@@ -70,7 +70,7 @@ void compile_runtime() {
   auto clang = find_existing_command({"clang-7", "clang"});
   TC_ASSERT(command_exist("llvm-as"));
   TC_TRACE("Compiling runtime module bitcode...");
-  auto runtime_folder = get_project_fn() + "/src/runtime/";
+  auto runtime_folder = get_project_fn() + "/runtime/";
   std::system(
       fmt::format("{} -S {}runtime.cpp -o {}runtime.ll -emit-llvm -std=c++17",
                   clang, runtime_folder, runtime_folder)
@@ -83,7 +83,7 @@ void compile_runtime() {
 std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
   if (!runtime_module) {
     compile_runtime();
-    std::ifstream ifs(get_project_fn() + "/src/runtime/runtime.bc");
+    std::ifstream ifs(get_project_fn() + "/runtime/runtime.bc");
     std::string bitcode(std::istreambuf_iterator<char>(ifs),
                         (std::istreambuf_iterator<char>()));
     auto runtime =

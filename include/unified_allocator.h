@@ -15,6 +15,7 @@ class UnifiedAllocator;
 extern UnifiedAllocator *&allocator();
 extern UnifiedAllocator* allocator_instance;
 
+// This class can only have one instance
 class UnifiedAllocator {
   std::unique_ptr<VirtualMemoryAllocator> cpu_vm;
   std::vector<char> _data;

@@ -7,8 +7,8 @@
 #endif
 
 // *****************************************************************************
-// these structures are used for maintaining metadata and sparsity.
-// Their look_up function takes a merged index, but they don't know where do the
+// These structures are used for maintaining metadata and sparsity.
+// Their look_up function takes a merged index, but they don't know where the
 // bits come from.
 
 #if defined(TLANG_KERNEL)

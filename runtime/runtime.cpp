@@ -1,5 +1,9 @@
+// This file will only be compiled with clang into llvm bitcode
+// Generated bitcode will likely get inline for performance.
+
 #include <atomic>
-// #include <vector>
+
+#define FORCEINLINE __attribute__((always_inline))
 
 constexpr int taichi_max_num_indices = 4;
 constexpr int taichi_max_num_args = 8;
@@ -25,10 +29,6 @@ void *context_get_buffer(Context *context) {
 }
 
 int printf(const char *, ...);
-
-void ___test___() {
-  printf("");
-}
 
 using float32 = float;
 
@@ -98,9 +98,6 @@ STRUCT_FIELD(DenseStruct, morton_dim)
 STRUCT_FIELD(DenseStruct, element_size)
 STRUCT_FIELD(DenseStruct, forking_factor)
 
-// STRUCT_FUNCTION(DenseStruct, activate, int);
-// STRUCT_FUNCTION(DenseStruct, activate, int);
-
 void DenseStruct_activate(DenseStruct *s, int i) {
 }
 
@@ -108,7 +105,19 @@ void *DenseStruct_lookup(DenseStruct *s, int i) {
   return (char *)s->node + s->element_size * i;
 }
 
+void *taichi_allocate(std::size_t size, int alignment);
+
+void ___stubs___() {
+  printf("");
+  taichi_allocate(1, 1);
+}
+
 /*
+ *
+void unitied_allocator_create();
+
+void unified_allocator_free();
+
 void *create_noderef_vector() {
   return new std::vector<NodeRef>;
 }

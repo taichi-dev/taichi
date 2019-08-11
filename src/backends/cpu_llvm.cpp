@@ -779,7 +779,7 @@ class CPULLVMCodeGen : public IRVisitor {
       /*
       stmt->value = builder.CreateGEP(
           parent, {tlctx->get_constant(0), stmt->input_index->value});
-          */
+      */
 
       // allocate the struct
       auto s = builder.CreateAlloca(get_runtime_type("DenseStruct"));

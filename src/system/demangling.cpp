@@ -13,6 +13,16 @@ TC_NAMESPACE_BEGIN
 
 // From https://en.wikipedia.org/wiki/Name_mangling
 
+std::string cpp_demangle(const std::string &mangled_name) {
+  char *demangled_name;
+  int status = -1;
+  demangled_name =
+      abi::__cxa_demangle(mangled_name.c_str(), NULL, NULL, &status);
+  std::string ret(demangled_name);
+  free(demangled_name);
+  return ret;
+}
+
 class Demangling : public Task {
   virtual std::string run(const std::vector<std::string> &parameters) {
     if (parameters.size() == 0) {
@@ -20,12 +30,7 @@ class Demangling : public Task {
     }
     for (auto p : parameters) {
 #if !defined(_WIN64)
-      char *demangled_name;
-      int status = -1;
-      demangled_name =
-          abi::__cxa_demangle(parameters[0].c_str(), NULL, NULL, &status);
-      printf("Demangled C++ Identifier: %s\n", demangled_name);
-      free(demangled_name);
+      printf("Demangled C++ Identifier: %s\n", cpp_demangle(p).c_str());
 #else
       TC_NOT_IMPLEMENTED
 #endif

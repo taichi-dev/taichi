@@ -57,7 +57,6 @@ static_assert(false, "32-bit Windows systems are not supported")
 
 // Compilers
 
-
 // MSVC
 #if defined(_MSC_VER)
 #define TC_COMPILER_MSVC
@@ -492,6 +491,8 @@ inline std::string absolute_path(std::string path) {
   }
   return path;
 }
+
+std::string cpp_demangle(const std::string &mangled_name);
 
 TC_NAMESPACE_END
 

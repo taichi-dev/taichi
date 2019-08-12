@@ -71,10 +71,13 @@ void compile_runtime() {
   TC_ASSERT(command_exist("llvm-as"));
   TC_TRACE("Compiling runtime module bitcode...");
   auto runtime_folder = get_project_fn() + "/runtime/";
-  std::system(
+  int ret = std::system(
       fmt::format("{} -S {}runtime.cpp -o {}runtime.ll -emit-llvm -std=c++17",
                   clang, runtime_folder, runtime_folder)
           .c_str());
+  if (ret) {
+    TC_ERROR("Runtime compilation failed.");
+  }
   std::system(fmt::format("llvm-as {}runtime.ll -o {}runtime.bc",
                           runtime_folder, runtime_folder)
                   .c_str());

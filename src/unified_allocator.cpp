@@ -94,6 +94,6 @@ UnifiedAllocator::UnifiedAllocator() {
 
 TLANG_NAMESPACE_END
 
-extern "C" void *taichi_allocate(std::size_t size, int alignment) {
+extern "C" void *taichi_allocate_aligned(std::size_t size, int alignment) {
   taichi::Tlang::allocate(size, alignment);
 }

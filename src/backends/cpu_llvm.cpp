@@ -78,7 +78,7 @@ class CPULLVMCodeGen : public IRVisitor {
 
     for (auto &f : *module) {
       if (!f.isDeclaration())
-        f.setLinkage(Function::PrivateLinkage); // to avoid duplicated symbols
+        f.setLinkage(Function::PrivateLinkage);  // to avoid duplicated symbols
     }
 
     current_struct_for = nullptr;
@@ -129,15 +129,16 @@ class CPULLVMCodeGen : public IRVisitor {
     // TC_P(context_ptr->getType()->isPointerTy());
     // TC_P((std::string)context_ptr->getType()->getStructName());
 
-    get_runtime_function("context_get_buffer")->print(llvm::errs(), nullptr);
     root = builder.CreateCall(get_runtime_function("context_get_buffer"),
                               context_ptr);
 
     node->accept(this);
     builder.CreateRet(const_int32(0));
 
-    TC_INFO("Kernel Module IR");
-    module->print(errs(), nullptr);
+    if (get_current_program().config.print_kernel_llvm_ir) {
+      TC_INFO("Kernel Module IR");
+      module->print(errs(), nullptr);
+    }
     TC_ASSERT(!llvm::verifyFunction(*func, &errs()));
 
     llvm::cantFail(jit->addModule(std::move(module)));

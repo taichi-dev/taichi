@@ -320,8 +320,10 @@ void StructCompilerLLVM::run(SNode &node) {
   root_type = node.node_type_name;
   generate_leaf_accessors(node);
 
-  TC_INFO("Struct Module IR");
-  module->print(errs(), nullptr);
+  if (get_current_program().config.print_struct_llvm_ir) {
+    TC_INFO("Struct Module IR");
+    module->print(errs(), nullptr);
+  }
 
   TC_ASSERT((int)snodes.size() <= max_num_snodes);
   for (int i = 0; i < (int)snodes.size(); i++) {

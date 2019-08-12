@@ -329,6 +329,8 @@ struct CompileConfig {
   bool simplify_after_lower_access;
   bool attempt_vectorized_load_cpu;
   bool use_llvm;
+  bool print_struct_llvm_ir;
+  bool print_kernel_llvm_ir;
   DataType gradient_dt;
   std::string extra_flags;
 

@@ -105,11 +105,57 @@ void *DenseStruct_lookup(DenseStruct *s, int i) {
   return (char *)s->node + s->element_size * i;
 }
 
-void *taichi_allocate(std::size_t size, int alignment);
+void *taichi_allocate(std::size_t size, int alignment) {
+  return taichi_allocate_aligned(size, 1);
+}
+
+void *taichi_allocate_aligned(std::size_t size, int alignment);
 
 void ___stubs___() {
   printf("");
-  taichi_allocate(1, 1);
+  taichi_allocate(1);
+  taichi_allocate_aligned(1, 1);
+}
+
+struct Node {
+  void *node;
+  int coordinates[taichi_max_num_indices];
+}
+
+STRUCT_FIELD(Node, node);
+STRUCT_FIELD(Node, coordinates);
+
+struct NodeList {
+  Node *list;
+  int tail;
+};
+
+void NodeList_initialize(Node *node_list) {
+  list = taichi_allocate(1024 * 1024 * 1024);
+  tail = 0;
+}
+
+
+void NodeList_insert(NodeList *node_list, Node *node) {
+  *node_list->list[tail] = *node;
+  list->tail++;
+}
+
+void NodeList_clear(NodeList *node_list) {
+  node_list->tail = 0;
+}
+
+// Is "runtime" a correct name, even if it is created after the data layout is
+// materialized?
+struct Runtime {
+  NodeList *lists[1024];
+};
+
+void Runtime_initialize(Runtime *runtime, int num_snodes) {
+  for (int i = 0; i < num_snodes; i++) {
+    runtime->lists[i] = taichi_allocate(sizeof(NodeList));
+    NodeList_initialize(runtime->lists[i]);
+  }
 }
 
 /*

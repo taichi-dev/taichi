@@ -149,6 +149,7 @@ template llvm::Value *TaichiLLVMContext::get_constant(float64 t);
 
 template llvm::Value *TaichiLLVMContext::get_constant(int32 t);
 template llvm::Value *TaichiLLVMContext::get_constant(uint32 t);
+
 template llvm::Value *TaichiLLVMContext::get_constant(int64 t);
 template llvm::Value *TaichiLLVMContext::get_constant(uint64 t);
 

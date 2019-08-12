@@ -64,6 +64,7 @@ class Program {
   SNode *snode_root;
   // pointer to the data structure. assigned to context.buffers[0] during kernel
   // launches
+  void *llvm_runtime;
   void *data_structure;
   CompileConfig config;
   CPUProfiler cpu_profiler;
@@ -125,6 +126,7 @@ class Program {
     snode_root = nullptr;
     index_counter = 0;
     sync = true;
+    llvm_runtime = nullptr;
   }
 
   void synchronize();

@@ -347,6 +347,30 @@ void StructCompilerLLVM::run(SNode &node) {
     }
   }
 
+  // initializer
+
+  {
+    auto ft =
+        llvm::FunctionType::get(llvm::Type::getVoidTy(*llvm_ctx),
+                                {llvm::Type::getInt8PtrTy(*llvm_ctx)}, false);
+    auto init = llvm::Function::Create(ft, llvm::Function::ExternalLinkage,
+                                       "initialize_data_structure", *module);
+    std::vector<llvm::Value *> args;
+    for (auto &arg : init->args()) {
+      args.push_back(&arg);
+    }
+    auto bb = BasicBlock::Create(*llvm_ctx, "body", init);
+    llvm::IRBuilder<> builder(bb, bb->begin());
+    auto runtime_ty = get_runtime_type("Runtime");
+    builder.CreateCall(
+        get_runtime_function("Runtime_initialize"),
+        {builder.CreateBitCast(
+             args[0],
+             llvm::PointerType::get(llvm::PointerType::get(runtime_ty, 0), 0)),
+         tlctx->get_constant((int)snodes.size())});
+    builder.CreateRetVoid();
+  }
+
   module->setDataLayout(tlctx->jit->getDataLayout());
 
   tlctx->set_struct_module(module);
@@ -354,6 +378,9 @@ void StructCompilerLLVM::run(SNode &node) {
   llvm::cantFail(tlctx->jit->addModule(std::move(module)));
 
   load_accessors(node);
+
+  creator = tlctx->lookup_function<std::function<void *()>>(
+      "initialize_data_structure");
 }
 
 std::unique_ptr<StructCompiler> StructCompiler::make(bool use_llvm) {

@@ -150,7 +150,10 @@ struct Runtime {
   NodeList *lists[1024];
 };
 
-void Runtime_initialize(Runtime *runtime, int num_snodes) {
+void Runtime_initialize(Runtime **runtime_ptr, int num_snodes) {
+  *runtime_ptr = (Runtime *)taichi_allocate(sizeof(Runtime));
+  Runtime *runtime = *runtime_ptr;
+  printf("Initializing runtime with %d snodes", num_snodes);
   for (int i = 0; i < num_snodes; i++) {
     runtime->lists[i] = (NodeList *)taichi_allocate(sizeof(NodeList));
     NodeList_initialize(runtime->lists[i]);

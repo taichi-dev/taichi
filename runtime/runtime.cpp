@@ -110,48 +110,48 @@ void ___stubs___() {
   taichi_allocate_aligned(1, 1);
 }
 
-struct Node {
-  void *node;
+struct Element {
+  void *element;
   int loop_bounds[2];
   int coordinates[taichi_max_num_indices];
 };
 
-STRUCT_FIELD(Node, node);
-STRUCT_FIELD_ARRAY(Node, loop_bounds);
-STRUCT_FIELD_ARRAY(Node, coordinates);
+STRUCT_FIELD(Element, element);
+STRUCT_FIELD_ARRAY(Element, loop_bounds);
+STRUCT_FIELD_ARRAY(Element, coordinates);
 
-struct NodeList {
-  Node *list;
+struct ElementList {
+  Element *list;
   int tail;
 };
 
-void NodeList_initialize(NodeList *node_list) {
-  node_list->list = (Node *)taichi_allocate(1024 * 1024 * 1024);
-  node_list->tail = 0;
+void ElementList_initialize(ElementList *element_list) {
+  element_list->list = (Element *)taichi_allocate(1024 * 1024 * 1024);
+  element_list->tail = 0;
 }
 
-void NodeList_insert(NodeList *node_list, Node *node) {
-  node_list->list[node_list->tail] = *node;
-  node_list->tail++;
+void ElementList_insert(ElementList *element_list, Element *element) {
+  element_list->list[element_list->tail] = *element;
+  element_list->tail++;
 }
 
-void NodeList_clear(NodeList *node_list) {
-  node_list->tail = 0;
+void ElementList_clear(ElementList *element_list) {
+  element_list->tail = 0;
 }
 
 // Is "runtime" a correct name, even if it is created after the data layout is
 // materialized?
 struct Runtime {
-  NodeList *lists[1024];
+  ElementList *lists[1024];
 };
 
 void Runtime_initialize(Runtime **runtime_ptr, int num_snodes) {
   *runtime_ptr = (Runtime *)taichi_allocate(sizeof(Runtime));
   Runtime *runtime = *runtime_ptr;
-  printf("Initializing runtime with %d snodes\n", num_snodes);
+  printf("Initializing runtime with %d selements\n", num_snodes);
   for (int i = 0; i < num_snodes; i++) {
-    runtime->lists[i] = (NodeList *)taichi_allocate(sizeof(NodeList));
-    NodeList_initialize(runtime->lists[i]);
+    runtime->lists[i] = (ElementList *)taichi_allocate(sizeof(ElementList));
+    ElementList_initialize(runtime->lists[i]);
   }
   printf("Runtime initialized.\n");
 }

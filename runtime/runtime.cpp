@@ -1,6 +1,7 @@
 // This file will only be compiled with clang into llvm bitcode
 // Generated bitcode will likely get inline for performance.
 
+#include <type_traits>
 #include <atomic>
 
 #define FORCEINLINE __attribute__((always_inline))
@@ -50,30 +51,22 @@ float32 atomic_add_cpu_f32(volatile float32 *dest, float32 inc) {
   return old_val;
 }
 
-struct NodeRef {
-  int indices[taichi_max_num_indices];
-  int loop_bounds[2];
-  void *node;
-};
-
-int *noderef_get_index_ptr(NodeRef *noderef, int i) {
-  return &noderef->indices[i];
-}
-
-int *noderef_get_loop_bound_ptr(NodeRef *noderef, int i) {
-  return &noderef->loop_bounds[i];
-}
-
-void **noderef_get_node_ptr_ptr(NodeRef *noderef) {
-  return &noderef->node;
-}
-
 #define STRUCT_FIELD(S, F)                              \
   extern "C" decltype(S::F) S##_get_##F(S *s) {         \
     return s->F;                                        \
   }                                                     \
   extern "C" void S##_set_##F(S *s, decltype(S::F) f) { \
     s->F = f;                                           \
+  }
+
+#define STRUCT_FIELD_ARRAY(S, F)                                             \
+  extern "C" std::remove_all_extents_t<decltype(S::F)> S##_get_##F(S *s,     \
+                                                                   int i) {  \
+    return s->F[i];                                                          \
+  }                                                                          \
+  extern "C" void S##_set_##F(S *s, int i,                                   \
+                              std::remove_all_extents_t<decltype(S::F)> f) { \
+    s->F[i] = f;                                                             \
   }
 
 /*
@@ -119,11 +112,13 @@ void ___stubs___() {
 
 struct Node {
   void *node;
+  int loop_bounds[2];
   int coordinates[taichi_max_num_indices];
 };
 
 STRUCT_FIELD(Node, node);
-// STRUCT_FIELD(Node, coordinates);
+STRUCT_FIELD_ARRAY(Node, loop_bounds);
+STRUCT_FIELD_ARRAY(Node, coordinates);
 
 struct NodeList {
   Node *list;
@@ -160,30 +155,4 @@ void Runtime_initialize(Runtime **runtime_ptr, int num_snodes) {
   }
   printf("Runtime initialized.\n");
 }
-
-/*
- *
-void unitied_allocator_create();
-
-void unified_allocator_free();
-
-void *create_noderef_vector() {
-  return new std::vector<NodeRef>;
-}
-
-void destory_noderef_vector(void *vec) {
-  auto ptr = (std::vector<NodeRef> *)vec;
-  delete ptr;
-}
-
-int noderef_vector_size(void *vec) {
-  auto ptr = (std::vector<NodeRef> *)vec;
-  return ptr->size();
-}
-
-NodeRef *get_noderef_vector_elem(void *vec, int i) {
-  auto ptr = (std::vector<NodeRef> *)vec;
-  return &(*ptr)[i];
-}
-*/
 }

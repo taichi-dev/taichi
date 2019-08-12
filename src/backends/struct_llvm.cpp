@@ -14,7 +14,7 @@ StructCompilerLLVM::StructCompilerLLVM() : StructCompiler() {
   Program *prog = &get_current_program();
   tlctx = &prog->llvm_context;
   llvm_ctx = tlctx->ctx.get();
-  module = llvm::make_unique<Module>("taichi struct", *llvm_ctx);
+  module = tlctx->get_init_module();
 }
 
 void StructCompilerLLVM::codegen(SNode &snode) {

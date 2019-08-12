@@ -75,10 +75,12 @@ class CPULLVMCodeGen : public IRVisitor {
         kernel(kernel) {
     using namespace llvm;
     module = tlctx->clone_struct_module();
+
     for (auto &f : *module) {
       if (!f.isDeclaration())
-        f.setLinkage(Function::PrivateLinkage);
+        f.setLinkage(Function::PrivateLinkage); // to avoid duplicated symbols
     }
+
     current_struct_for = nullptr;
 
     context_ty = get_runtime_type("Context");

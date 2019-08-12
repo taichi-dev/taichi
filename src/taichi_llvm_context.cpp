@@ -80,6 +80,10 @@ void compile_runtime() {
                   .c_str());
 }
 
+std::unique_ptr<llvm::Module> TaichiLLVMContext::get_init_module() {
+  return clone_runtime_module();
+}
+
 std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
   if (!runtime_module) {
     compile_runtime();
@@ -100,17 +104,18 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
 }
 
 std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_struct_module() {
-  using namespace llvm;
-  auto runtime = clone_runtime_module();
   TC_ASSERT(struct_module);
+  /*
+  auto runtime = clone_runtime_module();
   bool failed =
       llvm::Linker::linkModules(*runtime, llvm::CloneModule(*struct_module));
   if (failed) {
     TC_ERROR("Runtime linking failure.");
   }
+  */
   // return llvm::CloneModule(*struct_module);
   // runtime_module->print(llvm::errs(), nullptr);
-  return runtime;
+  return llvm::CloneModule(*struct_module);
 }
 
 void TaichiLLVMContext::set_struct_module(

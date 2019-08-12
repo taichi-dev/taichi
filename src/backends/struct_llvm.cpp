@@ -96,8 +96,10 @@ void StructCompilerLLVM::generate_leaf_accessors(SNode &snode) {
       auto accessor = llvm::Function::Create(
           ft, llvm::Function::InternalLinkage,
           "chain_accessor_" + ch->get_name(), module.get());
+      /*
       accessor->addAttribute(
           0, llvm::Attribute::get(*llvm_ctx, llvm::Attribute::AlwaysInline));
+          */
       auto bb = BasicBlock::Create(*llvm_ctx, "body", accessor);
       llvm::IRBuilder<> builder(bb, bb->begin());
       std::vector<Value *> args;
@@ -310,12 +312,6 @@ void StructCompilerLLVM::run(SNode &node) {
   */
 
   // TODO: general allocators
-  auto root_size = tlctx->jit->getDataLayout().getTypeAllocSize(root.llvm_type);
-
-  creator = [=] {
-    TC_INFO("Allocating data structure of size {}", root_size);
-    return std::malloc(root_size);
-  };
 
   root_type = node.node_type_name;
   generate_leaf_accessors(node);
@@ -379,8 +375,16 @@ void StructCompilerLLVM::run(SNode &node) {
 
   load_accessors(node);
 
-  creator = tlctx->lookup_function<std::function<void *()>>(
-      "initialize_data_structure");
+  auto initialize_data_structure =
+      tlctx->lookup_function<std::function<void *(void *)>>(
+          "initialize_data_structure");
+
+  auto root_size = tlctx->jit->getDataLayout().getTypeAllocSize(root.llvm_type);
+  creator = [initialize_data_structure, root_size]() {
+    // initialize_data_structure(&get_current_program().llvm_runtime);
+    TC_INFO("Allocating data structure of size {}", root_size);
+    return std::malloc(root_size);
+  };
 }
 
 std::unique_ptr<StructCompiler> StructCompiler::make(bool use_llvm) {

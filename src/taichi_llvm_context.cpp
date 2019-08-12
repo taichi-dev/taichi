@@ -125,6 +125,7 @@ void TaichiLLVMContext::set_struct_module(
     const std::unique_ptr<llvm::Module> &module) {
   TC_ASSERT(module);
   if (llvm::verifyModule(*module, &llvm::errs())) {
+    module->print(llvm::errs(), nullptr);
     TC_ERROR("module broken");
   }
   struct_module = llvm::CloneModule(*module);

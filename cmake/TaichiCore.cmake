@@ -106,17 +106,17 @@ endif ()
 include_directories(include)
 include_directories(external/include)
 
-add_custom_target(
-        clangformat
-        COMMAND clang-format-6.0
-        -style=file
-        -i
-        ${TAICHI_CORE_SOURCE} ${TAICHI_PROJECT_SOURCE}
-)
-
-add_custom_target(
-        yapfformat
-        COMMAND yapf
-        -irp
-        ${CMAKE_CURRENT_LIST_DIR}/../
-)
+#add_custom_target(
+#        clangformat
+#        COMMAND clang-format-6.0
+#        -style=file
+#        -i
+#        ${TAICHI_CORE_SOURCE} ${TAICHI_PROJECT_SOURCE}
+#)
+#
+#add_custom_target(
+#        yapfformat
+#        COMMAND yapf
+#        -irp
+#        ${CMAKE_CURRENT_LIST_DIR}/../
+#)

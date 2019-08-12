@@ -312,12 +312,13 @@ def load_module(name, verbose=True):
   if verbose:
     print('Loading module', name)
   try:
+    mode = ctypes.RTLD_GLOBAL
     if '.so' in name:
-      ctypes.PyDLL(name)
+      ctypes.PyDLL(name, mode=mode)
     else:
       ctypes.PyDLL(
         os.path.join(get_repo_directory(), 'build',
-                     get_dll_name(name)))
+                     get_dll_name(name)), mode=mode)
   except Exception as e:
     print(Fore.YELLOW + "Warning: module [{}] loading failed: {}".format(
       name, e) + Style.RESET_ALL)

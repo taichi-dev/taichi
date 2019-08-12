@@ -131,7 +131,7 @@ class CPULLVMCodeGen : public IRVisitor {
                               context_ptr);
 
     node->accept(this);
-    builder.CreateRet(const_int32(0));
+    builder.CreateRet(tlctx->get_constant(0));
 
     if (get_current_program().config.print_kernel_llvm_ir) {
       TC_INFO("Kernel Module IR");
@@ -347,8 +347,7 @@ class CPULLVMCodeGen : public IRVisitor {
     emit("}}");
   }
 
-  void visit(StructForStmt *for_stmt) {
-  }
+  void visit(StructForStmt *for_stmt){TC_NOT_IMPLEMENTED}
 
   AllocaInst *CreateEntryBlockAlloca(llvm::Type *type,
                                      const std::string &name) {
@@ -361,16 +360,12 @@ class CPULLVMCodeGen : public IRVisitor {
     builder.CreateStore(builder.CreateAdd(builder.CreateLoad(ptr), value), ptr);
   }
 
-  llvm::Value *const_int32(int32 val) {
-    return llvm::ConstantInt::get(*llvm_context, llvm::APInt(32, val, true));
-  }
-
   void visit(RangeForStmt *for_stmt) {
     // auto entry = builder.GetInsertBlock();
 
     BasicBlock *body = BasicBlock::Create(*llvm_context, "loop_body", func);
     BasicBlock *after_loop = BasicBlock::Create(*llvm_context, "block", func);
-    builder.CreateStore(const_int32(0), for_stmt->loop_var->value);
+    builder.CreateStore(tlctx->get_constant(0), for_stmt->loop_var->value);
     builder.CreateBr(body);
 
     // body cfg
@@ -386,7 +381,7 @@ class CPULLVMCodeGen : public IRVisitor {
 
     for_stmt->body->accept(this);
 
-    increment(for_stmt->loop_var->value, const_int32(1));
+    increment(for_stmt->loop_var->value, tlctx->get_constant(1));
 
     auto cond = builder.CreateICmp(
         llvm::CmpInst::Predicate::ICMP_SLT,

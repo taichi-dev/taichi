@@ -35,6 +35,8 @@ class StructCompilerLLVM : public StructCompiler {
 
   virtual void generate_leaf_accessors(SNode &snode) override;
 
+  void emit_element_list_gen(SNode *snode);
+
   virtual void load_accessors(SNode &snode) override;
 
   virtual void set_parents(SNode &snode) override;

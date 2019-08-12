@@ -70,6 +70,54 @@ void StructCompilerLLVM::codegen(SNode &snode) {
   snode.llvm_type = llvm_type;
 }
 
+void StructCompilerLLVM::emit_element_list_gen(SNode *snode) {
+  using namespace llvm;
+  auto runtime_ty = get_runtime_type("Runtime");
+  auto ft = llvm::FunctionType::get(Type::getVoidTy(*llvm_ctx),
+                                    {PointerType::get(runtime_ty, 0)}, false);
+  auto func = Function::Create(ft, Function::ExternalLinkage,
+                               snode->element_listgen_func_name());
+  auto bb = BasicBlock::Create(*llvm_ctx, "entry", func);
+  llvm::IRBuilder<> builder(bb, bb->begin());
+  std::vector<Value *> args;
+  for (auto &arg : func->args()) {
+    args.push_back(&arg);
+  }
+  llvm::Value *runtime_ptr = args[0];
+
+
+  auto node_list = builder.CreateCall(get_runtime_function("Runtime_get_node_list"));
+  llvm::Value *num_elements = builder.CreateCall(get_runtime_function("NodeList_get_tail"));
+
+  // Create the for loop over elements
+
+  auto llvm_context = llvm_ctx;
+  BasicBlock *body = BasicBlock::Create(*llvm_context, "loop_body", func);
+  BasicBlock *after_loop = BasicBlock::Create(*llvm_context, "block", func);
+
+  auto loop = builder.CreateAlloca(tlctx->get_data_type(DataType::i32));
+  builder.CreateStore(tlctx->get_constant(0), loop);
+  builder.CreateBr(body);
+
+  // body cfg
+  builder.SetInsertPoint(body);
+
+  // Emit node generation for index i
+
+  builder.CreateStore(
+      builder.CreateAdd(builder.CreateLoad(loop), tlctx->get_constant(1)),
+      loop);
+
+  auto cond = builder.CreateICmp(llvm::CmpInst::Predicate::ICMP_SLT,
+                                 builder.CreateLoad(loop), num_elements
+                                 );
+
+  builder.CreateCondBr(cond, body, after_loop);
+
+  // next cfg
+  builder.SetInsertPoint(after_loop);
+}
+
 void StructCompilerLLVM::generate_leaf_accessors(SNode &snode) {
   auto type = snode.type;
   stack.push_back(&snode);

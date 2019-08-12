@@ -289,6 +289,10 @@ class SNode {
   std::string get_name() const {
     return node_type_name;
   }
+
+  std::string element_listgen_func_name() {
+    return get_name() + "_element_listgen";
+  }
 };
 
 TLANG_NAMESPACE_END

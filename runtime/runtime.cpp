@@ -9,6 +9,8 @@
 constexpr int taichi_max_num_indices = 4;
 constexpr int taichi_max_num_args = 8;
 
+using uint8 = uint8_t;
+
 using ContextArgType = long long;
 
 struct Context {
@@ -110,28 +112,32 @@ void ___stubs___() {
   taichi_allocate_aligned(1, 1);
 }
 
-struct Element {
-  void *element;
-  int loop_bounds[2];
+struct PhysicalCoordinates {
   int coordinates[taichi_max_num_indices];
 };
 
+struct Element {
+  uint8 *element;
+  int loop_bounds[2];
+  PhysicalCoordinates pcoord;
+};
+
 STRUCT_FIELD(Element, element);
+STRUCT_FIELD(Element, pcoord);
 STRUCT_FIELD_ARRAY(Element, loop_bounds);
-STRUCT_FIELD_ARRAY(Element, coordinates);
 
 struct ElementList {
-  Element *list;
+  Element *elements;
   int tail;
 };
 
 void ElementList_initialize(ElementList *element_list) {
-  element_list->list = (Element *)taichi_allocate(1024 * 1024 * 1024);
+  element_list->elements = (Element *)taichi_allocate(1024 * 1024 * 1024);
   element_list->tail = 0;
 }
 
 void ElementList_insert(ElementList *element_list, Element *element) {
-  element_list->list[element_list->tail] = *element;
+  element_list->elements[element_list->tail] = *element;
   element_list->tail++;
 }
 
@@ -142,17 +148,57 @@ void ElementList_clear(ElementList *element_list) {
 // Is "runtime" a correct name, even if it is created after the data layout is
 // materialized?
 struct Runtime {
-  ElementList *lists[1024];
+  ElementList *element_lists[1024];
 };
+
+STRUCT_FIELD_ARRAY(Runtime, element_lists);
 
 void Runtime_initialize(Runtime **runtime_ptr, int num_snodes) {
   *runtime_ptr = (Runtime *)taichi_allocate(sizeof(Runtime));
   Runtime *runtime = *runtime_ptr;
   printf("Initializing runtime with %d selements\n", num_snodes);
   for (int i = 0; i < num_snodes; i++) {
-    runtime->lists[i] = (ElementList *)taichi_allocate(sizeof(ElementList));
-    ElementList_initialize(runtime->lists[i]);
+    runtime->element_lists[i] =
+        (ElementList *)taichi_allocate(sizeof(ElementList));
+    ElementList_initialize(runtime->element_lists[i]);
   }
   printf("Runtime initialized.\n");
 }
+
+// "Element", "component" are different concepts
+
+struct SNodeInfo {
+  int snode_id;
+  int snode_type;
+  uint8 *(*lookup_element)(uint8 *, int i);
+  uint8 *(*from_parent_element)(uint8 *);
+  bool (*is_active)(uint8 *, int i);
+  int (*get_num_elements)(void *);
+  PhysicalCoordinates (*refine_coordinates)(PhysicalCoordinates inp_coord,
+                                            int index);
+};
+
+// ultimately all function calls here will be inlined
+void element_listgen(Runtime *runtime, SNodeInfo *parent, SNodeInfo *child) {
+  auto parent_list = runtime->element_lists[parent->snode_id];
+  int num_parent_elements = parent_list->tail;
+  auto child_list = runtime->element_lists[child->snode_id];
+  for (int i = 0; i < num_parent_elements; i++) {
+    auto element = parent_list->elements[i];
+    auto ch_component = child->from_parent_element(element.element);
+    int ch_num_elements = child->get_num_elements(ch_component);
+    for (int j = 0; j < ch_num_elements; j++) {
+      auto ch_element = child->lookup_element(element.element, j);
+      if (child->is_active(ch_component, j)) {
+        Element elem;
+        elem.element = ch_element;
+        elem.loop_bounds[0] = 0;
+        elem.loop_bounds[1] = child->get_num_elements(ch_element);
+        elem.pcoord = parent->refine_coordinates(element.pcoord, j);
+        child_list->elements[child_list->tail++] = elem;
+      }
+    }
+  }
+}
+
 }

@@ -33,6 +33,11 @@ class TaichiLLVMContext {
 
   llvm::Type *get_data_type(DataType dt);
 
+  template <typename T>
+  llvm::Type *get_data_type() {
+    return TaichiLLVMContext::get_data_type(taichi::Tlang::get_data_type<T>());
+  }
+
   std::size_t get_type_size(llvm::Type *type);
 
   template <typename T>

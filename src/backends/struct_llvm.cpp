@@ -85,9 +85,22 @@ void StructCompilerLLVM::emit_element_list_gen(SNode *snode) {
   }
   llvm::Value *runtime_ptr = args[0];
 
+  auto pnode = snode->parent;
 
-  auto node_list = builder.CreateCall(get_runtime_function("Runtime_get_node_list"));
-  llvm::Value *num_elements = builder.CreateCall(get_runtime_function("NodeList_get_tail"));
+  TC_ASSERT(pnode != nullptr);
+
+  auto parent_element_list =
+      builder.CreateCall(get_runtime_function("Runtime_get_element_list"),
+                         {runtime_ptr, tlctx->get_constant(pnode->id)});
+  auto parent_num_elements =
+      builder.CreateCall(get_runtime_function("ElementList_get_tail"));
+
+  auto child_element_list =
+      builder.CreateCall(get_runtime_function("Runtime_get_element_list"),
+                         {runtime_ptr, tlctx->get_constant(snode->id)});
+
+  builder.CreateCall(get_runtime_function("ElementList_clear"),
+                     {child_element_list});
 
   // Create the for loop over elements
 
@@ -99,22 +112,26 @@ void StructCompilerLLVM::emit_element_list_gen(SNode *snode) {
   builder.CreateStore(tlctx->get_constant(0), loop);
   builder.CreateBr(body);
 
-  // body cfg
-  builder.SetInsertPoint(body);
+  // body: another for loop that emits node generation for index i
+  {
+    /*
+    auto inner_begin
+    auto i = builder.CreateAlloca(tlctx->get_data_type<int>());
+    // call a function?
+    */
+  }
 
-  // Emit node generation for index i
-
+  builder.SetInsertPoint(bb);
   builder.CreateStore(
       builder.CreateAdd(builder.CreateLoad(loop), tlctx->get_constant(1)),
       loop);
 
   auto cond = builder.CreateICmp(llvm::CmpInst::Predicate::ICMP_SLT,
-                                 builder.CreateLoad(loop), num_elements
-                                 );
+                                 builder.CreateLoad(loop), parent_num_elements);
 
   builder.CreateCondBr(cond, body, after_loop);
 
-  // next cfg
+  // next
   builder.SetInsertPoint(after_loop);
 }
 

@@ -312,7 +312,10 @@ def load_module(name, verbose=True):
   if verbose:
     print('Loading module', name)
   try:
-    mode = ctypes.RTLD_GLOBAL
+    if get_os_name() == 'osx':
+      mode = ctypes.RTLD_LOCAL
+    else:
+      mode = ctypes.RTLD_GLOBAL
     if '.so' in name:
       ctypes.PyDLL(name, mode=mode)
     else:

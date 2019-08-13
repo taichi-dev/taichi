@@ -79,8 +79,9 @@ extern "C" decltype()
 // These structures are accessible by both the LLVM backend and this C++ runtime
 // file here (for building complex runtime functions in C++)
 
+// This struct contains a pointer to the node and some "template parameters"
 struct DenseStruct {
-  void *node;
+  uint8 *node;
   bool bitmasked;
   int morton_dim;
   std::size_t element_size;
@@ -168,14 +169,17 @@ void Runtime_initialize(Runtime **runtime_ptr, int num_snodes) {
 // "Element", "component" are different concepts
 
 struct SNodeInfo {
+  uint8 *node;
+  int max_num_elements;
+  int element_size;
   int snode_id;
-  int snode_type;
   uint8 *(*lookup_element)(uint8 *, int i);
   uint8 *(*from_parent_element)(uint8 *);
   bool (*is_active)(uint8 *, int i);
-  int (*get_num_elements)(void *);
-  PhysicalCoordinates (*refine_coordinates)(PhysicalCoordinates inp_coord,
-                                            int index);
+  int (*get_num_elements)(uint8 *);
+  void (*refine_coordinates)(PhysicalCoordinates *inp_coord,
+                             PhysicalCoordinates *refined_coord,
+                             int index);
 };
 
 // ultimately all function calls here will be inlined
@@ -194,11 +198,12 @@ void element_listgen(Runtime *runtime, SNodeInfo *parent, SNodeInfo *child) {
         elem.element = ch_element;
         elem.loop_bounds[0] = 0;
         elem.loop_bounds[1] = child->get_num_elements(ch_element);
-        elem.pcoord = parent->refine_coordinates(element.pcoord, j);
+        PhysicalCoordinates refined_coord;
+        parent->refine_coordinates(&element.pcoord, &refined_coord, j);
+        elem.pcoord = refined_coord;
         child_list->elements[child_list->tail++] = elem;
       }
     }
   }
 }
-
 }

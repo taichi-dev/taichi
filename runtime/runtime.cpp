@@ -75,18 +75,22 @@ float32 atomic_add_cpu_f32(volatile float32 *dest, float32 inc) {
 // These structures are accessible by both the LLVM backend and this C++ runtime
 // file here (for building complex runtime functions in C++)
 
-// This struct contains some "template parameters"
-struct DenseMeta {
-  bool bitmasked;
-  int morton_dim;
+struct StructCommon {
+  int snode_id;
   std::size_t element_size;
   int max_num_elements;
+};
+STRUCT_FIELD(StructCommon, element_size)
+STRUCT_FIELD(StructCommon, max_num_elements)
+
+// This struct contains some "template parameters"
+struct DenseMeta : public StructCommon {
+  bool bitmasked;
+  bool morton_dim;
 };
 
 STRUCT_FIELD(DenseMeta, bitmasked)
 STRUCT_FIELD(DenseMeta, morton_dim)
-STRUCT_FIELD(DenseMeta, element_size)
-STRUCT_FIELD(DenseMeta, max_num_elements)
 
 void Dense_activate(Ptr node, DenseMeta *s, int i) {
 }
@@ -164,9 +168,7 @@ void Runtime_initialize(Runtime **runtime_ptr, int num_snodes) {
 
 struct SNodeInfo {
   uint8 *node;
-  int max_num_elements;
-  int element_size;
-  int snode_id;
+  uint8 *snode_info;
   uint8 *(*lookup_element)(uint8 *, int i);
   uint8 *(*from_parent_element)(uint8 *);
   bool (*is_active)(uint8 *, int i);
@@ -174,13 +176,18 @@ struct SNodeInfo {
   void (*refine_coordinates)(PhysicalCoordinates *inp_coord,
                              PhysicalCoordinates *refined_coord,
                              int index);
+
+  int snode_id() {
+    return ((StructCommon *)snode_info)->snode_id;
+  }
 };
 
 // ultimately all function calls here will be inlined
 void element_listgen(Runtime *runtime, SNodeInfo *parent, SNodeInfo *child) {
-  auto parent_list = runtime->element_lists[parent->snode_id];
+  auto parent_list = runtime->element_lists[parent->snode_id()];
   int num_parent_elements = parent_list->tail;
-  auto child_list = runtime->element_lists[child->snode_id];
+  auto child_list =
+      runtime->element_lists[child->snode_id()];
   for (int i = 0; i < num_parent_elements; i++) {
     auto element = parent_list->elements[i];
     auto ch_component = child->from_parent_element(element.element);
@@ -200,4 +207,5 @@ void element_listgen(Runtime *runtime, SNodeInfo *parent, SNodeInfo *child) {
     }
   }
 }
+
 }

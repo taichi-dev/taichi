@@ -135,6 +135,8 @@ template <typename T>
 llvm::Value *TaichiLLVMContext::get_constant(T t) {
   if constexpr (std::is_same_v<T, float32> || std::is_same_v<T, float64>) {
     return llvm::ConstantFP::get(*ctx, llvm::APFloat(t));
+  } else if (std::is_same_v<T, bool>) {
+    return llvm::ConstantInt::get(*ctx, llvm::APInt(1, t, false));
   } else if (std::is_same_v<T, int32> || std::is_same_v<T, uint32>) {
     return llvm::ConstantInt::get(*ctx, llvm::APInt(32, t, true));
   } else if (std::is_same_v<T, int64> || std::is_same_v<T, uint64>) {
@@ -158,6 +160,8 @@ std::size_t TaichiLLVMContext::get_type_size(llvm::Type *type) {
 
 template llvm::Value *TaichiLLVMContext::get_constant(float32 t);
 template llvm::Value *TaichiLLVMContext::get_constant(float64 t);
+
+template llvm::Value *TaichiLLVMContext::get_constant(bool t);
 
 template llvm::Value *TaichiLLVMContext::get_constant(int32 t);
 template llvm::Value *TaichiLLVMContext::get_constant(uint32 t);

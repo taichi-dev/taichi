@@ -118,6 +118,35 @@ class CPULLVMCodeGen : public IRVisitor {
     return f;
   }
 
+  void emit_struct_common_info(llvm::IRBuilder<> *builder,
+                               llvm::Value *node_info,
+                               SNode *snode) {
+    auto common = builder->CreateBitCast(
+        node_info, llvm::PointerType::get(get_runtime_type("StructCommon"), 0));
+    auto element_ty = snode->llvm_type->getArrayElementType();
+    std::size_t element_size = tlctx->get_type_size(element_ty);
+    builder->CreateCall(get_runtime_function("StructCommon_set_element_size"),
+                        {common, tlctx->get_constant((uint64)element_size)});
+    builder->CreateCall(
+        get_runtime_function("StructCommon_set_max_num_elements"),
+        {common, tlctx->get_constant(1 << snode->total_num_bits)});
+  }
+
+  llvm::Value *emit_dense_struct_info(llvm::IRBuilder<> *builder,
+                                      llvm::Value *node,
+                                      SNode *snode) {
+    auto s = builder->CreateAlloca(get_runtime_type("DenseMeta"));
+    emit_struct_common_info(builder, s, snode);
+
+    builder->CreateCall(get_runtime_function("DenseMeta_set_bitmasked"),
+                        {s, tlctx->get_constant(snode->_bitmasked)});
+
+    builder->CreateCall(get_runtime_function("DenseMeta_set_morton_dim"),
+                        {s, tlctx->get_constant(snode->_morton)});
+
+    return s;
+  }
+
   FunctionType gen(IRNode *node) {
     BasicBlock *bb = BasicBlock::Create(*llvm_context, "entry", func);
     builder.SetInsertPoint(bb);
@@ -772,41 +801,34 @@ class CPULLVMCodeGen : public IRVisitor {
       stmt->value = builder.CreateGEP(parent, stmt->input_index->value);
     } else {
       TC_ASSERT(snode->type == SNodeType::dense);
-      /*
-      stmt->value = builder.CreateGEP(
-          parent, {tlctx->get_constant(0), stmt->input_index->value});
-      */
-
       // allocate the struct
+      /*
       auto s = builder.CreateAlloca(get_runtime_type("DenseMeta"));
-
       auto node = builder.CreateBitCast(
           stmt->input_snode->value, llvm::Type::getInt8PtrTy(*llvm_context));
       auto element_ty = stmt->snode->llvm_type->getArrayElementType();
       std::size_t element_size = tlctx->get_type_size(element_ty);
       builder.CreateCall(get_runtime_function("DenseMeta_set_element_size"),
                          {s, tlctx->get_constant((uint64)element_size)});
+                         */
+      auto s = emit_dense_struct_info(&builder, stmt->input_snode->value,
+                                      stmt->snode);
+
+      // call look up
+      auto node_ptr = builder.CreateBitCast(
+          stmt->input_snode->value, llvm::Type::getInt8PtrTy(*llvm_context));
       auto elem =
           builder.CreateCall(get_runtime_function("Dense_lookup_element"),
-                             {node, s, stmt->input_index->value});
+                             {node_ptr, s, stmt->input_index->value});
+      auto element_ty = snode->llvm_type->getArrayElementType();
       stmt->value =
           builder.CreateBitCast(elem, PointerType::get(element_ty, 0));
     }
   }
 
   void visit(GetChStmt *stmt) {
-    if (stmt->output_snode->type == SNodeType::place) {
-      /*
-      emit(R"({} *{}[1] {{&{}->get{}()->val}};)",
-           stmt->output_snode->data_type_name(), stmt->raw_name(),
-           stmt->input_ptr->raw_name(), stmt->chid);
-           */
-    } else {
-      /*
-      emit(R"(auto {} = {}->get{}();)", stmt->raw_name(),
-           stmt->input_ptr->raw_name(), stmt->chid);
-           */
-    }
+    // always unvectorized
+    // it is OK to directly use GEP here since Components are "dense"
     stmt->value = builder.CreateGEP(
         stmt->input_ptr->value,
         {tlctx->get_constant(0), tlctx->get_constant(stmt->chid)}, "getch");

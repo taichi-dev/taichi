@@ -10,6 +10,7 @@ constexpr int taichi_max_num_indices = 4;
 constexpr int taichi_max_num_args = 8;
 
 using uint8 = uint8_t;
+using Ptr = uint8 *;
 
 using ContextArgType = long long;
 
@@ -71,34 +72,27 @@ float32 atomic_add_cpu_f32(volatile float32 *dest, float32 inc) {
     s->F[i] = f;                                                             \
   }
 
-/*
-#define STRUCT_FUNCTION(S, F)
-extern "C" decltype()
- */
-
 // These structures are accessible by both the LLVM backend and this C++ runtime
 // file here (for building complex runtime functions in C++)
 
-// This struct contains a pointer to the node and some "template parameters"
-struct DenseStruct {
-  uint8 *node;
+// This struct contains some "template parameters"
+struct DenseMeta {
   bool bitmasked;
   int morton_dim;
   std::size_t element_size;
-  int forking_factor;  // n
+  int max_num_elements;
 };
 
-STRUCT_FIELD(DenseStruct, node)
-STRUCT_FIELD(DenseStruct, bitmasked)
-STRUCT_FIELD(DenseStruct, morton_dim)
-STRUCT_FIELD(DenseStruct, element_size)
-STRUCT_FIELD(DenseStruct, forking_factor)
+STRUCT_FIELD(DenseMeta, bitmasked)
+STRUCT_FIELD(DenseMeta, morton_dim)
+STRUCT_FIELD(DenseMeta, element_size)
+STRUCT_FIELD(DenseMeta, max_num_elements)
 
-void DenseStruct_activate(DenseStruct *s, int i) {
+void Dense_activate(Ptr node, DenseMeta *s, int i) {
 }
 
-void *DenseStruct_lookup(DenseStruct *s, int i) {
-  return (char *)s->node + s->element_size * i;
+void *Dense_lookup_element(Ptr node, DenseMeta *s, int i) {
+  return node + s->element_size * i;
 }
 
 void *taichi_allocate_aligned(std::size_t size, int alignment);

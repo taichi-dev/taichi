@@ -778,18 +778,17 @@ class CPULLVMCodeGen : public IRVisitor {
       */
 
       // allocate the struct
-      auto s = builder.CreateAlloca(get_runtime_type("DenseStruct"));
+      auto s = builder.CreateAlloca(get_runtime_type("DenseMeta"));
 
-      builder.CreateCall(
-          get_runtime_function("DenseStruct_set_node"),
-          {s, builder.CreateBitCast(stmt->input_snode->value,
-                                    llvm::Type::getInt8PtrTy(*llvm_context))});
+      auto node = builder.CreateBitCast(
+          stmt->input_snode->value, llvm::Type::getInt8PtrTy(*llvm_context));
       auto element_ty = stmt->snode->llvm_type->getArrayElementType();
       std::size_t element_size = tlctx->get_type_size(element_ty);
-      builder.CreateCall(get_runtime_function("DenseStruct_set_element_size"),
+      builder.CreateCall(get_runtime_function("DenseMeta_set_element_size"),
                          {s, tlctx->get_constant((uint64)element_size)});
-      auto elem = builder.CreateCall(get_runtime_function("DenseStruct_lookup"),
-                                     {s, stmt->input_index->value});
+      auto elem =
+          builder.CreateCall(get_runtime_function("Dense_lookup_element"),
+                             {node, s, stmt->input_index->value});
       stmt->value =
           builder.CreateBitCast(elem, PointerType::get(element_ty, 0));
     }

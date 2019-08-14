@@ -446,7 +446,7 @@ void StructCompilerLLVM::run(SNode &node) {
 
   auto root_size = tlctx->jit->getDataLayout().getTypeAllocSize(root.llvm_type);
   creator = [initialize_data_structure, root_size]() {
-    // initialize_data_structure(&get_current_program().llvm_runtime);
+    initialize_data_structure(&get_current_program().llvm_runtime);
     TC_INFO("Allocating data structure of size {}", root_size);
     return std::malloc(root_size);
   };

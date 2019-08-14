@@ -156,7 +156,7 @@ class CPULLVMCodeGen : public IRVisitor {
     // TC_P(context_ptr->getType()->isPointerTy());
     // TC_P((std::string)context_ptr->getType()->getStructName());
 
-    root = builder.CreateCall(get_runtime_function("context_get_buffer"),
+    root = builder.CreateCall(get_runtime_function("Context_get_buffer"),
                               context_ptr);
 
     node->accept(this);

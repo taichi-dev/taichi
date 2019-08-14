@@ -6,54 +6,6 @@
 
 #define FORCEINLINE __attribute__((always_inline))
 
-constexpr int taichi_max_num_indices = 4;
-constexpr int taichi_max_num_args = 8;
-
-using uint8 = uint8_t;
-using Ptr = uint8 *;
-
-using ContextArgType = long long;
-
-struct Context {
-  void *buffer;
-  ContextArgType args[taichi_max_num_args];
-  void *leaves;
-  int num_leaves;
-  void *cpu_profiler;
-};
-
-extern "C" {
-
-ContextArgType context_get_arg(Context *context, int arg_id) {
-  return context->args[arg_id];
-}
-
-void *context_get_buffer(Context *context) {
-  return context->buffer;
-}
-
-int printf(const char *, ...);
-
-using float32 = float;
-
-float32 atomic_add_cpu_f32(volatile float32 *dest, float32 inc) {
-  float32 old_val;
-  float32 new_val;
-  do {
-    old_val = *dest;
-    new_val = old_val + inc;
-#if defined(__clang__)
-  } while (!__atomic_compare_exchange(dest, &old_val, &new_val, true,
-                                      std::memory_order::memory_order_seq_cst,
-                                      std::memory_order::memory_order_seq_cst));
-#else
-  } while (!__atomic_compare_exchange((float32 *)dest, &old_val, &new_val, true,
-                                      std::memory_order::memory_order_seq_cst,
-                                      std::memory_order::memory_order_seq_cst));
-#endif
-  return old_val;
-}
-
 #define STRUCT_FIELD(S, F)                              \
   extern "C" decltype(S::F) S##_get_##F(S *s) {         \
     return s->F;                                        \
@@ -72,6 +24,49 @@ float32 atomic_add_cpu_f32(volatile float32 *dest, float32 inc) {
     s->F[i] = f;                                                             \
   }
 
+
+using float32 = float;
+constexpr int taichi_max_num_indices = 4;
+constexpr int taichi_max_num_args = 8;
+
+using uint8 = uint8_t;
+using Ptr = uint8 *;
+
+using ContextArgType = long long;
+
+extern "C" {
+
+int printf(const char *, ...);
+
+struct Context {
+  void *buffer;
+  ContextArgType args[taichi_max_num_args];
+  int num_leaves;
+  Ptr cpu_profiler;
+  Ptr runtime;
+};
+
+STRUCT_FIELD_ARRAY(Context, args);
+STRUCT_FIELD(Context, runtime);
+STRUCT_FIELD(Context, buffer);
+
+float32 atomic_add_cpu_f32(volatile float32 *dest, float32 inc) {
+  float32 old_val;
+  float32 new_val;
+  do {
+    old_val = *dest;
+    new_val = old_val + inc;
+#if defined(__clang__)
+  } while (!__atomic_compare_exchange(dest, &old_val, &new_val, true,
+                                      std::memory_order::memory_order_seq_cst,
+                                      std::memory_order::memory_order_seq_cst));
+#else
+  } while (!__atomic_compare_exchange((float32 *)dest, &old_val, &new_val, true,
+                                      std::memory_order::memory_order_seq_cst,
+                                      std::memory_order::memory_order_seq_cst));
+#endif
+  return old_val;
+}
 // These structures are accessible by both the LLVM backend and this C++ runtime
 // file here (for building complex runtime functions in C++)
 

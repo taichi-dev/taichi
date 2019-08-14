@@ -24,7 +24,6 @@
     s->F[i] = f;                                                             \
   }
 
-
 using float32 = float;
 constexpr int taichi_max_num_indices = 4;
 constexpr int taichi_max_num_args = 8;
@@ -37,6 +36,10 @@ using ContextArgType = long long;
 extern "C" {
 
 int printf(const char *, ...);
+
+struct PhysicalCoordinates {
+  int coordinates[taichi_max_num_indices];
+};
 
 struct Context {
   void *buffer;
@@ -71,16 +74,31 @@ float32 atomic_add_cpu_f32(volatile float32 *dest, float32 inc) {
 // These structures are accessible by both the LLVM backend and this C++ runtime
 // file here (for building complex runtime functions in C++)
 
-struct StructCommon {
+// These structs contain some "template parameters"
+
+// Common Attributes
+struct StructMeta {
   int snode_id;
   std::size_t element_size;
   int max_num_elements;
+  uint8 *(*lookup_element)(uint8 *, int i);
+  uint8 *(*from_parent_element)(uint8 *);
+  bool (*is_active)(uint8 *, int i);
+  int (*get_num_elements)(uint8 *);
+  void (*refine_coordinates)(PhysicalCoordinates *inp_coord,
+                             PhysicalCoordinates *refined_coord,
+                             int index);
 };
-STRUCT_FIELD(StructCommon, element_size)
-STRUCT_FIELD(StructCommon, max_num_elements)
 
-// This struct contains some "template parameters"
-struct DenseMeta : public StructCommon {
+STRUCT_FIELD(StructMeta, element_size)
+STRUCT_FIELD(StructMeta, max_num_elements)
+STRUCT_FIELD(StructMeta, get_num_elements);
+STRUCT_FIELD(StructMeta, lookup_element);
+STRUCT_FIELD(StructMeta, from_parent_element);
+STRUCT_FIELD(StructMeta, refine_coordinates);
+
+// Specialized Attributes and functions
+struct DenseMeta : public StructMeta {
   bool bitmasked;
   bool morton_dim;
 };
@@ -95,6 +113,10 @@ void *Dense_lookup_element(Ptr node, DenseMeta *s, int i) {
   return node + s->element_size * i;
 }
 
+int Dense_get_num_elements(DenseMeta *s, Ptr node) {
+  return s->max_num_elements;
+}
+
 void *taichi_allocate_aligned(std::size_t size, int alignment);
 
 void *taichi_allocate(std::size_t size) {
@@ -106,10 +128,6 @@ void ___stubs___() {
   taichi_allocate(1);
   taichi_allocate_aligned(1, 1);
 }
-
-struct PhysicalCoordinates {
-  int coordinates[taichi_max_num_indices];
-};
 
 struct Element {
   uint8 *element;
@@ -162,33 +180,11 @@ void Runtime_initialize(Runtime **runtime_ptr, int num_snodes) {
 
 // "Element", "component" are different concepts
 
-struct SNodeInfo {
-  uint8 *detail; // struct-specific
-  uint8 *(*lookup_element)(uint8 *, int i);
-  uint8 *(*from_parent_element)(uint8 *);
-  bool (*is_active)(uint8 *, int i);
-  int (*get_num_elements)(uint8 *);
-  void (*refine_coordinates)(PhysicalCoordinates *inp_coord,
-                             PhysicalCoordinates *refined_coord,
-                             int index);
-
-  int snode_id() {
-    return ((StructCommon *)detail)->snode_id;
-  }
-};
-
-STRUCT_FIELD(SNodeInfo, detail);
-STRUCT_FIELD(SNodeInfo, get_num_elements);
-STRUCT_FIELD(SNodeInfo, lookup_element);
-STRUCT_FIELD(SNodeInfo, from_parent_element);
-STRUCT_FIELD(SNodeInfo, refine_coordinates);
-
 // ultimately all function calls here will be inlined
-void element_listgen(Runtime *runtime, SNodeInfo *parent, SNodeInfo *child) {
-  auto parent_list = runtime->element_lists[parent->snode_id()];
+void element_listgen(Runtime *runtime, StructMeta *parent, StructMeta *child) {
+  auto parent_list = runtime->element_lists[parent->snode_id];
   int num_parent_elements = parent_list->tail;
-  auto child_list =
-      runtime->element_lists[child->snode_id()];
+  auto child_list = runtime->element_lists[child->snode_id];
   for (int i = 0; i < num_parent_elements; i++) {
     auto element = parent_list->elements[i];
     auto ch_component = child->from_parent_element(element.element);
@@ -208,5 +204,4 @@ void element_listgen(Runtime *runtime, SNodeInfo *parent, SNodeInfo *child) {
     }
   }
 }
-
 }

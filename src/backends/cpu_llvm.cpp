@@ -122,13 +122,13 @@ class CPULLVMCodeGen : public IRVisitor {
                                llvm::Value *node_info,
                                SNode *snode) {
     auto common = builder->CreateBitCast(
-        node_info, llvm::PointerType::get(get_runtime_type("StructCommon"), 0));
+        node_info, llvm::PointerType::get(get_runtime_type("StructMeta"), 0));
     auto element_ty = snode->llvm_type->getArrayElementType();
     std::size_t element_size = tlctx->get_type_size(element_ty);
-    builder->CreateCall(get_runtime_function("StructCommon_set_element_size"),
+    builder->CreateCall(get_runtime_function("StructMeta_set_element_size"),
                         {common, tlctx->get_constant((uint64)element_size)});
     builder->CreateCall(
-        get_runtime_function("StructCommon_set_max_num_elements"),
+        get_runtime_function("StructMeta_set_max_num_elements"),
         {common, tlctx->get_constant(1 << snode->total_num_bits)});
   }
 
@@ -379,8 +379,8 @@ class CPULLVMCodeGen : public IRVisitor {
     emit("}}");
   }
 
-  llvm::Value *emit_snode_info(SNode *snode) {
-    auto info = builder.CreateAlloca(get_runtime_type("SNodeInfo"));
+  llvm::Value *emit_struct_meta(SNode *snode) {
+    auto info = builder.CreateAlloca(get_runtime_type("StructMeta"));
 
   }
 
@@ -399,8 +399,8 @@ class CPULLVMCodeGen : public IRVisitor {
 
     for (int i = 0; i + 1 < path.size(); i++) {
       auto parent = path[i], child = path[i + 1];
-      auto snode_parent = emit_snode_info(parent);
-      auto snode_child = emit_snode_info(child);
+      auto snode_parent = emit_struct_meta(parent);
+      auto snode_child = emit_struct_meta(child);
       builder.CreateCall(get_runtime_function("element_listgen"),
                          {runtime_ptr, snode_parent, snode_child});
     }

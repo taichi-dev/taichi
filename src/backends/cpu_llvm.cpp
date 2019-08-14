@@ -376,7 +376,38 @@ class CPULLVMCodeGen : public IRVisitor {
     emit("}}");
   }
 
-  void visit(StructForStmt *for_stmt){TC_NOT_IMPLEMENTED}
+  llvm::Value *emit_snode_info(SNode *snode) {
+  }
+
+  llvm::Value *get_runtime_ptr() {
+    return nullptr;
+  }
+
+  void visit(StructForStmt *for_stmt) {
+    // emit listgen
+    auto runtime = get_runtime_ptr();
+
+    auto leaf = for_stmt->snode;
+    TC_ASSERT(leaf->type == SNodeType::place)
+
+    // make a list
+    std::vector<SNode *> path;
+    for (auto p = leaf->parent; p; p = p->parent) {
+      path.push_back(p);
+    }
+    std::reverse(path.begin(), path.end());
+
+    for (int i = 0; i + 1 < path.size(); i++) {
+      auto parent = path[i], child = path[i + 1];
+      auto snode_parent = emit_snode_info(parent);
+      auto snode_child = emit_snode_info(child);
+      builder.CreateCall(get_runtime_function("element_listgen"),
+                         {runtime, snode_parent, snode_child});
+    }
+
+    // traverse leaf node
+    for_stmt->body->accept(this);
+  }
 
   AllocaInst *CreateEntryBlockAlloca(llvm::Type *type,
                                      const std::string &name) {

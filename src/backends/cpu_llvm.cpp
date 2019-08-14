@@ -65,7 +65,7 @@ class CPULLVMCodeGen : public IRVisitor {
   llvm::Function *func;
   std::vector<Value *> kernel_args;
   llvm::Type *context_ty;
-  llvm::Value *root, *context_ptr;
+  llvm::Value *root, *context_ptr, *runtime_ptr;
 
   CPULLVMCodeGen(CodeGenBase *codegen, Kernel *kernel)
       : tlctx(&get_current_program().llvm_context),
@@ -158,6 +158,9 @@ class CPULLVMCodeGen : public IRVisitor {
 
     root = builder.CreateCall(get_runtime_function("Context_get_buffer"),
                               context_ptr);
+
+    runtime_ptr = builder.CreateCall(
+        get_runtime_function("Context_get_runtime"), context_ptr);
 
     node->accept(this);
     builder.CreateRet(tlctx->get_constant(0));
@@ -377,15 +380,12 @@ class CPULLVMCodeGen : public IRVisitor {
   }
 
   llvm::Value *emit_snode_info(SNode *snode) {
-  }
+    auto info = builder.CreateAlloca(get_runtime_type("SNodeInfo"));
 
-  llvm::Value *get_runtime_ptr() {
-    return nullptr;
   }
 
   void visit(StructForStmt *for_stmt) {
     // emit listgen
-    auto runtime = get_runtime_ptr();
 
     auto leaf = for_stmt->snode;
     TC_ASSERT(leaf->type == SNodeType::place)
@@ -402,7 +402,7 @@ class CPULLVMCodeGen : public IRVisitor {
       auto snode_parent = emit_snode_info(parent);
       auto snode_child = emit_snode_info(child);
       builder.CreateCall(get_runtime_function("element_listgen"),
-                         {runtime, snode_parent, snode_child});
+                         {runtime_ptr, snode_parent, snode_child});
     }
 
     // traverse leaf node

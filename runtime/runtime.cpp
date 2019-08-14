@@ -41,8 +41,9 @@ int printf(const char *, ...);
 struct Context {
   void *buffer;
   ContextArgType args[taichi_max_num_args];
+  void *leaves;
   int num_leaves;
-  Ptr cpu_profiler;
+  void *cpu_profiler;
   Ptr runtime;
 };
 
@@ -162,8 +163,7 @@ void Runtime_initialize(Runtime **runtime_ptr, int num_snodes) {
 // "Element", "component" are different concepts
 
 struct SNodeInfo {
-  uint8 *node;
-  uint8 *snode_info;
+  uint8 *detail; // struct-specific
   uint8 *(*lookup_element)(uint8 *, int i);
   uint8 *(*from_parent_element)(uint8 *);
   bool (*is_active)(uint8 *, int i);
@@ -173,9 +173,15 @@ struct SNodeInfo {
                              int index);
 
   int snode_id() {
-    return ((StructCommon *)snode_info)->snode_id;
+    return ((StructCommon *)detail)->snode_id;
   }
 };
+
+STRUCT_FIELD(SNodeInfo, detail);
+STRUCT_FIELD(SNodeInfo, get_num_elements);
+STRUCT_FIELD(SNodeInfo, lookup_element);
+STRUCT_FIELD(SNodeInfo, from_parent_element);
+STRUCT_FIELD(SNodeInfo, refine_coordinates);
 
 // ultimately all function calls here will be inlined
 void element_listgen(Runtime *runtime, SNodeInfo *parent, SNodeInfo *child) {

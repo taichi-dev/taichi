@@ -99,6 +99,7 @@ class Program {
   Context get_context() {
     context.buffers[0] = data_structure;
     context.cpu_profiler = &cpu_profiler;
+    context.runtime = llvm_runtime;
     return context;
   }
 

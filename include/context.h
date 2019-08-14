@@ -14,6 +14,7 @@ struct Context {
   void *leaves;
   int num_leaves;
   CPUProfiler *cpu_profiler;
+  void *runtime;
 
   Context() {
     leaves = 0;

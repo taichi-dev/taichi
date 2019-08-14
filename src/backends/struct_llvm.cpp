@@ -329,6 +329,72 @@ void StructCompilerLLVM::generate_leaf_accessors(SNode &snode) {
 }
 
 void StructCompilerLLVM::load_accessors(SNode &snode) {
+  if (snode.parent != nullptr) {
+    auto parent = snode.parent;
+
+    auto ft = llvm::FunctionType::get(snode.llvm_type,
+                                      {snode.llvm_type}, false);
+    auto func = Function::Create(ft, Function::ExternalLinkage,
+                                 snode->element_listgen_func_name());
+    auto bb = BasicBlock::Create(*llvm_ctx, "entry", func);
+    llvm::IRBuilder<> builder(bb, bb->begin());
+    std::vector<Value *> args;
+    for (auto &arg : func->args()) {
+      args.push_back(&arg);
+    }
+    llvm::Value *runtime_ptr = args[0];
+
+    auto pnode = snode->parent;
+
+    TC_ASSERT(pnode != nullptr);
+
+    auto parent_element_list =
+        builder.CreateCall(get_runtime_function("Runtime_get_element_list"),
+                           {runtime_ptr, tlctx->get_constant(pnode->id)});
+    auto parent_num_elements =
+        builder.CreateCall(get_runtime_function("ElementList_get_tail"));
+
+    auto child_element_list =
+        builder.CreateCall(get_runtime_function("Runtime_get_element_list"),
+                           {runtime_ptr, tlctx->get_constant(snode->id)});
+
+    builder.CreateCall(get_runtime_function("ElementList_clear"),
+                       {child_element_list});
+
+    // Create the for loop over elements
+
+    auto llvm_context = llvm_ctx;
+    BasicBlock *body = BasicBlock::Create(*llvm_context, "loop_body", func);
+    BasicBlock *after_loop = BasicBlock::Create(*llvm_context, "block", func);
+
+    auto loop = builder.CreateAlloca(tlctx->get_data_type(DataType::i32));
+    builder.CreateStore(tlctx->get_constant(0), loop);
+    builder.CreateBr(body);
+
+    // body: another for loop that emits node generation for index i
+    {
+      /*
+      auto inner_begin
+      auto i = builder.CreateAlloca(tlctx->get_data_type<int>());
+      // call a function?
+      */
+    }
+
+    builder.SetInsertPoint(bb);
+    builder.CreateStore(
+        builder.CreateAdd(builder.CreateLoad(loop), tlctx->get_constant(1)),
+        loop);
+
+    auto cond = builder.CreateICmp(llvm::CmpInst::Predicate::ICMP_SLT,
+                                   builder.CreateLoad(loop), parent_num_elements);
+
+    builder.CreateCondBr(cond, body, after_loop);
+
+    // next
+    builder.SetInsertPoint(after_loop);
+
+  }
+
   for (auto ch : snode.ch) {
     load_accessors(*ch);
   }

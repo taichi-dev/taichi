@@ -81,11 +81,12 @@ struct StructMeta {
   int snode_id;
   std::size_t element_size;
   int max_num_elements;
-  uint8 *(*lookup_element)(uint8 *, int i);
-  uint8 *(*from_parent_element)(uint8 *);
-  bool (*is_active)(uint8 *, int i);
-  int (*get_num_elements)(uint8 *);
-  void (*refine_coordinates)(PhysicalCoordinates *inp_coord,
+  uint8 *(*lookup_element)(Ptr, Ptr, int i);
+  uint8 *(*from_parent_element)(Ptr, Ptr);
+  bool (*is_active)(Ptr, Ptr, int i);
+  int (*get_num_elements)(Ptr, Ptr);
+  void (*refine_coordinates)(Ptr,
+                             PhysicalCoordinates *inp_coord,
                              PhysicalCoordinates *refined_coord,
                              int index);
 };
@@ -106,15 +107,15 @@ struct DenseMeta : public StructMeta {
 STRUCT_FIELD(DenseMeta, bitmasked)
 STRUCT_FIELD(DenseMeta, morton_dim)
 
-void Dense_activate(Ptr node, DenseMeta *s, int i) {
+void Dense_activate(Ptr meta, Ptr node, int i) {
 }
 
-void *Dense_lookup_element(Ptr node, DenseMeta *s, int i) {
-  return node + s->element_size * i;
+void *Dense_lookup_element(Ptr meta, Ptr node, int i) {
+  return node + ((StructMeta *)meta)->element_size * i;
 }
 
-int Dense_get_num_elements(DenseMeta *s, Ptr node) {
-  return s->max_num_elements;
+int Dense_get_num_elements(Ptr meta, Ptr node) {
+  return ((StructMeta *)meta)->max_num_elements;
 }
 
 void *taichi_allocate_aligned(std::size_t size, int alignment);
@@ -187,17 +188,18 @@ void element_listgen(Runtime *runtime, StructMeta *parent, StructMeta *child) {
   auto child_list = runtime->element_lists[child->snode_id];
   for (int i = 0; i < num_parent_elements; i++) {
     auto element = parent_list->elements[i];
-    auto ch_component = child->from_parent_element(element.element);
-    int ch_num_elements = child->get_num_elements(ch_component);
+    auto ch_component = child->from_parent_element((Ptr)child, element.element);
+    int ch_num_elements = child->get_num_elements((Ptr)child, ch_component);
     for (int j = 0; j < ch_num_elements; j++) {
-      auto ch_element = child->lookup_element(element.element, j);
-      if (child->is_active(ch_component, j)) {
+      auto ch_element = child->lookup_element((Ptr)child, element.element, j);
+      if (child->is_active((Ptr)child, ch_component, j)) {
         Element elem;
         elem.element = ch_element;
         elem.loop_bounds[0] = 0;
-        elem.loop_bounds[1] = child->get_num_elements(ch_element);
+        elem.loop_bounds[1] = child->get_num_elements((Ptr)child, ch_element);
         PhysicalCoordinates refined_coord;
-        parent->refine_coordinates(&element.pcoord, &refined_coord, j);
+        parent->refine_coordinates((Ptr)parent, &element.pcoord, &refined_coord,
+                                   j);
         elem.pcoord = refined_coord;
         child_list->elements[child_list->tail++] = elem;
       }

@@ -98,6 +98,7 @@ class SNode {
   bool _morton;
   bool _bitmasked;
   llvm::Type *llvm_type;
+  llvm::Type *llvm_element_type;
 
   SNode() {
     id = counter++;
@@ -128,6 +129,7 @@ class SNode {
     expr = nullptr;
 
     llvm_type = nullptr;
+    llvm_element_type = nullptr;
   }
 
   SNode &insert_children(SNodeType t) {
@@ -290,8 +292,12 @@ class SNode {
     return node_type_name;
   }
 
-  std::string element_listgen_func_name() {
+  std::string element_listgen_func_name() const {
     return get_name() + "_element_listgen";
+  }
+
+  std::string get_ch_from_parent_func_name() const {
+    return fmt::format("get_ch_{}_to_{}", parent->get_name(), get_name());
   }
 };
 

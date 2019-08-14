@@ -118,31 +118,55 @@ class CPULLVMCodeGen : public IRVisitor {
     return f;
   }
 
-  void emit_struct_common_info(llvm::IRBuilder<> *builder,
+  void emit_struct_common_info(std::string name,
                                llvm::Value *node_info,
                                SNode *snode) {
-    auto common = builder->CreateBitCast(
+    auto common = builder.CreateBitCast(
         node_info, llvm::PointerType::get(get_runtime_type("StructMeta"), 0));
     auto element_ty = snode->llvm_type->getArrayElementType();
     std::size_t element_size = tlctx->get_type_size(element_ty);
-    builder->CreateCall(get_runtime_function("StructMeta_set_element_size"),
-                        {common, tlctx->get_constant((uint64)element_size)});
-    builder->CreateCall(
+    builder.CreateCall(get_runtime_function("StructMeta_set_element_size"),
+                       {common, tlctx->get_constant((uint64)element_size)});
+    builder.CreateCall(
         get_runtime_function("StructMeta_set_max_num_elements"),
         {common, tlctx->get_constant(1 << snode->total_num_bits)});
+
+    /*
+    uint8 *(*lookup_element)(uint8 *, int i);
+    uint8 *(*from_parent_element)(uint8 *);
+    bool (*is_active)(uint8 *, int i);
+    int (*get_num_elements)(uint8 *);
+    void (*refine_coordinates)(PhysicalCoordinates *inp_coord,
+                               PhysicalCoordinates *refined_coord,
+                               int index);
+                               */
+
+    std::vector<std::string> functions = {
+        "lookup_element", "is_active",
+        "get_num_elements", "refine_coordinates"};
+
+    for (auto f : functions) {
+      TC_P(f);
+      builder.CreateCall(
+          get_runtime_function(fmt::format("StructMeta_set_{}", f)),
+          {common, get_runtime_function(fmt::format("{}_{}", name, f))});
+    }
+
+    // "from_parent_element" is different for different snodes, even of the same kind.
+    builder.CreateCall(
+        get_runtime_function(fmt::format("StructMeta_set_{}", f)),
+        {common, get_runtime_function(SNode::snode->node_type_name)});
   }
 
-  llvm::Value *emit_dense_struct_info(llvm::IRBuilder<> *builder,
-                                      llvm::Value *node,
-                                      SNode *snode) {
-    auto s = builder->CreateAlloca(get_runtime_type("DenseMeta"));
-    emit_struct_common_info(builder, s, snode);
+  llvm::Value *emit_dense_struct_info(llvm::Value *node, SNode *snode) {
+    auto s = builder.CreateAlloca(get_runtime_type("DenseMeta"));
+    emit_struct_common_info("Dense", s, snode);
 
-    builder->CreateCall(get_runtime_function("DenseMeta_set_bitmasked"),
-                        {s, tlctx->get_constant(snode->_bitmasked)});
+    builder.CreateCall(get_runtime_function("DenseMeta_set_bitmasked"),
+                       {s, tlctx->get_constant(snode->_bitmasked)});
 
-    builder->CreateCall(get_runtime_function("DenseMeta_set_morton_dim"),
-                        {s, tlctx->get_constant(snode->_morton)});
+    builder.CreateCall(get_runtime_function("DenseMeta_set_morton_dim"),
+                       {s, tlctx->get_constant(snode->_morton)});
 
     return s;
   }
@@ -381,7 +405,6 @@ class CPULLVMCodeGen : public IRVisitor {
 
   llvm::Value *emit_struct_meta(SNode *snode) {
     auto info = builder.CreateAlloca(get_runtime_type("StructMeta"));
-
   }
 
   void visit(StructForStmt *for_stmt) {
@@ -832,6 +855,7 @@ class CPULLVMCodeGen : public IRVisitor {
       stmt->value = builder.CreateGEP(parent, stmt->input_index->value);
     } else {
       TC_ASSERT(snode->type == SNodeType::dense);
+
       // allocate the struct
       /*
       auto s = builder.CreateAlloca(get_runtime_type("DenseMeta"));
@@ -842,15 +866,15 @@ class CPULLVMCodeGen : public IRVisitor {
       builder.CreateCall(get_runtime_function("DenseMeta_set_element_size"),
                          {s, tlctx->get_constant((uint64)element_size)});
                          */
-      auto s = emit_dense_struct_info(&builder, stmt->input_snode->value,
-                                      stmt->snode);
+
+      auto s = emit_dense_struct_info(stmt->input_snode->value, stmt->snode);
 
       // call look up
       auto node_ptr = builder.CreateBitCast(
           stmt->input_snode->value, llvm::Type::getInt8PtrTy(*llvm_context));
       auto elem =
           builder.CreateCall(get_runtime_function("Dense_lookup_element"),
-                             {node_ptr, s, stmt->input_index->value});
+                             {s, node_ptr, stmt->input_index->value});
       auto element_ty = snode->llvm_type->getArrayElementType();
       stmt->value =
           builder.CreateBitCast(elem, PointerType::get(element_ty, 0));

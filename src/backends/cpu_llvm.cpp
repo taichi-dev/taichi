@@ -155,6 +155,10 @@ class CPULLVMCodeGen : public IRVisitor {
     builder.CreateCall(
         get_runtime_function(fmt::format("StructMeta_set_from_parent_element")),
         {common, get_runtime_function(snode->get_ch_from_parent_func_name())});
+
+    builder.CreateCall(
+        get_runtime_function(fmt::format("StructMeta_set_refine_coordinates")),
+        {common, get_runtime_function(snode->refine_coordinates_func_name())});
   }
 
   llvm::Value *emit_dense_struct_info(llvm::Value *node, SNode *snode) {

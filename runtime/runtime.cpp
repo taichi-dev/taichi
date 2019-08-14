@@ -38,8 +38,10 @@ extern "C" {
 int printf(const char *, ...);
 
 struct PhysicalCoordinates {
-  int coordinates[taichi_max_num_indices];
+  int val[taichi_max_num_indices];
 };
+
+STRUCT_FIELD_ARRAY(PhysicalCoordinates, val);
 
 struct Context {
   void *buffer;
@@ -85,8 +87,7 @@ struct StructMeta {
   Ptr (*from_parent_element)(Ptr);
   bool (*is_active)(Ptr, Ptr, int i);
   int (*get_num_elements)(Ptr, Ptr);
-  void (*refine_coordinates)(Ptr,
-                             PhysicalCoordinates *inp_coord,
+  void (*refine_coordinates)(PhysicalCoordinates *inp_coord,
                              PhysicalCoordinates *refined_coord,
                              int index);
 };
@@ -203,8 +204,7 @@ void element_listgen(Runtime *runtime, StructMeta *parent, StructMeta *child) {
         elem.loop_bounds[0] = 0;
         elem.loop_bounds[1] = child->get_num_elements((Ptr)child, ch_element);
         PhysicalCoordinates refined_coord;
-        parent->refine_coordinates((Ptr)parent, &element.pcoord, &refined_coord,
-                                   j);
+        parent->refine_coordinates(&element.pcoord, &refined_coord, j);
         elem.pcoord = refined_coord;
         child_list->elements[child_list->tail++] = elem;
       }

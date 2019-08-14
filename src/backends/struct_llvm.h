@@ -42,6 +42,8 @@ class StructCompilerLLVM : public StructCompiler {
   virtual void set_parents(SNode &snode) override;
 
   virtual void run(SNode &node) override;
+
+  void generate_refine_coordinates(SNode *snode);
 };
 
 TLANG_NAMESPACE_END

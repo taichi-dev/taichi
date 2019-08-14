@@ -300,6 +300,11 @@ class SNode {
     TC_ASSERT(parent != nullptr);
     return fmt::format("get_ch_{}_to_{}", parent->get_name(), get_name());
   }
+
+  std::string refine_coordinates_func_name() const {
+    TC_ASSERT(type != SNodeType::place);
+    return fmt::format("{}_refine_coordinates", get_name());
+  }
 };
 
 TLANG_NAMESPACE_END

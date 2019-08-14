@@ -137,6 +137,55 @@ void StructCompilerLLVM::emit_element_list_gen(SNode *snode) {
   builder.SetInsertPoint(after_loop);
 }
 
+void StructCompilerLLVM::generate_refine_coordinates(SNode *snode) {
+  auto coord_type = get_runtime_type("PhysicalCoordinates");
+  auto coord_type_ptr = llvm::PointerType::get(coord_type, 0);
+
+  auto ft = llvm::FunctionType::get(
+      llvm::Type::getVoidTy(*llvm_ctx),
+      {coord_type_ptr, coord_type_ptr, llvm::Type::getInt32Ty(*llvm_ctx)},
+      false);
+
+  auto func = Function::Create(ft, Function::ExternalLinkage,
+                               snode->refine_coordinates_func_name(), *module);
+
+  auto bb = BasicBlock::Create(*llvm_ctx, "entry", func);
+
+  llvm::IRBuilder<> builder(bb, bb->begin());
+  std::vector<Value *> args;
+
+  for (auto &arg : func->args()) {
+    args.push_back(&arg);
+  }
+
+  auto inp_coords = args[0];
+  auto outp_coords = args[1];
+  auto l = args[2];
+
+  for (int i = 0; i < max_num_indices; i++) {
+    auto addition = tlctx->get_constant(0);
+    if (snode->extractors[i].num_bits) {
+      /*
+      fmt::format("((({} >> {}) & ((1 << {}) - 1)) << {})", l,
+                  snode->extractors[i].acc_offset,
+                  snode->extractors[i].num_bits,
+                  snode->extractors[i].start);
+                  */
+      auto mask = ((1 << snode->extractors[i].num_bits) - 1)
+                  << snode->extractors[i].start;
+      addition = builder.CreateAnd(
+          builder.CreateAShr(l, snode->extractors[i].acc_offset), mask);
+    }
+    auto in =
+        builder.CreateCall(get_runtime_function("PhysicalCoordinates_get_val"),
+                           {inp_coords, tlctx->get_constant(i)});
+    auto added = builder.CreateOr(in, addition);
+    builder.CreateCall(get_runtime_function("PhysicalCoordinates_set_val"),
+                       {outp_coords, tlctx->get_constant(i), added});
+  }
+  builder.CreateRetVoid();
+}
+
 void StructCompilerLLVM::generate_leaf_accessors(SNode &snode) {
   auto type = snode.type;
   stack.push_back(&snode);
@@ -144,6 +193,10 @@ void StructCompilerLLVM::generate_leaf_accessors(SNode &snode) {
   bool is_leaf = type == SNodeType::place;
 
   auto llvm_index_type = llvm::Type::getInt32Ty(*llvm_ctx);
+
+  if (!is_leaf) {
+    generate_refine_coordinates(&snode);
+  }
 
   if (snode.parent != nullptr) {
     // create the get ch function

@@ -7,7 +7,7 @@ n = 256
 num_ch = 16
 
 input_voxel = array.array('f')
-#f = open('bunny.bin', 'rb')
+# f = open('bunny.bin', 'rb')
 f = open('bunny_sparse.bin', 'rb')
 input_voxel.fromfile(f, num_ch * n * n * n)
 
@@ -23,6 +23,7 @@ print(sparse_voxel)
 conv = scn.Convolution(3, num_ch, num_ch, 3, 1, None)
 conv.weight.data.zero_()
 print(conv.weight.shape)
+'''
 for co in range(0, 16):
     for ci in range(0, 16):
         inc = 0.1
@@ -32,17 +33,19 @@ for co in range(0, 16):
                     if x == 0 and y == 0 and z == 0:
                         conv.weight.data[(z+1)*9+(y+1)*3+(x+1), ci, co] = inc
                     inc += 0.1
-#conv.weight.data.fill_(1.0/16.0)
+'''
+conv.weight.data.fill_(1.0/16.0)
 conv = conv.cuda()
 
 conv_sparse_voxel = conv(sparse_voxel)
 min_time = 1e10
-for i in range(50):
+for i in range(10):
     start = time.time()
     conv_sparse_voxel = conv(sparse_voxel)
     end = time.time()
     if end - start < min_time:
         min_time = end - start
+    print(min_time)
 print(conv_sparse_voxel)
 print('time:', min_time)
 

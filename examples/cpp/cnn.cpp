@@ -139,7 +139,7 @@ auto cnn = [](std::vector<std::string> cli_param) {
               for (int y = -1; y < 2; y++) {
                 for (int z = -1; z < 2; z++) {
                   layer2[i + x * block_size, j + y * block_size,
-                         k + z * block_size] =
+                         k + z * block_size, 0] =
                       0.0f;  // simply activate the block
                 }
               }

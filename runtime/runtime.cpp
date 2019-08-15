@@ -38,8 +38,10 @@ extern "C" {
 int printf(const char *, ...);
 
 struct PhysicalCoordinates {
-  int coordinates[taichi_max_num_indices];
+  int val[taichi_max_num_indices];
 };
+
+STRUCT_FIELD_ARRAY(PhysicalCoordinates, val);
 
 struct Context {
   void *buffer;
@@ -81,12 +83,11 @@ struct StructMeta {
   int snode_id;
   std::size_t element_size;
   int max_num_elements;
-  uint8 *(*lookup_element)(Ptr, Ptr, int i);
-  uint8 *(*from_parent_element)(Ptr, Ptr);
+  Ptr (*lookup_element)(Ptr, Ptr, int i);
+  Ptr (*from_parent_element)(Ptr);
   bool (*is_active)(Ptr, Ptr, int i);
   int (*get_num_elements)(Ptr, Ptr);
-  void (*refine_coordinates)(Ptr,
-                             PhysicalCoordinates *inp_coord,
+  void (*refine_coordinates)(PhysicalCoordinates *inp_coord,
                              PhysicalCoordinates *refined_coord,
                              int index);
 };
@@ -97,6 +98,7 @@ STRUCT_FIELD(StructMeta, get_num_elements);
 STRUCT_FIELD(StructMeta, lookup_element);
 STRUCT_FIELD(StructMeta, from_parent_element);
 STRUCT_FIELD(StructMeta, refine_coordinates);
+STRUCT_FIELD(StructMeta, is_active);
 
 // Specialized Attributes and functions
 struct DenseMeta : public StructMeta {
@@ -108,6 +110,10 @@ STRUCT_FIELD(DenseMeta, bitmasked)
 STRUCT_FIELD(DenseMeta, morton_dim)
 
 void Dense_activate(Ptr meta, Ptr node, int i) {
+}
+
+bool Dense_is_active(Ptr meta, Ptr node, int i) {
+  return true;
 }
 
 void *Dense_lookup_element(Ptr meta, Ptr node, int i) {
@@ -188,7 +194,7 @@ void element_listgen(Runtime *runtime, StructMeta *parent, StructMeta *child) {
   auto child_list = runtime->element_lists[child->snode_id];
   for (int i = 0; i < num_parent_elements; i++) {
     auto element = parent_list->elements[i];
-    auto ch_component = child->from_parent_element((Ptr)child, element.element);
+    auto ch_component = child->from_parent_element(element.element);
     int ch_num_elements = child->get_num_elements((Ptr)child, ch_component);
     for (int j = 0; j < ch_num_elements; j++) {
       auto ch_element = child->lookup_element((Ptr)child, element.element, j);
@@ -198,8 +204,7 @@ void element_listgen(Runtime *runtime, StructMeta *parent, StructMeta *child) {
         elem.loop_bounds[0] = 0;
         elem.loop_bounds[1] = child->get_num_elements((Ptr)child, ch_element);
         PhysicalCoordinates refined_coord;
-        parent->refine_coordinates((Ptr)parent, &element.pcoord, &refined_coord,
-                                   j);
+        parent->refine_coordinates(&element.pcoord, &refined_coord, j);
         elem.pcoord = refined_coord;
         child_list->elements[child_list->tail++] = elem;
       }

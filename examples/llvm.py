@@ -8,6 +8,8 @@ tc.set_gdb_trigger(True)
 val = ti.var(ti.i32)
 
 ti.cfg.use_llvm = True
+ti.cfg.print_struct_llvm_ir = True
+
 # ti.cfg.print_ir = True
 # ti.runtime.print_preprocessed = True
 

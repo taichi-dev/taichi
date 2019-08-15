@@ -297,7 +297,13 @@ class SNode {
   }
 
   std::string get_ch_from_parent_func_name() const {
+    TC_ASSERT(parent != nullptr);
     return fmt::format("get_ch_{}_to_{}", parent->get_name(), get_name());
+  }
+
+  std::string refine_coordinates_func_name() const {
+    TC_ASSERT(type != SNodeType::place);
+    return fmt::format("{}_refine_coordinates", get_name());
   }
 };
 

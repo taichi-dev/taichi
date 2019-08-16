@@ -43,8 +43,12 @@ auto mpm3d = [](std::vector<std::string> cli_param) {
 
   bool bbox = param.get("bbox", false);
   int scene = param.get("scene", 0);
+  if (scene == 0) {
+    TC_INFO("Scene: [1] ball smash    [2] one jet    [3] two jets");
+    exit(0);
+  }
   std::string output = param.get<std::string>("output");
-  std::string material_name = param.get("material_name", "snow");
+  std::string material_name = param.get("material", "snow");
   MPMMaterial material;
   if (material_name == "snow") {
     material = MPMMaterial::snow;
@@ -62,7 +66,7 @@ auto mpm3d = [](std::vector<std::string> cli_param) {
   TC_P(bbox);
   TC_P(scene);
 
-  // scene 1: ball drop   2: jets
+  // scene 1: ball drop 2: jets
 
   Vector particle_x("x", f32, dim), particle_v("v", f32, dim);
   Matrix particle_F("F", f32, dim, dim), particle_C("C", f32, dim, dim);
@@ -596,7 +600,7 @@ auto mpm3d = [](std::vector<std::string> cli_param) {
 
     set_renderer_volume();
     renderer.preprocess_volume();
-    int nsamples = 51;
+    int nsamples = 5;
     for (int s = 0; s < nsamples; s++) {
       renderer.sample();
     }

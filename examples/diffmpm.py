@@ -107,15 +107,15 @@ def grid_op():
   for i, j in grid_m_in:
     inv_m = 1 / (grid_m_in[i, j] + 1e-10)
     v_out = inv_m * grid_v_in[i, j]
-    v_out(1).val -= dt * gravity
-    if i < bound and v_out(0) < 0:
-      v_out(0).val = 0
-    if i > n_grid - bound and v_out(0) > 0:
-      v_out(0).val = 0
-    if j < bound and v_out(1) < 0:
-      v_out(1).val = 0
-    if j > n_grid - bound and v_out(1) > 0:
-      v_out(1).val = 0
+    v_out[1] -= dt * gravity
+    if i < bound and v_out[0] < 0:
+      v_out[0] = 0
+    if i > n_grid - bound and v_out[0] > 0:
+      v_out[0] = 0
+    if j < bound and v_out[1] < 0:
+      v_out[1] = 0
+    if j > n_grid - bound and v_out[1] > 0:
+      v_out[1] = 0
     grid_v_out[i, j] = v_out
 
 

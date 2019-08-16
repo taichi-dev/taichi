@@ -332,7 +332,7 @@ def sqrt(expr):
 
 @unary
 def floor(expr):
-  return Expr(taichi_lang_core.expr_sqrt(expr.ptr))
+  return Expr(taichi_lang_core.expr_floor(expr.ptr))
 
 @unary
 def inv(expr):

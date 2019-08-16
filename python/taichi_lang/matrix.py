@@ -79,6 +79,15 @@ class Matrix:
         ret(i, j).assign(self(i, j) / other(i, j))
     return ret
 
+  @broadcast_if_scalar
+  def __rtruediv__(self, other):
+    assert self.n == other.n and self.m == other.m
+    ret = Matrix(self.n, self.m)
+    for i in range(self.n):
+      for j in range(self.m):
+        ret(i, j).assign(other(i, j) / self(i, j))
+    return ret
+
   def broadcast(self, scalar):
     ret = Matrix(self.n, self.m, empty=True)
     for i in range(self.n * self.m):
@@ -207,6 +216,12 @@ class Matrix:
     return invlen * a
 
   @staticmethod
+  def floor(a):
+    for i in range(len(a.entries)):
+      a.entries[i].assign(impl.floor(a.entries[i]))
+    return a
+
+  @staticmethod
   def outer_product(a, b):
     assert a.m == 1
     assert b.m == 1
@@ -279,3 +294,4 @@ class Matrix:
   def norm(self, l=2):
     assert l == 2
     return impl.sqrt(impl.sqr(self).sum())
+

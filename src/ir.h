@@ -553,6 +553,7 @@ class Stmt : public IRNode {
   Stmt *adjoint;
 
   llvm::Value *value;
+  bool is_ptr;
 
   Stmt(const Stmt &stmt) = delete;
 
@@ -564,6 +565,7 @@ class Stmt : public IRNode {
     id = instance_id;
     operand_bitmap = 0;
     erased = false;
+    is_ptr = false;
   }
 
   static uint64 operand_hash(Stmt *stmt) {
@@ -596,7 +598,8 @@ class Stmt : public IRNode {
     if (ret_type.data_type == DataType::unknown)
       return "";
     else
-      return fmt::format("<{}> ", ret_type.short_str());
+      return fmt::format("<{}> {}", ret_type.short_str(),
+                         is_ptr ? "ptr " : " ");
   }
 
   std::string name() const {
@@ -978,7 +981,8 @@ class ArgLoadStmt : public Stmt {
  public:
   int arg_id;
 
-  ArgLoadStmt(int arg_id) : arg_id(arg_id) {
+  ArgLoadStmt(int arg_id, bool is_ptr = false) : arg_id(arg_id) {
+    this->is_ptr = is_ptr;
   }
 
   virtual bool has_side_effect() const override {
@@ -1267,8 +1271,9 @@ class ExternalTensorExpression : public Expression {
   }
 
   void flatten(VecStatement &ret) override {
-    auto ptr = Stmt::make<ArgLoadStmt>(arg_id);
+    auto ptr = Stmt::make<ArgLoadStmt>(arg_id, true);
     ret.push_back(std::move(ptr));
+    stmt = ret.back().get();
   }
 };
 
@@ -1338,6 +1343,7 @@ class GlobalPtrExpression : public Expression {
           var.cast<GlobalVariableExpression>()->snode, index_stmts));
     } else {
       TC_ASSERT(var.is<ExternalTensorExpression>());
+      var->flatten(ret);
       ret.push_back(std::make_unique<ExternalPtrStmt>(
           var.cast<ExternalTensorExpression>()->stmt, index_stmts));
     }

@@ -240,6 +240,11 @@ class TypeCheck : public IRVisitor {
     stmt->ret_type = VectorType(1, args[stmt->arg_id].dt);
   }
 
+  void visit(ExternalPtrStmt *stmt) {
+    stmt->ret_type = VectorType(stmt->base_ptrs.size(),
+                                stmt->base_ptrs[0]->ret_type.data_type);
+  }
+
   static void run(IRNode *node) {
     TypeCheck inst;
     node->accept(&inst);

@@ -5,6 +5,8 @@ import cv2
 res = 1024
 color_buffer = ti.Vector(3, dt=ti.f32)
 
+ti.runtime.print_preprocessed = True
+
 @ti.layout
 def buffers():
   ti.root.dense(ti.ij, res).place(color_buffer)
@@ -12,16 +14,16 @@ def buffers():
 @ti.kernel
 def render():
   for i, j in color_buffer(0):
-    color_buffer[i, j](0).val = i
-    color_buffer[i, j](1).val = j
-    color_buffer[i, j](2).val = i + j
+    color_buffer[0][i, j] = i
+    color_buffer[1][i, j] = j
+    color_buffer[2][i, j] = i + j
 
 @ti.kernel
 def copy(img: np.ndarray):
   for i, j in color_buffer(0):
     coord = (i * res + j) * 3
     for c in ti.static(range(3)):
-      img[coord + c] = color_buffer[i, j](c) * 0.003
+      img[coord + c] = color_buffer[c][i, j] * 0.003
 
 def main():
   render()

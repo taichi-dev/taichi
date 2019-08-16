@@ -202,9 +202,10 @@ if 1:
                     keywords=[])
 
   def visit_Subscript(self, node):
+    self.generic_visit(node)
+
     value = node.value
     indices = node.slice
-    self.generic_visit(node)
     if isinstance(indices.value, ast.Tuple):
       indices = indices.value.elts
     else:

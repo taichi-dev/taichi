@@ -138,10 +138,19 @@ class Matrix:
       snode.place(e)
 
   def subscript(self, *indices):
+    '''
     ret = Matrix(self.n, self.m, empty=True)
     for i, e in enumerate(self.entries):
       ret.entries[i] = impl.subscript(e, *indices)
     return ret
+    '''
+    assert len(indices) in [1, 2]
+    i = indices[0]
+    if len(indices) >= 2:
+      j = indices[1]
+    else:
+      j = 0
+    return self(i, j)
 
   def __getitem__(self, index):
     ret = [[] for _ in range(self.n)]

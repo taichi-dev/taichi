@@ -201,6 +201,12 @@ class Matrix:
     return sum
 
   @staticmethod
+  def normalized(a):
+    assert a.m == 1
+    invlen = 1.0 / Matrix.norm(a)
+    return invlen * a
+
+  @staticmethod
   def outer_product(a, b):
     assert a.m == 1
     assert b.m == 1

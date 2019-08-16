@@ -19,12 +19,20 @@ def render():
   for i, j in color_buffer(0):
     fov = 1
     orig = ti.Vector([0.0, 0.0, 12.0])
-    c = ti.Vector([fov * i / (res / 2) - 2.0,
+    c = ti.Vector([fov * i / (res / 2) - 1.0,
                    fov * j / (res / 2) - 1.0,
                    -1.0])
 
     c = ti.Matrix.normalized(c)
-    color_buffer[i, j] = c
+
+    hit = 0
+
+    for k in range(300):
+      p = orig + k * 0.1 * c
+      if ti.Matrix.norm(p) < 2:
+        hit = 1
+
+    color_buffer[i, j] = c * hit
 
 
 @ti.kernel

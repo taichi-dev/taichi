@@ -411,6 +411,10 @@ class CPULLVMCodeGen : public IRVisitor {
     return info;
   }
 
+  llvm::Value *call(std::string func_name, std::vector<llvm::Value *> value) {
+    return builder.CreateCall(get_runtime_function(func_name), value);
+  }
+
   void visit(StructForStmt *for_stmt) {
     // emit listgen
 

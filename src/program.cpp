@@ -15,9 +15,9 @@ Program *current_program = nullptr;
 SNode root;
 
 Kernel::Kernel(Program &program,
-                        std::function<void()> func,
-                        std::string name,
-                        bool grad)
+               std::function<void()> func,
+               std::string name,
+               bool grad)
     : program(program), name(name), grad(grad) {
   is_reduction = false;
   compiled = nullptr;
@@ -51,21 +51,24 @@ void Kernel::operator()() {
 }
 
 void Kernel::set_arg_float(int i, float64 d) {
-  if (args[i] == DataType::f32) {
+  TC_ASSERT_INFO(args[i].is_nparray == false,
+                 "Setting scalar value to numpy array argument is not allowed");
+  auto dt = args[i].dt;
+  if (dt == DataType::f32) {
     program.context.set_arg(i, (float32)d);
-  } else if (args[i] == DataType::f64) {
+  } else if (dt == DataType::f64) {
     program.context.set_arg(i, (float64)d);
-  } else if (args[i] == DataType::i32) {
+  } else if (dt == DataType::i32) {
     program.context.set_arg(i, (int32)d);
-  } else if (args[i] == DataType::i64) {
+  } else if (dt == DataType::i64) {
     program.context.set_arg(i, (int64)d);
-  } else if (args[i] == DataType::i16) {
+  } else if (dt == DataType::i16) {
     program.context.set_arg(i, (int16)d);
-  } else if (args[i] == DataType::u16) {
+  } else if (dt == DataType::u16) {
     program.context.set_arg(i, (uint16)d);
-  } else if (args[i] == DataType::u32) {
+  } else if (dt == DataType::u32) {
     program.context.set_arg(i, (uint32)d);
-  } else if (args[i] == DataType::u64) {
+  } else if (dt == DataType::u64) {
     program.context.set_arg(i, (uint64)d);
   } else {
     TC_NOT_IMPLEMENTED
@@ -73,25 +76,35 @@ void Kernel::set_arg_float(int i, float64 d) {
 }
 
 void Kernel::set_arg_int(int i, int64 d) {
-  if (args[i] == DataType::i32) {
+  TC_ASSERT_INFO(args[i].is_nparray == false,
+                 "Setting scalar value to numpy array argument is not allowed");
+  auto dt = args[i].dt;
+  if (dt == DataType::i32) {
     program.context.set_arg(i, (int32)d);
-  } else if (args[i] == DataType::i64) {
+  } else if (dt == DataType::i64) {
     program.context.set_arg(i, (int64)d);
-  } else if (args[i] == DataType::i16) {
+  } else if (dt == DataType::i16) {
     program.context.set_arg(i, (int16)d);
-  } else if (args[i] == DataType::u16) {
+  } else if (dt == DataType::u16) {
     program.context.set_arg(i, (uint16)d);
-  } else if (args[i] == DataType::u32) {
+  } else if (dt == DataType::u32) {
     program.context.set_arg(i, (uint32)d);
-  } else if (args[i] == DataType::u64) {
+  } else if (dt == DataType::u64) {
     program.context.set_arg(i, (uint64)d);
-  } else if (args[i] == DataType::f32) {
+  } else if (dt == DataType::f32) {
     program.context.set_arg(i, (float32)d);
-  } else if (args[i] == DataType::f64) {
+  } else if (dt == DataType::f64) {
     program.context.set_arg(i, (float64)d);
   } else {
     TC_NOT_IMPLEMENTED
   }
+}
+
+void Kernel::set_arg_nparray(int i, uint64 d) {
+  TC_ASSERT_INFO(args[i].is_nparray,
+                 "Setting numpy array to scalar argument is not allowed");
+  TC_INFO("Array address {}", d);
+  program.context.set_arg(i, d);
 }
 
 FunctionType Program::compile(Kernel &kernel) {

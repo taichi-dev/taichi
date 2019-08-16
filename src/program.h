@@ -26,7 +26,11 @@ class Kernel {
   Program &program;
   FunctionType compiled;
   std::string name;
-  std::vector<DataType> args;
+  struct Arg {
+    DataType dt;
+    bool is_nparray;
+  };
+  std::vector<Arg> args;
   bool benchmarking;
   bool is_reduction;  // TODO: systematically treat all types of reduction
   bool grad;
@@ -44,14 +48,16 @@ class Kernel {
     return std::function<void()>([&] { (*this)(); });
   }
 
-  int insert_arg(DataType dt) {
-    args.push_back(dt);
+  int insert_arg(DataType dt, bool is_nparray) {
+    args.push_back({dt, is_nparray});
     return args.size() - 1;
   }
 
   void set_arg_float(int i, float64 d);
 
   void set_arg_int(int i, int64 d);
+
+  void set_arg_nparray(int i, uint64 ptr);
 };
 
 class Program {

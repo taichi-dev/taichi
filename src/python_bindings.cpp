@@ -295,8 +295,9 @@ PYBIND11_MODULE(taichi_lang_core, m) {
 
   m.def("print_", Print_);
 
-  m.def("decl_arg", [&](DataType dt) {
-    return get_current_program().get_current_kernel().insert_arg(dt);
+  m.def("decl_arg", [&](DataType dt, bool is_nparray) {
+    return get_current_program().get_current_kernel().insert_arg(dt,
+                                                                 is_nparray);
   });
 
   // Schedules

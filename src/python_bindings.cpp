@@ -119,6 +119,9 @@ PYBIND11_MODULE(taichi_lang_core, m) {
   py::class_<Expr> expr(m, "Expr");
   expr.def("serialize", &Expr::serialize)
       .def("snode", &Expr::snode, py::return_value_policy::reference)
+      .def("is_global_var", [](Expr *expr){
+        return expr->is<GlobalVariableExpression>();
+      })
       .def("set_tb", &Expr::set_tb)
       .def("set_is_primal",
            [&](Expr *expr, bool v) {

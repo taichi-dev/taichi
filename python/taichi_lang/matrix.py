@@ -42,6 +42,17 @@ class Matrix:
             self.entries.append(impl.var(dt))
           self.grad = self.make_grad()
 
+  def is_global(self):
+    results = [False for _ in self.entries]
+    for i, e in enumerate(self.entries):
+      if isinstance(e, expr.Expr):
+        if e.ptr.is_global_var():
+          results[i] = True
+      assert results[i] == results[
+        0], "Matrices with  mixed global/local entries are not allowed"
+
+    return results[0]
+
   def assign(self, other):
     if not isinstance(other, Matrix):
       other = Matrix(other)
@@ -138,19 +149,19 @@ class Matrix:
       snode.place(e)
 
   def subscript(self, *indices):
-    '''
-    ret = Matrix(self.n, self.m, empty=True)
-    for i, e in enumerate(self.entries):
-      ret.entries[i] = impl.subscript(e, *indices)
-    return ret
-    '''
-    assert len(indices) in [1, 2]
-    i = indices[0]
-    if len(indices) >= 2:
-      j = indices[1]
+    if self.is_global():
+      ret = Matrix(self.n, self.m, empty=True)
+      for i, e in enumerate(self.entries):
+        ret.entries[i] = impl.subscript(e, *indices)
+      return ret
     else:
-      j = 0
-    return self(i, j)
+      assert len(indices) in [1, 2]
+      i = indices[0]
+      if len(indices) >= 2:
+        j = indices[1]
+      else:
+        j = 0
+      return self(i, j)
 
   def __getitem__(self, index):
     ret = [[] for _ in range(self.n)]

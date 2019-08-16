@@ -22,4 +22,3 @@ def test_numpy(arr: np.array):
 
 a = np.array([4, 8, 1, 24], dtype=np.float32)
 test_numpy(a)
-

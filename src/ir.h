@@ -7,7 +7,7 @@
 #include "snode.h"
 
 namespace llvm {
-  class Value;
+class Value;
 }
 
 TLANG_NAMESPACE_BEGIN
@@ -88,6 +88,7 @@ class WhileStmt;
 class WhileControlStmt;
 
 class ArgLoadStmt;
+class ExternalPtrStmt;
 class ConstStmt;
 class AllocaStmt;
 class UnaryOpStmt;
@@ -373,6 +374,7 @@ class IRVisitor {
   DEFINE_VISIT(FrontendAssertStmt);
 
   DEFINE_VISIT(ArgLoadStmt);
+  DEFINE_VISIT(ExternalPtrStmt);
   DEFINE_VISIT(SNodeOpStmt);
   DEFINE_VISIT(AllocaStmt);
   DEFINE_VISIT(UnaryOpStmt);
@@ -1053,7 +1055,8 @@ class UnaryOpExpression : public Expression {
       return fmt::format("({}{}<{}> {})", reint, unary_op_type_name(type),
                          data_type_name(cast_type), operand->serialize());
     } else {
-      return fmt::format("({} {})", unary_op_type_name(type), operand->serialize());
+      return fmt::format("({} {})", unary_op_type_name(type),
+                         operand->serialize());
     }
   }
 
@@ -1182,6 +1185,37 @@ class TrinaryOpExpression : public Expression {
   }
 };
 
+class ExternalPtrStmt : public Stmt {
+ public:
+  LaneAttribute<Stmt *> base_ptrs;
+  std::vector<Stmt *> indices;
+  bool activate;
+
+  ExternalPtrStmt(const LaneAttribute<Stmt *> &base_ptrs,
+                  const std::vector<Stmt *> &indices)
+      : base_ptrs(base_ptrs), indices(indices) {
+    DataType dt;
+    for (int i = 0; i < (int)base_ptrs.size(); i++) {
+      TC_ASSERT(base_ptrs[i] != nullptr);
+      TC_ASSERT(base_ptrs[i]->is<ArgLoadStmt>());
+      auto arg_load = base_ptrs[i]->as<ArgLoadStmt>();
+      // TODO: determine the type of external tensor
+    }
+    for (int i = 0; i < (int)indices.size(); i++) {
+      add_operand(this->base_ptrs[i]);
+      add_operand(this->indices[i]);
+    }
+    width() = base_ptrs.size();
+    element_type() = dt;
+  }
+
+  virtual bool has_side_effect() const override {
+    return false;
+  }
+
+  DEFINE_ACCEPT
+};
+
 class GlobalPtrStmt : public Stmt {
  public:
   LaneAttribute<SNode *> snodes;
@@ -1216,6 +1250,26 @@ class GlobalPtrStmt : public Stmt {
   }
 
   DEFINE_ACCEPT
+};
+
+class ExternalTensorExpression : public Expression {
+ public:
+  DataType dt;
+  int dim;
+  int arg_id;
+
+  ExternalTensorExpression(DataType dt, int dim, int arg_id)
+      : dt(dt), dim(dim), arg_id(arg_id) {
+  }
+
+  std::string serialize() override {
+    return fmt::format("{}d_extarr", dim);
+  }
+
+  void flatten(VecStatement &ret) override {
+    auto ptr = Stmt::make<ArgLoadStmt>(arg_id);
+    ret.push_back(std::move(ptr));
+  }
 };
 
 class GlobalVariableExpression : public Expression {

@@ -21,10 +21,10 @@ i64 = int64
 
 
 def decl_arg(dt):
-  if dt is np.array:
+  if dt is np.ndarray:
     print("Warning: numpy array arg supports 1D and f32 only for now")
     id = taichi_lang_core.decl_arg(f32, True)
-    return Expr(taichi_lang_core.make_arg_load_expr(id))
+    return Expr(taichi_lang_core.make_external_tensor_expr(f32, 1, id))
   else:
     id = taichi_lang_core.decl_arg(dt, False)
     return Expr(taichi_lang_core.make_arg_load_expr(id))
@@ -214,9 +214,9 @@ def kernel(foo):
               t_kernel.set_arg_float(i, v)
             elif isinstance(v, int):
               t_kernel.set_arg_int(i, v)
-            elif isinstance(v, np.array):
+            elif isinstance(v, np.ndarray):
               tmp = np.ascontiguousarray(v)
-              t_kernel.set_arg_nparray(i, int(tmp.ctypes.data()))
+              t_kernel.set_arg_nparray(i, int(tmp.ctypes.data))
             else:
               assert False, 'Argument to kernels must have type float/int'
           t_kernel()

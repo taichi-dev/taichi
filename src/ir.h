@@ -1258,7 +1258,7 @@ class ExternalTensorExpression : public Expression {
   int dim;
   int arg_id;
 
-  ExternalTensorExpression(DataType dt, int dim, int arg_id)
+  ExternalTensorExpression(const DataType &dt, int dim, int arg_id)
       : dt(dt), dim(dim), arg_id(arg_id) {
   }
 
@@ -1333,8 +1333,14 @@ class GlobalPtrExpression : public Expression {
       indices.exprs[i]->flatten(ret);
       index_stmts.push_back(indices.exprs[i]->stmt);
     }
-    ret.push_back(std::make_unique<GlobalPtrStmt>(
-        var.cast<GlobalVariableExpression>()->snode, index_stmts));
+    if (var.is<GlobalVariableExpression>()) {
+      ret.push_back(std::make_unique<GlobalPtrStmt>(
+          var.cast<GlobalVariableExpression>()->snode, index_stmts));
+    } else {
+      TC_ASSERT(var.is<ExternalTensorExpression>());
+      ret.push_back(std::make_unique<ExternalPtrStmt>(
+          var.cast<ExternalTensorExpression>()->stmt, index_stmts));
+    }
     stmt = ret.back().get();
   }
 

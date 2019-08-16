@@ -45,9 +45,8 @@ Expr bit_cast(const Expr &input, DataType dt) {
 }
 
 Expr Expr::operator[](ExprGroup indices) const {
-  TC_ASSERT(is<GlobalVariableExpression>());
-  return Expr::make<GlobalPtrExpression>(Expr(cast<GlobalVariableExpression>()),
-                                         indices.loaded());
+  TC_ASSERT(is<GlobalVariableExpression>() || is<ExternalTensorExpression>());
+  return Expr::make<GlobalPtrExpression>(*this, indices.loaded());
 }
 
 ExprGroup ExprGroup::loaded() const {

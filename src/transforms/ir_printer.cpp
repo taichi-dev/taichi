@@ -158,7 +158,7 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(FrontendPrintStmt *print_stmt) override {
-    print("print {}, {}", print_stmt->str, print_stmt->expr.serialize());
+    print("print \"{}\", {}", print_stmt->str, print_stmt->expr.serialize());
   }
 
   void visit(FrontendEvalStmt *stmt) override {
@@ -336,6 +336,25 @@ class IRPrinter : public IRVisitor {
   void visit(ClearAllStmt *stmt) override {
     print("{} = clear {} deactivate={}", stmt->name(),
           stmt->snode->node_type_name, stmt->deactivate);
+  }
+
+  void visit(ExternalPtrStmt *stmt) override {
+    std::string s = "[";
+    for (int i = 0; i < (int)stmt->indices.size(); i++) {
+      s += fmt::format("{}", stmt->base_ptrs[i]->name());
+      if (i + 1 < (int)stmt->indices.size()) {
+        s += ", ";
+      }
+    }
+    for (int i = 0; i < (int)stmt->indices.size(); i++) {
+      s += fmt::format("{}", stmt->indices[i]->name());
+      if (i + 1 < (int)stmt->indices.size()) {
+        s += ", ";
+      }
+    }
+    s += "]";
+
+    print(fmt::format("{} = external_ptr {}", stmt->name(), s));
   }
 };
 

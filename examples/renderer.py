@@ -22,7 +22,7 @@ def query_density_int(ipos):
 def render():
   for u, v in color_buffer(0):
     fov = 0.3
-    pos = ti.Vector([0.5, 0.2, 2.0])
+    pos = ti.Vector([0.5, 0.5, 2.0])
     d = ti.Vector([fov * u / (res / 2) - fov - 1e-3,
                    fov * v / (res / 2) - fov - 1e-3,
                    -1.0])
@@ -32,7 +32,10 @@ def render():
     rinv = 1.0 / d
     rsign = ti.Vector([0, 0, 0])
     for i in ti.static(range(3)):
-      rsign[i] = (d[i] > 0) * 2 - 1
+      if d[i] > 0:
+        rsign[i] = 1
+      else:
+        rsign[i] = -1
 
     o = grid_resolution * pos
     ipos = ti.Matrix.floor(o).cast(ti.i32)
@@ -43,7 +46,7 @@ def render():
     normal = ti.Vector([0.0, 0.0, 0.0])
     hit_pos = ti.Vector([0.0, 0.0, 0.0])
     while running:
-      last_sample = (ipos[0] + ipos[1]) % 2 and (ipos[2] == 0)# query_density_int(ipos)
+      last_sample = (ipos[0] + ipos[1]+ 1000) % 2 and (ipos[2] == 0)# query_density_int(ipos)
       if last_sample > 0:
         mini = (ipos - o + ti.Vector([0.5, 0.5, 0.5]) - rsign * 0.5) * rinv
         hit_distance = mini.max() * (1 / grid_resolution)
@@ -63,12 +66,12 @@ def render():
       i += 1
       if i > 500:
         running = 0
-        normal *= 0
+        normal = [-0.3, -0.3, -0.3]
 
 
     #for c in ti.static(range(3)):
     #  color_buffer[u, v][c] = i / 500.0
-    color_buffer[u, v] = normal
+    color_buffer[u, v] = normal * 0.5 + ti.Matrix([0.5, 0.5, 0.5])
 
 
 @ti.kernel

@@ -46,8 +46,8 @@ def render():
     normal = ti.Vector([0.0, 0.0, 0.0])
     hit_pos = ti.Vector([0.0, 0.0, 0.0])
     while running:
-      last_sample = (ipos[0] + ipos[1]+ 1000) % 2 and (ipos[2] == 0)# query_density_int(ipos)
-      if last_sample > 0:
+      last_sample = ipos[0] + ipos[1] + ipos[2] < 10 and ipos.min() >= 0
+      if last_sample:
         mini = (ipos - o + ti.Vector([0.5, 0.5, 0.5]) - rsign * 0.5) * rinv
         hit_distance = mini.max() * (1 / grid_resolution)
         hit_pos = pos + hit_distance * d
@@ -66,18 +66,17 @@ def render():
       i += 1
       if i > 500:
         running = 0
-        normal = [-0.3, -0.3, -0.3]
-
+        normal = [0, 0, 0]
 
     #for c in ti.static(range(3)):
     #  color_buffer[u, v][c] = i / 500.0
-    color_buffer[u, v] = normal * 0.5 + ti.Matrix([0.5, 0.5, 0.5])
+    color_buffer[u, v] = normal * 0.3 + ti.Matrix([0.5, 0.5, 0.5])
 
 
 @ti.kernel
 def copy(img: np.ndarray):
   for i, j in color_buffer(0):
-    coord = (j * res + i) * 3
+    coord = ((res - 1 - j) * res + i) * 3
     for c in ti.static(range(3)):
       img[coord + c] = color_buffer[i, j][c]
 

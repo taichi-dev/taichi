@@ -368,3 +368,7 @@ def random(dt=f32):
 @binary
 def max(a, b):
   return Expr(taichi_lang_core.expr_max(a.ptr, b.ptr))
+
+@binary
+def min(a, b):
+  return Expr(taichi_lang_core.expr_min(a.ptr, b.ptr))

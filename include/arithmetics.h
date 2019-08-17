@@ -633,6 +633,16 @@ inline float32x1 max<float32, 1>(float32x1 a, float32x1 b) {
   return std::max(a, b);
 }
 
+template <>
+inline int32x1 max<int32, 1>(int32x1 a, int32x1 b) {
+  return std::max(a, b);
+}
+
+template <>
+inline int32x1 min<int32, 1>(int32x1 a, int32x1 b) {
+  return std::min(a, b);
+}
+
 //*****************************************************************************
 inline int32x1 cmp_ne(float32x1 a, float32x1 b) {
   return int32(a.v != b.v) * -1;

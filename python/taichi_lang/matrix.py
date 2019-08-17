@@ -307,3 +307,9 @@ class Matrix:
     for i in range(1, len(self.entries)):
       ret = impl.max(ret, self.entries[i])
     return ret
+
+  def min(self):
+    ret = self.entries[0]
+    for i in range(1, len(self.entries)):
+      ret = impl.min(ret, self.entries[i])
+    return ret

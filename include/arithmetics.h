@@ -929,6 +929,10 @@ inline float32x1 inv(float32x1 v) {
   return 1.0f / v;
 }
 
+inline int32x1 neg(int32x1 v) {
+  return -v;
+}
+
 inline float32x1 neg(float32x1 v) {
   // TODO: optimize
   return -v;

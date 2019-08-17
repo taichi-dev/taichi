@@ -205,6 +205,8 @@ PYBIND11_MODULE(taichi_lang_core, m) {
   m.def("expr_mul", expr_mul);
   m.def("expr_div", expr_div);
   m.def("expr_mod", expr_mod);
+  m.def("expr_max", expr_max);
+  m.def("expr_min", expr_min);
 
   m.def("expr_bit_and", expr_bit_and);
   m.def("expr_bit_or", expr_bit_or);

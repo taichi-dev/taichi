@@ -162,6 +162,11 @@ enum class BinaryOpType : int {
   undefined
 };
 
+inline bool binary_is_bitwise(BinaryOpType t) {
+  return t == BinaryOpType ::bit_and || t == BinaryOpType ::bit_or ||
+         t == BinaryOpType ::bit_xor;
+}
+
 std::string binary_op_type_name(BinaryOpType type);
 
 inline bool is_comparison(BinaryOpType type) {

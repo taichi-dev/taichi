@@ -303,9 +303,13 @@ def logical_or(a, b):
 
 unary_ops = []
 
-
 def unary(x):
   unary_ops.append(x)
+  return x
+
+binary_ops = []
+def binary(x):
+  binary_ops.append(x)
   return x
 
 def pow(x, n):
@@ -360,3 +364,7 @@ def abs(expr):
 
 def random(dt=f32):
   return Expr(taichi_lang_core.make_rand_expr(dt))
+
+@binary
+def max(a, b):
+  return Expr(taichi_lang_core.expr_max(a.ptr, b.ptr))

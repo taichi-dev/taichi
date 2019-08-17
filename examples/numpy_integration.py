@@ -6,9 +6,6 @@ tc.set_gdb_trigger(True)
 
 val = ti.var(ti.i32)
 
-# ti.cfg.print_ir = True
-# ti.cfg.print_struct_llvm_ir = True
-
 n = 32
 
 @ti.layout

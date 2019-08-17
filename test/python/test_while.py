@@ -20,6 +20,5 @@ def test_while():
         i += 1
       x[0] = s
 
-
     func()
     assert x[0] == 45

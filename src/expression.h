@@ -12,32 +12,35 @@
     return opname(expr);                                             \
   }
 
-#define DEFINE_EXPRESSION_OP_BINARY(op, op_name)                            \
-  Expr operator op(const Expr &lhs, const Expr &rhs) {                      \
-    return Expr::make<BinaryOpExpression>(BinaryOpType::op_name, lhs, rhs); \
-  }                                                                         \
-  Expr expr_##op_name(const Expr &lhs, const Expr &rhs) {                   \
-    return lhs op rhs;                                                      \
+#define DEFINE_EXPRESSION_OP_BINARY(op, opname)                            \
+  Expr operator op(const Expr &lhs, const Expr &rhs) {                     \
+    return Expr::make<BinaryOpExpression>(BinaryOpType::opname, lhs, rhs); \
+  }                                                                        \
+  Expr expr_##opname(const Expr &lhs, const Expr &rhs) {                   \
+    return lhs op rhs;                                                     \
   }
 
-#define DEFINE_EXPRESSION_FUNC(op_name)                                     \
-  Expr op_name(const Expr &lhs, const Expr &rhs) {                          \
-    return Expr::make<BinaryOpExpression>(BinaryOpType::op_name, lhs, rhs); \
+#define DEFINE_EXPRESSION_FUNC(opname)                                     \
+  Expr opname(const Expr &lhs, const Expr &rhs) {                          \
+    return Expr::make<BinaryOpExpression>(BinaryOpType::opname, lhs, rhs); \
+  }                                                                        \
+  Expr expr_##opname(const Expr &lhs, const Expr &rhs) {                   \
+    return opname(lhs, rhs);                                               \
   }
 
 #else
 
-#define DEFINE_EXPRESSION_OP_BINARY(op, op_name)      \
+#define DEFINE_EXPRESSION_OP_BINARY(op, opname)       \
   Expr operator op(const Expr &lhs, const Expr &rhs); \
-  Expr expr_##op_name(const Expr &lhs, const Expr &rhs);
+  Expr expr_##opname(const Expr &lhs, const Expr &rhs);
 
 #define DEFINE_EXPRESSION_OP_UNARY(opname) \
   Expr opname(const Expr &expr);           \
   Expr expr_##opname(const Expr &expr);
 
-#define DEFINE_EXPRESSION_FUNC(op_name)           \
-  Expr op_name(const Expr &lhs, const Expr &rhs); \
-  Expr expr_##op_name(const Expr &lhs, const Expr &rhs);
+#define DEFINE_EXPRESSION_FUNC(opname)           \
+  Expr opname(const Expr &lhs, const Expr &rhs); \
+  Expr expr_##opname(const Expr &lhs, const Expr &rhs);
 
 #endif
 
@@ -65,7 +68,7 @@ DEFINE_EXPRESSION_OP_BINARY(&&, bit_and)
 DEFINE_EXPRESSION_OP_BINARY(||, bit_or)
 // DEFINE_EXPRESSION_OP_BINARY(&, bit_and)
 // DEFINE_EXPRESSION_OP_BINARY(|, bit_or)
-DEFINE_EXPRESSION_OP_BINARY (^, bit_xor)
+DEFINE_EXPRESSION_OP_BINARY(^, bit_xor)
 DEFINE_EXPRESSION_OP_BINARY(<, cmp_lt)
 DEFINE_EXPRESSION_OP_BINARY(<=, cmp_le)
 DEFINE_EXPRESSION_OP_BINARY(>, cmp_gt)

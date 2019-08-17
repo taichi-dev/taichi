@@ -50,7 +50,6 @@ class Matrix:
           results[i] = True
       assert results[i] == results[
         0], "Matrices with  mixed global/local entries are not allowed"
-
     return results[0]
 
   def assign(self, other):
@@ -123,6 +122,13 @@ class Matrix:
     for i in range(self.n):
       for j in range(self.m):
         ret(i, j).assign(self(i, j) - other(i, j))
+    return ret
+
+  def __neg__(self):
+    ret = Matrix(self.n, self.m)
+    for i in range(self.n):
+      for j in range(self.m):
+        ret(i, j).assign(-self(i, j))
     return ret
 
   @broadcast_if_scalar
@@ -295,3 +301,8 @@ class Matrix:
     assert l == 2
     return impl.sqrt(impl.sqr(self).sum())
 
+  def max(self):
+    ret = self.entries[0]
+    for i in range(1, len(self.entries)):
+      ret = impl.max(ret, self.entries[i])
+    return ret

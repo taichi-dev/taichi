@@ -162,10 +162,14 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(BinaryOpStmt *stmt) {
-    auto error = [&] {
-      TC_WARN("Error: type mismatch (left = {}, right = {}, stmt_id = {}) at",
-              stmt->lhs->ret_data_type_name(), stmt->rhs->ret_data_type_name(),
-              stmt->id);
+    auto error = [&](std::string comment = "") {
+      if (comment == "") {
+        TC_WARN("Error: type mismatch (left = {}, right = {}, stmt_id = {}) at",
+                stmt->lhs->ret_data_type_name(),
+                stmt->rhs->ret_data_type_name(), stmt->id);
+      } else {
+        TC_WARN(comment + " at");
+      }
       fmt::print(stmt->tb);
       TC_WARN("Compilation stopped due to type mismatch.");
       exit(-1);
@@ -195,6 +199,11 @@ class TypeCheck : public IRVisitor {
     matching = matching && (stmt->lhs->ret_type == stmt->rhs->ret_type);
     if (!matching) {
       error();
+    }
+    if (binary_is_bitwise(stmt->op_type)) {
+      if (!is_integral(stmt->lhs->ret_type.data_type)) {
+        error("Error: bitwise operations can only apply to integral types.");
+      }
     }
     if (is_comparison(stmt->op_type)) {
       stmt->ret_type = VectorType(stmt->lhs->ret_type.width, DataType::i32);

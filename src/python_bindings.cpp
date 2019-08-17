@@ -10,11 +10,12 @@ Expr expr_index(const Expr &expr, const Expr &index) {
   return expr[index];
 }
 
-void expr_assign(const Expr &lhs_, const Expr &rhs) {
+void expr_assign(const Expr &lhs_, const Expr &rhs, std::string tb) {
   auto lhs = ptr_if_global(lhs_);
   TC_ASSERT(lhs->is_lvalue());
-  current_ast_builder().insert(
-      std::make_unique<FrontendAssignStmt>(lhs, load_if_ptr(rhs)));
+  auto stmt = std::make_unique<FrontendAssignStmt>(lhs, load_if_ptr(rhs));
+  stmt->set_tb(tb);
+  current_ast_builder().insert(std::move(stmt));
 }
 
 std::vector<std::unique_ptr<IRBuilder::ScopeGuard>> scope_stack;

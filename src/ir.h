@@ -705,6 +705,10 @@ class Stmt : public IRNode {
     irpass::typecheck(this);
   }
 
+  void set_tb(std::string tb) {
+    this->tb = tb;
+  }
+
   virtual ~Stmt() {
   }
 };

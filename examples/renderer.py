@@ -30,9 +30,9 @@ def render():
     d = ti.Matrix.normalized(d)
 
     rinv = 1.0 / d
-    rsign = ti.Vector([0.0, 0.0, 0.0])
+    rsign = ti.Vector([0, 0, 0])
     for i in ti.static(range(3)):
-      rsign[i] = (d[i] > 0) * 2.0 - 1
+      rsign[i] = (d[i] > 0) * 2 - 1
 
     o = res * pos
     ipos = ti.Matrix.floor(o).cast(ti.i32)
@@ -49,13 +49,13 @@ def render():
         hit_pos = pos + hit_distance * d
         running = 0
       else:
-        mm = ti.Vector([0.0, 0.0, 0.0])
+        mm = ti.Vector([0, 0, 0])
         if dis[0] <= dis[1] and dis[0] < dis[2]:
-          mm[0] = 1.0
+          mm[0] = 1
         elif dis[1] <= dis[0] and dis[1] <= dis[2]:
-          mm[1] = 1.0
+          mm[1] = 1
         else:
-          mm[2] = 1.0
+          mm[2] = 1
         dis += mm * rsign * rinv
         ipos += mm * rsign
         normal = -mm * rsign

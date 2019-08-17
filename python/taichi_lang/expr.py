@@ -52,20 +52,20 @@ class Expr:
 
 
   def __neg__(self):
-    return Expr(taichi_lang_core.expr_neg(self.ptr))
+    return Expr(taichi_lang_core.expr_neg(self.ptr), tb=self.stack_info())
 
   def __sub__(self, other):
     other = Expr(other)
-    return Expr(taichi_lang_core.expr_sub(self.ptr, other.ptr))
+    return Expr(taichi_lang_core.expr_sub(self.ptr, other.ptr), tb=self.stack_info())
 
   def __isub__(self, other):
-    self.assign(Expr(taichi_lang_core.expr_sub(self.ptr, other.ptr)))
+    self.assign(Expr(taichi_lang_core.expr_sub(self.ptr, other.ptr)), tb=self.stack_info())
 
   def __imul__(self, other):
-    self.assign(Expr(taichi_lang_core.expr_mul(self.ptr, other.ptr)))
+    self.assign(Expr(taichi_lang_core.expr_mul(self.ptr, other.ptr)), tb=self.stack_info())
 
   def __idiv__(self, other):
-    self.assign(Expr(taichi_lang_core.expr_div(self.ptr, other.ptr)))
+    self.assign(Expr(taichi_lang_core.expr_div(self.ptr, other.ptr)), tb=self.stack_info())
 
   __itruediv__ = __idiv__
 
@@ -143,7 +143,7 @@ class Expr:
     return self | item
 
   def assign(self, other):
-    taichi_lang_core.expr_assign(self.ptr, Expr(other).ptr)
+    taichi_lang_core.expr_assign(self.ptr, Expr(other).ptr, self.stack_info())
 
   def serialize(self):
     return self.ptr.serialize()

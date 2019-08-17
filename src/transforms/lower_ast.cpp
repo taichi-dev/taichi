@@ -194,6 +194,7 @@ class LowerAST : public IRVisitor {
       global_ptr->flatten(flattened);
       flattened.push_back<GlobalStoreStmt>(flattened.back().get(), expr->stmt);
     }
+    flattened.back()->set_tb(assign->tb);
     assign->parent->replace_with(assign, flattened);
     throw IRModified();
   }

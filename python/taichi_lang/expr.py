@@ -59,13 +59,13 @@ class Expr:
     return Expr(taichi_lang_core.expr_sub(self.ptr, other.ptr), tb=self.stack_info())
 
   def __isub__(self, other):
-    self.assign(Expr(taichi_lang_core.expr_sub(self.ptr, other.ptr)), tb=self.stack_info())
+    self.assign(Expr(taichi_lang_core.expr_sub(self.ptr, other.ptr)))
 
   def __imul__(self, other):
-    self.assign(Expr(taichi_lang_core.expr_mul(self.ptr, other.ptr)), tb=self.stack_info())
+    self.assign(Expr(taichi_lang_core.expr_mul(self.ptr, other.ptr)))
 
   def __idiv__(self, other):
-    self.assign(Expr(taichi_lang_core.expr_div(self.ptr, other.ptr)), tb=self.stack_info())
+    self.assign(Expr(taichi_lang_core.expr_div(self.ptr, other.ptr)))
 
   __itruediv__ = __idiv__
 

@@ -21,10 +21,10 @@ def query_density_int(ipos):
 @ti.kernel
 def render():
   for u, v in color_buffer(0):
-    fov = 1
+    fov = 0.3
     pos = ti.Vector([0.5, 0.2, 2.0])
-    d = ti.Vector([fov * u / (res / 2) - 1.001,
-                   fov * v / (res / 2) - 1.001,
+    d = ti.Vector([fov * u / (res / 2) - fov - 1e-3,
+                   fov * v / (res / 2) - fov - 1e-3,
                    -1.0])
 
     d = ti.Matrix.normalized(d)
@@ -63,9 +63,12 @@ def render():
       i += 1
       if i > 500:
         running = 0
+        normal *= 0
 
-    for c in ti.static(range(3)):
-      color_buffer[u, v][c] = i / 500.0
+
+    #for c in ti.static(range(3)):
+    #  color_buffer[u, v][c] = i / 500.0
+    color_buffer[u, v] = normal
 
 
 @ti.kernel

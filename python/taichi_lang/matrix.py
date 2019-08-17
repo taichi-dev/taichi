@@ -5,10 +5,10 @@ import numbers
 
 
 def broadcast_if_scalar(func):
-  def broadcasted(self, other):
+  def broadcasted(self, other, *args, **kwargs):
     if isinstance(other, expr.Expr) or isinstance(other, numbers.Number):
       other = self.broadcast(expr.Expr(other))
-    return func(self, other)
+    return func(self, other, *args, **kwargs)
 
   return broadcasted
 
@@ -273,6 +273,7 @@ class Matrix:
   def loop_range(self):
     return self.entries[0]
 
+  @broadcast_if_scalar
   def augassign(self, other, op):
     if not isinstance(other, Matrix):
       other = Matrix(other)

@@ -5,9 +5,9 @@ import cv2
 res = 512
 color_buffer = ti.Vector(3, dt=ti.f32)
 
-ti.runtime.print_preprocessed = True
-ti.cfg.print_ir = True
-grid_resolution = 32
+# ti.runtime.print_preprocessed = True
+# ti.cfg.print_ir = True
+grid_resolution = 16
 
 @ti.layout
 def buffers():
@@ -22,9 +22,9 @@ def query_density_int(ipos):
 def render():
   for u, v in color_buffer(0):
     fov = 1
-    pos = ti.Vector([0.5, 0.5, 3.0])
-    d = ti.Vector([fov * u / (res / 2) - 1.0,
-                   fov * v / (res / 2) - 1.0,
+    pos = ti.Vector([0.5, 0.2, 2.0])
+    d = ti.Vector([fov * u / (res / 2) - 1.001,
+                   fov * v / (res / 2) - 1.001,
                    -1.0])
 
     d = ti.Matrix.normalized(d)
@@ -34,13 +34,14 @@ def render():
     for i in ti.static(range(3)):
       rsign[i] = (d[i] > 0) * 2 - 1
 
-    o = res * pos
+    o = grid_resolution * pos
     ipos = ti.Matrix.floor(o).cast(ti.i32)
     dis = (ipos - o + 0.5 + rsign * 0.5) * rinv
     running = 1
     i = 0
     hit_distance = -1.0
     normal = ti.Vector([0.0, 0.0, 0.0])
+    hit_pos = ti.Vector([0.0, 0.0, 0.0])
     while running:
       last_sample = (ipos[0] + ipos[1]) % 2 and (ipos[2] == 0)# query_density_int(ipos)
       if last_sample > 0:
@@ -63,7 +64,8 @@ def render():
       if i > 500:
         running = 0
 
-    color_buffer[u, v] = normal
+    for c in ti.static(range(3)):
+      color_buffer[u, v][c] = i / 500.0
 
 
 @ti.kernel

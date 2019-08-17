@@ -86,6 +86,23 @@ class ASTTransformer(ast.NodeTransformer):
       call = ast.Call(func=func, args=[node.value], keywords=[])
       return ast.copy_location(ast.Expr(value=call), node)
 
+  def visit_While(self, node):
+    with self.variable_scope():
+      self.generic_visit(node)
+
+    template = ''' 
+if 1:
+  __cond = 0
+  ti.core.begin_frontend_while(__cond.ptr)
+  ti.core.pop_scope()
+'''
+    t = ast.parse(template).body[0]
+    cond = node.test
+    t.body[0].value = cond
+    t.body = t.body[:2] + node.body + t.body[2:]
+    return ast.copy_location(t, node)
+
+
   def visit_If(self, node):
     with self.variable_scope():
       self.generic_visit(node)

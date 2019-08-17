@@ -76,9 +76,10 @@ PYBIND11_MODULE(taichi_lang_core, m) {
       .def_readwrite("lower_access", &CompileConfig::lower_access)
       .def_readwrite("gradient_dt", &CompileConfig::gradient_dt);
 
-  m.def("default_compile_config",
-        [&]() -> CompileConfig & { return default_compile_config; },
-        py::return_value_policy::reference);
+  m.def(
+      "default_compile_config",
+      [&]() -> CompileConfig & { return default_compile_config; },
+      py::return_value_policy::reference);
 
   py::class_<Program>(m, "Program")
       .def(py::init<>())
@@ -88,9 +89,10 @@ PYBIND11_MODULE(taichi_lang_core, m) {
   m.def("get_current_program", get_current_program,
         py::return_value_policy::reference);
 
-  m.def("current_compile_config",
-        [&]() -> CompileConfig & { return get_current_program().config; },
-        py::return_value_policy::reference);
+  m.def(
+      "current_compile_config",
+      [&]() -> CompileConfig & { return get_current_program().config; },
+      py::return_value_policy::reference);
 
   py::class_<Index>(m, "Index").def(py::init<int>());
   py::class_<SNode>(m, "SNode")
@@ -119,9 +121,8 @@ PYBIND11_MODULE(taichi_lang_core, m) {
   py::class_<Expr> expr(m, "Expr");
   expr.def("serialize", &Expr::serialize)
       .def("snode", &Expr::snode, py::return_value_policy::reference)
-      .def("is_global_var", [](Expr *expr){
-        return expr->is<GlobalVariableExpression>();
-      })
+      .def("is_global_var",
+           [](Expr *expr) { return expr->is<GlobalVariableExpression>(); })
       .def("set_tb", &Expr::set_tb)
       .def("set_is_primal",
            [&](Expr *expr, bool v) {
@@ -143,6 +144,13 @@ PYBIND11_MODULE(taichi_lang_core, m) {
   py::class_<Program::KernelProxy>(m, "KernelProxy")
       .def("define", &Program::KernelProxy::def,
            py::return_value_policy::reference);
+
+  m.def("begin_frontend_while", [&](const Expr &cond) {
+    auto stmt_unique = std::make_unique<FrontendWhileStmt>(cond);
+    auto stmt = stmt_unique.get();
+    current_ast_builder().insert(std::move(stmt_unique));
+    scope_stack.push_back(current_ast_builder().create_scope(stmt->body));
+  });
 
   m.def("begin_frontend_range_for",
         [&](const Expr &i, const Expr &s, const Expr &e) {
@@ -182,8 +190,9 @@ PYBIND11_MODULE(taichi_lang_core, m) {
 
   m.def("layout", layout);
 
-  m.def("get_root", [&]() -> SNode * { return &root; },
-        py::return_value_policy::reference);
+  m.def(
+      "get_root", [&]() -> SNode * { return &root; },
+      py::return_value_policy::reference);
 
   m.def("value_cast", static_cast<Expr (*)(const Expr &expr, DataType)>(cast));
 

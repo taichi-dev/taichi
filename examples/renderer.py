@@ -74,7 +74,7 @@ def render():
 @ti.kernel
 def copy(img: np.ndarray):
   for i, j in color_buffer(0):
-    coord = (i * res + j) * 3
+    coord = (j * res + i) * 3
     for c in ti.static(range(3)):
       img[coord + c] = color_buffer[i, j][c]
 

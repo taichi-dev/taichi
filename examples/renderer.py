@@ -19,6 +19,49 @@ def buffers():
 def query_density_int(ipos):
   return ipos[0] + ipos[1] + ipos[2] < 10 and ipos.min() >= 0
 
+@ti.func
+def dda(pos, d):
+  rinv = 1.0 / d
+  rsign = ti.Vector([0, 0, 0])
+  for i in ti.static(range(3)):
+    if d[i] > 0:
+      rsign[i] = 1
+    else:
+      rsign[i] = -1
+
+  o = grid_resolution * pos
+  ipos = ti.Matrix.floor(o).cast(ti.i32)
+  dis = (ipos - o + 0.5 + rsign * 0.5) * rinv
+  running = 1
+  i = 0
+  hit_distance = -1.0
+  normal = ti.Vector([0.0, 0.0, 0.0])
+  hit_pos = ti.Vector([0.0, 0.0, 0.0])
+  while running:
+    last_sample = query_density_int(ipos)
+    if last_sample:
+      mini = (ipos - o + ti.Vector([0.5, 0.5, 0.5]) - rsign * 0.5) * rinv
+      hit_distance = mini.max() * (1 / grid_resolution)
+      hit_pos = pos + hit_distance * d
+      running = 0
+    else:
+      mm = ti.Vector([0, 0, 0])
+      if dis[0] <= dis[1] and dis[0] < dis[2]:
+        mm[0] = 1
+      elif dis[1] <= dis[0] and dis[1] <= dis[2]:
+        mm[1] = 1
+      else:
+        mm[2] = 1
+      dis += mm * rsign * rinv
+      ipos += mm * rsign
+      normal = -mm * rsign
+    i += 1
+    if i > 500:
+      running = 0
+      normal = [0, 0, 0]
+  return normal
+
+
 
 @ti.kernel
 def render():
@@ -30,46 +73,7 @@ def render():
                    -1.0])
 
     d = ti.Matrix.normalized(d)
-
-    rinv = 1.0 / d
-    rsign = ti.Vector([0, 0, 0])
-    for i in ti.static(range(3)):
-      if d[i] > 0:
-        rsign[i] = 1
-      else:
-        rsign[i] = -1
-
-    o = grid_resolution * pos
-    ipos = ti.Matrix.floor(o).cast(ti.i32)
-    dis = (ipos - o + 0.5 + rsign * 0.5) * rinv
-    running = 1
-    i = 0
-    hit_distance = -1.0
-    normal = ti.Vector([0.0, 0.0, 0.0])
-    hit_pos = ti.Vector([0.0, 0.0, 0.0])
-    while running:
-      last_sample = query_density_int(ipos)
-      if last_sample:
-        mini = (ipos - o + ti.Vector([0.5, 0.5, 0.5]) - rsign * 0.5) * rinv
-        hit_distance = mini.max() * (1 / grid_resolution)
-        hit_pos = pos + hit_distance * d
-        running = 0
-      else:
-        mm = ti.Vector([0, 0, 0])
-        if dis[0] <= dis[1] and dis[0] < dis[2]:
-          mm[0] = 1
-        elif dis[1] <= dis[0] and dis[1] <= dis[2]:
-          mm[1] = 1
-        else:
-          mm[2] = 1
-        dis += mm * rsign * rinv
-        ipos += mm * rsign
-        normal = -mm * rsign
-      i += 1
-      if i > 500:
-        running = 0
-        normal = [0, 0, 0]
-
+    normal = dda(pos, d)
     # for c in ti.static(range(3)):
     #  color_buffer[u, v][c] = i / 500.0
     # color_buffer[u, v] = normal * 0.5 + ti.Matrix([0.5, 0.5, 0.5])

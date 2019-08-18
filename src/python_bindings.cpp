@@ -151,6 +151,10 @@ PYBIND11_MODULE(taichi_lang_core, m) {
   m.def("insert_append", [](SNode *snode, const ExprGroup &indices,
                             const Expr &val) { Append(snode, indices, val); });
 
+  m.def("insert_len", [](SNode *snode, const ExprGroup &indices) {
+    return Probe(snode, indices);
+  });
+
   m.def("begin_frontend_while", [&](const Expr &cond) {
     auto stmt_unique = std::make_unique<FrontendWhileStmt>(cond);
     auto stmt = stmt_unique.get();

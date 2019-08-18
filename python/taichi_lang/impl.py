@@ -401,3 +401,7 @@ def min(a, b):
 
 def append(l, indices, val):
   taichi_lang_core.insert_append(l.ptr, make_expr_group(indices), val.ptr)
+
+def length(l, indices):
+  return taichi_lang_core.insert_len(l.ptr, make_expr_group(indices))
+

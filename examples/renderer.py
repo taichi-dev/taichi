@@ -19,7 +19,7 @@ def buffers():
 @ti.func
 def query_density_int(ipos):
   # return ipos[0] + ipos[1] + ipos[2] < 16 and ipos.min() >= 0 or ipos.min() == 6 and ipos.max() == 9
-  return ipos.min() % 4 == 0 and ipos.max() < 16
+  return ipos.min() % 3 == 0 and ipos.max() < 16
 
 
 @ti.func
@@ -82,7 +82,7 @@ def color(pos):
   p = pos * grid_resolution
 
   p -= ti.Matrix.floor(p)
-  boundary = 0.1
+  boundary = 0.05
   count = 0
   for i in ti.static(range(3)):
     if p[i] < boundary or p[i] > 1 - boundary:
@@ -90,23 +90,22 @@ def color(pos):
   f = 0.0
   if count >= 2:
     f = 1.0
-  return ti.Vector([1.0, 1.0, 1.0]) * (0.2 + f * 0.3)
+  return ti.Vector([0.3, 0.4, 0.3]) * (1 + f)
 
 
 @ti.kernel
 def render():
-  ti.parallelize(8)
   for u, v in color_buffer(0):
     fov = 0.6
     pos = ti.Vector([0.5, 0.5, 3.0])
-    d = ti.Vector([fov * u / (res / 2) - fov - 1e-3,
-                   fov * v / (res / 2) - fov - 1e-3,
+    d = ti.Vector([fov * (u + ti.random(ti.f32)) / (res / 2) - fov - 1e-3,
+                   fov * (v + ti.random(ti.f32)) / (res / 2) - fov - 1e-3,
                    -1.0])
 
     d = ti.Matrix.normalized(d)
     normal, hit_pos = dda(pos, d)
 
-    contrib = ti.Vector([0.1, 0.13, 0.1])
+    contrib = ti.Vector([0.01, 0.013, 0.01])
 
     if normal.norm() != 0:
       c = color(hit_pos)
@@ -125,7 +124,7 @@ def copy(img: np.ndarray):
   for i, j in color_buffer(0):
     coord = ((res - 1 - j) * res + i) * 3
     for c in ti.static(range(3)):
-      img[coord + c] = color_buffer[i, j][c]
+      img[coord + c] = color_buffer[i, j][2 - c]
 
 
 def main():
@@ -135,7 +134,7 @@ def main():
   img = np.zeros((res * res * 3,), dtype=np.float32)
   copy(img)
   img = img.reshape(res, res, 3) * (1 / samples)
-  img = np.sqrt(img)
+  img = np.sqrt(img) * 2
   cv2.imshow('img', img)
   cv2.waitKey(0)
 

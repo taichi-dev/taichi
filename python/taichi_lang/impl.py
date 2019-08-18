@@ -31,15 +31,20 @@ def decl_arg(dt):
 
 def expr_init(rhs):
   if rhs is None:
+    print("expr_none")
     return Expr(taichi_lang_core.expr_alloca())
   if is_taichi_class(rhs):
+    print("expr_variable")
     return rhs.variable()
   else:
     if isinstance(rhs, list):
+      print("expr_list")
       return [expr_init(e) for e in rhs]
     elif isinstance(rhs, tuple):
+      print("expr_tuple")
       return tuple(expr_init(e) for e in rhs)
     else:
+      print("expr_var")
       return Expr(taichi_lang_core.expr_var(Expr(rhs).ptr))
 
 
@@ -166,6 +171,30 @@ def remove_indent(lines):
         assert l[i] == ' '
 
   return '\n'.join(cleaned)
+
+def func(foo):
+  src = remove_indent(inspect.getsource(foo))
+  tree = ast.parse(src)
+
+  func_body = tree.body[0]
+  func_body.decorator_list = []
+
+  visitor = ASTTransformer(False)
+  visitor.visit(tree)
+  ast.fix_missing_locations(tree)
+
+  if pytaichi.print_preprocessed:
+    print(astor.to_source(tree.body[0], indent_with='  '))
+
+  ast.increment_lineno(tree, inspect.getsourcelines(foo)[1] - 1)
+
+  pytaichi.inside_kernel = True
+  frame = inspect.currentframe().f_back
+  exec(compile(tree, filename=inspect.getsourcefile(foo), mode='exec'),
+       dict(frame.f_globals, **frame.f_locals), locals())
+  pytaichi.inside_kernel = False
+  compiled = locals()[foo.__name__]
+  return compiled
 
 
 def kernel(foo):

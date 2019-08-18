@@ -179,6 +179,7 @@ class Matrix:
       return self(i, j)
 
   def __getitem__(self, index):
+    print("Warning: should be unreachable")
     ret = [[] for _ in range(self.n)]
     for i in range(self.n):
       for j in range(self.m):
@@ -186,6 +187,7 @@ class Matrix:
     return ret
 
   def __setitem__(self, index, item):
+    print("Warning: should be unreachable")
     if not isinstance(item[0], list):
       item = [[i] for i in item]
     for i in range(self.n):

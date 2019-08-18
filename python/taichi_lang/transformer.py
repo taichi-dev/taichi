@@ -16,9 +16,10 @@ class ScopeGuard:
 
 # Single-pass transform
 class ASTTransformer(ast.NodeTransformer):
-  def __init__(self):
+  def __init__(self, transform_args=True):
     super().__init__()
     self.local_scopes = []
+    self.transform_args = transform_args
 
   def variable_scope(self):
     return ScopeGuard(self)
@@ -259,15 +260,16 @@ if 1:
     assert args.kwonlyargs == []
     assert args.kw_defaults == []
     assert args.kwarg is None
-    arg_decls = []
-    for i, arg in enumerate(args.args):
-      arg_init = self.parse_stmt('x = ti.decl_arg(0)')
-      arg_init.targets[0].id = arg.arg
-      arg_init.value.args[0] = arg.annotation
-      arg_decls.append(arg_init)
-    node.body = arg_decls + node.body
-    # remove original args
-    node.args.args = []
+    if self.transform_args:
+      arg_decls = []
+      for i, arg in enumerate(args.args):
+        arg_init = self.parse_stmt('x = ti.decl_arg(0)')
+        arg_init.targets[0].id = arg.arg
+        arg_init.value.args[0] = arg.annotation
+        arg_decls.append(arg_init)
+      node.body = arg_decls + node.body
+      # remove original args
+      node.args.args = []
     return node
 
   def visit_BoolOp(self, node):

@@ -13,16 +13,15 @@ grid_resolution = 16
 def buffers():
   ti.root.dense(ti.ij, res).place(color_buffer)
 
+@ti.func
 def query_density_int(ipos):
-  # return ipos[2] == grid_resolution // 2 and ipos[1] == ipos[0]
-  return ipos[0]
-  # return 1
+  return ipos.subscript(0) + ipos.subscript(1) + ipos.subscript(2) < 10 and ipos.min() >= 0
 
 @ti.kernel
 def render():
   for u, v in color_buffer(0):
-    fov = 0.3
-    pos = ti.Vector([0.5, 0.5, 2.0])
+    fov = 0.4
+    pos = ti.Vector([0.5, 0.5, 3.0])
     d = ti.Vector([fov * u / (res / 2) - fov - 1e-3,
                    fov * v / (res / 2) - fov - 1e-3,
                    -1.0])
@@ -46,7 +45,7 @@ def render():
     normal = ti.Vector([0.0, 0.0, 0.0])
     hit_pos = ti.Vector([0.0, 0.0, 0.0])
     while running:
-      last_sample = ipos[0] + ipos[1] + ipos[2] < 10 and ipos.min() >= 0
+      last_sample = query_density_int(ipos)
       if last_sample:
         mini = (ipos - o + ti.Vector([0.5, 0.5, 0.5]) - rsign * 0.5) * rinv
         hit_distance = mini.max() * (1 / grid_resolution)
@@ -70,7 +69,8 @@ def render():
 
     #for c in ti.static(range(3)):
     #  color_buffer[u, v][c] = i / 500.0
-    color_buffer[u, v] = normal * 0.3 + ti.Matrix([0.5, 0.5, 0.5])
+    # color_buffer[u, v] = normal * 0.5 + ti.Matrix([0.5, 0.5, 0.5])
+    color_buffer[u, v] = normal
 
 
 @ti.kernel

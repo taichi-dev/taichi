@@ -225,9 +225,10 @@ class Matrix:
 
   @staticmethod
   def floor(a):
+    b = Matrix(a.n, a.m)
     for i in range(len(a.entries)):
-      a.entries[i].assign(impl.floor(a.entries[i]))
-    return a
+      b.entries[i] = impl.floor(a.entries[i])
+    return b
 
   @staticmethod
   def outer_product(a, b):

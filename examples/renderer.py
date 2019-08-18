@@ -8,7 +8,7 @@ color_buffer = ti.Vector(3, dt=ti.f32)
 
 # ti.runtime.print_preprocessed = True
 # ti.cfg.print_ir = True
-grid_resolution = 16
+grid_resolution = 10
 
 
 @ti.layout
@@ -77,10 +77,26 @@ def out_dir(n):
   return ax * (ti.cos(phi) * u + ti.sin(phi) * v) + ay * n
 
 
+@ti.func
+def color(pos):
+  p = pos * grid_resolution
+
+  p -= ti.Matrix.floor(p)
+  boundary = 0.1
+  count = 0
+  for i in ti.static(range(3)):
+    if p[i] < boundary or p[i] > 1 - boundary:
+      count += 1
+  f = 0.0
+  if count >= 2:
+    f = 1.0
+  return ti.Vector([1.0, 1.0, 1.0]) * (0.2 + f * 0.3)
+
+
 @ti.kernel
 def render():
   for u, v in color_buffer(0):
-    fov = 0.4
+    fov = 0.6
     pos = ti.Vector([0.5, 0.5, 3.0])
     d = ti.Vector([fov * u / (res / 2) - fov - 1e-3,
                    fov * v / (res / 2) - fov - 1e-3,
@@ -92,13 +108,13 @@ def render():
     contrib = ti.Vector([0.1, 0.13, 0.1])
 
     if normal.norm() != 0:
-      contrib += ti.Vector([0.6, 0.6, 0.6])
+      contrib += color(hit_pos)
 
       # d = out_dir(normal)
-      d = ti.Vector.normalized(ti.Vector([0.5, 0.5, -0.5]))
-      normal, _ = dda(hit_pos + 1e-3 * d, d)
-      if normal.norm() == 0:
-        contrib += ti.Vector([0.3, 0.3, 0.3]) * ti.max(d[1], 0)
+      #d = ti.Vector.normalized(ti.Vector([0.1, 0.5, -0.2]))
+      #normal, _ = dda(hit_pos + d * 1e-4, ti.Matrix.normalized(d))
+      #if normal.norm() == 0:
+      #  contrib += ti.Vector([0.3, 0.3, 0.3])# * ti.max(d[1], 0)
 
     color_buffer[u, v] += contrib
 

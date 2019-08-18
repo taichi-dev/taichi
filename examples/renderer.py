@@ -18,7 +18,7 @@ def buffers():
 
 @ti.func
 def query_density_int(ipos):
-  return ipos[0] + ipos[1] + ipos[2] < 10 and ipos.min() >= 0
+  return ipos[0] + ipos[1] + ipos[2] < 16 and ipos.min() >= 0
 
 
 @ti.func
@@ -58,7 +58,7 @@ def dda(pos, d):
       ipos += mm * rsign
       normal = -mm * rsign
     i += 1
-    if i > 500:
+    if i > grid_resolution * 4:
       running = 0
       normal = [0, 0, 0]
   return normal, hit_pos
@@ -71,9 +71,9 @@ def out_dir(n):
     u = ti.Matrix.normalized(ti.Matrix.cross(n, ti.Vector([0.0, 1.0, 0.0])))
   v = ti.Matrix.cross(n, u)
   phi = 2 * math.pi * ti.random(ti.f32)
-  r = ti.random(ti.f32)
-  alpha = 0.5 * math.pi * (r * r)
-  return ti.sin(alpha) * (ti.cos(phi) * u + ti.sin(phi) * v) + ti.cos(alpha) * n
+  ay = ti.random(ti.f32)
+  ax = ti.sqrt(1 - ay * ay)
+  return ax * (ti.cos(phi) * u + ti.sin(phi) * v) + ay * n
 
 
 @ti.kernel
@@ -90,16 +90,15 @@ def render():
 
     contrib = ti.Vector([0.0, 0.0, 0.0])
 
-
     if normal.norm() != 0:
-      contrib += ti.Vector([0.3, 0.3, 0.3])
+      contrib += ti.Vector([0.6, 0.6, 0.6])
 
       d = out_dir(normal)
-      normal, _ = dda(hit_pos + 1e-4 * d, d)
+      normal, _ = dda(hit_pos + 1e-3 * d, d)
       if normal.norm() == 0:
         contrib += ti.Vector([0.3, 0.3, 0.3])
 
-    color_buffer[u, v] = contrib
+    color_buffer[u, v] += contrib
 
 
 @ti.kernel
@@ -111,10 +110,12 @@ def copy(img: np.ndarray):
 
 
 def main():
-  render()
+  samples = 10
+  for i in range(samples):
+    render()
   img = np.zeros((res * res * 3,), dtype=np.float32)
   copy(img)
-  img = img.reshape(res, res, 3)
+  img = img.reshape(res, res, 3) * (1 / samples)
   cv2.imshow('img', img)
   cv2.waitKey(0)
 

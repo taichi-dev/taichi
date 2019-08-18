@@ -9,6 +9,10 @@ class SNode:
       dimensions = [dimensions] * len(indices)
     return SNode(self.ptr.dense(indices, dimensions))
 
+  def dynamic(self, index, dimension):
+    assert len(index) == 1
+    return SNode(self.ptr.dynamic(index[0], dimension))
+
   def pointer(self):
     return SNode(self.ptr.pointer())
 
@@ -26,3 +30,6 @@ class SNode:
 
   def lazy_grad(self):
     self.ptr.lazy_grad()
+
+  def parent(self):
+    return SNode(self.ptr.snode().parent)

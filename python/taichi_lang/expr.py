@@ -219,4 +219,6 @@ class Expr:
       ret = ret * self
     return ret
 
-
+  def parent(self):
+    from .snode import SNode
+    return SNode(self.ptr.snode().parent)

@@ -202,14 +202,14 @@ class SNode {
   }
   */
 
-  SNode &indirect(Index &expr, int n) {
+  SNode &indirect(const Index &expr, int n) {
     auto &child = insert_children(SNodeType::indirect);
     child.index_id = expr.value;
     child.n = n;
     return child;
   }
 
-  SNode &dynamic(Index &expr, int n) {
+  SNode &dynamic(const Index &expr, int n) {
     TC_ASSERT(bit::is_power_of_two(n));
     auto &child = insert_children(SNodeType::dynamic);
     child.extractors[expr.value].activate(bit::log2int(n));
@@ -217,15 +217,15 @@ class SNode {
     return child;
   }
 
-  SNode &hash(std::vector<Index> indices, std::vector<int> sizes) {
+  SNode &hash(const std::vector<Index> indices, std::vector<int> sizes) {
     return create_node(indices, sizes, SNodeType::hash);
   }
 
-  SNode &hash(std::vector<Index> indices, int sizes) {
+  SNode &hash(const std::vector<Index> indices, int sizes) {
     return create_node(indices, std::vector<int>{sizes}, SNodeType::hash);
   }
 
-  SNode &hash(Index &expr, int n) {
+  SNode &hash(const Index &expr, int n) {
     return hash(std::vector<Index>{expr}, n);
   }
 

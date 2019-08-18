@@ -13,7 +13,7 @@ render_voxel = True
 
 # ti.runtime.print_preprocessed = True
 # ti.cfg.print_ir = True
-grid_resolution = 10
+grid_resolution = 16
 eps = 1e-4
 
 @ti.layout
@@ -23,7 +23,6 @@ def buffers():
 
 @ti.func
 def query_density_int(ipos):
-  # return ipos[0] + ipos[1] + ipos[2] < 16 and ipos.min() >= 0 or ipos.min() == 6 and ipos.max() == 9
   return ipos.min() % 3 == 0 and ipos.max() < 16
 
 @ti.func
@@ -57,7 +56,6 @@ def dda(pos, d):
   dis = (ipos - o + 0.5 + rsign * 0.5) * rinv
   running = 1
   i = 0
-  hit_distance = -1.0
   normal = ti.Vector([0.0, 0.0, 0.0])
   hit_pos = ti.Vector([0.0, 0.0, 0.0])
   c = ti.Vector([0.0, 0.0, 0.0])
@@ -173,7 +171,6 @@ def render():
 
     if normal.norm() != 0:
       d = out_dir(normal)
-      # d = ti.Vector.normalized(ti.Vector([0.1, 0.5, -0.2]))
       normal, _, _ = next_hit(hit_pos + d * 1e-4, ti.Matrix.normalized(d))
       if normal.norm() == 0:
         contrib += c * ti.max(d[1], 0)

@@ -105,6 +105,8 @@ PYBIND11_MODULE(taichi_lang_core, m) {
            (SNode & (SNode::*)(const std::vector<Index> &,
                                const std::vector<int> &))(&SNode::dense),
            py::return_value_policy::reference)
+      .def("dynamic", (SNode & (SNode::*)(const Index &, int))(&SNode::dynamic),
+           py::return_value_policy::reference)
       .def("pointer", &SNode::pointer)
       .def("place", (SNode & (SNode::*)(Expr &))(&SNode::place),
            py::return_value_policy::reference)
@@ -145,6 +147,9 @@ PYBIND11_MODULE(taichi_lang_core, m) {
   py::class_<Program::KernelProxy>(m, "KernelProxy")
       .def("define", &Program::KernelProxy::def,
            py::return_value_policy::reference);
+
+  m.def("insert_append", [](SNode *snode, const ExprGroup &indices,
+                            const Expr &val) { Append(snode, indices, val); });
 
   m.def("begin_frontend_while", [&](const Expr &cond) {
     auto stmt_unique = std::make_unique<FrontendWhileStmt>(cond);

@@ -13,7 +13,7 @@ inf = 1e10
 # ti.runtime.print_preprocessed = True
 # ti.cfg.print_ir = True
 grid_resolution = 10
-
+eps = 1e-4
 
 @ti.layout
 def buffers():
@@ -76,7 +76,6 @@ def dda(pos, d):
 def intersect_sphere(pos, d, center):
   radius = 0.1
   T = pos - center
-  eps = 1e-4
   A = 1
   B = 2 * T.dot(d)
   C = T.dot(T) - radius * radius
@@ -186,9 +185,11 @@ def copy(img: np.ndarray):
 
 
 def main():
+
   for i in range(num_spheres):
     for c in range(3):
       sphere_pos[i][c] = random.random()
+
   for i in range(1000):
     render()
     img = np.zeros((res * res * 3,), dtype=np.float32)

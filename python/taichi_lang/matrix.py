@@ -178,8 +178,24 @@ class Matrix:
         j = 0
       return self(i, j)
 
+  class Proxy:
+    def __init__(self, mat, index):
+      self.mat = mat
+      self.index = index
+
+    def __getitem__(self, item):
+      if not isinstance(item, list):
+        item = [item]
+      return self.mat(*item)[self.index]
+
+    def __setitem__(self, key, value):
+      if not isinstance(key, list):
+        key = [key]
+      self.mat(*key)[self.index] = value
+
   # host access
   def __getitem__(self, index):
+    return Matrix.Proxy(self, index)
     ret = [[] for _ in range(self.n)]
     for i in range(self.n):
       for j in range(self.m):

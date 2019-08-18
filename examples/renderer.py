@@ -5,10 +5,11 @@ import math
 import random
 
 res = 512
-num_spheres = 128
+num_spheres = 32
 color_buffer = ti.Vector(3, dt=ti.f32)
 sphere_pos = ti.Vector(3, dt=ti.f32)
 inf = 1e10
+render_voxel = True
 
 # ti.runtime.print_preprocessed = True
 # ti.cfg.print_ir = True
@@ -24,6 +25,21 @@ def buffers():
 def query_density_int(ipos):
   # return ipos[0] + ipos[1] + ipos[2] < 16 and ipos.min() >= 0 or ipos.min() == 6 and ipos.max() == 9
   return ipos.min() % 3 == 0 and ipos.max() < 16
+
+@ti.func
+def voxel_color(pos):
+  p = pos * grid_resolution
+
+  p -= ti.Matrix.floor(p)
+  boundary = 0.05
+  count = 0
+  for i in ti.static(range(3)):
+    if p[i] < boundary or p[i] > 1 - boundary:
+      count += 1
+  f = 0.0
+  if count >= 2:
+    f = 1.0
+  return ti.Vector([0.3, 0.4, 0.3]) * (1 + f)
 
 
 @ti.func
@@ -44,6 +60,7 @@ def dda(pos, d):
   hit_distance = -1.0
   normal = ti.Vector([0.0, 0.0, 0.0])
   hit_pos = ti.Vector([0.0, 0.0, 0.0])
+  c = ti.Vector([0.0, 0.0, 0.0])
   while running:
     last_sample = query_density_int(ipos)
     if last_sample:
@@ -66,7 +83,10 @@ def dda(pos, d):
     if i > grid_resolution * 10:
       running = 0
       normal = [0, 0, 0]
-  return normal, hit_pos
+    else:
+      c = voxel_color(hit_pos)
+
+  return normal, hit_pos, c
 
 # (T + x d)(T + x d) = r * r
 # T*T + 2Td x + x^2 = r * r
@@ -99,6 +119,7 @@ def intersect_sphere(pos, d, center):
 def intersect_spheres(pos, d):
   normal = ti.Vector([0.0, 0.0, 0.0])
   hit_pos = ti.Vector([0.0, 0.0, 0.0])
+  c = ti.Vector([0.0, 0.0, 0.0])
   min_dist = inf
   sid = -1
 
@@ -111,14 +132,17 @@ def intersect_spheres(pos, d):
   if min_dist < inf:
     hit_pos = pos + d * min_dist
     normal = ti.Matrix.normalized(hit_pos - sphere_pos[sid])
+    c = [0.3, 0.5, 0.2]
 
-  return normal, hit_pos
+  return normal, hit_pos, c
 
 
 @ti.func
 def next_hit(pos, d):
-  # return dda(pos, d)
-  return intersect_spheres(pos, d)
+  if ti.static(render_voxel):
+    return dda(pos, d)
+  else:
+    return intersect_spheres(pos, d)
 
 @ti.func
 def out_dir(n):
@@ -132,21 +156,6 @@ def out_dir(n):
   return ax * (ti.cos(phi) * u + ti.sin(phi) * v) + ay * n
 
 
-@ti.func
-def color(pos):
-  p = pos * grid_resolution
-
-  p -= ti.Matrix.floor(p)
-  boundary = 0.05
-  count = 0
-  for i in ti.static(range(3)):
-    if p[i] < boundary or p[i] > 1 - boundary:
-      count += 1
-  f = 0.0
-  if count >= 2:
-    f = 1.0
-  return ti.Vector([0.3, 0.4, 0.3]) * (1 + f)
-
 
 @ti.kernel
 def render():
@@ -158,16 +167,14 @@ def render():
                    -1.0])
 
     d = ti.Matrix.normalized(d)
-    normal, hit_pos = next_hit(pos, d)
+    normal, hit_pos, c = next_hit(pos, d)
 
     contrib = ti.Vector([0.01, 0.013, 0.01])
 
     if normal.norm() != 0:
-      c = color(hit_pos)
-
       d = out_dir(normal)
       # d = ti.Vector.normalized(ti.Vector([0.1, 0.5, -0.2]))
-      normal, _ = next_hit(hit_pos + d * 1e-4, ti.Matrix.normalized(d))
+      normal, _, _ = next_hit(hit_pos + d * 1e-4, ti.Matrix.normalized(d))
       if normal.norm() == 0:
         contrib += c * ti.max(d[1], 0)
     else:

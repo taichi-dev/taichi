@@ -18,7 +18,8 @@ def buffers():
 
 @ti.func
 def query_density_int(ipos):
-  return ipos[0] + ipos[1] + ipos[2] < 16 and ipos.min() >= 0
+  # return ipos[0] + ipos[1] + ipos[2] < 16 and ipos.min() >= 0 or ipos.min() == 6 and ipos.max() == 9
+  return ipos.min() == 0 and ipos.max() < 16
 
 
 @ti.func
@@ -58,7 +59,7 @@ def dda(pos, d):
       ipos += mm * rsign
       normal = -mm * rsign
     i += 1
-    if i > grid_resolution * 4:
+    if i > grid_resolution * 10:
       running = 0
       normal = [0, 0, 0]
   return normal, hit_pos
@@ -88,15 +89,16 @@ def render():
     d = ti.Matrix.normalized(d)
     normal, hit_pos = dda(pos, d)
 
-    contrib = ti.Vector([0.0, 0.0, 0.0])
+    contrib = ti.Vector([0.1, 0.13, 0.1])
 
     if normal.norm() != 0:
       contrib += ti.Vector([0.6, 0.6, 0.6])
 
-      d = out_dir(normal)
+      # d = out_dir(normal)
+      d = ti.Vector.normalized(ti.Vector([0.5, 0.5, -0.5]))
       normal, _ = dda(hit_pos + 1e-3 * d, d)
       if normal.norm() == 0:
-        contrib += ti.Vector([0.3, 0.3, 0.3])
+        contrib += ti.Vector([0.3, 0.3, 0.3]) * ti.max(d[1], 0)
 
     color_buffer[u, v] += contrib
 

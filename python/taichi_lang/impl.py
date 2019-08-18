@@ -332,9 +332,11 @@ def unary(x):
   return x
 
 binary_ops = []
-def binary(x):
-  binary_ops.append(x)
-  return x
+def binary(foo):
+  def x_(a, b):
+    return foo(Expr(a), Expr(b))
+  binary_ops.append(x_)
+  return x_
 
 def pow(x, n):
   assert isinstance(n, int) and n >= 0

@@ -263,6 +263,16 @@ class Matrix:
     return a(0, 0) * a(1, 1) - a(0, 1) * a(1, 0)
 
   @staticmethod
+  def cross(a, b):
+    assert a.n == 3 and a.m == 1
+    assert b.n == 3 and b.m == 1
+    return Matrix([
+      a(1) * b(2) - a(2) * b(1),
+      a(2) * b(0) - a(0) * b(2),
+      a(0) * b(1) - a(1) * b(0),
+    ])
+
+  @staticmethod
   def diag(dim, val):
     ret = Matrix(dim, dim)
     for i in range(dim):

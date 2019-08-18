@@ -1,6 +1,7 @@
 import taichi_lang as ti
 import numpy as np
 import cv2
+import math
 
 res = 512
 color_buffer = ti.Vector(3, dt=ti.f32)
@@ -18,6 +19,7 @@ def buffers():
 @ti.func
 def query_density_int(ipos):
   return ipos[0] + ipos[1] + ipos[2] < 10 and ipos.min() >= 0
+
 
 @ti.func
 def dda(pos, d):
@@ -59,8 +61,19 @@ def dda(pos, d):
     if i > 500:
       running = 0
       normal = [0, 0, 0]
-  return normal
+  return normal, hit_pos
 
+
+@ti.func
+def out_dir(n):
+  u = ti.Vector([1.0, 0.0, 0.0])
+  if ti.abs(n[1]) < 1 - 1e-3:
+    u = ti.Matrix.normalized(ti.Matrix.cross(n, ti.Vector([0.0, 1.0, 0.0])))
+  v = ti.Matrix.cross(n, u)
+  phi = 2 * math.pi * ti.random(ti.f32)
+  r = ti.random(ti.f32)
+  alpha = 0.5 * math.pi * (r * r)
+  return ti.sin(alpha) * (ti.cos(phi) * u + ti.sin(phi) * v) + ti.cos(alpha) * n
 
 
 @ti.kernel
@@ -73,11 +86,20 @@ def render():
                    -1.0])
 
     d = ti.Matrix.normalized(d)
-    normal = dda(pos, d)
-    # for c in ti.static(range(3)):
-    #  color_buffer[u, v][c] = i / 500.0
-    # color_buffer[u, v] = normal * 0.5 + ti.Matrix([0.5, 0.5, 0.5])
-    color_buffer[u, v] = normal
+    normal, hit_pos = dda(pos, d)
+
+    contrib = ti.Vector([0.0, 0.0, 0.0])
+
+
+    if normal.norm() != 0:
+      contrib += ti.Vector([0.3, 0.3, 0.3])
+
+      d = out_dir(normal)
+      normal, _ = dda(hit_pos + 1e-4 * d, d)
+      if normal.norm() == 0:
+        contrib += ti.Vector([0.3, 0.3, 0.3])
+
+    color_buffer[u, v] = contrib
 
 
 @ti.kernel

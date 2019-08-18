@@ -9,13 +9,16 @@ color_buffer = ti.Vector(3, dt=ti.f32)
 # ti.cfg.print_ir = True
 grid_resolution = 16
 
+
 @ti.layout
 def buffers():
   ti.root.dense(ti.ij, res).place(color_buffer)
 
+
 @ti.func
 def query_density_int(ipos):
-  return ipos.subscript(0) + ipos.subscript(1) + ipos.subscript(2) < 10 and ipos.min() >= 0
+  return ipos[0] + ipos[1] + ipos[2] < 10 and ipos.min() >= 0
+
 
 @ti.kernel
 def render():
@@ -67,7 +70,7 @@ def render():
         running = 0
         normal = [0, 0, 0]
 
-    #for c in ti.static(range(3)):
+    # for c in ti.static(range(3)):
     #  color_buffer[u, v][c] = i / 500.0
     # color_buffer[u, v] = normal * 0.5 + ti.Matrix([0.5, 0.5, 0.5])
     color_buffer[u, v] = normal

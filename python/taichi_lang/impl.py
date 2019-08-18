@@ -31,20 +31,15 @@ def decl_arg(dt):
 
 def expr_init(rhs):
   if rhs is None:
-    print("expr_none")
     return Expr(taichi_lang_core.expr_alloca())
   if is_taichi_class(rhs):
-    print("expr_variable")
     return rhs.variable()
   else:
     if isinstance(rhs, list):
-      print("expr_list")
       return [expr_init(e) for e in rhs]
     elif isinstance(rhs, tuple):
-      print("expr_tuple")
       return tuple(expr_init(e) for e in rhs)
     else:
-      print("expr_var")
       return Expr(taichi_lang_core.expr_var(Expr(rhs).ptr))
 
 

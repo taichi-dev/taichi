@@ -178,16 +178,16 @@ class Matrix:
         j = 0
       return self(i, j)
 
+  # host access
   def __getitem__(self, index):
-    print("Warning: should be unreachable")
     ret = [[] for _ in range(self.n)]
     for i in range(self.n):
       for j in range(self.m):
         ret[i].append(self(i, j)[index])
     return ret
 
+  # host access
   def __setitem__(self, index, item):
-    print("Warning: should be unreachable")
     if not isinstance(item[0], list):
       item = [[i] for i in item]
     for i in range(self.n):
@@ -326,3 +326,7 @@ class Matrix:
     for i in range(1, len(self.entries)):
       ret = impl.min(ret, self.entries[i])
     return ret
+
+  def dot(self, other):
+    assert self.m == 1 and other.m == 1
+    return (self.transposed(self) @ other).subscript(0, 0)

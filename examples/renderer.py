@@ -19,7 +19,7 @@ def buffers():
 @ti.func
 def query_density_int(ipos):
   # return ipos[0] + ipos[1] + ipos[2] < 16 and ipos.min() >= 0 or ipos.min() == 6 and ipos.max() == 9
-  return ipos.min() == 0 and ipos.max() < 16
+  return ipos.min() % 4 == 0 and ipos.max() < 16
 
 
 @ti.func
@@ -95,6 +95,7 @@ def color(pos):
 
 @ti.kernel
 def render():
+  ti.parallelize(8)
   for u, v in color_buffer(0):
     fov = 0.6
     pos = ti.Vector([0.5, 0.5, 3.0])
@@ -108,13 +109,13 @@ def render():
     contrib = ti.Vector([0.1, 0.13, 0.1])
 
     if normal.norm() != 0:
-      contrib += color(hit_pos)
+      c = color(hit_pos)
 
-      # d = out_dir(normal)
-      #d = ti.Vector.normalized(ti.Vector([0.1, 0.5, -0.2]))
-      #normal, _ = dda(hit_pos + d * 1e-4, ti.Matrix.normalized(d))
-      #if normal.norm() == 0:
-      #  contrib += ti.Vector([0.3, 0.3, 0.3])# * ti.max(d[1], 0)
+      d = out_dir(normal)
+      # d = ti.Vector.normalized(ti.Vector([0.1, 0.5, -0.2]))
+      normal, _ = dda(hit_pos + d * 1e-4, ti.Matrix.normalized(d))
+      if normal.norm() == 0:
+        contrib += c * ti.max(d[1], 0)
 
     color_buffer[u, v] += contrib
 
@@ -128,12 +129,13 @@ def copy(img: np.ndarray):
 
 
 def main():
-  samples = 10
+  samples = 20
   for i in range(samples):
     render()
   img = np.zeros((res * res * 3,), dtype=np.float32)
   copy(img)
   img = img.reshape(res, res, 3) * (1 / samples)
+  img = np.sqrt(img)
   cv2.imshow('img', img)
   cv2.waitKey(0)
 

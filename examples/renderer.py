@@ -5,11 +5,12 @@ import math
 import random
 
 res = 1024
-num_spheres = 32
+num_spheres = 1024
 color_buffer = ti.Vector(3, dt=ti.f32)
 sphere_pos = ti.Vector(3, dt=ti.f32)
 inf = 1e10
-render_voxel = True
+render_voxel = False
+max_ray_bounces = 3
 
 # ti.runtime.print_preprocessed = True
 # ti.cfg.print_ir = True
@@ -93,7 +94,7 @@ def dda(pos, d):
 
 @ti.func
 def intersect_sphere(pos, d, center):
-  radius = 0.1
+  radius = 0.05
   T = pos - center
   A = 1
   B = 2 * T.dot(d)
@@ -150,8 +151,9 @@ def out_dir(n):
     u = ti.Matrix.normalized(ti.Matrix.cross(n, ti.Vector([0.0, 1.0, 0.0])))
   v = ti.Matrix.cross(n, u)
   phi = 2 * math.pi * ti.random(ti.f32)
-  ay = ti.random(ti.f32)
-  ax = ti.sqrt(1 - ay * ay)
+  r = ti.random(ti.f32)
+  ay = ti.sqrt(r)
+  ax = ti.sqrt(1 - r)
   return ax * (ti.cos(phi) * u + ti.sin(phi) * v) + ay * n
 
 
@@ -166,18 +168,26 @@ def render():
                    fov * (v + ti.random(ti.f32)) / (res / 2) - fov - 1e-3,
                    -1.0])
 
+    contrib = ti.Vector([1.0, 1.0, 1.0])
+
     d = ti.Matrix.normalized(d)
-    normal, hit_pos, c = next_hit(pos, d)
 
-    contrib = ti.Vector([0.01, 0.013, 0.01])
+    depth = 0
+    bounces = 0
 
-    if normal.norm() != 0:
-      d = out_dir(normal)
-      normal, _, _ = next_hit(hit_pos + d * 1e-4, ti.Matrix.normalized(d))
-      if normal.norm() == 0:
-        contrib += c * ti.max(d[1], 0)
-    else:
-      contrib = ti.Vector([1, 1, 1])
+    while depth < max_ray_bounces:
+      normal, hit_pos, c = next_hit(pos, d)
+
+      if normal.norm() != 0:
+        d = out_dir(normal)
+        pos = hit_pos + 1e-4 * d
+        contrib *= c
+        bounces += 1
+      else: # hit sky
+        depth = max_ray_bounces
+        if bounces > 0:
+          # if the ray directly hits sky, return pure white
+          contrib *= ti.max(d[1], 0.05)
 
     color_buffer[u, v] += contrib
 
@@ -196,14 +206,15 @@ def main():
     for c in range(3):
       sphere_pos[i][c] = random.random()
 
-  for i in range(1000):
+  for i in range(100000):
     render()
-    img = np.zeros((res * res * 3,), dtype=np.float32)
-    copy(img)
-    img = img.reshape(res, res, 3) * (1 / (i + 1))
-    img = np.sqrt(img) * 2
-    cv2.imshow('img', img)
-    cv2.waitKey(1)
+    if i % 10 == 0:
+      img = np.zeros((res * res * 3,), dtype=np.float32)
+      copy(img)
+      img = img.reshape(res, res, 3) * (1 / (i + 1))
+      img = np.sqrt(img) * 2
+      cv2.imshow('img', img)
+      cv2.waitKey(1)
   cv2.waitKey(0)
 
 

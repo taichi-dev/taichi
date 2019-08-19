@@ -45,8 +45,39 @@ void Kernel::compile() {
 void Kernel::operator()() {
   if (!compiled)
     compile();
-  auto c = program.get_context();
-  compiled(c);
+  std::vector<void *> host_buffers(args.size());
+  std::vector<void *> device_buffers(args.size());
+  if (program.config.arch == Arch::gpu) {
+    // copy data to GRAM
+    bool has_buffer = false;
+    for (int i = 0; i < (int)args.size(); i++) {
+      if (args[i].is_nparray) {
+        has_buffer = true;
+        cudaMalloc(&device_buffers[i], args[i].size);
+        // replace host buffer with device buffer
+        host_buffers[i] = program.context.get_arg<void *>(i);
+        set_arg_nparray(i, (uint64)device_buffers[i], args[i].size);
+        cudaMemcpy(device_buffers[i], host_buffers[i], args[i].size,
+                   cudaMemcpyHostToDevice);
+      }
+    }
+    if (has_buffer)
+      cudaDeviceSynchronize();
+    auto c = program.get_context();
+    compiled(c);
+    if (has_buffer)
+      cudaDeviceSynchronize();
+    for (int i = 0; i < (int)args.size(); i++) {
+      if (args[i].is_nparray) {
+        cudaMemcpy(host_buffers[i], device_buffers[i], args[i].size,
+                   cudaMemcpyDeviceToHost);
+        cudaFree(device_buffers[i]);
+      }
+    }
+  } else {
+    auto c = program.get_context();
+    compiled(c);
+  }
   program.sync = false;
 }
 
@@ -100,10 +131,10 @@ void Kernel::set_arg_int(int i, int64 d) {
   }
 }
 
-void Kernel::set_arg_nparray(int i, uint64 d) {
+void Kernel::set_arg_nparray(int i, uint64 d, uint64 size) {
   TC_ASSERT_INFO(args[i].is_nparray,
                  "Setting numpy array to scalar argument is not allowed");
-  TC_INFO("Array address {}", d);
+  args[i].size = size;
   program.context.set_arg(i, d);
 }
 

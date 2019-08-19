@@ -240,7 +240,7 @@ def kernel(foo):
               t_kernel.set_arg_int(i, v)
             elif isinstance(v, np.ndarray):
               tmp = np.ascontiguousarray(v)
-              t_kernel.set_arg_nparray(i, int(tmp.ctypes.data))
+              t_kernel.set_arg_nparray(i, int(tmp.ctypes.data), tmp.nbytes)
             else:
               assert False, 'Argument to kernels must have type float/int'
           t_kernel()

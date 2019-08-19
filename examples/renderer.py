@@ -4,7 +4,7 @@ import cv2
 import math
 import random
 
-res = 512
+res = 1024
 num_spheres = 32
 color_buffer = ti.Vector(3, dt=ti.f32)
 sphere_pos = ti.Vector(3, dt=ti.f32)
@@ -13,12 +13,13 @@ render_voxel = True
 
 # ti.runtime.print_preprocessed = True
 # ti.cfg.print_ir = True
+ti.cfg.arch = ti.cuda
 grid_resolution = 16
 eps = 1e-4
 
 @ti.layout
 def buffers():
-  ti.root.dense(ti.ij, res).place(color_buffer)
+  ti.root.dense(ti.ij, res // 8).dense(ti.ij, 8).place(color_buffer)
   ti.root.dense(ti.i, num_spheres).place(sphere_pos)
 
 @ti.func
@@ -157,6 +158,7 @@ def out_dir(n):
 
 @ti.kernel
 def render():
+  ti.parallelize(6)
   for u, v in color_buffer(0):
     fov = 0.6
     pos = ti.Vector([0.5, 0.5, 3.0])

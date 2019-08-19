@@ -29,6 +29,7 @@ class Kernel {
   struct Arg {
     DataType dt;
     bool is_nparray;
+    std::size_t size;
   };
   std::vector<Arg> args;
   bool benchmarking;
@@ -57,7 +58,7 @@ class Kernel {
 
   void set_arg_int(int i, int64 d);
 
-  void set_arg_nparray(int i, uint64 ptr);
+  void set_arg_nparray(int i, uint64 ptr, uint64 size);
 };
 
 class Program {

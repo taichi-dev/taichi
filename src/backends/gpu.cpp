@@ -538,9 +538,15 @@ class GPUIRCodeGen : public IRVisitor {
   }
 
   void visit(ArgLoadStmt *stmt) {
-    emit("const {} {}({{context.get_arg<{}>({})}});",
-         stmt->ret_data_type_name(), stmt->raw_name(),
-         data_type_name(stmt->ret_type.data_type), stmt->arg_id);
+    if (stmt->is_ptr) {
+      auto dt = data_type_name(stmt->ret_type.data_type);
+      emit("const {} * {}(context.get_arg<{} *>({}));", dt,
+           stmt->raw_name(), dt, stmt->arg_id);
+    } else {
+      emit("const {} {}({{context.get_arg<{}>({})}});",
+           stmt->ret_data_type_name(), stmt->raw_name(),
+           data_type_name(stmt->ret_type.data_type), stmt->arg_id);
+    }
   }
 
   void visit(LocalLoadStmt *stmt) {
@@ -553,7 +559,15 @@ class GPUIRCodeGen : public IRVisitor {
     emit("{} = {};", stmt->ptr->raw_name(), stmt->data->raw_name());
   }
 
-  void visit(GlobalPtrStmt *stmt) {
+  void visit(ExternalPtrStmt *stmt) override {
+    TC_ASSERT(stmt->width() == 1);
+    TC_ASSERT(stmt->indices.size() == 1);
+    auto dt = stmt->ret_type.data_type;
+    emit("const {} *{}[1] = {{&{}[{}]}};", data_type_name(dt), stmt->raw_name(),
+         stmt->base_ptrs[0]->raw_name(), stmt->indices[0]->raw_name());
+  }
+
+  void visit(GlobalPtrStmt *stmt) override {
     auto snode = stmt->snodes[0];
     if (current_scratch_pads && current_scratch_pads->has(snode)) {
       return;

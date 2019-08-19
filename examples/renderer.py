@@ -3,7 +3,7 @@ import numpy as np
 import cv2
 import math
 import random
-from renderer_utils import copy, out_dir
+from renderer_utils import copy, out_dir, ray_aabb_intersection
 
 res = 1024
 num_spheres = 1024
@@ -154,6 +154,11 @@ def intersect_spheres(pos, d):
 
 @ti.func
 def dda_particle(pos, d):
+  bbox_min = ti.Vector([0.0, 0.0, 0.0])
+  bbox_max = ti.Vector([1.0, 1.0, 1.0])
+
+  inter, near, far = ray_aabb_intersection(bbox_min, bbox_max, pos, d)
+
   rinv = 1.0 / d
   rsign = ti.Vector([0, 0, 0])
   for i in ti.static(range(3)):
@@ -174,8 +179,8 @@ def dda_particle(pos, d):
   c = ti.Vector([0.0, 0.0, 0.0])
   while running:
     last_sample = ti.length(pid.parent(), (ipos[0], ipos[1], ipos[2]))
+    mini = (ipos - o + ti.Vector([0.5, 0.5, 0.5]) - rsign * 0.5) * rinv
     if last_sample > 0:
-      mini = (ipos - o + ti.Vector([0.5, 0.5, 0.5]) - rsign * 0.5) * rinv
       hit_distance = mini.max() * (1 / grid_res)
       hit_pos = pos + hit_distance * d
       running = 0
@@ -247,9 +252,7 @@ def render():
 def initialize_particle_grid():
   for p in particle_x(0):
     x = particle_x[p]
-
-    ipos = ti.Matrix.floor(x * particle_grid_res)
-    ti.print(ipos[0])
+    ipos = ti.Matrix.floor(x * particle_grid_res).cast(ti.i32)
     ti.append(pid.parent(), (ipos[0], ipos[1], ipos[2]), p)
 
 def main():

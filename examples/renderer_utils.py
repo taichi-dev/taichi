@@ -20,3 +20,27 @@ def out_dir(n):
   ay = ti.sqrt(r)
   ax = ti.sqrt(1 - r)
   return ax * (ti.cos(phi) * u + ti.sin(phi) * v) + ay * n
+
+@ti.func
+def ray_aabb_intersection(box_min, box_max, o, d):
+  intersect = 1
+
+  near_int = 1e10
+  far_int = -1e10
+
+  for i in ti.static(range(3)):
+    if d[i] == 0:
+      if o[i] < box_min[i] or o[i] > box_max[i]:
+        intersect = 0
+    else:
+      int1 = (box_min[i] - o[i]) / d[i]
+      int2 = (box_max[i] - o[i]) / d[i]
+      near_int = ti.max(int1, near_int)
+      near_int = ti.max(int2, near_int)
+      far_int = ti.min(int1, far_int)
+      far_int = ti.min(int2, far_int)
+
+  if near_int > far_int:
+    intersect = 0
+  return intersect, near_int, far_int
+

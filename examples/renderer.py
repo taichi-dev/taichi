@@ -3,6 +3,7 @@ import numpy as np
 import cv2
 import math
 import random
+from renderer_utils import copy, out_dir
 
 res = 1024
 num_spheres = 1024
@@ -12,20 +13,33 @@ inf = 1e10
 render_voxel = False
 max_ray_bounces = 1
 
+particle_x = ti.Vector(3, dt=ti.f32)
+pid = ti.var(ti.i32)
+
 # ti.runtime.print_preprocessed = True
 # ti.cfg.print_ir = True
 ti.cfg.arch = ti.cuda
 grid_resolution = 16
 eps = 1e-4
+particle_grid_res = 32
+max_num_particles_per_cell = 128
+max_num_particles = 32
+
 
 @ti.layout
 def buffers():
   ti.root.dense(ti.ij, res // 8).dense(ti.ij, 8).place(color_buffer)
   ti.root.dense(ti.i, num_spheres).place(sphere_pos)
+  ti.root.dense(ti.ijk, particle_grid_res).dynamic(ti.l,
+                                                   max_num_particles_per_cell).place(
+    pid)
+  ti.root.dense(ti.l, max_num_particles).place(particle_x)
+
 
 @ti.func
 def query_density_int(ipos):
   return ipos.min() % 3 == 0 and ipos.max() < grid_resolution
+
 
 @ti.func
 def voxel_color(pos):
@@ -88,6 +102,7 @@ def dda(pos, d):
 
   return normal, hit_pos, c
 
+
 # (T + x d)(T + x d) = r * r
 # T*T + 2Td x + x^2 = r * r
 # x^2 + 2Td x + (T * T - r * r) = 0
@@ -138,24 +153,60 @@ def intersect_spheres(pos, d):
 
 
 @ti.func
+def dda_particle(pos, d):
+  rinv = 1.0 / d
+  rsign = ti.Vector([0, 0, 0])
+  for i in ti.static(range(3)):
+    if d[i] > 0:
+      rsign[i] = 1
+    else:
+      rsign[i] = -1
+
+  grid_res = particle_grid_res
+
+  o = grid_res * pos
+  ipos = ti.Matrix.floor(o).cast(ti.i32)
+  dis = (ipos - o + 0.5 + rsign * 0.5) * rinv
+  running = 1
+  i = 0
+  normal = ti.Vector([0.0, 0.0, 0.0])
+  hit_pos = ti.Vector([0.0, 0.0, 0.0])
+  c = ti.Vector([0.0, 0.0, 0.0])
+  while running:
+    last_sample = ti.length(pid.parent(), (ipos[0], ipos[1], ipos[2]))
+    if last_sample > 0:
+      mini = (ipos - o + ti.Vector([0.5, 0.5, 0.5]) - rsign * 0.5) * rinv
+      hit_distance = mini.max() * (1 / grid_res)
+      hit_pos = pos + hit_distance * d
+      running = 0
+    else:
+      mm = ti.Vector([0, 0, 0])
+      if dis[0] <= dis[1] and dis[0] < dis[2]:
+        mm[0] = 1
+      elif dis[1] <= dis[0] and dis[1] <= dis[2]:
+        mm[1] = 1
+      else:
+        mm[2] = 1
+      dis += mm * rsign * rinv
+      ipos += mm * rsign
+      normal = -mm * rsign
+    i += 1
+    if i > grid_res * 10:
+      running = 0
+      normal = [0, 0, 0]
+    else:
+      c = voxel_color(hit_pos)
+
+  return normal, hit_pos, c
+
+
+@ti.func
 def next_hit(pos, d):
+  return dda_particle(pos, d)
   if ti.static(render_voxel):
     return dda(pos, d)
   else:
     return intersect_spheres(pos, d)
-
-@ti.func
-def out_dir(n):
-  u = ti.Vector([1.0, 0.0, 0.0])
-  if ti.abs(n[1]) < 1 - 1e-3:
-    u = ti.Matrix.normalized(ti.Matrix.cross(n, ti.Vector([0.0, 1.0, 0.0])))
-  v = ti.Matrix.cross(n, u)
-  phi = 2 * math.pi * ti.random(ti.f32)
-  r = ti.random(ti.f32)
-  ay = ti.sqrt(r)
-  ax = ti.sqrt(1 - r)
-  return ax * (ti.cos(phi) * u + ti.sin(phi) * v) + ay * n
-
 
 
 @ti.kernel
@@ -183,7 +234,7 @@ def render():
         pos = hit_pos + 1e-4 * d
         contrib *= c
         bounces += 1
-      else: # hit sky
+      else:  # hit sky
         depth = max_ray_bounces
         if bounces > 0:
           # if the ray directly hits sky, return pure white
@@ -193,18 +244,24 @@ def render():
 
 
 @ti.kernel
-def copy(img: np.ndarray):
-  for i, j in color_buffer(0):
-    coord = ((res - 1 - j) * res + i) * 3
-    for c in ti.static(range(3)):
-      img[coord + c] = color_buffer[i, j][2 - c]
+def initialize_particle_grid():
+  for p in particle_x(0):
+    x = particle_x[p]
 
+    ipos = ti.Matrix.floor(x * particle_grid_res)
+    ti.print(ipos[0])
+    ti.append(pid.parent(), (ipos[0], ipos[1], ipos[2]), p)
 
 def main():
-
   for i in range(num_spheres):
     for c in range(3):
       sphere_pos[i][c] = random.random()
+
+  for i in range(max_num_particles):
+    for c in range(3):
+      particle_x[i][c] = random.random()
+
+  initialize_particle_grid()
 
   for i in range(100000):
     render()

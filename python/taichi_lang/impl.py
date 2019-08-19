@@ -44,6 +44,8 @@ def expr_init(rhs):
 
 
 def make_expr_group(*exprs):
+  if len(exprs) == 1 and (isinstance(exprs[0], list) or isinstance(exprs[0], tuple)):
+    exprs = exprs[0]
   expr_group = taichi_lang_core.ExprGroup()
   for i in exprs:
     expr_group.push_back(Expr(i).ptr)

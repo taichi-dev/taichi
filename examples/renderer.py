@@ -10,7 +10,7 @@ color_buffer = ti.Vector(3, dt=ti.f32)
 sphere_pos = ti.Vector(3, dt=ti.f32)
 inf = 1e10
 render_voxel = False
-max_ray_bounces = 3
+max_ray_bounces = 1
 
 # ti.runtime.print_preprocessed = True
 # ti.cfg.print_ir = True
@@ -25,7 +25,7 @@ def buffers():
 
 @ti.func
 def query_density_int(ipos):
-  return ipos.min() % 3 == 0 and ipos.max() < 16
+  return ipos.min() % 3 == 0 and ipos.max() < grid_resolution
 
 @ti.func
 def voxel_color(pos):

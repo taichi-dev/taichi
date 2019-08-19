@@ -203,10 +203,10 @@ def main():
     l = forward()
     losses.append(l)
     grad = backward()
-    print('loss=', l, '   grad=', grad)
+    print('loss=', l, '   grad=', (grad[0], grad[1]))
     learning_rate = 10
-    init_v(0)[None] -= learning_rate * grad[0][0]
-    init_v(1)[None] -= learning_rate * grad[1][0]
+    init_v(0)[None] -= learning_rate * grad[0]
+    init_v(1)[None] -= learning_rate * grad[1]
 
     # visualize
     for s in range(0, steps - 1, 64):

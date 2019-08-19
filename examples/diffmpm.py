@@ -209,7 +209,7 @@ def main():
     init_v(1)[None] -= learning_rate * grad[1]
 
     # visualize
-    for s in range(0, steps - 1, 64):
+    for s in range(63, steps, 64):
       scale = 4
       img = np.zeros(shape=(scale * n_grid, scale * n_grid)) + 0.3
       total = [0, 0]

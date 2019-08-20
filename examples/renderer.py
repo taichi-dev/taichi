@@ -16,6 +16,7 @@ max_ray_depth = 4
 
 particle_x = ti.Vector(3, dt=ti.f32)
 particle_v = ti.Vector(3, dt=ti.f32)
+particle_color = ti.var(ti.i32)
 pid = ti.var(ti.i32)
 
 camera_pos = ti.Vector([0.5, 0.5, 2.0])
@@ -25,8 +26,8 @@ camera_pos = ti.Vector([0.5, 0.5, 2.0])
 ti.cfg.arch = ti.cuda
 grid_resolution = 16
 
-shutter_time = 0.05
-high_res = False
+shutter_time = 0.0
+high_res = True
 if high_res:
   sphere_radius = 0.0025
   particle_grid_res = 64
@@ -48,7 +49,8 @@ def buffers():
   ti.root.dense(ti.ijk, particle_grid_res).dynamic(ti.l,
                                                    max_num_particles_per_cell).place(
     pid)
-  ti.root.dense(ti.l, max_num_particles).place(particle_x, particle_v)
+  ti.root.dense(ti.l, max_num_particles).place(particle_x, particle_v,
+                                               particle_color)
 
 
 @ti.func
@@ -177,7 +179,6 @@ def dda_particle(eye_pos, d, t):
     o = grid_res * pos
     ipos = ti.Matrix.floor(o).cast(ti.i32)
     running = 1
-    c = [0.3, 0.4, 0.3]
     while running:
       inside = inside_particle_grid(ipos)
 
@@ -187,11 +188,14 @@ def dda_particle(eye_pos, d, t):
           p = pid[ipos[0], ipos[1], ipos[2], k]
           x = particle_x[p]
           v = particle_v[p]
+          color = particle_color[p]
           dist = intersect_sphere(eye_pos, d, x + t * v, sphere_radius)
           if dist < closest_intersection:
             closest_intersection = dist
             hit_pos = eye_pos + d * closest_intersection
             normal = ti.Matrix.normalized(hit_pos - x)
+            c = [color // 256 ** 2 / 255.0, color / 256 % 256 / 255.0,
+                 color % 256 / 255.0]
       else:
         running = 0
         normal = [0, 0, 0]
@@ -232,7 +236,7 @@ def render():
     d = ti.Vector([fov * (u + ti.random(ti.f32)) / (res / 2) - fov - 1e-3,
                    fov * (v + ti.random(ti.f32)) / (res / 2) - fov - 1e-3,
                    -1.0])
-    t = ti.random(ti.f32) * shutter_time
+    t = ti.min(1, ti.random(ti.f32) * 2) * shutter_time
 
     contrib = ti.Vector([1.0, 1.0, 1.0])
 
@@ -291,16 +295,19 @@ def main():
       sphere_pos[i][c] = random.random()
 
   np_x = np.random.rand(max_num_particles * 6).astype(np.float32)
+  np_c = np.random.randint(0, 256 ** 3, max_num_particles,
+                           dtype=np.int32).astype(np.float32)
 
   @ti.kernel
-  def initialize_particle_x(x: np.ndarray):
+  def initialize_particle_x(x: np.ndarray, color: np.ndarray):
     for i in range(max_num_particles):
       for c in ti.static(range(3)):
         particle_x[i][c] = x[i * 6 + c]
       for c in ti.static(range(3)):
         particle_v[i][c] = x[i * 6 + 3 + c] - 0.5
+      particle_color[i] = ti.cast(color[i], ti.i32)
 
-  initialize_particle_x(np_x)
+  initialize_particle_x(np_x, np_c)
   initialize_particle_grid()
 
   last_t = 0

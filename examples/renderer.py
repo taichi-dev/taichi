@@ -153,54 +153,58 @@ def intersect_spheres(pos, d):
 
 
 @ti.func
-def dda_particle(pos, d):
+def dda_particle(eye_pos, d):
   bbox_min = ti.Vector([0.0, 0.0, 0.0])
   bbox_max = ti.Vector([1.0, 1.0, 1.0])
 
-  inter, near, far = ray_aabb_intersection(bbox_min, bbox_max, pos, d)
-
-  rinv = 1.0 / d
-  rsign = ti.Vector([0, 0, 0])
-  for i in ti.static(range(3)):
-    if d[i] > 0:
-      rsign[i] = 1
-    else:
-      rsign[i] = -1
-
-  grid_res = particle_grid_res
-
-  o = grid_res * pos
-  ipos = ti.Matrix.floor(o).cast(ti.i32)
-  dis = (ipos - o + 0.5 + rsign * 0.5) * rinv
-  running = 1
-  i = 0
   normal = ti.Vector([0.0, 0.0, 0.0])
   hit_pos = ti.Vector([0.0, 0.0, 0.0])
   c = ti.Vector([0.0, 0.0, 0.0])
-  while running:
-    last_sample = ti.length(pid.parent(), (ipos[0], ipos[1], ipos[2]))
-    mini = (ipos - o + ti.Vector([0.5, 0.5, 0.5]) - rsign * 0.5) * rinv
-    if last_sample > 0:
-      hit_distance = mini.max() * (1 / grid_res)
-      hit_pos = pos + hit_distance * d
-      running = 0
-    else:
-      mm = ti.Vector([0, 0, 0])
-      if dis[0] <= dis[1] and dis[0] < dis[2]:
-        mm[0] = 1
-      elif dis[1] <= dis[0] and dis[1] <= dis[2]:
-        mm[1] = 1
+
+  inter, near, far = ray_aabb_intersection(bbox_min, bbox_max, eye_pos, d)
+
+  if inter:
+    pos = eye_pos
+
+    rinv = 1.0 / d
+    rsign = ti.Vector([0, 0, 0])
+    for i in ti.static(range(3)):
+      if d[i] > 0:
+        rsign[i] = 1
       else:
-        mm[2] = 1
-      dis += mm * rsign * rinv
-      ipos += mm * rsign
-      normal = -mm * rsign
-    i += 1
-    if i > grid_res * 10:
-      running = 0
-      normal = [0, 0, 0]
-    else:
-      c = voxel_color(hit_pos)
+        rsign[i] = -1
+
+    grid_res = particle_grid_res
+
+    o = grid_res * pos
+    ipos = ti.Matrix.floor(o).cast(ti.i32)
+    dis = (ipos - o + 0.5 + rsign * 0.5) * rinv
+    running = 1
+    i = 0
+    while running:
+      last_sample = ti.length(pid.parent(), (ipos[0], ipos[1], ipos[2]))
+      mini = (ipos - o + ti.Vector([0.5, 0.5, 0.5]) - rsign * 0.5) * rinv
+      if last_sample > 0:
+        hit_distance = mini.max() * (1 / grid_res)
+        hit_pos = pos + hit_distance * d
+        running = 0
+      else:
+        mm = ti.Vector([0, 0, 0])
+        if dis[0] <= dis[1] and dis[0] < dis[2]:
+          mm[0] = 1
+        elif dis[1] <= dis[0] and dis[1] <= dis[2]:
+          mm[1] = 1
+        else:
+          mm[2] = 1
+        dis += mm * rsign * rinv
+        ipos += mm * rsign
+        normal = -mm * rsign
+      i += 1
+      if i > grid_res * 10:
+        running = 0
+        normal = [0, 0, 0]
+      else:
+        c = voxel_color(hit_pos)
 
   return normal, hit_pos, c
 
@@ -254,6 +258,7 @@ def initialize_particle_grid():
     x = particle_x[p]
     ipos = ti.Matrix.floor(x * particle_grid_res).cast(ti.i32)
     ti.append(pid.parent(), (ipos[0], ipos[1], ipos[2]), p)
+
 
 def main():
   for i in range(num_spheres):

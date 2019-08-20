@@ -331,7 +331,10 @@ class Matrix:
 
   def norm(self, l=2):
     assert l == 2
-    return impl.sqrt(impl.sqr(self).sum())
+    return impl.sqrt(self.norm_sqr())
+
+  def norm_sqr(self):
+    return impl.sqr(self).sum()
 
   def max(self):
     ret = self.entries[0]

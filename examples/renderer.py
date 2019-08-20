@@ -5,7 +5,7 @@ import math
 import time
 import random
 from renderer_utils import copy, out_dir, ray_aabb_intersection, inf, eps, \
-  intersect_sphere
+  intersect_sphere, sphere_aabb_intersect
 
 res = 1024
 num_spheres = 1024
@@ -254,8 +254,12 @@ def initialize_particle_grid():
       j = nei // 3 % 3 - 1
       k = nei % 3 - 1
       offset = ti.Vector([i, j, k])
-      if inside_particle_grid(ipos + offset):
-        ti.append(pid.parent(), ipos + offset, p)
+      box_ipos = ipos + offset
+      if inside_particle_grid(box_ipos):
+        box_min = box_ipos * (1 / particle_grid_res)
+        box_max = (box_ipos + ti.Vector([1, 1, 1])) * (1 / particle_grid_res)
+        if sphere_aabb_intersect(box_min, box_max, x, sphere_radius):
+          ti.append(pid.parent(), box_ipos, p)
 
 
 def main():

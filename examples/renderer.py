@@ -19,7 +19,7 @@ pid = ti.var(ti.i32)
 # ti.cfg.print_ir = True
 ti.cfg.arch = ti.cuda
 grid_resolution = 16
-particle_grid_res = 32
+particle_grid_res = 8
 max_num_particles_per_cell = 128
 max_num_particles = 64
 
@@ -161,7 +161,6 @@ def dda_particle(eye_pos, d):
         0 <= ipos[0] and ipos[0] < grid_res and 0 <= ipos[1] and ipos[
           1] < grid_res and 0 <= ipos[2] and ipos[2] < grid_res
 
-      '''
       if inside:
         num_particles = ti.length(pid.parent(), (ipos[0], ipos[1], ipos[2]))
         for k in range(num_particles):
@@ -172,15 +171,10 @@ def dda_particle(eye_pos, d):
             closest_intersection = dist
             hit_pos = pos + dist * closest_intersection
             normal = ti.Matrix.normalized(hit_pos - x)
-      '''
-      last_sample = 0
-      if inside:
-        last_sample = ti.length(pid.parent(), (ipos[0], ipos[1], ipos[2]))
 
-      if last_sample > 0:
+      if closest_intersection < inf:
         mini = (ipos - o + ti.Vector([0.5, 0.5, 0.5]) - rsign * 0.5) * rinv
         hit_distance = mini.max() * (1 / grid_res)
-        hit_pos = pos + hit_distance * d
         running = 0
       else:
         mm = ti.Vector([0, 0, 0])
@@ -198,7 +192,7 @@ def dda_particle(eye_pos, d):
         running = 0
         normal = [0, 0, 0]
       else:
-        c = voxel_color(hit_pos)
+        c = [0.1, 0.1, 0.1]
 
   return normal, hit_pos, c
 

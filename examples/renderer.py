@@ -125,6 +125,12 @@ def intersect_spheres(pos, d):
 
 
 @ti.func
+def inside_particle_grid(ipos):
+  grid_res = particle_grid_res
+  return 0 <= ipos[0] and ipos[0] < grid_res and 0 <= ipos[1] and ipos[
+    1] < grid_res and 0 <= ipos[2] and ipos[2] < grid_res
+
+@ti.func
 def dda_particle(eye_pos, d):
   grid_res = particle_grid_res
 
@@ -157,9 +163,7 @@ def dda_particle(eye_pos, d):
     i = 0
     c = [0.1, 0.1, 0.1]
     while running:
-      inside = \
-        0 <= ipos[0] and ipos[0] < grid_res and 0 <= ipos[1] and ipos[
-          1] < grid_res and 0 <= ipos[2] and ipos[2] < grid_res
+      inside = inside_particle_grid(ipos)
 
       if inside:
         num_particles = ti.length(pid.parent(), ipos)
@@ -241,6 +245,10 @@ def initialize_particle_grid():
   for p in particle_x(0):
     x = particle_x[p]
     ipos = ti.Matrix.floor(x * particle_grid_res).cast(ti.i32)
+    for nei in range(27):
+      i = nei // 9 - 1
+      j = nei // 3 % 3 - 1
+      k = nei % 3 - 1
     ti.append(pid.parent(), ipos, p)
 
 

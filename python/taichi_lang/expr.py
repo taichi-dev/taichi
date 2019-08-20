@@ -100,6 +100,9 @@ class Expr:
     other = Expr(other)
     return Expr(taichi_lang_core.expr_div(other.ptr, self.ptr))
 
+  __floordiv__ = __truediv__
+  __rfloordiv__ = __rtruediv__
+
   def __le__(self, other):
     other = Expr(other)
     return Expr(taichi_lang_core.expr_cmp_le(self.ptr, other.ptr))

@@ -24,8 +24,8 @@ camera_pos = ti.Vector([0.5, 0.5, 2.0])
 # ti.cfg.print_ir = True
 ti.cfg.arch = ti.cuda
 grid_resolution = 16
-particle_grid_res = 32
-max_num_particles_per_cell = 128
+particle_grid_res = 16
+max_num_particles_per_cell = 512
 max_num_particles = 8192
 
 
@@ -146,6 +146,7 @@ def dda_particle(eye_pos, d):
   c = ti.Vector([0.0, 0.0, 0.0])
 
   inter, near, far = ray_aabb_intersection(bbox_min, bbox_max, eye_pos, d)
+  near = ti.max(0, near)
 
   closest_intersection = inf
 
@@ -164,7 +165,6 @@ def dda_particle(eye_pos, d):
     ipos = ti.Matrix.floor(o).cast(ti.i32)
     dis = (ipos - o + 0.5 + rsign * 0.5) * rinv
     running = 1
-    i = 0
     c = [0.2, 0.3, 0.3]
     while running:
       inside = inside_particle_grid(ipos)
@@ -179,10 +179,14 @@ def dda_particle(eye_pos, d):
             closest_intersection = dist
             hit_pos = eye_pos + d * closest_intersection
             normal = ti.Matrix.normalized(hit_pos - x)
+      else:
+        running = 0
+        normal = [0, 0, 0]
 
       if closest_intersection < inf:
         running = 0
       else:
+        # hits nothing. Continue ray marching
         mm = ti.Vector([0, 0, 0])
         if dis[0] <= dis[1] and dis[0] < dis[2]:
           mm[0] = 1
@@ -192,17 +196,14 @@ def dda_particle(eye_pos, d):
           mm[2] = 1
         dis += mm * rsign * rinv
         ipos += mm * rsign
-        normal = -mm * rsign
-      i += 1
-      if not inside:
-        running = 0
-        normal = [0, 0, 0]
 
   return normal, hit_pos, c
 
 
 @ti.func
-def next_hit(pos, d):
+def next_hit(pos_, d_):
+  pos = pos_
+  d = d_
   return dda_particle(pos, d)
   if ti.static(render_voxel):
     return dda(pos, d)
@@ -267,9 +268,11 @@ def main():
     for c in range(3):
       sphere_pos[i][c] = random.random()
 
+  t = time.time()
   for i in range(max_num_particles):
     for c in range(3):
       particle_x[i][c] = random.random() * 0.9 + 0.05
+  print(time.time() - t)
 
   initialize_particle_grid()
 

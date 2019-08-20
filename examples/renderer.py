@@ -249,7 +249,9 @@ def initialize_particle_grid():
       i = nei // 9 - 1
       j = nei // 3 % 3 - 1
       k = nei % 3 - 1
-    ti.append(pid.parent(), ipos, p)
+      offset = ti.Vector([i, j, k])
+      if inside_particle_grid(ipos + offset):
+        ti.append(pid.parent(), ipos + offset, p)
 
 
 def main():

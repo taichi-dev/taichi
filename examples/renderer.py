@@ -17,7 +17,6 @@ max_ray_depth = 4
 particle_x = ti.Vector(3, dt=ti.f32)
 pid = ti.var(ti.i32)
 
-sphere_radius = 0.0025
 camera_pos = ti.Vector([0.5, 0.5, 2.0])
 
 # ti.runtime.print_preprocessed = True
@@ -25,9 +24,19 @@ camera_pos = ti.Vector([0.5, 0.5, 2.0])
 ti.cfg.arch = ti.cuda
 grid_resolution = 16
 
-particle_grid_res = 64
-max_num_particles_per_cell = 256
-max_num_particles = 8 * 1024 ** 2
+high_res = False
+if high_res:
+  sphere_radius = 0.0025
+  particle_grid_res = 64
+  max_num_particles_per_cell = 512
+  max_num_particles = 1024 * 1024 * 8
+else:
+  sphere_radius = 0.02
+  particle_grid_res = 8
+  max_num_particles_per_cell = 32
+  max_num_particles = 128
+
+assert sphere_radius * 2 * particle_grid_res < 1
 
 
 @ti.layout
@@ -136,7 +145,7 @@ def inside_particle_grid(ipos):
     1] < grid_res and 0 <= ipos[2] and ipos[2] < grid_res
 
 @ti.func
-def dda_particle(eye_pos, d):
+def dda_particle(eye_pos, d, t):
   grid_res = particle_grid_res
 
   bbox_min = ti.Vector([0.0, 0.0, 0.0])
@@ -174,7 +183,7 @@ def dda_particle(eye_pos, d):
         for k in range(num_particles):
           p = pid[ipos[0], ipos[1], ipos[2], k]
           x = particle_x[p]
-          dist = intersect_sphere(eye_pos, d, x, sphere_radius)
+          dist = intersect_sphere(eye_pos, d, x + 0.01 * t * x, sphere_radius)
           if dist < closest_intersection:
             closest_intersection = dist
             hit_pos = eye_pos + d * closest_intersection
@@ -202,10 +211,8 @@ def dda_particle(eye_pos, d):
 
 
 @ti.func
-def next_hit(pos_, d_):
-  pos = pos_
-  d = d_
-  return dda_particle(pos, d)
+def next_hit(pos, d, t):
+  return dda_particle(pos, d, t)
   if ti.static(render_voxel):
     return dda(pos, d)
   else:
@@ -221,6 +228,7 @@ def render():
     d = ti.Vector([fov * (u + ti.random(ti.f32)) / (res / 2) - fov - 1e-3,
                    fov * (v + ti.random(ti.f32)) / (res / 2) - fov - 1e-3,
                    -1.0])
+    t = ti.random(ti.f32)
 
     contrib = ti.Vector([1.0, 1.0, 1.0])
 
@@ -231,7 +239,7 @@ def render():
     ray_depth = 0
 
     while depth < max_ray_depth:
-      normal, hit_pos, c = next_hit(pos, d)
+      normal, hit_pos, c = next_hit(pos, d, t)
       depth += 1
       ray_depth = depth
       if normal.norm() != 0:
@@ -245,6 +253,8 @@ def render():
     if hit_sky:
       if ray_depth != 1:
         contrib *= ti.max(d[1], 0.05)
+      else:
+        contrib *= 0
     else:
       contrib *= 0
 
@@ -283,14 +293,6 @@ def main():
         particle_x[i][c] = x[i * 3 + c]
 
   initialize_particle_x(np_x)
-  '''
-  t = time.time()
-  for i in range(max_num_particles):
-    for c in range(3):
-      particle_x[i][c] = random.random() * 0.9 + 0.05
-  print(time.time() - t)
-  '''
-
   initialize_particle_grid()
 
 

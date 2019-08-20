@@ -326,6 +326,9 @@ def logical_and(a, b):
 def logical_or(a, b):
   return a.logical_or(b)
 
+def logical_not(a):
+  return a.logical_not()
+
 
 unary_ops = []
 

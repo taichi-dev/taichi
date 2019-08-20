@@ -272,19 +272,36 @@ if 1:
       node.args.args = []
     return node
 
+  def visit_UnaryOp(self, node):
+    self.generic_visit(node)
+    if isinstance(node.op, ast.Not):
+      # Python does not support overloading logical and & or
+      new_node = self.parse_expr('ti.logical_not(0)')
+      new_node.args[0] = node.operand
+      node = new_node
+    return node
+
   def visit_BoolOp(self, node):
     self.generic_visit(node)
-    if isinstance(node.op, ast.And):
-      # Python does not support overloading logical and & or
-      new_node = self.parse_expr('ti.logical_and(0, 0)')
-      new_node.args[0] = node.values[0]
-      new_node.args[1] = node.values[1]
-      node = new_node
-    elif isinstance(node.op, ast.Or):
-      # Python does not support overloading logical and & or
-      new_node = self.parse_expr('ti.logical_or(0, 0)')
-      new_node.args[0] = node.values[0]
-      new_node.args[1] = node.values[1]
-      node = new_node
 
-    return node
+    def make_node(a, b, token):
+      new_node = self.parse_expr('ti.logical_{}(0, 0)'.format(token))
+      new_node.args[0] = a
+      new_node.args[1] = b
+      return new_node
+
+    token = ''
+    if isinstance(node.op, ast.And):
+      token = 'and'
+    elif isinstance(node.op, ast.Or):
+      token = 'or'
+    else:
+      print(node.op)
+      print("BoolOp above not implemented")
+      exit(0)
+
+    new_node = node.values[0]
+    for i in range(1, len(node.values)):
+      new_node = make_node(new_node, node.values[i], token)
+
+    return new_node

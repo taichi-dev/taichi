@@ -136,11 +136,15 @@ class Expr:
     item = Expr(item)
     return Expr(taichi_lang_core.expr_bit_or(self.ptr, item.ptr))
 
+
   def logical_and(self, item):
     return self & item
 
   def logical_or(self, item):
     return self | item
+
+  def logical_not(self):
+    return Expr(taichi_lang_core.expr_bit_not(self.ptr), tb=self.stack_info())
 
   def assign(self, other):
     taichi_lang_core.expr_assign(self.ptr, Expr(other).ptr, self.stack_info())

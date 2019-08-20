@@ -3,7 +3,7 @@ import numpy as np
 import cv2
 import math
 import random
-from renderer_utils import copy, out_dir, ray_aabb_intersection, inf, eps, sphere_intersect
+from renderer_utils import copy, out_dir, ray_aabb_intersection, inf, eps, intersect_sphere
 
 res = 1024
 num_spheres = 1024
@@ -15,7 +15,7 @@ max_ray_bounces = 1
 particle_x = ti.Vector(3, dt=ti.f32)
 pid = ti.var(ti.i32)
 
-# ti.runtime.print_preprocessed = True
+ti.runtime.print_preprocessed = True
 # ti.cfg.print_ir = True
 ti.cfg.arch = ti.cuda
 grid_resolution = 16
@@ -156,12 +156,13 @@ def dda_particle(eye_pos, d):
     running = 1
     i = 0
     while running:
+      last_sample = 0
       inside = \
         0 <= ipos[0] and ipos[0] < grid_res and 0 <= ipos[1] and ipos[
           1] < grid_res and 0 <= ipos[2] and ipos[2] < grid_res
-      last_sample = 0
+
       if inside:
-        num_particles = ti.length(ti.length(pid.parent(), (ipos[0], ipos[1], ipos[2])))
+        num_particles = ti.length(pid.parent(), (ipos[0], ipos[1], ipos[2]))
         for k in range(num_particles):
           p = pid[ipos[0], ipos[1], ipos[2], k]
           x = particle_x[p]

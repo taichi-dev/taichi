@@ -12,21 +12,22 @@ num_spheres = 1024
 color_buffer = ti.Vector(3, dt=ti.f32)
 sphere_pos = ti.Vector(3, dt=ti.f32)
 render_voxel = False
-max_ray_bounces = 3
+max_ray_depth = 4
 
 particle_x = ti.Vector(3, dt=ti.f32)
 pid = ti.var(ti.i32)
 
-sphere_radius = 0.02
+sphere_radius = 0.005
 camera_pos = ti.Vector([0.5, 0.5, 2.0])
 
 # ti.runtime.print_preprocessed = True
 # ti.cfg.print_ir = True
 ti.cfg.arch = ti.cuda
 grid_resolution = 16
-particle_grid_res = 16
-max_num_particles_per_cell = 128
-max_num_particles = 8192
+
+particle_grid_res = 64
+max_num_particles_per_cell = 512
+max_num_particles = 1024 ** 2
 
 
 @ti.layout
@@ -164,7 +165,7 @@ def dda_particle(eye_pos, d):
     o = grid_res * pos
     ipos = ti.Matrix.floor(o).cast(ti.i32)
     running = 1
-    c = [0.2, 0.3, 0.3]
+    c = [0.3, 0.4, 0.3]
     while running:
       inside = inside_particle_grid(ipos)
 
@@ -226,20 +227,26 @@ def render():
     d = ti.Matrix.normalized(d)
 
     depth = 0
+    hit_sky = 1
+    ray_depth = 0
 
-    while depth < max_ray_bounces:
+    while depth < max_ray_depth:
       normal, hit_pos, c = next_hit(pos, d)
-
+      depth += 1
+      ray_depth = depth
       if normal.norm() != 0:
         d = out_dir(normal)
         pos = hit_pos + 1e-4 * d
         contrib *= c
-        depth += 1
       else:  # hit sky
-        if depth == 0:
-          # if the ray directly hits sky, return pure white
-          contrib *= ti.max(d[1], 0.05)
-        depth = max_ray_bounces
+        hit_sky = 1
+        depth = max_ray_depth
+
+    if hit_sky:
+      if ray_depth != 1:
+        contrib *= ti.max(d[1], 0.05)
+    else:
+      contrib *= 0
 
     color_buffer[u, v] += contrib
 

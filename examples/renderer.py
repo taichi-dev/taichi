@@ -3,13 +3,12 @@ import numpy as np
 import cv2
 import math
 import random
-from renderer_utils import copy, out_dir, ray_aabb_intersection
+from renderer_utils import copy, out_dir, ray_aabb_intersection, inf, eps, sphere_intersect
 
 res = 1024
 num_spheres = 1024
 color_buffer = ti.Vector(3, dt=ti.f32)
 sphere_pos = ti.Vector(3, dt=ti.f32)
-inf = 1e10
 render_voxel = False
 max_ray_bounces = 1
 
@@ -20,7 +19,6 @@ pid = ti.var(ti.i32)
 # ti.cfg.print_ir = True
 ti.cfg.arch = ti.cuda
 grid_resolution = 16
-eps = 1e-4
 particle_grid_res = 32
 max_num_particles_per_cell = 128
 max_num_particles = 32
@@ -103,32 +101,6 @@ def dda(pos, d):
   return normal, hit_pos, c
 
 
-# (T + x d)(T + x d) = r * r
-# T*T + 2Td x + x^2 = r * r
-# x^2 + 2Td x + (T * T - r * r) = 0
-
-@ti.func
-def intersect_sphere(pos, d, center):
-  radius = 0.05
-  T = pos - center
-  A = 1
-  B = 2 * T.dot(d)
-  C = T.dot(T) - radius * radius
-  delta = B * B - 4 * A * C
-  dist = inf
-
-  if delta > 0:
-    sdelta = ti.sqrt(delta)
-    ratio = 0.5 / A
-    ret1 = ratio * (-B - sdelta)
-    if ret1 > eps:
-      dist = ret1
-    else:
-      ret2 = ratio * (-B + sdelta)
-      if ret2 > eps:
-        dist = ret2
-  return dist
-
 
 @ti.func
 def intersect_spheres(pos, d):
@@ -154,6 +126,8 @@ def intersect_spheres(pos, d):
 
 @ti.func
 def dda_particle(eye_pos, d):
+  grid_res = particle_grid_res
+
   bbox_min = ti.Vector([0.0, 0.0, 0.0])
   bbox_max = ti.Vector([1.0, 1.0, 1.0])
 
@@ -163,8 +137,10 @@ def dda_particle(eye_pos, d):
 
   inter, near, far = ray_aabb_intersection(bbox_min, bbox_max, eye_pos, d)
 
+  closest_intersection = inf
+
   if inter:
-    pos = eye_pos
+    pos = eye_pos + d * (near + eps)
 
     rinv = 1.0 / d
     rsign = ti.Vector([0, 0, 0])
@@ -174,17 +150,29 @@ def dda_particle(eye_pos, d):
       else:
         rsign[i] = -1
 
-    grid_res = particle_grid_res
-
     o = grid_res * pos
     ipos = ti.Matrix.floor(o).cast(ti.i32)
     dis = (ipos - o + 0.5 + rsign * 0.5) * rinv
     running = 1
     i = 0
     while running:
-      last_sample = ti.length(pid.parent(), (ipos[0], ipos[1], ipos[2]))
-      mini = (ipos - o + ti.Vector([0.5, 0.5, 0.5]) - rsign * 0.5) * rinv
+      inside = \
+        0 <= ipos[0] and ipos[0] < grid_res and 0 <= ipos[1] and ipos[
+          1] < grid_res and 0 <= ipos[2] and ipos[2] < grid_res
+      last_sample = 0
+      if inside:
+        num_particles = ti.length(ti.length(pid.parent(), (ipos[0], ipos[1], ipos[2])))
+        for k in range(num_particles):
+          p = pid[ipos[0], ipos[1], ipos[2], k]
+          x = particle_x[p]
+          d = intersect_sphere(eye_pos, d, x, 0.05)
+          if d < closest_intersection:
+            closest_intersection = d
+            hit_pos = pos + d * closest_intersection
+            normal = ti.Matrix.normalized(hit_pos - x)
+
       if last_sample > 0:
+        mini = (ipos - o + ti.Vector([0.5, 0.5, 0.5]) - rsign * 0.5) * rinv
         hit_distance = mini.max() * (1 / grid_res)
         hit_pos = pos + hit_distance * d
         running = 0
@@ -200,7 +188,7 @@ def dda_particle(eye_pos, d):
         ipos += mm * rsign
         normal = -mm * rsign
       i += 1
-      if i > grid_res * 10:
+      if not inside:
         running = 0
         normal = [0, 0, 0]
       else:

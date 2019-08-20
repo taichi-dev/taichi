@@ -2,6 +2,9 @@ import taichi_lang as ti
 import numpy as np
 import math
 
+eps = 1e-4
+inf = 1e10
+
 @ti.kernel
 def copy(img: np.ndarray):
   for i, j in color_buffer(0):
@@ -25,8 +28,8 @@ def out_dir(n):
 def ray_aabb_intersection(box_min, box_max, o, d):
   intersect = 1
 
-  near_int = -1e10
-  far_int = 1e10
+  near_int = -inf
+  far_int = inf
 
   for i in ti.static(range(3)):
     if d[i] == 0:
@@ -46,4 +49,30 @@ def ray_aabb_intersection(box_min, box_max, o, d):
   if near_int > far_int:
     intersect = 0
   return intersect, near_int, far_int
+
+
+# (T + x d)(T + x d) = r * r
+# T*T + 2Td x + x^2 = r * r
+# x^2 + 2Td x + (T * T - r * r) = 0
+
+@ti.func
+def intersect_sphere(pos, d, center, radius):
+  T = pos - center
+  A = 1
+  B = 2 * T.dot(d)
+  C = T.dot(T) - radius * radius
+  delta = B * B - 4 * A * C
+  dist = inf
+
+  if delta > 0:
+    sdelta = ti.sqrt(delta)
+    ratio = 0.5 / A
+    ret1 = ratio * (-B - sdelta)
+    if ret1 > eps:
+      dist = ret1
+    else:
+      ret2 = ratio * (-B + sdelta)
+      if ret2 > eps:
+        dist = ret2
+  return dist
 

@@ -3,7 +3,8 @@ import numpy as np
 import cv2
 import math
 import random
-from renderer_utils import copy, out_dir, ray_aabb_intersection, inf, eps, intersect_sphere
+from renderer_utils import copy, out_dir, ray_aabb_intersection, inf, eps, \
+  intersect_sphere
 
 res = 1024
 num_spheres = 1024
@@ -101,7 +102,6 @@ def dda(pos, d):
   return normal, hit_pos, c
 
 
-
 @ti.func
 def intersect_spheres(pos, d):
   normal = ti.Vector([0.0, 0.0, 0.0])
@@ -157,7 +157,6 @@ def dda_particle(eye_pos, d):
     i = 0
     c = [0.1, 0.1, 0.1]
     while running:
-      last_sample = 0
       inside = \
         0 <= ipos[0] and ipos[0] < grid_res and 0 <= ipos[1] and ipos[
           1] < grid_res and 0 <= ipos[2] and ipos[2] < grid_res
@@ -170,7 +169,7 @@ def dda_particle(eye_pos, d):
           dist = intersect_sphere(eye_pos, d, x, 0.05)
           if dist < closest_intersection:
             closest_intersection = dist
-            hit_pos = pos + dist * closest_intersection
+            hit_pos = eye_pos + d * closest_intersection
             normal = ti.Matrix.normalized(hit_pos - x)
 
       if closest_intersection < inf:

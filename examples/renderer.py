@@ -15,13 +15,13 @@ max_ray_bounces = 1
 particle_x = ti.Vector(3, dt=ti.f32)
 pid = ti.var(ti.i32)
 
-ti.runtime.print_preprocessed = True
+# ti.runtime.print_preprocessed = True
 # ti.cfg.print_ir = True
 ti.cfg.arch = ti.cuda
 grid_resolution = 16
 particle_grid_res = 32
 max_num_particles_per_cell = 128
-max_num_particles = 32
+max_num_particles = 64
 
 
 @ti.layout
@@ -161,6 +161,7 @@ def dda_particle(eye_pos, d):
         0 <= ipos[0] and ipos[0] < grid_res and 0 <= ipos[1] and ipos[
           1] < grid_res and 0 <= ipos[2] and ipos[2] < grid_res
 
+      '''
       if inside:
         num_particles = ti.length(pid.parent(), (ipos[0], ipos[1], ipos[2]))
         for k in range(num_particles):
@@ -171,6 +172,10 @@ def dda_particle(eye_pos, d):
             closest_intersection = dist
             hit_pos = pos + dist * closest_intersection
             normal = ti.Matrix.normalized(hit_pos - x)
+      '''
+      last_sample = 0
+      if inside:
+        last_sample = ti.length(pid.parent(), (ipos[0], ipos[1], ipos[2]))
 
       if last_sample > 0:
         mini = (ipos - o + ti.Vector([0.5, 0.5, 0.5]) - rsign * 0.5) * rinv

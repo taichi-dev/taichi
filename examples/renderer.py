@@ -166,16 +166,15 @@ def dda_particle(eye_pos, d):
         for k in range(num_particles):
           p = pid[ipos[0], ipos[1], ipos[2], k]
           x = particle_x[p]
-          d = intersect_sphere(eye_pos, d, x, 0.05)
-          if d < closest_intersection:
-            closest_intersection = d
-            hit_pos = pos + d * closest_intersection
+          dist = intersect_sphere(eye_pos, d, x, 0.05)
+          if dist < closest_intersection:
+            closest_intersection = dist
+            hit_pos = pos + dist * closest_intersection
             normal = ti.Matrix.normalized(hit_pos - x)
 
       if last_sample > 0:
         mini = (ipos - o + ti.Vector([0.5, 0.5, 0.5]) - rsign * 0.5) * rinv
         hit_distance = mini.max() * (1 / grid_res)
-        # this is causing segfault
         hit_pos = pos + hit_distance * d
         running = 0
       else:

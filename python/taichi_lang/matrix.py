@@ -53,6 +53,8 @@ class Matrix:
     return results[0]
 
   def assign(self, other):
+    if isinstance(other, expr.Expr):
+      raise Exception('Cannot assign scalar expr to Matrix/Vector.')
     if not isinstance(other, Matrix):
       other = Matrix(other)
     assert other.n == self.n and other.m == self.m

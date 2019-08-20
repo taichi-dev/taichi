@@ -5,7 +5,7 @@ import math
 import time
 import random
 from renderer_utils import copy, out_dir, ray_aabb_intersection, inf, eps, \
-  intersect_sphere, sphere_aabb_intersect
+  intersect_sphere, sphere_aabb_intersect_motion
 
 res = 1024
 num_spheres = 1024
@@ -15,6 +15,7 @@ render_voxel = False
 max_ray_depth = 4
 
 particle_x = ti.Vector(3, dt=ti.f32)
+particle_v = ti.Vector(3, dt=ti.f32)
 pid = ti.var(ti.i32)
 
 camera_pos = ti.Vector([0.5, 0.5, 2.0])
@@ -24,6 +25,7 @@ camera_pos = ti.Vector([0.5, 0.5, 2.0])
 ti.cfg.arch = ti.cuda
 grid_resolution = 16
 
+shutter_time = 0.05
 high_res = False
 if high_res:
   sphere_radius = 0.0025
@@ -46,7 +48,7 @@ def buffers():
   ti.root.dense(ti.ijk, particle_grid_res).dynamic(ti.l,
                                                    max_num_particles_per_cell).place(
     pid)
-  ti.root.dense(ti.l, max_num_particles).place(particle_x)
+  ti.root.dense(ti.l, max_num_particles).place(particle_x, particle_v)
 
 
 @ti.func
@@ -144,6 +146,7 @@ def inside_particle_grid(ipos):
   return 0 <= ipos[0] and ipos[0] < grid_res and 0 <= ipos[1] and ipos[
     1] < grid_res and 0 <= ipos[2] and ipos[2] < grid_res
 
+
 @ti.func
 def dda_particle(eye_pos, d, t):
   grid_res = particle_grid_res
@@ -183,7 +186,8 @@ def dda_particle(eye_pos, d, t):
         for k in range(num_particles):
           p = pid[ipos[0], ipos[1], ipos[2], k]
           x = particle_x[p]
-          dist = intersect_sphere(eye_pos, d, x + 0.01 * t * x, sphere_radius)
+          v = particle_v[p]
+          dist = intersect_sphere(eye_pos, d, x + t * v, sphere_radius)
           if dist < closest_intersection:
             closest_intersection = dist
             hit_pos = eye_pos + d * closest_intersection
@@ -228,7 +232,7 @@ def render():
     d = ti.Vector([fov * (u + ti.random(ti.f32)) / (res / 2) - fov - 1e-3,
                    fov * (v + ti.random(ti.f32)) / (res / 2) - fov - 1e-3,
                    -1.0])
-    t = ti.random(ti.f32)
+    t = ti.random(ti.f32) * shutter_time
 
     contrib = ti.Vector([1.0, 1.0, 1.0])
 
@@ -265,6 +269,7 @@ def render():
 def initialize_particle_grid():
   for p in particle_x(0):
     x = particle_x[p]
+    v = particle_v[p]
     ipos = ti.Matrix.floor(x * particle_grid_res).cast(ti.i32)
     for nei in range(27):
       i = nei // 9 - 1
@@ -275,7 +280,8 @@ def initialize_particle_grid():
       if inside_particle_grid(box_ipos):
         box_min = box_ipos * (1 / particle_grid_res)
         box_max = (box_ipos + ti.Vector([1, 1, 1])) * (1 / particle_grid_res)
-        if sphere_aabb_intersect(box_min, box_max, x, sphere_radius):
+        if sphere_aabb_intersect_motion(box_min, box_max, x,
+                                        x + shutter_time * v, sphere_radius):
           ti.append(pid.parent(), box_ipos, p)
 
 
@@ -284,17 +290,18 @@ def main():
     for c in range(3):
       sphere_pos[i][c] = random.random()
 
-  np_x = np.random.rand(max_num_particles * 3).astype(np.float32)
+  np_x = np.random.rand(max_num_particles * 6).astype(np.float32)
 
   @ti.kernel
   def initialize_particle_x(x: np.ndarray):
     for i in range(max_num_particles):
       for c in ti.static(range(3)):
-        particle_x[i][c] = x[i * 3 + c]
+        particle_x[i][c] = x[i * 6 + c]
+      for c in ti.static(range(3)):
+        particle_v[i][c] = x[i * 6 + 3 + c] - 0.5
 
   initialize_particle_x(np_x)
   initialize_particle_grid()
-
 
   last_t = 0
   for i in range(100000):
@@ -303,7 +310,8 @@ def main():
       img = np.zeros((res * res * 3,), dtype=np.float32)
       copy(img)
       if last_t != 0:
-        print("time per spp = {:.2f} ms".format((time.time() - last_t) * 1000 / 10))
+        print(
+          "time per spp = {:.2f} ms".format((time.time() - last_t) * 1000 / 10))
       last_t = time.time()
       img = img.reshape(res, res, 3) * (1 / (i + 1))
       img = np.sqrt(img) * 2

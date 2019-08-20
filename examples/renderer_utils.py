@@ -76,9 +76,30 @@ def intersect_sphere(pos, d, center, radius):
         dist = ret2
   return dist
 
+
 @ti.func
-def sphere_aabb_intersect(box_min, box_max, o, radius):
+def point_aabb_distance2(box_min, box_max, o):
   p = ti.Vector([0.0, 0.0, 0.0])
   for i in ti.static(range(3)):
     p[i] = ti.max(ti.min(o[i], box_max[i]), box_min[i])
-  return ti.Matrix.norm_sqr(p - o) < radius * radius
+  return ti.Matrix.norm_sqr(p - o)
+
+@ti.func
+def sphere_aabb_intersect(box_min, box_max, o, radius):
+  return point_aabb_distance2(box_min, box_max, o) < radius * radius
+
+@ti.func
+def sphere_aabb_intersect_motion(box_min, box_max, o1, o2, radius):
+  lo = 0.0
+  hi = 1.0
+  while lo + 1e-5 < hi:
+    m1 = 2 * lo / 3 + hi / 3
+    m2 = lo / 3 + 2 * hi / 3
+    d1 = point_aabb_distance2(box_min, box_max, (1 - m1) * o1 + m1 * o2)
+    d2 = point_aabb_distance2(box_min, box_max, (1 - m2) * o1 + m2 * o2)
+    if d2 > d1:
+      hi = m2
+    else:
+      lo = m1
+
+  return point_aabb_distance2(box_min, box_max, (1 - lo) * o1 + lo * o2) < radius * radius

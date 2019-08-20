@@ -11,18 +11,21 @@ num_spheres = 1024
 color_buffer = ti.Vector(3, dt=ti.f32)
 sphere_pos = ti.Vector(3, dt=ti.f32)
 render_voxel = False
-max_ray_bounces = 1
+max_ray_bounces = 3
 
 particle_x = ti.Vector(3, dt=ti.f32)
 pid = ti.var(ti.i32)
+
+sphere_radius = 0.02
+camera_pos = ti.Vector([0.5, 0.5, 2.0])
 
 # ti.runtime.print_preprocessed = True
 # ti.cfg.print_ir = True
 ti.cfg.arch = ti.cuda
 grid_resolution = 16
-particle_grid_res = 8
+particle_grid_res = 32
 max_num_particles_per_cell = 128
-max_num_particles = 64
+max_num_particles = 8192
 
 
 @ti.layout
@@ -161,7 +164,7 @@ def dda_particle(eye_pos, d):
     dis = (ipos - o + 0.5 + rsign * 0.5) * rinv
     running = 1
     i = 0
-    c = [0.1, 0.1, 0.1]
+    c = [0.2, 0.3, 0.3]
     while running:
       inside = inside_particle_grid(ipos)
 
@@ -170,7 +173,7 @@ def dda_particle(eye_pos, d):
         for k in range(num_particles):
           p = pid[ipos[0], ipos[1], ipos[2], k]
           x = particle_x[p]
-          dist = intersect_sphere(eye_pos, d, x, 0.05)
+          dist = intersect_sphere(eye_pos, d, x, sphere_radius)
           if dist < closest_intersection:
             closest_intersection = dist
             hit_pos = eye_pos + d * closest_intersection
@@ -211,7 +214,7 @@ def render():
   ti.parallelize(6)
   for u, v in color_buffer(0):
     fov = 0.6
-    pos = ti.Vector([0.5, 0.5, 3.0])
+    pos = camera_pos
     d = ti.Vector([fov * (u + ti.random(ti.f32)) / (res / 2) - fov - 1e-3,
                    fov * (v + ti.random(ti.f32)) / (res / 2) - fov - 1e-3,
                    -1.0])
@@ -261,7 +264,7 @@ def main():
 
   for i in range(max_num_particles):
     for c in range(3):
-      particle_x[i][c] = random.random()
+      particle_x[i][c] = random.random() * 0.9 + 0.05
 
   initialize_particle_grid()
 

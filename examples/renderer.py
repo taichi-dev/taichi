@@ -17,7 +17,7 @@ max_ray_depth = 4
 particle_x = ti.Vector(3, dt=ti.f32)
 pid = ti.var(ti.i32)
 
-sphere_radius = 0.005
+sphere_radius = 0.0025
 camera_pos = ti.Vector([0.5, 0.5, 2.0])
 
 # ti.runtime.print_preprocessed = True
@@ -26,8 +26,8 @@ ti.cfg.arch = ti.cuda
 grid_resolution = 16
 
 particle_grid_res = 64
-max_num_particles_per_cell = 512
-max_num_particles = 1024 ** 2
+max_num_particles_per_cell = 256
+max_num_particles = 8 * 1024 ** 2
 
 
 @ti.layout
@@ -274,11 +274,22 @@ def main():
     for c in range(3):
       sphere_pos[i][c] = random.random()
 
+  np_x = np.random.rand(max_num_particles * 3).astype(np.float32)
+
+  @ti.kernel
+  def initialize_particle_x(x: np.ndarray):
+    for i in range(max_num_particles):
+      for c in ti.static(range(3)):
+        particle_x[i][c] = x[i * 3 + c]
+
+  initialize_particle_x(np_x)
+  '''
   t = time.time()
   for i in range(max_num_particles):
     for c in range(3):
       particle_x[i][c] = random.random() * 0.9 + 0.05
   print(time.time() - t)
+  '''
 
   initialize_particle_grid()
 

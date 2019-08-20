@@ -44,8 +44,14 @@ def expr_init(rhs):
 
 
 def make_expr_group(*exprs):
-  if len(exprs) == 1 and (isinstance(exprs[0], list) or isinstance(exprs[0], tuple)):
-    exprs = exprs[0]
+  if len(exprs) == 1:
+    from .matrix import Matrix
+    if (isinstance(exprs[0], list) or isinstance(exprs[0], tuple)):
+      exprs = exprs[0]
+    elif isinstance(exprs[0], Matrix):
+      mat = exprs[0]
+      assert mat.m == 1
+      exprs = mat.entries
   expr_group = taichi_lang_core.ExprGroup()
   for i in exprs:
     expr_group.push_back(Expr(i).ptr)

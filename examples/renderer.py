@@ -155,6 +155,7 @@ def dda_particle(eye_pos, d):
     dis = (ipos - o + 0.5 + rsign * 0.5) * rinv
     running = 1
     i = 0
+    c = [0.1, 0.1, 0.1]
     while running:
       last_sample = 0
       inside = \
@@ -162,7 +163,7 @@ def dda_particle(eye_pos, d):
           1] < grid_res and 0 <= ipos[2] and ipos[2] < grid_res
 
       if inside:
-        num_particles = ti.length(pid.parent(), (ipos[0], ipos[1], ipos[2]))
+        num_particles = ti.length(pid.parent(), ipos)
         for k in range(num_particles):
           p = pid[ipos[0], ipos[1], ipos[2], k]
           x = particle_x[p]
@@ -173,8 +174,6 @@ def dda_particle(eye_pos, d):
             normal = ti.Matrix.normalized(hit_pos - x)
 
       if closest_intersection < inf:
-        mini = (ipos - o + ti.Vector([0.5, 0.5, 0.5]) - rsign * 0.5) * rinv
-        hit_distance = mini.max() * (1 / grid_res)
         running = 0
       else:
         mm = ti.Vector([0, 0, 0])
@@ -191,8 +190,6 @@ def dda_particle(eye_pos, d):
       if not inside:
         running = 0
         normal = [0, 0, 0]
-      else:
-        c = [0.1, 0.1, 0.1]
 
   return normal, hit_pos, c
 
@@ -245,7 +242,7 @@ def initialize_particle_grid():
   for p in particle_x(0):
     x = particle_x[p]
     ipos = ti.Matrix.floor(x * particle_grid_res).cast(ti.i32)
-    ti.append(pid.parent(), (ipos[0], ipos[1], ipos[2]), p)
+    ti.append(pid.parent(), ipos, p)
 
 
 def main():

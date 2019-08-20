@@ -2,6 +2,7 @@ import taichi_lang as ti
 import numpy as np
 import cv2
 import math
+import time
 import random
 from renderer_utils import copy, out_dir, ray_aabb_intersection, inf, eps, \
   intersect_sphere
@@ -268,11 +269,16 @@ def main():
 
   initialize_particle_grid()
 
+
+  last_t = 0
   for i in range(100000):
     render()
     if i % 10 == 0:
       img = np.zeros((res * res * 3,), dtype=np.float32)
       copy(img)
+      if last_t != 0:
+        print("time per spp = {:.2f} ms".format((time.time() - last_t) * 1000 / 10))
+      last_t = time.time()
       img = img.reshape(res, res, 3) * (1 / (i + 1))
       img = np.sqrt(img) * 2
       cv2.imshow('img', img)

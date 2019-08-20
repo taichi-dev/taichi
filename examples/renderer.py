@@ -175,6 +175,7 @@ def dda_particle(eye_pos, d):
       if last_sample > 0:
         mini = (ipos - o + ti.Vector([0.5, 0.5, 0.5]) - rsign * 0.5) * rinv
         hit_distance = mini.max() * (1 / grid_res)
+        # this is causing segfault
         hit_pos = pos + hit_distance * d
         running = 0
       else:

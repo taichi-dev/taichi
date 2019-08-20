@@ -25,7 +25,7 @@ camera_pos = ti.Vector([0.5, 0.5, 2.0])
 ti.cfg.arch = ti.cuda
 grid_resolution = 16
 particle_grid_res = 16
-max_num_particles_per_cell = 512
+max_num_particles_per_cell = 128
 max_num_particles = 8192
 
 
@@ -163,7 +163,6 @@ def dda_particle(eye_pos, d):
 
     o = grid_res * pos
     ipos = ti.Matrix.floor(o).cast(ti.i32)
-    dis = (ipos - o + 0.5 + rsign * 0.5) * rinv
     running = 1
     c = [0.2, 0.3, 0.3]
     while running:
@@ -187,6 +186,7 @@ def dda_particle(eye_pos, d):
         running = 0
       else:
         # hits nothing. Continue ray marching
+        dis = (ipos - o + 0.5 + rsign * 0.5) * rinv
         mm = ti.Vector([0, 0, 0])
         if dis[0] <= dis[1] and dis[0] < dis[2]:
           mm[0] = 1
@@ -226,7 +226,6 @@ def render():
     d = ti.Matrix.normalized(d)
 
     depth = 0
-    bounces = 0
 
     while depth < max_ray_bounces:
       normal, hit_pos, c = next_hit(pos, d)
@@ -235,12 +234,12 @@ def render():
         d = out_dir(normal)
         pos = hit_pos + 1e-4 * d
         contrib *= c
-        bounces += 1
+        depth += 1
       else:  # hit sky
-        depth = max_ray_bounces
-        if bounces > 0:
+        if depth == 0:
           # if the ray directly hits sky, return pure white
           contrib *= ti.max(d[1], 0.05)
+        depth = max_ray_bounces
 
     color_buffer[u, v] += contrib
 

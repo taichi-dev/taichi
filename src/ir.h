@@ -2130,6 +2130,10 @@ inline void Cache(int v, const Expr &var) {
   dec.scratch_opt.push_back(std::make_pair(v, var.snode()));
 }
 
+inline void CacheL1(const Expr &var) {
+  dec.scratch_opt.push_back(std::make_pair(1, var.snode()));
+}
+
 inline void BlockDim(int v) {
   TC_ASSERT(bit::is_power_of_two(v) && v <= max_gpu_block_size);
   dec.block_size = v;

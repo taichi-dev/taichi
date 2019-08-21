@@ -287,7 +287,13 @@ def initialize_particle_grid():
         if sphere_aabb_intersect_motion(box_min, box_max, x,
                                         x + shutter_time * v, sphere_radius):
           ti.append(pid.parent(), box_ipos, p)
+@ti.func
+def color_f32_to_i8(x):
+  return ti.cast(ti.min(ti.max(x, 0.0), 1.0) * 255, ti.i32)
 
+@ti.func
+def rgb_to_i32(r, g, b):
+   return color_f32_to_i8(r) * 65536 + color_f32_to_i8(g) * 256 + color_f32_to_i8(b)
 
 def main():
   for i in range(num_spheres):
@@ -305,7 +311,14 @@ def main():
         particle_x[i][c] = x[i * 6 + c]
       for c in ti.static(range(3)):
         particle_v[i][c] = x[i * 6 + 3 + c] - 0.5
-      particle_color[i] = ti.cast(color[i], ti.i32)
+      brightness = ti.random(ti.f32)
+
+      cc = ti.Vector([0.0, 0.0, 0.0])
+      if brightness > 0.5:
+        cc = [1.0, 0.5, 1.0]
+      else:
+        cc = [0.4, 0.5, 1.0]
+      particle_color[i] = rgb_to_i32(cc[0], cc[1], cc[2])
 
   initialize_particle_x(np_x, np_c)
   initialize_particle_grid()

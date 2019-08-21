@@ -94,7 +94,7 @@ auto cnn = [](std::vector<std::string> cli_param) {
     bool use_cache = false;
     if (opt && gpu) {
       use_cache = true;
-      Cache(1, weights);
+      CacheL1(weights);
     }
     if (!gpu) {
       Parallelize(8);

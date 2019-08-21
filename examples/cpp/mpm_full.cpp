@@ -17,7 +17,7 @@ auto mpm3d = [](std::vector<std::string> cli_param) {
   Program prog(Arch::gpu);
   prog.config.lower_access = false;
 
-  TRenderer renderer((Dict()));
+  TRenderer renderer(Dict().set("depth_limit", 3));
 
   CoreState::set_trigger_gdb_when_crash(true);
 
@@ -69,6 +69,7 @@ auto mpm3d = [](std::vector<std::string> cli_param) {
   // scene 1: ball drop 2: jets
 
   Vector particle_x("x", f32, dim), particle_v("v", f32, dim);
+  Global(particle_color, i32);
   Matrix particle_F("F", f32, dim, dim), particle_C("C", f32, dim, dim);
 
   NamedScalar(l, l, i32);
@@ -162,6 +163,7 @@ auto mpm3d = [](std::vector<std::string> cli_param) {
     for (int i = 0; i < dim; i++)
       place(particle_v(i));
     place(particle_J);
+    place(particle_color);
 
     TC_ASSERT(n % grid_block_size == 0);
     auto &block = root.dense({i, j, k}, grid_n / 4 / grid_block_size)
@@ -459,13 +461,22 @@ auto mpm3d = [](std::vector<std::string> cli_param) {
   std::sort(p_x.begin(), p_x.end(),
             [&](Vector3 a, Vector3 b) { return block_id(a) < block_id(b); });
 
-  auto insert_part = [&](int i, Vector3 pos, Vector3 v) {
+  auto insert_part = [&](int i, Vector3 pos, Vector3 v,
+                         Vector3 color = Vector3(0)) {
     for (int d = 0; d < dim; d++) {
       particle_x(d).val<float32>(i) = pos[d];
     }
     particle_v(0).val<float32>(i) = v(0);
     particle_v(1).val<float32>(i) = v(1);
     particle_v(2).val<float32>(i) = v(2);
+
+    int c = 0;
+    for (int k = 0; k < 3; k++) {
+      c = c * 256;
+      c += std::max(std::min((int)(color[k] * 255), 255), 0);
+    }
+    particle_color.val<int32>(i) = c;
+
     if (material == MPMMaterial::sand) {
       particle_J.val<float32>(i) = 0_f;
     } else {
@@ -537,14 +548,13 @@ auto mpm3d = [](std::vector<std::string> cli_param) {
 
   auto tone_map = [](real x) { return std::sqrt(x); };
   // auto &canvas = gui.get_canvas();
-  for (int frame = 0;; frame++) {
+  for (int frame = 0; frame < 100000; frame++) {
     if (scene == 2) {
       int N = 10000;
       if (n_particles + N <= max_n_particles) {
         for (int i = 0; i < N; i++) {
           insert_part(i + frame * N,
-                      sample_unit_sphere() * 0.1f + Vector3(0.5f, 0.5f, 0.5f),
-                      Vector3());
+                      sample_unit_sphere() * 0.1f + Vector3(0.5f, 0.5f, 0.5f), Vector3());
         }
         n_particles += N;
       }
@@ -553,14 +563,16 @@ auto mpm3d = [](std::vector<std::string> cli_param) {
       int N = 10000;
       if (n_particles + N <= max_n_particles) {
         for (int i = 0; i < N / 2; i++) {
+          Vector3 color(0.1, 0.1, 0.1);
           insert_part(i + frame * N,
                       sample_unit_sphere() * 0.03f + Vector3(0.4f, 0.6f, 0.4f),
-                      Vector3(10, 0, 10));
+                      Vector3(10, 0, 10), color);
         }
         for (int i = N / 2; i < N; i++) {
+          Vector3 color(0.9, 0.9, 0.9);
           insert_part(i + frame * N,
                       sample_unit_sphere() * 0.03f + Vector3(0.6f, 0.6f, 0.6f),
-                      Vector3(-10, 0, -10));
+                      Vector3(-10, 0, -10), color);
         }
         n_particles += N;
       }
@@ -578,11 +590,14 @@ auto mpm3d = [](std::vector<std::string> cli_param) {
       renderer.parameters.box_max[d] = -1e16f;
     }
 
-    std::vector<Vector3> particles;
+    std::vector<float32> particles;
     for (int i = 0; i < n_particles; i++) {
-      particles.push_back(Vector3(particle_x(0).val<float32>(i),
-                                  particle_x(1).val<float32>(i),
-                                  particle_x(2).val<float32>(i)));
+      for (int k = 0; k < 3; k++) {
+        particles.push_back(particle_x(k).val<float32>(i));
+      }
+      for (int k = 0; k < 3; k++) {
+        particles.push_back(particle_v(k).val<float32>(i));
+      }
       for (int d = 0; d < 3; d++) {
         renderer.parameters.box_min[d] = std::min(
             renderer.parameters.box_min[d], particle_x(d).val<float32>(i));
@@ -591,8 +606,14 @@ auto mpm3d = [](std::vector<std::string> cli_param) {
       }
     }
     create_directories(fmt::format("final_particles/{}", output));
+    /*
     write_to_binary_file(
         particles, fmt::format("final_particles/{}/{:04d}.tcb", output, frame));
+        */
+    auto fn = fmt::format("final_particles/{}/{:04d}.bin", output, frame);
+    auto f = std::fopen(fn.c_str(), "wb");
+    std::fwrite(particles.data(), sizeof(float), 7 * n_particles, f);
+    fclose(f);
     for (int d = 0; d < 3; d++) {
       renderer.parameters.box_min[d] -= 5.0f / grid_n;
       renderer.parameters.box_max[d] += 5.0f / grid_n;

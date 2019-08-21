@@ -18,6 +18,7 @@ particle_x = ti.Vector(3, dt=ti.f32)
 particle_v = ti.Vector(3, dt=ti.f32)
 particle_color = ti.var(ti.i32)
 pid = ti.var(ti.i32)
+num_particles = ti.var(ti.i32)
 
 camera_pos = ti.Vector([0.5, 0.5, 2.0])
 
@@ -49,9 +50,8 @@ def buffers():
   ti.root.dense(ti.ijk, particle_grid_res).dynamic(ti.l,
                                                    max_num_particles_per_cell).place(
     pid)
-  ti.root.dense(ti.l, max_num_particles).place(particle_x, particle_v,
-                                               particle_color)
-
+  ti.root.dense(ti.l, max_num_particles).place(particle_x, particle_v, particle_color)
+  ti.root.place(num_particles)
 
 @ti.func
 def query_density_int(ipos):
@@ -272,21 +272,22 @@ def render():
 @ti.kernel
 def initialize_particle_grid():
   for p in particle_x(0):
-    x = particle_x[p]
-    v = particle_v[p]
-    ipos = ti.Matrix.floor(x * particle_grid_res).cast(ti.i32)
-    for nei in range(27):
-      i = nei // 9 - 1
-      j = nei // 3 % 3 - 1
-      k = nei % 3 - 1
-      offset = ti.Vector([i, j, k])
-      box_ipos = ipos + offset
-      if inside_particle_grid(box_ipos):
-        box_min = box_ipos * (1 / particle_grid_res)
-        box_max = (box_ipos + ti.Vector([1, 1, 1])) * (1 / particle_grid_res)
-        if sphere_aabb_intersect_motion(box_min, box_max, x,
-                                        x + shutter_time * v, sphere_radius):
-          ti.append(pid.parent(), box_ipos, p)
+    if p < num_particles:
+      x = particle_x[p]
+      v = particle_v[p]
+      ipos = ti.Matrix.floor(x * particle_grid_res).cast(ti.i32)
+      for nei in range(27):
+        i = nei // 9 - 1
+        j = nei // 3 % 3 - 1
+        k = nei % 3 - 1
+        offset = ti.Vector([i, j, k])
+        box_ipos = ipos + offset
+        if inside_particle_grid(box_ipos):
+          box_min = box_ipos * (1 / particle_grid_res)
+          box_max = (box_ipos + ti.Vector([1, 1, 1])) * (1 / particle_grid_res)
+          if sphere_aabb_intersect_motion(box_min, box_max, x,
+                                          x + shutter_time * v, sphere_radius):
+            ti.append(pid.parent(), box_ipos, p)
 @ti.func
 def color_f32_to_i8(x):
   return ti.cast(ti.min(ti.max(x, 0.0), 1.0) * 255, ti.i32)
@@ -296,29 +297,32 @@ def rgb_to_i32(r, g, b):
    return color_f32_to_i8(r) * 65536 + color_f32_to_i8(g) * 256 + color_f32_to_i8(b)
 
 def main():
+  num_particles = max_num_particles
+
   for i in range(num_spheres):
     for c in range(3):
       sphere_pos[i][c] = random.random()
 
-  np_x = np.random.rand(max_num_particles * 6).astype(np.float32)
-  np_c = np.random.randint(0, 256 ** 3, max_num_particles,
+  np_x = np.random.rand(num_particles * 6).astype(np.float32)
+  np_c = np.random.randint(0, 256 ** 3, num_particles,
                            dtype=np.int32).astype(np.float32)
 
   @ti.kernel
   def initialize_particle_x(x: np.ndarray, color: np.ndarray):
     for i in range(max_num_particles):
-      for c in ti.static(range(3)):
-        particle_x[i][c] = x[i * 6 + c]
-      for c in ti.static(range(3)):
-        particle_v[i][c] = x[i * 6 + 3 + c] - 0.5
-      brightness = ti.random(ti.f32)
+      if i < num_particles:
+        for c in ti.static(range(3)):
+          particle_x[i][c] = x[i * 6 + c]
+        for c in ti.static(range(3)):
+          particle_v[i][c] = x[i * 6 + 3 + c] - 0.5
+        brightness = ti.random(ti.f32)
 
-      cc = ti.Vector([0.0, 0.0, 0.0])
-      if brightness > 0.5:
-        cc = [1.0, 0.5, 1.0]
-      else:
-        cc = [0.4, 0.5, 1.0]
-      particle_color[i] = rgb_to_i32(cc[0], cc[1], cc[2])
+        cc = ti.Vector([0.0, 0.0, 0.0])
+        if brightness > 0.5:
+          cc = [1.0, 0.5, 1.0]
+        else:
+          cc = [0.4, 0.5, 1.0]
+        particle_color[i] = rgb_to_i32(cc[0], cc[1], cc[2])
 
   initialize_particle_x(np_x, np_c)
   initialize_particle_grid()

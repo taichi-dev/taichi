@@ -598,6 +598,7 @@ auto mpm3d = [](std::vector<std::string> cli_param) {
       for (int k = 0; k < 3; k++) {
         particles.push_back(particle_v(k).val<float32>(i));
       }
+      particles.push_back(particle_color.val<int32>(i));
       for (int d = 0; d < 3; d++) {
         renderer.parameters.box_min[d] = std::min(
             renderer.parameters.box_min[d], particle_x(d).val<float32>(i));

@@ -226,6 +226,7 @@ def next_hit(pos, d, t):
   else:
     return intersect_spheres(pos, d)
 
+aspect_ratio = res[0] / res[1]
 
 @ti.kernel
 def render():
@@ -233,42 +234,43 @@ def render():
   for u, v in color_buffer(0):
     fov = 0.6
     pos = camera_pos
-    d = ti.Vector([fov * (u + ti.random(ti.f32)) / (res[1] / 2) - fov - 1e-3,
-                   fov * (v + ti.random(ti.f32)) / (res[1] / 2) - fov - 1e-3,
+    d = ti.Vector([(2 * fov * (u + ti.random(ti.f32)) / res[1] - fov * aspect_ratio - 1e-3),
+                   2 * fov * (v + ti.random(ti.f32)) / res[1] - fov - 1e-3,
                    -1.0])
-    # t = ti.min(1, ti.random(ti.f32) * 2) * shutter_time
-    t = ti.random(ti.f32) * shutter_time
+    if u < res[0] and v < res[1]:
+      # t = ti.min(1, ti.random(ti.f32) * 2) * shutter_time
+      t = ti.random(ti.f32) * shutter_time
 
-    contrib = ti.Vector([1.0, 1.0, 1.0])
+      contrib = ti.Vector([1.0, 1.0, 1.0])
 
-    d = ti.Matrix.normalized(d)
+      d = ti.Matrix.normalized(d)
 
-    depth = 0
-    hit_sky = 1
-    ray_depth = 0
+      depth = 0
+      hit_sky = 1
+      ray_depth = 0
 
-    while depth < max_ray_depth:
-      normal, hit_pos, c = next_hit(pos, d, t)
-      depth += 1
-      ray_depth = depth
-      if normal.norm() != 0:
-        d = out_dir(normal)
-        pos = hit_pos + 1e-4 * d
-        contrib *= c
-      else:  # hit sky
-        hit_sky = 1
-        depth = max_ray_depth
+      while depth < max_ray_depth:
+        normal, hit_pos, c = next_hit(pos, d, t)
+        depth += 1
+        ray_depth = depth
+        if normal.norm() != 0:
+          d = out_dir(normal)
+          pos = hit_pos + 1e-4 * d
+          contrib *= c
+        else:  # hit sky
+          hit_sky = 1
+          depth = max_ray_depth
 
-    if hit_sky:
-      if ray_depth != 1:
-        contrib *= ti.max(d[1], 0.05)
+      if hit_sky:
+        if ray_depth != 1:
+          contrib *= ti.max(d[1], 0.05)
+        else:
+          # directly hit sky
+          pass
       else:
-        # directly hit sky
-        pass
-    else:
-      contrib *= 0
+        contrib *= 0
 
-    color_buffer[u, v] += contrib
+      color_buffer[u, v] += contrib
 
 
 @ti.kernel

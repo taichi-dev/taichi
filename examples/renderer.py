@@ -7,7 +7,7 @@ import random
 from renderer_utils import copy, out_dir, ray_aabb_intersection, inf, eps, \
   intersect_sphere, sphere_aabb_intersect_motion
 
-res = 1024
+res = 1280, 720
 num_spheres = 1024
 color_buffer = ti.Vector(3, dt=ti.f32)
 sphere_pos = ti.Vector(3, dt=ti.f32)
@@ -45,7 +45,7 @@ assert sphere_radius * 2 * particle_grid_res < 1
 
 @ti.layout
 def buffers():
-  ti.root.dense(ti.ij, res // 8).dense(ti.ij, 8).place(color_buffer)
+  ti.root.dense(ti.ij, (res[0] // 8, res[1] // 8)).dense(ti.ij, 8).place(color_buffer)
   ti.root.dense(ti.i, num_spheres).place(sphere_pos)
   ti.root.dense(ti.ijk, particle_grid_res).dynamic(ti.l,
                                                    max_num_particles_per_cell).place(
@@ -233,8 +233,8 @@ def render():
   for u, v in color_buffer(0):
     fov = 0.6
     pos = camera_pos
-    d = ti.Vector([fov * (u + ti.random(ti.f32)) / (res / 2) - fov - 1e-3,
-                   fov * (v + ti.random(ti.f32)) / (res / 2) - fov - 1e-3,
+    d = ti.Vector([fov * (u + ti.random(ti.f32)) / (res[1] / 2) - fov - 1e-3,
+                   fov * (v + ti.random(ti.f32)) / (res[1] / 2) - fov - 1e-3,
                    -1.0])
     # t = ti.min(1, ti.random(ti.f32) * 2) * shutter_time
     t = ti.random(ti.f32) * shutter_time
@@ -342,13 +342,13 @@ def main():
 
     interval = 1
     if i % interval == 0:
-      img = np.zeros((res * res * 3,), dtype=np.float32)
+      img = np.zeros((res[1] * res[0] * 3,), dtype=np.float32)
       copy(img)
       if last_t != 0:
         print(
           "time per spp = {:.2f} ms".format((time.time() - last_t) * 1000 / interval))
       last_t = time.time()
-      img = img.reshape(res, res, 3) * (1 / (i + 1))
+      img = img.reshape(res[1], res[0], 3) * (1 / (i + 1))
       img = np.sqrt(img)
       cv2.imshow('img', img)
       cv2.waitKey(1)

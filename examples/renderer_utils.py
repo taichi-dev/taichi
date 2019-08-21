@@ -7,10 +7,11 @@ inf = 1e10
 
 @ti.kernel
 def copy(img: np.ndarray):
-  for i, j in color_buffer(0):
-    coord = ((res - 1 - j) * res + i) * 3
-    for c in ti.static(range(3)):
-      img[coord + c] = color_buffer[i, j][2 - c]
+  for i in range(res[0]):
+    for j in range(res[1]):
+      coord = ((res[1] - 1 - j) * res[0] + i) * 3
+      for c in ti.static(range(3)):
+        img[coord + c] = color_buffer[i, j][2 - c]
 
 @ti.func
 def out_dir(n):

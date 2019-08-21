@@ -12,7 +12,7 @@ num_spheres = 1024
 color_buffer = ti.Vector(3, dt=ti.f32)
 sphere_pos = ti.Vector(3, dt=ti.f32)
 render_voxel = False
-max_ray_depth = 2
+max_ray_depth = 4
 
 particle_x = ti.Vector(3, dt=ti.f32)
 particle_v = ti.Vector(3, dt=ti.f32)
@@ -20,7 +20,7 @@ particle_color = ti.var(ti.i32)
 pid = ti.var(ti.i32)
 num_particles = ti.var(ti.i32)
 
-camera_pos = ti.Vector([0.5, 0.5, 2.0])
+camera_pos = ti.Vector([0.5, 0.5, 1.0])
 
 # ti.runtime.print_preprocessed = True
 # ti.cfg.print_ir = True
@@ -30,12 +30,12 @@ grid_resolution = 16
 shutter_time = 0.0
 high_res = True
 if high_res:
-  sphere_radius = 0.0025
+  sphere_radius = 0.001
   particle_grid_res = 64
   max_num_particles_per_cell = 512
   max_num_particles = 1024 * 1024 * 8
 else:
-  sphere_radius = 0.02
+  sphere_radius = 0.01
   particle_grid_res = 8
   max_num_particles_per_cell = 32
   max_num_particles = 128
@@ -262,7 +262,8 @@ def render():
       if ray_depth != 1:
         contrib *= ti.max(d[1], 0.05)
       else:
-        contrib *= 0.7
+        # directly hit sky
+        pass
     else:
       contrib *= 0
 
@@ -347,7 +348,7 @@ def main():
           "time per spp = {:.2f} ms".format((time.time() - last_t) * 1000 / interval))
       last_t = time.time()
       img = img.reshape(res, res, 3) * (1 / (i + 1))
-      img = np.sqrt(img) * 2
+      img = np.sqrt(img)
       cv2.imshow('img', img)
       cv2.waitKey(1)
   cv2.waitKey(0)

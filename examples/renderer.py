@@ -297,14 +297,15 @@ def rgb_to_i32(r, g, b):
    return color_f32_to_i8(r) * 65536 + color_f32_to_i8(g) * 256 + color_f32_to_i8(b)
 
 def main():
-  num_particles = max_num_particles
+  num_particles[None] = max_num_particles // 100 * 1
+  num_part = num_particles[None]
 
   for i in range(num_spheres):
     for c in range(3):
       sphere_pos[i][c] = random.random()
 
-  np_x = np.random.rand(num_particles * 6).astype(np.float32)
-  np_c = np.random.randint(0, 256 ** 3, num_particles,
+  np_x = np.random.rand(num_part * 6).astype(np.float32)
+  np_c = np.random.randint(0, 256 ** 3, num_part,
                            dtype=np.int32).astype(np.float32)
 
   @ti.kernel
@@ -315,14 +316,7 @@ def main():
           particle_x[i][c] = x[i * 6 + c]
         for c in ti.static(range(3)):
           particle_v[i][c] = x[i * 6 + 3 + c] - 0.5
-        brightness = ti.random(ti.f32)
-
-        cc = ti.Vector([0.0, 0.0, 0.0])
-        if brightness > 0.5:
-          cc = [1.0, 0.5, 1.0]
-        else:
-          cc = [0.4, 0.5, 1.0]
-        particle_color[i] = rgb_to_i32(cc[0], cc[1], cc[2])
+        particle_color[i] = ti.cast(color[i], ti.i32)
 
   initialize_particle_x(np_x, np_c)
   initialize_particle_grid()

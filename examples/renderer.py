@@ -12,7 +12,7 @@ num_spheres = 1024
 color_buffer = ti.Vector(3, dt=ti.f32)
 sphere_pos = ti.Vector(3, dt=ti.f32)
 render_voxel = False
-max_ray_depth = 4
+max_ray_depth = 3
 
 particle_x = ti.Vector(3, dt=ti.f32)
 particle_v = ti.Vector(3, dt=ti.f32)
@@ -20,14 +20,14 @@ particle_color = ti.var(ti.i32)
 pid = ti.var(ti.i32)
 num_particles = ti.var(ti.i32)
 
-camera_pos = ti.Vector([0.5, 0.5, 1.0])
+camera_pos = ti.Vector([0.5, 0.3, 1.3])
 
 # ti.runtime.print_preprocessed = True
 # ti.cfg.print_ir = True
 ti.cfg.arch = ti.cuda
 grid_resolution = 16
 
-shutter_time = 0.0
+shutter_time = 3e-4
 high_res = True
 if high_res:
   sphere_radius = 0.001
@@ -236,7 +236,8 @@ def render():
     d = ti.Vector([fov * (u + ti.random(ti.f32)) / (res / 2) - fov - 1e-3,
                    fov * (v + ti.random(ti.f32)) / (res / 2) - fov - 1e-3,
                    -1.0])
-    t = ti.min(1, ti.random(ti.f32) * 2) * shutter_time
+    # t = ti.min(1, ti.random(ti.f32) * 2) * shutter_time
+    t = ti.random(ti.f32) * shutter_time
 
     contrib = ti.Vector([1.0, 1.0, 1.0])
 

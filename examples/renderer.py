@@ -203,7 +203,7 @@ def dda_particle(eye_pos, d_, t):
           p = pid[ipos[0], ipos[1], ipos[2], k]
           v = particle_v[p]
           x = particle_x[p] + t * v
-          color = 2 ** 24 - 1  # particle_color[p]
+          color = particle_color[p]
           dist = intersect_sphere(eye_pos, d, x, sphere_radius)
           if dist < closest_intersection:
             closest_intersection = dist
@@ -238,7 +238,7 @@ def next_hit(pos_, d, t):
   closest, normal, c = dda_particle(pos_, d, t)
   # closest, normal, c = intersect_spheres(pos, d)
   if d[1] != 0:
-    ray_closest = -(pos[1] + 0.2) / d[1]
+    ray_closest = -(pos[1] - 0.02) / d[1]
     if ray_closest > 0 and ray_closest < closest:
       closest = ray_closest
       normal = ti.Vector([0.0, 1.0, 0.0])

@@ -266,7 +266,8 @@ def render():
       # t = ti.min(1, ti.random(ti.f32) * 2) * shutter_time
       t = ti.random(ti.f32) * shutter_time
 
-      contrib = ti.Vector([1.0, 1.0, 1.0])
+      contrib = ti.Vector([0.0, 0.0, 0.0])
+      throughput = ti.Vector([1.0, 1.0, 1.0])
 
       d = ti.Matrix.normalized(d)
 
@@ -282,17 +283,17 @@ def render():
         if normal.norm() != 0:
           d = out_dir(normal)
           pos = hit_pos + 1e-4 * d
-          contrib *= c
+          throughput *= c
         else:  # hit sky
           hit_sky = 1
           depth = max_ray_depth
 
-        max_c = contrib.max()
+        max_c = throughput.max()
         if ti.random() > max_c:
           depth = max_ray_depth
-          contrib = [0, 0, 0]
+          throughput = [0, 0, 0]
         else:
-          contrib /= max_c
+          throughput /= max_c
 
       if hit_sky:
         if ray_depth != 1:
@@ -302,8 +303,9 @@ def render():
           # directly hit sky
           pass
       else:
-        contrib *= 0
+        throughput *= 0
 
+      contrib += throughput
       color_buffer[u, v] += contrib
 
 

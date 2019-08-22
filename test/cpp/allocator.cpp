@@ -97,7 +97,8 @@ TC_TEST("parallel_particle_sort") {
 
   Kernel(sort).def([&] {
     BlockDim(256);
-    For(particle_x(0), [&](Expr p) { grid_m[particle_x[p]] = 1; });
+    // For(particle_x(0), [&](Expr p) { grid_m[particle_x[p]] = 1; });
+    For(0, max_n_particles, [&](Expr p) { grid_m[particle_x[p]] = 1; });
   });
 
   for (int i = 0; i < n_particles; i++) {

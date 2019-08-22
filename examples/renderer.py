@@ -22,10 +22,14 @@ particle_color = ti.var(ti.i32)
 pid = ti.var(ti.i32)
 num_particles = ti.var(ti.i32)
 
-camera_pos = ti.Vector([0.5, 0.3, 1.5])
+fov = 0.53
+
+exposure = 3.5
+camera_pos = ti.Vector([0.5, 0.32, 1.5])
 vignette_strength = 0.9
 vignette_radius = 0.0
 vignette_center = [0.5, 0.5]
+light_direction = [1.2, 0.6, 0.5]
 
 # ti.runtime.print_preprocessed = True
 # ti.cfg.print_ir = True
@@ -238,7 +242,7 @@ def next_hit(pos_, d, t):
   closest, normal, c = dda_particle(pos_, d, t)
   # closest, normal, c = intersect_spheres(pos, d)
   if d[1] != 0:
-    ray_closest = -(pos[1] - 0.02) / d[1]
+    ray_closest = -(pos[1] - 0.027) / d[1]
     if ray_closest > 0 and ray_closest < closest:
       closest = ray_closest
       normal = ti.Vector([0.0, 1.0, 0.0])
@@ -268,7 +272,6 @@ aspect_ratio = res[0] / res[1]
 def render():
   ti.parallelize(6)
   for u, v in color_buffer(0):
-    fov = 0.5
     pos = camera_pos
     d = ti.Vector(
       [(2 * fov * (u + ti.random(ti.f32)) / res[1] - fov * aspect_ratio - 1e-3),
@@ -298,7 +301,7 @@ def render():
           throughput *= c
 
           if ti.static(use_directional_light):
-            direct = ti.Matrix.normalized(ti.Vector([1.0, 1.0, 1.0]))
+            direct = ti.Matrix.normalized(ti.Vector(light_direction))
             dot = direct.dot(normal)
             if dot > 0:
               dist, _, _ = next_hit(hit_pos + direct * 1e-4, direct, t)
@@ -431,7 +434,6 @@ def main():
           "time per spp = {:.2f} ms".format(
             (time.time() - last_t) * 1000 / interval))
       last_t = time.time()
-      exposure = 2.5
       img = img.reshape(res[1], res[0], 3) * (1 / (i + 1)) * exposure
       img = np.sqrt(img)
       cv2.imshow('img', img)

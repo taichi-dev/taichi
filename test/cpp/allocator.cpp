@@ -137,4 +137,74 @@ TC_TEST("parallel_particle_sort") {
   }
 };
 
+TC_TEST("struct_for") {
+  Program prog(Arch::gpu);
+  CoreState::set_trigger_gdb_when_crash(true);
+
+  constexpr int n = 256;
+  const real dx = 1.0_f / n, inv_dx = 1.0_f / dx;
+
+  constexpr int dim = 3;
+
+  auto f32 = DataType::f32;
+  auto i32 = DataType::i32;
+  int grid_block_size = 4;
+
+  Vector particle_x(i32, dim);
+
+  Global(grid_m, f32);
+  Global(flag, i32);
+
+  int max_n_particles = 1024 * 1024;
+
+  int n_particles = 0;
+  std::vector<float> benchmark_particles;
+  std::vector<Vector3> p_x;
+  n_particles = max_n_particles;
+  p_x.resize(n_particles);
+  for (int i = 0; i < n_particles; i++) {
+    Vector3 offset = Vector3::rand() - Vector3(0.5_f);
+    p_x[i] = Vector3(0.5_f) + offset * 0.7f;
+  }
+
+  TC_ASSERT(n_particles <= max_n_particles);
+
+  auto i = Index(0), j = Index(1), k = Index(2);
+  auto p = Index(3);
+
+  layout([&]() {
+    auto &fork = root.dynamic(p, max_n_particles);
+    for (int i = 0; i < dim; i++) {
+      fork.place(particle_x(i));
+    }
+    root.dense(i, max_n_particles).place(flag);
+  });
+
+  Kernel(sort).def([&] {
+    BlockDim(256);
+    For(particle_x(0), [&](Expr p) { Atomic(flag[p]) += 1; });
+  });
+
+  for (int i = 0; i < n_particles; i++) {
+    particle_x(0).val<int32>(i) = 1;
+  }
+
+  for (int i = 0; i < 2048; i++) {
+    for (int k = 0; k < max_n_particles; k++)
+      flag.val<int32>(k) = 0;
+    sort();
+    int zero_count = 0, big_count = 0;
+    for (int k = 0; k < max_n_particles; k++) {
+      if (flag.val<int32>(k) < 1) {
+        zero_count += 1;
+      }
+      if (flag.val<int32>(k) > 1) {
+        big_count += 1;
+      }
+    }
+    TC_CHECK(zero_count == 0);
+    TC_CHECK(big_count == 0);
+  }
+};
+
 TLANG_NAMESPACE_END

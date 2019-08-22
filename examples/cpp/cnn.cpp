@@ -17,6 +17,7 @@ auto cnn = [](std::vector<std::string> cli_param) {
   auto param = parse_param(cli_param);
   auto gpu = param.get("gpu", true);
   auto opt = param.get("opt", true);
+  auto cache_l1 = param.get("cache_l1", true);
   auto use_dense = param.get("use_dense", false);
   auto write_input_voxel = param.get("write_input", true);
   TC_P(use_dense);
@@ -90,11 +91,11 @@ auto cnn = [](std::vector<std::string> cli_param) {
   }
 
   Kernel(forward).def([&] {
-    // Cache(0, layer1);
     bool use_cache = false;
     if (opt && gpu) {
       use_cache = true;
-      CacheL1(weights);
+      if (cache_l1)
+        CacheL1(weights);
     }
     if (!gpu) {
       Parallelize(8);

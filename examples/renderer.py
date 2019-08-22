@@ -21,7 +21,7 @@ particle_color = ti.var(ti.i32)
 pid = ti.var(ti.i32)
 num_particles = ti.var(ti.i32)
 
-camera_pos = ti.Vector([0.5, 0.3, 1.3])
+camera_pos = ti.Vector([0.5, 0.3, 1.5])
 
 # ti.runtime.print_preprocessed = True
 # ti.cfg.print_ir = True
@@ -216,7 +216,7 @@ def dda_particle(eye_pos, d, t):
         dis += mm * rsign * rinv
         ipos += mm * rsign
 
-  return normal, hit_pos, c
+  return closest_intersection, normal, c
 
 
 @ti.func
@@ -251,7 +251,8 @@ def render():
       ray_depth = 0
 
       while depth < max_ray_depth:
-        normal, hit_pos, c = next_hit(pos, d, t)
+        closest, normal, c = next_hit(pos, d, t)
+        hit_pos = pos + closest * d
         depth += 1
         ray_depth = depth
         if normal.norm() != 0:
@@ -351,7 +352,8 @@ def main():
         print(
           "time per spp = {:.2f} ms".format((time.time() - last_t) * 1000 / interval))
       last_t = time.time()
-      img = img.reshape(res[1], res[0], 3) * (1 / (i + 1))
+      exposure = 2.5
+      img = img.reshape(res[1], res[0], 3) * (1 / (i + 1)) * exposure
       img = np.sqrt(img)
       cv2.imshow('img', img)
       cv2.waitKey(1)

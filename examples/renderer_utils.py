@@ -127,10 +127,10 @@ def inside_taichi(p_):
   ret = -1
   if not inside(p, Vector2(0.50, 0.50), 0.5):
     if ret == -1:
-      ret = 1
-  if not inside(p, Vector2(0.50, 0.50), 0.5):
-    if ret == -1:
       ret = 0
+  if not inside(p, Vector2(0.50, 0.50), 0.495):
+    if ret == -1:
+      ret = 1
   p = Vector2(0.5, 0.5) + (p - Vector2(0.5, 0.5))
   if inside(p, Vector2(0.50, 0.25), 0.08):
     if ret == -1:

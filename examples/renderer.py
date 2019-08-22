@@ -26,12 +26,13 @@ fov = 0.53
 dist_limit = 100
 
 exposure = 3.5
-camera_pos = ti.Vector([0.5, 0.32, 1.8])
+camera_pos = ti.Vector([0.4, 0.32, 1.7])
 vignette_strength = 0.9
 vignette_radius = 0.0
 vignette_center = [0.5, 0.5]
-light_direction = [1.2, 0.6, 0.5]
+light_direction = [1.2, 0.6, 0.7]
 light_direction_noise = 0.03
+light_color = [1.0, 1.0, 1.0]
 
 # ti.runtime.print_preprocessed = True
 # ti.cfg.print_ir = True
@@ -92,7 +93,7 @@ def voxel_color(pos):
 def sdf(o_):
   o = o_ - ti.Vector([0.5, 0.027, 0.5])
   r = ti.sqrt(o[0] * o[0] + o[2] * o[2])
-  return ti.max(o[1], r - 0.52)
+  return ti.max(o[1], r - 0.51)
 
 @ti.func
 def ray_march(p, d):
@@ -120,10 +121,10 @@ def sdf_normal(p):
 def sdf_color(p_):
   # p = p_ - ti.Vector([0.5, 0.027, 0.5])
   p = p_
-  scale = 0.6
+  scale = 0.8
   if inside_taichi(ti.Vector([p[0], p[2]])):
     scale = 1
-  return ti.Vector([0.5, 0.5, 0.7]) * scale
+  return ti.Vector([0.3, 0.5, 0.7]) * scale
 
 @ti.func
 def dda(pos, d_):
@@ -357,7 +358,7 @@ def render():
             if dot > 0:
               dist, _, _ = next_hit(hit_pos + direct * 1e-4, direct, t)
               if dist > 1000:
-                contrib += throughput * ti.Vector([1.0, 0.9, 0.7]) * dot
+                contrib += throughput * ti.Vector(light_color) * dot
         else:  # hit sky
           hit_sky = 1
           depth = max_ray_depth

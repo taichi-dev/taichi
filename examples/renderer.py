@@ -48,7 +48,7 @@ assert sphere_radius * 2 * particle_grid_res < 1
 def buffers():
   ti.root.dense(ti.ij, (res[0] // 8, res[1] // 8)).dense(ti.ij, 8).place(color_buffer)
   ti.root.dense(ti.i, num_spheres).place(sphere_pos)
-  ti.root.dense(ti.ijk, particle_grid_res).dynamic(ti.l,
+  ti.root.dense(ti.ijk, particle_grid_res // 8).dense(ti.ijk, 8).dynamic(ti.l,
                                                    max_num_particles_per_cell).place(
     pid)
   ti.root.dense(ti.l, max_num_particles).place(particle_x, particle_v, particle_color)
@@ -279,6 +279,13 @@ def render():
           hit_sky = 1
           depth = max_ray_depth
 
+        max_c = contrib.max()
+        if ti.random() > max_c:
+          depth = max_ray_depth
+          contrib = [0, 0, 0]
+        else:
+          contrib /= max_c
+
       if hit_sky:
         if ray_depth != 1:
           contrib *= ti.max(d[1], 0.05)
@@ -357,7 +364,7 @@ def main():
   initialize_particle_grid()
 
   last_t = 0
-  for i in range(1000):
+  for i in range(100):
     render()
 
     interval = 10
@@ -374,7 +381,7 @@ def main():
       cv2.imshow('img', img)
       cv2.waitKey(1)
       cv2.imwrite('outputs/{:04d}.png'.format(int(fn)), img * 255)
-  cv2.waitKey(1)
+  cv2.waitKey(0)
 
 
 if __name__ == '__main__':

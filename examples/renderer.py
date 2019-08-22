@@ -6,6 +6,7 @@ import time
 import random
 from renderer_utils import copy, out_dir, ray_aabb_intersection, inf, eps, \
   intersect_sphere, sphere_aabb_intersect_motion
+import sys
 
 res = 1280, 720
 num_spheres = 1024
@@ -31,8 +32,8 @@ shutter_time = 3e-4
 high_res = True
 if high_res:
   sphere_radius = 0.001
-  particle_grid_res = 64
-  max_num_particles_per_cell = 512
+  particle_grid_res = 128
+  max_num_particles_per_cell = 256
   max_num_particles = 1024 * 1024 * 8
 else:
   sphere_radius = 0.01
@@ -301,8 +302,8 @@ def rgb_to_i32(r, g, b):
    return color_f32_to_i8(r) * 65536 + color_f32_to_i8(g) * 256 + color_f32_to_i8(b)
 
 def main():
-
-  sand = np.fromfile("../final_particles/sand/0042.bin", dtype=np.float32)
+  fn = sys.argv[1]
+  sand = np.fromfile("../final_particles/sand/{:04d}.bin".format(int(fn)), dtype=np.float32)
 
 
   for i in range(num_spheres):
@@ -339,10 +340,10 @@ def main():
   initialize_particle_grid()
 
   last_t = 0
-  for i in range(100000):
+  for i in range(200):
     render()
 
-    interval = 1
+    interval = 10
     if i % interval == 0:
       img = np.zeros((res[1] * res[0] * 3,), dtype=np.float32)
       copy(img)
@@ -352,9 +353,10 @@ def main():
       last_t = time.time()
       img = img.reshape(res[1], res[0], 3) * (1 / (i + 1))
       img = np.sqrt(img)
-      cv2.imshow('img', img)
-      cv2.waitKey(1)
-  cv2.waitKey(0)
+      # cv2.imshow('img', img)
+      # cv2.waitKey(1)
+      cv2.imwrite('outputs/{:04d}.png'.format(int(fn)), img * 255)
+  # cv2.waitKey(0)
 
 
 if __name__ == '__main__':

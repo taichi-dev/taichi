@@ -82,7 +82,7 @@ TC_TEST("parallel_particle_sort") {
   auto p = Index(3);
 
   layout([&]() {
-    auto &fork = root.dynamic(p, max_n_particles);
+    auto &fork = root.dense(p, max_n_particles);
     for (int i = 0; i < dim; i++) {
       fork.place(particle_x(i));
     }
@@ -114,7 +114,7 @@ TC_TEST("parallel_particle_sort") {
   }
 
   int last_nb = -1;
-  for (int i = 0; i < 2048; i++) {
+  for (int i = 0; i < 4; i++) {
     for (int k = 0; k < max_n_particles; k++)
       flag.val<int32>(k) = 0;
     grid_m.parent().parent().snode()->clear_data_and_deactivate();
@@ -127,7 +127,6 @@ TC_TEST("parallel_particle_sort") {
     int nb = stat.num_resident_blocks;
     if (last_nb == -1) {
       last_nb = nb;
-      TC_P(last_nb);
     } else {
       if (last_nb != nb) {
         TC_P(i);

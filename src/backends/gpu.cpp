@@ -80,6 +80,8 @@ class GPUIRCodeGen : public IRVisitor {
            leaf->node_type_name);
       emit("int bid = 0;");
       emit("while (1) {{");
+      emit("__syncthreads();");  // This syncthread is necessary otherwise
+                                 // bid_shared may be overwritten..
       emit("__shared__ int bid_shared;");
       emit("if (threadIdx.x == 0) {{ ");
       emit(
@@ -540,8 +542,8 @@ class GPUIRCodeGen : public IRVisitor {
   void visit(ArgLoadStmt *stmt) {
     if (stmt->is_ptr) {
       auto dt = data_type_name(stmt->ret_type.data_type);
-      emit("const {} * {}(context.get_arg<{} *>({}));", dt,
-           stmt->raw_name(), dt, stmt->arg_id);
+      emit("const {} * {}(context.get_arg<{} *>({}));", dt, stmt->raw_name(),
+           dt, stmt->arg_id);
     } else {
       emit("const {} {}({{context.get_arg<{}>({})}});",
            stmt->ret_data_type_name(), stmt->raw_name(),

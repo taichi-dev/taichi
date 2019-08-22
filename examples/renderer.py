@@ -5,7 +5,7 @@ import math
 import time
 import random
 from renderer_utils import out_dir, ray_aabb_intersection, inf, eps, \
-  intersect_sphere, sphere_aabb_intersect_motion
+  intersect_sphere, sphere_aabb_intersect_motion, inside_taichi
 import sys
 
 res = 1280, 720
@@ -26,7 +26,7 @@ fov = 0.53
 dist_limit = 100
 
 exposure = 3.5
-camera_pos = ti.Vector([0.5, 0.32, 1.5])
+camera_pos = ti.Vector([0.5, 0.32, 1.8])
 vignette_strength = 0.9
 vignette_radius = 0.0
 vignette_center = [0.5, 0.5]
@@ -89,9 +89,10 @@ def voxel_color(pos):
 
 
 @ti.func
-def sdf(o):
-  return (o - 0.5).norm() - 0.3
-
+def sdf(o_):
+  o = o_ - ti.Vector([0.5, 0.027, 0.5])
+  r = ti.sqrt(o[0] * o[0] + o[2] * o[2])
+  return ti.max(o[1], r - 0.52)
 
 @ti.func
 def ray_march(p, d):
@@ -116,8 +117,13 @@ def sdf_normal(p):
   return ti.Matrix.normalized(n)
 
 @ti.func
-def sdf_color(p):
-  return [0.5, 0.5, 0.3]
+def sdf_color(p_):
+  # p = p_ - ti.Vector([0.5, 0.027, 0.5])
+  p = p_
+  scale = 0.6
+  if inside_taichi(ti.Vector([p[0], p[2]])):
+    scale = 1
+  return ti.Vector([0.5, 0.5, 0.7]) * scale
 
 @ti.func
 def dda(pos, d_):
@@ -274,6 +280,8 @@ def next_hit(pos_, d, t):
   pos = pos_
   closest, normal, c = dda_particle(pos_, d, t)
   # closest, normal, c = intersect_spheres(pos, d)
+
+  '''
   if d[1] != 0:
     ray_closest = -(pos[1] - 0.027) / d[1]
     if ray_closest > 0 and ray_closest < closest:
@@ -281,6 +289,7 @@ def next_hit(pos_, d, t):
       normal = ti.Vector([0.0, 1.0, 0.0])
       c = ti.Vector([0.3, 0.3, 0.4])
       # c = ti.Vector([1, 1, 1])
+  '''
 
   if d[2] != 0:
     ray_closest = -(pos[2] + 0.5) / d[2]

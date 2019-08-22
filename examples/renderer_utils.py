@@ -5,6 +5,7 @@ import math
 eps = 1e-4
 inf = 1e10
 
+
 @ti.func
 def out_dir(n):
   u = ti.Vector([1.0, 0.0, 0.0])
@@ -16,6 +17,7 @@ def out_dir(n):
   ay = ti.sqrt(r)
   ax = ti.sqrt(1 - r)
   return ax * (ti.cos(phi) * u + ti.sin(phi) * v) + ay * n
+
 
 @ti.func
 def ray_aabb_intersection(box_min, box_max, o, d):
@@ -37,7 +39,6 @@ def ray_aabb_intersection(box_min, box_max, o, d):
 
       far_int = ti.min(new_far_int, far_int)
       near_int = ti.max(new_near_int, near_int)
-
 
   if near_int > far_int:
     intersect = 0
@@ -77,9 +78,11 @@ def point_aabb_distance2(box_min, box_max, o):
     p[i] = ti.max(ti.min(o[i], box_max[i]), box_min[i])
   return ti.Matrix.norm_sqr(p - o)
 
+
 @ti.func
 def sphere_aabb_intersect(box_min, box_max, o, radius):
   return point_aabb_distance2(box_min, box_max, o) < radius * radius
+
 
 @ti.func
 def sphere_aabb_intersect_motion(box_min, box_max, o1, o2, radius):
@@ -95,4 +98,56 @@ def sphere_aabb_intersect_motion(box_min, box_max, o1, o2, radius):
     else:
       lo = m1
 
-  return point_aabb_distance2(box_min, box_max, (1 - lo) * o1 + lo * o2) < radius * radius
+  return point_aabb_distance2(box_min, box_max,
+                              (1 - lo) * o1 + lo * o2) < radius * radius
+
+
+@ti.func
+def inside(p, c, r):
+  return (p - c).norm_sqr() <= r * r
+
+
+@ti.func
+def inside_left(p, c, r):
+  return inside(p, c, r) and p[0] < c[0]
+
+
+@ti.func
+def inside_right(p, c, r):
+  return inside(p, c, r) and p[0] > c[0]
+
+
+def Vector2(x, y):
+  return ti.Vector([x, y])
+
+
+@ti.func
+def inside_taichi(p_):
+  p = p_
+  ret = -1
+  if not inside(p, Vector2(0.50, 0.50), 0.5):
+    if ret == -1:
+      ret = 1
+  if not inside(p, Vector2(0.50, 0.50), 0.5):
+    if ret == -1:
+      ret = 0
+  p = Vector2(0.5, 0.5) + (p - Vector2(0.5, 0.5))
+  if inside(p, Vector2(0.50, 0.25), 0.08):
+    if ret == -1:
+      ret = 1
+  if inside(p, Vector2(0.50, 0.75), 0.08):
+    if ret == -1:
+      ret = 0
+  if inside(p, Vector2(0.50, 0.25), 0.25):
+    if ret == -1:
+      ret = 0
+  if inside(p, Vector2(0.50, 0.75), 0.25):
+    if ret == -1:
+      ret = 1
+  if p[0] < 0.5:
+    if ret == -1:
+      ret = 1
+  else:
+    if ret == -1:
+      ret = 0
+  return ret

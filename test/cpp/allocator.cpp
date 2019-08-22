@@ -56,10 +56,10 @@ TC_TEST("parallel_particle_sort") {
   constexpr int dim = 3;
 
   auto f32 = DataType::f32;
+  auto i32 = DataType::i32;
   int grid_block_size = 4;
 
-  Vector particle_x(f32, dim);
-  Global(l, i32);
+  Vector particle_x(i32, dim);
 
   Vector grid_v(f32, dim);
   Global(grid_m, f32);
@@ -98,16 +98,12 @@ TC_TEST("parallel_particle_sort") {
 
   Kernel(sort).def([&] {
     BlockDim(256);
-    For(particle_x(0), [&](Expr p) {
-      auto node_coord = floor(particle_x[p] * inv_dx - 0.5_f);
-      grid_v[cast<int32>(node_coord(0)), cast<int32>(node_coord(1)),
-             cast<int32>(node_coord(2))](0) = 1;
-    });
+    For(particle_x(0), [&](Expr p) { grid_v[particle_x[p]](0) = 1; });
   });
 
   for (int i = 0; i < n_particles; i++) {
     for (int d = 0; d < dim; d++) {
-      particle_x(d).val<float32>(i) = p_x[i][d];
+      particle_x(d).val<int32>(i) = p_x[i][d] * inv_dx;
     }
   }
 

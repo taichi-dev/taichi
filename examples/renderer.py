@@ -221,7 +221,15 @@ def dda_particle(eye_pos, d, t):
 
 @ti.func
 def next_hit(pos, d, t):
-  return dda_particle(pos, d, t)
+  closest, normal, c = dda_particle(pos, d, t)
+  if d[1] != 0:
+    ray_closest = -pos[1] / d[1]
+    if ray_closest > 0 and ray_closest < closest:
+      closest = ray_closest
+      normal = out_dir(ti.Vector([0.0, 1.0, 0.0]))
+      c = ti.Vector([0.3, 0.1, 0.4])
+
+  return closest, normal, c
   if ti.static(render_voxel):
     return dda(pos, d)
   else:

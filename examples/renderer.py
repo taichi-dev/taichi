@@ -23,6 +23,7 @@ pid = ti.var(ti.i32)
 num_particles = ti.var(ti.i32)
 
 fov = 0.53
+dist_limit = 100
 
 exposure = 3.5
 camera_pos = ti.Vector([0.5, 0.32, 1.5])
@@ -30,6 +31,7 @@ vignette_strength = 0.9
 vignette_radius = 0.0
 vignette_center = [0.5, 0.5]
 light_direction = [1.2, 0.6, 0.5]
+light_direction_noise = 0.03
 
 # ti.runtime.print_preprocessed = True
 # ti.cfg.print_ir = True
@@ -85,6 +87,37 @@ def voxel_color(pos):
     f = 1.0
   return ti.Vector([0.3, 0.4, 0.3]) * (1 + f)
 
+
+@ti.func
+def sdf(o):
+  return (o - 0.5).norm() - 0.3
+
+
+@ti.func
+def ray_march(p, d):
+  j = 0
+  dist = 0.0
+  limit = 200
+  while j < limit and sdf(p + dist * d) > eps and dist < dist_limit:
+    dist += sdf(p + dist * d)
+    j += 1
+  return dist
+
+@ti.func
+def sdf_normal(p):
+  d = 1e-3
+  n = ti.Vector([0.0, 0.0, 0.0])
+  for i in ti.static(range(3)):
+    inc = p
+    dec = p
+    inc[i] += d
+    dec[i] -= d
+    n[i] = (0.5 / d) * (sdf(inc) - sdf(dec))
+  return ti.Matrix.normalized(n)
+
+@ti.func
+def sdf_color(p):
+  return [0.5, 0.5, 0.3]
 
 @ti.func
 def dda(pos, d_):
@@ -257,6 +290,12 @@ def next_hit(pos_, d, t):
       c = ti.Vector([0.3, 0.4, 0.4])
       # c = ti.Vector([1, 1, 1])
 
+  ray_march_dist = ray_march(pos, d)
+  if ray_march_dist < dist_limit and ray_march_dist < closest:
+    closest = ray_march_dist
+    normal = sdf_normal(pos + d * closest)
+    c = sdf_color(pos + d * closest)
+
   return closest, normal, c
 
   if ti.static(render_voxel):
@@ -301,7 +340,10 @@ def render():
           throughput *= c
 
           if ti.static(use_directional_light):
-            direct = ti.Matrix.normalized(ti.Vector(light_direction))
+            dir_noise = ti.Vector([ti.random() - 0.5, ti.random() - 0.5,
+                                   ti.random() - 0.5]) * light_direction_noise
+            direct = ti.Matrix.normalized(
+              ti.Vector(light_direction) + dir_noise)
             dot = direct.dot(normal)
             if dot > 0:
               dist, _, _ = next_hit(hit_pos + direct * 1e-4, direct, t)
@@ -331,7 +373,9 @@ def render():
       # contrib += throughput
       color_buffer[u, v] += contrib
 
+
 support = 2
+
 
 @ti.kernel
 def initialize_particle_grid():
@@ -348,7 +392,7 @@ def initialize_particle_grid():
             if inside_particle_grid(box_ipos):
               box_min = box_ipos * (1 / particle_grid_res)
               box_max = (box_ipos + ti.Vector([1, 1, 1])) * (
-                    1 / particle_grid_res)
+                  1 / particle_grid_res)
               if sphere_aabb_intersect_motion(box_min, box_max, x,
                                               x + shutter_time * v,
                                               sphere_radius):
@@ -439,7 +483,7 @@ def main():
       cv2.imshow('img', img)
       cv2.waitKey(1)
       cv2.imwrite('outputs/{:04d}.png'.format(int(fn)), img * 255)
-  cv2.waitKey(0)
+  cv2.waitKey(1)
 
 
 if __name__ == '__main__':

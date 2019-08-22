@@ -62,6 +62,7 @@ TC_TEST("parallel_particle_sort") {
   Vector particle_x(i32, dim);
 
   Global(grid_m, f32);
+  Global(flag, i32);
 
   int max_n_particles = 1024 * 1024;
 
@@ -86,6 +87,8 @@ TC_TEST("parallel_particle_sort") {
       fork.place(particle_x(i));
     }
 
+    root.dense(i, max_n_particles).place(flag);
+
     TC_ASSERT(n % grid_block_size == 0);
     root.dense({i, j, k}, n / grid_block_size)
         .pointer()
@@ -97,8 +100,11 @@ TC_TEST("parallel_particle_sort") {
 
   Kernel(sort).def([&] {
     BlockDim(256);
-    // For(particle_x(0), [&](Expr p) { grid_m[particle_x[p]] = 1; });
-    For(0, max_n_particles, [&](Expr p) { grid_m[particle_x[p]] = 1; });
+    For(particle_x(0), [&](Expr p) {
+      grid_m[particle_x[p]] = 1;
+      Atomic(flag[p]) += 1;
+    });
+    // For(0, max_n_particles, [&](Expr p) { grid_m[particle_x[p]] = 1; });
   });
 
   for (int i = 0; i < n_particles; i++) {
@@ -109,9 +115,14 @@ TC_TEST("parallel_particle_sort") {
 
   int last_nb = -1;
   for (int i = 0; i < 2048; i++) {
+    for (int k = 0; k < max_n_particles; k++)
+      flag.val<int32>(k) = 0;
     grid_m.parent().parent().snode()->clear_data_and_deactivate();
     sort();
     prog.synchronize();
+    for (int k = 0; k < max_n_particles; k++) {
+      TC_CHECK(flag.val<int32>(k) == 1);
+    }
     auto stat = grid_m.parent().parent().snode()->stat();
     int nb = stat.num_resident_blocks;
     if (last_nb == -1) {

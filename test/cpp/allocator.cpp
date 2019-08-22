@@ -47,13 +47,12 @@ TC_TEST("gpu_gc_basics") {
 };
 
 TC_TEST("parallel_particle_sort") {
-  bool benchmark_dragon = false;
   Program prog(Arch::gpu);
   constexpr bool highres = true;
   CoreState::set_trigger_gdb_when_crash(true);
 
-  constexpr int n = highres ? 256 : 128;  // grid_resolution
-  const real dt = 1e-5_f * 256 / n, dx = 1.0_f / n, inv_dx = 1.0_f / dx;
+  constexpr int n = 256;
+  const real dx = 1.0_f / n, inv_dx = 1.0_f / dx;
 
   constexpr int dim = 3;
 
@@ -62,7 +61,6 @@ TC_TEST("parallel_particle_sort") {
 
   Vector particle_x(f32, dim);
   Global(l, i32);
-  Global(gravity_x, f32);
 
   Vector grid_v(f32, dim);
   Global(grid_m, f32);
@@ -87,33 +85,20 @@ TC_TEST("parallel_particle_sort") {
   auto i = Index(0), j = Index(1), k = Index(2);
   auto p = Index(3);
 
-  bool SOA = false;
-
   layout([&]() {
     SNode *fork = nullptr;
-    if (!SOA)
-      fork = &root.dynamic(p, max_n_particles);
-    auto place = [&](Expr &expr) {
-      if (SOA) {
-        root.dynamic(p, max_n_particles).place(expr);
-      } else {
-        fork->place(expr);
-      }
-    };
+    fork = &root.dynamic(p, max_n_particles);
     for (int i = 0; i < dim; i++) {
-      place(particle_x(i));
+      fork->place(particle_x(i));
     }
 
     TC_ASSERT(n % grid_block_size == 0);
     auto &block = root.dense({i, j, k}, n / grid_block_size).pointer();
-    constexpr bool block_soa = false;
 
     block.dense({i, j, k}, grid_block_size)
         .place(grid_v(0), grid_v(1), grid_v(2), grid_m);
 
     block.dynamic(p, pow<dim>(grid_block_size) * 64).place(l);
-
-    root.place(gravity_x);
   });
 
   TC_ASSERT(bit::is_power_of_two(n));

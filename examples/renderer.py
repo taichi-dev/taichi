@@ -157,7 +157,7 @@ def inside_particle_grid(ipos):
 
 
 @ti.func
-def dda_particle(eye_pos, d, t):
+def dda_particle(eye_pos, d_, t):
   grid_res = particle_grid_res
 
   bbox_min = ti.Vector([0.0, 0.0, 0.0])
@@ -165,13 +165,15 @@ def dda_particle(eye_pos, d, t):
 
   normal = ti.Vector([0.0, 0.0, 0.0])
   c = ti.Vector([0.0, 0.0, 0.0])
+  d = d_
+  for i in ti.static(range(3)):
+    if ti.abs(d[i]) < 1e-6:
+      d[i] = 1e-6
 
   inter, near, far = ray_aabb_intersection(bbox_min, bbox_max, eye_pos, d)
   near = ti.max(0, near)
 
   closest_intersection = inf
-
-  has_s = 0
 
   if inter:
     pos = eye_pos + d * (near + eps)
@@ -186,14 +188,13 @@ def dda_particle(eye_pos, d, t):
 
     o = grid_res * pos
     ipos = ti.Matrix.floor(o).cast(ti.i32)
+    dis = (ipos - o + 0.5 + rsign * 0.5) * rinv
     running = 1
     while running:
       inside = inside_particle_grid(ipos)
 
       if inside:
         num_particles = ti.length(pid.parent(), ipos)
-        if num_particles:
-          has_s = 1
         for k in range(num_particles):
           p = pid[ipos[0], ipos[1], ipos[2], k]
           x = particle_x[p]
@@ -214,9 +215,8 @@ def dda_particle(eye_pos, d, t):
         running = 0
       else:
         # hits nothing. Continue ray marching
-        dis = (ipos - o + 0.5 + rsign * 0.5) * rinv
         mm = ti.Vector([0, 0, 0])
-        if dis[0] <= dis[1] and dis[0] < dis[2]:
+        if dis[0] <= dis[1] and dis[0] <= dis[2]:
           mm[0] = 1
         elif dis[1] <= dis[0] and dis[1] <= dis[2]:
           mm[1] = 1
@@ -225,19 +225,14 @@ def dda_particle(eye_pos, d, t):
         dis += mm * rsign * rinv
         ipos += mm * rsign
 
-  if has_s:
-    closest_intersection = near
-    normal = [0, -1, 0]
-    c = [1, 1, 1]
-
   return closest_intersection, normal, c
 
 
 @ti.func
 def next_hit(pos_, d, t):
   pos = pos_
-  # closest, normal, c = dda_particle(pos_, d, t)
-  closest, normal, c = intersect_spheres(pos, d)
+  closest, normal, c = dda_particle(pos_, d, t)
+  # closest, normal, c = intersect_spheres(pos, d)
   if d[1] != 0:
     ray_closest = -(pos[1] + 0.2) / d[1]
     if ray_closest > 0 and ray_closest < closest:
@@ -270,7 +265,7 @@ aspect_ratio = res[0] / res[1]
 def render():
   ti.parallelize(6)
   for u, v in color_buffer(0):
-    fov = 0.03
+    fov = 0.6
     pos = camera_pos
     d = ti.Vector(
       [(2 * fov * (u + ti.random(ti.f32)) / res[1] - fov * aspect_ratio - 1e-3),
@@ -398,8 +393,8 @@ def main():
     np_v = sand[:, 3:6].flatten()
     np_c = sand[:, 6].flatten().astype(np.float32)
   else:
-    num_part = 1
-    np_x = np.random.rand(num_part * 3).astype(np.float32) * 0.0 + 0.5
+    num_part = 128
+    np_x = np.random.rand(num_part * 3).astype(np.float32) * 0.8 + 0.1
     np_v = np.random.rand(num_part * 3).astype(np.float32) * 0
     np_c = np.random.randint(0, 256 ** 3, num_part,
                              dtype=np.int32).astype(np.float32)

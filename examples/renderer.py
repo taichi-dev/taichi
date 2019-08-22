@@ -13,7 +13,7 @@ num_spheres = 1024
 color_buffer = ti.Vector(3, dt=ti.f32)
 sphere_pos = ti.Vector(3, dt=ti.f32)
 render_voxel = False
-max_ray_depth = 3
+max_ray_depth = 4
 
 particle_x = ti.Vector(3, dt=ti.f32)
 particle_v = ti.Vector(3, dt=ti.f32)
@@ -31,7 +31,7 @@ grid_resolution = 16
 shutter_time = 3e-4
 high_res = True
 if high_res:
-  sphere_radius = 0.001
+  sphere_radius = 0.0012
   particle_grid_res = 128
   max_num_particles_per_cell = 256
   max_num_particles = 1024 * 1024 * 8
@@ -303,7 +303,7 @@ def rgb_to_i32(r, g, b):
 
 def main():
   fn = sys.argv[1]
-  sand = np.fromfile("../final_particles/sand/{:04d}.bin".format(int(fn)), dtype=np.float32)
+  sand = np.fromfile("../final_particles/sand_new/{:04d}.bin".format(int(fn)), dtype=np.float32)
 
 
   for i in range(num_spheres):
@@ -340,7 +340,7 @@ def main():
   initialize_particle_grid()
 
   last_t = 0
-  for i in range(200):
+  for i in range(1000):
     render()
 
     interval = 10
@@ -353,10 +353,10 @@ def main():
       last_t = time.time()
       img = img.reshape(res[1], res[0], 3) * (1 / (i + 1))
       img = np.sqrt(img)
-      # cv2.imshow('img', img)
-      # cv2.waitKey(1)
+      cv2.imshow('img', img)
+      cv2.waitKey(1)
       cv2.imwrite('outputs/{:04d}.png'.format(int(fn)), img * 255)
-  # cv2.waitKey(0)
+  cv2.waitKey(1)
 
 
 if __name__ == '__main__':

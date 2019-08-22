@@ -31,7 +31,13 @@ auto mpm3d = [](std::vector<std::string> cli_param) {
   constexpr int grid_n = n * 4;
   real dt = 2e-5_f * 256 / n * param.get<float32>("dt_mul", 1.0f),
        dx = 1.0_f / n, inv_dx = 1.0_f / dx;
-  const real frame_dt = param.get<float32>("frame_dt", 0.004);
+  const real frame_dt = param.get<float32>("frame_dt", 0.002);
+
+  int total_frames = param.get("total_frames", 400);
+  int seeding_frames = param.get("total_frames", 300);
+
+  TC_P(total_frames);
+  TC_P(seeding_frames);
   TC_P(dt);
   dt = frame_dt / std::ceil(frame_dt / dt - 1e-5f);
   TC_P(dt);
@@ -52,7 +58,7 @@ auto mpm3d = [](std::vector<std::string> cli_param) {
   bool bbox = param.get("bbox", false);
   int scene = param.get("scene", 0);
   if (scene == 0) {
-    TC_INFO("Scene: [1] ball smash    [2] one jet    [3] two jets");
+    TC_INFO("Scene: [1] ball smash    [2] one jet    [3] two static jets   [4] two moving jets");
     exit(0);
   }
   std::string output = param.get<std::string>("output");
@@ -573,35 +579,46 @@ auto mpm3d = [](std::vector<std::string> cli_param) {
 
   auto tone_map = [](real x) { return std::sqrt(x); };
   // auto &canvas = gui.get_canvas();
-  for (int frame = 0; frame < 100000; frame++) {
+  for (int frame = 0; frame < total_frames; frame++) {
     float32 current_t = frame_dt * frame;
-    if (scene == 2) {
-      int N = 10000;
-      if (n_particles + N <= max_n_particles) {
-        for (int i = 0; i < N; i++) {
-          insert_part(i + frame * N,
-                      sample_unit_sphere() * 0.1f + Vector3(0.5f, 0.5f, 0.5f),
-                      Vector3());
+    if (frame < seeding_frames) {
+      if (scene == 2) {
+        int N = 10000;
+        if (n_particles + N <= max_n_particles) {
+          for (int i = 0; i < N; i++) {
+            insert_part(i + frame * N,
+                        sample_unit_sphere() * 0.1f + Vector3(0.5f, 0.5f, 0.5f),
+                        Vector3());
+          }
+          n_particles += N;
         }
-        n_particles += N;
       }
-    }
-    if (scene == 3) {
-      int N = 10000;
-      if (n_particles + N <= max_n_particles) {
-        for (int i = 0; i < N / 2; i++) {
-          Vector3 color(0.1, 0.1, 0.1);
-          insert_part(i + frame * N,
-                      sample_unit_sphere() * 0.03f + Vector3(0.4f, 0.6f, 0.4f),
-                      Vector3(10, 0, 10), color);
+      if (scene >= 3) {
+        int N = 10000;
+        if (n_particles + N <= max_n_particles) {
+          bool mutate = rand() < 0.05;
+          auto o = sin(current_t * 30) * (scene > 3) * 0.01;
+          Vector3 offset(-o, 0, o);
+          for (int i = 0; i < N / 2; i++) {
+            Vector3 color(0.5, 0.6, 0.4);
+            if (mutate) {
+              color = Vector3(1.0) - color;
+            }
+            insert_part(i + frame * N,
+                        sample_unit_sphere() * 0.03f + Vector3(0.3f, 0.7f, 0.3f) + offset,
+                        Vector3(10, 0, 10), color);
+          }
+          for (int i = N / 2; i < N; i++) {
+            Vector3 color(0.4, 0.6, 0.7);
+            if (mutate) {
+              color = Vector3(1.0) - color;
+            }
+            insert_part(i + frame * N,
+                        sample_unit_sphere() * 0.03f + Vector3(0.7f, 0.7f, 0.7f) - offset,
+                        Vector3(-10, 0, -10), color);
+          }
+          n_particles += N;
         }
-        for (int i = N / 2; i < N; i++) {
-          Vector3 color(0.9, 0.9, 0.9);
-          insert_part(i + frame * N,
-                      sample_unit_sphere() * 0.03f + Vector3(0.6f, 0.6f, 0.6f),
-                      Vector3(-10, 0, -10), color);
-        }
-        n_particles += N;
       }
     }
     TC_P(n_particles)

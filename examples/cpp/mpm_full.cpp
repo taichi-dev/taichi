@@ -29,7 +29,15 @@ auto mpm3d = [](std::vector<std::string> cli_param) {
 
   constexpr int n = highres ? 256 : 128;  // grid_resolution
   constexpr int grid_n = n * 4;
-  const real dt = 1e-5_f * 256 / n, dx = 1.0_f / n, inv_dx = 1.0_f / dx;
+  real dt = 2e-5_f * 256 / n * param.get<float32>("dt_mul", 1.0f),
+       dx = 1.0_f / n, inv_dx = 1.0_f / dx;
+  const real frame_dt = param.get<float32>("frame_dt", 0.004);
+  TC_P(dt);
+  dt = frame_dt / std::ceil(frame_dt / dt - 1e-5f);
+  TC_P(dt);
+  TC_P(frame_dt);
+  int visualize_interval = param.get<int32>("visualize_interval", 5);
+  TC_P(visualize_interval);
   auto particle_mass = 1.0_f, vol = 1.0_f;
   auto E = 1e4_f, nu = 0.3f;
   real mu_0 = E / (2 * (1 + nu)), lambda_0 = E * nu / ((1 + nu) * (1 - 2 * nu));
@@ -528,7 +536,7 @@ auto mpm3d = [](std::vector<std::string> cli_param) {
         .snode()
         ->clear_data_and_deactivate();
     auto t = Time::get_time();
-    for (int f = 0; f < 200; f++) {
+    for (int f = 0; f < std::round(frame_dt / dt); f++) {
       TC_PROFILE("p2g", p2g());
       TC_PROFILE("grid_op", grid_op());
       TC_PROFILE("g2p", g2p());
@@ -536,6 +544,8 @@ auto mpm3d = [](std::vector<std::string> cli_param) {
     prog.profiler_print();
     auto ms_per_substep = (Time::get_time() - t) / 200 * 1000;
     TC_P(ms_per_substep);
+    auto sec_per_frame = Time::get_time() - t;
+    TC_P(sec_per_frame);
   };
 
   Kernel(set_renderer_volume).def([&] {
@@ -549,12 +559,14 @@ auto mpm3d = [](std::vector<std::string> cli_param) {
   auto tone_map = [](real x) { return std::sqrt(x); };
   // auto &canvas = gui.get_canvas();
   for (int frame = 0; frame < 100000; frame++) {
+    float32 current_t = frame_dt * frame;
     if (scene == 2) {
       int N = 10000;
       if (n_particles + N <= max_n_particles) {
         for (int i = 0; i < N; i++) {
           insert_part(i + frame * N,
-                      sample_unit_sphere() * 0.1f + Vector3(0.5f, 0.5f, 0.5f), Vector3());
+                      sample_unit_sphere() * 0.1f + Vector3(0.5f, 0.5f, 0.5f),
+                      Vector3());
         }
         n_particles += N;
       }
@@ -590,22 +602,23 @@ auto mpm3d = [](std::vector<std::string> cli_param) {
       renderer.parameters.box_max[d] = -1e16f;
     }
 
+    auto ot = Time::get_time();
     std::vector<float32> particles;
     for (int i = 0; i < n_particles; i++) {
       for (int k = 0; k < 3; k++) {
+        auto v = particle_x(k).val<float32>(i);
         particles.push_back(particle_x(k).val<float32>(i));
+        renderer.parameters.box_min[k] =
+            std::min(renderer.parameters.box_min[k], v);
+        renderer.parameters.box_max[k] =
+            std::max(renderer.parameters.box_max[k], v);
       }
       for (int k = 0; k < 3; k++) {
         particles.push_back(particle_v(k).val<float32>(i));
       }
       particles.push_back(particle_color.val<int32>(i));
-      for (int d = 0; d < 3; d++) {
-        renderer.parameters.box_min[d] = std::min(
-            renderer.parameters.box_min[d], particle_x(d).val<float32>(i));
-        renderer.parameters.box_max[d] = std::max(
-            renderer.parameters.box_max[d], particle_x(d).val<float32>(i));
-      }
     }
+    TC_P(Time::get_time() - ot);
     create_directories(fmt::format("final_particles/{}", output));
     /*
     write_to_binary_file(
@@ -620,28 +633,30 @@ auto mpm3d = [](std::vector<std::string> cli_param) {
       renderer.parameters.box_max[d] += 5.0f / grid_n;
     }
 
-    set_renderer_volume();
-    renderer.preprocess_volume();
-    int nsamples = 5;
-    for (int s = 0; s < nsamples; s++) {
-      renderer.sample();
+    if (frame % visualize_interval == 0) {
+      set_renderer_volume();
+      renderer.preprocess_volume();
+      int nsamples = 2;
+      for (int s = 0; s < nsamples; s++) {
+        renderer.sample();
+      }
+
+      real scale = 1.0f / nsamples;
+      for (int i = 0; i < res.prod(); i++) {
+        gui.canvas->img[i / res.y][i % res.y] =
+            Vector4(tone_map(scale * renderer.buffer(0).val<float32>(i)),
+                    tone_map(scale * renderer.buffer(1).val<float32>(i)),
+                    tone_map(scale * renderer.buffer(2).val<float32>(i)), 1);
+      }
+
+      prog.profiler_print();
+
+      gui.update();
+      auto render_dir = fmt::format("{}_rendered", "mpm");
+      create_directories(render_dir);
+      gui.get_canvas().img.write_as_image(
+          fmt::format("{}/{:05d}.png", render_dir, frame));
     }
-
-    real scale = 1.0f / nsamples;
-    for (int i = 0; i < res.prod(); i++) {
-      gui.canvas->img[i / res.y][i % res.y] =
-          Vector4(tone_map(scale * renderer.buffer(0).val<float32>(i)),
-                  tone_map(scale * renderer.buffer(1).val<float32>(i)),
-                  tone_map(scale * renderer.buffer(2).val<float32>(i)), 1);
-    }
-
-    prog.profiler_print();
-
-    gui.update();
-    auto render_dir = fmt::format("{}_rendered", "mpm");
-    create_directories(render_dir);
-    gui.get_canvas().img.write_as_image(
-        fmt::format("{}/{:05d}.png", render_dir, frame));
     print_profile_info();
   }
 };

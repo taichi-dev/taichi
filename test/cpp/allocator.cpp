@@ -48,7 +48,6 @@ TC_TEST("gpu_gc_basics") {
 
 TC_TEST("parallel_particle_sort") {
   Program prog(Arch::gpu);
-  constexpr bool highres = true;
   CoreState::set_trigger_gdb_when_crash(true);
 
   constexpr int n = 256;
@@ -70,14 +69,11 @@ TC_TEST("parallel_particle_sort") {
   int n_particles = 0;
   std::vector<float> benchmark_particles;
   std::vector<Vector3> p_x;
-  n_particles = max_n_particles / (highres ? 1 : 8);
+  n_particles = max_n_particles;
   p_x.resize(n_particles);
   for (int i = 0; i < n_particles; i++) {
     Vector3 offset = Vector3::rand() - Vector3(0.5_f);
-    while (offset.length() > 0.5f) {
-      offset = Vector3::rand() - Vector3(0.5_f);
-    }
-    p_x[i] = Vector3(0.5_f) + offset * 0.3f;
+    p_x[i] = Vector3(0.5_f) + offset * 0.7f;
   }
 
   TC_ASSERT(n_particles <= max_n_particles);
@@ -86,10 +82,9 @@ TC_TEST("parallel_particle_sort") {
   auto p = Index(3);
 
   layout([&]() {
-    SNode *fork = nullptr;
-    fork = &root.dynamic(p, max_n_particles);
+    auto &fork = root.dynamic(p, max_n_particles);
     for (int i = 0; i < dim; i++) {
-      fork->place(particle_x(i));
+      fork.place(particle_x(i));
     }
 
     TC_ASSERT(n % grid_block_size == 0);
@@ -121,14 +116,19 @@ TC_TEST("parallel_particle_sort") {
   }
 
   int last_nb = -1;
-  for (int i = 0; i < 128; i++) {
+  for (int i = 0; i < 2048; i++) {
     grid_m.parent().parent().snode()->clear_data_and_deactivate();
     sort();
+    prog.synchronize();
     auto stat = grid_m.parent().parent().snode()->stat();
     int nb = stat.num_resident_blocks;
     if (last_nb == -1) {
       last_nb = nb;
+      TC_P(last_nb);
     } else {
+      if (last_nb != nb) {
+        TC_P(i);
+      }
       TC_CHECK(last_nb == nb);
     }
   }

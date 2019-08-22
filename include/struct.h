@@ -683,8 +683,10 @@ struct pointer {
           }
 #if defined(__CUDA_ARCH__)
           atomicExch(&lock, 0);
+          __threadfence();
         }
         uniques ^= 1 << leader;
+        __syncwarp(mask);
       }
 #endif
     }

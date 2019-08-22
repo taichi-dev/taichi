@@ -92,8 +92,6 @@ TC_TEST("parallel_particle_sort") {
 
     block.dense({i, j, k}, grid_block_size)
         .place(grid_v(0), grid_v(1), grid_v(2), grid_m);
-
-    block.dynamic(p, pow<dim>(grid_block_size) * 64).place(l);
   });
 
   TC_ASSERT(bit::is_power_of_two(n));
@@ -102,10 +100,8 @@ TC_TEST("parallel_particle_sort") {
     BlockDim(256);
     For(particle_x(0), [&](Expr p) {
       auto node_coord = floor(particle_x[p] * inv_dx - 0.5_f);
-      Append(l.parent(),
-             (cast<int32>(node_coord(0)), cast<int32>(node_coord(1)),
-              cast<int32>(node_coord(2))),
-             p);
+      grid_v[cast<int32>(node_coord(0)), cast<int32>(node_coord(1)),
+             cast<int32>(node_coord(2))](0) = 1;
     });
   });
 

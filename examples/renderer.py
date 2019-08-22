@@ -4,7 +4,7 @@ import cv2
 import math
 import time
 import random
-from renderer_utils import copy, out_dir, ray_aabb_intersection, inf, eps, \
+from renderer_utils import out_dir, ray_aabb_intersection, inf, eps, \
   intersect_sphere, sphere_aabb_intersect_motion
 import sys
 
@@ -22,6 +22,9 @@ pid = ti.var(ti.i32)
 num_particles = ti.var(ti.i32)
 
 camera_pos = ti.Vector([0.5, 0.3, 1.5])
+vignette_strength = 0.9
+vignette_radius = 0.0
+vignette_center = [0.5, 0.5]
 
 # ti.runtime.print_preprocessed = True
 # ti.cfg.print_ir = True
@@ -46,13 +49,16 @@ assert sphere_radius * 2 * particle_grid_res < 1
 
 @ti.layout
 def buffers():
-  ti.root.dense(ti.ij, (res[0] // 8, res[1] // 8)).dense(ti.ij, 8).place(color_buffer)
+  ti.root.dense(ti.ij, (res[0] // 8, res[1] // 8)).dense(ti.ij, 8).place(
+    color_buffer)
   ti.root.dense(ti.i, num_spheres).place(sphere_pos)
   ti.root.dense(ti.ijk, particle_grid_res // 8).dense(ti.ijk, 8).dynamic(ti.l,
-                                                   max_num_particles_per_cell).place(
+                                                                         max_num_particles_per_cell).place(
     pid)
-  ti.root.dense(ti.l, max_num_particles).place(particle_x, particle_v, particle_color)
+  ti.root.dense(ti.l, max_num_particles).place(particle_x, particle_v,
+                                               particle_color)
   ti.root.place(num_particles)
+
 
 @ti.func
 def query_density_int(ipos):
@@ -158,7 +164,6 @@ def dda_particle(eye_pos, d, t):
   bbox_max = ti.Vector([1.0, 1.0, 1.0])
 
   normal = ti.Vector([0.0, 0.0, 0.0])
-  hit_pos = ti.Vector([0.0, 0.0, 0.0])
   c = ti.Vector([0.0, 0.0, 0.0])
 
   inter, near, far = ray_aabb_intersection(bbox_min, bbox_max, eye_pos, d)
@@ -243,7 +248,9 @@ def next_hit(pos, d, t):
   else:
     return intersect_spheres(pos, d)
 
+
 aspect_ratio = res[0] / res[1]
+
 
 @ti.kernel
 def render():
@@ -251,9 +258,10 @@ def render():
   for u, v in color_buffer(0):
     fov = 0.6
     pos = camera_pos
-    d = ti.Vector([(2 * fov * (u + ti.random(ti.f32)) / res[1] - fov * aspect_ratio - 1e-3),
-                   2 * fov * (v + ti.random(ti.f32)) / res[1] - fov - 1e-3,
-                   -1.0])
+    d = ti.Vector(
+      [(2 * fov * (u + ti.random(ti.f32)) / res[1] - fov * aspect_ratio - 1e-3),
+       2 * fov * (v + ti.random(ti.f32)) / res[1] - fov - 1e-3,
+       -1.0])
     if u < res[0] and v < res[1]:
       # t = ti.min(1, ti.random(ti.f32) * 2) * shutter_time
       t = ti.random(ti.f32) * shutter_time
@@ -288,7 +296,8 @@ def render():
 
       if hit_sky:
         if ray_depth != 1:
-          contrib *= ti.max(d[1], 0.05)
+          # contrib *= ti.max(d[1], 0.05)
+          pass
         else:
           # directly hit sky
           pass
@@ -317,18 +326,39 @@ def initialize_particle_grid():
           if sphere_aabb_intersect_motion(box_min, box_max, x,
                                           x + shutter_time * v, sphere_radius):
             ti.append(pid.parent(), box_ipos, p)
+
+
 @ti.func
 def color_f32_to_i8(x):
   return ti.cast(ti.min(ti.max(x, 0.0), 1.0) * 255, ti.i32)
 
+
 @ti.func
 def rgb_to_i32(r, g, b):
-   return color_f32_to_i8(r) * 65536 + color_f32_to_i8(g) * 256 + color_f32_to_i8(b)
+  return color_f32_to_i8(r) * 65536 + color_f32_to_i8(
+    g) * 256 + color_f32_to_i8(b)
+
+
+@ti.kernel
+def copy(img: np.ndarray):
+  for i in range(res[0]):
+    for j in range(res[1]):
+      u = 1.0 * i / res[0]
+      v = 1.0 * j / res[1]
+
+      darken = 1.0 - vignette_strength * ti.max((ti.sqrt(
+        ti.sqr(u - vignette_center[0]) + ti.sqr(
+          v - vignette_center[1])) - vignette_radius), 0)
+
+      coord = ((res[1] - 1 - j) * res[0] + i) * 3
+      for c in ti.static(range(3)):
+        img[coord + c] = color_buffer[i, j][2 - c] * darken
+
 
 def main():
   fn = sys.argv[1]
-  sand = np.fromfile("../final_particles/sand_new/{:04d}.bin".format(int(fn)), dtype=np.float32)
-
+  sand = np.fromfile("../final_particles/sand_new/{:04d}.bin".format(int(fn)),
+                     dtype=np.float32)
 
   for i in range(num_spheres):
     for c in range(3):
@@ -364,7 +394,7 @@ def main():
   initialize_particle_grid()
 
   last_t = 0
-  for i in range(100):
+  for i in range(1000):
     render()
 
     interval = 10
@@ -373,7 +403,8 @@ def main():
       copy(img)
       if last_t != 0:
         print(
-          "time per spp = {:.2f} ms".format((time.time() - last_t) * 1000 / interval))
+          "time per spp = {:.2f} ms".format(
+            (time.time() - last_t) * 1000 / interval))
       last_t = time.time()
       exposure = 2.5
       img = img.reshape(res[1], res[0], 3) * (1 / (i + 1)) * exposure

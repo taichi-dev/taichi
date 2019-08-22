@@ -22,7 +22,7 @@ particle_color = ti.var(ti.i32)
 pid = ti.var(ti.i32)
 num_particles = ti.var(ti.i32)
 
-camera_pos = ti.Vector([0.5, 0.3, 2.5])
+camera_pos = ti.Vector([0.5, 0.3, 1.5])
 vignette_strength = 0.9
 vignette_radius = 0.0
 vignette_center = [0.5, 0.5]
@@ -33,7 +33,7 @@ ti.cfg.arch = ti.cuda
 grid_resolution = 16
 
 shutter_time = 3e-4
-high_res = False
+high_res = True
 if high_res:
   sphere_radius = 0.0012
   particle_grid_res = 128
@@ -83,7 +83,11 @@ def voxel_color(pos):
 
 
 @ti.func
-def dda(pos, d):
+def dda(pos, d_):
+  d = d_
+  for i in ti.static(range(3)):
+    if ti.abs(d[i]) < 1e-6:
+      d[i] = 1e-6
   rinv = 1.0 / d
   rsign = ti.Vector([0, 0, 0])
   for i in ti.static(range(3)):
@@ -199,7 +203,7 @@ def dda_particle(eye_pos, d_, t):
           p = pid[ipos[0], ipos[1], ipos[2], k]
           x = particle_x[p]
           v = particle_v[p]
-          color = particle_color[p]
+          color = 2 ** 24 - 1# particle_color[p]
           dist = intersect_sphere(eye_pos, d, x + t * v, sphere_radius)
           if dist < closest_intersection:
             closest_intersection = dist
@@ -242,6 +246,7 @@ def next_hit(pos_, d, t):
       # c = ti.Vector([1, 1, 1])
 
 
+  '''
   if d[2] != 0:
     ray_closest = -(pos[2] + 0.5) / d[2]
     if ray_closest > 0 and ray_closest < closest:
@@ -249,6 +254,7 @@ def next_hit(pos_, d, t):
       normal = ti.Vector([0.0, 0.0, 1.0])
       c = ti.Vector([0.3, 0.4, 0.4])
       # c = ti.Vector([1, 1, 1])
+  '''
 
   return closest, normal, c
 
@@ -265,11 +271,11 @@ aspect_ratio = res[0] / res[1]
 def render():
   ti.parallelize(6)
   for u, v in color_buffer(0):
-    fov = 0.6
+    fov = 0.5
     pos = camera_pos
     d = ti.Vector(
       [(2 * fov * (u + ti.random(ti.f32)) / res[1] - fov * aspect_ratio - 1e-3),
-       2 * fov * (v + ti.random(ti.f32)) / res[1] - fov - 1e-3 - 0.24,
+       2 * fov * (v + ti.random(ti.f32)) / res[1] - fov - 1e-3,
        -1.0])
     if u < res[0] and v < res[1]:
       # t = ti.min(1, ti.random(ti.f32) * 2) * shutter_time
@@ -295,10 +301,10 @@ def render():
           throughput *= c
 
           if ti.static(use_directional_light):
-            direct = ti.Matrix.normalized(ti.Vector([0.0, 1.0, 0.1]))
+            direct = ti.Matrix.normalized(ti.Vector([0.0, 0.0, 1.0]))
             dot = direct.dot(normal)
             if dot > 0:
-              dist, _, _ = next_hit(pos, direct, t)
+              dist, _, _ = next_hit(hit_pos + direct * 1e-4, direct, t)
               if dist > 1000:
                 contrib += throughput * ti.Vector([1.0, 0.9, 0.7]) * dot
         else:  # hit sky

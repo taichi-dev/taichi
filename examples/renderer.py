@@ -13,7 +13,7 @@ num_spheres = 1024
 color_buffer = ti.Vector(3, dt=ti.f32)
 sphere_pos = ti.Vector(3, dt=ti.f32)
 render_voxel = False
-max_ray_depth = 2
+max_ray_depth = 1
 use_directional_light = True
 
 particle_x = ti.Vector(3, dt=ti.f32)
@@ -33,14 +33,14 @@ ti.cfg.arch = ti.cuda
 grid_resolution = 16
 
 shutter_time = 3e-4
-high_res = True
+high_res = False
 if high_res:
   sphere_radius = 0.0012
   particle_grid_res = 128
   max_num_particles_per_cell = 256
   max_num_particles = 1024 * 1024 * 8
 else:
-  sphere_radius = 0.01
+  sphere_radius = 0.03
   particle_grid_res = 8
   max_num_particles_per_cell = 32
   max_num_particles = 128
@@ -227,26 +227,24 @@ def dda_particle(eye_pos, d, t):
 @ti.func
 def next_hit(pos_, d, t):
   pos = pos_
-  # closest, normal, c = dda_particle(pos_, d, t)
-  closest, normal, c = intersect_spheres(pos, d)
+  closest, normal, c = dda_particle(pos_, d, t)
+  # closest, normal, c = intersect_spheres(pos, d)
   if d[1] != 0:
     ray_closest = -(pos[1] + 0.2) / d[1]
     if ray_closest > 0 and ray_closest < closest:
       closest = ray_closest
       normal = ti.Vector([0.0, 1.0, 0.0])
-      # c = ti.Vector([0.3, 0.1, 0.4])
-      c = ti.Vector([1, 1, 1])
+      c = ti.Vector([0.3, 0.3, 0.4])
+      # c = ti.Vector([1, 1, 1])
 
-  '''
 
   if d[2] != 0:
     ray_closest = -(pos[2] + 0.5) / d[2]
     if ray_closest > 0 and ray_closest < closest:
       closest = ray_closest
       normal = ti.Vector([0.0, 0.0, 1.0])
-      # c = ti.Vector([0.3, 0.7, 0.4])
-      c = ti.Vector([1, 1, 1])
-  '''
+      c = ti.Vector([0.3, 0.4, 0.4])
+      # c = ti.Vector([1, 1, 1])
 
   return closest, normal, c
 
@@ -293,9 +291,9 @@ def render():
           throughput *= c
 
           if ti.static(use_directional_light):
-            direct = ti.Matrix.normalized(ti.Vector([0.0, 1.0, 0.0]))
-            dot =  direct.dot(normal)
-            if  dot > 0:
+            direct = ti.Matrix.normalized(ti.Vector([0.0, 1.0, 0.1]))
+            dot = direct.dot(normal)
+            if dot > 0:
               dist, _, _ = next_hit(pos, direct, t)
               if dist > 1000:
                 contrib += throughput * ti.Vector([1.0, 0.9, 0.7]) * dot
@@ -382,21 +380,23 @@ def main():
     for c in range(3):
       sphere_pos[i][c] = random.random()
 
-  '''
-  np_x = np.random.rand(num_part * 3).astype(np.float32)
-  np_v = np.random.rand(num_part * 3).astype(np.float32)
-  np_c = np.random.randint(0, 256 ** 3, num_part,
-                           dtype=np.int32).astype(np.float32)
-  '''
 
-  num_sand_particles = len(sand) // 7
-  print('num_input_particles =', num_sand_particles)
-  num_particles[None] = num_sand_particles
-  num_part = num_particles[None]
-  sand = sand.reshape((num_sand_particles, 7))
-  np_x = sand[:, :3].flatten()
-  np_v = sand[:, 3:6].flatten()
-  np_c = sand[:, 6].flatten().astype(np.float32)
+  if high_res:
+    num_sand_particles = len(sand) // 7
+    num_part = num_sand_particles
+    sand = sand.reshape((num_sand_particles, 7))
+    np_x = sand[:, :3].flatten()
+    np_v = sand[:, 3:6].flatten()
+    np_c = sand[:, 6].flatten().astype(np.float32)
+  else:
+    num_part = max_num_particles
+    np_x = np.random.rand(num_part * 3).astype(np.float32) * 0.8 + 0.1
+    np_v = np.random.rand(num_part * 3).astype(np.float32) * 0
+    np_c = np.random.randint(0, 256 ** 3, num_part,
+                             dtype=np.int32).astype(np.float32)
+
+  num_particles[None] = num_part
+  print('num_input_particles =', num_part)
 
   @ti.kernel
   def initialize_particle_x(x: np.ndarray, v: np.ndarray, color: np.ndarray):

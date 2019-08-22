@@ -229,7 +229,15 @@ def next_hit(pos, d, t):
       normal = out_dir(ti.Vector([0.0, 1.0, 0.0]))
       c = ti.Vector([0.3, 0.1, 0.4])
 
+  if d[2] != 0:
+    ray_closest = -(pos[2] + 0.5) / d[2]
+    if ray_closest > 0 and ray_closest < closest:
+      closest = ray_closest
+      normal = out_dir(ti.Vector([0.0, 0.0, 1.0]))
+      c = ti.Vector([0.3, 0.7, 0.4])
+
   return closest, normal, c
+
   if ti.static(render_voxel):
     return dda(pos, d)
   else:

@@ -83,11 +83,12 @@ auto mpm3d = [](std::vector<std::string> cli_param) {
   NamedScalar(l, l, i32);
   NamedScalar(particle_J, J, f32);
   NamedScalar(gravity_x, g, f32);
+  NamedScalar(particle_buffer, g, f32);
 
   Vector grid_v("v^{g}", f32, dim);
   NamedScalar(grid_m, m ^ {p}, f32);
 
-  int max_n_particles = 1024 * 1024 * 4;
+  int max_n_particles = 1024 * 1024 * 8;
 
   int n_particles = 0;
   std::vector<float> benchmark_particles;
@@ -193,6 +194,7 @@ auto mpm3d = [](std::vector<std::string> cli_param) {
     block.dynamic(p, pow<dim>(grid_block_size) * 64).place(l);
 
     root.place(gravity_x);
+    root.dense(i, max_n_particles * 7).place(particle_buffer);
 
     renderer.place_data();
   });
@@ -202,6 +204,19 @@ auto mpm3d = [](std::vector<std::string> cli_param) {
   // prog.visualize_layout("layout.tex");
 
   TC_ASSERT(bit::is_power_of_two(n));
+
+  Kernel(summarize).def([&] {
+    BlockDim(512);
+    For(particle_x(0), [&](Expr p) {
+      for (int i = 0; i < 3; i++) {
+        particle_buffer[p * 7 + i] = particle_x(i)[p];
+      }
+      for (int i = 0; i < 3; i++) {
+        particle_buffer[p * 7 + 3 + i] = particle_v(i)[p];
+      }
+      particle_buffer[p * 7 + 6] = particle_color[p];
+    });
+  });
 
   Kernel(sort).def([&] {
     BlockDim(512);
@@ -603,6 +618,12 @@ auto mpm3d = [](std::vector<std::string> cli_param) {
     }
 
     auto ot = Time::get_time();
+    std::vector<float32> particle_data(max_n_particles * 7);
+    summarize();
+    prog.synchronize();
+    cudaMemcpy(particle_data.data(), &particle_x(0).val<float32>(0),
+               particle_data.size() * sizeof(float), cudaMemcpyDeviceToHost);
+
     std::vector<float32> particles;
     for (int i = 0; i < n_particles; i++) {
       for (int k = 0; k < 3; k++) {

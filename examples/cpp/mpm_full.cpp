@@ -620,24 +620,17 @@ auto mpm3d = [](std::vector<std::string> cli_param) {
     auto ot = Time::get_time();
     std::vector<float32> particle_data(max_n_particles * 7);
     summarize();
-    prog.synchronize();
-    cudaMemcpy(particle_data.data(), &particle_x(0).val<float32>(0),
+    cudaMemcpy(particle_data.data(), &particle_buffer.val<float32>(0),
                particle_data.size() * sizeof(float), cudaMemcpyDeviceToHost);
 
-    std::vector<float32> particles;
     for (int i = 0; i < n_particles; i++) {
       for (int k = 0; k < 3; k++) {
-        auto v = particle_x(k).val<float32>(i);
-        particles.push_back(particle_x(k).val<float32>(i));
+        auto v = particle_data[i * 7 + k];
         renderer.parameters.box_min[k] =
             std::min(renderer.parameters.box_min[k], v);
         renderer.parameters.box_max[k] =
             std::max(renderer.parameters.box_max[k], v);
       }
-      for (int k = 0; k < 3; k++) {
-        particles.push_back(particle_v(k).val<float32>(i));
-      }
-      particles.push_back(particle_color.val<int32>(i));
     }
     TC_P(Time::get_time() - ot);
     create_directories(fmt::format("final_particles/{}", output));
@@ -647,7 +640,7 @@ auto mpm3d = [](std::vector<std::string> cli_param) {
         */
     auto fn = fmt::format("final_particles/{}/{:04d}.bin", output, frame);
     auto f = std::fopen(fn.c_str(), "wb");
-    std::fwrite(particles.data(), sizeof(float), 7 * n_particles, f);
+    std::fwrite(particle_data.data(), sizeof(float), 7 * n_particles, f);
     fclose(f);
     for (int d = 0; d < 3; d++) {
       renderer.parameters.box_min[d] -= 5.0f / grid_n;

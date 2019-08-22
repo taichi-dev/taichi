@@ -13,7 +13,7 @@ num_spheres = 1024
 color_buffer = ti.Vector(3, dt=ti.f32)
 sphere_pos = ti.Vector(3, dt=ti.f32)
 render_voxel = False
-max_ray_depth = 1
+max_ray_depth = 4
 use_directional_light = True
 
 particle_x = ti.Vector(3, dt=ti.f32)
@@ -201,10 +201,10 @@ def dda_particle(eye_pos, d_, t):
         num_particles = ti.length(pid.parent(), ipos)
         for k in range(num_particles):
           p = pid[ipos[0], ipos[1], ipos[2], k]
-          x = particle_x[p]
           v = particle_v[p]
-          color = 2 ** 24 - 1# particle_color[p]
-          dist = intersect_sphere(eye_pos, d, x + t * v, sphere_radius)
+          x = particle_x[p] + t * v
+          color = 2 ** 24 - 1  # particle_color[p]
+          dist = intersect_sphere(eye_pos, d, x, sphere_radius)
           if dist < closest_intersection:
             closest_intersection = dist
             hit_pos = eye_pos + d * closest_intersection
@@ -245,8 +245,6 @@ def next_hit(pos_, d, t):
       c = ti.Vector([0.3, 0.3, 0.4])
       # c = ti.Vector([1, 1, 1])
 
-
-  '''
   if d[2] != 0:
     ray_closest = -(pos[2] + 0.5) / d[2]
     if ray_closest > 0 and ray_closest < closest:
@@ -254,7 +252,6 @@ def next_hit(pos_, d, t):
       normal = ti.Vector([0.0, 0.0, 1.0])
       c = ti.Vector([0.3, 0.4, 0.4])
       # c = ti.Vector([1, 1, 1])
-  '''
 
   return closest, normal, c
 
@@ -301,7 +298,7 @@ def render():
           throughput *= c
 
           if ti.static(use_directional_light):
-            direct = ti.Matrix.normalized(ti.Vector([0.0, 0.0, 1.0]))
+            direct = ti.Matrix.normalized(ti.Vector([1.0, 1.0, 1.0]))
             dot = direct.dot(normal)
             if dot > 0:
               dist, _, _ = next_hit(hit_pos + direct * 1e-4, direct, t)
@@ -318,7 +315,6 @@ def render():
         else:
           throughput /= max_c
 
-
       if hit_sky:
         if ray_depth != 1:
           # contrib *= ti.max(d[1], 0.05)
@@ -332,6 +328,7 @@ def render():
       # contrib += throughput
       color_buffer[u, v] += contrib
 
+support = 2
 
 @ti.kernel
 def initialize_particle_grid():
@@ -340,18 +337,19 @@ def initialize_particle_grid():
       x = particle_x[p]
       v = particle_v[p]
       ipos = ti.Matrix.floor(x * particle_grid_res).cast(ti.i32)
-      for nei in range(27):
-        i = nei // 9 - 1
-        j = nei // 3 % 3 - 1
-        k = nei % 3 - 1
-        offset = ti.Vector([i, j, k])
-        box_ipos = ipos + offset
-        if inside_particle_grid(box_ipos):
-          box_min = box_ipos * (1 / particle_grid_res)
-          box_max = (box_ipos + ti.Vector([1, 1, 1])) * (1 / particle_grid_res)
-          if sphere_aabb_intersect_motion(box_min, box_max, x,
-                                          x + shutter_time * v, sphere_radius):
-            ti.append(pid.parent(), box_ipos, p)
+      for i in range(-support, support + 1):
+        for j in range(-support, support + 1):
+          for k in range(-support, support + 1):
+            offset = ti.Vector([i, j, k])
+            box_ipos = ipos + offset
+            if inside_particle_grid(box_ipos):
+              box_min = box_ipos * (1 / particle_grid_res)
+              box_max = (box_ipos + ti.Vector([1, 1, 1])) * (
+                    1 / particle_grid_res)
+              if sphere_aabb_intersect_motion(box_min, box_max, x,
+                                              x + shutter_time * v,
+                                              sphere_radius):
+                ti.append(pid.parent(), box_ipos, p)
 
 
 @ti.func
@@ -388,8 +386,7 @@ def main():
 
   for i in range(num_spheres):
     for c in range(3):
-      sphere_pos[i][c] = 0.5 # random.random()
-
+      sphere_pos[i][c] = 0.5  # random.random()
 
   if high_res:
     num_sand_particles = len(sand) // 7

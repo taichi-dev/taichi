@@ -13,7 +13,8 @@ num_spheres = 1024
 color_buffer = ti.Vector(3, dt=ti.f32)
 sphere_pos = ti.Vector(3, dt=ti.f32)
 render_voxel = False
-max_ray_depth = 4
+max_ray_depth = 2
+use_directional_light = True
 
 particle_x = ti.Vector(3, dt=ti.f32)
 particle_v = ti.Vector(3, dt=ti.f32)
@@ -21,7 +22,7 @@ particle_color = ti.var(ti.i32)
 pid = ti.var(ti.i32)
 num_particles = ti.var(ti.i32)
 
-camera_pos = ti.Vector([0.5, 0.3, 1.5])
+camera_pos = ti.Vector([0.5, 0.3, 2.5])
 vignette_strength = 0.9
 vignette_radius = 0.0
 vignette_center = [0.5, 0.5]
@@ -130,13 +131,12 @@ def dda(pos, d):
 @ti.func
 def intersect_spheres(pos, d):
   normal = ti.Vector([0.0, 0.0, 0.0])
-  hit_pos = ti.Vector([0.0, 0.0, 0.0])
   c = ti.Vector([0.0, 0.0, 0.0])
   min_dist = inf
   sid = -1
 
   for i in range(num_spheres):
-    dist = intersect_sphere(pos, d, sphere_pos[i])
+    dist = intersect_sphere(pos, d, sphere_pos[i], 0.05)
     if dist < min_dist:
       min_dist = dist
       sid = i
@@ -146,7 +146,7 @@ def intersect_spheres(pos, d):
     normal = ti.Matrix.normalized(hit_pos - sphere_pos[sid])
     c = [0.3, 0.5, 0.2]
 
-  return normal, hit_pos, c
+  return min_dist, normal, c
 
 
 @ti.func
@@ -225,21 +225,28 @@ def dda_particle(eye_pos, d, t):
 
 
 @ti.func
-def next_hit(pos, d, t):
-  closest, normal, c = dda_particle(pos, d, t)
+def next_hit(pos_, d, t):
+  pos = pos_
+  # closest, normal, c = dda_particle(pos_, d, t)
+  closest, normal, c = intersect_spheres(pos, d)
   if d[1] != 0:
-    ray_closest = -pos[1] / d[1]
+    ray_closest = -(pos[1] + 0.2) / d[1]
     if ray_closest > 0 and ray_closest < closest:
       closest = ray_closest
-      normal = out_dir(ti.Vector([0.0, 1.0, 0.0]))
-      c = ti.Vector([0.3, 0.1, 0.4])
+      normal = ti.Vector([0.0, 1.0, 0.0])
+      # c = ti.Vector([0.3, 0.1, 0.4])
+      c = ti.Vector([1, 1, 1])
+
+  '''
 
   if d[2] != 0:
     ray_closest = -(pos[2] + 0.5) / d[2]
     if ray_closest > 0 and ray_closest < closest:
       closest = ray_closest
-      normal = out_dir(ti.Vector([0.0, 0.0, 1.0]))
-      c = ti.Vector([0.3, 0.7, 0.4])
+      normal = ti.Vector([0.0, 0.0, 1.0])
+      # c = ti.Vector([0.3, 0.7, 0.4])
+      c = ti.Vector([1, 1, 1])
+  '''
 
   return closest, normal, c
 
@@ -284,6 +291,14 @@ def render():
           d = out_dir(normal)
           pos = hit_pos + 1e-4 * d
           throughput *= c
+
+          if ti.static(use_directional_light):
+            direct = ti.Matrix.normalized(ti.Vector([0.0, 1.0, 0.0]))
+            dot =  direct.dot(normal)
+            if  dot > 0:
+              dist, _, _ = next_hit(pos, direct, t)
+              if dist > 1000:
+                contrib += throughput * ti.Vector([1.0, 0.9, 0.7]) * dot
         else:  # hit sky
           hit_sky = 1
           depth = max_ray_depth
@@ -295,6 +310,7 @@ def render():
         else:
           throughput /= max_c
 
+
       if hit_sky:
         if ray_depth != 1:
           # contrib *= ti.max(d[1], 0.05)
@@ -305,7 +321,7 @@ def render():
       else:
         throughput *= 0
 
-      contrib += throughput
+      # contrib += throughput
       color_buffer[u, v] += contrib
 
 

@@ -61,7 +61,6 @@ TC_TEST("parallel_particle_sort") {
 
   Vector particle_x(i32, dim);
 
-  Vector grid_v(f32, dim);
   Global(grid_m, f32);
 
   int max_n_particles = 1024 * 1024;
@@ -88,17 +87,17 @@ TC_TEST("parallel_particle_sort") {
     }
 
     TC_ASSERT(n % grid_block_size == 0);
-    auto &block = root.dense({i, j, k}, n / grid_block_size).pointer();
-
-    block.dense({i, j, k}, grid_block_size)
-        .place(grid_v(0), grid_v(1), grid_v(2), grid_m);
+    root.dense({i, j, k}, n / grid_block_size)
+        .pointer()
+        .dense({i, j, k}, grid_block_size)
+        .place(grid_m);
   });
 
   TC_ASSERT(bit::is_power_of_two(n));
 
   Kernel(sort).def([&] {
     BlockDim(256);
-    For(particle_x(0), [&](Expr p) { grid_v[particle_x[p]](0) = 1; });
+    For(particle_x(0), [&](Expr p) { grid_m[particle_x[p]] = 1; });
   });
 
   for (int i = 0; i < n_particles; i++) {

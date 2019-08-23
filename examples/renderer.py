@@ -14,7 +14,7 @@ color_buffer = ti.Vector(3, dt=ti.f32)
 sphere_pos = ti.Vector(3, dt=ti.f32)
 render_voxel = False
 max_ray_depth = 1
-use_directional_light = True
+use_directional_light = False
 
 particle_x = ti.Vector(3, dt=ti.f32)
 particle_v = ti.Vector(3, dt=ti.f32)
@@ -22,12 +22,12 @@ particle_color = ti.var(ti.i32)
 pid = ti.var(ti.i32)
 num_particles = ti.var(ti.i32)
 
-fov = 0.01
+fov = 0.03
 dist_limit = 100
 
-exposure = 2.5
-camera_pos = ti.Vector([0.51, 0.22, 4.7])
-vignette_strength = 0.9
+exposure = 1
+camera_pos = ti.Vector([0.5, 0.32, 4.7])
+vignette_strength = 0.0
 vignette_radius = 0.0
 vignette_center = [0.5, 0.5]
 light_direction = [1.2, 0.6, 0.7]
@@ -280,7 +280,7 @@ def dda_particle(eye_pos, d_, t):
           v = particle_v[p]
           x = particle_x[p] + t * v
           color = particle_color[p]
-          dist = intersect_sphere(eye_pos, d, x, sphere_radius)
+          dist = intersect_sphere(eye_pos, d, x, sphere_radius) - 1e-5
           if dist < closest_intersection and dist > 0:
             closest_intersection = dist
             hit_pos = eye_pos + d * closest_intersection
@@ -377,8 +377,9 @@ def render():
         depth += 1
         ray_depth = depth
         if normal.norm() != 0:
+          contrib = normal * 0.5 + 0.5
           d = out_dir(normal)
-          pos = hit_pos + 1e-4 * normal
+          pos = hit_pos + 1e-4 * d
           throughput *= c
 
           if ti.static(use_directional_light):

@@ -49,6 +49,7 @@ def ray_aabb_intersection(box_min, box_max, o, d):
 # T*T + 2Td x + x^2 = r * r
 # x^2 + 2Td x + (T * T - r * r) = 0
 
+refine = True
 @ti.func
 def intersect_sphere(pos, d, center, radius):
   T = pos - center
@@ -62,12 +63,34 @@ def intersect_sphere(pos, d, center, radius):
     sdelta = ti.sqrt(delta)
     ratio = 0.5 / A
     ret1 = ratio * (-B - sdelta)
-    if ret1 > eps:
+    if ret1 > 0:
       dist = ret1
     else:
       ret2 = ratio * (-B + sdelta)
-      if ret2 > eps:
+      if ret2 > 0:
         dist = ret2
+    if ti.static(refine):
+      if dist < inf:
+        # refinement
+        old_dist = dist
+        T = pos + d * dist - center
+        A = 1
+        B = 2 * T.dot(d)
+        C = T.dot(T) - radius * radius
+        delta = B * B - 4 * A * C
+        if delta > 0:
+          sdelta = ti.sqrt(delta)
+          ratio = 0.5 / A
+          ret1 = ratio * (-B - sdelta) + old_dist
+          if ret1 > 0:
+            dist = ret1
+          else:
+            ret2 = ratio * (-B + sdelta) + old_dist
+            if ret2 > 0:
+              dist = ret2
+        else:
+          dist = inf
+
   return dist
 
 

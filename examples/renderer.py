@@ -13,8 +13,8 @@ num_spheres = 1024
 color_buffer = ti.Vector(3, dt=ti.f32)
 sphere_pos = ti.Vector(3, dt=ti.f32)
 render_voxel = False
-max_ray_depth = 1
-use_directional_light = False
+max_ray_depth = 4
+use_directional_light = True
 
 particle_x = ti.Vector(3, dt=ti.f32)
 particle_v = ti.Vector(3, dt=ti.f32)
@@ -22,15 +22,15 @@ particle_color = ti.var(ti.i32)
 pid = ti.var(ti.i32)
 num_particles = ti.var(ti.i32)
 
-fov = 0.03
+fov = 0.23
 dist_limit = 100
 
-exposure = 1
-camera_pos = ti.Vector([0.5, 0.5, 4.7])
-vignette_strength = 0.0
+exposure = 2.5
+camera_pos = ti.Vector([0.5, 0.32, 4.7])
+vignette_strength = 0.9
 vignette_radius = 0.0
 vignette_center = [0.5, 0.5]
-light_direction = [1.2, 0.6, 0.7]
+light_direction = [1.2, 0.6, 0.5]
 light_direction_noise = 0.03
 light_color = [1.0, 1.0, 1.0]
 
@@ -41,10 +41,10 @@ grid_resolution = 16
 # ti.cfg.simplify_before_lower_access = False
 # ti.cfg.simplify_after_lower_access = False
 
-shutter_time = 0  # 3e-4
+shutter_time = 3e-4
 high_res = True
 if high_res:
-  sphere_radius = 0.0045
+  sphere_radius = 0.0012
   particle_grid_res = 128
   max_num_particles_per_cell = 256
   max_num_particles = 1024 * 1024 * 8
@@ -54,7 +54,7 @@ else:
   max_num_particles_per_cell = 64
   max_num_particles = 1024
 
-# assert sphere_radius * 2 * particle_grid_res < 1
+assert sphere_radius * 2 * particle_grid_res < 1
 
 
 @ti.layout

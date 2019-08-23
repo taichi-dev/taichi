@@ -305,7 +305,7 @@ std::string CompileConfig::compiler_config() {
     cmd = fmt::format(
         "nvcc -g -lineinfo -std=c++14 -shared {} -Xcompiler \"-fPIC "
         "-march=native \" "
-        " -arch=compute_61 -code=sm_61,compute_61 "
+        "--use_fast_math -arch=compute_61 -code=sm_61,compute_61 "
         "--ptxas-options=-allow-expensive-optimizations=true,-O3,-v -I "
         "{}/include -ccbin {} "
         " -lstdc++ -L{}/build/ -ltaichi_lang_core "

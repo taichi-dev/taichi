@@ -22,7 +22,7 @@ particle_color = ti.var(ti.i32)
 pid = ti.var(ti.i32)
 num_particles = ti.var(ti.i32)
 
-fov = 0.003
+fov = 0.03
 dist_limit = 100
 
 exposure = 1
@@ -38,11 +38,13 @@ light_color = [1.0, 1.0, 1.0]
 # ti.cfg.print_ir = True
 ti.cfg.arch = ti.cuda
 grid_resolution = 16
+# ti.cfg.simplify_before_lower_access = False
+# ti.cfg.simplify_after_lower_access = False
 
 shutter_time = 0  # 3e-4
 high_res = True
 if high_res:
-  sphere_radius = 0.0015
+  sphere_radius = 0.0045
   particle_grid_res = 128
   max_num_particles_per_cell = 256
   max_num_particles = 1024 * 1024 * 8
@@ -52,7 +54,7 @@ else:
   max_num_particles_per_cell = 64
   max_num_particles = 1024
 
-assert sphere_radius * 2 * particle_grid_res < 1
+# assert sphere_radius * 2 * particle_grid_res < 1
 
 
 @ti.layout
@@ -239,26 +241,6 @@ def inside_particle_grid(ipos):
 
 @ti.func
 def dda_particle(eye_pos, d_, t):
-  hit_pos = ti.Vector([0.0, 0.0, 0.0])
-  normal = ti.Vector([0.0, 0.0, 0.0])
-  c = ti.Vector([0.0, 0.0, 0.0])
-  min_dist = inf
-  sid = -1
-
-  for i in range(num_particles):
-    dist, _ = intersect_sphere(eye_pos, d_, particle_x[i], sphere_radius)
-    if dist < min_dist:
-      min_dist = dist
-      sid = i
-
-  if min_dist < inf:
-    hit_pos = eye_pos + d_ * min_dist
-    normal = ti.Matrix.normalized(hit_pos - particle_x[sid])
-    c = [0.3, 0.5, 0.2]
-
-  return min_dist, hit_pos, normal, c
-
-  '''
   grid_res = particle_grid_res
 
   bbox_min = ti.Vector([0.0, 0.0, 0.0])
@@ -329,7 +311,6 @@ def dda_particle(eye_pos, d_, t):
         ipos += mm * rsign
 
   return closest_intersection, hit_pos, normal, c
-  '''
 
 
 @ti.func
@@ -385,7 +366,6 @@ def render():
        -1.0])
     d = ti.Matrix.normalized(d)
     if u < res[0] and v < res[1]:
-      # t = ti.min(1, ti.random(ti.f32) * 2) * shutter_time
       t = (ti.random() - 0.5) * shutter_time
 
       contrib = ti.Vector([0.0, 0.0, 0.0])
@@ -400,8 +380,6 @@ def render():
         depth += 1
         ray_depth = depth
         if normal.norm() != 0:
-          cc = (hit_pos[2] - 0.45) * 10 + 0.5
-          contrib = [cc, cc, cc]#normal * 0.5 + 0.5
           contrib = normal * 0.5 + 0.5
           d = out_dir(normal)
           pos = hit_pos + 1e-4 * d
@@ -518,8 +496,6 @@ def main():
     np_c = np.random.randint(0, 256 ** 3, num_part,
                              dtype=np.int32).astype(np.float32)
 
-  # num_part = num_part // 500
-  num_part = 1
   num_particles[None] = num_part
   print('num_input_particles =', num_part)
 
@@ -527,11 +503,8 @@ def main():
   def initialize_particle_x(x: np.ndarray, v: np.ndarray, color: np.ndarray):
     for i in range(max_num_particles):
       if i < num_particles:
-        # for c in ti.static(range(3)):
-        #  particle_x[i][c] = x[i * 3 + c]
-        particle_x[i][0] = ti.random() * 0.00 + 0.5004
-        particle_x[i][1] = ti.random() * 0.00 + 0.5004
-        particle_x[i][2] = ti.random() * 0.0 + 0.45
+        for c in ti.static(range(3)):
+          particle_x[i][c] = x[i * 3 + c]
         for c in ti.static(range(3)):
           particle_v[i][c] = v[i * 3 + c]
         particle_color[i] = ti.cast(color[i], ti.i32)

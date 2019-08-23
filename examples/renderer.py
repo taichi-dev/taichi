@@ -22,7 +22,7 @@ particle_color = ti.var(ti.i32)
 pid = ti.var(ti.i32)
 num_particles = ti.var(ti.i32)
 
-fov = 0.03
+fov = 0.003
 dist_limit = 100
 
 exposure = 1
@@ -380,8 +380,8 @@ def render():
   for u, v in color_buffer(0):
     pos = camera_pos
     d = ti.Vector(
-      [(2 * fov * (u + ti.random(ti.f32)) / res[1] - fov * aspect_ratio - 1e-3),
-       2 * fov * (v + ti.random(ti.f32)) / res[1] - fov - 1e-3,
+      [(2 * fov * (u + ti.random(ti.f32)) / res[1] - fov * aspect_ratio - 1e-5),
+       2 * fov * (v + ti.random(ti.f32)) / res[1] - fov - 1e-5,
        -1.0])
     d = ti.Matrix.normalized(d)
     if u < res[0] and v < res[1]:
@@ -400,7 +400,7 @@ def render():
         depth += 1
         ray_depth = depth
         if normal.norm() != 0:
-          cc = (closest - 4.3) * 10
+          cc = (hit_pos[2] - 0.45) * 10 + 0.5
           contrib = [cc, cc, cc]#normal * 0.5 + 0.5
           contrib = normal * 0.5 + 0.5
           d = out_dir(normal)
@@ -518,7 +518,8 @@ def main():
     np_c = np.random.randint(0, 256 ** 3, num_part,
                              dtype=np.int32).astype(np.float32)
 
-  num_part = num_part // 500
+  # num_part = num_part // 500
+  num_part = 1
   num_particles[None] = num_part
   print('num_input_particles =', num_part)
 
@@ -528,8 +529,8 @@ def main():
       if i < num_particles:
         # for c in ti.static(range(3)):
         #  particle_x[i][c] = x[i * 3 + c]
-        particle_x[i][0] = ti.random() * 0.3 + 0.35
-        particle_x[i][1] = ti.random() * 0.3 + 0.35
+        particle_x[i][0] = ti.random() * 0.00 + 0.5004
+        particle_x[i][1] = ti.random() * 0.00 + 0.5004
         particle_x[i][2] = ti.random() * 0.0 + 0.45
         for c in ti.static(range(3)):
           particle_v[i][c] = v[i * 3 + c]

@@ -49,14 +49,14 @@ def ray_aabb_intersection(box_min, box_max, o, d):
 # T*T + 2Td x + x^2 = r * r
 # x^2 + 2Td x + (T * T - r * r) = 0
 
-refine = True
+refine = False
 @ti.func
 def intersect_sphere(pos, d, center, radius):
   T = pos - center
-  A = 1
-  B = 2 * T.dot(d)
+  A = 1.0
+  B = 2.0 * T.dot(d)
   C = T.dot(T) - radius * radius
-  delta = B * B - 4 * A * C
+  delta = B * B - 4.0 * A * C
   dist = inf
   hit_pos = ti.Vector([0.0, 0.0, 0.0])
 
@@ -64,20 +64,15 @@ def intersect_sphere(pos, d, center, radius):
     sdelta = ti.sqrt(delta)
     ratio = 0.5 / A
     ret1 = ratio * (-B - sdelta)
-    if ret1 > 0:
-      dist = ret1
-    else:
-      ret2 = ratio * (-B + sdelta)
-      if ret2 > 0:
-        dist = ret2
+    dist = ret1
     if ti.static(refine):
       if dist < inf:
         # refinement
         old_dist = dist
         new_pos = pos + d * dist
         T = new_pos - center
-        A = 1
-        B = 2 * T.dot(d)
+        A = 1.0
+        B = 2.0 * T.dot(d)
         C = T.dot(T) - radius * radius
         delta = B * B - 4 * A * C
         if delta > 0:
@@ -88,10 +83,11 @@ def intersect_sphere(pos, d, center, radius):
             dist = ret1
             hit_pos = new_pos + ratio * (-B - sdelta) * d
           else:
-            ret2 = ratio * (-B + sdelta) + old_dist
-            if ret2 > 0:
-              dist = ret2
-              hit_pos = new_pos + ratio * (-B + sdelta) * d
+            pass
+            #ret2 = ratio * (-B + sdelta) + old_dist
+            #if ret2 > 0:
+            #  dist = ret2
+            #  hit_pos = new_pos + ratio * (-B + sdelta) * d
         else:
           dist = inf
 

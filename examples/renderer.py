@@ -13,7 +13,7 @@ num_spheres = 1024
 color_buffer = ti.Vector(3, dt=ti.f32)
 sphere_pos = ti.Vector(3, dt=ti.f32)
 render_voxel = False
-max_ray_depth = 4
+max_ray_depth = 1
 use_directional_light = True
 
 particle_x = ti.Vector(3, dt=ti.f32)
@@ -22,11 +22,11 @@ particle_color = ti.var(ti.i32)
 pid = ti.var(ti.i32)
 num_particles = ti.var(ti.i32)
 
-fov = 0.23
+fov = 0.01
 dist_limit = 100
 
 exposure = 2.5
-camera_pos = ti.Vector([0.5, 0.32, 2.7])
+camera_pos = ti.Vector([0.51, 0.22, 4.7])
 vignette_strength = 0.9
 vignette_radius = 0.0
 vignette_center = [0.5, 0.5]
@@ -39,10 +39,10 @@ light_color = [1.0, 1.0, 1.0]
 ti.cfg.arch = ti.cuda
 grid_resolution = 16
 
-shutter_time = 3e-4
+shutter_time = 0#3e-4
 high_res = True
 if high_res:
-  sphere_radius = 0.0012
+  sphere_radius = 0.0015
   particle_grid_res = 128
   max_num_particles_per_cell = 256
   max_num_particles = 1024 * 1024 * 8
@@ -93,7 +93,7 @@ n_pillars = 9
 
 @ti.func
 def sdf(o_):
-  o = o_ - ti.Vector([0.5, 0.027, 0.5])
+  o = o_ - ti.Vector([0.5, 0.002, 0.5])
   # r = ti.sqrt(o[0] * o[0] + o[2] * o[2])
   p = o
 
@@ -128,9 +128,11 @@ def ray_march(p, d):
   j = 0
   dist = 0.0
   limit = 200
-  while j < limit and sdf(p + dist * d) > eps and dist < dist_limit:
+  while j < limit and sdf(p + dist * d) > 1e-8 and dist < dist_limit:
     dist += sdf(p + dist * d)
     j += 1
+  if dist > dist_limit:
+    dist = inf
   return dist
 
 
@@ -150,7 +152,7 @@ def sdf_normal(p):
 @ti.func
 def sdf_color(p_):
   p = p_
-  scale = 0.8
+  scale = 0.4
   if inside_taichi(ti.Vector([p[0], p[2]])):
     scale = 1
   return ti.Vector([0.3, 0.5, 0.7]) * scale
@@ -279,7 +281,7 @@ def dda_particle(eye_pos, d_, t):
           x = particle_x[p] + t * v
           color = particle_color[p]
           dist = intersect_sphere(eye_pos, d, x, sphere_radius)
-          if dist < closest_intersection:
+          if dist < closest_intersection and dist > 0:
             closest_intersection = dist
             hit_pos = eye_pos + d * closest_intersection
             normal = ti.Matrix.normalized(hit_pos - x)
@@ -356,6 +358,7 @@ def render():
       [(2 * fov * (u + ti.random(ti.f32)) / res[1] - fov * aspect_ratio - 1e-3),
        2 * fov * (v + ti.random(ti.f32)) / res[1] - fov - 1e-3,
        -1.0])
+    d = ti.Matrix.normalized(d)
     if u < res[0] and v < res[1]:
       # t = ti.min(1, ti.random(ti.f32) * 2) * shutter_time
       t = ti.random(ti.f32) * shutter_time
@@ -363,7 +366,6 @@ def render():
       contrib = ti.Vector([0.0, 0.0, 0.0])
       throughput = ti.Vector([1.0, 1.0, 1.0])
 
-      d = ti.Matrix.normalized(d)
 
       depth = 0
       hit_sky = 1
@@ -376,7 +378,7 @@ def render():
         ray_depth = depth
         if normal.norm() != 0:
           d = out_dir(normal)
-          pos = hit_pos + 1e-4 * d
+          pos = hit_pos + 1e-4 * normal
           throughput *= c
 
           if ti.static(use_directional_light):
@@ -386,8 +388,8 @@ def render():
               ti.Vector(light_direction) + dir_noise)
             dot = direct.dot(normal)
             if dot > 0:
-              dist, _, _ = next_hit(hit_pos + direct * 1e-4, direct, t)
-              if dist > 1000:
+              dist, _, _ = next_hit(pos, direct, t)
+              if dist > dist_limit:
                 contrib += throughput * ti.Vector(light_color) * dot
         else:  # hit sky
           hit_sky = 1
@@ -523,7 +525,7 @@ def main():
       cv2.imshow('img', img)
       cv2.waitKey(1)
       cv2.imwrite('outputs/{:04d}.png'.format(int(fn)), img * 255)
-  cv2.waitKey(1)
+  cv2.waitKey(0)
 
 
 if __name__ == '__main__':

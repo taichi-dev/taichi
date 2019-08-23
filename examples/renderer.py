@@ -239,6 +239,26 @@ def inside_particle_grid(ipos):
 
 @ti.func
 def dda_particle(eye_pos, d_, t):
+  hit_pos = ti.Vector([0.0, 0.0, 0.0])
+  normal = ti.Vector([0.0, 0.0, 0.0])
+  c = ti.Vector([0.0, 0.0, 0.0])
+  min_dist = inf
+  sid = -1
+
+  for i in range(num_particles):
+    dist, _ = intersect_sphere(eye_pos, d_, particle_x[i], sphere_radius)
+    if dist < min_dist:
+      min_dist = dist
+      sid = i
+
+  if min_dist < inf:
+    hit_pos = eye_pos + d_ * min_dist
+    normal = ti.Matrix.normalized(hit_pos - particle_x[sid])
+    c = [0.3, 0.5, 0.2]
+
+  return min_dist, hit_pos, normal, c
+
+  '''
   grid_res = particle_grid_res
 
   bbox_min = ti.Vector([0.0, 0.0, 0.0])
@@ -309,6 +329,7 @@ def dda_particle(eye_pos, d_, t):
         ipos += mm * rsign
 
   return closest_intersection, hit_pos, normal, c
+  '''
 
 
 @ti.func
@@ -497,7 +518,8 @@ def main():
     np_c = np.random.randint(0, 256 ** 3, num_part,
                              dtype=np.int32).astype(np.float32)
 
-  num_particles[None] = num_part // 100
+  num_part = num_part // 500
+  num_particles[None] = num_part
   print('num_input_particles =', num_part)
 
   @ti.kernel
@@ -508,7 +530,7 @@ def main():
         #  particle_x[i][c] = x[i * 3 + c]
         particle_x[i][0] = ti.random() * 0.3 + 0.35
         particle_x[i][1] = ti.random() * 0.3 + 0.35
-        particle_x[i][2] = ti.random() * 0.1 + 0.45
+        particle_x[i][2] = ti.random() * 0.0 + 0.45
         for c in ti.static(range(3)):
           particle_v[i][c] = v[i * 3 + c]
         particle_color[i] = ti.cast(color[i], ti.i32)

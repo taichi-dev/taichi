@@ -1,4 +1,5 @@
 import taichi_lang as ti
+import os
 import numpy as np
 import cv2
 import math
@@ -25,7 +26,7 @@ num_particles = ti.var(ti.i32)
 fov = 0.23
 dist_limit = 100
 
-exposure = 2.5
+exposure = 2.0
 camera_pos = ti.Vector([0.5, 0.32, 2.7])
 vignette_strength = 0.9
 vignette_radius = 0.0
@@ -523,10 +524,11 @@ def main():
       last_t = time.time()
       img = img.reshape(res[1], res[0], 3) * (1 / (i + 1)) * exposure
       img = np.sqrt(img)
-      cv2.imshow('img', img)
-      cv2.waitKey(1)
-      cv2.imwrite('outputs/{:04d}.png'.format(int(fn)), img * 255)
-  cv2.waitKey(0)
+      # cv2.imshow('img', img)
+      # cv2.waitKey(1)
+      os.makedirs('outputs', exist_ok=True)
+    cv2.imwrite('outputs/{:04d}.png'.format(int(fn)), img * 255)
+  # cv2.waitKey(0)
 
 
 if __name__ == '__main__':

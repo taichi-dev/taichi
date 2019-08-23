@@ -94,7 +94,7 @@ class ASTTransformer(ast.NodeTransformer):
     template = ''' 
 if 1:
   __cond = 0
-  ti.core.begin_frontend_while(__cond.ptr)
+  ti.core.begin_frontend_while(ti.Expr(__cond).ptr)
   ti.core.pop_scope()
 '''
     t = ast.parse(template).body[0]
@@ -125,7 +125,7 @@ if 1:
     template = ''' 
 if 1:
   __cond = 0
-  ti.core.begin_frontend_if(__cond.ptr)
+  ti.core.begin_frontend_if(ti.Expr(__cond).ptr)
   ti.core.begin_frontend_if_true()
   ti.core.pop_scope()
   ti.core.begin_frontend_if_false()

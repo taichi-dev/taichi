@@ -1,3 +1,5 @@
+// The CUDA backend
+
 #pragma once
 
 #include "kernel.h"

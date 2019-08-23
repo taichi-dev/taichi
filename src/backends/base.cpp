@@ -1,3 +1,5 @@
+// The code generator base class
+
 #include "base.h"
 #include <xxhash.h>
 #include <sstream>

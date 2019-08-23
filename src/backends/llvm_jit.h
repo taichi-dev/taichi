@@ -1,3 +1,5 @@
+// A LLVM JIT compiler wrapper
+
 #pragma once
 
 // https://llvm.org/docs/tutorial/BuildingAJIT2.html

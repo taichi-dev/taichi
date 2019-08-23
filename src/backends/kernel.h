@@ -1,3 +1,5 @@
+// Driver class for kernel codegen
+
 #pragma once
 
 #include "base.h"

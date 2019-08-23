@@ -4,6 +4,8 @@
 
 TLANG_NAMESPACE_BEGIN
 
+// Lower GlobalPtrStmt into smaller pieces for access optimization
+
 class LowerAccess : public IRVisitor {
  public:
   StructForStmt *current_struct_for;

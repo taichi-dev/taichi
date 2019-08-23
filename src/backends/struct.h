@@ -1,3 +1,5 @@
+// Codegen for the hierarchical data structure
+
 #include "../snode.h"
 #include "base.h"
 #include "loopgen.h"

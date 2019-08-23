@@ -1,3 +1,5 @@
+// Codegen for the hierarchical data structure (LLVM)
+
 #include "llvm/IR/Verifier.h"
 #include <llvm/IR/IRBuilder.h>
 #include "../ir.h"

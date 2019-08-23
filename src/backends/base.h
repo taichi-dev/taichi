@@ -1,3 +1,5 @@
+// The code generator base class
+
 #pragma once
 #include "../util.h"
 #include "../snode.h"

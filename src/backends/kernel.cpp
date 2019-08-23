@@ -1,3 +1,5 @@
+// Driver class for kernel codegen
+
 #include "kernel.h"
 #include <taichi/system/timer.h>
 

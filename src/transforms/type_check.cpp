@@ -1,3 +1,5 @@
+// Type checking
+
 #include "../ir.h"
 #include <taichi/lang.h>
 

@@ -1,3 +1,5 @@
+// Helpers for generating nested loops
+
 #include "loopgen.h"
 // XXX: HACK to remove warning
 #if defined(__device__)

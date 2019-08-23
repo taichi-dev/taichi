@@ -1,3 +1,5 @@
+// This pass analyzes compile-time known offsets for two values.
+
 #include "../ir.h"
 
 TLANG_NAMESPACE_BEGIN

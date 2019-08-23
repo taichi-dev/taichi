@@ -1,3 +1,5 @@
+// Dead Instruction Elimination
+
 #include "../ir.h"
 #include <unordered_set>
 

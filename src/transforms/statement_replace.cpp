@@ -2,6 +2,8 @@
 
 TLANG_NAMESPACE_BEGIN
 
+// Replace all usages statement A with a new statement B.
+// Note that the original statement A is NOT replaced.
 class StatementReplace : public IRVisitor {
  public:
   Stmt *old_stmt, *new_stmt;

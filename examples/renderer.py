@@ -333,7 +333,7 @@ def next_hit(pos_, d, t):
     if ray_closest > 0 and ray_closest < closest:
       closest = ray_closest
       normal = ti.Vector([0.0, 0.0, 1.0])
-      c = ti.Vector([0.3, 0.4, 0.4])
+      c = ti.Vector([0.6, 0.7, 0.7])
 
   ray_march_dist = ray_march(pos, d)
   if ray_march_dist < dist_limit and ray_march_dist < closest:
@@ -524,11 +524,11 @@ def main():
       last_t = time.time()
       img = img.reshape(res[1], res[0], 3) * (1 / (i + 1)) * exposure
       img = np.sqrt(img)
-      # cv2.imshow('img', img)
-      # cv2.waitKey(1)
+      cv2.imshow('img', img)
+      cv2.waitKey(1)
       os.makedirs('outputs', exist_ok=True)
     cv2.imwrite('outputs/{:04d}.png'.format(int(fn)), img * 255)
-  # cv2.waitKey(0)
+  cv2.waitKey(0)
 
 
 if __name__ == '__main__':

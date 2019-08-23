@@ -4,6 +4,8 @@
 
 TLANG_NAMESPACE_BEGIN
 
+// Common subexpression elimination, store forwarding, useless local store elimination;
+// Simplify if statements into conditional stores.
 class BasicBlockSimplify : public IRVisitor {
  public:
   Block *block;

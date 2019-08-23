@@ -1,3 +1,5 @@
+// The IRPrinter prints the IR in a human-readable format
+
 #include <typeinfo>
 #include "../ir.h"
 

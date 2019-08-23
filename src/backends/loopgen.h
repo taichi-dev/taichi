@@ -1,3 +1,5 @@
+// Helpers for generating nested loops
+
 #pragma once
 #include "base.h"
 

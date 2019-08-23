@@ -1,3 +1,5 @@
+// Codegen for the hierarchical data structure (LLVM)
+
 #include "struct.h"
 #include "llvm_jit.h"
 

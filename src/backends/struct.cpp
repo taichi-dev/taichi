@@ -1,3 +1,5 @@
+// Codegen for the hierarchical data structure
+
 #include "../ir.h"
 #include "../program.h"
 #include "struct.h"

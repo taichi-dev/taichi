@@ -2,6 +2,8 @@
 
 TLANG_NAMESPACE_BEGIN
 
+// This pass manipulates the id of statements so that they are successive values
+// starting from 0
 class ReId : public IRVisitor {
  public:
   int id_counter;

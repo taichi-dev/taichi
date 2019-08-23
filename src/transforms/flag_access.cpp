@@ -2,7 +2,7 @@
 
 TLANG_NAMESPACE_BEGIN
 
-// Flag accesses to be either weak or strong
+// Flag accesses to be either weak (non-activating) or strong (activating)
 class FlagAccess : public IRVisitor {
  public:
   FlagAccess(IRNode *node) {

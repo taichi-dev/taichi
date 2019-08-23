@@ -26,11 +26,11 @@ fov = 0.23
 dist_limit = 100
 
 exposure = 2.5
-camera_pos = ti.Vector([0.5, 0.32, 4.7])
+camera_pos = ti.Vector([0.5, 0.32, 2.7])
 vignette_strength = 0.9
 vignette_radius = 0.0
 vignette_center = [0.5, 0.5]
-light_direction = [1.2, 0.6, 0.5]
+light_direction = [1.2, 0.3, 0.7]
 light_direction_noise = 0.03
 light_color = [1.0, 1.0, 1.0]
 
@@ -38,8 +38,6 @@ light_color = [1.0, 1.0, 1.0]
 # ti.cfg.print_ir = True
 ti.cfg.arch = ti.cuda
 grid_resolution = 16
-# ti.cfg.simplify_before_lower_access = False
-# ti.cfg.simplify_after_lower_access = False
 
 shutter_time = 3e-4
 high_res = True
@@ -310,14 +308,13 @@ def dda_particle(eye_pos, d_, t):
         dis += mm * rsign * rinv
         ipos += mm * rsign
 
-  return closest_intersection, hit_pos, normal, c
+  return closest_intersection, normal, c
 
 
 @ti.func
 def next_hit(pos_, d, t):
   pos = pos_
-  hit_pos = ti.Vector([0.0, 0.0, 0.0])
-  closest, hit_pos, normal, c = dda_particle(pos_, d, t)
+  closest, normal, c = dda_particle(pos_, d, t)
   # closest, normal, c = intersect_spheres(pos, d)
 
   '''
@@ -328,6 +325,7 @@ def next_hit(pos_, d, t):
       normal = ti.Vector([0.0, 1.0, 0.0])
       c = ti.Vector([0.3, 0.3, 0.4])
       # c = ti.Vector([1, 1, 1])
+  '''
 
   if d[2] != 0:
     ray_closest = -(pos[2] + 5.5) / d[2]
@@ -335,16 +333,14 @@ def next_hit(pos_, d, t):
       closest = ray_closest
       normal = ti.Vector([0.0, 0.0, 1.0])
       c = ti.Vector([0.3, 0.4, 0.4])
-      # c = ti.Vector([1, 1, 1])
 
   ray_march_dist = ray_march(pos, d)
   if ray_march_dist < dist_limit and ray_march_dist < closest:
     closest = ray_march_dist
     normal = sdf_normal(pos + d * closest)
     c = sdf_color(pos + d * closest)
-  '''
 
-  return closest, hit_pos, normal, c
+  return closest, normal, c
 
   if ti.static(render_voxel):
     return dda(pos, d)
@@ -376,11 +372,11 @@ def render():
       ray_depth = 0
 
       while depth < max_ray_depth:
-        closest, hit_pos, normal, c = next_hit(pos, d, t)
+        closest, normal, c = next_hit(pos, d, t)
+        hit_pos = pos + closest * d
         depth += 1
         ray_depth = depth
         if normal.norm() != 0:
-          contrib = normal * 0.5 + 0.5
           d = out_dir(normal)
           pos = hit_pos + 1e-4 * d
           throughput *= c
@@ -392,7 +388,7 @@ def render():
               ti.Vector(light_direction) + dir_noise)
             dot = direct.dot(normal)
             if dot > 0:
-              dist, _, _, _ = next_hit(pos, direct, t)
+              dist,  _, _ = next_hit(pos, direct, t)
               if dist > dist_limit:
                 contrib += throughput * ti.Vector(light_color) * dot
         else:  # hit sky
@@ -516,7 +512,7 @@ def main():
   for i in range(500):
     render()
 
-    interval = 1
+    interval = 10
     if i % interval == 0:
       img = np.zeros((res[1] * res[0] * 3,), dtype=np.float32)
       copy(img)
@@ -526,7 +522,7 @@ def main():
             (time.time() - last_t) * 1000 / interval))
       last_t = time.time()
       img = img.reshape(res[1], res[0], 3) * (1 / (i + 1)) * exposure
-      # img = np.sqrt(img)
+      img = np.sqrt(img)
       cv2.imshow('img', img)
       cv2.waitKey(1)
       cv2.imwrite('outputs/{:04d}.png'.format(int(fn)), img * 255)

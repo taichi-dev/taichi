@@ -58,6 +58,7 @@ def intersect_sphere(pos, d, center, radius):
   C = T.dot(T) - radius * radius
   delta = B * B - 4 * A * C
   dist = inf
+  hit_pos = ti.Vector([0.0, 0.0, 0.0])
 
   if delta > 0:
     sdelta = ti.sqrt(delta)
@@ -73,7 +74,8 @@ def intersect_sphere(pos, d, center, radius):
       if dist < inf:
         # refinement
         old_dist = dist
-        T = pos + d * dist - center
+        new_pos = pos + d * dist
+        T = new_pos - center
         A = 1
         B = 2 * T.dot(d)
         C = T.dot(T) - radius * radius
@@ -84,14 +86,16 @@ def intersect_sphere(pos, d, center, radius):
           ret1 = ratio * (-B - sdelta) + old_dist
           if ret1 > 0:
             dist = ret1
+            hit_pos = new_pos + ratio * (-B - sdelta) * d
           else:
             ret2 = ratio * (-B + sdelta) + old_dist
             if ret2 > 0:
               dist = ret2
+              hit_pos = new_pos + ratio * (-B + sdelta) * d
         else:
           dist = inf
 
-  return dist
+  return dist, hit_pos
 
 
 @ti.func

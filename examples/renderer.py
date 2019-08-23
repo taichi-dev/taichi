@@ -26,7 +26,7 @@ fov = 0.03
 dist_limit = 100
 
 exposure = 1
-camera_pos = ti.Vector([0.5, 0.32, 4.7])
+camera_pos = ti.Vector([0.5, 0.5, 4.7])
 vignette_strength = 0.0
 vignette_radius = 0.0
 vignette_center = [0.5, 0.5]
@@ -39,7 +39,7 @@ light_color = [1.0, 1.0, 1.0]
 ti.cfg.arch = ti.cuda
 grid_resolution = 16
 
-shutter_time = 0#3e-4
+shutter_time = 0  # 3e-4
 high_res = True
 if high_res:
   sphere_radius = 0.0015
@@ -90,6 +90,7 @@ def voxel_color(pos):
 
 
 n_pillars = 9
+
 
 @ti.func
 def sdf(o_):
@@ -243,6 +244,7 @@ def dda_particle(eye_pos, d_, t):
   bbox_min = ti.Vector([0.0, 0.0, 0.0])
   bbox_max = ti.Vector([1.0, 1.0, 1.0])
 
+  hit_pos = ti.Vector([0.0, 0.0, 0.0])
   normal = ti.Vector([0.0, 0.0, 0.0])
   c = ti.Vector([0.0, 0.0, 0.0])
   d = d_
@@ -280,10 +282,11 @@ def dda_particle(eye_pos, d_, t):
           v = particle_v[p]
           x = particle_x[p] + t * v
           color = particle_color[p]
-          dist = intersect_sphere(eye_pos, d, x, sphere_radius) - 1e-5
+          dist, poss = intersect_sphere(eye_pos, d, x, sphere_radius)
+          hit_pos = poss
           if dist < closest_intersection and dist > 0:
+            hit_pos = eye_pos + dist * d
             closest_intersection = dist
-            hit_pos = eye_pos + d * closest_intersection
             normal = ti.Matrix.normalized(hit_pos - x)
             c = [color // 256 ** 2 / 255.0, color / 256 % 256 / 255.0,
                  color % 256 / 255.0]
@@ -305,13 +308,14 @@ def dda_particle(eye_pos, d_, t):
         dis += mm * rsign * rinv
         ipos += mm * rsign
 
-  return closest_intersection, normal, c
+  return closest_intersection, hit_pos, normal, c
 
 
 @ti.func
 def next_hit(pos_, d, t):
   pos = pos_
-  closest, normal, c = dda_particle(pos_, d, t)
+  hit_pos = ti.Vector([0.0, 0.0, 0.0])
+  closest, hit_pos, normal, c = dda_particle(pos_, d, t)
   # closest, normal, c = intersect_spheres(pos, d)
 
   '''
@@ -322,7 +326,6 @@ def next_hit(pos_, d, t):
       normal = ti.Vector([0.0, 1.0, 0.0])
       c = ti.Vector([0.3, 0.3, 0.4])
       # c = ti.Vector([1, 1, 1])
-  '''
 
   if d[2] != 0:
     ray_closest = -(pos[2] + 5.5) / d[2]
@@ -337,8 +340,9 @@ def next_hit(pos_, d, t):
     closest = ray_march_dist
     normal = sdf_normal(pos + d * closest)
     c = sdf_color(pos + d * closest)
+  '''
 
-  return closest, normal, c
+  return closest, hit_pos, normal, c
 
   if ti.static(render_voxel):
     return dda(pos, d)
@@ -361,22 +365,22 @@ def render():
     d = ti.Matrix.normalized(d)
     if u < res[0] and v < res[1]:
       # t = ti.min(1, ti.random(ti.f32) * 2) * shutter_time
-      t = ti.random(ti.f32) * shutter_time
+      t = (ti.random() - 0.5) * shutter_time
 
       contrib = ti.Vector([0.0, 0.0, 0.0])
       throughput = ti.Vector([1.0, 1.0, 1.0])
-
 
       depth = 0
       hit_sky = 1
       ray_depth = 0
 
       while depth < max_ray_depth:
-        closest, normal, c = next_hit(pos, d, t)
-        hit_pos = pos + closest * d
+        closest, hit_pos, normal, c = next_hit(pos, d, t)
         depth += 1
         ray_depth = depth
         if normal.norm() != 0:
+          cc = (closest - 4.3) * 10
+          contrib = [cc, cc, cc]#normal * 0.5 + 0.5
           contrib = normal * 0.5 + 0.5
           d = out_dir(normal)
           pos = hit_pos + 1e-4 * d
@@ -389,7 +393,7 @@ def render():
               ti.Vector(light_direction) + dir_noise)
             dot = direct.dot(normal)
             if dot > 0:
-              dist, _, _ = next_hit(pos, direct, t)
+              dist, _, _, _ = next_hit(pos, direct, t)
               if dist > dist_limit:
                 contrib += throughput * ti.Vector(light_color) * dot
         else:  # hit sky
@@ -436,8 +440,9 @@ def initialize_particle_grid():
               box_min = box_ipos * (1 / particle_grid_res)
               box_max = (box_ipos + ti.Vector([1, 1, 1])) * (
                   1 / particle_grid_res)
-              if sphere_aabb_intersect_motion(box_min, box_max, x,
-                                              x + shutter_time * v,
+              if sphere_aabb_intersect_motion(box_min, box_max,
+                                              x - 0.5 * shutter_time * v,
+                                              x + 0.5 * shutter_time * v,
                                               sphere_radius):
                 ti.append(pid.parent(), box_ipos, p)
 
@@ -492,15 +497,18 @@ def main():
     np_c = np.random.randint(0, 256 ** 3, num_part,
                              dtype=np.int32).astype(np.float32)
 
-  num_particles[None] = num_part
+  num_particles[None] = num_part // 100
   print('num_input_particles =', num_part)
 
   @ti.kernel
   def initialize_particle_x(x: np.ndarray, v: np.ndarray, color: np.ndarray):
     for i in range(max_num_particles):
       if i < num_particles:
-        for c in ti.static(range(3)):
-          particle_x[i][c] = x[i * 3 + c]
+        # for c in ti.static(range(3)):
+        #  particle_x[i][c] = x[i * 3 + c]
+        particle_x[i][0] = ti.random() * 0.3 + 0.35
+        particle_x[i][1] = ti.random() * 0.3 + 0.35
+        particle_x[i][2] = ti.random() * 0.1 + 0.45
         for c in ti.static(range(3)):
           particle_v[i][c] = v[i * 3 + c]
         particle_color[i] = ti.cast(color[i], ti.i32)
@@ -512,7 +520,7 @@ def main():
   for i in range(500):
     render()
 
-    interval = 10
+    interval = 1
     if i % interval == 0:
       img = np.zeros((res[1] * res[0] * 3,), dtype=np.float32)
       copy(img)
@@ -522,7 +530,7 @@ def main():
             (time.time() - last_t) * 1000 / interval))
       last_t = time.time()
       img = img.reshape(res[1], res[0], 3) * (1 / (i + 1)) * exposure
-      img = np.sqrt(img)
+      # img = np.sqrt(img)
       cv2.imshow('img', img)
       cv2.waitKey(1)
       cv2.imwrite('outputs/{:04d}.png'.format(int(fn)), img * 255)

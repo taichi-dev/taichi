@@ -22,11 +22,11 @@ particle_color = ti.var(ti.i32)
 pid = ti.var(ti.i32)
 num_particles = ti.var(ti.i32)
 
-fov = 0.53
+fov = 0.23
 dist_limit = 100
 
-exposure = 3.5
-camera_pos = ti.Vector([0.4, 0.32, 1.7])
+exposure = 2.5
+camera_pos = ti.Vector([0.5, 0.32, 2.7])
 vignette_strength = 0.9
 vignette_radius = 0.0
 vignette_center = [0.5, 0.5]
@@ -89,11 +89,39 @@ def voxel_color(pos):
   return ti.Vector([0.3, 0.4, 0.3]) * (1 + f)
 
 
+n_pillars = 9
+
 @ti.func
 def sdf(o_):
   o = o_ - ti.Vector([0.5, 0.027, 0.5])
-  r = ti.sqrt(o[0] * o[0] + o[2] * o[2])
-  return ti.max(o[1], r - 0.51)
+  # r = ti.sqrt(o[0] * o[0] + o[2] * o[2])
+  p = o
+
+  h = 0.02
+
+  ra = 0.29
+  rb = 0.005
+
+  d = (ti.Vector([p[0], p[2]]).norm() - 2.0 * ra + rb, ti.abs(p[1]) - h)
+  plate = ti.min(ti.max(d[0], d[1]), 0.0) + ti.Vector(
+    [ti.max(d[0], 0.0), ti.max(d[1], 0)]).norm() - rb
+  return plate
+
+  pillars = inf
+  angle = math.pi * 2 / n_pillars
+  for i in ti.static(range(n_pillars)):
+    rotated = ti.Vector([
+      ti.cos(angle * i) * o[0] + ti.sin(angle * i) * o[2],
+      -ti.sin(angle * i) * o[0] + ti.cos(angle * i) * o[2]
+    ])
+    dist = ti.max((rotated - ti.Vector([0.0, 0.48])).norm() - 0.06, o[1])
+
+    pillars = ti.min(pillars, dist)
+
+  return ti.min(plate, pillars)
+
+  # return ti.max(ti.max(o[1], -0.04 - o[1]), r - 0.51)
+
 
 @ti.func
 def ray_march(p, d):
@@ -104,6 +132,7 @@ def ray_march(p, d):
     dist += sdf(p + dist * d)
     j += 1
   return dist
+
 
 @ti.func
 def sdf_normal(p):
@@ -117,14 +146,15 @@ def sdf_normal(p):
     n[i] = (0.5 / d) * (sdf(inc) - sdf(dec))
   return ti.Matrix.normalized(n)
 
+
 @ti.func
 def sdf_color(p_):
-  # p = p_ - ti.Vector([0.5, 0.027, 0.5])
   p = p_
   scale = 0.8
   if inside_taichi(ti.Vector([p[0], p[2]])):
     scale = 1
   return ti.Vector([0.3, 0.5, 0.7]) * scale
+
 
 @ti.func
 def dda(pos, d_):
@@ -293,7 +323,7 @@ def next_hit(pos_, d, t):
   '''
 
   if d[2] != 0:
-    ray_closest = -(pos[2] + 0.5) / d[2]
+    ray_closest = -(pos[2] + 5.5) / d[2]
     if ray_closest > 0 and ray_closest < closest:
       closest = ray_closest
       normal = ti.Vector([0.0, 0.0, 1.0])
@@ -476,7 +506,7 @@ def main():
   initialize_particle_grid()
 
   last_t = 0
-  for i in range(1000):
+  for i in range(500):
     render()
 
     interval = 10

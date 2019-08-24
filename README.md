@@ -19,7 +19,10 @@ Supports Ubuntu 14.04/16.04/18.04, ArchLinux, Mac OS X. For GPU support, CUDA 9.
 
 # Folder Structure
 Key folders are
- - *examples* : example programs written in Taichi, including benchmarking examples in the SIGGRAPH Asia paper
+ - *examples* : example programs written in Taichi
+   - *cpp*: benchmarking examples in the SIGGRAPH Asia paper (mpm_benchmark.cpp, smoke_renderer.cpp, cnn.cpp)
+   - *fem*: the FEM benchmark
+ - *include*: language runtime
  - *src*: the compiler implementation (The functionality is briefly documented in each file)
    - *analysis*: static analysis passes
    - *backends*: codegen to x86 and CUDA

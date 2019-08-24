@@ -1,3 +1,5 @@
+// Frontend constructs
+
 #pragma once
 
 #if defined(CUDA_FOUND)

@@ -7,9 +7,7 @@ set(TAICHI_PROJECT_LIBRARIES ${TAICHI_PROJECT_LIBRARIES} ${TAICHI_PROJECT_NAME} 
 option(TLANG_WITH_VDB "Use VDB" OFF)
 option(TLANG_WITH_FEM "Use FEM" OFF)
 
-# add_subdirectory(external/partio)
 include_directories(external/openvdb/)
-# include_directories(external/partio/include)
 include_directories(external/xxhash)
 
 if (TLANG_WITH_VDB)
@@ -35,7 +33,8 @@ if (TLANG_WITH_VDB)
 endif()
 
 if (TLANG_WITH_FEM)
-    target_link_libraries(${LIBRARY_NAME} /home/yuanming/repos/topo_opt_private/solver/libSPGridCPUSolver.so )
+    # Change the path to your own libSPGridCPUSolver.so
+    target_link_libraries(${LIBRARY_NAME} /home/user/repos/topo_opt_private/solver/libSPGridCPUSolver.so )
     target_link_libraries(${LIBRARY_NAME} /opt/intel/compilers_and_libraries_2019/linux/mkl/lib/intel64_lin/libmkl_rt.so)
 endif()
 

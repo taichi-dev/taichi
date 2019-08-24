@@ -1,3 +1,5 @@
+// A helper for the llvm backend
+
 #pragma once
 #include "util.h"
 #include "llvm_fwd.h"

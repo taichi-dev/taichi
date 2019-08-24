@@ -1,3 +1,5 @@
+// The "standard library" for small matrices
+
 #include "math.h"
 #include "ir.h"
 

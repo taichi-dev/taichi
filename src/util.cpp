@@ -1,3 +1,5 @@
+// Definitions of utility functions and enums
+
 #include "util.h"
 #include <taichi/system/timer.h>
 #include <Eigen/Eigen>

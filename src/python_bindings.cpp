@@ -1,3 +1,5 @@
+// Bindings for the python frontend
+
 #include <pybind11/pybind11.h>
 #include <pybind11/functional.h>
 #include <taichi/python/export.h>

@@ -1,3 +1,5 @@
+// A helper for the llvm backend
+
 #include <llvm/Transforms/Utils/Cloning.h>
 #include "llvm/ADT/APFloat.h"
 #include "llvm/ADT/STLExtras.h"
@@ -66,6 +68,9 @@ std::string find_existing_command(const std::vector<std::string> &commands) {
   return "";
 }
 
+// clang++-7 -S -emit-llvm tmp0001.cpp -Ofast -std=c++14 -march=native -mfma -I
+// ../headers -ffp-contract=fast -Wall -D_GLIBCXX_USE_CXX11_ABI=0 -DTLANG_CPU
+// -lstdc++ -o tmp0001.bc
 void compile_runtime() {
   auto clang = find_existing_command({"clang-7", "clang"});
   TC_ASSERT(command_exist("llvm-as"));

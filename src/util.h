@@ -1,3 +1,5 @@
+// Definitions of utility functions and enums
+
 #pragma once
 #include <taichi/common/util.h>
 #include <taichi/io/io.h>

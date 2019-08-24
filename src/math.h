@@ -1,3 +1,5 @@
+// The "standard library" for small matrices
+
 #pragma once
 
 #include "tlang.h"

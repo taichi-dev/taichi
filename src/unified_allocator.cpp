@@ -1,3 +1,5 @@
+// Virtual memory allocator for CPU/GPU
+
 #if defined(CUDA_FOUND)
 #include <cuda_runtime.h>
 #endif

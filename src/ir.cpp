@@ -1,3 +1,5 @@
+// Intermediate representations
+
 #include "ir.h"
 
 #include <numeric>

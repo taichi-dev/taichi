@@ -1,1 +1,0 @@
-clang++-7 -S -emit-llvm tmp0001.cpp -Ofast -std=c++14 -march=native -mfma -I ../headers -ffp-contract=fast -Wall -D_GLIBCXX_USE_CXX11_ABI=0 -DTLANG_CPU -lstdc++ -o tmp0001.bc

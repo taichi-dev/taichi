@@ -1,3 +1,5 @@
+// Program, which is a context for a taichi program execution
+
 #pragma once
 
 #include "../include/context.h"

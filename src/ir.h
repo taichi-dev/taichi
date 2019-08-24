@@ -1,3 +1,5 @@
+// Intermediate representation system
+
 #pragma once
 
 #include <atomic>

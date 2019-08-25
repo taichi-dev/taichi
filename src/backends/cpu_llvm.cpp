@@ -85,9 +85,15 @@ class RuntimeObject {
 
   RuntimeObject(const std::string &cls_name,
                 ModuleBuilder *mb,
-                llvm::IRBuilder<> *builder)
+                llvm::IRBuilder<> *builder,
+                llvm::Value *init = nullptr)
       : cls_name(cls_name), mb(mb), builder(builder) {
-    ptr = builder->CreateAlloca(mb->get_runtime_type(cls_name));
+    if (init == nullptr) {
+      ptr = builder->CreateAlloca(mb->get_runtime_type(cls_name));
+    } else {
+      ptr = builder->CreateBitCast(
+          init, llvm::PointerType::get(mb->get_runtime_type(cls_name), 0));
+    }
   }
 
   llvm::Value *get() {
@@ -96,7 +102,7 @@ class RuntimeObject {
   }
 
   void set(const std::string &field, llvm::Value *val) {
-    TC_NOT_IMPLEMENTED
+    call(fmt::format("set_{}", field), val);
   }
 
   static std::string type_name(llvm::Type *type) {
@@ -173,14 +179,19 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
   }
 
   void emit_struct_meta(std::string name,
-                        llvm::Value *node_info,
+                        llvm::Value *node_meta,
                         SNode *snode) {
     auto common = builder.CreateBitCast(
-        node_info, llvm::PointerType::get(get_runtime_type("StructMeta"), 0));
+        node_meta, llvm::PointerType::get(get_runtime_type("StructMeta"), 0));
+
+    RuntimeObject common_obj("StructMeta", this, &builder, node_meta);
     auto element_ty = snode->llvm_type->getArrayElementType();
     std::size_t element_size = tlctx->get_type_size(element_ty);
+    common_obj.set("element_size", tlctx->get_constant((uint64)element_size));
+    /*
     builder.CreateCall(get_runtime_function("StructMeta_set_element_size"),
                        {common, tlctx->get_constant((uint64)element_size)});
+                       */
     builder.CreateCall(
         get_runtime_function("StructMeta_set_max_num_elements"),
         {common, tlctx->get_constant(1 << snode->total_num_bits)});

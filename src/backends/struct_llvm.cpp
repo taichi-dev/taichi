@@ -57,7 +57,8 @@ void StructCompilerLLVM::codegen(SNode &snode) {
   } else {
     TC_P(snode.type_name());
     TC_NOT_IMPLEMENTED;
-  } if (snode.has_null()) {
+  }
+  if (snode.has_null()) {
     if (get_current_program().config.arch == Arch::gpu) {
       emit("__device__ __constant__ {}::child_type *{}_ambient_ptr;",
            snode.node_type_name, snode.node_type_name);
@@ -494,11 +495,12 @@ void StructCompilerLLVM::run(SNode &node) {
     }
   }
 
+  auto root_size = tlctx->jit->getDataLayout().getTypeAllocSize(root.llvm_type);
   // initializer
 
   {
     auto ft =
-        llvm::FunctionType::get(llvm::Type::getVoidTy(*llvm_ctx),
+        llvm::FunctionType::get(llvm::Type::getInt8PtrTy(*llvm_ctx),
                                 {llvm::Type::getInt8PtrTy(*llvm_ctx)}, false);
     auto init = llvm::Function::Create(ft, llvm::Function::ExternalLinkage,
                                        "initialize_data_structure", *module);
@@ -509,13 +511,14 @@ void StructCompilerLLVM::run(SNode &node) {
     auto bb = BasicBlock::Create(*llvm_ctx, "body", init);
     llvm::IRBuilder<> builder(bb, bb->begin());
     auto runtime_ty = get_runtime_type("Runtime");
-    builder.CreateCall(
+    auto ret = builder.CreateCall(
         get_runtime_function("Runtime_initialize"),
         {builder.CreateBitCast(
              args[0],
              llvm::PointerType::get(llvm::PointerType::get(runtime_ty, 0), 0)),
-         tlctx->get_constant((int)snodes.size())});
-    builder.CreateRetVoid();
+         tlctx->get_constant((int)snodes.size()),
+         tlctx->get_constant(root_size)});
+    builder.CreateRet(ret);
   }
 
   module->setDataLayout(tlctx->jit->getDataLayout());
@@ -530,11 +533,11 @@ void StructCompilerLLVM::run(SNode &node) {
       tlctx->lookup_function<std::function<void *(void *)>>(
           "initialize_data_structure");
 
-  auto root_size = tlctx->jit->getDataLayout().getTypeAllocSize(root.llvm_type);
   creator = [initialize_data_structure, root_size]() {
-    initialize_data_structure(&get_current_program().llvm_runtime);
     TC_INFO("Allocating data structure of size {}", root_size);
-    return std::malloc(root_size);
+    auto root_ptr =
+        initialize_data_structure(&get_current_program().llvm_runtime);
+    return (void *)root_ptr;
   };
 }
 

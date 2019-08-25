@@ -195,7 +195,9 @@ struct Runtime {
 
 STRUCT_FIELD_ARRAY(Runtime, element_lists);
 
-void Runtime_initialize(Runtime **runtime_ptr, int num_snodes) {
+Ptr Runtime_initialize(Runtime **runtime_ptr,
+                       int num_snodes,
+                       uint64_t root_size) {
   *runtime_ptr = (Runtime *)taichi_allocate(sizeof(Runtime));
   Runtime *runtime = *runtime_ptr;
   printf("Initializing runtime with %d selements\n", num_snodes);
@@ -204,7 +206,19 @@ void Runtime_initialize(Runtime **runtime_ptr, int num_snodes) {
         (ElementList *)taichi_allocate(sizeof(ElementList));
     ElementList_initialize(runtime->element_lists[i]);
   }
+  // Assuming num_snodes - 1 is the root
+  int root_snode_id = num_snodes - 1;
+  auto root_ptr = taichi_allocate(root_size);
+  Element elem;
+  elem.loop_bounds[0] = 0;
+  elem.loop_bounds[1] = 1;
+  elem.element = (Ptr)root_ptr;
+  for (int i = 0; i < taichi_max_num_indices; i++) {
+    elem.pcoord.val[i] = 0;
+  }
+  ElementList_insert(runtime->element_lists[root_snode_id], &elem);
   printf("Runtime initialized.\n");
+  return (Ptr)root_ptr;
 }
 
 // "Element", "component" are different concepts

@@ -92,6 +92,7 @@ struct StructMeta {
                              int index);
 };
 
+STRUCT_FIELD(StructMeta, snode_id)
 STRUCT_FIELD(StructMeta, element_size)
 STRUCT_FIELD(StructMeta, max_num_elements)
 STRUCT_FIELD(StructMeta, get_num_elements);
@@ -197,7 +198,7 @@ STRUCT_FIELD_ARRAY(Runtime, element_lists);
 
 Ptr Runtime_initialize(Runtime **runtime_ptr,
                        int num_snodes,
-                       uint64_t root_size) {
+                       uint64_t root_size, int root_id) {
   *runtime_ptr = (Runtime *)taichi_allocate(sizeof(Runtime));
   Runtime *runtime = *runtime_ptr;
   printf("Initializing runtime with %d selements\n", num_snodes);
@@ -207,7 +208,6 @@ Ptr Runtime_initialize(Runtime **runtime_ptr,
     ElementList_initialize(runtime->element_lists[i]);
   }
   // Assuming num_snodes - 1 is the root
-  int root_snode_id = num_snodes - 1;
   auto root_ptr = taichi_allocate(root_size);
   Element elem;
   elem.loop_bounds[0] = 0;
@@ -216,7 +216,7 @@ Ptr Runtime_initialize(Runtime **runtime_ptr,
   for (int i = 0; i < taichi_max_num_indices; i++) {
     elem.pcoord.val[i] = 0;
   }
-  ElementList_insert(runtime->element_lists[root_snode_id], &elem);
+  ElementList_insert(runtime->element_lists[root_id], &elem);
   printf("Runtime initialized.\n");
   return (Ptr)root_ptr;
 }
@@ -227,14 +227,18 @@ Ptr Runtime_initialize(Runtime **runtime_ptr,
 void element_listgen(Runtime *runtime, StructMeta *parent, StructMeta *child) {
   auto parent_list = runtime->element_lists[parent->snode_id];
   int num_parent_elements = parent_list->tail;
+  printf("num_parent_elements %d\n", num_parent_elements);
   auto child_list = runtime->element_lists[child->snode_id];
   for (int i = 0; i < num_parent_elements; i++) {
     auto element = parent_list->elements[i];
     auto ch_component = child->from_parent_element(element.element);
     int ch_num_elements = child->get_num_elements((Ptr)child, ch_component);
+    printf("ch_num_parent_elements %d\n", ch_num_elements);
     for (int j = 0; j < ch_num_elements; j++) {
       auto ch_element = child->lookup_element((Ptr)child, element.element, j);
+      printf("j %d\n", j);
       if (child->is_active((Ptr)child, ch_component, j)) {
+        printf("j! %d\n", j);
         Element elem;
         elem.element = ch_element;
         elem.loop_bounds[0] = 0;
@@ -242,7 +246,7 @@ void element_listgen(Runtime *runtime, StructMeta *parent, StructMeta *child) {
         PhysicalCoordinates refined_coord;
         parent->refine_coordinates(&element.pcoord, &refined_coord, j);
         elem.pcoord = refined_coord;
-        child_list->elements[child_list->tail++] = elem;
+        ElementList_insert(child_list, &elem);
       }
     }
   }

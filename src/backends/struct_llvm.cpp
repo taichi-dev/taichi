@@ -517,7 +517,7 @@ void StructCompilerLLVM::run(SNode &node) {
              args[0],
              llvm::PointerType::get(llvm::PointerType::get(runtime_ty, 0), 0)),
          tlctx->get_constant((int)snodes.size()),
-         tlctx->get_constant(root_size)});
+         tlctx->get_constant(root_size), tlctx->get_constant(root.id)});
     builder.CreateRet(ret);
   }
 

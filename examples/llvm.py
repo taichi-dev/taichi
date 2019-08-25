@@ -10,7 +10,7 @@ y = ti.var(ti.i32)
 
 ti.cfg.use_llvm = True
 ti.cfg.print_ir = True
-ti.cfg.print_struct_llvm_ir = True
+# ti.cfg.print_struct_llvm_ir = True
 ti.cfg.print_kernel_llvm_ir = True
 
 # ti.cfg.print_ir = True
@@ -56,6 +56,6 @@ def test_struct():
     val[i] = i
     ti.print(val[i])
 
-test()
+# test()
 # test1()
-# test_struct()
+test_struct()

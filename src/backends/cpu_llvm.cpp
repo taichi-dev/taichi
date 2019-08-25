@@ -52,6 +52,13 @@ TLANG_NAMESPACE_BEGIN
 
 using namespace llvm;
 
+std::string type_name(llvm::Type *type) {
+  std::string type_name_str;
+  llvm::raw_string_ostream rso(type_name_str);
+  type->print(rso);
+  return type_name_str;
+}
+
 class ModuleBuilder {
  public:
   std::unique_ptr<Module> module;
@@ -103,13 +110,6 @@ class RuntimeObject {
 
   void set(const std::string &field, llvm::Value *val) {
     call(fmt::format("set_{}", field), val);
-  }
-
-  static std::string type_name(llvm::Type *type) {
-    std::string type_name_str;
-    llvm::raw_string_ostream rso(type_name_str);
-    type->print(rso);
-    return type_name_str;
   }
 
   template <typename... Args>
@@ -459,6 +459,14 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
     return builder.CreateCall(get_runtime_function(func_name), value);
   }
 
+  llvm::Value *cast_pointer(llvm::Value *val,
+                            std::string dest_ty_name,
+                            int addr_space = 0) {
+    return builder.CreateBitCast(
+        val,
+        llvm::PointerType::get(get_runtime_type(dest_ty_name), addr_space));
+  }
+
   void visit(StructForStmt *for_stmt) {
     // emit listgen
 
@@ -472,12 +480,26 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
     }
     std::reverse(path.begin(), path.end());
 
-    for (int i = 0; i + 1 < path.size(); i++) {
-      auto parent = path[i], child = path[i + 1];
-      auto snode_parent = emit_dense_struct_meta(parent);
-      auto snode_child = emit_dense_struct_meta(child);
-      builder.CreateCall(get_runtime_function("element_listgen"),
-                         {runtime_ptr, snode_parent, snode_child});
+    std::vector<llvm::Value *> metas;
+    for (int i = 0; i < path.size(); i++) {
+      if (path[i]->type == SNodeType::dense)
+        // TODO: should we use a local addr space for more compiler
+        // optimization?
+        metas.push_back(
+            cast_pointer(emit_dense_struct_meta(path[i]), "StructMeta"));
+    }
+
+    TC_P(path.size());
+    for (int i = 1; i + 1 < path.size(); i++) {
+      auto snode_parent = metas[i];
+      auto snode_child = metas[i + 1];
+      auto listgen = get_runtime_function("element_listgen");
+      TC_P(type_name(listgen->getType()));
+      auto args = {runtime_ptr, snode_parent, snode_child};
+      for (auto &a : args) {
+        TC_P(type_name(a->getType()));
+      }
+      builder.CreateCall(listgen, args);
     }
 
     // traverse leaf node

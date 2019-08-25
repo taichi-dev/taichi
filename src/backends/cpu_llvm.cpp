@@ -130,7 +130,7 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
         llvm_context(tlctx->ctx.get()),
         jit(tlctx->jit.get()),
         builder(*llvm_context),
-        ModuleBuilder(tlctx->clone_struct_module()),
+        ModuleBuilder(get_current_program().llvm_context.clone_struct_module()),
         kernel(kernel) {
     using namespace llvm;
 

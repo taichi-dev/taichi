@@ -57,9 +57,7 @@ void StructCompilerLLVM::codegen(SNode &snode) {
   } else {
     TC_P(snode.type_name());
     TC_NOT_IMPLEMENTED;
-  }
-
-  if (snode.has_null()) {
+  } if (snode.has_null()) {
     if (get_current_program().config.arch == Arch::gpu) {
       emit("__device__ __constant__ {}::child_type *{}_ambient_ptr;",
            snode.node_type_name, snode.node_type_name);

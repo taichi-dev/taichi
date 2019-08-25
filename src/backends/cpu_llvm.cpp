@@ -116,9 +116,9 @@ class RuntimeObject {
   void call(const std::string &func_name, Args &&... args) {
     auto arglist = std::vector<Value *>({ptr, args...});
     for (auto a : arglist) {
-      TC_P(type_name(a->getType()));
+      // TC_P(type_name(a->getType()));
     }
-    TC_P(type_name(get_func(func_name)->getType()));
+    // TC_P(type_name(get_func(func_name)->getType()));
     builder->CreateCall(get_func(func_name), arglist);
   }
 
@@ -178,12 +178,18 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
     module->setDataLayout(jit->getDataLayout());
   }
 
-  void emit_struct_meta(std::string name,
-                        llvm::Value *node_meta,
-                        SNode *snode) {
+  void emit_struct_meta_base(std::string name,
+                             llvm::Value *node_meta,
+                             SNode *snode) {
     RuntimeObject common_obj("StructMeta", this, &builder, node_meta);
-    auto element_ty = snode->llvm_type->getArrayElementType();
-    std::size_t element_size = tlctx->get_type_size(element_ty);
+    std::size_t element_size;
+    if (snode->type != SNodeType::root && snode->type != SNodeType::place) {
+      auto element_ty = snode->llvm_type->getArrayElementType();
+      element_size = tlctx->get_type_size(element_ty);
+    } else {
+      auto element_ty = snode->llvm_type;
+      element_size = tlctx->get_type_size(element_ty);
+    }
     common_obj.set("element_size", tlctx->get_constant((uint64)element_size));
     common_obj.set("max_num_elements",
                    tlctx->get_constant(1 << snode->total_num_bits));
@@ -206,19 +212,35 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
 
     // "from_parent_element", "refine_coordinates" are different for different
     // snodes, even if they have the same type.
-    common_obj.set("from_parent_element",
-                   get_runtime_function(snode->get_ch_from_parent_func_name()));
+    if (snode->parent)
+      common_obj.set(
+          "from_parent_element",
+          get_runtime_function(snode->get_ch_from_parent_func_name()));
 
-    common_obj.set("refine_coordinates",
-                   get_runtime_function(snode->refine_coordinates_func_name()));
+    if (snode->type != SNodeType::place)
+      common_obj.set(
+          "refine_coordinates",
+          get_runtime_function(snode->refine_coordinates_func_name()));
   }
 
-  llvm::Value *emit_dense_struct_meta(SNode *snode) {
-    RuntimeObject meta("DenseMeta", this, &builder);
-    emit_struct_meta("Dense", meta.ptr, snode);
-    meta.call("set_bitmasked", tlctx->get_constant(snode->_bitmasked));
-    meta.call("set_morton_dim", tlctx->get_constant(snode->_morton));
-    return meta.ptr;
+  llvm::Value *emit_struct_meta(SNode *snode) {
+    if (snode->type == SNodeType::dense) {
+      RuntimeObject meta("DenseMeta", this, &builder);
+      emit_struct_meta_base("Dense", meta.ptr, snode);
+      meta.call("set_bitmasked", tlctx->get_constant(snode->_bitmasked));
+      meta.call("set_morton_dim", tlctx->get_constant(snode->_morton));
+      return meta.ptr;
+    } else if (snode->type == SNodeType::root) {
+      TC_TAG;
+      RuntimeObject meta("RootMeta", this, &builder);
+      TC_TAG;
+      emit_struct_meta_base("Root", meta.ptr, snode);
+      TC_TAG;
+      return meta.ptr;
+    } else {
+      TC_P(snode_type_name(snode->type));
+      TC_NOT_IMPLEMENTED;
+    }
   }
 
   FunctionType gen(IRNode *node) {
@@ -469,11 +491,10 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
 
   void visit(StructForStmt *for_stmt) {
     // emit listgen
-
     auto leaf = for_stmt->snode;
     TC_ASSERT(leaf->type == SNodeType::place)
 
-    // make a list
+    // make a list of nodes, from the leaf block (instead of 'place') to root
     std::vector<SNode *> path;
     for (auto p = leaf->parent; p; p = p->parent) {
       path.push_back(p);
@@ -481,16 +502,17 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
     std::reverse(path.begin(), path.end());
 
     std::vector<llvm::Value *> metas;
-    for (int i = 0; i < path.size(); i++) {
-      if (path[i]->type == SNodeType::dense)
-        // TODO: should we use a local addr space for more compiler
-        // optimization?
-        metas.push_back(
-            cast_pointer(emit_dense_struct_meta(path[i]), "StructMeta"));
+    // These must be emitted in place for inlining optimization
+    for (int i = 0; i < (int)path.size(); i++) {
+      TC_P(i);
+      TC_P(path[i]);
+      TC_P(snode_type_name(path[i]->type));
+      // TODO: should we use a local addr space for more compiler optimization?
+      metas.push_back(cast_pointer(emit_struct_meta(path[i]), "StructMeta"));
     }
 
     TC_P(path.size());
-    for (int i = 1; i + 1 < path.size(); i++) {
+    for (int i = 0; i + 2 < path.size(); i++) {
       auto snode_parent = metas[i];
       auto snode_child = metas[i + 1];
       auto listgen = get_runtime_function("element_listgen");
@@ -941,7 +963,7 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
                          {s, tlctx->get_constant((uint64)element_size)});
                          */
 
-      auto s = emit_dense_struct_meta(stmt->snode);
+      auto s = emit_struct_meta(stmt->snode);
       auto s_ptr =
           builder.CreateBitCast(s, llvm::Type::getInt8PtrTy(*llvm_context));
 

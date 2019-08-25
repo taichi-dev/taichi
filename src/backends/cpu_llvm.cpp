@@ -172,9 +172,9 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
     module->setDataLayout(jit->getDataLayout());
   }
 
-  void emit_struct_common_info(std::string name,
-                               llvm::Value *node_info,
-                               SNode *snode) {
+  void emit_struct_meta(std::string name,
+                        llvm::Value *node_info,
+                        SNode *snode) {
     auto common = builder.CreateBitCast(
         node_info, llvm::PointerType::get(get_runtime_type("StructMeta"), 0));
     auto element_ty = snode->llvm_type->getArrayElementType();
@@ -215,22 +215,11 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
         {common, get_runtime_function(snode->refine_coordinates_func_name())});
   }
 
-  llvm::Value *emit_dense_struct_info(llvm::Value *node, SNode *snode) {
+  llvm::Value *emit_dense_struct_meta(llvm::Value *node, SNode *snode) {
     RuntimeObject meta("DenseMeta", this, &builder);
-    // auto s = builder.CreateAlloca(get_runtime_type("DenseMeta"));
-    emit_struct_common_info("Dense", meta.ptr, snode);
-
-    /*
-    builder.CreateCall(get_runtime_function("DenseMeta_set_bitmasked"),
-                       {s, tlctx->get_constant(snode->_bitmasked)});
-    builder.CreateCall(get_runtime_function("DenseMeta_set_morton_dim"),
-                       {s, tlctx->get_constant(snode->_morton)});
-    */
-
+    emit_struct_meta("Dense", meta.ptr, snode);
     meta.call("set_bitmasked", tlctx->get_constant(snode->_bitmasked));
     meta.call("set_morton_dim", tlctx->get_constant(snode->_morton));
-
-    // return s;
     return meta.ptr;
   }
 
@@ -937,7 +926,7 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
                          {s, tlctx->get_constant((uint64)element_size)});
                          */
 
-      auto s = emit_dense_struct_info(stmt->input_snode->value, stmt->snode);
+      auto s = emit_dense_struct_meta(stmt->input_snode->value, stmt->snode);
       auto s_ptr =
           builder.CreateBitCast(s, llvm::Type::getInt8PtrTy(*llvm_context));
 

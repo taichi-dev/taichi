@@ -188,13 +188,8 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
     auto element_ty = snode->llvm_type->getArrayElementType();
     std::size_t element_size = tlctx->get_type_size(element_ty);
     common_obj.set("element_size", tlctx->get_constant((uint64)element_size));
-    /*
-    builder.CreateCall(get_runtime_function("StructMeta_set_element_size"),
-                       {common, tlctx->get_constant((uint64)element_size)});
-                       */
-    builder.CreateCall(
-        get_runtime_function("StructMeta_set_max_num_elements"),
-        {common, tlctx->get_constant(1 << snode->total_num_bits)});
+    common_obj.set("max_num_elements",
+                   tlctx->get_constant(1 << snode->total_num_bits));
 
     /*
     uint8 *(*lookup_element)(uint8 *, int i);
@@ -209,21 +204,16 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
     std::vector<std::string> functions = {"lookup_element", "is_active",
                                           "get_num_elements"};
 
-    for (auto f : functions) {
-      builder.CreateCall(
-          get_runtime_function(fmt::format("StructMeta_set_{}", f)),
-          {common, get_runtime_function(fmt::format("{}_{}", name, f))});
-    }
+    for (auto f : functions)
+      common_obj.set(f, get_runtime_function(fmt::format("{}_{}", name, f)));
 
     // "from_parent_element", "refine_coordinates" are different for different
     // snodes, even if they have the same type.
-    builder.CreateCall(
-        get_runtime_function(fmt::format("StructMeta_set_from_parent_element")),
-        {common, get_runtime_function(snode->get_ch_from_parent_func_name())});
+    common_obj.set("from_parent_element",
+                   get_runtime_function(snode->get_ch_from_parent_func_name()));
 
-    builder.CreateCall(
-        get_runtime_function(fmt::format("StructMeta_set_refine_coordinates")),
-        {common, get_runtime_function(snode->refine_coordinates_func_name())});
+    common_obj.set("refine_coordinates",
+                   get_runtime_function(snode->refine_coordinates_func_name()));
   }
 
   llvm::Value *emit_dense_struct_meta(llvm::Value *node, SNode *snode) {

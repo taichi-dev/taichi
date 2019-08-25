@@ -181,9 +181,6 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
   void emit_struct_meta(std::string name,
                         llvm::Value *node_meta,
                         SNode *snode) {
-    auto common = builder.CreateBitCast(
-        node_meta, llvm::PointerType::get(get_runtime_type("StructMeta"), 0));
-
     RuntimeObject common_obj("StructMeta", this, &builder, node_meta);
     auto element_ty = snode->llvm_type->getArrayElementType();
     std::size_t element_size = tlctx->get_type_size(element_ty);
@@ -204,7 +201,7 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
     std::vector<std::string> functions = {"lookup_element", "is_active",
                                           "get_num_elements"};
 
-    for (auto f : functions)
+    for (auto const f : functions)
       common_obj.set(f, get_runtime_function(fmt::format("{}_{}", name, f)));
 
     // "from_parent_element", "refine_coordinates" are different for different
@@ -216,7 +213,7 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
                    get_runtime_function(snode->refine_coordinates_func_name()));
   }
 
-  llvm::Value *emit_dense_struct_meta(llvm::Value *node, SNode *snode) {
+  llvm::Value *emit_dense_struct_meta(SNode *snode) {
     RuntimeObject meta("DenseMeta", this, &builder);
     emit_struct_meta("Dense", meta.ptr, snode);
     meta.call("set_bitmasked", tlctx->get_constant(snode->_bitmasked));
@@ -458,11 +455,6 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
     emit("}}");
   }
 
-  llvm::Value *emit_struct_meta(SNode *snode) {
-    auto info = builder.CreateAlloca(get_runtime_type("StructMeta"));
-    return info;
-  }
-
   llvm::Value *call(std::string func_name, std::vector<llvm::Value *> value) {
     return builder.CreateCall(get_runtime_function(func_name), value);
   }
@@ -482,8 +474,8 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
 
     for (int i = 0; i + 1 < path.size(); i++) {
       auto parent = path[i], child = path[i + 1];
-      auto snode_parent = emit_struct_meta(parent);
-      auto snode_child = emit_struct_meta(child);
+      auto snode_parent = emit_dense_struct_meta(parent);
+      auto snode_child = emit_dense_struct_meta(child);
       builder.CreateCall(get_runtime_function("element_listgen"),
                          {runtime_ptr, snode_parent, snode_child});
     }
@@ -927,7 +919,7 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
                          {s, tlctx->get_constant((uint64)element_size)});
                          */
 
-      auto s = emit_dense_struct_meta(stmt->input_snode->value, stmt->snode);
+      auto s = emit_dense_struct_meta(stmt->snode);
       auto s_ptr =
           builder.CreateBitCast(s, llvm::Type::getInt8PtrTy(*llvm_context));
 

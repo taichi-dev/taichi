@@ -87,7 +87,7 @@ class RuntimeObject {
                 ModuleBuilder *mb,
                 llvm::IRBuilder<> *builder)
       : cls_name(cls_name), mb(mb), builder(builder) {
-    ptr = builder->CreateAlloca(mb->get_runtime_type("StructMeta"));
+    ptr = builder->CreateAlloca(mb->get_runtime_type(cls_name));
   }
 
   llvm::Value *get() {
@@ -99,9 +99,21 @@ class RuntimeObject {
     TC_NOT_IMPLEMENTED
   }
 
+  static std::string type_name(llvm::Type *type) {
+    std::string type_name_str;
+    llvm::raw_string_ostream rso(type_name_str);
+    type->print(rso);
+    return type_name_str;
+  }
+
   template <typename... Args>
   void call(const std::string &func_name, Args &&... args) {
-    builder->CreateCall(get_func(func_name), args...);
+    auto arglist = std::vector<Value *>({ptr, args...});
+    for (auto a : arglist) {
+      TC_P(type_name(a->getType()));
+    }
+    TC_P(type_name(get_func(func_name)->getType()));
+    builder->CreateCall(get_func(func_name), arglist);
   }
 
   llvm::Value *get_func(const std::string &func_name) const {
@@ -204,16 +216,22 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
   }
 
   llvm::Value *emit_dense_struct_info(llvm::Value *node, SNode *snode) {
-    auto s = builder.CreateAlloca(get_runtime_type("DenseMeta"));
-    emit_struct_common_info("Dense", s, snode);
+    RuntimeObject meta("DenseMeta", this, &builder);
+    // auto s = builder.CreateAlloca(get_runtime_type("DenseMeta"));
+    emit_struct_common_info("Dense", meta.ptr, snode);
 
+    /*
     builder.CreateCall(get_runtime_function("DenseMeta_set_bitmasked"),
                        {s, tlctx->get_constant(snode->_bitmasked)});
-
     builder.CreateCall(get_runtime_function("DenseMeta_set_morton_dim"),
                        {s, tlctx->get_constant(snode->_morton)});
+    */
 
-    return s;
+    meta.call("set_bitmasked", tlctx->get_constant(snode->_bitmasked));
+    meta.call("set_morton_dim", tlctx->get_constant(snode->_morton));
+
+    // return s;
+    return meta.ptr;
   }
 
   FunctionType gen(IRNode *node) {

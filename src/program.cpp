@@ -50,6 +50,7 @@ void Kernel::operator()() {
   std::vector<void *> host_buffers(args.size());
   std::vector<void *> device_buffers(args.size());
   if (program.config.arch == Arch::gpu) {
+#if __CUDAARCH__
     // copy data to GRAM
     bool has_buffer = false;
     for (int i = 0; i < (int)args.size(); i++) {
@@ -76,6 +77,9 @@ void Kernel::operator()() {
         cudaFree(device_buffers[i]);
       }
     }
+#else
+    TC_ERROR("No CUDA");
+#endif
   } else {
     auto c = program.get_context();
     compiled(c);

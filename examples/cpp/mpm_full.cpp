@@ -637,8 +637,12 @@ auto mpm3d = [](std::vector<std::string> cli_param) {
     auto ot = Time::get_time();
     std::vector<float32> particle_data(max_n_particles * 7);
     summarize();
+#ifdef __CUDAARCH__
     cudaMemcpy(particle_data.data(), &particle_buffer.val<float32>(0),
                particle_data.size() * sizeof(float), cudaMemcpyDeviceToHost);
+#else
+    TC_ERROR("No CUDA.");
+#endif
 
     for (int i = 0; i < n_particles; i++) {
       for (int k = 0; k < 3; k++) {

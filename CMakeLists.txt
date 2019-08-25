@@ -63,6 +63,10 @@ if (LLVM_FOUND)
             InstCombine
             OrcJIT
             RuntimeDyld
+            TransformUtils
+            BitReader
+            BitWriter
+            Object
             ScalarOpts
             Support
             native

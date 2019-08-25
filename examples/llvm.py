@@ -54,7 +54,6 @@ def test_struct():
     val[i] = i
     ti.print(val[i])
 
-test()
-test()
-test1()
+# test()
+# test1()
 test_struct()

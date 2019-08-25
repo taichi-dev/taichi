@@ -52,14 +52,70 @@ TLANG_NAMESPACE_BEGIN
 
 using namespace llvm;
 
-class CPULLVMCodeGen : public IRVisitor {
+class ModuleBuilder {
+ public:
+  std::unique_ptr<Module> module;
+
+  ModuleBuilder(std::unique_ptr<Module> &&module) : module(std::move(module)) {
+  }
+
+  llvm::Type *get_runtime_type(const std::string &name) {
+    auto ty = module->getTypeByName("struct." + name);
+    if (!ty) {
+      TC_ERROR("Runtime type {} not found.", name);
+    }
+    return ty;
+  }
+
+  llvm::Function *get_runtime_function(const std::string &name) {
+    auto f = module->getFunction(name);
+    if (!f) {
+      TC_ERROR("Runtime function {} not found.", name);
+    }
+    return f;
+  }
+};
+
+class RuntimeObject {
+ public:
+  std::string cls_name;
+  llvm::Value *ptr;
+  ModuleBuilder *mb;
+  llvm::IRBuilder<> *builder;
+
+  RuntimeObject(const std::string &cls_name,
+                ModuleBuilder *mb,
+                llvm::IRBuilder<> *builder)
+      : cls_name(cls_name), mb(mb), builder(builder) {
+    ptr = builder->CreateAlloca(mb->get_runtime_type("StructMeta"));
+  }
+
+  llvm::Value *get() {
+    TC_NOT_IMPLEMENTED
+    return nullptr;
+  }
+
+  void set(const std::string &field, llvm::Value *val) {
+    TC_NOT_IMPLEMENTED
+  }
+
+  template <typename... Args>
+  void call(const std::string &func_name, Args &&... args) {
+    builder->CreateCall(get_func(func_name), args...);
+  }
+
+  llvm::Value *get_func(const std::string &func_name) const {
+    return mb->get_runtime_function(fmt::format("{}_{}", cls_name, func_name));
+  }
+};
+
+class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
  public:
   StructForStmt *current_struct_for;
   TaichiLLVMContext *tlctx;
   llvm::LLVMContext *llvm_context;
   TaichiLLVMJIT *jit;
   llvm::IRBuilder<> builder;
-  std::unique_ptr<Module> module;
 
   CodeGenBase *codegen;
   Kernel *kernel;
@@ -74,9 +130,9 @@ class CPULLVMCodeGen : public IRVisitor {
         llvm_context(tlctx->ctx.get()),
         jit(tlctx->jit.get()),
         builder(*llvm_context),
+        ModuleBuilder(tlctx->clone_struct_module()),
         kernel(kernel) {
     using namespace llvm;
-    module = tlctx->clone_struct_module();
 
     for (auto &f : *module) {
       if (!f.isDeclaration())
@@ -102,22 +158,6 @@ class CPULLVMCodeGen : public IRVisitor {
     kernel_args[0]->setName("context");
 
     module->setDataLayout(jit->getDataLayout());
-  }
-
-  llvm::Type *get_runtime_type(const std::string &name) {
-    auto ty = module->getTypeByName("struct." + name);
-    if (!ty) {
-      TC_ERROR("Runtime type {} not found.", name);
-    }
-    return ty;
-  }
-
-  llvm::Function *get_runtime_function(const std::string &name) {
-    auto f = module->getFunction(name);
-    if (!f) {
-      TC_ERROR("Runtime function {} not found.", name);
-    }
-    return f;
   }
 
   void emit_struct_common_info(std::string name,
@@ -190,6 +230,8 @@ class CPULLVMCodeGen : public IRVisitor {
 
     runtime_ptr = builder.CreateCall(
         get_runtime_function("Context_get_runtime"), context_ptr);
+    runtime_ptr = builder.CreateBitCast(
+        runtime_ptr, llvm::PointerType::get(get_runtime_type("Runtime"), 0));
 
     node->accept(this);
     builder.CreateRet(tlctx->get_constant(0));

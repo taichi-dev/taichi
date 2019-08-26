@@ -11,7 +11,7 @@ using namespace Tlang;
 
 enum class MPMMaterial : int { fluid, jelly, snow, sand };
 
-auto mpm3d = [](std::vector<std::string> cli_param) {
+auto mpm_full = [](std::vector<std::string> cli_param) {
   auto param = parse_param(cli_param);
 
   Program prog(Arch::gpu);
@@ -36,6 +36,7 @@ auto mpm3d = [](std::vector<std::string> cli_param) {
   int total_frames = param.get("total_frames", 400);
   int seeding_frames = param.get("total_frames", 300);
 
+  real G = -1000.0f;
   TC_P(total_frames);
   TC_P(seeding_frames);
   TC_P(dt);
@@ -58,7 +59,9 @@ auto mpm3d = [](std::vector<std::string> cli_param) {
   bool bbox = param.get("bbox", false);
   int scene = param.get("scene", 0);
   if (scene == 0) {
-    TC_INFO("Scene: [1] ball smash    [2] one jet    [3] two static jets   [4] two moving jets");
+    TC_INFO(
+        "Scene: [1] ball smash    [2] one jet    [3] two static jets   [4] two "
+        "moving jets  [5] particle curtain");
     exit(0);
   }
   std::string output = param.get<std::string>("output");
@@ -79,8 +82,6 @@ auto mpm3d = [](std::vector<std::string> cli_param) {
   TC_P(material_name);
   TC_P(bbox);
   TC_P(scene);
-
-  // scene 1: ball drop 2: jets
 
   Vector particle_x("x", f32, dim), particle_v("v", f32, dim);
   Global(particle_color, i32);
@@ -387,9 +388,7 @@ auto mpm3d = [](std::vector<std::string> cli_param) {
         auto inv_m = Var(1.0f / m);
         v *= inv_m;
 
-        auto f = gravity_x[Expr(0)];
-        v(1) += dt * (-1000_f + abs(f));
-        v(0) += dt * f;
+        v(1) += dt * G;
       });
 
       if (bbox) {
@@ -582,6 +581,7 @@ auto mpm3d = [](std::vector<std::string> cli_param) {
   for (int frame = 0; frame < total_frames; frame++) {
     float32 current_t = frame_dt * frame;
     if (frame < seeding_frames) {
+      TC_P(scene);
       if (scene == 2) {
         int N = 10000;
         if (n_particles + N <= max_n_particles) {
@@ -592,8 +592,7 @@ auto mpm3d = [](std::vector<std::string> cli_param) {
           }
           n_particles += N;
         }
-      }
-      if (scene >= 3) {
+      } else if (scene == 3 || scene == 4) {
         int N = 10000;
         if (n_particles + N <= max_n_particles) {
           bool mutate = rand() < 0.05;
@@ -605,7 +604,8 @@ auto mpm3d = [](std::vector<std::string> cli_param) {
               color = Vector3(1.0) - color;
             }
             insert_part(i + frame * N,
-                        sample_unit_sphere() * 0.03f + Vector3(0.3f, 0.7f, 0.3f) + offset,
+                        sample_unit_sphere() * 0.03f +
+                            Vector3(0.3f, 0.7f, 0.3f) + offset,
                         Vector3(10, 0, 10), color);
           }
           for (int i = N / 2; i < N; i++) {
@@ -614,8 +614,23 @@ auto mpm3d = [](std::vector<std::string> cli_param) {
               color = Vector3(1.0) - color;
             }
             insert_part(i + frame * N,
-                        sample_unit_sphere() * 0.03f + Vector3(0.7f, 0.7f, 0.7f) - offset,
+                        sample_unit_sphere() * 0.03f +
+                            Vector3(0.7f, 0.7f, 0.7f) - offset,
                         Vector3(-10, 0, -10), color);
+          }
+        }
+      } else if (scene == 5) {
+        int N = 10000;
+        TC_P(N);
+        if (n_particles + N <= max_n_particles) {
+          for (int i = 0; i < N; i++) {
+            Vector3 color(0.5, 0.6, 0.4);
+            float t = rand() * frame_dt;
+            float v = 10;
+            insert_part(i + frame * N,
+                        Vector3(0.1f + 0.8 * rand(), 0.8f + 0.5f * G * t * t,
+                                0.2f + v * t),
+                        Vector3(0, 0, v), color);
           }
           n_particles += N;
         }
@@ -637,7 +652,7 @@ auto mpm3d = [](std::vector<std::string> cli_param) {
     auto ot = Time::get_time();
     std::vector<float32> particle_data(max_n_particles * 7);
     summarize();
-#ifdef __CUDAARCH__
+#if defined(CUDA_FOUND)
     cudaMemcpy(particle_data.data(), &particle_buffer.val<float32>(0),
                particle_data.size() * sizeof(float), cudaMemcpyDeviceToHost);
 #else
@@ -695,6 +710,12 @@ auto mpm3d = [](std::vector<std::string> cli_param) {
     print_profile_info();
   }
 };
-TC_REGISTER_TASK(mpm3d);
+TC_REGISTER_TASK(mpm_full);
 
 TC_NAMESPACE_END
+
+// demos:
+// two sand jets:
+//   ti mpm_full scene=4 material=sand output=sand
+// water curtain:
+//   ti mpm_full scene=5 material=fluid output=fluid bbox=true

@@ -96,6 +96,10 @@ class RuntimeObject {
                 llvm::Value *init = nullptr)
       : cls_name(cls_name), mb(mb), builder(builder) {
     if (init == nullptr) {
+      TC_P(builder);
+      TC_P(mb);
+      auto type = mb->get_runtime_type(cls_name);
+      TC_P(type_name(type));
       ptr = builder->CreateAlloca(mb->get_runtime_type(cls_name));
     } else {
       ptr = builder->CreateBitCast(
@@ -146,8 +150,8 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
       : tlctx(&get_current_program().llvm_context),
         llvm_context(tlctx->ctx.get()),
         jit(tlctx->jit.get()),
-        builder(*llvm_context),
         ModuleBuilder(get_current_program().llvm_context.clone_struct_module()),
+        builder(*llvm_context),
         kernel(kernel) {
     using namespace llvm;
 
@@ -246,7 +250,6 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
   }
 
   llvm::Value *emit_struct_meta(SNode *snode) {
-    TC_P(snode);
     if (snode->type == SNodeType::dense) {
       RuntimeObject meta("DenseMeta", this, &builder);
       emit_struct_meta_base("Dense", meta.ptr, snode);
@@ -535,16 +538,17 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
            llvm::PointerType::get(get_runtime_type("Element"), 0)},
           false);
 
-      body = llvm::Function::Create(body_function_type,
-                                    llvm::Function::InternalLinkage, "body");
+      body = llvm::Function::Create(
+          body_function_type, llvm::Function::InternalLinkage, "loop_body");
       auto old_func = func;
       // emit into loop body function
       func = body;
-      BasicBlock *entry = BasicBlock::Create(*llvm_context, "entry", func);
+      auto entry = BasicBlock::Create(*llvm_context, "entry", func);
       builder.SetInsertPoint(entry);
       for_stmt->body->accept(this);
       func = old_func;
       builder.CreateRetVoid();
+      // TODO: restore original insert point
     }
 
     // traverse leaf node

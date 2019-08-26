@@ -50,7 +50,7 @@ void Kernel::operator()() {
   std::vector<void *> host_buffers(args.size());
   std::vector<void *> device_buffers(args.size());
   if (program.config.arch == Arch::gpu) {
-#if __CUDAARCH__
+#if defined(CUDA_FOUND)
     // copy data to GRAM
     bool has_buffer = false;
     for (int i = 0; i < (int)args.size(); i++) {

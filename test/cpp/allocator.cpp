@@ -188,7 +188,7 @@ TC_TEST("struct_for") {
     particle_x(0).val<int32>(i) = 1;
   }
 
-  for (int i = 0; i < 2048; i++) {
+  for (int i = 0; i < 32; i++) {
     for (int k = 0; k < max_n_particles; k++)
       flag.val<int32>(k) = 0;
     sort();

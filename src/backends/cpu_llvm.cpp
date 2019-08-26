@@ -141,7 +141,6 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
   llvm::Function *func;
   std::vector<Value *> kernel_args;
   llvm::Type *context_ty;
-  llvm::Value *root, *context_ptr, *runtime_ptr;
 
   CPULLVMCodeGen(CodeGenBase *codegen, Kernel *kernel)
       : tlctx(&get_current_program().llvm_context),
@@ -176,6 +175,30 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
     kernel_args[0]->setName("context");
 
     module->setDataLayout(jit->getDataLayout());
+  }
+
+  llvm::Value *get_arg(int i) {
+    std::vector<llvm::Value *> args;
+    for (auto &arg : func->args()) {
+      args.push_back(&arg);
+    }
+    return args[i];
+  }
+
+  llvm::Value *get_context() {
+    return get_arg(0);
+  }
+
+  llvm::Value *get_root() {
+    return builder.CreateCall(get_runtime_function("Context_get_buffer"),
+                              get_context());
+  }
+
+  llvm::Value *get_runtime() {
+    auto runtime_ptr = builder.CreateCall(
+        get_runtime_function("Context_get_runtime"), get_context());
+    return builder.CreateBitCast(
+        runtime_ptr, llvm::PointerType::get(get_runtime_type("Runtime"), 0));
   }
 
   void emit_struct_meta_base(std::string name,
@@ -223,6 +246,7 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
   }
 
   llvm::Value *emit_struct_meta(SNode *snode) {
+    TC_P(snode);
     if (snode->type == SNodeType::dense) {
       RuntimeObject meta("DenseMeta", this, &builder);
       emit_struct_meta_base("Dense", meta.ptr, snode);
@@ -230,34 +254,19 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
       meta.call("set_morton_dim", tlctx->get_constant(snode->_morton));
       return meta.ptr;
     } else if (snode->type == SNodeType::root) {
-      TC_TAG;
       RuntimeObject meta("RootMeta", this, &builder);
-      TC_TAG;
       emit_struct_meta_base("Root", meta.ptr, snode);
-      TC_TAG;
       return meta.ptr;
     } else {
       TC_P(snode_type_name(snode->type));
       TC_NOT_IMPLEMENTED;
     }
+    return nullptr;
   }
 
   FunctionType gen(IRNode *node) {
     BasicBlock *bb = BasicBlock::Create(*llvm_context, "entry", func);
     builder.SetInsertPoint(bb);
-
-    // Initialize
-    context_ptr = kernel_args[0];
-    // TC_P(context_ptr->getType()->isPointerTy());
-    // TC_P((std::string)context_ptr->getType()->getStructName());
-
-    root = builder.CreateCall(get_runtime_function("Context_get_buffer"),
-                              context_ptr);
-
-    runtime_ptr = builder.CreateCall(
-        get_runtime_function("Context_get_runtime"), context_ptr);
-    runtime_ptr = builder.CreateBitCast(
-        runtime_ptr, llvm::PointerType::get(get_runtime_type("Runtime"), 0));
 
     node->accept(this);
     builder.CreateRet(tlctx->get_constant(0));
@@ -511,12 +520,37 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
       auto snode_parent = metas[i];
       auto snode_child = metas[i + 1];
       auto listgen = get_runtime_function("element_listgen");
-      auto args = {runtime_ptr, snode_parent, snode_child};
+      auto args = {get_runtime(), snode_parent, snode_child};
       builder.CreateCall(listgen, args);
     }
 
+    // body cfg
+
+    llvm::Function *body;
+    {
+      // Create the loop body function
+      auto body_function_type = llvm::FunctionType::get(
+          llvm::Type::getVoidTy(*llvm_context),
+          {llvm::PointerType::get(get_runtime_type("Context"), 0),
+           llvm::PointerType::get(get_runtime_type("Element"), 0)},
+          false);
+
+      body = llvm::Function::Create(body_function_type,
+                                    llvm::Function::InternalLinkage, "body");
+      auto old_func = func;
+      // emit into loop body function
+      func = body;
+      BasicBlock *entry = BasicBlock::Create(*llvm_context, "entry", func);
+      builder.SetInsertPoint(entry);
+      for_stmt->body->accept(this);
+      func = old_func;
+      builder.CreateRetVoid();
+    }
+
     // traverse leaf node
-    for_stmt->body->accept(this);
+    builder.CreateCall(
+        get_runtime_function("for_each_block"),
+        {get_runtime(), tlctx->get_constant(path.back()->id), body});
   }
 
   AllocaInst *CreateEntryBlockAlloca(llvm::Type *type,
@@ -571,7 +605,7 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
     */
     auto raw_arg =
         builder.CreateCall(get_runtime_function("context_get_arg"),
-                           {context_ptr, tlctx->get_constant(stmt->arg_id)});
+                           {get_context(), tlctx->get_constant(stmt->arg_id)});
     auto dest_ty = tlctx->get_data_type(stmt->ret_type.data_type);
     auto truncated = builder.CreateTrunc(
         raw_arg,
@@ -909,7 +943,7 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
       parent = stmt->input_snode->value;
     } else {
       parent = builder.CreateBitCast(
-          root,
+          get_root(),
           PointerType::get(get_current_program().snode_root->llvm_type, 0));
     }
     TC_ASSERT(parent);

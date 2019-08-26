@@ -198,7 +198,8 @@ STRUCT_FIELD_ARRAY(Runtime, element_lists);
 
 Ptr Runtime_initialize(Runtime **runtime_ptr,
                        int num_snodes,
-                       uint64_t root_size, int root_id) {
+                       uint64_t root_size,
+                       int root_id) {
   *runtime_ptr = (Runtime *)taichi_allocate(sizeof(Runtime));
   Runtime *runtime = *runtime_ptr;
   printf("Initializing runtime with %d selements\n", num_snodes);
@@ -249,6 +250,15 @@ void element_listgen(Runtime *runtime, StructMeta *parent, StructMeta *child) {
         ElementList_insert(child_list, &elem);
       }
     }
+  }
+}
+
+void for_each_block(Context *context,
+                    int snode_id,
+                    void (*task)(Context *, Element *)) {
+  auto list = ((Runtime *)context->runtime)->element_lists[snode_id];
+  for (int i = 0; i < list->tail; i++) {
+    task(context, &list->elements[i]);
   }
 }
 }

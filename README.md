@@ -10,7 +10,7 @@ Supports Ubuntu 14.04/16.04/18.04, ArchLinux, Mac OS X. For GPU support, CUDA 9.
   cmake .. -DLLVM_ENABLE_RTTI:BOOL=ON -DBUILD_SHARED_LIBS:BOOL=ON
   ```
  - Execute `ti install https://github.com/yuanming-hu/taichi_lang` to install the DSL project
- - Execute `python3 -m pip install astpretty astor pytest opencv-python`
+ - Execute `python3 -m pip install astpretty astor pytest opencv-python pybind11=2.2.4`
  - Add the following line to your `~/.bashrc` or `~/.zshrc` for the python frontend.
  ```bash
  export PYTHONPATH=$TAICHI_REPO_DIR/projects/taichi_lang/python:$PYTHONPATH

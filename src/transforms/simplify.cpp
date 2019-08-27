@@ -721,15 +721,25 @@ class BasicBlockSimplify : public IRVisitor {
       // Keep only global atomics/store, and other statements that have no
       // global side effects. LocalStore is kept and specially treated later.
 
+      bool global_state_changed = false;
       for (int i = 0; i < (int)clause.size(); i++) {
         bool has_side_effects = clause[i]->is_container_statement() ||
                                 clause[i]->has_global_side_effect();
+
+        if (global_state_changed && clause[i]->is<GlobalLoadStmt>()) {
+          // This clause cannot be trivially simplified, since there's a global
+          // load after store and they must be kept in order
+          plain_clause = false;
+        }
 
         if (is_global_write(clause[i].get()) ||
             clause[i]->is<LocalStoreStmt>() || !has_side_effects) {
           // This stmt can be kept.
         } else {
           plain_clause = false;
+        }
+        if (is_global_write(clause[i].get()) || has_side_effects) {
+          global_state_changed = true;
         }
       }
       if (plain_clause) {

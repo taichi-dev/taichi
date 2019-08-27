@@ -26,7 +26,7 @@ num_particles = ti.var(ti.i32)
 fov = 0.23
 dist_limit = 100
 
-exposure = 2.0
+exposure = 1.5
 camera_pos = ti.Vector([0.5, 0.32, 2.7])
 vignette_strength = 0.9
 vignette_radius = 0.0
@@ -36,11 +36,11 @@ light_direction_noise = 0.03
 light_color = [1.0, 1.0, 1.0]
 
 # ti.runtime.print_preprocessed = True
-ti.cfg.print_ir = True
+# ti.cfg.print_ir = True
 ti.cfg.arch = ti.cuda
 grid_resolution = 16
 
-shutter_time = 0
+shutter_time = 3e-4
 high_res = True
 if high_res:
   sphere_radius = 0.0018
@@ -507,9 +507,8 @@ def main():
         # v_c = ti.min(1, particle_v[i].norm()) * 1.5
         # ti.print(v_c)
         # particle_color[i] = ti.cast(color[i], ti.i32)
-        v_c = particle_v[i][0]
-        # v_c = v[i * 3]
-        particle_color[i] = rgb_to_i32(v_c, v_c, v_c)
+        v_c = ti.min(particle_v[i].norm() * 0.1, 1)
+        particle_color[i] = rgb_to_i32(v_c * 0.3 + 0.3, v_c * 0.4 + 0.4, 0.5 + v_c * 0.5)
 
   initialize_particle_x(np_x, np_v, np_c)
   initialize_particle_grid()

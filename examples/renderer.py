@@ -13,6 +13,7 @@ res = 1280, 720
 num_spheres = 1024
 color_buffer = ti.Vector(3, dt=ti.f32)
 sphere_pos = ti.Vector(3, dt=ti.f32)
+grid_density = ti.var(dt=ti.i32)
 render_voxel = True
 max_ray_depth = 4
 use_directional_light = True
@@ -40,7 +41,8 @@ light_color = [1.0, 1.0, 1.0]
 # ti.runtime.print_preprocessed = True
 # ti.cfg.print_ir = True
 ti.cfg.arch = ti.cuda
-grid_resolution = 16
+grid_visualization_block_size = 1
+grid_resolution = 256 // grid_visualization_block_size
 
 shutter_time = 1e-3
 high_res = True
@@ -69,11 +71,19 @@ def buffers():
   ti.root.dense(ti.l, max_num_particles).place(particle_x, particle_v,
                                                particle_color)
   ti.root.place(num_particles)
+  ti.root.dense(ti.ijk, grid_resolution).place(grid_density)
 
 
 @ti.func
 def query_density_int(ipos):
-  return ipos.min() % 3 == 0 and ipos.max() < grid_resolution
+  # return ipos.min() > 10 and ipos.min() % 3 == 0 and ipos.max() < grid_resolution
+  inside = ipos.min() >= 0 and ipos.max() < grid_resolution // grid_visualization_block_size
+  ret = 0
+  if inside:
+    ret = grid_density[ipos]
+  else:
+    ret = 0
+  return ret
 
 
 @ti.func
@@ -500,6 +510,11 @@ def main():
         # particle_color[i] = ti.cast(color[i], ti.i32)
         v_c = ti.min(particle_v[i].norm() * 0.1, 1)
         particle_color[i] = rgb_to_i32(v_c * 0.3 + 0.3, v_c * 0.4 + 0.4, 0.5 + v_c * 0.5)
+
+        # reconstruct grid using particle position and MPM p2g.
+        inv_dx = 256
+        base_coord = (inv_dx * particle_x[i] - 0.5).cast(ti.i32)
+        grid_density[base_coord] = 1
 
   initialize_particle_x(np_x, np_v, np_c)
   initialize_particle_grid()

@@ -71,7 +71,7 @@ def buffers():
   ti.root.dense(ti.l, max_num_particles).place(particle_x, particle_v,
                                                particle_color)
   ti.root.place(num_particles)
-  ti.root.dense(ti.ijk, grid_resolution).place(grid_density)
+  ti.root.dense(ti.ijk, grid_resolution // 8).dense(ti.ijk, 8).place(grid_density)
 
 
 @ti.func
@@ -91,7 +91,7 @@ def voxel_color(pos):
   p = pos * grid_resolution
 
   p -= ti.Matrix.floor(p)
-  boundary = 0.05
+  boundary = 0.1
   count = 0
   for i in ti.static(range(3)):
     if p[i] < boundary or p[i] > 1 - boundary:
@@ -99,7 +99,7 @@ def voxel_color(pos):
   f = 0.0
   if count >= 2:
     f = 1.0
-  return ti.Vector([0.3, 0.4, 0.3]) * (1 + f)
+  return ti.Vector([0.2, 0.3, 0.2]) * (2.3 - 2 * f)
 
 
 n_pillars = 9
@@ -201,7 +201,7 @@ def dda(pos, d_):
       ipos += mm * rsign
       normal = -mm * rsign
     i += 1
-    if i > grid_resolution * 10:
+    if i > grid_resolution * 3:
       running = 0
       normal = [0, 0, 0]
     else:
@@ -513,8 +513,9 @@ def main():
 
         # reconstruct grid using particle position and MPM p2g.
         inv_dx = 256
-        base_coord = (inv_dx * particle_x[i] - 0.5).cast(ti.i32)
-        grid_density[base_coord] = 1
+        for k in ti.static(range(27)):
+          base_coord = (inv_dx * particle_x[i] - 0.5).cast(ti.i32) + ti.Vector([k // 9, k // 3 % 3, k % 3])
+          grid_density[base_coord] = 1
 
   initialize_particle_x(np_x, np_v, np_c)
   initialize_particle_grid()

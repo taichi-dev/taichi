@@ -7,7 +7,11 @@ Supports Ubuntu 14.04/16.04/18.04, ArchLinux, Mac OS X. For GPU support, CUDA 9.
  - Install `taichi` with the [installation script](https://taichi.readthedocs.io/en/latest/installation.html#ubuntu-arch-linux-and-mac-os-x)
  - (Optional) If you use the experimental LLVM backend, make sure you have LLVM 8 built from scratch, with
   ```
+  mkdir build
+  cd build
   cmake .. -DLLVM_ENABLE_RTTI:BOOL=ON -DBUILD_SHARED_LIBS:BOOL=ON
+  make -j 8
+  sudo make install
   ```
  - Execute `ti install https://github.com/yuanming-hu/taichi_lang` to install the DSL project
  - Execute `python3 -m pip install astpretty astor pytest opencv-python pybind11=2.2.4`
@@ -16,6 +20,10 @@ Supports Ubuntu 14.04/16.04/18.04, ArchLinux, Mac OS X. For GPU support, CUDA 9.
  export PYTHONPATH=$TAICHI_REPO_DIR/projects/taichi_lang/python:$PYTHONPATH
  ```
  - Execute `ti test` to run all the tests. It may take a around 20 minutes to run all tests.
+
+# Troubleshooting
+ - Run with debug mode to see if there's any illegal memory access;
+ - Disable compiler optimizations to quickly confirm that the issue is not cause by optimization;
 
 # Folder Structure
 Key folders are

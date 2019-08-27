@@ -21,6 +21,9 @@ Supports Ubuntu 14.04/16.04/18.04, ArchLinux, Mac OS X. For GPU support, CUDA 9.
  ```
  - Execute `ti test` to run all the tests. It may take a around 20 minutes to run all tests.
 
+# Troubleshooting
+ - Disable compiler optimizations to quickly confirm that the issue is not cause by optimization.
+
 # Folder Structure
 Key folders are
  - *examples* : example programs written in Taichi

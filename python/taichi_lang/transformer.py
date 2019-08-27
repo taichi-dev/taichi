@@ -103,10 +103,22 @@ if 1:
     t.body = t.body[:2] + node.body + t.body[2:]
     return ast.copy_location(t, node)
 
+  def visit_block(self, list_stmt):
+    for i, l in enumerate(list_stmt):
+      list_stmt[i] = self.visit(l)
 
   def visit_If(self, node):
-    with self.variable_scope():
-      self.generic_visit(node)
+    old = False
+    if old:
+      with self.variable_scope():
+        self.generic_visit(node)
+    else:
+      with self.variable_scope():
+        node.test = self.visit(node.test)
+        with self.variable_scope():
+          self.visit_block(node.body)
+        with self.variable_scope():
+          self.visit_block(node.orelse)
 
     is_static_if = isinstance(node.test,
                                ast.Call) and isinstance(node.test.func,

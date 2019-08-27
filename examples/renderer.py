@@ -17,6 +17,8 @@ render_voxel = False
 max_ray_depth = 4
 use_directional_light = True
 
+supporter = 1
+
 particle_x = ti.Vector(3, dt=ti.f32)
 particle_v = ti.Vector(3, dt=ti.f32)
 particle_color = ti.var(ti.i32)
@@ -95,34 +97,21 @@ n_pillars = 9
 
 @ti.func
 def sdf(o_):
-  o = o_ - ti.Vector([0.5, 0.002, 0.5])
-  # r = ti.sqrt(o[0] * o[0] + o[2] * o[2])
-  p = o
-
-  h = 0.02
-
-  ra = 0.29
-  rb = 0.005
-
-  d = (ti.Vector([p[0], p[2]]).norm() - 2.0 * ra + rb, ti.abs(p[1]) - h)
-  plate = ti.min(ti.max(d[0], d[1]), 0.0) + ti.Vector(
-    [ti.max(d[0], 0.0), ti.max(d[1], 0)]).norm() - rb
-  return plate
-
-  pillars = inf
-  angle = math.pi * 2 / n_pillars
-  for i in ti.static(range(n_pillars)):
-    rotated = ti.Vector([
-      ti.cos(angle * i) * o[0] + ti.sin(angle * i) * o[2],
-      -ti.sin(angle * i) * o[0] + ti.cos(angle * i) * o[2]
-    ])
-    dist = ti.max((rotated - ti.Vector([0.0, 0.48])).norm() - 0.06, o[1])
-
-    pillars = ti.min(pillars, dist)
-
-  return ti.min(plate, pillars)
-
-  # return ti.max(ti.max(o[1], -0.04 - o[1]), r - 0.51)
+  if ti.static(supporter == 0):
+    o = o_ - ti.Vector([0.5, 0.002, 0.5])
+    p = o
+    h = 0.02
+    ra = 0.29
+    rb = 0.005
+    d = (ti.Vector([p[0], p[2]]).norm() - 2.0 * ra + rb, ti.abs(p[1]) - h)
+    dist = ti.min(ti.max(d[0], d[1]), 0.0) + ti.Vector(
+      [ti.max(d[0], 0.0), ti.max(d[1], 0)]).norm() - rb
+    return dist
+  else:
+    o = o_ - ti.Vector([0.5, 0.002, 0.5])
+    dist = (o.abs() - ti.Vector([0.5, 0.02, 0.5])).max()
+  
+  return dist
 
 
 @ti.func

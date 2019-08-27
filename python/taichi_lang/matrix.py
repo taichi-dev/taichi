@@ -227,6 +227,12 @@ class Matrix:
     for i in range(len(self.entries)):
       ret.entries[i] = impl.cast(ret.entries[i], type)
     return ret
+  
+  def abs(self):
+    ret = self.copy()
+    for i in range(len(self.entries)):
+      ret.entries[i] = impl.abs(ret.entries[i])
+    return ret
 
   def trace(self):
     assert self.n == self.m

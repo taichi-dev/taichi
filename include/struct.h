@@ -723,8 +723,12 @@ struct dynamic {
   __device__ __host__ TC_FORCE_INLINE void append(child_type t) {
     auto tail = atomic_add(&n, 1);
     TC_ASSERT(tail < max_n);
-    atomic_min(&n, max_n - 1);
+    atomic_min(&n, max_n);
+#if __CUDA_ARCH__
+    tail = min(tail, (int)(max_n - 1));
+#else
     tail = std::min(tail, (int)(max_n - 1));
+#endif
     data[tail] = t;
   }
 

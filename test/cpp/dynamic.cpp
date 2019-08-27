@@ -23,17 +23,17 @@ TC_TEST("append_and_probe") {
 
     kernel([&]() {
       Declare(i);
-      For(i, 0, n, [&] { Append(list, i, i); });
+      For(i, 0, n, [&] { Append(list, Expr(0), i); });
     })();
 
     kernel([&]() {
       Declare(i);
       len[Expr(0)] = Probe(list, Expr(0));
-    });
+    })();
 
-    for (int i = 0; i < n; i++) {
+    for (int i = 0; i < n; i++)
       TC_CHECK(x.val<int>(i) == i);
-    }
+    TC_CHECK(len.val<int>() == n);
   }
 };
 

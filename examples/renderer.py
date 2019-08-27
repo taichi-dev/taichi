@@ -42,7 +42,7 @@ light_color = [1.0, 1.0, 1.0]
 ti.cfg.arch = ti.cuda
 grid_resolution = 16
 
-shutter_time = 3e-4
+shutter_time = 1e-3
 high_res = True
 if high_res:
   sphere_radius = 0.0018
@@ -461,7 +461,7 @@ def copy(img: np.ndarray):
 
 def main():
   fn = sys.argv[1]
-  sand = np.fromfile("../final_particles/fluid_jets/{:04d}.bin".format(int(fn)),
+  sand = np.fromfile("../final_particles/fluid/{:04d}.bin".format(int(fn)),
                      dtype=np.float32)
 
   for i in range(num_spheres):

@@ -2,6 +2,10 @@
 
 #pragma once
 
+#if __cpluscplus >= 201703L
+static_assert(false, "please use C++17.");
+#endif
+
 // https://llvm.org/docs/tutorial/BuildingAJIT2.html
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ExecutionEngine/JITSymbol.h"

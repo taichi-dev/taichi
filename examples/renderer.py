@@ -13,7 +13,7 @@ res = 1280, 720
 num_spheres = 1024
 color_buffer = ti.Vector(3, dt=ti.f32)
 sphere_pos = ti.Vector(3, dt=ti.f32)
-render_voxel = False
+render_voxel = True
 max_ray_depth = 4
 use_directional_light = True
 
@@ -171,6 +171,7 @@ def dda(pos, d_):
   normal = ti.Vector([0.0, 0.0, 0.0])
   hit_pos = ti.Vector([0.0, 0.0, 0.0])
   c = ti.Vector([0.0, 0.0, 0.0])
+  hit_distance = inf
   while running:
     last_sample = query_density_int(ipos)
     if last_sample:
@@ -196,7 +197,7 @@ def dda(pos, d_):
     else:
       c = voxel_color(hit_pos)
 
-  return normal, hit_pos, c
+  return hit_distance, normal, c
 
 
 @ti.func
@@ -304,7 +305,13 @@ def dda_particle(eye_pos, d_, t):
 @ti.func
 def next_hit(pos_, d, t):
   pos = pos_
-  closest, normal, c = dda_particle(pos_, d, t)
+  closest = inf
+  normal = ti.Vector([0.0, 0.0, 0.0])
+  c = ti.Vector([0.0, 0.0, 0.0])
+  if ti.static(render_voxel):
+    closest, normal, c = dda(pos, d)
+  else:
+    closest, normal, c = dda_particle(pos, d, t)
   # closest, normal, c = intersect_spheres(pos, d)
 
   '''
@@ -331,11 +338,6 @@ def next_hit(pos_, d, t):
     c = sdf_color(pos + d * closest)
 
   return closest, normal, c
-
-  if ti.static(render_voxel):
-    return dda(pos, d)
-  else:
-    return intersect_spheres(pos, d)
 
 
 aspect_ratio = res[0] / res[1]

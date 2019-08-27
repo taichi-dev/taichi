@@ -49,7 +49,7 @@ class DIE : public IRVisitor {
     if (phase == 0) {
       register_usage(stmt);
     } else {
-      if (!stmt->has_side_effect() &&
+      if (!stmt->has_global_side_effect() &&
           used.find(stmt->instance_id) == used.end()) {
         stmt->parent->erase(stmt);
         throw IRModified();

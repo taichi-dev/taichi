@@ -4,8 +4,8 @@
 
 TLANG_NAMESPACE_BEGIN
 
-// Common subexpression elimination, store forwarding, useless local store elimination;
-// Simplify if statements into conditional stores.
+// Common subexpression elimination, store forwarding, useless local store
+// elimination; Simplify if statements into conditional stores.
 class BasicBlockSimplify : public IRVisitor {
  public:
   Block *block;
@@ -717,12 +717,17 @@ class BasicBlockSimplify : public IRVisitor {
     auto flatten = [&](std::vector<pStmt> &clause, bool true_branch) {
       bool plain_clause = true;  // no global store, no container
 
-      // Keep only global atomics/store
+      // Here we try to move statements outside the clause;
+      // Keep only global atomics/store, and other statements that have no
+      // global side effects. LocalStore is kept and specially treated later.
+
       for (int i = 0; i < (int)clause.size(); i++) {
+        bool has_side_effects = clause[i]->is_container_statement() ||
+                                clause[i]->has_global_side_effect();
+
         if (is_global_write(clause[i].get()) ||
-            (!clause[i]->is_container_statement() &&
-                (!clause[i]->has_side_effect() ||
-                 clause[i]->is<LocalStoreStmt>()))) {
+            clause[i]->is<LocalStoreStmt>() || !has_side_effects) {
+          // This stmt can be kept.
         } else {
           plain_clause = false;
         }
@@ -753,7 +758,7 @@ class BasicBlockSimplify : public IRVisitor {
         }
         auto clean_clause = std::vector<pStmt>();
         bool reduced = false;
-        for (auto &&stmt: clause) {
+        for (auto &&stmt : clause) {
           if (stmt != nullptr) {
             clean_clause.push_back(std::move(stmt));
           } else {

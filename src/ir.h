@@ -689,7 +689,7 @@ class Stmt : public IRNode {
     return true;
   }
 
-  virtual bool has_side_effect() const {
+  virtual bool has_global_side_effect() const {
     return true;
   }
 
@@ -932,7 +932,7 @@ class AllocaStmt : public Stmt {
     ret_type = VectorType(width, type);
   }
 
-  virtual bool has_side_effect() const override {
+  virtual bool has_global_side_effect() const override {
     return false;
   }
 
@@ -977,7 +977,7 @@ class UnaryOpStmt : public Stmt {
     return false;
   }
 
-  virtual bool has_side_effect() const override {
+  virtual bool has_global_side_effect() const override {
     return false;
   }
   DEFINE_ACCEPT
@@ -991,7 +991,7 @@ class ArgLoadStmt : public Stmt {
     this->is_ptr = is_ptr;
   }
 
-  virtual bool has_side_effect() const override {
+  virtual bool has_global_side_effect() const override {
     return false;
   }
 
@@ -1022,7 +1022,7 @@ class RandStmt : public Stmt {
     ret_type.data_type = dt;
   }
 
-  virtual bool has_side_effect() const override {
+  virtual bool has_global_side_effect() const override {
     return false;
   }
   DEFINE_ACCEPT
@@ -1095,7 +1095,7 @@ class BinaryOpStmt : public Stmt {
     add_operand(this->rhs);
   }
 
-  virtual bool has_side_effect() const override {
+  virtual bool has_global_side_effect() const override {
     return false;
   }
   DEFINE_ACCEPT
@@ -1116,7 +1116,7 @@ class TernaryOpStmt : public Stmt {
     add_operand(this->op3);
   }
 
-  virtual bool has_side_effect() const override {
+  virtual bool has_global_side_effect() const override {
     return false;
   }
   DEFINE_ACCEPT
@@ -1219,7 +1219,7 @@ class ExternalPtrStmt : public Stmt {
     element_type() = dt;
   }
 
-  virtual bool has_side_effect() const override {
+  virtual bool has_global_side_effect() const override {
     return false;
   }
 
@@ -1247,7 +1247,7 @@ class GlobalPtrStmt : public Stmt {
     element_type() = snodes[0]->dt;
   }
 
-  virtual bool has_side_effect() const override {
+  virtual bool has_global_side_effect() const override {
     return false;
   }
 
@@ -1591,7 +1591,7 @@ class GlobalLoadStmt : public Stmt {
     add_operand(this->ptr);
   }
 
-  virtual bool has_side_effect() const override {
+  virtual bool has_global_side_effect() const override {
     return false;
   }
 
@@ -1663,7 +1663,7 @@ class LocalLoadStmt : public Stmt {
 
   Stmt *previous_store_or_alloca_in_block();
 
-  virtual bool has_side_effect() const override {
+  virtual bool has_global_side_effect() const override {
     return false;
   }
 
@@ -1796,7 +1796,7 @@ class ConstStmt : public Stmt {
     val.repeat(factor);
   }
 
-  virtual bool has_side_effect() const override {
+  virtual bool has_global_side_effect() const override {
     return false;
   }
   DEFINE_ACCEPT
@@ -2178,7 +2178,7 @@ class ElementShuffleStmt : public Stmt {
     }
   }
 
-  virtual bool has_side_effect() const override {
+  virtual bool has_global_side_effect() const override {
     return false;
   }
   DEFINE_ACCEPT
@@ -2193,7 +2193,7 @@ class IntegerOffsetStmt : public Stmt {
     add_operand(this->input);
   }
 
-  virtual bool has_side_effect() const override {
+  virtual bool has_global_side_effect() const override {
     return false;
   }
   DEFINE_ACCEPT
@@ -2213,7 +2213,7 @@ class LinearizeStmt : public Stmt {
     }
   }
 
-  virtual bool has_side_effect() const override {
+  virtual bool has_global_side_effect() const override {
     return false;
   }
   DEFINE_ACCEPT
@@ -2231,7 +2231,7 @@ class OffsetAndExtractBitsStmt : public Stmt {
     simplified = false;
   }
 
-  virtual bool has_side_effect() const override {
+  virtual bool has_global_side_effect() const override {
     return false;
   }
   DEFINE_ACCEPT;

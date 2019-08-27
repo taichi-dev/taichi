@@ -619,6 +619,7 @@ auto mpm_full = [](std::vector<std::string> cli_param) {
                         Vector3(-10, 0, -10), color);
           }
         }
+        n_particles += N;
       } else if (scene == 5) {
         int N = 10000;
         TC_P(N);
@@ -719,3 +720,5 @@ TC_NAMESPACE_END
 //   ti mpm_full scene=4 material=sand output=sand
 // water curtain:
 //   ti mpm_full scene=5 material=fluid output=fluid bbox=true
+// water jets:
+//   ti mpm_full scene=3 material=fluid output=fluid bbox=true dt_mul=0.7

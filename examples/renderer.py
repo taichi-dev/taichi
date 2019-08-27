@@ -36,14 +36,14 @@ light_direction_noise = 0.03
 light_color = [1.0, 1.0, 1.0]
 
 # ti.runtime.print_preprocessed = True
-# ti.cfg.print_ir = True
+ti.cfg.print_ir = True
 ti.cfg.arch = ti.cuda
 grid_resolution = 16
 
-shutter_time = 3e-4
+shutter_time = 0
 high_res = True
 if high_res:
-  sphere_radius = 0.0012
+  sphere_radius = 0.0018
   particle_grid_res = 128
   max_num_particles_per_cell = 256
   max_num_particles = 1024 * 1024 * 8
@@ -472,7 +472,7 @@ def copy(img: np.ndarray):
 
 def main():
   fn = sys.argv[1]
-  sand = np.fromfile("../final_particles/sand_new/{:04d}.bin".format(int(fn)),
+  sand = np.fromfile("../final_particles/fluid_jets/{:04d}.bin".format(int(fn)),
                      dtype=np.float32)
 
   for i in range(num_spheres):
@@ -485,7 +485,7 @@ def main():
     sand = sand.reshape((num_sand_particles, 7))
     np_x = sand[:, :3].flatten()
     np_v = sand[:, 3:6].flatten()
-    np_c = sand[:, 6].flatten().astype(np.float32)
+    np_c = sand[:, 6].flatten().astype(np.float32) * 0 + 127
   else:
     num_part = 128
     np_x = np.random.rand(num_part * 3).astype(np.float32) * 0.8 + 0.1
@@ -504,7 +504,12 @@ def main():
           particle_x[i][c] = x[i * 3 + c]
         for c in ti.static(range(3)):
           particle_v[i][c] = v[i * 3 + c]
-        particle_color[i] = ti.cast(color[i], ti.i32)
+        # v_c = ti.min(1, particle_v[i].norm()) * 1.5
+        # ti.print(v_c)
+        # particle_color[i] = ti.cast(color[i], ti.i32)
+        v_c = particle_v[i][0]
+        # v_c = v[i * 3]
+        particle_color[i] = rgb_to_i32(v_c, v_c, v_c)
 
   initialize_particle_x(np_x, np_v, np_c)
   initialize_particle_grid()
@@ -528,7 +533,7 @@ def main():
       cv2.waitKey(1)
       os.makedirs('outputs', exist_ok=True)
     cv2.imwrite('outputs/{:04d}.png'.format(int(fn)), img * 255)
-  cv2.waitKey(0)
+  # cv2.waitKey(1)
 
 
 if __name__ == '__main__':

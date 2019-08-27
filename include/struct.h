@@ -723,6 +723,8 @@ struct dynamic {
   __device__ __host__ TC_FORCE_INLINE void append(child_type t) {
     auto tail = atomic_add(&n, 1);
     TC_ASSERT(tail < max_n);
+    atomic_min(&n, max_n - 1);
+    tail = std::min(tail, (int)(max_n - 1));
     data[tail] = t;
   }
 

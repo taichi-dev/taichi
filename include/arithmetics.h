@@ -1060,12 +1060,39 @@ TC_FORCE_INLINE __host__ float32 atomicAddCPU(volatile float32 *dest,
   return old_val;
 }
 
+TC_FORCE_INLINE __host__ int32 atomicMinCPU(volatile int32 *dest, int32 inc) {
+  int32 old_val;
+  int32 new_val;
+  do {
+    old_val = *dest;
+    new_val = std::min(old_val, inc);
+#if defined(__clang__)
+  } while (!__atomic_compare_exchange(dest, &old_val, &new_val, true,
+                                      std::memory_order::memory_order_seq_cst,
+                                      std::memory_order::memory_order_seq_cst));
+#else
+  } while (!__atomic_compare_exchange((int32 *)dest, &old_val, &new_val, true,
+                                      std::memory_order::memory_order_seq_cst,
+                                      std::memory_order::memory_order_seq_cst));
+#endif
+  return old_val;
+}
+
 template <typename T>
 TC_FORCE_INLINE __host__ __device__ T atomic_add(T *dest, T inc) {
 #if __CUDA_ARCH__
   return atomicAdd(dest, inc);
 #else
   return atomicAddCPU(dest, inc);
+#endif
+}
+
+template <typename T>
+TC_FORCE_INLINE __host__ __device__ T atomic_min(T *dest, T inc) {
+#if __CUDA_ARCH__
+  return atomicMin(dest, inc);
+#else
+  return atomicMinCPU(dest, inc);
 #endif
 }
 

@@ -45,6 +45,8 @@ auto mpm_full = [](std::vector<std::string> cli_param) {
   TC_P(frame_dt);
   int visualize_interval = param.get<int32>("visualize_interval", 5);
   TC_P(visualize_interval);
+  real ground_friction = param.get<real>("ground_friction", 0.2f);
+  TC_P(ground_friction);
   auto particle_mass = 1.0_f, vol = 1.0_f;
   auto E = 1e4_f, nu = 0.3f;
   real mu_0 = E / (2 * (1 + nu)), lambda_0 = E * nu / ((1 + nu) * (1 - 2 * nu));
@@ -95,7 +97,7 @@ auto mpm_full = [](std::vector<std::string> cli_param) {
   Vector grid_v("v^{g}", f32, dim);
   NamedScalar(grid_m, m ^ {p}, f32);
 
-  int max_n_particles = 1024 * 1024 * 8;
+  int max_n_particles = 1024 * 1024 * 4;
 
   int n_particles = 0;
   std::vector<float> benchmark_particles;
@@ -116,22 +118,21 @@ auto mpm_full = [](std::vector<std::string> cli_param) {
         p_x[i][j] = benchmark_particles[i * 3 + j];
     }
   } else {
+    auto random_in_unit_sphere = [] {
+      Vector3 offset = Vector3::rand() - Vector3(0.5_f);
+      while (offset.length() > 0.5f) {
+        offset = Vector3::rand() - Vector3(0.5_f);
+      }
+      return offset;
+    };
     if (scene == 1) {
       n_particles = max_n_particles / (highres ? 1 : 8);
       p_x.resize(n_particles);
-      if (false) {
-        for (int i = 0; i < n_particles; i++) {
-          p_x[i].x = 0.4_f + rand() * 0.2_f;
-          p_x[i].y = 0.15_f + rand() * 0.55_f;
-          p_x[i].z = 0.4_f + rand() * 0.2_f;
-        }
-      } else {
-        for (int i = 0; i < n_particles; i++) {
-          Vector3 offset = Vector3::rand() - Vector3(0.5_f);
-          while (offset.length() > 0.5f) {
-            offset = Vector3::rand() - Vector3(0.5_f);
-          }
-          p_x[i] = Vector3(0.5_f) + offset * 0.25f;
+      int group_size = 10;
+      for (int i = 0; i < n_particles / group_size; i++) {
+        auto center = Vector3(0.5_f) + random_in_unit_sphere() * 0.25f;
+        for (int j = 0; j < group_size; j++) {
+          p_x[i * group_size + j] = center + random_in_unit_sphere() * dx;
         }
       }
     }
@@ -402,10 +403,8 @@ auto mpm_full = [](std::vector<std::string> cli_param) {
 
       If(j < bound, [&] {
         auto norm = Var(sqrt(v(0) * v(0) + v(2) * v(2)));
-        auto s = Var(clamp(
-            (norm + v(1) * (material == MPMMaterial::sand ? 1.0f : 0.20f)) /
-                (norm + 1e-30f),
-            Expr(0.0_f), Expr(1.0_f)));
+        auto s = Var(clamp((norm + v(1) * ground_friction) / (norm + 1e-30f),
+                           Expr(0.0_f), Expr(1.0_f)));
 
         v *= s;
         v(1) = max(v(1), Expr(0.0_f));
@@ -717,10 +716,10 @@ TC_NAMESPACE_END
 
 // demos:
 // two sand jets:
-//   ti mpm_full scene=4 material=sand output=sand
+//   ti mpm_full scene=4 material=sand output=sand ground_friction=1.0
 // water curtain:
 //   ti mpm_full scene=5 material=fluid output=fluid bbox=true
 // water jets:
 //   ti mpm_full scene=3 material=fluid output=fluid bbox=true dt_mul=0.7
 // snow smash:
-//   ti mpm_full scene=1 material=snow output=snow_unbounded
+//   ti mpm_full scene=1 material=snow output=snow_unbounded ground_friction=1.0

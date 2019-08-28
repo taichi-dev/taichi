@@ -14,11 +14,10 @@ num_spheres = 1024
 color_buffer = ti.Vector(3, dt=ti.f32)
 sphere_pos = ti.Vector(3, dt=ti.f32)
 grid_density = ti.var(dt=ti.i32)
-render_voxel = True
+voxel_has_particle = ti.var(dt=ti.i32)
 max_ray_depth = 4
 use_directional_light = True
 
-supporter = 1
 
 particle_x = ti.Vector(3, dt=ti.f32)
 particle_v = ti.Vector(3, dt=ti.f32)
@@ -44,18 +43,27 @@ ti.cfg.arch = ti.cuda
 grid_visualization_block_size = 16
 grid_resolution = 256 // grid_visualization_block_size
 
-shutter_time = 1e-3
-high_res = True
-if high_res:
+scene = sys.argv[1]
+folder = sys.argv[2]
+frame_id = int(sys.argv[3])
+assert scene in ['sand', 'fluid', 'snow']
+
+render_voxel = False
+
+if scene == 'fluid':
+  supporter = 1
+  shutter_time = 1e-3
   sphere_radius = 0.0018
   particle_grid_res = 128
   max_num_particles_per_cell = 256
-  max_num_particles = 1024 * 1024 * 8
-else:
-  sphere_radius = 0.03
-  particle_grid_res = 8
-  max_num_particles_per_cell = 64
-  max_num_particles = 1024
+  max_num_particles = 1024 * 1024 * 4
+elif scene == 'snow':
+  supporter = 2
+  shutter_time = 1e-3
+  sphere_radius = 0.0007
+  particle_grid_res = 128
+  max_num_particles_per_cell = 1024
+  max_num_particles = 1024 * 1024 * 4
 
 assert sphere_radius * 2 * particle_grid_res < 1
 
@@ -65,6 +73,7 @@ def buffers():
   ti.root.dense(ti.ij, (res[0] // 8, res[1] // 8)).dense(ti.ij, 8).place(
     color_buffer)
   ti.root.dense(ti.i, num_spheres).place(sphere_pos)
+  ti.root.dense(ti.ijk, particle_grid_res // 8).dense(ti.ijk, 8).place(voxel_has_particle)
   ti.root.dense(ti.ijk, particle_grid_res // 8).dense(ti.ijk, 8).dynamic(ti.l,
                                                                          max_num_particles_per_cell).place(
     pid)
@@ -133,9 +142,11 @@ def sdf(o_):
     dist = ti.min(ti.max(d[0], d[1]), 0.0) + ti.Vector(
       [ti.max(d[0], 0.0), ti.max(d[1], 0)]).norm() - rb
     return dist
-  else:
+  elif ti.static(supporter == 1):
     o = o_ - ti.Vector([0.5, 0.002, 0.5])
     dist = (o.abs() - ti.Vector([0.5, 0.02, 0.5])).max()
+  else:
+    dist = o_[1] - 0.027
   
   return dist
 
@@ -301,7 +312,9 @@ def dda_particle(eye_pos, d_, t):
       inside = inside_particle_grid(ipos)
 
       if inside:
-        num_particles = ti.length(pid.parent(), ipos)
+        num_particles = voxel_has_particle[ipos]
+        if num_particles != 0:
+          num_particles = ti.length(pid.parent(), ipos)
         for k in range(num_particles):
           p = pid[ipos[0], ipos[1], ipos[2], k]
           v = particle_v[p]
@@ -466,6 +479,7 @@ def initialize_particle_grid():
                                               x + 0.5 * shutter_time * v,
                                               sphere_radius):
                 ti.append(pid.parent(), box_ipos, p)
+                voxel_has_particle[box_ipos] = 1
 
 
 @ti.func
@@ -496,27 +510,19 @@ def copy(img: np.ndarray):
 
 
 def main():
-  fn = sys.argv[1]
-  sand = np.fromfile("../final_particles/fluid/{:04d}.bin".format(int(fn)),
+  sand = np.fromfile("../final_particles/{}/{:04d}.bin".format(folder, frame_id),
                      dtype=np.float32)
 
   for i in range(num_spheres):
     for c in range(3):
       sphere_pos[i][c] = 0.5  # random.random()
 
-  if high_res:
-    num_sand_particles = len(sand) // 7
-    num_part = num_sand_particles
-    sand = sand.reshape((num_sand_particles, 7))
-    np_x = sand[:, :3].flatten()
-    np_v = sand[:, 3:6].flatten()
-    np_c = sand[:, 6].flatten().astype(np.float32) * 0 + 127
-  else:
-    num_part = 128
-    np_x = np.random.rand(num_part * 3).astype(np.float32) * 0.8 + 0.1
-    np_v = np.random.rand(num_part * 3).astype(np.float32) * 0
-    np_c = np.random.randint(0, 256 ** 3, num_part,
-                             dtype=np.int32).astype(np.float32)
+  num_sand_particles = len(sand) // 7
+  num_part = num_sand_particles
+  sand = sand.reshape((num_sand_particles, 7))
+  np_x = sand[:, :3].flatten()
+  np_v = sand[:, 3:6].flatten()
+  np_c = sand[:, 6].flatten().astype(np.float32) * 0 + 127
 
   num_particles[None] = num_part
   print('num_input_particles =', num_part)
@@ -531,9 +537,13 @@ def main():
           particle_v[i][c] = v[i * 3 + c]
         # v_c = ti.min(1, particle_v[i].norm()) * 1.5
         # ti.print(v_c)
-        # particle_color[i] = ti.cast(color[i], ti.i32)
-        v_c = ti.min(particle_v[i].norm() * 0.1, 1)
-        particle_color[i] = rgb_to_i32(v_c * 0.3 + 0.3, v_c * 0.4 + 0.4, 0.5 + v_c * 0.5)
+        if ti.static(scene == 'fluid'):
+          v_c = ti.min(particle_v[i].norm() * 0.1, 1)
+          particle_color[i] = rgb_to_i32(v_c * 0.3 + 0.3, v_c * 0.4 + 0.4, 0.5 + v_c * 0.5)
+        elif ti.static(scene == 'sand'):
+          particle_color[i] = ti.cast(color[i], ti.i32)
+        else:
+          particle_color[i] = rgb_to_i32(0.65, 0.8, 1.0)
 
         # reconstruct grid using particle position and MPM p2g.
         inv_dx = 256
@@ -544,11 +554,13 @@ def main():
   initialize_particle_x(np_x, np_v, np_c)
   initialize_particle_grid()
 
+  output_folder = 'outputs_' + folder
+
   last_t = 0
   for i in range(500):
     render()
 
-    interval = 100
+    interval = 50
     if i % interval == 0:
       img = np.zeros((res[1] * res[0] * 3,), dtype=np.float32)
       copy(img)
@@ -559,11 +571,11 @@ def main():
       last_t = time.time()
       img = img.reshape(res[1], res[0], 3) * (1 / (i + 1)) * exposure
       img = np.sqrt(img)
-      # cv2.imshow('img', img)
-      # cv2.waitKey(1)
-  os.makedirs('outputs', exist_ok=True)
-  cv2.imwrite('outputs/{:04d}.png'.format(int(fn)), img * 255)
-  # cv2.waitKey(1)
+      cv2.imshow('img', img)
+      cv2.waitKey(1)
+  os.makedirs(output_folder, exist_ok=True)
+  cv2.imwrite(output_folder + '/{:04d}.png'.format(frame_id), img * 255)
+  cv2.waitKey(1)
 
 
 if __name__ == '__main__':

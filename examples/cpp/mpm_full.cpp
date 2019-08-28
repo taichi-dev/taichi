@@ -722,3 +722,5 @@ TC_NAMESPACE_END
 //   ti mpm_full scene=5 material=fluid output=fluid bbox=true
 // water jets:
 //   ti mpm_full scene=3 material=fluid output=fluid bbox=true dt_mul=0.7
+// snow smash:
+//   ti mpm_full scene=1 material=snow output=snow_unbounded

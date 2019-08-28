@@ -41,7 +41,7 @@ light_color = [1.0, 1.0, 1.0]
 # ti.runtime.print_preprocessed = True
 # ti.cfg.print_ir = True
 ti.cfg.arch = ti.cuda
-grid_visualization_block_size = 4
+grid_visualization_block_size = 16
 grid_resolution = 256 // grid_visualization_block_size
 
 shutter_time = 1e-3
@@ -76,6 +76,12 @@ def buffers():
 @ti.func
 def inside_grid(ipos):
  return ipos.min() >= 0 and ipos.max() < grid_resolution
+
+# The dda algorithm requires the voxel grid to have one surrounding layer of void region
+# to correctly render the outmost voxel faces
+@ti.func
+def inside_grid_loose(ipos):
+  return ipos.min() >= -1 and ipos.max() <= grid_resolution
 
 
 '''
@@ -184,8 +190,8 @@ def dda(eye_pos, d_):
       rsign[i] = -1
 
 
-  bbox_min = ti.Vector([0.0, 0.0, 0.0])
-  bbox_max = ti.Vector([1.0, 1.0, 1.0])
+  bbox_min = ti.Vector([0.0, 0.0, 0.0]) - eps
+  bbox_max = ti.Vector([1.0, 1.0, 1.0]) + eps
   inter, near, far = ray_aabb_intersection(bbox_min, bbox_max, eye_pos, d)
   hit_distance = inf
   normal = ti.Vector([0.0, 0.0, 0.0])
@@ -203,7 +209,7 @@ def dda(eye_pos, d_):
     hit_pos = ti.Vector([0.0, 0.0, 0.0])
     while running:
       last_sample = query_density_int(ipos)
-      if not inside_grid(ipos):
+      if not inside_grid_loose(ipos):
         running = 0
         # normal = [0, 0, 0]
 

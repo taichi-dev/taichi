@@ -73,11 +73,21 @@ def buffers():
   ti.root.place(num_particles)
   ti.root.dense(ti.ijk, grid_resolution // 8).dense(ti.ijk, 8).place(grid_density)
 
+@ti.func
+def inside_grid(ipos):
+ return ipos.min() >= 0 and ipos.max() < grid_resolution // grid_visualization_block_size
+
+
+'''
+def inside_grid(ipos):
+  grid_res = grid_resolution // grid_visualization_block_size
+  return 0 <= ipos[0] and ipos[0] < grid_res and 0 <= ipos[1] and ipos[
+    1] < grid_res and 0 <= ipos[2] and ipos[2] < grid_res
+'''
 
 @ti.func
 def query_density_int(ipos):
-  # return ipos.min() > 10 and ipos.min() % 3 == 0 and ipos.max() < grid_resolution
-  inside = ipos.min() >= 0 and ipos.max() < grid_resolution // grid_visualization_block_size
+  inside = inside_grid(ipos)
   ret = 0
   if inside:
     ret = grid_density[ipos]
@@ -160,7 +170,7 @@ def sdf_color(p_):
 
 
 @ti.func
-def dda(pos, d_):
+def dda(eye_pos, d_):
   d = d_
   for i in ti.static(range(3)):
     if ti.abs(d[i]) < 1e-6:
@@ -173,40 +183,48 @@ def dda(pos, d_):
     else:
       rsign[i] = -1
 
-  o = grid_resolution * pos
-  ipos = ti.Matrix.floor(o).cast(ti.i32)
-  dis = (ipos - o + 0.5 + rsign * 0.5) * rinv
-  running = 1
-  i = 0
-  normal = ti.Vector([0.0, 0.0, 0.0])
-  hit_pos = ti.Vector([0.0, 0.0, 0.0])
-  c = ti.Vector([0.0, 0.0, 0.0])
-  hit_distance = inf
-  while running:
-    last_sample = query_density_int(ipos)
-    if last_sample:
-      mini = (ipos - o + ti.Vector([0.5, 0.5, 0.5]) - rsign * 0.5) * rinv
-      hit_distance = mini.max() * (1 / grid_resolution)
-      hit_pos = pos + hit_distance * d
-      running = 0
-    else:
-      mm = ti.Vector([0, 0, 0])
-      if dis[0] <= dis[1] and dis[0] < dis[2]:
-        mm[0] = 1
-      elif dis[1] <= dis[0] and dis[1] <= dis[2]:
-        mm[1] = 1
-      else:
-        mm[2] = 1
-      dis += mm * rsign * rinv
-      ipos += mm * rsign
-      normal = -mm * rsign
-    i += 1
-    if i > grid_resolution * 3:
-      running = 0
-      normal = [0, 0, 0]
-    else:
-      c = voxel_color(hit_pos)
 
+  bbox_min = ti.Vector([0.0, 0.0, 0.0])
+  bbox_max = ti.Vector([1.0, 1.0, 1.0])
+  inter, near, far = ray_aabb_intersection(bbox_min, bbox_max, eye_pos, d)
+  hit_distance = inf
+  normal = ti.Vector([0.0, 0.0, 0.0])
+  c = ti.Vector([0.0, 0.0, 0.0])
+  if inter:
+    near = ti.max(0, near)
+
+    pos = eye_pos + d * (near + eps)
+
+    o = grid_resolution * pos
+    ipos = ti.Matrix.floor(o).cast(ti.i32)
+    dis = (ipos - o + 0.5 + rsign * 0.5) * rinv
+    running = 1
+    i = 0
+    hit_pos = ti.Vector([0.0, 0.0, 0.0])
+    while running:
+      last_sample = query_density_int(ipos)
+      if not inside_grid(ipos):
+        running = 0
+        normal = [0, 0, 0]
+
+      if last_sample:
+        mini = (ipos - o + ti.Vector([0.5, 0.5, 0.5]) - rsign * 0.5) * rinv
+        hit_distance = mini.max() * (1 / grid_resolution) + near
+        hit_pos = eye_pos + hit_distance * d
+        c = voxel_color(hit_pos)
+        running = 0
+      else:
+        mm = ti.Vector([0, 0, 0])
+        if dis[0] <= dis[1] and dis[0] < dis[2]:
+          mm[0] = 1
+        elif dis[1] <= dis[0] and dis[1] <= dis[2]:
+          mm[1] = 1
+        else:
+          mm[2] = 1
+        dis += mm * rsign * rinv
+        ipos += mm * rsign
+        normal = -mm * rsign
+      i += 1
   return hit_distance, normal, c
 
 
@@ -524,7 +542,7 @@ def main():
   for i in range(500):
     render()
 
-    interval = 10
+    interval = 100
     if i % interval == 0:
       img = np.zeros((res[1] * res[0] * 3,), dtype=np.float32)
       copy(img)
@@ -535,9 +553,9 @@ def main():
       last_t = time.time()
       img = img.reshape(res[1], res[0], 3) * (1 / (i + 1)) * exposure
       img = np.sqrt(img)
-      cv2.imshow('img', img)
-      cv2.waitKey(1)
-      os.makedirs('outputs', exist_ok=True)
+      # cv2.imshow('img', img)
+      # cv2.waitKey(1)
+    os.makedirs('outputs', exist_ok=True)
     cv2.imwrite('outputs/{:04d}.png'.format(int(fn)), img * 255)
   # cv2.waitKey(1)
 

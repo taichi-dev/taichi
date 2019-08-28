@@ -94,6 +94,24 @@ class Matrix:
     for i in range(self.n * self.m):
       ret.entries[i] = scalar
     return ret
+  
+  @broadcast_if_scalar
+  def __truediv__(self, other):
+    assert self.n == other.n and self.m == other.m
+    ret = Matrix(self.n, self.m)
+    for i in range(self.n):
+      for j in range(self.m):
+        ret(i, j).assign(self(i, j) / other(i, j))
+    return ret
+
+  @broadcast_if_scalar
+  def __floordiv__(self, other):
+    assert self.n == other.n and self.m == other.m
+    ret = Matrix(self.n, self.m)
+    for i in range(self.n):
+      for j in range(self.m):
+        ret(i, j).assign(self(i, j) // other(i, j))
+    return ret
 
   @broadcast_if_scalar
   def __mul__(self, other):

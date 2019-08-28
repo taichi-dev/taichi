@@ -41,7 +41,7 @@ light_color = [1.0, 1.0, 1.0]
 # ti.runtime.print_preprocessed = True
 # ti.cfg.print_ir = True
 ti.cfg.arch = ti.cuda
-grid_visualization_block_size = 1
+grid_visualization_block_size = 4
 grid_resolution = 256 // grid_visualization_block_size
 
 shutter_time = 1e-3
@@ -75,12 +75,12 @@ def buffers():
 
 @ti.func
 def inside_grid(ipos):
- return ipos.min() >= 0 and ipos.max() < grid_resolution // grid_visualization_block_size
+ return ipos.min() >= 0 and ipos.max() < grid_resolution
 
 
 '''
 def inside_grid(ipos):
-  grid_res = grid_resolution // grid_visualization_block_size
+  grid_res = grid_resolution
   return 0 <= ipos[0] and ipos[0] < grid_res and 0 <= ipos[1] and ipos[
     1] < grid_res and 0 <= ipos[2] and ipos[2] < grid_res
 '''
@@ -205,7 +205,7 @@ def dda(eye_pos, d_):
       last_sample = query_density_int(ipos)
       if not inside_grid(ipos):
         running = 0
-        normal = [0, 0, 0]
+        # normal = [0, 0, 0]
 
       if last_sample:
         mini = (ipos - o + ti.Vector([0.5, 0.5, 0.5]) - rsign * 0.5) * rinv
@@ -533,7 +533,7 @@ def main():
         inv_dx = 256
         for k in ti.static(range(27)):
           base_coord = (inv_dx * particle_x[i] - 0.5).cast(ti.i32) + ti.Vector([k // 9, k // 3 % 3, k % 3])
-          grid_density[base_coord] = 1
+          grid_density[base_coord / grid_visualization_block_size] = 1
 
   initialize_particle_x(np_x, np_v, np_c)
   initialize_particle_grid()
@@ -553,8 +553,8 @@ def main():
       last_t = time.time()
       img = img.reshape(res[1], res[0], 3) * (1 / (i + 1)) * exposure
       img = np.sqrt(img)
-      # cv2.imshow('img', img)
-      # cv2.waitKey(1)
+      cv2.imshow('img', img)
+      cv2.waitKey(1)
     os.makedirs('outputs', exist_ok=True)
     cv2.imwrite('outputs/{:04d}.png'.format(int(fn)), img * 255)
   # cv2.waitKey(1)

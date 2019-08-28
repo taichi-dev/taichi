@@ -59,7 +59,7 @@ if scene == 'fluid':
   max_num_particles = 1024 * 1024 * 4
 elif scene == 'snow':
   supporter = 2
-  shutter_time = 1e-3
+  shutter_time = 0.5e-3
   sphere_radius = 0.0007
   particle_grid_res = 128
   max_num_particles_per_cell = 1024
@@ -575,7 +575,6 @@ def main():
       cv2.waitKey(1)
   os.makedirs(output_folder, exist_ok=True)
   cv2.imwrite(output_folder + '/{:04d}.png'.format(frame_id), img * 255)
-  cv2.waitKey(1)
 
 
 if __name__ == '__main__':

@@ -48,7 +48,7 @@ auto mpm_full = [](std::vector<std::string> cli_param) {
   real ground_friction = param.get<real>("ground_friction", 0.2f);
   TC_P(ground_friction);
   auto particle_mass = 1.0_f, vol = 1.0_f;
-  auto E = 1e4_f, nu = 0.3f;
+  auto E = param.get<real>("E", 1e4), nu = 0.3f;
   real mu_0 = E / (2 * (1 + nu)), lambda_0 = E * nu / ((1 + nu) * (1 - 2 * nu));
 
   auto friction_angle = 45._f;
@@ -128,11 +128,11 @@ auto mpm_full = [](std::vector<std::string> cli_param) {
     if (scene == 1) {
       n_particles = max_n_particles / (highres ? 1 : 8);
       p_x.resize(n_particles);
-      int group_size = 10;
+      int group_size = 1000;
       for (int i = 0; i < n_particles / group_size; i++) {
-        auto center = Vector3(0.5_f) + random_in_unit_sphere() * 0.25f;
+        auto center = Vector3(0.5_f, 0.6f, 0.5f) + random_in_unit_sphere() * 0.35f;
         for (int j = 0; j < group_size; j++) {
-          p_x[i * group_size + j] = center + random_in_unit_sphere() * dx;
+          p_x[i * group_size + j] = center + random_in_unit_sphere() * dx * 10.0f;
         }
       }
     }
@@ -722,4 +722,4 @@ TC_NAMESPACE_END
 // water jets:
 //   ti mpm_full scene=3 material=fluid output=fluid bbox=true dt_mul=0.7
 // snow smash:
-//   ti mpm_full scene=1 material=snow output=snow_unbounded ground_friction=1.0
+//   ti mpm_full scene=1 material=snow output=snow_unbounded ground_friction=0.5 frame_dt=0.001 dt_mul=0.25 E=1.6e5

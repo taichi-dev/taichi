@@ -190,8 +190,8 @@ def dda(eye_pos, d_):
       rsign[i] = -1
 
 
-  bbox_min = ti.Vector([0.0, 0.0, 0.0]) - eps
-  bbox_max = ti.Vector([1.0, 1.0, 1.0]) + eps
+  bbox_min = ti.Vector([0.0, 0.0, 0.0]) - 10 * eps
+  bbox_max = ti.Vector([1.0, 1.0, 1.0]) + 10 * eps
   inter, near, far = ray_aabb_intersection(bbox_min, bbox_max, eye_pos, d)
   hit_distance = inf
   normal = ti.Vector([0.0, 0.0, 0.0])
@@ -199,7 +199,7 @@ def dda(eye_pos, d_):
   if inter:
     near = ti.max(0, near)
 
-    pos = eye_pos + d * (near + eps)
+    pos = eye_pos + d * (near + 5 * eps)
 
     o = grid_resolution * pos
     ipos = ti.Matrix.floor(o).cast(ti.i32)
@@ -559,10 +559,10 @@ def main():
       last_t = time.time()
       img = img.reshape(res[1], res[0], 3) * (1 / (i + 1)) * exposure
       img = np.sqrt(img)
-      cv2.imshow('img', img)
-      cv2.waitKey(1)
-    os.makedirs('outputs', exist_ok=True)
-    cv2.imwrite('outputs/{:04d}.png'.format(int(fn)), img * 255)
+      # cv2.imshow('img', img)
+      # cv2.waitKey(1)
+  os.makedirs('outputs', exist_ok=True)
+  cv2.imwrite('outputs/{:04d}.png'.format(int(fn)), img * 255)
   # cv2.waitKey(1)
 
 

@@ -526,9 +526,10 @@ def main():
   
   for i in range(3):
     print(sand[:, i].min(), sand[:, i].max())
-    bbox[0][i] = sand[:, i].min() - 3 / particle_grid_res
-    bbox[1][i] = sand[:, i].max() + 3 / particle_grid_res
-  
+    # bbox values must be multiples of dx
+    bbox[0][i] = (math.floor(sand[:, i].min() * particle_grid_res) - 3.0) / particle_grid_res
+    bbox[1][i] = (math.floor(sand[:, i].max() * particle_grid_res) + 3.0) / particle_grid_res
+
   num_particles[None] = num_part
   print('num_input_particles =', num_part)
   

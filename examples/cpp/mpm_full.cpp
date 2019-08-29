@@ -34,7 +34,7 @@ auto mpm_full = [](std::vector<std::string> cli_param) {
   const real frame_dt = param.get<float32>("frame_dt", 0.002);
 
   int total_frames = param.get("total_frames", 400);
-  int seeding_frames = param.get("total_frames", 300);
+  int seeding_frames = param.get("seeding_frames", 300);
 
   real G = -1000.0f;
   TC_P(total_frames);
@@ -725,4 +725,5 @@ TC_NAMESPACE_END
 // water jets:
 //   ti mpm_full scene=3 material=fluid output=fluid bbox=true dt_mul=0.7
 // snow smash:
-//   ti mpm_full scene=1 material=snow output=snow_unbounded ground_friction=0.4 frame_dt=0.001 dt_mul=0.5 E=4e4 group_size=1000
+//   ti mpm_full scene=1 material=snow output=snow_unbounded ground_friction=0.4 frame_dt=0.001 dt_mul=0.5 E=4e4 group_size=1000 total_frames=200
+//   ti mpm_full scene=1 material=snow output=snow_bounded bbox=true ground_friction=0.4 frame_dt=0.001 dt_mul=0.5 E=4e4 group_size=1000 total_frames=200

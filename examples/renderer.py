@@ -526,8 +526,8 @@ def main():
   
   for i in range(3):
     print(sand[:, i].min(), sand[:, i].max())
-    bbox[0][i] = sand[:, i].min()# - 2 / particle_grid_res
-    bbox[1][i] = sand[:, i].max()# + 2 / particle_grid_res
+    bbox[0][i] = sand[:, i].min() - 3 / particle_grid_res
+    bbox[1][i] = sand[:, i].max() + 3 / particle_grid_res
   
   num_particles[None] = num_part
   print('num_input_particles =', num_part)
@@ -577,8 +577,8 @@ def main():
       last_t = time.time()
       img = img.reshape(res[1], res[0], 3) * (1 / (i + 1)) * exposure
       img = np.sqrt(img)
-      cv2.imshow('img', img)
-      cv2.waitKey(1)
+      # cv2.imshow('img', img)
+      # cv2.waitKey(1)
   os.makedirs(output_folder, exist_ok=True)
   cv2.imwrite(output_folder + '/{:04d}.png'.format(frame_id), img * 255)
 

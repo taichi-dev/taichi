@@ -60,9 +60,10 @@ if scene == 'fluid':
   max_num_particles_per_cell = 256
   max_num_particles = 1024 * 1024 * 4
 elif scene == 'snow':
+  camera_pos = ti.Vector([0.5, 0.27, 2.7])
   supporter = 2
   shutter_time = 0.5e-3
-  sphere_radius = 0.0007
+  sphere_radius = 0.0012
   particle_grid_res = 256
   max_num_particles_per_cell = 64
   max_num_particles = 1024 * 1024 * 4
@@ -274,15 +275,8 @@ def intersect_spheres(pos, d):
 @ti.func
 def inside_particle_grid(ipos):
   grid_res = particle_grid_res
-  # t = ti.cast(ipos[0], ti.f32) * dx <= 1.0
-  t1 = ipos[0] <= inv_dx
-  t2 = ipos[0] * (1.0 / 256) <= 1
-  if t1 != t2:
-    ti.print(t1)
-  # t2 = ipos[0] / 256.0 <= 1
-  ret= bbox[0][0] <= ipos[0] * dx and t2 and 0 <= ipos[1] and ipos[
-    1] < grid_res and 0 <= ipos[2] and ipos[2] < grid_res
-  return ret
+  return bbox[0][0] <= ipos[0] * dx and ipos[0] < bbox[1][0] * inv_dx and bbox[0][1] * inv_dx <= ipos[1] and ipos[
+    1] < bbox[1][1] * inv_dx and bbox[0][2] * inv_dx <= ipos[2] and ipos[2] < bbox[1][2] * inv_dx
 
   # pos = ipos * dx
   # return bbox[0][0] - 0.1 < pos[0] and pos[0] < bbox[1][0] + 0.1 and bbox[0][1] - 0.1 < pos[1] and \

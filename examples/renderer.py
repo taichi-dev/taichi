@@ -13,10 +13,12 @@ res = 1280, 720
 num_spheres = 1024
 color_buffer = ti.Vector(3, dt=ti.f32)
 sphere_pos = ti.Vector(3, dt=ti.f32)
+bbox = ti.Vector(3, dt=ti.f32)
 grid_density = ti.var(dt=ti.i32)
 voxel_has_particle = ti.var(dt=ti.i32)
 max_ray_depth = 4
 use_directional_light = True
+
 
 
 particle_x = ti.Vector(3, dt=ti.f32)
@@ -61,8 +63,8 @@ elif scene == 'snow':
   supporter = 2
   shutter_time = 0.5e-3
   sphere_radius = 0.0007
-  particle_grid_res = 128
-  max_num_particles_per_cell = 1024
+  particle_grid_res = 256
+  max_num_particles_per_cell = 64
   max_num_particles = 1024 * 1024 * 4
 
 assert sphere_radius * 2 * particle_grid_res < 1
@@ -81,6 +83,7 @@ def buffers():
                                                particle_color)
   ti.root.place(num_particles)
   ti.root.dense(ti.ijk, grid_resolution // 8).dense(ti.ijk, 8).place(grid_density)
+  ti.root.dense(ti.i, 2).place(bbox)
 
 @ti.func
 def inside_grid(ipos):
@@ -277,8 +280,8 @@ def inside_particle_grid(ipos):
 def dda_particle(eye_pos, d_, t):
   grid_res = particle_grid_res
 
-  bbox_min = ti.Vector([0.0, 0.0, 0.0])
-  bbox_max = ti.Vector([1.0, 1.0, 1.0])
+  bbox_min = bbox[0]
+  bbox_max = bbox[1]
 
   hit_pos = ti.Vector([0.0, 0.0, 0.0])
   normal = ti.Vector([0.0, 0.0, 0.0])
@@ -523,6 +526,11 @@ def main():
   np_x = sand[:, :3].flatten()
   np_v = sand[:, 3:6].flatten()
   np_c = sand[:, 6].flatten().astype(np.float32) * 0 + 127
+  
+  for i in range(3):
+    print(sand[:, i].min(), sand[:, i].max())
+    bbox[0][i] = sand[:, i].min()
+    bbox[1][i] = sand[:, i].max()
 
   num_particles[None] = num_part
   print('num_input_particles =', num_part)

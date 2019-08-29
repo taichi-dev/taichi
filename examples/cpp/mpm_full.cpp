@@ -128,11 +128,14 @@ auto mpm_full = [](std::vector<std::string> cli_param) {
     if (scene == 1) {
       n_particles = max_n_particles / (highres ? 1 : 8);
       p_x.resize(n_particles);
-      int group_size = 1000;
-      for (int i = 0; i < n_particles / group_size; i++) {
-        auto center = Vector3(0.5_f, 0.6f, 0.5f) + random_in_unit_sphere() * 0.35f;
+      int group_size = param.get<int>("group_size", 10);
+      for (int i = 0; i < n_particles / group_size + 1; i++) {
+        auto center =
+            Vector3(0.5_f, 0.6f, 0.5f) + random_in_unit_sphere() * 0.35f;
         for (int j = 0; j < group_size; j++) {
-          p_x[i * group_size + j] = center + random_in_unit_sphere() * dx * 10.0f;
+          if (i * group_size + j < max_n_particles)
+            p_x[i * group_size + j] =
+                center + random_in_unit_sphere() * dx * 10.0f;
         }
       }
     }
@@ -722,4 +725,5 @@ TC_NAMESPACE_END
 // water jets:
 //   ti mpm_full scene=3 material=fluid output=fluid bbox=true dt_mul=0.7
 // snow smash:
-//   ti mpm_full scene=1 material=snow output=snow_unbounded ground_friction=0.5 frame_dt=0.001 dt_mul=0.25 E=1.6e5
+//   ti mpm_full scene=1 material=snow output=snow_unbounded ground_friction=0.5
+//   frame_dt=0.001 dt_mul=0.25 E=1.6e5 group_size=10

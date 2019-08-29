@@ -19,8 +19,6 @@ voxel_has_particle = ti.var(dt=ti.i32)
 max_ray_depth = 4
 use_directional_light = True
 
-
-
 particle_x = ti.Vector(3, dt=ti.f32)
 particle_v = ti.Vector(3, dt=ti.f32)
 particle_color = ti.var(ti.i32)
@@ -51,6 +49,8 @@ frame_id = int(sys.argv[3])
 assert scene in ['sand', 'fluid', 'snow']
 
 render_voxel = False
+inv_dx = 256.0
+dx = 1.0 / inv_dx
 
 if scene == 'fluid':
   supporter = 1
@@ -75,19 +75,29 @@ def buffers():
   ti.root.dense(ti.ij, (res[0] // 8, res[1] // 8)).dense(ti.ij, 8).place(
     color_buffer)
   ti.root.dense(ti.i, num_spheres).place(sphere_pos)
-  ti.root.dense(ti.ijk, particle_grid_res // 8).dense(ti.ijk, 8).place(voxel_has_particle)
-  ti.root.dense(ti.ijk, particle_grid_res // 8).dense(ti.ijk, 8).dynamic(ti.l,
-                                                                         max_num_particles_per_cell).place(
+  
+  ti.root.dense(ti.ijk, 2).dense(ti.ijk, particle_grid_res // 8).dense(ti.ijk,
+                                                                       8).place(
+    voxel_has_particle)
+  ti.root.dense(ti.ijk, 4).dense(ti.ijk,
+                                 particle_grid_res // 8).pointer().dense(ti.ijk,
+                                                                         8).dynamic(
+    ti.l,
+    max_num_particles_per_cell).place(
     pid)
+  
   ti.root.dense(ti.l, max_num_particles).place(particle_x, particle_v,
                                                particle_color)
   ti.root.place(num_particles)
-  ti.root.dense(ti.ijk, grid_resolution // 8).dense(ti.ijk, 8).place(grid_density)
+  ti.root.dense(ti.ijk, grid_resolution // 8).dense(ti.ijk, 8).place(
+    grid_density)
   ti.root.dense(ti.i, 2).place(bbox)
+
 
 @ti.func
 def inside_grid(ipos):
- return ipos.min() >= 0 and ipos.max() < grid_resolution
+  return ipos.min() >= 0 and ipos.max() < grid_resolution
+
 
 # The dda algorithm requires the voxel grid to have one surrounding layer of void region
 # to correctly render the outmost voxel faces
@@ -95,13 +105,6 @@ def inside_grid(ipos):
 def inside_grid_loose(ipos):
   return ipos.min() >= -1 and ipos.max() <= grid_resolution
 
-
-'''
-def inside_grid(ipos):
-  grid_res = grid_resolution
-  return 0 <= ipos[0] and ipos[0] < grid_res and 0 <= ipos[1] and ipos[
-    1] < grid_res and 0 <= ipos[2] and ipos[2] < grid_res
-'''
 
 @ti.func
 def query_density_int(ipos):
@@ -117,7 +120,7 @@ def query_density_int(ipos):
 @ti.func
 def voxel_color(pos):
   p = pos * grid_resolution
-
+  
   p -= ti.Matrix.floor(p)
   boundary = 0.1
   count = 0
@@ -202,8 +205,7 @@ def dda(eye_pos, d_):
       rsign[i] = 1
     else:
       rsign[i] = -1
-
-
+  
   bbox_min = ti.Vector([0.0, 0.0, 0.0]) - 10 * eps
   bbox_max = ti.Vector([1.0, 1.0, 1.0]) + 10 * eps
   inter, near, far = ray_aabb_intersection(bbox_min, bbox_max, eye_pos, d)
@@ -212,9 +214,9 @@ def dda(eye_pos, d_):
   c = ti.Vector([0.0, 0.0, 0.0])
   if inter:
     near = ti.max(0, near)
-
+    
     pos = eye_pos + d * (near + 5 * eps)
-
+    
     o = grid_resolution * pos
     ipos = ti.Matrix.floor(o).cast(ti.i32)
     dis = (ipos - o + 0.5 + rsign * 0.5) * rinv
@@ -226,7 +228,7 @@ def dda(eye_pos, d_):
       if not inside_grid_loose(ipos):
         running = 0
         # normal = [0, 0, 0]
-
+      
       if last_sample:
         mini = (ipos - o + ti.Vector([0.5, 0.5, 0.5]) - rsign * 0.5) * rinv
         hit_distance = mini.max() * (1 / grid_resolution) + near
@@ -254,35 +256,46 @@ def intersect_spheres(pos, d):
   c = ti.Vector([0.0, 0.0, 0.0])
   min_dist = inf
   sid = -1
-
+  
   for i in range(num_spheres):
     dist = intersect_sphere(pos, d, sphere_pos[i], 0.05)
     if dist < min_dist:
       min_dist = dist
       sid = i
-
+  
   if min_dist < inf:
     hit_pos = pos + d * min_dist
     normal = ti.Matrix.normalized(hit_pos - sphere_pos[sid])
     c = [0.3, 0.5, 0.2]
-
+  
   return min_dist, normal, c
 
 
 @ti.func
 def inside_particle_grid(ipos):
   grid_res = particle_grid_res
-  return 0 <= ipos[0] and ipos[0] < grid_res and 0 <= ipos[1] and ipos[
+  # t = ti.cast(ipos[0], ti.f32) * dx <= 1.0
+  t1 = ipos[0] <= inv_dx
+  t2 = ipos[0] * (1.0 / 256) <= 1
+  if t1 != t2:
+    ti.print(t1)
+  # t2 = ipos[0] / 256.0 <= 1
+  ret= bbox[0][0] <= ipos[0] * dx and t2 and 0 <= ipos[1] and ipos[
     1] < grid_res and 0 <= ipos[2] and ipos[2] < grid_res
+  return ret
+
+  # pos = ipos * dx
+  # return bbox[0][0] - 0.1 < pos[0] and pos[0] < bbox[1][0] + 0.1 and bbox[0][1] - 0.1 < pos[1] and \
+  #       pos[1] < bbox[1][1] + 0.1 and bbox[0][2] - 0.1 < pos[2] and pos[2] < bbox[1][2] + 0.1
 
 
 @ti.func
 def dda_particle(eye_pos, d_, t):
   grid_res = particle_grid_res
-
+  
   bbox_min = bbox[0]
   bbox_max = bbox[1]
-
+  
   hit_pos = ti.Vector([0.0, 0.0, 0.0])
   normal = ti.Vector([0.0, 0.0, 0.0])
   c = ti.Vector([0.0, 0.0, 0.0])
@@ -290,15 +303,15 @@ def dda_particle(eye_pos, d_, t):
   for i in ti.static(range(3)):
     if ti.abs(d[i]) < 1e-6:
       d[i] = 1e-6
-
+  
   inter, near, far = ray_aabb_intersection(bbox_min, bbox_max, eye_pos, d)
   near = ti.max(0, near)
-
+  
   closest_intersection = inf
-
+  
   if inter:
     pos = eye_pos + d * (near + eps)
-
+    
     rinv = 1.0 / d
     rsign = ti.Vector([0, 0, 0])
     for i in ti.static(range(3)):
@@ -306,14 +319,14 @@ def dda_particle(eye_pos, d_, t):
         rsign[i] = 1
       else:
         rsign[i] = -1
-
+    
     o = grid_res * pos
     ipos = ti.Matrix.floor(o).cast(ti.i32)
     dis = (ipos - o + 0.5 + rsign * 0.5) * rinv
     running = 1
     while running:
       inside = inside_particle_grid(ipos)
-
+      
       if inside:
         num_particles = voxel_has_particle[ipos]
         if num_particles != 0:
@@ -334,7 +347,7 @@ def dda_particle(eye_pos, d_, t):
       else:
         running = 0
         normal = [0, 0, 0]
-
+      
       if closest_intersection < inf:
         running = 0
       else:
@@ -348,7 +361,7 @@ def dda_particle(eye_pos, d_, t):
           mm[2] = 1
         dis += mm * rsign * rinv
         ipos += mm * rsign
-
+  
   return closest_intersection, normal, c
 
 
@@ -362,31 +375,20 @@ def next_hit(pos_, d, t):
     closest, normal, c = dda(pos, d)
   else:
     closest, normal, c = dda_particle(pos, d, t)
-  # closest, normal, c = intersect_spheres(pos, d)
-
-  '''
-  if d[1] != 0:
-    ray_closest = -(pos[1] - 0.027) / d[1]
-    if ray_closest > 0 and ray_closest < closest:
-      closest = ray_closest
-      normal = ti.Vector([0.0, 1.0, 0.0])
-      c = ti.Vector([0.3, 0.3, 0.4])
-      # c = ti.Vector([1, 1, 1])
-  '''
-
+  
   if d[2] != 0:
     ray_closest = -(pos[2] + 5.5) / d[2]
     if ray_closest > 0 and ray_closest < closest:
       closest = ray_closest
       normal = ti.Vector([0.0, 0.0, 1.0])
       c = ti.Vector([0.6, 0.7, 0.7])
-
+  
   ray_march_dist = ray_march(pos, d)
   if ray_march_dist < dist_limit and ray_march_dist < closest:
     closest = ray_march_dist
     normal = sdf_normal(pos + d * closest)
     c = sdf_color(pos + d * closest)
-
+  
   return closest, normal, c
 
 
@@ -405,14 +407,14 @@ def render():
     d = ti.Matrix.normalized(d)
     if u < res[0] and v < res[1]:
       t = (ti.random() - 0.5) * shutter_time
-
+      
       contrib = ti.Vector([0.0, 0.0, 0.0])
       throughput = ti.Vector([1.0, 1.0, 1.0])
-
+      
       depth = 0
       hit_sky = 1
       ray_depth = 0
-
+      
       while depth < max_ray_depth:
         closest, normal, c = next_hit(pos, d, t)
         hit_pos = pos + closest * d
@@ -422,7 +424,7 @@ def render():
           d = out_dir(normal)
           pos = hit_pos + 1e-4 * d
           throughput *= c
-
+          
           if ti.static(use_directional_light):
             dir_noise = ti.Vector([ti.random() - 0.5, ti.random() - 0.5,
                                    ti.random() - 0.5]) * light_direction_noise
@@ -430,20 +432,20 @@ def render():
               ti.Vector(light_direction) + dir_noise)
             dot = direct.dot(normal)
             if dot > 0:
-              dist,  _, _ = next_hit(pos, direct, t)
+              dist, _, _ = next_hit(pos, direct, t)
               if dist > dist_limit:
                 contrib += throughput * ti.Vector(light_color) * dot
         else:  # hit sky
           hit_sky = 1
           depth = max_ray_depth
-
+        
         max_c = throughput.max()
         if ti.random() > max_c:
           depth = max_ray_depth
           throughput = [0, 0, 0]
         else:
           throughput /= max_c
-
+      
       if hit_sky:
         if ray_depth != 1:
           # contrib *= ti.max(d[1], 0.05)
@@ -453,7 +455,7 @@ def render():
           pass
       else:
         throughput *= 0
-
+      
       # contrib += throughput
       color_buffer[u, v] += contrib
 
@@ -502,24 +504,25 @@ def copy(img: np.ndarray):
     for j in range(res[1]):
       u = 1.0 * i / res[0]
       v = 1.0 * j / res[1]
-
+      
       darken = 1.0 - vignette_strength * ti.max((ti.sqrt(
         ti.sqr(u - vignette_center[0]) + ti.sqr(
           v - vignette_center[1])) - vignette_radius), 0)
-
+      
       coord = ((res[1] - 1 - j) * res[0] + i) * 3
       for c in ti.static(range(3)):
         img[coord + c] = color_buffer[i, j][2 - c] * darken
 
 
 def main():
-  sand = np.fromfile("../final_particles/{}/{:04d}.bin".format(folder, frame_id),
-                     dtype=np.float32)
-
+  sand = np.fromfile(
+    "../final_particles/{}/{:04d}.bin".format(folder, frame_id),
+    dtype=np.float32)
+  
   for i in range(num_spheres):
     for c in range(3):
       sphere_pos[i][c] = 0.5  # random.random()
-
+  
   num_sand_particles = len(sand) // 7
   num_part = num_sand_particles
   sand = sand.reshape((num_sand_particles, 7))
@@ -529,12 +532,12 @@ def main():
   
   for i in range(3):
     print(sand[:, i].min(), sand[:, i].max())
-    bbox[0][i] = sand[:, i].min()
-    bbox[1][i] = sand[:, i].max()
-
+    bbox[0][i] = sand[:, i].min()# - 2 / particle_grid_res
+    bbox[1][i] = sand[:, i].max()# + 2 / particle_grid_res
+  
   num_particles[None] = num_part
   print('num_input_particles =', num_part)
-
+  
   @ti.kernel
   def initialize_particle_x(x: np.ndarray, v: np.ndarray, color: np.ndarray):
     for i in range(max_num_particles):
@@ -547,27 +550,28 @@ def main():
         # ti.print(v_c)
         if ti.static(scene == 'fluid'):
           v_c = ti.min(particle_v[i].norm() * 0.1, 1)
-          particle_color[i] = rgb_to_i32(v_c * 0.3 + 0.3, v_c * 0.4 + 0.4, 0.5 + v_c * 0.5)
+          particle_color[i] = rgb_to_i32(v_c * 0.3 + 0.3, v_c * 0.4 + 0.4,
+                                         0.5 + v_c * 0.5)
         elif ti.static(scene == 'sand'):
           particle_color[i] = ti.cast(color[i], ti.i32)
         else:
-          particle_color[i] = rgb_to_i32(0.65, 0.8, 1.0)
-
+          particle_color[i] = rgb_to_i32(0.75, 0.85, 1.0)
+        
         # reconstruct grid using particle position and MPM p2g.
-        inv_dx = 256
         for k in ti.static(range(27)):
-          base_coord = (inv_dx * particle_x[i] - 0.5).cast(ti.i32) + ti.Vector([k // 9, k // 3 % 3, k % 3])
+          base_coord = (inv_dx * particle_x[i] - 0.5).cast(ti.i32) + ti.Vector(
+            [k // 9, k // 3 % 3, k % 3])
           grid_density[base_coord / grid_visualization_block_size] = 1
-
+  
   initialize_particle_x(np_x, np_v, np_c)
   initialize_particle_grid()
-
+  
   output_folder = 'outputs_' + folder
-
+  
   last_t = 0
   for i in range(500):
     render()
-
+    
     interval = 50
     if i % interval == 0:
       img = np.zeros((res[1] * res[0] * 3,), dtype=np.float32)

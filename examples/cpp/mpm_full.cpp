@@ -725,5 +725,4 @@ TC_NAMESPACE_END
 // water jets:
 //   ti mpm_full scene=3 material=fluid output=fluid bbox=true dt_mul=0.7
 // snow smash:
-//   ti mpm_full scene=1 material=snow output=snow_unbounded ground_friction=0.5
-//   frame_dt=0.001 dt_mul=0.25 E=1.6e5 group_size=10
+//   ti mpm_full scene=1 material=snow output=snow_unbounded ground_friction=0.4 frame_dt=0.001 dt_mul=0.5 E=4e4 group_size=1000

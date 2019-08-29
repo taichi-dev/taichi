@@ -107,7 +107,7 @@ PYBIND11_MODULE(taichi_lang_core, m) {
            py::return_value_policy::reference)
       .def("dynamic", (SNode & (SNode::*)(const Index &, int))(&SNode::dynamic),
            py::return_value_policy::reference)
-      .def("pointer", &SNode::pointer)
+      .def("pointer", &SNode::pointer, py::return_value_policy::reference)
       .def("place", (SNode & (SNode::*)(Expr &))(&SNode::place),
            py::return_value_policy::reference)
       .def("data_type", [](SNode *snode) { return snode->dt; })

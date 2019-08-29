@@ -750,6 +750,7 @@ inline int32x1 cmp_gt(int32x1 b, int32x1 a) {
   return int(a < b) * -1;
 }
 
+// TODO: multiplty the results of these comparisons by -1 to set all bits 1
 inline int32x1 cmp_ge(float32x1 a, float32x1 b) {
   return a >= b;
 }

@@ -51,7 +51,6 @@ TLANG_NAMESPACE_BEGIN
 #if defined(TLANG_WITH_LLVM)
 
 using namespace llvm;
-
 std::string type_name(llvm::Type *type) {
   std::string type_name_str;
   llvm::raw_string_ostream rso(type_name_str);
@@ -96,11 +95,10 @@ class RuntimeObject {
                 llvm::Value *init = nullptr)
       : cls_name(cls_name), mb(mb), builder(builder) {
     if (init == nullptr) {
-      TC_P(builder);
-      TC_P(mb);
       auto type = mb->get_runtime_type(cls_name);
       TC_P(type_name(type));
-      ptr = builder->CreateAlloca(mb->get_runtime_type(cls_name));
+      ptr = builder->CreateAlloca(type);
+      TC_TAG;
     } else {
       ptr = builder->CreateBitCast(
           init, llvm::PointerType::get(mb->get_runtime_type(cls_name), 0));
@@ -118,6 +116,7 @@ class RuntimeObject {
 
   template <typename... Args>
   void call(const std::string &func_name, Args &&... args) {
+    TC_P(func_name);
     auto arglist = std::vector<Value *>({ptr, args...});
     for (auto a : arglist) {
       // TC_P(type_name(a->getType()));
@@ -137,7 +136,7 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
   TaichiLLVMContext *tlctx;
   llvm::LLVMContext *llvm_context;
   TaichiLLVMJIT *jit;
-  llvm::IRBuilder<> builder;
+  llvm::IRBuilder<> *builder;
 
   CodeGenBase *codegen;
   Kernel *kernel;
@@ -151,7 +150,7 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
         llvm_context(tlctx->ctx.get()),
         jit(tlctx->jit.get()),
         ModuleBuilder(get_current_program().llvm_context.clone_struct_module()),
-        builder(*llvm_context),
+        builder(new llvm::IRBuilder<>(*llvm_context)),
         kernel(kernel) {
     using namespace llvm;
 
@@ -194,21 +193,21 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
   }
 
   llvm::Value *get_root() {
-    return builder.CreateCall(get_runtime_function("Context_get_buffer"),
-                              get_context());
+    return builder->CreateCall(get_runtime_function("Context_get_buffer"),
+                               get_context());
   }
 
   llvm::Value *get_runtime() {
-    auto runtime_ptr = builder.CreateCall(
+    auto runtime_ptr = builder->CreateCall(
         get_runtime_function("Context_get_runtime"), get_context());
-    return builder.CreateBitCast(
+    return builder->CreateBitCast(
         runtime_ptr, llvm::PointerType::get(get_runtime_type("Runtime"), 0));
   }
 
   void emit_struct_meta_base(std::string name,
                              llvm::Value *node_meta,
                              SNode *snode) {
-    RuntimeObject common("StructMeta", this, &builder, node_meta);
+    RuntimeObject common("StructMeta", this, builder, node_meta);
     std::size_t element_size;
     if (snode->type != SNodeType::root && snode->type != SNodeType::place) {
       auto element_ty = snode->llvm_type->getArrayElementType();
@@ -251,13 +250,13 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
 
   llvm::Value *emit_struct_meta(SNode *snode) {
     if (snode->type == SNodeType::dense) {
-      RuntimeObject meta("DenseMeta", this, &builder);
+      RuntimeObject meta("DenseMeta", this, builder);
       emit_struct_meta_base("Dense", meta.ptr, snode);
       meta.call("set_bitmasked", tlctx->get_constant(snode->_bitmasked));
       meta.call("set_morton_dim", tlctx->get_constant(snode->_morton));
       return meta.ptr;
     } else if (snode->type == SNodeType::root) {
-      RuntimeObject meta("RootMeta", this, &builder);
+      RuntimeObject meta("RootMeta", this, builder);
       emit_struct_meta_base("Root", meta.ptr, snode);
       return meta.ptr;
     } else {
@@ -269,10 +268,10 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
 
   FunctionType gen(IRNode *node) {
     BasicBlock *bb = BasicBlock::Create(*llvm_context, "entry", func);
-    builder.SetInsertPoint(bb);
+    builder->SetInsertPoint(bb);
 
     node->accept(this);
-    builder.CreateRet(tlctx->get_constant(0));
+    builder->CreateRet(tlctx->get_constant(0));
 
     if (get_current_program().config.print_kernel_llvm_ir) {
       TC_INFO("Kernel Module IR");
@@ -308,7 +307,7 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
 
   void visit(AllocaStmt *stmt) {
     TC_ASSERT(stmt->width() == 1);
-    stmt->value = builder.CreateAlloca(
+    stmt->value = builder->CreateAlloca(
         tlctx->get_data_type(stmt->ret_type.data_type), (unsigned)0);
   }
 
@@ -325,9 +324,9 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
       if (op == UnaryOpType::sqrt) {
         llvm::Function *sqrt_fn = Intrinsic::getDeclaration(
             module.get(), Intrinsic::sqrt, input->getType());
-        stmt->value = builder.CreateCall(sqrt_fn, input, "sqrt");
+        stmt->value = builder->CreateCall(sqrt_fn, input, "sqrt");
       } else if (op == UnaryOpType::neg) {
-        stmt->value = builder.CreateFNeg(input, "neg");
+        stmt->value = builder->CreateFNeg(input, "neg");
       } else {
         TC_P(unary_op_type_name(stmt->op_type));
         emit("const {} {}({}({}));", stmt->ret_data_type_name(),
@@ -347,12 +346,13 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
           cast_op = llvm::Instruction::CastOps::FPToSI;
           TC_NOT_IMPLEMENTED;
         }
-        stmt->value = builder.CreateCast(cast_op, stmt->operand->value,
-                                         tlctx->get_data_type(stmt->cast_type));
+        stmt->value =
+            builder->CreateCast(cast_op, stmt->operand->value,
+                                tlctx->get_data_type(stmt->cast_type));
       } else {
         TC_ASSERT(data_type_size(stmt->ret_type.data_type) ==
                   data_type_size(stmt->cast_type));
-        stmt->value = builder.CreateBitCast(
+        stmt->value = builder->CreateBitCast(
             stmt->operand->value, tlctx->get_data_type(stmt->cast_type));
       }
     }
@@ -377,39 +377,39 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
     auto op = stmt->op_type;
     if (op == BinaryOpType::add) {
       if (is_real(stmt->ret_type.data_type)) {
-        stmt->value = builder.CreateFAdd(stmt->lhs->value, stmt->rhs->value);
+        stmt->value = builder->CreateFAdd(stmt->lhs->value, stmt->rhs->value);
       } else {
-        stmt->value = builder.CreateAdd(stmt->lhs->value, stmt->rhs->value);
+        stmt->value = builder->CreateAdd(stmt->lhs->value, stmt->rhs->value);
       }
     } else if (op == BinaryOpType::sub) {
       if (is_real(stmt->ret_type.data_type)) {
-        stmt->value = builder.CreateFSub(stmt->lhs->value, stmt->rhs->value);
+        stmt->value = builder->CreateFSub(stmt->lhs->value, stmt->rhs->value);
       } else {
-        stmt->value = builder.CreateSub(stmt->lhs->value, stmt->rhs->value);
+        stmt->value = builder->CreateSub(stmt->lhs->value, stmt->rhs->value);
       }
     } else if (op == BinaryOpType::mul) {
       if (is_real(stmt->ret_type.data_type)) {
-        stmt->value = builder.CreateFMul(stmt->lhs->value, stmt->rhs->value);
+        stmt->value = builder->CreateFMul(stmt->lhs->value, stmt->rhs->value);
       } else {
-        stmt->value = builder.CreateMul(stmt->lhs->value, stmt->rhs->value);
+        stmt->value = builder->CreateMul(stmt->lhs->value, stmt->rhs->value);
       }
     } else if (op == BinaryOpType::div) {
       if (is_real(stmt->ret_type.data_type)) {
-        stmt->value = builder.CreateFDiv(stmt->lhs->value, stmt->rhs->value);
+        stmt->value = builder->CreateFDiv(stmt->lhs->value, stmt->rhs->value);
       } else {
-        stmt->value = builder.CreateSDiv(stmt->lhs->value, stmt->rhs->value);
+        stmt->value = builder->CreateSDiv(stmt->lhs->value, stmt->rhs->value);
       }
     } else if (op == BinaryOpType::mod) {
-      stmt->value = builder.CreateSRem(stmt->lhs->value, stmt->rhs->value);
+      stmt->value = builder->CreateSRem(stmt->lhs->value, stmt->rhs->value);
     } else if (is_comparison(op)) {
       if (op == BinaryOpType::cmp_eq) {
         if (is_real(stmt->lhs->ret_type.data_type)) {
-          stmt->value = builder.CreateSExt(
-              builder.CreateFCmpOEQ(stmt->lhs->value, stmt->rhs->value),
+          stmt->value = builder->CreateSExt(
+              builder->CreateFCmpOEQ(stmt->lhs->value, stmt->rhs->value),
               llvm_type(DataType::i32));
         } else {
-          stmt->value = builder.CreateSExt(
-              builder.CreateICmpEQ(stmt->lhs->value, stmt->rhs->value),
+          stmt->value = builder->CreateSExt(
+              builder->CreateICmpEQ(stmt->lhs->value, stmt->rhs->value),
               llvm_type(DataType::i32));
         }
       } else {
@@ -422,8 +422,8 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
 
   void visit(TernaryOpStmt *stmt) {
     TC_ASSERT(stmt->op_type == TernaryOpType::select);
-    stmt->value = builder.CreateSelect(
-        builder.CreateTrunc(stmt->op1->value, llvm_type(DataType::i1)),
+    stmt->value = builder->CreateSelect(
+        builder->CreateTrunc(stmt->op1->value, llvm_type(DataType::i1)),
         stmt->op2->value, stmt->op3->value);
   }
 
@@ -449,17 +449,17 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
       format = "%d";
     } else if (stmt->stmt->ret_type.data_type == DataType::f32) {
       format = "%f";
-      value = builder.CreateFPExt(value, tlctx->get_data_type(DataType::f64));
+      value = builder->CreateFPExt(value, tlctx->get_data_type(DataType::f64));
     } else {
       TC_NOT_IMPLEMENTED
     }
-    args.push_back(builder.CreateGlobalStringPtr(
+    args.push_back(builder->CreateGlobalStringPtr(
         ("[debug] " + stmt->str + " = " + format + "\n").c_str(),
         "format string"));
     args.push_back(value);
 
-    stmt->value = builder.CreateCall(get_runtime_function("printf"), args,
-                                     "debug_printf");
+    stmt->value = builder->CreateCall(get_runtime_function("printf"), args,
+                                      "debug_printf");
   }
 
   void visit(ConstStmt *stmt) {
@@ -489,13 +489,13 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
   }
 
   llvm::Value *call(std::string func_name, std::vector<llvm::Value *> value) {
-    return builder.CreateCall(get_runtime_function(func_name), value);
+    return builder->CreateCall(get_runtime_function(func_name), value);
   }
 
   llvm::Value *cast_pointer(llvm::Value *val,
                             std::string dest_ty_name,
                             int addr_space = 0) {
-    return builder.CreateBitCast(
+    return builder->CreateBitCast(
         val,
         llvm::PointerType::get(get_runtime_type(dest_ty_name), addr_space));
   }
@@ -524,7 +524,7 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
       auto snode_child = metas[i + 1];
       auto listgen = get_runtime_function("element_listgen");
       auto args = {get_runtime(), snode_parent, snode_child};
-      builder.CreateCall(listgen, args);
+      builder->CreateCall(listgen, args);
     }
 
     // body cfg
@@ -544,15 +544,17 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
       // emit into loop body function
       func = body;
       auto entry = BasicBlock::Create(*llvm_context, "entry", func);
-      builder.SetInsertPoint(entry);
+      auto old_ip = builder->saveIP();
+      builder->SetInsertPoint(entry);
       for_stmt->body->accept(this);
       func = old_func;
-      builder.CreateRetVoid();
+      builder->CreateRetVoid();
+      builder->restoreIP(old_ip);
       // TODO: restore original insert point
     }
 
     // traverse leaf node
-    builder.CreateCall(
+    builder->CreateCall(
         get_runtime_function("for_each_block"),
         {get_runtime(), tlctx->get_constant(path.back()->id), body});
   }
@@ -565,23 +567,24 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
   }
 
   void increment(llvm::Value *ptr, llvm::Value *value) {
-    builder.CreateStore(builder.CreateAdd(builder.CreateLoad(ptr), value), ptr);
+    builder->CreateStore(builder->CreateAdd(builder->CreateLoad(ptr), value),
+                         ptr);
   }
 
   void visit(RangeForStmt *for_stmt) {
-    // auto entry = builder.GetInsertBlock();
+    // auto entry = builder->GetInsertBlock();
 
     BasicBlock *body = BasicBlock::Create(*llvm_context, "loop_body", func);
     BasicBlock *after_loop = BasicBlock::Create(*llvm_context, "block", func);
-    builder.CreateStore(tlctx->get_constant(0), for_stmt->loop_var->value);
-    builder.CreateBr(body);
+    builder->CreateStore(tlctx->get_constant(0), for_stmt->loop_var->value);
+    builder->CreateBr(body);
 
     // body cfg
-    builder.SetInsertPoint(body);
+    builder->SetInsertPoint(body);
 
     /*
-    auto phi = builder.CreatePHI(llvm::Type::getInt32Ty(llvm_context), 2);
-    auto loop_inc = builder.CreateAdd(
+    auto phi = builder->CreatePHI(llvm::Type::getInt32Ty(llvm_context), 2);
+    auto loop_inc = builder->CreateAdd(
         phi, llvm::ConstantInt::get(llvm_context, llvm::APInt(32, 1, true)));
     phi->addIncoming(for_stmt->begin->value, entry);
     phi->addIncoming(loop_inc, body);
@@ -591,14 +594,14 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
 
     increment(for_stmt->loop_var->value, tlctx->get_constant(1));
 
-    auto cond = builder.CreateICmp(
+    auto cond = builder->CreateICmp(
         llvm::CmpInst::Predicate::ICMP_SLT,
-        builder.CreateLoad(for_stmt->loop_var->value), for_stmt->end->value);
+        builder->CreateLoad(for_stmt->loop_var->value), for_stmt->end->value);
 
-    builder.CreateCondBr(cond, body, after_loop);
+    builder->CreateCondBr(cond, body, after_loop);
 
     // next cfg
-    builder.SetInsertPoint(after_loop);
+    builder->SetInsertPoint(after_loop);
   }
 
   void visit(ArgLoadStmt *stmt) {
@@ -608,18 +611,18 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
          data_type_name(stmt->ret_type.data_type), stmt->arg_id);
     */
     auto raw_arg =
-        builder.CreateCall(get_runtime_function("context_get_arg"),
-                           {get_context(), tlctx->get_constant(stmt->arg_id)});
+        builder->CreateCall(get_runtime_function("context_get_arg"),
+                            {get_context(), tlctx->get_constant(stmt->arg_id)});
     auto dest_ty = tlctx->get_data_type(stmt->ret_type.data_type);
-    auto truncated = builder.CreateTrunc(
+    auto truncated = builder->CreateTrunc(
         raw_arg,
         Type::getIntNTy(*llvm_context, dest_ty->getPrimitiveSizeInBits()));
-    stmt->value = builder.CreateBitCast(truncated, dest_ty);
+    stmt->value = builder->CreateBitCast(truncated, dest_ty);
   }
 
   void visit(LocalLoadStmt *stmt) {
     TC_ASSERT(stmt->width() == 1);
-    stmt->value = builder.CreateLoad(stmt->ptr[0].var->value);
+    stmt->value = builder->CreateLoad(stmt->ptr[0].var->value);
   }
 
   void visit(LocalStoreStmt *stmt) {
@@ -627,7 +630,7 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
     if (mask) {
       TC_NOT_IMPLEMENTED
     } else {
-      builder.CreateStore(stmt->data->value, stmt->ptr->value);
+      builder->CreateStore(stmt->data->value, stmt->ptr->value);
     }
   }
 
@@ -684,12 +687,12 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
       } else {
         TC_ASSERT(stmt->op_type == AtomicOpType::add);
         if (stmt->val->ret_type.data_type == DataType::i32)
-          builder.CreateAtomicRMW(llvm::AtomicRMWInst::BinOp::Add,
-                                  stmt->dest->value, stmt->val->value,
-                                  llvm::AtomicOrdering::SequentiallyConsistent);
+          builder->CreateAtomicRMW(
+              llvm::AtomicRMWInst::BinOp::Add, stmt->dest->value,
+              stmt->val->value, llvm::AtomicOrdering::SequentiallyConsistent);
         else if (stmt->val->ret_type.data_type == DataType::f32) {
-          builder.CreateCall(get_runtime_function("atomic_add_cpu_f32"),
-                             {stmt->dest->value, stmt->val->value});
+          builder->CreateCall(get_runtime_function("atomic_add_cpu_f32"),
+                              {stmt->dest->value, stmt->val->value});
         }
       }
     }
@@ -800,7 +803,7 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
          data_type_name(stmt->data->ret_type.data_type),
          stmt->ptr->raw_name(), i, stmt->data->raw_name(), i);
     */
-    builder.CreateStore(stmt->data->value, stmt->ptr->value);
+    builder->CreateStore(stmt->data->value, stmt->ptr->value);
   }
 
   void visit(GlobalLoadStmt *stmt) {
@@ -874,7 +877,7 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
       */
     }
     TC_ASSERT(stmt->width() == 1);
-    stmt->value = builder.CreateLoad(
+    stmt->value = builder->CreateLoad(
         tlctx->get_data_type(stmt->ret_type.data_type), stmt->ptr->value);
   }
 
@@ -906,12 +909,12 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
          stmt->bit_begin, stmt->bit_end - stmt->bit_begin);
     */
 
-    auto shifted = builder.CreateAdd(stmt->input->value,
-                                     tlctx->get_constant((int32)stmt->offset));
+    auto shifted = builder->CreateAdd(stmt->input->value,
+                                      tlctx->get_constant((int32)stmt->offset));
     int mask = (1u << (stmt->bit_end - stmt->bit_begin)) - 1;
     stmt->value =
-        builder.CreateAnd(builder.CreateLShr(shifted, stmt->bit_begin),
-                          tlctx->get_constant(mask));
+        builder->CreateAnd(builder->CreateLShr(shifted, stmt->bit_begin),
+                           tlctx->get_constant(mask));
   }
 
   void visit(LinearizeStmt *stmt) {
@@ -920,8 +923,8 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
       // val = fmt::format("({}) * {} + {}", val, stmt->strides[i],
       //                  stmt->inputs[i]->raw_name());
 
-      val = builder.CreateAdd(
-          builder.CreateMul(val, tlctx->get_constant(stmt->strides[i])),
+      val = builder->CreateAdd(
+          builder->CreateMul(val, tlctx->get_constant(stmt->strides[i])),
           stmt->inputs[i]->value);
     }
     stmt->value = val;
@@ -946,7 +949,7 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
     if (stmt->input_snode) {
       parent = stmt->input_snode->value;
     } else {
-      parent = builder.CreateBitCast(
+      parent = builder->CreateBitCast(
           get_root(),
           PointerType::get(get_current_program().snode_root->llvm_type, 0));
     }
@@ -976,44 +979,49 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
            stmt->raw_name(), stmt->raw_name(), snode->node_type_name);
     }
     // emit(R"(auto {} = {}_guarded;)", stmt->raw_name(), stmt->raw_name());
+    TC_P(snode_type_name(snode->type));
     if (snode->type == SNodeType::root) {
-      stmt->value = builder.CreateGEP(parent, stmt->input_index->value);
+      stmt->value = builder->CreateGEP(parent, stmt->input_index->value);
     } else {
       TC_ASSERT(snode->type == SNodeType::dense);
 
       // allocate the struct
       /*
-      auto s = builder.CreateAlloca(get_runtime_type("DenseMeta"));
-      auto node = builder.CreateBitCast(
+      auto s = builder->CreateAlloca(get_runtime_type("DenseMeta"));
+      auto node = builder->CreateBitCast(
           stmt->input_snode->value, llvm::Type::getInt8PtrTy(*llvm_context));
       auto element_ty = stmt->snode->llvm_type->getArrayElementType();
       std::size_t element_size = tlctx->get_type_size(element_ty);
-      builder.CreateCall(get_runtime_function("DenseMeta_set_element_size"),
+      builder->CreateCall(get_runtime_function("DenseMeta_set_element_size"),
                          {s, tlctx->get_constant((uint64)element_size)});
                          */
 
       auto s = emit_struct_meta(stmt->snode);
       auto s_ptr =
-          builder.CreateBitCast(s, llvm::Type::getInt8PtrTy(*llvm_context));
+          builder->CreateBitCast(s, llvm::Type::getInt8PtrTy(*llvm_context));
 
       // call look up
-      auto node_ptr = builder.CreateBitCast(
+      auto node_ptr = builder->CreateBitCast(
           stmt->input_snode->value, llvm::Type::getInt8PtrTy(*llvm_context));
       auto elem =
-          builder.CreateCall(get_runtime_function("Dense_lookup_element"),
-                             {s_ptr, node_ptr, stmt->input_index->value});
+          builder->CreateCall(get_runtime_function("Dense_lookup_element"),
+                              {s_ptr, node_ptr, stmt->input_index->value});
       auto element_ty = snode->llvm_type->getArrayElementType();
       stmt->value =
-          builder.CreateBitCast(elem, PointerType::get(element_ty, 0));
+          builder->CreateBitCast(elem, PointerType::get(element_ty, 0));
     }
   }
 
   void visit(GetChStmt *stmt) {
     // always unvectorized
     // it is OK to directly use GEP here since Components are "dense"
-    stmt->value = builder.CreateGEP(
+    stmt->value = builder->CreateGEP(
         stmt->input_ptr->value,
         {tlctx->get_constant(0), tlctx->get_constant(stmt->chid)}, "getch");
+  }
+
+  ~CPULLVMCodeGen() {
+    delete builder;
   }
 };
 

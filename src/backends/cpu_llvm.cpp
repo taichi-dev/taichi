@@ -129,9 +129,8 @@ class RuntimeObject {
     }
   }
 
-  llvm::Value *get() {
-    TC_NOT_IMPLEMENTED
-    return nullptr;
+  llvm::Value *get(const std::string &field) {
+    return call(fmt::format("get_{}", field));
   }
 
   void set(const std::string &field, llvm::Value *val) {
@@ -139,11 +138,11 @@ class RuntimeObject {
   }
 
   template <typename... Args>
-  void call(const std::string &func_name, Args &&... args) {
+  llvm::Value *call(const std::string &func_name, Args &&... args) {
     auto func = get_func(func_name);
     auto arglist = std::vector<Value *>({ptr, args...});
     check_func_call_signature(func, arglist);
-    builder->CreateCall(func, arglist);
+    return builder->CreateCall(func, arglist);
   }
 
   llvm::Value *get_func(const std::string &func_name) const {
@@ -165,6 +164,7 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
   llvm::Function *func;
   std::vector<Value *> kernel_args;
   llvm::Type *context_ty;
+  llvm::Type *physical_coordinate_ty;
 
   CPULLVMCodeGen(CodeGenBase *codegen, Kernel *kernel)
       : tlctx(&get_current_program().llvm_context),
@@ -183,6 +183,7 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
     current_struct_for = nullptr;
 
     context_ty = get_runtime_type("Context");
+    physical_coordinate_ty = get_runtime_type("PhysicalCoordinates");
 
     auto *FT =
         llvm::FunctionType::get(tlctx->get_data_type(DataType::i32),
@@ -269,22 +270,27 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
                  get_runtime_function(snode->refine_coordinates_func_name()));
   }
 
-  llvm::Value *emit_struct_meta(SNode *snode) {
+  std::unique_ptr<RuntimeObject> emit_struct_meta_object(SNode *snode) {
+    std::unique_ptr<RuntimeObject> meta;
     if (snode->type == SNodeType::dense) {
-      RuntimeObject meta("DenseMeta", this, builder);
-      emit_struct_meta_base("Dense", meta.ptr, snode);
-      meta.call("set_bitmasked", tlctx->get_constant(snode->_bitmasked));
-      meta.call("set_morton_dim", tlctx->get_constant((int)snode->_morton));
-      return meta.ptr;
+      meta = std::make_unique<RuntimeObject>("DenseMeta", this, builder);
+      emit_struct_meta_base("Dense", meta->ptr, snode);
+      meta->call("set_bitmasked", tlctx->get_constant(snode->_bitmasked));
+      meta->call("set_morton_dim", tlctx->get_constant((int)snode->_morton));
     } else if (snode->type == SNodeType::root) {
-      RuntimeObject meta("RootMeta", this, builder);
-      emit_struct_meta_base("Root", meta.ptr, snode);
-      return meta.ptr;
+      meta = std::make_unique<RuntimeObject>("RootMeta", this, builder);
+      emit_struct_meta_base("Root", meta->ptr, snode);
     } else {
       TC_P(snode_type_name(snode->type));
       TC_NOT_IMPLEMENTED;
     }
-    return nullptr;
+    return meta;
+  }
+
+  llvm::Value *emit_struct_meta(SNode *snode) {
+    auto obj = emit_struct_meta_object(snode);
+    TC_ASSERT(obj != nullptr);
+    return obj->ptr;
   }
 
   FunctionType gen(IRNode *node) {
@@ -525,6 +531,7 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
     // emit listgen
     auto leaf = for_stmt->snode;
     TC_ASSERT(leaf->type == SNodeType::place)
+    auto leaf_block = leaf->parent;
 
     // make a list of nodes, from the leaf block (instead of 'place') to root
     std::vector<SNode *> path;
@@ -581,6 +588,19 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
       builder->CreateBr(body_bb);
 
       builder->SetInsertPoint(body_bb);
+      // initialize the coordinates
+
+      // auto meta_obj = emit_struct_meta_object(leaf_block);
+      // meta_obj->get("refine_coordinate");
+      auto refine =
+          get_runtime_function(leaf_block->refine_coordinates_func_name());
+      auto new_coordinates = builder->CreateAlloca(physical_coordinate_ty);
+      RuntimeObject element("Element", this, builder, get_arg(1));
+      TC_TAG;
+      create_call(refine, {element.get("pcoord"), new_coordinates,
+                           builder->CreateLoad(loop_index)});
+      TC_TAG;
+
       for_stmt->body->accept(this);
 
       BasicBlock *after_loop = BasicBlock::Create(*llvm_context, "block", func);
@@ -609,10 +629,14 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
                 {get_context(), tlctx->get_constant(path.back()->id), body});
   }
 
-  llvm::Value *create_call(std::string func_name, std::vector<Value *> args) {
-    auto func = get_runtime_function(func_name);
+  llvm::Value *create_call(llvm::Value *func, std::vector<Value *> args) {
     check_func_call_signature(func, args);
     return builder->CreateCall(func, args);
+  }
+
+  llvm::Value *create_call(std::string func_name, std::vector<Value *> args) {
+    auto func = get_runtime_function(func_name);
+    return create_call(func, args);
   }
 
   void create_increment(llvm::Value *ptr, llvm::Value *value) {

@@ -63,7 +63,7 @@ elif scene == 'snow':
   camera_pos = ti.Vector([0.5, 0.27, 2.7])
   supporter = 2
   shutter_time = 0.5e-3
-  sphere_radius = 0.0012
+  sphere_radius = 0.0015
   particle_grid_res = 256
   max_num_particles_per_cell = 64
   max_num_particles = 1024 * 1024 * 4
@@ -550,7 +550,7 @@ def main():
         elif ti.static(scene == 'sand'):
           particle_color[i] = ti.cast(color[i], ti.i32)
         else:
-          particle_color[i] = rgb_to_i32(0.75, 0.85, 1.0)
+          particle_color[i] = rgb_to_i32(0.85, 0.90, 1.0)
         
         # reconstruct grid using particle position and MPM p2g.
         for k in ti.static(range(27)):

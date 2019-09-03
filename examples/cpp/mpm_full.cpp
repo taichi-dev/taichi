@@ -131,7 +131,7 @@ auto mpm_full = [](std::vector<std::string> cli_param) {
       int group_size = param.get<int>("group_size", 10);
       for (int i = 0; i < n_particles / group_size + 1; i++) {
         auto center =
-            Vector3(0.5_f, 0.6f, 0.5f) + random_in_unit_sphere() * 0.35f;
+            Vector3(0.5_f, 0.6f, 0.5f) + random_in_unit_sphere() * 0.3f;
         for (int j = 0; j < group_size; j++) {
           if (i * group_size + j < max_n_particles)
             p_x[i * group_size + j] =

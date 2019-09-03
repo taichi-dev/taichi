@@ -528,7 +528,10 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
 
     // make a list of nodes, from the leaf block (instead of 'place') to root
     std::vector<SNode *> path;
-    for (auto p = leaf->parent; p; p = p->parent) {
+    // leaf is the place (scalar)
+    // leaf->parent is the leaf block
+    // so listgen should be invoked from the root to leaf->parent->parent
+    for (auto p = leaf->parent->parent; p; p = p->parent) {
       path.push_back(p);
     }
     std::reverse(path.begin(), path.end());
@@ -570,7 +573,31 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
       auto ip = builder->saveIP();
       builder->SetInsertPoint(entry);
       current_struct_for = for_stmt;
+
+      auto body_bb = BasicBlock::Create(*llvm_context, "loop_body", func);
+      // per-leaf-block for loop
+      auto loop_index = builder->CreateAlloca(Type::getInt32Ty(*llvm_context));
+      builder->CreateStore(tlctx->get_constant(0), loop_index);
+      builder->CreateBr(body_bb);
+
+      builder->SetInsertPoint(body_bb);
       for_stmt->body->accept(this);
+
+      BasicBlock *after_loop = BasicBlock::Create(*llvm_context, "block", func);
+
+      // body cfg
+
+      create_increment(loop_index, tlctx->get_constant(1));
+
+      auto cond = builder->CreateICmp(
+          llvm::CmpInst::Predicate::ICMP_SLT, builder->CreateLoad(loop_index),
+          tlctx->get_constant(1 << (leaf->parent->total_num_bits)));
+
+      builder->CreateCondBr(cond, body_bb, after_loop);
+
+      // next cfg
+      builder->SetInsertPoint(after_loop);
+
       current_struct_for = nullptr;
       builder->CreateRetVoid();
       func = old_func;
@@ -588,7 +615,7 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
     return builder->CreateCall(func, args);
   }
 
-  void increment(llvm::Value *ptr, llvm::Value *value) {
+  void create_increment(llvm::Value *ptr, llvm::Value *value) {
     builder->CreateStore(builder->CreateAdd(builder->CreateLoad(ptr), value),
                          ptr);
   }
@@ -604,17 +631,9 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
     // body cfg
     builder->SetInsertPoint(body);
 
-    /*
-    auto phi = builder->CreatePHI(llvm::Type::getInt32Ty(llvm_context), 2);
-    auto loop_inc = builder->CreateAdd(
-        phi, llvm::ConstantInt::get(llvm_context, llvm::APInt(32, 1, true)));
-    phi->addIncoming(for_stmt->begin->value, entry);
-    phi->addIncoming(loop_inc, body);
-    */
-
     for_stmt->body->accept(this);
 
-    increment(for_stmt->loop_var->value, tlctx->get_constant(1));
+    create_increment(for_stmt->loop_var->value, tlctx->get_constant(1));
 
     auto cond = builder->CreateICmp(
         llvm::CmpInst::Predicate::ICMP_SLT,

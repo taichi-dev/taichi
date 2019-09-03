@@ -98,7 +98,6 @@ class RuntimeObject {
       auto type = mb->get_runtime_type(cls_name);
       TC_P(type_name(type));
       ptr = builder->CreateAlloca(type);
-      TC_TAG;
     } else {
       ptr = builder->CreateBitCast(
           init, llvm::PointerType::get(mb->get_runtime_type(cls_name), 0));
@@ -538,32 +537,26 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
            llvm::PointerType::get(get_runtime_type("Element"), 0)},
           false);
 
-      body = llvm::Function::Create(
-          body_function_type, llvm::Function::InternalLinkage, "loop_body");
+      body = llvm::Function::Create(body_function_type,
+                                    llvm::Function::InternalLinkage,
+                                    "loop_body", module.get());
       auto old_func = func;
       // emit into loop body function
       func = body;
       auto entry = BasicBlock::Create(*llvm_context, "entry", func);
-      auto old_ip = builder->saveIP();
+
+      auto ip = builder->saveIP();
       builder->SetInsertPoint(entry);
       for_stmt->body->accept(this);
-      func = old_func;
       builder->CreateRetVoid();
-      builder->restoreIP(old_ip);
-      // TODO: restore original insert point
+      func = old_func;
+      builder->restoreIP(ip);
     }
 
     // traverse leaf node
     builder->CreateCall(
         get_runtime_function("for_each_block"),
         {get_runtime(), tlctx->get_constant(path.back()->id), body});
-  }
-
-  AllocaInst *CreateEntryBlockAlloca(llvm::Type *type,
-                                     const std::string &name) {
-    llvm::IRBuilder<> TmpB(&func->getEntryBlock(),
-                           func->getEntryBlock().begin());
-    return TmpB.CreateAlloca(type, 0, name.c_str());
   }
 
   void increment(llvm::Value *ptr, llvm::Value *value) {

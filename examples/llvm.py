@@ -54,7 +54,8 @@ def test1():
 def test_struct():
   for i in y:
     val[i] = i
-    ti.print(val[i])
+    ti.print(i)
+    # pass
 
 # test()
 # test1()

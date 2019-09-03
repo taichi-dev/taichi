@@ -569,7 +569,9 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
 
       auto ip = builder->saveIP();
       builder->SetInsertPoint(entry);
+      current_struct_for = for_stmt;
       for_stmt->body->accept(this);
+      current_struct_for = nullptr;
       builder->CreateRetVoid();
       func = old_func;
       builder->restoreIP(ip);
@@ -577,7 +579,7 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
 
     // traverse leaf node
     create_call("for_each_block",
-                {get_runtime(), tlctx->get_constant(path.back()->id), body});
+                {get_context(), tlctx->get_constant(path.back()->id), body});
   }
 
   llvm::Value *create_call(std::string func_name, std::vector<Value *> args) {
@@ -642,7 +644,20 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
 
   void visit(LocalLoadStmt *stmt) {
     TC_ASSERT(stmt->width() == 1);
-    stmt->value = builder->CreateLoad(stmt->ptr[0].var->value);
+    bool is_loop_var = false;
+    if (current_struct_for)
+      for (int i = 0; i < current_struct_for->loop_vars.size(); i++) {
+        if (stmt->ptr[0].var == current_struct_for->loop_vars[i]) {
+          is_loop_var = true;
+        }
+      }
+    if (is_loop_var) {
+      // TODO: replace this
+      auto alloca = builder->CreateAlloca(Type::getInt32Ty(*llvm_context));
+      stmt->value = builder->CreateLoad(alloca);
+    } else {
+      stmt->value = builder->CreateLoad(stmt->ptr[0].var->value);
+    }
   }
 
   void visit(LocalStoreStmt *stmt) {

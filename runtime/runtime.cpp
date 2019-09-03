@@ -104,7 +104,7 @@ STRUCT_FIELD(StructMeta, is_active);
 // Specialized Attributes and functions
 struct DenseMeta : public StructMeta {
   bool bitmasked;
-  bool morton_dim;
+  int morton_dim;
 };
 
 STRUCT_FIELD(DenseMeta, bitmasked)

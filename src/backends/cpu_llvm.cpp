@@ -82,6 +82,31 @@ class ModuleBuilder {
   }
 };
 
+bool check_func_call_signature(llvm::Value *func,
+                               std::vector<Value *> arglist) {
+  auto func_type = func->getType()->getPointerElementType();
+  int num_params = func_type->getFunctionNumParams();
+  TC_ASSERT(num_params == arglist.size());
+
+  for (int i = 0; i < (int)arglist.size(); i++) {
+    auto required = func_type->getFunctionParamType(i);
+    auto provided = arglist[i]->getType();
+    if (required != provided) {
+      TC_INFO("Function type: {}", type_name(func->getType()));
+      TC_INFO("  parameter {} mismatch: required={}, provided={}", i,
+              type_name(required), type_name(provided));
+      TC_WARN("Bad function signature.");
+      return false;
+    }
+  }
+  return true;
+}
+
+template <typename... Args>
+bool check_func_call_signature(llvm::Value *func, Args &&... args) {
+  return check_func_call_signature(func, {args...});
+}
+
 class RuntimeObject {
  public:
   std::string cls_name;
@@ -115,13 +140,10 @@ class RuntimeObject {
 
   template <typename... Args>
   void call(const std::string &func_name, Args &&... args) {
-    TC_P(func_name);
+    auto func = get_func(func_name);
     auto arglist = std::vector<Value *>({ptr, args...});
-    for (auto a : arglist) {
-      // TC_P(type_name(a->getType()));
-    }
-    // TC_P(type_name(get_func(func_name)->getType()));
-    builder->CreateCall(get_func(func_name), arglist);
+    check_func_call_signature(func, arglist);
+    builder->CreateCall(func, arglist);
   }
 
   llvm::Value *get_func(const std::string &func_name) const {
@@ -252,7 +274,7 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
       RuntimeObject meta("DenseMeta", this, builder);
       emit_struct_meta_base("Dense", meta.ptr, snode);
       meta.call("set_bitmasked", tlctx->get_constant(snode->_bitmasked));
-      meta.call("set_morton_dim", tlctx->get_constant(snode->_morton));
+      meta.call("set_morton_dim", tlctx->get_constant((int)snode->_morton));
       return meta.ptr;
     } else if (snode->type == SNodeType::root) {
       RuntimeObject meta("RootMeta", this, builder);
@@ -554,9 +576,14 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
     }
 
     // traverse leaf node
-    builder->CreateCall(
-        get_runtime_function("for_each_block"),
-        {get_runtime(), tlctx->get_constant(path.back()->id), body});
+    create_call("for_each_block",
+                {get_runtime(), tlctx->get_constant(path.back()->id), body});
+  }
+
+  llvm::Value *create_call(std::string func_name, std::vector<Value *> args) {
+    auto func = get_runtime_function(func_name);
+    check_func_call_signature(func, args);
+    return builder->CreateCall(func, args);
   }
 
   void increment(llvm::Value *ptr, llvm::Value *value) {

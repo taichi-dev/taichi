@@ -1,5 +1,6 @@
 #include <taichi/common/task.h>
 #include <taichi/taichi>
+#include "kernel.h"
 #include "program.h"
 #if defined(CUDA_FOUND)
 #include <cuda_runtime.h>

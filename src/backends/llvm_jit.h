@@ -63,17 +63,24 @@ class TaichiLLVMJIT {
     return *Ctx.getContext();
   }
 
-  static Expected<std::unique_ptr<TaichiLLVMJIT>> Create() {
-    auto JTMB = JITTargetMachineBuilder::detectHost();
+  static Expected<std::unique_ptr<TaichiLLVMJIT>> create(Arch arch) {
+    std::unique_ptr<JITTargetMachineBuilder> jtmb;
+    if (arch == Arch::x86_64) {
+      auto JTMB = JITTargetMachineBuilder::detectHost();
+      if (!JTMB)
+        return JTMB.takeError();
+      jtmb = std::make_unique<JITTargetMachineBuilder>(std::move(*JTMB));
+    } else {
+      TC_ASSERT(arch == Arch::gpu);
+      Triple triple("nvptx64", "nvidia", "cuda");
+      jtmb = std::make_unique<JITTargetMachineBuilder>(triple);
+    }
 
-    if (!JTMB)
-      return JTMB.takeError();
-
-    auto DL = JTMB->getDefaultDataLayoutForTarget();
+    auto DL = jtmb->getDefaultDataLayoutForTarget();
     if (!DL)
       return DL.takeError();
 
-    return llvm::make_unique<TaichiLLVMJIT>(std::move(*JTMB), std::move(*DL));
+    return llvm::make_unique<TaichiLLVMJIT>(std::move(*jtmb), std::move(*DL));
   }
 
   Error addModule(std::unique_ptr<Module> M) {

@@ -37,11 +37,10 @@ TaichiLLVMContext::TaichiLLVMContext(Arch arch) {
     llvm::InitializeNativeTarget();
     llvm::InitializeNativeTargetAsmPrinter();
     llvm::InitializeNativeTargetAsmParser();
-    ctx = std::make_unique<llvm::LLVMContext>();
-    jit = exit_on_err(TaichiLLVMJIT::Create());
   } else {
-    TC_NOT_IMPLEMENTED;
   }
+  ctx = std::make_unique<llvm::LLVMContext>();
+  jit = exit_on_err(TaichiLLVMJIT::create(arch));
 }
 
 TaichiLLVMContext::~TaichiLLVMContext() {

@@ -144,6 +144,9 @@ Program::Program(Arch arch) {
   }
 #endif
   llvm_context_host = std::make_unique<TaichiLLVMContext>(Arch::x86_64);
+  if (arch == Arch::gpu) {
+    llvm_context_device = std::make_unique<TaichiLLVMContext>(Arch::gpu);
+  }
   UnifiedAllocator::create();
   TC_ASSERT(current_program == nullptr);
   current_program = this;

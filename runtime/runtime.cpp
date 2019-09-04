@@ -249,6 +249,10 @@ void element_listgen(Runtime *runtime, StructMeta *parent, StructMeta *child) {
         elem.loop_bounds[1] = child->get_num_elements((Ptr)child, ch_element);
         PhysicalCoordinates refined_coord;
         parent->refine_coordinates(&element.pcoord, &refined_coord, j);
+        printf("snode id %d\n", parent->snode_id);
+        for (int k = 0; k < taichi_max_num_indices; k++) {
+          printf("   %d\n", refined_coord.val[k]);
+        }
         elem.pcoord = refined_coord;
         ElementList_insert(child_list, &elem);
       }

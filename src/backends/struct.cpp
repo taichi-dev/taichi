@@ -14,7 +14,6 @@ StructCompiler::StructCompiler() : CodeGenBase(), loopgen(this) {
   profiler_clear = [] { TC_NOT_IMPLEMENTED; };
   profiler_print = [] { TC_NOT_IMPLEMENTED; };
 
-  snode_count = 0;
   if (get_current_program().config.arch == Arch::x86_64)
     suffix = "cpp";
   else
@@ -95,7 +94,6 @@ void StructCompiler::compile(SNode &snode) {
   }
 
   emit("");
-  snode.node_type_name = create_snode();
   codegen(snode);
 
   if (snode.has_null()) {

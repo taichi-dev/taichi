@@ -100,12 +100,18 @@ class SNode {
   llvm::Type *llvm_type;
   llvm::Type *llvm_element_type;
 
+  std::string get_node_type_name() {
+    return fmt::format("S{}", id);
+  }
+
   SNode() {
     id = counter++;
+    node_type_name = get_node_type_name();
   }
 
   SNode(int depth, SNodeType t) : depth(depth), type(t) {
     id = counter++;
+    node_type_name = get_node_type_name();
     total_num_bits = 0;
     total_bit_start = 0;
     num_active_indices = 0;

@@ -10,6 +10,9 @@
   extern "C" decltype(S::F) S##_get_##F(S *s) {         \
     return s->F;                                        \
   }                                                     \
+  extern "C" decltype(S::F) * S##_get_ptr_##F(S *s) {   \
+    return &(s->F);                                     \
+  }                                                     \
   extern "C" void S##_set_##F(S *s, decltype(S::F) f) { \
     s->F = f;                                           \
   }

@@ -133,6 +133,10 @@ class RuntimeObject {
     return call(fmt::format("get_{}", field));
   }
 
+  llvm::Value *get_ptr(const std::string &field) {
+    return call(fmt::format("get_ptr_{}", field));
+  }
+
   void set(const std::string &field, llvm::Value *val) {
     call(fmt::format("set_{}", field), val);
   }
@@ -596,10 +600,8 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
           get_runtime_function(leaf_block->refine_coordinates_func_name());
       auto new_coordinates = builder->CreateAlloca(physical_coordinate_ty);
       RuntimeObject element("Element", this, builder, get_arg(1));
-      TC_TAG;
-      create_call(refine, {element.get("pcoord"), new_coordinates,
+      create_call(refine, {element.get_ptr("pcoord"), new_coordinates,
                            builder->CreateLoad(loop_index)});
-      TC_TAG;
 
       for_stmt->body->accept(this);
 

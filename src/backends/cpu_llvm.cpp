@@ -177,10 +177,10 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
   llvm::Value *current_coordinates;
 
   CPULLVMCodeGen(CodeGenBase *codegen, Kernel *kernel)
-      : tlctx(&get_current_program().llvm_context),
+      : tlctx(get_current_program().llvm_context_host.get()),
         llvm_context(tlctx->ctx.get()),
         jit(tlctx->jit.get()),
-        ModuleBuilder(get_current_program().llvm_context.clone_struct_module()),
+        ModuleBuilder(get_current_program().llvm_context_host->clone_struct_module()),
         builder(new llvm::IRBuilder<>(*llvm_context)),
         kernel(kernel) {
     using namespace llvm;

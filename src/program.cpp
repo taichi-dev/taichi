@@ -263,4 +263,25 @@ void Program::visualize_layout(const std::string &fn) {
   trash(system(fmt::format("pdflatex {}", fn).c_str()));
 }
 
+Program::Program(Arch arch) {
+#if !defined(CUDA_FOUND)
+  if (arch == Arch::gpu) {
+      TC_WARN("CUDA not found. GPU is not supported.");
+      TC_WARN("Falling back to x86_64");
+      arch = Arch::x86_64;
+    }
+#endif
+  llvm_context_host = std::make_unique<TaichiLLVMContext>(Arch::x86_64);
+  UnifiedAllocator::create();
+  TC_ASSERT(current_program == nullptr);
+  current_program = this;
+  config = default_compile_config;
+  config.arch = arch;
+  current_kernel = nullptr;
+  snode_root = nullptr;
+  index_counter = 0;
+  sync = true;
+  llvm_runtime = nullptr;
+}
+
 TLANG_NAMESPACE_END

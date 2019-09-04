@@ -78,7 +78,7 @@ class Program {
   CompileConfig config;
   CPUProfiler cpu_profiler;
   Context context;
-  TaichiLLVMContext llvm_context;
+  std::unique_ptr<TaichiLLVMContext> llvm_context_host, llvm_context_device;
   bool sync;  // device/host synchronized?
 
   std::vector<std::unique_ptr<Kernel>> functions;
@@ -119,25 +119,7 @@ class Program {
       TC_NOT_IMPLEMENTED  // for pybind11..
   }
 
-  Program(Arch arch) {
-#if !defined(CUDA_FOUND)
-    if (arch == Arch::gpu) {
-      TC_WARN("CUDA not found. GPU is not supported.");
-      TC_WARN("Falling back to x86_64");
-      arch = Arch::x86_64;
-    }
-#endif
-    UnifiedAllocator::create();
-    TC_ASSERT(current_program == nullptr);
-    current_program = this;
-    config = default_compile_config;
-    config.arch = arch;
-    current_kernel = nullptr;
-    snode_root = nullptr;
-    index_counter = 0;
-    sync = true;
-    llvm_runtime = nullptr;
-  }
+  Program(Arch arch);
 
   void synchronize();
 

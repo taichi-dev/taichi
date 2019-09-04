@@ -16,7 +16,7 @@ class TaichiLLVMContext {
   std::unique_ptr<TaichiLLVMJIT> jit;
   std::unique_ptr<llvm::Module> runtime_module, struct_module;
 
-  TaichiLLVMContext();
+  TaichiLLVMContext(Arch arch);
 
   ~TaichiLLVMContext();
 

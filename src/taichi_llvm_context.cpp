@@ -32,12 +32,16 @@ TLANG_NAMESPACE_BEGIN
 
 static llvm::ExitOnError exit_on_err;
 
-TaichiLLVMContext::TaichiLLVMContext() {
-  llvm::InitializeNativeTarget();
-  llvm::InitializeNativeTargetAsmPrinter();
-  llvm::InitializeNativeTargetAsmParser();
-  ctx = std::make_unique<llvm::LLVMContext>();
-  jit = exit_on_err(TaichiLLVMJIT::Create());
+TaichiLLVMContext::TaichiLLVMContext(Arch arch) {
+  if (arch == Arch::x86_64) {
+    llvm::InitializeNativeTarget();
+    llvm::InitializeNativeTargetAsmPrinter();
+    llvm::InitializeNativeTargetAsmParser();
+    ctx = std::make_unique<llvm::LLVMContext>();
+    jit = exit_on_err(TaichiLLVMJIT::Create());
+  } else {
+    TC_NOT_IMPLEMENTED;
+  }
 }
 
 TaichiLLVMContext::~TaichiLLVMContext() {

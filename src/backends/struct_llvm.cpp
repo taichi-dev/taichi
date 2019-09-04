@@ -14,7 +14,7 @@ StructCompilerLLVM::StructCompilerLLVM() : StructCompiler() {
     return nullptr;
   };
   Program *prog = &get_current_program();
-  tlctx = &prog->llvm_context;
+  tlctx = prog->llvm_context_host.get();
   llvm_ctx = tlctx->ctx.get();
   module = tlctx->get_init_module();
 }
@@ -24,7 +24,7 @@ void StructCompilerLLVM::codegen(SNode &snode) {
   llvm::Type *llvm_type = nullptr;
 
   Program *prog = &get_current_program();
-  auto ctx = prog->llvm_context.ctx.get();
+  auto ctx = prog->llvm_context_host->ctx.get();
 
   // create children type that supports forking...
 

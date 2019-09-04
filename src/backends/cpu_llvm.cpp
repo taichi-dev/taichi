@@ -133,6 +133,10 @@ class RuntimeObject {
     return call(fmt::format("get_{}", field));
   }
 
+  llvm::Value *get(const std::string &field, llvm::Value *index) {
+    return call(fmt::format("get_{}", field), index);
+  }
+
   llvm::Value *get_ptr(const std::string &field) {
     return call(fmt::format("get_ptr_{}", field));
   }
@@ -169,6 +173,8 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
   std::vector<Value *> kernel_args;
   llvm::Type *context_ty;
   llvm::Type *physical_coordinate_ty;
+
+  llvm::Value *current_coordinates;
 
   CPULLVMCodeGen(CodeGenBase *codegen, Kernel *kernel)
       : tlctx(&get_current_program().llvm_context),
@@ -594,8 +600,6 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
       builder->SetInsertPoint(body_bb);
       // initialize the coordinates
 
-      // auto meta_obj = emit_struct_meta_object(leaf_block);
-      // meta_obj->get("refine_coordinate");
       auto refine =
           get_runtime_function(leaf_block->refine_coordinates_func_name());
       auto new_coordinates = builder->CreateAlloca(physical_coordinate_ty);
@@ -603,6 +607,7 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
       create_call(refine, {element.get_ptr("pcoord"), new_coordinates,
                            builder->CreateLoad(loop_index)});
 
+      current_coordinates = new_coordinates;
       for_stmt->body->accept(this);
 
       BasicBlock *after_loop = BasicBlock::Create(*llvm_context, "block", func);
@@ -689,17 +694,18 @@ class CPULLVMCodeGen : public IRVisitor, public ModuleBuilder {
 
   void visit(LocalLoadStmt *stmt) {
     TC_ASSERT(stmt->width() == 1);
-    bool is_loop_var = false;
+    int loop_var_index = -1;
     if (current_struct_for)
       for (int i = 0; i < current_struct_for->loop_vars.size(); i++) {
         if (stmt->ptr[0].var == current_struct_for->loop_vars[i]) {
-          is_loop_var = true;
+          loop_var_index = i;
         }
       }
-    if (is_loop_var) {
-      // TODO: replace this
-      auto alloca = builder->CreateAlloca(Type::getInt32Ty(*llvm_context));
-      stmt->value = builder->CreateLoad(alloca);
+    if (loop_var_index != -1) {
+      stmt->value = builder->CreateLoad(builder->CreateGEP(
+          current_coordinates, {tlctx->get_constant(0), tlctx->get_constant(0),
+                                tlctx->get_constant(loop_var_index)}));
+      TC_P(type_name(stmt->value->getType()));
     } else {
       stmt->value = builder->CreateLoad(stmt->ptr[0].var->value);
     }

@@ -10,7 +10,7 @@
   extern "C" decltype(S::F) S##_get_##F(S *s) {         \
     return s->F;                                        \
   }                                                     \
-  extern "C" decltype(S::F) * S##_get_ptr_##F(S *s) {   \
+  extern "C" decltype(S::F) *S##_get_ptr_##F(S *s) {    \
     return &(s->F);                                     \
   }                                                     \
   extern "C" void S##_set_##F(S *s, decltype(S::F) f) { \
@@ -231,28 +231,30 @@ Ptr Runtime_initialize(Runtime **runtime_ptr,
 void element_listgen(Runtime *runtime, StructMeta *parent, StructMeta *child) {
   auto parent_list = runtime->element_lists[parent->snode_id];
   int num_parent_elements = parent_list->tail;
-  printf("num_parent_elements %d\n", num_parent_elements);
+  // printf("num_parent_elements %d\n", num_parent_elements);
   auto child_list = runtime->element_lists[child->snode_id];
   for (int i = 0; i < num_parent_elements; i++) {
     auto element = parent_list->elements[i];
     auto ch_component = child->from_parent_element(element.element);
     int ch_num_elements = child->get_num_elements((Ptr)child, ch_component);
-    printf("ch_num_parent_elements %d\n", ch_num_elements);
+    // printf("ch_num_parent_elements %d\n", ch_num_elements);
     for (int j = 0; j < ch_num_elements; j++) {
       auto ch_element = child->lookup_element((Ptr)child, element.element, j);
-      printf("j %d\n", j);
+      // printf("j %d\n", j);
       if (child->is_active((Ptr)child, ch_component, j)) {
-        printf("j! %d\n", j);
+        // printf("j! %d\n", j);
         Element elem;
         elem.element = ch_element;
         elem.loop_bounds[0] = 0;
         elem.loop_bounds[1] = child->get_num_elements((Ptr)child, ch_element);
         PhysicalCoordinates refined_coord;
-        parent->refine_coordinates(&element.pcoord, &refined_coord, j);
-        printf("snode id %d\n", parent->snode_id);
+        child->refine_coordinates(&element.pcoord, &refined_coord, j);
+        /*
+        printf("snode id %d\n", child->snode_id);
         for (int k = 0; k < taichi_max_num_indices; k++) {
           printf("   %d\n", refined_coord.val[k]);
         }
+        */
         elem.pcoord = refined_coord;
         ElementList_insert(child_list, &elem);
       }

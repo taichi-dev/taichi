@@ -172,10 +172,11 @@ void StructCompilerLLVM::generate_refine_coordinates(SNode *snode) {
                   snode->extractors[i].num_bits,
                   snode->extractors[i].start);
                   */
-      auto mask = ((1 << snode->extractors[i].num_bits) - 1)
-                  << snode->extractors[i].start;
+      auto mask = ((1 << snode->extractors[i].num_bits) - 1);
       addition = builder.CreateAnd(
           builder.CreateAShr(l, snode->extractors[i].acc_offset), mask);
+      addition = builder.CreateShl(
+          addition, tlctx->get_constant(snode->extractors[i].start));
     }
     auto in =
         builder.CreateCall(get_runtime_function("PhysicalCoordinates_get_val"),

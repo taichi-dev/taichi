@@ -24,7 +24,7 @@ def values():
   # fork.dense(ti.ij, 16).place(x, y)
   # fork.dense(ti.ijk, 4).dense(ti.i, 8).place(z, w)
   ti.root.dense(ti.i, 4).place(val)
-  ti.root.dense(ti.i, 4).dense(ti.i, 4).place(y)
+  ti.root.dense(ti.i, 4).dense(ti.i, 8).place(y)
 
 val[0] = 123456
 print('val', val[0])
@@ -53,10 +53,12 @@ def test1():
 @ti.kernel
 def test_struct():
   for i in y:
-    val[i] = i
+    y[i] = i + 1
     ti.print(i)
     # pass
 
 # test()
 # test1()
 test_struct()
+for i in range(32):
+  assert y[i] == i + 1

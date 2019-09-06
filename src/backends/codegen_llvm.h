@@ -164,7 +164,8 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     return obj->ptr;
   }
 
-  FunctionType gen(IRNode *node) {
+  FunctionType gen() {
+    auto node = kernel->ir;
     BasicBlock *bb = BasicBlock::Create(*llvm_context, "entry", func);
     builder->SetInsertPoint(bb);
 
@@ -845,12 +846,6 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   }
 
   void visit(OffsetAndExtractBitsStmt *stmt) {
-    /*
-    emit(R"(auto {} = ((({} + {}) >> {}) & ((1 << {}) - 1));)",
-         stmt->raw_name(), stmt->offset, stmt->input->raw_name(),
-         stmt->bit_begin, stmt->bit_end - stmt->bit_begin);
-    */
-
     auto shifted = builder->CreateAdd(stmt->input->value,
                                       tlctx->get_constant((int32)stmt->offset));
     int mask = (1u << (stmt->bit_end - stmt->bit_begin)) - 1;
@@ -862,9 +857,6 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   void visit(LinearizeStmt *stmt) {
     llvm::Value *val = tlctx->get_constant(0);
     for (int i = 0; i < (int)stmt->inputs.size(); i++) {
-      // val = fmt::format("({}) * {} + {}", val, stmt->strides[i],
-      //                  stmt->inputs[i]->raw_name());
-
       val = builder->CreateAdd(
           builder->CreateMul(val, tlctx->get_constant(stmt->strides[i])),
           stmt->inputs[i]->value);

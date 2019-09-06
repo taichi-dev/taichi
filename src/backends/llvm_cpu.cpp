@@ -23,15 +23,10 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
   CodeGenLLVMCPU(CodeGenBase *codegen_base, Kernel *kernel)
       : CodeGenLLVM(codegen_base, kernel) {
   }
-
-  static FunctionType run(CodeGenBase *codegen, IRNode *node, Kernel *kernel) {
-    auto p = CodeGenLLVMCPU(codegen, kernel);
-    return p.gen(node);
-  }
 };
 
 FunctionType CPUCodeGen::codegen_llvm() {
-  return CodeGenLLVMCPU::run(this, kernel->ir, kernel);
+  return CodeGenLLVMCPU(this, kernel).gen();
 }
 #else
 

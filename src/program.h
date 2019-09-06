@@ -79,6 +79,8 @@ class Program {
 
   Program(Arch arch);
 
+  void initialize_device_llvm_context();
+
   void synchronize();
 
   ~Program() {

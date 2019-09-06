@@ -16,6 +16,14 @@ constexpr int default_simd_width_x86_64 = 8;
 
 enum class Arch { x86_64, gpu };
 
+inline std::string arch_name(Arch arch) {
+  if (arch == Arch::x86_64) {
+    return "x86_64";
+  } else {
+    return "cuda";
+  }
+}
+
 int default_simd_width(Arch arch);
 
 real get_cpu_frequency();

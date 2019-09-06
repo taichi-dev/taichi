@@ -33,13 +33,17 @@ TLANG_NAMESPACE_BEGIN
 static llvm::ExitOnError exit_on_err;
 
 TaichiLLVMContext::TaichiLLVMContext(Arch arch) {
+  llvm::InitializeAllTargets();
   if (arch == Arch::x86_64) {
     llvm::InitializeNativeTarget();
     llvm::InitializeNativeTargetAsmPrinter();
     llvm::InitializeNativeTargetAsmParser();
   } else {
+    LLVMInitializeNVPTXTarget();
+    LLVMInitializeNVPTXTargetMC();
   }
   ctx = std::make_unique<llvm::LLVMContext>();
+  TC_INFO("Creating llvm context for arch: {}", arch_name(arch));
   jit = exit_on_err(TaichiLLVMJIT::create(arch));
 }
 
@@ -107,9 +111,11 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
       TC_ERROR("Runtime bitcode load failure.");
     }
     runtime_module = std::move(runtime.get());
+    /*
     for (auto &f : *runtime_module) {
       TC_INFO("Loaded runtime function: {}", std::string(f.getName()));
     }
+    */
   }
   return llvm::CloneModule(*runtime_module);
 }

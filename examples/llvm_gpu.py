@@ -3,19 +3,12 @@ import taichi as tc
 
 tc.set_gdb_trigger(True)
 
-# x, y = ti.var(ti.f32), ti.var(ti.f32)
-# z, w = ti.var(ti.f32), ti.var(ti.f32)
 val = ti.var(ti.i32)
-y = ti.var(ti.i32)
 
 ti.cfg.use_llvm = True
-ti.cfg.print_ir = True
-# ti.cfg.print_struct_llvm_ir = True
-ti.cfg.print_kernel_llvm_ir = True
-
-# ti.cfg.print_ir = True
-# ti.runtime.print_preprocessed = True
 ti.cfg.arch = ti.cuda
+ti.cfg.print_ir = True
+ti.cfg.print_kernel_llvm_ir = True
 
 n = 32
 

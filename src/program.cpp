@@ -144,9 +144,7 @@ Program::Program(Arch arch) {
   }
 #endif
   llvm_context_host = std::make_unique<TaichiLLVMContext>(Arch::x86_64);
-  if (arch == Arch::gpu) {
-    llvm_context_device = std::make_unique<TaichiLLVMContext>(Arch::gpu);
-  }
+  // llvm_context_device is initialized before kernel compilation
   UnifiedAllocator::create();
   TC_ASSERT(current_program == nullptr);
   current_program = this;
@@ -157,6 +155,13 @@ Program::Program(Arch arch) {
   index_counter = 0;
   sync = true;
   llvm_runtime = nullptr;
+}
+
+void Program::initialize_device_llvm_context() {
+  if (config.arch == Arch::gpu && config.use_llvm) {
+    if (llvm_context_device == nullptr)
+      llvm_context_device = std::make_unique<TaichiLLVMContext>(Arch::gpu);
+  }
 }
 
 TLANG_NAMESPACE_END

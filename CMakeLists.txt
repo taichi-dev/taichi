@@ -70,6 +70,7 @@ if (LLVM_FOUND)
             ScalarOpts
             Support
             native
+            NVPTX
             Linker
             )
     target_link_libraries(${LIBRARY_NAME} ${llvm_libs})

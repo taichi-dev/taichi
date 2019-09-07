@@ -33,6 +33,7 @@ void StructCompiler::compile(SNode &snode) {
   // TC_P(snode.type_name());
   for (int ch_id = 0; ch_id < (int)snode.ch.size(); ch_id++) {
     auto &ch = snode.ch[ch_id];
+    ch->parent = &snode;
     for (int i = 0; i < max_num_indices; i++) {
       bool found = false;
       for (int k = 0; k < max_num_indices; k++) {
@@ -315,15 +316,7 @@ void StructCompiler::load_accessors(SNode &snode) {
   }
 }
 
-void StructCompiler::set_parents(SNode &snode) {
-  for (auto &c : snode.ch) {
-    set_parents(*c);
-    c->parent = &snode;
-  }
-}
-
 void StructCompiler::run(SNode &node) {
-  set_parents(node);
   // bottom to top
   compile(node);
 

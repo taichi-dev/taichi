@@ -29,8 +29,6 @@ class StructCompiler : public CodeGenBase {
 
   virtual void load_accessors(SNode &snode);
 
-  virtual void set_parents(SNode &snode);
-
   virtual void run(SNode &node);
 
   static std::unique_ptr<StructCompiler> make(bool use_llvm, Arch arch);

@@ -364,15 +364,7 @@ void StructCompilerLLVM::load_accessors(SNode &snode) {
   }
 }
 
-void StructCompilerLLVM::set_parents(SNode &snode) {
-  for (auto &c : snode.ch) {
-    set_parents(*c);
-    c->parent = &snode;
-  }
-}
-
 void StructCompilerLLVM::run(SNode &node) {
-  set_parents(node);
   // bottom to top
   compile(node);
 

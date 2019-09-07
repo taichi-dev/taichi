@@ -354,9 +354,6 @@ void StructCompilerLLVM::generate_leaf_accessors(SNode &snode) {
 }
 
 void StructCompilerLLVM::load_accessors(SNode &snode) {
-  for (auto ch : snode.ch) {
-    load_accessors(*ch);
-  }
   if (snode.type == SNodeType::place) {
     llvm::ExitOnError exit_on_err;
     std::string name = leaf_accessor_names[&snode];
@@ -364,9 +361,10 @@ void StructCompilerLLVM::load_accessors(SNode &snode) {
   }
 }
 
-void StructCompilerLLVM::run(SNode &node) {
+void StructCompilerLLVM::run(SNode &node, bool host) {
   // bottom to top
-  compile(node);
+  if (host)
+    compile(node);
 
   // get corner coordinates
   /*
@@ -450,7 +448,9 @@ void StructCompilerLLVM::run(SNode &node) {
 
   llvm::cantFail(tlctx->jit->addModule(std::move(module)));
 
-  load_accessors(node);
+  for (auto n : snodes) {
+    load_accessors(*n);
+  }
 
   auto initialize_data_structure =
       tlctx->lookup_function<std::function<void *(void *)>>(

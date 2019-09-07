@@ -300,9 +300,6 @@ void StructCompiler::generate_leaf_accessors(SNode &snode) {
 }
 
 void StructCompiler::load_accessors(SNode &snode) {
-  for (auto ch : snode.ch) {
-    load_accessors(*ch);
-  }
   if (snode.type == SNodeType::place) {
     snode.access_func = load_function<SNode::AccessorFunction>(
         fmt::format("access_{}", snode.node_type_name));
@@ -316,7 +313,7 @@ void StructCompiler::load_accessors(SNode &snode) {
   }
 }
 
-void StructCompiler::run(SNode &node) {
+void StructCompiler::run(SNode &node, bool host) {
   // bottom to top
   compile(node);
 
@@ -431,7 +428,10 @@ void StructCompiler::run(SNode &node) {
   creator = load_function<void *(*)()>("create_data_structure");
   profiler_print = load_function<void (*)()>("profiler_print");
   profiler_clear = load_function<void (*)()>("profiler_clear");
-  load_accessors(node);
+
+  for (auto n : snodes) {
+    load_accessors(*n);
+  }
 }
 
 TLANG_NAMESPACE_END

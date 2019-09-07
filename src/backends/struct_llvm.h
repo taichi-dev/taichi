@@ -24,7 +24,7 @@ class StructCompilerLLVM : public StructCompiler, public ModuleBuilder {
 
   virtual void load_accessors(SNode &snode) override;
 
-  virtual void run(SNode &node) override;
+  virtual void run(SNode &node, bool host) override;
 
   void generate_refine_coordinates(SNode *snode);
 };

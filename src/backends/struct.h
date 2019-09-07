@@ -29,7 +29,7 @@ class StructCompiler : public CodeGenBase {
 
   virtual void load_accessors(SNode &snode);
 
-  virtual void run(SNode &node);
+  virtual void run(SNode &node, bool host);
 
   static std::unique_ptr<StructCompiler> make(bool use_llvm, Arch arch);
 };

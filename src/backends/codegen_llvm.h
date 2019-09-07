@@ -36,14 +36,23 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
 
   llvm::Value *current_coordinates;
 
+  void initialize_context() {
+    if (get_current_program().config.arch == Arch::gpu) {
+      tlctx = get_current_program().llvm_context_device.get();
+    } else {
+      tlctx = get_current_program().llvm_context_host.get();
+    }
+    llvm_context = tlctx->ctx.get();
+    jit = tlctx->jit.get();
+    builder = new llvm::IRBuilder<>(*llvm_context);
+  }
+
   CodeGenLLVM(CodeGenBase *codegen, Kernel *kernel)
-      : tlctx(get_current_program().llvm_context_host.get()),
-        llvm_context(tlctx->ctx.get()),
-        jit(tlctx->jit.get()),
-        ModuleBuilder(
+      : ModuleBuilder(
             get_current_program().llvm_context_host->clone_struct_module()),
-        builder(new llvm::IRBuilder<>(*llvm_context)),
         kernel(kernel) {
+    initialize_context();
+
     using namespace llvm;
 
     for (auto &f : *module) {

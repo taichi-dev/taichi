@@ -17,12 +17,11 @@ StructCompilerLLVM::StructCompilerLLVM(Arch arch)
     TC_WARN("Data structure creation not implemented");
     return nullptr;
   };
-  Program *prog = &get_current_program();
-  tlctx = prog->get_llvm_context(arch);
+  tlctx = get_current_program().get_llvm_context(arch);
   llvm_ctx = tlctx->ctx.get();
 }
 
-void StructCompilerLLVM::codegen(SNode &snode) {
+void StructCompilerLLVM::generate_types(SNode &snode) {
   auto type = snode.type;
   llvm::Type *llvm_type = nullptr;
 
@@ -362,13 +361,6 @@ void StructCompilerLLVM::load_accessors(SNode &snode) {
     llvm::ExitOnError exit_on_err;
     std::string name = leaf_accessor_names[&snode];
     snode.access_func = tlctx->lookup_function<SNode::AccessorFunction>(name);
-  } else {
-    // snode.stat_func = load_function<SNode::StatFunction>(
-    // fmt::format("stat_{}", snode.node_type_name));
-  }
-  if (snode.has_null()) {
-    // snode.clear_func = load_function<SNode::ClearFunction>(
-    //    fmt::format("clear_{}", snode.node_type_name));
   }
 }
 

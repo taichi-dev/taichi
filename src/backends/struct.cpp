@@ -94,7 +94,7 @@ void StructCompiler::compile(SNode &snode) {
   }
 
   emit("");
-  codegen(snode);
+  generate_types(snode);
 
   if (snode.has_null()) {
     ambient_snodes.push_back(&snode);
@@ -106,7 +106,7 @@ void StructCompiler::compile(SNode &snode) {
   }
 }
 
-void StructCompiler::codegen(SNode &snode) {
+void StructCompiler::generate_types(SNode &snode) {
   auto type = snode.type;
 
   if (snode.type != SNodeType::indirect && snode.type != SNodeType::place &&

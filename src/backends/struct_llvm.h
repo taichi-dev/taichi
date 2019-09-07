@@ -18,7 +18,7 @@ class StructCompilerLLVM : public StructCompiler, public ModuleBuilder {
   std::map<SNode *, llvm::Function *> leaf_accessors;
   std::map<SNode *, std::string> leaf_accessor_names;
 
-  virtual void codegen(SNode &snode) override;
+  virtual void generate_types(SNode &snode) override;
 
   virtual void generate_leaf_accessors(SNode &snode) override;
 

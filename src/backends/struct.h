@@ -23,7 +23,7 @@ class StructCompiler : public CodeGenBase {
   virtual void compile(SNode &snode);
 
   // generate C++/llvm IR
-  virtual void codegen(SNode &snode);
+  virtual void generate_types(SNode &snode);
 
   virtual void generate_leaf_accessors(SNode &snode);
 

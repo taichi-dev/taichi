@@ -361,10 +361,18 @@ void StructCompilerLLVM::load_accessors(SNode &snode) {
   }
 }
 
-void StructCompilerLLVM::run(SNode &node, bool host) {
+void StructCompilerLLVM::run(SNode &root, bool host) {
   // bottom to top
+  collect_snodes(root);
+
   if (host)
-    compile(node);
+    compile(root);
+
+  auto snodes_rev = snodes;
+  std::reverse(snodes_rev.begin(), snodes_rev.end());
+
+  for (auto &n: snodes_rev)
+    generate_types(*n);
 
   // get corner coordinates
   /*
@@ -386,8 +394,8 @@ void StructCompilerLLVM::run(SNode &node, bool host) {
 
   // TODO: general allocators
 
-  root_type = node.node_type_name;
-  generate_leaf_accessors(node);
+  root_type = root.node_type_name;
+  generate_leaf_accessors(root);
 
   if (get_current_program().config.print_struct_llvm_ir) {
     TC_INFO("Struct Module IR");

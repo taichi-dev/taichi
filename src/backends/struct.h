@@ -19,8 +19,10 @@ class StructCompiler : public CodeGenBase {
 
   StructCompiler();
 
+  void collect_snodes(SNode &snode);
+
   // propagate root-to-leaf for a well-formed data structure
-  virtual void compile(SNode &snode);
+  void compile(SNode &snode);
 
   // generate C++/llvm IR
   virtual void generate_types(SNode &snode);

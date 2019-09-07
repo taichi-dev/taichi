@@ -28,8 +28,16 @@ StructCompiler::StructCompiler() : CodeGenBase(), loopgen(this) {
   emit("\n");
 }
 
-void StructCompiler::compile(SNode &snode) {
+void StructCompiler::collect_snodes(SNode &snode) {
   snodes.push_back(&snode);
+  for (int ch_id = 0; ch_id < (int) snode.ch.size(); ch_id++) {
+    auto &ch = snode.ch[ch_id];
+    collect_snodes(*ch);
+  }
+}
+
+
+void StructCompiler::compile(SNode &snode) {
   // TC_P(snode.type_name());
   for (int ch_id = 0; ch_id < (int)snode.ch.size(); ch_id++) {
     auto &ch = snode.ch[ch_id];
@@ -95,7 +103,6 @@ void StructCompiler::compile(SNode &snode) {
   }
 
   emit("");
-  generate_types(snode);
 
   if (snode.has_null()) {
     ambient_snodes.push_back(&snode);
@@ -313,9 +320,17 @@ void StructCompiler::load_accessors(SNode &snode) {
   }
 }
 
-void StructCompiler::run(SNode &node, bool host) {
+void StructCompiler::run(SNode &root, bool host) {
+  collect_snodes(root);
+
   // bottom to top
-  compile(node);
+  compile(root);
+
+  auto snodes_rev = snodes;
+  std::reverse(snodes_rev.begin(), snodes_rev.end());
+
+  for (auto &n: snodes_rev)
+    generate_types(*n);
 
   for (int i = 0; i < (int)snodes.size(); i++) {
     // if (snodes[i]->type != SNodeType::place)
@@ -355,8 +370,8 @@ void StructCompiler::run(SNode &node, bool host) {
     }
   }
 
-  root_type = node.node_type_name;
-  generate_leaf_accessors(node);
+  root_type = root.node_type_name;
+  generate_leaf_accessors(root);
   emit("#if defined(TC_STRUCT)");
   emit("TC_EXPORT void *create_data_structure() {{");
 

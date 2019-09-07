@@ -33,7 +33,7 @@ class StructCompiler : public CodeGenBase {
 
   virtual void run(SNode &node);
 
-  static std::unique_ptr<StructCompiler> make(bool use_llvm);
+  static std::unique_ptr<StructCompiler> make(bool use_llvm, Arch arch);
 };
 
 TLANG_NAMESPACE_END

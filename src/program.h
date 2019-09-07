@@ -144,6 +144,14 @@ class Program {
     TC_ASSERT(current_kernel);
     return *current_kernel;
   }
+
+  TaichiLLVMContext *get_llvm_context(Arch arch) {
+    if (arch == Arch::x86_64) {
+      return llvm_context_host.get();
+    } else {
+      return llvm_context_device.get();
+    }
+  }
 };
 
 TLANG_NAMESPACE_END

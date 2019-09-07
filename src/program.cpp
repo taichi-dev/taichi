@@ -32,7 +32,8 @@ FunctionType Program::compile(Kernel &kernel) {
 }
 
 void Program::materialize_layout() {
-  std::unique_ptr<StructCompiler> scomp = StructCompiler::make(config.use_llvm);
+  // always use arch=x86_64 since this is for host accessors
+  std::unique_ptr<StructCompiler> scomp = StructCompiler::make(config.use_llvm, Arch::x86_64);
   scomp->run(root);
   layout_fn = scomp->get_source_path();
   data_structure = scomp->creator();

@@ -25,8 +25,7 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
   auto type = snode.type;
   llvm::Type *llvm_type = nullptr;
 
-  Program *prog = &get_current_program();
-  auto ctx = prog->llvm_context_host->ctx.get();
+  auto ctx = llvm_ctx;
 
   // create children type that supports forking...
 

@@ -205,7 +205,7 @@ Ptr Runtime_initialize(Runtime **runtime_ptr,
                        int root_id) {
   *runtime_ptr = (Runtime *)taichi_allocate(sizeof(Runtime));
   Runtime *runtime = *runtime_ptr;
-  printf("Initializing runtime with %d selements\n", num_snodes);
+  printf("Initializing runtime with %d elements\n", num_snodes);
   for (int i = 0; i < num_snodes; i++) {
     runtime->element_lists[i] =
         (ElementList *)taichi_allocate(sizeof(ElementList));

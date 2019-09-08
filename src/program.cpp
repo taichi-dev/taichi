@@ -33,12 +33,21 @@ FunctionType Program::compile(Kernel &kernel) {
 
 void Program::materialize_layout() {
   // always use arch=x86_64 since this is for host accessors
-  std::unique_ptr<StructCompiler> scomp = StructCompiler::make(config.use_llvm, Arch::x86_64);
+  std::unique_ptr<StructCompiler> scomp =
+      StructCompiler::make(config.use_llvm, Arch::x86_64);
   scomp->run(root, true);
   layout_fn = scomp->get_source_path();
   data_structure = scomp->creator();
   profiler_print_gpu = scomp->profiler_print;
   profiler_clear_gpu = scomp->profiler_clear;
+
+  if (config.arch == Arch::gpu && config.use_llvm) {
+    initialize_device_llvm_context();
+    // llvm_context_device->get_init_module();
+    std::unique_ptr<StructCompiler> scomp_gpu =
+        StructCompiler::make(config.use_llvm, Arch::gpu);
+    scomp_gpu->run(root, false);
+  }
 }
 
 void Program::synchronize() {

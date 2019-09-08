@@ -37,7 +37,7 @@ void StructCompiler::collect_snodes(SNode &snode) {
 }
 
 
-void StructCompiler::compile(SNode &snode) {
+void StructCompiler::infer_snode_properties(SNode &snode) {
   // TC_P(snode.type_name());
   for (int ch_id = 0; ch_id < (int)snode.ch.size(); ch_id++) {
     auto &ch = snode.ch[ch_id];
@@ -66,7 +66,7 @@ void StructCompiler::compile(SNode &snode) {
     std::memcpy(ch->physical_index_position, snode.physical_index_position,
                 sizeof(snode.physical_index_position));
     ch->num_active_indices = snode.num_active_indices;
-    compile(*ch);
+    infer_snode_properties(*ch);
 
     // TC_P(ch->type_name());
     int total_bits_start_inferred = ch->total_bit_start + ch->total_num_bits;
@@ -324,7 +324,7 @@ void StructCompiler::run(SNode &root, bool host) {
   collect_snodes(root);
 
   // bottom to top
-  compile(root);
+  infer_snode_properties(root);
 
   auto snodes_rev = snodes;
   std::reverse(snodes_rev.begin(), snodes_rev.end());

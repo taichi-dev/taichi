@@ -32,7 +32,7 @@ TLANG_NAMESPACE_BEGIN
 
 static llvm::ExitOnError exit_on_err;
 
-TaichiLLVMContext::TaichiLLVMContext(Arch arch) {
+TaichiLLVMContext::TaichiLLVMContext(Arch arch): arch(arch) {
   llvm::InitializeAllTargets();
   if (arch == Arch::x86_64) {
     llvm::InitializeNativeTarget();
@@ -78,11 +78,12 @@ std::string find_existing_command(const std::vector<std::string> &commands) {
 // clang++-7 -S -emit-llvm tmp0001.cpp -Ofast -std=c++14 -march=native -mfma -I
 // ../headers -ffp-contract=fast -Wall -D_GLIBCXX_USE_CXX11_ABI=0 -DTLANG_CPU
 // -lstdc++ -o tmp0001.bc
-void compile_runtime() {
+void compile_runtime(Arch arch) {
   auto clang = find_existing_command({"clang-7", "clang"});
   TC_ASSERT(command_exist("llvm-as"));
   TC_TRACE("Compiling runtime module bitcode...");
   auto runtime_folder = get_project_fn() + "/runtime/";
+  std::string macro = fmt::format(" -D ARCH_{} ", arch_name(arch));
   int ret = std::system(
       fmt::format("{} -S {}runtime.cpp -o {}runtime.ll -emit-llvm -std=c++17",
                   clang, runtime_folder, runtime_folder)
@@ -101,7 +102,7 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::get_init_module() {
 
 std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
   if (!runtime_module) {
-    compile_runtime();
+    compile_runtime(arch);
     std::ifstream ifs(get_project_fn() + "/runtime/runtime.bc");
     std::string bitcode(std::istreambuf_iterator<char>(ifs),
                         (std::istreambuf_iterator<char>()));
@@ -111,6 +112,10 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
       TC_ERROR("Runtime bitcode load failure.");
     }
     runtime_module = std::move(runtime.get());
+    if (arch == Arch::gpu) {
+      runtime_module->setTargetTriple("nvptx64-nvidia-cuda");
+      runtime_module->setDataLayout(jit->getDataLayout());
+    }
     /*
     for (auto &f : *runtime_module) {
       TC_INFO("Loaded runtime function: {}", std::string(f.getName()));

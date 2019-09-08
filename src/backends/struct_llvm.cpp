@@ -366,12 +366,12 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
   collect_snodes(root);
 
   if (host)
-    compile(root);
+    infer_snode_properties(root);
 
   auto snodes_rev = snodes;
   std::reverse(snodes_rev.begin(), snodes_rev.end());
 
-  for (auto &n: snodes_rev)
+  for (auto &n : snodes_rev)
     generate_types(*n);
 
   // get corner coordinates

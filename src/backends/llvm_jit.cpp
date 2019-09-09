@@ -58,7 +58,7 @@ std::string compile_module_to_ptx(std::unique_ptr<llvm::Module> &module) {
   std::string err_str;
   const llvm::Target *target =
       TargetRegistry::lookupTarget(triple.str(), err_str);
-  TC_ERROR_IF(target, err_str);
+  TC_ERROR_UNLESS(target, err_str);
 
   TargetOptions options;
   options.PrintMachineCode = false;

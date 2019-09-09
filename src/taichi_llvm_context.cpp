@@ -15,6 +15,7 @@
 #include "llvm/IR/Type.h"
 #include "llvm/IR/Verifier.h"
 #include "llvm/Support/TargetSelect.h"
+#include "llvm/Support/TargetRegistry.h"
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Transforms/InstCombine/InstCombine.h"
 #include "llvm/Transforms/Scalar.h"
@@ -41,6 +42,8 @@ TaichiLLVMContext::TaichiLLVMContext(Arch arch): arch(arch) {
   } else {
     LLVMInitializeNVPTXTarget();
     LLVMInitializeNVPTXTargetMC();
+    LLVMInitializeNVPTXTargetInfo();
+    LLVMInitializeNVPTXAsmPrinter();
   }
   ctx = std::make_unique<llvm::LLVMContext>();
   TC_INFO("Creating llvm context for arch: {}", arch_name(arch));

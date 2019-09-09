@@ -270,4 +270,13 @@ void for_each_block(Context *context,
     task(context, &list->elements[i]);
   }
 }
+
+int ti_cuda_tid_x() {
+  return 0;
+}
+
+void cuda_add(float *a, float *b, float *c) {
+  auto i = ti_cuda_tid_x();
+  c[i] = a[i] + b[i];
+}
 }

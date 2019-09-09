@@ -24,6 +24,14 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
   CodeGenLLVMGPU(CodeGenBase *codegen_base, Kernel *kernel)
       : CodeGenLLVM(codegen_base, kernel) {
   }
+
+  FunctionType compile_module_to_executable() override {
+    auto ptx = compile_module_to_ptx(module);
+    TC_P(ptx);
+    // return [=](Context context) { f(&context); };
+    TC_NOT_IMPLEMENTED
+    return nullptr;
+  }
 };
 
 FunctionType GPUCodeGen::codegen_llvm() {

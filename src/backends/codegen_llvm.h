@@ -174,7 +174,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     return obj->ptr;
   }
 
-  FunctionType gen() {
+  virtual void emit_to_module() {
     auto node = kernel->ir;
     BasicBlock *bb = BasicBlock::Create(*llvm_context, "entry", func);
     builder->SetInsertPoint(bb);
@@ -187,7 +187,9 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       module->print(errs(), nullptr);
     }
     TC_ASSERT(!llvm::verifyFunction(*func, &errs()));
+  }
 
+  virtual FunctionType compile_module_to_executable() {
     llvm::cantFail(jit->addModule(std::move(module)));
 
     auto kernel_symbol = llvm::cantFail(jit->lookup(kernel_name));
@@ -195,6 +197,11 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
 
     auto f = (int32(*)(void *))(void *)(kernel_symbol.getAddress());
     return [=](Context context) { f(&context); };
+  }
+
+  FunctionType gen() {
+    emit_to_module();
+    return compile_module_to_executable();
   }
 
   template <typename... Args>

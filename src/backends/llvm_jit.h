@@ -32,6 +32,8 @@ TLANG_NAMESPACE_BEGIN
 using namespace llvm;
 using namespace llvm::orc;
 
+std::string compile_module_to_ptx(std::unique_ptr<llvm::Module> &module);
+
 class TaichiLLVMJIT {
  private:
   ExecutionSession ES;

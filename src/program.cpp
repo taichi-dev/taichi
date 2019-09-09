@@ -42,6 +42,8 @@ void Program::materialize_layout() {
   profiler_clear_gpu = scomp->profiler_clear;
 
   if (config.arch == Arch::gpu && config.use_llvm) {
+    TC_P(llvm_context_device.get());
+    TC_P(llvm_context_host.get());
     initialize_device_llvm_context();
     // llvm_context_device->get_init_module();
     std::unique_ptr<StructCompiler> scomp_gpu =

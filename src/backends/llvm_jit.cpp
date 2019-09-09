@@ -42,7 +42,7 @@ std::string mattrs() {
   */
 }
 
-std::vector<char> compile_to_ptx(std::unique_ptr<llvm::Module> module) {
+std::string compile_module_to_ptx(std::unique_ptr<llvm::Module> &module) {
   using namespace llvm;
 
   // DISABLED - hooked in here to force PrintBeforeAll option - seems to be the
@@ -153,7 +153,7 @@ std::vector<char> compile_to_ptx(std::unique_ptr<llvm::Module> module) {
   TC_DEBUG("Done with CodeGen_PTX_Dev::compile_to_src");
   TC_DEBUG("PTX kernel: {}", outstr.c_str());
 
-  std::vector<char> buffer(outstr.begin(), outstr.end());
+  std::string buffer(outstr.begin(), outstr.end());
 
   // Null-terminate the ptx source
   buffer.push_back(0);

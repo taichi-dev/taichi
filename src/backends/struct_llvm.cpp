@@ -455,20 +455,22 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
 
   llvm::cantFail(tlctx->jit->addModule(std::move(module)));
 
-  for (auto n : snodes) {
-    load_accessors(*n);
+  if (host) {
+    for (auto n : snodes) {
+      load_accessors(*n);
+    }
+
+    auto initialize_data_structure =
+        tlctx->lookup_function<std::function<void *(void *)>>(
+            "initialize_data_structure");
+
+    creator = [initialize_data_structure, root_size]() {
+      TC_INFO("Allocating data structure of size {}", root_size);
+      auto root_ptr =
+          initialize_data_structure(&get_current_program().llvm_runtime);
+      return (void *)root_ptr;
+    };
   }
-
-  auto initialize_data_structure =
-      tlctx->lookup_function<std::function<void *(void *)>>(
-          "initialize_data_structure");
-
-  creator = [initialize_data_structure, root_size]() {
-    TC_INFO("Allocating data structure of size {}", root_size);
-    auto root_ptr =
-        initialize_data_structure(&get_current_program().llvm_runtime);
-    return (void *)root_ptr;
-  };
 }
 
 std::unique_ptr<StructCompiler> StructCompiler::make(bool use_llvm, Arch arch) {

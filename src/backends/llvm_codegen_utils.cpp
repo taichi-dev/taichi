@@ -19,7 +19,15 @@ bool check_func_call_signature(llvm::Value *func,
     auto required = func_type->getFunctionParamType(i);
     auto provided = arglist[i]->getType();
     if (required != provided) {
-      TC_INFO("Function type: {}", type_name(func->getType()));
+      TC_INFO("Function : {}", std::string(func->getName()));
+      TC_INFO("    Type : {}", type_name(func->getType()));
+      if (&required->getContext() != &provided->getContext()) {
+        TC_INFO("  parameter {} types are from different contexts", i);
+        TC_INFO("    required from context {}",
+                (void *)&required->getContext());
+        TC_INFO("    provided from context {}",
+                (void *)&provided->getContext());
+      }
       TC_INFO("  parameter {} mismatch: required={}, provided={}", i,
               type_name(required), type_name(provided));
       TC_WARN("Bad function signature.");

@@ -2,6 +2,7 @@ import taichi_lang as ti
 import math
 import numpy as np
 import cv2
+import os
 import matplotlib.pyplot as plt
 
 real = ti.f32
@@ -13,10 +14,12 @@ dx = 1 / n_grid
 inv_dx = 1 / dx
 dt = 3e-4
 max_steps = 512
-vis_interval = 1
-steps = 16
+vis_interval = 32
+output_vis_interval = 2
+steps = 256
+assert steps * 2 <= max_steps
 gravity = 9.8
-amplify = 1
+amplify = 2
 
 scalar = lambda: ti.var(dt=real)
 vec = lambda: ti.Vector(2, dt=real)
@@ -45,10 +48,10 @@ def place():
 
 c = 340
 # damping
-alpha = 0.0000
+alpha = 0.00000
 inv_dx2 = inv_dx * inv_dx
 dt = (math.sqrt(alpha * alpha + dx * dx / 3) - alpha) / c
-learning_rate = 0.001
+learning_rate = 0.1
 
 
 @ti.func
@@ -78,7 +81,7 @@ def fdtd(t: ti.i32):
 def compute_loss(t: ti.i32):
   for i in range(n_grid):
     for j in range(n_grid):
-      ti.atomic_add(loss, ti.abs(target[i, j] - p[t, i, j]))
+      ti.atomic_add(loss, dx * dx * ti.sqr(target[i, j] - p[t, i, j]))
 
 @ti.kernel
 def apply_grad():
@@ -86,18 +89,26 @@ def apply_grad():
   for i, j in initial.grad:
     initial[i, j] -= learning_rate * initial.grad[i, j]
 
-def forward():
+def forward(output=None):
+  steps_mul = 1
+  interval = vis_interval
+  if output:
+    os.makedirs(output, exist_ok=True)
+    steps_mul = 2
+    interval = output_vis_interval
   initialize()
-  for t in range(2, steps):
+  for t in range(2, steps * steps_mul):
     fdtd(t)
-    if (t + 1) % vis_interval == 0:
+    if (t + 1) % interval == 0:
       img = np.zeros(shape=(n_grid, n_grid), dtype=np.float32)
       for i in range(n_grid):
-        for j in range(n_grid):
-          img[i, j] = p[t, i, j] * amplify + 0.5
+        for j in range(n_grid): img[i, j] = p[t, i, j] * amplify + 0.5
       img = cv2.resize(img, fx=4, fy=4, dsize=None)
       cv2.imshow('img', img)
       cv2.waitKey(1)
+      if output:
+        img = np.clip(img, 0, 255)
+        cv2.imwrite(output + "/{:04d}.png".format(t), img * 255)
   loss[None] = 0
   compute_loss(steps - 1)
 
@@ -136,10 +147,12 @@ def main():
 
   # initial[n_grid // 2, n_grid // 2] = 1
 
-  for opt in range(1000):
+  for opt in range(200):
     forward()
-    print('Loss =', loss[None])
+    print('Iter', opt, ' Loss =', loss[None])
     backward()
+    
+  forward('optimized')
 
 if __name__ == '__main__':
   main()

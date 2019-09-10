@@ -1,7 +1,6 @@
 import taichi_lang as ti
 import math
 import numpy as np
-import random
 import cv2
 import matplotlib.pyplot as plt
 
@@ -12,9 +11,10 @@ n_grid = 128
 dx = 1 / n_grid
 inv_dx = 1 / dx
 dt = 3e-4
-max_steps = 128
-steps = 1024
+max_steps = 4096
+steps = max_steps
 gravity = 9.8
+amplify = 2
 
 scalar = lambda: ti.var(dt=real)
 vec = lambda: ti.Vector(2, dt=real)
@@ -25,10 +25,6 @@ p = scalar()
 
 ti.cfg.arch = ti.cuda
 
-
-# ti.cfg.print_ir = True
-
-
 @ti.layout
 def place():
   ti.root.dense(ti.l, max_steps).dense(ti.ij, n_grid).place(p)
@@ -38,7 +34,8 @@ def place():
 
 
 c = 340
-alpha = 0.01
+# damping
+alpha = 0.0000
 inv_dx2 = inv_dx * inv_dx
 dt = (math.sqrt(alpha * alpha + dx * dx / 3) - alpha) / c
 
@@ -57,9 +54,8 @@ def ftdt(t: ti.i32):
       laplacian_p = laplacian(t - 2, i, j)
       laplacian_q = laplacian(t - 1, i, j)
       p[t, i, j] = 2 * p[t - 1, i, j] + (
-            c * c * dt * dt + c * alpha * dt) * laplacian_q - p[
+          c * c * dt * dt + c * alpha * dt) * laplacian_q - p[
                      t - 2, i, j] - c * alpha * dt * laplacian_p
-
 
 
 def main():
@@ -67,14 +63,14 @@ def main():
   p[0, n_grid // 2, n_grid // 2] = 1
   for t in range(2, max_steps):
     ftdt(t)
-    img = np.zeros(shape=(n_grid, n_grid), dtype=np.float32)
-    for i in range(n_grid):
-      for j in range(n_grid):
-        img[i, j] = p[t, i, j] * 0.5 + 0.5
-    img = cv2.resize(img, fx=4, fy=4, dsize=None)
-    print(img.shape)
-    cv2.imshow('img', img)
-    cv2.waitKey(1)
+    if t % 4 == 0:
+      img = np.zeros(shape=(n_grid, n_grid), dtype=np.float32)
+      for i in range(n_grid):
+        for j in range(n_grid):
+          img[i, j] = (p[t, i, j] - 0.5) * amplify + 0.5
+      img = cv2.resize(img, fx=4, fy=4, dsize=None)
+      cv2.imshow('img', img)
+      cv2.waitKey(1)
 
 
 if __name__ == '__main__':

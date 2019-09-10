@@ -48,7 +48,7 @@ c = 340
 alpha = 0.0000
 inv_dx2 = inv_dx * inv_dx
 dt = (math.sqrt(alpha * alpha + dx * dx / 3) - alpha) / c
-learning_rate = 0.1
+learning_rate = 0.001
 
 
 @ti.func
@@ -78,9 +78,7 @@ def ftdt(t: ti.i32):
 def compute_loss():
   for i in range(n_grid):
     for j in range(n_grid):
-      ti.atomic_add(loss, ti.sqr(target[i, j] - p[steps - 1]))
-
-
+      ti.atomic_add(loss, dx * dx * ti.sqr(target[i, j] - p[steps - 1, i, j]))
 
 def forward():
   initialize()
@@ -94,6 +92,7 @@ def forward():
       img = cv2.resize(img, fx=4, fy=4, dsize=None)
       cv2.imshow('img', img)
       cv2.waitKey(1)
+  compute_loss()
 
 @ti.kernel
 def apply_grad():
@@ -104,6 +103,8 @@ def apply_grad():
 def backward():
   clear_p_grad()
   clear_initial_grad()
+
+  compute_loss.grad()
   for t in reversed(range(2, max_steps)):
     ftdt.grad(t)
   initialize.grad()
@@ -121,7 +122,7 @@ def clear_initial_grad():
 
 def main():
   # initialization
-  target_img = cv2.imread('iclr2020.png')[:,:,0] / 255.0
+  target_img = cv2.imread('iclr2020.png')[:,:,0] / 255.0 - 0.5
   # print(target_img.min(), target_img.max())
   for i in range(n_grid):
     for j in range(n_grid):
@@ -129,10 +130,11 @@ def main():
 
   # initial[n_grid // 2, n_grid // 2] = 1
 
-  forward()
-  print('Loss =', loss[None])
-  loss.grad[None] = 1
-  backward()
+  for opt in range(100):
+    forward()
+    print('Loss =', loss[None])
+    loss.grad[None] = 1
+    backward()
 
 if __name__ == '__main__':
   main()

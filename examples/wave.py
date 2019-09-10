@@ -21,6 +21,7 @@ vec = lambda: ti.Vector(2, dt=real)
 
 p = scalar()
 target = scalar()
+initial = scalar()
 loss = scalar()
 
 ti.cfg.arch = ti.cuda
@@ -30,6 +31,7 @@ def place():
   ti.root.dense(ti.l, max_steps).dense(ti.ij, n_grid).place(p)
   ti.root.dense(ti.l, max_steps).dense(ti.ij, n_grid).place(p.grad)
   ti.root.dense(ti.ij, n_grid).place(target)
+  ti.root.dense(ti.ij, n_grid).place(initial)
   ti.root.place(loss)
   # ti.root.dense(ti.ij, n_grid).place(grid_v_in, grid_m_in, grid_v_out)
   # ti.root.place(init_v, loss, x_avg)
@@ -48,6 +50,12 @@ def laplacian(t, i, j):
   return inv_dx2 * (
       -4 * p[t, i, j] + p[t, i, j - 1] + p[t, i, j + 1] + p[t, i + 1, j] +
       p[t, i - 1, j])
+
+@ti.kernel
+def initialize():
+  for i in range(n_grid):
+    for j in range(n_grid):
+      p[0, i, j] = initial[i, j]
 
 
 @ti.kernel
@@ -86,12 +94,14 @@ def backward():
 
 def main():
   # initialization
-  target_img = cv2.imread('iclr2020.jpg') / 255.0
+  target_img = cv2.imread('iclr2020.png')[:,:,0] / 255.0
   for i in range(n_grid):
     for j in range(n_grid):
-      target[i, j] = target_img[i, j]
+      target[i, j] = float(target_img[i, j])
 
-  p[0, n_grid // 2, n_grid // 2] = 1
+  initial[n_grid // 2, n_grid // 2] = 1
+
+  initialize()
   forward()
   backward()
 

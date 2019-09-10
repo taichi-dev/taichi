@@ -6,12 +6,14 @@ import matplotlib.pyplot as plt
 
 real = ti.f32
 ti.set_default_fp(real)
+# ti.runtime.print_preprocessed = True
 
 n_grid = 128
 dx = 1 / n_grid
 inv_dx = 1 / dx
 dt = 3e-4
-max_steps = 1024
+max_steps = 512
+vis_interval = 16
 steps = max_steps
 gravity = 9.8
 amplify = 2
@@ -31,8 +33,11 @@ def place():
   ti.root.dense(ti.l, max_steps).dense(ti.ij, n_grid).place(p)
   ti.root.dense(ti.l, max_steps).dense(ti.ij, n_grid).place(p.grad)
   ti.root.dense(ti.ij, n_grid).place(target)
+  ti.root.dense(ti.ij, n_grid).place(target.grad)
   ti.root.dense(ti.ij, n_grid).place(initial)
+  ti.root.dense(ti.ij, n_grid).place(initial.grad)
   ti.root.place(loss)
+  ti.root.place(loss.grad)
   # ti.root.dense(ti.ij, n_grid).place(grid_v_in, grid_m_in, grid_v_out)
   # ti.root.place(init_v, loss, x_avg)
   # ti.root.lazy_grad()
@@ -43,6 +48,7 @@ c = 340
 alpha = 0.0000
 inv_dx2 = inv_dx * inv_dx
 dt = (math.sqrt(alpha * alpha + dx * dx / 3) - alpha) / c
+learning_rate = 0.1
 
 
 @ti.func
@@ -77,9 +83,10 @@ def compute_loss():
 
 
 def forward():
+  initialize()
   for t in range(2, max_steps):
     ftdt(t)
-    if t % 8 == 0:
+    if (t + 1) % vis_interval == 0:
       img = np.zeros(shape=(n_grid, n_grid), dtype=np.float32)
       for i in range(n_grid):
         for j in range(n_grid):
@@ -88,23 +95,44 @@ def forward():
       cv2.imshow('img', img)
       cv2.waitKey(1)
 
+@ti.kernel
+def apply_grad():
+  # gradient descent
+  for i, j in initial.grad:
+    initial[i, j] -= learning_rate * initial.grad[i, j]
+
 def backward():
+  clear_p_grad()
+  clear_initial_grad()
   for t in reversed(range(2, max_steps)):
     ftdt.grad(t)
+  initialize.grad()
+  apply_grad()
+
+@ti.kernel
+def clear_p_grad():
+  for t, i, j in p:
+    p.grad[t, i, j] = 0
+
+@ti.kernel
+def clear_initial_grad():
+  for i, j in initial:
+    initial.grad[i, j] = 0
 
 def main():
   # initialization
   target_img = cv2.imread('iclr2020.png')[:,:,0] / 255.0
+  # print(target_img.min(), target_img.max())
   for i in range(n_grid):
     for j in range(n_grid):
       target[i, j] = float(target_img[i, j])
 
-  initial[n_grid // 2, n_grid // 2] = 1
+  # initial[n_grid // 2, n_grid // 2] = 1
 
-  initialize()
   forward()
+  print('Loss =', loss[None])
+  loss.grad[None] = 1
   backward()
-
 
 if __name__ == '__main__':
   main()

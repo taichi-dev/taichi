@@ -13,10 +13,10 @@ dx = 1 / n_grid
 inv_dx = 1 / dx
 dt = 3e-4
 max_steps = 512
-vis_interval = 16
-steps = max_steps
+vis_interval = 1
+steps = 16
 gravity = 9.8
-amplify = 2
+amplify = 1
 
 scalar = lambda: ti.var(dt=real)
 vec = lambda: ti.Vector(2, dt=real)
@@ -65,7 +65,7 @@ def initialize():
 
 
 @ti.kernel
-def ftdt(t: ti.i32):
+def fdtd(t: ti.i32):
   for i in range(n_grid):
     for j in range(n_grid):
       laplacian_p = laplacian(t - 2, i, j)
@@ -75,24 +75,10 @@ def ftdt(t: ti.i32):
                      t - 2, i, j] - c * alpha * dt * laplacian_p
 
 @ti.kernel
-def compute_loss():
+def compute_loss(t: ti.i32):
   for i in range(n_grid):
     for j in range(n_grid):
-      ti.atomic_add(loss, dx * dx * ti.sqr(target[i, j] - p[steps - 1, i, j]))
-
-def forward():
-  initialize()
-  for t in range(2, max_steps):
-    ftdt(t)
-    if (t + 1) % vis_interval == 0:
-      img = np.zeros(shape=(n_grid, n_grid), dtype=np.float32)
-      for i in range(n_grid):
-        for j in range(n_grid):
-          img[i, j] = (p[t, i, j] - 0.5) * amplify + 0.5
-      img = cv2.resize(img, fx=4, fy=4, dsize=None)
-      cv2.imshow('img', img)
-      cv2.waitKey(1)
-  compute_loss()
+      ti.atomic_add(loss, ti.abs(target[i, j] - p[t, i, j]))
 
 @ti.kernel
 def apply_grad():
@@ -100,14 +86,32 @@ def apply_grad():
   for i, j in initial.grad:
     initial[i, j] -= learning_rate * initial.grad[i, j]
 
+def forward():
+  initialize()
+  for t in range(2, steps):
+    fdtd(t)
+    if (t + 1) % vis_interval == 0:
+      img = np.zeros(shape=(n_grid, n_grid), dtype=np.float32)
+      for i in range(n_grid):
+        for j in range(n_grid):
+          img[i, j] = p[t, i, j] * amplify + 0.5
+      img = cv2.resize(img, fx=4, fy=4, dsize=None)
+      cv2.imshow('img', img)
+      cv2.waitKey(1)
+  loss[None] = 0
+  compute_loss(steps - 1)
+
+
 def backward():
   clear_p_grad()
   clear_initial_grad()
 
-  compute_loss.grad()
-  for t in reversed(range(2, max_steps)):
-    ftdt.grad(t)
+  loss.grad[None] = 1
+  compute_loss.grad(steps - 1)
+  for t in reversed(range(2, steps)):
+    fdtd.grad(t)
   initialize.grad()
+  
   apply_grad()
 
 @ti.kernel
@@ -122,7 +126,9 @@ def clear_initial_grad():
 
 def main():
   # initialization
-  target_img = cv2.imread('iclr2020.png')[:,:,0] / 255.0 - 0.5
+  target_img = cv2.imread('iclr2020.png')[:,:,0] / 255.0
+  target_img -= target_img.mean()
+  cv2.imshow('target', target_img * amplify + 0.5)
   # print(target_img.min(), target_img.max())
   for i in range(n_grid):
     for j in range(n_grid):
@@ -130,10 +136,9 @@ def main():
 
   # initial[n_grid // 2, n_grid // 2] = 1
 
-  for opt in range(100):
+  for opt in range(1000):
     forward()
     print('Loss =', loss[None])
-    loss.grad[None] = 1
     backward()
 
 if __name__ == '__main__':

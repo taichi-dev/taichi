@@ -11,7 +11,7 @@ n_grid = 128
 dx = 1 / n_grid
 inv_dx = 1 / dx
 dt = 3e-4
-max_steps = 4096
+max_steps = 1024
 steps = max_steps
 gravity = 9.8
 amplify = 2
@@ -20,14 +20,17 @@ scalar = lambda: ti.var(dt=real)
 vec = lambda: ti.Vector(2, dt=real)
 
 p = scalar()
-
-# loss = scalar()
+target = scalar()
+loss = scalar()
 
 ti.cfg.arch = ti.cuda
 
 @ti.layout
 def place():
   ti.root.dense(ti.l, max_steps).dense(ti.ij, n_grid).place(p)
+  ti.root.dense(ti.l, max_steps).dense(ti.ij, n_grid).place(p.grad)
+  ti.root.dense(ti.ij, n_grid).place(target)
+  ti.root.place(loss)
   # ti.root.dense(ti.ij, n_grid).place(grid_v_in, grid_m_in, grid_v_out)
   # ti.root.place(init_v, loss, x_avg)
   # ti.root.lazy_grad()
@@ -57,13 +60,18 @@ def ftdt(t: ti.i32):
           c * c * dt * dt + c * alpha * dt) * laplacian_q - p[
                      t - 2, i, j] - c * alpha * dt * laplacian_p
 
+@ti.kernel
+def compute_loss():
+  for i in range(n_grid):
+    for j in range(n_grid):
+      ti.atomic_add(loss, ti.sqr(target[i, j] - p[steps - 1]))
 
-def main():
-  # initialization
-  p[0, n_grid // 2, n_grid // 2] = 1
+
+
+def forward():
   for t in range(2, max_steps):
     ftdt(t)
-    if t % 4 == 0:
+    if t % 8 == 0:
       img = np.zeros(shape=(n_grid, n_grid), dtype=np.float32)
       for i in range(n_grid):
         for j in range(n_grid):
@@ -71,6 +79,21 @@ def main():
       img = cv2.resize(img, fx=4, fy=4, dsize=None)
       cv2.imshow('img', img)
       cv2.waitKey(1)
+
+def backward():
+  for t in reversed(range(2, max_steps)):
+    ftdt.grad(t)
+
+def main():
+  # initialization
+  target_img = cv2.imread('iclr2020.jpg') / 255.0
+  for i in range(n_grid):
+    for j in range(n_grid):
+      target[i, j] = target_img[i, j]
+
+  p[0, n_grid // 2, n_grid // 2] = 1
+  forward()
+  backward()
 
 
 if __name__ == '__main__':

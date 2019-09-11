@@ -18,7 +18,6 @@ vis_interval = 32
 output_vis_interval = 2
 steps = 256
 assert steps * 2 <= max_steps
-gravity = 9.8
 amplify = 2
 
 scalar = lambda: ti.var(dt=real)

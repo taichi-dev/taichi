@@ -42,7 +42,8 @@ def place():
 
 
 alpha = 0.00000
-dt = 0.01
+dt = 0.003
+penalty = 0.1
 learning_rate = 0.1
 
 
@@ -53,13 +54,16 @@ def collide(t: ti.i32):
     for j in range(n_balls):
       if i != j:
         dist = x[t, i] - x[t, j]
-        if dist.norm_sqr() < 4 * radius * radius:
-          dir = ti.Vector.normalized(x[t, i])
+        dist_norm = dist.norm()
+        if dist_norm < 2 * radius:
+          dir = ti.Vector.normalized(dist)
           rela_v = v[t, i] - v[t, j]
           projected_v = dir.dot(rela_v)
           if projected_v < 0:
             imp = -(1 + elasticity) * 0.5 * projected_v
             impulse_contribution += imp * dir
+            
+          # impulse_contribution -= dir * (penalty * (dist_norm - 2 * radius))
     
     impulse[t + 1, i] = impulse_contribution
 
@@ -95,13 +99,13 @@ def forward(output=None):
     collide(t - 1)
     advance(t)
     
-    img = np.zeros(shape=(vis_resolution, vis_resolution, 3), dtype=np.float32)
+    img = np.ones(shape=(vis_resolution, vis_resolution, 3), dtype=np.float32)
     for i in range(n_balls):
       cv2.circle(img, center=(
       int(vis_resolution * x[t, i][0]), int(vis_resolution * x[t, i][1])),
-                 radius=int(radius * vis_resolution), color=(1, 1, 1))
+                 radius=int(radius * vis_resolution), color=(0, 0, 0), thickness=-1)
     cv2.imshow('img', img)
-    cv2.waitKey(100)
+    cv2.waitKey(1)
   
   # loss[None] = 0
   # compute_loss(steps - 1)

@@ -40,9 +40,6 @@ def place():
   ti.root.dense(ti.ij, n_grid).place(initial.grad)
   ti.root.place(loss)
   ti.root.place(loss.grad)
-  # ti.root.dense(ti.ij, n_grid).place(grid_v_in, grid_m_in, grid_v_out)
-  # ti.root.place(init_v, loss, x_avg)
-  # ti.root.lazy_grad()
 
 
 c = 340

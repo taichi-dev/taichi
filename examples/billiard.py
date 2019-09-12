@@ -12,7 +12,7 @@ ti.set_default_fp(real)
 max_steps = 2048
 vis_interval = 16
 output_vis_interval = 2
-steps = 256
+steps = 4
 assert steps * 2 <= max_steps
 
 vis_resolution = 1024
@@ -56,7 +56,7 @@ learning_rate = 0.1
 @ti.kernel
 def collide(t: ti.i32):
   for i in range(n_balls):
-    for j in range(n_balls):
+    for j in range(i):
       imp = ti.Vector([0.0, 0.0])
       if i != j:
         dist = x[t, i] - x[t, j]
@@ -66,6 +66,20 @@ def collide(t: ti.i32):
           rela_v = v[t, i] - v[t, j]
           projected_v = dir.dot(rela_v)
           
+          if projected_v < 0:
+            imp = -(1 + elasticity) * 0.5 * projected_v * dir
+      ti.atomic_add(impulse[t + 1, i], imp)
+    for j_ in range(n_balls - i - 1):
+      j = j_ + i + 1
+      imp = ti.Vector([0.0, 0.0])
+      if i != j:
+        dist = x[t, i] - x[t, j]
+        dist_norm = dist.norm()
+        if dist_norm < 2 * radius:
+          dir = ti.Vector.normalized(dist)
+          rela_v = v[t, i] - v[t, j]
+          projected_v = dir.dot(rela_v)
+      
           if projected_v < 0:
             imp = -(1 + elasticity) * 0.5 * projected_v * dir
       ti.atomic_add(impulse[t + 1, i], imp)
@@ -106,7 +120,7 @@ def forward(output=None):
       x[0, count] = [i * 2 * radius + 0.5, j * 2 * radius + 0.5 - i * radius * 0.7]
   
   for t in range(1, steps):
-    # collide(t - 1)
+    collide(t - 1)
     advance(t)
     
     if (t + 1) % vis_interval == 0:
@@ -156,7 +170,7 @@ def backward():
   compute_loss.grad()
   for i in reversed(range(1, steps)):
     advance.grad(i)
-    # collide.grad(i - 1)
+    collide.grad(i - 1)
   initialize.grad()
   
   print(init_x.grad[None][0], init_x.grad[None][1], init_v.grad[None][0], init_v.grad[None][1])
@@ -169,7 +183,7 @@ def backward():
 def main():
   init_x[None] = [0.1, 0.5]
   init_v[None] = [0.0, 0.0]
-  for iter in range(200):
+  for iter in range(20):
     clear()
     forward()
     print('Iter=', iter, 'Loss=', loss[None])

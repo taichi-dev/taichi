@@ -56,7 +56,9 @@ learning_rate = 0.1
 def collide(t: ti.i32):
   for i in range(n_balls):
     impulse_contribution = ti.Vector([0.0, 0.0])
+    
     for j in range(n_balls):
+      imp = ti.Vector([0.0, 0.0])
       if i != j:
         dist = x[t, i] - x[t, j]
         dist_norm = dist.norm()
@@ -64,11 +66,10 @@ def collide(t: ti.i32):
           dir = ti.Vector.normalized(dist)
           rela_v = v[t, i] - v[t, j]
           projected_v = dir.dot(rela_v)
+          
           if projected_v < 0:
-            imp = -(1 + elasticity) * 0.5 * projected_v
-            impulse_contribution += imp * dir
-    
-    impulse[t + 1, i] = impulse_contribution
+            imp = -(1 + elasticity) * 0.5 * projected_v * dir
+      ti.atomic_add(impulse[t + 1, i], imp)
 
 
 @ti.kernel
@@ -110,35 +111,65 @@ def forward(output=None):
     collide(t - 1)
     advance(t)
     
-    img = np.ones(shape=(vis_resolution, vis_resolution, 3), dtype=np.float32) * 0.8
-    
-    def circle(x, y, color):
-      cv2.circle(img, center=(
-        int(vis_resolution * x), int(vis_resolution * (1 - y))),
-                 radius=int(radius * vis_resolution), color=color, thickness=-1)
-    
-    for i in range(n_balls):
-      if i == 0:
-        color = (0.4, 0, 0)
-      elif i == n_balls - 1:
-        color = (0, 1, 0)
-      else:
-        color = (0.4, 0.4, 0.6)
+    if (t + 1) % vis_interval == 0:
+      img = np.ones(shape=(vis_resolution, vis_resolution, 3), dtype=np.float32) * 0.8
       
-      circle(x[t, i][0], x[t, i][1], color)
-    
-    circle(goal[0], goal[1], (0.9, 0.9, 0.9))
+      def circle(x, y, color):
+        cv2.circle(img, center=(
+          int(vis_resolution * x), int(vis_resolution * (1 - y))),
+                   radius=int(radius * vis_resolution), color=color, thickness=-1)
       
-    cv2.imshow('img', img)
-    cv2.waitKey(1)
+      for i in range(n_balls):
+        if i == 0:
+          color = (0.4, 0, 0)
+        elif i == n_balls - 1:
+          color = (0, 1, 0)
+        else:
+          color = (0.4, 0.4, 0.6)
+        
+        circle(x[t, i][0], x[t, i][1], color)
+      
+      circle(goal[0], goal[1], (0.9, 0.9, 0.9))
+      
+      cv2.imshow('img', img)
+      cv2.waitKey(1)
   
   loss[None] = 0
   compute_loss(steps - 1)
-  print('Loss =', loss[None])
+  
+@ti.kernel
+def clear_gradients():
+  for t in range(0, max_steps):
+    for i in range(0, n_balls):
+      x.grad[t, i] = ti.Vector([0.0, 0.0])
+      v.grad[t, i] = ti.Vector([0.0, 0.0])
+      # x.grad[t, i][0] = 0.0
+      # x.grad[t, i][1] = 0.0
+      # v.grad[t, i][0] = 0.0
+      # v.grad[t, i][1] = 0.0
 
+def backward():
+  clear_gradients()
+  init_x.grad[None] = [0, 0]
+  init_v.grad[None] = [0, 0]
+  
+  loss.grad[None] = -1
+  compute_loss.grad()
+  for i in reversed(range(1, billiard_layers)):
+    advance.grad(i)
+    collide.grad(i - 1)
+  initialize.grad()
+  
+  for d in range(2):
+    init_x[0, 0][d] += learning_rate * init_x.grad[0, 0][d]
+    init_v[0, 0][d] += learning_rate * init_v.grad[0, 0][d]
+  
 
 def main():
-  forward()
+  for iter in range(200):
+    forward()
+    print('Iter=', iter, 'Loss=', loss[None])
+    backward()
 
 
 if __name__ == '__main__':

@@ -157,16 +157,21 @@ def clear():
       impulse[t, i] = ti.Vector([0.0, 0.0])
       impulse.grad[t, i] = ti.Vector([0.0, 0.0])
 
-def backward():
+def backward(t):
   init_x.grad[None] = [0, 0]
   init_v.grad[None] = [0, 0]
   
   loss.grad[None] = -1
+
+  t.grad()
+  
+  '''
   compute_loss.grad()
   for i in reversed(range(1, steps)):
     advance.grad(i)
     collide.grad(i - 1)
   initialize.grad()
+  '''
   
   # print(init_x.grad[None][0], init_x.grad[None][1], init_v.grad[None][0], init_v.grad[None][1])
   
@@ -178,15 +183,17 @@ def backward():
 def main():
   init_x[None] = [0.1, 0.5]
   init_v[None] = [0.3, 0.0]
-  forward('initial')
+  # forward('initial')
   for iter in range(200):
     clear()
-    forward()
+    t = ti.tape()
+    with t:
+      forward()
     print('Iter=', iter, 'Loss=', loss[None])
-    backward()
+    backward(t)
     
   clear()
-  forward('final')
+  # forward('final')
 
 
 if __name__ == '__main__':

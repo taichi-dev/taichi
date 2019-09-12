@@ -96,6 +96,7 @@ class PyTaichi:
     self.print_preprocessed = False
     self.default_fp = f32
     self.default_ip = i32
+    self.target_tape = None
     Expr.materialize_layout_callback = self.materialize
 
   def set_default_fp(self, fp):
@@ -125,6 +126,10 @@ class PyTaichi:
     del self.prog
     Expr.materialize_layout_callback = None
     Expr.layout_materialized = False
+    
+  def get_tape(self):
+    from .tape import Tape
+    return Tape(self)
 
 
 pytaichi = PyTaichi()
@@ -202,7 +207,7 @@ def func(foo):
 
 def kernel(foo):
   def invoke(grad=False, *args, **kwargs):
-    def ret(*args):
+    def ret(*args, _extra_frame_backtrace=1):
       if grad:
         compiled_functions = pytaichi.compiled_functions
       else:
@@ -232,7 +237,9 @@ def kernel(foo):
         ast.increment_lineno(tree, inspect.getsourcelines(foo)[1] - 1)
 
         pytaichi.inside_kernel = True
-        frame = inspect.currentframe().f_back
+        frame = inspect.currentframe()
+        for t in range(_extra_frame_backtrace):
+          frame = frame.f_back
         exec(compile(tree, filename=inspect.getsourcefile(foo), mode='exec'),
              dict(frame.f_globals, **frame.f_locals), locals())
         pytaichi.inside_kernel = False
@@ -251,6 +258,8 @@ def kernel(foo):
               t_kernel.set_arg_nparray(i, int(tmp.ctypes.data), tmp.nbytes)
             else:
               assert False, 'Argument to kernels must have type float/int'
+          if pytaichi.target_tape:
+            pytaichi.target_tape.insert(ret, args)
           t_kernel()
         compiled_functions[foo] = func__
       compiled_functions[foo](*args)

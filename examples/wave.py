@@ -50,6 +50,7 @@ dt = (math.sqrt(alpha * alpha + dx * dx / 3) - alpha) / c
 learning_rate = 0.1
 
 
+# TODO: there may by out-of-bound accesses here
 @ti.func
 def laplacian(t, i, j):
   return inv_dx2 * (

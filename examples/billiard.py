@@ -9,11 +9,10 @@ real = ti.f32
 ti.set_default_fp(real)
 # ti.runtime.print_preprocessed = True
 
-dt = 3e-4
-max_steps = 512
+max_steps = 2048
 vis_interval = 32
 output_vis_interval = 2
-steps = 256
+steps = 1024
 assert steps * 2 <= max_steps
 
 vis_resolution = 1024
@@ -30,8 +29,11 @@ x = vec()
 v = vec()
 impulse = vec()
 
-n_balls = 2
-radius = 0.05
+
+billiard_layers = 4
+n_balls = 1 + (1 + billiard_layers) * billiard_layers // 2
+target_ball = n_balls - 1
+radius = 0.03
 elasticity = 0.8
 
 
@@ -40,9 +42,8 @@ def place():
   ti.root.dense(ti.l, max_steps).dense(ti.i, n_balls).place(x, v, impulse)
   ti.root.lazy_grad()
 
-
-alpha = 0.00000
 dt = 0.003
+alpha = 0.00000
 penalty = 0.1
 learning_rate = 0.1
 
@@ -91,19 +92,31 @@ def apply_grad():
 
 
 def forward(output=None):
-  x[0, 0] = [0.3, 0.5]
-  x[0, 1] = [0.7, 0.51]
+  x[0, 0] = [0.2, 0.5]
   v[0, 0] = [1, 0]
+  
+  
+  count = 0
+  for i in range(billiard_layers):
+    for j in range(i + 1):
+      count += 1
+      x[0, count] = [i * 2 * radius + 0.5, j * 2 * radius + 0.5 - i * radius * 0.7]
   
   for t in range(1, steps):
     collide(t - 1)
     advance(t)
     
-    img = np.ones(shape=(vis_resolution, vis_resolution, 3), dtype=np.float32)
+    img = np.ones(shape=(vis_resolution, vis_resolution, 3), dtype=np.float32) * 0.8
     for i in range(n_balls):
+      if i == 0:
+        color = (0.4, 0, 0)
+      elif i == n_balls - 1:
+        color = (0, 1, 0)
+      else:
+        color = (0.4, 0.4, 0.6)
       cv2.circle(img, center=(
       int(vis_resolution * x[t, i][0]), int(vis_resolution * x[t, i][1])),
-                 radius=int(radius * vis_resolution), color=(0, 0, 0), thickness=-1)
+                 radius=int(radius * vis_resolution), color=color, thickness=-1)
     cv2.imshow('img', img)
     cv2.waitKey(1)
   

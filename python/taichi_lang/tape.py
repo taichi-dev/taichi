@@ -13,7 +13,7 @@ class Tape:
     self.entered = True
   
   def __exit__(self, type, value, tb):
-    print('# kernel calls', len(self.calls))
+    # print('# kernel calls', len(self.calls))
     self.runtime.target_tape = None
     
   def insert(self, func, args):

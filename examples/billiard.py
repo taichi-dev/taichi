@@ -12,7 +12,7 @@ ti.set_default_fp(real)
 max_steps = 2048
 vis_interval = 16
 output_vis_interval = 2
-steps = 16
+steps = 256
 assert steps * 2 <= max_steps
 
 vis_resolution = 1024
@@ -36,7 +36,7 @@ billiard_layers = 4
 n_balls = 1 + (1 + billiard_layers) * billiard_layers // 2
 # target_ball = n_balls - 1
 target_ball = 0
-goal = [0.8, 0.7]
+goal = [0.2, 0.5]
 radius = 0.03
 elasticity = 0.8
 
@@ -168,7 +168,7 @@ def backward():
 
 def main():
   init_x[None] = [0.1, 0.5]
-  init_v[None] = [0.3, 0.0]
+  init_v[None] = [0.0, 0.0]
   for iter in range(200):
     clear()
     forward()

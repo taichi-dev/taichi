@@ -22,7 +22,7 @@ vec = lambda: ti.Vector(2, dt=real)
 
 loss = scalar()
 
-# ti.cfg.arch = ti.cuda
+ti.cfg.arch = ti.cuda
 
 init_x = vec()
 init_v = vec()
@@ -55,8 +55,6 @@ learning_rate = 0.1
 @ti.kernel
 def collide(t: ti.i32):
   for i in range(n_balls):
-    impulse_contribution = ti.Vector([0.0, 0.0])
-    
     for j in range(n_balls):
       imp = ti.Vector([0.0, 0.0])
       if i != j:
@@ -138,18 +136,19 @@ def forward(output=None):
   compute_loss(steps - 1)
   
 @ti.kernel
-def clear_gradients():
+def clear():
   for t in range(0, max_steps):
     for i in range(0, n_balls):
       x.grad[t, i] = ti.Vector([0.0, 0.0])
       v.grad[t, i] = ti.Vector([0.0, 0.0])
+      impulse[t, i] = ti.Vector([0.0, 0.0])
+      impulse.grad[t, i] = ti.Vector([0.0, 0.0])
       # x.grad[t, i][0] = 0.0
       # x.grad[t, i][1] = 0.0
       # v.grad[t, i][0] = 0.0
       # v.grad[t, i][1] = 0.0
 
 def backward():
-  clear_gradients()
   init_x.grad[None] = [0, 0]
   init_v.grad[None] = [0, 0]
   
@@ -160,13 +159,16 @@ def backward():
     collide.grad(i - 1)
   initialize.grad()
   
+  print(init_x.grad[None][0], init_x.grad[None][1], init_v.grad[None][0], init_v.grad[None][1])
+  
   for d in range(2):
-    init_x[0, 0][d] += learning_rate * init_x.grad[0, 0][d]
-    init_v[0, 0][d] += learning_rate * init_v.grad[0, 0][d]
+    init_x[None][d] += learning_rate * init_x.grad[None][d]
+    init_v[None][d] += learning_rate * init_v.grad[None][d]
   
 
 def main():
   for iter in range(200):
+    clear()
     forward()
     print('Iter=', iter, 'Loss=', loss[None])
     backward()

@@ -10,9 +10,9 @@ ti.set_default_fp(real)
 # ti.runtime.print_preprocessed = True
 
 max_steps = 2048
-vis_interval = 16
+vis_interval = 64
 output_vis_interval = 2
-steps = 4
+steps = 1024
 assert steps * 2 <= max_steps
 
 vis_resolution = 1024
@@ -34,9 +34,9 @@ impulse = vec()
 
 billiard_layers = 4
 n_balls = 1 + (1 + billiard_layers) * billiard_layers // 2
-# target_ball = n_balls - 1
-target_ball = 0
-goal = [0.2, 0.5]
+target_ball = n_balls - 1
+# target_ball = 0
+goal = [0.9, 0.75]
 radius = 0.03
 elasticity = 0.8
 
@@ -50,7 +50,7 @@ def place():
 
 dt = 0.003
 alpha = 0.00000
-learning_rate = 0.1
+learning_rate = 0.02
 
 
 @ti.kernel
@@ -113,6 +113,11 @@ def initialize():
 def forward(output=None):
   initialize()
   
+  interval = vis_interval
+  if output:
+    interval = output_vis_interval
+    os.makedirs('billiards/{}/'.format(output), exist_ok=True)
+  
   count = 0
   for i in range(billiard_layers):
     for j in range(i + 1):
@@ -123,13 +128,15 @@ def forward(output=None):
     collide(t - 1)
     advance(t)
     
-    if (t + 1) % vis_interval == 0:
+    if (t + 1) % interval == 0:
       img = np.ones(shape=(vis_resolution, vis_resolution, 3), dtype=np.float32) * 0.8
       
       def circle(x, y, color):
         cv2.circle(img, center=(
           int(vis_resolution * x), int(vis_resolution * (1 - y))),
                    radius=int(radius * vis_resolution), color=color, thickness=-1)
+
+      circle(goal[0], goal[1], (0.2, 0.2, 0.7))
       
       for i in range(n_balls):
         if i == 0:
@@ -141,10 +148,11 @@ def forward(output=None):
         
         circle(x[t, i][0], x[t, i][1], color)
       
-      circle(goal[0], goal[1], (0.9, 0.9, 0.9))
       
       cv2.imshow('img', img)
       cv2.waitKey(1)
+      if output:
+        cv2.imwrite('billiards/{}/{:04d}.png'.format(output, t), img * 255)
   
   loss[None] = 0
   compute_loss(steps - 1)
@@ -173,7 +181,7 @@ def backward():
     collide.grad(i - 1)
   initialize.grad()
   
-  print(init_x.grad[None][0], init_x.grad[None][1], init_v.grad[None][0], init_v.grad[None][1])
+  # print(init_x.grad[None][0], init_x.grad[None][1], init_v.grad[None][0], init_v.grad[None][1])
   
   for d in range(2):
     init_x[None][d] += learning_rate * init_x.grad[None][d]
@@ -182,12 +190,16 @@ def backward():
 
 def main():
   init_x[None] = [0.1, 0.5]
-  init_v[None] = [0.0, 0.0]
-  for iter in range(20):
+  init_v[None] = [0.3, 0.0]
+  forward('initial')
+  for iter in range(200):
     clear()
     forward()
     print('Iter=', iter, 'Loss=', loss[None])
     backward()
+    
+  clear()
+  forward('final')
 
 
 if __name__ == '__main__':

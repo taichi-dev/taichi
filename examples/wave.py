@@ -109,19 +109,6 @@ def forward(output=None):
   loss[None] = 0
   compute_loss(steps - 1)
 
-
-def backward():
-  clear_p_grad()
-  clear_initial_grad()
-
-  loss.grad[None] = 1
-  compute_loss.grad(steps - 1)
-  for t in reversed(range(2, steps)):
-    fdtd.grad(t)
-  initialize.grad()
-  
-  apply_grad()
-
 @ti.kernel
 def clear_p_grad():
   for t, i, j in p:
@@ -145,9 +132,18 @@ def main():
   # initial[n_grid // 2, n_grid // 2] = 1
 
   for opt in range(200):
-    forward()
+    clear_p_grad()
+    clear_initial_grad()
+    loss.grad[None] = 1
+    
+    t = ti.tape()
+    with t:
+      forward()
+    t.grad()
+    
     print('Iter', opt, ' Loss =', loss[None])
-    backward()
+
+    apply_grad()
     
   forward('optimized')
 

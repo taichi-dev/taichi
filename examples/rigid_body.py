@@ -38,7 +38,7 @@ omega_inc = scalar()
 
 n_objects = 1
 # target_ball = 0
-elasticity = 0.0
+elasticity = 0.5
 ground_height = 0.1
 gravity = -9.8
 friction = 0.5
@@ -157,7 +157,7 @@ def forward(output=None):
   for i in range(n_objects):
     x[0, i] = [0.5, 0.5]
     halfsize[i] = [0.1, 0.05]
-    rotation[0, i] = 0.0
+    rotation[0, i] = 0.4
     omega[0, i] = 1
   
   initialize_properties()

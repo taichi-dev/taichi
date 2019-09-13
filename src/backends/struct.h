@@ -1,4 +1,5 @@
 // Codegen for the hierarchical data structure
+#pragma once
 
 #include "../snode.h"
 #include "base.h"

@@ -74,5 +74,8 @@ def test_minmax():
   grad_test(lambda x: ti.min(x, 1), lambda x: np.minimum(x, 1))
   grad_test(lambda x: ti.min(0, x), lambda x: np.minimum(0, x))
   grad_test(lambda x: ti.min(1, x), lambda x: np.minimum(1, x))
-
-test_minmax()
+  
+  grad_test(lambda x: ti.max(x, 0), lambda x: np.maximum(x, 0))
+  grad_test(lambda x: ti.max(x, 1), lambda x: np.maximum(x, 1))
+  grad_test(lambda x: ti.max(0, x), lambda x: np.maximum(0, x))
+  grad_test(lambda x: ti.max(1, x), lambda x: np.maximum(1, x))

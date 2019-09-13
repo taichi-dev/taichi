@@ -8,10 +8,10 @@ import matplotlib.pyplot as plt
 real = ti.f32
 ti.set_default_fp(real)
 
-max_steps = 2048
+max_steps = 4096
 vis_interval = 2
 output_vis_interval = 2
-steps = 1024
+steps = 2048
 assert steps * 2 <= max_steps
 
 vis_resolution = 1024
@@ -38,9 +38,10 @@ omega_inc = scalar()
 
 n_objects = 1
 # target_ball = 0
-elasticity = 0.0
+elasticity = 0.5
 ground_height = 0.1
 gravity = -9.8
+penalty = 1e5
 
 
 @ti.layout
@@ -107,6 +108,9 @@ def apply_gravity_and_collide(t: ti.i32):
       impulse = 0.0
       if rela_v_ground < 0 and corner_x[1] < ground_height:
         impulse = -(1 + elasticity) * rela_v_ground / impulse_contribution
+      if corner_x[1] < ground_height:
+        # apply penalty
+        impulse = impulse - dt * penalty * (corner_x[1] - ground_height) / impulse_contribution
         
       ti.atomic_add(v_inc[t + 1, i], impulse * normal * inverse_mass[i])
       ti.atomic_add(omega_inc[t + 1, i], impulse * rn * inverse_inertia[i])

@@ -90,13 +90,26 @@ def initialize_properties():
 def cross(a, b):
   return a[0] * b[1] - a[1] * b[0]
 
+@ti.func
+def to_world(t, i, rela_x):
+  rot = rotation[t, i]
+  rot_matrix = rotation_matrix(rot)
+  
+  rela_pos = rot_matrix @ rela_x
+  rela_v = omega[t, i] * ti.Vector([-rela_pos[1], rela_pos[0]])
+  
+  world_x = x[t, i] + rela_pos
+  world_v = v[t, i] + rela_v
+  
+  return world_x, world_v
+  
 
 @ti.kernel
 def collide(t: ti.i32):
   for i in range(n_objects):
+    hs = halfsize[i]
     for k in ti.static(range(4)):
       # the corner for collision detection
-      hs = halfsize[k]
       offset_scale = ti.Vector([k % 2 * 2 - 1, k // 2 % 2 * 2 - 1])
       rot = rotation[t, i]
       rot_matrix = rotation_matrix(rot)
@@ -181,7 +194,7 @@ def forward(output=None):
   
   for t in range(1, steps):
     collide(t - 1)
-    apply_spring_force(t - 1)
+    # apply_spring_force(t - 1)
     advance(t)
     
     if (t + 1) % interval == 0:

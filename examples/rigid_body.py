@@ -38,7 +38,7 @@ omega_inc = scalar()
 
 n_objects = 1
 # target_ball = 0
-elasticity = 0.8
+elasticity = 0.0
 ground_height = 0.1
 gravity = -9.8
 
@@ -83,7 +83,7 @@ def apply_gravity_and_collide(t: ti.i32):
     for k in ti.static(range(4)):
       # the corner for collision detection
       hs = halfsize[k]
-      offset_scale = ti.Vector([k % 2 * 2 - 1, (k + 1) % 2 * 2 - 1])
+      offset_scale = ti.Vector([k % 2 * 2 - 1, k // 2 % 2 * 2 - 1])
       rot = rotation[t, i]
       rot_matrix = rotation_matrix(rot)
       
@@ -100,7 +100,7 @@ def apply_gravity_and_collide(t: ti.i32):
       impulse_contribution = inverse_mass[i] + ti.sqr(rn) * \
                              inverse_inertia[i]
       
-      ti.print(impulse_contribution)
+      # ti.print(impulse_contribution)
       
       rela_v_ground = normal.dot(corner_v)
       
@@ -168,13 +168,16 @@ def forward(output=None):
         
         cv2.fillConvexPoly(img, points=np.array(points), color=color)
       
+      y = int((1 - ground_height) * vis_resolution)
+      cv2.line(img, (0, y), (vis_resolution, y), color=(0.1, 0.1, 0.1))
+      
       cv2.imshow('img', img)
       cv2.waitKey(1)
       if output:
         cv2.imwrite('rigid_body/{}/{:04d}.png'.format(output, t), img * 255)
   
   loss[None] = 0
-  compute_loss(steps - 1)
+  # compute_loss(steps - 1)
 
 
 @ti.kernel

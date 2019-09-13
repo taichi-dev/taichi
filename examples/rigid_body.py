@@ -245,9 +245,9 @@ def forward(output=None):
           rot_matrix = np.array(
             [[math.cos(rot), -math.sin(rot)], [math.sin(rot), math.cos(rot)]])
           pos = np.array(
-            [x[t, i][0], x[t, i][1]]) + rot_matrix @ np.array([[offset[0]], [offset[1]]])
+            [[x[t, i][0]], [x[t, i][1]]]) + rot_matrix @ np.array([[offset[0]], [offset[1]]])
           pos = pos * vis_resolution
-          return (int(pos[0, 0]), vis_resolution - int(pos[0, 1]))
+          return (int(pos[0, 0]), vis_resolution - int(pos[1, 0]))
         pt1 = get_world_loc(spring_anchor_a[i], spring_offset_a[i])
         pt2 = get_world_loc(spring_anchor_b[i], spring_offset_b[i])
         cv2.line(img, pt1, pt2, (0.2, 0.2, 0.4), thickness=6)
@@ -290,10 +290,9 @@ def add_spring():
   spring_anchor_a[i] = 0
   spring_anchor_b[i] = 1
   spring_length[i] = 0.2
-  spring_offset_a[i] = [0.0, 0.0]
+  spring_offset_a[i] = [0.05, 0.01]
   spring_offset_b[i] = [0.0, 0.0]
   spring_stiffness[i] = 10
-
 def main():
   for i in range(n_objects):
     x[0, i] = [0.5 + 0.2 * i, 0.5 + 0.3 * i]

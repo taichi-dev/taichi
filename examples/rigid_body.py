@@ -62,12 +62,19 @@ def rotation_matrix(r):
   return ti.Matrix([[ti.cos(r), -ti.sin(r)], [ti.sin(r), ti.cos(r)]])
 
 
-@ti.func
+@ti.kernel
 def initialize_properties():
   for i in range(n_objects):
     inverse_mass[i] = 1.0 / (4 * halfsize[i][0] * halfsize[i][1])
     inverse_inertia[i] = 1.0 / (4 / 3 * halfsize[i][0] * halfsize[i][1] * (
         halfsize[i][0] * halfsize[i][0] + halfsize[i][1] * halfsize[i][1]))
+    ti.print(inverse_mass[i])
+    ti.print(inverse_inertia[i])
+
+
+@ti.func
+def cross(a, b):
+  return a[0] * b[1] - a[1] * b[0]
 
 
 @ti.kernel
@@ -77,11 +84,11 @@ def apply_gravity_and_collide(t: ti.i32):
       # the corner for collision detection
       hs = halfsize[k]
       offset_scale = ti.Vector([k % 2 * 2 - 1, (k + 1) % 2 * 2 - 1])
-      rot = rotation[i]
+      rot = rotation[t, i]
       rot_matrix = rotation_matrix(rot)
       
-      rela_pos = offset_scale * hs @ rot_matrix
-      rela_v = ti.Vector([-rela_pos[1], rela_pos[0]])
+      rela_pos = rot_matrix @ (offset_scale * hs)
+      rela_v = omega[t, i] * ti.Vector([-rela_pos[1], rela_pos[0]])
       
       corner_x = x[t, i] + rela_pos
       corner_v = v[t, i] + rela_v
@@ -89,12 +96,20 @@ def apply_gravity_and_collide(t: ti.i32):
       # Apply impulse so that there's no sinking
       normal = ti.Vector([0.0, 1.0])
       
+      rn = cross(rela_pos, normal)
+      impulse_contribution = inverse_mass[i] + ti.sqr(rn) * \
+                             inverse_inertia[i]
+      
+      ti.print(impulse_contribution)
+      
       rela_v_ground = normal.dot(corner_v)
       
-      impulse = 0
+      impulse = 0.0
       if rela_v_ground < 0 and corner_x[1] < ground_height:
-        impulse = 0
-      # ti.atomic_add()
+        impulse = -(1 + elasticity) * rela_v_ground / impulse_contribution
+        
+      ti.atomic_add(v_inc[t + 1, i], impulse * normal * inverse_mass[i])
+      ti.atomic_add(omega_inc[t + 1, i], impulse * rn * inverse_inertia[i])
 
 
 @ti.kernel
@@ -128,27 +143,28 @@ def forward(output=None):
     os.makedirs('billiards/{}/'.format(output), exist_ok=True)
   
   for t in range(1, steps):
-    # collide(t - 1)
+    apply_gravity_and_collide(t - 1)
     advance(t)
     
     if (t + 1) % interval == 0:
       img = np.ones(shape=(vis_resolution, vis_resolution, 3),
                     dtype=np.float32) * 0.8
-
+      
       color = (0.3, 0.5, 0.8)
       for i in range(n_objects):
         points = []
         for k in range(4):
           offset_scale = [[-1, -1], [1, -1], [1, 1], [-1, 1]][k]
           rot = rotation[t, i]
-          rot_matrix = np.array([[math.cos(rot), -math.sin(rot)], [math.sin(rot), math.cos(rot)]])
+          rot_matrix = np.array(
+            [[math.cos(rot), -math.sin(rot)], [math.sin(rot), math.cos(rot)]])
           
-          pos = np.array([x[t, i][0], x[t, i][1]]) + offset_scale * rot_matrix @ np.array(
+          pos = np.array(
+            [x[t, i][0], x[t, i][1]]) + offset_scale * rot_matrix @ np.array(
             [halfsize[i][0], halfsize[i][1]])
           points.append(
-            (int(pos[0] * vis_resolution), vis_resolution - int(pos[1] * vis_resolution)))
-          
-        print(points)
+            (int(pos[0] * vis_resolution),
+             vis_resolution - int(pos[1] * vis_resolution)))
         
         cv2.fillConvexPoly(img, points=np.array(points), color=color)
       

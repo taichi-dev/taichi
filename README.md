@@ -5,7 +5,7 @@
 Supports Ubuntu 14.04/16.04/18.04, ArchLinux, Mac OS X. For GPU support, CUDA 9.0+ is needed.
 
  - Execute `python3 -m pip install astpretty astor pytest opencv-python pybind11==2.2.4`
- - Install `taichi` with the [installation script](https://taichi.readthedocs.io/en/latest/installation.html#ubuntu-arch-linux-and-mac-os-x). Checkout branch `llvm`.
+ - Install `taichi` with the [installation script](https://taichi.readthedocs.io/en/latest/installation.html#ubuntu-arch-linux-and-mac-os-x). **Checkout branch `llvm`**.
  - (Optional) If you use the experimental LLVM backend, make sure you have LLVM 8 built from scratch, with
   ```
   mkdir build

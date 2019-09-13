@@ -104,7 +104,7 @@ def apply_gravity_and_collide(t: ti.i32):
       impulse_contribution = inverse_mass[i] + ti.sqr(rn) * \
                              inverse_inertia[i]
       timpulse_contribution = inverse_mass[i] + ti.sqr(rt) * \
-                             inverse_inertia[i]
+                              inverse_inertia[i]
       
       # ti.print(impulse_contribution)
       
@@ -117,16 +117,18 @@ def apply_gravity_and_collide(t: ti.i32):
         if impulse > 0:
           # friction
           timpulse = -rela_v.dot(tao) / timpulse_contribution
-          timpulse = ti.min(friction * impulse, ti.max(-friction * impulse, timpulse))
+          timpulse = ti.min(friction * impulse,
+                            ti.max(-friction * impulse, timpulse))
       
       if corner_x[1] < ground_height:
         # apply penalty
-        impulse = impulse - dt * penalty * (corner_x[1] - ground_height) / impulse_contribution
-        
-      ti.atomic_add(v_inc[t + 1, i], (impulse * normal + timpulse * tao) * inverse_mass[i])
-      ti.atomic_add(omega_inc[t + 1, i], (impulse * rn + timpulse * rt) * inverse_inertia[i])
+        impulse = impulse - dt * penalty * (
+              corner_x[1] - ground_height) / impulse_contribution
       
-      
+      ti.atomic_add(v_inc[t + 1, i],
+                    (impulse * normal + timpulse * tao) * inverse_mass[i])
+      ti.atomic_add(omega_inc[t + 1, i],
+                    (impulse * rn + timpulse * rt) * inverse_inertia[i])
 
 
 @ti.kernel

@@ -50,12 +50,16 @@ friction = 0.0
 penalty = 1e4
 damping = 0.5
 
+spring_omega = 10
+
 n_springs = 2
 spring_anchor_a = ti.global_var(ti.i32)
 spring_anchor_b = ti.global_var(ti.i32)
 spring_length = scalar()
 spring_offset_a = vec()
 spring_offset_b = vec()
+spring_phase = scalar()
+spring_actuation = scalar()
 spring_stiffness = scalar()
 
 
@@ -67,7 +71,8 @@ def place():
   ti.root.dense(ti.i, n_objects).place(halfsize, inverse_mass, inverse_inertia)
   ti.root.dense(ti.i, n_springs).place(spring_anchor_a, spring_anchor_b,
                                        spring_length, spring_offset_a,
-                                       spring_offset_b, spring_stiffness)
+                                       spring_offset_b, spring_stiffness,
+                                       spring_phase, spring_actuation)
   ti.root.place(loss)
   ti.root.lazy_grad()
 
@@ -95,17 +100,18 @@ def initialize_properties():
 def cross(a, b):
   return a[0] * b[1] - a[1] * b[0]
 
+
 @ti.func
 def to_world(t, i, rela_x):
   rot = rotation[t, i]
   rot_matrix = rotation_matrix(rot)
-  
+
   rela_pos = rot_matrix @ rela_x
   rela_v = omega[t, i] * ti.Vector([-rela_pos[1], rela_pos[0]])
-  
+
   world_x = x[t, i] + rela_pos
   world_v = v[t, i] + rela_v
-  
+
   return world_x, world_v, rela_pos
 
 
@@ -123,25 +129,25 @@ def collide(t: ti.i32):
     for k in ti.static(range(4)):
       # the corner for collision detection
       offset_scale = ti.Vector([k % 2 * 2 - 1, k // 2 % 2 * 2 - 1])
-      
+
       corner_x, corner_v, rela_pos = to_world(t, i, offset_scale * hs)
       corner_v = corner_v + dt * gravity * ti.Vector([0.0, 1.0])
-      
+
       # Apply impulse so that there's no sinking
       normal = ti.Vector([0.0, 1.0])
       tao = ti.Vector([1.0, 0.0])
-      
+
       rn = cross(rela_pos, normal)
       rt = cross(rela_pos, tao)
       impulse_contribution = inverse_mass[i] + ti.sqr(rn) * \
                              inverse_inertia[i]
       timpulse_contribution = inverse_mass[i] + ti.sqr(rt) * \
                               inverse_inertia[i]
-      
+
       # ti.print(impulse_contribution)
-      
+
       rela_v_ground = normal.dot(corner_v)
-      
+
       impulse = 0.0
       timpulse = 0.0
       if rela_v_ground < 0 and corner_x[1] < ground_height:
@@ -151,13 +157,14 @@ def collide(t: ti.i32):
           timpulse = -corner_v.dot(tao) / timpulse_contribution
           timpulse = ti.min(friction * impulse,
                             ti.max(-friction * impulse, timpulse))
-      
+
       if corner_x[1] < ground_height:
         # apply penalty
         impulse = impulse - dt * penalty * (
             corner_x[1] - ground_height) / impulse_contribution
 
       apply_impulse(t, i, impulse * normal + timpulse * tao, corner_x)
+
 
 @ti.kernel
 def apply_spring_force(t: ti.i32):
@@ -168,10 +175,12 @@ def apply_spring_force(t: ti.i32):
     pos_b, _, rela_b = to_world(t, b, spring_offset_b[i])
     dist = pos_a - pos_b
     length = dist.norm()
-    impulse = dt * (length - spring_length[i]) * spring_stiffness[i] * ti.Vector.normalized(dist)
+    target_length = spring_length[i] + spring_actuation[i] * ti.sin(
+      spring_omega * t * dt + spring_phase[i])
+    impulse = dt * (length - target_length) * spring_stiffness[
+      i] * ti.Vector.normalized(dist)
     apply_impulse(t, a, -impulse, pos_a)
     apply_impulse(t, b, impulse, pos_b)
-
 
 
 @ti.kernel
@@ -192,21 +201,21 @@ def compute_loss(t: ti.i32):
 
 def forward(output=None):
   initialize_properties()
-  
+
   interval = vis_interval
   if output:
     interval = output_vis_interval
     os.makedirs('rigid_body/{}/'.format(output), exist_ok=True)
-  
+
   for t in range(1, steps):
     collide(t - 1)
     apply_spring_force(t - 1)
     advance(t)
-    
+
     if (t + 1) % interval == 0:
       img = np.ones(shape=(vis_resolution, vis_resolution, 3),
                     dtype=np.float32) * 0.8
-      
+
       color = (0.3, 0.5, 0.8)
       for i in range(n_objects):
         points = []
@@ -215,20 +224,20 @@ def forward(output=None):
           rot = rotation[t, i]
           rot_matrix = np.array(
             [[math.cos(rot), -math.sin(rot)], [math.sin(rot), math.cos(rot)]])
-          
+
           pos = np.array(
             [x[t, i][0], x[t, i][1]]) + offset_scale * rot_matrix @ np.array(
             [halfsize[i][0], halfsize[i][1]])
           points.append(
             (int(pos[0] * vis_resolution),
              vis_resolution - int(pos[1] * vis_resolution)))
-        
+
         cv2.fillConvexPoly(img, points=np.array(points), color=color)
-      
+
       y = int((1 - ground_height) * vis_resolution)
       cv2.line(img, (0, y), (vis_resolution - 2, y), color=(0.1, 0.1, 0.1),
                thickness=4)
-      
+
       def circle(x, y, color):
         radius = 0.02
         cv2.circle(img, center=(
@@ -245,45 +254,63 @@ def forward(output=None):
           rot_matrix = np.array(
             [[math.cos(rot), -math.sin(rot)], [math.sin(rot), math.cos(rot)]])
           pos = np.array(
-            [[x[t, i][0]], [x[t, i][1]]]) + rot_matrix @ np.array([[offset[0]], [offset[1]]])
+            [[x[t, i][0]], [x[t, i][1]]]) + rot_matrix @ np.array(
+            [[offset[0]], [offset[1]]])
           pos = pos * vis_resolution
           return (int(pos[0, 0]), vis_resolution - int(pos[1, 0]))
+
         pt1 = get_world_loc(spring_anchor_a[i], spring_offset_a[i])
         pt2 = get_world_loc(spring_anchor_b[i], spring_offset_b[i])
         cv2.line(img, pt1, pt2, (0.2, 0.2, 0.4), thickness=6)
-    
-      
+
       cv2.imshow('img', img)
       cv2.waitKey(1)
       if output:
         cv2.imwrite('rigid_body/{}/{:04d}.png'.format(output, t), img * 255)
-  
+
   loss[None] = 0
   compute_loss(steps - 1)
 
 
 @ti.kernel
-def clear():
+def clear_states():
   for t in range(0, max_steps):
     for i in range(0, n_objects):
       x.grad[t, i] = ti.Vector([0.0, 0.0])
       v.grad[t, i] = ti.Vector([0.0, 0.0])
       rotation.grad[t, i] = 0.0
       omega.grad[t, i] = 0.0
-      
+
       v_inc[t, i] = ti.Vector([0.0, 0.0])
       omega_inc[t, i] = 0.0
-      
+
       v_inc.grad[t, i] = ti.Vector([0.0, 0.0])
       omega_inc.grad[t, i] = 0.0
 
 
 @ti.kernel
-def clear2():
+def clear_objects():
   for i in range(0, n_objects):
     halfsize.grad[i] = [0.0, 0.0]
     inverse_inertia.grad[i] = 0
     inverse_mass.grad[i] = 0
+
+@ti.kernel
+def clear_springs():
+  for i in range(0, n_springs):
+    spring_actuation.grad[i] = 0.0
+    spring_phase.grad[i] = 0.0
+    spring_offset_a.grad[i] = [0.0, 0.0]
+    spring_offset_b.grad[i] = [0.0, 0.0]
+    spring_stiffness.grad[i] = 0.0
+    spring_length.grad[i] = 0.0
+
+
+def clear():
+  clear_states()
+  clear_objects()
+  clear_springs()
+
 
 def add_spring(i, a, b, offset_a, offset_b, length, stiffness):
   spring_anchor_a[i] = a
@@ -292,6 +319,7 @@ def add_spring(i, a, b, offset_a, offset_b, length, stiffness):
   spring_offset_a[i] = offset_a
   spring_offset_b[i] = offset_b
   spring_stiffness[i] = stiffness
+
 
 def main():
   for i in range(n_objects):
@@ -303,11 +331,9 @@ def main():
   add_spring(0, 0, 1, [0.01, 0.02], [0.05, 0.01], 0.15, 10)
   add_spring(1, 1, 2, [0.02, 0.02], [-0.02, 0.01], 0.15, 10)
 
-
   forward('initial')
   for iter in range(300):
     clear()
-    clear2()
     loss.grad[None] = -1
 
     tape = ti.tape()
@@ -316,17 +342,19 @@ def main():
       forward()
 
     tape.grad()
-    
+
     print('Iter=', iter, 'Loss=', loss[None])
-    
+
     for i in range(n_objects):
       for d in range(2):
         print(halfsize.grad[i][d])
         halfsize[i][d] += learning_rate * halfsize.grad[i][d]
 
-  
+    for i in range(n_springs):
+      spring_actuation[i] += learning_rate * spring_actuation.grad[i]
+      spring_phase[i] += learning_rate * spring_phase.grad[i]
+
   clear()
-  clear2()
   forward('final')
 
 

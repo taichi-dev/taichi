@@ -41,6 +41,7 @@ n_objects = 1
 elasticity = 0.5
 ground_height = 0.1
 gravity = -9.8
+friction = 0.8
 penalty = 1e5
 
 
@@ -96,9 +97,13 @@ def apply_gravity_and_collide(t: ti.i32):
       
       # Apply impulse so that there's no sinking
       normal = ti.Vector([0.0, 1.0])
+      tao = ti.Vector([1.0, 0.0])
       
       rn = cross(rela_pos, normal)
+      rt = cross(rela_pos, tao)
       impulse_contribution = inverse_mass[i] + ti.sqr(rn) * \
+                             inverse_inertia[i]
+      timpulse_contribution = inverse_mass[i] + ti.sqr(rt) * \
                              inverse_inertia[i]
       
       # ti.print(impulse_contribution)
@@ -106,14 +111,22 @@ def apply_gravity_and_collide(t: ti.i32):
       rela_v_ground = normal.dot(corner_v)
       
       impulse = 0.0
+      timpulse = 0.0
       if rela_v_ground < 0 and corner_x[1] < ground_height:
         impulse = -(1 + elasticity) * rela_v_ground / impulse_contribution
+        if impulse > 0:
+          # friction
+          timpulse = -rela_v.dot(tao) / timpulse_contribution
+          timpulse = ti.min(friction * impulse, ti.max(-friction * impulse, timpulse))
+      
       if corner_x[1] < ground_height:
         # apply penalty
         impulse = impulse - dt * penalty * (corner_x[1] - ground_height) / impulse_contribution
         
-      ti.atomic_add(v_inc[t + 1, i], impulse * normal * inverse_mass[i])
-      ti.atomic_add(omega_inc[t + 1, i], impulse * rn * inverse_inertia[i])
+      ti.atomic_add(v_inc[t + 1, i], (impulse * normal + timpulse * tao) * inverse_mass[i])
+      ti.atomic_add(omega_inc[t + 1, i], (impulse * rn + timpulse * rt) * inverse_inertia[i])
+      
+      
 
 
 @ti.kernel
@@ -144,7 +157,7 @@ def forward(output=None):
   interval = vis_interval
   if output:
     interval = output_vis_interval
-    os.makedirs('billiards/{}/'.format(output), exist_ok=True)
+    os.makedirs('rigid_body/{}/'.format(output), exist_ok=True)
   
   for t in range(1, steps):
     apply_gravity_and_collide(t - 1)

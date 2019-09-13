@@ -341,7 +341,7 @@ def main():
   # add_spring(2, 0, 2, [0.00, 0.00], [-0.01, 0.01], 0.14, 15)
 
   forward('initial')
-  for iter in range(500):
+  for iter in range(1500):
     clear()
     loss.grad[None] = -1
 

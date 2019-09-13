@@ -38,7 +38,7 @@ omega_inc = scalar()
 
 n_objects = 1
 # target_ball = 0
-elasticity = 0.5
+elasticity = 0.2
 ground_height = 0.1
 gravity = -9.8
 friction = 0.5
@@ -118,13 +118,10 @@ def apply_gravity_and_collide(t: ti.i32):
         impulse = -(1 + elasticity) * rela_v_ground / impulse_contribution
         if impulse > 0:
           # friction
-          timpulse = -rela_v.dot(tao) / timpulse_contribution
+          timpulse = -corner_v.dot(tao) / timpulse_contribution
           timpulse = ti.min(friction * impulse,
                             ti.max(-friction * impulse, timpulse))
 
-      ti.print(impulse)
-      ti.print(timpulse)
-      
       if corner_x[1] < ground_height:
         # apply penalty
         impulse = impulse - dt * penalty * (
@@ -156,9 +153,9 @@ def forward(output=None):
   
   for i in range(n_objects):
     x[0, i] = [0.5, 0.5]
-    halfsize[i] = [0.1, 0.05]
-    rotation[0, i] = 0.4
-    omega[0, i] = 1
+    halfsize[i] = [0.05, 0.05]
+    rotation[0, i] = math.pi / 4 + 0.01
+    omega[0, i] = 0
   
   initialize_properties()
   

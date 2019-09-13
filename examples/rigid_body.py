@@ -103,7 +103,7 @@ def advance(t: ti.i32):
     v[t, i] = v[t - 1, i] + v_inc[t, i] + dt * gravity * ti.Vector([0.0, 1.0])
     x[t, i] = x[t - 1, i] + dt * v[t, i]
     omega[t, i] = omega[t - 1, i] + omega_inc[t, i]
-    rotation[t, i] = rotation[t - 1, i] + omega[t, i]
+    rotation[t, i] = rotation[t - 1, i] + dt * omega[t, i]
 
 
 @ti.kernel
@@ -117,6 +117,8 @@ def forward(output=None):
   for i in range(n_objects):
     x[0, i] = [0.5, 0.5]
     halfsize[i] = [0.1, 0.05]
+    rotation[0, i] = 0.0
+    omega[0, i] = 1
   
   initialize_properties()
   
@@ -138,10 +140,10 @@ def forward(output=None):
         points = []
         for k in range(4):
           offset_scale = [[-1, -1], [1, -1], [1, 1], [-1, 1]][k]
-          # rot = rotation[t, i]
-          # rot_matrix = rotation_matrix(rot)
+          rot = rotation[t, i]
+          rot_matrix = np.array([[math.cos(rot), -math.sin(rot)], [math.sin(rot), math.cos(rot)]])
           
-          pos = np.array([x[t, i][0], x[t, i][1]]) + offset_scale * np.array(
+          pos = np.array([x[t, i][0], x[t, i][1]]) + offset_scale * rot_matrix @ np.array(
             [halfsize[i][0], halfsize[i][1]])
           points.append(
             (int(pos[0] * vis_resolution), vis_resolution - int(pos[1] * vis_resolution)))

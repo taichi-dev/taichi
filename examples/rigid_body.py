@@ -11,7 +11,7 @@ ti.set_default_fp(real)
 max_steps = 4096
 vis_interval = 256
 output_vis_interval = 2
-steps = 512
+steps = 1024
 assert steps * 2 <= max_steps
 
 vis_resolution = 1024
@@ -39,20 +39,20 @@ v_inc = vec()
 omega_inc = scalar()
 
 head_id = 0
-goal = [0.3, 0.2]
+goal = [0.8, 0.3]
 
 n_objects = 3
 # target_ball = 0
 elasticity = 0.0
 ground_height = 0.1
 gravity = -9.8
-friction = 0.0
+friction = 0.7
 penalty = 1e4
 damping = 0.2
 
 spring_omega = 30
 
-n_springs = 2
+n_springs = 4
 spring_anchor_a = ti.global_var(ti.i32)
 spring_anchor_b = ti.global_var(ti.i32)
 spring_length = scalar()
@@ -78,7 +78,7 @@ def place():
 
 
 dt = 0.001
-learning_rate = 0.0010
+learning_rate = 0.00001
 
 
 @ti.func
@@ -332,16 +332,22 @@ def main():
     # rotation[0, i] = math.pi / 4 + 0.01
     # omega[0, i] = 0
 
-  # x[0, 0] = [0.5, 0.2]
-  # x[0, 1] = [0.6, 0.2]
-  # x[0, 2] = [0.6, 0.3]
+  x[0, 0] = [0.3, 0.25]
+  x[0, 1] = [0.2, 0.15]
+  x[0, 2] = [0.4, 0.15]
+  halfsize[0] = [0.15, 0.03]
+  halfsize[1] = [0.03, 0.03]
+  halfsize[2] = [0.03, 0.03]
 
-  add_spring(0, 0, 1, [0.01, 0.02], [0.02, 0.01], 0.2, 10)
-  add_spring(1, 1, 2, [0.02, 0.00], [-0.01, 0.01], 0.2, 10)
-  # add_spring(2, 0, 2, [0.00, 0.00], [-0.01, 0.01], 0.14, 15)
+  l = 0.1
+  s = 10
+  add_spring(0, 0, 1, [-0.03, 0.00], [0.0, 0.0], l, s)
+  add_spring(1, 0, 1, [-0.1, 0.00], [-0.0, 0.0], l, s)
+  add_spring(2, 0, 2, [0.03, 0.00], [-0.0, 0.0], l, s)
+  add_spring(3, 0, 2, [0.1, 0.00], [-0.0, 0.0], l, s)
 
   forward('initial')
-  for iter in range(1500):
+  for iter in range(300):
     clear()
     loss.grad[None] = -1
 
@@ -354,15 +360,18 @@ def main():
 
     print('Iter=', iter, 'Loss=', loss[None])
 
+    '''
     for i in range(n_objects):
       for d in range(2):
         print(halfsize.grad[i][d])
         halfsize[i][d] += learning_rate * halfsize.grad[i][d]
+    '''
 
     for i in range(n_springs):
       print(spring_actuation.grad[i])
       print(spring_phase.grad[i])
       spring_actuation[i] += learning_rate * spring_actuation.grad[i]
+      spring_actuation[i] = max(min(spring_actuation[i], spring_length[i] * 0.5), -spring_length[i] * 0.5)
       spring_phase[i] += learning_rate * spring_phase.grad[i]
 
   clear()

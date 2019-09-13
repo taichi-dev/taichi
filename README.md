@@ -19,11 +19,14 @@ Supports Ubuntu 14.04/16.04/18.04, ArchLinux, Mac OS X. For GPU support, CUDA 9.
  ```bash
  export PYTHONPATH=$TAICHI_REPO_DIR/projects/taichi_lang/python:$PYTHONPATH
  ```
+ - Execute `source ~/.bashrc` (or `source ~/.zshrc`) to reload shell config.
  - Execute `ti test` to run all the tests. It may take a around 20 minutes to run all tests.
 
 # Troubleshooting
  - Run with debug mode to see if there's any illegal memory access;
  - Disable compiler optimizations to quickly confirm that the issue is not cause by optimization;
+
+# [Python Frontend Tutorial]()
 
 # Folder Structure
 Key folders are

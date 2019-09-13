@@ -175,7 +175,7 @@ class MakeAdjoint : public IRVisitor {
     } else if (is_comparison(bin->op_type) || is_bit_op(bin->op_type)) {
       // do nothing
     } else {
-      TC_WARN("", binary_op_type_name(bin->op_type));
+      TC_WARN("{}", binary_op_type_name(bin->op_type));
       TC_NOT_IMPLEMENTED
     }
   }

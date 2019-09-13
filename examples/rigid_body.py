@@ -9,7 +9,7 @@ real = ti.f32
 ti.set_default_fp(real)
 
 max_steps = 4096
-vis_interval = 128
+vis_interval = 256
 output_vis_interval = 2
 steps = 512
 assert steps * 2 <= max_steps
@@ -48,9 +48,9 @@ ground_height = 0.1
 gravity = -9.8
 friction = 0.0
 penalty = 1e4
-damping = 0.5
+damping = 0.2
 
-spring_omega = 10
+spring_omega = 30
 
 n_springs = 2
 spring_anchor_a = ti.global_var(ti.i32)
@@ -78,7 +78,7 @@ def place():
 
 
 dt = 0.001
-learning_rate = 0.0001
+learning_rate = 0.0010
 
 
 @ti.func
@@ -261,7 +261,11 @@ def forward(output=None):
 
         pt1 = get_world_loc(spring_anchor_a[i], spring_offset_a[i])
         pt2 = get_world_loc(spring_anchor_b[i], spring_offset_b[i])
-        cv2.line(img, pt1, pt2, (0.2, 0.2, 0.4), thickness=6)
+
+        act = math.sin(spring_omega * t * dt + spring_phase[i]) * spring_actuation[i]
+        act *= 30
+
+        cv2.line(img, pt1, pt2, (0.5 + act, 0.5, 0.5 - act), thickness=6)
 
       cv2.imshow('img', img)
       cv2.waitKey(1)
@@ -324,15 +328,20 @@ def add_spring(i, a, b, offset_a, offset_b, length, stiffness):
 def main():
   for i in range(n_objects):
     x[0, i] = [0.5, 0.2 + 0.2 * i]
-    halfsize[i] = [0.08, 0.03]
+    halfsize[i] = [0.04, 0.03]
     # rotation[0, i] = math.pi / 4 + 0.01
     # omega[0, i] = 0
 
-  add_spring(0, 0, 1, [0.01, 0.02], [0.05, 0.01], 0.15, 10)
-  add_spring(1, 1, 2, [0.02, 0.02], [-0.02, 0.01], 0.15, 10)
+  # x[0, 0] = [0.5, 0.2]
+  # x[0, 1] = [0.6, 0.2]
+  # x[0, 2] = [0.6, 0.3]
+
+  add_spring(0, 0, 1, [0.01, 0.02], [0.02, 0.01], 0.2, 10)
+  add_spring(1, 1, 2, [0.02, 0.00], [-0.01, 0.01], 0.2, 10)
+  # add_spring(2, 0, 2, [0.00, 0.00], [-0.01, 0.01], 0.14, 15)
 
   forward('initial')
-  for iter in range(300):
+  for iter in range(500):
     clear()
     loss.grad[None] = -1
 
@@ -351,6 +360,8 @@ def main():
         halfsize[i][d] += learning_rate * halfsize.grad[i][d]
 
     for i in range(n_springs):
+      print(spring_actuation.grad[i])
+      print(spring_phase.grad[i])
       spring_actuation[i] += learning_rate * spring_actuation.grad[i]
       spring_phase[i] += learning_rate * spring_phase.grad[i]
 

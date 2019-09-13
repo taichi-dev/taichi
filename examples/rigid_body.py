@@ -101,7 +101,7 @@ def to_world(t, i, rela_x):
   world_x = x[t, i] + rela_pos
   world_v = v[t, i] + rela_v
   
-  return world_x, world_v
+  return world_x, world_v, rela_pos
   
 
 @ti.kernel
@@ -111,14 +111,9 @@ def collide(t: ti.i32):
     for k in ti.static(range(4)):
       # the corner for collision detection
       offset_scale = ti.Vector([k % 2 * 2 - 1, k // 2 % 2 * 2 - 1])
-      rot = rotation[t, i]
-      rot_matrix = rotation_matrix(rot)
       
-      rela_pos = rot_matrix @ (offset_scale * hs)
-      rela_v = omega[t, i] * ti.Vector([-rela_pos[1], rela_pos[0]])
-      
-      corner_x = x[t, i] + rela_pos
-      corner_v = v[t, i] + rela_v + dt * gravity * ti.Vector([0.0, 1.0])
+      corner_x, corner_v, rela_pos = to_world(t, i, offset_scale * hs)
+      corner_v = corner_v + dt * gravity * ti.Vector([0.0, 1.0])
       
       # Apply impulse so that there's no sinking
       normal = ti.Vector([0.0, 1.0])

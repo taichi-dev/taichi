@@ -38,11 +38,13 @@ omega_inc = scalar()
 
 n_objects = 1
 # target_ball = 0
-elasticity = 0.5
+elasticity = 0.0
 ground_height = 0.1
 gravity = -9.8
-friction = 0.8
-penalty = 1e5
+friction = 0.5
+# penalty = 1e4
+penalty = 0.0
+damping = 0
 
 
 @ti.layout
@@ -93,7 +95,7 @@ def apply_gravity_and_collide(t: ti.i32):
       rela_v = omega[t, i] * ti.Vector([-rela_pos[1], rela_pos[0]])
       
       corner_x = x[t, i] + rela_pos
-      corner_v = v[t, i] + rela_v
+      corner_v = v[t, i] + rela_v + dt * gravity * ti.Vector([0.0, 1.0])
       
       # Apply impulse so that there's no sinking
       normal = ti.Vector([0.0, 1.0])
@@ -119,6 +121,9 @@ def apply_gravity_and_collide(t: ti.i32):
           timpulse = -rela_v.dot(tao) / timpulse_contribution
           timpulse = ti.min(friction * impulse,
                             ti.max(-friction * impulse, timpulse))
+
+      ti.print(impulse)
+      ti.print(timpulse)
       
       if corner_x[1] < ground_height:
         # apply penalty
@@ -134,9 +139,10 @@ def apply_gravity_and_collide(t: ti.i32):
 @ti.kernel
 def advance(t: ti.i32):
   for i in range(n_objects):
-    v[t, i] = v[t - 1, i] + v_inc[t, i] + dt * gravity * ti.Vector([0.0, 1.0])
+    s = math.exp(-dt * damping)
+    v[t, i] = s * v[t - 1, i] + v_inc[t, i] + dt * gravity * ti.Vector([0.0, 1.0])
     x[t, i] = x[t - 1, i] + dt * v[t, i]
-    omega[t, i] = omega[t - 1, i] + omega_inc[t, i]
+    omega[t, i] = s * omega[t - 1, i] + omega_inc[t, i]
     rotation[t, i] = rotation[t - 1, i] + dt * omega[t, i]
 
 

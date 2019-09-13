@@ -9,7 +9,7 @@ real = ti.f32
 ti.set_default_fp(real)
 
 max_steps = 4096
-vis_interval = 2
+vis_interval = 128
 output_vis_interval = 2
 steps = 512
 assert steps * 2 <= max_steps
@@ -29,6 +29,7 @@ v = vec()
 rotation = scalar()
 # angular velocity
 omega = scalar()
+
 halfsize = vec()
 
 inverse_mass = scalar()
@@ -72,7 +73,7 @@ def place():
 
 
 dt = 0.001
-learning_rate = 0.02
+learning_rate = 0.001
 
 
 @ti.func
@@ -86,8 +87,8 @@ def initialize_properties():
     inverse_mass[i] = 1.0 / (4 * halfsize[i][0] * halfsize[i][1])
     inverse_inertia[i] = 1.0 / (4 / 3 * halfsize[i][0] * halfsize[i][1] * (
         halfsize[i][0] * halfsize[i][0] + halfsize[i][1] * halfsize[i][1]))
-    ti.print(inverse_mass[i])
-    ti.print(inverse_inertia[i])
+    # ti.print(inverse_mass[i])
+    # ti.print(inverse_inertia[i])
 
 
 @ti.func
@@ -178,12 +179,6 @@ def compute_loss(t: ti.i32):
 def forward(output=None):
   # initialize()
   
-  for i in range(n_objects):
-    x[0, i] = [0.5, 0.5]
-    halfsize[i] = [0.15, 0.05]
-    rotation[0, i] = math.pi / 4 + 0.01
-    omega[0, i] = 5
-  
   initialize_properties()
   
   interval = vis_interval
@@ -222,6 +217,17 @@ def forward(output=None):
       cv2.line(img, (0, y), (vis_resolution - 2, y), color=(0.1, 0.1, 0.1),
                thickness=4)
       
+      def circle(x, y, color):
+        radius = 0.02
+        cv2.circle(img, center=(
+          int(vis_resolution * x), int(vis_resolution * (1 - y))),
+                   radius=int(radius * vis_resolution), color=color,
+                   thickness=-1)
+
+      circle(x[t, head_id][0], x[t, head_id][1], (0.4, 0.6, 0.6))
+      circle(goal[0], goal[1], (0.6, 0.2, 0.2))
+    
+      
       cv2.imshow('img', img)
       cv2.waitKey(1)
       if output:
@@ -251,31 +257,40 @@ def clear():
 def clear2():
   for i in range(0, n_objects):
     halfsize.grad[i] = [0.0, 0.0]
+    inverse_inertia.grad[i] = 0
+    inverse_mass.grad[i] = 0
 
 def main():
-  for iter in range(200):
+  for i in range(n_objects):
+    x[0, i] = [0.5, 0.5]
+    halfsize[i] = [0.15, 0.07]
+    rotation[0, i] = math.pi / 4 + 0.01
+    omega[0, i] = 5
+
+  forward('initial')
+  for iter in range(300):
     clear()
+    clear2()
     tape = ti.tape()
     
     with tape:
       forward()
-      
+
+    loss.grad[None] = -1
+    
     tape.grad()
     
     print('Iter=', iter, 'Loss=', loss[None])
     
     for i in range(n_objects):
       for d in range(2):
-        halfsize[i][d] -= learning_rate * halfsize.grad[i][d]
+        print(halfsize.grad[i][d])
+        halfsize[i][d] += learning_rate * halfsize.grad[i][d]
     
-    # init_x.grad[None] = [0, 0]
-    # init_v.grad[None] = [0, 0]
-    # loss.grad[None] = -1
-    
-    # tape.grad()
   
-  # clear()
-  # forward('final')
+  clear()
+  clear2()
+  forward('final')
 
 
 if __name__ == '__main__':

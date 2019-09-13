@@ -42,8 +42,7 @@ elasticity = 0.2
 ground_height = 0.1
 gravity = -9.8
 friction = 0.5
-# penalty = 1e4
-penalty = 0.0
+penalty = 1e4
 damping = 0
 
 
@@ -153,7 +152,7 @@ def forward(output=None):
   
   for i in range(n_objects):
     x[0, i] = [0.5, 0.5]
-    halfsize[i] = [0.05, 0.05]
+    halfsize[i] = [0.15, 0.05]
     rotation[0, i] = math.pi / 4 + 0.01
     omega[0, i] = 0
   

@@ -48,9 +48,9 @@ ground_height = 0.1
 gravity = -9.8
 friction = 0.0
 penalty = 1e4
-damping = 0
+damping = 0.5
 
-n_springs = 1
+n_springs = 2
 spring_anchor_a = ti.global_var(ti.i32)
 spring_anchor_b = ti.global_var(ti.i32)
 spring_length = scalar()
@@ -73,7 +73,7 @@ def place():
 
 
 dt = 0.001
-learning_rate = 0.001
+learning_rate = 0.0001
 
 
 @ti.func
@@ -285,22 +285,23 @@ def clear2():
     inverse_inertia.grad[i] = 0
     inverse_mass.grad[i] = 0
 
-def add_spring():
-  i = 0
-  spring_anchor_a[i] = 0
-  spring_anchor_b[i] = 1
-  spring_length[i] = 0.2
-  spring_offset_a[i] = [0.05, 0.01]
-  spring_offset_b[i] = [0.0, 0.0]
-  spring_stiffness[i] = 10
+def add_spring(i, a, b, offset_a, offset_b, length, stiffness):
+  spring_anchor_a[i] = a
+  spring_anchor_b[i] = b
+  spring_length[i] = length
+  spring_offset_a[i] = offset_a
+  spring_offset_b[i] = offset_b
+  spring_stiffness[i] = stiffness
+
 def main():
   for i in range(n_objects):
-    x[0, i] = [0.5 + 0.2 * i, 0.5 + 0.3 * i]
+    x[0, i] = [0.5, 0.2 + 0.2 * i]
     halfsize[i] = [0.08, 0.03]
-    rotation[0, i] = math.pi / 4 + 0.01
-    omega[0, i] = 5
+    # rotation[0, i] = math.pi / 4 + 0.01
+    # omega[0, i] = 0
 
-  add_spring()
+  add_spring(0, 0, 1, [0.01, 0.02], [0.05, 0.01], 0.15, 10)
+  add_spring(1, 1, 2, [0.02, 0.02], [-0.02, 0.01], 0.15, 10)
 
 
   forward('initial')

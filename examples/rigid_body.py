@@ -45,6 +45,14 @@ friction = 0.5
 penalty = 1e4
 damping = 0
 
+n_springs = 1
+spring_anchor_a = ti.global_var(ti.i32)
+spring_anchor_b = ti.global_var(ti.i32)
+spring_length = scalar()
+spring_offset_a = vec()
+spring_offset_b = vec()
+spring_stiffness = vec()
+
 
 @ti.layout
 def place():
@@ -52,6 +60,9 @@ def place():
                                                               omega, v_inc,
                                                               omega_inc)
   ti.root.dense(ti.i, n_objects).place(halfsize, inverse_mass, inverse_inertia)
+  ti.root.dense(ti.i, n_springs).place(spring_anchor_a, spring_anchor_b,
+                                       spring_length, spring_offset_a,
+                                       spring_offset_b, spring_stiffness)
   ti.root.place(loss)
   ti.root.lazy_grad()
 
@@ -81,7 +92,7 @@ def cross(a, b):
 
 
 @ti.kernel
-def apply_gravity_and_collide(t: ti.i32):
+def collide(t: ti.i32):
   for i in range(n_objects):
     for k in ti.static(range(4)):
       # the corner for collision detection
@@ -120,23 +131,28 @@ def apply_gravity_and_collide(t: ti.i32):
           timpulse = -corner_v.dot(tao) / timpulse_contribution
           timpulse = ti.min(friction * impulse,
                             ti.max(-friction * impulse, timpulse))
-
+      
       if corner_x[1] < ground_height:
         # apply penalty
         impulse = impulse - dt * penalty * (
-              corner_x[1] - ground_height) / impulse_contribution
+            corner_x[1] - ground_height) / impulse_contribution
       
       ti.atomic_add(v_inc[t + 1, i],
                     (impulse * normal + timpulse * tao) * inverse_mass[i])
       ti.atomic_add(omega_inc[t + 1, i],
                     (impulse * rn + timpulse * rt) * inverse_inertia[i])
 
+@ti.kernel
+def apply_spring_force():
+  for i in range(n_springs):
+    pass
 
 @ti.kernel
 def advance(t: ti.i32):
   for i in range(n_objects):
     s = math.exp(-dt * damping)
-    v[t, i] = s * v[t - 1, i] + v_inc[t, i] + dt * gravity * ti.Vector([0.0, 1.0])
+    v[t, i] = s * v[t - 1, i] + v_inc[t, i] + dt * gravity * ti.Vector(
+      [0.0, 1.0])
     x[t, i] = x[t - 1, i] + dt * v[t, i]
     omega[t, i] = s * omega[t - 1, i] + omega_inc[t, i]
     rotation[t, i] = rotation[t - 1, i] + dt * omega[t, i]
@@ -154,7 +170,7 @@ def forward(output=None):
     x[0, i] = [0.5, 0.5]
     halfsize[i] = [0.15, 0.05]
     rotation[0, i] = math.pi / 4 + 0.01
-    omega[0, i] = 0
+    omega[0, i] = 5
   
   initialize_properties()
   
@@ -164,7 +180,8 @@ def forward(output=None):
     os.makedirs('rigid_body/{}/'.format(output), exist_ok=True)
   
   for t in range(1, steps):
-    apply_gravity_and_collide(t - 1)
+    collide(t - 1)
+    apply_spring_force(t - 1)
     advance(t)
     
     if (t + 1) % interval == 0:
@@ -190,7 +207,8 @@ def forward(output=None):
         cv2.fillConvexPoly(img, points=np.array(points), color=color)
       
       y = int((1 - ground_height) * vis_resolution)
-      cv2.line(img, (0, y), (vis_resolution, y), color=(0.1, 0.1, 0.1))
+      cv2.line(img, (0, y), (vis_resolution - 2, y), color=(0.1, 0.1, 0.1),
+               thickness=4)
       
       cv2.imshow('img', img)
       cv2.waitKey(1)

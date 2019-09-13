@@ -26,7 +26,7 @@ Supports Ubuntu 14.04/16.04/18.04, ArchLinux, Mac OS X. For GPU support, CUDA 9.
  - Run with debug mode to see if there's any illegal memory access;
  - Disable compiler optimizations to quickly confirm that the issue is not cause by optimization;
 
-# [Python Frontend Tutorial]()
+# [Python Frontend Tutorial](https://github.com/yuanming-hu/taichi_lang/blob/master/python/README.md#the-taichi-python-frontend)
 
 # Folder Structure
 Key folders are

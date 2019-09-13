@@ -1,3 +1,5 @@
+#if defined(TLANG_WITH_LLVM)
+
 #include "llvm_codegen_utils.h"
 
 TLANG_NAMESPACE_BEGIN
@@ -38,3 +40,4 @@ bool check_func_call_signature(llvm::Value *func,
 }
 
 TLANG_NAMESPACE_END
+#endif

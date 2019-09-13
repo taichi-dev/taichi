@@ -1,11 +1,11 @@
+#pragma once
+#if defined(TLANG_WITH_LLVM)
 // A helper for the llvm backend
 
-#pragma once
 #include "util.h"
 #include "llvm_fwd.h"
 
 TLANG_NAMESPACE_BEGIN
-
 class TaichiLLVMJIT;
 
 void *jit_lookup_name(TaichiLLVMJIT *jit, const std::string &name);
@@ -50,3 +50,14 @@ class TaichiLLVMContext {
 };
 
 TLANG_NAMESPACE_END
+#else
+#include "util.h"
+TLANG_NAMESPACE_BEGIN
+class TaichiLLVMContext {
+ public:
+  TaichiLLVMContext(Arch arch) {
+  }
+};
+TLANG_NAMESPACE_END
+
+#endif

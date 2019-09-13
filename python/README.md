@@ -1,7 +1,10 @@
-# Global Tensors
+# The Taichi Python Frontend
+## Global Tensors
  - Every global variable is an N-dimensional tensor. Global scalars are treated as 0-D tensors.
  - Global tensors are accessed using indices, e.g. `x[i, j, k]` if `x` is a 3D tensor. For 0-D tensor, access it as `x[None]`.
    - If you access a 0-D tensor `x` using `x = 0`, instead of `x[None] = 0`, the handle `x` will be set to zero instead of the value in that tensor. This is a compromise to the native python semantics. So please always use indexing to access entries in tensors.
+ - For a tensor `F` of element `ti.Matrix`, make sure you first index the tensor dimensions, and then the matrix dimensions: `F[i, j, k][0, 2]`. (Assuming `F` is a 3D tensor with `ti.Matrix` of size `3x3` as element)
+ - `ti.Vector` is simply an alias of `ti.Matrix`.
  - Tensors values are initially zero.
  - Sparse tensors are initially inactive.
 
@@ -55,7 +58,7 @@ def print():
  - Differentiate element-wise product `*` and matrix product `@`.
 
 # Debugging
- -    Debug your program with `ti.print(x)`.
+ - Debug your program with `ti.print(x)`.
 
 # Performance tips
 ## Avoid synchronization

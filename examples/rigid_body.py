@@ -11,7 +11,7 @@ ti.set_default_fp(real)
 max_steps = 4096
 vis_interval = 2
 output_vis_interval = 2
-steps = 2048
+steps = 512
 assert steps * 2 <= max_steps
 
 vis_resolution = 1024
@@ -35,6 +35,9 @@ inverse_inertia = scalar()
 
 v_inc = vec()
 omega_inc = scalar()
+
+head_id = 0
+goal = [0.3, 0.2]
 
 n_objects = 1
 # target_ball = 0
@@ -168,7 +171,7 @@ def advance(t: ti.i32):
 
 @ti.kernel
 def compute_loss(t: ti.i32):
-  pass
+  loss[None] = (x[t, head_id] - ti.Vector(goal)).norm_sqr()
 
 
 def forward(output=None):
@@ -224,7 +227,7 @@ def forward(output=None):
         cv2.imwrite('rigid_body/{}/{:04d}.png'.format(output, t), img * 255)
   
   loss[None] = 0
-  # compute_loss(steps - 1)
+  compute_loss(steps - 1)
 
 
 @ti.kernel
@@ -243,6 +246,11 @@ def clear():
       omega_inc.grad[t, i] = 0.0
 
 
+@ti.kernel
+def clear2():
+  for i in range(0, n_objects):
+    halfsize.grad[i] = [0.0, 0.0]
+
 def main():
   for iter in range(200):
     clear()
@@ -250,8 +258,14 @@ def main():
     
     with tape:
       forward()
+      
+    tape.grad()
     
     print('Iter=', iter, 'Loss=', loss[None])
+    
+    for i in range(n_objects):
+      for d in range(2):
+        halfsize[i][d] -= learning_rate * halfsize.grad[i][d]
     
     # init_x.grad[None] = [0, 0]
     # init_v.grad[None] = [0, 0]
@@ -259,7 +273,7 @@ def main():
     
     # tape.grad()
   
-  clear()
+  # clear()
   # forward('final')
 
 

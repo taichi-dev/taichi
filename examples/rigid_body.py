@@ -238,6 +238,19 @@ def forward(output=None):
 
       circle(x[t, head_id][0], x[t, head_id][1], (0.4, 0.6, 0.6))
       circle(goal[0], goal[1], (0.6, 0.2, 0.2))
+
+      for i in range(n_springs):
+        def get_world_loc(i, offset):
+          rot = rotation[t, i]
+          rot_matrix = np.array(
+            [[math.cos(rot), -math.sin(rot)], [math.sin(rot), math.cos(rot)]])
+          pos = np.array(
+            [x[t, i][0], x[t, i][1]]) + rot_matrix @ np.array([[offset[0]], [offset[1]]])
+          pos = pos * vis_resolution
+          return (int(pos[0, 0]), vis_resolution - int(pos[0, 1]))
+        pt1 = get_world_loc(spring_anchor_a[i], spring_offset_a[i])
+        pt2 = get_world_loc(spring_anchor_b[i], spring_offset_b[i])
+        cv2.line(img, pt1, pt2, (0.2, 0.2, 0.4), thickness=6)
     
       
       cv2.imshow('img', img)
@@ -279,7 +292,7 @@ def add_spring():
   spring_length[i] = 0.2
   spring_offset_a[i] = [0.0, 0.0]
   spring_offset_b[i] = [0.0, 0.0]
-  spring_stiffness[i] = 1
+  spring_stiffness[i] = 10
 
 def main():
   for i in range(n_objects):
@@ -295,13 +308,13 @@ def main():
   for iter in range(300):
     clear()
     clear2()
+    loss.grad[None] = -1
+
     tape = ti.tape()
-    
+
     with tape:
       forward()
 
-    loss.grad[None] = -1
-    
     tape.grad()
     
     print('Iter=', iter, 'Loss=', loss[None])

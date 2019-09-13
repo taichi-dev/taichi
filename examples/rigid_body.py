@@ -164,11 +164,13 @@ def apply_spring_force(t: ti.i32):
   for i in range(n_springs):
     a = spring_anchor_a[i]
     b = spring_anchor_b[i]
-    pos_a, _, _ = to_world(t, a, spring_offset_a[i])
-    pos_b, _, _ = to_world(t, b, spring_offset_b[i])
+    pos_a, _, rela_a = to_world(t, a, spring_offset_a[i])
+    pos_b, _, rela_b = to_world(t, b, spring_offset_b[i])
     dist = pos_a - pos_b
     length = dist.norm()
-    force = (length - spring_length[i]) * spring_stiffness[i] * ti.Vector.normalized(dist)
+    impulse = dt * (length - spring_length[i]) * spring_stiffness[i] * ti.Vector.normalized(dist)
+    apply_impulse(t, a, -impulse, pos_a)
+    apply_impulse(t, b, impulse, pos_b)
 
 
 
@@ -198,7 +200,7 @@ def forward(output=None):
   
   for t in range(1, steps):
     collide(t - 1)
-    # apply_spring_force(t - 1)
+    apply_spring_force(t - 1)
     advance(t)
     
     if (t + 1) % interval == 0:
@@ -277,7 +279,7 @@ def add_spring():
   spring_length[i] = 0.2
   spring_offset_a[i] = [0.0, 0.0]
   spring_offset_b[i] = [0.0, 0.0]
-  spring_stiffness[i] = 0.01
+  spring_stiffness[i] = 1
 
 def main():
   for i in range(n_objects):

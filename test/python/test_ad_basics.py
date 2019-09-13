@@ -69,4 +69,10 @@ def test_unary():
   grad_test(lambda x: ti.exp(x), lambda x: np.exp(x))
   grad_test(lambda x: ti.log(x), lambda x: np.log(x))
 
-test_trigonometric()
+def test_minmax():
+  grad_test(lambda x: ti.min(x, 0), lambda x: np.minimum(x, 0))
+  grad_test(lambda x: ti.min(x, 1), lambda x: np.minimum(x, 1))
+  grad_test(lambda x: ti.min(0, x), lambda x: np.minimum(0, x))
+  grad_test(lambda x: ti.min(1, x), lambda x: np.minimum(1, x))
+
+test_minmax()

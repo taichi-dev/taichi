@@ -21,6 +21,7 @@ vec = lambda: ti.Vector(2, dt=real)
 
 loss = scalar()
 
+# On CPU this may not work since during AD, min's adjoint uses cmp_le, which might return -1 instead of 1
 ti.cfg.arch = ti.cuda
 
 x = vec()

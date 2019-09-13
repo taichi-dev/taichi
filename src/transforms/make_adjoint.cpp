@@ -36,12 +36,21 @@ class MakeAdjoint : public IRVisitor {
     return insert<BinaryOpStmt>(BinaryOpType::add, load(op1), load(op2));
   }
 
+  Stmt *cmp_lt(Stmt *op1, Stmt *op2) {
+    return insert<BinaryOpStmt>(BinaryOpType::cmp_lt, load(op1), load(op2));
+  }
+
   Stmt *sub(Stmt *op1, Stmt *op2) {
     return insert<BinaryOpStmt>(BinaryOpType::sub, load(op1), load(op2));
   }
 
   Stmt *div(Stmt *op1, Stmt *op2) {
     return insert<BinaryOpStmt>(BinaryOpType::div, load(op1), load(op2));
+  }
+
+  Stmt *sel(Stmt *op1, Stmt *op2, Stmt *op3) {
+    return insert<TernaryOpStmt>(TernaryOpType::select, load(op1), load(op2),
+                                 load(op3));
   }
 
   Stmt *cos(Stmt *op1) {
@@ -172,6 +181,11 @@ class MakeAdjoint : public IRVisitor {
       accumulate(bin->lhs, div(adjoint(bin), bin->rhs));
       accumulate(bin->rhs, negate(div(mul(adjoint(bin), bin->lhs),
                                       mul(bin->rhs, bin->rhs))));
+    } else if (bin->op_type == BinaryOpType::min) {
+      auto cmp = cmp_lt(bin->lhs, bin->rhs);
+      auto zero = insert<ConstStmt>(TypedConstant(bin->ret_type.data_type));
+      accumulate(bin->lhs, sel(cmp, adjoint(bin), zero));
+      accumulate(bin->rhs, sel(cmp, zero, adjoint(bin)));
     } else if (is_comparison(bin->op_type) || is_bit_op(bin->op_type)) {
       // do nothing
     } else {

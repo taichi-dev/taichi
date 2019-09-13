@@ -86,4 +86,4 @@ else()
     message("OpenMP not found.")
 endif()
 
-add_executable(runtime runtime/runtime.cpp)
+# add_executable(runtime runtime/runtime.cpp)

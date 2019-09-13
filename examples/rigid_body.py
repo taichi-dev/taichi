@@ -41,12 +41,12 @@ omega_inc = scalar()
 head_id = 0
 goal = [0.3, 0.2]
 
-n_objects = 1
+n_objects = 3
 # target_ball = 0
-elasticity = 0.2
+elasticity = 0.0
 ground_height = 0.1
 gravity = -9.8
-friction = 0.5
+friction = 0.0
 penalty = 1e4
 damping = 0
 
@@ -56,7 +56,7 @@ spring_anchor_b = ti.global_var(ti.i32)
 spring_length = scalar()
 spring_offset_a = vec()
 spring_offset_b = vec()
-spring_stiffness = vec()
+spring_stiffness = scalar()
 
 
 @ti.layout
@@ -107,7 +107,14 @@ def to_world(t, i, rela_x):
   world_v = v[t, i] + rela_v
   
   return world_x, world_v, rela_pos
-  
+
+
+@ti.func
+def apply_impulse(t, i, impulse, location):
+  ti.atomic_add(v_inc[t + 1, i], impulse * inverse_mass[i])
+  ti.atomic_add(omega_inc[t + 1, i],
+                cross(location - x[t, i], impulse) * inverse_inertia[i])
+
 
 @ti.kernel
 def collide(t: ti.i32):
@@ -149,16 +156,21 @@ def collide(t: ti.i32):
         # apply penalty
         impulse = impulse - dt * penalty * (
             corner_x[1] - ground_height) / impulse_contribution
-      
-      ti.atomic_add(v_inc[t + 1, i],
-                    (impulse * normal + timpulse * tao) * inverse_mass[i])
-      ti.atomic_add(omega_inc[t + 1, i],
-                    (impulse * rn + timpulse * rt) * inverse_inertia[i])
+
+      apply_impulse(t, i, impulse * normal + timpulse * tao, corner_x)
 
 @ti.kernel
-def apply_spring_force():
+def apply_spring_force(t: ti.i32):
   for i in range(n_springs):
-    pass
+    a = spring_anchor_a[i]
+    b = spring_anchor_b[i]
+    pos_a, _, _ = to_world(t, a, spring_offset_a[i])
+    pos_b, _, _ = to_world(t, b, spring_offset_b[i])
+    dist = pos_a - pos_b
+    length = dist.norm()
+    force = (length - spring_length[i]) * spring_stiffness[i] * ti.Vector.normalized(dist)
+
+
 
 @ti.kernel
 def advance(t: ti.i32):
@@ -177,8 +189,6 @@ def compute_loss(t: ti.i32):
 
 
 def forward(output=None):
-  # initialize()
-  
   initialize_properties()
   
   interval = vis_interval
@@ -260,12 +270,24 @@ def clear2():
     inverse_inertia.grad[i] = 0
     inverse_mass.grad[i] = 0
 
+def add_spring():
+  i = 0
+  spring_anchor_a[i] = 0
+  spring_anchor_b[i] = 1
+  spring_length[i] = 0.2
+  spring_offset_a[i] = [0.0, 0.0]
+  spring_offset_b[i] = [0.0, 0.0]
+  spring_stiffness[i] = 0.01
+
 def main():
   for i in range(n_objects):
-    x[0, i] = [0.5, 0.5]
-    halfsize[i] = [0.15, 0.07]
+    x[0, i] = [0.5 + 0.2 * i, 0.5 + 0.3 * i]
+    halfsize[i] = [0.08, 0.03]
     rotation[0, i] = math.pi / 4 + 0.01
     omega[0, i] = 5
+
+  add_spring()
+
 
   forward('initial')
   for iter in range(300):
@@ -286,7 +308,7 @@ def main():
       for d in range(2):
         print(halfsize.grad[i][d])
         halfsize[i][d] += learning_rate * halfsize.grad[i][d]
-    
+
   
   clear()
   clear2()

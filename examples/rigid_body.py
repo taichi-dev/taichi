@@ -1,3 +1,5 @@
+from robot_config import robots
+
 import taichi_lang as ti
 import math
 import numpy as np
@@ -360,15 +362,10 @@ def clear():
   clear_weights()
 
 
-def add_spring(a, b, offset_a, offset_b, length, stiffness):
-  springs.append([a, b, offset_a, offset_b, length, stiffness])
 
 
-springs = []
-objects = []
 
-
-def setup_robot():
+def setup_robot(objects, springs):
   global n_objects, n_springs
   n_objects = len(objects)
   n_springs = len(springs)
@@ -378,6 +375,7 @@ def setup_robot():
   for i in range(n_objects):
     x[0, i] = objects[i][0]
     halfsize[i] = objects[i][1]
+    rotation[0, i] = objects[i][2]
   
   for i in range(n_springs):
     s = springs[i]
@@ -388,29 +386,8 @@ def setup_robot():
     spring_length[i] = s[4]
     spring_stiffness[i] = s[5]
 
-
-def add_object(x, halfsize):
-  objects.append([x, halfsize])
-
-
 def main():
-  add_object(x=[0.3, 0.25], halfsize=[0.15, 0.03])
-  add_object(x=[0.2, 0.15], halfsize=[0.03, 0.02])
-  add_object(x=[0.3, 0.15], halfsize=[0.03, 0.02])
-  add_object(x=[0.4, 0.15], halfsize=[0.03, 0.02])
-  add_object(x=[0.4, 0.3], halfsize=[0.005, 0.03])
-  
-  l = 0.12
-  s = 15
-  add_spring(0, 1, [-0.03, 0.00], [0.0, 0.0], l, s)
-  add_spring(0, 1, [-0.1, 0.00], [0.0, 0.0], l, s)
-  add_spring(0, 2, [-0.03, 0.00], [0.0, 0.0], l, s)
-  add_spring(0, 2, [0.03, 0.00], [0.0, 0.0], l, s)
-  add_spring(0, 3, [0.03, 0.00], [0.0, 0.0], l, s)
-  add_spring(0, 3, [0.1, 0.00], [0.0, 0.0], l, s)
-  add_spring(0, 4, [0.1, 0], [0, -0.05], -1, s)
-  
-  setup_robot()
+  setup_robot(*robots[0]())
   
   for i in range(n_springs):
     for j in range(n_sin_waves):

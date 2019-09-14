@@ -13,7 +13,7 @@ ti.set_default_fp(real)
 max_steps = 4096
 vis_interval = 256
 output_vis_interval = 8
-steps = 2048
+steps = 1024
 assert steps * 2 <= max_steps
 
 vis_resolution = 1024
@@ -34,14 +34,14 @@ n_objects = 0
 # target_ball = 0
 elasticity = 0.0
 ground_height = 0.1
-gravity = -9.8
+gravity = -19.8
 friction = 0.7
 penalty = 1e4
 
 gradient_clip = 1
 spring_omega = 20
-damping = 15
-amplitude = 0.15
+damping = 10
+amplitude = 0.10
 
 n_springs = 0
 spring_anchor_a = ti.global_var(ti.i32)
@@ -66,8 +66,7 @@ def place():
 
 
 dt = 0.001
-learning_rate = 0.01
-
+learning_rate = 0.05
 
 @ti.kernel
 def apply_spring_force(t: ti.i32):
@@ -90,9 +89,8 @@ def apply_spring_force(t: ti.i32):
     impulse = dt * (length - target_length) * spring_stiffness[
       i] / length * dist
     
-    ti.atomic_add(v_inc[t + 1, a], -impulse)
-    ti.atomic_add(v_inc[t + 1, b], impulse)
-
+    ti.atomic_add(v_inc[t + 1, a],  -impulse)
+    ti.atomic_add(v_inc[t + 1, b],  impulse)
 
 @ti.kernel
 def advance(t: ti.i32):
@@ -150,13 +148,9 @@ def forward(output=None):
       
       for i in range(n_springs):
         def get_pt(x):
-          return int(x[0] * vis_resolution), int(
-            vis_resolution - x[1] * vis_resolution)
-        
+          return int(x[0] * vis_resolution), int(vis_resolution - x[1]* vis_resolution)
         act = 0
-        cv2.line(img, get_pt(x[t, spring_anchor_a[i]]),
-                 get_pt(x[t, spring_anchor_b[i]]), (0.5 + act, 0.5, 0.5 - act),
-                 thickness=6)
+        cv2.line(img, get_pt(x[t, spring_anchor_a[i]]), get_pt(x[t, spring_anchor_b[i]]), (0.5 + act, 0.5, 0.5 - act), thickness=6)
       
       cv2.imshow('img', img)
       cv2.waitKey(1)
@@ -206,7 +200,6 @@ def setup_robot(objects, springs):
     spring_anchor_b[i] = s[1]
     spring_length[i] = s[2]
     spring_stiffness[i] = s[3]
-
 
 def main():
   robot_id = 0

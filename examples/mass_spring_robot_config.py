@@ -30,6 +30,8 @@ def robotA():
   link(0, 4)
   link(1, 4)
   link(2, 4)
+  link(3, 1)
+  link(5, 1)
   
   return objects, springs
 

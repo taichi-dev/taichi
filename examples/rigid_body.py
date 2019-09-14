@@ -1,4 +1,5 @@
 from robot_config import robots
+import sys
 
 import taichi_lang as ti
 import math
@@ -387,7 +388,12 @@ def setup_robot(objects, springs):
     spring_stiffness[i] = s[5]
 
 def main():
-  setup_robot(*robots[0]())
+  robot_id = 0
+  if len(sys.argv) != 2:
+    print("Usage: python3 rigid_body.py [robot_id=0, 1, 2, ...]")
+  else:
+    robot_id = int(sys.argv[1])
+  setup_robot(*robots[robot_id]())
   
   for i in range(n_springs):
     for j in range(n_sin_waves):

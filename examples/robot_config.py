@@ -49,9 +49,9 @@ def robotB():
 
 
 l_thigh_init_ang = 45
-l_calf_init_ang = -10
+l_calf_init_ang = 0
 r_thigh_init_ang = -10 
-r_calf_init_ang = -10
+r_calf_init_ang = -20
 initHeight = 0.15
 
 hip_pos = [0.3, 0.5 + initHeight]
@@ -89,18 +89,18 @@ def robotLeg():
   s = 200
 
   #left springs
-  add_spring(0, 1, [0,0.1], [0,-thigh_half_length], 2.0*thigh_half_length + 0.22, 50)
-  add_spring(1, 2, [0,thigh_half_length], [0,-thigh_half_length], 4.0* thigh_half_length, 50)
-  add_spring(2, 3, [0,0], [foot_half_length,0], math.sqrt(pow(thigh_half_length,2)+pow(2.0*foot_half_length,2)), 50)
+  add_spring(0, 1, [0,0.1], [0,-thigh_half_length], 2.0*thigh_half_length + 0.22, 15)
+  add_spring(1, 2, [0,thigh_half_length], [0,-thigh_half_length], 4.0* thigh_half_length, 15)
+  add_spring(2, 3, [0,0], [foot_half_length,0], math.sqrt(pow(thigh_half_length,2)+pow(2.0*foot_half_length,2)), 15)
 
   add_spring(0, 1, [0, -0.1], [0.0, thigh_half_length], -1, s)
   add_spring(1, 2, [0, -thigh_half_length], [0.0, thigh_half_length], -1, s)
   add_spring(2, 3, [0, -thigh_half_length], [-foot_half_length,0], -1, s)
 
   #right springs
-  add_spring(0, 4, [0,0.1], [0,-thigh_half_length], 2.0*thigh_half_length + 0.22, 50)
-  add_spring(4, 5, [0,thigh_half_length], [0,-thigh_half_length], 4.0* thigh_half_length, 50)
-  add_spring(5, 6, [0,0], [foot_half_length,0], math.sqrt(pow(thigh_half_length,2)+pow(2.0*foot_half_length,2)), 50)
+  add_spring(0, 4, [0,0.1], [0,-thigh_half_length], 2.0*thigh_half_length + 0.22, 15)
+  add_spring(4, 5, [0,thigh_half_length], [0,-thigh_half_length], 4.0* thigh_half_length, 15)
+  add_spring(5, 6, [0,0], [foot_half_length,0], math.sqrt(pow(thigh_half_length,2)+pow(2.0*foot_half_length,2)), 15)
 
   add_spring(0, 4, [0, -0.1], [0.0, thigh_half_length], -1, s)
   add_spring(4, 5, [0, -thigh_half_length], [0.0, thigh_half_length], -1, s)

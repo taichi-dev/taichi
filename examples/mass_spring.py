@@ -12,8 +12,8 @@ ti.set_default_fp(real)
 
 max_steps = 4096
 vis_interval = 256
-output_vis_interval = 8
-steps = 1024
+output_vis_interval = 1
+steps = 256
 assert steps * 2 <= max_steps
 
 vis_resolution = 1024
@@ -84,16 +84,12 @@ def apply_spring_force(t: ti.i32):
     actuation += bias[i]
     actuation = ti.tanh(actuation)
     
-    is_joint = spring_length[i] == -1
-    
     target_length = spring_length[i] * (0.8 + 0.4 * actuation)
-    if is_joint:
-      target_length = 0.0
     impulse = dt * (length - target_length) * spring_stiffness[
       i] / length * dist
     
-    ti.atomic_add(v_inc[t, a],  -impulse)
-    ti.atomic_add(v_inc[t, b],  impulse)
+    ti.atomic_add(v_inc[t + 1, a],  -impulse)
+    ti.atomic_add(v_inc[t + 1, b],  impulse)
 
 @ti.kernel
 def advance(t: ti.i32):
@@ -138,7 +134,10 @@ def forward(output=None):
                    thickness=-1)
       
       for i in range(n_objects):
-        circle(x[t, head_id][0], x[t, head_id][1], (0.4, 0.6, 0.6))
+        color = (0.4, 0.6, 0.6)
+        if i == head_id:
+          color = (0.8, 0.2, 0.3)
+        circle(x[t, i][0], x[t, i][1], color)
       circle(goal[0], goal[1], (0.6, 0.2, 0.2))
       
       for i in range(n_springs):

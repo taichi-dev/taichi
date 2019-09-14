@@ -66,7 +66,7 @@ def initialize():
 
 @ti.kernel
 def fdtd(t: ti.i32):
-  for i in range(n_grid):
+  for i in range(n_grid): # Parallelized over GPU threads
     for j in range(n_grid):
       laplacian_p = laplacian(t - 2, i, j)
       laplacian_q = laplacian(t - 1, i, j)
@@ -77,7 +77,7 @@ def fdtd(t: ti.i32):
 @ti.kernel
 def compute_loss(t: ti.i32):
   for i in range(n_grid):
-    for j in range(n_grid):
+    for j in range(n_grid)::
       ti.atomic_add(loss, dx * dx * ti.sqr(target[i, j] - p[t, i, j]))
 
 @ti.kernel

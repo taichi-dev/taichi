@@ -10,7 +10,7 @@ ti.set_default_fp(real)
 
 max_steps = 4096
 vis_interval = 256
-output_vis_interval = 2
+output_vis_interval = 8
 steps = 1024
 assert steps * 2 <= max_steps
 
@@ -39,7 +39,7 @@ v_inc = vec()
 omega_inc = scalar()
 
 head_id = 0
-goal = [0.8, 0.3]
+goal = [0.9, 0.2]
 
 n_objects = 3
 # target_ball = 0
@@ -48,10 +48,10 @@ ground_height = 0.1
 gravity = -9.8
 friction = 0.7
 penalty = 1e4
-damping = 0.2
+damping = 0.01
 
-gradient_clip = 10
-spring_omega = 30
+gradient_clip = 30
+spring_omega = 60
 
 n_springs = 4
 spring_anchor_a = ti.global_var(ti.i32)
@@ -79,7 +79,7 @@ def place():
 
 
 dt = 0.001
-learning_rate = 0.00001
+learning_rate = 0.000003
 
 
 @ti.func
@@ -197,7 +197,7 @@ def advance(t: ti.i32):
 
 @ti.kernel
 def compute_loss(t: ti.i32):
-  loss[None] = (x[t, head_id] - ti.Vector(goal)).norm_sqr()
+  loss[None] = (x[t, head_id] - ti.Vector(goal)).norm()
 
 
 def forward(output=None):
@@ -347,8 +347,8 @@ def main():
   add_spring(2, 0, 2, [0.03, 0.00], [-0.0, 0.0], l, s)
   add_spring(3, 0, 2, [0.1, 0.00], [-0.0, 0.0], l, s)
 
-  forward('initial')
-  for iter in range(300):
+  # forward('initial')
+  for iter in range(1000):
     clear()
     loss.grad[None] = -1
 

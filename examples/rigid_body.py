@@ -49,7 +49,7 @@ n_objects = 0
 elasticity = 0.0
 ground_height = 0.1
 gravity = -9.8
-friction = 1.7
+friction = 1.0
 penalty = 1e4
 damping = 10
 

@@ -1,3 +1,5 @@
+import math
+
 objects = []
 springs = []
 
@@ -45,4 +47,69 @@ def robotB():
   
   return objects, springs
 
-robots = [robotA, robotB]
+
+l_thigh_init_ang = 45
+l_calf_init_ang = -10
+r_thigh_init_ang = -10 
+r_calf_init_ang = -10
+initHeight = 0.15
+
+hip_pos = [0.3, 0.5 + initHeight]
+thigh_half_length = 0.11
+calf_half_length = 0.11
+
+foot_half_length = 0.08
+
+
+def rotAlong(half_length, deg, center):
+  ang = math.radians(deg)
+  return [half_length*math.sin(ang) + center[0], -half_length*math.cos(ang) + center[1]] 
+
+
+def robotLeg():
+  #hip
+  add_object(hip_pos, halfsize=[0.06, 0.11])
+  hip_end = [hip_pos[0], hip_pos[1] - 0.1]
+
+  #left  
+  l_thigh_center = rotAlong(thigh_half_length, l_thigh_init_ang, hip_end)
+  l_thigh_end = rotAlong(thigh_half_length * 2.0, l_thigh_init_ang, hip_end)
+  add_object(l_thigh_center, halfsize=[0.02, thigh_half_length], rotation=math.radians(l_thigh_init_ang))
+  add_object(rotAlong(calf_half_length, l_calf_init_ang, l_thigh_end), halfsize=[0.02, calf_half_length], rotation = math.radians(l_calf_init_ang))
+  l_calf_end = rotAlong(2.0 * calf_half_length, l_calf_init_ang, l_thigh_end)
+  add_object([l_calf_end[0] + foot_half_length, l_calf_end[1]], halfsize=[foot_half_length, 0.02])
+
+  #right 
+  add_object(rotAlong(thigh_half_length, r_thigh_init_ang, hip_end), halfsize=[0.02, thigh_half_length], rotation=math.radians(r_thigh_init_ang))
+  r_thigh_end = rotAlong(thigh_half_length * 2.0, r_thigh_init_ang, hip_end)
+  add_object(rotAlong(calf_half_length, r_calf_init_ang, r_thigh_end), halfsize=[0.02, calf_half_length], rotation = math.radians(r_calf_init_ang))
+  r_calf_end = rotAlong(2.0 * calf_half_length, r_calf_init_ang, r_thigh_end)
+  add_object([r_calf_end[0] + foot_half_length, r_calf_end[1]], halfsize=[foot_half_length, 0.02])
+
+  s = 200
+
+  #left springs
+  add_spring(0, 1, [0,0.1], [0,-thigh_half_length], 2.0*thigh_half_length + 0.22, 50)
+  add_spring(1, 2, [0,thigh_half_length], [0,-thigh_half_length], 4.0* thigh_half_length, 50)
+  add_spring(2, 3, [0,0], [foot_half_length,0], math.sqrt(pow(thigh_half_length,2)+pow(2.0*foot_half_length,2)), 50)
+
+  add_spring(0, 1, [0, -0.1], [0.0, thigh_half_length], -1, s)
+  add_spring(1, 2, [0, -thigh_half_length], [0.0, thigh_half_length], -1, s)
+  add_spring(2, 3, [0, -thigh_half_length], [-foot_half_length,0], -1, s)
+
+  #right springs
+  add_spring(0, 4, [0,0.1], [0,-thigh_half_length], 2.0*thigh_half_length + 0.22, 50)
+  add_spring(4, 5, [0,thigh_half_length], [0,-thigh_half_length], 4.0* thigh_half_length, 50)
+  add_spring(5, 6, [0,0], [foot_half_length,0], math.sqrt(pow(thigh_half_length,2)+pow(2.0*foot_half_length,2)), 50)
+
+  add_spring(0, 4, [0, -0.1], [0.0, thigh_half_length], -1, s)
+  add_spring(4, 5, [0, -thigh_half_length], [0.0, thigh_half_length], -1, s)
+  add_spring(5, 6, [0, -thigh_half_length], [-foot_half_length,0], -1, s)
+
+
+
+  return objects, springs
+
+
+#robots = [robotA, robotB]
+robots = [robotLeg]

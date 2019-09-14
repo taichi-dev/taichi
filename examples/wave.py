@@ -134,12 +134,9 @@ def main():
   for opt in range(200):
     clear_p_grad()
     clear_initial_grad()
-    loss.grad[None] = 1
     
-    t = ti.tape()
-    with t:
+    with ti.Tape(loss):
       forward()
-    t.grad()
     
     print('Iter', opt, ' Loss =', loss[None])
 

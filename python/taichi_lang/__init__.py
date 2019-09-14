@@ -33,6 +33,11 @@ set_default_fp = pytaichi.set_default_fp
 def tape():
   return runtime.get_tape()
 
+def Tape(loss):
+  loss[None] = 0
+  loss.grad[None] = 1
+  return runtime.get_tape(loss)
+
 schedules = [parallelize, vectorize, block_dim, cache]
 
 __all__ = [kernel, layout, var, global_var, f64, float64, f32, float32, i32,

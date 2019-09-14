@@ -51,7 +51,7 @@ ground_height = 0.1
 gravity = -9.8
 friction = 0.7
 penalty = 1e4
-damping = 0.01
+damping = 10
 
 gradient_clip = 30
 spring_omega = 30
@@ -89,7 +89,7 @@ def place():
 
 
 dt = 0.001
-learning_rate = 0.0001
+learning_rate = 0.01
 
 
 @ti.func
@@ -196,7 +196,7 @@ def apply_spring_force(t: ti.i32):
     
     is_joint = spring_length[i] == -1
     
-    target_length = spring_length[i] * (0.8 + 0.4 * actuation)
+    target_length = spring_length[i] * (1.0 + 0.15 * actuation)
     if is_joint:
       target_length = 0.0
     impulse = dt * (length - target_length) * spring_stiffness[

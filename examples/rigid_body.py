@@ -201,7 +201,7 @@ def apply_spring_force(t: ti.i32):
     
     if is_joint:
       rela_vel = vel_a - vel_b
-      rela_vel_norm = rela_vel.norm() + 1e-3
+      rela_vel_norm = rela_vel.norm() + 1e-1
       impulse_dir = rela_vel / rela_vel_norm
       impulse_contribution = inverse_mass[a] + ti.sqr(
         cross(impulse_dir, rela_a)) * inverse_inertia[
@@ -417,7 +417,7 @@ def main():
       weights[i, j] = np.random.randn() * 0.001
   
   forward('initial')
-  for iter in range(1000):
+  for iter in range(300):
     clear()
     loss.grad[None] = -1
     

@@ -88,19 +88,23 @@ def robotLeg():
 
   s = 200
 
+  thigh_relax = 1.1
+  leg_relax = 0.8
+  foot_relax = 1.0
+
   #left springs
-  add_spring(0, 1, [0,0.1], [0,-thigh_half_length], 2.0*thigh_half_length + 0.22, 15)
-  add_spring(1, 2, [0,thigh_half_length], [0,-thigh_half_length], 4.0* thigh_half_length, 15)
-  add_spring(2, 3, [0,0], [foot_half_length,0], math.sqrt(pow(thigh_half_length,2)+pow(2.0*foot_half_length,2)), 15)
+  add_spring(0, 1, [0,0.1], [0,-thigh_half_length], thigh_relax*(2.0*thigh_half_length + 0.22), 15)
+  add_spring(1, 2, [0,thigh_half_length], [0,-thigh_half_length], leg_relax * 4.0* thigh_half_length, 15)
+  add_spring(2, 3, [0,0], [foot_half_length,0], foot_relax*math.sqrt(pow(thigh_half_length,2)+pow(2.0*foot_half_length,2)), 15)
 
   add_spring(0, 1, [0, -0.1], [0.0, thigh_half_length], -1, s)
   add_spring(1, 2, [0, -thigh_half_length], [0.0, thigh_half_length], -1, s)
   add_spring(2, 3, [0, -thigh_half_length], [-foot_half_length,0], -1, s)
 
   #right springs
-  add_spring(0, 4, [0,0.1], [0,-thigh_half_length], 2.0*thigh_half_length + 0.22, 15)
-  add_spring(4, 5, [0,thigh_half_length], [0,-thigh_half_length], 4.0* thigh_half_length, 15)
-  add_spring(5, 6, [0,0], [foot_half_length,0], math.sqrt(pow(thigh_half_length,2)+pow(2.0*foot_half_length,2)), 15)
+  add_spring(0, 4, [0,0.1], [0,-thigh_half_length], thigh_relax*(2.0*thigh_half_length + 0.22), 15)
+  add_spring(4, 5, [0,thigh_half_length], [0,-thigh_half_length], leg_relax * 4.0* thigh_half_length, 15)
+  add_spring(5, 6, [0,0], [foot_half_length,0], foot_relax*math.sqrt(pow(thigh_half_length,2)+pow(2.0*foot_half_length,2)), 15)
 
   add_spring(0, 4, [0, -0.1], [0.0, thigh_half_length], -1, s)
   add_spring(4, 5, [0, -thigh_half_length], [0.0, thigh_half_length], -1, s)

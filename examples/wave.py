@@ -77,7 +77,7 @@ def fdtd(t: ti.i32):
 @ti.kernel
 def compute_loss(t: ti.i32):
   for i in range(n_grid):
-    for j in range(n_grid)::
+    for j in range(n_grid):
       ti.atomic_add(loss, dx * dx * ti.sqr(target[i, j] - p[t, i, j]))
 
 @ti.kernel

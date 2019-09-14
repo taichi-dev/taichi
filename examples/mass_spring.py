@@ -12,8 +12,8 @@ ti.set_default_fp(real)
 
 max_steps = 4096
 vis_interval = 256
-output_vis_interval = 1
-steps = 256
+output_vis_interval = 4
+steps = 1024
 assert steps * 2 <= max_steps
 
 vis_resolution = 1024
@@ -37,7 +37,7 @@ ground_height = 0.1
 gravity = -9.8
 friction = 0.7
 penalty = 1e4
-damping = 0.01
+damping = 30
 
 gradient_clip = 30
 spring_omega = 30
@@ -65,7 +65,7 @@ def place():
 
 
 dt = 0.001
-learning_rate = 0.0001
+learning_rate = 0.055
 
 @ti.kernel
 def apply_spring_force(t: ti.i32):
@@ -84,7 +84,7 @@ def apply_spring_force(t: ti.i32):
     actuation += bias[i]
     actuation = ti.tanh(actuation)
     
-    target_length = spring_length[i] * (0.8 + 0.4 * actuation)
+    target_length = spring_length[i] * (1.0 + 0.1 * actuation)
     impulse = dt * (length - target_length) * spring_stiffness[
       i] / length * dist
     
@@ -98,6 +98,11 @@ def advance(t: ti.i32):
     new_v = s * v[t - 1, i] + v_inc[t, i] + dt * gravity * ti.Vector([0.0, 1.0])
     depth = x[t - 1, i][1] - ground_height
     if depth < 0 and new_v[1] < 0:
+      # friction projection
+      if new_v[0] > 0:
+        new_v[0] -= min(new_v[0], friction * -new_v[1])
+      if new_v[0] < 0:
+        new_v[0] += min(-new_v[0], friction * -new_v[1])
       new_v[1] = 0
     v[t, i] = new_v
     x[t, i] = x[t - 1, i] + dt * v[t, i]
@@ -149,7 +154,7 @@ def forward(output=None):
       cv2.imshow('img', img)
       cv2.waitKey(1)
       if output:
-        cv2.imwrite('rigid_body/{}/{:04d}.png'.format(output, t), img * 255)
+        cv2.imwrite('mass_spring/{}/{:04d}.png'.format(output, t), img * 255)
   
   loss[None] = 0
   compute_loss(steps - 1)

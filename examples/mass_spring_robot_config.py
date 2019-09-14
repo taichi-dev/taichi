@@ -10,14 +10,26 @@ def add_spring(a, b, length=None, stiffness=1):
   springs.append([a, b, length, stiffness])
 
 def robotA():
+  add_object([0.2, 0.1])
+  add_object([0.3, 0.13])
+  add_object([0.4, 0.1])
   add_object([0.2, 0.2])
   add_object([0.3, 0.2])
-  add_object([0.3, 0.3])
+  add_object([0.4, 0.2])
   
-  s = 4000
-  add_spring(0, 1, stiffness=s)
-  add_spring(0, 2, stiffness=s)
-  add_spring(1, 2, stiffness=s)
+  s = 14000
+  def link(a, b):
+    add_spring(a, b, stiffness=s)
+    
+  link(0, 1)
+  link(1, 2)
+  link(3, 4)
+  link(4, 5)
+  link(0, 3)
+  link(2, 5)
+  link(0, 4)
+  link(1, 4)
+  link(2, 4)
   
   return objects, springs
 

@@ -50,12 +50,13 @@ friction = 0.7
 penalty = 1e4
 damping = 0.01
 
-gradient_clip = 300
+gradient_clip = 30
 spring_omega = 30
 
 n_springs = 0
 spring_anchor_a = ti.global_var(ti.i32)
 spring_anchor_b = ti.global_var(ti.i32)
+# spring_length = -1 means it is a joint
 spring_length = scalar()
 spring_offset_a = vec()
 spring_offset_b = vec()
@@ -85,7 +86,7 @@ def place():
 
 
 dt = 0.001
-learning_rate = 0.00001
+learning_rate = 0.0001
 
 
 @ti.func
@@ -178,8 +179,8 @@ def apply_spring_force(t: ti.i32):
   for i in range(n_springs):
     a = spring_anchor_a[i]
     b = spring_anchor_b[i]
-    pos_a, _, rela_a = to_world(t, a, spring_offset_a[i])
-    pos_b, _, rela_b = to_world(t, b, spring_offset_b[i])
+    pos_a, vel_a, rela_a = to_world(t, a, spring_offset_a[i])
+    pos_b, vel_b, rela_b = to_world(t, b, spring_offset_b[i])
     dist = pos_a - pos_b
     length = dist.norm() + 1e-4
     
@@ -190,9 +191,27 @@ def apply_spring_force(t: ti.i32):
     actuation += bias[i]
     actuation = ti.tanh(actuation)
     
-    target_length = spring_length[i] * (0.7 + 0.6 * actuation)
+    is_joint = spring_length[i] == -1
+    
+    target_length = spring_length[i] * (0.8 + 0.4 * actuation)
+    if is_joint:
+      target_length = 0.0
     impulse = dt * (length - target_length) * spring_stiffness[
       i] / length * dist
+    
+    if is_joint:
+      rela_vel = vel_a - vel_b
+      rela_vel_norm = rela_vel.norm() + 1e-3
+      impulse_dir = rela_vel / rela_vel_norm
+      impulse_contribution = inverse_mass[a] + ti.sqr(
+        cross(impulse_dir, rela_a)) * inverse_inertia[
+                               a] + inverse_mass[b] + ti.sqr(cross(impulse_dir,
+                                                                   rela_b)) * \
+                             inverse_inertia[
+                               b]
+      # project relative velocity
+      impulse += rela_vel_norm / impulse_contribution * impulse_dir
+    
     apply_impulse(t, a, -impulse, pos_a)
     apply_impulse(t, b, impulse, pos_b)
 
@@ -379,6 +398,7 @@ def main():
   add_object(x=[0.2, 0.15], halfsize=[0.03, 0.02])
   add_object(x=[0.3, 0.15], halfsize=[0.03, 0.02])
   add_object(x=[0.4, 0.15], halfsize=[0.03, 0.02])
+  add_object(x=[0.4, 0.3], halfsize=[0.005, 0.03])
   
   l = 0.12
   s = 15
@@ -388,12 +408,13 @@ def main():
   add_spring(0, 2, [0.03, 0.00], [0.0, 0.0], l, s)
   add_spring(0, 3, [0.03, 0.00], [0.0, 0.0], l, s)
   add_spring(0, 3, [0.1, 0.00], [0.0, 0.0], l, s)
+  add_spring(0, 4, [0.1, 0], [0, -0.05], -1, s)
   
   setup_robot()
   
   for i in range(n_springs):
     for j in range(n_sin_waves):
-      weights[i, j] = np.random.randn() * 0.01
+      weights[i, j] = np.random.randn() * 0.001
   
   forward('initial')
   for iter in range(1000):
@@ -422,7 +443,6 @@ def main():
       for j in range(n_sin_waves):
         weights[i, j] += scale * weights.grad[i, j]
       bias[i] += scale * bias.grad[i]
-    
   
   clear()
   forward('final')

@@ -232,7 +232,8 @@ def advance(t: ti.i32):
 
 @ti.kernel
 def compute_loss(t: ti.i32):
-  loss[None] = (x[t, head_id] - ti.Vector(goal)).norm()
+  #loss[None] = (x[t, head_id] - ti.Vector(goal)).norm()
+  loss[None] = 10 * ti.abs(x[t, head_id][0] - goal[0]) + ti.abs(x[t, head_id][1] - goal[1]) 
 
 
 def forward(output=None):

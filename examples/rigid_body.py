@@ -42,7 +42,7 @@ v_inc = vec()
 omega_inc = scalar()
 
 head_id = 0
-goal = [0.7, 0.45]
+goal = [0.7, 0.65]
 
 n_objects = 0
 # target_ball = 0

@@ -1,3 +1,5 @@
+import math
+
 objects = []
 springs = []
 
@@ -46,55 +48,65 @@ def robotB():
   return objects, springs
 
 
-lThighInitAng = 0
-lCalfInitAng = 0
-rThighInitAng = 0
-rCalfInitAng = 0
+l_thigh_init_ang = 45
+l_calf_init_ang = -10
+r_thigh_init_ang = -10 
+r_calf_init_ang = -10
 initHeight = 0.15
 
 hip_pos = [0.3, 0.5 + initHeight]
+thigh_half_length = 0.11
+calf_half_length = 0.11
 
-def spreadAlongHip(pos, ang):
-  return [(pos[0]-hip_pos[0])*cos(ang) - (pos[1]-hip_pos[1])*sin(ang), (pos[0]-hip_pos[0])*sin(ang) + (pos[1]-hip_pos[1])*cos(ang)] + hip_pos
+foot_half_length = 0.08
+
+
+def rotAlong(half_length, deg, center):
+  ang = math.radians(deg)
+  return [half_length*math.sin(ang) + center[0], -half_length*math.cos(ang) + center[1]] 
 
 
 def robotLeg():
-
-
   #hip
   add_object(hip_pos, halfsize=[0.06, 0.11])
+  hip_end = [hip_pos[0], hip_pos[1] - 0.1]
 
-  #left
-  add_object(x=[0.3, 0.3 + initHeight], halfsize=[0.02, 0.11])
-  add_object(x=[0.3, 0.1 + initHeight], halfsize=[0.02, 0.11])
-  add_object(x=[0.36, 0 + initHeight], halfsize=[0.08, 0.02])
+  #left  
+  l_thigh_center = rotAlong(thigh_half_length, l_thigh_init_ang, hip_end)
+  l_thigh_end = rotAlong(thigh_half_length * 2.0, l_thigh_init_ang, hip_end)
+  add_object(l_thigh_center, halfsize=[0.02, thigh_half_length], rotation=math.radians(l_thigh_init_ang))
+  add_object(rotAlong(calf_half_length, l_calf_init_ang, l_thigh_end), halfsize=[0.02, calf_half_length], rotation = math.radians(l_calf_init_ang))
+  l_calf_end = rotAlong(2.0 * calf_half_length, l_calf_init_ang, l_thigh_end)
+  add_object([l_calf_end[0] + foot_half_length, l_calf_end[1]], halfsize=[foot_half_length, 0.02])
 
-  #right
-  add_object(x=[0.3, 0.3 + initHeight], halfsize=[0.02, 0.11])
-  add_object(x=[0.3, 0.1 + initHeight], halfsize=[0.02, 0.11])
-  add_object(x=[0.36, 0 + initHeight], halfsize=[0.08, 0.02])
+  #right 
+  add_object(rotAlong(thigh_half_length, r_thigh_init_ang, hip_end), halfsize=[0.02, thigh_half_length], rotation=math.radians(r_thigh_init_ang))
+  r_thigh_end = rotAlong(thigh_half_length * 2.0, r_thigh_init_ang, hip_end)
+  add_object(rotAlong(calf_half_length, r_calf_init_ang, r_thigh_end), halfsize=[0.02, calf_half_length], rotation = math.radians(r_calf_init_ang))
+  r_calf_end = rotAlong(2.0 * calf_half_length, r_calf_init_ang, r_thigh_end)
+  add_object([r_calf_end[0] + foot_half_length, r_calf_end[1]], halfsize=[foot_half_length, 0.02])
 
   l = 0.12
   s = 15
 
+  #left springs
+  add_spring(0, 1, [0,0.1], [0,-thigh_half_length], thigh_half_length + 0.1, 15)
+  add_spring(1, 2, [0,thigh_half_length], [0,-thigh_half_length], 2.0* thigh_half_length, 15)
+  add_spring(2, 3, [0,0], [foot_half_length,0], thigh_half_length, 15)
 
-  add_spring(0, 1, [0, 0.1], [0.0, -0.1], 0.4, 15)
-  add_spring(1, 2, [0.0, 0.1], [0.0, -0.1], 0.4, 15)
-  add_spring(2, 3, [0, 0.0], [0.05, 0], 0.15, 20)
+  add_spring(0, 1, [0, -0.1], [0.0, thigh_half_length], -1, s)
+  add_spring(1, 2, [0, -thigh_half_length], [0.0, thigh_half_length], -1, s)
+  add_spring(2, 3, [0, -thigh_half_length], [-foot_half_length,0], -1, s)
 
-  add_spring(0, 1, [0, -0.1], [0.0, 0.1], -1, s)
-  add_spring(1, 2, [0, -0.1], [0.0, 0.1], -1, s)
-  add_spring(2, 3, [0, -0.1], [-0.06, 0], -1, s)
-  
+  #right springs
+  add_spring(0, 4, [0,0.1], [0,-thigh_half_length], thigh_half_length + 0.1, 15)
+  add_spring(4, 5, [0,thigh_half_length], [0,-thigh_half_length], 2.0* thigh_half_length, 15)
+  add_spring(5, 6, [0,0], [foot_half_length,0], thigh_half_length, 15)
 
+  add_spring(0, 4, [0, -0.1], [0.0, thigh_half_length], -1, s)
+  add_spring(4, 5, [0, -thigh_half_length], [0.0, thigh_half_length], -1, s)
+  add_spring(5, 6, [0, -thigh_half_length], [-foot_half_length,0], -1, s)
 
-  add_spring(0, 4, [0, 0.1], [0.0, -0.1], 0.4, 15)
-  add_spring(4, 5, [0.0, 0.1], [0.0, -0.1], 0.4, 15)
-  add_spring(5, 6, [0, 0.0], [0.05, 0], 0.15, 20)
-
-  add_spring(0, 4, [0, -0.1], [0.0, 0.1], -1, s)
-  add_spring(4, 5, [0, -0.1], [0.0, 0.1], -1, s)
-  add_spring(5, 6, [0, -0.1], [-0.06, 0], -1, s)
 
 
   return objects, springs

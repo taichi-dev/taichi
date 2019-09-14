@@ -66,7 +66,7 @@ def initialize():
 
 @ti.kernel
 def fdtd(t: ti.i32):
-  for i in range(n_grid):
+  for i in range(n_grid): # Parallelized over GPU threads
     for j in range(n_grid):
       laplacian_p = laplacian(t - 2, i, j)
       laplacian_q = laplacian(t - 1, i, j)

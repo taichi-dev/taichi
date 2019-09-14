@@ -22,7 +22,7 @@ vec = lambda: ti.Vector(2, dt=real)
 loss = scalar()
 
 # On CPU this may not work since during AD, min's adjoint uses cmp_le, which might return -1 instead of 1
-ti.cfg.arch = ti.cuda
+# ti.cfg.arch = ti.cuda
 
 x = vec()
 v = vec()
@@ -368,15 +368,19 @@ def main():
         halfsize[i][d] += learning_rate * halfsize.grad[i][d]
     '''
     
-    def clip(x):
-      return max(min(x, gradient_clip), -gradient_clip)
+    total_norm_sqr = 0
+    for i in range(n_springs):
+      total_norm_sqr += spring_actuation.grad[i] ** 2
+      total_norm_sqr += spring_phase.grad[i] ** 2
+    
+    scale = min(1.0, gradient_clip / total_norm_sqr ** 0.5)
 
     for i in range(n_springs):
       print(spring_actuation.grad[i])
       print(spring_phase.grad[i])
-      spring_actuation[i] += learning_rate * clip(spring_actuation.grad[i])
+      spring_actuation[i] += learning_rate * scale * spring_actuation.grad[i]
       spring_actuation[i] = max(min(spring_actuation[i], spring_length[i] * 0.5), -spring_length[i] * 0.5)
-      spring_phase[i] += learning_rate * clip(spring_phase.grad[i])
+      spring_phase[i] += learning_rate * scale * spring_phase.grad[i]
 
   clear()
   forward('final')

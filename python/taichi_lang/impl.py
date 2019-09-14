@@ -127,9 +127,9 @@ class PyTaichi:
     Expr.materialize_layout_callback = None
     Expr.layout_materialized = False
     
-  def get_tape(self):
+  def get_tape(self, loss=None):
     from .tape import Tape
-    return Tape(self)
+    return Tape(self, loss)
 
 
 pytaichi = PyTaichi()

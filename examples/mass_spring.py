@@ -13,7 +13,7 @@ ti.set_default_fp(real)
 max_steps = 4096
 vis_interval = 256
 output_vis_interval = 8
-steps = 1024
+steps = 2048
 assert steps * 2 <= max_steps
 
 vis_resolution = 1024
@@ -34,13 +34,13 @@ n_objects = 0
 # target_ball = 0
 elasticity = 0.0
 ground_height = 0.1
-gravity = -19.8
+gravity = -14.8
 friction = 0.7
 penalty = 1e4
 
 gradient_clip = 1
 spring_omega = 20
-damping = 10
+damping = 15
 amplitude = 0.10
 
 n_springs = 0
@@ -102,7 +102,7 @@ def advance(t: ti.i32):
       # friction projection
       if new_v[0] > 0:
         new_v[0] -= min(new_v[0], friction * -new_v[1])
-      if new_v[0] < 0:
+      else:
         new_v[0] += min(-new_v[0], friction * -new_v[1])
       new_v[1] = 0
     v[t, i] = new_v
@@ -119,8 +119,10 @@ def forward(output=None):
   if output:
     interval = output_vis_interval
     os.makedirs('mass_spring/{}/'.format(output), exist_ok=True)
+    
+  total_steps = steps if not output else steps * 2
   
-  for t in range(1, steps):
+  for t in range(1, total_steps):
     apply_spring_force(t - 1)
     advance(t)
     
@@ -214,7 +216,7 @@ def main():
       weights[i, j] = np.random.randn() * 0.001
   
   forward('initial')
-  for iter in range(600):
+  for iter in range(500):
     clear()
     loss.grad[None] = -1
     

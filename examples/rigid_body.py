@@ -50,6 +50,7 @@ friction = 0.7
 penalty = 1e4
 damping = 0.2
 
+gradient_clip = 10
 spring_omega = 30
 
 n_springs = 4
@@ -174,11 +175,11 @@ def apply_spring_force(t: ti.i32):
     pos_a, _, rela_a = to_world(t, a, spring_offset_a[i])
     pos_b, _, rela_b = to_world(t, b, spring_offset_b[i])
     dist = pos_a - pos_b
-    length = dist.norm()
+    length = dist.norm() + 1e-4
     target_length = spring_length[i] + spring_actuation[i] * ti.sin(
       spring_omega * t * dt + spring_phase[i])
     impulse = dt * (length - target_length) * spring_stiffness[
-      i] * ti.Vector.normalized(dist)
+      i] / length * dist
     apply_impulse(t, a, -impulse, pos_a)
     apply_impulse(t, b, impulse, pos_b)
 
@@ -340,7 +341,7 @@ def main():
   halfsize[2] = [0.03, 0.03]
 
   l = 0.1
-  s = 10
+  s = 30
   add_spring(0, 0, 1, [-0.03, 0.00], [0.0, 0.0], l, s)
   add_spring(1, 0, 1, [-0.1, 0.00], [-0.0, 0.0], l, s)
   add_spring(2, 0, 2, [0.03, 0.00], [-0.0, 0.0], l, s)
@@ -366,13 +367,16 @@ def main():
         print(halfsize.grad[i][d])
         halfsize[i][d] += learning_rate * halfsize.grad[i][d]
     '''
+    
+    def clip(x):
+      return max(min(x, gradient_clip), -gradient_clip)
 
     for i in range(n_springs):
       print(spring_actuation.grad[i])
       print(spring_phase.grad[i])
-      spring_actuation[i] += learning_rate * spring_actuation.grad[i]
+      spring_actuation[i] += learning_rate * clip(spring_actuation.grad[i])
       spring_actuation[i] = max(min(spring_actuation[i], spring_length[i] * 0.5), -spring_length[i] * 0.5)
-      spring_phase[i] += learning_rate * spring_phase.grad[i]
+      spring_phase[i] += learning_rate * clip(spring_phase.grad[i])
 
   clear()
   forward('final')

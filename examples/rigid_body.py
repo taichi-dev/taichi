@@ -328,7 +328,7 @@ def setup_robot():
   n_objects = len(objects)
   n_springs = len(springs)
   
-  print(n_objects, n_springs)
+  print('n_objects=', n_objects, '   n_springs=', n_springs)
   
   for i in range(n_objects):
     x[0, i] = objects[i][0]
@@ -349,14 +349,17 @@ def add_object(x, halfsize):
 def main():
   add_object(x=[0.3, 0.25], halfsize=[0.15, 0.03])
   add_object(x=[0.2, 0.15], halfsize=[0.03, 0.03])
+  add_object(x=[0.3, 0.15], halfsize=[0.03, 0.03])
   add_object(x=[0.4, 0.15], halfsize=[0.03, 0.03])
 
   l = 0.1
   s = 30
   add_spring(0, 1, [-0.03, 0.00], [0.0, 0.0], l, s)
-  add_spring(0, 1, [-0.1, 0.00], [-0.0, 0.0], l, s)
-  add_spring(0, 2, [0.03, 0.00], [-0.0, 0.0], l, s)
-  add_spring(0, 2, [0.1, 0.00], [-0.0, 0.0], l, s)
+  add_spring(0, 1, [-0.1, 0.00], [0.0, 0.0], l, s)
+  add_spring(0, 2, [-0.03, 0.00], [0.0, 0.0], l, s)
+  add_spring(0, 2, [0.03, 0.00], [0.0, 0.0], l, s)
+  add_spring(0, 3, [0.03, 0.00], [0.0, 0.0], l, s)
+  add_spring(0, 3, [0.1, 0.00], [0.0, 0.0], l, s)
   
   setup_robot()
 

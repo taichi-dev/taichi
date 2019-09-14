@@ -41,7 +41,7 @@ omega_inc = scalar()
 head_id = 0
 goal = [0.9, 0.2]
 
-n_objects = 3
+n_objects = 0
 # target_ball = 0
 elasticity = 0.0
 ground_height = 0.1
@@ -53,7 +53,7 @@ damping = 0.01
 gradient_clip = 30
 spring_omega = 60
 
-n_springs = 4
+n_springs = 0
 spring_anchor_a = ti.global_var(ti.i32)
 spring_anchor_b = ti.global_var(ti.i32)
 spring_length = scalar()
@@ -317,35 +317,48 @@ def clear():
   clear_springs()
 
 
-def add_spring(i, a, b, offset_a, offset_b, length, stiffness):
-  spring_anchor_a[i] = a
-  spring_anchor_b[i] = b
-  spring_length[i] = length
-  spring_offset_a[i] = offset_a
-  spring_offset_b[i] = offset_b
-  spring_stiffness[i] = stiffness
+def add_spring(a, b, offset_a, offset_b, length, stiffness):
+  springs.append([a, b, offset_a, offset_b, length, stiffness])
 
+
+springs = []
+objects = []
+def setup_robot():
+  global n_objects, n_springs
+  n_objects = len(objects)
+  n_springs = len(springs)
+  
+  print(n_objects, n_springs)
+  
+  for i in range(n_objects):
+    x[0, i] = objects[i][0]
+    halfsize[i] = objects[i][1]
+  
+  for i in range(n_springs):
+    s = springs[i]
+    spring_anchor_a[i] = s[0]
+    spring_anchor_b[i] = s[1]
+    spring_offset_a[i] = s[2]
+    spring_offset_b[i] = s[3]
+    spring_length[i] = s[4]
+    spring_stiffness[i] = s[5]
+    
+def add_object(x, halfsize):
+  objects.append([x, halfsize])
 
 def main():
-  for i in range(n_objects):
-    x[0, i] = [0.5, 0.2 + 0.2 * i]
-    halfsize[i] = [0.04, 0.03]
-    # rotation[0, i] = math.pi / 4 + 0.01
-    # omega[0, i] = 0
-
-  x[0, 0] = [0.3, 0.25]
-  x[0, 1] = [0.2, 0.15]
-  x[0, 2] = [0.4, 0.15]
-  halfsize[0] = [0.15, 0.03]
-  halfsize[1] = [0.03, 0.03]
-  halfsize[2] = [0.03, 0.03]
+  add_object(x=[0.3, 0.25], halfsize=[0.15, 0.03])
+  add_object(x=[0.2, 0.15], halfsize=[0.03, 0.03])
+  add_object(x=[0.4, 0.15], halfsize=[0.03, 0.03])
 
   l = 0.1
   s = 30
-  add_spring(0, 0, 1, [-0.03, 0.00], [0.0, 0.0], l, s)
-  add_spring(1, 0, 1, [-0.1, 0.00], [-0.0, 0.0], l, s)
-  add_spring(2, 0, 2, [0.03, 0.00], [-0.0, 0.0], l, s)
-  add_spring(3, 0, 2, [0.1, 0.00], [-0.0, 0.0], l, s)
+  add_spring(0, 1, [-0.03, 0.00], [0.0, 0.0], l, s)
+  add_spring(0, 1, [-0.1, 0.00], [-0.0, 0.0], l, s)
+  add_spring(0, 2, [0.03, 0.00], [-0.0, 0.0], l, s)
+  add_spring(0, 2, [0.1, 0.00], [-0.0, 0.0], l, s)
+  
+  setup_robot()
 
   # forward('initial')
   for iter in range(1000):

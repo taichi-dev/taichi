@@ -9,6 +9,7 @@ import os
 
 real = ti.f32
 ti.set_default_fp(real)
+# ti.cfg.print_ir = True
 
 max_steps = 4096
 vis_interval = 256
@@ -34,9 +35,8 @@ n_objects = 0
 # target_ball = 0
 elasticity = 0.0
 ground_height = 0.1
-gravity = -14.8
-friction = 0.7
-penalty = 1e4
+gravity = -9.8
+friction = 1.2
 
 gradient_clip = 1
 spring_omega = 20
@@ -66,7 +66,7 @@ def place():
 
 
 dt = 0.001
-learning_rate = 0.05
+learning_rate = 0.5
 
 @ti.kernel
 def apply_spring_force(t: ti.i32):
@@ -101,9 +101,9 @@ def advance(t: ti.i32):
     if depth < 0 and new_v[1] < 0:
       # friction projection
       if new_v[0] > 0:
-        new_v[0] -= min(new_v[0], friction * -new_v[1])
-      else:
-        new_v[0] += min(-new_v[0], friction * -new_v[1])
+        new_v[0] -= ti.min(new_v[0], friction * -new_v[1])
+      if new_v[0] < 0:
+        new_v[0] += ti.min(-new_v[0], friction * -new_v[1])
       new_v[1] = 0
     v[t, i] = new_v
     x[t, i] = x[t - 1, i] + dt * v[t, i]
@@ -213,10 +213,10 @@ def main():
   
   for i in range(n_springs):
     for j in range(n_sin_waves):
-      weights[i, j] = np.random.randn() * 0.001
+      weights[i, j] = np.random.randn() * 0.1
   
   forward('initial')
-  for iter in range(500):
+  for iter in range(100):
     clear()
     loss.grad[None] = -1
     

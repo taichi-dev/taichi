@@ -3,7 +3,7 @@
 #include <llvm/Target/TargetMachine.h>
 #include <llvm/Analysis/TargetTransformInfo.h>
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
-#if defined(TC_WITH_CUDA)
+#if defined(TLANG_WITH_CUDA)
 #include <cuda.h>
 #endif
 #include "llvm_jit.h"

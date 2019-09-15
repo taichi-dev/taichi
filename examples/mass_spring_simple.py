@@ -44,7 +44,7 @@ def place():
 
 
 dt = 0.001
-learning_rate = 0.5
+learning_rate = 5
 
 @ti.kernel
 def apply_spring_force(t: ti.i32):
@@ -78,7 +78,7 @@ def compute_loss(t: ti.i32):
 
 def visualize(output, t):
   img = np.ones(shape=(vis_resolution, vis_resolution, 3),
-                dtype=np.float32) * 0.8
+                dtype=np.float32) * (216 / 255.0)
   
   def circle(x, y, color):
     radius = 0.02
@@ -88,14 +88,13 @@ def visualize(output, t):
                thickness=-1)
   
   for i in range(n_objects):
-    color = (0.4, 0.6, 0.6)
+    color = (0.24, 0.3, 0.25)
     circle(x[t, i][0], x[t, i][1], color)
   
   for i in range(n_springs):
     def get_pt(x):
       return int(x[0] * vis_resolution), int(vis_resolution - x[1]* vis_resolution)
-    act = 0
-    cv2.line(img, get_pt(x[t, spring_anchor_a[i]]), get_pt(x[t, spring_anchor_b[i]]), (0.5 + act, 0.5, 0.5 - act), thickness=6)
+    cv2.line(img, get_pt(x[t, spring_anchor_a[i]]), get_pt(x[t, spring_anchor_b[i]]), (0.2, 0.75, 0.48), thickness=4)
   
   cv2.imshow('img', img)
   cv2.waitKey(1)
@@ -115,7 +114,6 @@ def forward(output=None):
     if (t + 1) % interval == 0:
       visualize(output, t)
   
-  loss[None] = 0
   compute_loss(steps - 1)
 
 
@@ -133,7 +131,7 @@ def clear_springs():
   for i in range(n_springs):
     spring_length.grad[i] = 0.0
 
-def clear():
+def clear_tensors():
   clear_states()
   clear_springs()
 
@@ -145,10 +143,13 @@ def main():
   spring_anchor_a[0], spring_anchor_b[0], spring_length[0] = 0, 1, 0.1
   spring_anchor_a[1], spring_anchor_b[1], spring_length[1] = 1, 2, 0.1
   spring_anchor_a[2], spring_anchor_b[2], spring_length[2] = 2, 0, 0.1 * 2 ** 0.5
+
+  clear_tensors()
+  forward('initial')
   
   losses = []
-  for iter in range(200):
-    clear()
+  for iter in range(25):
+    clear_tensors()
     
     with ti.Tape(loss):
       forward()
@@ -157,9 +158,14 @@ def main():
     losses.append(loss[None])
 
     for i in range(n_springs):
-      print(spring_length.grad[i])
-    for i in range(n_springs):
       spring_length[i] -= learning_rate * spring_length.grad[i]
+  
+  for i in range(n_springs):
+    print(i, spring_length[i])
+
+
+  fig = plt.gcf()
+  fig.set_size_inches(4, 3)
   
   plt.plot(losses)
   plt.title("Spring Rest Length Optimization")
@@ -168,9 +174,11 @@ def main():
   plt.tight_layout()
 
   plt.show()
-  clear()
+  clear_tensors()
   forward('final')
 
 
 if __name__ == '__main__':
   main()
+  
+  

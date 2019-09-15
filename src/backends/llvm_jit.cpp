@@ -3,7 +3,9 @@
 #include <llvm/Target/TargetMachine.h>
 #include <llvm/Analysis/TargetTransformInfo.h>
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
+#if defined(TC_WITH_CUDA)
 #include <cuda.h>
+#endif
 #include "llvm_jit.h"
 
 TLANG_NAMESPACE_BEGIN
@@ -43,7 +45,7 @@ std::string mattrs() {
   }
   */
 }
-
+#if defined(TLANG_WITH_CUDA)
 std::string compile_module_to_ptx(std::unique_ptr<llvm::Module> &module) {
   using namespace llvm;
 
@@ -265,6 +267,16 @@ int compile_ptx_and_launch(const std::string &ptx,
   checkCudaErrors(cuModuleUnload(cudaModule));
   checkCudaErrors(cuCtxDestroy(context));
 }
+#else
+std::string compile_module_to_ptx(std::unique_ptr<llvm::Module> &module) {
+  TC_NOT_IMPLEMENTED
+}
+
+int compile_ptx_and_launch(const std::string &ptx,
+                           const std::string &kernel_name) {
+  TC_NOT_IMPLEMENTED
+}
+#endif
 
 TLANG_NAMESPACE_END
 #endif

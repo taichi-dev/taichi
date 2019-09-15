@@ -42,7 +42,7 @@ v_inc = vec()
 omega_inc = scalar()
 
 head_id = 3
-goal = [0.7, 0.85]
+goal = [0.7, 0.15]
 
 n_objects = 0
 # target_ball = 0
@@ -89,7 +89,7 @@ def place():
 
 
 dt = 0.001
-learning_rate = 0.1
+learning_rate = 1.0
 
 
 @ti.func
@@ -240,11 +240,13 @@ def forward(output=None):
   initialize_properties()
   
   interval = vis_interval
+  total_steps = steps
   if output:
     interval = output_vis_interval
     os.makedirs('rigid_body/{}/'.format(output), exist_ok=True)
-  
-  for t in range(1, steps):
+    total_steps *= 2
+
+  for t in range(1, total_steps):
     collide(t - 1)
     apply_spring_force(t - 1)
     advance(t)

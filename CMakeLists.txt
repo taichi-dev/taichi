@@ -80,7 +80,7 @@ endif()
 
 find_package(OpenMP)
 if(OpenMP_CXX_FOUND)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DOPENMP_FOUND")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DOPENMP_FOUND -DTLANG_WITH_OPENMP")
     message("Found OpenMP.")
 else()
     message("OpenMP not found.")

@@ -14,7 +14,7 @@ ti.set_default_fp(real)
 max_steps = 4096
 vis_interval = 256
 output_vis_interval = 8
-steps = 1024
+steps = 2048
 assert steps * 2 <= max_steps
 
 vis_resolution = 1024
@@ -41,8 +41,8 @@ inverse_inertia = scalar()
 v_inc = vec()
 omega_inc = scalar()
 
-head_id = 0
-goal = [0.7, 0.65]
+head_id = 3
+goal = [0.7, 0.85]
 
 n_objects = 0
 # target_ball = 0
@@ -89,7 +89,7 @@ def place():
 
 
 dt = 0.001
-learning_rate = 0.01
+learning_rate = 0.1
 
 
 @ti.func
@@ -196,7 +196,7 @@ def apply_spring_force(t: ti.i32):
     
     is_joint = spring_length[i] == -1
     
-    target_length = spring_length[i] * (1.0 + 0.15 * actuation)
+    target_length = spring_length[i] * (1.0 + 0.05 * actuation)
     if is_joint:
       target_length = 0.0
     impulse = dt * (length - target_length) * spring_stiffness[
@@ -232,8 +232,8 @@ def advance(t: ti.i32):
 
 @ti.kernel
 def compute_loss(t: ti.i32):
-  #loss[None] = (x[t, head_id] - ti.Vector(goal)).norm()
-  loss[None] = 10 * ti.abs(x[t, head_id][0] - goal[0]) + ti.abs(x[t, head_id][1] - goal[1]) 
+  loss[None] = (x[t, head_id] - ti.Vector(goal)).norm()
+  # loss[None] = 10 * ti.abs(x[t, head_id][0] - goal[0]) + ti.abs(x[t, head_id][1] - goal[1])
 
 
 def forward(output=None):
@@ -396,10 +396,10 @@ def main():
   
   for i in range(n_springs):
     for j in range(n_sin_waves):
-      weights[i, j] = np.random.randn() * 0.001
+      weights[i, j] = np.random.randn() * 0.1
   
   forward('initial')
-  for iter in range(300):
+  for iter in range(100):
     clear()
     loss.grad[None] = -1
     

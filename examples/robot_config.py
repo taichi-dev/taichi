@@ -48,10 +48,10 @@ def robotB():
   return objects, springs
 
 
-l_thigh_init_ang = 50
-l_calf_init_ang = -50
-r_thigh_init_ang = 0
-r_calf_init_ang =  0
+l_thigh_init_ang = 10
+l_calf_init_ang = -10
+r_thigh_init_ang = 10
+r_calf_init_ang = -10
 initHeight = 0.15
 
 hip_pos = [0.3, 0.5 + initHeight]
@@ -90,7 +90,7 @@ def robotLeg():
 
   thigh_relax = 0.9
   leg_relax = 0.9
-  foot_relax = 0.9
+  foot_relax = 0.7
 
   thigh_stiff = 5
   leg_stiff = 20

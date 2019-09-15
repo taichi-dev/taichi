@@ -3,6 +3,7 @@ import math
 import numpy as np
 import cv2
 import os
+import matplotlib.pyplot as plt
 
 real = ti.f32
 ti.set_default_fp(real)
@@ -44,7 +45,7 @@ def place():
 
 
 dt = 0.001
-learning_rate = 0.01
+learning_rate = 0.05
 
 @ti.kernel
 def apply_spring_force(t: ti.i32):
@@ -73,7 +74,7 @@ def compute_loss(t: ti.i32):
   x02 = x[t, 0] - x[t, 2]
   area = ti.abs(0.5 * (x01[0] * x02[1] - x01[1] * x02[0])) # area from cross product
   target_area = 0.1
-  loss[None] = ti.abs(area - target_area)
+  loss[None] = ti.sqr(area - target_area)
 
 
 def visualize(output, t):
@@ -147,6 +148,7 @@ def main():
   spring_anchor_a[1], spring_anchor_b[1], spring_length[1] = 1, 2, 0.1
   spring_anchor_a[2], spring_anchor_b[2], spring_length[2] = 2, 0, 0.1
   
+  losses = []
   for iter in range(100):
     clear()
     
@@ -154,9 +156,13 @@ def main():
       forward()
     
     print('Iter=', iter, 'Loss=', loss[None])
+    losses.append(loss[None])
     
     for i in range(n_springs):
       spring_length[i] -= learning_rate * spring_length.grad[i]
+  
+  plt.plot(losses)
+  plt.show()
   
   clear()
   forward('final')

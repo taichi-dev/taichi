@@ -11,8 +11,7 @@ ti.set_default_fp(real)
 max_steps = 1024
 vis_interval = 256
 output_vis_interval = 8
-steps = 512
-assert steps * 2 <= max_steps
+steps = 1024
 
 vis_resolution = 1024
 
@@ -33,7 +32,7 @@ spring_anchor_a = ti.global_var(ti.i32)
 spring_anchor_b = ti.global_var(ti.i32)
 spring_length = scalar()
 spring_stiffness = 10
-damping = 10
+damping = 20
 
 @ti.layout
 def place():
@@ -101,17 +100,15 @@ def visualize(output, t):
   cv2.imshow('img', img)
   cv2.waitKey(1)
   if output:
-    cv2.imwrite('mass_spring/{}/{:04d}.png'.format(output, t), img * 255)
+    cv2.imwrite('mass_spring_simple/{}/{:04d}.png'.format(output, t), img * 255)
 
 def forward(output=None):
   interval = vis_interval
   if output:
     interval = output_vis_interval
-    os.makedirs('mass_spring/{}/'.format(output), exist_ok=True)
+    os.makedirs('mass_spring_simple/{}/'.format(output), exist_ok=True)
     
-  total_steps = steps if not output else steps * 2
-  
-  for t in range(1, total_steps):
+  for t in range(1, steps):
     apply_spring_force(t)
     time_integrate(t)
     
@@ -147,10 +144,10 @@ def main():
   
   spring_anchor_a[0], spring_anchor_b[0], spring_length[0] = 0, 1, 0.1
   spring_anchor_a[1], spring_anchor_b[1], spring_length[1] = 1, 2, 0.1
-  spring_anchor_a[2], spring_anchor_b[2], spring_length[2] = 2, 0, 0.1
+  spring_anchor_a[2], spring_anchor_b[2], spring_length[2] = 2, 0, 0.1 * 2 ** 0.5
   
   losses = []
-  for iter in range(1000):
+  for iter in range(200):
     clear()
     
     with ti.Tape(loss):
@@ -165,8 +162,12 @@ def main():
       spring_length[i] -= learning_rate * spring_length.grad[i]
   
   plt.plot(losses)
+  plt.title("Spring Rest Length Optimization")
+  plt.xlabel("Gradient descent iterations")
+  plt.ylabel("Loss")
+  plt.tight_layout()
+
   plt.show()
-  
   clear()
   forward('final')
 

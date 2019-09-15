@@ -33,7 +33,6 @@ spring_anchor_a = ti.global_var(ti.i32)
 spring_anchor_b = ti.global_var(ti.i32)
 spring_length = scalar()
 spring_stiffness = 10
-damping = 20
 
 @ti.layout
 def place():
@@ -45,7 +44,7 @@ def place():
 
 
 dt = 0.001
-learning_rate = 0.5
+learning_rate = 0.005
 
 @ti.kernel
 def apply_spring_force(t: ti.i32):
@@ -62,17 +61,15 @@ def apply_spring_force(t: ti.i32):
 @ti.kernel
 def time_integrate(t: ti.i32):
   for i in range(n_objects):
-    s = math.exp(-dt * damping)
-    tmp = s * v[t - 1, i] + dt * force[t, i] / mass
+    tmp = v[t - 1, i] + dt * force[t, i] / mass
     v[t, i] = tmp
     x[t, i] = x[t - 1, i] + dt * tmp
 
 
 @ti.kernel
 def compute_loss(t: ti.i32):
-  x01 = x[t, 0] - x[t, 1]
   target_length = 0.2
-  loss[None] = ti.sqr(x01.norm() - target_length)
+  loss[None] = ti.sqr(spring_length[0] - target_length)
 
 
 def visualize(output, t):
@@ -102,21 +99,6 @@ def visualize(output, t):
     cv2.imwrite('mass_spring/{}/{:04d}.png'.format(output, t), img * 255)
 
 def forward(output=None):
-  interval = vis_interval
-  if output:
-    interval = output_vis_interval
-    os.makedirs('mass_spring/{}/'.format(output), exist_ok=True)
-    
-  total_steps = steps if not output else steps * 2
-  
-  for t in range(1, total_steps):
-    apply_spring_force(t)
-    time_integrate(t)
-    
-    if (t + 1) % interval == 0:
-      visualize(output, t)
-  
-  loss[None] = 0
   compute_loss(steps - 1)
 
 
@@ -136,6 +118,7 @@ def clear_springs():
 
 def clear():
   clear_states()
+  clear_springs()
 
 def main():
   x[0, 0] = [0.3, 0.3]

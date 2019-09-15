@@ -33,7 +33,7 @@ spring_anchor_a = ti.global_var(ti.i32)
 spring_anchor_b = ti.global_var(ti.i32)
 spring_length = scalar()
 spring_stiffness = 10
-damping = 20
+damping = 10
 
 @ti.layout
 def place():
@@ -45,7 +45,7 @@ def place():
 
 
 dt = 0.001
-learning_rate = 0.05
+learning_rate = 0.5
 
 @ti.kernel
 def apply_spring_force(t: ti.i32):
@@ -138,6 +138,7 @@ def clear_springs():
 
 def clear():
   clear_states()
+  clear_springs()
 
 def main():
   x[0, 0] = [0.3, 0.3]

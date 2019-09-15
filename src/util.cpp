@@ -285,7 +285,7 @@ std::string CompileConfig::compiler_config() {
   std::string cmd;
   if (arch == Arch::x86_64) {
 #if defined(OPENMP_FOUND)
-    std::string omp_flag = "-fopenmp";
+    std::string omp_flag = "-fopenmp -DTLANG_WITH_OPENMP";
 #else
     std::string omp_flag = "";
 #endif

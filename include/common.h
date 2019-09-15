@@ -46,7 +46,9 @@ __device__ __constant__ int *error_code;
 #include <iostream>
 #include <array>
 #include <vector>
+#if defined(TLANG_WITH_OPENMP)
 #include <omp.h>
+#endif
 
 using float32 = float;
 using float64 = double;

@@ -9,9 +9,9 @@ real = ti.f32
 ti.set_default_fp(real)
 
 max_steps = 1024
-vis_interval = 256
-output_vis_interval = 8
-steps = 512
+vis_interval = 16
+output_vis_interval = 2
+steps = 64
 assert steps * 2 <= max_steps
 
 vis_resolution = 1024
@@ -45,7 +45,7 @@ def place():
 
 
 dt = 0.001
-learning_rate = 0.05
+learning_rate = 0.5
 
 @ti.kernel
 def apply_spring_force(t: ti.i32):
@@ -56,7 +56,6 @@ def apply_spring_force(t: ti.i32):
     dist = x_a - x_b
     length = dist.norm() + 1e-4
     F = (length - spring_length[i]) * spring_stiffness * dist / length
-    # apply spring impulses to mass points. Use atomic_add for parallel safety.
     ti.atomic_add(force[t, a],  -F)
     ti.atomic_add(force[t, b],  F)
 
@@ -64,8 +63,9 @@ def apply_spring_force(t: ti.i32):
 def time_integrate(t: ti.i32):
   for i in range(n_objects):
     s = math.exp(-dt * damping)
-    v[t, i] = s * v[t - 1, i] + dt * force[t, i] / mass
-    x[t, i] = x[t - 1, i] + dt * v[t, i]
+    tmp = s * v[t - 1, i] + dt * force[t, i] / mass
+    v[t, i] = tmp
+    x[t, i] = x[t - 1, i] + dt * tmp
 
 
 @ti.kernel
@@ -144,7 +144,8 @@ def main():
   spring_anchor_a[0], spring_anchor_b[0], spring_length[0] = 0, 1, 0.1
   
   losses = []
-  for iter in range(1000):
+  grads = []
+  for iter in range(100):
     clear()
     
     with ti.Tape(loss):
@@ -152,13 +153,23 @@ def main():
     
     print('Iter=', iter, 'Loss=', loss[None])
     losses.append(loss[None])
+    grads.append(spring_length.grad[0])
 
     for i in range(n_springs):
       print(spring_length.grad[i])
+    print(x.grad[steps - 1, 0][0])
+    print(x.grad[steps - 1, 0][1])
+    print(x.grad[steps - 1, 1][0])
+    print(x.grad[steps - 1, 1][1])
     for i in range(n_springs):
       spring_length[i] -= learning_rate * spring_length.grad[i]
+      
+    if loss[None] < 1e-4:
+      break
   
-  plt.plot(losses)
+  plt.plot(losses, label='losses')
+  plt.plot(grads, label='grad')
+  plt.legend()
   plt.show()
   
   clear()

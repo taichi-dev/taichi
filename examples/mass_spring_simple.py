@@ -1,5 +1,3 @@
-import sys
-
 import taichi_lang as ti
 import math
 import numpy as np
@@ -8,12 +6,11 @@ import os
 
 real = ti.f32
 ti.set_default_fp(real)
-# ti.cfg.print_ir = True
 
-max_steps = 4096
+max_steps = 1024
 vis_interval = 256
 output_vis_interval = 8
-steps = 2048
+steps = 512
 assert steps * 2 <= max_steps
 
 vis_resolution = 1024
@@ -22,19 +19,12 @@ scalar = lambda: ti.var(dt=real)
 vec = lambda: ti.Vector(2, dt=real)
 
 loss = scalar()
-
 x = vec()
 v = vec()
 force = vec()
 
-head_id = 0
-
 n_objects = 3
 
-gradient_clip = 1
-spring_omega = 20
-damping = 15
-amplitude = 0.10
 mass = 1
 
 n_springs = 3
@@ -42,6 +32,7 @@ spring_anchor_a = ti.global_var(ti.i32)
 spring_anchor_b = ti.global_var(ti.i32)
 spring_length = scalar()
 spring_stiffness = 10
+damping = 20
 
 @ti.layout
 def place():
@@ -53,7 +44,7 @@ def place():
 
 
 dt = 0.001
-learning_rate = 0.005
+learning_rate = 0.01
 
 @ti.kernel
 def apply_spring_force(t: ti.i32):
@@ -71,13 +62,18 @@ def apply_spring_force(t: ti.i32):
 @ti.kernel
 def time_integrate(t: ti.i32):
   for i in range(n_objects):
-    v[t, i] = v[t - 1, i] + dt * force[t, i] / mass
+    s = math.exp(-dt * damping)
+    v[t, i] = s * v[t - 1, i] + dt * force[t, i] / mass
     x[t, i] = x[t - 1, i] + dt * v[t, i]
 
 
 @ti.kernel
 def compute_loss(t: ti.i32):
-  loss[None] = (x[t, head_id] - ti.Vector([0.4, 0.4])).norm()
+  x01 = x[t, 0] - x[t, 1]
+  x02 = x[t, 0] - x[t, 2]
+  area = ti.abs(0.5 * (x01[0] * x02[1] - x01[1] * x02[0])) # area from cross product
+  target_area = 0.1
+  loss[None] = ti.abs(area - target_area)
 
 
 def visualize(output, t):
@@ -93,8 +89,6 @@ def visualize(output, t):
   
   for i in range(n_objects):
     color = (0.4, 0.6, 0.6)
-    if i == head_id:
-      color = (0.8, 0.2, 0.3)
     circle(x[t, i][0], x[t, i][1], color)
   
   for i in range(n_springs):

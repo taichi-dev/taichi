@@ -149,7 +149,7 @@ def main():
   spring_anchor_a[2], spring_anchor_b[2], spring_length[2] = 2, 0, 0.1
   
   losses = []
-  for iter in range(100):
+  for iter in range(1000):
     clear()
     
     with ti.Tape(loss):
@@ -157,7 +157,9 @@ def main():
     
     print('Iter=', iter, 'Loss=', loss[None])
     losses.append(loss[None])
-    
+
+    for i in range(n_springs):
+      print(spring_length.grad[i])
     for i in range(n_springs):
       spring_length[i] -= learning_rate * spring_length.grad[i]
   

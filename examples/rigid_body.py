@@ -403,14 +403,9 @@ def main():
   forward('initial')
   for iter in range(100):
     clear()
-    loss.grad[None] = -1
     
-    tape = ti.tape()
-    
-    with tape:
+    with ti.Tape(loss):
       forward()
-    
-    tape.grad()
     
     print('Iter=', iter, 'Loss=', loss[None])
     
@@ -425,8 +420,8 @@ def main():
     scale = learning_rate * min(1.0, gradient_clip / total_norm_sqr ** 0.5)
     for i in range(n_springs):
       for j in range(n_sin_waves):
-        weights[i, j] += scale * weights.grad[i, j]
-      bias[i] += scale * bias.grad[i]
+        weights[i, j] -= scale * weights.grad[i, j]
+      bias[i] -= scale * bias.grad[i]
   
   clear()
   forward('final')

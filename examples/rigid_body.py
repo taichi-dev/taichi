@@ -155,8 +155,6 @@ def collide(t: ti.i32):
       timpulse_contribution = inverse_mass[i] + ti.sqr(rt) * \
                               inverse_inertia[i]
       
-      # ti.print(impulse_contribution)
-      
       rela_v_ground = normal.dot(corner_v)
       
       impulse = 0.0

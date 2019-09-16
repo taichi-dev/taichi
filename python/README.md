@@ -43,10 +43,50 @@ def print():
     y[i] = x[i]
   for i in x:
     z[i] = x[i]
-
 ```
 
 - `Taichi`-scope (`ti.kernel`) v.s. `Python`-scope: everything decorated by `ti.kernel` is in `Taichi`-scope, which will be compiled by the Taichi compiler.
+ - TODO: "It would be useful if there was a way to pass in global vars to kernels. At the moment I'm duplicating code in 2 kernels, each of which operates on a different global var."
+## Functions
+ - Use `@ti.func` to decorate your Taichi functions. These functions are callable only in `Taichi`-scope. Don't call them in `Python`-scope. All function calls are force-inlined, so no recursion supported.
+```python
+@ti.func
+def laplacian(t, i, j):
+  return inv_dx2 * (
+      -4 * p[t, i, j] + p[t, i, j - 1] + p[t, i, j + 1] + p[t, i + 1, j] +
+      p[t, i - 1, j])
+
+@ti.kernel
+def fdtd(t: ti.i32):
+  for i in range(n_grid): # Parallelized over GPU threads
+    for j in range(n_grid):
+      laplacian_p = laplacian(t - 2, i, j)
+      laplacian_q = laplacian(t - 1, i, j)
+      p[t, i, j] = 2 * p[t - 1, i, j] + (
+          c * c * dt * dt + c * alpha * dt) * laplacian_q - p[
+                     t - 2, i, j] - c * alpha * dt * laplacian_p
+```
+ - Functions with multiple return values are not supported now. Use a local variable instead:
+```python
+# Good function
+@ti.func
+def safe_sqrt(x):
+  rst = 0.0
+  if x >= 0:
+    rst = ti.sqrt(x)
+  else:
+    rst = 0.0
+  return rst
+
+# Bad function with two *return*s
+@ti.func
+def safe_sqrt(x):
+  if x >= 0:
+    return ti.sqrt(x)
+  else:
+    return 0.0
+```
+
 
 # Data Layout
  - Non-power-of-two tensor dimensions are promoted into powers of two. For example, a tensor of size `(18, 65)` will be materialized as `(32, 128)`. Be careful if you want to iterate over this structural node when it is dense: the loop variables will become iterate over the promoted large domain instead of the original compact domain. Use a range-for instead. For sparse structural nodes, this makes no difference.

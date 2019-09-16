@@ -14,7 +14,9 @@ class Tape:
   def __exit__(self, type, value, tb):
     # print('# kernel calls', len(self.calls))
     self.runtime.target_tape = None
+    print('tag a')
     if self.eval_on_exit:
+      print('tag b')
       self.grad(extra_frame_backtrace=1)
   
   def insert(self, func, args):

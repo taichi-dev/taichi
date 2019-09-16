@@ -1,6 +1,8 @@
 # The **Taichi** Programming Language
 ### High-Performance Computing on Spatially Sparse Data Structures
 
+# [Python Frontend Tutorial](https://github.com/yuanming-hu/taichi_lang/blob/master/python/README.md#the-taichi-python-frontend)
+
 # Installation
 Supports Ubuntu 14.04/16.04/18.04, ArchLinux, Mac OS X. For GPU support, CUDA 9.0+ is needed.
 
@@ -22,12 +24,6 @@ Supports Ubuntu 14.04/16.04/18.04, ArchLinux, Mac OS X. For GPU support, CUDA 9.
  - Execute `source ~/.bashrc` (or `source ~/.zshrc`) to reload shell config.
  - Execute `ti test` to run all the tests. It may take a around 20 minutes to run all tests.
 
-# Troubleshooting
- - Run with debug mode to see if there's any illegal memory access;
- - Disable compiler optimizations to quickly confirm that the issue is not cause by optimization;
-
-# [Python Frontend Tutorial](https://github.com/yuanming-hu/taichi_lang/blob/master/python/README.md#the-taichi-python-frontend)
-
 # Folder Structure
 Key folders are
  - *examples* : example programs written in Taichi
@@ -42,6 +38,10 @@ Key folders are
    - *program*: the context for taichi programs
    - ...
  - *test*: unit tests
+
+# Troubleshooting
+ - Run with debug mode to see if there's any illegal memory access;
+ - Disable compiler optimizations to quickly confirm that the issue is not cause by optimization;
 
 # Bibtex
 ```

@@ -1,4 +1,7 @@
 # The Taichi Python Frontend
+
+Make sure you also check out the DiffTaichi paper (section "Language design" and "Appendix A") to learn more about the language.
+
 ## Global Tensors
  - Every global variable is an N-dimensional tensor. Global scalars are treated as 0-D tensors.
  - Global tensors are accessed using indices, e.g. `x[i, j, k]` if `x` is a 3D tensor. For 0-D tensor, access it as `x[None]`.

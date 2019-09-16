@@ -42,3 +42,15 @@ Key folders are
    - *program*: the context for taichi programs
    - ...
  - *test*: unit tests
+
+# Bibtex
+```
+@inproceedings{hu2019taichi,
+  title={Taichi: A Language for High-Performance Computation on Spatially Sparse Data Structures},
+  author={Hu, Yuanming and Li, Tzu-Mao and Anderson, Luke and Ragan-Kelley, Jonathan and Durand, Fr\'edo},
+  booktitle={SIGGRAPH Asia 2019 Technical Papers},
+  pages={201},
+  year={2019},
+  organization={ACM}
+}
+```

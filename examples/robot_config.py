@@ -70,7 +70,7 @@ half_hip_length = 0.08
 
 def robotLeg():
   #hip
-  add_object(hip_pos, halfsize=[0.08, half_hip_length])
+  add_object(hip_pos, halfsize=[0.06, half_hip_length])
   hip_end = [hip_pos[0], hip_pos[1] - (half_hip_length-0.01)]
 
   #left  
@@ -94,12 +94,12 @@ def robotLeg():
   leg_relax = 0.9
   foot_relax = 0.7
 
-  thigh_stiff = 10
+  thigh_stiff = 5
   leg_stiff = 20
   foot_stiff = 40
 
   #left springs
-  add_spring(0, 1, [0,(half_hip_length-0.01)*0.5], [0,-thigh_half_length], thigh_relax*(2.0*thigh_half_length + 0.22), thigh_stiff)
+  add_spring(0, 1, [0,(half_hip_length-0.01)*0.4], [0,-thigh_half_length], thigh_relax*(2.0*thigh_half_length + 0.22), thigh_stiff)
   add_spring(1, 2, [0,thigh_half_length], [0,-thigh_half_length], leg_relax * 4.0* thigh_half_length, leg_stiff)
   add_spring(2, 3, [0,0], [foot_half_length,0], foot_relax*math.sqrt(pow(thigh_half_length,2)+pow(2.0*foot_half_length,2)), foot_stiff)
 
@@ -108,7 +108,7 @@ def robotLeg():
   add_spring(2, 3, [0, -thigh_half_length], [-foot_half_length,0], -1, s)
 
   #right springs
-  add_spring(0, 4, [0,(half_hip_length-0.01)*0.5], [0,-thigh_half_length], thigh_relax*(2.0*thigh_half_length + 0.22), thigh_stiff)
+  add_spring(0, 4, [0,(half_hip_length-0.01)*0.4], [0,-thigh_half_length], thigh_relax*(2.0*thigh_half_length + 0.22), thigh_stiff)
   add_spring(4, 5, [0,thigh_half_length], [0,-thigh_half_length], leg_relax * 4.0* thigh_half_length, leg_stiff)
   add_spring(5, 6, [0,0], [foot_half_length,0], foot_relax*math.sqrt(pow(thigh_half_length,2)+pow(2.0*foot_half_length,2)), foot_stiff)
 

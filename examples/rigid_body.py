@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 
 real = ti.f32
 ti.set_default_fp(real)
- 
+
 max_steps = 4096
 vis_interval = 256
 output_vis_interval = 8
@@ -401,14 +401,9 @@ def main():
   forward('initial')
   for iter in range(200):
     clear()
-    loss.grad[None] = -1
     
-    tape = ti.tape()
-    
-    with tape:
+    with ti.Tape(loss):
       forward()
-    
-    tape.grad()
     
     print('Iter=', iter, 'Loss=', loss[None])
     
@@ -423,8 +418,8 @@ def main():
     scale = learning_rate * min(1.0, gradient_clip / total_norm_sqr ** 0.5)
     for i in range(n_springs):
       for j in range(n_sin_waves):
-        weights[i, j] += scale * weights.grad[i, j]
-      bias[i] += scale * bias.grad[i]
+        weights[i, j] -= scale * weights.grad[i, j]
+      bias[i] -= scale * bias.grad[i]
   
   clear()
   forward('final')

@@ -399,7 +399,7 @@ def main():
       weights[i, j] = np.random.randn() * 0.1
   
   forward('initial')
-  for iter in range(100):
+  for iter in range(200):
     clear()
     
     with ti.Tape(loss):

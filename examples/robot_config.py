@@ -94,7 +94,7 @@ def robotLeg():
   leg_relax = 0.9
   foot_relax = 0.7
 
-  thigh_stiff = 5
+  thigh_stiff = 10
   leg_stiff = 20
   foot_stiff = 40
 

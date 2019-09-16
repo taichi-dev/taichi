@@ -13,7 +13,7 @@ ti.set_default_fp(real)
 
 max_steps = 4096
 vis_interval = 256
-output_vis_interval = 8
+output_vis_interval = 16
 steps = 2048
 assert steps * 2 <= max_steps
 
@@ -55,6 +55,7 @@ damping = 10
 
 gradient_clip = 30
 spring_omega = 30
+default_actuation = 0.05
 
 n_springs = 0
 spring_anchor_a = ti.global_var(ti.i32)
@@ -194,7 +195,7 @@ def apply_spring_force(t: ti.i32):
     
     is_joint = spring_length[i] == -1
     
-    target_length = spring_length[i] * (1.0 + 0.05 * actuation)
+    target_length = spring_length[i] * (1.0 + spring_actuation[i] * actuation)
     if is_joint:
       target_length = 0.0
     impulse = dt * (length - target_length) * spring_stiffness[
@@ -299,9 +300,7 @@ def forward(output=None):
         pt1 = get_world_loc(spring_anchor_a[i], spring_offset_a[i])
         pt2 = get_world_loc(spring_anchor_b[i], spring_offset_b[i])
         
-        act = math.sin(spring_omega * t * dt + spring_phase[i]) * \
-              spring_actuation[i]
-        act *= 30
+        act = 0
         
         cv2.line(img, pt1, pt2, (0.5 + act, 0.5, 0.5 - act), thickness=6)
       
@@ -385,6 +384,10 @@ def setup_robot(objects, springs):
     spring_offset_b[i] = s[3]
     spring_length[i] = s[4]
     spring_stiffness[i] = s[5]
+    if s[6]:
+      spring_actuation[i] = s[6]
+    else:
+      spring_actuation[i] = default_actuation
 
 def main():
   robot_id = 0

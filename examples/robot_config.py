@@ -66,10 +66,12 @@ def rotAlong(half_length, deg, center):
   return [half_length*math.sin(ang) + center[0], -half_length*math.cos(ang) + center[1]] 
 
 
+half_hip_length = 0.08
+
 def robotLeg():
   #hip
-  add_object(hip_pos, halfsize=[0.06, 0.11])
-  hip_end = [hip_pos[0], hip_pos[1] - 0.1]
+  add_object(hip_pos, halfsize=[0.06, half_hip_length])
+  hip_end = [hip_pos[0], hip_pos[1] - (half_hip_length-0.01)]
 
   #left  
   l_thigh_center = rotAlong(thigh_half_length, l_thigh_init_ang, hip_end)
@@ -97,20 +99,20 @@ def robotLeg():
   foot_stiff = 40
 
   #left springs
-  add_spring(0, 1, [0,0.1], [0,-thigh_half_length], thigh_relax*(2.0*thigh_half_length + 0.22), thigh_stiff)
+  add_spring(0, 1, [0,(half_hip_length-0.01)*0.4], [0,-thigh_half_length], thigh_relax*(2.0*thigh_half_length + 0.22), thigh_stiff)
   add_spring(1, 2, [0,thigh_half_length], [0,-thigh_half_length], leg_relax * 4.0* thigh_half_length, leg_stiff)
   add_spring(2, 3, [0,0], [foot_half_length,0], foot_relax*math.sqrt(pow(thigh_half_length,2)+pow(2.0*foot_half_length,2)), foot_stiff)
 
-  add_spring(0, 1, [0, -0.1], [0.0, thigh_half_length], -1, s)
+  add_spring(0, 1, [0, -(half_hip_length-0.01)], [0.0, thigh_half_length], -1, s)
   add_spring(1, 2, [0, -thigh_half_length], [0.0, thigh_half_length], -1, s)
   add_spring(2, 3, [0, -thigh_half_length], [-foot_half_length,0], -1, s)
 
   #right springs
-  add_spring(0, 4, [0,0.1], [0,-thigh_half_length], thigh_relax*(2.0*thigh_half_length + 0.22), thigh_stiff)
+  add_spring(0, 4, [0,(half_hip_length-0.01)*0.4], [0,-thigh_half_length], thigh_relax*(2.0*thigh_half_length + 0.22), thigh_stiff)
   add_spring(4, 5, [0,thigh_half_length], [0,-thigh_half_length], leg_relax * 4.0* thigh_half_length, leg_stiff)
   add_spring(5, 6, [0,0], [foot_half_length,0], foot_relax*math.sqrt(pow(thigh_half_length,2)+pow(2.0*foot_half_length,2)), foot_stiff)
 
-  add_spring(0, 4, [0, -0.1], [0.0, thigh_half_length], -1, s)
+  add_spring(0, 4, [0, -(half_hip_length-0.01)], [0.0, thigh_half_length], -1, s)
   add_spring(4, 5, [0, -thigh_half_length], [0.0, thigh_half_length], -1, s)
   add_spring(5, 6, [0, -thigh_half_length], [-foot_half_length,0], -1, s)
 

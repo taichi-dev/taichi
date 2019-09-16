@@ -94,11 +94,27 @@ def safe_sqrt(x):
 # Data Layout
  - Non-power-of-two tensor dimensions are promoted into powers of two. For example, a tensor of size `(18, 65)` will be materialized as `(32, 128)`. Be careful if you want to iterate over this structural node when it is dense: the loop variables will become iterate over the promoted large domain instead of the original compact domain. Use a range-for instead. For sparse structural nodes, this makes no difference.
 
-# Scalar and Vector Arithmetics
+# Scalar, Vector and Matrix Arithmetics
  - Supported data types: `ti.i32`, `ti.i64`, `ti.f32`, `ti.f64`.
  - Binary operations on different types will give you a promoted type, e.g. `i32 + f32 = f32`.
  - `ti.Matrix` are for small matrices (e.g. `3x3`) only. If you have `64x64` matrices, you should consider using a 2D global tensor. `ti.Vector` is the same as `ti.Matrix`, except that it has only 1 column.
- - Differentiate element-wise product `*` and matrix product `@`.
+ - **Differentiate element-wise product `*` and matrix product `@`**.
+ - Supported scalar functions:
+   - `ti.sin(x)`
+   - `ti.cos(x)`
+   - `ti.cast(x, type)`
+   - `ti.sqr(x)`
+   - `ti.floor(x)`
+   - `ti.inv(x)`
+   - `ti.tan(x)`
+   - `ti.tanh(x)`
+   - `ti.exp(x)`
+   - `ti.log(x)`
+   - `ti.abs(x)`
+   - `ti.random(type)`
+   - `ti.max(a, b)` Note: do not use native python `max` in Taichi kernels.
+   - `ti.min(a, b)` Note: do not use native python `min` in Taichi kernels.
+   - `ti.length(dynamic_snode)`
 
 # Debugging
  - Debug your program with `ti.print(x)`.

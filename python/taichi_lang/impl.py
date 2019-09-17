@@ -205,68 +205,81 @@ def func(foo):
   return compiled
 
 
+class Kernel:
+  def __init__(self, foo, is_grad):
+    self.foo = foo
+    self.is_grad = is_grad
+    self.materialized = False
+    if is_grad:
+      self.compiled_functions = pytaichi.compiled_functions
+    else:
+      self.compiled_functions = pytaichi.compiled_grad_functions
+  
+  
+  def materialize(self, extra_frame_backtrace):
+    if not self.materialized:
+      self.materialized = True
+    else:
+      return
+    if not pytaichi.materialized:
+      pytaichi.materialize()
+    grad_suffix = ""
+    if self.is_grad:
+      grad_suffix = ".grad"
+    print("Compiling kernel {}{}...".format(self.foo.__name__, grad_suffix))
+  
+    src = remove_indent(inspect.getsource(self.foo))
+    tree = ast.parse(src)
+    # print(astor.to_source(tree.body[0]))
+  
+    func_body = tree.body[0]
+    func_body.decorator_list = []
+  
+    visitor = ASTTransformer()
+    visitor.visit(tree)
+    ast.fix_missing_locations(tree)
+  
+    if pytaichi.print_preprocessed:
+      print(astor.to_source(tree.body[0], indent_with='  '))
+  
+    ast.increment_lineno(tree, inspect.getsourcelines(self.foo)[1] - 1)
+  
+    pytaichi.inside_kernel = True
+    frame = inspect.currentframe()
+    for t in range(extra_frame_backtrace):
+      frame = frame.f_back
+    exec(compile(tree, filename=inspect.getsourcefile(self.foo), mode='exec'),
+         dict(frame.f_globals, **frame.f_locals), locals())
+    pytaichi.inside_kernel = False
+    compiled = locals()[self.foo.__name__]
+  
+    t_kernel = taichi_lang_core.create_kernel(self.foo.__name__, self.is_grad)
+    t_kernel = t_kernel.define(lambda: compiled())
+    
+    # The actual function body
+    def func__(*args):
+      for i, v in enumerate(args):
+        if isinstance(v, float):
+          t_kernel.set_arg_float(i, v)
+        elif isinstance(v, int):
+          t_kernel.set_arg_int(i, v)
+        elif isinstance(v, np.ndarray):
+          tmp = np.ascontiguousarray(v)
+          t_kernel.set_arg_nparray(i, int(tmp.ctypes.data), tmp.nbytes)
+        else:
+          assert False, 'Argument to kernels must have type float/int'
+      if pytaichi.target_tape:
+        pytaichi.target_tape.insert(self, args)
+      t_kernel()
+    self.compiled_functions[self.foo] = func__
+    
+  def __call__(self, *args, extra_frame_backtrace=2):
+    self.materialize(extra_frame_backtrace=extra_frame_backtrace)
+    self.compiled_functions[self.foo](*args)
+
 def kernel(foo):
-  def invoke(grad=False, *args, **kwargs):
-    def ret(*args, _extra_frame_backtrace=1):
-      if grad:
-        compiled_functions = pytaichi.compiled_functions
-      else:
-        compiled_functions = pytaichi.compiled_grad_functions
-      if not pytaichi.materialized:
-        pytaichi.materialize()
-      if foo not in compiled_functions:
-        grad_suffix = ""
-        if grad:
-          grad_suffix = ".grad"
-        print("Compiling kernel {}{}...".format(foo.__name__, grad_suffix))
-
-        src = remove_indent(inspect.getsource(foo))
-        tree = ast.parse(src)
-        # print(astor.to_source(tree.body[0]))
-
-        func_body = tree.body[0]
-        func_body.decorator_list = []
-
-        visitor = ASTTransformer()
-        visitor.visit(tree)
-        ast.fix_missing_locations(tree)
-
-        if pytaichi.print_preprocessed:
-          print(astor.to_source(tree.body[0], indent_with='  '))
-
-        ast.increment_lineno(tree, inspect.getsourcelines(foo)[1] - 1)
-
-        pytaichi.inside_kernel = True
-        frame = inspect.currentframe()
-        for t in range(_extra_frame_backtrace):
-          frame = frame.f_back
-        exec(compile(tree, filename=inspect.getsourcefile(foo), mode='exec'),
-             dict(frame.f_globals, **frame.f_locals), locals())
-        pytaichi.inside_kernel = False
-        compiled = locals()[foo.__name__]
-
-        t_kernel = taichi_lang_core.create_kernel(foo.__name__, grad)
-        t_kernel = t_kernel.define(lambda: compiled())
-        def func__(*args):
-          for i, v in enumerate(args):
-            if isinstance(v, float):
-              t_kernel.set_arg_float(i, v)
-            elif isinstance(v, int):
-              t_kernel.set_arg_int(i, v)
-            elif isinstance(v, np.ndarray):
-              tmp = np.ascontiguousarray(v)
-              t_kernel.set_arg_nparray(i, int(tmp.ctypes.data), tmp.nbytes)
-            else:
-              assert False, 'Argument to kernels must have type float/int'
-          if pytaichi.target_tape:
-            pytaichi.target_tape.insert(ret, args)
-          t_kernel()
-        compiled_functions[foo] = func__
-      compiled_functions[foo](*args)
-    return ret
-
-  ret = invoke(False)
-  ret.grad = invoke(True)
+  ret = Kernel(foo, False)
+  ret.grad = Kernel(foo, True)
   return ret
 
 

@@ -49,7 +49,7 @@ def place():
 
 dt = 0.003
 alpha = 0.00000
-learning_rate = 0.02
+learning_rate = 0.01
 
 
 @ti.kernel
@@ -124,7 +124,7 @@ def forward(output=None):
     
     if (t + 1) % interval == 0:
       img = np.ones(shape=(vis_resolution, vis_resolution, 3),
-                    dtype=np.float32) * 0.8
+                    dtype=np.float32)
       
       def circle(x, y, color):
         cv2.circle(img, center=(
@@ -132,7 +132,7 @@ def forward(output=None):
                    radius=int(radius * vis_resolution), color=color,
                    thickness=-1)
       
-      circle(goal[0], goal[1], (0.2, 0.2, 0.7))
+      circle(goal[0], goal[1], (0.2, 0.3, 0.9))
       
       for i in range(n_balls):
         if i == 0:
@@ -149,7 +149,6 @@ def forward(output=None):
       if output:
         cv2.imwrite('billiards/{}/{:04d}.png'.format(output, t), img * 255)
   
-  loss[None] = 0
   compute_loss(steps - 1)
 
 
@@ -167,24 +166,19 @@ def main():
   init_x[None] = [0.1, 0.5]
   init_v[None] = [0.3, 0.0]
   
+  
   for iter in range(200):
     clear()
-    tape = ti.tape()
-    
-    with tape:
+    init_x.grad[None] = [0.0, 0.0]
+    init_v.grad[None] = [0.0, 0.0]
+
+    with ti.Tape(loss):
       forward()
     
     print('Iter=', iter, 'Loss=', loss[None])
-    
-    init_x.grad[None] = [0, 0]
-    init_v.grad[None] = [0, 0]
-    loss.grad[None] = -1
-    
-    tape.grad()
-    
     for d in range(2):
-      init_x[None][d] += learning_rate * init_x.grad[None][d]
-      init_v[None][d] += learning_rate * init_v.grad[None][d]
+      init_x[None][d] -= learning_rate * init_x.grad[None][d]
+      init_v[None][d] -= learning_rate * init_v.grad[None][d]
   
   clear()
   # forward('final')

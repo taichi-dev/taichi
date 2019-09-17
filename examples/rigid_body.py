@@ -42,7 +42,7 @@ v_inc = vec()
 omega_inc = scalar()
 
 head_id = 3
-goal = [0.7, 0.15]
+goal = [0.9, 0.15]
 
 n_objects = 0
 # target_ball = 0
@@ -252,9 +252,9 @@ def forward(output=None):
     
     if (t + 1) % interval == 0:
       img = np.ones(shape=(vis_resolution, vis_resolution, 3),
-                    dtype=np.float32) * 0.8
+                    dtype=np.float32)
       
-      color = (0.3, 0.5, 0.8)
+      color = (0.3, 0.5, 0.9)
       for i in range(n_objects):
         points = []
         for k in range(4):
@@ -274,7 +274,7 @@ def forward(output=None):
       
       y = int((1 - ground_height) * vis_resolution)
       cv2.line(img, (0, y), (vis_resolution - 2, y), color=(0.1, 0.1, 0.1),
-               thickness=4)
+               thickness=3)
       
       def circle(x, y, color):
         radius = 0.02
@@ -283,8 +283,8 @@ def forward(output=None):
                    radius=int(radius * vis_resolution), color=color,
                    thickness=-1)
       
-      circle(x[t, head_id][0], x[t, head_id][1], (0.4, 0.6, 0.6))
-      circle(goal[0], goal[1], (0.6, 0.2, 0.2))
+      circle(x[t, head_id][0], x[t, head_id][1], (0.2, 0.3, 0.8))
+      circle(goal[0], goal[1], (0.9, 0.3, 0.2))
       
       for i in range(n_springs):
         def get_world_loc(i, offset):
@@ -402,7 +402,7 @@ def main():
       weights[i, j] = np.random.randn() * 0.1
   
   forward('initial')
-  for iter in range(200):
+  for iter in range(50):
     clear()
     
     with ti.Tape(loss):

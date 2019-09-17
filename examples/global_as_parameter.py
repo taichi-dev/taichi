@@ -17,6 +17,7 @@ def double(a, b):
   def kernel():
     for i in range(16):
       b[i] = a[i] * 2 + 1
+  # Make sure you materialize the kernels immediately (by default they are initialized on first invocation)
   kernel.materialize()
   kernel.grad.materialize() # If you need the gradients
   return kernel
@@ -29,6 +30,7 @@ def compute_loss():
 for i in range(16):
   x[i] = i
   
+# Instantiate your kernels here with different global variables
 double1 = double(x, y)
 double2 = double(y, z)
 with ti.Tape(loss):

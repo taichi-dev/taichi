@@ -1,6 +1,5 @@
 import taichi_lang as ti
 
-ti.runtime.print_preprocessed = True
 x = ti.global_var(ti.f32)
 y = ti.global_var(ti.f32)
 z = ti.global_var(ti.f32)
@@ -19,14 +18,23 @@ def double(a, b):
     for i in range(16):
       b[i] = a[i] * 2 + 1
   kernel.materialize()
+  kernel.grad.materialize() # If you need the gradients
   return kernel
-      
+  
+@ti.kernel
+def compute_loss():
+  for i in range(16):
+    ti.atomic_add(loss, z[i])
       
 for i in range(16):
   x[i] = i
   
-double(x, y)()
-double(y, z)()
+double1 = double(x, y)
+double2 = double(y, z)
+with ti.Tape(loss):
+  double1()
+  double2()
+  compute_loss()
 
 for i in range(16):
-  print(z[i])
+  print(z[i], x.grad[i])

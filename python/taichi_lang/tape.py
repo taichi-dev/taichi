@@ -24,5 +24,5 @@ class Tape:
     assert self.entered == True, "Before evaluating gradiends tape must be entered."
     assert self.gradient_evaluated == False, "Gradients of grad can be evaluated only once."
     for func, args in reversed(self.calls):
-      func.grad(extra_frame_backtrace=3 + extra_frame_backtrace, *args)
+      func.grad(extra_frame_backtrace=1 + extra_frame_backtrace, *args)
     self.gradient_evaluated = True

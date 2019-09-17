@@ -216,7 +216,7 @@ class Kernel:
       self.compiled_functions = pytaichi.compiled_grad_functions
   
   
-  def materialize(self, extra_frame_backtrace):
+  def materialize(self, extra_frame_backtrace=-1):
     if not self.materialized:
       self.materialized = True
     else:
@@ -246,7 +246,7 @@ class Kernel:
   
     pytaichi.inside_kernel = True
     frame = inspect.currentframe()
-    for t in range(extra_frame_backtrace):
+    for t in range(extra_frame_backtrace + 2):
       frame = frame.f_back
     exec(compile(tree, filename=inspect.getsourcefile(self.foo), mode='exec'),
          dict(frame.f_globals, **frame.f_locals), locals())
@@ -273,7 +273,7 @@ class Kernel:
       t_kernel()
     self.compiled_functions[self.foo] = func__
     
-  def __call__(self, *args, extra_frame_backtrace=2):
+  def __call__(self, *args, extra_frame_backtrace=0):
     self.materialize(extra_frame_backtrace=extra_frame_backtrace)
     self.compiled_functions[self.foo](*args)
 

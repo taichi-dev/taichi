@@ -41,18 +41,15 @@ def place():
   ti.root.lazy_grad()
 
 
-# TODO: merge these into a single @ti.func
-# Integer modulo operator for negative values of n
-@ti.func
-def nimod(n, divisor):
-  return divisor + n - divisor * (-n // divisor)
-
-
 # Integer modulo operator for positive values of n
 @ti.func
 def imod(n, divisor):
-  return n - divisor * (n // divisor)
-
+  ret = 0
+  if n > 0:
+    ret = n - divisor * (n // divisor)
+  else:
+    ret = divisor + n - divisor * (-n // divisor)
+  return ret
 
 @ti.func
 def dec_index(index):
@@ -118,27 +115,12 @@ def advect_smoke(t: ti.i32):
       
       # Wrap around edges
       # TODO: implement mod (%) operator
-      if left_ix < 0:
-        left_ix = nimod(left_ix, n_grid)
-      else:
-        left_ix = imod(left_ix, n_grid)
-      
+      left_ix = imod(left_ix, n_grid)
       right_ix = left_ix + 1
-      if right_ix < 0:
-        right_ix = nimod(right_ix, n_grid)
-      else:
-        right_ix = imod(right_ix, n_grid)
-      
-      if top_ix < 0:
-        top_ix = nimod(top_ix, n_grid)
-      else:
-        top_ix = imod(top_ix, n_grid)
-      
+      right_ix = imod(right_ix, n_grid)
+      top_ix = imod(top_ix, n_grid)
       bot_ix = top_ix + 1
-      if bot_ix < 0:
-        bot_ix = nimod(bot_ix, n_grid)
-      else:
-        bot_ix = imod(bot_ix, n_grid)
+      bot_ix = imod(bot_ix, n_grid)
       
       # Linearly-weighted sum of the 4 surrounding cells
       smoke[t, y, x] = (1 - rw) * (
@@ -166,27 +148,13 @@ def advect_v(t: ti.i32):
       
       # Wrap around edges
       # TODO: implement mod (%) operator
-      if left_ix < 0:
-        left_ix = nimod(left_ix, n_grid)
-      else:
-        left_ix = imod(left_ix, n_grid)
+      left_ix = imod(left_ix, n_grid)
       
       right_ix = left_ix + 1
-      if right_ix < 0:
-        right_ix = nimod(right_ix, n_grid)
-      else:
-        right_ix = imod(right_ix, n_grid)
-      
-      if top_ix < 0:
-        top_ix = nimod(top_ix, n_grid)
-      else:
-        top_ix = imod(top_ix, n_grid)
-      
+      right_ix = imod(right_ix, n_grid)
+      top_ix = imod(top_ix, n_grid)
       bot_ix = top_ix + 1
-      if bot_ix < 0:
-        bot_ix = nimod(bot_ix, n_grid)
-      else:
-        bot_ix = imod(bot_ix, n_grid)
+      bot_ix = imod(bot_ix, n_grid)
       
       # Linearly-weighted sum of the 4 surrounding cells
       v_updated[y, x] = (1 - rw) * (

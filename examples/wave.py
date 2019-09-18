@@ -109,16 +109,6 @@ def forward(output=None):
   loss[None] = 0
   compute_loss(steps - 1)
 
-@ti.kernel
-def clear_p_grad():
-  for t, i, j in p:
-    p.grad[t, i, j] = 0
-
-@ti.kernel
-def clear_initial_grad():
-  for i, j in initial:
-    initial.grad[i, j] = 0
-
 def main():
   # initialization
   target_img = cv2.imread('iclr2020.png')[:,:,0] / 255.0
@@ -132,9 +122,6 @@ def main():
   # initial[n_grid // 2, n_grid // 2] = 1
 
   for opt in range(200):
-    clear_p_grad()
-    clear_initial_grad()
-    
     with ti.Tape(loss):
       forward()
     

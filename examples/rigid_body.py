@@ -321,11 +321,6 @@ def clear_states():
       omega_inc[t, i] = 0.0
       
 
-def clear():
-  ti.clear_all_gradients()
-  clear_states()
-
-
 def setup_robot(objects, springs):
   global n_objects, n_springs
   n_objects = len(objects)
@@ -365,7 +360,7 @@ def main():
   
   forward('initial')
   for iter in range(50):
-    clear()
+    clear_states()
     
     with ti.Tape(loss):
       forward()
@@ -386,7 +381,7 @@ def main():
         weights[i, j] -= scale * weights.grad[i, j]
       bias[i] -= scale * bias.grad[i]
   
-  clear()
+  clear_states()
   forward('final')
 
 

@@ -156,10 +156,7 @@ def forward(output=None):
 def clear():
   for t in range(0, max_steps):
     for i in range(0, n_balls):
-      x.grad[t, i] = ti.Vector([0.0, 0.0])
-      v.grad[t, i] = ti.Vector([0.0, 0.0])
       impulse[t, i] = ti.Vector([0.0, 0.0])
-      impulse.grad[t, i] = ti.Vector([0.0, 0.0])
 
 
 def main():
@@ -169,8 +166,6 @@ def main():
   
   for iter in range(200):
     clear()
-    init_x.grad[None] = [0.0, 0.0]
-    init_v.grad[None] = [0.0, 0.0]
 
     with ti.Tape(loss):
       forward()

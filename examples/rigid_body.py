@@ -8,6 +8,11 @@ import cv2
 import os
 import matplotlib.pyplot as plt
 
+from renderer_vector import VectorRenderer
+import time
+
+renderer = VectorRenderer()
+
 real = ti.f32
 ti.set_default_fp(real)
 
@@ -250,6 +255,9 @@ def forward(output=None):
     advance(t)
     
     if (t + 1) % interval == 0:
+      #renderer.ax = renderer.fig.add_subplot(1,1,1)
+      renderer.ax.set_xlim([0,16])
+      renderer.ax.set_ylim([0,9])
       img = np.ones(shape=(vis_resolution, vis_resolution, 3),
                     dtype=np.float32) * 0.8
       
@@ -268,22 +276,29 @@ def forward(output=None):
           points.append(
             (int(pos[0] * vis_resolution),
              vis_resolution - int(pos[1] * vis_resolution)))
-        
-        cv2.fillConvexPoly(img, points=np.array(points), color=color)
+      
+        #renderer.draw_rectangle([x[t,i][0]*16, x[t,i][1]*9], rotation[t, i])  
+        renderer.draw_dot([x[t,i][0]*16, x[t,i][1]*9], 50)  
+      #plt.show()
+      #renderer.fig.canvas.draw()
+      #plt.draw()
+      #cv2.fillConvexPoly(img, points=np.array(points), color=color)        
+      #renderer.camera.snap()
+      #renderer.clean()
       
       y = int((1 - ground_height) * vis_resolution)
-      cv2.line(img, (0, y), (vis_resolution - 2, y), color=(0.1, 0.1, 0.1),
-               thickness=4)
+      #cv2.line(img, (0, y), (vis_resolution - 2, y), color=(0.1, 0.1, 0.1),
+      #         thickness=4)
       
-      def circle(x, y, color):
-        radius = 0.02
-        cv2.circle(img, center=(
-          int(vis_resolution * x), int(vis_resolution * (1 - y))),
-                   radius=int(radius * vis_resolution), color=color,
-                   thickness=-1)
+      #def circle(x, y, color):
+      #  radius = 0.02
+      #  cv2.circle(img, center=(
+      #    int(vis_resolution * x), int(vis_resolution * (1 - y))),
+      #             radius=int(radius * vis_resolution), color=color,
+      #             thickness=-1)
       
-      circle(x[t, head_id][0], x[t, head_id][1], (0.4, 0.6, 0.6))
-      circle(goal[0], goal[1], (0.6, 0.2, 0.2))
+      #circle(x[t, head_id][0], x[t, head_id][1], (0.4, 0.6, 0.6))
+      #circle(goal[0], goal[1], (0.6, 0.2, 0.2))
       
       for i in range(n_springs):
         def get_world_loc(i, offset):
@@ -303,13 +318,20 @@ def forward(output=None):
               spring_actuation[i]
         act *= 30
         
-        cv2.line(img, pt1, pt2, (0.5 + act, 0.5, 0.5 - act), thickness=6)
-      
-      cv2.imshow('img', img)
-      cv2.waitKey(1)
-      if output:
-        cv2.imwrite('rigid_body/{}/{:04d}.png'.format(output, t), img * 255)
-  
+        #cv2.line(img, pt1, pt2, (0.5 + act, 0.5, 0.5 - act), thickness=6)
+
+      renderer.fig.canvas.flush_events()
+      time.sleep(0.01)
+      plt.cla()    
+    #print (t)
+    #renderer.draw()      
+    #animation = renderer.camera.animate()  
+      #cv2.imshow('img', img)
+      #cv2.waitKey(1)
+      #if output:
+      #  cv2.imwrite('rigid_body/{}/{:04d}.png'.format(output, t), img * 255)
+
+
   loss[None] = 0
   compute_loss(steps - 1)
 

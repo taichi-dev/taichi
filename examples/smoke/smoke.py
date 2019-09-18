@@ -9,13 +9,13 @@ from imageio import imread, imwrite
 real = ti.f32
 ti.set_default_fp(real)
 
-num_iterations = 32
+num_iterations = 100
 n_grid = 110
 dx = 1.0 / n_grid
 num_iterations_gauss_seidel = 10
 p_dims = num_iterations_gauss_seidel + 1
-steps = 100
-learning_rate = 0.01
+steps = 20
+learning_rate = 1e-5
 
 scalar = lambda: ti.var(dt=real)
 
@@ -33,7 +33,7 @@ loss = scalar()
 
 @ti.layout
 def place():
-  ti.root.dense(ti.l, num_iterations * p_dims).dense(ti.ij, n_grid).place(p)
+  ti.root.dense(ti.l, steps * p_dims).dense(ti.ij, n_grid).place(p)
   ti.root.dense(ti.l, steps).dense(ti.ij, n_grid).place(vx, vy, smoke, div)
   ti.root.dense(ti.ij, n_grid).place(target)
   ti.root.dense(ti.ij, n_grid).place(vx_updated, vy_updated)
@@ -265,9 +265,7 @@ def main():
   for i in range(n_grid):
     for j in range(n_grid):
       target[i, j] = float(target_img[i, j])
-      vx[0, i, j] = (i - 0.5 * j) * 0.01
-      # vx[0, i, j] = 0
-      vy[0, i, j] = 0
+      # vx[0, i, j] = (i - 0.5 * j) * 0.01
       smoke[0, i, j] = float(initial_smoke_img[i, j])
 
   for opt in range(num_iterations):
@@ -275,7 +273,11 @@ def main():
       forward("test")
 
     print('Iter', opt, ' Loss =', loss[None])
-
+    '''
+    for i in range(n_grid):
+      for j in range(n_grid):
+        print(vy.grad[0, i, j])
+    '''
     apply_grad()
 
   forward("output")

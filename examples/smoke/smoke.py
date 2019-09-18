@@ -15,7 +15,7 @@ dx = 1.0 / n_grid
 num_iterations_gauss_seidel = 10
 p_dims = num_iterations_gauss_seidel + 1
 steps = 30
-learning_rate = 1e-5
+learning_rate = 100
 
 scalar = lambda: ti.var(dt=real)
 vector = lambda: ti.Vector(2, dt=real)
@@ -34,9 +34,8 @@ loss = scalar()
 @ti.layout
 def place():
   ti.root.dense(ti.l, steps * p_dims).dense(ti.ij, n_grid).place(p)
-  ti.root.dense(ti.l, steps).dense(ti.ij, n_grid).place(v, smoke, div)
+  ti.root.dense(ti.l, steps).dense(ti.ij, n_grid).place(v, v_updated, smoke, div)
   ti.root.dense(ti.ij, n_grid).place(target)
-  ti.root.dense(ti.ij, n_grid).place(v_updated)
   ti.root.place(loss)
   ti.root.lazy_grad()
 
@@ -72,8 +71,8 @@ def compute_div(t: ti.i32):
   for y in range(n_grid):
     for x in range(n_grid):
       div[t, y, x] = -0.5 * dx * (
-            v_updated[inc_index(y), x][0] - v_updated[dec_index(y), x][0] +
-            v_updated[y, inc_index(x)][1] - v_updated[y, dec_index(x)][1])
+            v_updated[t, inc_index(y), x][0] - v_updated[t, dec_index(y), x][0] +
+            v_updated[t, y, inc_index(x)][1] - v_updated[t, y, dec_index(x)][1])
 
 
 @ti.kernel
@@ -91,78 +90,47 @@ def update_v(t: ti.i32):
   for y in range(n_grid):
     for x in range(n_grid):
       a = num_iterations_gauss_seidel * t - 1
-      v[t, y, x][0] = v_updated[y, x][0] - 0.5 * (
+      v[t, y, x][0] = v_updated[t, y, x][0] - 0.5 * (
             p[a, inc_index(y), x] - p[a, dec_index(y), x]) / dx
-      v[t, y, x][1] = v_updated[y, x][1] - 0.5 * (
+      v[t, y, x][1] = v_updated[t, y, x][1] - 0.5 * (
             p[a, y, inc_index(x)] - p[a, y, dec_index(x)]) / dx
 
 
-@ti.kernel
-def advect_smoke(t: ti.i32):
-  """Move field smoke according to x and y velocities (vx and vy)
-     using an implicit Euler integrator."""
-  for y in range(n_grid):
-    for x in range(n_grid):
-      center_x = y - v[t, y, x][0]
-      center_y = x - v[t, y, x][1]
-      
-      # Compute indices of source cell
-      left_ix = ti.cast(ti.floor(center_x), ti.i32)
-      top_ix = ti.cast(ti.floor(center_y), ti.i32)
-      
-      rw = center_x - left_ix  # Relative weight of right-hand cell
-      bw = center_y - top_ix  # Relative weight of bottom cell
-      
-      # Wrap around edges
-      # TODO: implement mod (%) operator
-      left_ix = imod(left_ix, n_grid)
-      right_ix = left_ix + 1
-      right_ix = imod(right_ix, n_grid)
-      top_ix = imod(top_ix, n_grid)
-      bot_ix = top_ix + 1
-      bot_ix = imod(bot_ix, n_grid)
-      
-      # Linearly-weighted sum of the 4 surrounding cells
-      smoke[t, y, x] = (1 - rw) * (
-            (1 - bw) * smoke[t - 1, left_ix, top_ix] + bw * smoke[
-          t - 1, left_ix, bot_ix]) + rw * (
-                             (1 - bw) * smoke[t - 1, right_ix, top_ix] + bw *
-                             smoke[t - 1, right_ix, bot_ix])
-
-
-@ti.kernel
-def advect_v(t: ti.i32):
-  """Move field vy according to x and y velocities (vx and vy)
-     using an implicit Euler integrator."""
-  for y in range(n_grid):
-    for x in range(n_grid):
-      center_x = y - v[t - 1, y, x][0]
-      center_y = x - v[t - 1, y, x][1]
-      
-      # Compute indices of source cell
-      left_ix = ti.cast(ti.floor(center_x), ti.i32)
-      top_ix = ti.cast(ti.floor(center_y), ti.i32)
-      
-      rw = center_x - left_ix  # Relative weight of right-hand cell
-      bw = center_y - top_ix  # Relative weight of bottom cell
-      
-      # Wrap around edges
-      # TODO: implement mod (%) operator
-      left_ix = imod(left_ix, n_grid)
-      
-      right_ix = left_ix + 1
-      right_ix = imod(right_ix, n_grid)
-      top_ix = imod(top_ix, n_grid)
-      bot_ix = top_ix + 1
-      bot_ix = imod(bot_ix, n_grid)
-      
-      # Linearly-weighted sum of the 4 surrounding cells
-      v_updated[y, x] = (1 - rw) * (
-            (1 - bw) * v[t - 1, left_ix, top_ix] + bw * v[
-          t - 1, left_ix, bot_ix]) \
-                        + rw * ((1 - bw) * v[t - 1, right_ix, top_ix] + bw * v[
-        t - 1, right_ix, bot_ix])
-
+def advect(field, field_out, t_offset):
+  @ti.kernel
+  def kernel(t: ti.i32):
+    """Move field smoke according to x and y velocities (vx and vy)
+       using an implicit Euler integrator."""
+    for y in range(n_grid):
+      for x in range(n_grid):
+        center_x = y - v[t + t_offset, y, x][0]
+        center_y = x - v[t + t_offset, y, x][1]
+        
+        # Compute indices of source cell
+        left_ix = ti.cast(ti.floor(center_x), ti.i32)
+        top_ix = ti.cast(ti.floor(center_y), ti.i32)
+        
+        rw = center_x - left_ix  # Relative weight of right-hand cell
+        bw = center_y - top_ix  # Relative weight of bottom cell
+        
+        # Wrap around edges
+        # TODO: implement mod (%) operator
+        left_ix = imod(left_ix, n_grid)
+        right_ix = left_ix + 1
+        right_ix = imod(right_ix, n_grid)
+        top_ix = imod(top_ix, n_grid)
+        bot_ix = top_ix + 1
+        bot_ix = imod(bot_ix, n_grid)
+        
+        # Linearly-weighted sum of the 4 surrounding cells
+        field_out[t, y, x] = (1 - rw) * (
+              (1 - bw) * field[t - 1, left_ix, top_ix] + bw * field[
+            t - 1, left_ix, bot_ix]) + rw * (
+                               (1 - bw) * field[t - 1, right_ix, top_ix] + bw *
+                               field[t - 1, right_ix, bot_ix])
+  kernel.materialize()
+  kernel.grad.materialize()
+  return kernel
 
 @ti.kernel
 def compute_loss():
@@ -179,6 +147,8 @@ def apply_grad():
     for j in range(n_grid):
       v[0, i, j] -= learning_rate * v.grad[0, i, j]
 
+advect_v = advect(v, v_updated, -1)
+advect_smoke = advect(smoke, smoke, 0)
 
 def forward(output=None):
   for t in range(1, steps):
@@ -196,8 +166,8 @@ def forward(output=None):
       for i in range(n_grid):
         for j in range(n_grid):
           smoke_[i, j] = smoke[t, i, j]
-      # cv2.imshow('smoke', smoke_)
-      # cv2.waitKey(1)
+      cv2.imshow('smoke', smoke_)
+      cv2.waitKey(1)
       matplotlib.image.imsave("{}/{:04d}.png".format(output, t), 255 * smoke_)
   compute_loss()
 
@@ -210,6 +180,7 @@ def main():
   for i in range(n_grid):
     for j in range(n_grid):
       target[i, j] = float(target_img[i, j])
+      # v[0, i, j][0] = (i + 0.5 * j) * 0.01
       smoke[0, i, j] = float(initial_smoke_img[i, j])
   
   for opt in range(num_iterations):

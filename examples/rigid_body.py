@@ -304,7 +304,8 @@ def forward(output=None):
         
         renderer.draw_line(pt1, pt2, True)
       if output:
-        renderer.save_raster('rigid_body/{}/{:04d}.png'.format(output, t))
+        renderer.save_fig('rigid_body/{}/{:04d}.png'.format(output, t))
+        #renderer.save_fig('rigid_body/{}/{:04d}.pdf'.format(output, t))
 
       renderer.clean_frame()
 

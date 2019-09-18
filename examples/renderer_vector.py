@@ -44,5 +44,5 @@ class VectorRenderer:
 		#time.sleep(0.000001)
 		plt.cla()
 
-	def save_raster(self, fname):
+	def save_fig(self, fname):
 		plt.savefig(fname,transparent="True", pad_inches=0)

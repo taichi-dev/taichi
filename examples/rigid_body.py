@@ -260,6 +260,8 @@ def forward(output=None):
     
     if (t + 1) % interval == 0:
       renderer.build_axis()
+      renderer.draw_line([0,ground_height], [1,ground_height], False,color='black',width=5)
+
       img = np.ones(shape=(vis_resolution, vis_resolution, 3),
                     dtype=np.float32)
       
@@ -286,8 +288,8 @@ def forward(output=None):
         elif (i == 3 or i == 6):
           renderer.draw_polygon(points, cmap(0.7))
 
-      renderer.draw_dot([x[t, head_id][0], x[t, head_id][1]], color=cmap(0.6),layer=20)      
-      renderer.draw_dot([goal[0], goal[1]])
+      renderer.draw_dot([x[t, head_id][0], x[t, head_id][1]],color=cmap(0.6),layer=20,ec='r')      
+      renderer.draw_dot([goal[0], goal[1]],layer=20,ec='r')
 
       for i in range(n_springs):
         def get_world_loc(i, offset):

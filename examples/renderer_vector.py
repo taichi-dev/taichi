@@ -13,11 +13,11 @@ class VectorRenderer:
 		self.ax = self.fig.add_subplot(111)
 		self.fig.show()
 
-	def draw_dot(self, pos, size=800,color='C0',layer=0):
+	def draw_dot(self, pos, size=500,color='C0',layer=0,ec='face'):
 		plt.scatter(self.canvas_scale[0] * pos[0], self.canvas_scale[1] * pos[1], 
-			s=size,color=color,zorder=layer)
+			s=size,color=color,zorder=layer,edgecolors=ec)
 
-	def draw_line(self, pos_start, pos_end, dashed = False, width = 3, color='C0',layer=0):
+	def draw_line(self, pos_start, pos_end, dashed = False, width = 2, color='C0',layer=1):
 		if (dashed):
 			plt.plot([self.canvas_scale[0] * pos_start[0], self.canvas_scale[0] * pos_end[0]], 
 				[self.canvas_scale[1] * pos_start[1], self.canvas_scale[1] * pos_end[1]], '--', linewidth=width,color=color,zorder=layer)
@@ -31,7 +31,7 @@ class VectorRenderer:
 		self.ax.add_patch(p_fancy)
 
 	def draw_polygon(self, pos, color='C0',layer=0):
-		p_fancy = mpatches.Polygon(pos, color=color,path_effects=[path_effects.SimplePatchShadow(), path_effects.Normal()])
+		p_fancy = mpatches.Polygon(pos, color=color,joinstyle='round',path_effects=[path_effects.SimplePatchShadow(), path_effects.Normal()])
 		self.ax.add_patch(p_fancy)
 
 	def build_axis(self):

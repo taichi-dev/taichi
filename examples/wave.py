@@ -28,7 +28,7 @@ target = scalar()
 initial = scalar()
 loss = scalar()
 
-ti.cfg.arch = ti.cuda
+# ti.cfg.arch = ti.cuda
 
 @ti.layout
 def place():

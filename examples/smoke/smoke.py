@@ -14,7 +14,7 @@ n_grid = 110
 dx = 1.0 / n_grid
 num_iterations_gauss_seidel = 10
 p_dims = num_iterations_gauss_seidel + 1
-steps = 30
+steps = 100
 learning_rate = 100
 
 scalar = lambda: ti.var(dt=real)
@@ -179,9 +179,8 @@ def main():
   
   for i in range(n_grid):
     for j in range(n_grid):
-      target[i, j] = float(target_img[i, j])
-      # v[0, i, j][0] = (i + 0.5 * j) * 0.01
-      smoke[0, i, j] = float(initial_smoke_img[i, j])
+      target[i, j] = target_img[i, j]
+      smoke[0, i, j] = initial_smoke_img[i, j]
   
   for opt in range(num_iterations):
     with ti.Tape(loss):

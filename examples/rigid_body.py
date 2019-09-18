@@ -255,8 +255,7 @@ def forward(output=None):
     advance(t)
     
     if (t + 1) % interval == 0:
-      renderer.ax.set_xlim([0,renderer.canvas_scale[0]])
-      renderer.ax.set_ylim([0,renderer.canvas_scale[1]])
+      renderer.build_axis()
       img = np.ones(shape=(vis_resolution, vis_resolution, 3),
                     dtype=np.float32) * 0.8
       
@@ -275,16 +274,12 @@ def forward(output=None):
 
           points.append((pos[0] * renderer.canvas_scale[0], pos[1] * renderer.canvas_scale[1] ))
       
-        #renderer.draw_rectangle([x[t,i][0]*renderer.canvas_scale[0], x[t,i][1]*renderer.canvas_scale[1]], rotation[t, i])  
-        #print (pos.size())
         renderer.draw_polygon(points)
 
       y = int((1 - ground_height) * vis_resolution)
 
-      renderer.draw_dot([x[t, head_id][0], x[t, head_id][1]], 800)
-      
+      renderer.draw_dot([x[t, head_id][0], x[t, head_id][1]], 800)      
       renderer.draw_dot([goal[0], goal[1]], 800)
-
 
       for i in range(n_springs):
         def get_world_loc(i, offset):
@@ -302,22 +297,13 @@ def forward(output=None):
         act = math.sin(spring_omega * t * dt + spring_phase[i]) * \
               spring_actuation[i]
         act *= 30
-
         renderer.draw_line(pt1, pt2)
 
-        #cv2.line(img, pt1, pt2, (0.5 + act, 0.5, 0.5 - act), thickness=6)
+      if output:
+        plt.savefig('rigid_body/{}/{:04d}.png'.format(output, t),transparent="True", pad_inches=0)
+        #cv2.imwrite('rigid_body/{}/{:04d}.png'.format(output, t), img * 255)
 
-      renderer.fig.canvas.flush_events()
-      time.sleep(0.01)
-      plt.cla()
-    #print (t)
-    #renderer.draw()      
-    #animation = renderer.camera.animate()  
-      #cv2.imshow('img', img)
-      #cv2.waitKey(1)
-      #if output:
-      #  cv2.imwrite('rigid_body/{}/{:04d}.png'.format(output, t), img * 255)
-
+      renderer.clean_frame()
 
   loss[None] = 0
   compute_loss(steps - 1)

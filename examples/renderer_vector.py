@@ -5,7 +5,7 @@ import matplotlib.animation as animation
 
 class VectorRenderer:
 	def __init__(self):
-		self.canvas_scale = [16,9]
+		self.canvas_scale = [9.6,7.2]
 		plt.ion()
 		self.fig = plt.figure(figsize=(self.canvas_scale[0],self.canvas_scale[1]))
 		self.ax = self.fig.add_subplot(111)
@@ -29,17 +29,12 @@ class VectorRenderer:
 		p_fancy = mpatches.FancyBboxPatch([8,4.5], 1, 1)
 		ax.add_patch(p_fancy)
 
-	def clean(self):
-		self.ax.set_xlim([0,16])
-		self.ax.set_ylim([0,9])
-		self.ax.clear()
-		#self.ax = plt.gca()
-		#self.ax.set_xlim([0,16])
-		#self.ax.set_ylim([0,9])
+	def build_axis(self):
+		self.ax.axis('off')
+		self.ax.set_xlim([0,self.canvas_scale[0]])
+		self.ax.set_ylim([0,self.canvas_scale[1]])
 
-#	def main():
-
-
-#if __name__ == '__main__':
-#	main()
-#	plt.show()
+	def clean_frame(self):
+		self.fig.canvas.flush_events()
+		#time.sleep(0.000001)
+		plt.cla()

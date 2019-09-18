@@ -31,7 +31,7 @@ target = scalar()
 smoke = scalar()
 loss = scalar()
 
-ti.cfg.arch = ti.cuda
+# ti.cfg.arch = ti.cuda
 
 @ti.layout
 def place():
@@ -236,8 +236,7 @@ def advect_vx(t: ti.i32):
 def compute_loss():
   for i in range(n_grid):
     for j in range(n_grid):
-      ti.atomic_add(loss, ti.sqr(target[i, j] - smoke[steps - 1, i, j]))
-  loss /= (n_grid * n_grid)
+      ti.atomic_add(loss, ti.sqr(target[i, j] - smoke[steps - 1, i, j]) * (1 / n_grid ** 2))
 
 @ti.kernel
 def apply_grad():
@@ -265,20 +264,10 @@ def forward(output=None):
       for i in range(n_grid):
         for j in range(n_grid):
           smoke_[i, j] = smoke[t, i, j]
+      cv2.imshow('smoke', smoke_)
+      cv2.waitKey(1)
       matplotlib.image.imsave("{}/{:04d}.png".format(output, t), 255 * smoke_)
-
-  loss[None] = 0
-  compute_loss()
-
-@ti.kernel
-def clear_vx_grad():
-  for t, i, j in vx:
-    vx.grad[t, i, j] = 0
-
-@ti.kernel
-def clear_vy_grad():
-  for t, i, j in vy:
-    vy.grad[t, i, j] = 0
+compute_loss()
 
 def main():
   print("Loading initial and target states...")
@@ -288,19 +277,14 @@ def main():
   for i in range(n_grid):
     for j in range(n_grid):
       target[i, j] = float(target_img[i, j])
-      vx[0, i, j] = float(0)
-      vy[0, i, j] = float(0)
+      # vx[0, i, j] = (i - 0.5 * j) * 0.01
+      vx[0, i, j] = 0
+      vy[0, i, j] = 0
       smoke[0, i, j] = float(initial_smoke_img[i, j])
 
   for opt in range(num_iterations):
-    clear_vx_grad()
-    clear_vy_grad()
-    loss.grad[None] = 1
-
-    t = ti.tape()
-    with t:
-      forward()
-    t.grad()
+    with ti.Tape(loss):
+      forward("test")
 
     print('Iter', opt, ' Loss =', loss[None])
 

@@ -255,7 +255,6 @@ def forward(output=None):
     advance(t)
     
     if (t + 1) % interval == 0:
-      #renderer.ax = renderer.fig.add_subplot(1,1,1)
       renderer.ax.set_xlim([0,renderer.canvas_scale[0]])
       renderer.ax.set_ylim([0,renderer.canvas_scale[1]])
       img = np.ones(shape=(vis_resolution, vis_resolution, 3),
@@ -273,16 +272,18 @@ def forward(output=None):
           pos = np.array(
             [x[t, i][0], x[t, i][1]]) + offset_scale * rot_matrix @ np.array(
             [halfsize[i][0], halfsize[i][1]])
-          points.append(
-            (int(pos[0] * vis_resolution),
-             vis_resolution - int(pos[1] * vis_resolution)))
+
+          points.append((pos[0] * renderer.canvas_scale[0], pos[1] * renderer.canvas_scale[1] ))
       
-        renderer.draw_rectangle([x[t,i][0]*renderer.canvas_scale[0], x[t,i][1]*renderer.canvas_scale[1]], rotation[t, i])  
-      
+        #renderer.draw_rectangle([x[t,i][0]*renderer.canvas_scale[0], x[t,i][1]*renderer.canvas_scale[1]], rotation[t, i])  
+        #print (pos.size())
+        renderer.draw_polygon(points)
+
       y = int((1 - ground_height) * vis_resolution)
 
-      renderer.draw_dot([x[t, head_id][0] * renderer.canvas_scale[0], x[t, head_id][1]] * renderer.canvas_scale[1], 800)
-      renderer.draw_dot([goal[0] * renderer.canvas_scale[0], goal[1]] * renderer.canvas_scale[1], 800)
+      renderer.draw_dot([x[t, head_id][0], x[t, head_id][1]], 800)
+      
+      renderer.draw_dot([goal[0], goal[1]], 800)
 
 
       for i in range(n_springs):
@@ -294,8 +295,6 @@ def forward(output=None):
             [[x[t, i][0]], [x[t, i][1]]]) + rot_matrix @ np.array(
             [[offset[0]], [offset[1]]])
           return pos
-          #pos = pos * vis_resolution
-          #return (int(pos[0, 0]), vis_resolution - int(pos[1, 0]))
         
         pt1 = get_world_loc(spring_anchor_a[i], spring_offset_a[i])
         pt2 = get_world_loc(spring_anchor_b[i], spring_offset_b[i])
@@ -304,13 +303,13 @@ def forward(output=None):
               spring_actuation[i]
         act *= 30
 
-        #renderer.draw_line(pt1, pt2)
+        renderer.draw_line(pt1, pt2)
 
         #cv2.line(img, pt1, pt2, (0.5 + act, 0.5, 0.5 - act), thickness=6)
 
       renderer.fig.canvas.flush_events()
       time.sleep(0.01)
-      plt.cla()    
+      plt.cla()
     #print (t)
     #renderer.draw()      
     #animation = renderer.camera.animate()  

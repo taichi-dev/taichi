@@ -12,13 +12,17 @@ class VectorRenderer:
 		self.fig.show()
 
 	def draw_dot(self, pos, size):
-		plt.scatter(pos[0], pos[1], s=size)
+		plt.scatter(self.canvas_scale[0] * pos[0], self.canvas_scale[1] * pos[1], s=size)
 
 	def draw_line(self, pos_start, pos_end, dashed = False):
-		plt.plot([self.canvas_scale[0] * pos_start[0], self.canvas_scale[0] * pos_end[0]], [self.canvas_scale[1] * pos_start[1], self.canvas_scale[1] * pos_end[1]]*self.canvas_scale[1], linewidth=30)
+		plt.plot([self.canvas_scale[0] * pos_start[0], self.canvas_scale[0] * pos_end[0]], [self.canvas_scale[1] * pos_start[1], self.canvas_scale[1] * pos_end[1]], linewidth=3)
 
 	def draw_rectangle(self, pos, angle = 0):
 		p_fancy = mpatches.Rectangle([pos[0],pos[1]], 1, 1, angle)	
+		self.ax.add_patch(p_fancy)
+
+	def draw_polygon(self, pos):
+		p_fancy = mpatches.Polygon(pos)	
 		self.ax.add_patch(p_fancy)
 
 	def draw_fancy_rectangle(self,ax):

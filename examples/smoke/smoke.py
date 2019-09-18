@@ -9,13 +9,13 @@ from imageio import imread, imwrite
 real = ti.f32
 ti.set_default_fp(real)
 
-num_iterations = 100
+num_iterations = 1000
 n_grid = 110
 dx = 1.0 / n_grid
 num_iterations_gauss_seidel = 10
 p_dims = num_iterations_gauss_seidel + 1
 steps = 20
-learning_rate = 1e-5
+learning_rate = 5e-3
 
 scalar = lambda: ti.var(dt=real)
 
@@ -229,11 +229,16 @@ def compute_loss():
 @ti.kernel
 def apply_grad():
   # gradient descent
-  for i, j in vx.grad:
-    vx[0, i, j] -= learning_rate * vx.grad[0, i, j]
+  for i in range(n_grid):
+    for j in range(n_grid):
+      vx[0, i, j] -= learning_rate * vx.grad[0, i, j]
 
-  for i, j in vy.grad:
-    vy[0, i, j] -= learning_rate * vy.grad[0, i, j]
+
+@ti.kernel
+def apply_grad2():
+  for i in range(n_grid):
+    for j in range(n_grid):
+      vy[0, i, j] -= learning_rate * vy.grad[0, i, j]
 
 def forward(output=None):
   for t in range(1, steps):
@@ -265,20 +270,16 @@ def main():
   for i in range(n_grid):
     for j in range(n_grid):
       target[i, j] = float(target_img[i, j])
-      # vx[0, i, j] = (i - 0.5 * j) * 0.01
       smoke[0, i, j] = float(initial_smoke_img[i, j])
 
   for opt in range(num_iterations):
     with ti.Tape(loss):
-      forward("test")
+      output = "test" if opt % 50 == 0 else None
+      forward(output)
 
     print('Iter', opt, ' Loss =', loss[None])
-    '''
-    for i in range(n_grid):
-      for j in range(n_grid):
-        print(vy.grad[0, i, j])
-    '''
     apply_grad()
+    apply_grad2()
 
   forward("output")
 

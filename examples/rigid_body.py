@@ -241,6 +241,8 @@ def compute_loss(t: ti.i32):
 
 
 def forward(output=None):
+  cmap = cm.get_cmap('rainbow')
+
   initialize_properties()
 
   interval = vis_interval
@@ -260,7 +262,6 @@ def forward(output=None):
       img = np.ones(shape=(vis_resolution, vis_resolution, 3),
                     dtype=np.float32) * 0.8
       
-      color = (0.3, 0.5, 0.8)
       for i in range(n_objects):
         points = []
         for k in range(4):
@@ -276,13 +277,17 @@ def forward(output=None):
           points.append((pos[0] * renderer.canvas_scale[0], pos[1] * renderer.canvas_scale[1] ))
         
         if (i == 0):
-          renderer.draw_dot([x[t, i][0], x[t, i][1]],5000)
-        else:
-          renderer.draw_polygon(points)
+          renderer.draw_dot([x[t, i][0], x[t, i][1]],5000, cmap(0),20)
+        elif (i == 1 or i == 4):
+          renderer.draw_polygon(points, cmap(0.1))
+        elif (i == 2 or i == 5):
+          renderer.draw_polygon(points, cmap(0.3))
+        elif (i == 3 or i == 6):
+          renderer.draw_polygon(points, cmap(0.7))
 
       y = int((1 - ground_height) * vis_resolution)
 
-      renderer.draw_dot([x[t, head_id][0], x[t, head_id][1]])      
+      renderer.draw_dot([x[t, head_id][0], x[t, head_id][1]], color=cmap(0.6),layer=20)      
       renderer.draw_dot([goal[0], goal[1]])
 
       for i in range(n_springs):

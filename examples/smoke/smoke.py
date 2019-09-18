@@ -9,13 +9,13 @@ from imageio import imread, imwrite
 real = ti.f32
 ti.set_default_fp(real)
 
-num_iterations = 1000
+num_iterations = 50
 n_grid = 110
 dx = 1.0 / n_grid
 num_iterations_gauss_seidel = 10
 p_dims = num_iterations_gauss_seidel + 1
-steps = 20
-learning_rate = 5e-3
+steps = 30
+learning_rate = 1e-5
 
 scalar = lambda: ti.var(dt=real)
 
@@ -257,8 +257,8 @@ def forward(output=None):
       for i in range(n_grid):
         for j in range(n_grid):
           smoke_[i, j] = smoke[t, i, j]
-      cv2.imshow('smoke', smoke_)
-      cv2.waitKey(1)
+      # cv2.imshow('smoke', smoke_)
+      # cv2.waitKey(1)
       matplotlib.image.imsave("{}/{:04d}.png".format(output, t), 255 * smoke_)
   compute_loss()
 
@@ -274,7 +274,7 @@ def main():
 
   for opt in range(num_iterations):
     with ti.Tape(loss):
-      output = "test" if opt % 50 == 0 else None
+      output = "test" if opt % 10 == 0 else None
       forward(output)
 
     print('Iter', opt, ' Loss =', loss[None])

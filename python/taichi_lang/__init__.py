@@ -34,6 +34,9 @@ def Tape(loss):
   loss.grad[None] = 1
   return runtime.get_tape(loss)
 
+def clear_all_gradients():
+  core.get_current_program().clear_all_gradients()
+
 schedules = [parallelize, vectorize, block_dim, cache]
 
 __all__ = [kernel, layout, var, global_var, f64, float64, f32, float32, i32,

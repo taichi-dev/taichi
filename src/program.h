@@ -22,7 +22,7 @@ TC_FORCE_INLINE Program &get_current_program() {
 }
 
 class Program {
- public:
+public:
   using Kernel = taichi::Tlang::Kernel;
   // Should be copiable
   std::vector<void *> loaded_dlls;
@@ -38,6 +38,7 @@ class Program {
   Context context;
   std::unique_ptr<TaichiLLVMContext> llvm_context_host, llvm_context_device;
   bool sync;  // device/host synchronized?
+  bool clear_all_gradients_initialized;
 
   std::vector<std::unique_ptr<Kernel>> functions;
   int index_counter;
@@ -73,8 +74,8 @@ class Program {
   Program() : Program(default_compile_config.arch) {
   }
 
-  Program(const Program &){
-      TC_NOT_IMPLEMENTED  // for pybind11..
+  Program(const Program &) {
+    TC_NOT_IMPLEMENTED  // for pybind11..
   }
 
   Program(Arch arch);
@@ -152,6 +153,12 @@ class Program {
       return llvm_context_device.get();
     }
   }
+
+  std::vector<std::function<void()>> gradient_clearers;
+
+  void initialize_gradient_clearers();
+
+  void clear_all_gradients();
 };
 
 TLANG_NAMESPACE_END

@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 
 from renderer_vector import VectorRenderer
 import time
+from matplotlib.pyplot import cm
 
 renderer = VectorRenderer()
 
@@ -273,13 +274,16 @@ def forward(output=None):
             [halfsize[i][0], halfsize[i][1]])
 
           points.append((pos[0] * renderer.canvas_scale[0], pos[1] * renderer.canvas_scale[1] ))
-      
-        renderer.draw_polygon(points)
+        
+        if (i == 0):
+          renderer.draw_dot([x[t, i][0], x[t, i][1]],5000)
+        else:
+          renderer.draw_polygon(points)
 
       y = int((1 - ground_height) * vis_resolution)
 
-      renderer.draw_dot([x[t, head_id][0], x[t, head_id][1]], 800)      
-      renderer.draw_dot([goal[0], goal[1]], 800)
+      renderer.draw_dot([x[t, head_id][0], x[t, head_id][1]])      
+      renderer.draw_dot([goal[0], goal[1]])
 
       for i in range(n_springs):
         def get_world_loc(i, offset):
@@ -297,11 +301,10 @@ def forward(output=None):
         act = math.sin(spring_omega * t * dt + spring_phase[i]) * \
               spring_actuation[i]
         act *= 30
-        renderer.draw_line(pt1, pt2)
+        renderer.draw_line(pt1, pt2, True)
 
       if output:
-        plt.savefig('rigid_body/{}/{:04d}.png'.format(output, t),transparent="True", pad_inches=0)
-        #cv2.imwrite('rigid_body/{}/{:04d}.png'.format(output, t), img * 255)
+        renderer.save_raster('rigid_body/{}/{:04d}.png'.format(output, t))
 
       renderer.clean_frame()
 

@@ -19,7 +19,7 @@ ti.set_default_fp(real)
 
 max_steps = 4096
 vis_interval = 256
-output_vis_interval = 8
+output_vis_interval = 16
 steps = 2048
 assert steps * 2 <= max_steps
 
@@ -48,7 +48,7 @@ v_inc = vec()
 omega_inc = scalar()
 
 head_id = 3
-goal = [0.7, 0.15]
+goal = [0.9, 0.15]
 
 n_objects = 0
 # target_ball = 0
@@ -61,6 +61,7 @@ damping = 10
 
 gradient_clip = 30
 spring_omega = 30
+default_actuation = 0.05
 
 n_springs = 0
 spring_anchor_a = ti.global_var(ti.i32)
@@ -200,7 +201,7 @@ def apply_spring_force(t: ti.i32):
     
     is_joint = spring_length[i] == -1
     
-    target_length = spring_length[i] * (1.0 + 0.05 * actuation)
+    target_length = spring_length[i] * (1.0 + spring_actuation[i] * actuation)
     if is_joint:
       target_length = 0.0
     impulse = dt * (length - target_length) * spring_stiffness[
@@ -260,7 +261,7 @@ def forward(output=None):
     if (t + 1) % interval == 0:
       renderer.build_axis()
       img = np.ones(shape=(vis_resolution, vis_resolution, 3),
-                    dtype=np.float32) * 0.8
+                    dtype=np.float32)
       
       for i in range(n_objects):
         points = []
@@ -285,8 +286,6 @@ def forward(output=None):
         elif (i == 3 or i == 6):
           renderer.draw_polygon(points, cmap(0.7))
 
-      y = int((1 - ground_height) * vis_resolution)
-
       renderer.draw_dot([x[t, head_id][0], x[t, head_id][1]], color=cmap(0.6),layer=20)      
       renderer.draw_dot([goal[0], goal[1]])
 
@@ -303,11 +302,7 @@ def forward(output=None):
         pt1 = get_world_loc(spring_anchor_a[i], spring_offset_a[i])
         pt2 = get_world_loc(spring_anchor_b[i], spring_offset_b[i])
         
-        act = math.sin(spring_omega * t * dt + spring_phase[i]) * \
-              spring_actuation[i]
-        act *= 30
         renderer.draw_line(pt1, pt2, True)
-
       if output:
         renderer.save_raster('rigid_body/{}/{:04d}.png'.format(output, t))
 
@@ -321,52 +316,9 @@ def forward(output=None):
 def clear_states():
   for t in range(0, max_steps):
     for i in range(0, n_objects):
-      x.grad[t, i] = ti.Vector([0.0, 0.0])
-      v.grad[t, i] = ti.Vector([0.0, 0.0])
-      rotation.grad[t, i] = 0.0
-      omega.grad[t, i] = 0.0
-      
       v_inc[t, i] = ti.Vector([0.0, 0.0])
       omega_inc[t, i] = 0.0
       
-      v_inc.grad[t, i] = ti.Vector([0.0, 0.0])
-      omega_inc.grad[t, i] = 0.0
-
-
-@ti.kernel
-def clear_objects():
-  for i in range(0, n_objects):
-    halfsize.grad[i] = [0.0, 0.0]
-    inverse_inertia.grad[i] = 0
-    inverse_mass.grad[i] = 0
-
-
-@ti.kernel
-def clear_springs():
-  for i in range(0, n_springs):
-    spring_actuation.grad[i] = 0.0
-    spring_phase.grad[i] = 0.0
-    spring_offset_a.grad[i] = [0.0, 0.0]
-    spring_offset_b.grad[i] = [0.0, 0.0]
-    spring_stiffness.grad[i] = 0.0
-    spring_length.grad[i] = 0.0
-
-
-@ti.kernel
-def clear_weights():
-  for i in range(n_springs):
-    bias.grad[i] = 0.0
-    for j in range(n_sin_waves):
-      weights.grad[i, j] = 0.0
-
-
-def clear():
-  clear_states()
-  clear_objects()
-  clear_springs()
-  clear_weights()
-
-
 
 def setup_robot(objects, springs):
   global n_objects, n_springs
@@ -388,6 +340,10 @@ def setup_robot(objects, springs):
     spring_offset_b[i] = s[3]
     spring_length[i] = s[4]
     spring_stiffness[i] = s[5]
+    if s[6]:
+      spring_actuation[i] = s[6]
+    else:
+      spring_actuation[i] = default_actuation
 
 def main():
   robot_id = 0
@@ -402,8 +358,8 @@ def main():
       weights[i, j] = np.random.randn() * 0.1
   
   forward('initial')
-  for iter in range(200):
-    clear()
+  for iter in range(50):
+    clear_states()
     
     with ti.Tape(loss):
       forward()
@@ -424,7 +380,7 @@ def main():
         weights[i, j] -= scale * weights.grad[i, j]
       bias[i] -= scale * bias.grad[i]
   
-  clear()
+  clear_states()
   forward('final')
 
 

@@ -9,7 +9,8 @@ real = ti.f32
 ti.set_default_fp(real)
 
 dim = 2
-n_particles = 8192
+n_particles = 6400
+N = 80
 n_grid = 128
 dx = 1 / n_grid
 inv_dx = 1 / dx
@@ -39,14 +40,33 @@ loss = scalar()
 
 # ti.cfg.arch = ti.x86_64
 # ti.cfg.use_llvm = True
-# ti.cfg.arch = ti.cuda
+ti.cfg.arch = ti.cuda
 # ti.cfg.print_ir = True
 
 
 @ti.layout
 def place():
-  ti.root.dense(ti.l, max_steps).dense(ti.k, n_particles).place(x, v, C, F)
-  ti.root.dense(ti.ij, n_grid).place(grid_v_in, grid_m_in, grid_v_out)
+  def p(x):
+    for i in x.entries:
+      ti.root.dense(ti.l, max_steps).dense(ti.k, n_particles).place(i)
+      ti.root.dense(ti.l, max_steps).dense(ti.k, n_particles).place(i.grad)
+      
+  # ti.root.dense(ti.l, max_steps).dense(ti.k, n_particles).place(x, v, C, F)
+  p(x)
+  p(v)
+  p(C)
+  p(F)
+  def pg(x):
+    ti.root.dense(ti.ij, n_grid // 8).dense(ti.ij, 8).place(x)
+  def pgv(x):
+    for i in x.entries:
+      ti.root.dense(ti.ij, n_grid // 8).dense(ti.ij, 8).place(i)
+    
+  pgv(grid_v_in)
+  pg(grid_m_in)
+  pg(grid_v_out)
+  # ti.root.dense(ti.ij, n_grid).place(grid_v_in, grid_m_in, grid_v_out)
+  # ti.root.dense(ti.ij, n_grid).place(grid_v_in, grid_m_in, grid_v_out)
   ti.root.place(init_v, loss, x_avg)
 
   ti.root.lazy_grad()
@@ -194,9 +214,20 @@ def main():
   init_v[None] = [0, 0]
 
   for i in range(n_particles):
-    x[0, i] = [random.random() * 0.4 + 0.3, random.random() * 0.4 + 0.3]
     F[0, i] = [[1, 0], [0, 1]]
 
+  for i in range(N):
+    for j in range(N):
+      x[0, i * N + j] = [dx * (i * 0.5 + 10), dx * (j * 0.5 + 25)]
+
+
+  set_v()
+  for i in range(1024):
+    # clear_grid()
+    p2g(0)
+    grid_op()
+    g2p(0)
+  ti.profiler_print()
 
   losses = []
   img_count = 0

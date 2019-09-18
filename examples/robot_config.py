@@ -6,8 +6,9 @@ springs = []
 def add_object(x, halfsize, rotation=0):
   objects.append([x, halfsize, rotation])
   
-def add_spring(a, b, offset_a, offset_b, length, stiffness):
-  springs.append([a, b, offset_a, offset_b, length, stiffness])
+# actuation 0.0 will be translated into default actuation
+def add_spring(a, b, offset_a, offset_b, length, stiffness, actuation=0.0):
+  springs.append([a, b, offset_a, offset_b, length, stiffness, actuation])
 
 def robotA():
   add_object(x=[0.3, 0.25], halfsize=[0.15, 0.03])
@@ -100,7 +101,7 @@ def robotLeg():
 
   #left springs
   add_spring(0, 1, [0,(half_hip_length-0.01)*0.4], [0,-thigh_half_length], thigh_relax*(2.0*thigh_half_length + 0.22), thigh_stiff)
-  add_spring(1, 2, [0,thigh_half_length], [0,-thigh_half_length], leg_relax * 4.0* thigh_half_length, leg_stiff)
+  add_spring(1, 2, [0,thigh_half_length], [0,-thigh_half_length], leg_relax * 4.0* thigh_half_length, leg_stiff, 0.08)
   add_spring(2, 3, [0,0], [foot_half_length,0], foot_relax*math.sqrt(pow(thigh_half_length,2)+pow(2.0*foot_half_length,2)), foot_stiff)
 
   add_spring(0, 1, [0, -(half_hip_length-0.01)], [0.0, thigh_half_length], -1, s)
@@ -109,7 +110,7 @@ def robotLeg():
 
   #right springs
   add_spring(0, 4, [0,(half_hip_length-0.01)*0.4], [0,-thigh_half_length], thigh_relax*(2.0*thigh_half_length + 0.22), thigh_stiff)
-  add_spring(4, 5, [0,thigh_half_length], [0,-thigh_half_length], leg_relax * 4.0* thigh_half_length, leg_stiff)
+  add_spring(4, 5, [0,thigh_half_length], [0,-thigh_half_length], leg_relax * 4.0* thigh_half_length, leg_stiff, 0.08)
   add_spring(5, 6, [0,0], [foot_half_length,0], foot_relax*math.sqrt(pow(thigh_half_length,2)+pow(2.0*foot_half_length,2)), foot_stiff)
 
   add_spring(0, 4, [0, -(half_hip_length-0.01)], [0.0, thigh_half_length], -1, s)

@@ -7,8 +7,11 @@
 #include "backends/struct.h"
 #include "backends/cpu.h"
 #include "backends/gpu.h"
+
 #if defined(CUDA_FOUND)
+
 #include <cuda_runtime.h>
+
 #endif
 
 TLANG_NAMESPACE_BEGIN
@@ -77,7 +80,7 @@ std::string capitalize_first(std::string s) {
 std::string latex_short_digit(int v) {
   std::string units = "KMGT";
   int unit_id = -1;
-  while (v >= 1024 && unit_id + 1 < (int)units.size()) {
+  while (v >= 1024 && unit_id + 1 < (int) units.size()) {
     TC_ASSERT(v % 1024 == 0);
     v /= 1024;
     unit_id++;
@@ -107,7 +110,7 @@ void Program::visualize_layout(const std::string &fn) {
 \Tree)";
     emit(header);
 
-    std::function<void(SNode * snode)> visit = [&](SNode *snode) {
+    std::function<void(SNode *snode)> visit = [&](SNode *snode) {
       emit("[.{");
       if (snode->type == SNodeType::place) {
         emit(snode->name);
@@ -134,7 +137,7 @@ void Program::visualize_layout(const std::string &fn) {
       }
       emit("} ");
 
-      for (int i = 0; i < (int)snode->ch.size(); i++) {
+      for (int i = 0; i < (int) snode->ch.size(); i++) {
         visit(snode->ch[i].get());
       }
       emit("]");
@@ -171,12 +174,23 @@ Program::Program(Arch arch) {
   index_counter = 0;
   sync = true;
   llvm_runtime = nullptr;
+  clear_all_gradients_initialized = false;
 }
 
 void Program::initialize_device_llvm_context() {
   if (config.arch == Arch::gpu && config.use_llvm) {
     if (llvm_context_device == nullptr)
       llvm_context_device = std::make_unique<TaichiLLVMContext>(Arch::gpu);
+  }
+}
+
+void Program::clear_all_gradients() {
+  if (!clear_all_gradients_initialized) {
+    initialize_gradient_clearers();
+    clear_all_gradients_initialized = true;
+  }
+  for (auto &f : gradient_clearers) {
+    f();
   }
 }
 

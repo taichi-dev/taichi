@@ -2,10 +2,8 @@ import taichi_lang as ti
 import math
 import numpy as np
 import cv2
-import os
 import matplotlib
 import matplotlib.pyplot as plt
-import pdb
 from imageio import imread, imwrite
 
 real = ti.f32
@@ -35,24 +33,12 @@ loss = scalar()
 
 @ti.layout
 def place():
-  ti.root.dense(ti.l, p_dims).dense(ti.ij, n_grid).place(p)
-  ti.root.dense(ti.l, p_dims).dense(ti.ij, n_grid).place(p.grad)
-  ti.root.dense(ti.l, steps).dense(ti.ij, n_grid).place(vx)
-  ti.root.dense(ti.l, steps).dense(ti.ij, n_grid).place(vx.grad)
-  ti.root.dense(ti.l, steps).dense(ti.ij, n_grid).place(vy)
-  ti.root.dense(ti.l, steps).dense(ti.ij, n_grid).place(vy.grad)
-  ti.root.dense(ti.l, steps).dense(ti.ij, n_grid).place(smoke)
-  ti.root.dense(ti.l, steps).dense(ti.ij, n_grid).place(smoke.grad)
+  ti.root.dense(ti.l, num_iterations * p_dims).dense(ti.ij, n_grid).place(p)
+  ti.root.dense(ti.l, steps).dense(ti.ij, n_grid).place(vx, vy, smoke, div)
   ti.root.dense(ti.ij, n_grid).place(target)
-  ti.root.dense(ti.ij, n_grid).place(target.grad)
-  ti.root.dense(ti.ij, n_grid).place(vx_updated)
-  ti.root.dense(ti.ij, n_grid).place(vx_updated.grad)
-  ti.root.dense(ti.ij, n_grid).place(vy_updated)
-  ti.root.dense(ti.ij, n_grid).place(vy_updated.grad)
-  ti.root.dense(ti.ij, n_grid).place(div)
-  ti.root.dense(ti.ij, n_grid).place(div.grad)
+  ti.root.dense(ti.ij, n_grid).place(vx_updated, vy_updated)
   ti.root.place(loss)
-  ti.root.place(loss.grad)
+  ti.root.lazy_grad()
 
 
 # TODO: merge these into a single @ti.func
@@ -85,20 +71,22 @@ def inc_index(index):
 def compute_div(t: ti.i32):
   for y in range(n_grid):
     for x in range(n_grid):
-      div[y, x] = -0.5 * dx * (vx_updated[inc_index(y), x]  - vx_updated[dec_index(y), x] + vy_updated[y, inc_index(x)] - vy_updated[y, dec_index(x)])
+      div[t, y, x] = -0.5 * dx * (vx_updated[inc_index(y), x]  - vx_updated[dec_index(y), x] + vy_updated[y, inc_index(x)] - vy_updated[y, dec_index(x)])
 
 @ti.kernel
-def compute_p(k: ti.i32):
+def compute_p(t:ti.i32, k: ti.i32):
   for y in range(n_grid):
     for x in range(n_grid):
-      p[k + 1, y, x] = (div[y, x] + p[k, dec_index(y), x] + p[k, inc_index(y), x] + p[k, y, dec_index(x)] + p[k, y, inc_index(x)]) / 4.0
+      a = k + t * num_iterations_gauss_seidel
+      p[a + 1, y, x] = (div[t, y, x] + p[a, dec_index(y), x] + p[a, inc_index(y), x] + p[a, y, dec_index(x)] + p[a, y, inc_index(x)]) / 4.0
 
 @ti.kernel
 def update_v(t: ti.i32):
   for y in range(n_grid):
     for x in range(n_grid):
-      vx[t, y, x] = vx_updated[y, x] - 0.5 * (p[num_iterations_gauss_seidel, inc_index(y), x] - p[num_iterations_gauss_seidel, dec_index(y), x]) / dx
-      vy[t, y, x] = vy_updated[y, x] - 0.5 * (p[num_iterations_gauss_seidel, y, inc_index(x)] - p[num_iterations_gauss_seidel, y, dec_index(x)]) / dx
+      a = num_iterations_gauss_seidel * t - 1
+      vx[t, y, x] = vx_updated[y, x] - 0.5 * (p[a, inc_index(y), x] - p[a, dec_index(y), x]) / dx
+      vy[t, y, x] = vy_updated[y, x] - 0.5 * (p[a, y, inc_index(x)] - p[a, y, dec_index(x)]) / dx
 
 @ti.kernel
 def advect_smoke(t: ti.i32):
@@ -254,7 +242,7 @@ def forward(output=None):
 
     compute_div(t)
     for k in range(num_iterations_gauss_seidel):
-      compute_p(k)
+      compute_p(t, k)
 
     update_v(t)
     advect_smoke(t)
@@ -267,7 +255,7 @@ def forward(output=None):
       cv2.imshow('smoke', smoke_)
       cv2.waitKey(1)
       matplotlib.image.imsave("{}/{:04d}.png".format(output, t), 255 * smoke_)
-compute_loss()
+  compute_loss()
 
 def main():
   print("Loading initial and target states...")
@@ -277,8 +265,8 @@ def main():
   for i in range(n_grid):
     for j in range(n_grid):
       target[i, j] = float(target_img[i, j])
-      # vx[0, i, j] = (i - 0.5 * j) * 0.01
-      vx[0, i, j] = 0
+      vx[0, i, j] = (i - 0.5 * j) * 0.01
+      # vx[0, i, j] = 0
       vy[0, i, j] = 0
       smoke[0, i, j] = float(initial_smoke_img[i, j])
 

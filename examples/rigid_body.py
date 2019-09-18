@@ -317,51 +317,13 @@ def forward(output=None):
 def clear_states():
   for t in range(0, max_steps):
     for i in range(0, n_objects):
-      x.grad[t, i] = ti.Vector([0.0, 0.0])
-      v.grad[t, i] = ti.Vector([0.0, 0.0])
-      rotation.grad[t, i] = 0.0
-      omega.grad[t, i] = 0.0
-      
       v_inc[t, i] = ti.Vector([0.0, 0.0])
       omega_inc[t, i] = 0.0
       
-      v_inc.grad[t, i] = ti.Vector([0.0, 0.0])
-      omega_inc.grad[t, i] = 0.0
-
-
-@ti.kernel
-def clear_objects():
-  for i in range(0, n_objects):
-    halfsize.grad[i] = [0.0, 0.0]
-    inverse_inertia.grad[i] = 0
-    inverse_mass.grad[i] = 0
-
-
-@ti.kernel
-def clear_springs():
-  for i in range(0, n_springs):
-    spring_actuation.grad[i] = 0.0
-    spring_phase.grad[i] = 0.0
-    spring_offset_a.grad[i] = [0.0, 0.0]
-    spring_offset_b.grad[i] = [0.0, 0.0]
-    spring_stiffness.grad[i] = 0.0
-    spring_length.grad[i] = 0.0
-
-
-@ti.kernel
-def clear_weights():
-  for i in range(n_springs):
-    bias.grad[i] = 0.0
-    for j in range(n_sin_waves):
-      weights.grad[i, j] = 0.0
-
 
 def clear():
+  ti.clear_all_gradients()
   clear_states()
-  clear_objects()
-  clear_springs()
-  clear_weights()
-
 
 
 def setup_robot(objects, springs):

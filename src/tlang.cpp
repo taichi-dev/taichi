@@ -21,38 +21,57 @@ Expr global_new(DataType dt, std::string name) {
   return Expr::make<GlobalVariableExpression>(dt, id_expr->id);
 }
 
-
 void Program::initialize_gradient_clearers() {
-  std::function<void(SNode *node)> visit = [&](SNode *node) {
+  std::function<void(SNode * node)> visit = [&](SNode *node) {
     std::vector<SNode *> places;
-    for (auto &ch: node->ch){
+    for (auto &ch : node->ch) {
       if (ch->type == SNodeType::place) {
-        places.push_back(ch.get());
+        if (!ch->is_primal())
+          places.push_back(ch.get());
       } else {
         visit(ch.get());
       }
     }
     auto kernel_name = fmt::format("clear_gradient_{}", node->id);
     if (!places.empty()) {
-      TC_TAG;
       auto &ker = kernel([&] {
         if (places[0]->num_active_indices == 1) {
-          For(*places[0]->expr, [&](Expr i){
-            for (auto s: places) {
+          For(*places[0]->expr, [&](Expr i) {
+            for (auto s : places) {
               (*s->expr)[i] = 0;
             }
           });
+        } else if (places[0]->num_active_indices == 2) {
+          For(*places[0]->expr, [&](Expr i, Expr j) {
+            for (auto s : places) {
+              (*s->expr)[i, j] = 0;
+            }
+          });
+        } else if (places[0]->num_active_indices == 3) {
+          For(*places[0]->expr, [&](Expr i, Expr j, Expr k) {
+            for (auto s : places) {
+              (*s->expr)[i, j, k] = 0;
+            }
+          });
+        } else if (places[0]->num_active_indices == 4) {
+          For(*places[0]->expr, [&](Expr i, Expr j, Expr k, Expr l) {
+            for (auto s : places) {
+              (*s->expr)[i, j, k, l] = 0;
+            }
+          });
+        } else if (places[0]->num_active_indices == 0){
+          for (auto s : places) {
+            (*s->expr)[Expr(0)] = 0;
+          }
+        } else {
+          TC_NOT_IMPLEMENTED
         }
       });
       ker.name = kernel_name;
-      gradient_clearers.emplace_back([&]{
-        TC_TAG;
-        ker();
-      });
+      gradient_clearers.emplace_back([&] { ker(); });
     }
   };
   visit(&root);
 }
-
 
 TLANG_NAMESPACE_END

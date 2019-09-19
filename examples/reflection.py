@@ -28,6 +28,7 @@ rendered = scalar()
 target = scalar()
 initial = scalar()
 loss = scalar()
+height_gradient = vec()
 
 
 # ti.cfg.arch = ti.cuda
@@ -38,6 +39,7 @@ def place():
   ti.root.dense(ti.ij, n_grid).place(rendered)
   ti.root.dense(ti.ij, n_grid).place(target)
   ti.root.dense(ti.ij, n_grid).place(initial)
+  ti.root.dense(ti.ij, n_grid).place(height_gradient)
   ti.root.place(loss)
   ti.root.lazy_grad()
 
@@ -60,8 +62,8 @@ def laplacian(t, i, j):
 
 @ti.func
 def gradient(t, i, j):
-  return inv_dx * ti.Vector(
-    [p[t, i, j + 1] - p[t, i, j - 1], p[t, i, j + 1] + p[t, i, j - 1]])
+  return 0.5 * inv_dx * ti.Vector(
+    [p[t, i, j + 1] - p[t, i, j - 1], p[t, i, j + 1] - p[t, i, j - 1]])
 
 
 @ti.kernel
@@ -116,10 +118,20 @@ def render_refract(t: ti.i32):
 
       rendered[i, j] = (1.0 - frac_x) * (
           (1 - frac_y) * target[sample_xi, sample_yi] + frac_y * target[
-                         sample_xi, sample_yi + 1]) + frac_x * (
-        (1 - frac_y) * target[sample_xi + 1, sample_yi] + frac_y * target[
-                         sample_xi + 1, sample_yi + 1]
-      )
+        sample_xi, sample_yi + 1]) + frac_x * (
+                           (1 - frac_y) * target[
+                         sample_xi + 1, sample_yi] + frac_y * target[
+                             sample_xi + 1, sample_yi + 1]
+                       )
+
+
+@ti.kernel
+def compute_height_gradient(t: ti.i32):
+  for i in range(n_grid):  # Parallelized over GPU threads
+    for j in range(n_grid):
+      # TODO: fix boundary
+      height_gradient[i, j] = gradient(t, i, j)
+
 
 @ti.kernel
 def clear_photon_map():
@@ -127,15 +139,19 @@ def clear_photon_map():
     for j in range(n_grid):
       rendered[i, j] = 0.0
 
+
 @ti.kernel
-def render_photon_map(t: ti.i32):
+def render_photon_map(t: ti.i32, offset_x: ti.f32, offset_y: ti.f32):
   for i in range(n_grid):  # Parallelized over GPU threads
     for j in range(n_grid):
-      grad = gradient(t, i, j)
+      grad = height_gradient[i, j] * (1 - offset_x) * (1 - offset_y) + \
+             height_gradient[i + 1, j] * offset_x * (1 - offset_y) + \
+             height_gradient[i, j + 1] * (1 - offset_x) * offset_y + \
+             height_gradient[i + 1, j + 1] * offset_x * offset_y
 
       scale = 5.0
-      sample_x = i - grad[0] * scale
-      sample_y = j - grad[1] * scale
+      sample_x = i - grad[0] * scale + offset_x
+      sample_y = j - grad[1] * scale + offset_y
       sample_x = ti.min(n_grid - 1, ti.max(0, sample_x))
       sample_y = ti.min(n_grid - 1, ti.max(0, sample_y))
       sample_xi = ti.cast(ti.floor(sample_x), ti.i32)
@@ -153,7 +169,7 @@ def render_photon_map(t: ti.i32):
       ti.atomic_add(rendered[x + 1, y + 1], frac_x * frac_y)
 
 
-@ ti.kernel
+@ti.kernel
 def compute_loss(t: ti.i32):
   for i in range(n_grid):
     for j in range(n_grid):
@@ -180,10 +196,14 @@ def forward(output=None):
     if (t + 1) % interval == 0:
       img = np.zeros(shape=(n_grid, n_grid), dtype=np.float32)
       clear_photon_map()
-      render_photon_map(t)
+      compute_height_gradient()
+      render_photon_map(t, 0.25, 0.25)
+      render_photon_map(t, 0.25, 0.75)
+      render_photon_map(t, 0.75, 0.25)
+      render_photon_map(t, 0.75, 0.75)
       for i in range(n_grid):
         for j in range(n_grid):
-          img[i, j] = rendered[i, j] * 0.3
+          img[i, j] = rendered[i, j] * 0.3 / 4
       img = cv2.resize(img, fx=4, fy=4, dsize=None)
       cv2.imshow('img', img)
       cv2.waitKey(1)
@@ -205,7 +225,7 @@ def main():
     for j in range(n_grid):
       target[i, j] = float(target_img[i, j])
 
-  # initial[n_grid // 2, n_grid // 2] = 1
+  initial[n_grid // 2, n_grid // 2] = 1
   forward('initial')
 
   for opt in range(200):

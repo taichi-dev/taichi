@@ -11,19 +11,19 @@ ti.set_default_fp(real)
 
 dim = 2
 n_particles = 8192
+n_solid_particles = 0
 n_actuators = 0
 n_grid = 128
 dx = 1 / n_grid
 inv_dx = 1 / dx
 dt = 3e-4
-p_mass = 1
 p_vol = 1
 E = 100
 # TODO: update
 mu = E
 la = E
-max_steps = 1024
-steps = 1024
+max_steps = 2048
+steps = 2048
 gravity = 9.8
 target = [0.8, 0.2]
 
@@ -101,8 +101,13 @@ def p2g(f: ti.i32):
     w = [0.5 * ti.sqr(1.5 - fx), 0.75 - ti.sqr(fx - 1),
          0.5 * ti.sqr(fx - 0.5)]
     new_F = (ti.Matrix.diag(dim=2, val=1) + dt * C[f, p]) @ F[f, p]
-    F[f + 1, p] = new_F
     J = ti.determinant(new_F)
+    if particle_type[p] == 0: # fluid
+      sqrtJ = ti.sqrt(J)
+      new_F = ti.Matrix([[sqrtJ, 0], [0, sqrtJ]])
+      
+    
+    F[f + 1, p] = new_F
     r, s = ti.polar_decompose(new_F)
     
     act_id = actuator_id[p]
@@ -112,24 +117,27 @@ def p2g(f: ti.i32):
       act = 0.0
     # ti.print(act)
       
-    A = ti.Matrix([[1.0, 0.0], [0.0, 0.0]]) * act
+    A = ti.Matrix([[0.0, 0.0], [0.0, 1.0]]) * act
     cauchy = ti.Matrix([[0.0, 0.0], [0.0, 0.0]])
+    mass = 0.0
     if particle_type[p] == 0:
+      mass = 4
       cauchy = ti.Matrix([[1.0, 0.0], [0.0, 0.1]]) * (J - 1) * E
     else:
+      mass = 1
       cauchy = 2 * mu * (new_F - r) @ ti.transposed(new_F) + \
                ti.Matrix.diag(2, la * (J - 1) * J)
     cauchy += new_F @ A @ ti.transposed(new_F)
     stress = -(dt * p_vol * 4 * inv_dx * inv_dx) * cauchy
-    affine = stress + p_mass * C[f, p]
+    affine = stress + mass * C[f, p]
     for i in ti.static(range(3)):
       for j in ti.static(range(3)):
         offset = ti.Vector([i, j])
         dpos = (ti.cast(ti.Vector([i, j]), real) - fx) * dx
         weight = w[i](0) * w[j](1)
         grid_v_in[base + offset].atomic_add(
-          weight * (p_mass * v[f, p] + affine @ dpos))
-        grid_m_in[base + offset].atomic_add(weight * p_mass)
+          weight * (mass * v[f, p] + affine @ dpos))
+        grid_m_in[base + offset].atomic_add(weight * mass)
 
 
 bound = 3
@@ -209,7 +217,10 @@ def compute_actuation(t: ti.i32):
 @ti.kernel
 def compute_x_avg():
   for i in range(n_particles):
-    x_avg[None].atomic_add((1 / n_particles) * x[steps - 1, i])
+    contrib = 0.0
+    if particle_type[i] == 1:
+      contrib = 1.0 / n_solid_particles
+    x_avg[None].atomic_add(contrib * x[steps - 1, i])
 
 
 @ti.kernel
@@ -253,11 +264,14 @@ def backward():
 class Scene:
   def __init__(self):
     self.n_particles = 0
+    self.n_solid_particles = 0
     self.x = []
     self.actuator_id = []
     self.particle_type = []
   
-  def add_rect(self, x, y, w, h, actuation, ptype=0):
+  def add_rect(self, x, y, w, h, actuation, ptype=1):
+    if ptype == 0:
+      assert actuation == -1
     global n_particles
     w_count = int(w / dx) * 2
     h_count = int(h / dx) * 2
@@ -265,30 +279,37 @@ class Scene:
     real_dy = h / h_count
     for i in range(w_count):
       for j in range(h_count):
-        self.x.append([x + (i + 0.5) * real_dx, y + (j + 0.5) * real_dy - 0.06])
+        self.x.append([x + (i + 0.5) * real_dx, y + (j + 0.5) * real_dy])
         self.actuator_id.append(actuation)
         self.particle_type.append(ptype)
         self.n_particles += 1
+        self.n_solid_particles += int(ptype == 1)
   
   def finalize(self):
-    global n_particles
+    global n_particles, n_solid_particles
     n_particles = self.n_particles
+    n_solid_particles = self.n_solid_particles
+    print('n_particles', n_particles)
+    print('n_solid', n_solid_particles)
     
   def set_n_actuators(self, n_act):
     global n_actuators
     n_actuators = n_act
     
-
+def fish(scene):
+  scene.add_rect(0.025, 0.025, 0.95, 0.1, -1, ptype=0)
+  scene.add_rect(0.1, 0.2, 0.15, 0.05, -1)
+  scene.add_rect(0.1, 0.15, 0.025, 0.05, 0)
+  scene.add_rect(0.125, 0.15, 0.025, 0.05, 1)
+  scene.add_rect(0.2, 0.15, 0.025, 0.05, 2)
+  scene.add_rect(0.225, 0.15, 0.025, 0.05, 3)
+  scene.set_n_actuators(4)
+  
 
 def main():
   # initialization
   scene = Scene()
-  scene.add_rect(0.1, 0.1, 0.05, 0.1, 0, ptype=1)
-  scene.add_rect(0.15, 0.1, 0.05, 0.1, 1)
-  scene.add_rect(0.1, 0.2, 0.3, 0.1, -1)
-  scene.add_rect(0.3, 0.1, 0.05, 0.1, 2)
-  scene.add_rect(0.35, 0.1, 0.05, 0.1, 3)
-  scene.set_n_actuators(4)
+  fish(scene)
   scene.finalize()
   
   for i in range(n_actuators):
@@ -300,6 +321,7 @@ def main():
     x[0, i] = scene.x[i]
     F[0, i] = [[1, 0], [0, 1]]
     actuator_id[i] = scene.actuator_id[i]
+    particle_type[i] = scene.particle_type[i]
   
   losses = []
   img_count = 0
@@ -310,7 +332,7 @@ def main():
     loss.grad[None] = 1
     backward()
     print('loss=', l)
-    learning_rate = 0.1
+    learning_rate = 5
 
     for i in range(n_actuators):
       for j in range(n_sin_waves):
@@ -319,7 +341,7 @@ def main():
       bias[i] -= learning_rate * bias.grad[i]
     
     # visualize
-    for s in range(63, steps, 32):
+    for s in range(63, steps, 4):
       scale = 4
       img = np.zeros(shape=(scale * n_grid, scale * n_grid)) + 0.3
       total = [0, 0]

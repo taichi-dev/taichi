@@ -51,7 +51,7 @@ actuation_omega = 20
 
 # ti.cfg.arch = ti.x86_64
 # ti.cfg.use_llvm = True
-# ti.cfg.arch = ti.cuda
+ti.cfg.arch = ti.cuda
 # ti.cfg.print_ir = True
 
 
@@ -112,7 +112,7 @@ def p2g(f: ti.i32):
     
     act_id = actuator_id[p]
     
-    act = actuation[f, ti.max(0, act_id)] * 40
+    act = actuation[f, ti.max(0, act_id)] * 30
     if act_id == -1:
       act = 0.0
     # ti.print(act)
@@ -268,7 +268,9 @@ class Scene:
     self.x = []
     self.actuator_id = []
     self.particle_type = []
-  
+    self.offset_x = 0
+    self.offset_y = 0
+
   def add_rect(self, x, y, w, h, actuation, ptype=1):
     if ptype == 0:
       assert actuation == -1
@@ -279,12 +281,16 @@ class Scene:
     real_dy = h / h_count
     for i in range(w_count):
       for j in range(h_count):
-        self.x.append([x + (i + 0.5) * real_dx, y + (j + 0.5) * real_dy])
+        self.x.append([x + (i + 0.5) * real_dx + self.offset_x, y + (j + 0.5) * real_dy + self.offset_y])
         self.actuator_id.append(actuation)
         self.particle_type.append(ptype)
         self.n_particles += 1
         self.n_solid_particles += int(ptype == 1)
-  
+
+  def set_offset(self, x, y):
+    self.offset_x = x
+    self.offset_y = y
+
   def finalize(self):
     global n_particles, n_solid_particles
     n_particles = self.n_particles
@@ -304,12 +310,23 @@ def fish(scene):
   scene.add_rect(0.2, 0.15, 0.025, 0.05, 2)
   scene.add_rect(0.225, 0.15, 0.025, 0.05, 3)
   scene.set_n_actuators(4)
-  
+
+
+def robot(scene):
+  scene.set_offset(0.1, 0.1)
+  scene.add_rect(0.0, 0.1, 0.3, 0.1, -1)
+  scene.add_rect(0.0, 0.0, 0.05, 0.1, 0)
+  scene.add_rect(0.05, 0.0, 0.05, 0.1, 1)
+  scene.add_rect(0.2, 0.0, 0.05, 0.1, 2)
+  scene.add_rect(0.25, 0.0, 0.05, 0.1, 3)
+  scene.set_n_actuators(4)
+
 
 def main():
   # initialization
   scene = Scene()
-  fish(scene)
+  # fish(scene)
+  robot(scene)
   scene.finalize()
   
   for i in range(n_actuators):
@@ -332,7 +349,7 @@ def main():
     loss.grad[None] = 1
     backward()
     print('loss=', l)
-    learning_rate = 5
+    learning_rate = 0.02
 
     for i in range(n_actuators):
       for j in range(n_sin_waves):
@@ -341,7 +358,7 @@ def main():
       bias[i] -= learning_rate * bias.grad[i]
     
     # visualize
-    for s in range(63, steps, 4):
+    for s in range(63, steps, 64):
       scale = 4
       img = np.zeros(shape=(scale * n_grid, scale * n_grid)) + 0.3
       total = [0, 0]

@@ -21,7 +21,7 @@ vec = lambda: ti.Vector(2, dt=real)
 
 loss = scalar()
 
-ti.cfg.arch = ti.cuda
+# ti.cfg.arch = ti.cuda
 
 init_x = vec()
 init_v = vec()

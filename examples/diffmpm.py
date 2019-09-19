@@ -25,7 +25,7 @@ la = E
 max_steps = 1024
 steps = 1024
 gravity = 9.8
-target = [0.6, 0.2]
+target = [0.8, 0.2]
 
 scalar = lambda: ti.var(dt=real)
 vec = lambda: ti.Vector(dim, dt=real)
@@ -45,7 +45,7 @@ bias = scalar()
 x_avg = vec()
 
 actuation = scalar()
-actuation_omega = 10
+actuation_omega = 20
 
 
 # ti.cfg.arch = ti.x86_64
@@ -106,7 +106,7 @@ def p2g(f: ti.i32):
     
     act_id = actuator_id[p]
     
-    act = actuation[f, ti.max(0, act_id)] * 10
+    act = actuation[f, ti.max(0, act_id)] * 40
     if act_id == -1:
       act = 0.0
     # ti.print(act)
@@ -252,13 +252,13 @@ class Scene:
   
   def add_rect(self, x, y, w, h, actuation):
     global n_particles
-    w_count = int(w / dx)
-    h_count = int(h / dx)
+    w_count = int(w / dx) * 2
+    h_count = int(h / dx) * 2
     real_dx = w / w_count
     real_dy = h / h_count
     for i in range(w_count):
       for j in range(h_count):
-        self.x.append([x + (i + 0.5) * real_dx, y + (j + 0.5) * real_dy - 0.05])
+        self.x.append([x + (i + 0.5) * real_dx, y + (j + 0.5) * real_dy - 0.06])
         self.actuator_id.append(actuation)
         self.n_particles += 1
   
@@ -275,15 +275,17 @@ class Scene:
 def main():
   # initialization
   scene = Scene()
-  scene.add_rect(0.1, 0.1, 0.1, 0.1, 0)
-  scene.add_rect(0.1, 0.2, 0.3, 0.1, 1)
-  scene.add_rect(0.3, 0.1, 0.1, 0.1, 2)
-  scene.set_n_actuators(3)
+  scene.add_rect(0.1, 0.1, 0.05, 0.1, 0)
+  scene.add_rect(0.15, 0.1, 0.05, 0.1, 1)
+  scene.add_rect(0.1, 0.2, 0.3, 0.1, -1)
+  scene.add_rect(0.3, 0.1, 0.05, 0.1, 2)
+  scene.add_rect(0.35, 0.1, 0.05, 0.1, 2)
+  scene.set_n_actuators(4)
   scene.finalize()
   
   for i in range(n_actuators):
     for j in range(n_sin_waves):
-      weights[i, j] = np.random.randn() * 0.2
+      weights[i, j] = np.random.randn() * 0.01
 
   for i in range(scene.n_particles):
     x[0, i] = scene.x[i]
@@ -292,14 +294,14 @@ def main():
   
   losses = []
   img_count = 0
-  for i in range(30):
+  for i in range(300):
     ti.clear_all_gradients()
     l = forward()
     losses.append(l)
     loss.grad[None] = 1
     backward()
     print('loss=', l)
-    learning_rate = 10
+    learning_rate = 0.1
 
     for i in range(n_actuators):
       for j in range(n_sin_waves):

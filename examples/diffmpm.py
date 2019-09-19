@@ -32,6 +32,7 @@ vec = lambda: ti.Vector(dim, dt=real)
 mat = lambda: ti.Matrix(dim, dim, dt=real)
 
 actuator_id = ti.global_var(ti.i32)
+particle_type = ti.global_var(ti.i32)
 x, v = vec(), vec()
 grid_v_in, grid_m_in = vec(), scalar()
 grid_v_out = vec()
@@ -60,7 +61,7 @@ def place():
   ti.root.dense(ti.i, n_actuators).place(bias)
   
   ti.root.dense(ti.ij, (steps, n_actuators)).place(actuation)
-  ti.root.dense(ti.i, n_particles).place(actuator_id)
+  ti.root.dense(ti.i, n_particles).place(actuator_id, particle_type)
   ti.root.dense(ti.l, max_steps).dense(ti.k, n_particles).place(x, v, C, F)
   ti.root.dense(ti.ij, n_grid).place(grid_v_in, grid_m_in, grid_v_out)
   ti.root.place(loss, x_avg)
@@ -112,8 +113,13 @@ def p2g(f: ti.i32):
     # ti.print(act)
       
     A = ti.Matrix([[1.0, 0.0], [0.0, 0.0]]) * act
-    cauchy = 2 * mu * (new_F - r) @ ti.transposed(new_F) + \
-             ti.Matrix.diag(2, la * (J - 1) * J) + new_F @ A @ ti.transposed(new_F)
+    cauchy = ti.Matrix([[0.0, 0.0], [0.0, 0.0]])
+    if particle_type[p] == 0:
+      cauchy = ti.Matrix([[1.0, 0.0], [0.0, 0.1]]) * (J - 1) * E
+    else:
+      cauchy = 2 * mu * (new_F - r) @ ti.transposed(new_F) + \
+               ti.Matrix.diag(2, la * (J - 1) * J)
+    cauchy += new_F @ A @ ti.transposed(new_F)
     stress = -(dt * p_vol * 4 * inv_dx * inv_dx) * cauchy
     affine = stress + p_mass * C[f, p]
     for i in ti.static(range(3)):
@@ -249,8 +255,9 @@ class Scene:
     self.n_particles = 0
     self.x = []
     self.actuator_id = []
+    self.particle_type = []
   
-  def add_rect(self, x, y, w, h, actuation):
+  def add_rect(self, x, y, w, h, actuation, ptype=0):
     global n_particles
     w_count = int(w / dx) * 2
     h_count = int(h / dx) * 2
@@ -260,6 +267,7 @@ class Scene:
       for j in range(h_count):
         self.x.append([x + (i + 0.5) * real_dx, y + (j + 0.5) * real_dy - 0.06])
         self.actuator_id.append(actuation)
+        self.particle_type.append(ptype)
         self.n_particles += 1
   
   def finalize(self):
@@ -275,7 +283,7 @@ class Scene:
 def main():
   # initialization
   scene = Scene()
-  scene.add_rect(0.1, 0.1, 0.05, 0.1, 0)
+  scene.add_rect(0.1, 0.1, 0.05, 0.1, 0, ptype=1)
   scene.add_rect(0.15, 0.1, 0.05, 0.1, 1)
   scene.add_rect(0.1, 0.2, 0.3, 0.1, -1)
   scene.add_rect(0.3, 0.1, 0.05, 0.1, 2)
@@ -286,6 +294,7 @@ def main():
   for i in range(n_actuators):
     for j in range(n_sin_waves):
       weights[i, j] = np.random.randn() * 0.01
+  
 
   for i in range(scene.n_particles):
     x[0, i] = scene.x[i]

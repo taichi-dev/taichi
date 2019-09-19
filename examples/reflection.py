@@ -9,7 +9,7 @@ real = ti.f32
 ti.set_default_fp(real)
 # ti.runtime.print_preprocessed = True
 
-n_grid = 128
+n_grid = 256
 dx = 1 / n_grid
 inv_dx = 1 / dx
 dt = 3e-4
@@ -102,11 +102,10 @@ def render_refract(t: ti.i32):
   for i in range(n_grid):  # Parallelized over GPU threads
     for j in range(n_grid):
       grad = gradient(t, i, j)
-      # normal = ti.Vector.normalized(ti.Vector([grad[0], 1.0, grad[1]]))
 
       scale = 2.0
-      sample_x = i + grad[0] * scale
-      sample_y = j + grad[1] * scale
+      sample_x = i - grad[0] * scale
+      sample_y = j - grad[1] * scale
       sample_x = ti.min(n_grid - 1, ti.max(0, sample_x))
       sample_y = ti.min(n_grid - 1, ti.max(0, sample_y))
       sample_xi = ti.cast(ti.floor(sample_x), ti.i32)
@@ -121,6 +120,38 @@ def render_refract(t: ti.i32):
         (1 - frac_y) * target[sample_xi + 1, sample_yi] + frac_y * target[
                          sample_xi + 1, sample_yi + 1]
       )
+
+@ti.kernel
+def clear_photon_map():
+  for i in range(n_grid):
+    for j in range(n_grid):
+      rendered[i, j] = 0.0
+
+@ti.kernel
+def render_photon_map(t: ti.i32):
+  for i in range(n_grid):  # Parallelized over GPU threads
+    for j in range(n_grid):
+      grad = gradient(t, i, j)
+
+      scale = 5.0
+      sample_x = i - grad[0] * scale
+      sample_y = j - grad[1] * scale
+      sample_x = ti.min(n_grid - 1, ti.max(0, sample_x))
+      sample_y = ti.min(n_grid - 1, ti.max(0, sample_y))
+      sample_xi = ti.cast(ti.floor(sample_x), ti.i32)
+      sample_yi = ti.cast(ti.floor(sample_y), ti.i32)
+
+      frac_x = sample_x - sample_xi
+      frac_y = sample_y - sample_yi
+
+      x = sample_xi
+      y = sample_yi
+
+      ti.atomic_add(rendered[x, y], (1 - frac_x) * (1 - frac_y))
+      ti.atomic_add(rendered[x, y + 1], (1 - frac_x) * frac_y)
+      ti.atomic_add(rendered[x + 1, y], frac_x * (1 - frac_y))
+      ti.atomic_add(rendered[x + 1, y + 1], frac_x * frac_y)
+
 
 @ ti.kernel
 def compute_loss(t: ti.i32):
@@ -148,9 +179,11 @@ def forward(output=None):
     fdtd(t)
     if (t + 1) % interval == 0:
       img = np.zeros(shape=(n_grid, n_grid), dtype=np.float32)
-      render_refract(t)
+      clear_photon_map()
+      render_photon_map(t)
       for i in range(n_grid):
-        for j in range(n_grid): img[i, j] = rendered[i, j]
+        for j in range(n_grid):
+          img[i, j] = rendered[i, j] * 0.3
       img = cv2.resize(img, fx=4, fy=4, dsize=None)
       cv2.imshow('img', img)
       cv2.waitKey(1)
@@ -164,6 +197,7 @@ def forward(output=None):
 def main():
   # initialization
   target_img = cv2.imread('iclr2020.png')[:, :, 0] / 255.0
+  target_img = cv2.resize(target_img, (n_grid, n_grid))
   target_img -= target_img.mean()
   cv2.imshow('target', target_img * amplify + 0.5)
   # print(target_img.min(), target_img.max())
@@ -171,7 +205,7 @@ def main():
     for j in range(n_grid):
       target[i, j] = float(target_img[i, j])
 
-  initial[n_grid // 2, n_grid // 2] = 1
+  # initial[n_grid // 2, n_grid // 2] = 1
   forward('initial')
 
   for opt in range(200):

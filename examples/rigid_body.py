@@ -8,6 +8,12 @@ import cv2
 import os
 import matplotlib.pyplot as plt
 
+from renderer_vector import VectorRenderer
+import time
+from matplotlib.pyplot import cm
+
+renderer = VectorRenderer()
+
 real = ti.f32
 ti.set_default_fp(real)
 
@@ -24,7 +30,6 @@ vec = lambda: ti.Vector(2, dt=real)
 
 loss = scalar()
 
-# On CPU this may not work since during AD, min's adjoint uses cmp_le, which might return -1 instead of 1
 # ti.cfg.arch = ti.cuda
 
 x = vec()
@@ -236,8 +241,10 @@ def compute_loss(t: ti.i32):
 
 
 def forward(output=None):
+  cmap = cm.get_cmap('rainbow')
+
   initialize_properties()
-  
+
   interval = vis_interval
   total_steps = steps
   if output:
@@ -251,10 +258,12 @@ def forward(output=None):
     advance(t)
     
     if (t + 1) % interval == 0:
+      renderer.build_axis()
+      renderer.draw_line([0,ground_height], [1,ground_height], False,color='black',width=5)
+
       img = np.ones(shape=(vis_resolution, vis_resolution, 3),
                     dtype=np.float32)
       
-      color = (0.3, 0.5, 0.9)
       for i in range(n_objects):
         points = []
         for k in range(4):
@@ -266,26 +275,21 @@ def forward(output=None):
           pos = np.array(
             [x[t, i][0], x[t, i][1]]) + offset_scale * rot_matrix @ np.array(
             [halfsize[i][0], halfsize[i][1]])
-          points.append(
-            (int(pos[0] * vis_resolution),
-             vis_resolution - int(pos[1] * vis_resolution)))
+
+          points.append((pos[0] * renderer.canvas_scale[0], pos[1] * renderer.canvas_scale[1] ))
         
-        cv2.fillConvexPoly(img, points=np.array(points), color=color)
-      
-      y = int((1 - ground_height) * vis_resolution)
-      cv2.line(img, (0, y), (vis_resolution - 2, y), color=(0.1, 0.1, 0.1),
-               thickness=3)
-      
-      def circle(x, y, color):
-        radius = 0.02
-        cv2.circle(img, center=(
-          int(vis_resolution * x), int(vis_resolution * (1 - y))),
-                   radius=int(radius * vis_resolution), color=color,
-                   thickness=-1)
-      
-      circle(x[t, head_id][0], x[t, head_id][1], (0.2, 0.3, 0.8))
-      circle(goal[0], goal[1], (0.9, 0.3, 0.2))
-      
+        if (i == 0):
+          renderer.draw_dot([x[t, i][0], x[t, i][1]],5000, cmap(0),20)
+        elif (i == 1 or i == 4):
+          renderer.draw_polygon(points, cmap(0.1))
+        elif (i == 2 or i == 5):
+          renderer.draw_polygon(points, cmap(0.3))
+        elif (i == 3 or i == 6):
+          renderer.draw_polygon(points, cmap(0.7))
+
+      renderer.draw_dot([x[t, head_id][0], x[t, head_id][1]],color=cmap(0.6),layer=20,ec='r')      
+      renderer.draw_dot([goal[0], goal[1]],layer=20,ec='r')
+
       for i in range(n_springs):
         def get_world_loc(i, offset):
           rot = rotation[t, i]
@@ -294,21 +298,18 @@ def forward(output=None):
           pos = np.array(
             [[x[t, i][0]], [x[t, i][1]]]) + rot_matrix @ np.array(
             [[offset[0]], [offset[1]]])
-          pos = pos * vis_resolution
-          return (int(pos[0, 0]), vis_resolution - int(pos[1, 0]))
+          return pos
         
         pt1 = get_world_loc(spring_anchor_a[i], spring_offset_a[i])
         pt2 = get_world_loc(spring_anchor_b[i], spring_offset_b[i])
         
-        act = 0
-        
-        cv2.line(img, pt1, pt2, (0.5 + act, 0.5, 0.5 - act), thickness=6)
-      
-      cv2.imshow('img', img)
-      cv2.waitKey(1)
+        renderer.draw_line(pt1, pt2, True)
       if output:
-        cv2.imwrite('rigid_body/{}/{:04d}.png'.format(output, t), img * 255)
-  
+        renderer.save_fig('rigid_body/{}/{:04d}.png'.format(output, t))
+        #renderer.save_fig('rigid_body/{}/{:04d}.pdf'.format(output, t))
+
+      renderer.clean_frame()
+
   loss[None] = 0
   compute_loss(steps - 1)
 

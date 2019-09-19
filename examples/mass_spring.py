@@ -28,7 +28,7 @@ x = vec()
 v = vec()
 v_inc = vec()
 
-head_id = 0
+head_id = 2
 goal = [0.9, 0.2]
 
 n_objects = 0
@@ -39,15 +39,15 @@ gravity = -9.8
 friction = 1.2
 
 gradient_clip = 1
-spring_omega = 20
+spring_omega = 10
 damping = 15
-amplitude = 0.10
 
 n_springs = 0
 spring_anchor_a = ti.global_var(ti.i32)
 spring_anchor_b = ti.global_var(ti.i32)
 spring_length = scalar()
 spring_stiffness = scalar()
+spring_actuation = scalar()
 
 n_sin_waves = 10
 weights = scalar()
@@ -58,7 +58,8 @@ bias = scalar()
 def place():
   ti.root.dense(ti.l, max_steps).dense(ti.i, n_objects).place(x, v, v_inc)
   ti.root.dense(ti.i, n_springs).place(spring_anchor_a, spring_anchor_b,
-                                       spring_length, spring_stiffness)
+                                       spring_length, spring_stiffness,
+                                       spring_actuation)
   ti.root.dense(ti.ij, (n_springs, n_sin_waves)).place(weights)
   ti.root.dense(ti.i, n_springs).place(bias)
   ti.root.place(loss)
@@ -66,7 +67,8 @@ def place():
 
 
 dt = 0.001
-learning_rate = 0.5
+learning_rate = 5
+
 
 @ti.kernel
 def apply_spring_force(t: ti.i32):
@@ -85,12 +87,13 @@ def apply_spring_force(t: ti.i32):
     actuation += bias[i]
     actuation = ti.tanh(actuation)
     
-    target_length = spring_length[i] * (1.0 + amplitude * actuation)
+    target_length = spring_length[i] * (1.0 + spring_actuation[i] * actuation)
     impulse = dt * (length - target_length) * spring_stiffness[
       i] / length * dist
     
-    ti.atomic_add(v_inc[t + 1, a],  -impulse)
-    ti.atomic_add(v_inc[t + 1, b],  impulse)
+    ti.atomic_add(v_inc[t + 1, a], -impulse)
+    ti.atomic_add(v_inc[t + 1, b], impulse)
+
 
 @ti.kernel
 def advance(t: ti.i32):
@@ -119,7 +122,7 @@ def forward(output=None):
   if output:
     interval = output_vis_interval
     os.makedirs('mass_spring/{}/'.format(output), exist_ok=True)
-    
+  
   total_steps = steps if not output else steps * 2
   
   for t in range(1, total_steps):
@@ -150,9 +153,13 @@ def forward(output=None):
       
       for i in range(n_springs):
         def get_pt(x):
-          return int(x[0] * vis_resolution), int(vis_resolution - x[1]* vis_resolution)
+          return int(x[0] * vis_resolution), int(
+            vis_resolution - x[1] * vis_resolution)
+        
         act = 0
-        cv2.line(img, get_pt(x[t, spring_anchor_a[i]]), get_pt(x[t, spring_anchor_b[i]]), (0.5 + act, 0.5, 0.5 - act), thickness=6)
+        cv2.line(img, get_pt(x[t, spring_anchor_a[i]]),
+                 get_pt(x[t, spring_anchor_b[i]]), (0.5 + act, 0.5, 0.5 - act),
+                 thickness=6)
       
       cv2.imshow('img', img)
       cv2.waitKey(1)
@@ -202,6 +209,8 @@ def setup_robot(objects, springs):
     spring_anchor_b[i] = s[1]
     spring_length[i] = s[2]
     spring_stiffness[i] = s[3]
+    spring_actuation[i] = s[4]
+
 
 def main():
   robot_id = 0
@@ -213,7 +222,7 @@ def main():
   
   for i in range(n_springs):
     for j in range(n_sin_waves):
-      weights[i, j] = np.random.randn() * 0.1
+      weights[i, j] = np.random.randn() * 0.3
   
   forward('initial')
   for iter in range(100):
@@ -236,7 +245,7 @@ def main():
     for i in range(n_springs):
       for j in range(n_sin_waves):
         weights[i, j] -= scale * weights.grad[i, j]
-      bias[i] += scale * bias.grad[i]
+      bias[i] -= scale * bias.grad[i]
   
   clear()
   forward('final')

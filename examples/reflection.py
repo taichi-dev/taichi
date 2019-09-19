@@ -29,6 +29,7 @@ target = scalar()
 initial = scalar()
 loss = scalar()
 
+
 # ti.cfg.arch = ti.cuda
 
 @ti.layout
@@ -56,9 +57,12 @@ def laplacian(t, i, j):
       -4 * p[t, i, j] + p[t, i, j - 1] + p[t, i, j + 1] + p[t, i + 1, j] +
       p[t, i - 1, j])
 
+
 @ti.func
 def gradient(t, i, j):
-  return inv_dx * ti.Vector([p[t, i, j + 1] - p[t, i, j - 1], p[t, i, j + 1] + p[t, i, j - 1]])
+  return inv_dx * ti.Vector(
+    [p[t, i, j + 1] - p[t, i, j - 1], p[t, i, j + 1] + p[t, i, j - 1]])
+
 
 @ti.kernel
 def initialize():
@@ -69,7 +73,7 @@ def initialize():
 
 @ti.kernel
 def fdtd(t: ti.i32):
-  for i in range(n_grid): # Parallelized over GPU threads
+  for i in range(n_grid):  # Parallelized over GPU threads
     for j in range(n_grid):
       laplacian_p = laplacian(t - 2, i, j)
       laplacian_q = laplacian(t - 1, i, j)
@@ -77,26 +81,60 @@ def fdtd(t: ti.i32):
           c * c * dt * dt + c * alpha * dt) * laplacian_q - p[
                      t - 2, i, j] - c * alpha * dt * laplacian_p
 
+
 @ti.kernel
-def render(t: ti.i32):
-  for i in range(n_grid): # Parallelized over GPU threads
+def render_reflect(t: ti.i32):
+  for i in range(n_grid):  # Parallelized over GPU threads
     for j in range(n_grid):
       grad = gradient(t, i, j)
       normal = ti.Vector.normalized(ti.Vector([grad[0], 1.0, grad[1]]))
       rendered[i, j] = normal[1]
 
 
+@ti.func
+def pattern(i, j):
+  return ti.cast(ti.floor(i / (n_grid / 8)) + ti.floor(j / (n_grid / 8)),
+                 ti.i32) % 2
+
+
 @ti.kernel
+def render_refract(t: ti.i32):
+  for i in range(n_grid):  # Parallelized over GPU threads
+    for j in range(n_grid):
+      grad = gradient(t, i, j)
+      # normal = ti.Vector.normalized(ti.Vector([grad[0], 1.0, grad[1]]))
+
+      scale = 2.0
+      sample_x = i + grad[0] * scale
+      sample_y = j + grad[1] * scale
+      sample_x = ti.min(n_grid - 1, ti.max(0, sample_x))
+      sample_y = ti.min(n_grid - 1, ti.max(0, sample_y))
+      sample_xi = ti.cast(ti.floor(sample_x), ti.i32)
+      sample_yi = ti.cast(ti.floor(sample_y), ti.i32)
+
+      frac_x = sample_x - sample_xi
+      frac_y = sample_y - sample_yi
+
+      rendered[i, j] = (1.0 - frac_x) * (
+          (1 - frac_y) * target[sample_xi, sample_yi] + frac_y * target[
+                         sample_xi, sample_yi + 1]) + frac_x * (
+        (1 - frac_y) * target[sample_xi + 1, sample_yi] + frac_y * target[
+                         sample_xi + 1, sample_yi + 1]
+      )
+
+@ ti.kernel
 def compute_loss(t: ti.i32):
   for i in range(n_grid):
     for j in range(n_grid):
       ti.atomic_add(loss, dx * dx * ti.sqr(target[i, j] - p[t, i, j]))
+
 
 @ti.kernel
 def apply_grad():
   # gradient descent
   for i, j in initial.grad:
     initial[i, j] -= learning_rate * initial.grad[i, j]
+
 
 def forward(output=None):
   steps_mul = 1
@@ -110,7 +148,7 @@ def forward(output=None):
     fdtd(t)
     if (t + 1) % interval == 0:
       img = np.zeros(shape=(n_grid, n_grid), dtype=np.float32)
-      render(t)
+      render_refract(t)
       for i in range(n_grid):
         for j in range(n_grid): img[i, j] = rendered[i, j]
       img = cv2.resize(img, fx=4, fy=4, dsize=None)
@@ -122,9 +160,10 @@ def forward(output=None):
   loss[None] = 0
   compute_loss(steps - 1)
 
+
 def main():
   # initialization
-  target_img = cv2.imread('iclr2020.png')[:,:,0] / 255.0
+  target_img = cv2.imread('iclr2020.png')[:, :, 0] / 255.0
   target_img -= target_img.mean()
   cv2.imshow('target', target_img * amplify + 0.5)
   # print(target_img.min(), target_img.max())
@@ -138,12 +177,13 @@ def main():
   for opt in range(200):
     with ti.Tape(loss):
       forward()
-    
+
     print('Iter', opt, ' Loss =', loss[None])
 
     apply_grad()
-    
+
   forward('optimized')
+
 
 if __name__ == '__main__':
   main()

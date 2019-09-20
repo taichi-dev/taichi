@@ -17,6 +17,7 @@
 
 #include <taichi/geometry/factory.h>
 #include <taichi/math/levelset.h>
+#include <taichi/visual/gui.h>
 
 PYBIND11_MAKE_OPAQUE(std::vector<taichi::RenderParticle>);
 PYBIND11_MAKE_OPAQUE(std::vector<taichi::Triangle>);
@@ -143,6 +144,29 @@ void export_visual(py::module &m) {
   py::class_<Function31>(m, "Function31");
   py::class_<Function32>(m, "Function32");
   py::class_<Function33>(m, "Function33");
+
+  // GUI
+  using Line = Canvas::Line;
+  using Circle = Canvas::Circle;
+  py::class_<GUI>(m, "GUI")
+      .def(py::init<std::string, Vector2i>())
+      .def("get_canvas", &GUI::get_canvas, py::return_value_policy::reference)
+      .def("update", &GUI::update);
+  py::class_<Canvas>(m, "Canvas")
+      .def("clear", static_cast<void (Canvas::*)(int)>(&Canvas::clear))
+      .def("rect", &Canvas::rect, py::return_value_policy::reference)
+      .def("circle", static_cast<Circle (Canvas::*)(Vector2)>(&Canvas::circle),
+           py::return_value_policy::reference);
+  py::class_<Line>(m, "Line")
+      .def("radius", &Line::radius, py::return_value_policy::reference)
+      .def("close", &Line::close, py::return_value_policy::reference)
+      .def("color", static_cast<Line &(Line::*)(int)>(&Line::color),
+           py::return_value_policy::reference);
+  py::class_<Circle>(m, "Circle")
+      .def("finish", &Circle::finish)
+      .def("radius", &Circle::radius, py::return_value_policy::reference)
+      .def("color", static_cast<Circle &(Circle::*)(int)>(&Circle::color),
+           py::return_value_policy::reference);
 }
 
 TC_NAMESPACE_END

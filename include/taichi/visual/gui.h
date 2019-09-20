@@ -214,12 +214,14 @@ class Canvas {
     Vector2 _center;
     Vector4 _color;
     real _radius;
+    bool finished;
 
     TC_FORCE_INLINE Circle(Canvas &canvas, Vector2 center)
         : canvas(canvas),
           _center(center),
           _color(canvas.context._color),
           _radius(canvas.context._radius) {
+      finished = false;
     }
 
     TC_FORCE_INLINE Circle &color(Vector4 color) {
@@ -246,7 +248,11 @@ class Canvas {
       return *this;
     }
 
-    TC_FORCE_INLINE ~Circle() {
+    void finish() {
+      TC_ASSERT(finished == false);
+      finished = true;
+      TC_P(this);
+      TC_P(&canvas);
       auto center = canvas.transform(_center);
       auto center_i = (center + Vector2(0.5_f)).template cast<int>();
       auto radius_i = (int)std::ceil(_radius + 0.5_f);
@@ -259,6 +265,10 @@ class Canvas {
           dest = lerp(alpha, dest, _color);
         }
       }
+    }
+
+    TC_FORCE_INLINE ~Circle() {
+      finish();
     }
   };
 

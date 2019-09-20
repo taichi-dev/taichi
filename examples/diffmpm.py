@@ -5,6 +5,7 @@ import random
 import cv2
 import matplotlib.pyplot as plt
 import time
+import taichi as tc
 
 real = ti.f32
 ti.set_default_fp(real)
@@ -23,7 +24,7 @@ E = 100
 mu = E
 la = E
 max_steps = 2048
-steps = 2048
+steps = 128
 gravity = 9.8
 target = [0.8, 0.2]
 
@@ -60,7 +61,7 @@ def place():
   ti.root.dense(ti.ij, (n_actuators, n_sin_waves)).place(weights)
   ti.root.dense(ti.i, n_actuators).place(bias)
   
-  ti.root.dense(ti.ij, (steps, n_actuators)).place(actuation)
+  ti.root.dense(ti.ij, (max_steps, n_actuators)).place(actuation)
   ti.root.dense(ti.i, n_particles).place(actuator_id, particle_type)
   ti.root.dense(ti.l, max_steps).dense(ti.k, n_particles).place(x, v, C, F)
   ti.root.dense(ti.ij, n_grid).place(grid_v_in, grid_m_in, grid_v_out)
@@ -323,6 +324,7 @@ def robot(scene):
 
 
 def main():
+  tc.set_gdb_trigger()
   # initialization
   scene = Scene()
   # fish(scene)
@@ -339,9 +341,12 @@ def main():
     F[0, i] = [[1, 0], [0, 1]]
     actuator_id[i] = scene.actuator_id[i]
     particle_type[i] = scene.particle_type[i]
-  
+    
+  gui = tc.core.GUI("Differentiable MPM", tc.Vectori(512, 512))
+  canvas = gui.get_canvas()
+
+  vec = tc.Vector
   losses = []
-  img_count = 0
   for i in range(300):
     ti.clear_all_gradients()
     l = forward()
@@ -356,28 +361,14 @@ def main():
         # print(weights.grad[i, j])
         weights[i, j] -= learning_rate * weights.grad[i, j]
       bias[i] -= learning_rate * bias.grad[i]
-    
+      
     # visualize
     for s in range(63, steps, 64):
-      scale = 4
-      img = np.zeros(shape=(scale * n_grid, scale * n_grid)) + 0.3
-      total = [0, 0]
+      canvas.clear(0x112F41)
+      canvas.circle(vec(target[0], target[1])).color(0xED553B).radius(5)
       for i in range(n_particles):
-        p_x = int(scale * x(0)[s, i] / dx)
-        p_y = int(scale * x(1)[s, i] / dx)
-        total[0] += p_x
-        total[1] += p_y
-        img[p_x, p_y] = 1
-      cv2.circle(img, (total[1] // n_particles, total[0] // n_particles),
-                 radius=5, color=0, thickness=5)
-      cv2.circle(img, (
-      int(target[1] * scale * n_grid), int(target[0] * scale * n_grid)),
-                 radius=5, color=1, thickness=5)
-      img = img.swapaxes(0, 1)[::-1]
-      cv2.imshow('MPM', img)
-      img_count += 1
-      # cv2.imwrite('MPM{:04d}.png'.format(img_count), img * 255)
-      cv2.waitKey(1)
+        canvas.circle(vec(x[s, i][0], x[s, i][1])).radius(2).color(0xF2B134)
+      gui.update()
   
   # ti.profiler_print()
   plt.title("Optimization of Initial Velocity")

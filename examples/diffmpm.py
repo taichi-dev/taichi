@@ -346,6 +346,11 @@ def main():
   canvas = gui.get_canvas()
 
   vec = tc.Vector
+  print(canvas)
+  canvas.clear(0x112F41)
+  canvas.circle(vec(0.5, 0.5)).finish()
+  while True:
+    gui.update()
   losses = []
   for i in range(300):
     ti.clear_all_gradients()
@@ -365,9 +370,10 @@ def main():
     # visualize
     for s in range(63, steps, 64):
       canvas.clear(0x112F41)
-      canvas.circle(vec(target[0], target[1])).color(0xED553B).radius(5)
-      for i in range(n_particles):
-        canvas.circle(vec(x[s, i][0], x[s, i][1])).radius(2).color(0xF2B134)
+      # canvas.circle(vec(target[0], target[1])).color(0xED553B).radius(5)
+      canvas.circle(vec(0.5, 0.5))
+      # for i in range(n_particles):
+      #   canvas.circle(vec(x[s, i][0], x[s, i][1])).radius(2).color(0xF2B134)
       gui.update()
   
   # ti.profiler_print()

@@ -43,12 +43,12 @@ head_id = 3
 goal = [0.9, 0.15]
 
 n_objects = 1
-elasticity = 0.5
+elasticity = 1
 ground_height = 0.1
 gravity = -9.8
 friction = 0.0
 penalty = 1e4
-damping = 10
+damping = 0
 
 @ti.layout
 def place():
@@ -164,6 +164,7 @@ def compute_loss(t: ti.i32):
 
 
 gui = tc.core.GUI("Rigid Body", tc.Vectori(1024, 1024))
+canvas = gui.get_canvas()
 
 def forward(output=None):
 
@@ -181,7 +182,6 @@ def forward(output=None):
     advance(t)
     
     if (t + 1) % interval == 0:
-      canvas = gui.get_canvas()
       canvas.clear(0xFFFFFF)
       for i in range(n_objects):
         points = []
@@ -195,11 +195,12 @@ def forward(output=None):
             [x[t, i][0], x[t, i][1]]) + offset_scale * rot_matrix @ np.array(
             [halfsize[i][0], halfsize[i][1]])
           points.append((pos[0], pos[1]))
-        print(points)
 
         for k in range(4):
-          canvas.path(tc.Vector(*points[k]), tc.Vector(*points[(k + 1) % 4])).radius(2).color(0x0).close()
+          canvas.path(tc.Vector(*points[k]), tc.Vector(*points[(k + 1) % 4])).radius(2).color(0x0).finish()
 
+      offset = 0.003
+      canvas.path(tc.Vector(0.05, ground_height - offset), tc.Vector(0.95, ground_height - offset)).radius(2).color(0xAAAAAA).finish()
 
       if output:
         gui.screenshot('rigid_body/{}/{:04d}.png'.format(output, t))
@@ -220,16 +221,19 @@ def clear_states():
 
 def main():
   x[0, 0] = [0.5, 0.5]
-  halfsize[0] = [0.2, 0.1]
+  halfsize[0] = [0.2, 0.03]
   omega[0, 0] = 1
-  forward('initial')
+  # forward('initial')
   for iter in range(50):
     clear_states()
     
     with ti.Tape(loss):
       forward()
-    
+
     print('Iter=', iter, 'Loss=', loss[None])
+    x[0, 0][0] = x[0, 0][0] - x.grad[0, 0][0] * learning_rate
+
+
     
 if __name__ == '__main__':
   main()

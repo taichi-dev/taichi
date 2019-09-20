@@ -24,7 +24,7 @@ E = 100
 mu = E
 la = E
 max_steps = 2048
-steps = 128
+steps = 2048
 gravity = 9.8
 target = [0.8, 0.2]
 
@@ -342,15 +342,10 @@ def main():
     actuator_id[i] = scene.actuator_id[i]
     particle_type[i] = scene.particle_type[i]
     
-  gui = tc.core.GUI("Differentiable MPM", tc.Vectori(512, 512))
+  gui = tc.core.GUI("Differentiable MPM", tc.Vectori(1024, 1024))
   canvas = gui.get_canvas()
 
   vec = tc.Vector
-  print(canvas)
-  canvas.clear(0x112F41)
-  canvas.circle(vec(0.5, 0.5)).finish()
-  while True:
-    gui.update()
   losses = []
   for i in range(300):
     ti.clear_all_gradients()
@@ -370,10 +365,10 @@ def main():
     # visualize
     for s in range(63, steps, 64):
       canvas.clear(0x112F41)
-      # canvas.circle(vec(target[0], target[1])).color(0xED553B).radius(5)
-      canvas.circle(vec(0.5, 0.5))
-      # for i in range(n_particles):
-      #   canvas.circle(vec(x[s, i][0], x[s, i][1])).radius(2).color(0xF2B134)
+      canvas.circle(vec(target[0], target[1])).color(0xED553B).radius(5).finish()
+      # canvas.circle(vec(0.5, 0.5))
+      for i in range(n_particles):
+        canvas.circle(vec(x[s, i][0], x[s, i][1])).radius(2).color(0xF2B134).finish()
       gui.update()
   
   # ti.profiler_print()

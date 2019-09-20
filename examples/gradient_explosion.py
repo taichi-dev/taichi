@@ -39,8 +39,6 @@ def gradient(alpha, num_steps):
   return loss[None]
 
 
-
-
 # c = ['r', 'g', 'b', 'y', 'k']
 for i, alpha in enumerate([0, 1, 3, 10]):
   xs, ys = [], []

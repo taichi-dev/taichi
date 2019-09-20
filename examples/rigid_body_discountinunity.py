@@ -10,8 +10,6 @@ import time
 from matplotlib.pyplot import cm
 import taichi as tc
 
-renderer = VectorRenderer()
-
 real = ti.f32
 ti.set_default_fp(real)
 
@@ -48,7 +46,7 @@ n_objects = 1
 elasticity = 0.5
 ground_height = 0.1
 gravity = -9.8
-friction = 1.0
+friction = 0.0
 penalty = 1e4
 damping = 10
 
@@ -165,7 +163,7 @@ def compute_loss(t: ti.i32):
   loss[None] = (x[t, head_id] - ti.Vector(goal)).norm()
 
 
-gui = tc.GUI("Rigid Body", ti.Vectoi(1024, 1024))
+gui = tc.core.GUI("Rigid Body", tc.Vectori(1024, 1024))
 
 def forward(output=None):
 
@@ -184,7 +182,7 @@ def forward(output=None):
     
     if (t + 1) % interval == 0:
       canvas = gui.get_canvas()
-      canvas.clear()
+      canvas.clear(0xFFFFFF)
       for i in range(n_objects):
         points = []
         for k in range(4):
@@ -197,9 +195,10 @@ def forward(output=None):
             [x[t, i][0], x[t, i][1]]) + offset_scale * rot_matrix @ np.array(
             [halfsize[i][0], halfsize[i][1]])
           points.append((pos[0], pos[1]))
+        print(points)
 
         for k in range(4):
-          gui.line(ti.Vector(points[k]), ti.Vector(points[(k + 1) % 4])).finish()
+          canvas.path(tc.Vector(*points[k]), tc.Vector(*points[(k + 1) % 4])).radius(2).color(0x0).close()
 
 
       if output:
@@ -221,6 +220,7 @@ def clear_states():
 
 def main():
   x[0, 0] = [0.5, 0.5]
+  halfsize[0] = [0.2, 0.1]
   omega[0, 0] = 1
   forward('initial')
   for iter in range(50):

@@ -251,8 +251,6 @@ class Canvas {
     void finish() {
       TC_ASSERT(finished == false);
       finished = true;
-      TC_P(this);
-      TC_P(&canvas);
       auto center = canvas.transform(_center);
       auto center_i = (center + Vector2(0.5_f)).template cast<int>();
       auto radius_i = (int)std::ceil(_radius + 0.5_f);
@@ -268,7 +266,8 @@ class Canvas {
     }
 
     TC_FORCE_INLINE ~Circle() {
-      finish();
+      if (!finished)
+        finish();
     }
   };
 
@@ -284,12 +283,16 @@ class Canvas {
     return Vector2(transform_matrix * Vector3(x, 1.0_f));
   }
 
-  Circle circle(Vector2 center) {
-    return Circle(*this, center);
+  std::vector<Circle> circles;
+
+  Circle &circle(Vector2 center) {
+    circles.emplace_back(*this, center);
+    return circles.back();
   }
 
-  Circle circle(real x, real y) {
-    return Circle(*this, Vector2(x, y));
+  Circle &circle(real x, real y) {
+    circles.emplace_back(*this, Vector2(x, y));
+    return circles.back();
   }
 
   Line path(real xa, real ya, real xb, real yb) {
@@ -376,6 +379,7 @@ class Canvas {
   }
 
   void clear(Vector4 color) {
+    circles.clear();
     img.reset(color);
   }
 

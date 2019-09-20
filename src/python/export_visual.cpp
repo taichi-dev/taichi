@@ -150,13 +150,13 @@ void export_visual(py::module &m) {
   using Circle = Canvas::Circle;
   py::class_<GUI>(m, "GUI")
       .def(py::init<std::string, Vector2i>())
-      .def("get_canvas", &GUI::get_canvas, py::return_value_policy::reference)
+      .def("get_canvas", &GUI::get_canvas, py::return_value_policy::automatic_reference)
+      .def("screenshot", &GUI::screenshot)
       .def("update", &GUI::update);
   py::class_<Canvas>(m, "Canvas")
       .def("clear", static_cast<void (Canvas::*)(int)>(&Canvas::clear))
       .def("rect", &Canvas::rect, py::return_value_policy::reference)
-      .def("circle", static_cast<Circle (Canvas::*)(Vector2)>(&Canvas::circle),
-           py::return_value_policy::reference);
+      .def("circle", static_cast<Circle &(Canvas::*)(Vector2)>(&Canvas::circle), py::return_value_policy::reference);
   py::class_<Line>(m, "Line")
       .def("radius", &Line::radius, py::return_value_policy::reference)
       .def("close", &Line::close, py::return_value_policy::reference)

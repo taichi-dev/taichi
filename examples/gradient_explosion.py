@@ -1,6 +1,7 @@
 import taichi_lang as ti
 import matplotlib.pyplot as plt
 import math
+import sys
 
 x = ti.global_var(dt=ti.f32)
 v = ti.global_var(dt=ti.f32)
@@ -38,12 +39,15 @@ def gradient(alpha, num_steps):
     compute_loss(num_steps - 1)
   return loss[None]
 
+large = False
+if len(sys.argv) > 1:
+  large = True
 
 # c = ['r', 'g', 'b', 'y', 'k']
 for i, alpha in enumerate([0, 1, 3, 10]):
   xs, ys = [], []
   grads = []
-  for num_steps in range(0, 1000, 50):
+  for num_steps in range(0, 10000 if large else 1000, 50):
     g = gradient(alpha, num_steps)
     xs.append(num_steps)
     ys.append(g)
@@ -57,5 +61,8 @@ plt.title("Gradient Explosion without Damping")
 plt.ylabel("Gradient")
 plt.xlabel("Time steps")
 plt.legend()
+if large:
+  plt.ylim(0, 3000)
 plt.tight_layout()
+
 plt.show()

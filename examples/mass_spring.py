@@ -28,15 +28,15 @@ x = vec()
 v = vec()
 v_inc = vec()
 
-head_id = 2
+head_id = 0
 goal = [0.9, 0.2]
 
 n_objects = 0
 # target_ball = 0
 elasticity = 0.0
 ground_height = 0.1
-gravity = -9.8
-friction = 1.2
+gravity = -4.8
+friction = 2.5
 
 gradient_clip = 1
 spring_omega = 10
@@ -103,10 +103,7 @@ def advance(t: ti.i32):
     depth = x[t - 1, i][1] - ground_height
     if depth < 0 and new_v[1] < 0:
       # friction projection
-      if new_v[0] > 0:
-        new_v[0] -= ti.min(new_v[0], friction * -new_v[1])
-      if new_v[0] < 0:
-        new_v[0] += ti.min(-new_v[0], friction * -new_v[1])
+      new_v[0] = 0
       new_v[1] = 0
     v[t, i] = new_v
     x[t, i] = x[t - 1, i] + dt * v[t, i]
@@ -222,7 +219,7 @@ def main():
   
   for i in range(n_springs):
     for j in range(n_sin_waves):
-      weights[i, j] = np.random.randn() * 0.3
+      weights[i, j] = np.random.randn() * 1.3
   
   forward('initial')
   for iter in range(100):
@@ -241,7 +238,9 @@ def main():
     
     print(total_norm_sqr)
     
-    scale = learning_rate * min(1.0, gradient_clip / total_norm_sqr ** 0.5)
+    # scale = learning_rate * min(1.0, gradient_clip / total_norm_sqr ** 0.5)
+    gradient_clip = 0.1
+    scale = gradient_clip / total_norm_sqr ** 0.5
     for i in range(n_springs):
       for j in range(n_sin_waves):
         weights[i, j] -= scale * weights.grad[i, j]

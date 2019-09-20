@@ -1,4 +1,5 @@
 import taichi_lang as ti
+import sys
 import math
 import numpy as np
 import cv2
@@ -107,7 +108,7 @@ def initialize():
 gui = tc.core.GUI("Billiards", tc.Vectori(1024, 1024))
 
 
-def forward(output=None):
+def forward(visualize=False, output=None):
   initialize()
 
   interval = vis_interval
@@ -129,16 +130,16 @@ def forward(output=None):
     collide(t - 1)
     advance(t)
 
-    if (t + 1) % interval == 0:
+    if (t + 1) % interval == 0 and visualize:
       canvas.clear(0x3C733F)
 
-      canvas.circle(tc.Vector(goal[0], goal[1])).radius(pixel_radius).color(0x00000).finish()
+      canvas.circle(tc.Vector(goal[0], goal[1])).radius(pixel_radius // 2).color(0x00000).finish()
 
       for i in range(n_balls):
         if i == 0:
           color = 0xCCCCCC
         elif i == n_balls - 1:
-          color = 0xF2055C
+          color = 0x3344cc
         else:
           color = 0xF20530
 
@@ -146,8 +147,8 @@ def forward(output=None):
           pixel_radius).color(color).finish()
 
       gui.update()
-      # if output:
-      #   cv2.imwrite('billiards/{}/{:04d}.png'.format(output, t), img * 255)
+      if output:
+        gui.screenshot('billiards/{}/{:04d}.png'.format(output, t))
 
   compute_loss(steps - 1)
 
@@ -159,15 +160,18 @@ def clear():
       impulse[t, i] = ti.Vector([0.0, 0.0])
 
 
-def main():
+def optimize():
   init_x[None] = [0.1, 0.5]
   init_v[None] = [0.3, 0.0]
+
+  clear()
+  forward(visualize=True, output='initial')
 
   for iter in range(200):
     clear()
 
     with ti.Tape(loss):
-      forward()
+      forward(visualize=True)
 
     print('Iter=', iter, 'Loss=', loss[None])
     for d in range(2):
@@ -175,8 +179,39 @@ def main():
       init_v[None][d] -= learning_rate * init_v.grad[None][d]
 
   clear()
-  # forward('final')
+  forward(visualize=True, output='final')
+
+def scan(zoom):
+  N = 1000
+  angles = []
+  losses = []
+  forward(visualize=True, output='initial')
+  for i in range(N):
+    alpha = ((i + 0.5) / N - 0.5) * math.pi * zoom
+    init_x[None] = [0.1, 0.5]
+    init_v[None] = [0.3 * math.cos(alpha), 0.3 * math.sin(alpha)]
+
+    loss[None] = 0
+    clear()
+    forward(visualize=False)
+    print(loss[None])
+
+    losses.append(loss[None])
+    angles.append(math.degrees(alpha))
+
+  plt.plot(angles, losses)
+  fig = plt.gcf()
+  fig.set_size_inches(5, 3)
+  plt.title('Billiard Scene Objective')
+  plt.ylabel('Objective')
+  plt.xlabel('Angle of velocity')
+  plt.tight_layout()
+  plt.show()
+
 
 
 if __name__ == '__main__':
-  main()
+  if len(sys.argv) > 1:
+    scan(float(sys.argv[1]))
+  else:
+    optimize()

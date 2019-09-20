@@ -71,16 +71,26 @@ def add_mesh_square(i, j, actuation=0.0):
       if i != j:
         add_mesh_spring(i, j, 3e4, 0)
 
+def add_mesh_triangle(i, j, actuation=0.0):
+  a = add_mesh_point(i + 0.5, j + 0.5)
+  b = add_mesh_point(i, j + 1)
+  d = add_mesh_point(i + 1, j + 1)
+
+  for i in [a, b, d]:
+    for j in [a, b, d]:
+      if i != j:
+        add_mesh_spring(i, j, 3e4, 0)
+
 def robotB():
-  add_mesh_square(2, 0, actuation=0.15)
-  add_mesh_square(0, 0, actuation=0.15)
+  add_mesh_triangle(2, 0, actuation=0.15)
+  add_mesh_triangle(0, 0, actuation=0.15)
   add_mesh_square(0, 1, actuation=0.15)
   add_mesh_square(0, 2)
   add_mesh_square(1, 2)
   add_mesh_square(2, 1, actuation=0.15)
   add_mesh_square(2, 2)
-  add_mesh_square(2, 3)
-  add_mesh_square(2, 4)
+  # add_mesh_square(2, 3)
+  # add_mesh_square(2, 4)
   
   return objects, springs
 

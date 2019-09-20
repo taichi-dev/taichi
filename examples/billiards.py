@@ -3,6 +3,7 @@ import math
 import numpy as np
 import cv2
 import os
+import taichi as tc
 import matplotlib.pyplot as plt
 
 real = ti.f32
@@ -64,7 +65,7 @@ def collide(t: ti.i32):
           dir = ti.Vector.normalized(dist)
           rela_v = v[t, i] - v[t, j]
           projected_v = dir.dot(rela_v)
-          
+
           if projected_v < 0:
             imp = -(1 + elasticity) * 0.5 * projected_v * dir
       ti.atomic_add(impulse[t + 1, i], imp)
@@ -78,7 +79,7 @@ def collide(t: ti.i32):
           dir = ti.Vector.normalized(dist)
           rela_v = v[t, i] - v[t, j]
           projected_v = dir.dot(rela_v)
-          
+
           if projected_v < 0:
             imp = -(1 + elasticity) * 0.5 * projected_v * dir
       ti.atomic_add(impulse[t + 1, i], imp)
@@ -103,52 +104,51 @@ def initialize():
   v[0, 0] = init_v
 
 
+gui = tc.core.GUI("Billiards", tc.Vectori(1024, 1024))
+
+
 def forward(output=None):
   initialize()
-  
+
   interval = vis_interval
   if output:
     interval = output_vis_interval
     os.makedirs('billiards/{}/'.format(output), exist_ok=True)
-  
+
   count = 0
   for i in range(billiard_layers):
     for j in range(i + 1):
       count += 1
       x[0, count] = [i * 2 * radius + 0.5,
                      j * 2 * radius + 0.5 - i * radius * 0.7]
-  
+
+  pixel_radius = int(radius * 1024)
+
+  canvas = gui.get_canvas()
   for t in range(1, steps):
     collide(t - 1)
     advance(t)
-    
+
     if (t + 1) % interval == 0:
-      img = np.ones(shape=(vis_resolution, vis_resolution, 3),
-                    dtype=np.float32)
-      
-      def circle(x, y, color):
-        cv2.circle(img, center=(
-          int(vis_resolution * x), int(vis_resolution * (1 - y))),
-                   radius=int(radius * vis_resolution), color=color,
-                   thickness=-1)
-      
-      circle(goal[0], goal[1], (0.2, 0.3, 0.9))
-      
+      canvas.clear(0x3C733F)
+
+      canvas.circle(tc.Vector(goal[0], goal[1])).radius(pixel_radius).color(0x00000).finish()
+
       for i in range(n_balls):
         if i == 0:
-          color = (0.4, 0, 0)
+          color = 0xCCCCCC
         elif i == n_balls - 1:
-          color = (0, 1, 0)
+          color = 0xF2055C
         else:
-          color = (0.4, 0.4, 0.6)
-        
-        circle(x[t, i][0], x[t, i][1], color)
-      
-      cv2.imshow('img', img)
-      cv2.waitKey(1)
-      if output:
-        cv2.imwrite('billiards/{}/{:04d}.png'.format(output, t), img * 255)
-  
+          color = 0xF20530
+
+        canvas.circle(tc.Vector(x[t, i][0], x[t, i][1])).radius(
+          pixel_radius).color(color).finish()
+
+      gui.update()
+      # if output:
+      #   cv2.imwrite('billiards/{}/{:04d}.png'.format(output, t), img * 255)
+
   compute_loss(steps - 1)
 
 
@@ -162,19 +162,18 @@ def clear():
 def main():
   init_x[None] = [0.1, 0.5]
   init_v[None] = [0.3, 0.0]
-  
-  
+
   for iter in range(200):
     clear()
 
     with ti.Tape(loss):
       forward()
-    
+
     print('Iter=', iter, 'Loss=', loss[None])
     for d in range(2):
       init_x[None][d] -= learning_rate * init_x.grad[None][d]
       init_v[None][d] -= learning_rate * init_v.grad[None][d]
-  
+
   clear()
   # forward('final')
 

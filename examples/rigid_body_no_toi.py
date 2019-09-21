@@ -43,14 +43,29 @@ def place():
 dt = 0.002
 learning_rate = 1.0
 
+use_toi = False
+
 @ti.kernel
 def advance(t: ti.i32):
-  for i in range(n_objects):
-    new_v = v[t - 1, i]
-    if x[t - 1, i][1] < ground_height and new_v[1] < 0:
-      new_v[1] = -new_v[1]
-    v[t, i] = new_v
-    x[t, i] = x[t - 1, i] + dt * new_v
+  if ti.static(use_toi):
+    for i in range(n_objects):
+      old_v = v[t - 1, i]
+      new_v = old_v
+      old_x = x[t - 1, i]
+      new_x = old_x + dt * new_v
+      toi = 0.0
+      if new_x[1] < ground_height and new_v[1] < 0:
+        new_v[1] = -new_v[1]
+        toi = -(old_x[1] - ground_height) / old_v[1]
+      v[t, i] = new_v
+      x[t, i] = x[t - 1, i] + toi * old_v + (dt - toi) * new_v
+  else:
+    for i in range(n_objects):
+      new_v = v[t - 1, i]
+      if x[t - 1, i][1] < ground_height and new_v[1] < 0:
+        new_v[1] = -new_v[1]
+      v[t, i] = new_v
+      x[t, i] = x[t - 1, i] + dt * new_v
 
 
 @ti.kernel
@@ -91,7 +106,7 @@ def forward(output=None, visualize=True):
 def main():
   losses = []
   grads = []
-  for dy in np.arange(0, 0.3, 0.05):
+  for dy in np.arange(0, 0.3, 0.0005):
     x[0, 0] = [0.7, 0.5 + dy]
     v[0, 0] = [-1, -2]
     

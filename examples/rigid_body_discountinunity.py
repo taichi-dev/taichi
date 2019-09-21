@@ -30,6 +30,7 @@ x = vec()
 v = vec()
 rotation = scalar()
 omega = scalar()
+friction = scalar()
 
 halfsize = vec()
 
@@ -46,7 +47,6 @@ n_objects = 1
 elasticity = 0.3
 ground_height = 0.1
 gravity = 0# -9.8
-friction = 1.0
 penalty = 1e4
 damping = 0
 
@@ -56,7 +56,7 @@ def place():
                                                               omega, v_inc,
                                                               omega_inc)
   ti.root.dense(ti.i, n_objects).place(halfsize, inverse_mass, inverse_inertia)
-  ti.root.place(loss)
+  ti.root.place(loss, friction)
   ti.root.lazy_grad()
 
 
@@ -110,6 +110,7 @@ def collide(t: ti.i32):
   for i in range(n_objects):
     hs = halfsize[i]
     for k in ti.static(range(4)):
+      f = friction[None]
       # the corner for collision detection
       offset_scale = ti.Vector([k % 2 * 2 - 1, k // 2 % 2 * 2 - 1])
       
@@ -136,8 +137,8 @@ def collide(t: ti.i32):
         if impulse > 0:
           # friction
           timpulse = -corner_v.dot(tao) / timpulse_contribution
-          timpulse = ti.min(friction * impulse,
-                            ti.max(-friction * impulse, timpulse))
+          timpulse = ti.min(f * impulse,
+                            ti.max(-f * impulse, timpulse))
       
       if corner_x[1] < ground_height:
         # apply penalty
@@ -220,32 +221,35 @@ def clear_states():
 
 
 def main():
-  losses = []
-  grads = []
-  rots = []
-  for i in range(-20, 20):
-    x[0, 0] = [0.7, 0.5]
-    v[0, 0] = [-1, -2]
-    halfsize[0] = [0.1, 0.1]
-    rot = (i + 0.5) * 0.001
-    rotation[0, 0] = rot
-    # forward('initial')
-    # for iter in range(50):
-    clear_states()
-    
-    with ti.Tape(loss):
-      forward(visualize=False)
+  for fric in [0, 1]:
+    losses = []
+    grads = []
+    rots = []
+    friction[None] = fric
+    for i in range(-20, 20):
+      x[0, 0] = [0.7, 0.5]
+      v[0, 0] = [-1, -2]
+      halfsize[0] = [0.1, 0.1]
+      rot = (i + 0.5) * 0.001
+      rotation[0, 0] = rot
+      # forward('initial')
+      # for iter in range(50):
+      clear_states()
       
-    print('Iter=', i, 'Loss=', loss[None])
-    print(omega.grad[0, 0])
-    losses.append(loss[None])
-    grads.append(omega.grad[0, 0] * 20)
-    rots.append(math.degrees(rot))
-    # x[0, 0][0] = x[0, 0][0] - x.grad[0, 0][0] * learning_rate
+      with ti.Tape(loss):
+        forward(visualize=False)
+        
+      print('Iter=', i, 'Loss=', loss[None])
+      print(omega.grad[0, 0])
+      losses.append(loss[None])
+      grads.append(omega.grad[0, 0] * 20)
+      rots.append(math.degrees(rot))
+      # x[0, 0][0] = x[0, 0][0] - x.grad[0, 0][0] * learning_rate
+    plt.plot(rots, losses, 'x', label='coeff of friction={}'.format(fric))
   fig = plt.gcf()
-  plt.plot(rots, losses, 'x', label='coeff of friction=1')
   plt.legend()
   fig.set_size_inches(5, 3)
+  plt.ylim(0.2, 0.55)
   plt.title('Rigid Body Simulation Discontinuity')
   plt.ylabel('Loss (m)')
   plt.xlabel('Initial Rotation Angle (degrees)')

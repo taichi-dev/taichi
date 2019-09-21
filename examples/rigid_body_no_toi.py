@@ -183,22 +183,7 @@ def forward(output=None, visualize=True):
     
     if (t + 1) % interval == 0 and visualize:
       canvas.clear(0xFFFFFF)
-      for i in range(n_objects):
-        points = []
-        for k in range(4):
-          offset_scale = [[-1, -1], [1, -1], [1, 1], [-1, 1]][k]
-          rot = rotation[t, i]
-          rot_matrix = np.array(
-            [[math.cos(rot), -math.sin(rot)], [math.sin(rot), math.cos(rot)]])
-
-          pos = np.array(
-            [x[t, i][0], x[t, i][1]]) + offset_scale * rot_matrix @ np.array(
-            [halfsize[i][0], halfsize[i][1]])
-          points.append((pos[0], pos[1]))
-
-        for k in range(4):
-          canvas.path(tc.Vector(*points[k]), tc.Vector(*points[(k + 1) % 4])).radius(2).color(0x0).finish()
-
+      canvas.circle(tc.Vector(x[t, 0][0], x[t, 0][1])).radius(10).color(0x0).finish()
       offset = 0.003
       canvas.path(tc.Vector(0.05, ground_height - offset), tc.Vector(0.95, ground_height - offset)).radius(2).color(0xAAAAAA).finish()
 
@@ -227,8 +212,7 @@ def main():
     v[0, 0] = [-1, -2]
     halfsize[0] = [0.1, 0.1]
     rotation[0, 0] = (i + 0.5) * 0.1
-    # forward('initial')
-    # for iter in range(50):
+    
     clear_states()
     
     with ti.Tape(loss):

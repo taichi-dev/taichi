@@ -44,6 +44,8 @@ inverse_mass = scalar()
 inverse_inertia = scalar()
 
 v_inc = vec()
+x_inc = vec()
+rotation_inc = scalar()
 omega_inc = scalar()
 
 head_id = 3
@@ -51,7 +53,7 @@ goal = [0.9, 0.15]
 
 n_objects = 0
 # target_ball = 0
-elasticity = 0.3
+elasticity = 0.0
 ground_height = 0.1
 gravity = -9.8
 friction = 1.0
@@ -80,8 +82,8 @@ bias = scalar()
 
 @ti.layout
 def place():
-  ti.root.dense(ti.l, max_steps).dense(ti.i, n_objects).place(x, v, rotation,
-                                                              omega, v_inc,
+  ti.root.dense(ti.l, max_steps).dense(ti.i, n_objects).place(x, v, rotation, rotation_inc,
+                                                              omega, v_inc, x_inc,
                                                               omega_inc)
   ti.root.dense(ti.i, n_objects).place(halfsize, inverse_mass, inverse_inertia)
   ti.root.dense(ti.i, n_springs).place(spring_anchor_a, spring_anchor_b,
@@ -133,10 +135,18 @@ def to_world(t, i, rela_x):
 
 
 @ti.func
-def apply_impulse(t, i, impulse, location):
-  ti.atomic_add(v_inc[t + 1, i], impulse * inverse_mass[i])
-  ti.atomic_add(omega_inc[t + 1, i],
-                cross(location - x[t, i], impulse) * inverse_inertia[i])
+def apply_impulse(t, i, impulse, location, toi_input):
+  # ti.print(toi)
+  delta_v = impulse * inverse_mass[i]
+  delta_omega = cross(location - x[t, i], impulse) * inverse_inertia[i]
+
+  toi = ti.min(ti.max(0.0, toi_input), dt)
+
+  ti.atomic_add(x_inc[t + 1, i], toi * (v[t, i] - delta_v))
+  ti.atomic_add(rotation_inc[t + 1, i], toi * (omega[t, i] - delta_omega))
+
+  ti.atomic_add(v_inc[t + 1, i], delta_v)
+  ti.atomic_add(omega_inc[t + 1, i], delta_omega)
 
 
 @ti.kernel
@@ -165,20 +175,29 @@ def collide(t: ti.i32):
       
       impulse = 0.0
       timpulse = 0.0
-      if rela_v_ground < 0 and corner_x[1] < ground_height:
+      new_corner_x = corner_x + dt * corner_v
+      toi = 0.0
+      if rela_v_ground < -1e-3 and new_corner_x[1] < ground_height:
         impulse = -(1 + elasticity) * rela_v_ground / impulse_contribution
         if impulse > 0:
           # friction
           timpulse = -corner_v.dot(tao) / timpulse_contribution
           timpulse = ti.min(friction * impulse,
                             ti.max(-friction * impulse, timpulse))
-      
-      if corner_x[1] < ground_height:
+          if corner_x[1] > ground_height:
+            toi = -(corner_x[1] - ground_height) / corner_v[1]
+
+      # toi = 0.5 * dt
+      toi = 0
+      apply_impulse(t, i, impulse * normal + timpulse * tao, new_corner_x, toi)
+
+      penalty = ti.Vector([0.0, 0.0])
+      if new_corner_x[1] < ground_height:
         # apply penalty
-        impulse = impulse - dt * penalty * (
-            corner_x[1] - ground_height) / impulse_contribution
-      
-      apply_impulse(t, i, impulse * normal + timpulse * tao, corner_x)
+        penalty = -dt * penalty * (
+            new_corner_x[1] - ground_height) / impulse_contribution
+
+      apply_impulse(t, i, penalty * normal, new_corner_x, 0)
 
 
 @ti.kernel
@@ -219,8 +238,8 @@ def apply_spring_force(t: ti.i32):
       # project relative velocity
       impulse += rela_vel_norm / impulse_contribution * impulse_dir
     
-    apply_impulse(t, a, -impulse, pos_a)
-    apply_impulse(t, b, impulse, pos_b)
+    apply_impulse(t, a, -impulse, pos_a, 0.0)
+    apply_impulse(t, b, impulse, pos_b, 0.0)
 
 
 @ti.kernel
@@ -229,9 +248,9 @@ def advance(t: ti.i32):
     s = math.exp(-dt * damping)
     v[t, i] = s * v[t - 1, i] + v_inc[t, i] + dt * gravity * ti.Vector(
       [0.0, 1.0])
-    x[t, i] = x[t - 1, i] + dt * v[t, i]
+    x[t, i] = x[t - 1, i] + dt * v[t, i] + x_inc[t, i]
     omega[t, i] = s * omega[t - 1, i] + omega_inc[t, i]
-    rotation[t, i] = rotation[t - 1, i] + dt * omega[t, i]
+    rotation[t, i] = rotation[t - 1, i] + dt * omega[t, i] + rotation_inc[t, i]
 
 
 @ti.kernel
@@ -335,6 +354,8 @@ def clear_states():
   for t in range(0, max_steps):
     for i in range(0, n_objects):
       v_inc[t, i] = ti.Vector([0.0, 0.0])
+      x_inc[t, i] = ti.Vector([0.0, 0.0])
+      rotation_inc[t, i] = 0.0
       omega_inc[t, i] = 0.0
       
 

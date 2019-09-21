@@ -31,6 +31,7 @@ init_v = vec()
 x = vec()
 v = vec()
 impulse = vec()
+x_inc = vec()
 
 billiard_layers = 4
 n_balls = 1 + (1 + billiard_layers) * billiard_layers // 2

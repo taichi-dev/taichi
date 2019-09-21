@@ -16,7 +16,7 @@ ti.set_default_fp(real)
 max_steps = 4096
 vis_interval = 1
 output_vis_interval = 1
-steps = 200
+steps = 20
 assert steps * 2 <= max_steps
 
 vis_resolution = 1024
@@ -43,7 +43,7 @@ def place():
 dt = 0.35 / steps
 learning_rate = 1.0
 
-use_toi = False
+use_toi = True
 
 @ti.kernel
 def advance_toi(t: ti.i32):
@@ -90,13 +90,14 @@ def forward(output=None, visualize=True):
       advance_no_toi(t)
     
     if (t + 1) % interval == 0 and visualize:
-      canvas.circle(tc.Vector(x[t, 0][0], x[t, 0][1])).radius(20).color(0x0).finish()
-      offset = 0.003
+      canvas.circle(tc.Vector(x[t, 0][0], x[t, 0][1])).radius(30).color(0x0).finish()
+      offset = 0.027
       canvas.path(tc.Vector(0.05, ground_height - offset), tc.Vector(0.95, ground_height - offset)).radius(2).color(0x000000).finish()
 
   if output:
     gui.screenshot('rigid_body/{}/{:04d}.png'.format(output, t))
-  gui.update()
+  while True:
+    gui.update()
 
 
 def main():

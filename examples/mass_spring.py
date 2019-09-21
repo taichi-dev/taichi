@@ -1,6 +1,7 @@
 from mass_spring_robot_config import robots
 import sys
 
+import matplotlib.pyplot as plt
 import taichi_lang as ti
 import math
 import numpy as np
@@ -237,7 +238,7 @@ def optimize(toi, visualize):
   use_toi = toi
   for i in range(n_springs):
     for j in range(n_sin_waves):
-      weights[i, j] = np.random.randn() * 0.1
+      weights[i, j] = np.random.randn() * 0.5
 
   losses = []
   forward('initial', visualize=visualize)
@@ -266,6 +267,7 @@ def optimize(toi, visualize):
       bias[i] -= scale * bias.grad[i]
     losses.append(loss[None])
 
+  return losses
   # clear()
   # forward('final')
 
@@ -277,7 +279,15 @@ def main():
     robot_id = int(sys.argv[1])
   setup_robot(*robots[robot_id]())
   
-  optimize(toi=False, visualize=False)
+  for toi in [False, True]:
+    for i in range(5):
+      losses = optimize(toi=toi, visualize=False)
+      plt.plot(losses, 'g' if toi else 'r')
+  
+  plt.title('Mass Spring (Red is no TOI, green is TOI)')
+  plt.xlabel("Iteration")
+  plt.ylabel("loss")
+  plt.show()
 
 
 if __name__ == '__main__':

@@ -14,9 +14,9 @@ real = ti.f32
 ti.set_default_fp(real)
 
 max_steps = 4096
-vis_interval = 16
+vis_interval = 4
 output_vis_interval = 16
-steps = 2048
+steps = 204
 assert steps * 2 <= max_steps
 
 vis_resolution = 1024
@@ -40,24 +40,23 @@ def place():
   ti.root.place(loss)
   ti.root.lazy_grad()
 
-dt = 0.0002
+dt = 0.002
 learning_rate = 1.0
 
 @ti.kernel
 def advance(t: ti.i32):
   for i in range(n_objects):
-    new_v = ti.Vector([0.0, 0.0])
-    if x[t, i][1] < ground_height:
-      new_v = -v[t - 1, i]
-    else:
-      new_v = v[t - 1, i]
+    new_v = v[t - 1, i]
+    if x[t - 1, i][1] < ground_height and new_v[1] < 0:
+      new_v[1] = -new_v[1]
     v[t, i] = new_v
     x[t, i] = x[t - 1, i] + dt * new_v
 
 
 @ti.kernel
 def compute_loss(t: ti.i32):
-  loss[None] = (x[t, 0] - ti.Vector(goal)).norm()
+  # loss[None] = (x[t, 0] - ti.Vector(goal)).norm()
+  loss[None] = x[t, 0][1]
 
 
 gui = tc.core.GUI("Rigid Body", tc.Vectori(1024, 1024))
@@ -92,15 +91,17 @@ def forward(output=None, visualize=True):
 def main():
   losses = []
   grads = []
-  for i in range(0, 1):
-    x[0, 0] = [0.7, 0.5]
+  for dy in np.arange(0, 0.3, 0.05):
+    x[0, 0] = [0.7, 0.5 + dy]
     v[0, 0] = [-1, -2]
     
     with ti.Tape(loss):
-      forward(visualize=True)
+      forward(visualize=False)
       
-    print('Iter=', i, 'Loss=', loss[None])
+    print('dy=', dy, 'Loss=', loss[None])
+    grads.append(x.grad[0, 0][1])
     losses.append(loss[None])
+    
   plt.plot(losses)
   plt.plot(grads)
   plt.show()

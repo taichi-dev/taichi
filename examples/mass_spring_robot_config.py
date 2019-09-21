@@ -94,4 +94,17 @@ def robotB():
   
   return objects, springs
 
-robots = [robotA, robotB]
+def robotC():
+  add_mesh_square(2, 0, actuation=0.15)
+  add_mesh_square(0, 0, actuation=0.15)
+  add_mesh_square(0, 1, actuation=0.15)
+  add_mesh_square(0, 2)
+  add_mesh_square(1, 2)
+  add_mesh_square(2, 1, actuation=0.15)
+  add_mesh_square(2, 2)
+  add_mesh_square(2, 3)
+  add_mesh_square(2, 4)
+  
+  return objects, springs
+
+robots = [robotA, robotB, robotC]

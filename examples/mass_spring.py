@@ -66,8 +66,8 @@ def place():
   ti.root.lazy_grad()
 
 
-dt = 0.001
-learning_rate = 5
+dt = 0.004
+learning_rate = 25
 
 
 @ti.kernel
@@ -94,24 +94,39 @@ def apply_spring_force(t: ti.i32):
     ti.atomic_add(v_inc[t + 1, a], -impulse)
     ti.atomic_add(v_inc[t + 1, b], impulse)
 
+use_toi = True
 
 @ti.kernel
 def advance(t: ti.i32):
   for i in range(n_objects):
     s = math.exp(-dt * damping)
-    new_v = s * v[t - 1, i] + v_inc[t, i] + dt * gravity * ti.Vector([0.0, 1.0])
-    depth = x[t - 1, i][1] - ground_height
-    if depth < 0 and new_v[1] < 0:
-      # friction projection
-      new_v[0] = 0
-      new_v[1] = 0
+    old_v = s * v[t - 1, i] + dt * gravity * ti.Vector([0.0, 1.0]) + v_inc[t, i]
+    old_x = x[t - 1, i]
+    new_x = old_x + dt * old_v
+    if ti.static(use_toi):
+      toi = 0.0
+      new_v = old_v
+      if new_x[1] < ground_height and old_v[1] < 1e-4:
+        toi = -(old_x[1] - ground_height) / old_v[1]
+        new_v = ti.Vector([0.0, 0.0])
+      new_x = old_x + toi * old_v + (dt - toi) * new_v
+      
+    else:
+      new_v = old_v
+      depth = old_x[1] - ground_height
+      if depth < 0 and new_v[1] < 0:
+        # friction projection
+        new_v[0] = 0
+        new_v[1] = 0
+      new_x = old_x + dt * new_v
+      
     v[t, i] = new_v
-    x[t, i] = x[t - 1, i] + dt * v[t, i]
+    x[t, i] = new_x
 
 
 @ti.kernel
 def compute_loss(t: ti.i32):
-  loss[None] = (x[t, head_id] - ti.Vector(goal)).norm()
+  loss[None] = -x[t, head_id][0]
 
 
 def forward(output=None):
@@ -222,7 +237,7 @@ def main():
       weights[i, j] = np.random.randn() * 1.3
   
   forward('initial')
-  for iter in range(100):
+  for iter in range(300):
     clear()
     
     with ti.Tape(loss):

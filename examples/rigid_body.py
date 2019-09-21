@@ -51,7 +51,7 @@ goal = [0.9, 0.15]
 
 n_objects = 0
 # target_ball = 0
-elasticity = 0.0
+elasticity = 0.3
 ground_height = 0.1
 gravity = -9.8
 friction = 1.0
@@ -294,6 +294,7 @@ def forward(output=None):
 
       # renderer.draw_dot([x[t, head_id][0], x[t, head_id][1]],color=cmap(0.6),layer=20,ec='r')
       # renderer.draw_dot([goal[0], goal[1]],layer=20,ec='r')
+      canvas.path(tc.Vector(*points[k]), tc.Vector(*points[(k + 1) % 4])).color(0x0).radius(2).finish()
 
       for i in range(n_springs):
         def get_world_loc(i, offset):
@@ -307,7 +308,15 @@ def forward(output=None):
         
         pt1 = get_world_loc(spring_anchor_a[i], spring_offset_a[i])
         pt2 = get_world_loc(spring_anchor_b[i], spring_offset_b[i])
-        
+
+        if spring_length[i] == -1:
+          canvas.path(tc.Vector(*pt1), tc.Vector(*pt2)).color(0x000000).radius(9).finish()
+          canvas.path(tc.Vector(*pt1), tc.Vector(*pt2)).color(0xFF2233).radius(7).finish()
+        else:
+          canvas.path(tc.Vector(*pt1), tc.Vector(*pt2)).color(0x000000).radius(7).finish()
+          canvas.path(tc.Vector(*pt1), tc.Vector(*pt2)).color(0xFBCCAA).radius(5).finish()
+
+        canvas.path(tc.Vector(0.05, ground_height), tc.Vector(0.95, ground_height)).color(0x0).radius(5).finish()
         # renderer.draw_line(pt1, pt2, True)
       # if output:
         # renderer.save_fig('rigid_body/{}/{:04d}.png'.format(output, t))
@@ -329,7 +338,9 @@ def clear_states():
       omega_inc[t, i] = 0.0
       
 
-def setup_robot(objects, springs):
+def setup_robot(objects, springs, h_id):
+  global head_id
+  head_id = h_id
   global n_objects, n_springs
   n_objects = len(objects)
   n_springs = len(springs)

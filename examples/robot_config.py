@@ -32,7 +32,7 @@ def robotA():
   return objects, springs
 
 
-def robotB():
+def robotC():
   add_object(x=[0.3, 0.25], halfsize=[0.15, 0.03])
   add_object(x=[0.2, 0.15], halfsize=[0.03, 0.02])
   add_object(x=[0.3, 0.15], halfsize=[0.03, 0.02])
@@ -47,7 +47,7 @@ def robotB():
   add_spring(0, 3, [0.03, 0.00], [0.0, 0.0], l, s)
   add_spring(0, 3, [0.1, 0.00], [0.0, 0.0], l, s)
   
-  return objects, springs
+  return objects, springs, 3
 
 
 l_thigh_init_ang = 10
@@ -119,24 +119,24 @@ def robotLeg():
   add_spring(5, 6, [0, -thigh_half_length], [-foot_half_length,0], -1, s)
 
 
-
-  return objects, springs
+  return objects, springs, 3
 
 
 def robotB():
-  body = add_object([0.1, 0.15], [0.1, 0.05])
-  back = add_object([0.03, 0.12], [0.03, 0.08])
-  front = add_object([0.08, 0.12], [0.03, 0.08])
+  body = add_object([0.15, 0.25], [0.1, 0.05])
+  back = add_object([0.08, 0.22], [0.01, 0.10])
+  front = add_object([0.22, 0.22], [0.01, 0.10])
 
-  rest_length = 0.4
+  rest_length = 0.14
   stiffness = 30
-  add_spring(body, back, [0.0, 0.0], [0.0, 0.0], rest_length, stiffness)
-  add_spring(body, front, [0.0, 0.0], [0.0, 0.0], rest_length, stiffness)
+  act = 0.1
+  add_spring(body, back, [0.0, 0.0], [0.0, -0.08], rest_length, stiffness, actuation=act)
+  add_spring(body, front, [0.0, 0.0], [0.0, -0.08], rest_length, stiffness, actuation=act)
 
-  add_spring(body, back, [-0.08, 0.0], [0.0, 0.03], -1, 0)
-  add_spring(body, front, [0.08, 0.0], [0.0, 0.03], -1, 0)
+  add_spring(body, back, [-0.08, 0.0], [0.0, 0.03], -1, stiffness)
+  add_spring(body, front, [0.08, 0.0], [0.0, 0.03], -1, stiffness)
 
-  return objects, springs
+  return objects, springs, body
 
 
 robots = [robotA, robotB, robotLeg]

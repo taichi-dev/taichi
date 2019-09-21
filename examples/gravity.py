@@ -58,7 +58,7 @@ def place():
 
 dt = 0.03
 alpha = 0.00000
-learning_rate = 0.01
+learning_rate = 1e-3
 
 K = 1e-2
 
@@ -148,13 +148,32 @@ def initialize():
 
 def optimize():
   
+  initialize()
   forward(visualize=True, output='initial')
   
-  for iter in range(200):
+  losses = []
+  for iter in range(20000):
     initialize()
+    vis = iter % 100 == 0
     with ti.Tape(loss):
-      forward(visualize=True)
-    print(iter, "loss", loss[None])
+      forward(visualize=vis)
+    losses.append(loss[None])
+    # print(iter, "loss", loss[None])
+    if vis:
+      print(iter, sum(losses))
+      losses.clear()
+
+    for i in range(6):
+      for j in range(n_hidden):
+        weight1[i, j] = weight1[i, j] - weight1.grad[i, j] * learning_rate
+    for j in range(n_hidden):
+      bias1[j] = bias1[j] - bias1.grad[j] * learning_rate
+      
+    for i in range(n_hidden):
+      for j in range(n_gravitation):
+        weight2[i, j] = weight2[i, j] - weight2.grad[i, j] * learning_rate
+    for j in range(n_gravitation):
+      bias2[j] = bias2[j] - bias2.grad[j] * learning_rate
   
   forward(visualize=True, output='final')
 

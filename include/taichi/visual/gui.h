@@ -264,11 +264,16 @@ class Canvas {
       auto radius_i = (int)std::ceil(_radius + 0.5_f);
       for (int i = -radius_i; i <= radius_i; i++) {
         for (int j = -radius_i; j <= radius_i; j++) {
-          real dist =
-              length(center - center_i.template cast<real>() - Vector2(i, j));
-          auto alpha = _color.w * clamp(_radius - dist);
-          auto &dest = canvas.img[center_i + Vector2i(i, j)];
-          dest = lerp(alpha, dest, _color);
+          if (0 <= center_i(0) + i &&
+              center_i(0) + i < canvas.img.get_width() &&
+              0 <= center_i(1) + j &&
+              center_i(1) + j < canvas.img.get_height()) {
+            real dist =
+                length(center - center_i.template cast<real>() - Vector2(i, j));
+            auto alpha = _color.w * clamp(_radius - dist);
+            auto &dest = canvas.img[center_i + Vector2i(i, j)];
+            dest = lerp(alpha, dest, _color);
+          }
         }
       }
     }

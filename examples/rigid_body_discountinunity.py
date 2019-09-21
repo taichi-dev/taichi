@@ -14,7 +14,7 @@ real = ti.f32
 ti.set_default_fp(real)
 
 max_steps = 4096
-vis_interval = 256
+vis_interval = 128
 output_vis_interval = 16
 steps = 2048
 assert steps * 2 <= max_steps
@@ -43,9 +43,9 @@ head_id = 3
 goal = [0.9, 0.15]
 
 n_objects = 1
-elasticity = 1
+elasticity = 1.0
 ground_height = 0.1
-gravity = -9.8
+gravity = 0# -9.8
 friction = 0.0
 penalty = 1e4
 damping = 0
@@ -60,7 +60,7 @@ def place():
   ti.root.lazy_grad()
 
 
-dt = 0.001
+dt = 0.0002
 learning_rate = 1.0
 
 
@@ -166,7 +166,7 @@ def compute_loss(t: ti.i32):
 gui = tc.core.GUI("Rigid Body", tc.Vectori(1024, 1024))
 canvas = gui.get_canvas()
 
-def forward(output=None):
+def forward(output=None, visualize=True):
 
   initialize_properties()
 
@@ -181,7 +181,7 @@ def forward(output=None):
     collide(t - 1)
     advance(t)
     
-    if (t + 1) % interval == 0:
+    if (t + 1) % interval == 0 and visualize:
       canvas.clear(0xFFFFFF)
       for i in range(n_objects):
         points = []
@@ -220,20 +220,28 @@ def clear_states():
 
 
 def main():
-  x[0, 0] = [0.5, 0.5]
-  halfsize[0] = [0.2, 0.03]
-  omega[0, 0] = 1
-  # forward('initial')
-  for iter in range(50):
+  losses = []
+  grads = []
+  for i in range(-100, 100):
+    x[0, 0] = [0.7, 0.5]
+    v[0, 0] = [-1, -2]
+    halfsize[0] = [0.1, 0.1]
+    omega[0, 0] = (i + 0.5) * 0.01
+    # forward('initial')
+    # for iter in range(50):
     clear_states()
     
     with ti.Tape(loss):
-      forward()
-
-    print('Iter=', iter, 'Loss=', loss[None])
-    x[0, 0][0] = x[0, 0][0] - x.grad[0, 0][0] * learning_rate
-
-
-    
+      forward(visualize=False)
+      
+    print('Iter=', i, 'Loss=', loss[None])
+    print(omega.grad[0, 0])
+    losses.append(loss[None])
+    grads.append(omega.grad[0, 0] * 20)
+    # x[0, 0][0] = x[0, 0][0] - x.grad[0, 0][0] * learning_rate
+  plt.plot(losses)
+  # plt.plot(grads)
+  plt.show()
+  
 if __name__ == '__main__':
   main()

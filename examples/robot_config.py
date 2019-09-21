@@ -5,6 +5,7 @@ springs = []
 
 def add_object(x, halfsize, rotation=0):
   objects.append([x, halfsize, rotation])
+  return len(objects) - 1
   
 # actuation 0.0 will be translated into default actuation
 def add_spring(a, b, offset_a, offset_b, length, stiffness, actuation=0.0):
@@ -122,5 +123,20 @@ def robotLeg():
   return objects, springs
 
 
-#robots = [robotA, robotB]
-robots = [robotLeg]
+def robotB():
+  body = add_object([0.1, 0.15], [0.1, 0.05])
+  back = add_object([0.03, 0.12], [0.03, 0.08])
+  front = add_object([0.08, 0.12], [0.03, 0.08])
+
+  rest_length = 0.4
+  stiffness = 30
+  add_spring(body, back, [0.0, 0.0], [0.0, 0.0], rest_length, stiffness)
+  add_spring(body, front, [0.0, 0.0], [0.0, 0.0], rest_length, stiffness)
+
+  add_spring(body, back, [-0.08, 0.0], [0.0, 0.03], -1, 0)
+  add_spring(body, front, [0.08, 0.0], [0.0, 0.03], -1, 0)
+
+  return objects, springs
+
+
+robots = [robotA, robotB, robotLeg]

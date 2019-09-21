@@ -15,7 +15,7 @@ ti.set_default_fp(real)
 max_steps = 4096
 vis_interval = 256
 output_vis_interval = 8
-steps = 2048
+steps = 2048 // 3
 assert steps * 2 <= max_steps
 
 vis_resolution = 1024
@@ -268,26 +268,32 @@ def optimize(toi, visualize):
     losses.append(loss[None])
 
   return losses
-  # clear()
-  # forward('final')
 
 def main():
   robot_id = 0
-  if len(sys.argv) != 2:
-    print("Usage: python3 mass_spring.py [robot_id=0, 1, 2, ...]")
+  if len(sys.argv) != 3:
+    print("Usage: python3 mass_spring.py [robot_id=0, 1, 2, ...] [task]")
   else:
     robot_id = int(sys.argv[1])
+    task = sys.argv[2]
+
   setup_robot(*robots[robot_id]())
-  
-  for toi in [False, True]:
-    for i in range(5):
-      losses = optimize(toi=toi, visualize=False)
-      plt.plot(losses, 'g' if toi else 'r')
-  
-  plt.title('Mass Spring (Red is no TOI, green is TOI)')
-  plt.xlabel("Iteration")
-  plt.ylabel("loss")
-  plt.show()
+
+  if task == 'plot':
+    for toi in [False, True]:
+      for i in range(5):
+        losses = optimize(toi=toi, visualize=False)
+        plt.plot(losses, 'g' if toi else 'r')
+
+    plt.title('Mass Spring (Red is no TOI, green is TOI)')
+    plt.xlabel("Iteration")
+    plt.ylabel("loss")
+    plt.show()
+  else:
+    optimize(toi=True, visualize=True)
+    clear()
+    forward('final')
+
 
 
 if __name__ == '__main__':

@@ -67,12 +67,12 @@ def subscript(value, *indices):
       return value.__getitem__(*indices)
   except:
     pass
-  if len(indices) == 1 and is_taichi_class(indices[0]):
-    indices = indices[0].entries
   if isinstance(value, tuple) or isinstance(value, list):
     assert len(indices) == 1
     return value[indices[0]]
-  elif is_taichi_class(value):
+  if len(indices) == 1 and is_taichi_class(indices[0]):
+    indices = indices[0].entries
+  if is_taichi_class(value):
     return value.subscript(*indices)
   else:
     if isinstance(indices, tuple) and len(indices) == 1 and indices[0] is None:

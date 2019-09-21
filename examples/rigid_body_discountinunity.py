@@ -160,7 +160,7 @@ def advance(t: ti.i32):
 
 @ti.kernel
 def compute_loss(t: ti.i32):
-  loss[None] = (x[t, head_id] - ti.Vector(goal)).norm()
+  loss[None] = x[t, head_id][0]
 
 
 gui = tc.core.GUI("Rigid Body", tc.Vectori(1024, 1024))
@@ -222,25 +222,35 @@ def clear_states():
 def main():
   losses = []
   grads = []
-  for i in range(0, 1):
+  rots = []
+  for i in range(-20, 20):
     x[0, 0] = [0.7, 0.5]
     v[0, 0] = [-1, -2]
     halfsize[0] = [0.1, 0.1]
-    rotation[0, 0] = (i + 0.5) * 0.1
+    rot = (i + 0.5) * 0.001
+    rotation[0, 0] = rot
     # forward('initial')
     # for iter in range(50):
     clear_states()
     
     with ti.Tape(loss):
-      forward(visualize=True)
+      forward(visualize=False)
       
     print('Iter=', i, 'Loss=', loss[None])
     print(omega.grad[0, 0])
     losses.append(loss[None])
     grads.append(omega.grad[0, 0] * 20)
+    rots.append(math.degrees(rot))
     # x[0, 0][0] = x[0, 0][0] - x.grad[0, 0][0] * learning_rate
-  plt.plot(losses)
-  plt.plot(grads)
+  fig = plt.gcf()
+  plt.plot(rots, losses, 'x', label='coeff of friction=1')
+  plt.legend()
+  fig.set_size_inches(5, 3)
+  plt.title('Rigid Body Simulation Discontinuity')
+  plt.ylabel('Loss (m)')
+  plt.xlabel('Initial Rotation Angle (degrees)')
+  plt.tight_layout()
+  # plt.plot(grads)
   plt.show()
   
 if __name__ == '__main__':

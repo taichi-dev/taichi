@@ -14,8 +14,8 @@ real = ti.f32
 ti.set_default_fp(real)
 
 max_steps = 4096
-vis_interval = 4
-output_vis_interval = 16
+vis_interval = 1
+output_vis_interval = 1
 steps = 200
 assert steps * 2 <= max_steps
 
@@ -82,6 +82,7 @@ def forward(output=None, visualize=True):
     os.makedirs('rigid_body/{}/'.format(output), exist_ok=True)
     total_steps *= 2
 
+  canvas.clear(0xFFFFFF)
   for t in range(1, total_steps):
     if use_toi:
       advance_toi(t)
@@ -89,15 +90,13 @@ def forward(output=None, visualize=True):
       advance_no_toi(t)
     
     if (t + 1) % interval == 0 and visualize:
-      canvas.clear(0xFFFFFF)
       canvas.circle(tc.Vector(x[t, 0][0], x[t, 0][1])).radius(20).color(0x0).finish()
       offset = 0.003
       canvas.path(tc.Vector(0.05, ground_height - offset), tc.Vector(0.95, ground_height - offset)).radius(2).color(0x000000).finish()
 
-      if output:
-        gui.screenshot('rigid_body/{}/{:04d}.png'.format(output, t))
-
-      gui.update()
+  if output:
+    gui.screenshot('rigid_body/{}/{:04d}.png'.format(output, t))
+  gui.update()
 
 
 def main():

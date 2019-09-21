@@ -39,7 +39,8 @@ bias1 = scalar()
 weight2 = scalar()
 bias2 = scalar()
 
-gravitation_position = [[0.1, 0.1], [0.1, 0.9], [0.9, 0.9], [0.9, 0.1]]
+pad = 0.1
+gravitation_position = [[pad, pad], [pad, 1-pad], [1-pad, 1-pad], [1-pad, pad]]
 
 
 @ti.layout
@@ -60,19 +61,19 @@ dt = 0.03
 alpha = 0.00000
 learning_rate = 1e-3
 
-K = 1e-2
+K = 1e-3
 
 
 @ti.kernel
 def nn1(t: ti.i32):
   for i in range(n_hidden):
     act = 0.0
-    act += x[t][0] * weight1[0, i]
-    act += x[t][1] * weight1[1, i]
+    act += (x[t][0] - 0.5) * weight1[0, i]
+    act += (x[t][1] - 0.5) * weight1[1, i]
     act += v[t][0] * weight1[2, i]
     act += v[t][1] * weight1[3, i]
-    act += goal[None][0] * weight1[4, i]
-    act += goal[None][1] * weight1[5, i]
+    act += (goal[None][0] - 0.5) * weight1[4, i]
+    act += (goal[None][1] - 0.5) * weight1[5, i]
     act += bias1[i]
     hidden[t, i] = ti.tanh(act)
 
@@ -93,15 +94,15 @@ def advance(t: ti.i32):
     gravitational_force = ti.Vector([0.0, 0.0])
     for i in ti.static(range(n_gravitation)):  # instead of this one
       r = x[t - 1] - ti.Vector(gravitation_position[i])
-      r_hat = ti.Vector.normalized(r)
-      gravitational_force += K * gravitation[t, i] / ti.max(1e-3, r.norm_sqr()) * r_hat
+      len_r = ti.max(r.norm(), 1e-1)
+      gravitational_force += K * gravitation[t, i] / (len_r * len_r * len_r) * r
     v[t] = v[t - 1] + dt * gravitational_force
     x[t] = x[t - 1] + dt * v[t]
 
 
 @ti.kernel
 def compute_loss(t: ti.i32):
-  loss[None] = (x[t] - goal[None]).norm()
+  loss[None] = (x[t] - goal[None]).norm_sqr()
 
 
 gui = tc.core.GUI("Gravity", tc.Vectori(1024, 1024))
@@ -123,10 +124,9 @@ def forward(visualize=False, output=None):
       canvas.clear(0x3C733F)
       
       for i in range(n_gravitation):
-        g = gravitation[t, i]
-        g = int(g + 1 / 2 * 255)
-        canvas.circle(tc.Vector(*gravitation_position[i])).radius(10).color(
-          0x010101 * g).finish()
+        r = (gravitation[t, i] + 1) * 30
+        canvas.circle(tc.Vector(*gravitation_position[i])).radius(r).color(
+          0xccaa44).finish()
       
       canvas.circle(tc.Vector(goal[None][0], goal[None][1])).radius(10).color(
         0x3344cc).finish()
@@ -140,11 +140,20 @@ def forward(visualize=False, output=None):
   compute_loss(steps - 1)
 
 
+
+
+def rand():
+  return 0.2 + random.random() * 0.6
+tasks = [((rand(), rand()), (rand(), rand())) for i in range(10)]
+
 def initialize():
-  def rand():
-    return 0.2 + random.random() * 0.6
   x[0] = [rand(), rand()]
   goal[None] = [rand(), rand()]
+  # x[0] = [0.3, 0.6]
+  # goal[None] = [0.5, 0.2]
+  # i = random.randrange(2)
+  # x[0] = tasks[i][0]
+  # goal[None] = tasks[i][1]
 
 def optimize():
   
@@ -152,7 +161,7 @@ def optimize():
   forward(visualize=True, output='initial')
   
   losses = []
-  for iter in range(20000):
+  for iter in range(200000):
     initialize()
     vis = iter % 100 == 0
     with ti.Tape(loss):
@@ -179,13 +188,10 @@ def optimize():
 
 
 if __name__ == '__main__':
-  
   for i in range(6):
     for j in range(n_hidden):
-      weight1[i, j] = random.random() * 0.1
-  
+      weight1[i, j] = (random.random() - 0.5) * 0.1
   for i in range(n_hidden):
     for j in range(n_gravitation):
-      weight2[i, j] = random.random() * 0.1
-  
+      weight2[i, j] = (random.random() - 0.5) * 0.1
   optimize()

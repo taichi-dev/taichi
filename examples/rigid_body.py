@@ -239,6 +239,9 @@ def compute_loss(t: ti.i32):
   loss[None] = (x[t, head_id] - ti.Vector(goal)).norm()
   # loss[None] = 10 * ti.abs(x[t, head_id][0] - goal[0]) + ti.abs(x[t, head_id][1] - goal[1])
 
+import taichi as tc
+gui = tc.core.GUI('Rigid Body Simulation', tc.Vectori(1024, 1024))
+canvas = gui.get_canvas()
 
 def forward(output=None):
   cmap = cm.get_cmap('rainbow')
@@ -258,12 +261,10 @@ def forward(output=None):
     advance(t)
     
     if (t + 1) % interval == 0:
-      renderer.build_axis()
-      renderer.draw_line([0,ground_height], [1,ground_height], False,color='black',width=5)
+      # renderer.build_axis()
+      # renderer.draw_line([0,ground_height], [1,ground_height], False,color='black',width=5)
+      canvas.clear(0xFFFFFF)
 
-      img = np.ones(shape=(vis_resolution, vis_resolution, 3),
-                    dtype=np.float32)
-      
       for i in range(n_objects):
         points = []
         for k in range(4):
@@ -276,8 +277,11 @@ def forward(output=None):
             [x[t, i][0], x[t, i][1]]) + offset_scale * rot_matrix @ np.array(
             [halfsize[i][0], halfsize[i][1]])
 
-          points.append((pos[0] * renderer.canvas_scale[0], pos[1] * renderer.canvas_scale[1] ))
-        
+          points.append((pos[0], pos[1]))
+
+        for k in range(4):
+          canvas.path(tc.Vector(*points[k]), tc.Vector(*points[(k + 1) % 4])).color(0x0).radius(2).finish()
+        '''
         if (i == 0):
           renderer.draw_dot([x[t, i][0], x[t, i][1]],5000, cmap(0),20)
         elif (i == 1 or i == 4):
@@ -286,9 +290,10 @@ def forward(output=None):
           renderer.draw_polygon(points, cmap(0.3))
         elif (i == 3 or i == 6):
           renderer.draw_polygon(points, cmap(0.7))
+        '''
 
-      renderer.draw_dot([x[t, head_id][0], x[t, head_id][1]],color=cmap(0.6),layer=20,ec='r')      
-      renderer.draw_dot([goal[0], goal[1]],layer=20,ec='r')
+      # renderer.draw_dot([x[t, head_id][0], x[t, head_id][1]],color=cmap(0.6),layer=20,ec='r')
+      # renderer.draw_dot([goal[0], goal[1]],layer=20,ec='r')
 
       for i in range(n_springs):
         def get_world_loc(i, offset):
@@ -303,12 +308,14 @@ def forward(output=None):
         pt1 = get_world_loc(spring_anchor_a[i], spring_offset_a[i])
         pt2 = get_world_loc(spring_anchor_b[i], spring_offset_b[i])
         
-        renderer.draw_line(pt1, pt2, True)
-      if output:
-        renderer.save_fig('rigid_body/{}/{:04d}.png'.format(output, t))
+        # renderer.draw_line(pt1, pt2, True)
+      # if output:
+        # renderer.save_fig('rigid_body/{}/{:04d}.png'.format(output, t))
         #renderer.save_fig('rigid_body/{}/{:04d}.pdf'.format(output, t))
 
-      renderer.clean_frame()
+      # renderer.clean_frame()
+
+      gui.update()
 
   loss[None] = 0
   compute_loss(steps - 1)

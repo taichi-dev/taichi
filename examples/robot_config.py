@@ -123,15 +123,15 @@ def robotLeg():
 
 
 def robotB():
-  body = add_object([0.15, 0.25], [0.1, 0.05])
+  body = add_object([0.15, 0.25], [0.1, 0.03])
   back = add_object([0.08, 0.22], [0.01, 0.10])
   front = add_object([0.22, 0.22], [0.01, 0.10])
 
-  rest_length = 0.14
-  stiffness = 30
-  act = 0.1
-  add_spring(body, back, [0.0, 0.0], [0.0, -0.08], rest_length, stiffness, actuation=act)
-  add_spring(body, front, [0.0, 0.0], [0.0, -0.08], rest_length, stiffness, actuation=act)
+  rest_length = 0.15
+  stiffness = 20
+  act = 0.07
+  add_spring(body, back, [0.0, 0.02], [0.0, -0.08], rest_length, stiffness, actuation=act)
+  add_spring(body, front, [0.0, 0.02], [0.0, -0.08], rest_length, stiffness, actuation=act)
 
   add_spring(body, back, [-0.08, 0.0], [0.0, 0.03], -1, stiffness)
   add_spring(body, front, [0.08, 0.0], [0.0, 0.03], -1, stiffness)

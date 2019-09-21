@@ -175,7 +175,7 @@ def collide(t: ti.i32):
       
       impulse = 0.0
       timpulse = 0.0
-      new_corner_x = corner_x# + dt * corner_v
+      new_corner_x = corner_x + dt * corner_v
       toi = 0.0
       if rela_v_ground < 0 and new_corner_x[1] < ground_height:
         impulse = -(1 + elasticity) * rela_v_ground / impulse_contribution
@@ -185,10 +185,8 @@ def collide(t: ti.i32):
           timpulse = ti.min(friction * impulse,
                             ti.max(-friction * impulse, timpulse))
           if corner_x[1] > ground_height:
-            toi = -(corner_x[1] - ground_height) / corner_v[1]
+            toi = -(corner_x[1] - ground_height) / ti.min(corner_v[1], 1e-3)
 
-      # toi = 0.5 * dt
-      toi = 0
       apply_impulse(t, i, impulse * normal + timpulse * tao, new_corner_x, toi)
 
       penalty = 0.0
@@ -398,8 +396,8 @@ def main():
     for j in range(n_sin_waves):
       weights[i, j] = np.random.randn() * 0.1
   
-  forward('initial')
-  for iter in range(50):
+  # forward('initial')
+  for iter in range(150):
     clear_states()
     
     with ti.Tape(loss):
@@ -414,8 +412,11 @@ def main():
       total_norm_sqr += bias.grad[i] ** 2
     
     print(total_norm_sqr)
-    
-    scale = learning_rate * min(1.0, gradient_clip / total_norm_sqr ** 0.5)
+
+    norm = total_norm_sqr ** 0.5
+    scale = learning_rate * min(1.0, gradient_clip / norm)
+    if norm > 1e3:
+      continue
     for i in range(n_springs):
       for j in range(n_sin_waves):
         weights[i, j] -= scale * weights.grad[i, j]

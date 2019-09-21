@@ -142,8 +142,8 @@ def apply_impulse(t, i, impulse, location, toi_input):
 
   toi = ti.min(ti.max(0.0, toi_input), dt)
 
-  ti.atomic_add(x_inc[t + 1, i], toi * (v[t, i] - delta_v))
-  ti.atomic_add(rotation_inc[t + 1, i], toi * (omega[t, i] - delta_omega))
+  ti.atomic_add(x_inc[t + 1, i], toi * (-delta_v))
+  ti.atomic_add(rotation_inc[t + 1, i], toi * (-delta_omega))
 
   ti.atomic_add(v_inc[t + 1, i], delta_v)
   ti.atomic_add(omega_inc[t + 1, i], delta_omega)
@@ -175,9 +175,9 @@ def collide(t: ti.i32):
       
       impulse = 0.0
       timpulse = 0.0
-      new_corner_x = corner_x + dt * corner_v
+      new_corner_x = corner_x# + dt * corner_v
       toi = 0.0
-      if rela_v_ground < -1e-3 and new_corner_x[1] < ground_height:
+      if rela_v_ground < 0 and new_corner_x[1] < ground_height:
         impulse = -(1 + elasticity) * rela_v_ground / impulse_contribution
         if impulse > 0:
           # friction
@@ -191,7 +191,7 @@ def collide(t: ti.i32):
       toi = 0
       apply_impulse(t, i, impulse * normal + timpulse * tao, new_corner_x, toi)
 
-      penalty = ti.Vector([0.0, 0.0])
+      penalty = 0.0
       if new_corner_x[1] < ground_height:
         # apply penalty
         penalty = -dt * penalty * (

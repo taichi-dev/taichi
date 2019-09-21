@@ -46,26 +46,27 @@ learning_rate = 1.0
 use_toi = False
 
 @ti.kernel
-def advance(t: ti.i32):
-  if ti.static(use_toi):
-    for i in range(n_objects):
-      old_v = v[t - 1, i]
-      new_v = old_v
-      old_x = x[t - 1, i]
-      new_x = old_x + dt * new_v
-      toi = 0.0
-      if new_x[1] < ground_height and new_v[1] < 0:
-        new_v[1] = -new_v[1]
-        toi = -(old_x[1] - ground_height) / old_v[1]
-      v[t, i] = new_v
-      x[t, i] = x[t - 1, i] + toi * old_v + (dt - toi) * new_v
-  else:
-    for i in range(n_objects):
-      new_v = v[t - 1, i]
-      if x[t - 1, i][1] < ground_height and new_v[1] < 0:
-        new_v[1] = -new_v[1]
-      v[t, i] = new_v
-      x[t, i] = x[t - 1, i] + dt * new_v
+def advance_toi(t: ti.i32):
+  for i in range(n_objects):
+    old_v = v[t - 1, i]
+    new_v = old_v
+    old_x = x[t - 1, i]
+    new_x = old_x + dt * new_v
+    toi = 0.0
+    if new_x[1] < ground_height and new_v[1] < 0:
+      new_v[1] = -new_v[1]
+      toi = -(old_x[1] - ground_height) / old_v[1]
+    v[t, i] = new_v
+    x[t, i] = x[t - 1, i] + toi * old_v + (dt - toi) * new_v
+    
+@ti.kernel
+def advance_no_toi(t: ti.i32):
+  for i in range(n_objects):
+    new_v = v[t - 1, i]
+    if x[t - 1, i][1] < ground_height and new_v[1] < 0:
+      new_v[1] = -new_v[1]
+    v[t, i] = new_v
+    x[t, i] = x[t - 1, i] + dt * new_v
 
 
 @ti.kernel
@@ -86,7 +87,10 @@ def forward(output=None, visualize=True):
     total_steps *= 2
 
   for t in range(1, total_steps):
-    advance(t)
+    if use_toi:
+      advance_toi(t)
+    else:
+      advance_no_toi(t)
     
     if (t + 1) % interval == 0 and visualize:
       canvas.clear(0xFFFFFF)
@@ -104,21 +108,37 @@ def forward(output=None, visualize=True):
 
 
 def main():
-  losses = []
-  grads = []
-  for dy in np.arange(0, 0.3, 0.0005):
-    x[0, 0] = [0.7, 0.5 + dy]
-    v[0, 0] = [-1, -2]
-    
-    with ti.Tape(loss):
-      forward(visualize=False)
+  for toi in [True, False]:
+    losses = []
+    grads = []
+    y_offsets = []
+    global use_toi
+    use_toi = toi
+    for dy in np.arange(0, 0.3, 0.02):
+      y_offsets.append(0.5 + dy)
+      x[0, 0] = [0.7, 0.5 + dy]
+      v[0, 0] = [-1, -2]
       
-    print('dy=', dy, 'Loss=', loss[None])
-    grads.append(x.grad[0, 0][1])
-    losses.append(loss[None])
+      with ti.Tape(loss):
+        forward(visualize=False)
+        
+      print('dy=', dy, 'Loss=', loss[None])
+      grads.append(x.grad[0, 0][1])
+      losses.append(loss[None])
     
-  plt.plot(losses)
-  plt.plot(grads)
+    suffix = '(-TOI)'
+    if use_toi:
+      suffix = '(+TOI)'
+    plt.plot(y_offsets, losses, 'o' if use_toi else 'x', label='Loss' + suffix)
+    plt.plot(y_offsets, grads, label='Gradient' + suffix)
+
+  fig = plt.gcf()
+  fig.set_size_inches(5, 3)
+  plt.title('The Effect of Time of Impact on Gradients')
+  plt.legend(bbox_to_anchor=(1, 1), loc='upper left', ncol=1)
+  plt.xlabel('Initial y')
+  plt.tight_layout()
+  plt.show()
   plt.show()
   
 if __name__ == '__main__':

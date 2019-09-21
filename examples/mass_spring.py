@@ -94,32 +94,38 @@ def apply_spring_force(t: ti.i32):
     ti.atomic_add(v_inc[t + 1, a], -impulse)
     ti.atomic_add(v_inc[t + 1, b], impulse)
 
-use_toi = True
+use_toi = False
 
 @ti.kernel
-def advance(t: ti.i32):
+def advance_toi(t: ti.i32):
   for i in range(n_objects):
     s = math.exp(-dt * damping)
     old_v = s * v[t - 1, i] + dt * gravity * ti.Vector([0.0, 1.0]) + v_inc[t, i]
     old_x = x[t - 1, i]
     new_x = old_x + dt * old_v
-    if ti.static(use_toi):
-      toi = 0.0
-      new_v = old_v
-      if new_x[1] < ground_height and old_v[1] < 1e-4:
-        toi = -(old_x[1] - ground_height) / old_v[1]
-        new_v = ti.Vector([0.0, 0.0])
-      new_x = old_x + toi * old_v + (dt - toi) * new_v
-      
-    else:
-      new_v = old_v
-      depth = old_x[1] - ground_height
-      if depth < 0 and new_v[1] < 0:
-        # friction projection
-        new_v[0] = 0
-        new_v[1] = 0
-      new_x = old_x + dt * new_v
-      
+    toi = 0.0
+    new_v = old_v
+    if new_x[1] < ground_height and old_v[1] < 1e-4:
+      toi = -(old_x[1] - ground_height) / old_v[1]
+      new_v = ti.Vector([0.0, 0.0])
+    new_x = old_x + toi * old_v + (dt - toi) * new_v
+    
+    v[t, i] = new_v
+    x[t, i] = new_x
+  
+@ti.kernel
+def advance_no_toi(t: ti.i32):
+  for i in range(n_objects):
+    s = math.exp(-dt * damping)
+    old_v = s * v[t - 1, i] + dt * gravity * ti.Vector([0.0, 1.0]) + v_inc[t, i]
+    old_x = x[t - 1, i]
+    new_v = old_v
+    depth = old_x[1] - ground_height
+    if depth < 0 and new_v[1] < 0:
+      # friction projection
+      new_v[0] = 0
+      new_v[1] = 0
+    new_x = old_x + dt * new_v
     v[t, i] = new_v
     x[t, i] = new_x
 
@@ -129,7 +135,7 @@ def compute_loss(t: ti.i32):
   loss[None] = -x[t, head_id][0]
 
 
-def forward(output=None):
+def forward(output=None, visualize=True):
   interval = vis_interval
   if output:
     interval = output_vis_interval
@@ -139,9 +145,12 @@ def forward(output=None):
   
   for t in range(1, total_steps):
     apply_spring_force(t - 1)
-    advance(t)
+    if use_toi:
+      advance_toi(t)
+    else:
+      advance_no_toi(t)
     
-    if (t + 1) % interval == 0:
+    if (t + 1) % interval == 0 and visualize:
       img = np.ones(shape=(vis_resolution, vis_resolution, 3),
                     dtype=np.float32) * 0.8
       
@@ -223,6 +232,42 @@ def setup_robot(objects, springs):
     spring_stiffness[i] = s[3]
     spring_actuation[i] = s[4]
 
+def optimize(toi, visualize):
+  global use_toi
+  use_toi = toi
+  for i in range(n_springs):
+    for j in range(n_sin_waves):
+      weights[i, j] = np.random.randn() * 0.1
+
+  losses = []
+  forward('initial', visualize=visualize)
+  for iter in range(100):
+    clear()
+  
+    with ti.Tape(loss):
+      forward(visualize=visualize)
+  
+    print('Iter=', iter, 'Loss=', loss[None])
+  
+    total_norm_sqr = 0
+    for i in range(n_springs):
+      for j in range(n_sin_waves):
+        total_norm_sqr += weights.grad[i, j] ** 2
+      total_norm_sqr += bias.grad[i] ** 2
+  
+    print(total_norm_sqr)
+  
+    # scale = learning_rate * min(1.0, gradient_clip / total_norm_sqr ** 0.5)
+    gradient_clip = 0.1
+    scale = gradient_clip / (total_norm_sqr ** 0.5 + 1e-6)
+    for i in range(n_springs):
+      for j in range(n_sin_waves):
+        weights[i, j] -= scale * weights.grad[i, j]
+      bias[i] -= scale * bias.grad[i]
+    losses.append(loss[None])
+
+  # clear()
+  # forward('final')
 
 def main():
   robot_id = 0
@@ -232,37 +277,7 @@ def main():
     robot_id = int(sys.argv[1])
   setup_robot(*robots[robot_id]())
   
-  for i in range(n_springs):
-    for j in range(n_sin_waves):
-      weights[i, j] = np.random.randn() * 1.3
-  
-  forward('initial')
-  for iter in range(300):
-    clear()
-    
-    with ti.Tape(loss):
-      forward()
-    
-    print('Iter=', iter, 'Loss=', loss[None])
-    
-    total_norm_sqr = 0
-    for i in range(n_springs):
-      for j in range(n_sin_waves):
-        total_norm_sqr += weights.grad[i, j] ** 2
-      total_norm_sqr += bias.grad[i] ** 2
-    
-    print(total_norm_sqr)
-    
-    # scale = learning_rate * min(1.0, gradient_clip / total_norm_sqr ** 0.5)
-    gradient_clip = 0.1
-    scale = gradient_clip / total_norm_sqr ** 0.5
-    for i in range(n_springs):
-      for j in range(n_sin_waves):
-        weights[i, j] -= scale * weights.grad[i, j]
-      bias[i] -= scale * bias.grad[i]
-  
-  clear()
-  forward('final')
+  optimize(toi=False, visualize=False)
 
 
 if __name__ == '__main__':

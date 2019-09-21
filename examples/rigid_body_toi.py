@@ -1,5 +1,6 @@
 import sys
 
+import sys
 import taichi_lang as ti
 import math
 import numpy as np
@@ -108,13 +109,18 @@ def forward(output=None, visualize=True):
 
 
 def main():
-  for toi in [True, False]:
+  zoom = len(sys.argv) > 1
+  for toi in [False, True]:
     losses = []
     grads = []
     y_offsets = []
     global use_toi
     use_toi = toi
-    for dy in np.arange(0, 0.3, 0.02):
+    if zoom:
+      ran = np.arange(0.26, 0.3, 0.0001)
+    else:
+      ran = np.arange(0, 0.3, 0.02)
+    for dy in ran:
       y_offsets.append(0.5 + dy)
       x[0, 0] = [0.7, 0.5 + dy]
       v[0, 0] = [-1, -2]
@@ -126,18 +132,29 @@ def main():
       grads.append(x.grad[0, 0][1])
       losses.append(loss[None])
     
-    suffix = '(-TOI)'
+    suffix = ' (Naive)'
     if use_toi:
-      suffix = '(+TOI)'
-    plt.plot(y_offsets, losses, ':' if use_toi else '.', label='Loss' + suffix)
-    plt.plot(y_offsets, grads, label='Gradient' + suffix)
+      suffix = ' (+TOI)'
+    if zoom:
+      t = '-'
+    else:
+      t = ':' if use_toi else '.'
+    plt.plot(y_offsets, losses, t, label='Loss' + suffix)
+    if not zoom:
+      plt.plot(y_offsets, grads, label='Gradient' + suffix)
 
   fig = plt.gcf()
-  fig.set_size_inches(5, 3)
+  fig.set_size_inches(4, 3)
   plt.title('The Effect of Time of Impact on Gradients')
-  plt.legend(bbox_to_anchor=(1, 1), loc='upper left', ncol=1)
+  if not zoom:
+    # plt.ylim(-6, 2)
+    plt.legend(bbox_to_anchor=(0.02, 0.1), loc='lower left', ncol=1)
+    # plt.legend(bbox_to_anchor=(1.1, 1.2), ncol=1)
+    # plt.legend()
+  else:
+    plt.legend()
   plt.xlabel('Initial y')
-  plt.tight_layout()
+  # plt.tight_layout()
   plt.show()
   plt.show()
   

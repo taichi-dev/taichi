@@ -129,7 +129,7 @@ def main():
     suffix = '(-TOI)'
     if use_toi:
       suffix = '(+TOI)'
-    plt.plot(y_offsets, losses, 'o' if use_toi else 'x', label='Loss' + suffix)
+    plt.plot(y_offsets, losses, ':' if use_toi else '.', label='Loss' + suffix)
     plt.plot(y_offsets, grads, label='Gradient' + suffix)
 
   fig = plt.gcf()

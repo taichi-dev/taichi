@@ -91,7 +91,7 @@ def advance(t: ti.i32):
     for i in ti.static(range(n_gravitation)): # instead of this one
       r = x[t - 1] - ti.Vector(gravitation_position[i])
       r_hat = ti.Vector.normalized(r)
-      gravitational_force += K * gravitation[t, i] / r.norm_sqr() * r_hat
+      gravitational_force += K * gravitation[t, i] * r.norm_sqr() * r_hat
     v[t] = v[t - 1] + dt * gravitational_force
     x[t] = x[t - 1] + dt * v[t]
 
@@ -111,8 +111,8 @@ def forward(visualize=False, output=None):
     
   canvas = gui.get_canvas()
   for t in range(1, steps):
-    nn1()
-    nn2()
+    nn1(t)
+    nn2(t)
     advance(t)
 
     if (t + 1) % interval == 0 and visualize:

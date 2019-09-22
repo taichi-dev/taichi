@@ -82,12 +82,22 @@ learning_rate = 25
 
 @ti.kernel
 def nn1(t: ti.i32):
-  for i in range(n_springs):
+  for i in range(n_hidden):
     actuation = 0.0
     for j in ti.static(range(n_sin_waves)):
       actuation += weights1[i, j] * ti.sin(
         spring_omega * t * dt + 2 * math.pi / n_sin_waves * j)
     actuation += bias1[i]
+    actuation = ti.tanh(actuation)
+    hidden[t, i] = actuation
+    
+@ti.kernel
+def nn2(t: ti.i32):
+  for i in range(n_springs):
+    actuation = 0.0
+    for j in ti.static(range(n_hidden)):
+      actuation += weights2[i, j] * hidden[t, j]
+    actuation += bias2[i]
     actuation = ti.tanh(actuation)
     act[t, i] = actuation
 
@@ -159,6 +169,7 @@ def forward(output=None, visualize=True):
   
   for t in range(1, total_steps):
     nn1(t - 1)
+    nn2(t - 1)
     apply_spring_force(t - 1)
     if use_toi:
       advance_toi(t)
@@ -240,9 +251,13 @@ def setup_robot(objects, springs):
 def optimize(toi, visualize):
   global use_toi
   use_toi = toi
-  for i in range(n_springs):
+  for i in range(n_hidden):
     for j in range(n_sin_waves):
-      weights1[i, j] = np.random.randn() * 0.5
+      weights1[i, j] = np.random.randn() * 0.1
+      
+  for i in range(n_springs):
+    for j in range(n_hidden):
+      weights2[i, j] = np.random.randn() * 0.1
 
   losses = []
   forward('initial', visualize=visualize)
@@ -265,10 +280,15 @@ def optimize(toi, visualize):
     # scale = learning_rate * min(1.0, gradient_clip / total_norm_sqr ** 0.5)
     gradient_clip = 0.1
     scale = gradient_clip / (total_norm_sqr ** 0.5 + 1e-6)
-    for i in range(n_springs):
+    for i in range(n_hidden):
       for j in range(n_sin_waves):
         weights1[i, j] -= scale * weights1.grad[i, j]
       bias1[i] -= scale * bias1.grad[i]
+      
+    for i in range(n_springs):
+      for j in range(n_hidden):
+        weights2[i, j] -= scale * weights2.grad[i, j]
+      bias2[i] -= scale * bias2.grad[i]
     losses.append(loss[None])
 
   return losses

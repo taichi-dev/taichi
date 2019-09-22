@@ -1,4 +1,5 @@
 from mass_spring_robot_config import robots
+import random
 import sys
 from scipy.ndimage.filters import gaussian_filter
 
@@ -32,7 +33,7 @@ v = vec()
 v_inc = vec()
 
 head_id = 0
-goal = [0.9, 0.2]
+goal = vec()
 
 n_objects = 0
 # target_ball = 0
@@ -81,7 +82,7 @@ def place():
   ti.root.dense(ti.ij, (max_steps, n_hidden)).place(hidden)
   ti.root.dense(ti.ij, (max_steps, n_springs)).place(act)
   ti.root.dense(ti.i, max_steps).place(center)
-  ti.root.place(loss)
+  ti.root.place(loss, goal)
   ti.root.lazy_grad()
 
 
@@ -110,8 +111,8 @@ def nn1(t: ti.i32):
       actuation += weights1[i, j * 4 + n_sin_waves + 1] * offset[1] * 0.05
       actuation += weights1[i, j * 4 + n_sin_waves + 2] * v[t, i][0] * 0.05
       actuation += weights1[i, j * 4 + n_sin_waves + 3] * v[t, i][1] * 0.05
-    actuation += weights1[i, n_objects * 4 + n_sin_waves] * (goal[0] - center[t][0])
-    actuation += weights1[i, n_objects * 4 + n_sin_waves + 1] * (goal[1] - center[t][1])
+    actuation += weights1[i, n_objects * 4 + n_sin_waves] * (goal[None][0] - center[t][0])
+    actuation += weights1[i, n_objects * 4 + n_sin_waves + 1] * (goal[None][1] - center[t][1])
     actuation += bias1[i]
     actuation = ti.tanh(actuation)
     hidden[t, i] = actuation
@@ -192,6 +193,12 @@ def rgb_to_hex(c):
   
 
 def forward(output=None, visualize=True):
+  if random.random() > 0.5:
+    goal[None] = [0.9, 0.2]
+  else:
+    goal[None] = [0.1, 0.2]
+  goal[None] = [0.9, 0.2]
+  
   interval = vis_interval
   if output:
     interval = output_vis_interval
@@ -237,7 +244,7 @@ def forward(output=None, visualize=True):
         if i == head_id:
           color = (0.8, 0.2, 0.3)
         circle(x[t, i][0], x[t, i][1], color)
-      circle(goal[0], goal[1], (0.6, 0.2, 0.2))
+      circle(goal[None][0], goal[None][1], (0.6, 0.2, 0.2))
       
       gui.update()
       # if output:

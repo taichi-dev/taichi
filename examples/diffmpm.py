@@ -17,15 +17,15 @@ n_actuators = 0
 n_grid = 128
 dx = 1 / n_grid
 inv_dx = 1 / dx
-dt = 3e-4
+dt = 1e-3
 p_vol = 1
-E = 100
+E = 10
 # TODO: update
 mu = E
 la = E
-max_steps = 2048
-steps = 2048
-gravity = 9.8
+max_steps = 1024
+steps = 1024
+gravity = 3.8
 target = [0.8, 0.2]
 
 scalar = lambda: ti.var(dt=real)
@@ -41,13 +41,14 @@ C, F = mat(), mat()
 
 loss = scalar()
 
-n_sin_waves = 10
+n_sin_waves = 4
 weights = scalar()
 bias = scalar()
 x_avg = vec()
 
 actuation = scalar()
 actuation_omega = 20
+act_strength = 4
 
 
 # ti.cfg.arch = ti.x86_64
@@ -113,7 +114,7 @@ def p2g(f: ti.i32):
     
     act_id = actuator_id[p]
     
-    act = actuation[f, ti.max(0, act_id)] * 30
+    act = actuation[f, ti.max(0, act_id)] * act_strength
     if act_id == -1:
       act = 0.0
     # ti.print(act)
@@ -226,8 +227,8 @@ def compute_x_avg():
 
 @ti.kernel
 def compute_loss():
-  dist = ti.sqr(x_avg - ti.Vector(target))
-  loss[None] = 0.5 * (dist(0) + dist(1))
+  dist = x_avg[None][0]
+  loss[None] = -dist
 
 
 def forward():
@@ -314,7 +315,7 @@ def fish(scene):
 
 
 def robot(scene):
-  scene.set_offset(0.1, 0.1)
+  scene.set_offset(0.1, 0.03)
   scene.add_rect(0.0, 0.1, 0.3, 0.1, -1)
   scene.add_rect(0.0, 0.0, 0.05, 0.1, 0)
   scene.add_rect(0.05, 0.0, 0.05, 0.1, 1)
@@ -347,29 +348,31 @@ def main():
 
   vec = tc.Vector
   losses = []
-  for i in range(300):
+  for iter in range(300):
     ti.clear_all_gradients()
     l = forward()
     losses.append(l)
     loss.grad[None] = 1
     backward()
-    print('loss=', l)
-    learning_rate = 0.02
+    print('i=', iter, 'loss=', l)
+    learning_rate = 0.1
 
     for i in range(n_actuators):
       for j in range(n_sin_waves):
         # print(weights.grad[i, j])
         weights[i, j] -= learning_rate * weights.grad[i, j]
       bias[i] -= learning_rate * bias.grad[i]
-      
-    # visualize
-    for s in range(63, steps, 64):
-      canvas.clear(0x112F41)
-      canvas.circle(vec(target[0], target[1])).color(0xED553B).radius(5).finish()
-      # canvas.circle(vec(0.5, 0.5))
-      for i in range(n_particles):
-        canvas.circle(vec(x[s, i][0], x[s, i][1])).radius(2).color(0xF2B134).finish()
-      gui.update()
+
+    if iter % 10 == 0:
+      # visualize
+      for s in range(63, steps, 64):
+        canvas.clear(0x112F41)
+        canvas.circle(vec(target[0], target[1])).color(0xED553B).radius(5).finish()
+        # canvas.circle(vec(0.5, 0.5))
+        for i in range(n_particles):
+          canvas.circle(vec(x[s, i][0], x[s, i][1])).radius(2).color(0xF2B134).finish()
+        canvas.path(tc.Vector(0.05, 0.05), tc.Vector(0.95, 0.05)).radius(3).color(0xaa1177).finish()
+        gui.update()
   
   # ti.profiler_print()
   plt.title("Optimization of Initial Velocity")

@@ -1,5 +1,6 @@
 from mass_spring_robot_config import robots
 import sys
+from scipy.ndimage.filters import gaussian_filter
 
 import taichi as tc
 import matplotlib.pyplot as plt
@@ -336,11 +337,12 @@ def main():
     for toi in [False, True]:
       for i in range(5):
         losses = optimize(toi=toi, visualize=False)
+        losses = gaussian_filter(losses, sigma=3)
         plt.plot(losses, 'g' if toi else 'r')
 
     plt.title('Mass Spring (Red is no TOI, green is TOI)')
-    plt.xlabel("Iteration")
-    plt.ylabel("loss")
+    plt.xlabel("Gradient Descent Iteration")
+    plt.ylabel("Loss")
     plt.show()
   else:
     optimize(toi=True, visualize=True)

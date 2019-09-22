@@ -346,10 +346,6 @@ def main():
     import pickle
     pickle.dump(ret, open('losses.pkl', 'wb'))
     print("Losses saved to losses.pkl")
-    # plt.title('Mass Spring (Red is no TOI, green is TOI)')
-    # plt.xlabel("Gradient Descent Iteration")
-    # plt.ylabel("Loss")
-    # plt.show()
   else:
     optimize(toi=True, visualize=True)
     clear()

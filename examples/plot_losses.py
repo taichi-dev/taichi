@@ -1,8 +1,9 @@
 import matplotlib.pyplot as plt
 import pickle
+import sys
 from scipy.ndimage.filters import gaussian_filter
 
-losses = pickle.load(open('losses.pkl', 'rb'))
+losses = pickle.load(open(sys.argv[1], 'rb'))
 
 iterations = len(losses[list(losses.keys())[0]][0])
 
@@ -10,7 +11,7 @@ for key, item in losses.items():
   for i in range(len(item)):
     item[i] = gaussian_filter(item[i], 3)
 
-colors = ['g', 'r']
+colors = ['r', 'g']
 for id, (key, item) in enumerate(losses.items()):
   l = iterations
   mean_loss = []
@@ -31,13 +32,13 @@ for id, (key, item) in enumerate(losses.items()):
     min_loss.append(MIN)
   
   plt.fill_between(list(range(iterations)), min_loss, max_loss, color=colors[id], alpha=0.3)
-  plt.plot(mean_loss, label='+TOI' if key else '-TOI', color=colors[id])
+  plt.plot(mean_loss, label='TOI' if key else 'Naive', color=colors[id])
   
 
 fig = plt.gcf()
 plt.legend()
 fig.set_size_inches(4, 3)
-plt.title('Mass Spring Robot')
+plt.title('Mass Spring Robot 1')
 plt.ylabel('Loss')
 plt.xlabel('Gradient Descent Iterations')
 plt.tight_layout()

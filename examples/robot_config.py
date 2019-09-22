@@ -29,7 +29,7 @@ def robotA():
   # -1 means the spring is a joint
   add_spring(0, 4, [0.1, 0], [0, -0.05], -1, s)
   
-  return objects, springs
+  return objects, springs, 0
 
 
 def robotC():

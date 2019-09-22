@@ -260,9 +260,7 @@ import taichi as tc
 gui = tc.core.GUI('Rigid Body Simulation', tc.Vectori(1024, 1024))
 canvas = gui.get_canvas()
 
-def forward(output=None):
-  cmap = cm.get_cmap('rainbow')
-
+def forward(output=None, visualize=True):
   initialize_properties()
 
   interval = vis_interval
@@ -277,9 +275,7 @@ def forward(output=None):
     apply_spring_force(t - 1)
     advance(t)
     
-    if (t + 1) % interval == 0:
-      # renderer.build_axis()
-      # renderer.draw_line([0,ground_height], [1,ground_height], False,color='black',width=5)
+    if (t + 1) % interval == 0 and visualize:
       canvas.clear(0xFFFFFF)
 
       for i in range(n_objects):
@@ -311,7 +307,6 @@ def forward(output=None):
 
       # renderer.draw_dot([x[t, head_id][0], x[t, head_id][1]],color=cmap(0.6),layer=20,ec='r')
       # renderer.draw_dot([goal[0], goal[1]],layer=20,ec='r')
-      canvas.path(tc.Vector(*points[k]), tc.Vector(*points[(k + 1) % 4])).color(0x0).radius(2).finish()
 
       for i in range(n_springs):
         def get_world_loc(i, offset):
@@ -333,7 +328,7 @@ def forward(output=None):
           canvas.path(tc.Vector(*pt1), tc.Vector(*pt2)).color(0x000000).radius(7).finish()
           canvas.path(tc.Vector(*pt1), tc.Vector(*pt2)).color(0xFBCCAA).radius(5).finish()
 
-        canvas.path(tc.Vector(0.05, ground_height), tc.Vector(0.95, ground_height)).color(0x0).radius(5).finish()
+      canvas.path(tc.Vector(0.05, ground_height), tc.Vector(0.95, ground_height)).color(0x0).radius(5).finish()
         # renderer.draw_line(pt1, pt2, True)
       # if output:
         # renderer.save_fig('rigid_body/{}/{:04d}.png'.format(output, t))
@@ -383,25 +378,19 @@ def setup_robot(objects, springs, h_id):
       spring_actuation[i] = s[6]
     else:
       spring_actuation[i] = default_actuation
-
-def main():
-  robot_id = 0
-  if len(sys.argv) != 2:
-    print("Usage: python3 rigid_body.py [robot_id=0, 1, 2, ...]")
-  else:
-    robot_id = int(sys.argv[1])
-  setup_robot(*robots[robot_id]())
-  
+      
+def optimize(toi=True, visualize=True):
   for i in range(n_springs):
     for j in range(n_sin_waves):
       weights[i, j] = np.random.randn() * 0.1
   
-  # forward('initial')
+  losses = []
+  forward('initial')
   for iter in range(20):
     clear_states()
     
     with ti.Tape(loss):
-      forward()
+      forward(visualize=visualize)
     
     print('Iter=', iter, 'Loss=', loss[None])
     
@@ -412,15 +401,44 @@ def main():
       total_norm_sqr += bias.grad[i] ** 2
     
     print(total_norm_sqr)
-
+    
     norm = total_norm_sqr ** 0.5
-    scale = learning_rate * min(1.0, gradient_clip / norm)
+    scale = learning_rate * min(1.0, gradient_clip / (norm + 1e-4))
     if norm > 1e3:
       continue
     for i in range(n_springs):
       for j in range(n_sin_waves):
         weights[i, j] -= scale * weights.grad[i, j]
       bias[i] -= scale * bias.grad[i]
+    losses.append(loss[None])
+  return losses
+  
+
+def main():
+  robot_id = 0
+  if len(sys.argv) != 3:
+    print("Usage: python3 rigid_body.py [robot_id=0, 1, 2, ...] cmd")
+  else:
+    robot_id = int(sys.argv[1])
+    cmd = sys.argv[2]
+  print(robot_id, cmd)
+  setup_robot(*robots[robot_id]())
+  
+  if cmd == 'plot':
+    ret = {}
+    for toi in [False, True]:
+      ret[toi] = []
+      for i in range(5):
+        losses = optimize(toi=toi, visualize=True)
+        # losses = gaussian_filter(losses, sigma=3)
+        ret[toi].append(losses)
+  
+    import pickle
+    pickle.dump(ret, open('losses.pkl', 'wb'))
+    print("Losses saved to losses.pkl")
+  else:
+    optimize(toi=True, visualize=True)
+  
   
   clear_states()
   forward('final')

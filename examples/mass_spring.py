@@ -213,24 +213,28 @@ def forward(output=None, visualize=True):
       canvas.path(tc.Vector(0, ground_height), tc.Vector(1, ground_height)).color(0x0).radius(3).finish()
       
       def circle(x, y, color):
-        canvas.circle(tc.Vector(x, y)).color(rgb_to_hex(color)).radius(5).finish()
+        canvas.circle(tc.Vector(x, y)).color(rgb_to_hex(color)).radius(7).finish()
       
+      
+      for i in range(n_springs):
+        def get_pt(x):
+          return tc.Vector(x[0], x[1])
+        
+        a = act[t, i] * 0.5
+        if spring_actuation[i] == 0:
+          a = 0
+          c = 0x222222
+        else:
+          c = rgb_to_hex((0.5 + a, 0.5 - abs(a), 0.5 - a))
+        canvas.path(get_pt(x[t, spring_anchor_a[i]]),
+                get_pt(x[t, spring_anchor_b[i]])).color(c).radius(2).finish()
+
       for i in range(n_objects):
         color = (0.4, 0.6, 0.6)
         if i == head_id:
           color = (0.8, 0.2, 0.3)
         circle(x[t, i][0], x[t, i][1], color)
       circle(goal[0], goal[1], (0.6, 0.2, 0.2))
-      
-      for i in range(n_springs):
-        def get_pt(x):
-          return int(x[0] * vis_resolution), int(
-            vis_resolution - x[1] * vis_resolution)
-        
-        act = 0
-        # cv2.line(img, get_pt(x[t, spring_anchor_a[i]]),
-        #         get_pt(x[t, spring_anchor_b[i]]), (0.5 + act, 0.5, 0.5 - act),
-        #         thickness=6)
       
       gui.update()
       # if output:
@@ -280,7 +284,7 @@ def optimize(toi, visualize):
       
   for i in range(n_springs):
     for j in range(n_hidden):
-      weights2[i, j] = np.random.randn() * math.sqrt(2 / (n_hidden + n_springs)) * 2
+      weights2[i, j] = np.random.randn() * math.sqrt(2 / (n_hidden + n_springs)) * 3
 
   losses = []
   forward('initial', visualize=visualize)

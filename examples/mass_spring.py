@@ -187,10 +187,7 @@ def compute_loss(t: ti.i32):
 gui = tc.core.GUI("Mass Spring Robot", tc.Vectori(1024, 1024))
 canvas = gui.get_canvas()
 
-def rgb_to_hex(c):
-  to255 = lambda x: min(255, max(0, int(x * 255)))
-  return 65536 * to255(c[0]) + 256 * to255(c[1]) + to255(c[2])
-  
+from .renderer_vector import rgb_to_hex
 
 def forward(output=None, visualize=True):
   if random.random() > 0.5:
@@ -228,7 +225,7 @@ def forward(output=None, visualize=True):
         def get_pt(x):
           return tc.Vector(x[0], x[1])
         
-        a = act[t, i] * 0.5
+        a = act[t - 1, i] * 0.5
         r = 2
         if spring_actuation[i] == 0:
           a = 0

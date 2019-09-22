@@ -23,7 +23,7 @@ E = 10
 # TODO: update
 mu = E
 la = E
-max_steps = 1024
+max_steps = 2048
 steps = 1024
 gravity = 3.8
 target = [0.8, 0.2]
@@ -231,9 +231,9 @@ def compute_loss():
   loss[None] = -dist
 
 
-def forward():
+def forward(total_steps=steps):
   # simulation
-  for s in range(steps - 1):
+  for s in range(total_steps - 1):
     clear_grid()
     compute_actuation()
     p2g(s)
@@ -324,6 +324,8 @@ def robot(scene):
   scene.set_n_actuators(4)
 
 
+from renderer_vector import rgb_to_hex
+
 def main():
   tc.set_gdb_trigger()
   # initialization
@@ -348,7 +350,7 @@ def main():
 
   vec = tc.Vector
   losses = []
-  for iter in range(300):
+  for iter in range(100):
     ti.clear_all_gradients()
     l = forward()
     losses.append(l)
@@ -366,12 +368,17 @@ def main():
     if iter % 10 == 0:
       # visualize
       for s in range(63, steps, 64):
-        canvas.clear(0x112F41)
-        canvas.circle(vec(target[0], target[1])).color(0xED553B).radius(5).finish()
+        canvas.clear(0xFFFFFF)
+        # canvas.circle(vec(target[0], target[1])).color(0xED553B).radius(5).finish()
         # canvas.circle(vec(0.5, 0.5))
         for i in range(n_particles):
-          canvas.circle(vec(x[s, i][0], x[s, i][1])).radius(2).color(0xF2B134).finish()
-        canvas.path(tc.Vector(0.05, 0.05), tc.Vector(0.95, 0.05)).radius(3).color(0xaa1177).finish()
+          color = 0x333333
+          aid = actuator_id[i]
+          if aid != -1:
+            act = actuation[s - 1, aid]
+            color = rgb_to_hex((0.5 - act, 0.5, 0.5 + act))
+          canvas.circle(vec(x[s, i][0], x[s, i][1])).radius(2).color(color).finish()
+        canvas.path(tc.Vector(0.05, 0.02), tc.Vector(0.95, 0.02)).radius(3).color(0x0).finish()
         gui.update()
   
   # ti.profiler_print()

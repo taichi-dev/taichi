@@ -5,6 +5,10 @@ import matplotlib.animation as animation
 from matplotlib.pyplot import cm
 import matplotlib.patheffects as path_effects
 
+def rgb_to_hex(c):
+	to255 = lambda x: min(255, max(0, int(x * 255)))
+	return 65536 * to255(c[0]) + 256 * to255(c[1]) + to255(c[2])
+
 class VectorRenderer:
 	def __init__(self):
 		self.canvas_scale = [9.6,7.2]

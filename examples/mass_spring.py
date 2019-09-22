@@ -155,7 +155,7 @@ def advance_toi(t: ti.i32):
     new_x = old_x + dt * old_v
     toi = 0.0
     new_v = old_v
-    if new_x[1] < ground_height and old_v[1] < 1e-4:
+    if new_x[1] < ground_height and old_v[1] < -1e-4:
       toi = -(old_x[1] - ground_height) / old_v[1]
       new_v = ti.Vector([0.0, 0.0])
     new_x = old_x + toi * old_v + (dt - toi) * new_v

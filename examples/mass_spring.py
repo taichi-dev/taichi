@@ -105,10 +105,10 @@ def nn1(t: ti.i32):
     for j in ti.static(range(n_objects)):
       offset = x[t, j] - center[t]
       # use a smaller weight since there are too many of them
-      actuation += weights1[i, j * 4 + n_sin_waves] * offset[0] * 0.2
-      actuation += weights1[i, j * 4 + n_sin_waves + 1] * offset[1] * 0.2
-      actuation += weights1[i, j * 4 + n_sin_waves + 2] * v[t, i][0] * 0.1
-      actuation += weights1[i, j * 4 + n_sin_waves + 3] * v[t, i][1] * 0.1
+      actuation += weights1[i, j * 4 + n_sin_waves] * offset[0] * 0.05
+      actuation += weights1[i, j * 4 + n_sin_waves + 1] * offset[1] * 0.05
+      actuation += weights1[i, j * 4 + n_sin_waves + 2] * v[t, i][0] * 0.05
+      actuation += weights1[i, j * 4 + n_sin_waves + 3] * v[t, i][1] * 0.05
     actuation += weights1[i, n_objects * 4 + n_sin_waves] * (goal[0] - center[t][0])
     actuation += weights1[i, n_objects * 4 + n_sin_waves + 1] * (goal[1] - center[t][1])
     actuation += bias1[i]
@@ -221,13 +221,15 @@ def forward(output=None, visualize=True):
           return tc.Vector(x[0], x[1])
         
         a = act[t, i] * 0.5
+        r = 2
         if spring_actuation[i] == 0:
           a = 0
           c = 0x222222
         else:
+          r = 4
           c = rgb_to_hex((0.5 + a, 0.5 - abs(a), 0.5 - a))
         canvas.path(get_pt(x[t, spring_anchor_a[i]]),
-                get_pt(x[t, spring_anchor_b[i]])).color(c).radius(2).finish()
+                get_pt(x[t, spring_anchor_b[i]])).color(c).radius(r).finish()
 
       for i in range(n_objects):
         color = (0.4, 0.6, 0.6)

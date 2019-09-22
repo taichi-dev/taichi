@@ -372,7 +372,7 @@ def main():
         # canvas.circle(vec(target[0], target[1])).color(0xED553B).radius(5).finish()
         # canvas.circle(vec(0.5, 0.5))
         for i in range(n_particles):
-          color = 0x333333
+          color = 0x111111
           aid = actuator_id[i]
           if aid != -1:
             act = actuation[s - 1, aid]

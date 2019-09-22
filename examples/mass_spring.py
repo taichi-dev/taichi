@@ -1,6 +1,7 @@
 from mass_spring_robot_config import robots
 import sys
 
+import taichi as tc
 import matplotlib.pyplot as plt
 import taichi_lang as ti
 import math
@@ -181,6 +182,13 @@ def advance_no_toi(t: ti.i32):
 def compute_loss(t: ti.i32):
   loss[None] = -x[t, head_id][0]
 
+gui = tc.core.GUI("Mass Spring Robot", tc.Vectori(1024, 1024))
+canvas = gui.get_canvas()
+
+def rgb_to_hex(c):
+  to255 = lambda x: min(255, max(0, int(x * 255)))
+  return 65536 * to255(c[0]) + 256 * to255(c[1]) + to255(c[2])
+  
 
 def forward(output=None, visualize=True):
   interval = vis_interval
@@ -201,19 +209,11 @@ def forward(output=None, visualize=True):
       advance_no_toi(t)
       
     if (t + 1) % interval == 0 and visualize:
-      img = np.ones(shape=(vis_resolution, vis_resolution, 3),
-                    dtype=np.float32) * 0.8
-      
-      y = int((1 - ground_height) * vis_resolution)
-      cv2.line(img, (0, y), (vis_resolution - 2, y), color=(0.1, 0.1, 0.1),
-               thickness=4)
+      canvas.clear(0xFFFFFF)
+      canvas.path(tc.Vector(0, ground_height), tc.Vector(1, ground_height)).color(0x0).radius(3).finish()
       
       def circle(x, y, color):
-        radius = 0.02
-        cv2.circle(img, center=(
-          int(vis_resolution * x), int(vis_resolution * (1 - y))),
-                   radius=int(radius * vis_resolution), color=color,
-                   thickness=-1)
+        canvas.circle(tc.Vector(x, y)).color(rgb_to_hex(color)).radius(5).finish()
       
       for i in range(n_objects):
         color = (0.4, 0.6, 0.6)
@@ -228,14 +228,13 @@ def forward(output=None, visualize=True):
             vis_resolution - x[1] * vis_resolution)
         
         act = 0
-        cv2.line(img, get_pt(x[t, spring_anchor_a[i]]),
-                 get_pt(x[t, spring_anchor_b[i]]), (0.5 + act, 0.5, 0.5 - act),
-                 thickness=6)
+        # cv2.line(img, get_pt(x[t, spring_anchor_a[i]]),
+        #         get_pt(x[t, spring_anchor_b[i]]), (0.5 + act, 0.5, 0.5 - act),
+        #         thickness=6)
       
-      cv2.imshow('img', img)
-      cv2.waitKey(1)
-      if output:
-        cv2.imwrite('mass_spring/{}/{:04d}.png'.format(output, t), img * 255)
+      gui.update()
+      # if output:
+      #   cv2.imwrite('mass_spring/{}/{:04d}.png'.format(output, t), img * 255)
   
   loss[None] = 0
   compute_loss(steps - 1)

@@ -1,16 +1,12 @@
 from robot_config import robots
 import sys
-
 import taichi_lang as ti
 import math
 import numpy as np
-import cv2
 import os
-import matplotlib.pyplot as plt
 
 from renderer_vector import VectorRenderer
 import time
-from matplotlib.pyplot import cm
 
 renderer = VectorRenderer()
 
@@ -266,7 +262,6 @@ def advance_no_toi(t: ti.i32):
 @ti.kernel
 def compute_loss(t: ti.i32):
   loss[None] = (x[t, head_id] - ti.Vector(goal)).norm()
-  # loss[None] = 10 * ti.abs(x[t, head_id][0] - goal[0]) + ti.abs(x[t, head_id][1] - goal[1])
 
 import taichi as tc
 gui = tc.core.GUI('Rigid Body Simulation', tc.Vectori(1024, 1024))
@@ -309,19 +304,6 @@ def forward(output=None, visualize=True):
 
         for k in range(4):
           canvas.path(tc.Vector(*points[k]), tc.Vector(*points[(k + 1) % 4])).color(0x0).radius(2).finish()
-        '''
-        if (i == 0):
-          renderer.draw_dot([x[t, i][0], x[t, i][1]],5000, cmap(0),20)
-        elif (i == 1 or i == 4):
-          renderer.draw_polygon(points, cmap(0.1))
-        elif (i == 2 or i == 5):
-          renderer.draw_polygon(points, cmap(0.3))
-        elif (i == 3 or i == 6):
-          renderer.draw_polygon(points, cmap(0.7))
-        '''
-
-      # renderer.draw_dot([x[t, head_id][0], x[t, head_id][1]],color=cmap(0.6),layer=20,ec='r')
-      # renderer.draw_dot([goal[0], goal[1]],layer=20,ec='r')
 
       for i in range(n_springs):
         def get_world_loc(i, offset):

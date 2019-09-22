@@ -284,9 +284,10 @@ def optimize(toi, visualize):
   for i in range(n_hidden):
     for j in range(n_input_states()):
       weights1[i, j] = np.random.randn() * math.sqrt(2 / (n_hidden + n_input_states())) * 2
-      
+
   for i in range(n_springs):
     for j in range(n_hidden):
+      # TODO: n_springs should be n_actuators
       weights2[i, j] = np.random.randn() * math.sqrt(2 / (n_hidden + n_springs)) * 3
 
   losses = []
@@ -311,6 +312,7 @@ def optimize(toi, visualize):
       total_norm_sqr += bias2.grad[i] ** 2
   
     print(total_norm_sqr)
+  
   
     # scale = learning_rate * min(1.0, gradient_clip / total_norm_sqr ** 0.5)
     gradient_clip = 0.2

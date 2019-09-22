@@ -103,8 +103,9 @@ def nn1(t: ti.i32):
         spring_omega * t * dt + 2 * math.pi / n_sin_waves * j)
     for j in ti.static(range(n_objects)):
       offset = x[t, j] - center[t]
-      # actuation += weights1[i, j * 4 + n_sin_waves] * offset[0]
-      # actuation += weights1[i, j * 4 + n_sin_waves + 1] * offset[1]
+      # use a smaller weight since there are too many of them
+      actuation += weights1[i, j * 4 + n_sin_waves] * offset[0] * 0.2
+      actuation += weights1[i, j * 4 + n_sin_waves + 1] * offset[1] * 0.2
       actuation += weights1[i, j * 4 + n_sin_waves + 2] * v[t, i][0] * 0.1
       actuation += weights1[i, j * 4 + n_sin_waves + 3] * v[t, i][1] * 0.1
     actuation += weights1[i, n_objects * 4 + n_sin_waves] * (goal[0] - center[t][0])
@@ -198,7 +199,7 @@ def forward(output=None, visualize=True):
       advance_toi(t)
     else:
       advance_no_toi(t)
-    
+      
     if (t + 1) % interval == 0 and visualize:
       img = np.ones(shape=(vis_resolution, vis_resolution, 3),
                     dtype=np.float32) * 0.8
@@ -276,11 +277,11 @@ def optimize(toi, visualize):
   use_toi = toi
   for i in range(n_hidden):
     for j in range(n_input_states()):
-      weights1[i, j] = np.random.randn() * 0.1
+      weights1[i, j] = np.random.randn() * math.sqrt(2 / (n_hidden + n_input_states()))
       
   for i in range(n_springs):
     for j in range(n_hidden):
-      weights2[i, j] = np.random.randn() * 0.3
+      weights2[i, j] = np.random.randn() * math.sqrt(2 / (n_hidden + n_springs)) * 2
 
   losses = []
   forward('initial', visualize=visualize)

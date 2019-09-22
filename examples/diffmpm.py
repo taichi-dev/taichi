@@ -1,4 +1,5 @@
 import taichi_lang as ti
+import os
 import math
 import numpy as np
 import random
@@ -323,8 +324,26 @@ def robot(scene):
   scene.add_rect(0.25, 0.0, 0.05, 0.1, 3)
   scene.set_n_actuators(4)
 
-
 from renderer_vector import rgb_to_hex
+
+gui = tc.core.GUI("Differentiable MPM", tc.Vectori(1024, 1024))
+canvas = gui.get_canvas()
+
+def visualize(s, folder):
+  canvas.clear(0xFFFFFF)
+  vec = tc.Vector
+  for i in range(n_particles):
+    color = 0x111111
+    aid = actuator_id[i]
+    if aid != -1:
+      act = actuation[s - 1, aid]
+      color = rgb_to_hex((0.5 - act, 0.5 - abs(act), 0.5 + act))
+    canvas.circle(vec(x[s, i][0], x[s, i][1])).radius(2).color(color).finish()
+  canvas.path(tc.Vector(0.05, 0.02), tc.Vector(0.95, 0.02)).radius(3).color(0x0).finish()
+  gui.update()
+
+  os.makedirs(folder, exist_ok=True)
+  gui.screenshot('{}/{:04d}.png'.format(folder, s))
 
 def main():
   tc.set_gdb_trigger()
@@ -345,8 +364,6 @@ def main():
     actuator_id[i] = scene.actuator_id[i]
     particle_type[i] = scene.particle_type[i]
     
-  gui = tc.core.GUI("Differentiable MPM", tc.Vectori(1024, 1024))
-  canvas = gui.get_canvas()
 
   vec = tc.Vector
   losses = []
@@ -365,22 +382,13 @@ def main():
         weights[i, j] -= learning_rate * weights.grad[i, j]
       bias[i] -= learning_rate * bias.grad[i]
 
+
     if iter % 10 == 0:
       # visualize
-      for s in range(63, steps, 64):
-        canvas.clear(0xFFFFFF)
-        # canvas.circle(vec(target[0], target[1])).color(0xED553B).radius(5).finish()
-        # canvas.circle(vec(0.5, 0.5))
-        for i in range(n_particles):
-          color = 0x111111
-          aid = actuator_id[i]
-          if aid != -1:
-            act = actuation[s - 1, aid]
-            color = rgb_to_hex((0.5 - act, 0.5, 0.5 + act))
-          canvas.circle(vec(x[s, i][0], x[s, i][1])).radius(2).color(color).finish()
-        canvas.path(tc.Vector(0.05, 0.02), tc.Vector(0.95, 0.02)).radius(3).color(0x0).finish()
-        gui.update()
-  
+      forward(1500)
+      for s in range(63, 1500, 16):
+        visualize(s, 'diffmpm/iter{:03d}/'.format(iter))
+
   # ti.profiler_print()
   plt.title("Optimization of Initial Velocity")
   plt.ylabel("Loss")

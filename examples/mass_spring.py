@@ -59,7 +59,12 @@ weights2 = scalar()
 bias2 = scalar()
 hidden = scalar()
 
+center = vec()
+
 act = scalar()
+
+def n_input_states():
+  return n_sin_waves + 4 * n_objects + 2
 
 @ti.layout
 def place():
@@ -67,12 +72,13 @@ def place():
   ti.root.dense(ti.i, n_springs).place(spring_anchor_a, spring_anchor_b,
                                        spring_length, spring_stiffness,
                                        spring_actuation)
-  ti.root.dense(ti.ij, (n_springs, n_sin_waves)).place(weights1)
-  ti.root.dense(ti.i, n_springs).place(bias1)
+  ti.root.dense(ti.ij, (n_hidden, n_input_states())).place(weights1)
+  ti.root.dense(ti.i, n_hidden).place(bias1)
   ti.root.dense(ti.ij, (n_springs, n_hidden)).place(weights2)
   ti.root.dense(ti.i, n_springs).place(bias2)
   ti.root.dense(ti.ij, (max_steps, n_hidden)).place(hidden)
   ti.root.dense(ti.ij, (max_steps, n_springs)).place(act)
+  ti.root.dense(ti.i, max_steps).place(center)
   ti.root.place(loss)
   ti.root.lazy_grad()
 
@@ -81,12 +87,28 @@ dt = 0.004
 learning_rate = 25
 
 @ti.kernel
+def compute_center(t: ti.i32):
+  for _ in range(1):
+    c = ti.Vector([0.0, 0.0])
+    for i in ti.static(range(n_objects)):
+      c += x[t, i]
+    center[t] = (1.0 / n_objects) * c
+
+@ti.kernel
 def nn1(t: ti.i32):
   for i in range(n_hidden):
     actuation = 0.0
     for j in ti.static(range(n_sin_waves)):
       actuation += weights1[i, j] * ti.sin(
         spring_omega * t * dt + 2 * math.pi / n_sin_waves * j)
+    for j in ti.static(range(n_objects)):
+      offset = x[t, j] - center[t]
+      # actuation += weights1[i, j * 4 + n_sin_waves] * offset[0]
+      # actuation += weights1[i, j * 4 + n_sin_waves + 1] * offset[1]
+      actuation += weights1[i, j * 4 + n_sin_waves + 2] * v[t, i][0] * 0.1
+      actuation += weights1[i, j * 4 + n_sin_waves + 3] * v[t, i][1] * 0.1
+    actuation += weights1[i, n_objects * 4 + n_sin_waves] * (goal[0] - center[t][0])
+    actuation += weights1[i, n_objects * 4 + n_sin_waves + 1] * (goal[1] - center[t][1])
     actuation += bias1[i]
     actuation = ti.tanh(actuation)
     hidden[t, i] = actuation
@@ -168,6 +190,7 @@ def forward(output=None, visualize=True):
   total_steps = steps if not output else steps * 2
   
   for t in range(1, total_steps):
+    compute_center(t - 1)
     nn1(t - 1)
     nn2(t - 1)
     apply_spring_force(t - 1)
@@ -252,12 +275,12 @@ def optimize(toi, visualize):
   global use_toi
   use_toi = toi
   for i in range(n_hidden):
-    for j in range(n_sin_waves):
+    for j in range(n_input_states()):
       weights1[i, j] = np.random.randn() * 0.1
       
   for i in range(n_springs):
     for j in range(n_hidden):
-      weights2[i, j] = np.random.randn() * 0.1
+      weights2[i, j] = np.random.randn() * 0.3
 
   losses = []
   forward('initial', visualize=visualize)
@@ -271,7 +294,7 @@ def optimize(toi, visualize):
   
     total_norm_sqr = 0
     for i in range(n_springs):
-      for j in range(n_sin_waves):
+      for j in range(n_input_states()):
         total_norm_sqr += weights1.grad[i, j] ** 2
       total_norm_sqr += bias1.grad[i] ** 2
   
@@ -281,7 +304,7 @@ def optimize(toi, visualize):
     gradient_clip = 0.1
     scale = gradient_clip / (total_norm_sqr ** 0.5 + 1e-6)
     for i in range(n_hidden):
-      for j in range(n_sin_waves):
+      for j in range(n_input_states()):
         weights1[i, j] -= scale * weights1.grad[i, j]
       bias1[i] -= scale * bias1.grad[i]
       

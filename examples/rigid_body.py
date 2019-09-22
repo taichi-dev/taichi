@@ -30,6 +30,8 @@ vec = lambda: ti.Vector(2, dt=real)
 
 loss = scalar()
 
+use_toi = False
+
 # ti.cfg.arch = ti.cuda
 
 x = vec()
@@ -241,7 +243,7 @@ def apply_spring_force(t: ti.i32):
 
 
 @ti.kernel
-def advance(t: ti.i32):
+def advance_toi(t: ti.i32):
   for i in range(n_objects):
     s = math.exp(-dt * damping)
     v[t, i] = s * v[t - 1, i] + v_inc[t, i] + dt * gravity * ti.Vector(
@@ -249,6 +251,16 @@ def advance(t: ti.i32):
     x[t, i] = x[t - 1, i] + dt * v[t, i] + x_inc[t, i]
     omega[t, i] = s * omega[t - 1, i] + omega_inc[t, i]
     rotation[t, i] = rotation[t - 1, i] + dt * omega[t, i] + rotation_inc[t, i]
+    
+@ti.kernel
+def advance_no_toi(t: ti.i32):
+  for i in range(n_objects):
+    s = math.exp(-dt * damping)
+    v[t, i] = s * v[t - 1, i] + v_inc[t, i] + dt * gravity * ti.Vector(
+      [0.0, 1.0])
+    x[t, i] = x[t - 1, i] + dt * v[t, i]
+    omega[t, i] = s * omega[t - 1, i] + omega_inc[t, i]
+    rotation[t, i] = rotation[t - 1, i] + dt * omega[t, i]
 
 
 @ti.kernel
@@ -273,7 +285,10 @@ def forward(output=None, visualize=True):
   for t in range(1, total_steps):
     collide(t - 1)
     apply_spring_force(t - 1)
-    advance(t)
+    if use_toi:
+      advance_toi(t)
+    else:
+      advance_no_toi(t)
     
     if (t + 1) % interval == 0 and visualize:
       canvas.clear(0xFFFFFF)
@@ -329,12 +344,6 @@ def forward(output=None, visualize=True):
           canvas.path(tc.Vector(*pt1), tc.Vector(*pt2)).color(0xFBCCAA).radius(5).finish()
 
       canvas.path(tc.Vector(0.05, ground_height), tc.Vector(0.95, ground_height)).color(0x0).radius(5).finish()
-        # renderer.draw_line(pt1, pt2, True)
-      # if output:
-        # renderer.save_fig('rigid_body/{}/{:04d}.png'.format(output, t))
-        #renderer.save_fig('rigid_body/{}/{:04d}.pdf'.format(output, t))
-
-      # renderer.clean_frame()
 
       gui.update()
 
@@ -380,12 +389,13 @@ def setup_robot(objects, springs, h_id):
       spring_actuation[i] = default_actuation
       
 def optimize(toi=True, visualize=True):
+  global use_toi
+  use_toi = toi
   for i in range(n_springs):
     for j in range(n_sin_waves):
       weights[i, j] = np.random.randn() * 0.1
   
   losses = []
-  forward('initial')
   for iter in range(20):
     clear_states()
     
@@ -429,7 +439,7 @@ def main():
     for toi in [False, True]:
       ret[toi] = []
       for i in range(5):
-        losses = optimize(toi=toi, visualize=True)
+        losses = optimize(toi=toi, visualize=False)
         # losses = gaussian_filter(losses, sigma=3)
         ret[toi].append(losses)
   

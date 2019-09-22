@@ -127,7 +127,7 @@ def robotB():
   back = add_object([0.08, 0.22], [0.03, 0.10])
   front = add_object([0.22, 0.22], [0.03, 0.10])
 
-  rest_length = 0.23
+  rest_length = 0.22
   stiffness = 50
   act = 0.03
   add_spring(body, back, [0.08, 0.02], [0.0, -0.08], rest_length, stiffness, actuation=act)

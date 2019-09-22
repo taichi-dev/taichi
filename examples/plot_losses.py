@@ -38,7 +38,7 @@ for id, (key, item) in enumerate(losses.items()):
 fig = plt.gcf()
 plt.legend()
 fig.set_size_inches(4, 3)
-plt.title('Mass Spring Robot 1')
+plt.title('Rigid Body Robot 1')
 plt.ylabel('Loss')
 plt.xlabel('Gradient Descent Iterations')
 plt.tight_layout()

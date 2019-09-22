@@ -51,9 +51,15 @@ spring_stiffness = scalar()
 spring_actuation = scalar()
 
 n_sin_waves = 10
-weights = scalar()
-bias = scalar()
+weights1 = scalar()
+bias1 = scalar()
 
+n_hidden = 32
+weights2 = scalar()
+bias2 = scalar()
+hidden = scalar()
+
+act = scalar()
 
 @ti.layout
 def place():
@@ -61,8 +67,12 @@ def place():
   ti.root.dense(ti.i, n_springs).place(spring_anchor_a, spring_anchor_b,
                                        spring_length, spring_stiffness,
                                        spring_actuation)
-  ti.root.dense(ti.ij, (n_springs, n_sin_waves)).place(weights)
-  ti.root.dense(ti.i, n_springs).place(bias)
+  ti.root.dense(ti.ij, (n_springs, n_sin_waves)).place(weights1)
+  ti.root.dense(ti.i, n_springs).place(bias1)
+  ti.root.dense(ti.ij, (n_springs, n_hidden)).place(weights2)
+  ti.root.dense(ti.i, n_springs).place(bias2)
+  ti.root.dense(ti.ij, (max_steps, n_hidden)).place(hidden)
+  ti.root.dense(ti.ij, (max_steps, n_springs)).place(act)
   ti.root.place(loss)
   ti.root.lazy_grad()
 
@@ -70,6 +80,16 @@ def place():
 dt = 0.004
 learning_rate = 25
 
+@ti.kernel
+def nn1(t: ti.i32):
+  for i in range(n_springs):
+    actuation = 0.0
+    for j in ti.static(range(n_sin_waves)):
+      actuation += weights1[i, j] * ti.sin(
+        spring_omega * t * dt + 2 * math.pi / n_sin_waves * j)
+    actuation += bias1[i]
+    actuation = ti.tanh(actuation)
+    act[t, i] = actuation
 
 @ti.kernel
 def apply_spring_force(t: ti.i32):
@@ -81,14 +101,7 @@ def apply_spring_force(t: ti.i32):
     dist = pos_a - pos_b
     length = dist.norm() + 1e-4
     
-    actuation = 0.0
-    for j in ti.static(range(n_sin_waves)):
-      actuation += weights[i, j] * ti.sin(
-        spring_omega * t * dt + 2 * math.pi / n_sin_waves * j)
-    actuation += bias[i]
-    actuation = ti.tanh(actuation)
-    
-    target_length = spring_length[i] * (1.0 + spring_actuation[i] * actuation)
+    target_length = spring_length[i] * (1.0 + spring_actuation[i] * act[t, i])
     impulse = dt * (length - target_length) * spring_stiffness[
       i] / length * dist
     
@@ -145,6 +158,7 @@ def forward(output=None, visualize=True):
   total_steps = steps if not output else steps * 2
   
   for t in range(1, total_steps):
+    nn1(t - 1)
     apply_spring_force(t - 1)
     if use_toi:
       advance_toi(t)
@@ -201,18 +215,8 @@ def clear_states():
       v_inc[t, i] = ti.Vector([0.0, 0.0])
       v_inc.grad[t, i] = ti.Vector([0.0, 0.0])
 
-
-@ti.kernel
-def clear_weights():
-  for i in range(n_springs):
-    bias.grad[i] = 0.0
-    for j in range(n_sin_waves):
-      weights.grad[i, j] = 0.0
-
-
 def clear():
   clear_states()
-  clear_weights()
 
 
 def setup_robot(objects, springs):
@@ -238,7 +242,7 @@ def optimize(toi, visualize):
   use_toi = toi
   for i in range(n_springs):
     for j in range(n_sin_waves):
-      weights[i, j] = np.random.randn() * 0.5
+      weights1[i, j] = np.random.randn() * 0.5
 
   losses = []
   forward('initial', visualize=visualize)
@@ -253,8 +257,8 @@ def optimize(toi, visualize):
     total_norm_sqr = 0
     for i in range(n_springs):
       for j in range(n_sin_waves):
-        total_norm_sqr += weights.grad[i, j] ** 2
-      total_norm_sqr += bias.grad[i] ** 2
+        total_norm_sqr += weights1.grad[i, j] ** 2
+      total_norm_sqr += bias1.grad[i] ** 2
   
     print(total_norm_sqr)
   
@@ -263,8 +267,8 @@ def optimize(toi, visualize):
     scale = gradient_clip / (total_norm_sqr ** 0.5 + 1e-6)
     for i in range(n_springs):
       for j in range(n_sin_waves):
-        weights[i, j] -= scale * weights.grad[i, j]
-      bias[i] -= scale * bias.grad[i]
+        weights1[i, j] -= scale * weights1.grad[i, j]
+      bias1[i] -= scale * bias1.grad[i]
     losses.append(loss[None])
 
   return losses

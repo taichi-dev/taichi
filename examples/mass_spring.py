@@ -300,15 +300,20 @@ def optimize(toi, visualize):
     print('Iter=', iter, 'Loss=', loss[None])
   
     total_norm_sqr = 0
-    for i in range(n_springs):
+    for i in range(n_hidden):
       for j in range(n_input_states()):
         total_norm_sqr += weights1.grad[i, j] ** 2
       total_norm_sqr += bias1.grad[i] ** 2
+      
+    for i in range(n_springs):
+      for j in range(n_hidden):
+        total_norm_sqr += weights2.grad[i, j] ** 2
+      total_norm_sqr += bias2.grad[i] ** 2
   
     print(total_norm_sqr)
   
     # scale = learning_rate * min(1.0, gradient_clip / total_norm_sqr ** 0.5)
-    gradient_clip = 0.1
+    gradient_clip = 0.2
     scale = gradient_clip / (total_norm_sqr ** 0.5 + 1e-6)
     for i in range(n_hidden):
       for j in range(n_input_states()):

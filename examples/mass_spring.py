@@ -283,7 +283,7 @@ def optimize(toi, visualize):
   use_toi = toi
   for i in range(n_hidden):
     for j in range(n_input_states()):
-      weights1[i, j] = np.random.randn() * math.sqrt(2 / (n_hidden + n_input_states()))
+      weights1[i, j] = np.random.randn() * math.sqrt(2 / (n_hidden + n_input_states())) * 2
       
   for i in range(n_springs):
     for j in range(n_hidden):
@@ -334,16 +334,22 @@ def main():
   setup_robot(*robots[robot_id]())
 
   if task == 'plot':
+    ret = {}
     for toi in [False, True]:
+      ret[toi] = []
       for i in range(5):
         losses = optimize(toi=toi, visualize=False)
-        losses = gaussian_filter(losses, sigma=3)
+        # losses = gaussian_filter(losses, sigma=3)
         plt.plot(losses, 'g' if toi else 'r')
+        ret[toi].append(losses)
 
-    plt.title('Mass Spring (Red is no TOI, green is TOI)')
-    plt.xlabel("Gradient Descent Iteration")
-    plt.ylabel("Loss")
-    plt.show()
+    import pickle
+    pickle.dump(ret, open('losses.pkl', 'wb'))
+    print("Losses saved to losses.pkl")
+    # plt.title('Mass Spring (Red is no TOI, green is TOI)')
+    # plt.xlabel("Gradient Descent Iteration")
+    # plt.ylabel("Loss")
+    # plt.show()
   else:
     optimize(toi=True, visualize=True)
     clear()

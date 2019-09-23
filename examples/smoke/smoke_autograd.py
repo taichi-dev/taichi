@@ -120,10 +120,11 @@ if __name__ == '__main__':
     import time
     for i in range(10):
       t = time.time()
+      r = objective(init_dx_and_dy)
+      print('forward time', (time.time() - t) * 1000, 'ms/iter')
+      t = time.time()
       r = objective_with_grad(init_dx_and_dy)
-      print(r[0].dtype)
-      print(r[1].dtype)
-      print((time.time() - t) * 1000, 'ms/iter')
+      print('total time', (time.time() - t) * 1000, 'ms/iter')
 
     fig = plt.figure(figsize=(8,8))
     ax = fig.add_subplot(111, frameon=False)

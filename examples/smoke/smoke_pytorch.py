@@ -97,10 +97,12 @@ def main():
   for opt in range(num_iterations):
     t = time.time()
     smoke = forward(opt, initial_smoke, vx, vy, opt == (num_iterations - 1))
-
     loss = ((smoke - target)**2).mean()
+    print('forward time', (time.time() - t) * 1000, 'ms')
+
+    t = time.time()
     loss.backward()
-    print('time', (time.time() - t) * 1000, 'ms')
+    print('backward time', (time.time() - t) * 1000, 'ms')
 
     with torch.no_grad():
       vx -= learning_rate * vx.grad.data

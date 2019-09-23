@@ -29,7 +29,7 @@ target = scalar()
 smoke = scalar()
 loss = scalar()
 
-# ti.cfg.arch = ti.cuda
+ti.cfg.arch = ti.cuda
 
 @ti.layout
 def place():
@@ -151,6 +151,7 @@ advect_v = advect(v, v_updated, -1)
 advect_smoke = advect(smoke, smoke, 0)
 
 def forward(output=None):
+  T = time.time()
   for t in range(1, steps):
     advect_v(t)
     
@@ -170,6 +171,7 @@ def forward(output=None):
       cv2.waitKey(1)
       matplotlib.image.imsave("{}/{:04d}.png".format(output, t), 255 * smoke_)
   compute_loss()
+  print('forward time', (time.time() - T) * 1000, 'ms')
 
 
 def main():
@@ -187,7 +189,7 @@ def main():
     with ti.Tape(loss):
       output = "test" if opt % 10 == 0 else None
       forward(output)
-    print((time.time() - t) * 1000, 'ms')
+    print('total time', (time.time() - t) * 1000, 'ms')
     
     print('Iter', opt, ' Loss =', loss[None])
     apply_grad()

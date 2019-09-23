@@ -187,7 +187,7 @@ def compute_loss(t: ti.i32):
 gui = tc.core.GUI("Mass Spring Robot", tc.Vectori(1024, 1024))
 canvas = gui.get_canvas()
 
-from .renderer_vector import rgb_to_hex
+from renderer_vector import rgb_to_hex
 
 def forward(output=None, visualize=True):
   if random.random() > 0.5:
@@ -241,7 +241,7 @@ def forward(output=None, visualize=True):
         if i == head_id:
           color = (0.8, 0.2, 0.3)
         circle(x[t, i][0], x[t, i][1], color)
-      circle(goal[None][0], goal[None][1], (0.6, 0.2, 0.2))
+      # circle(goal[None][0], goal[None][1], (0.6, 0.2, 0.2))
       
       gui.update()
       # if output:

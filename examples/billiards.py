@@ -31,7 +31,6 @@ init_v = vec()
 x = vec()
 v = vec()
 impulse = vec()
-x_inc = vec()
 
 billiard_layers = 4
 n_balls = 1 + (1 + billiard_layers) * billiard_layers // 2
@@ -124,7 +123,7 @@ def forward(visualize=False, output=None):
       x[0, count] = [i * 2 * radius + 0.5,
                      j * 2 * radius + 0.5 - i * radius * 0.7]
 
-  pixel_radius = int(radius * 1024)
+  pixel_radius = int(radius * 1024) + 1
 
   canvas = gui.get_canvas()
   for t in range(1, steps):
@@ -172,7 +171,11 @@ def optimize():
     clear()
 
     with ti.Tape(loss):
-      forward(visualize=True)
+      if iter % 20 == 0:
+        output = 'iter{:04d}'.format(iter)
+      else:
+        output = None
+      forward(visualize=True, output=output)
 
     print('Iter=', iter, 'Loss=', loss[None])
     for d in range(2):

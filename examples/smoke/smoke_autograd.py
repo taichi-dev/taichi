@@ -10,9 +10,13 @@ from autograd import value_and_grad
 from scipy.optimize import minimize
 from scipy.misc import imread
 
+import cv2
+
 import matplotlib
 import matplotlib.pyplot as plt
 import os
+
+n_grid = 256
 
 # Fluid simulation code based on
 # "Real-Time Fluid Dynamics for Games" by Jos Stam
@@ -85,9 +89,8 @@ if __name__ == '__main__':
     os.system("mkdir -p output_autograd")
 
     print("Loading initial and target states...")
-    init_smoke = imread(os.path.join(basepath, 'init_smoke.png'))[:,:,0]
-    target = imread('peace.png')[::2,::2,3]
-    #target = imread(os.path.join(basepath, 'skull.png'))[::2,::2]
+    init_smoke = cv2.resize(imread(os.path.join(basepath, 'init_smoke.png')), (n_grid, n_grid))[:, :, 0]
+    target = cv2.resize(imread('taichi.png'), (n_grid, n_grid))[:, :, 0]
     rows, cols = target.shape
 
     init_dx_and_dy = np.zeros((2, rows, cols)).ravel()

@@ -1,4 +1,5 @@
 import taichi_lang as ti
+import time
 import math
 import numpy as np
 import cv2
@@ -27,7 +28,6 @@ v_updated = vector()
 target = scalar()
 smoke = scalar()
 loss = scalar()
-
 
 # ti.cfg.arch = ti.cuda
 
@@ -183,9 +183,11 @@ def main():
       smoke[0, i, j] = initial_smoke_img[i, j]
   
   for opt in range(num_iterations):
+    t = time.time()
     with ti.Tape(loss):
       output = "test" if opt % 10 == 0 else None
       forward(output)
+    print((time.time() - t) * 1000, 'ms')
     
     print('Iter', opt, ' Loss =', loss[None])
     apply_grad()

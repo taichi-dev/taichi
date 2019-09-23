@@ -1,5 +1,5 @@
 # TO run on CPU:
-#   CUDA_VISIBLE_DEVICES='' python3 smoke_pytorch.py
+#   CUDA_VISIBLE_DEVICES='' OMP_NUM_THREADS=1 python3 smoke_pytorch.py
 
 import torch
 import time

@@ -244,8 +244,8 @@ def forward(output=None, visualize=True):
       # circle(goal[None][0], goal[None][1], (0.6, 0.2, 0.2))
       
       gui.update()
-      # if output:
-      #   cv2.imwrite('mass_spring/{}/{:04d}.png'.format(output, t), img * 255)
+      if output:
+        gui.screenshot('mass_spring/{}/{:04d}.png'.format(output, t))
   
   loss[None] = 0
   compute_loss(steps - 1)
@@ -295,7 +295,7 @@ def optimize(toi, visualize):
       weights2[i, j] = np.random.randn() * math.sqrt(2 / (n_hidden + n_springs)) * 3
 
   losses = []
-  forward('initial', visualize=visualize)
+  forward('initial{}'.format(robot_id), visualize=visualize)
   for iter in range(100):
     clear()
   
@@ -333,14 +333,15 @@ def optimize(toi, visualize):
     losses.append(loss[None])
 
   return losses
+  
+robot_id = 0
+if len(sys.argv) != 3:
+  print("Usage: python3 mass_spring.py [robot_id=0, 1, 2, ...] [task]")
+else:
+  robot_id = int(sys.argv[1])
+  task = sys.argv[2]
 
 def main():
-  robot_id = 0
-  if len(sys.argv) != 3:
-    print("Usage: python3 mass_spring.py [robot_id=0, 1, 2, ...] [task]")
-  else:
-    robot_id = int(sys.argv[1])
-    task = sys.argv[2]
 
   setup_robot(*robots[robot_id]())
 
@@ -360,7 +361,7 @@ def main():
   else:
     optimize(toi=True, visualize=True)
     clear()
-    forward('final')
+    forward('final{}'.format(robot_id))
 
 
 

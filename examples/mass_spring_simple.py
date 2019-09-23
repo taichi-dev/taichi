@@ -59,12 +59,23 @@ def apply_spring_force(t: ti.i32):
     ti.atomic_add(force[t, a],  -F)
     ti.atomic_add(force[t, b],  F)
 
+friction = 0.01
+
 @ti.kernel
 def time_integrate(t: ti.i32):
   for i in range(n_objects):
     s = math.exp(-dt * damping)
-    v[t, i] = s * v[t - 1, i] + dt * force[t, i] / mass
-    x[t, i] = x[t - 1, i] + dt * v[t, i]
+    new_v = s * v[t - 1, i] + dt * force[t, i] / mass
+    new_x = x[t - 1, i] + dt * new_v
+    if new_x[0] > 0.4 and new_v[0] > 0:
+      # friction projection
+      if new_v[1] > 0:
+        new_v[1] -= ti.min(new_v[1], friction * new_v[0])
+      if new_v[1] < 0:
+        new_v[1] += ti.min(-new_v[1], friction * new_v[0])
+      new_v[0] = 0
+    v[t, i] = new_v
+    x[t, i] = new_x
 
 
 @ti.kernel
@@ -136,7 +147,7 @@ def clear_tensors():
   clear_springs()
 
 def main():
-  x[0, 0] = [0.3, 0.3]
+  x[0, 0] = [0.3, 0.5]
   x[0, 1] = [0.3, 0.4]
   x[0, 2] = [0.4, 0.4]
   

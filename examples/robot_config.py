@@ -5,6 +5,7 @@ springs = []
 
 def add_object(x, halfsize, rotation=0):
   objects.append([x, halfsize, rotation])
+  return len(objects) - 1
   
 # actuation 0.0 will be translated into default actuation
 def add_spring(a, b, offset_a, offset_b, length, stiffness, actuation=0.0):
@@ -28,10 +29,10 @@ def robotA():
   # -1 means the spring is a joint
   add_spring(0, 4, [0.1, 0], [0, -0.05], -1, s)
   
-  return objects, springs
+  return objects, springs, 0
 
 
-def robotB():
+def robotC():
   add_object(x=[0.3, 0.25], halfsize=[0.15, 0.03])
   add_object(x=[0.2, 0.15], halfsize=[0.03, 0.02])
   add_object(x=[0.3, 0.15], halfsize=[0.03, 0.02])
@@ -46,7 +47,7 @@ def robotB():
   add_spring(0, 3, [0.03, 0.00], [0.0, 0.0], l, s)
   add_spring(0, 3, [0.1, 0.00], [0.0, 0.0], l, s)
   
-  return objects, springs
+  return objects, springs, 3
 
 
 l_thigh_init_ang = 10
@@ -118,9 +119,24 @@ def robotLeg():
   add_spring(5, 6, [0, -thigh_half_length], [-foot_half_length,0], -1, s)
 
 
+  return objects, springs, 3
 
-  return objects, springs
+
+def robotB():
+  body = add_object([0.15, 0.25], [0.1, 0.03])
+  back = add_object([0.08, 0.22], [0.03, 0.10])
+  front = add_object([0.22, 0.22], [0.03, 0.10])
+
+  rest_length = 0.22
+  stiffness = 50
+  act = 0.03
+  add_spring(body, back, [0.08, 0.02], [0.0, -0.08], rest_length, stiffness, actuation=act)
+  add_spring(body, front, [-0.08, 0.02], [0.0, -0.08], rest_length, stiffness, actuation=act)
+
+  add_spring(body, back, [-0.08, 0.0], [0.0, 0.03], -1, stiffness)
+  add_spring(body, front, [0.08, 0.0], [0.0, 0.03], -1, stiffness)
+
+  return objects, springs, body
 
 
-#robots = [robotA, robotB]
-robots = [robotLeg]
+robots = [robotA, robotB, robotLeg]

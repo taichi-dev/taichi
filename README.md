@@ -23,6 +23,7 @@ Supports Ubuntu 14.04/16.04/18.04, ArchLinux, Mac OS X. For GPU support, CUDA 9.
  ```
  - Execute `source ~/.bashrc` (or `source ~/.zshrc`) to reload shell config.
  - Execute `ti test` to run all the tests. It may take a around 20 minutes to run all tests.
+ - Check out `examples` for runnable examples. Run them with `python3`.
 
 # Folder Structure
 Key folders are

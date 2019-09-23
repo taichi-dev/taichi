@@ -29,10 +29,15 @@ polar_decompose = Matrix.polar_decompose
 determinant = Matrix.determinant
 set_default_fp = pytaichi.set_default_fp
 
-def Tape(loss):
+def Tape(loss, clear_gradients=True):
+  if clear_gradients:
+    clear_all_gradients()
   loss[None] = 0
   loss.grad[None] = 1
   return runtime.get_tape(loss)
+
+def clear_all_gradients():
+  core.get_current_program().clear_all_gradients()
 
 schedules = [parallelize, vectorize, block_dim, cache]
 

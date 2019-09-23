@@ -9,13 +9,13 @@ from imageio import imread, imwrite
 real = ti.f32
 ti.set_default_fp(real)
 
-num_iterations = 50
-n_grid = 110
+num_iterations = 500
+n_grid = 256
 dx = 1.0 / n_grid
 num_iterations_gauss_seidel = 10
 p_dims = num_iterations_gauss_seidel + 1
 steps = 100
-learning_rate = 100
+learning_rate = 200
 
 scalar = lambda: ti.var(dt=real)
 vector = lambda: ti.Vector(2, dt=real)
@@ -29,7 +29,7 @@ smoke = scalar()
 loss = scalar()
 
 
-# ti.cfg.arch = ti.cuda
+ti.cfg.arch = ti.cuda
 
 @ti.layout
 def place():
@@ -173,9 +173,8 @@ def forward(output=None):
 
 
 def main():
-  print("Loading initial and target states...")
-  initial_smoke_img = imread("init_smoke.png")[:, :, 0] / 255.0
-  target_img = imread("peace.png")[::2, ::2, 3] / 255.0
+  initial_smoke_img = cv2.resize(imread("init_smoke.png")[:, :, 0], (n_grid, n_grid)) / 255.0
+  target_img = cv2.resize(cv2.imread('taichi.png'), (n_grid, n_grid))[:,:,0] / 255.0
   
   for i in range(n_grid):
     for j in range(n_grid):

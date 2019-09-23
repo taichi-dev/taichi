@@ -1,12 +1,14 @@
 from robot_config import robots
 import sys
-
 import taichi_lang as ti
 import math
 import numpy as np
-import cv2
 import os
-import matplotlib.pyplot as plt
+
+from renderer_vector import VectorRenderer
+import time
+
+renderer = VectorRenderer()
 
 real = ti.f32
 ti.set_default_fp(real)
@@ -24,7 +26,8 @@ vec = lambda: ti.Vector(2, dt=real)
 
 loss = scalar()
 
-# On CPU this may not work since during AD, min's adjoint uses cmp_le, which might return -1 instead of 1
+use_toi = False
+
 # ti.cfg.arch = ti.cuda
 
 x = vec()
@@ -39,6 +42,8 @@ inverse_mass = scalar()
 inverse_inertia = scalar()
 
 v_inc = vec()
+x_inc = vec()
+rotation_inc = scalar()
 omega_inc = scalar()
 
 head_id = 3
@@ -75,8 +80,8 @@ bias = scalar()
 
 @ti.layout
 def place():
-  ti.root.dense(ti.l, max_steps).dense(ti.i, n_objects).place(x, v, rotation,
-                                                              omega, v_inc,
+  ti.root.dense(ti.l, max_steps).dense(ti.i, n_objects).place(x, v, rotation, rotation_inc,
+                                                              omega, v_inc, x_inc,
                                                               omega_inc)
   ti.root.dense(ti.i, n_objects).place(halfsize, inverse_mass, inverse_inertia)
   ti.root.dense(ti.i, n_springs).place(spring_anchor_a, spring_anchor_b,
@@ -128,10 +133,18 @@ def to_world(t, i, rela_x):
 
 
 @ti.func
-def apply_impulse(t, i, impulse, location):
-  ti.atomic_add(v_inc[t + 1, i], impulse * inverse_mass[i])
-  ti.atomic_add(omega_inc[t + 1, i],
-                cross(location - x[t, i], impulse) * inverse_inertia[i])
+def apply_impulse(t, i, impulse, location, toi_input):
+  # ti.print(toi)
+  delta_v = impulse * inverse_mass[i]
+  delta_omega = cross(location - x[t, i], impulse) * inverse_inertia[i]
+
+  toi = ti.min(ti.max(0.0, toi_input), dt)
+
+  ti.atomic_add(x_inc[t + 1, i], toi * (-delta_v))
+  ti.atomic_add(rotation_inc[t + 1, i], toi * (-delta_omega))
+
+  ti.atomic_add(v_inc[t + 1, i], delta_v)
+  ti.atomic_add(omega_inc[t + 1, i], delta_omega)
 
 
 @ti.kernel
@@ -160,20 +173,27 @@ def collide(t: ti.i32):
       
       impulse = 0.0
       timpulse = 0.0
-      if rela_v_ground < 0 and corner_x[1] < ground_height:
+      new_corner_x = corner_x + dt * corner_v
+      toi = 0.0
+      if rela_v_ground < 0 and new_corner_x[1] < ground_height:
         impulse = -(1 + elasticity) * rela_v_ground / impulse_contribution
         if impulse > 0:
           # friction
           timpulse = -corner_v.dot(tao) / timpulse_contribution
           timpulse = ti.min(friction * impulse,
                             ti.max(-friction * impulse, timpulse))
-      
-      if corner_x[1] < ground_height:
+          if corner_x[1] > ground_height:
+            toi = -(corner_x[1] - ground_height) / ti.min(corner_v[1], 1e-3)
+
+      apply_impulse(t, i, impulse * normal + timpulse * tao, new_corner_x, toi)
+
+      penalty = 0.0
+      if new_corner_x[1] < ground_height:
         # apply penalty
-        impulse = impulse - dt * penalty * (
-            corner_x[1] - ground_height) / impulse_contribution
-      
-      apply_impulse(t, i, impulse * normal + timpulse * tao, corner_x)
+        penalty = -dt * penalty * (
+            new_corner_x[1] - ground_height) / impulse_contribution
+
+      apply_impulse(t, i, penalty * normal, new_corner_x, 0)
 
 
 @ti.kernel
@@ -214,12 +234,22 @@ def apply_spring_force(t: ti.i32):
       # project relative velocity
       impulse += rela_vel_norm / impulse_contribution * impulse_dir
     
-    apply_impulse(t, a, -impulse, pos_a)
-    apply_impulse(t, b, impulse, pos_b)
+    apply_impulse(t, a, -impulse, pos_a, 0.0)
+    apply_impulse(t, b, impulse, pos_b, 0.0)
 
 
 @ti.kernel
-def advance(t: ti.i32):
+def advance_toi(t: ti.i32):
+  for i in range(n_objects):
+    s = math.exp(-dt * damping)
+    v[t, i] = s * v[t - 1, i] + v_inc[t, i] + dt * gravity * ti.Vector(
+      [0.0, 1.0])
+    x[t, i] = x[t - 1, i] + dt * v[t, i] + x_inc[t, i]
+    omega[t, i] = s * omega[t - 1, i] + omega_inc[t, i]
+    rotation[t, i] = rotation[t - 1, i] + dt * omega[t, i] + rotation_inc[t, i]
+    
+@ti.kernel
+def advance_no_toi(t: ti.i32):
   for i in range(n_objects):
     s = math.exp(-dt * damping)
     v[t, i] = s * v[t - 1, i] + v_inc[t, i] + dt * gravity * ti.Vector(
@@ -232,12 +262,14 @@ def advance(t: ti.i32):
 @ti.kernel
 def compute_loss(t: ti.i32):
   loss[None] = (x[t, head_id] - ti.Vector(goal)).norm()
-  # loss[None] = 10 * ti.abs(x[t, head_id][0] - goal[0]) + ti.abs(x[t, head_id][1] - goal[1])
 
+import taichi as tc
+gui = tc.core.GUI('Rigid Body Simulation', tc.Vectori(1024, 1024))
+canvas = gui.get_canvas()
 
-def forward(output=None):
+def forward(output=None, visualize=True):
   initialize_properties()
-  
+
   interval = vis_interval
   total_steps = steps
   if output:
@@ -248,13 +280,14 @@ def forward(output=None):
   for t in range(1, total_steps):
     collide(t - 1)
     apply_spring_force(t - 1)
-    advance(t)
+    if use_toi:
+      advance_toi(t)
+    else:
+      advance_no_toi(t)
     
-    if (t + 1) % interval == 0:
-      img = np.ones(shape=(vis_resolution, vis_resolution, 3),
-                    dtype=np.float32)
-      
-      color = (0.3, 0.5, 0.9)
+    if (t + 1) % interval == 0 and visualize:
+      canvas.clear(0xFFFFFF)
+
       for i in range(n_objects):
         points = []
         for k in range(4):
@@ -266,26 +299,12 @@ def forward(output=None):
           pos = np.array(
             [x[t, i][0], x[t, i][1]]) + offset_scale * rot_matrix @ np.array(
             [halfsize[i][0], halfsize[i][1]])
-          points.append(
-            (int(pos[0] * vis_resolution),
-             vis_resolution - int(pos[1] * vis_resolution)))
-        
-        cv2.fillConvexPoly(img, points=np.array(points), color=color)
-      
-      y = int((1 - ground_height) * vis_resolution)
-      cv2.line(img, (0, y), (vis_resolution - 2, y), color=(0.1, 0.1, 0.1),
-               thickness=3)
-      
-      def circle(x, y, color):
-        radius = 0.02
-        cv2.circle(img, center=(
-          int(vis_resolution * x), int(vis_resolution * (1 - y))),
-                   radius=int(radius * vis_resolution), color=color,
-                   thickness=-1)
-      
-      circle(x[t, head_id][0], x[t, head_id][1], (0.2, 0.3, 0.8))
-      circle(goal[0], goal[1], (0.9, 0.3, 0.2))
-      
+
+          points.append((pos[0], pos[1]))
+
+        for k in range(4):
+          canvas.path(tc.Vector(*points[k]), tc.Vector(*points[(k + 1) % 4])).color(0x0).radius(2).finish()
+
       for i in range(n_springs):
         def get_world_loc(i, offset):
           rot = rotation[t, i]
@@ -294,21 +313,22 @@ def forward(output=None):
           pos = np.array(
             [[x[t, i][0]], [x[t, i][1]]]) + rot_matrix @ np.array(
             [[offset[0]], [offset[1]]])
-          pos = pos * vis_resolution
-          return (int(pos[0, 0]), vis_resolution - int(pos[1, 0]))
+          return pos
         
         pt1 = get_world_loc(spring_anchor_a[i], spring_offset_a[i])
         pt2 = get_world_loc(spring_anchor_b[i], spring_offset_b[i])
-        
-        act = 0
-        
-        cv2.line(img, pt1, pt2, (0.5 + act, 0.5, 0.5 - act), thickness=6)
-      
-      cv2.imshow('img', img)
-      cv2.waitKey(1)
-      if output:
-        cv2.imwrite('rigid_body/{}/{:04d}.png'.format(output, t), img * 255)
-  
+
+        if spring_length[i] == -1:
+          canvas.path(tc.Vector(*pt1), tc.Vector(*pt2)).color(0x000000).radius(9).finish()
+          canvas.path(tc.Vector(*pt1), tc.Vector(*pt2)).color(0xFF2233).radius(7).finish()
+        else:
+          canvas.path(tc.Vector(*pt1), tc.Vector(*pt2)).color(0x000000).radius(7).finish()
+          canvas.path(tc.Vector(*pt1), tc.Vector(*pt2)).color(0xFBCCAA).radius(5).finish()
+
+      canvas.path(tc.Vector(0.05, ground_height), tc.Vector(0.95, ground_height)).color(0x0).radius(5).finish()
+
+      gui.update()
+
   loss[None] = 0
   compute_loss(steps - 1)
 
@@ -317,54 +337,15 @@ def forward(output=None):
 def clear_states():
   for t in range(0, max_steps):
     for i in range(0, n_objects):
-      x.grad[t, i] = ti.Vector([0.0, 0.0])
-      v.grad[t, i] = ti.Vector([0.0, 0.0])
-      rotation.grad[t, i] = 0.0
-      omega.grad[t, i] = 0.0
-      
       v_inc[t, i] = ti.Vector([0.0, 0.0])
+      x_inc[t, i] = ti.Vector([0.0, 0.0])
+      rotation_inc[t, i] = 0.0
       omega_inc[t, i] = 0.0
       
-      v_inc.grad[t, i] = ti.Vector([0.0, 0.0])
-      omega_inc.grad[t, i] = 0.0
 
-
-@ti.kernel
-def clear_objects():
-  for i in range(0, n_objects):
-    halfsize.grad[i] = [0.0, 0.0]
-    inverse_inertia.grad[i] = 0
-    inverse_mass.grad[i] = 0
-
-
-@ti.kernel
-def clear_springs():
-  for i in range(0, n_springs):
-    spring_actuation.grad[i] = 0.0
-    spring_phase.grad[i] = 0.0
-    spring_offset_a.grad[i] = [0.0, 0.0]
-    spring_offset_b.grad[i] = [0.0, 0.0]
-    spring_stiffness.grad[i] = 0.0
-    spring_length.grad[i] = 0.0
-
-
-@ti.kernel
-def clear_weights():
-  for i in range(n_springs):
-    bias.grad[i] = 0.0
-    for j in range(n_sin_waves):
-      weights.grad[i, j] = 0.0
-
-
-def clear():
-  clear_states()
-  clear_objects()
-  clear_springs()
-  clear_weights()
-
-
-
-def setup_robot(objects, springs):
+def setup_robot(objects, springs, h_id):
+  global head_id
+  head_id = h_id
   global n_objects, n_springs
   n_objects = len(objects)
   n_springs = len(springs)
@@ -388,25 +369,20 @@ def setup_robot(objects, springs):
       spring_actuation[i] = s[6]
     else:
       spring_actuation[i] = default_actuation
-
-def main():
-  robot_id = 0
-  if len(sys.argv) != 2:
-    print("Usage: python3 rigid_body.py [robot_id=0, 1, 2, ...]")
-  else:
-    robot_id = int(sys.argv[1])
-  setup_robot(*robots[robot_id]())
-  
+      
+def optimize(toi=True, visualize=True):
+  global use_toi
+  use_toi = toi
   for i in range(n_springs):
     for j in range(n_sin_waves):
       weights[i, j] = np.random.randn() * 0.1
   
-  forward('initial')
-  for iter in range(50):
-    clear()
+  losses = []
+  for iter in range(20):
+    clear_states()
     
     with ti.Tape(loss):
-      forward()
+      forward(visualize=visualize)
     
     print('Iter=', iter, 'Loss=', loss[None])
     
@@ -418,13 +394,45 @@ def main():
     
     print(total_norm_sqr)
     
-    scale = learning_rate * min(1.0, gradient_clip / total_norm_sqr ** 0.5)
+    norm = total_norm_sqr ** 0.5
+    scale = learning_rate * min(1.0, gradient_clip / (norm + 1e-4))
+    if norm > 1e3:
+      continue
     for i in range(n_springs):
       for j in range(n_sin_waves):
         weights[i, j] -= scale * weights.grad[i, j]
       bias[i] -= scale * bias.grad[i]
+    losses.append(loss[None])
+  return losses
   
-  clear()
+
+def main():
+  robot_id = 0
+  if len(sys.argv) != 3:
+    print("Usage: python3 rigid_body.py [robot_id=0, 1, 2, ...] cmd")
+  else:
+    robot_id = int(sys.argv[1])
+    cmd = sys.argv[2]
+  print(robot_id, cmd)
+  setup_robot(*robots[robot_id]())
+  
+  if cmd == 'plot':
+    ret = {}
+    for toi in [False, True]:
+      ret[toi] = []
+      for i in range(5):
+        losses = optimize(toi=toi, visualize=False)
+        # losses = gaussian_filter(losses, sigma=3)
+        ret[toi].append(losses)
+  
+    import pickle
+    pickle.dump(ret, open('losses.pkl', 'wb'))
+    print("Losses saved to losses.pkl")
+  else:
+    optimize(toi=True, visualize=True)
+  
+  
+  clear_states()
   forward('final')
 
 

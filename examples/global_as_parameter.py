@@ -37,6 +37,16 @@ with ti.Tape(loss):
   double1()
   double2()
   compute_loss()
+  
+ti.clear_all_gradients()
+
+for i in range(16):
+  print(z[i], x.grad[i])
+
+with ti.Tape(loss):
+  double1()
+  double2()
+  compute_loss()
 
 for i in range(16):
   print(z[i], x.grad[i])

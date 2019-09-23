@@ -306,6 +306,8 @@ import taichi as tc
 gui = tc.core.GUI('Rigid Body Simulation', tc.Vectori(1024, 1024))
 canvas = gui.get_canvas()
 
+from renderer_vector import rgb_to_hex
+
 def forward(output=None, visualize=True):
   
   initialize_properties()
@@ -313,6 +315,7 @@ def forward(output=None, visualize=True):
   interval = vis_interval
   total_steps = steps
   if output:
+    print(output)
     interval = output_vis_interval
     os.makedirs('rigid_body/{}/'.format(output), exist_ok=True)
     total_steps *= 2
@@ -360,17 +363,25 @@ def forward(output=None, visualize=True):
         
         pt1 = get_world_loc(spring_anchor_a[i], spring_offset_a[i])
         pt2 = get_world_loc(spring_anchor_b[i], spring_offset_b[i])
+        
+        color = 0xFF2233
+        
+        if spring_actuation[i] != 0 and spring_length[i] != -1:
+          a = actuation[t - 1, i] * 0.5
+          color = rgb_to_hex((0.5 + a, 0.5 - abs(a), 0.5 - a))
 
         if spring_length[i] == -1:
           canvas.path(tc.Vector(*pt1), tc.Vector(*pt2)).color(0x000000).radius(9).finish()
-          canvas.path(tc.Vector(*pt1), tc.Vector(*pt2)).color(0xFF2233).radius(7).finish()
+          canvas.path(tc.Vector(*pt1), tc.Vector(*pt2)).color(color).radius(7).finish()
         else:
           canvas.path(tc.Vector(*pt1), tc.Vector(*pt2)).color(0x000000).radius(7).finish()
-          canvas.path(tc.Vector(*pt1), tc.Vector(*pt2)).color(0xFBCCAA).radius(5).finish()
+          canvas.path(tc.Vector(*pt1), tc.Vector(*pt2)).color(color).radius(5).finish()
 
       canvas.path(tc.Vector(0.05, ground_height - 5e-3), tc.Vector(0.95, ground_height - 5e-3)).color(0x0).radius(5).finish()
 
       gui.update()
+      if output:
+        gui.screenshot('rigid_body/{}/{:04d}.png'.format(output, t))
 
   loss[None] = 0
   compute_loss(steps - 1)
@@ -425,6 +436,10 @@ def optimize(toi=True, visualize=True):
     for j in range(n_hidden):
       # TODO: n_springs should be n_actuators
       weights2[i, j] = np.random.randn() * math.sqrt(2 / (n_hidden + n_springs)) * 1
+
+
+  clear_states()
+  forward('initial{}'.format(robot_id))
   
   losses = []
   for iter in range(20):
@@ -463,16 +478,16 @@ def optimize(toi=True, visualize=True):
       
     losses.append(loss[None])
   return losses
-  
+
+robot_id = 0
+if len(sys.argv) != 3:
+  print("Usage: python3 rigid_body.py [robot_id=0, 1, 2, ...] cmd")
+else:
+  robot_id = int(sys.argv[1])
+  cmd = sys.argv[2]
+print(robot_id, cmd)
 
 def main():
-  robot_id = 0
-  if len(sys.argv) != 3:
-    print("Usage: python3 rigid_body.py [robot_id=0, 1, 2, ...] cmd")
-  else:
-    robot_id = int(sys.argv[1])
-    cmd = sys.argv[2]
-  print(robot_id, cmd)
   setup_robot(*robots[robot_id]())
   
   if cmd == 'plot':
@@ -491,7 +506,7 @@ def main():
     optimize(toi=True, visualize=True)
   
   clear_states()
-  forward('final')
+  forward('final{}'.format(robot_id))
 
 
 if __name__ == '__main__':

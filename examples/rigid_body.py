@@ -47,7 +47,7 @@ rotation_inc = scalar()
 omega_inc = scalar()
 
 head_id = 3
-goal = [0.9, 0.15]
+goal = vec()
 
 n_objects = 0
 # target_ball = 0
@@ -74,9 +74,17 @@ spring_actuation = scalar()
 spring_stiffness = scalar()
 
 n_sin_waves = 10
-weights = scalar()
-bias = scalar()
 
+n_hidden = 32
+weights1 = scalar()
+bias1 = scalar()
+hidden = scalar()
+weights2 = scalar()
+bias2 = scalar()
+actuation = scalar()
+
+def n_input_states():
+  return n_sin_waves + 6 * n_objects + 2
 
 @ti.layout
 def place():
@@ -88,15 +96,51 @@ def place():
                                        spring_length, spring_offset_a,
                                        spring_offset_b, spring_stiffness,
                                        spring_phase, spring_actuation)
-  ti.root.dense(ti.ij, (n_springs, n_sin_waves)).place(weights)
-  ti.root.dense(ti.i, n_springs).place(bias)
-  ti.root.place(loss)
+  ti.root.dense(ti.ij, (n_hidden, n_input_states())).place(weights1)
+  ti.root.dense(ti.ij, (n_springs, n_hidden)).place(weights2)
+  ti.root.dense(ti.i, n_hidden).place(bias1)
+  ti.root.dense(ti.i, n_springs).place(bias2)
+  ti.root.dense(ti.ij, (max_steps, n_springs)).place(actuation)
+  ti.root.dense(ti.ij, (max_steps, n_hidden)).place(hidden)
+  ti.root.place(loss, goal)
   ti.root.lazy_grad()
 
 
 dt = 0.001
 learning_rate = 1.0
 
+@ti.kernel
+def nn1(t: ti.i32):
+  for i in range(n_hidden):
+    actuation = 0.0
+    for j in ti.static(range(n_sin_waves)):
+      actuation += weights1[i, j] * ti.sin(
+        spring_omega * t * dt + 2 * math.pi / n_sin_waves * j)
+    for j in ti.static(range(n_objects)):
+      offset = x[t, j] - x[t, head_id]
+      # use a smaller weight since there are too many of them
+      actuation += weights1[i, j * 6 + n_sin_waves] * offset[0] * 0.05
+      actuation += weights1[i, j * 6 + n_sin_waves + 1] * offset[1] * 0.05
+      actuation += weights1[i, j * 6 + n_sin_waves + 2] * v[t, i][0] * 0.05
+      actuation += weights1[i, j * 6 + n_sin_waves + 3] * v[t, i][1] * 0.05
+      actuation += weights1[i, j * 6 + n_sin_waves + 4] * rotation[t, i] * 0.05
+      actuation += weights1[i, j * 6 + n_sin_waves + 5] * omega[t, i] * 0.05
+      
+    actuation += weights1[i, n_objects * 6 + n_sin_waves] * goal[None][0]
+    actuation += weights1[i, n_objects * 6 + n_sin_waves + 1] * goal[None][1]
+    actuation += bias1[i]
+    actuation = ti.tanh(actuation)
+    hidden[t, i] = actuation
+
+@ti.kernel
+def nn2(t: ti.i32):
+  for i in range(n_springs):
+    act = 0.0
+    for j in ti.static(range(n_hidden)):
+      act += weights2[i, j] * hidden[t, j]
+    act += bias2[i]
+    act = ti.tanh(act)
+    actuation[t, i] = act
 
 @ti.func
 def rotation_matrix(r):
@@ -206,16 +250,11 @@ def apply_spring_force(t: ti.i32):
     dist = pos_a - pos_b
     length = dist.norm() + 1e-4
     
-    actuation = 0.0
-    for j in ti.static(range(n_sin_waves)):
-      actuation += weights[i, j] * ti.sin(
-        spring_omega * t * dt + 2 * math.pi / n_sin_waves * j)
-    actuation += bias[i]
-    actuation = ti.tanh(actuation)
+    act = actuation[t, i]
     
     is_joint = spring_length[i] == -1
     
-    target_length = spring_length[i] * (1.0 + spring_actuation[i] * actuation)
+    target_length = spring_length[i] * (1.0 + spring_actuation[i] * act)
     if is_joint:
       target_length = 0.0
     impulse = dt * (length - target_length) * spring_stiffness[
@@ -261,13 +300,14 @@ def advance_no_toi(t: ti.i32):
 
 @ti.kernel
 def compute_loss(t: ti.i32):
-  loss[None] = (x[t, head_id] - ti.Vector(goal)).norm()
+  loss[None] = (x[t, head_id] - goal[None]).norm()
 
 import taichi as tc
 gui = tc.core.GUI('Rigid Body Simulation', tc.Vectori(1024, 1024))
 canvas = gui.get_canvas()
 
 def forward(output=None, visualize=True):
+  
   initialize_properties()
 
   interval = vis_interval
@@ -277,7 +317,10 @@ def forward(output=None, visualize=True):
     os.makedirs('rigid_body/{}/'.format(output), exist_ok=True)
     total_steps *= 2
 
+  goal[None] = [0.9, 0.15]
   for t in range(1, total_steps):
+    nn1(t - 1)
+    nn2(t - 1)
     collide(t - 1)
     apply_spring_force(t - 1)
     if use_toi:
@@ -325,7 +368,7 @@ def forward(output=None, visualize=True):
           canvas.path(tc.Vector(*pt1), tc.Vector(*pt2)).color(0x000000).radius(7).finish()
           canvas.path(tc.Vector(*pt1), tc.Vector(*pt2)).color(0xFBCCAA).radius(5).finish()
 
-      canvas.path(tc.Vector(0.05, ground_height), tc.Vector(0.95, ground_height)).color(0x0).radius(5).finish()
+      canvas.path(tc.Vector(0.05, ground_height - 5e-3), tc.Vector(0.95, ground_height - 5e-3)).color(0x0).radius(5).finish()
 
       gui.update()
 
@@ -373,9 +416,15 @@ def setup_robot(objects, springs, h_id):
 def optimize(toi=True, visualize=True):
   global use_toi
   use_toi = toi
+  
+  for i in range(n_hidden):
+    for j in range(n_input_states()):
+      weights1[i, j] = np.random.randn() * math.sqrt(2 / (n_hidden + n_input_states())) * 0.5
+
   for i in range(n_springs):
-    for j in range(n_sin_waves):
-      weights[i, j] = np.random.randn() * 0.1
+    for j in range(n_hidden):
+      # TODO: n_springs should be n_actuators
+      weights2[i, j] = np.random.randn() * math.sqrt(2 / (n_hidden + n_springs)) * 1
   
   losses = []
   for iter in range(20):
@@ -387,21 +436,31 @@ def optimize(toi=True, visualize=True):
     print('Iter=', iter, 'Loss=', loss[None])
     
     total_norm_sqr = 0
+    for i in range(n_hidden):
+      for j in range(n_input_states()):
+        total_norm_sqr += weights1.grad[i, j] ** 2
+      total_norm_sqr += bias1.grad[i] ** 2
+
     for i in range(n_springs):
-      for j in range(n_sin_waves):
-        total_norm_sqr += weights.grad[i, j] ** 2
-      total_norm_sqr += bias.grad[i] ** 2
-    
+      for j in range(n_hidden):
+        total_norm_sqr += weights2.grad[i, j] ** 2
+      total_norm_sqr += bias2.grad[i] ** 2
+
     print(total_norm_sqr)
-    
-    norm = total_norm_sqr ** 0.5
-    scale = learning_rate * min(1.0, gradient_clip / (norm + 1e-4))
-    if norm > 1e3:
-      continue
+
+    gradient_clip = 0.2
+    scale = learning_rate * min(1.0, gradient_clip / (total_norm_sqr ** 0.5 + 1e-4))
+    for i in range(n_hidden):
+      for j in range(n_input_states()):
+        weights1[i, j] -= scale * weights1.grad[i, j]
+      bias1[i] -= scale * bias1.grad[i]
+
     for i in range(n_springs):
-      for j in range(n_sin_waves):
-        weights[i, j] -= scale * weights.grad[i, j]
-      bias[i] -= scale * bias.grad[i]
+      for j in range(n_hidden):
+        weights2[i, j] -= scale * weights2.grad[i, j]
+      bias2[i] -= scale * bias2.grad[i]
+      
+      
     losses.append(loss[None])
   return losses
   
@@ -430,7 +489,6 @@ def main():
     print("Losses saved to losses.pkl")
   else:
     optimize(toi=True, visualize=True)
-  
   
   clear_states()
   forward('final')

@@ -63,7 +63,7 @@ def laplacian(t, i, j):
 @ti.func
 def gradient(t, i, j):
   return 0.5 * inv_dx * ti.Vector(
-    [p[t, i, j + 1] - p[t, i, j - 1], p[t, i, j + 1] - p[t, i, j - 1]])
+    [p[t, i + 1, j] - p[t, i - 1, j], p[t, i, j + 1] - p[t, i, j - 1]])
 
 
 @ti.kernel
@@ -88,7 +88,7 @@ def fdtd(t: ti.i32):
 def render_reflect(t: ti.i32):
   for i in range(n_grid):  # Parallelized over GPU threads
     for j in range(n_grid):
-      grad = gradient(t, i, j)
+      grad = height_gradient[i, j]
       normal = ti.Vector.normalized(ti.Vector([grad[0], 1.0, grad[1]]))
       rendered[i, j] = normal[1]
 
@@ -197,10 +197,13 @@ def forward(output=None):
       img = np.zeros(shape=(n_grid, n_grid), dtype=np.float32)
       clear_photon_map()
       compute_height_gradient()
-      render_photon_map(t, 0.25, 0.25)
-      render_photon_map(t, 0.25, 0.75)
-      render_photon_map(t, 0.75, 0.25)
-      render_photon_map(t, 0.75, 0.75)
+      if True:
+        render_photon_map(t, 0.25, 0.25)
+        render_photon_map(t, 0.25, 0.75)
+        render_photon_map(t, 0.75, 0.25)
+        render_photon_map(t, 0.75, 0.75)
+      else:
+        render_reflect()
       for i in range(n_grid):
         for j in range(n_grid):
           img[i, j] = rendered[i, j] * 0.3 / 4

@@ -84,6 +84,7 @@ for epoch in range(Nepochs):
   imgvard.data = torch.clamp(torch.abs(diff), max=eps) + imgvar.data
   
   loss.backward()
+  print(imgvard.grad)
   optimizer.step()
   
   print('epoch: {}/{}, loss: {}'.format(epoch + 1, Nepochs, loss.item()))

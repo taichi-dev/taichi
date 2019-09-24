@@ -85,7 +85,6 @@ def collide(t: ti.i32):
             imp = -(1 + elasticity) * 0.5 * projected_v * dir
       ti.atomic_add(impulse[t + 1, i], imp)
 
-
 @ti.kernel
 def advance(t: ti.i32):
   for i in range(n_balls):

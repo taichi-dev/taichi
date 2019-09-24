@@ -30,7 +30,7 @@ damping = 0.2
 x = vec()
 v = vec()
 
-n_gravitation = 4
+n_gravitation = 8
 goal = vec()
 goal_v = vec()
 gravitation = scalar()
@@ -42,9 +42,9 @@ bias1 = scalar()
 weight2 = scalar()
 bias2 = scalar()
 
-pad = 0.2
+pad = 0.1
 gravitation_position = [[pad, pad], [pad, 1 - pad], [1 - pad, 1 - pad],
-                        [1 - pad, pad]]
+                        [1 - pad, pad], [0.5, 1-pad], [0.5, pad], [pad, 0.5], [1-pad, 0.5]]
 
 
 @ti.layout

@@ -63,7 +63,7 @@ def place():
 
 dt = 0.03
 alpha = 0.00000
-learning_rate = 1e-2
+learning_rate = 2e-2
 
 K = 1e-3
 
@@ -182,9 +182,12 @@ def optimize():
   losses = []
   for iter in range(200000):
     initialize()
-    vis = iter % 100 == 0
+    vis = iter % 200 == 0
+    output = None
+    if vis:
+      output = 'iter{:05d}'.format(iter)
     with ti.Tape(loss):
-      forward(visualize=vis)
+      forward(visualize=vis, output=output)
     losses.append(loss[None])
     # print(iter, "loss", loss[None])
     if vis:

@@ -13,11 +13,10 @@ n_grid = 256
 dx = 1 / n_grid
 inv_dx = 1 / dx
 dt = 3e-4
-max_steps = 128
+max_steps = 256
 vis_interval = 32
 output_vis_interval = 2
-steps = 64
-assert steps * 2 <= max_steps
+steps = 256
 amplify = 2
 
 scalar = lambda: ti.var(dt=real)
@@ -200,7 +199,6 @@ def forward(output=None):
   interval = vis_interval
   if output:
     os.makedirs(output, exist_ok=True)
-    steps_mul = 2
     interval = output_vis_interval
   initialize()
   for t in range(2, steps * steps_mul):
@@ -226,7 +224,9 @@ def forward(output=None):
         img = cv2.resize(img, fx=4, fy=4, dsize=None)
         cv2.imshow('img', img)
         cv2.waitKey(1)
-        
+        if output:
+          img = np.clip(img, 0, 255)
+          cv2.imwrite(output + "/{:04d}.png".format(t), img * 255)
       else:
         img = np.zeros(shape=(n_grid, n_grid), dtype=np.float32)
         for i in range(n_grid):
@@ -258,9 +258,9 @@ def main():
     for j in range(n_grid):
       target[i, j] = float(target_img[i, j])
   
-  #initial[n_grid // 2, n_grid // 2] = 1
-  #forward('initial')
-  #initial[n_grid // 2, n_grid // 2] = 0
+  initial[n_grid // 2, n_grid // 2] = 1
+  # forward('water_renderer/initial')
+  initial[n_grid // 2, n_grid // 2] = 0
   
   from adversarial import vgg_grad, predict
   
@@ -287,7 +287,7 @@ def main():
     
     apply_grad()
   
-  forward('optimized')
+  forward('water_renderer/optimized')
 
 
 if __name__ == '__main__':

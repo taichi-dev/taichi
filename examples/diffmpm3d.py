@@ -20,7 +20,7 @@ n_actuators = 0
 n_grid = 64
 dx = 1 / n_grid
 inv_dx = 1 / dx
-dt = 1e-3
+dt = 2e-3
 p_vol = 1
 E = 10
 # TODO: update
@@ -30,6 +30,7 @@ max_steps = 1024
 steps = 1024
 gravity = 3.8
 target = [0.8, 0.2, 0.2]
+use_apic = False
 
 scalar = lambda: ti.var(dt=real)
 vec = lambda: ti.Vector(dim, dt=real)
@@ -163,7 +164,7 @@ def p2g(f: ti.i32):
 
 
 bound = 3
-coeff = 0.0
+coeff = 0.5
 
 
 @ti.kernel
@@ -383,14 +384,14 @@ def copy_back_and_clear(img: np.ndarray):
 
 def robot(scene):
   block_size = 0.1
-  scene.set_offset(0.1, 0.3, 0.1)
+  scene.set_offset(0.1, 0.06, 0.3)
   def add_leg(x, y, z):
     for i in range(4):
       scene.add_rect(x + block_size / 2 * (i // 2), y + block_size / 2 * (i % 2), z, block_size / 2, block_size / 2, block_size, scene.new_actuator())
 
   for i in range(4):
     add_leg(i // 2 * block_size * 2, 0.0, i % 2 * block_size * 2)
-  for i in range(4):
+  for i in range(3):
     scene.add_rect(block_size * i, 0, block_size, block_size, block_size, block_size, -1, 1)
   # scene.
 
@@ -426,7 +427,7 @@ def main():
     loss.grad[None] = 1
     backward()
     print('i=', iter, 'loss=', l)
-    learning_rate = 0.1
+    learning_rate = 1
 
     for i in range(n_actuators):
       for j in range(n_sin_waves):
@@ -437,31 +438,30 @@ def main():
     if iter % 10 == 0:
       # visualize
       forward()
-      while True:
-        for s in range(63, steps, 16):
-          '''
-          print(s)
-          img = np.zeros((res[1] * res[0] * 3,), dtype=np.float32)
-          splat(s)
-          copy_back_and_clear(img)
-          img = img.reshape(res[1], res[0], 3)
-          img = np.sqrt(img)
-          cv2.imshow('img', img)
-          cv2.waitKey(1)
-          '''
+      for s in range(63, steps, 16):
+        '''
+        print(s)
+        img = np.zeros((res[1] * res[0] * 3,), dtype=np.float32)
+        splat(s)
+        copy_back_and_clear(img)
+        img = img.reshape(res[1], res[0], 3)
+        img = np.sqrt(img)
+        cv2.imshow('img', img)
+        cv2.waitKey(1)
+        '''
 
-          xs, ys, zs = [], [], []
-          for i in range(n_particles):
-            xs.append(x[s, i][0])
-            ys.append(x[s, i][2])
-            zs.append(x[s, i][1])
-          ax.scatter(xs, ys, zs, marker='o')
-          ax.set_xlim(0, 1)
-          ax.set_ylim(0, 1)
-          ax.set_zlim(0, 1)
-          plt.draw()
-          plt.pause(0.001)
-          plt.cla()
+        xs, ys, zs = [], [], []
+        for i in range(n_particles):
+          xs.append(x[s, i][0])
+          ys.append(x[s, i][2])
+          zs.append(x[s, i][1])
+        ax.scatter(xs, ys, zs, marker='o')
+        ax.set_xlim(0, 1)
+        ax.set_ylim(0, 1)
+        ax.set_zlim(0, 1)
+        plt.draw()
+        plt.pause(0.001)
+        plt.cla()
 
   # ti.profiler_print()
   plt.title("Optimization of Initial Velocity")

@@ -258,12 +258,29 @@ def main():
     for j in range(n_grid):
       target[i, j] = float(target_img[i, j])
   
-  initial[n_grid // 2, n_grid // 2] = 1
-  forward('initial')
+  #initial[n_grid // 2, n_grid // 2] = 1
+  #forward('initial')
+  #initial[n_grid // 2, n_grid // 2] = 0
+  
+  from adversarial import vgg_grad, predict
   
   for opt in range(200):
     with ti.Tape(loss):
       forward()
+      
+      feed_to_vgg = np.zeros((224, 224, 3), dtype=np.float32)
+      for i in range(224):
+        for j in range(224):
+          for k in range(3):
+            feed_to_vgg[i, j, k] = refracted_image[i + 16, j + 16, k]
+      
+      predict(feed_to_vgg)
+      grad = vgg_grad(feed_to_vgg)
+      for i in range(224):
+        for j in range(224):
+          for k in range(3):
+            refracted_image.grad[i + 16, j + 16, k] = grad[i, j, k] * 0.001
+      
     
     print('Iter', opt, ' Loss =', loss[None])
     

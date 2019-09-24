@@ -64,7 +64,7 @@ def predict(img):
     print("%.2f%% , class: %s (%s)" % (
     100 * pred.data[0][ind], str(ind), imagenet_labels[ind]))
 
-def grad(img):
+def vgg_grad(img):
   img = torch.tensor(img)
   
   imgvar = Variable(img, requires_grad=False)
@@ -128,7 +128,7 @@ def test_interface():
   
   for i in range(10):
     predict(img)
-    img -= grad(img)
+    img -= vgg_grad(img)
     
 
 if __name__ == '__main__':

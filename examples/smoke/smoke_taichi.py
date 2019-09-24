@@ -1,4 +1,5 @@
 import taichi_lang as ti
+import os
 import math
 import numpy as np
 import cv2
@@ -9,13 +10,13 @@ from imageio import imread, imwrite
 real = ti.f32
 ti.set_default_fp(real)
 
-num_iterations = 500
-n_grid = 256
+num_iterations = 240
+n_grid = 128
 dx = 1.0 / n_grid
 num_iterations_gauss_seidel = 10
 p_dims = num_iterations_gauss_seidel + 1
 steps = 100
-learning_rate = 200
+learning_rate = 400
 
 scalar = lambda: ti.var(dt=real)
 vector = lambda: ti.Vector(2, dt=real)
@@ -168,23 +169,32 @@ def forward(output=None):
           smoke_[i, j] = smoke[t, i, j]
       cv2.imshow('smoke', smoke_)
       cv2.waitKey(1)
-      matplotlib.image.imsave("{}/{:04d}.png".format(output, t), 255 * smoke_)
+      os.makedirs(output, exist_ok=True)
+      cv2.imwrite("{}/{:04d}.png".format(output, t), 255 * smoke_)
   compute_loss()
 
 
 def main():
-  initial_smoke_img = cv2.resize(imread("init_smoke.png")[:, :, 0], (n_grid, n_grid)) / 255.0
   target_img = cv2.resize(cv2.imread('taichi.png'), (n_grid, n_grid))[:,:,0] / 255.0
   
   for i in range(n_grid):
     for j in range(n_grid):
       target[i, j] = target_img[i, j]
-      smoke[0, i, j] = initial_smoke_img[i, j]
+      smoke[0, i, j] = (i // 16 + j // 16) % 2
   
   for opt in range(num_iterations):
     with ti.Tape(loss):
-      output = "test" if opt % 10 == 0 else None
+      output = "outputs/opt{:03d}".format(opt) if opt % 10 == 0 else None
       forward(output)
+      velocity_field = np.ones(shape=(n_grid, n_grid, 3), dtype=np.float32)
+      for i in range(n_grid):
+        for j in range(n_grid):
+          s = 0.2
+          b = 0.5
+          velocity_field[i, j, 0] = v[0, i, j][0] * s + b
+          velocity_field[i, j, 1] = v[0, i, j][1] * s + b
+      cv2.imshow('velocity', velocity_field)
+      cv2.waitKey(1)
     
     print('Iter', opt, ' Loss =', loss[None])
     apply_grad()

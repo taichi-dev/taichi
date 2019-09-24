@@ -18,7 +18,7 @@ ti.set_default_fp(real)
 max_steps = 4096
 vis_interval = 256
 output_vis_interval = 8
-steps = 2048 // 3
+steps = 2048 // 2
 assert steps * 2 <= max_steps
 
 vis_resolution = 1024
@@ -32,14 +32,14 @@ x = vec()
 v = vec()
 v_inc = vec()
 
-head_id = 0
+head_id = 10
 goal = vec()
 
 n_objects = 0
 # target_ball = 0
 elasticity = 0.0
 ground_height = 0.1
-gravity = -4.8
+gravity = -1.8
 friction = 2.5
 
 gradient_clip = 1
@@ -63,6 +63,7 @@ bias2 = scalar()
 hidden = scalar()
 
 center = vec()
+target_v = vec()
 
 act = scalar()
 
@@ -81,7 +82,7 @@ def place():
   ti.root.dense(ti.i, n_springs).place(bias2)
   ti.root.dense(ti.ij, (max_steps, n_hidden)).place(hidden)
   ti.root.dense(ti.ij, (max_steps, n_springs)).place(act)
-  ti.root.dense(ti.i, max_steps).place(center)
+  ti.root.dense(ti.i, max_steps).place(center, target_v)
   ti.root.place(loss, goal)
   ti.root.lazy_grad()
 
@@ -111,8 +112,8 @@ def nn1(t: ti.i32):
       actuation += weights1[i, j * 4 + n_sin_waves + 1] * offset[1] * 0.05
       actuation += weights1[i, j * 4 + n_sin_waves + 2] * v[t, i][0] * 0.05
       actuation += weights1[i, j * 4 + n_sin_waves + 3] * v[t, i][1] * 0.05
-    actuation += weights1[i, n_objects * 4 + n_sin_waves] * (goal[None][0] - center[t][0])
-    actuation += weights1[i, n_objects * 4 + n_sin_waves + 1] * (goal[None][1] - center[t][1])
+    actuation += weights1[i, n_objects * 4 + n_sin_waves] * target_v[t][0]
+    actuation += weights1[i, n_objects * 4 + n_sin_waves + 1] * target_v[t][1]
     actuation += bias1[i]
     actuation = ti.tanh(actuation)
     hidden[t, i] = actuation
@@ -182,7 +183,7 @@ def advance_no_toi(t: ti.i32):
 
 @ti.kernel
 def compute_loss(t: ti.i32):
-  loss[None] = -x[t, head_id][0]
+  ti.atomic_add(loss[None], dt * ti.sqr(target_v[t][0]-v[t, head_id][0]))
 
 gui = tc.core.GUI("Mass Spring Robot", tc.Vectori(1024, 1024))
 canvas = gui.get_canvas()
@@ -203,6 +204,14 @@ def forward(output=None, visualize=True):
   
   total_steps = steps if not output else steps * 2
   
+  pool = [(random.random() - 0.5) * 2 for _ in range(100)]
+  for i in range(total_steps):
+    if output:
+      target_v[i][0] = (i // 300) % 2 * 2 - 1
+    else:
+      target_v[i][0] = pool[i // 300]
+
+  
   for t in range(1, total_steps):
     compute_center(t - 1)
     nn1(t - 1)
@@ -212,7 +221,8 @@ def forward(output=None, visualize=True):
       advance_toi(t)
     else:
       advance_no_toi(t)
-      
+    compute_loss(t)
+    
     if (t + 1) % interval == 0 and visualize:
       canvas.clear(0xFFFFFF)
       canvas.path(tc.Vector(0, ground_height), tc.Vector(1, ground_height)).color(0x0).radius(3).finish()
@@ -243,12 +253,16 @@ def forward(output=None, visualize=True):
         circle(x[t, i][0], x[t, i][1], color)
       # circle(goal[None][0], goal[None][1], (0.6, 0.2, 0.2))
       
+      if target_v[t][0] > 0:
+        circle(0.5, 0.5, (1, 0, 0))
+        circle(0.6, 0.5, (1, 0, 0))
+      else:
+        circle(0.5, 0.5, (0, 0, 1))
+        circle(0.4, 0.5, (0, 0, 1))
+      
       gui.update()
       if output:
         gui.screenshot('mass_spring/{}/{:04d}.png'.format(output, t))
-  
-  loss[None] = 0
-  compute_loss(steps - 1)
 
 
 @ti.kernel
@@ -272,7 +286,7 @@ def setup_robot(objects, springs):
   print('n_objects=', n_objects, '   n_springs=', n_springs)
   
   for i in range(n_objects):
-    x[0, i] = objects[i]
+    x[0, i] = [objects[i][0] + 0.4, objects[i][1]]
   
   for i in range(n_springs):
     s = springs[i]
@@ -293,10 +307,10 @@ def optimize(toi, visualize):
     for j in range(n_hidden):
       # TODO: n_springs should be n_actuators
       weights2[i, j] = np.random.randn() * math.sqrt(2 / (n_hidden + n_springs)) * 3
-
+  
   losses = []
-  forward('initial{}'.format(robot_id), visualize=visualize)
-  for iter in range(100):
+  # forward('initial{}'.format(robot_id), visualize=visualize)
+  for iter in range(1000):
     clear()
   
     with ti.Tape(loss):
@@ -317,9 +331,8 @@ def optimize(toi, visualize):
   
     print(total_norm_sqr)
   
-  
     # scale = learning_rate * min(1.0, gradient_clip / total_norm_sqr ** 0.5)
-    gradient_clip = 0.2
+    gradient_clip = 0.1
     scale = gradient_clip / (total_norm_sqr ** 0.5 + 1e-6)
     for i in range(n_hidden):
       for j in range(n_input_states()):
@@ -332,6 +345,9 @@ def optimize(toi, visualize):
       bias2[i] -= scale * bias2.grad[i]
     losses.append(loss[None])
 
+  losses = gaussian_filter(losses, 10)
+  plt.plot(losses)
+  plt.show()
   return losses
   
 robot_id = 0

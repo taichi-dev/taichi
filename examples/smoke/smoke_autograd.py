@@ -18,7 +18,7 @@ import os
 
 n_grid = 110
 
-dtype = np.float32
+dtype = np.float64
 
 # Fluid simulation code based on
 # "Real-Time Fluid Dynamics for Games" by Jos Stam

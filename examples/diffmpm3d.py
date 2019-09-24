@@ -62,7 +62,7 @@ ti.cfg.arch = ti.cuda
 # ti.cfg.print_ir = True
 
 
-visualize_resolution = 1024
+visualize_resolution = 256
 
 @ti.layout
 def place():
@@ -140,14 +140,13 @@ def p2g(f: ti.i32):
     A = ti.Matrix([[0.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 0.0]]) * act
     cauchy = ti.Matrix(zero_matrix())
     mass = 0.0
+    ident = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
     if particle_type[p] == 0:
       mass = 4
-      cauchy = ti.Matrix([[1.0, 0.0, 0.0], [0.0, 0.1, 0.0], [0.0, 0.0, 1.0]]) * (J - 1) * E
+      cauchy = ti.Matrix(ident) * (J - 1) * E
     else:
-      pass
-      # mass = 1
-      # cauchy = 2 * mu * (new_F - r) @ ti.transposed(new_F) + \
-      #          ti.Matrix.diag(2, la * (J - 1) * J)
+      mass = 1
+      cauchy = mu * (new_F @ ti.transposed(new_F)) + ti.Matrix(ident) * (la * ti.log(J) - mu)
     cauchy += new_F @ A @ ti.transposed(new_F)
     stress = -(dt * p_vol * 4 * inv_dx * inv_dx) * cauchy
     affine = stress + mass * C[f, p]
@@ -313,6 +312,7 @@ class Scene:
     self.offset_x = 0
     self.offset_y = 0
     self.offset_z = 0
+    self.num_actuators = 0
 
   def add_rect(self, x, y, z, w, h, d, actuation, ptype=1):
     if ptype == 0:
@@ -393,6 +393,14 @@ def copy_back_and_clear(img: np.ndarray):
         img[coord + c] = screen[i, j][2 - c]
         screen[i, j][2 - c] = 0
 
+def robot(scene):
+  block_size = 0.1
+  def add_leg(x, y, z):
+    for i in range(4):
+      pass
+      # scene.add_rect(x, y, z, block_size / 2, block_size / 2, )
+  # scene.
+
 
 def main():
   tc.set_gdb_trigger()
@@ -400,7 +408,7 @@ def main():
   scene = Scene()
   # fish(scene)
   # robot(scene)
-  scene.add_rect(0.4, 0.4, 0.2, 0.1, 0.3, 0.1, -1, 0)
+  scene.add_rect(0.4, 0.4, 0.2, 0.1, 0.3, 0.1, -1, 1)
   scene.finalize()
 
   for i in range(n_actuators):
@@ -435,15 +443,16 @@ def main():
       print(1)
       forward()
       print(2)
-      for s in range(63, steps, 16):
-        print(s)
-        img = np.zeros((res[1] * res[0] * 3,), dtype=np.float32)
-        splat(s)
-        copy_back_and_clear(img)
-        img = img.reshape(res[1], res[0], 3)
-        img = np.sqrt(img)
-        cv2.imshow('img', img)
-        cv2.waitKey(1)
+      while True:
+        for s in range(63, steps, 16):
+          print(s)
+          img = np.zeros((res[1] * res[0] * 3,), dtype=np.float32)
+          splat(s)
+          copy_back_and_clear(img)
+          img = img.reshape(res[1], res[0], 3)
+          img = np.sqrt(img)
+          cv2.imshow('img', img)
+          cv2.waitKey(1)
 
   # ti.profiler_print()
   plt.title("Optimization of Initial Velocity")

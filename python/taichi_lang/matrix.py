@@ -94,7 +94,7 @@ class Matrix:
     for i in range(self.n * self.m):
       ret.entries[i] = scalar
     return ret
-  
+
   @broadcast_if_scalar
   def __truediv__(self, other):
     assert self.n == other.n and self.m == other.m
@@ -245,7 +245,7 @@ class Matrix:
     for i in range(len(self.entries)):
       ret.entries[i] = impl.cast(ret.entries[i], type)
     return ret
-  
+
   def abs(self):
     ret = self.copy()
     for i in range(len(self.entries)):
@@ -302,8 +302,12 @@ class Matrix:
 
   @staticmethod
   def determinant(a):
-    assert a.n == 2 and a.m == 2
-    return a(0, 0) * a(1, 1) - a(0, 1) * a(1, 0)
+    if a.n == 2 and a.m == 2:
+      return a(0, 0) * a(1, 1) - a(0, 1) * a(1, 0)
+    elif a.n == 3 and a.m == 3:
+      return a(0, 0) * (a(1, 1) * a(2, 2) - a(2, 1) * a(1, 2)) - a(1, 0) * (
+            a(0, 1) * a(2, 2) - a(2, 1) * a(0, 2)) + a(2, 0) * (
+                   a(0, 1) * a(1, 2) - a(1, 1) * a(0, 2))
 
   @staticmethod
   def cross(a, b):

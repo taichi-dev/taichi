@@ -14,8 +14,8 @@ import torch.nn.functional as F
 import json
 
 
-means = np.array([0.485, 0.456, 0.406])
-std = np.array([0.229, 0.224, 0.225])
+means = np.array([0.485, 0.456, 0.406], dtype=np.float32)
+std = np.array([0.229, 0.224, 0.225], dtype=np.float32)
 normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                  std=[0.229, 0.224, 0.225])
 
@@ -28,10 +28,6 @@ def imshow(inp, title=None):
   """Imshow for Tensor."""
   plt.figure()
   inp = inp.data[0]
-  inp = inp.numpy().transpose((1, 2, 0))
-  mean = np.array([0.485, 0.456, 0.406])
-  std = np.array([0.229, 0.224, 0.225])
-  inp = std * inp + mean
   plt.imshow(inp)
   plt.axis('off')
   if title is not None:
@@ -47,8 +43,19 @@ model = models.vgg16(pretrained=True)
 for param in model.parameters():
   param.requires_grad = False
 
+def preprocess_and_forward(img):
+  img = (img - torch.tensor(means[None, None, :])) / torch.tensor(std[None, None, :])
+  img = img[None, :, :, :]
+  img = torch.transpose(torch.transpose(img, 1, 3), 2, 3)
+  return model(img)
+  
+  
 
 def predict(img):
+  img = (img - torch.tensor(means[None, None, :])) / torch.tensor(std[None, None, :])
+  img = img[None, :, :, :]
+  img = torch.transpose(torch.transpose(img, 1, 3), 2, 3)
+  
   pred_raw = model(img)
   pred = F.softmax(pred_raw)
   _, indices = torch.topk(pred, k=1)
@@ -65,19 +72,11 @@ def main():
   peppers = imread("squirrel.jpg")
   # cv2.imshow('p', peppers)
   # cv2.waitKey(0)
-  img = imresize(peppers, (224, 224)) / 255.0
-  # print(img.shape)
-  # imgtensor = transform(img)
-  # print(imgtensor.shape)
-  imgtensor = (img - means[None, None, :]) / std[None, None, :]
-  imgtensor = imgtensor[None, :, :, :].astype(np.float32)
-  imgtensor = torch.tensor(imgtensor)
-  imgtensor = torch.transpose(torch.transpose(imgtensor, 1, 3), 2, 3)
-  print(imgtensor.shape)
-  # imgtensor = transforms.ToTensor()(imgtensor)
+  img = (imresize(peppers, (224, 224)) / 255.0).astype(np.float32)
+  img = torch.tensor(img)
   
-  imgvar = Variable(imgtensor, requires_grad=False)
-  imgvard = Variable(imgtensor, requires_grad=True)
+  imgvar = Variable(img, requires_grad=False)
+  imgvard = Variable(img, requires_grad=True)
   
   loss_fn = nn.CrossEntropyLoss()
 
@@ -91,11 +90,8 @@ def main():
   Nepochs = 10
   print("Starting ...........", predict(imgvar))
   for epoch in range(Nepochs):
-    pred_raw = model(imgvard)
+    pred_raw = preprocess_and_forward(imgvard)
     loss = loss_fn(pred_raw, label)
-    
-    diff = imgvard.data - imgvar.data
-    imgvard.data = torch.clamp(torch.abs(diff), max=eps) + imgvar.data
     
     loss.backward()
     imgvar -= imgvard.grad * 1
@@ -108,11 +104,13 @@ def main():
   imshow(imgvard)
 
   # %%
+  '''
   plt.figure()
   diffimg = diff[0].numpy()
   diffimg = diffimg.transpose((1, 2, 0))
   plt.imshow(diffimg)
   plt.show()
+  '''
 
 if __name__ == '__main__':
   main()

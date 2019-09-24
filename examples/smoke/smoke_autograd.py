@@ -16,7 +16,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import os
 
-n_grid = 256
+n_grid = 110
 
 dtype = np.float64
 
@@ -135,7 +135,7 @@ if __name__ == '__main__':
 
     print("Optimizing initial conditions...")
     result = minimize(objective_with_grad, init_dx_and_dy, jac=True, method='CG',
-                      options={'maxiter':1, 'disp':False}, callback=callback)
+                      options={'maxiter':10, 'disp':False}, callback=callback)
 
     print("Rendering optimized flow...")
     init_vx, init_vy = convert_param_vector_to_matrices(result.x)

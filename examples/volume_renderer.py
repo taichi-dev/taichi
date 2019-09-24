@@ -4,7 +4,10 @@ import math
 import matplotlib
 import matplotlib.pyplot as plt
 import pdb
+import os
 from imageio import imread, imwrite
+
+os.makedirs('output_volume_renderer', exist_ok=True)
 
 real = ti.f32
 ti.set_default_fp(real)
@@ -13,7 +16,7 @@ ti.cfg.arch = ti.cuda
 
 num_iterations = 100
 res = 512
-density_res = 256
+density_res = 128
 inv_density_res = 1.0 / density_res
 res_f32 = float(res)
 dx = 0.04
@@ -34,7 +37,7 @@ loss = scalar()
 
 @ti.layout
 def place():
-  # TODO: use sparsity
+  # TODO: use sparsity (Actually, it doesn't have to be sparse.)
   ti.root.dense(ti.ijk, res).place(density)
   ti.root.dense(ti.l, n_views).dense(ti.ij, res).place(target_images, images)
   ti.root.place(loss)
@@ -48,27 +51,26 @@ def in_box(x, y, z):
 def ray_march(field):
   @ti.kernel
   def kernel(angle: ti.f32, view_id: ti.i32):
-    camera_origin = ti.Vector([camera_origin_radius * ti.sin(angle), 0, camera_origin_radius * ti.cos(angle)])
-
     for y in range(res):
       for x in range(res):
+        camera_origin = ti.Vector([camera_origin_radius * ti.sin(angle), 0, camera_origin_radius * ti.cos(angle)])
+        dir = ti.Vector([
+          fov * (ti.cast(x, ti.f32) / (res_f32 / 2.0) - res_f32 / res_f32),
+          fov * (ti.cast(y, ti.f32) / (res_f32 / 2.0) - 1.0),
+          -1.0
+        ])
+  
+        length = ti.sqrt(dir[0] * dir[0] + dir[1] * dir[1] + dir[2] * dir[2])
+        dir /= length
+  
+        rotated_x = dir[0] * ti.cos(angle) + dir[2] * ti.sin(angle)
+        rotated_z = -dir[0] * ti.sin(angle) + dir[2] * ti.cos(angle)
+        dir[0] = rotated_x
+        dir[2] = rotated_z
         for k in range(marching_steps):
-          dir = ti.Vector([
-            fov * (ti.cast(x, ti.f32) / (res_f32 / 2.0) - res_f32 / res_f32),
-            fov * (ti.cast(y, ti.f32) / (res_f32 / 2.0) - 1.0),
-            -1.0
-          ])
-
-          length = ti.sqrt(dir[0] * dir[0] + dir[1] * dir[1] + dir[2] * dir[2])
-          dir /= length
-
-          rotated_x = dir[0] * ti.cos(angle) + dir[2] * ti.sin(angle)
-          rotated_z = -dir[0] * ti.sin(angle) + dir[2] * ti.cos(angle)
-          dir[0] = rotated_x
-          dir[2] = rotated_z
-
           point = camera_origin + (k + 1) * dx * dir
 
+          contribution = 0.0
           if in_box(point[0], point[1], point[2]):
             # Convert to coordinates of the density grid box
             box_x = point[0] + 0.5
@@ -79,8 +81,10 @@ def ray_march(field):
             index_x = ti.cast(ti.floor(box_x * density_res), ti.i32)
             index_y = ti.cast(ti.floor(box_y * density_res), ti.i32)
             index_z = ti.cast(ti.floor(box_z * density_res), ti.i32)
+            
+            contribution = density[index_z, index_y, index_x]
 
-            ti.atomic_add(field[view_id, y, x], density[index_z, index_y, index_x])
+          ti.atomic_add(field[view_id, y, x], contribution)
 
   kernel.materialize()
   kernel.grad.materialize()

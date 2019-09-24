@@ -25,8 +25,8 @@ E = 10
 # TODO: update
 mu = E
 la = E
-max_steps = 512
-steps = 512
+max_steps = 1024
+steps = 1024
 gravity = 3.8
 target = [0.8, 0.2, 0.2]
 
@@ -163,7 +163,7 @@ def p2g(f: ti.i32):
 
 
 bound = 3
-coeff = 0.5
+coeff = 0.0
 
 
 @ti.kernel
@@ -380,8 +380,6 @@ canvas = gui.get_canvas()
 def splat(t: ti.i32):
   for i in range(n_particles):
     pos = ti.cast(x[t, i] * visualize_resolution, ti.i32)
-    ti.print(pos[0])
-    ti.print(pos[1])
     screen[pos[0], pos[1]][0] += 0.1
 
 res = [visualize_resolution, visualize_resolution]
@@ -402,7 +400,7 @@ def main():
   scene = Scene()
   # fish(scene)
   # robot(scene)
-  scene.add_rect(0.2, 0.2, 0.2, 0.1, 0.1, 0.1, -1, 0)
+  scene.add_rect(0.4, 0.4, 0.2, 0.1, 0.3, 0.1, -1, 0)
   scene.finalize()
 
   for i in range(n_actuators):

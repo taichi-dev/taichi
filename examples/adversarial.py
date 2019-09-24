@@ -52,6 +52,7 @@ def preprocess_and_forward(img):
   
 
 def predict(img):
+  img = torch.tensor(img)
   img = (img - torch.tensor(means[None, None, :])) / torch.tensor(std[None, None, :])
   img = img[None, :, :, :]
   img = torch.transpose(torch.transpose(img, 1, 3), 2, 3)
@@ -63,8 +64,24 @@ def predict(img):
     print("%.2f%% , class: %s (%s)" % (
     100 * pred.data[0][ind], str(ind), imagenet_labels[ind]))
 
-
-# In[image ]:
+def grad(img):
+  img = torch.tensor(img)
+  
+  imgvar = Variable(img, requires_grad=False)
+  imgvard = Variable(img, requires_grad=True)
+  
+  loss_fn = nn.CrossEntropyLoss()
+  
+  label = torch.LongTensor(1)
+  # classify the object as this label
+  label[0] = 1
+  label = Variable(label)
+  
+  pred_raw = preprocess_and_forward(imgvard)
+  loss = loss_fn(pred_raw, label)
+  loss.backward()
+  return imgvard.grad.numpy()
+  
 
 def main():
   # everything is RGB instead of BGR in this file
@@ -84,7 +101,6 @@ def main():
   # classify the object as this label
   label[0] = 1
   label = Variable(label)
-  eps = 2 / 255.0
 
   # %%
   Nepochs = 10
@@ -103,14 +119,18 @@ def main():
   # %%
   imshow(imgvard)
 
-  # %%
-  '''
-  plt.figure()
-  diffimg = diff[0].numpy()
-  diffimg = diffimg.transpose((1, 2, 0))
-  plt.imshow(diffimg)
-  plt.show()
-  '''
+
+def test_interface():
+  peppers = imread("squirrel.jpg")
+  img = (imresize(peppers, (224, 224)) / 255.0).astype(np.float32)
+  
+  print(img)
+  
+  for i in range(10):
+    predict(img)
+    img -= grad(img)
+    
 
 if __name__ == '__main__':
-  main()
+  # main()
+  test_interface()

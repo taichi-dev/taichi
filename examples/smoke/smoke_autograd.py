@@ -18,7 +18,7 @@ import os
 
 n_grid = 110
 
-dtype = np.float64
+dtype = np.float32
 
 # Fluid simulation code based on
 # "Real-Time Fluid Dynamics for Games" by Jos Stam
@@ -121,6 +121,7 @@ if __name__ == '__main__':
     for i in range(10):
       t = time.time()
       r = objective(init_dx_and_dy)
+      print('loss dtype', r.dtype)
       print('forward time', (time.time() - t) * 1000, 'ms/iter')
       t = time.time()
       r = objective_with_grad(init_dx_and_dy)

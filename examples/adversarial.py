@@ -52,6 +52,9 @@ def preprocess_and_forward(img):
   
 
 def predict(img):
+  import cv2
+  # cv2.imshow('img', img[:,:,::-1])
+  # cv2.waitKey()
   img = torch.tensor(img)
   img = (img - torch.tensor(means[None, None, :])) / torch.tensor(std[None, None, :])
   img = img[None, :, :, :]

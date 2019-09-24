@@ -264,22 +264,23 @@ def main():
   
   from adversarial import vgg_grad, predict
   
-  for opt in range(200):
+  for opt in range(10):
     with ti.Tape(loss):
       forward()
       
       feed_to_vgg = np.zeros((224, 224, 3), dtype=np.float32)
+      # Note: do a transpose here
       for i in range(224):
         for j in range(224):
           for k in range(3):
-            feed_to_vgg[i, j, k] = refracted_image[i + 16, j + 16, k]
+            feed_to_vgg[i, j, k] = refracted_image[i + 16, j + 16, 2-k]
       
       predict(feed_to_vgg)
       grad = vgg_grad(feed_to_vgg)
       for i in range(224):
         for j in range(224):
           for k in range(3):
-            refracted_image.grad[i + 16, j + 16, k] = grad[i, j, k] * 0.001
+            refracted_image.grad[i + 16, j + 16, k] = grad[i, j, 2-k] * 0.001
       
     
     print('Iter', opt, ' Loss =', loss[None])

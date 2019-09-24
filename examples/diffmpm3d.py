@@ -1,4 +1,5 @@
 import taichi_lang as ti
+from mpl_toolkits.mplot3d import Axes3D
 import os
 import math
 import numpy as np
@@ -314,6 +315,12 @@ class Scene:
     self.offset_z = 0
     self.num_actuators = 0
 
+  def new_actuator(self):
+    self.num_actuators += 1
+    global n_actuators
+    n_actuators = self.num_actuators
+    return self.num_actuators - 1
+
   def add_rect(self, x, y, z, w, h, d, actuation, ptype=1):
     if ptype == 0:
       assert actuation == -1
@@ -337,9 +344,10 @@ class Scene:
           if self.n_particles % 1000 == 0:
             print("num particles", self.n_particles)
 
-  def set_offset(self, x, y):
+  def set_offset(self, x, y, z):
     self.offset_x = x
     self.offset_y = y
+    self.offset_z = z
 
   def finalize(self):
     global n_particles, n_solid_particles
@@ -351,27 +359,6 @@ class Scene:
   def set_n_actuators(self, n_act):
     global n_actuators
     n_actuators = n_act
-
-
-def fish(scene):
-  scene.add_rect(0.025, 0.025, 0.95, 0.1, -1, ptype=0)
-  scene.add_rect(0.1, 0.2, 0.15, 0.05, -1)
-  scene.add_rect(0.1, 0.15, 0.025, 0.05, 0)
-  scene.add_rect(0.125, 0.15, 0.025, 0.05, 1)
-  scene.add_rect(0.2, 0.15, 0.025, 0.05, 2)
-  scene.add_rect(0.225, 0.15, 0.025, 0.05, 3)
-  scene.set_n_actuators(4)
-
-
-def robot(scene):
-  scene.set_offset(0.1, 0.03)
-  scene.add_rect(0.0, 0.1, 0.3, 0.1, -1)
-  scene.add_rect(0.0, 0.0, 0.05, 0.1, 0)
-  scene.add_rect(0.05, 0.0, 0.05, 0.1, 1)
-  scene.add_rect(0.2, 0.0, 0.05, 0.1, 2)
-  scene.add_rect(0.25, 0.0, 0.05, 0.1, 3)
-  scene.set_n_actuators(4)
-
 
 gui = tc.core.GUI("Differentiable MPM", tc.Vectori(1024, 1024))
 canvas = gui.get_canvas()
@@ -395,10 +382,13 @@ def copy_back_and_clear(img: np.ndarray):
 
 def robot(scene):
   block_size = 0.1
+  scene.set_offset(0.1, 0.03, 0.1)
   def add_leg(x, y, z):
     for i in range(4):
-      pass
-      # scene.add_rect(x, y, z, block_size / 2, block_size / 2, )
+      scene.add_rect(x + block_size / 2 * (i // 2), y + block_size / 2 * (i % 2), z, block_size / 2, block_size / 2, block_size, scene.new_actuator())
+
+  for i in range(4):
+    scene.add
   # scene.
 
 
@@ -421,7 +411,9 @@ def main():
     actuator_id[i] = scene.actuator_id[i]
     particle_type[i] = scene.particle_type[i]
 
-  vec = tc.Vector
+  fig = plt.figure()
+  ax = fig.add_subplot(111, projection='3d')
+
   losses = []
   for iter in range(100):
     ti.clear_all_gradients()
@@ -440,11 +432,10 @@ def main():
 
     if iter % 10 == 0:
       # visualize
-      print(1)
       forward()
-      print(2)
       while True:
         for s in range(63, steps, 16):
+          '''
           print(s)
           img = np.zeros((res[1] * res[0] * 3,), dtype=np.float32)
           splat(s)
@@ -453,6 +444,14 @@ def main():
           img = np.sqrt(img)
           cv2.imshow('img', img)
           cv2.waitKey(1)
+          '''
+          xs, ys, zs = [], [], []
+          for i in range(n_particles):
+            xs.append(x[s, i][0])
+            ys.append(x[s, i][1])
+            zs.append(x[s, i][2])
+          ax.scatter(xs, ys, zs, marker='o')
+          plt.show()
 
   # ti.profiler_print()
   plt.title("Optimization of Initial Velocity")

@@ -9,7 +9,7 @@ real = ti.f32
 ti.set_default_fp(real)
 # ti.runtime.print_preprocessed = True
 
-n_grid = 128
+n_grid = 256
 dx = 1 / n_grid
 inv_dx = 1 / dx
 dt = 3e-4
@@ -18,7 +18,7 @@ vis_interval = 32
 output_vis_interval = 2
 steps = 256
 assert steps * 2 <= max_steps
-amplify = 2
+amplify = 1
 
 scalar = lambda: ti.var(dt=real)
 vec = lambda: ti.Vector(2, dt=real)
@@ -28,7 +28,7 @@ target = scalar()
 initial = scalar()
 loss = scalar()
 
-# ti.cfg.arch = ti.cuda
+ti.cfg.arch = ti.cuda
 
 @ti.layout
 def place():
@@ -47,7 +47,7 @@ c = 340
 alpha = 0.00000
 inv_dx2 = inv_dx * inv_dx
 dt = (math.sqrt(alpha * alpha + dx * dx / 3) - alpha) / c
-learning_rate = 0.1
+learning_rate = 1
 
 
 # TODO: there may by out-of-bound accesses here
@@ -111,19 +111,25 @@ def forward(output=None):
 
 def main():
   # initialization
-  target_img = cv2.imread('iclr2020.png')[:,:,0] / 255.0
+  target_img = cv2.imread('smoke/taichi.png')[:,:,0] / 255.0
   target_img -= target_img.mean()
+  target_img = cv2.resize(target_img, (n_grid, n_grid))
   cv2.imshow('target', target_img * amplify + 0.5)
   # print(target_img.min(), target_img.max())
   for i in range(n_grid):
     for j in range(n_grid):
       target[i, j] = float(target_img[i, j])
 
-  # initial[n_grid // 2, n_grid // 2] = 1
+  initial[n_grid // 2, n_grid // 2] = -2
+  forward('center')
+  initial[n_grid // 2, n_grid // 2] = 0
 
   for opt in range(200):
     with ti.Tape(loss):
-      forward()
+      output = None
+      if opt % 20 == 0:
+        output = 'wave/iter{:03d}/'.format(opt)
+      forward(output)
     
     print('Iter', opt, ' Loss =', loss[None])
 

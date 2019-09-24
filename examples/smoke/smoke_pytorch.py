@@ -1,4 +1,8 @@
+# TO run on CPU:
+#   CUDA_VISIBLE_DEVICES='' OMP_NUM_THREADS=1 python3 smoke_pytorch.py
+
 import torch
+import time
 import math
 import numpy as np
 import cv2
@@ -91,10 +95,14 @@ def main():
   target = torch.tensor(target_img, device=device, dtype=torch.float32)
 
   for opt in range(num_iterations):
+    t = time.time()
     smoke = forward(opt, initial_smoke, vx, vy, opt == (num_iterations - 1))
-
     loss = ((smoke - target)**2).mean()
+    print('forward time', (time.time() - t) * 1000, 'ms')
+
+    t = time.time()
     loss.backward()
+    print('backward time', (time.time() - t) * 1000, 'ms')
 
     with torch.no_grad():
       vx -= learning_rate * vx.grad.data
@@ -106,4 +114,5 @@ def main():
 
 if __name__ == '__main__':
   main()
+
 

@@ -18,6 +18,8 @@ import os
 
 n_grid = 256
 
+dtype = np.float64
+
 # Fluid simulation code based on
 # "Real-Time Fluid Dynamics for Games" by Jos Stam
 # http://www.intpowertechcorp.com/GDC03.pdf
@@ -25,7 +27,7 @@ n_grid = 256
 def project(vx, vy):
     """Project the velocity field to be approximately mass-conserving,
        using a few iterations of Gauss-Seidel."""
-    p = np.zeros(vx.shape)
+    p = np.zeros(vx.shape, dtype=dtype)
     h = 1.0/vx.shape[0]
     div = -0.5 * h * (np.roll(vx, -1, axis=0) - np.roll(vx, 1, axis=0)
                     + np.roll(vy, -1, axis=1) - np.roll(vy, 1, axis=1))
@@ -43,6 +45,8 @@ def advect(f, vx, vy):
        using an implicit Euler integrator."""
     rows, cols = f.shape
     cell_ys, cell_xs = np.meshgrid(np.arange(rows), np.arange(cols))
+    cell_xs = cell_xs.astype(dtype)
+    cell_ys = cell_ys.astype(dtype)
     center_xs = (cell_xs - vx).ravel()
     center_ys = (cell_ys - vy).ravel()
 
@@ -93,9 +97,10 @@ if __name__ == '__main__':
     target = cv2.resize(imread('taichi.png'), (n_grid, n_grid))[:, :, 0]
     rows, cols = target.shape
 
-    init_dx_and_dy = np.zeros((2, rows, cols)).ravel()
+    init_dx_and_dy = np.zeros((2, rows, cols), dtype=dtype).ravel()
 
     def distance_from_target_image(smoke):
+        print(smoke.dtype)
         return np.mean((target - smoke)**2)
 
     def convert_param_vector_to_matrices(params):
@@ -108,8 +113,18 @@ if __name__ == '__main__':
         final_smoke = simulate(init_vx, init_vy, init_smoke, simulation_timesteps)
         return distance_from_target_image(final_smoke)
 
+
     # Specify gradient of objective function using autograd.
     objective_with_grad = value_and_grad(objective)
+
+    import time
+    for i in range(10):
+      t = time.time()
+      r = objective(init_dx_and_dy)
+      print('forward time', (time.time() - t) * 1000, 'ms/iter')
+      t = time.time()
+      r = objective_with_grad(init_dx_and_dy)
+      print('total time', (time.time() - t) * 1000, 'ms/iter')
 
     fig = plt.figure(figsize=(8,8))
     ax = fig.add_subplot(111, frameon=False)
@@ -120,7 +135,7 @@ if __name__ == '__main__':
 
     print("Optimizing initial conditions...")
     result = minimize(objective_with_grad, init_dx_and_dy, jac=True, method='CG',
-                      options={'maxiter':25, 'disp':True}, callback=callback)
+                      options={'maxiter':1, 'disp':False}, callback=callback)
 
     print("Rendering optimized flow...")
     init_vx, init_vy = convert_param_vector_to_matrices(result.x)

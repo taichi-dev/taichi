@@ -51,40 +51,47 @@ def in_box(x, y, z):
 def ray_march(field):
   @ti.kernel
   def kernel(angle: ti.f32, view_id: ti.i32):
-    for y in range(res):
-      for x in range(res):
-        camera_origin = ti.Vector([camera_origin_radius * ti.sin(angle), 0, camera_origin_radius * ti.cos(angle)])
-        dir = ti.Vector([
-          fov * (ti.cast(x, ti.f32) / (res_f32 / 2.0) - res_f32 / res_f32),
-          fov * (ti.cast(y, ti.f32) / (res_f32 / 2.0) - 1.0),
-          -1.0
-        ])
-  
-        length = ti.sqrt(dir[0] * dir[0] + dir[1] * dir[1] + dir[2] * dir[2])
-        dir /= length
-  
-        rotated_x = dir[0] * ti.cos(angle) + dir[2] * ti.sin(angle)
-        rotated_z = -dir[0] * ti.sin(angle) + dir[2] * ti.cos(angle)
-        dir[0] = rotated_x
-        dir[2] = rotated_z
-        for k in range(marching_steps):
-          point = camera_origin + (k + 1) * dx * dir
+    for pixel in range(res * res):
+      x = pixel // res
+      y = pixel - x * res
+      
+      camera_origin = ti.Vector([camera_origin_radius * ti.sin(angle), 0, camera_origin_radius * ti.cos(angle)])
+      dir = ti.Vector([
+        fov * (ti.cast(x, ti.f32) / (res_f32 / 2.0) - res_f32 / res_f32),
+        fov * (ti.cast(y, ti.f32) / (res_f32 / 2.0) - 1.0),
+        -1.0
+      ])
 
-          contribution = 0.0
-          if in_box(point[0], point[1], point[2]):
-            # Convert to coordinates of the density grid box
-            box_x = point[0] + 0.5
-            box_y = point[1] + 0.5
-            box_z = point[2] + 0.5
+      length = ti.sqrt(dir[0] * dir[0] + dir[1] * dir[1] + dir[2] * dir[2])
+      dir /= length
 
-            # Density grid location
-            index_x = ti.cast(ti.floor(box_x * density_res), ti.i32)
-            index_y = ti.cast(ti.floor(box_y * density_res), ti.i32)
-            index_z = ti.cast(ti.floor(box_z * density_res), ti.i32)
-            
-            contribution = density[index_z, index_y, index_x]
+      rotated_x = dir[0] * ti.cos(angle) + dir[2] * ti.sin(angle)
+      rotated_z = -dir[0] * ti.sin(angle) + dir[2] * ti.cos(angle)
+      dir[0] = rotated_x
+      dir[2] = rotated_z
+      for k in range(marching_steps):
+        point = camera_origin + (k + 1) * dx * dir
 
-          ti.atomic_add(field[view_id, y, x], contribution)
+        # Convert to coordinates of the density grid box
+        box_x = point[0] + 0.5
+        box_y = point[1] + 0.5
+        box_z = point[2] + 0.5
+
+        # Density grid location
+        index_x = ti.cast(ti.floor(box_x * density_res), ti.i32)
+        index_y = ti.cast(ti.floor(box_y * density_res), ti.i32)
+        index_z = ti.cast(ti.floor(box_z * density_res), ti.i32)
+        index_x = ti.max(0, ti.min(index_x, density_res - 1))
+        index_y = ti.max(0, ti.min(index_y, density_res - 1))
+        index_z = ti.max(0, ti.min(index_z, density_res - 1))
+        
+        flag = 0
+        if in_box(point[0], point[1], point[2]):
+          flag = 1
+          
+        contribution = density[index_z, index_y, index_x] * flag
+
+        ti.atomic_add(field[view_id, y, x], contribution)
 
   kernel.materialize()
   kernel.grad.materialize()

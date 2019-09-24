@@ -17,7 +17,7 @@ dim = 3
 n_particles = 0
 n_solid_particles = 0
 n_actuators = 0
-n_grid = 128
+n_grid = 64
 dx = 1 / n_grid
 inv_dx = 1 / dx
 dt = 1e-3
@@ -325,9 +325,10 @@ class Scene:
     if ptype == 0:
       assert actuation == -1
     global n_particles
-    w_count = int(w / dx) * 2
-    h_count = int(h / dx) * 2
-    d_count = int(d / dx) * 2
+    density = 1.5
+    w_count = int(w / dx * density)
+    h_count = int(h / dx * density)
+    d_count = int(d / dx * density)
     real_dx = w / w_count
     real_dy = h / h_count
     real_dz = d / d_count
@@ -382,13 +383,15 @@ def copy_back_and_clear(img: np.ndarray):
 
 def robot(scene):
   block_size = 0.1
-  scene.set_offset(0.1, 0.03, 0.1)
+  scene.set_offset(0.1, 0.3, 0.1)
   def add_leg(x, y, z):
     for i in range(4):
       scene.add_rect(x + block_size / 2 * (i // 2), y + block_size / 2 * (i % 2), z, block_size / 2, block_size / 2, block_size, scene.new_actuator())
 
   for i in range(4):
-    scene.add
+    add_leg(i // 2 * block_size * 2, 0.0, i % 2 * block_size * 2)
+  for i in range(4):
+    scene.add_rect(block_size * i, 0, block_size, block_size, block_size, block_size, -1, 1)
   # scene.
 
 
@@ -397,8 +400,8 @@ def main():
   # initialization
   scene = Scene()
   # fish(scene)
-  # robot(scene)
-  scene.add_rect(0.4, 0.4, 0.2, 0.1, 0.3, 0.1, -1, 1)
+  robot(scene)
+  # scene.add_rect(0.4, 0.4, 0.2, 0.1, 0.3, 0.1, -1, 1)
   scene.finalize()
 
   for i in range(n_actuators):
@@ -412,6 +415,7 @@ def main():
     particle_type[i] = scene.particle_type[i]
 
   fig = plt.figure()
+  plt.ion()
   ax = fig.add_subplot(111, projection='3d')
 
   losses = []
@@ -445,13 +449,18 @@ def main():
           cv2.imshow('img', img)
           cv2.waitKey(1)
           '''
+
           xs, ys, zs = [], [], []
           for i in range(n_particles):
             xs.append(x[s, i][0])
             ys.append(x[s, i][1])
             zs.append(x[s, i][2])
           ax.scatter(xs, ys, zs, marker='o')
-          plt.show()
+          ax.set_xlim(0, 1)
+          ax.set_ylim(0, 1)
+          ax.set_zlim(0, 1)
+          plt.draw()
+          plt.pause(0.001)
 
   # ti.profiler_print()
   plt.title("Optimization of Initial Velocity")

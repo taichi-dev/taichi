@@ -453,14 +453,15 @@ def main():
           xs, ys, zs = [], [], []
           for i in range(n_particles):
             xs.append(x[s, i][0])
-            ys.append(x[s, i][1])
-            zs.append(x[s, i][2])
+            ys.append(x[s, i][2])
+            zs.append(x[s, i][1])
           ax.scatter(xs, ys, zs, marker='o')
           ax.set_xlim(0, 1)
           ax.set_ylim(0, 1)
           ax.set_zlim(0, 1)
           plt.draw()
           plt.pause(0.001)
+          plt.cla()
 
   # ti.profiler_print()
   plt.title("Optimization of Initial Velocity")

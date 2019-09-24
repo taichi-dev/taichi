@@ -52,24 +52,24 @@ def ray_march(field):
   @ti.kernel
   def kernel(angle: ti.f32, view_id: ti.i32):
     for pixel in range(res * res):
-      x = pixel // res
-      y = pixel - x * res
-      
-      camera_origin = ti.Vector([camera_origin_radius * ti.sin(angle), 0, camera_origin_radius * ti.cos(angle)])
-      dir = ti.Vector([
-        fov * (ti.cast(x, ti.f32) / (res_f32 / 2.0) - res_f32 / res_f32),
-        fov * (ti.cast(y, ti.f32) / (res_f32 / 2.0) - 1.0),
-        -1.0
-      ])
-
-      length = ti.sqrt(dir[0] * dir[0] + dir[1] * dir[1] + dir[2] * dir[2])
-      dir /= length
-
-      rotated_x = dir[0] * ti.cos(angle) + dir[2] * ti.sin(angle)
-      rotated_z = -dir[0] * ti.sin(angle) + dir[2] * ti.cos(angle)
-      dir[0] = rotated_x
-      dir[2] = rotated_z
       for k in range(marching_steps):
+        x = pixel // res
+        y = pixel - x * res
+
+        camera_origin = ti.Vector([camera_origin_radius * ti.sin(angle), 0, camera_origin_radius * ti.cos(angle)])
+        dir = ti.Vector([
+          fov * (ti.cast(x, ti.f32) / (res_f32 / 2.0) - res_f32 / res_f32),
+          fov * (ti.cast(y, ti.f32) / (res_f32 / 2.0) - 1.0),
+          -1.0
+        ])
+
+        length = ti.sqrt(dir[0] * dir[0] + dir[1] * dir[1] + dir[2] * dir[2])
+        dir /= length
+
+        rotated_x = dir[0] * ti.cos(angle) + dir[2] * ti.sin(angle)
+        rotated_z = -dir[0] * ti.sin(angle) + dir[2] * ti.cos(angle)
+        dir[0] = rotated_x
+        dir[2] = rotated_z
         point = camera_origin + (k + 1) * dx * dir
 
         # Convert to coordinates of the density grid box

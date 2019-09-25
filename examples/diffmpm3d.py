@@ -385,7 +385,7 @@ def copy_back_and_clear(img: np.ndarray):
 def robot(scene):
   block_size = 0.1
   # scene.set_offset(0.1, 0.10, 0.3)
-  scene.set_offset(0.1, 0.03, 0.3)
+  scene.set_offset(0.1, 0.06, 0.3)
   def add_leg(x, y, z):
     for i in range(4):
       scene.add_rect(x + block_size / 2 * (i // 2), y + block_size / 2 * (i % 2), z, block_size / 2, block_size / 2, block_size, scene.new_actuator())
@@ -430,7 +430,7 @@ def main():
     loss.grad[None] = 1
     backward()
     print('i=', iter, 'loss=', l)
-    learning_rate = 100
+    learning_rate = 1
 
     for i in range(n_actuators):
       for j in range(n_sin_waves):
@@ -441,7 +441,7 @@ def main():
     if iter % 10 == 0:
       # visualize
       forward()
-      for s in range(63, steps, 16):
+      for s in range(7, steps, 8):
         '''
         print(s)
         img = np.zeros((res[1] * res[0] * 3,), dtype=np.float32)
@@ -453,6 +453,7 @@ def main():
         cv2.waitKey(1)
         '''
 
+        '''
         xs, ys, zs = [], [], []
         aas, bs, cs = [], [], []
         for i in range(n_particles):
@@ -473,6 +474,7 @@ def main():
         plt.draw()
         plt.pause(0.001)
         plt.cla()
+        '''
 
 
         def to255(x):
@@ -499,7 +501,7 @@ def main():
             # neohookean
             if actuator_id[i] != -1:
               # actuated
-              act = actuation[s, actuator_id[i]]
+              act = actuation[s, actuator_id[i]] * 0.5
               r = 0.5 - act
               g = 0.5 - abs(act)
               b = 0.5 + act

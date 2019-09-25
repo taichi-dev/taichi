@@ -29,7 +29,7 @@ fov = 0.23
 dist_limit = 100
 
 exposure = 1.5
-camera_pos = ti.Vector([0.5, 0.32, 2.7])
+camera_pos = ti.Vector([0.5, 0.32, 1.7])
 vignette_strength = 0.9
 vignette_radius = 0.0
 vignette_center = [0.5, 0.5]
@@ -60,9 +60,9 @@ if scene == 'fluid':
   max_num_particles_per_cell = 256
   max_num_particles = 1024 * 1024 * 4
 elif scene == 'snow':
-  camera_pos = ti.Vector([0.5, 0.27, 2.7])
+  camera_pos = ti.Vector([0.5, 0.27, 2.0])
   supporter = 2
-  shutter_time = 0.5e-3
+  shutter_time = 1e-3
   sphere_radius = 0.005
   particle_grid_res = 64
   max_num_particles_per_cell = 128
@@ -188,8 +188,8 @@ def sdf_normal(p):
 def sdf_color(p_):
   p = p_
   scale = 0.4
-  if inside_taichi(ti.Vector([p[0], p[2]])):
-    scale = 1
+  # if inside_taichi(ti.Vector([p[0], p[2]])):
+  #   scale = 1
   return ti.Vector([0.3, 0.5, 0.7]) * scale
 
 
@@ -523,7 +523,7 @@ def main():
   sand = np.transpose(sand)
   np_x = sand[:, :3].flatten()
   np_v = sand[:, 3:6].flatten()
-  np_c = sand[:, 6].flatten().astype(np.float32) * 0 + 127
+  np_c = sand[:, 6].flatten().astype(np.float32)
   
   for i in range(3):
     print(sand[:, i].min(), sand[:, i].max())
@@ -544,14 +544,7 @@ def main():
           particle_v[i][c] = v[i * 3 + c]
         # v_c = ti.min(1, particle_v[i].norm()) * 1.5
         # ti.print(v_c)
-        if ti.static(scene == 'fluid'):
-          v_c = ti.min(particle_v[i].norm() * 0.1, 1)
-          particle_color[i] = rgb_to_i32(v_c * 0.3 + 0.3, v_c * 0.4 + 0.4,
-                                         0.5 + v_c * 0.5)
-        elif ti.static(scene == 'sand'):
-          particle_color[i] = ti.cast(color[i], ti.i32)
-        else:
-          particle_color[i] = rgb_to_i32(0.85, 0.90, 1.0)
+        particle_color[i] = ti.cast(color[i], ti.i32)
         
         # reconstruct grid using particle position and MPM p2g.
         for k in ti.static(range(27)):
@@ -579,8 +572,8 @@ def main():
       last_t = time.time()
       img = img.reshape(res[1], res[0], 3) * (1 / (i + 1)) * exposure
       img = np.sqrt(img)
-      cv2.imshow('img', img)
-      cv2.waitKey(1)
+      # cv2.imshow('img', img)
+      # cv2.waitKey(1)
   os.makedirs(output_folder, exist_ok=True)
   cv2.imwrite(output_folder + '/{:04d}.png'.format(frame_id), img * 255)
 

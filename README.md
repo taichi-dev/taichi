@@ -1,5 +1,5 @@
-# DiffSim Programming Language
-### Differentiable Physical Simulation
+# The DiffSim Programming Language
+### High-Performance Differentiable Physical Simulation
 
 # Installation
 Supports Ubuntu 14.04/16.04/18.04, ArchLinux, Mac OS X. For GPU support, CUDA 9.0+ is needed.
@@ -18,9 +18,7 @@ Supports Ubuntu 14.04/16.04/18.04, ArchLinux, Mac OS X. For GPU support, CUDA 9.
 
 # Folder Structure
 Key folders are
- - *examples* : example programs written in Taichi
-   - *cpp*: benchmarking examples in the SIGGRAPH Asia paper (mpm_benchmark.cpp, smoke_renderer.cpp, cnn.cpp)
-   - *fem*: the FEM benchmark
+ - *examples* : example programs written in DiffSim
  - *include*: language runtime
  - *src*: the compiler implementation (The functionality is briefly documented in each file)
    - *analysis*: static analysis passes

@@ -3,8 +3,6 @@
 
 TLANG_NAMESPACE_BEGIN
 
-// https://github.com/yuanming-hu/topo_opt_private/blob/master/misc/volume_rendering_kernel.cu
-
 auto voxel_renderer = [](const std::vector<std::string> &params) {
   CoreState::set_trigger_gdb_when_crash(true);
 

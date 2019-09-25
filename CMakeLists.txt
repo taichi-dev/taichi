@@ -34,7 +34,7 @@ endif()
 
 if (TLANG_WITH_FEM)
     # Change the path to your own libSPGridCPUSolver.so
-    target_link_libraries(${LIBRARY_NAME} /home/yuanming/repos/topo_opt_private/solver/libSPGridCPUSolver.so )
+    target_link_libraries(${LIBRARY_NAME} /home/user/repos/topo_opt_private/solver/libSPGridCPUSolver.so )
     target_link_libraries(${LIBRARY_NAME} /opt/intel/compilers_and_libraries_2019/linux/mkl/lib/intel64_lin/libmkl_rt.so)
 endif()
 

@@ -26,9 +26,9 @@ E = 10
 # TODO: update
 mu = E
 la = E
-max_steps = 1024
-steps = 1024
-gravity = 3.8
+max_steps = 512
+steps = 512
+gravity = 2
 target = [0.8, 0.2, 0.2]
 use_apic = False
 
@@ -393,7 +393,7 @@ def robot(scene):
   for i in range(4):
     add_leg(i // 2 * block_size * 2, 0.0, i % 2 * block_size * 2)
   for i in range(3):
-    scene.add_rect(block_size * i, 0, block_size, block_size, block_size, block_size, -1, 1)
+    scene.add_rect(block_size * i, 0, block_size, block_size * 0.7, block_size, block_size, -1, 1)
   scene.set_offset(0.1, 0.03, 0.3)
   # scene.add_rect(0.0, 0.0, 0.0, 0.6, 0.04, 0.6, -1, 0)
   # scene.
@@ -430,7 +430,7 @@ def main():
     loss.grad[None] = 1
     backward()
     print('i=', iter, 'loss=', l)
-    learning_rate = 3
+    learning_rate = 10
 
     for i in range(n_actuators):
       for j in range(n_sin_waves):

@@ -49,7 +49,7 @@ frame_id = int(sys.argv[3])
 assert scene in ['sand', 'fluid', 'snow']
 
 render_voxel = False
-inv_dx = 256.0
+inv_dx = 64.0
 dx = 1.0 / inv_dx
 
 if scene == 'fluid':
@@ -63,9 +63,9 @@ elif scene == 'snow':
   camera_pos = ti.Vector([0.5, 0.27, 2.7])
   supporter = 2
   shutter_time = 0.5e-3
-  sphere_radius = 0.0015
-  particle_grid_res = 256
-  max_num_particles_per_cell = 64
+  sphere_radius = 0.005
+  particle_grid_res = 64
+  max_num_particles_per_cell = 128
   max_num_particles = 1024 * 1024 * 4
 
 assert sphere_radius * 2 * particle_grid_res < 1
@@ -510,7 +510,7 @@ def copy(img: np.ndarray):
 
 def main():
   sand = np.fromfile(
-    "diffmpm3d/iter0000/{:04d}.bin".format(folder, frame_id),
+    "mpm3d/iter{}/{:04d}.bin".format(folder, frame_id),
     dtype=np.float32)
   
   for i in range(num_spheres):
@@ -519,7 +519,8 @@ def main():
   
   num_sand_particles = len(sand) // 7
   num_part = num_sand_particles
-  sand = sand.reshape((num_sand_particles, 7))
+  sand = sand.reshape((7, num_sand_particles))
+  sand = np.transpose(sand)
   np_x = sand[:, :3].flatten()
   np_v = sand[:, 3:6].flatten()
   np_c = sand[:, 6].flatten().astype(np.float32) * 0 + 127
@@ -578,8 +579,8 @@ def main():
       last_t = time.time()
       img = img.reshape(res[1], res[0], 3) * (1 / (i + 1)) * exposure
       img = np.sqrt(img)
-      # cv2.imshow('img', img)
-      # cv2.waitKey(1)
+      cv2.imshow('img', img)
+      cv2.waitKey(1)
   os.makedirs(output_folder, exist_ok=True)
   cv2.imwrite(output_folder + '/{:04d}.png'.format(frame_id), img * 255)
 

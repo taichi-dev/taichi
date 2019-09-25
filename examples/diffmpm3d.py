@@ -139,7 +139,7 @@ def p2g(f: ti.i32):
       act = 0.0
     # ti.print(act)
 
-    A = ti.Matrix([[0.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 0.0]]) * act
+    A = ti.Matrix([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]) * act
     cauchy = ti.Matrix(zero_matrix())
     mass = 0.0
     ident = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
@@ -430,7 +430,7 @@ def main():
     loss.grad[None] = 1
     backward()
     print('i=', iter, 'loss=', l)
-    learning_rate = 1
+    learning_rate = 3
 
     for i in range(n_actuators):
       for j in range(n_sin_waves):
@@ -478,7 +478,7 @@ def main():
 
 
         def to255(x):
-          return max(min(x * 255, 255), 0)
+          return int(max(min(x * 255, 255), 0))
         xs, ys, zs = [], [], []
         us, vs, ws = [], [], []
         cs = []
@@ -507,6 +507,7 @@ def main():
               b = 0.5 + act
             else:
               r, g, b = 0.4, 0.4, 0.4
+          print(r, g, b)
 
           color = to255(r) * 65536 + 256 * to255(g) + to255(b)
           cs.append(color)

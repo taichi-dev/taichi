@@ -409,6 +409,9 @@ def robot(scene):
     add_leg(i // 2 * block_size * 2, 0.0, i % 2 * block_size * 2)
   for i in range(3):
     scene.add_rect(block_size * i, 0, block_size, block_size, block_size * 0.7, block_size, -1, 1)
+  # scene.set_offset(0.1, 0.03, 0.3)
+  scene.add_rect(0.1, 0.15, 0.1, 0.2, 0.05, 0.2, -1, 0)
+  # scene.
 
 
 def main():

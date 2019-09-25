@@ -153,7 +153,7 @@ def sdf(o_):
     o = o_ - ti.Vector([0.5, 0.002, 0.5])
     dist = (o.abs() - ti.Vector([0.5, 0.02, 0.5])).max()
   else:
-    dist = o_[1] - 0.041
+    dist = o_[1] - 0.04
   
   return dist
 

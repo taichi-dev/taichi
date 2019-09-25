@@ -326,7 +326,7 @@ class Scene:
     if ptype == 0:
       assert actuation == -1
     global n_particles
-    density = 1.5
+    density = 2
     w_count = int(w / dx * density)
     h_count = int(h / dx * density)
     d_count = int(d / dx * density)
@@ -385,10 +385,10 @@ def copy_back_and_clear(img: np.ndarray):
 def robot(scene):
   block_size = 0.1
   # scene.set_offset(0.1, 0.10, 0.3)
-  scene.set_offset(0.1, 0.06, 0.3)
+  scene.set_offset(0.1, 0.05, 0.3)
   def add_leg(x, y, z):
     for i in range(4):
-      scene.add_rect(x + block_size / 2 * (i // 2), y + block_size / 2 * (i % 2), z, block_size / 2, block_size / 2, block_size, scene.new_actuator())
+      scene.add_rect(x + block_size / 2 * (i // 2), y + 0.7 * block_size / 2 * (i % 2), z, block_size / 2, 0.7 * block_size / 2, block_size, scene.new_actuator())
 
   for i in range(4):
     add_leg(i // 2 * block_size * 2, 0.0, i % 2 * block_size * 2)
@@ -507,7 +507,6 @@ def main():
               b = 0.5 + act
             else:
               r, g, b = 0.4, 0.4, 0.4
-          print(r, g, b)
 
           color = to255(r) * 65536 + 256 * to255(g) + to255(b)
           cs.append(color)

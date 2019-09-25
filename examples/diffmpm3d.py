@@ -441,7 +441,7 @@ def main():
     if iter % 10 == 0:
       # visualize
       forward()
-      for s in range(7, steps, 8):
+      for s in range(7, steps, 2):
         '''
         print(s)
         img = np.zeros((res[1] * res[0] * 3,), dtype=np.float32)

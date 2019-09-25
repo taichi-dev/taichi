@@ -60,7 +60,7 @@ if scene == 'fluid':
   max_num_particles_per_cell = 256
   max_num_particles = 1024 * 1024 * 4
 elif scene == 'snow':
-  camera_pos = ti.Vector([0.5, 0.27, 2.0])
+  camera_pos = ti.Vector([0.35, 0.27, 2.0])
   supporter = 2
   shutter_time = 1e-3
   sphere_radius = 0.005

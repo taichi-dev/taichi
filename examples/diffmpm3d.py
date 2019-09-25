@@ -430,7 +430,7 @@ def main():
     loss.grad[None] = 1
     backward()
     print('i=', iter, 'loss=', l)
-    learning_rate = 10
+    learning_rate = 100
 
     for i in range(n_actuators):
       for j in range(n_sin_waves):

@@ -510,7 +510,7 @@ def copy(img: np.ndarray):
 
 def main():
   sand = np.fromfile(
-    "../final_particles/{}/{:04d}.bin".format(folder, frame_id),
+    "diffmpm3d/iter0000/{:04d}.bin".format(folder, frame_id),
     dtype=np.float32)
   
   for i in range(num_spheres):

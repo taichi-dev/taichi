@@ -28,7 +28,7 @@ mu = E
 la = E
 max_steps = 512
 steps = 512
-gravity = 2
+gravity = 10
 target = [0.8, 0.2, 0.2]
 use_apic = False
 
@@ -333,18 +333,33 @@ class Scene:
     real_dx = w / w_count
     real_dy = h / h_count
     real_dz = d / d_count
-    for i in range(w_count):
-      for j in range(h_count):
-        for k in range(d_count):
-          self.x.append([x + (i + 0.5) * real_dx + self.offset_x,
-                         y + (j + 0.5) * real_dy + self.offset_y,
-                         z + (k + 0.5) * real_dz + self.offset_z])
-          self.actuator_id.append(actuation)
-          self.particle_type.append(ptype)
-          self.n_particles += 1
-          self.n_solid_particles += int(ptype == 1)
-          if self.n_particles % 1000 == 0:
-            print("num particles", self.n_particles)
+    
+    if ptype == 1:
+      for i in range(w_count):
+        for j in range(h_count):
+          for k in range(d_count):
+            self.x.append([x + (i + 0.5) * real_dx + self.offset_x,
+                           y + (j + 0.5) * real_dy + self.offset_y,
+                           z + (k + 0.5) * real_dz + self.offset_z])
+            self.actuator_id.append(actuation)
+            self.particle_type.append(ptype)
+            self.n_particles += 1
+            self.n_solid_particles += int(ptype == 1)
+            if self.n_particles % 1000 == 0:
+              print("num particles", self.n_particles)
+    else:
+      for i in range(w_count):
+        for j in range(h_count):
+          for k in range(d_count):
+            self.x.append([x + random.random() * w + self.offset_x,
+                           y + random.random() * h + self.offset_y,
+                           z + random.random() * d + self.offset_z])
+            self.actuator_id.append(actuation)
+            self.particle_type.append(ptype)
+            self.n_particles += 1
+            self.n_solid_particles += int(ptype == 1)
+            if self.n_particles % 1000 == 0:
+              print("num particles", self.n_particles)
 
   def set_offset(self, x, y, z):
     self.offset_x = x
@@ -394,8 +409,8 @@ def robot(scene):
     add_leg(i // 2 * block_size * 2, 0.0, i % 2 * block_size * 2)
   for i in range(3):
     scene.add_rect(block_size * i, 0, block_size, block_size, block_size * 0.7, block_size, -1, 1)
-  scene.set_offset(0.1, 0.03, 0.3)
-  # scene.add_rect(0.0, 0.0, 0.0, 0.6, 0.04, 0.6, -1, 0)
+  # scene.set_offset(0.1, 0.03, 0.3)
+  scene.add_rect(0.1, 0.15, 0.1, 0.2, 0.05, 0.2, -1, 0)
   # scene.
 
 

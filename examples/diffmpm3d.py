@@ -53,7 +53,7 @@ bias = scalar()
 x_avg = vec()
 
 actuation = scalar()
-actuation_omega = 20
+actuation_omega = 40
 act_strength = 4
 
 # ti.cfg.arch = ti.x86_64
@@ -164,7 +164,7 @@ def p2g(f: ti.i32):
 
 
 bound = 3
-coeff = 0.5
+coeff = 1.5
 
 
 @ti.kernel
@@ -326,7 +326,7 @@ class Scene:
     if ptype == 0:
       assert actuation == -1
     global n_particles
-    density = 2
+    density = 3
     w_count = int(w / dx * density)
     h_count = int(h / dx * density)
     d_count = int(d / dx * density)
@@ -393,7 +393,7 @@ def robot(scene):
   for i in range(4):
     add_leg(i // 2 * block_size * 2, 0.0, i % 2 * block_size * 2)
   for i in range(3):
-    scene.add_rect(block_size * i, 0, block_size, block_size * 0.7, block_size, block_size, -1, 1)
+    scene.add_rect(block_size * i, 0, block_size, block_size, block_size * 0.7, block_size, -1, 1)
   scene.set_offset(0.1, 0.03, 0.3)
   # scene.add_rect(0.0, 0.0, 0.0, 0.6, 0.04, 0.6, -1, 0)
   # scene.

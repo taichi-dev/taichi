@@ -11,7 +11,7 @@ ti.set_default_fp(real)
 dim = 2
 n_particles = 6400
 N = 80
-n_grid = 128
+n_grid = 120
 dx = 1 / n_grid
 inv_dx = 1 / dx
 dt = 3e-4
@@ -57,10 +57,11 @@ def place():
   p(C)
   p(F)
   def pg(x):
-    ti.root.dense(ti.ij, n_grid // 8).dense(ti.ij, 8).place(x)
+    # ti.root.dense(ti.ij, n_grid // 8).dense(ti.ij, 8).place(x)
+    ti.root.dense(ti.ij, n_grid).place(x)
   def pgv(x):
     for i in x.entries:
-      ti.root.dense(ti.ij, n_grid // 8).dense(ti.ij, 8).place(i)
+      ti.root.dense(ti.ij, n_grid).place(i)
     
   pgv(grid_v_in)
   pg(grid_m_in)
@@ -125,7 +126,9 @@ bound = 3
 
 @ti.kernel
 def grid_op():
-  for i, j in grid_m_in:
+  for p in range(n_grid * n_grid):
+    i = p // n_grid
+    j = p - n_grid * i
     inv_m = 1 / (grid_m_in[i, j] + 1e-10)
     v_out = inv_m * grid_v_in[i, j]
     v_out[1] -= dt * gravity
@@ -142,7 +145,7 @@ def grid_op():
 
 @ti.kernel
 def g2p(f: ti.i32):
-  for p in range(0, n_particles):
+  for p in range(n_particles):
     base = ti.cast(x[f, p] * inv_dx - 0.5, ti.i32)
     fx = x[f, p] * inv_dx - ti.cast(base, real)
     w = [0.5 * ti.sqr(1.5 - fx), 0.75 - ti.sqr(fx - 1.0),

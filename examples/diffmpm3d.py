@@ -384,7 +384,7 @@ def copy_back_and_clear(img: np.ndarray):
 
 def robot(scene):
   block_size = 0.1
-  scene.set_offset(0.1, 0.06, 0.3)
+  scene.set_offset(0.1, 0.10, 0.3)
   def add_leg(x, y, z):
     for i in range(4):
       scene.add_rect(x + block_size / 2 * (i // 2), y + block_size / 2 * (i % 2), z, block_size / 2, block_size / 2, block_size, scene.new_actuator())
@@ -393,6 +393,8 @@ def robot(scene):
     add_leg(i // 2 * block_size * 2, 0.0, i % 2 * block_size * 2)
   for i in range(3):
     scene.add_rect(block_size * i, 0, block_size, block_size, block_size, block_size, -1, 1)
+  scene.set_offset(0.1, 0.03, 0.3)
+  scene.add_rect(0.0, 0.0, 0.0, 0.6, 0.04, 0.6, -1, 0)
   # scene.
 
 
@@ -427,7 +429,7 @@ def main():
     loss.grad[None] = 1
     backward()
     print('i=', iter, 'loss=', l)
-    learning_rate = 1
+    learning_rate = 100
 
     for i in range(n_actuators):
       for j in range(n_sin_waves):
@@ -451,10 +453,18 @@ def main():
         '''
 
         xs, ys, zs = [], [], []
+        aas, bs, cs = [], [], []
         for i in range(n_particles):
-          xs.append(x[s, i][0])
-          ys.append(x[s, i][2])
-          zs.append(x[s, i][1])
+          if particle_type[i] == 0:
+            xs.append(x[s, i][0])
+            ys.append(x[s, i][2])
+            zs.append(x[s, i][1])
+          else:
+            aas.append(x[s, i][0])
+            bs.append(x[s, i][2])
+            cs.append(x[s, i][1])
+
+        ax.scatter(aas, bs, cs, marker='o')
         ax.scatter(xs, ys, zs, marker='o')
         ax.set_xlim(0, 1)
         ax.set_ylim(0, 1)

@@ -19,14 +19,14 @@ res = 512
 density_res = 128
 inv_density_res = 1.0 / density_res
 res_f32 = float(res)
-dx = 0.04
-n_views = 8
+dx = 0.02
+n_views = 7
 torus_r1 = 0.4
 torus_r2 = 0.1
 fov = 1
 camera_origin_radius = 1
 marching_steps = 1000
-learning_rate = 0.1
+learning_rate = 15
 
 scalar = lambda: ti.var(dt=real)
 
@@ -37,7 +37,6 @@ loss = scalar()
 
 @ti.layout
 def place():
-  # TODO: use sparsity (Actually, it doesn't have to be sparse.)
   ti.root.dense(ti.ijk, res).place(density)
   ti.root.dense(ti.l, n_views).dense(ti.ij, res).place(target_images, images)
   ti.root.place(loss)
@@ -84,11 +83,11 @@ def ray_march(field):
         index_x = ti.max(0, ti.min(index_x, density_res - 1))
         index_y = ti.max(0, ti.min(index_y, density_res - 1))
         index_z = ti.max(0, ti.min(index_z, density_res - 1))
-        
+
         flag = 0
         if in_box(point[0], point[1], point[2]):
           flag = 1
-          
+
         contribution = density[index_z, index_y, index_x] * flag
 
         ti.atomic_add(field[view_id, y, x], contribution)
@@ -119,14 +118,16 @@ def clear_density():
 
 def create_target_images():
   for view in range(n_views):
-    ray_march_target(math.pi * 2 / n_views * view, view)
+    ray_march_target(math.pi / n_views * view - math.pi / 2.0, view)
 
     img = np.zeros((res, res), dtype=np.float32)
     for i in range(res):
       for j in range(res):
         img[i, j] = target_images[view, i, j]
+    img /= np.max(img)
+    img = 1 - img
 
-    imwrite("{}/target_{}.png".format("output_volume_renderer", view), 100 * img)
+    imwrite("{}/target_{:04d}.png".format("output_volume_renderer", view), 100 * img)
 
 @ti.func
 def in_torus(x, y, z):
@@ -135,6 +136,7 @@ def in_torus(x, y, z):
   len_q = ti.sqrt(qx*qx + y*y)
   dist = len_q - torus_r2
   return dist < 0
+
 
 @ti.kernel
 def create_torus_density():
@@ -161,9 +163,16 @@ def apply_grad():
     for j in range(density_res):
       for k in range(density_res):
         density[i, j, k] -= learning_rate * density.grad[i, j, k]
+        density[i, j, k] = ti.max(density[i, j, k], 0)
 
 def main():
-  create_torus_density()
+  volume = np.fromfile("bunny_128.bin", dtype=np.float32).reshape((density_res, density_res, density_res))
+  for i in range(density_res):
+    for j in range(density_res):
+      for k in range(density_res):
+        density[i, j, k] = volume[i, density_res - j - 1, k]
+
+  #create_torus_density()
   create_target_images()
   clear_density()
 
@@ -171,7 +180,7 @@ def main():
     clear_images()
     with ti.Tape(loss):
       for view in range(n_views):
-        ray_march_images(math.pi * 2 / n_views * view, view)
+        ray_march_images(math.pi / n_views * view - math.pi / 2.0, view)
         compute_loss(view)
 
         img = np.zeros((res, res), dtype=np.float32)
@@ -179,7 +188,11 @@ def main():
           for j in range(res):
             img[i, j] = images[view, i, j]
 
-        imwrite("{}/image_{}.png".format("output_volume_renderer", view), 100 * img)
+        m = np.max(img)
+        if m > 0:
+          img /= m
+        img = 1 - img
+        imwrite("{}/image_{:04d}_{:04d}.png".format("output_volume_renderer", iter, view), (255 * img).astype(np.uint8))
 
     print('Iter', iter, ' Loss =', loss[None])
     apply_grad()

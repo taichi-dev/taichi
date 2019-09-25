@@ -15,6 +15,13 @@ steps = 1024
 
 vis_resolution = 1024
 
+n_objects = 3
+mass = 1
+n_springs = 3
+spring_stiffness = 10
+damping = 20
+
+
 scalar = lambda: ti.var(dt=real)
 vec = lambda: ti.Vector(2, dt=real)
 
@@ -23,16 +30,9 @@ x = vec()
 v = vec()
 force = vec()
 
-n_objects = 3
-
-mass = 1
-
-n_springs = 3
 spring_anchor_a = ti.global_var(ti.i32)
 spring_anchor_b = ti.global_var(ti.i32)
 spring_length = scalar()
-spring_stiffness = 10
-damping = 20
 
 @ti.layout
 def place():

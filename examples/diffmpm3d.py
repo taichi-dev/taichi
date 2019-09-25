@@ -384,7 +384,8 @@ def copy_back_and_clear(img: np.ndarray):
 
 def robot(scene):
   block_size = 0.1
-  scene.set_offset(0.1, 0.10, 0.3)
+  # scene.set_offset(0.1, 0.10, 0.3)
+  scene.set_offset(0.1, 0.03, 0.3)
   def add_leg(x, y, z):
     for i in range(4):
       scene.add_rect(x + block_size / 2 * (i // 2), y + block_size / 2 * (i % 2), z, block_size / 2, block_size / 2, block_size, scene.new_actuator())
@@ -394,7 +395,7 @@ def robot(scene):
   for i in range(3):
     scene.add_rect(block_size * i, 0, block_size, block_size, block_size, block_size, -1, 1)
   scene.set_offset(0.1, 0.03, 0.3)
-  scene.add_rect(0.0, 0.0, 0.0, 0.6, 0.04, 0.6, -1, 0)
+  # scene.add_rect(0.0, 0.0, 0.0, 0.6, 0.04, 0.6, -1, 0)
   # scene.
 
 
@@ -429,7 +430,7 @@ def main():
     loss.grad[None] = 1
     backward()
     print('i=', iter, 'loss=', l)
-    learning_rate = 100
+    learning_rate = 10
 
     for i in range(n_actuators):
       for j in range(n_sin_waves):
@@ -472,6 +473,45 @@ def main():
         plt.draw()
         plt.pause(0.001)
         plt.cla()
+
+
+        def to255(x):
+          return max(min(x * 255, 255), 0)
+        xs, ys, zs = [], [], []
+        us, vs, ws = [], [], []
+        cs = []
+        folder = 'mpm3d/iter{:04d}/'.format(iter)
+        os.makedirs(folder, exist_ok=True)
+        for i in range(n_particles):
+          xs.append(x[s, i][0])
+          ys.append(x[s, i][1])
+          zs.append(x[s, i][2])
+          us.append(v[s, i][0])
+          vs.append(v[s, i][1])
+          ws.append(v[s, i][2])
+
+          if particle_type[i] == 0:
+            # fluid
+            r = 0.3
+            g = 0.3
+            b = 1.0
+          else:
+            # neohookean
+            if actuator_id[i] != -1:
+              # actuated
+              act = actuation[s, actuator_id[i]]
+              r = 0.5 - act
+              g = 0.5 - abs(act)
+              b = 0.5 + act
+            else:
+              r, g, b = 0.4, 0.4, 0.4
+
+          color = to255(r) * 65536 + 256 * to255(g) + to255(b)
+          cs.append(color)
+        data = np.array(xs + ys + zs + us + vs + ws + cs, dtype=np.float32)
+        data.tofile(open('{}/{:04}.bin'.format(folder, s), 'wb'))
+
+
 
   # ti.profiler_print()
   plt.title("Optimization of Initial Velocity")

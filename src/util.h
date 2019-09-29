@@ -346,6 +346,7 @@ struct CompileConfig {
   bool use_llvm;
   bool print_struct_llvm_ir;
   bool print_kernel_llvm_ir;
+  bool enable_profiler;
   DataType gradient_dt;
   std::string extra_flags;
 

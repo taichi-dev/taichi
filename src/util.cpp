@@ -386,6 +386,7 @@ CompileConfig::CompileConfig() {
   simplify_after_lower_access = true;
   attempt_vectorized_load_cpu = true;
   gradient_dt = DataType::f32;
+  enable_profiler = true;
 }
 
 std::string CompileConfig::compiler_name() {

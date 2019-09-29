@@ -212,6 +212,38 @@ def backward():
   set_v.grad()
   return init_v.grad[None]
 
+def benchmark():
+  print('Also check "nvprof --print-gpu-trace python3 diffmpm_benchmark.py" for more accurate results')
+  iters = 100000
+  for i in range(1):
+    p2g(0)
+    grid_op()
+    g2p(0)
+  t = time.time()
+  ti.runtime.sync()
+  for i in range(iters):
+    # clear_grid()
+    p2g(0)
+    grid_op()
+    g2p(0)
+  ti.runtime.sync()
+  print('forward ', (time.time() - t) / iters * 1000 * 3, 'ms')
+  ti.profiler_print()
+  
+  for i in range(1):
+    p2g.grad(0)
+    grid_op.grad()
+    g2p.grad(0)
+  t = time.time()
+  ti.runtime.sync()
+  for i in range(iters):
+    # clear_grid()
+    g2p.grad(0)
+    grid_op.grad()
+    p2g.grad(0)
+  ti.runtime.sync()
+  print('backward ', (time.time() - t) / iters * 1000 * 3, 'ms')
+  ti.profiler_print()
 
 def main():
   # initialization
@@ -226,13 +258,8 @@ def main():
 
 
   set_v()
-  for i in range(1024):
-    # clear_grid()
-    p2g(0)
-    grid_op()
-    g2p(0)
-  ti.profiler_print()
-
+  benchmark()
+  
   losses = []
   img_count = 0
   for i in range(30):

@@ -88,7 +88,8 @@ PYBIND11_MODULE(taichi_lang_core, m) {
       .def(py::init<>())
       .def("clear_all_gradients", &Program::clear_all_gradients)
       .def("profiler_print", &Program::profiler_print)
-      .def("profiler_print", &Program::profiler_clear);
+      .def("profiler_print", &Program::profiler_clear)
+      .def("synchronize", &Program::synchronize);
 
   m.def("get_current_program", get_current_program,
         py::return_value_policy::reference);

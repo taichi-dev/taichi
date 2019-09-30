@@ -16,12 +16,14 @@ class GPUIRCodeGen : public IRVisitor {
   bool debug;
   int grid_dim;
   int for_stmt_counter;
+  CompileConfig cfg;
   std::set<SNode *> ldg;
 
   GPUIRCodeGen(GPUCodeGen *codegen) : codegen(codegen), loopgen(codegen) {
     current_struct_for = nullptr;
     current_scratch_pads = nullptr;
-    debug = codegen->prog->config.debug;
+    cfg = codegen->prog->config;
+    debug = cfg.debug;
     grid_dim = loopgen.grid_dim;
     for_stmt_counter = 0;
   }
@@ -229,14 +231,16 @@ class GPUIRCodeGen : public IRVisitor {
       emit("");
 
       // generate the list
-      emit(R"(GPUProfiler::get_instance().start("{}_list_gen");)",
-           codegen->func_name);
+      if (cfg.enable_profiler)
+        emit(R"(GPUProfiler::get_instance().start("{}_list_gen");)",
+             codegen->func_name);
 
       std::reverse(path.begin(), path.end());
       for (auto &s : path) {
         emit("{}(context);", loopgen.listgen_func_name(s, listgen_suffix));
       }
-      emit(R"(GPUProfiler::get_instance().stop();)");
+      if (cfg.enable_profiler)
+        emit(R"(GPUProfiler::get_instance().stop();)");
 
       emit("");
 
@@ -260,10 +264,13 @@ class GPUIRCodeGen : public IRVisitor {
       }
       emit("");
       emit("reset_execution_tail<{}><<<1, 1>>>();", leaf->node_type_name);
-      emit(R"(GPUProfiler::get_instance().start("{}");)", current_func_name());
+      if (cfg.enable_profiler)
+        emit(R"(GPUProfiler::get_instance().start("{}");)",
+             current_func_name());
       emit("{}_kernel<<<{}, blockDim>>>(context);", current_func_name(),
            grid_dim);
-      emit(R"(GPUProfiler::get_instance().stop();)");
+      if (cfg.enable_profiler)
+        emit(R"(GPUProfiler::get_instance().stop();)");
       emit("");
       if (debug) {
         emit("cudaEventRecord(stop);");
@@ -345,10 +352,12 @@ class GPUIRCodeGen : public IRVisitor {
       }
       emit("gpu_runtime_init();");
       int num_blocks = (end - begin + block_size - 1) / block_size;
-      emit(R"(GPUProfiler::get_instance().start("{}");)", codegen->func_name);
+      if (cfg.enable_profiler)
+        emit(R"(GPUProfiler::get_instance().start("{}");)", codegen->func_name);
       emit("{}_kernel<<<{}, {}>>>(context);", current_func_name(), num_blocks,
            block_size);
-      emit(R"(GPUProfiler::get_instance().stop();)");
+      if (cfg.enable_profiler)
+        emit(R"(GPUProfiler::get_instance().stop();)");
       emit("}}");
     } else {
       auto for_stmt = for_stmt_->as<StructForStmt>();
@@ -918,22 +927,26 @@ class GPUIRCodeGen : public IRVisitor {
     emit("");
 
     // generate the list
-    emit(R"(GPUProfiler::get_instance().start("{}_list_gen");)",
-         codegen->func_name);
+    if (cfg.enable_profiler)
+      emit(R"(GPUProfiler::get_instance().start("{}_list_gen");)",
+           codegen->func_name);
 
     std::reverse(path.begin(), path.end());
     for (auto &s : path) {
       emit("{}(context);", loopgen.listgen_func_name(s));
     }
-    emit(R"(GPUProfiler::get_instance().stop();)");
+    if (cfg.enable_profiler)
+      emit(R"(GPUProfiler::get_instance().stop();)");
 
     emit("");
 
     emit("reset_execution_tail<{}><<<1, 1>>>();", leaf->node_type_name);
-    emit(R"(GPUProfiler::get_instance().start("clear_{}");)",
-         snode->node_type_name);
+    if (cfg.enable_profiler)
+      emit(R"(GPUProfiler::get_instance().start("clear_{}");)",
+           snode->node_type_name);
     emit("{}_kernel<<<{}, blockDim>>>(context);", codegen->func_name, grid_dim);
-    emit(R"(GPUProfiler::get_instance().stop();)");
+    if (cfg.enable_profiler)
+      emit(R"(GPUProfiler::get_instance().stop();)");
 
     emit("");
     emit("}}");

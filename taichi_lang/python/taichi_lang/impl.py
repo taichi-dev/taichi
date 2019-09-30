@@ -130,6 +130,9 @@ class PyTaichi:
   def get_tape(self, loss=None):
     from .tape import Tape
     return Tape(self, loss)
+  
+  def sync(self):
+    self.prog.synchronize()
 
 
 pytaichi = PyTaichi()

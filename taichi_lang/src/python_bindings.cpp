@@ -77,6 +77,7 @@ PYBIND11_MODULE(taichi_lang_core, m) {
       .def_readwrite("simplify_after_lower_access",
                      &CompileConfig::simplify_after_lower_access)
       .def_readwrite("lower_access", &CompileConfig::lower_access)
+      .def_readwrite("enable_profiler", &CompileConfig::enable_profiler)
       .def_readwrite("gradient_dt", &CompileConfig::gradient_dt);
 
   m.def("default_compile_config",
@@ -87,7 +88,8 @@ PYBIND11_MODULE(taichi_lang_core, m) {
       .def(py::init<>())
       .def("clear_all_gradients", &Program::clear_all_gradients)
       .def("profiler_print", &Program::profiler_print)
-      .def("profiler_print", &Program::profiler_clear);
+      .def("profiler_print", &Program::profiler_clear)
+      .def("synchronize", &Program::synchronize);
 
   m.def("get_current_program", get_current_program,
         py::return_value_policy::reference);

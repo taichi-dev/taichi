@@ -1,6 +1,6 @@
 # The Taichi Python Frontend
 
-Make sure you also check out the DiffSym paper (section "Language design" and "Appendix A") to learn more about the language.
+Make sure you also check out the DiffTaichi paper (section "Language design" and "Appendix A") to learn more about the language.
 
 ## Global Tensors
  - Every global variable is an N-dimensional tensor. Global scalars are treated as 0-D tensors.

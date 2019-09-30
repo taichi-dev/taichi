@@ -1,0 +1,33 @@
+bool leaveLoop = false;
+while (!leaveLoop) {
+ // printf("attempting...\n");
+ if (atomicExch(&lock, 1) == 0) {
+   // printf("locked\n");
+   leaveLoop = true;
+   atomicExch(&lock, 0);
+ } else {
+   //printf("%d failed...\n", threadIdx.x);
+ }
+}
+
+
+cuobjdump mutex -ptx
+
+ld.param.u64 %rd2, [_Z3incP4Node_param_0];
+cvta.to.global.u64 %rd3, %rd2;
+mov.u32 %r1, %ntid.x;
+mov.u32 %r2, %ctaid.x;
+mov.u32 %r3, %tid.x;
+mad.lo.s32 %r4, %r1, %r2, %r3;
+and.b32 %r5, %r4, 1;
+mul.wide.u32 %rd4, %r5, 8;
+add.s64 %rd1, %rd3, %rd4;
+
+BB0_1:
+atom.global.exch.b32 %r6, [%rd1], 1;
+setp.ne.s32	%p1, %r6, 0;
+@%p1 bra BB0_1;
+
+atom.global.exch.b32 %r7, [%rd1], 0;
+ret;
+}

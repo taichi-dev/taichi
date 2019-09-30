@@ -438,14 +438,14 @@ def main():
   ax = fig.add_subplot(111, projection='3d')
 
   losses = []
-  for iter in range(100):
+  for iter in range(501):
     ti.clear_all_gradients()
     l = forward()
     losses.append(l)
     loss.grad[None] = 1
     backward()
     print('i=', iter, 'loss=', l)
-    learning_rate = 30
+    learning_rate = 10
 
     for i in range(n_actuators):
       for j in range(n_sin_waves):
@@ -453,45 +453,10 @@ def main():
         weights[i, j] -= learning_rate * weights.grad[i, j]
       bias[i] -= learning_rate * bias.grad[i]
 
-    if iter % 20 == 0 and iter > 0:
+    if iter % 50 == 0:
       # visualize
-      forward()
+      print("Dumping particles...")
       for s in range(7, steps, 2):
-        '''
-        print(s)
-        img = np.zeros((res[1] * res[0] * 3,), dtype=np.float32)
-        splat(s)
-        copy_back_and_clear(img)
-        img = img.reshape(res[1], res[0], 3)
-        img = np.sqrt(img)
-        cv2.imshow('img', img)
-        cv2.waitKey(1)
-        '''
-
-        '''
-        xs, ys, zs = [], [], []
-        aas, bs, cs = [], [], []
-        for i in range(n_particles):
-          if particle_type[i] == 0:
-            xs.append(x[s, i][0])
-            ys.append(x[s, i][2])
-            zs.append(x[s, i][1])
-          else:
-            aas.append(x[s, i][0])
-            bs.append(x[s, i][2])
-            cs.append(x[s, i][1])
-
-        ax.scatter(aas, bs, cs, marker='o')
-        ax.scatter(xs, ys, zs, marker='o')
-        ax.set_xlim(0, 1)
-        ax.set_ylim(0, 1)
-        ax.set_zlim(0, 1)
-        plt.draw()
-        plt.pause(0.001)
-        plt.cla()
-        '''
-
-
         def to255(x):
           return int(max(min(x * 255, 255), 0))
         xs, ys, zs = [], [], []
@@ -527,15 +492,7 @@ def main():
           cs.append(color)
         data = np.array(xs + ys + zs + us + vs + ws + cs, dtype=np.float32)
         data.tofile(open('{}/{:04}.bin'.format(folder, s), 'wb'))
-
-
-
-  # ti.profiler_print()
-  plt.title("Optimization of Initial Velocity")
-  plt.ylabel("Loss")
-  plt.xlabel("Gradient Descent Iterations")
-  plt.plot(losses)
-  plt.show()
+      print("Particles dumped")
 
 
 if __name__ == '__main__':

@@ -48,12 +48,6 @@ endif ()
 
 if (NOT WIN32)
     target_link_libraries(${CORE_LIBRARY_NAME} pthread stdc++)
-    if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/external/lib)
-        message("Runtimes exist.")
-    else()
-        message("Fetching runtimes..")
-        execute_process(COMMAND git clone https://github.com/yuanming-hu/taichi_runtime ${CMAKE_CURRENT_SOURCE_DIR}/external/lib)
-    endif()
     if (APPLE)
         # OS X
     else()

@@ -5,7 +5,6 @@ bool use_gui = false;
 TLANG_NAMESPACE_END
 
 #if defined(CUDA_FOUND)
-#include <tbb/tbb.h>
 #include <cuda_runtime_api.h>
 
 TLANG_NAMESPACE_BEGIN
@@ -243,12 +242,12 @@ auto volume_renderer = [](std::vector<std::string> cli_param) {
 
     cudaMemcpy(buffer.data(), &renderer.buffer(0).val<float32>(0),
                buffer.size() * sizeof(float32), cudaMemcpyDeviceToHost);
-    tbb::parallel_for(0, render_size.prod(), [&](int i) {
+    for (int i = 0; i < render_size.prod(); i++) {
       render_buffer[i / render_size.y][i % render_size.y] =
           Vector4(tone_map(scale * buffer[i * 3 + 0]),
                   tone_map(scale * buffer[i * 3 + 1]),
                   tone_map(scale * buffer[i * 3 + 2]), 1.0f);
-    });
+    }
 
     if (video_mode) {
       render_buffer.write_as_image(fmt::format("frames/{:04d}.png", frame));

@@ -2,7 +2,6 @@
 #include <taichi/testing.h>
 #include <numeric>
 #include <taichi/visual/gui.h>
-#include <tbb/tbb.h>
 #include <taichi/system/threading.h>
 #include <taichi/math/svd.h>
 #include "scalar_svd.h"

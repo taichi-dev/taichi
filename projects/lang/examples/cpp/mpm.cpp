@@ -2,7 +2,6 @@
 #include <taichi/testing.h>
 #include <numeric>
 #include <taichi/visual/gui.h>
-#include <tbb/tbb.h>
 #include <taichi/system/threading.h>
 #include <Eigen/Dense>
 #include <taichi/math/eigen.h>
@@ -487,7 +486,7 @@ TC_TEST("simd_mpm") {
   });
 
   auto initialize_data = [&] {
-    tbb::parallel_for(0, n_particles, [&](int p) {
+    for (int p = 0; p < n_particles; p++) {
       g_J.val<float32>(p) = context.particles[p].J;
       for (int i = 0; i < dim; i++) {
         g_pos(i).val<float32>(p) = context.particles[p].pos[i];
@@ -496,7 +495,7 @@ TC_TEST("simd_mpm") {
           g_C(i, j).val<float32>(p) = context.particles[p].C[j][i];
         }
       }
-    });
+    }
   };
   TC_TIME(initialize_data());
 

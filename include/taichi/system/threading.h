@@ -18,9 +18,7 @@
 #include <unistd.h>
 #endif
 #if !defined(TC_AMALGAMATED)
-#include <tbb/tbb.h>
 #define TBB_PREVIEW_GLOBAL_CONTROL 1
-#include <tbb/global_control.h>
 #endif
 
 TC_NAMESPACE_BEGIN
@@ -64,6 +62,7 @@ class Spinlock {
   }
 };
 
+#if (0)
 class ThreadedTaskManager {
  public:
 #if !defined(TC_AMALGAMATED)
@@ -110,6 +109,7 @@ class ThreadedTaskManager {
     return run(target, 0, end, num_threads);
   }
 };
+#endif
 
 class PID {
  public:

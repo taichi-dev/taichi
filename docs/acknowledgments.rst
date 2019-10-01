@@ -4,7 +4,6 @@ Acknowledgments
 `Taichi` is based on many other open-source projects,
 which are shipped with taichi and users do not have to install manually:
 `pybind11 <https://github.com/pybind/pybind11>`_,
-`Intel TBB <https://www.threadingbuildingblocks.org/>`_,
 `fmt <https://github.com/fmtlib/fmt>`_,
 `Catch2 <https://github.com/catchorg/Catch2>`_,
 `spdlog <https://github.com/gabime/spdlog>`_,

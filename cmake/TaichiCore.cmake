@@ -56,13 +56,9 @@ if (NOT WIN32)
     endif()
     if (APPLE)
         # OS X
-        target_link_libraries(${CORE_LIBRARY_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/external/lib/libtbb.dylib)
-        target_link_libraries(${CORE_LIBRARY_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/external/lib/libtbbmalloc.dylib)
     else()
         # Linux
         target_link_libraries(${CORE_LIBRARY_NAME} stdc++fs X11)
-        target_link_libraries(${CORE_LIBRARY_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/external/lib/libtbb.so.2)
-        target_link_libraries(${CORE_LIBRARY_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/external/lib/libtbbmalloc.so.2)
     endif()
 endif ()
 message("PYTHON_LIBRARIES" ${PYTHON_LIBRARIES})
@@ -82,18 +78,6 @@ endif ()
 if (WIN32)
     set_target_properties(${CORE_LIBRARY_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY
             "${CMAKE_CURRENT_SOURCE_DIR}/runtimes")
-    if (MSVC)
-        target_link_libraries(${CORE_LIBRARY_NAME}
-          ${CMAKE_CURRENT_SOURCE_DIR}/external/lib/tbb.lib
-          ${CMAKE_CURRENT_SOURCE_DIR}/external/lib/tbbmalloc.lib
-        )
-    else ()
-        target_link_libraries(${CORE_LIBRARY_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/external/lib/tbb.lib)
-        target_link_libraries(${CORE_LIBRARY_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/external/lib/tbb.dll)
-        target_link_libraries(${CORE_LIBRARY_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/external/lib/tbbmalloc.lib)
-        target_link_libraries(${CORE_LIBRARY_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/external/lib/tbbmalloc.dll)
-        target_link_libraries(${CORE_LIBRARY_NAME} ws2_32)
-    endif()
 endif ()
 
 include_directories(include)

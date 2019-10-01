@@ -1,4 +1,4 @@
-import taichi_lang as ti
+import taichi as ti
 from pytest import approx
 import math
 import autograd.numpy as np

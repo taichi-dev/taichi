@@ -1,4 +1,4 @@
-import taichi_lang as ti
+import taichi as ti
 
 x, y = ti.var(ti.f32), ti.var(ti.f32)
 

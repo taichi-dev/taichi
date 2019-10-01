@@ -1,4 +1,4 @@
-import taichi_lang as ti
+import taichi as ti
 
 ti.cfg.use_llvm = True
 

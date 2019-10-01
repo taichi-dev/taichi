@@ -1,4 +1,4 @@
-import taichi_lang as ti
+import taichi as ti
 
 
 x = ti.Matrix(2, 2, ti.i32)

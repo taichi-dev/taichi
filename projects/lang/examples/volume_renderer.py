@@ -1,4 +1,4 @@
-import taichi_lang as ti
+import taichi as ti
 import numpy as np
 import math
 import matplotlib

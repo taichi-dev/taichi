@@ -1,4 +1,4 @@
-import taichi_lang as ti
+import taichi as ti
 
 x = ti.global_var(ti.i32)
 l = ti.global_var(ti.i32)

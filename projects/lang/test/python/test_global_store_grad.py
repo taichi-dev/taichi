@@ -1,5 +1,5 @@
 '''
-import taichi_lang as ti
+import taichi as ti
 
 ti.cfg.print_ir = True
 

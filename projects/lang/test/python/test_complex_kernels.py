@@ -1,4 +1,4 @@
-import taichi_lang as ti
+import taichi as ti
 from pytest import approx
 
 ti.cfg.print_ir = True

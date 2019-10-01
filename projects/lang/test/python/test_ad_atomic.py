@@ -1,4 +1,4 @@
-import taichi_lang as ti
+import taichi as ti
 from pytest import approx
 
 def test_ad_reduce():

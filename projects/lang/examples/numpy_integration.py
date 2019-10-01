@@ -1,4 +1,4 @@
-import taichi_lang as ti
+import taichi as ti
 import taichi as tc
 import numpy as np
 

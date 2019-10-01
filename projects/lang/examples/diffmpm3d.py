@@ -1,4 +1,4 @@
-import taichi_lang as ti
+import taichi as ti
 from mpl_toolkits.mplot3d import Axes3D
 import os
 import math

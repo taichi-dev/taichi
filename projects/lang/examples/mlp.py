@@ -1,6 +1,6 @@
 import numpy as np
 import random
-import taichi_lang as ti
+import taichi as ti
 import pickle
 
 # ti.runtime.print_preprocessed = True

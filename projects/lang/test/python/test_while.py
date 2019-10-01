@@ -1,4 +1,4 @@
-import taichi_lang as ti
+import taichi as ti
 
 def test_while():
   for arch in [ti.x86_64, ti.cuda]:

@@ -5,7 +5,7 @@ from scipy.ndimage.filters import gaussian_filter
 
 import taichi as tc
 import matplotlib.pyplot as plt
-import taichi_lang as ti
+import taichi as ti
 import math
 import numpy as np
 import cv2

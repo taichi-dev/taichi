@@ -225,7 +225,7 @@ def g2p(f: ti.i32):
 ```
  - Parameterize kernels with different global variables:
 ```python
-import taichi_lang as ti
+import taichi as ti
 
 x = ti.global_var(ti.f32)
 y = ti.global_var(ti.f32)

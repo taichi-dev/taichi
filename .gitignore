@@ -43,8 +43,6 @@ build/
 bin/
 tmp/
 cmake-build-*
-/projects/*
-!/projects/examples
 modules.txt
 /external/lib
 __pycache__

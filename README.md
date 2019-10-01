@@ -1,3 +1,11 @@
+# The Taichi Programming Language
+(Page under construction)
+
+## [High-Performance Computation on Sparse Data Structures](https://youtu.be/wKw8LMF3Djo)
+
+## [Differentiable Programming](https://youtu.be/Z1xvAZve9aE)
+
+# (Legacy) The Taichi Library
 **Taichi** is an open-source computer graphics library that aims to provide easy-to-use infrastructures for computer graphics R&D. It's written in C++14 and wrapped friendly with Python.
 
 | **Linux, Mac OS X** | **Windows** | Doc (WIP) | **Chat** |

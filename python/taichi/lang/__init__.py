@@ -41,8 +41,13 @@ def clear_all_gradients():
 
 schedules = [parallelize, vectorize, block_dim, cache]
 
+'''
 __all__ = [kernel, layout, var, global_var, f64, float64, f32, float32, i32,
            int32, print, core, index, make_expr_group, i, j, k, ij, ijk,
            inside_kernel, Matrix, Vector, cfg, current_cfg, outer_product,
            profiler_print, profiler_clear, reset, runtime, Tape,
            set_default_fp] + schedules + unary_ops
+'''
+
+__all__ = [s for s in dir() if not s.startswith('_')]
+

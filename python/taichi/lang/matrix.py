@@ -1,5 +1,5 @@
-import taichi_lang.impl as impl
-import taichi_lang.expr as expr
+from . import expr
+from . import impl
 import copy
 import numbers
 

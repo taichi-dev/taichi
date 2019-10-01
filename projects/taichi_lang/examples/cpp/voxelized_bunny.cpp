@@ -2,13 +2,13 @@
 #include <taichi/util.h>
 #include <taichi/visual/gui.h>
 #include <taichi/system/profiler.h>
-#include <taichi/visualization/particle_visualization.h>
 
 TC_NAMESPACE_BEGIN
 
 using namespace Tlang;
 
 auto voxel_bunny = [](std::vector<std::string> cli_param) {
+#if(0)
   int n = 128, num_ch1 = 1, num_ch2 = 1;
   CoreState::set_trigger_gdb_when_crash(true);
   auto param = parse_param(cli_param);
@@ -45,6 +45,8 @@ auto voxel_bunny = [](std::vector<std::string> cli_param) {
   auto f = fopen("bunny128.bin", "wb");
   fwrite(in_data, sizeof(float), num_ch1 * n * n * n, f);
   fclose(f);
+#endif
+  TC_NOT_IMPLEMENTED
 };
 TC_REGISTER_TASK(voxel_bunny);
 

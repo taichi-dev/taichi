@@ -2,7 +2,6 @@
 #include <taichi/util.h>
 #include <taichi/visual/gui.h>
 #include <taichi/system/profiler.h>
-#include <taichi/visualization/particle_visualization.h>
 
 TC_NAMESPACE_BEGIN
 
@@ -13,6 +12,7 @@ constexpr int n = 128;
 constexpr int num_ch1 = 1;
 
 auto bunny_volume_128 = [](std::vector<std::string> cli_param) {
+#if (0)
   auto tex = create_instance<Texture>(
       "mesh", Dict()
                   .set("resolution", Vector3(n))
@@ -45,6 +45,8 @@ auto bunny_volume_128 = [](std::vector<std::string> cli_param) {
   auto f = fopen("bunny_128.bin", "wb");
   fwrite(in_data, sizeof(float), num_ch1 * n * n * n, f);
   fclose(f);
+#endif
+  TC_NOT_IMPLEMENTED
 };
 TC_REGISTER_TASK(bunny_volume_128);
 

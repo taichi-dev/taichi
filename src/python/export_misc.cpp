@@ -39,10 +39,6 @@ Config config_from_py_dict(py::dict &c) {
   return config;
 }
 
-void test();
-
-void test_volumetric_io();
-
 void test_raise_error() {
   raise_assertion_failure_in_python("Just a test.");
 }
@@ -140,9 +136,7 @@ void export_misc(py::module &m) {
         [](const std::string &level) { logger.set_level(level); });
   m.def("set_core_trigger_gdb_when_crash",
         CoreState::set_trigger_gdb_when_crash);
-  m.def("test", test);
   m.def("test_raise_error", test_raise_error);
-  m.def("test_volumetric_io", test_volumetric_io);
   m.def("config_from_dict", config_from_py_dict);
   m.def("get_default_float_size", []() { return sizeof(real); });
   m.def("register_at_exit",

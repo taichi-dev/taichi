@@ -2,7 +2,6 @@
 #include <taichi/util.h>
 #include <taichi/visual/gui.h>
 #include <taichi/system/profiler.h>
-#include <taichi/visualization/particle_visualization.h>
 
 TC_NAMESPACE_BEGIN
 
@@ -13,6 +12,9 @@ constexpr int n = 256;
 constexpr int num_ch1 = 16, num_ch2 = 16;
 
 auto cnn = [](std::vector<std::string> cli_param) {
+  TC_WARN("After refactoring the Texture class from Taichi is removed. Need to read from the raw bunny binary.");
+  TC_NOT_IMPLEMENTED
+#if (0)
   CoreState::set_trigger_gdb_when_crash(true);
   auto param = parse_param(cli_param);
   auto gpu = param.get("gpu", true);
@@ -221,6 +223,7 @@ auto cnn = [](std::vector<std::string> cli_param) {
     }
     gui.update();
   }
+#endif
 #endif
 };
 TC_REGISTER_TASK(cnn);

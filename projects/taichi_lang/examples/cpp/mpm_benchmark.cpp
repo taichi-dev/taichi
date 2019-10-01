@@ -5,7 +5,6 @@
 #include <taichi/visual/gui.h>
 #include <taichi/common/bit.h>
 #include <taichi/system/profiler.h>
-#include <taichi/visualization/particle_visualization.h>
 
 TC_NAMESPACE_BEGIN
 
@@ -253,6 +252,7 @@ auto mpm_benchmark = [](std::vector<std::string> cli_param) {
     TC_P(ms_per_substep);
   };
 
+#if (0)
   // Visualization
   Vector2i cam_res(1280, 720);
   GUI gui("MPM", cam_res);
@@ -317,6 +317,7 @@ auto mpm_benchmark = [](std::vector<std::string> cli_param) {
         fmt::format("{}/{:05d}.png", render_dir, frame));
     print_profile_info();
   }
+#endif
 };
 TC_REGISTER_TASK(mpm_benchmark);
 

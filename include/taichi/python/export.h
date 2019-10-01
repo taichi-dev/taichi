@@ -34,8 +34,6 @@ namespace py = pybind11;
 
 void export_math(py::module &m);
 
-void export_dynamics(py::module &m);
-
 void export_visual(py::module &m);
 
 void export_misc(py::module &m);

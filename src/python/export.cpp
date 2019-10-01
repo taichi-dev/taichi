@@ -21,7 +21,6 @@ PYBIND11_MODULE(taichi_core, m) {
   }
 
   export_math(m);
-  export_dynamics(m);
   export_visual(m);
   export_io(m);
   export_misc(m);

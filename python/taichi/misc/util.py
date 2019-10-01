@@ -402,10 +402,10 @@ def redirect_print_to_log():
 
 
 def duplicate_stdout_to_file(fn):
-  taichi.core.duplicate_stdout_to_file(fn)
+  taichi.tc_core.duplicate_stdout_to_file(fn)
   
 def set_logging_level(level):
-  taichi.core.set_logging_level(level)
+  taichi.tc_core.set_logging_level(level)
   
 def set_gdb_trigger(on=True):
-  taichi.core.set_core_trigger_gdb_when_crash(on)
+  taichi.tc_core.set_core_trigger_gdb_when_crash(on)

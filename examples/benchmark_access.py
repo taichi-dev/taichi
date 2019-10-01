@@ -14,7 +14,7 @@ def laplace():
 
 @ti.layout
 def place_variables():
-  ti.root.dense(ti.indices(0, 1), (16, 16)).place(x.ptr).place(y.ptr)
+  ti.root.dense(ti.ij, (16, 16)).place(x).place(y)
 
 laplace()
 

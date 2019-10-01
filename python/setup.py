@@ -31,13 +31,12 @@ setuptools.setup(
     name=project_name(),
     packages=packages,
     version='0.0.32',
-    description='Computer Graphics R&D Infrastructure',
+    description='The Taichi Programming Language',
     author='Yuanming Hu',
     author_email='yuanmhu@gmail.com',
     url='https://github.com/yuanming-hu/taichi',
     install_requires=[
-        'numpy', 'Pillow', 'scipy', 'pybind11', 'flask', 'flask_cors',
-        'GitPython', 'yapf', 'colorama', 'psutil', 'requests', 'PyQt5'
+        'numpy', 'Pillow', 'scipy', 'pybind11', 'GitPython', 'yapf', 'colorama', 'psutil'
     ],
     data_files=[('lib', data_files)],
     keywords=['graphics', 'simulation'],

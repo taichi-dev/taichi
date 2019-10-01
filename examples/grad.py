@@ -1,8 +1,7 @@
 import taichi as ti
-import taichi as tc
 import matplotlib.pyplot as plt
 
-tc.set_gdb_trigger(True)
+ti.set_gdb_trigger(True)
 
 N = 2048
 x, y = ti.var(ti.f32), ti.var(ti.f32)
@@ -10,9 +9,6 @@ x, y = ti.var(ti.f32), ti.var(ti.f32)
 @ti.layout
 def xy():
   ti.root.dense(ti.i, N).place(x, x.grad, y, y.grad)
-
-#ti.cfg.lower_access = True
-#ti.cfg.print_ir = True
 
 @ti.kernel
 def poly():

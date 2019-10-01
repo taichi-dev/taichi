@@ -72,7 +72,7 @@ def main(debug=False):
   lines.append(u' *******************************************')
   lines.append(u' **                Taichi                 **')
   lines.append(u' **                ~~~~~~                 **')
-  lines.append(u' ** Open Source Computer Graphics Library **')
+  lines.append(u' ** High-Performance Programming Language **')
   lines.append(u' *******************************************')
   lines.append(u'{:^43}'.format(u"\u2630 \u2631 \u2632 \u2633 "
                                 "\u2634 \u2635 \u2636 \u2637"))

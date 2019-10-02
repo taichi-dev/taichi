@@ -80,7 +80,7 @@ def main(debug=False):
   print()
   import taichi as tc
 
-  tc.core.set_core_debug(debug)
+  tc.tc_core.set_core_debug(debug)
 
   argc = len(sys.argv)
   if argc == 1 or sys.argv[1] == 'help':

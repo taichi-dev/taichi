@@ -335,14 +335,9 @@ def at_startup():
     os.mkdir(output_dir)
 
   # Load modules
-  f = open(os.path.join(get_repo_directory(), 'modules.txt'), 'r')
-  modules = f.readline().strip().split(';')
-  for module in modules:
-    if module != '':
-      load_module(module)
+  load_module('lang_core')
 
   tc_core.set_core_state_python_imported(True)
-  f.close()
 
 
 def start_memory_monitoring(output_fn, pid=-1, interval=1):

@@ -28,4 +28,3 @@ include(cmake/TaichiMain.cmake)
 add_subdirectory(lang)
 
 message("C++ Flags: ${CMAKE_CXX_FLAGS}")
-file(WRITE modules.txt "lang_core")

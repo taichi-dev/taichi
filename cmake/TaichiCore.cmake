@@ -8,39 +8,10 @@ file(GLOB TAICHI_CORE_SOURCE
         "include/taichi/*/*/*/*.cpp" "include/taichi/*/*/*.cpp" "include/taichi/*/*.cpp"
         "include/taichi/*/*/*/*.h" "include/taichi/*/*/*.h" "include/taichi/*/*.h")
 
-file(GLOB TAICHI_PROJECT_SOURCE
-        "projects/*/*/*/*.cpp"
-        "projects/*/*/*/*.h"
-        "projects/*/*/*.cpp"
-        "projects/*/*/*.h"
-        "projects/*/*.cpp"
-        "projects/*/*.h"
-        "projects/*.cpp"
-        "projects/*.h"
-        )
 
 add_library(${CORE_LIBRARY_NAME} SHARED ${TAICHI_CORE_SOURCE})
 
 # Optional dependencies
-
-if (USE_OPENGL)
-    #add_subdirectory(external/glfw)
-    #include_directories(external/glfw/include)
-    #target_link_libraries(${CORE_LIBRARY_NAME} glfw)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTC_USE_OPENGL")
-    find_package(OpenGL REQUIRED)
-    find_package(GLFW3 REQUIRED)
-    include_directories(${GLFW_INCLUDE_DIRS})
-    find_package(GLEW REQUIRED)
-    include_directories(${GLEW_INCLUDE_DIRS})
-    target_link_libraries(${CORE_LIBRARY_NAME} ${GLEW_LIBRARY})
-    target_link_libraries(${CORE_LIBRARY_NAME} ${GLEW_LIBRARIES})
-    target_link_libraries(${CORE_LIBRARY_NAME} ${OPENGL_LIBRARIES})
-    target_link_libraries(${CORE_LIBRARY_NAME} ${GLFW3_LIBRARY})
-    if (APPLE)
-        target_link_libraries(${CORE_LIBRARY_NAME} glfw3)
-    endif ()
-endif ()
 
 if (APPLE)
     target_link_libraries(${CORE_LIBRARY_NAME} "-framework Cocoa")

@@ -62,7 +62,7 @@ real measure_cpe(std::function<void()> target,
 }
 
 std::string get_project_fn() {
-  return fmt::format("{}/projects/lang/", get_repo_dir());
+  return fmt::format("{}/lang/", get_repo_dir());
 }
 
 int default_simd_width(Arch arch) {

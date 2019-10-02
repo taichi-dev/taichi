@@ -25,11 +25,7 @@ include(cmake/TaichiCXXFlags.cmake)
 include(cmake/TaichiCore.cmake)
 include(cmake/TaichiMain.cmake)
 
-set(TAICHI_PROJECT_LIBRARIES "")
-if (EXISTS "${CMAKE_CURRENT_LIST_DIR}/projects")
-    add_subdirectory(projects)
-endif()
+add_subdirectory(lang)
 
 message("C++ Flags: ${CMAKE_CXX_FLAGS}")
-message("Project libraries: ${TAICHI_PROJECT_LIBRARIES}")
-file(WRITE modules.txt "${TAICHI_PROJECT_LIBRARIES}")
+file(WRITE modules.txt "lang_core")

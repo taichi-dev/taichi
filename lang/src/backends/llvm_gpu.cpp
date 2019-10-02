@@ -10,7 +10,9 @@
 #include "../ir.h"
 
 #if defined(TLANG_WITH_LLVM)
+
 #include "codegen_llvm.h"
+
 #endif
 
 TLANG_NAMESPACE_BEGIN
@@ -20,7 +22,7 @@ TLANG_NAMESPACE_BEGIN
 using namespace llvm;
 
 class CodeGenLLVMGPU : public CodeGenLLVM {
- public:
+public:
   CodeGenLLVMGPU(CodeGenBase *codegen_base, Kernel *kernel)
       : CodeGenLLVM(codegen_base, kernel) {
   }
@@ -28,6 +30,7 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
   FunctionType compile_module_to_executable() override {
     auto ptx = compile_module_to_ptx(module);
     TC_P(ptx);
+    compile_ptx_and_launch(ptx, "cuda_add");
     // return [=](Context context) { f(&context); };
     TC_NOT_IMPLEMENTED
     return nullptr;
@@ -37,6 +40,7 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
 FunctionType GPUCodeGen::codegen_llvm() {
   return CodeGenLLVMGPU(this, kernel).gen();
 }
+
 #else
 
 FunctionType GPUCodeGen::codegen_llvm() {

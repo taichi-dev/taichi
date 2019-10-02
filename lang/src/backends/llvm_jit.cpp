@@ -164,9 +164,7 @@ std::string compile_module_to_ptx(std::unique_ptr<llvm::Module> &module) {
   return buffer;
 }
 
-void checkCudaErrors(CUresult err) {
-  assert(err == CUDA_SUCCESS);
-}
+#define checkCudaErrors(err) assert((err) == CUDA_SUCCESS);
 
 int compile_ptx_and_launch(const std::string &ptx,
                            const std::string &kernel_name) {

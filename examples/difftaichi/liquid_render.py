@@ -15,7 +15,7 @@ inv_dx = 1 / dx
 dt = 3e-4
 max_steps = 256
 vis_interval = 32
-output_vis_interval = 2
+output_vis_interval = 1
 steps = 256
 amplify = 2
 

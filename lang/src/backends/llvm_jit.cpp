@@ -292,7 +292,7 @@ const char *get_error_name(CUresult err) {
 }
 
 int compile_ptx_and_launch(const std::string &ptx,
-                           const std::string &kernel_name) {
+                           const std::string &kernel_name, void *context_ptr) {
   CUdevice device;
   CUmodule cudaModule;
   CUcontext context;
@@ -333,29 +333,6 @@ int compile_ptx_and_launch(const std::string &ptx,
   checkCudaErrors(
       cuModuleGetFunction(&function, cudaModule, kernel_name.c_str()));
 
-  // Device data
-  CUdeviceptr devBufferA;
-  CUdeviceptr devBufferB;
-  CUdeviceptr devBufferC;
-
-  checkCudaErrors(cuMemAlloc(&devBufferA, sizeof(float) * 16));
-  checkCudaErrors(cuMemAlloc(&devBufferB, sizeof(float) * 16));
-  checkCudaErrors(cuMemAlloc(&devBufferC, sizeof(float) * 16));
-
-  float *hostA = new float[16];
-  float *hostB = new float[16];
-  float *hostC = new float[16];
-
-  // Populate input
-  for (unsigned i = 0; i != 16; ++i) {
-    hostA[i] = (float)i;
-    hostB[i] = (float)(2 * i);
-    hostC[i] = 0.0f;
-  }
-
-  checkCudaErrors(cuMemcpyHtoD(devBufferA, &hostA[0], sizeof(float) * 16));
-  checkCudaErrors(cuMemcpyHtoD(devBufferB, &hostB[0], sizeof(float) * 16));
-
   unsigned blockSizeX = 16;
   unsigned blockSizeY = 1;
   unsigned blockSizeZ = 1;
@@ -364,32 +341,16 @@ int compile_ptx_and_launch(const std::string &ptx,
   unsigned gridSizeZ = 1;
 
   // Kernel parameters
-  void *KernelParams[] = {&devBufferA, &devBufferB, &devBufferC};
+  void *KernelParams[] = {&context_ptr};
 
-  std::cout << "Launching kernel\n";
+  TC_INFO("Launching kernel {}", kernel_name);
 
   // Kernel launch
   checkCudaErrors(cuLaunchKernel(function, gridSizeX, gridSizeY, gridSizeZ,
-                                 blockSizeX, blockSizeY, blockSizeZ, 0, NULL,
-                                 KernelParams, NULL));
-
-  // Retrieve device data
-  checkCudaErrors(cuMemcpyDtoH(&hostC[0], devBufferC, sizeof(float) * 16));
-
-  std::cout << "Results:\n";
-  for (unsigned i = 0; i != 16; ++i) {
-    std::cout << hostA[i] << " + " << hostB[i] << " = " << hostC[i] << "\n";
-  }
-
-  // Clean up after ourselves
-  delete[] hostA;
-  delete[] hostB;
-  delete[] hostC;
+                                 blockSizeX, blockSizeY, blockSizeZ, 0, nullptr,
+                                 KernelParams, nullptr));
 
   // Clean-up
-  checkCudaErrors(cuMemFree(devBufferA));
-  checkCudaErrors(cuMemFree(devBufferB));
-  checkCudaErrors(cuMemFree(devBufferC));
   checkCudaErrors(cuModuleUnload(cudaModule));
   checkCudaErrors(cuCtxDestroy(context));
 }
@@ -399,7 +360,7 @@ std::string compile_module_to_ptx(std::unique_ptr<llvm::Module> &module) {
 }
 
 int compile_ptx_and_launch(const std::string &ptx,
-                           const std::string &kernel_name) {
+                           const std::string &kernel_name, void *) {
   TC_NOT_IMPLEMENTED
 }
 #endif

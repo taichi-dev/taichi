@@ -58,7 +58,7 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
 
     auto ptx = compile_module_to_ptx(module);
     TC_P(ptx);
-    compile_ptx_and_launch(ptx, "test_kernel");
+    compile_ptx_and_launch(ptx, "test_kernel", &context);
     // return [=](Context context) { f(&context); };
     TC_NOT_IMPLEMENTED
     return nullptr;

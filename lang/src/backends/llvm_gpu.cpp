@@ -59,7 +59,8 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
     module->getOrInsertNamedMetadata("nvvm.annotations")->addOperand(md_node);
 
     auto ptx = compile_module_to_ptx(module);
-    compile_ptx_and_launch(ptx, "test_kernel", &get_current_program().context);
+    auto context = get_current_program().get_context();
+    compile_ptx_and_launch(ptx, "test_kernel", &context);
     TC_NOT_IMPLEMENTED
     return nullptr;
   }

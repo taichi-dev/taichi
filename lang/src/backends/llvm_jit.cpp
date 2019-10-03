@@ -7,6 +7,7 @@
 #include <cuda.h>
 #endif
 #include "llvm_jit.h"
+#include "context.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -297,6 +298,7 @@ class CUDAContext {
   CUfunction function;
   CUlinkState linker;
   int devCount;
+  CUdeviceptr devBufferA;
 
  public:
   CUDAContext() {
@@ -318,6 +320,7 @@ class CUDAContext {
     }
     // Create driver context
     checkCudaErrors(cuCtxCreate(&context, 0, device));
+    checkCudaErrors(cuMemAlloc(&devBufferA, sizeof(Context)));
   }
 
   void run(const std::string &ptx,
@@ -331,7 +334,10 @@ class CUDAContext {
     unsigned gridSizeZ = 1;
 
     // Kernel parameters
-    void *KernelParams[] = {context_ptr};
+
+    checkCudaErrors(cuMemcpyHtoD(devBufferA, context_ptr, sizeof(Context)));
+
+    void *KernelParams[] = {&devBufferA};
 
     // Create module for object
     checkCudaErrors(cuModuleLoadDataEx(&cudaModule, ptx.c_str(), 0, 0, 0));
@@ -344,10 +350,12 @@ class CUDAContext {
     checkCudaErrors(cuLaunchKernel(function, gridSizeX, gridSizeY, gridSizeZ,
                                    blockSizeX, blockSizeY, blockSizeZ, 0,
                                    nullptr, KernelParams, nullptr));
+
     cuCtxSynchronize();
   }
 
   ~CUDAContext() {
+    checkCudaErrors(cuMemFree(devBufferA));
     checkCudaErrors(cuModuleUnload(cudaModule));
     checkCudaErrors(cuCtxDestroy(context));
   }

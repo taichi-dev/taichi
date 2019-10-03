@@ -42,7 +42,7 @@ Casting
 
 Do’s
 -------------------------------------------------------------------------------
-- Be considerate to your users (this includes yourself in the near future).
+- Be considerate to your users (including yourself in the near future).
 - Use ``auto`` for local variables when appropriate.
 - Mark ``override`` and ``const`` when necessary.
 

@@ -38,6 +38,15 @@ TLANG_NAMESPACE_BEGIN
 
 std::string type_name(llvm::Type *type);
 
+bool check_func_call_signature(llvm::Value *func,
+                               std::vector<Value *> arglist);
+
+template <typename... Args>
+inline bool check_func_call_signature(llvm::Value *func, Args &&... args) {
+  return check_func_call_signature(func, {args...});
+}
+
+
 class ModuleBuilder {
  public:
   std::unique_ptr<Module> module;
@@ -60,15 +69,15 @@ class ModuleBuilder {
     }
     return f;
   }
+
+  template <typename... Args>
+  llvm::Value *call(llvm::IRBuilder<> *builder, const std::string &func_name, Args &&... args) {
+    auto func = get_runtime_function(func_name);
+    auto arglist = std::vector<Value *>({args...});
+    check_func_call_signature(func, arglist);
+    return builder->CreateCall(func, arglist);
+  }
 };
-
-bool check_func_call_signature(llvm::Value *func,
-                               std::vector<Value *> arglist);
-
-template <typename... Args>
-inline bool check_func_call_signature(llvm::Value *func, Args &&... args) {
-  return check_func_call_signature(func, {args...});
-}
 
 class RuntimeObject {
  public:

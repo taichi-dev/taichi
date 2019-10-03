@@ -74,7 +74,8 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
     std::string format;
 
     auto values = builder->CreateAlloca(stype);
-    auto value_ptr = builder->CreateGEP(values, {0, 0});
+    auto value_ptr = builder->CreateGEP(
+        values, {tlctx->get_constant(0), tlctx->get_constant(0)});
     auto value = stmt->stmt->value;
 
     if (stmt->stmt->ret_type.data_type == DataType::i32) {
@@ -89,12 +90,11 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
 
     auto format_str = "[debug] " + stmt->str + " = " + format + "\n";
 
-    stmt->value = builder->CreateCall(
-        get_runtime_function("vprintf"),
-        {builder->CreateGlobalStringPtr(format_str, "format string"),
-         builder->CreateBitCast(values,
-                                llvm::Type::getInt8PtrTy(*llvm_context))},
-        "debug_printf");
+    stmt->value = ModuleBuilder::call(
+        builder, "vprintf",
+        builder->CreateGlobalStringPtr(format_str, "format string"),
+        builder->CreateBitCast(values,
+                               llvm::Type::getInt8PtrTy(*llvm_context)));
   }
 };
 

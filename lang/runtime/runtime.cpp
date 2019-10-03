@@ -38,7 +38,7 @@ using ContextArgType = long long;
 
 extern "C" {
 
-int vprintf(Ptr *format, Ptr *arg);
+int vprintf(Ptr format, Ptr arg);
 int printf(const char *, ...);
 
 struct PhysicalCoordinates {

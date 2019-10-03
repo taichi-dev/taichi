@@ -69,7 +69,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     physical_coordinate_ty = get_runtime_type("PhysicalCoordinates");
 
     auto *FT =
-        llvm::FunctionType::get(tlctx->get_data_type(DataType::i32),
+        llvm::FunctionType::get(llvm::Type::getVoidTy(*llvm_context),
                                 {PointerType::get(context_ty, 0)}, false);
 
     kernel_name = kernel->name + "_kernel";
@@ -182,7 +182,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     builder->SetInsertPoint(bb);
 
     node->accept(this);
-    builder->CreateRet(tlctx->get_constant(0));
+    builder->CreateRetVoid();
 
     if (get_current_program().config.print_kernel_llvm_ir) {
       TC_INFO("Kernel Module IR");

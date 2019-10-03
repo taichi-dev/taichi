@@ -8,7 +8,7 @@ val = ti.var(ti.i32)
 ti.cfg.use_llvm = True
 ti.cfg.arch = ti.cuda
 # ti.cfg.print_ir = True
-# ti.cfg.print_kernel_llvm_ir = True
+ti.cfg.print_kernel_llvm_ir = True
 
 n = 32
 
@@ -26,7 +26,8 @@ for i in range(4):
 
 @ti.kernel
 def test():
-  for i in range(4):
-    val[i] = i * 10
+  pass
+  # for i in range(4):
+  #   val[i] = i * 10
 
 test()

@@ -291,68 +291,75 @@ const char *get_error_name(CUresult err) {
   }
 }
 
-int compile_ptx_and_launch(const std::string &ptx,
-                           const std::string &kernel_name, void *context_ptr) {
+class CUDAContext {
   CUdevice device;
   CUmodule cudaModule;
   CUcontext context;
   CUfunction function;
   CUlinkState linker;
   int devCount;
+public:
+  CUDAContext() {
+    // CUDA initialization
+    checkCudaErrors(cuInit(0));
+    checkCudaErrors(cuDeviceGetCount(&devCount));
+    checkCudaErrors(cuDeviceGet(&device, 0));
 
-  // CUDA initialization
-  checkCudaErrors(cuInit(0));
-  checkCudaErrors(cuDeviceGetCount(&devCount));
-  checkCudaErrors(cuDeviceGet(&device, 0));
+    char name[128];
+    checkCudaErrors(cuDeviceGetName(name, 128, device));
+    std::cout << "Using CUDA Device [0]: " << name << "\n";
 
-  char name[128];
-  checkCudaErrors(cuDeviceGetName(name, 128, device));
-  std::cout << "Using CUDA Device [0]: " << name << "\n";
-
-  int devMajor, devMinor;
-  checkCudaErrors(cuDeviceComputeCapability(&devMajor, &devMinor, device));
-  std::cout << "Device Compute Capability: " << devMajor << "." << devMinor
-            << "\n";
-  if (devMajor < 2) {
-    std::cerr << "ERROR: Device 0 is not SM 2.0 or greater\n";
-    return 1;
+    int devMajor, devMinor;
+    checkCudaErrors(cuDeviceComputeCapability(&devMajor, &devMinor, device));
+    std::cout << "Device Compute Capability: " << devMajor << "." << devMinor
+              << "\n";
+    if (devMajor < 2) {
+      TC_ERROR("Device 0 is not SM 2.0 or greater");
+    }
+    // Create driver context
+    checkCudaErrors(cuCtxCreate(&context, 0, device));
   }
 
-  std::string str = ptx;
+  void run(std::string ptx, std::string kernel_name, void *context_ptr) {
+    TC_TRACE("Compiling PTX: \n{}", ptx);
 
-  TC_TRACE("Compiling PTX: \n{}", str);
+    unsigned blockSizeX = 16;
+    unsigned blockSizeY = 1;
+    unsigned blockSizeZ = 1;
+    unsigned gridSizeX = 1;
+    unsigned gridSizeY = 1;
+    unsigned gridSizeZ = 1;
 
-  // Create driver context
-  checkCudaErrors(cuCtxCreate(&context, 0, device));
+    // Kernel parameters
+    void *KernelParams[] = {&context_ptr};
 
-  // Create module for object
-  checkCudaErrors(cuModuleLoadDataEx(&cudaModule, str.c_str(), 0, 0, 0));
+    TC_INFO("Launching kernel {}", kernel_name);
 
-  TC_TRACE("Loading symbol {}", kernel_name);
-  // Get kernel function
-  checkCudaErrors(
-      cuModuleGetFunction(&function, cudaModule, kernel_name.c_str()));
+    // Create module for object
+    checkCudaErrors(cuModuleLoadDataEx(&cudaModule, ptx.c_str(), 0, 0, 0));
 
-  unsigned blockSizeX = 16;
-  unsigned blockSizeY = 1;
-  unsigned blockSizeZ = 1;
-  unsigned gridSizeX = 1;
-  unsigned gridSizeY = 1;
-  unsigned gridSizeZ = 1;
+    TC_TRACE("Loading symbol {}", kernel_name);
+    // Get kernel function
+    checkCudaErrors(
+        cuModuleGetFunction(&function, cudaModule, kernel_name.c_str()));
+    // Kernel launch
+    checkCudaErrors(cuLaunchKernel(function, gridSizeX, gridSizeY, gridSizeZ,
+                                   blockSizeX, blockSizeY, blockSizeZ, 0, nullptr,
+                                   KernelParams, nullptr));
+  }
 
-  // Kernel parameters
-  void *KernelParams[] = {&context_ptr};
+  ~CUDAContext() {
+    // Clean-up
+    checkCudaErrors(cuModuleUnload(cudaModule));
+    checkCudaErrors(cuCtxDestroy(context));
+  }
+};
 
-  TC_INFO("Launching kernel {}", kernel_name);
 
-  // Kernel launch
-  checkCudaErrors(cuLaunchKernel(function, gridSizeX, gridSizeY, gridSizeZ,
-                                 blockSizeX, blockSizeY, blockSizeZ, 0, nullptr,
-                                 KernelParams, nullptr));
-
-  // Clean-up
-  checkCudaErrors(cuModuleUnload(cudaModule));
-  checkCudaErrors(cuCtxDestroy(context));
+CUDAContext cuda_context; // TODO:..
+int compile_ptx_and_launch(const std::string &ptx,
+                           const std::string &kernel_name, void *context_ptr) {
+  cuda_context.run(ptx, kernel_name, context_ptr);
 }
 #else
 std::string compile_module_to_ptx(std::unique_ptr<llvm::Module> &module) {

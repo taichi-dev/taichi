@@ -26,8 +26,8 @@ for i in range(4):
 
 @ti.kernel
 def test():
-  pass
-  # for i in range(4):
+  for i in range(4):
+    ti.print(i)
   #   val[i] = i * 10
 
 test()

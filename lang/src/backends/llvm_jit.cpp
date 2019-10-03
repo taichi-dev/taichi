@@ -323,9 +323,6 @@ class CUDAContext {
   void run(const std::string &ptx,
            const std::string &kernel_name,
            void *context_ptr) {
-    /*
-    // TC_TRACE("Compiling PTX: \n{}", ptx);
-
     unsigned blockSizeX = 16;
     unsigned blockSizeY = 1;
     unsigned blockSizeZ = 1;
@@ -348,26 +345,21 @@ class CUDAContext {
                                    blockSizeX, blockSizeY, blockSizeZ, 0,
                                    nullptr, KernelParams, nullptr));
     cuCtxSynchronize();
-    TC_TAG;
-    checkCudaErrors(cuModuleUnload(cudaModule));
-    TC_TAG;
-    checkCudaErrors(cuCtxDestroy(context));
-    TC_TAG;
-                                   */
   }
 
   ~CUDAContext() {
-    // Clean-up
+    checkCudaErrors(cuModuleUnload(cudaModule));
+    checkCudaErrors(cuCtxDestroy(context));
   }
 };
 
-// static CUDAContext cuda_context;  // TODO:..
+static CUDAContext cuda_context;  // TODO:..
 
 int compile_ptx_and_launch(const std::string &ptx,
                            const std::string &kernel_name,
                            void *context_ptr) {
-  // cuda_context.run(ptx, kernel_name, context_ptr);
-  TC_TAG;
+  cuda_context.run(ptx, kernel_name, context_ptr);
+  return 0;
 }
 #else
 std::string compile_module_to_ptx(std::unique_ptr<llvm::Module> &module) {

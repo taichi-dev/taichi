@@ -31,11 +31,11 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
   }
 
   FunctionType compile_module_to_executable() override {
-    // Mark kernel function as a CUDA __global__ function
     llvm::Function *func = module->getFunction("test_kernel");
 
-    // Example annotation from llvm PTX doc:
-    /*
+    /*******************************************************************
+    Example annotation from llvm PTX doc:
+
     define void @kernel(float addrspace(1)* %A,
                         float addrspace(1)* %B,
                         float addrspace(1)* %C);
@@ -44,9 +44,11 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
     !0 = !{void (float addrspace(1)*,
                  float addrspace(1)*,
                  float addrspace(1)*)* @kernel, !"kernel", i32 1}
-    */
+    *******************************************************************/
 
-    // Add the nvvm annotation that it is a kernel function.
+    // Mark kernel function as a CUDA __global__ function
+    // Add the nvvm annotation that it is considered a kernel function.
+
     llvm::Metadata *md_args[] = {
         llvm::ValueAsMetadata::get(func),
         MDString::get(*llvm_context, "kernel"),
@@ -57,9 +59,7 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
     module->getOrInsertNamedMetadata("nvvm.annotations")->addOperand(md_node);
 
     auto ptx = compile_module_to_ptx(module);
-    TC_P(ptx);
-    compile_ptx_and_launch(ptx, "test_kernel", &context);
-    // return [=](Context context) { f(&context); };
+    compile_ptx_and_launch(ptx, "test_kernel", &get_current_program().context);
     TC_NOT_IMPLEMENTED
     return nullptr;
   }

@@ -155,7 +155,6 @@ std::string compile_module_to_ptx(std::unique_ptr<llvm::Module> &module) {
   module_pass_manager.run(*module);
 
   TC_DEBUG("Done with CodeGen_PTX_Dev::compile_to_src");
-  TC_DEBUG("PTX kernel: {}", outstr.c_str());
 
   std::string buffer(outstr.begin(), outstr.end());
 
@@ -298,7 +297,8 @@ class CUDAContext {
   CUfunction function;
   CUlinkState linker;
   int devCount;
-public:
+
+ public:
   CUDAContext() {
     // CUDA initialization
     checkCudaErrors(cuInit(0));
@@ -320,8 +320,11 @@ public:
     checkCudaErrors(cuCtxCreate(&context, 0, device));
   }
 
-  void run(std::string ptx, std::string kernel_name, void *context_ptr) {
-    TC_TRACE("Compiling PTX: \n{}", ptx);
+  void run(const std::string &ptx,
+           const std::string &kernel_name,
+           void *context_ptr) {
+    /*
+    // TC_TRACE("Compiling PTX: \n{}", ptx);
 
     unsigned blockSizeX = 16;
     unsigned blockSizeY = 1;
@@ -331,35 +334,40 @@ public:
     unsigned gridSizeZ = 1;
 
     // Kernel parameters
-    void *KernelParams[] = {&context_ptr};
-
-    TC_INFO("Launching kernel {}", kernel_name);
+    void *KernelParams[] = {context_ptr};
 
     // Create module for object
     checkCudaErrors(cuModuleLoadDataEx(&cudaModule, ptx.c_str(), 0, 0, 0));
 
-    TC_TRACE("Loading symbol {}", kernel_name);
+    // TC_TRACE("Loading symbol {}", kernel_name);
     // Get kernel function
     checkCudaErrors(
         cuModuleGetFunction(&function, cudaModule, kernel_name.c_str()));
     // Kernel launch
     checkCudaErrors(cuLaunchKernel(function, gridSizeX, gridSizeY, gridSizeZ,
-                                   blockSizeX, blockSizeY, blockSizeZ, 0, nullptr,
-                                   KernelParams, nullptr));
+                                   blockSizeX, blockSizeY, blockSizeZ, 0,
+                                   nullptr, KernelParams, nullptr));
+    cuCtxSynchronize();
+    TC_TAG;
+    checkCudaErrors(cuModuleUnload(cudaModule));
+    TC_TAG;
+    checkCudaErrors(cuCtxDestroy(context));
+    TC_TAG;
+                                   */
   }
 
   ~CUDAContext() {
     // Clean-up
-    checkCudaErrors(cuModuleUnload(cudaModule));
-    checkCudaErrors(cuCtxDestroy(context));
   }
 };
 
+// static CUDAContext cuda_context;  // TODO:..
 
-CUDAContext cuda_context; // TODO:..
 int compile_ptx_and_launch(const std::string &ptx,
-                           const std::string &kernel_name, void *context_ptr) {
-  cuda_context.run(ptx, kernel_name, context_ptr);
+                           const std::string &kernel_name,
+                           void *context_ptr) {
+  // cuda_context.run(ptx, kernel_name, context_ptr);
+  TC_TAG;
 }
 #else
 std::string compile_module_to_ptx(std::unique_ptr<llvm::Module> &module) {
@@ -367,7 +375,8 @@ std::string compile_module_to_ptx(std::unique_ptr<llvm::Module> &module) {
 }
 
 int compile_ptx_and_launch(const std::string &ptx,
-                           const std::string &kernel_name, void *) {
+                           const std::string &kernel_name,
+                           void *) {
   TC_NOT_IMPLEMENTED
 }
 #endif

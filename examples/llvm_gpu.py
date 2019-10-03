@@ -28,6 +28,6 @@ for i in range(4):
 def test():
   for i in range(4):
     ti.print(i)
-  #   val[i] = i * 10
+    val[i] = i * 10
 
 test()

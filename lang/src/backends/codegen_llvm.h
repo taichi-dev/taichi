@@ -188,7 +188,9 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       TC_INFO("Kernel Module IR");
       module->print(errs(), nullptr);
     }
+    TC_INFO("Kernel Module IR printed.");
     TC_ASSERT(!llvm::verifyFunction(*func, &errs()));
+    TC_INFO("Kernel function verified.");
   }
 
   virtual FunctionType compile_module_to_executable() {

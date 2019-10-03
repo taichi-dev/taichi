@@ -290,84 +290,11 @@ const char *get_error_name(CUresult err) {
   }
 }
 
-class CUDAContext {
-  CUdevice device;
-  CUmodule cudaModule;
-  CUcontext context;
-  CUfunction function;
-  CUlinkState linker;
-  int devCount;
-
- public:
-  CUDAContext() {
-    // CUDA initialization
-    checkCudaErrors(cuInit(0));
-    checkCudaErrors(cuDeviceGetCount(&devCount));
-    checkCudaErrors(cuDeviceGet(&device, 0));
-
-    char name[128];
-    checkCudaErrors(cuDeviceGetName(name, 128, device));
-    std::cout << "Using CUDA Device [0]: " << name << "\n";
-
-    int devMajor, devMinor;
-    checkCudaErrors(cuDeviceComputeCapability(&devMajor, &devMinor, device));
-    std::cout << "Device Compute Capability: " << devMajor << "." << devMinor
-              << "\n";
-    if (devMajor < 2) {
-      TC_ERROR("Device 0 is not SM 2.0 or greater");
-    }
-    // Create driver context
-    checkCudaErrors(cuCtxCreate(&context, 0, device));
-  }
-
-  void run(const std::string &ptx,
-           const std::string &kernel_name,
-           void *context_ptr) {
-    /*
-    // TC_TRACE("Compiling PTX: \n{}", ptx);
-
-    unsigned blockSizeX = 16;
-    unsigned blockSizeY = 1;
-    unsigned blockSizeZ = 1;
-    unsigned gridSizeX = 1;
-    unsigned gridSizeY = 1;
-    unsigned gridSizeZ = 1;
-
-    // Kernel parameters
-    void *KernelParams[] = {context_ptr};
-
-    // Create module for object
-    checkCudaErrors(cuModuleLoadDataEx(&cudaModule, ptx.c_str(), 0, 0, 0));
-
-    // TC_TRACE("Loading symbol {}", kernel_name);
-    // Get kernel function
-    checkCudaErrors(
-        cuModuleGetFunction(&function, cudaModule, kernel_name.c_str()));
-    // Kernel launch
-    checkCudaErrors(cuLaunchKernel(function, gridSizeX, gridSizeY, gridSizeZ,
-                                   blockSizeX, blockSizeY, blockSizeZ, 0,
-                                   nullptr, KernelParams, nullptr));
-    cuCtxSynchronize();
-    TC_TAG;
-    checkCudaErrors(cuModuleUnload(cudaModule));
-    TC_TAG;
-    checkCudaErrors(cuCtxDestroy(context));
-    TC_TAG;
-                                   */
-  }
-
-  ~CUDAContext() {
-    // Clean-up
-  }
-};
-
 // static CUDAContext cuda_context;  // TODO:..
 
 int compile_ptx_and_launch(const std::string &ptx,
                            const std::string &kernel_name,
-                           void *context_ptr) {
-  // cuda_context.run(ptx, kernel_name, context_ptr);
-  TC_TAG;
+                           Context *context_ptr) {
 }
 #else
 std::string compile_module_to_ptx(std::unique_ptr<llvm::Module> &module) {
@@ -376,7 +303,7 @@ std::string compile_module_to_ptx(std::unique_ptr<llvm::Module> &module) {
 
 int compile_ptx_and_launch(const std::string &ptx,
                            const std::string &kernel_name,
-                           void *) {
+                           Context *) {
   TC_NOT_IMPLEMENTED
 }
 #endif

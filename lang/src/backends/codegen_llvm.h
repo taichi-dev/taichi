@@ -204,8 +204,9 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   }
 
   FunctionType gen() {
-    emit_to_module();
-    return compile_module_to_executable();
+    // emit_to_module();
+    compile_module_to_executable();
+    TC_NOT_IMPLEMENTED
   }
 
   template <typename... Args>

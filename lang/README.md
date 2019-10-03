@@ -1,7 +1,7 @@
-# The **Taichi** Programming Language
-### High-Performance Computing on Spatially Sparse Data Structures
+# The Taichi Programming Language
+### High-Performance (Differentiable) Computing on Spatially Sparse Data Structures
 
-# [Python Frontend Tutorial](https://github.com/yuanming-hu/taichi_lang/blob/master/python/README.md#the-taichi-python-frontend)
+# [Python Frontend Tutorial](https://github.com/yuanming-hu/taichi/tree/master/python/taichi)
 
 # Installation
 Supports Ubuntu 14.04/16.04/18.04, ArchLinux, Mac OS X. For GPU support, CUDA 9.0+ is needed.

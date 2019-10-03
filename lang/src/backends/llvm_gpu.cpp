@@ -23,10 +23,6 @@ using namespace llvm;
 
 // NVVM IR Spec:
 // https://docs.nvidia.com/cuda/archive/10.0/pdf/NVVM_IR_Specification.pdf
-int compile_ptx_and_launch2() {
-  printf("123321\n");
-  // return 1;
-}
 
 class CodeGenLLVMGPU : public CodeGenLLVM {
  public:
@@ -35,7 +31,7 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
   }
 
   FunctionType compile_module_to_executable() override {
-    // llvm::Function *func = module->getFunction("test_kernel");
+    llvm::Function *func = module->getFunction("test_kernel");
 
     /*******************************************************************
     Example annotation from llvm PTX doc:
@@ -53,23 +49,18 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
     // Mark kernel function as a CUDA __global__ function
     // Add the nvvm annotation that it is considered a kernel function.
 
-    /*
     llvm::Metadata *md_args[] = {
         llvm::ValueAsMetadata::get(func),
         MDString::get(*llvm_context, "kernel"),
         llvm::ValueAsMetadata::get(tlctx->get_constant(1))};
 
     MDNode *md_node = MDNode::get(*llvm_context, md_args);
-    module->getOrInsertNamedMetadata("nvvm.annotations")->addOperand(md_node);
-    */
 
-    // auto ptx = compile_module_to_ptx(module);
-    // TC_TAG;
-    printf("123\n");
-    compile_ptx_and_launch2();
-    printf("456\n");
-    // TC_TAG;
-    // TC_NOT_IMPLEMENTED
+    module->getOrInsertNamedMetadata("nvvm.annotations")->addOperand(md_node);
+
+    auto ptx = compile_module_to_ptx(module);
+    compile_ptx_and_launch(ptx, "test_kernel", &get_current_program().context);
+    TC_NOT_IMPLEMENTED
     return nullptr;
   }
 

@@ -35,7 +35,7 @@ using namespace llvm::orc;
 std::string compile_module_to_ptx(std::unique_ptr<llvm::Module> &module);
 int compile_ptx_and_launch(const std::string &ptx,
                            const std::string &kernel_name,
-                           Context *);
+                           void *);
 
 class TaichiLLVMJIT {
  private:

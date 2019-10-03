@@ -21,7 +21,8 @@ TLANG_NAMESPACE_BEGIN
 
 using namespace llvm;
 
-// NVVM IR Spec: https://docs.nvidia.com/cuda/archive/10.0/pdf/NVVM_IR_Specification.pdf
+// NVVM IR Spec:
+// https://docs.nvidia.com/cuda/archive/10.0/pdf/NVVM_IR_Specification.pdf
 
 class CodeGenLLVMGPU : public CodeGenLLVM {
  public:
@@ -34,16 +35,16 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
     llvm::Function *func = module->getFunction("test_kernel");
 
     // Example annotation from llvm PTX doc:
-/*
-define void @kernel(float addrspace(1)* %A,
-                    float addrspace(1)* %B,
-                    float addrspace(1)* %C);
+    /*
+    define void @kernel(float addrspace(1)* %A,
+                        float addrspace(1)* %B,
+                        float addrspace(1)* %C);
 
-!nvvm.annotations = !{!0}
-!0 = !{void (float addrspace(1)*,
-             float addrspace(1)*,
-             float addrspace(1)*)* @kernel, !"kernel", i32 1}
-*/
+    !nvvm.annotations = !{!0}
+    !0 = !{void (float addrspace(1)*,
+                 float addrspace(1)*,
+                 float addrspace(1)*)* @kernel, !"kernel", i32 1}
+    */
 
     // Add the nvvm annotation that it is a kernel function.
     llvm::Metadata *md_args[] = {
@@ -61,6 +62,39 @@ define void @kernel(float addrspace(1)* %A,
     // return [=](Context context) { f(&context); };
     TC_NOT_IMPLEMENTED
     return nullptr;
+  }
+
+  void visit(PrintStmt *stmt) override {
+    TC_ASSERT(stmt->width() == 1);
+
+    auto value_type = tlctx->get_data_type(stmt->stmt->ret_type.data_type);
+    std::vector<llvm::Type *> types{value_type};
+    auto stype = llvm::StructType::get(*llvm_context, types, false);
+
+    std::string format;
+
+    auto values = builder->CreateAlloca(stype);
+    auto value_ptr = builder->CreateGEP(values, {0, 0});
+    auto value = stmt->stmt->value;
+
+    if (stmt->stmt->ret_type.data_type == DataType::i32) {
+      format = "%d";
+    } else if (stmt->stmt->ret_type.data_type == DataType::f32) {
+      format = "%f";
+    } else {
+      TC_NOT_IMPLEMENTED
+    }
+
+    builder->CreateStore(value, value_ptr);
+
+    auto format_str = "[debug] " + stmt->str + " = " + format + "\n";
+
+    stmt->value = builder->CreateCall(
+        get_runtime_function("vprintf"),
+        {builder->CreateGlobalStringPtr(format_str, "format string"),
+         builder->CreateBitCast(values,
+                                llvm::Type::getInt8PtrTy(*llvm_context))},
+        "debug_printf");
   }
 };
 

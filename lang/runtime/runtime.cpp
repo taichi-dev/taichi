@@ -38,6 +38,7 @@ using ContextArgType = long long;
 
 extern "C" {
 
+int vprintf(Ptr *format, Ptr *arg);
 int printf(const char *, ...);
 
 struct PhysicalCoordinates {
@@ -158,6 +159,7 @@ void *taichi_allocate(std::size_t size) {
 
 void ___stubs___() {
   printf("");
+  vprintf(nullptr, nullptr);
   taichi_allocate(1);
   taichi_allocate_aligned(1, 1);
 }
@@ -279,4 +281,6 @@ void cuda_add(float *a, float *b, float *c) {
   auto i = ti_cuda_tid_x();
   c[i] = a[i] + b[i];
 }
+
+
 }

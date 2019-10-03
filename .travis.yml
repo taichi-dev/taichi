@@ -16,63 +16,19 @@ matrix:
       apt:
         sources: *1
         packages:
-        - g++-5
+        - clang++-7
     env:
-    - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5 && PYTHON=python3.5"
+    - MATRIX_EVAL="CC=clang++-7 && CXX=clang++-7 && PYTHON=python3.6"
   - os: linux
     dist: xenial
     addons:
       apt:
         sources: *1
         packages:
-        - g++-6
+          - clang++-7
     env:
-    - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6 && PYTHON=python3.5"
-  - os: linux
-    dist: xenial
-    addons:
-      apt:
-        sources: *1
-        packages:
-        - g++-6
-    env:
-    - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6 && PYTHON=python3.6"
-  - os: linux
-    dist: xenial
-    addons:
-      apt:
-        sources: *1
-        packages:
-          - g++-6
-    env:
-    - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6 && PYTHON=python3.7"
-  - os: linux
-    dist: xenial
-    addons:
-      apt:
-        sources: *1
-        packages:
-        - g++-7
-    env:
-    - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7 && PYTHON=python3.5"
-  - os: linux
-    dist: xenial
-    addons:
-      apt:
-        sources: *1
-        packages:
-        - g++-7
-    env:
-    - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7 && PYTHON=python3.6"
-  - os: linux
-    dist: xenial
-    addons:
-      apt:
-        sources: *1
-        packages:
-          - g++-7
-    env:
-    - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7 && PYTHON=python3.7"
+    - MATRIX_EVAL="CC=clang++-7 && CXX=clang++-7 && PYTHON=python3.7"
+    -
 before_install:
 - eval "${MATRIX_EVAL}"
 - echo $CXX

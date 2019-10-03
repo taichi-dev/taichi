@@ -370,7 +370,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     }
     args.push_back(builder->CreateGlobalStringPtr(
         ("[debug] " + stmt->str + " = " + format + "\n").c_str(),
-        "format string"));
+        "format_string"));
     args.push_back(value);
 
     stmt->value = builder->CreateCall(get_runtime_function("printf"), args,

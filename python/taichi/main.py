@@ -87,7 +87,6 @@ def main(debug=False):
     print(
       "    Usage: ti run [task name]        |-> Run a specific task\n"
       "           ti test                   |-> Run tests\n"
-      "           ti daemon                 |-> Start daemon process\n"
       "           ti install                |-> Install package\n"
       "           ti proj                   |-> List all projects\n"
       "           ti proj activate [name]   |-> Activate project\n"
@@ -137,14 +136,6 @@ def main(debug=False):
     with open(name) as script:
       script = script.read()
     exec(script, {'__name__': '__main__'})
-  elif mode == "daemon":
-    from taichi.system.daemon import start
-    if len(sys.argv) > 2:
-      # Master daemon
-      start(True)
-    else:
-      # Slave daemon
-      start(False)
   elif mode == "proj":
     if len(sys.argv) == 2:
       print_all_projects()

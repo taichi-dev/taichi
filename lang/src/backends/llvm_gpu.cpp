@@ -92,7 +92,7 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
 
     stmt->value = ModuleBuilder::call(
         builder, "vprintf",
-        builder->CreateGlobalStringPtr(format_str, "format string"),
+        builder->CreateGlobalStringPtr(format_str, "format_string"),
         builder->CreateBitCast(values,
                                llvm::Type::getInt8PtrTy(*llvm_context)));
   }

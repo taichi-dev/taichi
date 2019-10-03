@@ -7,7 +7,7 @@ import ctypes
 import subprocess
 
 if sys.version_info[0] < 3 or sys.version_info[1] < 5:
-  print("\nPlease restart with python3. \n(Taichi supports Python 3.5+)\n")
+  print("\nPlease restart with python3. \n(Taichi supports Python 3.6+)\n")
   print("Current version:", sys.version_info)
   exit(-1)
 
@@ -21,8 +21,8 @@ except Exception as e:
   exit(-1)
 
 required_packages = [
-    'numpy', ('Pillow', 'PIL'), 'scipy', 'pybind11', 'flask', 'flask_cors',
-    ('GitPython', 'git'), 'yapf', 'colorama', 'psutil', 'requests', "PyQt5"
+    'numpy', ('Pillow', 'PIL'), 'scipy', 'pybind11',
+    ('GitPython', 'git'), 'yapf', 'colorama', 'psutil'
 ]
 
 

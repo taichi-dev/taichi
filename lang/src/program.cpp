@@ -5,8 +5,8 @@
 #include "program.h"
 #include "snode.h"
 #include "backends/struct.h"
-#include "backends/cpu.h"
-#include "backends/gpu.h"
+#include "backends/codegen_x86.h"
+#include "backends/codegen_cuda.h"
 
 #if defined(CUDA_FOUND)
 

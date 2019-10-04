@@ -4,8 +4,9 @@
 #include <taichi/io/io.h>
 #include <set>
 
+#include "cuda_context.h"
 #include "../util.h"
-#include "gpu.h"
+#include "codegen_cuda.h"
 #include "../program.h"
 #include "../ir.h"
 
@@ -59,10 +60,10 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
     module->getOrInsertNamedMetadata("nvvm.annotations")->addOperand(md_node);
 
     auto ptx = compile_module_to_ptx(module);
-    auto context = get_current_program().get_context();
-    compile_ptx_and_launch(ptx, "test_kernel", &context);
-    TC_NOT_IMPLEMENTED
-    return nullptr;
+    auto cuda_kernel = cuda_context.compile(ptx, kernel_name);
+    return [=](Context context){
+      cuda_context.launch(cuda_kernel, &context, 1, 1);
+    };
   }
 
   void visit(PrintStmt *stmt) override {

@@ -8,6 +8,7 @@
 #endif
 #include "llvm_jit.h"
 #include "context.h"
+#include "cuda_context.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -291,84 +292,61 @@ const char *get_error_name(CUresult err) {
   }
 }
 
-class CUDAContext {
-  CUdevice device;
-  CUmodule cudaModule;
-  CUcontext context;
-  CUfunction function;
-  CUlinkState linker;
-  int devCount;
-  CUdeviceptr devBufferA;
+CUDAContext::CUDAContext() {
+  // CUDA initialization
+  checkCudaErrors(cuInit(0));
+  checkCudaErrors(cuDeviceGetCount(&devCount));
+  checkCudaErrors(cuDeviceGet(&device, 0));
 
- public:
-  CUDAContext() {
-    // CUDA initialization
-    checkCudaErrors(cuInit(0));
-    checkCudaErrors(cuDeviceGetCount(&devCount));
-    checkCudaErrors(cuDeviceGet(&device, 0));
+  char name[128];
+  checkCudaErrors(cuDeviceGetName(name, 128, device));
+  std::cout << "Using CUDA Device [0]: " << name << "\n";
 
-    char name[128];
-    checkCudaErrors(cuDeviceGetName(name, 128, device));
-    std::cout << "Using CUDA Device [0]: " << name << "\n";
-
-    int devMajor, devMinor;
-    checkCudaErrors(cuDeviceComputeCapability(&devMajor, &devMinor, device));
-    std::cout << "Device Compute Capability: " << devMajor << "." << devMinor
-              << "\n";
-    if (devMajor < 2) {
-      TC_ERROR("Device 0 is not SM 2.0 or greater");
-    }
-    // Create driver context
-    checkCudaErrors(cuCtxCreate(&context, 0, device));
-    checkCudaErrors(cuMemAlloc(&devBufferA, sizeof(Context)));
+  int devMajor, devMinor;
+  checkCudaErrors(cuDeviceComputeCapability(&devMajor, &devMinor, device));
+  std::cout << "Device Compute Capability: " << devMajor << "." << devMinor
+            << "\n";
+  if (devMajor < 2) {
+    TC_ERROR("Device 0 is not SM 2.0 or greater");
   }
-
-  void run(const std::string &ptx,
-           const std::string &kernel_name,
-           void *context_ptr) {
-    unsigned blockSizeX = 16;
-    unsigned blockSizeY = 1;
-    unsigned blockSizeZ = 1;
-    unsigned gridSizeX = 1;
-    unsigned gridSizeY = 1;
-    unsigned gridSizeZ = 1;
-
-    // Kernel parameters
-
-    checkCudaErrors(cuMemcpyHtoD(devBufferA, context_ptr, sizeof(Context)));
-
-    void *KernelParams[] = {&devBufferA};
-
-    // Create module for object
-    checkCudaErrors(cuModuleLoadDataEx(&cudaModule, ptx.c_str(), 0, 0, 0));
-
-    // TC_TRACE("Loading symbol {}", kernel_name);
-    // Get kernel function
-    checkCudaErrors(
-        cuModuleGetFunction(&function, cudaModule, kernel_name.c_str()));
-    // Kernel launch
-    checkCudaErrors(cuLaunchKernel(function, gridSizeX, gridSizeY, gridSizeZ,
-                                   blockSizeX, blockSizeY, blockSizeZ, 0,
-                                   nullptr, KernelParams, nullptr));
-
-    cuCtxSynchronize();
-  }
-
-  ~CUDAContext() {
-    checkCudaErrors(cuMemFree(devBufferA));
-    checkCudaErrors(cuModuleUnload(cudaModule));
-    checkCudaErrors(cuCtxDestroy(context));
-  }
-};
-
-static CUDAContext cuda_context;  // TODO:..
-
-int compile_ptx_and_launch(const std::string &ptx,
-                           const std::string &kernel_name,
-                           void *context_ptr) {
-  cuda_context.run(ptx, kernel_name, context_ptr);
-  return 0;
+  // Create driver context
+  checkCudaErrors(cuCtxCreate(&context, 0, device));
+  checkCudaErrors(cuMemAlloc(&context_buffer, sizeof(Context)));
 }
+
+CUfunction CUDAContext::compile(const std::string &ptx,
+                                const std::string &kernel_name) {
+  // Create module for object
+  checkCudaErrors(cuModuleLoadDataEx(&cudaModule, ptx.c_str(), 0, 0, 0));
+
+  CUfunction func;
+  checkCudaErrors(cuModuleGetFunction(&func, cudaModule, kernel_name.c_str()));
+  return func;
+}
+
+void CUDAContext::launch(CUfunction func,
+                         void *context_ptr,
+                         unsigned gridDim,
+                         unsigned blockDim) {
+  // Kernel parameters
+
+  checkCudaErrors(cuMemcpyHtoD(context_buffer, context_ptr, sizeof(Context)));
+
+  void *KernelParams[] = {&context_buffer};
+
+  // Kernel launch
+  checkCudaErrors(cuLaunchKernel(func, gridDim, 1, 1, blockDim, 1, 1, 0,
+                                 nullptr, KernelParams, nullptr));
+}
+
+CUDAContext::~CUDAContext() {
+  checkCudaErrors(cuMemFree(context_buffer));
+  checkCudaErrors(cuModuleUnload(cudaModule));
+  checkCudaErrors(cuCtxDestroy(context));
+}
+
+CUDAContext cuda_context;  // TODO:..
+
 #else
 std::string compile_module_to_ptx(std::unique_ptr<llvm::Module> &module) {
   TC_NOT_IMPLEMENTED

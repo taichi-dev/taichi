@@ -1,6 +1,6 @@
 // The CUDA backend
 
-#include "gpu.h"
+#include "codegen_cuda.h"
 #include "loopgen.h"
 #include "../scratch_pad.h"
 

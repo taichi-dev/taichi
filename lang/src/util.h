@@ -107,6 +107,7 @@ enum class UnaryOpType : int {
   neg,
   sqrt,
   floor,
+  ceil,
   cast,
   abs,
   sgn,

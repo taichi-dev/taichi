@@ -233,8 +233,14 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   }
 
   void visit(UnaryOpStmt *stmt) {
+#define UNARY_INTRINSIC(x)                                                   \
+  else if (op == UnaryOpType::x) {                                           \
+    stmt->value =                                                            \
+        builder->CreateIntrinsic(llvm::Intrinsic::x, {input_type}, {input}); \
+  }
     if (stmt->op_type != UnaryOpType::cast) {
       auto input = stmt->operand->value;
+      auto input_type = input->getType();
       auto op = stmt->op_type;
       if (op == UnaryOpType::sqrt) {
         llvm::Function *sqrt_fn = Intrinsic::getDeclaration(
@@ -242,12 +248,16 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
         stmt->value = builder->CreateCall(sqrt_fn, input, "sqrt");
       } else if (op == UnaryOpType::neg) {
         stmt->value = builder->CreateFNeg(input, "neg");
-      } else {
-        TC_P(unary_op_type_name(stmt->op_type));
-        emit("const {} {}({}({}));", stmt->ret_data_type_name(),
-             stmt->raw_name(), unary_op_type_name(stmt->op_type),
-             stmt->operand->raw_name());
       }
+      UNARY_INTRINSIC(sin)
+      UNARY_INTRINSIC(cos)
+      UNARY_INTRINSIC(sqrt)
+      UNARY_INTRINSIC(floor)
+      UNARY_INTRINSIC(ceil)
+      else {
+        TC_P(unary_op_type_name(stmt->op_type));
+      }
+#undef UNARY_INTRINSIC
     } else {
       if (stmt->cast_by_value) {
         llvm::CastInst::CastOps cast_op;

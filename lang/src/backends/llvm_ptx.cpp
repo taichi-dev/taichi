@@ -61,7 +61,7 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
 
     auto ptx = compile_module_to_ptx(module);
     auto cuda_kernel = cuda_context.compile(ptx, kernel_name);
-    return [=](Context context){
+    return [=](Context context) {
       cuda_context.launch(cuda_kernel, &context, 1, 1);
     };
   }
@@ -70,24 +70,28 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
     TC_ASSERT(stmt->width() == 1);
 
     auto value_type = tlctx->get_data_type(stmt->stmt->ret_type.data_type);
-    std::vector<llvm::Type *> types{value_type};
-    auto stype = llvm::StructType::get(*llvm_context, types, false);
 
     std::string format;
 
-    auto values = builder->CreateAlloca(stype);
-    auto value_ptr = builder->CreateGEP(
-        values, {tlctx->get_constant(0), tlctx->get_constant(0)});
     auto value = stmt->stmt->value;
 
     if (stmt->stmt->ret_type.data_type == DataType::i32) {
       format = "%d";
     } else if (stmt->stmt->ret_type.data_type == DataType::f32) {
+      value_type = llvm::Type::getDoubleTy(*llvm_context);
+      value = builder->CreateFPExt(value, value_type);
+      format = "%f";
+    } else if (stmt->stmt->ret_type.data_type == DataType::f64) {
       format = "%f";
     } else {
       TC_NOT_IMPLEMENTED
     }
 
+    std::vector<llvm::Type *> types{value_type};
+    auto stype = llvm::StructType::get(*llvm_context, types, false);
+    auto values = builder->CreateAlloca(stype);
+    auto value_ptr = builder->CreateGEP(
+        values, {tlctx->get_constant(0), tlctx->get_constant(0)});
     builder->CreateStore(value, value_ptr);
 
     auto format_str = "[debug] " + stmt->str + " = " + format + "\n";

@@ -35,6 +35,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   llvm::Type *physical_coordinate_ty;
 
   llvm::Value *current_coordinates;
+  bool offloaded;
 
   void initialize_context() {
     if (get_current_program().config.arch == Arch::gpu) {
@@ -54,6 +55,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
                           .get_llvm_context(get_current_program().config.arch)
                           ->clone_struct_module()),
         kernel(kernel) {
+    offloaded = false;
     initialize_context();
 
     using namespace llvm;
@@ -539,9 +541,8 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
                          ptr);
   }
 
-  void visit(RangeForStmt *for_stmt) {
-    // auto entry = builder->GetInsertBlock();
-
+  // Direct translation
+  void create_naive_range_for(RangeForStmt *for_stmt) {
     BasicBlock *body = BasicBlock::Create(*llvm_context, "loop_body", func);
     BasicBlock *after_loop = BasicBlock::Create(*llvm_context, "block", func);
     builder->CreateStore(tlctx->get_constant(0), for_stmt->loop_var->value);
@@ -562,6 +563,10 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
 
     // next cfg
     builder->SetInsertPoint(after_loop);
+  }
+
+  virtual void visit(RangeForStmt *for_stmt) {
+    create_naive_range_for(for_stmt);
   }
 
   void visit(ArgLoadStmt *stmt) {

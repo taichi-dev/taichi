@@ -62,7 +62,7 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
     auto ptx = compile_module_to_ptx(module);
     auto cuda_kernel = cuda_context.compile(ptx, kernel_name);
     return [=](Context context) {
-      cuda_context.launch(cuda_kernel, &context, 1, 1);
+      cuda_context.launch(cuda_kernel, &context, 1, 256);
     };
   }
 
@@ -101,6 +101,40 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
         builder->CreateGlobalStringPtr(format_str, "format_string"),
         builder->CreateBitCast(values,
                                llvm::Type::getInt8PtrTy(*llvm_context)));
+  }
+
+  void visit(RangeForStmt *for_stmt) override {
+    if (offloaded) {
+      create_naive_range_for(for_stmt);
+    } else {
+      offloaded = true;
+      BasicBlock *body = BasicBlock::Create(*llvm_context, "loop_body", func);
+      BasicBlock *after_loop = BasicBlock::Create(*llvm_context, "block", func);
+      auto threadIdx =
+          builder->CreateIntrinsic(Intrinsic::nvvm_read_ptx_sreg_tid_x, {}, {});
+      builder->CreateStore(
+          builder->CreateAdd(for_stmt->begin->value, threadIdx),
+          for_stmt->loop_var->value);
+
+      auto cond = builder->CreateICmp(
+          llvm::CmpInst::Predicate::ICMP_SLT,
+          builder->CreateLoad(for_stmt->loop_var->value), for_stmt->end->value);
+
+      builder->CreateCondBr(cond, body, after_loop);
+      {
+        // body cfg
+        builder->SetInsertPoint(body);
+        for_stmt->body->accept(this);
+        builder->CreateBr(after_loop);
+      }
+
+      // create_increment(for_stmt->loop_var->value, tlctx->get_constant(1));
+
+      builder->SetInsertPoint(after_loop);
+      // builder->CreateRetVoid();
+
+      offloaded = false;
+    }
   }
 };
 

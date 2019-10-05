@@ -2,8 +2,8 @@
 ### High-Performance (Differentiable) Computing on Spatially Sparse Data Structures
 
 # [Python Frontend Tutorial](https://github.com/yuanming-hu/taichi/tree/master/python/taichi)
-
-# Installation
+##  PyPI package under construction
+##  Dev Installation
 Supports Ubuntu 14.04/16.04/18.04, ArchLinux, Mac OS X. For GPU support, CUDA 9.0+ is needed.
 
  - Execute `python3 -m pip install astpretty astor pytest opencv-python pybind11==2.2.4`

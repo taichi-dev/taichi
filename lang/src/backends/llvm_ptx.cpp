@@ -27,6 +27,9 @@ using namespace llvm;
 
 class CodeGenLLVMGPU : public CodeGenLLVM {
  public:
+  int kernel_grid_dim;
+  int kernel_block_dim;
+
   CodeGenLLVMGPU(CodeGenBase *codegen_base, Kernel *kernel)
       : CodeGenLLVM(codegen_base, kernel) {
   }
@@ -62,7 +65,8 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
     auto ptx = compile_module_to_ptx(module);
     auto cuda_kernel = cuda_context.compile(ptx, kernel_name);
     return [=](Context context) {
-      cuda_context.launch(cuda_kernel, &context, 1, 256);
+      cuda_context.launch(cuda_kernel, &context, kernel_grid_dim,
+                          kernel_block_dim);
     };
   }
 
@@ -108,13 +112,30 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
       create_naive_range_for(for_stmt);
     } else {
       offloaded = true;
+      auto loop_begin = for_stmt->begin->as<ConstStmt>()->val[0].val_int32();
+      auto loop_end = for_stmt->end->as<ConstStmt>()->val[0].val_int32();
+      auto loop_block_dim = for_stmt->block_size;
+      kernel_grid_dim =
+          (loop_end - loop_begin + loop_block_dim - 1) / loop_block_dim;
+      kernel_block_dim = loop_block_dim;
+      TC_P(kernel_grid_dim);
+      TC_P(kernel_block_dim);
       BasicBlock *body = BasicBlock::Create(*llvm_context, "loop_body", func);
       BasicBlock *after_loop = BasicBlock::Create(*llvm_context, "block", func);
+
       auto threadIdx =
           builder->CreateIntrinsic(Intrinsic::nvvm_read_ptx_sreg_tid_x, {}, {});
-      builder->CreateStore(
-          builder->CreateAdd(for_stmt->begin->value, threadIdx),
-          for_stmt->loop_var->value);
+      auto blockIdx = builder->CreateIntrinsic(
+          Intrinsic::nvvm_read_ptx_sreg_ctaid_x, {}, {});
+      auto blockDim = builder->CreateIntrinsic(
+          Intrinsic::nvvm_read_ptx_sreg_ntid_x, {}, {});
+
+      auto loop_id = builder->CreateAdd(
+          for_stmt->begin->value,
+          builder->CreateAdd(threadIdx,
+                             builder->CreateMul(blockIdx, blockDim)));
+
+      builder->CreateStore(loop_id, for_stmt->loop_var->value);
 
       auto cond = builder->CreateICmp(
           llvm::CmpInst::Predicate::ICMP_SLT,

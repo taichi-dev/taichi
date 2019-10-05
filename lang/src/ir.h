@@ -197,7 +197,7 @@ class DecoratorRecorder {
     parallelize = 0;
     uniform = false;
     scratch_opt.clear();
-    block_size = 0;
+    block_size = default_gpu_block_size;
   }
 };
 
@@ -1857,7 +1857,7 @@ class RangeForStmt : public Stmt {
     add_operand(this->loop_var);
     add_operand(this->begin);
     add_operand(this->end);
-    block_size = 256;
+    block_size = default_gpu_block_size;
   }
 
   bool is_container_statement() const override {

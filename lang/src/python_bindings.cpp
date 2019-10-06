@@ -57,7 +57,12 @@ void export_accessors(C &c) {
         &Expr::set_val<T, int, int, int, int>);
 }
 
-PYBIND11_MODULE(taichi_lang_core, m) {
+TLANG_NAMESPACE_END
+
+TC_NAMESPACE_BEGIN
+void export_lang(py::module &m) {
+  using namespace taichi::Tlang;
+
   py::enum_<Arch>(m, "Arch", py::arithmetic())
       .value("gpu", Arch::gpu)
       .value("x86_64", Arch::x86_64)
@@ -343,5 +348,5 @@ PYBIND11_MODULE(taichi_lang_core, m) {
 
   m.def("needs_grad", needs_grad);
 }
+TC_NAMESPACE_END
 
-TLANG_NAMESPACE_END

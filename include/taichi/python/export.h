@@ -42,8 +42,6 @@ void export_io(py::module &m);
 
 void export_ndarray(py::module &m);
 
-extern std::vector<std::function<void()>> extra_exports;
-
 #define DEFINE_VECTOR_OF_NAMED(x, name)                                   \
   py::class_<std::vector<x>>(m, name)                                     \
       .def(py::init<>())                                                  \

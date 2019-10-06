@@ -456,17 +456,13 @@ inline bool running_on_windows() {
 #endif
 }
 
-inline std::string get_repo_dir() {
-  auto dir = std::getenv("TAICHI_REPO_DIR");
-  if (dir != nullptr || std::string(dir) == "") {
-    // release mode. Use ~/.taichi as root
-    auto home = std::getenv("HOME");
-    TC_ASSERT(home != nullptr);
-    return std::string(home) + "/.taichi/";
-  } else {
-    return std::string(dir);
-  }
-}
+bool is_release();
+
+std::string get_repo_dir();
+
+std::string get_python_package_dir();
+
+std::string set_python_package_dir(const std::string &dir);
 
 inline std::string assets_dir() {
   return get_repo_dir() + "/assets/";

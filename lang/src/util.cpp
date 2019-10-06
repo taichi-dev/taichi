@@ -283,26 +283,36 @@ std::string snode_op_type_name(SNodeOpType type) {
 
 std::string CompileConfig::compiler_config() {
   std::string cmd;
-  if (arch == Arch::x86_64) {
 #if defined(OPENMP_FOUND)
-    std::string omp_flag = "-fopenmp -DTLANG_WITH_OPENMP";
+  std::string omp_flag = "-fopenmp -DTLANG_WITH_OPENMP";
 #else
-    std::string omp_flag = "";
+  std::string omp_flag = "";
 #endif
 
 #if defined(TC_PLATFORM_OSX)
-    std::string linking = "-undefined dynamic_lookup";
+  std::string linking = "-undefined dynamic_lookup";
 #else
-    std::string linking = "-ltaichi_core";
+  std::string linking = "-ltaichi_core";
 #endif
 
+  std::string include_flag;
+  std::string link_flag;
+
+  if (is_release()) {
+    linking = fmt::format("-L{}/lib -ltaichi_core", get_python_package_dir());
+    include_flag = fmt::format("-I{}/include/", get_python_package_dir());
+  } else {
+    linking = fmt::format(" -L{}/build -ltaichi_core ", get_repo_dir());
+    include_flag = fmt::format(" -I{}/include/ ", get_project_fn());
+  }
+  if (arch == Arch::x86_64) {
     cmd = fmt::format(
-        "{} -std=c++14 -shared -fPIC {} -march=native -mfma -I {}/include "
+        "{} -std=c++14 -shared -fPIC {} -march=native -mfma {} "
         "-ffp-contract=fast "
         "{} -Wall -g -DTLANG_CPU "
-        "-lstdc++  -L{}/build/ {} {}",
-        compiler_name(), gcc_opt_flag(), get_project_fn(), omp_flag,
-        get_repo_dir(), linking, extra_flags);
+        "-lstdc++  {} {}",
+        compiler_name(), gcc_opt_flag(), include_flag, omp_flag, linking,
+        extra_flags);
   } else {
     cmd = fmt::format(
         "nvcc -g -lineinfo -std=c++14 -shared {} -Xcompiler \"-fPIC "
@@ -310,9 +320,10 @@ std::string CompileConfig::compiler_config() {
         "--use_fast_math -arch=compute_61 -code=sm_61,compute_61 "
         "--ptxas-options=-allow-expensive-optimizations=true,-O3,-v -I "
         "{}/include -ccbin {} "
-        " -lstdc++ -L{}/build/ -ltaichi_core "
+        " -lstdc++ {} {} "
         "-DTLANG_GPU {} ",
-        gcc_opt_flag(), get_project_fn(), "g++-6", get_repo_dir(), extra_flags);
+        gcc_opt_flag(), get_project_fn(), "g++-6", include_flag, link_flag,
+        extra_flags);
   }
   return cmd;
 }

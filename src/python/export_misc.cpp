@@ -150,6 +150,9 @@ void export_misc(py::module &m) {
   m.def("print_profile_info", [&]() { print_profile_info(); });
   m.def("start_memory_monitoring", start_memory_monitoring);
   m.def("absolute_path", absolute_path);
+  m.def("get_repo_dir", get_repo_dir);
+  m.def("get_python_package_dir", get_python_package_dir);
+  m.def("set_python_package_dir", set_python_package_dir);
 }
 
 TC_NAMESPACE_END

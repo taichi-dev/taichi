@@ -101,6 +101,8 @@ if is_release():
   print("[Release mode]")
   sys.path.append(os.path.join(package_root(), 'lib'))
   import taichi_core as tc_core
+  tc_core.set_python_package_dir(package_root())
+  os.makedirs(tc_core.get_repo_dir(), exist_ok=True)
 else:
   if get_os_name() == 'osx':
     bin_dir = get_bin_directory()

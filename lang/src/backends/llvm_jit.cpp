@@ -317,10 +317,12 @@ CUDAContext::CUDAContext() {
 CUfunction CUDAContext::compile(const std::string &ptx,
                                 const std::string &kernel_name) {
   // Create module for object
+  CUmodule cudaModule;
   checkCudaErrors(cuModuleLoadDataEx(&cudaModule, ptx.c_str(), 0, 0, 0));
 
   CUfunction func;
   checkCudaErrors(cuModuleGetFunction(&func, cudaModule, kernel_name.c_str()));
+  cudaModules.push_back(cudaModule);
   return func;
 }
 
@@ -341,7 +343,8 @@ void CUDAContext::launch(CUfunction func,
 
 CUDAContext::~CUDAContext() {
   checkCudaErrors(cuMemFree(context_buffer));
-  checkCudaErrors(cuModuleUnload(cudaModule));
+  for (auto cudaModule: cudaModules)
+    checkCudaErrors(cuModuleUnload(cudaModule));
   checkCudaErrors(cuCtxDestroy(context));
 }
 

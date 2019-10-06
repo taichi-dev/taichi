@@ -8,7 +8,7 @@ TLANG_NAMESPACE_BEGIN
 
 class CUDAContext {
   CUdevice device;
-  CUmodule cudaModule;
+  std::vector<CUmodule> cudaModules;
   CUcontext context;
   CUlinkState linker;
   int devCount;

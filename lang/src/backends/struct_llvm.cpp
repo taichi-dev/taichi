@@ -18,8 +18,7 @@ StructCompilerLLVM::StructCompilerLLVM(Arch arch)
           get_current_program().get_llvm_context(arch)->get_init_module()),
       arch(arch) {
   creator = [] {
-    TC_WARN("Data structure creation not implemented");
-    return nullptr;
+    TC_WARN("Data structure creation not implemented"); return nullptr;
   };
   tlctx = get_current_program().get_llvm_context(arch);
   llvm_ctx = tlctx->ctx.get();
@@ -461,7 +460,10 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
 
   if (host) {
     for (auto n : snodes) {
+      TC_TAG;
+      TC_P(n->type_name());
       load_accessors(*n);
+      TC_TAG;
     }
 
     auto initialize_data_structure =

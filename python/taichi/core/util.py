@@ -219,7 +219,7 @@ def at_startup():
     os.mkdir(output_dir)
 
   # Load modules
-  load_module('lang_core')
+  # load_module('lang_core')
 
   tc_core.set_core_state_python_imported(True)
 

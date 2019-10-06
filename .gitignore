@@ -51,3 +51,4 @@ __pycache__
 *.png
 *.jpg
 *.ini
+*.egg-info

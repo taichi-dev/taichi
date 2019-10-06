@@ -293,7 +293,7 @@ std::string CompileConfig::compiler_config() {
 #if defined(TC_PLATFORM_OSX)
     std::string linking = "-undefined dynamic_lookup";
 #else
-    std::string linking = "-ltaichi_lang_core";
+    std::string linking = "-ltaichi_core";
 #endif
 
     cmd = fmt::format(
@@ -310,7 +310,7 @@ std::string CompileConfig::compiler_config() {
         "--use_fast_math -arch=compute_61 -code=sm_61,compute_61 "
         "--ptxas-options=-allow-expensive-optimizations=true,-O3,-v -I "
         "{}/include -ccbin {} "
-        " -lstdc++ -L{}/build/ -ltaichi_lang_core "
+        " -lstdc++ -L{}/build/ -ltaichi_core "
         "-DTLANG_GPU {} ",
         gcc_opt_flag(), get_project_fn(), "g++-6", get_repo_dir(), extra_flags);
   }

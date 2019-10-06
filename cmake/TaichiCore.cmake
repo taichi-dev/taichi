@@ -8,7 +8,6 @@ file(GLOB TAICHI_CORE_SOURCE
         "include/taichi/*/*/*/*.cpp" "include/taichi/*/*/*.cpp" "include/taichi/*/*.cpp"
         "include/taichi/*/*/*/*.h" "include/taichi/*/*/*.h" "include/taichi/*/*.h")
 
-set(TAICHI_PROJECT_NAME "lang_core")
 file(GLOB_RECURSE PROJECT_SOURCES "lang/src/*.cpp" "lang/src/*.h" "lang/headers/*.h" "external/xxhash/*.c" "lang/test/cpp/*.cpp" "lang/cpp_examples/*.cpp")
 include_directories(lang/include)
 

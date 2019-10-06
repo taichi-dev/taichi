@@ -1,9 +1,9 @@
 include README
 include MANIFEST.in
-utsi
 include *.txt
 include *.py
 include *.cfg
+include taichi/lib/taichi_core.so
 
 global-exclude *.pyc *.pyo *.pyd
 global-exclude ffmpeg

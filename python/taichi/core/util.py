@@ -13,11 +13,10 @@ def is_ci():
   return os.environ.get('TC_CI', '') == '1'
 
 def package_root():
-  return os.path.join(os.path.dirname(os.path.realpath(__file__)), '../', '../')
+  return os.path.join(os.path.dirname(os.path.realpath(__file__)), '../')
 
 def is_release():
-  # TODO: improve this
-  return not os.path.exists(os.path.join(package_root() + '../CMakeLists.txt'))
+  return os.environ['TAICHI_REPO_DIR'] == ''
 
 from colorama import Fore, Back, Style
 
@@ -100,7 +99,7 @@ def build():
 
 if is_release():
   print("[Release mode]")
-  sys.path.append(os.path.join(package_root(), '../../'))
+  sys.path.append(os.path.join(package_root(), 'lib'))
   import taichi_core as tc_core
 else:
   if get_os_name() == 'osx':
@@ -211,12 +210,13 @@ def load_module(name, verbose=True):
       name, e) + Style.RESET_ALL)
 
 def at_startup():
-  assert os.path.exists(get_repo_directory(
-  )), 'Please make sure $TAICHI_REPO_DIR [' + get_repo_directory() + '] exists.'
-  output_dir = get_output_directory()
-  if not os.path.exists(output_dir):
-    print('Making output directory')
-    os.mkdir(output_dir)
+  if not is_release():
+    assert os.path.exists(get_repo_directory(
+    )), 'Please make sure $TAICHI_REPO_DIR [' + get_repo_directory() + '] exists.'
+    output_dir = get_output_directory()
+    if not os.path.exists(output_dir):
+      print('Making output directory')
+      os.mkdir(output_dir)
 
   # Load modules
   # load_module('lang_core')

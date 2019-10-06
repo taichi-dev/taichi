@@ -30,7 +30,7 @@ def project_name():
 setuptools.setup(
     name=project_name(),
     packages=packages,
-    version='0.0.40',
+    version='0.0.50',
     description='The Taichi Programming Language',
     author='Yuanming Hu',
     author_email='yuanmhu@gmail.com',

@@ -4,34 +4,17 @@ import shutil
 import time
 import random
 from taichi.tools.video import make_video, interpolate_frames
-from taichi.core.util import get_projects, activate_package, deactivate_package
-
-packages = {
-  'mpm': 'https://github.com/yuanming-hu/taichi_mpm',
-  'wushi': 'https://github.com/yuanming-hu/taichi_wushi'
-}
 
 def run_pytest():
   print("\nRunning python tests...\n")
-  import taichi as ti
-  import pytest
-  pytest.main([os.path.join(ti.get_repo_directory(), 'tests')])
-  ti.reset()
-
-def print_all_projects():
-  from colorama import Fore, Back, Style
-  print(Fore.GREEN, end='')
-  print("Active projects:")
-  projs = get_projects(active=True)
-  for p in projs:
-    print('    {}'.format(p))
-
-  print(Fore.BLUE, end='')
-  projs = get_projects(active=False)
-  print("Inactive projects:")
-  for p in projs:
-    print('    {}'.format(p))
-  print(Fore.RESET, end='')
+  # TODO: for some reason the python tests piss off cpp tests. Need to fix.
+  def test_python():
+    import taichi as ti
+    import pytest
+    pytest.main([os.path.join(ti.get_repo_directory(), 'tests')])
+    ti.reset()
+  test_python()
+    
 
 def plot(fn):
   import matplotlib.pyplot as plt
@@ -82,14 +65,10 @@ def main(debug=False):
       "    Usage: ti run [task name]        |-> Run a specific task\n"
       "           ti test                   |-> Run tests\n"
       "           ti install                |-> Install package\n"
-      "           ti proj                   |-> List all projects\n"
-      "           ti proj activate [name]   |-> Activate project\n"
-      "           ti proj deactivate [name] |-> Deactivate project\n"
       "           ti build                  |-> Build C++ files\n"
       "           ti amal                   |-> Generate amalgamated taichi.h\n"
       "           ti clean asm [*.s]        |-> Clean up gcc ASM\n"
       "           ti plot [*.txt]           |-> Plot a memory usage curve\n"
-      "           ti update                 |-> Update taichi and projects\n"
       "           ti video                  |-> Make a video using *.png files in the current folder\n"
       "           ti convert                |-> Delete color controllers in a log file\n"
       "           ti exec                   |-> Invoke a executable in the 'build' folder\n"
@@ -130,17 +109,6 @@ def main(debug=False):
     with open(name) as script:
       script = script.read()
     exec(script, {'__name__': '__main__'})
-  elif mode == "proj":
-    if len(sys.argv) == 2:
-      print_all_projects()
-    elif sys.argv[2] == 'activate':
-      proj = sys.argv[3]
-      activate_package(proj)
-    elif sys.argv[2] == 'deactivate':
-      proj = sys.argv[3]
-      deactivate_package(proj)
-    else:
-      assert False
   elif mode == "test":
     if len(sys.argv) == 2:
       run_pytest()
@@ -157,17 +125,6 @@ def main(debug=False):
     plot(sys.argv[2])
   elif mode == "update":
     tc.core.update(True)
-    tc.core.build()
-  elif mode == "install":
-    os.chdir(tc.get_directory('projects'))
-    pkg = sys.argv[2]
-    if pkg not in packages:
-      url = pkg
-      pkg = pkg.split('/')[-1]
-    else:
-      url = packages[pkg]
-    tc.info('Cloning and building package {}...'.format(pkg))
-    os.system('git clone {} {}'.format(url, pkg))
     tc.core.build()
   elif mode == "asm":
     fn = sys.argv[2]

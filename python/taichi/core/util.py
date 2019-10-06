@@ -6,25 +6,11 @@ import sys
 import ctypes
 import subprocess
 
+
 if sys.version_info[0] < 3 or sys.version_info[1] < 5:
   print("\nPlease restart with python3. \n(Taichi supports Python 3.6+)\n")
   print("Current version:", sys.version_info)
   exit(-1)
-
-try:
-  import pip
-except Exception as e:
-  print(e)
-  print('  Please install pip3.')
-  print('    [Ubuntu] sudo apt-get install python-pip3')
-  print('    [Arch Linux] sudo pacman -S python-pip')
-  exit(-1)
-
-required_packages = [
-    'numpy', ('Pillow', 'PIL'), 'scipy', 'pybind11',
-    ('GitPython', 'git'), 'yapf', 'colorama', 'psutil'
-]
-
 
 def is_ci():
   return os.environ.get('TC_CI', '') == '1'
@@ -36,28 +22,6 @@ def is_release():
   # TODO: improve this
   return not os.path.exists(os.path.join(package_root() + '../CMakeLists.txt'))
 
-def install_package(pkg):
-  pip.main(['install', '--user', pkg])
-
-
-def check_for_packages():
-  for pkg in required_packages:
-    if isinstance(pkg, tuple):
-      import_name = pkg[1]
-      pkg = pkg[0]
-    else:
-      import_name = pkg
-
-    try:
-      exec('import {}'.format(import_name))
-    except ImportError as e:
-      print("Installing package:", pkg)
-      install_package(pkg)
-      print('Checking installation of "{}"'.format(import_name))
-      exec('import {}'.format(import_name))
-
-
-check_for_packages()
 from colorama import Fore, Back, Style
 
 
@@ -72,79 +36,6 @@ def print_red_bold(*args, **kwargs):
   print(Fore.RED + Style.BRIGHT, end='')
   print(*args, **kwargs)
   print(Style.RESET_ALL, end='')
-
-def get_projects(active=True):
-  import taichi as tc
-  ret = []
-  for proj in os.listdir(tc.get_project_directory()):
-    if proj not in ['examples', 'toys'] and os.path.isdir(tc.get_project_directory(proj)):
-      activation = not proj.startswith('_')
-      if not activation:
-        proj = proj[1:]
-      if activation == active:
-        ret.append(proj)
-  return ret
-
-def get_packages():
-  import taichi as tc
-  ret = []
-  for proj in os.listdir(tc.get_project_directory()):
-    proj_path = tc.get_project_directory(proj)
-    if proj not in ['examples', 'toys'] and os.path.isdir(proj_path):
-      activation = not proj.startswith('_')
-      import git
-      repo = git.Repo(proj_path)
-      commit = repo.head.commit
-      if not activation:
-        proj = proj[1:]
-      ret.append({
-        'name': proj,
-        'active': activation,
-        'version': commit.hexsha[:8] + ': ' + commit.message,
-        'time': commit.committed_datetime.strftime('%b %d %Y, %H:%M:%S')
-      })
-  return ret
-
-def activate_package(proj):
-  import taichi as tc
-  assert not os.path.exists(tc.get_project_directory(proj))
-  assert os.path.exists(tc.get_project_directory('_' + proj))
-  os.rename(tc.get_project_directory('_' + proj), tc.get_project_directory(proj))
-
-def deactivate_package(proj):
-  import taichi as tc
-  assert not os.path.exists(tc.get_project_directory('_' + proj))
-  assert os.path.exists(tc.get_project_directory(proj))
-  os.rename(tc.get_project_directory(proj), tc.get_project_directory('_' + proj))
-
-def update(include_projects=False):
-  import git
-  import taichi as tc
-
-  g = git.cmd.Git(tc.get_repo_directory())
-  print(Fore.GREEN + "Updating [taichi]..." + Style.RESET_ALL)
-  try:
-    g.pull('--rebase')
-    print(Fore.GREEN + "   ...Done" + Style.RESET_ALL)
-  except git.exc.GitCommandError as e:
-    if 'You have unstaged changes' in e.stderr:
-      print_red_bold("   You have unstaged changes in the Taichi main repo. Please commit your changes first.")
-      exit(-1)
-
-  for proj in os.listdir(tc.get_project_directory()):
-    if proj in ['examples', 'toys'] or proj.startswith('_') or not os.path.isdir(
-        tc.get_project_directory(proj)):
-      continue
-    print(
-        Fore.GREEN + "Updating project [{}]...".format(proj) + Style.RESET_ALL)
-    g = git.cmd.Git(os.path.join(tc.get_project_directory(proj)))
-    try:
-      g.pull('--rebase')
-      print(Fore.GREEN + "   ...Done" + Style.RESET_ALL)
-    except git.exc.GitCommandError as e:
-      if 'You have unstaged changes' in e.stderr:
-        print_red_bold("   You have committed changes in project [{}]. Please commit your changes first.".format(proj))
-        exit(-1)
 
 
 def format():

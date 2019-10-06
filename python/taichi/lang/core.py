@@ -9,4 +9,5 @@ try:
   shutil.copy(get_build_directory() + '/libtaichi_lang_core.dylib', get_build_directory() + '/taichi_lang_core.so')
 except:
   pass
+
 import taichi_lang_core

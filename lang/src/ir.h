@@ -197,7 +197,7 @@ class DecoratorRecorder {
     parallelize = 0;
     uniform = false;
     scratch_opt.clear();
-    block_size = default_gpu_block_size;
+    block_size = 0;
   }
 };
 

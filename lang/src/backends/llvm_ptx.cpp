@@ -118,8 +118,6 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
       kernel_grid_dim =
           (loop_end - loop_begin + loop_block_dim - 1) / loop_block_dim;
       kernel_block_dim = loop_block_dim;
-      TC_P(kernel_grid_dim);
-      TC_P(kernel_block_dim);
       BasicBlock *body = BasicBlock::Create(*llvm_context, "loop_body", func);
       BasicBlock *after_loop = BasicBlock::Create(*llvm_context, "block", func);
 

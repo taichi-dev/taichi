@@ -16,8 +16,7 @@ def run_pytest():
   from pathlib import Path
   import taichi as ti
   import subprocess
-  hooks = list(filter(lambda x: str(x).endswith('testhook.py'), Path(ti.get_project_directory()).rglob("*.py")))
-  for hook in map(str, hooks):
+  for hook in map(str, [ti.get_repo_directory() + "/tests/testhook.py"]):
     print("\nRunning testhook {}...\n".format(hook))
     cwd = os.getcwd()
     os.chdir(hook[:hook.rfind('/')])

@@ -8,6 +8,7 @@ import time
 real = ti.f32
 ti.set_default_fp(real)
 ti.cfg.enable_profiler = False
+# ti.cfg.use_llvm = True
 
 dim = 2
 n_particles = 6400

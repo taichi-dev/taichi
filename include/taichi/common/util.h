@@ -458,20 +458,18 @@ inline bool running_on_windows() {
 
 inline std::string get_repo_dir() {
   auto dir = std::getenv("TAICHI_REPO_DIR");
-  TC_ASSERT_INFO(dir != nullptr,
-                 "TAICHI_REPO_DIR is not specified in environment variables.");
-  return std::string(dir);
+  if (dir != nullptr || std::string(dir) == "") {
+    // release mode. Use ~/.taichi as root
+    auto home = std::getenv("HOME");
+    TC_ASSERT(home != nullptr);
+    return std::string(home) + "/.taichi/";
+  } else {
+    return std::string(dir);
+  }
 }
 
 inline std::string assets_dir() {
-  // release mode and dev mode are different...
-  // TODO: release mode
-  if (std::getenv("TAICHI_REPO_DIR")) {
-    return std::string(std::getenv("TAICHI_REPO_DIR")) + "/assets/";
-  } else {
-    TC_NOT_IMPLEMENTED
-  }
-  return "";
+  return get_repo_dir() + "/assets/";
 }
 
 inline std::string absolute_path(std::string path) {
@@ -487,7 +485,7 @@ inline std::string absolute_path(std::string path) {
     path = assets_dir() + path.substr(1, (int)path.size() - 1);
   } else if (path[0] != '.' && path[0] != '/' &&
              (path.size() >= 2 && path[1] != ':')) {
-    path = std::string(std::getenv("TAICHI_REPO_DIR")) + "/" + path;
+    path = get_repo_dir() + "/" + path;
   }
   return path;
 }

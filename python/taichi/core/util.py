@@ -211,8 +211,6 @@ def load_module(name, verbose=True):
 
 def at_startup():
   if not is_release():
-    assert os.path.exists(get_repo_directory(
-    )), 'Please make sure $TAICHI_REPO_DIR [' + get_repo_directory() + '] exists.'
     output_dir = get_output_directory()
     if not os.path.exists(output_dir):
       print('Making output directory')

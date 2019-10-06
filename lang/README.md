@@ -2,9 +2,16 @@
 ### High-Performance (Differentiable) Computing on Spatially Sparse Data Structures
 
 # [Python Frontend Tutorial](https://github.com/yuanming-hu/taichi/tree/master/python/taichi)
-##  PyPI package under construction
-##  Developer Installation
-(Note this is for the compiler developers of Taichi lang. I'm build a pip package for end users.)
+##  PyPI package for Linux (experimental)
+With gpu:
+```
+```
+Without GPU:
+```
+```
+
+###  Developer Installation
+(Note this is for the compiler developers of Taichi lang. I'm building a pip package for end users.)
 Supports Ubuntu 14.04/16.04/18.04, ArchLinux, Mac OS X. For GPU support, CUDA 9.0+ is needed.
 
  - Execute `python3 -m pip install astpretty astor pytest opencv-python pybind11 Pillow numpy scipy GitPython yapf colorama psutil`
@@ -17,11 +24,6 @@ Supports Ubuntu 14.04/16.04/18.04, ArchLinux, Mac OS X. For GPU support, CUDA 9.
   make -j 8
   sudo make install
   ```
- - Execute `ti install https://github.com/yuanming-hu/taichi_lang` to install the DSL project
- - Add the following line to your `~/.bashrc` or `~/.zshrc` for the python frontend.
- ```bash
- export PYTHONPATH=$TAICHI_REPO_DIR/projects/taichi_lang/python:$PYTHONPATH
- ```
  - Execute `source ~/.bashrc` (or `source ~/.zshrc`) to reload shell config.
  - Execute `ti test` to run all the tests. It may take a around 20 minutes to run all tests.
  - Check out `examples` for runnable examples. Run them with `python3`.

@@ -25,6 +25,7 @@ void main(int argc, char **argv) {
         argv_char[i] = &argv_converted[i][0];
     }
     PySys_SetArgv(argc, &argv_char[0]);
+    // TODO: implement release mode for this
     auto dir = getenv("TAICHI_REPO_DIR");
     if (dir == nullptr) {
         std::cout << "Please set TAICHI_REPO_DIR" << std::endl;

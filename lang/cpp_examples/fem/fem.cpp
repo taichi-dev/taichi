@@ -1,9 +1,10 @@
+#if defined(TLANG_WITH_FEM)
 #include <taichi/lang.h>
 #include <taichi/util.h>
 #include <taichi/visual/gui.h>
 #include <taichi/system/profiler.h>
-#include <taichi/visualization/particle_visualization.h>
 #include <taichi/visual/texture.h>
+#include <deque>
 #include "fem_interface.h"
 
 TC_NAMESPACE_BEGIN
@@ -568,3 +569,4 @@ auto fem = [](std::vector<std::string> cli_param) {
 TC_REGISTER_TASK(fem);
 
 TC_NAMESPACE_END
+#endif

@@ -138,11 +138,8 @@ else:
       import taichi_core as tc_core
     except Exception as e:
       from colorama import Fore, Back, Style
+      print_red_bold("Taichi core import failed: ", end='')
       print(e)
-      print()
-      print(Fore.RED + "Please make sure you are using python3 "
-                       "instead of python2." + Style.RESET_ALL)
-      print()
       exit(-1)
 
     os.chdir(tmp_cwd)

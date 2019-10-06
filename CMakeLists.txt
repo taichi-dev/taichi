@@ -25,6 +25,4 @@ include(cmake/TaichiCXXFlags.cmake)
 include(cmake/TaichiCore.cmake)
 include(cmake/TaichiMain.cmake)
 
-add_subdirectory(lang)
-
 message("C++ Flags: ${CMAKE_CXX_FLAGS}")

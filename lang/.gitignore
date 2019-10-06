@@ -14,7 +14,6 @@ output*
 images
 particles
 ms_output
-_tlang_cache
 __pycache__
 *.bin
 mpm_rendered

@@ -123,7 +123,9 @@ class PyTaichi:
       assert var.ptr.snode() is not None, 'variable not placed.'
 
   def clear(self):
-    del self.prog
+    if self.prog:
+      self.prog.finalize()
+      self.prog = None
     Expr.materialize_layout_callback = None
     Expr.layout_materialized = False
     
@@ -158,6 +160,7 @@ def reset():
   global root
   pytaichi.clear()
   pytaichi = PyTaichi()
+  taichi_lang_core.reset_default_compile_config()
   root = SNode(taichi_lang_core.get_root())
 
 

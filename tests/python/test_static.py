@@ -1,5 +1,4 @@
 import taichi as ti
-from pytest import approx
 
 def test_static_if():
   for val in [0, 1]:

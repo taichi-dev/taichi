@@ -1204,7 +1204,7 @@ class ExternalPtrStmt : public Stmt {
   ExternalPtrStmt(const LaneAttribute<Stmt *> &base_ptrs,
                   const std::vector<Stmt *> &indices)
       : base_ptrs(base_ptrs), indices(indices) {
-    DataType dt;
+    DataType dt = DataType::f32;
     for (int i = 0; i < (int)base_ptrs.size(); i++) {
       TC_ASSERT(base_ptrs[i] != nullptr);
       TC_ASSERT(base_ptrs[i]->is<ArgLoadStmt>());

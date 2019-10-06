@@ -22,7 +22,7 @@ TC_FORCE_INLINE Program &get_current_program() {
 }
 
 class Program {
-public:
+ public:
   using Kernel = taichi::Tlang::Kernel;
   // Should be copiable
   std::vector<void *> loaded_dlls;
@@ -39,6 +39,7 @@ public:
   std::unique_ptr<TaichiLLVMContext> llvm_context_host, llvm_context_device;
   bool sync;  // device/host synchronized?
   bool clear_all_gradients_initialized;
+  bool finalized;
 
   std::vector<std::unique_ptr<Kernel>> functions;
   int index_counter;
@@ -74,8 +75,8 @@ public:
   Program() : Program(default_compile_config.arch) {
   }
 
-  Program(const Program &) {
-    TC_NOT_IMPLEMENTED  // for pybind11..
+  Program(const Program &){
+      TC_NOT_IMPLEMENTED  // for pybind11..
   }
 
   Program(Arch arch);
@@ -84,12 +85,18 @@ public:
 
   void synchronize();
 
-  ~Program() {
+  void finalize() {
     current_program = nullptr;
     for (auto &dll : loaded_dlls) {
       dlclose(dll);
     }
     UnifiedAllocator::free();
+    finalized = true;
+  }
+
+  ~Program() {
+    if (!finalized)
+      finalize();
   }
 
   void layout(std::function<void()> func) {

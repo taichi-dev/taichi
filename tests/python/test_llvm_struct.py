@@ -1,8 +1,8 @@
 import taichi as ti
 
-ti.cfg.use_llvm = True
 
 '''
+ti.cfg.use_llvm = True
 def test_linear():
   ti.reset()
 

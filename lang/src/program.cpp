@@ -175,6 +175,7 @@ Program::Program(Arch arch) {
   sync = true;
   llvm_runtime = nullptr;
   clear_all_gradients_initialized = false;
+  finalized = false;
 }
 
 void Program::initialize_device_llvm_context() {

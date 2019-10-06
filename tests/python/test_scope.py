@@ -1,11 +1,11 @@
 import taichi as ti
 
-ti.runtime.print_preprocessed = True
 
 def test_scope():
   # In the future the following code should throw an exception at the python front end
   # instead of crashing the compiler
   return
+  ti.runtime.print_preprocessed = True
   for arch in [ti.x86_64, ti.cuda]:
     # ti.reset()
     ti.cfg.arch = arch

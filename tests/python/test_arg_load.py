@@ -1,8 +1,6 @@
 import taichi as ti
 from pytest import approx
 
-ti.cfg.use_llvm = True
-
 def test_arg_load():
   ti.reset()
   x = ti.var(ti.i32)

@@ -13,15 +13,10 @@ packages = {
 
 def run_pytest():
   print("\nRunning python tests...\n")
-  from pathlib import Path
   import taichi as ti
-  import subprocess
-  for hook in map(str, [ti.get_repo_directory() + "/tests/testhook.py"]):
-    print("\nRunning testhook {}...\n".format(hook))
-    cwd = os.getcwd()
-    os.chdir(hook[:hook.rfind('/')])
-    subprocess.call([sys.executable, hook])
-    os.chdir(cwd)
+  import pytest
+  pytest.main([os.path.join(ti.get_repo_directory(), 'tests')])
+  ti.reset()
 
 def print_all_projects():
   from colorama import Fore, Back, Style

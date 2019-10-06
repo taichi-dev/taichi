@@ -1,8 +1,6 @@
 import taichi as ti
 from pytest import approx
 
-ti.cfg.arch = ti.cuda
-
 def test_transpose():
   ti.reset()
   dim = 3

@@ -1,11 +1,8 @@
-from __future__ import print_function
 import atexit
 import os
 import shutil
 import sys
 import ctypes
-import subprocess
-
 
 if sys.version_info[0] < 3 or sys.version_info[1] < 5:
   print("\nPlease restart with python3. \n(Taichi supports Python 3.6+)\n")
@@ -23,7 +20,6 @@ def is_release():
   return not os.path.exists(os.path.join(package_root() + '../CMakeLists.txt'))
 
 from colorama import Fore, Back, Style
-
 
 def get_repo():
   from git import Repo

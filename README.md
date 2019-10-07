@@ -1,6 +1,27 @@
-# The Taichi Programming Language
-[Details](https://github.com/yuanming-hu/taichi/blob/master/lang/README.md)
-(Page under construction)
+# The Taichi Programming Language [[Details]](https://github.com/yuanming-hu/taichi/blob/master/lang/README.md)
+
+### High-Performance Computation on Sparse Data Structures [[Paper]](https://github.com/yuanming-hu/taichi/tree/master/lang) [[Video]](https://youtu.be/wKw8LMF3Djo)
+
+### Differentiable Programming for Physical Simulation [[Paper]](https://arxiv.org/abs/1910.00935) [[Video]](https://youtu.be/Z1xvAZve9aE)
+
+## Updates
+ - (Oct 7, 2019) I have released **experimental** python wheels on Linux (tested on Ubuntu 18.04) for those who are eager to try. More stable version coming in the next a few days. To install them: 
+```bash
+# With GPU support (needs CUDA 9.0+)
+python3 -m pip install taichi-gpu-nightly --user
+
+# CPU only. No GPU/CUDA needed
+python3 -m pip install taichi-nightly --user
+```
+Notes: 
+   - You still need to clone this repo for demo scripts under `examples/diffmpm`. You do not need to execute `install.py`.
+   After installation using `pip` you can simply to go to `examples/diffmpm` and execute, say, `python3 mass_spring 3 train.py`.
+   - Make sure you are have `clang-7`. On Ubuntu 18.04 you can install it with `sudo apt-get install clang-7`.
+   - Make sure to clear your legacy Taichi installation (if applicable) by cleaning the environment variables (delete `TAICHI_REPO_DIR`, and remove legacy taichi from `PYTHONPATH`) in your `.bashrc` or `.zshrc`. If you don't know what to do, simply do this in shell:
+   ```
+   export PYTHONPATH=
+   export TAICHI_REPO_DIR=
+   ```
 
 <!---
 | **Linux, Mac OS X** | **Windows** | Doc (WIP) | **Chat** |
@@ -8,13 +29,6 @@
 |[![Build Status](https://travis-ci.org/yuanming-hu/taichi.svg?branch=master)](https://travis-ci.org/yuanming-hu/taichi)|[![Build Status](https://ci.appveyor.com/api/projects/status/github/yuanming-hu/taichi?branch=master&svg=true)](https://ci.appveyor.com/project/IteratorAdvance/taichi)|[![Documentation Status](https://readthedocs.org/projects/taichi/badge/?version=latest)](http://taichi.readthedocs.io/en/latest/?badge=latest)|[![Join the chat at https://gitter.im/taichi-dev/Lobby](https://badges.gitter.im/taichi-dev/Lobby.svg)](https://gitter.im/taichi-dev/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)|
 --->
 
-## High-Performance Computation on Sparse Data Structures
-[[Paper]](https://github.com/yuanming-hu/taichi/tree/master/lang)
-[[Video]](https://youtu.be/wKw8LMF3Djo)
-
-## Differentiable Programming for Physical Simulation
-[[Paper]](https://arxiv.org/abs/1910.00935)
-[[Video]](https://youtu.be/Z1xvAZve9aE)
 
 # (Legacy) The Taichi Library
 **Taichi** is an open-source computer graphics library that aims to provide easy-to-use infrastructures for computer graphics R&D. It's written in C++14 and wrapped friendly with Python.

@@ -35,6 +35,7 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
   }
 
   FunctionType compile_module_to_executable() override {
+#if defined(TLANG_WITH_CUDA)
     llvm::Function *func = module->getFunction("test_kernel");
 
     /*******************************************************************
@@ -68,6 +69,10 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
       cuda_context.launch(cuda_kernel, &context, kernel_grid_dim,
                           kernel_block_dim);
     };
+#else
+    TC_NOT_IMPLEMENTED;
+    return nullptr;
+#endif
   }
 
   void visit(PrintStmt *stmt) override {

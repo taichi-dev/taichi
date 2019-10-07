@@ -1,6 +1,5 @@
 #if defined(TLANG_WITH_CUDA)
 #include <cuda.h>
-#endif
 #include "llvm_jit.h"
 #include "context.h"
 
@@ -30,3 +29,4 @@ class CUDAContext {
 extern CUDAContext cuda_context;
 
 TLANG_NAMESPACE_END
+#endif

@@ -462,7 +462,7 @@ std::string get_repo_dir();
 
 std::string get_python_package_dir();
 
-std::string set_python_package_dir(const std::string &dir);
+void set_python_package_dir(const std::string &dir);
 
 inline std::string assets_dir() {
   return get_repo_dir() + "/assets/";

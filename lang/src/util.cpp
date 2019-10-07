@@ -322,7 +322,7 @@ std::string CompileConfig::compiler_config() {
         "{}/include -ccbin {} "
         " -lstdc++ {} {} "
         "-DTLANG_GPU {} ",
-        gcc_opt_flag(), get_project_fn(), "g++-6", include_flag, link_flag,
+        gcc_opt_flag(), get_project_fn(), "g++-6", include_flag, linking,
         extra_flags);
   }
   return cmd;

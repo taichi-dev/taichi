@@ -3,11 +3,12 @@
 
 # [Python Frontend Tutorial](https://github.com/yuanming-hu/taichi/tree/master/python/taichi)
 ##  PyPI package for Linux (experimental)
-With gpu:
 ```
-```
-Without GPU:
-```
+# With GPU support (needs CUDA 9.0+)
+python3 -m pip install taichi-gpu-nightly --user
+
+# CPU only. No GPU/CUDA needed
+python3 -m pip install taichi-nightly --user
 ```
 
 ###  Developer Installation

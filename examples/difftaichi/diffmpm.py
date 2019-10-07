@@ -326,12 +326,12 @@ def robot(scene):
 
 from renderer_vector import rgb_to_hex
 
-gui = tc.core.GUI("Differentiable MPM", tc.Vectori(1024, 1024))
+gui = tc.core.GUI("Differentiable MPM", tc.veci(1024, 1024))
 canvas = gui.get_canvas()
 
 def visualize(s, folder):
   canvas.clear(0xFFFFFF)
-  vec = tc.Vector
+  vec = tc.vec
   for i in range(n_particles):
     color = 0x111111
     aid = actuator_id[i]
@@ -339,7 +339,7 @@ def visualize(s, folder):
       act = actuation[s - 1, aid]
       color = rgb_to_hex((0.5 - act, 0.5 - abs(act), 0.5 + act))
     canvas.circle(vec(x[s, i][0], x[s, i][1])).radius(2).color(color).finish()
-  canvas.path(tc.Vector(0.05, 0.02), tc.Vector(0.95, 0.02)).radius(3).color(0x0).finish()
+  canvas.path(tc.vec(0.05, 0.02), tc.vec(0.95, 0.02)).radius(3).color(0x0).finish()
   gui.update()
 
   os.makedirs(folder, exist_ok=True)
@@ -365,7 +365,7 @@ def main():
     particle_type[i] = scene.particle_type[i]
     
 
-  vec = tc.Vector
+  vec = tc.vec
   losses = []
   for iter in range(100):
     ti.clear_all_gradients()

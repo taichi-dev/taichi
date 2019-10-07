@@ -303,7 +303,7 @@ def compute_loss(t: ti.i32):
   loss[None] = (x[t, head_id] - goal[None]).norm()
 
 import taichi as tc
-gui = tc.core.GUI('Rigid Body Simulation', tc.Vectori(1024, 1024))
+gui = tc.core.GUI('Rigid Body Simulation', tc.veci(1024, 1024))
 canvas = gui.get_canvas()
 
 from renderer_vector import rgb_to_hex
@@ -349,7 +349,7 @@ def forward(output=None, visualize=True):
           points.append((pos[0], pos[1]))
 
         for k in range(4):
-          canvas.path(tc.Vector(*points[k]), tc.Vector(*points[(k + 1) % 4])).color(0x0).radius(2).finish()
+          canvas.path(tc.vec(*points[k]), tc.vec(*points[(k + 1) % 4])).color(0x0).radius(2).finish()
 
       for i in range(n_springs):
         def get_world_loc(i, offset):
@@ -371,13 +371,13 @@ def forward(output=None, visualize=True):
           color = rgb_to_hex((0.5 + a, 0.5 - abs(a), 0.5 - a))
 
         if spring_length[i] == -1:
-          canvas.path(tc.Vector(*pt1), tc.Vector(*pt2)).color(0x000000).radius(9).finish()
-          canvas.path(tc.Vector(*pt1), tc.Vector(*pt2)).color(color).radius(7).finish()
+          canvas.path(tc.vec(*pt1), tc.vec(*pt2)).color(0x000000).radius(9).finish()
+          canvas.path(tc.vec(*pt1), tc.vec(*pt2)).color(color).radius(7).finish()
         else:
-          canvas.path(tc.Vector(*pt1), tc.Vector(*pt2)).color(0x000000).radius(7).finish()
-          canvas.path(tc.Vector(*pt1), tc.Vector(*pt2)).color(color).radius(5).finish()
+          canvas.path(tc.vec(*pt1), tc.vec(*pt2)).color(0x000000).radius(7).finish()
+          canvas.path(tc.vec(*pt1), tc.vec(*pt2)).color(color).radius(5).finish()
 
-      canvas.path(tc.Vector(0.05, ground_height - 5e-3), tc.Vector(0.95, ground_height - 5e-3)).color(0x0).radius(5).finish()
+      canvas.path(tc.vec(0.05, ground_height - 5e-3), tc.vec(0.95, ground_height - 5e-3)).color(0x0).radius(5).finish()
 
       gui.update()
       if output:

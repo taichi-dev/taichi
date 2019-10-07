@@ -111,7 +111,7 @@ def compute_loss(t: ti.i32):
   ti.atomic_add(loss[None], dt * (x[t] - goal[t]).norm_sqr())
 
 
-gui = tc.core.GUI("Gravity", tc.Vectori(1024, 1024))
+gui = tc.core.GUI("Gravity", tc.veci(1024, 1024))
 
 
 def forward(visualize=False, output=None):
@@ -132,13 +132,13 @@ def forward(visualize=False, output=None):
       
       for i in range(n_gravitation):
         r = (gravitation[t, i] + 1) * 30
-        canvas.circle(tc.Vector(*gravitation_position[i])).radius(r).color(
+        canvas.circle(tc.vec(*gravitation_position[i])).radius(r).color(
           0xccaa44).finish()
       
-      canvas.circle(tc.Vector(x[t][0], x[t][1])).radius(30).color(
+      canvas.circle(tc.vec(x[t][0], x[t][1])).radius(30).color(
         0xF20530).finish()
       
-      canvas.circle(tc.Vector(goal[t][0], goal[t][1])).radius(10).color(
+      canvas.circle(tc.vec(goal[t][0], goal[t][1])).radius(10).color(
         0x3344cc).finish()
       
       gui.update()

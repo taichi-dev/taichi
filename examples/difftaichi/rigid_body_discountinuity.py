@@ -164,7 +164,7 @@ def compute_loss(t: ti.i32):
   loss[None] = x[t, head_id][0]
 
 
-gui = tc.core.GUI("Rigid Body", tc.Vectori(1024, 1024))
+gui = tc.core.GUI("Rigid Body", tc.veci(1024, 1024))
 canvas = gui.get_canvas()
 
 def forward(output=None, visualize=True):
@@ -198,10 +198,10 @@ def forward(output=None, visualize=True):
           points.append((pos[0], pos[1]))
 
         for k in range(4):
-          canvas.path(tc.Vector(*points[k]), tc.Vector(*points[(k + 1) % 4])).radius(2).color(0x0).finish()
+          canvas.path(tc.vec(*points[k]), tc.vec(*points[(k + 1) % 4])).radius(2).color(0x0).finish()
 
       offset = 0.003
-      canvas.path(tc.Vector(0.05, ground_height - offset), tc.Vector(0.95, ground_height - offset)).radius(2).color(0xAAAAAA).finish()
+      canvas.path(tc.vec(0.05, ground_height - offset), tc.vec(0.95, ground_height - offset)).radius(2).color(0xAAAAAA).finish()
 
       if output:
         gui.screenshot('rigid_body/{}/{:04d}.png'.format(output, t))

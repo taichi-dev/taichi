@@ -185,7 +185,7 @@ def advance_no_toi(t: ti.i32):
 def compute_loss(t: ti.i32):
   ti.atomic_add(loss[None], dt * ti.sqr(target_v[t][0]-v[t, head_id][0]))
 
-gui = tc.core.GUI("Mass Spring Robot", tc.Vectori(1024, 1024))
+gui = tc.core.GUI("Mass Spring Robot", tc.veci(1024, 1024))
 canvas = gui.get_canvas()
 
 from renderer_vector import rgb_to_hex
@@ -225,15 +225,15 @@ def forward(output=None, visualize=True):
     
     if (t + 1) % interval == 0 and visualize:
       canvas.clear(0xFFFFFF)
-      canvas.path(tc.Vector(0, ground_height), tc.Vector(1, ground_height)).color(0x0).radius(3).finish()
+      canvas.path(tc.vec(0, ground_height), tc.vec(1, ground_height)).color(0x0).radius(3).finish()
       
       def circle(x, y, color):
-        canvas.circle(tc.Vector(x, y)).color(rgb_to_hex(color)).radius(7).finish()
+        canvas.circle(tc.vec(x, y)).color(rgb_to_hex(color)).radius(7).finish()
       
       
       for i in range(n_springs):
         def get_pt(x):
-          return tc.Vector(x[0], x[1])
+          return tc.vec(x[0], x[1])
         
         a = act[t - 1, i] * 0.5
         r = 2

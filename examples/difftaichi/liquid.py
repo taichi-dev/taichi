@@ -377,7 +377,7 @@ class Scene:
     global n_actuators
     n_actuators = n_act
 
-gui = tc.core.GUI("Differentiable MPM", tc.Vectori(1024, 1024))
+gui = tc.core.GUI("Differentiable MPM", tc.veci(1024, 1024))
 canvas = gui.get_canvas()
 
 @ti.kernel

@@ -67,7 +67,7 @@ def advance_no_toi(t: ti.i32):
     v[t, i] = new_v
     x[t, i] = x[t - 1, i] + dt * new_v
 
-gui = tc.core.GUI("Rigid Body", tc.Vectori(1024, 1024))
+gui = tc.core.GUI("Rigid Body", tc.veci(1024, 1024))
 canvas = gui.get_canvas()
 
 def forward(output=None, visualize=True, dy=0, i=0):
@@ -88,9 +88,9 @@ def forward(output=None, visualize=True, dy=0, i=0):
     
     if (t + 1) % interval == 0 and visualize:
       color = 0x010101 * min(255, max(0, int((1 - t * dt / total_t) * 0.7 * 255)))
-      canvas.circle(tc.Vector(x[t, 0][0], x[t, 0][1])).radius(80).color(color).finish()
+      canvas.circle(tc.vec(x[t, 0][0], x[t, 0][1])).radius(80).color(color).finish()
       offset = 0.077
-      canvas.path(tc.Vector(0.05, ground_height - offset), tc.Vector(0.95, ground_height - offset)).radius(2).color(0x000000).finish()
+      canvas.path(tc.vec(0.05, ground_height - offset), tc.vec(0.95, ground_height - offset)).radius(2).color(0x000000).finish()
 
   if output:
     gui.screenshot('rigid_body_toi/{}/{:04d}.png'.format(output, i))

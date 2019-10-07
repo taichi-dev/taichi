@@ -100,6 +100,10 @@ def build():
 if is_release():
   print("[Release mode]")
   sys.path.append(os.path.join(package_root(), 'lib'))
+  link_src = os.path.join(package_root(), 'lib', 'taichi_core.so')
+  link_dst = os.path.join(package_root(), 'lib', 'libtaichi_core.so')
+  if not os.path.exists(link_dst):
+    os.symlink(link_src, link_dst)
   import taichi_core as tc_core
   tc_core.set_python_package_dir(package_root())
   os.makedirs(tc_core.get_repo_dir(), exist_ok=True)

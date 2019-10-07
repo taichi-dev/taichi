@@ -1,5 +1,3 @@
-project_name = 'taichi-nightly'
-version = '0.0.51'
 import setuptools
 import glob
 

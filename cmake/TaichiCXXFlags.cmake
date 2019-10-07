@@ -46,10 +46,9 @@ else()
         message("Clang compiler detected. Using std=c++17.")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
     else()
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
+        message(FATAL_ERROR "clang-7 is the only supported compiler for Taichi compiler development")
     endif()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native\
-         -DGL_DO_NOT_WARN_IF_MULTI_GL_VERSION_HEADERS_INCLUDED -Wall")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native -Wall ")
 endif ()
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTC_PASS_EXCEPTION_TO_PYTHON")

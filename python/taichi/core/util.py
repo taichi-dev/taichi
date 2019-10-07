@@ -20,6 +20,13 @@ def is_release():
 
 from colorama import Fore, Back, Style
 
+def get_core_shared_object():
+  if is_release():
+    directory = os.path.join(package_root(), 'lib')
+  else:
+    directory = get_bin_directory()
+  return os.path.join(directory, 'libtaichi_core.so')
+
 def get_repo():
   from git import Repo
   import taichi as tc
@@ -105,6 +112,10 @@ if is_release():
   if not os.path.exists(link_dst):
     os.symlink(link_src, link_dst)
   import taichi_core as tc_core
+  
+  # For llvm jit to find the runtime symbols
+  dll = ctypes.CDLL(get_core_shared_object(), mode=ctypes.RTLD_GLOBAL)
+
   tc_core.set_python_package_dir(package_root())
   os.makedirs(tc_core.get_repo_dir(), exist_ok=True)
 else:
@@ -186,6 +197,9 @@ else:
       raise e
 
     os.chdir(old_wd)
+    
+  # For llvm jit to find the runtime symbols
+  dll = ctypes.CDLL(get_core_shared_object(), mode=ctypes.RTLD_GLOBAL)
 
 def get_dll_name(name):
   if get_os_name() == 'linux':

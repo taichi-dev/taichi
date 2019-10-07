@@ -5,7 +5,7 @@
 ### Differentiable Programming for Physical Simulation [[Paper]](https://arxiv.org/abs/1910.00935) [[Video]](https://youtu.be/Z1xvAZve9aE)
 
 ## Updates
- - (Oct 7, 2019) I have released **experimental** python wheels on Linux (tested on Ubuntu 18.04) for those who are eager to try. More stable version coming in the next a few days. To install them: 
+ - (Oct 7, 2019) I have released **experimental** python wheels on Linux (tested on Ubuntu 18.04) for those who are eager to try. More stable releases are coming in a few days. To install them: 
 ```bash
 # With GPU support (needs CUDA 9.0+)
 python3 -m pip install taichi-gpu-nightly --user
@@ -14,10 +14,10 @@ python3 -m pip install taichi-gpu-nightly --user
 python3 -m pip install taichi-nightly --user
 ```
 Notes: 
-   - You still need to clone this repo for demo scripts under `examples/diffmpm`. You do not need to execute `install.py`.
-   After installation using `pip` you can simply to go to `examples/diffmpm` and execute, say, `python3 mass_spring 3 train.py`.
-   - Make sure you are have `clang-7`. On Ubuntu 18.04 you can install it with `sudo apt-get install clang-7`.
-   - Make sure to clear your legacy Taichi installation (if applicable) by cleaning the environment variables (delete `TAICHI_REPO_DIR`, and remove legacy taichi from `PYTHONPATH`) in your `.bashrc` or `.zshrc`. If you don't know what to do, simply do this in shell:
+   - You still need to clone this repo for demo scripts under `examples/diffmpm`. You *do not* need to execute `install.py`.
+   After installation using `pip` you can simply go to `examples/diffmpm` and execute, e.g., `python3 mass_spring.py 3 train.py`.
+   - Make sure you have `clang-7`. On Ubuntu 18.04 you can install it with `sudo apt-get install clang-7`.
+   - Make sure you clear your legacy Taichi installation (if applicable) by cleaning the environment variables (delete `TAICHI_REPO_DIR`, and remove legacy taichi from `PYTHONPATH`) in your `.bashrc` or `.zshrc`. Or you can simply do this in your shell to temporarily clear them:
    ```
    export PYTHONPATH=
    export TAICHI_REPO_DIR=

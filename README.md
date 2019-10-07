@@ -2,9 +2,11 @@
 [Details](https://github.com/yuanming-hu/taichi/blob/master/lang/README.md)
 (Page under construction)
 
+<!---
 | **Linux, Mac OS X** | **Windows** | Doc (WIP) | **Chat** |
 |---------------------|------------------|----------------|------------------|
 |[![Build Status](https://travis-ci.org/yuanming-hu/taichi.svg?branch=master)](https://travis-ci.org/yuanming-hu/taichi)|[![Build Status](https://ci.appveyor.com/api/projects/status/github/yuanming-hu/taichi?branch=master&svg=true)](https://ci.appveyor.com/project/IteratorAdvance/taichi)|[![Documentation Status](https://readthedocs.org/projects/taichi/badge/?version=latest)](http://taichi.readthedocs.io/en/latest/?badge=latest)|[![Join the chat at https://gitter.im/taichi-dev/Lobby](https://badges.gitter.im/taichi-dev/Lobby.svg)](https://gitter.im/taichi-dev/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)|
+--->
 
 ## High-Performance Computation on Sparse Data Structures
 [[Paper]](https://github.com/yuanming-hu/taichi/tree/master/lang)

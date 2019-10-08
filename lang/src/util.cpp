@@ -319,7 +319,7 @@ std::string CompileConfig::compiler_config() {
         "-march=native \" "
         "--use_fast_math -arch=compute_61 -code=sm_61,compute_61 "
         "--ptxas-options=-allow-expensive-optimizations=true,-O3,-v -I "
-        "{}/include -ccbin {} "
+        "{}/include -I/usr/local/cuda/include/ -ccbin {} "
         " -lstdc++ {} {} "
         "-DTLANG_GPU {} ",
         gcc_opt_flag(), get_project_fn(), "g++-6", include_flag, linking,

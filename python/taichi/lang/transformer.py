@@ -1,6 +1,4 @@
 import ast
-import astpretty
-import astor
 
 
 class ScopeGuard:

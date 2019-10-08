@@ -36,7 +36,7 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
 
   FunctionType compile_module_to_executable() override {
 #if defined(TLANG_WITH_CUDA)
-    llvm::Function *func = module->getFunction("test_kernel");
+    llvm::Function *func = module->getFunction(kernel_name);
     TC_ASSERT(func);
 
     /*******************************************************************

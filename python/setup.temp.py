@@ -28,7 +28,7 @@ setuptools.setup(
     author_email='yuanmhu@gmail.com',
     url='https://github.com/yuanming-hu/taichi',
     install_requires=[
-        'numpy', 'Pillow', 'scipy', 'pybind11', 'colorama', 'psutil'
+        'numpy', 'Pillow', 'scipy', 'pybind11', 'colorama', 'setuptools', 'astor', 'matplotlib'
     ],
     data_files=[('lib', data_files)],
     keywords=['graphics', 'simulation'],

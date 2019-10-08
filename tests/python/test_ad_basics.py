@@ -43,8 +43,8 @@ def test_size1():
   assert x[0] == 1
 
 def test_poly():
-  grad_test(lambda x: -x)
   grad_test(lambda x: x)
+  grad_test(lambda x: -x)
   grad_test(lambda x: x * x)
   grad_test(lambda x: ti.sqr(x))
   grad_test(lambda x: x * x * x)
@@ -79,3 +79,4 @@ def test_minmax():
   grad_test(lambda x: ti.max(x, 1), lambda x: np.maximum(x, 1))
   grad_test(lambda x: ti.max(0, x), lambda x: np.maximum(0, x))
   grad_test(lambda x: ti.max(1, x), lambda x: np.maximum(1, x))
+

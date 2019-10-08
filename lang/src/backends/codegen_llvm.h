@@ -236,6 +236,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
 
   void visit(UnaryOpStmt *stmt) {
     auto input = stmt->operand->value;
+    auto input_taichi_type = stmt->operand->ret_type.data_type;
     auto input_type = input->getType();
     auto op = stmt->op_type;
 
@@ -254,12 +255,17 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
         stmt->value = builder->CreateFNeg(input, "neg");
       }
       UNARY_INTRINSIC(sin)
-      UNARY_INTRINSIC(cos) UNARY_INTRINSIC(sqrt) UNARY_INTRINSIC(floor)
-          UNARY_INTRINSIC(ceil)
+      UNARY_INTRINSIC(cos)
+      UNARY_INTRINSIC(sqrt) UNARY_INTRINSIC(floor) UNARY_INTRINSIC(ceil)
 #undef UNARY_INTRINSIC
-              else if (op == UnaryOpType::tanh) {
-        stmt->value =
-            builder->CreateCall(get_runtime_function("tanhf"), input, "tanhf");
+          else if (op == UnaryOpType::tanh) {
+        if (input_taichi_type == DataType::f32) {
+          stmt->value = builder->CreateCall(get_runtime_function("tanhf"),
+                                            input, "tanhf");
+        } else {
+          stmt->value =
+              builder->CreateCall(get_runtime_function("tanh"), input, "tanh");
+        }
       }
     } else {
       // op = cast
@@ -304,6 +310,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
 
   void visit(BinaryOpStmt *stmt) {
     auto op = stmt->op_type;
+    auto ret_type = stmt->ret_type.data_type;
     if (op == BinaryOpType::add) {
       if (is_real(stmt->ret_type.data_type)) {
         stmt->value = builder->CreateFAdd(stmt->lhs->value, stmt->rhs->value);
@@ -330,6 +337,26 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       }
     } else if (op == BinaryOpType::mod) {
       stmt->value = builder->CreateSRem(stmt->lhs->value, stmt->rhs->value);
+    } else if (op == BinaryOpType::max) {
+      if (is_real(ret_type)) {
+        stmt->value =
+            builder->CreateMaximum(stmt->lhs->value, stmt->rhs->value);
+      } else if (ret_type == DataType::i32) {
+        stmt->value =
+            create_call("int32_max", {stmt->lhs->value, stmt->rhs->value});
+      } else {
+        TC_NOT_IMPLEMENTED
+      }
+    } else if (op == BinaryOpType::min) {
+      if (is_real(ret_type)) {
+        stmt->value =
+            builder->CreateMinimum(stmt->lhs->value, stmt->rhs->value);
+      } else if (ret_type == DataType::i32) {
+        stmt->value =
+            create_call("int32_min", {stmt->lhs->value, stmt->rhs->value});
+      } else {
+        TC_NOT_IMPLEMENTED
+      }
     } else if (is_comparison(op)) {
       if (op == BinaryOpType::cmp_eq) {
         if (is_real(stmt->lhs->ret_type.data_type)) {
@@ -345,6 +372,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
         TC_NOT_IMPLEMENTED
       }
     } else {
+      TC_P(binary_op_type_name(op));
       TC_NOT_IMPLEMENTED
     }
   }

@@ -42,6 +42,15 @@ void vprintf(Ptr format, Ptr arg);
 int printf(const char *, ...);
 
 float tanhf(float x);
+double tanh(double x);
+
+int int32_max(int a, int b) {
+  return a > b ? a : b;
+}
+
+int int32_min(int a, int b) {
+  return a < b ? a : b;
+}
 
 struct PhysicalCoordinates {
   int val[taichi_max_num_indices];
@@ -161,6 +170,7 @@ void *taichi_allocate(std::size_t size) {
 
 void ___stubs___() {
   tanhf(0);
+  tanh(0);
   printf("");
   vprintf(nullptr, nullptr);
   taichi_allocate(1);

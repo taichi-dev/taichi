@@ -3,7 +3,6 @@ import sys
 import taichi as ti
 import math
 import numpy as np
-import cv2
 import os
 import matplotlib.pyplot as plt
 import time

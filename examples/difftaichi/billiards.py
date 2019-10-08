@@ -2,7 +2,6 @@ import taichi as ti
 import sys
 import math
 import numpy as np
-import cv2
 import os
 import taichi as tc
 import matplotlib.pyplot as plt

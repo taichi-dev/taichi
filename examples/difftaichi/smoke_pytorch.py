@@ -5,7 +5,6 @@ import torch
 import time
 import math
 import numpy as np
-import cv2
 import os
 import matplotlib
 import matplotlib.pyplot as plt

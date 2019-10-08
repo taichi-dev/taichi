@@ -22,7 +22,7 @@ python3 -m pip install taichi-nightly --user
 Notes: 
    - You still need to clone this repo for demo scripts under `examples/diffmpm`. You *do not* need to execute `install.py`.
    After installation using `pip` you can simply go to `examples/diffmpm` and execute, e.g., `python3 mass_spring.py 3 train.py`.
-   - Make sure you have `clang-7`. On Ubuntu 18.04 you can install it with `sudo apt-get install clang-7`.
+   - Make sure you have `clang-7`. On Ubuntu 18.04 you can install it with `sudo apt-get install clang-7`. See [here](https://askubuntu.com/questions/1113974/using-c17-with-clang-on-ubuntu-16-04) for installing `clang-7` on Ubuntu 16.04.
    - Make sure you clear your legacy Taichi installation (if applicable) by cleaning the environment variables (delete `TAICHI_REPO_DIR`, and remove legacy taichi from `PYTHONPATH`) in your `.bashrc` or `.zshrc`. Or you can simply do this in your shell to temporarily clear them:
    ```
    export PYTHONPATH=

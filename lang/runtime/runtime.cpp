@@ -41,6 +41,8 @@ extern "C" {
 void vprintf(Ptr format, Ptr arg);
 int printf(const char *, ...);
 
+float tanhf(float x);
+
 struct PhysicalCoordinates {
   int val[taichi_max_num_indices];
 };
@@ -158,6 +160,7 @@ void *taichi_allocate(std::size_t size) {
 }
 
 void ___stubs___() {
+  tanhf(0);
   printf("");
   vprintf(nullptr, nullptr);
   taichi_allocate(1);

@@ -31,9 +31,16 @@ def test_llvm_gpu():
       # ti.print(f[i])
 
   test()
+  
+  @ti.kernel
+  def test2():
+    for i in range(n):
+      val[i] += 1
+  
+  test2()
 
   for i in range(n):
     print(i, val[i], f[i])
-    assert val[i] == 95 + i
+    assert val[i] == 96 + i
 
 test_llvm_gpu()

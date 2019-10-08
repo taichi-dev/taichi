@@ -235,15 +235,17 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   }
 
   void visit(UnaryOpStmt *stmt) {
+    auto input = stmt->operand->value;
+    auto input_type = input->getType();
+    auto op = stmt->op_type;
+
 #define UNARY_INTRINSIC(x)                                                   \
   else if (op == UnaryOpType::x) {                                           \
     stmt->value =                                                            \
         builder->CreateIntrinsic(llvm::Intrinsic::x, {input_type}, {input}); \
   }
+
     if (stmt->op_type != UnaryOpType::cast) {
-      auto input = stmt->operand->value;
-      auto input_type = input->getType();
-      auto op = stmt->op_type;
       if (op == UnaryOpType::sqrt) {
         llvm::Function *sqrt_fn = Intrinsic::getDeclaration(
             module.get(), Intrinsic::sqrt, input->getType());
@@ -252,15 +254,15 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
         stmt->value = builder->CreateFNeg(input, "neg");
       }
       UNARY_INTRINSIC(sin)
-      UNARY_INTRINSIC(cos)
-      UNARY_INTRINSIC(sqrt)
-      UNARY_INTRINSIC(floor)
-      UNARY_INTRINSIC(ceil)
-      else {
-        TC_P(unary_op_type_name(stmt->op_type));
-      }
+      UNARY_INTRINSIC(cos) UNARY_INTRINSIC(sqrt) UNARY_INTRINSIC(floor)
+          UNARY_INTRINSIC(ceil)
 #undef UNARY_INTRINSIC
+              else if (op == UnaryOpType::tanh) {
+        stmt->value =
+            builder->CreateCall(get_runtime_function("tanhf"), input, "tanhf");
+      }
     } else {
+      // op = cast
       if (stmt->cast_by_value) {
         llvm::CastInst::CastOps cast_op;
         auto from = stmt->operand->ret_type.data_type;
@@ -446,7 +448,8 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     std::vector<llvm::Value *> metas;
     // These must be emitted in place for inlining optimization
     for (int i = 0; i < (int)path.size(); i++) {
-      // TODO: should we use a local addr space for more compiler optimization?
+      // TODO: should we use a local addr space for more compiler
+      // optimization?
       metas.push_back(cast_pointer(emit_struct_meta(path[i]), "StructMeta"));
     }
 
@@ -570,13 +573,8 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   }
 
   void visit(ArgLoadStmt *stmt) {
-    /*
-    emit("const {} {}({{context.get_arg<{}>({})}});",
-         stmt->ret_data_type_name(), stmt->raw_name(),
-         data_type_name(stmt->ret_type.data_type), stmt->arg_id);
-    */
     auto raw_arg =
-        builder->CreateCall(get_runtime_function("context_get_arg"),
+        builder->CreateCall(get_runtime_function("Context_get_args"),
                             {get_context(), tlctx->get_constant(stmt->arg_id)});
     auto dest_ty = tlctx->get_data_type(stmt->ret_type.data_type);
     auto truncated = builder->CreateTrunc(
@@ -782,6 +780,8 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
          data_type_name(stmt->data->ret_type.data_type),
          stmt->ptr->raw_name(), i, stmt->data->raw_name(), i);
     */
+    TC_ASSERT(stmt->data->value);
+    TC_ASSERT(stmt->ptr->value);
     builder->CreateStore(stmt->data->value, stmt->ptr->value);
   }
 

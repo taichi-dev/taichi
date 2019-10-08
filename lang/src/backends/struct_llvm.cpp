@@ -460,10 +460,7 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
 
   if (host) {
     for (auto n : snodes) {
-      TC_TAG;
-      TC_P(n->type_name());
       load_accessors(*n);
-      TC_TAG;
     }
 
     auto initialize_data_structure =

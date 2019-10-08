@@ -4,7 +4,6 @@ from .transformer import ASTTransformer
 from .expr import Expr
 from .snode import SNode
 import ast
-import astpretty
 import astor
 from .util import *
 import numpy as np

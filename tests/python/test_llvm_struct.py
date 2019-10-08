@@ -1,10 +1,9 @@
 import taichi as ti
 
-
 '''
-ti.cfg.use_llvm = True
 def test_linear():
   ti.reset()
+  ti.cfg.use_llvm = True
 
   x = ti.var(ti.i32)
   y = ti.var(ti.i32)
@@ -26,6 +25,7 @@ def test_linear():
 
 def test_linear_nested():
   ti.reset()
+  ti.cfg.use_llvm = True
 
   x = ti.var(ti.i32)
   y = ti.var(ti.i32)
@@ -47,6 +47,7 @@ def test_linear_nested():
 
 def test_2d_nested():
   ti.reset()
+  ti.cfg.use_llvm = True
 
   x = ti.var(ti.i32)
 
@@ -63,5 +64,4 @@ def test_2d_nested():
   for i in range(n * 2):
     for j in range(n):
       assert x[i, j] == i + j * 10
-
 '''

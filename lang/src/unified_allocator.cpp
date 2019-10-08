@@ -24,6 +24,9 @@ taichi::Tlang::UnifiedAllocator::UnifiedAllocator(std::size_t size, bool gpu)
   } else {
 #if defined(CUDA_FOUND)
     cudaMallocManaged(&_cuda_data, size + 4096);
+    if (_cuda_data == nullptr) {
+      TC_ERROR("GPU memory allocation failed.");
+    }
     cudaMemAdvise(_cuda_data, size + 4096, cudaMemAdviseSetPreferredLocation,
                   0);
     // http://on-demand.gputechconf.com/gtc/2017/presentation/s7285-nikolay-sakharnykh-unified-memory-on-pascal-and-volta.pdf
@@ -77,6 +80,7 @@ void taichi::Tlang::UnifiedAllocator::create() {
 }
 
 void taichi::Tlang::UnifiedAllocator::free() {
+  (*allocator()).~UnifiedAllocator();
 #if defined(CUDA_FOUND)
   cudaFree(allocator());
 #else

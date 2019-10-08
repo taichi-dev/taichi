@@ -162,13 +162,15 @@ Program::Program(Arch arch) {
     arch = Arch::x86_64;
   }
 #endif
-  llvm_context_host = std::make_unique<TaichiLLVMContext>(Arch::x86_64);
   // llvm_context_device is initialized before kernel compilation
   UnifiedAllocator::create();
   TC_ASSERT(current_program == nullptr);
   current_program = this;
   config = default_compile_config;
   config.arch = arch;
+  if (config.use_llvm) {
+    llvm_context_host = std::make_unique<TaichiLLVMContext>(Arch::x86_64);
+  }
   current_kernel = nullptr;
   snode_root = nullptr;
   index_counter = 0;

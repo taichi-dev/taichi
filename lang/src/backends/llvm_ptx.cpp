@@ -120,6 +120,9 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
       auto loop_begin = for_stmt->begin->as<ConstStmt>()->val[0].val_int32();
       auto loop_end = for_stmt->end->as<ConstStmt>()->val[0].val_int32();
       auto loop_block_dim = for_stmt->block_size;
+      if (loop_block_dim == 0) {
+        loop_block_dim = default_gpu_block_size;
+      }
       kernel_grid_dim =
           (loop_end - loop_begin + loop_block_dim - 1) / loop_block_dim;
       kernel_block_dim = loop_block_dim;

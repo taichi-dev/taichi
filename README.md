@@ -11,10 +11,10 @@
 ### Differentiable Programming for Physical Simulation [[Paper]](https://arxiv.org/abs/1910.00935) [[Video]](https://youtu.be/Z1xvAZve9aE)
 
 ## Updates
- - (Oct 7, 2019) I have released **experimental** python **3.6** wheels on Linux (tested on Ubuntu 18.04) for those who are eager to try. More stable releases are coming in a few days. To install them: 
+ - (Oct 7, 2019) I have released **experimental** python **3.6** wheels on Linux (tested on Ubuntu 16.04/18.04) for those who are eager to try. More stable releases are coming in a few days. To install them: 
 ```bash
-# With GPU support (needs CUDA 9.0+)
-python3 -m pip install taichi-gpu-nightly --user
+# With GPU support (needs CUDA 10.0)
+python3 -m pip install taichi-gpu-nightly==0.0.52 --user
 
 # CPU only. No GPU/CUDA needed
 python3 -m pip install taichi-nightly --user

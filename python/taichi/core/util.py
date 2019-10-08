@@ -8,7 +8,18 @@ if sys.version_info[0] < 3 or sys.version_info[1] < 5:
   print("\nPlease restart with python3. \n(Taichi supports Python 3.6+)\n")
   print("Current version:", sys.version_info)
   exit(-1)
+  
+tc_core = None
 
+def import_tc_core():
+  global tc_core
+  old_flags = sys.getdlopenflags()
+  sys.setdlopenflags(258) # 258 = RTLD_NOW | RTLD_GLOBAL
+  # We
+  import taichi_core as core
+  tc_core = core
+  sys.setdlopenflags(old_flags)
+  
 def is_ci():
   return os.environ.get('TC_CI', '') == '1'
 
@@ -111,7 +122,7 @@ if is_release():
   link_dst = os.path.join(package_root(), 'lib', 'libtaichi_core.so')
   if not os.path.exists(link_dst):
     os.symlink(link_src, link_dst)
-  import taichi_core as tc_core
+  import_tc_core()
   
   # For llvm jit to find the runtime symbols
   dll = ctypes.CDLL(get_core_shared_object(), mode=ctypes.RTLD_GLOBAL)
@@ -151,7 +162,7 @@ else:
         pass
     shutil.copy('libtaichi_core.so', 'taichi_core.so')
     try:
-      import taichi_core as tc_core
+      import_tc_core()
     except Exception as e:
       from colorama import Fore, Back, Style
       print_red_bold("Taichi core import failed: ", end='')
@@ -198,8 +209,6 @@ else:
 
     os.chdir(old_wd)
     
-  # For llvm jit to find the runtime symbols
-  dll = ctypes.CDLL(get_core_shared_object(), mode=ctypes.RTLD_GLOBAL)
 
 def get_dll_name(name):
   if get_os_name() == 'linux':

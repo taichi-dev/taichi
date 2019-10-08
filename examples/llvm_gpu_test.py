@@ -11,24 +11,17 @@ def test_llvm_gpu():
   # ti.cfg.print_ir = True
   # ti.cfg.print_kernel_llvm_ir = True
 
-  n = 1024
+  n = 16
 
   @ti.layout
   def values():
-    ti.root.dense(ti.i, n).dense(ti.i, 2).place(val, f)
+    ti.root.dense(ti.i, n).place(val, f)
 
   @ti.kernel
   def test():
     for i in range(n):
-      ti.print(i)
-      s = 0
-      for j in range(10):
-        s += j
-      a = ti.Vector([0.4, 0.3])
-      val[i] = s + ti.cast(a.norm() * 100, ti.i32) + i
-      # ti.print(val[i])
-      # f[i] = ti.sin(ti.cast(i, ti.f32))
-      # ti.print(f[i])
+      # ti.print(i)
+      val[i] = i * 2
 
   test()
   
@@ -41,6 +34,6 @@ def test_llvm_gpu():
 
   for i in range(n):
     # print(i, val[i], f[i])
-    assert val[i] == 96 + i
+    assert val[i] == 1 + i * 2
 
 test_llvm_gpu()

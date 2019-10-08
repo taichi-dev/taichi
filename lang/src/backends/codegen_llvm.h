@@ -74,7 +74,12 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
         llvm::FunctionType::get(llvm::Type::getVoidTy(*llvm_context),
                                 {PointerType::get(context_ty, 0)}, false);
 
-    kernel_name = kernel->name + "_kernel";
+    std::string grad_suffix;
+    if (kernel->grad) {
+      grad_suffix = "_grad";
+    }
+    kernel_name = kernel->name + grad_suffix + "_kernel";
+    TC_P(kernel_name);
 
     func = Function::Create(FT, Function::ExternalLinkage, kernel_name,
                             module.get());
@@ -189,14 +194,16 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     if (get_current_program().config.print_kernel_llvm_ir) {
       TC_INFO("Kernel Module IR");
       module->print(errs(), nullptr);
+      TC_INFO("Kernel Module IR printed.");
     }
-    TC_INFO("Kernel Module IR printed.");
     TC_ASSERT(!llvm::verifyFunction(*func, &errs()));
     TC_INFO("Kernel function verified.");
   }
 
   virtual FunctionType compile_module_to_executable() {
+    TC_TAG;
     llvm::cantFail(jit->addModule(std::move(module)));
+    TC_TAG;
 
     auto kernel_symbol = llvm::cantFail(jit->lookup(kernel_name));
     TC_ASSERT_INFO(kernel_symbol, "Function not found");

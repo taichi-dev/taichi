@@ -8,6 +8,7 @@ def grad_test(tifunc, npfunc=None):
   if npfunc is None:
     npfunc = tifunc
   ti.reset()
+  # ti.cfg.use_llvm = True
 
   x = ti.var(ti.f32)
   y = ti.var(ti.f32)
@@ -79,3 +80,4 @@ def test_minmax():
   grad_test(lambda x: ti.max(x, 1), lambda x: np.maximum(x, 1))
   grad_test(lambda x: ti.max(0, x), lambda x: np.maximum(0, x))
   grad_test(lambda x: ti.max(1, x), lambda x: np.maximum(1, x))
+

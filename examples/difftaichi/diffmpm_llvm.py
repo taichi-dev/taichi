@@ -52,10 +52,11 @@ actuation_omega = 20
 act_strength = 4
 
 
-# ti.cfg.arch = ti.x86_64
-# ti.cfg.use_llvm = True
-ti.cfg.arch = ti.cuda
-# ti.cfg.print_ir = True
+ti.cfg.arch = ti.x86_64
+ti.cfg.use_llvm = True
+# ti.cfg.arch = ti.cuda
+ti.cfg.print_ir = True
+ti.cfg.print_kernel_llvm_ir = True
 
 
 @ti.layout
@@ -98,50 +99,19 @@ def clear_actuation_grad():
 
 @ti.kernel
 def p2g(f: ti.i32):
-  for p in range(0, n_particles):
-    base = ti.cast(x[f, p] * inv_dx - 0.5, ti.i32)
-    fx = x[f, p] * inv_dx - ti.cast(base, ti.i32)
-    w = [0.5 * ti.sqr(1.5 - fx), 0.75 - ti.sqr(fx - 1),
-         0.5 * ti.sqr(fx - 0.5)]
-    new_F = (ti.Matrix.diag(dim=2, val=1) + dt * C[f, p]) @ F[f, p]
-    J = ti.determinant(new_F)
-    if particle_type[p] == 0: # fluid
-      sqrtJ = ti.sqrt(J)
-      new_F = ti.Matrix([[sqrtJ, 0], [0, sqrtJ]])
-      
+  for p in range(n_particles):
+    base = x[f, p] * inv_dx
+    ti.print(f)
+    ti.print(p)
+    new_F = (F[f, p]) @ F[f, p]
+    
     
     F[f + 1, p] = new_F
-    r, s = ti.polar_decompose(new_F)
+    # r, s = ti.polar_decompose(new_F)
     
-    act_id = actuator_id[p]
+    # act_id = actuator_id[p]
     
-    act = actuation[f, ti.max(0, act_id)] * act_strength
-    if act_id == -1:
-      act = 0.0
-    # ti.print(act)
-      
-    A = ti.Matrix([[0.0, 0.0], [0.0, 1.0]]) * act
-    cauchy = ti.Matrix([[0.0, 0.0], [0.0, 0.0]])
-    mass = 0.0
-    if particle_type[p] == 0:
-      mass = 4
-      cauchy = ti.Matrix([[1.0, 0.0], [0.0, 0.1]]) * (J - 1) * E
-    else:
-      mass = 1
-      cauchy = 2 * mu * (new_F - r) @ ti.transposed(new_F) + \
-               ti.Matrix.diag(2, la * (J - 1) * J)
-    cauchy += new_F @ A @ ti.transposed(new_F)
-    stress = -(dt * p_vol * 4 * inv_dx * inv_dx) * cauchy
-    affine = stress + mass * C[f, p]
-    for i in ti.static(range(3)):
-      for j in ti.static(range(3)):
-        offset = ti.Vector([i, j])
-        dpos = (ti.cast(ti.Vector([i, j]), real) - fx) * dx
-        weight = w[i](0) * w[j](1)
-        grid_v_in[base + offset].atomic_add(
-          weight * (mass * v[f, p] + affine @ dpos))
-        grid_m_in[base + offset].atomic_add(weight * mass)
-
+    # act = actuation[f, ti.max(0, act_id)] * act_strength
 
 bound = 3
 coeff = 0.5
@@ -237,7 +207,9 @@ def forward(total_steps=steps):
   for s in range(total_steps - 1):
     clear_grid()
     compute_actuation()
+    print('here1')
     p2g(s)
+    print('here2')
     grid_op()
     g2p(s)
   

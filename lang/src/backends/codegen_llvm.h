@@ -977,7 +977,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
            stmt->raw_name(), stmt->raw_name(), snode->node_type_name);
     }
     // emit(R"(auto {} = {}_guarded;)", stmt->raw_name(), stmt->raw_name());
-    TC_P(snode_type_name(snode->type));
+    // TC_P(snode_type_name(snode->type));
     if (snode->type == SNodeType::root) {
       stmt->value = builder->CreateGEP(parent, stmt->input_index->value);
     } else {

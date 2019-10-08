@@ -93,7 +93,6 @@ class RuntimeObject {
       : cls_name(cls_name), mb(mb), builder(builder) {
     if (init == nullptr) {
       auto type = mb->get_runtime_type(cls_name);
-      TC_P(type_name(type));
       ptr = builder->CreateAlloca(type);
     } else {
       ptr = builder->CreateBitCast(

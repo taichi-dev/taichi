@@ -115,6 +115,8 @@ endif ()
 message("PYTHON_LIBRARIES" ${PYTHON_LIBRARIES})
 target_link_libraries(${CORE_LIBRARY_NAME} ${PYTHON_LIBRARIES})
 
+target_link_libraries(${CORE_LIBRARY_NAME} -static-libgcc -static-libstdc++)
+
 foreach (source IN LISTS TAICHI_CORE_SOURCE)
     file(RELATIVE_PATH source_rel ${CMAKE_CURRENT_LIST_DIR} ${source})
     get_filename_component(source_path "${source_rel}" PATH)

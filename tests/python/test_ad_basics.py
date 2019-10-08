@@ -8,7 +8,6 @@ def grad_test(tifunc, npfunc=None):
   if npfunc is None:
     npfunc = tifunc
   ti.reset()
-  # ti.cfg.use_llvm = True
 
   x = ti.var(ti.f32)
   y = ti.var(ti.f32)
@@ -44,8 +43,8 @@ def test_size1():
   assert x[0] == 1
 
 def test_poly():
-  grad_test(lambda x: -x)
   grad_test(lambda x: x)
+  grad_test(lambda x: -x)
   grad_test(lambda x: x * x)
   grad_test(lambda x: ti.sqr(x))
   grad_test(lambda x: x * x * x)

@@ -27,7 +27,7 @@ def package_root():
   return os.path.join(os.path.dirname(os.path.realpath(__file__)), '../')
 
 def is_release():
-  return os.environ['TAICHI_REPO_DIR'] == ''
+  return os.environ.get('TAICHI_REPO_DIR', '') == ''
 
 from colorama import Fore, Back, Style
 
@@ -252,6 +252,8 @@ def at_startup():
 
 
 def start_memory_monitoring(output_fn, pid=-1, interval=1):
+  # removing dependency on psutil
+  return
   import os, psutil, time
   if pid == -1:
     pid = os.getpid()

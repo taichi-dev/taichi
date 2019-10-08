@@ -37,7 +37,7 @@ loss = scalar()
 
 @ti.layout
 def place():
-  ti.root.dense(ti.ijk, res).place(density)
+  ti.root.dense(ti.ijk, density_res).place(density)
   ti.root.dense(ti.l, n_views).dense(ti.ij, res).place(target_images, images)
   ti.root.place(loss)
   ti.root.lazy_grad()

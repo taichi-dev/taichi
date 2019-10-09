@@ -5,7 +5,8 @@ import torch
 # ti.set_gdb_trigger(True)
 ti.cfg.arch = ti.cuda
 
-n = 1024 * 1024
+# n = 1024 * 1024
+n = 32
 
 y = ti.var(ti.i32)
 
@@ -15,7 +16,6 @@ z = np.array((n,), dtype=np.float32)
 
 @ti.layout
 def values():
-  # ti.root.dense(ti.i, n).place(y)
   ti.root.place(y)
 
 
@@ -25,34 +25,31 @@ def torch_kernel(t: np.ndarray, o: np.ndarray):
     o[i] = t[i] * t[i]
     
 @ti.kernel
-def torch_kernel_2(t: np.ndarray, o: np.ndarray):
+def torch_kernel_2(t_grad: np.ndarray, t:np.ndarray, o_grad: np.ndarray):
   for i in range(n):
-    t[i] = 2 * o[i]
+    t_grad[i] = 2 * t[i] * o_grad[i]
   
-torch_kernel(z, z)
-# torch_kernel_2(z, z)
-
-
+  
 class Sqr(torch.autograd.Function):
   @staticmethod
   def forward(ctx, inp):
     outp = torch.zeros_like(inp)
-    print("here")
+    ctx.save_for_backward(inp)
     torch_kernel(inp, outp)
-    print("here1")
     return outp
   
   @staticmethod
   def backward(ctx, outp_grad):
+    print(outp_grad.cpu())
     inp_grad = torch.zeros_like(outp_grad)
-    print("here2")
-    torch_kernel_2(inp_grad, outp_grad)
-    print("here3")
+    inp, = ctx.saved_tensors
+    torch_kernel_2(inp_grad, inp, outp_grad)
     return inp_grad
 
 sqr = Sqr.apply
-x = torch.tensor(np.ones((n, ), dtype=np.float32), device=torch.device('cuda:0'), requires_grad=True)
+x = torch.tensor(1 * np.ones((n, ), dtype=np.float32), device=torch.device('cuda:0'), requires_grad=True)
 sqr(x).sum().backward()
+# print(sqr(x).sum())#.backward()
 print(x.grad.cpu())
 
 

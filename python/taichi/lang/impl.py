@@ -260,7 +260,7 @@ class Kernel:
          dict(frame.f_globals, **frame.f_locals), locals())
     pytaichi.inside_kernel = False
     compiled = locals()[self.foo.__name__]
-  
+    
     t_kernel = taichi_lang_core.create_kernel(self.foo.__name__, self.is_grad)
     t_kernel = t_kernel.define(lambda: compiled())
     

@@ -158,7 +158,12 @@ void export_lang(py::module &m) {
       .def("serialize", &ExprGroup::serialize);
   py::class_<Stmt>(m, "Stmt");
   py::class_<Program::KernelProxy>(m, "KernelProxy")
-      .def("define", &Program::KernelProxy::def,
+      .def("define",
+           [](Program::KernelProxy *ker,
+              const std::function<void()> &func) -> Kernel & {
+             py::gil_scoped_release release;
+             return ker->def(func);
+           },
            py::return_value_policy::reference);
 
   m.def("insert_append", [](SNode *snode, const ExprGroup &indices,
@@ -349,4 +354,3 @@ void export_lang(py::module &m) {
   m.def("needs_grad", needs_grad);
 }
 TC_NAMESPACE_END
-

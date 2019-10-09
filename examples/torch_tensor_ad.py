@@ -15,7 +15,6 @@ y = ti.var(ti.f32)
 
 @ti.layout
 def values():
-  # actually useless in thie example
   ti.root.dense(ti.i, n).place(x, y)
   ti.root.lazy_grad()
 

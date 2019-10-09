@@ -27,6 +27,7 @@ def torch_kernel(t: np.ndarray, o: np.ndarray):
 @ti.kernel
 def torch_kernel_2(t_grad: np.ndarray, t:np.ndarray, o_grad: np.ndarray):
   for i in range(n):
+    ti.print(o_grad[i])
     t_grad[i] = 2 * t[i] * o_grad[i]
   
   
@@ -41,15 +42,15 @@ class Sqr(torch.autograd.Function):
   @staticmethod
   def backward(ctx, outp_grad):
     print(outp_grad.cpu())
+    outp_grad = outp_grad.contiguous()
     inp_grad = torch.zeros_like(outp_grad)
     inp, = ctx.saved_tensors
     torch_kernel_2(inp_grad, inp, outp_grad)
     return inp_grad
 
 sqr = Sqr.apply
-x = torch.tensor(1 * np.ones((n, ), dtype=np.float32), device=torch.device('cuda:0'), requires_grad=True)
+x = torch.tensor(2 * np.ones((n, ), dtype=np.float32), device=torch.device('cuda:0'), requires_grad=True)
 sqr(x).sum().backward()
 # print(sqr(x).sum())#.backward()
 print(x.grad.cpu())
-
 

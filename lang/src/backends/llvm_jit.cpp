@@ -342,10 +342,12 @@ void CUDAContext::launch(CUfunction func,
 }
 
 CUDAContext::~CUDAContext() {
+  /*
   checkCudaErrors(cuMemFree(context_buffer));
   for (auto cudaModule: cudaModules)
     checkCudaErrors(cuModuleUnload(cudaModule));
   checkCudaErrors(cuCtxDestroy(context));
+  */
 }
 
 CUDAContext cuda_context;  // TODO:..

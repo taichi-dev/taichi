@@ -18,6 +18,9 @@ i32 = int32
 int64 = taichi_lang_core.DataType.int64
 i64 = int64
 
+# ti.np.f32
+# ti.torch.f32
+
 
 def decl_arg(dt):
   if dt is np.ndarray:
@@ -263,6 +266,7 @@ class Kernel:
     
     # The actual function body
     def func__(*args):
+      import torch
       for i, v in enumerate(args):
         if isinstance(v, float):
           t_kernel.set_arg_float(i, v)
@@ -271,6 +275,9 @@ class Kernel:
         elif isinstance(v, np.ndarray):
           tmp = np.ascontiguousarray(v)
           t_kernel.set_arg_nparray(i, int(tmp.ctypes.data), tmp.nbytes)
+        elif isinstance(v, torch.Tensor):
+          tmp = v
+          t_kernel.set_arg_nparray(i, int(tmp.data_ptr()), tmp.element_size() * tmp.nelement())
         else:
           assert False, 'Argument to kernels must have type float/int'
       if pytaichi.target_tape:

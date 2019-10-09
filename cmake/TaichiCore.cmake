@@ -46,7 +46,7 @@ if (TLANG_WITH_FEM)
 endif()
 
 if (TLANG_WITH_CUDA)
-    find_package(CUDA 9.0)
+    find_package(CUDA 10.0)
     if (CUDA_FOUND)
         set(CUDA_ARCH 61)
         message("Found CUDA. Arch = ${CUDA_ARCH}")

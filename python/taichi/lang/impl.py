@@ -266,7 +266,6 @@ class Kernel:
     
     # The actual function body
     def func__(*args):
-      import torch
       for i, v in enumerate(args):
         if isinstance(v, float):
           t_kernel.set_arg_float(i, v)
@@ -275,11 +274,18 @@ class Kernel:
         elif isinstance(v, np.ndarray):
           tmp = np.ascontiguousarray(v)
           t_kernel.set_arg_nparray(i, int(tmp.ctypes.data), tmp.nbytes)
-        elif isinstance(v, torch.Tensor):
-          tmp = v
-          t_kernel.set_arg_nparray(i, int(tmp.data_ptr()), tmp.element_size() * tmp.nelement())
         else:
-          assert False, 'Argument to kernels must have type float/int'
+          success = False
+          try:
+            import torch
+            if isinstance(v, torch.Tensor):
+              tmp = v
+              t_kernel.set_arg_nparray(i, int(tmp.data_ptr()), tmp.element_size() * tmp.nelement())
+              success = True
+          except:
+            pass
+          if not success:
+            assert False, 'Argument to kernels must have type float/int'
       if pytaichi.target_tape:
         pytaichi.target_tape.insert(self, args)
       t_kernel()

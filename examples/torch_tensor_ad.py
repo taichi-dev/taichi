@@ -38,9 +38,9 @@ class Sqr(torch.autograd.Function):
   
   @staticmethod
   def backward(ctx, outp_grad):
-    ti.clear_all_gradients()
     inp_grad = torch.zeros_like(outp_grad)
-    
+
+    ti.clear_all_gradients()
     ti.from_torch(y.grad, outp_grad)
     torch_kernel.grad()
     ti.to_torch(x.grad, inp_grad)

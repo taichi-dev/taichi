@@ -8,29 +8,28 @@ ti.cfg.arch = ti.cuda
 # n = 1024 * 1024
 n = 32
 
-y = ti.var(ti.i32)
+y = ti.var(ti.f32)
 
 # https://pytorch.org/tutorials/beginner/examples_autograd/two_layer_net_custom_function.html
 
-z = np.array((n,), dtype=np.float32)
-
 @ti.layout
 def values():
-  ti.root.place(y)
-
+  # actually useless in thie example
+  ti.root.dense(ti.i, n).place(y)
+  ti.root.lazy_grad()
 
 @ti.kernel
 def torch_kernel(t: np.ndarray, o: np.ndarray):
   for i in range(n):
     o[i] = t[i] * t[i]
-    
+
 @ti.kernel
 def torch_kernel_2(t_grad: np.ndarray, t:np.ndarray, o_grad: np.ndarray):
   for i in range(n):
     ti.print(o_grad[i])
     t_grad[i] = 2 * t[i] * o_grad[i]
-  
-  
+
+
 class Sqr(torch.autograd.Function):
   @staticmethod
   def forward(ctx, inp):
@@ -41,7 +40,6 @@ class Sqr(torch.autograd.Function):
   
   @staticmethod
   def backward(ctx, outp_grad):
-    print(outp_grad.cpu())
     outp_grad = outp_grad.contiguous()
     inp_grad = torch.zeros_like(outp_grad)
     inp, = ctx.saved_tensors
@@ -49,8 +47,7 @@ class Sqr(torch.autograd.Function):
     return inp_grad
 
 sqr = Sqr.apply
-x = torch.tensor(2 * np.ones((n, ), dtype=np.float32), device=torch.device('cuda:0'), requires_grad=True)
-sqr(x).sum().backward()
-# print(sqr(x).sum())#.backward()
-print(x.grad.cpu())
+X = torch.tensor(2 * np.ones((n, ), dtype=np.float32), device=torch.device('cuda:0'), requires_grad=True)
+sqr(X).sum().backward()
+print(X.grad.cpu())
 

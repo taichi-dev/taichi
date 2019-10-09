@@ -36,13 +36,13 @@ Notes:
 --->
 
 
-# (Legacy) The Taichi Library
+#  The Taichi Library [[Legacy branch]](https://github.com/yuanming-hu/taichi/tree/legacy)
 **Taichi** is an open-source computer graphics library that aims to provide easy-to-use infrastructures for computer graphics R&D. It's written in C++14 and wrapped friendly with Python.
 
 ## News
  - May 17, 2019: [Giga-Voxel SPGrid Topology Optimization Solver](https://github.com/yuanming-hu/spgrid_topo_opt) is released!
  - March 4, 2019: [MLS-MPM/CPIC solver](https://github.com/yuanming-hu/taichi_mpm) is now MIT-licensed!
- - August 14, 2018: [MLS-MPM/CPIC solver](https://github.com/yuanming-hu/taichi_mpm) reloaded! We made it closed-source for a while, which is required by anonymous peer review. It delivers 4-14x performance boost over the previous state of the art on CPUs.
+ - August 14, 2018: [MLS-MPM/CPIC solver](https://github.com/yuanming-hu/taichi_mpm) reloaded! It delivers 4-14x performance boost over the previous state of the art on CPUs.
  
 <img src="https://github.com/yuanming-hu/public_files/raw/master/graphics/topopt/bird-beak.gif">
 

@@ -3,6 +3,7 @@ from .util import is_taichi_class
 import sys
 import traceback
 
+
 # Scalar, basic data type
 class Expr:
   materialize_layout_callback = None
@@ -12,6 +13,8 @@ class Expr:
     self.getter = None
     self.setter = None
     self.tb = tb
+    self.from_torch_ = None
+    self.to_torch_ = None
     if len(args) == 1:
       if isinstance(args[0], taichi_lang_core.Expr):
         self.ptr = args[0]
@@ -229,3 +232,7 @@ class Expr:
   def parent(self):
     from .snode import SNode
     return SNode(self.ptr.snode().parent)
+  
+  def snode(self):
+    from .snode import SNode
+    return SNode(self.ptr.snode())

@@ -11,6 +11,7 @@ from taichi.tools.video import VideoManager
 from taichi.tools.file import *
 from taichi.system import *
 from taichi.lang import *
+from .torch_io import from_torch, to_torch
 
 def test():
   task = taichi.Task('test')

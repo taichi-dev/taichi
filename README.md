@@ -5,10 +5,7 @@
 |------------------|
 |[![Join the chat at https://gitter.im/taichi-dev/Lobby](https://badges.gitter.im/taichi-dev/Lobby.svg)](https://gitter.im/taichi-dev/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) |
 
-
 ### High-Performance Computation on Sparse Data Structures [[Paper]](https://github.com/yuanming-hu/taichi/tree/master/lang) [[Video]](https://youtu.be/wKw8LMF3Djo)
-
-### Differentiable Programming for Physical Simulation [[Paper]](https://arxiv.org/abs/1910.00935) [[Video]](https://youtu.be/Z1xvAZve9aE)
 
 ## Updates
 ```bash

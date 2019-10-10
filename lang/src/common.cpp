@@ -1,9 +1,9 @@
 #include "util.h"
-#include "../include/common.h"
-#include "../include/unified_allocator.h"
-#include "../include/arithmetics.h"
-#include "../include/struct.h"
-#include "profiler.h"
+#include <taichi/common.h>
+#include <taichi/unified_allocator.h>
+#include <taichi/arithmetics.h>
+#include <taichi/struct.h>
+#include <taichi/profiler.h>
 
 TLANG_NAMESPACE_BEGIN
 

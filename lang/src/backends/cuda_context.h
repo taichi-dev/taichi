@@ -1,7 +1,7 @@
 #if defined(TLANG_WITH_CUDA)
 #include <cuda.h>
 #include "llvm_jit.h"
-#include "context.h"
+#include <taichi/context.h>
 
 TLANG_NAMESPACE_BEGIN
 

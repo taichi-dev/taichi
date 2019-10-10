@@ -20,7 +20,7 @@ class KernelCodeGen : public CodeGenBase {
     emit("#define TLANG_KERNEL\n");
     if (prog->config.debug)
       emit("#define TL_DEBUG");
-    emit("#include <kernel.h>\n");
+    emit("#include <taichi/kernel.h>\n");
     emit("#include \"{}\"", prog->layout_fn);
     emit("using namespace taichi; using namespace Tlang;");
   }

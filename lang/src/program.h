@@ -2,9 +2,9 @@
 
 #pragma once
 
-#include "../include/context.h"
-#include "../include/unified_allocator.h"
-#include "../include/profiler.h"
+#include <taichi/context.h>
+#include <taichi/unified_allocator.h>
+#include <taichi/profiler.h>
 #include "util.h"
 #include "snode.h"
 #include "ir.h"

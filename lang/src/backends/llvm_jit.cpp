@@ -7,7 +7,7 @@
 #include <cuda.h>
 #endif
 #include "llvm_jit.h"
-#include "context.h"
+#include <taichi/context.h>
 #include "cuda_context.h"
 
 TLANG_NAMESPACE_BEGIN

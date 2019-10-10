@@ -4,7 +4,7 @@
 #include <cuda_runtime.h>
 #endif
 #include "util.h"
-#include "../include/unified_allocator.h"
+#include <taichi/unified_allocator.h>
 #include <taichi/system/virtual_memory.h>
 #include <string>
 

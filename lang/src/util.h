@@ -3,7 +3,7 @@
 #pragma once
 #include <taichi/common/util.h>
 #include <taichi/io/io.h>
-#include "../include/common.h"
+#include <taichi/common.h>
 
 TLANG_NAMESPACE_BEGIN
 

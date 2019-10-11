@@ -275,17 +275,22 @@ class Kernel:
           tmp = np.ascontiguousarray(v)
           t_kernel.set_arg_nparray(i, int(tmp.ctypes.data), tmp.nbytes)
         else:
-          success = False
+          has_torch = False
           try:
             import torch
-            if isinstance(v, torch.Tensor):
-              tmp = v
-              t_kernel.set_arg_nparray(i, int(tmp.data_ptr()), tmp.element_size() * tmp.nelement())
-              success = True
+            has_torch = True
           except:
             pass
-          if not success:
-            assert False, 'Argument to kernels must have type float/int'
+            
+          if has_torch and isinstance(v, torch.Tensor):
+            tmp = v
+            if str(v.device).startswith('cuda'):
+              assert pytaichi.prog.config.arch == taichi_lang_core.Arch.gpu, 'Torch tensor on CPU yet taichi is on GPU'
+            else:
+              assert pytaichi.prog.config.arch == taichi_lang_core.Arch.x86_64, 'Torch tensor on GPU yet taichi is on CPU'
+            t_kernel.set_arg_nparray(i, int(tmp.data_ptr()), tmp.element_size() * tmp.nelement())
+          else:
+            assert False, 'Argument to kernels must have type float/int. If you are pssing a PyTorch tensor, make sure it is on the same device (CPU/GPU) as taichi.'
       if pytaichi.target_tape:
         pytaichi.target_tape.insert(self, args)
       t_kernel()

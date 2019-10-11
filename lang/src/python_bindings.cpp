@@ -95,6 +95,7 @@ void export_lang(py::module &m) {
 
   py::class_<Program>(m, "Program")
       .def(py::init<>())
+      .def_readonly("config", &Program::config)
       .def("clear_all_gradients", &Program::clear_all_gradients)
       .def("profiler_print", &Program::profiler_print)
       .def("profiler_print", &Program::profiler_clear)

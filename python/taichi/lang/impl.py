@@ -285,9 +285,9 @@ class Kernel:
           if has_torch and isinstance(v, torch.Tensor):
             tmp = v
             if str(v.device).startswith('cuda'):
-              assert pytaichi.prog.config.arch == taichi_lang_core.Arch.gpu, 'Torch tensor on CPU yet taichi is on GPU'
+              assert pytaichi.prog.config.arch == taichi_lang_core.Arch.gpu, 'Torch tensor on GPU yet taichi is on CPU'
             else:
-              assert pytaichi.prog.config.arch == taichi_lang_core.Arch.x86_64, 'Torch tensor on GPU yet taichi is on CPU'
+              assert pytaichi.prog.config.arch == taichi_lang_core.Arch.x86_64, 'Torch tensor on CPU yet taichi is on GPU'
             t_kernel.set_arg_nparray(i, int(tmp.data_ptr()), tmp.element_size() * tmp.nelement())
           else:
             assert False, 'Argument to kernels must have type float/int. If you are pssing a PyTorch tensor, make sure it is on the same device (CPU/GPU) as taichi.'

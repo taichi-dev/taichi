@@ -10,10 +10,10 @@
 ## Updates
 ```bash
 # With GPU support (needs CUDA 10.0)
-python3 -m pip install taichi-gpu-nightly==0.0.54 --user
+python3 -m pip install taichi-gpu-nightly==0.0.55 --user
 
 # CPU only. No GPU/CUDA needed
-python3 -m pip install taichi-nightly --user
+python3 -m pip install taichi-nightly==0.0.55 --user
 ```
 
 - (Oct 9, 2019) Compatibility improvements. Added a basic PyTorch interface. [[Example]](https://github.com/yuanming-hu/taichi/blob/master/examples/torch_tensor_ad.py).

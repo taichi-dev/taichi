@@ -11,6 +11,12 @@ if sys.version_info[0] < 3 or sys.version_info[1] < 5:
   
 tc_core = None
 
+def in_docker():
+  if os.environ.get("TI_IN_DOCKER", "") == "":
+    return False
+  else:
+    return True
+
 def import_tc_core():
   global tc_core
   old_flags = sys.getdlopenflags()
@@ -90,6 +96,10 @@ def build():
   os.chdir(bin_dir)
 
   flags = ' -DPYTHON_EXECUTABLE:FILEPATH="{}"'.format(sys.executable)
+  
+  if in_docker():
+    print("Building in docker. Use -stdlib=libc++...")
+    flags += ' -DUSE_STDCPP:BOOL=TRUE '
 
   print('Running cmake...')
   if is_ci():

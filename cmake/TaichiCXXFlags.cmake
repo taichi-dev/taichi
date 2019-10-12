@@ -53,6 +53,7 @@ endif ()
 
 if (USE_STDCPP)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
+    target_link_libraries(${LIBRARY_NAME} c++)
 endif()
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTC_PASS_EXCEPTION_TO_PYTHON")

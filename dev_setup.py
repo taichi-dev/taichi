@@ -24,7 +24,7 @@ if sys.version_info[0] < 3 or sys.version_info[1] < 5:
   exit(-1)
 
 print(
-  "Note: this is the setup script for the taichi compiler DEVELOPERS. For language users please use pip to install the python wheels.")
+  "Note: this is the setup script for the taichi compiler DEVELOPERS. Language users please use pip to install the python wheels.")
 
 
 def get_python_executable():

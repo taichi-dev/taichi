@@ -1,3 +1,4 @@
+#if defined(TLANG_WITH_FEM)
 #define TESTING
 #include <taichi/util.h>
 #include <taichi/io/io.h>
@@ -270,3 +271,4 @@ TC_TEST("fem_interface") {
 }
 
 TC_NAMESPACE_END
+#endif

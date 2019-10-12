@@ -1,4 +1,4 @@
-Installation
+Installation The (Legacy) Taichi Library
 ===============================================
 
 Supported Platforms:
@@ -14,7 +14,7 @@ Ubuntu, Arch Linux, and Mac OS X
 
 .. code-block:: bash
 
-   wget https://raw.githubusercontent.com/yuanming-hu/taichi/master/install.py
+   wget https://raw.githubusercontent.com/yuanming-hu/taichi/legacy/install.py
    python3 install.py
 
 
@@ -22,7 +22,7 @@ Note, if python complains that a package is missing, simply rerun install.py and
 
 Windows
 -------------------------------
-Download and execute `this script <https://raw.githubusercontent.com/yuanming-hu/taichi/master/install.py>`_ with python3.
+Download and execute `this script <https://raw.githubusercontent.com/yuanming-hu/taichi/legacy/install.py>`_ with python3.
 
 Additional environment variables: (assuming taichi is installed in ``DIR/taichi``)
 Set ``TAICHI_REPO_DIR`` as  ``DIR/taichi`` (e.g. ``E:/repos/taichi``).
@@ -36,16 +36,3 @@ Build with Double Precision (64 bit) Float Point
    export TC_USE_DOUBLE=1
    ti build
 
-Examples
-------------------------------
-Please see `examples <https://github.com/yuanming-hu/taichi/tree/master/projects/examples>`_.
-
-Run examples using `python3 [X.py]`. For example,
-
-.. code-block:: bash
-
-    python3 projects/examples/simulation/3d/mgpcg_smoke_3d.py
-    python3 projects/examples/rendering/paper_cut.py
-
-Please learn the python interface by examples for now.
-Detailed documentation coming soon.

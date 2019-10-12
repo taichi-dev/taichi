@@ -97,10 +97,6 @@ def build():
 
   flags = ' -DPYTHON_EXECUTABLE:FILEPATH="{}"'.format(sys.executable)
   
-  if in_docker():
-    print("Building in docker. Use -stdlib=libc++...")
-    flags += ' -DUSE_STDCPP:BOOL=TRUE '
-
   print('Running cmake...')
   if is_ci():
     print('  Note: building for CI. SIMD disabled.')

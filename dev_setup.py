@@ -247,6 +247,7 @@ class Installer:
     print('PYTHONPATH={}'.format(os.environ['PYTHONPATH']))
     
     execute_command('echo $PYTHONPATH')
+    return
     if test_installation():
       print('  Successfully Installed Taichi at {}.'.format(self.repo_dir))
       if get_os_name() != 'win':

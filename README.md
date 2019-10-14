@@ -5,7 +5,7 @@
 |------------------|
 |[![Join the chat at https://gitter.im/taichi-dev/Lobby](https://badges.gitter.im/taichi-dev/Lobby.svg)](https://gitter.im/taichi-dev/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) |
 
-### High-Performance Computation on Sparse Data Structures [[Paper]](https://github.com/yuanming-hu/taichi/tree/master/lang) [[Video]](https://youtu.be/wKw8LMF3Djo)
+### High-Performance Computation on Sparse Data Structures [[Paper]](http://taichi.graphics/wp-content/uploads/2019/09/taichi_lang.pdf) [[Video]](https://youtu.be/wKw8LMF3Djo)
 
 ## Updates
 ```bash

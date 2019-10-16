@@ -23,6 +23,7 @@ class LowerAST : public IRVisitor {
     auto backup_block = current_block;
     current_block = stmt_list;
     for (auto &stmt : stmt_list->statements) {
+      TC_P(stmt->type());
       stmt->accept(this);
     }
     current_block = backup_block;

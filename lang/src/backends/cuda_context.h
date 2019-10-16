@@ -9,7 +9,7 @@ class CUDAContext {
   CUdevice device;
   std::vector<CUmodule> cudaModules;
   CUcontext context;
-  CUlinkState linker;
+  // CUlinkState linker;
   int devCount;
   CUdeviceptr context_buffer;
 

@@ -48,7 +48,7 @@ def test_size1():
   assert x[0] == 1
 
 def test_poly():
-  for i in range(10):
+  for i in range(2):
     grad_test(lambda x: x)
   # grad_test(lambda x: -x)
   # grad_test(lambda x: x * x)

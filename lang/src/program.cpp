@@ -48,8 +48,6 @@ void Program::materialize_layout() {
   if (config.arch == Arch::gpu && config.use_llvm) {
 #if defined(TLANG_WITH_LLVM)
     initialize_device_llvm_context();
-    TC_P(llvm_context_device->ctx.get());
-    TC_P(llvm_context_host->ctx.get());
     // llvm_context_device->get_init_module();
     std::unique_ptr<StructCompiler> scomp_gpu =
         StructCompiler::make(config.use_llvm, Arch::gpu);

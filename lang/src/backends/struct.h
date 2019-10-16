@@ -20,6 +20,8 @@ class StructCompiler : public CodeGenBase {
 
   StructCompiler();
 
+  virtual ~StructCompiler() {}
+
   void collect_snodes(SNode &snode);
 
   // propagate root-to-leaf for a well-formed data structure

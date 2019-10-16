@@ -1,6 +1,5 @@
 import taichi as ti
 
-'''
 def test_linear():
   ti.reset()
   ti.cfg.use_llvm = True
@@ -22,7 +21,12 @@ def test_linear():
   for i in range(n):
     assert x[i] == i
     assert y[i] == i + 123
+    
+def test_linear_repeated():
+  for i in range(10):
+    test_linear()
 
+'''
 def test_linear_nested():
   ti.reset()
   ti.cfg.use_llvm = True

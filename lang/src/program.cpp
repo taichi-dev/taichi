@@ -17,6 +17,7 @@
 TLANG_NAMESPACE_BEGIN
 
 Program *current_program = nullptr;
+std::atomic<int> Program::num_instances;
 SNode root;
 
 FunctionType Program::compile(Kernel &kernel) {
@@ -162,6 +163,9 @@ Program::Program(Arch arch) {
     arch = Arch::x86_64;
   }
 #endif
+  TC_ASSERT_INFO(num_instances == 0, "Only one instance at a time");
+  num_instances += 1;
+  SNode::counter = 0;
   // llvm_context_device is initialized before kernel compilation
   UnifiedAllocator::create();
   TC_ASSERT(current_program == nullptr);

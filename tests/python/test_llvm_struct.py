@@ -25,7 +25,7 @@ def test_linear():
 def test_linear_repeated():
   for i in range(10):
     test_linear()
-
+  
 '''
 def test_linear_nested():
   ti.reset()

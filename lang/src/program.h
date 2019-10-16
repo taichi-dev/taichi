@@ -5,6 +5,7 @@
 #include <taichi/context.h>
 #include <taichi/unified_allocator.h>
 #include <taichi/profiler.h>
+#include <atomic>
 #include "util.h"
 #include "snode.h"
 #include "ir.h"
@@ -40,6 +41,7 @@ class Program {
   bool sync;  // device/host synchronized?
   bool clear_all_gradients_initialized;
   bool finalized;
+  static std::atomic<int> num_instances;
 
   std::vector<std::unique_ptr<Kernel>> functions;
   int index_counter;
@@ -92,6 +94,7 @@ class Program {
     }
     UnifiedAllocator::free();
     finalized = true;
+    num_instances -= 1;
   }
 
   ~Program() {

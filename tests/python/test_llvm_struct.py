@@ -26,7 +26,6 @@ def test_linear_repeated():
   for i in range(10):
     test_linear()
   
-'''
 def test_linear_nested():
   ti.reset()
   ti.cfg.use_llvm = True
@@ -68,4 +67,3 @@ def test_2d_nested():
   for i in range(n * 2):
     for j in range(n):
       assert x[i, j] == i + j * 10
-'''

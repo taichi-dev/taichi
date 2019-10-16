@@ -79,7 +79,6 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       grad_suffix = "_grad";
     }
     kernel_name = kernel->name + grad_suffix + "_kernel";
-    TC_P(kernel_name);
 
     func = Function::Create(FT, Function::ExternalLinkage, kernel_name,
                             module.get());
@@ -233,6 +232,9 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     TC_ASSERT(stmt->width() == 1);
     stmt->value = builder->CreateAlloca(
         tlctx->get_data_type(stmt->ret_type.data_type), (unsigned)0);
+    // initialize as zero
+    builder->CreateStore(tlctx->get_constant(stmt->ret_type.data_type, 0),
+                         stmt->value);
   }
 
   void visit(RandStmt *stmt) {
@@ -263,7 +265,9 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       }
       UNARY_INTRINSIC(sin)
       UNARY_INTRINSIC(cos)
-      UNARY_INTRINSIC(sqrt) UNARY_INTRINSIC(floor) UNARY_INTRINSIC(ceil)
+      UNARY_INTRINSIC(sqrt)
+      UNARY_INTRINSIC(floor)
+      UNARY_INTRINSIC(ceil)
 #undef UNARY_INTRINSIC
           else if (op == UnaryOpType::tanh) {
         if (input_taichi_type == DataType::f32) {

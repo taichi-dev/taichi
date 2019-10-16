@@ -130,17 +130,17 @@ enum class UnaryOpType : int {
 
 std::string unary_op_type_name(UnaryOpType type);
 
-inline bool is_trigonometric(UnaryOpType op) {
+inline bool constexpr is_trigonometric(UnaryOpType op) {
   return op == UnaryOpType::sin || op == UnaryOpType::asin ||
          op == UnaryOpType::cos || op == UnaryOpType::acos ||
          op == UnaryOpType::tan || op == UnaryOpType::tanh;
 }
 
-inline bool is_real(DataType dt) {
+inline bool constexpr is_real(DataType dt) {
   return dt == DataType::f16 || dt == DataType::f32 || dt == DataType::f64;
 }
 
-inline bool is_integral(DataType dt) {
+inline bool constexpr is_integral(DataType dt) {
   return dt == DataType::i8 || dt == DataType::i16 || dt == DataType::i32 ||
          dt == DataType::i64;
 }

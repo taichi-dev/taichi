@@ -164,14 +164,40 @@ void TaichiLLVMContext::set_struct_module(
 }
 
 template <typename T>
-llvm::Value *TaichiLLVMContext::get_constant(T t) {
-  if constexpr (std::is_same_v<T, float32> || std::is_same_v<T, float64>) {
-    return llvm::ConstantFP::get(*ctx, llvm::APFloat(t));
-  } else if (std::is_same_v<T, bool>) {
-    return llvm::ConstantInt::get(*ctx, llvm::APInt(1, t, false));
-  } else if (std::is_same_v<T, int32> || std::is_same_v<T, uint32>) {
+llvm::Value *TaichiLLVMContext::get_constant(DataType dt, T t) {
+  if (dt == DataType::f32) {
+    return llvm::ConstantFP::get(*ctx, llvm::APFloat((float32)t));
+  } else if (dt == DataType::f64) {
+    return llvm::ConstantFP::get(*ctx, llvm::APFloat((float64)t));
+  } else if (dt == DataType::i32) {
     return llvm::ConstantInt::get(*ctx, llvm::APInt(32, t, true));
-  } else if (std::is_same_v<T, int64> || std::is_same_v<T, uint64>) {
+  } else if (dt == DataType::u32) {
+    return llvm::ConstantInt::get(*ctx, llvm::APInt(32, t, false));
+  } else if (dt == DataType::i64) {
+    return llvm::ConstantInt::get(*ctx, llvm::APInt(64, t, true));
+  } else if (dt == DataType::u64) {
+    return llvm::ConstantInt::get(*ctx, llvm::APInt(64, t, false));
+  } else {
+    TC_NOT_IMPLEMENTED
+    return nullptr;
+  }
+}
+
+template llvm::Value *TaichiLLVMContext::get_constant(DataType dt, int32 t);
+
+template <typename T>
+llvm::Value *TaichiLLVMContext::get_constant(T t) {
+  using TargetType = T;
+  if constexpr (std::is_same_v<TargetType, float32> ||
+                std::is_same_v<TargetType, float64>) {
+    return llvm::ConstantFP::get(*ctx, llvm::APFloat(t));
+  } else if (std::is_same_v<TargetType, bool>) {
+    return llvm::ConstantInt::get(*ctx, llvm::APInt(1, t, false));
+  } else if (std::is_same_v<TargetType, int32> ||
+             std::is_same_v<TargetType, uint32>) {
+    return llvm::ConstantInt::get(*ctx, llvm::APInt(32, t, true));
+  } else if (std::is_same_v<TargetType, int64> ||
+             std::is_same_v<TargetType, uint64>) {
     return llvm::ConstantInt::get(*ctx, llvm::APInt(64, t, true));
   } else {
     TC_NOT_IMPLEMENTED

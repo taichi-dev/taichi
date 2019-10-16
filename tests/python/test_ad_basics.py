@@ -5,16 +5,21 @@ import autograd.numpy as np
 from autograd import grad
 
 def grad_test(tifunc, npfunc=None):
+  ti.set_gdb_trigger(True)
   if npfunc is None:
     npfunc = tifunc
   ti.reset()
+  ti.cfg.use_llvm = True
+  # ti.cfg.print_ir = True
+  # ti.cfg.print_kernel_llvm_ir = True
 
   x = ti.var(ti.f32)
   y = ti.var(ti.f32)
 
   @ti.layout
   def place():
-    ti.root.dense(ti.i, 1).place(x, x.grad, y, y.grad)
+    ti.root.dense(ti.i, 1).place(x, y)
+    ti.root.lazy_grad()
 
   @ti.kernel
   def func():
@@ -30,7 +35,7 @@ def grad_test(tifunc, npfunc=None):
 
   assert y[0] == approx(npfunc(v))
   assert x.grad[0] == approx(grad(npfunc)(v))
-
+  
 def test_size1():
   ti.reset()
   x = ti.var(ti.i32)
@@ -44,6 +49,7 @@ def test_size1():
 
 def test_poly():
   grad_test(lambda x: x)
+  return
   grad_test(lambda x: -x)
   grad_test(lambda x: x * x)
   grad_test(lambda x: ti.sqr(x))
@@ -63,6 +69,8 @@ def test_frac():
   grad_test(lambda x: (x + 1) / (x - 1))
   grad_test(
     lambda x: (x + 1) * (x + 2) / ((x - 1) * (x + 3)))
+  
+test_poly()
 
 def test_unary():
   grad_test(lambda x: ti.sqrt(x), lambda x: np.sqrt(x))

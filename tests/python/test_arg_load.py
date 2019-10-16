@@ -1,5 +1,4 @@
 import taichi as ti
-from pytest import approx
 
 def test_arg_load():
   ti.reset()

@@ -46,6 +46,9 @@ class TaichiLLVMContext {
   template <typename T>
   llvm::Value *get_constant(T t);
 
+  template <typename T>
+  llvm::Value *get_constant(DataType dt, T t);
+
   std::string type_name(llvm::Type *type);
 };
 

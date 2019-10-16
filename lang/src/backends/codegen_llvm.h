@@ -200,9 +200,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   }
 
   virtual FunctionType compile_module_to_executable() {
-    TC_TAG;
     llvm::cantFail(jit->addModule(std::move(module)));
-    TC_TAG;
 
     auto kernel_symbol = llvm::cantFail(jit->lookup(kernel_name));
     TC_ASSERT_INFO(kernel_symbol, "Function not found");

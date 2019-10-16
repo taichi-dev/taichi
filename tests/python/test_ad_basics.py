@@ -23,6 +23,7 @@ def grad_test2():
   print('grad_test2')
   ti.set_gdb_trigger()
   ti.reset()
+  ti.lang_core.test_throw()
   ti.cfg.use_llvm = True
 
   x = ti.var(ti.i32)

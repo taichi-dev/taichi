@@ -352,6 +352,7 @@ void export_lang(py::module &m) {
   m.def("block_dim", BlockDim);
   m.def("cache", Cache);
 
+  m.def("test_throw", [] { throw IRModified(); });
   m.def("needs_grad", needs_grad);
 }
 TC_NAMESPACE_END

@@ -21,7 +21,7 @@ def get_python_executable():
 
 
 if platform.system() == 'Linux':
-  if os.environ['CXX'] != 'clang++-7':
+  if os.environ['CXX'] not in ['clang++-7', 'clang++']:
     print('Only the wheel with clang-7 will be released to PyPI.')
     sys.exit(0)
 

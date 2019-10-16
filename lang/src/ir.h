@@ -67,9 +67,11 @@ using ScratchPadOptions = std::vector<std::pair<int, SNode *>>;
 class Expression;
 class Expr;
 class ExprGroup;
+class ScratchPads;
 
 #define PER_STATEMENT(x) class x;
 #include "statements.inc.h"
+#undef PER_STATEMENT
 
 // IR passes
 namespace irpass {
@@ -656,6 +658,8 @@ class Stmt : public IRNode {
   void set_tb(std::string tb) {
     this->tb = tb;
   }
+
+  std::string type();
 
   virtual ~Stmt() {
   }

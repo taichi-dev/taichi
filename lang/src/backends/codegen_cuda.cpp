@@ -713,7 +713,7 @@ class GPUIRCodeGen : public IRVisitor {
     }
   }
 
-  void visit(AtomicOpStmt *stmt) {
+  void visit(AtomicOpStmt *stmt) override {
     TC_ASSERT(stmt->val->ret_type.data_type == DataType::f32 ||
               stmt->val->ret_type.data_type == DataType::i32 ||
               stmt->val->ret_type.data_type == DataType::f64 ||
@@ -733,7 +733,7 @@ class GPUIRCodeGen : public IRVisitor {
     }
   }
 
-  void visit(ElementShuffleStmt *stmt) {
+  void visit(ElementShuffleStmt *stmt) override {
     auto init = stmt->elements.serialize(
         [&](const VectorElement &elem) {
           TC_ASSERT(elem.index == 0);
@@ -753,7 +753,7 @@ class GPUIRCodeGen : public IRVisitor {
     }
   }
 
-  void visit(RangeAssumptionStmt *stmt) {
+  void visit(RangeAssumptionStmt *stmt) override {
     // this does not necessarily hold since any index within the leaf block can
     // be the base
     /*
@@ -765,19 +765,19 @@ class GPUIRCodeGen : public IRVisitor {
     emit("const auto {} = {};", stmt->raw_name(), stmt->input->raw_name());
   }
 
-  void visit(AssertStmt *stmt) {
+  void visit(AssertStmt *stmt) override {
     emit("#if defined(TL_DEBUG)");
     emit(R"(TC_ASSERT_INFO({}, "{}");)", stmt->val->raw_name(), stmt->text);
     emit("#endif");
   }
 
-  void visit(OffsetAndExtractBitsStmt *stmt) {
+  void visit(OffsetAndExtractBitsStmt *stmt) override {
     emit(R"(auto {} = ((({} + {}) >> {}) & ((1 << {}) - 1));)",
          stmt->raw_name(), stmt->offset, stmt->input->raw_name(),
          stmt->bit_begin, stmt->bit_end - stmt->bit_begin);
   }
 
-  void visit(LinearizeStmt *stmt) {
+  void visit(LinearizeStmt *stmt) override {
     std::string val = "0";
     for (int i = 0; i < (int)stmt->inputs.size(); i++) {
       val = fmt::format("({}) * {} + {}", val, stmt->strides[i],
@@ -786,7 +786,7 @@ class GPUIRCodeGen : public IRVisitor {
     emit(R"(auto {} = {};)", stmt->raw_name(), val);
   }
 
-  void visit(IntegerOffsetStmt *stmt) {
+  void visit(IntegerOffsetStmt *stmt) override {
     if (stmt->input->is<GetChStmt>() &&
         stmt->input->as<GetChStmt>()->output_snode->type == SNodeType::place) {
       auto input = stmt->input->as<GetChStmt>();
@@ -799,7 +799,7 @@ class GPUIRCodeGen : public IRVisitor {
     }
   }
 
-  void visit(SNodeLookupStmt *stmt) {
+  void visit(SNodeLookupStmt *stmt) override {
     std::string parent;
     if (stmt->input_snode) {
       parent = stmt->input_snode->raw_name();
@@ -830,7 +830,7 @@ class GPUIRCodeGen : public IRVisitor {
     emit(R"(auto {} = {}_guarded;)", stmt->raw_name(), stmt->raw_name());
   }
 
-  void visit(GetChStmt *stmt) {
+  void visit(GetChStmt *stmt) override {
     // emit("{} *{};", stmt->output_snode->data_type_name(),
     //     stmt->raw_name());
     if (stmt->output_snode->type == SNodeType::place) {
@@ -843,7 +843,7 @@ class GPUIRCodeGen : public IRVisitor {
     }
   }
 
-  void visit(ClearAllStmt *stmt) {
+  void visit(ClearAllStmt *stmt) override {
     auto snode = stmt->snode;
     auto leaf = snode;
 

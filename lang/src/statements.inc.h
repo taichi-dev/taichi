@@ -50,7 +50,6 @@ PER_STATEMENT(ElementShuffleStmt)
 
 // Pragma statements
 PER_STATEMENT(PragmaSLPStmt)
-PER_STATEMENT(ScratchPads)
 
 // Clearer
 PER_STATEMENT(ClearAllStmt)

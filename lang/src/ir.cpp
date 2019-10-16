@@ -11,6 +11,26 @@ TLANG_NAMESPACE_BEGIN
 #define TC_EXPRESSION_IMPLEMENTATION
 #include "expression.h"
 
+class StatementTypeNameVisitor : public IRVisitor {
+ public:
+  std::string type_name;
+  StatementTypeNameVisitor() {
+  }
+
+#define PER_STATEMENT(x)         \
+  void visit(x *stmt) override { \
+    type_name = #x;              \
+  }
+#include "statements.inc.h"
+#undef PER_STATEMENT
+};
+
+std::string Stmt::type() {
+  StatementTypeNameVisitor v;
+  this->accept(&v);
+  return v.type_name;
+}
+
 GetChStmt::GetChStmt(taichi::Tlang::Stmt *input_ptr, int chid)
     : input_ptr(input_ptr), chid(chid) {
   add_operand(this->input_ptr);

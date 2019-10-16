@@ -68,62 +68,8 @@ class Expression;
 class Expr;
 class ExprGroup;
 
-// Frontend statements
-class FrontendIfStmt;
-class FrontendForStmt;
-class FrontendPrintStmt;
-class FrontendWhileStmt;
-class FrontendAllocaStmt;
-class FrontendAssignStmt;
-class FrontendAtomicStmt;
-class FrontendEvalStmt;
-class FrontendSNodeOpStmt;  // activate, deactivate, append, clear
-class FrontendAssertStmt;
-
-// Midend statement
-
-// Without per-lane attributes
-class RangeForStmt;
-class StructForStmt;
-class IfStmt;
-class WhileStmt;
-class WhileControlStmt;
-
-class ArgLoadStmt;
-class ExternalPtrStmt;
-class ConstStmt;
-class AllocaStmt;
-class UnaryOpStmt;
-class BinaryOpStmt;
-class TernaryOpStmt;
-class PrintStmt;
-class RandStmt;
-class GlobalLoadStmt;
-class GlobalStoreStmt;
-class AtomicOpStmt;
-class LocalStoreStmt;
-class SNodeOpStmt;
-class RangeAssumptionStmt;
-class AssertStmt;
-
-// SNodeOps
-class IntegerOffsetStmt;
-class OffsetAndExtractBitsStmt;
-class LinearizeStmt;
-class SNodeLookupStmt;
-class GetChStmt;
-
-// With per-lane attributes
-class LocalLoadStmt;
-class GlobalPtrStmt;
-class ElementShuffleStmt;
-
-// Pragma statements
-class PragmaSLPStmt;
-class ScratchPads;
-
-// Clearer
-class ClearAllStmt;
+#define PER_STATEMENT(x) class x;
+#include "statements.inc.h"
 
 // IR passes
 namespace irpass {

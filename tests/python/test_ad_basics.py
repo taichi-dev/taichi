@@ -10,7 +10,7 @@ def grad_test(tifunc, npfunc=None):
     npfunc = tifunc
   ti.reset()
   ti.cfg.use_llvm = True
-  # ti.cfg.print_ir = True
+  ti.cfg.print_ir = True
   # ti.cfg.print_kernel_llvm_ir = True
 
   x = ti.var(ti.f32)
@@ -48,10 +48,11 @@ def test_size1():
   assert x[0] == 1
 
 def test_poly():
-  grad_test(lambda x: x)
+  for i in range(10):
+    grad_test(lambda x: x)
+  # grad_test(lambda x: -x)
+  # grad_test(lambda x: x * x)
   return
-  grad_test(lambda x: -x)
-  grad_test(lambda x: x * x)
   grad_test(lambda x: ti.sqr(x))
   grad_test(lambda x: x * x * x)
   grad_test(lambda x: x * x * x * x)

@@ -10,6 +10,8 @@
 #include <taichi/math/levelset.h>
 #include <taichi/image/operations.h>
 
+// TODO: these "make_opaque" macros disables pybind11 from resolving [1] as std::vector<int>. Why?
+/*
 PYBIND11_MAKE_OPAQUE(std::vector<int>);
 PYBIND11_MAKE_OPAQUE(std::vector<taichi::float32>);
 PYBIND11_MAKE_OPAQUE(std::vector<taichi::float64>);
@@ -19,6 +21,7 @@ PYBIND11_MAKE_OPAQUE(std::vector<taichi::Vector4>);
 PYBIND11_MAKE_OPAQUE(std::vector<taichi::Vector2i>);
 PYBIND11_MAKE_OPAQUE(std::vector<taichi::Vector3i>);
 PYBIND11_MAKE_OPAQUE(std::vector<taichi::Vector4i>);
+ */
 
 TC_NAMESPACE_BEGIN
 std::vector<real> make_range(real start, real end, real delta) {

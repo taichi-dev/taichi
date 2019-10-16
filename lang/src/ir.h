@@ -364,8 +364,7 @@ class IRNode {
   virtual void accept(IRVisitor *visitor) {
     TC_NOT_IMPLEMENTED
   }
-  virtual ~IRNode() {
-  }
+  virtual ~IRNode() = default;
 };
 
 #define DEFINE_ACCEPT                        \
@@ -501,7 +500,6 @@ class Stmt : public IRNode {
   bool erased;
   std::string tb;
   Stmt *adjoint;
-
   llvm::Value *value;
   bool is_ptr;
 
@@ -661,8 +659,7 @@ class Stmt : public IRNode {
 
   std::string type();
 
-  virtual ~Stmt() {
-  }
+  virtual ~Stmt() override = default;
 };
 
 // always a tree - used as rvalues

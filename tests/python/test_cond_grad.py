@@ -2,6 +2,7 @@ import taichi as ti
 
 def test_cond_grad():
   ti.reset()
+  ti.cfg.print_ir = True
   x = ti.var(ti.f32)
   y = ti.var(ti.f32)
 
@@ -14,7 +15,7 @@ def test_cond_grad():
     for i in range(2):
       t = 0.0
       if x[i] > 0:
-        t = 1 / x[i]
+        t = 1 / (x[i] + 1e-10)
       y[i] = t
 
   x[0] = 0

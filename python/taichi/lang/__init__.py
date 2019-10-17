@@ -11,6 +11,7 @@ k = indices(2)
 l = indices(3)
 ij = indices(0, 1)
 ijk = indices(0, 1, 2)
+ijkl = indices(0, 1, 2, 3)
 Vector = Matrix
 outer_product = Matrix.outer_product
 cfg = default_cfg()

@@ -1,3 +1,5 @@
+// disabling to support old CPUs without necessary simd inst...
+#if (0)
 #include <taichi/lang.h>
 #include <taichi/testing.h>
 #include <numeric>
@@ -534,3 +536,4 @@ TC_TEST("simd_mpm") {
 };
 
 TLANG_NAMESPACE_END
+#endif

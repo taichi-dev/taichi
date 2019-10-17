@@ -499,6 +499,9 @@ class GPUIRCodeGen : public IRVisitor {
     } else if (print_stmt->stmt->ret_type.data_type == DataType::f32) {
       emit("printf(\"[debug] {}\" \" = %f\\n\", {});", print_stmt->str,
            print_stmt->stmt->raw_name());
+    } else if (print_stmt->stmt->ret_type.data_type == DataType::f64) {
+      emit("printf(\"[debug] {}\" \" = %f\\n\", {});", print_stmt->str,
+           print_stmt->stmt->raw_name());
     } else {
       TC_NOT_IMPLEMENTED
     }

@@ -361,38 +361,83 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       stmt->value = builder->CreateSRem(stmt->lhs->value, stmt->rhs->value);
     } else if (op == BinaryOpType::max) {
       if (is_real(ret_type)) {
-        stmt->value =
-            builder->CreateMaximum(stmt->lhs->value, stmt->rhs->value);
+        stmt->value = builder->CreateMaxNum(stmt->lhs->value, stmt->rhs->value);
       } else if (ret_type == DataType::i32) {
         stmt->value =
             create_call("int32_max", {stmt->lhs->value, stmt->rhs->value});
       } else {
+        TC_P(data_type_name(ret_type));
         TC_NOT_IMPLEMENTED
       }
     } else if (op == BinaryOpType::min) {
       if (is_real(ret_type)) {
-        stmt->value =
-            builder->CreateMinimum(stmt->lhs->value, stmt->rhs->value);
+        stmt->value = builder->CreateMinNum(stmt->lhs->value, stmt->rhs->value);
       } else if (ret_type == DataType::i32) {
         stmt->value =
             create_call("int32_min", {stmt->lhs->value, stmt->rhs->value});
       } else {
+        TC_P(data_type_name(ret_type));
         TC_NOT_IMPLEMENTED
       }
     } else if (is_comparison(op)) {
+      llvm::Value *cmp = nullptr;
+      auto input_type = stmt->lhs->ret_type.data_type;
       if (op == BinaryOpType::cmp_eq) {
-        if (is_real(stmt->lhs->ret_type.data_type)) {
-          stmt->value = builder->CreateSExt(
-              builder->CreateFCmpOEQ(stmt->lhs->value, stmt->rhs->value),
-              llvm_type(DataType::i32));
+        if (is_real(input_type)) {
+          cmp = builder->CreateFCmpOEQ(stmt->lhs->value, stmt->rhs->value);
         } else {
-          stmt->value = builder->CreateSExt(
-              builder->CreateICmpEQ(stmt->lhs->value, stmt->rhs->value),
-              llvm_type(DataType::i32));
+          cmp = builder->CreateICmpEQ(stmt->lhs->value, stmt->rhs->value);
+        }
+      } else if (op == BinaryOpType::cmp_le) {
+        if (is_real(input_type)) {
+          cmp = builder->CreateFCmpOLE(stmt->lhs->value, stmt->rhs->value);
+        } else {
+          if (is_signed(input_type)) {
+            cmp = builder->CreateICmpSLE(stmt->lhs->value, stmt->rhs->value);
+          } else {
+            cmp = builder->CreateICmpULE(stmt->lhs->value, stmt->rhs->value);
+          }
+        }
+      } else if (op == BinaryOpType::cmp_ge) {
+        if (is_real(input_type)) {
+          cmp = builder->CreateFCmpOGE(stmt->lhs->value, stmt->rhs->value);
+        } else {
+          if (is_signed(input_type)) {
+            cmp = builder->CreateICmpSGE(stmt->lhs->value, stmt->rhs->value);
+          } else {
+            cmp = builder->CreateICmpUGE(stmt->lhs->value, stmt->rhs->value);
+          }
+        }
+      } else if (op == BinaryOpType::cmp_lt) {
+        if (is_real(input_type)) {
+          cmp = builder->CreateFCmpOLT(stmt->lhs->value, stmt->rhs->value);
+        } else {
+          if (is_signed(input_type)) {
+            cmp = builder->CreateICmpSLT(stmt->lhs->value, stmt->rhs->value);
+          } else {
+            cmp = builder->CreateICmpULT(stmt->lhs->value, stmt->rhs->value);
+          }
+        }
+      } else if (op == BinaryOpType::cmp_gt) {
+        if (is_real(input_type)) {
+          cmp = builder->CreateFCmpOGT(stmt->lhs->value, stmt->rhs->value);
+        } else {
+          if (is_signed(input_type)) {
+            cmp = builder->CreateICmpSGT(stmt->lhs->value, stmt->rhs->value);
+          } else {
+            cmp = builder->CreateICmpUGT(stmt->lhs->value, stmt->rhs->value);
+          }
+        }
+      } else if (op == BinaryOpType::cmp_ne) {
+        if (is_real(input_type)) {
+          cmp = builder->CreateFCmpONE(stmt->lhs->value, stmt->rhs->value);
+        } else {
+          cmp = builder->CreateICmpNE(stmt->lhs->value, stmt->rhs->value);
         }
       } else {
         TC_NOT_IMPLEMENTED
       }
+      stmt->value = builder->CreateSExt(cmp, llvm_type(DataType::i32));
     } else {
       TC_P(binary_op_type_name(op));
       TC_NOT_IMPLEMENTED

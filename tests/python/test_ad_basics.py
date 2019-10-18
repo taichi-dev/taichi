@@ -71,7 +71,6 @@ def test_unary():
   grad_test(lambda x: ti.log(x), lambda x: np.log(x))
 
 def test_minmax():
-  return
   grad_test(lambda x: ti.min(x, 0), lambda x: np.minimum(x, 0))
   grad_test(lambda x: ti.min(x, 1), lambda x: np.minimum(x, 1))
   grad_test(lambda x: ti.min(0, x), lambda x: np.minimum(0, x))

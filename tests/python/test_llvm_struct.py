@@ -2,6 +2,9 @@ import taichi as ti
 
 def test_linear():
   ti.reset()
+  
+  ti.core.test_throw()
+  
   ti.cfg.use_llvm = True
 
   x = ti.var(ti.i32)
@@ -14,17 +17,29 @@ def test_linear():
     ti.root.dense(ti.i, n).place(x)
     ti.root.dense(ti.i, n).place(y)
 
-  for i in range(n):
-    x[i] = i
-    y[i] = i + 123
+  @ti.kernel
+  def func():
+    for i in range(n):
+      x[i] = i
+      y[i] = i + 123
+
+
+  ti.core.test_throw()
+  # ti.runtime.materialize()
+  ti.core.test_throw()
+  func()
+  ti.core.test_throw()
+  
 
   for i in range(n):
     assert x[i] == i
     assert y[i] == i + 123
-    
+  
 def test_linear_repeated():
   for i in range(10):
     test_linear()
+    
+test_linear_repeated()
   
 def test_linear_nested():
   ti.reset()

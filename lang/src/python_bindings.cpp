@@ -346,6 +346,13 @@ void export_lang(py::module &m) {
                                                                  is_nparray);
   });
 
+  m.def("test_throw", [] {
+    try {
+      throw IRModified();
+    } catch (IRModified) {
+      TC_INFO("caught");
+    }
+  });
   // Schedules
   m.def("parallelize", Parallelize);
   m.def("vectorize", Vectorize);

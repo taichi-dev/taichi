@@ -193,7 +193,7 @@ struct ElementList {
 };
 
 void ElementList_initialize(ElementList *element_list) {
-  element_list->elements = (Element *)taichi_allocate(1024 * 1024);
+  element_list->elements = (Element *)taichi_allocate(1024 * 1024 * 1024);
   element_list->tail = 0;
 }
 

@@ -28,7 +28,6 @@ TC_TEST("float64") {
 TC_TEST("llvm_exception") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 1;
-  default_compile_config.use_llvm = true;
   for (int i = 0; i < 2; i++) {
     // Program prog(Arch::gpu);
     Program prog(Arch::x86_64);

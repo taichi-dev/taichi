@@ -3,6 +3,7 @@
 
 #include <type_traits>
 #include <atomic>
+#include <cmath>
 
 #define FORCEINLINE __attribute__((always_inline))
 
@@ -41,14 +42,26 @@ extern "C" {
 void vprintf(Ptr format, Ptr arg);
 int printf(const char *, ...);
 
-float tanhf(float x);
-double tanh(double x);
+#define DEFINE_UNARY_REAL_FUNC(F) \
+  float F##_f32(float x) {        \
+    return std::F(x);             \
+  }                               \
+  double F##_f64(double x) {      \
+    return std::F(x);             \
+  }
 
-int int32_max(int a, int b) {
+DEFINE_UNARY_REAL_FUNC(exp)
+DEFINE_UNARY_REAL_FUNC(log)
+DEFINE_UNARY_REAL_FUNC(sin)
+DEFINE_UNARY_REAL_FUNC(cos)
+DEFINE_UNARY_REAL_FUNC(tan)
+DEFINE_UNARY_REAL_FUNC(tanh)
+
+int max_i32(int a, int b) {
   return a > b ? a : b;
 }
 
-int int32_min(int a, int b) {
+int min_i32(int a, int b) {
   return a < b ? a : b;
 }
 
@@ -169,8 +182,6 @@ void *taichi_allocate(std::size_t size) {
 }
 
 void ___stubs___() {
-  tanhf(0);
-  tanh(0);
   printf("");
   vprintf(nullptr, nullptr);
   taichi_allocate(1);
@@ -294,6 +305,4 @@ void cuda_add(float *a, float *b, float *c) {
   auto i = ti_cuda_tid_x();
   c[i] = a[i] + b[i];
 }
-
-
 }

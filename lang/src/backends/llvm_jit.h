@@ -1,12 +1,13 @@
 // A LLVM JIT compiler wrapper
-
 #pragma once
 
-#if __cpluscplus >= 201703L
-static_assert(false, "please use C++17.");
-#endif
+// Based on
+// https://llvm.org/docs/tutorial/BuildingAJIT3.html
 
+// Note that
 // https://llvm.org/docs/tutorial/BuildingAJIT2.html
+// leads to a JIT that crashes all C++ exception after JIT session destruction...
+
 #include "../util.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ExecutionEngine/ExecutionEngine.h"

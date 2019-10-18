@@ -205,7 +205,8 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     auto kernel_symbol = jit->lookup(kernel_name);
     TC_ASSERT_INFO(kernel_symbol, "Function not found");
 
-    auto f = (int32(*)(void *))(void *)(llvm::cantFail(kernel_symbol.getAddress()));
+    auto f =
+        (int32(*)(void *))(void *)(llvm::cantFail(kernel_symbol.getAddress()));
     return [=](Context context) { f(&context); };
   }
 
@@ -267,14 +268,26 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       UNARY_INTRINSIC(floor)
       UNARY_INTRINSIC(ceil)
 #undef UNARY_INTRINSIC
-          else if (op == UnaryOpType::tanh) {
-        if (input_taichi_type == DataType::f32) {
-          stmt->value = builder->CreateCall(get_runtime_function("tanhf"),
-                                            input, "tanhf");
-        } else {
-          stmt->value =
-              builder->CreateCall(get_runtime_function("tanh"), input, "tanh");
-        }
+#define UNARY_STD(x)                                                   \
+  else if (op == UnaryOpType::x) {                                     \
+    if (input_taichi_type == DataType::f32) {                          \
+      stmt->value =                                                    \
+          builder->CreateCall(get_runtime_function(#x "_f32"), input); \
+    } else {                                                           \
+      stmt->value =                                                    \
+          builder->CreateCall(get_runtime_function(#x "_f64"), input); \
+    }                                                                  \
+  }
+      UNARY_STD(exp)
+      UNARY_STD(log)
+      UNARY_STD(sin)
+      UNARY_STD(cos)
+      UNARY_STD(tan)
+      UNARY_STD(tanh)
+#undef UNARY_STD
+      else {
+        TC_P(unary_op_type_name(op));
+        TC_NOT_IMPLEMENTED
       }
     } else {
       // op = cast
@@ -633,7 +646,6 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       stmt->value = builder->CreateLoad(builder->CreateGEP(
           current_coordinates, {tlctx->get_constant(0), tlctx->get_constant(0),
                                 tlctx->get_constant(loop_var_index)}));
-      TC_P(type_name(stmt->value->getType()));
     } else {
       stmt->value = builder->CreateLoad(stmt->ptr[0].var->value);
     }

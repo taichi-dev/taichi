@@ -32,3 +32,6 @@ include(cmake/TaichiMain.cmake)
 
 message("C++ Flags: ${CMAKE_CXX_FLAGS}")
 message("Build type: ${CMAKE_BUILD_TYPE}")
+
+add_executable(llvm_exception llvm_exception.cpp)
+target_link_libraries(llvm_exception ${CORE_LIBRARY_NAME})

@@ -90,21 +90,25 @@ std::string find_existing_command(const std::vector<std::string> &commands) {
 // ../headers -ffp-contract=fast -Wall -D_GLIBCXX_USE_CXX11_ABI=0 -DTLANG_CPU
 // -lstdc++ -o tmp0001.bc
 void compile_runtime_bitcode(Arch arch) {
-  auto clang = find_existing_command({"clang-7", "clang"});
-  TC_ASSERT(command_exist("llvm-as"));
-  TC_TRACE("Compiling runtime module bitcode...");
-  auto runtime_folder = get_project_fn() + "/runtime/";
-  std::string macro = fmt::format(" -D ARCH_{} ", arch_name(arch));
-  int ret = std::system(
-      fmt::format("{} -S {}runtime.cpp -o {}runtime.ll -emit-llvm -std=c++17",
-                  clang, runtime_folder, runtime_folder)
-          .c_str());
-  if (ret) {
-    TC_ERROR("Runtime compilation failed.");
+  static bool runtime_compiled = false;
+  if (!runtime_compiled) {
+    auto clang = find_existing_command({"clang-7", "clang"});
+    TC_ASSERT(command_exist("llvm-as"));
+    TC_TRACE("Compiling runtime module bitcode...");
+    auto runtime_folder = get_project_fn() + "/runtime/";
+    std::string macro = fmt::format(" -D ARCH_{} ", arch_name(arch));
+    int ret = std::system(
+        fmt::format("{} -S {}runtime.cpp -o {}runtime.ll -emit-llvm -std=c++17",
+                    clang, runtime_folder, runtime_folder)
+            .c_str());
+    if (ret) {
+      TC_ERROR("Runtime compilation failed.");
+    }
+    std::system(fmt::format("llvm-as {}runtime.ll -o {}runtime.bc",
+                            runtime_folder, runtime_folder)
+                    .c_str());
+    runtime_compiled = true;
   }
-  std::system(fmt::format("llvm-as {}runtime.ll -o {}runtime.bc",
-                          runtime_folder, runtime_folder)
-                  .c_str());
 }
 
 std::unique_ptr<llvm::Module> TaichiLLVMContext::get_init_module() {

@@ -456,7 +456,7 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
 
   tlctx->set_struct_module(module);
 
-  llvm::cantFail(tlctx->jit->addModule(std::move(module)));
+  (tlctx->jit->addModule(std::move(module)));
 
   if (host) {
     for (auto n : snodes) {

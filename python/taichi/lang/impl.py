@@ -233,7 +233,7 @@ class Kernel:
       pytaichi.materialize()
     grad_suffix = ""
     if self.is_grad:
-      grad_suffix = ".grad"
+      grad_suffix = "_grad"
     print("Compiling kernel {}{}...".format(self.foo.__name__, grad_suffix))
   
     src = remove_indent(inspect.getsource(self.foo))
@@ -261,7 +261,7 @@ class Kernel:
     pytaichi.inside_kernel = False
     compiled = locals()[self.foo.__name__]
     
-    t_kernel = taichi_lang_core.create_kernel(self.foo.__name__, self.is_grad)
+    t_kernel = taichi_lang_core.create_kernel(self.foo.__name__ + grad_suffix, self.is_grad)
     t_kernel = t_kernel.define(lambda: compiled())
     
     # The actual function body

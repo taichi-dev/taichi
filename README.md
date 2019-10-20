@@ -9,7 +9,7 @@
 ## Updates
 ```bash
 # With GPU support (needs CUDA 10.0)
-python3 -m pip install taichi-gpu-nightly==0.0.55 --user
+python3 -m pip install taichi-gpu-nightly==0.0.56 --user
 
 # CPU only. No GPU/CUDA needed
 python3 -m pip install taichi-nightly==0.0.55 --user

@@ -276,7 +276,7 @@ def forward(total_steps=steps):
   # simulation
   for s in range(total_steps - 1):
     clear_grid()
-    compute_actuation()
+    compute_actuation(s)
     p2g(s)
     grid_op()
     g2p(s)
@@ -301,7 +301,7 @@ def backward():
     g2p.grad(s)
     grid_op.grad()
     p2g.grad(s)
-    compute_actuation.grad()
+    compute_actuation.grad(s)
 
 
 class Scene:

@@ -81,3 +81,30 @@ def test_minmax():
   grad_test(lambda x: ti.max(0, x), lambda x: np.maximum(0, x))
   grad_test(lambda x: ti.max(1, x), lambda x: np.maximum(1, x))
 
+
+def test_mod():
+  ti.reset()
+  ti.cfg.use_llvm = True
+
+  x = ti.var(ti.i32)
+  y = ti.var(ti.i32)
+
+  @ti.layout
+  def place():
+    ti.root.dense(ti.i, 1).place(x, y)
+    ti.root.lazy_grad()
+
+  @ti.kernel
+  def func():
+    y[0] = x[0] % 3
+
+  @ti.kernel
+  def func2():
+    ti.atomic_add(y[0], x[0] % 3)
+
+  func()
+  func.grad()
+
+  func2()
+  func2.grad()
+

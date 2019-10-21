@@ -177,6 +177,8 @@ class MakeAdjoint : public IRVisitor {
     } else if (bin->op_type == BinaryOpType::mul) {
       accumulate(bin->lhs, mul(adjoint(bin), bin->rhs));
       accumulate(bin->rhs, mul(adjoint(bin), bin->lhs));
+    } else if (bin->op_type == BinaryOpType::mod) {
+      // Do nothing
     } else if (bin->op_type == BinaryOpType::div) {
       accumulate(bin->lhs, div(adjoint(bin), bin->rhs));
       accumulate(bin->rhs, negate(div(mul(adjoint(bin), bin->lhs),
@@ -191,7 +193,7 @@ class MakeAdjoint : public IRVisitor {
     } else if (is_comparison(bin->op_type) || is_bit_op(bin->op_type)) {
       // do nothing
     } else {
-      TC_WARN("{}", binary_op_type_name(bin->op_type));
+      TC_WARN("gradient of binary op {}", binary_op_type_name(bin->op_type));
       TC_NOT_IMPLEMENTED
     }
   }
@@ -292,6 +294,10 @@ class MakeAdjoint : public IRVisitor {
     GlobalPtrStmt *ptr = stmt->ptr->as<GlobalPtrStmt>();
     TC_ASSERT(ptr->width() == 1);
     auto snodes = ptr->snodes;
+    if (!snodes[0]->has_grad()) {
+      // no gradient (likely integer types)
+      return;
+    }
     TC_ASSERT(snodes[0]->get_grad() != nullptr);
     snodes[0] = snodes[0]->get_grad();
     auto adjoint_ptr = insert<GlobalPtrStmt>(snodes, ptr->indices);
@@ -304,6 +310,10 @@ class MakeAdjoint : public IRVisitor {
     GlobalPtrStmt *ptr = stmt->dest->as<GlobalPtrStmt>();
     TC_ASSERT(ptr->width() == 1);
     auto snodes = ptr->snodes;
+    if (!snodes[0]->has_grad()) {
+      // no gradient (likely integer types)
+      return;
+    }
     TC_ASSERT(snodes[0]->get_grad() != nullptr);
     snodes[0] = snodes[0]->get_grad();
     auto adjoint_ptr = insert<GlobalPtrStmt>(snodes, ptr->indices);

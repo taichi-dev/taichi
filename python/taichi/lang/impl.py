@@ -465,8 +465,10 @@ unary_ops = []
 
 
 def unary(x):
-  unary_ops.append(x)
-  return x
+  def func(expr):
+    return x(Expr(expr))
+  unary_ops.append(func)
+  return func
 
 
 binary_ops = []

@@ -91,7 +91,9 @@ void CodeGenBase::generate_binary(std::string extra_flags) {
   auto hash_input =
       preprocess_cmd + std::string(std::istreambuf_iterator<char>(ifs),
                                    std::istreambuf_iterator<char>());
+  // TC_P(preprocess_cmd);
   auto hash = XXH64(hash_input.data(), hash_input.size(), 0);
+  // TC_P(hash);
 
   std::string cached_binary_fn = db_folder() + fmt::format("/{}.so", hash);
   std::ifstream key_file(cached_binary_fn);

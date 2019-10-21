@@ -1785,6 +1785,7 @@ class RangeForStmt : public Stmt {
   Stmt *loop_var;
   Stmt *begin, *end;
   std::unique_ptr<Block> body;
+  bool reversed;
   int vectorize;
   int parallelize;
   int block_size;
@@ -1801,6 +1802,7 @@ class RangeForStmt : public Stmt {
         body(std::move(body)),
         vectorize(vectorize),
         parallelize(parallelize) {
+    reversed = false;
     add_operand(this->loop_var);
     add_operand(this->begin);
     add_operand(this->end);
@@ -1809,6 +1811,10 @@ class RangeForStmt : public Stmt {
 
   bool is_container_statement() const override {
     return true;
+  }
+
+  void reverse() {
+    reversed = !reversed;
   }
 
   DEFINE_ACCEPT

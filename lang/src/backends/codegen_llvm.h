@@ -641,6 +641,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
 
   // Direct translation
   void create_naive_range_for(RangeForStmt *for_stmt) {
+    TC_ASSERT(!for_stmt->reversed);
     BasicBlock *body = BasicBlock::Create(*llvm_context, "loop_body", func);
     BasicBlock *after_loop = BasicBlock::Create(*llvm_context, "block", func);
     builder->CreateStore(tlctx->get_constant(0), for_stmt->loop_var->value);

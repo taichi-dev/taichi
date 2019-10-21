@@ -63,9 +63,11 @@ class MakeAdjoint : public IRVisitor {
 
  public:
   Block *current_block;
+  int for_depth;
 
   MakeAdjoint() {
     current_block = nullptr;
+    for_depth = 0;
   }
 
   static void run(IRNode *node) {
@@ -245,12 +247,17 @@ class MakeAdjoint : public IRVisitor {
   }
 
   void visit(RangeForStmt *for_stmt) override {
-    TC_WARN("Range for order not yet reversed.");
+    if (for_depth > 0) // reverse non-parallelized for-loops
+      for_stmt->reverse();
+    for_depth += 1;
     for_stmt->body->accept(this);
+    for_depth -= 1;
   }
 
   void visit(StructForStmt *for_stmt) override {
+    for_depth += 1;
     for_stmt->body->accept(this);
+    for_depth -= 1;
   }
 
   void visit(GlobalPtrStmt *stmt) override {

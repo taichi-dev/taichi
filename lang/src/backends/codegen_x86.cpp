@@ -200,11 +200,22 @@ class CPUIRCodeGen : public IRVisitor {
     }
     if (loop_var->ret_type.width == 1 &&
         loop_var->ret_type.data_type == DataType::i32) {
-      emit("for (int {}_ = {}; {}_ < {}; {}_ = {}_ + {}) {{",
-           loop_var->raw_name(), for_stmt->begin->raw_name(),
-           loop_var->raw_name(), for_stmt->end->raw_name(),
-           loop_var->raw_name(), loop_var->raw_name(), for_stmt->vectorize);
-      emit("{} = {}_;", loop_var->raw_name(), loop_var->raw_name());
+      if (!for_stmt->reversed) {
+        // normal loop
+        emit("for (int {}_ = {}; {}_ < {}; {}_ = {}_ + {}) {{",
+             loop_var->raw_name(), for_stmt->begin->raw_name(),
+             loop_var->raw_name(), for_stmt->end->raw_name(),
+             loop_var->raw_name(), loop_var->raw_name(), for_stmt->vectorize);
+        emit("{} = {}_;", loop_var->raw_name(), loop_var->raw_name());
+      } else {
+        // reversed loop
+        TC_ASSERT(for_stmt->vectorize == 1);
+        emit("for (int {}_ = {} - 1; {}_ >= {}; {}_ = {}_ - {}) {{",
+             loop_var->raw_name(), for_stmt->end->raw_name(),
+             loop_var->raw_name(), for_stmt->begin->raw_name(),
+             loop_var->raw_name(), loop_var->raw_name(), for_stmt->vectorize);
+        emit("{} = {}_;", loop_var->raw_name(), loop_var->raw_name());
+      }
     } else {
       emit("for ({} {} = {}; {} < {}; {} = {} + {}({})) {{",
            loop_var->ret_data_type_name(), loop_var->raw_name(),
@@ -220,8 +231,8 @@ class CPUIRCodeGen : public IRVisitor {
   void visit(ArgLoadStmt *stmt) {
     if (stmt->is_ptr) {
       auto dt = data_type_name(stmt->ret_type.data_type);
-      emit("const {} * {}(context.get_arg<{} *>({}));", dt,
-           stmt->raw_name(), dt, stmt->arg_id);
+      emit("const {} * {}(context.get_arg<{} *>({}));", dt, stmt->raw_name(),
+           dt, stmt->arg_id);
     } else {
       emit("const {} {}({{context.get_arg<{}>({})}});",
            stmt->ret_data_type_name(), stmt->raw_name(),

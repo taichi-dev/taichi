@@ -537,12 +537,22 @@ class GPUIRCodeGen : public IRVisitor {
     auto loop_var = for_stmt->loop_var;
     if (loop_var->ret_type.width == 1 &&
         loop_var->ret_type.data_type == DataType::i32) {
-      emit("for (int {}_ = {}; {}_ < {}; {}_ = {}_ + {}) {{",
-           loop_var->raw_name(), for_stmt->begin->raw_name(),
-           loop_var->raw_name(), for_stmt->end->raw_name(),
-           loop_var->raw_name(), loop_var->raw_name(), 1);
-      emit("{} = {}_;", loop_var->raw_name(), loop_var->raw_name());
+      if (!for_stmt->reversed) {
+        emit("for (int {}_ = {}; {}_ < {}; {}_ = {}_ + {}) {{",
+             loop_var->raw_name(), for_stmt->begin->raw_name(),
+             loop_var->raw_name(), for_stmt->end->raw_name(),
+             loop_var->raw_name(), loop_var->raw_name(), 1);
+        emit("{} = {}_;", loop_var->raw_name(), loop_var->raw_name());
+      } else {
+        // reversed for loop
+        emit("for (int {}_ = {} - 1; {}_ >= {}; {}_ = {}_ - {}) {{",
+             loop_var->raw_name(), for_stmt->end->raw_name(),
+             loop_var->raw_name(), for_stmt->begin->raw_name(),
+             loop_var->raw_name(), loop_var->raw_name(), 1);
+        emit("{} = {}_;", loop_var->raw_name(), loop_var->raw_name());
+      }
     } else {
+      TC_ASSERT(!for_stmt->reversed);
       emit("for ({} {} = {}; {} < {}; {} = {} + {}({})) {{",
            loop_var->ret_data_type_name(), loop_var->raw_name(),
            for_stmt->begin->raw_name(), loop_var->raw_name(),

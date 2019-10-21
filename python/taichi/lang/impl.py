@@ -130,11 +130,11 @@ class PyTaichi:
       self.prog = None
     Expr.materialize_layout_callback = None
     Expr.layout_materialized = False
-    
+
   def get_tape(self, loss=None):
     from .tape import Tape
     return Tape(self, loss)
-  
+
   def sync(self):
     self.prog.synchronize()
 
@@ -222,8 +222,8 @@ class Kernel:
       self.compiled_functions = pytaichi.compiled_functions
     else:
       self.compiled_functions = pytaichi.compiled_grad_functions
-  
-  
+
+
   def materialize(self, extra_frame_backtrace=-1):
     if not self.materialized:
       self.materialized = True
@@ -235,23 +235,23 @@ class Kernel:
     if self.is_grad:
       grad_suffix = ".grad"
     print("Compiling kernel {}{}...".format(self.foo.__name__, grad_suffix))
-  
+
     src = remove_indent(inspect.getsource(self.foo))
     tree = ast.parse(src)
     # print(astor.to_source(tree.body[0]))
-  
+
     func_body = tree.body[0]
     func_body.decorator_list = []
-  
+
     visitor = ASTTransformer()
     visitor.visit(tree)
     ast.fix_missing_locations(tree)
-  
+
     if pytaichi.print_preprocessed:
       print(astor.to_source(tree.body[0], indent_with='  '))
-  
+
     ast.increment_lineno(tree, inspect.getsourcelines(self.foo)[1] - 1)
-  
+
     pytaichi.inside_kernel = True
     frame = inspect.currentframe()
     for t in range(extra_frame_backtrace + 2):
@@ -260,10 +260,10 @@ class Kernel:
          dict(frame.f_globals, **frame.f_locals), locals())
     pytaichi.inside_kernel = False
     compiled = locals()[self.foo.__name__]
-    
+
     t_kernel = taichi_lang_core.create_kernel(self.foo.__name__, self.is_grad)
     t_kernel = t_kernel.define(lambda: compiled())
-    
+
     # The actual function body
     def func__(*args):
       for i, v in enumerate(args):
@@ -281,7 +281,7 @@ class Kernel:
             has_torch = True
           except:
             pass
-            
+
           if has_torch and isinstance(v, torch.Tensor):
             tmp = v
             if str(v.device).startswith('cuda'):
@@ -295,7 +295,7 @@ class Kernel:
         pytaichi.target_tape.insert(self, args)
       t_kernel()
     self.compiled_functions[self.foo] = func__
-    
+
   def __call__(self, *args, extra_frame_backtrace=0):
     self.materialize(extra_frame_backtrace=extra_frame_backtrace)
     self.compiled_functions[self.foo](*args)
@@ -409,6 +409,14 @@ def cos(expr):
   return Expr(taichi_lang_core.expr_cos(expr.ptr))
 
 @unary
+def asin(expr):
+  return Expr(taichi_lang_core.expr_asin(expr.ptr))
+
+@unary
+def acos(expr):
+  return Expr(taichi_lang_core.expr_acos(expr.ptr))
+
+@unary
 def sqrt(expr):
   return Expr(taichi_lang_core.expr_sqrt(expr.ptr))
 
@@ -456,4 +464,3 @@ def append(l, indices, val):
 
 def length(l, indices):
   return taichi_lang_core.insert_len(l.ptr, make_expr_group(indices))
-

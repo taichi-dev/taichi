@@ -30,13 +30,14 @@ class ArgExtArray:
 ext_arr = ArgExtArray
 
 
-class ArgGenerator:
+class Template:
   def __init__(self, tensor=None, dim=None):
     self.tensor = tensor
     self.dim = dim
 
 
-gen = ArgGenerator
+template = Template
+
 
 
 def decl_arg(dt):
@@ -282,6 +283,11 @@ class Kernel:
     self.materialized = False
     self.arguments = []
     self.extract_arguments()
+    template_slot_locations = []
+    for i in range(len(self.arguments)):
+      if isinstance(self.arguments[i], template):
+        template_slot_locations.append(i)
+    self.mapper = KernelTemplateMapper(len(self.arguments), template_slot_locations)
     if is_grad:
       self.compiled_functions = pytaichi.compiled_functions
     else:
@@ -311,7 +317,7 @@ class Kernel:
         raise KernelDefError('Taichi kernels parameters must be type annotated')
       self.arguments.append(param.annotation)
   
-  def materialize(self, extra_frame_backtrace=-1):
+  def materialize(self, key=None, args=None, extra_frame_backtrace=-1):
     if not self.materialized:
       self.materialized = True
     else:
@@ -353,7 +359,8 @@ class Kernel:
                                                    self.is_grad)
     taichi_kernel = taichi_kernel.define(lambda: compiled())
     
-    self.compiled_functions[self.func] = self.get_function_body(taichi_kernel)
+    assert key not in self.compiled_functions
+    self.compiled_functions[key] = self.get_function_body(taichi_kernel)
     
     
   def get_function_body(self, t_kernel):
@@ -404,8 +411,10 @@ class Kernel:
     
   
   def __call__(self, *args, extra_frame_backtrace=0):
-    self.materialize(extra_frame_backtrace=extra_frame_backtrace)
-    self.compiled_functions[self.func](*args)
+    instance_id = self.mapper.lookup(args)
+    key = (self.func, instance_id)
+    self.materialize(key=key, args=args, extra_frame_backtrace=extra_frame_backtrace)
+    return self.compiled_functions[key](*args)
 
 
 def kernel(foo):

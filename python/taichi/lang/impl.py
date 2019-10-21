@@ -349,16 +349,20 @@ class Kernel:
     pytaichi.inside_kernel = False
     compiled = locals()[self.foo.__name__]
     
-    t_kernel = taichi_lang_core.create_kernel(self.foo.__name__ + grad_suffix,
+    taichi_kernel = taichi_lang_core.create_kernel(self.foo.__name__ + grad_suffix,
                                               self.is_grad)
-    t_kernel = t_kernel.define(lambda: compiled())
+    taichi_kernel = taichi_kernel.define(lambda: compiled())
     
+    self.compiled_functions[self.foo] = self.get_function_body(taichi_kernel)
+    
+    
+  def get_function_body(self, t_kernel):
     # The actual function body
     def func__(*args):
       assert len(args) == len(
         self.arguments), '{} arguments needed but {} provided'.format(
         len(self.arguments), len(args))
-      
+    
       for i, v in enumerate(args):
         needed = self.arguments[i]
         provided = type(v)
@@ -381,7 +385,7 @@ class Kernel:
             has_torch = True
           except:
             pass
-          
+        
           if has_torch and isinstance(v, torch.Tensor):
             tmp = v
             if str(v.device).startswith('cuda'):
@@ -395,8 +399,9 @@ class Kernel:
       if pytaichi.target_tape:
         pytaichi.target_tape.insert(self, args)
       t_kernel()
+      
+    return func__
     
-    self.compiled_functions[self.foo] = func__
   
   def __call__(self, *args, extra_frame_backtrace=0):
     self.materialize(extra_frame_backtrace=extra_frame_backtrace)

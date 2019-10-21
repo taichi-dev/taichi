@@ -236,6 +236,27 @@ def func(foo):
   return compiled
 
 
+class KernelTemplateMapper:
+  def __init__(self, num_args, template_slot_locations):
+    self.num_args = num_args
+    self.template_slot_locations = template_slot_locations
+    self.mapping = {}
+    
+  def extract(self, args):
+    extracted = []
+    for i in self.template_slot_locations:
+      extracted.append(args[i])
+    return tuple(extracted)
+    
+  def lookup(self, args):
+    assert len(args) == self.num_args
+    key = self.extract(args)
+    if key not in self.mapping:
+      count = len(self.mapping)
+      self.mapping[key] = count
+    return self.mapping[key]
+    
+
 class KernelDefError(Exception):
   def __init__(self, msg):
     super().__init__(msg)
@@ -309,15 +330,8 @@ class Kernel:
     func_body = tree.body[0]
     func_body.decorator_list = []
     
-    # import astpretty
-    # astpretty.pprint(tree)
-    # print(type(inspect.signature(self.foo).parameters['v'].annotation))
-    # print(type(inspect.signature(self.foo).parameters['v'].annotation))
-    
     visitor = ASTTransformer()
     
-    # Extract arguments
-    # args = func_body.ar
     visitor.visit(tree)
     ast.fix_missing_locations(tree)
     

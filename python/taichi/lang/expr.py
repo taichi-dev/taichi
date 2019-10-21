@@ -236,3 +236,7 @@ class Expr:
   def snode(self):
     from .snode import SNode
     return SNode(self.ptr.snode())
+  
+  def __hash__(self):
+    return self.ptr.get_raw_address()
+  

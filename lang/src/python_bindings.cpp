@@ -145,7 +145,8 @@ void export_lang(py::module &m) {
            [&](Expr *expr, bool v) {
              expr->cast<GlobalVariableExpression>()->is_primal = v;
            })
-      .def("set_grad", &Expr::set_grad);
+      .def("set_grad", &Expr::set_grad)
+      .def("get_raw_address", [](Expr *expr) { return (uint64)expr; });
 
   export_accessors<int32>(expr);
   export_accessors<int64>(expr);

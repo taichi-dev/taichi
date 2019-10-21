@@ -235,6 +235,9 @@ def func(foo):
   compiled = locals()[foo.__name__]
   return compiled
 
+class KernelDefError(Exception):
+  def __init__(self, msg):
+    super().__init__(msg)
 
 class KernelArgError(Exception):
   def __init__(self, pos, needed, provided):
@@ -248,17 +251,38 @@ class KernelArgError(Exception):
       str(self.needed),
       str(self.provided))
 
-
 class Kernel:
   def __init__(self, foo, is_grad):
     self.foo = foo
     self.is_grad = is_grad
     self.materialized = False
     self.arguments = []
+    self.extract_arguments()
     if is_grad:
       self.compiled_functions = pytaichi.compiled_functions
     else:
       self.compiled_functions = pytaichi.compiled_grad_functions
+    
+  def extract_arguments(self):
+    sig = inspect.signature(self.foo)
+    params = sig.parameters
+    arg_names = params.keys()
+    for arg_name in arg_names:
+      param = params[arg_name]
+      if param.kind == inspect.Parameter.VAR_KEYWORD:
+        raise KernelDefError('Taichi kernels do not support variable keyword parameters (i.e., **kwargs)')
+      if param.kind == inspect.Parameter.VAR_POSITIONAL:
+        raise KernelDefError('Taichi kernels do not support variable positional parameters (i.e., *args)')
+      if param.default is not inspect.Parameter.empty:
+        raise KernelDefError('Taichi kernels do not support default values for arguments')
+      if param.kind == inspect.Parameter.KEYWORD_ONLY:
+        raise KernelDefError('Taichi kernels do not support keyword parameters')
+      if param.kind != inspect.Parameter.POSITIONAL_OR_KEYWORD:
+        raise KernelDefError('Taichi kernels only support "positional or keyword" parameters')
+      if param.annotation is inspect.Parameter.empty:
+        raise KernelDefError('Taichi kernels parameters must be type annotated')
+      self.arguments.append(param)
+        
   
   def materialize(self, extra_frame_backtrace=-1):
     if not self.materialized:
@@ -344,7 +368,7 @@ class Kernel:
             t_kernel.set_arg_nparray(i, int(tmp.data_ptr()),
                                      tmp.element_size() * tmp.nelement())
           else:
-            assert False, 'Argument to kernels must have type float/int. If you are pssing a PyTorch tensor, make sure it is on the same device (CPU/GPU) as taichi.'
+            assert False, 'Argument to kernels must have type float/int. If you are passing a PyTorch tensor, make sure it is on the same device (CPU/GPU) as taichi.'
       if pytaichi.target_tape:
         pytaichi.target_tape.insert(self, args)
       t_kernel()

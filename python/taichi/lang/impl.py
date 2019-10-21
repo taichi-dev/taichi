@@ -508,6 +508,13 @@ def sin(expr):
 def cos(expr):
   return Expr(taichi_lang_core.expr_cos(expr.ptr))
 
+@unary
+def asin(expr):
+  return Expr(taichi_lang_core.expr_asin(expr.ptr))
+
+@unary
+def acos(expr):
+  return Expr(taichi_lang_core.expr_acos(expr.ptr))
 
 @unary
 def sqrt(expr):

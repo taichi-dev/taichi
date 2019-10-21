@@ -276,8 +276,8 @@ class KernelArgError(Exception):
 
 
 class Kernel:
-  def __init__(self, foo, is_grad):
-    self.foo = foo
+  def __init__(self, func, is_grad):
+    self.func = func
     self.is_grad = is_grad
     self.materialized = False
     self.arguments = []
@@ -288,7 +288,7 @@ class Kernel:
       self.compiled_functions = pytaichi.compiled_grad_functions
   
   def extract_arguments(self):
-    sig = inspect.signature(self.foo)
+    sig = inspect.signature(self.func)
     params = sig.parameters
     arg_names = params.keys()
     for arg_name in arg_names:
@@ -321,9 +321,9 @@ class Kernel:
     grad_suffix = ""
     if self.is_grad:
       grad_suffix = "_grad"
-    print("Compiling kernel {}{}...".format(self.foo.__name__, grad_suffix))
+    print("Compiling kernel {}{}...".format(self.func.__name__, grad_suffix))
     
-    src = remove_indent(inspect.getsource(self.foo))
+    src = remove_indent(inspect.getsource(self.func))
     tree = ast.parse(src)
     # print(astor.to_source(tree.body[0]))
     
@@ -338,22 +338,22 @@ class Kernel:
     if pytaichi.print_preprocessed:
       print(astor.to_source(tree.body[0], indent_with='  '))
     
-    ast.increment_lineno(tree, inspect.getsourcelines(self.foo)[1] - 1)
+    ast.increment_lineno(tree, inspect.getsourcelines(self.func)[1] - 1)
     
     pytaichi.inside_kernel = True
     frame = inspect.currentframe()
     for t in range(extra_frame_backtrace + 2):
       frame = frame.f_back
-    exec(compile(tree, filename=inspect.getsourcefile(self.foo), mode='exec'),
+    exec(compile(tree, filename=inspect.getsourcefile(self.func), mode='exec'),
          dict(frame.f_globals, **frame.f_locals), locals())
     pytaichi.inside_kernel = False
-    compiled = locals()[self.foo.__name__]
+    compiled = locals()[self.func.__name__]
     
-    taichi_kernel = taichi_lang_core.create_kernel(self.foo.__name__ + grad_suffix,
-                                              self.is_grad)
+    taichi_kernel = taichi_lang_core.create_kernel(self.func.__name__ + grad_suffix,
+                                                   self.is_grad)
     taichi_kernel = taichi_kernel.define(lambda: compiled())
     
-    self.compiled_functions[self.foo] = self.get_function_body(taichi_kernel)
+    self.compiled_functions[self.func] = self.get_function_body(taichi_kernel)
     
     
   def get_function_body(self, t_kernel):
@@ -405,7 +405,7 @@ class Kernel:
   
   def __call__(self, *args, extra_frame_backtrace=0):
     self.materialize(extra_frame_backtrace=extra_frame_backtrace)
-    self.compiled_functions[self.foo](*args)
+    self.compiled_functions[self.func](*args)
 
 
 def kernel(foo):

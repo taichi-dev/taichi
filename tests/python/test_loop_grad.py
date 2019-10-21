@@ -6,23 +6,30 @@ def test_loop_grad():
     ti.cfg.arch = arch
     x = ti.var(ti.f32)
 
-    N = 8
+    n = 16
+    m = 8
     @ti.layout
     def place():
-      ti.root.dense(ti.i, N).place(x)
+      ti.root.dense(ti.ij, (n, m)).place(x)
       ti.root.lazy_grad()
-
 
     @ti.kernel
     def func():
-      for k in range(1):
-        for i in range(N - 1):
-          x[i + 1] = x[i] * 2
+      for k in range(n):
+        for i in range(m - 1):
+          x[k, i + 1] = x[k, i] * 2
 
-    x[0] = 3
+
+    for k in range(n):
+      x[k, 0] = k
     func()
-    x.grad[N - 1] = 1
+
+    for k in range(n):
+      x.grad[k, m - 1] = 1
     func.grad()
-    assert x[N - 1] == 384
-    assert x.grad[0] == 128
+
+    for k in range(n):
+      for i in range(m):
+        assert x[k, i] == 2 ** i * k
+        assert x.grad[k, i] == 2 ** (m - 1 - i)
 

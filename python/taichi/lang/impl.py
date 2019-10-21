@@ -40,7 +40,7 @@ gen = ArgGenerator
 
 
 def decl_arg(dt):
-  if dt is np.ndarray:
+  if dt is np.ndarray or isinstance(dt, ext_arr):
     print("Warning: numpy array arg supports 1D and f32 only for now")
     id = taichi_lang_core.decl_arg(f32, True)
     return Expr(taichi_lang_core.make_external_tensor_expr(f32, 1, id))
@@ -235,9 +235,11 @@ def func(foo):
   compiled = locals()[foo.__name__]
   return compiled
 
+
 class KernelDefError(Exception):
   def __init__(self, msg):
     super().__init__(msg)
+
 
 class KernelArgError(Exception):
   def __init__(self, pos, needed, provided):
@@ -251,6 +253,7 @@ class KernelArgError(Exception):
       str(self.needed),
       str(self.provided))
 
+
 class Kernel:
   def __init__(self, foo, is_grad):
     self.foo = foo
@@ -262,7 +265,7 @@ class Kernel:
       self.compiled_functions = pytaichi.compiled_functions
     else:
       self.compiled_functions = pytaichi.compiled_grad_functions
-    
+  
   def extract_arguments(self):
     sig = inspect.signature(self.foo)
     params = sig.parameters
@@ -270,19 +273,22 @@ class Kernel:
     for arg_name in arg_names:
       param = params[arg_name]
       if param.kind == inspect.Parameter.VAR_KEYWORD:
-        raise KernelDefError('Taichi kernels do not support variable keyword parameters (i.e., **kwargs)')
+        raise KernelDefError(
+          'Taichi kernels do not support variable keyword parameters (i.e., **kwargs)')
       if param.kind == inspect.Parameter.VAR_POSITIONAL:
-        raise KernelDefError('Taichi kernels do not support variable positional parameters (i.e., *args)')
+        raise KernelDefError(
+          'Taichi kernels do not support variable positional parameters (i.e., *args)')
       if param.default is not inspect.Parameter.empty:
-        raise KernelDefError('Taichi kernels do not support default values for arguments')
+        raise KernelDefError(
+          'Taichi kernels do not support default values for arguments')
       if param.kind == inspect.Parameter.KEYWORD_ONLY:
         raise KernelDefError('Taichi kernels do not support keyword parameters')
       if param.kind != inspect.Parameter.POSITIONAL_OR_KEYWORD:
-        raise KernelDefError('Taichi kernels only support "positional or keyword" parameters')
+        raise KernelDefError(
+          'Taichi kernels only support "positional or keyword" parameters')
       if param.annotation is inspect.Parameter.empty:
         raise KernelDefError('Taichi kernels parameters must be type annotated')
       self.arguments.append(param.annotation)
-        
   
   def materialize(self, extra_frame_backtrace=-1):
     if not self.materialized:
@@ -335,7 +341,9 @@ class Kernel:
     
     # The actual function body
     def func__(*args):
-      # assert len(args) == len(self.arguments)
+      assert len(args) == len(
+        self.arguments), '{} arguments needed but {} provided'.format(
+        len(self.arguments), len(args))
       
       for i, v in enumerate(args):
         needed = self.arguments[i]
@@ -348,7 +356,8 @@ class Kernel:
           if type(v) not in [int]:
             raise KernelArgError(i, needed, provided)
           t_kernel.set_arg_int(i, int(v))
-        elif isinstance(v, np.ndarray):
+        elif isinstance(needed, ext_arr) or isinstance(needed, np.ndarray):
+          assert v.dtype == np.float32, 'Kernel arg supports single-precision (float32) np arrays only'
           tmp = np.ascontiguousarray(v)
           t_kernel.set_arg_nparray(i, int(tmp.ctypes.data), tmp.nbytes)
         else:

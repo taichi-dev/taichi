@@ -281,7 +281,7 @@ class Kernel:
         raise KernelDefError('Taichi kernels only support "positional or keyword" parameters')
       if param.annotation is inspect.Parameter.empty:
         raise KernelDefError('Taichi kernels parameters must be type annotated')
-      self.arguments.append(param)
+      self.arguments.append(param.annotation)
         
   
   def materialize(self, extra_frame_backtrace=-1):

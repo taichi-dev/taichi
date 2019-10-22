@@ -232,7 +232,7 @@ class IRPrinter : public IRVisitor {
 
   void visit(GlobalPtrStmt *stmt) override {
     std::string s =
-        fmt::format("{}{} = ptr [", stmt->type_hint(), stmt->name());
+        fmt::format("{}{} = global ptr [", stmt->type_hint(), stmt->name());
 
     for (int l = 0; l < stmt->width(); l++) {
       std::string snode_name;

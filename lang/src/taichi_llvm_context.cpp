@@ -136,13 +136,15 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
     runtime_module = module_from_bitcode_file(
         get_project_fn() + "/runtime/runtime.bc", ctx.get());
     if (arch == Arch::gpu) {
-      runtime_module->setTargetTriple("nvptx64-nvidia-cuda");
-      runtime_module->setDataLayout(jit->getDataLayout());
       auto libdevice_module = module_from_bitcode_file(
           "/usr/local/cuda-10.0/nvvm/libdevice/libdevice.10.bc", ctx.get());
 
-      bool failed = llvm::Linker::linkModules(
-          *runtime_module, llvm::CloneModule(*libdevice_module));
+      libdevice_module->setTargetTriple("nvptx64-nvidia-cuda");
+      runtime_module->setTargetTriple("nvptx64-nvidia-cuda");
+      runtime_module->setDataLayout(libdevice_module->getDataLayout());
+
+      bool failed =
+          llvm::Linker::linkModules(*runtime_module, std::move(libdevice_module));
       // runtime_module->print(llvm::errs(), nullptr);
       if (failed) {
         TC_ERROR("CUDA libdevice linking failure.");

@@ -56,5 +56,15 @@ lang_core = core
 
 print = tprint
 
+def program_test(func):
+  def test():
+    for arch in [x86_64, cuda]:
+      reset()
+      cfg.arch = arch
+      func()
+
+  return test
+
+
 __all__ = [s for s in dir() if not s.startswith('_')]
 

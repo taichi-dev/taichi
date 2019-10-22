@@ -988,6 +988,7 @@ void GPUCodeGen::lower() {
   if (prog->config.print_ir) {
     irpass::print(ir);
   }
+  irpass::constant_fold(ir);
   if (prog->config.simplify_before_lower_access) {
     irpass::simplify(ir);
     irpass::re_id(ir);

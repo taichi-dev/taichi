@@ -89,6 +89,7 @@ void vector_split(IRNode *root, int max_width, bool serial_schedule);
 void replace_all_usages_with(IRNode *root, Stmt *old_stmt, Stmt *new_stmt);
 void lower_access(IRNode *root, bool lower_atomic);
 void make_adjoint(IRNode *root);
+void constant_fold(IRNode *root);
 std::unique_ptr<ScratchPads> initialize_scratch_pad(StructForStmt *root);
 
 }  // namespace irpass
@@ -248,7 +249,10 @@ class VecStatement {
  public:
   std::vector<pStmt> stmts;
 
-  VecStatement() {
+  VecStatement() {}
+
+  VecStatement(pStmt &&stmt) {
+    push_back(std::move(stmt));
   }
 
   VecStatement(VecStatement &&o) {
@@ -1377,7 +1381,7 @@ class Block : public IRNode {
 
   void replace_with(Stmt *old_statement, std::unique_ptr<Stmt> &&new_statement);
 
-  void insert_before(Stmt *old_statement, VecStatement &new_statements) {
+  void insert_before(Stmt *old_statement, VecStatement &&new_statements) {
     int location = -1;
     for (int i = 0; i < (int)statements.size(); i++) {
       if (old_statement == statements[i].get()) {

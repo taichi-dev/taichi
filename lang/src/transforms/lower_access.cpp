@@ -151,7 +151,7 @@ class LowerAccess : public IRVisitor {
     if (stmt->ptr->is<GlobalPtrStmt>()) {
       auto lowered = lower_vector_ptr(stmt->ptr->as<GlobalPtrStmt>(), false);
       stmt->ptr = lowered.back().get();
-      stmt->parent->insert_before(stmt, lowered);
+      stmt->parent->insert_before(stmt, std::move(lowered));
       throw IRModified();
     }
   }
@@ -160,7 +160,7 @@ class LowerAccess : public IRVisitor {
     if (stmt->ptr->is<GlobalPtrStmt>()) {
       auto lowered = lower_vector_ptr(stmt->ptr->as<GlobalPtrStmt>(), true);
       stmt->ptr = lowered.back().get();
-      stmt->parent->insert_before(stmt, lowered);
+      stmt->parent->insert_before(stmt, std::move(lowered));
       throw IRModified();
     }
   }
@@ -171,7 +171,7 @@ class LowerAccess : public IRVisitor {
     if (stmt->dest->is<GlobalPtrStmt>()) {
       auto lowered = lower_vector_ptr(stmt->dest->as<GlobalPtrStmt>(), true);
       stmt->dest = lowered.back().get();
-      stmt->parent->insert_before(stmt, lowered);
+      stmt->parent->insert_before(stmt, std::move(lowered));
       throw IRModified();
     }
   }

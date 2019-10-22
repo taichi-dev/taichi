@@ -19,7 +19,7 @@ def test_loops():
 
     @ti.kernel
     def func():
-      for i in range(N // 2 + 3, N):
+      for i in range(ti.static(N // 2 + 3), N):
         x[i] = ti.abs(y[i])
 
     func()
@@ -34,6 +34,7 @@ def test_numpy_loops():
   for arch in [ti.x86_64, ti.cuda]:
     ti.reset()
     ti.cfg.arch = arch
+    ti.cfg.print_ir = True
     x = ti.var(ti.f32)
     y = ti.var(ti.f32)
 
@@ -48,8 +49,8 @@ def test_numpy_loops():
       y[i] = i - 300
 
     import numpy as np
-    begin = np.ones(1) * (N // 2 + 3)
-    end = np.ones(1) * N
+    begin = (np.ones(1) * (N // 2 + 3)).astype(np.int32)
+    end = (np.ones(1) * N).astype(np.int32)
 
     @ti.kernel
     def func():

@@ -115,23 +115,38 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::get_init_module() {
   return clone_runtime_module();
 }
 
+std::unique_ptr<llvm::Module> module_from_bitcode_file(std::string bitcode_path,
+                                                       llvm::LLVMContext *ctx) {
+  std::ifstream ifs(bitcode_path);
+  std::string bitcode(std::istreambuf_iterator<char>(ifs),
+                      (std::istreambuf_iterator<char>()));
+  auto runtime =
+      parseBitcodeFile(MemoryBufferRef(bitcode, "runtime_bitcode"), *ctx);
+  if (!runtime) {
+    TC_ERROR("Runtime bitcode load failure.");
+  }
+  bool module_broken = llvm::verifyModule(*runtime.get(), &llvm::errs());
+  TC_ERROR_IF(module_broken, "Module broken");
+  return std::move(runtime.get());
+}
+
 std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
   if (!runtime_module) {
     compile_runtime_bitcode(arch);
-    std::ifstream ifs(get_project_fn() + "/runtime/runtime.bc");
-    std::string bitcode(std::istreambuf_iterator<char>(ifs),
-                        (std::istreambuf_iterator<char>()));
-    auto runtime =
-        parseBitcodeFile(MemoryBufferRef(bitcode, "runtime_bitcode"), *ctx);
-    if (!runtime) {
-      TC_ERROR("Runtime bitcode load failure.");
-    }
-    runtime_module = std::move(runtime.get());
-    bool module_broken = llvm::verifyModule(*runtime_module, &llvm::errs());
-    TC_ERROR_IF(module_broken, "Module broken");
+    runtime_module = module_from_bitcode_file(
+        get_project_fn() + "/runtime/runtime.bc", ctx.get());
     if (arch == Arch::gpu) {
       runtime_module->setTargetTriple("nvptx64-nvidia-cuda");
       runtime_module->setDataLayout(jit->getDataLayout());
+      auto libdevice_module = module_from_bitcode_file(
+          "/usr/local/cuda-10.0/nvvm/libdevice/libdevice.10.bc", ctx.get());
+
+      bool failed = llvm::Linker::linkModules(
+          *runtime_module, llvm::CloneModule(*libdevice_module));
+      runtime_module->print(llvm::errs(), nullptr);
+      if (failed) {
+        TC_ERROR("CUDA libdevice linking failure.");
+      }
     }
     /*
     for (auto &f : *runtime_module) {

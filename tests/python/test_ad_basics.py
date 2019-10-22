@@ -4,11 +4,10 @@ import math
 import autograd.numpy as np
 from autograd import grad
 
+@ti.program_test
 def grad_test(tifunc, npfunc=None):
   if npfunc is None:
     npfunc = tifunc
-  ti.reset()
-  ti.cfg.use_llvm = True
 
   x = ti.var(ti.f32)
   y = ti.var(ti.f32)

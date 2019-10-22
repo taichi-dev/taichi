@@ -10,7 +10,7 @@ class IRPrinter : public IRVisitor {
   int current_indent;
 
   IRPrinter() {
-    current_indent = -1;
+    current_indent = 0;
   }
 
   template <typename... Args>
@@ -28,7 +28,9 @@ class IRPrinter : public IRVisitor {
   static void run(IRNode *node) {
     auto p = IRPrinter();
     fmt::print("==========\n");
+    fmt::print("kernel {{\n");
     node->accept(&p);
+    fmt::print("}}\n");
     fmt::print("==========\n");
   }
 

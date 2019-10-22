@@ -672,11 +672,17 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     auto raw_arg =
         builder->CreateCall(get_runtime_function("Context_get_args"),
                             {get_context(), tlctx->get_constant(stmt->arg_id)});
-    auto dest_ty = tlctx->get_data_type(stmt->ret_type.data_type);
-    auto truncated = builder->CreateTrunc(
-        raw_arg,
-        Type::getIntNTy(*llvm_context, dest_ty->getPrimitiveSizeInBits()));
-    stmt->value = builder->CreateBitCast(truncated, dest_ty);
+    llvm::Type *dest_ty = nullptr;
+    if (stmt->is_ptr) {
+      dest_ty = PointerType::get(tlctx->get_data_type(DataType::i32), 0);
+      stmt->value = builder->CreateIntToPtr(raw_arg, dest_ty);
+    } else {
+      dest_ty = tlctx->get_data_type(stmt->ret_type.data_type);
+      auto dest_bits = dest_ty->getPrimitiveSizeInBits();
+      auto truncated = builder->CreateTrunc(
+          raw_arg, Type::getIntNTy(*llvm_context, dest_bits));
+      stmt->value = builder->CreateBitCast(truncated, dest_ty);
+    }
   }
 
   void visit(LocalLoadStmt *stmt) {
@@ -1083,6 +1089,19 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     stmt->value = builder->CreateGEP(
         stmt->input_ptr->value,
         {tlctx->get_constant(0), tlctx->get_constant(stmt->chid)}, "getch");
+  }
+
+  void visit(ExternalPtrStmt *stmt) override {
+    TC_ASSERT(stmt->width() == 1);
+    TC_ASSERT(stmt->indices.size() == 1);
+    auto dt = stmt->ret_type.data_type;
+    stmt->value = builder->CreateBitCast(
+        stmt->base_ptrs[0]->value,
+        llvm::PointerType::get(tlctx->get_data_type(dt), 0));
+    /*
+    emit("const {} *{}[1] = {{&{}[{}]}};", data_type_name(dt), stmt->raw_name(),
+         stmt->base_ptrs[0]->raw_name(), stmt->indices[0]->raw_name());
+         */
   }
 
   ~CodeGenLLVM() {

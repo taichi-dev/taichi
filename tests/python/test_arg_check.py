@@ -36,25 +36,3 @@ def test_argument_error():
   set_i32(123)
   assert x[None] == 123
 
-
-def test_ext_arr():
-  ti.reset()
-  N = 128
-  x = ti.var(ti.f32)
-  
-  @ti.layout
-  def layout():
-    ti.root.dense(ti.i, N).place(x)
-  
-  @ti.kernel
-  def set_f32(v: ti.ext_arr()):
-    for i in range(N):
-      x[i] = v[i] + i
-  
-  import numpy as np
-  v = np.ones((N,), dtype=np.float32) * 10
-  set_f32(v)
-  for i in range(N):
-    assert x[i] == 10 + i
-
-

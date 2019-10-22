@@ -41,6 +41,8 @@ template = Template
 
 
 def decl_arg(dt):
+  if isinstance(dt, template):
+    return
   if dt is np.ndarray or isinstance(dt, ext_arr):
     print("Warning: numpy array arg supports 1D and f32 only for now")
     id = taichi_lang_core.decl_arg(f32, True)
@@ -162,6 +164,8 @@ class PyTaichi:
 
 pytaichi = PyTaichi()
 
+def get_runtime():
+  return pytaichi
 
 def make_constant_expr(val):
   if isinstance(val, int):
@@ -283,11 +287,11 @@ class Kernel:
     self.materialized = False
     self.arguments = []
     self.extract_arguments()
-    template_slot_locations = []
+    self.template_slot_locations = []
     for i in range(len(self.arguments)):
       if isinstance(self.arguments[i], template):
-        template_slot_locations.append(i)
-    self.mapper = KernelTemplateMapper(len(self.arguments), template_slot_locations)
+        self.template_slot_locations.append(i)
+    self.mapper = KernelTemplateMapper(len(self.arguments), self.template_slot_locations)
     if is_grad:
       self.compiled_functions = pytaichi.compiled_functions
     else:
@@ -333,12 +337,13 @@ class Kernel:
     
     src = remove_indent(inspect.getsource(self.func))
     tree = ast.parse(src)
-    # print(astor.to_source(tree.body[0]))
+    if pytaichi.print_preprocessed:
+      print(astor.to_source(tree.body[0]))
     
     func_body = tree.body[0]
     func_body.decorator_list = []
     
-    visitor = ASTTransformer()
+    visitor = ASTTransformer(excluded_paremeters=self.template_slot_locations)
     
     visitor.visit(tree)
     ast.fix_missing_locations(tree)
@@ -374,6 +379,8 @@ class Kernel:
     
       for i, v in enumerate(args):
         needed = self.arguments[i]
+        if isinstance(needed, template):
+          continue
         provided = type(v)
         if needed == f32:
           if type(v) not in [float, int]:

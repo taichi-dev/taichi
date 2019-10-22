@@ -1,9 +1,8 @@
 from .impl import *
 from .matrix import Matrix
 
-print = tprint
 core = taichi_lang_core
-runtime = pytaichi
+runtime = get_runtime()
 
 i = indices(0)
 j = indices(1)
@@ -20,6 +19,12 @@ x86_64 = core.x86_64
 cuda = core.gpu
 profiler_print = lambda: core.get_current_program().profiler_print()
 profiler_clear = lambda: core.get_current_program().profiler_clear()
+
+def reset():
+  from .impl import reset as impl_reset
+  impl_reset()
+  global runtime
+  runtime = get_runtime()
 
 def cache_shared(v):
   taichi_lang_core.cache(0, v.ptr)
@@ -48,6 +53,8 @@ def clear_all_gradients():
 
 schedules = [parallelize, vectorize, block_dim, cache]
 lang_core = core
+
+print = tprint
 
 __all__ = [s for s in dir() if not s.startswith('_')]
 

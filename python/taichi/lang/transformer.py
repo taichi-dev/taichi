@@ -14,9 +14,10 @@ class ScopeGuard:
 
 # Single-pass transform
 class ASTTransformer(ast.NodeTransformer):
-  def __init__(self, transform_args=True):
+  def __init__(self, excluded_paremeters=(), transform_args=True):
     super().__init__()
     self.local_scopes = []
+    self.excluded_parameters = excluded_paremeters
     self.transform_args = transform_args
 
   def variable_scope(self):
@@ -268,6 +269,8 @@ if 1:
     if self.transform_args:
       arg_decls = []
       for i, arg in enumerate(args.args):
+        if i in self.excluded_parameters:
+          continue # skip template parameters
         arg_init = self.parse_stmt('x = ti.decl_arg(0)')
         arg_init.targets[0].id = arg.arg
         arg_init.value.args[0] = arg.annotation

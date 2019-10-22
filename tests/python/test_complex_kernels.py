@@ -1,5 +1,4 @@
 import taichi as ti
-from pytest import approx
 
 def test_complex_kernels():
   for arch in [ti.x86_64, ti.cuda]:

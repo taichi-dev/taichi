@@ -383,6 +383,7 @@ class Kernel:
         self.arguments), '{} arguments needed but {} provided'.format(
         len(self.arguments), len(args))
     
+      actual_argument_slot = 0
       for i, v in enumerate(args):
         needed = self.arguments[i]
         if isinstance(needed, template):
@@ -391,15 +392,15 @@ class Kernel:
         if needed == f32:
           if type(v) not in [float, int]:
             raise KernelArgError(i, needed, provided)
-          t_kernel.set_arg_float(i, float(v))
+          t_kernel.set_arg_float(actual_argument_slot, float(v))
         elif needed == i32:
           if type(v) not in [int]:
             raise KernelArgError(i, needed, provided)
-          t_kernel.set_arg_int(i, int(v))
+          t_kernel.set_arg_int(actual_argument_slot, int(v))
         elif isinstance(needed, ext_arr) or isinstance(needed, np.ndarray):
           assert v.dtype == np.float32, 'Kernel arg supports single-precision (float32) np arrays only'
           tmp = np.ascontiguousarray(v)
-          t_kernel.set_arg_nparray(i, int(tmp.ctypes.data), tmp.nbytes)
+          t_kernel.set_arg_nparray(actual_argument_slot, int(tmp.ctypes.data), tmp.nbytes)
         else:
           has_torch = False
           try:
@@ -414,10 +415,11 @@ class Kernel:
               assert pytaichi.prog.config.arch == taichi_lang_core.Arch.gpu, 'Torch tensor on GPU yet taichi is on CPU'
             else:
               assert pytaichi.prog.config.arch == taichi_lang_core.Arch.x86_64, 'Torch tensor on CPU yet taichi is on GPU'
-            t_kernel.set_arg_nparray(i, int(tmp.data_ptr()),
+            t_kernel.set_arg_nparray(actual_argument_slot, int(tmp.data_ptr()),
                                      tmp.element_size() * tmp.nelement())
           else:
             assert False, 'Argument to kernels must have type float/int. If you are passing a PyTorch tensor, make sure it is on the same device (CPU/GPU) as taichi.'
+        actual_argument_slot += 1
       if pytaichi.target_tape:
         pytaichi.target_tape.insert(self, args)
       t_kernel()

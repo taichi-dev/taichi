@@ -54,10 +54,9 @@ int printf(const char *, ...);
     return std::F(x);             \
   }
 
+// sin and cos are already included in llvm intrinsics
 DEFINE_UNARY_REAL_FUNC(exp)
 DEFINE_UNARY_REAL_FUNC(log)
-DEFINE_UNARY_REAL_FUNC(sin)
-DEFINE_UNARY_REAL_FUNC(cos)
 DEFINE_UNARY_REAL_FUNC(tan)
 DEFINE_UNARY_REAL_FUNC(tanh)
 DEFINE_UNARY_REAL_FUNC(abs)

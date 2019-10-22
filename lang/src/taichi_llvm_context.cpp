@@ -143,7 +143,7 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
 
       bool failed = llvm::Linker::linkModules(
           *runtime_module, llvm::CloneModule(*libdevice_module));
-      runtime_module->print(llvm::errs(), nullptr);
+      // runtime_module->print(llvm::errs(), nullptr);
       if (failed) {
         TC_ERROR("CUDA libdevice linking failure.");
       }

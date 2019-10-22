@@ -6,6 +6,7 @@ from autograd import grad
 
 @ti.program_test
 def grad_test(tifunc, npfunc=None):
+  ti.cfg.print_ir = True
   if npfunc is None:
     npfunc = tifunc
 
@@ -54,9 +55,9 @@ def test_poly():
   grad_test(lambda x: (x - 3) * (x - 1) + x * x)
 
 def test_trigonometric():
+  grad_test(lambda x: ti.tanh(x), lambda x: np.tanh(x))
   grad_test(lambda x: ti.sin(x), lambda x: np.sin(x))
   grad_test(lambda x: ti.cos(x), lambda x: np.cos(x))
-  grad_test(lambda x: ti.tanh(x), lambda x: np.tanh(x))
 
 def test_frac():
   grad_test(lambda x: 1 / x)

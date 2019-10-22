@@ -32,6 +32,8 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
 
   CodeGenLLVMGPU(CodeGenBase *codegen_base, Kernel *kernel)
       : CodeGenLLVM(codegen_base, kernel) {
+    kernel_grid_dim = 1;
+    kernel_block_dim = 1;
   }
 
   FunctionType compile_module_to_executable() override {
@@ -66,9 +68,10 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
 
     auto ptx = compile_module_to_ptx(module);
     auto cuda_kernel = cuda_context.compile(ptx, kernel_name);
-    return [=](Context context) {
-      cuda_context.launch(cuda_kernel, &context, kernel_grid_dim,
-                          kernel_block_dim);
+    auto grid_dim = kernel_grid_dim;
+    auto block_dim = kernel_block_dim;
+    return [grid_dim, block_dim, cuda_kernel](Context context) {
+      cuda_context.launch(cuda_kernel, &context, grid_dim, block_dim);
     };
 #else
     TC_NOT_IMPLEMENTED;

@@ -4,6 +4,9 @@ def test_complex_kernels():
   for arch in [ti.x86_64, ti.cuda]:
     ti.reset()
     ti.cfg.arch = arch
+    if ti.cfg.use_llvm:
+      # LLVM currently does not support this...
+      continue
 
     a = ti.var(ti.f32)
     b = ti.var(ti.f32)
@@ -14,6 +17,7 @@ def test_complex_kernels():
     def place():
       ti.root.dense(ti.i, n).place(a, b)
 
+    # Note: the CUDA backend can indeed translate this into multiple kernel launches
     @ti.kernel
     def add():
       for i in range(n):

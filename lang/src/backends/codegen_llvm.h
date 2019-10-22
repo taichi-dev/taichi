@@ -36,6 +36,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
 
   llvm::Value *current_coordinates;
   bool offloaded;
+  llvm::BasicBlock *while_after_loop;
 
   void initialize_context() {
     if (get_current_program().config.arch == Arch::gpu) {
@@ -57,6 +58,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
         kernel(kernel) {
     offloaded = false;
     initialize_context();
+    while_after_loop = nullptr;
 
     using namespace llvm;
 
@@ -509,15 +511,32 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   }
 
   void visit(WhileControlStmt *stmt) {
-    emit("{} = bit_and({}, {});", stmt->mask->raw_name(),
-         stmt->mask->raw_name(), stmt->cond->raw_name());
-    emit("if (!any({})) break;", stmt->mask->raw_name());
+    BasicBlock *after_break =
+        BasicBlock::Create(*llvm_context, "after_break", func);
+    TC_ASSERT(while_after_loop);
+    auto cond =
+        builder->CreateICmpEQ(stmt->cond->value, tlctx->get_constant(0));
+    builder->CreateCondBr(cond, while_after_loop, after_break);
+    builder->SetInsertPoint(after_break);
   }
 
   void visit(WhileStmt *stmt) {
-    emit("while (1) {{");
+    BasicBlock *body =
+        BasicBlock::Create(*llvm_context, "while_loop_body", func);
+    builder->CreateBr(body);
+    builder->SetInsertPoint(body);
+
+    BasicBlock *after_loop =
+        BasicBlock::Create(*llvm_context, "after_while", func);
+    auto old_while_after_loop = while_after_loop;
+    while_after_loop = after_loop;
+
     stmt->body->accept(this);
-    emit("}}");
+
+    builder->CreateBr(body);  // jump to head
+
+    builder->SetInsertPoint(after_loop);
+    while_after_loop = old_while_after_loop;
   }
 
   llvm::Value *call(std::string func_name, std::vector<llvm::Value *> value) {
@@ -668,16 +687,15 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     llvm::Value *cond = nullptr;
     if (!for_stmt->reversed) {
       create_increment(for_stmt->loop_var->value, tlctx->get_constant(1));
-      cond = builder->CreateICmp(
-          llvm::CmpInst::Predicate::ICMP_SLT,
-          builder->CreateLoad(for_stmt->loop_var->value), for_stmt->end->value);
+      cond = builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_SLT,
+                                 builder->CreateLoad(for_stmt->loop_var->value),
+                                 for_stmt->end->value);
     } else {
       create_increment(for_stmt->loop_var->value, tlctx->get_constant(-1));
-      cond = builder->CreateICmp(
-          llvm::CmpInst::Predicate::ICMP_SGE,
-          builder->CreateLoad(for_stmt->loop_var->value), for_stmt->begin->value);
+      cond = builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_SGE,
+                                 builder->CreateLoad(for_stmt->loop_var->value),
+                                 for_stmt->begin->value);
     }
-
 
     builder->CreateCondBr(cond, body, after_loop);
 
@@ -726,7 +744,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
 
   void visit(LocalStoreStmt *stmt) {
     auto mask = stmt->parent->mask();
-    if (mask) {
+    if (mask && stmt->width() != 1) {
       TC_NOT_IMPLEMENTED
     } else {
       builder->CreateStore(stmt->data->value, stmt->ptr->value);

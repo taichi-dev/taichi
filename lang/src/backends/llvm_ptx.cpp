@@ -121,7 +121,6 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
       create_naive_range_for(for_stmt);
     } else {
       offloaded = true;
-      TC_P(for_stmt->begin->type());
       auto loop_begin = for_stmt->begin->as<ConstStmt>()->val[0].val_int32();
       auto loop_end = for_stmt->end->as<ConstStmt>()->val[0].val_int32();
       auto loop_block_dim = for_stmt->block_size;

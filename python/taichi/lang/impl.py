@@ -284,8 +284,8 @@ class Kernel:
   def __init__(self, func, is_grad):
     self.func = func
     self.is_grad = is_grad
-    self.materialized = False
     self.arguments = []
+    self.argument_names = []
     self.extract_arguments()
     self.template_slot_locations = []
     for i in range(len(self.arguments)):
@@ -320,16 +320,15 @@ class Kernel:
       if param.annotation is inspect.Parameter.empty:
         raise KernelDefError('Taichi kernels parameters must be type annotated')
       self.arguments.append(param.annotation)
+      self.argument_names.append(param.name)
   
   def materialize(self, key=None, args=None, extra_frame_backtrace=-1):
     if key is None:
       key = (self.func, 0)
-    if not self.materialized:
-      self.materialized = True
-    else:
-      return
     if not pytaichi.materialized:
       pytaichi.materialize()
+    if key in self.compiled_functions:
+      return
     grad_suffix = ""
     if self.is_grad:
       grad_suffix = "_grad"
@@ -357,8 +356,15 @@ class Kernel:
     frame = inspect.currentframe()
     for t in range(extra_frame_backtrace + 2):
       frame = frame.f_back
+    globals = dict(frame.f_globals, **frame.f_locals)
+    # inject template parameters into globals
+    
+    for i in self.template_slot_locations:
+      template_var_name = self.argument_names[i]
+      globals[template_var_name] = args[i]
+      
     exec(compile(tree, filename=inspect.getsourcefile(self.func), mode='exec'),
-         dict(frame.f_globals, **frame.f_locals), locals())
+         globals, locals())
     pytaichi.inside_kernel = False
     compiled = locals()[self.func.__name__]
     

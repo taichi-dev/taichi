@@ -116,6 +116,42 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
                                llvm::Type::getInt8PtrTy(*llvm_context)));
   }
 
+  void emit_extra_unary(UnaryOpStmt *stmt) override {
+    // functions from libdevice
+    auto input = stmt->operand->value;
+    auto input_taichi_type = stmt->operand->ret_type.data_type;
+    auto input_type = input->getType();
+    auto op = stmt->op_type;
+
+#define UNARY_STD(x)                                                        \
+  else if (op == UnaryOpType::x) {                                          \
+    if (input_taichi_type == DataType::f32) {                               \
+      stmt->value =                                                         \
+          builder->CreateCall(get_runtime_function("__nv_" #x "f"), input); \
+    } else if (input_taichi_type == DataType::f64) {                        \
+      stmt->value =                                                         \
+          builder->CreateCall(get_runtime_function("__nv_" #x), input);     \
+    } else if (input_taichi_type == DataType::i32) {                        \
+      stmt->value = builder->CreateCall(get_runtime_function(#x), input);   \
+    } else {                                                                \
+      TC_NOT_IMPLEMENTED                                                    \
+    }                                                                       \
+  }
+    if (false) {
+    }
+    UNARY_STD(abs)
+    UNARY_STD(exp)
+    UNARY_STD(log)
+    UNARY_STD(tan)
+    UNARY_STD(tanh)
+    UNARY_STD(sgn)
+    else {
+      TC_P(unary_op_type_name(op));
+      TC_NOT_IMPLEMENTED
+    }
+#undef UNARY_STD
+  }
+
   void visit(RangeForStmt *for_stmt) override {
     if (offloaded) {
       create_naive_range_for(for_stmt);

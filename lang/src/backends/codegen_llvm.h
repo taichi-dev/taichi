@@ -649,10 +649,15 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
 
   // Direct translation
   void create_naive_range_for(RangeForStmt *for_stmt) {
-    TC_ASSERT(!for_stmt->reversed);
     BasicBlock *body = BasicBlock::Create(*llvm_context, "loop_body", func);
     BasicBlock *after_loop = BasicBlock::Create(*llvm_context, "block", func);
-    builder->CreateStore(for_stmt->begin->value, for_stmt->loop_var->value);
+    if (!for_stmt->reversed) {
+      builder->CreateStore(for_stmt->begin->value, for_stmt->loop_var->value);
+    } else {
+      builder->CreateStore(
+          builder->CreateSub(for_stmt->end->value, tlctx->get_constant(1)),
+          for_stmt->loop_var->value);
+    }
     builder->CreateBr(body);
 
     // body cfg
@@ -660,11 +665,19 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
 
     for_stmt->body->accept(this);
 
-    create_increment(for_stmt->loop_var->value, tlctx->get_constant(1));
+    llvm::Value *cond = nullptr;
+    if (!for_stmt->reversed) {
+      create_increment(for_stmt->loop_var->value, tlctx->get_constant(1));
+      cond = builder->CreateICmp(
+          llvm::CmpInst::Predicate::ICMP_SLT,
+          builder->CreateLoad(for_stmt->loop_var->value), for_stmt->end->value);
+    } else {
+      create_increment(for_stmt->loop_var->value, tlctx->get_constant(-1));
+      cond = builder->CreateICmp(
+          llvm::CmpInst::Predicate::ICMP_SGE,
+          builder->CreateLoad(for_stmt->loop_var->value), for_stmt->begin->value);
+    }
 
-    auto cond = builder->CreateICmp(
-        llvm::CmpInst::Predicate::ICMP_SLT,
-        builder->CreateLoad(for_stmt->loop_var->value), for_stmt->end->value);
 
     builder->CreateCondBr(cond, body, after_loop);
 

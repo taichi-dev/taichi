@@ -263,6 +263,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
         stmt->value = builder->CreateFNeg(input, "neg");
       }
       UNARY_INTRINSIC(sin)
+      UNARY_INTRINSIC(sin)
       UNARY_INTRINSIC(cos)
       UNARY_INTRINSIC(sqrt)
       UNARY_INTRINSIC(floor)
@@ -273,17 +274,24 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     if (input_taichi_type == DataType::f32) {                          \
       stmt->value =                                                    \
           builder->CreateCall(get_runtime_function(#x "_f32"), input); \
-    } else {                                                           \
+    } else if (input_taichi_type == DataType::f64) {                   \
       stmt->value =                                                    \
           builder->CreateCall(get_runtime_function(#x "_f64"), input); \
+    } else if (input_taichi_type == DataType::i32) {                   \
+      stmt->value =                                                    \
+          builder->CreateCall(get_runtime_function(#x "_i32"), input); \
+    } else {                                                           \
+      TC_NOT_IMPLEMENTED                                               \
     }                                                                  \
   }
+      UNARY_STD(abs)
       UNARY_STD(exp)
       UNARY_STD(log)
       UNARY_STD(sin)
       UNARY_STD(cos)
       UNARY_STD(tan)
       UNARY_STD(tanh)
+      UNARY_STD(sgn)
 #undef UNARY_STD
       else {
         TC_P(unary_op_type_name(op));

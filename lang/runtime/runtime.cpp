@@ -28,7 +28,11 @@
     s->F[i] = f;                                                             \
   }
 
+using int32 = int32_t;
+using int64 = int64_t;
 using float32 = float;
+using float64 = double;
+
 constexpr int taichi_max_num_indices = 4;
 constexpr int taichi_max_num_args = 8;
 
@@ -56,6 +60,11 @@ DEFINE_UNARY_REAL_FUNC(sin)
 DEFINE_UNARY_REAL_FUNC(cos)
 DEFINE_UNARY_REAL_FUNC(tan)
 DEFINE_UNARY_REAL_FUNC(tanh)
+DEFINE_UNARY_REAL_FUNC(abs)
+
+int abs_i32(int a) {
+  return std::abs(a);
+}
 
 int max_i32(int a, int b) {
   return a > b ? a : b;
@@ -63,6 +72,28 @@ int max_i32(int a, int b) {
 
 int min_i32(int a, int b) {
   return a < b ? a : b;
+}
+
+float32 sgn_f32(float32 a) {
+  int32 b;
+  if (a > 0)
+    b = 1;
+  else if (a < 0)
+    b = -1;
+  else
+    b = 0;
+  return b;
+}
+
+float32 sgn_f64(float64 a) {
+  int32 b;
+  if (a > 0)
+    b = 1;
+  else if (a < 0)
+    b = -1;
+  else
+    b = 0;
+  return b;
 }
 
 struct PhysicalCoordinates {

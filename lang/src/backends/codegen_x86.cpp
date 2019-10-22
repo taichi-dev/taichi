@@ -655,6 +655,7 @@ void CPUCodeGen::lower() {
     // TC_TRACE("Primal:");
     // irpass::print(ir);
     irpass::make_adjoint(ir);
+    irpass::typecheck(ir);
     if (prog->config.print_ir) {
       TC_TRACE("Adjoint:");
       irpass::re_id(ir);

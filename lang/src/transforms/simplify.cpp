@@ -242,20 +242,31 @@ class BasicBlockSimplify : public IRVisitor {
       }
     }
     if (regular) {
-      for (int i = current_stmt_id - 1; i >= 0; i--) {
-        auto &bstmt = block->statements[i];
-        if (bstmt->is<LocalStoreStmt>()) {
-          auto bstmt_ = bstmt->as<LocalStoreStmt>();
-          if (bstmt_->ptr == alloca) {
-            // forward
-            stmt->replace_with(bstmt_->data);
-            stmt->parent->erase(current_stmt_id);
-            throw IRModified();
+      // Check all previous statements in the current block before the local load
+      auto block = stmt->parent;
+      while (true) {
+        auto stmt_id = stmt->parent->locate(stmt);
+        TC_ASSERT(current_stmt_id == stmt_id);
+        for (int i = current_stmt_id - 1; i >= 0; i--) {
+          auto &bstmt = block->statements[i];
+          // Find a previous store
+          if (bstmt->is<LocalStoreStmt>()) {
+            auto bstmt_ = bstmt->as<LocalStoreStmt>();
+            // Same alloca
+            if (bstmt_->ptr == alloca) {
+              // Forward to the first local store only
+              stmt->replace_with(bstmt_->data);
+              stmt->parent->erase(current_stmt_id);
+              throw IRModified();
+            }
+          } else if (bstmt->is_container_statement()) {
+            // assume this container may modify the local var
+            break;
           }
-        } else if (bstmt->is_container_statement()) {
-          // assume this container may modify the local var
-          break;
         }
+        break;
+        // block = block->parent; // TODO: how to find the stmt of this block?
+        //if ()
       }
     }
     set_done(stmt);

@@ -428,7 +428,13 @@ class GPUIRCodeGen : public IRVisitor {
         // CPU Kernel code
         emit("extern \"C\" void {} (Context context) {{\n", codegen->func_name);
         emit("gpu_runtime_init();");
+
+        if (cfg.enable_profiler)
+          emit(R"(GPUProfiler::get_instance().start("{}");)",
+               current_func_name());
         emit("{}_kernel<<<1, 1>>>(context);", codegen->func_name);
+        if (cfg.enable_profiler)
+          emit(R"(GPUProfiler::get_instance().stop();)");
         emit("}}\n\n");
       }
     } else {

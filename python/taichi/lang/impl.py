@@ -318,6 +318,8 @@ class Kernel:
       self.arguments.append(param.annotation)
   
   def materialize(self, key=None, args=None, extra_frame_backtrace=-1):
+    if key is None:
+      key = (self.func, 0)
     if not self.materialized:
       self.materialized = True
     else:

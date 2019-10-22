@@ -370,6 +370,11 @@ CompileConfig::CompileConfig() {
   external_optimization_level = 3;
   print_ir = false;
   use_llvm = false;
+  auto use_llvm_char = getenv("TI_LLVM");
+  if (use_llvm_char != nullptr and use_llvm_char[0] == '1') {
+    use_llvm = true;
+    TC_INFO("Using LLVM by default (env TI_LLVM=1)");
+  }
   print_struct_llvm_ir = false;
   print_kernel_llvm_ir = false;
   max_vector_width = 8;

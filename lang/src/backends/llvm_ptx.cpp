@@ -137,9 +137,20 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
       TC_NOT_IMPLEMENTED                                                    \
     }                                                                       \
   }
-    if (false) {
+    if (op == UnaryOpType::abs) {
+      if (input_taichi_type == DataType::f32) {
+        stmt->value =
+            builder->CreateCall(get_runtime_function("__nv_fabsf"), input);
+      } else if (input_taichi_type == DataType::f64) {
+        stmt->value =
+            builder->CreateCall(get_runtime_function("__nv_fabs"), input);
+      } else if (input_taichi_type == DataType::i32) {
+        stmt->value =
+            builder->CreateCall(get_runtime_function("__nv_abs"), input);
+      } else {
+        TC_NOT_IMPLEMENTED
+      }
     }
-    UNARY_STD(abs)
     UNARY_STD(exp)
     UNARY_STD(log)
     UNARY_STD(tan)

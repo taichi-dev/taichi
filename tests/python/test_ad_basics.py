@@ -6,7 +6,6 @@ from autograd import grad
 
 @ti.program_test
 def grad_test(tifunc, npfunc=None):
-  ti.cfg.print_ir = True
   if npfunc is None:
     npfunc = tifunc
 

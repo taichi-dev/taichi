@@ -33,6 +33,10 @@ using int64 = int64_t;
 using float32 = float;
 using float64 = double;
 
+using i32 = int32;
+using f32 = float32;
+using f64 = float64;
+
 constexpr int taichi_max_num_indices = 4;
 constexpr int taichi_max_num_args = 8;
 
@@ -74,7 +78,7 @@ int min_i32(int a, int b) {
 }
 
 float32 sgn_f32(float32 a) {
-  int32 b;
+  float32 b;
   if (a > 0)
     b = 1;
   else if (a < 0)
@@ -84,8 +88,8 @@ float32 sgn_f32(float32 a) {
   return b;
 }
 
-float32 sgn_f64(float64 a) {
-  int32 b;
+float64 sgn_f64(float64 a) {
+  float32 b;
   if (a > 0)
     b = 1;
   else if (a < 0)
@@ -93,6 +97,14 @@ float32 sgn_f64(float64 a) {
   else
     b = 0;
   return b;
+}
+
+auto __nv_sgnf(f32 x) {
+  return sgn_f32(x);
+}
+
+auto __nv_sgn(f64 x) {
+  return sgn_f64(x);
 }
 
 struct PhysicalCoordinates {

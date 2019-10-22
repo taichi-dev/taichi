@@ -48,6 +48,27 @@ def test_linear_nested():
     assert x[i] == i
     assert y[i] == i + 123
 
+def test_linear_nested_aos():
+  ti.reset()
+  ti.cfg.use_llvm = True
+
+  x = ti.var(ti.i32)
+  y = ti.var(ti.i32)
+
+  n = 128
+
+  @ti.layout
+  def place():
+    ti.root.dense(ti.i, n // 16).dense(ti.i, 16).place(x, y)
+
+  for i in range(n):
+    x[i] = i
+    y[i] = i + 123
+
+  for i in range(n):
+    assert x[i] == i
+    assert y[i] == i + 123
+
 def test_2d_nested():
   ti.reset()
   ti.cfg.use_llvm = True

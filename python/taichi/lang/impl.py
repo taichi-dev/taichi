@@ -332,7 +332,8 @@ class Kernel:
     grad_suffix = ""
     if self.is_grad:
       grad_suffix = "_grad"
-    print("Compiling kernel {}{}...".format(self.func.__name__, grad_suffix))
+    kernel_name = "{}_{}_{}".format(self.func.__name__, key[1], grad_suffix)
+    print("Compiling kernel {}...".format(kernel_name))
     
     src = remove_indent(inspect.getsource(self.func))
     tree = ast.parse(src)
@@ -368,8 +369,7 @@ class Kernel:
     pytaichi.inside_kernel = False
     compiled = locals()[self.func.__name__]
     
-    taichi_kernel = taichi_lang_core.create_kernel(self.func.__name__ + grad_suffix,
-                                                   self.is_grad)
+    taichi_kernel = taichi_lang_core.create_kernel(kernel_name, self.is_grad)
     taichi_kernel = taichi_kernel.define(lambda: compiled())
     
     assert key not in self.compiled_functions

@@ -1,5 +1,6 @@
 import taichi as ti
 
+@ti.program_test
 def test_complex_kernels():
   for arch in [ti.x86_64, ti.cuda]:
     ti.reset()

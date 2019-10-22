@@ -1,5 +1,6 @@
 import taichi as ti
 
+@ti.program_test
 def test_static_if():
   for val in [0, 1]:
     ti.reset()

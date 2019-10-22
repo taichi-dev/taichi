@@ -1,9 +1,8 @@
 import taichi as ti
 
-def test_linear():
-  ti.reset()
-  ti.cfg.use_llvm = True
 
+@ti.program_test
+def test_linear():
   x = ti.var(ti.i32)
   y = ti.var(ti.i32)
 
@@ -21,15 +20,15 @@ def test_linear():
   for i in range(n):
     assert x[i] == i
     assert y[i] == i + 123
-    
+
+
 def test_linear_repeated():
   for i in range(10):
     test_linear()
-  
-def test_linear_nested():
-  ti.reset()
-  ti.cfg.use_llvm = True
 
+
+@ti.program_test
+def test_linear_nested():
   x = ti.var(ti.i32)
   y = ti.var(ti.i32)
 
@@ -48,10 +47,9 @@ def test_linear_nested():
     assert x[i] == i
     assert y[i] == i + 123
 
-def test_linear_nested_aos():
-  ti.reset()
-  ti.cfg.use_llvm = True
 
+@ti.program_test
+def test_linear_nested_aos():
   x = ti.var(ti.i32)
   y = ti.var(ti.i32)
 
@@ -69,10 +67,9 @@ def test_linear_nested_aos():
     assert x[i] == i
     assert y[i] == i + 123
 
-def test_2d_nested():
-  ti.reset()
-  ti.cfg.use_llvm = True
 
+@ti.program_test
+def test_2d_nested():
   x = ti.var(ti.i32)
 
   n = 128

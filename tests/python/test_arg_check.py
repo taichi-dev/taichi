@@ -1,7 +1,7 @@
 import taichi as ti
 
+@ti.program_test
 def test_argument_error():
-  ti.reset()
   x = ti.var(ti.i32)
   
   @ti.layout

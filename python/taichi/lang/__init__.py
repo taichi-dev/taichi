@@ -57,11 +57,11 @@ lang_core = core
 print = tprint
 
 def program_test(func):
-  def test():
+  def test(*args, **kwargs):
     for arch in [x86_64, cuda]:
       reset()
       cfg.arch = arch
-      func()
+      func(*args, **kwargs)
 
   return test
 

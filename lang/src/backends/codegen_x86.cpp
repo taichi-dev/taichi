@@ -645,7 +645,7 @@ void CPUCodeGen::lower() {
   if (prog->config.simplify_before_lower_access) {
     irpass::simplify(ir);
     if (prog->config.print_ir) {
-      TC_TRACE("DupEliminated:");
+      TC_TRACE("Simplified I:");
       irpass::re_id(ir);
       irpass::print(ir);
     }
@@ -677,7 +677,7 @@ void CPUCodeGen::lower() {
       }
       irpass::simplify(ir);
       if (prog->config.print_ir) {
-        TC_TRACE("DupEliminated2:");
+        TC_TRACE("Simplified II:");
         irpass::re_id(ir);
         irpass::print(ir);
       }

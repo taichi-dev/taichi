@@ -991,8 +991,10 @@ void GPUCodeGen::lower() {
   if (prog->config.simplify_before_lower_access) {
     irpass::simplify(ir);
     irpass::re_id(ir);
-    if (prog->config.print_ir)
+    if (prog->config.print_ir) {
+      TC_TRACE("Simplified I:");
       irpass::print(ir);
+    }
   }
   if (kernel->grad) {
     // irpass::re_id(ir);
@@ -1019,7 +1021,7 @@ void GPUCodeGen::lower() {
       }
       irpass::simplify(ir);
       if (prog->config.print_ir) {
-        TC_TRACE("DupEliminated2:");
+        TC_TRACE("Simplified II:");
         irpass::re_id(ir);
         irpass::print(ir);
       }

@@ -242,12 +242,15 @@ class BasicBlockSimplify : public IRVisitor {
       }
     }
     if (regular) {
-      // Check all previous statements in the current block before the local load
+      // Check all previous statements in the current block before the local
+      // load
       auto block = stmt->parent;
+      Stmt *containing_statement = stmt;
+      bool modified = false;
       while (true) {
-        auto stmt_id = stmt->parent->locate(stmt);
-        TC_ASSERT(current_stmt_id == stmt_id);
-        for (int i = current_stmt_id - 1; i >= 0; i--) {
+        auto stmt_id = block->locate(containing_statement);
+        TC_ASSERT(stmt_id != -1);
+        for (int i = stmt_id - 1; i >= 0; i--) {
           auto &bstmt = block->statements[i];
           // Find a previous store
           if (bstmt->is<LocalStoreStmt>()) {
@@ -261,12 +264,33 @@ class BasicBlockSimplify : public IRVisitor {
             }
           } else if (bstmt->is_container_statement()) {
             // assume this container may modify the local var
+            modified = true;
             break;
           }
         }
         break;
-        // block = block->parent; // TODO: how to find the stmt of this block?
-        //if ()
+        /*
+        // Note: simply checking all statements before stmt is not sufficient
+        // since statements after stmt may change the value of the alloca
+        if (modified) break;
+        // Go to parent level
+        auto parent_block = block->parent;
+        if (!parent_block)
+          break;
+        Stmt *parent_statement = nullptr;
+        for (int i = 0; i < parent_block->statements.size(); i++) {
+          auto s = parent_block->statements[i].get();
+          if (s->is<RangeForStmt>() &&
+              s->as<RangeForStmt>()->body.get() == block) {
+            parent_statement = s;
+            break;
+          }
+        }
+        if (!parent_statement)
+          break;
+        block = parent_block;
+        containing_statement = parent_statement;
+        */
       }
     }
     set_done(stmt);

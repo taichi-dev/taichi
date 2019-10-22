@@ -1,7 +1,6 @@
 import taichi as ti
 
 def test_loop_grad():
-  return
   for arch in [ti.x86_64, ti.cuda]:
     ti.reset()
     ti.cfg.arch = arch

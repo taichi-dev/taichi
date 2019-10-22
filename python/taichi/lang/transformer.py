@@ -106,17 +106,12 @@ if 1:
       list_stmt[i] = self.visit(l)
 
   def visit_If(self, node):
-    old = False
-    if old:
+    with self.variable_scope():
+      node.test = self.visit(node.test)
       with self.variable_scope():
-        self.generic_visit(node)
-    else:
+        self.visit_block(node.body)
       with self.variable_scope():
-        node.test = self.visit(node.test)
-        with self.variable_scope():
-          self.visit_block(node.body)
-        with self.variable_scope():
-          self.visit_block(node.orelse)
+        self.visit_block(node.orelse)
 
     is_static_if = isinstance(node.test,
                                ast.Call) and isinstance(node.test.func,

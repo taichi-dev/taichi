@@ -377,12 +377,18 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       }
     } else if (op == BinaryOpType::mod) {
       stmt->value = builder->CreateSRem(stmt->lhs->value, stmt->rhs->value);
+    } else if (op == BinaryOpType::bit_and) {
+      stmt->value = builder->CreateAnd(stmt->lhs->value, stmt->rhs->value);
+    } else if (op == BinaryOpType::bit_or) {
+      stmt->value = builder->CreateOr(stmt->lhs->value, stmt->rhs->value);
+    } else if (op == BinaryOpType::bit_xor) {
+      stmt->value = builder->CreateXor(stmt->lhs->value, stmt->rhs->value);
     } else if (op == BinaryOpType::max) {
       if (is_real(ret_type)) {
         stmt->value = builder->CreateMaxNum(stmt->lhs->value, stmt->rhs->value);
       } else if (ret_type == DataType::i32) {
         stmt->value =
-            create_call("int32_max", {stmt->lhs->value, stmt->rhs->value});
+            create_call("max_i32", {stmt->lhs->value, stmt->rhs->value});
       } else {
         TC_P(data_type_name(ret_type));
         TC_NOT_IMPLEMENTED
@@ -392,7 +398,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
         stmt->value = builder->CreateMinNum(stmt->lhs->value, stmt->rhs->value);
       } else if (ret_type == DataType::i32) {
         stmt->value =
-            create_call("int32_min", {stmt->lhs->value, stmt->rhs->value});
+            create_call("min_i32", {stmt->lhs->value, stmt->rhs->value});
       } else {
         TC_P(data_type_name(ret_type));
         TC_NOT_IMPLEMENTED

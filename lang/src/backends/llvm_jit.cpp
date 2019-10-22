@@ -8,6 +8,7 @@
 #endif
 #include "llvm_jit.h"
 #include <taichi/context.h>
+#include <taichi/system/timer.h>
 #include "cuda_context.h"
 
 TLANG_NAMESPACE_BEGIN
@@ -128,8 +129,8 @@ std::string compile_module_to_ptx(std::unique_ptr<llvm::Module> &module) {
   PassManagerBuilder b;
   b.OptLevel = 3;
   b.Inliner = createFunctionInliningPass(b.OptLevel, 0, false);
-  b.LoopVectorize = true;
-  b.SLPVectorize = true;
+  b.LoopVectorize = false;
+  b.SLPVectorize = false;
 
   target_machine->adjustPassManager(b);
 
@@ -155,8 +156,6 @@ std::string compile_module_to_ptx(std::unique_ptr<llvm::Module> &module) {
   }
   function_pass_manager.doFinalization();
   module_pass_manager.run(*module);
-
-  TC_DEBUG("Done with CodeGen_PTX_Dev::compile_to_src");
 
   std::string buffer(outstr.begin(), outstr.end());
 
@@ -317,12 +316,16 @@ CUDAContext::CUDAContext() {
 CUfunction CUDAContext::compile(const std::string &ptx,
                                 const std::string &kernel_name) {
   // Create module for object
+  auto t = Time::get_time();
   CUmodule cudaModule;
+  TC_INFO("PTX size: {}B", ptx.size());
   checkCudaErrors(cuModuleLoadDataEx(&cudaModule, ptx.c_str(), 0, 0, 0));
 
   CUfunction func;
   checkCudaErrors(cuModuleGetFunction(&func, cudaModule, kernel_name.c_str()));
+  t = Time::get_time() - t;
   cudaModules.push_back(cudaModule);
+  TC_INFO("PTX Compilation time: {}ms", t * 1000);
   return func;
 }
 

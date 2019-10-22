@@ -99,11 +99,11 @@ float64 sgn_f64(float64 a) {
   return b;
 }
 
-auto __nv_sgnf(f32 x) {
+f32 __nv_sgnf(f32 x) {
   return sgn_f32(x);
 }
 
-auto __nv_sgn(f64 x) {
+f64 __nv_sgn(f64 x) {
   return sgn_f64(x);
 }
 

@@ -652,7 +652,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     TC_ASSERT(!for_stmt->reversed);
     BasicBlock *body = BasicBlock::Create(*llvm_context, "loop_body", func);
     BasicBlock *after_loop = BasicBlock::Create(*llvm_context, "block", func);
-    builder->CreateStore(tlctx->get_constant(0), for_stmt->loop_var->value);
+    builder->CreateStore(for_stmt->begin->value, for_stmt->loop_var->value);
     builder->CreateBr(body);
 
     // body cfg

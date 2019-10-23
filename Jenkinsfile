@@ -1,3 +1,31 @@
+def build() {
+    sh "echo building"
+    sh "echo $PATH"
+    git 'https://github.com/yuanming-hu/taichi.git'
+    sh label: '', script: '''
+    echo $PATH
+    echo $CC
+    echo $CXX
+    export TAICHI_REPO_DIR=$WORKSPACE/
+    export PYTHONPATH=$TAICHI_REPO_DIR/python
+    export PATH=$WORKSPACE/bin/:$PATH
+    nvidia-smi
+    $CC --version
+    $CXX --version
+    echo $TAICHI_REPO_DIR
+    cd $TAICHI_REPO_DIR
+    [ -e build ] && rm -rf build
+    mkdir build && cd build
+    cmake .. -DPYTHON_EXECUTABLE=$PYTHON_EXECUTABLE
+    make -j 40
+    $CC --version
+    $CXX --version
+    echo $TAICHI_REPO_DIR
+    echo $TAICHI_REPO_DIR
+    echo $PYTHONPATH
+    '''
+}
+
 pipeline {
     agent any
     environment {
@@ -9,32 +37,23 @@ pipeline {
     }
     stages{
         stage('Build') {
-            steps {
-                sh "echo building"
-                sh "echo $PATH"
-                git 'https://github.com/yuanming-hu/taichi.git'
-                sh label: '', script: '''
-                echo $PATH
-                echo $CC
-                echo $CXX
-                export TAICHI_REPO_DIR=$WORKSPACE/
-                export PYTHONPATH=$TAICHI_REPO_DIR/python
-                export PATH=$WORKSPACE/bin/:$PATH
-                nvidia-smi
-                $CC --version
-                $CXX --version
-                echo $TAICHI_REPO_DIR
-                cd $TAICHI_REPO_DIR
-                [ -e build ] && rm -rf build
-                mkdir build && cd build
-                cmake .. -DPYTHON_EXECUTABLE=$PYTHON_EXECUTABLE
-                make -j 40
-                $CC --version
-                $CXX --version
-                echo $TAICHI_REPO_DIR
-                echo $TAICHI_REPO_DIR
-                echo $PYTHONPATH
-                ti test'''
+            parallel {
+                stage('cuda10.0-python3.6') {
+                    agent {
+                        label "cuda10.0"
+                    }
+                    steps{
+                        build()
+                    }
+                }
+                stage('cuda10.1-python3.6') {
+                    agent {
+                        label "cuda10.1"
+                    }
+                    steps{
+                        build()
+                    }
+                }
             }
         }
         stage('Test') {

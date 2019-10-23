@@ -13,6 +13,16 @@ gpu = int(sys.argv[2])
 assert gpu in [0, 1]
 mode = sys.argv[3]
 
+def get_os_name():
+  name = platform.platform()
+  if name.lower().startswith('darwin'):
+    return 'osx'
+  elif name.lower().startswith('windows'):
+    return 'win'
+  elif name.lower().startswith('linux'):
+    return 'linux'
+  assert False, "Unknown platform name %s" % name
+
 if os.environ.get('PYPI_PWD', '') is '':
   assert False, "Missing environment variable PYPI_PWD"
 
@@ -37,15 +47,23 @@ with open('setup.temp.py') as fin:
       print(l, file=fout, end='')
 
 os.makedirs('taichi/lib', exist_ok=True)
-os.system('rm -r ./build')
+shutil.rmtree('build')
+shutil.rmtree('dist')
 os.system('cp -r ../lang/include taichi/')
-os.system('cp ../build/libtaichi_core.so taichi/lib/taichi_core.so')
-os.system('cp ../build/libtaichi_core.dylib taichi/lib/taichi_core.so')
-os.system('rm dist/*.whl')
+build_dir = '../build'
+
+if get_os_name() == 'linux':
+  shutil.copy('../build/libtaichi_core.so', 'taichi/lib/taichi_core.so')
+elif get_os_name() == 'osx':
+  shutil.copy('../build/libtaichi_core.dylib', 'taichi/lib/taichi_core.so')
+else:
+  print('not implemented')
+  exit(-1)
+
 os.system('{} -m pip install --user --upgrade twine setuptools wheel'.format(
   get_python_executable()))
 
-if platform.system() == 'Linux':
+if get_os_name() == 'linux':
   os.system('{} setup.py bdist_wheel -p manylinux1_x86_64'.format(
     get_python_executable()))
 else:

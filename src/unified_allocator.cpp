@@ -71,12 +71,14 @@ taichi::Tlang::UnifiedAllocator::~UnifiedAllocator() {
 void taichi::Tlang::UnifiedAllocator::create() {
   TC_ASSERT(allocator() == nullptr);
   void *dst;
+  bool gpu = false;
 #if defined(CUDA_FOUND)
+  gpu = true;
   cudaMallocManaged(&dst, sizeof(UnifiedAllocator));
 #else
   dst = std::malloc(sizeof(UnifiedAllocator));
 #endif
-  allocator() = new (dst) UnifiedAllocator(1LL << 40, true);
+  allocator() = new (dst) UnifiedAllocator(1LL << 40, gpu);
 }
 
 void taichi::Tlang::UnifiedAllocator::free() {

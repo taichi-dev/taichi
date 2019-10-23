@@ -8,7 +8,7 @@ file(GLOB TAICHI_CORE_SOURCE
         "include/taichi/*/*/*/*.cpp" "include/taichi/*/*/*.cpp" "include/taichi/*/*.cpp"
         "include/taichi/*/*/*/*.h" "include/taichi/*/*/*.h" "include/taichi/*/*.h")
 
-file(GLOB_RECURSE PROJECT_SOURCES "lang/src/*.cpp" "lang/src/*.h" "lang/headers/*.h" "external/xxhash/*.c" "lang/test/cpp/*.cpp" "lang/cpp_examples/*.cpp")
+file(GLOB_RECURSE PROJECT_SOURCES "lang/headers/*.h" "external/xxhash/*.c" "tests/cpp/*.cpp" "lang/cpp_examples/*.cpp")
 include_directories(lang/include)
 
 add_library(${CORE_LIBRARY_NAME} SHARED ${TAICHI_CORE_SOURCE} ${PROJECT_SOURCES} ${SPGridSource})

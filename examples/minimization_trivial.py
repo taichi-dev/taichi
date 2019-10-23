@@ -23,25 +23,15 @@ for i in range(n):
   y[i] = random.random()
 
 @ti.kernel
-def reset_gradients():
-  L.grad[None] = -1
-  for i in x:
-    x.grad[i] = 0
-    y.grad[i] = 0
-
-@ti.kernel
 def update():
   for i in x:
-    x[i] += x.grad[i] * 0.1
+    x[i] -= x.grad[i] * 0.1
 
 # Optimize with 100 gradient descent iterations
 for k in range(100):
-  L[None] = 0
-  reduce()
-  print('L =', L[None])
-
-  reset_gradients()
-  reduce.grad() # the *gradient* version of the reduce kernel
+  with ti.Tape(loss=L):
+    reduce()
+  print('Loss =', L[None])
   update()
 
 for i in range(n):

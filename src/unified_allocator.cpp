@@ -18,31 +18,25 @@ UnifiedAllocator *&allocator() {
 taichi::Tlang::UnifiedAllocator::UnifiedAllocator(std::size_t size, bool gpu)
     : size(size), gpu(gpu) {
   size += 4096;
-  if (!gpu) {
-    _data.resize(size + 4096);
-    data = _data.data();
-  } else {
 #if defined(CUDA_FOUND)
-    cudaMallocManaged(&_cuda_data, size + 4096);
-    if (_cuda_data == nullptr) {
-      TC_ERROR("GPU memory allocation failed.");
-    }
-    cudaMemAdvise(_cuda_data, size + 4096, cudaMemAdviseSetPreferredLocation,
-                  0);
-    // http://on-demand.gputechconf.com/gtc/2017/presentation/s7285-nikolay-sakharnykh-unified-memory-on-pascal-and-volta.pdf
-    /*
-    cudaMemAdvise(_cuda_data, size + 4096, cudaMemAdviseSetReadMostly,
-                  cudaCpuDeviceId);
-    cudaMemAdvise(_cuda_data, size + 4096, cudaMemAdviseSetAccessedBy,
-                  0);
-                  */
-    data = _cuda_data;
-#else
-    cpu_vm = std::make_unique<VirtualMemoryAllocator>(size);
-    data = cpu_vm->ptr;
-    TC_ASSERT(data != nullptr);
-#endif
+  cudaMallocManaged(&_cuda_data, size + 4096);
+  if (_cuda_data == nullptr) {
+    TC_ERROR("GPU memory allocation failed.");
   }
+  cudaMemAdvise(_cuda_data, size + 4096, cudaMemAdviseSetPreferredLocation, 0);
+  // http://on-demand.gputechconf.com/gtc/2017/presentation/s7285-nikolay-sakharnykh-unified-memory-on-pascal-and-volta.pdf
+  /*
+  cudaMemAdvise(_cuda_data, size + 4096, cudaMemAdviseSetReadMostly,
+                cudaCpuDeviceId);
+  cudaMemAdvise(_cuda_data, size + 4096, cudaMemAdviseSetAccessedBy,
+                0);
+                */
+  data = _cuda_data;
+#else
+  cpu_vm = std::make_unique<VirtualMemoryAllocator>(size);
+  data = cpu_vm->ptr;
+  TC_ASSERT(data != nullptr);
+#endif
   auto p = reinterpret_cast<uint64>(data);
   data = (void *)(p + (4096 - p % 4096));
 

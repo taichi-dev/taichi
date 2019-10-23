@@ -5,14 +5,35 @@ pipeline {
         LD_LIBRARY_PATH = "/usr/local/clang-7.0.1/lib:/usr/local/cuda/lib64:$LD_LIBRARY_PATH"
         CC = "clang-7"
         CXX = "clang++"
-        PYTHON_EXECUTABLE = "python3.6"
     }
     stages{
         stage('Build') {
             parallel {
                 stage('cuda10.0-python3.6') {
                     agent {
-                        label "cuda10.0"
+                        node {
+                            label "cuda10.0 && python3.6"
+                            customWorkspace "taichi_cu100_py36"
+                        }
+                    }
+                    environment {
+                        PYTHON_EXECUTABLE = "python3.6"
+                        CUDA_VERSION = "10.0"
+                    }
+                    steps{
+                        build_taichi()
+                    }
+                }
+                stage('cuda10.0-python3.7') {
+                    agent {
+                        node {
+                            label "cuda10.0 && python3.7"
+                            customWorkspace "taichi_cu100_py37"
+                        }
+                    }
+                    environment {
+                        PYTHON_EXECUTABLE = "python3.7"
+                        CUDA_VERSION = "10.0"
                     }
                     steps{
                         build_taichi()
@@ -20,7 +41,29 @@ pipeline {
                 }
                 stage('cuda10.1-python3.6') {
                     agent {
-                        label "cuda10.1"
+                        node {
+                            label "cuda10.1 && python3.6"
+                            customWorkspace "taichi_cu101_py36"
+                        }
+                    }
+                    environment {
+                        PYTHON_EXECUTABLE = "python3.6"
+                        CUDA_VERSION = "10.1"
+                    }
+                    steps{
+                        build_taichi()
+                    }
+                }
+                stage('cuda10.1-python3.7') {
+                    agent {
+                        node {
+                            label "cuda10.1 && python3.7"
+                            customWorkspace "taichi_cu101_py37"
+                        }
+                    }
+                    environment {
+                        PYTHON_EXECUTABLE = "python3.7"
+                        CUDA_VERSION = "10.1"
                     }
                     steps{
                         build_taichi()
@@ -60,8 +103,8 @@ void build_taichi() {
     cd $TAICHI_REPO_DIR
     [ -e build ] && rm -rf build
     mkdir build && cd build
-    cmake .. -DPYTHON_EXECUTABLE=$PYTHON_EXECUTABLE
-    make -j 40
+    cmake .. -DPYTHON_EXECUTABLE=$PYTHON_EXECUTABLE -DCUDA_VERSION=$CUDA_VERSION
+    make -j 15
     $CC --version
     $CXX --version
     echo $TAICHI_REPO_DIR

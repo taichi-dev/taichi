@@ -231,22 +231,23 @@ class Installer:
     self.detect_or_setup_repo()
     
     # TODO: Make sure there is no existing Taichi ENV
-    set_env('TAICHI_REPO_DIR', self.repo_dir)
-    
-    set_env('PYTHONPATH',
-            '\$TAICHI_REPO_DIR/python/' + get_path_separator() + '\$PYTHONPATH',
-            '{}/python/'.format(
-              self.repo_dir) + get_path_separator() + os.environ.get(
-              'PYTHONPATH', ''))
-    set_env('PATH', '\$TAICHI_REPO_DIR/bin/' + get_path_separator() + '\$PATH',
-            os.path.join(self.repo_dir,
-                         'bin') + get_path_separator() + os.environ.get('PATH',
-                                                                        ''))
-    
-    os.environ['PYTHONIOENCODING'] = 'utf-8'
-    print('PYTHONPATH={}'.format(os.environ['PYTHONPATH']))
-    
-    execute_command('echo $PYTHONPATH')
+    if self.build_type != 'ci':
+      set_env('TAICHI_REPO_DIR', self.repo_dir)
+
+      set_env('PYTHONPATH',
+              '\$TAICHI_REPO_DIR/python/' + get_path_separator() + '\$PYTHONPATH',
+              '{}/python/'.format(
+                self.repo_dir) + get_path_separator() + os.environ.get(
+                'PYTHONPATH', ''))
+      set_env('PATH', '\$TAICHI_REPO_DIR/bin/' + get_path_separator() + '\$PATH',
+              os.path.join(self.repo_dir,
+                           'bin') + get_path_separator() + os.environ.get('PATH',
+                                                                          ''))
+
+      os.environ['PYTHONIOENCODING'] = 'utf-8'
+      print('PYTHONPATH={}'.format(os.environ['PYTHONPATH']))
+
+      execute_command('echo $PYTHONPATH')
     return
     if test_installation():
       print('  Successfully Installed Taichi at {}.'.format(self.repo_dir))

@@ -46,8 +46,14 @@ if (TLANG_WITH_FEM)
     target_link_libraries(${LIBRARY_NAME} /opt/intel/compilers_and_libraries_2019/linux/mkl/lib/intel64_lin/libmkl_rt.so)
 endif()
 
+if(NOT CUDA_VERSION)
+    set(CUDA_VERSION 10.0)
+endif()
+
+message("Building with CUDA ${CUDA_VERSION}")
+
 if (TLANG_WITH_CUDA)
-    find_package(CUDA 10.0)
+    find_package(CUDA ${CUDA_VERSION})
     if (CUDA_FOUND)
         set(CUDA_ARCH 61)
         message("Found CUDA. Arch = ${CUDA_ARCH}")

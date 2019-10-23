@@ -14,8 +14,9 @@ before_install:
 - eval "${MATRIX_EVAL}"
 - echo $CXX
 - echo $PYTHON
+- nproc --all
 - curl -SL https://github.com/llvm/llvm-project/releases/download/llvmorg-8.0.1/llvm-8.0.1.src.tar.xz | tar -xJC .
-- cd llvm-8.0.1.src && mkdir build && cd build && cmake .. -DLLVM_ENABLE_RTTI:BOOL=ON -DBUILD_SHARED_LIBS:BOOL=OFF -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD="X86;NVPTX" -DLLVM_ENABLE_ASSERTIONS=ON && make -j `nproc --all` && make install
+- cd llvm-8.0.1.src && mkdir build && cd build && cmake .. -DLLVM_ENABLE_RTTI:BOOL=ON -DBUILD_SHARED_LIBS:BOOL=OFF -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD="X86;NVPTX" -DLLVM_ENABLE_ASSERTIONS=ON && make -j 4 && make install
 - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update; brew install $PYTHON || brew upgrade python; fi
 
 script:

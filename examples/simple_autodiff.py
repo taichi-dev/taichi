@@ -1,8 +1,6 @@
 import taichi as ti
 import matplotlib.pyplot as plt
 
-ti.set_gdb_trigger(True)
-
 N = 2048
 x, y = ti.var(ti.f32), ti.var(ti.f32)
 
@@ -17,7 +15,7 @@ def poly():
     ret = 0.0
     guard = 0.2
     if v < -guard or v > guard:
-      ret = ti.sin(4 / v)
+      ret = 4 / ti.max(v, 0.1)
     else:
       ret = 0
     y[i] = ret
@@ -27,7 +25,7 @@ ys = []
 grad_xs = []
 
 for i in range(N):
-  v = ((i + 0.5) / N) * 7 - 3
+  v = ((i + 0.5) / N) * 2 - 1
   xs.append(v)
   x[i] = v
 
@@ -42,7 +40,6 @@ print()
 poly.grad()
 print('grad_x')
 for i in range(N):
-  # print(x[i], x.grad[i], y[i], y.grad[i])
   grad_xs.append(x.grad[i])
 
 plt.title('Auto Diff')

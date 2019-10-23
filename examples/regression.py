@@ -21,7 +21,6 @@ def xy():
   for i in range(number_coeffs):
     ti.root.place(coeffs[i], coeffs[i].grad)
 
-ti.cfg.print_ir = True
 @ti.kernel
 def regress():
   for i in x:
@@ -34,9 +33,9 @@ def regress():
 @ti.kernel
 def update():
   for i in ti.static(range(number_coeffs)):
-    ti.print(i)
-    ti.print(coeffs[i][None])
-    ti.print(coeffs[i].grad[None])
+    # ti.print(i)
+    # ti.print(coeffs[i][None])
+    # ti.print(coeffs[i].grad[None])
     coeffs[i][None] -= learning_rate * coeffs[i].grad[None]
     coeffs[i].grad[None] = 0
 
@@ -48,7 +47,6 @@ for i in range(N):
   xs.append(v)
   x[i] = v
   y[i] = (v - 1) * (v - 2) * (v + 2) + random.random() - 0.5
-  # y[i] = v * 2 + 1 + random.random() - 0.1
 
 regress()
 
@@ -66,7 +64,7 @@ for i in range(1000):
   print('Loss =', loss[None])
   update()
   for i in range(number_coeffs):
-    print(coeffs[i][None])
+    print(coeffs[i][None], end=', ')
   print()
 
 curve_xs = np.arange(-2.5, 2.5, 0.01)

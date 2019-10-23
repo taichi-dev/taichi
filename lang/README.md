@@ -15,7 +15,7 @@ python3 -m pip install taichi-nightly --user
 (Note this is for the compiler developers of Taichi lang. I'm building a pip package for end users.)
 Supports Ubuntu 14.04/16.04/18.04, ArchLinux, Mac OS X. For GPU support, CUDA 9.0+ is needed.
 
- - Execute `python3 -m pip install astpretty astor pytest opencv-python pybind11 Pillow numpy scipy GitPython yapf colorama psutil autograd`
+ - Execute `python3 -m pip install setuptools astpretty astor pytest opencv-python pybind11 Pillow numpy scipy GitPython yapf colorama psutil autograd`
  - Execute `sudo apt install libtinfo-dev` on Ubuntu.
  - (TODO: update) Install `taichi` with the [installation script](https://taichi.readthedocs.io/en/latest/installation.html#ubuntu-arch-linux-and-mac-os-x).
  - If you use the experimental LLVM backend, make sure you have LLVM 8 built from scratch, with

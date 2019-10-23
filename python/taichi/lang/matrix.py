@@ -162,6 +162,8 @@ class Matrix:
 
   def linearize_entry_id(self, *args):
     assert 1 <= len(args) <= 2
+    if len(args) == 1 and isinstance(args[0], (list, tuple)):
+      args = args[0]
     if len(args) == 1:
       args = args + (0,)
     assert 0 <= args[0] < self.n

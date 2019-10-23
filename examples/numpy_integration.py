@@ -1,8 +1,5 @@
 import taichi as ti
-import taichi as tc
 import numpy as np
-
-tc.set_gdb_trigger(True)
 
 val = ti.var(ti.i32)
 

@@ -60,3 +60,28 @@ def test_polar_decomp():
       assert I(i, j)[None] == approx(int(i == j), abs=1e-5)
       assert D(i, j)[None] == approx(0, abs=1e-5)
 
+
+@ti.program_test
+def test_matrix():
+  x = ti.Matrix(2, 2, dt=ti.i32)
+
+  @ti.layout
+  def xy():
+    ti.root.dense(ti.i, 16).place(x)
+
+  @ti.kernel
+  def inc():
+    for i in x(0, 0):
+      delta = ti.Matrix([[3, 0], [0, 0]])
+      x[i][1, 1] = x[i][0, 0] + 1
+      x[i] = x[i] + delta
+      x[i] += delta
+
+  for i in range(10):
+    x[i][0, 0] = i
+
+  inc()
+
+  for i in range(10):
+    assert x[i][0, 0] == 6 + i
+    assert x[i][1, 1] == 1 + i

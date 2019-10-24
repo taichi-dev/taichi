@@ -10,11 +10,12 @@ if len(sys.argv) != 3:
   exit(-1)
   
 version = sys.argv[1]
-cuda_version = int(ti.core.cuda_version())
+cuda_version = ti.core.cuda_version()
+cuda_version_major, cuda_version_minor = list(map(int, cuda_version.split('.')))
 print('Taichi version=', version, 'CUDA version =', cuda_version)
-gpu = cuda_version > 0
+gpu = cuda_version_major > 0
 if gpu:
-  assert cuda_version >= 10000
+  assert cuda_version_major >= 10
 assert gpu in [0, 1]
 mode = sys.argv[2]
 
@@ -43,7 +44,7 @@ if platform.system() == 'Linux':
 with open('setup.temp.py') as fin:
   with open('setup.py', 'w') as fout:
     if gpu:
-      project_name = 'taichi-nightly-cuda-{}-{}'.format(cuda_version // 1000, cuda_version % 1000 // 10)
+      project_name = 'taichi-nightly-cuda-{}-{}'.format(cuda_version_major, cuda_version_minor)
     else:
       project_name = 'taichi-nightly'
     print("project_name = '{}'".format(project_name), file=fout)

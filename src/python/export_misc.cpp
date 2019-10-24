@@ -90,9 +90,9 @@ void stop_duplicating_stdout_to_file(const std::string &fn) {
 
 std::string cuda_version() {
 #if defined(TLANG_WITH_CUDA)
-  return std::to_string(CUDART_VERSION);
+  return TLANG_CUDA_VERSION;
 #else
-  return "";
+  return "0.0";
 #endif
 }
 

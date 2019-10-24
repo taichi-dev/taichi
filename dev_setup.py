@@ -249,6 +249,11 @@ class Installer:
       print('PYTHONPATH={}'.format(os.environ['PYTHONPATH']))
 
       execute_command('echo $PYTHONPATH')
+    else:
+      # compile ..
+      os.makedirs('build')
+      execute_command('cd build && cmake ..')
+      execute_command('cd build && make -j 10')
     return
     if test_installation():
       print('  Successfully Installed Taichi at {}.'.format(self.repo_dir))

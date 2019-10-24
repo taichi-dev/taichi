@@ -6,6 +6,7 @@ pipeline {
         LD_LIBRARY_PATH = "/usr/local/clang-7.0.1/lib:/usr/local/cuda/lib64:$LD_LIBRARY_PATH"
         CC = "clang-7"
         CXX = "clang++"
+        TI_WITH_CUDA = "True"
     }
     stages{
         stage('Build') {
@@ -70,6 +71,36 @@ pipeline {
                         build_taichi()
                     }
                 }
+                stage('cpu-python3.6') {
+                    agent {
+                        node {
+                            label "python3.6"
+                            customWorkspace "taichi_cpu_py36"
+                        }
+                    }
+                    environment {
+                        PYTHON_EXECUTABLE = "python3.6"
+                        TI_WITH_CUDA = "False"
+                    }
+                    steps{
+                        build_taichi()
+                    }
+                }
+                stage('cpu-python3.7') {
+                    agent {
+                        node {
+                            label "python3.7"
+                            customWorkspace "taichi_cpu_py37"
+                        }
+                    }
+                    environment {
+                        PYTHON_EXECUTABLE = "python3.7"
+                        TI_WITH_CUDA = "False"
+                    }
+                    steps{
+                        build_taichi()
+                    }
+                }
             }
         }
         stage('Test') {
@@ -105,7 +136,7 @@ void build_taichi() {
     [ -e build ] && rm -rf build
     mkdir build && cd build
     export CUDA_BIN_PATH=/usr/local/cuda-${CUDA_VERSION}
-    cmake .. -DPYTHON_EXECUTABLE=$PYTHON_EXECUTABLE -DCUDA_VERSION=$CUDA_VERSION
+    cmake .. -DPYTHON_EXECUTABLE=$PYTHON_EXECUTABLE -DCUDA_VERSION=$CUDA_VERSION -DTLANG_WITH_CUDA:BOOL=$TI_WITH_CUDA
     make -j 15
     ldd libtaichi_core.so
     cd ../python

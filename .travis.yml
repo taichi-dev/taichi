@@ -19,6 +19,7 @@ before_install:
 - pwd
 - cd $TRAVIS_BUILD_DIR
 - mkdir taichi-llvm
+- cd taichi-llvm
 - wget https://github.com/yuanming-hu/taichi_assets/releases/download/llvm8/taichi-llvm-8.0.1.zip
 - unzip taichi-llvm-8.0.1.zip
 - export PATH=$TRAVIS_BUILD_DIR/taichi-llvm/bin/:$PATH

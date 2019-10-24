@@ -1,6 +1,7 @@
 pipeline {
     agent any
     environment {
+        PYPI_PWD = credentials('PYPI_PWD')
         PATH = "/usr/local/clang-7.0.1/bin:/usr/local/cuda/bin/:$PATH"
         LD_LIBRARY_PATH = "/usr/local/clang-7.0.1/lib:/usr/local/cuda/lib64:$LD_LIBRARY_PATH"
         CC = "clang-7"

@@ -99,6 +99,8 @@ def g2p():
     J[p] *= 1 + dt * new_C.trace()
     C[p] = new_C
 
+gui = ti.core.GUI("Differentiable MPM", ti.veci(512, 512))
+canvas = gui.get_canvas()
 
 def main():
   for i in range(n_particles):
@@ -107,24 +109,18 @@ def main():
     J[i] = 1
 
   for f in range(200):
+    canvas.clear(0x112F41)
     for s in range(150):
       clear_grid()
       p2g()
       grid_op()
       g2p()
 
-    ti.profiler_print()
 
-    scale = 2
-    img = np.zeros(shape=(scale * n_grid, scale * n_grid)) + 0.3
     for i in range(n_particles):
-      p_x = int(scale * x(0)[i] / dx)
-      p_y = int(scale * x(1)[i] / dx)
-      img[p_x, p_y] = 1
-    img = img.swapaxes(0, 1)[::-1]
-    cv2.imshow('MPM', img)
-    cv2.waitKey(1)
-    # cv2.imwrite('frame{:03d}.png'.format(f), img * 255)
+      canvas.circle(ti.vec(x[i][0], x[i][1])).radius(1).color(0x068587).finish()
+    gui.update()
+  ti.profiler_print()
 
 if __name__ == '__main__':
   main()

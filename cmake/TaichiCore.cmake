@@ -36,10 +36,6 @@ endif()
 
 set(LIBRARY_NAME ${CORE_LIBRARY_NAME})
 
-if (TLANG_WITH_VDB)
-    target_link_libraries(${LIBRARY_NAME} ${CMAKE_CURRENT_LIST_DIR}/external/openvdb/openvdb/libopenvdb.so Half log4cplus boost_iostreams)
-endif()
-
 if (TLANG_WITH_FEM)
     # Change the path to your own libSPGridCPUSolver.so
     target_link_libraries(${LIBRARY_NAME} /home/user/repos/topo_opt_private/solver/libSPGridCPUSolver.so )
@@ -66,33 +62,30 @@ if (TLANG_WITH_CUDA)
 endif()
 
 # http://llvm.org/docs/CMake.html#embedding-llvm-in-your-project
-find_package(LLVM CONFIG 8.0)
-if (LLVM_FOUND)
-    message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
-    message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
-    include_directories(${LLVM_INCLUDE_DIRS})
-    add_definitions(${LLVM_DEFINITIONS})
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTLANG_WITH_LLVM")
-    llvm_map_components_to_libnames(llvm_libs
-            Core
-            ExecutionEngine
-            InstCombine
-            OrcJIT
-            RuntimeDyld
-            TransformUtils
-            BitReader
-            BitWriter
-            Object
-            ScalarOpts
-            Support
-            native
-            NVPTX
-            Linker
-            )
-    target_link_libraries(${LIBRARY_NAME} ${llvm_libs})
-else()
-    message("LLVM not found.")
-endif()
+find_package(LLVM REQUIRED CONFIG 8.0)
+message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
+message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
+include_directories(${LLVM_INCLUDE_DIRS})
+    message("llvm include dirs ${LLVM_INCLUDE_DIRS}")
+add_definitions(${LLVM_DEFINITIONS})
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTLANG_WITH_LLVM")
+llvm_map_components_to_libnames(llvm_libs
+        Core
+        ExecutionEngine
+        InstCombine
+        OrcJIT
+        RuntimeDyld
+        TransformUtils
+        BitReader
+        BitWriter
+        Object
+        ScalarOpts
+        Support
+        native
+        NVPTX
+        Linker
+        )
+target_link_libraries(${LIBRARY_NAME} ${llvm_libs})
 
 find_package(OpenMP)
 if(OpenMP_CXX_FOUND)

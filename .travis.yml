@@ -16,13 +16,9 @@ before_install:
 - echo $PYTHON
 - sysctl -n hw.ncpu
 - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update; brew install $PYTHON || brew upgrade python; fi
-- curl -SL https://github.com/llvm/llvm-project/releases/download/llvmorg-8.0.1/llvm-8.0.1.src.tar.xz | tar -xJC .
-- cd llvm-8.0.1.src && mkdir build && cd build && cmake .. -DLLVM_ENABLE_RTTI:BOOL=ON -DBUILD_SHARED_LIBS:BOOL=OFF -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD="X86" -DLLVM_ENABLE_ASSERTIONS=ON
-- gtimeout 30m make -j 8
-- gtimeout 30m make -j 8
-- gtimeout 30m make -j 8
-- gtimeout 30m make -j 8
-- make install
+- curl -SL https://github.com/yuanming-hu/taichi_assets/releases/download/llvm8/taichi-llvm-8.0.1.zip | tar -xJC .
+- export PATH=`pwd`/taichi-llvm-8.0.1/bin/$PATH
+- llvm-config
 
 script:
 - "$PYTHON dev_setup.py"

@@ -8,13 +8,18 @@
 
 ## Updates
 ```bash
-# With GPU support (needs CUDA 10.0)
-python3 -m pip install taichi-gpu-nightly==0.0.56 --user
-
 # CPU only. No GPU/CUDA needed
-python3 -m pip install taichi-nightly==0.0.55 --user
+python3 -m pip install taichi-nightly
+
+# With GPU (CUDA 10.0) support
+python3 -m pip install taichi-nightly-cuda-10-0
+
+# With GPU (CUDA 10.1) support
+python3 -m pip install taichi-nightly-cuda-10-1
 ```
 
+ - (Oct 24, 2019) Python wheels (v0.0.61) released for Python 3.6/3.7 and CUDA 10.0/10.1 on Ubuntu 16.04+. Contributors of this release include *Yuanming Hu, robbertvc, Zhoutong Zhang, Tao Du, Srinivas Kaza, and Kenneth Lozes*.
+ - (Oct 22, 2019) Added support for [kernel templates](https://github.com/yuanming-hu/taichi/blob/master/tests/python/test_kernel_templates.py). Kernel templates allow users to pass in taichi tensors and compile-time constants as kernel parameters.
  - (Oct 9, 2019) Compatibility improvements. Added a basic PyTorch interface. [[Example]](https://github.com/yuanming-hu/taichi/blob/master/examples/torch_tensor_ad.py).
  - (Oct 7, 2019) Released **experimental** python **3.6** wheels on Linux (tested on Ubuntu 16.04/18.04) for those who are eager to try without building from source. More stable releases are coming in a few days. To install them: 
 

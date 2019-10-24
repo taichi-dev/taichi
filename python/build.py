@@ -3,15 +3,20 @@ import os
 import platform
 import sys
 import shutil
+import taichi as ti
 
-if len(sys.argv) != 4:
-  print("Usage: python3 build.py [version: 0.0.50] [gpu=0] [mode=upload/test]")
+if len(sys.argv) != 3:
+  print("Usage: python3 build.py [version: 0.0.50] [mode=upload/test]")
   exit(-1)
   
 version = sys.argv[1]
-gpu = int(sys.argv[2])
+cuda_version = int(ti.core.cuda_version())
+print('Taichi version=', version, 'CUDA version =', cuda_version)
+gpu = cuda_version > 0
+if gpu:
+  assert cuda_version >= 10000
 assert gpu in [0, 1]
-mode = sys.argv[3]
+mode = sys.argv[2]
 
 def get_os_name():
   name = platform.platform()
@@ -38,13 +43,16 @@ if platform.system() == 'Linux':
 with open('setup.temp.py') as fin:
   with open('setup.py', 'w') as fout:
     if gpu:
-      project_name = 'taichi-gpu-nightly'
+      project_name = 'taichi-nightly-cuda-{}-{}'.format(cuda_version // 1000, cuda_version % 1000 // 10)
     else:
       project_name = 'taichi-nightly'
     print("project_name = '{}'".format(project_name), file=fout)
     print("version = '{}'".format(version), file=fout)
     for l in fin:
       print(l, file=fout, end='')
+
+
+print("*** project_name = '{}'".format(project_name))
 
 os.makedirs('taichi/lib', exist_ok=True)
 shutil.rmtree('build')
@@ -73,7 +81,7 @@ if mode == 'upload':
   os.system('{} -m twine upload dist/* --verbose -u yuanming-hu -p $PYPI_PWD'.format(get_python_executable()))
 elif mode == 'test':
   print('Uninstalling old taichi package...')
-  os.system('pip3 uninstall taichi-nightly taichi-gpu-nightly')
+  os.system('pip3 uninstall taichi-nightly taichi-gpu-nightly taichi-nightly-cuda-10-0 taichi-nightly-cuda-10-1')
   dists = os.listdir('dist')
   assert len(dists) == 1
   dist = dists[0]

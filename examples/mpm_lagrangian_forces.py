@@ -3,7 +3,7 @@ import random
 
 real = ti.f32
 dim = 2
-n_particle_x = 64
+n_particle_x = 100
 n_particle_y = 8
 n_particles = n_particle_x * n_particle_y
 n_elements = (n_particle_x - 1) * (n_particle_y - 1) * 2
@@ -20,9 +20,8 @@ scalar = lambda: ti.var(dt=real)
 vec = lambda: ti.Vector(dim, dt=real)
 mat = lambda: ti.Matrix(dim, dim, dt=real)
 
-x, v = vec(), vec()
+x, v, C = vec(), vec(), mat()
 grid_v, grid_m = vec(), scalar()
-C, J = mat(), scalar()
 restT = mat()
 total_energy = scalar()
 vertices = ti.var(ti.i32)
@@ -31,7 +30,7 @@ ti.cfg.arch = ti.cuda
 
 @ti.layout
 def place():
-  ti.root.dense(ti.k, n_particles).place(x, x.grad, v, J, C)
+  ti.root.dense(ti.k, n_particles).place(x, x.grad, v, C)
   ti.root.dense(ti.ij, n_grid).place(grid_v, grid_m)
   ti.root.dense(ti.i, n_elements).place(restT, restT.grad)
   ti.root.dense(ti.ij, (n_elements, 3)).place(vertices)
@@ -97,6 +96,12 @@ def grid_op():
       inv_m = 1 / grid_m[i, j]
       grid_v[i, j] = inv_m * grid_v[i, j]
       grid_v(1)[i, j] -= dt * 9.8
+
+      # center sticky circle
+      if (i * dx - 0.5) ** 2 + (j * dx - 0.5) ** 2 < 0.01:
+        grid_v[i, j] = [0, 0]
+
+      # box
       if i < bound and grid_v(0)[i, j] < 0:
         grid_v(0)[i, j] = 0
       if i > n_grid - bound and grid_v(0)[i, j] > 0:
@@ -127,7 +132,6 @@ def g2p():
 
     v[p] = new_v
     x[p] += dt * v[p]
-    J[p] *= 1 + dt * new_C.trace()
     C[p] = new_C
 
 gui = ti.core.GUI("MPM", ti.veci(1024, 1024))
@@ -140,9 +144,8 @@ def main():
   for i in range(n_particle_x):
     for j in range(n_particle_y):
       t = mesh(i, j)
-      x[t] = [0.2 + i * dx * 0.5, 0.3 + j * dx * 0.5]
+      x[t] = [0.1 + i * dx * 0.5, 0.7 + j * dx * 0.5]
       v[t] = [0, -1]
-      J[t] = 1
 
   # build mesh
   for i in range(n_particle_x - 1):
@@ -171,6 +174,7 @@ def main():
       g2p()
 
 
+    # canvas.circle(ti.vec(0.5, 0.5)).radius(100).color(0x068587).finish()
     # TODO: why is visualization so slow?
     for i in range(n_particles):
       canvas.circle(ti.vec(x[i][0], x[i][1])).radius(2).color(0x068587).finish()

@@ -5,7 +5,7 @@ real = ti.f32
 dim = 2
 n_particle_x = 64
 n_particle_y = 8
-n_particles = 8192 * 4
+n_particles = n_particle_x * n_particle_y
 n_elements = (n_particle_x - 1) * (n_particle_y - 1) * 2
 n_grid = 64
 dx = 1 / n_grid
@@ -63,9 +63,11 @@ def compute_total_energy():
   for i in range(n_elements):
     currentT = compute_T(i)
     F = restT[i] * currentT.inverse()
-    # Fixed Corotated
-    I1 = (F @ F.transpose()).trace()
-    J = F.determinant()
+    # NeoHookean
+    I1 = (F @ ti.Matrix.transposed(F)).trace()
+    J = ti.Matrix.determinant(F)
+    # ti.print(ti.Matrix.determinant(currentT))
+    # ti.print(J)
     element_energy = 0.5 * mu * (I1 - 3) - mu * ti.log(J) + 0.5 * la * ti.log(J) ** 2
     ti.atomic_add(total_energy[None], element_energy)
 
@@ -83,7 +85,7 @@ def p2g():
         offset = ti.Vector([i, j])
         dpos = (ti.cast(ti.Vector([i, j]), ti.f32) - fx) * dx
         weight = w[i](0) * w[j](1)
-        grid_v[base + offset].atomic_add(weight * (p_mass * v[p] + x.grad[p] + affine @ dpos))
+        grid_v[base + offset].atomic_add(weight * (p_mass * v[p] + x.grad[p] * -1e-5 + affine @ dpos))
         grid_m[base + offset].atomic_add(weight * p_mass)
 
 
@@ -133,18 +135,39 @@ def g2p():
 gui = ti.core.GUI("MPM", ti.veci(512, 512))
 canvas = gui.get_canvas()
 
+def mesh(i, j):
+  return i * n_particle_y + j
+
 def main():
   for i in range(n_particle_x):
     for j in range(n_particle_y):
-      t = i * n_particle_y + j
+      t = mesh(i, j)
       x[t] = [0.2 + i * dx * 0.5, 0.6 + j * dx * 0.5]
       v[t] = [0, 0]
       J[t] = 1
+
+  # build mesh
+  for i in range(n_particle_x - 1):
+    for j in range(n_particle_y - 1):
+      # element id
+      eid = (i * (n_particle_y - 1) + j) * 2
+      vertices[eid, 0] = mesh(i, j)
+      vertices[eid, 1] = mesh(i + 1, j)
+      vertices[eid, 2] = mesh(i, j + 1)
+
+      eid = (i * (n_particle_y - 1) + j) * 2 + 1
+      vertices[eid, 0] = mesh(i, j + 1)
+      vertices[eid, 1] = mesh(i + 1, j + 1)
+      vertices[eid, 2] = mesh(i + 1, j)
+
+  compute_rest_T()
 
   for f in range(200):
     canvas.clear(0x112F41)
     for s in range(150):
       clear_grid()
+      with ti.Tape(total_energy):
+        compute_total_energy()
       p2g()
       grid_op()
       g2p()
@@ -152,7 +175,7 @@ def main():
 
     # TODO: why is visualization so slow?
     for i in range(n_particles):
-      canvas.circle(ti.vec(x[i][0], x[i][1])).radius(1).color(0x068587).finish()
+      canvas.circle(ti.vec(x[i][0], x[i][1])).radius(4).color(0x068587).finish()
     gui.update()
   ti.profiler_print()
 

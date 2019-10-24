@@ -261,6 +261,11 @@ class Matrix:
       sum = sum + self(i, i)
     return sum
 
+  def inverse(self):
+    assert self.n == 2 and self.m == 2
+    inv_det = impl.expr_init(1.0 / self.determinant(self))
+    return inv_det * Matrix([[self(1, 1), -self(0, 1)], [-self(1, 0), self(0, 0)]])
+
   @staticmethod
   def normalized(a):
     assert a.m == 1

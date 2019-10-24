@@ -105,5 +105,7 @@ void build_taichi() {
     mkdir build && cd build
     cmake .. -DPYTHON_EXECUTABLE=$PYTHON_EXECUTABLE -DCUDA_VERSION=$CUDA_VERSION
     make -j 15
+    cd python
+    $PYTHON_EXECUTABLE build.py $TAICHI_VERSION upload
     '''
 }

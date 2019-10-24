@@ -132,7 +132,7 @@ def g2p():
     J[p] *= 1 + dt * new_C.trace()
     C[p] = new_C
 
-gui = ti.core.GUI("MPM", ti.veci(512, 512))
+gui = ti.core.GUI("MPM", ti.veci(1024, 1024))
 canvas = gui.get_canvas()
 
 def mesh(i, j):
@@ -175,7 +175,11 @@ def main():
 
     # TODO: why is visualization so slow?
     for i in range(n_particles):
-      canvas.circle(ti.vec(x[i][0], x[i][1])).radius(4).color(0x068587).finish()
+      canvas.circle(ti.vec(x[i][0], x[i][1])).radius(2).color(0x068587).finish()
+    for i in range(n_elements):
+      for j in range(3):
+        a, b = vertices[i, j], vertices[i, (j + 1) % 3]
+        canvas.path(ti.vec(x[a][0], x[a][1]), ti.vec(x[b][0], x[b][1])).radius(1).color(0x4FB99F).finish()
     gui.update()
   ti.profiler_print()
 

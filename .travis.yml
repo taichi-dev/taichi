@@ -18,7 +18,9 @@ before_install:
 # - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update; brew install $PYTHON || brew upgrade python; fi
 - wget https://github.com/yuanming-hu/taichi_assets/releases/download/llvm8/taichi-llvm-8.0.1.zip
 - unzip taichi-llvm-8.0.1.zip
-- export PATH=`pwd`/taichi-llvm-8.0.1/bin/:$PATH
+- export PATH=$TRAVIS_BUILD_DIR/taichi-llvm-8.0.1/bin/:$PATH
+- ls $TRAVIS_BUILD_DIR/taichi-llvm-8.0.1/bin/
+- echo $PATH
 - llvm-config
 
 script:

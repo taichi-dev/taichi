@@ -1,11 +1,9 @@
-#if defined(TLANG_WITH_FEM)
 #include <taichi/lang.h>
 #include <taichi/util.h>
 #include <taichi/visual/gui.h>
 #include <taichi/system/profiler.h>
 #include <taichi/visual/texture.h>
 #include <deque>
-#include "fem_interface.h"
 
 TC_NAMESPACE_BEGIN
 
@@ -26,194 +24,6 @@ auto R = new real[n][n][n][dim]();
 auto D = new real[n][n][n]();
 auto X = new real[n][n][n][dim]();
 
-void fem_solve() {
-  Dict config;
-  using namespace fem_interface;
-  FEMInterface interface;
-  auto &param = interface.param;
-  constexpr int padding = 8;
-
-  // TC_P(container_bounds);
-  // Cell size, instead of node size
-  for (int i = 0; i < 3; i++)
-    param.resolution[i] = n + padding * 3;
-
-  param.global_mu = mu_0;
-  param.global_lambda = lambda_0;
-  param.use_density_only = true;
-  param.dx = 1;
-
-  param.krylov.tolerance = config.get("cg_tolerance", 1e-7_f);
-  param.krylov.max_iterations = config.get("cg_max_iterations", 50);
-  param.krylov.print_residuals = config.get("print_residuals", true);
-  param.krylov.restart_iterations = config.get("restart_iterations", 0);
-  TC_ERROR_IF(config.has_key("global_smoothing_iter"),
-              "global_smoothing_iter is obselete.");
-  param.defect_correction_cg_iter() =
-      config.get("defect_correction_cg_iter", 3);
-  param.penalty() = 1;
-  param.minimum_stiffness() = 0;
-
-  // Do not do warm starting for a pure objective solve
-  param.keep_state() = false;
-  param.forced_reuse() = (int)config.get<bool>("forced_reuse", true);
-
-  // Bool's solver type option
-  param.solver_type() = config.get<int>("solver_type", 1);
-
-  // Multigrid Parameters
-  param.mg_level = 3;
-  param.explicit_mg_level = 0;
-
-  if (param.explicit_mg_level >= param.mg_level) {
-    TC_WARN("Clamping explicit_mg_level ({}) to {}!", param.explicit_mg_level,
-            param.mg_level - 1);
-    param.explicit_mg_level = param.mg_level - 1;
-  }
-  param.pre_and_post_smoothing_iter = 1;
-  param.boundary_smoothing() = 3;
-  param.bottom_smoothing_iter = 600;
-  param.jacobi_damping = 0.4f;
-
-  using scalar_block_size = FEMInputs::ScalarGrid::block_size;
-
-  for (int i = 0; i < 3; i++) {
-    param.mu.resolution[i] = param.resolution[i];
-    param.lambda.resolution[i] = param.resolution[i];
-    param.density.resolution[i] = param.resolution[i];
-  }
-
-  Vector3i block_size(scalar_block_size::x, scalar_block_size::y,
-                      scalar_block_size::z);
-
-  double bounds[2] = {1e30f, -1e30f};
-
-  bool has_nan = false;
-
-  for (int I = 0; I < n; I += block_size.x)
-    for (int J = 0; J < n; J += block_size.y)
-      for (int K = 0; K < n; K += block_size.z) {
-        Vector3i base_coord(I, J, K);
-
-        TC_ASSERT(n % scalar_block_size::x == 0);
-        TC_ASSERT(n % scalar_block_size::y == 0);
-        TC_ASSERT(n % scalar_block_size::z == 0);
-
-        for (int i = base_coord[0]; i < base_coord[0] + block_size.x;
-             i += scalar_block_size::x) {
-          for (int j = base_coord[1]; j < base_coord[1] + block_size.y;
-               j += scalar_block_size::y) {
-            for (int k = base_coord[2]; k < base_coord[2] + block_size.z;
-                 k += scalar_block_size::z) {
-              FEMInputs::ScalarGrid::Block density_block;
-
-              density_block.base_coordinates[0] = i + padding;
-              density_block.base_coordinates[1] = j + padding;
-              density_block.base_coordinates[2] = k + padding;
-
-              bool has_non_zero = false;
-              for (int ii = -1; ii < scalar_block_size::x; ii++) {
-                for (int jj = -1; jj < scalar_block_size::y; jj++) {
-                  for (int kk = -1; kk < scalar_block_size::z; kk++) {
-                    if (i + ii >= 0 && j + jj >= 0 && k + kk >= 0) {
-                      auto scale = (double)D[i + ii][j + jj][k + kk];
-                      // auto scale = 1.0;
-                      if (scale != 0) {
-                        has_non_zero = true;
-                      }
-                      if (ii >= 0 && jj >= 0 && kk >= 0) {
-                        density_block.get(ii, jj, kk) = scale;
-                        bounds[0] = std::min(bounds[0], scale);
-                        bounds[1] = std::max(bounds[1], scale);
-                        has_nan = has_nan || (scale != scale);
-                      }
-                    }
-                  }
-                }
-              }
-              if (has_non_zero) {
-                param.density.blocks.push_back(density_block);
-              }
-            }
-          }
-        }
-      }
-
-  TC_P(bounds);
-  TC_ERROR_IF(has_nan, "density field contains nan!");
-
-  for (int i = 1; i < n - 2; i++) {
-    for (int j = 0; j < 2; j++) {
-      for (int k = 1; k < n - 2; k++) {
-        for (int d = 0; d < 3; d++) {
-          DirichletOnNode dirichlet;
-          dirichlet.coord[0] = i + padding;
-          dirichlet.coord[1] = j + padding;
-          dirichlet.coord[2] = k + padding;
-          dirichlet.axis = d;
-          dirichlet.value = 0;
-          param.dirichlet_nodes.push_back(dirichlet);
-        }
-      }
-    }
-  }
-
-  param.forces.push_back(fem_interface::ForceOnNode{
-      {n / 2 + padding, n / 2 + padding, n / 2 + padding}, {0, F, 0}});
-
-  param.caller_method = "taichi_benchmark";
-  interface.preserve_output(param.density.blocks.size());
-
-  TC_INFO("Invoking FEM Solver");
-
-  param.min_fraction() = 0;
-  std::string solver = config.get<std::string>("solver", "");
-  TC_PROFILE("solver", interface.run());
-  TC_INFO("FEM Solver returned");
-
-  using vector_block_size = FEMInputs::ScalarGrid::block_size;
-
-  bounds[0] = 1e30f;
-  bounds[1] = -1e30f;
-
-  has_nan = false;
-
-  for (auto &block : interface.outputs.displacements.blocks) {
-    int i = block.base_coordinates[0];
-    int j = block.base_coordinates[1];
-    int k = block.base_coordinates[2];
-    for (int ii = 0; ii < vector_block_size::x; ii++) {
-      for (int jj = 0; jj < vector_block_size::y; jj++) {
-        for (int kk = 0; kk < vector_block_size::z; kk++) {
-          /*
-          auto sparse_v0 = grid->v0();
-          sparse_v2(i + ii, j + jj, k + kk) = block.get(ii, jj, kk)[2];
-          */
-
-          for (int d = 0; d < dim; d++) {
-            int I = i + ii - padding, J = j + jj - padding,
-                K = k + kk - padding;
-            if (0 <= I && I < n && 0 <= J && J < n && 0 <= K && K < n)
-              X[I][J][K][d] = block.get(ii, jj, kk)[d];
-          }
-
-          for (int r = 0; r < dim; r++) {
-            bounds[0] = std::min(bounds[0], block.get(ii, jj, kk)[r]);
-            bounds[1] = std::max(bounds[1], block.get(ii, jj, kk)[r]);
-            has_nan = has_nan ||
-                      (block.get(ii, jj, kk)[r] != block.get(ii, jj, kk)[r]);
-          }
-        }
-      }
-    }
-  }
-  TC_P(bounds);
-  TC_WARN_UNLESS(interface.outputs.success, "FEM solve has failed!");
-  TC_WARN_UNLESS(!has_nan, "FEM solution contains nan!");
-
-  bool success = !has_nan && interface.outputs.success;
-  TC_ASSERT(success);
-}
 
 auto fem = [](std::vector<std::string> cli_param) {
   CoreState::set_trigger_gdb_when_crash(true);
@@ -458,9 +268,6 @@ auto fem = [](std::vector<std::string> cli_param) {
     }
   }
 
-  if (compute_gt)
-    fem_solve();
-
   // r = b - Ax = b    since x = 0
   // copy_b_to_r();
   // p = r = r + 0 p
@@ -569,4 +376,3 @@ auto fem = [](std::vector<std::string> cli_param) {
 TC_REGISTER_TASK(fem);
 
 TC_NAMESPACE_END
-#endif

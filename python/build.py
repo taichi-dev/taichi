@@ -55,8 +55,8 @@ with open('setup.temp.py') as fin:
 print("*** project_name = '{}'".format(project_name))
 
 os.makedirs('taichi/lib', exist_ok=True)
-shutil.rmtree('build')
-shutil.rmtree('dist')
+shutil.rmtree('build', ignore_errors=True)
+shutil.rmtree('dist', ignore_errors=True)
 os.system('cp -r ../lang/include taichi/')
 build_dir = '../build'
 

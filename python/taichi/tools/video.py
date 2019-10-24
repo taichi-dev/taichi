@@ -9,7 +9,8 @@ FRAME_DIR = 'frames'
 # Write the frames to the disk and then make videos (mp4 or gif) if necessary
 
 def get_ffmpeg_path():
-  return get_directory('external/lib/ffmpeg')
+  # return get_directory('external/lib/ffmpeg')
+  return 'ffmpeg'
 
 class VideoManager:
 

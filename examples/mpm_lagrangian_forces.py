@@ -98,7 +98,7 @@ def grid_op():
       grid_v(1)[i, j] -= dt * 9.8
 
       # center sticky circle
-      if (i * dx - 0.5) ** 2 + (j * dx - 0.5) ** 2 < 0.01:
+      if (i * dx - 0.5) ** 2 + (j * dx - 0.5) ** 2 < 0.005:
         grid_v[i, j] = [0, 0]
 
       # box
@@ -163,9 +163,9 @@ def main():
 
   compute_rest_T()
 
-  for f in range(200):
+  for f in range(600):
     canvas.clear(0x112F41)
-    for s in range(150):
+    for s in range(50):
       clear_grid()
       with ti.Tape(total_energy):
         compute_total_energy()
@@ -174,15 +174,16 @@ def main():
       g2p()
 
 
-    # canvas.circle(ti.vec(0.5, 0.5)).radius(100).color(0x068587).finish()
+    canvas.circle(ti.vec(0.5, 0.5)).radius(70).color(0x068587).finish()
     # TODO: why is visualization so slow?
-    for i in range(n_particles):
-      canvas.circle(ti.vec(x[i][0], x[i][1])).radius(2).color(0x068587).finish()
     for i in range(n_elements):
       for j in range(3):
         a, b = vertices[i, j], vertices[i, (j + 1) % 3]
         canvas.path(ti.vec(x[a][0], x[a][1]), ti.vec(x[b][0], x[b][1])).radius(1).color(0x4FB99F).finish()
+    for i in range(n_particles):
+      canvas.circle(ti.vec(x[i][0], x[i][1])).radius(2).color(0xF2B134).finish()
     gui.update()
+    gui.screenshot("tmp/{:04d}.png".format(f))
   ti.profiler_print()
 
 if __name__ == '__main__':

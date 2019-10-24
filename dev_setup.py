@@ -212,12 +212,13 @@ class Installer:
         dist = 'ubuntu'
       print("Linux distribution '{}' detected".format(dist))
       if dist == 'ubuntu':
-        execute_command('sudo apt-get update')
-        if self.build_type == 'ci':
-          execute_command('sudo apt-get install -y python3-dev libx11-dev')
-        else:
-          execute_command(
-            'sudo apt-get install -y python3-dev git build-essential cmake make g++ libx11-dev')
+        if self.build_type != 'ci': # Currently the CI machines have no sudo
+          execute_command('sudo apt-get update')
+          if self.build_type == 'ci':
+            execute_command('sudo apt-get install -y python3-dev libx11-dev')
+          else:
+            execute_command(
+              'sudo apt-get install -y python3-dev git build-essential cmake make g++ libx11-dev')
       elif dist == 'arch':
         execute_command('sudo pacman --needed -S git cmake make gcc')
       elif dist == 'fedora':

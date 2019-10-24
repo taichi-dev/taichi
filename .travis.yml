@@ -15,13 +15,14 @@ before_install:
 - echo $CXX
 - echo $PYTHON
 - sysctl -n hw.ncpu
-- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update; brew install $PYTHON || brew upgrade python; fi
-- curl -SL https://github.com/yuanming-hu/taichi_assets/releases/download/llvm8/taichi-llvm-8.0.1.zip | tar -xJC .
-- export PATH=`pwd`/taichi-llvm-8.0.1/bin/$PATH
+# - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update; brew install $PYTHON || brew upgrade python; fi
+- wget https://github.com/yuanming-hu/taichi_assets/releases/download/llvm8/taichi-llvm-8.0.1.zip
+- unzip taichi-llvm-8.0.1.zip
+- export PATH=`pwd`/taichi-llvm-8.0.1/bin/:$PATH
 - llvm-config
 
 script:
-- "$PYTHON dev_setup.py"
+- "$PYTHON dev_setup.py ci"
 
 env:
   global:

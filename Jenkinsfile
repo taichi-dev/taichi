@@ -92,23 +92,18 @@ void build_taichi() {
     echo $PATH
     echo $CC
     echo $CXX
+    $CC --version
+    $CXX --version
     echo $WORKSPACE
     export TAICHI_REPO_DIR=$WORKSPACE/
+    echo $TAICHI_REPO_DIR
     export PYTHONPATH=$TAICHI_REPO_DIR/python
     export PATH=$WORKSPACE/bin/:$PATH
     nvidia-smi
-    $CC --version
-    $CXX --version
-    echo $TAICHI_REPO_DIR
     cd $TAICHI_REPO_DIR
     [ -e build ] && rm -rf build
     mkdir build && cd build
     cmake .. -DPYTHON_EXECUTABLE=$PYTHON_EXECUTABLE -DCUDA_VERSION=$CUDA_VERSION
     make -j 15
-    $CC --version
-    $CXX --version
-    echo $TAICHI_REPO_DIR
-    echo $TAICHI_REPO_DIR
-    echo $PYTHONPATH
     '''
 }

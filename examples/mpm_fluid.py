@@ -20,8 +20,9 @@ x, v = vec(), vec()
 grid_v, grid_m = vec(), scalar()
 C, J = mat(), scalar()
 
-# ti.cfg.arch = ti.x86_64
-ti.cfg.arch = ti.cuda
+ti.cfg.arch = ti.x86_64
+ti.cfg.print_kernel_llvm_ir = False
+# ti.cfg.arch = ti.cuda
 
 @ti.layout
 def place():
@@ -105,13 +106,14 @@ def main():
     x[i] = [random.random() * 0.4 + 0.2, random.random() * 0.4 + 0.2]
     v[i] = [0, -1]
     J[i] = 1
-
+    
   for f in range(200):
     canvas.clear(0x112F41)
     for s in range(150):
       clear_grid()
       p2g()
       grid_op()
+      print('here')
       g2p()
 
 

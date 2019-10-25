@@ -483,7 +483,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
         BasicBlock::Create(*llvm_context, "false_block", func);
     BasicBlock *after_if = BasicBlock::Create(*llvm_context, "after_if", func);
     builder->CreateCondBr(
-        builder->CreateICmpEQ(if_stmt->cond->value, tlctx->get_constant(0)),
+        builder->CreateICmpNE(if_stmt->cond->value, tlctx->get_constant(0)),
         true_block, false_block);
     builder->SetInsertPoint(true_block);
     if (if_stmt->true_statements) {

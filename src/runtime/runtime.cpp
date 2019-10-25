@@ -66,7 +66,11 @@ DEFINE_UNARY_REAL_FUNC(tanh)
 DEFINE_UNARY_REAL_FUNC(abs)
 
 int abs_i32(int a) {
-  return std::abs(a);
+  if (a > 0) {
+    return a;
+  } else {
+    return -a;
+  }
 }
 
 int max_i32(int a, int b) {

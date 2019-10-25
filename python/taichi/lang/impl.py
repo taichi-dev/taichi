@@ -389,15 +389,15 @@ class Kernel:
         if isinstance(needed, template):
           continue
         provided = type(v)
-        if needed == f32:
+        if isinstance(needed, taichi_lang_core.DataType) and needed == f32:
           if type(v) not in [float, int]:
             raise KernelArgError(i, needed, provided)
           t_kernel.set_arg_float(actual_argument_slot, float(v))
-        elif needed == i32:
+        elif isinstance(needed, taichi_lang_core.DataType) and needed == i32:
           if type(v) not in [int]:
             raise KernelArgError(i, needed, provided)
           t_kernel.set_arg_int(actual_argument_slot, int(v))
-        elif isinstance(needed, ext_arr) or isinstance(needed, np.ndarray):
+        elif isinstance(needed, ext_arr) or isinstance(needed, np.ndarray) or needed == np.ndarray:
           assert v.dtype == np.float32, 'Kernel arg supports single-precision (float32) np arrays only'
           tmp = np.ascontiguousarray(v)
           t_kernel.set_arg_nparray(actual_argument_slot, int(tmp.ctypes.data), tmp.nbytes)

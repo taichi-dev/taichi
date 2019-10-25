@@ -2,14 +2,6 @@
 ### High-Performance (Differentiable) Computing on Spatially Sparse Data Structures
 
 # [Python Frontend Tutorial](https://github.com/yuanming-hu/taichi/tree/master/python/taichi)
-##  PyPI package for Linux (experimental)
-```
-# With GPU support (needs CUDA 9.0+)
-python3 -m pip install taichi-gpu-nightly --user
-
-# CPU only. No GPU/CUDA needed
-python3 -m pip install taichi-nightly --user
-```
 
 ###  Developer Installation
 (Note this is for the compiler developers of Taichi lang. I'm building a pip package for end users.)

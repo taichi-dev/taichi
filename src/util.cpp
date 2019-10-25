@@ -303,7 +303,7 @@ std::string CompileConfig::compiler_config() {
     include_flag = fmt::format("-I{}/include/", get_python_package_dir());
   } else {
     linking = fmt::format(" -L{}/build -ltaichi_core ", get_repo_dir());
-    include_flag = fmt::format(" -I{}/include/ ", get_project_fn());
+    include_flag = fmt::format(" -I{}/include/ ", get_repo_dir());
   }
   if (arch == Arch::x86_64) {
     cmd = fmt::format(

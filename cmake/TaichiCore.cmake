@@ -17,21 +17,9 @@ option(USE_STDCPP "Use -stdlib=libc++" OFF)
 option(TLANG_WITH_VDB "Use VDB" OFF)
 option(TLANG_WITH_CUDA "Build with GPU support" ON)
 
-# include_directories(external/openvdb/)
 include_directories(external/xxhash)
 
-if (TLANG_WITH_VDB)
-    list(APPEND  PROJECT_SOURCES "baselines/vdb/benchmark_vdb.cpp")
-    list(APPEND  PROJECT_SOURCES "baselines/vdb/convert_vdb.cpp")
-endif()
-
 set(LIBRARY_NAME ${CORE_LIBRARY_NAME})
-
-if (TLANG_WITH_FEM)
-    # Change the path to your own libSPGridCPUSolver.so
-    target_link_libraries(${LIBRARY_NAME} /home/user/repos/topo_opt_private/solver/libSPGridCPUSolver.so )
-    target_link_libraries(${LIBRARY_NAME} /opt/intel/compilers_and_libraries_2019/linux/mkl/lib/intel64_lin/libmkl_rt.so)
-endif()
 
 if(NOT CUDA_VERSION)
     set(CUDA_VERSION 10.0)

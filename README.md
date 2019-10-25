@@ -1,4 +1,4 @@
-# The Taichi Programming Language [[Details]](https://github.com/yuanming-hu/taichi/blob/master/lang/README.md)
+# The Taichi Programming Language [[Details]](https://github.com/yuanming-hu/taichi/blob/master/src/README.md)
 
 | **Linux (CUDA)** | **OS X** |**Chat** |
 |-------|-----|------|

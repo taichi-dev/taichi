@@ -7,8 +7,6 @@
 
 TLANG_NAMESPACE_BEGIN
 
-std::string get_project_fn();
-
 template <typename T>
 using Handle = std::shared_ptr<T>;
 

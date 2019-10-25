@@ -3,7 +3,7 @@ set(CORE_LIBRARY_NAME taichi_core)
 include(cmake/PythonNumpyPybind11.cmake)
 
 file(GLOB TAICHI_CORE_SOURCE
-        "src/*/*/*/*.cpp" "src/*/*/*.cpp" "src/*/*.cpp" "src/*.cpp"
+        "src/*/*/*/*.cpp" "src/*/*/*.cpp" "src/*/*.cpp" "src/*.cpp" "examples/cpp/*.cpp"
         "src/*/*/*/*.h" "src/*/*/*.h" "src/*/*.h" "src/*.h"
         "include/taichi/*/*/*/*.cpp" "include/taichi/*/*/*.cpp" "include/taichi/*/*.cpp"
         "include/taichi/*/*/*/*.h" "include/taichi/*/*/*.h" "include/taichi/*/*.h")
@@ -34,7 +34,6 @@ if (TLANG_WITH_CUDA)
         message("Found CUDA. Arch = ${CUDA_ARCH}")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DCUDA_FOUND -DTLANG_WITH_CUDA -D TLANG_CUDA_VERSION='\"${CUDA_VERSION}\"'")
         include_directories(/usr/local/cuda-${CUDA_VERSION}/include)
-        # link_directories(/usr/local/cuda-${CUDA_VERSION}/lib64)
         target_link_libraries(${LIBRARY_NAME} /usr/local/cuda-${CUDA_VERSION}/lib64/libcudart.so cuda)
     else()
         message("CUDA not found.")

@@ -95,7 +95,7 @@ void compile_runtime_bitcode(Arch arch) {
     auto clang = find_existing_command({"clang-7", "clang"});
     TC_ASSERT(command_exist("llvm-as"));
     TC_TRACE("Compiling runtime module bitcode...");
-    auto runtime_folder = get_project_fn() + "/runtime/";
+    auto runtime_folder = get_repo_dir() + "/src/runtime/";
     std::string macro = fmt::format(" -D ARCH_{} ", arch_name(arch));
     int ret = std::system(
         fmt::format("{} -S {}runtime.cpp -o {}runtime.ll -emit-llvm -std=c++17",
@@ -134,7 +134,7 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
   if (!runtime_module) {
     compile_runtime_bitcode(arch);
     runtime_module = module_from_bitcode_file(
-        get_project_fn() + "/runtime/runtime.bc", ctx.get());
+        get_repo_dir() + "/src/runtime/runtime.bc", ctx.get());
     if (arch == Arch::gpu) {
       auto libdevice_module = module_from_bitcode_file(
           "/usr/local/cuda-10.0/nvvm/libdevice/libdevice.10.bc", ctx.get());

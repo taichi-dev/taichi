@@ -61,10 +61,6 @@ real measure_cpe(std::function<void()> target,
   return elasped_cycles / float64(total_batches * elements_per_call);
 }
 
-std::string get_project_fn() {
-  return fmt::format("{}/lang/", get_repo_dir());
-}
-
 int default_simd_width(Arch arch) {
   if (arch == Arch::x86_64) {
     return default_simd_width_x86_64;
@@ -322,7 +318,7 @@ std::string CompileConfig::compiler_config() {
         "{}/include -I/usr/local/cuda/include/ -ccbin {} "
         " -lstdc++ {} {} "
         "-DTLANG_GPU {} ",
-        gcc_opt_flag(), get_project_fn(), "g++-6", include_flag, linking,
+        gcc_opt_flag(), get_repo_dir(), "g++-6", include_flag, linking,
         extra_flags);
   }
   return cmd;

@@ -273,6 +273,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     UNARY_STD(tan)
     UNARY_STD(tanh)
     UNARY_STD(sgn)
+    UNARY_STD(logic_not)
     else {
       TC_P(unary_op_type_name(op));
       TC_NOT_IMPLEMENTED
@@ -476,16 +477,25 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   }
 
   void visit(IfStmt *if_stmt) {
+    BasicBlock *true_block =
+        BasicBlock::Create(*llvm_context, "true_block", func);
+    BasicBlock *false_block =
+        BasicBlock::Create(*llvm_context, "false_block", func);
+    BasicBlock *after_if = BasicBlock::Create(*llvm_context, "after_if", func);
+    builder->CreateCondBr(
+        builder->CreateICmpEQ(if_stmt->cond->value, tlctx->get_constant(0)),
+        true_block, false_block);
+    builder->SetInsertPoint(true_block);
     if (if_stmt->true_statements) {
-      emit("if (any({})) {{", if_stmt->true_mask->raw_name());
       if_stmt->true_statements->accept(this);
-      emit("}}");
     }
+    builder->CreateBr(false_block);
+    builder->SetInsertPoint(false_block);
     if (if_stmt->false_statements) {
-      emit("if (any({})) {{", if_stmt->false_mask->raw_name());
       if_stmt->false_statements->accept(this);
-      emit("}}");
     }
+    builder->CreateBr(after_if);
+    builder->SetInsertPoint(after_if);
   }
 
   void visit(PrintStmt *stmt) {
@@ -927,8 +937,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       emit("{}.store({}[0]);", stmt->data->raw_name(), stmt->ptr->raw_name());
     }
     */
-    TC_ASSERT(!stmt->parent->mask());
-    TC_ASSERT(stmt->width() == 1);
+    TC_ASSERT(!stmt->parent->mask() || stmt->width() == 1);
     /*
     emit("*({} *){}[{}] = {}[{}];",
          data_type_name(stmt->data->ret_type.data_type),

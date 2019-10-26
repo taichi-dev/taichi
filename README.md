@@ -64,4 +64,4 @@ sudo apt install g++-7 -y
 <img src="https://github.com/yuanming-hu/public_files/raw/master/graphics/mls-mpm-cpic/bunny.gif"> <img src="https://github.com/yuanming-hu/public_files/raw/master/graphics/mls-mpm-cpic/robot_forward.gif">
 <img src="https://github.com/yuanming-hu/public_files/raw/master/graphics/mls-mpm-cpic/banana.gif"> <img src="https://github.com/yuanming-hu/public_files/raw/master/graphics/mls-mpm-cpic/cheese.gif">
  
-## [Getting Started](https://taichi.readthedocs.io/en/latest/installation.html#)
+## [Getting Started (Legacy)](https://taichi.readthedocs.io/en/latest/installation.html#)

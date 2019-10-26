@@ -1176,13 +1176,10 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     TC_ASSERT(stmt->width() == 1);
     TC_ASSERT(stmt->indices.size() == 1);
     auto dt = stmt->ret_type.data_type;
-    stmt->value = builder->CreateBitCast(
+    auto base = builder->CreateBitCast(
         stmt->base_ptrs[0]->value,
         llvm::PointerType::get(tlctx->get_data_type(dt), 0));
-    /*
-    emit("const {} *{}[1] = {{&{}[{}]}};", data_type_name(dt), stmt->raw_name(),
-         stmt->base_ptrs[0]->raw_name(), stmt->indices[0]->raw_name());
-         */
+    stmt->value = builder->CreateGEP(base, {stmt->indices[0]->value});
   }
 
   ~CodeGenLLVM() {

@@ -3,7 +3,6 @@ import numpy as np
 
 @ti.program_test
 def test_numpy():
-  return
   val = ti.var(ti.i32)
 
   n = 4

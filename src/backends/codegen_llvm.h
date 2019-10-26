@@ -580,6 +580,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   }
 
   void visit(StructForStmt *for_stmt) {
+
     // emit listgen
     auto leaf = for_stmt->snode;
     TC_ASSERT(leaf->type == SNodeType::place)
@@ -628,6 +629,11 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       auto old_func = func;
       // emit into loop body function
       func = body;
+
+      auto allocas = BasicBlock::Create(*llvm_context, "allocs", body);
+      auto old_entry = entry_block;
+      entry_block = allocas;
+
       auto entry = BasicBlock::Create(*llvm_context, "entry", func);
 
       auto ip = builder->saveIP();
@@ -636,7 +642,8 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
 
       auto body_bb = BasicBlock::Create(*llvm_context, "loop_body", func);
       // per-leaf-block for loop
-      auto loop_index = create_entry_block_alloca(Type::getInt32Ty(*llvm_context));
+      auto loop_index =
+          create_entry_block_alloca(Type::getInt32Ty(*llvm_context));
       builder->CreateStore(tlctx->get_constant(0), loop_index);
       builder->CreateBr(body_bb);
 
@@ -672,11 +679,19 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       builder->CreateRetVoid();
       func = old_func;
       builder->restoreIP(ip);
+
+      {
+        llvm::IRBuilderBase::InsertPointGuard gurad(*builder);
+        builder->SetInsertPoint(allocas);
+        builder->CreateBr(entry);
+        entry_block = old_entry;
+      }
     }
 
     // traverse leaf node
     create_call("for_each_block",
                 {get_context(), tlctx->get_constant(path.back()->id), body});
+
   }
 
   llvm::Value *create_call(llvm::Value *func, std::vector<Value *> args) {

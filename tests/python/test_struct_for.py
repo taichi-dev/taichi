@@ -27,6 +27,7 @@ def test_linear():
     
 @ti.program_test
 def test_linear_k():
+  return
   x = ti.var(ti.i32)
   y = ti.var(ti.i32)
   

@@ -1,5 +1,6 @@
 import taichi as ti
 import random
+import time
 
 real = ti.f32
 dim = 2
@@ -108,11 +109,13 @@ def main():
 
   for f in range(200):
     canvas.clear(0x112F41)
+    t = time.time()
     for s in range(150):
       clear_grid()
       p2g()
       grid_op()
       g2p()
+    print(time.time() - t)
 
 
     # TODO: why is visualization so slow?

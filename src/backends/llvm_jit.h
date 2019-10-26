@@ -42,6 +42,7 @@ std::string compile_module_to_ptx(std::unique_ptr<llvm::Module> &module);
 int compile_ptx_and_launch(const std::string &ptx,
                            const std::string &kernel_name,
                            void *);
+void global_optimize_module_x86_64(std::unique_ptr<llvm::Module> &module);
 
 class TaichiLLVMJIT {
  private:
@@ -118,6 +119,7 @@ class TaichiLLVMJIT {
   }
 
   VModuleKey addModule(std::unique_ptr<Module> M) {
+    global_optimize_module_x86_64(M);
     // Create a new VModuleKey.
     VModuleKey K = ES.allocateVModule();
 
@@ -158,7 +160,6 @@ class TaichiLLVMJIT {
     auto FPM = llvm::make_unique<legacy::FunctionPassManager>(M.get());
 
     // Add some optimizations.
-    /*
     FPM->add(createInstructionCombiningPass());
     FPM->add(createReassociatePass());
     FPM->add(createGVNPass());
@@ -169,7 +170,6 @@ class TaichiLLVMJIT {
     // the JIT.
     for (auto &F : *M)
       FPM->run(F);
-     */
 
     return M;
   }

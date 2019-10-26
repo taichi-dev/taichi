@@ -48,15 +48,73 @@ std::string mattrs() {
   }
   */
 }
+
+void global_optimize_module_x86_64(std::unique_ptr<llvm::Module> &module) {
+  auto JTMB = JITTargetMachineBuilder::detectHost();
+  if (!JTMB) {
+  }
+  module->setTargetTriple(JTMB->getTargetTriple().str());
+  llvm::Triple triple(module->getTargetTriple());
+  TC_P(triple.str());
+
+  std::string err_str;
+  const llvm::Target *target =
+      TargetRegistry::lookupTarget(triple.str(), err_str);
+  TC_ERROR_UNLESS(target, err_str);
+
+  TargetOptions options;
+  options.PrintMachineCode = false;
+  options.AllowFPOpFusion = FPOpFusion::Fast;
+  options.UnsafeFPMath = true;
+  options.NoInfsFPMath = true;
+  options.NoNaNsFPMath = true;
+  options.HonorSignDependentRoundingFPMathOption = false;
+  options.NoZerosInBSS = false;
+  options.GuaranteedTailCallOpt = false;
+  options.StackAlignmentOverride = 0;
+
+  legacy::FunctionPassManager function_pass_manager(module.get());
+  legacy::PassManager module_pass_manager;
+
+  llvm::StringRef mcpu = llvm::sys::getHostCPUName();
+  TC_P(mcpu.str());
+  std::unique_ptr<TargetMachine> target_machine(target->createTargetMachine(
+      triple.str(), mcpu.str(), "", options, llvm::Reloc::PIC_,
+      llvm::CodeModel::Small, CodeGenOpt::Aggressive));
+
+  TC_ERROR_UNLESS(target_machine.get(), "Could not allocate target machine!");
+
+  module->setDataLayout(target_machine->createDataLayout());
+
+  module_pass_manager.add(createTargetTransformInfoWrapperPass(
+      target_machine->getTargetIRAnalysis()));
+  function_pass_manager.add(createTargetTransformInfoWrapperPass(
+      target_machine->getTargetIRAnalysis()));
+
+  PassManagerBuilder b;
+  b.OptLevel = 3;
+  b.Inliner = createFunctionInliningPass(b.OptLevel, 0, false);
+  b.LoopVectorize = true;
+  b.SLPVectorize = true;
+
+  target_machine->adjustPassManager(b);
+
+  b.populateFunctionPassManager(function_pass_manager);
+  b.populateModulePassManager(module_pass_manager);
+
+  function_pass_manager.doInitialization();
+  for (llvm::Module::iterator i = module->begin(); i != module->end(); i++)
+    function_pass_manager.run(*i);
+
+  function_pass_manager.doFinalization();
+  module_pass_manager.run(*module);
+
+  // module->print(llvm::errs(), nullptr);
+}
+
 #if defined(TLANG_WITH_CUDA)
 std::string compile_module_to_ptx(std::unique_ptr<llvm::Module> &module) {
   using namespace llvm;
-
-  // DISABLED - hooked in here to force PrintBeforeAll option - seems to be the
-  // only way?
-  /*char* argv[] = { "llc", "-print-before-all" };*/
-  /*int argc = sizeof(argv)/sizeof(char*);*/
-  /*cl::ParseCommandLineOptions(argc, argv, "Halide PTX internal compiler\n");*/
 
   llvm::Triple triple(module->getTargetTriple());
 

@@ -83,6 +83,10 @@ class ModuleBuilder {
     if (!f) {
       TC_ERROR("Runtime function {} not found.", name);
     }
+    // TC_P(std::string(f->getName()));
+    f->removeAttribute(AttributeList::FunctionIndex, llvm::Attribute::OptimizeNone);
+    f->removeAttribute(AttributeList::FunctionIndex, llvm::Attribute::NoInline);
+    f->addAttribute(AttributeList::FunctionIndex, llvm::Attribute::AlwaysInline);
     return f;
   }
 

@@ -13,18 +13,18 @@ def inside(p, c, r):
 @ti.func
 def inside_taichi(p_):
   p = p_
-  p = Vector2(0.5, 0.5) + (p - Vector2(0.5, 0.5)) * 1.08
+  p = Vector2(0.5, 0.5) + (p - Vector2(0.5, 0.5)) * 1.11
   ret = -1
-  if not inside(p, Vector2(0.50, 0.50), 0.52):
+  if not inside(p, Vector2(0.50, 0.50), 0.55):
     if ret == -1:
       ret = 0
-  if not inside(p, Vector2(0.50, 0.50), 0.495):
+  if not inside(p, Vector2(0.50, 0.50), 0.50):
     if ret == -1:
       ret = 1
-  if inside(p, Vector2(0.50, 0.25), 0.08):
+  if inside(p, Vector2(0.50, 0.25), 0.09):
     if ret == -1:
       ret = 1
-  if inside(p, Vector2(0.50, 0.75), 0.08):
+  if inside(p, Vector2(0.50, 0.75), 0.09):
     if ret == -1:
       ret = 0
   if inside(p, Vector2(0.50, 0.25), 0.25):
@@ -66,5 +66,6 @@ for i in range(n):
   for j in range(n):
     img[i, j] = x[j, n - 1 - i]
 
-cv2.imshow('img', img)
+cv2.imshow('Taichi', img)
+cv2.imwrite('taichi.png', img * 255)
 cv2.waitKey(0)

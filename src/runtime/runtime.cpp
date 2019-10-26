@@ -291,7 +291,6 @@ Ptr Runtime_initialize(Runtime **runtime_ptr,
   }
   // Assuming num_snodes - 1 is the root
   auto root_ptr = taichi_allocate_aligned(root_size, 4096);
-  printf("root_ptr %lld\n", root_ptr);
   Element elem;
   elem.loop_bounds[0] = 0;
   elem.loop_bounds[1] = 1;

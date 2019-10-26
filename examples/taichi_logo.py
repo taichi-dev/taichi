@@ -13,7 +13,7 @@ def inside(p, c, r):
 @ti.func
 def inside_taichi(p_):
   p = p_
-  p = Vector2(0.5, 0.5) + (p - Vector2(0.5, 0.5)) * 1.1
+  p = Vector2(0.5, 0.5) + (p - Vector2(0.5, 0.5)) * 1.08
   ret = -1
   if not inside(p, Vector2(0.50, 0.50), 0.52):
     if ret == -1:
@@ -43,7 +43,7 @@ def inside_taichi(p_):
 
 x = ti.var(ti.f32)
 
-n = 256
+n = 512
 ti.cfg.use_llvm = True
 
 @ti.layout
@@ -53,10 +53,10 @@ def layout():
 
 @ti.kernel
 def paint():
-  for i in range(n):
-    for j in range(n):
-      ret = 1 - inside_taichi(Vector2(1.0 * i / n, 1.0 * j / n))
-      x[i, j] = ret
+  for i in range(n * 4):
+    for j in range(n * 4):
+      ret = 1.0 - inside_taichi(Vector2(1.0 * i / n / 4, 1.0 * j / n / 4))
+      x[i // 4, j // 4] += ret / 16
 
 
 paint()

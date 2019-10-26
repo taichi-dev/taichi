@@ -150,6 +150,13 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
       } else {
         TC_NOT_IMPLEMENTED
       }
+    } else if (op == UnaryOpType::logic_not) {
+      if (input_taichi_type == DataType::i32) {
+        stmt->value =
+            builder->CreateCall(get_runtime_function("logic_not_i32"), input);
+      } else {
+        TC_NOT_IMPLEMENTED
+      }
     }
     UNARY_STD(exp)
     UNARY_STD(log)

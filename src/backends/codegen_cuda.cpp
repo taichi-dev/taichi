@@ -973,7 +973,7 @@ class GPUIRCodeGen : public IRVisitor {
   }
 };
 
-void GPUCodeGen::lower() {
+void GPUCodeGen::lower_cuda() {
   auto ir = kernel->ir;
   if (prog->config.print_ir) {
     irpass::print(ir);
@@ -1041,6 +1041,85 @@ void GPUCodeGen::lower() {
     TC_TRACE("Access Flagged:");
     irpass::re_id(ir);
     irpass::print(ir);
+  }
+}
+
+void GPUCodeGen::lower_llvm() {
+  auto ir = kernel->ir;
+  if (prog->config.print_ir) {
+    irpass::print(ir);
+  }
+  irpass::lower(ir);
+  irpass::re_id(ir);
+  if (prog->config.print_ir) {
+    irpass::print(ir);
+  }
+  irpass::typecheck(ir);
+  irpass::re_id(ir);
+  if (prog->config.print_ir) {
+    irpass::print(ir);
+  }
+  irpass::constant_fold(ir);
+  if (prog->config.simplify_before_lower_access) {
+    irpass::simplify(ir);
+    irpass::re_id(ir);
+    if (prog->config.print_ir) {
+      TC_TRACE("Simplified I:");
+      irpass::print(ir);
+    }
+  }
+  if (kernel->grad) {
+    // irpass::re_id(ir);
+    // TC_TRACE("Primal:");
+    // irpass::print(ir);
+    irpass::make_adjoint(ir);
+    irpass::typecheck(ir);
+    // irpass::re_id(ir);
+    // TC_TRACE("Adjoint:");
+    // irpass::print(ir);
+  }
+  if (prog->config.lower_access || prog->config.use_llvm) {
+    TC_INFO("Always lower access when using llvm");
+    irpass::lower_access(ir, prog->config.use_llvm);
+    if (prog->config.print_ir) {
+      TC_TRACE("Access Lowered:");
+      irpass::re_id(ir);
+      irpass::print(ir);
+    }
+    if (prog->config.simplify_after_lower_access) {
+      irpass::die(ir);
+      if (prog->config.print_ir) {
+        TC_TRACE("DIEd:");
+        irpass::re_id(ir);
+        irpass::print(ir);
+      }
+      irpass::simplify(ir);
+      if (prog->config.print_ir) {
+        TC_TRACE("Simplified II:");
+        irpass::re_id(ir);
+        irpass::print(ir);
+      }
+    }
+  }
+  irpass::die(ir);
+  if (prog->config.print_ir) {
+    TC_TRACE("DIEd:");
+    irpass::re_id(ir);
+    irpass::print(ir);
+  }
+  irpass::flag_access(ir);
+  if (prog->config.print_ir) {
+    TC_TRACE("Access Flagged:");
+    irpass::re_id(ir);
+    irpass::print(ir);
+  }
+}
+
+void GPUCodeGen::lower() {
+  if (prog->config.use_llvm) {
+    lower_llvm();
+  } else {
+    lower_cuda();
   }
 }
 

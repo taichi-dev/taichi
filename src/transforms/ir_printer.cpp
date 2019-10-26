@@ -361,6 +361,14 @@ class IRPrinter : public IRVisitor {
 
     print(fmt::format("{} = external_ptr {}", stmt->name(), s));
   }
+
+  void visit(OffloadedStmt *stmt) override {
+    print("{} = offloaded {{", stmt->name());
+    current_indent++;
+    stmt->body_stmt->accept(this);
+    current_indent--;
+    print("}}");
+  }
 };
 
 namespace irpass {

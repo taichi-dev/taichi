@@ -90,6 +90,7 @@ void replace_all_usages_with(IRNode *root, Stmt *old_stmt, Stmt *new_stmt);
 void lower_access(IRNode *root, bool lower_atomic);
 void make_adjoint(IRNode *root);
 void constant_fold(IRNode *root);
+void offload(IRNode *root);
 std::unique_ptr<ScratchPads> initialize_scratch_pad(StructForStmt *root);
 
 }  // namespace irpass
@@ -528,6 +529,11 @@ class Stmt : public IRNode {
   template <typename T>
   T *as() {
     TC_ASSERT(is<T>());
+    return dynamic_cast<T *>(this);
+  }
+
+  template <typename T>
+  T *cast() {
     return dynamic_cast<T *>(this);
   }
 

@@ -63,6 +63,7 @@ def test_numpy_loops():
 @ti.program_test
 def test_nested_loops():
   # this may crash if any LLVM allocas are called in the loop body
+  ti.cfg.print_ir = True
   x = ti.var(ti.i32)
 
   n = 2048

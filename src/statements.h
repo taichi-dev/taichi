@@ -161,7 +161,8 @@ class OffloadedStmt : public Stmt {
 
   Type type;
   SNode *snode;
-  std::unique_ptr<Block> body;
+  std::unique_ptr<Block> body_block;
+  std::unique_ptr<Stmt> body_stmt;
 
   OffloadedStmt(Type type) : type(type) {
   }

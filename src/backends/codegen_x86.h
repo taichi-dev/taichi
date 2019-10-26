@@ -17,6 +17,9 @@ class CPUCodeGen : public KernelCodeGen {
 
   void lower() override;
 
+  void lower_cpp();
+  void lower_llvm();
+
   void codegen() override;
 
   virtual FunctionType codegen_llvm() override;

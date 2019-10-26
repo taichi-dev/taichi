@@ -53,3 +53,6 @@ PER_STATEMENT(PragmaSLPStmt)
 
 // Clearer
 PER_STATEMENT(ClearAllStmt)
+
+// Offloaded
+PER_STATEMENT(OffloadedStmt)

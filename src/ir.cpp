@@ -21,7 +21,7 @@ class StatementTypeNameVisitor : public IRVisitor {
   void visit(x *stmt) override { \
     type_name = #x;              \
   }
-#include "statements.inc.h"
+#include "inc/statements.inc.h"
 #undef PER_STATEMENT
 };
 

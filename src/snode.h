@@ -61,6 +61,7 @@ class SNode {
   int taken_bits[max_num_indices];  // counting from the tail
   int num_active_indices;
   int physical_index_position[max_num_indices];
+  // physical indices are (ti.i, ti.j, ti.k, ti.l, ...)
   // physical_index_position[i] =
   // the virtual index position of the i^th physical index
 

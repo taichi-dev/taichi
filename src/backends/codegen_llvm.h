@@ -580,7 +580,6 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   }
 
   void visit(StructForStmt *for_stmt) {
-
     // emit listgen
     auto leaf = for_stmt->snode;
     TC_ASSERT(leaf->type == SNodeType::place)
@@ -691,7 +690,6 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     // traverse leaf node
     create_call("for_each_block",
                 {get_context(), tlctx->get_constant(path.back()->id), body});
-
   }
 
   llvm::Value *create_call(llvm::Value *func, std::vector<Value *> args) {
@@ -777,9 +775,12 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
         }
       }
     if (loop_var_index != -1) {
+      auto snode = current_struct_for->snode;
       stmt->value = builder->CreateLoad(builder->CreateGEP(
-          current_coordinates, {tlctx->get_constant(0), tlctx->get_constant(0),
-                                tlctx->get_constant(loop_var_index)}));
+          current_coordinates,
+          {tlctx->get_constant(0), tlctx->get_constant(0),
+           tlctx->get_constant(
+               snode->physical_index_position[loop_var_index])}));
     } else {
       stmt->value = builder->CreateLoad(stmt->ptr[0].var->value);
     }
@@ -1179,7 +1180,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     auto base = builder->CreateBitCast(
         stmt->base_ptrs[0]->value,
         llvm::PointerType::get(tlctx->get_data_type(dt), 0));
-    stmt->value = builder->CreateGEP(base, {stmt->indices[0]->value});
+    stmt->value = builder->CreateGEP(base, stmt->indices[0]->value);
   }
 
   ~CodeGenLLVM() {

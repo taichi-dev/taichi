@@ -28,11 +28,13 @@
     s->F[i] = f;                                                             \
   }
 
+using int8= int8_t;
 using int32 = int32_t;
 using int64 = int64_t;
 using float32 = float;
 using float64 = double;
 
+using i8 = int8;
 using i32 = int32;
 using f32 = float32;
 using f64 = float64;
@@ -48,7 +50,7 @@ using ContextArgType = long long;
 extern "C" {
 
 void vprintf(Ptr format, Ptr arg);
-int printf(const char *, ...);
+i32 printf(const char*, ...);
 
 #define DEFINE_UNARY_REAL_FUNC(F) \
   float F##_f32(float x) {        \
@@ -288,7 +290,8 @@ Ptr Runtime_initialize(Runtime **runtime_ptr,
     ElementList_initialize(runtime->element_lists[i]);
   }
   // Assuming num_snodes - 1 is the root
-  auto root_ptr = taichi_allocate(root_size);
+  auto root_ptr = taichi_allocate_aligned(root_size, 4096);
+  printf("root_ptr %lld\n", root_ptr);
   Element elem;
   elem.loop_bounds[0] = 0;
   elem.loop_bounds[1] = 1;

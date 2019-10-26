@@ -37,6 +37,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   llvm::Value *current_coordinates;
   bool offloaded;
   llvm::BasicBlock *while_after_loop;
+  llvm::BasicBlock *entry_block;
 
   void initialize_context() {
     if (get_current_program().config.arch == Arch::gpu) {
@@ -186,11 +187,20 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
 
   virtual void emit_to_module() {
     auto node = kernel->ir;
+    this->entry_block = BasicBlock::Create(*llvm_context, "entry", func);
+    // entry_block has all the allocas
+
+    // The real function body
     BasicBlock *bb = BasicBlock::Create(*llvm_context, "entry", func);
     builder->SetInsertPoint(bb);
 
     node->accept(this);
     builder->CreateRetVoid();
+
+
+    // entry_block should jump to the body after all allocas are inserted
+    builder->SetInsertPoint(entry_block);
+    builder->CreateBr(bb);
 
     if (get_current_program().config.print_kernel_llvm_ir) {
       TC_INFO("Kernel Module IR");
@@ -229,10 +239,15 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     }
   }
 
+  llvm::Value *create_entry_block_alloca(DataType dt) {
+    llvm::IRBuilderBase::InsertPointGuard guard(*builder);
+    builder->SetInsertPoint(entry_block);
+    return builder->CreateAlloca(tlctx->get_data_type(dt), (unsigned)0);
+  }
+
   void visit(AllocaStmt *stmt) {
     TC_ASSERT(stmt->width() == 1);
-    stmt->value = builder->CreateAlloca(
-        tlctx->get_data_type(stmt->ret_type.data_type), (unsigned)0);
+    stmt->value = create_entry_block_alloca(stmt->ret_type.data_type);
     // initialize as zero
     builder->CreateStore(tlctx->get_constant(stmt->ret_type.data_type, 0),
                          stmt->value);

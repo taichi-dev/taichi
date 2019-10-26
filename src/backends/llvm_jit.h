@@ -158,6 +158,7 @@ class TaichiLLVMJIT {
     auto FPM = llvm::make_unique<legacy::FunctionPassManager>(M.get());
 
     // Add some optimizations.
+    /*
     FPM->add(createInstructionCombiningPass());
     FPM->add(createReassociatePass());
     FPM->add(createGVNPass());
@@ -168,6 +169,7 @@ class TaichiLLVMJIT {
     // the JIT.
     for (auto &F : *M)
       FPM->run(F);
+     */
 
     return M;
   }

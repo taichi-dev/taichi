@@ -60,3 +60,21 @@ def test_numpy_loops():
   for i in range(N // 2 + 3, N):
     assert x[i] == abs(y[i])
 
+@ti.program_test
+def test_nested_loops():
+  # this may crash if any LLVM allocas are called in the loop body
+  x = ti.var(ti.i32)
+
+  n = 2048
+
+  @ti.layout
+  def layout():
+    ti.root.dense(ti.ij, n).place(x)
+
+  @ti.kernel
+  def paint():
+    for i in range(n):
+      for j in range(n):
+        x[0, 0] = i
+
+  paint()

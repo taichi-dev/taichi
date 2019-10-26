@@ -70,7 +70,7 @@ class ExprGroup;
 class ScratchPads;
 
 #define PER_STATEMENT(x) class x;
-#include "statements.inc.h"
+#include "inc/statements.inc.h"
 #undef PER_STATEMENT
 
 // IR passes
@@ -249,7 +249,8 @@ class VecStatement {
  public:
   std::vector<pStmt> stmts;
 
-  VecStatement() {}
+  VecStatement() {
+  }
 
   VecStatement(pStmt &&stmt) {
     push_back(std::move(stmt));
@@ -315,52 +316,9 @@ class IRVisitor {
   }
 
   DEFINE_VISIT(Block);
-
-  DEFINE_VISIT(FrontendIfStmt);
-  DEFINE_VISIT(FrontendAllocaStmt);
-  DEFINE_VISIT(FrontendPrintStmt);
-  DEFINE_VISIT(FrontendForStmt);
-  DEFINE_VISIT(FrontendWhileStmt);
-  DEFINE_VISIT(FrontendAssignStmt);
-  DEFINE_VISIT(FrontendAtomicStmt);
-  DEFINE_VISIT(FrontendSNodeOpStmt);
-  DEFINE_VISIT(FrontendEvalStmt);
-  DEFINE_VISIT(FrontendAssertStmt);
-
-  DEFINE_VISIT(ArgLoadStmt);
-  DEFINE_VISIT(ExternalPtrStmt);
-  DEFINE_VISIT(SNodeOpStmt);
-  DEFINE_VISIT(AllocaStmt);
-  DEFINE_VISIT(UnaryOpStmt);
-  DEFINE_VISIT(LocalLoadStmt);
-  DEFINE_VISIT(BinaryOpStmt);
-  DEFINE_VISIT(TernaryOpStmt);
-  DEFINE_VISIT(AtomicOpStmt);
-  DEFINE_VISIT(LocalStoreStmt);
-  DEFINE_VISIT(GlobalLoadStmt);
-  DEFINE_VISIT(GlobalStoreStmt);
-  DEFINE_VISIT(GlobalPtrStmt);
-  DEFINE_VISIT(IfStmt);
-  DEFINE_VISIT(PrintStmt);
-  DEFINE_VISIT(ConstStmt);
-  DEFINE_VISIT(RangeForStmt);
-  DEFINE_VISIT(StructForStmt);
-  DEFINE_VISIT(WhileStmt);
-  DEFINE_VISIT(WhileControlStmt);
-  DEFINE_VISIT(RandStmt);
-  DEFINE_VISIT(RangeAssumptionStmt);
-  DEFINE_VISIT(AssertStmt);
-
-  DEFINE_VISIT(IntegerOffsetStmt);
-  DEFINE_VISIT(OffsetAndExtractBitsStmt);
-  DEFINE_VISIT(LinearizeStmt);
-  DEFINE_VISIT(SNodeLookupStmt);
-  DEFINE_VISIT(GetChStmt);
-
-  DEFINE_VISIT(PragmaSLPStmt);
-  DEFINE_VISIT(ElementShuffleStmt);
-
-  DEFINE_VISIT(ClearAllStmt);
+#define PER_STATEMENT(x) DEFINE_VISIT(x)
+#include "inc/statements.inc.h"
+#undef PER_STATEMENT
 };
 
 class IRNode {

@@ -103,27 +103,9 @@ enum class SNodeType {
 std::string snode_type_name(SNodeType t);
 
 enum class UnaryOpType : int {
-  neg,
-  sqrt,
-  floor,
-  ceil,
-  cast,
-  abs,
-  sgn,
-  sin,
-  asin,
-  cos,
-  acos,
-  tan,
-  tanh,
-  inv,
-  rcp,
-  exp,
-  log,
-  rsqrt,
-  bit_not,
-  logic_not,
-  undefined
+#define PER_UNARY_OP(x) x,
+#include "inc/unary_op.h"
+#undef PER_UNARY_OP
 };
 
 std::string unary_op_type_name(UnaryOpType type);

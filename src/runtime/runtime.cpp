@@ -28,7 +28,7 @@
     s->F[i] = f;                                                             \
   }
 
-using int8= int8_t;
+using int8 = int8_t;
 using int32 = int32_t;
 using int64 = int64_t;
 using float32 = float;
@@ -50,7 +50,7 @@ using ContextArgType = long long;
 extern "C" {
 
 void vprintf(Ptr format, Ptr arg);
-i32 printf(const char*, ...);
+i32 printf(const char *, ...);
 
 #define DEFINE_UNARY_REAL_FUNC(F) \
   float F##_f32(float x) {        \

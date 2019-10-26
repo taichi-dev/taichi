@@ -164,28 +164,9 @@ std::string snode_type_name(SNodeType t) {
 std::string unary_op_type_name(UnaryOpType type) {
   static std::map<UnaryOpType, std::string> type_names;
   if (type_names.empty()) {
-#define REGISTER_TYPE(i) type_names[UnaryOpType::i] = #i;
-    REGISTER_TYPE(neg);
-    REGISTER_TYPE(sqrt);
-    REGISTER_TYPE(floor);
-    REGISTER_TYPE(cast);
-    REGISTER_TYPE(abs);
-    REGISTER_TYPE(sgn);
-    REGISTER_TYPE(sin);
-    REGISTER_TYPE(asin);
-    REGISTER_TYPE(cos);
-    REGISTER_TYPE(acos);
-    REGISTER_TYPE(tan);
-    REGISTER_TYPE(tanh);
-    REGISTER_TYPE(inv);
-    REGISTER_TYPE(exp);
-    REGISTER_TYPE(log);
-    REGISTER_TYPE(rcp);
-    REGISTER_TYPE(rsqrt);
-    REGISTER_TYPE(bit_not);
-    REGISTER_TYPE(logic_not);
-    REGISTER_TYPE(undefined);
-#undef REGISTER_TYPE
+#define PER_UNARY_OP(i) type_names[UnaryOpType::i] = #i;
+#include "inc/unary_op.h"
+#undef PER_UNARY_OP
   }
   return type_names[type];
 }

@@ -21,10 +21,7 @@ using namespace llvm;
 class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
  public:
   StructForStmt *current_struct_for;
-  TaichiLLVMContext *tlctx;
-  llvm::LLVMContext *llvm_context;
   TaichiLLVMJIT *jit;
-  llvm::IRBuilder<> *builder;
 
   CodeGenBase *codegen;
   Kernel *kernel;
@@ -37,7 +34,6 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   llvm::Value *current_coordinates;
   bool offloaded;
   llvm::BasicBlock *while_after_loop;
-  llvm::BasicBlock *entry_block;
 
   void initialize_context() {
     if (get_current_program().config.arch == Arch::gpu) {
@@ -197,7 +193,6 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     node->accept(this);
     builder->CreateRetVoid();
 
-
     // entry_block should jump to the body after all allocas are inserted
     builder->SetInsertPoint(entry_block);
     builder->CreateBr(bb);
@@ -237,12 +232,6 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     for (auto &stmt : stmt_list->statements) {
       stmt->accept(this);
     }
-  }
-
-  llvm::Value *create_entry_block_alloca(DataType dt) {
-    llvm::IRBuilderBase::InsertPointGuard guard(*builder);
-    builder->SetInsertPoint(entry_block);
-    return builder->CreateAlloca(tlctx->get_data_type(dt), (unsigned)0);
   }
 
   void visit(AllocaStmt *stmt) {
@@ -647,7 +636,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
 
       auto body_bb = BasicBlock::Create(*llvm_context, "loop_body", func);
       // per-leaf-block for loop
-      auto loop_index = builder->CreateAlloca(Type::getInt32Ty(*llvm_context));
+      auto loop_index = create_entry_block_alloca(Type::getInt32Ty(*llvm_context));
       builder->CreateStore(tlctx->get_constant(0), loop_index);
       builder->CreateBr(body_bb);
 
@@ -656,7 +645,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
 
       auto refine =
           get_runtime_function(leaf_block->refine_coordinates_func_name());
-      auto new_coordinates = builder->CreateAlloca(physical_coordinate_ty);
+      auto new_coordinates = create_entry_block_alloca(physical_coordinate_ty);
       RuntimeObject element("Element", this, builder, get_arg(1));
       create_call(refine, {element.get_ptr("pcoord"), new_coordinates,
                            builder->CreateLoad(loop_index)});

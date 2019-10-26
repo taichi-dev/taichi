@@ -33,6 +33,7 @@
 #include <vector>
 
 #include "llvm_jit.h"
+#include "../taichi_llvm_context.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -50,9 +51,24 @@ inline bool check_func_call_signature(llvm::Value *func, Args &&... args) {
 class ModuleBuilder {
  public:
   std::unique_ptr<Module> module;
+  llvm::BasicBlock *entry_block;
+  llvm::IRBuilder<> *builder;
+  TaichiLLVMContext *tlctx;
+  llvm::LLVMContext *llvm_context;
 
   ModuleBuilder(std::unique_ptr<Module> &&module) : module(std::move(module)) {
   }
+
+  llvm::Value *create_entry_block_alloca(llvm::Type *type) {
+    llvm::IRBuilderBase::InsertPointGuard guard(*builder);
+    builder->SetInsertPoint(entry_block);
+    return builder->CreateAlloca(type, (unsigned)0);
+  }
+
+  llvm::Value *create_entry_block_alloca(DataType dt) {
+    return create_entry_block_alloca(tlctx->get_data_type(dt));
+  }
+
 
   llvm::Type *get_runtime_type(const std::string &name) {
     auto ty = module->getTypeByName("struct." + name);
@@ -93,7 +109,7 @@ class RuntimeObject {
       : cls_name(cls_name), mb(mb), builder(builder) {
     if (init == nullptr) {
       auto type = mb->get_runtime_type(cls_name);
-      ptr = builder->CreateAlloca(type);
+      ptr = mb->create_entry_block_alloca(type);
     } else {
       ptr = builder->CreateBitCast(
           init, llvm::PointerType::get(mb->get_runtime_type(cls_name), 0));

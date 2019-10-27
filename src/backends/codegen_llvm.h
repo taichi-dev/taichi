@@ -1193,49 +1193,58 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     stmt->value = builder->CreateGEP(base, stmt->indices[0]->value);
   }
 
+  BasicBlock *func_body_bb;
+
+  void init_task_function() {
+    offloaded = false;
+    while_after_loop = nullptr;
+    current_struct_for = nullptr;
+
+    task_function_type =
+        llvm::FunctionType::get(llvm::Type::getVoidTy(*llvm_context),
+                                {PointerType::get(context_ty, 0)}, false);
+
+    func = Function::Create(task_function_type, Function::ExternalLinkage,
+                            kernel_name, module.get());
+
+    task.begin(kernel_name);
+
+    for (auto &arg : func->args()) {
+      kernel_args.push_back(&arg);
+    }
+    kernel_args[0]->setName("context");
+
+    auto node = kernel->ir;
+    this->entry_block = BasicBlock::Create(*llvm_context, "entry", func);
+    // entry_block has all the allocas
+
+    // The real function body
+    func_body_bb = BasicBlock::Create(*llvm_context, "body", func);
+    builder->SetInsertPoint(func_body_bb);
+  }
+
+  void finalize_task_function() {
+    builder->CreateRetVoid();
+
+    // entry_block should jump to the body after all allocas are inserted
+    builder->SetInsertPoint(entry_block);
+    builder->CreateBr(func_body_bb);
+
+    if (get_current_program().config.print_kernel_llvm_ir) {
+      TC_INFO("Kernel Module IR");
+      module->print(errs(), nullptr);
+      TC_INFO("Kernel Module IR printed.");
+    }
+    TC_ASSERT(!llvm::verifyFunction(*func, &errs()));
+    TC_INFO("Kernel function verified.");
+  }
+
   void visit(OffloadedStmt *stmt) override {
     using Type = OffloadedStmt::TaskType;
     if (stmt->task_type == Type::serial) {
-      offloaded = false;
-      while_after_loop = nullptr;
-      current_struct_for = nullptr;
-
-      task_function_type =
-          llvm::FunctionType::get(llvm::Type::getVoidTy(*llvm_context),
-                                  {PointerType::get(context_ty, 0)}, false);
-
-      func = Function::Create(task_function_type, Function::ExternalLinkage,
-                              kernel_name, module.get());
-
-      task.begin(kernel_name);
-
-      for (auto &arg : func->args()) {
-        kernel_args.push_back(&arg);
-      }
-      kernel_args[0]->setName("context");
-
-      auto node = kernel->ir;
-      this->entry_block = BasicBlock::Create(*llvm_context, "entry", func);
-      // entry_block has all the allocas
-
-      // The real function body
-      BasicBlock *bb = BasicBlock::Create(*llvm_context, "entry", func);
-      builder->SetInsertPoint(bb);
+      init_task_function();
       stmt->body_block->accept(this);
-      builder->CreateRetVoid();
-
-      // entry_block should jump to the body after all allocas are inserted
-      builder->SetInsertPoint(entry_block);
-      builder->CreateBr(bb);
-
-      if (get_current_program().config.print_kernel_llvm_ir) {
-        TC_INFO("Kernel Module IR");
-        module->print(errs(), nullptr);
-        TC_INFO("Kernel Module IR printed.");
-      }
-      TC_ASSERT(!llvm::verifyFunction(*func, &errs()));
-      TC_INFO("Kernel function verified.");
-
+      finalize_task_function();
     } else if (stmt->task_type == Type::range_for) {
       TC_NOT_IMPLEMENTED
       stmt->body_stmt->accept(this);

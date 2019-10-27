@@ -227,22 +227,22 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
 
   void visit(OffloadedStmt *stmt) override {
     using Type = OffloadedStmt::TaskType;
+    kernel_grid_dim = 1;
+    kernel_block_dim = 1;
+    init_task_function();
     if (stmt->task_type == Type::serial) {
-      kernel_grid_dim = 1;
-      kernel_block_dim = 1;
-      init_task_function();
       stmt->body_block->accept(this);
-      finalize_task_function();
-      current_task->grid_dim = kernel_grid_dim;
-      current_task->block_dim = kernel_block_dim;
-      current_task->end();
-      current_task = nullptr;
     } else if (stmt->task_type == Type::range_for) {
       TC_NOT_IMPLEMENTED
       stmt->body_stmt->accept(this);
     } else {
       TC_NOT_IMPLEMENTED
     }
+    finalize_task_function();
+    current_task->grid_dim = kernel_grid_dim;
+    current_task->block_dim = kernel_block_dim;
+    current_task->end();
+    current_task = nullptr;
   }
 };
 

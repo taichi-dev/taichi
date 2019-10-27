@@ -363,7 +363,11 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(OffloadedStmt *stmt) override {
-    print("{} = offloaded {{", stmt->name());
+    std::string details;
+    if (stmt->task_type == stmt->range_for) {
+      details = fmt::format(" range_for({}, {})", stmt->begin, stmt->end);
+    }
+    print("{} = offloaded {} {{", stmt->name(), details);
     if (stmt->body_stmt) {
       current_indent++;
       stmt->body_stmt->accept(this);

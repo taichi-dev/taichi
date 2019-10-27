@@ -161,10 +161,16 @@ class OffloadedStmt : public Stmt {
 
   TaskType task_type;
   SNode *snode;
+  int begin, end, step;
+  bool reversed;
+  std::vector<Stmt *> loop_vars;
+  std::vector<llvm::Value *> loop_vars_llvm;
   std::unique_ptr<Block> body_block;
   std::unique_ptr<Stmt> body_stmt;
 
   OffloadedStmt(TaskType task_type) : task_type(task_type) {
+    begin = end = step = 0;
+    reversed = false;
   }
 
   DEFINE_ACCEPT

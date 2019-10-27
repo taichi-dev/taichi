@@ -1237,20 +1237,55 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     TC_INFO("Kernel function verified.");
   }
 
+  void create_offload_range_for(OffloadedStmt *stmt) {
+    BasicBlock *body = BasicBlock::Create(*llvm_context, "loop_body", func);
+    BasicBlock *after_loop = BasicBlock::Create(*llvm_context, "block", func);
+    if (!stmt->reversed) {
+      builder->CreateStore(stmt->begin->value, stmt->loop_var->value);
+    } else {
+      builder->CreateStore(
+          builder->CreateSub(for_stmt->end->value, tlctx->get_constant(1)),
+          for_stmt->loop_var->value);
+    }
+    builder->CreateBr(body);
+
+    // body cfg
+    builder->SetInsertPoint(body);
+
+    for_stmt->body->accept(this);
+
+    llvm::Value *cond = nullptr;
+    if (!stmt->reversed) {
+      create_increment(stmt->loop_var->value, tlctx->get_constant(1));
+      cond = builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_SLT,
+                                 builder->CreateLoad(for_stmt->loop_var->value),
+                                 for_stmt->end->value);
+    } else {
+      create_increment(stmt->loop_var->value, tlctx->get_constant(-1));
+      cond = builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_SGE,
+                                 builder->CreateLoad(for_stmt->loop_var->value),
+                                 for_stmt->begin->value);
+    }
+
+    builder->CreateCondBr(cond, body, after_loop);
+
+    // next cfg
+    builder->SetInsertPoint(after_loop);
+  }
+
   void visit(OffloadedStmt *stmt) override {
     using Type = OffloadedStmt::TaskType;
+    init_task_function();
     if (stmt->task_type == Type::serial) {
-      init_task_function();
       stmt->body_block->accept(this);
-      finalize_task_function();
-      current_task->end();
-      current_task = nullptr;
     } else if (stmt->task_type == Type::range_for) {
-      TC_NOT_IMPLEMENTED
-      stmt->body_stmt->accept(this);
+      create_offload_range_for(stmt);
     } else {
       TC_NOT_IMPLEMENTED
     }
+    finalize_task_function();
+    current_task->end();
+    current_task = nullptr;
   }
 
   ~CodeGenLLVM() {

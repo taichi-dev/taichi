@@ -21,14 +21,12 @@ class Offloader {
     auto pending_serial_statements =
         Stmt::make_typed<OffloadedStmt>(OffloadedStmt::TaskType::serial);
 
-    bool has_range_for = false;
-
     auto assemble_serial_statements = [&]() {
-      if (pending_serial_statements->body_block->statements.size()) {
+      if (!pending_serial_statements->body_block->statements.empty()) {
         root_block->insert(std::move(pending_serial_statements));
+        pending_serial_statements =
+            Stmt::make_typed<OffloadedStmt>(OffloadedStmt::TaskType::serial);
       }
-      pending_serial_statements =
-          Stmt::make_typed<OffloadedStmt>(OffloadedStmt::TaskType::serial);
     };
 
     for (int i = 0; i < (int)root_statements.size(); i++) {
@@ -41,7 +39,6 @@ class Offloader {
         offloaded->begin = s->begin->as<ConstStmt>()->val[0].val_int32();
         offloaded->end = s->end->as<ConstStmt>()->val[0].val_int32();
         offloaded->block_size = s->block_size;
-        has_range_for = true;
         auto loop_var = s->loop_var;
         replace_statements_with(
             s,

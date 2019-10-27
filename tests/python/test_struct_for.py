@@ -74,6 +74,50 @@ def test_nested2():
     assert y[i] == i * 2
     
 @ti.program_test
+def test_nested_2d():
+  x = ti.var(ti.i32)
+  y = ti.var(ti.i32)
+  
+  n = 32
+  
+  @ti.layout
+  def place():
+    ti.root.dense(ti.ij, n // 4).dense(ti.ij, 4).place(x, y)
+  
+  @ti.kernel
+  def fill():
+    for i, j in x:
+      x[i, j] = i + j * 2
+  
+  fill()
+  
+  for i in range(n):
+    for j in range(n):
+      assert x[i, j] == i + j * 2
+      
+@ti.program_test
+def test_nested_2d_more_nests():
+  x = ti.var(ti.i32)
+  y = ti.var(ti.i32)
+  
+  n = 64
+  
+  @ti.layout
+  def place():
+    ti.root.dense(ti.ij, n // 16).dense(ti.ij, 2).dense(ti.ij, 4).dense(ti.ij, 2).place(x, y)
+  
+  @ti.kernel
+  def fill():
+    for i, j in x:
+      x[i, j] = i + j * 2
+  
+  fill()
+  
+  for i in range(n):
+    for j in range(n):
+      assert x[i, j] == i + j * 2
+    
+@ti.program_test
 def test_linear_k():
   x = ti.var(ti.i32)
   

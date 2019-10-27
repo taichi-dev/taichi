@@ -54,15 +54,32 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
    public:
     std::string name;
     CodeGenLLVM *codegen;
+    using task_fp_type = int32 (*)(void *);
+    task_fp_type func;
 
     OffloadedTask(CodeGenLLVM *codegen) : codegen(codegen) {
+      func = nullptr;
     }
 
-    void begin() {
+    void begin(std::string name) {
+      this->name = name;
     }
 
     void end() {
       codegen->offloaded_tasks.push_back(*this);
+    }
+
+    void compile() {
+      TC_ASSERT(!func);
+      auto kernel_symbol = codegen->jit->lookup(name);
+      TC_ASSERT_INFO(kernel_symbol, "Function not found");
+
+      func = (task_fp_type)(void *)(llvm::cantFail(kernel_symbol.getAddress()));
+    }
+
+    void operator()(Context *context) {
+      TC_ASSERT(func);
+      func(context);
     }
   };
 
@@ -93,7 +110,6 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     while_after_loop = nullptr;
     current_struct_for = nullptr;
 
-
     std::string grad_suffix;
     if (kernel->grad) {
       grad_suffix = "_grad";
@@ -103,17 +119,18 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     task_function_type =
         llvm::FunctionType::get(llvm::Type::getVoidTy(*llvm_context),
                                 {PointerType::get(context_ty, 0)}, false);
-    
+
     func = Function::Create(task_function_type, Function::ExternalLinkage,
                             kernel_name, module.get());
 
-
-    task.begin();
+    task.begin(kernel_name);
 
     for (auto &arg : func->args()) {
       kernel_args.push_back(&arg);
     }
     kernel_args[0]->setName("context");
+
+    task.end();
   }
 
   llvm::Value *get_arg(int i) {
@@ -235,12 +252,15 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   virtual FunctionType compile_module_to_executable() {
     jit->addModule(std::move(module));
 
-    auto kernel_symbol = jit->lookup(kernel_name);
-    TC_ASSERT_INFO(kernel_symbol, "Function not found");
-
-    auto f =
-        (int32(*)(void *))(void *)(llvm::cantFail(kernel_symbol.getAddress()));
-    return [=](Context context) { f(&context); };
+    for (auto &task : offloaded_tasks) {
+      task.compile();
+    }
+    auto offloaded_tasks_local = offloaded_tasks;
+    return [=](Context context) {
+      for (auto task : offloaded_tasks_local) {
+        task(&context);
+      }
+    };
   }
 
   FunctionType gen() {

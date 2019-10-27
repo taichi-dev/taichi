@@ -366,17 +366,25 @@ class IRPrinter : public IRVisitor {
     std::string details;
     if (stmt->task_type == stmt->range_for) {
       details = fmt::format(" range_for({}, {})", stmt->begin, stmt->end);
+    } else if (stmt->task_type == stmt->struct_for) {
+      details =
+          fmt::format(" struct_for({})", stmt->snode->get_node_type_name());
     }
-    print("{} = offloaded {} {{", stmt->name(), details);
-    if (stmt->body_stmt) {
-      current_indent++;
-      stmt->body_stmt->accept(this);
-      current_indent--;
+    if (stmt->task_type == OffloadedStmt::TaskType::listgen) {
+      print("{} = offloaded listgen {}", stmt->name(),
+            stmt->snode->get_node_type_name());
     } else {
-      TC_ASSERT(stmt->body_block);
-      stmt->body_block->accept(this);
+      print("{} = offloaded {} {{", stmt->name(), details);
+      if (stmt->body_stmt) {
+        current_indent++;
+        stmt->body_stmt->accept(this);
+        current_indent--;
+      } else {
+        TC_ASSERT(stmt->body_block);
+        stmt->body_block->accept(this);
+      }
+      print("}}");
     }
-    print("}}");
   }
 
   void visit(LoopIndexStmt *stmt) override {

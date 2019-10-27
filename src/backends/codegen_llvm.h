@@ -589,7 +589,18 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
         llvm::PointerType::get(get_runtime_type(dest_ty_name), addr_space));
   }
 
+  void emit_list_gen(OffloadedStmt *listgen) {
+    auto snode_child = listgen->snode;
+    auto snode_parent = listgen->snode->parent;
+    auto meta_child = emit_struct_meta(snode_child);
+    auto meta_parent = emit_struct_meta(snode_parent);
+    auto listgen_call = get_runtime_function("element_listgen");
+    auto args = {get_runtime(), meta_parent, meta_child};
+    builder->CreateCall(listgen_call, args);
+  }
+
   void visit(StructForStmt *for_stmt) {
+    TC_ERROR("This should be replaced with offloaded tasks");
     // emit listgen
     auto leaf = for_stmt->snode;
     TC_ASSERT(leaf->type == SNodeType::place)
@@ -1292,6 +1303,8 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       stmt->body_block->accept(this);
     } else if (stmt->task_type == Type::range_for) {
       create_offload_range_for(stmt);
+    } else if (stmt->task_type == Type::listgen) {
+      emit_list_gen(stmt);
     } else {
       TC_NOT_IMPLEMENTED
     }

@@ -16,7 +16,6 @@ class Offloader {
     auto root_block = dynamic_cast<Block *>(root);
     auto root_statements = std::move(root_block->statements);
     root_block->statements.clear();
-    auto new_root_statements = std::vector<pStmt>();
 
     auto pending_serial_statements =
         Stmt::make_typed<OffloadedStmt>(OffloadedStmt::TaskType::serial);
@@ -55,13 +54,10 @@ class Offloader {
           offloaded->body_block->insert(std::move(s->body->statements[j]));
         }
         root_block->insert(std::move(offloaded));
-        /*
       } else if (auto s = stmt->cast<StructForStmt>()) {
+        emit_struct_for(s, root_block);
         // TODO: emit listgen
-        auto offloaded =
-            Stmt::make_typed<OffloadedStmt>(OffloadedStmt::TaskType::struct_for);
-        offloaded->body_stmt = std::move(root_statements[i]);
-        new_root_statements.push_back(std::move(offloaded));
+        /*
       } else {
         // Serial stmt
         auto offloaded =
@@ -74,6 +70,40 @@ class Offloader {
       }
     }
     assemble_serial_statements();
+  }
+
+  void emit_struct_for(StructForStmt *for_stmt, Block *root_block) {
+    auto leaf = for_stmt->snode;
+    TC_ASSERT(leaf->type == SNodeType::place)
+    auto leaf_block = leaf->parent;
+
+    // make a list of nodes, from the leaf block (instead of 'place') to root
+    std::vector<SNode *> path;
+    // leaf is the place (scalar)
+    // leaf->parent is the leaf block
+    // so listgen should be invoked from the root to leaf->parent->parent
+    for (auto p = leaf->parent->parent; p; p = p->parent) {
+      path.push_back(p);
+    }
+    std::reverse(path.begin(), path.end());
+
+    for (int i = 0; i + 1 < path.size(); i++) {
+      auto snode_child = path[i + 1];
+      auto offloaded_listgen =
+          Stmt::make_typed<OffloadedStmt>(OffloadedStmt::TaskType::listgen);
+      offloaded_listgen->snode = snode_child;
+      root_block->insert(std::move(offloaded_listgen));
+    }
+
+    auto offloaded_struct_for =
+        Stmt::make_typed<OffloadedStmt>(OffloadedStmt::TaskType::struct_for);
+
+    for (int i = 0; i < (int)for_stmt->body->statements.size(); i++) {
+      offloaded_struct_for->body_block->insert(
+          std::move(for_stmt->body->statements[i]));
+    }
+
+    root_block->insert(std::move(offloaded_struct_for));
   }
 };
 

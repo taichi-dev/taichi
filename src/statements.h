@@ -184,8 +184,10 @@ class OffloadedStmt : public Stmt {
 class LoopIndexStmt : public Stmt {
  public:
   int index;
+  bool is_struct_for;
 
-  LoopIndexStmt(int index) : index(index) {
+  LoopIndexStmt(int index, bool is_struct_for)
+      : index(index), is_struct_for(is_struct_for) {
   }
 
   DEFINE_ACCEPT

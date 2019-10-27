@@ -43,6 +43,7 @@ def test_nested():
   @ti.kernel
   def fill():
     for i in x:
+      ti.print(i)
       x[i] = i
       y[i] = i * 2
   

@@ -21,7 +21,6 @@ using namespace llvm;
 
 class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
  public:
-  StructForStmt *current_struct_for;
   TaichiLLVMJIT *jit;
 
   CodeGenBase *codegen;
@@ -654,7 +653,6 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
 
       auto ip = builder->saveIP();
       builder->SetInsertPoint(entry);
-      current_struct_for = for_stmt;
 
       auto body_bb = BasicBlock::Create(*llvm_context, "loop_body", func);
       // per-leaf-block for loop
@@ -691,7 +689,6 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       // next cfg
       builder->SetInsertPoint(after_loop);
 
-      current_struct_for = nullptr;
       builder->CreateRetVoid();
       func = old_func;
       builder->restoreIP(ip);
@@ -784,23 +781,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
 
   void visit(LocalLoadStmt *stmt) {
     TC_ASSERT(stmt->width() == 1);
-    int loop_var_index = -1;
-    if (current_struct_for)
-      for (int i = 0; i < current_struct_for->loop_vars.size(); i++) {
-        if (stmt->ptr[0].var == current_struct_for->loop_vars[i]) {
-          loop_var_index = i;
-        }
-      }
-    if (loop_var_index != -1) {
-      auto snode = current_struct_for->snode;
-      stmt->value = builder->CreateLoad(builder->CreateGEP(
-          current_coordinates,
-          {tlctx->get_constant(0), tlctx->get_constant(0),
-           tlctx->get_constant(
-               snode->physical_index_position[loop_var_index])}));
-    } else {
-      stmt->value = builder->CreateLoad(stmt->ptr[0].var->value);
-    }
+    stmt->value = builder->CreateLoad(stmt->ptr[0].var->value);
   }
 
   void visit(LocalStoreStmt *stmt) {
@@ -877,85 +858,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   }
 
   void visit(GlobalPtrStmt *stmt) {
-    emit("{} *{}[{}];", data_type_name(stmt->ret_type.data_type),
-         stmt->raw_name(), stmt->ret_type.width);
-    for (int l = 0; l < stmt->ret_type.width; l++) {
-      // Try to weaken here...
-      std::vector<int> offsets(stmt->indices.size());
-
-      auto snode = stmt->snodes[l];
-      std::vector<std::string> indices(max_num_indices, "0");  // = "(root, ";
-      for (int i = 0; i < (int)stmt->indices.size(); i++) {
-        if (snode->physical_index_position[i] != -1) {
-          // TC_ASSERT(snode->physical_index_position[i] != -1);
-          indices[snode->physical_index_position[i]] =
-              stmt->indices[i]->raw_name() + fmt::format("[{}]", l);
-        }
-      }
-      std::string full_access = fmt::format(
-          "{}[{}] = &{}_{}{}->val;", stmt->raw_name(), l,
-          stmt->accessor_func_name(), stmt->snodes[l]->node_type_name,
-          "(root, " + make_list(indices, "") + ")");
-
-      bool weakened = false;
-      if (current_struct_for &&
-          snode->parent == current_struct_for->snode->parent) {
-        bool identical_indices = false;
-        bool all_offsets_zero = true;
-        for (int i = 0; i < (int)stmt->indices.size(); i++) {
-          auto ret = analysis::value_diff(stmt->indices[i], l,
-                                          current_struct_for->loop_vars[i]);
-          if (!ret.linear_related() || !ret.certain()) {
-            identical_indices = false;
-          }
-          offsets[i] = ret.low;
-          if (ret.low != 0)
-            all_offsets_zero = false;
-        }
-        if (identical_indices) {
-          // TC_WARN("Weakened addressing");
-          weakened = true;
-
-          std::string cond;
-          cond = "true";
-          // add safe guards...
-          for (int i = 0; i < (int)stmt->indices.size(); i++) {
-            if (offsets[i] == 0)
-              continue;
-            // TODO: fix hacky hardcoded name, make sure index same order as
-            // snode indices
-            std::string local_var = fmt::format(
-                "index_{}_{}_local", snode->parent->node_type_name, i);
-            int upper_bound = 1 << snode->parent->extractors[i].num_bits;
-            if (offsets[i] == -1) {
-              cond += fmt::format("&& {} > 0", local_var);
-            } else if (offsets[i] >= 1) {
-              cond += fmt::format("&& {} < {} - {}", local_var, upper_bound,
-                                  offsets[i]);
-            }
-          }
-
-          int offset = 0;
-          int current_num_bits = 0;
-          for (int i = (int)stmt->indices.size() - 1; i >= 0; i--) {
-            offset += offsets[i] * (1 << current_num_bits);
-            current_num_bits += snode->parent->extractors[i].num_bits;
-          }
-
-          emit("if ({}) {{", cond);
-          emit("{}[{}] = &access_{}({}_cache, {}_loop + {})->val;",
-               stmt->raw_name(), l, snode->node_type_name,
-               snode->parent->node_type_name, snode->parent->node_type_name,
-               offset);
-          emit("}} else {{");
-          emit("{}", full_access);
-          emit("}}");
-        }
-      }
-      if (!weakened) {
-        emit("{}", full_access);
-      }
-    }
+    TC_ERROR("Global Ptrs should have been lowered.");
   }
 
   void visit(GlobalStoreStmt *stmt) {
@@ -1205,7 +1108,6 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   void init_task_function(OffloadedStmt *stmt) {
     offloaded = false;
     while_after_loop = nullptr;
-    current_struct_for = nullptr;
     current_offloaded_stmt = stmt;
 
     task_function_type =
@@ -1287,9 +1189,98 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     builder->SetInsertPoint(after_loop);
   }
 
+  void create_offload_struct_for(OffloadedStmt *stmt) {
+    llvm::Function *body;
+    auto leaf_block = stmt->snode->parent;
+    {
+      // Create the loop body function
+      auto body_function_type = llvm::FunctionType::get(
+          llvm::Type::getVoidTy(*llvm_context),
+          {llvm::PointerType::get(get_runtime_type("Context"), 0),
+           llvm::PointerType::get(get_runtime_type("Element"), 0)},
+          false);
+
+      body = llvm::Function::Create(body_function_type,
+                                    llvm::Function::InternalLinkage,
+                                    "loop_body", module.get());
+      auto old_func = func;
+      // emit into loop body function
+      func = body;
+
+      auto allocas = BasicBlock::Create(*llvm_context, "allocs", body);
+      auto old_entry = entry_block;
+      entry_block = allocas;
+
+      auto entry = BasicBlock::Create(*llvm_context, "entry", func);
+
+      auto ip = builder->saveIP();
+      builder->SetInsertPoint(entry);
+      // current_struct_for = for_stmt;
+
+      auto body_bb = BasicBlock::Create(*llvm_context, "loop_body", func);
+      // per-leaf-block for loop
+      auto loop_index =
+          create_entry_block_alloca(Type::getInt32Ty(*llvm_context));
+      builder->CreateStore(tlctx->get_constant(0), loop_index);
+      builder->CreateBr(body_bb);
+
+      builder->SetInsertPoint(body_bb);
+      // initialize the coordinates
+
+      auto refine =
+          get_runtime_function(leaf_block->refine_coordinates_func_name());
+      auto new_coordinates = create_entry_block_alloca(physical_coordinate_ty);
+      RuntimeObject element("Element", this, builder, get_arg(1));
+      create_call(refine, {element.get_ptr("pcoord"), new_coordinates,
+                           builder->CreateLoad(loop_index)});
+
+      current_coordinates = new_coordinates;
+      // for_stmt->body->accept(this);
+
+      BasicBlock *after_loop = BasicBlock::Create(*llvm_context, "block", func);
+
+      // body cfg
+
+      create_increment(loop_index, tlctx->get_constant(1));
+
+      auto cond = builder->CreateICmp(
+          llvm::CmpInst::Predicate::ICMP_SLT, builder->CreateLoad(loop_index),
+          tlctx->get_constant(1 << (leaf_block->total_num_bits)));
+
+      builder->CreateCondBr(cond, body_bb, after_loop);
+
+      // next cfg
+      builder->SetInsertPoint(after_loop);
+
+      builder->CreateRetVoid();
+      func = old_func;
+      builder->restoreIP(ip);
+
+      {
+        llvm::IRBuilderBase::InsertPointGuard gurad(*builder);
+        builder->SetInsertPoint(allocas);
+        builder->CreateBr(entry);
+        entry_block = old_entry;
+      }
+    }
+
+    // traverse leaf node
+    create_call("for_each_block",
+                {get_context(), tlctx->get_constant(leaf_block->parent->id), body});
+
+  }
+
   void visit(LoopIndexStmt *stmt) override {
-    stmt->value = builder->CreateLoad(
-        current_offloaded_stmt->loop_vars_llvm[stmt->index]);
+    if (stmt->is_struct_for) {
+      stmt->value = builder->CreateLoad(builder->CreateGEP(
+          current_coordinates,
+          {tlctx->get_constant(0), tlctx->get_constant(0),
+           tlctx->get_constant(
+               stmt->index)}));
+    } else {
+      stmt->value = builder->CreateLoad(
+          current_offloaded_stmt->loop_vars_llvm[stmt->index]);
+    }
   }
 
   void visit(OffloadedStmt *stmt) override {
@@ -1299,6 +1290,8 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       stmt->body_block->accept(this);
     } else if (stmt->task_type == Type::range_for) {
       create_offload_range_for(stmt);
+    } else if (stmt->task_type == Type::struct_for) {
+      create_offload_struct_for(stmt);
     } else if (stmt->task_type == Type::listgen) {
       emit_list_gen(stmt);
     } else {

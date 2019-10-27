@@ -12,7 +12,10 @@ class Offloader {
     run(root);
   }
 
-  void fix_loop_index_load(Stmt *s, Stmt *loop_var, int index) {
+  void fix_loop_index_load(Stmt *s,
+                           Stmt *loop_var,
+                           int index,
+                           bool is_struct_for) {
     replace_statements_with(
         s,
         [&](Stmt *load) {
@@ -23,7 +26,7 @@ class Offloader {
           }
           return false;
         },
-        []() { return Stmt::make<LoopIndexStmt>(0); });
+        [&]() { return Stmt::make<LoopIndexStmt>(0, is_struct_for); });
   }
 
   void run(IRNode *root) {
@@ -52,7 +55,7 @@ class Offloader {
         offloaded->begin = s->begin->as<ConstStmt>()->val[0].val_int32();
         offloaded->end = s->end->as<ConstStmt>()->val[0].val_int32();
         offloaded->block_size = s->block_size;
-        fix_loop_index_load(s, s->loop_var, 0);
+        fix_loop_index_load(s, s->loop_var, 0, false);
         for (int j = 0; j < (int)s->body->statements.size(); j++) {
           offloaded->body_block->insert(std::move(s->body->statements[j]));
         }
@@ -79,8 +82,6 @@ class Offloader {
   void emit_struct_for(StructForStmt *for_stmt, Block *root_block) {
     auto leaf = for_stmt->snode;
     TC_ASSERT(leaf->type == SNodeType::place)
-    auto leaf_block = leaf->parent;
-
     // make a list of nodes, from the leaf block (instead of 'place') to root
     std::vector<SNode *> path;
     // leaf is the place (scalar)
@@ -91,8 +92,8 @@ class Offloader {
     }
     std::reverse(path.begin(), path.end());
 
-    for (int i = 0; i + 1 < path.size(); i++) {
-      auto snode_child = path[i + 1];
+    for (int i = 1; i < path.size(); i++) {
+      auto snode_child = path[i];
       auto offloaded_listgen =
           Stmt::make_typed<OffloadedStmt>(OffloadedStmt::TaskType::listgen);
       offloaded_listgen->snode = snode_child;
@@ -102,8 +103,10 @@ class Offloader {
     auto offloaded_struct_for =
         Stmt::make_typed<OffloadedStmt>(OffloadedStmt::TaskType::struct_for);
 
-    for (int i = 0; i < for_stmt->loop_vars.size(); i++)
-      fix_loop_index_load(for_stmt, for_stmt->loop_vars[i], i);
+    for (int i = 0; i < for_stmt->loop_vars.size(); i++) {
+      fix_loop_index_load(for_stmt, for_stmt->loop_vars[i],
+                          leaf->physical_index_position[i], true);
+    }
 
     for (int i = 0; i < (int)for_stmt->body->statements.size(); i++) {
       offloaded_struct_for->body_block->insert(

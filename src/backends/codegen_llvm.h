@@ -1265,18 +1265,16 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     }
 
     // traverse leaf node
-    create_call("for_each_block",
-                {get_context(), tlctx->get_constant(leaf_block->parent->id), body});
-
+    create_call(
+        "for_each_block",
+        {get_context(), tlctx->get_constant(leaf_block->parent->id), body});
   }
 
   void visit(LoopIndexStmt *stmt) override {
     if (stmt->is_struct_for) {
       stmt->value = builder->CreateLoad(builder->CreateGEP(
-          current_coordinates,
-          {tlctx->get_constant(0), tlctx->get_constant(0),
-           tlctx->get_constant(
-               stmt->index)}));
+          current_coordinates, {tlctx->get_constant(0), tlctx->get_constant(0),
+                                tlctx->get_constant(stmt->index)}));
     } else {
       stmt->value = builder->CreateLoad(
           current_offloaded_stmt->loop_vars_llvm[stmt->index]);

@@ -1,8 +1,7 @@
 import taichi as ti
 
+@ti.program_test
 def test_linear():
-  ti.cfg.print_ir = True
-  ti.cfg.print_kernel_llvm_ir = True
   x = ti.var(ti.i32)
   y = ti.var(ti.i32)
 
@@ -26,10 +25,8 @@ def test_linear():
     assert y[i] == i * 2
     
     
-# @ti.program_test
+@ti.program_test
 def test_nested():
-  ti.cfg.print_ir = True
-  ti.cfg.print_kernel_llvm_ir = True
   x = ti.var(ti.i32)
   y = ti.var(ti.i32)
   
@@ -43,7 +40,6 @@ def test_nested():
   @ti.kernel
   def fill():
     for i in x:
-      ti.print(i)
       x[i] = i
       y[i] = i * 2
   
@@ -52,8 +48,6 @@ def test_nested():
   for i in range(n):
     assert x[i] == i
     assert y[i] == i * 2
-    
-test_nested()
 
 @ti.program_test
 def test_nested2():

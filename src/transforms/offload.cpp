@@ -26,7 +26,7 @@ class Offloader {
           }
           return false;
         },
-        [&]() { return Stmt::make<LoopIndexStmt>(0, is_struct_for); });
+        [&]() { return Stmt::make<LoopIndexStmt>(index, is_struct_for); });
   }
 
   void run(IRNode *root) {
@@ -63,15 +63,6 @@ class Offloader {
       } else if (auto s = stmt->cast<StructForStmt>()) {
         assemble_serial_statements();
         emit_struct_for(s, root_block);
-        // TODO: emit listgen
-        /*
-      } else {
-        // Serial stmt
-        auto offloaded =
-            Stmt::make_typed<OffloadedStmt>(OffloadedStmt::TaskType::serial);
-        offloaded->body_stmt = std::move(root_statements[i]);
-        new_root_statements.push_back(std::move(offloaded));
-         */
       } else {
         pending_serial_statements->body_block->insert(std::move(stmt));
       }

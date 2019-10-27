@@ -240,6 +240,10 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
       stmt->body_block->accept(this);
     } else if (stmt->task_type == Type::range_for) {
       create_offload_range_for(stmt);
+    } else if (stmt->task_type == Type::struct_for) {
+      create_offload_struct_for(stmt);
+    } else if (stmt->task_type == Type::listgen) {
+      emit_list_gen(stmt);
     } else {
       TC_NOT_IMPLEMENTED
     }

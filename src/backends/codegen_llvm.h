@@ -18,6 +18,7 @@ TLANG_NAMESPACE_BEGIN
 #if defined(TLANG_WITH_LLVM)
 
 using namespace llvm;
+
 class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
  public:
   StructForStmt *current_struct_for;
@@ -26,7 +27,6 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   CodeGenBase *codegen;
   Kernel *kernel;
   std::string kernel_name;
-  llvm::Function *func;
   std::vector<Value *> kernel_args;
   llvm::Type *context_ty;
   llvm::Type *physical_coordinate_ty;
@@ -34,7 +34,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   llvm::Value *current_coordinates;
   bool offloaded;
   llvm::BasicBlock *while_after_loop;
-
+  llvm::FunctionType *task_function_type;
 
   void initialize_context() {
     if (get_current_program().config.arch == Arch::gpu) {
@@ -48,15 +48,39 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     builder = new llvm::IRBuilder<>(*llvm_context);
   }
 
+  llvm::Function *func;
+
+  class OffloadedTask {
+   public:
+    std::string name;
+    CodeGenLLVM *codegen;
+
+    OffloadedTask(CodeGenLLVM *codegen) : codegen(codegen) {
+    }
+
+    void begin() {
+    }
+
+    void end() {
+      codegen->offloaded_tasks.push_back(*this);
+    }
+  };
+
+  OffloadedTask task;
+  std::vector<OffloadedTask> offloaded_tasks;
+
   CodeGenLLVM(CodeGenBase *codegen, Kernel *kernel)
       // TODO: simplify ModuleBuilder ctor input
       : ModuleBuilder(get_current_program()
                           .get_llvm_context(get_current_program().config.arch)
                           ->clone_struct_module()),
-        kernel(kernel) {
-    offloaded = false;
+        kernel(kernel),
+        task(this) {
     initialize_context();
-    while_after_loop = nullptr;
+
+    context_ty = get_runtime_type("Context");
+    physical_coordinate_ty = get_runtime_type("PhysicalCoordinates");
+    module->setDataLayout(jit->getDataLayout());
 
     using namespace llvm;
 
@@ -65,14 +89,10 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
         f.setLinkage(Function::PrivateLinkage);  // to avoid duplicated symbols
     }
 
+    offloaded = false;
+    while_after_loop = nullptr;
     current_struct_for = nullptr;
 
-    context_ty = get_runtime_type("Context");
-    physical_coordinate_ty = get_runtime_type("PhysicalCoordinates");
-
-    auto *FT =
-        llvm::FunctionType::get(llvm::Type::getVoidTy(*llvm_context),
-                                {PointerType::get(context_ty, 0)}, false);
 
     std::string grad_suffix;
     if (kernel->grad) {
@@ -80,15 +100,20 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     }
     kernel_name = kernel->name + grad_suffix + "_kernel";
 
-    func = Function::Create(FT, Function::ExternalLinkage, kernel_name,
-                            module.get());
+    task_function_type =
+        llvm::FunctionType::get(llvm::Type::getVoidTy(*llvm_context),
+                                {PointerType::get(context_ty, 0)}, false);
+    
+    func = Function::Create(task_function_type, Function::ExternalLinkage,
+                            kernel_name, module.get());
+
+
+    task.begin();
 
     for (auto &arg : func->args()) {
       kernel_args.push_back(&arg);
     }
     kernel_args[0]->setName("context");
-
-    module->setDataLayout(jit->getDataLayout());
   }
 
   llvm::Value *get_arg(int i) {

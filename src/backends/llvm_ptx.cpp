@@ -34,11 +34,7 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
       : CodeGenLLVM(codegen_base, kernel) {
   }
 
-  FunctionType compile_module_to_executable() override {
-#if defined(TLANG_WITH_CUDA)
-    llvm::Function *func = module->getFunction(kernel_name);
-    TC_ASSERT(func);
-
+  void mark_function_as_cuda_kernel(llvm::Function *func) {
     /*******************************************************************
     Example annotation from llvm PTX doc:
 
@@ -63,12 +59,23 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
     MDNode *md_node = MDNode::get(*llvm_context, md_args);
 
     module->getOrInsertNamedMetadata("nvvm.annotations")->addOperand(md_node);
+  }
 
-    auto ptx = compile_module_to_ptx(module);
-
+  FunctionType compile_module_to_executable() override {
+#if defined(TLANG_WITH_CUDA)
     auto offloaded_local = offloaded_tasks;
     for (auto &task : offloaded_local) {
-      task.cuda_func = (void *)cuda_context.compile(ptx, kernel_name);
+      llvm::Function *func = module->getFunction(task.name);
+      TC_ASSERT(func);
+      mark_function_as_cuda_kernel(func);
+    }
+
+    auto ptx = compile_module_to_ptx(module);
+    auto cuda_module = cuda_context.compile(ptx);
+
+    for (auto &task : offloaded_local) {
+      task.cuda_func =
+          (void *)cuda_context.get_function(cuda_module, task.name);
     }
     return [offloaded_local](Context context) {
       for (auto task : offloaded_local) {
@@ -174,7 +181,7 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
   }
 
   void visit(RangeForStmt *for_stmt) override {
-      create_naive_range_for(for_stmt);
+    create_naive_range_for(for_stmt);
   }
 
   void create_offload_range_for(OffloadedStmt *stmt) {
@@ -194,22 +201,20 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
 
     auto threadIdx =
         builder->CreateIntrinsic(Intrinsic::nvvm_read_ptx_sreg_tid_x, {}, {});
-    auto blockIdx = builder->CreateIntrinsic(
-        Intrinsic::nvvm_read_ptx_sreg_ctaid_x, {}, {});
-    auto blockDim = builder->CreateIntrinsic(
-        Intrinsic::nvvm_read_ptx_sreg_ntid_x, {}, {});
-
+    auto blockIdx =
+        builder->CreateIntrinsic(Intrinsic::nvvm_read_ptx_sreg_ctaid_x, {}, {});
+    auto blockDim =
+        builder->CreateIntrinsic(Intrinsic::nvvm_read_ptx_sreg_ntid_x, {}, {});
 
     auto loop_id = builder->CreateAdd(
         tlctx->get_constant(stmt->begin),
-        builder->CreateAdd(threadIdx,
-                           builder->CreateMul(blockIdx, blockDim)));
+        builder->CreateAdd(threadIdx, builder->CreateMul(blockIdx, blockDim)));
 
     builder->CreateStore(loop_id, loop_var);
 
-    auto cond = builder->CreateICmp(
-        llvm::CmpInst::Predicate::ICMP_SLT,
-        builder->CreateLoad(loop_var), tlctx->get_constant(stmt->end));
+    auto cond = builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_SLT,
+                                    builder->CreateLoad(loop_var),
+                                    tlctx->get_constant(stmt->end));
 
     builder->CreateCondBr(cond, body, after_loop);
     {
@@ -224,7 +229,6 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
     builder->SetInsertPoint(after_loop);
 
     offloaded = false;
-
   }
 
   void visit(OffloadedStmt *stmt) override {

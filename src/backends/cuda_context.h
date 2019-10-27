@@ -16,7 +16,9 @@ class CUDAContext {
  public:
   CUDAContext();
 
-  CUfunction compile(const std::string &ptx, const std::string &kernel_name);
+  CUmodule compile(const std::string &ptx);
+
+  CUfunction get_function(CUmodule module, const std::string &func_name);
 
   void launch(CUfunction func,
               void *context_ptr,

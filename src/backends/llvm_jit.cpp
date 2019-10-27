@@ -372,19 +372,24 @@ CUDAContext::CUDAContext() {
   checkCudaErrors(cuMemAlloc(&context_buffer, sizeof(Context)));
 }
 
-CUfunction CUDAContext::compile(const std::string &ptx,
-                                const std::string &kernel_name) {
+CUmodule CUDAContext::compile(const std::string &ptx) {
   // Create module for object
-  auto t = Time::get_time();
   CUmodule cudaModule;
   TC_INFO("PTX size: {}B", ptx.size());
+  auto t = Time::get_time();
   checkCudaErrors(cuModuleLoadDataEx(&cudaModule, ptx.c_str(), 0, 0, 0));
-
-  CUfunction func;
-  checkCudaErrors(cuModuleGetFunction(&func, cudaModule, kernel_name.c_str()));
-  t = Time::get_time() - t;
+  TC_INFO("CUDA module load time : {}ms", t * 1000);
   cudaModules.push_back(cudaModule);
-  TC_INFO("PTX Compilation time: {}ms", t * 1000);
+  return cudaModule;
+}
+
+CUfunction CUDAContext::get_function(CUmodule module,
+                                     const std::string &func_name) {
+  CUfunction func;
+  auto t = Time::get_time();
+  checkCudaErrors(cuModuleGetFunction(&func, module, func_name.c_str()));
+  t = Time::get_time() - t;
+  TC_INFO("Kernel {} compilation time: {}ms", func_name, t * 1000);
   return func;
 }
 

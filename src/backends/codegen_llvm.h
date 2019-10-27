@@ -36,6 +36,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   llvm::BasicBlock *while_after_loop;
   llvm::FunctionType *task_function_type;
   OffloadedStmt *current_offloaded_stmt;
+  int task_counter;
 
   void initialize_context() {
     if (get_current_program().config.arch == Arch::gpu) {
@@ -96,7 +97,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       : ModuleBuilder(get_current_program()
                           .get_llvm_context(get_current_program().config.arch)
                           ->clone_struct_module()),
-        kernel(kernel) {
+        kernel(kernel), task_counter(0) {
     initialize_context();
 
     context_ty = get_runtime_type("Context");
@@ -1204,11 +1205,13 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
         llvm::FunctionType::get(llvm::Type::getVoidTy(*llvm_context),
                                 {PointerType::get(context_ty, 0)}, false);
 
+    auto task_kernel_name = fmt::format("{}_{}", kernel_name, task_counter);
+    task_counter += 1;
     func = Function::Create(task_function_type, Function::ExternalLinkage,
-                            kernel_name, module.get());
+                            task_kernel_name, module.get());
 
     current_task = std::make_unique<OffloadedTask>(this);
-    current_task->begin(kernel_name);
+    current_task->begin(task_kernel_name);
 
     for (auto &arg : func->args()) {
       kernel_args.push_back(&arg);

@@ -18,19 +18,23 @@ class Offloader {
     root_block->statements.clear();
     auto new_root_statements = std::vector<pStmt>();
 
+    auto pending_serial_statements =
+        Stmt::make_typed<OffloadedStmt>(OffloadedStmt::TaskType::serial);
+
     bool has_range_for = false;
 
-    int unclassified = 3;
+    auto assemble_serial_statements = [&]() {
+      if (pending_serial_statements->body_block->statements.size()) {
+        root_block->insert(std::move(pending_serial_statements));
+      }
+      pending_serial_statements =
+          Stmt::make_typed<OffloadedStmt>(OffloadedStmt::TaskType::serial);
+    };
+
     for (int i = 0; i < (int)root_statements.size(); i++) {
       auto &stmt = root_statements[i];
       if (auto s = stmt->cast<RangeForStmt>()) {
-        TC_ASSERT(root_statements[unclassified - 3]->is<AllocaStmt>());
-        TC_ASSERT(root_statements[unclassified - 3].get() == s->loop_var);
-        TC_ASSERT(root_statements[unclassified - 2]->is<ConstStmt>());
-        TC_ASSERT(root_statements[unclassified - 2].get() == s->begin);
-        TC_ASSERT(root_statements[unclassified - 1]->is<ConstStmt>());
-        TC_ASSERT(root_statements[unclassified - 1].get() == s->end);
-
+        assemble_serial_statements();
         auto offloaded =
             Stmt::make_typed<OffloadedStmt>(OffloadedStmt::TaskType::range_for);
         offloaded->body_block = std::make_unique<Block>();
@@ -50,19 +54,10 @@ class Offloader {
               return false;
             },
             []() { return Stmt::make<LoopIndexStmt>(0); });
-        for (int j = unclassified; j < i; j++) {
-          offloaded->body_block->insert(std::move(root_statements[j]));
-        }
         for (int j = 0; j < (int)s->body->statements.size(); j++) {
           offloaded->body_block->insert(std::move(s->body->statements[j]));
-          TC_P((void *)offloaded->body_block->mask());
-        }
-        for (int j = 0; j < (int)offloaded->body_block->statements.size();
-             j++) {
-          TC_P((void *)offloaded->body_block->mask());
         }
         root_block->insert(std::move(offloaded));
-        unclassified = i + 3;
         /*
       } else if (auto s = stmt->cast<StructForStmt>()) {
         // TODO: emit listgen
@@ -77,19 +72,11 @@ class Offloader {
         offloaded->body_stmt = std::move(root_statements[i]);
         new_root_statements.push_back(std::move(offloaded));
          */
+      } else {
+        pending_serial_statements->body_block->insert(std::move(stmt));
       }
     }
-
-    if (!has_range_for) {
-      auto offload =
-          Stmt::make_typed<OffloadedStmt>(OffloadedStmt::TaskType::serial);
-      offload->body_block = std::make_unique<Block>();
-      for (int i = 0; i < (int)root_statements.size(); i++) {
-        auto &stmt = root_statements[i];
-        offload->body_block->insert(std::move(stmt));
-      }
-      root_block->insert(std::move(offload));
-    }
+    assemble_serial_statements();
   }
 };
 

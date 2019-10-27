@@ -173,6 +173,9 @@ class OffloadedStmt : public Stmt {
     begin = end = step = 0;
     block_size = 0;
     reversed = false;
+    if (task_type != TaskType::listgen) {
+      body_block = std::make_unique<Block>();
+    }
   }
 
   DEFINE_ACCEPT

@@ -852,7 +852,6 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   void visit(AtomicOpStmt *stmt) {
     auto mask = stmt->parent->mask();
     for (int l = 0; l < stmt->width(); l++) {
-      TC_P((void *)mask);
       if (mask) {
         emit("if ({}[{}]) ", mask->raw_name(), l);
       } else {

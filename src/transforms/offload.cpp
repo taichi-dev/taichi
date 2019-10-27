@@ -48,11 +48,10 @@ class Offloader {
         }
         for (int j = 0; j < (int)s->body->statements.size(); j++) {
           offloaded->body_block->insert(std::move(s->body->statements[j]));
+          TC_P((void *)offloaded->body_block->mask());
         }
         for (int j = 0; j < (int)offloaded->body_block->statements.size();
              j++) {
-          TC_ASSERT(offloaded->body_block->statements[i]->parent ==
-                    offloaded->body_block.get());
           TC_P((void *)offloaded->body_block->mask());
         }
         root_block->insert(std::move(offloaded));
@@ -90,6 +89,7 @@ class Offloader {
 void offload(IRNode *root) {
   Offloader _(root);
   irpass::typecheck(root);
+  irpass::fix_block_parents(root);
 }
 
 }  // namespace irpass

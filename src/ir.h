@@ -91,6 +91,7 @@ void lower_access(IRNode *root, bool lower_atomic);
 void make_adjoint(IRNode *root);
 void constant_fold(IRNode *root);
 void offload(IRNode *root);
+void fix_block_parents(IRNode *root);
 void replace_statements_with(IRNode *root,
                              std::function<bool(Stmt *)> filter,
                              std::function<std::unique_ptr<Stmt>()> generator);

@@ -364,9 +364,14 @@ class IRPrinter : public IRVisitor {
 
   void visit(OffloadedStmt *stmt) override {
     print("{} = offloaded {{", stmt->name());
-    current_indent++;
-    stmt->body_stmt->accept(this);
-    current_indent--;
+    if (stmt->body_stmt) {
+      current_indent++;
+      stmt->body_stmt->accept(this);
+      current_indent--;
+    } else {
+      TC_ASSERT(stmt->body_block);
+      stmt->body_block->accept(this);
+    }
     print("}}");
   }
 };

@@ -793,7 +793,7 @@ void CPUCodeGen::lower_llvm() {
     irpass::print(ir);
   }
 
-  // irpass::offload(ir);
+  irpass::offload(ir);
   if (prog->config.print_ir) {
     TC_TRACE("Offloaded:");
     irpass::re_id(ir);

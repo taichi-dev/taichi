@@ -14,9 +14,10 @@ class Offloader {
 
   void run(IRNode *root) {
     auto root_block = dynamic_cast<Block *>(root);
-    auto &root_statements = root_block->statements;
+    auto &&root_statements = std::move(root_block->statements);
     auto new_root_statements = std::vector<pStmt>();
 
+    /*
     for (int i = 0; i < (int)root_statements.size(); i++) {
       auto &stmt = root_statements[i];
       if (auto s = stmt->cast<RangeForStmt>()) {
@@ -38,6 +39,16 @@ class Offloader {
         new_root_statements.push_back(std::move(offloaded));
       }
     }
+    */
+
+    auto offload =
+        Stmt::make_typed<OffloadedStmt>(OffloadedStmt::TaskType::serial);
+    offload->body_block = std::make_unique<Block>();
+    for (int i = 0; i < (int)root_statements.size(); i++) {
+      auto &stmt = root_statements[i];
+      offload->body_block->statements.push_back(std::move(stmt));
+    }
+    new_root_statements.push_back(std::move(offload));
 
     root_block->statements = std::move(new_root_statements);
   }

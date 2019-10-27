@@ -71,11 +71,7 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
     task.grid_dim = kernel_grid_dim;
     task.block_dim = kernel_block_dim;
     task.end();
-    /*
-    return [grid_dim, block_dim, cuda_kernel](Context context) {
-      cuda_context.launch(cuda_kernel, &context, grid_dim, block_dim);
-    };
-    */
+
     auto offloaded_local = offloaded_tasks;
     return [offloaded_local](Context context) {
       for (auto task : offloaded_local) {

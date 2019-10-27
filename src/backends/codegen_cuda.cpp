@@ -1113,6 +1113,12 @@ void GPUCodeGen::lower_llvm() {
     irpass::re_id(ir);
     irpass::print(ir);
   }
+  irpass::offload(ir);
+  if (prog->config.print_ir) {
+    TC_TRACE("Offloaded:");
+    irpass::re_id(ir);
+    irpass::print(ir);
+  }
 }
 
 void GPUCodeGen::lower() {

@@ -378,6 +378,10 @@ class IRPrinter : public IRVisitor {
     }
     print("}}");
   }
+
+  void visit(LoopIndexStmt *stmt) override {
+    print("{} = loop index {}", stmt->name(), stmt->index);
+  }
 };
 
 namespace irpass {

@@ -29,6 +29,18 @@ class Offloader {
         offloaded->begin = s->begin->as<ConstStmt>()->val[0].val_int32();
         offloaded->end = s->end->as<ConstStmt>()->val[0].val_int32();
         has_range_for = true;
+        auto loop_var = s->loop_var;
+        replace_statements_with(
+            s,
+            [&](Stmt *load) {
+              if (auto local_load = load->cast<LocalLoadStmt>()) {
+                return local_load->width() == 1 &&
+                       local_load->ptr[0].var == loop_var &&
+                       local_load->ptr[0].offset == 0;
+              }
+              return false;
+            },
+            []() { return Stmt::make<LoopIndexStmt>(0); });
         for (int j = unclassified; j < i; j++) {
           offloaded->body_block->statements.push_back(
               std::move(root_statements[j]));

@@ -28,8 +28,6 @@ def test_loops():
   for i in range(N // 2 + 3, N):
     assert x[i] == abs(y[i])
     
-test_loops()
-    
 @ti.program_test
 def test_numpy_loops():
   x = ti.var(ti.f32)
@@ -61,11 +59,11 @@ def test_numpy_loops():
 
   for i in range(N // 2 + 3, N):
     assert x[i] == abs(y[i])
+    
 
 @ti.program_test
 def test_nested_loops():
   # this may crash if any LLVM allocas are called in the loop body
-  ti.cfg.print_ir = True
   x = ti.var(ti.i32)
 
   n = 2048

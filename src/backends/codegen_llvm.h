@@ -1235,7 +1235,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
                            builder->CreateLoad(loop_index)});
 
       current_coordinates = new_coordinates;
-      // for_stmt->body->accept(this);
+      stmt->body_block->accept(this);
 
       BasicBlock *after_loop = BasicBlock::Create(*llvm_context, "block", func);
 

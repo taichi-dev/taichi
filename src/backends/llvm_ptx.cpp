@@ -174,55 +174,57 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
   }
 
   void visit(RangeForStmt *for_stmt) override {
-    if (offloaded) {
       create_naive_range_for(for_stmt);
-    } else {
-      offloaded = true;
-      auto loop_begin = for_stmt->begin->as<ConstStmt>()->val[0].val_int32();
-      auto loop_end = for_stmt->end->as<ConstStmt>()->val[0].val_int32();
-      auto loop_block_dim = for_stmt->block_size;
-      if (loop_block_dim == 0) {
-        loop_block_dim = default_gpu_block_size;
-      }
-      kernel_grid_dim =
-          (loop_end - loop_begin + loop_block_dim - 1) / loop_block_dim;
-      kernel_block_dim = loop_block_dim;
-      BasicBlock *body = BasicBlock::Create(*llvm_context, "loop_body", func);
-      BasicBlock *after_loop = BasicBlock::Create(*llvm_context, "block", func);
+  }
 
-      auto threadIdx =
-          builder->CreateIntrinsic(Intrinsic::nvvm_read_ptx_sreg_tid_x, {}, {});
-      auto blockIdx = builder->CreateIntrinsic(
-          Intrinsic::nvvm_read_ptx_sreg_ctaid_x, {}, {});
-      auto blockDim = builder->CreateIntrinsic(
-          Intrinsic::nvvm_read_ptx_sreg_ntid_x, {}, {});
-
-      auto loop_id = builder->CreateAdd(
-          for_stmt->begin->value,
-          builder->CreateAdd(threadIdx,
-                             builder->CreateMul(blockIdx, blockDim)));
-
-      builder->CreateStore(loop_id, for_stmt->loop_var->value);
-
-      auto cond = builder->CreateICmp(
-          llvm::CmpInst::Predicate::ICMP_SLT,
-          builder->CreateLoad(for_stmt->loop_var->value), for_stmt->end->value);
-
-      builder->CreateCondBr(cond, body, after_loop);
-      {
-        // body cfg
-        builder->SetInsertPoint(body);
-        for_stmt->body->accept(this);
-        builder->CreateBr(after_loop);
-      }
-
-      // create_increment(for_stmt->loop_var->value, tlctx->get_constant(1));
-
-      builder->SetInsertPoint(after_loop);
-      // builder->CreateRetVoid();
-
-      offloaded = false;
+  void create_offload_range_for(OffloadedStmt *stmt) {
+    auto loop_var = create_entry_block_alloca(DataType::i32);
+    stmt->loop_vars_llvm.push_back(loop_var);
+    auto loop_begin = stmt->begin;
+    auto loop_end = stmt->end;
+    auto loop_block_dim = stmt->block_size;
+    if (loop_block_dim == 0) {
+      loop_block_dim = default_gpu_block_size;
     }
+    kernel_grid_dim =
+        (loop_end - loop_begin + loop_block_dim - 1) / loop_block_dim;
+    kernel_block_dim = loop_block_dim;
+    BasicBlock *body = BasicBlock::Create(*llvm_context, "loop_body", func);
+    BasicBlock *after_loop = BasicBlock::Create(*llvm_context, "block", func);
+
+    auto threadIdx =
+        builder->CreateIntrinsic(Intrinsic::nvvm_read_ptx_sreg_tid_x, {}, {});
+    auto blockIdx = builder->CreateIntrinsic(
+        Intrinsic::nvvm_read_ptx_sreg_ctaid_x, {}, {});
+    auto blockDim = builder->CreateIntrinsic(
+        Intrinsic::nvvm_read_ptx_sreg_ntid_x, {}, {});
+
+
+    auto loop_id = builder->CreateAdd(
+        tlctx->get_constant(stmt->begin),
+        builder->CreateAdd(threadIdx,
+                           builder->CreateMul(blockIdx, blockDim)));
+
+    builder->CreateStore(loop_id, loop_var);
+
+    auto cond = builder->CreateICmp(
+        llvm::CmpInst::Predicate::ICMP_SLT,
+        builder->CreateLoad(loop_var), tlctx->get_constant(stmt->end));
+
+    builder->CreateCondBr(cond, body, after_loop);
+    {
+      // body cfg
+      builder->SetInsertPoint(body);
+      stmt->body_block->accept(this);
+      builder->CreateBr(after_loop);
+    }
+
+    // create_increment(for_stmt->loop_var->value, tlctx->get_constant(1));
+
+    builder->SetInsertPoint(after_loop);
+
+    offloaded = false;
+
   }
 
   void visit(OffloadedStmt *stmt) override {
@@ -233,8 +235,7 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
     if (stmt->task_type == Type::serial) {
       stmt->body_block->accept(this);
     } else if (stmt->task_type == Type::range_for) {
-      TC_NOT_IMPLEMENTED
-      stmt->body_stmt->accept(this);
+      create_offload_range_for(stmt);
     } else {
       TC_NOT_IMPLEMENTED
     }

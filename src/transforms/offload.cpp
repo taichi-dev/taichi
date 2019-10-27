@@ -28,6 +28,7 @@ class Offloader {
         offloaded->body_block = std::make_unique<Block>();
         offloaded->begin = s->begin->as<ConstStmt>()->val[0].val_int32();
         offloaded->end = s->end->as<ConstStmt>()->val[0].val_int32();
+        offloaded->block_size = s->block_size;
         has_range_for = true;
         auto loop_var = s->loop_var;
         replace_statements_with(

@@ -1,10 +1,7 @@
 import taichi as ti
 
-ti.set_gdb_trigger(True)
-
 @ti.program_test
 def test_loops():
-  ti.cfg.print_ir = True
   x = ti.var(ti.f32)
   y = ti.var(ti.f32)
 
@@ -32,7 +29,7 @@ def test_loops():
     assert x[i] == abs(y[i])
     
 test_loops()
-
+    
 @ti.program_test
 def test_numpy_loops():
   x = ti.var(ti.f32)

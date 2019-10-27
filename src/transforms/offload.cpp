@@ -24,6 +24,13 @@ class Offloader {
     for (int i = 0; i < (int)root_statements.size(); i++) {
       auto &stmt = root_statements[i];
       if (auto s = stmt->cast<RangeForStmt>()) {
+        TC_ASSERT(root_statements[unclassified - 3]->is<AllocaStmt>());
+        TC_ASSERT(root_statements[unclassified - 3].get() == s->loop_var);
+        TC_ASSERT(root_statements[unclassified - 2]->is<ConstStmt>());
+        TC_ASSERT(root_statements[unclassified - 2].get() == s->begin);
+        TC_ASSERT(root_statements[unclassified - 1]->is<ConstStmt>());
+        TC_ASSERT(root_statements[unclassified - 1].get() == s->end);
+
         auto offloaded =
             Stmt::make_typed<OffloadedStmt>(OffloadedStmt::TaskType::range_for);
         offloaded->body_block = std::make_unique<Block>();

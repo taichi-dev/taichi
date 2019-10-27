@@ -21,19 +21,19 @@ class Offloader {
       auto &stmt = root_statements[i];
       if (auto s = stmt->cast<RangeForStmt>()) {
         auto offloaded =
-            Stmt::make_typed<OffloadedStmt>(OffloadedStmt::Type::range_for);
+            Stmt::make_typed<OffloadedStmt>(OffloadedStmt::TaskType::range_for);
         offloaded->body_stmt = std::move(root_statements[i]);
         new_root_statements.push_back(std::move(offloaded));
       } else if (auto s = stmt->cast<StructForStmt>()) {
         // TODO: emit listgen
         auto offloaded =
-            Stmt::make_typed<OffloadedStmt>(OffloadedStmt::Type::struct_for);
+            Stmt::make_typed<OffloadedStmt>(OffloadedStmt::TaskType::struct_for);
         offloaded->body_stmt = std::move(root_statements[i]);
         new_root_statements.push_back(std::move(offloaded));
       } else {
         // Serial stmt
         auto offloaded =
-            Stmt::make_typed<OffloadedStmt>(OffloadedStmt::Type::serial);
+            Stmt::make_typed<OffloadedStmt>(OffloadedStmt::TaskType::serial);
         offloaded->body_stmt = std::move(root_statements[i]);
         new_root_statements.push_back(std::move(offloaded));
       }

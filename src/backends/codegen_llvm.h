@@ -35,6 +35,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   bool offloaded;
   llvm::BasicBlock *while_after_loop;
 
+
   void initialize_context() {
     if (get_current_program().config.arch == Arch::gpu) {
       TC_INFO("Initializing GPU context");
@@ -1181,6 +1182,17 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
         stmt->base_ptrs[0]->value,
         llvm::PointerType::get(tlctx->get_data_type(dt), 0));
     stmt->value = builder->CreateGEP(base, stmt->indices[0]->value);
+  }
+
+  void visit(OffloadedStmt *stmt) override {
+    using Type = OffloadedStmt::TaskType;
+    if (stmt->task_type == Type::serial) {
+      stmt->body_stmt->accept(this);
+    } else if (stmt->task_type == Type::range_for) {
+      stmt->body_stmt->accept(this);
+    } else {
+      TC_NOT_IMPLEMENTED
+    }
   }
 
   ~CodeGenLLVM() {

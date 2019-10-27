@@ -152,19 +152,19 @@ class ClearAllStmt : public Stmt {
 
 class OffloadedStmt : public Stmt {
  public:
-  enum Type : int {
+  enum TaskType : int {
     serial,
     range_for,
     struct_for,
     listgen,
   };
 
-  Type type;
+  TaskType task_type;
   SNode *snode;
   std::unique_ptr<Block> body_block;
   std::unique_ptr<Stmt> body_stmt;
 
-  OffloadedStmt(Type type) : type(type) {
+  OffloadedStmt(TaskType task_type) : task_type(task_type) {
   }
 
   DEFINE_ACCEPT

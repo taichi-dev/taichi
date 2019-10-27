@@ -229,7 +229,7 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
     using Type = OffloadedStmt::TaskType;
     kernel_grid_dim = 1;
     kernel_block_dim = 1;
-    init_task_function();
+    init_task_function(stmt);
     if (stmt->task_type == Type::serial) {
       stmt->body_block->accept(this);
     } else if (stmt->task_type == Type::range_for) {

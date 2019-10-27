@@ -256,6 +256,10 @@ class TypeCheck : public IRVisitor {
                                 stmt->base_ptrs[0]->ret_type.data_type);
   }
 
+  void visit(LoopIndexStmt *stmt) {
+    stmt->ret_type = VectorType(1, DataType::i32);
+  }
+
   static void run(IRNode *node) {
     TypeCheck inst;
     node->accept(&inst);

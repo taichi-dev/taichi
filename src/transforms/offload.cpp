@@ -14,7 +14,8 @@ class Offloader {
 
   void run(IRNode *root) {
     auto root_block = dynamic_cast<Block *>(root);
-    auto &&root_statements = std::move(root_block->statements);
+    auto root_statements = std::move(root_block->statements);
+    root_block->statements.clear();
     auto new_root_statements = std::vector<pStmt>();
 
     bool has_range_for = false;
@@ -43,14 +44,12 @@ class Offloader {
             },
             []() { return Stmt::make<LoopIndexStmt>(0); });
         for (int j = unclassified; j < i; j++) {
-          offloaded->body_block->statements.push_back(
-              std::move(root_statements[j]));
+          offloaded->body_block->insert(std::move(root_statements[j]));
         }
         for (int j = 0; j < (int)s->body->statements.size(); j++) {
-          offloaded->body_block->statements.push_back(
-              std::move(s->body->statements[j]));
+          offloaded->body_block->insert(std::move(s->body->statements[j]));
         }
-        new_root_statements.push_back(std::move(offloaded));
+        root_block->insert(std::move(offloaded));
         unclassified = i + 3;
         /*
       } else if (auto s = stmt->cast<StructForStmt>()) {
@@ -77,14 +76,14 @@ class Offloader {
         auto &stmt = root_statements[i];
         offload->body_block->statements.push_back(std::move(stmt));
       }
-      new_root_statements.push_back(std::move(offload));
+      root_block->insert(std::move(offload));
     }
-    root_block->statements = std::move(new_root_statements);
   }
 };
 
 void offload(IRNode *root) {
   Offloader _(root);
+  irpass::typecheck(root);
 }
 
 }  // namespace irpass

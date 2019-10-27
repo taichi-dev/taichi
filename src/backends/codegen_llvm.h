@@ -97,7 +97,8 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       : ModuleBuilder(get_current_program()
                           .get_llvm_context(get_current_program().config.arch)
                           ->clone_struct_module()),
-        kernel(kernel), task_counter(0) {
+        kernel(kernel),
+        task_counter(0) {
     initialize_context();
 
     context_ty = get_runtime_type("Context");
@@ -577,10 +578,6 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     while_after_loop = old_while_after_loop;
   }
 
-  llvm::Value *call(std::string func_name, std::vector<llvm::Value *> value) {
-    return builder->CreateCall(get_runtime_function(func_name), value);
-  }
-
   llvm::Value *cast_pointer(llvm::Value *val,
                             std::string dest_ty_name,
                             int addr_space = 0) {
@@ -592,11 +589,10 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   void emit_list_gen(OffloadedStmt *listgen) {
     auto snode_child = listgen->snode;
     auto snode_parent = listgen->snode->parent;
-    auto meta_child = emit_struct_meta(snode_child);
-    auto meta_parent = emit_struct_meta(snode_parent);
-    auto listgen_call = get_runtime_function("element_listgen");
-    auto args = {get_runtime(), meta_parent, meta_child};
-    builder->CreateCall(listgen_call, args);
+    auto meta_child = cast_pointer(emit_struct_meta(snode_child), "StructMeta");
+    auto meta_parent =
+        cast_pointer(emit_struct_meta(snode_parent), "StructMeta");
+    call("element_listgen", get_runtime(), meta_parent, meta_child);
   }
 
   void visit(StructForStmt *for_stmt) {

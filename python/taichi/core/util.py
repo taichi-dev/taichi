@@ -215,7 +215,6 @@ else:
 
     os.chdir(old_wd)
     
-
 def get_dll_name(name):
   if get_os_name() == 'linux':
     return 'libtaichi_%s.so' % name
@@ -284,3 +283,6 @@ def clean_libs():
   pass
 
 at_startup()
+
+if not is_release():
+  tc_core.set_core_trigger_gdb_when_crash(True)

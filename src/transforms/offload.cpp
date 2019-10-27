@@ -12,6 +12,20 @@ class Offloader {
     run(root);
   }
 
+  void fix_loop_index_load(Stmt *s, Stmt *loop_var, int index) {
+    replace_statements_with(
+        s,
+        [&](Stmt *load) {
+          if (auto local_load = load->cast<LocalLoadStmt>()) {
+            return local_load->width() == 1 &&
+                   local_load->ptr[0].var == loop_var &&
+                   local_load->ptr[0].offset == 0;
+          }
+          return false;
+        },
+        []() { return Stmt::make<LoopIndexStmt>(0); });
+  }
+
   void run(IRNode *root) {
     auto root_block = dynamic_cast<Block *>(root);
     auto root_statements = std::move(root_block->statements);
@@ -38,23 +52,13 @@ class Offloader {
         offloaded->begin = s->begin->as<ConstStmt>()->val[0].val_int32();
         offloaded->end = s->end->as<ConstStmt>()->val[0].val_int32();
         offloaded->block_size = s->block_size;
-        auto loop_var = s->loop_var;
-        replace_statements_with(
-            s,
-            [&](Stmt *load) {
-              if (auto local_load = load->cast<LocalLoadStmt>()) {
-                return local_load->width() == 1 &&
-                       local_load->ptr[0].var == loop_var &&
-                       local_load->ptr[0].offset == 0;
-              }
-              return false;
-            },
-            []() { return Stmt::make<LoopIndexStmt>(0); });
+        fix_loop_index_load(s, s->loop_var, 0);
         for (int j = 0; j < (int)s->body->statements.size(); j++) {
           offloaded->body_block->insert(std::move(s->body->statements[j]));
         }
         root_block->insert(std::move(offloaded));
       } else if (auto s = stmt->cast<StructForStmt>()) {
+        assemble_serial_statements();
         emit_struct_for(s, root_block);
         // TODO: emit listgen
         /*
@@ -98,10 +102,15 @@ class Offloader {
     auto offloaded_struct_for =
         Stmt::make_typed<OffloadedStmt>(OffloadedStmt::TaskType::struct_for);
 
+    for (int i = 0; i < for_stmt->loop_vars.size(); i++)
+      fix_loop_index_load(for_stmt, for_stmt->loop_vars[i], i);
+
     for (int i = 0; i < (int)for_stmt->body->statements.size(); i++) {
       offloaded_struct_for->body_block->insert(
           std::move(for_stmt->body->statements[i]));
     }
+
+    offloaded_struct_for->snode = for_stmt->snode;
 
     root_block->insert(std::move(offloaded_struct_for));
   }

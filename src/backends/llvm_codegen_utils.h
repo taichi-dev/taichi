@@ -39,14 +39,12 @@ TLANG_NAMESPACE_BEGIN
 
 std::string type_name(llvm::Type *type);
 
-bool check_func_call_signature(llvm::Value *func,
-                               std::vector<Value *> arglist);
+bool check_func_call_signature(llvm::Value *func, std::vector<Value *> arglist);
 
 template <typename... Args>
 inline bool check_func_call_signature(llvm::Value *func, Args &&... args) {
   return check_func_call_signature(func, {args...});
 }
-
 
 class ModuleBuilder {
  public:
@@ -69,7 +67,6 @@ class ModuleBuilder {
     return create_entry_block_alloca(tlctx->get_data_type(dt));
   }
 
-
   llvm::Type *get_runtime_type(const std::string &name) {
     auto ty = module->getTypeByName("struct." + name);
     if (!ty) {
@@ -84,18 +81,27 @@ class ModuleBuilder {
       TC_ERROR("Runtime function {} not found.", name);
     }
     // TC_P(std::string(f->getName()));
-    f->removeAttribute(AttributeList::FunctionIndex, llvm::Attribute::OptimizeNone);
+    f->removeAttribute(AttributeList::FunctionIndex,
+                       llvm::Attribute::OptimizeNone);
     f->removeAttribute(AttributeList::FunctionIndex, llvm::Attribute::NoInline);
-    f->addAttribute(AttributeList::FunctionIndex, llvm::Attribute::AlwaysInline);
+    f->addAttribute(AttributeList::FunctionIndex,
+                    llvm::Attribute::AlwaysInline);
     return f;
   }
 
   template <typename... Args>
-  llvm::Value *call(llvm::IRBuilder<> *builder, const std::string &func_name, Args &&... args) {
+  llvm::Value *call(llvm::IRBuilder<> *builder,
+                    const std::string &func_name,
+                    Args &&... args) {
     auto func = get_runtime_function(func_name);
     auto arglist = std::vector<Value *>({args...});
     check_func_call_signature(func, arglist);
     return builder->CreateCall(func, arglist);
+  }
+
+  template <typename... Args>
+  llvm::Value *call(const std::string &func_name, Args &&... args) {
+    return call(this->builder, func_name, std::forward<Args>(args)...);
   }
 };
 

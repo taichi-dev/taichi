@@ -57,6 +57,10 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     using task_fp_type = int32 (*)(void *);
     task_fp_type func;
 
+    int block_dim;
+    int grid_dim;
+    void *cuda_func;
+
     OffloadedTask(CodeGenLLVM *codegen) : codegen(codegen) {
       func = nullptr;
     }
@@ -130,7 +134,6 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     }
     kernel_args[0]->setName("context");
 
-    task.end();
   }
 
   llvm::Value *get_arg(int i) {
@@ -252,6 +255,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   virtual FunctionType compile_module_to_executable() {
     jit->addModule(std::move(module));
 
+    task.end();
     for (auto &task : offloaded_tasks) {
       task.compile();
     }

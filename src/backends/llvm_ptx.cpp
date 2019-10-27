@@ -67,11 +67,21 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
     module->getOrInsertNamedMetadata("nvvm.annotations")->addOperand(md_node);
 
     auto ptx = compile_module_to_ptx(module);
-    auto cuda_kernel = cuda_context.compile(ptx, kernel_name);
-    auto grid_dim = kernel_grid_dim;
-    auto block_dim = kernel_block_dim;
+    task.cuda_func = (void *)cuda_context.compile(ptx, kernel_name);
+    task.grid_dim = kernel_grid_dim;
+    task.block_dim = kernel_block_dim;
+    task.end();
+    /*
     return [grid_dim, block_dim, cuda_kernel](Context context) {
       cuda_context.launch(cuda_kernel, &context, grid_dim, block_dim);
+    };
+    */
+    auto offloaded_local = offloaded_tasks;
+    return [offloaded_local](Context context) {
+      for (auto task : offloaded_local) {
+        cuda_context.launch((CUfunction)task.cuda_func, &context, task.grid_dim,
+                            task.block_dim);
+      }
     };
 #else
     TC_NOT_IMPLEMENTED;

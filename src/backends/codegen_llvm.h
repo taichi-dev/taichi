@@ -87,7 +87,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     }
   };
 
-  OffloadedTask task;
+  std::unique_ptr<OffloadedTask> current_task;
   std::vector<OffloadedTask> offloaded_tasks;
 
   CodeGenLLVM(CodeGenBase *codegen, Kernel *kernel)
@@ -95,8 +95,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       : ModuleBuilder(get_current_program()
                           .get_llvm_context(get_current_program().config.arch)
                           ->clone_struct_module()),
-        kernel(kernel),
-        task(this) {
+        kernel(kernel) {
     initialize_context();
 
     context_ty = get_runtime_type("Context");
@@ -215,7 +214,6 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   virtual FunctionType compile_module_to_executable() {
     jit->addModule(std::move(module));
 
-    task.end();
     for (auto &task : offloaded_tasks) {
       task.compile();
     }
@@ -1207,16 +1205,16 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     func = Function::Create(task_function_type, Function::ExternalLinkage,
                             kernel_name, module.get());
 
-    task.begin(kernel_name);
+    current_task = std::make_unique<OffloadedTask>(this);
+    current_task->begin(kernel_name);
 
     for (auto &arg : func->args()) {
       kernel_args.push_back(&arg);
     }
     kernel_args[0]->setName("context");
 
-    auto node = kernel->ir;
-    this->entry_block = BasicBlock::Create(*llvm_context, "entry", func);
     // entry_block has all the allocas
+    this->entry_block = BasicBlock::Create(*llvm_context, "entry", func);
 
     // The real function body
     func_body_bb = BasicBlock::Create(*llvm_context, "body", func);
@@ -1245,6 +1243,8 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       init_task_function();
       stmt->body_block->accept(this);
       finalize_task_function();
+      current_task->end();
+      current_task = nullptr;
     } else if (stmt->task_type == Type::range_for) {
       TC_NOT_IMPLEMENTED
       stmt->body_stmt->accept(this);

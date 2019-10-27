@@ -32,8 +32,6 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
 
   CodeGenLLVMGPU(CodeGenBase *codegen_base, Kernel *kernel)
       : CodeGenLLVM(codegen_base, kernel) {
-    kernel_grid_dim = 1;
-    kernel_block_dim = 1;
   }
 
   FunctionType compile_module_to_executable() override {
@@ -67,12 +65,11 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
     module->getOrInsertNamedMetadata("nvvm.annotations")->addOperand(md_node);
 
     auto ptx = compile_module_to_ptx(module);
-    task.cuda_func = (void *)cuda_context.compile(ptx, kernel_name);
-    task.grid_dim = kernel_grid_dim;
-    task.block_dim = kernel_block_dim;
-    task.end();
 
     auto offloaded_local = offloaded_tasks;
+    for (auto &task : offloaded_local) {
+      task.cuda_func = (void *)cuda_context.compile(ptx, kernel_name);
+    }
     return [offloaded_local](Context context) {
       for (auto task : offloaded_local) {
         cuda_context.launch((CUfunction)task.cuda_func, &context, task.grid_dim,
@@ -225,6 +222,26 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
       // builder->CreateRetVoid();
 
       offloaded = false;
+    }
+  }
+
+  void visit(OffloadedStmt *stmt) override {
+    using Type = OffloadedStmt::TaskType;
+    if (stmt->task_type == Type::serial) {
+      kernel_grid_dim = 1;
+      kernel_block_dim = 1;
+      init_task_function();
+      stmt->body_block->accept(this);
+      finalize_task_function();
+      current_task->grid_dim = kernel_grid_dim;
+      current_task->block_dim = kernel_block_dim;
+      current_task->end();
+      current_task = nullptr;
+    } else if (stmt->task_type == Type::range_for) {
+      TC_NOT_IMPLEMENTED
+      stmt->body_stmt->accept(this);
+    } else {
+      TC_NOT_IMPLEMENTED
     }
   }
 };

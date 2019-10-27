@@ -1240,6 +1240,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   void create_offload_range_for(OffloadedStmt *stmt) {
     BasicBlock *body = BasicBlock::Create(*llvm_context, "loop_body", func);
     BasicBlock *after_loop = BasicBlock::Create(*llvm_context, "block", func);
+    /*
     if (!stmt->reversed) {
       builder->CreateStore(stmt->begin->value, stmt->loop_var->value);
     } else {
@@ -1271,6 +1272,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
 
     // next cfg
     builder->SetInsertPoint(after_loop);
+    */
   }
 
   void visit(OffloadedStmt *stmt) override {

@@ -91,6 +91,9 @@ void lower_access(IRNode *root, bool lower_atomic);
 void make_adjoint(IRNode *root);
 void constant_fold(IRNode *root);
 void offload(IRNode *root);
+void replace_statements_with(IRNode *root,
+                             std::function<bool(Stmt *)> filter,
+                             std::function<std::unique_ptr<Stmt>()> generator);
 std::unique_ptr<ScratchPads> initialize_scratch_pad(StructForStmt *root);
 
 }  // namespace irpass

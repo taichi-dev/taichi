@@ -4,48 +4,6 @@
 
 TLANG_NAMESPACE_BEGIN
 
-// Visits all non-containing statements
-class BasicStmtVisitor : public IRVisitor {
- public:
-  StructForStmt *current_struct_for;
-
-  BasicStmtVisitor() {
-    current_struct_for = nullptr;
-    allow_undefined_visitor = true;
-  }
-
-  void visit(Block *stmt_list) override {
-    auto backup_block = current_block;
-    current_block = stmt_list;
-    for (auto &stmt : stmt_list->statements) {
-      stmt->accept(this);
-    }
-    current_block = backup_block;
-  }
-
-  void visit(IfStmt *if_stmt) override {
-    if (if_stmt->true_statements)
-      if_stmt->true_statements->accept(this);
-    if (if_stmt->false_statements) {
-      if_stmt->false_statements->accept(this);
-    }
-  }
-
-  void visit(WhileStmt *stmt) override {
-    stmt->body->accept(this);
-  }
-
-  void visit(RangeForStmt *for_stmt) override {
-    for_stmt->body->accept(this);
-  }
-
-  void visit(StructForStmt *for_stmt) override {
-    current_struct_for = for_stmt;
-    for_stmt->body->accept(this);
-    current_struct_for = nullptr;
-  }
-};
-
 class ConstantFold : public BasicStmtVisitor {
  public:
   ConstantFold() : BasicStmtVisitor() {

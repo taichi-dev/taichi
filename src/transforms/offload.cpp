@@ -49,6 +49,12 @@ class Offloader {
         for (int j = 0; j < (int)s->body->statements.size(); j++) {
           offloaded->body_block->insert(std::move(s->body->statements[j]));
         }
+        for (int j = 0; j < (int)offloaded->body_block->statements.size();
+             j++) {
+          TC_ASSERT(offloaded->body_block->statements[i]->parent ==
+                    offloaded->body_block.get());
+          TC_P((void *)offloaded->body_block->mask());
+        }
         root_block->insert(std::move(offloaded));
         unclassified = i + 3;
         /*
@@ -74,7 +80,7 @@ class Offloader {
       offload->body_block = std::make_unique<Block>();
       for (int i = 0; i < (int)root_statements.size(); i++) {
         auto &stmt = root_statements[i];
-        offload->body_block->statements.push_back(std::move(stmt));
+        offload->body_block->insert(std::move(stmt));
       }
       root_block->insert(std::move(offload));
     }

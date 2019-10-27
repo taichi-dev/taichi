@@ -260,6 +260,15 @@ class TypeCheck : public IRVisitor {
     stmt->ret_type = VectorType(1, DataType::i32);
   }
 
+  void visit(GetChStmt *stmt) {
+    stmt->ret_type = VectorType(1, stmt->output_snode->dt);
+  }
+
+  void visit(OffloadedStmt *stmt) {
+    if (stmt->body_block) stmt->body_block->accept(this);
+    if (stmt->body_stmt) stmt->body_stmt->accept(this);
+  }
+
   static void run(IRNode *node) {
     TypeCheck inst;
     node->accept(&inst);

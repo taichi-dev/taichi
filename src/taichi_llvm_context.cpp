@@ -146,18 +146,24 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
       runtime_module->setTargetTriple("nvptx64-nvidia-cuda");
       runtime_module->setDataLayout(libdevice_module->getDataLayout());
 
-      auto patch_intrinsic = [&](std::string name, Intrinsic::ID intrin) {
+      auto patch_intrinsic = [&](std::string name, Intrinsic::ID intrin,
+                                 bool ret = true) {
         auto func = runtime_module->getFunction(name);
         func->getEntryBlock().eraseFromParent();
         auto bb = llvm::BasicBlock::Create(*ctx, "entry", func);
         IRBuilder<> builder(*ctx);
         builder.SetInsertPoint(bb);
-        builder.CreateRet(builder.CreateIntrinsic(intrin, {}, {}));
+        if (ret) {
+          builder.CreateRet(builder.CreateIntrinsic(intrin, {}, {}));
+        } else {
+          builder.CreateIntrinsic(intrin, {}, {});
+          builder.CreateRetVoid();
+        }
       };
 
       patch_intrinsic("thread_idx", Intrinsic::nvvm_read_ptx_sreg_tid_x);
       patch_intrinsic("block_idx", Intrinsic::nvvm_read_ptx_sreg_ctaid_x);
-      // patch_intrinsic("block_barrier", Intrinsic::nvvm_barrier0);
+      patch_intrinsic("block_barrier", Intrinsic::nvvm_barrier0, false);
 
       bool failed = llvm::Linker::linkModules(*runtime_module,
                                               std::move(libdevice_module));

@@ -7,7 +7,7 @@ language: cpp
 matrix:
   include:
   - os: osx
-    osx_image: xcode10
+    osx_image: xcode10.3
     env:
       - MATRIX_EVAL="CC=clang && CXX=clang++ && PYTHON=python3.7"
 before_install:

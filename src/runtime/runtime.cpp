@@ -252,6 +252,7 @@ STRUCT_FIELD_ARRAY(Element, loop_bounds);
 
 struct ElementList {
   Element *elements;
+  int head;
   int tail;
 };
 
@@ -311,6 +312,7 @@ void element_listgen(Runtime *runtime, StructMeta *parent, StructMeta *child) {
   int num_parent_elements = parent_list->tail;
   // printf("num_parent_elements %d\n", num_parent_elements);
   auto child_list = runtime->element_lists[child->snode_id];
+  child_list->head = 0;
   for (int i = 0; i < num_parent_elements; i++) {
     auto element = parent_list->elements[i];
     auto ch_component = child->from_parent_element(element.element);
@@ -340,6 +342,38 @@ void element_listgen(Runtime *runtime, StructMeta *parent, StructMeta *child) {
   }
 }
 
+int32 thread_idx() {
+  return 0;
+}
+
+int32 block_idx() {
+  return 0;
+}
+
+void block_barrier() {
+}
+
+#if ARCH_cuda
+void for_each_block(Context *context,
+                    int snode_id,
+                    void (*task)(Context *, Element *)) {
+  /*
+  auto list = ((Runtime *)context->runtime)->element_lists[snode_id];
+  block_barrier();
+  if (thread_idx() == 0) {
+    atomic_add(&list->head, 1);
+  }
+  block_barrier();
+  for (int i = 0; i < list->tail; i++) {
+    task(context, &list->elements[i]);
+  }
+  */
+  auto list = ((Runtime *)context->runtime)->element_lists[snode_id];
+  for (int i = 0; i < list->tail; i++) {
+    task(context, &list->elements[i]);
+  }
+}
+#else
 void for_each_block(Context *context,
                     int snode_id,
                     void (*task)(Context *, Element *)) {
@@ -348,6 +382,7 @@ void for_each_block(Context *context,
     task(context, &list->elements[i]);
   }
 }
+#endif
 
 int ti_cuda_tid_x() {
   return 0;

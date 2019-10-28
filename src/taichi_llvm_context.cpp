@@ -90,24 +90,25 @@ std::string find_existing_command(const std::vector<std::string> &commands) {
 // ../headers -ffp-contract=fast -Wall -D_GLIBCXX_USE_CXX11_ABI=0 -DTLANG_CPU
 // -lstdc++ -o tmp0001.bc
 void compile_runtime_bitcode(Arch arch) {
-  static bool runtime_compiled = false;
-  if (!runtime_compiled) {
+  static std::set<int> runtime_compiled;
+  if (runtime_compiled.find((int)arch) == runtime_compiled.end()) {
     auto clang = find_existing_command({"clang-7", "clang"});
     TC_ASSERT(command_exist("llvm-as"));
     TC_TRACE("Compiling runtime module bitcode...");
     auto runtime_folder = get_repo_dir() + "/src/runtime/";
     std::string macro = fmt::format(" -D ARCH_{} ", arch_name(arch));
     int ret = std::system(
-        fmt::format("{} -S {}runtime.cpp -o {}runtime.ll -emit-llvm -std=c++17",
-                    clang, runtime_folder, runtime_folder)
+        fmt::format(
+            "{} -S {}runtime.cpp -o {}runtime.ll -emit-llvm -std=c++17 {}",
+            clang, runtime_folder, runtime_folder, macro)
             .c_str());
     if (ret) {
       TC_ERROR("Runtime compilation failed.");
     }
-    std::system(fmt::format("llvm-as {}runtime.ll -o {}runtime.bc",
-                            runtime_folder, runtime_folder)
+    std::system(fmt::format("llvm-as {}runtime.ll -o {}runtime_{}.bc",
+                            runtime_folder, runtime_folder, arch_name(arch))
                     .c_str());
-    runtime_compiled = true;
+    runtime_compiled.insert((int)arch);
   }
 }
 
@@ -134,7 +135,9 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
   if (!runtime_module) {
     compile_runtime_bitcode(arch);
     runtime_module = module_from_bitcode_file(
-        get_repo_dir() + "/src/runtime/runtime.bc", ctx.get());
+        get_repo_dir() +
+            fmt::format("/src/runtime/runtime_{}.bc", arch_name(arch)),
+        ctx.get());
     if (arch == Arch::gpu) {
       auto libdevice_module = module_from_bitcode_file(
           "/usr/local/cuda-10.0/nvvm/libdevice/libdevice.10.bc", ctx.get());
@@ -143,8 +146,21 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
       runtime_module->setTargetTriple("nvptx64-nvidia-cuda");
       runtime_module->setDataLayout(libdevice_module->getDataLayout());
 
-      bool failed =
-          llvm::Linker::linkModules(*runtime_module, std::move(libdevice_module));
+      auto patch_intrinsic = [&](std::string name, Intrinsic::ID intrin) {
+        auto func = runtime_module->getFunction(name);
+        func->getEntryBlock().eraseFromParent();
+        auto bb = llvm::BasicBlock::Create(*ctx, "entry", func);
+        IRBuilder<> builder(*ctx);
+        builder.SetInsertPoint(bb);
+        builder.CreateRet(builder.CreateIntrinsic(intrin, {}, {}));
+      };
+
+      patch_intrinsic("thread_idx", Intrinsic::nvvm_read_ptx_sreg_tid_x);
+      patch_intrinsic("block_idx", Intrinsic::nvvm_read_ptx_sreg_ctaid_x);
+      // patch_intrinsic("block_barrier", Intrinsic::nvvm_barrier0);
+
+      bool failed = llvm::Linker::linkModules(*runtime_module,
+                                              std::move(libdevice_module));
       // runtime_module->print(llvm::errs(), nullptr);
       if (failed) {
         TC_ERROR("CUDA libdevice linking failure.");

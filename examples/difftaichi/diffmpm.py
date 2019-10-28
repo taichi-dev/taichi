@@ -51,10 +51,7 @@ actuation_omega = 20
 act_strength = 4
 
 
-# ti.cfg.arch = ti.x86_64
-# ti.cfg.use_llvm = True
-ti.cfg.arch = ti.cuda
-# ti.cfg.print_ir = True
+# ti.cfg.arch = ti.cuda
 
 
 @ti.layout

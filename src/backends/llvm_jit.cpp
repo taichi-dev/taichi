@@ -55,7 +55,6 @@ void global_optimize_module_x86_64(std::unique_ptr<llvm::Module> &module) {
   }
   module->setTargetTriple(JTMB->getTargetTriple().str());
   llvm::Triple triple(module->getTargetTriple());
-  TC_P(triple.str());
 
   std::string err_str;
   const llvm::Target *target =
@@ -77,7 +76,6 @@ void global_optimize_module_x86_64(std::unique_ptr<llvm::Module> &module) {
   legacy::PassManager module_pass_manager;
 
   llvm::StringRef mcpu = llvm::sys::getHostCPUName();
-  TC_P(mcpu.str());
   std::unique_ptr<TargetMachine> target_machine(target->createTargetMachine(
       triple.str(), mcpu.str(), "", options, llvm::Reloc::PIC_,
       llvm::CodeModel::Small, CodeGenOpt::Aggressive));
@@ -378,7 +376,7 @@ CUmodule CUDAContext::compile(const std::string &ptx) {
   TC_INFO("PTX size: {}B", ptx.size());
   auto t = Time::get_time();
   checkCudaErrors(cuModuleLoadDataEx(&cudaModule, ptx.c_str(), 0, 0, 0));
-  TC_INFO("CUDA module load time : {}ms", t * 1000);
+  TC_INFO("CUDA module load time : {}ms", (Time::get_time() - t) * 1000);
   cudaModules.push_back(cudaModule);
   return cudaModule;
 }

@@ -14,7 +14,6 @@ include_directories(lang/include)
 add_library(${CORE_LIBRARY_NAME} SHARED ${TAICHI_CORE_SOURCE} ${PROJECT_SOURCES} ${SPGridSource})
 
 option(USE_STDCPP "Use -stdlib=libc++" OFF)
-option(TLANG_WITH_VDB "Use VDB" OFF)
 option(TLANG_WITH_CUDA "Build with GPU support" ON)
 
 include_directories(external/xxhash)

@@ -6,7 +6,7 @@
 
 ### High-Performance Computation on Sparse Data Structures [[Paper]](http://taichi.graphics/wp-content/uploads/2019/09/taichi_lang.pdf) [[Video]](https://youtu.be/wKw8LMF3Djo) [[Language Details]](https://github.com/yuanming-hu/taichi/blob/master/src/README.md)
 
-
+## [Examples](https://github.com/yuanming-hu/taichi/tree/master/examples)
 ## Updates
 ```bash
 # CPU only. No GPU/CUDA needed

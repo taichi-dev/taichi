@@ -31,7 +31,6 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   llvm::Type *physical_coordinate_ty;
 
   llvm::Value *current_coordinates;
-  bool offloaded;
   llvm::BasicBlock *while_after_loop;
   llvm::FunctionType *task_function_type;
   OffloadedStmt *current_offloaded_stmt;
@@ -865,7 +864,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     }
   }
 
-  void visit(AtomicOpStmt *stmt) {
+  virtual void visit(AtomicOpStmt *stmt) {
     auto mask = stmt->parent->mask();
     for (int l = 0; l < stmt->width(); l++) {
       if (mask) {
@@ -879,6 +878,11 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
         else if (stmt->val->ret_type.data_type == DataType::f32) {
           builder->CreateCall(get_runtime_function("atomic_add_cpu_f32"),
                               {stmt->dest->value, stmt->val->value});
+        } else if (stmt->val->ret_type.data_type == DataType::f64) {
+          builder->CreateCall(get_runtime_function("atomic_add_cpu_f64"),
+                              {stmt->dest->value, stmt->val->value});
+        } else {
+          TC_NOT_IMPLEMENTED
         }
       }
     }
@@ -1133,7 +1137,6 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   BasicBlock *func_body_bb;
 
   void init_task_function(OffloadedStmt *stmt) {
-    offloaded = false;
     while_after_loop = nullptr;
     current_offloaded_stmt = stmt;
 

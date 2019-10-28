@@ -186,6 +186,34 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
 #undef UNARY_STD
   }
 
+  void visit(AtomicOpStmt *stmt) override {
+    auto mask = stmt->parent->mask();
+    for (int l = 0; l < stmt->width(); l++) {
+      if (mask) {
+        emit("if ({}[{}]) ", mask->raw_name(), l);
+      } else {
+        TC_ASSERT(stmt->op_type == AtomicOpType::add);
+        if (is_integral(stmt->val->ret_type.data_type))
+          builder->CreateAtomicRMW(
+              llvm::AtomicRMWInst::BinOp::Add, stmt->dest->value,
+              stmt->val->value, llvm::AtomicOrdering::SequentiallyConsistent);
+        else if (stmt->val->ret_type.data_type == DataType::f32) {
+          auto dt = tlctx->get_data_type(DataType::f32);
+          builder->CreateIntrinsic(Intrinsic::nvvm_atomic_load_add_f32,
+                                   {llvm::PointerType::get(dt, 0)},
+                                   {stmt->dest->value, stmt->val->value});
+        } else if (stmt->val->ret_type.data_type == DataType::f64) {
+          auto dt = tlctx->get_data_type(DataType::f64);
+          builder->CreateIntrinsic(Intrinsic::nvvm_atomic_load_add_f64,
+                                   {llvm::PointerType::get(dt, 0)},
+                                   {stmt->dest->value, stmt->val->value});
+        } else {
+          TC_NOT_IMPLEMENTED
+        }
+      }
+    }
+  }
+
   void visit(RangeForStmt *for_stmt) override {
     create_naive_range_for(for_stmt);
   }
@@ -233,8 +261,6 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
     // create_increment(for_stmt->loop_var->value, tlctx->get_constant(1));
 
     builder->SetInsertPoint(after_loop);
-
-    offloaded = false;
   }
 
   void visit(OffloadedStmt *stmt) override {

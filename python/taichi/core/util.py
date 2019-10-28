@@ -25,6 +25,7 @@ def import_tc_core():
   import taichi_core as core
   tc_core = core
   sys.setdlopenflags(old_flags)
+  core.set_lib_dir(os.path.join(package_root(), 'lib'))
   
 def is_ci():
   return os.environ.get('TC_CI', '') == '1'

@@ -86,6 +86,10 @@ std::string find_existing_command(const std::vector<std::string> &commands) {
   return "";
 }
 
+std::string get_runtime_fn(Arch arch) {
+  return fmt::format("runtime_{}.bc", arch_name(arch));
+}
+
 void compile_runtime_bitcode(Arch arch) {
   static std::set<int> runtime_compiled;
   if (runtime_compiled.find((int)arch) == runtime_compiled.end()) {
@@ -102,8 +106,8 @@ void compile_runtime_bitcode(Arch arch) {
     if (ret) {
       TC_ERROR("Runtime compilation failed.");
     }
-    std::system(fmt::format("llvm-as {}runtime.ll -o {}runtime_{}.bc",
-                            runtime_folder, runtime_folder, arch_name(arch))
+    std::system(fmt::format("llvm-as {}runtime.ll -o {}{}", runtime_folder,
+                            runtime_folder, get_runtime_fn(arch))
                     .c_str());
     runtime_compiled.insert((int)arch);
   }
@@ -117,6 +121,9 @@ void compile_runtimes() {
 }
 
 std::string libdevice_path() {
+  if (is_release()) {
+    return compiled_lib_dir;
+  }
 #if defined(TLANG_WITH_CUDA)
   auto cuda_version_major = int(std::atof(TLANG_CUDA_VERSION));
   return fmt::format("/usr/local/cuda-{}/nvvm/libdevice/libdevice.{}.bc",
@@ -148,11 +155,17 @@ std::unique_ptr<llvm::Module> module_from_bitcode_file(std::string bitcode_path,
 
 std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
   if (!runtime_module) {
-    compile_runtime_bitcode(arch);
-    runtime_module = module_from_bitcode_file(
-        get_repo_dir() +
-            fmt::format("/src/runtime/runtime_{}.bc", arch_name(arch)),
-        ctx.get());
+    if (is_release()) {
+      runtime_module = module_from_bitcode_file(
+          get_repo_dir() +
+              fmt::format("{}/{}", compiled_lib_dir, get_runtime_fn(arch)),
+          ctx.get());
+    } else {
+      compile_runtime_bitcode(arch);
+      runtime_module = module_from_bitcode_file(
+          get_repo_dir() + fmt::format("/src/runtime/{}", get_runtime_fn(arch)),
+          ctx.get());
+    }
     if (arch == Arch::gpu) {
       auto libdevice_module =
           module_from_bitcode_file(libdevice_path(), ctx.get());

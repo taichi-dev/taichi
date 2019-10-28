@@ -360,6 +360,7 @@ struct CompileConfig {
 };
 
 extern CompileConfig default_compile_config;
+extern std::string compiled_lib_dir;
 
 bool command_exist(const std::string &command);
 

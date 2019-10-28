@@ -8,6 +8,8 @@
 
 TLANG_NAMESPACE_BEGIN
 
+std::string compiled_lib_dir;
+
 Expr expr_index(const Expr &expr, const Expr &index) {
   return expr[index];
 }
@@ -368,5 +370,9 @@ void export_lang(py::module &m) {
 
   m.def("compile_runtimes", compile_runtimes);
   m.def("libdevice_path", libdevice_path);
+
+  m.def("set_lib_dir", [&](const std::string &dir){
+    compiled_lib_dir = dir;
+  });
 }
 TC_NAMESPACE_END

@@ -83,8 +83,8 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
     }
     return [offloaded_local](Context context) {
       for (auto task : offloaded_local) {
-        TC_INFO("Launching kernel {}<<<{}, {}>>>", task.name, task.grid_dim,
-                task.block_dim);
+        // TC_INFO("Launching kernel {}<<<{}, {}>>>", task.name, task.grid_dim,
+        // task.block_dim);
         cuda_context.launch((CUfunction)task.cuda_func, &context, task.grid_dim,
                             task.block_dim);
       }
@@ -252,7 +252,8 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
       kernel_grid_dim = num_SMs * 32;  // each SM can have 16-32 resident blocks
       kernel_block_dim = stmt->block_size;
       if (kernel_block_dim == 0) {
-        kernel_block_dim = std::min(1024, 1 << stmt->snode->parent->total_num_bits);
+        kernel_block_dim =
+            std::min(1024, 1 << stmt->snode->parent->total_num_bits);
       }
       create_offload_struct_for(stmt, true);
     } else if (stmt->task_type == Type::listgen) {

@@ -56,7 +56,7 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
     } else if (snode.dt == DataType::i32) {
       llvm_type = llvm::Type::getInt32Ty(*ctx);
     } else {
-      TC_NOT_IMPLEMENTED
+      llvm_type = llvm::Type::getDoubleTy(*ctx);
     }
   } else {
     TC_P(snode.type_name());

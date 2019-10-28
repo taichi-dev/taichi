@@ -328,17 +328,41 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
         llvm::CastInst::CastOps cast_op;
         auto from = stmt->operand->ret_type.data_type;
         auto to = stmt->cast_type;
-        if (from == DataType::f32 && to == DataType::i32) {
-          cast_op = llvm::Instruction::CastOps::FPToSI;
-        } else if (from == DataType::i32 && to == DataType::f32) {
-          cast_op = llvm::Instruction::CastOps::SIToFP;
-        } else {
-          cast_op = llvm::Instruction::CastOps::FPToSI;
-          TC_NOT_IMPLEMENTED;
+        TC_ASSERT(from != to);
+        if (is_real(from) != is_real(to)) {
+          if (from == DataType::f32 && to == DataType::i32) {
+            cast_op = llvm::Instruction::CastOps::FPToSI;
+          } else if (from == DataType::f64 && to == DataType::i32) {
+            cast_op = llvm::Instruction::CastOps::FPToSI;
+          } else if (from == DataType::i32 && to == DataType::f32) {
+            cast_op = llvm::Instruction::CastOps::SIToFP;
+          } else if (from == DataType::i32 && to == DataType::f64) {
+            cast_op = llvm::Instruction::CastOps::SIToFP;
+          } else {
+            TC_P(data_type_name(from));
+            TC_P(data_type_name(to));
+            TC_NOT_IMPLEMENTED;
+          }
+          stmt->value =
+              builder->CreateCast(cast_op, stmt->operand->value,
+                                  tlctx->get_data_type(stmt->cast_type));
+        } else if (is_real(from) && is_real(to)) {
+          if (data_type_size(from) < data_type_size(to)) {
+            stmt->value = builder->CreateFPExt(
+                stmt->operand->value, tlctx->get_data_type(stmt->cast_type));
+          } else {
+            stmt->value = builder->CreateFPTrunc(
+                stmt->operand->value, tlctx->get_data_type(stmt->cast_type));
+          }
+        } else if (!is_real(from) && !is_real(to)) {
+          if (data_type_size(from) < data_type_size(to)) {
+            stmt->value = builder->CreateSExt(
+                stmt->operand->value, tlctx->get_data_type(stmt->cast_type));
+          } else {
+            stmt->value = builder->CreateTrunc(
+                stmt->operand->value, tlctx->get_data_type(stmt->cast_type));
+          }
         }
-        stmt->value =
-            builder->CreateCast(cast_op, stmt->operand->value,
-                                tlctx->get_data_type(stmt->cast_type));
       } else {
         TC_ASSERT(data_type_size(stmt->ret_type.data_type) ==
                   data_type_size(stmt->cast_type));
@@ -540,6 +564,9 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     if (val.dt == DataType::f32) {
       stmt->value = llvm::ConstantFP::get(*llvm_context,
                                           llvm::APFloat(val.val_float32()));
+    } else if (val.dt == DataType::f64) {
+      stmt->value = llvm::ConstantFP::get(*llvm_context,
+                                          llvm::APFloat(val.val_float64()));
     } else if (val.dt == DataType::i32) {
       stmt->value = llvm::ConstantInt::get(
           *llvm_context, llvm::APInt(32, val.val_int32(), true));

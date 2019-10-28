@@ -397,8 +397,9 @@ class Kernel:
           if type(v) not in [int]:
             raise KernelArgError(i, needed, provided)
           t_kernel.set_arg_int(actual_argument_slot, int(v))
-        elif isinstance(needed, ext_arr) or isinstance(needed, np.ndarray) or needed == np.ndarray:
-          assert v.dtype == np.float32, 'Kernel arg supports single-precision (float32) np arrays only'
+        elif isinstance(needed, np.ndarray) or needed == np.ndarray or (isinstance(v, np.ndarray) and isinstance(needed, ext_arr)):
+          float32_types = [np.float32]
+          assert v.dtype in float32_types, 'Kernel arg supports single-precision (float32) np arrays only'
           tmp = np.ascontiguousarray(v)
           t_kernel.set_arg_nparray(actual_argument_slot, int(tmp.ctypes.data), tmp.nbytes)
         else:

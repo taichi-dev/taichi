@@ -1,4 +1,5 @@
 import taichi as ti
+import os
 import random
 
 real = ti.f32
@@ -162,6 +163,8 @@ def main():
       vertices[eid, 2] = mesh(i + 1, j)
 
   compute_rest_T()
+  
+  os.makedirs('tmp', exist_ok=True)
 
   for f in range(600):
     canvas.clear(0x112F41)

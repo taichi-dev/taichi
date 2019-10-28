@@ -16,15 +16,14 @@ y = ti.var(ti.f32)
 def values():
   # actually useless in thie example
   ti.root.dense(ti.i, n).place(y)
-  ti.root.lazy_grad()
 
 @ti.kernel
-def torch_kernel(t: np.ndarray, o: np.ndarray):
+def torch_kernel(t: ti.ext_arr(), o: ti.ext_arr()):
   for i in range(n):
     o[i] = t[i] * t[i]
 
 @ti.kernel
-def torch_kernel_2(t_grad: np.ndarray, t:np.ndarray, o_grad: np.ndarray):
+def torch_kernel_2(t_grad: ti.ext_arr(), t: ti.ext_arr(), o_grad: ti.ext_arr()):
   for i in range(n):
     ti.print(o_grad[i])
     t_grad[i] = 2 * t[i] * o_grad[i]

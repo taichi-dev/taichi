@@ -8,7 +8,7 @@ import taichi as ti
 if len(sys.argv) != 3:
   print("Usage: python3 build.py [version: 0.0.50] [mode=upload/test]")
   exit(-1)
-  
+
 version = sys.argv[1]
 cuda_version = ti.core.cuda_version()
 cuda_version_major, cuda_version_minor = list(map(int, cuda_version.split('.')))
@@ -18,6 +18,7 @@ if gpu:
   assert cuda_version_major >= 10
 assert gpu in [0, 1]
 mode = sys.argv[2]
+
 
 def get_os_name():
   name = platform.platform()
@@ -29,8 +30,10 @@ def get_os_name():
     return 'linux'
   assert False, "Unknown platform name %s" % name
 
+
 if os.environ.get('PYPI_PWD', '') is '':
   assert False, "Missing environment variable PYPI_PWD"
+
 
 def get_python_executable():
   return sys.executable.replace('\\', '/')
@@ -44,14 +47,14 @@ if platform.system() == 'Linux':
 with open('setup.temp.py') as fin:
   with open('setup.py', 'w') as fout:
     if gpu:
-      project_name = 'taichi-nightly-cuda-{}-{}'.format(cuda_version_major, cuda_version_minor)
+      project_name = 'taichi-nightly-cuda-{}-{}'.format(cuda_version_major,
+                                                        cuda_version_minor)
     else:
       project_name = 'taichi-nightly'
     print("project_name = '{}'".format(project_name), file=fout)
     print("version = '{}'".format(version), file=fout)
     for l in fin:
       print(l, file=fout, end='')
-
 
 print("*** project_name = '{}'".format(project_name))
 
@@ -70,6 +73,17 @@ else:
   print('not implemented')
   exit(-1)
 
+if gpu:
+  libdevice_path = ti.core.libdevice_path()
+  print("copying libdevice:", libdevice_path)
+  assert os.path.exists(libdevice_path)
+  shutil.copy(libdevice_path, 'taichi/lib/libdevice.10.bc')
+  
+ti.core.compile_runtimes()
+for f in os.listdir('../src/runtime'):
+  if f.startswith('runtime_') and f.endswith('.bc'):
+    shutil.copy(os.path.join('../src/runtime', f), 'taichi/lib')
+
 os.system('{} -m pip install --user --upgrade twine setuptools wheel'.format(
   get_python_executable()))
 
@@ -80,10 +94,13 @@ else:
   os.system('{} setup.py bdist_wheel'.format(get_python_executable()))
 
 if mode == 'upload':
-  os.system('{} -m twine upload dist/* --verbose -u yuanming-hu -p $PYPI_PWD'.format(get_python_executable()))
+  os.system(
+    '{} -m twine upload dist/* --verbose -u yuanming-hu -p $PYPI_PWD'.format(
+      get_python_executable()))
 elif mode == 'test':
   print('Uninstalling old taichi package...')
-  os.system('pip3 uninstall taichi-nightly taichi-gpu-nightly taichi-nightly-cuda-10-0 taichi-nightly-cuda-10-1')
+  os.system(
+    'pip3 uninstall taichi-nightly taichi-gpu-nightly taichi-nightly-cuda-10-0 taichi-nightly-cuda-10-1')
   dists = os.listdir('dist')
   assert len(dists) == 1
   dist = dists[0]

@@ -57,6 +57,9 @@ void export_accessors(C &c) {
         &Expr::set_val<T, int, int, int, int>);
 }
 
+void compile_runtimes();
+std::string libdevice_path();
+
 TLANG_NAMESPACE_END
 
 TC_NAMESPACE_BEGIN
@@ -362,5 +365,8 @@ void export_lang(py::module &m) {
 
   m.def("test_throw", [] { throw IRModified(); });
   m.def("needs_grad", needs_grad);
+
+  m.def("compile_runtimes", compile_runtimes);
+  m.def("libdevice_path", libdevice_path);
 }
 TC_NAMESPACE_END

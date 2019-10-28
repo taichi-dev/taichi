@@ -86,9 +86,6 @@ std::string find_existing_command(const std::vector<std::string> &commands) {
   return "";
 }
 
-// clang++-7 -S -emit-llvm tmp0001.cpp -Ofast -std=c++14 -march=native -mfma -I
-// ../headers -ffp-contract=fast -Wall -D_GLIBCXX_USE_CXX11_ABI=0 -DTLANG_CPU
-// -lstdc++ -o tmp0001.bc
 void compile_runtime_bitcode(Arch arch) {
   static std::set<int> runtime_compiled;
   if (runtime_compiled.find((int)arch) == runtime_compiled.end()) {
@@ -110,6 +107,24 @@ void compile_runtime_bitcode(Arch arch) {
                     .c_str());
     runtime_compiled.insert((int)arch);
   }
+}
+
+void compile_runtimes() {
+  compile_runtime_bitcode(Arch::x86_64);
+#if defined(TLANG_WITH_CUDA)
+  compile_runtime_bitcode(Arch::gpu);
+#endif
+}
+
+std::string libdevice_path() {
+#if defined(TLANG_WITH_CUDA)
+  auto cuda_version_major = int(std::atof(TLANG_CUDA_VERSION));
+  return fmt::format("/usr/local/cuda-{}/nvvm/libdevice/libdevice.{}.bc",
+                     TLANG_CUDA_VERSION, cuda_version_major);
+#else
+  TC_NOT_IMPLEMENTED;
+  return "";
+#endif
 }
 
 std::unique_ptr<llvm::Module> TaichiLLVMContext::get_init_module() {
@@ -139,8 +154,8 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
             fmt::format("/src/runtime/runtime_{}.bc", arch_name(arch)),
         ctx.get());
     if (arch == Arch::gpu) {
-      auto libdevice_module = module_from_bitcode_file(
-          "/usr/local/cuda-10.0/nvvm/libdevice/libdevice.10.bc", ctx.get());
+      auto libdevice_module =
+          module_from_bitcode_file(libdevice_path(), ctx.get());
 
       libdevice_module->setTargetTriple("nvptx64-nvidia-cuda");
       runtime_module->setTargetTriple("nvptx64-nvidia-cuda");

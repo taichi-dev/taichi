@@ -1189,7 +1189,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     builder->SetInsertPoint(after_loop);
   }
 
-  void create_offload_struct_for(OffloadedStmt *stmt) {
+  void create_offload_struct_for(OffloadedStmt *stmt, bool spmd = false) {
     llvm::Function *body;
     auto leaf_block = stmt->snode->parent;
     {
@@ -1221,7 +1221,17 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       // per-leaf-block for loop
       auto loop_index =
           create_entry_block_alloca(Type::getInt32Ty(*llvm_context));
-      builder->CreateStore(tlctx->get_constant(0), loop_index);
+
+      llvm::Value *threadIdx = nullptr, *blockDim = nullptr;
+      if (spmd) {
+        threadIdx = builder->CreateIntrinsic(
+            Intrinsic::nvvm_read_ptx_sreg_tid_x, {}, {});
+        blockDim = builder->CreateIntrinsic(
+            Intrinsic::nvvm_read_ptx_sreg_ntid_x, {}, {});
+        builder->CreateStore(threadIdx, loop_index);
+      } else {
+        builder->CreateStore(tlctx->get_constant(0), loop_index);
+      }
       builder->CreateBr(body_bb);
 
       builder->SetInsertPoint(body_bb);
@@ -1241,7 +1251,11 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
 
       // body cfg
 
-      create_increment(loop_index, tlctx->get_constant(1));
+      if (spmd) {
+        create_increment(loop_index, blockDim);
+      } else {
+        create_increment(loop_index, tlctx->get_constant(1));
+      }
 
       auto cond = builder->CreateICmp(
           llvm::CmpInst::Predicate::ICMP_SLT, builder->CreateLoad(loop_index),

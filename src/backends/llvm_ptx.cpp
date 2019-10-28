@@ -248,7 +248,11 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
       int num_SMs;
       cudaDeviceGetAttribute(&num_SMs, cudaDevAttrMultiProcessorCount, 0);
       kernel_grid_dim = num_SMs * 32;  // each SM can have 16-32 resident blocks
-      create_offload_struct_for(stmt);
+      kernel_block_dim = stmt->block_size;
+      if (kernel_block_dim == 0) {
+        kernel_block_dim = std::min(1024, 1 << stmt->snode->total_num_bits);
+      }
+      create_offload_struct_for(stmt, true);
     } else if (stmt->task_type == Type::listgen) {
       emit_list_gen(stmt);
     } else {

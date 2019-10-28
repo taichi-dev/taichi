@@ -104,6 +104,7 @@ class Offloader {
           std::move(for_stmt->body->statements[i]));
     }
 
+    offloaded_struct_for->block_size = for_stmt->block_size;
     offloaded_struct_for->snode = for_stmt->snode;
 
     root_block->insert(std::move(offloaded_struct_for));

@@ -350,27 +350,42 @@ int32 block_idx() {
   return 0;
 }
 
+int32 block_dim() {
+  return 0;
+}
+
+int32 grid_dim() {
+  return 0;
+}
+
+int32 atomic_add_i32(int *a, int val) {
+  // TODO: replace this with a real cuda atomic add
+  auto old = *a;
+  *a += val;
+  return old;
+}
+
 void block_barrier() {
 }
+
+/*
+block_barrier();
+if (thread_idx() == 0) {
+  i = atomic_add_i32(&list->head, 1);
+}
+block_barrier();
+*/
 
 #if ARCH_cuda
 void for_each_block(Context *context,
                     int snode_id,
                     void (*task)(Context *, Element *)) {
-  /*
   auto list = ((Runtime *)context->runtime)->element_lists[snode_id];
-  block_barrier();
-  if (thread_idx() == 0) {
-    atomic_add(&list->head, 1);
-  }
-  block_barrier();
-  for (int i = 0; i < list->tail; i++) {
+  auto list_tail = list->tail;
+  int i = block_idx();
+  while (i < list_tail) {
     task(context, &list->elements[i]);
-  }
-  */
-  auto list = ((Runtime *)context->runtime)->element_lists[snode_id];
-  for (int i = 0; i < list->tail; i++) {
-    task(context, &list->elements[i]);
+    i += block_dim();
   }
 }
 #else

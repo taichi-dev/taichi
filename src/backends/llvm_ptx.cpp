@@ -264,6 +264,7 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
   }
 
   void visit(OffloadedStmt *stmt) override {
+#if defined(TLANG_WITH_CUDA)
     using Type = OffloadedStmt::TaskType;
     kernel_grid_dim = 1;
     kernel_block_dim = 1;
@@ -292,6 +293,9 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
     current_task->block_dim = kernel_block_dim;
     current_task->end();
     current_task = nullptr;
+#else
+    TC_NOT_IMPLEMENTED
+#endif
   }
 };
 

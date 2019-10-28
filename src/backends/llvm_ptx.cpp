@@ -10,6 +10,10 @@
 #include "../program.h"
 #include "../ir.h"
 
+#if defined(TLANG_WITH_CUDA)
+#include "cuda_runtime.h"
+#endif
+
 #if defined(TLANG_WITH_LLVM)
 
 #include "codegen_llvm.h"
@@ -241,6 +245,9 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
     } else if (stmt->task_type == Type::range_for) {
       create_offload_range_for(stmt);
     } else if (stmt->task_type == Type::struct_for) {
+      int num_SMs;
+      cudaDeviceGetAttribute(&num_SMs, cudaDevAttrMultiProcessorCount, 0);
+      kernel_grid_dim = num_SMs * 32;  // each SM can have 16-32 resident blocks
       create_offload_struct_for(stmt);
     } else if (stmt->task_type == Type::listgen) {
       emit_list_gen(stmt);

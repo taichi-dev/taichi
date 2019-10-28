@@ -121,13 +121,14 @@ void compile_runtimes() {
 }
 
 std::string libdevice_path() {
-  if (is_release()) {
-    return compiled_lib_dir;
-  }
 #if defined(TLANG_WITH_CUDA)
+  auto folder =
+      fmt::format("/usr/local/cuda-{}/nvvm/libdevice/", TLANG_CUDA_VERSION);
+  if (is_release()) {
+    folder = compiled_lib_dir;
+  }
   auto cuda_version_major = int(std::atof(TLANG_CUDA_VERSION));
-  return fmt::format("/usr/local/cuda-{}/nvvm/libdevice/libdevice.{}.bc",
-                     TLANG_CUDA_VERSION, cuda_version_major);
+  return fmt::format("{}/libdevice.{}.bc", folder, cuda_version_major);
 #else
   TC_NOT_IMPLEMENTED;
   return "";
@@ -157,8 +158,7 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
   if (!runtime_module) {
     if (is_release()) {
       runtime_module = module_from_bitcode_file(
-          get_repo_dir() +
-              fmt::format("{}/{}", compiled_lib_dir, get_runtime_fn(arch)),
+          fmt::format("{}/{}", compiled_lib_dir, get_runtime_fn(arch)),
           ctx.get());
     } else {
       compile_runtime_bitcode(arch);

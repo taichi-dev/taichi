@@ -239,6 +239,12 @@ if 1:
                     args=[value] + indices, keywords=[])
     return ast.copy_location(call, node)
 
+  def visit_Break(self, node):
+    assert False, '"break" is not yet supported in Taichi kernels. Please walk around by changing loop conditions.'
+
+  def visit_Continue(self, node):
+    assert False, '"continue" is not yet supported in Taichi kernels. Please walk around by changing loop conditions.'
+
   def visit_Module(self, node):
     with self.variable_scope():
       self.generic_visit(node)

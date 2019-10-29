@@ -29,7 +29,6 @@
 #include "util.h"
 #include "taichi_llvm_context.h"
 #include "backends/llvm_jit.h"
-
 TLANG_NAMESPACE_BEGIN
 
 static llvm::ExitOnError exit_on_err;

@@ -1,14 +1,25 @@
 import ast
 
+class TaichiSyntaxError(Exception):
+  def __init__(self, *args, **kwargs):
+    super().__init__(*args, **kwargs)
+
 
 class ScopeGuard:
-  def __init__(self, t):
+  def __init__(self, t, stmt_block=None):
     self.t = t
+    self.stmt_block = stmt_block
 
   def __enter__(self):
-    self.t.local_scopes.append(set())
+    self.t.local_scopes.append([])
 
   def __exit__(self, exc_type, exc_val, exc_tb):
+    local = self.t.local_scopes[-1]
+    if self.stmt_block is not None:
+      for var in reversed(local):
+        stmt = ASTTransformer.parse_stmt('del var')
+        stmt.targets[0].id = var
+        self.stmt_block.append(stmt)
     self.t.local_scopes = self.t.local_scopes[:-1]
 
 
@@ -20,8 +31,8 @@ class ASTTransformer(ast.NodeTransformer):
     self.excluded_parameters = excluded_paremeters
     self.transform_args = transform_args
 
-  def variable_scope(self):
-    return ScopeGuard(self)
+  def variable_scope(self, *args):
+    return ScopeGuard(self, *args)
 
   def current_scope(self):
     return self.local_scopes[-1]
@@ -33,7 +44,8 @@ class ASTTransformer(ast.NodeTransformer):
     return True
 
   def create_variable(self, name):
-    self.current_scope().add(name)
+    assert name not in self.current_scope(), "Recreating variables is not allowed"
+    self.current_scope().append(name)
 
   def visit_AugAssign(self, node):
     self.generic_visit(node)
@@ -107,12 +119,11 @@ if 1:
       list_stmt[i] = self.visit(l)
 
   def visit_If(self, node):
-    with self.variable_scope():
-      node.test = self.visit(node.test)
-      with self.variable_scope():
-        self.visit_block(node.body)
-      with self.variable_scope():
-        self.visit_block(node.orelse)
+    node.test = self.visit(node.test)
+    with self.variable_scope(node.body):
+      self.visit_block(node.body)
+    with self.variable_scope(node.orelse):
+      self.visit_block(node.orelse)
 
     is_static_if = isinstance(node.test,
                                ast.Call) and isinstance(node.test.func,

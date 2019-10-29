@@ -56,6 +56,17 @@ lang_core = core
 
 print = tprint
 
+# test x86_64 only
+def simple_test(func):
+  def test(*args, **kwargs):
+    reset()
+    cfg.arch = x86_64
+    func(*args, **kwargs)
+
+  return test
+
+
+# test with all archs
 def program_test(func):
   def test(*args, **kwargs):
     for arch in [x86_64, cuda]:
@@ -65,6 +76,24 @@ def program_test(func):
 
   return test
 
+def must_throw(ex):
+  def decorator(func):
+    def func__(*args, **kwargs):
+      finishes = False
+      try:
+        simple_test(func)(*args, **kwargs)
+        finishes = True
+      except ex:
+        # throws. test passed
+        pass
+      except Exception as err_actual:
+        assert False, 'Exception {} instead of {} thrown'.format(str(type(err_actual)), str(ex))
+      if finishes:
+        assert False, 'Test finishes instead of throwing {}'.format(str(ex))
+
+
+    return func__
+  return decorator
 
 __all__ = [s for s in dir() if not s.startswith('_')]
 

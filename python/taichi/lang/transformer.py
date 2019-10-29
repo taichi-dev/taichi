@@ -47,6 +47,36 @@ class ASTTransformer(ast.NodeTransformer):
     assert name not in self.current_scope(), "Recreating variables is not allowed"
     self.current_scope().append(name)
 
+
+  def generic_visit(self, node, body_names=[]):
+    assert isinstance(body_names, list)
+    for field, old_value in ast.iter_fields(node):
+      if field in body_names:
+        list_stmt = old_value
+        with self.variable_scope(list_stmt):
+          for i, l in enumerate(list_stmt):
+            list_stmt[i] = self.visit(l)
+
+      elif isinstance(old_value, list):
+        new_values = []
+        for value in old_value:
+          if isinstance(value, ast.AST):
+            value = self.visit(value)
+            if value is None:
+              continue
+            elif not isinstance(value, ast.AST):
+              new_values.extend(value)
+              continue
+          new_values.append(value)
+        old_value[:] = new_values
+      elif isinstance(old_value, ast.AST):
+        new_node = self.visit(old_value)
+        if new_node is None:
+          delattr(node, field)
+        else:
+          setattr(node, field, new_node)
+    return node
+
   def visit_AugAssign(self, node):
     self.generic_visit(node)
     template = 'x.augassign(0, 0)'
@@ -99,8 +129,7 @@ class ASTTransformer(ast.NodeTransformer):
       return ast.copy_location(ast.Expr(value=call), node)
 
   def visit_While(self, node):
-    with self.variable_scope():
-      self.generic_visit(node)
+    self.generic_visit(node, ['body'])
 
     template = ''' 
 if 1:
@@ -119,11 +148,7 @@ if 1:
       list_stmt[i] = self.visit(l)
 
   def visit_If(self, node):
-    node.test = self.visit(node.test)
-    with self.variable_scope(node.body):
-      self.visit_block(node.body)
-    with self.variable_scope(node.orelse):
-      self.visit_block(node.orelse)
+    self.generic_visit(node, ['body', 'orelse'])
 
     is_static_if = isinstance(node.test,
                                ast.Call) and isinstance(node.test.func,
@@ -156,8 +181,7 @@ if 1:
     return ast.copy_location(t, node)
 
   def visit_For(self, node):
-    with self.variable_scope():
-      self.generic_visit(node)
+    self.generic_visit(node, ['body'])
     is_static_for = isinstance(node.iter,
                                ast.Call) and isinstance(node.iter.func,
                                                         ast.Attribute)

@@ -52,3 +52,4 @@ def test_while():
     ti.print(a)
 
   func()
+

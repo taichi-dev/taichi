@@ -128,7 +128,12 @@ class ASTTransformer(ast.NodeTransformer):
       call = ast.Call(func=func, args=[node.value], keywords=[])
       return ast.copy_location(ast.Expr(value=call), node)
 
+  def visit_Try(self, node):
+    raise TaichiSyntaxError("Keyword 'try' not supported in Taichi kernels")
+
   def visit_While(self, node):
+    if node.orelse:
+      raise TaichiSyntaxError("'else' clause for 'while' not supported in Taichi kernels")
     self.generic_visit(node, ['body'])
 
     template = ''' 
@@ -275,10 +280,10 @@ if 1:
     return ast.copy_location(call, node)
 
   def visit_Break(self, node):
-    assert False, '"break" is not yet supported in Taichi kernels. Please walk around by changing loop conditions.'
+    raise TaichiSyntaxError('"break" is not yet supported in Taichi kernels. Please walk around by changing loop conditions.')
 
   def visit_Continue(self, node):
-    assert False, '"continue" is not yet supported in Taichi kernels. Please walk around by changing loop conditions.'
+    raise TaichiSyntaxError('"continue" is not yet supported in Taichi kernels. Please walk around by changing loop conditions.')
 
   def visit_Module(self, node):
     with self.variable_scope():

@@ -297,6 +297,9 @@ if 1:
                     args=[value] + indices, keywords=[])
     return ast.copy_location(call, node)
 
+  def visit_IfExp(self, node):
+    raise TaichiSyntaxError('Ternary operator ("a if cond else b") is not yet supported in Taichi kernels. Please walk around by changing loop conditions.')
+
   def visit_Break(self, node):
     raise TaichiSyntaxError('"break" is not yet supported in Taichi kernels. Please walk around by changing loop conditions.')
 

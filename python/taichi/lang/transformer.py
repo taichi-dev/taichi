@@ -131,6 +131,9 @@ class ASTTransformer(ast.NodeTransformer):
   def visit_Try(self, node):
     raise TaichiSyntaxError("Keyword 'try' not supported in Taichi kernels")
 
+  def visit_Import(self, node):
+    raise TaichiSyntaxError("Keyword 'import' not supported in Taichi kernels")
+
   def visit_While(self, node):
     if node.orelse:
       raise TaichiSyntaxError("'else' clause for 'while' not supported in Taichi kernels")
@@ -186,6 +189,8 @@ if 1:
     return ast.copy_location(t, node)
 
   def visit_For(self, node):
+    if node.orelse:
+      raise TaichiSyntaxError("'else' clause for 'for' not supported in Taichi kernels")
     self.generic_visit(node, ['body'])
     is_static_for = isinstance(node.iter,
                                ast.Call) and isinstance(node.iter.func,

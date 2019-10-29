@@ -95,3 +95,53 @@ def test_continue():
       continue
 
   func()
+
+@ti.must_throw(ti.TaichiSyntaxError)
+def test_loop_var_range():
+  x = ti.var(ti.f32)
+
+  @ti.layout
+  def layout():
+    ti.root.dense(ti.i, 1).place(x)
+
+  @ti.kernel
+  def func():
+    i = 0
+    for i in range(10):
+      pass
+
+  func()
+
+@ti.must_throw(ti.TaichiSyntaxError)
+def test_loop_var_struct():
+  x = ti.var(ti.f32)
+
+  @ti.layout
+  def layout():
+    ti.root.dense(ti.i, 1).place(x)
+
+  @ti.kernel
+  def func():
+    i = 0
+    for i in x:
+      pass
+
+  func()
+
+
+@ti.must_throw(ti.TaichiSyntaxError)
+def test_loop_var_struct():
+  x = ti.var(ti.f32)
+
+  @ti.layout
+  def layout():
+    ti.root.dense(ti.i, 1).place(x)
+
+  @ti.kernel
+  def func():
+    j = 0
+    for i, j in x:
+      pass
+
+  func()
+

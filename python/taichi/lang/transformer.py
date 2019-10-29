@@ -37,11 +37,14 @@ class ASTTransformer(ast.NodeTransformer):
   def current_scope(self):
     return self.local_scopes[-1]
 
-  def is_creation(self, name):
+  def var_declared(self, name):
     for s in self.local_scopes:
       if name in s:
-        return False
-    return True
+        return True
+    return False
+
+  def is_creation(self, name):
+    return not self.var_declared(name)
 
   def create_variable(self, name):
     assert name not in self.current_scope(), "Recreating variables is not allowed"
@@ -188,6 +191,10 @@ if 1:
     t.body = t.body[:3] + node.body + t.body[3:]
     return ast.copy_location(t, node)
 
+  def check_loop_var(self, loop_var):
+    if self.var_declared(loop_var):
+      raise TaichiSyntaxError("Variable '{}' is already declared in the outer scope and cannot be used as loop variable".format(loop_var))
+
   def visit_For(self, node):
     if node.orelse:
       raise TaichiSyntaxError("'else' clause for 'for' not supported in Taichi kernels")
@@ -208,6 +215,7 @@ if 1:
       return node
     elif is_range_for:
       loop_var = node.target.id
+      self.check_loop_var(loop_var)
       template = ''' 
 if 1:
   {} = ti.Expr(ti.core.make_id_expr(''))
@@ -239,6 +247,9 @@ if 1:
       else:
         elts = node.target.elts
 
+      for loop_var in elts:
+        self.check_loop_var(loop_var.id)
+
       var_decl = ''.join(
         '  {} = ti.Expr(ti.core.make_id_expr(""))\n'.format(ind.id) for ind in
         elts)
@@ -255,6 +266,8 @@ if 1:
       cut = len(elts) + 3
       t.body[cut - 3].value = node.iter
       t.body = t.body[:cut] + node.body + t.body[cut:]
+      for loop_var in reversed(elts):
+        t.body.append(self.parse_stmt('del {}'.format(loop_var.id)))
       return ast.copy_location(t, node)
 
   @staticmethod

@@ -62,6 +62,11 @@ llvm_map_components_to_libnames(llvm_libs
         native
         NVPTX
         Linker
+        Target
+        MC
+        Passes
+        ipo
+        Analysis
         )
 target_link_libraries(${LIBRARY_NAME} ${llvm_libs})
 

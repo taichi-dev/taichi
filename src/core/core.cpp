@@ -45,4 +45,9 @@ CoreState &CoreState::get_instance() {
 
 int __trash__;
 
+std::string get_version_string() {
+  return fmt::format("{}.{}.{}", get_version_major(), get_version_minor(),
+                     get_version_patch());
+}
+
 TC_NAMESPACE_END

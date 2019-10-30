@@ -374,5 +374,12 @@ void export_lang(py::module &m) {
   m.def("set_lib_dir", [&](const std::string &dir){
     compiled_lib_dir = dir;
   });
+
+  m.def("get_commit_hash", get_commit_hash);
+  m.def("get_version_string", get_version_string);
+  m.def("get_version_major", get_version_major);
+  m.def("get_version_minor", get_version_minor);
+  m.def("get_version_patch", get_version_patch);
 }
+
 TC_NAMESPACE_END

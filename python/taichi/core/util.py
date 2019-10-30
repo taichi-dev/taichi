@@ -5,7 +5,7 @@ import sys
 import ctypes
 
 if sys.version_info[0] < 3 or sys.version_info[1] < 5:
-  print("\nPlease restart with python3. \n(Taichi supports Python 3.6+)\n")
+  print("\nPlease restart with python3. \n(Taichi supports Python 3.5+)\n")
   print("Current version:", sys.version_info)
   exit(-1)
   
@@ -284,6 +284,8 @@ def clean_libs():
   pass
 
 at_startup()
+
+print('[Taichi version {}]'.format(tc_core.get_version_string()))
 
 if not is_release():
   tc_core.set_core_trigger_gdb_when_crash(True)

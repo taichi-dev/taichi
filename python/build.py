@@ -5,11 +5,11 @@ import sys
 import shutil
 import taichi as ti
 
-if len(sys.argv) != 3:
-  print("Usage: python3 build.py [version: 0.0.50] [mode=upload/test]")
+if len(sys.argv) != 2:
+  print("Usage: python3 build.py [upload/test]")
   exit(-1)
 
-version = sys.argv[1]
+version = ti.core.get_version_string()
 cuda_version = ti.core.cuda_version()
 cuda_version_major, cuda_version_minor = list(map(int, cuda_version.split('.')))
 print('Taichi version=', version, 'CUDA version =', cuda_version)
@@ -17,7 +17,7 @@ gpu = cuda_version_major > 0
 if gpu:
   assert cuda_version_major >= 10
 assert gpu in [0, 1]
-mode = sys.argv[2]
+mode = sys.argv[1]
 
 
 def get_os_name():

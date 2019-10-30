@@ -496,6 +496,24 @@ inline std::string absolute_path(std::string path) {
 
 std::string cpp_demangle(const std::string &mangled_name);
 
+inline constexpr int get_version_major() {
+  return TI_VERSION_MAJOR;
+}
+
+inline constexpr int get_version_minor() {
+  return TI_VERSION_MINOR;
+}
+
+inline constexpr int get_version_patch() {
+  return TI_VERSION_PATCH;
+}
+
+std::string get_version_string();
+
+std::string get_commit_hash() {
+  return TI_COMMIT_HASH;
+}
+
 TC_NAMESPACE_END
 
 #include "asset_manager.h"

@@ -29,7 +29,8 @@ before_install:
 - llvm-config --version
 
 script:
-- "$PYTHON dev_setup.py ci"
+- $PYTHON dev_setup.py ci
+- cd python && $PYTHON build.py upload
 
 env:
   global:

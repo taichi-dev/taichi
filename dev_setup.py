@@ -60,9 +60,12 @@ def check_command_existence(cmd):
   return os.system('type {}'.format(cmd)) == 0
 
 
-def execute_command(line):
+def execute_command(line, allow_nonzero_output = 0):
   print('Executing command:', line)
-  return os.system(line)
+  ret = os.system(line)
+  if ret and not allow_nonzero_output:
+    print('failed.')
+    exit(-1)
 
 
 def get_os_name():

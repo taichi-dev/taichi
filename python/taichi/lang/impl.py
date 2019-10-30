@@ -4,7 +4,6 @@ from .transformer import ASTTransformer
 from .expr import Expr
 from .snode import SNode
 import ast
-import astor
 from .util import *
 import numpy as np
 
@@ -228,6 +227,7 @@ def func(foo):
   ast.fix_missing_locations(tree)
   
   if pytaichi.print_preprocessed:
+    import astor
     print(astor.to_source(tree.body[0], indent_with='  '))
   
   ast.increment_lineno(tree, inspect.getsourcelines(foo)[1] - 1)
@@ -340,6 +340,7 @@ class Kernel:
     src = remove_indent(inspect.getsource(self.func))
     tree = ast.parse(src)
     if pytaichi.print_preprocessed:
+      import astor
       print(astor.to_source(tree.body[0]))
     
     func_body = tree.body[0]
@@ -351,6 +352,7 @@ class Kernel:
     ast.fix_missing_locations(tree)
     
     if pytaichi.print_preprocessed:
+      import astor
       print(astor.to_source(tree.body[0], indent_with='  '))
     
     ast.increment_lineno(tree, inspect.getsourcelines(self.func)[1] - 1)

@@ -266,7 +266,7 @@ class MakeAdjoint : public IRVisitor {
 
   void visit(LocalLoadStmt *stmt) override {
     // do nothing
-    TC_WARN("needs impl when loading something other than loop var");
+    // TC_WARN("needs impl when loading something other than loop var");
   }
 
   void visit(LocalStoreStmt *stmt) override{TC_NOT_IMPLEMENTED}

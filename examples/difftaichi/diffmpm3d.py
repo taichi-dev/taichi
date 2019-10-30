@@ -435,12 +435,14 @@ def main():
 
   losses = []
   for iter in range(100):
+    t = time.time()
     ti.clear_all_gradients()
     l = forward()
     losses.append(l)
     loss.grad[None] = 1
     backward()
-    print('i=', iter, 'loss=', l)
+    per_iter_time = time.time() - t
+    print('i=', iter, 'loss=', l, F' per iter {per_iter_time:.2f}s')
     learning_rate = 30
 
     for i in range(n_actuators):

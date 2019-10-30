@@ -123,15 +123,7 @@ def safe_sqrt(x):
 ## Avoid synchronization
  - When using GPU, an asynchronous task queue will be maintained. Whenever reading/writing global tensors, a synchronization will be invoked, which leads to idle cycles on CPU/GPU.
 ## Make Use of GPU Shared Memory and L1-d$
- -
-## Vectorization and Parallelization on CPUs
- -
-
-## Tweaking your data structure
-### Improve Cacheline Utilization
-### Reduce Data Structure Overheads
-
-
+ - `ti.cache_l1(x)` will enforce data loads related to `x` cached in L1-cache. `ti.cache_shared(x)` will allocate shared memory. TODO: add examples
 
 # Differentiable Programming on Sparse Data
 Recall that a (primal) kernel (e.g. `f(X, Y) = Z, W`) takes as input multiple sparse tensors (e.g. `X, Y`) and outputs another set of sparse tensors (e.g. `Z, W`).  A computation task typically involves a series of kernels. When it comes to differentiable programming, a loss funtion will be defined on the final tensors. The gradients of the final loss function `L` w.r.t. each tensors are computed. In our system, all tensors can be **sparse**.

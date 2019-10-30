@@ -29,7 +29,10 @@ before_install:
 - llvm-config --version
 
 script:
+- cd $TRAVIS_BUILD_DIR
 - $PYTHON dev_setup.py ci
+- export TAICHI_REPO_DIR=$TRAVIS_BUILD_DIR
+- export PYTHONPATH=$TAICHI_REPO_DIR/python
 - cd python && $PYTHON build.py upload
 
 env:

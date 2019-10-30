@@ -4,6 +4,7 @@
 #include <taichi/common/util.h>
 #include <taichi/io/io.h>
 #include <taichi/common.h>
+#include <taichi/system/profiler.h>
 
 TLANG_NAMESPACE_BEGIN
 

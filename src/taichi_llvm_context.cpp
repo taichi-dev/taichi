@@ -29,7 +29,6 @@
 #include "util.h"
 #include "taichi_llvm_context.h"
 #include "backends/llvm_jit.h"
-#include <taichi/system/timer.h>
 
 TLANG_NAMESPACE_BEGIN
 
@@ -141,6 +140,7 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::get_init_module() {
 
 std::unique_ptr<llvm::Module> module_from_bitcode_file(std::string bitcode_path,
                                                        llvm::LLVMContext *ctx) {
+  TC_PROFILER("module from bitcode file");
   std::ifstream ifs(bitcode_path);
   std::string bitcode(std::istreambuf_iterator<char>(ifs),
                       (std::istreambuf_iterator<char>()));
@@ -155,6 +155,7 @@ std::unique_ptr<llvm::Module> module_from_bitcode_file(std::string bitcode_path,
 }
 
 std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
+  TC_PROFILER("clone runtime module");
   if (!runtime_module) {
     if (is_release()) {
       runtime_module = module_from_bitcode_file(
@@ -205,6 +206,7 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
 
 void TaichiLLVMContext::link_module_with_libdevice(
     std::unique_ptr<llvm::Module> &module) {
+  TC_PROFILER("link_module_with_libdevice");
   auto libdevice_module = module_from_bitcode_file(libdevice_path(), ctx.get());
 
   std::vector<std::string> libdevice_function_names;

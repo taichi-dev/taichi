@@ -1128,6 +1128,7 @@ void GPUCodeGen::lower_llvm() {
 }
 
 void GPUCodeGen::lower() {
+  TC_PROFILER(__FUNCTION__)
   if (prog->config.use_llvm) {
     lower_llvm();
   } else {

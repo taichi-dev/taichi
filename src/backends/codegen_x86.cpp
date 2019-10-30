@@ -816,6 +816,7 @@ void CPUCodeGen::lower_llvm() {
 }
 
 void CPUCodeGen::lower() {
+  TC_PROFILER(__FUNCTION__)
   if (prog->config.use_llvm) {
     lower_llvm();
   } else {

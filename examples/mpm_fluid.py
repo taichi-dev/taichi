@@ -1,4 +1,5 @@
 import taichi as ti
+import numpy as np
 import random
 import time
 
@@ -101,6 +102,12 @@ def g2p():
 gui = ti.core.GUI("MPM", ti.veci(512, 512))
 canvas = gui.get_canvas()
 
+@ti.kernel
+def copy_x(pos: ti.ext_arr()):
+  for i in range(n_particles):
+    pos[i * 2] = x[i][0]
+    pos[i * 2 + 1] = x[i][1]
+
 def main():
   for i in range(n_particles):
     x[i] = [random.random() * 0.4 + 0.2, random.random() * 0.4 + 0.2]
@@ -115,12 +122,15 @@ def main():
       p2g()
       grid_op()
       g2p()
-    print(time.time() - t)
+    print('{:.1f} ms per frame'.format(1000 * (time.time() - t)))
 
-
-    # TODO: why is visualization so slow?
+    pos = np.empty((2 * n_particles), dtype=np.float32)
+    copy_x(pos)
     for i in range(n_particles):
-      canvas.circle(ti.vec(x[i][0], x[i][1])).radius(1).color(0x068587).finish()
+      # canvas.circle(ti.vec(x[i][0], x[i][1])).radius(1).color(0x068587).finish()
+      
+      # Python binding here is still a bit slow...
+      canvas.circle(ti.vec(pos[i * 2], pos[i * 2 + 1])).radius(1).color(0x068587).finish()
     gui.update()
   ti.profiler_print()
 

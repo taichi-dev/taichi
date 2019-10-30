@@ -80,6 +80,7 @@ void re_id(IRNode *root);
 void flag_access(IRNode *root);
 void die(IRNode *root);
 void simplify(IRNode *root);
+void full_simplify(IRNode *root);
 void print(IRNode *root);
 void lower(IRNode *root);
 void typecheck(IRNode *root);

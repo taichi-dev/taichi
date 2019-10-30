@@ -281,8 +281,16 @@ TC_NAMESPACE_BEGIN
 #define TC_DEBUG(...) SPD_AUGMENTED_LOG(debug, __VA_ARGS__)
 #define TC_INFO(...) SPD_AUGMENTED_LOG(info, __VA_ARGS__)
 #define TC_WARN(...) SPD_AUGMENTED_LOG(warn, __VA_ARGS__)
-#define TC_ERROR(...) SPD_AUGMENTED_LOG(error, __VA_ARGS__)
-#define TC_CRITICAL(...) SPD_AUGMENTED_LOG(critical, __VA_ARGS__)
+#define TC_ERROR(...)                      \
+  {                                        \
+    SPD_AUGMENTED_LOG(error, __VA_ARGS__); \
+    __builtin_unreachable();               \
+  }
+#define TC_CRITICAL(...)                      \
+  {                                           \
+    SPD_AUGMENTED_LOG(critical, __VA_ARGS__); \
+    __builtin_unreachable();                  \
+  }
 
 #define TC_TRACE_IF(condition, ...) \
   if (condition) {                  \

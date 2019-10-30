@@ -265,8 +265,8 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(OffloadedStmt *stmt) {
-    if (stmt->body_block) stmt->body_block->accept(this);
-    if (stmt->body_stmt) stmt->body_stmt->accept(this);
+    if (stmt->body)
+      stmt->body->accept(this);
   }
 
   static void run(IRNode *node) {

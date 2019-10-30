@@ -848,6 +848,14 @@ class BasicBlockSimplify : public IRVisitor {
   void visit(RangeAssumptionStmt *stmt) override {
     return;
   }
+
+  void visit(OffloadedStmt *stmt) override {
+    if (stmt->task_type != OffloadedStmt::TaskType ::listgen &&
+        stmt->body->statements.empty()) {
+      stmt->parent->erase(stmt);
+      throw IRModified();
+    }
+  }
 };
 
 class Simplify : public IRVisitor {
@@ -900,6 +908,11 @@ class Simplify : public IRVisitor {
   void visit(WhileStmt *stmt) override {
     stmt->body->accept(this);
   }
+
+  void visit(OffloadedStmt *stmt) override {
+    if (stmt->body)
+      stmt->body->accept(this);
+  }
 };
 
 namespace irpass {
@@ -910,6 +923,12 @@ void simplify(IRNode *root) {
     if (!pass.modified)
       break;
   }
+}
+
+void full_simplify(IRNode *root) {
+  constant_fold(root);
+  die(root);
+  simplify(root);
 }
 
 }  // namespace irpass

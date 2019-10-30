@@ -254,7 +254,7 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
     {
       // body cfg
       builder->SetInsertPoint(body);
-      stmt->body_block->accept(this);
+      stmt->body->accept(this);
       builder->CreateBr(after_loop);
     }
 
@@ -268,7 +268,7 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
     kernel_block_dim = 1;
     init_task_function(stmt);
     if (stmt->task_type == Type::serial) {
-      stmt->body_block->accept(this);
+      stmt->body->accept(this);
     } else if (stmt->task_type == Type::range_for) {
       create_offload_range_for(stmt);
     } else if (stmt->task_type == Type::struct_for) {

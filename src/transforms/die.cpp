@@ -86,6 +86,11 @@ class DIE : public IRVisitor {
     register_usage(for_stmt);
     for_stmt->body->accept(this);
   }
+
+  void visit(OffloadedStmt *stmt) {
+    if (stmt->body)
+      stmt->body->accept(this);
+  }
 };
 
 namespace irpass {

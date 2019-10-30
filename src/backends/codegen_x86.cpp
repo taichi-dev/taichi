@@ -806,6 +806,13 @@ void CPUCodeGen::lower_llvm() {
     irpass::re_id(ir);
     irpass::print(ir);
   }
+
+  irpass::full_simplify(ir);
+  if (prog->config.print_ir) {
+    TC_TRACE("Simplified III:");
+    irpass::re_id(ir);
+    irpass::print(ir);
+  }
 }
 
 void CPUCodeGen::lower() {

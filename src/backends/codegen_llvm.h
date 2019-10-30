@@ -1086,7 +1086,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     // body cfg
     builder->SetInsertPoint(body);
 
-    stmt->body_block->accept(this);
+    stmt->body->accept(this);
 
     llvm::Value *cond = nullptr;
     if (!stmt->reversed) {
@@ -1172,7 +1172,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
                            builder->CreateLoad(loop_index)});
 
       current_coordinates = new_coordinates;
-      stmt->body_block->accept(this);
+      stmt->body->accept(this);
 
       BasicBlock *after_loop = BasicBlock::Create(*llvm_context, "block", func);
 
@@ -1207,8 +1207,6 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
 
     int num_splits = leaf_block->max_num_elements() / stmt->block_size;
     // traverse leaf node
-    TC_P(leaf_block->max_num_elements());
-    TC_P(num_splits);
     create_call("for_each_block",
                 {get_context(), tlctx->get_constant(leaf_block->parent->id),
                  tlctx->get_constant(leaf_block->max_num_elements()),
@@ -1230,7 +1228,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     using Type = OffloadedStmt::TaskType;
     init_task_function(stmt);
     if (stmt->task_type == Type::serial) {
-      stmt->body_block->accept(this);
+      stmt->body->accept(this);
     } else if (stmt->task_type == Type::range_for) {
       create_offload_range_for(stmt);
     } else if (stmt->task_type == Type::struct_for) {

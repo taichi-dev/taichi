@@ -38,7 +38,7 @@ class Offloader {
         Stmt::make_typed<OffloadedStmt>(OffloadedStmt::TaskType::serial);
 
     auto assemble_serial_statements = [&]() {
-      if (!pending_serial_statements->body_block->statements.empty()) {
+      if (!pending_serial_statements->body->statements.empty()) {
         root_block->insert(std::move(pending_serial_statements));
         pending_serial_statements =
             Stmt::make_typed<OffloadedStmt>(OffloadedStmt::TaskType::serial);
@@ -51,20 +51,20 @@ class Offloader {
         assemble_serial_statements();
         auto offloaded =
             Stmt::make_typed<OffloadedStmt>(OffloadedStmt::TaskType::range_for);
-        offloaded->body_block = std::make_unique<Block>();
+        offloaded->body = std::make_unique<Block>();
         offloaded->begin = s->begin->as<ConstStmt>()->val[0].val_int32();
         offloaded->end = s->end->as<ConstStmt>()->val[0].val_int32();
         offloaded->block_size = s->block_size;
         fix_loop_index_load(s, s->loop_var, 0, false);
         for (int j = 0; j < (int)s->body->statements.size(); j++) {
-          offloaded->body_block->insert(std::move(s->body->statements[j]));
+          offloaded->body->insert(std::move(s->body->statements[j]));
         }
         root_block->insert(std::move(offloaded));
       } else if (auto s = stmt->cast<StructForStmt>()) {
         assemble_serial_statements();
         emit_struct_for(s, root_block);
       } else {
-        pending_serial_statements->body_block->insert(std::move(stmt));
+        pending_serial_statements->body->insert(std::move(stmt));
       }
     }
     assemble_serial_statements();
@@ -100,7 +100,7 @@ class Offloader {
     }
 
     for (int i = 0; i < (int)for_stmt->body->statements.size(); i++) {
-      offloaded_struct_for->body_block->insert(
+      offloaded_struct_for->body->insert(
           std::move(for_stmt->body->statements[i]));
     }
 

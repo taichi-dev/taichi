@@ -166,15 +166,14 @@ class OffloadedStmt : public Stmt {
   bool reversed;
   std::vector<Stmt *> loop_vars;
   std::vector<llvm::Value *> loop_vars_llvm;
-  std::unique_ptr<Block> body_block;
-  std::unique_ptr<Stmt> body_stmt;
+  std::unique_ptr<Block> body;
 
   OffloadedStmt(TaskType task_type) : task_type(task_type) {
     begin = end = step = 0;
     block_size = 0;
     reversed = false;
     if (task_type != TaskType::listgen) {
-      body_block = std::make_unique<Block>();
+      body = std::make_unique<Block>();
     }
   }
 
@@ -232,6 +231,11 @@ class BasicStmtVisitor : public IRVisitor {
     current_struct_for = for_stmt;
     for_stmt->body->accept(this);
     current_struct_for = nullptr;
+  }
+
+  void visit(OffloadedStmt *stmt) override {
+    if (stmt->body)
+      stmt->body->accept(this);
   }
 };
 

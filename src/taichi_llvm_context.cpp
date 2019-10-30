@@ -191,7 +191,6 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module(
       patch_intrinsic("grid_dim", Intrinsic::nvvm_read_ptx_sreg_nctaid_x);
       patch_intrinsic("block_barrier", Intrinsic::nvvm_barrier0, false);
 
-      link_module_with_libdevice(runtime_module);
       // runtime_module->print(llvm::errs(), nullptr);
     }
     /*
@@ -207,11 +206,23 @@ void TaichiLLVMContext::link_module_with_libdevice(
     std::unique_ptr<llvm::Module> &module) {
   auto libdevice_module = module_from_bitcode_file(libdevice_path(), ctx.get());
 
+  std::vector<std::string> libdevice_function_names;
+  for (auto &f : *libdevice_module) {
+    if (!f.isDeclaration()) {
+      libdevice_function_names.push_back(f.getName());
+    }
+  }
+
   libdevice_module->setTargetTriple("nvptx64-nvidia-cuda");
   module->setDataLayout(libdevice_module->getDataLayout());
+
   bool failed = llvm::Linker::linkModules(*module, std::move(libdevice_module));
   if (failed) {
     TC_ERROR("CUDA libdevice linking failure.");
+  }
+
+  for (auto func_name : libdevice_function_names) {
+    module->getFunction(func_name)->setLinkage(Function::InternalLinkage);
   }
 }
 

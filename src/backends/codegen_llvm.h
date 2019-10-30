@@ -226,7 +226,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     };
   }
 
-  FunctionType gen() {
+  virtual FunctionType gen() {
     emit_to_module();
     return compile_module_to_executable();
   }

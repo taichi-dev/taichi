@@ -376,7 +376,7 @@ CUDAContext::CUDAContext() {
 CUmodule CUDAContext::compile(const std::string &ptx) {
   // Create module for object
   CUmodule cudaModule;
-  TC_INFO("PTX size: {:.1f}KB", ptx.size() / 1024.0);
+  TC_INFO("PTX size: {:.2f}KB", ptx.size() / 1024.0);
   // auto t = Time::get_time();
   checkCudaErrors(cuModuleLoadDataEx(&cudaModule, ptx.c_str(), 0, 0, 0));
   // TC_INFO("CUDA module load time : {}ms", (Time::get_time() - t) * 1000);

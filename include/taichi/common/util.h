@@ -510,7 +510,7 @@ inline constexpr int get_version_patch() {
 
 std::string get_version_string();
 
-std::string get_commit_hash() {
+inline std::string get_commit_hash() {
   return TI_COMMIT_HASH;
 }
 

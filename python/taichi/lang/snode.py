@@ -16,6 +16,10 @@ class SNode:
   def pointer(self):
     return SNode(self.ptr.pointer())
 
+  def bitmasked(self, val=True):
+    self.ptr.bitmasked(val)
+    return self
+
   def place(self, *args):
     from .expr import Expr
     for arg in args:

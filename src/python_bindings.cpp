@@ -127,6 +127,7 @@ void export_lang(py::module &m) {
       .def("dynamic", (SNode & (SNode::*)(const Index &, int))(&SNode::dynamic),
            py::return_value_policy::reference)
       .def("pointer", &SNode::pointer, py::return_value_policy::reference)
+      .def("bitmasked", &SNode::bitmasked)
       .def("place", (SNode & (SNode::*)(Expr &))(&SNode::place),
            py::return_value_policy::reference)
       .def("data_type", [](SNode *snode) { return snode->dt; })

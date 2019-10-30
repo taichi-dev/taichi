@@ -81,7 +81,7 @@ def make_expr_group(*exprs):
 
 
 def atomic_add(a, b):
-  a.atomic_add(b)
+  a.atomic_add(Expr(b))
 
 
 def subscript(value, *indices):

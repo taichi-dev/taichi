@@ -365,14 +365,6 @@ int32 atomic_add_i32(int *a, int val) {
 void block_barrier() {
 }
 
-/*
-block_barrier();
-if (thread_idx() == 0) {
-  i = atomic_add_i32(&list->head, 1);
-}
-block_barrier();
-*/
-
 void for_each_block(Context *context,
                     int snode_id,
                     int element_size,
@@ -398,14 +390,5 @@ void for_each_block(Context *context,
     task(context, &list->elements[i], 0, element_size);
   }
 #endif
-}
-
-int ti_cuda_tid_x() {
-  return 0;
-}
-
-void cuda_add(float *a, float *b, float *c) {
-  auto i = ti_cuda_tid_x();
-  c[i] = a[i] + b[i];
 }
 }

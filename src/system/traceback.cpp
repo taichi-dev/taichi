@@ -26,10 +26,9 @@
 
 TC_NAMESPACE_BEGIN
 
-static std::mutex traceback_printer_mutex;
-
 TC_EXPORT void print_traceback() {
 #ifdef __APPLE__
+  static std::mutex traceback_printer_mutex;
   // Modified based on
   // http://www.nullptr.me/2013/04/14/generating-stack-trace-on-os-x/
   // TODO: print line number instead of offset
@@ -126,31 +125,27 @@ TC_EXPORT void print_traceback() {
   char **strings;
 
   nptrs = backtrace(buffer, BT_BUF_SIZE);
-
-  // std::printf("backtrace() returned %d addresses\n", nptrs);
-
-  /* The call backtrace_symbols_fd(buffer, nptrs, STDOUT_FILENO)
-     would produce similar output to the following: */
-
   strings = backtrace_symbols(buffer, nptrs);
-  if (strings == NULL) {
+
+  if (strings == nullptr) {
     perror("backtrace_symbols");
     exit(EXIT_FAILURE);
   }
 
-  fmt::print_colored(fmt::MAGENTA, "***************************\n");
-  fmt::print_colored(fmt::MAGENTA, "* Taichi Core Stack Trace *\n");
-  fmt::print_colored(fmt::MAGENTA, "***************************\n");
+  fmt::print_colored(fmt::MAGENTA, "***********************************\n");
+  fmt::print_colored(fmt::MAGENTA, "* Taichi Compiler Stack Traceback *\n");
+  fmt::print_colored(fmt::MAGENTA, "***********************************\n");
 
   // j = 0: taichi::print_traceback
   for (int j = 1; j < nptrs; j++) {
     std::string s(strings[j]);
+    std::size_t slash = s.find("/");
     std::size_t start = s.find("(");
     std::size_t end = s.rfind("+");
 
     std::string line;
 
-    if (start < end) {
+    if (slash == 0 && start < end && s[start + 1] != '+') {
       std::string name = s.substr(start + 1, end - start - 1);
 
       char *demangled_name_;

@@ -11,8 +11,12 @@ StructCompiler::StructCompiler() : CodeGenBase(), loopgen(this) {
     TC_ERROR("Not Specified");
     return nullptr;
   };
-  profiler_clear = [] { TC_NOT_IMPLEMENTED; };
-  profiler_print = [] { TC_NOT_IMPLEMENTED; };
+  profiler_clear = [] {
+    TC_WARN("Profiler not yet implemented in this backend.");
+  };
+  profiler_print = [] {
+    TC_WARN("Profiler not yet implemented in this backend.");
+  };
 
   if (get_current_program().config.arch == Arch::x86_64)
     suffix = "cpp";
@@ -30,12 +34,11 @@ StructCompiler::StructCompiler() : CodeGenBase(), loopgen(this) {
 
 void StructCompiler::collect_snodes(SNode &snode) {
   snodes.push_back(&snode);
-  for (int ch_id = 0; ch_id < (int) snode.ch.size(); ch_id++) {
+  for (int ch_id = 0; ch_id < (int)snode.ch.size(); ch_id++) {
     auto &ch = snode.ch[ch_id];
     collect_snodes(*ch);
   }
 }
-
 
 void StructCompiler::infer_snode_properties(SNode &snode) {
   // TC_P(snode.type_name());
@@ -329,7 +332,7 @@ void StructCompiler::run(SNode &root, bool host) {
   auto snodes_rev = snodes;
   std::reverse(snodes_rev.begin(), snodes_rev.end());
 
-  for (auto &n: snodes_rev)
+  for (auto &n : snodes_rev)
     generate_types(*n);
 
   for (int i = 0; i < (int)snodes.size(); i++) {

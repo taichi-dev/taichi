@@ -165,6 +165,14 @@ void export_misc(py::module &m) {
   m.def("get_python_package_dir", get_python_package_dir);
   m.def("set_python_package_dir", set_python_package_dir);
   m.def("cuda_version", cuda_version);
+  m.def("test_cpp_exception", []{
+    try {
+      throw std::exception();
+    } catch (const std::exception &e) {
+      printf("caught.\n");
+    }
+    printf("test was successful.\n");
+  });
 }
 
 TC_NAMESPACE_END

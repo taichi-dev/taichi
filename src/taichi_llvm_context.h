@@ -21,7 +21,7 @@ class TaichiLLVMContext {
 
   ~TaichiLLVMContext();
 
-  std::unique_ptr<llvm::Module> get_init_module();
+  std::unique_ptr<llvm::Module> get_init_module(bool with_libdevice = true);
 
   std::unique_ptr<llvm::Module> clone_struct_module();
 
@@ -32,7 +32,8 @@ class TaichiLLVMContext {
     return T((function_pointer_type<T>)jit_lookup_name(jit.get(), name));
   }
 
-  std::unique_ptr<llvm::Module> clone_runtime_module();
+  std::unique_ptr<llvm::Module> clone_runtime_module(
+      bool with_libdevice = true);
 
   llvm::Type *get_data_type(DataType dt);
 
@@ -50,6 +51,8 @@ class TaichiLLVMContext {
   llvm::Value *get_constant(DataType dt, T t);
 
   std::string type_name(llvm::Type *type);
+
+  void link_module_with_libdevice(std::unique_ptr<llvm::Module> &module);
 };
 
 TLANG_NAMESPACE_END

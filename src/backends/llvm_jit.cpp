@@ -106,9 +106,11 @@ void global_optimize_module_x86_64(std::unique_ptr<llvm::Module> &module) {
     function_pass_manager.run(*i);
 
   function_pass_manager.doFinalization();
-  TC_WARN("Skipping global optimization for compilation speed.");
-  // module_pass_manager.run(*module);
 
+  auto t = Time::get_time();
+  module_pass_manager.run(*module);
+  t = Time::get_time() - t;
+  TC_INFO("Global optimization time: {} ms", t * 1000);
   // module->print(llvm::errs(), nullptr);
 }
 

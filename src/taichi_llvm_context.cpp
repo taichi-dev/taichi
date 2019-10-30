@@ -29,6 +29,7 @@
 #include "util.h"
 #include "taichi_llvm_context.h"
 #include "backends/llvm_jit.h"
+
 TLANG_NAMESPACE_BEGIN
 
 static llvm::ExitOnError exit_on_err;
@@ -82,7 +83,6 @@ std::string find_existing_command(const std::vector<std::string> &commands) {
   }
   TC_P(commands);
   TC_ERROR("No command found.");
-  return "";
 }
 
 std::string get_runtime_fn(Arch arch) {
@@ -134,8 +134,9 @@ std::string libdevice_path() {
 #endif
 }
 
-std::unique_ptr<llvm::Module> TaichiLLVMContext::get_init_module() {
-  return clone_runtime_module();
+std::unique_ptr<llvm::Module> TaichiLLVMContext::get_init_module(
+    bool with_libdevice) {
+  return clone_runtime_module(with_libdevice);
 }
 
 std::unique_ptr<llvm::Module> module_from_bitcode_file(std::string bitcode_path,
@@ -153,7 +154,8 @@ std::unique_ptr<llvm::Module> module_from_bitcode_file(std::string bitcode_path,
   return std::move(runtime.get());
 }
 
-std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
+std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module(
+    bool with_libdevice) {
   if (!runtime_module) {
     if (is_release()) {
       runtime_module = module_from_bitcode_file(
@@ -166,12 +168,7 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
           ctx.get());
     }
     if (arch == Arch::gpu) {
-      auto libdevice_module =
-          module_from_bitcode_file(libdevice_path(), ctx.get());
-
-      libdevice_module->setTargetTriple("nvptx64-nvidia-cuda");
       runtime_module->setTargetTriple("nvptx64-nvidia-cuda");
-      runtime_module->setDataLayout(libdevice_module->getDataLayout());
 
       auto patch_intrinsic = [&](std::string name, Intrinsic::ID intrin,
                                  bool ret = true) {
@@ -194,12 +191,8 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
       patch_intrinsic("grid_dim", Intrinsic::nvvm_read_ptx_sreg_nctaid_x);
       patch_intrinsic("block_barrier", Intrinsic::nvvm_barrier0, false);
 
-      bool failed = llvm::Linker::linkModules(*runtime_module,
-                                              std::move(libdevice_module));
+      link_module_with_libdevice(runtime_module);
       // runtime_module->print(llvm::errs(), nullptr);
-      if (failed) {
-        TC_ERROR("CUDA libdevice linking failure.");
-      }
     }
     /*
     for (auto &f : *runtime_module) {
@@ -210,18 +203,20 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
   return llvm::CloneModule(*runtime_module);
 }
 
+void TaichiLLVMContext::link_module_with_libdevice(
+    std::unique_ptr<llvm::Module> &module) {
+  auto libdevice_module = module_from_bitcode_file(libdevice_path(), ctx.get());
+
+  libdevice_module->setTargetTriple("nvptx64-nvidia-cuda");
+  module->setDataLayout(libdevice_module->getDataLayout());
+  bool failed = llvm::Linker::linkModules(*module, std::move(libdevice_module));
+  if (failed) {
+    TC_ERROR("CUDA libdevice linking failure.");
+  }
+}
+
 std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_struct_module() {
   TC_ASSERT(struct_module);
-  /*
-  auto runtime = clone_runtime_module();
-  bool failed =
-      llvm::Linker::linkModules(*runtime, llvm::CloneModule(*struct_module));
-  if (failed) {
-    TC_ERROR("Runtime linking failure.");
-  }
-  */
-  // return llvm::CloneModule(*struct_module);
-  // runtime_module->print(llvm::errs(), nullptr);
   return llvm::CloneModule(*struct_module);
 }
 

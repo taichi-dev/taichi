@@ -15,7 +15,7 @@ TLANG_NAMESPACE_BEGIN
 StructCompilerLLVM::StructCompilerLLVM(Arch arch)
     : StructCompiler(),
       ModuleBuilder(
-          get_current_program().get_llvm_context(arch)->get_init_module()),
+          get_current_program().get_llvm_context(arch)->get_init_module(false)),
       arch(arch) {
   creator = [] {
     TC_WARN("Data structure creation not implemented"); return nullptr;

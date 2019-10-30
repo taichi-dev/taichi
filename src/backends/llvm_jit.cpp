@@ -52,6 +52,7 @@ std::string mattrs() {
 void global_optimize_module_x86_64(std::unique_ptr<llvm::Module> &module) {
   auto JTMB = JITTargetMachineBuilder::detectHost();
   if (!JTMB) {
+    TC_ERROR("Target machine creation failed.");
   }
   module->setTargetTriple(JTMB->getTargetTriple().str());
   llvm::Triple triple(module->getTargetTriple());
@@ -373,10 +374,10 @@ CUDAContext::CUDAContext() {
 CUmodule CUDAContext::compile(const std::string &ptx) {
   // Create module for object
   CUmodule cudaModule;
-  TC_INFO("PTX size: {}B", ptx.size());
-  auto t = Time::get_time();
+  TC_INFO("PTX size: {:.1f}KB", ptx.size() / 1024.0);
+  // auto t = Time::get_time();
   checkCudaErrors(cuModuleLoadDataEx(&cudaModule, ptx.c_str(), 0, 0, 0));
-  TC_INFO("CUDA module load time : {}ms", (Time::get_time() - t) * 1000);
+  // TC_INFO("CUDA module load time : {}ms", (Time::get_time() - t) * 1000);
   cudaModules.push_back(cudaModule);
   return cudaModule;
 }
@@ -384,10 +385,10 @@ CUmodule CUDAContext::compile(const std::string &ptx) {
 CUfunction CUDAContext::get_function(CUmodule module,
                                      const std::string &func_name) {
   CUfunction func;
-  auto t = Time::get_time();
+  // auto t = Time::get_time();
   checkCudaErrors(cuModuleGetFunction(&func, module, func_name.c_str()));
-  t = Time::get_time() - t;
-  TC_INFO("Kernel {} compilation time: {}ms", func_name, t * 1000);
+  // t = Time::get_time() - t;
+  // TC_INFO("Kernel {} compilation time: {}ms", func_name, t * 1000);
   return func;
 }
 

@@ -312,6 +312,10 @@ class SNode {
     TC_ASSERT(type != SNodeType::place);
     return fmt::format("{}_refine_coordinates", get_name());
   }
+
+  int max_num_elements() const {
+    return 1 << total_num_bits;
+  }
 };
 
 TLANG_NAMESPACE_END

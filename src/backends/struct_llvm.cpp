@@ -238,7 +238,7 @@ void StructCompilerLLVM::generate_leaf_accessors(SNode &snode) {
   verbs[mode_activate] = "activate";
   verbs[mode_query] = "query";
 
-  TC_WARN("TODO: mode_activate, mode_query");
+  // TODO: mode_activate, mode_query
 
   for (auto mode : {mode_weak_access, mode_strong_access}) {
     if (mode == mode_weak_access || !is_leaf)

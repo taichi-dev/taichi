@@ -316,31 +316,21 @@ Ptr Runtime_initialize(Runtime **runtime_ptr,
 void element_listgen(Runtime *runtime, StructMeta *parent, StructMeta *child) {
   auto parent_list = runtime->element_lists[parent->snode_id];
   int num_parent_elements = parent_list->tail;
-  // printf("num_parent_elements %d\n", num_parent_elements);
   auto child_list = runtime->element_lists[child->snode_id];
   child_list->head = 0;
   for (int i = 0; i < num_parent_elements; i++) {
     auto element = parent_list->elements[i];
     auto ch_component = child->from_parent_element(element.element);
     int ch_num_elements = child->get_num_elements((Ptr)child, ch_component);
-    // printf("ch_num_parent_elements %d\n", ch_num_elements);
     for (int j = 0; j < ch_num_elements; j++) {
       auto ch_element = child->lookup_element((Ptr)child, element.element, j);
-      // printf("j %d\n", j);
       if (child->is_active((Ptr)child, ch_component, j)) {
-        // printf("j! %d\n", j);
         Element elem;
         elem.element = ch_element;
         elem.loop_bounds[0] = 0;
         elem.loop_bounds[1] = child->get_num_elements((Ptr)child, ch_element);
         PhysicalCoordinates refined_coord;
         child->refine_coordinates(&element.pcoord, &refined_coord, j);
-        /*
-        printf("snode id %d\n", child->snode_id);
-        for (int k = 0; k < taichi_max_num_indices; k++) {
-          printf("   %d\n", refined_coord.val[k]);
-        }
-        */
         elem.pcoord = refined_coord;
         ElementList_insert(child_list, &elem);
       }
@@ -382,28 +372,31 @@ if (thread_idx() == 0) {
 block_barrier();
 */
 
-#if ARCH_cuda
 void for_each_block(Context *context,
                     int snode_id,
-                    void (*task)(Context *, Element *)) {
+                    int element_size,
+                    int element_split,
+                    void (*task)(Context *, Element *, int, int)) {
   auto list = ((Runtime *)context->runtime)->element_lists[snode_id];
   auto list_tail = list->tail;
+#if ARCH_cuda
   int i = block_idx();
-  while (i < list_tail) {
-    task(context, &list->elements[i]);
-    i += block_dim();
+  const auto part_size = element_size / element_split;
+  while (true) {
+    int element_id = block_idx() / element_split;
+    if (element_id >= list_tail)
+      break;
+    auto part_id = i % element_split;
+    task(context, &list->elements[element_id], part_size * part_id,
+         part_size * (part_id + 1));
+    i += grid_dim();
   }
-}
 #else
-void for_each_block(Context *context,
-                    int snode_id,
-                    void (*task)(Context *, Element *)) {
-  auto list = ((Runtime *)context->runtime)->element_lists[snode_id];
-  for (int i = 0; i < list->tail; i++) {
-    task(context, &list->elements[i]);
+  for (int i = 0; i < list_tail; i++) {
+    task(context, &list->elements[i], 0, element_size);
   }
-}
 #endif
+}
 
 int ti_cuda_tid_x() {
   return 0;

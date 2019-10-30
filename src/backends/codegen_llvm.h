@@ -620,118 +620,6 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     call("element_listgen", get_runtime(), meta_parent, meta_child);
   }
 
-  void visit(StructForStmt *for_stmt) {
-    TC_ERROR("This should be replaced with offloaded tasks");
-    // emit listgen
-    auto leaf = for_stmt->snode;
-    TC_ASSERT(leaf->type == SNodeType::place)
-    auto leaf_block = leaf->parent;
-
-    // make a list of nodes, from the leaf block (instead of 'place') to root
-    std::vector<SNode *> path;
-    // leaf is the place (scalar)
-    // leaf->parent is the leaf block
-    // so listgen should be invoked from the root to leaf->parent->parent
-    for (auto p = leaf->parent->parent; p; p = p->parent) {
-      path.push_back(p);
-    }
-    std::reverse(path.begin(), path.end());
-
-    std::vector<llvm::Value *> metas;
-    // These must be emitted in place for inlining optimization
-    for (int i = 0; i < (int)path.size(); i++) {
-      // TODO: should we use a local addr space for more compiler
-      // optimization?
-      metas.push_back(cast_pointer(emit_struct_meta(path[i]), "StructMeta"));
-    }
-
-    for (int i = 0; i + 1 < path.size(); i++) {
-      auto snode_parent = metas[i];
-      auto snode_child = metas[i + 1];
-      auto listgen = get_runtime_function("element_listgen");
-      auto args = {get_runtime(), snode_parent, snode_child};
-      builder->CreateCall(listgen, args);
-    }
-
-    // body cfg
-
-    llvm::Function *body;
-    {
-      // Create the loop body function
-      auto body_function_type = llvm::FunctionType::get(
-          llvm::Type::getVoidTy(*llvm_context),
-          {llvm::PointerType::get(get_runtime_type("Context"), 0),
-           llvm::PointerType::get(get_runtime_type("Element"), 0)},
-          false);
-
-      body = llvm::Function::Create(body_function_type,
-                                    llvm::Function::InternalLinkage,
-                                    "loop_body", module.get());
-      auto old_func = func;
-      // emit into loop body function
-      func = body;
-
-      auto allocas = BasicBlock::Create(*llvm_context, "allocs", body);
-      auto old_entry = entry_block;
-      entry_block = allocas;
-
-      auto entry = BasicBlock::Create(*llvm_context, "entry", func);
-
-      auto ip = builder->saveIP();
-      builder->SetInsertPoint(entry);
-
-      auto body_bb = BasicBlock::Create(*llvm_context, "loop_body", func);
-      // per-leaf-block for loop
-      auto loop_index =
-          create_entry_block_alloca(Type::getInt32Ty(*llvm_context));
-      builder->CreateStore(tlctx->get_constant(0), loop_index);
-      builder->CreateBr(body_bb);
-
-      builder->SetInsertPoint(body_bb);
-      // initialize the coordinates
-
-      auto refine =
-          get_runtime_function(leaf_block->refine_coordinates_func_name());
-      auto new_coordinates = create_entry_block_alloca(physical_coordinate_ty);
-      RuntimeObject element("Element", this, builder, get_arg(1));
-      create_call(refine, {element.get_ptr("pcoord"), new_coordinates,
-                           builder->CreateLoad(loop_index)});
-
-      current_coordinates = new_coordinates;
-      for_stmt->body->accept(this);
-
-      BasicBlock *after_loop = BasicBlock::Create(*llvm_context, "block", func);
-
-      // body cfg
-
-      create_increment(loop_index, tlctx->get_constant(1));
-
-      auto cond = builder->CreateICmp(
-          llvm::CmpInst::Predicate::ICMP_SLT, builder->CreateLoad(loop_index),
-          tlctx->get_constant(1 << (leaf->parent->total_num_bits)));
-
-      builder->CreateCondBr(cond, body_bb, after_loop);
-
-      // next cfg
-      builder->SetInsertPoint(after_loop);
-
-      builder->CreateRetVoid();
-      func = old_func;
-      builder->restoreIP(ip);
-
-      {
-        llvm::IRBuilderBase::InsertPointGuard gurad(*builder);
-        builder->SetInsertPoint(allocas);
-        builder->CreateBr(entry);
-        entry_block = old_entry;
-      }
-    }
-
-    // traverse leaf node
-    create_call("for_each_block",
-                {get_context(), tlctx->get_constant(path.back()->id), body});
-  }
-
   llvm::Value *create_call(llvm::Value *func, std::vector<Value *> args) {
     check_func_call_signature(func, args);
     return builder->CreateCall(func, args);
@@ -1178,7 +1066,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       TC_INFO("Kernel Module IR printed.");
     }
     TC_ASSERT(!llvm::verifyFunction(*func, &errs()));
-    TC_INFO("Kernel function verified.");
+    // TC_INFO("Kernel function verified.");
   }
 
   void create_offload_range_for(OffloadedStmt *stmt) {
@@ -1226,8 +1114,12 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       // Create the loop body function
       auto body_function_type = llvm::FunctionType::get(
           llvm::Type::getVoidTy(*llvm_context),
-          {llvm::PointerType::get(get_runtime_type("Context"), 0),
-           llvm::PointerType::get(get_runtime_type("Element"), 0)},
+          {
+              llvm::PointerType::get(get_runtime_type("Context"), 0),
+              llvm::PointerType::get(get_runtime_type("Element"), 0),
+              tlctx->get_data_type<int>(),
+              tlctx->get_data_type<int>(),
+          },
           false);
 
       body = llvm::Function::Create(body_function_type,
@@ -1253,14 +1145,19 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
           create_entry_block_alloca(Type::getInt32Ty(*llvm_context));
 
       llvm::Value *threadIdx = nullptr, *blockDim = nullptr;
+
+      auto lower_bound = get_arg(2);
+      auto upper_bound = get_arg(3);
+
       if (spmd) {
         threadIdx = builder->CreateIntrinsic(
             Intrinsic::nvvm_read_ptx_sreg_tid_x, {}, {});
         blockDim = builder->CreateIntrinsic(
             Intrinsic::nvvm_read_ptx_sreg_ntid_x, {}, {});
-        builder->CreateStore(threadIdx, loop_index);
+        builder->CreateStore(builder->CreateAdd(threadIdx, lower_bound),
+                             loop_index);
       } else {
-        builder->CreateStore(tlctx->get_constant(0), loop_index);
+        builder->CreateStore(lower_bound, loop_index);
       }
       builder->CreateBr(body_bb);
 
@@ -1287,9 +1184,9 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
         create_increment(loop_index, tlctx->get_constant(1));
       }
 
-      auto cond = builder->CreateICmp(
-          llvm::CmpInst::Predicate::ICMP_SLT, builder->CreateLoad(loop_index),
-          tlctx->get_constant(1 << (leaf_block->total_num_bits)));
+      auto cond =
+          builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_SLT,
+                              builder->CreateLoad(loop_index), upper_bound);
 
       builder->CreateCondBr(cond, body_bb, after_loop);
 
@@ -1308,10 +1205,14 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       }
     }
 
+    int num_splits = leaf_block->max_num_elements() / stmt->block_size;
     // traverse leaf node
-    create_call(
-        "for_each_block",
-        {get_context(), tlctx->get_constant(leaf_block->parent->id), body});
+    TC_P(leaf_block->max_num_elements());
+    TC_P(num_splits);
+    create_call("for_each_block",
+                {get_context(), tlctx->get_constant(leaf_block->parent->id),
+                 tlctx->get_constant(leaf_block->max_num_elements()),
+                 tlctx->get_constant(num_splits), body});
   }
 
   void visit(LoopIndexStmt *stmt) override {
@@ -1333,6 +1234,8 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     } else if (stmt->task_type == Type::range_for) {
       create_offload_range_for(stmt);
     } else if (stmt->task_type == Type::struct_for) {
+      stmt->block_size =
+          std::min(stmt->snode->parent->max_num_elements(), stmt->block_size);
       create_offload_struct_for(stmt);
     } else if (stmt->task_type == Type::listgen) {
       emit_list_gen(stmt);

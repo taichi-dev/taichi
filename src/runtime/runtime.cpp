@@ -383,12 +383,13 @@ void for_each_block(Context *context,
   int i = block_idx();
   const auto part_size = element_size / element_split;
   while (true) {
-    int element_id = block_idx() / element_split;
+    int element_id = i / element_split;
     if (element_id >= list_tail)
       break;
     auto part_id = i % element_split;
-    task(context, &list->elements[element_id], part_size * part_id,
-         part_size * (part_id + 1));
+    auto lower = part_size * part_id;
+    auto upper = part_size * (part_id + 1);
+    task(context, &list->elements[element_id], lower, upper);
     i += grid_dim();
   }
 #else

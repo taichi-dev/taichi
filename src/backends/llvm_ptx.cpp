@@ -83,8 +83,8 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
     }
     return [offloaded_local](Context context) {
       for (auto task : offloaded_local) {
-        TC_INFO("Launching kernel {}<<<{}, {}>>>", task.name, task.grid_dim,
-        task.block_dim);
+        // TC_INFO("Launching kernel {}<<<{}, {}>>>", task.name, task.grid_dim,
+        //    task.block_dim);
         cuda_context.launch((CUfunction)task.cuda_func, &context, task.grid_dim,
                             task.block_dim);
       }

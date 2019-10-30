@@ -318,6 +318,7 @@ void element_listgen(Runtime *runtime, StructMeta *parent, StructMeta *child) {
   int num_parent_elements = parent_list->tail;
   auto child_list = runtime->element_lists[child->snode_id];
   child_list->head = 0;
+  child_list->tail = 0;
   for (int i = 0; i < num_parent_elements; i++) {
     auto element = parent_list->elements[i];
     auto ch_component = child->from_parent_element(element.element);

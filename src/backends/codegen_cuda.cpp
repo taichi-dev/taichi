@@ -1079,7 +1079,7 @@ void GPUCodeGen::lower_llvm() {
     // irpass::print(ir);
   }
   if (prog->config.lower_access || prog->config.use_llvm) {
-    TC_INFO("Always lower access when using llvm");
+    // TC_DEBUG("Always lower access when using llvm");
     irpass::lower_access(ir, prog->config.use_llvm);
     if (prog->config.print_ir) {
       TC_TRACE("Access Lowered:");

@@ -254,7 +254,9 @@ class KernelTemplateMapper:
     return tuple(extracted)
     
   def lookup(self, args):
-    assert len(args) == self.num_args
+    if len(args) != self.num_args:
+      raise Exception(f'{self.num_args} arguments needed but {len(args)} provided.')
+    
     key = self.extract(args)
     if key not in self.mapping:
       count = len(self.mapping)

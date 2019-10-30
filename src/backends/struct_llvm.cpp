@@ -15,7 +15,7 @@ TLANG_NAMESPACE_BEGIN
 StructCompilerLLVM::StructCompilerLLVM(Arch arch)
     : StructCompiler(),
       ModuleBuilder(
-          get_current_program().get_llvm_context(arch)->get_init_module(false)),
+          get_current_program().get_llvm_context(arch)->get_init_module()),
       arch(arch) {
   creator = [] {
     TC_WARN("Data structure creation not implemented"); return nullptr;
@@ -456,7 +456,8 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
 
   tlctx->set_struct_module(module);
 
-  (tlctx->jit->addModule(std::move(module)));
+  if (arch == Arch::x86_64) // Do not compile the GPU struct module alone since it's useless unless used with kernels
+    tlctx->jit->addModule(std::move(module));
 
   if (host) {
     for (auto n : snodes) {

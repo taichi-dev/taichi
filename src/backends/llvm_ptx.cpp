@@ -36,7 +36,6 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
 
   CodeGenLLVMGPU(CodeGenBase *codegen_base, Kernel *kernel)
       : CodeGenLLVM(codegen_base, kernel) {
-    tlctx->link_module_with_libdevice(module);
   }
 
   void mark_function_as_cuda_kernel(llvm::Function *func) {

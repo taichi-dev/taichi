@@ -38,7 +38,6 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
 
   void initialize_context() {
     if (get_current_program().config.arch == Arch::gpu) {
-      TC_INFO("Initializing GPU context");
       tlctx = get_current_program().llvm_context_device.get();
     } else {
       tlctx = get_current_program().llvm_context_host.get();

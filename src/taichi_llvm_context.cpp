@@ -29,6 +29,7 @@
 #include "util.h"
 #include "taichi_llvm_context.h"
 #include "backends/llvm_jit.h"
+#include <taichi/system/timer.h>
 
 TLANG_NAMESPACE_BEGIN
 
@@ -134,9 +135,8 @@ std::string libdevice_path() {
 #endif
 }
 
-std::unique_ptr<llvm::Module> TaichiLLVMContext::get_init_module(
-    bool with_libdevice) {
-  return clone_runtime_module(with_libdevice);
+std::unique_ptr<llvm::Module> TaichiLLVMContext::get_init_module() {
+  return clone_runtime_module();
 }
 
 std::unique_ptr<llvm::Module> module_from_bitcode_file(std::string bitcode_path,
@@ -154,8 +154,7 @@ std::unique_ptr<llvm::Module> module_from_bitcode_file(std::string bitcode_path,
   return std::move(runtime.get());
 }
 
-std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module(
-    bool with_libdevice) {
+std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
   if (!runtime_module) {
     if (is_release()) {
       runtime_module = module_from_bitcode_file(
@@ -190,6 +189,8 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module(
       patch_intrinsic("block_dim", Intrinsic::nvvm_read_ptx_sreg_ntid_x);
       patch_intrinsic("grid_dim", Intrinsic::nvvm_read_ptx_sreg_nctaid_x);
       patch_intrinsic("block_barrier", Intrinsic::nvvm_barrier0, false);
+
+      link_module_with_libdevice(runtime_module);
 
       // runtime_module->print(llvm::errs(), nullptr);
     }

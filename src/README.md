@@ -1,6 +1,6 @@
 #  Developer Installation
 Note this is for the compiler developers of Taichi lang. End users please use the pip packages.
-Supports Ubuntu 14.04/16.04/18.04, ArchLinux, Mac OS X. For GPU support, CUDA 9.0+ is needed.
+Supports Ubuntu 14.04/16.04/18.04, ArchLinux, Mac OS X. For NVIDIA GPU support, CUDA 9.0+ is needed. [[Installing CUDA]](https://github.com/yuanming-hu/taichi/blob/master/src/README.md#setting-up-cuda-101-on-ubuntu-1804)
 
  - Execute `python3 -m pip install setuptools astpretty astor pytest opencv-python pybind11 Pillow numpy scipy GitPython yapf colorama psutil autograd`
  - Execute `sudo apt install libtinfo-dev clang-7` on Ubuntu.

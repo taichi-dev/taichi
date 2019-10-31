@@ -36,6 +36,14 @@ Notes:
 # Ubuntu 18.04
 
 ### Dependencies
+  First, make sure you have CUDA 10.1 installed.
+  Check this by running the following command:
+  ```bash
+  nvcc --version
+  ```
+  If you dont have it - go ahead to [this website](https://developer.nvidia.com/cuda-downloads) and download it.
+  
+  Once that's complete, make sure you have clang installed:
   ```bash
   sudo apt install clang
   ```

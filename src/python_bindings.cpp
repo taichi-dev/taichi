@@ -41,22 +41,6 @@ void export_accessors(C &c) {
   c.def(
       fmt::format("val4_{}", data_type_short_name(get_data_type<T>())).c_str(),
       &Expr::val<T, int, int, int, int>);
-
-  c.def(fmt::format("set_val0_{}", data_type_short_name(get_data_type<T>()))
-            .c_str(),
-        &Expr::set_val<T>);
-  c.def(fmt::format("set_val1_{}", data_type_short_name(get_data_type<T>()))
-            .c_str(),
-        &Expr::set_val<T, int>);
-  c.def(fmt::format("set_val2_{}", data_type_short_name(get_data_type<T>()))
-            .c_str(),
-        &Expr::set_val<T, int, int>);
-  c.def(fmt::format("set_val3_{}", data_type_short_name(get_data_type<T>()))
-            .c_str(),
-        &Expr::set_val<T, int, int, int>);
-  c.def(fmt::format("set_val4_{}", data_type_short_name(get_data_type<T>()))
-            .c_str(),
-        &Expr::set_val<T, int, int, int, int>);
 }
 
 void compile_runtimes();

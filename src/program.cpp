@@ -22,10 +22,10 @@ SNode root;
 
 FunctionType Program::compile(Kernel &kernel) {
   FunctionType ret = nullptr;
-  if (config.arch == Arch::x86_64) {
+  if (kernel.arch == Arch::x86_64) {
     CPUCodeGen codegen(kernel.name);
     ret = codegen.compile(*this, kernel);
-  } else if (config.arch == Arch::gpu) {
+  } else if (kernel.arch == Arch::gpu) {
     GPUCodeGen codegen(kernel.name);
     ret = codegen.compile(*this, kernel);
   } else {
@@ -213,6 +213,7 @@ Kernel &Program::get_snode_writer(SNode *snode) {
     (*snode->expr)[indices] =
         Expr::make<ArgLoadExpression>(snode->num_active_indices);
   });
+  ker.set_arch(get_host_arch());
   ker.name = kernel_name;
   for (int i = 0; i < snode->num_active_indices; i++)
     ker.insert_arg(DataType::i32, false);

@@ -154,9 +154,7 @@ float64 SNode::read_float(int i, int j, int k, int l) {
 // for int32 and int64
 void SNode::write_int(int i, int j, int k, int l, int64 val) {
   if (writer_kernel == nullptr) {
-    TC_TAG;
     writer_kernel = &get_current_program().get_snode_writer(this);
-    TC_TAG;
   }
   if (num_active_indices >= 1)
     writer_kernel->set_arg_int(0, i);
@@ -167,9 +165,7 @@ void SNode::write_int(int i, int j, int k, int l, int64 val) {
   if (num_active_indices >= 4)
     writer_kernel->set_arg_int(3, l);
   writer_kernel->set_arg_float(num_active_indices, val);
-  TC_TAG;
   (*writer_kernel)();
-  TC_TAG;
 }
 int64 SNode::read_int(int i, int j, int k, int l) {
   return 0;

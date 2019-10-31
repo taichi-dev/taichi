@@ -27,6 +27,8 @@ Kernel::Kernel(Program &program,
   program.end_function_definition();
   program.current_kernel = nullptr;
 
+  arch = program.config.arch;
+
   if (!program.config.lazy_compilation)
     compile();
 }
@@ -134,6 +136,16 @@ void Kernel::set_arg_nparray(int i, uint64 d, uint64 size) {
                  "Setting numpy array to scalar argument is not allowed");
   args[i].size = size;
   program.context.set_arg(i, d);
+}
+
+void Kernel::set_arch(Arch arch) {
+  TC_ASSERT(!compiled);
+  this->arch = arch;
+}
+
+int Kernel::insert_arg(DataType dt, bool is_nparray) {
+  args.push_back({dt, is_nparray});
+  return args.size() - 1;
 }
 
 TLANG_NAMESPACE_END

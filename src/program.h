@@ -173,6 +173,10 @@ class Program {
   void get_snode_reader(SNode *snode);
 
   Kernel &get_snode_writer(SNode *snode);
+
+  Arch get_host_arch() {
+    return Arch::x86_64;
+  }
 };
 
 TLANG_NAMESPACE_END

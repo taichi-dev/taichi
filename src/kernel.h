@@ -15,6 +15,7 @@ class Kernel {
   Program &program;
   FunctionType compiled;
   std::string name;
+  Arch arch;
   struct Arg {
     DataType dt;
     bool is_nparray;
@@ -38,16 +39,15 @@ class Kernel {
     return std::function<void()>([&] { (*this)(); });
   }
 
-  int insert_arg(DataType dt, bool is_nparray) {
-    args.push_back({dt, is_nparray});
-    return args.size() - 1;
-  }
+  int insert_arg(DataType dt, bool is_nparray);
 
   void set_arg_float(int i, float64 d);
 
   void set_arg_int(int i, int64 d);
 
   void set_arg_nparray(int i, uint64 ptr, uint64 size);
+
+  void set_arch(Arch arch);
 };
 
 TLANG_NAMESPACE_END

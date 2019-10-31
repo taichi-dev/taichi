@@ -21,6 +21,7 @@ std::atomic<int> Program::num_instances;
 SNode root;
 
 FunctionType Program::compile(Kernel &kernel) {
+  TI_AUTO_PROF;
   FunctionType ret = nullptr;
   if (kernel.arch == Arch::x86_64) {
     CPUCodeGen codegen(kernel.name);

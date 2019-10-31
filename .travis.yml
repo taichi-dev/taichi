@@ -12,18 +12,11 @@ matrix:
       - "3.7"
     env:
       - MATRIX_EVAL="CC=clang && CXX=clang++ && PYTHON=python3.7"
-  - os: osx
-    osx_image: xcode10.3
-    python:
-      - "3.6"
-    env:
-      - MATRIX_EVAL="CC=clang && CXX=clang++ && PYTHON=python3.6"
 before_install:
 - eval "${MATRIX_EVAL}"
 - echo $CXX
 - echo $PYTHON
 - sysctl -n hw.ncpu
-- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update; brew install $PYTHON || brew upgrade python; fi
 - pwd
 - cd $TRAVIS_BUILD_DIR
 - mkdir taichi-llvm

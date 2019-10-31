@@ -90,6 +90,7 @@ std::string get_runtime_fn(Arch arch) {
 }
 
 void compile_runtime_bitcode(Arch arch) {
+  TI_AUTO_PROF;
   static std::set<int> runtime_compiled;
   if (runtime_compiled.find((int)arch) == runtime_compiled.end()) {
     auto clang = find_existing_command({"clang-7", "clang"});
@@ -154,6 +155,13 @@ std::unique_ptr<llvm::Module> module_from_bitcode_file(std::string bitcode_path,
   return std::move(runtime.get());
 }
 
+int num_instructions(llvm::Function *func) {
+  int counter = 0;
+  for (BasicBlock &bb : *func)
+    counter += std::distance(bb.begin(), bb.end());
+  return counter;
+}
+
 std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
   TI_AUTO_PROF
   if (!runtime_module) {
@@ -172,6 +180,7 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
 
       auto patch_intrinsic = [&](std::string name, Intrinsic::ID intrin,
                                  bool ret = true) {
+        TC_PROFILER("patch intrinsic");
         auto func = runtime_module->getFunction(name);
         func->getEntryBlock().eraseFromParent();
         auto bb = llvm::BasicBlock::Create(*ctx, "entry", func);
@@ -197,7 +206,8 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
     }
     /*
     for (auto &f : *runtime_module) {
-      TC_INFO("Loaded runtime function: {}", std::string(f.getName()));
+      TC_INFO("Loaded runtime function: {} (inst. count= {})",
+              std::string(f.getName()), num_instructions(&f));
     }
     */
   }

@@ -976,17 +976,6 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     } else {
       TC_ASSERT(snode->type == SNodeType::dense);
 
-      // allocate the struct
-      /*
-      auto s = builder->CreateAlloca(get_runtime_type("DenseMeta"));
-      auto node = builder->CreateBitCast(
-          stmt->input_snode->value, llvm::Type::getInt8PtrTy(*llvm_context));
-      auto element_ty = stmt->snode->llvm_type->getArrayElementType();
-      std::size_t element_size = tlctx->get_type_size(element_ty);
-      builder->CreateCall(get_runtime_function("DenseMeta_set_element_size"),
-                         {s, tlctx->get_constant((uint64)element_size)});
-                         */
-
       auto s = emit_struct_meta(stmt->snode);
       auto s_ptr =
           builder->CreateBitCast(s, llvm::Type::getInt8PtrTy(*llvm_context));

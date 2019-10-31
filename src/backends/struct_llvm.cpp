@@ -47,7 +47,10 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
   if (type == SNodeType::dense) {
     TC_ASSERT(snode._bitmasked == false);
     TC_ASSERT(snode._morton == false);
-    llvm_type = llvm::ArrayType::get(ch_type, 1 << snode.total_num_bits);
+    llvm_type = llvm::ArrayType::get(ch_type, snode.max_num_elements());
+    // auto body = llvm::ArrayType::get(ch_type, snode.max_num_elements());
+    // auto aux = llvm::Type::getVoidTy(*ctx);
+    // llvm_type = llvm::StructType::create(*ctx, {body, aux}, "");
   } else if (type == SNodeType::root) {
     llvm_type = ch_type;
   } else if (type == SNodeType::place) {

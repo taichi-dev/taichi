@@ -40,9 +40,22 @@ Notes:
   Check this by running the following command:
   ```bash
   nvcc --version
+
+  or 
+
+  cat /usr/local/cuda/version.txt
   ```
   If you dont have it - go ahead to [this website](https://developer.nvidia.com/cuda-downloads) and download it.
-  
+  These instructions were copied from the webiste above for x86_64 architecture
+  ```bash
+  wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/cuda-ubuntu1804.pin
+  sudo mv cuda-ubuntu1804.pin /etc/apt/preferences.d/cuda-repository-pin-600
+  wget http://developer.download.nvidia.com/compute/cuda/10.1/Prod/local_installers/cuda-repo-ubuntu1804-10-1-local-10.1.243-418.87.00_1.0-1_amd64.deb
+  sudo dpkg -i cuda-repo-ubuntu1804-10-1-local-10.1.243-418.87.00_1.0-1_amd64.deb
+  sudo apt-key add /var/cuda-repo-10-1-local-10.1.243-418.87.00/7fa2af80.pub
+  sudo apt-get update
+  sudo apt-get -y install cuda 
+  ```
   Once that's complete, make sure you have clang installed:
   ```bash
   sudo apt install clang
@@ -59,8 +72,9 @@ sudo update-alternatives --config c++
   sudo apt install libc++-dev llvm-8 libomp-dev
   ```
   Now you can run cmake from the directory that has your cloned tachi repo in it
+  NOTE: be sure to set the correct flags - below we assume CUDA version 10.1
   ```bash
-  cmake taichi
+  cmake taichi/ -DCUDA_VERSION=10.1
   ```
   Finally, you can compile with make
   ```bash

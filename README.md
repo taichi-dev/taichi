@@ -32,12 +32,26 @@ Notes:
    - You still need to clone this repo for demo scripts under `examples`. You *do not* need to execute `install.py`.
    After installation using `pip` you can simply go to `examples` and execute, e.g., `python3 mpm.py`.
    - Make sure you have `clang-7`. On Ubuntu 18.04 you can install it with `sudo apt-get install clang-7`. See [here](https://askubuntu.com/questions/1113974/using-c17-with-clang-on-ubuntu-16-04) for installing `clang-7` on Ubuntu 16.04. You will also need `g++-7` on Ubuntu16.04 (for c++17 headers). To install:
-   ```bash
+
 # Ubuntu 18.04
 
 ### Dependencies
   ```bash
-  sudo apt install clang libc++-dev llvm-8 libomp-dev
+  sudo apt install clang
+  ```
+  Once clang is installed, follow [these](https://stackoverflow.com/questions/7031126/switching-between-gcc-and-clang-llvm-using-cmake) directions to update your alternative compiler list.
+ 
+  Next, install the other dependencies 
+  ```bash
+  sudo apt install libc++-dev llvm-8 libomp-dev
+  ```
+  Now you can run cmake from the directory that has your cloned tachi repo in it
+  ```bash
+  cmake taichi
+  ```
+  Finally, you can compile with make
+  ```bash
+  make
   ```
 
 # Ubuntu 16.04 only

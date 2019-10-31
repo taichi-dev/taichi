@@ -4,10 +4,6 @@
 |-------|-----|------|
 |[![Build Status](http://f11.csail.mit.edu:8080/job/taichi/badge/icon)](http://f11.csail.mit.edu:8080/job/taichi/)|[![Build Status](https://travis-ci.com/yuanming-hu/taichi.svg?branch=master)](https://travis-ci.com/yuanming-hu/taichi)|[![Join the chat at https://gitter.im/taichi-dev/Lobby](https://badges.gitter.im/taichi-dev/Lobby.svg)](https://gitter.im/taichi-dev/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) |
 
-### High-Performance Computation on Sparse Data Structures [[Paper]](http://taichi.graphics/wp-content/uploads/2019/09/taichi_lang.pdf) [[Video]](https://youtu.be/wKw8LMF3Djo) [[Language Details]](https://github.com/yuanming-hu/taichi/blob/master/src/README.md)
-
-## [Examples](https://github.com/yuanming-hu/taichi/tree/master/examples)
-## Updates
 ```bash
 # CPU only. No GPU/CUDA needed
 python3 -m pip install taichi-nightly
@@ -18,6 +14,11 @@ python3 -m pip install taichi-nightly-cuda-10-0
 # With GPU (CUDA 10.1) support
 python3 -m pip install taichi-nightly-cuda-10-1
 ```
+
+### High-Performance Computation on Sparse Data Structures [[Paper]](http://taichi.graphics/wp-content/uploads/2019/09/taichi_lang.pdf) [[Video]](https://youtu.be/wKw8LMF3Djo) [[Language Details]](https://github.com/yuanming-hu/taichi/blob/master/python/taichi/README.md) [[Taichi Compiler Developer Installation]](https://github.com/yuanming-hu/taichi/blob/master/src/README.md#developer-installation)
+
+## [Examples](https://github.com/yuanming-hu/taichi/tree/master/examples)
+## Updates
  - (Oct 30, 2019) v0.0.72 released. Update highly recommended.
    - LLVM GPU backend now as fast as the legacy (yet optimized) CUDA backend. To enable, ```export TI_LLVM=1```;
    - Bug fixes: LLVM `struct for` list generation.

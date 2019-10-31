@@ -26,60 +26,12 @@ python3 -m pip install taichi-nightly-cuda-10-1
  - (Oct 24, 2019) Python wheels (v0.0.61) released for Python 3.6/3.7 and CUDA 10.0/10.1 on Ubuntu 16.04+. Contributors of this release include *Yuanming Hu, robbertvc, Zhoutong Zhang, Tao Du, Srinivas Kaza, and Kenneth Lozes*.
  - (Oct 22, 2019) Added support for [kernel templates](https://github.com/yuanming-hu/taichi/blob/master/tests/python/test_kernel_templates.py). Kernel templates allow users to pass in taichi tensors and compile-time constants as kernel parameters.
  - (Oct 9, 2019) Compatibility improvements. Added a basic PyTorch interface. [[Example]](https://github.com/yuanming-hu/taichi/blob/master/examples/pytorch_tensor_ad.py).
- - (Oct 7, 2019) Released **experimental** python **3.6** wheels on Linux (tested on Ubuntu 16.04/18.04) for those who are eager to try without building from source. More stable releases are coming in a few days. To install them: 
 
 Notes: 
-   - You still need to clone this repo for demo scripts under `examples`. You *do not* need to execute `install.py`.
+   - You still need to clone this repo for demo scripts under `examples`. You *do not* need to execute `install.py` or `dev_setup.py`.
    After installation using `pip` you can simply go to `examples` and execute, e.g., `python3 mpm.py`.
-   - Make sure you have `clang-7`. On Ubuntu 18.04 you can install it with `sudo apt-get install clang-7`. See [here](https://askubuntu.com/questions/1113974/using-c17-with-clang-on-ubuntu-16-04) for installing `clang-7` on Ubuntu 16.04. You will also need `g++-7` on Ubuntu16.04 (for c++17 headers). To install:
+   - Make sure you have `clang-7`. On Ubuntu 18.04 you can install it with `sudo apt-get install clang-7`. See [here](https://askubuntu.com/questions/1113974/using-c17-with-clang-on-ubuntu-16-04) for installing `clang-7` on Ubuntu 16.04. You will also need `g++-7` on Ubuntu16.04 (for c++17 headers).
 
-# Ubuntu 18.04
-
-### Dependencies
-  First, make sure you have CUDA 10.1 installed.
-  Check this by running the following command:
-  ```bash
-  nvcc --version
-
-  or 
-
-  cat /usr/local/cuda/version.txt
-  ```
-  If you dont have it - go ahead to [this website](https://developer.nvidia.com/cuda-downloads) and download it.
-  These instructions were copied from the webiste above for x86_64 architecture
-  ```bash
-  wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/cuda-ubuntu1804.pin
-  sudo mv cuda-ubuntu1804.pin /etc/apt/preferences.d/cuda-repository-pin-600
-  wget http://developer.download.nvidia.com/compute/cuda/10.1/Prod/local_installers/cuda-repo-ubuntu1804-10-1-local-10.1.243-418.87.00_1.0-1_amd64.deb
-  sudo dpkg -i cuda-repo-ubuntu1804-10-1-local-10.1.243-418.87.00_1.0-1_amd64.deb
-  sudo apt-key add /var/cuda-repo-10-1-local-10.1.243-418.87.00/7fa2af80.pub
-  sudo apt-get update
-  sudo apt-get -y install cuda 
-  ```
-  Once that's complete, make sure you have clang installed:
-  ```bash
-  sudo apt install clang
-  ```
-  Once clang is installed, follow [these](https://stackoverflow.com/questions/7031126/switching-between-gcc-and-clang-llvm-using-cmake) directions to update your alternative compiler list.
-  ```bash
-  sudo apt-get install clang
-sudo update-alternatives --config c++
-  ```
-  And choose your freshly installed clang compiler
- 
-  Next, install the other dependencies 
-  ```bash
-  sudo apt install libc++-dev llvm-8 libomp-dev
-  ```
-  Now you can run cmake from the directory that has your cloned tachi repo in it
-  NOTE: be sure to set the correct flags - below we assume CUDA version 10.1
-  ```bash
-  cmake taichi/ -DCUDA_VERSION=10.1
-  ```
-  Finally, you can compile with make
-  ```bash
-  make
-  ```
 
 # Ubuntu 16.04 only
 sudo apt-get install -y software-properties-common

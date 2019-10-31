@@ -12,6 +12,7 @@ FunctionType KernelCodeGen::compile(taichi::Tlang::Program &prog,
   this->kernel = &kernel;
   lower();
   if (prog.config.use_llvm) {
+    TC_PROFILER("codegen llvm")
     return codegen_llvm();
   } else {
     codegen();

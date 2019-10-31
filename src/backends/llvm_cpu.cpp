@@ -26,6 +26,7 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
 };
 
 FunctionType CPUCodeGen::codegen_llvm() {
+  TC_PROFILER("cpu codegen");
   return CodeGenLLVMCPU(this, kernel).gen();
 }
 #else

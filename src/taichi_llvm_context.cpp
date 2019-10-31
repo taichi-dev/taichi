@@ -94,6 +94,8 @@ std::string get_runtime_dir() {
 }
 
 void compile_runtime_bitcode(Arch arch) {
+  if (is_release())
+    return;
   TI_AUTO_PROF;
   static std::set<int> runtime_compiled;
   if (runtime_compiled.find((int)arch) == runtime_compiled.end()) {
@@ -252,6 +254,8 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
 
       // runtime_module->print(llvm::errs(), nullptr);
     }
+
+    /*
     int total_inst = 0;
     int total_big_inst = 0;
 
@@ -266,6 +270,7 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
     }
     TC_P(total_inst);
     TC_P(total_big_inst);
+    */
   }
   std::unique_ptr<llvm::Module> cloned;
   {

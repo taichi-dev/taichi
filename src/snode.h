@@ -52,6 +52,7 @@ class Index {
   }
 };
 
+class Kernel;
 // "Structural" nodes
 class SNode {
  public:
@@ -79,6 +80,8 @@ class SNode {
   TypedConstant ambient_val;
   // Note: parent will not be set until structural nodes are compiled!
   SNode *parent;
+  Kernel *reader_kernel;
+  Kernel *writer_kernel;
   std::unique_ptr<Expr> expr;
 
   std::string data_type_name() {
@@ -137,6 +140,9 @@ class SNode {
 
     llvm_type = nullptr;
     llvm_element_type = nullptr;
+
+    reader_kernel = nullptr;
+    writer_kernel = nullptr;
   }
 
   SNode &insert_children(SNodeType t) {
@@ -254,6 +260,14 @@ class SNode {
     TC_ASSERT(access_func);
     return access_func(ds, i, j, k, l);
   }
+
+  // for float and double
+  void write_float(int i, int j, int k, int l, float64);
+  float64 read_float(int i, int j, int k, int l);
+
+  // for int32 and int64
+  void write_int(int i, int j, int k, int l, int64);
+  int64 read_int(int i, int j, int k, int l);
 
   TC_FORCE_INLINE AllocatorStat stat() {
     TC_ASSERT(stat_func);

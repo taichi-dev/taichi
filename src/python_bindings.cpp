@@ -133,6 +133,8 @@ void export_lang(py::module &m) {
            py::return_value_policy::reference)
       .def("data_type", [](SNode *snode) { return snode->dt; })
       .def("lazy_grad", &SNode::lazy_grad)
+      .def("write_int", &SNode::write_int)
+      .def("write_float", &SNode::write_float)
       .def("num_active_indices",
            [](SNode *snode) { return snode->num_active_indices; });
 

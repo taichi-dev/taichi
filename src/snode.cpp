@@ -118,7 +118,8 @@ bool SNode::is_primal() const {
 }
 
 bool SNode::has_grad() const {
-  return is_primal() && (*expr).cast<GlobalVariableExpression>()->adjoint.expr != nullptr;
+  return is_primal() &&
+         (*expr).cast<GlobalVariableExpression>()->adjoint.expr != nullptr;
 }
 
 SNode *SNode::get_grad() const {
@@ -127,6 +128,51 @@ SNode *SNode::get_grad() const {
       .cast<GlobalVariableExpression>()
       ->adjoint.cast<GlobalVariableExpression>()
       ->snode;
+}
+
+// for float and double
+void SNode::write_float(int i, int j, int k, int l, float64 val) {
+  if (writer_kernel == nullptr) {
+    writer_kernel = &get_current_program().get_snode_writer(this);
+  }
+  if (num_active_indices >= 1)
+    writer_kernel->set_arg_int(0, i);
+  if (num_active_indices >= 2)
+    writer_kernel->set_arg_int(1, j);
+  if (num_active_indices >= 3)
+    writer_kernel->set_arg_int(2, k);
+  if (num_active_indices >= 4)
+    writer_kernel->set_arg_int(3, l);
+  writer_kernel->set_arg_float(num_active_indices, val);
+  (*writer_kernel)();
+}
+
+float64 SNode::read_float(int i, int j, int k, int l) {
+  return 0;
+}
+
+// for int32 and int64
+void SNode::write_int(int i, int j, int k, int l, int64 val) {
+  if (writer_kernel == nullptr) {
+    TC_TAG;
+    writer_kernel = &get_current_program().get_snode_writer(this);
+    TC_TAG;
+  }
+  if (num_active_indices >= 1)
+    writer_kernel->set_arg_int(0, i);
+  if (num_active_indices >= 2)
+    writer_kernel->set_arg_int(1, j);
+  if (num_active_indices >= 3)
+    writer_kernel->set_arg_int(2, k);
+  if (num_active_indices >= 4)
+    writer_kernel->set_arg_int(3, l);
+  writer_kernel->set_arg_float(num_active_indices, val);
+  TC_TAG;
+  (*writer_kernel)();
+  TC_TAG;
+}
+int64 SNode::read_int(int i, int j, int k, int l) {
+  return 0;
 }
 
 TLANG_NAMESPACE_END

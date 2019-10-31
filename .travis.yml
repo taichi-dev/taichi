@@ -8,8 +8,17 @@ matrix:
   include:
   - os: osx
     osx_image: xcode10.3
+    python:
+      - "3.7"
     env:
-      - MATRIX_EVAL="CC=clang && CXX=clang++ && PYTHON=python3.6"
+      - MATRIX_EVAL="CC=clang && CXX=clang++ && PYTHON=python3.7"
+  include:
+    - os: osx
+      osx_image: xcode10.3
+      python:
+        - "3.6"
+      env:
+        - MATRIX_EVAL="CC=clang && CXX=clang++ && PYTHON=python3.6"
 before_install:
 - eval "${MATRIX_EVAL}"
 - echo $CXX

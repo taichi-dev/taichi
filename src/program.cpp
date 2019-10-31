@@ -79,7 +79,7 @@ std::string capitalize_first(std::string s) {
 std::string latex_short_digit(int v) {
   std::string units = "KMGT";
   int unit_id = -1;
-  while (v >= 1024 && unit_id + 1 < (int) units.size()) {
+  while (v >= 1024 && unit_id + 1 < (int)units.size()) {
     TC_ASSERT(v % 1024 == 0);
     v /= 1024;
     unit_id++;
@@ -136,7 +136,7 @@ void Program::visualize_layout(const std::string &fn) {
       }
       emit("} ");
 
-      for (int i = 0; i < (int) snode->ch.size(); i++) {
+      for (int i = 0; i < (int)snode->ch.size(); i++) {
         visit(snode->ch[i].get());
       }
       emit("]");
@@ -199,30 +199,25 @@ void Program::clear_all_gradients() {
   }
 }
 
-void Program::get_snode_reader(SNode *snode) {
-  TC_NOT_IMPLEMENTED
-}
+void Program::get_snode_reader(SNode *snode){TC_NOT_IMPLEMENTED}
 
-std::function<void(int, int)> Program::get_snode_writer(SNode *snode) {
+Kernel &Program::get_snode_writer(SNode *snode) {
   TC_ASSERT(snode->type == SNodeType::place);
   auto kernel_name = fmt::format("snode_writer_{}", snode->id);
+  TC_ASSERT(snode->num_active_indices <= 4);
   auto &ker = kernel([&] {
-    if (snode->num_active_indices == 1) {
-      (*snode->expr)[Expr::make<ArgLoadExpression>(0)] =
-          Expr::make<ArgLoadExpression>(1);
-    } else {
-      TC_NOT_IMPLEMENTED;
+    ExprGroup indices;
+    for (int i = 0; i < snode->num_active_indices; i++) {
+      indices.push_back(Expr::make<ArgLoadExpression>(i));
     }
+    (*snode->expr)[indices] =
+        Expr::make<ArgLoadExpression>(snode->num_active_indices);
   });
   ker.name = kernel_name;
-  ker.insert_arg(DataType::i32, false);
-  ker.insert_arg(DataType::i32, false);
-  auto writer = [&](int i, int val) {
-    ker.set_arg_int(0, i);
-    ker.set_arg_int(1, val);
-    ker();
-  };
-  return writer;
+  for (int i = 0; i < snode->num_active_indices; i++)
+    ker.insert_arg(DataType::i32, false);
+  ker.insert_arg(snode->dt, false);
+  return ker;
 }
 
 TLANG_NAMESPACE_END

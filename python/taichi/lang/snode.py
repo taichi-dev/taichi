@@ -37,3 +37,6 @@ class SNode:
 
   def parent(self):
     return SNode(self.ptr.snode().parent)
+
+  def data_type(self):
+    return self.ptr.data_type()

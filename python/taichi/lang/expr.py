@@ -1,5 +1,5 @@
 from .core import taichi_lang_core
-from .util import is_taichi_class
+from .util import *
 import traceback
 
 
@@ -164,18 +164,24 @@ class Expr:
     num_ind = snode.num_active_indices()
     dt_name = taichi_lang_core.data_type_short_name(snode.data_type())
     self.getter = getattr(self.ptr, 'val{}_{}'.format(num_ind, dt_name))
-    self.setter = getattr(self.ptr, 'set_val{}_{}'.format(num_ind, dt_name))
+    if self.snode().data_type() == f32 or self.snode().data_type() == f64:
+      def setter(value, *key):
+        self.snode().ptr.write_float(key[0], key[1], key[2], key[3], value)
+    else:
+      def setter(value, *key):
+        self.snode().ptr.write_int(key[0], key[1], key[2], key[3], value)
+    self.setter = setter
 
   def __setitem__(self, key, value):
     if not Expr.layout_materialized:
       self.materialize_layout_callback()
     self.initialize_accessor()
     if key is None:
-      self.setter(value)
-    else:
-      if not isinstance(key, tuple):
-        key = (key, )
-      self.setter(value, *key)
+      key = ()
+    if not isinstance(key, tuple):
+      key = (key, )
+    key = key + ((0, ) * (4 - len(key)))
+    self.setter(value, *key)
 
   def __getitem__(self, key):
     if not Expr.layout_materialized:

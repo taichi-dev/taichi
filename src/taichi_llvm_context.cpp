@@ -166,8 +166,48 @@ int num_instructions(llvm::Function *func) {
   return counter;
 }
 
-void remove_useless_long_functions(llvm::Module *module) {
-  auto function_name_list = {""};
+void remove_useless_libdevice_functions(llvm::Module *module) {
+  std::vector<std::string> function_name_list = {
+      "rnorm3df",
+      "norm4df",
+      "rnorm4df",
+      "normf",
+      "rnormf",
+      "j0f",
+      "j1f",
+      "y0f",
+      "y1f",
+      "ynf",
+      "jnf",
+      "cyl_bessel_i0f",
+      "cyl_bessel_i1f",
+      "j0",
+      "j1",
+      "y0",
+      "y1",
+      "yn",
+      "jn",
+      "cyl_bessel_i0",
+      "cyl_bessel_i1",
+      "tgammaf",
+      "lgammaf",
+      "tgamma",
+      "lgamma",
+      "erff",
+      "erfinvf",
+      "erfcf",
+      "erfcxf",
+      "erfcinvf",
+      "erf",
+      "erfinv",
+      "erfcx",
+      "erfcinv",
+      "erfc",
+  };
+  for (auto fn : function_name_list) {
+    module->getFunction("__nv_" + fn)->eraseFromParent();
+  }
+  module->getFunction("__internal_lgamma_pos")->eraseFromParent();
 }
 
 std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
@@ -240,6 +280,8 @@ void TaichiLLVMContext::link_module_with_libdevice(
   TI_AUTO_PROF
   auto libdevice_module = module_from_bitcode_file(libdevice_path(), ctx.get());
 
+  remove_useless_libdevice_functions(libdevice_module.get());
+
   std::vector<std::string> libdevice_function_names;
   for (auto &f : *libdevice_module) {
     if (!f.isDeclaration()) {
@@ -256,7 +298,11 @@ void TaichiLLVMContext::link_module_with_libdevice(
   }
 
   for (auto func_name : libdevice_function_names) {
-    module->getFunction(func_name)->setLinkage(Function::InternalLinkage);
+    auto func = module->getFunction(func_name);
+    if (!func) {
+      TC_P(func_name);
+    } else
+      func->setLinkage(Function::InternalLinkage);
   }
 }
 

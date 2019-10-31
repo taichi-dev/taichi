@@ -21,6 +21,28 @@ def test_linear():
     assert x[i] == i
     assert y[i] == i + 123
 
+@ti.program_test
+def test_writer():
+  x = ti.var(ti.i32)
+  y = ti.var(ti.i32)
+
+  n = 128
+
+  @ti.layout
+  def place():
+    ti.root.dense(ti.i, n).place(x)
+    ti.root.dense(ti.i, n).place(y)
+
+  x[0] = 0
+  writer = ti.get_runtime().prog.get_snode_writer(x.ptr.snode())
+
+  for i in range(n):
+    writer(i, i * 2)
+    y[i] = i + 123
+
+  for i in range(n):
+    assert x[i] == i * 2
+    assert y[i] == i + 123
 
 def test_linear_repeated():
   for i in range(10):

@@ -10,10 +10,6 @@ matrix:
     osx_image: xcode10.3
     env:
       - MATRIX_EVAL="CC=clang && CXX=clang++ && PYTHON=python3.6"
-  - os: osx
-    osx_image: xcode10.3
-    env:
-      - MATRIX_EVAL="CC=clang && CXX=clang++ && PYTHON=python3.7"
 before_install:
 - eval "${MATRIX_EVAL}"
 - echo $CXX

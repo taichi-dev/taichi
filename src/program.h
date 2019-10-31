@@ -172,7 +172,7 @@ class Program {
 
   void get_snode_reader(SNode *snode);
 
-  void get_snode_writer(SNode *snode);
+  std::function<void(int, int)> get_snode_writer(SNode *snode);
 };
 
 TLANG_NAMESPACE_END

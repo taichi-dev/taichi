@@ -105,6 +105,7 @@ void export_lang(py::module &m) {
       .def("profiler_print", &Program::profiler_print)
       .def("profiler_print", &Program::profiler_clear)
       .def("finalize", &Program::finalize)
+      .def("get_snode_writer", &Program::get_snode_writer)
       .def("synchronize", &Program::synchronize);
 
   m.def("get_current_program", get_current_program,

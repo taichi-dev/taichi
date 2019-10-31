@@ -59,7 +59,7 @@ void Program::initialize_gradient_clearers() {
               (*s->expr)[i, j, k, l] = 0;
             }
           });
-        } else if (places[0]->num_active_indices == 0){
+        } else if (places[0]->num_active_indices == 0) {
           for (auto s : places) {
             (*s->expr)[Expr(0)] = 0;
           }
@@ -72,6 +72,20 @@ void Program::initialize_gradient_clearers() {
     }
   };
   visit(&root);
+}
+
+void Program::get_snode_writer(SNode *snode) {
+  TC_ASSERT(snode->type == SNodeType::place);
+  auto kernel_name = fmt::format("snode_writer_{}", snode->id);
+  auto &ker = kernel([&] {
+    if (snode->num_active_indices == 1) {
+      (*snode->expr)[Expr::make<ArgLoadExpression>(0)] =
+          Expr::make<ArgLoadExpression>(1);
+    } else {
+      TC_NOT_IMPLEMENTED;
+    }
+  });
+  ker.name = kernel_name;
 }
 
 TLANG_NAMESPACE_END

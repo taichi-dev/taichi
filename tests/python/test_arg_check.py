@@ -35,4 +35,3 @@ def test_argument_error():
     
   set_i32(123)
   assert x[None] == 123
-

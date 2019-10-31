@@ -1,7 +1,8 @@
 import taichi as ti
 
 @ti.program_test
-def test_while():
+def test_bitmasked():
+  return
   x = ti.var(ti.f32)
   s = ti.var(ti.i32)
 

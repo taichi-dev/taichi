@@ -38,8 +38,7 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
     ch_types.push_back(ch);
   }
 
-  auto ch_type =
-      llvm::StructType::create(*ctx, ch_types, snode.node_type_name + "_ch");
+  auto ch_type = llvm::StructType::create(*ctx, ch_types, snode.node_type_name + "_ch");
   ch_type->setName(snode.node_type_name + "_ch");
 
   snode.llvm_element_type = ch_type;

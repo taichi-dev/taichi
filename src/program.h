@@ -169,6 +169,10 @@ class Program {
   void initialize_gradient_clearers();
 
   void clear_all_gradients();
+
+  void get_snode_reader(SNode *snode);
+
+  void get_snode_writer(SNode *snode);
 };
 
 TLANG_NAMESPACE_END

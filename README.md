@@ -40,6 +40,11 @@ Notes:
   sudo apt install clang
   ```
   Once clang is installed, follow [these](https://stackoverflow.com/questions/7031126/switching-between-gcc-and-clang-llvm-using-cmake) directions to update your alternative compiler list.
+  ```bash
+  sudo apt-get install clang
+sudo update-alternatives --config c++
+  ```
+  And choose your freshly installed clang compiler
  
   Next, install the other dependencies 
   ```bash

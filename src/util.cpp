@@ -299,7 +299,7 @@ std::string CompileConfig::compiler_config() {
         "{}/include -I/usr/local/cuda/include/ -ccbin {} "
         " -lstdc++ {} {} "
         "-DTLANG_GPU {} ",
-        gcc_opt_flag(), get_repo_dir(), "g++-6", include_flag, linking,
+        gcc_opt_flag(), get_repo_dir(), "g++-7", include_flag, linking,
         extra_flags);
   }
   return cmd;

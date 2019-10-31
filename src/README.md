@@ -1,10 +1,5 @@
-# The Taichi Programming Language
-### High-Performance (Differentiable) Computing on Spatially Sparse Data Structures
-
-# [Python Frontend Tutorial](https://github.com/yuanming-hu/taichi/tree/master/python/taichi)
-
-###  Developer Installation
-(Note this is for the compiler developers of Taichi lang. End users please use the pip packages.)
+#  Developer Installation
+Note this is for the compiler developers of Taichi lang. End users please use the pip packages.
 Supports Ubuntu 14.04/16.04/18.04, ArchLinux, Mac OS X. For GPU support, CUDA 9.0+ is needed.
 
  - Execute `python3 -m pip install setuptools astpretty astor pytest opencv-python pybind11 Pillow numpy scipy GitPython yapf colorama psutil autograd`
@@ -29,7 +24,7 @@ Supports Ubuntu 14.04/16.04/18.04, ArchLinux, Mac OS X. For GPU support, CUDA 9.
  - Check out `examples` for runnable examples. Run them with `python3`.
 
 
-### CUDA on Ubuntu 18.04
+### Setting up CUDA 10.1 on Ubuntu 18.04
   First, make sure you have CUDA 10.1 installed.
   Check this by running the following command:
   ```bash
@@ -52,7 +47,7 @@ Supports Ubuntu 14.04/16.04/18.04, ArchLinux, Mac OS X. For GPU support, CUDA 9.
   ```
 
 # Folder Structure
-Key folders are
+Key folders are (TODO: update)
  - *examples* : example programs written in Taichi
    - *cpp*: benchmarking examples in the SIGGRAPH Asia paper (mpm_benchmark.cpp, smoke_renderer.cpp, cnn.cpp)
    - *fem*: the FEM benchmark
@@ -67,7 +62,7 @@ Key folders are
  - *test*: unit tests
 
 # Troubleshooting
- - Run with debug mode to see if there's any illegal memory access;
+ - Run with debug mode to see if there's any illegal memory access; (TODO: this is broken in new releases)
  - Disable compiler optimizations to quickly confirm that the issue is not cause by optimization;
 
 # Bibtex

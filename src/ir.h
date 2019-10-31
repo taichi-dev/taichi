@@ -212,8 +212,6 @@ class IRBuilder {
   Stmt *get_last_stmt();
 };
 
-IRBuilder &current_ast_uilder();
-
 inline Expr load_if_ptr(const Expr &ptr);
 inline Expr smart_load(const Expr &var);
 
@@ -934,6 +932,38 @@ class ArgLoadExpression : public Expression {
     ret.push_back(std::move(ran));
     stmt = ret.back().get();
   }
+};
+
+// For return values
+class FrontendArgStoreStmt : public Stmt {
+ public:
+  int arg_id;
+  Expr expr;
+
+  FrontendArgStoreStmt(int arg_id, Expr expr) : arg_id(arg_id), expr(expr) {
+  }
+
+  virtual bool has_global_side_effect() const override {
+    return false;
+  }
+
+  DEFINE_ACCEPT
+};
+
+// For return values
+class ArgStoreStmt : public Stmt {
+ public:
+  int arg_id;
+  Stmt *val;
+
+  ArgStoreStmt(int arg_id, Stmt *val) : arg_id(arg_id), val(val) {
+  }
+
+  virtual bool has_global_side_effect() const override {
+    return false;
+  }
+
+  DEFINE_ACCEPT
 };
 
 class RandStmt : public Stmt {

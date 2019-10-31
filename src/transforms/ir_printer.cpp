@@ -264,6 +264,16 @@ class IRPrinter : public IRVisitor {
     print("{}{} = arg[{}]", stmt->type_hint(), stmt->name(), stmt->arg_id);
   }
 
+  void visit(FrontendArgStoreStmt *stmt) override {
+    print("{}{} : store arg {} <- {}", stmt->type_hint(), stmt->name(),
+          stmt->arg_id, stmt->expr->serialize());
+  }
+
+  void visit(ArgStoreStmt *stmt) override {
+    print("{}{} : store arg {} <- {}", stmt->type_hint(), stmt->name(),
+          stmt->arg_id, stmt->val->name());
+  }
+
   void visit(LocalLoadStmt *stmt) override {
     print("{}{} = local load [{}]", stmt->type_hint(), stmt->name(),
           to_string(stmt->ptr));

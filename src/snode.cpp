@@ -148,7 +148,19 @@ void SNode::write_float(int i, int j, int k, int l, float64 val) {
 }
 
 float64 SNode::read_float(int i, int j, int k, int l) {
-  return 0;
+  if (writer_kernel == nullptr) {
+    writer_kernel = &get_current_program().get_snode_writer(this);
+  }
+  if (num_active_indices >= 1)
+    writer_kernel->set_arg_int(0, i);
+  if (num_active_indices >= 2)
+    writer_kernel->set_arg_int(1, j);
+  if (num_active_indices >= 3)
+    writer_kernel->set_arg_int(2, k);
+  if (num_active_indices >= 4)
+    writer_kernel->set_arg_int(3, l);
+  (*writer_kernel)();
+  return get_current_program().context.get_arg<float32>(num_active_indices);
 }
 
 // for int32 and int64

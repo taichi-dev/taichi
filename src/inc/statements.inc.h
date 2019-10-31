@@ -9,6 +9,7 @@ PER_STATEMENT(FrontendAtomicStmt)
 PER_STATEMENT(FrontendEvalStmt)
 PER_STATEMENT(FrontendSNodeOpStmt)  // activate, deactivate, append, clear
 PER_STATEMENT(FrontendAssertStmt)
+PER_STATEMENT(FrontendArgStoreStmt)
 
 // Midend statement
 
@@ -35,6 +36,7 @@ PER_STATEMENT(LocalStoreStmt)
 PER_STATEMENT(SNodeOpStmt)
 PER_STATEMENT(RangeAssumptionStmt)
 PER_STATEMENT(AssertStmt)
+PER_STATEMENT(ArgStoreStmt)
 
 // SNodeOps
 PER_STATEMENT(IntegerOffsetStmt)

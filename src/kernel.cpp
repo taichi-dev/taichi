@@ -57,7 +57,8 @@ void Kernel::operator()() {
         set_arg_nparray(i, (uint64)device_buffers[i], args[i].size);
         cudaMemcpy(device_buffers[i], host_buffers[i], args[i].size,
                    cudaMemcpyHostToDevice);
-      } }
+      }
+    }
     if (has_buffer)
       cudaDeviceSynchronize();
     auto c = program.get_context();
@@ -131,6 +132,10 @@ void Kernel::set_arg_int(int i, int64 d) {
   }
 }
 
+void Kernel::mark_arg_return_value(int i, bool is_return) {
+  args[i].is_return_value = is_return;
+}
+
 void Kernel::set_arg_nparray(int i, uint64 d, uint64 size) {
   TC_ASSERT_INFO(args[i].is_nparray,
                  "Setting numpy array to scalar argument is not allowed");
@@ -144,7 +149,7 @@ void Kernel::set_arch(Arch arch) {
 }
 
 int Kernel::insert_arg(DataType dt, bool is_nparray) {
-  args.push_back({dt, is_nparray});
+  args.push_back(Arg{dt, is_nparray, 0, false});
   return args.size() - 1;
 }
 

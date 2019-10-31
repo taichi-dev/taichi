@@ -170,7 +170,7 @@ class Program {
 
   void clear_all_gradients();
 
-  void get_snode_reader(SNode *snode);
+  Kernel &get_snode_reader(SNode *snode);
 
   Kernel &get_snode_writer(SNode *snode);
 

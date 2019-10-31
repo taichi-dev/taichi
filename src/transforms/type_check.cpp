@@ -251,6 +251,16 @@ class TypeCheck : public IRVisitor {
     stmt->ret_type = VectorType(1, args[stmt->arg_id].dt);
   }
 
+  void visit(ArgStoreStmt *stmt) {
+    auto &args = get_current_program().get_current_kernel().args;
+    TC_ASSERT(0 <= stmt->arg_id && stmt->arg_id < args.size());
+    auto arg = args[stmt->arg_id];
+    auto arg_type = arg.dt;
+    TC_ASSERT(arg.is_return_value);
+    TC_ASSERT(stmt->val->ret_type.data_type == arg_type);
+    stmt->ret_type = VectorType(1, arg_type);
+  }
+
   void visit(ExternalPtrStmt *stmt) {
     stmt->ret_type = VectorType(stmt->base_ptrs.size(),
                                 stmt->base_ptrs[0]->ret_type.data_type);

@@ -22,32 +22,34 @@ def remove_indent(lines):
 
   return '\n'.join(cleaned)
 
+# The ti.func decorator
+
 def func(foo):
-  # What is this func used for?
-  assert False
+  from .impl import get_runtime
   src = remove_indent(inspect.getsource(foo))
   tree = ast.parse(src)
-
+  
   func_body = tree.body[0]
   func_body.decorator_list = []
-
+  
   visitor = ASTTransformer(transform_args=False)
   visitor.visit(tree)
   ast.fix_missing_locations(tree)
-
-  if self.runtime.print_preprocessed:
+  
+  if get_runtime().print_preprocessed:
     import astor
     print(astor.to_source(tree.body[0], indent_with='  '))
-
+  
   ast.increment_lineno(tree, inspect.getsourcelines(foo)[1] - 1)
-
-  self.runtime.inside_kernel = True
+  
+  get_runtime().inside_kernel = True
   frame = inspect.currentframe().f_back
   exec(compile(tree, filename=inspect.getsourcefile(foo), mode='exec'),
        dict(frame.f_globals, **frame.f_locals), locals())
-  self.runtime.inside_kernel = False
+  get_runtime().inside_kernel = False
   compiled = locals()[foo.__name__]
   return compiled
+
 
 class KernelTemplateMapper:
   def __init__(self, num_args, template_slot_locations):

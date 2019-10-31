@@ -106,7 +106,7 @@ void Program::visualize_layout(const std::string &fn) {
 \Tree)";
     emit(header);
 
-    std::function<void(SNode *snode)> visit = [&](SNode *snode) {
+    std::function<void(SNode * snode)> visit = [&](SNode *snode) {
       emit("[.{");
       if (snode->type == SNodeType::place) {
         emit(snode->name);
@@ -196,7 +196,26 @@ void Program::clear_all_gradients() {
   }
 }
 
-void Program::get_snode_reader(SNode *snode){TC_NOT_IMPLEMENTED}
+Kernel &Program::get_snode_reader(SNode *snode) {
+  TC_ASSERT(snode->type == SNodeType::place);
+  auto kernel_name = fmt::format("snode_writer_{}", snode->id);
+  TC_ASSERT(snode->num_active_indices <= 4);
+  auto &ker = kernel([&] {
+    ExprGroup indices;
+    for (int i = 0; i < snode->num_active_indices; i++) {
+      indices.push_back(Expr::make<ArgLoadExpression>(i));
+    }
+    Stmt::make<FrontendArgStoreStmt>(snode->num_active_indices,
+                                     (*snode->expr)[indices]);
+  });
+  ker.set_arch(get_host_arch());
+  ker.name = kernel_name;
+  for (int i = 0; i < snode->num_active_indices; i++)
+    ker.insert_arg(DataType::i32, false);
+  auto ret_val = ker.insert_arg(snode->dt, false);
+  ker.mark_arg_return_value(ret_val);
+  return ker;
+}
 
 Kernel &Program::get_snode_writer(SNode *snode) {
   TC_ASSERT(snode->type == SNodeType::place);

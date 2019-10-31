@@ -89,6 +89,10 @@ std::string get_runtime_fn(Arch arch) {
   return fmt::format("runtime_{}.bc", arch_name(arch));
 }
 
+std::string get_runtime_dir() {
+  return get_repo_dir() + "/src/runtime/";
+}
+
 void compile_runtime_bitcode(Arch arch) {
   TI_AUTO_PROF;
   static std::set<int> runtime_compiled;
@@ -96,7 +100,7 @@ void compile_runtime_bitcode(Arch arch) {
     auto clang = find_existing_command({"clang-7", "clang"});
     TC_ASSERT(command_exist("llvm-as"));
     TC_TRACE("Compiling runtime module bitcode...");
-    auto runtime_folder = get_repo_dir() + "/src/runtime/";
+    auto runtime_folder = get_runtime_dir();
     std::string macro = fmt::format(" -D ARCH_{} ", arch_name(arch));
     int ret = std::system(
         fmt::format(
@@ -162,6 +166,10 @@ int num_instructions(llvm::Function *func) {
   return counter;
 }
 
+void remove_useless_long_functions(llvm::Module *module) {
+  auto function_name_list = {""};
+}
+
 std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
   TI_AUTO_PROF
   if (!runtime_module) {
@@ -172,7 +180,7 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
     } else {
       compile_runtime_bitcode(arch);
       runtime_module = module_from_bitcode_file(
-          get_repo_dir() + fmt::format("/src/runtime/{}", get_runtime_fn(arch)),
+          fmt::format("{}/{}", get_runtime_dir(), get_runtime_fn(arch)),
           ctx.get());
     }
     if (arch == Arch::gpu) {
@@ -204,14 +212,27 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
 
       // runtime_module->print(llvm::errs(), nullptr);
     }
-    /*
+    int total_inst = 0;
+    int total_big_inst = 0;
+
     for (auto &f : *runtime_module) {
-      TC_INFO("Loaded runtime function: {} (inst. count= {})",
-              std::string(f.getName()), num_instructions(&f));
+      int c = num_instructions(&f);
+      if (c > 100) {
+        total_big_inst += c;
+        TC_INFO("Loaded runtime function: {} (inst. count= {})",
+                std::string(f.getName()), c);
+      }
+      total_inst += c;
     }
-    */
+    TC_P(total_inst);
+    TC_P(total_big_inst);
   }
-  return llvm::CloneModule(*runtime_module);
+  std::unique_ptr<llvm::Module> cloned;
+  {
+    TC_PROFILER("clone module");
+    cloned = llvm::CloneModule(*runtime_module);
+  }
+  return cloned;
 }
 
 void TaichiLLVMContext::link_module_with_libdevice(

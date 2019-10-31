@@ -3,15 +3,12 @@
 #include "../ir.h"
 #include "../program.h"
 #include "struct.h"
-#if defined(TLANG_WITH_LLVM)
 #include "struct_llvm.h"
 #include "llvm/IR/Verifier.h"
 #include <llvm/IR/IRBuilder.h>
-#endif
 
 TLANG_NAMESPACE_BEGIN
 
-#if defined(TLANG_WITH_LLVM)
 StructCompilerLLVM::StructCompilerLLVM(Arch arch)
     : StructCompiler(),
       ModuleBuilder(
@@ -478,15 +475,10 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
     };
   }
 }
-#endif
 
 std::unique_ptr<StructCompiler> StructCompiler::make(bool use_llvm, Arch arch) {
   if (use_llvm) {
-#if defined(TLANG_WITH_LLVM)
     return std::make_unique<StructCompilerLLVM>(arch);
-#else
-    TC_NOT_IMPLEMENTED
-#endif
   } else {
     return std::make_unique<StructCompiler>();
   }

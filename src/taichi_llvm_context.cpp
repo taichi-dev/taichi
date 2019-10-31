@@ -1,4 +1,3 @@
-#if defined(TLANG_WITH_LLVM)
 // A helper for the llvm backend
 
 #include <llvm/Transforms/Utils/Cloning.h>
@@ -391,4 +390,3 @@ template llvm::Value *TaichiLLVMContext::get_constant(int64 t);
 template llvm::Value *TaichiLLVMContext::get_constant(uint64 t);
 
 TLANG_NAMESPACE_END
-#endif

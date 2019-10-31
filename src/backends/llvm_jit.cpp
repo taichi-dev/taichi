@@ -1,4 +1,3 @@
-#if defined(TLANG_WITH_LLVM)
 #include <llvm/Support/TargetRegistry.h>
 #include <llvm/Target/TargetMachine.h>
 #include <llvm/Analysis/TargetTransformInfo.h>
@@ -434,4 +433,3 @@ int compile_ptx_and_launch(const std::string &ptx,
 #endif
 
 TLANG_NAMESPACE_END
-#endif

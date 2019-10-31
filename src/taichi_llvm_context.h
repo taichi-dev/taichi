@@ -1,5 +1,4 @@
 #pragma once
-#if defined(TLANG_WITH_LLVM)
 // A helper for the llvm backend
 
 #include "util.h"
@@ -55,14 +54,3 @@ class TaichiLLVMContext {
 };
 
 TLANG_NAMESPACE_END
-#else
-#include "util.h"
-TLANG_NAMESPACE_BEGIN
-class TaichiLLVMContext {
- public:
-  TaichiLLVMContext(Arch arch) {
-  }
-};
-TLANG_NAMESPACE_END
-
-#endif

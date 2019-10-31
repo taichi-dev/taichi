@@ -47,15 +47,11 @@ void Program::materialize_layout() {
   profiler_clear_gpu = scomp->profiler_clear;
 
   if (config.arch == Arch::gpu && config.use_llvm) {
-#if defined(TLANG_WITH_LLVM)
     initialize_device_llvm_context();
     // llvm_context_device->get_init_module();
     std::unique_ptr<StructCompiler> scomp_gpu =
         StructCompiler::make(config.use_llvm, Arch::gpu);
     scomp_gpu->run(root, false);
-#else
-    TC_NOT_IMPLEMENTED
-#endif
   }
 }
 

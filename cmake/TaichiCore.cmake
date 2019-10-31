@@ -46,7 +46,7 @@ message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
 include_directories(${LLVM_INCLUDE_DIRS})
     message("llvm include dirs ${LLVM_INCLUDE_DIRS}")
 add_definitions(${LLVM_DEFINITIONS})
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTLANG_WITH_LLVM")
+
 llvm_map_components_to_libnames(llvm_libs
         Core
         ExecutionEngine

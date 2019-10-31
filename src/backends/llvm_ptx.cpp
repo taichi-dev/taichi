@@ -14,15 +14,9 @@
 #include "cuda_runtime.h"
 #endif
 
-#if defined(TLANG_WITH_LLVM)
-
 #include "codegen_llvm.h"
 
-#endif
-
 TLANG_NAMESPACE_BEGIN
-
-#if defined(TLANG_WITH_LLVM)
 
 using namespace llvm;
 
@@ -304,13 +298,5 @@ FunctionType GPUCodeGen::codegen_llvm() {
   TC_PROFILER("gpu codegen");
   return CodeGenLLVMGPU(this, kernel).gen();
 }
-
-#else
-
-FunctionType GPUCodeGen::codegen_llvm() {
-  TC_ERROR("LLVM not found");
-}
-
-#endif
 
 TLANG_NAMESPACE_END

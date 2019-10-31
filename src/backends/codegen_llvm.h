@@ -9,13 +9,9 @@
 #include "../program.h"
 #include "../ir.h"
 
-#if defined(TLANG_WITH_LLVM)
 #include "llvm_codegen_utils.h"
-#endif
 
 TLANG_NAMESPACE_BEGIN
-
-#if defined(TLANG_WITH_LLVM)
 
 using namespace llvm;
 
@@ -1237,7 +1233,5 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     delete builder;
   }
 };
-
-#endif
 
 TLANG_NAMESPACE_END

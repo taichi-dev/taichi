@@ -23,7 +23,7 @@ before_install:
 - echo $CXX
 - echo $PYTHON
 - sysctl -n hw.ncpu
-# - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update; brew install $PYTHON || brew upgrade python; fi
+- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update; brew install $PYTHON || brew upgrade python; fi
 - pwd
 - cd $TRAVIS_BUILD_DIR
 - mkdir taichi-llvm

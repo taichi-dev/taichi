@@ -45,7 +45,7 @@ def test_range_loops():
 
 @ti.program_test
 def test_io():
-  ti.cfg.print_ir = True
+  ti.cfg.arch = ti.cuda
   x = ti.var(ti.i32)
   
   n = 128
@@ -59,4 +59,3 @@ def test_io():
   assert x[3] == 123
   assert x[4] == 456
 
-test_io()

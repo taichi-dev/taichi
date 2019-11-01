@@ -130,7 +130,6 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
     // functions from libdevice
     auto input = stmt->operand->value;
     auto input_taichi_type = stmt->operand->ret_type.data_type;
-    auto input_type = input->getType();
     auto op = stmt->op_type;
 
 #define UNARY_STD(x)                                                        \

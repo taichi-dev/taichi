@@ -232,13 +232,13 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     codegen->emit(f, std::forward<Args>(args)...);
   }
 
-  void visit(Block *stmt_list) {
+  void visit(Block *stmt_list) override {
     for (auto &stmt : stmt_list->statements) {
       stmt->accept(this);
     }
   }
 
-  void visit(AllocaStmt *stmt) {
+  void visit(AllocaStmt *stmt) override {
     TC_ASSERT(stmt->width() == 1);
     stmt->value = create_entry_block_alloca(stmt->ret_type.data_type);
     // initialize as zero
@@ -246,7 +246,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
                          stmt->value);
   }
 
-  void visit(RandStmt *stmt) {
+  void visit(RandStmt *stmt) override {
     TC_ASSERT(stmt->ret_type.data_type == DataType::f32);
     emit("const auto {} = {}::rand();", stmt->raw_name(),
          stmt->ret_data_type_name());
@@ -289,9 +289,8 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
 #undef UNARY_STD
   }
 
-  void visit(UnaryOpStmt *stmt) {
+  void visit(UnaryOpStmt *stmt) override {
     auto input = stmt->operand->value;
-    auto input_taichi_type = stmt->operand->ret_type.data_type;
     auto input_type = input->getType();
     auto op = stmt->op_type;
 
@@ -381,7 +380,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     return nullptr;
   }
 
-  void visit(BinaryOpStmt *stmt) {
+  void visit(BinaryOpStmt *stmt) override {
     auto op = stmt->op_type;
     auto ret_type = stmt->ret_type.data_type;
     if (op == BinaryOpType::add) {
@@ -501,14 +500,14 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     }
   }
 
-  void visit(TernaryOpStmt *stmt) {
+  void visit(TernaryOpStmt *stmt) override {
     TC_ASSERT(stmt->op_type == TernaryOpType::select);
     stmt->value = builder->CreateSelect(
         builder->CreateTrunc(stmt->op1->value, llvm_type(DataType::i1)),
         stmt->op2->value, stmt->op3->value);
   }
 
-  void visit(IfStmt *if_stmt) {
+  void visit(IfStmt *if_stmt) override {
     BasicBlock *true_block =
         BasicBlock::Create(*llvm_context, "true_block", func);
     BasicBlock *false_block =
@@ -530,7 +529,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     builder->SetInsertPoint(after_if);
   }
 
-  void visit(PrintStmt *stmt) {
+  void visit(PrintStmt *stmt) override {
     TC_ASSERT(stmt->width() == 1);
     std::vector<Value *> args;
     std::string format;
@@ -552,7 +551,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
                                       "debug_printf");
   }
 
-  void visit(ConstStmt *stmt) {
+  void visit(ConstStmt *stmt) override {
     TC_ASSERT(stmt->width() == 1);
     auto val = stmt->val[0];
     if (val.dt == DataType::f32) {
@@ -569,7 +568,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     }
   }
 
-  void visit(WhileControlStmt *stmt) {
+  void visit(WhileControlStmt *stmt) override {
     BasicBlock *after_break =
         BasicBlock::Create(*llvm_context, "after_break", func);
     TC_ASSERT(while_after_loop);
@@ -579,7 +578,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     builder->SetInsertPoint(after_break);
   }
 
-  void visit(WhileStmt *stmt) {
+  void visit(WhileStmt *stmt) override {
     BasicBlock *body =
         BasicBlock::Create(*llvm_context, "while_loop_body", func);
     builder->CreateBr(body);
@@ -667,11 +666,11 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     builder->SetInsertPoint(after_loop);
   }
 
-  virtual void visit(RangeForStmt *for_stmt) {
+  virtual void visit(RangeForStmt *for_stmt) override {
     create_naive_range_for(for_stmt);
   }
 
-  void visit(ArgLoadStmt *stmt) {
+  void visit(ArgLoadStmt *stmt) override {
     auto raw_arg =
         builder->CreateCall(get_runtime_function("Context_get_args"),
                             {get_context(), tlctx->get_constant(stmt->arg_id)});
@@ -688,7 +687,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     }
   }
 
-  void visit(ArgStoreStmt *stmt) {
+  void visit(ArgStoreStmt *stmt) override {
     if (stmt->is_ptr) {
       TC_NOT_IMPLEMENTED
     } else {
@@ -706,12 +705,12 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     }
   }
 
-  void visit(LocalLoadStmt *stmt) {
+  void visit(LocalLoadStmt *stmt) override {
     TC_ASSERT(stmt->width() == 1);
     stmt->value = builder->CreateLoad(stmt->ptr[0].var->value);
   }
 
-  void visit(LocalStoreStmt *stmt) {
+  void visit(LocalStoreStmt *stmt) override {
     auto mask = stmt->parent->mask();
     if (mask && stmt->width() != 1) {
       TC_NOT_IMPLEMENTED
@@ -720,7 +719,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     }
   }
 
-  void visit(SNodeOpStmt *stmt) {
+  void visit(SNodeOpStmt *stmt) override {
     stmt->ret_type.data_type = DataType::i32;
     if (stmt->op_type == SNodeOpType::probe) {
       emit("{} {};", stmt->ret_data_type_name(), stmt->raw_name());
@@ -765,7 +764,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     }
   }
 
-  virtual void visit(AtomicOpStmt *stmt) {
+  virtual void visit(AtomicOpStmt *stmt) override {
     auto mask = stmt->parent->mask();
     for (int l = 0; l < stmt->width(); l++) {
       if (mask) {
@@ -789,11 +788,11 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     }
   }
 
-  void visit(GlobalPtrStmt *stmt) {
+  void visit(GlobalPtrStmt *stmt) override {
     TC_ERROR("Global Ptrs should have been lowered.");
   }
 
-  void visit(GlobalStoreStmt *stmt) {
+  void visit(GlobalStoreStmt *stmt) override {
     /*
     if (!current_program->config.force_vectorized_global_store) {
       for (int i = 0; i < stmt->data->ret_type.width; i++) {
@@ -820,7 +819,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     builder->CreateStore(stmt->data->value, stmt->ptr->value);
   }
 
-  void visit(GlobalLoadStmt *stmt) {
+  void visit(GlobalLoadStmt *stmt) override {
     int width = stmt->width();
     if (get_current_program().config.attempt_vectorized_load_cpu &&
         width >= 4 && stmt->ptr->is<ElementShuffleStmt>()) {
@@ -895,7 +894,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
         tlctx->get_data_type(stmt->ret_type.data_type), stmt->ptr->value);
   }
 
-  void visit(ElementShuffleStmt *stmt) {
+  void visit(ElementShuffleStmt *stmt) override {
     auto init = stmt->elements.serialize(
         [](const VectorElement &elem) {
           return fmt::format("{}[{}]", elem.stmt->raw_name(), elem.index);
@@ -910,13 +909,13 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     }
   }
 
-  void visit(AssertStmt *stmt) {
+  void visit(AssertStmt *stmt) override {
     emit("#if defined(TL_DEBUG)");
     emit(R"(TC_ASSERT_INFO({}, "{}");)", stmt->val->raw_name(), stmt->text);
     emit("#endif");
   }
 
-  void visit(OffsetAndExtractBitsStmt *stmt) {
+  void visit(OffsetAndExtractBitsStmt *stmt) override {
     auto shifted = builder->CreateAdd(stmt->input->value,
                                       tlctx->get_constant((int32)stmt->offset));
     int mask = (1u << (stmt->bit_end - stmt->bit_begin)) - 1;
@@ -925,7 +924,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
                            tlctx->get_constant(mask));
   }
 
-  void visit(LinearizeStmt *stmt) {
+  void visit(LinearizeStmt *stmt) override {
     llvm::Value *val = tlctx->get_constant(0);
     for (int i = 0; i < (int)stmt->inputs.size(); i++) {
       val = builder->CreateAdd(
@@ -935,7 +934,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     stmt->value = val;
   }
 
-  void visit(IntegerOffsetStmt *stmt) {
+  void visit(IntegerOffsetStmt *stmt) override {
     TC_NOT_IMPLEMENTED
     if (stmt->input->is<GetChStmt>() &&
         stmt->input->as<GetChStmt>()->output_snode->type == SNodeType::place) {
@@ -949,7 +948,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     }
   }
 
-  void visit(SNodeLookupStmt *stmt) {
+  void visit(SNodeLookupStmt *stmt) override {
     llvm::Value *parent = nullptr;
     if (stmt->input_snode) {
       parent = stmt->input_snode->value;
@@ -1006,7 +1005,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     }
   }
 
-  void visit(GetChStmt *stmt) {
+  void visit(GetChStmt *stmt) override {
     // always unvectorized
     // it is OK to directly use GEP here since Components are "dense"
     stmt->value = builder->CreateGEP(

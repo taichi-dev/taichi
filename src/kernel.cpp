@@ -44,7 +44,7 @@ void Kernel::operator()() {
     compile();
   std::vector<void *> host_buffers(args.size());
   std::vector<void *> device_buffers(args.size());
-  if (program.config.arch == Arch::gpu) {
+  if (arch == Arch::gpu) {
 #if defined(CUDA_FOUND)
     // copy data to GRAM
     bool has_buffer = false;
@@ -76,7 +76,7 @@ void Kernel::operator()() {
     TC_ERROR("No CUDA");
 #endif
   } else {
-    auto c = program.get_context();
+    auto &c = program.get_context();
     compiled(c);
   }
   program.sync = false;

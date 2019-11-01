@@ -29,8 +29,13 @@
   }
 
 using int8 = int8_t;
+using int16 = int16_t;
 using int32 = int32_t;
 using int64 = int64_t;
+using uint8 = uint8_t;
+using uint16 = uint16_t;
+using uint32 = uint32_t;
+using uint64 = uint64_t;
 using float32 = float;
 using float64 = double;
 
@@ -136,6 +141,26 @@ STRUCT_FIELD_ARRAY(Context, args);
 STRUCT_FIELD(Context, runtime);
 STRUCT_FIELD(Context, buffer);
 
+int32 atomic_add_i32(volatile int32 *dest, int32 val) {
+  return __atomic_fetch_add(dest, val, std::memory_order::memory_order_seq_cst);
+}
+
+int64 atomic_add_i64(volatile int64 *dest, int64 val) {
+  return __atomic_fetch_add(dest, val, std::memory_order::memory_order_seq_cst);
+}
+
+uint64 atomic_add_u64(volatile uint64 *dest, uint64 val) {
+  return __atomic_fetch_add(dest, val, std::memory_order::memory_order_seq_cst);
+}
+
+uint64 atomic_or_u64(volatile uint64 *dest, uint64 val) {
+  return __atomic_fetch_or(dest, val, std::memory_order::memory_order_seq_cst);
+}
+
+uint64 atomic_and_u64(volatile uint64 *dest, uint64 val) {
+  return __atomic_fetch_and(dest, val, std::memory_order::memory_order_seq_cst);
+}
+
 float32 atomic_add_cpu_f32(volatile float32 *dest, float32 inc) {
   float32 old_val;
   float32 new_val;
@@ -203,8 +228,8 @@ void Dense_activate(Ptr meta, Ptr node, int i) {
     auto element_size = StructMeta_get_element_size(smeta);
     auto num_elements = StructMeta_get_element_size(smeta);
     auto data_section_size = element_size * num_elements;
-    auto mask_begin = node + data_section_size;
-    mask_begin[i / 8] |= 1 << (i % 8);
+    auto mask_begin = (uint64 *)(node + data_section_size);
+    atomic_or_u64(&mask_begin[i / 64], 1UL << (i % 64));
   }
 }
 
@@ -372,13 +397,6 @@ int32 block_dim() {
 
 int32 grid_dim() {
   return 0;
-}
-
-int32 atomic_add_i32(int *a, int val) {
-  // TODO: replace this with a real cuda atomic add
-  auto old = *a;
-  *a += val;
-  return old;
 }
 
 void block_barrier() {

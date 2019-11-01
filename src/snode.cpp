@@ -135,6 +135,7 @@ void SNode::write_float(int i, int j, int k, int l, float64 val) {
   if (writer_kernel == nullptr) {
     writer_kernel = &get_current_program().get_snode_writer(this);
   }
+  set_kernel_args(writer_kernel, i, j, k, l);
   if (num_active_indices >= 1)
     writer_kernel->set_arg_int(0, i);
   if (num_active_indices >= 2)
@@ -152,14 +153,7 @@ float64 SNode::read_float(int i, int j, int k, int l) {
   if (reader_kernel == nullptr) {
     reader_kernel = &get_current_program().get_snode_reader(this);
   }
-  if (num_active_indices >= 1)
-    reader_kernel->set_arg_int(0, i);
-  if (num_active_indices >= 2)
-    reader_kernel->set_arg_int(1, j);
-  if (num_active_indices >= 3)
-    reader_kernel->set_arg_int(2, k);
-  if (num_active_indices >= 4)
-    reader_kernel->set_arg_int(3, l);
+  set_kernel_args(reader_kernel, i, j, k, l);
   get_current_program().synchronize();
   (*reader_kernel)();
   if (dt == DataType::f32) {
@@ -176,14 +170,7 @@ void SNode::write_int(int i, int j, int k, int l, int64 val) {
   if (writer_kernel == nullptr) {
     writer_kernel = &get_current_program().get_snode_writer(this);
   }
-  if (num_active_indices >= 1)
-    writer_kernel->set_arg_int(0, i);
-  if (num_active_indices >= 2)
-    writer_kernel->set_arg_int(1, j);
-  if (num_active_indices >= 3)
-    writer_kernel->set_arg_int(2, k);
-  if (num_active_indices >= 4)
-    writer_kernel->set_arg_int(3, l);
+  set_kernel_args(writer_kernel, i, j, k, l);
   writer_kernel->set_arg_float(num_active_indices, val);
   get_current_program().synchronize();
   (*writer_kernel)();
@@ -193,14 +180,7 @@ int64 SNode::read_int(int i, int j, int k, int l) {
   if (reader_kernel == nullptr) {
     reader_kernel = &get_current_program().get_snode_reader(this);
   }
-  if (num_active_indices >= 1)
-    reader_kernel->set_arg_int(0, i);
-  if (num_active_indices >= 2)
-    reader_kernel->set_arg_int(1, j);
-  if (num_active_indices >= 3)
-    reader_kernel->set_arg_int(2, k);
-  if (num_active_indices >= 4)
-    reader_kernel->set_arg_int(3, l);
+  set_kernel_args(reader_kernel, i, j, k, l);
   get_current_program().synchronize();
   (*reader_kernel)();
   if (dt == DataType::i32) {
@@ -210,6 +190,17 @@ int64 SNode::read_int(int i, int j, int k, int l) {
   } else {
     TC_NOT_IMPLEMENTED
   }
+}
+
+void SNode::set_kernel_args(Kernel *kernel, int i, int j, int k, int l) {
+  if (num_active_indices >= 1)
+    kernel->set_arg_int(0, i);
+  if (num_active_indices >= 2)
+    kernel->set_arg_int(1, j);
+  if (num_active_indices >= 3)
+    kernel->set_arg_int(2, k);
+  if (num_active_indices >= 4)
+    kernel->set_arg_int(3, l);
 }
 
 TLANG_NAMESPACE_END

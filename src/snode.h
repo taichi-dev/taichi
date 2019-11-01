@@ -330,6 +330,8 @@ class SNode {
   int max_num_elements() const {
     return 1 << total_num_bits;
   }
+
+  void set_kernel_args(Kernel *kernel, int i, int j, int k, int l);
 };
 
 TLANG_NAMESPACE_END

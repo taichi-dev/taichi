@@ -672,7 +672,7 @@ class GPUIRCodeGen : public IRVisitor {
     emit("}}");
   }
 
-  void visit(GlobalStoreStmt *stmt) {
+  void visit(GlobalStoreStmt *stmt) override {
     if (stmt->ptr->is<GlobalPtrStmt>()) {
       auto ptr = stmt->ptr->as<GlobalPtrStmt>();
       auto snode = ptr->snodes[0];
@@ -694,7 +694,7 @@ class GPUIRCodeGen : public IRVisitor {
     }
   }
 
-  void visit(GlobalLoadStmt *stmt) {
+  void visit(GlobalLoadStmt *stmt) override {
     TC_ASSERT(stmt->width() == 1);
     if (stmt->ptr->is<GlobalPtrStmt>()) {
       auto ptr = stmt->ptr->as<GlobalPtrStmt>();

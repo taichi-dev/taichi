@@ -260,7 +260,6 @@ class LowerAST : public IRVisitor {
 
   void visit(FrontendArgStoreStmt *stmt) override {
     // expand value
-    Stmt *val_stmt = nullptr;
     VecStatement flattened;
     stmt->expr->flatten(flattened);
     flattened.push_back(

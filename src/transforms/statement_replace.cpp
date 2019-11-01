@@ -60,7 +60,7 @@ class StatementReplace : public IRVisitor {
     for_stmt->body->accept(this);
   }
 
-  void visit(Stmt *stmt) {
+  void visit(Stmt *stmt) override {
     replace_if_necessary(stmt);
   }
 

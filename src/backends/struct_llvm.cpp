@@ -15,7 +15,8 @@ StructCompilerLLVM::StructCompilerLLVM(Arch arch)
           get_current_program().get_llvm_context(arch)->get_init_module()),
       arch(arch) {
   creator = [] {
-    TC_WARN("Data structure creation not implemented"); return nullptr;
+    TC_WARN("Data structure creation not implemented");
+    return nullptr;
   };
   tlctx = get_current_program().get_llvm_context(arch);
   llvm_ctx = tlctx->ctx.get();
@@ -35,7 +36,8 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
     ch_types.push_back(ch);
   }
 
-  auto ch_type = llvm::StructType::create(*ctx, ch_types, snode.node_type_name + "_ch");
+  auto ch_type =
+      llvm::StructType::create(*ctx, ch_types, snode.node_type_name + "_ch");
   ch_type->setName(snode.node_type_name + "_ch");
 
   snode.llvm_element_type = ch_type;
@@ -104,12 +106,6 @@ void StructCompilerLLVM::generate_refine_coordinates(SNode *snode) {
   for (int i = 0; i < max_num_indices; i++) {
     auto addition = tlctx->get_constant(0);
     if (snode->extractors[i].num_bits) {
-      /*
-      fmt::format("((({} >> {}) & ((1 << {}) - 1)) << {})", l,
-                  snode->extractors[i].acc_offset,
-                  snode->extractors[i].num_bits,
-                  snode->extractors[i].start);
-                  */
       auto mask = ((1 << snode->extractors[i].num_bits) - 1);
       addition = builder.CreateAnd(
           builder.CreateAShr(l, snode->extractors[i].acc_offset), mask);
@@ -131,8 +127,6 @@ void StructCompilerLLVM::generate_leaf_accessors(SNode &snode) {
   stack.push_back(&snode);
 
   bool is_leaf = type == SNodeType::place;
-
-  auto llvm_index_type = llvm::Type::getInt32Ty(*llvm_ctx);
 
   if (!is_leaf) {
     generate_refine_coordinates(&snode);
@@ -169,60 +163,6 @@ void StructCompilerLLVM::generate_leaf_accessors(SNode &snode) {
         builder.CreateBitCast(ret, llvm::Type::getInt8PtrTy(*llvm_ctx)));
   }
 
-  if (!is_leaf) {
-    // Chain accessors for non-leaf nodes
-    TC_ASSERT(snode.ch.size() > 0);
-    TC_ASSERT_INFO(
-        snode.type == SNodeType::dense || snode.type == SNodeType::root,
-        "TODO: deal with child nullptrs when sparse");
-    for (int i = 0; i < (int)snode.ch.size(); i++) {
-      auto ch = snode.ch[i];
-      llvm::Type *parent_type = snode.llvm_type;
-      llvm::Type *child_type = ch->llvm_type;
-      llvm::Type *parent_ptr_type = llvm::PointerType::get(parent_type, 0);
-      llvm::Type *child_ptr_type = llvm::PointerType::get(child_type, 0);
-
-      auto ft = llvm::FunctionType::get(
-          child_ptr_type, {parent_ptr_type, llvm_index_type}, false);
-      auto accessor = llvm::Function::Create(
-          ft, llvm::Function::InternalLinkage,
-          "chain_accessor_" + ch->get_name(), module.get());
-      /*
-      accessor->addAttribute(
-          0, llvm::Attribute::get(*llvm_ctx, llvm::Attribute::AlwaysInline));
-          */
-      auto bb = BasicBlock::Create(*llvm_ctx, "body", accessor);
-      llvm::IRBuilder<> builder(bb, bb->begin());
-      std::vector<Value *> args;
-      for (auto &arg : accessor->args()) {
-        args.push_back(&arg);
-      }
-      llvm::Value *parent_ptr = args[0];
-
-      args[0]->setName("parent_ptr");
-      args[1]->setName("index");
-
-      llvm::Value *index = args[1];
-      llvm::Value *fork = nullptr;
-
-      if (snode.type == SNodeType::dense) {
-        fork = builder.CreateGEP(
-            parent_ptr,
-            {llvm::ConstantInt::get(llvm::Type::getInt32Ty(*llvm_ctx), 0),
-             index});
-      } else if (snode.type == SNodeType::root) {
-        fork = parent_ptr;
-      }
-      auto ret = builder.CreateStructGEP(fork, i);
-      builder.CreateRet(ret);
-
-      TC_WARN_IF(llvm::verifyFunction(*accessor, &errs()),
-                 "function verification failed");
-
-      chain_accessors[ch.get()] = accessor;
-    }
-    emit("");
-  }
   // SNode::place & indirect
   // emit end2end accessors for leaf (place) nodes, using chain accessors
   TC_ASSERT(max_num_indices == 4);
@@ -237,116 +177,6 @@ void StructCompilerLLVM::generate_leaf_accessors(SNode &snode) {
   verbs[mode_activate] = "activate";
   verbs[mode_query] = "query";
 
-  // TODO: mode_activate, mode_query
-
-  for (auto mode : {mode_weak_access, mode_strong_access}) {
-    if (mode == mode_weak_access || !is_leaf)
-      continue;
-    bool is_access = mode == mode_weak_access || mode == mode_strong_access;
-    auto verb = verbs[mode];
-    auto ret_type =
-        mode == mode_query ? "bool" : fmt::format("{} *", snode.node_type_name);
-    emit(
-        "TLANG_ACCESSOR TC_EXPORT {} {}_{}(void *root, int i0=0, int i1=0, "
-        "int "
-        "i2=0, "
-        "int i3=0) {{",
-        ret_type, verb, snode.node_type_name);
-    std::vector<llvm::Type *> arg_types{
-        llvm::PointerType::get(root.llvm_type, 0)};
-    for (int i = 0; i < max_num_indices; i++) {
-      arg_types.push_back(llvm_index_type);
-    }
-    auto ft = llvm::FunctionType::get(
-        llvm::PointerType::get(tlctx->get_data_type(snode.dt), 0), arg_types,
-        false);
-    auto accessor = llvm::Function::Create(
-        ft, llvm::Function::ExternalLinkage,
-        "leaf_accessor_" + snode.node_type_name, module.get());
-    auto bb = BasicBlock::Create(*llvm_ctx, "body", accessor);
-    llvm::IRBuilder<> builder(bb, bb->begin());
-    std::vector<Value *> args;
-    for (auto &arg : accessor->args()) {
-      args.push_back(&arg);
-    }
-    args[0]->setName("root_ptr");
-    for (int i = 0; i < max_num_indices; i++) {
-      args[1 + i]->setName(fmt::format("index{}", i));
-    }
-    emit("int tmp;");
-    emit("auto n0 = ({} *)root;", root_type);
-
-    llvm::Value *node = args[0];
-    for (int i = 0; i + 1 < (int)stack.size(); i++) {
-      emit("tmp = 0;", i);
-      llvm::Value *tmp = llvm::ConstantInt::get(llvm_index_type, 0);
-      for (int j = 0; j < max_num_indices; j++) {
-        auto e = stack[i]->extractors[j];
-        int b = e.num_bits;
-        if (b) {
-          if (e.num_bits == e.start || max_num_indices != 1) {
-            /*
-            emit("tmp = (tmp << {}) + ((i{} >> {}) & ((1 << {}) - 1));",
-                 e.num_bits, j, e.start, e.num_bits);
-            */
-            uint32 mask = (1u << e.num_bits) - 1;
-            tmp = builder.CreateShl(tmp, e.num_bits);
-            auto patch = builder.CreateAShr(args[j + 1], e.start);
-            patch = builder.CreateAnd(patch, mask);
-            tmp = builder.CreateAdd(tmp, patch);
-          } else {
-            TC_WARN("Emitting shortcut indexing");
-            emit("tmp = i{};", j);
-          }
-        }
-      }
-      bool force_activate = mode == mode_strong_access;
-      if (mode != mode_activate) {
-        if (force_activate)
-          emit("#if 1");
-        else
-          emit("#if defined(TC_STRUCT)");
-      }
-      if (stack[i]->type != SNodeType::place) {
-        if (mode == mode_query) {
-          if (stack[i]->need_activation())
-            emit("if (!n{}->is_active(tmp)) return false;", i);
-        } else {
-          emit("n{}->activate(tmp, {{i0, i1, i2, i3}});", i);
-        }
-      }
-      if (mode != mode_activate) {
-        emit("#endif");
-      }
-      if (mode == mode_weak_access) {
-        if (stack[i]->has_null()) {
-          emit("if (!n{}->is_active(tmp))", i);
-          emit(
-              "#if __CUDA_ARCH__\n return "
-              "({} *)Managers::get_zeros();\n #else \n return &{}_ambient;\n "
-              "#endif",
-              snode.node_type_name, snode.node_type_name, snode.node_type_name);
-        }
-      }
-      emit("auto n{} = access_{}(n{}, tmp);", i + 1,
-           stack[i + 1]->node_type_name, i);
-      node = builder.CreateCall(chain_accessors[stack[i + 1]], {node, tmp});
-    }
-    if (mode == mode_query) {
-      emit("return true;");
-    } else {
-      emit("return n{};", (int)stack.size() - 1);
-    }
-    emit("}}");
-    emit("");
-    builder.CreateRet(node);
-
-    TC_WARN_IF(llvm::verifyFunction(*accessor, &errs()),
-               "function verification failed");
-    leaf_accessors[&snode] = accessor;
-    leaf_accessor_names[&snode] = (std::string)accessor->getName();
-  }
-
   for (auto ch : snode.ch) {
     generate_leaf_accessors(*ch);
   }
@@ -355,11 +185,6 @@ void StructCompilerLLVM::generate_leaf_accessors(SNode &snode) {
 }
 
 void StructCompilerLLVM::load_accessors(SNode &snode) {
-  if (snode.type == SNodeType::place) {
-    llvm::ExitOnError exit_on_err;
-    std::string name = leaf_accessor_names[&snode];
-    snode.access_func = tlctx->lookup_function<SNode::AccessorFunction>(name);
-  }
 }
 
 void StructCompilerLLVM::run(SNode &root, bool host) {
@@ -455,7 +280,8 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
 
   tlctx->set_struct_module(module);
 
-  if (arch == Arch::x86_64) // Do not compile the GPU struct module alone since it's useless unless used with kernels
+  if (arch == Arch::x86_64)  // Do not compile the GPU struct module alone since
+                             // it's useless unless used with kernels
     tlctx->jit->addModule(std::move(module));
 
   if (host) {

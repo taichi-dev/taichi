@@ -144,6 +144,7 @@ void SNode::write_float(int i, int j, int k, int l, float64 val) {
   if (num_active_indices >= 4)
     writer_kernel->set_arg_int(3, l);
   writer_kernel->set_arg_float(num_active_indices, val);
+  get_current_program().synchronize();
   (*writer_kernel)();
 }
 
@@ -159,6 +160,7 @@ float64 SNode::read_float(int i, int j, int k, int l) {
     reader_kernel->set_arg_int(2, k);
   if (num_active_indices >= 4)
     reader_kernel->set_arg_int(3, l);
+  get_current_program().synchronize();
   (*reader_kernel)();
   if (dt == DataType::f32) {
     return get_current_program().context.get_arg<float32>(num_active_indices);
@@ -183,6 +185,7 @@ void SNode::write_int(int i, int j, int k, int l, int64 val) {
   if (num_active_indices >= 4)
     writer_kernel->set_arg_int(3, l);
   writer_kernel->set_arg_float(num_active_indices, val);
+  get_current_program().synchronize();
   (*writer_kernel)();
 }
 
@@ -198,6 +201,7 @@ int64 SNode::read_int(int i, int j, int k, int l) {
     reader_kernel->set_arg_int(2, k);
   if (num_active_indices >= 4)
     reader_kernel->set_arg_int(3, l);
+  get_current_program().synchronize();
   (*reader_kernel)();
   if (dt == DataType::i32) {
     return get_current_program().context.get_arg<int32>(num_active_indices);

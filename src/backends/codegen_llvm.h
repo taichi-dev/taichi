@@ -1006,11 +1006,12 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   }
 
   void visit(GetChStmt *stmt) override {
-    // always unvectorized
-    // it is OK to directly use GEP here since Components are "dense"
-    stmt->value = builder->CreateGEP(
-        stmt->input_ptr->value,
-        {tlctx->get_constant(0), tlctx->get_constant(stmt->chid)}, "getch");
+    auto ch = create_call(
+        stmt->output_snode->get_ch_from_parent_func_name(),
+        {builder->CreateBitCast(stmt->input_ptr->value,
+                                PointerType::getInt8PtrTy(*llvm_context))});
+    stmt->value = builder->CreateBitCast(
+        ch, PointerType::get(stmt->output_snode->llvm_type, 0));
   }
 
   void visit(ExternalPtrStmt *stmt) override {

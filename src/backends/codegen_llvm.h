@@ -996,6 +996,10 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       // call look up
       auto node_ptr = builder->CreateBitCast(
           stmt->input_snode->value, llvm::Type::getInt8PtrTy(*llvm_context));
+      if (stmt->activate) {
+        builder->CreateCall(get_runtime_function("Dense_activate"),
+                            {s_ptr, node_ptr, stmt->input_index->value});
+      }
       auto elem =
           builder->CreateCall(get_runtime_function("Dense_lookup_element"),
                               {s_ptr, node_ptr, stmt->input_index->value});

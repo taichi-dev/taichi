@@ -45,10 +45,12 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
   llvm::Type *body_type = nullptr, *aux_type = nullptr;
   aux_type = llvm::Type::getVoidTy(*ctx);
   if (type == SNodeType::dense) {
-    TC_ASSERT(snode._bitmasked == false);
     TC_ASSERT(snode._morton == false);
-    // llvm_type = llvm::ArrayType::get(ch_type, snode.max_num_elements());
     body_type = llvm::ArrayType::get(ch_type, snode.max_num_elements());
+    if (snode._bitmasked) {
+      aux_type = llvm::ArrayType::get(Type::getInt32Ty(*llvm_ctx),
+                                      (snode.max_num_elements() + 31) / 32);
+    }
   } else if (type == SNodeType::root) {
     body_type = ch_type;
   } else if (type == SNodeType::place) {

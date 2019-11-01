@@ -2,7 +2,7 @@ import taichi as ti
 
 @ti.program_test
 def test_bitmasked():
-  return
+  ti.reset()
   x = ti.var(ti.f32)
   s = ti.var(ti.i32)
 
@@ -19,6 +19,9 @@ def test_bitmasked():
       ti.atomic_add(s[None], 1)
 
   x[0] = 1
+  x[127] = 1
+  x[256] = 1
+  x[257] = 1
 
   func()
-  assert s[None] == 128
+  assert s[None] == 256

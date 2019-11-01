@@ -12,7 +12,6 @@ template <typename T>
 using Handle = std::shared_ptr<T>;
 
 constexpr int default_simd_width_x86_64 = 8;
-constexpr int default_gpu_block_size = 256;
 
 enum class Arch { x86_64, gpu };
 
@@ -340,6 +339,7 @@ struct CompileConfig {
   bool enable_profiler;
   DataType gradient_dt;
   std::string extra_flags;
+  int default_gpu_block_dim;
 
   CompileConfig();
 

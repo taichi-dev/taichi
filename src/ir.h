@@ -1812,7 +1812,7 @@ class RangeForStmt : public Stmt {
     add_operand(this->loop_var);
     add_operand(this->begin);
     add_operand(this->end);
-    block_size = default_gpu_block_size;
+    block_size = 0;
   }
 
   bool is_container_statement() const override {

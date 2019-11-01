@@ -19,7 +19,12 @@ python3 -m pip install taichi-nightly-cuda-10-1
 
 ## [Examples](https://github.com/yuanming-hu/taichi/tree/master/examples)
 ## Updates
- - (Oct 30, 2019) v0.0.72 released. Update highly recommended.
+ - (Nov 1, 2019) v0.0.77 released.
+   - **Pip wheels now support OS X 10.14+**;
+   - LLVM backend is the default backend. No need to install `gcc-7` or `clang-7` anymore. To use legacy backends, ```export TI_LLVM=0```;
+   - LLVM compilation is improved by 2x;
+   - More friendly syntax error messages.
+ - (Oct 30, 2019) v0.0.72 released.
    - LLVM GPU backend now as fast as the legacy (yet optimized) CUDA backend. To enable, ```export TI_LLVM=1```;
    - Bug fixes: LLVM `struct for` list generation.
  - (Oct 29, 2019) v0.0.71 released. LLVM GPU backend performance greatly improved. Frontend compiler now emits readable syntax error messages.
@@ -30,16 +35,7 @@ python3 -m pip install taichi-nightly-cuda-10-1
 
 Notes: 
    - You still need to clone this repo for demo scripts under `examples`. You *do not* need to execute `install.py` or `dev_setup.py`.
-   After installation using `pip` you can simply go to `examples` and execute, e.g., `python3 mpm.py`.
-   - Make sure you have `clang-7`. On Ubuntu 18.04 you can install it with `sudo apt-get install clang-7`. See [here](https://askubuntu.com/questions/1113974/using-c17-with-clang-on-ubuntu-16-04) for installing `clang-7` on Ubuntu 16.04. You will also need `g++-7` on Ubuntu16.04 (for c++17 headers).
-
-```
-# Ubuntu 16.04 only
-sudo apt-get install -y software-properties-common
-sudo add-apt-repository ppa:ubuntu-toolchain-r/test
-sudo apt update
-sudo apt install g++-7 -y
-   ```
+   After installation using `pip` you can simply go to `examples` and execute, e.g., `python3 mpm_fluid.py`.
    - Make sure you clear your legacy Taichi installation (if applicable) by cleaning the environment variables (delete `TAICHI_REPO_DIR`, and remove legacy taichi from `PYTHONPATH`) in your `.bashrc` or `.zshrc`. Or you can simply do this in your shell to temporarily clear them:
    ```
    export PYTHONPATH=

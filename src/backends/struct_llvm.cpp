@@ -42,26 +42,33 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
 
   snode.llvm_element_type = ch_type;
 
+  llvm::Type *body_type = nullptr, *aux_type = nullptr;
+  aux_type = llvm::Type::getVoidTy(*ctx);
   if (type == SNodeType::dense) {
     TC_ASSERT(snode._bitmasked == false);
     TC_ASSERT(snode._morton == false);
-    llvm_type = llvm::ArrayType::get(ch_type, snode.max_num_elements());
-    // auto body = llvm::ArrayType::get(ch_type, snode.max_num_elements());
-    // auto aux = llvm::Type::getVoidTy(*ctx);
-    // llvm_type = llvm::StructType::create(*ctx, {body, aux}, "");
+    // llvm_type = llvm::ArrayType::get(ch_type, snode.max_num_elements());
+    body_type = llvm::ArrayType::get(ch_type, snode.max_num_elements());
   } else if (type == SNodeType::root) {
-    llvm_type = ch_type;
+    body_type = ch_type;
   } else if (type == SNodeType::place) {
     if (snode.dt == DataType::f32) {
-      llvm_type = llvm::Type::getFloatTy(*ctx);
+      body_type = llvm::Type::getFloatTy(*ctx);
     } else if (snode.dt == DataType::i32) {
-      llvm_type = llvm::Type::getInt32Ty(*ctx);
+      body_type = llvm::Type::getInt32Ty(*ctx);
     } else {
-      llvm_type = llvm::Type::getDoubleTy(*ctx);
+      body_type = llvm::Type::getDoubleTy(*ctx);
     }
   } else {
     TC_P(snode.type_name());
     TC_NOT_IMPLEMENTED;
+  }
+  if (aux_type == nullptr) {
+    llvm_type = llvm::StructType::create(*ctx, {body_type, aux_type}, "");
+    snode.has_aux_structure = true;
+  } else {
+    llvm_type = body_type;
+    snode.has_aux_structure = false;
   }
   if (snode.has_null()) {
     if (get_current_program().config.arch == Arch::gpu) {
@@ -154,11 +161,19 @@ void StructCompilerLLVM::generate_leaf_accessors(SNode &snode) {
     for (auto &arg : func->args()) {
       args.push_back(&arg);
     }
+    llvm::Value *ret;
+    if (snode.has_aux_structure) {
+      ret = builder.CreateGEP(builder.CreateBitCast(args[0], inp_type),
+                              {tlctx->get_constant(0), tlctx->get_constant(0),
+                               tlctx->get_constant(parent->child_id(&snode))},
+                              "getch");
+    } else {
+      ret = builder.CreateGEP(builder.CreateBitCast(args[0], inp_type),
+                              {tlctx->get_constant(0),
+                               tlctx->get_constant(parent->child_id(&snode))},
+                              "getch");
+    }
 
-    auto ret = builder.CreateGEP(
-        builder.CreateBitCast(args[0], inp_type),
-        {tlctx->get_constant(0), tlctx->get_constant(parent->child_id(&snode))},
-        "getch");
     builder.CreateRet(
         builder.CreateBitCast(ret, llvm::Type::getInt8PtrTy(*llvm_ctx)));
   }

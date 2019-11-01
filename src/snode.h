@@ -103,6 +103,7 @@ class SNode {
   bool _bitmasked;
   llvm::Type *llvm_type;
   llvm::Type *llvm_element_type;
+  bool has_aux_structure;
 
   std::string get_node_type_name() {
     return fmt::format("S{}", id);

@@ -82,6 +82,27 @@ class BasicBlockSimplify : public IRVisitor {
     set_done(stmt);
   }
 
+  void visit(ArgLoadStmt *stmt) override {
+    if (is_done(stmt))
+      return;
+    for (int i = 0; i < current_stmt_id; i++) {
+      auto &bstmt = block->statements[i];
+      auto &bstmt_data = *bstmt;
+      if (typeid(bstmt_data) == typeid(*stmt)) {
+        if (stmt->width() == bstmt->width()) {
+          auto bstmt_ = bstmt->as<ArgLoadStmt>();
+          bool same = stmt->arg_id == bstmt_->arg_id;
+          if (same) {
+            stmt->replace_with(bstmt.get());
+            stmt->parent->erase(current_stmt_id);
+            throw IRModified();
+          }
+        }
+      }
+    }
+    set_done(stmt);
+  }
+
   void visit(ConstStmt *stmt) override {
     if (is_done(stmt))
       return;

@@ -20,15 +20,13 @@ include_directories(external/xxhash)
 
 set(LIBRARY_NAME ${CORE_LIBRARY_NAME})
 
-if(NOT CUDA_VERSION)
-    set(CUDA_VERSION 10.0)
-endif()
-
-message("Building with CUDA ${CUDA_VERSION}")
-
 if (TLANG_WITH_CUDA)
+    if(NOT CUDA_VERSION)
+        set(CUDA_VERSION 10.0)
+    endif()
     find_package(CUDA ${CUDA_VERSION})
     if (CUDA_FOUND)
+        message("Building with CUDA ${CUDA_VERSION}")
         set(CUDA_ARCH 61)
         message("Found CUDA. Arch = ${CUDA_ARCH}")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DCUDA_FOUND -DTLANG_WITH_CUDA -D TLANG_CUDA_VERSION='\"${CUDA_VERSION}\"'")

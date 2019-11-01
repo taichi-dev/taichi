@@ -346,11 +346,11 @@ CompileConfig::CompileConfig() {
   internal_optimization = true;
   external_optimization_level = 3;
   print_ir = false;
-  use_llvm = false;
+  use_llvm = true;
   auto use_llvm_char = getenv("TI_LLVM");
-  if (use_llvm_char != nullptr and use_llvm_char[0] == '1') {
-    use_llvm = true;
-    TC_INFO("Using LLVM by default (env TI_LLVM=1)");
+  if (use_llvm_char != nullptr and use_llvm_char[0] == '0') {
+    use_llvm = false;
+    TC_INFO("LLVM disabled (env TI_LLVM=0)");
   }
   print_struct_llvm_ir = false;
   print_kernel_llvm_ir = false;

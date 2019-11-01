@@ -8,7 +8,7 @@ project(taichi)
 
 SET(TI_VERSION_MAJOR 0)
 SET(TI_VERSION_MINOR 0)
-SET(TI_VERSION_PATCH 76)
+SET(TI_VERSION_PATCH 77)
 
 execute_process(
   COMMAND git rev-parse --short HEAD

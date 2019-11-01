@@ -943,8 +943,9 @@ class FrontendArgStoreStmt : public Stmt {
   FrontendArgStoreStmt(int arg_id, Expr expr) : arg_id(arg_id), expr(expr) {
   }
 
+  // Arguments are considered global (nonlocal)
   virtual bool has_global_side_effect() const override {
-    return false;
+    return true;
   }
 
   DEFINE_ACCEPT
@@ -957,10 +958,12 @@ class ArgStoreStmt : public Stmt {
   Stmt *val;
 
   ArgStoreStmt(int arg_id, Stmt *val) : arg_id(arg_id), val(val) {
+    add_operand(this->val);
   }
 
+  // Arguments are considered global (nonlocal)
   virtual bool has_global_side_effect() const override {
-    return false;
+    return true;
   }
 
   DEFINE_ACCEPT

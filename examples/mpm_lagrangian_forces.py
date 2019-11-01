@@ -1,6 +1,5 @@
 import taichi as ti
 import os
-import random
 
 real = ti.f32
 dim = 2

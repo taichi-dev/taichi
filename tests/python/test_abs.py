@@ -3,6 +3,7 @@ import taichi as ti
 @ti.program_test
 def test_abs():
   ti.reset()
+  ti.cfg.print_ir = True
   x = ti.var(ti.f32)
   y = ti.var(ti.f32)
 

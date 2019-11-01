@@ -148,19 +148,25 @@ void SNode::write_float(int i, int j, int k, int l, float64 val) {
 }
 
 float64 SNode::read_float(int i, int j, int k, int l) {
-  if (writer_kernel == nullptr) {
-    writer_kernel = &get_current_program().get_snode_writer(this);
+  if (reader_kernel == nullptr) {
+    reader_kernel = &get_current_program().get_snode_reader(this);
   }
   if (num_active_indices >= 1)
-    writer_kernel->set_arg_int(0, i);
+    reader_kernel->set_arg_int(0, i);
   if (num_active_indices >= 2)
-    writer_kernel->set_arg_int(1, j);
+    reader_kernel->set_arg_int(1, j);
   if (num_active_indices >= 3)
-    writer_kernel->set_arg_int(2, k);
+    reader_kernel->set_arg_int(2, k);
   if (num_active_indices >= 4)
-    writer_kernel->set_arg_int(3, l);
-  (*writer_kernel)();
-  return get_current_program().context.get_arg<float32>(num_active_indices);
+    reader_kernel->set_arg_int(3, l);
+  (*reader_kernel)();
+  if (dt == DataType::f32) {
+    return get_current_program().context.get_arg<float32>(num_active_indices);
+  } else if (dt == DataType::f64) {
+    return get_current_program().context.get_arg<float64>(num_active_indices);
+  } else {
+    TC_NOT_IMPLEMENTED
+  }
 }
 
 // for int32 and int64
@@ -179,8 +185,27 @@ void SNode::write_int(int i, int j, int k, int l, int64 val) {
   writer_kernel->set_arg_float(num_active_indices, val);
   (*writer_kernel)();
 }
+
 int64 SNode::read_int(int i, int j, int k, int l) {
-  return 0;
+  if (reader_kernel == nullptr) {
+    reader_kernel = &get_current_program().get_snode_reader(this);
+  }
+  if (num_active_indices >= 1)
+    reader_kernel->set_arg_int(0, i);
+  if (num_active_indices >= 2)
+    reader_kernel->set_arg_int(1, j);
+  if (num_active_indices >= 3)
+    reader_kernel->set_arg_int(2, k);
+  if (num_active_indices >= 4)
+    reader_kernel->set_arg_int(3, l);
+  (*reader_kernel)();
+  if (dt == DataType::i32) {
+    return get_current_program().context.get_arg<int32>(num_active_indices);
+  } else if (dt == DataType::i64) {
+    return get_current_program().context.get_arg<int64>(num_active_indices);
+  } else {
+    TC_NOT_IMPLEMENTED
+  }
 }
 
 TLANG_NAMESPACE_END

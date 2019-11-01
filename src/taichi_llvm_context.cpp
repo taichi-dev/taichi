@@ -63,6 +63,12 @@ TaichiLLVMContext::~TaichiLLVMContext() {
 llvm::Type *TaichiLLVMContext::get_data_type(DataType dt) {
   if (dt == DataType::i32) {
     return llvm::Type::getInt32Ty(*ctx);
+  } else if (dt == DataType::i8) {
+    return llvm::Type::getInt8Ty(*ctx);
+  } else if (dt == DataType::i16) {
+    return llvm::Type::getInt16Ty(*ctx);
+  } else if (dt == DataType::i64) {
+    return llvm::Type::getInt64Ty(*ctx);
   } else if (dt == DataType::f32) {
     return llvm::Type::getFloatTy(*ctx);
   } else if (dt == DataType::f64) {

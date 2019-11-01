@@ -214,7 +214,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       task.compile();
     }
     auto offloaded_tasks_local = offloaded_tasks;
-    return [=](Context context) {
+    return [=](Context &context) {
       for (auto task : offloaded_tasks_local) {
         task(&context);
       }
@@ -685,6 +685,24 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       auto truncated = builder->CreateTrunc(
           raw_arg, Type::getIntNTy(*llvm_context, dest_bits));
       stmt->value = builder->CreateBitCast(truncated, dest_ty);
+    }
+  }
+
+  void visit(ArgStoreStmt *stmt) {
+    if (stmt->is_ptr) {
+      TC_NOT_IMPLEMENTED
+    } else {
+      auto intermediate_bits =
+          tlctx->get_data_type(stmt->val->ret_type.data_type)
+              ->getPrimitiveSizeInBits();
+      llvm::Type *intermediate_type =
+          llvm::Type::getIntNTy(*llvm_context, intermediate_bits);
+      llvm::Type *dest_ty = tlctx->get_data_type<int64>();
+      auto extended = builder->CreateZExt(
+          builder->CreateBitCast(stmt->val->value, intermediate_type), dest_ty);
+      builder->CreateCall(
+          get_runtime_function("Context_set_args"),
+          {get_context(), tlctx->get_constant(stmt->arg_id), extended});
     }
   }
 

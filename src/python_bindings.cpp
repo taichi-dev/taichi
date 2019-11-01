@@ -24,25 +24,6 @@ void expr_assign(const Expr &lhs_, const Expr &rhs, std::string tb) {
 
 std::vector<std::unique_ptr<IRBuilder::ScopeGuard>> scope_stack;
 
-template <typename T, typename C>
-void export_accessors(C &c) {
-  c.def(
-      fmt::format("val0_{}", data_type_short_name(get_data_type<T>())).c_str(),
-      &Expr::val<T>);
-  c.def(
-      fmt::format("val1_{}", data_type_short_name(get_data_type<T>())).c_str(),
-      &Expr::val<T, int>);
-  c.def(
-      fmt::format("val2_{}", data_type_short_name(get_data_type<T>())).c_str(),
-      &Expr::val<T, int, int>);
-  c.def(
-      fmt::format("val3_{}", data_type_short_name(get_data_type<T>())).c_str(),
-      &Expr::val<T, int, int, int>);
-  c.def(
-      fmt::format("val4_{}", data_type_short_name(get_data_type<T>())).c_str(),
-      &Expr::val<T, int, int, int, int>);
-}
-
 void compile_runtimes();
 std::string libdevice_path();
 
@@ -117,6 +98,8 @@ void export_lang(py::module &m) {
            py::return_value_policy::reference)
       .def("data_type", [](SNode *snode) { return snode->dt; })
       .def("lazy_grad", &SNode::lazy_grad)
+      .def("read_int", &SNode::read_int)
+      .def("read_float", &SNode::read_float)
       .def("write_int", &SNode::write_int)
       .def("write_float", &SNode::write_float)
       .def("num_active_indices",
@@ -140,12 +123,6 @@ void export_lang(py::module &m) {
            })
       .def("set_grad", &Expr::set_grad)
       .def("get_raw_address", [](Expr *expr) { return (uint64)expr; });
-
-  export_accessors<int32>(expr);
-  export_accessors<int64>(expr);
-
-  export_accessors<float32>(expr);
-  export_accessors<float64>(expr);
 
   py::class_<ExprGroup>(m, "ExprGroup")
       .def(py::init<>())

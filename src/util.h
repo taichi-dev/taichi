@@ -36,7 +36,7 @@ real measure_cpe(std::function<void()> target,
 
 struct Context;
 
-using FunctionType = std::function<void(Context)>;
+using FunctionType = std::function<void(Context &)>;
 
 enum class DataType : int {
   f16,

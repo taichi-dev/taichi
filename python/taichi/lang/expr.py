@@ -161,15 +161,19 @@ class Expr:
     if self.getter:
       return
     snode = self.ptr.snode()
-    num_ind = snode.num_active_indices()
-    dt_name = taichi_lang_core.data_type_short_name(snode.data_type())
-    self.getter = getattr(self.ptr, 'val{}_{}'.format(num_ind, dt_name))
+    
     if self.snode().data_type() == f32 or self.snode().data_type() == f64:
+      def getter(*key):
+        return snode.read_float(key[0], key[1], key[2], key[3])
       def setter(value, *key):
-        self.snode().ptr.write_float(key[0], key[1], key[2], key[3], value)
+        snode.write_float(key[0], key[1], key[2], key[3], value)
     else:
+      def getter(*key):
+        return snode.read_int(key[0], key[1], key[2], key[3])
       def setter(value, *key):
-        self.snode().ptr.write_int(key[0], key[1], key[2], key[3], value)
+        snode.write_int(key[0], key[1], key[2], key[3], value)
+        
+    self.getter = getter
     self.setter = setter
 
   def __setitem__(self, key, value):
@@ -188,11 +192,11 @@ class Expr:
       self.materialize_layout_callback()
     self.initialize_accessor()
     if key is None:
-      return self.getter()
-    else:
-      if not isinstance(key, tuple):
-        key = (key, )
-      return self.getter(*key)
+      key = ()
+    if not isinstance(key, tuple):
+      key = (key, )
+    key = key + ((0, ) * (4 - len(key)))
+    return self.getter(*key)
 
   def loop_range(self):
     return self

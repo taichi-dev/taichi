@@ -3,7 +3,7 @@
 #if defined(CUDA_FOUND)
 #include <cuda_runtime.h>
 #endif
-#include "util.h"
+#include "tlang_util.h"
 #include <taichi/unified_allocator.h>
 #include <taichi/system/virtual_memory.h>
 #include <string>

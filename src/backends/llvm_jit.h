@@ -8,7 +8,7 @@
 // https://llvm.org/docs/tutorial/BuildingAJIT2.html
 // leads to a JIT that crashes all C++ exception after JIT session destruction...
 
-#include "../util.h"
+#include "../tlang_util.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ExecutionEngine/ExecutionEngine.h"
 #include "llvm/ExecutionEngine/JITSymbol.h"

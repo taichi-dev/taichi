@@ -3,7 +3,7 @@
 #pragma once
 
 #include "base.h"
-#include "../util.h"
+#include "../tlang_util.h"
 #include "../program.h"
 
 TLANG_NAMESPACE_BEGIN

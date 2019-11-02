@@ -5,7 +5,7 @@
 #include <atomic>
 #include <taichi/util.h>
 #include <taichi/common/bit.h>
-#include "util.h"
+#include "tlang_util.h"
 #include "snode.h"
 
 namespace llvm {

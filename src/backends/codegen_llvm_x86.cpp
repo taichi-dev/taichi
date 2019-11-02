@@ -6,7 +6,7 @@
 #include <taichi/io/io.h>
 #include <set>
 
-#include "../util.h"
+#include "../tlang_util.h"
 #include "codegen_x86.h"
 #include "../program.h"
 #include "../ir.h"

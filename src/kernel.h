@@ -1,6 +1,6 @@
 #pragma once
 
-#include "util.h"
+#include "tlang_util.h"
 #include "snode.h"
 #include "ir.h"
 

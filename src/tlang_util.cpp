@@ -1,6 +1,6 @@
 // Definitions of utility functions and enums
 
-#include "util.h"
+#include "tlang_util.h"
 #include <taichi/system/timer.h>
 
 TC_NAMESPACE_BEGIN

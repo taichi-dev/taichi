@@ -5,7 +5,7 @@
 #include <set>
 
 #include "cuda_context.h"
-#include "../util.h"
+#include "../tlang_util.h"
 #include "codegen_cuda.h"
 #include "../program.h"
 #include "../ir.h"

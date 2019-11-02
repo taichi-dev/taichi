@@ -22,7 +22,7 @@ inline int maximum(int a) {
 #include <set>
 #include <dlfcn.h>
 
-#include "util.h"
+#include "tlang_util.h"
 #include "math.h"
 #include "program.h"
 

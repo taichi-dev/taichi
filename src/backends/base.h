@@ -1,7 +1,7 @@
 // The code generator base class
 
 #pragma once
-#include "../util.h"
+#include "../tlang_util.h"
 #include "../snode.h"
 #include "../ir.h"
 #include "../program.h"

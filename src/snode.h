@@ -1,5 +1,5 @@
 #pragma once
-#include "util.h"
+#include "tlang_util.h"
 #include "llvm_fwd.h"
 #include <taichi/common/bit.h>
 

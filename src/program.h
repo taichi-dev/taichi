@@ -6,7 +6,7 @@
 #include <taichi/unified_allocator.h>
 #include <taichi/profiler.h>
 #include <atomic>
-#include "util.h"
+#include "tlang_util.h"
 #include "snode.h"
 #include "ir.h"
 #include "taichi_llvm_context.h"

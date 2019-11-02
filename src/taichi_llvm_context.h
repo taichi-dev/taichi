@@ -1,7 +1,7 @@
 #pragma once
 // A helper for the llvm backend
 
-#include "util.h"
+#include "tlang_util.h"
 #include "llvm_fwd.h"
 
 TLANG_NAMESPACE_BEGIN

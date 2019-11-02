@@ -29,7 +29,6 @@ for p in projects:
     os.remove(fn)
 
     pkg_ver = f"{pkg_name_underscore}-{version}"
-    lib_dir = f'release/{folder}/{pkg_ver}.data/purelib/taichi/lib'
-    shutil.move(lib_dir, f'release/{folder}-lib')
+    shutil.make_archive(f'release/{folder}', 'zip', f'release/{folder}/{pkg_ver}.data/purelib/taichi/lib')
     shutil.rmtree(package_extracted_folder)
 

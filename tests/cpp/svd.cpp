@@ -3,7 +3,6 @@
 #include <numeric>
 #include <taichi/visual/gui.h>
 #include <taichi/system/threading.h>
-#include <taichi/math/svd.h>
 #include "scalar_svd.h"
 #include "svd.h"
 
@@ -45,56 +44,6 @@ void sifakis_svd_gt(Matrix3 &a,
       sig(0), sig(1), sig(2)
   );
   // clang-format on
-}
-
-int g_i = 1;
-int g_j = 1;
-
-TC_TEST("svd_benchmark") {
-  return;
-  using Matrix = TMatrix<float32, 3>;
-  using Vector = TVector<float32, 3>;
-  int N = 10000;
-  auto cpe1 = measure_cpe(
-      [&] {
-        for (int i = 0; i < N; i++) {
-          Matrix m = Matrix::rand();
-          Matrix U, sig, V, Q, R, S;
-          Vector sig_vec;
-          sifakis_svd_gt<4>(m, U, V, sig_vec);
-          trash(U(g_i, g_j));
-        }
-      },
-      N);
-  TC_INFO("Sifakis SVD CPE: {}", cpe1);
-
-  auto cpe2 = measure_cpe(
-      [&] {
-        for (int i = 0; i < N; i++) {
-          Matrix m = Matrix::rand();
-          Matrix U, sig, V, Q, R, S;
-          taichi::svd(m, U, sig, V);
-          trash(U(g_i, g_j));
-        }
-      },
-      N);
-  TC_INFO("Jixie SVD CPE: {}", cpe2);
-
-  /*
-  if (dim == 2) {
-    qr_decomp(m, Q, R);
-    TC_CHECK_EQUAL(m, Q * R, tolerance);
-    TC_CHECK_EQUAL(Q * transposed(Q), Matrix(1), tolerance);
-    CHECK(abs(R[0][1]) < 1e-6_f);
-    CHECK(R[0][0] > -1e-6_f);
-    CHECK(R[1][1] > -1e-6_f);
-  }
-
-  polar_decomp(m, R, S);
-  TC_CHECK_EQUAL(m, R * S, tolerance);
-  TC_CHECK_EQUAL(Matrix(1), R * transposed(R), tolerance);
-  TC_CHECK_EQUAL(S, transposed(S), tolerance);
-  */
 }
 
 TC_TEST("svd_scalar") {

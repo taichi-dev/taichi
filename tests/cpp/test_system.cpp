@@ -5,8 +5,6 @@
 
 #include <taichi/util.h>
 #include <taichi/testing.h>
-#include <taichi/math/svd.h>
-#include <taichi/math/eigen.h>
 #include <taichi/system/virtual_memory.h>
 
 TC_NAMESPACE_BEGIN

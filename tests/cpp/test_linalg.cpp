@@ -5,8 +5,6 @@
 
 #include <taichi/util.h>
 #include <taichi/testing.h>
-#include <taichi/math/svd.h>
-#include <taichi/math/eigen.h>
 
 TC_NAMESPACE_BEGIN
 
@@ -25,16 +23,6 @@ void test_matrix() {
       TC_CHECK_EQUAL(m * inversed(m), Matrix(1), tolerance);
     }
   }
-}
-
-template <typename T, int dim>
-void test_conversion() {
-  using Vector = VectorND<dim, T>;
-  using Matrix = MatrixND<dim, T>;
-  Vector vec = Vector::rand();
-  Matrix mat = Matrix::rand();
-  CHECK(from_eigen<dim, T>(to_eigen(vec)) == vec);
-  CHECK(from_eigen<dim, T>(to_eigen(mat)) == mat);
 }
 
 TC_TEST("vector arith") {
@@ -96,58 +84,6 @@ TC_TEST("vector arith") {
                 "VectorND should be VectorND");
   static_assert(!type::is_VectorND<std::string>(),
                 "std::string is not VectorND.");
-}
-
-TC_TEST("eigen_conversion") {
-  for (int T = 0; T < 1000; T++) {
-    test_conversion<float32, 2>();
-    test_conversion<float32, 3>();
-    test_conversion<float32, 4>();
-    test_conversion<float64, 2>();
-    test_conversion<float64, 3>();
-    test_conversion<float64, 4>();
-    test_conversion<int, 2>();
-    test_conversion<int, 3>();
-    test_conversion<int, 4>();
-  }
-}
-
-template <int dim, typename T>
-inline void test_decompositions() {
-  using Matrix = MatrixND<dim, T>;
-  T tolerance = std::is_same<T, float32>() ? 3e-5_f32 : 1e-12_f32;
-  for (int i = 0; i < 100; i++) {
-    Matrix m = Matrix::rand();
-    Matrix U, sig, V, Q, R, S;
-
-    svd(m, U, sig, V);
-    TC_CHECK_EQUAL(m, U * sig * transposed(V), tolerance);
-    TC_CHECK_EQUAL(Matrix(1), U * transposed(U), tolerance);
-    TC_CHECK_EQUAL(Matrix(1), V * transposed(V), tolerance);
-    TC_CHECK_EQUAL(sig, Matrix(sig.diag()), tolerance);
-
-    if (dim == 2) {
-      qr_decomp(m, Q, R);
-      TC_CHECK_EQUAL(m, Q * R, tolerance);
-      TC_CHECK_EQUAL(Q * transposed(Q), Matrix(1), tolerance);
-      CHECK(abs(R[0][1]) < 1e-6_f);
-      CHECK(R[0][0] > -1e-6_f);
-      CHECK(R[1][1] > -1e-6_f);
-    }
-
-    polar_decomp(m, R, S);
-    TC_CHECK_EQUAL(m, R * S, tolerance);
-    TC_CHECK_EQUAL(Matrix(1), R * transposed(R), tolerance);
-    TC_CHECK_EQUAL(S, transposed(S), tolerance);
-  }
-};
-
-TC_TEST("decompositions") {
-  return;
-  test_decompositions<2, float32>();
-  test_decompositions<3, float32>();
-  test_decompositions<2, float64>();
-  test_decompositions<3, float64>();
 }
 
 TC_NAMESPACE_END

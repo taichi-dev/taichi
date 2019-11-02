@@ -2,7 +2,6 @@
 
 #include "util.h"
 #include <taichi/system/timer.h>
-#include <Eigen/Eigen>
 
 TC_NAMESPACE_BEGIN
 
@@ -453,8 +452,6 @@ void initialize_benchmark() {
   TC_WARN_IF(c != '1',
              "You seem to be running the benchmark with Intel Turboboost.");
 #endif
-  TC_INFO("Eigen Version {}.{}.{}", EIGEN_WORLD_VERSION, EIGEN_MAJOR_VERSION,
-          EIGEN_MINOR_VERSION);
   TC_INFO("GCC   Version {}.{}.{}", __GNUC__, __GNUC_MINOR__,
           __GNUC_PATCHLEVEL__);
   // TC_INFO("NVCC  Version {}.{}.{}", __CUDACC_VER_MAJOR__,

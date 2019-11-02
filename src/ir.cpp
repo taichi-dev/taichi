@@ -4,7 +4,6 @@
 
 #include <numeric>
 #include "tlang.h"
-#include <Eigen/Dense>
 
 TLANG_NAMESPACE_BEGIN
 

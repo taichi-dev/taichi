@@ -13,13 +13,23 @@ def download(url):
   return fn
 
 for p in projects:
-  package = requests.get(f"https://pypi.python.org/pypi/taichi-{p}/json").json()
-  wheels = package["releases"]['0.0.75']
+  pkg_name_dash = f'taichi-{p}'
+  pkg_name_underscore = pkg_name_dash.replace('-', '_')
+  package = requests.get(f"https://pypi.python.org/pypi/{pkg_name_dash}/json").json()
+  version = '0.0.75'
+  wheels = package["releases"][version]
   for wheel in wheels:
-    print(wheel['python_version'], wheel['url'])
+    py_ver = wheel['python_version']
+    print(py_ver, wheel['url'])
     fn = download(wheel['url'])
     folder = wheel['python_version'] + '-' + fn[:-4]
+    package_extracted_folder = f"release/{folder}"
     with zipfile.ZipFile(fn, 'r') as zip_ref:
-      zip_ref.extractall('release/{}'.format(folder))
+      zip_ref.extractall(package_extracted_folder)
     os.remove(fn)
+
+    pkg_ver = f"{pkg_name_underscore}-{version}"
+    lib_dir = f'release/{folder}/{pkg_ver}.data/purelib/taichi/lib'
+    shutil.move(lib_dir, f'release/{folder}-lib')
+    shutil.rmtree(package_extracted_folder)
 

@@ -9,14 +9,15 @@ file(GLOB TAICHI_CORE_SOURCE
         "include/taichi/*/*/*/*.h" "include/taichi/*/*/*.h" "include/taichi/*/*.h")
 
 file(GLOB_RECURSE PROJECT_SOURCES "lang/headers/*.h" "external/xxhash/*.c" "tests/cpp/*.cpp" "lang/cpp_examples/*.cpp")
-include_directories(lang/include)
 
 add_library(${CORE_LIBRARY_NAME} SHARED ${TAICHI_CORE_SOURCE} ${PROJECT_SOURCES} ${SPGridSource})
 
 option(USE_STDCPP "Use -stdlib=libc++" OFF)
 option(TLANG_WITH_CUDA "Build with GPU support" ON)
 
+include_directories(${CMAKE_SOURCE_DIR})
 include_directories(external/xxhash)
+include_directories(external/include)
 
 set(LIBRARY_NAME ${CORE_LIBRARY_NAME})
 
@@ -115,9 +116,6 @@ if (WIN32)
     set_target_properties(${CORE_LIBRARY_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY
             "${CMAKE_CURRENT_SOURCE_DIR}/runtimes")
 endif ()
-
-include_directories(include)
-include_directories(external/include)
 
 #add_custom_target(
 #        clangformat

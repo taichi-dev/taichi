@@ -24,7 +24,7 @@ string(STRIP ${TI_COMMIT_SHORT_HASH} TI_COMMIT_SHORT_HASH)
 message("Taichi Version ${TI_VERSION_MAJOR}.${TI_VERSION_MINOR}.${TI_VERSION_PATCH}")
 message("       Commit ${TI_COMMIT_HASH}")
 
-FILE(WRITE ${CMAKE_CURRENT_LIST_DIR}/include/taichi/common/version.h
+FILE(WRITE ${CMAKE_CURRENT_LIST_DIR}/taichi/common/version.h
         "#pragma once\n"
         "#define TI_VERSION_MAJOR \"${TI_VERSION_MAJOR}\"\n"
         "#define TI_VERSION_MINOR \"${TI_VERSION_MINOR}\"\n"

@@ -404,7 +404,7 @@ class GPUIRCodeGen : public IRVisitor {
           stmt->accept(this);
         }
       } else if (pure_loop) {
-        emit("extern \"C\" void {} (Context context) {{\n", codegen->func_name);
+        emit("extern \"C\" void {} (Context &context) {{\n", codegen->func_name);
         emit("auto root = ({} *)context.buffers[0];",
              current_program->snode_root->node_type_name);
         for (int i = 0; i < (int)stmt_list->statements.size(); i++) {
@@ -426,7 +426,7 @@ class GPUIRCodeGen : public IRVisitor {
         emit("}}\n\n");
 
         // CPU Kernel code
-        emit("extern \"C\" void {} (Context context) {{\n", codegen->func_name);
+        emit("extern \"C\" void {} (Context &context) {{\n", codegen->func_name);
         emit("gpu_runtime_init();");
 
         if (cfg.enable_profiler)
@@ -936,7 +936,7 @@ class GPUIRCodeGen : public IRVisitor {
     emit("}}");  // end for
     emit("}}");  // end kernel
 
-    emit("extern \"C\" void {} (Context context) {{\n", codegen->func_name);
+    emit("extern \"C\" void {} (Context &context) {{\n", codegen->func_name);
     emit("auto root = ({} *)context.buffers[0];",
          current_program->snode_root->node_type_name);
     emit("{{");

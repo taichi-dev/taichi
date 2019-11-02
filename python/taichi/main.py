@@ -9,8 +9,8 @@ def test_python():
   print("\nRunning python tests...\n")
   import taichi as ti
   import pytest
-  return pytest.main([os.path.join(ti.get_repo_directory(), 'tests')])
-  
+  return int(pytest.main([os.path.join(ti.get_repo_directory(), 'tests')]))
+
 def test_cpp():
   import taichi as ti
   if not ti.core.with_cuda():
@@ -172,4 +172,4 @@ def main(debug=False):
   print(">>> Running time: {:.2f}s".format(time.time() - t))
 
 if __name__ == '__main__':
-  main()
+  exit(main())

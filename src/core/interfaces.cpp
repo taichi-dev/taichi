@@ -9,7 +9,6 @@
 #include <taichi/visual/texture.h>
 #include <taichi/image/tone_mapper.h>
 #include <taichi/io/image_reader.h>
-#include <taichi/math/sdf.h>
 #include <taichi/visual/sampler.h>
 #include <taichi/visual/framebuffer.h>
 #include <taichi/system/benchmark.h>
@@ -17,7 +16,6 @@
 TC_NAMESPACE_BEGIN
 
 TC_INTERFACE_DEF(Texture, "texture")
-TC_INTERFACE_DEF(SDF, "sdf")
 TC_INTERFACE_DEF(Sampler, "sampler")
 TC_INTERFACE_DEF(Framebuffer, "framebuffer")
 TC_INTERFACE_DEF(Benchmark, "benchmark")

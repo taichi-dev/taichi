@@ -4,19 +4,12 @@
 *******************************************************************************/
 
 #include <taichi/python/export.h>
-#include <taichi/math/sdf.h>
 #include <taichi/common/asset_manager.h>
 
 #include <taichi/geometry/factory.h>
-#include <taichi/math/levelset.h>
 #include <taichi/visual/gui.h>
 
 TC_NAMESPACE_BEGIN
-
-template <typename T, typename V>
-V address_as(T &obj) {
-  return (V)(&obj);
-};
 
 void export_visual(py::module &m) {
 

@@ -5,12 +5,11 @@
 
 #include <taichi/python/export.h>
 #include <taichi/common/dict.h>
-#include <taichi/math/levelset.h>
 #include <taichi/visualization/rgb.h>
-#include <taichi/math/levelset.h>
 #include <taichi/image/operations.h>
 
-// TODO: these "make_opaque" macros disables pybind11 from resolving [1] as std::vector<int>. Why?
+// TODO: these "make_opaque" macros disables pybind11 from resolving [1] as
+// std::vector<int>. Why?
 /*
 PYBIND11_MAKE_OPAQUE(std::vector<int>);
 PYBIND11_MAKE_OPAQUE(std::vector<taichi::float32>);
@@ -46,19 +45,6 @@ void ndarray_to_image_buffer(T *arr,
           input)[ind.i * channels * height + ind.j * channels + i];
     }
   }
-}
-
-std::string rasterize_levelset(const LevelSet2D &levelset,
-                               int width,
-                               int height) {
-  std::string ret;
-  for (auto &ind : Region2D(0, width, 0, height)) {
-    real c = -levelset.sample((ind.i + 0.5f) / width * levelset.get_width(),
-                              (ind.j + 0.5f) / height * levelset.get_height());
-    RGB rgb(c, c, c);
-    rgb.append_to_string(ret);
-  }
-  return ret;
 }
 
 template <typename T, int channels>
@@ -296,8 +282,6 @@ struct VectorRegistration<VectorND<dim, T, ISE>> {
 };
 
 void export_math(py::module &m) {
-  m.def("rasterize_levelset", rasterize_levelset);
-
   py::class_<Config>(m, "Config");
 
 #define EXPORT_ARRAY_2D_OF(T, C)                             \
@@ -347,58 +331,6 @@ void export_math(py::module &m) {
       .def("rasterize_scale", &Array2D<Vector4>::rasterize_scale)
       .def("to_ndarray", &array2d_to_ndarray<Array2D<Vector4>, 4>);
 
-  py::class_<LevelSet2D, std::shared_ptr<LevelSet2D>>(m, "LevelSet2D",
-                                                      PyArray2Dreal)
-      .def(py::init<Vector2i, Vector2>())
-      .def("get_width", &LevelSet2D::get_width)
-      .def("get_height", &LevelSet2D::get_height)
-      .def("get", &LevelSet2D::get_copy)
-      .def("set", static_cast<void (LevelSet2D::*)(int, int, const real &)>(
-                      &LevelSet2D::set))
-      .def("add_sphere", &LevelSet2D::add_sphere)
-      .def("add_polygon", &LevelSet2D::add_polygon)
-      .def("add_plane", &LevelSet2D::add_plane)
-      .def("add_slope", &LevelSet2D::add_slope)
-      .def("get_gradient", &LevelSet2D::get_gradient)
-      .def("rasterize", &LevelSet2D::rasterize)
-      .def("sample", static_cast<real (LevelSet2D::*)(real, real) const>(
-                         &LevelSet2D::sample))
-      .def("get_normalized_gradient", &LevelSet2D::get_normalized_gradient)
-      .def("to_ndarray", &array2d_to_ndarray<LevelSet2D, 1>)
-      .def("get_channels", &return_constant<LevelSet2D, 1>)
-      .def_readwrite("friction", &LevelSet2D::friction);
-
-  py::class_<DynamicLevelSet3D>(m, "DynamicLevelSet3D")
-      .def(py::init<>())
-      .def("initialize", &DynamicLevelSet3D::initialize);
-
-  py::class_<LevelSet3D, std::shared_ptr<LevelSet3D>>(m, "LevelSet3D",
-                                                      PyArray3Dreal)
-      .def(py::init<Vector3i, Vector3>())
-      .def("get_width", &LevelSet3D::get_width)
-      .def("get_height", &LevelSet3D::get_height)
-      .def("get", &LevelSet3D::get_copy)
-      .def("set",
-           static_cast<void (LevelSet3D::*)(int, int, int, const real &)>(
-               &LevelSet3D::set))
-      .def("add_sphere", &LevelSet3D::add_sphere)
-      .def("add_plane", &LevelSet3D::add_plane)
-      .def("add_cuboid", &LevelSet3D::add_cuboid)
-      .def("add_slope", &LevelSet3D::add_slope)
-      .def("add_cylinder", &LevelSet3D::add_cylinder)
-      .def("global_increase", &LevelSet3D::global_increase)
-      .def("get_gradient", &LevelSet3D::get_gradient)
-      .def("rasterize", &LevelSet3D::rasterize)
-      .def("sample", static_cast<real (LevelSet3D::*)(real, real, real) const>(
-                         &LevelSet3D::sample))
-      .def("get_normalized_gradient", &LevelSet3D::get_normalized_gradient)
-      .def("get_channels", &return_constant<LevelSet3D, 1>)
-      .def_readwrite("friction", &LevelSet3D::friction);
-
-  py::class_<DynamicLevelSet2D>(m, "DynamicLevelSet2D")
-      .def(py::init<>())
-      .def("initialize", &DynamicLevelSet2D::initialize);
-
   m.def("points_inside_polygon", points_inside_polygon);
   m.def("points_inside_sphere", points_inside_sphere);
   m.def("make_range", make_range);
@@ -415,15 +347,6 @@ void export_math(py::module &m) {
       .def("rotate_euler", &matrix4_rotate_euler)
       .def("rotate_angle_axis", &matrix4_rotate_angle_axis)
       .def("get_ptr_string", &Config::get_ptr_string<Matrix4>);
-
-  m.def("gaussian_blur_real", gaussian_blur<2, real>);
-  m.def("gaussian_blur_vec3", gaussian_blur<2, Vector3>);
-
-  m.def("box_blur_real", box_blur<real>);
-  m.def("box_blur_vec3", box_blur<Vector3>);
-
-  m.def("blur_with_depth", blur_with_depth);
-  m.def("seam_carving", seam_carving);
 
   // VectorRegistration<Vector1>::run(m);
   VectorRegistration<Vector2f>::run(m);

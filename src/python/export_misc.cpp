@@ -6,7 +6,6 @@
 #include <taichi/common/task.h>
 #include <taichi/image/tone_mapper.h>
 #include <taichi/math/math.h>
-#include <taichi/math/sdf.h>
 #include <taichi/python/exception.h>
 #include <taichi/python/export.h>
 #include <taichi/system/benchmark.h>
@@ -22,16 +21,6 @@
 TC_NAMESPACE_BEGIN
 
 extern Function11 python_at_exit;
-
-/*
-py::dict py_dict_from_py_config(const Config &config) {
-  py::dict d;
-  for (auto key : config.get_keys()) {
-    d[key] = config.get<std::string>(key);
-  }
-  return d;
-}
-*/
 
 Config config_from_py_dict(py::dict &c) {
   Config config;

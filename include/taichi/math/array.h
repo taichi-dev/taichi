@@ -8,7 +8,6 @@
 #include "array_1d.h"
 #include "array_2d.h"
 #include "array_3d.h"
-#include "array_op.h"
 
 TC_NAMESPACE_BEGIN
 template <int dim>

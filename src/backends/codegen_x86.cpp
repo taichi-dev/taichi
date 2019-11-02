@@ -827,7 +827,7 @@ void CPUCodeGen::lower() {
 void CPUCodeGen::codegen() {
   generate_header();
 
-  emit("extern \"C\" void " + func_name + "(Context context) {{\n");
+  emit("extern \"C\" void " + func_name + "(Context &context) {{\n");
   emit("auto root = ({} *)context.buffers[0];",
        prog->snode_root->node_type_name);
 

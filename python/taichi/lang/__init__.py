@@ -69,8 +69,12 @@ def simple_test(func):
 
 # test with all archs
 def program_test(func):
+  import taichi as ti
   def test(*args, **kwargs):
-    for arch in [x86_64, cuda]:
+    archs = [x86_64]
+    if ti.with_cuda():
+      archs.append(cuda)
+    for arch in archs:
       reset()
       cfg.arch = arch
       func(*args, **kwargs)

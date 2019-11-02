@@ -260,10 +260,7 @@ struct VectorRegistration<VectorND<dim, T, ISE>> {
         .def("cast_int", &Vector::template cast<int>)
         .def("D", [](Vector *) { return Vector::dim; })
         .def("__len__", [](Vector *) { return Vector::dim; })
-        //.def("__getitem__", static_cast<T
-        //(Vector::*)(int)>(&Vector::operator[]))
         .def("__getitem__", [](Vector *vec, int i) { return (*vec)[i]; })
-        .def("ise", [](Vector *) { return Vector::ise; })
         .def("simd", [](Vector *) { return Vector::simd; })
         .def("abs", &Vector::abs)
         .def("floor", &Vector::floor)

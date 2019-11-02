@@ -26,7 +26,7 @@ StructCompiler::StructCompiler() : CodeGenBase(), loopgen(this) {
     emit("#define TL_DEBUG");
   }
   emit("#define TL_HOST");
-  emit("#include <taichi/kernel.h>");
+  emit("#include <taichi/legacy_kernel.h>");
   emit(" namespace taichi {{");
   emit(" namespace Tlang {{");
   emit("\n");

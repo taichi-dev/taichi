@@ -95,7 +95,7 @@ std::string get_runtime_fn(Arch arch) {
 }
 
 std::string get_runtime_dir() {
-  return get_repo_dir() + "/src/runtime/";
+  return get_repo_dir() + "/taichi/runtime/";
 }
 
 void compile_runtime_bitcode(Arch arch) {

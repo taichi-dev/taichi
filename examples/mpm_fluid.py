@@ -9,9 +9,10 @@ n_particles = 8192 * 4
 n_grid = 256
 dx = 1 / n_grid
 inv_dx = 1 / dx
-dt = 1e-4
-p_mass = 1
-p_vol = 1
+dt = 2.0e-4
+p_vol = (dx * 0.5) ** 2
+p_rho = 1
+p_mass = p_vol * p_rho
 E = 100
 
 scalar = lambda: ti.var(dt=real)
@@ -24,8 +25,8 @@ C, J = mat(), scalar()
 
 # ti.cfg.arch = ti.x86_64
 ti.cfg.arch = ti.cuda
-ti.cfg.verbose_kernel_launches = True
-ti.cfg.default_gpu_block_dim = 32
+# ti.cfg.verbose_kernel_launches = True
+# ti.cfg.default_gpu_block_dim = 32
 
 @ti.layout
 def place():

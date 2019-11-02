@@ -364,13 +364,15 @@ CompileConfig::CompileConfig() {
   gcc_version = -2;  // not 7 for faster compilation
                      // Use clang for faster speed
 #endif
-  if (gcc_version == -2 && !command_exist("clang-7")) {
-    TC_WARN("Command clang-7 not found. Attempting clang");
-    gcc_version = -1;
-  }
-  if (gcc_version == -1 && !command_exist("clang")) {
-    TC_WARN("Command clang not found. Attempting gcc-6");
-    gcc_version = 6;
+  if (!use_llvm) {
+    if (gcc_version == -2 && !command_exist("clang-7")) {
+      TC_WARN("Command clang-7 not found. Attempting clang");
+      gcc_version = -1;
+    }
+    if (gcc_version == -1 && !command_exist("clang")) {
+      TC_WARN("Command clang not found. Attempting gcc-6");
+      gcc_version = 6;
+    }
   }
   lazy_compilation = true;
   serial_schedule = false;

@@ -285,7 +285,8 @@ def clean_libs():
 
 at_startup()
 
-print('[Taichi version {}]'.format(tc_core.get_version_string()))
+device_string = 'cpu only' if not tc_core.with_cuda() else 'cuda {}'.format(tc_core.cuda_version())
+print('[Taichi version {}, {}, commit {}]'.format(tc_core.get_version_string(), device_string, tc_core.get_commit_hash()[-8:]))
 
 if not is_release():
   tc_core.set_core_trigger_gdb_when_crash(True)

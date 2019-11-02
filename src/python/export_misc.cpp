@@ -96,6 +96,14 @@ std::string cuda_version() {
 #endif
 }
 
+bool with_cuda() {
+#if defined(TLANG_WITH_CUDA)
+  return true;
+#else
+  return false;
+#endif
+}
+
 void export_misc(py::module &m) {
   py::register_exception_translator([](std::exception_ptr p) {
     try {
@@ -165,7 +173,7 @@ void export_misc(py::module &m) {
   m.def("get_python_package_dir", get_python_package_dir);
   m.def("set_python_package_dir", set_python_package_dir);
   m.def("cuda_version", cuda_version);
-  m.def("test_cpp_exception", []{
+  m.def("test_cpp_exception", [] {
     try {
       throw std::exception();
     } catch (const std::exception &e) {
@@ -173,6 +181,7 @@ void export_misc(py::module &m) {
     }
     printf("test was successful.\n");
   });
+  m.def("with_cuda", with_cuda);
 }
 
 TC_NAMESPACE_END

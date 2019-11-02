@@ -10,10 +10,14 @@ def test_python():
   import taichi as ti
   import pytest
   pytest.main([os.path.join(ti.get_repo_directory(), 'tests')])
-  ti.reset()
   
 def test_cpp():
   import taichi as ti
+  if not ti.core.with_cuda():
+    print("skipping legacy tests since no GPU supported")
+  # Cpp tests use the legacy non LLVM backend
+  os.environ['TI_LLVM'] = '0'
+  ti.reset()
   print("Running C++ tests...")
   task = ti.Task('test')
   task.run(*sys.argv[2:])

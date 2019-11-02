@@ -348,7 +348,7 @@ CompileConfig::CompileConfig() {
   print_ir = false;
   use_llvm = true;
   auto use_llvm_char = getenv("TI_LLVM");
-  if (use_llvm_char != nullptr and use_llvm_char[0] == '0') {
+  if (use_llvm_char != nullptr && use_llvm_char[0] == '0') {
     use_llvm = false;
     TC_INFO("LLVM disabled (env TI_LLVM=0)");
   }

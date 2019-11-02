@@ -12,7 +12,7 @@ SET(TI_VERSION_PATCH 78)
 
 execute_process(
   COMMAND git rev-parse --short HEAD
-  RESULT_VARIABLE SHORT_HASH_RESULT 
+  RESULT_VARIABLE SHORT_HASH_RESULT
   OUTPUT_VARIABLE TI_COMMIT_SHORT_HASH)
 execute_process(
   COMMAND git rev-parse HEAD
@@ -24,9 +24,13 @@ string(STRIP ${TI_COMMIT_SHORT_HASH} TI_COMMIT_SHORT_HASH)
 message("Taichi Version ${TI_VERSION_MAJOR}.${TI_VERSION_MINOR}.${TI_VERSION_PATCH}")
 message("       Commit ${TI_COMMIT_HASH}")
 
-set(CMAKE_CXX_FLAGS " -DTI_VERSION_MAJOR=${TI_VERSION_MAJOR} -DTI_VERSION_MINOR=${TI_VERSION_MINOR} -DTI_VERSION_PATCH=${TI_VERSION_PATCH} ")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_COMMIT_HASH='\"${TI_COMMIT_HASH}\"' ")
-message("${CMAKE_CXX_FLAGS}")
+FILE(WRITE ${CMAKE_CURRENT_LIST_DIR}/include/taichi/common/version.h
+        "#pragma once\n"
+        "#define TI_VERSION_MAJOR \"${TI_VERSION_MAJOR}\"\n"
+        "#define TI_VERSION_MINOR \"${TI_VERSION_MINOR}\"\n"
+        "#define TI_VERSION_PATCH \"${TI_VERSION_PATCH}\"\n"
+        "#define TI_COMMIT_HASH \"${TI_COMMIT_HASH}\"\n"
+        )
 
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "RelWithDebInfo" CACHE STRING

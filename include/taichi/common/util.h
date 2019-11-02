@@ -427,6 +427,7 @@ TC_NAMESPACE_END
 //******************************************************************************
 
 #include "serialization.h"
+#include "version.h"
 
 //******************************************************************************
 //                                   Misc.
@@ -496,23 +497,15 @@ inline std::string absolute_path(std::string path) {
 
 std::string cpp_demangle(const std::string &mangled_name);
 
-inline constexpr int get_version_major() {
-  return TI_VERSION_MAJOR;
-}
+int get_version_major();
 
-inline constexpr int get_version_minor() {
-  return TI_VERSION_MINOR;
-}
+int get_version_minor();
 
-inline constexpr int get_version_patch() {
-  return TI_VERSION_PATCH;
-}
+int get_version_patch();
 
 std::string get_version_string();
 
-inline std::string get_commit_hash() {
-  return TI_COMMIT_HASH;
-}
+std::string get_commit_hash();
 
 TC_NAMESPACE_END
 

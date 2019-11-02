@@ -4,6 +4,7 @@
 *******************************************************************************/
 
 #include <taichi/common/util.h>
+#include <taichi/common/version.h>
 
 TC_NAMESPACE_BEGIN
 
@@ -48,6 +49,22 @@ int __trash__;
 std::string get_version_string() {
   return fmt::format("{}.{}.{}", get_version_major(), get_version_minor(),
                      get_version_patch());
+}
+
+int get_version_major() {
+  return std::atoi(TI_VERSION_MAJOR);
+}
+
+int get_version_minor() {
+  return std::atoi(TI_VERSION_MINOR);
+}
+
+int get_version_patch() {
+  return std::atoi(TI_VERSION_PATCH);
+}
+
+std::string get_commit_hash() {
+  return TI_COMMIT_HASH;
 }
 
 TC_NAMESPACE_END

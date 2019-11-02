@@ -1,4 +1,3 @@
-#include <taichi/taichi>
 #include <set>
 #include "../ir.h"
 

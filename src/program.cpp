@@ -1,7 +1,6 @@
 // Program, which is a context for a taichi program execution
 
 #include <taichi/common/task.h>
-#include <taichi/taichi>
 #include "program.h"
 #include "snode.h"
 #include "backends/struct.h"

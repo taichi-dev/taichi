@@ -1,4 +1,3 @@
-#include <taichi/taichi>
 #include <taichi/util.h>
 
 TC_NAMESPACE_BEGIN

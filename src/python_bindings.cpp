@@ -52,7 +52,10 @@ void export_lang(py::module &m) {
       .def_readwrite("simplify_after_lower_access",
                      &CompileConfig::simplify_after_lower_access)
       .def_readwrite("lower_access", &CompileConfig::lower_access)
-
+      .def_readwrite("default_gpu_block_dim",
+                     &CompileConfig::default_gpu_block_dim)
+      .def_readwrite("verbose_kernel_launches",
+                     &CompileConfig::verbose_kernel_launches)
       .def_readwrite("enable_profiler", &CompileConfig::enable_profiler)
       .def_readwrite("gradient_dt", &CompileConfig::gradient_dt);
 
@@ -336,9 +339,7 @@ void export_lang(py::module &m) {
   m.def("compile_runtimes", compile_runtimes);
   m.def("libdevice_path", libdevice_path);
 
-  m.def("set_lib_dir", [&](const std::string &dir){
-    compiled_lib_dir = dir;
-  });
+  m.def("set_lib_dir", [&](const std::string &dir) { compiled_lib_dir = dir; });
 
   m.def("get_commit_hash", get_commit_hash);
   m.def("get_version_string", get_version_string);

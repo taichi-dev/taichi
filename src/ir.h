@@ -140,7 +140,7 @@ class DecoratorRecorder {
   int vectorize;
   int parallelize;
   ScratchPadOptions scratch_opt;
-  int block_size;
+  int block_dim;
   bool uniform;
 
   DecoratorRecorder() {
@@ -152,7 +152,7 @@ class DecoratorRecorder {
     parallelize = 0;
     uniform = false;
     scratch_opt.clear();
-    block_size = 0;
+    block_dim = 0;
   }
 };
 
@@ -1764,7 +1764,7 @@ class FrontendForStmt : public Stmt {
   int vectorize;
   int parallelize;
   ScratchPadOptions scratch_opt;
-  int block_size;
+  int block_dim;
 
   bool is_ranged() const {
     if (global_var.expr == nullptr) {
@@ -1794,7 +1794,7 @@ class RangeForStmt : public Stmt {
   bool reversed;
   int vectorize;
   int parallelize;
-  int block_size;
+  int block_dim;
 
   RangeForStmt(Stmt *loop_var,
                Stmt *begin,
@@ -1812,7 +1812,7 @@ class RangeForStmt : public Stmt {
     add_operand(this->loop_var);
     add_operand(this->begin);
     add_operand(this->end);
-    block_size = 0;
+    block_dim = 0;
   }
 
   bool is_container_statement() const override {
@@ -1836,7 +1836,7 @@ class StructForStmt : public Stmt {
   std::unique_ptr<Block> block_finalization;
   int vectorize;
   int parallelize;
-  int block_size;
+  int block_dim;
   ScratchPadOptions scratch_opt;
 
   StructForStmt(std::vector<Stmt *> loop_vars,
@@ -1852,7 +1852,7 @@ class StructForStmt : public Stmt {
     for (auto &v : this->loop_vars) {
       add_operand(v);
     }
-    block_size = 0;
+    block_dim = 0;
   }
 
   bool is_container_statement() const override {
@@ -2096,8 +2096,8 @@ inline void CacheL1(const Expr &var) {
 }
 
 inline void BlockDim(int v) {
-  TC_ASSERT(bit::is_power_of_two(v) && v <= max_gpu_block_size);
-  dec.block_size = v;
+  TC_ASSERT(bit::is_power_of_two(v) && v <= max_gpu_block_dim);
+  dec.block_dim = v;
 }
 
 inline void SLP(int v) {

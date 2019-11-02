@@ -31,10 +31,10 @@ void LoopGenerator::emit_listgen_func(SNode *snode,
   auto child_block_size = 1 << snode->total_num_bits;
   if (child_block_division == 0) {
     // how many divisions should the CHILD node have?
-    if (child_block_size > max_gpu_block_size && !deactivate) {
+    if (child_block_size > max_gpu_block_dim && !deactivate) {
       // no need to split block if emitted for ClearAllStmt
-      child_block_division = child_block_size / max_gpu_block_size;
-      child_block_size = max_gpu_block_size;
+      child_block_division = child_block_size / max_gpu_block_dim;
+      child_block_size = max_gpu_block_dim;
     } else {
       child_block_division = 1;
     }
@@ -52,7 +52,7 @@ void LoopGenerator::emit_listgen_func(SNode *snode,
   }
 
   int listgen_block_dim =
-      std::min(max_gpu_block_size, parent_branching * child_block_division);
+      std::min(max_gpu_block_dim, parent_branching * child_block_division);
 
   auto leaf_allocator =
       fmt::format("Managers::get_allocator<{}>()", snode->node_type_name);
@@ -123,7 +123,7 @@ void LoopGenerator::emit_listgen_func(SNode *snode,
     // factors. therefore we use a for loop to enumerate the elements
 
     // we need a for loop here since parent->get_max_n() may be bigger than
-    // max_gpu_block_size
+    // max_gpu_block_dim
     emit("auto cid = div / child_block_division + input_meta.start_loop;");
     emit("if (cid >= input_meta.end_loop) break;");
     emit("if (!{}_cache->is_active(cid)) continue;", parent->node_type_name);

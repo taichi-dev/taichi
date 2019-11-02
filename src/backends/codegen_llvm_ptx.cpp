@@ -77,8 +77,10 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
     }
     return [offloaded_local](Context context) {
       for (auto task : offloaded_local) {
-        // TC_INFO("Launching kernel {}<<<{}, {}>>>", task.name, task.grid_dim,
-        //    task.block_dim);
+        if (get_current_program().config.verbose_kernel_launches)
+          TC_INFO("Launching kernel {}<<<{}, {}>>>", task.name, task.grid_dim,
+                  task.block_dim);
+
         cuda_context.launch((CUfunction)task.cuda_func, &context, task.grid_dim,
                             task.block_dim);
       }
@@ -216,7 +218,7 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
     stmt->loop_vars_llvm.push_back(loop_var);
     auto loop_begin = stmt->begin;
     auto loop_end = stmt->end;
-    auto loop_block_dim = stmt->block_size;
+    auto loop_block_dim = stmt->block_dim;
     if (loop_block_dim == 0) {
       loop_block_dim = get_current_program().config.default_gpu_block_dim;
     }
@@ -270,12 +272,12 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
       int max_block_dim;
       cudaDeviceGetAttribute(&max_block_dim, cudaDevAttrMaxBlockDimX, 0);
       kernel_grid_dim = num_SMs * 32;  // each SM can have 16-32 resident blocks
-      kernel_block_dim = stmt->block_size;
+      kernel_block_dim = stmt->block_dim;
       if (kernel_block_dim == 0)
-        kernel_block_dim = max_block_dim;
+        kernel_block_dim = get_current_program().config.default_gpu_block_dim;
       kernel_block_dim =
           std::min(stmt->snode->parent->max_num_elements(), kernel_block_dim);
-      stmt->block_size = kernel_block_dim;
+      stmt->block_dim = kernel_block_dim;
       create_offload_struct_for(stmt, true);
     } else if (stmt->task_type == Type::listgen) {
       emit_list_gen(stmt);

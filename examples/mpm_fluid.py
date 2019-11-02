@@ -24,6 +24,8 @@ C, J = mat(), scalar()
 
 # ti.cfg.arch = ti.x86_64
 ti.cfg.arch = ti.cuda
+ti.cfg.verbose_kernel_launches = True
+ti.cfg.default_gpu_block_dim = 32
 
 @ti.layout
 def place():

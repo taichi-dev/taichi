@@ -379,6 +379,7 @@ CompileConfig::CompileConfig() {
   simplify_after_lower_access = true;
   attempt_vectorized_load_cpu = true;
   gradient_dt = DataType::f32;
+  verbose_kernel_launches = false;
   enable_profiler = true;
   default_gpu_block_dim = 64;
 }

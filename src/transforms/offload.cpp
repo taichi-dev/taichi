@@ -54,7 +54,7 @@ class Offloader {
         offloaded->body = std::make_unique<Block>();
         offloaded->begin = s->begin->as<ConstStmt>()->val[0].val_int32();
         offloaded->end = s->end->as<ConstStmt>()->val[0].val_int32();
-        offloaded->block_size = s->block_size;
+        offloaded->block_dim = s->block_dim;
         fix_loop_index_load(s, s->loop_var, 0, false);
         for (int j = 0; j < (int)s->body->statements.size(); j++) {
           offloaded->body->insert(std::move(s->body->statements[j]));
@@ -104,7 +104,7 @@ class Offloader {
           std::move(for_stmt->body->statements[i]));
     }
 
-    offloaded_struct_for->block_size = for_stmt->block_size;
+    offloaded_struct_for->block_dim = for_stmt->block_dim;
     offloaded_struct_for->snode = for_stmt->snode;
 
     root_block->insert(std::move(offloaded_struct_for));

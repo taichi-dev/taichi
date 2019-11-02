@@ -1211,7 +1211,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       }
     }
 
-    int num_splits = leaf_block->max_num_elements() / stmt->block_size;
+    int num_splits = leaf_block->max_num_elements() / stmt->block_dim;
     // traverse leaf node
     create_call("for_each_block",
                 {get_context(), tlctx->get_constant(leaf_block->parent->id),
@@ -1238,8 +1238,8 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     } else if (stmt->task_type == Type::range_for) {
       create_offload_range_for(stmt);
     } else if (stmt->task_type == Type::struct_for) {
-      stmt->block_size =
-          std::min(stmt->snode->parent->max_num_elements(), stmt->block_size);
+      stmt->block_dim =
+          std::min(stmt->snode->parent->max_num_elements(), stmt->block_dim);
       create_offload_struct_for(stmt);
     } else if (stmt->task_type == Type::listgen) {
       emit_list_gen(stmt);

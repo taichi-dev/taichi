@@ -47,13 +47,13 @@ class GPUIRCodeGen : public IRVisitor {
     current_struct_for = for_stmt;
     auto leaf = for_stmt->snode->parent;
 
-    if (for_stmt->block_size == 0) {
-      for_stmt->block_size =
-          std::min(1 << leaf->total_num_bits, max_gpu_block_size);
+    if (for_stmt->block_dim == 0) {
+      for_stmt->block_dim =
+          std::min(1 << leaf->total_num_bits, max_gpu_block_dim);
     }
 
-    TC_ASSERT((1 << leaf->total_num_bits) % for_stmt->block_size == 0);
-    int block_division = (1 << leaf->total_num_bits) / for_stmt->block_size;
+    TC_ASSERT((1 << leaf->total_num_bits) % for_stmt->block_dim == 0);
+    int block_division = (1 << leaf->total_num_bits) / for_stmt->block_dim;
 
     std::vector<SNode *> path;
     for (auto p = leaf; !p->has_allocator(); p = p->parent) {
@@ -345,17 +345,17 @@ class GPUIRCodeGen : public IRVisitor {
 
       // host code
       emit("{{");
-      int block_size = range_for->block_size;
-      if (block_size == 0) {
+      int block_dim = range_for->block_dim;
+      if (block_dim == 0) {
         TC_WARN("Using default block size = 256");
-        block_size = 256;
+        block_dim = 256;
       }
       emit("gpu_runtime_init();");
-      int num_blocks = (end - begin + block_size - 1) / block_size;
+      int num_blocks = (end - begin + block_dim - 1) / block_dim;
       if (cfg.enable_profiler)
         emit(R"(GPUProfiler::get_instance().start("{}");)", codegen->func_name);
       emit("{}_kernel<<<{}, {}>>>(context);", current_func_name(), num_blocks,
-           block_size);
+           block_dim);
       if (cfg.enable_profiler)
         emit(R"(GPUProfiler::get_instance().stop();)");
       emit("}}");
@@ -942,7 +942,7 @@ class GPUIRCodeGen : public IRVisitor {
     emit("{{");
 
     emit("gpu_runtime_init();");
-    emit("int blockDim = {};", max_gpu_block_size);
+    emit("int blockDim = {};", max_gpu_block_dim);
     emit("");
 
     // generate the list

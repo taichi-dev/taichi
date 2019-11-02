@@ -162,7 +162,7 @@ class OffloadedStmt : public Stmt {
   TaskType task_type;
   SNode *snode;
   int begin, end, step;
-  int block_size;
+  int block_dim;
   bool reversed;
   std::vector<Stmt *> loop_vars;
   std::vector<llvm::Value *> loop_vars_llvm;
@@ -170,7 +170,7 @@ class OffloadedStmt : public Stmt {
 
   OffloadedStmt(TaskType task_type) : task_type(task_type) {
     begin = end = step = 0;
-    block_size = 0;
+    block_dim = 0;
     reversed = false;
     if (task_type != TaskType::listgen) {
       body = std::make_unique<Block>();

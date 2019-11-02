@@ -176,12 +176,12 @@ FrontendForStmt::FrontendForStmt(const Expr &loop_var,
     : begin(begin), end(end) {
   vectorize = dec.vectorize;
   parallelize = dec.parallelize;
-  block_size = dec.block_size;
+  block_dim = dec.block_dim;
   if (get_current_program().config.arch == Arch::gpu) {
     vectorize = 1;
     parallelize = 1;
   } else {
-    block_size = 1;
+    block_dim = 1;
   }
   scratch_opt = dec.scratch_opt;
   dec.reset();
@@ -196,12 +196,12 @@ FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
     : global_var(global_var) {
   vectorize = dec.vectorize;
   parallelize = dec.parallelize;
-  block_size = dec.block_size;
+  block_dim = dec.block_dim;
   if (get_current_program().config.arch == Arch::gpu) {
     vectorize = 1;
     parallelize = 1;
   } else {
-    block_size = 1;
+    block_dim = 1;
   }
   scratch_opt = dec.scratch_opt;
   dec.reset();

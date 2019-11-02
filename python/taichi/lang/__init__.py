@@ -72,7 +72,7 @@ def program_test(func):
   import taichi as ti
   def test(*args, **kwargs):
     archs = [x86_64]
-    if ti.with_cuda():
+    if ti.core.with_cuda():
       archs.append(cuda)
     for arch in archs:
       reset()

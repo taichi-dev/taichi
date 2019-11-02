@@ -35,8 +35,7 @@ script:
 - export TAICHI_REPO_DIR=$TRAVIS_BUILD_DIR
 - export PYTHONPATH=$TAICHI_REPO_DIR/python
 - export PATH=$TAICHI_REPO_DIR/bin:$PATH
-- ti test
-- cd python && $PYTHON build.py upload
+- ti test && cd python && $PYTHON build.py upload
 
 env:
   global:

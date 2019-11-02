@@ -205,11 +205,11 @@ class Kernel:
         if isinstance(needed, template):
           continue
         provided = type(v)
-        if isinstance(needed, taichi_lang_core.DataType) and needed == f32:
+        if isinstance(needed, taichi_lang_core.DataType) and needed in [f32, f64]:
           if type(v) not in [float, int]:
             raise KernelArgError(i, needed, provided)
           t_kernel.set_arg_float(actual_argument_slot, float(v))
-        elif isinstance(needed, taichi_lang_core.DataType) and needed == i32:
+        elif isinstance(needed, taichi_lang_core.DataType) and needed in [i32, i64]:
           if type(v) not in [int]:
             raise KernelArgError(i, needed, provided)
           t_kernel.set_arg_int(actual_argument_slot, int(v))

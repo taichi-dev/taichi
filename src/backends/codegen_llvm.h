@@ -323,13 +323,9 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
         auto to = stmt->cast_type;
         TC_ASSERT(from != to);
         if (is_real(from) != is_real(to)) {
-          if (from == DataType::f32 && to == DataType::i32) {
+          if (is_real(from) && is_integral(to)) {
             cast_op = llvm::Instruction::CastOps::FPToSI;
-          } else if (from == DataType::f64 && to == DataType::i32) {
-            cast_op = llvm::Instruction::CastOps::FPToSI;
-          } else if (from == DataType::i32 && to == DataType::f32) {
-            cast_op = llvm::Instruction::CastOps::SIToFP;
-          } else if (from == DataType::i32 && to == DataType::f64) {
+          } else if (is_integral(from) && is_real(to)) {
             cast_op = llvm::Instruction::CastOps::SIToFP;
           } else {
             TC_P(data_type_name(from));

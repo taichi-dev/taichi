@@ -9,18 +9,19 @@ def test_python():
   print("\nRunning python tests...\n")
   import taichi as ti
   import pytest
-  pytest.main([os.path.join(ti.get_repo_directory(), 'tests')])
+  return pytest.main([os.path.join(ti.get_repo_directory(), 'tests')])
   
 def test_cpp():
   import taichi as ti
   if not ti.core.with_cuda():
     print("skipping legacy tests since no GPU supported")
+    return 0
   # Cpp tests use the legacy non LLVM backend
   os.environ['TI_LLVM'] = '0'
   ti.reset()
   print("Running C++ tests...")
   task = ti.Task('test')
-  task.run(*sys.argv[2:])
+  return task.run(*sys.argv[2:])
 
 def main(debug=False):
   lines = []
@@ -89,12 +90,13 @@ def main(debug=False):
       script = script.read()
     exec(script, {'__name__': '__main__'})
   elif mode == "test_python":
-    test_python()
+    return test_python()
   elif mode == "test_cpp":
-    test_cpp()
+    return test_cpp()
   elif mode == "test":
-    test_python()
-    test_cpp()
+    if test_python() != 0:
+      return -1
+    return test_cpp()
   elif mode == "build":
     ti.core.build()
   elif mode == "format":

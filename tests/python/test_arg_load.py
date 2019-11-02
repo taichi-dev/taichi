@@ -1,8 +1,8 @@
 import taichi as ti
 
+
 @ti.program_test
 def test_arg_load():
-  return
   x = ti.var(ti.i32)
   y = ti.var(ti.f32)
 
@@ -11,11 +11,19 @@ def test_arg_load():
     ti.root.place(x, y)
 
   @ti.kernel
-  def set_i32(v : ti.i32):
+  def set_i32(v: ti.i32):
     x[None] = v
 
   @ti.kernel
-  def set_f32(v : ti.f32):
+  def set_f32(v: ti.f32):
+    y[None] = v
+
+  @ti.kernel
+  def set_f64(v: ti.f64):
+    y[None] = ti.cast(v, ti.f32)
+
+  @ti.kernel
+  def set_i64(v: ti.i64):
     y[None] = v
 
   set_i32(123)
@@ -24,11 +32,17 @@ def test_arg_load():
   set_i32(456)
   assert x[None] == 456
 
+  set_i64(789)
+  assert y[None] == 789
+
   set_f32(0.125)
   assert y[None] == 0.125
 
   set_f32(1.5)
   assert y[None] == 1.5
+
+  set_f64(2.5)
+  assert y[None] == 2.5
 
 
 @ti.program_test
@@ -50,4 +64,3 @@ def test_ext_arr():
   set_f32(v)
   for i in range(N):
     assert x[i] == 10 + i
-

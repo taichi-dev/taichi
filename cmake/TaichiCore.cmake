@@ -3,10 +3,9 @@ set(CORE_LIBRARY_NAME taichi_core)
 include(cmake/PythonNumpyPybind11.cmake)
 
 file(GLOB TAICHI_CORE_SOURCE
-        "src/*/*/*/*.cpp" "src/*/*/*.cpp" "src/*/*.cpp" "src/*.cpp" "examples/cpp/*.cpp"
-        "src/*/*/*/*.h" "src/*/*/*.h" "src/*/*.h" "src/*.h"
-        "include/taichi/*/*/*/*.cpp" "include/taichi/*/*/*.cpp" "include/taichi/*/*.cpp"
-        "include/taichi/*/*/*/*.h" "include/taichi/*/*/*.h" "include/taichi/*/*.h")
+        "examples/cpp/*.cpp"
+        "taichi/*/*/*/*.cpp" "taichi/*/*/*.cpp" "taichi/*/*.cpp" "taichi/*.cpp"
+        "taichi/*/*/*/*.h" "taichi/*/*/*.h" "taichi/*/*.h" "taichi/*.h")
 
 file(GLOB_RECURSE PROJECT_SOURCES "lang/headers/*.h" "external/xxhash/*.c" "tests/cpp/*.cpp" "lang/cpp_examples/*.cpp")
 

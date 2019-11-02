@@ -1,2 +1,2 @@
 #pragma once
-#include "../../src/tlang.h"
+#include "tlang.h"

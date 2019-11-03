@@ -1,3 +1,4 @@
+#if !defined(_WIN32)
 /*
 *  xxhsum - Command line interface for xxhash algorithms
 *  Copyright (C) Yann Collet 2012-2016
@@ -1644,3 +1645,4 @@ int main(int argc, const char** argv)
 }
 
 #endif /* XXHASH_C_2097394837 */
+#endif

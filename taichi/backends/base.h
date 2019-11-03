@@ -112,7 +112,7 @@ class CodeGenBase {
 
   template <typename T>
   T load_function(std::string name) {
-#if defined(TC_PLATFORM_WINDOWS)
+#if !defined(TC_PLATFORM_WINDOWS)
     using FP = decltype(function_pointer_helper(std::declval<T>()));
     if (dll == nullptr) {
       load_dll();

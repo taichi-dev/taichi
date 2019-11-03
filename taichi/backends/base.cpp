@@ -1,7 +1,9 @@
 // The code generator base class
 
 #include "base.h"
+#if !defined(TC_PLATFORM_WINDOWS)
 #include <xxhash.h>
+#endif
 #include <sstream>
 #include <taichi/system/timer.h>
 
@@ -74,6 +76,7 @@ std::string CodeGenBase::get_source_name() {
 }
 
 void CodeGenBase::generate_binary(std::string extra_flags) {
+#if !defined(_WIN32)
   auto t = Time::get_time();
   write_source();
   auto format_ret =
@@ -127,6 +130,9 @@ void CodeGenBase::generate_binary(std::string extra_flags) {
   }
   trash(std::system(fmt::format("rm {}", pp_fn).c_str()));
   TC_INFO("Compilation time: {:.1f} ms", 1000 * (Time::get_time() - t));
+#else
+  TC_NOT_IMPLEMENTED
+#endif
 }
 
 CodeGenBase::~CodeGenBase() {

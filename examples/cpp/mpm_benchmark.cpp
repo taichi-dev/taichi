@@ -55,6 +55,8 @@ auto mpm_benchmark = [](std::vector<std::string> cli_param) {
       p_x[i][j] = benchmark_particles[i * dim + j];
   }
 
+  int block_particle_limit = pow<dim>(grid_block_size) * 64;
+
   layout([&]() {
     auto i = Index(0), j = Index(1), k = Index(2), p = Index(3);
     SNode *fork = nullptr;
@@ -89,7 +91,7 @@ auto mpm_benchmark = [](std::vector<std::string> cli_param) {
           .place(grid_v(0), grid_v(1), grid_v(2), grid_m);
     }
 
-    block.dynamic(p, taichi::pow<dim>(grid_block_size) * 64).place(l);
+    block.dynamic(p, block_particle_limit).place(l);
     root.place(gravity_x);
   });
   Kernel(sort).def([&] {

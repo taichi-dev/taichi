@@ -59,7 +59,7 @@ void GUI::process_event() {
 }
 
 void GUI::create_window() {
-  const char CLASS_NAME[] = "Taichi Win32 Window";
+  auto CLASS_NAME = L"Taichi Win32 Window";
 
   WNDCLASS wc = {};
 
@@ -71,7 +71,7 @@ void GUI::create_window() {
 
   hwnd = CreateWindowEx(0,                    // Optional window styles.
                         CLASS_NAME,           // Window class
-                        window_name.c_str(),  // Window text
+                        std::wstring(window_name.begin(), window_name.end()).data(),  // Window text
                         WS_OVERLAPPEDWINDOW,  // Window style
                         // Size and position
                         CW_USEDEFAULT, CW_USEDEFAULT, width + 16, height + 32,
@@ -112,7 +112,7 @@ void GUI::redraw() {
 }
 
 void GUI::set_title(std::string title) {
-  SetWindowText(hwnd, title.c_str());
+  SetWindowText(hwnd, std::wstring(title.begin(), title.end()).data());
 }
 
 GUI::~GUI() {

@@ -797,6 +797,7 @@ TC_TEST("mpm_layout") {
   auto p = Index(3);
 
   bool particle_soa = true;
+  int block_list_limit = pow<dim>(grid_block_size) * 64;
 
   layout([&]() {
     SNode *fork = nullptr;
@@ -838,7 +839,7 @@ TC_TEST("mpm_layout") {
       block.dense({i, j, k}, grid_block_size).place(grid_v).place(grid_m);
     }
 
-    block.dynamic(p, pow<dim>(grid_block_size) * 64).place(l);
+    block.dynamic(p, block_list_limit).place(l);
 
     root.place(gravity_x);
   });

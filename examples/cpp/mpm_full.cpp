@@ -155,6 +155,7 @@ auto mpm_full = [](std::vector<std::string> cli_param) {
   auto p = Index(3);
 
   bool particle_soa = false;
+  int block_particle_limit = pow<dim>(grid_block_size) * 64;
 
   layout([&]() {
     SNode *fork = nullptr;
@@ -202,7 +203,7 @@ auto mpm_full = [](std::vector<std::string> cli_param) {
           .place(grid_v(0), grid_v(1), grid_v(2), grid_m);
     }
 
-    block.dynamic(p, pow<dim>(grid_block_size) * 64).place(l);
+    block.dynamic(p, block_particle_limit).place(l);
 
     root.place(gravity_x);
     root.dense(i, max_n_particles * 7).place(particle_buffer);

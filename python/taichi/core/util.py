@@ -100,8 +100,7 @@ def build():
   
   print('Running cmake...')
   if is_ci():
-    print('  Note: building for CI. SIMD disabled.')
-    flags += ' -DTC_DISABLE_SIMD:BOOL=1'
+    print('  Note: building for CI.')
   if get_os_name() == 'win':
     flags += ' -G "Visual Studio 15 Win64"'
   cmake_ret = os.system('cmake .. ' + flags)

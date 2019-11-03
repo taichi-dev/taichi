@@ -1,3 +1,4 @@
+#if !defined(_WIN32)
 /*
 *  xxHash - Fast Hash algorithm
 *  Copyright (C) 2012-2016, Yann Collet
@@ -1018,3 +1019,4 @@ XXH_PUBLIC_API XXH64_hash_t XXH64_hashFromCanonical(const XXH64_canonical_t* src
 
 
 #endif  /* XXH_NO_LONG_LONG */
+#endif

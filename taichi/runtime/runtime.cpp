@@ -1,3 +1,4 @@
+#if !defined(_WIN32)
 // This file will only be compiled with clang into llvm bitcode
 // Generated bitcode will likely get inline for performance.
 
@@ -322,3 +323,4 @@ void for_each_block(Context *context, int snode_id, int element_size,
 #include "node_pointer.h"
 #include "node_root.h"
 }
+#endif

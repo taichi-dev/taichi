@@ -58,7 +58,6 @@ llvm_map_components_to_libnames(llvm_libs
         ScalarOpts
         Support
         native
-        NVPTX
         Linker
         Target
         MC
@@ -67,6 +66,11 @@ llvm_map_components_to_libnames(llvm_libs
         Analysis
         )
 target_link_libraries(${LIBRARY_NAME} ${llvm_libs})
+
+if (TLANG_WITH_CUDA)
+    llvm_map_components_to_libnames(llvm_ptx_libs PTX)
+    target_link_libraries(${LIBRARY_NAME} ${llvm_ptx_libs})
+endif()
 
 find_package(OpenMP)
 if(OpenMP_CXX_FOUND)

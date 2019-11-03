@@ -277,6 +277,12 @@ TC_NAMESPACE_BEGIN
       fmt::format("[{}:{}@{}] ", __FILENAME__, __FUNCTION__, __LINE__) + \
       fmt::format(__VA_ARGS__))
 
+#if defined(TC_PLATFORM_WINDOWS)
+#define TI_UNREACHABLE __assume(0);
+#else
+#define TI_UNREACHABLE __builtin_unreachable();
+#endif
+
 #define TC_TRACE(...) SPD_AUGMENTED_LOG(trace, __VA_ARGS__)
 #define TC_DEBUG(...) SPD_AUGMENTED_LOG(debug, __VA_ARGS__)
 #define TC_INFO(...) SPD_AUGMENTED_LOG(info, __VA_ARGS__)
@@ -284,12 +290,12 @@ TC_NAMESPACE_BEGIN
 #define TC_ERROR(...)                      \
   {                                        \
     SPD_AUGMENTED_LOG(error, __VA_ARGS__); \
-    __builtin_unreachable();               \
+    TI_UNREACHABLE; \
   }
 #define TC_CRITICAL(...)                      \
   {                                           \
     SPD_AUGMENTED_LOG(critical, __VA_ARGS__); \
-    __builtin_unreachable();                  \
+    TI_UNREACHABLE;                  \
   }
 
 #define TC_TRACE_IF(condition, ...) \

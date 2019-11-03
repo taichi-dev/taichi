@@ -1,7 +1,9 @@
 #pragma once
 
 #include "common.h"
+#if !defined(TC_PLATFORM_WINDOWS)
 #include "arithmetics.h"
+#endif
 #if defined(TLANG_GPU)
 #include <cuda_runtime.h>
 #endif

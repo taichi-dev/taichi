@@ -45,11 +45,15 @@ std::string CodeGenBase::get_source() {
 }
 
 void CodeGenBase::load_dll() {
+#if defined(TC_PLATFORM_UNIX)	
   dll = dlopen((get_library_path()).c_str(), RTLD_LAZY);
   if (dll == nullptr) {
     TC_ERROR("{}", dlerror());
   }
   TC_ASSERT(dll != nullptr);
+#else
+  TC_NOT_IMPLEMENTED
+#endif
 }
 
 void CodeGenBase::disassemble() {

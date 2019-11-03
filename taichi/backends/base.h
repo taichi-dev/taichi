@@ -112,6 +112,7 @@ class CodeGenBase {
 
   template <typename T>
   T load_function(std::string name) {
+#if defined(TC_PLATFORM_WINDOWS)
     using FP = decltype(function_pointer_helper(std::declval<T>()));
     if (dll == nullptr) {
       load_dll();
@@ -119,6 +120,9 @@ class CodeGenBase {
     auto ret = dlsym(dll, name.c_str());
     TC_ASSERT(ret != nullptr);
     return T((FP)ret);
+#else
+	  TC_NOT_IMPLEMENTED
+#endif
   }
 
   FunctionType load_function();

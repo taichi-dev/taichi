@@ -14,6 +14,7 @@ TC_NAMESPACE_BEGIN
 // From https://en.wikipedia.org/wiki/Name_mangling
 
 std::string cpp_demangle(const std::string &mangled_name) {
+#if defined(TC_PLATFORM_UNIX)
   char *demangled_name;
   int status = -1;
   demangled_name =
@@ -21,6 +22,9 @@ std::string cpp_demangle(const std::string &mangled_name) {
   std::string ret(demangled_name);
   free(demangled_name);
   return ret;
+#else
+	TC_NOT_IMPLEMENTED
+#endif
 }
 
 class Demangling : public Task {

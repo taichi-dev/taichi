@@ -442,13 +442,11 @@ class CPUIRCodeGen : public IRVisitor {
         width >= 4 && stmt->ptr->is<ElementShuffleStmt>()) {
       TC_ASSERT(stmt->ret_type.data_type == DataType::i32 ||
                 stmt->ret_type.data_type == DataType::f32);
-      bool loaded[width];
-      for (int i = 0; i < width; i++)
-        loaded[i] = false;
 
       auto shuffle = stmt->ptr->as<ElementShuffleStmt>();
-      Stmt *statements[width];
-      int offsets[width];
+      std::vector<bool> loaded(width, false);
+      std::vector<Stmt *> statements(width, nullptr);
+      std::vector<int> offsets(width, 0);
 
       for (int i = 0; i < width; i++) {
         auto src = shuffle->elements[i].stmt;
@@ -466,8 +464,7 @@ class CPUIRCodeGen : public IRVisitor {
       for (int i = 0; i < width; i++) {
         if (loaded[i])
           continue;
-        bool mask[width];
-        std::memset(mask, 0, sizeof(mask));
+        std::vector<bool> mask(width, false);
         mask[i] = true;
         for (int j = i + 1; j < width; j++) {
           if (statements[i] == statements[j]) {

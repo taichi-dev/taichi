@@ -364,13 +364,13 @@ llvm::Value *TaichiLLVMContext::get_constant(T t) {
                 std::is_same_v<TargetType, float64>) {
     return llvm::ConstantFP::get(*ctx, llvm::APFloat(t));
   } else if (std::is_same_v<TargetType, bool>) {
-    return llvm::ConstantInt::get(*ctx, llvm::APInt(1, t, false));
+    return llvm::ConstantInt::get(*ctx, llvm::APInt(1, (uint64)t, false));
   } else if (std::is_same_v<TargetType, int32> ||
              std::is_same_v<TargetType, uint32>) {
-    return llvm::ConstantInt::get(*ctx, llvm::APInt(32, t, true));
+    return llvm::ConstantInt::get(*ctx, llvm::APInt(32, (uint64)t, true));
   } else if (std::is_same_v<TargetType, int64> ||
              std::is_same_v<TargetType, uint64>) {
-    return llvm::ConstantInt::get(*ctx, llvm::APInt(64, t, true));
+    return llvm::ConstantInt::get(*ctx, llvm::APInt(64, (uint64)t, true));
   } else {
     TC_NOT_IMPLEMENTED
     return nullptr;

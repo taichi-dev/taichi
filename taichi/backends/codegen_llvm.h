@@ -145,6 +145,7 @@ public:
     common.set("element_size", tlctx->get_constant((uint64)element_size));
     common.set("max_num_elements",
                tlctx->get_constant(1 << snode->total_num_bits));
+    common.set("context", get_context());
 
     /*
     uint8 *(*lookup_element)(uint8 *, int i);

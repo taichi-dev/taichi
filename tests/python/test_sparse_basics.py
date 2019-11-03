@@ -26,7 +26,7 @@ def test_bitmasked():
   func()
   assert s[None] == 256
   
-
+@ti.program_test
 def test_pointer():
   ti.reset()
   ti.cfg.arch = ti.x86_64
@@ -52,9 +52,9 @@ def test_pointer():
   func()
   assert s[None] == 256
   
+  
+@ti.program_test
 def test_pointer2():
-  ti.reset()
-  ti.cfg.arch = ti.x86_64
   x = ti.var(ti.f32)
   s = ti.var(ti.i32)
   
@@ -81,4 +81,3 @@ def test_pointer2():
   
   func()
   assert s[None] == 5 * n
-

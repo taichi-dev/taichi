@@ -323,10 +323,12 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
           initialize_data_structure(&get_current_program().llvm_runtime);
       for (int i = 0; i < (int)snodes.size(); i++) {
         if (snodes[i]->type == SNodeType::pointer) {
-          TC_INFO("Initializing allocator for snode {}", snodes[i]->id);
+          auto element_size = tlctx->get_type_size(
+              snodes[i]->ch[0]->llvm_body_type);
+          TC_INFO("Initializing allocator for snode {} (element size {})",
+                  snodes[i]->id, element_size);
           auto allocator = get_allocator(get_current_program().llvm_runtime, i);
-          initialize_allocator(allocator,
-                               tlctx->get_type_size(snodes[i]->llvm_body_type));
+          initialize_allocator(allocator, element_size);
         }
       }
       return (void *)root_ptr;

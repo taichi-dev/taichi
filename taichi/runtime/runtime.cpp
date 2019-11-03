@@ -137,6 +137,7 @@ struct StructMeta {
   int (*get_num_elements)(Ptr, Ptr);
   void (*refine_coordinates)(PhysicalCoordinates *inp_coord,
                              PhysicalCoordinates *refined_coord, int index);
+  Context *context;
 };
 
 STRUCT_FIELD(StructMeta, snode_id)
@@ -147,10 +148,7 @@ STRUCT_FIELD(StructMeta, lookup_element);
 STRUCT_FIELD(StructMeta, from_parent_element);
 STRUCT_FIELD(StructMeta, refine_coordinates);
 STRUCT_FIELD(StructMeta, is_active);
-
-#include "node_root.h"
-#include "node_dense.h"
-#include "node_pointer.h"
+STRUCT_FIELD(StructMeta, context);
 
 void *taichi_allocate_aligned(std::size_t size, int alignment);
 
@@ -201,7 +199,8 @@ struct NodeAllocator {
 
 void NodeAllocator_initialize(NodeAllocator *node_allocator,
                               std::size_t node_size) {
-  node_allocator->pool = (Ptr)taichi_allocate_aligned(1024 * 1024 * 1024, 4096);
+  node_allocator->pool =
+      (Ptr)taichi_allocate_aligned(1024 * 1024 * 1024, 4096);
   node_allocator->node_size = node_size;
   node_allocator->tail = 0;
 }
@@ -311,4 +310,8 @@ void for_each_block(Context *context, int snode_id, int element_size,
   }
 #endif
 }
+
+#include "node_dense.h"
+#include "node_pointer.h"
+#include "node_root.h"
 }

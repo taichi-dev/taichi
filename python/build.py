@@ -62,7 +62,7 @@ os.makedirs('taichi/lib', exist_ok=True)
 shutil.rmtree('build', ignore_errors=True)
 shutil.rmtree('dist', ignore_errors=True)
 shutil.rmtree('taichi/include', ignore_errors=True)
-shutil.copytree('../include/', 'taichi/include')
+# shutil.copytree('../include/', 'taichi/include')
 build_dir = '../build'
 
 if get_os_name() == 'linux':

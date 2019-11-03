@@ -1,31 +1,23 @@
 // This file will only be compiled with clang into llvm bitcode
 // Generated bitcode will likely get inline for performance.
 
-#include <type_traits>
 #include <atomic>
 #include <cmath>
+#include <type_traits>
 
-#define FORCEINLINE __attribute__((always_inline))
+#define STRUCT_FIELD(S, F)                                                     \
+  extern "C" decltype(S::F) S##_get_##F(S *s) { return s->F; }                 \
+  extern "C" decltype(S::F) *S##_get_ptr_##F(S *s) { return &(s->F); }         \
+  extern "C" void S##_set_##F(S *s, decltype(S::F) f) { s->F = f; }
 
-#define STRUCT_FIELD(S, F)                              \
-  extern "C" decltype(S::F) S##_get_##F(S *s) {         \
-    return s->F;                                        \
-  }                                                     \
-  extern "C" decltype(S::F) *S##_get_ptr_##F(S *s) {    \
-    return &(s->F);                                     \
-  }                                                     \
-  extern "C" void S##_set_##F(S *s, decltype(S::F) f) { \
-    s->F = f;                                           \
-  }
-
-#define STRUCT_FIELD_ARRAY(S, F)                                             \
-  extern "C" std::remove_all_extents_t<decltype(S::F)> S##_get_##F(S *s,     \
-                                                                   int i) {  \
-    return s->F[i];                                                          \
-  }                                                                          \
-  extern "C" void S##_set_##F(S *s, int i,                                   \
-                              std::remove_all_extents_t<decltype(S::F)> f) { \
-    s->F[i] = f;                                                             \
+#define STRUCT_FIELD_ARRAY(S, F)                                               \
+  extern "C" std::remove_all_extents_t<decltype(S::F)> S##_get_##F(S *s,       \
+                                                                   int i) {    \
+    return s->F[i];                                                            \
+  }                                                                            \
+  extern "C" void S##_set_##F(S *s, int i,                                     \
+                              std::remove_all_extents_t<decltype(S::F)> f) {   \
+    s->F[i] = f;                                                               \
   }
 
 using int8 = int8_t;
@@ -57,13 +49,9 @@ extern "C" {
 void vprintf(Ptr format, Ptr arg);
 i32 printf(const char *, ...);
 
-#define DEFINE_UNARY_REAL_FUNC(F) \
-  float F##_f32(float x) {        \
-    return std::F(x);             \
-  }                               \
-  double F##_f64(double x) {      \
-    return std::F(x);             \
-  }
+#define DEFINE_UNARY_REAL_FUNC(F)                                              \
+  float F##_f32(float x) { return std::F(x); }                                 \
+  double F##_f64(double x) { return std::F(x); }
 
 // sin and cos are already included in llvm intrinsics
 DEFINE_UNARY_REAL_FUNC(exp)
@@ -80,17 +68,11 @@ int abs_i32(int a) {
   }
 }
 
-int max_i32(int a, int b) {
-  return a > b ? a : b;
-}
+int max_i32(int a, int b) { return a > b ? a : b; }
 
-int min_i32(int a, int b) {
-  return a < b ? a : b;
-}
+int min_i32(int a, int b) { return a < b ? a : b; }
 
-int32 logic_not_i32(int32 a) {
-  return !a;
-}
+int32 logic_not_i32(int32 a) { return !a; }
 
 float32 sgn_f32(float32 a) {
   float32 b;
@@ -114,13 +96,9 @@ float64 sgn_f64(float64 a) {
   return b;
 }
 
-f32 __nv_sgnf(f32 x) {
-  return sgn_f32(x);
-}
+f32 __nv_sgnf(f32 x) { return sgn_f32(x); }
 
-f64 __nv_sgn(f64 x) {
-  return sgn_f64(x);
-}
+f64 __nv_sgn(f64 x) { return sgn_f64(x); }
 
 struct PhysicalCoordinates {
   int val[taichi_max_num_indices];
@@ -199,8 +177,7 @@ struct StructMeta {
   bool (*is_active)(Ptr, Ptr, int i);
   int (*get_num_elements)(Ptr, Ptr);
   void (*refine_coordinates)(PhysicalCoordinates *inp_coord,
-                             PhysicalCoordinates *refined_coord,
-                             int index);
+                             PhysicalCoordinates *refined_coord, int index);
 };
 
 STRUCT_FIELD(StructMeta, snode_id)
@@ -261,21 +238,16 @@ struct RootMeta : public StructMeta {
 
 STRUCT_FIELD(RootMeta, tag);
 
-void Root_activate(Ptr meta, Ptr node, int i) {
-}
+void Root_activate(Ptr meta, Ptr node, int i) {}
 
-bool Root_is_active(Ptr meta, Ptr node, int i) {
-  return true;
-}
+bool Root_is_active(Ptr meta, Ptr node, int i) { return true; }
 
 void *Root_lookup_element(Ptr meta, Ptr node, int i) {
   // only one element
   return node;
 }
 
-int Root_get_num_elements(Ptr meta, Ptr node) {
-  return 1;
-}
+int Root_get_num_elements(Ptr meta, Ptr node) { return 1; }
 
 void *taichi_allocate_aligned(std::size_t size, int alignment);
 
@@ -316,22 +288,38 @@ void ElementList_insert(ElementList *element_list, Element *element) {
   element_list->tail++;
 }
 
-void ElementList_clear(ElementList *element_list) {
-  element_list->tail = 0;
+void ElementList_clear(ElementList *element_list) { element_list->tail = 0; }
+
+struct NodeAllocator {
+  Ptr pool;
+  std::size_t node_size;
+  int tail;
+};
+
+void NodeAllocator_initialize(NodeAllocator *node_allocator,
+                              std::size_t node_size) {
+  node_allocator->pool = (Ptr)taichi_allocate_aligned(1024 * 1024 * 1024, 4096);
+  node_allocator->node_size = node_size;
+  node_allocator->tail = 0;
+}
+
+Ptr NodeAllocator_allocate(NodeAllocator *node_allocator) {
+  int p = atomic_add_i32(&node_allocator->tail, 1);
+  return node_allocator->pool + node_allocator->node_size * p;
 }
 
 // Is "runtime" a correct name, even if it is created after the data layout is
 // materialized?
 struct Runtime {
   ElementList *element_lists[1024];
+  NodeAllocator *node_allocators[1024];
 };
 
 STRUCT_FIELD_ARRAY(Runtime, element_lists);
+STRUCT_FIELD_ARRAY(Runtime, node_allocators);
 
-Ptr Runtime_initialize(Runtime **runtime_ptr,
-                       int num_snodes,
-                       uint64_t root_size,
-                       int root_id) {
+Ptr Runtime_initialize(Runtime **runtime_ptr, int num_snodes,
+                       uint64_t root_size, int root_id) {
   *runtime_ptr = (Runtime *)taichi_allocate(sizeof(Runtime));
   Runtime *runtime = *runtime_ptr;
   printf("Initializing runtime with %d elements\n", num_snodes);
@@ -339,6 +327,9 @@ Ptr Runtime_initialize(Runtime **runtime_ptr,
     runtime->element_lists[i] =
         (ElementList *)taichi_allocate(sizeof(ElementList));
     ElementList_initialize(runtime->element_lists[i]);
+
+    runtime->node_allocators[i] =
+        (NodeAllocator *)taichi_allocate(sizeof(NodeAllocator));
   }
   // Assuming num_snodes - 1 is the root
   auto root_ptr = taichi_allocate_aligned(root_size, 4096);
@@ -383,28 +374,17 @@ void element_listgen(Runtime *runtime, StructMeta *parent, StructMeta *child) {
   }
 }
 
-int32 thread_idx() {
-  return 0;
-}
+int32 thread_idx() { return 0; }
 
-int32 block_idx() {
-  return 0;
-}
+int32 block_idx() { return 0; }
 
-int32 block_dim() {
-  return 0;
-}
+int32 block_dim() { return 0; }
 
-int32 grid_dim() {
-  return 0;
-}
+int32 grid_dim() { return 0; }
 
-void block_barrier() {
-}
+void block_barrier() {}
 
-void for_each_block(Context *context,
-                    int snode_id,
-                    int element_size,
+void for_each_block(Context *context, int snode_id, int element_size,
                     int element_split,
                     void (*task)(Context *, Element *, int, int)) {
   auto list = ((Runtime *)context->runtime)->element_lists[snode_id];

@@ -101,7 +101,7 @@ class SNode {
   int index_id;
   bool _morton;
   bool _bitmasked;
-  llvm::Type *llvm_type;
+  llvm::Type *llvm_type, *llvm_body_type, *llvm_aux_type;
   llvm::Type *llvm_element_type;
   bool has_aux_structure;
 
@@ -333,6 +333,9 @@ class SNode {
   }
 
   void set_kernel_args(Kernel *kernel, int i, int j, int k, int l);
+
+  llvm::Type *get_body_type();
+  llvm::Type *get_aux_type();
 };
 
 TLANG_NAMESPACE_END

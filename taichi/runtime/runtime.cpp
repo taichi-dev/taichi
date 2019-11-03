@@ -152,7 +152,6 @@ STRUCT_FIELD(StructMeta, is_active);
 #include "node_dense.h"
 #include "node_pointer.h"
 
-
 void *taichi_allocate_aligned(std::size_t size, int alignment);
 
 void *taichi_allocate(std::size_t size) {

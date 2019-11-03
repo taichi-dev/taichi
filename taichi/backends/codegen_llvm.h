@@ -1,13 +1,13 @@
 // A work-in-progress llvm backend
 #pragma once
 
+#include <set>
 #include <taichi/common/util.h>
 #include <taichi/io/io.h>
-#include <set>
 
-#include "../tlang_util.h"
-#include "../program.h"
 #include "../ir.h"
+#include "../program.h"
+#include "../tlang_util.h"
 
 #include "llvm_codegen_utils.h"
 
@@ -16,7 +16,7 @@ TLANG_NAMESPACE_BEGIN
 using namespace llvm;
 
 class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
- public:
+public:
   TaichiLLVMJIT *jit;
 
   CodeGenBase *codegen;
@@ -46,7 +46,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   llvm::Function *func;
 
   class OffloadedTask {
-   public:
+  public:
     std::string name;
     CodeGenLLVM *codegen;
     using task_fp_type = int32 (*)(void *);
@@ -56,17 +56,11 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     int grid_dim;
     void *cuda_func;
 
-    OffloadedTask(CodeGenLLVM *codegen) : codegen(codegen) {
-      func = nullptr;
-    }
+    OffloadedTask(CodeGenLLVM *codegen) : codegen(codegen) { func = nullptr; }
 
-    void begin(std::string name) {
-      this->name = name;
-    }
+    void begin(std::string name) { this->name = name; }
 
-    void end() {
-      codegen->offloaded_tasks.push_back(*this);
-    }
+    void end() { codegen->offloaded_tasks.push_back(*this); }
 
     void compile() {
       TC_ASSERT(!func);
@@ -90,8 +84,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       : ModuleBuilder(get_current_program()
                           .get_llvm_context(get_current_program().config.arch)
                           ->clone_struct_module()),
-        kernel(kernel),
-        task_counter(0) {
+        kernel(kernel), task_counter(0) {
     initialize_context();
 
     context_ty = get_runtime_type("Context");
@@ -102,7 +95,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
 
     for (auto &f : *module) {
       if (!f.isDeclaration())
-        f.setLinkage(Function::PrivateLinkage);  // to avoid duplicated symbols
+        f.setLinkage(Function::PrivateLinkage); // to avoid duplicated symbols
     }
 
     std::string grad_suffix;
@@ -120,9 +113,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     return args[i];
   }
 
-  llvm::Value *get_context() {
-    return get_arg(0);
-  }
+  llvm::Value *get_context() { return get_arg(0); }
 
   llvm::Value *get_root() {
     return builder->CreateCall(get_runtime_function("Context_get_buffer"),
@@ -136,13 +127,16 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
         runtime_ptr, llvm::PointerType::get(get_runtime_type("Runtime"), 0));
   }
 
-  void emit_struct_meta_base(std::string name,
-                             llvm::Value *node_meta,
+  void emit_struct_meta_base(std::string name, llvm::Value *node_meta,
                              SNode *snode) {
     RuntimeObject common("StructMeta", this, builder, node_meta);
     std::size_t element_size;
-    if (snode->type != SNodeType::root && snode->type != SNodeType::place) {
-      auto element_ty = snode->llvm_type->getArrayElementType();
+    if (snode->type == SNodeType::dense) {
+      snode->llvm_type->print(llvm::errs());
+      auto element_ty = snode->get_body_type()->getArrayElementType();
+      element_size = tlctx->get_type_size(element_ty);
+    } else if (snode->type == SNodeType::pointer) {
+      auto element_ty = snode->ch[0]->llvm_type;
       element_size = tlctx->get_type_size(element_ty);
     } else {
       auto element_ty = snode->llvm_type;
@@ -187,6 +181,9 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       emit_struct_meta_base("Dense", meta->ptr, snode);
       meta->call("set_bitmasked", tlctx->get_constant(snode->_bitmasked));
       meta->call("set_morton_dim", tlctx->get_constant((int)snode->_morton));
+    } else if (snode->type == SNodeType::pointer) {
+      meta = std::make_unique<RuntimeObject>("PointerMeta", this, builder);
+      emit_struct_meta_base("Pointer", meta->ptr, snode);
     } else if (snode->type == SNodeType::root) {
       meta = std::make_unique<RuntimeObject>("RootMeta", this, builder);
       emit_struct_meta_base("Root", meta->ptr, snode);
@@ -203,9 +200,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     return obj->ptr;
   }
 
-  virtual void emit_to_module() {
-    kernel->ir->accept(this);
-  }
+  virtual void emit_to_module() { kernel->ir->accept(this); }
 
   virtual FunctionType compile_module_to_executable() {
     jit->addModule(std::move(module));
@@ -226,8 +221,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     return compile_module_to_executable();
   }
 
-  template <typename... Args>
-  void emit(std::string f, Args &&... args) {
+  template <typename... Args> void emit(std::string f, Args &&... args) {
     TC_NOT_IMPLEMENTED
     codegen->emit(f, std::forward<Args>(args)...);
   }
@@ -258,20 +252,20 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     auto input_type = input->getType();
     auto op = stmt->op_type;
 
-#define UNARY_STD(x)                                                   \
-  else if (op == UnaryOpType::x) {                                     \
-    if (input_taichi_type == DataType::f32) {                          \
-      stmt->value =                                                    \
-          builder->CreateCall(get_runtime_function(#x "_f32"), input); \
-    } else if (input_taichi_type == DataType::f64) {                   \
-      stmt->value =                                                    \
-          builder->CreateCall(get_runtime_function(#x "_f64"), input); \
-    } else if (input_taichi_type == DataType::i32) {                   \
-      stmt->value =                                                    \
-          builder->CreateCall(get_runtime_function(#x "_i32"), input); \
-    } else {                                                           \
-      TC_NOT_IMPLEMENTED                                               \
-    }                                                                  \
+#define UNARY_STD(x)                                                           \
+  else if (op == UnaryOpType::x) {                                             \
+    if (input_taichi_type == DataType::f32) {                                  \
+      stmt->value =                                                            \
+          builder->CreateCall(get_runtime_function(#x "_f32"), input);         \
+    } else if (input_taichi_type == DataType::f64) {                           \
+      stmt->value =                                                            \
+          builder->CreateCall(get_runtime_function(#x "_f64"), input);         \
+    } else if (input_taichi_type == DataType::i32) {                           \
+      stmt->value =                                                            \
+          builder->CreateCall(get_runtime_function(#x "_i32"), input);         \
+    } else {                                                                   \
+      TC_NOT_IMPLEMENTED                                                       \
+    }                                                                          \
   }
     if (false) {
     }
@@ -294,10 +288,10 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     auto input_type = input->getType();
     auto op = stmt->op_type;
 
-#define UNARY_INTRINSIC(x)                                                   \
-  else if (op == UnaryOpType::x) {                                           \
-    stmt->value =                                                            \
-        builder->CreateIntrinsic(llvm::Intrinsic::x, {input_type}, {input}); \
+#define UNARY_INTRINSIC(x)                                                     \
+  else if (op == UnaryOpType::x) {                                             \
+    stmt->value =                                                              \
+        builder->CreateIntrinsic(llvm::Intrinsic::x, {input_type}, {input});   \
   }
 
     if (stmt->op_type != UnaryOpType::cast) {
@@ -587,14 +581,13 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
 
     stmt->body->accept(this);
 
-    builder->CreateBr(body);  // jump to head
+    builder->CreateBr(body); // jump to head
 
     builder->SetInsertPoint(after_loop);
     while_after_loop = old_while_after_loop;
   }
 
-  llvm::Value *cast_pointer(llvm::Value *val,
-                            std::string dest_ty_name,
+  llvm::Value *cast_pointer(llvm::Value *val, std::string dest_ty_name,
                             int addr_space = 0) {
     return builder->CreateBitCast(
         val,
@@ -982,9 +975,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     // TC_P(snode_type_name(snode->type));
     if (snode->type == SNodeType::root) {
       stmt->value = builder->CreateGEP(parent, stmt->input_index->value);
-    } else {
-      TC_ASSERT(snode->type == SNodeType::dense);
-
+    } else if (snode->type == SNodeType::dense) {
       auto s = emit_struct_meta(stmt->snode);
       auto s_ptr =
           builder->CreateBitCast(s, llvm::Type::getInt8PtrTy(*llvm_context));
@@ -999,9 +990,31 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       auto elem =
           builder->CreateCall(get_runtime_function("Dense_lookup_element"),
                               {s_ptr, node_ptr, stmt->input_index->value});
-      auto element_ty = snode->llvm_type->getArrayElementType();
+      auto element_ty = snode->get_body_type();
       stmt->value =
           builder->CreateBitCast(elem, PointerType::get(element_ty, 0));
+    } else if (snode->type == SNodeType::pointer) {
+      auto s = emit_struct_meta(stmt->snode);
+      auto s_ptr =
+          builder->CreateBitCast(s, llvm::Type::getInt8PtrTy(*llvm_context));
+
+      // call look up
+      auto node_ptr = builder->CreateBitCast(
+          stmt->input_snode->value, llvm::Type::getInt8PtrTy(*llvm_context));
+      if (stmt->activate) {
+        builder->CreateCall(get_runtime_function("Pointer_activate"),
+                            {s_ptr, node_ptr, stmt->input_index->value});
+      }
+      auto elem =
+          builder->CreateCall(get_runtime_function("Pointer_lookup_element"),
+                              {s_ptr, node_ptr, stmt->input_index->value});
+      auto element_ty = snode->ch[0]->llvm_type;
+      stmt->value =
+          builder->CreateBitCast(elem, PointerType::get(element_ty, 0));
+
+    } else {
+      TC_INFO(snode_type_name(snode->type));
+      TC_NOT_IMPLEMENTED
     }
   }
 
@@ -1247,9 +1260,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     current_task = nullptr;
   }
 
-  ~CodeGenLLVM() {
-    delete builder;
-  }
+  ~CodeGenLLVM() { delete builder; }
 };
 
 TLANG_NAMESPACE_END

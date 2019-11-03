@@ -1,9 +1,9 @@
 // Codegen for the hierarchical data structure (LLVM)
 
+#include "struct_llvm.h"
 #include "../ir.h"
 #include "../program.h"
 #include "struct.h"
-#include "struct_llvm.h"
 #include "llvm/IR/Verifier.h"
 #include <llvm/IR/IRBuilder.h>
 
@@ -43,7 +43,6 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
   snode.llvm_element_type = ch_type;
 
   llvm::Type *body_type = nullptr, *aux_type = nullptr;
-  aux_type = llvm::Type::getVoidTy(*ctx);
   if (type == SNodeType::dense) {
     TC_ASSERT(snode._morton == false);
     body_type = llvm::ArrayType::get(ch_type, snode.max_num_elements());
@@ -61,11 +60,15 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
     } else {
       body_type = llvm::Type::getDoubleTy(*ctx);
     }
+  } else if (type == SNodeType::pointer) {
+    body_type = llvm::PointerType::getInt8PtrTy(*ctx);
+    // mutex
+    aux_type = llvm::PointerType::getInt32Ty(*ctx);
   } else {
     TC_P(snode.type_name());
     TC_NOT_IMPLEMENTED;
   }
-  if (aux_type == nullptr) {
+  if (aux_type != nullptr) {
     llvm_type = llvm::StructType::create(*ctx, {body_type, aux_type}, "");
     snode.has_aux_structure = true;
   } else {
@@ -85,6 +88,8 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
 
   TC_ASSERT(llvm_type != nullptr);
   snode.llvm_type = llvm_type;
+  snode.llvm_body_type = body_type;
+  snode.llvm_aux_type = aux_type;
 }
 
 void StructCompilerLLVM::generate_refine_coordinates(SNode *snode) {
@@ -164,17 +169,10 @@ void StructCompilerLLVM::generate_leaf_accessors(SNode &snode) {
       args.push_back(&arg);
     }
     llvm::Value *ret;
-    if (snode.has_aux_structure) {
-      ret = builder.CreateGEP(builder.CreateBitCast(args[0], inp_type),
-                              {tlctx->get_constant(0), tlctx->get_constant(0),
-                               tlctx->get_constant(parent->child_id(&snode))},
-                              "getch");
-    } else {
-      ret = builder.CreateGEP(builder.CreateBitCast(args[0], inp_type),
-                              {tlctx->get_constant(0),
-                               tlctx->get_constant(parent->child_id(&snode))},
-                              "getch");
-    }
+    ret = builder.CreateGEP(builder.CreateBitCast(args[0], inp_type),
+                            {tlctx->get_constant(0), /// tlctx->get_constant(0),
+                             tlctx->get_constant(parent->child_id(&snode))},
+                            "getch");
 
     builder.CreateRet(
         builder.CreateBitCast(ret, llvm::Type::getInt8PtrTy(*llvm_ctx)));
@@ -201,8 +199,7 @@ void StructCompilerLLVM::generate_leaf_accessors(SNode &snode) {
   stack.pop_back();
 }
 
-void StructCompilerLLVM::load_accessors(SNode &snode) {
-}
+void StructCompilerLLVM::load_accessors(SNode &snode) {}
 
 void StructCompilerLLVM::run(SNode &root, bool host) {
   // bottom to top
@@ -250,10 +247,9 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
     // if (snodes[i]->type == SNodeType::pointer ||
     // snodes[i]->type == SNodeType::hashed) {
     if (snodes[i]->type != SNodeType::place) {
-      emit(
-          "Managers::get<{}>() = "
-          "create_unified<SNodeManager<{}>>();",
-          snodes[i]->node_type_name, snodes[i]->node_type_name);
+      emit("Managers::get<{}>() = "
+           "create_unified<SNodeManager<{}>>();",
+           snodes[i]->node_type_name, snodes[i]->node_type_name);
     }
   }
 
@@ -297,8 +293,8 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
 
   tlctx->set_struct_module(module);
 
-  if (arch == Arch::x86_64)  // Do not compile the GPU struct module alone since
-                             // it's useless unless used with kernels
+  if (arch == Arch::x86_64) // Do not compile the GPU struct module alone since
+                            // it's useless unless used with kernels
     tlctx->jit->addModule(std::move(module));
 
   if (host) {
@@ -326,5 +322,8 @@ std::unique_ptr<StructCompiler> StructCompiler::make(bool use_llvm, Arch arch) {
     return std::make_unique<StructCompiler>();
   }
 }
+
+llvm::Type *SNode::get_body_type() { return llvm_body_type; }
+llvm::Type *SNode::get_aux_type() { return llvm_aux_type; }
 
 TLANG_NAMESPACE_END

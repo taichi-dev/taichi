@@ -40,8 +40,7 @@ def get_bin_directory():
     bin_rel_path = ['runtimes']
   else:
     bin_rel_path = ['build']
-  return os.environ.get('TAICHI_BIN_DIR',
-                        os.path.join(get_repo_directory(), *bin_rel_path))
+  return os.path.join(get_repo_directory(), *bin_rel_path)
 
 
 def get_output_directory():

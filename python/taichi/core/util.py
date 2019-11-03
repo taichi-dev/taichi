@@ -87,6 +87,7 @@ CREATE_SAND_BOX_ON_WINDOWS = True
 
 
 def build():
+  assert False
   tmp_cwd = os.getcwd()
   bin_dir = get_build_directory()
 
@@ -139,8 +140,7 @@ else:
   if get_os_name() == 'osx':
     bin_dir = get_bin_directory()
     os.environ['DYLD_FALLBACK_LIBRARY_PATH'] = get_runtime_directory()
-    if not os.path.exists(os.path.join(bin_dir, 'libtaichi_core.dylib')):
-      build()
+    assert os.path.exists(os.path.join(bin_dir, 'libtaichi_core.dylib'))
     tmp_cwd = os.getcwd()
     os.chdir(bin_dir)
     shutil.copy('libtaichi_core.dylib', 'taichi_core.so')
@@ -153,8 +153,7 @@ else:
       os.environ['LD_LIBRARY_PATH'] += ':/usr/lib64/'
     else:
       os.environ['LD_LIBRARY_PATH'] = '/usr/lib64/'
-    if not os.path.exists(os.path.join(bin_dir, 'libtaichi_core.so')):
-      build()
+    assert os.path.exists(os.path.join(bin_dir, 'libtaichi_core.so'))
     tmp_cwd = os.getcwd()
     os.chdir(bin_dir)
     sys.path.append(bin_dir)
@@ -178,10 +177,9 @@ else:
     os.chdir(tmp_cwd)
   elif get_os_name() == 'win':
     bin_dir = get_bin_directory()
-    dll_path1 = os.path.join(bin_dir, 'Release', 'taichi_core.dll')
+    dll_path1 = os.path.join(bin_dir, 'RelWithDebInfo', 'taichi_core.dll')
     dll_path2 = os.path.join(bin_dir, 'libtaichi_core.dll')
-    if not os.path.exists(dll_path1) and not os.path.exists(dll_path2):
-      build()
+    assert os.path.exists(dll_path1) and not os.path.exists(dll_path2)
 
     # On windows when an dll/pyd is loaded, we can not write to it any more
     old_wd = os.getcwd()

@@ -75,16 +75,6 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
     llvm_type = body_type;
     snode.has_aux_structure = false;
   }
-  if (snode.has_null()) {
-    if (get_current_program().config.arch == Arch::gpu) {
-      emit("__device__ __constant__ {}::child_type *{}_ambient_ptr;",
-           snode.node_type_name, snode.node_type_name);
-    }
-    emit("{}::child_type {}_ambient;", snode.node_type_name,
-         snode.node_type_name);
-  } else if (snode.type == SNodeType::place) {
-    emit("{} {}_ambient;", snode.node_type_name, snode.node_type_name);
-  }
 
   TC_ASSERT(llvm_type != nullptr);
   snode.llvm_type = llvm_type;
@@ -169,10 +159,10 @@ void StructCompilerLLVM::generate_leaf_accessors(SNode &snode) {
       args.push_back(&arg);
     }
     llvm::Value *ret;
-    ret = builder.CreateGEP(builder.CreateBitCast(args[0], inp_type),
-                            {tlctx->get_constant(0), /// tlctx->get_constant(0),
-                             tlctx->get_constant(parent->child_id(&snode))},
-                            "getch");
+    ret = builder.CreateGEP(
+        builder.CreateBitCast(args[0], inp_type),
+        {tlctx->get_constant(0), tlctx->get_constant(parent->child_id(&snode))},
+        "getch");
 
     builder.CreateRet(
         builder.CreateBitCast(ret, llvm::Type::getInt8PtrTy(*llvm_ctx)));
@@ -214,24 +204,6 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
   for (auto &n : snodes_rev)
     generate_types(*n);
 
-  // get corner coordinates
-  /*
-  for (int i = 0; i < (int)snodes.size(); i++) {
-    auto snode = snodes[i];
-    emit(
-        "template <> __host__ __device__ void "
-        "get_corner_coord<{}>(const "
-        "PhysicalIndexGroup &indices, PhysicalIndexGroup &output) {{",
-        snode->node_type_name);
-    for (int j = 0; j < max_num_indices; j++) {
-      auto e = snode->extractors[j];
-      emit("output[{}] = indices[{}] & (~((1 << {}) - 1));", j, j,
-           e.start + e.num_bits);
-    }
-    emit("}}");
-  }
-  */
-
   // TODO: general allocators
 
   root_type = root.node_type_name;
@@ -243,25 +215,6 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
   }
 
   TC_ASSERT((int)snodes.size() <= max_num_snodes);
-  for (int i = 0; i < (int)snodes.size(); i++) {
-    // if (snodes[i]->type == SNodeType::pointer ||
-    // snodes[i]->type == SNodeType::hashed) {
-    if (snodes[i]->type != SNodeType::place) {
-      emit("Managers::get<{}>() = "
-           "create_unified<SNodeManager<{}>>();",
-           snodes[i]->node_type_name, snodes[i]->node_type_name);
-    }
-  }
-
-  if (get_current_program().config.arch == Arch::gpu) {
-    for (int i = 0; i < (int)ambient_snodes.size(); i++) {
-      emit("{{");
-      auto ntn = ambient_snodes[i]->node_type_name;
-      emit("auto ambient_ptr = create_unified<{}::child_type>();", ntn);
-      emit("Managers::get_allocator<{}>()->ambient = ambient_ptr;", ntn);
-      emit("}}");
-    }
-  }
 
   auto root_size = tlctx->jit->getDataLayout().getTypeAllocSize(root.llvm_type);
   // initializer

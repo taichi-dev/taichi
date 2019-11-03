@@ -333,11 +333,19 @@ std::string CompileConfig::compile_cmd(const std::string &input,
 }
 
 bool command_exist(const std::string &command) {
+#if defined(TC_PLATFORM_UNIX)
   if (std::system(fmt::format("which {} > /dev/null 2>&1", command).c_str())) {
     return false;
   } else {
     return true;
   }
+#else
+  if (std::system(fmt::format("where {} >nul 2>nul", command).c_str())) {
+    return false;
+  } else {
+    return true;
+  }
+#endif
 }
 
 CompileConfig::CompileConfig() {

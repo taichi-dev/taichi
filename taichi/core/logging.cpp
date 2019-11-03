@@ -129,7 +129,9 @@ void signal_handler(int signo) {
   taichi::print_traceback();
   fmt::print("\n\n\n");
   if (taichi::CoreState::get_instance().trigger_gdb_when_crash) {
+#if defined(TC_PLATFORM_LINUX)
     trash(system(fmt::format("sudo gdb -p {}", PID::get_pid()).c_str()));
+#endif
   }
   if (python_at_exit && !python_at_exit_called) {
     python_at_exit_called = true;

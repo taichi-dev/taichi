@@ -262,8 +262,8 @@ void element_listgen(Runtime *runtime, StructMeta *parent, StructMeta *child) {
     auto ch_component = child->from_parent_element(element.element);
     int ch_num_elements = child->get_num_elements((Ptr)child, ch_component);
     for (int j = 0; j < ch_num_elements; j++) {
-      auto ch_element = child->lookup_element((Ptr)child, element.element, j);
       if (child->is_active((Ptr)child, ch_component, j)) {
+        auto ch_element = child->lookup_element((Ptr)child, element.element, j);
         Element elem;
         elem.element = ch_element;
         elem.loop_bounds[0] = 0;

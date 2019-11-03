@@ -132,7 +132,6 @@ public:
     RuntimeObject common("StructMeta", this, builder, node_meta);
     std::size_t element_size;
     if (snode->type == SNodeType::dense) {
-      snode->llvm_type->print(llvm::errs());
       auto element_ty = snode->get_body_type()->getArrayElementType();
       element_size = tlctx->get_type_size(element_ty);
     } else if (snode->type == SNodeType::pointer) {

@@ -24,6 +24,14 @@ class VirtualMemoryAllocator {
     TC_ERROR_IF(ptr == MAP_FAILED, "Virtual memory allocation ({} B) failed.",
                 size);
 #else
+    MEMORYSTATUSEX stat;
+    stat.dwLength = sizeof(stat);
+    GlobalMemoryStatusEx (&stat);
+    if (stat.ullAvailVirtual < size) {
+      TC_P(stat.ullAvailVirtual);
+      TC_P(size);
+      TC_ERROR("Insufficient virtual memory space");
+    }
     ptr = VirtualAlloc(nullptr, size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
     TC_ERROR_IF(ptr == nullptr, "Virtual memory allocation ({} B) failed.",
                 size);

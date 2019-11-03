@@ -72,7 +72,11 @@ void taichi::Tlang::UnifiedAllocator::create() {
 #else
   dst = std::malloc(sizeof(UnifiedAllocator));
 #endif
-  allocator() = new (dst) UnifiedAllocator(1LL << 42, gpu);
+#if not defined(TC_PLATFORM_WINDOWS)
+  allocator() = new (dst) UnifiedAllocator(1LL << 44, gpu);
+#else
+  allocator() = new (dst) UnifiedAllocator(1LL << 35, gpu);
+#endif
 }
 
 void taichi::Tlang::UnifiedAllocator::free() {

@@ -46,12 +46,11 @@ Supports Ubuntu 14.04/16.04/18.04, ArchLinux, Mac OS X. For NVIDIA GPU support, 
   sudo apt-get -y install cuda 
   ```
 
-### Preparing Prebuilt LLVM for OS X/Windows CI
+### Preparing Prebuilt LLVM for Windows CI
 ```
-cmake .. -G"Visual Studio 15 2017 Win64"  -DLLVM_ENABLE_RTTI:BOOL=ON -DBUILD_SHARED_LIBS:BOOL=OFF -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD="X86" -DLLVM_ENABLE_ASSERTIONS=ON -Thost=x64 -DCMAKE_INSTALL_PREFIX=installed
-msbuild /p:Configuration=Release /p:Platform=x64 /m LLVM.sln 
-
+cmake .. -G"Visual Studio 15 2017 Win64"  -DLLVM_ENABLE_RTTI:BOOL=ON -DBUILD_SHARED_LIBS:BOOL=OFF -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD="X86" -DLLVM_ENABLE_ASSERTIONS=ON -Thost=x64 -DLLVM_BUILD_TESTS:BOOL=OFF -DCMAKE_INSTALL_PREFIX=installed
 ```
+Then use Visual Studio to build. After building the "INSTALL" project, find your LLVM binaries/headers in `build/include`. 
 
 # Folder Structure
 Key folders are (TODO: update)

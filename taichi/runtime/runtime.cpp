@@ -119,49 +119,8 @@ STRUCT_FIELD_ARRAY(Context, args);
 STRUCT_FIELD(Context, runtime);
 STRUCT_FIELD(Context, buffer);
 
-int32 atomic_add_i32(volatile int32 *dest, int32 val) {
-  return __atomic_fetch_add(dest, val, std::memory_order::memory_order_seq_cst);
-}
+#include "atomic.h"
 
-int64 atomic_add_i64(volatile int64 *dest, int64 val) {
-  return __atomic_fetch_add(dest, val, std::memory_order::memory_order_seq_cst);
-}
-
-uint64 atomic_add_u64(volatile uint64 *dest, uint64 val) {
-  return __atomic_fetch_add(dest, val, std::memory_order::memory_order_seq_cst);
-}
-
-uint64 atomic_or_u64(volatile uint64 *dest, uint64 val) {
-  return __atomic_fetch_or(dest, val, std::memory_order::memory_order_seq_cst);
-}
-
-uint64 atomic_and_u64(volatile uint64 *dest, uint64 val) {
-  return __atomic_fetch_and(dest, val, std::memory_order::memory_order_seq_cst);
-}
-
-float32 atomic_add_cpu_f32(volatile float32 *dest, float32 inc) {
-  float32 old_val;
-  float32 new_val;
-  do {
-    old_val = *dest;
-    new_val = old_val + inc;
-  } while (!__atomic_compare_exchange(dest, &old_val, &new_val, true,
-                                      std::memory_order::memory_order_seq_cst,
-                                      std::memory_order::memory_order_seq_cst));
-  return old_val;
-}
-
-float64 atomic_add_cpu_f64(volatile float64 *dest, float64 inc) {
-  float64 old_val;
-  float64 new_val;
-  do {
-    old_val = *dest;
-    new_val = old_val + inc;
-  } while (!__atomic_compare_exchange(dest, &old_val, &new_val, true,
-                                      std::memory_order::memory_order_seq_cst,
-                                      std::memory_order::memory_order_seq_cst));
-  return old_val;
-}
 // These structures are accessible by both the LLVM backend and this C++ runtime
 // file here (for building complex runtime functions in C++)
 
@@ -189,65 +148,10 @@ STRUCT_FIELD(StructMeta, from_parent_element);
 STRUCT_FIELD(StructMeta, refine_coordinates);
 STRUCT_FIELD(StructMeta, is_active);
 
-// Specialized Attributes and functions
-struct DenseMeta : public StructMeta {
-  bool bitmasked;
-  int morton_dim;
-};
+#include "node_root.h"
+#include "node_dense.h"
+#include "node_pointer.h"
 
-STRUCT_FIELD(DenseMeta, bitmasked)
-STRUCT_FIELD(DenseMeta, morton_dim)
-
-void Dense_activate(Ptr meta, Ptr node, int i) {
-  auto smeta = (StructMeta *)meta;
-  auto dmeta = (DenseMeta *)meta;
-  if (DenseMeta_get_bitmasked(dmeta)) {
-    auto element_size = StructMeta_get_element_size(smeta);
-    auto num_elements = StructMeta_get_element_size(smeta);
-    auto data_section_size = element_size * num_elements;
-    auto mask_begin = (uint64 *)(node + data_section_size);
-    atomic_or_u64(&mask_begin[i / 64], 1UL << (i % 64));
-  }
-}
-
-bool Dense_is_active(Ptr meta, Ptr node, int i) {
-  auto smeta = (StructMeta *)meta;
-  auto dmeta = (DenseMeta *)meta;
-  if (DenseMeta_get_bitmasked(dmeta)) {
-    auto element_size = StructMeta_get_element_size(smeta);
-    auto num_elements = StructMeta_get_element_size(smeta);
-    auto data_section_size = element_size * num_elements;
-    auto mask_begin = node + data_section_size;
-    return bool((mask_begin[i / 8] >> (i % 8)) & 1);
-  } else {
-    return true;
-  }
-}
-
-void *Dense_lookup_element(Ptr meta, Ptr node, int i) {
-  return node + ((StructMeta *)meta)->element_size * i;
-}
-
-int Dense_get_num_elements(Ptr meta, Ptr node) {
-  return ((StructMeta *)meta)->max_num_elements;
-}
-
-struct RootMeta : public StructMeta {
-  int tag;
-};
-
-STRUCT_FIELD(RootMeta, tag);
-
-void Root_activate(Ptr meta, Ptr node, int i) {}
-
-bool Root_is_active(Ptr meta, Ptr node, int i) { return true; }
-
-void *Root_lookup_element(Ptr meta, Ptr node, int i) {
-  // only one element
-  return node;
-}
-
-int Root_get_num_elements(Ptr meta, Ptr node) { return 1; }
 
 void *taichi_allocate_aligned(std::size_t size, int alignment);
 

@@ -132,33 +132,10 @@ class Installer:
     # parser.parse_args()
     self.build_type = None
   
-  def detect_or_setup_repo(self):
+  def setup_repo(self):
     cwd = os.getcwd()
     print("Current directory:", cwd)
     
-    if os.path.exists(os.path.join(cwd, 'include', 'taichi')):
-      print("Taichi source detected.")
-      self.repo_dir = cwd
-    else:
-      print("Cloning taichi from github...")
-      self.repo_dir = os.path.join(get_default_directory_name(), 'taichi')
-      os.chdir(get_default_directory_name())
-      execute_command('git clone https://github.com/yuanming-hu/taichi.git')
-      os.chdir('taichi')
-    if os.path.exists('external/lib'):
-      print('Existing taichi runtimes detected.')
-    else:
-      print('Fetching taichi runtimes...')
-      if get_os_name() == 'win':
-        # On Windows, both MSVC and MinGW are supported. Assuming MSVC here
-        # TODO: MinGW
-        execute_command(
-          'git clone https://github.com/yuanming-hu/taichi_runtime external/lib -b msvc --depth 1'.format(
-            get_os_name()))
-      else:
-        execute_command(
-          'git clone https://github.com/yuanming-hu/taichi_runtime external/lib -b {} --depth 1'.format(
-            get_os_name()))
     execute_command("git submodule update --init --recursive")
   
   def run(self):
@@ -227,7 +204,7 @@ class Installer:
     subprocess.run(
       [get_python_executable(), "-m", "pip", "install", "--user", "psutil"])
     
-    self.detect_or_setup_repo()
+    self.setup_repo()
     
     # TODO: Make sure there is no existing Taichi ENV
     if self.build_type != 'ci':

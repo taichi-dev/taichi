@@ -68,7 +68,6 @@ def test_pointer2():
   @ti.kernel
   def func():
     for i in x:
-      ti.print(i)
       ti.atomic_add(s[None], 1)
   
   x[0] = 1

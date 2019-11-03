@@ -36,8 +36,10 @@ using i32 = int32;
 using f32 = float32;
 using f64 = float64;
 
+// TODO: DRY. merge this with taichi_core
 constexpr int taichi_max_num_indices = 4;
 constexpr int taichi_max_num_args = 8;
+constexpr int taichi_max_num_snodes = 1024;
 
 using uint8 = uint8_t;
 using Ptr = uint8 *;
@@ -199,8 +201,7 @@ struct NodeAllocator {
 
 void NodeAllocator_initialize(NodeAllocator *node_allocator,
                               std::size_t node_size) {
-  node_allocator->pool =
-      (Ptr)taichi_allocate_aligned(1024 * 1024 * 1024, 4096);
+  node_allocator->pool = (Ptr)taichi_allocate_aligned(1024 * 1024 * 1024, 4096);
   node_allocator->node_size = node_size;
   node_allocator->tail = 0;
 }
@@ -213,8 +214,9 @@ Ptr NodeAllocator_allocate(NodeAllocator *node_allocator) {
 // Is "runtime" a correct name, even if it is created after the data layout is
 // materialized?
 struct Runtime {
-  ElementList *element_lists[1024];
-  NodeAllocator *node_allocators[1024];
+  ElementList *element_lists[taichi_max_num_snodes];
+  NodeAllocator *node_allocators[taichi_max_num_snodes];
+  Ptr ambient_elements[taichi_max_num_snodes];
 };
 
 STRUCT_FIELD_ARRAY(Runtime, element_lists);
@@ -245,6 +247,11 @@ Ptr Runtime_initialize(Runtime **runtime_ptr, int num_snodes,
   ElementList_insert(runtime->element_lists[root_id], &elem);
   printf("Runtime initialized.\n");
   return (Ptr)root_ptr;
+}
+
+void Runtime_allocate_ambient(Runtime *runtime, int snode_id) {
+  runtime->ambient_elements[snode_id] =
+      NodeAllocator_allocate(runtime->node_allocators[snode_id]);
 }
 
 // "Element", "component" are different concepts

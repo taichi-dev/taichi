@@ -310,25 +310,32 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
         tlctx->lookup_function<std::function<void *(void *, int)>>(
             "Runtime_get_node_allocators");
 
+    auto allocate_ambient =
+        tlctx->lookup_function<std::function<void(void *, int)>>(
+            "Runtime_allocate_ambient");
+
     auto initialize_allocator =
         tlctx->lookup_function<std::function<void *(void *, std::size_t)>>(
             "NodeAllocator_initialize");
 
     auto snodes = this->snodes;
     auto tlctx = this->tlctx;
-    creator = [initialize_data_structure, get_allocator, initialize_allocator,
-               root_size, snodes, tlctx]() {
+    creator = [=]() {
       TC_INFO("Allocating data structure of size {}", root_size);
       auto root_ptr =
           initialize_data_structure(&get_current_program().llvm_runtime);
       for (int i = 0; i < (int)snodes.size(); i++) {
         if (snodes[i]->type == SNodeType::pointer) {
-          auto element_size = tlctx->get_type_size(
-              snodes[i]->ch[0]->llvm_body_type);
+          auto element_size =
+              tlctx->get_type_size(snodes[i]->ch[0]->llvm_body_type);
           TC_INFO("Initializing allocator for snode {} (element size {})",
                   snodes[i]->id, element_size);
-          auto allocator = get_allocator(get_current_program().llvm_runtime, i);
+          auto rt = get_current_program().llvm_runtime;
+          auto allocator = get_allocator(rt, i);
           initialize_allocator(allocator, element_size);
+          TC_INFO("Allocating ambient element for snode {} (element size {})",
+                  snodes[i]->id, element_size);
+          allocate_ambient(rt, i);
         }
       }
       return (void *)root_ptr;

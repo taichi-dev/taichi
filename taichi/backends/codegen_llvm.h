@@ -950,29 +950,6 @@ public:
     // This part may need a redesign - why do we need both global indices and
     // linearized indices?
     auto snode = stmt->snode;
-    /*
-    std::vector<std::string> global_indices(max_num_indices, "0");
-    for (int i = 0; i < (int)stmt->global_indices.size(); i++) {
-      if (snode->physical_index_position[i] != -1) {
-        global_indices[snode->physical_index_position[i]] =
-            stmt->global_indices[i]->raw_name() + fmt::format("[{}]", 0);
-      }
-    }
-    */
-    if (stmt->activate && stmt->snode->type != SNodeType::place) {
-      // emit(R"({}->activate({}, {});)", parent,
-      // stmt->input_index->raw_name(),
-      //     make_list(global_indices, "{"));
-    }
-    // emit("auto {}_guarded = {}->look_up({});", stmt->raw_name(), parent,
-    //     stmt->input_index->raw_name());
-    if (!stmt->activate && snode->has_null()) {
-      // safe guard with ambient node
-      emit("if({}_guarded == nullptr) {}_guarded = &{}_ambient;",
-           stmt->raw_name(), stmt->raw_name(), snode->node_type_name);
-    }
-    // emit(R"(auto {} = {}_guarded;)", stmt->raw_name(), stmt->raw_name());
-    // TC_P(snode_type_name(snode->type));
     if (snode->type == SNodeType::root) {
       stmt->value = builder->CreateGEP(parent, stmt->input_index->value);
     } else if (snode->type == SNodeType::dense) {

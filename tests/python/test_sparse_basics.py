@@ -81,3 +81,5 @@ def test_pointer2():
   
   func()
   assert s[None] == 5 * n
+  print(x[257 + n * n * 7])
+  assert s[None] == 5 * n

@@ -48,7 +48,9 @@ Supports Ubuntu 14.04/16.04/18.04, ArchLinux, Mac OS X. For NVIDIA GPU support, 
 
 ### Preparing Prebuilt LLVM for OS X/Windows CI
 ```
-cmake .. -DLLVM_ENABLE_RTTI:BOOL=ON -DBUILD_SHARED_LIBS:BOOL=OFF -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD="X86" -DLLVM_ENABLE_ASSERTIONS=ON -DCMAKE_INSTALL_PREFIX=installed
+cmake .. -G"Visual Studio 15 2017 Win64"  -DLLVM_ENABLE_RTTI:BOOL=ON -DBUILD_SHARED_LIBS:BOOL=OFF -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD="X86" -DLLVM_ENABLE_ASSERTIONS=ON -Thost=x64 -DCMAKE_INSTALL_PREFIX=installed
+msbuild /p:Configuration=Release /p:Platform=x64 /m LLVM.sln 
+
 ```
 
 # Folder Structure

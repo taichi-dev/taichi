@@ -143,11 +143,6 @@ class Installer:
       print("Cloning taichi from github...")
       self.repo_dir = os.path.join(get_default_directory_name(), 'taichi')
       os.chdir(get_default_directory_name())
-      if os.path.exists('taichi'):
-        print('Existing taichi installation detected.')
-        print('Please remove existing taichi installation in {}'.format(
-          self.repo_dir))
-        exit(-1)
       execute_command('git clone https://github.com/yuanming-hu/taichi.git')
       os.chdir('taichi')
     if os.path.exists('external/lib'):

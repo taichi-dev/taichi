@@ -52,8 +52,8 @@ void vprintf(Ptr format, Ptr arg);
 i32 printf(const char *, ...);
 
 #define DEFINE_UNARY_REAL_FUNC(F)                                              \
-  float F##_f32(float x) { return std::F(x); }                                 \
-  double F##_f64(double x) { return std::F(x); }
+  f32 F##_f32(f32 x) { return std::F(x); }                                     \
+  f64 F##_f64(f64 x) { return std::F(x); }
 
 // sin and cos are already included in llvm intrinsics
 DEFINE_UNARY_REAL_FUNC(exp)

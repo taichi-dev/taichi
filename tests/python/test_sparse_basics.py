@@ -2,7 +2,6 @@ import taichi as ti
 
 @ti.all_archs
 def test_bitmasked():
-  ti.reset()
   x = ti.var(ti.f32)
   s = ti.var(ti.i32)
 
@@ -28,8 +27,6 @@ def test_bitmasked():
   
 @ti.all_archs
 def test_pointer():
-  ti.reset()
-  ti.cfg.arch = ti.x86_64
   x = ti.var(ti.f32)
   s = ti.var(ti.i32)
   

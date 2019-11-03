@@ -453,11 +453,6 @@ void initialize_benchmark() {
   TC_WARN_IF(c != '1',
              "You seem to be running the benchmark with Intel Turboboost.");
 #endif
-  TC_INFO("GCC   Version {}.{}.{}", __GNUC__, __GNUC_MINOR__,
-          __GNUC_PATCHLEVEL__);
-  // TC_INFO("NVCC  Version {}.{}.{}", __CUDACC_VER_MAJOR__,
-  // __CUDACC_VER_MINOR__,
-  //        __CUDACC_VER_BUILD__);
 }
 
 TC_NAMESPACE_END

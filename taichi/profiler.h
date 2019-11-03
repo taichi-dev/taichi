@@ -2,8 +2,16 @@
 #include <map>
 #include <vector>
 #include <algorithm>
+#if defined(TC_PLATFORM_UNIX)
 #include <sys/time.h>
+#endif
 #include "common.h"
+
+#if defined(TC_PLATFORM_WINDOWS)
+#undef min
+#undef max
+#endif
+
 
 TLANG_NAMESPACE_BEGIN
 

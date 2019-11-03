@@ -11,7 +11,9 @@
 #include "ir.h"
 #include "taichi_llvm_context.h"
 #include "kernel.h"
+#if defined(TC_PLATFORM_UNIX)
 #include <dlfcn.h>
+#endif
 
 TLANG_NAMESPACE_BEGIN
 
@@ -90,7 +92,11 @@ class Program {
   void finalize() {
     current_program = nullptr;
     for (auto &dll : loaded_dlls) {
+#if defined(TC_PLATFORM_UNIX)
       dlclose(dll);
+#else
+	TC_NOT_IMPLEMENTED
+#endif
     }
     UnifiedAllocator::free();
     finalized = true;

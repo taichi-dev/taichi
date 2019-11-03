@@ -47,10 +47,14 @@ TaichiLLVMContext::TaichiLLVMContext(Arch arch) : arch(arch) {
     llvm::InitializeNativeTargetAsmPrinter();
     llvm::InitializeNativeTargetAsmParser();
   } else {
+#if defined(TLANG_WITH_CUDA)
     LLVMInitializeNVPTXTarget();
     LLVMInitializeNVPTXTargetMC();
     LLVMInitializeNVPTXTargetInfo();
     LLVMInitializeNVPTXAsmPrinter();
+#else
+	TC_NOT_IMPLEMENTED
+#endif
   }
   ctx = std::make_unique<llvm::LLVMContext>();
   TC_INFO("Creating llvm context for arch: {}", arch_name(arch));

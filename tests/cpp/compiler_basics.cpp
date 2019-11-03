@@ -231,19 +231,6 @@ TC_TEST("vectorize") {
   }
 };
 
-TC_TEST("simd_fpe") {
-  return;
-  __m128 a = _mm_set_ps(1, 0, -1, -2);
-  __m128 b = _mm_set_ps(0, 0, 0, 0);
-  a = _mm_sqrt_ps(a);
-  for (int i = 0; i < 4; i++) {
-    std::cout << a[i] << std::endl;
-  }
-  a = a / b;
-  for (int i = 0; i < 4; i++) {
-    std::cout << a[i] << std::endl;
-  }
-};
 
 TC_TEST("rand") {
   CoreState::set_trigger_gdb_when_crash(true);

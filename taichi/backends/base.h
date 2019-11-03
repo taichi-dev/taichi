@@ -5,7 +5,9 @@
 #include "../snode.h"
 #include "../ir.h"
 #include "../program.h"
+#if defined(TC_PLATFORM_UNIX)
 #include <dlfcn.h>
+#endif
 
 TLANG_NAMESPACE_BEGIN
 

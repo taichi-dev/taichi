@@ -30,9 +30,9 @@ TC_INTERFACE(Task)
 
 template <typename T>
 inline std::enable_if_t<
-    std::is_same<std::invoke_result_t<T(const std::vector<std::string> &)>,
+    std::is_same<std::result_of_t<T(const std::vector<std::string> &)>,
                  void>::value ||
-        std::is_same<std::invoke_result_t<T(const std::vector<std::string> &)>,
+        std::is_same<std::result_of_t<T(const std::vector<std::string> &)>,
                      const char *>::value,
     std::string>
 task_invoke(const T &func, const std::vector<std::string> &params) {
@@ -42,7 +42,7 @@ task_invoke(const T &func, const std::vector<std::string> &params) {
 
 template <typename T>
 inline std::enable_if_t<
-    std::is_same<std::invoke_result_t<T(const std::vector<std::string> &)>,
+    std::is_same<std::result_of_t<T(const std::vector<std::string> &)>,
                  std::string>::value,
     std::string>
 task_invoke(const T &func, const std::vector<std::string> &params) {
@@ -50,7 +50,7 @@ task_invoke(const T &func, const std::vector<std::string> &params) {
 }
 
 template <typename T>
-inline std::enable_if_t<std::is_same<std::invoke_result_t<T()>, void>::value,
+inline std::enable_if_t<std::is_same<std::result_of_t<T()>, void>::value,
                         std::string>
 task_invoke(const T &func, const std::vector<std::string> &params) {
   func();
@@ -59,8 +59,8 @@ task_invoke(const T &func, const std::vector<std::string> &params) {
 
 template <typename T>
 inline std::enable_if_t<
-    std::is_same<std::invoke_result_t<T()>, std::string>::value ||
-        std::is_same<std::invoke_result_t<T()>, const char *>::value,
+    std::is_same<std::result_of_t<T()>, std::string>::value ||
+        std::is_same<std::result_of_t<T()>, const char *>::value,
     std::string>
 task_invoke(const T &func, const std::vector<std::string> &params) {
   return func();

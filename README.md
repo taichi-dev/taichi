@@ -15,7 +15,7 @@ python3 -m pip install taichi-nightly-cuda-10-0
 python3 -m pip install taichi-nightly-cuda-10-1
 ```
 
-### High-Performance Computation on Sparse Data Structures [[Paper]](http://taichi.graphics/wp-content/uploads/2019/09/taichi_lang.pdf) [[Video]](https://youtu.be/wKw8LMF3Djo) [[Language Details]](https://github.com/yuanming-hu/taichi/blob/master/python/taichi/README.md) [[Taichi Compiler Developer Installation]](https://github.com/yuanming-hu/taichi/blob/master/src/README.md#developer-installation)
+### High-Performance Computation on Sparse Data Structures [[Paper]](http://taichi.graphics/wp-content/uploads/2019/09/taichi_lang.pdf) [[Video]](https://youtu.be/wKw8LMF3Djo) [[Language Details]](https://github.com/yuanming-hu/taichi/blob/master/python/taichi/README.md) [[Taichi Compiler Developer Installation]](https://github.com/yuanming-hu/taichi/blob/master/taichi/README.md#developer-installation)
 
 ## [Examples](https://github.com/yuanming-hu/taichi/tree/master/examples)
 ## Updates

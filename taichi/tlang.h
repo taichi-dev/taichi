@@ -20,7 +20,9 @@ inline int maximum(int a) {
 }  // namespace taichi
 #include <taichi/math.h>
 #include <set>
+#if defined(TC_PLATFORM_UNIX)
 #include <dlfcn.h>
+#endif
 
 #include "tlang_util.h"
 #include "math.h"

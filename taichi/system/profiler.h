@@ -10,6 +10,9 @@
 #include <vector>
 #include <map>
 #include <memory>
+#if defined(TC_PLATFORM_WINDOWS)
+#undef max
+#endif
 
 TC_NAMESPACE_BEGIN
 

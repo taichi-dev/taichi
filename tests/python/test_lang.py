@@ -38,7 +38,7 @@ def test_nested_subscript():
   assert x[0] == 1
 
 
-@ti.program_test
+@ti.all_archs
 def test_norm():
   val = ti.var(ti.i32)
   f = ti.var(ti.f32)
@@ -71,7 +71,7 @@ def test_norm():
     assert val[i] == 96 + i
     
 
-@ti.program_test
+@ti.all_archs
 def test_simple2():
   val = ti.var(ti.i32)
   f = ti.var(ti.f32)

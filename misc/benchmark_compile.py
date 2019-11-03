@@ -3,7 +3,7 @@ from pytest import approx
 import autograd.numpy as np
 from autograd import grad
 
-@ti.program_test
+@ti.all_archs
 def grad_test(tifunc, npfunc=None):
   if npfunc is None:
     npfunc = tifunc

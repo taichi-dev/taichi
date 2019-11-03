@@ -1,6 +1,6 @@
 import taichi as ti
 
-@ti.program_test
+@ti.all_archs
 def test_linear():
   x = ti.var(ti.i32)
   y = ti.var(ti.i32)
@@ -25,7 +25,7 @@ def test_linear():
     assert y[i] == i * 2
     
     
-@ti.program_test
+@ti.all_archs
 def test_nested():
   x = ti.var(ti.i32)
   y = ti.var(ti.i32)
@@ -49,7 +49,7 @@ def test_nested():
     assert x[i] == i
     assert y[i] == i * 2
 
-@ti.program_test
+@ti.all_archs
 def test_nested2():
   x = ti.var(ti.i32)
   y = ti.var(ti.i32)
@@ -73,7 +73,7 @@ def test_nested2():
     assert x[i] == i
     assert y[i] == i * 2
     
-@ti.program_test
+@ti.all_archs
 def test_nested_2d():
   x = ti.var(ti.i32)
   y = ti.var(ti.i32)
@@ -95,7 +95,7 @@ def test_nested_2d():
     for j in range(n):
       assert x[i, j] == i + j * 2
       
-@ti.program_test
+@ti.all_archs
 def test_nested_2d_more_nests():
   x = ti.var(ti.i32)
   y = ti.var(ti.i32)
@@ -117,7 +117,7 @@ def test_nested_2d_more_nests():
     for j in range(n):
       assert x[i, j] == i + j * 2
     
-@ti.program_test
+@ti.all_archs
 def test_linear_k():
   x = ti.var(ti.i32)
   

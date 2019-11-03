@@ -1,7 +1,7 @@
 import taichi as ti
 import numpy as np
 
-@ti.program_test
+@ti.all_archs
 def test_numpy():
   val = ti.var(ti.i32)
 

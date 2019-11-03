@@ -1,6 +1,6 @@
 import taichi as ti
 
-@ti.program_test
+@ti.all_archs
 def test_kernel_template_basic():
   x = ti.var(ti.i32)
   y = ti.var(ti.f32)
@@ -33,7 +33,7 @@ def test_kernel_template_basic():
     assert x[i] == 12
 
 
-@ti.program_test
+@ti.all_archs
 def test_kernel_template_gradient():
   x = ti.global_var(ti.f32)
   y = ti.global_var(ti.f32)

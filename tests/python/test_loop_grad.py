@@ -1,6 +1,6 @@
 import taichi as ti
 
-@ti.program_test
+@ti.all_archs
 def test_loop_grad():
   ti.set_gdb_trigger()
   ti.cfg.print_ir = True
@@ -35,7 +35,7 @@ def test_loop_grad():
       assert x.grad[k, i] == 2 ** (m - 1 - i)
 
 
-@ti.program_test
+@ti.all_archs
 def test_loop_grad_complex():
   return # This case is not supported yet
   x = ti.var(ti.f32)

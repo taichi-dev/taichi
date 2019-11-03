@@ -1,6 +1,6 @@
 import taichi as ti
 
-@ti.program_test
+@ti.all_archs
 def test_loops():
   x = ti.var(ti.f32)
   y = ti.var(ti.f32)
@@ -28,7 +28,7 @@ def test_loops():
   for i in range(N // 2 + 3, N):
     assert x[i] == abs(y[i])
     
-@ti.program_test
+@ti.all_archs
 def test_numpy_loops():
   x = ti.var(ti.f32)
   y = ti.var(ti.f32)
@@ -61,7 +61,7 @@ def test_numpy_loops():
     assert x[i] == abs(y[i])
     
 
-@ti.program_test
+@ti.all_archs
 def test_nested_loops():
   # this may crash if any LLVM allocas are called in the loop body
   x = ti.var(ti.i32)

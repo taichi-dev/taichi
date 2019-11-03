@@ -1,6 +1,6 @@
 import taichi as ti
 
-@ti.program_test
+@ti.all_archs
 def test_simple():
   x = ti.var(ti.i32)
 
@@ -22,7 +22,7 @@ def test_simple():
     else:
       assert x[i] == 0
 
-@ti.program_test
+@ti.all_archs
 def test_range_loops():
   x = ti.var(ti.i32)
 
@@ -43,7 +43,7 @@ def test_range_loops():
     assert x[i] == i + 123
 
 
-@ti.program_test
+@ti.all_archs
 def test_io():
   ti.cfg.arch = ti.cuda
   x = ti.var(ti.i32)

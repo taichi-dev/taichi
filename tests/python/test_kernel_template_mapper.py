@@ -1,6 +1,6 @@
 import taichi as ti
 
-@ti.program_test
+@ti.all_archs
 def test_kernel_template_mapper():
   x = ti.var(ti.i32)
   y = ti.var(ti.f32)

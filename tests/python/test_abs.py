@@ -1,6 +1,6 @@
 import taichi as ti
 
-@ti.program_test
+@ti.all_archs
 def test_abs():
   ti.reset()
   ti.cfg.print_ir = True

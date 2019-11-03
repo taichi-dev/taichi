@@ -1,7 +1,7 @@
 import taichi as ti
 from pytest import approx
 
-@ti.program_test
+@ti.all_archs
 def test_transpose():
   dim = 3
   m = ti.Matrix(dim, dim, ti.f32)
@@ -26,7 +26,7 @@ def test_transpose():
       assert m(j, i)[None] == approx(i * 2 + j * 7)
 
 
-@ti.program_test
+@ti.all_archs
 def test_polar_decomp():
   dim = 2
   m = ti.Matrix(dim, dim, ti.f32)
@@ -61,7 +61,7 @@ def test_polar_decomp():
       assert D(i, j)[None] == approx(0, abs=1e-5)
 
 
-@ti.program_test
+@ti.all_archs
 def test_matrix():
   x = ti.Matrix(2, 2, dt=ti.i32)
 

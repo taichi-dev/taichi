@@ -1,6 +1,6 @@
 import taichi as ti
 
-@ti.program_test
+@ti.all_archs
 def test_complex_kernels_range():
   a = ti.var(ti.f32)
   b = ti.var(ti.f32)
@@ -35,7 +35,7 @@ def test_complex_kernels_range():
     assert a[i] == i + 12
     assert b[i] == i + 7
 
-@ti.program_test
+@ti.all_archs
 def test_complex_kernels():
   return
   a = ti.var(ti.f32)

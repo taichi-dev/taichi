@@ -1,6 +1,6 @@
 import taichi as ti
 
-@ti.program_test
+@ti.all_archs
 def test_bitmasked():
   ti.reset()
   x = ti.var(ti.f32)
@@ -26,7 +26,7 @@ def test_bitmasked():
   func()
   assert s[None] == 256
   
-@ti.program_test
+@ti.all_archs
 def test_pointer():
   ti.reset()
   ti.cfg.arch = ti.x86_64
@@ -53,7 +53,7 @@ def test_pointer():
   assert s[None] == 256
   
   
-@ti.program_test
+@ti.all_archs
 def test_pointer2():
   x = ti.var(ti.f32)
   s = ti.var(ti.i32)

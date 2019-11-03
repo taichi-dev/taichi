@@ -68,7 +68,7 @@ def simple_test(func):
 
 
 # test with all archs
-def program_test(func):
+def all_archs(func):
   import taichi as ti
   def test(*args, **kwargs):
     archs = [x86_64]

@@ -210,6 +210,8 @@ class IRBuilder {
   }
 
   Stmt *get_last_stmt();
+
+  void stop_gradient(SNode *);
 };
 
 inline Expr load_if_ptr(const Expr &ptr);
@@ -1343,6 +1345,7 @@ class Block : public IRNode {
   std::vector<std::unique_ptr<Stmt>> statements, trash_bin;
   std::map<Ident, Stmt *> local_var_alloca;
   Stmt *mask_var;
+  std::vector<SNode *> stop_gradients;
 
   Block() {
     mask_var = nullptr;
@@ -1891,11 +1894,6 @@ class FrontendWhileStmt : public Stmt {
 
   DEFINE_ACCEPT
 };
-
-inline void IRBuilder::insert(std::unique_ptr<Stmt> &&stmt, int location) {
-  TC_ASSERT(!stack.empty());
-  stack.back()->insert(std::move(stmt), location);
-}
 
 #define Print(x) Print_(x, #x);
 

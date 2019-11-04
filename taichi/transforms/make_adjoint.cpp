@@ -283,6 +283,17 @@ class MakeAdjoint : public IRVisitor {
     }
   }
 
+  bool gradients_stopped(GlobalLoadStmt *stmt, SNode *snode) {
+    for (auto block = stmt->parent; block; block = block->parent) {
+      for (auto s : block->stop_gradients) {
+        if (s == snode) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
   void visit(GlobalLoadStmt *stmt) override {
     // issue global store to adjoint
     GlobalPtrStmt *ptr = stmt->ptr->as<GlobalPtrStmt>();
@@ -290,6 +301,10 @@ class MakeAdjoint : public IRVisitor {
     auto snodes = ptr->snodes;
     if (!snodes[0]->has_grad()) {
       // No adjoint SNode. Do nothing
+      return;
+    }
+    if (gradients_stopped(stmt, snodes[0])) {
+      // gradients stopped, do nothing.
       return;
     }
     TC_ASSERT(snodes[0]->get_grad() != nullptr);

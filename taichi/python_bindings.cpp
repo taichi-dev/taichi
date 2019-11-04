@@ -1,18 +1,16 @@
 // Bindings for the python frontend
 
-#include <pybind11/pybind11.h>
-#include <pybind11/functional.h>
-#include <taichi/python/export.h>
-#include <taichi/common/interface.h>
 #include "tlang.h"
+#include <pybind11/functional.h>
+#include <pybind11/pybind11.h>
+#include <taichi/common/interface.h>
+#include <taichi/python/export.h>
 
 TLANG_NAMESPACE_BEGIN
 
 std::string compiled_lib_dir;
 
-Expr expr_index(const Expr &expr, const Expr &index) {
-  return expr[index];
-}
+Expr expr_index(const Expr &expr, const Expr &index) { return expr[index]; }
 
 void expr_assign(const Expr &lhs_, const Expr &rhs, std::string tb) {
   auto lhs = ptr_if_global(lhs_);
@@ -333,6 +331,8 @@ void export_lang(py::module &m) {
   m.def("vectorize", Vectorize);
   m.def("block_dim", BlockDim);
   m.def("cache", Cache);
+  m.def("stop_grad",
+        [](SNode *snode) { current_ast_builder().stop_gradient(snode); });
 
   m.def("test_throw", [] { throw IRModified(); });
   m.def("needs_grad", needs_grad);

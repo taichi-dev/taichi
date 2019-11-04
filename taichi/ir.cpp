@@ -30,6 +30,16 @@ std::string Stmt::type() {
   return v.type_name;
 }
 
+void IRBuilder::insert(std::unique_ptr<Stmt> &&stmt, int location) {
+  TC_ASSERT(!stack.empty());
+  stack.back()->insert(std::move(stmt), location);
+}
+
+void IRBuilder::stop_gradient(SNode *snode) {
+  TC_ASSERT(!stack.empty());
+  stack.back()->stop_gradients.push_back(snode);
+}
+
 GetChStmt::GetChStmt(taichi::Tlang::Stmt *input_ptr, int chid)
     : input_ptr(input_ptr), chid(chid) {
   add_operand(this->input_ptr);

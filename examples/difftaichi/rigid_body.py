@@ -438,9 +438,11 @@ def optimize(toi=True, visualize=True):
       weights2[i, j] = np.random.randn() * math.sqrt(2 / (n_hidden + n_springs)) * 1
 
 
+  '''
   if visualize:
     clear_states()
     forward('initial{}'.format(robot_id))
+  '''
   
   losses = []
   for iter in range(20):

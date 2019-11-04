@@ -20,9 +20,14 @@ def expr_init(rhs):
       return Expr(taichi_lang_core.expr_var(Expr(rhs).ptr))
 
 
+def wrap_scalar(x):
+  if type(x) in [int, float]:
+    return Expr(x)
+  else:
+    return x
 
 def atomic_add(a, b):
-  a.atomic_add(Expr(b))
+  a.atomic_add(wrap_scalar(b))
 
 
 def subscript(value, *indices):

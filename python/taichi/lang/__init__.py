@@ -43,6 +43,8 @@ determinant = Matrix.determinant
 set_default_fp = pytaichi.set_default_fp
 
 def Tape(loss, clear_gradients=True):
+  get_runtime().materialize()
+  assert loss.snode().ptr.has_grad(), "gradient for loss not allocated"
   if clear_gradients:
     clear_all_gradients()
   loss[None] = 0
@@ -50,6 +52,7 @@ def Tape(loss, clear_gradients=True):
   return runtime.get_tape(loss)
 
 def clear_all_gradients():
+  get_runtime().materialize()
   core.get_current_program().clear_all_gradients()
 
 schedules = [parallelize, vectorize, block_dim, cache]

@@ -78,7 +78,8 @@ class PyTaichi:
     self.default_ip = ip
   
   def materialize(self):
-    assert self.materialized == False
+    if self.materialized:
+      return
     Expr.layout_materialized = True
     self.prog = taichi_lang_core.Program()
     

@@ -103,6 +103,7 @@ void export_lang(py::module &m) {
       .def("lazy_grad", &SNode::lazy_grad)
       .def("read_int", &SNode::read_int)
       .def("read_float", &SNode::read_float)
+      .def("has_grad", &SNode::has_grad)
       .def("write_int", &SNode::write_int)
       .def("write_float", &SNode::write_float)
       .def("num_active_indices",

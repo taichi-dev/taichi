@@ -4,6 +4,8 @@
 
 TLANG_NAMESPACE_BEGIN
 
+// Do automatic differentiation pass in the reverse order (reverse-mode AD)
+
 class MakeAdjoint : public IRVisitor {
  private:
   Stmt *constant(float32 x) {

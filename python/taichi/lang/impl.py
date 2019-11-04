@@ -187,6 +187,10 @@ def static(x):
   return x
 
 
+def stop_grad(x):
+  taichi_lang_core.stop_grad(x.snode().ptr)
+
+
 def current_cfg():
   return taichi_lang_core.current_compile_config()
 

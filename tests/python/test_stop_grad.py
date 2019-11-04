@@ -70,8 +70,9 @@ def test_stop_grad2():
 
   @ti.kernel
   def func():
+    # Two loops, one with stop grad on without
     for i in range(n):
-      ti.core.stop_grad(x.snode().ptr)
+      ti.stop_grad(x)
       ti.atomic_add(loss, x[i] ** 2)
     for i in range(n):
       ti.atomic_add(loss, x[i] ** 2)
@@ -81,6 +82,8 @@ def test_stop_grad2():
 
   with ti.Tape(loss):
     func()
+
+  # without stop grad x.grad[i] = i * 4
 
   for i in range(n):
     assert x.grad[i] == i * 2

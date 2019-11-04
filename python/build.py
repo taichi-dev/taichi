@@ -72,6 +72,8 @@ elif get_os_name() == 'osx':
 else:
   print('not implemented')
   exit(-1)
+  
+shutil.copytree('../tests/python', './taichi/tests')
 
 if gpu:
   libdevice_path = ti.core.libdevice_path()
@@ -93,12 +95,15 @@ if get_os_name() == 'linux':
 else:
   os.system('{} setup.py bdist_wheel'.format(get_python_executable()))
 
+shutil.rmtree('taichi/lib')
+shutil.rmtree('taichi/tests')
+
 if mode == 'upload':
   os.system(
     '{} -m twine upload dist/* --verbose -u yuanming-hu -p $PYPI_PWD'.format(
       get_python_executable()))
 elif mode == 'test':
-  print('Uninstalling old taichi package...')
+  print('Uninstalling old taichi packages...')
   os.system(
     'pip3 uninstall taichi-nightly taichi-gpu-nightly taichi-nightly-cuda-10-0 taichi-nightly-cuda-10-1')
   dists = os.listdir('dist')

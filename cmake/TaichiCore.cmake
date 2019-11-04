@@ -13,7 +13,7 @@ add_library(${CORE_LIBRARY_NAME} SHARED ${TAICHI_CORE_SOURCE} ${PROJECT_SOURCES}
 
 if (APPLE)
 # Ask OS X to minic Linux dynamic linking behavior
-target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE "-undefined dynamic_lookup")
+target_link_libraries(${CORE_LIBRARY_NAME} "-undefined dynamic_lookup")
 endif()
 
 

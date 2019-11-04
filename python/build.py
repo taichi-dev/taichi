@@ -87,12 +87,6 @@ ti.core.compile_runtimes()
 for f in os.listdir('../taichi/runtime'):
   if f.startswith('runtime_') and f.endswith('.bc'):
     shutil.copy(os.path.join('../taichi/runtime', f), 'taichi/lib')
-    
-with open('libpython_path.txt') as f:
-  libpython_path = f.readline().strip()
-libpython_path = os.path.realpath(libpython_path)
-print("Shipping libpython", libpython_path)
-shutil.copy(libpython_path, os.path.join("taichi/lib/", libpython_path.split('/')[-1]))
 
 os.system('{} -m pip install --user --upgrade twine setuptools wheel'.format(
   get_python_executable()))

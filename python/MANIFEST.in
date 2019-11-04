@@ -3,7 +3,7 @@ include MANIFEST.in
 include *.txt
 include *.py
 include *.cfg
-include taichi/lib/libpython*
+include taichi/lib/*.so
 include taichi/lib/*.bc
 
 global-exclude *.pyc *.pyo *.pyd

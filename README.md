@@ -20,9 +20,9 @@ python3 -m pip install taichi-nightly-cuda-10-1
 ## [Examples](https://github.com/yuanming-hu/taichi/tree/master/examples)
 ## Updates
  - (Nov 1, 2019) v0.0.77 released.
-   - **Pip wheels now support OS X 10.14+**;
-   - LLVM backend is the default backend. No need to install `gcc-7` or `clang-7` anymore. To use legacy backends, ```export TI_LLVM=0```;
-   - LLVM compilation is improved by 2x;
+   - **Python wheels now support OS X 10.14+**;
+   - LLVM is now the default backend. No need to install `gcc-7` or `clang-7` anymore. To use legacy backends, ```export TI_LLVM=0```;
+   - LLVM compilation speed is improved by 2x;
    - More friendly syntax error messages.
  - (Oct 30, 2019) v0.0.72 released.
    - LLVM GPU backend now as fast as the legacy (yet optimized) CUDA backend. To enable, ```export TI_LLVM=1```;

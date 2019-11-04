@@ -54,3 +54,4 @@ __pycache__
 *.egg-info
 .tlang_cache
 /taichi/common/version.h
+libpython_path.txt

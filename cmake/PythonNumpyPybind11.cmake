@@ -49,6 +49,8 @@ else()
   set(PYTHON_LIBRARIES ${PYTHON_LIBRARY})
 endif()
 
+file(WRITE ${CMAKE_SOURCE_DIR}/python/libpython_path.txt ${PYTHON_LIBRARY})
+
 # Creating python enters
 file(MAKE_DIRECTORY bin)
 file(WRITE ${CMAKE_SOURCE_DIR}/bin/ti "#!${PYTHON_EXECUTABLE_PATH}\nimport taichi\nexit(taichi.main())")

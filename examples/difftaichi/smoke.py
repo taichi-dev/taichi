@@ -1,10 +1,8 @@
 import taichi as ti
 import time
-import math
 import numpy as np
 import cv2
-import matplotlib
-import matplotlib.pyplot as plt
+import os
 from imageio import imread, imwrite
 
 real = ti.f32
@@ -163,13 +161,14 @@ def forward(output=None):
     advect_smoke(t)
     
     if output:
+      os.makedirs(output, exist_ok=True)
       smoke_ = np.zeros(shape=(n_grid, n_grid), dtype=np.float32)
       for i in range(n_grid):
         for j in range(n_grid):
           smoke_[i, j] = smoke[t, i, j]
       cv2.imshow('smoke', smoke_)
       cv2.waitKey(1)
-      matplotlib.image.imsave("{}/{:04d}.png".format(output, t), 255 * smoke_)
+      cv2.imwrite("{}/{:04d}.png".format(output, t), 255 * smoke_)
   compute_loss()
   print('forward time', (time.time() - T) * 1000, 'ms')
 

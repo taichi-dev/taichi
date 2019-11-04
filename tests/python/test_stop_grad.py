@@ -83,7 +83,6 @@ def test_stop_grad2():
   with ti.Tape(loss):
     func()
 
-  # without stop grad x.grad[i] = i * 4
-
+  # If without stop, grad x.grad[i] = i * 4
   for i in range(n):
     assert x.grad[i] == i * 2

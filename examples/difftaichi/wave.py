@@ -106,12 +106,11 @@ def forward(output=None):
       if output:
         img = np.clip(img, 0, 255)
         cv2.imwrite(output + "/{:04d}.png".format(t), img * 255)
-  loss[None] = 0
   compute_loss(steps - 1)
 
 def main():
   # initialization
-  target_img = cv2.imread('smoke/taichi.png')[:,:,0] / 255.0
+  target_img = cv2.imread('taichi.png')[:,:,0] / 255.0
   target_img -= target_img.mean()
   target_img = cv2.resize(target_img, (n_grid, n_grid))
   cv2.imshow('target', target_img * amplify + 0.5)
@@ -120,14 +119,16 @@ def main():
     for j in range(n_grid):
       target[i, j] = float(target_img[i, j])
 
-  initial[n_grid // 2, n_grid // 2] = -2
-  forward('center')
-  initial[n_grid // 2, n_grid // 2] = 0
+  if False:
+    # this is not too exciting...
+    initial[n_grid // 2, n_grid // 2] = -2
+    forward('center')
+    initial[n_grid // 2, n_grid // 2] = 0
 
   for opt in range(200):
     with ti.Tape(loss):
       output = None
-      if opt % 20 == 0:
+      if opt % 20 == 19:
         output = 'wave/iter{:03d}/'.format(opt)
       forward(output)
     

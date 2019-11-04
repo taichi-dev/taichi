@@ -295,7 +295,7 @@ def optimize(toi, visualize):
       weights2[i, j] = np.random.randn() * math.sqrt(2 / (n_hidden + n_springs)) * 3
 
   losses = []
-  forward('initial{}'.format(robot_id), visualize=visualize)
+  # forward('initial{}'.format(robot_id), visualize=visualize)
   for iter in range(100):
     clear()
   
@@ -337,6 +337,7 @@ def optimize(toi, visualize):
 robot_id = 0
 if len(sys.argv) != 3:
   print("Usage: python3 mass_spring.py [robot_id=0, 1, 2, ...] [task]")
+  exit(-1)
 else:
   robot_id = int(sys.argv[1])
   task = sys.argv[2]

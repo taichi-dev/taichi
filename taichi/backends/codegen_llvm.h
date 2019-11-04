@@ -300,7 +300,11 @@ public:
             module.get(), Intrinsic::sqrt, input->getType());
         stmt->value = builder->CreateCall(sqrt_fn, input, "sqrt");
       } else if (op == UnaryOpType::neg) {
-        stmt->value = builder->CreateFNeg(input, "neg");
+        if (is_real(stmt->operand->ret_type.data_type)) {
+          stmt->value = builder->CreateFNeg(input, "neg");
+        } else {
+          stmt->value = builder->CreateNeg(input, "neg");
+        }
       }
       UNARY_INTRINSIC(sin)
       UNARY_INTRINSIC(cos)

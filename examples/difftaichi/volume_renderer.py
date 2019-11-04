@@ -166,6 +166,9 @@ def apply_grad():
         density[i, j, k] = ti.max(density[i, j, k], 0)
 
 def main():
+  if not os.path.exists('bunny_128.bin'):
+    print('\n***\nPlease download bunny_128.bin and put in the current working directory. URL: https://github.com/yuanming-hu/taichi_assets/releases/download/llvm8/bunny_128.bin ')
+    exit(0)
   volume = np.fromfile("bunny_128.bin", dtype=np.float32).reshape((density_res, density_res, density_res))
   for i in range(density_res):
     for j in range(density_res):

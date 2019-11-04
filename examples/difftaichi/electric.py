@@ -110,14 +110,14 @@ def compute_loss(t: ti.i32):
   ti.atomic_add(loss[None], dt * (x[t] - goal[t]).norm_sqr())
 
 
-gui = tc.core.GUI("Gravity", tc.veci(1024, 1024))
+gui = tc.core.GUI("Electric", tc.veci(1024, 1024))
 
 
 def forward(visualize=False, output=None):
   interval = vis_interval
   if output:
     interval = output_vis_interval
-    os.makedirs('gravity/{}/'.format(output), exist_ok=True)
+    os.makedirs('electric/{}/'.format(output), exist_ok=True)
   
   canvas = gui.get_canvas()
   for t in range(1, steps):
@@ -142,7 +142,7 @@ def forward(visualize=False, output=None):
       
       gui.update()
       if output:
-        gui.screenshot('gravity/{}/{:04d}.png'.format(output, t))
+        gui.screenshot('electric/{}/{:04d}.png'.format(output, t))
 
 
 def rand():

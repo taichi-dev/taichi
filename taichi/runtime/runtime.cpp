@@ -1,4 +1,4 @@
-#if !defined(_WIN32)
+#if !defined(TC_INCLUDED)
 // This file will only be compiled with clang into llvm bitcode
 // Generated bitcode will likely get inline for performance.
 
@@ -49,7 +49,9 @@ using ContextArgType = long long;
 
 extern "C" {
 
+#if ARCH_cuda
 void vprintf(Ptr format, Ptr arg);
+#endif
 i32 printf(const char *, ...);
 
 #define DEFINE_UNARY_REAL_FUNC(F)                                              \
@@ -161,7 +163,9 @@ void *taichi_allocate(std::size_t size) {
 
 void ___stubs___() {
   printf("");
+#if ARCH_cuda
   vprintf(nullptr, nullptr);
+#endif
   taichi_allocate(1);
   taichi_allocate_aligned(1, 1);
 }

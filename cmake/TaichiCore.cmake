@@ -92,8 +92,6 @@ if (NOT WIN32)
     target_link_libraries(${CORE_LIBRARY_NAME} pthread stdc++)
     if (APPLE)
         # OS X
-        # Ask OS X to minic Linux dynamic linking hebavior
-        target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE "-undefined dynamic_lookup")
     else()
         # Linux
         target_link_libraries(${CORE_LIBRARY_NAME} stdc++fs X11)

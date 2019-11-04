@@ -58,6 +58,8 @@ with open('setup.temp.py') as fin:
 
 print("*** project_name = '{}'".format(project_name))
 
+shutil.rmtree('taichi/lib', ignore_errors=True)
+shutil.rmtree('taichi/tests', ignore_errors=True)
 os.makedirs('taichi/lib', exist_ok=True)
 shutil.rmtree('build', ignore_errors=True)
 shutil.rmtree('dist', ignore_errors=True)
@@ -72,7 +74,7 @@ elif get_os_name() == 'osx':
 else:
   print('not implemented')
   exit(-1)
-  
+
 shutil.copytree('../tests/python', './taichi/tests')
 
 if gpu:
@@ -80,11 +82,19 @@ if gpu:
   print("copying libdevice:", libdevice_path)
   assert os.path.exists(libdevice_path)
   shutil.copy(libdevice_path, 'taichi/lib/libdevice.10.bc')
-  
+
 ti.core.compile_runtimes()
 for f in os.listdir('../taichi/runtime'):
   if f.startswith('runtime_') and f.endswith('.bc'):
     shutil.copy(os.path.join('../taichi/runtime', f), 'taichi/lib')
+    
+from distutils import sysconfig
+libpython_path = os.path.join(sysconfig.get_config_var("LIBDIR"),
+                              'libpython{}{}.so'.format(sysconfig.get_python_version(),
+                                                        sysconfig.build_flags))
+libpython_path = os.path.realpath(libpython_path)
+print("Shipping libpython", libpython_path)
+shutil.copy(libpython_path, os.path.join("taichi/lib/", libpython_path.split('/')[-1]))
 
 os.system('{} -m pip install --user --upgrade twine setuptools wheel'.format(
   get_python_executable()))

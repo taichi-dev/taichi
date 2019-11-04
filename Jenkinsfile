@@ -127,6 +127,7 @@ void build_taichi() {
     $CC --version
     $CXX --version
     echo $WORKSPACE
+    $PYTHON_EXECUTABLE -m pip install pytest autograd --user
     export TAICHI_REPO_DIR=$WORKSPACE/
     echo $TAICHI_REPO_DIR
     export PYTHONPATH=$TAICHI_REPO_DIR/python

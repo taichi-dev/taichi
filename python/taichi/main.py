@@ -44,20 +44,12 @@ def main(debug=False):
   if argc == 1 or sys.argv[1] == 'help':
     print(
       "    Usage: ti run [task name]        |-> Run a specific task\n"
-      "           ti test                   |-> Run tests\n"
-      "           ti install                |-> Install package\n"
+      "           ti test                   |-> Run all tests\n"
+      "           ti test_python            |-> Run python tests\n"
+      "           ti test_cpp               |-> Run cpp tests\n"
       "           ti build                  |-> Build C++ files\n"
-      "           ti amal                   |-> Generate amalgamated taichi.h\n"
-      "           ti clean asm [*.s]        |-> Clean up gcc ASM\n"
       "           ti video                  |-> Make a video using *.png files in the current folder\n"
-      "           ti convert                |-> Delete color controllers in a log file\n"
-      "           ti exec                   |-> Invoke a executable in the 'build' folder\n"
-      "           ti format                 |-> Format taichi and projects\n"
-      "                                         (C++ source and python scripts)\n"
-      "           ti statement [statement]  |-> Execute a single statement (with taichi imported as ti\n"
-      "           ti [script.py]            |-> Run script\n"
       "           ti doc                    |-> Build documentation\n"
-      "           ti merge                  |-> Merge images in folders horizontally\n"
       "           ti debug [script.py]      |-> Debug script\n")
     exit(-1)
   mode = sys.argv[1]

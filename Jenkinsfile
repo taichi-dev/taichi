@@ -140,6 +140,7 @@ void build_taichi() {
     make -j 15
     ldd libtaichi_core.so
     cd ../python
+    ti test_python
     $PYTHON_EXECUTABLE build.py upload
     '''
 }

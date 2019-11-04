@@ -68,7 +68,7 @@ llvm_map_components_to_libnames(llvm_libs
 target_link_libraries(${LIBRARY_NAME} ${llvm_libs})
 
 if (CUDA_FOUND)
-    llvm_map_components_to_libnames(llvm_ptx_libs PTX)
+    llvm_map_components_to_libnames(llvm_ptx_libs NVPTX)
     target_link_libraries(${LIBRARY_NAME} ${llvm_ptx_libs})
 endif()
 

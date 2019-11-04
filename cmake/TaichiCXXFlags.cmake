@@ -2,11 +2,6 @@ message("Using C++ compiler: " ${CMAKE_CXX_COMPILER})
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTC_ISE_NONE")
 
-if (APPLE)
-    # Ask OS X to minic Linux dynamic linking behavior
-    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE "-undefined dynamic_lookup")
-endif()
-
 
 if (MINGW)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_hypot=hypot")

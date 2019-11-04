@@ -11,6 +11,12 @@ file(GLOB_RECURSE PROJECT_SOURCES "lang/headers/*.h" "external/xxhash/*.c" "test
 
 add_library(${CORE_LIBRARY_NAME} SHARED ${TAICHI_CORE_SOURCE} ${PROJECT_SOURCES} ${SPGridSource})
 
+if (APPLE)
+# Ask OS X to minic Linux dynamic linking behavior
+target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE "-undefined dynamic_lookup")
+endif()
+
+
 option(USE_STDCPP "Use -stdlib=libc++" OFF)
 option(TLANG_WITH_CUDA "Build with GPU support" ON)
 

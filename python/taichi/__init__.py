@@ -1,6 +1,6 @@
 from taichi.main import main
 from taichi.core import tc_core
-from taichi.core import start_memory_monitoring
+from taichi.core import start_memory_monitoring, is_release, package_root
 from taichi.misc.util import vec, veci, set_gdb_trigger, set_logging_level, info, warning, error, debug, trace
 from taichi.tools import *
 from taichi.misc import *

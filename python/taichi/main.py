@@ -9,7 +9,10 @@ def test_python():
   print("\nRunning python tests...\n")
   import taichi as ti
   import pytest
-  return int(pytest.main([os.path.join(ti.get_repo_directory(), 'tests')]))
+  if ti.is_release():
+    return int(pytest.main([os.path.join(ti.package_root(), 'tests')]))
+  else:
+    return int(pytest.main([os.path.join(ti.get_repo_directory(), 'tests')]))
 
 def test_cpp():
   import taichi as ti

@@ -297,10 +297,7 @@ class SNode {
            type == SNodeType::root;
   }
 
-  bool need_activation() const {
-    return type == SNodeType::pointer || type == SNodeType::hash ||
-           (type == SNodeType::dense && _bitmasked);
-  }
+  bool need_activation() const;
 
   void lazy_grad();
 

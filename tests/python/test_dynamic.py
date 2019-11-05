@@ -2,7 +2,6 @@ import taichi as ti
 
 @ti.all_archs
 def test_dynamic():
-  return
   x = ti.var(ti.f32)
   n = 128
 

@@ -8,7 +8,8 @@ struct PointerMeta : public StructMeta {
 STRUCT_FIELD(PointerMeta, _);
 
 void Pointer_activate(Ptr meta, Ptr node, int i) {
-  int &lock = *(int32 *)(node + 8);
+  // TODO: lock
+  // int &lock = *(int32 *)(node + 8);
   Ptr &data_ptr = *(Ptr *)(node + 0);
   if (data_ptr == nullptr) {
     auto smeta = (StructMeta *)meta;

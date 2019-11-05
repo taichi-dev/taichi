@@ -266,16 +266,25 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
           &get_current_program().llvm_runtime, (int)snodes.size(), root_size,
           root_id, (void *)&::taichi_allocate_aligned);
       for (int i = 0; i < (int)snodes.size(); i++) {
-        if (snodes[i]->type == SNodeType::pointer) {
-          auto element_size =
-              tlctx->get_type_size(snodes[i]->ch[0]->llvm_body_type);
-          TC_INFO("Initializing allocator for snode {} (element size {})",
-                  snodes[i]->id, element_size);
+        if (snodes[i]->type == SNodeType::pointer ||
+            snodes[i]->type == SNodeType::dynamic) {
+          std::size_t chunk_size;
+          if (snodes[i]->type == SNodeType::pointer)
+            chunk_size = tlctx->get_type_size(snodes[i]->ch[0]->llvm_body_type);
+          else {
+            // dynamic. Allocators are for the chunks
+            chunk_size =
+                sizeof(void *) +
+                tlctx->get_type_size(snodes[i]->ch[0]->llvm_body_type) *
+                    snodes[i]->max_num_elements();
+          }
+          TC_INFO("Initializing allocator for snode {} (chunk size {})",
+                  snodes[i]->id, chunk_size);
           auto rt = get_current_program().llvm_runtime;
           auto allocator = get_allocator(rt, i);
-          initialize_allocator(rt, allocator, element_size);
-          TC_INFO("Allocating ambient element for snode {} (element size {})",
-                  snodes[i]->id, element_size);
+          initialize_allocator(rt, allocator, chunk_size);
+          TC_INFO("Allocating ambient element for snode {} (chunk size {})",
+                  snodes[i]->id, chunk_size);
           allocate_ambient(rt, i);
         }
       }
@@ -294,5 +303,11 @@ std::unique_ptr<StructCompiler> StructCompiler::make(bool use_llvm, Arch arch) {
 
 llvm::Type *SNode::get_body_type() { return llvm_body_type; }
 llvm::Type *SNode::get_aux_type() { return llvm_aux_type; }
+
+bool SNode::need_activation() const {
+  return type == SNodeType::pointer || type == SNodeType::hash ||
+         (type == SNodeType::dense && _bitmasked) ||
+         (get_current_program().config.use_llvm && type == SNodeType::dynamic);
+}
 
 TLANG_NAMESPACE_END

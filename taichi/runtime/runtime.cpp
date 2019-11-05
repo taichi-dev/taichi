@@ -336,5 +336,6 @@ void for_each_block(Context *context, int snode_id, int element_size,
 #include "node_dense.h"
 #include "node_pointer.h"
 #include "node_root.h"
+#include "node_dynamic.h"
 }
 #endif

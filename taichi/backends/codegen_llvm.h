@@ -187,6 +187,11 @@ public:
     } else if (snode->type == SNodeType::root) {
       meta = std::make_unique<RuntimeObject>("RootMeta", this, builder);
       emit_struct_meta_base("Root", meta->ptr, snode);
+    } else if (snode->type == SNodeType::dynamic) {
+      meta = std::make_unique<RuntimeObject>("DynamicMeta", this, builder);
+      emit_struct_meta_base("Root", meta->ptr, snode);
+      meta->call("set_chunk_size",
+                 tlctx->get_constant((int)snode->max_num_elements()));
     } else {
       TC_P(snode_type_name(snode->type));
       TC_NOT_IMPLEMENTED;
@@ -974,7 +979,8 @@ public:
     if (snode->type == SNodeType::root) {
       stmt->value = builder->CreateGEP(parent, stmt->input_index->value);
     } else if (snode->type == SNodeType::dense ||
-               snode->type == SNodeType::pointer) {
+               snode->type == SNodeType::pointer ||
+               snode->type == SNodeType::dynamic) {
       auto prefix = get_runtime_snode_name(snode);
       auto s = emit_struct_meta(stmt->snode);
       auto s_ptr =

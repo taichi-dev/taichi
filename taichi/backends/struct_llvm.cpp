@@ -3,8 +3,8 @@
 #include "struct_llvm.h"
 #include "../ir.h"
 #include "../program.h"
-#include "struct.h"
 #include "../unified_allocator.h"
+#include "struct.h"
 #include "llvm/IR/Verifier.h"
 #include <llvm/IR/IRBuilder.h>
 
@@ -67,6 +67,13 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
     body_type = llvm::PointerType::getInt8PtrTy(*ctx);
     // mutex
     aux_type = llvm::PointerType::getInt32Ty(*ctx);
+  } else if (type == SNodeType::dynamic) {
+    body_type = llvm::PointerType::getInt8PtrTy(*ctx);
+    // TODO: maybe load a struct from runtime?
+    // n (number of elements), and the mutex
+    aux_type =
+        llvm::StructType::get(*ctx, {llvm::PointerType::getInt32Ty(*ctx),
+                                     llvm::PointerType::getInt32Ty(*ctx)});
   } else {
     TC_P(snode.type_name());
     TC_NOT_IMPLEMENTED;
@@ -246,9 +253,9 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
         tlctx->lookup_function<std::function<void(void *, int)>>(
             "Runtime_allocate_ambient");
 
-    auto initialize_allocator =
-        tlctx->lookup_function<std::function<void *(void *, void *, std::size_t)>>(
-            "NodeAllocator_initialize");
+    auto initialize_allocator = tlctx->lookup_function<
+        std::function<void *(void *, void *, std::size_t)>>(
+        "NodeAllocator_initialize");
 
     auto snodes = this->snodes;
     auto tlctx = this->tlctx;

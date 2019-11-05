@@ -941,6 +941,23 @@ public:
     }
   }
 
+  static std::string get_runtime_snode_name(SNode *snode) {
+    if (snode->type == SNodeType::root) {
+      return "Root";
+    } else if (snode->type == SNodeType::dense) {
+      return "Dense";
+    } else if (snode->type == SNodeType::dynamic) {
+      return "Dynamic";
+    } else if (snode->type == SNodeType::pointer) {
+      return "Pointer";
+    } else if (snode->type == SNodeType::hash) {
+      return "Hash";
+    } else {
+      TC_P(snode_type_name(snode->type));
+      TC_NOT_IMPLEMENTED
+    }
+  }
+
   void visit(SNodeLookupStmt *stmt) override {
     llvm::Value *parent = nullptr;
     if (stmt->input_snode) {
@@ -956,7 +973,9 @@ public:
     auto snode = stmt->snode;
     if (snode->type == SNodeType::root) {
       stmt->value = builder->CreateGEP(parent, stmt->input_index->value);
-    } else if (snode->type == SNodeType::dense) {
+    } else if (snode->type == SNodeType::dense ||
+               snode->type == SNodeType::pointer) {
+      auto prefix = get_runtime_snode_name(snode);
       auto s = emit_struct_meta(stmt->snode);
       auto s_ptr =
           builder->CreateBitCast(s, llvm::Type::getInt8PtrTy(*llvm_context));
@@ -965,34 +984,15 @@ public:
       auto node_ptr = builder->CreateBitCast(
           stmt->input_snode->value, llvm::Type::getInt8PtrTy(*llvm_context));
       if (stmt->activate) {
-        builder->CreateCall(get_runtime_function("Dense_activate"),
+        builder->CreateCall(get_runtime_function(prefix + "_activate"),
                             {s_ptr, node_ptr, stmt->input_index->value});
       }
       auto elem =
-          builder->CreateCall(get_runtime_function("Dense_lookup_element"),
+          builder->CreateCall(get_runtime_function(prefix + "_lookup_element"),
                               {s_ptr, node_ptr, stmt->input_index->value});
       auto element_ty = snode->get_body_type();
       stmt->value =
           builder->CreateBitCast(elem, PointerType::get(element_ty, 0));
-    } else if (snode->type == SNodeType::pointer) {
-      auto s = emit_struct_meta(stmt->snode);
-      auto s_ptr =
-          builder->CreateBitCast(s, llvm::Type::getInt8PtrTy(*llvm_context));
-
-      // call look up
-      auto node_ptr = builder->CreateBitCast(
-          stmt->input_snode->value, llvm::Type::getInt8PtrTy(*llvm_context));
-      if (stmt->activate) {
-        builder->CreateCall(get_runtime_function("Pointer_activate"),
-                            {s_ptr, node_ptr, stmt->input_index->value});
-      }
-      auto elem =
-          builder->CreateCall(get_runtime_function("Pointer_lookup_element"),
-                              {s_ptr, node_ptr, stmt->input_index->value});
-      auto element_ty = snode->ch[0]->llvm_type;
-      stmt->value =
-          builder->CreateBitCast(elem, PointerType::get(element_ty, 0));
-
     } else {
       TC_INFO(snode_type_name(snode->type));
       TC_NOT_IMPLEMENTED

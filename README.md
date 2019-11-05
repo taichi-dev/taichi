@@ -19,7 +19,11 @@ python3 -m pip install taichi-nightly-cuda-10-1
 
 ## [Examples](https://github.com/yuanming-hu/taichi/tree/master/examples)
 ## Updates
- - (Nov 1, 2019) v0.0.77 released.
+ - (Nov 4, 2019) v0.0.85 released.
+   - `ti.stop_grad` for stopping gradients during backpropagation. [[Example]](https://github.com/yuanming-hu/taichi/blob/master/tests/python/test_stop_grad.py#L75);
+   - Compatibility improvements on Linux and OS X;
+   - Minor bug fixes.
+- (Nov 1, 2019) v0.0.77 released.
    - **Python wheels now support OS X 10.14+**;
    - LLVM is now the default backend. No need to install `gcc-7` or `clang-7` anymore. To use legacy backends, ```export TI_LLVM=0```;
    - LLVM compilation speed is improved by 2x;

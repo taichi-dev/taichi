@@ -217,30 +217,6 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
   TC_ASSERT((int)snodes.size() <= max_num_snodes);
 
   auto root_size = tlctx->jit->getDataLayout().getTypeAllocSize(root.llvm_type);
-  // initializer
-
-  {
-    auto ft =
-        llvm::FunctionType::get(llvm::Type::getInt8PtrTy(*llvm_ctx),
-                                {llvm::Type::getInt8PtrTy(*llvm_ctx)}, false);
-    auto init = llvm::Function::Create(ft, llvm::Function::ExternalLinkage,
-                                       "initialize_data_structure", *module);
-    std::vector<llvm::Value *> args;
-    for (auto &arg : init->args()) {
-      args.push_back(&arg);
-    }
-    auto bb = BasicBlock::Create(*llvm_ctx, "body", init);
-    llvm::IRBuilder<> builder(bb, bb->begin());
-    auto runtime_ty = get_runtime_type("Runtime");
-    auto ret = builder.CreateCall(
-        get_runtime_function("Runtime_initialize"),
-        {builder.CreateBitCast(
-             args[0],
-             llvm::PointerType::get(llvm::PointerType::get(runtime_ty, 0), 0)),
-         tlctx->get_constant((int)snodes.size()),
-         tlctx->get_constant(root_size), tlctx->get_constant(root.id)});
-    builder.CreateRet(ret);
-  }
 
   module->setDataLayout(tlctx->jit->getDataLayout());
 
@@ -255,9 +231,9 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
       load_accessors(*n);
     }
 
-    auto initialize_data_structure =
-        tlctx->lookup_function<std::function<void *(void *)>>(
-            "initialize_data_structure");
+    auto initialize_data_structure = tlctx->lookup_function<
+        std::function<void *(void *, int, std::size_t, int)>>(
+        "Runtime_initialize");
 
     auto get_allocator =
         tlctx->lookup_function<std::function<void *(void *, int)>>(
@@ -273,10 +249,12 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
 
     auto snodes = this->snodes;
     auto tlctx = this->tlctx;
+    auto root_id = root.id;
     creator = [=]() {
       TC_INFO("Allocating data structure of size {}", root_size);
       auto root_ptr =
-          initialize_data_structure(&get_current_program().llvm_runtime);
+          initialize_data_structure(&get_current_program().llvm_runtime,
+                                    (int)snodes.size(), root_size, root_id);
       for (int i = 0; i < (int)snodes.size(); i++) {
         if (snodes[i]->type == SNodeType::pointer) {
           auto element_size =

@@ -1,4 +1,4 @@
-#if !defined(TC_INCLUDED)
+#if !defined(TC_INCLUDED) || !defined(_WIN32)
 // This file will only be compiled with clang into llvm bitcode
 // Generated bitcode will likely get inline for performance.
 
@@ -219,6 +219,7 @@ Ptr NodeAllocator_allocate(NodeAllocator *node_allocator) {
 // Is "runtime" a correct name, even if it is created after the data layout is
 // materialized?
 struct Runtime {
+  Ptr vm_allocate_aligned;
   ElementList *element_lists[taichi_max_num_snodes];
   NodeAllocator *node_allocators[taichi_max_num_snodes];
   Ptr ambient_elements[taichi_max_num_snodes];
@@ -231,6 +232,7 @@ Ptr Runtime_initialize(Runtime **runtime_ptr, int num_snodes,
                        uint64_t root_size, int root_id) {
   *runtime_ptr = (Runtime *)taichi_allocate(sizeof(Runtime));
   Runtime *runtime = *runtime_ptr;
+  // runtime->vm_allocate_aligned = vm_allocate_aligned;
   printf("Initializing runtime with %d elements\n", num_snodes);
   for (int i = 0; i < num_snodes; i++) {
     runtime->element_lists[i] =

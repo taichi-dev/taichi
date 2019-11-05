@@ -155,10 +155,11 @@ STRUCT_FIELD(StructMeta, refine_coordinates);
 STRUCT_FIELD(StructMeta, is_active);
 STRUCT_FIELD(StructMeta, context);
 
-void *taichi_allocate_aligned(std::size_t size, int alignment);
+struct Runtime;
+void *allocate_aligned(Runtime *, std::size_t size, int alignment);
 
-void *taichi_allocate(std::size_t size) {
-  return taichi_allocate_aligned(size, 1);
+void *allocate(Runtime *runtime, std::size_t size) {
+  return allocate_aligned(runtime, size, 1);
 }
 
 void ___stubs___() {
@@ -166,8 +167,6 @@ void ___stubs___() {
 #if ARCH_cuda
   vprintf(nullptr, nullptr);
 #endif
-  taichi_allocate(1);
-  taichi_allocate_aligned(1, 1);
 }
 
 struct Element {
@@ -186,8 +185,8 @@ struct ElementList {
   int tail;
 };
 
-void ElementList_initialize(ElementList *element_list) {
-  element_list->elements = (Element *)taichi_allocate(1024 * 1024 * 1024);
+void ElementList_initialize(Runtime *runtime, ElementList *element_list) {
+  element_list->elements = (Element *)allocate(runtime, 1024 * 1024 * 1024);
   element_list->tail = 0;
 }
 
@@ -204,9 +203,10 @@ struct NodeAllocator {
   int tail;
 };
 
-void NodeAllocator_initialize(NodeAllocator *node_allocator,
+void NodeAllocator_initialize(Runtime *runtime, NodeAllocator *node_allocator,
                               std::size_t node_size) {
-  node_allocator->pool = (Ptr)taichi_allocate_aligned(1024 * 1024 * 1024, 4096);
+  node_allocator->pool =
+      (Ptr)allocate_aligned(runtime, 1024 * 1024 * 1024, 4096);
   node_allocator->node_size = node_size;
   node_allocator->tail = 0;
 }
@@ -216,10 +216,12 @@ Ptr NodeAllocator_allocate(NodeAllocator *node_allocator) {
   return node_allocator->pool + node_allocator->node_size * p;
 }
 
+using vm_allocator_type = void *(*)(std::size_t, int);
+
 // Is "runtime" a correct name, even if it is created after the data layout is
 // materialized?
 struct Runtime {
-  Ptr vm_allocate_aligned;
+  vm_allocator_type vm_allocator;
   ElementList *element_lists[taichi_max_num_snodes];
   NodeAllocator *node_allocators[taichi_max_num_snodes];
   Ptr ambient_elements[taichi_max_num_snodes];
@@ -228,22 +230,28 @@ struct Runtime {
 STRUCT_FIELD_ARRAY(Runtime, element_lists);
 STRUCT_FIELD_ARRAY(Runtime, node_allocators);
 
+void *allocate_aligned(Runtime *runtime, std::size_t size,
+                              int alignment) {
+  return runtime->vm_allocator(size, alignment);
+}
+
 Ptr Runtime_initialize(Runtime **runtime_ptr, int num_snodes,
-                       uint64_t root_size, int root_id) {
-  *runtime_ptr = (Runtime *)taichi_allocate(sizeof(Runtime));
+                       uint64_t root_size, int root_id, void *_vm_allocator) {
+  auto vm_allocator = (vm_allocator_type)_vm_allocator;
+  *runtime_ptr = (Runtime *)vm_allocator(sizeof(Runtime), 128);
   Runtime *runtime = *runtime_ptr;
-  // runtime->vm_allocate_aligned = vm_allocate_aligned;
+  runtime->vm_allocator = vm_allocator;
   printf("Initializing runtime with %d elements\n", num_snodes);
   for (int i = 0; i < num_snodes; i++) {
     runtime->element_lists[i] =
-        (ElementList *)taichi_allocate(sizeof(ElementList));
-    ElementList_initialize(runtime->element_lists[i]);
+        (ElementList *)allocate(runtime, sizeof(ElementList));
+    ElementList_initialize(runtime, runtime->element_lists[i]);
 
     runtime->node_allocators[i] =
-        (NodeAllocator *)taichi_allocate(sizeof(NodeAllocator));
+        (NodeAllocator *)allocate(runtime, sizeof(NodeAllocator));
   }
   // Assuming num_snodes - 1 is the root
-  auto root_ptr = taichi_allocate_aligned(root_size, 4096);
+  auto root_ptr = allocate_aligned(runtime, root_size, 4096);
   Element elem;
   elem.loop_bounds[0] = 0;
   elem.loop_bounds[1] = 1;

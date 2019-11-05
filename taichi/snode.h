@@ -75,6 +75,7 @@ class SNode {
   std::string name;
   int64 n;
   int total_num_bits, total_bit_start;
+  int chunk_size;
   DataType dt;
   bool has_ambient;
   TypedConstant ambient_val;
@@ -228,6 +229,17 @@ class SNode {
     auto &child = insert_children(SNodeType::dynamic);
     child.extractors[expr.value].activate(bit::log2int(n));
     child.n = n;
+    child.chunk_size = n;
+    return child;
+  }
+
+  SNode &dynamic_chunked(const Index &expr, int n, int chunk_size) {
+    TC_ASSERT(bit::is_power_of_two(n));
+    TC_ASSERT(bit::is_power_of_two(chunk_size));
+    auto &child = insert_children(SNodeType::dynamic);
+    child.extractors[expr.value].activate(bit::log2int(n));
+    child.n = n;
+    child.chunk_size = chunk_size;
     return child;
   }
 

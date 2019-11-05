@@ -276,7 +276,7 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
             chunk_size =
                 sizeof(void *) +
                 tlctx->get_type_size(snodes[i]->ch[0]->llvm_body_type) *
-                    snodes[i]->max_num_elements();
+                    snodes[i]->chunk_size;
           }
           TC_INFO("Initializing allocator for snode {} (chunk size {})",
                   snodes[i]->id, chunk_size);

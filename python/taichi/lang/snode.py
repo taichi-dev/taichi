@@ -9,9 +9,11 @@ class SNode:
       dimensions = [dimensions] * len(indices)
     return SNode(self.ptr.dense(indices, dimensions))
 
-  def dynamic(self, index, dimension):
+  def dynamic(self, index, dimension, chunk_size=None):
     assert len(index) == 1
-    return SNode(self.ptr.dynamic(index[0], dimension))
+    if chunk_size is None:
+      chunk_size = dimension
+    return SNode(self.ptr.dynamic(index[0], dimension, chunk_size))
 
   def pointer(self):
     return SNode(self.ptr.pointer())

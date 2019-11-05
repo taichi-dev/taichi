@@ -51,7 +51,6 @@ void *Dynamic_lookup_element(Ptr meta_, Ptr node_, int i) {
   while (true) {
     if (i < chunk_start + chunk_size) {
       return chunk_ptr + sizeof(Ptr) + (i - chunk_start) * meta->element_size;
-      break;
     }
     chunk_ptr = *(Ptr *)chunk_ptr;
     chunk_start += chunk_size;

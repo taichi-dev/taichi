@@ -1,31 +1,5 @@
 import taichi as ti
 
-def complex_kernel(func):
-  def decorated(*args, **kwargs):
-    ti.get_runtime().inside_complex_kernel = True
-    ti.get_runtime().target_tape.insert(decorated, args)
-    try:
-      with ti.FrameBacktraceGuard(2):
-        func(*args, **kwargs)
-    except Exception as e:
-      raise e
-    finally:
-      ti.get_runtime().inside_complex_kernel = False
-  decorated.grad = None
-  return decorated
-
-def complex_kernel_grad(primal):
-  def decorator(func):
-    def decorated(*args, **kwargs):
-      with ti.FrameBacktraceGuard(2):
-        func(*args, **kwargs)
-    primal.grad = decorated
-    return decorated
-  return decorator
-
-ti.complex_kernel = complex_kernel
-ti.complex_kernel_grad = complex_kernel_grad
-
 @ti.all_archs
 def test_complex_kernels():
   x = ti.var(ti.f32)
@@ -57,6 +31,3 @@ def test_complex_kernels():
     forward(4)
   for i in range(n):
     assert x.grad[0] == 4
-
-
-test_complex_kernels()

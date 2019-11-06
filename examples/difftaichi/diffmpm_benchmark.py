@@ -1,6 +1,5 @@
 import taichi as ti
 import numpy as np
-import random
 import cv2
 import matplotlib.pyplot as plt
 import time
@@ -40,10 +39,7 @@ C, F = mat(), mat()
 init_v = vec()
 loss = scalar()
 
-# ti.cfg.arch = ti.x86_64
-# ti.cfg.use_llvm = True
 ti.cfg.arch = ti.cuda
-# ti.cfg.print_ir = True
 
 
 @ti.layout
@@ -177,41 +173,23 @@ def compute_loss():
   dist = ti.sqr(x_avg - ti.Vector(target))
   loss[None] = 0.5 * (dist(0) + dist(1))
 
-def forward():
-  # simulation
-  set_v()
-  for s in range(steps - 1):
-    clear_grid()
-    p2g(s)
-    grid_op()
-    g2p(s)
+@ti.complex_kernel
+def substep(s):
+  clear_grid()
+  p2g(s)
+  grid_op()
+  g2p(s)
 
-  loss[None] = 0
-  x_avg[None] = [0, 0]
-  compute_x_avg()
-  compute_loss()
-  return loss[None]
+@ti.complex_kernel_grad(substep)
+def substep_grad(s):
+  clear_grid()
+  p2g(s)
+  grid_op()
 
-def backward():
-  clear_particle_grad()
-  init_v.grad[None] = [0, 0]
+  g2p.grad(s)
+  grid_op.grad()
+  p2g.grad(s)
 
-  loss.grad[None] = 1
-  x_avg.grad[None] = [0, 0]
-
-  compute_loss.grad()
-  compute_x_avg.grad()
-  for s in reversed(range(steps - 1)):
-    # Since we do not store the grid history (to save space), we redo p2g and grid op
-    clear_grid()
-    p2g(s)
-    grid_op()
-
-    g2p.grad(s)
-    grid_op.grad()
-    p2g.grad(s)
-  set_v.grad()
-  return init_v.grad[None]
 
 def benchmark():
   print('Also check "nvprof --print-gpu-trace python3 diffmpm_benchmark.py" for more accurate results')
@@ -264,9 +242,18 @@ def main():
   losses = []
   img_count = 0
   for i in range(30):
-    l = forward()
+    with ti.Tape(loss=loss):
+      set_v()
+      for s in range(steps - 1):
+        substep(s)
+
+      loss[None] = 0
+      x_avg[None] = [0, 0]
+      compute_x_avg()
+      compute_loss()
+    l = loss[None]
     losses.append(l)
-    grad = backward()
+    grad = init_v.grad[None]
     print('loss=', l, '   grad=', (grad[0], grad[1]))
     learning_rate = 10
     init_v(0)[None] -= learning_rate * grad[0]

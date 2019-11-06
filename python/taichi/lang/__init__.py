@@ -103,5 +103,28 @@ def must_throw(ex):
     return func__
   return decorator
 
-__all__ = [s for s in dir() if not s.startswith('_')]
 
+def complex_kernel(func):
+  def decorated(*args, **kwargs):
+    get_runtime().inside_complex_kernel = True
+    get_runtime().target_tape.insert(decorated, args)
+    try:
+      with FrameBacktraceGuard(2):
+        func(*args, **kwargs)
+    except Exception as e:
+      raise e
+    finally:
+      get_runtime().inside_complex_kernel = False
+  decorated.grad = None
+  return decorated
+
+def complex_kernel_grad(primal):
+  def decorator(func):
+    def decorated(*args, **kwargs):
+      with FrameBacktraceGuard(2):
+        func(*args, **kwargs)
+    primal.grad = decorated
+    return decorated
+  return decorator
+
+__all__ = [s for s in dir() if not s.startswith('_')]

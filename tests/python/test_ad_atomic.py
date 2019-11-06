@@ -1,9 +1,8 @@
 import taichi as ti
 from pytest import approx
 
+@ti.all_archs
 def test_ad_reduce():
-  ti.reset()
-
   x = ti.var(ti.f32)
   loss = ti.var(ti.f32)
 

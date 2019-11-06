@@ -136,8 +136,7 @@ class Kernel:
       self.arguments.append(param.annotation)
       self.argument_names.append(param.name)
 
-  def materialize(self, key=None, args=None, extra_frame_backtrace=None):
-    assert extra_frame_backtrace is None
+  def materialize(self, key=None, args=None):
     if key is None:
       key = (self.func, 0)
     if not self.runtime.materialized:

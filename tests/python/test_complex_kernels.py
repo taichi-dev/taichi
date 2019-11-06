@@ -5,7 +5,8 @@ def complex_kernel(func):
     ti.get_runtime().inside_complex_kernel = True
     ti.get_runtime().target_tape.insert(decorated, args)
     try:
-      func(*args, **kwargs)
+      with ti.FrameBacktraceGuard(2):
+        func(*args, **kwargs)
     except Exception as e:
       raise e
     finally:
@@ -16,7 +17,8 @@ def complex_kernel(func):
 def complex_kernel_grad(primal):
   def decorator(func):
     def decorated(*args, **kwargs):
-      func(*args, **kwargs)
+      with ti.FrameBacktraceGuard(2):
+        func(*args, **kwargs)
     primal.grad = decorated
     return decorated
   return decorator
@@ -44,15 +46,17 @@ def test_complex_kernels():
 
   @ti.complex_kernel
   def forward(mul):
-    func(mul, extra_frame_backtrace=2)
+    func(mul)
+    func(mul)
 
   @ti.complex_kernel_grad(forward)
-  def backward(mul, **kwargs):
-    func.grad(mul, extra_frame_backtrace=4)
+  def backward(mul):
+    func.grad(mul)
 
   with ti.Tape(loss=total):
     forward(4)
-  assert x[0] == 45
+  for i in range(n):
+    assert x.grad[0] == 4
 
 
 test_complex_kernels()

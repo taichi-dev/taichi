@@ -258,6 +258,11 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
       patch_intrinsic("grid_dim", Intrinsic::nvvm_read_ptx_sreg_nctaid_x);
       patch_intrinsic("block_barrier", Intrinsic::nvvm_barrier0, false);
 
+      // patch_intrinsic("sync_warp", Intrinsic::nvvm_bar_warp_sync, false);
+      // patch_intrinsic("warp_ballot", Intrinsic::nvvm_vote_ballot, false);
+      // patch_intrinsic("warp_active_mask", Intrinsic::nvvm_membar_cta, false);
+      patch_intrinsic("block_memfence", Intrinsic::nvvm_membar_cta, false);
+
       link_module_with_libdevice(runtime_module);
 
       // runtime_module->print(llvm::errs(), nullptr);

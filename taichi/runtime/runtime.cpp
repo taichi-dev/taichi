@@ -230,8 +230,7 @@ struct Runtime {
 STRUCT_FIELD_ARRAY(Runtime, element_lists);
 STRUCT_FIELD_ARRAY(Runtime, node_allocators);
 
-void *allocate_aligned(Runtime *runtime, std::size_t size,
-                              int alignment) {
+void *allocate_aligned(Runtime *runtime, std::size_t size, int alignment) {
   return runtime->vm_allocator(size, alignment);
 }
 
@@ -306,7 +305,13 @@ int32 block_dim() { return 0; }
 
 int32 grid_dim() { return 0; }
 
+void sync_warp(uint32 mask) {}
+
 void block_barrier() {}
+
+int32 warp_active_mask() { return 0; }
+
+void block_memfence() { }
 
 void for_each_block(Context *context, int snode_id, int element_size,
                     int element_split,
@@ -334,8 +339,8 @@ void for_each_block(Context *context, int snode_id, int element_size,
 }
 
 #include "node_dense.h"
+#include "node_dynamic.h"
 #include "node_pointer.h"
 #include "node_root.h"
-#include "node_dynamic.h"
 }
 #endif

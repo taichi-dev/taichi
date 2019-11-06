@@ -1,3 +1,5 @@
+from .impl import FrameBacktraceGuard
+
 class Tape:
   def __init__(self, runtime, loss=None):
     self.calls = []
@@ -15,15 +17,17 @@ class Tape:
     print('# kernel calls', len(self.calls))
     self.runtime.target_tape = None
     if self.eval_on_exit:
-      self.grad(extra_frame_backtrace=1)
+      with FrameBacktraceGuard(1):
+        self.grad()
   
   def insert(self, func, args):
     self.calls.append((func, args))
   
-  def grad(self, extra_frame_backtrace=0):
+  def grad(self):
     assert self.entered == True, "Before evaluating gradiends tape must be entered."
     assert self.gradient_evaluated == False, "Gradients of grad can be evaluated only once."
     for func, args in reversed(self.calls):
       print(func)
-      func.grad(extra_frame_backtrace=1 + extra_frame_backtrace, *args)
+      with FrameBacktraceGuard(1):
+        func.grad(*args)
     self.gradient_evaluated = True

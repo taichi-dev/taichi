@@ -136,7 +136,8 @@ class Kernel:
       self.arguments.append(param.annotation)
       self.argument_names.append(param.name)
 
-  def materialize(self, key=None, args=None, extra_frame_backtrace=-1):
+  def materialize(self, key=None, args=None, extra_frame_backtrace=None):
+    assert extra_frame_backtrace is None
     if key is None:
       key = (self.func, 0)
     if not self.runtime.materialized:
@@ -171,7 +172,7 @@ class Kernel:
 
     self.runtime.inside_kernel = True
     frame = inspect.currentframe()
-    for t in range(extra_frame_backtrace + 2):
+    for t in range(self.runtime.current_frame_backtrace + 2):
       frame = frame.f_back
     globals = dict(frame.f_globals, **frame.f_locals)
     # inject template parameters into globals
@@ -244,10 +245,10 @@ class Kernel:
     return func__
 
 
-  def __call__(self, *args, extra_frame_backtrace=0):
+  def __call__(self, *args):
     instance_id = self.mapper.lookup(args)
     key = (self.func, instance_id)
-    self.materialize(key=key, args=args, extra_frame_backtrace=extra_frame_backtrace)
+    self.materialize(key=key, args=args)
     return self.compiled_functions[key](*args)
 
 

@@ -65,7 +65,7 @@ class KernelTemplateMapper:
 
   def lookup(self, args):
     if len(args) != self.num_args:
-      raise Exception(f'{self.num_args} arguments needed but {len(args)} provided.')
+      raise Exception(f'{self.num_args} argument(s) needed but {len(args)} provided.')
 
     key = self.extract(args)
     if key not in self.mapping:
@@ -237,7 +237,7 @@ class Kernel:
           else:
             assert False, 'Argument to kernels must have type float/int. If you are passing a PyTorch tensor, make sure it is on the same device (CPU/GPU) as taichi.'
         actual_argument_slot += 1
-      if self.runtime.target_tape:
+      if self.runtime.target_tape and not self.runtime.inside_complex_kernel:
         self.runtime.target_tape.insert(self, args)
       t_kernel()
 

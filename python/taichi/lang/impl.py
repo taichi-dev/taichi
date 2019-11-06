@@ -67,6 +67,8 @@ class PyTaichi:
     self.default_fp = f32
     self.default_ip = i32
     self.target_tape = None
+    self.inside_complex_kernel = False
+    self.current_frame_backtrace = 0
     Expr.materialize_layout_callback = self.materialize
   
   def set_default_fp(self, fp):
@@ -112,6 +114,17 @@ pytaichi = PyTaichi()
 
 def get_runtime():
   return pytaichi
+
+class FrameBacktraceGuard:
+  def __init__(self, inc):
+    self.inc = inc
+
+  def __enter__(self):
+    get_runtime().current_frame_backtrace += self.inc
+
+  def __exit__(self, exc_type, exc_val, exc_tb):
+    get_runtime().current_frame_backtrace -= self.inc
+
 
 def make_constant_expr(val):
   if isinstance(val, int):

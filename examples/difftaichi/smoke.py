@@ -41,11 +41,9 @@ def place():
 # Integer modulo operator for positive values of n
 @ti.func
 def imod(n, divisor):
-  ret = 0
-  if n > 0:
-    ret = n - divisor * (n // divisor)
-  else:
-    ret = divisor + n - divisor * (-n // divisor)
+  ret = n % divisor
+  if ret < 0:
+    ret += divisor
   return ret
 
 @ti.func

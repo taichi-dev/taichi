@@ -1,72 +1,58 @@
 import taichi as ti
 
-@ti.all_archs
-def test_complex_kernels_range():
-  a = ti.var(ti.f32)
-  b = ti.var(ti.f32)
-  ti.cfg.print_ir = True
-  
-  n = 128
-  
-  @ti.layout
-  def place():
-    ti.root.dense(ti.i, n).place(a, b)
-  
-  # Note: the CUDA backend can indeed translate this into multiple kernel launches
-  @ti.kernel
-  def add():
-    for i in range(n):
-      a[i] += 1
-    for i in range(n):
-      b[i] += 2
-    for i in range(n):
-      b[i] += 3
-    for i in range(n):
-      a[i] += 1
-    for i in range(n):
-      a[i] += 9
-  
-  for i in range(n):
-    a[i] = i + 1
-    b[i] = i + 2
-  add()
-  
-  for i in range(n):
-    assert a[i] == i + 12
-    assert b[i] == i + 7
+def complex_kernel(func):
+  def decorated(*args, **kwargs):
+    ti.get_runtime().inside_complex_kernel = True
+    ti.get_runtime().target_tape.insert(decorated, args)
+    try:
+      func(*args, **kwargs)
+    except Exception as e:
+      raise e
+    finally:
+      ti.get_runtime().inside_complex_kernel = False
+  decorated.grad = None
+  return decorated
+
+def complex_kernel_grad(primal):
+  def decorator(func):
+    def decorated(*args, **kwargs):
+      func(*args, **kwargs)
+    primal.grad = decorated
+    return decorated
+  return decorator
+
+ti.complex_kernel = complex_kernel
+ti.complex_kernel_grad = complex_kernel_grad
 
 @ti.all_archs
 def test_complex_kernels():
-  return
-  a = ti.var(ti.f32)
-  b = ti.var(ti.f32)
+  x = ti.var(ti.f32)
+  total = ti.var(ti.f32)
 
   n = 128
 
   @ti.layout
   def place():
-    ti.root.dense(ti.i, n).place(a, b)
+    ti.root.dense(ti.i, n).place(x)
+    ti.root.place(total)
+    ti.root.lazy_grad()
 
-  # Note: the CUDA backend can indeed translate this into multiple kernel launches
   @ti.kernel
-  def add():
+  def func(mul: ti.f32):
     for i in range(n):
-      a[i] += 1
-    for i in range(n):
-      b[i] += 2
-    for i in a:
-      b[i] += 3
-    for i in b:
-      a[i] += 1
-    for i in a:
-      a[i] += 9
+      ti.atomic_add(total[None], x[i] * mul)
 
-  for i in range(n):
-    a[i] = i + 1
-    b[i] = i + 2
-  add()
+  @ti.complex_kernel
+  def forward(mul):
+    func(mul, extra_frame_backtrace=2)
 
-  for i in range(n):
-    assert a[i] == i + 12
-    assert b[i] == i + 7
+  @ti.complex_kernel_grad(forward)
+  def backward(mul, **kwargs):
+    func.grad(mul, extra_frame_backtrace=4)
 
+  with ti.Tape(loss=total):
+    forward(4)
+  assert x[0] == 45
+
+
+test_complex_kernels()

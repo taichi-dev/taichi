@@ -6,7 +6,6 @@ import numpy as np
 import os
 
 from renderer_vector import VectorRenderer
-import time
 
 renderer = VectorRenderer()
 
@@ -485,6 +484,7 @@ def optimize(toi=True, visualize=True):
 robot_id = 0
 if len(sys.argv) != 3:
   print("Usage: python3 rigid_body.py [robot_id=0, 1, 2, ...] cmd")
+  exit(-1)
 else:
   robot_id = int(sys.argv[1])
   cmd = sys.argv[2]

@@ -23,11 +23,11 @@ public:
       auto store = new_stmts.push_back<GlobalStoreStmt>(ptr, add);
 
       stmt->parent->replace_with(stmt, new_stmts);
+      throw IRModified();
     }
   }
 
   void visit(OffloadedStmt *stmt) {
-    TC_ASSERT(current_offloaded == nullptr);
     current_offloaded = stmt;
     if (stmt->body) {
       stmt->body->accept(this);
@@ -37,7 +37,14 @@ public:
 
   static void run(IRNode *node) {
     DemoteAtomics demoter;
-    node->accept(&demoter);
+    while (true) {
+      try {
+        node->accept(&demoter);
+      } catch (IRModified) {
+        continue;
+      }
+      break;
+    }
   }
 };
 

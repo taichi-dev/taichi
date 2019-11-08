@@ -164,11 +164,13 @@ class OffloadedStmt : public Stmt {
   int begin, end, step;
   int block_dim;
   bool reversed;
+  int num_cpu_threads;
   std::vector<Stmt *> loop_vars;
   std::vector<llvm::Value *> loop_vars_llvm;
   std::unique_ptr<Block> body;
 
   OffloadedStmt(TaskType task_type) : task_type(task_type) {
+    num_cpu_threads = 1;
     begin = end = step = 0;
     block_dim = 0;
     reversed = false;

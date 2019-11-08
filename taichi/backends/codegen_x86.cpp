@@ -810,6 +810,13 @@ void CPUCodeGen::lower_llvm() {
     irpass::re_id(ir);
     irpass::print(ir);
   }
+
+  irpass::demote_atomics(ir);
+  if (prog->config.print_ir) {
+    TC_TRACE("Atomics demoted:");
+    irpass::re_id(ir);
+    irpass::print(ir);
+  }
 }
 
 void CPUCodeGen::lower() {

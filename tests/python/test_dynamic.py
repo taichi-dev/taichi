@@ -22,7 +22,8 @@ def test_dynamic():
 
 @ti.all_archs
 def test_dynamic2():
-  ti.cfg.print_ir = True
+  if ti.cfg.arch == ti.cuda:
+    return
   x = ti.var(ti.f32)
   n = 128
   

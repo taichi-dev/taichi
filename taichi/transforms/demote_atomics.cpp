@@ -13,17 +13,19 @@ public:
   void visit(AtomicOpStmt *stmt) override {
     if (current_offloaded && current_offloaded->num_cpu_threads == 1) {
       // replace atomics with load, add, store
-      auto ptr = stmt->dest;
-      auto val = stmt->val;
+      if (stmt->op_type == AtomicOpType::add) {
+        auto ptr = stmt->dest;
+        auto val = stmt->val;
 
-      auto new_stmts = VecStatement();
-      auto load = new_stmts.push_back<GlobalLoadStmt>(ptr);
-      auto add =
-          new_stmts.push_back<BinaryOpStmt>(BinaryOpType::add, load, val);
-      auto store = new_stmts.push_back<GlobalStoreStmt>(ptr, add);
+        auto new_stmts = VecStatement();
+        auto load = new_stmts.push_back<GlobalLoadStmt>(ptr);
+        auto add =
+            new_stmts.push_back<BinaryOpStmt>(BinaryOpType::add, load, val);
+        auto store = new_stmts.push_back<GlobalStoreStmt>(ptr, add);
 
-      stmt->parent->replace_with(stmt, new_stmts);
-      throw IRModified();
+        stmt->parent->replace_with(stmt, new_stmts);
+        throw IRModified();
+      }
     }
   }
 

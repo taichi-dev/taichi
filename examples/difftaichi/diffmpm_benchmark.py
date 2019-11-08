@@ -84,15 +84,6 @@ def clear_grid():
     grid_m_in.grad[i, j] = 0
     grid_v_out.grad[i, j] = [0, 0]
 
-@ti.kernel
-def clear_particle_grad():
-  # for all time steps and all particles
-  for f, i in x:
-    x.grad[f, i] = [0, 0]
-    v.grad[f, i] = [0, 0]
-    C.grad[f, i] = [[0, 0], [0, 0]]
-    F.grad[f, i] = [[0, 0], [0, 0]]
-
 
 @ti.kernel
 def p2g(f: ti.i32):

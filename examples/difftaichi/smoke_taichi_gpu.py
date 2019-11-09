@@ -11,7 +11,7 @@ ti.set_default_fp(real)
 num_iterations = 50
 n_grid = 110
 dx = 1.0 / n_grid
-num_iterations_gauss_seidel = 10
+num_iterations_gauss_seidel = 6
 p_dims = num_iterations_gauss_seidel + 1
 steps = 100
 learning_rate = 100
@@ -76,65 +76,67 @@ def inc_index(index):
 
 @ti.kernel
 def compute_div(t: ti.i32):
-  for y in range(n_grid):
-    for x in range(n_grid):
-      div[t, y, x] = -0.5 * dx * (
-            v_updated[t, inc_index(y), x][0] - v_updated[t, dec_index(y), x][0] +
-            v_updated[t, y, inc_index(x)][1] - v_updated[t, y, dec_index(x)][1])
+  for T in range(n_grid * n_grid):
+    y = T / n_grid
+    x = T - y * n_grid
+    div[t, y, x] = -0.5 * dx * (
+          v_updated[t, inc_index(y), x][0] - v_updated[t, dec_index(y), x][0] +
+          v_updated[t, y, inc_index(x)][1] - v_updated[t, y, dec_index(x)][1])
 
 
 @ti.kernel
 def compute_p(t: ti.i32, k: ti.i32):
-  for y in range(n_grid):
-    for x in range(n_grid):
-      a = k + t * num_iterations_gauss_seidel
-      p[a + 1, y, x] = (div[t, y, x] + p[a, dec_index(y), x] + p[
-        a, inc_index(y), x] + p[a, y, dec_index(x)] + p[
-                          a, y, inc_index(x)]) / 4.0
+  for T in range(n_grid * n_grid):
+    y = T / n_grid
+    x = T - y * n_grid
+    a = k + t * num_iterations_gauss_seidel
+    p[a + 1, y, x] = (div[t, y, x] + p[a, dec_index(y), x] + p[
+      a, inc_index(y), x] + p[a, y, dec_index(x)] + p[
+                        a, y, inc_index(x)]) / 4.0
 
 
 @ti.kernel
 def update_v(t: ti.i32):
-  for y in range(n_grid):
-    for x in range(n_grid):
-      a = num_iterations_gauss_seidel * t - 1
-      v[t, y, x][0] = v_updated[t, y, x][0] - 0.5 * (
-            p[a, inc_index(y), x] - p[a, dec_index(y), x]) / dx
-      v[t, y, x][1] = v_updated[t, y, x][1] - 0.5 * (
-            p[a, y, inc_index(x)] - p[a, y, dec_index(x)]) / dx
+  for T in range(n_grid * n_grid):
+    y = T / n_grid
+    x = T - y * n_grid
+    a = num_iterations_gauss_seidel * t - 1
+    v[t, y, x][0] = v_updated[t, y, x][0] - 0.5 * (
+          p[a, inc_index(y), x] - p[a, dec_index(y), x]) / dx
+    v[t, y, x][1] = v_updated[t, y, x][1] - 0.5 * (
+          p[a, y, inc_index(x)] - p[a, y, dec_index(x)]) / dx
 
 
 @ti.kernel
 def advect(field: ti.template(), field_out: ti.template(), t_offset: ti.template(), t: ti.i32):
   """Move field smoke according to x and y velocities (vx and vy)
      using an implicit Euler integrator."""
-  for y in range(n_grid):
-    for x in range(n_grid):
-      center_x = y - v[t + t_offset, y, x][0]
-      center_y = x - v[t + t_offset, y, x][1]
+  for T in range(n_grid * n_grid):
+    y = T / n_grid
+    x = T - y * n_grid
+    center_x = y - v[t + t_offset, y, x][0]
+    center_y = x - v[t + t_offset, y, x][1]
 
-      # Compute indices of source cell
-      left_ix = ti.cast(ti.floor(center_x), ti.i32)
-      top_ix = ti.cast(ti.floor(center_y), ti.i32)
+    # Compute indices of source cell
+    left_ix = ti.cast(ti.floor(center_x), ti.i32)
+    top_ix = ti.cast(ti.floor(center_y), ti.i32)
 
-      rw = center_x - left_ix  # Relative weight of right-hand cell
-      bw = center_y - top_ix  # Relative weight of bottom cell
+    rw = center_x - left_ix  # Relative weight of right-hand cell
+    bw = center_y - top_ix  # Relative weight of bottom cell
 
-      # Wrap around edges
-      # TODO: implement mod (%) operator
-      left_ix = imod(left_ix, n_grid)
-      right_ix = left_ix + 1
-      right_ix = imod(right_ix, n_grid)
-      top_ix = imod(top_ix, n_grid)
-      bot_ix = top_ix + 1
-      bot_ix = imod(bot_ix, n_grid)
+    # Wrap around edges
+    # TODO: implement mod (%) operator
+    left_ix = imod(left_ix, n_grid)
+    right_ix = inc_index(left_ix)
+    top_ix = imod(top_ix, n_grid)
+    bot_ix = inc_index(top_ix)
 
-      # Linearly-weighted sum of the 4 surrounding cells
-      field_out[t, y, x] = (1 - rw) * (
-            (1 - bw) * field[t - 1, left_ix, top_ix] + bw * field[
-          t - 1, left_ix, bot_ix]) + rw * (
-                             (1 - bw) * field[t - 1, right_ix, top_ix] + bw *
-                             field[t - 1, right_ix, bot_ix])
+    # Linearly-weighted sum of the 4 surrounding cells
+    field_out[t, y, x] = (1 - rw) * (
+          (1 - bw) * field[t - 1, left_ix, top_ix] + bw * field[
+        t - 1, left_ix, bot_ix]) + rw * (
+                           (1 - bw) * field[t - 1, right_ix, top_ix] + bw *
+                           field[t - 1, right_ix, bot_ix])
 
 @ti.kernel
 def compute_loss():
@@ -189,7 +191,7 @@ def main():
   for opt in range(num_iterations):
     t = time.time()
     with ti.Tape(loss):
-      output = "test" if opt % 10 == 0 else None
+      output = "test" if opt % 10 == 9 else None
       forward(output)
     print('total time', (time.time() - t) * 1000, 'ms')
     

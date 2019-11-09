@@ -4,11 +4,14 @@
 from __future__ import absolute_import
 from __future__ import print_function
 from builtins import range
-import autograd.numpy as np
-from autograd import value_and_grad
+import jax.numpy as np
+from jax import value_and_grad
+from jax import jit
+from jax import device_put
+from jax import vjp
 
 from scipy.optimize import minimize
-from scipy.misc import imread
+from imageio import imread
 
 import cv2
 
@@ -24,6 +27,7 @@ dtype = np.float64
 # "Real-Time Fluid Dynamics for Games" by Jos Stam
 # http://www.intpowertechcorp.com/GDC03.pdf
 
+@jit
 def project(vx, vy):
     """Project the velocity field to be approximately mass-conserving,
        using a few iterations of Gauss-Seidel."""
@@ -32,7 +36,8 @@ def project(vx, vy):
     div = -0.5 * h * (np.roll(vx, -1, axis=0) - np.roll(vx, 1, axis=0)
                     + np.roll(vy, -1, axis=1) - np.roll(vy, 1, axis=1))
 
-    for k in range(6
+    # Note: for some reason JAX crashes when num_iteration != 5/6.
+    for k in range(6):
         p = (div + np.roll(p, 1, axis=0) + np.roll(p, -1, axis=0)
                  + np.roll(p, 1, axis=1) + np.roll(p, -1, axis=1))/4.0
 
@@ -40,6 +45,12 @@ def project(vx, vy):
     vy -= 0.5*(np.roll(p, -1, axis=1) - np.roll(p, 1, axis=1))/h
     return vx, vy
 
+@jit
+def d_project(vx, vy, d_vx, d_vy):
+    _, fun = vjp(project, vx, vy)
+    return fun((d_vx, d_vy))
+
+@jit
 def advect(f, vx, vy):
     """Move field f according to x and y velocities (u and v)
        using an implicit Euler integrator."""
@@ -65,6 +76,11 @@ def advect(f, vx, vy):
                  + rw * ((1 - bw)*f[right_ix, top_ix] + bw*f[right_ix, bot_ix])
     return np.reshape(flat_f, (rows, cols))
 
+@jit
+def d_advect(f, vx, vy, d_f):
+    _, fun = vjp(advect, f, vx, vy)
+    return fun(d_f)
+
 def simulate(vx, vy, smoke, num_time_steps, ax=None, render=False):
     print("Running simulation...")
     for t in range(num_time_steps):
@@ -75,6 +91,36 @@ def simulate(vx, vy, smoke, num_time_steps, ax=None, render=False):
         smoke = advect(smoke, vx, vy)
     if ax: plot_matrix(ax, smoke, num_time_steps, render)
     return smoke
+
+def d_simulate(vx, vy, smoke, target, num_time_steps, ax=None, render=False):
+    print("Running differentiated simulation...")
+    states = []
+    for t in range(num_time_steps):
+        states.append((vx, vy, smoke))
+        vx_updated = advect(vx, vx, vy)
+        vy_updated = advect(vy, vx, vy)
+        vx, vy = project(vx_updated, vy_updated)
+        smoke = advect(smoke, vx, vy)
+
+    d_smoke = 2 * (smoke - target)
+
+    d_vx = np.zeros_like(vx)
+    d_vy = np.zeros_like(vy)
+    for t in range(num_time_steps-1, -1, -1):
+        vx, vy, smoke = states[t]
+        vx_updated = advect(vx, vx, vy)
+        vy_updated = advect(vy, vx, vy)
+        new_vx, new_vy = project(vx_updated, vy_updated)
+        # new_smoke = advect(smoke, new_vx, new_vy)
+
+        d_smoke, d_vx, d_vy = d_advect(smoke, vx, vy, d_smoke)
+        d_vx_updated, d_vy_updated = d_project(vx_updated, vy_updated, d_vx, d_vy)
+        d_vy0, d_vx, d_vy1 = d_advect(vy, vx, vy, d_vy_updated)
+        d_vy += d_vy0 + d_vy1
+        d_vx0, d_vx1, d_vy = d_advect(vx, vx, vy, d_vx_updated)
+        d_vx += d_vx0 + d_vx1
+
+    return d_vx, d_vy
 
 def plot_matrix(ax, mat, t, render=False):
     plt.cla()
@@ -95,6 +141,8 @@ if __name__ == '__main__':
     print("Loading initial and target states...")
     init_smoke = cv2.resize(imread(os.path.join(basepath, 'init_smoke.png')), (n_grid, n_grid))[:, :, 0]
     target = cv2.resize(imread('taichi.png'), (n_grid, n_grid))[:, :, 0]
+    init_smoke = device_put(init_smoke.astype(np.float32))
+    target = device_put(target.astype(np.float32))
     rows, cols = target.shape
 
     init_dx_and_dy = np.zeros((2, rows, cols), dtype=dtype).ravel()
@@ -113,9 +161,8 @@ if __name__ == '__main__':
         final_smoke = simulate(init_vx, init_vy, init_smoke, simulation_timesteps)
         return distance_from_target_image(final_smoke)
 
-
-    # Specify gradient of objective function using autograd.
-    objective_with_grad = value_and_grad(objective)
+    # Specify gradient of objective function using JAX.
+    #objective_with_grad = value_and_grad(objective)
 
     import time
     for i in range(10):
@@ -124,7 +171,9 @@ if __name__ == '__main__':
       print('loss dtype', r.dtype)
       print('forward time', (time.time() - t) * 1000, 'ms/iter')
       t = time.time()
-      r = objective_with_grad(init_dx_and_dy)
+      #r = objective_with_grad(init_dx_and_dy)
+      init_vx, init_vy = convert_param_vector_to_matrices(init_dx_and_dy)
+      r = d_simulate(init_vx, init_vy, init_smoke, target, simulation_timesteps)
       print('total time', (time.time() - t) * 1000, 'ms/iter')
 
     fig = plt.figure(figsize=(8,8))

@@ -1,52 +1,21 @@
+#include "llvm/Transforms/IPO/PassManagerBuilder.h"
+#include <llvm/Analysis/TargetTransformInfo.h>
 #include <llvm/Support/TargetRegistry.h>
 #include <llvm/Target/TargetMachine.h>
-#include <llvm/Analysis/TargetTransformInfo.h>
-#include "llvm/Transforms/IPO/PassManagerBuilder.h"
 #if defined(TLANG_WITH_CUDA)
 #include <cuda.h>
+#include <cuda_runtime_api.h>
+#include <driver_types.h>
 #endif
+#include "cuda_context.h"
 #include "llvm_jit.h"
 #include <taichi/context.h>
 #include <taichi/system/timer.h>
-#include "cuda_context.h"
 
 TLANG_NAMESPACE_BEGIN
 
 // This file is based on Halide:CodeGen_PTX_Dev.cpp
-
-std::string mcpu() {
-  return "sm_61";
-  /*
-  if (target.has_feature(Target::CUDACapability61)) {
-    return "sm_61";
-  } else if (target.has_feature(Target::CUDACapability50)) {
-    return "sm_50";
-  } else if (target.has_feature(Target::CUDACapability35)) {
-    return "sm_35";
-  } else if (target.has_feature(Target::CUDACapability32)) {
-    return "sm_32";
-  } else if (target.has_feature(Target::CUDACapability30)) {
-    return "sm_30";
-  } else {
-    return "sm_20";
-  }
-  */
-}
-
-std::string mattrs() {
-  return "+ptx50";
-  /*
-  if (target.has_feature(Target::CUDACapability61)) {
-  } else if (target.features_any_of({Target::CUDACapability32,
-                                     Target::CUDACapability50})) {
-    // Need ptx isa 4.0.
-    return "+ptx40";
-  } else {
-    // Use the default. For llvm 3.5 it's ptx 3.2.
-    return "";
-  }
-  */
-}
+std::string cuda_mattrs() { return "+ptx50"; }
 
 #if defined(TLANG_WITH_CUDA)
 std::string compile_module_to_ptx(std::unique_ptr<llvm::Module> &module) {
@@ -73,8 +42,8 @@ std::string compile_module_to_ptx(std::unique_ptr<llvm::Module> &module) {
   options.StackAlignmentOverride = 0;
 
   std::unique_ptr<TargetMachine> target_machine(target->createTargetMachine(
-      triple.str(), mcpu(), mattrs(), options, llvm::Reloc::PIC_,
-      llvm::CodeModel::Small, CodeGenOpt::Aggressive));
+      triple.str(), cuda_context.get_mcpu(), cuda_mattrs(), options,
+      llvm::Reloc::PIC_, llvm::CodeModel::Small, CodeGenOpt::Aggressive));
 
   TC_ERROR_UNLESS(target_machine.get(), "Could not allocate target machine!");
 
@@ -158,130 +127,130 @@ std::string compile_module_to_ptx(std::unique_ptr<llvm::Module> &module) {
   return buffer;
 }
 
-#define checkCudaErrors(err) \
-  if ((err) != CUDA_SUCCESS) \
+#define checkCudaErrors(err)                                                   \
+  if ((err) != CUDA_SUCCESS)                                                   \
     TC_ERROR("Cuda Error {}", get_error_name(err));
 
 // from Halide::Runtime::Internal::Cuda
 const char *get_error_name(CUresult err) {
   switch (err) {
-    case CUDA_SUCCESS:
-      return "CUDA_SUCCESS";
-    case CUDA_ERROR_INVALID_VALUE:
-      return "CUDA_ERROR_INVALID_VALUE";
-    case CUDA_ERROR_OUT_OF_MEMORY:
-      return "CUDA_ERROR_OUT_OF_MEMORY";
-    case CUDA_ERROR_NOT_INITIALIZED:
-      return "CUDA_ERROR_NOT_INITIALIZED";
-    case CUDA_ERROR_DEINITIALIZED:
-      return "CUDA_ERROR_DEINITIALIZED";
-    case CUDA_ERROR_PROFILER_DISABLED:
-      return "CUDA_ERROR_PROFILER_DISABLED";
-    case CUDA_ERROR_PROFILER_NOT_INITIALIZED:
-      return "CUDA_ERROR_PROFILER_NOT_INITIALIZED";
-    case CUDA_ERROR_PROFILER_ALREADY_STARTED:
-      return "CUDA_ERROR_PROFILER_ALREADY_STARTED";
-    case CUDA_ERROR_PROFILER_ALREADY_STOPPED:
-      return "CUDA_ERROR_PROFILER_ALREADY_STOPPED";
-    case CUDA_ERROR_NO_DEVICE:
-      return "CUDA_ERROR_NO_DEVICE";
-    case CUDA_ERROR_INVALID_DEVICE:
-      return "CUDA_ERROR_INVALID_DEVICE";
-    case CUDA_ERROR_INVALID_IMAGE:
-      return "CUDA_ERROR_INVALID_IMAGE";
-    case CUDA_ERROR_INVALID_CONTEXT:
-      return "CUDA_ERROR_INVALID_CONTEXT";
-    case CUDA_ERROR_CONTEXT_ALREADY_CURRENT:
-      return "CUDA_ERROR_CONTEXT_ALREADY_CURRENT";
-    case CUDA_ERROR_MAP_FAILED:
-      return "CUDA_ERROR_MAP_FAILED";
-    case CUDA_ERROR_UNMAP_FAILED:
-      return "CUDA_ERROR_UNMAP_FAILED";
-    case CUDA_ERROR_ARRAY_IS_MAPPED:
-      return "CUDA_ERROR_ARRAY_IS_MAPPED";
-    case CUDA_ERROR_ALREADY_MAPPED:
-      return "CUDA_ERROR_ALREADY_MAPPED";
-    case CUDA_ERROR_NO_BINARY_FOR_GPU:
-      return "CUDA_ERROR_NO_BINARY_FOR_GPU";
-    case CUDA_ERROR_ALREADY_ACQUIRED:
-      return "CUDA_ERROR_ALREADY_ACQUIRED";
-    case CUDA_ERROR_NOT_MAPPED:
-      return "CUDA_ERROR_NOT_MAPPED";
-    case CUDA_ERROR_NOT_MAPPED_AS_ARRAY:
-      return "CUDA_ERROR_NOT_MAPPED_AS_ARRAY";
-    case CUDA_ERROR_NOT_MAPPED_AS_POINTER:
-      return "CUDA_ERROR_NOT_MAPPED_AS_POINTER";
-    case CUDA_ERROR_ECC_UNCORRECTABLE:
-      return "CUDA_ERROR_ECC_UNCORRECTABLE";
-    case CUDA_ERROR_UNSUPPORTED_LIMIT:
-      return "CUDA_ERROR_UNSUPPORTED_LIMIT";
-    case CUDA_ERROR_CONTEXT_ALREADY_IN_USE:
-      return "CUDA_ERROR_CONTEXT_ALREADY_IN_USE";
-    case CUDA_ERROR_PEER_ACCESS_UNSUPPORTED:
-      return "CUDA_ERROR_PEER_ACCESS_UNSUPPORTED";
-    case CUDA_ERROR_INVALID_PTX:
-      return "CUDA_ERROR_INVALID_PTX";
-    case CUDA_ERROR_INVALID_GRAPHICS_CONTEXT:
-      return "CUDA_ERROR_INVALID_GRAPHICS_CONTEXT";
-    case CUDA_ERROR_NVLINK_UNCORRECTABLE:
-      return "CUDA_ERROR_NVLINK_UNCORRECTABLE";
-    case CUDA_ERROR_JIT_COMPILER_NOT_FOUND:
-      return "CUDA_ERROR_JIT_COMPILER_NOT_FOUND";
-    case CUDA_ERROR_INVALID_SOURCE:
-      return "CUDA_ERROR_INVALID_SOURCE";
-    case CUDA_ERROR_FILE_NOT_FOUND:
-      return "CUDA_ERROR_FILE_NOT_FOUND";
-    case CUDA_ERROR_SHARED_OBJECT_SYMBOL_NOT_FOUND:
-      return "CUDA_ERROR_SHARED_OBJECT_SYMBOL_NOT_FOUND";
-    case CUDA_ERROR_SHARED_OBJECT_INIT_FAILED:
-      return "CUDA_ERROR_SHARED_OBJECT_INIT_FAILED";
-    case CUDA_ERROR_OPERATING_SYSTEM:
-      return "CUDA_ERROR_OPERATING_SYSTEM";
-    case CUDA_ERROR_INVALID_HANDLE:
-      return "CUDA_ERROR_INVALID_HANDLE";
-    case CUDA_ERROR_NOT_FOUND:
-      return "CUDA_ERROR_NOT_FOUND";
-    case CUDA_ERROR_NOT_READY:
-      return "CUDA_ERROR_NOT_READY";
-    case CUDA_ERROR_ILLEGAL_ADDRESS:
-      return "CUDA_ERROR_ILLEGAL_ADDRESS";
-    case CUDA_ERROR_LAUNCH_OUT_OF_RESOURCES:
-      return "CUDA_ERROR_LAUNCH_OUT_OF_RESOURCES";
-    case CUDA_ERROR_LAUNCH_TIMEOUT:
-      return "CUDA_ERROR_LAUNCH_TIMEOUT";
-    case CUDA_ERROR_LAUNCH_INCOMPATIBLE_TEXTURING:
-      return "CUDA_ERROR_LAUNCH_INCOMPATIBLE_TEXTURING";
-    case CUDA_ERROR_PEER_ACCESS_ALREADY_ENABLED:
-      return "CUDA_ERROR_PEER_ACCESS_ALREADY_ENABLED";
-    case CUDA_ERROR_PEER_ACCESS_NOT_ENABLED:
-      return "CUDA_ERROR_PEER_ACCESS_NOT_ENABLED";
-    case CUDA_ERROR_PRIMARY_CONTEXT_ACTIVE:
-      return "CUDA_ERROR_PRIMARY_CONTEXT_ACTIVE";
-    case CUDA_ERROR_CONTEXT_IS_DESTROYED:
-      return "CUDA_ERROR_CONTEXT_IS_DESTROYED";
-      // A trap instruction produces the below error, which is how we codegen
-      // asserts on GPU
-    case CUDA_ERROR_ILLEGAL_INSTRUCTION:
-      return "Illegal instruction or Halide assertion failure inside kernel";
-    case CUDA_ERROR_MISALIGNED_ADDRESS:
-      return "CUDA_ERROR_MISALIGNED_ADDRESS";
-    case CUDA_ERROR_INVALID_ADDRESS_SPACE:
-      return "CUDA_ERROR_INVALID_ADDRESS_SPACE";
-    case CUDA_ERROR_INVALID_PC:
-      return "CUDA_ERROR_INVALID_PC";
-    case CUDA_ERROR_LAUNCH_FAILED:
-      return "CUDA_ERROR_LAUNCH_FAILED";
-    case CUDA_ERROR_NOT_PERMITTED:
-      return "CUDA_ERROR_NOT_PERMITTED";
-    case CUDA_ERROR_NOT_SUPPORTED:
-      return "CUDA_ERROR_NOT_SUPPORTED";
-    case CUDA_ERROR_UNKNOWN:
-      return "CUDA_ERROR_UNKNOWN";
-    default:
-      // This is unfortunate as usually get_cuda_error is called in the middle
-      // of an error print, but dropping the number on the floor is worse.
-      TC_ERROR("Unknown cuda error {}", int(err));
-      return "<Unknown error>";
+  case CUDA_SUCCESS:
+    return "CUDA_SUCCESS";
+  case CUDA_ERROR_INVALID_VALUE:
+    return "CUDA_ERROR_INVALID_VALUE";
+  case CUDA_ERROR_OUT_OF_MEMORY:
+    return "CUDA_ERROR_OUT_OF_MEMORY";
+  case CUDA_ERROR_NOT_INITIALIZED:
+    return "CUDA_ERROR_NOT_INITIALIZED";
+  case CUDA_ERROR_DEINITIALIZED:
+    return "CUDA_ERROR_DEINITIALIZED";
+  case CUDA_ERROR_PROFILER_DISABLED:
+    return "CUDA_ERROR_PROFILER_DISABLED";
+  case CUDA_ERROR_PROFILER_NOT_INITIALIZED:
+    return "CUDA_ERROR_PROFILER_NOT_INITIALIZED";
+  case CUDA_ERROR_PROFILER_ALREADY_STARTED:
+    return "CUDA_ERROR_PROFILER_ALREADY_STARTED";
+  case CUDA_ERROR_PROFILER_ALREADY_STOPPED:
+    return "CUDA_ERROR_PROFILER_ALREADY_STOPPED";
+  case CUDA_ERROR_NO_DEVICE:
+    return "CUDA_ERROR_NO_DEVICE";
+  case CUDA_ERROR_INVALID_DEVICE:
+    return "CUDA_ERROR_INVALID_DEVICE";
+  case CUDA_ERROR_INVALID_IMAGE:
+    return "CUDA_ERROR_INVALID_IMAGE";
+  case CUDA_ERROR_INVALID_CONTEXT:
+    return "CUDA_ERROR_INVALID_CONTEXT";
+  case CUDA_ERROR_CONTEXT_ALREADY_CURRENT:
+    return "CUDA_ERROR_CONTEXT_ALREADY_CURRENT";
+  case CUDA_ERROR_MAP_FAILED:
+    return "CUDA_ERROR_MAP_FAILED";
+  case CUDA_ERROR_UNMAP_FAILED:
+    return "CUDA_ERROR_UNMAP_FAILED";
+  case CUDA_ERROR_ARRAY_IS_MAPPED:
+    return "CUDA_ERROR_ARRAY_IS_MAPPED";
+  case CUDA_ERROR_ALREADY_MAPPED:
+    return "CUDA_ERROR_ALREADY_MAPPED";
+  case CUDA_ERROR_NO_BINARY_FOR_GPU:
+    return "CUDA_ERROR_NO_BINARY_FOR_GPU";
+  case CUDA_ERROR_ALREADY_ACQUIRED:
+    return "CUDA_ERROR_ALREADY_ACQUIRED";
+  case CUDA_ERROR_NOT_MAPPED:
+    return "CUDA_ERROR_NOT_MAPPED";
+  case CUDA_ERROR_NOT_MAPPED_AS_ARRAY:
+    return "CUDA_ERROR_NOT_MAPPED_AS_ARRAY";
+  case CUDA_ERROR_NOT_MAPPED_AS_POINTER:
+    return "CUDA_ERROR_NOT_MAPPED_AS_POINTER";
+  case CUDA_ERROR_ECC_UNCORRECTABLE:
+    return "CUDA_ERROR_ECC_UNCORRECTABLE";
+  case CUDA_ERROR_UNSUPPORTED_LIMIT:
+    return "CUDA_ERROR_UNSUPPORTED_LIMIT";
+  case CUDA_ERROR_CONTEXT_ALREADY_IN_USE:
+    return "CUDA_ERROR_CONTEXT_ALREADY_IN_USE";
+  case CUDA_ERROR_PEER_ACCESS_UNSUPPORTED:
+    return "CUDA_ERROR_PEER_ACCESS_UNSUPPORTED";
+  case CUDA_ERROR_INVALID_PTX:
+    return "CUDA_ERROR_INVALID_PTX";
+  case CUDA_ERROR_INVALID_GRAPHICS_CONTEXT:
+    return "CUDA_ERROR_INVALID_GRAPHICS_CONTEXT";
+  case CUDA_ERROR_NVLINK_UNCORRECTABLE:
+    return "CUDA_ERROR_NVLINK_UNCORRECTABLE";
+  case CUDA_ERROR_JIT_COMPILER_NOT_FOUND:
+    return "CUDA_ERROR_JIT_COMPILER_NOT_FOUND";
+  case CUDA_ERROR_INVALID_SOURCE:
+    return "CUDA_ERROR_INVALID_SOURCE";
+  case CUDA_ERROR_FILE_NOT_FOUND:
+    return "CUDA_ERROR_FILE_NOT_FOUND";
+  case CUDA_ERROR_SHARED_OBJECT_SYMBOL_NOT_FOUND:
+    return "CUDA_ERROR_SHARED_OBJECT_SYMBOL_NOT_FOUND";
+  case CUDA_ERROR_SHARED_OBJECT_INIT_FAILED:
+    return "CUDA_ERROR_SHARED_OBJECT_INIT_FAILED";
+  case CUDA_ERROR_OPERATING_SYSTEM:
+    return "CUDA_ERROR_OPERATING_SYSTEM";
+  case CUDA_ERROR_INVALID_HANDLE:
+    return "CUDA_ERROR_INVALID_HANDLE";
+  case CUDA_ERROR_NOT_FOUND:
+    return "CUDA_ERROR_NOT_FOUND";
+  case CUDA_ERROR_NOT_READY:
+    return "CUDA_ERROR_NOT_READY";
+  case CUDA_ERROR_ILLEGAL_ADDRESS:
+    return "CUDA_ERROR_ILLEGAL_ADDRESS";
+  case CUDA_ERROR_LAUNCH_OUT_OF_RESOURCES:
+    return "CUDA_ERROR_LAUNCH_OUT_OF_RESOURCES";
+  case CUDA_ERROR_LAUNCH_TIMEOUT:
+    return "CUDA_ERROR_LAUNCH_TIMEOUT";
+  case CUDA_ERROR_LAUNCH_INCOMPATIBLE_TEXTURING:
+    return "CUDA_ERROR_LAUNCH_INCOMPATIBLE_TEXTURING";
+  case CUDA_ERROR_PEER_ACCESS_ALREADY_ENABLED:
+    return "CUDA_ERROR_PEER_ACCESS_ALREADY_ENABLED";
+  case CUDA_ERROR_PEER_ACCESS_NOT_ENABLED:
+    return "CUDA_ERROR_PEER_ACCESS_NOT_ENABLED";
+  case CUDA_ERROR_PRIMARY_CONTEXT_ACTIVE:
+    return "CUDA_ERROR_PRIMARY_CONTEXT_ACTIVE";
+  case CUDA_ERROR_CONTEXT_IS_DESTROYED:
+    return "CUDA_ERROR_CONTEXT_IS_DESTROYED";
+    // A trap instruction produces the below error, which is how we codegen
+    // asserts on GPU
+  case CUDA_ERROR_ILLEGAL_INSTRUCTION:
+    return "Illegal instruction or Halide assertion failure inside kernel";
+  case CUDA_ERROR_MISALIGNED_ADDRESS:
+    return "CUDA_ERROR_MISALIGNED_ADDRESS";
+  case CUDA_ERROR_INVALID_ADDRESS_SPACE:
+    return "CUDA_ERROR_INVALID_ADDRESS_SPACE";
+  case CUDA_ERROR_INVALID_PC:
+    return "CUDA_ERROR_INVALID_PC";
+  case CUDA_ERROR_LAUNCH_FAILED:
+    return "CUDA_ERROR_LAUNCH_FAILED";
+  case CUDA_ERROR_NOT_PERMITTED:
+    return "CUDA_ERROR_NOT_PERMITTED";
+  case CUDA_ERROR_NOT_SUPPORTED:
+    return "CUDA_ERROR_NOT_SUPPORTED";
+  case CUDA_ERROR_UNKNOWN:
+    return "CUDA_ERROR_UNKNOWN";
+  default:
+    // This is unfortunate as usually get_cuda_error is called in the middle
+    // of an error print, but dropping the number on the floor is worse.
+    TC_ERROR("Unknown cuda error {}", int(err));
+    return "<Unknown error>";
   }
 }
 
@@ -305,6 +274,11 @@ CUDAContext::CUDAContext() {
   // Create driver context
   checkCudaErrors(cuCtxCreate(&context, 0, device));
   checkCudaErrors(cuMemAlloc(&context_buffer, sizeof(Context)));
+
+  int cap_major, cap_minor;
+  cudaDeviceGetAttribute(&cap_major, cudaDevAttrComputeCapabilityMajor, 0);
+  cudaDeviceGetAttribute(&cap_minor, cudaDevAttrComputeCapabilityMinor, 0);
+  mcpu = fmt::format("sm_{}{}", cap_major, cap_minor);
 }
 
 CUmodule CUDAContext::compile(const std::string &ptx) {
@@ -328,9 +302,7 @@ CUfunction CUDAContext::get_function(CUmodule module,
   return func;
 }
 
-void CUDAContext::launch(CUfunction func,
-                         void *context_ptr,
-                         unsigned gridDim,
+void CUDAContext::launch(CUfunction func, void *context_ptr, unsigned gridDim,
                          unsigned blockDim) {
   // Kernel parameters
 
@@ -352,7 +324,7 @@ CUDAContext::~CUDAContext() {
   */
 }
 
-CUDAContext cuda_context;  // TODO:..
+CUDAContext cuda_context; // TODO:..
 
 #else
 std::string compile_module_to_ptx(std::unique_ptr<llvm::Module> &module) {
@@ -360,8 +332,7 @@ std::string compile_module_to_ptx(std::unique_ptr<llvm::Module> &module) {
 }
 
 int compile_ptx_and_launch(const std::string &ptx,
-                           const std::string &kernel_name,
-                           void *) {
+                           const std::string &kernel_name, void *) {
   TC_NOT_IMPLEMENTED
 }
 #endif

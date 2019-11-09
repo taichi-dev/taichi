@@ -1,6 +1,6 @@
 #if defined(TLANG_WITH_CUDA)
-#include <cuda.h>
 #include "llvm_jit.h"
+#include <cuda.h>
 #include <taichi/context.h>
 
 TLANG_NAMESPACE_BEGIN
@@ -12,18 +12,19 @@ class CUDAContext {
   // CUlinkState linker;
   int devCount;
   CUdeviceptr context_buffer;
+  std::string mcpu;
 
- public:
+public:
   CUDAContext();
 
   CUmodule compile(const std::string &ptx);
 
   CUfunction get_function(CUmodule module, const std::string &func_name);
 
-  void launch(CUfunction func,
-              void *context_ptr,
-              unsigned gridDim,
+  void launch(CUfunction func, void *context_ptr, unsigned gridDim,
               unsigned blockDim);
+
+  std::string get_mcpu() const { return mcpu; }
 
   ~CUDAContext();
 };

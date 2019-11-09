@@ -1,4 +1,4 @@
-# TO run on CPU:
+# To run on CPU:
 #   CUDA_VISIBLE_DEVICES='' OMP_NUM_THREADS=1 python3 smoke_pytorch.py
 
 import torch
@@ -17,8 +17,6 @@ device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cp
 num_iterations = 50
 n_grid = 110
 dx = 1.0 / n_grid
-num_iterations_gauss_seidel = 6
-p_dims = num_iterations_gauss_seidel + 1
 steps = 100
 learning_rate = 100
 
@@ -36,7 +34,7 @@ def project(vx, vy):
   div = -0.5 * h * (roll_row(vx, -1) - roll_row(vx, 1)
                   + roll_col(vy, -1) - roll_col(vy, 1))
 
-  for k in range(10):
+  for k in range(6):
     p = (div + roll_row(p, 1) + roll_row(p, -1)
              + roll_col(p, 1) + roll_col(p, -1))/4.0
 

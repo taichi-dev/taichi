@@ -85,14 +85,14 @@ def compute_div(t: ti.i32):
 
 
 @ti.kernel
-def compute_p(t: ti.i32, k: ti.i32):
+def compute_p(t: ti.i32, k: ti.template()):
   for T in range(n_grid * n_grid):
     y = T / n_grid
     x = T - y * n_grid
     a = k + t * num_iterations_gauss_seidel
     p[a + 1, y, x] = (div[t, y, x] + p[a, dec_index(y), x] + p[
       a, inc_index(y), x] + p[a, y, dec_index(x)] + p[
-                        a, y, inc_index(x)]) / 4.0
+                        a, y, inc_index(x)]) / 4
 
 
 @ti.kernel

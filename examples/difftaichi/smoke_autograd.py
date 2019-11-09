@@ -8,7 +8,7 @@ import autograd.numpy as np
 from autograd import value_and_grad
 
 from scipy.optimize import minimize
-from scipy.misc import imread
+from imageio import imread
 
 import cv2
 
@@ -32,7 +32,7 @@ def project(vx, vy):
     div = -0.5 * h * (np.roll(vx, -1, axis=0) - np.roll(vx, 1, axis=0)
                     + np.roll(vy, -1, axis=1) - np.roll(vy, 1, axis=1))
 
-    for k in range(6
+    for k in range(6):
         p = (div + np.roll(p, 1, axis=0) + np.roll(p, -1, axis=0)
                  + np.roll(p, 1, axis=1) + np.roll(p, -1, axis=1))/4.0
 

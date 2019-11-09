@@ -82,7 +82,7 @@ def compute_div(t: ti.i32):
 
 
 @ti.kernel
-def compute_p(t: ti.i32, k: ti.i32):
+def compute_p(t: ti.i32, k: ti.template()):
   for y in range(n_grid):
     for x in range(n_grid):
       a = k + t * num_iterations_gauss_seidel

@@ -32,7 +32,19 @@ ti.cfg.arch = ti.cuda
 @ti.layout
 def place():
   ti.root.dense(ti.l, steps * p_dims).dense(ti.ij, n_grid).place(p)
-  ti.root.dense(ti.l, steps).dense(ti.ij, n_grid).place(v, v_updated, smoke, div)
+  ti.root.dense(ti.l, steps * p_dims).dense(ti.ij, n_grid).place(p.grad)
+  block = ti.root.dense(ti.l, steps)
+  def soa(x):
+    if isinstance(x, ti.Expr):
+      block.dense(ti.ij, n_grid).place(x)
+      block.dense(ti.ij, n_grid).place(x.grad)
+    else:
+      for y in x.entries:
+        soa(y)
+  soa(v)
+  soa(v_updated)
+  soa(smoke)
+  soa(div)
   ti.root.dense(ti.ij, n_grid).place(target)
   ti.root.place(loss)
   ti.root.lazy_grad()

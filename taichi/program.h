@@ -28,7 +28,6 @@ public:
   // Should be copiable
   std::vector<void *> loaded_dlls;
   Kernel *current_kernel;
-  SNode *current_snode;
   SNode *snode_root;
   // pointer to the data structure. assigned to context.buffers[0] during kernel
   // launches
@@ -45,7 +44,6 @@ public:
   static std::atomic<int> num_instances;
 
   std::vector<std::unique_ptr<Kernel>> functions;
-  int index_counter;
 
   std::function<void()> profiler_print_gpu;
   std::function<void()> profiler_clear_gpu;
@@ -139,7 +137,6 @@ public:
     auto func = std::make_unique<Kernel>(*this, body, name, grad);
     // Expr::set_allow_store(false);
     functions.emplace_back(std::move(func));
-    current_snode = nullptr;
     return *functions.back();
   }
 

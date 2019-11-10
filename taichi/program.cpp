@@ -174,7 +174,6 @@ Program::Program(Arch arch) {
   }
   current_kernel = nullptr;
   snode_root = nullptr;
-  index_counter = 0;
   sync = true;
   llvm_runtime = nullptr;
   clear_all_gradients_initialized = false;

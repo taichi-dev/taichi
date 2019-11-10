@@ -2,15 +2,15 @@
 
 #pragma once
 
-#include <taichi/context.h>
-#include <taichi/unified_allocator.h>
-#include <taichi/profiler.h>
-#include <atomic>
-#include "tlang_util.h"
-#include "snode.h"
 #include "ir.h"
-#include "taichi_llvm_context.h"
 #include "kernel.h"
+#include "snode.h"
+#include "taichi_llvm_context.h"
+#include "tlang_util.h"
+#include <atomic>
+#include <taichi/context.h>
+#include <taichi/profiler.h>
+#include <taichi/unified_allocator.h>
 #if defined(TC_PLATFORM_UNIX)
 #include <dlfcn.h>
 #endif
@@ -20,12 +20,10 @@ TLANG_NAMESPACE_BEGIN
 extern Program *current_program;
 extern SNode root;
 
-TC_FORCE_INLINE Program &get_current_program() {
-  return *current_program;
-}
+TC_FORCE_INLINE Program &get_current_program() { return *current_program; }
 
 class Program {
- public:
+public:
   using Kernel = taichi::Tlang::Kernel;
   // Should be copiable
   std::vector<void *> loaded_dlls;
@@ -40,9 +38,10 @@ class Program {
   CPUProfiler cpu_profiler;
   Context context;
   std::unique_ptr<TaichiLLVMContext> llvm_context_host, llvm_context_device;
-  bool sync;  // device/host synchronized?
+  bool sync; // device/host synchronized?
   bool clear_all_gradients_initialized;
   bool finalized;
+  float64 total_compilation_time;
   static std::atomic<int> num_instances;
 
   std::vector<std::unique_ptr<Kernel>> functions;
@@ -76,11 +75,10 @@ class Program {
     return context;
   }
 
-  Program() : Program(default_compile_config.arch) {
-  }
+  Program() : Program(default_compile_config.arch) {}
 
   Program(const Program &){
-      TC_NOT_IMPLEMENTED  // for pybind11..
+      TC_NOT_IMPLEMENTED // for pybind11..
   }
 
   Program(Arch arch);
@@ -95,7 +93,7 @@ class Program {
 #if defined(TC_PLATFORM_UNIX)
       dlclose(dll);
 #else
-	TC_NOT_IMPLEMENTED
+      TC_NOT_IMPLEMENTED
 #endif
     }
     UnifiedAllocator::free();
@@ -136,8 +134,7 @@ class Program {
   }
 
   Kernel &kernel(const std::function<void()> &body,
-                 const std::string &name = "",
-                 bool grad = false) {
+                 const std::string &name = "", bool grad = false) {
     // Expr::set_allow_store(true);
     auto func = std::make_unique<Kernel>(*this, body, name, grad);
     // Expr::set_allow_store(false);
@@ -146,12 +143,9 @@ class Program {
     return *functions.back();
   }
 
-  void start_function_definition(Kernel *func) {
-    current_kernel = func;
-  }
+  void start_function_definition(Kernel *func) { current_kernel = func; }
 
-  void end_function_definition() {
-  }
+  void end_function_definition() {}
 
   FunctionType compile(Kernel &kernel);
 
@@ -180,9 +174,9 @@ class Program {
 
   Kernel &get_snode_writer(SNode *snode);
 
-  Arch get_host_arch() {
-    return Arch::x86_64;
-  }
+  Arch get_host_arch() { return Arch::x86_64; }
+
+  float64 get_total_compilation_time() { return total_compilation_time; }
 };
 
 TLANG_NAMESPACE_END

@@ -8,7 +8,7 @@ from imageio import imread, imwrite
 real = ti.f32
 ti.set_default_fp(real)
 
-num_iterations = 50
+num_iterations = 150
 n_grid = 110
 dx = 1.0 / n_grid
 num_iterations_gauss_seidel = 6
@@ -191,12 +191,13 @@ def main():
   for opt in range(num_iterations):
     t = time.time()
     with ti.Tape(loss):
-      output = "test" if opt % 10 == 9 else None
+      output = "test" if opt % 10 == -1 else None
       forward(output)
     print('total time', (time.time() - t) * 1000, 'ms')
     
     print('Iter', opt, ' Loss =', loss[None])
     apply_grad()
+    print("Compilation time:", ti.get_runtime().prog.get_total_compilation_time())
   
   forward("output")
 

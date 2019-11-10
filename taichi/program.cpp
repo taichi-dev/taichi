@@ -20,6 +20,7 @@ std::atomic<int> Program::num_instances;
 SNode root;
 
 FunctionType Program::compile(Kernel &kernel) {
+  auto start_t = Time::get_time();
   TI_AUTO_PROF;
   FunctionType ret = nullptr;
   if (kernel.arch == Arch::x86_64) {
@@ -32,6 +33,7 @@ FunctionType Program::compile(Kernel &kernel) {
     TC_NOT_IMPLEMENTED;
   }
   TC_ASSERT(ret);
+  total_compilation_time += Time::get_time() - start_t;
   return ret;
 }
 
@@ -158,6 +160,7 @@ Program::Program(Arch arch) {
   }
 #endif
   TC_ASSERT_INFO(num_instances == 0, "Only one instance at a time");
+  total_compilation_time = 0;
   num_instances += 1;
   SNode::counter = 0;
   // llvm_context_device is initialized before kernel compilation

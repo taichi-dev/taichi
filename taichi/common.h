@@ -29,7 +29,7 @@ __device__ __constant__ int *error_code;
 #include <mutex>
 #include <unordered_map>
 #include <iostream>
-#if not defined(TC_PLATFORM_WINDOWS)
+#if !defined(TC_PLATFORM_WINDOWS)
 #include <sys/time.h>
 #endif
 
@@ -137,7 +137,7 @@ TC_FORCE_INLINE T rand() noexcept;
 
 TLANG_NAMESPACE_BEGIN
 
-#if not defined(TC_PLATFORM_WINDOWS)
+#if !defined(TC_PLATFORM_WINDOWS)
 inline double get_time() {
   struct timeval tv;
   gettimeofday(&tv, nullptr);

@@ -69,7 +69,7 @@ TC_FORCE_INLINE T clamp(const T &a) noexcept {
 
 template <typename T, typename V>
 TC_FORCE_INLINE V lerp(T a, V x_0, V x_1) noexcept {
-  return (T(1) - a) * x_0 + a * x_1;
+  return V((T(1) - a) * x_0 + a * x_1);
 }
 
 template <typename T>

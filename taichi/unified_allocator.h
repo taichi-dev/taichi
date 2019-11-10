@@ -50,7 +50,7 @@ class UnifiedAllocator {
   __host__ void *alloc(std::size_t size, int alignment) {
     std::lock_guard<std::mutex> _(lock);
     auto ret = (char *)(*head) + alignment - 1 -
-               ((unsigned long)(char *)(*head) + alignment - 1) % alignment;
+               ((std::size_t)(char *)(*head) + alignment - 1) % alignment;
     *head = (char *)ret + size;
     return ret;
   }

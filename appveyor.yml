@@ -1,0 +1,35 @@
+#---------------------------------#
+#      general configuration      #
+#---------------------------------#
+
+# version format
+version: 0.0.{build}-{branch}
+
+#---------------------------------#
+#    environment configuration    #
+#---------------------------------#
+
+image: Visual Studio 2017
+clone_folder: C:\taichi
+
+#---------------------------------#
+#       build configuration       #
+#---------------------------------#
+
+platform: x64
+configuration: Release
+
+build_script:
+  - cd C:\
+  - curl https://github.com/yuanming-hu/taichi_assets/releases/download/llvm8/taichi-llvm-8.0.1-msvc2017.zip -LO
+  - 7z e taichi-llvm-8.0.1-msvc2017.zip -o llvm
+  - dir
+  - curl https://github.com/yuanming-hu/taichi_assets/releases/download/llvm8/clang-7.0.1-win.zip -LO
+  - 7z e clang-7.0.1-win.zip -o clang
+  - dir
+  - cd C:\taichi
+  - C:\Python36-x64\python.exe dev_setup.py ci
+  - mkdir build
+  - cd build
+  - cmake ..
+  - make -j 4

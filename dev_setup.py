@@ -224,7 +224,7 @@ class Installer:
       print('PYTHONPATH={}'.format(os.environ['PYTHONPATH']))
 
       execute_command('echo $PYTHONPATH')
-    else:
+    elif get_os_name() != 'win':
       # compile ..
       os.makedirs('build')
       execute_command('cd build && cmake ..')

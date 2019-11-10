@@ -156,7 +156,7 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::get_init_module() {
 std::unique_ptr<llvm::Module> module_from_bitcode_file(std::string bitcode_path,
                                                        llvm::LLVMContext *ctx) {
   TI_AUTO_PROF
-  std::ifstream ifs(bitcode_path);
+  std::ifstream ifs(bitcode_path, std::ios::binary);
   std::string bitcode(std::istreambuf_iterator<char>(ifs),
                       (std::istreambuf_iterator<char>()));
   auto runtime =

@@ -228,36 +228,32 @@ def compute_loss():
   loss[None] = -dist
 
 
+@ti.complex_kernel
+def advance(s):
+  clear_grid()
+  compute_actuation(s)
+  p2g(s)
+  grid_op()
+  g2p(s)
+  
+@ti.complex_kernel_grad(advance)
+def advance_grad(s):
+  clear_grid()
+  p2g(s)
+  grid_op()
+  
+  g2p.grad(s)
+  grid_op.grad()
+  p2g.grad(s)
+  compute_actuation.grad(s)
+
 def forward(total_steps=steps):
   # simulation
   for s in range(total_steps - 1):
-    clear_grid()
-    compute_actuation(s)
-    p2g(s)
-    grid_op()
-    g2p(s)
-  
+    advance(s)
   x_avg[None] = [0, 0]
   compute_x_avg()
   compute_loss()
-  return loss[None]
-
-
-def backward():
-  clear_particle_grad()
-  
-  compute_loss.grad()
-  compute_x_avg.grad()
-  for s in reversed(range(steps - 1)):
-    # Since we do not store the grid history (to save space), we redo p2g and grid op
-    clear_grid()
-    p2g(s)
-    grid_op()
-    
-    g2p.grad(s)
-    grid_op.grad()
-    p2g.grad(s)
-    compute_actuation.grad(s)
 
 
 class Scene:
@@ -361,14 +357,12 @@ def main():
     particle_type[i] = scene.particle_type[i]
     
 
-  vec = tc.vec
   losses = []
   for iter in range(100):
-    ti.clear_all_gradients()
-    l = forward()
+    with ti.Tape(loss):
+      forward()
+    l = loss[None]
     losses.append(l)
-    loss.grad[None] = 1
-    backward()
     print('i=', iter, 'loss=', l)
     learning_rate = 0.1
 
@@ -379,7 +373,7 @@ def main():
       bias[i] -= learning_rate * bias.grad[i]
 
 
-    if iter % 10 == 0:
+    if iter % 10 == 9:
       # visualize
       forward(1500)
       for s in range(63, 1500, 16):

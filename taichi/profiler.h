@@ -67,27 +67,37 @@ class ProfilerBase {
 };
 
 #if defined(TLANG_GPU)
-
 #include <cuda_runtime.h>
+#endif
 
 class GPUProfiler : public ProfilerBase {
  public:
+#if defined(TLANG_GPU)
   cudaEvent_t current_stop;
 
   std::map<std::string, std::vector<std::pair<cudaEvent_t, cudaEvent_t>>>
       outstanding_events;
+#endif
 
   void start(const std::string &kernel_name) {
+#if defined(TLANG_GPU)
     cudaEvent_t start, stop;
     cudaEventCreate(&start);
     cudaEventCreate(&stop);
     cudaEventRecord(start);
     outstanding_events[kernel_name].push_back(std::make_pair(start, stop));
     current_stop = stop;
+#else
+    printf("GPU Profiler not implemented;\n");
+#endif
   }
 
   void stop() {
+#if defined(TLANG_GPU)
     cudaEventRecord(current_stop);
+#else
+    printf("GPU Profiler not implemented;\n");
+#endif
   }
 
   std::string title() override {
@@ -95,6 +105,7 @@ class GPUProfiler : public ProfilerBase {
   }
 
   void sync() override {
+#if defined(TLANG_GPU)
     cudaDeviceSynchronize();
     for (auto &map_elem : outstanding_events) {
       auto &list = map_elem.second;
@@ -114,6 +125,9 @@ class GPUProfiler : public ProfilerBase {
       }
     }
     outstanding_events.clear();
+#else
+    printf("GPU Profiler not implemented;\n");
+#endif
   }
 
   static GPUProfiler &get_instance() {
@@ -121,7 +135,6 @@ class GPUProfiler : public ProfilerBase {
     return profiler;
   }
 };
-#endif
 
 class CPUProfiler : public ProfilerBase {
  public:

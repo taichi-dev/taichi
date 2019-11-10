@@ -107,7 +107,8 @@ def must_throw(ex):
 def complex_kernel(func):
   def decorated(*args, **kwargs):
     get_runtime().inside_complex_kernel = True
-    get_runtime().target_tape.insert(decorated, args)
+    if get_runtime().target_tape:
+      get_runtime().target_tape.insert(decorated, args)
     try:
       with FrameBacktraceGuard(2):
         func(*args, **kwargs)

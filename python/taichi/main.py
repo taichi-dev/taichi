@@ -29,14 +29,11 @@ def test_cpp():
 def main(debug=False):
   lines = []
   print()
-  lines.append(u'{:^43}'.format(u' '.join([u'\u262f'] * 8)))
   lines.append(u' *******************************************')
   lines.append(u' **                Taichi                 **')
-  lines.append(u' **                ~~~~~~                 **')
+  lines.append(u' **                                       **')
   lines.append(u' ** High-Performance Programming Language **')
   lines.append(u' *******************************************')
-  lines.append(u'{:^43}'.format(u"\u2630 \u2631 \u2632 \u2633 "
-                                "\u2634 \u2635 \u2636 \u2637"))
   print(u'\n'.join(lines))
   print()
   import taichi as ti

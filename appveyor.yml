@@ -34,6 +34,6 @@ build_script:
   - "%PYTHON% dev_setup.py ci"
   - mkdir build
   - cd build
-  - cmake .. -DPYTHON_EXECUTABLE="%PYTHON%" -DLLVM_DIR="C:\taichi_llvm\lib\cmake\llvm"
-  - msbuild /p:Configuration=Release /p:Platform=x64 /m taichi.sln
+  - cmake .. -G"Visual Studio 15 2017 Win64" -DPYTHON_EXECUTABLE="%PYTHON%" -DLLVM_DIR="C:\taichi_llvm\lib\cmake\llvm"
+  - msbuild /p:Configuration=RelWithDebInfo /p:Platform=x64 /m taichi.sln
   - "%PYTHON% -m taichi test"

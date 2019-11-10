@@ -45,7 +45,9 @@ class VirtualMemoryAllocator {
 #if defined(TC_PLATFORM_UNIX)
     if (munmap(ptr, size) != 0)
 #else
-    if (!VirtualFree(ptr, size, MEM_RELEASE))
+    // https://docs.microsoft.com/en-us/windows/win32/api/memoryapi/nf-memoryapi-virtualfree
+	// According to MS Doc: size must be when using MEM_RELEASE
+    if (!VirtualFree(ptr, 0, MEM_RELEASE))
 #endif
       TC_ERROR("Failed to free virtual memory ({} B)", size);
   }

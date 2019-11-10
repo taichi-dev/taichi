@@ -483,7 +483,7 @@ def optimize(toi=True, visualize=True):
 
 robot_id = 0
 if len(sys.argv) != 3:
-  print("Usage: python3 rigid_body.py [robot_id=0, 1, 2, ...] cmd")
+  print("Usage: python3 rigid_body.py [robot_id=0, 1, 2, ...] [cmd=train/plot]")
   exit(-1)
 else:
   robot_id = int(sys.argv[1])

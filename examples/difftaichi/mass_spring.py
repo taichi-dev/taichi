@@ -336,7 +336,7 @@ def optimize(toi, visualize):
   
 robot_id = 0
 if len(sys.argv) != 3:
-  print("Usage: python3 mass_spring.py [robot_id=0, 1, 2, ...] [task]")
+  print("Usage: python3 mass_spring.py [robot_id=0, 1, 2, ...] [task=train/plot]")
   exit(-1)
 else:
   robot_id = int(sys.argv[1])

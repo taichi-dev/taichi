@@ -186,7 +186,12 @@ struct ElementList {
 };
 
 void ElementList_initialize(Runtime *runtime, ElementList *element_list) {
-  element_list->elements = (Element *)allocate(runtime, 1024 * 1024 * 1024);
+#if defined(_WIN32)
+  auto list_size = 32 * 1024 * 1024;
+#else
+  auto list_size = 1024 * 1024 * 1024;
+#endif
+  element_list->elements = (Element *)allocate(runtime, list_size);
   element_list->tail = 0;
 }
 

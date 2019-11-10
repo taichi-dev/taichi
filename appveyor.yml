@@ -36,4 +36,6 @@ build_script:
   - cd build
   - cmake .. -G"Visual Studio 15 2017 Win64" -DPYTHON_EXECUTABLE="%PYTHON%" -DLLVM_DIR="C:\taichi_llvm\lib\cmake\llvm"
   - msbuild /p:Configuration=RelWithDebInfo /p:Platform=x64 /m taichi.sln
-  - "%PYTHON% -m taichi test"
+  # - "%PYTHON% -m taichi test"
+  - cd ..
+  - "%PYTHON% -m pytest test/python/test_abs.py -s"

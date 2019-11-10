@@ -35,5 +35,5 @@ build_script:
   - mkdir build
   - cd build
   - cmake .. -DPYTHON_EXECUTABLE="%PYTHON%" -DLLVM_DIR="C:\taichi_llvm\lib\cmake\llvm"
-  - msbuild /p:Configuration=RelWithDebInfo /p:Platform=x64 /m taichi.sln
+  - msbuild /p:Configuration=Release /p:Platform=x64 /m taichi.sln
   - "%PYTHON% -m taichi test"

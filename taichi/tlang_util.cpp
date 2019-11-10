@@ -390,7 +390,7 @@ CompileConfig::CompileConfig() {
   attempt_vectorized_load_cpu = true;
   gradient_dt = DataType::f32;
   verbose_kernel_launches = false;
-  enable_profiler = true;
+  enable_profiler = false;
   default_gpu_block_dim = 64;
 }
 

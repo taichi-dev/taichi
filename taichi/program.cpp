@@ -171,6 +171,11 @@ Program::Program(Arch arch) {
   config.arch = arch;
   if (config.use_llvm) {
     llvm_context_host = std::make_unique<TaichiLLVMContext>(Arch::x86_64);
+    if (config.arch == Arch::x86_64) {
+      profiler_llvm = std::make_unique<CPUProfiler>();
+    } else {
+      profiler_llvm = std::make_unique<GPUProfiler>();
+    }
   }
   current_kernel = nullptr;
   snode_root = nullptr;

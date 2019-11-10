@@ -47,22 +47,31 @@ public:
 
   std::function<void()> profiler_print_gpu;
   std::function<void()> profiler_clear_gpu;
+  std::unique_ptr<ProfilerBase> profiler_llvm;
 
   std::string layout_fn;
 
   void profiler_print() {
-    if (config.arch == Arch::gpu) {
-      profiler_print_gpu();
+    if (config.use_llvm) {
+      profiler_llvm->print();
     } else {
-      cpu_profiler.print();
+      if (config.arch == Arch::gpu) {
+        profiler_print_gpu();
+      } else {
+        cpu_profiler.print();
+      }
     }
   }
 
   void profiler_clear() {
-    if (config.arch == Arch::gpu) {
-      profiler_clear_gpu();
+    if (config.use_llvm) {
+      profiler_llvm->clear();
     } else {
-      cpu_profiler.clear();
+      if (config.arch == Arch::gpu) {
+        profiler_clear_gpu();
+      } else {
+        cpu_profiler.clear();
+      }
     }
   }
 

@@ -28,6 +28,7 @@ smoke = scalar()
 loss = scalar()
 
 ti.cfg.arch = ti.cuda
+# ti.cfg.enable_profiler = True
 
 @ti.layout
 def place():
@@ -198,6 +199,7 @@ def main():
     print('Iter', opt, ' Loss =', loss[None])
     apply_grad()
     print("Compilation time:", ti.get_runtime().prog.get_total_compilation_time())
+    # ti.profiler_print()
   
   forward("output")
 

@@ -1,7 +1,7 @@
-#include <string>
-#include <map>
-#include <vector>
 #include <algorithm>
+#include <map>
+#include <string>
+#include <vector>
 #if defined(TC_PLATFORM_UNIX)
 #include <sys/time.h>
 #endif
@@ -10,6 +10,10 @@
 #if defined(TC_PLATFORM_WINDOWS)
 #undef min
 #undef max
+#endif
+
+#if defined(TLANG_WITH_CUDA)
+#include <cuda_runtime.h>
 #endif
 
 
@@ -23,8 +27,7 @@ struct ProfileRecord {
   double total;
 
   ProfileRecord(const std::string &name)
-      : name(name), counter(0), min(0), max(0), total(0) {
-  }
+      : name(name), counter(0), min(0), max(0), total(0) {}
 
   void insert_sample(double t) {
     if (counter == 0) {
@@ -39,11 +42,11 @@ struct ProfileRecord {
 };
 
 class ProfilerBase {
- protected:
+protected:
   std::vector<ProfileRecord> records;
   double total_time;
 
- public:
+public:
   void clear() {
     total_time = 0;
     records.clear();
@@ -53,34 +56,33 @@ class ProfilerBase {
 
   virtual std::string title() = 0;
 
+  virtual void start(const std::string &kernel_name) = 0;
+  virtual void stop() = 0;
+
   void print() {
     sync();
     printf("%s\n", title().c_str());
     for (auto &rec : records) {
-      printf(
-          "[%6.2f%%] %30s     min %7.3f ms   avg %7.3f ms    max %7.3f ms   "
-          "total %7.3f s [%7dx]\n",
-          rec.total / total_time * 100.0f, rec.name.c_str(), rec.min,
-          rec.total / rec.counter, rec.max, rec.total / 1000.0f, rec.counter);
+      printf("[%6.2f%%] %30s     min %7.3f ms   avg %7.3f ms    max %7.3f ms   "
+             "total %7.3f s [%7dx]\n",
+             rec.total / total_time * 100.0f, rec.name.c_str(), rec.min,
+             rec.total / rec.counter, rec.max, rec.total / 1000.0f,
+             rec.counter);
     }
   }
 };
 
-#if defined(TLANG_GPU)
-#include <cuda_runtime.h>
-#endif
-
 class GPUProfiler : public ProfilerBase {
- public:
-#if defined(TLANG_GPU)
+public:
+#if defined(TLANG_WITH_CUDA)
   cudaEvent_t current_stop;
 
   std::map<std::string, std::vector<std::pair<cudaEvent_t, cudaEvent_t>>>
       outstanding_events;
 #endif
 
-  void start(const std::string &kernel_name) {
-#if defined(TLANG_GPU)
+  void start(const std::string &kernel_name) override {
+#if defined(TLANG_WITH_CUDA)
     cudaEvent_t start, stop;
     cudaEventCreate(&start);
     cudaEventCreate(&stop);
@@ -92,20 +94,18 @@ class GPUProfiler : public ProfilerBase {
 #endif
   }
 
-  void stop() {
-#if defined(TLANG_GPU)
+  virtual void stop() override {
+#if defined(TLANG_WITH_CUDA)
     cudaEventRecord(current_stop);
 #else
     printf("GPU Profiler not implemented;\n");
 #endif
   }
 
-  std::string title() override {
-    return "GPU Profiler";
-  }
+  std::string title() override { return "GPU Profiler"; }
 
   void sync() override {
-#if defined(TLANG_GPU)
+#if defined(TLANG_WITH_CUDA)
     cudaDeviceSynchronize();
     for (auto &map_elem : outstanding_events) {
       auto &list = map_elem.second;
@@ -113,9 +113,10 @@ class GPUProfiler : public ProfilerBase {
         auto start = item.first, stop = item.second;
         float ms;
         cudaEventElapsedTime(&ms, start, stop);
-        auto it = std::find_if(
-            records.begin(), records.end(),
-            [&](ProfileRecord &r) { return r.name == map_elem.first; });
+        auto it =
+            std::find_if(records.begin(), records.end(), [&](ProfileRecord &r) {
+              return r.name == map_elem.first;
+            });
         if (it == records.end()) {
           records.emplace_back(map_elem.first);
           it = std::prev(records.end());
@@ -137,23 +138,20 @@ class GPUProfiler : public ProfilerBase {
 };
 
 class CPUProfiler : public ProfilerBase {
- public:
+public:
   double start_t;
   std::string event_name;
 
-  void sync() override {
-  }
+  void sync() override {}
 
-  std::string title() override {
-    return "CPU Profiler";
-  }
+  std::string title() override { return "CPU Profiler"; }
 
-  void start(const std::string &kernel_name) {
+  void start(const std::string &kernel_name) override {
     start_t = get_time();
     event_name = kernel_name;
   }
 
-  void stop() {
+  void stop() override {
     auto t = get_time() - start_t;
     auto ms = t * 1000.0;
     auto it =

@@ -38,4 +38,4 @@ build_script:
   - msbuild /p:Configuration=RelWithDebInfo /p:Platform=x64 /m taichi.sln
   # - "%PYTHON% -m taichi test"
   - cd ..
-  - "%PYTHON% -m pytest test/python/test_abs.py -s"
+  - "%PYTHON% -m pytest tests/python/test_abs.py -s"

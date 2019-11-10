@@ -70,6 +70,8 @@ public:
              rec.counter);
     }
   }
+
+  virtual ~ProfilerBase() {}
 };
 
 class GPUProfiler : public ProfilerBase {

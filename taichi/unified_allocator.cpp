@@ -79,8 +79,8 @@ void taichi::Tlang::UnifiedAllocator::create() {
   GetPhysicallyInstalledSystemMemory(&phys_mem_size); // KB
   phys_mem_size /= 1024; // MB
   TC_INFO("Physical memory size size {} MB", phys_mem_size);
-  auto virtual_mem_to_allocate = (phys_mem_size << 20) / 2;
-  TC_INFO("Allocating virtual memory pool of size {} MB", phys_mem_size);
+  auto virtual_mem_to_allocate = (phys_mem_size << 20) / 4;
+  TC_INFO("Allocating virtual memory pool of size {} MB", virtual_mem_to_allocate);
   allocator() = new (dst) UnifiedAllocator(virtual_mem_to_allocate, gpu);
 #endif
 }

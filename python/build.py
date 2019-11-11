@@ -112,9 +112,12 @@ elif mode == 'test':
   assert len(dists) == 1
   dist = dists[0]
   print('Installing ', dist)
-  os.system('pip3 install dist/{} --user'.format(dist))
+  os.system('{} -m pip install dist/{} --user'.format(get_python_executable(), dist))
   print('Entering test environment...')
-  os.system('PYTHONPATH= TAICHI_REPO_DIR= bash')
+  if get_os_name() == 'win':
+    os.system('cmd /V /C "set PYTHONPATH=&& set TAICHI_REPO_DIR=&& cmd"')
+  else:
+    os.system('PYTHONPATH= TAICHI_REPO_DIR= bash')
 elif mode == '':
   pass
 else:

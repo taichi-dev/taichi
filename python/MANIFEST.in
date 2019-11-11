@@ -4,7 +4,8 @@ include *.txt
 include *.py
 include *.cfg
 include taichi/lib/*.so
+include taichi/lib/*.pyd
 include taichi/lib/*.bc
 
-global-exclude *.pyc *.pyo *.pyd
+global-exclude *.pyc *.pyo
 global-exclude ffmpeg

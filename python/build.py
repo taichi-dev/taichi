@@ -72,7 +72,7 @@ if get_os_name() == 'linux':
 elif get_os_name() == 'osx':
   shutil.copy('../build/libtaichi_core.dylib', 'taichi/lib/taichi_core.so')
 else:
-  shutil.copy('../runtimes/RelWithDebInfo/taichi_core.dll', 'taichi/lib/taichi_core.dll')
+  shutil.copy('../runtimes/RelWithDebInfo/taichi_core.dll', 'taichi/lib/taichi_core.pyd')
 
 shutil.copytree('../tests/python', './taichi/tests')
 
@@ -112,10 +112,12 @@ elif mode == 'test':
   assert len(dists) == 1
   dist = dists[0]
   print('Installing ', dist)
-  os.system('{} -m pip install dist/{} --user'.format(get_python_executable(), dist))
+  os.environ['PYTHONPATH'] = ''
+  os.makedirs('test_env', exist_ok=True)
+  os.system('cd test_env && {} -m pip install ../dist/{} --user'.format(get_python_executable(), dist))
   print('Entering test environment...')
   if get_os_name() == 'win':
-    os.system('cmd /V /C "set PYTHONPATH=&& set TAICHI_REPO_DIR=&& cmd"')
+    os.system('cmd /V /C "set PYTHONPATH=&& set TAICHI_REPO_DIR=&& cd test_env && cmd"')
   else:
     os.system('PYTHONPATH= TAICHI_REPO_DIR= bash')
 elif mode == '':

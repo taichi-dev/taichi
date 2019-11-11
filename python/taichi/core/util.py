@@ -19,12 +19,17 @@ def in_docker():
 
 def import_tc_core():
   global tc_core
-  old_flags = sys.getdlopenflags()
-  sys.setdlopenflags(258) # 258 = RTLD_NOW | RTLD_GLOBAL
-  # We
+  if get_os_name() != 'win':
+    old_flags = sys.getdlopenflags()
+    sys.setdlopenflags(258) # 258 = RTLD_NOW | RTLD_GLOBAL
+  else:
+    pyddir = os.path.join(package_root(), 'lib')
+    print(pyddir)
+    os.environ['PATH'] += ';' +  pyddir
   import taichi_core as core
   tc_core = core
-  sys.setdlopenflags(old_flags)
+  if get_os_name() != 'win':
+    sys.setdlopenflags(old_flags)
   core.set_lib_dir(os.path.join(package_root(), 'lib'))
   
 def is_ci():
@@ -125,14 +130,15 @@ def build():
 if is_release():
   print("[Release mode]")
   sys.path.append(os.path.join(package_root(), 'lib'))
-  link_src = os.path.join(package_root(), 'lib', 'taichi_core.so')
-  link_dst = os.path.join(package_root(), 'lib', 'libtaichi_core.so')
-  if not os.path.exists(link_dst):
-    os.symlink(link_src, link_dst)
+  if get_os_name() != 'win':
+    link_src = os.path.join(package_root(), 'lib', 'taichi_core.so')
+    link_dst = os.path.join(package_root(), 'lib', 'libtaichi_core.so')
+    # For llvm jit to find the runtime symbols
+    dll = ctypes.CDLL(get_core_shared_object(), mode=ctypes.RTLD_GLOBAL)
+    if not os.path.exists(link_dst):
+      os.symlink(link_src, link_dst)
   import_tc_core()
   
-  # For llvm jit to find the runtime symbols
-  dll = ctypes.CDLL(get_core_shared_object(), mode=ctypes.RTLD_GLOBAL)
 
   tc_core.set_python_package_dir(package_root())
   os.makedirs(tc_core.get_repo_dir(), exist_ok=True)

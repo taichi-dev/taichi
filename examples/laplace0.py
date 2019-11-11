@@ -1,4 +1,4 @@
-print(1)
-print(1)
-print(1)
-exit(-1)
+import taichi as ti
+ti.core.test_printf()
+ti.core.test_logging()
+ti.core.trigger_crash()

@@ -36,7 +36,7 @@ if os.environ.get('PYPI_PWD', '') is '':
 
 
 def get_python_executable():
-  return sys.executable.replace('\\', '/')
+  return '"' + sys.executable.replace('\\', '/') + '"'
 
 
 if platform.system() == 'Linux':
@@ -87,6 +87,7 @@ for f in os.listdir('../taichi/runtime'):
   if f.startswith('runtime_') and f.endswith('.bc'):
     shutil.copy(os.path.join('../taichi/runtime', f), 'taichi/lib')
 
+print("Using python executable", get_python_executable())
 os.system('{} -m pip install --user --upgrade twine setuptools wheel'.format(
   get_python_executable()))
 

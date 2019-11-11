@@ -31,9 +31,13 @@ std::string get_repo_dir() {
   auto dir = std::getenv("TAICHI_REPO_DIR");
   if (is_release()) {
     // release mode. Use ~/.taichi as root
+#if defined(TC_PLATFORM_WINDOWS)
+    return "C:/taichi_cache/";
+#else
     auto home = std::getenv("HOME");
     TC_ASSERT(home != nullptr);
     return std::string(home) + "/.taichi/";
+#endif
   } else {
     return std::string(dir);
   }

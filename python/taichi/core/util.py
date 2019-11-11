@@ -24,7 +24,6 @@ def import_tc_core():
     sys.setdlopenflags(258) # 258 = RTLD_NOW | RTLD_GLOBAL
   else:
     pyddir = os.path.join(package_root(), 'lib')
-    print(pyddir)
     os.environ['PATH'] += ';' +  pyddir
   import taichi_core as core
   tc_core = core

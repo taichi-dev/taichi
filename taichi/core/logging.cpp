@@ -55,6 +55,7 @@ void Logger::set_level(const std::string &level) {
 
 Logger::Logger() {
   console = spdlog::stdout_color_mt("console");
+  console->flush_on(spdlog::level::trace);
   TC_LOG_SET_PATTERN("[%L %D %X.%e] %v")
 
   TC_REGISTER_SIGNAL_HANDLER(SIGSEGV, signal_handler);

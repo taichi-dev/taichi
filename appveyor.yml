@@ -26,6 +26,7 @@ build_script:
   - curl https://github.com/yuanming-hu/taichi_assets/releases/download/llvm8/clang-7.0.1-win.zip -LO
   - 7z x clang-7.0.1-win.zip -otaichi_clang
   - set PATH=%PATH%;C:\taichi_clang\bin
+  - set PATH=%PATH%;C:\taichi_llvm\bin
   - set TAICHI_REPO_DIR=C:\taichi
   - set PYTHONPATH=%TAICHI_REPO_DIR%/python
   - set PYTHON=C:\Python36-x64\python.exe

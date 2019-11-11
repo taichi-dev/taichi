@@ -72,8 +72,7 @@ if get_os_name() == 'linux':
 elif get_os_name() == 'osx':
   shutil.copy('../build/libtaichi_core.dylib', 'taichi/lib/taichi_core.so')
 else:
-  print('not implemented')
-  exit(-1)
+  shutil.copy('../runtimes/RelWithDebInfo/taichi_core.dll', 'taichi/lib/taichi_core.dll')
 
 shutil.copytree('../tests/python', './taichi/tests')
 
@@ -107,7 +106,7 @@ if mode == 'upload':
 elif mode == 'test':
   print('Uninstalling old taichi packages...')
   os.system(
-    'pip3 uninstall taichi-nightly taichi-gpu-nightly taichi-nightly-cuda-10-0 taichi-nightly-cuda-10-1')
+    '{} -m pip uninstall taichi-nightly taichi-gpu-nightly taichi-nightly-cuda-10-0 taichi-nightly-cuda-10-1'.format(get_python_executable()))
   dists = os.listdir('dist')
   assert len(dists) == 1
   dist = dists[0]

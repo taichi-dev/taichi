@@ -4,6 +4,7 @@ print(1)
 x, y = ti.var(ti.f32), ti.var(ti.f32)
 print(2)
 
+exit()
 @ti.layout
 def xy():
   print(3)

@@ -38,7 +38,14 @@ build_script:
   - msbuild /p:Configuration=RelWithDebInfo /p:Platform=x64 /m taichi.sln
   - cd ..
   - '%PYTHON% -c "import taichi"'
-  - "%PYTHON% examples/laplace.py"
+  - "%PYTHON% examples/laplace1.py"
+  - "%PYTHON% examples/laplace2.py"
+  - "%PYTHON% examples/laplace3.py"
+  - "%PYTHON% examples/laplace4.py"
+  - "%PYTHON% examples/laplace5.py"
+  - "%PYTHON% examples/laplace6.py"
+  - "%PYTHON% examples/laplace7.py"
+  - "%PYTHON% examples/laplace8.py"
   - "%PYTHON% -m taichi"
   - "%PYTHON% -m pytest tests/python/test_abs.py -s"
   #- "%PYTHON% -m taichi test"

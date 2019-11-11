@@ -1,4 +1,5 @@
 import taichi as ti
+exit()
 
 print(1)
 x, y = ti.var(ti.f32), ti.var(ti.f32)

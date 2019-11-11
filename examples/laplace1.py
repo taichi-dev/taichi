@@ -1,3 +1,4 @@
+exit()
 import taichi as ti
 
 print(1)

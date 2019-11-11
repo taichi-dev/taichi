@@ -20,6 +20,7 @@ def laplace():
     else:
       y[i, j] = 0.0
 
+
 print(6)
 for i in range(10):
   x[i, i + 1] = 1.0

@@ -9,6 +9,7 @@ def xy():
   print(3)
   ti.root.dense(ti.ij, 16).place(x, y)
 
+exit()
 print(4)
 
 @ti.kernel

@@ -69,33 +69,27 @@ Logger::Logger() {
 }
 
 void Logger::trace(const std::string &s) {
-	printf("%s\n", s.c_str());
   console->trace(s);
 }
 
 void Logger::debug(const std::string &s) {
-	printf("%s\n", s.c_str());
   console->debug(s);
 }
 
 void Logger::info(const std::string &s) {
-	printf("%s\n", s.c_str());
   console->info(s);
 }
 
 void Logger::warn(const std::string &s) {
-	printf("%s\n", s.c_str());
   console->warn(s);
 }
 void Logger::error(const std::string &s, bool raise_signal) {
-	printf("%s\n", s.c_str());
   console->error(s);
   if (raise_signal) {
     std::raise(SIGABRT);
   }
 }
 void Logger::critical(const std::string &s, bool raise_signal) {
-	printf("%s\n", s.c_str());
   console->critical(s);
   if (raise_signal) {
     std::raise(SIGABRT);

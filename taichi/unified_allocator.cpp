@@ -72,10 +72,16 @@ void taichi::Tlang::UnifiedAllocator::create() {
 #else
   dst = std::malloc(sizeof(UnifiedAllocator));
 #endif
-#if not defined(TC_PLATFORM_WINDOWS)
+#if !defined(TC_PLATFORM_WINDOWS)
   allocator() = new (dst) UnifiedAllocator(1LL << 44, gpu);
 #else
-  allocator() = new (dst) UnifiedAllocator(1LL << 30, gpu);
+  std::size_t phys_mem_size;
+  GetPhysicallyInstalledSystemMemory(&phys_mem_size); // KB
+  phys_mem_size /= 1024; // MB
+  TC_INFO("Physical memory size size {} MB", phys_mem_size);
+  auto virtual_mem_to_allocate = (phys_mem_size << 20) / 2;
+  TC_INFO("Allocating virtual memory pool of size {} MB", phys_mem_size);
+  allocator() = new (dst) UnifiedAllocator(virtual_mem_to_allocate, gpu);
 #endif
 }
 

@@ -40,5 +40,4 @@ build_script:
   - cd ..
   - '%PYTHON% -c "import taichi"'
   - "%PYTHON% examples/laplace.py"
-  - "%PYTHON% -m pytest tests/python/test_abs.py -s"
-  #- "%PYTHON% -m taichi test"
+  - "%PYTHON% -m taichi test"

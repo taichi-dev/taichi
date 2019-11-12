@@ -19,6 +19,11 @@ clone_folder: C:\taichi
 platform: x64
 configuration: Release
 
+environment:
+  matrix:
+    - PYTHON: C:\Python36-x64\python.exe
+    - PYTHON: C:\Python37-x64\python.exe
+
 build_script:
   - cd C:\
   - curl https://github.com/yuanming-hu/taichi_assets/releases/download/llvm8/taichi-llvm-8.0.1-msvc2017.zip -LO
@@ -29,7 +34,6 @@ build_script:
   - set PATH=C:\taichi_clang\bin;%PATH%
   - set TAICHI_REPO_DIR=C:\taichi
   - set PYTHONPATH=%TAICHI_REPO_DIR%/python
-  - set PYTHON=C:\Python36-x64\python.exe
   - clang --version
   - cd C:\taichi
   - "%PYTHON% dev_setup.py ci"

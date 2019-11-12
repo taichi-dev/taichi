@@ -133,11 +133,11 @@ if is_release():
     link_src = os.path.join(package_root(), 'lib', 'taichi_core.so')
     link_dst = os.path.join(package_root(), 'lib', 'libtaichi_core.so')
     # For llvm jit to find the runtime symbols
-    dll = ctypes.CDLL(get_core_shared_object(), mode=ctypes.RTLD_GLOBAL)
     if not os.path.exists(link_dst):
       os.symlink(link_src, link_dst)
   import_tc_core()
-  
+  if get_os_name() != 'win':
+    dll = ctypes.CDLL(get_core_shared_object(), mode=ctypes.RTLD_GLOBAL)
 
   tc_core.set_python_package_dir(package_root())
   os.makedirs(tc_core.get_repo_dir(), exist_ok=True)

@@ -119,7 +119,7 @@ elif mode == 'test':
   if get_os_name() == 'win':
     os.system('cmd /V /C "set PYTHONPATH=&& set TAICHI_REPO_DIR=&& cd test_env && cmd"')
   else:
-    os.system('PYTHONPATH= TAICHI_REPO_DIR= bash')
+    os.system('cd test_env && PYTHONPATH= TAICHI_REPO_DIR= bash --noprofile --norc ')
 elif mode == '':
   pass
 else:

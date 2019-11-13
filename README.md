@@ -7,7 +7,7 @@
 |[![Build Status](https://ci.appveyor.com/api/projects/status/github/yuanming-hu/taichi?branch=master&svg=true)](https://ci.appveyor.com/project/IteratorAdvance/taichi) |[![Build status](https://ci.appveyor.com/api/projects/status/39ar9wa8yd49je7o?svg=true)](https://ci.appveyor.com/project/IteratorAdvance/taichi-wheels-test)|[![Join the chat at https://gitter.im/taichi-dev/Lobby](https://badges.gitter.im/taichi-dev/Lobby.svg)](https://gitter.im/taichi-dev/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) |
 
 ```bash
-# CPU only. No GPU/CUDA needed. (Linux and OS X)
+# CPU only. No GPU/CUDA needed. (Linux, OS X and Windows)
 python3 -m pip install taichi-nightly
 
 # With GPU (CUDA 10.0) support (Linux only)

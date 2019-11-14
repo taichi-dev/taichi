@@ -22,7 +22,7 @@ python3 -m pip install taichi-nightly-cuda-10-1
 ## [Examples](https://github.com/yuanming-hu/taichi/tree/master/examples)
 ## Updates
  - (Nov 12, 2019) v0.0.87 released.
-   - Added experimental Windows support with a [[known issue]](https://github.com/yuanming-hu/taichi/issues/251) regarding virtual memory allocation. Most examples run. If you are a Windows expert, please let me know how to resolve it. Thanks!
+   - Added experimental Windows support with a [[known issue]](https://github.com/yuanming-hu/taichi/issues/251) regarding virtual memory allocation, which will potentially limit the scalability of Taichi programs (If you are a Windows expert, please let me know how to solve this. Thanks!). Most examples run on Windows.
    - CUDA march autodetection;
    - [Complex kernel]()https://github.com/yuanming-hu/taichi/blob/master/tests/python/test_complex_kernels.py to override autodiff.
  - (Nov 4, 2019) v0.0.85 released.

@@ -1,15 +1,6 @@
 Contributor Guide
 ===============================================
 
-Code Format
---------------------------------------------------------------------------
-- We rely on `clang-format-4.0` for code format.
-- Make sure to format your code before you commit, since we have not set up a githook for it.
-
-Scoping
---------------------------------------------------------------------------
-
-
 Naming
 --------------------------------------------------------------------------
 - Variable names should consist of lowercase words connected by underscores, e.g. ``density_field``.
@@ -20,29 +11,8 @@ Naming
    - We do not encourage the use of macro, though there are cases where macros are inevitable.
 - Filenames should constist of lowercase words connected by underscores, e.g. ``parallel_reduction.cpp``.
 
-File Organization
-----------------------------------------------------------------------------
-- Put in the `projects` folder
-
-
-Object-Oriented Programming
------------------------------------------------------------------------------
-
-Common Patterns
--------------------------------------------------------------------------------
-
-
-Casting
--------------------------------------------------------------------------------
-- We allow the use of old-style C casting e.g. ``auto t = (int)x;``
-    - Reason: ``static_cast<type>(variable)`` is too verbose.
-- Think twice when you use ``reinterpret_cast``, ``const_cast``.
-- Discussions on this in `Google C++ Style Guide <https://google.github.io/styleguide/cppguide.html#Casting>`_.
-
-
 Do’s
 -------------------------------------------------------------------------------
-- Be considerate to your users (including yourself in the near future).
 - Use ``auto`` for local variables when appropriate.
 - Mark ``override`` and ``const`` when necessary.
 
@@ -56,7 +26,7 @@ Dont’s
 - Virtual function call in constructors/destructors.
 - `C++ exceptions <https://google.github.io/styleguide/cppguide.html#Exceptions>`_
 - ``NULL``, use ``nullptr`` instead.
-- ``using namespace std;`` in headers global scope.
+- ``using namespace std;`` in global scope.
 - ``typedef``. Use ``using`` instead.
 
 Documentation

@@ -8,14 +8,14 @@ Logging
 
     '''
     level can be {}
-        tc.TRACE
-        tc.DEBUG
-        tc.INFO
-        tc.WARN
-        tc.ERR
-        tc.CRITICAL
+        ti.TRACE
+        ti.DEBUG
+        ti.INFO
+        ti.WARN
+        ti.ERR
+        ti.CRITICAL
     '''
-    tc.set_logging_level(level)
+    ti.set_logging_level(level)
 
 
 
@@ -40,7 +40,7 @@ Print all interfaces and units
 
 .. code-block:: python
 
-    tc.core.print_all_units()
+    ti.core.print_all_units()
 
 Serialization
 ----------------------------------
@@ -92,18 +92,3 @@ To enable:
 
     from taichi.tools import messager
     messager.enable(task_id='test')
-
-
-Memory Usage Monitoring
-----------------------------------
-
-.. code-block:: python
-
-    tc.start_memory_monitoring(output_fn='memory_usage_curve.txt', interval=1, pid=-1) # -1 means "this thread"
-
-.. code-block:: bash
-
-    ti plot memory_usage_curve.txt
-
-Shows the result.
-

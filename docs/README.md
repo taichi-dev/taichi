@@ -1,5 +1,5 @@
 Build the documentation
 ```$xslt
-sudo pip3 install Sphinx sphinx_rtd_theme
+python3 -m pip install Sphinx sphinx_rtd_theme --user
 sphinx-build . build
 ```

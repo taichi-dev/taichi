@@ -7,7 +7,6 @@
 #include <pybind11/pybind11.h>
 #include <taichi/common/task.h>
 #include <taichi/visual/texture.h>
-#include <taichi/image/tone_mapper.h>
 #include <taichi/io/image_reader.h>
 #include <taichi/visual/sampler.h>
 #include <taichi/visual/framebuffer.h>

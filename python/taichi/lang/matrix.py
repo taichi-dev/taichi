@@ -386,3 +386,9 @@ class Matrix:
   def dot(self, other):
     assert self.m == 1 and other.m == 1
     return (self.transposed(self) @ other).subscript(0, 0)
+
+  '''
+  def clear(self):
+    from .meta import clear_matrix
+    clear_matrix(self)
+  '''

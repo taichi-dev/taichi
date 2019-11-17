@@ -4,7 +4,6 @@
 *******************************************************************************/
 
 #include <taichi/common/task.h>
-#include <taichi/image/tone_mapper.h>
 #include <taichi/math/math.h>
 #include <taichi/python/exception.h>
 #include <taichi/python/export.h>
@@ -108,10 +107,6 @@ void export_misc(py::module &m) {
       .def("run",
            static_cast<std::string (Task::*)(const std::vector<std::string> &)>(
                &Task::run));
-
-  py::class_<ToneMapper, std::shared_ptr<ToneMapper>>(m, "ToneMapper")
-      .def("initialize", &ToneMapper::initialize)
-      .def("apply", &ToneMapper::apply);
 
   py::class_<Benchmark, std::shared_ptr<Benchmark>>(m, "Benchmark")
       .def("run", &Benchmark::run)

@@ -1,7 +1,7 @@
 Acknowledgments
 ===============================================
 
-`Taichi` depends on many other open-source projects,
+`Taichi` depends on other open-source projects,
 which are shipped with taichi and users do not have to install manually:
 `pybind11 <https://github.com/pybind/pybind11>`_,
 `fmt <https://github.com/fmtlib/fmt>`_,

@@ -256,3 +256,12 @@ def kernel(foo):
   ret.grad = Kernel(foo, True)
   return ret
 
+
+def classkernel(foo):
+  from .impl import FrameBacktraceGuard
+  ret = Kernel(foo, False)
+  ret.grad = Kernel(foo, True)
+  def decorated(self, *args, **kwargs):
+    with FrameBacktraceGuard(1):
+      ret(self, *args, **kwargs)
+  return decorated

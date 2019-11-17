@@ -84,6 +84,18 @@ def all_archs(func):
 
   return test
 
+# test with host arch only
+def host_arch(func):
+  import taichi as ti
+  def test(*args, **kwargs):
+    archs = [x86_64]
+    for arch in archs:
+      reset()
+      cfg.arch = arch
+      func(*args, **kwargs)
+
+  return test
+
 def must_throw(ex):
   def decorator(func):
     def func__(*args, **kwargs):

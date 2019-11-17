@@ -15,6 +15,7 @@ class Array2D:
     for i, j in self.val:
       self.val[i, j] += self.increment
 
+
 @ti.host_arch
 def test_oop():
   arr = Array2D(128, 128, 3)

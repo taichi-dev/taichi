@@ -99,6 +99,7 @@ else:
 
 shutil.rmtree('taichi/lib')
 shutil.rmtree('taichi/tests')
+shutil.rmtree('./build')
 
 if mode == 'upload':
   os.system(

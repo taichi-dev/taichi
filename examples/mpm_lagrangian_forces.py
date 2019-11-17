@@ -169,8 +169,12 @@ def main():
     canvas.clear(0x112F41)
     for s in range(50):
       clear_grid()
+      # Note that we are now differentiating the total energy w.r.t. the particle position.
+      # Recall that F = - \partial (total_energy) / \partial x
       with ti.Tape(total_energy):
+        # Do the forward computation of total energy and backward propagation for x.grad, which is later used in p2g
         compute_total_energy()
+        # It's OK not to use the computed total_energy at all, since we only need x.grad
       p2g()
       grid_op()
       g2p()

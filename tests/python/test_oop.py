@@ -1,4 +1,5 @@
 import taichi as ti
+import inspect
 
 @ti.host_arch
 def test_oop():
@@ -10,7 +11,7 @@ def test_oop():
       self.val = ti.var(ti.i32)
       self.increment = increment
 
-    def layout(self, root):
+    def place(self, root):
       root.dense(ti.ij, (self.n, self.m)).place(self.val)
 
     @ti.kernel
@@ -22,9 +23,9 @@ def test_oop():
 
   @ti.layout
   def place():
-    arr.layout(ti.root)
-
-  ti.get_runtime().materialize()
+    ti.root.place(arr)
 
   arr.inc(arr)
-  print(arr.val[3, 4])
+  assert arr.val[3, 4] == 3
+  arr.inc(arr)
+  assert arr.val[3, 4] == 6

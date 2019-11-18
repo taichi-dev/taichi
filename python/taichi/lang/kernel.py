@@ -244,7 +244,8 @@ class Kernel:
     return func__
 
 
-  def __call__(self, *args):
+  def __call__(self, *args, **kwargs):
+    assert len(kwargs) == 0, 'kwargs not supported for Taichi kernels'
     instance_id = self.mapper.lookup(args)
     key = (self.func, instance_id)
     self.materialize(key=key, args=args)
@@ -259,9 +260,13 @@ def kernel(foo):
 
 def classkernel(foo):
   from .impl import FrameBacktraceGuard
-  ret = Kernel(foo, False)
-  ret.grad = Kernel(foo, True)
-  def decorated(self, *args, **kwargs):
+  primal = Kernel(foo, False)
+  adjoint = Kernel(foo, True)
+  def decorated(*args, __gradient=False, **kwargs):
     with FrameBacktraceGuard(1):
-      ret(self, *args, **kwargs)
+      if __gradient:
+        adjoint(*args, **kwargs)
+      else:
+        primal(*args, **kwargs)
+
   return decorated

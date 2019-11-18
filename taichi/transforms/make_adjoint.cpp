@@ -334,14 +334,14 @@ class MakeAdjoint : public IRVisitor {
     GlobalPtrStmt *ptr = stmt->dest->as<GlobalPtrStmt>();
     TC_ASSERT(ptr->width() == 1);
     auto snodes = ptr->snodes;
-    if (!snodes[0]->has_grad()) {
+    if (snodes[0]->has_grad()) {
+      TC_ASSERT(snodes[0]->get_grad() != nullptr);
+      snodes[0] = snodes[0]->get_grad();
+      auto adjoint_ptr = insert<GlobalPtrStmt>(snodes, ptr->indices);
+      accumulate(stmt->val, insert<GlobalLoadStmt>(adjoint_ptr));
+    } else {
       // no gradient (likely integer types)
-      return;
     }
-    TC_ASSERT(snodes[0]->get_grad() != nullptr);
-    snodes[0] = snodes[0]->get_grad();
-    auto adjoint_ptr = insert<GlobalPtrStmt>(snodes, ptr->indices);
-    accumulate(stmt->val, insert<GlobalLoadStmt>(adjoint_ptr));
     stmt->parent->erase(stmt);
   }
 

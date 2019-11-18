@@ -26,13 +26,16 @@ def test_oop():
 
   arr = Array2D(128, 128, 3)
 
+  double_total = ti.var(ti.f32)
+
   @ti.layout
   def place():
-    ti.root.place(arr)
+    ti.root.place(arr) # Place an object. Make sure you defined place for that obj
+    ti.root.place(double_total)
     ti.root.lazy_grad()
 
   arr.inc()
-  arr.inc(__gradient=True)
+  arr.inc(__gradient=True) # instead of arr.inc.grad due to python method bounding... Or just use ti.Tape
   assert arr.val[3, 4] == 3
   arr.inc()
   assert arr.val[3, 4] == 6
@@ -43,3 +46,16 @@ def test_oop():
   for i in range(arr.n):
     for j in range(arr.m):
       assert arr.val.grad[i, j] == 4
+
+
+  @ti.kernel
+  def double():
+    double_total[None] = 2 * arr.total
+
+  with ti.Tape(loss=double_total):
+    arr.reduce()
+    double()
+
+  for i in range(arr.n):
+    for j in range(arr.m):
+      assert arr.val.grad[i, j] == 8

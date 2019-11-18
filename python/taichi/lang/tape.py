@@ -28,5 +28,10 @@ class Tape:
     assert self.gradient_evaluated == False, "Gradients of grad can be evaluated only once."
     for func, args in reversed(self.calls):
       with FrameBacktraceGuard(1):
-        func.grad(*args)
+        if hasattr(func, 'grad'):
+          func.grad(*args)
+        else:
+          print('args', args)
+          print('func', func)
+          func(*args, __gradient=True)
     self.gradient_evaluated = True

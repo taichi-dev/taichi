@@ -93,13 +93,14 @@ class KernelArgError(Exception):
 
 
 class Kernel:
-  def __init__(self, func, is_grad):
+  def __init__(self, func, is_grad, classkernel=False):
     self.func = func
     self.is_grad = is_grad
     self.arguments = []
     self.argument_names = []
     self.extract_arguments()
     self.template_slot_locations = []
+    self.classkernel = classkernel
     for i in range(len(self.arguments)):
       if isinstance(self.arguments[i], template):
         self.template_slot_locations.append(i)
@@ -237,7 +238,7 @@ class Kernel:
           else:
             assert False, 'Argument to kernels must have type float/int. If you are passing a PyTorch tensor, make sure it is on the same device (CPU/GPU) as taichi.'
         actual_argument_slot += 1
-      if self.runtime.target_tape and not self.runtime.inside_complex_kernel:
+      if not self.classkernel and self.runtime.target_tape and not self.runtime.inside_complex_kernel:
         self.runtime.target_tape.insert(self, args)
       t_kernel()
 
@@ -260,13 +261,21 @@ def kernel(foo):
 
 def classkernel(foo):
   from .impl import FrameBacktraceGuard
-  primal = Kernel(foo, False)
-  adjoint = Kernel(foo, True)
+  primal = Kernel(foo, False, classkernel=True)
+  adjoint = Kernel(foo, True, classkernel=True)
   def decorated(*args, __gradient=False, **kwargs):
+    print(args)
+    print(kwargs)
+    print('isgrad', __gradient)
     with FrameBacktraceGuard(1):
       if __gradient:
         adjoint(*args, **kwargs)
       else:
         primal(*args, **kwargs)
+
+    import taichi as ti
+    runtime = ti.get_runtime()
+    if runtime.target_tape and not runtime.inside_complex_kernel:
+      runtime.target_tape.insert(decorated, args)
 
   return decorated

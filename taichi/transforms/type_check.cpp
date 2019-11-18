@@ -44,6 +44,14 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(AtomicOpStmt *stmt) {
+    auto ret_type = promoted_type(stmt->dest->ret_type.data_type,
+                                  stmt->val->ret_type.data_type);
+    if (ret_type != stmt->dest->ret_type.data_type) {
+      TC_ERROR("Atomic add {} to {} is not allowed.", data_type_name(stmt->val->ret_type.data_type), data_type_name(stmt->dest->ret_type.data_type));
+    }
+    if (ret_type != stmt->val->ret_type.data_type) {
+      stmt->val = insert_type_cast_before(stmt, stmt->val, ret_type);
+    }
     TC_ASSERT(stmt->width() == 1);
     TC_ASSERT(stmt->dest->ret_type == stmt->val->ret_type);
   }

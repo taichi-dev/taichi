@@ -17,7 +17,7 @@ def test_oop():
       for i, j in self.val:
         ti.atomic_add(self.val[i, j], self.increment)
 
-  arr = Array2D(128, 128, 3.0)
+  arr = Array2D(128, 128, 3)
 
   @ti.layout
   def place():

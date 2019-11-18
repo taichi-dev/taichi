@@ -31,7 +31,5 @@ class Tape:
         if hasattr(func, 'grad'):
           func.grad(*args)
         else:
-          print('args', args)
-          print('func', func)
           func(*args, __gradient=True)
     self.gradient_evaluated = True

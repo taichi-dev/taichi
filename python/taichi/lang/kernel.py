@@ -264,9 +264,6 @@ def classkernel(foo):
   primal = Kernel(foo, False, classkernel=True)
   adjoint = Kernel(foo, True, classkernel=True)
   def decorated(*args, __gradient=False, **kwargs):
-    print(args)
-    print(kwargs)
-    print('isgrad', __gradient)
     with FrameBacktraceGuard(1):
       if __gradient:
         adjoint(*args, **kwargs)

@@ -98,9 +98,9 @@ class Kernel:
     self.is_grad = is_grad
     self.arguments = []
     self.argument_names = []
+    self.classkernel = classkernel
     self.extract_arguments()
     self.template_slot_locations = []
-    self.classkernel = classkernel
     for i in range(len(self.arguments)):
       if isinstance(self.arguments[i], template):
         self.template_slot_locations.append(i)
@@ -116,7 +116,7 @@ class Kernel:
     sig = inspect.signature(self.func)
     params = sig.parameters
     arg_names = params.keys()
-    for arg_name in arg_names:
+    for i, arg_name in enumerate(arg_names):
       param = params[arg_name]
       if param.kind == inspect.Parameter.VAR_KEYWORD:
         raise KernelDefError(
@@ -132,9 +132,13 @@ class Kernel:
       if param.kind != inspect.Parameter.POSITIONAL_OR_KEYWORD:
         raise KernelDefError(
           'Taichi kernels only support "positional or keyword" parameters')
+      annotation = param.annotation
       if param.annotation is inspect.Parameter.empty:
-        raise KernelDefError('Taichi kernels parameters must be type annotated')
-      self.arguments.append(param.annotation)
+        if i == 0 and self.classkernel:
+          annotation = template()
+        else:
+          raise KernelDefError('Taichi kernels parameters must be type annotated')
+      self.arguments.append(annotation)
       self.argument_names.append(param.name)
 
   def materialize(self, key=None, args=None):

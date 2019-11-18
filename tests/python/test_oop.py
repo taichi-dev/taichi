@@ -15,12 +15,17 @@ def test_oop():
       root.place(self.total)
 
     @ti.classkernel
-    def inc(self: ti.template()):
+    def inc(self):
       for i, j in self.val:
         ti.atomic_add(self.val[i, j], self.increment)
 
     @ti.classkernel
-    def reduce(self: ti.template()):
+    def inc2(self, increment: ti.i32):
+      for i, j in self.val:
+        ti.atomic_add(self.val[i, j], increment)
+
+    @ti.classkernel
+    def reduce(self):
       for i, j in self.val:
         ti.atomic_add(self.total, self.val[i, j] * 4)
 
@@ -37,8 +42,8 @@ def test_oop():
   arr.inc()
   arr.inc(__gradient=True) # instead of arr.inc.grad due to python method bounding... Or just use ti.Tape
   assert arr.val[3, 4] == 3
-  arr.inc()
-  assert arr.val[3, 4] == 6
+  arr.inc2(4)
+  assert arr.val[3, 4] == 7
 
   with ti.Tape(loss=arr.total):
     arr.reduce()

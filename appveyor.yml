@@ -26,9 +26,9 @@ environment:
 
 build_script:
   - cd C:\
-  - curl https://github.com/yuanming-hu/taichi_assets/releases/download/llvm8/taichi-llvm-8.0.1-msvc2017.zip -LO
+  - curl --retry 10 --retry-delay 5 https://github.com/yuanming-hu/taichi_assets/releases/download/llvm8/taichi-llvm-8.0.1-msvc2017.zip -LO
   - 7z x taichi-llvm-8.0.1-msvc2017.zip -otaichi_llvm
-  - curl https://github.com/yuanming-hu/taichi_assets/releases/download/llvm8/clang-7.0.1-win.zip -LO
+  - curl --retry 10 --retry-delay 5 https://github.com/yuanming-hu/taichi_assets/releases/download/llvm8/clang-7.0.1-win.zip -LO
   - 7z x clang-7.0.1-win.zip -otaichi_clang
   - set PATH=C:\taichi_llvm\bin;%PATH%;
   - set PATH=C:\taichi_clang\bin;%PATH%

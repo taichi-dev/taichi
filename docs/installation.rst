@@ -1,7 +1,7 @@
-Installation The Legacy Taichi Library
+Installing the Taichi Library (Legacy)
 ===============================================
 
-Note: this is NOT for installing the Taichi programming language, which should be installed via pip.
+Note: this is NOT for installing the Taichi programming language.
 
 Supported Platforms:
  - Ubuntu (gcc 5+)

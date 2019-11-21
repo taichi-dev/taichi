@@ -31,3 +31,43 @@ def test_complex_kernels():
     forward(4)
   for i in range(n):
     assert x.grad[0] == 4
+
+@ti.all_archs
+def test_complex_kernels_oop():
+  class A:
+    def __init__(self):
+      self.x = ti.var(ti.f32)
+      self.total = ti.var(ti.f32)
+      self.n = 128
+
+    def place(self, root):
+      ti.root.dense(ti.i, self.n).place(self.x)
+      ti.root.place(self.total)
+
+    @ti.classkernel
+    def func(self, mul: ti.f32):
+      for i in range(self.n):
+        ti.atomic_add(self.total[None], self.x[i] * mul)
+
+    @ti.complex_kernel
+    def forward(self, mul):
+      self.func(mul)
+      self.func(mul)
+
+    @ti.complex_kernel_grad(forward)
+    def backward(self, mul):
+      self.func(mul, __gradient=True)
+
+
+  a = A()
+
+  @ti.layout
+  def place():
+    ti.root.place(a)
+    ti.root.lazy_grad()
+
+
+  with ti.Tape(loss=a.total):
+    a.forward(4)
+  for i in range(a.n):
+    assert a.x.grad[0] == 4

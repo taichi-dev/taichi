@@ -21,7 +21,17 @@ python3 -m pip install taichi-nightly-cuda-10-1
 
 ## [Examples](https://github.com/yuanming-hu/taichi/tree/master/examples)
 ## Updates
- - (Nov 12, 2019) v0.0.87 released.
+- (Nov 22, 2019) v0.1.3 released. 
+   - Object-oriented programming. [[Example]](https://github.com/yuanming-hu/taichi/blob/master/tests/python/test_oop.py)
+   - native Python function translation in Taichi kernels: 
+     - Use `print` instead of `ti.print`
+     - Use `int()` instead of `ti.cast(x, ti.i32)` (or `ti.cast(x, ti.i64)` if your default integer precision is 64 bit)
+     - Use `float()` instead of `ti.cast(x, ti.f32)` (or `ti.cast(x, `ti.f64)` if your default float-point precision is 64 bit)
+     - Use `abs` instead of `ti.abs`
+     - Use `ti.static_print` for compile-time printing
+     
+- (Nov 16, 2019) v0.1.0 released. Fixed PyTorch interface. 
+- (Nov 12, 2019) v0.0.87 released.
    - Added experimental Windows support with a [[known issue]](https://github.com/yuanming-hu/taichi/issues/251) regarding virtual memory allocation, which will potentially limit the scalability of Taichi programs (If you are a Windows expert, please let me know how to solve this. Thanks!). Most examples work on Windows now.
    - CUDA march autodetection;
    - [Complex kernel](https://github.com/yuanming-hu/taichi/blob/master/tests/python/test_complex_kernels.py) to override autodiff.

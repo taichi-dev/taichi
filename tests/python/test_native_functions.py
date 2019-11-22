@@ -27,6 +27,7 @@ def test_int():
   x = ti.var(ti.f32)
 
   N = 16
+
   @ti.layout
   def place():
     ti.root.dense(ti.i, N).place(x)

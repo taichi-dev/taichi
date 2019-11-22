@@ -14,6 +14,7 @@ def test_abs():
     for i in range(N):
       x[i] = abs(-i)
       print(x[i])
+      ti.static_print(x[i])
 
   func()
 

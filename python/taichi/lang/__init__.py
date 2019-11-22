@@ -58,7 +58,8 @@ def clear_all_gradients():
 schedules = [parallelize, vectorize, block_dim, cache]
 lang_core = core
 
-print = tprint
+def static_print(*args, **kwargs):
+  print(*args, **kwargs)
 
 # test x86_64 only
 def simple_test(func):

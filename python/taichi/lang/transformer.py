@@ -311,7 +311,7 @@ if 1:
     if isinstance(node.func, ast.Name):
       func_name = node.func.id
       if func_name in ['print']:
-        node.func = self.parse_expr('ti.print')
+        node.func = self.parse_expr('ti.tprint')
     return node
 
   def visit_Module(self, node):

@@ -131,13 +131,14 @@ class Installer:
     # parser = argparse.ArgumentParser()
     # parser.parse_args()
     self.build_type = None
-  
+
   def setup_repo(self):
     cwd = os.getcwd()
+    self.repo_dir = cwd
     print("Current directory:", cwd)
-    
+
     execute_command("git submodule update --init --recursive")
-  
+
   def run(self):
     assert get_os_name() in ['linux', 'osx', 'win'], \
       'Platform {} is not currently supported by this script. Please install manually.'.format(
@@ -149,11 +150,11 @@ class Installer:
       self.build_type = 'default'
     global build_type
     build_type = self.build_type
-    
+
     print('Build type = {}'.format(self.build_type))
-    
+
     assert self.build_type in ['default', 'ci']
-    
+
     check_command_existence('wget')
     try:
       import pip
@@ -164,14 +165,14 @@ class Installer:
       execute_command('wget https://bootstrap.pypa.io/get-pip.py')
       subprocess.run([get_python_executable(), "get-pip.py", "--user"])
       execute_command('rm get-pip.py')
-    
+
     subprocess.run([get_python_executable(), "-m", "pip", "install", "--user",
                     "colorama", "numpy", "Pillow", "scipy", "pybind11",
                     "GitPython", "yapf", "distro", "pytest", "autograd", "astor"])
     print("importing numpy test:")
     ret = subprocess.run([get_python_executable(), "-c", "import numpy as np"])
     print("ret:", ret)
-    
+
     execute_command('cmake --version')
     if get_os_name() == 'osx':
       # Check command existence
@@ -200,12 +201,12 @@ class Installer:
         execute_command('sudo dnf install python3-devel git cmake libX11-devel')
       else:
         print("Unsupported Linux distribution.")
-    
+
     subprocess.run(
       [get_python_executable(), "-m", "pip", "install", "--user", "psutil"])
-    
+
     self.setup_repo()
-    
+
     # TODO: Make sure there is no existing Taichi ENV
     if self.build_type != 'ci':
       set_env('TAICHI_REPO_DIR', self.repo_dir)
@@ -224,7 +225,7 @@ class Installer:
       print('PYTHONPATH={}'.format(os.environ['PYTHONPATH']))
 
       execute_command('echo $PYTHONPATH')
-    elif get_os_name() != 'win':
+    if get_os_name() != 'win':
       # compile ..
       os.makedirs('build')
       execute_command('cd build && cmake ..')

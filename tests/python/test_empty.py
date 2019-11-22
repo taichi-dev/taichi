@@ -4,6 +4,6 @@ import taichi as ti
 def test_abs():
   @ti.kernel
   def func():
-    ti.print(1)
+    print(1)
 
   func()

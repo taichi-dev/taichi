@@ -58,7 +58,8 @@ def clear_all_gradients():
 schedules = [parallelize, vectorize, block_dim, cache]
 lang_core = core
 
-print = tprint
+def static_print(*args, __p=print, **kwargs):
+  __p(*args, **kwargs)
 
 # test x86_64 only
 def simple_test(func):
@@ -139,5 +140,10 @@ def complex_kernel_grad(primal):
     primal.grad = decorated
     return decorated
   return decorator
+
+def print(*args, **kwargs):
+  import taichi as ti
+  ti.error('ti.print is deprecated. Please simply use the builtin "print" in Python.')
+
 
 __all__ = [s for s in dir() if not s.startswith('_')]

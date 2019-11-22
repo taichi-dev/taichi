@@ -111,9 +111,10 @@ void StructCompiler::infer_snode_properties(SNode &snode) {
     ambient_snodes.push_back(&snode);
   }
 
-  if (snode.type != SNodeType::indirect && snode.type != SNodeType::place &&
-      snode.ch.empty()) {
-    TC_ERROR("Non-place node should have at least one child.");
+  if (snode.ch.empty()) {
+    if (snode.type != SNodeType::indirect && snode.type != SNodeType::place && snode.type != SNodeType::root) {
+      TC_ERROR("{} node must have at least one child.", snode_type_name(snode.type));
+    }
   }
 }
 
@@ -229,7 +230,6 @@ void StructCompiler::generate_leaf_accessors(SNode &snode) {
        {mode_weak_access, mode_strong_access, mode_activate, mode_query}) {
     if (mode == mode_weak_access && !is_leaf)
       continue;
-    bool is_access = mode == mode_weak_access || mode == mode_strong_access;
     auto verb = verbs[mode];
     auto ret_type =
         mode == mode_query ? "bool" : fmt::format("{} *", snode.node_type_name);

@@ -40,7 +40,7 @@ else()
     message("Using float32 (single) precision as real")
 endif()
 
-if (TC_USE_MPI)
+if ($ENV{TC_USE_MPI})
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTC_USE_MPI")
     message("Using MPI")
 endif ()
@@ -48,4 +48,3 @@ endif ()
 if (NOT WIN32)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
 endif()
-

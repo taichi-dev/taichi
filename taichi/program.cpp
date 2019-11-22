@@ -177,6 +177,15 @@ Program::Program(Arch arch) {
       profiler_llvm = std::make_unique<GPUProfiler>();
     }
   }
+
+  //initialize mpi
+#if defined TC_USE_MPI
+  std::cout << "Initializing mpi comm..." << std::endl;
+  MPI_Init(NULL, NULL);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &nproc);
+#endif
+
   current_kernel = nullptr;
   snode_root = nullptr;
   sync = true;

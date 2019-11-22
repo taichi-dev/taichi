@@ -1,7 +1,6 @@
 // Program, which is a context for a taichi program execution
 
 #pragma once
-
 #include "ir.h"
 #include "kernel.h"
 #include "snode.h"
@@ -13,6 +12,9 @@
 #include <taichi/unified_allocator.h>
 #if defined(TC_PLATFORM_UNIX)
 #include <dlfcn.h>
+#endif
+#if defined(TC_USE_MPI)
+#include <mpi.h>
 #endif
 
 TLANG_NAMESPACE_BEGIN
@@ -50,6 +52,11 @@ public:
   std::unique_ptr<ProfilerBase> profiler_llvm;
 
   std::string layout_fn;
+
+  // mpi variables
+  int rank;
+  int local_rank; // rank local to node
+  int nproc;
 
   void profiler_print() {
     if (config.use_llvm) {
@@ -106,6 +113,13 @@ public:
     UnifiedAllocator::free();
     finalized = true;
     num_instances -= 1;
+
+    // finalize mpi comm
+    //initialize mpi
+  #if defined TC_USE_MPI
+    std::cout << "Finializing mpi comm..." << std::endl;
+    MPI_Finalize();
+  #endif
   }
 
   ~Program() {

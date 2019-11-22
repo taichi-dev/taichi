@@ -310,8 +310,14 @@ if 1:
     self.generic_visit(node)
     if isinstance(node.func, ast.Name):
       func_name = node.func.id
-      if func_name in ['print']:
-        node.func = self.parse_expr('ti.tprint')
+      if func_name == 'print':
+        node.func = self.parse_expr('ti.ti_print')
+      elif func_name == 'int':
+        node.func = self.parse_expr('ti.ti_int')
+      elif func_name == 'float':
+        node.func = self.parse_expr('ti.ti_float')
+      else:
+        pass
     return node
 
   def visit_Module(self, node):

@@ -183,10 +183,24 @@ def layout(func):
   pytaichi.layout_functions.append(func)
 
 
-def tprint(var):
+def ti_print(var):
   code = inspect.getframeinfo(inspect.currentframe().f_back).code_context[0]
   arg_name = code[code.index('(') + 1: code.index(')')]
   taichi_lang_core.print_(Expr(var).ptr, arg_name)
+
+
+def ti_int(var):
+  if hasattr(var, '__ti_int__'):
+    return var.__ti_int__()
+  else:
+    return int(var)
+
+
+def ti_float(var):
+  if hasattr(var, '__ti_float__'):
+    return var.__ti_int__()
+  else:
+    return float(var)
 
 
 def indices(*x):

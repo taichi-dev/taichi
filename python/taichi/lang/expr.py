@@ -238,6 +238,10 @@ class Expr:
       ret = ret * self
     return ret
 
+  def __abs__(self):
+    import taichi as ti
+    return ti.abs(self)
+
   def parent(self):
     from .snode import SNode
     return SNode(self.ptr.snode().parent)

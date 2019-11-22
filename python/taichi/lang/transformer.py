@@ -306,6 +306,14 @@ if 1:
   def visit_Continue(self, node):
     raise TaichiSyntaxError('"continue" is not yet supported in Taichi kernels. Please walk around by changing loop conditions.')
 
+  def visit_Call(self, node):
+    self.generic_visit(node)
+    if isinstance(node.func, ast.Name):
+      func_name = node.func.id
+      if func_name in ['print']:
+        node.func = self.parse_expr('ti.print')
+    return node
+
   def visit_Module(self, node):
     with self.variable_scope():
       self.generic_visit(node)

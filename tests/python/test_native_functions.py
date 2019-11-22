@@ -13,6 +13,9 @@ def test_abs():
   def func():
     for i in range(N):
       x[i] = abs(-i)
+      print(x[i])
+
+  func()
 
   for i in range(N):
     assert x[i] == i

@@ -182,8 +182,8 @@ Program::Program(Arch arch) {
 #if defined TC_USE_MPI
   std::cout << "Initializing mpi comm..." << std::endl;
   MPI_Init(NULL, NULL);
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &nproc);
+  MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &world_size);
 #endif
 
   current_kernel = nullptr;

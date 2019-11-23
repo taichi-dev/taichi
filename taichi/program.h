@@ -54,9 +54,9 @@ public:
   std::string layout_fn;
 
   // mpi variables
-  int rank;
+  int world_rank;
   int local_rank; // rank local to node
-  int nproc;
+  int world_size;
 
   void profiler_print() {
     if (config.use_llvm) {

@@ -2,6 +2,18 @@ The Taichi Programming Language
 =========================================================
 
 .. toctree::
+   :caption: Syntax
+   :maxdepth: 2
+
+   syntax
+
+.. toctree::
+   :caption: Compilation
+   :maxdepth: 2
+
+   compilation
+
+.. toctree::
    :caption: Utilities
    :maxdepth: 2
    

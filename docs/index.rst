@@ -20,10 +20,22 @@ The Taichi Programming Language
    type
 
 .. toctree::
+   :caption: Linear Algebra
+   :maxdepth: 2
+
+   linalg
+
+.. toctree::
    :caption: Utilities
    :maxdepth: 2
    
    utilities
+
+.. toctree::
+   :caption: Developer Installation
+   :maxdepth: 2
+
+   dev_install
 
 .. toctree::
    :caption: Miscellaneous

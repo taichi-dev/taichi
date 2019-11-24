@@ -11,6 +11,11 @@ Currently, supported basic types in Taichi are
 
 Boolean types are represented using ``i32``.
 
+Binary operations on different types will give you a promoted type, following the C programming language, e.g.
+  - ``i32 + f32 = f32`
+  - ``f32 + f64 = f64`
+  - ``i32 + i64 = i64`
+
 Default Precision
 ---------------------------------------
 

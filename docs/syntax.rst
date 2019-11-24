@@ -6,7 +6,6 @@ Make sure you also check out the DiffTaichi paper (section "Language design" and
 Global Tensors
 --------------
 
-
 * Every global variable is an N-dimensional tensor. Global scalars are treated as 0-D tensors.
 * Global tensors are accessed using indices, e.g. ``x[i, j, k]`` if ``x`` is a 3D tensor. For 0-D tensor, access it as ``x[None]``.
 
@@ -118,12 +117,8 @@ Data Layout
 Non-power-of-two tensor dimensions are promoted into powers of two. For example, a tensor of size `(18, 65)` will be materialized as `(32, 128)`. Be careful if you want to iterate over this structural node when it is dense: the loop variables will become iterate over the promoted large domain instead of the original compact domain. Use a range-for instead. For sparse structural nodes, this makes no difference.
 
 
-Scalar, Vector and Matrix Arithmetics
+Scalar Arithmetics
 -----------------------------------------
-- Supported data types: `ti.i32`, `ti.i64`, `ti.f32`, `ti.f64`.
-- Binary operations on different types will give you a promoted type, e.g. `i32 + f32 = f32`.
-- `ti.Matrix` are for small matrices (e.g. `3x3`) only. If you have `64x64` matrices, you should consider using a 2D global tensor. `ti.Vector` is the same as `ti.Matrix`, except that it has only 1 column.
-- **Differentiate element-wise product `*` and matrix product `@`**.
 - Supported scalar functions:
 
   * `ti.sin(x)`

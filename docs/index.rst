@@ -14,6 +14,12 @@ The Taichi Programming Language
    compilation
 
 .. toctree::
+   :caption: Type System
+   :maxdepth: 2
+
+   type
+
+.. toctree::
    :caption: Utilities
    :maxdepth: 2
    

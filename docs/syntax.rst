@@ -156,7 +156,7 @@ Make Use of GPU Shared Memory and L1-d$ `ti.cache_l1(x)` will enforce data loads
 
 
 Multi-Stage Programming
-------------------------------------------------
+=======================================
 
 
 * Use `ti.static` for compile-time branching (For those who come from C++17, this is `if constexpr <https://en.cppreference.com/w/cpp/language/if>`_.
@@ -199,6 +199,12 @@ Multi-Stage Programming
   v[f + 1, p] = new_v
   x[f + 1, p] = x[f, p] + dt * v[f + 1, p]
   C[f + 1, p] = new_C
+
+
+When to use `ti.static`
+-----------------------------------------
+
+
 
 * Parameterize kernels with different global variables:
 

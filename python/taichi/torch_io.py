@@ -1,5 +1,4 @@
 import taichi as ti
-import numpy as np
 
 @ti.kernel
 def from_torch_template(expr: ti.template(), torch_tensor: ti.ext_arr()):

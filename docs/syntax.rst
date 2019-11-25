@@ -19,8 +19,8 @@ Global tensors
 Defining your kernels
 ---------------------
 
+Kernel arguments must be type hinted. Kernels can have at most 8 scalar parameters, e.g.,
 
-* Kernel arguments must be type hinted. Kernels can have at most 8 scalar parameters, e.g.
 .. code-block:: python
 
     @ti.kernel
@@ -87,29 +87,27 @@ Use `@ti.func` to decorate your Taichi functions. These functions are callable o
                         t - 2, i, j] - c * alpha * dt * laplacian_p
 
 
-* Functions with multiple return values are not supported now. Use a local variable instead:
-.. code-block:: python
-  # Good function
-  @ti.func
-  def safe_sqrt(x):
-  rst = 0.0
-  if x >= 0:
-   rst = ti.sqrt(x)
-  else:
-   rst = 0.0
-  return rst
-
-Bad function with two *return*\ s
-*********************************
+Functions with multiple return values are not supported now. Use a local variable instead:
 
 .. code-block:: python
 
+  # Bad function
   @ti.func
   def safe_sqrt(x):
     if x >= 0:
       return ti.sqrt(x)
     else:
       return 0.0
+
+  # Good function
+  @ti.func
+  def safe_sqrt(x):
+    rst = 0.0
+    if x >= 0:
+      rst = ti.sqrt(x)
+    else:
+      rst = 0.0
+    return rst
 
 
 Data layout
@@ -121,21 +119,21 @@ Scalar arithmetics
 -----------------------------------------
 - Supported scalar functions:
 
-  * `ti.sin(x)`
-  * `ti.cos(x)`
-  * `ti.cast(x, type)`
-  * `ti.sqr(x)`
-  * `ti.floor(x)`
-  * `ti.inv(x)`
-  * `ti.tan(x)`
-  * `ti.tanh(x)`
-  * `ti.exp(x)`
-  * `ti.log(x)`
-  * `ti.abs(x)`
-  * `ti.random(type)`
-  * `ti.max(a, b)` Note: do not use native python `max` in Taichi kernels.
-  * `ti.min(a, b)` Note: do not use native python `min` in Taichi kernels.
-  * `ti.length(dynamic_snode)`
+  * ``ti.sin(x)``
+  * ``ti.cos(x)``
+  * ``ti.cast(x, type)``
+  * ``ti.sqr(x)``
+  * ``ti.floor(x)``
+  * ``ti.inv(x)``
+  * ``ti.tan(x)``
+  * ``ti.tanh(x)``
+  * ``ti.exp(x)``
+  * ``ti.log(x)``
+  * ``ti.abs(x)``
+  * ``ti.random(type)``
+  * ``ti.max(a, b)`` Note: do not use native python ``max`` in Taichi kernels.
+  * ``ti.min(a, b)`` Note: do not use native python ``min`` in Taichi kernels.
+  * ``ti.length(dynamic_snode)``
 
 Debugging
 -------------------------------------------
@@ -145,9 +143,9 @@ Debug your program with `print(x)`.
 Performance tips
 -------------------------------------------
 
-Avoid synchronization:
- - When using GPU, an asynchronous task queue will be maintained. Whenever reading/writing global tensors, a synchronization will be invoked, which leads to idle cycles on CPU/GPU.
- - Make Use of GPU Shared Memory and L1-d$ `ti.cache_l1(x)` will enforce data loads related to `x` cached in L1-cache. `ti.cache_shared(x)` will allocate shared memory. TODO: add examples
+Avoid synchronization: when using GPU, an asynchronous task queue will be maintained. Whenever reading/writing global tensors, a synchronization will be invoked, which leads to idle cycles on CPU/GPU.
+
+Make Use of GPU Shared Memory and L1-d$ ``ti.cache_l1(x)`` will enforce data loads related to ``x`` cached in L1-cache. ``ti.cache_shared(x)`` will allocate shared memory. TODO: add examples
 
 
 Multi-stage programming
@@ -170,7 +168,6 @@ Multi-stage programming
 * Use ``ti.static`` for forced loop unrolling
 
 .. code-block:: python
-
 
  @ti.kernel
  def g2p(f: ti.i32):
@@ -201,7 +198,15 @@ When to use for loops with `ti.static`
 
 There are several reasons why `ti.static` for loops should be used.
  - Loop unrolling for performance.
- - Loop over vector/matrix elements.
+ - Loop over vector/matrix elements. Indices into Taichi matrices must be a compile-time constant. Indexing into taichi tensors can be run-time variables. For example, if ``x`` is a 1-D tesnor of 3D vector, accessed as ``x[tensor_index][matrix index]``. The first index can be variable, yet the second must be a constant. Code for reseting this tensor of vectors should be 
+ .. code-block:: python
+   
+   @ti.kernel
+   def reset():
+     for i in x:
+       for j in ti.static(range(3)):
+         # The inner loop must be unrolled since j is a vector index instead of global tensor index.
+         x[i][j] = 0
 
 Why Python frontend
 -----------------------------------

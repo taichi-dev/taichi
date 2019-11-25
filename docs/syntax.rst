@@ -3,13 +3,13 @@ Syntax
 
 Make sure you also check out the DiffTaichi paper (section "Language design" and "Appendix A") to learn more about the language.
 
-Global Tensors
+Global tensors
 --------------
 
-* Every global variable is an N-dimensional tensor. Global scalars are treated as 0-D tensors.
+* Every global variable is an N-dimensional tensor. Global `scalars` are treated as 0-D tensors.
 * Global tensors are accessed using indices, e.g. ``x[i, j, k]`` if ``x`` is a 3D tensor. For 0-D tensor, access it as ``x[None]``.
 
-  * If you access a 0-D tensor ``x`` using ``x = 0``\ , instead of ``x[None] = 0``\ , the handle ``x`` will be set to zero instead of the value in that tensor. This is a compromise to the native python semantics. So please always use indexing to access entries in tensors.
+  * Even when accessing 0-D tensor ``x``, use ``x[None] = 0`` instead of ``x = 0``. Please always use indexing to access entries in tensors.
 
 * For a tensor ``F`` of element ``ti.Matrix``\ , make sure you first index the tensor dimensions, and then the matrix dimensions: ``F[i, j, k][0, 2]``. (Assuming ``F`` is a 3D tensor with ``ti.Matrix`` of size ``3x3`` as element)
 * ``ti.Vector`` is simply an alias of ``ti.Matrix``.
@@ -50,7 +50,7 @@ Bad kernels that won't compile right now.
 
     @ti.kernel
     def print():
-      print(x + y)
+      print(x[0])
       for i in x:
         y[i] = x[i]
 
@@ -112,12 +112,12 @@ Bad function with two *return*\ s
       return 0.0
 
 
-Data Layout
+Data layout
 -------------------
 Non-power-of-two tensor dimensions are promoted into powers of two. For example, a tensor of size `(18, 65)` will be materialized as `(32, 128)`. Be careful if you want to iterate over this structural node when it is dense: the loop variables will become iterate over the promoted large domain instead of the original compact domain. Use a range-for instead. For sparse structural nodes, this makes no difference.
 
 
-Scalar Arithmetics
+Scalar arithmetics
 -----------------------------------------
 - Supported scalar functions:
 
@@ -142,15 +142,15 @@ Debugging
 
 Debug your program with `print(x)`.
 
-Performance Tips
+Performance tips
 -------------------------------------------
 
-Avoid synchronization
-When using GPU, an asynchronous task queue will be maintained. Whenever reading/writing global tensors, a synchronization will be invoked, which leads to idle cycles on CPU/GPU.
-Make Use of GPU Shared Memory and L1-d$ `ti.cache_l1(x)` will enforce data loads related to `x` cached in L1-cache. `ti.cache_shared(x)` will allocate shared memory. TODO: add examples
+Avoid synchronization:
+ - When using GPU, an asynchronous task queue will be maintained. Whenever reading/writing global tensors, a synchronization will be invoked, which leads to idle cycles on CPU/GPU.
+ - Make Use of GPU Shared Memory and L1-d$ `ti.cache_l1(x)` will enforce data loads related to `x` cached in L1-cache. `ti.cache_shared(x)` will allocate shared memory. TODO: add examples
 
 
-Multi-Stage Programming
+Multi-stage programming
 =======================================
 
 
@@ -196,43 +196,27 @@ Multi-Stage Programming
   C[f + 1, p] = new_C
 
 
-When to use `ti.static`
+When to use for loops with `ti.static`
 -----------------------------------------
 
+There are several reasons why `ti.static` for loops should be used.
+ - Loop unrolling for performance.
+ - Loop over vector/matrix elements.
 
-
-* Parameterize kernels with different global variables:
-
-.. code-block:: python
-
-  import taichi as ti
-
-  x = ti.global_var(ti.f32)
-  y = ti.global_var(ti.f32)
-  z = ti.global_var(ti.f32)
-  loss = ti.global_var(ti.f32)
-
-  @ti.layout
-  def tensors():
-    ti.root.dense(ti.i, 16).place(x, y, z)
-    ti.root.place(loss)
-    ti.root.lazy_grad()
-
-
-Why Python Frontend
+Why Python frontend
 -----------------------------------
 
 
 Embedding the language in ``python`` has the following advantages:
 
 
-* Easy to learn. Python itself is very easy to learn, so is PyTaichiLang.
+* Easy to learn. Taichi has a very similiar syntax to Python.
 * Easy to run. No ahead-of-time compilation is needed.
-* It allows people to reuse existing python infrastructure:
+* This design allows people to reuse existing python infrastructure:
 
   * IDEs. A python IDE simply works for TaichiLang, with syntax highlighting, checking, and autocomplete.
-  * Package manager (pip). A developed Taichi application and be easily submitted to ``PyPI`` and others can easily set it up   with ``pip``.
-  * Existing packages. Interacting with other python components is just trivial.
+  * Package manager (pip). A developed Taichi application and be easily submitted to ``PyPI`` and others can easily set it up with ``pip``.
+  * Existing packages. Interacting with other python components (e.g. ``matplotlib`` and ``numpy``) is just trivial.
 
 * The built-in AST manipulation tools in ``python`` allow us to do magical things, as long as the kernel body can be parsed by the ``python`` parser.
 

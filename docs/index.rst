@@ -14,11 +14,11 @@ The Taichi Programming Language
 
    syntax
 
-   compilation
-
    type
 
    linalg
+
+   compilation
 
 .. toctree::
    :caption: Utilities

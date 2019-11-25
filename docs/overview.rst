@@ -7,8 +7,8 @@ Why New Programming Language
 
 - Performance
 - Productivity
-- Sparse Computation
-- Differentiable Programming
+- Sparse computation
+- Differentiable programming
 
 Design Decisions
 ---------------------------------------

@@ -100,7 +100,7 @@ Use `@ti.func` to decorate your Taichi functions. These functions are callable o
   return rst
 
 Bad function with two *return*\ s
----------------------------------------
+*********************************
 
 .. code-block:: python
 

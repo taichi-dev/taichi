@@ -55,8 +55,11 @@ public:
 
   // mpi variables
   int world_rank;
-  int local_rank; // rank local to node
   int world_size;
+  int local_rank;
+  int local_size;
+  MPI_Comm local_comm;
+  int device_id;
 
   void profiler_print() {
     if (config.use_llvm) {

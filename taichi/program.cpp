@@ -179,11 +179,16 @@ Program::Program(Arch arch) {
   }
 
   //initialize mpi
-#if defined TC_USE_MPI
+#if defined(TC_USE_MPI)
   std::cout << "Initializing mpi comm..." << std::endl;
   MPI_Init(NULL, NULL);
   MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
   MPI_Comm_size(MPI_COMM_WORLD, &world_size);
+  // split mpi comm into shared memory regions so we can assign ranks to devices
+  MPI_Comm_split_type(MPI_COMM_WORLD, MPI_COMM_TYPE_SHARED, world_rank,  MPI_INFO_NULL, &local_comm);
+  MPI_Comm_size(local_comm, &local_size);
+  MPI_Comm_rank(local_comm, &local_rank);
+  device_id = local_rank%local_size;
 #endif
 
   current_kernel = nullptr;

@@ -25,6 +25,10 @@
 #include <llvm/Linker/Linker.h>
 #include <llvm/Demangle/Demangle.h>
 
+#if defined(TC_USE_MPI)
+#include <mpi.h>
+#endif
+
 #include "tlang_util.h"
 #include "taichi_llvm_context.h"
 #include "backends/llvm_jit.h"
@@ -128,6 +132,7 @@ void compile_runtime_bitcode(Arch arch) {
 }
 
 void compile_runtimes() {
+  std::cout << "compile_runtimes" << std::endl;
   compile_runtime_bitcode(Arch::x86_64);
 #if defined(TLANG_WITH_CUDA)
   compile_runtime_bitcode(Arch::gpu);
@@ -231,7 +236,16 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
           fmt::format("{}/{}", compiled_lib_dir, get_runtime_fn(arch)),
           ctx.get());
     } else {
-      compile_runtime_bitcode(arch);
+      int rank = 0;
+#if defined(TC_USE_MPI)
+      MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+      if (rank == 0)  {
+        compile_runtime_bitcode(arch);
+      }
+#if defined(TC_USE_MPI)
+      MPI_Barrier(MPI_COMM_WORLD);
+#endif
       runtime_module = module_from_bitcode_file(
           fmt::format("{}/{}", get_runtime_dir(), get_runtime_fn(arch)),
           ctx.get());

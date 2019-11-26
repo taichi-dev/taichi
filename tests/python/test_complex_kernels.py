@@ -33,6 +33,42 @@ def test_complex_kernels():
     assert x.grad[0] == 4
 
 @ti.all_archs
+def test_complex_kernels_indirect():
+  x = ti.var(ti.f32)
+  total = ti.var(ti.f32)
+
+  n = 128
+
+  @ti.layout
+  def place():
+    ti.root.dense(ti.i, n).place(x)
+    ti.root.place(total)
+    ti.root.lazy_grad()
+
+  @ti.kernel
+  def func(mul: ti.f32):
+    for i in range(n):
+      ti.atomic_add(total[None], x[i] * mul)
+
+  def func_proxy(mul):
+    func(mul)
+
+  @ti.complex_kernel
+  def forward(mul):
+    func_proxy(mul)
+    func_proxy(mul)
+
+  @ti.complex_kernel_grad(forward)
+  def backward(mul):
+    func.grad(mul)
+
+  with ti.Tape(loss=total):
+    forward(4)
+  for i in range(n):
+    assert x.grad[0] == 4
+
+
+@ti.all_archs
 def test_complex_kernels_oop():
   class A:
     def __init__(self):
@@ -72,7 +108,9 @@ def test_complex_kernels_oop():
   for i in range(a.n):
     assert a.x.grad[0] == 4
 
-@ti.all_archs
+test_globals = "12312312"
+
+# @ti.all_archs
 def test_complex_kernels_oop2():
   class A:
     def __init__(self):
@@ -101,7 +139,6 @@ def test_complex_kernels_oop2():
     def backward(self, mul):
       self.func(mul, __gradient=True)
 
-
   a = A()
 
   @ti.layout
@@ -114,3 +151,5 @@ def test_complex_kernels_oop2():
     a.forward(4)
   for i in range(a.n):
     assert a.x.grad[0] == 4
+
+test_complex_kernels_indirect()

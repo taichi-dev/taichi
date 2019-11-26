@@ -125,8 +125,6 @@ def complex_kernel(func):
     try:
       with FrameBacktraceGuard(2):
         func(*args, **kwargs)
-    except Exception as e:
-      raise e
     finally:
       get_runtime().inside_complex_kernel = False
   decorated.grad = None

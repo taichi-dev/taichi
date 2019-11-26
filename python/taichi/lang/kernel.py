@@ -178,19 +178,29 @@ class Kernel:
     frame = inspect.currentframe()
     for t in range(self.runtime.current_frame_backtrace + 2):
       frame = frame.f_back
-    globals = dict(frame.f_globals, **frame.f_locals)
+      print(t, frame.f_globals.keys())
+
+    global_vars = dict(frame.f_globals, **frame.f_locals)
     # inject template parameters into globals
 
     for i in self.template_slot_locations:
       template_var_name = self.argument_names[i]
-      globals[template_var_name] = args[i]
+      global_vars[template_var_name] = args[i]
+
 
     exec(compile(tree, filename=inspect.getsourcefile(self.func), mode='exec'),
-         globals, locals())
+         global_vars, locals())
     self.runtime.inside_kernel = False
     compiled = locals()[self.func.__name__]
 
     taichi_kernel = taichi_lang_core.create_kernel(kernel_name, self.is_grad)
+
+    print()
+    print()
+    print(global_vars.keys())
+    print()
+    print()
+
     taichi_kernel = taichi_kernel.define(lambda: compiled())
 
     assert key not in self.compiled_functions

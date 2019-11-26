@@ -123,7 +123,7 @@ def complex_kernel(func):
     if get_runtime().target_tape:
       get_runtime().target_tape.insert(decorated, args)
     try:
-      with FrameBacktraceGuard(2):
+      with FrameBacktraceGuard(0):
         func(*args, **kwargs)
     finally:
       get_runtime().inside_complex_kernel = False
@@ -138,10 +138,5 @@ def complex_kernel_grad(primal):
     primal.grad = decorated
     return decorated
   return decorator
-
-def print(*args, **kwargs):
-  import taichi as ti
-  ti.error('ti.print is deprecated. Please simply use the builtin "print" in Python.')
-
 
 __all__ = [s for s in dir() if not s.startswith('_')]

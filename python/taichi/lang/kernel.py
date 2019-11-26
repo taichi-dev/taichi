@@ -180,11 +180,30 @@ class Kernel:
 
     self.runtime.inside_kernel = True
     frame = inspect.currentframe()
+
     for t in range(self.runtime.current_frame_backtrace + 2):
       frame = frame.f_back
-      print(t, frame.f_globals.keys())
+      print(t)
+      print(frame.f_code.co_filename)
+      print(frame.f_globals.keys())
+      print(frame.f_locals.keys())
+      print()
 
-    global_vars = dict(frame.f_globals, **frame.f_locals)
+    kernel_code_fn = frame.f_code.co_filename
+
+    import copy
+    global_vars = copy.copy(frame.f_globals)
+
+    f = frame
+    while f:
+      if f.f_code.co_filename == kernel_code_fn:
+        for k, val in f.f_locals.items():
+          if k not in global_vars:
+            global_vars[k] = val
+      f = f.f_back
+    for k, val in frame.f_locals.items():
+      global_vars[k] = val
+
     # inject template parameters into globals
 
     for i in self.template_slot_locations:
@@ -193,20 +212,12 @@ class Kernel:
 
 
     local_vars = {}
-    print('before exec')
     exec(compile(tree, filename=inspect.getsourcefile(self.func), mode='exec'),
          global_vars, local_vars)
-    print('after exec')
     self.runtime.inside_kernel = False
     compiled = local_vars[self.func.__name__]
 
     taichi_kernel = taichi_lang_core.create_kernel(kernel_name, self.is_grad)
-
-    print()
-    print()
-    print(global_vars.keys())
-    print()
-    print()
 
     def taichi_ast_generator():
       compiled()

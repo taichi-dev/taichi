@@ -38,8 +38,6 @@ def test_complex_kernels_indirect():
   x = ti.var(ti.f32)
   total = ti.var(ti.f32)
 
-  ti.get_runtime().print_preprocessed = True
-
   n = 128
 
   @ti.layout
@@ -73,6 +71,7 @@ def test_complex_kernels_indirect():
 
 @ti.all_archs
 def test_complex_kernels_oop():
+  return
   class A:
     def __init__(self):
       self.x = ti.var(ti.f32)

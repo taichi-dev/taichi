@@ -49,7 +49,7 @@ class Matrix:
         if e.ptr.is_global_var():
           results[i] = True
       assert results[i] == results[
-        0], "Matrices with  mixed global/local entries are not allowed"
+        0], "Matrices with mixed global/local entries are not allowed"
     return results[0]
 
   def assign(self, other):

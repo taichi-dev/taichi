@@ -43,17 +43,19 @@ Kernel arguments must be type hinted. Kernels can have at most 8 scalar paramete
       for i in x:
         y[i] = x[i]
 
-Bad kernels that won't compile right now.
-(split them into two kernels for now. Compiler support coming soon.)
+Bad kernels that won't compile correctly.
+Please split them into two kernels for now. Compiler support coming soon. For example:
 
 .. code-block:: python
 
+    # Bad kernel 1
     @ti.kernel
     def print():
       print(x[0])
       for i in x:
         y[i] = x[i]
 
+    # Bad kernel 2
     @ti.kernel
     def print():
       for i in x:
@@ -61,7 +63,7 @@ Bad kernels that won't compile right now.
       for i in x:
         z[i] = x[i]
 
-   - `Taichi`-scope (`ti.kernel`) v.s. `Python`-scope: everything decorated by `ti.kernel` is in `Taichi`-scope, which will be compiled by the Taichi compiler.
+`Taichi`-scope (`ti.kernel`) v.s. `Python`-scope: everything decorated by `ti.kernel` is in `Taichi`-scope, which will be compiled by the Taichi compiler.
 
 Functions
 -----------------------------------------------

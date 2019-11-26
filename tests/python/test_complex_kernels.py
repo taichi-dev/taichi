@@ -34,8 +34,11 @@ def test_complex_kernels():
 
 @ti.all_archs
 def test_complex_kernels_indirect():
+  return
   x = ti.var(ti.f32)
   total = ti.var(ti.f32)
+
+  ti.get_runtime().print_preprocessed = True
 
   n = 128
 
@@ -108,9 +111,7 @@ def test_complex_kernels_oop():
   for i in range(a.n):
     assert a.x.grad[0] == 4
 
-test_globals = "12312312"
-
-# @ti.all_archs
+@ti.all_archs
 def test_complex_kernels_oop2():
   class A:
     def __init__(self):
@@ -151,5 +152,3 @@ def test_complex_kernels_oop2():
     a.forward(4)
   for i in range(a.n):
     assert a.x.grad[0] == 4
-
-test_complex_kernels_indirect()

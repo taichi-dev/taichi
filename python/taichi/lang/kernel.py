@@ -3,6 +3,7 @@ from .transformer import ASTTransformer
 import ast
 from .kernel_arguments import *
 from .util import *
+import traceback
 
 def remove_indent(lines):
   lines = lines.split('\n')
@@ -38,6 +39,7 @@ def func(foo):
   
   if get_runtime().print_preprocessed:
     import astor
+    print('After preprocessing:')
     print(astor.to_source(tree.body[0], indent_with='  '))
   
   ast.increment_lineno(tree, inspect.getsourcelines(foo)[1] - 1)
@@ -158,6 +160,7 @@ class Kernel:
     tree = ast.parse(src)
     if self.runtime.print_preprocessed:
       import astor
+      print('Before preprocessing:')
       print(astor.to_source(tree.body[0]))
 
     func_body = tree.body[0]
@@ -170,6 +173,7 @@ class Kernel:
 
     if self.runtime.print_preprocessed:
       import astor
+      print('After preprocessing:')
       print(astor.to_source(tree.body[0], indent_with='  '))
 
     ast.increment_lineno(tree, inspect.getsourcelines(self.func)[1] - 1)
@@ -188,10 +192,13 @@ class Kernel:
       global_vars[template_var_name] = args[i]
 
 
+    local_vars = {}
+    print('before exec')
     exec(compile(tree, filename=inspect.getsourcefile(self.func), mode='exec'),
-         global_vars, locals())
+         global_vars, local_vars)
+    print('after exec')
     self.runtime.inside_kernel = False
-    compiled = locals()[self.func.__name__]
+    compiled = local_vars[self.func.__name__]
 
     taichi_kernel = taichi_lang_core.create_kernel(kernel_name, self.is_grad)
 
@@ -201,7 +208,10 @@ class Kernel:
     print()
     print()
 
-    taichi_kernel = taichi_kernel.define(lambda: compiled())
+    def taichi_ast_generator():
+      compiled()
+
+    taichi_kernel = taichi_kernel.define(taichi_ast_generator)
 
     assert key not in self.compiled_functions
     self.compiled_functions[key] = self.get_function_body(taichi_kernel)
@@ -268,6 +278,7 @@ class Kernel:
 
 
 def kernel(foo):
+  print("inside decorator")
   ret = Kernel(foo, False)
   ret.grad = Kernel(foo, True)
   return ret

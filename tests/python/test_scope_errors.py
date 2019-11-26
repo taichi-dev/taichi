@@ -2,7 +2,6 @@ import taichi as ti
 
 @ti.must_throw(UnboundLocalError)
 def test_if():
-  ti.get_runtime().print_preprocessed = True
   x = ti.var(ti.f32)
 
   @ti.layout
@@ -15,13 +14,12 @@ def test_if():
       a = 0
     else:
       a = 1
-    ti.print(a)
+    print(a)
 
   func()
 
 @ti.must_throw(UnboundLocalError)
 def test_for():
-  ti.get_runtime().print_preprocessed = True
   x = ti.var(ti.f32)
 
   @ti.layout
@@ -32,13 +30,12 @@ def test_for():
   def func():
     for i in range(10):
       a = i
-    ti.print(a)
+    print(a)
 
   func()
 
 @ti.must_throw(UnboundLocalError)
 def test_while():
-  ti.get_runtime().print_preprocessed = True
   x = ti.var(ti.f32)
 
   @ti.layout
@@ -49,7 +46,7 @@ def test_while():
   def func():
     while True:
       a = 0
-    ti.print(a)
+    print(a)
 
   func()
 

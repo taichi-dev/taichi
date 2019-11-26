@@ -183,11 +183,6 @@ class Kernel:
 
     for t in range(self.runtime.current_frame_backtrace + 2):
       frame = frame.f_back
-      print(t)
-      print(frame.f_code.co_filename)
-      print(frame.f_globals.keys())
-      print(frame.f_locals.keys())
-      print()
 
     kernel_code_fn = frame.f_code.co_filename
 
@@ -289,7 +284,6 @@ class Kernel:
 
 
 def kernel(foo):
-  print("inside decorator")
   ret = Kernel(foo, False)
   ret.grad = Kernel(foo, True)
   return ret

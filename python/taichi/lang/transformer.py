@@ -364,8 +364,12 @@ if 1:
           import numpy as np
           if array_dt == np.float32:
             dt = self.parse_expr('ti.f32')
+          elif array_dt == np.float64:
+            dt = self.parse_expr('ti.f64')
           elif array_dt == np.int32:
             dt = self.parse_expr('ti.i32')
+          elif array_dt == np.int64:
+            dt = self.parse_expr('ti.i64')
           else:
             assert False
         else:

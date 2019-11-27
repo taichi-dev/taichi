@@ -236,8 +236,8 @@ class Kernel:
             raise KernelArgError(i, needed, provided)
           t_kernel.set_arg_int(actual_argument_slot, int(v))
         elif isinstance(needed, np.ndarray) or needed == np.ndarray or (isinstance(v, np.ndarray) and isinstance(needed, ext_arr)):
-          float32_types = [np.float32, np.int32]
-          assert v.dtype in float32_types, 'Kernel arg supports float32/int32 np arrays only'
+          float32_types = [np.float32, np.int32, np.float64, np.int64]
+          assert v.dtype in float32_types, 'Kernel arg supports float/int 32/64 np arrays only'
           tmp = np.ascontiguousarray(v)
           t_kernel.set_arg_nparray(actual_argument_slot, int(tmp.ctypes.data), tmp.nbytes)
         else:

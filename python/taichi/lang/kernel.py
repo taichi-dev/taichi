@@ -183,7 +183,6 @@ class Kernel:
     closure = self.func.__closure__
     if closure:
       freevar_values = list(map(lambda x: x.cell_contents, closure))
-      print(freevar_names, freevar_values)
       for name, value in zip(freevar_names, freevar_values):
         global_vars[name] = value
 

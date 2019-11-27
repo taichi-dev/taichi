@@ -3,7 +3,6 @@ from .transformer import ASTTransformer
 import ast
 from .kernel_arguments import *
 from .util import *
-import traceback
 
 def remove_indent(lines):
   lines = lines.split('\n')
@@ -44,11 +43,9 @@ def func(foo):
   
   ast.increment_lineno(tree, inspect.getsourcelines(foo)[1] - 1)
   
-  get_runtime().inside_kernel = True
   frame = inspect.currentframe().f_back
   exec(compile(tree, filename=inspect.getsourcefile(foo), mode='exec'),
        dict(frame.f_globals, **frame.f_locals), locals())
-  get_runtime().inside_kernel = False
   compiled = locals()[foo.__name__]
   return compiled
 
@@ -178,7 +175,6 @@ class Kernel:
 
     ast.increment_lineno(tree, inspect.getsourcelines(self.func)[1] - 1)
 
-    self.runtime.inside_kernel = True
     frame = inspect.currentframe()
 
     for t in range(self.runtime.current_frame_backtrace + 2):
@@ -209,13 +205,14 @@ class Kernel:
     local_vars = {}
     exec(compile(tree, filename=inspect.getsourcefile(self.func), mode='exec'),
          global_vars, local_vars)
-    self.runtime.inside_kernel = False
     compiled = local_vars[self.func.__name__]
 
     taichi_kernel = taichi_lang_core.create_kernel(kernel_name, self.is_grad)
 
     def taichi_ast_generator():
+      self.runtime.inside_kernel = True
       compiled()
+      self.runtime.inside_kernel = False
 
     taichi_kernel = taichi_kernel.define(taichi_ast_generator)
 

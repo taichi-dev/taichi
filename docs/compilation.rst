@@ -6,15 +6,21 @@ Sometimes it is helpful to understand the life cycle of a Taichi kernel.
 In short, compilation will only happen on the first invocation of the kernel.
 
 The steps are:
- - Template instantiation (if template kernels exist)
+ - Function registration
  - AST transform
+ - Template instantiation (if template kernels exist)
  - Taichi IR compilation and optimization and offloading
  - Kernel launching
 
+
+Function Registration
+---------------------------------------
+When the function definition script is executed, the ``ti.kernel`` decorator registers the kernel.
+
 Python Abstract Syntax Tree (AST) Transform
 ---------------------------------------
-
-
+The first time the registered function is called, a AST transformer will transform the kernel body
+into a script, which when executed emits a Taichi frontend AST.
 
 Template Instantiation
 ---------------------------------------
@@ -26,6 +32,8 @@ Template Instantiation
 
 Template instantiation is lazy. Common use cases are
  -
+
+
 
 The Just-in-Time Compilation Engine
 ---------------------------------------

@@ -211,6 +211,7 @@ index = indices
 
 
 def static(x):
+  assert get_runtime().inside_kernel, 'ti.static can only be used inside Taichi kernels'
   return x
 
 

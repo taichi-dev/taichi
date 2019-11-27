@@ -175,28 +175,19 @@ class Kernel:
 
     ast.increment_lineno(tree, inspect.getsourcelines(self.func)[1] - 1)
 
-    frame = inspect.currentframe()
-
-    for t in range(self.runtime.current_frame_backtrace + 2):
-      frame = frame.f_back
-
-    kernel_code_fn = frame.f_code.co_filename
-
+    # Discussions: https://github.com/yuanming-hu/taichi/issues/282
     import copy
-    global_vars = copy.copy(frame.f_globals)
+    global_vars = copy.copy(self.func.__globals__)
 
-    f = frame
-    while f:
-      if f.f_code.co_filename == kernel_code_fn:
-        for k, val in f.f_locals.items():
-          if k not in global_vars:
-            global_vars[k] = val
-      f = f.f_back
-    for k, val in frame.f_locals.items():
-      global_vars[k] = val
+    freevar_names = self.func.__code__.co_freevars
+    closure = self.func.__closure__
+    if closure:
+      freevar_values = list(map(lambda x: x.cell_contents, closure))
+      print(freevar_names, freevar_values)
+      for name, value in zip(freevar_names, freevar_values):
+        global_vars[name] = value
 
     # inject template parameters into globals
-
     for i in self.template_slot_locations:
       template_var_name = self.argument_names[i]
       global_vars[template_var_name] = args[i]

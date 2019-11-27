@@ -25,11 +25,13 @@ class ScopeGuard:
 
 # Single-pass transform
 class ASTTransformer(ast.NodeTransformer):
-  def __init__(self, excluded_paremeters=(), transform_args=True):
+  def __init__(self, excluded_paremeters=(), transform_args=True, func=None, arg_features=None):
     super().__init__()
     self.local_scopes = []
     self.excluded_parameters = excluded_paremeters
     self.transform_args = transform_args
+    self.func = func
+    self.arg_features = arg_features
 
   def variable_scope(self, *args):
     return ScopeGuard(self, *args)
@@ -347,14 +349,30 @@ if 1:
     assert args.kwonlyargs == []
     assert args.kw_defaults == []
     assert args.kwarg is None
+    import taichi as ti
     if self.transform_args:
       arg_decls = []
       for i, arg in enumerate(args.args):
-        if i in self.excluded_parameters:
+        if isinstance(self.func.arguments[i], ti.template):
           continue # skip template parameters
-        arg_init = self.parse_stmt('x = ti.decl_arg(0)')
+        arg_init = self.parse_stmt('x = ti.decl_arg(0, 0)')
         arg_init.targets[0].id = arg.arg
-        arg_init.value.args[0] = arg.annotation
+        import taichi as ti
+        if isinstance(self.func.arguments[i], ti.ext_arr):
+          ty = self.parse_expr("'array'")
+          array_dt = self.arg_features[i][0]
+          import numpy as np
+          if array_dt == np.float32:
+            dt = self.parse_expr('ti.f32')
+          elif array_dt == np.int32:
+            dt = self.parse_expr('ti.i32')
+          else:
+            assert False
+        else:
+          ty = self.parse_expr("'scalar'")
+          dt = arg.annotation
+        arg_init.value.args[0] = ty
+        arg_init.value.args[1] = dt
         arg_decls.append(arg_init)
       node.body = arg_decls + node.body
       # remove original args

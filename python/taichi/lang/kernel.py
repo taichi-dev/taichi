@@ -59,8 +59,11 @@ class KernelTemplateMapper:
 
   def extract(self, args):
     extracted = []
-    for i in self.template_slot_locations:
-      extracted.append(self.annotations[i].extract(args[i]))
+    for i in range(self.num_args):
+      if hasattr(self.annotations[i], 'extract'):
+        extracted.append(self.annotations[i].extract(args[i]))
+      else:
+        extracted.append(None)
     return tuple(extracted)
 
   def lookup(self, args):
@@ -102,7 +105,7 @@ class Kernel:
     self.extract_arguments()
     self.template_slot_locations = []
     for i in range(len(self.arguments)):
-      if isinstance(self.arguments[i], (template, ext_arr)):
+      if isinstance(self.arguments[i], template):
         self.template_slot_locations.append(i)
     self.mapper = KernelTemplateMapper(self.arguments, self.template_slot_locations)
     from .impl import get_runtime
@@ -141,7 +144,7 @@ class Kernel:
       self.arguments.append(annotation)
       self.argument_names.append(param.name)
 
-  def materialize(self, key=None, args=None):
+  def materialize(self, key=None, args=None, arg_features=None):
     if key is None:
       key = (self.func, 0)
     if not self.runtime.materialized:
@@ -164,7 +167,7 @@ class Kernel:
     func_body = tree.body[0]
     func_body.decorator_list = []
 
-    visitor = ASTTransformer(excluded_paremeters=self.template_slot_locations)
+    visitor = ASTTransformer(excluded_paremeters=self.template_slot_locations, func=self, arg_features=arg_features)
 
     visitor.visit(tree)
     ast.fix_missing_locations(tree)
@@ -267,7 +270,7 @@ class Kernel:
     assert len(kwargs) == 0, 'kwargs not supported for Taichi kernels'
     instance_id = self.mapper.lookup(args)
     key = (self.func, instance_id)
-    self.materialize(key=key, args=args)
+    self.materialize(key=key, args=args, arg_features=self.mapper.extract(args))
     return self.compiled_functions[key](*args)
 
 

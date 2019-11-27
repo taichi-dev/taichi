@@ -26,14 +26,16 @@ class Template:
 template = Template
 
 
-def decl_arg(dt):
+def decl_arg(ty, dt):
   if isinstance(dt, template):
     return
-  if dt is np.ndarray or isinstance(dt, ext_arr):
-    print("Warning: numpy array arg supports 1D and f32 only for now")
-    id = taichi_lang_core.decl_arg(f32, True)
-    return Expr(taichi_lang_core.make_external_tensor_expr(f32, 1, id))
-  else:
+  if ty == 'array':
+    print("Warning: external array arg supports 1D only")
+    id = taichi_lang_core.decl_arg(dt, True)
+    return Expr(taichi_lang_core.make_external_tensor_expr(dt, 1, id))
+  elif ty == 'scalar':
     id = taichi_lang_core.decl_arg(dt, False)
     return Expr(taichi_lang_core.make_arg_load_expr(id))
+  else:
+    assert False
 

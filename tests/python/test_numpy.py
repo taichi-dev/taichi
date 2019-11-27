@@ -12,7 +12,7 @@ def test_numpy():
     ti.root.dense(ti.i, n).place(val)
 
   @ti.kernel
-  def test_numpy(arr: np.ndarray):
+  def test_numpy(arr: ti.ext_arr()):
     for i in range(n):
       arr[i] = arr[i] ** 2
 
@@ -28,7 +28,6 @@ def test_numpy():
 
 @ti.all_archs
 def test_numpy_int():
-  ti.cfg.print_ir = True
   val = ti.var(ti.i32)
 
   n = 4
@@ -38,7 +37,7 @@ def test_numpy_int():
     ti.root.dense(ti.i, n).place(val)
 
   @ti.kernel
-  def test_numpy(arr: np.ndarray):
+  def test_numpy(arr: ti.ext_arr()):
     for i in range(n):
       arr[i] = arr[i] ** 2
 

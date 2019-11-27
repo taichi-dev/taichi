@@ -30,6 +30,12 @@ python3 -m pip install taichi-nightly-cuda-10-1
 
 ## [Examples](https://github.com/yuanming-hu/taichi/tree/master/examples)
 ## Updates
+- (Nov 27, 2019) v0.1.5 released. 
+   - [Better modular programming support](https://github.com/yuanming-hu/taichi/issues/282)
+   - Disalow the use of `ti.static` outside Taichi kernels
+   - Documentation improvements (WIP)
+   - Codegen bug fixes
+   - Special thanks to Andrew Spielberg and KLozes for bug report and feedback.
 - (Nov 22, 2019) v0.1.3 released. 
    - Object-oriented programming. [[Example]](https://github.com/yuanming-hu/taichi/blob/master/tests/python/test_oop.py)
    - native Python function translation in Taichi kernels: 

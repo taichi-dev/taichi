@@ -7,6 +7,9 @@ class ArgExtArray:
   def __init__(self, dim=1):
     assert dim == 1
 
+  def extract(self, x):
+    return x.dtype, len(x.shape)
+
 
 ext_arr = ArgExtArray
 
@@ -15,6 +18,9 @@ class Template:
   def __init__(self, tensor=None, dim=None):
     self.tensor = tensor
     self.dim = dim
+
+  def extract(self, x):
+    return x
 
 
 template = Template

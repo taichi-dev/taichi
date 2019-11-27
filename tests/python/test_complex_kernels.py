@@ -34,7 +34,6 @@ def test_complex_kernels():
 
 @ti.all_archs
 def test_complex_kernels_indirect():
-  return
   x = ti.var(ti.f32)
   total = ti.var(ti.f32)
 
@@ -71,7 +70,6 @@ def test_complex_kernels_indirect():
 
 @ti.all_archs
 def test_complex_kernels_oop():
-  return
   class A:
     def __init__(self):
       self.x = ti.var(ti.f32)

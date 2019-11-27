@@ -369,7 +369,7 @@ class IRPrinter : public IRVisitor {
     }
     s += "]";
 
-    print(fmt::format("{} = external_ptr {}", stmt->name(), s));
+    print(fmt::format("{}{} = external_ptr {}", stmt->type_hint(), stmt->name(), s));
   }
 
   void visit(OffloadedStmt *stmt) override {

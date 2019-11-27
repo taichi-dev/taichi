@@ -51,15 +51,16 @@ def func(foo):
 
 
 class KernelTemplateMapper:
-  def __init__(self, num_args, template_slot_locations):
-    self.num_args = num_args
+  def __init__(self, annotations, template_slot_locations):
+    self.annotations = annotations
+    self.num_args = len(annotations)
     self.template_slot_locations = template_slot_locations
     self.mapping = {}
 
   def extract(self, args):
     extracted = []
     for i in self.template_slot_locations:
-      extracted.append(args[i])
+      extracted.append(self.annotations[i].extract(args[i]))
     return tuple(extracted)
 
   def lookup(self, args):
@@ -101,9 +102,9 @@ class Kernel:
     self.extract_arguments()
     self.template_slot_locations = []
     for i in range(len(self.arguments)):
-      if isinstance(self.arguments[i], template):
+      if isinstance(self.arguments[i], (template, ext_arr)):
         self.template_slot_locations.append(i)
-    self.mapper = KernelTemplateMapper(len(self.arguments), self.template_slot_locations)
+    self.mapper = KernelTemplateMapper(self.arguments, self.template_slot_locations)
     from .impl import get_runtime
     self.runtime = get_runtime()
     if is_grad:
@@ -232,8 +233,8 @@ class Kernel:
             raise KernelArgError(i, needed, provided)
           t_kernel.set_arg_int(actual_argument_slot, int(v))
         elif isinstance(needed, np.ndarray) or needed == np.ndarray or (isinstance(v, np.ndarray) and isinstance(needed, ext_arr)):
-          float32_types = [np.float32]
-          assert v.dtype in float32_types, 'Kernel arg supports single-precision (float32) np arrays only'
+          float32_types = [np.float32, np.int32]
+          assert v.dtype in float32_types, 'Kernel arg supports float32/int32 np arrays only'
           tmp = np.ascontiguousarray(v)
           t_kernel.set_arg_nparray(actual_argument_slot, int(tmp.ctypes.data), tmp.nbytes)
         else:

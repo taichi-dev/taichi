@@ -20,7 +20,7 @@ When the function definition script is executed, the ``ti.kernel`` decorator reg
 Python Abstract Syntax Tree (AST) Transform
 ---------------------------------------
 The first time the registered function is called, a AST transformer will transform the kernel body
-into a script, which when executed emits a Taichi frontend AST.
+into a Python script, which, when executed, emits a Taichi frontend AST.
 
 Template Instantiation
 ---------------------------------------
@@ -29,10 +29,16 @@ Template Instantiation
     @ti.kernel
     def
 
-
 Template instantiation is lazy. Common use cases are
  -
 
+
+AST Lowering
+-----------------------------------------
+
+Taichi IR Optimization
+-----------------------------------------
+Access optimization etc
 
 
 The Just-in-Time Compilation Engine

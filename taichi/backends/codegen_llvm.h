@@ -507,6 +507,7 @@ public:
   }
 
   void visit(IfStmt *if_stmt) override {
+    // TODO: take care of vectorized cases
     BasicBlock *true_block =
         BasicBlock::Create(*llvm_context, "true_block", func);
     BasicBlock *false_block =
@@ -519,7 +520,7 @@ public:
     if (if_stmt->true_statements) {
       if_stmt->true_statements->accept(this);
     }
-    builder->CreateBr(false_block);
+    builder->CreateBr(after_if);
     builder->SetInsertPoint(false_block);
     if (if_stmt->false_statements) {
       if_stmt->false_statements->accept(this);

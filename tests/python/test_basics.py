@@ -59,3 +59,36 @@ def test_io():
   assert x[3] == 123
   assert x[4] == 456
 
+@ti.all_archs
+def test_if():
+  x = ti.var(ti.f32)
+
+  @ti.layout
+  def xy():
+    ti.root.dense(ti.i, 16).place(x)
+
+  @ti.kernel
+  def if_test():
+    for i in x:
+      if i < 100:
+        x[i] = 100
+      else:
+        x[i] = i
+
+  if_test()
+
+  for i in range(16):
+    assert x[i] == 100
+
+  @ti.kernel
+  def if_test2():
+    for i in x:
+      if i < 100:
+        x[i] = i
+      else:
+        x[i] = 100
+
+  if_test2()
+
+  for i in range(16):
+    assert x[i] == i

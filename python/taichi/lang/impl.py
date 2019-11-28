@@ -53,7 +53,7 @@ def subscript(value, *indices):
 
 
 class PyTaichi:
-  def __init__(self):
+  def __init__(self, kernels=[]):
     self.materialized = False
     self.prog = None
     self.layout_functions = []
@@ -67,6 +67,7 @@ class PyTaichi:
     self.default_ip = i32
     self.target_tape = None
     self.inside_complex_kernel = False
+    self.kernels = kernels
     Expr.materialize_layout_callback = self.materialize
   
   def set_default_fp(self, fp):
@@ -133,8 +134,11 @@ def make_constant_expr(val):
 def reset():
   global pytaichi
   global root
+  old_kernels = pytaichi.kernels
   pytaichi.clear()
-  pytaichi = PyTaichi()
+  pytaichi = PyTaichi(old_kernels)
+  for k in old_kernels:
+    k.reset()
   taichi_lang_core.reset_default_compile_config()
   root = SNode(taichi_lang_core.get_root())
 

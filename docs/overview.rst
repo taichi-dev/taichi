@@ -6,6 +6,7 @@ Taichi is a new high-performance programming language for computer graphics appl
 - Productivity
 - Sparse computation
 - Differentiable programming
+- Metaprogramming
 
 Design decisions
 ---------------------------------------

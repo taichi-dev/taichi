@@ -109,8 +109,13 @@ class Kernel:
         self.template_slot_locations.append(i)
     self.mapper = KernelTemplateMapper(self.arguments, self.template_slot_locations)
     from .impl import get_runtime
+    get_runtime().kernels.append(self)
+    self.reset()
+
+  def reset(self):
+    from .impl import get_runtime
     self.runtime = get_runtime()
-    if is_grad:
+    if self.is_grad:
       self.compiled_functions = self.runtime.compiled_functions
     else:
       self.compiled_functions = self.runtime.compiled_grad_functions

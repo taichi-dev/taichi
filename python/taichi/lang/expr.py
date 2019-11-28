@@ -280,8 +280,13 @@ class Expr:
     tensor_to_numpy(self, arr)
     return arr
 
-  def from_numpy(self):
-    pass
+  def from_numpy(self, arr):
+    assert self.dim() == len(arr.shape)
+    s = self.shape()
+    for i in range(self.dim()):
+      assert s[i] == arr.shape[i]
+    from .meta import numpy_to_tensor
+    numpy_to_tensor(arr, self)
 
 def make_var_vector(size):
   import taichi as ti

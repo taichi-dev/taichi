@@ -29,12 +29,12 @@ def test_vector_index():
 
 @ti.all_archs
 def test_grouped():
-  return
+  ti.get_runtime().print_preprocessed = True
   val = ti.var(ti.i32)
 
   n = 4
-  m = 7
-  p = 11
+  m = 8
+  p = 16
 
   @ti.layout
   def values():

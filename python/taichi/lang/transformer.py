@@ -201,15 +201,17 @@ if 1:
     if node.orelse:
       raise TaichiSyntaxError("'else' clause for 'for' not supported in Taichi kernels")
     self.generic_visit(node, ['body'])
-    is_static_for = isinstance(node.iter,
+    decorated = isinstance(node.iter,
                                ast.Call) and isinstance(node.iter.func,
                                                         ast.Attribute)
-    if is_static_for:
+    is_static_for = False
+    is_grouped = False
+    if decorated:
       attr = node.iter.func
       if attr.attr == 'static':
         is_static_for = True
-      else:
-        is_static_for = False
+      elif attr.attr == 'grouped':
+        is_grouped = True
     is_range_for = isinstance(node.iter,
                               ast.Call) and isinstance(node.iter.func,
                                                        ast.Name) and node.iter.func.id == 'range'
@@ -243,7 +245,7 @@ if 1:
       t.body = t.body[:6] + node.body + t.body[6:]
       t.body.append(self.parse_stmt('del {}'.format(loop_var)))
       return ast.copy_location(t, node)
-    else:
+    else: # Struct for
       if isinstance(node.target, ast.Name):
         elts = [node.target]
       else:
@@ -256,18 +258,32 @@ if 1:
         '  {} = ti.Expr(ti.core.make_id_expr(""))\n'.format(ind.id) for ind in
         elts)
       vars = ', '.join(ind.id for ind in elts)
-      template = ''' 
+      if is_grouped:
+        template = ''' 
+if 1:
+  ___loop_var = 0
+  {} = ti.make_var_vector(size=___loop_var.loop_range().dim())
+  ___expr_group = ti.make_expr_group({})
+  ti.core.begin_frontend_struct_for(___expr_group, ___loop_var.loop_range().ptr)
+  ti.core.end_frontend_range_for()
+        '''.format(vars, vars)
+        t = ast.parse(template).body[0]
+        cut = 4
+        t.body[0].value = node.iter
+        t.body = t.body[:cut] + node.body + t.body[cut:]
+      else:
+        template = ''' 
 if 1:
 {}
   ___loop_var = 0
   ___expr_group = ti.make_expr_group({})
   ti.core.begin_frontend_struct_for(___expr_group, ___loop_var.loop_range().ptr)
   ti.core.end_frontend_range_for()
-      '''.format(var_decl, vars)
-      t = ast.parse(template).body[0]
-      cut = len(elts) + 3
-      t.body[cut - 3].value = node.iter
-      t.body = t.body[:cut] + node.body + t.body[cut:]
+        '''.format(var_decl, vars)
+        t = ast.parse(template).body[0]
+        cut = len(elts) + 3
+        t.body[cut - 3].value = node.iter
+        t.body = t.body[:cut] + node.body + t.body[cut:]
       for loop_var in reversed(elts):
         t.body.append(self.parse_stmt('del {}'.format(loop_var.id)))
       return ast.copy_location(t, node)

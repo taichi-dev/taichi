@@ -202,6 +202,10 @@ def static(x):
   assert isinstance(x, (bool, int, float, range, list, tuple)), 'Input to ti.static must have compile-time constant values, instead of {}'.format(type(x))
   return x
 
+def grouped(x):
+  assert get_runtime().inside_kernel, 'ti.grouped can only be used inside Taichi kernels'
+  return x
+
 
 def stop_grad(x):
   taichi_lang_core.stop_grad(x.snode().ptr)
@@ -213,7 +217,6 @@ def current_cfg():
 
 def default_cfg():
   return taichi_lang_core.default_compile_config()
-
 
 from .kernel import *
 from .ops import *

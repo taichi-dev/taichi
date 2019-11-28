@@ -273,6 +273,13 @@ class Expr:
       s.append(self.snode().get_shape(i))
     return tuple(s)
 
+def make_var_vector(size):
+  import taichi as ti
+  exprs = []
+  for i in range(size):
+    exprs.append(taichi_lang_core.make_id_expr(''))
+  return ti.Vector(exprs)
+
 def make_expr_group(*exprs):
   if len(exprs) == 1:
     from .matrix import Matrix

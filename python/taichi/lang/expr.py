@@ -281,7 +281,7 @@ class Expr:
   def to_numpy(self):
     from .meta import tensor_to_numpy
     import numpy as np
-    arr = np.empty(shape=self.shape(), dtype=np.float32)
+    arr = np.empty(shape=self.shape(), dtype=to_numpy_type(self.snode().data_type()))
     tensor_to_numpy(self, arr)
     return arr
 

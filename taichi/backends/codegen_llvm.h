@@ -1162,7 +1162,6 @@ public:
       auto ip = builder->saveIP();
       builder->SetInsertPoint(entry);
 
-      auto body_bb = BasicBlock::Create(*llvm_context, "loop_body", func);
       // per-leaf-block for loop
       auto loop_index =
           create_entry_block_alloca(Type::getInt32Ty(*llvm_context));
@@ -1182,8 +1181,9 @@ public:
       } else {
         builder->CreateStore(lower_bound, loop_index);
       }
-      builder->CreateBr(body_bb);
 
+      auto body_bb = BasicBlock::Create(*llvm_context, "loop_body", func);
+      builder->CreateBr(body_bb);
       builder->SetInsertPoint(body_bb);
       // initialize the coordinates
 
@@ -1195,9 +1195,19 @@ public:
                            builder->CreateLoad(loop_index)});
 
       current_coordinates = new_coordinates;
+
+      // Additional compare if non-POT exists
+      bool nonpot = false;
+      if (nonpot) {
+
+      }
+
+      // The real loop body
       stmt->body->accept(this);
 
-      BasicBlock *after_loop = BasicBlock::Create(*llvm_context, "block", func);
+      if (nonpot) {
+
+      }
 
       // body cfg
 
@@ -1211,6 +1221,7 @@ public:
           builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_SLT,
                               builder->CreateLoad(loop_index), upper_bound);
 
+      BasicBlock *after_loop = BasicBlock::Create(*llvm_context, "block", func);
       builder->CreateCondBr(cond, body_bb, after_loop);
 
       builder->SetInsertPoint(after_loop);

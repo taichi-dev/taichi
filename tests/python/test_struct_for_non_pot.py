@@ -5,7 +5,7 @@ def test_non_POT():
   x = ti.var(ti.i32)
   sum = ti.var(ti.i32)
 
-  n = 100
+  n = 65
 
   @ti.layout
   def place():

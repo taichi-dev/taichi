@@ -1161,7 +1161,6 @@ public:
 
       auto ip = builder->saveIP();
       builder->SetInsertPoint(entry);
-      // current_struct_for = for_stmt;
 
       auto body_bb = BasicBlock::Create(*llvm_context, "loop_body", func);
       // per-leaf-block for loop
@@ -1214,9 +1213,7 @@ public:
 
       builder->CreateCondBr(cond, body_bb, after_loop);
 
-      // next cfg
       builder->SetInsertPoint(after_loop);
-
       builder->CreateRetVoid();
       func = old_func;
       builder->restoreIP(ip);

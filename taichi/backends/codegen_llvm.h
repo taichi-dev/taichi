@@ -1197,19 +1197,32 @@ public:
       current_coordinates = new_coordinates;
 
       // Additional compare if non-POT exists
-      bool nonpot = false;
-      if (nonpot) {
+      auto nonpot_cond = tlctx->get_constant(true);
+      auto snode = stmt->snode;
 
+      auto coord_object = RuntimeObject("PhysicalCoordinates", this, builder, new_coordinates);
+      for (int i = 0; i < snode->num_active_indices; i++) {
+        auto j = snode->physical_index_position[i];
+        if (!bit::is_power_of_two(snode->extractors[j].num_elements)) {
+          auto coord = coord_object.get("val", tlctx->get_constant(j));
+          nonpot_cond = builder->CreateAnd(nonpot_cond, builder->CreateICmp(llvm::CmpInst::ICMP_SLT,
+              coord, tlctx->get_constant(snode->extractors[j].num_elements)));
+        }
       }
 
-      // The real loop body
-      stmt->body->accept(this);
-
-      if (nonpot) {
-
+      auto body_bb_tail = BasicBlock::Create(*llvm_context, "loop_body_tail", func);
+      {
+        auto bounded_body_bb = BasicBlock::Create(*llvm_context, "bound_guarded_loop_body", func);
+        builder->CreateCondBr(nonpot_cond, bounded_body_bb, body_bb_tail);
+        builder->SetInsertPoint(bounded_body_bb);
+        // The real loop body
+        stmt->body->accept(this);
+        builder->CreateBr(body_bb_tail);
       }
 
       // body cfg
+
+      builder->SetInsertPoint(body_bb_tail);
 
       if (spmd) {
         create_increment(loop_index, blockDim);

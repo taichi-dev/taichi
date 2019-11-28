@@ -1,11 +1,11 @@
 import taichi as ti
 
 @ti.all_archs
-def test_non_POT():
+def test_1d():
   x = ti.var(ti.i32)
   sum = ti.var(ti.i32)
 
-  n = 65
+  n = 100
 
   @ti.layout
   def place():

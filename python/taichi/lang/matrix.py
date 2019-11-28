@@ -3,7 +3,6 @@ from . import impl
 import copy
 import numbers
 
-
 def broadcast_if_scalar(func):
   def broadcasted(self, other, *args, **kwargs):
     if isinstance(other, expr.Expr) or isinstance(other, numbers.Number):
@@ -387,8 +386,13 @@ class Matrix:
     assert self.m == 1 and other.m == 1
     return (self.transposed(self) @ other).subscript(0, 0)
 
-  '''
-  def clear(self):
-    from .meta import clear_matrix
-    clear_matrix(self)
-  '''
+  def fill(self, val):
+    if isinstance(val, numbers.Number):
+      for e in self.entries:
+        e.fill(val)
+    elif isinstance(val, Matrix):
+      assert val.n == self.n
+      assert val.m == self.m
+      for i in range(self.n):
+        for j in range(self.m):
+          self.get_entry(i, j).fill(val[i, j])

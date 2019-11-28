@@ -226,6 +226,11 @@ class Expr:
     assert node
     node.clear_data()
 
+  def fill(self, val):
+    # TODO: avoid too many template instantiations
+    from .meta import fill_tensor
+    fill_tensor(self, val)
+
   def atomic_add(self, other):
     taichi_lang_core.expr_atomic_add(self.ptr, other.ptr)
 

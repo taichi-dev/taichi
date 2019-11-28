@@ -95,12 +95,12 @@ def test_numpy_3d():
   for i in range(n):
     for j in range(m):
       for k in range(p):
-        a[i, j] = i * j
+        a[i, j, k] = i * j * (k + 1)
 
   test_numpy(a)
 
   for i in range(n):
     for j in range(m):
       for k in range(p):
-        assert a[i, j, k] == i * j + i + j + k * 2
+        assert a[i, j, k] == i * j * (k + 1) + i + j + k * 2
 

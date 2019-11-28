@@ -640,6 +640,7 @@ class Expression {
  public:
   Stmt *stmt;
   std::string tb;
+  std::map<std::string, std::string> attributes;
 
   Expression() {
     stmt = nullptr;
@@ -656,6 +657,18 @@ class Expression {
   }
 
   virtual ~Expression() {
+  }
+
+  void set_attribute(const std::string &key, const std::string &value) {
+    attributes[key] = value;
+  }
+
+  std::string get_attribute(const std::string &key) {
+    if (attributes.find(key) == attributes.end()) {
+      TC_ERROR("Attribute {} not found.", key);
+    } else {
+      return attributes[key];
+    }
   }
 };
 
@@ -765,6 +778,14 @@ class Expr {
   }
 
   void set_grad(const Expr &o);
+
+  void set_attribute(const std::string &key, const std::string &value) {
+    expr->set_attribute(key, value);
+  }
+
+  std::string get_attribute(const std::string &key) {
+    return expr->get_attribute(key);
+  }
 };
 
 class ExprGroup {

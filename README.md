@@ -30,6 +30,22 @@ python3 -m pip install taichi-nightly-cuda-10-1
 
 ## [Examples](https://github.com/yuanming-hu/taichi/tree/master/examples)
 ## Updates
+- (Nov 28, 2019) v0.2.0 released.
+   - More friendly syntax error when passing non-compile-time-constant values to `ti.static`
+   - Systematically resolved the variable name resolution [issue](https://github.com/yuanming-hu/taichi/issues/282)
+   - Better interaction with numpy:
+     - `numpy` arrays passed as a `ti.ext_arr()`
+     - `i32/f32/i64/f64` data type support for numpy
+     - Multidimensional numpy arrays now supported in Taichi kernels
+     - `Tensor.to_numpy()` and `Tensor.from_numpy(numpy.ndarray)` supported
+     - Corresponding PyTorch tensor interaction will be supported very soon. Now only 1D f32 PyTorch tensors supproted when using `ti.ext_arr()`. Please use numpy arrays as intermediate buffers for now
+   - Indexing arrays with an incorrect number of indices now results in a syntax error
+   - `Tensor.dim()` to retrieve the dimensionality of a global tensor
+   - `Tensor.shape()` to retrieve the shape of a global tensor
+   - `struct-for` (e.g. `for i, j in x`) now supports iterating over tensors with non power-of-two dimensions
+   - `Tensor.fill(x)` to set all entries to `x`
+   - `Matrix.fill(x)` to set all entries to `x`, where `x` can be a scalar or `ti.Matrix` of the same size 
+     
 - (Nov 27, 2019) v0.1.5 released. 
    - [Better modular programming support](https://github.com/yuanming-hu/taichi/issues/282)
    - Disalow the use of `ti.static` outside Taichi kernels

@@ -16,4 +16,3 @@ def tensor_to_numpy(tensor: ti.template(), arr: ti.ext_arr()):
 def numpy_to_tensor(arr: ti.ext_arr(), tensor: ti.template()):
   for I in ti.grouped(tensor):
     tensor[I] = arr[I]
-

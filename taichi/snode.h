@@ -5,16 +5,13 @@
 
 TLANG_NAMESPACE_BEGIN
 
+struct Matrix;
 class Expr;
-
-TC_FORCE_INLINE int32 constexpr operator"" _bits(unsigned long long a) {
-  return 1 << a;
-}
+class Kernel;
 
 struct IndexExtractor {
-  int start, num_bits;  //, dest_offset;
+  int start, num_bits;
   int acc_offset;
-  int dimension;
 
   TC_IO_DEF(start, num_bits, acc_offset);
 
@@ -25,21 +22,15 @@ struct IndexExtractor {
   IndexExtractor() {
     start = 0;
     num_bits = 0;
-    // dest_offset = 0;
     active = false;
-    dimension = 1;
     acc_offset = 0;
   }
 
   void activate(int num_bits) {
     active = true;
     this->num_bits = num_bits;
-    dimension = 1 << num_bits;
   }
 };
-
-struct Matrix;
-class Expr;
 
 class Index {
  public:
@@ -52,7 +43,6 @@ class Index {
   }
 };
 
-class Kernel;
 // "Structural" nodes
 class SNode {
  public:
@@ -209,14 +199,6 @@ class SNode {
 
   SNode &place(Expr &expr);
 
-  /*
-  SNode &place_verbose(Expr &expr) {
-    place(expr);
-    ch.back()->verbose();
-    return *this;
-  }
-  */
-
   SNode &indirect(const Index &expr, int n) {
     auto &child = insert_children(SNodeType::indirect);
     child.index_id = expr.value;
@@ -341,10 +323,7 @@ class SNode {
     return 1 << total_num_bits;
   }
 
-  int num_elements_along_axis(int i) const {
-    // TODO: non-POT
-    return 1 << taken_bits[i];
-  }
+  int num_elements_along_axis(int i) const;
 
   void set_kernel_args(Kernel *kernel, int i, int j, int k, int l);
 

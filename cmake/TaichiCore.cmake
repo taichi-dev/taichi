@@ -3,13 +3,18 @@ set(CORE_LIBRARY_NAME taichi_core)
 include(cmake/PythonNumpyPybind11.cmake)
 
 file(GLOB TAICHI_CORE_SOURCE
-        "examples/cpp/*.cpp"
         "taichi/*/*/*/*.cpp" "taichi/*/*/*.cpp" "taichi/*/*.cpp" "taichi/*.cpp"
-        "taichi/*/*/*/*.h" "taichi/*/*/*.h" "taichi/*/*.h" "taichi/*.h")
+        "taichi/*/*/*/*.h" "taichi/*/*/*.h" "taichi/*/*.h" "taichi/*.h" "external/xxhash/*.c")
 
-file(GLOB_RECURSE PROJECT_SOURCES "lang/headers/*.h" "external/xxhash/*.c" "tests/cpp/*.cpp" "lang/cpp_examples/*.cpp")
+option(BUILD_CPP_EXAMPLES "Build legacy C++ examples" OFF)
 
-add_library(${CORE_LIBRARY_NAME} SHARED ${TAICHI_CORE_SOURCE} ${PROJECT_SOURCES} ${SPGridSource})
+if (BUILD_CPP_EXAMPLES)
+    file(GLOB_RECURSE CPP_EXAMPLES "examples/cpp/*.cpp")
+else()
+    set(CPP_EXAMPLES "")
+endif()
+
+add_library(${CORE_LIBRARY_NAME} SHARED ${TAICHI_CORE_SOURCE} ${PROJECT_SOURCES} ${CPP_EXAMPLES})
 
 if (APPLE)
 # Ask OS X to minic Linux dynamic linking behavior

@@ -1,5 +1,3 @@
-from .core import taichi_lang_core
-
 class SNode:
   def __init__(self, ptr):
     self.ptr = ptr

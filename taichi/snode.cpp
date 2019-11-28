@@ -191,6 +191,10 @@ int64 SNode::read_int(int i, int j, int k, int l) {
   }
 }
 
+int SNode::num_elements_along_axis(int i) const {
+  return extractors[i].start + extractors[i].num_bits;
+}
+
 void SNode::set_kernel_args(Kernel *kernel, int i, int j, int k, int l) {
   if (num_active_indices >= 1)
     kernel->set_arg_int(0, i);

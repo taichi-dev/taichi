@@ -1163,11 +1163,11 @@ class ExternalPtrStmt : public Stmt {
     for (int i = 0; i < (int)base_ptrs.size(); i++) {
       TC_ASSERT(base_ptrs[i] != nullptr);
       TC_ASSERT(base_ptrs[i]->is<ArgLoadStmt>());
-      // auto arg_load = base_ptrs[i]->as<ArgLoadStmt>();
-      // TODO: determine the type of external tensor
+    }
+    for (int i = 0; i < (int)base_ptrs.size(); i++) {
+      add_operand(this->base_ptrs[i]);
     }
     for (int i = 0; i < (int)indices.size(); i++) {
-      add_operand(this->base_ptrs[i]);
       add_operand(this->indices[i]);
     }
     width() = base_ptrs.size();

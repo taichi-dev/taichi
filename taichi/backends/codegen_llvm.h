@@ -1023,8 +1023,6 @@ public:
     int num_indices = stmt->indices.size();
     std::vector<llvm::Value *> sizes(num_indices);
 
-    TC_P(num_indices);
-
     for (int i = 0; i < num_indices; i++) {
       auto raw_arg =
           builder->CreateCall(get_runtime_function("Context_get_extra_args"),
@@ -1040,9 +1038,7 @@ public:
 
     auto linear_index = tlctx->get_constant(0);
     for (int i = 0; i < num_indices; i++) {
-      if (i > 0) {
-        linear_index = builder->CreateMul(linear_index, sizes[i - 1]);
-      }
+      linear_index = builder->CreateMul(linear_index, sizes[i]);
       linear_index = builder->CreateAdd(linear_index,
           stmt->indices[i]->value);
     }

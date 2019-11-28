@@ -354,9 +354,9 @@ class IRPrinter : public IRVisitor {
 
   void visit(ExternalPtrStmt *stmt) override {
     std::string s = "<";
-    for (int i = 0; i < (int)stmt->indices.size(); i++) {
+    for (int i = 0; i < (int)stmt->base_ptrs.size(); i++) {
       s += fmt::format("{}", stmt->base_ptrs[i]->name());
-      if (i + 1 < (int)stmt->indices.size()) {
+      if (i + 1 < (int)stmt->base_ptrs.size()) {
         s += ", ";
       }
     }

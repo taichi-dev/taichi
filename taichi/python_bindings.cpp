@@ -351,7 +351,7 @@ void export_lang(py::module &m) {
   m.def("get_version_patch", get_version_patch);
   m.def("test_printf", [] {printf("test_printf\n");});
   m.def("test_logging", [] {TC_INFO("test_logging\n");});
-  m.def("trigger_crash", [] {*(int *)(nullptr)=0;});
+  m.def("trigger_crash", [] {*(int *)(1)=0;});
 }
 
 TC_NAMESPACE_END

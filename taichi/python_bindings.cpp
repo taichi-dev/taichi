@@ -105,8 +105,10 @@ void export_lang(py::module &m) {
       .def("has_grad", &SNode::has_grad)
       .def("write_int", &SNode::write_int)
       .def("write_float", &SNode::write_float)
+      .def("get_num_elements_along_axis", &SNode::num_elements_along_axis)
       .def("num_active_indices",
            [](SNode *snode) { return snode->num_active_indices; });
+
 
   py::class_<Kernel>(m, "Kernel")
       .def("set_arg_int", &Kernel::set_arg_int)

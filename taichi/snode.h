@@ -341,6 +341,11 @@ class SNode {
     return 1 << total_num_bits;
   }
 
+  int num_elements_along_axis(int i) const {
+    // TODO: non-POT
+    return 1 << taken_bits[i];
+  }
+
   void set_kernel_args(Kernel *kernel, int i, int j, int k, int l);
 
   llvm::Type *get_body_type();

@@ -266,6 +266,13 @@ class Expr:
       self.materialize_layout_callback()
     return self.snode().dim()
 
+  def shape(self):
+    dim = self.dim()
+    s = []
+    for i in range(dim):
+      s.append(self.snode().get_shape(i))
+    return tuple(s)
+
 def make_expr_group(*exprs):
   if len(exprs) == 1:
     from .matrix import Matrix

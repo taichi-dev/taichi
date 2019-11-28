@@ -13,3 +13,4 @@ def test_3d():
     ti.root.dense(ti.i, n).dense(ti.j, m).dense(ti.k, p).place(val)
 
   assert val.dim() == 3
+  print(val.shape())

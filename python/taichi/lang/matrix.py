@@ -395,4 +395,4 @@ class Matrix:
       assert val.m == self.m
       for i in range(self.n):
         for j in range(self.m):
-          self.get_entry(i, j).fill(val[i, j])
+          self.get_entry(i, j).fill(val.get_entry(i, j))

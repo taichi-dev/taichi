@@ -40,11 +40,25 @@ python3 -m pip install taichi-nightly-cuda-10-1
      - `Tensor.to_numpy()` and `Tensor.from_numpy(numpy.ndarray)` supported
      - Corresponding PyTorch tensor interaction will be supported very soon. Now only 1D f32 PyTorch tensors supproted when using `ti.ext_arr()`. Please use numpy arrays as intermediate buffers for now
    - Indexing arrays with an incorrect number of indices now results in a syntax error
-   - `Tensor.dim()` to retrieve the dimensionality of a global tensor
-   - `Tensor.shape()` to retrieve the shape of a global tensor
+   - Tensor shape reflection:
+     - `Tensor.dim()` to retrieve the dimensionality of a global tensor
+     - `Tensor.shape()` to retrieve the shape of a global tensor
+     - Note the above queries will cause data structures to be materialized
    - `struct-for` (e.g. `for i, j in x`) now supports iterating over tensors with non power-of-two dimensions
    - `Tensor.fill(x)` to set all entries to `x`
    - `Matrix.fill(x)` to set all entries to `x`, where `x` can be a scalar or `ti.Matrix` of the same size 
+   - `struct-for` with grouped indices for better metaprogramming, especially in writing dimensionality-independent code, in e.g. physical simulation:
+```python
+for I in ti.grouped(x): # I is a vector of size x.dim() and data type i32
+  x[I] = 0
+  
+# If tensor x is 2D 
+for I in ti.grouped(x): # I is a vector of size x.dim() and data type i32
+  y[I + ti.Vector([0, 1])] = I[0] + I[1]
+# is equivalent to
+for i, j in x:
+  y[i, j + 1] = i + j
+```
      
 - (Nov 27, 2019) v0.1.5 released. 
    - [Better modular programming support](https://github.com/yuanming-hu/taichi/issues/282)

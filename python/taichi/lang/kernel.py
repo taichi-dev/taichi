@@ -286,15 +286,13 @@ def kernel(foo):
 
 
 def classkernel(foo):
-  from .impl import FrameBacktraceGuard
   primal = Kernel(foo, False, classkernel=True)
   adjoint = Kernel(foo, True, classkernel=True)
   def decorated(*args, __gradient=False, **kwargs):
-    with FrameBacktraceGuard(1):
-      if __gradient:
-        adjoint(*args, **kwargs)
-      else:
-        primal(*args, **kwargs)
+    if __gradient:
+      adjoint(*args, **kwargs)
+    else:
+      primal(*args, **kwargs)
 
     import taichi as ti
     runtime = ti.get_runtime()

@@ -123,8 +123,7 @@ def complex_kernel(func):
     if get_runtime().target_tape:
       get_runtime().target_tape.insert(decorated, args)
     try:
-      with FrameBacktraceGuard(0):
-        func(*args, **kwargs)
+      func(*args, **kwargs)
     finally:
       get_runtime().inside_complex_kernel = False
   decorated.grad = None
@@ -133,8 +132,7 @@ def complex_kernel(func):
 def complex_kernel_grad(primal):
   def decorator(func):
     def decorated(*args, **kwargs):
-      with FrameBacktraceGuard(2):
-        func(*args, **kwargs)
+      func(*args, **kwargs)
     primal.grad = decorated
     return decorated
   return decorator

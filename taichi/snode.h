@@ -12,6 +12,7 @@ class Kernel;
 struct IndexExtractor {
   int start, num_bits;
   int acc_offset;
+  int num_elements;
 
   TC_IO_DEF(start, num_bits, acc_offset);
 
@@ -24,6 +25,7 @@ struct IndexExtractor {
     num_bits = 0;
     active = false;
     acc_offset = 0;
+    num_elements = 1;
   }
 
   void activate(int num_bits) {
@@ -54,7 +56,8 @@ class SNode {
   int physical_index_position[max_num_indices];
   // physical indices are (ti.i, ti.j, ti.k, ti.l, ...)
   // physical_index_position[i] =
-  // the virtual index position of the i^th physical index
+  // which physical index does the i-th virtual index (the one exposed to programmers) refer to?
+  // i.e. in a[i, j, k], "i", "j", and "k" are virtual indices.
 
   static int counter;
   int id;

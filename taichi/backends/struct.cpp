@@ -46,6 +46,7 @@ void StructCompiler::infer_snode_properties(SNode &snode) {
     auto &ch = snode.ch[ch_id];
     ch->parent = &snode;
     for (int i = 0; i < max_num_indices; i++) {
+      ch->extractors[i].num_elements *= snode.extractors[i].num_elements;
       bool found = false;
       for (int k = 0; k < max_num_indices; k++) {
         if (snode.physical_index_position[k] == i) {

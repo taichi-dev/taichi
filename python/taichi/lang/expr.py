@@ -283,7 +283,7 @@ def make_var_vector(size):
 def make_expr_group(*exprs):
   if len(exprs) == 1:
     from .matrix import Matrix
-    if (isinstance(exprs[0], list) or isinstance(exprs[0], tuple)):
+    if isinstance(exprs[0], (list, tuple)):
       exprs = exprs[0]
     elif isinstance(exprs[0], Matrix):
       mat = exprs[0]

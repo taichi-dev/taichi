@@ -29,16 +29,6 @@ SNode &SNode::create_node(std::vector<Index> indices, std::vector<int> sizes,
   if (sizes.size() == 1) {
     sizes = std::vector<int>(indices.size(), sizes[0]);
   }
-  /*
-  bool all_one = true;
-  for (auto s : sizes) {
-    if (s != 1) {
-      all_one = false;
-    }
-  }
-  if (all_one)
-    return *this;  // do nothing
-  */
 
   if (type == SNodeType::hash)
     TC_ASSERT_INFO(depth == 0,
@@ -50,9 +40,7 @@ SNode &SNode::create_node(std::vector<Index> indices, std::vector<int> sizes,
     auto s = sizes[i];
     if (!bit::is_power_of_two(s)) {
       auto promoted_s = bit::least_pot_bound(s);
-      TC_WARN("Non-power-of-two node size {} promoted to {}. Pay attention to "
-              "structural for's.",
-              s, promoted_s);
+      TC_WARN("Non-power-of-two node size {} promoted to {}.", s, promoted_s);
       s = promoted_s;
     }
     sizes[i] = s;
@@ -62,6 +50,7 @@ SNode &SNode::create_node(std::vector<Index> indices, std::vector<int> sizes,
   for (int i = 0; i < (int)indices.size(); i++) {
     auto &ind = indices[i];
     new_node.extractors[ind.value].activate(bit::log2int(sizes[i]));
+    new_node.extractors[ind.value].num_elements = sizes[i];
   }
   return new_node;
 }
@@ -192,7 +181,7 @@ int64 SNode::read_int(int i, int j, int k, int l) {
 }
 
 int SNode::num_elements_along_axis(int i) const {
-  return extractors[i].start + extractors[i].num_bits;
+  return extractors[physical_index_position[i]].num_elements;
 }
 
 void SNode::set_kernel_args(Kernel *kernel, int i, int j, int k, int l) {

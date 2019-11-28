@@ -288,6 +288,7 @@ def kernel(foo):
 def classkernel(foo):
   primal = Kernel(foo, False, classkernel=True)
   adjoint = Kernel(foo, True, classkernel=True)
+
   def decorated(*args, __gradient=False, **kwargs):
     if __gradient:
       adjoint(*args, **kwargs)

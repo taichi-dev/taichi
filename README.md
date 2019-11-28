@@ -48,7 +48,7 @@ python3 -m pip install taichi-nightly-cuda-10-1
    - Handy tensor filling: [[examples]](https://github.com/yuanming-hu/taichi/blob/master/tests/python/test_fill.py)
      - `Tensor.fill(x)` to set all entries to `x`
      - `Matrix.fill(x)` to set all entries to `x`, where `x` can be a scalar or `ti.Matrix` of the same size 
-   - Shinked package size
+   - Reduced python package size
    - `struct-for` with grouped indices for better metaprogramming, especially in writing dimensionality-independent code, in e.g. physical simulation: [[examples]](https://github.com/yuanming-hu/taichi/blob/master/tests/python/test_grouped.py)
 ```python
 for I in ti.grouped(x): # I is a vector of size x.dim() and data type i32

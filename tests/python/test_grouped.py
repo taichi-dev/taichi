@@ -14,7 +14,6 @@ def test_vector_index():
 
   @ti.kernel
   def test():
-    # for I in ti.grouped(val):
     for i in range(n):
       for j in range(m):
         for k in range(p):
@@ -27,4 +26,30 @@ def test_vector_index():
     for j in range(m):
       for k in range(p):
         assert val[i, j, k] == i + j * 2 + k * 3
+
+@ti.all_archs
+def test_grouped():
+  return
+  val = ti.var(ti.i32)
+
+  n = 4
+  m = 7
+  p = 11
+
+  @ti.layout
+  def values():
+    ti.root.dense(ti.i, n).dense(ti.j, m).dense(ti.k, p).place(val)
+
+  @ti.kernel
+  def test():
+    for I in ti.grouped(val):
+      val[I] = I[0] + I[1] * 2 + I[2] * 3
+
+  test()
+
+  for i in range(n):
+    for j in range(m):
+      for k in range(p):
+        assert val[i, j, k] == i + j * 2 + k * 3
+
 

@@ -114,6 +114,7 @@ STRUCT_FIELD_ARRAY(PhysicalCoordinates, val);
 struct Context {
   void *buffer;
   ContextArgType args[taichi_max_num_args];
+  int32 extra_args[taichi_max_num_args][taichi_max_num_indices];
   void *leaves;
   int num_leaves;
   void *cpu_profiler;
@@ -123,6 +124,10 @@ struct Context {
 STRUCT_FIELD_ARRAY(Context, args);
 STRUCT_FIELD(Context, runtime);
 STRUCT_FIELD(Context, buffer);
+
+int32 Context_get_extra_args(Context *ctx, int32 i, int32 j) {
+  return ctx->extra_args[i][j];
+}
 
 #include "atomic.h"
 

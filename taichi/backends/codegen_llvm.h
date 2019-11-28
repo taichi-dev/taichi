@@ -1017,12 +1017,37 @@ public:
 
   void visit(ExternalPtrStmt *stmt) override {
     TC_ASSERT(stmt->width() == 1);
-    TC_ASSERT(stmt->indices.size() == 1);
+
+    auto argload = stmt->base_ptrs[0]->as<ArgLoadStmt>();
+    auto arg_id = argload->arg_id;
+    int num_indices = stmt->indices.size();
+    std::vector<llvm::Value *> sizes(num_indices);
+
+    TC_P(num_indices);
+
+    for (int i = 0; i < num_indices; i++) {
+      auto raw_arg =
+          builder->CreateCall(get_runtime_function("Context_get_extra_args"),
+                              {get_context(), tlctx->get_constant(arg_id),
+                               tlctx->get_constant(i)});
+      sizes[i] = raw_arg;
+    }
+
     auto dt = stmt->ret_type.data_type;
     auto base = builder->CreateBitCast(
         stmt->base_ptrs[0]->value,
         llvm::PointerType::get(tlctx->get_data_type(dt), 0));
-    stmt->value = builder->CreateGEP(base, stmt->indices[0]->value);
+
+    auto linear_index = tlctx->get_constant(0);
+    for (int i = 0; i < num_indices; i++) {
+      if (i > 0) {
+        linear_index = builder->CreateMul(linear_index, sizes[i - 1]);
+      }
+      linear_index = builder->CreateAdd(linear_index,
+          stmt->indices[i]->value);
+    }
+
+    stmt->value = builder->CreateGEP(base, linear_index);
   }
 
   BasicBlock *func_body_bb;

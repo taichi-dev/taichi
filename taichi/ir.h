@@ -1228,7 +1228,7 @@ class ExternalTensorExpression : public Expression {
   }
 
   std::string serialize() override {
-    return fmt::format("{}d_extarr", dim);
+    return fmt::format("{}d_ext_arr", dim);
   }
 
   void flatten(VecStatement &ret) override {
@@ -2002,7 +2002,7 @@ class GlobalLoadExpression : public Expression {
   }
 
   std::string serialize() override {
-    return "load " + ptr.serialize();
+    return "gbl load " + ptr.serialize();
   }
 
   void flatten(VecStatement &ret) override {

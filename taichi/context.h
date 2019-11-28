@@ -10,6 +10,7 @@ struct Context {
   using Buffer = void *;
   Buffer buffers[1];
   uint64 args[max_num_args];
+  int32 extra_args[max_num_args][max_num_indices];
 
   void *leaves;
   int num_leaves;

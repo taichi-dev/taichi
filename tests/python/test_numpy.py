@@ -40,3 +40,36 @@ def test_numpy_i32():
 @ti.all_archs
 def test_numpy_i64():
   with_data_type(np.int64)
+
+@ti.all_archs
+def test_numpy_2d():
+  val = ti.var(ti.i32)
+  ti.cfg.print_ir = True
+  ti.get_runtime().print_preprocessed = True
+
+  n = 4
+  m = 7
+
+  @ti.layout
+  def values():
+    ti.root.dense(ti.i, n).dense(ti.j, m).place(val)
+
+  @ti.kernel
+  def test_numpy(arr: ti.ext_arr()):
+    for i in range(n):
+      for j in range(m):
+        arr[i, j] += i + j
+
+  a = np.empty(shape=(n, m), dtype=np.int32)
+
+  for i in range(n):
+    for j in range(m):
+      a[i, j] = i * j
+
+  test_numpy(a)
+
+  for i in range(n):
+    for j in range(m):
+      print(i, j, a[i, j])
+      assert a[i, j] == i * j + i + j
+

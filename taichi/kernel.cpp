@@ -106,6 +106,11 @@ void Kernel::set_arg_float(int i, float64 d) {
   }
 }
 
+void Kernel::set_extra_arg_int(int i, int j, int32 d) {
+  program.context.extra_args[i][j] = d;
+}
+
+
 void Kernel::set_arg_int(int i, int64 d) {
   TC_ASSERT_INFO(args[i].is_nparray == false,
                  "Setting scalar value to numpy array argument is not allowed");

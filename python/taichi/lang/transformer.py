@@ -354,13 +354,13 @@ if 1:
       arg_decls = []
       for i, arg in enumerate(args.args):
         if isinstance(self.func.arguments[i], ti.template):
-          continue # skip template parameters
-        arg_init = self.parse_stmt('x = ti.decl_arg(0, 0)')
-        arg_init.targets[0].id = arg.arg
+          continue
         import taichi as ti
         if isinstance(self.func.arguments[i], ti.ext_arr):
-          ty = self.parse_expr("'array'")
+          arg_init = self.parse_stmt('x = ti.decl_ext_arr_arg(0, 0)')
+          arg_init.targets[0].id = arg.arg
           array_dt = self.arg_features[i][0]
+          array_dim = self.arg_features[i][1]
           import numpy as np
           if array_dt == np.float32:
             dt = self.parse_expr('ti.f32')
@@ -372,12 +372,15 @@ if 1:
             dt = self.parse_expr('ti.i64')
           else:
             assert False
+          arg_init.value.args[0] = dt
+          arg_init.value.args[1] = self.parse_expr("{}".format(array_dim))
+          arg_decls.append(arg_init)
         else:
-          ty = self.parse_expr("'scalar'")
+          arg_init = self.parse_stmt('x = ti.decl_scalar_arg(0)')
+          arg_init.targets[0].id = arg.arg
           dt = arg.annotation
-        arg_init.value.args[0] = ty
-        arg_init.value.args[1] = dt
-        arg_decls.append(arg_init)
+          arg_init.value.args[0] = dt
+          arg_decls.append(arg_init)
       node.body = arg_decls + node.body
       # remove original args
       node.args.args = []

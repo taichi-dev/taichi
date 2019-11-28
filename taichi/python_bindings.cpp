@@ -110,6 +110,7 @@ void export_lang(py::module &m) {
 
   py::class_<Kernel>(m, "Kernel")
       .def("set_arg_int", &Kernel::set_arg_int)
+      .def("set_extra_arg_int", &Kernel::set_extra_arg_int)
       .def("set_arg_float", &Kernel::set_arg_float)
       .def("set_arg_nparray", &Kernel::set_arg_nparray)
       .def("__call__", &Kernel::operator());

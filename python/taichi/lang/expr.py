@@ -273,6 +273,16 @@ class Expr:
       s.append(self.snode().get_shape(i))
     return tuple(s)
 
+  def to_numpy(self):
+    from .meta import tensor_to_numpy
+    import numpy as np
+    arr = np.empty(shape=self.shape(), dtype=np.float32)
+    tensor_to_numpy(self, arr)
+    return arr
+
+  def from_numpy(self):
+    pass
+
 def make_var_vector(size):
   import taichi as ti
   exprs = []

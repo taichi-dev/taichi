@@ -70,3 +70,37 @@ def test_numpy_2d():
     for j in range(m):
       assert a[i, j] == i * j + i + j
 
+
+@ti.all_archs
+def test_numpy_3d():
+  val = ti.var(ti.i32)
+
+  n = 4
+  m = 7
+  p = 11
+
+  @ti.layout
+  def values():
+    ti.root.dense(ti.i, n).dense(ti.j, m).dense(ti.k, p).place(val)
+
+  @ti.kernel
+  def test_numpy(arr: ti.ext_arr()):
+    for i in range(n):
+      for j in range(m):
+        for k in range(p):
+          arr[i, j, k] += i + j + k * 2
+
+  a = np.empty(shape=(n, m, p), dtype=np.int32)
+
+  for i in range(n):
+    for j in range(m):
+      for k in range(p):
+        a[i, j] = i * j
+
+  test_numpy(a)
+
+  for i in range(n):
+    for j in range(m):
+      for k in range(p):
+        assert a[i, j, k] == i * j + i + j + k * 2
+

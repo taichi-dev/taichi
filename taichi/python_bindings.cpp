@@ -132,8 +132,10 @@ void export_lang(py::module &m) {
 
   py::class_<ExprGroup>(m, "ExprGroup")
       .def(py::init<>())
+      .def("size", [](ExprGroup *eg) {return eg->exprs.size(); })
       .def("push_back", &ExprGroup::push_back)
       .def("serialize", &ExprGroup::serialize);
+
   py::class_<Stmt>(m, "Stmt");
   py::class_<Program::KernelProxy>(m, "KernelProxy")
       .def("define",
@@ -354,6 +356,8 @@ void export_lang(py::module &m) {
   m.def("test_printf", [] {printf("test_printf\n");});
   m.def("test_logging", [] {TC_INFO("test_logging\n");});
   m.def("trigger_crash", [] {*(int *)(1)=0;});
+  m.def("get_max_num_indices", [] {return max_num_indices;});
+  m.def("get_max_num_args", [] {return max_num_args;});
 }
 
 TC_NAMESPACE_END

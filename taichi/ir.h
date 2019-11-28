@@ -663,11 +663,11 @@ class Expression {
     attributes[key] = value;
   }
 
-  std::string get_attribute(const std::string &key) {
-    if (attributes.find(key) == attributes.end()) {
+  std::string get_attribute(const std::string &key) const {
+    if (auto it = attributes.find(key); it == attributes.end()) {
       TC_ERROR("Attribute {} not found.", key);
     } else {
-      return attributes[key];
+      return it->second;
     }
   }
 };
@@ -783,7 +783,7 @@ class Expr {
     expr->set_attribute(key, value);
   }
 
-  std::string get_attribute(const std::string &key) {
+  std::string get_attribute(const std::string &key) const {
     return expr->get_attribute(key);
   }
 };
@@ -1246,6 +1246,7 @@ class ExternalTensorExpression : public Expression {
 
   ExternalTensorExpression(const DataType &dt, int dim, int arg_id)
       : dt(dt), dim(dim), arg_id(arg_id) {
+    set_attribute("dim", std::to_string(dim));
   }
 
   std::string serialize() override {
@@ -1273,6 +1274,11 @@ class GlobalVariableExpression : public Expression {
     snode = nullptr;
     has_ambient = false;
     is_primal = true;
+  }
+
+  void set_snode(SNode *snode) {
+    this->snode = snode;
+    set_attribute("dim", std::to_string(snode->num_active_indices));
   }
 
   GlobalVariableExpression(SNode *snode) : snode(snode) {

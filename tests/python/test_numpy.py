@@ -104,3 +104,26 @@ def test_numpy_3d():
       for k in range(p):
         assert a[i, j, k] == i * j * (k + 1) + i + j + k * 2
 
+
+@ti.must_throw(AssertionError)
+def test_numpy_3d():
+  val = ti.var(ti.i32)
+
+  n = 4
+  m = 7
+  p = 11
+
+  @ti.layout
+  def values():
+    ti.root.dense(ti.i, n).dense(ti.j, m).dense(ti.k, p).place(val)
+
+  @ti.kernel
+  def test_numpy(arr: ti.ext_arr()):
+    for i in range(n):
+      for j in range(m):
+        for k in range(p):
+          arr[i, j] += i + j + k * 2
+
+  a = np.empty(shape=(n, m, p), dtype=np.int32)
+
+  test_numpy(a)

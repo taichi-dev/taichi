@@ -240,6 +240,8 @@ class Kernel:
           assert v.dtype in float32_types, 'Kernel arg supports float/int 32/64 np arrays only'
           tmp = np.ascontiguousarray(v)
           t_kernel.set_arg_nparray(actual_argument_slot, int(tmp.ctypes.data), tmp.nbytes)
+          max_num_indices = taichi_lang_core.get_max_num_indices()
+          assert len(tmp.shape) <= max_num_indices, "External array cannot have > {} indices".format(max_num_indices)
           for i, s in enumerate(tmp.shape):
             t_kernel.set_extra_arg_int(actual_argument_slot, i, s)
           # v[:] = tmp[:]

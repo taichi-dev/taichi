@@ -31,26 +31,25 @@ def atomic_add(a, b):
 
 
 def subscript(value, *indices):
-  try:
-    import numpy as np
-    if isinstance(value, np.ndarray) or isinstance(value, list):
-      return value.__getitem__(*indices)
-  except:
-    pass
+  import numpy as np
+  if isinstance(value, np.ndarray):
+    return value.__getitem__(*indices)
+
   if isinstance(value, tuple) or isinstance(value, list):
     assert len(indices) == 1
     return value[indices[0]]
+
   if len(indices) == 1 and is_taichi_class(indices[0]):
     indices = indices[0].entries
   if is_taichi_class(value):
     return value.subscript(*indices)
   else:
     if isinstance(indices, tuple) and len(indices) == 1 and indices[0] is None:
-      return Expr(
-        taichi_lang_core.subscript(value.ptr, make_expr_group()))
+      indices_expr_group = make_expr_group()
     else:
-      return Expr(
-        taichi_lang_core.subscript(value.ptr, make_expr_group(*indices)))
+      indices_expr_group = make_expr_group(*indices)
+    assert int(value.ptr.get_attribute("dim")) == indices_expr_group.size()
+    return Expr(taichi_lang_core.subscript(value.ptr, indices_expr_group))
 
 
 class PyTaichi:

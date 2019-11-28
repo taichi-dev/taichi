@@ -12,7 +12,7 @@ SNode &SNode::place(Expr &expr_) {
   auto expr = expr_.cast<GlobalVariableExpression>();
   TC_ERROR_UNLESS(expr->snode == nullptr, "This variable has been placed.");
   auto &child = insert_children(SNodeType::place);
-  expr->snode = &child;
+  expr->set_snode(&child);
   child.name = expr->ident.raw_name();
   if (expr->has_ambient) {
     expr->snode->has_ambient = true;

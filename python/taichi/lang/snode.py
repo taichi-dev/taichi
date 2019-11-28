@@ -42,3 +42,6 @@ class SNode:
 
   def data_type(self):
     return self.ptr.data_type()
+
+  def dim(self):
+    return self.ptr.num_active_indices()

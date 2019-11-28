@@ -261,6 +261,11 @@ class Expr:
   def __hash__(self):
     return self.ptr.get_raw_address()
 
+  def dim(self):
+    if not Expr.layout_materialized:
+      self.materialize_layout_callback()
+    return self.snode().dim()
+
 def make_expr_group(*exprs):
   if len(exprs) == 1:
     from .matrix import Matrix

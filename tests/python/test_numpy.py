@@ -70,6 +70,33 @@ def test_numpy_2d():
     for j in range(m):
       assert a[i, j] == i * j + i + j
 
+@ti.all_archs
+def test_numpy_2d_transpose():
+  val = ti.var(ti.i32)
+
+  n = 8
+  m = 8
+
+  @ti.layout
+  def values():
+    ti.root.dense(ti.ij, (n, m)).place(val)
+
+  @ti.kernel
+  def test_numpy(arr: ti.ext_arr()):
+    for i in ti.grouped(val):
+        val[i] = arr[i]
+
+  a = np.empty(shape=(n, m), dtype=np.int32)
+
+  for i in range(n):
+    for j in range(m):
+      a[i, j] = i * j + i * 4
+
+  test_numpy(a.transpose())
+
+  for i in range(n):
+    for j in range(m):
+      assert val[i, j] == i * j + j * 4
 
 @ti.all_archs
 def test_numpy_3d():

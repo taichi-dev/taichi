@@ -17,7 +17,6 @@ def test_POT():
 
 @ti.all_archs
 def test_POT():
-  return
   val = ti.var(ti.i32)
 
   n = 3

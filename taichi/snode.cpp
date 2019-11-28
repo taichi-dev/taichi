@@ -43,7 +43,6 @@ SNode &SNode::create_node(std::vector<Index> indices, std::vector<int> sizes,
       TC_WARN("Non-power-of-two node size {} promoted to {}.", s, promoted_s);
       s = promoted_s;
     }
-    sizes[i] = s;
     TC_ASSERT(bit::is_power_of_two(s));
     new_node.n *= s;
   }

@@ -8,7 +8,7 @@ The Taichi Programming Language
    overview
 
 .. toctree::
-   :caption: Language
+   :caption: Basic Syntax
    :maxdepth: 2
 
    syntax
@@ -16,6 +16,10 @@ The Taichi Programming Language
    type
 
    linalg
+
+.. toctree::
+   :caption: Advanced Programming
+   :maxdepth: 2
 
    compilation
 

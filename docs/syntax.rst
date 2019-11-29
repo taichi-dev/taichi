@@ -11,15 +11,15 @@ Global tensors
 
   * Even when accessing 0-D tensor ``x``, use ``x[None] = 0`` instead of ``x = 0``. Please always use indexing to access entries in tensors.
 
-* For a tensor ``F`` of element ``ti.Matrix``, make sure you first index the tensor dimensions, and then the matrix dimensions: ``F[i, j, k][0, 2]``. (Assuming ``F`` is a 3D tensor with ``ti.Matrix`` of size ``3x3`` as element)
+* For a tensor ``F`` of element ``ti.Matrix``, make sure you first index the tensor dimensions, and then the matrix dimensions: ``F[i, j, k][0, 2]``. (Assuming ``F`` is a 3D tensor with ``ti.Matrix`` of size ``3x3`` as elements)
 * ``ti.Vector`` is simply an alias of ``ti.Matrix``.
-* Tensors values are initially zero.
+* Tensor values are initially zero.
 * Sparse tensors are initially inactive.
 
 Defining your kernels
 ---------------------
 
-Kernel arguments must be type hinted. Kernels can have at most 8 scalar parameters, e.g.,
+Kernel arguments must be type-hinted. Kernels can have at most 8 parameters, e.g.,
 
 .. code-block:: python
 
@@ -43,7 +43,7 @@ Kernel arguments must be type hinted. Kernels can have at most 8 scalar paramete
       for i in x:
         y[i] = x[i]
 
-Bad kernels that won't compile correctly.
+Bad kernels won't compile correctly.
 Compiler support coming soon. Please split them into two kernels for now.
 For example:
 
@@ -122,6 +122,7 @@ For example, a tensor of size `(18, 65)` will be materialized as `(32, 128)`.
 Scalar arithmetics
 -----------------------------------------
 Supported scalar functions:
+
 * ``ti.sin(x)``
 * ``ti.cos(x)``
 * ``ti.cast(x, type)``
@@ -157,7 +158,7 @@ Embedding the language in ``python`` has the following advantages:
   * Package manager (pip). A developed Taichi application and be easily submitted to ``PyPI`` and others can easily set it up with ``pip``.
   * Existing packages. Interacting with other python components (e.g. ``matplotlib`` and ``numpy``) is just trivial.
 
-* The built-in AST manipulation tools in ``python`` allow us to do magical things, as long as the kernel body can be parsed by the ``python`` parser.
+* The built-in AST manipulation tools in ``python`` allow us to do magical things, as long as the kernel body can be parsed by the Python parser.
 
 However, this design decision has drawbacks as well:
 

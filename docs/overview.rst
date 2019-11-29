@@ -1,6 +1,6 @@
 Why new programming language
 ---------------------------------------
-Taichi is a new high-performance programming language for computer graphics applications.
+Taichi is a high-performance programming language for computer graphics applications.
 
 - Performance
 - Productivity

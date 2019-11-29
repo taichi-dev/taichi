@@ -40,7 +40,7 @@ For sparse tensors, the full domain shape will be returned.
 
 Multi-stage programming
 ------------------------------------------
-Using compile-time evaluation will allow certain computation happen when kernels are instantiated.
+Using compile-time evaluation will allow certain computation to happen when kernels are instantiated.
 Such computation has no overhead at runtime.
 
 * Use `ti.static` for compile-time branching (for those who come from C++17, this is `if constexpr <https://en.cppreference.com/w/cpp/language/if>`_.
@@ -88,7 +88,8 @@ When to use for loops with `ti.static`
 
 There are several reasons why `ti.static` for loops should be used.
  - Loop unrolling for performance.
- - Loop over vector/matrix elements. Indices into Taichi matrices must be a compile-time constant. Indexing into taichi tensors can be run-time variables. For example, if ``x`` is a 1-D tesnor of 3D vector, accessed as ``x[tensor_index][matrix index]``. The first index can be variable, yet the second must be a constant. Code for reseting this tensor of vectors should be
+ - Loop over vector/matrix elements. Indices into Taichi matrices must be a compile-time constant. Indexing into taichi tensors can be run-time variables. For example, if ``x`` is a 1-D tensor of 3D vector, accessed as ``x[tensor_index][matrix index]``. The first index can be variable, yet the second must be a constant.
+For example, code for resetting this tensor of vectors should be
 
 .. code-block:: python
 
@@ -96,5 +97,5 @@ There are several reasons why `ti.static` for loops should be used.
    def reset():
      for i in x:
        for j in ti.static(range(3)):
-         # The inner loop must be unrolled since j is a vector index instead of global tensor index.
+         # The inner loop must be unrolled since j is a vector index instead of a global tensor index.
          x[i][j] = 0

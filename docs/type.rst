@@ -1,7 +1,7 @@
-Type System
+Type system
 ===============================================
 
-Supported Types
+Supported types
 ---------------------------------------
 Currently, supported basic types in Taichi are
   - int32 ``ti.i32``;
@@ -16,7 +16,7 @@ Binary operations on different types will give you a promoted type, following th
   - ``f32 + f64 = f64`
   - ``i32 + i64 = i64`
 
-Default Precision
+Default precision
 ---------------------------------------
 
 By default, numerical literals have 32-bit precision.
@@ -32,7 +32,7 @@ Default precisions can be altered using
   ti.get_runtime().set_default_ip(ti.i64)
 
 
-Type Conversion
+Type conversion
 ---------------------------------------
 
 Use ``ti.cast`` to type cast scalar values.

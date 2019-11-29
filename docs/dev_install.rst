@@ -1,7 +1,7 @@
 Developer Installation
 =====================================================
 
-Note this is for the compiler developers of Taichi lang. End users please use the pip packages.
+Note this is for the compiler developers of Taichi lang. End users should use the pip packages instead of building from scratch.
 Supports Ubuntu 14.04/16.04/18.04, ArchLinux, Mac OS X. For NVIDIA GPU support, CUDA 9.0+ is needed. 
 See below for installing CUDA.
 

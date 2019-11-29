@@ -19,7 +19,7 @@ When the function definition script is executed, the ``ti.kernel`` decorator reg
 
 Python Abstract Syntax Tree (AST) Transform
 ---------------------------------------
-The first time the registered function is called, a AST transformer will transform the kernel body
+The first time the registered function is called, an AST transformer will transform the kernel body
 into a Python script, which, when executed, emits a Taichi frontend AST.
 
 Template Instantiation

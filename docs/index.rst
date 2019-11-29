@@ -7,7 +7,6 @@ The Taichi Programming Language
 
    overview
 
-
 .. toctree::
    :caption: Language
    :maxdepth: 2
@@ -19,6 +18,10 @@ The Taichi Programming Language
    linalg
 
    compilation
+
+   meta
+
+   performance
 
 .. toctree::
    :caption: Utilities

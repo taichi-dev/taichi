@@ -6,8 +6,7 @@ Taichi provides metaprogramming infrastructures. Metaprogramming can
 Template metaprogramming
 ------------------------------------------
 
-*
-* Lazy instantiated
+* Lazily instantiated
 * Compile-time evaluation
 
 Grouped indexing

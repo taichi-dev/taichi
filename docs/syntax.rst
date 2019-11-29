@@ -27,7 +27,7 @@ Kernel arguments must be type hinted. Kernels can have at most 8 scalar paramete
     def print_xy(x: ti.i32, y: ti.f32):
       print(x + y)
 
-* Restart the Taichi runtime system (clear memory, destroy all variables and kernels) : ``ti.reset()``
+* Restart the Taichi runtime system (clear memory, destroy all variables and kernels): ``ti.reset()``
 * Right now kernels can have either statements or at most one for loop.
 
 .. code-block:: python
@@ -115,7 +115,7 @@ Functions with multiple return values are not supported now. Use a local variabl
 
 Data layout
 -------------------
-Non-power-of-two tensor dimensions are promoted into powers of two and thus occupy more virtual address space.
+Non-power-of-two tensor dimensions are promoted into powers of two and thus these tensors will occupy more virtual address space.
 For example, a tensor of size `(18, 65)` will be materialized as `(32, 128)`.
 
 
@@ -161,4 +161,8 @@ Embedding the language in ``python`` has the following advantages:
 
 However, this design decision has drawbacks as well:
 
-* Indexing is always needed when accessing elements in tensors, even if the tensor is 0D. Use ``x[None] = 123`` to set the value in ``x`` if ``x`` is 0D. This is because ``x = 123`` will set ``x`` itself (instead of its containing value) to be the constant ``123`` in python syntax, and unfortunately we cannot modify this behavior.
+* Taichi kernels must parse-able by Python parsers. This means Taichi syntax cannot go beyond Taichi syntax.
+
+  * For example, indexing is always needed when accessing elements in Taichi tensors, even if the tensor is 0D. Use ``x[None] = 123`` to set the value in ``x`` if ``x`` is 0D. This is because ``x = 123`` will set ``x`` itself (instead of its containing value) to be the constant ``123`` in python syntax, and, unfortunately, we cannot modify this behavior.
+
+* Python has relatively low performance. This can cause a performance issue when initializing large Taichi tensors with pure python scripts.

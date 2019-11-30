@@ -152,16 +152,23 @@ public:
     local_to_offloaded[stmt] = current_offloaded;
   }
 
-  void visit(LocalLoadStmt *stmt) override {
-    TC_ASSERT(current_offloaded);
+  void test_and_allocate(Stmt *stmt) {
     if (local_to_offloaded[stmt] == current_offloaded) return;
     if (local_to_global.find(stmt) == local_to_global.end()) {
       local_to_global[stmt] = allocate_global(stmt->ret_type);
     }
   }
 
+  void visit(LocalLoadStmt *stmt) override {
+    TC_ASSERT(current_offloaded);
+    TC_ASSERT(stmt->width() == 1);
+    test_and_allocate(stmt->ptr[0].var);
+  }
+
   void visit(LocalStoreStmt *stmt) override {
     TC_ASSERT(current_offloaded);
+    TC_ASSERT(stmt->width() == 1);
+    test_and_allocate(stmt->ptr);
   }
 
   static std::map<Stmt *, std::size_t> run(IRNode *root) {
@@ -176,8 +183,12 @@ void offload(IRNode *root) {
   irpass::typecheck(root);
   irpass::fix_block_parents(root);
   {
+    irpass::print(root);
     auto local_to_global = IdentifyLocalVars::run(root);
     TC_P(local_to_global.size());
+    for (auto i : local_to_global) {
+      TC_P(i.first->id);
+    }
     exit(0);
   }
 }

@@ -392,7 +392,11 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(LoopIndexStmt *stmt) override {
-    print("{} = loop index {}", stmt->name(), stmt->index);
+    print("{}{} = loop index {}", stmt->type_hint(), stmt->name(), stmt->index);
+  }
+
+  void visit(GlobalTemporaryStmt *stmt) override {
+    print("{}{} = global tmp var (offset = {} B)", stmt->type_hint(), stmt->name(), stmt->offset);
   }
 };
 

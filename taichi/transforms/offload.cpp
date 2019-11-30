@@ -180,14 +180,23 @@ public:
 
 class PromoteLocals : public BasicStmtVisitor {
 public:
-  std::map<Stmt *, std::size_t> local_to_global;
+  std::map<Stmt *, std::size_t> local_to_global_offset;
+  std::map<Stmt *, VectorType> local_to_global_vector_type;
 
-  PromoteLocals() {
+  PromoteLocals(std::map<Stmt *, std::size_t> local_to_global_offset): local_to_global_offset(local_to_global_offset) {
     allow_undefined_visitor = true;
   }
 
   void visit(AllocaStmt *stmt) override {
+    VecStatement replacement;
+    auto ret_type = stmt->ret_type;
+    local_to_global_vector_type[stmt] = ret_type;
+    auto ptr = replacement.push_back<GlobalTemporaryStmt>(local_to_global_offset[stmt], ret_type);
+    LaneAttribute<TypedConstant> zeros(std::vector<TypedConstant>(stmt->width(), TypedConstant(stmt->ret_type.data_type)));
+    auto const_zeros = replacement.push_back<ConstStmt>(zeros);
+    replacement.push_back<GlobalStoreStmt>(ptr, const_zeros);
 
+    stmt->parent->replace_with(stmt, replacement);
   }
 
   void visit(LocalLoadStmt *stmt) override {
@@ -196,8 +205,8 @@ public:
   void visit(LocalStoreStmt *stmt) override {
   }
 
-  static void run(IRNode *root) {
-    PromoteLocals pass;
+  static void run(IRNode *root, std::map<Stmt *, std::size_t> local_to_global_offset) {
+    PromoteLocals pass(local_to_global_offset);
     root->accept(&pass);
   }
 };
@@ -210,10 +219,11 @@ void offload(IRNode *root) {
     irpass::print(root);
     auto local_to_global = IdentifyLocalVars::run(root);
     TC_P(local_to_global.size());
-    PromoteLocals::run(root);
     for (auto i : local_to_global) {
       TC_P(i.first->id);
     }
+    PromoteLocals::run(root, local_to_global);
+    irpass::print(root);
     exit(0);
   }
 }

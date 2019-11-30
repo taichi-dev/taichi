@@ -194,6 +194,16 @@ class LoopIndexStmt : public Stmt {
   DEFINE_ACCEPT
 };
 
+class GlobalTemporaryStmt : public Stmt {
+public:
+  std::size_t offset;
+
+  GlobalTemporaryStmt(std::size_t offset, VectorType ret_type): offset(offset)
+    { this->ret_type = ret_type;}
+
+  DEFINE_ACCEPT
+};
+
 // Visits all non-containing statements
 class BasicStmtVisitor : public IRVisitor {
  public:

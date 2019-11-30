@@ -59,3 +59,4 @@ PER_STATEMENT(ClearAllStmt)
 // Offloaded
 PER_STATEMENT(OffloadedStmt)
 PER_STATEMENT(LoopIndexStmt)
+PER_STATEMENT(GlobalTemporaryStmt)

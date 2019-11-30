@@ -110,10 +110,76 @@ class Offloader {
   }
 };
 
+/*
+After offloading, some local variables are accessed across offloaded blocks.
+This pass promote these local variables into global variables.
+
+Steps:
+  1. Traverse offloaded blocks to identify out-of-block local LD/ST
+  2. Create a new offloaded block to fill these variables with 0
+  3. Replace local LD/ST with global LD/ST
+*/
+
+class IdentifyLocalVars : public BasicStmtVisitor {
+public:
+  std::map<Stmt *, std::size_t> local_to_global;
+  std::map<Stmt *, Stmt *> local_to_offloaded;
+  Stmt *current_offloaded;
+  std::size_t global_offset;
+
+  std::size_t allocate_global(VectorType type) {
+    TC_ASSERT(type.width == 1);
+    auto ret = global_offset;
+    global_offset += data_type_size(type.data_type);
+    return ret;
+  }
+
+  IdentifyLocalVars() {
+    allow_undefined_visitor = true;
+    current_offloaded = nullptr;
+    global_offset = 0;
+  }
+
+  void visit(OffloadedStmt *stmt) override {
+    current_offloaded = stmt;
+    if (stmt->body)
+      stmt->body->accept(this);
+    current_offloaded = nullptr;
+  }
+
+  void visit(AllocaStmt *stmt) override {
+    TC_ASSERT(current_offloaded);
+    local_to_offloaded[stmt] = current_offloaded;
+  }
+
+  void visit(LocalLoadStmt *stmt) override {
+    TC_ASSERT(current_offloaded);
+    if (local_to_offloaded[stmt] == current_offloaded) return;
+    if (local_to_global.find(stmt) == local_to_global.end()) {
+      local_to_global[stmt] = allocate_global(stmt->ret_type);
+    }
+  }
+
+  void visit(LocalStoreStmt *stmt) override {
+    TC_ASSERT(current_offloaded);
+  }
+
+  static std::map<Stmt *, std::size_t> run(IRNode *root) {
+    IdentifyLocalVars pass;
+    root->accept(&pass);
+    return pass.local_to_global;
+  }
+};
+
 void offload(IRNode *root) {
   Offloader _(root);
   irpass::typecheck(root);
   irpass::fix_block_parents(root);
+  {
+    auto local_to_global = IdentifyLocalVars::run(root);
+    TC_P(local_to_global.size());
+    exit(0);
+  }
 }
 
 }  // namespace irpass

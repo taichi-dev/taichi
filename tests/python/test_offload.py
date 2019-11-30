@@ -3,8 +3,6 @@ import taichi as ti
 @ti.all_archs
 def test_running_loss():
   return
-  ti.cfg.print_ir = True
-
   steps = 16
 
   total_loss = ti.var(ti.f32)

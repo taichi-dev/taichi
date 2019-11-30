@@ -154,13 +154,13 @@ Embedding the language in ``python`` has the following advantages:
 * Easy to run. No ahead-of-time compilation is needed.
 * This design allows people to reuse existing python infrastructure:
 
-  * IDEs. A python IDE simply works for TaichiLang, with syntax highlighting, checking, and autocomplete.
+  * IDEs. A python IDE mostly works for Taichi with syntax highlighting, syntax checking, and autocomplete.
   * Package manager (pip). A developed Taichi application and be easily submitted to ``PyPI`` and others can easily set it up with ``pip``.
   * Existing packages. Interacting with other python components (e.g. ``matplotlib`` and ``numpy``) is just trivial.
 
 * The built-in AST manipulation tools in ``python`` allow us to do magical things, as long as the kernel body can be parsed by the Python parser.
 
-However, this design decision has drawbacks as well:
+However, this design has drawbacks as well:
 
 * Taichi kernels must parse-able by Python parsers. This means Taichi syntax cannot go beyond Taichi syntax.
 

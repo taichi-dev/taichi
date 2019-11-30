@@ -191,7 +191,6 @@ public:
   void visit(AllocaStmt *stmt) override {
     if (local_to_global_offset.find(stmt) == local_to_global_offset.end())
       return;
-    TC_P(stmt->id);
     VecStatement replacement;
     auto ret_type = stmt->ret_type;
     local_to_global_vector_type[stmt] = ret_type;
@@ -201,9 +200,6 @@ public:
     replacement.push_back<GlobalStoreStmt>(ptr, const_zeros);
 
     stmt->parent->replace_with(stmt, replacement, false);
-
-    irpass::print(stmt->parent);
-
     throw IRModified();
   }
 
@@ -257,17 +253,10 @@ void offload(IRNode *root) {
   irpass::typecheck(root);
   irpass::fix_block_parents(root);
   {
-    irpass::print(root);
     auto local_to_global = IdentifyLocalVars::run(root);
-    /*
-    TC_P(local_to_global.size());
-    for (auto i : local_to_global) {
-      TC_P(i.first->id);
-    }
-    */
     PromoteLocals::run(root, local_to_global);
-    irpass::print(root);
   }
+  irpass::re_id(root);
 }
 
 }  // namespace irpass

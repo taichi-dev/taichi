@@ -792,7 +792,6 @@ public:
   }
 
   void visit(GlobalStoreStmt *stmt) override {
-    TC_P(stmt->id);
     TC_ASSERT(!stmt->parent->mask() || stmt->width() == 1);
     TC_ASSERT(stmt->data->value);
     TC_ASSERT(stmt->ptr->value);

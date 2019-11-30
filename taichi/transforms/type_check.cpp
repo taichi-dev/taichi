@@ -70,17 +70,15 @@ class TypeCheck : public IRVisitor {
     auto ret_type = promoted_type(stmt->ptr->ret_type.data_type,
                                   stmt->data->ret_type.data_type);
     if (ret_type != stmt->data->ret_type.data_type) {
-      stmt->data = insert_type_cast_before(stmt, stmt->data, ret_type);
+      stmt->data = insert_type_cast_before(stmt, stmt->data, stmt->ptr->ret_type.data_type);
     }
-    if (stmt->ptr->ret_type != stmt->data->ret_type) {
+    if (stmt->ptr->ret_type.data_type != ret_type) {
       TC_WARN(
-          "Error: type mismatch in local store (target = {}, value = {}, "
+          "Local store may lose precision (target = {}, value = {}, "
           "stmt_id = {}) at",
           stmt->ptr->ret_data_type_name(), stmt->data->ret_data_type_name(),
           stmt->id);
       fmt::print(stmt->tb);
-      TC_WARN("Compilation stopped due to type mismatch.");
-      exit(-1);
     }
     stmt->ret_type = stmt->ptr->ret_type;
   }
@@ -113,13 +111,13 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(GlobalStoreStmt *stmt) {
-    auto ret_type = promoted_type(stmt->ptr->ret_type.data_type,
+    auto promoted = promoted_type(stmt->ptr->ret_type.data_type,
                                   stmt->data->ret_type.data_type);
-    if (ret_type != stmt->data->ret_type.data_type) {
-      stmt->data = insert_type_cast_before(stmt, stmt->data, ret_type);
+    if (stmt->ptr->ret_type.data_type != stmt->data->ret_type.data_type) {
+      stmt->data = insert_type_cast_before(stmt, stmt->data, stmt->ptr->ret_type.data_type);
     }
-    if (stmt->ptr->ret_type != stmt->data->ret_type) {
-      TC_ERROR("Global store type mismatch: {} <- {}",
+    if (stmt->ptr->ret_type.data_type != promoted) {
+      TC_WARN("Global store may lose precision: {} <- {}",
                stmt->ptr->ret_data_type_name(),
                stmt->data->ret_data_type_name());
     }

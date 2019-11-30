@@ -116,8 +116,8 @@ This pass promote these local variables into global variables.
 
 Steps:
   1. Traverse offloaded blocks to identify out-of-block local LD/ST
-  2. Create a new offloaded block to fill these variables with 0
-  3. Replace local LD/ST with global LD/ST
+  2. Replace alloca with global var initializtion (set to 0)
+     Replace local LD/ST with global LD/ST
 */
 
 class IdentifyLocalVars : public BasicStmtVisitor {
@@ -178,6 +178,30 @@ public:
   }
 };
 
+class PromoteLocals : public BasicStmtVisitor {
+public:
+  std::map<Stmt *, std::size_t> local_to_global;
+
+  PromoteLocals() {
+    allow_undefined_visitor = true;
+  }
+
+  void visit(AllocaStmt *stmt) override {
+
+  }
+
+  void visit(LocalLoadStmt *stmt) override {
+  }
+
+  void visit(LocalStoreStmt *stmt) override {
+  }
+
+  static void run(IRNode *root) {
+    PromoteLocals pass;
+    root->accept(&pass);
+  }
+};
+
 void offload(IRNode *root) {
   Offloader _(root);
   irpass::typecheck(root);
@@ -186,6 +210,7 @@ void offload(IRNode *root) {
     irpass::print(root);
     auto local_to_global = IdentifyLocalVars::run(root);
     TC_P(local_to_global.size());
+    PromoteLocals::run(root);
     for (auto i : local_to_global) {
       TC_P(i.first->id);
     }

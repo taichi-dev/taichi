@@ -188,6 +188,8 @@ public:
   }
 
   void visit(AllocaStmt *stmt) override {
+    if (local_to_global_offset.find(stmt) == local_to_global_offset.end())
+      return;
     VecStatement replacement;
     auto ret_type = stmt->ret_type;
     local_to_global_vector_type[stmt] = ret_type;
@@ -197,17 +199,52 @@ public:
     replacement.push_back<GlobalStoreStmt>(ptr, const_zeros);
 
     stmt->parent->replace_with(stmt, replacement);
+    throw IRModified();
   }
 
   void visit(LocalLoadStmt *stmt) override {
+    TC_ASSERT(stmt->width() == 1);
+    auto alloca = stmt->ptr[0].var;
+    if (local_to_global_offset.find(alloca) == local_to_global_offset.end())
+      return;
+
+    VecStatement replacement;
+    auto ret_type = stmt->ret_type;
+
+    auto ptr = replacement.push_back<GlobalTemporaryStmt>(local_to_global_offset[alloca], ret_type);
+    replacement.push_back<GlobalLoadStmt>(ptr);
+
+    irpass::replace_all_usages_with(stmt->parent, stmt, replacement.back().get());
+    stmt->parent->replace_with(stmt, replacement);
+    throw IRModified();
   }
 
   void visit(LocalStoreStmt *stmt) override {
+    TC_ASSERT(stmt->width() == 1);
+    auto alloca = stmt->ptr;
+    if (local_to_global_offset.find(alloca) == local_to_global_offset.end())
+      return;
+
+    VecStatement replacement;
+    auto ret_type = stmt->ret_type;
+
+    auto ptr = replacement.push_back<GlobalTemporaryStmt>(local_to_global_offset[alloca], ret_type);
+    replacement.push_back<GlobalStoreStmt>(ptr, stmt->data);
+
+    stmt->parent->replace_with(stmt, replacement);
+    throw IRModified();
   }
 
   static void run(IRNode *root, std::map<Stmt *, std::size_t> local_to_global_offset) {
     PromoteLocals pass(local_to_global_offset);
-    root->accept(&pass);
+    while (true) {
+      try {
+        root->accept(&pass);
+      } catch (IRModified) {
+        continue;
+      }
+      break;
+    }
   }
 };
 

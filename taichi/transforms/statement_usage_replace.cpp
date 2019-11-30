@@ -48,6 +48,11 @@ class StatementUsageReplace : public IRVisitor {
     stmt->body->accept(this);
   }
 
+  void visit(OffloadedStmt *stmt) {
+    if (stmt->body)
+      stmt->body->accept(this);
+  }
+
   static void run(IRNode *node, Stmt *old_stmt, Stmt *new_stmt) {
     StatementUsageReplace inst(old_stmt, new_stmt);
     node->accept(&inst);

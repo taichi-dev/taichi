@@ -792,27 +792,8 @@ public:
   }
 
   void visit(GlobalStoreStmt *stmt) override {
-    /*
-    if (!current_program->config.force_vectorized_global_store) {
-      for (int i = 0; i < stmt->data->ret_type.width; i++) {
-        if (stmt->parent->mask()) {
-          TC_ASSERT(stmt->width() == 1);
-          emit("if ({}[{}])", stmt->parent->mask()->raw_name(), i);
-        }
-        emit("*({} *){}[{}] = {}[{}];",
-             data_type_name(stmt->data->ret_type.data_type),
-             stmt->ptr->raw_name(), i, stmt->data->raw_name(), i);
-      }
-    } else {
-      emit("{}.store({}[0]);", stmt->data->raw_name(), stmt->ptr->raw_name());
-    }
-    */
+    TC_P(stmt->id);
     TC_ASSERT(!stmt->parent->mask() || stmt->width() == 1);
-    /*
-    emit("*({} *){}[{}] = {}[{}];",
-         data_type_name(stmt->data->ret_type.data_type),
-         stmt->ptr->raw_name(), i, stmt->data->raw_name(), i);
-    */
     TC_ASSERT(stmt->data->value);
     TC_ASSERT(stmt->ptr->value);
     builder->CreateStore(stmt->data->value, stmt->ptr->value);
@@ -1267,6 +1248,14 @@ public:
       stmt->value = builder->CreateLoad(
           current_offloaded_stmt->loop_vars_llvm[stmt->index]);
     }
+  }
+
+  void visit(GlobalTemporaryStmt *stmt) {
+    auto runtime = get_runtime();
+    auto addr = builder->CreateGEP(runtime, tlctx->get_constant((int64)stmt->offset));
+    TC_ASSERT(stmt->width() == 1);
+    auto ptr_type = llvm::PointerType::get(tlctx->get_data_type(stmt->ret_type.data_type), 0);
+    stmt->value = builder->CreatePointerCast(addr, ptr_type);
   }
 
   void visit(OffloadedStmt *stmt) override {

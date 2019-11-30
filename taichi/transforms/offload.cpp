@@ -131,6 +131,7 @@ public:
     TC_ASSERT(type.width == 1);
     auto ret = global_offset;
     global_offset += data_type_size(type.data_type);
+    TC_ASSERT(global_offset < 1048576);
     return ret;
   }
 
@@ -190,6 +191,7 @@ public:
   void visit(AllocaStmt *stmt) override {
     if (local_to_global_offset.find(stmt) == local_to_global_offset.end())
       return;
+    TC_P(stmt->id);
     VecStatement replacement;
     auto ret_type = stmt->ret_type;
     local_to_global_vector_type[stmt] = ret_type;
@@ -198,7 +200,10 @@ public:
     auto const_zeros = replacement.push_back<ConstStmt>(zeros);
     replacement.push_back<GlobalStoreStmt>(ptr, const_zeros);
 
-    stmt->parent->replace_with(stmt, replacement);
+    stmt->parent->replace_with(stmt, replacement, false);
+
+    irpass::print(stmt->parent);
+
     throw IRModified();
   }
 
@@ -214,7 +219,6 @@ public:
     auto ptr = replacement.push_back<GlobalTemporaryStmt>(local_to_global_offset[alloca], ret_type);
     replacement.push_back<GlobalLoadStmt>(ptr);
 
-    irpass::replace_all_usages_with(stmt->parent, stmt, replacement.back().get());
     stmt->parent->replace_with(stmt, replacement);
     throw IRModified();
   }
@@ -255,13 +259,14 @@ void offload(IRNode *root) {
   {
     irpass::print(root);
     auto local_to_global = IdentifyLocalVars::run(root);
+    /*
     TC_P(local_to_global.size());
     for (auto i : local_to_global) {
       TC_P(i.first->id);
     }
+    */
     PromoteLocals::run(root, local_to_global);
     irpass::print(root);
-    exit(0);
   }
 }
 

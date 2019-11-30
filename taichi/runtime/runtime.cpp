@@ -235,10 +235,12 @@ struct Runtime {
   ElementList *element_lists[taichi_max_num_snodes];
   NodeAllocator *node_allocators[taichi_max_num_snodes];
   Ptr ambient_elements[taichi_max_num_snodes];
+  Ptr temporaries;
 };
 
 STRUCT_FIELD_ARRAY(Runtime, element_lists);
 STRUCT_FIELD_ARRAY(Runtime, node_allocators);
+STRUCT_FIELD(Runtime, temporaries);
 
 void *allocate_aligned(Runtime *runtime, std::size_t size, int alignment) {
   return runtime->vm_allocator(size, alignment);
@@ -261,6 +263,11 @@ Ptr Runtime_initialize(Runtime **runtime_ptr, int num_snodes,
   }
   // Assuming num_snodes - 1 is the root
   auto root_ptr = allocate_aligned(runtime, root_size, 4096);
+
+  // The same "1048576" is also used in offload.cpp
+  // TODO: DRY
+  runtime->temporaries = (Ptr)allocate_aligned(runtime, 1048576, 1024);
+
   Element elem;
   elem.loop_bounds[0] = 0;
   elem.loop_bounds[1] = 1;

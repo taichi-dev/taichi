@@ -40,9 +40,13 @@ class Expr:
   @staticmethod
   def stack_info():
     s = traceback.extract_stack()[3:-1]
+    for i, l in enumerate(s):
+      if 'taichi_ast_generator' in l:
+        s = s[i + 1:]
+        break
     raw = ''.join(traceback.format_list(s))
     # remove the confusing last line
-    return '\n'.join(raw.split('\n')[:-2]) + '\n'
+    return '\n'.join(raw.split('\n')[:-3]) + '\n'
 
   def __add__(self, other):
     other = Expr(other)

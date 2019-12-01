@@ -1,5 +1,6 @@
 from .expr import *
 from .util import *
+import numbers
 
 unary_ops = []
 
@@ -125,6 +126,31 @@ def max(a, b):
 def min(a, b):
   return Expr(taichi_lang_core.expr_min(a.ptr, b.ptr))
 
+def ti_max(*args):
+  num_args = len(args)
+  assert num_args >= 1
+  if num_args == 1:
+    return args[0]
+  elif num_args == 2:
+    if isinstance(args[0], numbers.Number) and isinstance(args[1], numbers.Number):
+      return max(args[0], args[1])
+    else:
+      return Expr(taichi_lang_core.expr_max(Expr(args[0]).ptr, Expr(args[1]).ptr))
+  else:
+    return ti_max(args[0], ti_max(args[1:]))
+
+def ti_min(*args):
+  num_args = len(args)
+  assert num_args >= 1
+  if num_args == 1:
+    return args[0]
+  elif num_args == 2:
+    if isinstance(args[0], numbers.Number) and isinstance(args[1], numbers.Number):
+      return min(args[0], args[1])
+    else:
+      return Expr(taichi_lang_core.expr_min(Expr(args[0]).ptr, Expr(args[1]).ptr))
+  else:
+    return ti_min(args[0], ti_min(args[1:]))
 
 def append(l, indices, val):
   taichi_lang_core.insert_append(l.ptr, make_expr_group(indices), Expr(val).ptr)

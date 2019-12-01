@@ -56,7 +56,6 @@ class Expr:
   def __iadd__(self, other):
     self.assign(Expr(taichi_lang_core.expr_add(self.ptr, other.ptr)))
 
-
   def __neg__(self):
     return Expr(taichi_lang_core.expr_neg(self.ptr), tb=self.stack_info())
 

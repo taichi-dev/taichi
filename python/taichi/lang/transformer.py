@@ -330,6 +330,10 @@ if 1:
       func_name = node.func.id
       if func_name == 'print':
         node.func = self.parse_expr('ti.ti_print')
+      elif func_name == 'min':
+        node.func = self.parse_expr('ti.ti_min')
+      elif func_name == 'max':
+        node.func = self.parse_expr('ti.ti_max')
       elif func_name == 'int':
         node.func = self.parse_expr('ti.ti_int')
       elif func_name == 'float':

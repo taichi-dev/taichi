@@ -154,3 +154,9 @@ def test_numpy_3d():
   a = np.empty(shape=(n, m, p), dtype=np.int32)
 
   test_numpy(a)
+
+@ti.must_throw(AssertionError)
+def test_index_mismatch():
+  val = ti.var(ti.i32, shape=(1, 2, 3))
+  val[0, 0] = 1
+

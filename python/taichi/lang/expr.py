@@ -187,7 +187,8 @@ class Expr:
       key = ()
     if not isinstance(key, tuple):
       key = (key, )
-    key = key + ((0, ) * (4 - len(key)))
+    assert len(key) == self.dim()
+    key = key + ((0, ) * (taichi_lang_core.get_max_num_indices() - len(key)))
     self.setter(value, *key)
 
   def __getitem__(self, key):

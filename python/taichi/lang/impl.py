@@ -146,8 +146,11 @@ def reset():
 def inside_kernel():
   return pytaichi.inside_kernel
 
+def index_nd(dim):
+  return indices(*range(dim))
 
-def global_var(dt):
+def global_var(dt, shape=None, needs_grad=False):
+
   # primal
   x = Expr(taichi_lang_core.make_id_expr(""))
   x.ptr = taichi_lang_core.global_new(x.ptr, dt)
@@ -160,7 +163,16 @@ def global_var(dt):
     x_grad.ptr = taichi_lang_core.global_new(x_grad.ptr, dt)
     x_grad.ptr.set_is_primal(False)
     x.set_grad(x_grad)
-  
+
+  if shape is not None:
+    @layout
+    def place():
+      import taichi as ti
+      dim = len(shape)
+      ti.root.dense(index_nd(dim), shape).place(x)
+      if needs_grad:
+        ti.root.dense(index_nd(dim), shape).place(x.grad)
+
   return x
 
 

@@ -5,11 +5,11 @@ import time
 
 real = ti.f32
 dim = 2
-n_particles = 8192 * 4
-n_grid = 256
+n_particles = 8192
+n_grid = 128
 dx = 1 / n_grid
 inv_dx = 1 / dx
-dt = 2.0e-4
+dt = 4.0e-4
 p_vol = (dx * 0.5) ** 2
 p_rho = 1
 p_mass = p_vol * p_rho
@@ -34,7 +34,7 @@ def place():
   ti.root.dense(ti.ij, n_grid).place(grid_v, grid_m)
 
 @ti.kernel
-def p2g():
+def substep():
   for p in x:
     base = ti.cast(x[p] * inv_dx - 0.5, ti.i32)
     fx = x[p] * inv_dx - ti.cast(base, ti.f32)
@@ -50,12 +50,7 @@ def p2g():
         grid_v[base + offset].atomic_add(weight * (p_mass * v[p] + affine @ dpos))
         grid_m[base + offset].atomic_add(weight * p_mass)
 
-
-bound = 3
-
-
-@ti.kernel
-def grid_op():
+  bound = 3
   for i, j in grid_m:
     if grid_m[i, j] > 0:
       inv_m = 1 / grid_m[i, j]
@@ -70,9 +65,6 @@ def grid_op():
       if j > n_grid - bound and grid_v(1)[i, j] > 0:
         grid_v(1)[i, j] = 0
 
-
-@ti.kernel
-def g2p():
   for p in x:
     base = ti.cast(x[p] * inv_dx - 0.5, ti.i32)
     fx = x[p] * inv_dx - ti.cast(base, ti.f32)
@@ -97,39 +89,20 @@ def g2p():
 gui = ti.core.GUI("MPM", ti.veci(512, 512))
 canvas = gui.get_canvas()
 
-@ti.kernel
-def copy_x(pos: ti.ext_arr()):
+for i in range(n_particles):
+  x[i] = [random.random() * 0.4 + 0.2, random.random() * 0.4 + 0.2]
+  v[i] = [0, -1]
+  J[i] = 1
+
+zeros = ti.Matrix([0, 0])
+for f in range(200):
+  canvas.clear(0x112F41)
+  for s in range(50):
+    grid_v.fill(zeros)
+    grid_m.fill(0)
+    substep()
+
+  pos = x.to_numpy()
   for i in range(n_particles):
-    pos[i * 2] = x[i][0]
-    pos[i * 2 + 1] = x[i][1]
-
-def main():
-  for i in range(n_particles):
-    x[i] = [random.random() * 0.4 + 0.2, random.random() * 0.4 + 0.2]
-    v[i] = [0, -1]
-    J[i] = 1
-
-  zeros = ti.Matrix([0, 0])
-  for f in range(200):
-    canvas.clear(0x112F41)
-    t = time.time()
-    for s in range(150):
-      grid_v.fill(zeros)
-      grid_m.fill(0)
-      p2g()
-      grid_op()
-      g2p()
-    print('{:.1f} ms per frame'.format(1000 * (time.time() - t)))
-
-    pos = np.empty((2 * n_particles), dtype=np.float32)
-    copy_x(pos)
-    for i in range(n_particles):
-      # canvas.circle(ti.vec(x[i][0], x[i][1])).radius(1).color(0x068587).finish()
-      
-      # Python binding here is still a bit slow...
-      canvas.circle(ti.vec(pos[i * 2], pos[i * 2 + 1])).radius(1).color(0x068587).finish()
-    gui.update()
-  ti.profiler_print()
-
-if __name__ == '__main__':
-  main()
+    canvas.circle(ti.vec(pos[i, 0, 0], pos[i, 1, 0])).radius(2).color(0x068587).finish()
+  gui.update()

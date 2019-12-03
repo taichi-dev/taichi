@@ -109,11 +109,12 @@ def main():
     v[i] = [0, -1]
     J[i] = 1
 
+  zeros = ti.Matrix([0, 0])
   for f in range(200):
     canvas.clear(0x112F41)
     t = time.time()
     for s in range(150):
-      grid_v.fill([0, 0])
+      grid_v.fill(zeros)
       grid_m.fill(0)
       p2g()
       grid_op()

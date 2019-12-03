@@ -2,6 +2,8 @@ from . import expr
 from . import impl
 import copy
 import numbers
+import numpy as np
+from .util import to_numpy_type
 
 def broadcast_if_scalar(func):
   def broadcasted(self, other, *args, **kwargs):
@@ -390,9 +392,18 @@ class Matrix:
     if isinstance(val, numbers.Number):
       for e in self.entries:
         e.fill(val)
-    elif isinstance(val, Matrix):
+    else:
+      if not isinstance(val, Matrix):
+        val = Matrix(val)
       assert val.n == self.n
       assert val.m == self.m
       for i in range(self.n):
         for j in range(self.m):
           self.get_entry(i, j).fill(val.get_entry(i, j))
+
+  def to_numpy(self):
+    ret = np.empty(self.loop_range().shape() + (self.n, self.m), dtype=to_numpy_type(self.loop_range().snode().data_type()))
+    for i in range(self.n):
+      for j in range(self.m):
+        ret[..., i, j] = self.get_entry(i, j).to_numpy()
+    return ret

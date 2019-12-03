@@ -3,7 +3,7 @@ import os
 import shutil
 import time
 import random
-from taichi.tools.video import make_video, interpolate_frames
+from taichi.tools.video import make_video, interpolate_frames, mp4_to_gif
 
 def test_python():
   print("\nRunning python tests...\n")
@@ -49,6 +49,7 @@ def main(debug=False):
       "           ti test_cpp               |-> Run cpp tests\n"
       "           ti build                  |-> Build C++ files\n"
       "           ti video                  |-> Make a video using *.png files in the current folder\n"
+      "           ti gif                    |-> Convert mp4 file to gif\n"
       "           ti doc                    |-> Build documentation\n"
       "           ti debug [script.py]      |-> Debug script\n")
     exit(-1)
@@ -134,6 +135,13 @@ def main(debug=False):
     output_fn = 'video.mp4'
     make_video(files, output_path=output_fn, frame_rate=frame_rate)
     ti.info('Done! Output video file = {}', output_fn)
+  elif mode == "gif":
+    input_fn = sys.argv[2]
+    assert input_fn[-4:] == '.mp4'
+    output_fn = input_fn[:-4] + '.gif'
+    ti.info('Converting {} to {}.gif'.format(input_fn, output_fn))
+    framerate = 24
+    mp4_to_gif(input_fn, output_fn, framerate)
   elif mode == "convert":
     # http://www.commandlinefu.com/commands/view/3584/remove-color-codes-special-characters-with-sed
     # TODO: Windows support

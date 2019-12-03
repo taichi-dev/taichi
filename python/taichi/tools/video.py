@@ -12,6 +12,25 @@ def get_ffmpeg_path():
   # return get_directory('external/lib/ffmpeg')
   return 'ffmpeg'
 
+def mp4_to_gif(input_fn, output_fn, framerate):
+  # Generate the palette
+  palette_name = 'palette.png'
+  if get_os_name() == 'win':
+    command = get_ffmpeg_path() + " -loglevel panic -i %s -vf 'palettegen' -y %s" % (
+      input_fn, palette_name)
+  else:
+    command = get_ffmpeg_path() + " -loglevel panic -i %s -vf 'fps=%d,scale=320:640:flags=lanczos,palettegen' -y %s" % (
+      input_fn, framerate, palette_name)
+  # print command
+  os.system(command)
+
+  # Generate the GIF
+  command = get_ffmpeg_path() + " -loglevel panic -i %s -i %s -lavfi paletteuse -y %s" % (
+    input_fn, palette_name, output_fn)
+  # print command
+  os.system(command)
+  os.remove(palette_name)
+
 class VideoManager:
 
   def __init__(self,
@@ -77,35 +96,18 @@ class VideoManager:
         os.remove(fn)
 
   def make_video(self, mp4=True, gif=True):
-
+    fn = self.get_output_filename('.mp4')
     command = (get_ffmpeg_path() + " -loglevel panic -framerate %d -i " % self.framerate) + os.path.join(self.frame_directory, FRAME_FN_TEMPLATE) + \
               " -s:v " + str(self.width) + 'x' + str(self.height) + \
-              " -c:v libx264 -profile:v high -crf 1 -pix_fmt yuv420p -y " + self.get_output_filename('.mp4')
+              " -c:v libx264 -profile:v high -crf 1 -pix_fmt yuv420p -y " + fn
 
     os.system(command)
 
     if gif:
-      # Generate the palette
-      palette_name = self.get_output_filename('_palette.png')
-      if get_os_name() == 'win':
-        command = get_ffmpeg_path() + " -loglevel panic -i %s -vf 'palettegen' -y %s" % (
-            self.get_output_filename('.mp4'), palette_name)
-      else:
-        command = get_ffmpeg_path() + " -loglevel panic -i %s -vf 'fps=%d,scale=320:640:flags=lanczos,palettegen' -y %s" % (
-            self.get_output_filename('.mp4'), self.framerate, palette_name)
-      # print command
-      os.system(command)
-
-      # Generate the GIF
-      command = get_ffmpeg_path() + " -loglevel panic -i %s -i %s -lavfi paletteuse -y %s" % (
-          self.get_output_filename('.mp4'), palette_name,
-          self.get_output_filename('.gif'))
-      # print command
-      os.system(command)
-      os.remove(palette_name)
+      self.mp4_to_gif(self.get_output_filename('.mp4'), self.get_output_filename('.gif'), self.framerate)
 
     if not mp4:
-      os.remove(self.get_output_filename('mp4'))
+      os.remove(fn)
 
 def interpolate_frames(frame_dir, mul=4):
   # TODO: remove dependency on cv2 here

@@ -33,14 +33,6 @@ def place():
   ti.root.dense(ti.k, n_particles).place(x, v, J, C)
   ti.root.dense(ti.ij, n_grid).place(grid_v, grid_m)
 
-
-@ti.kernel
-def clear_grid():
-  for i, j in grid_m:
-    grid_v[i, j] = [0, 0]
-    grid_m[i, j] = 0
-
-
 @ti.kernel
 def p2g():
   for p in x:
@@ -121,7 +113,8 @@ def main():
     canvas.clear(0x112F41)
     t = time.time()
     for s in range(150):
-      clear_grid()
+      grid_v.fill([0, 0])
+      grid_m.fill(0)
       p2g()
       grid_op()
       g2p()

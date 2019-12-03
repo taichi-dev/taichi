@@ -5,11 +5,11 @@ real = ti.f32
 dim = 2
 n_particles = 8192; n_grid = 128
 dx = 1 / n_grid; inv_dx = 1 / dx
-dt = 4.0e-4
+dt = 2.0e-4
 p_vol = (dx * 0.5) ** 2
 p_rho = 1
 p_mass = p_vol * p_rho
-E = 100
+E = 400
 
 scalar = lambda: ti.var(dt=real)
 vec = lambda: ti.Vector(dim, dt=real)
@@ -49,13 +49,13 @@ def substep():
       grid_v[i, j] = inv_m * grid_v[i, j]
       grid_v[i, j][1] -= dt * 9.8
       if i < bound and grid_v[i, j][0] < 0:
-        grid_v(0)[i, j] = 0
+        grid_v[i, j][0] = 0
       if i > n_grid - bound and grid_v(0)[i, j] > 0:
-        grid_v(0)[i, j] = 0
+        grid_v[i, j][0] = 0
       if j < bound and grid_v[i, j][1] < 0:
-        grid_v(1)[i, j] = 0
+        grid_v[i, j][1] = 0
       if j > n_grid - bound and grid_v[i, j][1] > 0:
-        grid_v(1)[i, j] = 0
+        grid_v[i, j][1] = 0
 
   for p in x:
     base = ti.cast(x[p] * inv_dx - 0.5, ti.i32)

@@ -243,10 +243,18 @@ class Matrix:
     ret.entries = [impl.expr_init(e) for e in ret.entries]
     return ret
 
-  def cast(self, type):
+  def cast(self, dt):
     ret = self.copy()
+    if type(dt) is type and issubclass(dt, numbers.Number):
+      import taichi as ti
+      if dt is float:
+        dt = ti.get_runtime().default_fp
+      elif dt is int:
+        dt = ti.get_runtime().default_ip
+      else:
+        assert False
     for i in range(len(self.entries)):
-      ret.entries[i] = impl.cast(ret.entries[i], type)
+      ret.entries[i] = impl.cast(ret.entries[i], dt)
     return ret
 
   def abs(self):

@@ -67,7 +67,7 @@ def substep():
 
     for i in ti.static(range(3)):
       for j in ti.static(range(3)):
-        dpos = ti.cast(ti.Vector([i, j]), ti.f32) - fx
+        dpos = ti.Vector([i, j]).cast(float) - fx
         g_v = grid_v[base + ti.Vector([i, j])]
         weight = w[i][0] * w[j][1]
         new_v += weight * g_v
@@ -96,5 +96,5 @@ for f in range(200):
 
   pos = x.to_numpy()
   for i in range(n_particles):
-    canvas.circle(ti.vec(pos[i, 0, 0], pos[i, 1, 0])).radius(2).color(0x068587).finish()
+    canvas.circle(ti.vec(pos[i, 0, 0], pos[i, 1, 0])).radius(1.5).color(0x068587).finish()
   gui.update()

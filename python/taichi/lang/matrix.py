@@ -407,3 +407,8 @@ class Matrix:
       for j in range(self.m):
         ret[..., i, j] = self.get_entry(i, j).to_numpy()
     return ret
+
+  @staticmethod
+  def zero(dt, n, m=1):
+    import taichi as ti
+    return ti.Matrix([[ti.cast(0, dt) for _ in range(m)] for _ in range(n)])

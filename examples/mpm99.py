@@ -1,14 +1,10 @@
 import taichi as ti
-import numpy as np
 import random
-import time
 
 real = ti.f32
 dim = 2
-n_particles = 8192
-n_grid = 128
-dx = 1 / n_grid
-inv_dx = 1 / dx
+n_particles = 8192; n_grid = 128
+dx = 1 / n_grid; inv_dx = 1 / dx
 dt = 4.0e-4
 p_vol = (dx * 0.5) ** 2
 p_rho = 1
@@ -23,10 +19,7 @@ x, v = vec(), vec()
 grid_v, grid_m = vec(), scalar()
 C, J = mat(), scalar()
 
-# ti.cfg.arch = ti.x86_64
 ti.cfg.arch = ti.cuda
-# ti.cfg.verbose_kernel_launches = True
-# ti.cfg.default_gpu_block_dim = 32
 
 @ti.layout
 def place():
@@ -50,9 +43,9 @@ def substep():
         grid_v[base + offset].atomic_add(weight * (p_mass * v[p] + affine @ dpos))
         grid_m[base + offset].atomic_add(weight * p_mass)
 
-  bound = 3
   for i, j in grid_m:
     if grid_m[i, j] > 0:
+      bound = 3
       inv_m = 1 / grid_m[i, j]
       grid_v[i, j] = inv_m * grid_v[i, j]
       grid_v(1)[i, j] -= dt * 9.8
@@ -70,8 +63,8 @@ def substep():
     fx = x[p] * inv_dx - ti.cast(base, ti.f32)
     w = [0.5 * ti.sqr(1.5 - fx), 0.75 - ti.sqr(fx - 1.0),
          0.5 * ti.sqr(fx - 0.5)]
-    new_v = ti.Vector([0.0, 0.0])
-    new_C = ti.Matrix([[0.0, 0.0], [0.0, 0.0]])
+    new_v = ti.Vector.zero(ti.f32, 2)
+    new_C = ti.Matrix.zero(ti.f32, 2, 2)
 
     for i in ti.static(range(3)):
       for j in ti.static(range(3)):

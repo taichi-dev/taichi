@@ -3,7 +3,7 @@ import os
 import shutil
 import time
 import random
-from taichi.tools.video import make_video, interpolate_frames, mp4_to_gif
+from taichi.tools.video import make_video, interpolate_frames, mp4_to_gif, scale_video
 
 def test_python():
   print("\nRunning python tests...\n")
@@ -49,6 +49,8 @@ def main(debug=False):
       "           ti test_cpp               |-> Run cpp tests\n"
       "           ti build                  |-> Build C++ files\n"
       "           ti video                  |-> Make a video using *.png files in the current folder\n"
+      "           ti video_scale            |-> Scale video resolution \n"
+      "           ti video_crop             |-> Crop video\n"
       "           ti gif                    |-> Convert mp4 file to gif\n"
       "           ti doc                    |-> Build documentation\n"
       "           ti debug [script.py]      |-> Debug script\n")
@@ -135,6 +137,16 @@ def main(debug=False):
     output_fn = 'video.mp4'
     make_video(files, output_path=output_fn, frame_rate=frame_rate)
     ti.info('Done! Output video file = {}', output_fn)
+  elif mode == "video_scale":
+    input_fn = sys.argv[2]
+    assert input_fn[-4:] == '.mp4'
+    output_fn = input_fn[:-4] + '-scaled.mp4'
+    ratiow = float(sys.argv[3])
+    if len(sys.argv) >= 5:
+      ratioh = float(sys.argv[4])
+    else:
+      ratioh = ratiow
+    scale_video(input_fn, output_fn, ratiow, ratioh)
   elif mode == "gif":
     input_fn = sys.argv[2]
     assert input_fn[-4:] == '.mp4'

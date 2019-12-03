@@ -8,6 +8,9 @@ FRAME_DIR = 'frames'
 
 # Write the frames to the disk and then make videos (mp4 or gif) if necessary
 
+def scale_video(input, output, ratiow, ratioh):
+  os.system('ffmpeg -i {}  -vf "scale=iw*{:.4f}:ih*{:.4f}" {}'.format(input, ratiow, ratioh, output))
+
 def get_ffmpeg_path():
   # return get_directory('external/lib/ffmpeg')
   return 'ffmpeg'

@@ -29,15 +29,15 @@ def place():
 @ti.kernel
 def substep():
   for p in x:
-    base = ti.cast(x[p] * inv_dx - 0.5, ti.i32)
-    fx = x[p] * inv_dx - ti.cast(base, ti.f32)
+    base = (x[p] * inv_dx - 0.5).cast(int)
+    fx = x[p] * inv_dx - base.cast(float)
     w = [0.5 * ti.sqr(1.5 - fx), 0.75 - ti.sqr(fx - 1), 0.5 * ti.sqr(fx - 0.5)]
     stress = -dt * p_vol * (J[p] - 1) * 4 * inv_dx * inv_dx * E
     affine = ti.Matrix([[stress, 0], [0, stress]]) + p_mass * C[p]
     for i in ti.static(range(3)):
       for j in ti.static(range(3)):
         offset = ti.Vector([i, j])
-        dpos = (ti.cast(offset, ti.f32) - fx) * dx
+        dpos = (offset.cast(float) - fx) * dx
         weight = w[i][0] * w[j][1]
         grid_v[base + offset].atomic_add(weight * (p_mass * v[p] + affine @ dpos))
         grid_m[base + offset].atomic_add(weight * p_mass)
@@ -58,8 +58,8 @@ def substep():
         grid_v[i, j][1] = 0
 
   for p in x:
-    base = ti.cast(x[p] * inv_dx - 0.5, ti.i32)
-    fx = x[p] * inv_dx - ti.cast(base, ti.f32)
+    base = (x[p] * inv_dx - 0.5).cast(int)
+    fx = x[p] * inv_dx - base.cast(float)
     w = [0.5 * ti.sqr(1.5 - fx), 0.75 - ti.sqr(fx - 1.0), 0.5 * ti.sqr(fx - 0.5)]
 
     new_v = ti.Vector.zero(ti.f32, 2)

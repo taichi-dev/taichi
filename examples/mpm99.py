@@ -76,7 +76,7 @@ def substep():
     J[p] *= 1 + dt * new_C.trace()
     C[p] = new_C
 
-gui = ti.core.GUI("MPM", ti.veci(512, 512))
+gui = ti.core.GUI("MPM99", ti.veci(512, 512))
 canvas = gui.get_canvas()
 
 for i in range(n_particles):
@@ -84,14 +84,14 @@ for i in range(n_particles):
   v[i] = [0, -1]
   J[i] = 1
 
-for f in range(200):
-  canvas.clear(0x112F41)
+for frame in range(200):
   for s in range(50):
     grid_v.fill([0, 0])
     grid_m.fill(0)
     substep()
 
-  pos = x.to_numpy()
+  canvas.clear(0x112F41)
+  pos = x.to_numpy(as_vector=True)
   for i in range(n_particles):
-    canvas.circle(ti.vec(pos[i, 0, 0], pos[i, 1, 0])).radius(1.5).color(0x068587).finish()
+    canvas.circle(ti.vec(pos[i, 0], pos[i, 1])).radius(1.5).color(0x068587).finish()
   gui.update()

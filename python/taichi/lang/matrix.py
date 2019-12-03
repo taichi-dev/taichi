@@ -413,14 +413,22 @@ class Matrix:
         for j in range(self.m):
           self.get_entry(i, j).fill(val.get_entry(i, j))
 
-  def to_numpy(self):
+  def to_numpy(self, as_vector=False):
     ret = np.empty(self.loop_range().shape() + (self.n, self.m), dtype=to_numpy_type(self.loop_range().snode().data_type()))
     for i in range(self.n):
       for j in range(self.m):
         ret[..., i, j] = self.get_entry(i, j).to_numpy()
+    if as_vector:
+      assert self.m == 1
+      ret = ret[..., 0]
     return ret
 
   @staticmethod
   def zero(dt, n, m=1):
     import taichi as ti
     return ti.Matrix([[ti.cast(0, dt) for _ in range(m)] for _ in range(n)])
+
+  @staticmethod
+  def identity(dt, n):
+    import taichi as ti
+    return ti.Matrix([[ti.cast(1, dt) for _ in range(n)] for _ in range(n)])

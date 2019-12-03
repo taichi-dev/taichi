@@ -12,7 +12,7 @@ def scale_video(input, output, ratiow, ratioh):
   os.system('ffmpeg -i {}  -vf "scale=iw*{:.4f}:ih*{:.4f}" {}'.format(input, ratiow, ratioh, output))
 
 def crop_video(input, output, x_begin, x_end, y_begin, y_end):
-  os.system('ffmpeg -i {} -filter:v "crop=iw*{:.4f}:ih*{:.4f}:iw*{:0.4f}:ih*{:0.4f}" {}'.format(input, x_end - x_begin, y_end - y_begin, x_begin, 1 - y_begin, output))
+  os.system('ffmpeg -i {} -filter:v "crop=iw*{:.4f}:ih*{:.4f}:iw*{:0.4f}:ih*{:0.4f}" {}'.format(input, x_end - x_begin, y_end - y_begin, x_begin, 1 - y_end, output))
 
 def accelerate_video(input, output, speed):
   os.system('ffmpeg -i {} -filter:v "setpts={:.4f}*PTS" {}'.format(input, 1 / speed, output))

@@ -31,15 +31,14 @@ def substep():
   for p in x:
     base = ti.cast(x[p] * inv_dx - 0.5, ti.i32)
     fx = x[p] * inv_dx - ti.cast(base, ti.f32)
-    w = [0.5 * ti.sqr(1.5 - fx), 0.75 - ti.sqr(fx - 1),
-         0.5 * ti.sqr(fx - 0.5)]
+    w = [0.5 * ti.sqr(1.5 - fx), 0.75 - ti.sqr(fx - 1), 0.5 * ti.sqr(fx - 0.5)]
     stress = -dt * p_vol * (J[p] - 1) * 4 * inv_dx * inv_dx * E
     affine = ti.Matrix([[stress, 0], [0, stress]]) + p_mass * C[p]
     for i in ti.static(range(3)):
       for j in ti.static(range(3)):
         offset = ti.Vector([i, j])
-        dpos = (ti.cast(ti.Vector([i, j]), ti.f32) - fx) * dx
-        weight = w[i](0) * w[j](1)
+        dpos = (ti.cast(offset, ti.f32) - fx) * dx
+        weight = w[i][0] * w[j][1]
         grid_v[base + offset].atomic_add(weight * (p_mass * v[p] + affine @ dpos))
         grid_m[base + offset].atomic_add(weight * p_mass)
 
@@ -48,29 +47,29 @@ def substep():
       bound = 3
       inv_m = 1 / grid_m[i, j]
       grid_v[i, j] = inv_m * grid_v[i, j]
-      grid_v(1)[i, j] -= dt * 9.8
-      if i < bound and grid_v(0)[i, j] < 0:
+      grid_v[i, j][1] -= dt * 9.8
+      if i < bound and grid_v[i, j][0] < 0:
         grid_v(0)[i, j] = 0
       if i > n_grid - bound and grid_v(0)[i, j] > 0:
         grid_v(0)[i, j] = 0
-      if j < bound and grid_v(1)[i, j] < 0:
+      if j < bound and grid_v[i, j][1] < 0:
         grid_v(1)[i, j] = 0
-      if j > n_grid - bound and grid_v(1)[i, j] > 0:
+      if j > n_grid - bound and grid_v[i, j][1] > 0:
         grid_v(1)[i, j] = 0
 
   for p in x:
     base = ti.cast(x[p] * inv_dx - 0.5, ti.i32)
     fx = x[p] * inv_dx - ti.cast(base, ti.f32)
-    w = [0.5 * ti.sqr(1.5 - fx), 0.75 - ti.sqr(fx - 1.0),
-         0.5 * ti.sqr(fx - 0.5)]
+    w = [0.5 * ti.sqr(1.5 - fx), 0.75 - ti.sqr(fx - 1.0), 0.5 * ti.sqr(fx - 0.5)]
+
     new_v = ti.Vector.zero(ti.f32, 2)
     new_C = ti.Matrix.zero(ti.f32, 2, 2)
 
     for i in ti.static(range(3)):
       for j in ti.static(range(3)):
         dpos = ti.cast(ti.Vector([i, j]), ti.f32) - fx
-        g_v = grid_v[base(0) + i, base(1) + j]
-        weight = w[i](0) * w[j](1)
+        g_v = grid_v[base + ti.Vector([i, j])]
+        weight = w[i][0] * w[j][1]
         new_v += weight * g_v
         new_C += 4 * weight * ti.outer_product(g_v, dpos) * inv_dx
 

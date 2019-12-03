@@ -1,19 +1,17 @@
 import taichi as ti
 import random
 
-real = ti.f32
 dim = 2
 n_particles = 8192; n_grid = 128
 dx = 1 / n_grid; inv_dx = 1 / dx
 dt = 2.0e-4
 p_vol = (dx * 0.5) ** 2
-p_rho = 1
-p_mass = p_vol * p_rho
+p_rho = 1; p_mass = p_vol * p_rho
 E = 400
 
-scalar = lambda: ti.var(dt=real)
-vec = lambda: ti.Vector(dim, dt=real)
-mat = lambda: ti.Matrix(dim, dim, dt=real)
+scalar = lambda: ti.var(dt=ti.f32)
+vec = lambda: ti.Vector(dim, dt=ti.f32)
+mat = lambda: ti.Matrix(dim, dim, dt=ti.f32)
 
 x, v = vec(), vec()
 grid_v, grid_m = vec(), scalar()
@@ -28,6 +26,10 @@ def place():
 
 @ti.kernel
 def substep():
+  for i, j in grid_v:
+    grid_v[i, j] = ti.Matrix.zero(ti.f32, 2)
+    grid_m[i, j] = 0
+
   for p in x:
     base = (x[p] * inv_dx - 0.5).cast(int)
     fx = x[p] * inv_dx - base.cast(float)
@@ -86,12 +88,9 @@ for i in range(n_particles):
   v[i] = [0, -1]
   J[i] = 1
 
-zeros = ti.Matrix([0, 0])
 for f in range(200):
   canvas.clear(0x112F41)
   for s in range(50):
-    grid_v.fill(zeros)
-    grid_m.fill(0)
     substep()
 
   pos = x.to_numpy()

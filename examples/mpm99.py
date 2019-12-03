@@ -14,8 +14,8 @@ vec = lambda: ti.Vector(dim, dt=ti.f32)
 mat = lambda: ti.Matrix(dim, dim, dt=ti.f32)
 
 x, v = vec(), vec()
-grid_v, grid_m = vec(), scalar()
 C, J = mat(), scalar()
+grid_v, grid_m = vec(), scalar()
 
 ti.cfg.arch = ti.cuda
 
@@ -48,7 +48,7 @@ def substep():
       grid_v[i, j][1] -= dt * 9.8
       if i < bound and grid_v[i, j][0] < 0:
         grid_v[i, j][0] = 0
-      if i > n_grid - bound and grid_v(0)[i, j] > 0:
+      if i > n_grid - bound and grid_v[i, j][0] > 0:
         grid_v[i, j][0] = 0
       if j < bound and grid_v[i, j][1] < 0:
         grid_v[i, j][1] = 0

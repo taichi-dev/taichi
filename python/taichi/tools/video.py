@@ -14,6 +14,9 @@ def scale_video(input, output, ratiow, ratioh):
 def crop_video(input, output, x_begin, x_end, y_begin, y_end):
   os.system('ffmpeg -i {} -filter:v "crop=iw*{:.4f}:ih*{:.4f}:iw*{:0.4f}:ih*{:0.4f}" {}'.format(input, x_end - x_begin, y_end - y_begin, x_begin, 1 - y_begin, output))
 
+def accelerate_video(input, output, speed):
+  os.system('ffmpeg -i {} -filter:v "setpts={:.4f}*PTS" {}'.format(input, 1 / speed, output))
+
 def get_ffmpeg_path():
   # return get_directory('external/lib/ffmpeg')
   return 'ffmpeg'
@@ -110,7 +113,7 @@ class VideoManager:
     os.system(command)
 
     if gif:
-      self.mp4_to_gif(self.get_output_filename('.mp4'), self.get_output_filename('.gif'), self.framerate)
+      mp4_to_gif(self.get_output_filename('.mp4'), self.get_output_filename('.gif'), self.framerate)
 
     if not mp4:
       os.remove(fn)

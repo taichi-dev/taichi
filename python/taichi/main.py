@@ -3,7 +3,7 @@ import os
 import shutil
 import time
 import random
-from taichi.tools.video import make_video, interpolate_frames, mp4_to_gif, scale_video, crop_video
+from taichi.tools.video import make_video, interpolate_frames, mp4_to_gif, scale_video, crop_video, accelerate_video
 
 def test_python():
   print("\nRunning python tests...\n")
@@ -51,6 +51,7 @@ def main(debug=False):
       "           ti video                  |-> Make a video using *.png files in the current folder\n"
       "           ti video_scale            |-> Scale video resolution \n"
       "           ti video_crop             |-> Crop video\n"
+      "           ti video_speed            |-> Speed up video\n"
       "           ti gif                    |-> Convert mp4 file to gif\n"
       "           ti doc                    |-> Build documentation\n"
       "           ti debug [script.py]      |-> Debug script\n")
@@ -159,11 +160,20 @@ def main(debug=False):
     y_begin = float(sys.argv[5])
     y_end = float(sys.argv[6])
     crop_video(input_fn, output_fn, x_begin, x_end, y_begin, y_end)
+  elif mode == "video_speed":
+    if len(sys.argv) != 4:
+      print('Usage: ti video_speed fn speed_up_factor')
+      exit(-1)
+    input_fn = sys.argv[2]
+    assert input_fn[-4:] == '.mp4'
+    output_fn = input_fn[:-4] + '-sped.mp4'
+    speed = float(sys.argv[3])
+    accelerate_video(input_fn, output_fn, speed)
   elif mode == "gif":
     input_fn = sys.argv[2]
     assert input_fn[-4:] == '.mp4'
     output_fn = input_fn[:-4] + '.gif'
-    ti.info('Converting {} to {}.gif'.format(input_fn, output_fn))
+    ti.info('Converting {} to {}'.format(input_fn, output_fn))
     framerate = 24
     mp4_to_gif(input_fn, output_fn, framerate)
   elif mode == "convert":

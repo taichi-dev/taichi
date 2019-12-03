@@ -21,7 +21,11 @@ class Matrix:
     self.grad = None
     if isinstance(n, list):
       if not isinstance(n[0], list):
-        mat = [list([expr.Expr(x)]) for x in n]
+        if impl.get_runtime().inside_kernel:
+          # wrap potential constants with Expr
+          mat = [list([expr.Expr(x)]) for x in n]
+        else:
+          mat = [[x] for x in n]
       else:
         mat = n
       self.n, self.m = len(mat), len(mat[0])

@@ -26,10 +26,6 @@ def place():
 
 @ti.kernel
 def substep():
-  for i, j in grid_v:
-    grid_v[i, j] = ti.Matrix.zero(ti.f32, 2)
-    grid_m[i, j] = 0
-
   for p in x:
     base = (x[p] * inv_dx - 0.5).cast(int)
     fx = x[p] * inv_dx - base.cast(float)
@@ -91,6 +87,8 @@ for i in range(n_particles):
 for f in range(200):
   canvas.clear(0x112F41)
   for s in range(50):
+    grid_v.fill([0, 0])
+    grid_m.fill(0)
     substep()
 
   pos = x.to_numpy()

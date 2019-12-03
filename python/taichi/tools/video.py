@@ -11,6 +11,9 @@ FRAME_DIR = 'frames'
 def scale_video(input, output, ratiow, ratioh):
   os.system('ffmpeg -i {}  -vf "scale=iw*{:.4f}:ih*{:.4f}" {}'.format(input, ratiow, ratioh, output))
 
+def crop_video(input, output, x_begin, x_end, y_begin, y_end):
+  os.system('ffmpeg -i {} -filter:v "crop=iw*{:.4f}:ih*{:.4f}:iw*{:0.4f}:ih*{:0.4f}" {}'.format(input, x_end - x_begin, y_end - y_begin, x_begin, 1 - y_begin, output))
+
 def get_ffmpeg_path():
   # return get_directory('external/lib/ffmpeg')
   return 'ffmpeg'

@@ -3,7 +3,7 @@ import os
 import shutil
 import time
 import random
-from taichi.tools.video import make_video, interpolate_frames, mp4_to_gif, scale_video
+from taichi.tools.video import make_video, interpolate_frames, mp4_to_gif, scale_video, crop_video
 
 def test_python():
   print("\nRunning python tests...\n")
@@ -147,6 +147,18 @@ def main(debug=False):
     else:
       ratioh = ratiow
     scale_video(input_fn, output_fn, ratiow, ratioh)
+  elif mode == "video_crop":
+    if len(sys.argv) != 7:
+      print('Usage: ti video_crop fn x_begin x_end y_begin y_end')
+      exit(-1)
+    input_fn = sys.argv[2]
+    assert input_fn[-4:] == '.mp4'
+    output_fn = input_fn[:-4] + '-cropped.mp4'
+    x_begin = float(sys.argv[3])
+    x_end = float(sys.argv[4])
+    y_begin = float(sys.argv[5])
+    y_end = float(sys.argv[6])
+    crop_video(input_fn, output_fn, x_begin, x_end, y_begin, y_end)
   elif mode == "gif":
     input_fn = sys.argv[2]
     assert input_fn[-4:] == '.mp4'

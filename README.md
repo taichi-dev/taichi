@@ -30,6 +30,13 @@ python3 -m pip install taichi-nightly-cuda-10-1
 
 ## [Examples](https://github.com/yuanming-hu/taichi/tree/master/examples)
 ## Updates
+- (Dec  3, 2019) v0.2.1 released.
+   - Improved type mismatch error message
+   - native `min`/`max` supprt
+   - Tensor access index dimensionality checking
+   - `Matrix.to_numpy`, `Matrix.zero`, `Matrix.identity`, `Matrix.fill`
+   - Warning instead of error on lossy stores
+   - Added some initial support for cross-referencing local variables in different offloaded blocks.
 - (Nov 28, 2019) v0.2.0 released.
    - More friendly syntax error when passing non-compile-time-constant values to `ti.static`
    - Systematically resolved the variable name resolution [issue](https://github.com/yuanming-hu/taichi/issues/282)

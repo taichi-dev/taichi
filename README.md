@@ -1,6 +1,4 @@
-<div align="center">
-  <img width="500px" src="https://github.com/yuanming-hu/taichi/raw/master/misc/logo.png">
-</div>
+<img width="500px" src="https://github.com/yuanming-hu/taichi/raw/master/misc/logo.png">
 
 || **Linux (CUDA)** | **OS X** | **Windows** |
 |:------|:-----|:-----|:-----|

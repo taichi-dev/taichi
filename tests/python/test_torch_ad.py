@@ -1,11 +1,11 @@
 import taichi as ti
 import numpy as np
-import torch
 
 @ti.host_arch
 def test_torch_ad():
   if not ti.has_pytorch():
     return
+  import torch
   n = 32
 
   x = ti.var(ti.f32, shape=n, needs_grad=True)
@@ -43,5 +43,7 @@ def test_torch_ad():
   for i in range(10):
     X = torch.tensor(2 * np.ones((n, ), dtype=np.float32), requires_grad=True)
     sqr(X).sum().backward()
-    print(X.grad.cpu().numpy())
+    ret = X.grad.cpu().numpy()
+    for j in range(n):
+      assert ret[j] == 4
 

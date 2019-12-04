@@ -48,7 +48,7 @@ class Sqr(torch.autograd.Function):
 
 sqr = Sqr.apply
 for i in range(10):
-  X = torch.tensor(2 * np.ones((n, ), dtype=np.float32), device=torch.device('cuda:0'), requires_grad=True)
+  X = torch.tensor(2 * np.ones((n, ), dtype=np.float32), requires_grad=True)
   sqr(X).sum().backward()
   print(X.grad.cpu().numpy())
 

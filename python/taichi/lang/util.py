@@ -1,6 +1,17 @@
 from .core import taichi_lang_core
 import numpy as np
 
+_has_pytorch = False
+
+try:
+  import torch
+  _has_pytorch = True
+except:
+  pass
+
+def has_pytorch():
+  return _has_pytorch
+
 def is_taichi_class(rhs):
   taichi_class = False
   try:
@@ -45,3 +56,26 @@ def to_pytorch_type(dt):
     return torch.int64
   else:
     assert False
+
+def to_taichi_type(dt):
+  if dt == np.float32:
+    return f32
+  elif dt == np.float64:
+    return f64
+  elif dt == np.int32:
+    return i32
+  elif dt == np.int64:
+    return i64
+
+  if has_pytorch():
+    if dt == torch.float32:
+      return f32
+    elif dt == torch.float64:
+      return f64
+    elif dt == torch.int32:
+      return i32
+    elif dt == torch.int64:
+      return i64
+
+  raise AssertionError("Unknown type {}".format(dt))
+

@@ -1,4 +1,5 @@
 import ast
+from .util import to_taichi_type
 
 class TaichiSyntaxError(Exception):
   def __init__(self, *args, **kwargs):
@@ -382,13 +383,14 @@ if 1:
           array_dt = self.arg_features[i][0]
           array_dim = self.arg_features[i][1]
           import numpy as np
-          if array_dt == np.float32:
+          array_dt = to_taichi_type(array_dt)
+          if array_dt == ti.f32:
             dt = self.parse_expr('ti.f32')
-          elif array_dt == np.float64:
+          elif array_dt == ti.f64:
             dt = self.parse_expr('ti.f64')
-          elif array_dt == np.int32:
+          elif array_dt == ti.i32:
             dt = self.parse_expr('ti.i32')
-          elif array_dt == np.int64:
+          elif array_dt == ti.i64:
             dt = self.parse_expr('ti.i64')
           else:
             assert False

@@ -2,6 +2,8 @@ import taichi as ti
 
 @ti.all_archs
 def test_offload_with_cross_block_locals():
+  if ti.cfg.arch == ti.cuda:
+    return
   ret = ti.var(ti.f32)
 
   @ti.layout
@@ -22,6 +24,8 @@ def test_offload_with_cross_block_locals():
 
 @ti.all_archs
 def test_offload_with_cross_block_locals2():
+  if ti.cfg.arch == ti.cuda:
+    return
   ret = ti.var(ti.f32)
 
   @ti.layout

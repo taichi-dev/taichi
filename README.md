@@ -1,19 +1,13 @@
- <img src="https://github.com/yuanming-hu/taichi/raw/master/misc/logo.png">
+<img width="500px" src="https://github.com/yuanming-hu/taichi/raw/master/misc/logo.png">
 
-### Build
-| **Linux (CUDA)** | **OS X** | **Windows** |
-|:-----|:-----|:-----|
-|[![Build Status](http://f11.csail.mit.edu:8080/job/taichi/badge/icon)](http://f11.csail.mit.edu:8080/job/taichi/)|[![Build Status](https://travis-ci.com/yuanming-hu/taichi.svg?branch=master)](https://travis-ci.com/yuanming-hu/taichi) | [![Build Status](https://ci.appveyor.com/api/projects/status/github/yuanming-hu/taichi?branch=master&svg=true)](https://ci.appveyor.com/project/IteratorAdvance/taichi) |
+|| **Linux (CUDA)** | **OS X** | **Windows** |
+|:------|:-----|:-----|:-----|
+|**Build**|[![Build Status](http://f11.csail.mit.edu:8080/job/taichi/badge/icon)](http://f11.csail.mit.edu:8080/job/taichi/)|[![Build Status](https://travis-ci.com/yuanming-hu/taichi.svg?branch=master)](https://travis-ci.com/yuanming-hu/taichi) | [![Build Status](https://ci.appveyor.com/api/projects/status/github/yuanming-hu/taichi?branch=master&svg=true)](https://ci.appveyor.com/project/IteratorAdvance/taichi) |
+|**PyPI**|[![Build Status](https://travis-ci.com/yuanming-hu/taichi-wheels-test.svg?branch=master)](https://travis-ci.com/yuanming-hu/taichi-wheels-test)|[![Build Status](https://travis-ci.com/yuanming-hu/taichi-wheels-test.svg?branch=master)](https://travis-ci.com/yuanming-hu/taichi-wheels-test)|[![Build status](https://ci.appveyor.com/api/projects/status/39ar9wa8yd49je7o?svg=true)](https://ci.appveyor.com/project/IteratorAdvance/taichi-wheels-test)|
 
-### Python Wheels
-| **Linux** | **OS X** | **Windows** |
-|:-----|:-----|:-----|
-|[![Build Status](https://travis-ci.com/yuanming-hu/taichi-wheels-test.svg?branch=master)](https://travis-ci.com/yuanming-hu/taichi-wheels-test)|[![Build Status](https://travis-ci.com/yuanming-hu/taichi-wheels-test.svg?branch=master)](https://travis-ci.com/yuanming-hu/taichi-wheels-test)|[![Build status](https://ci.appveyor.com/api/projects/status/39ar9wa8yd49je7o?svg=true)](https://ci.appveyor.com/project/IteratorAdvance/taichi-wheels-test)|
-
-### Misc.
-| **Documentation** | **Chat** |
-|:-----|:-----|
-| [![Documentation Status](https://readthedocs.org/projects/taichi/badge/?version=latest)](http://taichi.readthedocs.io/en/latest/?badge=latest) | [![Join the chat at https://gitter.im/taichi-dev/Lobby](https://badges.gitter.im/taichi-dev/Lobby.svg)](https://gitter.im/taichi-dev/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) |
+| **Documentation** | **Chat** | taichi-nightly | taichi-nightly-cuda-10-0 | taichi-nightly-cuda-10-1 |
+|:-----|:-----|:----|:----|:----|
+| [![Documentation Status](https://readthedocs.org/projects/taichi/badge/?version=latest)](http://taichi.readthedocs.io/en/latest/?badge=latest) | [![Join the chat at https://gitter.im/taichi-dev/Lobby](https://badges.gitter.im/taichi-dev/Lobby.svg)](https://gitter.im/taichi-dev/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) | [![Downloads](https://pepy.tech/badge/taichi-nightly/month)](https://pepy.tech/project/taichi-nightly/month)| [![Downloads](https://pepy.tech/badge/taichi-nightly-cuda-10-0/month)](https://pepy.tech/project/taichi-nightly-cuda-10-0/month) | [![Downloads](https://pepy.tech/badge/taichi-nightly-cuda-10-0/month)](https://pepy.tech/project/taichi-nightly-cuda-10-1/month) |
 
 ```bash
 # CPU only. No GPU/CUDA needed. (Linux, OS X and Windows)
@@ -30,6 +24,13 @@ python3 -m pip install taichi-nightly-cuda-10-1
 
 ## [Examples](https://github.com/yuanming-hu/taichi/tree/master/examples)
 ## Updates
+- (Dec  3, 2019) v0.2.1 released.
+   - Improved type mismatch error message
+   - native `min`/`max` supprt
+   - Tensor access index dimensionality checking
+   - `Matrix.to_numpy`, `Matrix.zero`, `Matrix.identity`, `Matrix.fill`
+   - Warning instead of error on lossy stores
+   - Added some initial support for cross-referencing local variables in different offloaded blocks.
 - (Nov 28, 2019) v0.2.0 released.
    - More friendly syntax error when passing non-compile-time-constant values to `ti.static`
    - Systematically resolved the variable name resolution [issue](https://github.com/yuanming-hu/taichi/issues/282)

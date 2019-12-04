@@ -14,10 +14,8 @@ def test_torch_ad():
   @ti.kernel
   def torch_kernel():
     for i in range(n):
-      # Do whatever complex operations here a little bit fancier
+      # Do whatever complex operations here
       y[n - i - 1] = x[i] * x[i]
-
-  # https://pytorch.org/tutorials/beginner/examples_autograd/two_layer_net_custom_function.html
 
   class Sqr(torch.autograd.Function):
     @staticmethod

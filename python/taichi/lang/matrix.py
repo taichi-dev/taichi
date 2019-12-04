@@ -449,6 +449,13 @@ class Matrix:
       ret = ret[..., 0]
     return ret
 
+  def from_numpy(self, ndarray):
+    if len(ndarray.shape) < self.loop_range().dim() + 2:
+      ndarray = ndarray[..., None]
+    for i in range(self.n):
+      for j in range(self.m):
+        self.get_entry(i, j).from_numpy(ndarray[..., i, j])
+
   @staticmethod
   def zero(dt, n, m=1):
     import taichi as ti

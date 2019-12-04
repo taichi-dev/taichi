@@ -89,3 +89,20 @@ def test_f64():
   for i in range(n):
     for j in range(m):
       assert val[i, j] == (i + j * 3) * 2e100
+
+@ti.all_archs
+def test_matrix():
+  n = 4
+  m = 7
+  val = ti.Matrix(2, 3, ti.f32, shape=(n, m))
+
+  nparr = np.empty(shape=(n, m, 2, 3))
+  for i in range(n):
+    for j in range(m):
+      for k in range(2):
+        for l in range(3):
+          nparr[i, j, k, l] = i + j * 2 - k - l * 3
+
+  val.from_numpy(nparr)
+  new_nparr = val.to_numpy()
+  assert (nparr == new_nparr).all()

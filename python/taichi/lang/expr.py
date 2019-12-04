@@ -297,6 +297,9 @@ class Expr:
     from .meta import numpy_to_tensor
     numpy_to_tensor(arr, self)
 
+  def from_torch(self, arr):
+    self.from_numpy(arr)
+
 def make_var_vector(size):
   import taichi as ti
   exprs = []

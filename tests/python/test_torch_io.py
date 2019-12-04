@@ -96,3 +96,18 @@ def test_io_3d():
   X = torch.tensor(2 * np.ones((n, n, n), dtype=np.float32), requires_grad=True)
   val = sqr(X).sum()
   assert val == 2 * 2 * n * n * n
+
+@ti.host_arch
+def test_io_simple():
+  if not ti.has_pytorch():
+    return
+  import torch
+  n = 32
+
+  x1 = ti.var(ti.f32, shape=(n, n))
+  t1 = torch.tensor(2 * np.ones((n, n), dtype=np.float32))
+
+  x1.from_torch(t1)
+  for i in range(n):
+    for j in range(n):
+      assert x1[i, j] == 2

@@ -175,6 +175,12 @@ def global_var(dt, shape=None, needs_grad=False):
 
   return x
 
+class Layout:
+  def __init__(self, soa=False):
+    self.soa = soa
+
+SOA = Layout(soa=True)
+AOS = Layout(soa=False)
 
 var = global_var
 

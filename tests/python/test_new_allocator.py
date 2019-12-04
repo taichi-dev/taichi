@@ -42,3 +42,22 @@ def test_3d():
   for i in range(N):
     for j in range(M):
       assert y[i, j] == i * 10 + j
+
+@ti.all_archs
+def test_matrix():
+  N = 16
+
+  x = ti.Matrix(2, 2, dt=ti.f32, shape=(N,), layout=ti.AOS)
+
+  @ti.kernel
+  def func():
+    for i in range(N):
+      x[i][1, 1] = x[i][0, 0]
+
+  for i in range(N):
+    x[i][0, 0] = i + 3
+
+  func()
+
+  for i in range(N):
+    assert x[i][1, 1] == i + 3

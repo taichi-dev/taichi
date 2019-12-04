@@ -17,7 +17,7 @@ def broadcast_if_scalar(func):
 class Matrix:
   is_taichi_class = True
 
-  def __init__(self, n, m=1, dt=None, empty=False):
+  def __init__(self, n, m=1, dt=None, empty=False, shape=None, layout=None, needs_grad=False):
     self.grad = None
     if isinstance(n, list):
       if not isinstance(n[0], list):
@@ -46,6 +46,30 @@ class Matrix:
           for i in range(n * m):
             self.entries.append(impl.var(dt))
           self.grad = self.make_grad()
+
+    if layout is not None:
+      assert shape is not None, 'layout is useless without shape'
+    if shape is not None:
+      import taichi as ti
+      if layout is None:
+        layout = ti.AOS
+      @ti.layout
+      def place():
+        dim = len(shape)
+        if layout.soa:
+          for i, e in enumerate(self.entries):
+            ti.root.dense(ti.index_nd(dim), shape).place(e)
+            if needs_grad:
+              ti.root.dense(ti.index_nd(dim), shape).place(e.grad)
+        else:
+          var_list = []
+          for i, e in enumerate(self.entries):
+            var_list.append(e)
+          if needs_grad:
+            for i, e in enumerate(self.entries):
+              var_list.append(e.grad)
+          ti.root.dense(ti.index_nd(dim), shape).place(*tuple(var_list))
+
 
   def is_global(self):
     results = [False for _ in self.entries]

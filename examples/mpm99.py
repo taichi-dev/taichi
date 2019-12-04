@@ -9,20 +9,14 @@ p_vol = (dx * 0.5) ** 2
 p_rho = 1; p_mass = p_vol * p_rho
 E = 400
 
-scalar = lambda: ti.var(dt=ti.f32)
-vec = lambda: ti.Vector(dim, dt=ti.f32)
-mat = lambda: ti.Matrix(dim, dim, dt=ti.f32)
-
-x, v = vec(), vec()
-C, J = mat(), scalar()
-grid_v, grid_m = vec(), scalar()
+x = ti.Vector(dim, dt=ti.f32, shape=n_particles)
+v = ti.Vector(dim, dt=ti.f32, shape=n_particles)
+C = ti.Matrix(dim, dim, dt=ti.f32, shape=n_particles)
+J = ti.var(dt=ti.f32, shape=n_particles)
+grid_v = ti.Vector(dim, dt=ti.f32, shape=(n_grid, n_grid))
+grid_m = ti.var(dt=ti.f32, shape=(n_grid, n_grid))
 
 ti.cfg.arch = ti.cuda
-
-@ti.layout
-def place():
-  ti.root.dense(ti.k, n_particles).place(x, v, J, C)
-  ti.root.dense(ti.ij, n_grid).place(grid_v, grid_m)
 
 @ti.kernel
 def substep():

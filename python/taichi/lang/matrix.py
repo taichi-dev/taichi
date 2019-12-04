@@ -50,6 +50,8 @@ class Matrix:
     if layout is not None:
       assert shape is not None, 'layout is useless without shape'
     if shape is not None:
+      if isinstance(shape, numbers.Number):
+        shape = (shape,)
       import taichi as ti
       if layout is None:
         layout = ti.AOS

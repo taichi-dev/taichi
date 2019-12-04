@@ -150,6 +150,8 @@ def index_nd(dim):
   return indices(*range(dim))
 
 def global_var(dt, shape=None, needs_grad=False):
+  if isinstance(shape, numbers.Number):
+    shape = (shape,)
 
   # primal
   x = Expr(taichi_lang_core.make_id_expr(""))

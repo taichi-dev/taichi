@@ -20,21 +20,17 @@ def test_torch_ad():
   class Sqr(torch.autograd.Function):
     @staticmethod
     def forward(ctx, inp):
-      outp = torch.zeros_like(inp)
-      ti.from_torch(x, inp)
+      x.from_torch(inp)
       torch_kernel()
-      ti.to_torch(y, outp)
+      outp = y.to_torch()
       return outp
 
     @staticmethod
     def backward(ctx, outp_grad):
-      inp_grad = torch.zeros_like(outp_grad)
-
       ti.clear_all_gradients()
-      ti.from_torch(y.grad, outp_grad)
+      y.grad.from_torch(outp_grad)
       torch_kernel.grad()
-      ti.to_torch(x.grad, inp_grad)
-
+      inp_grad = x.grad.to_torch()
       return inp_grad
 
   sqr = Sqr.apply

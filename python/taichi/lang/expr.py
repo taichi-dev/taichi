@@ -305,7 +305,7 @@ class Expr:
     numpy_to_tensor(arr, self)
 
   def from_torch(self, arr):
-    self.from_numpy(arr)
+    self.from_numpy(arr.contiguous())
 
 def make_var_vector(size):
   import taichi as ti

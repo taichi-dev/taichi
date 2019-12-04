@@ -302,6 +302,8 @@ class Expr:
     for i in range(self.dim()):
       assert s[i] == arr.shape[i]
     from .meta import numpy_to_tensor
+    if hasattr(arr, 'contiguous'):
+      arr = arr.contiguous()
     numpy_to_tensor(arr, self)
 
   def from_torch(self, arr):

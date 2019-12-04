@@ -468,7 +468,7 @@ class Matrix:
         self.get_entry(i, j).from_numpy(ndarray[..., i, j])
 
   def from_torch(self, torch_tensor):
-    return self.from_numpy(torch_tensor)
+    return self.from_numpy(torch_tensor.contiguous())
 
   @staticmethod
   def zero(dt, n, m=1):

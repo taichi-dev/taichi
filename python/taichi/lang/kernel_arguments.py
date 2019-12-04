@@ -8,7 +8,7 @@ class ArgExtArray:
     assert dim == 1
 
   def extract(self, x):
-    return x.dtype, len(x.shape)
+    return to_taichi_type(x.dtype), len(x.shape)
 
 
 ext_arr = ArgExtArray

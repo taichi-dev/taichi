@@ -58,6 +58,8 @@ def to_pytorch_type(dt):
     assert False
 
 def to_taichi_type(dt):
+  if type(dt) == taichi_lang_core.DataType:
+    return dt
   if dt == np.float32:
     return f32
   elif dt == np.float64:

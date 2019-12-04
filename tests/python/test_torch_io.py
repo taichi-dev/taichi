@@ -70,3 +70,29 @@ def test_io_2d():
   X = torch.tensor(2 * np.ones((n, n), dtype=np.float32), requires_grad=True)
   val = sqr(X).sum()
   assert val == 2 * 2 * n * n
+
+@ti.host_arch
+def test_io_3d():
+  if not ti.has_pytorch():
+    return
+  import torch
+  n = 16
+
+  @ti.kernel
+  def torch_kernel(t: ti.ext_arr(), o: ti.ext_arr()):
+    for i in range(n):
+      for j in range(n):
+        for k in range(n):
+          o[i, j, k] = t[i, j, k] * t[i, j, k]
+
+  class Sqr(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, inp):
+      outp = torch.zeros_like(inp)
+      torch_kernel(inp, outp)
+      return outp
+
+  sqr = Sqr.apply
+  X = torch.tensor(2 * np.ones((n, n, n), dtype=np.float32), requires_grad=True)
+  val = sqr(X).sum()
+  assert val == 2 * 2 * n * n * n

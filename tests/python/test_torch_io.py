@@ -121,3 +121,7 @@ def test_io_simple():
       for k in range(2):
         for l in range(3):
           assert x2[i, j][k, l] == 2
+
+  t3 = x2.to_torch()
+  assert (t2 == t3).all()
+

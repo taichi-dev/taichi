@@ -3,7 +3,7 @@ from . import impl
 import copy
 import numbers
 import numpy as np
-from .util import to_numpy_type
+from .util import to_numpy_type, to_pytorch_type
 
 def broadcast_if_scalar(func):
   def broadcasted(self, other, *args, **kwargs):
@@ -449,12 +449,26 @@ class Matrix:
       ret = ret[..., 0]
     return ret
 
+  def to_torch(self, as_vector=False):
+    import torch
+    ret = torch.empty(self.loop_range().shape() + (self.n, self.m), dtype=to_pytorch_type(self.loop_range().snode().data_type()))
+    for i in range(self.n):
+      for j in range(self.m):
+        ret[..., i, j] = self.get_entry(i, j).to_torch()
+    if as_vector:
+      assert self.m == 1
+      ret = ret[..., 0]
+    return ret
+
   def from_numpy(self, ndarray):
     if len(ndarray.shape) < self.loop_range().dim() + 2:
       ndarray = ndarray[..., None]
     for i in range(self.n):
       for j in range(self.m):
         self.get_entry(i, j).from_numpy(ndarray[..., i, j])
+
+  def from_torch(self, torch_tensor):
+    return self.from_numpy(torch_tensor)
 
   @staticmethod
   def zero(dt, n, m=1):

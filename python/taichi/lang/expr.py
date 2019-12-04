@@ -289,6 +289,13 @@ class Expr:
     tensor_to_numpy(self, arr)
     return arr
 
+  def to_torch(self):
+    from .meta import tensor_to_numpy
+    import torch
+    arr = torch.empty(size=self.shape(), dtype=to_pytorch_type(self.snode().data_type()))
+    tensor_to_numpy(self, arr)
+    return arr
+
   def from_numpy(self, arr):
     assert self.dim() == len(arr.shape)
     s = self.shape()

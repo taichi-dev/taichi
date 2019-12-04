@@ -256,6 +256,7 @@ void offload(IRNode *root) {
     auto local_to_global = IdentifyLocalVars::run(root);
     PromoteLocals::run(root, local_to_global);
   }
+  irpass::typecheck(root);
   irpass::re_id(root);
 }
 

@@ -48,7 +48,6 @@ def test_io():
 
 @ti.host_arch
 def test_io_2d():
-  return
   if not ti.has_pytorch():
     return
   import torch
@@ -68,8 +67,6 @@ def test_io_2d():
       return outp
 
   sqr = Sqr.apply
-  X = torch.tensor(2 * np.ones((n, ), dtype=np.float32), requires_grad=True)
-  print(sqr(X).sum())
-
-# test_io_2d()
-
+  X = torch.tensor(2 * np.ones((n, n), dtype=np.float32), requires_grad=True)
+  val = sqr(X).sum()
+  assert val == 2 * 2 * n * n

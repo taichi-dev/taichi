@@ -249,10 +249,6 @@ class Kernel:
           if is_numpy:
             tmp = np.ascontiguousarray(v)
             t_kernel.set_arg_nparray(actual_argument_slot, int(tmp.ctypes.data), tmp.nbytes)
-            max_num_indices = taichi_lang_core.get_max_num_indices()
-            assert len(tmp.shape) <= max_num_indices, "External array cannot have > {} indices".format(max_num_indices)
-            for i, s in enumerate(tmp.shape):
-              t_kernel.set_extra_arg_int(actual_argument_slot, i, s)
           else:
             assert has_torch and isinstance(v, torch.Tensor)
             tmp = v
@@ -262,6 +258,11 @@ class Kernel:
               assert self.runtime.prog.config.arch == taichi_lang_core.Arch.x86_64, 'Torch tensor on CPU yet taichi is on GPU'
             t_kernel.set_arg_nparray(actual_argument_slot, int(tmp.data_ptr()),
                                      tmp.element_size() * tmp.nelement())
+          shape = v.shape
+          max_num_indices = taichi_lang_core.get_max_num_indices()
+          assert len(shape) <= max_num_indices, "External array cannot have > {} indices".format(max_num_indices)
+          for i, s in enumerate(shape):
+            t_kernel.set_extra_arg_int(actual_argument_slot, i, s)
         else:
           assert False
         actual_argument_slot += 1

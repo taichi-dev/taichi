@@ -242,25 +242,19 @@ class Kernel:
           if type(v) not in [int]:
             raise KernelArgError(i, needed, provided)
           t_kernel.set_arg_int(actual_argument_slot, int(v))
-        elif isinstance(needed, np.ndarray) or needed == np.ndarray or (isinstance(v, np.ndarray) and isinstance(needed, ext_arr)):
-          float32_types = [np.float32, np.int32, np.float64, np.int64]
-          assert v.dtype in float32_types, 'Kernel arg supports float/int 32/64 np arrays only'
-          tmp = np.ascontiguousarray(v)
-          t_kernel.set_arg_nparray(actual_argument_slot, int(tmp.ctypes.data), tmp.nbytes)
-          max_num_indices = taichi_lang_core.get_max_num_indices()
-          assert len(tmp.shape) <= max_num_indices, "External array cannot have > {} indices".format(max_num_indices)
-          for i, s in enumerate(tmp.shape):
-            t_kernel.set_extra_arg_int(actual_argument_slot, i, s)
-          # v[:] = tmp[:]
-        else:
-          has_torch = False
-          try:
-            import torch
-            has_torch = True
-          except:
-            pass
-
-          if has_torch and isinstance(v, torch.Tensor):
+        elif self.match_ext_arr(v, needed):
+          dt = to_taichi_type(v.dtype)
+          has_torch = has_pytorch()
+          is_numpy = isinstance(v, np.ndarray)
+          if is_numpy:
+            tmp = np.ascontiguousarray(v)
+            t_kernel.set_arg_nparray(actual_argument_slot, int(tmp.ctypes.data), tmp.nbytes)
+            max_num_indices = taichi_lang_core.get_max_num_indices()
+            assert len(tmp.shape) <= max_num_indices, "External array cannot have > {} indices".format(max_num_indices)
+            for i, s in enumerate(tmp.shape):
+              t_kernel.set_extra_arg_int(actual_argument_slot, i, s)
+          else:
+            assert has_torch and isinstance(v, torch.Tensor)
             tmp = v
             if str(v.device).startswith('cuda'):
               assert self.runtime.prog.config.arch == taichi_lang_core.Arch.gpu, 'Torch tensor on GPU yet taichi is on CPU'
@@ -268,8 +262,8 @@ class Kernel:
               assert self.runtime.prog.config.arch == taichi_lang_core.Arch.x86_64, 'Torch tensor on CPU yet taichi is on GPU'
             t_kernel.set_arg_nparray(actual_argument_slot, int(tmp.data_ptr()),
                                      tmp.element_size() * tmp.nelement())
-          else:
-            assert False, 'Argument to kernels must have type float/int. If you are passing a PyTorch tensor, make sure it is on the same device (CPU/GPU) as taichi.'
+        else:
+          assert False
         actual_argument_slot += 1
       if not self.classkernel and self.runtime.target_tape and not self.runtime.inside_complex_kernel:
         self.runtime.target_tape.insert(self, args)
@@ -277,6 +271,12 @@ class Kernel:
 
     return func__
 
+  def match_ext_arr(self, v, needed):
+    needs_array = isinstance(needed, np.ndarray) or needed == np.ndarray or isinstance(needed, ext_arr)
+    has_array = isinstance(v, np.ndarray)
+    if not has_array and has_pytorch():
+      has_array = isinstance(v, torch.Tensor)
+    return has_array and needs_array
 
   def __call__(self, *args, **kwargs):
     assert len(kwargs) == 0, 'kwargs not supported for Taichi kernels'

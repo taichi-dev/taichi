@@ -205,9 +205,34 @@ class BasicBlockSimplify : public IRVisitor {
     set_done(stmt);
   }
 
+  // Local variable operation optimizations:
+  // 1. Store forwarding
+  //
+
+  bool modifies_local(Stmt *stmt, std::vector<Stmt *> vars) {
+    if (stmt->is<LocalStoreStmt>()) {
+      auto st = stmt->as<LocalStoreStmt>();
+      for (auto var : vars) {
+        if (st->ptr == var) {
+          return true;
+        }
+      }
+    } else if (stmt->is<AtomicOpStmt>()) {
+      auto st = stmt->as<AtomicOpStmt>();
+      for (auto var : vars) {
+        if (st->dest == var) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
   void visit(LocalLoadStmt *stmt) override {
     if (is_done(stmt))
       return;
+
+    // Merge identical loads
     for (int i = 0; i < current_stmt_id; i++) {
       auto &bstmt = block->statements[i];
       if (stmt->ret_type == bstmt->ret_type) {
@@ -233,14 +258,8 @@ class BasicBlockSimplify : public IRVisitor {
                 has_related_store = true;
                 break;
               }
-              if (block->statements[j]->is<LocalStoreStmt>()) {
-                auto st = block->statements[j]->as<LocalStoreStmt>();
-                for (auto var : vars) {
-                  if (st->ptr == var) {
-                    has_related_store = true;
-                    break;
-                  }
-                }
+              if (modifies_local(block->statements[j].get(), vars)) {
+                has_related_store = true;
               }
             }
             if (!has_related_store) {
@@ -266,52 +285,33 @@ class BasicBlockSimplify : public IRVisitor {
       // load
       auto block = stmt->parent;
       Stmt *containing_statement = stmt;
-      bool modified = false;
-      while (true) {
-        auto stmt_id = block->locate(containing_statement);
-        TC_ASSERT(stmt_id != -1);
-        for (int i = stmt_id - 1; i >= 0; i--) {
-          auto &bstmt = block->statements[i];
-          // Find a previous store
-          if (bstmt->is<LocalStoreStmt>()) {
-            auto bstmt_ = bstmt->as<LocalStoreStmt>();
-            // Same alloca
-            if (bstmt_->ptr == alloca) {
-              // Forward to the first local store only
-              stmt->replace_with(bstmt_->data);
-              stmt->parent->erase(current_stmt_id);
-              throw IRModified();
-            }
-          } else if (bstmt->is_container_statement()) {
-            // assume this container may modify the local var
-            modified = true;
+      auto stmt_id = block->locate(containing_statement);
+      TC_ASSERT(stmt_id != -1);
+      for (int i = stmt_id - 1; i >= 0; i--) {
+        auto &bstmt = block->statements[i];
+        // Find a previous store
+        if (auto s = bstmt->cast<AtomicOpStmt>()) {
+          if (s->dest == alloca) {
             break;
           }
         }
-        break;
-        /*
-        // Note: simply checking all statements before stmt is not sufficient
-        // since statements after stmt may change the value of the alloca
-        if (modified) break;
-        // Go to parent level
-        auto parent_block = block->parent;
-        if (!parent_block)
-          break;
-        Stmt *parent_statement = nullptr;
-        for (int i = 0; i < parent_block->statements.size(); i++) {
-          auto s = parent_block->statements[i].get();
-          if (s->is<RangeForStmt>() &&
-              s->as<RangeForStmt>()->body.get() == block) {
-            parent_statement = s;
-            break;
+        if (bstmt->is<LocalStoreStmt>()) {
+          auto bstmt_ = bstmt->as<LocalStoreStmt>();
+          // Same alloca
+          if (bstmt_->ptr == alloca) {
+            // Forward to the first local store only
+            stmt->replace_with(bstmt_->data);
+            stmt->parent->erase(current_stmt_id);
+            throw IRModified();
           }
-        }
-        if (!parent_statement)
+        } else if (bstmt->is_container_statement()) {
+          // assume this container may modify the local var
           break;
-        block = parent_block;
-        containing_statement = parent_statement;
-        */
+        }
       }
+      // Note: simply checking all statements before stmt is not sufficient
+      // since statements after stmt may change the value of the alloca
+      // For example, in a loop, later part of the loop body may alter the local var value.
     }
     set_done(stmt);
   }

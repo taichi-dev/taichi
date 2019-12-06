@@ -14,3 +14,16 @@ def test_cse():
   func()
   assert A[None] == 133
 
+@ti.all_archs
+def test_store_forward():
+  A = ti.var(ti.f32, shape=())
+
+  @ti.kernel
+  def func():
+    a = 0
+    a = 123
+    a += 10
+    A[None] = a
+
+  func()
+  assert A[None] == 133

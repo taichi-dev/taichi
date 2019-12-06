@@ -2,7 +2,9 @@
   <img width="500px" src="https://github.com/yuanming-hu/taichi/raw/master/misc/logo.png">
 </div>        
 
-Forum: https://forum.taichi.graphics/                                                                                         
+Forum: https://forum.taichi.graphics/
+
+[[FAQ]](https://github.com/yuanming-hu/taichi/tree/master/misc#faq)
 
 | **Documentation** | **Chat** | taichi-nightly | taichi-nightly-cuda-10-0 | taichi-nightly-cuda-10-1 |
 |:-----|:-----|:----|:----|:----|

@@ -18,7 +18,9 @@ extern UnifiedAllocator* allocator_instance;
 // This class can only have one instance
 class UnifiedAllocator {
   std::unique_ptr<VirtualMemoryAllocator> cpu_vm;
+#if defined(TLANG_GPU)
   void *_cuda_data{};
+#endif
   std::size_t size{};
   bool gpu{};
 

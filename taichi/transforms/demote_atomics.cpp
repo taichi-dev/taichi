@@ -6,6 +6,8 @@ TLANG_NAMESPACE_BEGIN
 
 class DemoteAtomics : public BasicStmtVisitor {
 public:
+  using BasicStmtVisitor::visit;
+
   OffloadedStmt *current_offloaded;
 
   DemoteAtomics() : BasicStmtVisitor() { current_offloaded = nullptr; }
@@ -29,7 +31,7 @@ public:
     }
   }
 
-  void visit(OffloadedStmt *stmt) {
+  void visit(OffloadedStmt *stmt) override {
     current_offloaded = stmt;
     if (stmt->body) {
       stmt->body->accept(this);

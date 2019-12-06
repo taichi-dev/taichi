@@ -122,6 +122,9 @@ Steps:
 
 class IdentifyLocalVars : public BasicStmtVisitor {
 public:
+
+  using BasicStmtVisitor::visit;
+
   std::map<Stmt *, std::size_t> local_to_global;
   std::map<Stmt *, Stmt *> local_to_offloaded;
   Stmt *current_offloaded;
@@ -189,6 +192,9 @@ public:
 
 class PromoteLocals : public BasicStmtVisitor {
 public:
+
+  using BasicStmtVisitor::visit;
+
   std::map<Stmt *, std::size_t> local_to_global_offset;
   std::map<Stmt *, VectorType> local_to_global_vector_type;
 

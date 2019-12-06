@@ -2,6 +2,14 @@
 
 TLANG_NAMESPACE_BEGIN
 
+template <typename T>
+std::vector<T*> make_raw_pointer_list(const std::vector<std::unique_ptr<T>> &unique_pointers) {
+  std::vector<T*> raw_pointers;
+  for (auto &ptr: unique_pointers)
+    raw_pointers.push_back(ptr.get());
+  return raw_pointers;
+}
+
 // Lower Expr tree to a bunch of binary/unary(binary/unary) statements
 // Goal: eliminate Expression, Identifiers, and mutable local variables. Make
 // AST SSA.
@@ -22,7 +30,8 @@ class LowerAST : public IRVisitor {
   void visit(Block *stmt_list) override {
     auto backup_block = current_block;
     current_block = stmt_list;
-    for (auto &stmt : stmt_list->statements) {
+    auto stmts = make_raw_pointer_list(stmt_list->statements);
+    for (auto &stmt : stmts) {
       stmt->accept(this);
     }
     current_block = backup_block;

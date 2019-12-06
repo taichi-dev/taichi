@@ -6,6 +6,8 @@ TLANG_NAMESPACE_BEGIN
 
 class ConstantFold : public BasicStmtVisitor {
  public:
+  using BasicStmtVisitor::visit;
+
   ConstantFold() : BasicStmtVisitor() {
   }
 

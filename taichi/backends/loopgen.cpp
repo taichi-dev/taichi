@@ -15,8 +15,8 @@
 TLANG_NAMESPACE_BEGIN
 
 LoopGenerator::LoopGenerator(taichi::Tlang::CodeGenBase *gen) : gen(gen) {
-  int num_SMs;
 #if defined(CUDA_FOUND)
+  int num_SMs;
   cudaDeviceGetAttribute(&num_SMs, cudaDevAttrMultiProcessorCount, 0);
   grid_dim = num_SMs * 32;  // each SM can have 16-32 resident blocks
 #else

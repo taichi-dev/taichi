@@ -254,7 +254,6 @@ public:
   virtual void emit_extra_unary(UnaryOpStmt *stmt) {
     auto input = stmt->operand->value;
     auto input_taichi_type = stmt->operand->ret_type.data_type;
-    auto input_type = input->getType();
     auto op = stmt->op_type;
 
 #define UNARY_STD(x)                                                           \
@@ -1249,7 +1248,7 @@ public:
     }
   }
 
-  void visit(GlobalTemporaryStmt *stmt) {
+  void visit(GlobalTemporaryStmt *stmt) override {
     auto runtime = get_runtime();
     auto addr = builder->CreateGEP(runtime, tlctx->get_constant((int64)stmt->offset));
     TC_ASSERT(stmt->width() == 1);

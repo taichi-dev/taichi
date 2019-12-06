@@ -21,7 +21,7 @@ public:
         auto load = new_stmts.push_back<GlobalLoadStmt>(ptr);
         auto add =
             new_stmts.push_back<BinaryOpStmt>(BinaryOpType::add, load, val);
-        auto store = new_stmts.push_back<GlobalStoreStmt>(ptr, add);
+        new_stmts.push_back<GlobalStoreStmt>(ptr, add);
 
         stmt->parent->replace_with(stmt, new_stmts);
         throw IRModified();

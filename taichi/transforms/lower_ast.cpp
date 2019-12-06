@@ -205,11 +205,10 @@ class LowerAST : public IRVisitor {
     VecStatement flattened;
     expr->flatten(flattened);
     if (stmt->dest.is<IdExpression>()) {  // local variable
-      TC_NOT_IMPLEMENTED
       // emit local store stmt
-      flattened.push_back<LocalStoreStmt>(
-          stmt->parent->lookup_var(stmt->dest.cast<IdExpression>()->id),
-          expr->stmt);
+      auto alloca = stmt->parent->lookup_var(stmt->dest.cast<IdExpression>()->id);
+      flattened.push_back<AtomicOpStmt>(stmt->op_type, alloca,
+                                        expr->stmt);
     } else {  // global variable
       TC_ASSERT(stmt->dest.is<GlobalPtrExpression>());
       auto global_ptr = stmt->dest.cast<GlobalPtrExpression>();

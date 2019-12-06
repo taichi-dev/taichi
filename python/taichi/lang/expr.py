@@ -54,7 +54,7 @@ class Expr:
   __radd__ = __add__
 
   def __iadd__(self, other):
-    self.assign(Expr(taichi_lang_core.expr_add(self.ptr, other.ptr)))
+    taichi_lang_core.expr_atomic_add(self.ptr, other.ptr)
 
   def __neg__(self):
     return Expr(taichi_lang_core.expr_neg(self.ptr), tb=self.stack_info())
@@ -64,7 +64,7 @@ class Expr:
     return Expr(taichi_lang_core.expr_sub(self.ptr, other.ptr), tb=self.stack_info())
 
   def __isub__(self, other):
-    self.assign(Expr(taichi_lang_core.expr_sub(self.ptr, other.ptr)))
+    taichi_lang_core.expr_atomic_sub(self.ptr, other.ptr)
 
   def __imul__(self, other):
     self.assign(Expr(taichi_lang_core.expr_mul(self.ptr, other.ptr)))

@@ -2,8 +2,6 @@ import taichi as ti
 
 @ti.all_archs
 def test_loop_grad():
-  ti.set_gdb_trigger()
-  ti.cfg.print_ir = True
   x = ti.var(ti.f32)
 
   n = 16

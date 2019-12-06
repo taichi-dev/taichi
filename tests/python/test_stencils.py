@@ -6,8 +6,6 @@ def test_simple():
   # Note: access simplification does not work in this case. Maybe worth fixing.
   x = ti.var(ti.i32)
   y = ti.var(ti.i32)
-  
-  ti.cfg.print_ir = True
 
   n = 128
 

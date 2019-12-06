@@ -172,6 +172,14 @@ public:
     test_and_allocate(stmt->ptr);
   }
 
+  void visit(AtomicOpStmt *stmt) override {
+    TC_ASSERT(current_offloaded);
+    TC_ASSERT(stmt->width() == 1);
+    if (stmt->dest->is<AllocaStmt>()) {
+      test_and_allocate(stmt->dest);
+    }
+  }
+
   static std::map<Stmt *, std::size_t> run(IRNode *root) {
     IdentifyLocalVars pass;
     root->accept(&pass);
@@ -235,6 +243,22 @@ public:
     throw IRModified();
   }
 
+  void visit(AtomicOpStmt *stmt) override {
+    TC_ASSERT(stmt->width() == 1);
+    auto alloca = stmt->dest;
+    if (local_to_global_offset.find(alloca) == local_to_global_offset.end())
+      return;
+
+    VecStatement replacement;
+    auto ret_type = stmt->dest->ret_type;
+
+    auto ptr = replacement.push_back<GlobalTemporaryStmt>(local_to_global_offset[alloca], ret_type);
+    replacement.push_back<AtomicOpStmt>(stmt->op_type, ptr, stmt->val);
+
+    stmt->parent->replace_with(stmt, replacement);
+    throw IRModified();
+  }
+
   static void run(IRNode *root, std::map<Stmt *, std::size_t> local_to_global_offset) {
     PromoteLocals pass(local_to_global_offset);
     while (true) {
@@ -256,6 +280,7 @@ void offload(IRNode *root) {
     auto local_to_global = IdentifyLocalVars::run(root);
     PromoteLocals::run(root, local_to_global);
   }
+  irpass::print(root);
   irpass::typecheck(root);
   irpass::re_id(root);
 }

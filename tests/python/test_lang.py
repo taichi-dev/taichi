@@ -100,6 +100,7 @@ def test_simple2():
 
 @ti.all_archs
 def test_recreate():
+  ti.get_runtime().print_preprocessed = True
   @ti.kernel
   def test():
     a = 0

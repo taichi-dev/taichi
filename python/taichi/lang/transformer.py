@@ -93,26 +93,67 @@ class ASTTransformer(ast.NodeTransformer):
     t.value.args[1] = ast.Str(s=type(node.op).__name__, ctx=ast.Load())
     return ast.copy_location(t, node)
 
+  @staticmethod
+  def make_single_statement(stmts):
+    template = 'if 1: pass'
+    t = ast.parse(template).body[0]
+    t.body = stmts
+    return t
+
   def visit_Assign(self, node):
     assert (len(node.targets) == 1)
     self.generic_visit(node)
-    is_local = isinstance(node.targets[0], ast.Name)
+
+    import astpretty
+    astpretty.pprint(node)
 
     if isinstance(node.targets[0], ast.Tuple):
-      # Create
-      init = ast.Attribute(
-        value=ast.Name(id='ti', ctx=ast.Load()), attr='expr_init',
-        ctx=ast.Load())
-      rhs = ast.Call(
-        func=init,
-        args=[node.value],
-        keywords=[],
-      )
-      for var in node.targets[0].elts:
-        self.create_variable(var.id)
-      return ast.copy_location(ast.Assign(targets=node.targets, value=rhs),
-                               node)
+      targets = node.targets[0].elts
 
+      # Create
+      stmts = []
+
+      holder = self.parse_stmt('__tmp_tuple = 0')
+      holder.value = node.value
+
+      stmts.append(holder)
+
+      def tuple_indexed(i):
+        indexing = self.parse_stmt('__tmp_tuple[0]')
+        import astpretty
+        astpretty.pprint(indexing)
+        indexing.value.slice.value = self.parse_expr("{}".format(i))
+        return indexing.value
+
+      for i, target in enumerate(targets):
+        is_local = isinstance(target, ast.Name)
+        if is_local and self.is_creation(target.id):
+          var_name = target.id
+          target.ctx = ast.Store()
+          # Create
+          init = ast.Attribute(
+            value=ast.Name(id='ti', ctx=ast.Load()), attr='expr_init',
+            ctx=ast.Load())
+          rhs = ast.Call(
+            func=init,
+            args=[tuple_indexed(i)],
+            keywords=[],
+          )
+          self.create_variable(var_name)
+          stmts.append(ast.Assign(targets=[target], value=rhs))
+        else:
+          # Assign
+          target.ctx = ast.Load()
+          func = ast.Attribute(value=target, attr='assign', ctx=ast.Load())
+          call = ast.Call(func=func, args=[tuple_indexed(i)], keywords=[])
+          stmts.append(ast.Expr(value=call))
+
+      for stmt in stmts:
+        ast.copy_location(stmt, node)
+      stmts.append(self.parse_stmt('del __tmp_tuple'))
+      return self.make_single_statement(stmts)
+
+    is_local = isinstance(node.targets[0], ast.Name)
     if is_local and self.is_creation(node.targets[0].id):
       var_name = node.targets[0].id
       # Create

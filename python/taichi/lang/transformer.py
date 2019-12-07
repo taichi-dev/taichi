@@ -104,9 +104,6 @@ class ASTTransformer(ast.NodeTransformer):
     assert (len(node.targets) == 1)
     self.generic_visit(node)
 
-    import astpretty
-    astpretty.pprint(node)
-
     if isinstance(node.targets[0], ast.Tuple):
       targets = node.targets[0].elts
 
@@ -120,8 +117,6 @@ class ASTTransformer(ast.NodeTransformer):
 
       def tuple_indexed(i):
         indexing = self.parse_stmt('__tmp_tuple[0]')
-        import astpretty
-        astpretty.pprint(indexing)
         indexing.value.slice.value = self.parse_expr("{}".format(i))
         return indexing.value
 
@@ -152,28 +147,28 @@ class ASTTransformer(ast.NodeTransformer):
         ast.copy_location(stmt, node)
       stmts.append(self.parse_stmt('del __tmp_tuple'))
       return self.make_single_statement(stmts)
-
-    is_local = isinstance(node.targets[0], ast.Name)
-    if is_local and self.is_creation(node.targets[0].id):
-      var_name = node.targets[0].id
-      # Create
-      init = ast.Attribute(
-        value=ast.Name(id='ti', ctx=ast.Load()), attr='expr_init',
-        ctx=ast.Load())
-      rhs = ast.Call(
-        func=init,
-        args=[node.value],
-        keywords=[],
-      )
-      self.create_variable(var_name)
-      return ast.copy_location(ast.Assign(targets=node.targets, value=rhs),
-                               node)
     else:
-      # Assign
-      node.targets[0].ctx = ast.Load()
-      func = ast.Attribute(value=node.targets[0], attr='assign', ctx=ast.Load())
-      call = ast.Call(func=func, args=[node.value], keywords=[])
-      return ast.copy_location(ast.Expr(value=call), node)
+      is_local = isinstance(node.targets[0], ast.Name)
+      if is_local and self.is_creation(node.targets[0].id):
+        var_name = node.targets[0].id
+        # Create
+        init = ast.Attribute(
+          value=ast.Name(id='ti', ctx=ast.Load()), attr='expr_init',
+          ctx=ast.Load())
+        rhs = ast.Call(
+          func=init,
+          args=[node.value],
+          keywords=[],
+        )
+        self.create_variable(var_name)
+        return ast.copy_location(ast.Assign(targets=node.targets, value=rhs),
+                                 node)
+      else:
+        # Assign
+        node.targets[0].ctx = ast.Load()
+        func = ast.Attribute(value=node.targets[0], attr='assign', ctx=ast.Load())
+        call = ast.Call(func=func, args=[node.value], keywords=[])
+        return ast.copy_location(ast.Expr(value=call), node)
 
   def visit_Try(self, node):
     raise TaichiSyntaxError("Keyword 'try' not supported in Taichi kernels")

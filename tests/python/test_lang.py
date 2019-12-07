@@ -1,5 +1,4 @@
 import taichi as ti
-from pytest import approx
 
 def test_clear():
   return
@@ -98,4 +97,13 @@ def test_simple2():
   
   for i in range(n):
     assert val[i] == 1 + i * 2
+
+@ti.all_archs
+def test_recreate():
+  @ti.kernel
+  def test():
+    a = 0
+    a, b = 1, 2
+
+  test()
 

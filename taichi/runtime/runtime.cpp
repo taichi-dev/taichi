@@ -5,6 +5,7 @@
 #include <atomic>
 #include <cmath>
 #include <type_traits>
+#include <cstdlib>
 
 #define STRUCT_FIELD(S, F)                                                     \
   extern "C" decltype(S::F) S##_get_##F(S *s) { return s->F; }                 \
@@ -72,6 +73,9 @@ int abs_i32(int a) {
     return -a;
   }
 }
+
+float32 rand_f32() {return rand() * f32(1.0f / (f32(RAND_MAX) + 1));}
+float64 rand_f64() {return rand() * f64(1.0 / (f64(RAND_MAX) + 1));}
 
 int max_i32(int a, int b) { return a > b ? a : b; }
 

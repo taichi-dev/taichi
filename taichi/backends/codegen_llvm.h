@@ -246,9 +246,13 @@ public:
   }
 
   void visit(RandStmt *stmt) override {
-    TC_ASSERT(stmt->ret_type.data_type == DataType::f32);
-    emit("const auto {} = {}::rand();", stmt->raw_name(),
-         stmt->ret_data_type_name());
+    if (stmt->ret_type.data_type == DataType::f32) {
+      stmt->value = create_call("rand_f32");
+    } else if (stmt->ret_type.data_type == DataType::f64) {
+      stmt->value = create_call("rand_f64");
+    } else {
+      TC_NOT_IMPLEMENTED;
+    }
   }
 
   virtual void emit_extra_unary(UnaryOpStmt *stmt) {
@@ -612,12 +616,12 @@ public:
     call("element_listgen", get_runtime(), meta_parent, meta_child);
   }
 
-  llvm::Value *create_call(llvm::Value *func, std::vector<Value *> args) {
+  llvm::Value *create_call(llvm::Value *func, std::vector<Value *> args={}) {
     check_func_call_signature(func, args);
     return builder->CreateCall(func, args);
   }
 
-  llvm::Value *create_call(std::string func_name, std::vector<Value *> args) {
+  llvm::Value *create_call(std::string func_name, std::vector<Value *> args={}) {
     auto func = get_runtime_function(func_name);
     return create_call(func, args);
   }

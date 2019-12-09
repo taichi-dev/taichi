@@ -13,7 +13,12 @@ ij = indices(0, 1)
 ijk = indices(0, 1, 2)
 ijkl = indices(0, 1, 2, 3)
 Vector = Matrix
+
 outer_product = Matrix.outer_product
+cross = Matrix.cross
+dot = Matrix.dot
+normalized = Matrix.normalized
+
 cfg = default_cfg()
 current_cfg = current_cfg()
 x86_64 = core.x86_64

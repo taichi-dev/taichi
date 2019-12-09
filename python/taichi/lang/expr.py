@@ -2,7 +2,6 @@ from .core import taichi_lang_core
 from .util import *
 import traceback
 
-
 # Scalar, basic data type
 class Expr:
   materialize_layout_callback = None

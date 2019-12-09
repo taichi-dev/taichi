@@ -32,7 +32,7 @@ def func(foo):
   func_body = tree.body[0]
   func_body.decorator_list = []
   
-  visitor = ASTTransformer(transform_args=False)
+  visitor = ASTTransformer(is_kernel=False)
   visitor.visit(tree)
   ast.fix_missing_locations(tree)
   

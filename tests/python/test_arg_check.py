@@ -28,7 +28,7 @@ def test_argument_error():
       pass
   except ti.KernelDefError:
     pass
-  
+
   @ti.kernel
   def set_i32(v: ti.i32):
     x[None] = v

@@ -1,7 +1,7 @@
 import taichi as ti
 
 @ti.all_archs
-def test_access_by_ref_should_crash():
+def test_pass_by_value():
 
   @ti.func
   def set_val(x, i):
@@ -14,4 +14,4 @@ def test_access_by_ref_should_crash():
     set_val(ret[None], 112)
 
   task()
-  print(ret[None])
+  assert ret[None] == 0

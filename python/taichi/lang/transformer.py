@@ -26,11 +26,11 @@ class ScopeGuard:
 
 # Single-pass transform
 class ASTTransformer(ast.NodeTransformer):
-  def __init__(self, excluded_paremeters=(), transform_args=True, func=None, arg_features=None):
+  def __init__(self, excluded_paremeters=(), is_kernel=True, func=None, arg_features=None):
     super().__init__()
     self.local_scopes = []
     self.excluded_parameters = excluded_paremeters
-    self.transform_args = transform_args
+    self.is_kernel = is_kernel
     self.func = func
     self.arg_features = arg_features
 
@@ -399,15 +399,14 @@ if 1:
     return node
 
   def visit_FunctionDef(self, node):
-    with self.variable_scope():
-      self.generic_visit(node)
     args = node.args
     assert args.vararg is None
     assert args.kwonlyargs == []
     assert args.kw_defaults == []
     assert args.kwarg is None
     import taichi as ti
-    if self.transform_args:
+    if self.is_kernel:
+      # Transform as kernel
       arg_decls = []
       for i, arg in enumerate(args.args):
         if isinstance(self.func.arguments[i], ti.template):
@@ -416,6 +415,7 @@ if 1:
         if isinstance(self.func.arguments[i], ti.ext_arr):
           arg_init = self.parse_stmt('x = ti.decl_ext_arr_arg(0, 0)')
           arg_init.targets[0].id = arg.arg
+          self.create_variable(arg.arg)
           array_dt = self.arg_features[i][0]
           array_dim = self.arg_features[i][1]
           import numpy as np
@@ -439,9 +439,21 @@ if 1:
           dt = arg.annotation
           arg_init.value.args[0] = dt
           arg_decls.append(arg_init)
-      node.body = arg_decls + node.body
       # remove original args
       node.args.args = []
+    else:
+      # Transform as func (all parameters passed by value)
+      arg_decls = []
+      for i, arg in enumerate(args.args):
+        arg_init = self.parse_stmt('x = ti.expr_init(0)')
+        arg_init.targets[0].id = arg.arg
+        self.create_variable(arg.arg)
+        arg_init.value.args[0] = self.parse_expr(arg.arg + '_by_value__')
+        args.args[i].arg += '_by_value__'
+        arg_decls.append(arg_init)
+    with self.variable_scope():
+      self.generic_visit(node)
+    node.body = arg_decls + node.body
     return node
 
   def visit_UnaryOp(self, node):

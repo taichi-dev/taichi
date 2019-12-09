@@ -13,6 +13,23 @@ from taichi.system import *
 from taichi.lang import *
 from .torch_io import from_torch, to_torch
 
+GUI = core.GUI
+
+def set_image(self, img):
+  import numpy as np
+  assert isinstance(img, np.ndarray)
+  assert len(img.shape) in [2, 3]
+  img = img.astype(np.float32)
+  if len(img.shape) == 2:
+    img = img[..., None]
+  if img.shape[2] == 1:
+    img = img + np.zeros(shape=(1, 1, 4))
+  if img.shape[2] == 3:
+    img = np.concatenate([img, np.zeros(shape=(img.shape[0], img.shape[1], 1), dtype=np.float32)], axis=2)
+  self.set_img(np.ascontiguousarray(img).ctypes.data)
+
+GUI.set_image = set_image
+
 def test():
   task = taichi.Task('test')
   return task.run([])

@@ -137,7 +137,7 @@ def ti_max(*args):
     else:
       return Expr(taichi_lang_core.expr_max(Expr(args[0]).ptr, Expr(args[1]).ptr))
   else:
-    return ti_max(args[0], ti_max(args[1:]))
+    return ti_max(args[0], ti_max(*args[1:]))
 
 def ti_min(*args):
   num_args = len(args)
@@ -150,7 +150,7 @@ def ti_min(*args):
     else:
       return Expr(taichi_lang_core.expr_min(Expr(args[0]).ptr, Expr(args[1]).ptr))
   else:
-    return ti_min(args[0], ti_min(args[1:]))
+    return ti_min(args[0], ti_min(*args[1:]))
 
 def append(l, indices, val):
   taichi_lang_core.insert_append(l.ptr, make_expr_group(indices), Expr(val).ptr)

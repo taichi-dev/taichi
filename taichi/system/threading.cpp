@@ -7,4 +7,16 @@
 
 TC_NAMESPACE_BEGIN
 
+class ThreadPool {
+public:
+  ThreadPool() {
+    TC_TAG;
+  }
+};
+
+bool test_threading() {
+  auto tp = ThreadPool();
+  return true;
+}
+
 TC_NAMESPACE_END

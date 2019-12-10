@@ -6,6 +6,12 @@
 #include <taichi/common/interface.h>
 #include <taichi/python/export.h>
 
+TC_NAMESPACE_BEGIN
+
+bool test_threading();
+
+TC_NAMESPACE_END
+
 TLANG_NAMESPACE_BEGIN
 
 std::string compiled_lib_dir;
@@ -361,6 +367,7 @@ void export_lang(py::module &m) {
   m.def("trigger_crash", [] {*(int *)(1)=0;});
   m.def("get_max_num_indices", [] {return max_num_indices;});
   m.def("get_max_num_args", [] {return max_num_args;});
+  m.def("test_threading", test_threading);
 }
 
 TC_NAMESPACE_END

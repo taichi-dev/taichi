@@ -2,12 +2,9 @@ import taichi as ti
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt
-import time
 
 real = ti.f32
 ti.set_default_fp(real)
-ti.cfg.enable_profiler = False
-# ti.cfg.use_llvm = True
 
 dim = 2
 n_particles = 6400
@@ -30,42 +27,18 @@ scalar = lambda: ti.var(dt=real)
 vec = lambda: ti.Vector(dim, dt=real)
 mat = lambda: ti.Matrix(dim, dim, dt=real)
 
-x, v, x_avg = vec(), vec(), vec()
-grid_v_in, grid_m_in = vec(), scalar()
-grid_v_out = vec()
-C, F = mat(), mat()
-
-init_v = vec()
-loss = scalar()
+x = ti.Vector(dim, dt=real, shape=(max_steps, n_particles), needs_grad=True)
+x_avg = ti.Vector(dim, dt=real, shape=(), needs_grad=True)
+v = ti.Vector(dim, dt=real, shape=(max_steps, n_particles), needs_grad=True)
+grid_v_in = ti.Vector(dim, dt=real, shape=(n_grid, n_grid), needs_grad=True)
+grid_v_out = ti.Vector(dim, dt=real, shape=(n_grid, n_grid), needs_grad=True)
+grid_m_in = ti.var(dt=real, shape=(n_grid, n_grid), needs_grad=True)
+C = ti.Matrix(dim, dim, dt=real, shape=(max_steps, n_particles), needs_grad=True)
+F = ti.Matrix(dim, dim, dt=real, shape=(max_steps, n_particles), needs_grad=True)
+init_v = ti.Vector(dim, dt=real, shape=(), needs_grad=True)
+loss = ti.var(dt=real, shape=(), needs_grad=True)
 
 ti.cfg.arch = ti.cuda
-
-
-@ti.layout
-def place():
-  def p(x):
-    for i in x.entries:
-      ti.root.dense(ti.l, max_steps).dense(ti.k, n_particles).place(i)
-      ti.root.dense(ti.l, max_steps).dense(ti.k, n_particles).place(i.grad)
-      
-  # ti.root.dense(ti.l, max_steps).dense(ti.k, n_particles).place(x, v, C, F)
-  p(x)
-  p(v)
-  p(C)
-  p(F)
-  def pg(x):
-    # ti.root.dense(ti.ij, n_grid // 8).dense(ti.ij, 8).place(x)
-    ti.root.dense(ti.ij, n_grid).place(x)
-  def pgv(x):
-    for i in x.entries:
-      ti.root.dense(ti.ij, n_grid).place(i)
-    
-  pgv(grid_v_in)
-  pg(grid_m_in)
-  pg(grid_v_out)
-  ti.root.place(init_v, loss, x_avg)
-
-  ti.root.lazy_grad()
 
 @ti.kernel
 def set_v():
@@ -102,13 +75,10 @@ def p2g(f: ti.i32):
         offset = ti.Vector([i, j])
         dpos = (ti.cast(ti.Vector([i, j]), real) - fx) * dx
         weight = w[i](0) * w[j](1)
-        grid_v_in[base + offset].atomic_add(
-          weight * (p_mass * v[f, p] + affine @ dpos))
-        grid_m_in[base + offset].atomic_add(weight * p_mass)
-
+        grid_v_in[base + offset] += weight * (p_mass * v[f, p] + affine @ dpos)
+        grid_m_in[base + offset] += weight * p_mass
 
 bound = 3
-
 
 @ti.kernel
 def grid_op():

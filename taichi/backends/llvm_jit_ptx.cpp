@@ -9,6 +9,7 @@
 #endif
 #include "cuda_context.h"
 #include "llvm_jit.h"
+#include <taichi/program.h>
 #include <taichi/context.h>
 #include <taichi/system/timer.h>
 
@@ -313,6 +314,14 @@ void CUDAContext::launch(CUfunction func, void *context_ptr, unsigned gridDim,
   // Kernel launch
   checkCudaErrors(cuLaunchKernel(func, gridDim, 1, 1, blockDim, 1, 1, 0,
                                  nullptr, KernelParams, nullptr));
+
+  if (get_current_program().config.debug) {
+    cudaDeviceSynchronize();
+    auto err = cudaGetLastError();
+    if (err) {
+      TC_ERROR("CUDA Kernel Launch Error: {}", cudaGetErrorString(err));
+    }
+  }
 }
 
 CUDAContext::~CUDAContext() {

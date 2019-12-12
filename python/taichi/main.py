@@ -34,6 +34,10 @@ def main(debug=False):
   lines.append(u' **                                       **')
   lines.append(u' ** High-Performance Programming Language **')
   lines.append(u' *******************************************')
+  if debug:
+    lines.append(u' *****************Debug Mode****************')
+    lines.append(u' *******************************************')
+    os.environ['TI_DEBUG'] = '1'
   print(u'\n'.join(lines))
   print()
   import taichi as ti
@@ -60,15 +64,8 @@ def main(debug=False):
 
   t = time.time()
   if mode.endswith('.py'):
-    with open(mode) as script:
-      script = script.read()
-    exec(script, {'__name__': '__main__'})
-  elif mode.endswith('.cpp'):
-    command = 'g++ {} -o {} -g -std=c++14 -O3 -lX11 -lpthread'.format(mode, mode[:-4])
-    print(command)
-    ret = os.system(command)
-    if ret == 0:
-      os.system('./{}'.format(mode[:-4]))
+    import subprocess
+    subprocess.call([sys.executable] + sys.argv[1:])
   elif mode == "run":
     if argc <= 2:
       print("Please specify [task name], e.g. test_math")
@@ -105,12 +102,6 @@ def main(debug=False):
   elif mode == "asm":
     fn = sys.argv[2]
     os.system(r"sed '/^\s*\.\(L[A-Z]\|[a-z]\)/ d' {0} > clean_{0}".format(fn))
-  elif mode == "exec":
-    import subprocess
-    exec_name = sys.argv[2]
-    folder = ti.get_bin_directory()
-    assert exec_name in os.listdir(folder)
-    subprocess.call([os.path.join(folder, exec_name)] + sys.argv[3:])
   elif mode == "interpolate":
     interpolate_frames('.')
   elif mode == "amal":

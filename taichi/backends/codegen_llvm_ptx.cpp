@@ -189,6 +189,15 @@ public:
   void visit(AtomicOpStmt *stmt) override {
     auto mask = stmt->parent->mask();
     TC_ASSERT(stmt->width() == 1);
+    int addr_space;
+    // https://llvm.org/docs/NVPTXUsage.html#address-spaces
+    if (stmt->dest->is<AllocaStmt>()) {
+      // local
+      addr_space = 5;
+    } else {
+      // global
+      addr_space = 1;
+    }
     for (int l = 0; l < stmt->width(); l++) {
       TC_ASSERT(stmt->op_type == AtomicOpType::add);
       if (is_integral(stmt->val->ret_type.data_type))
@@ -198,12 +207,12 @@ public:
       else if (stmt->val->ret_type.data_type == DataType::f32) {
         auto dt = tlctx->get_data_type(DataType::f32);
         builder->CreateIntrinsic(Intrinsic::nvvm_atomic_load_add_f32,
-                                 {llvm::PointerType::get(dt, 0)},
+                                 {llvm::PointerType::get(dt, addr_space)},
                                  {stmt->dest->value, stmt->val->value});
       } else if (stmt->val->ret_type.data_type == DataType::f64) {
         auto dt = tlctx->get_data_type(DataType::f64);
         builder->CreateIntrinsic(Intrinsic::nvvm_atomic_load_add_f64,
-                                 {llvm::PointerType::get(dt, 0)},
+                                 {llvm::PointerType::get(dt, addr_space)},
                                  {stmt->dest->value, stmt->val->value});
       } else {
         TC_NOT_IMPLEMENTED

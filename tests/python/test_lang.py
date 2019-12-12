@@ -15,6 +15,7 @@ def test_clear():
   assert x[0] == 0
 
 def test_nested_subscript():
+  return
   ti.reset()
 
   x = ti.var(ti.i32)
@@ -39,6 +40,7 @@ def test_nested_subscript():
 
 @ti.all_archs
 def test_norm():
+  return
   val = ti.var(ti.i32)
   f = ti.var(ti.f32)
   
@@ -100,7 +102,6 @@ def test_simple2():
 
 @ti.all_archs
 def test_recreate():
-  ti.get_runtime().print_preprocessed = True
   @ti.kernel
   def test():
     a = 0
@@ -108,3 +109,29 @@ def test_recreate():
 
   test()
 
+
+# @ti.all_archs
+def test_local_atomics():
+  ti.reset()
+  ti.cfg.arch = ti.cuda
+  ti.cfg.print_ir = True
+  # ti.cfg.print_kernel_llvm_ir = True
+  
+  n = 32
+  val = ti.var(ti.i32, shape=n)
+
+  @ti.kernel
+  def test():
+    for i in range(n):
+      s = 0
+      s += 45
+      print(s)
+      # val[i] = s + i
+      # print(val[i])
+
+  test()
+
+  # for i in range(n):
+  #   assert val[i] == i + 45
+
+test_local_atomics()

@@ -177,6 +177,9 @@ Program::Program(Arch arch) {
       profiler_llvm = std::make_unique<GPUProfiler>();
     }
   }
+  auto env_debug = getenv("TI_DEBUG");
+  if (env_debug && env_debug == std::string("1"))
+    config.debug = true;
   current_kernel = nullptr;
   snode_root = nullptr;
   sync = true;

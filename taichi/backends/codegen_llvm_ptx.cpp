@@ -193,6 +193,7 @@ public:
     // https://llvm.org/docs/NVPTXUsage.html#address-spaces
     bool is_local = stmt->dest->is<AllocaStmt>();
     if (is_local) {
+      TC_ERROR("Local atomics should have been demoted.");
       auto load = builder->CreateLoad(stmt->dest->value);
       TC_ASSERT(stmt->op_type == AtomicOpType::add);
       auto add = builder->CreateAdd(load, stmt->val->value);

@@ -1119,6 +1119,12 @@ void GPUCodeGen::lower_llvm() {
     irpass::re_id(ir);
     irpass::print(ir);
   }
+  irpass::demote_atomics(ir);
+  if (prog->config.print_ir) {
+    TC_TRACE("Atomics Demoted:");
+    irpass::re_id(ir);
+    irpass::print(ir);
+  }
   irpass::full_simplify(ir);
   if (prog->config.print_ir) {
     TC_TRACE("Simplified III:");

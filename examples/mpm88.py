@@ -17,6 +17,7 @@ grid_v = ti.Vector(dim, dt=ti.f32, shape=(n_grid, n_grid))
 grid_m = ti.var(dt=ti.f32, shape=(n_grid, n_grid))
 
 ti.cfg.arch = ti.cuda
+# ti.cfg.print_ir = True
 
 @ti.kernel
 def substep():
@@ -60,14 +61,14 @@ def substep():
         dpos = ti.Vector([i, j]).cast(float) - fx
         g_v = grid_v[base + ti.Vector([i, j])]
         weight = w[i][0] * w[j][1]
-        new_v += weight * g_v
-        new_C += 4 * weight * ti.outer_product(g_v, dpos) * inv_dx
+        new_v = new_v + weight * g_v
+        new_C = new_C + 4 * weight * ti.outer_product(g_v, dpos) * inv_dx
     v[p] = new_v
     x[p] += dt * v[p]
     J[p] *= 1 + dt * new_C.trace()
     C[p] = new_C
 
-gui = ti.core.GUI("MPM99", ti.veci(512, 512))
+gui = ti.core.GUI("MPM88", ti.veci(512, 512))
 canvas = gui.get_canvas()
 
 for i in range(n_particles):

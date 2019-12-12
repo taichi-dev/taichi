@@ -15,7 +15,8 @@ public:
   void visit(AtomicOpStmt *stmt) override {
     bool demote = false;
     bool is_local = false;
-    if (current_offloaded && current_offloaded->num_cpu_threads == 1) {
+    if (current_offloaded && current_offloaded->device == Arch::x86_64 &&
+        current_offloaded->num_cpu_threads == 1) {
       demote = true;
     }
     if (stmt->dest->is<AllocaStmt>()) {

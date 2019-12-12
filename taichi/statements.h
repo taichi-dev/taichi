@@ -165,19 +165,12 @@ class OffloadedStmt : public Stmt {
   int block_dim;
   bool reversed;
   int num_cpu_threads;
+  Arch device;
   std::vector<Stmt *> loop_vars;
   std::vector<llvm::Value *> loop_vars_llvm;
   std::unique_ptr<Block> body;
 
-  OffloadedStmt(TaskType task_type) : task_type(task_type) {
-    num_cpu_threads = 1;
-    begin = end = step = 0;
-    block_dim = 0;
-    reversed = false;
-    if (task_type != TaskType::listgen) {
-      body = std::make_unique<Block>();
-    }
-  }
+  OffloadedStmt(TaskType task_type);
 
   DEFINE_ACCEPT
 };

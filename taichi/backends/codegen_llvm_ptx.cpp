@@ -194,10 +194,6 @@ public:
     bool is_local = stmt->dest->is<AllocaStmt>();
     if (is_local) {
       TC_ERROR("Local atomics should have been demoted.");
-      auto load = builder->CreateLoad(stmt->dest->value);
-      TC_ASSERT(stmt->op_type == AtomicOpType::add);
-      auto add = builder->CreateAdd(load, stmt->val->value);
-      builder->CreateStore(add, stmt->dest->value);
     } else {
       for (int l = 0; l < stmt->width(); l++) {
         TC_ASSERT(stmt->op_type == AtomicOpType::add);

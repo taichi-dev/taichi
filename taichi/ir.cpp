@@ -1,3 +1,4 @@
+
 // Intermediate representations
 
 #include "ir.h"
@@ -502,6 +503,18 @@ For::For(Expr s, Expr e, const std::function<void(Expr)> &func) {
 
 Stmt *IRBuilder::get_last_stmt() {
   return stack.back()->back();
+}
+
+OffloadedStmt::OffloadedStmt(
+    taichi::Tlang::OffloadedStmt::TaskType task_type) : task_type(task_type) {
+  num_cpu_threads = 1;
+  begin = end = step = 0;
+  block_dim = 0;
+  reversed = false;
+  device = get_current_program().config.arch;
+  if (task_type != TaskType::listgen) {
+    body = std::make_unique<Block>();
+  }
 }
 
 TLANG_NAMESPACE_END

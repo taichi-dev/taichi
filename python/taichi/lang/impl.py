@@ -39,8 +39,14 @@ def subscript(value, *indices):
     assert len(indices) == 1
     return value[indices[0]]
 
-  if len(indices) == 1 and is_taichi_class(indices[0]):
-    indices = indices[0].entries
+  flattened_indices = []
+  for i in range(len(indices)):
+    if is_taichi_class(indices[i]):
+      ind = indices[i].entries
+    else:
+      ind = [indices[i]]
+    flattened_indices += ind
+  indices = tuple(flattened_indices)
   if is_taichi_class(value):
     return value.subscript(*indices)
   else:

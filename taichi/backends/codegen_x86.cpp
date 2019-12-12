@@ -746,6 +746,8 @@ void CPUCodeGen::lower_llvm() {
     // irpass::re_id(ir);
     // TC_TRACE("Primal:");
     // irpass::print(ir);
+    irpass::demote_atomics(ir);
+    irpass::simplify(ir);
     irpass::make_adjoint(ir);
     irpass::typecheck(ir);
     if (prog->config.print_ir) {

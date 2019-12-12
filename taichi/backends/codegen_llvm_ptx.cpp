@@ -191,31 +191,32 @@ public:
     TC_ASSERT(stmt->width() == 1);
     int addr_space;
     // https://llvm.org/docs/NVPTXUsage.html#address-spaces
-    if (stmt->dest->is<AllocaStmt>()) {
-      // local
-      addr_space = 5;
-    } else {
-      // global
-      addr_space = 1;
-    }
-    for (int l = 0; l < stmt->width(); l++) {
+    bool is_local = stmt->dest->is<AllocaStmt>();
+    if (is_local) {
+      auto load = builder->CreateLoad(stmt->dest->value);
       TC_ASSERT(stmt->op_type == AtomicOpType::add);
-      if (is_integral(stmt->val->ret_type.data_type))
-        builder->CreateAtomicRMW(
-            llvm::AtomicRMWInst::BinOp::Add, stmt->dest->value,
-            stmt->val->value, llvm::AtomicOrdering::SequentiallyConsistent);
-      else if (stmt->val->ret_type.data_type == DataType::f32) {
-        auto dt = tlctx->get_data_type(DataType::f32);
-        builder->CreateIntrinsic(Intrinsic::nvvm_atomic_load_add_f32,
-                                 {llvm::PointerType::get(dt, addr_space)},
-                                 {stmt->dest->value, stmt->val->value});
-      } else if (stmt->val->ret_type.data_type == DataType::f64) {
-        auto dt = tlctx->get_data_type(DataType::f64);
-        builder->CreateIntrinsic(Intrinsic::nvvm_atomic_load_add_f64,
-                                 {llvm::PointerType::get(dt, addr_space)},
-                                 {stmt->dest->value, stmt->val->value});
-      } else {
-        TC_NOT_IMPLEMENTED
+      auto add = builder->CreateAdd(load, stmt->val->value);
+      builder->CreateStore(add, stmt->dest->value);
+    } else {
+      for (int l = 0; l < stmt->width(); l++) {
+        TC_ASSERT(stmt->op_type == AtomicOpType::add);
+        if (is_integral(stmt->val->ret_type.data_type)) {
+          builder->CreateAtomicRMW(
+              llvm::AtomicRMWInst::BinOp::Add, stmt->dest->value,
+              stmt->val->value, llvm::AtomicOrdering::SequentiallyConsistent);
+        } else if (stmt->val->ret_type.data_type == DataType::f32) {
+          auto dt = tlctx->get_data_type(DataType::f32);
+          builder->CreateIntrinsic(Intrinsic::nvvm_atomic_load_add_f32,
+                                   {llvm::PointerType::get(dt, 0)},
+                                   {stmt->dest->value, stmt->val->value});
+        } else if (stmt->val->ret_type.data_type == DataType::f64) {
+          auto dt = tlctx->get_data_type(DataType::f64);
+          builder->CreateIntrinsic(Intrinsic::nvvm_atomic_load_add_f64,
+                                   {llvm::PointerType::get(dt, 0)},
+                                   {stmt->dest->value, stmt->val->value});
+        } else {
+          TC_NOT_IMPLEMENTED
+        }
       }
     }
   }

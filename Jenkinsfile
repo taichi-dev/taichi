@@ -14,7 +14,7 @@ pipeline {
                 stage('cuda10.0-python3.6') {
                     agent {
                         node {
-                            label "cuda10.0 && python3.6"
+                            label "cuda10_0 && python3_6"
                             customWorkspace "taichi_cu100_py36"
                         }
                     }
@@ -29,7 +29,7 @@ pipeline {
                 stage('cuda10.0-python3.7') {
                     agent {
                         node {
-                            label "cuda10.0 && python3.7"
+                            label "cuda10_0 && python3_7"
                             customWorkspace "taichi_cu100_py37"
                         }
                     }
@@ -44,7 +44,7 @@ pipeline {
                 stage('cuda10.1-python3.6') {
                     agent {
                         node {
-                            label "cuda10.1 && python3.6"
+                            label "cuda10_1 && python3_6"
                             customWorkspace "taichi_cu101_py36"
                         }
                     }
@@ -59,7 +59,7 @@ pipeline {
                 stage('cuda10.1-python3.7') {
                     agent {
                         node {
-                            label "cuda10.1 && python3.7"
+                            label "cuda10_1 && python3_7"
                             customWorkspace "taichi_cu101_py37"
                         }
                     }
@@ -74,7 +74,7 @@ pipeline {
                 stage('cpu-python3.6') {
                     agent {
                         node {
-                            label "python3.6"
+                            label "python3_6"
                             customWorkspace "taichi_cpu_py36"
                         }
                     }
@@ -89,7 +89,7 @@ pipeline {
                 stage('cpu-python3.7') {
                     agent {
                         node {
-                            label "python3.7"
+                            label "python3_7"
                             customWorkspace "taichi_cpu_py37"
                         }
                     }

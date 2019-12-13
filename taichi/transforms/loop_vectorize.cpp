@@ -6,9 +6,9 @@ TLANG_NAMESPACE_BEGIN
 // Lower Expr tree to a bunch of binary/unary(binary/unary) statements
 // Goal: eliminate Expression, and mutable local variables. Make AST SSA.
 class LoopVectorize : public IRVisitor {
- public:
+public:
   int vectorize;
-  Stmt *loop_var;  // an alloca...
+  Stmt *loop_var; // an alloca...
 
   LoopVectorize() {
     allow_undefined_visitor = true;
@@ -17,9 +17,7 @@ class LoopVectorize : public IRVisitor {
     vectorize = 1;
   }
 
-  void visit(Stmt *stmt) override {
-    stmt->ret_type.width *= vectorize;
-  }
+  void visit(Stmt *stmt) override { stmt->ret_type.width *= vectorize; }
 
   void visit(ConstStmt *stmt) override {
     stmt->val.repeat(vectorize);
@@ -120,6 +118,8 @@ class LoopVectorize : public IRVisitor {
   }
 
   void visit(StructForStmt *for_stmt) override {
+    if (for_stmt->loop_vars.empty())
+      return;
     auto old_vectorize = for_stmt->vectorize;
     if (for_stmt->vectorize != 1)
       vectorize = for_stmt->vectorize;
@@ -129,9 +129,7 @@ class LoopVectorize : public IRVisitor {
     vectorize = old_vectorize;
   }
 
-  void visit(WhileStmt *stmt) override {
-    stmt->body->accept(this);
-  }
+  void visit(WhileStmt *stmt) override { stmt->body->accept(this); }
 
   static void run(IRNode *node) {
     LoopVectorize inst;
@@ -141,10 +139,8 @@ class LoopVectorize : public IRVisitor {
 
 namespace irpass {
 
-void loop_vectorize(IRNode *root) {
-  return LoopVectorize::run(root);
-}
+void loop_vectorize(IRNode *root) { return LoopVectorize::run(root); }
 
-}  // namespace irpass
+} // namespace irpass
 
 TLANG_NAMESPACE_END

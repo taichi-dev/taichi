@@ -125,3 +125,17 @@ def test_io_simple():
   t3 = x2.to_torch()
   assert (t2 == t3).all()
 
+@ti.host_arch
+def test_io_simple():
+  if not ti.has_pytorch():
+    return
+  import torch
+  mat = ti.Matrix(2, 6, dt=ti.f32, shape=(), needs_grad=True)
+  zeros = torch.zeros((2, 6))
+  zeros[1, 2] = 3
+  mat.from_torch(zeros + 1)
+  
+  assert mat[None][1, 2] == 4
+  
+  zeros = mat.to_torch()
+  assert zeros[1, 2] == 4

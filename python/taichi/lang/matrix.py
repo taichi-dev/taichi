@@ -20,7 +20,9 @@ class Matrix:
   def __init__(self, n, m=1, dt=None, empty=False, shape=None, layout=None, needs_grad=False):
     self.grad = None
     if isinstance(n, list):
-      if not isinstance(n[0], list):
+      if n == []:
+        mat = []
+      elif not isinstance(n[0], list):
         if impl.get_runtime().inside_kernel:
           # wrap potential constants with Expr
           mat = [list([expr.Expr(x)]) for x in n]
@@ -28,7 +30,11 @@ class Matrix:
           mat = [[x] for x in n]
       else:
         mat = n
-      self.n, self.m = len(mat), len(mat[0])
+      self.n = len(mat)
+      if len(mat) > 0:
+        self.m = len(mat[0])
+      else:
+        self.m = 1
       self.entries = [x for row in mat for x in row]
     else:
       self.entries = []

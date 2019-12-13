@@ -132,7 +132,10 @@ void build_taichi() {
     echo $TAICHI_REPO_DIR
     export PYTHONPATH=$TAICHI_REPO_DIR/python
     export PATH=$WORKSPACE/bin/:$PATH
-    if [[ "$TI_WITH_CUDA" != 'False' ]]; then; nvidia-smi; fi
+    if [ "$TI_WITH_CUDA" != 'False' ]
+    then
+      nvidia-smi
+    fi
     cd $TAICHI_REPO_DIR
     [ -e build ] && rm -rf build
     mkdir build && cd build

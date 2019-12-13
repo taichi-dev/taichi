@@ -5,7 +5,7 @@ pipeline {
         PATH = "/usr/local/clang-7.0.1/bin:/usr/local/cuda/bin/:$PATH"
         LD_LIBRARY_PATH = "/usr/local/clang-7.0.1/lib:/usr/local/cuda/lib64:$LD_LIBRARY_PATH"
         CC = "clang-7"
-        CXX = "clang++"
+        CXX = "clang++-7"
         TI_WITH_CUDA = "True"
     }
     stages{

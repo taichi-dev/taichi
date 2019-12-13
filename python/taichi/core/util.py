@@ -167,7 +167,7 @@ else:
       try:
         os.unlink('taichi_core.so')
       except:
-        print('Warning: taichi_core.so already removed. This may be caused by'
+        print('Warning: taichi_core.so already removed. This may be caused by '
               'simultaneously starting two taichi instances.')
         pass
     shutil.copy('libtaichi_core.so', 'taichi_core.so')

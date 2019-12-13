@@ -5,7 +5,7 @@ pipeline {
         PATH = "/usr/local/clang-7.0.1/bin:/usr/local/cuda/bin/:$PATH"
         LD_LIBRARY_PATH = "/usr/local/clang-7.0.1/lib:/usr/local/cuda/lib64:$LD_LIBRARY_PATH"
         CC = "clang-7"
-        CXX = "clang++-7"
+        CXX = "clang++"
         TI_WITH_CUDA = "True"
     }
     stages{
@@ -127,7 +127,7 @@ void build_taichi() {
     $CC --version
     $CXX --version
     echo $WORKSPACE
-    $PYTHON_EXECUTABLE -m pip install pytest autograd --user
+    $PYTHON_EXECUTABLE -m pip install numpy Pillow scipy pybind11 colorama setuptools astor matplotlib pytest autograd --user
     export TAICHI_REPO_DIR=$WORKSPACE/
     echo $TAICHI_REPO_DIR
     export PYTHONPATH=$TAICHI_REPO_DIR/python

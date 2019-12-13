@@ -1,20 +1,6 @@
 Syntax
 ==========================
 
-Make sure you also check out the DiffTaichi paper (section "Language design" and "Appendix A") to learn more about the language.
-
-Global tensors
---------------
-
-* Every global variable is an N-dimensional tensor. Global `scalars` are treated as 0-D tensors.
-* Global tensors are accessed using indices, e.g. ``x[i, j, k]`` if ``x`` is a 3D tensor. For 0-D tensor, access it as ``x[None]``.
-
-  * Even when accessing 0-D tensor ``x``, use ``x[None] = 0`` instead of ``x = 0``. Please always use indexing to access entries in tensors.
-
-* For a tensor ``F`` of element ``ti.Matrix``, make sure you first index the tensor dimensions, and then the matrix dimensions: ``F[i, j, k][0, 2]``. (Assuming ``F`` is a 3D tensor with ``ti.Matrix`` of size ``3x3`` as elements)
-* ``ti.Vector`` is simply an alias of ``ti.Matrix``.
-* Tensor values are initially zero.
-* Sparse tensors are initially inactive.
 
 Defining your kernels
 ---------------------

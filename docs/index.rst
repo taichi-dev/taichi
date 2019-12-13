@@ -11,6 +11,8 @@ The Taichi Programming Language
    :caption: Basic Syntax
    :maxdepth: 2
 
+   tensor_matrix
+
    syntax
 
    type
@@ -33,16 +35,12 @@ The Taichi Programming Language
    
    utilities
 
-.. toctree::
-   :caption: Developer Installation
-   :maxdepth: 2
-
-   dev_install
 
 .. toctree::
    :caption: Miscellaneous
    :maxdepth: 2
 
+   dev_install
    contributor_guide
    acknowledgments
 

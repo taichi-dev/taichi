@@ -20,19 +20,28 @@ public:
   int task_head;
   int task_tail;
   int running_threads;
+  int desired_num_threads;
   uint64 timestamp;
   bool started;
   bool exiting;
   CPUTaskFunc func;
   void *context;
+  int thread_counter;
 
   void target() {
     uint64 last_timestamp = 0;
+    int thread_id;
+    {
+      std::lock_guard<std::mutex> lock(mutex);
+      thread_id = thread_counter++;
+    }
     while (true) {
       {
         std::unique_lock<std::mutex> lock(mutex);
-        slave_cv.wait(lock, [this, &last_timestamp] {
-          return (timestamp > last_timestamp) || this->exiting;
+        slave_cv.wait(lock, [this, last_timestamp, thread_id] {
+          return (timestamp > last_timestamp &&
+                  thread_id < desired_num_threads) ||
+                 this->exiting;
         });
         last_timestamp = timestamp;
         if (exiting) {
@@ -78,12 +87,14 @@ public:
     }
   }
 
-  void run(int tail, void *context, CPUTaskFunc func) {
+  void run(int splits, int desired_num_threads, void *context, CPUTaskFunc func) {
     this->context = context;
     this->func = func;
+    this->desired_num_threads = desired_num_threads;
+    TC_ASSERT(desired_num_threads > 0);
     started = false;
     task_head = 0;
-    task_tail = tail;
+    task_tail = splits;
     timestamp++;
 
     // wake all slaves
@@ -101,16 +112,15 @@ public:
       exiting = true;
     }
     slave_cv.notify_all();
-    for (int i = 0; i < threads.size(); i++) {
-      threads[i].join();
-    }
+    for (auto &th : threads)
+      th.join();
   }
 };
 
 bool test_threading() {
   auto tp = ThreadPool(10);
   for (int j = 0; j < 10; j++) {
-    tp.run(10, &j, [](void *j, int i){
+    tp.run(10, j + 1, &j, [](void *j, int i) {
       double ret = 0.0;
       for (int t = 0; t < 100000000; t++) {
         ret += t * 1e-20;

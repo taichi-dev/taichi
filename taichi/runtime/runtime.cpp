@@ -245,8 +245,8 @@ struct RandState {
   u32 w;
 };
 
-void initialize_rand_state(RandState *state) {
-  state->x = 123456789;
+void initialize_rand_state(RandState *state, u32 i) {
+  state->x = 123456789 * i * 1000000007;
   state->y = 362436069;
   state->z = 521288629;
   state->w = 88675123;
@@ -304,7 +304,7 @@ Ptr Runtime_initialize(Runtime **runtime_ptr, int num_snodes,
   runtime->rand_states = (RandState *)allocate_aligned(
       runtime, sizeof(RandState) * max_rand_states, 4096);
   for (int i = 0; i < max_rand_states; i++)
-    initialize_rand_state(&runtime->rand_states[i]);
+    initialize_rand_state(&runtime->rand_states[i], i);
   printf("Runtime initialized.\n");
   return (Ptr)root_ptr;
 }

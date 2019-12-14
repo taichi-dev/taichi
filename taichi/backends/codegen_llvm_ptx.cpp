@@ -218,6 +218,15 @@ public:
     }
   }
 
+  void visit(RandStmt *stmt) override {
+    if (stmt->ret_type.data_type == DataType::f32) {
+      stmt->value = create_call("cuda_rand_f32", {get_context()});
+    } else if (stmt->ret_type.data_type == DataType::f64) {
+      stmt->value = create_call("cuda_rand_f64", {get_context()});
+    } else {
+      TC_NOT_IMPLEMENTED;
+    }
+  }
   void visit(RangeForStmt *for_stmt) override {
     create_naive_range_for(for_stmt);
   }

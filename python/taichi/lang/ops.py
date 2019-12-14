@@ -113,7 +113,10 @@ def abs(expr):
   return Expr(taichi_lang_core.expr_abs(expr.ptr))
 
 
-def random(dt=f32):
+def random(dt=None):
+  if dt is None:
+    import taichi
+    dt = taichi.get_runtime().default_fp
   return Expr(taichi_lang_core.make_rand_expr(dt))
 
 

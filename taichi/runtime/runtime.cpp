@@ -387,7 +387,8 @@ void for_each_block(Context *context, int snode_id, int element_size,
 i32 linear_thread_id() { return block_idx() * block_dim() + thread_idx(); }
 
 u32 cuda_rand_u32(Context *context) {
-  auto state = &((Runtime *)context->runtime)->rand_states[linear_thread_id()];
+  auto state = &((Runtime *)context->runtime)
+                    ->rand_states[linear_thread_id() % max_rand_states];
   auto &x = state->x;
   auto &y = state->y;
   auto &z = state->z;

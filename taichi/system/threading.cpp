@@ -20,6 +20,7 @@ public:
   int task_head;
   int task_tail;
   int running_threads;
+  int max_num_threads;
   int desired_num_threads;
   uint64 timestamp;
   bool started;
@@ -74,23 +75,25 @@ public:
     }
   }
 
-  ThreadPool(int num_threads) {
+  ThreadPool() {
     exiting = false;
     started = false;
     running_threads = 0;
     timestamp = 0;
     task_head = 0;
     task_tail = 0;
-    threads.resize((std::size_t)num_threads);
-    for (int i = 0; i < num_threads; i++) {
+    max_num_threads = std::thread::hardware_concurrency();
+    threads.resize((std::size_t)max_num_threads);
+    for (int i = 0; i < max_num_threads; i++) {
       threads[i] = std::thread([this] { this->target(); });
     }
   }
 
-  void run(int splits, int desired_num_threads, void *context, CPUTaskFunc func) {
+  void run(int splits, int desired_num_threads, void *context,
+           CPUTaskFunc func) {
     this->context = context;
     this->func = func;
-    this->desired_num_threads = desired_num_threads;
+    this->desired_num_threads = std::min(desired_num_threads, max_num_threads);
     TC_ASSERT(desired_num_threads > 0);
     started = false;
     task_head = 0;
@@ -118,7 +121,7 @@ public:
 };
 
 bool test_threading() {
-  auto tp = ThreadPool(10);
+  auto tp = ThreadPool();
   for (int j = 0; j < 10; j++) {
     tp.run(10, j + 1, &j, [](void *j, int i) {
       double ret = 0.0;

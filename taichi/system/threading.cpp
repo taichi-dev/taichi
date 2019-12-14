@@ -6,6 +6,7 @@
 #include <condition_variable>
 #include <taichi/system/threading.h>
 #include <thread>
+#include <algorithm>
 
 TC_NAMESPACE_BEGIN
 
@@ -94,7 +95,7 @@ public:
     this->context = context;
     this->func = func;
     this->desired_num_threads = std::min(desired_num_threads, max_num_threads);
-    TC_ASSERT(desired_num_threads > 0);
+    TC_ASSERT(this->desired_num_threads > 0);
     started = false;
     task_head = 0;
     task_tail = splits;

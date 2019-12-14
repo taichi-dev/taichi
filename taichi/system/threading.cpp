@@ -78,7 +78,7 @@ public:
 
 bool test_threading() {
   auto tp = ThreadPool(10);
-  tp.start(1000);
+  tp.start(10);
   return true;
 }
 

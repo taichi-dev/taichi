@@ -14,17 +14,32 @@ public:
   std::vector<std::thread> threads;
   std::condition_variable cv;
   std::mutex mutex;
+  std::atomic<int> task_head;
+  int task_tail;
   bool running;
   bool finished;
 
-  void task() {
+
+  void do_task(int i) {
+    double ret = 0.0;
+    for (int t = 0; t < 100000000; t++) {
+      ret += t * 1e-20;
+    }
+    TC_P(i + ret);
+  }
+
+  void target() {
     while (true) {
-      std::unique_lock<std::mutex> lock(mutex);
-      cv.wait(lock, [this]{ return running;});
-      if (finished) {
-        break;
+      int task_id;
+      {
+        std::unique_lock<std::mutex> lock(mutex);
+        cv.wait(lock, [this]{ return running;});
+        task_id = task_head++;
+        if (task_id > task_tail) {
+          break;
+        }
       }
-      TC_TAG;
+      do_task(task_id);
     }
   }
 
@@ -34,15 +49,17 @@ public:
     threads.resize((std::size_t)num_threads);
     for (int i = 0; i < num_threads; i++) {
       threads[i] = std::thread([this] {
-        this->task();
+        this->target();
       });
     }
   }
 
-  void start() {
+  void start(int tail) {
     {
       std::lock_guard<std::mutex> lg(mutex);
       running = true;
+      task_head = 0;
+      task_tail = tail;
     }
     cv.notify_all();
   }
@@ -60,8 +77,8 @@ public:
 };
 
 bool test_threading() {
-  auto tp = ThreadPool(4);
-  tp.start();
+  auto tp = ThreadPool(10);
+  tp.start(1000);
   return true;
 }
 

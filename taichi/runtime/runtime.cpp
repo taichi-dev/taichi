@@ -4,8 +4,8 @@
 
 #include <atomic>
 #include <cmath>
-#include <type_traits>
 #include <cstdlib>
+#include <type_traits>
 
 #define STRUCT_FIELD(S, F)                                                     \
   extern "C" decltype(S::F) S##_get_##F(S *s) { return s->F; }                 \
@@ -35,6 +35,10 @@ using float64 = double;
 
 using i8 = int8;
 using i32 = int32;
+using i64 = int64;
+using u8 = uint8;
+using u32 = uint32;
+using u64 = uint64;
 using f32 = float32;
 using f64 = float64;
 
@@ -74,8 +78,8 @@ int abs_i32(int a) {
   }
 }
 
-float32 rand_f32() {return rand() * f32(1.0f / (f32(RAND_MAX) + 1));}
-float64 rand_f64() {return rand() * f64(1.0 / (f64(RAND_MAX) + 1));}
+float32 rand_f32() { return rand() * f32(1.0f / (f32(RAND_MAX) + 1)); }
+float64 rand_f64() { return rand() * f64(1.0 / (f64(RAND_MAX) + 1)); }
 
 int max_i32(int a, int b) { return a > b ? a : b; }
 
@@ -232,6 +236,22 @@ Ptr NodeAllocator_allocate(NodeAllocator *node_allocator) {
 
 using vm_allocator_type = void *(*)(std::size_t, int);
 
+constexpr int max_rand_states = 1024 * 1024;
+
+struct RandState {
+  u32 x;
+  u32 y;
+  u32 z;
+  u32 w;
+};
+
+void initialize_rand_state(RandState *state) {
+  state->x = 123456789;
+  state->y = 362436069;
+  state->z = 521288629;
+  state->w = 88675123;
+}
+
 // Is "runtime" a correct name, even if it is created after the data layout is
 // materialized?
 struct Runtime {
@@ -240,6 +260,7 @@ struct Runtime {
   NodeAllocator *node_allocators[taichi_max_num_snodes];
   Ptr ambient_elements[taichi_max_num_snodes];
   Ptr temporaries;
+  RandState *rand_states;
 };
 
 STRUCT_FIELD_ARRAY(Runtime, element_lists);
@@ -280,6 +301,10 @@ Ptr Runtime_initialize(Runtime **runtime_ptr, int num_snodes,
     elem.pcoord.val[i] = 0;
   }
   ElementList_insert(runtime->element_lists[root_id], &elem);
+  runtime->rand_states = (RandState *)allocate_aligned(
+      runtime, sizeof(RandState) * max_rand_states, 4096);
+  for (int i = 0; i < max_rand_states; i++)
+    initialize_rand_state(&runtime->rand_states[i]);
   printf("Runtime initialized.\n");
   return (Ptr)root_ptr;
 }
@@ -332,7 +357,7 @@ void block_barrier() {}
 
 int32 warp_active_mask() { return 0; }
 
-void block_memfence() { }
+void block_memfence() {}
 
 void for_each_block(Context *context, int snode_id, int element_size,
                     int element_split,
@@ -357,6 +382,29 @@ void for_each_block(Context *context, int snode_id, int element_size,
     task(context, &list->elements[i], 0, element_size);
   }
 #endif
+}
+
+i32 linear_thread_id() { return block_idx() * block_dim() + thread_idx(); }
+
+u32 cuda_rand_u32(Context *context) {
+  auto state = &((Runtime *)context->runtime)->rand_states[linear_thread_id()];
+  auto &x = state->x;
+  auto &y = state->y;
+  auto &z = state->z;
+  auto &w = state->w;
+  auto t = x ^ (x << 11);
+  x = y;
+  y = z;
+  z = w;
+  return (w = (w ^ (w >> 19)) ^ (t ^ (t >> 8)));
+}
+
+uint64 cuda_rand_u64(Context *context) {
+  return ((u64)cuda_rand_u32(context) << 32) + cuda_rand_u32(context);
+}
+
+f32 cuda_rand_f32(Context *context) {
+  return cuda_rand_u32(context) * (1.0f / 4294967296.0f);
 }
 
 #include "node_dense.h"

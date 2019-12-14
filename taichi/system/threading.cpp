@@ -9,10 +9,12 @@
 
 TC_NAMESPACE_BEGIN
 
+using CPUTaskFunc = void (*)(void *, int i);
+
 class ThreadPool {
 public:
   std::vector<std::thread> threads;
-  std::condition_variable cv;
+  std::condition_variable slave_cv;
   std::condition_variable master_cv;
   std::mutex mutex;
   int task_head;
@@ -21,21 +23,15 @@ public:
   uint64 timestamp;
   bool started;
   bool exiting;
-
-  void do_task(int i) {
-    double ret = 0.0;
-    for (int t = 0; t < 100000000; t++) {
-      ret += t * 1e-20;
-    }
-    TC_P(int(i + ret));
-  }
+  CPUTaskFunc func;
+  void *context;
 
   void target() {
     uint64 last_timestamp = 0;
     while (true) {
       {
         std::unique_lock<std::mutex> lock(mutex);
-        cv.wait(lock, [this, &last_timestamp] {
+        slave_cv.wait(lock, [this, &last_timestamp] {
           return (timestamp > last_timestamp) || this->exiting;
         });
         last_timestamp = timestamp;
@@ -57,7 +53,7 @@ public:
             break;
           task_head++;
         }
-        do_task(task_id);
+        func(context, task_id);
       }
 
       {
@@ -73,18 +69,25 @@ public:
     exiting = false;
     started = false;
     running_threads = 0;
+    timestamp = 0;
+    task_head = 0;
+    task_tail = 0;
     threads.resize((std::size_t)num_threads);
     for (int i = 0; i < num_threads; i++) {
       threads[i] = std::thread([this] { this->target(); });
     }
   }
 
-  void run(int tail) {
+  void run(int tail, void *context, CPUTaskFunc func) {
+    this->context = context;
+    this->func = func;
     started = false;
     task_head = 0;
     task_tail = tail;
     timestamp++;
-    cv.notify_all();
+
+    // wake all slaves
+    slave_cv.notify_all();
     {
       std::unique_lock<std::mutex> lock(mutex);
       master_cv.wait(lock, [this] { return started && running_threads == 0; });
@@ -97,7 +100,7 @@ public:
       std::lock_guard<std::mutex> lg(mutex);
       exiting = true;
     }
-    cv.notify_all();
+    slave_cv.notify_all();
     for (int i = 0; i < threads.size(); i++) {
       threads[i].join();
     }
@@ -106,8 +109,14 @@ public:
 
 bool test_threading() {
   auto tp = ThreadPool(10);
-  for (int i = 0; i < 10; i++) {
-    tp.run(10);
+  for (int j = 0; j < 10; j++) {
+    tp.run(10, &j, [](void *j, int i){
+      double ret = 0.0;
+      for (int t = 0; t < 100000000; t++) {
+        ret += t * 1e-20;
+      }
+      TC_P(int(i + ret + 10 * *(int *)j));
+    });
   }
   return true;
 }

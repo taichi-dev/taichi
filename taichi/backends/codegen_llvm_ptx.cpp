@@ -68,11 +68,11 @@ public:
     }
 
     auto ptx = compile_module_to_ptx(module);
-    auto cuda_module = cuda_context.compile(ptx);
+    auto cuda_module = cuda_context->compile(ptx);
 
     for (auto &task : offloaded_local) {
       task.cuda_func =
-          (void *)cuda_context.get_function(cuda_module, task.name);
+          (void *)cuda_context->get_function(cuda_module, task.name);
     }
     return [offloaded_local](Context context) {
       for (auto task : offloaded_local) {
@@ -83,7 +83,7 @@ public:
         if (get_current_program().config.enable_profiler) {
           get_current_program().profiler_llvm->start(task.name);
         }
-        cuda_context.launch((CUfunction)task.cuda_func, &context, task.grid_dim,
+        cuda_context->launch((CUfunction)task.cuda_func, &context, task.grid_dim,
                             task.block_dim);
         if (get_current_program().config.enable_profiler) {
           get_current_program().profiler_llvm->stop();

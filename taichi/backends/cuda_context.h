@@ -29,7 +29,7 @@ public:
   ~CUDAContext();
 };
 
-extern CUDAContext cuda_context;
+extern std::unique_ptr<CUDAContext> cuda_context;
 
 TLANG_NAMESPACE_END
 #endif

@@ -43,7 +43,7 @@ std::string compile_module_to_ptx(std::unique_ptr<llvm::Module> &module) {
   options.StackAlignmentOverride = 0;
 
   std::unique_ptr<TargetMachine> target_machine(target->createTargetMachine(
-      triple.str(), cuda_context.get_mcpu(), cuda_mattrs(), options,
+      triple.str(), cuda_context->get_mcpu(), cuda_mattrs(), options,
       llvm::Reloc::PIC_, llvm::CodeModel::Small, CodeGenOpt::Aggressive));
 
   TC_ERROR_UNLESS(target_machine.get(), "Could not allocate target machine!");
@@ -334,7 +334,7 @@ CUDAContext::~CUDAContext() {
   */
 }
 
-CUDAContext cuda_context; // TODO:..
+std::unique_ptr<CUDAContext> cuda_context; // TODO:..
 
 #else
 std::string compile_module_to_ptx(std::unique_ptr<llvm::Module> &module) {

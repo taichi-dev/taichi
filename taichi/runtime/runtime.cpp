@@ -235,7 +235,7 @@ Ptr NodeAllocator_allocate(NodeAllocator *node_allocator) {
 }
 
 using vm_allocator_type = void *(*)(std::size_t, int);
-using CPUTaskFunc = void (*)(void *, int i);
+using CPUTaskFunc = void (void *, int i);
 using parallel_for_type = void (*)(void *thread_pool, int splits,
                                    int num_desired_threads, void *context,
                                    CPUTaskFunc *func);
@@ -381,7 +381,8 @@ struct block_task_helper_context {
   int upper;
 };
 
-void block_helper(block_task_helper_context *ctx, int i) {
+void block_helper(void *ctx_, int i) {
+  auto ctx = (block_task_helper_context *)(ctx_);
   (*ctx->task)(ctx->context, &ctx->list[i], ctx->lower, ctx->upper);
 }
 
@@ -409,9 +410,13 @@ void for_each_block(Context *context, int snode_id, int element_size,
   ctx.list = list->elements;
   ctx.lower = 0;
   ctx.upper = element_size;
+  auto runtime = (Runtime *)context->runtime;
+  runtime->parallel_for(runtime->thread_pool, list_tail, 8, &ctx, block_helper);
+  /*
   for (int i = 0; i < list_tail; i++) {
     block_helper(&ctx, i);
   }
+  */
 #endif
 }
 

@@ -61,6 +61,7 @@ ThreadPool::ThreadPool() {
   timestamp = 0;
   task_head = 0;
   task_tail = 0;
+  thread_counter = 0;
   max_num_threads = std::thread::hardware_concurrency();
   threads.resize((std::size_t)max_num_threads);
   for (int i = 0; i < max_num_threads; i++) {
@@ -122,6 +123,7 @@ void ThreadPool::target() {
           break;
         task_head++;
       }
+      TC_P(task_id);
       func(context, task_id);
     }
 

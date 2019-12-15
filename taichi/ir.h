@@ -149,7 +149,7 @@ class DecoratorRecorder {
 
   void reset() {
     vectorize = -1;
-    parallelize = 0;
+    parallelize = 1;
     uniform = false;
     scratch_opt.clear();
     block_dim = 0;

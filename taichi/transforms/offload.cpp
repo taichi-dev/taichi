@@ -54,6 +54,7 @@ class Offloader {
         offloaded->begin = s->begin->as<ConstStmt>()->val[0].val_int32();
         offloaded->end = s->end->as<ConstStmt>()->val[0].val_int32();
         offloaded->block_dim = s->block_dim;
+        offloaded->num_cpu_threads = s->parallelize;
         fix_loop_index_load(s, s->loop_var, 0, false);
         for (int j = 0; j < (int)s->body->statements.size(); j++) {
           offloaded->body->insert(std::move(s->body->statements[j]));
@@ -105,6 +106,7 @@ class Offloader {
 
     offloaded_struct_for->block_dim = for_stmt->block_dim;
     offloaded_struct_for->snode = for_stmt->snode;
+    offloaded_struct_for->num_cpu_threads = for_stmt->parallelize;
 
     root_block->insert(std::move(offloaded_struct_for));
   }

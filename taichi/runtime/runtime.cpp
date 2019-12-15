@@ -236,8 +236,9 @@ Ptr NodeAllocator_allocate(NodeAllocator *node_allocator) {
 
 using vm_allocator_type = void *(*)(std::size_t, int);
 using CPUTaskFunc = void (*)(void *, int i);
-using parallel_for_type = void (*)(int splits, int num_desired_threads,
-                                   void *context, CPUTaskFunc *func);
+using parallel_for_type = void (*)(void *thread_pool, int splits,
+                                   int num_desired_threads, void *context,
+                                   CPUTaskFunc *func);
 
 constexpr int max_rand_states = 1024 * 1024;
 
@@ -259,6 +260,7 @@ void initialize_rand_state(RandState *state, u32 i) {
 // materialized?
 struct Runtime {
   vm_allocator_type vm_allocator;
+  Ptr thread_pool;
   parallel_for_type parallel_for;
   ElementList *element_lists[taichi_max_num_snodes];
   NodeAllocator *node_allocators[taichi_max_num_snodes];
@@ -276,13 +278,11 @@ void *allocate_aligned(Runtime *runtime, std::size_t size, int alignment) {
 }
 
 Ptr Runtime_initialize(Runtime **runtime_ptr, int num_snodes,
-                       uint64_t root_size, int root_id, void *_vm_allocator,
-                       void *_parallel_for) {
+                       uint64_t root_size, int root_id, void *_vm_allocator) {
   auto vm_allocator = (vm_allocator_type)_vm_allocator;
   *runtime_ptr = (Runtime *)vm_allocator(sizeof(Runtime), 128);
   Runtime *runtime = *runtime_ptr;
   runtime->vm_allocator = vm_allocator;
-  runtime->parallel_for = (parallel_for_type)_parallel_for;
   printf("Initializing runtime with %d elements\n", num_snodes);
   for (int i = 0; i < num_snodes; i++) {
     runtime->element_lists[i] =
@@ -313,6 +313,12 @@ Ptr Runtime_initialize(Runtime **runtime_ptr, int num_snodes,
     initialize_rand_state(&runtime->rand_states[i], i);
   printf("Runtime initialized.\n");
   return (Ptr)root_ptr;
+}
+
+void Runtime_initialize_thread_pool(Runtime *runtime, void *thread_pool,
+                                    void *parallel_for) {
+  runtime->thread_pool = (Ptr)thread_pool;
+  runtime->parallel_for = (parallel_for_type)parallel_for;
 }
 
 void Runtime_allocate_ambient(Runtime *runtime, int snode_id) {
@@ -365,9 +371,22 @@ int32 warp_active_mask() { return 0; }
 
 void block_memfence() {}
 
+using BlockTask = void(Context *, Element *, int, int);
+
+struct block_task_helper_context {
+  Context *context;
+  BlockTask *task;
+  Element *list;
+  int lower;
+  int upper;
+};
+
+void block_helper(block_task_helper_context *ctx, int i) {
+  (*ctx->task)(ctx->context, &ctx->list[i], ctx->lower, ctx->upper);
+}
+
 void for_each_block(Context *context, int snode_id, int element_size,
-                    int element_split,
-                    void (*task)(Context *, Element *, int, int)) {
+                    int element_split, BlockTask *task) {
   auto list = ((Runtime *)context->runtime)->element_lists[snode_id];
   auto list_tail = list->tail;
 #if ARCH_cuda
@@ -384,8 +403,14 @@ void for_each_block(Context *context, int snode_id, int element_size,
     i += grid_dim();
   }
 #else
+  block_task_helper_context ctx;
+  ctx.context = context;
+  ctx.task = task;
+  ctx.list = list->elements;
+  ctx.lower = 0;
+  ctx.upper = element_size;
   for (int i = 0; i < list_tail; i++) {
-    task(context, &list->elements[i], 0, element_size);
+    block_helper(&ctx, i);
   }
 #endif
 }

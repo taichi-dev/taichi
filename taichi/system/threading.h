@@ -39,16 +39,18 @@ public:
   CPUTaskFunc *func;
   void *context;
   int thread_counter;
-  std::function<ParallelFor> parallel_for_func;
 
   ThreadPool();
 
   void run(int splits, int desired_num_threads, void *context,
            CPUTaskFunc *func);
 
-  void target();
+  static void static_run(ThreadPool *pool, int splits, int desired_num_threads,
+                         void *context, CPUTaskFunc *func) {
+    return pool->run(splits, desired_num_threads, context, func);
+  }
 
-  ParallelFor *get_parallel_for();
+  void target();
 
   ~ThreadPool();
 };

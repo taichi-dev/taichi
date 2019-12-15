@@ -25,10 +25,10 @@ TC_NAMESPACE_BEGIN
 
 bool test_threading() {
   auto tp = ThreadPool();
-  for (int j = 0; j < 10; j++) {
+  for (int j = 0; j < 100; j++) {
     tp.run(10, j + 1, &j, [](void *j, int i) {
       double ret = 0.0;
-      for (int t = 0; t < 100000000; t++) {
+      for (int t = 0; t < 10000000; t++) {
         ret += t * 1e-20;
       }
       TC_P(int(i + ret + 10 * *(int *)j));
@@ -66,10 +66,6 @@ ThreadPool::ThreadPool() {
   for (int i = 0; i < max_num_threads; i++) {
     threads[i] = std::thread([this] { this->target(); });
   }
-  parallel_for_func = [this](int n, int num_threads, void *context,
-                             CPUTaskFunc func) {
-    run(n, num_threads, context, func);
-  };
 }
 
 void ThreadPool::run(int splits, int desired_num_threads, void *context,
@@ -120,7 +116,7 @@ void ThreadPool::target() {
       // For a single parallel task
       int task_id;
       {
-        std::unique_lock<std::mutex> lock(mutex);
+        std::lock_guard<std::mutex> lock(mutex);
         task_id = task_head;
         if (task_id >= task_tail)
           break;
@@ -146,11 +142,6 @@ ThreadPool::~ThreadPool() {
   slave_cv.notify_all();
   for (auto &th : threads)
     th.join();
-}
-
-ParallelFor *ThreadPool::get_parallel_for() {
-  auto const &parallel = parallel_for_func;
-  return parallel.template target<ParallelFor>();
 }
 
 TC_NAMESPACE_END

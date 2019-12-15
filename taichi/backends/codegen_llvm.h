@@ -1313,7 +1313,8 @@ void create_offload_range_for(OffloadedStmt *stmt) {
     create_call("for_each_block",
                 {get_context(), tlctx->get_constant(leaf_block->parent->id),
                  tlctx->get_constant(leaf_block->max_num_elements()),
-                 tlctx->get_constant(num_splits), body});
+                 tlctx->get_constant(num_splits), body,
+                 tlctx->get_constant(stmt->num_cpu_threads)});
   }
 
   void visit(LoopIndexStmt *stmt) override {

@@ -391,7 +391,7 @@ void block_helper(void *ctx_, int i) {
 }
 
 void for_each_block(Context *context, int snode_id, int element_size,
-                    int element_split, BlockTask *task) {
+                    int element_split, BlockTask *task, int num_threads) {
   auto list = ((Runtime *)context->runtime)->element_lists[snode_id];
   auto list_tail = list->tail;
 #if ARCH_cuda
@@ -415,13 +415,8 @@ void for_each_block(Context *context, int snode_id, int element_size,
   ctx.element_size = element_size;
   ctx.element_split = element_split;
   auto runtime = (Runtime *)context->runtime;
-  runtime->parallel_for(runtime->thread_pool, list_tail * element_split, 8,
-                        &ctx, block_helper);
-  /*
-  for (int i = 0; i < list_tail; i++) {
-    block_helper(&ctx, i);
-  }
-  */
+  runtime->parallel_for(runtime->thread_pool, list_tail * element_split,
+                        num_threads, &ctx, block_helper);
 #endif
 }
 

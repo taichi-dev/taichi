@@ -123,7 +123,6 @@ void ThreadPool::target() {
           break;
         task_head++;
       }
-      TC_P(task_id);
       func(context, task_id);
     }
 

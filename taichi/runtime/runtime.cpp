@@ -235,7 +235,7 @@ Ptr NodeAllocator_allocate(NodeAllocator *node_allocator) {
 }
 
 using vm_allocator_type = void *(*)(std::size_t, int);
-using CPUTaskFunc = void (void *, int i);
+using CPUTaskFunc = void(void *, int i);
 using parallel_for_type = void (*)(void *thread_pool, int splits,
                                    int num_desired_threads, void *context,
                                    CPUTaskFunc *func);
@@ -377,13 +377,17 @@ struct block_task_helper_context {
   Context *context;
   BlockTask *task;
   Element *list;
-  int lower;
-  int upper;
+  int element_size;
+  int element_split;
 };
 
 void block_helper(void *ctx_, int i) {
   auto ctx = (block_task_helper_context *)(ctx_);
-  (*ctx->task)(ctx->context, &ctx->list[i], ctx->lower, ctx->upper);
+  int element_id = i / ctx->element_split;
+  int part_size = ctx->element_size / ctx->element_split;
+  int part_id = i % ctx->element_split;
+  (*ctx->task)(ctx->context, &ctx->list[element_id], part_id * part_size,
+               (part_id + 1) * part_size);
 }
 
 void for_each_block(Context *context, int snode_id, int element_size,
@@ -408,10 +412,11 @@ void for_each_block(Context *context, int snode_id, int element_size,
   ctx.context = context;
   ctx.task = task;
   ctx.list = list->elements;
-  ctx.lower = 0;
-  ctx.upper = element_size;
+  ctx.element_size = element_size;
+  ctx.element_split = element_split;
   auto runtime = (Runtime *)context->runtime;
-  runtime->parallel_for(runtime->thread_pool, list_tail, 8, &ctx, block_helper);
+  runtime->parallel_for(runtime->thread_pool, list_tail * element_split, 8,
+                        &ctx, block_helper);
   /*
   for (int i = 0; i < list_tail; i++) {
     block_helper(&ctx, i);

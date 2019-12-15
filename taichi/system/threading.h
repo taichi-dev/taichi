@@ -19,55 +19,6 @@
 
 TC_NAMESPACE_BEGIN
 
-#if (0)
-class ThreadedTaskManager {
- public:
-#if !defined(TC_AMALGAMATED)
-  class TbbParallelismControl {
-    std::unique_ptr<tbb::global_control> c;
-   public:
-    TbbParallelismControl(int threads) {
-      c = std::make_unique<tbb::global_control>(
-          tbb::global_control::max_allowed_parallelism, threads);
-    }
-  };
-#endif
-  template <typename T>
-  void static run(const T &target, int begin, int end, int num_threads) {
-#if !defined(TC_AMALGAMATED)
-    if (num_threads > 0) {
-      tbb::task_arena limited_arena(num_threads);
-      limited_arena.execute([&]() { tbb::parallel_for(begin, end, target); });
-    } else {
-      TC_ASSERT_INFO(
-          num_threads == -1,
-          fmt::format(
-              "num_threads must be a positive number or -1, instead of [{}]",
-              num_threads));
-      tbb::parallel_for(begin, end, target);
-    }
-#else
-    TC_NOT_IMPLEMENTED
-#endif
-  }
-
-  template <typename T>
-  void static run(const T &target, int end, int num_threads) {
-    return run(target, 0, end, num_threads);
-  }
-
-  template <typename T>
-  void static run(int begin, int end, int num_threads, const T &target) {
-    return run(target, begin, end, num_threads);
-  }
-
-  template <typename T>
-  void static run(int end, int num_threads, const T &target) {
-    return run(target, 0, end, num_threads);
-  }
-};
-#endif
-
 class PID {
  public:
   static int get_pid() {

@@ -279,7 +279,7 @@ public:
     using Type = OffloadedStmt::TaskType;
     kernel_grid_dim = 1;
     kernel_block_dim = 1;
-    init_task_function(stmt);
+    init_offloaded_task_function(stmt);
     if (stmt->task_type == Type::serial) {
       stmt->body->accept(this);
     } else if (stmt->task_type == Type::range_for) {
@@ -302,7 +302,7 @@ public:
     } else {
       TC_NOT_IMPLEMENTED
     }
-    finalize_task_function();
+    finalize_offloaded_task_function();
     current_task->grid_dim = kernel_grid_dim;
     current_task->block_dim = kernel_block_dim;
     current_task->end();

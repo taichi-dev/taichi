@@ -12,6 +12,11 @@ TC_NAMESPACE_BEGIN
 
 using CPUTaskFunc = void (*)(void *, int i);
 
+#if defined(min)
+#undef min
+#endif
+
+
 class ThreadPool {
 public:
   std::vector<std::thread> threads;

@@ -1031,7 +1031,7 @@ public:
 
   BasicBlock *func_body_bb;
 
-  void init_task_function(OffloadedStmt *stmt) {
+  void init_offloaded_task_function(OffloadedStmt *stmt) {
     while_after_loop = nullptr;
     current_offloaded_stmt = stmt;
 
@@ -1060,7 +1060,7 @@ public:
     builder->SetInsertPoint(func_body_bb);
   }
 
-  void finalize_task_function() {
+  void finalize_offloaded_task_function() {
     builder->CreateRetVoid();
 
     // entry_block should jump to the body after all allocas are inserted
@@ -1262,7 +1262,7 @@ public:
 
   void visit(OffloadedStmt *stmt) override {
     using Type = OffloadedStmt::TaskType;
-    init_task_function(stmt);
+    init_offloaded_task_function(stmt);
     if (stmt->task_type == Type::serial) {
       stmt->body->accept(this);
     } else if (stmt->task_type == Type::range_for) {
@@ -1276,7 +1276,7 @@ public:
     } else {
       TC_NOT_IMPLEMENTED
     }
-    finalize_task_function();
+    finalize_offloaded_task_function();
     current_task->end();
     current_task = nullptr;
   }

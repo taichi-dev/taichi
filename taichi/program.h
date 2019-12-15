@@ -10,6 +10,7 @@
 #include <atomic>
 #include <taichi/context.h>
 #include <taichi/profiler.h>
+#include <taichi/system/threading.h>
 #include <taichi/unified_allocator.h>
 #if defined(TC_PLATFORM_UNIX)
 #include <dlfcn.h>
@@ -42,6 +43,7 @@ public:
   bool finalized;
   float64 total_compilation_time;
   static std::atomic<int> num_instances;
+  ThreadPool thread_pool;
 
   std::vector<std::unique_ptr<Kernel>> functions;
 

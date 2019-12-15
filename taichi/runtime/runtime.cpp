@@ -235,6 +235,9 @@ Ptr NodeAllocator_allocate(NodeAllocator *node_allocator) {
 }
 
 using vm_allocator_type = void *(*)(std::size_t, int);
+using CPUTaskFunc = void (*)(void *, int i);
+using parallel_for_type = void (*)(int splits, int num_desired_threads,
+                                   void *context, CPUTaskFunc *func);
 
 constexpr int max_rand_states = 1024 * 1024;
 
@@ -256,6 +259,7 @@ void initialize_rand_state(RandState *state, u32 i) {
 // materialized?
 struct Runtime {
   vm_allocator_type vm_allocator;
+  parallel_for_type parallel_for;
   ElementList *element_lists[taichi_max_num_snodes];
   NodeAllocator *node_allocators[taichi_max_num_snodes];
   Ptr ambient_elements[taichi_max_num_snodes];
@@ -272,11 +276,13 @@ void *allocate_aligned(Runtime *runtime, std::size_t size, int alignment) {
 }
 
 Ptr Runtime_initialize(Runtime **runtime_ptr, int num_snodes,
-                       uint64_t root_size, int root_id, void *_vm_allocator) {
+                       uint64_t root_size, int root_id, void *_vm_allocator,
+                       void *_parallel_for) {
   auto vm_allocator = (vm_allocator_type)_vm_allocator;
   *runtime_ptr = (Runtime *)vm_allocator(sizeof(Runtime), 128);
   Runtime *runtime = *runtime_ptr;
   runtime->vm_allocator = vm_allocator;
+  runtime->parallel_for = (parallel_for_type)_parallel_for;
   printf("Initializing runtime with %d elements\n", num_snodes);
   for (int i = 0; i < num_snodes; i++) {
     runtime->element_lists[i] =

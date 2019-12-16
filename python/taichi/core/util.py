@@ -106,8 +106,7 @@ def format(all=False):
 from taichi.misc.settings import get_output_directory, get_build_directory, get_bin_directory, get_repo_directory, get_runtime_directory
 from taichi.misc.util import get_os_name, get_unique_task_id
 
-CREATE_SAND_BOX_ON_WINDOWS = True
-
+create_sand_box_on_windows = True
 
 def build():
   assert False
@@ -211,7 +210,7 @@ else:
     old_wd = os.getcwd()
     os.chdir(bin_dir)
 
-    if CREATE_SAND_BOX_ON_WINDOWS:
+    if create_sand_box_on_windows:
       # Create a sandbox for separated core lib development and loading
       dir = os.path.join(get_output_directory(), 'tmp', get_unique_task_id())
 

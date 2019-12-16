@@ -18,8 +18,11 @@ GUI = core.GUI
 
 def set_image(self, img):
   import numpy as np
-  if not isinstance(img, np.ndarray):
+  import taichi as ti
+  if isinstance(img, ti.Matrix):
     img = img.to_numpy(as_vector=True)
+  if isinstance(img, ti.Expr):
+    img = img.to_numpy()
   assert isinstance(img, np.ndarray)
   assert len(img.shape) in [2, 3]
   img = img.astype(np.float32)
@@ -33,6 +36,7 @@ def set_image(self, img):
         np.zeros(shape=(img.shape[0], img.shape[1], 1), dtype=np.float32)
     ],
                          axis=2)
+  img = img.astype(np.float32)
   self.set_img(np.ascontiguousarray(img).ctypes.data)
 
 

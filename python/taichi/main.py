@@ -51,6 +51,8 @@ def main(debug=False):
       "           ti test                   |-> Run all tests\n"
       "           ti test_python            |-> Run python tests\n"
       "           ti test_cpp               |-> Run cpp tests\n"
+      "           ti format                 |-> Reformat modified source files\n"
+      "           ti format_all             |-> Reformat all source files\n"
       "           ti build                  |-> Build C++ files\n"
       "           ti video                  |-> Make a video using *.png files in the current folder\n"
       "           ti video_scale            |-> Scale video resolution \n"
@@ -94,6 +96,8 @@ def main(debug=False):
     ti.core.build()
   elif mode == "format":
     ti.core.format()
+  elif mode == "format_all":
+    ti.core.format(all=True)
   elif mode == "statement":
     exec(sys.argv[2])
   elif mode == "update":

@@ -1,11 +1,11 @@
-Tensors and Matrices
+Tensors and matrices
 ==========================
 
 Tensors are global variables provided by Taichi. Tensors can be either sparse or dense. A element of a tensor can be either a scalar, or a vector/matrix.
 
 Although mathematically matrices are treated as 2D tensors, in Taichi, **tensor** and **matrix** are two completely different things. Matrices can be used as tensor elements, so you have tensors of matrices.
 
-Tensors of Scalars
+Tensors of scalars
 ----------------------
 * Every global variable is an N-dimensional tensor.
 * Global `scalars` are treated as 0-D tensors of scalars.
@@ -15,7 +15,7 @@ Tensors of Scalars
 * Sparse tensors are initially inactive.
 
 
-Tensors of Matrices
+Tensors of matrices
 ---------------------
 Suppose you have a ``128 x 64`` global grid ``A``, each node containing a ``3 x 2`` matrices. In this case you need to allocate a ``128 x 64`` tensor of ``3 x 2`` matrix, using the statement ``A = ti.Matrix(3, 2, dt=ti.f32, shape=(128, 64))``.
 

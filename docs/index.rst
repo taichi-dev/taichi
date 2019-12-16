@@ -11,6 +11,8 @@ The Taichi Programming Language
    :caption: Basics
    :maxdepth: 2
 
+   hello
+
    syntax
 
    type
@@ -28,6 +30,8 @@ The Taichi Programming Language
    performance
 
    sparse
+
+   differentiable_programming
 
    compilation
 

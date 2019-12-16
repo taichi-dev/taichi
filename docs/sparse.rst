@@ -1,4 +1,4 @@
-Sparse Computation
+Sparse computation
 ===============================================
 
 .. warning::

@@ -1,4 +1,4 @@
-The Life of a Taichi Kernel
+The life of a Taichi kernel
 ===============================================
 
 Sometimes it is helpful to understand the life cycle of a Taichi kernel.

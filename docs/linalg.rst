@@ -1,6 +1,6 @@
 .. _linalg:
 
-Linear Algebra
+Linear algebra
 ===============================================
 
 Matrices

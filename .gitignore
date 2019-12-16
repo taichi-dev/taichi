@@ -57,3 +57,4 @@ __pycache__
 libpython_path.txt
 .vscode
 _build
+*.bin

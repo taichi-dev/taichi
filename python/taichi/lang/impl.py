@@ -225,7 +225,7 @@ def ti_int(var):
 
 def ti_float(var):
   if hasattr(var, '__ti_float__'):
-    return var.__ti_int__()
+    return var.__ti_float__()
   else:
     return float(var)
 

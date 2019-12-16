@@ -165,7 +165,7 @@ class Matrix:
     ret = Matrix(self.n, self.m)
     for i in range(self.n):
       for j in range(self.m):
-        ret(i, j).assign(self(i, j) * other(i, j))
+        ret.set_entry(i, j, self(i, j) * other(i, j))
     return ret
 
   __rmul__ = __mul__

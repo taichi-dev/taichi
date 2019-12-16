@@ -18,6 +18,8 @@ GUI = core.GUI
 
 def set_image(self, img):
   import numpy as np
+  if not isinstance(img, np.ndarray):
+    img = img.to_numpy(as_vector=True)
   assert isinstance(img, np.ndarray)
   assert len(img.shape) in [2, 3]
   img = img.astype(np.float32)

@@ -114,14 +114,14 @@ class TypeCheck : public IRVisitor {
   void visit(GlobalStoreStmt *stmt) {
     auto promoted = promoted_type(stmt->ptr->ret_type.data_type,
                                   stmt->data->ret_type.data_type);
+    auto input_type = stmt->data->ret_data_type_name();
     if (stmt->ptr->ret_type.data_type != stmt->data->ret_type.data_type) {
       stmt->data = insert_type_cast_before(stmt, stmt->data,
                                            stmt->ptr->ret_type.data_type);
     }
     if (stmt->ptr->ret_type.data_type != promoted) {
       TC_WARN("Global store may lose precision: {} <- {}",
-              stmt->ptr->ret_data_type_name(),
-              stmt->data->ret_data_type_name());
+              stmt->ptr->ret_data_type_name(), input_type);
     }
     stmt->ret_type = stmt->ptr->ret_type;
   }

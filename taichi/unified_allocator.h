@@ -5,7 +5,7 @@
 #include <memory>
 
 namespace taichi {
-  class VirtualMemoryAllocator;
+class VirtualMemoryAllocator;
 }
 
 TLANG_NAMESPACE_BEGIN
@@ -13,7 +13,7 @@ TLANG_NAMESPACE_BEGIN
 class UnifiedAllocator;
 
 extern UnifiedAllocator *&allocator();
-extern UnifiedAllocator* allocator_instance;
+extern UnifiedAllocator *allocator_instance;
 
 // This class can only have one instance
 class UnifiedAllocator {
@@ -43,7 +43,7 @@ class UnifiedAllocator {
       return (void *)atomicAdd(reinterpret_cast<unsigned long long *>(&head),
                                size);
     } else {
-      TC_ASSERT(false); // aligned allocation is not supported on GPU
+      TC_ASSERT(false);  // aligned allocation is not supported on GPU
       return nullptr;
     }
   }

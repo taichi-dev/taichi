@@ -13,8 +13,7 @@ class PLYWriter {
   struct Vertex {
     Vector3 position;
     Vector3 color;
-    Vertex(Vector3 position, Vector3 color)
-        : position(position), color(color) {
+    Vertex(Vector3 position, Vector3 color) : position(position), color(color) {
     }
   };
 

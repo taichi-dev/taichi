@@ -249,7 +249,7 @@ class MakeAdjoint : public IRVisitor {
   }
 
   void visit(RangeForStmt *for_stmt) override {
-    if (for_depth > 0) // reverse non-parallelized for-loops
+    if (for_depth > 0)  // reverse non-parallelized for-loops
       for_stmt->reverse();
     for_depth += 1;
     for_stmt->body->accept(this);

@@ -12,17 +12,17 @@
 TC_NAMESPACE_BEGIN
 
 void export_visual(py::module &m) {
-
   // GUI
   using Line = Canvas::Line;
   using Circle = Canvas::Circle;
   py::class_<GUI>(m, "GUI")
       .def(py::init<std::string, Vector2i>())
-      .def("get_canvas", &GUI::get_canvas,
-           py::return_value_policy::reference)
-           .def("set_img", [&](GUI *gui, std::size_t ptr) {
+      .def("get_canvas", &GUI::get_canvas, py::return_value_policy::reference)
+      .def("set_img",
+           [&](GUI *gui, std::size_t ptr) {
              auto &img = gui->canvas->img;
-             std::memcpy((void *)img.get_data().data(), (void *)ptr, img.get_data_size());
+             std::memcpy((void *)img.get_data().data(), (void *)ptr,
+                         img.get_data_size());
            })
       .def("screenshot", &GUI::screenshot)
       .def("update", &GUI::update);

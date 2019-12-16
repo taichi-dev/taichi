@@ -3,6 +3,7 @@ from pytest import approx
 import autograd.numpy as np
 from autograd import grad
 
+
 @ti.all_archs
 def grad_test(tifunc, npfunc=None):
   if npfunc is None:
@@ -40,6 +41,5 @@ def test_unary():
   ti.core.print_profile_info()
   print("Total time {:.3f}s".format(time.time() - t))
 
+
 test_unary()
-
-

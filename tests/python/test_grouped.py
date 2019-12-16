@@ -1,5 +1,6 @@
 import taichi as ti
 
+
 @ti.all_archs
 def test_vector_index():
   val = ti.var(ti.i32)
@@ -27,6 +28,7 @@ def test_vector_index():
       for k in range(p):
         assert val[i, j, k] == i + j * 2 + k * 3
 
+
 @ti.all_archs
 def test_grouped():
   ti.get_runtime().print_preprocessed = True
@@ -51,5 +53,3 @@ def test_grouped():
     for j in range(m):
       for k in range(p):
         assert val[i, j, k] == i + j * 2 + k * 3
-
-

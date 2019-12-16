@@ -84,6 +84,7 @@ def collide(t: ti.i32):
             imp = -(1 + elasticity) * 0.5 * projected_v * dir
       ti.atomic_add(impulse[t + 1, i], imp)
 
+
 @ti.kernel
 def advance(t: ti.i32):
   for i in range(n_balls):
@@ -93,8 +94,8 @@ def advance(t: ti.i32):
 
 @ti.kernel
 def compute_loss(t: ti.i32):
-  loss[None] = ti.sqr(x[t, target_ball][0] - goal[0]) + ti.sqr(
-    x[t, target_ball][1] - goal[1])
+  loss[None] = ti.sqr(x[t, target_ball][0] -
+                      goal[0]) + ti.sqr(x[t, target_ball][1] - goal[1])
 
 
 @ti.kernel
@@ -118,8 +119,9 @@ def forward(visualize=False, output=None):
   for i in range(billiard_layers):
     for j in range(i + 1):
       count += 1
-      x[0, count] = [i * 2 * radius + 0.5,
-                     j * 2 * radius + 0.5 - i * radius * 0.7]
+      x[0, count] = [
+          i * 2 * radius + 0.5, j * 2 * radius + 0.5 - i * radius * 0.7
+      ]
 
   pixel_radius = int(radius * 1024) + 1
 
@@ -131,7 +133,8 @@ def forward(visualize=False, output=None):
     if (t + 1) % interval == 0 and visualize:
       canvas.clear(0x3C733F)
 
-      canvas.circle(tc.vec(goal[0], goal[1])).radius(pixel_radius // 2).color(0x00000).finish()
+      canvas.circle(tc.vec(goal[0], goal[1])).radius(
+          pixel_radius // 2).color(0x00000).finish()
 
       for i in range(n_balls):
         if i == 0:
@@ -141,8 +144,8 @@ def forward(visualize=False, output=None):
         else:
           color = 0xF20530
 
-        canvas.circle(tc.vec(x[t, i][0], x[t, i][1])).radius(
-          pixel_radius).color(color).finish()
+        canvas.circle(tc.vec(
+            x[t, i][0], x[t, i][1])).radius(pixel_radius).color(color).finish()
 
       gui.update()
       if output:
@@ -183,6 +186,7 @@ def optimize():
   clear()
   forward(visualize=True, output='final')
 
+
 def scan(zoom):
   N = 1000
   angles = []
@@ -209,7 +213,6 @@ def scan(zoom):
   plt.xlabel('Angle of velocity')
   plt.tight_layout()
   plt.show()
-
 
 
 if __name__ == '__main__':

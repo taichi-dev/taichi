@@ -16,7 +16,6 @@
 #include <cuda_runtime.h>
 #endif
 
-
 TLANG_NAMESPACE_BEGIN
 
 struct ProfileRecord {
@@ -27,7 +26,8 @@ struct ProfileRecord {
   double total;
 
   ProfileRecord(const std::string &name)
-      : name(name), counter(0), min(0), max(0), total(0) {}
+      : name(name), counter(0), min(0), max(0), total(0) {
+  }
 
   void insert_sample(double t) {
     if (counter == 0) {
@@ -42,11 +42,11 @@ struct ProfileRecord {
 };
 
 class ProfilerBase {
-protected:
+ protected:
   std::vector<ProfileRecord> records;
   double total_time;
 
-public:
+ public:
   void clear() {
     total_time = 0;
     records.clear();
@@ -63,19 +63,20 @@ public:
     sync();
     printf("%s\n", title().c_str());
     for (auto &rec : records) {
-      printf("[%6.2f%%] %30s     min %7.3f ms   avg %7.3f ms    max %7.3f ms   "
-             "total %7.3f s [%7dx]\n",
-             rec.total / total_time * 100.0f, rec.name.c_str(), rec.min,
-             rec.total / rec.counter, rec.max, rec.total / 1000.0f,
-             rec.counter);
+      printf(
+          "[%6.2f%%] %30s     min %7.3f ms   avg %7.3f ms    max %7.3f ms   "
+          "total %7.3f s [%7dx]\n",
+          rec.total / total_time * 100.0f, rec.name.c_str(), rec.min,
+          rec.total / rec.counter, rec.max, rec.total / 1000.0f, rec.counter);
     }
   }
 
-  virtual ~ProfilerBase() {}
+  virtual ~ProfilerBase() {
+  }
 };
 
 class GPUProfiler : public ProfilerBase {
-public:
+ public:
 #if defined(TLANG_WITH_CUDA)
   cudaEvent_t current_stop;
 
@@ -104,7 +105,9 @@ public:
 #endif
   }
 
-  std::string title() override { return "GPU Profiler"; }
+  std::string title() override {
+    return "GPU Profiler";
+  }
 
   void sync() override {
 #if defined(TLANG_WITH_CUDA)
@@ -115,10 +118,9 @@ public:
         auto start = item.first, stop = item.second;
         float ms;
         cudaEventElapsedTime(&ms, start, stop);
-        auto it =
-            std::find_if(records.begin(), records.end(), [&](ProfileRecord &r) {
-              return r.name == map_elem.first;
-            });
+        auto it = std::find_if(
+            records.begin(), records.end(),
+            [&](ProfileRecord &r) { return r.name == map_elem.first; });
         if (it == records.end()) {
           records.emplace_back(map_elem.first);
           it = std::prev(records.end());
@@ -140,13 +142,16 @@ public:
 };
 
 class CPUProfiler : public ProfilerBase {
-public:
+ public:
   double start_t;
   std::string event_name;
 
-  void sync() override {}
+  void sync() override {
+  }
 
-  std::string title() override { return "CPU Profiler"; }
+  std::string title() override {
+    return "CPU Profiler";
+  }
 
   void start(const std::string &kernel_name) override {
     start_t = get_time();

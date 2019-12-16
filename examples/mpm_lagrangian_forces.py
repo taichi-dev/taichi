@@ -28,6 +28,7 @@ vertices = ti.var(ti.i32)
 
 ti.cfg.arch = ti.cuda
 
+
 @ti.layout
 def place():
   ti.root.dense(ti.k, n_particles).place(x, x.grad, v, C)
@@ -43,6 +44,7 @@ def clear_grid():
     grid_v[i, j] = [0, 0]
     grid_m[i, j] = 0
 
+
 @ti.func
 def compute_T(i):
   a = vertices[i, 0]
@@ -52,10 +54,12 @@ def compute_T(i):
   ac = x[c] - x[a]
   return ti.Matrix([[ab[0], ac[0]], [ab[1], ac[1]]])
 
+
 @ti.kernel
 def compute_rest_T():
   for i in range(n_elements):
     restT[i] = compute_T(i)
+
 
 @ti.kernel
 def compute_total_energy():
@@ -65,7 +69,8 @@ def compute_total_energy():
     # NeoHookean
     I1 = (F @ ti.Matrix.transposed(F)).trace()
     J = ti.Matrix.determinant(F)
-    element_energy = 0.5 * mu * (I1 - 2) - mu * ti.log(J) + 0.5 * la * ti.log(J) ** 2
+    element_energy = 0.5 * mu * (
+        I1 - 2) - mu * ti.log(J) + 0.5 * la * ti.log(J)**2
     ti.atomic_add(total_energy[None], element_energy * 1e-3)
 
 
@@ -74,15 +79,15 @@ def p2g():
   for p in x:
     base = ti.cast(x[p] * inv_dx - 0.5, ti.i32)
     fx = x[p] * inv_dx - ti.cast(base, ti.f32)
-    w = [0.5 * ti.sqr(1.5 - fx), 0.75 - ti.sqr(fx - 1),
-         0.5 * ti.sqr(fx - 0.5)]
+    w = [0.5 * ti.sqr(1.5 - fx), 0.75 - ti.sqr(fx - 1), 0.5 * ti.sqr(fx - 0.5)]
     affine = p_mass * C[p]
     for i in ti.static(range(3)):
       for j in ti.static(range(3)):
         offset = ti.Vector([i, j])
         dpos = (ti.cast(ti.Vector([i, j]), ti.f32) - fx) * dx
         weight = w[i](0) * w[j](1)
-        grid_v[base + offset].atomic_add(weight * (p_mass * v[p] - x.grad[p] + affine @ dpos))
+        grid_v[base + offset].atomic_add(
+            weight * (p_mass * v[p] - x.grad[p] + affine @ dpos))
         grid_m[base + offset].atomic_add(weight * p_mass)
 
 
@@ -98,7 +103,7 @@ def grid_op():
       grid_v(1)[i, j] -= dt * 9.8
 
       # center sticky circle
-      if (i * dx - 0.5) ** 2 + (j * dx - 0.5) ** 2 < 0.005:
+      if (i * dx - 0.5)**2 + (j * dx - 0.5)**2 < 0.005:
         grid_v[i, j] = [0, 0]
 
       # box
@@ -117,8 +122,9 @@ def g2p():
   for p in x:
     base = ti.cast(x[p] * inv_dx - 0.5, ti.i32)
     fx = x[p] * inv_dx - ti.cast(base, ti.f32)
-    w = [0.5 * ti.sqr(1.5 - fx), 0.75 - ti.sqr(fx - 1.0),
-         0.5 * ti.sqr(fx - 0.5)]
+    w = [
+        0.5 * ti.sqr(1.5 - fx), 0.75 - ti.sqr(fx - 1.0), 0.5 * ti.sqr(fx - 0.5)
+    ]
     new_v = ti.Vector([0.0, 0.0])
     new_C = ti.Matrix([[0.0, 0.0], [0.0, 0.0]])
 
@@ -134,11 +140,14 @@ def g2p():
     x[p] += dt * v[p]
     C[p] = new_C
 
+
 gui = ti.core.GUI("MPM", ti.veci(1024, 1024))
 canvas = gui.get_canvas()
 
+
 def mesh(i, j):
   return i * n_particle_y + j
+
 
 def main():
   for i in range(n_particle_x):
@@ -162,7 +171,7 @@ def main():
       vertices[eid, 2] = mesh(i + 1, j)
 
   compute_rest_T()
-  
+
   os.makedirs('tmp', exist_ok=True)
 
   for f in range(600):
@@ -179,18 +188,19 @@ def main():
       grid_op()
       g2p()
 
-
     canvas.circle(ti.vec(0.5, 0.5)).radius(70).color(0x068587).finish()
     # TODO: why is visualization so slow?
     for i in range(n_elements):
       for j in range(3):
         a, b = vertices[i, j], vertices[i, (j + 1) % 3]
-        canvas.path(ti.vec(x[a][0], x[a][1]), ti.vec(x[b][0], x[b][1])).radius(1).color(0x4FB99F).finish()
+        canvas.path(ti.vec(x[a][0], x[a][1]), ti.vec(
+            x[b][0], x[b][1])).radius(1).color(0x4FB99F).finish()
     for i in range(n_particles):
       canvas.circle(ti.vec(x[i][0], x[i][1])).radius(2).color(0xF2B134).finish()
     gui.update()
     gui.screenshot("tmp/{:04d}.png".format(f))
   ti.profiler_print()
+
 
 if __name__ == '__main__':
   main()

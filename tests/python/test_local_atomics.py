@@ -1,5 +1,6 @@
 import taichi as ti
 
+
 @ti.all_archs
 def test_explicit_local_atomics():
   A = ti.var(ti.f32, shape=())
@@ -14,6 +15,7 @@ def test_explicit_local_atomics():
   func()
   assert A[None] == 45
 
+
 @ti.all_archs
 def test_implicit_local_atomics():
   A = ti.var(ti.f32, shape=())
@@ -27,4 +29,3 @@ def test_implicit_local_atomics():
 
   func()
   assert A[None] == 45
-

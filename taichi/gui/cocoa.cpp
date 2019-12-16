@@ -32,7 +32,7 @@ template <typename C = id, typename... Args>
 C call(const char *class_name, const char *select, Args... args) {
   using func = C (*)(id, SEL, Args...);
   return ((func)(objc_msgSend))((id)objc_getClass(class_name),
-                                  sel_getUid(select), args...);
+                                sel_getUid(select), args...);
 }
 
 extern id NSApp;

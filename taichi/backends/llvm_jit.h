@@ -6,7 +6,8 @@
 
 // Note that
 // https://llvm.org/docs/tutorial/BuildingAJIT2.html
-// leads to a JIT that crashes all C++ exception after JIT session destruction...
+// leads to a JIT that crashes all C++ exception after JIT session
+// destruction...
 
 #include "../tlang_util.h"
 #include "llvm/ADT/StringRef.h"

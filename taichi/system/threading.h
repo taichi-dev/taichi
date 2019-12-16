@@ -5,86 +5,59 @@
 
 #pragma once
 
-#include <taichi/common/util.h>
 #include <atomic>
+#include <condition_variable>
 #include <functional>
+#include <taichi/common/util.h>
 #include <thread>
-#include <vector>
-#if defined(TC_PLATFORM_WINDOWS)
-#include <windows.h>
-#else
-// Mac and Linux
-#include <unistd.h>
-#endif
 
 TC_NAMESPACE_BEGIN
 
-#if (0)
-class ThreadedTaskManager {
- public:
-#if !defined(TC_AMALGAMATED)
-  class TbbParallelismControl {
-    std::unique_ptr<tbb::global_control> c;
-   public:
-    TbbParallelismControl(int threads) {
-      c = std::make_unique<tbb::global_control>(
-          tbb::global_control::max_allowed_parallelism, threads);
-    }
-  };
-#endif
-  template <typename T>
-  void static run(const T &target, int begin, int end, int num_threads) {
-#if !defined(TC_AMALGAMATED)
-    if (num_threads > 0) {
-      tbb::task_arena limited_arena(num_threads);
-      limited_arena.execute([&]() { tbb::parallel_for(begin, end, target); });
-    } else {
-      TC_ASSERT_INFO(
-          num_threads == -1,
-          fmt::format(
-              "num_threads must be a positive number or -1, instead of [{}]",
-              num_threads));
-      tbb::parallel_for(begin, end, target);
-    }
-#else
-    TC_NOT_IMPLEMENTED
-#endif
-  }
-
-  template <typename T>
-  void static run(const T &target, int end, int num_threads) {
-    return run(target, 0, end, num_threads);
-  }
-
-  template <typename T>
-  void static run(int begin, int end, int num_threads, const T &target) {
-    return run(target, begin, end, num_threads);
-  }
-
-  template <typename T>
-  void static run(int end, int num_threads, const T &target) {
-    return run(target, 0, end, num_threads);
-  }
-};
-#endif
+using CPUTaskFunc = void(void *, int i);
+using ParallelFor = void(int n, int num_threads, void *, CPUTaskFunc func);
 
 class PID {
  public:
-  static int get_pid() {
-#if defined(TC_PLATFORM_WINDOWS)
-    return (int)GetCurrentProcessId();
-#else
-    return (int)getpid();
-#endif
+  static int get_pid();
+  static int get_parent_pid();
+};
+
+class ThreadPool {
+ public:
+  std::vector<std::thread> threads;
+  std::condition_variable slave_cv;
+  std::condition_variable master_cv;
+  std::mutex mutex;
+  int task_head;
+  int task_tail;
+  int running_threads;
+  int max_num_threads;
+  int desired_num_threads;
+  uint64 timestamp;
+  bool started;
+  bool exiting;
+  CPUTaskFunc *func;
+  void *context;
+  int thread_counter;
+
+  ThreadPool();
+
+  void run(int splits,
+           int desired_num_threads,
+           void *context,
+           CPUTaskFunc *func);
+
+  static void static_run(ThreadPool *pool,
+                         int splits,
+                         int desired_num_threads,
+                         void *context,
+                         CPUTaskFunc *func) {
+    return pool->run(splits, desired_num_threads, context, func);
   }
-  static int get_parent_pid() {
-#if defined(TC_PLATFORM_WINDOWS)
-    TC_NOT_IMPLEMENTED
-    return -1;
-#else
-    return (int)getppid();
-#endif
-  }
+
+  void target();
+
+  ~ThreadPool();
 };
 
 TC_NAMESPACE_END

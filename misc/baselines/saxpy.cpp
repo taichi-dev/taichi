@@ -45,10 +45,14 @@ int main() {
     t = get_time();
     std::memcpy(x.data(), y.data(), sizeof(float) * n);
     double memcpy = get_time() - t;
-    printf("time saxpy(12) %f sasum(4) %f sscal(8) %f memset(4) %f memcpy(8) %f\n", saxpy, sasum,
-           sscal, memset, memcpy);
-    printf("BW:  saxpy(12) %.2f sasum(4) %.2f sscal(8) %.2f memset(4) %.2f memcpy(8) %.2f\n", 12.0f / saxpy, 4.0f / sasum,
-           8.0f / sscal, 4.0f / memset, 8.0f/ memcpy);
+    printf(
+        "time saxpy(12) %f sasum(4) %f sscal(8) %f memset(4) %f memcpy(8) %f\n",
+        saxpy, sasum, sscal, memset, memcpy);
+    printf(
+        "BW:  saxpy(12) %.2f sasum(4) %.2f sscal(8) %.2f memset(4) %.2f "
+        "memcpy(8) %.2f\n",
+        12.0f / saxpy, 4.0f / sasum, 8.0f / sscal, 4.0f / memset,
+        8.0f / memcpy);
   }
   printf("trash %f", trash);
   return 0;

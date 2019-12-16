@@ -8,37 +8,51 @@ FRAME_DIR = 'frames'
 
 # Write the frames to the disk and then make videos (mp4 or gif) if necessary
 
+
 def scale_video(input, output, ratiow, ratioh):
-  os.system('ffmpeg -i {}  -vf "scale=iw*{:.4f}:ih*{:.4f}" {}'.format(input, ratiow, ratioh, output))
+  os.system('ffmpeg -i {}  -vf "scale=iw*{:.4f}:ih*{:.4f}" {}'.format(
+      input, ratiow, ratioh, output))
+
 
 def crop_video(input, output, x_begin, x_end, y_begin, y_end):
-  os.system('ffmpeg -i {} -filter:v "crop=iw*{:.4f}:ih*{:.4f}:iw*{:0.4f}:ih*{:0.4f}" {}'.format(input, x_end - x_begin, y_end - y_begin, x_begin, 1 - y_end, output))
+  os.system(
+      'ffmpeg -i {} -filter:v "crop=iw*{:.4f}:ih*{:.4f}:iw*{:0.4f}:ih*{:0.4f}" {}'
+      .format(input, x_end - x_begin, y_end - y_begin, x_begin, 1 - y_end,
+              output))
+
 
 def accelerate_video(input, output, speed):
-  os.system('ffmpeg -i {} -filter:v "setpts={:.4f}*PTS" {}'.format(input, 1 / speed, output))
+  os.system('ffmpeg -i {} -filter:v "setpts={:.4f}*PTS" {}'.format(
+      input, 1 / speed, output))
+
 
 def get_ffmpeg_path():
   # return get_directory('external/lib/ffmpeg')
   return 'ffmpeg'
 
+
 def mp4_to_gif(input_fn, output_fn, framerate):
   # Generate the palette
   palette_name = 'palette.png'
   if get_os_name() == 'win':
-    command = get_ffmpeg_path() + " -loglevel panic -i %s -vf 'palettegen' -y %s" % (
-      input_fn, palette_name)
+    command = get_ffmpeg_path(
+    ) + " -loglevel panic -i %s -vf 'palettegen' -y %s" % (input_fn,
+                                                           palette_name)
   else:
-    command = get_ffmpeg_path() + " -loglevel panic -i %s -vf 'fps=%d,scale=320:640:flags=lanczos,palettegen' -y %s" % (
-      input_fn, framerate, palette_name)
+    command = get_ffmpeg_path(
+    ) + " -loglevel panic -i %s -vf 'fps=%d,scale=320:640:flags=lanczos,palettegen' -y %s" % (
+        input_fn, framerate, palette_name)
   # print command
   os.system(command)
 
   # Generate the GIF
-  command = get_ffmpeg_path() + " -loglevel panic -i %s -i %s -lavfi paletteuse -y %s" % (
-    input_fn, palette_name, output_fn)
+  command = get_ffmpeg_path(
+  ) + " -loglevel panic -i %s -i %s -lavfi paletteuse -y %s" % (
+      input_fn, palette_name, output_fn)
   # print command
   os.system(command)
   os.remove(palette_name)
+
 
 class VideoManager:
 
@@ -113,10 +127,13 @@ class VideoManager:
     os.system(command)
 
     if gif:
-      mp4_to_gif(self.get_output_filename('.mp4'), self.get_output_filename('.gif'), self.framerate)
+      mp4_to_gif(
+          self.get_output_filename('.mp4'), self.get_output_filename('.gif'),
+          self.framerate)
 
     if not mp4:
       os.remove(fn)
+
 
 def interpolate_frames(frame_dir, mul=4):
   # TODO: remove dependency on cv2 here
@@ -132,7 +149,8 @@ def interpolate_frames(frame_dir, mul=4):
     images_interpolated.append(images[i])
     for j in range(mul - 1):
       alpha = 1 - j / mul
-      images_interpolated.append(images[i] * alpha + images[i + 1] * (1 - alpha))
+      images_interpolated.append(images[i] * alpha +
+                                 images[i + 1] * (1 - alpha))
 
   images_interpolated.append(images[-1])
 

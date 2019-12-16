@@ -131,7 +131,7 @@ TC_FORCE_INLINE constexpr uint32 log2int(uint64 value) {
 }
 
 template <typename G, typename T>
-    constexpr TC_FORCE_INLINE copy_refcv_t<T, G> &&reinterpret_bits(T &&t) {
+constexpr TC_FORCE_INLINE copy_refcv_t<T, G> &&reinterpret_bits(T &&t) {
   TC_STATIC_ASSERT(sizeof(G) == sizeof(T));
   return std::forward<copy_refcv_t<T, G>>(*reinterpret_cast<G *>(&t));
 };

@@ -1,5 +1,6 @@
 import taichi as ti
 
+
 @ti.all_archs
 def test_pass_by_value():
 

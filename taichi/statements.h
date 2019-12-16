@@ -188,11 +188,13 @@ class LoopIndexStmt : public Stmt {
 };
 
 class GlobalTemporaryStmt : public Stmt {
-public:
+ public:
   std::size_t offset;
 
-  GlobalTemporaryStmt(std::size_t offset, VectorType ret_type): offset(offset)
-    { this->ret_type = ret_type;}
+  GlobalTemporaryStmt(std::size_t offset, VectorType ret_type)
+      : offset(offset) {
+    this->ret_type = ret_type;
+  }
 
   DEFINE_ACCEPT
 };

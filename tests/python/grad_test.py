@@ -2,6 +2,7 @@ import taichi as ti
 from pytest import approx
 from autograd import grad
 
+
 def grad_test(tifunc, npfunc=None):
   if npfunc is None:
     npfunc = tifunc
@@ -28,4 +29,3 @@ def grad_test(tifunc, npfunc=None):
 
   assert y[0] == approx(npfunc(v))
   assert x.grad[0] == approx(grad(npfunc)(v))
-

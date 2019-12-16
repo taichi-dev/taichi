@@ -10,6 +10,7 @@
 #if defined(CUDA_FOUND)
 
 #include <cuda_runtime.h>
+#include "backends/cuda_context.h"
 
 #endif
 
@@ -157,6 +158,10 @@ Program::Program(Arch arch) {
     TC_WARN("CUDA not found. GPU is not supported.");
     TC_WARN("Falling back to x86_64");
     arch = Arch::x86_64;
+  }
+#else
+  if (!cuda_context) {
+    cuda_context = std::make_unique<CUDAContext>();
   }
 #endif
   TC_ASSERT_INFO(num_instances == 0, "Only one instance at a time");

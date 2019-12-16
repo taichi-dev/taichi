@@ -207,12 +207,13 @@ inline std::vector<uint8> read_data_from_file(const std::string &fn) {
   }
 }
 
-inline void write_data_to_file(const std::string &fn, uint8_t *data, std::size_t size) {
+inline void write_data_to_file(const std::string &fn,
+                               uint8_t *data,
+                               std::size_t size) {
   std::FILE *f = fopen(fn.c_str(), "wb");
   if (f == nullptr) {
-    TC_ERROR(
-        "Cannot open file [{}] for writing. (Does the directory exist?)",
-        fn);
+    TC_ERROR("Cannot open file [{}] for writing. (Does the directory exist?)",
+             fn);
     assert(f != nullptr);
   }
   if (ends_with(fn, ".tcb.zip")) {

@@ -9,8 +9,10 @@ try:
 except:
   pass
 
+
 def has_pytorch():
   return _has_pytorch
+
 
 def is_taichi_class(rhs):
   taichi_class = False
@@ -32,6 +34,7 @@ i32 = int32
 int64 = taichi_lang_core.DataType.int64
 i64 = int64
 
+
 def to_numpy_type(dt):
   if dt == f32:
     return np.float32
@@ -43,6 +46,7 @@ def to_numpy_type(dt):
     return np.int64
   else:
     assert False
+
 
 def to_pytorch_type(dt):
   import torch
@@ -56,6 +60,7 @@ def to_pytorch_type(dt):
     return torch.int64
   else:
     assert False
+
 
 def to_taichi_type(dt):
   if type(dt) == taichi_lang_core.DataType:
@@ -80,4 +85,3 @@ def to_taichi_type(dt):
       return i64
 
   raise AssertionError("Unknown type {}".format(dt))
-

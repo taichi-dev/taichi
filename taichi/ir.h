@@ -149,7 +149,7 @@ class DecoratorRecorder {
 
   void reset() {
     vectorize = -1;
-    parallelize = 0;
+    parallelize = 1;
     uniform = false;
     scratch_opt.clear();
     block_dim = 0;
@@ -1427,7 +1427,9 @@ class Block : public IRNode {
     }
   }
 
-  void replace_with(Stmt *old_statement, VecStatement &new_statements, bool replace_usages=true) {
+  void replace_with(Stmt *old_statement,
+                    VecStatement &new_statements,
+                    bool replace_usages = true) {
     int location = -1;
     for (int i = 0; i < (int)statements.size(); i++) {
       if (old_statement == statements[i].get()) {

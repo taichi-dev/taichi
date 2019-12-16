@@ -59,11 +59,10 @@ act_strength = 5
 # ti.cfg.use_llvm = True
 ti.cfg.arch = ti.cuda
 
-
 # ti.cfg.print_ir = True
 
-
 visualize_resolution = 256
+
 
 @ti.layout
 def place():
@@ -75,7 +74,8 @@ def place():
   ti.root.dense(ti.l, max_steps).dense(ti.k, n_particles).place(x, v, C, F)
   ti.root.dense(ti.ijk, n_grid).place(grid_v_in, grid_m_in, grid_v_out)
   ti.root.place(loss, x_avg)
-  ti.root.dense(ti.ij, (visualize_resolution, visualize_resolution)).place(screen)
+  ti.root.dense(ti.ij,
+                (visualize_resolution, visualize_resolution)).place(screen)
 
   ti.root.lazy_grad()
 
@@ -119,8 +119,7 @@ def p2g(f: ti.i32):
   for p in range(0, n_particles):
     base = ti.cast(x[f, p] * inv_dx - 0.5, ti.i32)
     fx = x[f, p] * inv_dx - ti.cast(base, ti.i32)
-    w = [0.5 * ti.sqr(1.5 - fx), 0.75 - ti.sqr(fx - 1),
-         0.5 * ti.sqr(fx - 0.5)]
+    w = [0.5 * ti.sqr(1.5 - fx), 0.75 - ti.sqr(fx - 1), 0.5 * ti.sqr(fx - 0.5)]
     new_F = (ti.Matrix.diag(dim=dim, val=1) + dt * C[f, p]) @ F[f, p]
     J = ti.determinant(new_F)
     if particle_type[p] == 0:  # fluid
@@ -147,7 +146,8 @@ def p2g(f: ti.i32):
       cauchy = ti.Matrix(ident) * (J - 1) * E
     else:
       mass = 1
-      cauchy = mu * (new_F @ ti.transposed(new_F)) + ti.Matrix(ident) * (la * ti.log(J) - mu)
+      cauchy = mu * (new_F @ ti.transposed(new_F)) + ti.Matrix(ident) * (
+          la * ti.log(J) - mu)
     cauchy += new_F @ A @ ti.transposed(new_F)
     stress = -(dt * p_vol * 4 * inv_dx * inv_dx) * cauchy
     affine = stress + mass * C[f, p]
@@ -158,7 +158,7 @@ def p2g(f: ti.i32):
           dpos = (ti.cast(ti.Vector([i, j, k]), real) - fx) * dx
           weight = w[i](0) * w[j](1) * w[k](2)
           grid_v_in[base + offset].atomic_add(
-            weight * (mass * v[f, p] + affine @ dpos))
+              weight * (mass * v[f, p] + affine @ dpos))
           grid_m_in[base + offset].atomic_add(weight * mass)
 
 
@@ -226,8 +226,9 @@ def g2p(f: ti.i32):
   for p in range(0, n_particles):
     base = ti.cast(x[f, p] * inv_dx - 0.5, ti.i32)
     fx = x[f, p] * inv_dx - ti.cast(base, real)
-    w = [0.5 * ti.sqr(1.5 - fx), 0.75 - ti.sqr(fx - 1.0),
-         0.5 * ti.sqr(fx - 0.5)]
+    w = [
+        0.5 * ti.sqr(1.5 - fx), 0.75 - ti.sqr(fx - 1.0), 0.5 * ti.sqr(fx - 0.5)
+    ]
     new_v = ti.Vector(zero_vec())
     new_C = ti.Matrix(zero_matrix())
 
@@ -250,8 +251,8 @@ def compute_actuation(t: ti.i32):
   for i in range(n_actuators):
     act = 0.0
     for j in ti.static(range(n_sin_waves)):
-      act += weights[i, j] * ti.sin(
-        actuation_omega * t * dt + 2 * math.pi / n_sin_waves * j)
+      act += weights[i, j] * ti.sin(actuation_omega * t * dt +
+                                    2 * math.pi / n_sin_waves * j)
     act += bias[i]
     actuation[t, i] = ti.tanh(act)
 
@@ -304,6 +305,7 @@ def backward():
 
 
 class Scene:
+
   def __init__(self):
     self.n_particles = 0
     self.n_solid_particles = 0
@@ -332,14 +334,16 @@ class Scene:
     real_dx = w / w_count
     real_dy = h / h_count
     real_dz = d / d_count
-    
+
     if ptype == 1:
       for i in range(w_count):
         for j in range(h_count):
           for k in range(d_count):
-            self.x.append([x + (i + 0.5) * real_dx + self.offset_x,
-                           y + (j + 0.5) * real_dy + self.offset_y,
-                           z + (k + 0.5) * real_dz + self.offset_z])
+            self.x.append([
+                x + (i + 0.5) * real_dx + self.offset_x,
+                y + (j + 0.5) * real_dy + self.offset_y,
+                z + (k + 0.5) * real_dz + self.offset_z
+            ])
             self.actuator_id.append(actuation)
             self.particle_type.append(ptype)
             self.n_particles += 1
@@ -350,9 +354,11 @@ class Scene:
       for i in range(w_count):
         for j in range(h_count):
           for k in range(d_count):
-            self.x.append([x + random.random() * w + self.offset_x,
-                           y + random.random() * h + self.offset_y,
-                           z + random.random() * d + self.offset_z])
+            self.x.append([
+                x + random.random() * w + self.offset_x,
+                y + random.random() * h + self.offset_y,
+                z + random.random() * d + self.offset_z
+            ])
             self.actuator_id.append(actuation)
             self.particle_type.append(ptype)
             self.n_particles += 1
@@ -376,8 +382,10 @@ class Scene:
     global n_actuators
     n_actuators = n_act
 
+
 gui = tc.core.GUI("Differentiable MPM", tc.veci(1024, 1024))
 canvas = gui.get_canvas()
+
 
 @ti.kernel
 def splat(t: ti.i32):
@@ -385,7 +393,9 @@ def splat(t: ti.i32):
     pos = ti.cast(x[t, i] * visualize_resolution, ti.i32)
     screen[pos[0], pos[1]][0] += 0.1
 
+
 res = [visualize_resolution, visualize_resolution]
+
 
 @ti.kernel
 def copy_back_and_clear(img: np.ndarray):
@@ -396,18 +406,23 @@ def copy_back_and_clear(img: np.ndarray):
         img[coord + c] = screen[i, j][2 - c]
         screen[i, j][2 - c] = 0
 
+
 def robot(scene):
   block_size = 0.1
   # scene.set_offset(0.1, 0.10, 0.3)
   scene.set_offset(0.1, 0.05, 0.3)
+
   def add_leg(x, y, z):
     for i in range(4):
-      scene.add_rect(x + block_size / 2 * (i // 2), y + 0.7 * block_size / 2 * (i % 2), z, block_size / 2, 0.7 * block_size / 2, block_size, scene.new_actuator())
+      scene.add_rect(x + block_size / 2 * (i // 2),
+                     y + 0.7 * block_size / 2 * (i % 2), z, block_size / 2,
+                     0.7 * block_size / 2, block_size, scene.new_actuator())
 
   for i in range(4):
     add_leg(i // 2 * block_size * 2, 0.0, i % 2 * block_size * 2)
   for i in range(3):
-    scene.add_rect(block_size * i, 0, block_size, block_size, block_size * 0.7, block_size, -1, 1)
+    scene.add_rect(block_size * i, 0, block_size, block_size, block_size * 0.7,
+                   block_size, -1, 1)
 
 
 def main():
@@ -465,7 +480,6 @@ def main():
         cv2.imshow('img', img)
         cv2.waitKey(1)
         '''
-
         '''
         xs, ys, zs = [], [], []
         aas, bs, cs = [], [], []
@@ -489,9 +503,9 @@ def main():
         plt.cla()
         '''
 
-
         def to255(x):
           return int(max(min(x * 255, 255), 0))
+
         xs, ys, zs = [], [], []
         us, vs, ws = [], [], []
         cs = []
@@ -525,8 +539,6 @@ def main():
           cs.append(color)
         data = np.array(xs + ys + zs + us + vs + ws + cs, dtype=np.float32)
         data.tofile(open('{}/{:04}.bin'.format(folder, s), 'wb'))
-
-
 
   # ti.profiler_print()
   plt.title("Optimization of Initial Velocity")

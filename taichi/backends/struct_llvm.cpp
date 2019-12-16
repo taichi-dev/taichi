@@ -199,7 +199,8 @@ void StructCompilerLLVM::generate_leaf_accessors(SNode &snode) {
   stack.pop_back();
 }
 
-void StructCompilerLLVM::load_accessors(SNode &snode) {}
+void StructCompilerLLVM::load_accessors(SNode &snode) {
+}
 
 void StructCompilerLLVM::run(SNode &root, bool host) {
   // bottom to top
@@ -232,8 +233,8 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
 
   tlctx->set_struct_module(module);
 
-  if (arch == Arch::x86_64) // Do not compile the GPU struct module alone since
-                            // it's useless unless used with kernels
+  if (arch == Arch::x86_64)  // Do not compile the GPU struct module alone since
+                             // it's useless unless used with kernels
     tlctx->jit->addModule(std::move(module));
 
   if (host) {
@@ -256,6 +257,10 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
     auto initialize_allocator = tlctx->lookup_function<
         std::function<void *(void *, void *, std::size_t)>>(
         "NodeAllocator_initialize");
+
+    auto runtime_initialize_thread_pool =
+        tlctx->lookup_function<std::function<void(void *, void *, void *)>>(
+            "Runtime_initialize_thread_pool");
 
     auto snodes = this->snodes;
     auto tlctx = this->tlctx;
@@ -288,6 +293,11 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
           allocate_ambient(rt, i);
         }
       }
+
+      runtime_initialize_thread_pool(get_current_program().llvm_runtime,
+                                     &get_current_program().thread_pool,
+                                     (void *)ThreadPool::static_run);
+
       return (void *)root_ptr;
     };
   }
@@ -301,8 +311,12 @@ std::unique_ptr<StructCompiler> StructCompiler::make(bool use_llvm, Arch arch) {
   }
 }
 
-llvm::Type *SNode::get_body_type() { return llvm_body_type; }
-llvm::Type *SNode::get_aux_type() { return llvm_aux_type; }
+llvm::Type *SNode::get_body_type() {
+  return llvm_body_type;
+}
+llvm::Type *SNode::get_aux_type() {
+  return llvm_aux_type;
+}
 
 bool SNode::need_activation() const {
   return type == SNodeType::pointer || type == SNodeType::hash ||

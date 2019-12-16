@@ -101,7 +101,6 @@ void StructCompiler::infer_snode_properties(SNode &snode) {
     }
   }
 
-
   if (snode.expr)
     snode.expr->set_attribute("dim", std::to_string(snode.num_active_indices));
 
@@ -117,8 +116,10 @@ void StructCompiler::infer_snode_properties(SNode &snode) {
   }
 
   if (snode.ch.empty()) {
-    if (snode.type != SNodeType::indirect && snode.type != SNodeType::place && snode.type != SNodeType::root) {
-      TC_ERROR("{} node must have at least one child.", snode_type_name(snode.type));
+    if (snode.type != SNodeType::indirect && snode.type != SNodeType::place &&
+        snode.type != SNodeType::root) {
+      TC_ERROR("{} node must have at least one child.",
+               snode_type_name(snode.type));
     }
   }
 }

@@ -1,6 +1,7 @@
 import taichi as ti
 import numpy as np
 
+
 def with_data_type(dt):
   val = ti.var(ti.i32)
 
@@ -13,7 +14,7 @@ def with_data_type(dt):
   @ti.kernel
   def test_numpy(arr: ti.ext_arr()):
     for i in range(n):
-      arr[i] = arr[i] ** 2
+      arr[i] = arr[i]**2
 
   a = np.array([4, 8, 1, 24], dtype=dt)
 
@@ -25,21 +26,26 @@ def with_data_type(dt):
   for i in range(n):
     assert a[i] == i * i * 4
 
+
 @ti.all_archs
 def test_numpy_f32():
   with_data_type(np.float32)
+
 
 @ti.all_archs
 def test_numpy_f64():
   with_data_type(np.float64)
 
+
 @ti.all_archs
 def test_numpy_i32():
   with_data_type(np.int32)
 
+
 @ti.all_archs
 def test_numpy_i64():
   with_data_type(np.int64)
+
 
 @ti.all_archs
 def test_numpy_2d():
@@ -70,6 +76,7 @@ def test_numpy_2d():
     for j in range(m):
       assert a[i, j] == i * j + i + j
 
+
 @ti.all_archs
 def test_numpy_2d_transpose():
   val = ti.var(ti.i32)
@@ -84,7 +91,7 @@ def test_numpy_2d_transpose():
   @ti.kernel
   def test_numpy(arr: ti.ext_arr()):
     for i in ti.grouped(val):
-        val[i] = arr[i]
+      val[i] = arr[i]
 
   a = np.empty(shape=(n, m), dtype=np.int32)
 
@@ -97,6 +104,7 @@ def test_numpy_2d_transpose():
   for i in range(n):
     for j in range(m):
       assert val[i, j] == i * j + j * 4
+
 
 @ti.all_archs
 def test_numpy_3d():
@@ -155,8 +163,8 @@ def test_numpy_3d():
 
   test_numpy(a)
 
+
 @ti.must_throw(AssertionError)
 def test_index_mismatch():
   val = ti.var(ti.i32, shape=(1, 2, 3))
   val[0, 0] = 1
-

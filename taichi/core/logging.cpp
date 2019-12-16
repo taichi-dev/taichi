@@ -15,9 +15,9 @@ Function11 python_at_exit;
 
 void signal_handler(int signo);
 
-#define TC_REGISTER_SIGNAL_HANDLER(name, handler)                    \
-  {                                                                  \
-    if (std::signal(name, handler) == SIG_ERR)                       \
+#define TC_REGISTER_SIGNAL_HANDLER(name, handler)                   \
+  {                                                                 \
+    if (std::signal(name, handler) == SIG_ERR)                      \
       std::printf("Cannot register signal handler for" #name "\n"); \
   }
 

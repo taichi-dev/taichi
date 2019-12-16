@@ -18,10 +18,9 @@ def test_simple():
     for i in range(n - 1):
       x[i] = 1
       y[i + 1] = 2
-      
+
   run()
 
   for i in range(n - 1):
     assert x[i] == 1
     assert y[i + 1] == 2
-

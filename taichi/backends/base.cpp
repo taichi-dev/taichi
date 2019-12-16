@@ -47,7 +47,7 @@ std::string CodeGenBase::get_source() {
 }
 
 void CodeGenBase::load_dll() {
-#if defined(TC_PLATFORM_UNIX)	
+#if defined(TC_PLATFORM_UNIX)
   dll = dlopen((get_library_path()).c_str(), RTLD_LAZY);
   if (dll == nullptr) {
     TC_ERROR("{}", dlerror());

@@ -56,8 +56,9 @@ class SNode {
   int physical_index_position[max_num_indices];
   // physical indices are (ti.i, ti.j, ti.k, ti.l, ...)
   // physical_index_position[i] =
-  // which physical index does the i-th virtual index (the one exposed to programmers) refer to?
-  // i.e. in a[i, j, k], "i", "j", and "k" are virtual indices.
+  // which physical index does the i-th virtual index (the one exposed to
+  // programmers) refer to? i.e. in a[i, j, k], "i", "j", and "k" are virtual
+  // indices.
 
   static int counter;
   int id;

@@ -24,7 +24,6 @@ auto R = new real[n][n][n][dim]();
 auto D = new real[n][n][n]();
 auto X = new real[n][n][n][dim]();
 
-
 auto fem = [](std::vector<std::string> cli_param) {
   CoreState::set_trigger_gdb_when_crash(true);
 
@@ -68,7 +67,6 @@ auto fem = [](std::vector<std::string> cli_param) {
   AmbientGlobal(mu, f32, 0.0f);
 
   int block_size = 8;
-
 
   layout([&]() {
     auto ijk = Indices(0, 1, 2);

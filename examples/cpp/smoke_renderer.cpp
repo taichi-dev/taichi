@@ -41,7 +41,8 @@ auto smoke_renderer = [](std::vector<std::string> cli_param_) {
     int box_sizes[3]{584, 576, 440};
     int total_voxels = box_sizes[0] * box_sizes[1] * box_sizes[2];
     std::vector<float32> density_field(total_voxels);
-    trash(std::fread(density_field.data(), sizeof(float32), density_field.size(), f));
+    trash(std::fread(density_field.data(), sizeof(float32),
+                     density_field.size(), f));
     std::fclose(f);
 
     auto max_density = 0.0f;
@@ -84,7 +85,7 @@ auto smoke_renderer = [](std::vector<std::string> cli_param_) {
     for (int i = 0; i < N; i++) {
       renderer.sample();
     }
-    //prog.profiler_print();
+    // prog.profiler_print();
 
     real scale = 1.0f / ((frame + 1) * N);
     render_buffer.initialize(renderer.output_res);
@@ -99,9 +100,10 @@ auto smoke_renderer = [](std::vector<std::string> cli_param_) {
 
     auto time_in_s = Time::get_time() - t;
     auto time_in_s_per_spp = time_in_s / N;
-    std::cout << "Render time (" << N << "spp): " << time_in_s << "s" << std::endl;
-    std::cout << "Render time / spp (" << N << "spp):" << time_in_s_per_spp << "s/spp" << std::endl;
-
+    std::cout << "Render time (" << N << "spp): " << time_in_s << "s"
+              << std::endl;
+    std::cout << "Render time / spp (" << N << "spp):" << time_in_s_per_spp
+              << "s/spp" << std::endl;
 
     for (int i = 0; i < renderer.sky_map_size[0]; i++) {
       for (int j = 0; j < renderer.sky_map_size[1]; j++) {
@@ -115,8 +117,9 @@ auto smoke_renderer = [](std::vector<std::string> cli_param_) {
       gui->canvas->img = canvas->img;
       gui->update();
     } else {
-      auto filename = fmt::format("smoke-{:05d}-{:05d}-{:05d}-{:05f}.png", frame,
-                                             N, renderer.depth_limit, target_max_density);
+      auto filename =
+          fmt::format("smoke-{:05d}-{:05d}-{:05d}-{:05f}.png", frame, N,
+                      renderer.depth_limit, target_max_density);
       std::cout << "Saving image to " << filename << std::endl;
       canvas->img.write_as_image(filename);
     }

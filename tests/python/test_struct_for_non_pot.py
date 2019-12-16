@@ -1,5 +1,6 @@
 import taichi as ti
 
+
 @ti.all_archs
 def test_1d():
   x = ti.var(ti.i32)
@@ -21,6 +22,7 @@ def test_1d():
 
   for i in range(n):
     assert sum[None] == 4950
+
 
 @ti.all_archs
 def test_2d():

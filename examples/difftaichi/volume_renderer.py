@@ -35,6 +35,7 @@ target_images = scalar()
 images = scalar()
 loss = scalar()
 
+
 @ti.layout
 def place():
   ti.root.dense(ti.ijk, density_res).place(density)
@@ -42,12 +43,15 @@ def place():
   ti.root.place(loss)
   ti.root.lazy_grad()
 
+
 @ti.func
 def in_box(x, y, z):
   # The density grid is contained in a unit box [-0.5, 0.5] x [-0.5, 0.5] x [-0.5, 0.5]
   return x >= -0.5 and x < 0.5 and y >= -0.5 and y < 0.5 and z >= -0.5 and z < 0.5
 
+
 def ray_march(field):
+
   @ti.kernel
   def kernel(angle: ti.f32, view_id: ti.i32):
     for pixel in range(res * res):
@@ -55,11 +59,13 @@ def ray_march(field):
         x = pixel // res
         y = pixel - x * res
 
-        camera_origin = ti.Vector([camera_origin_radius * ti.sin(angle), 0, camera_origin_radius * ti.cos(angle)])
+        camera_origin = ti.Vector([
+            camera_origin_radius * ti.sin(angle), 0,
+            camera_origin_radius * ti.cos(angle)
+        ])
         dir = ti.Vector([
-          fov * (ti.cast(x, ti.f32) / (res_f32 / 2.0) - res_f32 / res_f32),
-          fov * (ti.cast(y, ti.f32) / (res_f32 / 2.0) - 1.0),
-          -1.0
+            fov * (ti.cast(x, ti.f32) / (res_f32 / 2.0) - res_f32 / res_f32),
+            fov * (ti.cast(y, ti.f32) / (res_f32 / 2.0) - 1.0), -1.0
         ])
 
         length = ti.sqrt(dir[0] * dir[0] + dir[1] * dir[1] + dir[2] * dir[2])
@@ -96,25 +102,33 @@ def ray_march(field):
   kernel.grad.materialize()
   return kernel
 
+
 ray_march_images = ray_march(images)
 ray_march_target = ray_march(target_images)
+
 
 @ti.kernel
 def compute_loss(view_id: ti.i32):
   for i in range(res):
     for j in range(res):
-      ti.atomic_add(loss, ti.sqr(images[view_id, i, j] - target_images[view_id, i, j]) * (1.0 / (res * res)))
+      ti.atomic_add(
+          loss,
+          ti.sqr(images[view_id, i, j] - target_images[view_id, i, j]) *
+          (1.0 / (res * res)))
+
 
 @ti.kernel
 def clear_images():
   for v, i, j in images:
     images[v, i, j] = 0
 
+
 @ti.kernel
 def clear_density():
   for i, j, k in density:
     density[i, j, k] = 0
     density.grad[i, j, k] = 0
+
 
 def create_target_images():
   for view in range(n_views):
@@ -127,13 +141,15 @@ def create_target_images():
     img /= np.max(img)
     img = 1 - img
 
-    imwrite("{}/target_{:04d}.png".format("output_volume_renderer", view), 100 * img)
+    imwrite("{}/target_{:04d}.png".format("output_volume_renderer", view),
+            100 * img)
+
 
 @ti.func
 def in_torus(x, y, z):
-  len_xz = ti.sqrt(x*x + z*z)
+  len_xz = ti.sqrt(x * x + z * z)
   qx = len_xz - torus_r1
-  len_q = ti.sqrt(qx*qx + y*y)
+  len_q = ti.sqrt(qx * qx + y * y)
   dist = len_q - torus_r2
   return dist < 0
 
@@ -148,13 +164,14 @@ def create_torus_density():
         y = ti.cast(j, ti.f32) * inv_density_res - 0.5
         z = ti.cast(i, ti.f32) * inv_density_res - 0.5
 
-        l = ti.sqrt(x*x + y*y + z*z)
+        l = ti.sqrt(x * x + y * y + z * z)
 
         # Swap x, y to rotate the torus
         if in_torus(y, x, z):
           density[i, j, k] = inv_density_res
         else:
           density[i, j, k] = 0.0
+
 
 @ti.kernel
 def apply_grad():
@@ -165,11 +182,16 @@ def apply_grad():
         density[i, j, k] -= learning_rate * density.grad[i, j, k]
         density[i, j, k] = ti.max(density[i, j, k], 0)
 
+
 def main():
   if not os.path.exists('bunny_128.bin'):
-    print('\n***\nPlease download bunny_128.bin and put in the current working directory. URL: https://github.com/yuanming-hu/taichi_assets/releases/download/llvm8/bunny_128.bin ')
+    print(
+        '\n***\nPlease download bunny_128.bin and put in the current working directory. URL: https://github.com/yuanming-hu/taichi_assets/releases/download/llvm8/bunny_128.bin '
+    )
     exit(0)
-  volume = np.fromfile("bunny_128.bin", dtype=np.float32).reshape((density_res, density_res, density_res))
+  volume = np.fromfile(
+      "bunny_128.bin", dtype=np.float32).reshape((density_res, density_res,
+                                                  density_res))
   for i in range(density_res):
     for j in range(density_res):
       for k in range(density_res):
@@ -195,7 +217,10 @@ def main():
         if m > 0:
           img /= m
         img = 1 - img
-        imwrite("{}/image_{:04d}_{:04d}.png".format("output_volume_renderer", iter, view), (255 * img).astype(np.uint8))
+        imwrite(
+            "{}/image_{:04d}_{:04d}.png".format("output_volume_renderer", iter,
+                                                view),
+            (255 * img).astype(np.uint8))
 
     print('Iter', iter, ' Loss =', loss[None])
     apply_grad()

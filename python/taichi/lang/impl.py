@@ -26,6 +26,7 @@ def wrap_scalar(x):
   else:
     return x
 
+
 def atomic_add(a, b):
   a.atomic_add(wrap_scalar(b))
 
@@ -59,6 +60,7 @@ def subscript(value, *indices):
 
 
 class PyTaichi:
+
   def __init__(self, kernels=[]):
     self.materialized = False
     self.prog = None
@@ -75,50 +77,52 @@ class PyTaichi:
     self.inside_complex_kernel = False
     self.kernels = kernels
     Expr.materialize_layout_callback = self.materialize
-  
+
   def set_default_fp(self, fp):
     assert fp in [f32, f64]
     self.default_fp = fp
-  
+
   def set_default_ip(self, ip):
     assert ip in [i32, i64]
     self.default_ip = ip
-  
+
   def materialize(self):
     if self.materialized:
       return
     Expr.layout_materialized = True
     self.prog = taichi_lang_core.Program()
-    
+
     def layout():
       for func in self.layout_functions:
         func()
-    
+
     print("Materializing layout...".format())
     taichi_lang_core.layout(layout)
     self.materialized = True
     for var in self.global_vars:
       assert var.ptr.snode() is not None, 'Some variable(s) not placed'
-  
+
   def clear(self):
     if self.prog:
       self.prog.finalize()
       self.prog = None
     Expr.materialize_layout_callback = None
     Expr.layout_materialized = False
-  
+
   def get_tape(self, loss=None):
     from .tape import Tape
     return Tape(self, loss)
-  
+
   def sync(self):
     self.prog.synchronize()
 
 
 pytaichi = PyTaichi()
 
+
 def get_runtime():
   return pytaichi
+
 
 def make_constant_expr(val):
   if isinstance(val, int):
@@ -152,8 +156,10 @@ def reset():
 def inside_kernel():
   return pytaichi.inside_kernel
 
+
 def index_nd(dim):
   return indices(*range(dim))
+
 
 def global_var(dt, shape=None, needs_grad=False):
   if isinstance(shape, numbers.Number):
@@ -164,7 +170,7 @@ def global_var(dt, shape=None, needs_grad=False):
   x.ptr = taichi_lang_core.global_new(x.ptr, dt)
   x.ptr.set_is_primal(True)
   pytaichi.global_vars.append(x)
-  
+
   if taichi_lang_core.needs_grad(dt):
     # adjoint
     x_grad = Expr(taichi_lang_core.make_id_expr(""))
@@ -173,6 +179,7 @@ def global_var(dt, shape=None, needs_grad=False):
     x.set_grad(x_grad)
 
   if shape is not None:
+
     @layout
     def place():
       import taichi as ti
@@ -183,9 +190,12 @@ def global_var(dt, shape=None, needs_grad=False):
 
   return x
 
+
 class Layout:
+
   def __init__(self, soa=False):
     self.soa = soa
+
 
 SOA = Layout(soa=True)
 AOS = Layout(soa=False)
@@ -202,7 +212,7 @@ def layout(func):
 
 def ti_print(var):
   code = inspect.getframeinfo(inspect.currentframe().f_back).code_context[0]
-  arg_name = code[code.index('(') + 1: code.index(')')]
+  arg_name = code[code.index('(') + 1:code.index(')')]
   taichi_lang_core.print_(Expr(var).ptr, arg_name)
 
 
@@ -228,12 +238,18 @@ index = indices
 
 
 def static(x):
-  assert get_runtime().inside_kernel, 'ti.static can only be used inside Taichi kernels'
-  assert isinstance(x, (bool, int, float, range, list, tuple)), 'Input to ti.static must have compile-time constant values, instead of {}'.format(type(x))
+  assert get_runtime(
+  ).inside_kernel, 'ti.static can only be used inside Taichi kernels'
+  assert isinstance(
+      x, (bool, int, float, range, list, tuple)
+  ), 'Input to ti.static must have compile-time constant values, instead of {}'.format(
+      type(x))
   return x
 
+
 def grouped(x):
-  assert get_runtime().inside_kernel, 'ti.grouped can only be used inside Taichi kernels'
+  assert get_runtime(
+  ).inside_kernel, 'ti.grouped can only be used inside Taichi kernels'
   return x
 
 
@@ -247,6 +263,7 @@ def current_cfg():
 
 def default_cfg():
   return taichi_lang_core.default_compile_config()
+
 
 from .kernel import *
 from .ops import *

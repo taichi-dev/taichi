@@ -1,5 +1,6 @@
 import taichi as ti
 
+
 @ti.all_archs
 def test_cond_grad():
   x = ti.var(ti.f32)

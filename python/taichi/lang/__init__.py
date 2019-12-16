@@ -26,17 +26,21 @@ cuda = core.gpu
 profiler_print = lambda: core.get_current_program().profiler_print()
 profiler_clear = lambda: core.get_current_program().profiler_clear()
 
+
 def reset():
   from .impl import reset as impl_reset
   impl_reset()
   global runtime
   runtime = get_runtime()
 
+
 def cache_shared(v):
   taichi_lang_core.cache(0, v.ptr)
 
+
 def cache_l1(v):
   taichi_lang_core.cache(1, v.ptr)
+
 
 parallelize = core.parallelize
 vectorize = core.vectorize
@@ -47,6 +51,7 @@ polar_decompose = Matrix.polar_decompose
 determinant = Matrix.determinant
 set_default_fp = pytaichi.set_default_fp
 
+
 def Tape(loss, clear_gradients=True):
   get_runtime().materialize()
   assert loss.snode().ptr.has_grad(), "gradient for loss not allocated"
@@ -56,18 +61,23 @@ def Tape(loss, clear_gradients=True):
   loss.grad[None] = 1
   return runtime.get_tape(loss)
 
+
 def clear_all_gradients():
   get_runtime().materialize()
   core.get_current_program().clear_all_gradients()
 
+
 schedules = [parallelize, vectorize, block_dim, cache]
 lang_core = core
+
 
 def static_print(*args, __p=print, **kwargs):
   __p(*args, **kwargs)
 
+
 # test x86_64 only
 def simple_test(func):
+
   def test(*args, **kwargs):
     reset()
     cfg.arch = x86_64
@@ -79,6 +89,7 @@ def simple_test(func):
 # test with all archs
 def all_archs(func):
   import taichi as ti
+
   def test(*args, **kwargs):
     archs = [x86_64]
     if ti.core.with_cuda():
@@ -90,9 +101,11 @@ def all_archs(func):
 
   return test
 
+
 # test with host arch only
 def host_arch(func):
   import taichi as ti
+
   def test(*args, **kwargs):
     archs = [x86_64]
     for arch in archs:
@@ -102,8 +115,11 @@ def host_arch(func):
 
   return test
 
+
 def must_throw(ex):
+
   def decorator(func):
+
     def func__(*args, **kwargs):
       finishes = False
       try:
@@ -113,16 +129,18 @@ def must_throw(ex):
         # throws. test passed
         pass
       except Exception as err_actual:
-        assert False, 'Exception {} instead of {} thrown'.format(str(type(err_actual)), str(ex))
+        assert False, 'Exception {} instead of {} thrown'.format(
+            str(type(err_actual)), str(ex))
       if finishes:
         assert False, 'Test finishes instead of throwing {}'.format(str(ex))
 
-
     return func__
+
   return decorator
 
 
 def complex_kernel(func):
+
   def decorated(*args, **kwargs):
     get_runtime().inside_complex_kernel = True
     if get_runtime().target_tape:
@@ -131,15 +149,22 @@ def complex_kernel(func):
       func(*args, **kwargs)
     finally:
       get_runtime().inside_complex_kernel = False
+
   decorated.grad = None
   return decorated
 
+
 def complex_kernel_grad(primal):
+
   def decorator(func):
+
     def decorated(*args, **kwargs):
       func(*args, **kwargs)
+
     primal.grad = decorated
     return decorated
+
   return decorator
+
 
 __all__ = [s for s in dir() if not s.startswith('_')]

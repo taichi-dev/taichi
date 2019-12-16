@@ -28,7 +28,9 @@ class TaichiLLVMContext {
 
   template <typename T>
   T lookup_function(const std::string &name) {
-    return T((function_pointer_type<T>)jit_lookup_name(jit.get(), name));
+    auto ret = T((function_pointer_type<T>)jit_lookup_name(jit.get(), name));
+    TC_ASSERT(ret != nullptr);
+    return ret;
   }
 
   std::unique_ptr<llvm::Module> clone_runtime_module();

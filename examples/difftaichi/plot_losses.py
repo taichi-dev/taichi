@@ -26,14 +26,14 @@ for id, (key, item) in enumerate(losses.items()):
       L += t
       MAX = max(MAX, t)
       MIN = min(MIN, t)
-    
+
     mean_loss.append(L / len(item))
     max_loss.append(MAX)
     min_loss.append(MIN)
-  
-  plt.fill_between(list(range(iterations)), min_loss, max_loss, color=colors[id], alpha=0.3)
+
+  plt.fill_between(
+      list(range(iterations)), min_loss, max_loss, color=colors[id], alpha=0.3)
   plt.plot(mean_loss, label='TOI' if key else 'Naive', color=colors[id])
-  
 
 fig = plt.gcf()
 plt.legend()

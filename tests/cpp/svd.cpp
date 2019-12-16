@@ -26,10 +26,7 @@ Expr svd_bitwise_and(const Expr &a, const Expr &b) {
 #include "svd_body.h"
 
 template <int sweeps = 5>
-void sifakis_svd_gt(Matrix3 &a,
-                                        Matrix3 &u,
-                                        Matrix3 &v,
-                                        Vector3 &sig) {
+void sifakis_svd_gt(Matrix3 &a, Matrix3 &u, Matrix3 &v, Vector3 &sig) {
   // clang-format off
   SifakisSVD::svd<sweeps>(
       a(0, 0), a(0, 1), a(0, 2),

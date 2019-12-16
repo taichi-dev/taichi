@@ -1,6 +1,7 @@
 import taichi as ti
 import numpy as np
 
+
 @ti.host_arch
 def test_io():
   if not ti.has_pytorch():
@@ -15,12 +16,13 @@ def test_io():
       o[i] = t[i] * t[i]
 
   @ti.kernel
-  def torch_kernel_2(t_grad: ti.ext_arr(), t: ti.ext_arr(), o_grad: ti.ext_arr()):
+  def torch_kernel_2(t_grad: ti.ext_arr(), t: ti.ext_arr(),
+                     o_grad: ti.ext_arr()):
     for i in range(n):
       t_grad[i] = 2 * t[i] * o_grad[i]
 
-
   class Sqr(torch.autograd.Function):
+
     @staticmethod
     def forward(ctx, inp):
       outp = torch.zeros_like(inp)
@@ -39,7 +41,7 @@ def test_io():
   #, device=torch.device('cuda:0')
 
   sqr = Sqr.apply
-  X = torch.tensor(2 * np.ones((n, ), dtype=np.float32), requires_grad=True)
+  X = torch.tensor(2 * np.ones((n,), dtype=np.float32), requires_grad=True)
   sqr(X).sum().backward()
   ret = X.grad.cpu()
   for i in range(n):
@@ -60,6 +62,7 @@ def test_io_2d():
         o[i, j] = t[i, j] * t[i, j]
 
   class Sqr(torch.autograd.Function):
+
     @staticmethod
     def forward(ctx, inp):
       outp = torch.zeros_like(inp)
@@ -70,6 +73,7 @@ def test_io_2d():
   X = torch.tensor(2 * np.ones((n, n), dtype=np.float32), requires_grad=True)
   val = sqr(X).sum()
   assert val == 2 * 2 * n * n
+
 
 @ti.host_arch
 def test_io_3d():
@@ -86,6 +90,7 @@ def test_io_3d():
           o[i, j, k] = t[i, j, k] * t[i, j, k]
 
   class Sqr(torch.autograd.Function):
+
     @staticmethod
     def forward(ctx, inp):
       outp = torch.zeros_like(inp)
@@ -96,6 +101,7 @@ def test_io_3d():
   X = torch.tensor(2 * np.ones((n, n, n), dtype=np.float32), requires_grad=True)
   val = sqr(X).sum()
   assert val == 2 * 2 * n * n * n
+
 
 @ti.host_arch
 def test_io_simple():
@@ -125,6 +131,7 @@ def test_io_simple():
   t3 = x2.to_torch()
   assert (t2 == t3).all()
 
+
 @ti.host_arch
 def test_io_simple():
   if not ti.has_pytorch():
@@ -134,8 +141,8 @@ def test_io_simple():
   zeros = torch.zeros((2, 6))
   zeros[1, 2] = 3
   mat.from_torch(zeros + 1)
-  
+
   assert mat[None][1, 2] == 4
-  
+
   zeros = mat.to_torch()
   assert zeros[1, 2] == 4

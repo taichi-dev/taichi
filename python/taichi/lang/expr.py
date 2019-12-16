@@ -2,6 +2,7 @@ from .core import taichi_lang_core
 from .util import *
 import traceback
 
+
 # Scalar, basic data type
 class Expr:
   materialize_layout_callback = None
@@ -49,7 +50,9 @@ class Expr:
 
   def __add__(self, other):
     other = Expr(other)
-    return Expr(taichi_lang_core.expr_add(self.ptr, other.ptr), tb=self.stack_info())
+    return Expr(
+        taichi_lang_core.expr_add(self.ptr, other.ptr), tb=self.stack_info())
+
   __radd__ = __add__
 
   def __iadd__(self, other):
@@ -60,7 +63,8 @@ class Expr:
 
   def __sub__(self, other):
     other = Expr(other)
-    return Expr(taichi_lang_core.expr_sub(self.ptr, other.ptr), tb=self.stack_info())
+    return Expr(
+        taichi_lang_core.expr_sub(self.ptr, other.ptr), tb=self.stack_info())
 
   def __isub__(self, other):
     taichi_lang_core.expr_atomic_sub(self.ptr, other.ptr)
@@ -143,7 +147,6 @@ class Expr:
     item = Expr(item)
     return Expr(taichi_lang_core.expr_bit_or(self.ptr, item.ptr))
 
-
   def logical_and(self, item):
     return self & item
 
@@ -163,18 +166,22 @@ class Expr:
     if self.getter:
       return
     snode = self.ptr.snode()
-    
+
     if self.snode().data_type() == f32 or self.snode().data_type() == f64:
+
       def getter(*key):
         return snode.read_float(key[0], key[1], key[2], key[3])
+
       def setter(value, *key):
         snode.write_float(key[0], key[1], key[2], key[3], value)
     else:
+
       def getter(*key):
         return snode.read_int(key[0], key[1], key[2], key[3])
+
       def setter(value, *key):
         snode.write_int(key[0], key[1], key[2], key[3], value)
-        
+
     self.getter = getter
     self.setter = setter
 
@@ -185,9 +192,9 @@ class Expr:
     if key is None:
       key = ()
     if not isinstance(key, tuple):
-      key = (key, )
+      key = (key,)
     assert len(key) == self.dim()
-    key = key + ((0, ) * (taichi_lang_core.get_max_num_indices() - len(key)))
+    key = key + ((0,) * (taichi_lang_core.get_max_num_indices() - len(key)))
     self.setter(value, *key)
 
   def __getitem__(self, key):
@@ -197,8 +204,8 @@ class Expr:
     if key is None:
       key = ()
     if not isinstance(key, tuple):
-      key = (key, )
-    key = key + ((0, ) * (4 - len(key)))
+      key = (key,)
+    key = key + ((0,) * (4 - len(key)))
     return self.getter(*key)
 
   def loop_range(self):
@@ -261,11 +268,11 @@ class Expr:
   def parent(self):
     from .snode import SNode
     return SNode(self.ptr.snode().parent)
-  
+
   def snode(self):
     from .snode import SNode
     return SNode(self.ptr.snode())
-  
+
   def __hash__(self):
     return self.ptr.get_raw_address()
 
@@ -284,14 +291,16 @@ class Expr:
   def to_numpy(self):
     from .meta import tensor_to_numpy
     import numpy as np
-    arr = np.empty(shape=self.shape(), dtype=to_numpy_type(self.snode().data_type()))
+    arr = np.empty(
+        shape=self.shape(), dtype=to_numpy_type(self.snode().data_type()))
     tensor_to_numpy(self, arr)
     return arr
 
   def to_torch(self):
     from .meta import tensor_to_numpy
     import torch
-    arr = torch.empty(size=self.shape(), dtype=to_pytorch_type(self.snode().data_type()))
+    arr = torch.empty(
+        size=self.shape(), dtype=to_pytorch_type(self.snode().data_type()))
     tensor_to_numpy(self, arr)
     return arr
 
@@ -308,12 +317,14 @@ class Expr:
   def from_torch(self, arr):
     self.from_numpy(arr.contiguous())
 
+
 def make_var_vector(size):
   import taichi as ti
   exprs = []
   for i in range(size):
     exprs.append(taichi_lang_core.make_id_expr(''))
   return ti.Vector(exprs)
+
 
 def make_expr_group(*exprs):
   if len(exprs) == 1:
@@ -328,4 +339,3 @@ def make_expr_group(*exprs):
   for i in exprs:
     expr_group.push_back(Expr(i).ptr)
   return expr_group
-

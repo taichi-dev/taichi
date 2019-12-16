@@ -3,13 +3,15 @@ import os
 import shutil
 import sys
 import ctypes
+from pathlib import Path
 
 if sys.version_info[0] < 3 or sys.version_info[1] < 5:
   print("\nPlease restart with python3. \n(Taichi supports Python 3.5+)\n")
   print("Current version:", sys.version_info)
   exit(-1)
-  
+
 tc_core = None
+
 
 def in_docker():
   if os.environ.get("TI_IN_DOCKER", "") == "":
@@ -17,30 +19,36 @@ def in_docker():
   else:
     return True
 
+
 def import_tc_core():
   global tc_core
   if get_os_name() != 'win':
     old_flags = sys.getdlopenflags()
-    sys.setdlopenflags(258) # 258 = RTLD_NOW | RTLD_GLOBAL
+    sys.setdlopenflags(258)  # 258 = RTLD_NOW | RTLD_GLOBAL
   else:
     pyddir = os.path.join(package_root(), 'lib')
-    os.environ['PATH'] += ';' +  pyddir
+    os.environ['PATH'] += ';' + pyddir
   import taichi_core as core
   tc_core = core
   if get_os_name() != 'win':
     sys.setdlopenflags(old_flags)
   core.set_lib_dir(os.path.join(package_root(), 'lib'))
-  
+
+
 def is_ci():
   return os.environ.get('TC_CI', '') == '1'
+
 
 def package_root():
   return os.path.join(os.path.dirname(os.path.realpath(__file__)), '../')
 
+
 def is_release():
   return os.environ.get('TAICHI_REPO_DIR', '') == ''
 
+
 from colorama import Fore, Back, Style
+
 
 def get_core_shared_object():
   if is_release():
@@ -48,6 +56,7 @@ def get_core_shared_object():
   else:
     directory = get_bin_directory()
   return os.path.join(directory, 'libtaichi_core.so')
+
 
 def get_repo():
   from git import Repo
@@ -62,33 +71,42 @@ def print_red_bold(*args, **kwargs):
   print(Style.RESET_ALL, end='')
 
 
-def format():
+def format(all=False):
   import os
   import taichi as tc
   from yapf.yapflib.yapf_api import FormatFile
   repo = get_repo()
 
-  print('* Formatting code', end='')
-  for item in repo.index.diff('HEAD'):
-    fn = os.path.join(tc.get_repo_directory(), item.a_path)
-    print(end='.')
+  print('Code formatting ...')
+  if all:
+    directories = ['taichi', 'tests', 'examples', 'misc', 'python']
+    files = []
+    for d in directories:
+      files += list(Path(os.path.join(tc.get_repo_directory(), d)).rglob('*'))
+  else:
+    files = repo.index.diff('HEAD')
+    files = list(
+        map(lambda x: os.path.join(tc.get_repo_directory(), x.a_path), files))
+
+  for fn in map(str, files):
     if fn.endswith('.py'):
+      print(fn, '...')
       FormatFile(
           fn,
           in_place=True,
-          style_config=os.path.join(tc.get_repo_directory(), '.style.yapf'))
-    if fn.endswith('.cpp'):
-      os.system('clang-format -i -style=file {}'.format(fn))
-    repo.git.add(item.a_path)
+          style_config=os.path.join(tc.get_repo_directory(), 'misc',
+                                    '.style.yapf'))
+    if fn.endswith('.cpp') or fn.endswith('.h'):
+      print(fn, '...')
+      os.system('clang-format-6.0 -i -style=file {}'.format(fn))
 
-  print('* Done!')
+  print('Formatting done!')
 
 
 from taichi.misc.settings import get_output_directory, get_build_directory, get_bin_directory, get_repo_directory, get_runtime_directory
 from taichi.misc.util import get_os_name, get_unique_task_id
 
-CREATE_SAND_BOX_ON_WINDOWS = True
-
+create_sand_box_on_windows = True
 
 def build():
   assert False
@@ -102,7 +120,7 @@ def build():
   os.chdir(bin_dir)
 
   flags = ' -DPYTHON_EXECUTABLE:FILEPATH="{}"'.format(sys.executable)
-  
+
   print('Running cmake...')
   if is_ci():
     print('  Note: building for CI.')
@@ -117,7 +135,8 @@ def build():
   print('Building taichi...')
   num_make_threads = min(20, multiprocessing.cpu_count())
   if get_os_name() == 'win':
-    make_ret = os.system("msbuild /p:Configuration=Release /p:Platform=x64 /m taichi.sln")
+    make_ret = os.system(
+        "msbuild /p:Configuration=Release /p:Platform=x64 /m taichi.sln")
   else:
     make_ret = os.system('make -j {}'.format(num_make_threads))
   if make_ret != 0:
@@ -125,6 +144,7 @@ def build():
     exit(-1)
 
   os.chdir(tmp_cwd)
+
 
 if is_release():
   print("[Release mode]")
@@ -190,7 +210,7 @@ else:
     old_wd = os.getcwd()
     os.chdir(bin_dir)
 
-    if CREATE_SAND_BOX_ON_WINDOWS:
+    if create_sand_box_on_windows:
       # Create a sandbox for separated core lib development and loading
       dir = os.path.join(get_output_directory(), 'tmp', get_unique_task_id())
 
@@ -217,7 +237,8 @@ else:
       raise e
 
     os.chdir(old_wd)
-    
+
+
 def get_dll_name(name):
   if get_os_name() == 'linux':
     return 'libtaichi_%s.so' % name
@@ -227,6 +248,7 @@ def get_dll_name(name):
     return 'taichi_%s.dll' % name
   else:
     assert False, "Unknown OS"
+
 
 def load_module(name, verbose=True):
   if verbose:
@@ -240,11 +262,13 @@ def load_module(name, verbose=True):
       ctypes.PyDLL(name, mode=mode)
     else:
       ctypes.PyDLL(
-        os.path.join(get_repo_directory(), 'build',
-                     get_dll_name(name)), mode=mode)
+          os.path.join(get_repo_directory(), 'build', get_dll_name(name)),
+          mode=mode)
   except Exception as e:
-    print(Fore.YELLOW + "Warning: module [{}] loading failed: {}".format(
-      name, e) + Style.RESET_ALL)
+    print(Fore.YELLOW +
+          "Warning: module [{}] loading failed: {}".format(name, e) +
+          Style.RESET_ALL)
+
 
 def at_startup():
   if not is_release():
@@ -266,6 +290,7 @@ def start_memory_monitoring(output_fn, pid=-1, interval=1):
   if pid == -1:
     pid = os.getpid()
   import multiprocessing
+
   def task():
     with open(output_fn, 'w') as f:
       process = psutil.Process(pid)
@@ -277,6 +302,7 @@ def start_memory_monitoring(output_fn, pid=-1, interval=1):
         time.sleep(interval)
         print(time.time(), mem, file=f)
         f.flush()
+
   proc = multiprocessing.Process(target=task, daemon=True)
   proc.start()
 
@@ -285,10 +311,14 @@ def start_memory_monitoring(output_fn, pid=-1, interval=1):
 def clean_libs():
   pass
 
+
 at_startup()
 
-device_string = 'cpu only' if not tc_core.with_cuda() else 'cuda {}'.format(tc_core.cuda_version())
-print('[Taichi version {}, {}, commit {}]'.format(tc_core.get_version_string(), device_string, tc_core.get_commit_hash()[:8]))
+device_string = 'cpu only' if not tc_core.with_cuda() else 'cuda {}'.format(
+    tc_core.cuda_version())
+print('[Taichi version {}, {}, commit {}]'.format(
+    tc_core.get_version_string(), device_string,
+    tc_core.get_commit_hash()[:8]))
 
 if not is_release():
   tc_core.set_core_trigger_gdb_when_crash(True)

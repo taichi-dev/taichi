@@ -6,7 +6,7 @@ Tensors are global variables provided by Taichi. Tensors can be either sparse or
 Although mathematically matrices are treated as 2D tensors, in Taichi, **tensor** and **matrix** are two completely different things. Matrices can be used as tensor elements, so you have tensors of matrices.
 
 Tensors of Scalars
---------------
+----------------------
 * Every global variable is an N-dimensional tensor.
 * Global `scalars` are treated as 0-D tensors of scalars.
 * Tensors are accessed using indices, e.g. ``x[i, j, k]`` if ``x`` is a scalar 3D tensor. For a 0-D tensor, access it as ``x[None]``.
@@ -25,3 +25,13 @@ Suppose you have a ``128 x 64`` global grid ``A``, each node containing a ``3 x 
 * For a tensor ``F`` of element ``ti.Matrix``, make sure you first index the tensor dimensions, and then the matrix dimensions: ``F[i, j, k][0, 2]``. (Assuming ``F`` is a 3D tensor with ``ti.Matrix`` of size ``3x3`` as elements)
 * ``ti.Vector`` is simply an alias of ``ti.Matrix``.
 * See :ref:`linalg` for more on matrices.
+
+
+Matrix size
+----------------------
+For performance reasons matrix operations will be unrolled, therefore we suggest using only small matrices.
+For example, ``2x1``, ``3x3``, ``4x4`` matrices are fine, yet ``32x6`` is probably too big as a matrix size.
+
+If you have a dimension that is too large (e.g. ``64``), it's better to declare a tensor of size ``64``.
+E.g., instead of declaring ``ti.Matrix(64, 32, dt=ti.f32, shape=(3, 2))``, declare ``ti.Matrix(3, 2, dt=ti.f32, shape=(64, 32))``.
+Try to put large dimensions to tensors instead of matrices.

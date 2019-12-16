@@ -5,7 +5,9 @@ import numbers
 import numpy as np
 from .util import to_numpy_type, to_pytorch_type
 
+
 def broadcast_if_scalar(func):
+
   def broadcasted(self, other, *args, **kwargs):
     if isinstance(other, expr.Expr) or isinstance(other, numbers.Number):
       other = self.broadcast(expr.Expr(other))
@@ -17,7 +19,14 @@ def broadcast_if_scalar(func):
 class Matrix:
   is_taichi_class = True
 
-  def __init__(self, n, m=1, dt=None, empty=False, shape=None, layout=None, needs_grad=False):
+  def __init__(self,
+               n,
+               m=1,
+               dt=None,
+               empty=False,
+               shape=None,
+               layout=None,
+               needs_grad=False):
     self.grad = None
     if isinstance(n, list):
       if n == []:
@@ -61,6 +70,7 @@ class Matrix:
       import taichi as ti
       if layout is None:
         layout = ti.AOS
+
       @ti.layout
       def place():
         dim = len(shape)
@@ -78,7 +88,6 @@ class Matrix:
               var_list.append(e.grad)
           ti.root.dense(ti.index_nd(dim), shape).place(*tuple(var_list))
 
-
   def is_global(self):
     results = [False for _ in self.entries]
     for i, e in enumerate(self.entries):
@@ -86,7 +95,7 @@ class Matrix:
         if e.ptr.is_global_var():
           results[i] = True
       assert results[i] == results[
-        0], "Matrices with mixed global/local entries are not allowed"
+          0], "Matrices with mixed global/local entries are not allowed"
     return results[0]
 
   def assign(self, other):
@@ -238,6 +247,7 @@ class Matrix:
       return self(i, j)
 
   class Proxy:
+
     def __init__(self, mat, index):
       self.mat = mat
       self.index = index
@@ -309,7 +319,8 @@ class Matrix:
   def inverse(self):
     assert self.n == 2 and self.m == 2
     inv_det = impl.expr_init(1.0 / self.determinant(self))
-    return inv_det * Matrix([[self(1, 1), -self(0, 1)], [-self(1, 0), self(0, 0)]])
+    return inv_det * Matrix([[self(1, 1), -self(0, 1)],
+                             [-self(1, 0), self(0, 0)]])
 
   @staticmethod
   def normalized(a):
@@ -357,18 +368,18 @@ class Matrix:
     if a.n == 2 and a.m == 2:
       return a(0, 0) * a(1, 1) - a(0, 1) * a(1, 0)
     elif a.n == 3 and a.m == 3:
-      return a(0, 0) * (a(1, 1) * a(2, 2) - a(2, 1) * a(1, 2)) - a(1, 0) * (
-            a(0, 1) * a(2, 2) - a(2, 1) * a(0, 2)) + a(2, 0) * (
-                   a(0, 1) * a(1, 2) - a(1, 1) * a(0, 2))
+      return a(0, 0) * (a(1, 1) * a(2, 2) - a(2, 1) * a(1, 2)) - a(
+          1, 0) * (a(0, 1) * a(2, 2) - a(2, 1) * a(0, 2)) + a(2, 0) * (
+              a(0, 1) * a(1, 2) - a(1, 1) * a(0, 2))
 
   @staticmethod
   def cross(a, b):
     assert a.n == 3 and a.m == 1
     assert b.n == 3 and b.m == 1
     return Matrix([
-      a(1) * b(2) - a(2) * b(1),
-      a(2) * b(0) - a(0) * b(2),
-      a(0) * b(1) - a(1) * b(0),
+        a(1) * b(2) - a(2) * b(1),
+        a(2) * b(0) - a(0) * b(2),
+        a(0) * b(1) - a(1) * b(0),
     ])
 
   @staticmethod
@@ -446,7 +457,9 @@ class Matrix:
           self.get_entry(i, j).fill(val.get_entry(i, j))
 
   def to_numpy(self, as_vector=False):
-    ret = np.empty(self.loop_range().shape() + (self.n, self.m), dtype=to_numpy_type(self.loop_range().snode().data_type()))
+    ret = np.empty(
+        self.loop_range().shape() + (self.n, self.m),
+        dtype=to_numpy_type(self.loop_range().snode().data_type()))
     for i in range(self.n):
       for j in range(self.m):
         ret[..., i, j] = self.get_entry(i, j).to_numpy()
@@ -457,7 +470,9 @@ class Matrix:
 
   def to_torch(self, as_vector=False):
     import torch
-    ret = torch.empty(self.loop_range().shape() + (self.n, self.m), dtype=to_pytorch_type(self.loop_range().snode().data_type()))
+    ret = torch.empty(
+        self.loop_range().shape() + (self.n, self.m),
+        dtype=to_pytorch_type(self.loop_range().snode().data_type()))
     for i in range(self.n):
       for j in range(self.m):
         ret[..., i, j] = self.get_entry(i, j).to_torch()

@@ -185,7 +185,8 @@ auto voxel_renderer = [](const std::vector<std::string> &params) {
     auto f = fopen(fn.c_str(), "rb");
     TC_ERROR_UNLESS(f, "File {} not found", params[0]);
     std::vector<char> density_field(pow<3>(grid_resolution), 0);
-    trash(std::fread(density_field.data(), sizeof(char), density_field.size(), f));
+    trash(std::fread(density_field.data(), sizeof(char), density_field.size(),
+                     f));
     std::fclose(f);
 
     for (int i = 0; i < grid_resolution; i++) {

@@ -34,16 +34,19 @@ goal = [0.9, 0.15]
 n_objects = 1
 ground_height = 0.1
 
+
 @ti.layout
 def place():
   ti.root.dense(ti.l, max_steps).dense(ti.i, n_objects).place(x, v)
   ti.root.place(loss)
   ti.root.lazy_grad()
 
+
 dt = 0.002
 learning_rate = 1.0
 
 use_toi = False
+
 
 @ti.kernel
 def advance_toi(t: ti.i32):
@@ -58,7 +61,8 @@ def advance_toi(t: ti.i32):
       toi = -(old_x[1] - ground_height) / old_v[1]
     v[t, i] = new_v
     x[t, i] = x[t - 1, i] + toi * old_v + (dt - toi) * new_v
-    
+
+
 @ti.kernel
 def advance_no_toi(t: ti.i32):
   for i in range(n_objects):
@@ -78,6 +82,7 @@ def compute_loss(t: ti.i32):
 gui = tc.core.GUI("Rigid Body", tc.veci(1024, 1024))
 canvas = gui.get_canvas()
 
+
 def forward(output=None, visualize=True):
   interval = vis_interval
   total_steps = steps
@@ -91,12 +96,16 @@ def forward(output=None, visualize=True):
       advance_toi(t)
     else:
       advance_no_toi(t)
-    
+
     if (t + 1) % interval == 0 and visualize:
       canvas.clear(0xFFFFFF)
-      canvas.circle(tc.vec(x[t, 0][0], x[t, 0][1])).radius(10).color(0x0).finish()
+      canvas.circle(tc.vec(x[t, 0][0],
+                           x[t, 0][1])).radius(10).color(0x0).finish()
       offset = 0.003
-      canvas.path(tc.vec(0.05, ground_height - offset), tc.vec(0.95, ground_height - offset)).radius(2).color(0xAAAAAA).finish()
+      canvas.path(
+          tc.vec(0.05, ground_height - offset),
+          tc.vec(0.95,
+                 ground_height - offset)).radius(2).color(0xAAAAAA).finish()
 
       if output:
         gui.screenshot('rigid_body/{}/{:04d}.png'.format(output, t))
@@ -123,14 +132,14 @@ def main():
       y_offsets.append(0.5 + dy)
       x[0, 0] = [0.7, 0.5 + dy]
       v[0, 0] = [-1, -2]
-      
+
       with ti.Tape(loss):
         forward(visualize=False)
-        
+
       print('dy=', dy, 'Loss=', loss[None])
       grads.append(x.grad[0, 0][1])
       losses.append(loss[None])
-    
+
     suffix = ' (Naive)'
     if use_toi:
       suffix = ' (+TOI)'
@@ -156,6 +165,7 @@ def main():
   # plt.tight_layout()
   plt.show()
   plt.show()
-  
+
+
 if __name__ == '__main__':
   main()

@@ -94,5 +94,4 @@ void global_optimize_module_x86_64(std::unique_ptr<llvm::Module> &module) {
   // module->print(llvm::errs(), nullptr);
 }
 
-
 TLANG_NAMESPACE_END

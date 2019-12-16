@@ -7,18 +7,24 @@ auto amal_base64 = [](const std::vector<std::string> &param) {
   TC_ASSERT(param.size() >= 1);
   auto fn = param[0];
   std::ifstream input(fn);
-  std::string str((std::istreambuf_iterator<char>(input)), std::istreambuf_iterator<char>());
+  std::string str((std::istreambuf_iterator<char>(input)),
+                  std::istreambuf_iterator<char>());
   auto encoded = base64_encode(str);
-  if(param.size() >= 2) {
+  if (param.size() >= 2) {
     auto line_width = 78;
     auto fo = fopen(param[2].c_str(), "w");
-    auto maximum_literal_length = 65500 / line_width * line_width; // MSVC cannot deal with literal with length > 65535
-    fmt::print(fo, "#include <taichi/common/util.h>\n\nTC_NAMESPACE_BEGIN\n\n\n");
+    auto maximum_literal_length =
+        65500 / line_width *
+        line_width;  // MSVC cannot deal with literal with length > 65535
+    fmt::print(fo,
+               "#include <taichi/common/util.h>\n\nTC_NAMESPACE_BEGIN\n\n\n");
     int num_literals = 0;
     for (int l = 0; l < (int)encoded.size(); l += maximum_literal_length) {
       fmt::print(fo, "const std::string {}_{:04d} =\n", param[1], num_literals);
       num_literals += 1;
-      for (int i = l; i < std::min((int)encoded.size(), l + maximum_literal_length); i += line_width) {
+      for (int i = l;
+           i < std::min((int)encoded.size(), l + maximum_literal_length);
+           i += line_width) {
         fmt::print(fo, "\"{}\"\n", encoded.substr(i, line_width));
       }
       fmt::print(fo, ";\n");

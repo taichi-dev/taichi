@@ -72,7 +72,8 @@ if get_os_name() == 'linux':
 elif get_os_name() == 'osx':
   shutil.copy('../build/libtaichi_core.dylib', 'taichi/lib/taichi_core.so')
 else:
-  shutil.copy('../runtimes/RelWithDebInfo/taichi_core.dll', 'taichi/lib/taichi_core.pyd')
+  shutil.copy('../runtimes/RelWithDebInfo/taichi_core.dll',
+              'taichi/lib/taichi_core.pyd')
 
 shutil.copytree('../tests/python', './taichi/tests')
 
@@ -89,11 +90,11 @@ for f in os.listdir('../taichi/runtime'):
 
 print("Using python executable", get_python_executable())
 os.system('{} -m pip install --user --upgrade twine setuptools wheel'.format(
-  get_python_executable()))
+    get_python_executable()))
 
 if get_os_name() == 'linux':
   os.system('{} setup.py bdist_wheel -p manylinux1_x86_64'.format(
-    get_python_executable()))
+      get_python_executable()))
 else:
   os.system('{} setup.py bdist_wheel'.format(get_python_executable()))
 
@@ -102,25 +103,30 @@ shutil.rmtree('taichi/tests')
 shutil.rmtree('./build')
 
 if mode == 'upload':
-  os.system(
-    '{} -m twine upload dist/* --verbose -u yuanming-hu -p {}'.format(
-      get_python_executable(), '%PYPI_PWD%' if get_os_name() == 'win' else '$PYPI_PWD'))
+  os.system('{} -m twine upload dist/* --verbose -u yuanming-hu -p {}'.format(
+      get_python_executable(),
+      '%PYPI_PWD%' if get_os_name() == 'win' else '$PYPI_PWD'))
 elif mode == 'test':
   print('Uninstalling old taichi packages...')
   os.system(
-    '{} -m pip uninstall taichi-nightly taichi-gpu-nightly taichi-nightly-cuda-10-0 taichi-nightly-cuda-10-1'.format(get_python_executable()))
+      '{} -m pip uninstall taichi-nightly taichi-gpu-nightly taichi-nightly-cuda-10-0 taichi-nightly-cuda-10-1'
+      .format(get_python_executable()))
   dists = os.listdir('dist')
   assert len(dists) == 1
   dist = dists[0]
   print('Installing ', dist)
   os.environ['PYTHONPATH'] = ''
   os.makedirs('test_env', exist_ok=True)
-  os.system('cd test_env && {} -m pip install ../dist/{} --user'.format(get_python_executable(), dist))
+  os.system('cd test_env && {} -m pip install ../dist/{} --user'.format(
+      get_python_executable(), dist))
   print('Entering test environment...')
   if get_os_name() == 'win':
-    os.system('cmd /V /C "set PYTHONPATH=&& set TAICHI_REPO_DIR=&& cd test_env && cmd"')
+    os.system(
+        'cmd /V /C "set PYTHONPATH=&& set TAICHI_REPO_DIR=&& cd test_env && cmd"'
+    )
   else:
-    os.system('cd test_env && PYTHONPATH= TAICHI_REPO_DIR= bash --noprofile --norc ')
+    os.system(
+        'cd test_env && PYTHONPATH= TAICHI_REPO_DIR= bash --noprofile --norc ')
 elif mode == '':
   pass
 else:

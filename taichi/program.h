@@ -10,6 +10,7 @@
 #include <atomic>
 #include <taichi/context.h>
 #include <taichi/profiler.h>
+#include <taichi/system/threading.h>
 #include <taichi/unified_allocator.h>
 #if defined(TC_PLATFORM_UNIX)
 #include <dlfcn.h>
@@ -20,10 +21,12 @@ TLANG_NAMESPACE_BEGIN
 extern Program *current_program;
 extern SNode root;
 
-TC_FORCE_INLINE Program &get_current_program() { return *current_program; }
+TC_FORCE_INLINE Program &get_current_program() {
+  return *current_program;
+}
 
 class Program {
-public:
+ public:
   using Kernel = taichi::Tlang::Kernel;
   // Should be copiable
   std::vector<void *> loaded_dlls;
@@ -37,11 +40,12 @@ public:
   CPUProfiler cpu_profiler;
   Context context;
   std::unique_ptr<TaichiLLVMContext> llvm_context_host, llvm_context_device;
-  bool sync; // device/host synchronized?
+  bool sync;  // device/host synchronized?
   bool clear_all_gradients_initialized;
   bool finalized;
   float64 total_compilation_time;
   static std::atomic<int> num_instances;
+  ThreadPool thread_pool;
 
   std::vector<std::unique_ptr<Kernel>> functions;
 
@@ -82,10 +86,11 @@ public:
     return context;
   }
 
-  Program() : Program(default_compile_config.arch) {}
+  Program() : Program(default_compile_config.arch) {
+  }
 
   Program(const Program &){
-      TC_NOT_IMPLEMENTED // for pybind11..
+      TC_NOT_IMPLEMENTED  // for pybind11..
   }
 
   Program(Arch arch);
@@ -141,7 +146,8 @@ public:
   }
 
   Kernel &kernel(const std::function<void()> &body,
-                 const std::string &name = "", bool grad = false) {
+                 const std::string &name = "",
+                 bool grad = false) {
     // Expr::set_allow_store(true);
     auto func = std::make_unique<Kernel>(*this, body, name, grad);
     // Expr::set_allow_store(false);
@@ -149,9 +155,12 @@ public:
     return *functions.back();
   }
 
-  void start_function_definition(Kernel *func) { current_kernel = func; }
+  void start_function_definition(Kernel *func) {
+    current_kernel = func;
+  }
 
-  void end_function_definition() {}
+  void end_function_definition() {
+  }
 
   FunctionType compile(Kernel &kernel);
 
@@ -180,9 +189,13 @@ public:
 
   Kernel &get_snode_writer(SNode *snode);
 
-  Arch get_host_arch() { return Arch::x86_64; }
+  Arch get_host_arch() {
+    return Arch::x86_64;
+  }
 
-  float64 get_total_compilation_time() { return total_compilation_time; }
+  float64 get_total_compilation_time() {
+    return total_compilation_time;
+  }
 };
 
 TLANG_NAMESPACE_END

@@ -1,5 +1,6 @@
 import taichi as ti
 
+
 @ti.must_throw(ti.TaichiSyntaxError)
 def test_try():
   x = ti.var(ti.f32)
@@ -17,6 +18,7 @@ def test_try():
 
   func()
 
+
 @ti.must_throw(ti.TaichiSyntaxError)
 def test_import():
   x = ti.var(ti.f32)
@@ -30,6 +32,7 @@ def test_import():
     import something
 
   func()
+
 
 @ti.must_throw(ti.TaichiSyntaxError)
 def test_for_else():
@@ -48,6 +51,7 @@ def test_for_else():
 
   func()
 
+
 @ti.must_throw(ti.TaichiSyntaxError)
 def test_while_else():
   x = ti.var(ti.f32)
@@ -64,6 +68,7 @@ def test_while_else():
       pass
 
   func()
+
 
 @ti.must_throw(ti.TaichiSyntaxError)
 def test_break():
@@ -96,6 +101,7 @@ def test_continue():
 
   func()
 
+
 @ti.must_throw(ti.TaichiSyntaxError)
 def test_loop_var_range():
   x = ti.var(ti.f32)
@@ -111,6 +117,7 @@ def test_loop_var_range():
       pass
 
   func()
+
 
 @ti.must_throw(ti.TaichiSyntaxError)
 def test_loop_var_struct():
@@ -159,4 +166,3 @@ def test_ternary():
     a = 0 if True else 123
 
   func()
-

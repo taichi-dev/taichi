@@ -15,6 +15,7 @@ from .torch_io import from_torch, to_torch
 
 GUI = core.GUI
 
+
 def set_image(self, img):
   import numpy as np
   assert isinstance(img, np.ndarray)
@@ -25,13 +26,20 @@ def set_image(self, img):
   if img.shape[2] == 1:
     img = img + np.zeros(shape=(1, 1, 4))
   if img.shape[2] == 3:
-    img = np.concatenate([img, np.zeros(shape=(img.shape[0], img.shape[1], 1), dtype=np.float32)], axis=2)
+    img = np.concatenate([
+        img,
+        np.zeros(shape=(img.shape[0], img.shape[1], 1), dtype=np.float32)
+    ],
+                         axis=2)
   self.set_img(np.ascontiguousarray(img).ctypes.data)
 
+
 GUI.set_image = set_image
+
 
 def test():
   task = taichi.Task('test')
   return task.run([])
+
 
 __all__ = [s for s in dir() if not s.startswith('_')] + ['settings']

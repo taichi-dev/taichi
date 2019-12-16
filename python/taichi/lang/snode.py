@@ -1,4 +1,5 @@
 class SNode:
+
   def __init__(self, ptr):
     self.ptr = ptr
 

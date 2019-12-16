@@ -5,6 +5,7 @@ import shutil
 
 projects = ['nightly', 'nightly-cuda-10-0', 'nightly-cuda-10-1']
 
+
 def download(url):
   fn = url.split('/')[-1]
   with requests.get(url, stream=True) as r:
@@ -12,10 +13,12 @@ def download(url):
       shutil.copyfileobj(r.raw, f)
   return fn
 
+
 for p in projects:
   pkg_name_dash = f'taichi-{p}'
   pkg_name_underscore = pkg_name_dash.replace('-', '_')
-  package = requests.get(f"https://pypi.python.org/pypi/{pkg_name_dash}/json").json()
+  package = requests.get(
+      f"https://pypi.python.org/pypi/{pkg_name_dash}/json").json()
   version = '0.0.75'
   wheels = package["releases"][version]
   for wheel in wheels:
@@ -29,6 +32,6 @@ for p in projects:
     os.remove(fn)
 
     pkg_ver = f"{pkg_name_underscore}-{version}"
-    shutil.make_archive(f'release/{folder}', 'zip', f'release/{folder}/{pkg_ver}.data/purelib/taichi/lib')
+    shutil.make_archive(f'release/{folder}', 'zip',
+                        f'release/{folder}/{pkg_ver}.data/purelib/taichi/lib')
     shutil.rmtree(package_extracted_folder)
-

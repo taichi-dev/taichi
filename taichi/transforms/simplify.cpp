@@ -311,7 +311,8 @@ class BasicBlockSimplify : public IRVisitor {
       }
       // Note: simply checking all statements before stmt is not sufficient
       // since statements after stmt may change the value of the alloca
-      // For example, in a loop, later part of the loop body may alter the local var value.
+      // For example, in a loop, later part of the loop body may alter the local
+      // var value.
     }
     set_done(stmt);
   }

@@ -4,8 +4,8 @@ x = ti.global_var(ti.i32)
 l = ti.global_var(ti.i32)
 n = 16
 
-
 # ti.runtime.print_preprocessed = True
+
 
 @ti.layout
 def lists():

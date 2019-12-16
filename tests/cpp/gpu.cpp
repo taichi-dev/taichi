@@ -28,7 +28,6 @@ TC_TEST("compiler_basics_gpu") {
   }
 };
 
-
 #if defined(CUDA_FOUND)
 TC_TEST("cuda_malloc_managed") {
   void *ptr;

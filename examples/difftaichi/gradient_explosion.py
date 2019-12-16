@@ -13,6 +13,7 @@ max_timesteps = 1024 * 1024
 
 dt = 0.001
 
+
 @ti.layout
 def place():
   ti.root.dense(ti.i, max_timesteps).place(x, v)
@@ -30,6 +31,7 @@ def advance(t: ti.i32):
 def compute_loss(t: ti.i32):
   loss[None] = x[t]
 
+
 def gradient(alpha, num_steps):
   damping[None] = math.exp(-dt * alpha)
   a[None] = 1
@@ -38,6 +40,7 @@ def gradient(alpha, num_steps):
       advance(i)
     compute_loss(num_steps - 1)
   return loss[None]
+
 
 large = False
 if len(sys.argv) > 1:
@@ -52,7 +55,6 @@ for i, alpha in enumerate([0, 1, 3, 10]):
     xs.append(num_steps)
     ys.append(g)
   plt.plot(xs, ys, label="damping={}".format(alpha))
-
 
 # plt.loglog()
 fig = plt.gcf()

@@ -2,6 +2,12 @@ message("Using C++ compiler: " ${CMAKE_CXX_COMPILER})
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTC_ISE_NONE")
 
+option(BUILD_WITH_ADDRESS_SANITIZER "Build with clang address sanitizer" OFF)
+
+if (BUILD_WITH_ADDRESS_SANITIZER)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fno-omit-frame-pointer -fsanitize=address")
+endif()
 
 if (MINGW)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_hypot=hypot")

@@ -145,7 +145,8 @@ void Array2D<T>::write_text(const std::string &font_fn,
 #if defined(TC_AMALGAMATED)
       std::string decoded = base64_decode(go_font_str);
       TC_ASSERT(decoded.size() < buffer_size);
-      std::memcpy(&font_buffers[font_fn][0], &decoded[0], decoded.size() * sizeof(char));
+      std::memcpy(&font_buffers[font_fn][0], &decoded[0],
+                  decoded.size() * sizeof(char));
 #else
       TC_NOT_IMPLEMENTED
 #endif

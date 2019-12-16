@@ -71,22 +71,6 @@ def test_while_else():
 
 
 @ti.must_throw(ti.TaichiSyntaxError)
-def test_break():
-  x = ti.var(ti.f32)
-
-  @ti.layout
-  def layout():
-    ti.root.dense(ti.i, 1).place(x)
-
-  @ti.kernel
-  def func():
-    while True:
-      break
-
-  func()
-
-
-@ti.must_throw(ti.TaichiSyntaxError)
 def test_continue():
   x = ti.var(ti.f32)
 

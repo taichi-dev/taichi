@@ -19,8 +19,10 @@ Dos
 Don'ts
 --------------------------------------------------------------------------------
 - C language legacies:
+
    -  ``printf`` (use ``fmtlib::print`` instead).
    -  ``new`` & ``free``. Use smart pointers (``std::unique_ptr, std::shared_ptr`` instead for ownership management).
+
 - Prefix member functions with ``m_`` or ``_``.
 - Virtual function call in constructors/destructors.
 - ``NULL``, use ``nullptr`` instead.

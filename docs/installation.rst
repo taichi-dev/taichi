@@ -1,14 +1,17 @@
-Installing the Taichi Library (Legacy)
+Installing the Legacy Taichi Library
 ===============================================
 
-Note: this is NOT for installing the Taichi programming language.
+.. note::
+ This is NOT for installing the Taichi programming language. Unless you are building a legacy project based on the Taichi **library**,
+ you should always install Taichi using ``pip``.
 
-Supported Platforms:
+Supported platforms:
+
  - Ubuntu (gcc 5+)
  - Mac OS X (gcc 5+, clang 4.0+)
  - Windows (Microsoft Visual Studio 2017)
 
-Make sure you have `python 3.5`+.
+Make sure you have ``python 3.5``+.
 
 
 Ubuntu, Arch Linux, and Mac OS X

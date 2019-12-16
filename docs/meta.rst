@@ -40,7 +40,7 @@ These functions can be used in both Taichi kernels and python scripts.
 
 For sparse tensors, the full domain shape will be returned.
 
-Compile-time Evaluations
+Compile-time evaluations
 ------------------------------------------
 Using compile-time evaluation will allow certain computation to happen when kernels are instantiated.
 Such computation has no overhead at runtime.

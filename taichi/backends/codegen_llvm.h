@@ -1008,89 +1008,14 @@ public:
   }
 
   void create_offload_range_for(OffloadedStmt *stmt) {
-    auto loop_var = create_entry_block_alloca(DataType::i32);
-    stmt->loop_vars_llvm.push_back(loop_var);
-    BasicBlock *body = BasicBlock::Create(*llvm_context, "loop_body", func);
-    BasicBlock *after_loop = BasicBlock::Create(*llvm_context, "block", func);
-    if (!stmt->reversed) {
-      builder->CreateStore(tlctx->get_constant(stmt->begin), loop_var);
-    } else {
-      builder->CreateStore(builder->CreateSub(tlctx->get_constant(stmt->end),
-                                              tlctx->get_constant(1)),
-                           loop_var);
+
+    int step = 1;
+    if (stmt->reversed) {
+      step = -1;
     }
-    builder->CreateBr(body);
-
-    // body cfg
-    builder->SetInsertPoint(body);
-
-    stmt->body->accept(this);
-
-    llvm::Value *cond = nullptr;
-    if (!stmt->reversed) {
-      create_increment(loop_var, tlctx->get_constant(1));
-      cond = builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_SLT,
-                                 builder->CreateLoad(loop_var),
-                                 tlctx->get_constant(stmt->end));
-    } else {
-      create_increment(loop_var, tlctx->get_constant(-1));
-      cond = builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_SGE,
-                                 builder->CreateLoad(loop_var),
-                                 tlctx->get_constant(stmt->begin));
-    }
-
-    builder->CreateCondBr(cond, body, after_loop);
-
-    // next cfg
-    builder->SetInsertPoint(after_loop);
-  }
-
-  /*
-void create_offload_range_for(OffloadedStmt *stmt) {
-  int block_dim = 16;
-  auto loop_var = create_entry_block_alloca(DataType::i32);
-  stmt->loop_vars_llvm.push_back(loop_var);
-  BasicBlock *body = BasicBlock::Create(*llvm_context, "loop_body", func);
-  BasicBlock *after_loop = BasicBlock::Create(*llvm_context, "block", func);
-
-  {
-    // create a function that takes i
-
-  }
-
-  if (!stmt->reversed) {
-    builder->CreateStore(tlctx->get_constant(stmt->begin), loop_var);
-  } else {
-    builder->CreateStore(builder->CreateSub(tlctx->get_constant(stmt->end),
-                                            tlctx->get_constant(1)),
-                         loop_var);
-  }
-  builder->CreateBr(body);
-
-  // body cfg
-  builder->SetInsertPoint(body);
-
-  stmt->body->accept(this);
-
-  llvm::Value *cond = nullptr;
-  if (!stmt->reversed) {
-    create_increment(loop_var, tlctx->get_constant(1));
-    cond = builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_SLT,
-                               builder->CreateLoad(loop_var),
-                               tlctx->get_constant(stmt->end));
-  } else {
-    create_increment(loop_var, tlctx->get_constant(-1));
-    cond = builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_SGE,
-                               builder->CreateLoad(loop_var),
-                               tlctx->get_constant(stmt->begin));
-  }
-
-  builder->CreateCondBr(cond, body, after_loop);
-
-  // next cfg
-  builder->SetInsertPoint(after_loop);
 
     llvm::Function *body;
+
     {
       // Create the loop body function
       auto body_function_type = llvm::FunctionType::get(
@@ -1117,51 +1042,17 @@ void create_offload_range_for(OffloadedStmt *stmt) {
       auto ip = builder->saveIP();
       builder->SetInsertPoint(entry);
 
-      // per-leaf-block for loop
-      auto loop_index =
-          create_entry_block_alloca(Type::getInt32Ty(*llvm_context));
+      auto loop_var = create_entry_block_alloca(DataType::i32);
+      stmt->loop_vars_llvm.push_back(loop_var);
 
-      auto block_id = get_arg(1);
-
-      builder->CreateStore(
-          builder->CreateMul(block_id, tlctx->get_constant(block_dim)),
-          loop_index);
-      auto tail = builder->CreateMul(
-          builder->CreateAdd(block_id, tlctx->get_constant(1)),
-          tlctx->get_constant(block_dim));
+      builder->CreateStore(get_arg(1), loop_var);
 
       auto body_bb = BasicBlock::Create(*llvm_context, "loop_body", func);
       builder->CreateBr(body_bb);
       builder->SetInsertPoint(body_bb);
-      // initialize the coordinates
 
-      // Additional compare if non-POT exists
+      stmt->body->accept(this);
 
-      auto body_bb_tail =
-          BasicBlock::Create(*llvm_context, "loop_body_tail", func);
-      {
-        auto bounded_body_bb =
-            BasicBlock::Create(*llvm_context, "bound_guarded_loop_body", func);
-        builder->CreateCondBr(nonpot_cond, bounded_body_bb, body_bb_tail);
-        builder->SetInsertPoint(bounded_body_bb);
-        // The real loop body
-        stmt->body->accept(this);
-        builder->CreateBr(body_bb_tail);
-      }
-
-      // body cfg
-
-      builder->SetInsertPoint(body_bb_tail);
-
-      create_increment(loop_index, tlctx->get_constant(1));
-
-      auto cond = builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_SLT,
-                                      builder->CreateLoad(loop_index), tail);
-
-      BasicBlock *after_loop = BasicBlock::Create(*llvm_context, "block", func);
-      builder->CreateCondBr(cond, body_bb, after_loop);
-
-      builder->SetInsertPoint(after_loop);
       builder->CreateRetVoid();
       func = old_func;
       builder->restoreIP(ip);
@@ -1174,14 +1065,12 @@ void create_offload_range_for(OffloadedStmt *stmt) {
       }
     }
 
-    int num_splits  = (stmt->end + block_dim -1) / block_dim;
-    // traverse leaf node
-    create_call("parallel_for_each",
-                {get_context(), tlctx->get_constant(leaf_block->parent->id),
-                 tlctx->get_constant(leaf_block->max_num_elements()),
-                 tlctx->get_constant(num_splits), body});
+    create_call("cpu_parallel_range_for",
+                {get_arg(0), tlctx->get_constant(stmt->num_cpu_threads),
+                 tlctx->get_constant(stmt->begin),
+                 tlctx->get_constant(stmt->end), tlctx->get_constant(step),
+                 tlctx->get_constant(stmt->block_dim), body});
   }
-  */
 
   void create_offload_struct_for(OffloadedStmt *stmt, bool spmd = false) {
     llvm::Function *body;

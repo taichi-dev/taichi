@@ -235,10 +235,10 @@ Ptr NodeAllocator_allocate(NodeAllocator *node_allocator) {
 }
 
 using vm_allocator_type = void *(*)(std::size_t, int);
-using CPUTaskFunc = void(void *, int i);
+using CPUTaskFunc = void(Context *, int i);
 using parallel_for_type = void (*)(void *thread_pool, int splits,
                                    int num_desired_threads, void *context,
-                                   CPUTaskFunc *func);
+                                   void (*func)(void *, int i));
 
 constexpr int max_rand_states = 1024 * 1024;
 
@@ -418,6 +418,52 @@ void for_each_block(Context *context, int snode_id, int element_size,
   runtime->parallel_for(runtime->thread_pool, list_tail * element_split,
                         num_threads, &ctx, block_helper);
 #endif
+}
+
+struct range_task_helper_context {
+  Context *context;
+  CPUTaskFunc *task;
+  int begin;
+  int end;
+  int block_size;
+  int step;
+};
+
+void parallel_range_for_task(void *range_context, int task_id) {
+  auto ctx = *(range_task_helper_context *)range_context;
+  if (ctx.step == 1) {
+    int block_start = ctx.begin + task_id * ctx.block_size;
+    int block_end = std::min(block_start + ctx.block_size, ctx.end);
+    for (int i = block_start; i < block_end; i++) {
+      ctx.task(ctx.context, i);
+    }
+  } else if (ctx.step == -1) {
+    int block_start = ctx.end - task_id * ctx.block_size;
+    int block_end = std::max(ctx.begin, block_start * ctx.block_size);
+    for (int i = block_start - 1; i >= block_end; i--) {
+      ctx.task(ctx.context, i);
+    }
+  }
+}
+
+void cpu_parallel_range_for(Context *context, int num_threads, int begin,
+                            int end, int step, int block_dim,
+                            CPUTaskFunc *task) {
+  range_task_helper_context ctx;
+  ctx.context = context;
+  ctx.task = task;
+  ctx.begin = begin;
+  ctx.end = end;
+  ctx.block_size = block_dim;
+  ctx.step = step;
+  if (step != 1 && step != -1) {
+    printf("step must not be %d\n", step);
+    exit(-1);
+  }
+  auto runtime = (Runtime *)context->runtime;
+  runtime->parallel_for(runtime->thread_pool,
+                        (end - begin + block_dim - 1) / block_dim, num_threads,
+                        &ctx, parallel_range_for_task);
 }
 
 i32 linear_thread_id() { return block_idx() * block_dim() + thread_idx(); }

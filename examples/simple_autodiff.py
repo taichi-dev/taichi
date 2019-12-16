@@ -4,9 +4,11 @@ import matplotlib.pyplot as plt
 N = 2048
 x, y = ti.var(ti.f32), ti.var(ti.f32)
 
+
 @ti.layout
 def xy():
   ti.root.dense(ti.i, N).place(x, x.grad, y, y.grad)
+
 
 @ti.kernel
 def poly():
@@ -19,6 +21,7 @@ def poly():
     else:
       ret = 0
     y[i] = ret
+
 
 xs = []
 ys = []
@@ -53,4 +56,3 @@ ax.spines['right'].set_color('none')
 ax.spines['bottom'].set_position('zero')
 ax.spines['top'].set_color('none')
 plt.show()
-

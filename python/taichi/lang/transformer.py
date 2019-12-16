@@ -1,12 +1,15 @@
 import ast
 from .util import to_taichi_type
 
+
 class TaichiSyntaxError(Exception):
+
   def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)
 
 
 class ScopeGuard:
+
   def __init__(self, t, stmt_block=None):
     self.t = t
     self.stmt_block = stmt_block
@@ -26,7 +29,12 @@ class ScopeGuard:
 
 # Single-pass transform
 class ASTTransformer(ast.NodeTransformer):
-  def __init__(self, excluded_paremeters=(), is_kernel=True, func=None, arg_features=None):
+
+  def __init__(self,
+               excluded_paremeters=(),
+               is_kernel=True,
+               func=None,
+               arg_features=None):
     super().__init__()
     self.local_scopes = []
     self.excluded_parameters = excluded_paremeters
@@ -50,9 +58,9 @@ class ASTTransformer(ast.NodeTransformer):
     return not self.var_declared(name)
 
   def create_variable(self, name):
-    assert name not in self.current_scope(), "Recreating variables is not allowed"
+    assert name not in self.current_scope(
+    ), "Recreating variables is not allowed"
     self.current_scope().append(name)
-
 
   def generic_visit(self, node, body_names=[]):
     assert isinstance(body_names, list)
@@ -127,12 +135,13 @@ class ASTTransformer(ast.NodeTransformer):
           target.ctx = ast.Store()
           # Create
           init = ast.Attribute(
-            value=ast.Name(id='ti', ctx=ast.Load()), attr='expr_init',
-            ctx=ast.Load())
+              value=ast.Name(id='ti', ctx=ast.Load()),
+              attr='expr_init',
+              ctx=ast.Load())
           rhs = ast.Call(
-            func=init,
-            args=[tuple_indexed(i)],
-            keywords=[],
+              func=init,
+              args=[tuple_indexed(i)],
+              keywords=[],
           )
           self.create_variable(var_name)
           stmts.append(ast.Assign(targets=[target], value=rhs))
@@ -153,20 +162,22 @@ class ASTTransformer(ast.NodeTransformer):
         var_name = node.targets[0].id
         # Create
         init = ast.Attribute(
-          value=ast.Name(id='ti', ctx=ast.Load()), attr='expr_init',
-          ctx=ast.Load())
+            value=ast.Name(id='ti', ctx=ast.Load()),
+            attr='expr_init',
+            ctx=ast.Load())
         rhs = ast.Call(
-          func=init,
-          args=[node.value],
-          keywords=[],
+            func=init,
+            args=[node.value],
+            keywords=[],
         )
         self.create_variable(var_name)
-        return ast.copy_location(ast.Assign(targets=node.targets, value=rhs),
-                                 node)
+        return ast.copy_location(
+            ast.Assign(targets=node.targets, value=rhs), node)
       else:
         # Assign
         node.targets[0].ctx = ast.Load()
-        func = ast.Attribute(value=node.targets[0], attr='assign', ctx=ast.Load())
+        func = ast.Attribute(
+            value=node.targets[0], attr='assign', ctx=ast.Load())
         call = ast.Call(func=func, args=[node.value], keywords=[])
         return ast.copy_location(ast.Expr(value=call), node)
 
@@ -178,7 +189,8 @@ class ASTTransformer(ast.NodeTransformer):
 
   def visit_While(self, node):
     if node.orelse:
-      raise TaichiSyntaxError("'else' clause for 'while' not supported in Taichi kernels")
+      raise TaichiSyntaxError(
+          "'else' clause for 'while' not supported in Taichi kernels")
     self.generic_visit(node, ['body'])
 
     template = ''' 
@@ -200,9 +212,8 @@ if 1:
   def visit_If(self, node):
     self.generic_visit(node, ['body', 'orelse'])
 
-    is_static_if = isinstance(node.test,
-                               ast.Call) and isinstance(node.test.func,
-                                                        ast.Attribute)
+    is_static_if = isinstance(node.test, ast.Call) and isinstance(
+        node.test.func, ast.Attribute)
     if is_static_if:
       attr = node.test.func
       if attr.attr == 'static':
@@ -232,15 +243,17 @@ if 1:
 
   def check_loop_var(self, loop_var):
     if self.var_declared(loop_var):
-      raise TaichiSyntaxError("Variable '{}' is already declared in the outer scope and cannot be used as loop variable".format(loop_var))
+      raise TaichiSyntaxError(
+          "Variable '{}' is already declared in the outer scope and cannot be used as loop variable"
+          .format(loop_var))
 
   def visit_For(self, node):
     if node.orelse:
-      raise TaichiSyntaxError("'else' clause for 'for' not supported in Taichi kernels")
+      raise TaichiSyntaxError(
+          "'else' clause for 'for' not supported in Taichi kernels")
     self.generic_visit(node, ['body'])
-    decorated = isinstance(node.iter,
-                               ast.Call) and isinstance(node.iter.func,
-                                                        ast.Attribute)
+    decorated = isinstance(node.iter, ast.Call) and isinstance(
+        node.iter.func, ast.Attribute)
     is_static_for = False
     is_grouped = False
     if decorated:
@@ -249,9 +262,8 @@ if 1:
         is_static_for = True
       elif attr.attr == 'grouped':
         is_grouped = True
-    is_range_for = isinstance(node.iter,
-                              ast.Call) and isinstance(node.iter.func,
-                                                       ast.Name) and node.iter.func.id == 'range'
+    is_range_for = isinstance(node.iter, ast.Call) and isinstance(
+        node.iter.func, ast.Name) and node.iter.func.id == 'range'
     if is_static_for:
       return node
     elif is_range_for:
@@ -282,7 +294,7 @@ if 1:
       t.body = t.body[:6] + node.body + t.body[6:]
       t.body.append(self.parse_stmt('del {}'.format(loop_var)))
       return ast.copy_location(t, node)
-    else: # Struct for
+    else:  # Struct for
       if isinstance(node.target, ast.Name):
         elts = [node.target]
       else:
@@ -292,8 +304,8 @@ if 1:
         self.check_loop_var(loop_var.id)
 
       var_decl = ''.join(
-        '  {} = ti.Expr(ti.core.make_id_expr(""))\n'.format(ind.id) for ind in
-        elts)
+          '  {} = ti.Expr(ti.core.make_id_expr(""))\n'.format(ind.id)
+          for ind in elts)
       vars = ', '.join(ind.id for ind in elts)
       if is_grouped:
         template = ''' 
@@ -335,8 +347,10 @@ if 1:
 
   @staticmethod
   def func_call(name, *args):
-    return ast.Call(func=ASTTransformer.parse_expr(name).value, args=list(args),
-                    keywords=[])
+    return ast.Call(
+        func=ASTTransformer.parse_expr(name).value,
+        args=list(args),
+        keywords=[])
 
   def visit_Subscript(self, node):
     self.generic_visit(node)
@@ -348,18 +362,26 @@ if 1:
     else:
       indices = [indices.value]
 
-    call = ast.Call(func=self.parse_expr('ti.subscript'),
-                    args=[value] + indices, keywords=[])
+    call = ast.Call(
+        func=self.parse_expr('ti.subscript'),
+        args=[value] + indices,
+        keywords=[])
     return ast.copy_location(call, node)
 
   def visit_IfExp(self, node):
-    raise TaichiSyntaxError('Ternary operator ("a if cond else b") is not yet supported in Taichi kernels. Please walk around by changing loop conditions.')
+    raise TaichiSyntaxError(
+        'Ternary operator ("a if cond else b") is not yet supported in Taichi kernels. Please walk around by changing loop conditions.'
+    )
 
   def visit_Break(self, node):
-    raise TaichiSyntaxError('"break" is not yet supported in Taichi kernels. Please walk around by changing loop conditions.')
+    raise TaichiSyntaxError(
+        '"break" is not yet supported in Taichi kernels. Please walk around by changing loop conditions.'
+    )
 
   def visit_Continue(self, node):
-    raise TaichiSyntaxError('"continue" is not yet supported in Taichi kernels. Please walk around by changing loop conditions.')
+    raise TaichiSyntaxError(
+        '"continue" is not yet supported in Taichi kernels. Please walk around by changing loop conditions.'
+    )
 
   def visit_Call(self, node):
     self.generic_visit(node)

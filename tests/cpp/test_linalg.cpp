@@ -51,11 +51,13 @@ TC_TEST("vector arith") {
 #endif
   CHECK(dot(Vector2(1, 2), Vector2(3, 2)) == 7.0_f);
   CHECK(dot(Vector2i(1, 2), Vector2i(3, 2)) == 7);
-  CHECK((fract(Vector2(1.3_f, 2.7_f)) - Vector2(0.3_f, 0.7_f)).length2() < 1e-10_f);
+  CHECK((fract(Vector2(1.3_f, 2.7_f)) - Vector2(0.3_f, 0.7_f)).length2() <
+        1e-10_f);
   CHECK(Vector2(1.3_f, 2.7_f).sin() == Vector2(sin(1.3_f), sin(2.7_f)));
 
   CHECK(Matrix3(3.0_f) + Matrix3(4.0_f) == Matrix3(7.0_f));
-  CHECK(Matrix3(3.0_f) + Matrix3(Vector3(1, 2, 3)) == Matrix3(Vector3(4, 5, 6)));
+  CHECK(Matrix3(3.0_f) + Matrix3(Vector3(1, 2, 3)) ==
+        Matrix3(Vector3(4, 5, 6)));
 
   CHECK(Matrix2(Vector2(1, 2)) * Vector2(2, 3) == Vector2(2, 6));
   CHECK(Matrix3(Vector3(1, 2, 3)) * Vector3(2, 3, 4) == Vector3(2, 6, 12));

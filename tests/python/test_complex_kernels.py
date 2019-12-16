@@ -1,5 +1,6 @@
 import taichi as ti
 
+
 @ti.all_archs
 def test_complex_kernels():
   x = ti.var(ti.f32)
@@ -31,6 +32,7 @@ def test_complex_kernels():
     forward(4)
   for i in range(n):
     assert x.grad[0] == 4
+
 
 @ti.all_archs
 def test_complex_kernels_indirect():
@@ -70,7 +72,9 @@ def test_complex_kernels_indirect():
 
 @ti.all_archs
 def test_complex_kernels_oop():
+
   class A:
+
     def __init__(self):
       self.x = ti.var(ti.f32)
       self.total = ti.var(ti.f32)
@@ -94,7 +98,6 @@ def test_complex_kernels_oop():
     def backward(self, mul):
       self.func(mul, __gradient=True)
 
-
   a = A()
 
   @ti.layout
@@ -102,15 +105,17 @@ def test_complex_kernels_oop():
     ti.root.place(a)
     ti.root.lazy_grad()
 
-
   with ti.Tape(loss=a.total):
     a.forward(4)
   for i in range(a.n):
     assert a.x.grad[0] == 4
 
+
 @ti.all_archs
 def test_complex_kernels_oop2():
+
   class A:
+
     def __init__(self):
       self.x = ti.var(ti.f32)
       self.total = ti.var(ti.f32)
@@ -143,7 +148,6 @@ def test_complex_kernels_oop2():
   def place():
     ti.root.place(a)
     ti.root.lazy_grad()
-
 
   with ti.Tape(loss=a.total):
     a.forward(4)

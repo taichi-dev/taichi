@@ -8,19 +8,25 @@
 #include <algorithm>
 #include <type_traits>
 
-#define STRUCT_FIELD(S, F)                                                     \
-  extern "C" decltype(S::F) S##_get_##F(S *s) { return s->F; }                 \
-  extern "C" decltype(S::F) *S##_get_ptr_##F(S *s) { return &(s->F); }         \
-  extern "C" void S##_set_##F(S *s, decltype(S::F) f) { s->F = f; }
+#define STRUCT_FIELD(S, F)                              \
+  extern "C" decltype(S::F) S##_get_##F(S *s) {         \
+    return s->F;                                        \
+  }                                                     \
+  extern "C" decltype(S::F) *S##_get_ptr_##F(S *s) {    \
+    return &(s->F);                                     \
+  }                                                     \
+  extern "C" void S##_set_##F(S *s, decltype(S::F) f) { \
+    s->F = f;                                           \
+  }
 
-#define STRUCT_FIELD_ARRAY(S, F)                                               \
-  extern "C" std::remove_all_extents_t<decltype(S::F)> S##_get_##F(S *s,       \
-                                                                   int i) {    \
-    return s->F[i];                                                            \
-  }                                                                            \
-  extern "C" void S##_set_##F(S *s, int i,                                     \
-                              std::remove_all_extents_t<decltype(S::F)> f) {   \
-    s->F[i] = f;                                                               \
+#define STRUCT_FIELD_ARRAY(S, F)                                             \
+  extern "C" std::remove_all_extents_t<decltype(S::F)> S##_get_##F(S *s,     \
+                                                                   int i) {  \
+    return s->F[i];                                                          \
+  }                                                                          \
+  extern "C" void S##_set_##F(S *s, int i,                                   \
+                              std::remove_all_extents_t<decltype(S::F)> f) { \
+    s->F[i] = f;                                                             \
   }
 
 using int8 = int8_t;
@@ -60,9 +66,13 @@ void vprintf(Ptr format, Ptr arg);
 #endif
 i32 printf(const char *, ...);
 
-#define DEFINE_UNARY_REAL_FUNC(F)                                              \
-  f32 F##_f32(f32 x) { return std::F(x); }                                     \
-  f64 F##_f64(f64 x) { return std::F(x); }
+#define DEFINE_UNARY_REAL_FUNC(F) \
+  f32 F##_f32(f32 x) {            \
+    return std::F(x);             \
+  }                               \
+  f64 F##_f64(f64 x) {            \
+    return std::F(x);             \
+  }
 
 // sin and cos are already included in llvm intrinsics
 DEFINE_UNARY_REAL_FUNC(exp)
@@ -79,14 +89,24 @@ int abs_i32(int a) {
   }
 }
 
-float32 rand_f32() { return rand() * f32(1.0f / (f32(RAND_MAX) + 1)); }
-float64 rand_f64() { return rand() * f64(1.0 / (f64(RAND_MAX) + 1)); }
+float32 rand_f32() {
+  return rand() * f32(1.0f / (f32(RAND_MAX) + 1));
+}
+float64 rand_f64() {
+  return rand() * f64(1.0 / (f64(RAND_MAX) + 1));
+}
 
-int max_i32(int a, int b) { return a > b ? a : b; }
+int max_i32(int a, int b) {
+  return a > b ? a : b;
+}
 
-int min_i32(int a, int b) { return a < b ? a : b; }
+int min_i32(int a, int b) {
+  return a < b ? a : b;
+}
 
-int32 logic_not_i32(int32 a) { return !a; }
+int32 logic_not_i32(int32 a) {
+  return !a;
+}
 
 float32 sgn_f32(float32 a) {
   float32 b;
@@ -110,9 +130,13 @@ float64 sgn_f64(float64 a) {
   return b;
 }
 
-f32 __nv_sgnf(f32 x) { return sgn_f32(x); }
+f32 __nv_sgnf(f32 x) {
+  return sgn_f32(x);
+}
 
-f64 __nv_sgn(f64 x) { return sgn_f64(x); }
+f64 __nv_sgn(f64 x) {
+  return sgn_f64(x);
+}
 
 struct PhysicalCoordinates {
   int val[taichi_max_num_indices];
@@ -155,7 +179,8 @@ struct StructMeta {
   bool (*is_active)(Ptr, Ptr, int i);
   int (*get_num_elements)(Ptr, Ptr);
   void (*refine_coordinates)(PhysicalCoordinates *inp_coord,
-                             PhysicalCoordinates *refined_coord, int index);
+                             PhysicalCoordinates *refined_coord,
+                             int index);
   Context *context;
 };
 
@@ -214,7 +239,9 @@ void ElementList_insert(ElementList *element_list, Element *element) {
   element_list->tail++;
 }
 
-void ElementList_clear(ElementList *element_list) { element_list->tail = 0; }
+void ElementList_clear(ElementList *element_list) {
+  element_list->tail = 0;
+}
 
 struct NodeAllocator {
   Ptr pool;
@@ -222,7 +249,8 @@ struct NodeAllocator {
   int tail;
 };
 
-void NodeAllocator_initialize(Runtime *runtime, NodeAllocator *node_allocator,
+void NodeAllocator_initialize(Runtime *runtime,
+                              NodeAllocator *node_allocator,
                               std::size_t node_size) {
   node_allocator->pool =
       (Ptr)allocate_aligned(runtime, 1024 * 1024 * 1024, 4096);
@@ -237,8 +265,10 @@ Ptr NodeAllocator_allocate(NodeAllocator *node_allocator) {
 
 using vm_allocator_type = void *(*)(std::size_t, int);
 using CPUTaskFunc = void(Context *, int i);
-using parallel_for_type = void (*)(void *thread_pool, int splits,
-                                   int num_desired_threads, void *context,
+using parallel_for_type = void (*)(void *thread_pool,
+                                   int splits,
+                                   int num_desired_threads,
+                                   void *context,
                                    void (*func)(void *, int i));
 
 constexpr int max_rand_states = 1024 * 1024;
@@ -278,8 +308,11 @@ void *allocate_aligned(Runtime *runtime, std::size_t size, int alignment) {
   return runtime->vm_allocator(size, alignment);
 }
 
-Ptr Runtime_initialize(Runtime **runtime_ptr, int num_snodes,
-                       uint64_t root_size, int root_id, void *_vm_allocator) {
+Ptr Runtime_initialize(Runtime **runtime_ptr,
+                       int num_snodes,
+                       uint64_t root_size,
+                       int root_id,
+                       void *_vm_allocator) {
   auto vm_allocator = (vm_allocator_type)_vm_allocator;
   *runtime_ptr = (Runtime *)vm_allocator(sizeof(Runtime), 128);
   Runtime *runtime = *runtime_ptr;
@@ -316,7 +349,8 @@ Ptr Runtime_initialize(Runtime **runtime_ptr, int num_snodes,
   return (Ptr)root_ptr;
 }
 
-void Runtime_initialize_thread_pool(Runtime *runtime, void *thread_pool,
+void Runtime_initialize_thread_pool(Runtime *runtime,
+                                    void *thread_pool,
                                     void *parallel_for) {
   runtime->thread_pool = (Ptr)thread_pool;
   runtime->parallel_for = (parallel_for_type)parallel_for;
@@ -356,21 +390,34 @@ void element_listgen(Runtime *runtime, StructMeta *parent, StructMeta *child) {
   }
 }
 
-int32 thread_idx() { return 0; }
+int32 thread_idx() {
+  return 0;
+}
 
-int32 block_idx() { return 0; }
+int32 block_idx() {
+  return 0;
+}
 
-int32 block_dim() { return 0; }
+int32 block_dim() {
+  return 0;
+}
 
-int32 grid_dim() { return 0; }
+int32 grid_dim() {
+  return 0;
+}
 
-void sync_warp(uint32 mask) {}
+void sync_warp(uint32 mask) {
+}
 
-void block_barrier() {}
+void block_barrier() {
+}
 
-int32 warp_active_mask() { return 0; }
+int32 warp_active_mask() {
+  return 0;
+}
 
-void block_memfence() {}
+void block_memfence() {
+}
 
 using BlockTask = void(Context *, Element *, int, int);
 
@@ -391,8 +438,12 @@ void block_helper(void *ctx_, int i) {
                (part_id + 1) * part_size);
 }
 
-void for_each_block(Context *context, int snode_id, int element_size,
-                    int element_split, BlockTask *task, int num_threads) {
+void for_each_block(Context *context,
+                    int snode_id,
+                    int element_size,
+                    int element_split,
+                    BlockTask *task,
+                    int num_threads) {
   auto list = ((Runtime *)context->runtime)->element_lists[snode_id];
   auto list_tail = list->tail;
 #if ARCH_cuda
@@ -447,8 +498,12 @@ void parallel_range_for_task(void *range_context, int task_id) {
   }
 }
 
-void cpu_parallel_range_for(Context *context, int num_threads, int begin,
-                            int end, int step, int block_dim,
+void cpu_parallel_range_for(Context *context,
+                            int num_threads,
+                            int begin,
+                            int end,
+                            int step,
+                            int block_dim,
                             CPUTaskFunc *task) {
   range_task_helper_context ctx;
   ctx.context = context;
@@ -467,7 +522,9 @@ void cpu_parallel_range_for(Context *context, int num_threads, int begin,
                         &ctx, parallel_range_for_task);
 }
 
-i32 linear_thread_id() { return block_idx() * block_dim() + thread_idx(); }
+i32 linear_thread_id() {
+  return block_idx() * block_dim() + thread_idx();
+}
 
 u32 cuda_rand_u32(Context *context) {
   auto state = &((Runtime *)context->runtime)

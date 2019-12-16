@@ -5,12 +5,14 @@
 TLANG_NAMESPACE_BEGIN
 
 class DemoteAtomics : public BasicStmtVisitor {
-public:
+ public:
   using BasicStmtVisitor::visit;
 
   OffloadedStmt *current_offloaded;
 
-  DemoteAtomics() : BasicStmtVisitor() { current_offloaded = nullptr; }
+  DemoteAtomics() : BasicStmtVisitor() {
+    current_offloaded = nullptr;
+  }
 
   void visit(AtomicOpStmt *stmt) override {
     bool demote = false;
@@ -76,6 +78,6 @@ void demote_atomics(IRNode *root) {
   typecheck(root);
 }
 
-} // namespace irpass
+}  // namespace irpass
 
 TLANG_NAMESPACE_END

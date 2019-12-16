@@ -43,7 +43,6 @@ tail = r'''
 
 '''
 
-
 # parameters: filename, graph
 
 assert len(sys.argv) == 3
@@ -51,9 +50,9 @@ folder_name = "/tmp/_graph_cache_{:04d}".format(random.randint(0, 10000))
 os.mkdir(folder_name)
 
 with open(os.path.join(folder_name, "main.tex"), 'w') as f:
-    f.write(head)
-    f.write(sys.argv[2])
-    f.write(tail)
+  f.write(head)
+  f.write(sys.argv[2])
+  f.write(tail)
 
 os.system("cd {} && lualatex main.tex > /dev/null".format(folder_name))
 os.system("cp {}/main.pdf {}".format(folder_name, sys.argv[1]))

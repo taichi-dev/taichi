@@ -12,7 +12,9 @@ constexpr int n = 256;
 constexpr int num_ch1 = 16, num_ch2 = 16;
 
 auto cnn = [](std::vector<std::string> cli_param) {
-  TC_WARN("After refactoring the Texture class from Taichi is removed. Need to read from the raw bunny binary.");
+  TC_WARN(
+      "After refactoring the Texture class from Taichi is removed. Need to "
+      "read from the raw bunny binary.");
   TC_NOT_IMPLEMENTED
 #if (0)
   CoreState::set_trigger_gdb_when_crash(true);

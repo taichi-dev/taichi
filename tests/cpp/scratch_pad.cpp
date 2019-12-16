@@ -41,7 +41,6 @@ TC_TEST("scratch_pad_bounds") {
   TC_CHECK(pad.bounds[1][2] == 6);
 }
 
-
 TC_TEST("range_assumption") {
   CoreState::set_trigger_gdb_when_crash(true);
   Program prog(Arch::gpu);

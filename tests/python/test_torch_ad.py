@@ -1,6 +1,7 @@
 import taichi as ti
 import numpy as np
 
+
 @ti.host_arch
 def test_torch_ad():
   if not ti.has_pytorch():
@@ -18,6 +19,7 @@ def test_torch_ad():
       y[n - i - 1] = x[i] * x[i]
 
   class Sqr(torch.autograd.Function):
+
     @staticmethod
     def forward(ctx, inp):
       x.from_torch(inp)
@@ -35,9 +37,8 @@ def test_torch_ad():
 
   sqr = Sqr.apply
   for i in range(10):
-    X = torch.tensor(2 * np.ones((n, ), dtype=np.float32), requires_grad=True)
+    X = torch.tensor(2 * np.ones((n,), dtype=np.float32), requires_grad=True)
     sqr(X).sum().backward()
     ret = X.grad.cpu().numpy()
     for j in range(n):
       assert ret[j] == 4
-

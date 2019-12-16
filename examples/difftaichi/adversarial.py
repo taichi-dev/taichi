@@ -13,15 +13,12 @@ import matplotlib.pyplot as plt
 import torch.nn.functional as F
 import json
 
-
 means = np.array([0.485, 0.456, 0.406], dtype=np.float32)
 std = np.array([0.229, 0.224, 0.225], dtype=np.float32)
-normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                                 std=[0.229, 0.224, 0.225])
+normalize = transforms.Normalize(
+    mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 
-transform = transforms.Compose(
-  [transforms.ToTensor(),
-   normalize])
+transform = transforms.Compose([transforms.ToTensor(), normalize])
 
 
 def imshow(inp, title=None):
@@ -43,48 +40,51 @@ model = models.vgg16(pretrained=True)
 for param in model.parameters():
   param.requires_grad = False
 
+
 def preprocess_and_forward(img):
-  img = (img - torch.tensor(means[None, None, :])) / torch.tensor(std[None, None, :])
+  img = (img - torch.tensor(means[None, None, :])) / torch.tensor(
+      std[None, None, :])
   img = img[None, :, :, :]
   img = torch.transpose(torch.transpose(img, 1, 3), 2, 3)
   return model(img)
-  
-  
+
 
 def predict(img):
   import cv2
   # cv2.imshow('img', img[:,:,::-1])
   # cv2.waitKey()
   img = torch.tensor(img)
-  img = (img - torch.tensor(means[None, None, :])) / torch.tensor(std[None, None, :])
+  img = (img - torch.tensor(means[None, None, :])) / torch.tensor(
+      std[None, None, :])
   img = img[None, :, :, :]
   img = torch.transpose(torch.transpose(img, 1, 3), 2, 3)
-  
+
   pred_raw = model(img)
   pred = F.softmax(pred_raw)
   _, indices = torch.topk(pred, k=1)
   for ind in indices.data.numpy().ravel():
-    print("%.2f%% , class: %s (%s)" % (
-    100 * pred.data[0][ind], str(ind), imagenet_labels[ind]))
+    print("%.2f%% , class: %s (%s)" % (100 * pred.data[0][ind], str(ind),
+                                       imagenet_labels[ind]))
+
 
 def vgg_grad(img):
   img = torch.tensor(img)
-  
+
   imgvar = Variable(img, requires_grad=False)
   imgvard = Variable(img, requires_grad=True)
-  
+
   loss_fn = nn.CrossEntropyLoss()
-  
+
   label = torch.LongTensor(1)
   # classify the object as this label
   label[0] = 1
   label = Variable(label)
-  
+
   pred_raw = preprocess_and_forward(imgvard)
   loss = loss_fn(pred_raw, label)
   loss.backward()
   return imgvard.grad.numpy()
-  
+
 
 def main():
   # everything is RGB instead of BGR in this file
@@ -94,10 +94,10 @@ def main():
   # cv2.waitKey(0)
   img = (imresize(peppers, (224, 224)) / 255.0).astype(np.float32)
   img = torch.tensor(img)
-  
+
   imgvar = Variable(img, requires_grad=False)
   imgvard = Variable(img, requires_grad=True)
-  
+
   loss_fn = nn.CrossEntropyLoss()
 
   label = torch.LongTensor(1)
@@ -111,10 +111,10 @@ def main():
   for epoch in range(Nepochs):
     pred_raw = preprocess_and_forward(imgvard)
     loss = loss_fn(pred_raw, label)
-    
+
     loss.backward()
     imgvar -= imgvard.grad * 1
-    
+
     print('epoch: {}/{}, loss: {}'.format(epoch + 1, Nepochs, loss.item()))
     predict(imgvard)
   print('Finished Training')
@@ -126,13 +126,13 @@ def main():
 def test_interface():
   peppers = imread("squirrel.jpg")
   img = (imresize(peppers, (224, 224)) / 255.0).astype(np.float32)
-  
+
   print(img)
-  
+
   for i in range(10):
     predict(img)
     img -= vgg_grad(img)
-    
+
 
 if __name__ == '__main__':
   # main()

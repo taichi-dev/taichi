@@ -5,6 +5,7 @@ import time
 import random
 from taichi.tools.video import make_video, interpolate_frames, mp4_to_gif, scale_video, crop_video, accelerate_video
 
+
 def test_python():
   print("\nRunning python tests...\n")
   import taichi as ti
@@ -13,6 +14,7 @@ def test_python():
     return int(pytest.main([os.path.join(ti.package_root(), 'tests')]))
   else:
     return int(pytest.main([os.path.join(ti.get_repo_directory(), 'tests')]))
+
 
 def test_cpp():
   import taichi as ti
@@ -25,6 +27,7 @@ def test_cpp():
   print("Running C++ tests...")
   task = ti.Task('test')
   return task.run(*sys.argv[2:])
+
 
 def main(debug=False):
   lines = []
@@ -47,20 +50,20 @@ def main(debug=False):
   argc = len(sys.argv)
   if argc == 1 or sys.argv[1] == 'help':
     print(
-      "    Usage: ti run [task name]        |-> Run a specific task\n"
-      "           ti test                   |-> Run all tests\n"
-      "           ti test_python            |-> Run python tests\n"
-      "           ti test_cpp               |-> Run cpp tests\n"
-      "           ti format                 |-> Reformat modified source files\n"
-      "           ti format_all             |-> Reformat all source files\n"
-      "           ti build                  |-> Build C++ files\n"
-      "           ti video                  |-> Make a video using *.png files in the current folder\n"
-      "           ti video_scale            |-> Scale video resolution \n"
-      "           ti video_crop             |-> Crop video\n"
-      "           ti video_speed            |-> Speed up video\n"
-      "           ti gif                    |-> Convert mp4 file to gif\n"
-      "           ti doc                    |-> Build documentation\n"
-      "           ti debug [script.py]      |-> Debug script\n")
+        "    Usage: ti run [task name]        |-> Run a specific task\n"
+        "           ti test                   |-> Run all tests\n"
+        "           ti test_python            |-> Run python tests\n"
+        "           ti test_cpp               |-> Run cpp tests\n"
+        "           ti format                 |-> Reformat modified source files\n"
+        "           ti format_all             |-> Reformat all source files\n"
+        "           ti build                  |-> Build C++ files\n"
+        "           ti video                  |-> Make a video using *.png files in the current folder\n"
+        "           ti video_scale            |-> Scale video resolution \n"
+        "           ti video_crop             |-> Crop video\n"
+        "           ti video_speed            |-> Speed up video\n"
+        "           ti gif                    |-> Convert mp4 file to gif\n"
+        "           ti doc                    |-> Build documentation\n"
+        "           ti debug [script.py]      |-> Debug script\n")
     exit(-1)
   mode = sys.argv[1]
 
@@ -115,7 +118,8 @@ def main(debug=False):
       script = script.read()
     exec(script, {'__name__': '__main__'})
     os.chdir(cwd)
-    shutil.copy(os.path.join(ti.get_repo_directory(), 'build/taichi.h'), './taichi.h')
+    shutil.copy(
+        os.path.join(ti.get_repo_directory(), 'build/taichi.h'), './taichi.h')
   elif mode == "doc":
     os.system('cd docs && sphinx-build -b html . build')
   elif mode == "video":
@@ -181,7 +185,7 @@ def main(debug=False):
       command = r'sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g"'
       os.system('{} {} > {}'.format(command, tmp_fn, fn))
   elif mode == "merge":
-    import cv2 # TODO: remove this dependency
+    import cv2  # TODO: remove this dependency
     import numpy as np
     folders = sys.argv[2:]
     os.makedirs('merged', exist_ok=True)
@@ -199,6 +203,7 @@ def main(debug=False):
     task.run(*sys.argv[2:])
   print()
   print(">>> Running time: {:.2f}s".format(time.time() - t))
+
 
 if __name__ == '__main__':
   exit(main())

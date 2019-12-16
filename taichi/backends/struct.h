@@ -20,7 +20,8 @@ class StructCompiler : public CodeGenBase {
 
   StructCompiler();
 
-  virtual ~StructCompiler() {}
+  virtual ~StructCompiler() {
+  }
 
   void collect_snodes(SNode &snode);
 

@@ -14,12 +14,14 @@ x, y = ti.var(ti.f32), ti.var(ti.f32)
 coeffs = [ti.var(ti.f32) for _ in range(number_coeffs)]
 loss = ti.var(ti.f32)
 
+
 @ti.layout
 def xy():
   ti.root.dense(ti.i, N).place(x, x.grad, y, y.grad)
   ti.root.place(loss, loss.grad)
   for i in range(number_coeffs):
     ti.root.place(coeffs[i], coeffs[i].grad)
+
 
 @ti.kernel
 def regress():
@@ -30,6 +32,7 @@ def regress():
       est += coeffs[j] * ti.pow(v, j)
     loss.atomic_add(0.5 * ti.sqr(y[i] - est))
 
+
 @ti.kernel
 def update():
   for i in ti.static(range(number_coeffs)):
@@ -38,6 +41,7 @@ def update():
     # ti.print(coeffs[i].grad[None])
     coeffs[i][None] -= learning_rate * coeffs[i].grad[None]
     coeffs[i].grad[None] = 0
+
 
 xs = []
 ys = []
@@ -83,4 +87,3 @@ ax.spines['right'].set_color('none')
 ax.spines['bottom'].set_position('zero')
 ax.spines['top'].set_color('none')
 plt.show()
-

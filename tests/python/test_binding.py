@@ -1,5 +1,6 @@
 import taichi as ti
 
+
 def test_binding():
   taichi_lang = ti.core
   print(taichi_lang.BinaryOpType.mul)

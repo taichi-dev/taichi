@@ -3,9 +3,10 @@
 TLANG_NAMESPACE_BEGIN
 
 template <typename T>
-std::vector<T*> make_raw_pointer_list(const std::vector<std::unique_ptr<T>> &unique_pointers) {
-  std::vector<T*> raw_pointers;
-  for (auto &ptr: unique_pointers)
+std::vector<T *> make_raw_pointer_list(
+    const std::vector<std::unique_ptr<T>> &unique_pointers) {
+  std::vector<T *> raw_pointers;
+  for (auto &ptr : unique_pointers)
     raw_pointers.push_back(ptr.get());
   return raw_pointers;
 }
@@ -215,9 +216,9 @@ class LowerAST : public IRVisitor {
     expr->flatten(flattened);
     if (stmt->dest.is<IdExpression>()) {  // local variable
       // emit local store stmt
-      auto alloca = stmt->parent->lookup_var(stmt->dest.cast<IdExpression>()->id);
-      flattened.push_back<AtomicOpStmt>(stmt->op_type, alloca,
-                                        expr->stmt);
+      auto alloca =
+          stmt->parent->lookup_var(stmt->dest.cast<IdExpression>()->id);
+      flattened.push_back<AtomicOpStmt>(stmt->op_type, alloca, expr->stmt);
     } else {  // global variable
       TC_ASSERT(stmt->dest.is<GlobalPtrExpression>());
       auto global_ptr = stmt->dest.cast<GlobalPtrExpression>();

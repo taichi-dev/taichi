@@ -1,5 +1,6 @@
 import taichi as ti
 
+
 @ti.all_archs
 def test_fill_scalar():
   val = ti.var(ti.i32)
@@ -20,6 +21,7 @@ def test_fill_scalar():
   for i in range(n):
     for j in range(m):
       assert val[i, j] == 2
+
 
 @ti.all_archs
 def test_fill_matrix_scalar():
@@ -45,6 +47,7 @@ def test_fill_matrix_scalar():
       for p in range(2):
         for q in range(3):
           assert val[i, j][p, q] == 2
+
 
 @ti.all_archs
 def test_fill_matrix_matrix():

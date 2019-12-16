@@ -49,8 +49,8 @@ auto diff_conv = [](const std::vector<std::string> args) {
       non_zero2++;
     }
 
-    //if (!same) {
-        //fprintf(stderr, "ret1:%f, ret2:%f\n", ret1[i], ret2[i]);
+    // if (!same) {
+    // fprintf(stderr, "ret1:%f, ret2:%f\n", ret1[i], ret2[i]);
     //}
   }
   TC_INFO("same {} {}%", counter[0], 100.0f * counter[0] / n);

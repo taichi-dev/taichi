@@ -93,11 +93,7 @@ TC_TEST("simplify_access") {
   auto i = Index(0);
   layout([&]() { root.dense(i, n).dense(i, n).place(a, b); });
 
-  kernel([&]() {
-    For(a, [&](Expr i) {
-      a[i] = b[i] + 1;
-    });
-  })();
+  kernel([&]() { For(a, [&](Expr i) { a[i] = b[i] + 1; }); })();
 };
 
 TC_TEST("fancy_for") {
@@ -230,7 +226,6 @@ TC_TEST("vectorize") {
     TC_CHECK(a.val<int>(i) == i);
   }
 };
-
 
 TC_TEST("rand") {
   CoreState::set_trigger_gdb_when_crash(true);

@@ -16,7 +16,9 @@ TLANG_NAMESPACE_BEGIN
 
 std::string compiled_lib_dir;
 
-Expr expr_index(const Expr &expr, const Expr &index) { return expr[index]; }
+Expr expr_index(const Expr &expr, const Expr &index) {
+  return expr[index];
+}
 
 void expr_assign(const Expr &lhs_, const Expr &rhs, std::string tb) {
   auto lhs = ptr_if_global(lhs_);
@@ -115,7 +117,6 @@ void export_lang(py::module &m) {
       .def("num_active_indices",
            [](SNode *snode) { return snode->num_active_indices; });
 
-
   py::class_<Kernel>(m, "Kernel")
       .def("set_arg_int", &Kernel::set_arg_int)
       .def("set_extra_arg_int", &Kernel::set_extra_arg_int)
@@ -140,7 +141,7 @@ void export_lang(py::module &m) {
 
   py::class_<ExprGroup>(m, "ExprGroup")
       .def(py::init<>())
-      .def("size", [](ExprGroup *eg) {return eg->exprs.size(); })
+      .def("size", [](ExprGroup *eg) { return eg->exprs.size(); })
       .def("push_back", &ExprGroup::push_back)
       .def("serialize", &ExprGroup::serialize);
 
@@ -362,11 +363,11 @@ void export_lang(py::module &m) {
   m.def("get_version_major", get_version_major);
   m.def("get_version_minor", get_version_minor);
   m.def("get_version_patch", get_version_patch);
-  m.def("test_printf", [] {printf("test_printf\n");});
-  m.def("test_logging", [] {TC_INFO("test_logging\n");});
-  m.def("trigger_crash", [] {*(int *)(1)=0;});
-  m.def("get_max_num_indices", [] {return max_num_indices;});
-  m.def("get_max_num_args", [] {return max_num_args;});
+  m.def("test_printf", [] { printf("test_printf\n"); });
+  m.def("test_logging", [] { TC_INFO("test_logging\n"); });
+  m.def("trigger_crash", [] { *(int *)(1) = 0; });
+  m.def("get_max_num_indices", [] { return max_num_indices; });
+  m.def("get_max_num_args", [] { return max_num_args; });
   m.def("test_threading", test_threading);
 }
 

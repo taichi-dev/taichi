@@ -52,7 +52,7 @@ TaichiLLVMContext::TaichiLLVMContext(Arch arch) : arch(arch) {
     LLVMInitializeNVPTXTargetInfo();
     LLVMInitializeNVPTXAsmPrinter();
 #else
-	TC_NOT_IMPLEMENTED
+    TC_NOT_IMPLEMENTED
 #endif
   }
   ctx = std::make_unique<llvm::LLVMContext>();
@@ -162,9 +162,9 @@ std::unique_ptr<llvm::Module> module_from_bitcode_file(std::string bitcode_path,
   auto runtime =
       parseBitcodeFile(MemoryBufferRef(bitcode, "runtime_bitcode"), *ctx);
   if (!runtime) {
-	auto error = runtime.takeError();
-	TC_WARN("Bitcode loading error message:");
-	llvm::errs() << error << "\n";
+    auto error = runtime.takeError();
+    TC_WARN("Bitcode loading error message:");
+    llvm::errs() << error << "\n";
     TC_ERROR("Runtime bitcode load failure.");
   }
   bool module_broken = llvm::verifyModule(*runtime.get(), &llvm::errs());

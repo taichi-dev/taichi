@@ -3,12 +3,15 @@ import taichi as ti
 import cv2
 import numpy as np
 
+
 def Vector2(x, y):
   return ti.Vector([x, y])
+
 
 @ti.func
 def inside(p, c, r):
   return (p - c).norm_sqr() <= r * r
+
 
 @ti.func
 def inside_taichi(p_):
@@ -41,10 +44,12 @@ def inside_taichi(p_):
       ret = 0
   return ret
 
+
 x = ti.var(ti.f32)
 
 n = 512
 ti.cfg.use_llvm = True
+
 
 @ti.layout
 def layout():

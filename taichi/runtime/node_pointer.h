@@ -34,4 +34,6 @@ void *Pointer_lookup_element(Ptr meta, Ptr node, int i) {
   return data_ptr;
 }
 
-int Pointer_get_num_elements(Ptr meta, Ptr node) { return 1; }
+int Pointer_get_num_elements(Ptr meta, Ptr node) {
+  return 1;
+}

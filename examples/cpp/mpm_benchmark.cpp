@@ -47,7 +47,9 @@ auto mpm_benchmark = [](std::vector<std::string> cli_param) {
   auto f = fopen("dragon_particles.bin", "rb");
   TC_ASSERT_INFO(f, "./dragon_particles.bin not found");
   benchmark_particles.resize(n_particles * 3);
-  if (std::fread(benchmark_particles.data(), sizeof(float), n_particles * 3, f)) {}
+  if (std::fread(benchmark_particles.data(), sizeof(float), n_particles * 3,
+                 f)) {
+  }
   std::fclose(f);
 
   for (int i = 0; i < n_particles; i++) {

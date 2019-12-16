@@ -50,6 +50,8 @@ def ray_aabb_intersection(box_min, box_max, o, d):
 # x^2 + 2Td x + (T * T - r * r) = 0
 
 refine = True
+
+
 @ti.func
 def intersect_sphere(pos, d, center, radius):
   T = pos - center

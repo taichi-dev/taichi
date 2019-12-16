@@ -3,7 +3,7 @@ import os
 import shutil
 import sys
 import ctypes
-import glob
+from pathlib import Path
 
 if sys.version_info[0] < 3 or sys.version_info[1] < 5:
   print("\nPlease restart with python3. \n(Taichi supports Python 3.5+)\n")
@@ -82,12 +82,13 @@ def format(all=False):
     directories = ['taichi', 'tests', 'examples', 'misc', 'python']
     files = []
     for d in directories:
-      files += glob.glob(os.path.join(tc.get_repo_directory(), d) + '/**/*')
+      files += list(Path(os.path.join(tc.get_repo_directory(), d)).rglob('*'))
   else:
     files = repo.index.diff('HEAD')
-    
-  for item in files:
-    fn = os.path.join(tc.get_repo_directory(), item.a_path)
+    files = list(
+        map(lambda x: os.path.join(tc.get_repo_directory(), x.a_path), files))
+
+  for fn in map(str, files):
     if fn.endswith('.py'):
       print(fn, '...')
       FormatFile(
@@ -98,7 +99,6 @@ def format(all=False):
     if fn.endswith('.cpp') or fn.endswith('.h'):
       print(fn, '...')
       os.system('clang-format-6.0 -i -style=file {}'.format(fn))
-    repo.git.add(item.a_path)
 
   print('Formatting done!')
 

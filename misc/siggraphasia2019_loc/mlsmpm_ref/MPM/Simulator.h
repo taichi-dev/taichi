@@ -16,7 +16,6 @@ class Benchmarks;
 class MPMSimulator {
   friend class Benchmarks;
   friend class SimulatorBuilder;
-
  public:
   auto &refModel(int idx = 0) {
     return h_models[idx];
@@ -65,7 +64,6 @@ class MPMSimulator {
   void buildIntegrator(const int integratorType,
                        const int transferScheme,
                        const T dtDefault);
-
  private:
   std::string _fileTitle;
   T _dtDefault;

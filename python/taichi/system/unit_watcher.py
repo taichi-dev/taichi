@@ -17,8 +17,8 @@ class UnitWatcher:
     self.src_path = os.path.join(self.dir, 'unit.cpp')
     self.dll_path = os.path.join(self.dir, 'build', 'libunit.dylib')
     self.cmakelists_path = os.path.join(self.dir, 'CMakeLists.txt')
-    cmakelists_src = os.path.join(get_repo_directory(), 'python',
-                                  'taichi', 'misc', 'CMakeLists.txt')
+    cmakelists_src = os.path.join(get_repo_directory(), 'python', 'taichi',
+                                  'misc', 'CMakeLists.txt')
     shutil.copy(cmakelists_src, self.cmakelists_path)
 
   def load_src(self):

@@ -26,7 +26,7 @@ class VirtualMemoryAllocator {
 #else
     MEMORYSTATUSEX stat;
     stat.dwLength = sizeof(stat);
-    GlobalMemoryStatusEx (&stat);
+    GlobalMemoryStatusEx(&stat);
     if (stat.ullAvailVirtual < size) {
       TC_P(stat.ullAvailVirtual);
       TC_P(size);
@@ -46,7 +46,7 @@ class VirtualMemoryAllocator {
     if (munmap(ptr, size) != 0)
 #else
     // https://docs.microsoft.com/en-us/windows/win32/api/memoryapi/nf-memoryapi-virtualfree
-	// According to MS Doc: size must be when using MEM_RELEASE
+    // According to MS Doc: size must be when using MEM_RELEASE
     if (!VirtualFree(ptr, 0, MEM_RELEASE))
 #endif
       TC_ERROR("Failed to free virtual memory ({} B)", size);

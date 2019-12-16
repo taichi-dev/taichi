@@ -1,5 +1,6 @@
 import taichi as ti
 
+
 @ti.all_archs
 def test_running_loss():
   return
@@ -15,7 +16,6 @@ def test_running_loss():
     ti.root.dense(ti.i, steps).place(running_loss)
     ti.root.place(additional_loss)
     ti.root.lazy_grad()
-
 
   @ti.kernel
   def compute_loss():

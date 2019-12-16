@@ -23,7 +23,8 @@ SNode &SNode::place(Expr &expr_) {
   return *this;
 }
 
-SNode &SNode::create_node(std::vector<Index> indices, std::vector<int> sizes,
+SNode &SNode::create_node(std::vector<Index> indices,
+                          std::vector<int> sizes,
                           SNodeType type) {
   TC_ASSERT(indices.size() == sizes.size() || sizes.size() == 1);
   if (sizes.size() == 1) {
@@ -48,7 +49,8 @@ SNode &SNode::create_node(std::vector<Index> indices, std::vector<int> sizes,
   }
   for (int i = 0; i < (int)indices.size(); i++) {
     auto &ind = indices[i];
-    new_node.extractors[ind.value].activate(bit::log2int(bit::least_pot_bound(sizes[i])));
+    new_node.extractors[ind.value].activate(
+        bit::log2int(bit::least_pot_bound(sizes[i])));
     new_node.extractors[ind.value].num_elements = sizes[i];
   }
   return new_node;

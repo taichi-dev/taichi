@@ -1,5 +1,6 @@
 import taichi as ti
 
+
 @ti.must_throw(UnboundLocalError)
 def test_if():
   x = ti.var(ti.f32)
@@ -18,6 +19,7 @@ def test_if():
 
   func()
 
+
 @ti.must_throw(UnboundLocalError)
 def test_for():
   x = ti.var(ti.f32)
@@ -34,6 +36,7 @@ def test_for():
 
   func()
 
+
 @ti.must_throw(UnboundLocalError)
 def test_while():
   x = ti.var(ti.f32)
@@ -49,4 +52,3 @@ def test_while():
     print(a)
 
   func()
-

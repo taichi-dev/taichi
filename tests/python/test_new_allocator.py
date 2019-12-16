@@ -1,5 +1,6 @@
 import taichi as ti
 
+
 @ti.all_archs
 def test_1d():
   N = 16
@@ -20,6 +21,7 @@ def test_1d():
   for i in range(N):
     assert y[i] == i * 2
 
+
 @ti.all_archs
 def test_3d():
   N = 2
@@ -31,7 +33,7 @@ def test_3d():
   @ti.kernel
   def func():
     for I in ti.grouped(x):
-        y[I] = x[I]
+      y[I] = x[I]
 
   for i in range(N):
     for j in range(M):
@@ -42,6 +44,7 @@ def test_3d():
   for i in range(N):
     for j in range(M):
       assert y[i, j] == i * 10 + j
+
 
 @ti.all_archs
 def test_matrix():

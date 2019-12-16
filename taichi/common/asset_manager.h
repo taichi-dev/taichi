@@ -27,7 +27,8 @@ class AssetManager {
   // Note: this is not thread safe!
   template <typename T>
   std::shared_ptr<T> get_asset_(int id) {
-    TC_ASSERT_INFO(id_to_asset.find(id) != id_to_asset.end(), "Asset not found");
+    TC_ASSERT_INFO(id_to_asset.find(id) != id_to_asset.end(),
+                   "Asset not found");
     auto ptr = id_to_asset[id];
     TC_ASSERT_INFO(!ptr.expired(), "Asset has been expired");
     return std::static_pointer_cast<T>(ptr.lock());
@@ -37,7 +38,8 @@ class AssetManager {
   int insert_asset_(const std::shared_ptr<T> &ptr) {
     if (asset_to_id.find(ptr.get()) != asset_to_id.end()) {
       int existing_id = asset_to_id.find(ptr.get())->second;
-      TC_ASSERT_INFO(id_to_asset[existing_id].expired(), "Asset already exists");
+      TC_ASSERT_INFO(id_to_asset[existing_id].expired(),
+                     "Asset already exists");
       asset_to_id.erase(ptr.get());
       id_to_asset.erase(existing_id);
     }

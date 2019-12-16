@@ -16,7 +16,7 @@ TLANG_NAMESPACE_BEGIN
 using namespace llvm;
 
 class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
-public:
+ public:
   TaichiLLVMJIT *jit;
 
   CodeGenBase *codegen;
@@ -46,7 +46,7 @@ public:
   llvm::Function *func;
 
   class OffloadedTask {
-  public:
+   public:
     std::string name;
     CodeGenLLVM *codegen;
     using task_fp_type = int32 (*)(void *);
@@ -56,11 +56,17 @@ public:
     int grid_dim;
     void *cuda_func;
 
-    OffloadedTask(CodeGenLLVM *codegen) : codegen(codegen) { func = nullptr; }
+    OffloadedTask(CodeGenLLVM *codegen) : codegen(codegen) {
+      func = nullptr;
+    }
 
-    void begin(std::string name) { this->name = name; }
+    void begin(std::string name) {
+      this->name = name;
+    }
 
-    void end() { codegen->offloaded_tasks.push_back(*this); }
+    void end() {
+      codegen->offloaded_tasks.push_back(*this);
+    }
 
     void compile() {
       TC_ASSERT(!func);
@@ -84,7 +90,8 @@ public:
       : ModuleBuilder(get_current_program()
                           .get_llvm_context(get_current_program().config.arch)
                           ->clone_struct_module()),
-        kernel(kernel), task_counter(0) {
+        kernel(kernel),
+        task_counter(0) {
     initialize_context();
 
     context_ty = get_runtime_type("Context");
@@ -95,7 +102,7 @@ public:
 
     for (auto &f : *module) {
       if (!f.isDeclaration())
-        f.setLinkage(Function::PrivateLinkage); // to avoid duplicated symbols
+        f.setLinkage(Function::PrivateLinkage);  // to avoid duplicated symbols
     }
 
     std::string grad_suffix;
@@ -113,7 +120,9 @@ public:
     return args[i];
   }
 
-  llvm::Value *get_context() { return get_arg(0); }
+  llvm::Value *get_context() {
+    return get_arg(0);
+  }
 
   llvm::Value *get_root() {
     return builder->CreateCall(get_runtime_function("Context_get_buffer"),
@@ -127,7 +136,8 @@ public:
         runtime_ptr, llvm::PointerType::get(get_runtime_type("Runtime"), 0));
   }
 
-  void emit_struct_meta_base(std::string name, llvm::Value *node_meta,
+  void emit_struct_meta_base(std::string name,
+                             llvm::Value *node_meta,
                              SNode *snode) {
     RuntimeObject common("StructMeta", this, builder, node_meta);
     std::size_t element_size;
@@ -205,7 +215,9 @@ public:
     return obj->ptr;
   }
 
-  virtual void emit_to_module() { kernel->ir->accept(this); }
+  virtual void emit_to_module() {
+    kernel->ir->accept(this);
+  }
 
   virtual FunctionType compile_module_to_executable() {
     jit->addModule(std::move(module));
@@ -226,7 +238,8 @@ public:
     return compile_module_to_executable();
   }
 
-  template <typename... Args> void emit(std::string f, Args &&... args) {
+  template <typename... Args>
+  void emit(std::string f, Args &&... args) {
     TC_NOT_IMPLEMENTED
     codegen->emit(f, std::forward<Args>(args)...);
   }
@@ -260,20 +273,20 @@ public:
     auto input_taichi_type = stmt->operand->ret_type.data_type;
     auto op = stmt->op_type;
 
-#define UNARY_STD(x)                                                           \
-  else if (op == UnaryOpType::x) {                                             \
-    if (input_taichi_type == DataType::f32) {                                  \
-      stmt->value =                                                            \
-          builder->CreateCall(get_runtime_function(#x "_f32"), input);         \
-    } else if (input_taichi_type == DataType::f64) {                           \
-      stmt->value =                                                            \
-          builder->CreateCall(get_runtime_function(#x "_f64"), input);         \
-    } else if (input_taichi_type == DataType::i32) {                           \
-      stmt->value =                                                            \
-          builder->CreateCall(get_runtime_function(#x "_i32"), input);         \
-    } else {                                                                   \
-      TC_NOT_IMPLEMENTED                                                       \
-    }                                                                          \
+#define UNARY_STD(x)                                                   \
+  else if (op == UnaryOpType::x) {                                     \
+    if (input_taichi_type == DataType::f32) {                          \
+      stmt->value =                                                    \
+          builder->CreateCall(get_runtime_function(#x "_f32"), input); \
+    } else if (input_taichi_type == DataType::f64) {                   \
+      stmt->value =                                                    \
+          builder->CreateCall(get_runtime_function(#x "_f64"), input); \
+    } else if (input_taichi_type == DataType::i32) {                   \
+      stmt->value =                                                    \
+          builder->CreateCall(get_runtime_function(#x "_i32"), input); \
+    } else {                                                           \
+      TC_NOT_IMPLEMENTED                                               \
+    }                                                                  \
   }
     if (false) {
     }
@@ -296,10 +309,10 @@ public:
     auto input_type = input->getType();
     auto op = stmt->op_type;
 
-#define UNARY_INTRINSIC(x)                                                     \
-  else if (op == UnaryOpType::x) {                                             \
-    stmt->value =                                                              \
-        builder->CreateIntrinsic(llvm::Intrinsic::x, {input_type}, {input});   \
+#define UNARY_INTRINSIC(x)                                                   \
+  else if (op == UnaryOpType::x) {                                           \
+    stmt->value =                                                            \
+        builder->CreateIntrinsic(llvm::Intrinsic::x, {input_type}, {input}); \
   }
 
     if (stmt->op_type != UnaryOpType::cast) {
@@ -594,13 +607,14 @@ public:
 
     stmt->body->accept(this);
 
-    builder->CreateBr(body); // jump to head
+    builder->CreateBr(body);  // jump to head
 
     builder->SetInsertPoint(after_loop);
     while_after_loop = old_while_after_loop;
   }
 
-  llvm::Value *cast_pointer(llvm::Value *val, std::string dest_ty_name,
+  llvm::Value *cast_pointer(llvm::Value *val,
+                            std::string dest_ty_name,
                             int addr_space = 0) {
     return builder->CreateBitCast(
         val,
@@ -1008,7 +1022,7 @@ public:
   }
 
   class FunctionCreationGuard {
-  public:
+   public:
     CodeGenLLVM *mb;
     llvm::Function *old_func;
     llvm::Function *body;
@@ -1057,8 +1071,8 @@ public:
     }
   };
 
-  FunctionCreationGuard
-  get_function_creation_gurad(std::vector<llvm::Type *> argument_types) {
+  FunctionCreationGuard get_function_creation_gurad(
+      std::vector<llvm::Type *> argument_types) {
     return FunctionCreationGuard(this, argument_types);
   }
 
@@ -1238,7 +1252,9 @@ public:
     current_task = nullptr;
   }
 
-  ~CodeGenLLVM() { delete builder; }
+  ~CodeGenLLVM() {
+    delete builder;
+  }
 };
 
 TLANG_NAMESPACE_END

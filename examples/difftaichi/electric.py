@@ -43,7 +43,8 @@ bias2 = scalar()
 
 pad = 0.1
 gravitation_position = [[pad, pad], [pad, 1 - pad], [1 - pad, 1 - pad],
-                        [1 - pad, pad], [0.5, 1-pad], [0.5, pad], [pad, 0.5], [1-pad, 0.5]]
+                        [1 - pad, pad], [0.5, 1 - pad], [0.5, pad], [pad, 0.5],
+                        [1 - pad, 0.5]]
 
 
 @ti.layout
@@ -118,28 +119,28 @@ def forward(visualize=False, output=None):
   if output:
     interval = output_vis_interval
     os.makedirs('electric/{}/'.format(output), exist_ok=True)
-  
+
   canvas = gui.get_canvas()
   for t in range(1, steps):
     nn1(t)
     nn2(t)
     advance(t)
     compute_loss(t)
-    
+
     if (t + 1) % interval == 0 and visualize:
       canvas.clear(0x3C733F)
-      
+
       for i in range(n_gravitation):
         r = (gravitation[t, i] + 1) * 30
         canvas.circle(tc.vec(*gravitation_position[i])).radius(r).color(
-          0xccaa44).finish()
-      
-      canvas.circle(tc.vec(x[t][0], x[t][1])).radius(30).color(
-        0xF20530).finish()
-      
-      canvas.circle(tc.vec(goal[t][0], goal[t][1])).radius(10).color(
-        0x3344cc).finish()
-      
+            0xccaa44).finish()
+
+      canvas.circle(tc.vec(x[t][0],
+                           x[t][1])).radius(30).color(0xF20530).finish()
+
+      canvas.circle(tc.vec(goal[t][0],
+                           goal[t][1])).radius(10).color(0x3344cc).finish()
+
       gui.update()
       if output:
         gui.screenshot('electric/{}/{:04d}.png'.format(output, t))
@@ -151,8 +152,10 @@ def rand():
 
 tasks = [((rand(), rand()), (rand(), rand())) for i in range(10)]
 
+
 def lerp(x, a, b):
   return (1 - x) * a + x * b
+
 
 def initialize():
   # x[0] = [rand(), rand()]
@@ -163,9 +166,13 @@ def initialize():
   for i in range(segments):
     for j in range(steps // segments):
       k = steps // segments * i + j
-      goal[k] = [lerp(j / seg_size, points[i][0], points[i + 1][0]),
-                 lerp(j / seg_size, points[i][1], points[i + 1][1])]
-      goal_v[k] = [points[i + 1][0] - points[i][0], points[i + 1][1] - points[i][1]]
+      goal[k] = [
+          lerp(j / seg_size, points[i][0], points[i + 1][0]),
+          lerp(j / seg_size, points[i][1], points[i + 1][1])
+      ]
+      goal_v[k] = [
+          points[i + 1][0] - points[i][0], points[i + 1][1] - points[i][1]
+      ]
   x[0] = points[0]
   # x[0] = [0.3, 0.6]
   # goal[None] = [0.5, 0.2]
@@ -177,7 +184,7 @@ def initialize():
 def optimize():
   initialize()
   forward(visualize=True, output='initial')
-  
+
   losses = []
   for iter in range(200000):
     initialize()
@@ -192,22 +199,22 @@ def optimize():
     if vis:
       print(iter, sum(losses))
       losses.clear()
-    
+
     tot = 0
     for i in range(8):
       for j in range(n_hidden):
         weight1[i, j] = weight1[i, j] - weight1.grad[i, j] * learning_rate
-        tot += weight1.grad[i, j] ** 2
+        tot += weight1.grad[i, j]**2
     # print(tot)
     for j in range(n_hidden):
       bias1[j] = bias1[j] - bias1.grad[j] * learning_rate
-    
+
     for i in range(n_hidden):
       for j in range(n_gravitation):
         weight2[i, j] = weight2[i, j] - weight2.grad[i, j] * learning_rate
     for j in range(n_gravitation):
       bias2[j] = bias2[j] - bias2.grad[j] * learning_rate
-  
+
   forward(visualize=True, output='final')
 
 

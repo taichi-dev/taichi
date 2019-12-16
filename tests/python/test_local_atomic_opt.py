@@ -1,5 +1,6 @@
 import taichi as ti
 
+
 @ti.all_archs
 def test_cse():
   A = ti.var(ti.f32, shape=())
@@ -13,6 +14,7 @@ def test_cse():
 
   func()
   assert A[None] == 133
+
 
 @ti.all_archs
 def test_store_forward():

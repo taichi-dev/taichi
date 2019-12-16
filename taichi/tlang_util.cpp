@@ -276,7 +276,8 @@ std::string CompileConfig::compiler_config() {
 
   if (is_release()) {
     linking = fmt::format("-L{}/lib -ltaichi_core", get_python_package_dir());
-    // TODO: this is useless now since python packages no longer support legacy backends
+    // TODO: this is useless now since python packages no longer support legacy
+    // backends
     include_flag = fmt::format("-I{}/", get_python_package_dir());
   } else {
     linking = fmt::format(" -L{}/build -ltaichi_core ", get_repo_dir());

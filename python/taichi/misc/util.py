@@ -108,7 +108,7 @@ def vec(*args):
       return tc_core.Vector3d(float(args[0]), float(args[1]), float(args[2]))
     elif len(args) == 4:
       return tc_core.Vector4d(
-        float(args[0]), float(args[1]), float(args[2]), float(args[3]))
+          float(args[0]), float(args[1]), float(args[2]), float(args[3]))
     else:
       assert False, type(args[0])
 
@@ -174,8 +174,8 @@ def array2d_to_image(arr,
 
 def image_buffer_to_image(arr):
   import pyglet
-  raw_data = np.empty(
-      (arr.get_width() * arr.get_height() * 3,), dtype='float32')
+  raw_data = np.empty((arr.get_width() * arr.get_height() * 3,),
+                      dtype='float32')
   arr.to_ndarray(raw_data.ctypes.data_as(ctypes.c_void_p).value)
   dat = (raw_data * 255.0).astype('uint8')
   dat.reshape((len(raw_data) / 3, 3))
@@ -187,8 +187,8 @@ def image_buffer_to_image(arr):
 
 def image_buffer_to_ndarray(arr, bgr=False):
   channels = arr.get_channels()
-  raw_data = np.empty(
-      (arr.get_width() * arr.get_height() * channels,), dtype='float32')
+  raw_data = np.empty((arr.get_width() * arr.get_height() * channels,),
+                      dtype='float32')
   arr.to_ndarray(raw_data.ctypes.data_as(ctypes.c_void_p).value)
   dat = raw_data.astype('float32')
   ret = dat.reshape((arr.get_width(), arr.get_height(), channels))
@@ -209,15 +209,13 @@ def P(**kwargs):
 
 
 def imread(fn, bgr=False):
-  img = taichi.core.Array2DVector3(
-      taichi.veci(0, 0), taichi.vec(0.0, 0.0, 0.0))
+  img = taichi.core.Array2DVector3(taichi.veci(0, 0), taichi.vec(0.0, 0.0, 0.0))
   img.read(fn)
   return image_buffer_to_ndarray(img, bgr)[::-1]
 
 
 def read_image(fn, linearize=False):
-  img = taichi.core.Array2DVector3(
-      taichi.veci(0, 0), taichi.vec(0.0, 0.0, 0.0))
+  img = taichi.core.Array2DVector3(taichi.veci(0, 0), taichi.vec(0.0, 0.0, 0.0))
   img.read(fn, linearize)
   return img
 
@@ -273,6 +271,7 @@ def sleep(seconds=-1):
       time.sleep(1)  # Wait for Ctrl-C
   else:
     time.sleep(seconds)
+
 
 class Tee():
 
@@ -358,9 +357,11 @@ def redirect_print_to_log():
 
 def duplicate_stdout_to_file(fn):
   taichi.tc_core.duplicate_stdout_to_file(fn)
-  
+
+
 def set_logging_level(level):
   taichi.tc_core.set_logging_level(level)
-  
+
+
 def set_gdb_trigger(on=True):
   taichi.tc_core.set_core_trigger_gdb_when_crash(on)

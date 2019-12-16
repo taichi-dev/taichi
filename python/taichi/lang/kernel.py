@@ -4,6 +4,7 @@ import ast
 from .kernel_arguments import *
 from .util import *
 
+
 def remove_indent(lines):
   lines = lines.split('\n')
   to_remove = 0
@@ -22,35 +23,39 @@ def remove_indent(lines):
 
   return '\n'.join(cleaned)
 
+
 # The ti.func decorator
+
 
 def func(foo):
   from .impl import get_runtime
   src = remove_indent(inspect.getsource(foo))
   tree = ast.parse(src)
-  
+
   func_body = tree.body[0]
   func_body.decorator_list = []
-  
+
   visitor = ASTTransformer(is_kernel=False)
   visitor.visit(tree)
   ast.fix_missing_locations(tree)
-  
+
   if get_runtime().print_preprocessed:
     import astor
     print('After preprocessing:')
     print(astor.to_source(tree.body[0], indent_with='  '))
-  
+
   ast.increment_lineno(tree, inspect.getsourcelines(foo)[1] - 1)
-  
+
   frame = inspect.currentframe().f_back
-  exec(compile(tree, filename=inspect.getsourcefile(foo), mode='exec'),
-       dict(frame.f_globals, **frame.f_locals), locals())
+  exec(
+      compile(tree, filename=inspect.getsourcefile(foo), mode='exec'),
+      dict(frame.f_globals, **frame.f_locals), locals())
   compiled = locals()[foo.__name__]
   return compiled
 
 
 class KernelTemplateMapper:
+
   def __init__(self, annotations, template_slot_locations):
     self.annotations = annotations
     self.num_args = len(annotations)
@@ -68,7 +73,8 @@ class KernelTemplateMapper:
 
   def lookup(self, args):
     if len(args) != self.num_args:
-      raise Exception(f'{self.num_args} argument(s) needed but {len(args)} provided.')
+      raise Exception(
+          f'{self.num_args} argument(s) needed but {len(args)} provided.')
 
     key = self.extract(args)
     if key not in self.mapping:
@@ -78,11 +84,13 @@ class KernelTemplateMapper:
 
 
 class KernelDefError(Exception):
+
   def __init__(self, msg):
     super().__init__(msg)
 
 
 class KernelArgError(Exception):
+
   def __init__(self, pos, needed, provided):
     self.pos = pos
     self.needed = needed
@@ -90,12 +98,11 @@ class KernelArgError(Exception):
 
   def message(self):
     return 'Argument {} (type={}) cannot be converted into required type {}'.format(
-      self.pos,
-      str(self.needed),
-      str(self.provided))
+        self.pos, str(self.needed), str(self.provided))
 
 
 class Kernel:
+
   def __init__(self, func, is_grad, classkernel=False):
     self.func = func
     self.is_grad = is_grad
@@ -107,7 +114,8 @@ class Kernel:
     for i in range(len(self.arguments)):
       if isinstance(self.arguments[i], template):
         self.template_slot_locations.append(i)
-    self.mapper = KernelTemplateMapper(self.arguments, self.template_slot_locations)
+    self.mapper = KernelTemplateMapper(self.arguments,
+                                       self.template_slot_locations)
     from .impl import get_runtime
     get_runtime().kernels.append(self)
     self.reset()
@@ -128,24 +136,27 @@ class Kernel:
       param = params[arg_name]
       if param.kind == inspect.Parameter.VAR_KEYWORD:
         raise KernelDefError(
-          'Taichi kernels do not support variable keyword parameters (i.e., **kwargs)')
+            'Taichi kernels do not support variable keyword parameters (i.e., **kwargs)'
+        )
       if param.kind == inspect.Parameter.VAR_POSITIONAL:
         raise KernelDefError(
-          'Taichi kernels do not support variable positional parameters (i.e., *args)')
+            'Taichi kernels do not support variable positional parameters (i.e., *args)'
+        )
       if param.default is not inspect.Parameter.empty:
         raise KernelDefError(
-          'Taichi kernels do not support default values for arguments')
+            'Taichi kernels do not support default values for arguments')
       if param.kind == inspect.Parameter.KEYWORD_ONLY:
         raise KernelDefError('Taichi kernels do not support keyword parameters')
       if param.kind != inspect.Parameter.POSITIONAL_OR_KEYWORD:
         raise KernelDefError(
-          'Taichi kernels only support "positional or keyword" parameters')
+            'Taichi kernels only support "positional or keyword" parameters')
       annotation = param.annotation
       if param.annotation is inspect.Parameter.empty:
         if i == 0 and self.classkernel:
           annotation = template()
         else:
-          raise KernelDefError('Taichi kernels parameters must be type annotated')
+          raise KernelDefError(
+              'Taichi kernels parameters must be type annotated')
       self.arguments.append(annotation)
       self.argument_names.append(param.name)
 
@@ -172,7 +183,10 @@ class Kernel:
     func_body = tree.body[0]
     func_body.decorator_list = []
 
-    visitor = ASTTransformer(excluded_paremeters=self.template_slot_locations, func=self, arg_features=arg_features)
+    visitor = ASTTransformer(
+        excluded_paremeters=self.template_slot_locations,
+        func=self,
+        arg_features=arg_features)
 
     visitor.visit(tree)
     ast.fix_missing_locations(tree)
@@ -200,10 +214,10 @@ class Kernel:
       template_var_name = self.argument_names[i]
       global_vars[template_var_name] = args[i]
 
-
     local_vars = {}
-    exec(compile(tree, filename=inspect.getsourcefile(self.func), mode='exec'),
-         global_vars, local_vars)
+    exec(
+        compile(tree, filename=inspect.getsourcefile(self.func), mode='exec'),
+        global_vars, local_vars)
     compiled = local_vars[self.func.__name__]
 
     taichi_kernel = taichi_lang_core.create_kernel(kernel_name, self.is_grad)
@@ -220,13 +234,12 @@ class Kernel:
     assert key not in self.compiled_functions
     self.compiled_functions[key] = self.get_function_body(taichi_kernel)
 
-
   def get_function_body(self, t_kernel):
     # The actual function body
     def func__(*args):
       assert len(args) == len(
-        self.arguments), '{} arguments needed but {} provided'.format(
-        len(self.arguments), len(args))
+          self.arguments), '{} arguments needed but {} provided'.format(
+              len(self.arguments), len(args))
 
       actual_argument_slot = 0
       for i, v in enumerate(args):
@@ -234,11 +247,13 @@ class Kernel:
         if isinstance(needed, template):
           continue
         provided = type(v)
-        if isinstance(needed, taichi_lang_core.DataType) and needed in [f32, f64]:
+        if isinstance(needed,
+                      taichi_lang_core.DataType) and needed in [f32, f64]:
           if type(v) not in [float, int]:
             raise KernelArgError(i, needed, provided)
           t_kernel.set_arg_float(actual_argument_slot, float(v))
-        elif isinstance(needed, taichi_lang_core.DataType) and needed in [i32, i64]:
+        elif isinstance(needed,
+                        taichi_lang_core.DataType) and needed in [i32, i64]:
           if type(v) not in [int]:
             raise KernelArgError(i, needed, provided)
           t_kernel.set_arg_int(actual_argument_slot, int(v))
@@ -248,7 +263,8 @@ class Kernel:
           is_numpy = isinstance(v, np.ndarray)
           if is_numpy:
             tmp = np.ascontiguousarray(v)
-            t_kernel.set_arg_nparray(actual_argument_slot, int(tmp.ctypes.data), tmp.nbytes)
+            t_kernel.set_arg_nparray(actual_argument_slot, int(tmp.ctypes.data),
+                                     tmp.nbytes)
           else:
             assert has_torch and isinstance(v, torch.Tensor)
             tmp = v
@@ -260,7 +276,10 @@ class Kernel:
                                      tmp.element_size() * tmp.nelement())
           shape = v.shape
           max_num_indices = taichi_lang_core.get_max_num_indices()
-          assert len(shape) <= max_num_indices, "External array cannot have > {} indices".format(max_num_indices)
+          assert len(
+              shape
+          ) <= max_num_indices, "External array cannot have > {} indices".format(
+              max_num_indices)
           for i, s in enumerate(shape):
             t_kernel.set_extra_arg_int(actual_argument_slot, i, s)
         else:
@@ -273,7 +292,9 @@ class Kernel:
     return func__
 
   def match_ext_arr(self, v, needed):
-    needs_array = isinstance(needed, np.ndarray) or needed == np.ndarray or isinstance(needed, ext_arr)
+    needs_array = isinstance(needed,
+                             np.ndarray) or needed == np.ndarray or isinstance(
+                                 needed, ext_arr)
     has_array = isinstance(v, np.ndarray)
     if not has_array and has_pytorch():
       has_array = isinstance(v, torch.Tensor)

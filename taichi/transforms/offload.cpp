@@ -123,8 +123,7 @@ Steps:
 */
 
 class IdentifyLocalVars : public BasicStmtVisitor {
-public:
-
+ public:
   using BasicStmtVisitor::visit;
 
   std::map<Stmt *, std::size_t> local_to_global;
@@ -159,7 +158,8 @@ public:
   }
 
   void test_and_allocate(Stmt *stmt) {
-    if (local_to_offloaded[stmt] == current_offloaded) return;
+    if (local_to_offloaded[stmt] == current_offloaded)
+      return;
     if (local_to_global.find(stmt) == local_to_global.end()) {
       local_to_global[stmt] = allocate_global(stmt->ret_type);
     }
@@ -193,14 +193,14 @@ public:
 };
 
 class PromoteLocals : public BasicStmtVisitor {
-public:
-
+ public:
   using BasicStmtVisitor::visit;
 
   std::map<Stmt *, std::size_t> local_to_global_offset;
   std::map<Stmt *, VectorType> local_to_global_vector_type;
 
-  PromoteLocals(std::map<Stmt *, std::size_t> local_to_global_offset): local_to_global_offset(local_to_global_offset) {
+  PromoteLocals(std::map<Stmt *, std::size_t> local_to_global_offset)
+      : local_to_global_offset(local_to_global_offset) {
     allow_undefined_visitor = true;
   }
 
@@ -210,8 +210,10 @@ public:
     VecStatement replacement;
     auto ret_type = stmt->ret_type;
     local_to_global_vector_type[stmt] = ret_type;
-    auto ptr = replacement.push_back<GlobalTemporaryStmt>(local_to_global_offset[stmt], ret_type);
-    LaneAttribute<TypedConstant> zeros(std::vector<TypedConstant>(stmt->width(), TypedConstant(stmt->ret_type.data_type)));
+    auto ptr = replacement.push_back<GlobalTemporaryStmt>(
+        local_to_global_offset[stmt], ret_type);
+    LaneAttribute<TypedConstant> zeros(std::vector<TypedConstant>(
+        stmt->width(), TypedConstant(stmt->ret_type.data_type)));
     auto const_zeros = replacement.push_back<ConstStmt>(zeros);
     replacement.push_back<GlobalStoreStmt>(ptr, const_zeros);
 
@@ -228,7 +230,8 @@ public:
     VecStatement replacement;
     auto ret_type = stmt->ret_type;
 
-    auto ptr = replacement.push_back<GlobalTemporaryStmt>(local_to_global_offset[alloca], ret_type);
+    auto ptr = replacement.push_back<GlobalTemporaryStmt>(
+        local_to_global_offset[alloca], ret_type);
     replacement.push_back<GlobalLoadStmt>(ptr);
 
     stmt->parent->replace_with(stmt, replacement);
@@ -244,7 +247,8 @@ public:
     VecStatement replacement;
     auto ret_type = stmt->ret_type;
 
-    auto ptr = replacement.push_back<GlobalTemporaryStmt>(local_to_global_offset[alloca], ret_type);
+    auto ptr = replacement.push_back<GlobalTemporaryStmt>(
+        local_to_global_offset[alloca], ret_type);
     replacement.push_back<GlobalStoreStmt>(ptr, stmt->data);
 
     stmt->parent->replace_with(stmt, replacement);
@@ -260,14 +264,16 @@ public:
     VecStatement replacement;
     auto ret_type = stmt->dest->ret_type;
 
-    auto ptr = replacement.push_back<GlobalTemporaryStmt>(local_to_global_offset[alloca], ret_type);
+    auto ptr = replacement.push_back<GlobalTemporaryStmt>(
+        local_to_global_offset[alloca], ret_type);
     replacement.push_back<AtomicOpStmt>(stmt->op_type, ptr, stmt->val);
 
     stmt->parent->replace_with(stmt, replacement);
     throw IRModified();
   }
 
-  static void run(IRNode *root, std::map<Stmt *, std::size_t> local_to_global_offset) {
+  static void run(IRNode *root,
+                  std::map<Stmt *, std::size_t> local_to_global_offset) {
     PromoteLocals pass(local_to_global_offset);
     while (true) {
       try {

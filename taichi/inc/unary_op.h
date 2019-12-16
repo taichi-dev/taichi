@@ -19,4 +19,3 @@ PER_UNARY_OP(rsqrt)
 PER_UNARY_OP(bit_not)
 PER_UNARY_OP(logic_not)
 PER_UNARY_OP(undefined)
-

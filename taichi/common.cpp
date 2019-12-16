@@ -6,4 +6,3 @@
 #endif
 #include <taichi/struct.h>
 #include <taichi/profiler.h>
-

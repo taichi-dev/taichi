@@ -9,29 +9,34 @@ default_num_threads = multiprocessing.cpu_count()
 def get_num_cores():
   return os.environ.get('TAICHI_NUM_THREADS', default_num_threads)
 
+
 def get_directory(dir):
   return os.path.join(get_repo_directory(), *dir.split('/'))
+
 
 def get_repo_directory():
   if 'TAICHI_REPO_DIR' not in os.environ:
     return os.path.join(os.environ.get('HOME'), ".taichi")
   return os.environ.get('TAICHI_REPO_DIR')
 
+
 def get_project_directory(project=None):
   if project:
     return os.path.join(get_project_directory(), project)
   else:
     return os.path.join(get_repo_directory(), 'projects')
-  
+
+
 def get_runtime_directory():
   bin_rel_path = ['extneral', 'lib']
   return os.environ.get('TAICHI_BIN_DIR',
                         os.path.join(get_repo_directory(), *bin_rel_path))
 
+
 def get_build_directory():
   bin_rel_path = ['build']
   return os.environ.get('TAICHI_BIN_DIR',
-    os.path.join(get_repo_directory(), *bin_rel_path))
+                        os.path.join(get_repo_directory(), *bin_rel_path))
 
 
 def get_bin_directory():
@@ -53,7 +58,6 @@ def get_output_path(path, create=False):
   if create:
     os.makedirs(path, exist_ok=True)
   return path
-  
 
 
 def get_asset_directory():

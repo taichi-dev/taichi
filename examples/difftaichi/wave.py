@@ -30,6 +30,7 @@ loss = scalar()
 
 ti.cfg.arch = ti.cuda
 
+
 @ti.layout
 def place():
   ti.root.dense(ti.l, max_steps).dense(ti.ij, n_grid).place(p)
@@ -53,9 +54,9 @@ learning_rate = 1
 # TODO: there may by out-of-bound accesses here
 @ti.func
 def laplacian(t, i, j):
-  return inv_dx2 * (
-      -4 * p[t, i, j] + p[t, i, j - 1] + p[t, i, j + 1] + p[t, i + 1, j] +
-      p[t, i - 1, j])
+  return inv_dx2 * (-4 * p[t, i, j] + p[t, i, j - 1] + p[t, i, j + 1] +
+                    p[t, i + 1, j] + p[t, i - 1, j])
+
 
 @ti.kernel
 def initialize():
@@ -66,13 +67,14 @@ def initialize():
 
 @ti.kernel
 def fdtd(t: ti.i32):
-  for i in range(n_grid): # Parallelized over GPU threads
+  for i in range(n_grid):  # Parallelized over GPU threads
     for j in range(n_grid):
       laplacian_p = laplacian(t - 2, i, j)
       laplacian_q = laplacian(t - 1, i, j)
       p[t, i, j] = 2 * p[t - 1, i, j] + (
-          c * c * dt * dt + c * alpha * dt) * laplacian_q - p[
-                     t - 2, i, j] - c * alpha * dt * laplacian_p
+          c * c * dt * dt + c * alpha * dt
+      ) * laplacian_q - p[t - 2, i, j] - c * alpha * dt * laplacian_p
+
 
 @ti.kernel
 def compute_loss(t: ti.i32):
@@ -80,11 +82,13 @@ def compute_loss(t: ti.i32):
     for j in range(n_grid):
       ti.atomic_add(loss, dx * dx * ti.sqr(target[i, j] - p[t, i, j]))
 
+
 @ti.kernel
 def apply_grad():
   # gradient descent
   for i, j in initial.grad:
     initial[i, j] -= learning_rate * initial.grad[i, j]
+
 
 def forward(output=None):
   steps_mul = 1
@@ -99,7 +103,8 @@ def forward(output=None):
     if (t + 1) % interval == 0:
       img = np.zeros(shape=(n_grid, n_grid), dtype=np.float32)
       for i in range(n_grid):
-        for j in range(n_grid): img[i, j] = p[t, i, j] * amplify + 0.5
+        for j in range(n_grid):
+          img[i, j] = p[t, i, j] * amplify + 0.5
       img = cv2.resize(img, fx=4, fy=4, dsize=None)
       cv2.imshow('img', img)
       cv2.waitKey(1)
@@ -108,9 +113,10 @@ def forward(output=None):
         cv2.imwrite(output + "/{:04d}.png".format(t), img * 255)
   compute_loss(steps - 1)
 
+
 def main():
   # initialization
-  target_img = cv2.imread('taichi.png')[:,:,0] / 255.0
+  target_img = cv2.imread('taichi.png')[:, :, 0] / 255.0
   target_img -= target_img.mean()
   target_img = cv2.resize(target_img, (n_grid, n_grid))
   cv2.imshow('target', target_img * amplify + 0.5)
@@ -131,12 +137,13 @@ def main():
       if opt % 20 == 19:
         output = 'wave/iter{:03d}/'.format(opt)
       forward(output)
-    
+
     print('Iter', opt, ' Loss =', loss[None])
 
     apply_grad()
-    
+
   forward('optimized')
+
 
 if __name__ == '__main__':
   main()

@@ -1,11 +1,13 @@
 import taichi as ti
 
+
 @ti.all_archs
 def test_loops():
   x = ti.var(ti.f32)
   y = ti.var(ti.f32)
 
   N = 512
+
   @ti.layout
   def place():
     ti.root.dense(ti.i, N).place(x)
@@ -27,13 +29,15 @@ def test_loops():
 
   for i in range(N // 2 + 3, N):
     assert x[i] == abs(y[i])
-    
+
+
 @ti.all_archs
 def test_numpy_loops():
   x = ti.var(ti.f32)
   y = ti.var(ti.f32)
 
   N = 512
+
   @ti.layout
   def place():
     ti.root.dense(ti.i, N).place(x)
@@ -59,7 +63,7 @@ def test_numpy_loops():
 
   for i in range(N // 2 + 3, N):
     assert x[i] == abs(y[i])
-    
+
 
 @ti.all_archs
 def test_nested_loops():

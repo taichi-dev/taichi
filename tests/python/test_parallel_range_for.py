@@ -1,5 +1,6 @@
 import taichi as ti
 
+
 @ti.all_archs
 def test_parallel_range_for():
   n = 1024 * 1024
@@ -11,7 +12,7 @@ def test_parallel_range_for():
     ti.block_dim(8)
     for i in range(n):
       val[i] = i
-  
+
   fill()
 
   for i in range(n):

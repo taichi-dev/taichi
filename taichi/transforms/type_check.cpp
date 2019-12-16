@@ -48,8 +48,11 @@ class TypeCheck : public IRVisitor {
     auto ret_type = promoted_type(stmt->dest->ret_type.data_type,
                                   stmt->val->ret_type.data_type);
     if (stmt->val->ret_type.data_type != stmt->dest->ret_type.data_type) {
-      TC_WARN("Atomically add {} to {} may lose precision.", data_type_name(stmt->val->ret_type.data_type), data_type_name(stmt->dest->ret_type.data_type));
-      stmt->val = insert_type_cast_before(stmt, stmt->val, stmt->dest->ret_type.data_type);
+      TC_WARN("Atomically add {} to {} may lose precision.",
+              data_type_name(stmt->val->ret_type.data_type),
+              data_type_name(stmt->dest->ret_type.data_type));
+      stmt->val = insert_type_cast_before(stmt, stmt->val,
+                                          stmt->dest->ret_type.data_type);
     }
   }
 
@@ -67,7 +70,8 @@ class TypeCheck : public IRVisitor {
     auto ret_type = promoted_type(stmt->ptr->ret_type.data_type,
                                   stmt->data->ret_type.data_type);
     if (ret_type != stmt->data->ret_type.data_type) {
-      stmt->data = insert_type_cast_before(stmt, stmt->data, stmt->ptr->ret_type.data_type);
+      stmt->data = insert_type_cast_before(stmt, stmt->data,
+                                           stmt->ptr->ret_type.data_type);
     }
     if (stmt->ptr->ret_type.data_type != ret_type) {
       TC_WARN(
@@ -111,12 +115,13 @@ class TypeCheck : public IRVisitor {
     auto promoted = promoted_type(stmt->ptr->ret_type.data_type,
                                   stmt->data->ret_type.data_type);
     if (stmt->ptr->ret_type.data_type != stmt->data->ret_type.data_type) {
-      stmt->data = insert_type_cast_before(stmt, stmt->data, stmt->ptr->ret_type.data_type);
+      stmt->data = insert_type_cast_before(stmt, stmt->data,
+                                           stmt->ptr->ret_type.data_type);
     }
     if (stmt->ptr->ret_type.data_type != promoted) {
       TC_WARN("Global store may lose precision: {} <- {}",
-               stmt->ptr->ret_data_type_name(),
-               stmt->data->ret_data_type_name());
+              stmt->ptr->ret_data_type_name(),
+              stmt->data->ret_data_type_name());
     }
     stmt->ret_type = stmt->ptr->ret_type;
   }

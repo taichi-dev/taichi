@@ -28,7 +28,8 @@ class ConstantFold : public BasicStmtVisitor {
       }
 
       if (success) {
-        auto evaluated = Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(new_constant));
+        auto evaluated =
+            Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(new_constant));
         stmt->replace_with(evaluated.get());
         stmt->parent->insert_before(stmt, VecStatement(std::move(evaluated)));
         stmt->parent->erase(stmt);

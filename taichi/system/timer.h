@@ -5,7 +5,6 @@
 
 #pragma once
 
-
 #include <string>
 #include <cstdio>
 #include <map>

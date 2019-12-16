@@ -48,11 +48,7 @@ TC_TEST("root_leaf_path_weakening") {
     root.place(sum);
   });
 
-  kernel([&]() {
-    For(x, [&](Expr i) {
-      y[i] += x[i + 1];
-    });
-  })();
+  kernel([&]() { For(x, [&](Expr i) { y[i] += x[i + 1]; }); })();
 };
 
 TLANG_NAMESPACE_END

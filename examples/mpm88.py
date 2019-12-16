@@ -2,11 +2,14 @@ import taichi as ti
 import random
 
 dim = 2
-n_particles = 8192; n_grid = 128
-dx = 1 / n_grid; inv_dx = 1 / dx
+n_particles = 8192
+n_grid = 128
+dx = 1 / n_grid
+inv_dx = 1 / dx
 dt = 2.0e-4
-p_vol = (dx * 0.5) ** 2
-p_rho = 1; p_mass = p_vol * p_rho
+p_vol = (dx * 0.5)**2
+p_rho = 1
+p_mass = p_vol * p_rho
 E = 400
 
 x = ti.Vector(dim, dt=ti.f32, shape=n_particles)
@@ -17,6 +20,7 @@ grid_v = ti.Vector(dim, dt=ti.f32, shape=(n_grid, n_grid))
 grid_m = ti.var(dt=ti.f32, shape=(n_grid, n_grid))
 
 ti.cfg.arch = ti.cuda
+
 
 @ti.kernel
 def substep():
@@ -31,7 +35,8 @@ def substep():
         offset = ti.Vector([i, j])
         dpos = (offset.cast(float) - fx) * dx
         weight = w[i][0] * w[j][1]
-        grid_v[base + offset].atomic_add(weight * (p_mass * v[p] + affine @ dpos))
+        grid_v[base + offset].atomic_add(
+            weight * (p_mass * v[p] + affine @ dpos))
         grid_m[base + offset].atomic_add(weight * p_mass)
 
   for i, j in grid_m:
@@ -52,7 +57,9 @@ def substep():
   for p in x:
     base = (x[p] * inv_dx - 0.5).cast(int)
     fx = x[p] * inv_dx - base.cast(float)
-    w = [0.5 * ti.sqr(1.5 - fx), 0.75 - ti.sqr(fx - 1.0), 0.5 * ti.sqr(fx - 0.5)]
+    w = [
+        0.5 * ti.sqr(1.5 - fx), 0.75 - ti.sqr(fx - 1.0), 0.5 * ti.sqr(fx - 0.5)
+    ]
     new_v = ti.Vector.zero(ti.f32, 2)
     new_C = ti.Matrix.zero(ti.f32, 2, 2)
     for i in ti.static(range(3)):
@@ -66,6 +73,7 @@ def substep():
     x[p] += dt * v[p]
     J[p] *= 1 + dt * new_C.trace()
     C[p] = new_C
+
 
 gui = ti.core.GUI("MPM88", ti.veci(512, 512))
 canvas = gui.get_canvas()
@@ -84,5 +92,6 @@ for frame in range(200):
   canvas.clear(0x112F41)
   pos = x.to_numpy(as_vector=True)
   for i in range(n_particles):
-    canvas.circle(ti.vec(pos[i, 0], pos[i, 1])).radius(1.5).color(0x068587).finish()
+    canvas.circle(ti.vec(pos[i, 0],
+                         pos[i, 1])).radius(1.5).color(0x068587).finish()
   gui.update()

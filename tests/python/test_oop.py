@@ -1,8 +1,11 @@
 import taichi as ti
 
+
 @ti.host_arch
 def test_oop():
+
   class Array2D:
+
     def __init__(self, n, m, increment):
       self.n = n
       self.m = m
@@ -35,12 +38,15 @@ def test_oop():
 
   @ti.layout
   def place():
-    ti.root.place(arr) # Place an object. Make sure you defined place for that obj
+    ti.root.place(
+        arr)  # Place an object. Make sure you defined place for that obj
     ti.root.place(double_total)
     ti.root.lazy_grad()
 
   arr.inc()
-  arr.inc(__gradient=True) # instead of arr.inc.grad due to python method bounding... Or just use ti.Tape
+  arr.inc(
+      __gradient=True
+  )  # instead of arr.inc.grad due to python method bounding... Or just use ti.Tape
   assert arr.val[3, 4] == 3
   arr.inc2(4)
   assert arr.val[3, 4] == 7
@@ -51,7 +57,6 @@ def test_oop():
   for i in range(arr.n):
     for j in range(arr.m):
       assert arr.val.grad[i, j] == 4
-
 
   @ti.kernel
   def double():

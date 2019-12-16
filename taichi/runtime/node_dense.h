@@ -42,4 +42,3 @@ void *Dense_lookup_element(Ptr meta, Ptr node, int i) {
 int Dense_get_num_elements(Ptr meta, Ptr node) {
   return ((StructMeta *)meta)->max_num_elements;
 }
-

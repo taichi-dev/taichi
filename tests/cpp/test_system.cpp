@@ -15,12 +15,12 @@ TC_TEST("Virtual Memory") {
     std::size_t size = 1LL << 40;
     VirtualMemoryAllocator vm(size);
     // Touch 512 MB (1 << 29 B)
-    for (int j = 0; j < (1 << 29) / (int)VirtualMemoryAllocator::page_size; j++) {
+    for (int j = 0; j < (1 << 29) / (int)VirtualMemoryAllocator::page_size;
+         j++) {
       uint8 val = *((uint8 *)vm.ptr + rand_int64() % size);
       CHECK(val == 0);
     }
   }
-
 }
 
 TC_NAMESPACE_END

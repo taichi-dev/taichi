@@ -21,7 +21,7 @@ gt = ti.var(ti.f32)
 loss = ti.var(ti.f32)
 learning_rate = ti.var(ti.f32)
 
-n_input = 28 ** 2
+n_input = 28**2
 n_hidden = 500
 n_output = 10
 
@@ -42,11 +42,13 @@ def layout():
 
   ti.root.lazy_grad()
 
+
 @ti.kernel
 def init_weights1():
   for i in range(n_input):
     for j in range(n_hidden):
       weight1[i, j] = ti.random() * 0.005
+
 
 @ti.kernel
 def init_weights2():
@@ -68,12 +70,14 @@ def clear_weight2_grad():
     for j in range(n_output):
       weight2.grad[i, j] = 0
 
+
 def clear_output1():
   for i in range(n_hidden):
     output1[i] = 0
     output1_nonlinear[i] = 0
     output1.grad[i] = 0
     output1_nonlinear.grad[i] = 0
+
 
 def clear_output2():
   for i in range(n_output):
@@ -87,6 +91,8 @@ def clear_output2():
 
 def layer(func):
   layer.list.append(func)
+
+
 layer.list = []
 
 
@@ -97,11 +103,13 @@ def w1():
     for j in range(n_hidden):
       output1[j].atomic_add(input[i] * weight1[i, j])
 
+
 @layer
 @ti.kernel
 def nonlinear1():
   for i in range(n_hidden):
     output1_nonlinear[i] = ti.tanh(output1[i])
+
 
 @layer
 @ti.kernel
@@ -110,11 +118,13 @@ def w2():
     for j in range(n_output):
       output[j].atomic_add(output1_nonlinear[i] * weight2[i, j])
 
+
 @layer
 @ti.kernel
 def nonlinear2():
   for i in range(n_output):
     output_exp[i] = ti.exp(output[i])
+
 
 @layer
 @ti.kernel
@@ -122,18 +132,20 @@ def reduce():
   for i in range(n_output):
     softmax_sum.atomic_add(output_exp[i] + 1e-6)
 
+
 @layer
 @ti.kernel
 def softmax():
   for i in range(n_output):
     output_softmax[i] = output_exp[i] / softmax_sum
 
+
 @layer
 @ti.kernel
 def xent():
   for i in range(n_output):
-    loss.atomic_add(-gt[i] * ti.log(output_softmax[i]) + (gt[i] - 1) * ti.log(
-      1 - output_softmax[i]))
+    loss.atomic_add(-gt[i] * ti.log(output_softmax[i]) +
+                    (gt[i] - 1) * ti.log(1 - output_softmax[i]))
 
 
 @ti.kernel
@@ -141,6 +153,7 @@ def gd_w1():
   for i in range(n_input):
     for j in range(n_hidden):
       weight1[i, j] -= learning_rate * weight1.grad[i, j]
+
 
 @ti.kernel
 def gd_w2():
@@ -191,11 +204,12 @@ def test_accuracy():
 
   return acc / ntest
 
+
 losses = []
 accs = []
 niter = 10000
 for k in range(niter):
-  learning_rate = 5e-3 * (0.1 ** (2 * k // niter))
+  learning_rate = 5e-3 * (0.1**(2 * k // niter))
   img_id = random.randrange(0, len(training_images))
   img = training_images[img_id]
 
@@ -235,4 +249,3 @@ for k in range(niter):
 
   gd_w1()
   gd_w2()
-

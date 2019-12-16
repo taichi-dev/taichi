@@ -45,15 +45,15 @@ goal = [0.9, 0.15]
 n_objects = 1
 elasticity = 0.3
 ground_height = 0.1
-gravity = 0# -9.8
+gravity = 0  # -9.8
 penalty = 1e4
 damping = 0
 
+
 @ti.layout
 def place():
-  ti.root.dense(ti.l, max_steps).dense(ti.i, n_objects).place(x, v, rotation,
-                                                              omega, v_inc,
-                                                              omega_inc)
+  ti.root.dense(ti.l, max_steps).dense(ti.i, n_objects).place(
+      x, v, rotation, omega, v_inc, omega_inc)
   ti.root.dense(ti.i, n_objects).place(halfsize, inverse_mass, inverse_inertia)
   ti.root.place(loss, friction)
   ti.root.lazy_grad()
@@ -87,13 +87,13 @@ def cross(a, b):
 def to_world(t, i, rela_x):
   rot = rotation[t, i]
   rot_matrix = rotation_matrix(rot)
-  
+
   rela_pos = rot_matrix @ rela_x
   rela_v = omega[t, i] * ti.Vector([-rela_pos[1], rela_pos[0]])
-  
+
   world_x = x[t, i] + rela_pos
   world_v = v[t, i] + rela_v
-  
+
   return world_x, world_v, rela_pos
 
 
@@ -112,23 +112,23 @@ def collide(t: ti.i32):
       f = friction[None]
       # the corner for collision detection
       offset_scale = ti.Vector([k % 2 * 2 - 1, k // 2 % 2 * 2 - 1])
-      
+
       corner_x, corner_v, rela_pos = to_world(t, i, offset_scale * hs)
       corner_v = corner_v + dt * gravity * ti.Vector([0.0, 1.0])
-      
+
       # Apply impulse so that there's no sinking
       normal = ti.Vector([0.0, 1.0])
       tao = ti.Vector([1.0, 0.0])
-      
+
       rn = cross(rela_pos, normal)
       rt = cross(rela_pos, tao)
       impulse_contribution = inverse_mass[i] + ti.sqr(rn) * \
                              inverse_inertia[i]
       timpulse_contribution = inverse_mass[i] + ti.sqr(rt) * \
                               inverse_inertia[i]
-      
+
       rela_v_ground = normal.dot(corner_v)
-      
+
       impulse = 0.0
       timpulse = 0.0
       if rela_v_ground < 0 and corner_x[1] < ground_height:
@@ -136,14 +136,13 @@ def collide(t: ti.i32):
         if impulse > 0:
           # friction
           timpulse = -corner_v.dot(tao) / timpulse_contribution
-          timpulse = ti.min(f * impulse,
-                            ti.max(-f * impulse, timpulse))
-      
+          timpulse = ti.min(f * impulse, ti.max(-f * impulse, timpulse))
+
       if corner_x[1] < ground_height:
         # apply penalty
         impulse = impulse - dt * penalty * (
             corner_x[1] - ground_height) / impulse_contribution
-      
+
       apply_impulse(t, i, impulse * normal + timpulse * tao, corner_x)
 
 
@@ -152,7 +151,7 @@ def advance(t: ti.i32):
   for i in range(n_objects):
     s = math.exp(-dt * damping)
     v[t, i] = s * v[t - 1, i] + v_inc[t, i] + dt * gravity * ti.Vector(
-      [0.0, 1.0])
+        [0.0, 1.0])
     x[t, i] = x[t - 1, i] + dt * v[t, i]
     omega[t, i] = s * omega[t - 1, i] + omega_inc[t, i]
     rotation[t, i] = rotation[t - 1, i] + dt * omega[t, i]
@@ -165,6 +164,7 @@ def compute_loss(t: ti.i32):
 
 gui = tc.core.GUI("Rigid Body", tc.veci(1024, 1024))
 canvas = gui.get_canvas()
+
 
 def forward(output=None, visualize=True):
 
@@ -180,7 +180,7 @@ def forward(output=None, visualize=True):
   for t in range(1, total_steps):
     collide(t - 1)
     advance(t)
-    
+
     if (t + 1) % interval == 0 and visualize:
       canvas.clear(0xFFFFFF)
       for i in range(n_objects):
@@ -188,19 +188,24 @@ def forward(output=None, visualize=True):
         for k in range(4):
           offset_scale = [[-1, -1], [1, -1], [1, 1], [-1, 1]][k]
           rot = rotation[t, i]
-          rot_matrix = np.array(
-            [[math.cos(rot), -math.sin(rot)], [math.sin(rot), math.cos(rot)]])
+          rot_matrix = np.array([[math.cos(rot), -math.sin(rot)],
+                                 [math.sin(rot), math.cos(rot)]])
 
-          pos = np.array(
-            [x[t, i][0], x[t, i][1]]) + offset_scale * rot_matrix @ np.array(
-            [halfsize[i][0], halfsize[i][1]])
+          pos = np.array([x[t, i][0], x[t, i][1]
+                         ]) + offset_scale * rot_matrix @ np.array(
+                             [halfsize[i][0], halfsize[i][1]])
           points.append((pos[0], pos[1]))
 
         for k in range(4):
-          canvas.path(tc.vec(*points[k]), tc.vec(*points[(k + 1) % 4])).radius(2).color(0x0).finish()
+          canvas.path(
+              tc.vec(*points[k]),
+              tc.vec(*points[(k + 1) % 4])).radius(2).color(0x0).finish()
 
       offset = 0.003
-      canvas.path(tc.vec(0.05, ground_height - offset), tc.vec(0.95, ground_height - offset)).radius(2).color(0xAAAAAA).finish()
+      canvas.path(
+          tc.vec(0.05, ground_height - offset),
+          tc.vec(0.95,
+                 ground_height - offset)).radius(2).color(0xAAAAAA).finish()
 
       if output:
         gui.screenshot('rigid_body/{}/{:04d}.png'.format(output, t))
@@ -234,10 +239,10 @@ def main():
       # forward('initial')
       # for iter in range(50):
       clear_states()
-      
+
       with ti.Tape(loss):
         forward(visualize=False)
-        
+
       print('Iter=', i, 'Loss=', loss[None])
       print(omega.grad[0, 0])
       losses.append(loss[None])
@@ -255,6 +260,7 @@ def main():
   plt.tight_layout()
   # plt.plot(grads)
   plt.show()
-  
+
+
 if __name__ == '__main__':
   main()

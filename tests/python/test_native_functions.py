@@ -1,10 +1,12 @@
 import taichi as ti
 
+
 @ti.all_archs
 def test_abs():
   x = ti.var(ti.f32)
 
   N = 16
+
   @ti.layout
   def place():
     ti.root.dense(ti.i, N).place(x)
@@ -38,7 +40,6 @@ def test_int():
       x[i] = int(x[i])
       x[i] = float(int(x[i]) // 2)
 
-
   for i in range(N):
     x[i] = i + 0.4
 
@@ -46,6 +47,7 @@ def test_int():
 
   for i in range(N):
     assert x[i] == i // 2
+
 
 @ti.all_archs
 def test_minmax():
@@ -65,7 +67,6 @@ def test_minmax():
     for i in range(N):
       minimum[i] = min(x[i], y[i])
       maximum[i] = max(x[i], y[i])
-
 
   for i in range(N):
     x[i] = i

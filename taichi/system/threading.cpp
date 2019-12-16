@@ -69,7 +69,9 @@ ThreadPool::ThreadPool() {
   }
 }
 
-void ThreadPool::run(int splits, int desired_num_threads, void *context,
+void ThreadPool::run(int splits,
+                     int desired_num_threads,
+                     void *context,
                      CPUTaskFunc *func) {
   this->context = context;
   this->func = func;

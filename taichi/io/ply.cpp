@@ -25,7 +25,6 @@ class TestPLY : public Task {
 
 TC_IMPLEMENTATION(Task, TestPLY, "test_ply");
 
-
 // n, data_ptr, fn, name0, name1, name2, name3, ...
 auto write_tcb_c_2 = [](const std::vector<std::string> &parameters) {
   auto n = (int)std::atoi(parameters[0].c_str());

@@ -290,12 +290,12 @@ TC_NAMESPACE_BEGIN
 #define TC_ERROR(...)                      \
   {                                        \
     SPD_AUGMENTED_LOG(error, __VA_ARGS__); \
-    TI_UNREACHABLE; \
+    TI_UNREACHABLE;                        \
   }
 #define TC_CRITICAL(...)                      \
   {                                           \
     SPD_AUGMENTED_LOG(critical, __VA_ARGS__); \
-    TI_UNREACHABLE;                  \
+    TI_UNREACHABLE;                           \
   }
 
 #define TC_TRACE_IF(condition, ...) \

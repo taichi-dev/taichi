@@ -69,9 +69,10 @@ void GUI::create_window() {
 
   RegisterClass(&wc);
 
-  hwnd = CreateWindowEx(0,                    // Optional window styles.
-                        CLASS_NAME,           // Window class
-                        std::wstring(window_name.begin(), window_name.end()).data(),  // Window text
+  hwnd = CreateWindowEx(0,           // Optional window styles.
+                        CLASS_NAME,  // Window class
+                        std::wstring(window_name.begin(), window_name.end())
+                            .data(),          // Window text
                         WS_OVERLAPPEDWINDOW,  // Window style
                         // Size and position
                         CW_USEDEFAULT, CW_USEDEFAULT, width + 16, height + 32,

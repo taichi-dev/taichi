@@ -30,28 +30,33 @@ mat = lambda: ti.Matrix(dim, dim, dt=real)
 x = ti.Vector(dim, dt=real, shape=(max_steps, n_particles), needs_grad=True)
 x_avg = ti.Vector(dim, dt=real, shape=(), needs_grad=True)
 v = ti.Vector(dim, dt=real, shape=(max_steps, n_particles), needs_grad=True)
-grid_v_in = ti.Vector(dim, dt=real, shape=(max_steps, n_grid, n_grid), needs_grad=True)
-grid_v_out = ti.Vector(dim, dt=real, shape=(max_steps, n_grid, n_grid), needs_grad=True)
+grid_v_in = ti.Vector(
+    dim, dt=real, shape=(max_steps, n_grid, n_grid), needs_grad=True)
+grid_v_out = ti.Vector(
+    dim, dt=real, shape=(max_steps, n_grid, n_grid), needs_grad=True)
 grid_m_in = ti.var(dt=real, shape=(max_steps, n_grid, n_grid), needs_grad=True)
-C = ti.Matrix(dim, dim, dt=real, shape=(max_steps, n_particles), needs_grad=True)
-F = ti.Matrix(dim, dim, dt=real, shape=(max_steps, n_particles), needs_grad=True)
+C = ti.Matrix(
+    dim, dim, dt=real, shape=(max_steps, n_particles), needs_grad=True)
+F = ti.Matrix(
+    dim, dim, dt=real, shape=(max_steps, n_particles), needs_grad=True)
 init_v = ti.Vector(dim, dt=real, shape=(), needs_grad=True)
 loss = ti.var(dt=real, shape=(), needs_grad=True)
 
 ti.cfg.arch = ti.cuda
+
 
 @ti.kernel
 def set_v():
   for i in range(n_particles):
     v[0, i] = init_v
 
+
 @ti.kernel
 def p2g(f: ti.i32):
   for p in range(0, n_particles):
     base = ti.cast(x[f, p] * inv_dx - 0.5, ti.i32)
     fx = x[f, p] * inv_dx - ti.cast(base, ti.i32)
-    w = [0.5 * ti.sqr(1.5 - fx), 0.75 - ti.sqr(fx - 1),
-         0.5 * ti.sqr(fx - 0.5)]
+    w = [0.5 * ti.sqr(1.5 - fx), 0.75 - ti.sqr(fx - 1), 0.5 * ti.sqr(fx - 0.5)]
     new_F = (ti.Matrix.diag(dim=2, val=1) + dt * C[f, p]) @ F[f, p]
     F[f + 1, p] = new_F
     J = ti.determinant(new_F)
@@ -65,10 +70,13 @@ def p2g(f: ti.i32):
         offset = ti.Vector([i, j])
         dpos = (ti.cast(ti.Vector([i, j]), real) - fx) * dx
         weight = w[i](0) * w[j](1)
-        grid_v_in[f, base + offset] += weight * (p_mass * v[f, p] + affine @ dpos)
+        grid_v_in[f, base + offset] += weight * (
+            p_mass * v[f, p] + affine @ dpos)
         grid_m_in[f, base + offset] += weight * p_mass
 
+
 bound = 3
+
 
 @ti.kernel
 def grid_op(f: ti.i32):
@@ -94,8 +102,9 @@ def g2p(f: ti.i32):
   for p in range(n_particles):
     base = ti.cast(x[f, p] * inv_dx - 0.5, ti.i32)
     fx = x[f, p] * inv_dx - ti.cast(base, real)
-    w = [0.5 * ti.sqr(1.5 - fx), 0.75 - ti.sqr(fx - 1.0),
-         0.5 * ti.sqr(fx - 0.5)]
+    w = [
+        0.5 * ti.sqr(1.5 - fx), 0.75 - ti.sqr(fx - 1.0), 0.5 * ti.sqr(fx - 0.5)
+    ]
     new_v = ti.Vector([0.0, 0.0])
     new_C = ti.Matrix([[0.0, 0.0], [0.0, 0.0]])
 
@@ -111,15 +120,18 @@ def g2p(f: ti.i32):
     x[f + 1, p] = x[f, p] + dt * v[f + 1, p]
     C[f + 1, p] = new_C
 
+
 @ti.kernel
 def compute_x_avg():
   for i in range(n_particles):
     x_avg[None] += (1 / n_particles) * x[steps - 1, i]
 
+
 @ti.kernel
 def compute_loss():
   dist = ti.sqr(x_avg - ti.Vector(target))
   loss[None] = 0.5 * (dist(0) + dist(1))
+
 
 def substep(s):
   p2g(s)
@@ -136,7 +148,6 @@ for i in range(n_particles):
 for i in range(N):
   for j in range(N):
     x[0, i * N + j] = [dx * (i * 0.5 + 10), dx * (j * 0.5 + 25)]
-
 
 set_v()
 
@@ -174,8 +185,16 @@ for i in range(30):
       total[0] += p_x
       total[1] += p_y
       img[p_x, p_y] = 1
-    cv2.circle(img, (total[1] // n_particles, total[0] // n_particles), radius=5, color=0, thickness=5)
-    cv2.circle(img, (int(target[1] * scale * n_grid), int(target[0] * scale * n_grid)), radius=5, color=1, thickness=5)
+    cv2.circle(
+        img, (total[1] // n_particles, total[0] // n_particles),
+        radius=5,
+        color=0,
+        thickness=5)
+    cv2.circle(
+        img, (int(target[1] * scale * n_grid), int(target[0] * scale * n_grid)),
+        radius=5,
+        color=1,
+        thickness=5)
     img = img.swapaxes(0, 1)[::-1]
     cv2.imshow('MPM', img)
     img_count += 1

@@ -17,13 +17,13 @@ using CPUTaskFunc = void(void *, int i);
 using ParallelFor = void(int n, int num_threads, void *, CPUTaskFunc func);
 
 class PID {
-public:
+ public:
   static int get_pid();
   static int get_parent_pid();
 };
 
 class ThreadPool {
-public:
+ public:
   std::vector<std::thread> threads;
   std::condition_variable slave_cv;
   std::condition_variable master_cv;
@@ -42,11 +42,16 @@ public:
 
   ThreadPool();
 
-  void run(int splits, int desired_num_threads, void *context,
+  void run(int splits,
+           int desired_num_threads,
+           void *context,
            CPUTaskFunc *func);
 
-  static void static_run(ThreadPool *pool, int splits, int desired_num_threads,
-                         void *context, CPUTaskFunc *func) {
+  static void static_run(ThreadPool *pool,
+                         int splits,
+                         int desired_num_threads,
+                         void *context,
+                         CPUTaskFunc *func) {
     return pool->run(splits, desired_num_threads, context, func);
   }
 

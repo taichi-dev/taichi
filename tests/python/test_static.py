@@ -1,5 +1,6 @@
 import taichi as ti
 
+
 @ti.all_archs
 def test_static_if():
   for val in [0, 1]:
@@ -37,4 +38,3 @@ def test_static_if_error():
       x[0] = 0
 
   static()
-

@@ -1,5 +1,6 @@
 import taichi as ti
 
+
 @ti.all_archs
 def test_POT():
   val = ti.var(ti.i32)
@@ -15,6 +16,7 @@ def test_POT():
   assert val.dim() == 3
   assert val.shape() == (n, m, p)
 
+
 @ti.all_archs
 def test_POT():
   val = ti.var(ti.i32)
@@ -29,6 +31,7 @@ def test_POT():
 
   assert val.dim() == 3
   assert val.shape() == (n, m, p)
+
 
 @ti.all_archs
 def test_unordered():

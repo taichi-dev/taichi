@@ -7,4 +7,3 @@ TC_TEST("xxhash") {
 }
 
 TC_NAMESPACE_END
-

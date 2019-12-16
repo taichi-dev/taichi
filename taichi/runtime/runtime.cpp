@@ -3,7 +3,10 @@
 // Generated bitcode will likely get inline for performance.
 
 #include <atomic>
+#if !ARCH_cuda
 #include <mutex>
+#endif
+#include <cstdint>
 #include <cmath>
 #include <cstdlib>
 #include <algorithm>

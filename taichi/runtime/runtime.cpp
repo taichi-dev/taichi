@@ -3,9 +3,6 @@
 // Generated bitcode will likely get inline for performance.
 
 #include <atomic>
-#if !ARCH_cuda
-#include <mutex>
-#endif
 #include <cstdint>
 #include <cmath>
 #include <cstdlib>
@@ -97,8 +94,6 @@ int abs_i32(int a) {
 
 u32 rand_u32() {
   static u32 x = 123456789, y = 362436069, z = 521288629, w = 88675123;
-  static std::mutex mut;
-  std::lock_guard _(mut);
   u32 t = x ^ (x << 11);
   x = y;
   y = z;

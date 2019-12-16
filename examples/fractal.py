@@ -17,7 +17,6 @@ def paint(t: ti.f32):
     while z.norm() < 20 and iterations < 50:
       z = complex_sqr(z) + c
       iterations += 1
-
     pixels[i, j] = 1 - iterations * 0.02
 
 gui = ti.core.GUI("Julia Set", ti.veci(n * 2, n))

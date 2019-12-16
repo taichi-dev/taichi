@@ -190,19 +190,24 @@ class ASTTransformer(ast.NodeTransformer):
   def visit_While(self, node):
     if node.orelse:
       raise TaichiSyntaxError(
-          "'else' clause for 'while' not supported in Taichi kernels")
-    self.generic_visit(node, ['body'])
+        "'else' clause for 'while' not supported in Taichi kernels")
 
     template = ''' 
 if 1:
-  __cond = 0
-  ti.core.begin_frontend_while(ti.Expr(__cond).ptr)
+  ti.core.begin_frontend_while(ti.Expr(1).ptr)
+  __while_cond = 0
+  if __while_cond:
+    pass
+  else:
+    break
   ti.core.pop_scope()
 '''
-    t = ast.parse(template).body[0]
     cond = node.test
-    t.body[0].value = cond
-    t.body = t.body[:2] + node.body + t.body[2:]
+    t = ast.parse(template).body[0]
+    t.body[1].value = cond
+    t.body = t.body[:3] + node.body + t.body[3:]
+
+    self.generic_visit(t, ['body'])
     return ast.copy_location(t, node)
 
   def visit_block(self, list_stmt):

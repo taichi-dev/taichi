@@ -8,7 +8,7 @@ def test_parallel_range_for():
   @ti.kernel
   def fill():
     ti.parallelize(8)
-    ti.block_dim(256)
+    ti.block_dim(8)
     for i in range(n):
       val[i] = i
   
@@ -16,5 +16,3 @@ def test_parallel_range_for():
 
   for i in range(n):
     assert val[i] == i
-
-

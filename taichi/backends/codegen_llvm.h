@@ -1007,8 +1007,57 @@ public:
     // TC_INFO("Kernel function verified.");
   }
 
-  void create_offload_range_for(OffloadedStmt *stmt) {
+  class FunctionCreationGuard {
+  public:
+    CodeGenLLVM *mb;
+    llvm::Function *old_func;
+    llvm::Function *body;
+    llvm::BasicBlock *old_entry, *allocas, *entry;
+    llvm::IRBuilder<>::InsertPoint ip;
 
+    FunctionCreationGuard(CodeGenLLVM *mb, std::vector<llvm::Type *> arguments)
+        : mb(mb) {
+      // Create the loop body function
+      auto body_function_type = llvm::FunctionType::get(
+          llvm::Type::getVoidTy(*mb->llvm_context), arguments, false);
+
+      body = llvm::Function::Create(body_function_type,
+                                    llvm::Function::InternalLinkage,
+                                    "loop_body", mb->module.get());
+      old_func = mb->func;
+      // emit into loop body function
+      mb->func = body;
+
+      allocas = BasicBlock::Create(*mb->llvm_context, "allocs", body);
+      old_entry = mb->entry_block;
+      mb->entry_block = allocas;
+
+      entry = BasicBlock::Create(*mb->llvm_context, "entry", mb->func);
+
+      ip = mb->builder->saveIP();
+      mb->builder->SetInsertPoint(entry);
+
+      auto body_bb =
+          BasicBlock::Create(*mb->llvm_context, "loop_body", mb->func);
+      mb->builder->CreateBr(body_bb);
+      mb->builder->SetInsertPoint(body_bb);
+    }
+
+    ~FunctionCreationGuard() {
+      mb->builder->CreateRetVoid();
+      mb->func = old_func;
+      mb->builder->restoreIP(ip);
+
+      {
+        llvm::IRBuilderBase::InsertPointGuard gurad(*mb->builder);
+        mb->builder->SetInsertPoint(allocas);
+        mb->builder->CreateBr(entry);
+        mb->entry_block = old_entry;
+      }
+    }
+  };
+
+  void create_offload_range_for(OffloadedStmt *stmt) {
     int step = 1;
     if (stmt->reversed) {
       step = -1;
@@ -1017,52 +1066,16 @@ public:
     llvm::Function *body;
 
     {
-      // Create the loop body function
-      auto body_function_type = llvm::FunctionType::get(
-          llvm::Type::getVoidTy(*llvm_context),
-          {
-              llvm::PointerType::get(get_runtime_type("Context"), 0),
-              tlctx->get_data_type<int>(),
-          },
-          false);
-
-      body = llvm::Function::Create(body_function_type,
-                                    llvm::Function::InternalLinkage,
-                                    "loop_body", module.get());
-      auto old_func = func;
-      // emit into loop body function
-      func = body;
-
-      auto allocas = BasicBlock::Create(*llvm_context, "allocs", body);
-      auto old_entry = entry_block;
-      entry_block = allocas;
-
-      auto entry = BasicBlock::Create(*llvm_context, "entry", func);
-
-      auto ip = builder->saveIP();
-      builder->SetInsertPoint(entry);
+      FunctionCreationGuard _(
+          this, {llvm::PointerType::get(get_runtime_type("Context"), 0),
+                 tlctx->get_data_type<int>()});
 
       auto loop_var = create_entry_block_alloca(DataType::i32);
       stmt->loop_vars_llvm.push_back(loop_var);
-
       builder->CreateStore(get_arg(1), loop_var);
-
-      auto body_bb = BasicBlock::Create(*llvm_context, "loop_body", func);
-      builder->CreateBr(body_bb);
-      builder->SetInsertPoint(body_bb);
-
       stmt->body->accept(this);
 
-      builder->CreateRetVoid();
-      func = old_func;
-      builder->restoreIP(ip);
-
-      {
-        llvm::IRBuilderBase::InsertPointGuard gurad(*builder);
-        builder->SetInsertPoint(allocas);
-        builder->CreateBr(entry);
-        entry_block = old_entry;
-      }
+      body = _.body;
     }
 
     create_call("cpu_parallel_range_for",

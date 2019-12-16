@@ -5,6 +5,7 @@
 #include <atomic>
 #include <cmath>
 #include <cstdlib>
+#include <algorithm>
 #include <type_traits>
 
 #define STRUCT_FIELD(S, F)                                                     \

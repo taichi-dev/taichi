@@ -220,13 +220,10 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
   }
 
   void visit(RandStmt *stmt) override {
-    if (stmt->ret_type.data_type == DataType::f32) {
-      stmt->value = create_call("cuda_rand_f32", {get_context()});
-    } else if (stmt->ret_type.data_type == DataType::f64) {
-      stmt->value = create_call("cuda_rand_f64", {get_context()});
-    } else {
-      TC_NOT_IMPLEMENTED;
-    }
+    stmt->value =
+        create_call(fmt::format("cuda_rand_{}",
+                                data_type_short_name(stmt->ret_type.data_type)),
+                    {get_context()});
   }
   void visit(RangeForStmt *for_stmt) override {
     create_naive_range_for(for_stmt);

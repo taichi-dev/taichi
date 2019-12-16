@@ -259,13 +259,8 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   }
 
   void visit(RandStmt *stmt) override {
-    if (stmt->ret_type.data_type == DataType::f32) {
-      stmt->value = create_call("rand_f32");
-    } else if (stmt->ret_type.data_type == DataType::f64) {
-      stmt->value = create_call("rand_f64");
-    } else {
-      TC_NOT_IMPLEMENTED;
-    }
+    stmt->value = create_call(
+        fmt::format("rand_{}", data_type_short_name(stmt->ret_type.data_type)));
   }
 
   virtual void emit_extra_unary(UnaryOpStmt *stmt) {

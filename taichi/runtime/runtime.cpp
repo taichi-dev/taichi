@@ -3,6 +3,7 @@
 // Generated bitcode will likely get inline for performance.
 
 #include <atomic>
+#include <mutex>
 #include <cmath>
 #include <cstdlib>
 #include <algorithm>
@@ -89,12 +90,40 @@ int abs_i32(int a) {
   }
 }
 
-float32 rand_f32() {
-  return rand() * f32(1.0f / (f32(RAND_MAX) + 1));
+#if ARCH_x86_64
+
+u32 rand_u32() {
+  static u32 x = 123456789, y = 362436069, z = 521288629, w = 88675123;
+  static std::mutex mut;
+  std::lock_guard _(mut);
+  u32 t = x ^ (x << 11);
+  x = y;
+  y = z;
+  z = w;
+  return (w = (w ^ (w >> 19)) ^ (t ^ (t >> 8)));
 }
-float64 rand_f64() {
-  return rand() * f64(1.0 / (f64(RAND_MAX) + 1));
+
+u64 rand_u64() {
+  return ((u64)rand_u32() << 32) + rand_u32();
 }
+
+f32 rand_f32() {
+  return rand_u32() * f32(1 / 4294967296.0);
+}
+
+f64 rand_f64() {
+  return rand_f32();
+}
+
+i32 rand_i32() {
+  return rand_u32();
+}
+
+i64 rand_i64() {
+  return rand_u64();
+}
+
+#endif
 
 int max_i32(int a, int b) {
   return a > b ? a : b;
@@ -526,6 +555,8 @@ i32 linear_thread_id() {
   return block_idx() * block_dim() + thread_idx();
 }
 
+#if ARCH_cuda
+
 u32 cuda_rand_u32(Context *context) {
   auto state = &((Runtime *)context->runtime)
                     ->rand_states[linear_thread_id() % max_rand_states];
@@ -547,6 +578,20 @@ uint64 cuda_rand_u64(Context *context) {
 f32 cuda_rand_f32(Context *context) {
   return cuda_rand_u32(context) * (1.0f / 4294967296.0f);
 }
+
+f32 cuda_rand_f64(Context *context) {
+  return cuda_rand_f32(context);
+}
+
+i32 cuda_rand_i32(Context *context) {
+  return cuda_rand_u32(context);
+}
+
+i64 cuda_rand_i64(Context *context) {
+  return cuda_rand_u64(context);
+}
+
+#endif
 
 #include "node_dense.h"
 #include "node_dynamic.h"

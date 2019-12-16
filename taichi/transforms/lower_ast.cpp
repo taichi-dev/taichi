@@ -15,10 +15,14 @@ std::vector<T *> make_raw_pointer_list(
 // Goal: eliminate Expression, Identifiers, and mutable local variables. Make
 // AST SSA.
 class LowerAST : public IRVisitor {
+ private:
+  Stmt *capturing_loop;
+
  public:
   LowerAST() {
     // TODO: change this to false
     allow_undefined_visitor = true;
+    capturing_loop = nullptr;
   }
 
   Expr load_if_ptr(Expr expr) {
@@ -96,10 +100,21 @@ class LowerAST : public IRVisitor {
     throw IRModified();
   }
 
+  void visit(FrontendBreakStmt *stmt) override {
+    TC_ASSERT_INFO(
+        capturing_loop->is<WhileStmt>(),
+        "The loop capturing 'break' must be a while loop instead of for loop.");
+    auto while_stmt = capturing_loop->as<WhileStmt>();
+    VecStatement stmts;
+    auto const_true = stmts.push_back<ConstStmt>(TypedConstant((int32)0));
+    stmts.push_back<WhileControlStmt>(while_stmt->mask, const_true);
+    stmt->parent->replace_with(stmt, stmts);
+    throw IRModified();
+  }
+
   void visit(FrontendWhileStmt *stmt) override {
     // transform into a structure as
     // while (1) { cond; if (no active) break; original body...}
-
     auto cond = stmt->cond;
     VecStatement flattened;
     cond->flatten(flattened);
@@ -131,7 +146,10 @@ class LowerAST : public IRVisitor {
   }
 
   void visit(WhileStmt *stmt) override {
+    auto old_capturing_loop = capturing_loop;
+    capturing_loop = stmt;
     stmt->body->accept(this);
+    capturing_loop = old_capturing_loop;
   }
 
   void visit(FrontendForStmt *stmt) override {
@@ -171,11 +189,17 @@ class LowerAST : public IRVisitor {
   }
 
   void visit(RangeForStmt *for_stmt) override {
+    auto old_capturing_loop = capturing_loop;
+    capturing_loop = for_stmt;
     for_stmt->body->accept(this);
+    capturing_loop = old_capturing_loop;
   }
 
   void visit(StructForStmt *for_stmt) override {
+    auto old_capturing_loop = capturing_loop;
+    capturing_loop = for_stmt;
     for_stmt->body->accept(this);
+    capturing_loop = old_capturing_loop;
   }
 
   void visit(FrontendEvalStmt *stmt) override {

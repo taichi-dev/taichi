@@ -1,6 +1,5 @@
 import taichi as ti
 
-
 @ti.all_archs
 def test_while():
   x = ti.var(ti.f32)
@@ -22,3 +21,23 @@ def test_while():
 
   func()
   assert x[0] == 45
+
+
+@ti.all_archs
+def test_break():
+  ti.cfg.print_ir = True
+  ret = ti.var(ti.i32, shape=())
+
+  @ti.kernel
+  def func():
+    i = 0
+    s = 0
+    while True:
+      s += i
+      i += 1
+      if i > 10:
+        break
+    ret[None] = s
+
+  func()
+  print(ret[None])

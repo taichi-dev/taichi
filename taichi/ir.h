@@ -1911,6 +1911,18 @@ class WhileStmt : public Stmt {
   DEFINE_ACCEPT
 };
 
+class FrontendBreakStmt : public Stmt {
+ public:
+  FrontendBreakStmt() {
+  }
+
+  bool is_container_statement() const override {
+    return false;
+  }
+
+  DEFINE_ACCEPT
+};
+
 class FrontendWhileStmt : public Stmt {
  public:
   Expr cond;

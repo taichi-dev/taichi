@@ -374,9 +374,7 @@ if 1:
     )
 
   def visit_Break(self, node):
-    raise TaichiSyntaxError(
-        '"break" is not yet supported in Taichi kernels. Please walk around by changing loop conditions.'
-    )
+    return self.parse_stmt('ti.core.insert_break_stmt()')
 
   def visit_Continue(self, node):
     raise TaichiSyntaxError(

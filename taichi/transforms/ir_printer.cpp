@@ -42,6 +42,10 @@ class IRPrinter : public IRVisitor {
     current_indent--;
   }
 
+  void visit(FrontendBreakStmt *stmt) override {
+    print("break");
+  }
+
   void visit(FrontendAssignStmt *assign) override {
     print("{} = {}", assign->lhs->serialize(), assign->rhs->serialize());
   }

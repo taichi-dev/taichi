@@ -206,6 +206,10 @@ void export_lang(py::module &m) {
         current_ast_builder().create_scope(if_stmt->false_statements));
   });
 
+  m.def("insert_break_stmt", [&]() {
+    current_ast_builder().insert(Stmt::make<FrontendBreakStmt>());
+  });
+
   m.def("layout", layout);
 
   m.def("get_root", [&]() -> SNode * { return &root; },

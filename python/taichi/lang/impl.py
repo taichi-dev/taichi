@@ -78,6 +78,15 @@ class PyTaichi:
     self.kernels = kernels
     Expr.materialize_layout_callback = self.materialize
 
+  def set_verbose(self, verbose):
+    import taichi as ti
+    if verbose:
+      default_cfg().verbose = True
+      ti.set_logging_level('trace')
+    else:
+      default_cfg().verbose = False
+      ti.set_logging_level('error')
+
   def set_default_fp(self, fp):
     assert fp in [f32, f64]
     self.default_fp = fp
@@ -96,7 +105,8 @@ class PyTaichi:
       for func in self.layout_functions:
         func()
 
-    print("Materializing layout...".format())
+    import taichi as ti
+    ti.info("Materializing layout...".format())
     taichi_lang_core.layout(layout)
     self.materialized = True
     for var in self.global_vars:

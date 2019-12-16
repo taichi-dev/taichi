@@ -393,6 +393,7 @@ CompileConfig::CompileConfig() {
   verbose_kernel_launches = false;
   enable_profiler = false;
   default_gpu_block_dim = 64;
+  verbose = true;
 }
 
 std::string CompileConfig::compiler_name() {

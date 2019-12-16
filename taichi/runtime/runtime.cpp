@@ -344,12 +344,13 @@ Ptr Runtime_initialize(Runtime **runtime_ptr,
                        int num_snodes,
                        uint64_t root_size,
                        int root_id,
-                       void *_vm_allocator) {
+                       void *_vm_allocator, bool verbose) {
   auto vm_allocator = (vm_allocator_type)_vm_allocator;
   *runtime_ptr = (Runtime *)vm_allocator(sizeof(Runtime), 128);
   Runtime *runtime = *runtime_ptr;
   runtime->vm_allocator = vm_allocator;
-  printf("Initializing runtime with %d elements\n", num_snodes);
+  if (verbose)
+    printf("Initializing runtime with %d elements\n", num_snodes);
   for (int i = 0; i < num_snodes; i++) {
     runtime->element_lists[i] =
         (ElementList *)allocate(runtime, sizeof(ElementList));
@@ -377,7 +378,8 @@ Ptr Runtime_initialize(Runtime **runtime_ptr,
       runtime, sizeof(RandState) * max_rand_states, 4096);
   for (int i = 0; i < max_rand_states; i++)
     initialize_rand_state(&runtime->rand_states[i], i);
-  printf("Runtime initialized.\n");
+  if (verbose)
+    printf("Runtime initialized.\n");
   return (Ptr)root_ptr;
 }
 

@@ -62,6 +62,7 @@ void export_lang(py::module &m) {
                      &CompileConfig::default_gpu_block_dim)
       .def_readwrite("verbose_kernel_launches",
                      &CompileConfig::verbose_kernel_launches)
+      .def_readwrite("verbose", &CompileConfig::verbose)
       .def_readwrite("enable_profiler", &CompileConfig::enable_profiler)
       .def_readwrite("gradient_dt", &CompileConfig::gradient_dt);
 

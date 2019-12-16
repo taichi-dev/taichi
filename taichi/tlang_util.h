@@ -338,6 +338,7 @@ struct CompileConfig {
   bool print_kernel_llvm_ir;
   bool verbose_kernel_launches;
   bool enable_profiler;
+  bool verbose;
   DataType gradient_dt;
   std::string extra_flags;
   int default_gpu_block_dim;

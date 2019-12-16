@@ -21,7 +21,6 @@ grid_m = ti.var(dt=ti.f32, shape=(n_grid, n_grid))
 
 ti.cfg.arch = ti.cuda
 
-
 @ti.kernel
 def substep():
   for p in x:

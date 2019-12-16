@@ -171,7 +171,8 @@ class Kernel:
     if self.is_grad:
       grad_suffix = "_grad"
     kernel_name = "{}_{}_{}".format(self.func.__name__, key[1], grad_suffix)
-    print("Compiling kernel {}...".format(kernel_name))
+    import taichi as ti
+    ti.info("Compiling kernel {}...".format(kernel_name))
 
     src = remove_indent(inspect.getsource(self.func))
     tree = ast.parse(src)

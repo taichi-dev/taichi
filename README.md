@@ -29,6 +29,12 @@ python3 -m pip install taichi-nightly-cuda-10-1
 ### High-Performance Computation on Sparse Data Structures [[Paper]](http://taichi.graphics/wp-content/uploads/2019/09/taichi_lang.pdf) [[Video]](https://youtu.be/wKw8LMF3Djo) [[Language Details]](https://github.com/yuanming-hu/taichi/blob/master/python/taichi/README.md) [[Taichi Compiler Developer Installation]](https://taichi.readthedocs.io/en/latest/dev_install.html)
 
 ## [Examples](https://github.com/yuanming-hu/taichi/tree/master/examples)
+## Short-term goals (by the end of Dec 2019)
+- Fully implement the LLVM backend to replace the legacy source-to-source C++/CUDA backend
+  - Dense computation done
+  - Sparse data structures to be implemented
+- Tune the performance of the LLVM backend to match that of the source-to-source backend
+- Language documentation
 ## Updates
 - (Dec  16, 2019) v0.2.6 released.
    - Simplified interaction between `Taichi`, `numpy` and `PyTorch`

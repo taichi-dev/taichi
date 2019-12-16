@@ -121,7 +121,7 @@ def main(debug=False):
     shutil.copy(
         os.path.join(ti.get_repo_directory(), 'build/taichi.h'), './taichi.h')
   elif mode == "doc":
-    os.system('cd docs && sphinx-build -b html . build')
+    os.system('cd {}/docs && sphinx-build -b html . build'.format(ti.get_repo_directory()))
   elif mode == "video":
     files = sorted(os.listdir('.'))
     files = list(filter(lambda x: x.endswith('.png'), files))

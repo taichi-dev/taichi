@@ -8,7 +8,7 @@ The Taichi Programming Language
    overview
 
 .. toctree::
-   :caption: Basic Syntax
+   :caption: Basics
    :maxdepth: 2
 
    tensor_matrix

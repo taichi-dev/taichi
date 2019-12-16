@@ -5,7 +5,7 @@ Sometimes it is helpful to understand the life cycle of a Taichi kernel.
 
 In short, compilation will only happen on the first invocation of the kernel.
 
-The steps are:
+The compilation steps are:
  - Function registration
  - AST transform
  - Template instantiation (if template kernels exist)

@@ -1057,6 +1057,11 @@ public:
     }
   };
 
+  FunctionCreationGuard
+  get_function_creation_gurad(std::vector<llvm::Type *> argument_types) {
+    return FunctionCreationGuard(this, argument_types);
+  }
+
   void create_offload_range_for(OffloadedStmt *stmt) {
     int step = 1;
     if (stmt->reversed) {
@@ -1066,16 +1071,16 @@ public:
     llvm::Function *body;
 
     {
-      FunctionCreationGuard _(
-          this, {llvm::PointerType::get(get_runtime_type("Context"), 0),
-                 tlctx->get_data_type<int>()});
+      auto guard = get_function_creation_gurad(
+          {llvm::PointerType::get(get_runtime_type("Context"), 0),
+           tlctx->get_data_type<int>()});
 
       auto loop_var = create_entry_block_alloca(DataType::i32);
       stmt->loop_vars_llvm.push_back(loop_var);
       builder->CreateStore(get_arg(1), loop_var);
       stmt->body->accept(this);
 
-      body = _.body;
+      body = guard.body;
     }
 
     create_call("cpu_parallel_range_for",
@@ -1090,31 +1095,18 @@ public:
     auto leaf_block = stmt->snode->parent;
     {
       // Create the loop body function
-      auto body_function_type = llvm::FunctionType::get(
-          llvm::Type::getVoidTy(*llvm_context),
-          {
-              llvm::PointerType::get(get_runtime_type("Context"), 0),
-              llvm::PointerType::get(get_runtime_type("Element"), 0),
-              tlctx->get_data_type<int>(),
-              tlctx->get_data_type<int>(),
-          },
-          false);
+      auto guard = get_function_creation_gurad({
+          llvm::PointerType::get(get_runtime_type("Context"), 0),
+          llvm::PointerType::get(get_runtime_type("Element"), 0),
+          tlctx->get_data_type<int>(),
+          tlctx->get_data_type<int>(),
+      });
 
-      body = llvm::Function::Create(body_function_type,
-                                    llvm::Function::InternalLinkage,
-                                    "loop_body", module.get());
-      auto old_func = func;
-      // emit into loop body function
-      func = body;
+      body = guard.body;
 
-      auto allocas = BasicBlock::Create(*llvm_context, "allocs", body);
-      auto old_entry = entry_block;
-      entry_block = allocas;
-
-      auto entry = BasicBlock::Create(*llvm_context, "entry", func);
-
-      auto ip = builder->saveIP();
-      builder->SetInsertPoint(entry);
+      auto body_bb = BasicBlock::Create(*llvm_context, "loop_body", func);
+      builder->CreateBr(body_bb);
+      builder->SetInsertPoint(body_bb);
 
       // per-leaf-block for loop
       auto loop_index =
@@ -1136,11 +1128,7 @@ public:
         builder->CreateStore(lower_bound, loop_index);
       }
 
-      auto body_bb = BasicBlock::Create(*llvm_context, "loop_body", func);
-      builder->CreateBr(body_bb);
-      builder->SetInsertPoint(body_bb);
       // initialize the coordinates
-
       auto refine =
           get_runtime_function(leaf_block->refine_coordinates_func_name());
       auto new_coordinates = create_entry_block_alloca(physical_coordinate_ty);
@@ -1196,18 +1184,7 @@ public:
 
       BasicBlock *after_loop = BasicBlock::Create(*llvm_context, "block", func);
       builder->CreateCondBr(cond, body_bb, after_loop);
-
       builder->SetInsertPoint(after_loop);
-      builder->CreateRetVoid();
-      func = old_func;
-      builder->restoreIP(ip);
-
-      {
-        llvm::IRBuilderBase::InsertPointGuard gurad(*builder);
-        builder->SetInsertPoint(allocas);
-        builder->CreateBr(entry);
-        entry_block = old_entry;
-      }
     }
 
     int num_splits = leaf_block->max_num_elements() / stmt->block_dim;

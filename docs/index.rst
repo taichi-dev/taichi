@@ -11,35 +11,32 @@ The Taichi Programming Language
    :caption: Basics
    :maxdepth: 2
 
-   tensor_matrix
-
    syntax
 
    type
 
    linalg
 
+   tensor_matrix
+
 .. toctree::
    :caption: Advanced Programming
    :maxdepth: 2
-
-   compilation
 
    meta
 
    performance
 
-.. toctree::
-   :caption: Utilities
-   :maxdepth: 2
-   
-   utilities
+   sparse
+
+   compilation
 
 
 .. toctree::
    :caption: Miscellaneous
    :maxdepth: 2
 
+   utilities
    dev_install
    contributor_guide
    acknowledgments

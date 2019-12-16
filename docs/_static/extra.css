@@ -1,3 +1,7 @@
 div .highlight {
     background-color: #F8F8FF;
 }
+
+.docutils.literal.notranslate > span {
+    color: #323242;
+}

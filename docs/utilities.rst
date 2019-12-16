@@ -1,6 +1,8 @@
 Utilities
 ==================================
 
+TODO: update
+
 Logging
 ----------------------------------
 
@@ -20,19 +22,15 @@ Logging
 
 
 Trigger GDB when the program crashes:
+--------------------------------------
 
-Python:
+.. code-block::
 
-.. code-block:: python
+  # Python
+  ti.set_gdb_trigger(True)
 
-    set_gdb_trigger(on=True)
-
-
-C++:
-
-.. code-block:: C++
-
-    CoreState::set_trigger_gdb_when_crash(true);
+  // C++
+  CoreState::set_trigger_gdb_when_crash(true);
 
 Interface System
 ---------------------------------
@@ -85,7 +83,7 @@ You can use ``TC_IO`` macros to explicit define fields necessary in Taichi.
 Progress Notification
 ----------------------------------
 
-The taichi messager can send an email to $TC_MONITOR_EMAIL when the task finished or crashed.
+The taichi messager can send an email to ``$TC_MONITOR_EMAIL`` when the task finished or crashed.
 To enable:
 
 .. code-block:: python

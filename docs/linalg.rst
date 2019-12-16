@@ -11,13 +11,13 @@ Matrices
 - ``ti.transposed(A)``
 - ``ti.inverse(A)``
 - ``ti.Matrix.abs(A)``
-- ``ti.Matrix.trace(A)``
+- ``ti.trace(A)``
 - ``ti.determinant(A, type)``
-- ``ti.Matrix.cast(A, type)``
+- ``A.cast(type)``
 
 Vectors
 ---------------------------------------
 Vectors are special matrices with only 1 column. In fact, ``ti.Vector`` is just an alias of ``ti.Matrix``.
 
-- Dot product: ``a.dot(b)``, where `a` and `b` are vectors. ``ti.transposed(a) @ b`` will give you a `matrix` of size 1x1, which is not a `scalar`.
-- ``ti.outer_product(a, b)``
+- Dot product: ``a.dot(b)``, where ``a`` and ``b`` are vectors. ``ti.transposed(a) @ b`` will give you a ``matrix`` of size ``1x1``, which is not a `scalar`.
+- Outer product: ``ti.outer_product(a, b)``

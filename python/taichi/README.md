@@ -180,7 +180,7 @@ for i in range(0, 16, step 1) {
  - The user should make sure `grad` tensors have the same sparsity as the corresponding `primal` tensors.
  - Reset gradients every time.
 
-# Multi-Stage Programming
+# Compile-time evaulations
  - Use `ti.static` for compile-time branching (For those who come from C++17, this is [`if constexpr`](https://en.cppreference.com/w/cpp/language/if).)
 ```python
 enable_projection = True

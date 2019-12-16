@@ -46,9 +46,12 @@ parallelize = core.parallelize
 vectorize = core.vectorize
 block_dim = core.block_dim
 cache = core.cache
+
 transposed = Matrix.transposed
 polar_decompose = Matrix.polar_decompose
 determinant = Matrix.determinant
+trace = Matrix.trace
+
 set_default_fp = pytaichi.set_default_fp
 
 

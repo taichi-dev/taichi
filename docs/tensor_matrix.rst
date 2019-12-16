@@ -32,6 +32,10 @@ Matrix size
 For performance reasons matrix operations will be unrolled, therefore we suggest using only small matrices.
 For example, ``2x1``, ``3x3``, ``4x4`` matrices are fine, yet ``32x6`` is probably too big as a matrix size.
 
+.. warning::
+
+  Due to the unrolling mechanisms, operating on large matrices (e.g. ``32x128``) can lead to long compilation time and low performance.
+
 If you have a dimension that is too large (e.g. ``64``), it's better to declare a tensor of size ``64``.
 E.g., instead of declaring ``ti.Matrix(64, 32, dt=ti.f32, shape=(3, 2))``, declare ``ti.Matrix(3, 2, dt=ti.f32, shape=(64, 32))``.
 Try to put large dimensions to tensors instead of matrices.

@@ -29,8 +29,7 @@ Template Instantiation
     @ti.kernel
     def
 
-Template instantiation is lazy. Common use cases are
- -
+Template instantiation is lazy. Common use cases are...
 
 
 AST Lowering

@@ -1,7 +1,7 @@
 Hello, world!
 ===============================================
 
-We introduce the Taichi programming language through this very basic example.
+We introduce the Taichi programming language through a very basic `fractal` example.
 
 If you haven't done so, please install Taichi via ``pip``.
 Depending on your hardware and OS, please execute one of the following commands.
@@ -18,6 +18,8 @@ Depending on your hardware and OS, please execute one of the following commands.
   python3 -m pip install taichi-nightly-cuda-10-1
 
 Now you are ready to use Taichi.
+
+TODO: explain what a Julia set is.
 
 .. code-block:: python
 

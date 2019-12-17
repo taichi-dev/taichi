@@ -16,23 +16,31 @@ The compilation steps are: TODO: update
 Let's consider the following simple kernel:
 
 .. code-block:: python
+  x = ti.var(dt=ti.f32, shape=128)
+  y = ti.var(dt=ti.f32, shape=16)
 
   @ti.kernel
   def add(tensor: ti.template(), delta: ti.i32):
     for i in tensor:
       tensor[i] += delta
 
-Kernel Registration
+Kernel registration
 ---------------------------------------
-When the function definition script is executed, the ``ti.kernel`` decorator registers the kernel.
+When the ``ti.kernel`` decorator is executed, a kernel named ``add`` is registered. Specifically, the
+Python Abstract Syntax Tree (AST) of the ``add`` function will be memorized.
+No compilation will happen until the first invocation of ``add``:
 
-Python Abstract Syntax Tree (AST) Transform
----------------------------------------
-The first time the registered function is called, an AST transformer will transform the kernel body
-into a Python script, which, when executed, emits a Taichi frontend AST.
+.. code-block:: python
 
-Template Instantiation
+  add(x, 42)
+
+When ``add`` is called for the first time, the Taichi frontend compiler will transform
+the Python (AST) of ``add`` into a Taichi AST, or the Taichi frontend intermediate representation (FIR).
+
+
+Template instantiation and caching
 ---------------------------------------
+
 .. code-block:: python
 
     @ti.kernel
@@ -40,18 +48,48 @@ Template Instantiation
 
 Template instantiation is lazy. Common use cases are...
 
-Template signatures
----------------------
+.. code-block:: python
 
-AST Lowering
+  add(x, 1)
+
+.. note::
+  **Template signatures** are what distinguishes different instantiations of a same kernel.
+  The signature of ``add(x, 42)`` is ``(x, ti.i32)``, which is the same as ``add(x, 1)``.
+  The signature of ``add(y, 42)`` is ``(y, ti.i32)``, a different value from the previous signature, therefore a new instantiation will be created.
+
+.. note::
+
+  Many basic operations in the Taichi standard library is implemented using Taichi kernels for performance,
+  with more or less metaprogramming tricks. Invoking them will incur **implicit kernel instantiations**
+
+  Examples include ``x.to_numpy()`` and ``y.from_torch(torch_tensor)``. When you invoke these functions,
+  you will see kernel instantiations, as Taichi kernels will be generated to offload the hard work to multiple CPU cores/GPUs.
+
+  As mentioned before, the second time you call the same operation, the cached compiled kernel will be reused and no further compilation is needed.
+
+Code transformation and optimizations
 -----------------------------------------
 
-Taichi IR Optimization
------------------------------------------
-Access optimization etc
+The first time the registered function is called, an AST transformer will transform the kernel body
+into a Python script, which, when executed, emits a Taichi frontend AST.
 
+The Taichi AST lowering pass translates Taichi frontend IR into hierarchical static single assignment (SSA) IR,
+which allows a series of further IR passes to happen, such as
 
-The Just-in-Time Compilation Engine
+ - Loop vectorization
+ - Type inference and checking
+ - General simplifications such as common subexpression elimination (CSE), dead instruction elimination (DIE), constant folding, and store forwarding
+ - Access lowering
+ - Data access optimizations
+ - Reverse-mode automatic differentiation (if using differentiable programming)
+ - Parallelization and offloading
+ - Atomic operation demotion
+
+The just-in-time (JIT) compilation engine
 ---------------------------------------
-Finally, the optimized IR is fed into LLVM to generate executable CPU/GPU programs.
 
+Finally, the optimized SSA IR is fed into the LLVM IR codegen, and LLVM JIT generates high-performance executable CPU/GPU programs.
+
+Kernel launching
+----------------
+Taichi kernels will be ultimately launched as multi-threaded CPU tasks or CUDA kernels.

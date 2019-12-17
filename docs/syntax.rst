@@ -13,44 +13,48 @@ Kernel arguments must be type-hinted. Kernels can have at most 8 parameters, e.g
     def print_xy(x: ti.i32, y: ti.f32):
       print(x + y)
 
+    @ti.kernel
+    def copy(x: ti.template(), y: ti.template()):
+      for i in x:
+        y[i] = x[i]
+
 * Restart the Taichi runtime system (clear memory, destroy all variables and kernels): ``ti.reset()``
-* Right now kernels can have either statements or at most one for loop.
+* For differentiable programming kernels should better have either serial statements or a single parallel for-loop. If you don't use differentiable programming, feel free to ignore this tip.
 
 .. code-block:: python
 
-    # Good kernels
-    @ti.kernel
-    def print(x: ti.i32, y: ti.f32):
-      print(x + y)
-      print(x * y)
 
     @ti.kernel
-    def copy():
+    def a_hard_kernel_to_auto_differentiate():
+      sum = 0
       for i in x:
-        y[i] = x[i]
+        sum += x[i]
+      for i in y:
+        y[i] = sum
 
-Bad kernels won't compile correctly.
-Compiler support coming soon. Please split them into two kernels for now.
-For example:
+    # instead, split it into multiple kernels to be nice to the Taichi autodiff compiler:
 
-.. code-block:: python
-
-    # Bad kernel 1
     @ti.kernel
-    def print():
-      print(x[0])
+    def reduce():
       for i in x:
-        y[i] = x[i]
+        sum[None] += x[i]
 
-    # Bad kernel 2
     @ti.kernel
-    def print():
-      for i in x:
-        y[i] = x[i]
-      for i in x:
-        z[i] = x[i]
+    def assign()
+      for i in y:
+        y[i] = sum[None]
 
-`Taichi`-scope (`ti.kernel`) v.s. `Python`-scope: everything decorated by `ti.kernel` is in `Taichi`-scope, which will be compiled by the Taichi compiler.
+    def main():
+      with ti.Tape(loss):
+        ...
+        sum[None] = 0
+        reduce()
+        assign()
+        ...
+
+
+.. note::
+    **Taichi-scope v.s. Python-scope**: everything decorated by ``ti.kernel`` and ``ti.func`` is in Taichi-scope, which will be compiled by the Taichi compiler. Code outside Taichi-scopes are just normal Python code.
 
 Functions
 -----------------------------------------------
@@ -76,27 +80,29 @@ Use ``@ti.func`` to decorate your Taichi functions. These functions are callable
                         t - 2, i, j] - c * alpha * dt * laplacian_p
 
 
-Functions with multiple return values are not supported now. Use a local variable instead:
+.. warning::
 
-.. code-block:: python
+    Functions with multiple return values are not supported for now. Use a **local** variable to store the results instead:
 
-  # Bad function
-  @ti.func
-  def safe_sqrt(x):
-    if x >= 0:
-      return ti.sqrt(x)
-    else:
-      return 0.0
+    .. code-block:: python
 
-  # Good function
-  @ti.func
-  def safe_sqrt(x):
-    rst = 0.0
-    if x >= 0:
-      rst = ti.sqrt(x)
-    else:
-      rst = 0.0
-    return rst
+      # Bad function
+      @ti.func
+      def safe_sqrt(x):
+        if x >= 0:
+          return ti.sqrt(x)
+        else:
+          return 0.0
+
+      # Good function
+      @ti.func
+      def safe_sqrt(x):
+        rst = 0.0
+        if x >= 0:
+          rst = ti.sqrt(x)
+        else:
+          rst = 0.0
+        return rst
 
 
 Data layout
@@ -128,7 +134,7 @@ Supported scalar functions:
 Debugging
 -------------------------------------------
 
-Debug your program with `print(x)`.
+Debug your program with ``print(x)``.
 
 
 Why Python frontend

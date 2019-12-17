@@ -1,6 +1,6 @@
 <div align="center">
   <img width="500px" src="https://github.com/yuanming-hu/taichi/raw/master/misc/logo.png">
-  <h3> | <a href="https://taichi.readthedocs.io/en/latest/"> Documentation </a> | <a href="https://taichi.readthedocs.io/en/latest/hello.html"> Tutorial </a> | <a href="https://github.com/yuanming-hu/taichi/tree/master/examples"> Examples </a> | <a href="https://github.com/yuanming-hu/taichi/tree/master/misc#faq"> FAQ </a> | <a href="https://forum.taichi.graphics/"> Forum </a> | </h3>
+  <h3> <a href="https://taichi.readthedocs.io/en/latest/"> Documentation </a> | <a href="https://taichi.readthedocs.io/en/latest/hello.html"> Tutorial </a> | <a href="https://github.com/yuanming-hu/taichi/tree/master/examples"> Examples </a> | <a href="https://github.com/yuanming-hu/taichi/tree/master/misc#faq"> FAQ </a> | <a href="https://forum.taichi.graphics/"> Forum </a> </h3>
 </div>        
 
 | **Documentation** | **Chat** | taichi-nightly | taichi-nightly-cuda-10-0 | taichi-nightly-cuda-10-1 |
@@ -32,6 +32,11 @@ python3 -m pip install taichi-nightly-cuda-10-1
 - Tune the performance of the LLVM backend to match that of the legacy source-to-source backends
 - Language documentation
 ## Updates
+- (Dec  17, 2019) v0.3.1 released.
+   - Removed dependency on `glibc 2.27`
+- (Dec  17, 2019) v0.3.0 released.
+   - `break` statements supported in while loops
+   - CPU multithreading enabled by default
 - (Dec  16, 2019) v0.2.6 released.
    - `ti.GUI.set_image(np.ndarray/Taichi tensor)`
    - Inplace adds are *atomic* by default. E.g., `x[i] += j` is equivalent to `ti.atomic_add(x[i], j)`

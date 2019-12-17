@@ -26,18 +26,18 @@ python3 -m pip install taichi-nightly-cuda-10-1
 |**Build**|[![Build Status](http://f11.csail.mit.edu:8080/job/taichi/badge/icon)](http://f11.csail.mit.edu:8080/job/taichi/)|[![Build Status](https://travis-ci.com/yuanming-hu/taichi.svg?branch=master)](https://travis-ci.com/yuanming-hu/taichi) | [![Build Status](https://ci.appveyor.com/api/projects/status/github/yuanming-hu/taichi?branch=master&svg=true)](https://ci.appveyor.com/project/IteratorAdvance/taichi) |
 |**PyPI**|[![Build Status](https://travis-ci.com/yuanming-hu/taichi-wheels-test.svg?branch=master)](https://travis-ci.com/yuanming-hu/taichi-wheels-test)|[![Build Status](https://travis-ci.com/yuanming-hu/taichi-wheels-test.svg?branch=master)](https://travis-ci.com/yuanming-hu/taichi-wheels-test)|[![Build status](https://ci.appveyor.com/api/projects/status/39ar9wa8yd49je7o?svg=true)](https://ci.appveyor.com/project/IteratorAdvance/taichi-wheels-test)|
 
-### High-Performance Computation on Sparse Data Structures [[Paper]](http://taichi.graphics/wp-content/uploads/2019/09/taichi_lang.pdf) [[Video]](https://youtu.be/wKw8LMF3Djo) [[Language Details]](https://github.com/yuanming-hu/taichi/blob/master/python/taichi/README.md) [[Taichi Compiler Developer Installation]](https://taichi.readthedocs.io/en/latest/dev_install.html)
+### [Tutorial](https://taichi.readthedocs.io/en/latest/hello.html) and [Examples](https://github.com/yuanming-hu/taichi/tree/master/examples)
 
-## [Examples](https://github.com/yuanming-hu/taichi/tree/master/examples)
+**High-Performance Computation on Sparse Data Structures** [[Paper]](http://taichi.graphics/wp-content/uploads/2019/09/taichi_lang.pdf) [[Video]](https://youtu.be/wKw8LMF3Djo) [[Language Details]](https://github.com/yuanming-hu/taichi/blob/master/python/taichi/README.md) [[Taichi Compiler Developer Installation]](https://taichi.readthedocs.io/en/latest/dev_install.html)
+
 ## Short-term goals (by the end of Dec 2019)
-- Fully implement the LLVM backend to replace the legacy source-to-source C++/CUDA backend
+- Fully implement the LLVM backend to replace the legacy source-to-source C++/CUDA backends
   - Dense computation done
   - Sparse data structures to be implemented
-- Tune the performance of the LLVM backend to match that of the source-to-source backend
+- Tune the performance of the LLVM backend to match that of the legacy source-to-source backends
 - Language documentation
 ## Updates
 - (Dec  16, 2019) v0.2.6 released.
-   - Simplified interaction between `Taichi`, `numpy` and `PyTorch`
    - `ti.GUI.set_image(nparray or Taichi tensor)`
    - Inplace adds are *atomic* by default. E.g., `x[i] += j` is equivalent to `ti.atomic_add(x[i], j)`
    - `ti.func` arguments are forced to pass by value

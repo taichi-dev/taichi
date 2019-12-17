@@ -149,7 +149,7 @@ class DecoratorRecorder {
 
   void reset() {
     vectorize = -1;
-    parallelize = 1;
+    parallelize = 0;
     uniform = false;
     scratch_opt.clear();
     block_dim = 0;
@@ -2137,7 +2137,7 @@ inline void CacheL1(const Expr &var) {
 }
 
 inline void BlockDim(int v) {
-  TC_ASSERT(bit::is_power_of_two(v) && v <= max_gpu_block_dim);
+  TC_ASSERT(bit::is_power_of_two(v));
   dec.block_dim = v;
 }
 

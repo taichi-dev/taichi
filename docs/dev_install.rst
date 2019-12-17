@@ -1,4 +1,4 @@
-Developer Installation
+Developer installation
 =====================================================
 
 Note this is for the compiler developers of Taichi lang. End users should use the pip packages instead of building from scratch.

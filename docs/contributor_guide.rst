@@ -1,4 +1,4 @@
-Contributor Guide
+Contributor guide
 ===============================================
 
 Naming

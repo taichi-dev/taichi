@@ -2,7 +2,7 @@
 // Intermediate representations
 
 #include "ir.h"
-
+#include <thread>
 #include <numeric>
 #include "tlang.h"
 
@@ -210,8 +210,12 @@ FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
   if (get_current_program().config.arch == Arch::gpu) {
     vectorize = 1;
     parallelize = 1;
+    TC_ASSERT(block_dim <= max_gpu_block_dim);
   } else {
-    block_dim = 1;
+    if (block_dim == 0)
+      block_dim = 128;  // default cpu block dim
+    if (parallelize == 0)
+      parallelize = std::thread::hardware_concurrency();
   }
   scratch_opt = dec.scratch_opt;
   dec.reset();

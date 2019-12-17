@@ -540,6 +540,24 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     builder->SetInsertPoint(after_if);
   }
 
+  llvm::Value *create_print(std::string tag, DataType dt, llvm::Value *value) {
+    std::vector<Value *> args;
+    std::string format;
+    if (dt == DataType::i32) {
+      format = "%d";
+    } else if (dt == DataType::f32) {
+      format = "%f";
+      value = builder->CreateFPExt(value, tlctx->get_data_type(DataType::f64));
+    } else {
+      TC_NOT_IMPLEMENTED
+    }
+    args.push_back(builder->CreateGlobalStringPtr(
+        ("[llvm codegen debug] " + tag + " = " + format + "\n").c_str(),
+        "format_string"));
+    args.push_back(value);
+    builder->CreateCall(get_runtime_function("printf"), args, "debug_printf");
+  }
+
   void visit(PrintStmt *stmt) override {
     TC_ASSERT(stmt->width() == 1);
     std::vector<Value *> args;
@@ -1186,6 +1204,8 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       } else {
         create_increment(loop_index, tlctx->get_constant(1));
       }
+
+      create_print("loop_var", DataType::i32, builder->CreateLoad(loop_index));
 
       auto cond =
           builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_SLT,

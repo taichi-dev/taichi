@@ -5,3 +5,8 @@ div .highlight {
 .docutils.literal.notranslate > span {
     color: #323242;
 }
+
+code.docutils.literal.notranslate {
+    border-style: none !important;
+    background-color: #EEEEEE !important;
+}

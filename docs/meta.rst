@@ -11,18 +11,24 @@ Taichi provides metaprogramming infrastructures. Metaprogramming can
 * Lazily instantiated
 * Compile-time evaluation
 
-Grouped indexing
-------------------------------------------
-
-Dimensionality-independent programming
+Dimensionality-independent programming using grouped indices
+--------------------------------------------------------------
 
 .. code-block:: python
 
-  @ti.func
+  @ti.kernel
   def copy(x: ti.template(), y: ti.template()):
     for I in ti.grouped(y):
       x[I] = y[I]
 
+  @ti.kernel
+  def array_op(x: ti.template(), y: ti.template()):
+    # If tensor x is 2D
+    for I in ti.grouped(x): # I is a vector of size x.dim() and data type i32
+      y[I + ti.Vector([0, 1])] = I[0] + I[1]
+    # is equivalent to
+    for i, j in x:
+      y[i, j + 1] = i + j
 
 Tensor size reflection
 ------------------------------------------

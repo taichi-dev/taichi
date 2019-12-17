@@ -5,15 +5,24 @@ Sometimes it is helpful to understand the life cycle of a Taichi kernel.
 
 In short, compilation will only happen on the first invocation of the kernel.
 
-The compilation steps are:
+The compilation steps are: TODO: update
+
  - Function registration
  - AST transform
  - Template instantiation (if template kernels exist)
  - Taichi IR compilation and optimization and offloading
  - Kernel launching
 
+Let's consider the following simple kernel:
 
-Function Registration
+.. code-block:: python
+
+  @ti.kernel
+  def add(tensor: ti.template(), delta: ti.i32):
+    for i in tensor:
+      tensor[i] += delta
+
+Kernel Registration
 ---------------------------------------
 When the function definition script is executed, the ``ti.kernel`` decorator registers the kernel.
 
@@ -31,6 +40,8 @@ Template Instantiation
 
 Template instantiation is lazy. Common use cases are...
 
+Template signatures
+---------------------
 
 AST Lowering
 -----------------------------------------

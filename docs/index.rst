@@ -3,13 +3,13 @@ The Taichi Programming Language
 
 .. toctree::
    :caption: Overview
-   :maxdepth: 2
+   :maxdepth: 3
 
    overview
 
 .. toctree::
-   :caption: Basics
-   :maxdepth: 2
+   :caption: Basic Concepts
+   :maxdepth: 3
 
    hello
 
@@ -23,9 +23,11 @@ The Taichi Programming Language
 
 .. toctree::
    :caption: Advanced Programming
-   :maxdepth: 2
+   :maxdepth: 3
 
    meta
+
+   data_layout
 
    performance
 
@@ -33,12 +35,14 @@ The Taichi Programming Language
 
    differentiable_programming
 
+   odop
+
    compilation
 
 
 .. toctree::
    :caption: Miscellaneous
-   :maxdepth: 2
+   :maxdepth: 3
 
    utilities
    dev_install
@@ -47,6 +51,6 @@ The Taichi Programming Language
 
 .. toctree::
    :caption: Legacy
-   :maxdepth: 2
+   :maxdepth: 3
 
    installation

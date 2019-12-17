@@ -102,7 +102,7 @@ Functions with multiple return values are not supported now. Use a local variabl
 Data layout
 -------------------
 Non-power-of-two tensor dimensions are promoted into powers of two and thus these tensors will occupy more virtual address space.
-For example, a tensor of size `(18, 65)` will be materialized as `(32, 128)`.
+For example, a tensor of size ``(18, 65)`` will be materialized as ``(32, 128)``.
 
 
 Scalar arithmetics

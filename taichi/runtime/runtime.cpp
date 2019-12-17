@@ -463,7 +463,7 @@ void block_helper(void *ctx_, int i) {
   int element_id = i / ctx->element_split;
   int part_size = ctx->element_size / ctx->element_split;
   int part_id = i % ctx->element_split;
-  printf("%d %d %d\n", element_id, part_size, part_id);
+  // printf("%d %d %d\n", element_id, part_size, part_id);
   (*ctx->task)(ctx->context, &ctx->list[element_id], part_id * part_size,
                (part_id + 1) * part_size);
 }
@@ -496,7 +496,7 @@ void for_each_block(Context *context,
   ctx.list = list->elements;
   ctx.element_size = element_size;
   ctx.element_split = element_split;
-  printf("size %d spilt %d tail %d\n", ctx.element_size, ctx.element_split, list_tail);
+  // printf("size %d spilt %d tail %d\n", ctx.element_size, ctx.element_split, list_tail);
   auto runtime = (Runtime *)context->runtime;
   runtime->parallel_for(runtime->thread_pool, list_tail * element_split,
                         num_threads, &ctx, block_helper);

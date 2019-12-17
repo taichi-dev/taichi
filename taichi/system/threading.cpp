@@ -97,7 +97,6 @@ void ThreadPool::target() {
   {
     std::lock_guard<std::mutex> lock(mutex);
     thread_id = thread_counter++;
-    TC_P(thread_id);
   }
   while (true) {
     {
@@ -126,7 +125,6 @@ void ThreadPool::target() {
           break;
         task_head++;
       }
-      TC_P(task_id);
       func(context, task_id);
     }
 

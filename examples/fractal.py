@@ -9,7 +9,6 @@ def complex_sqr(z):
 
 @ti.kernel
 def paint(t: ti.f32):
-  ti.block_dim(1)
   for i, j in pixels: # Parallized over all pixels
     c = ti.Vector([-0.8, ti.sin(t) * 0.2])
     z = ti.Vector([float(i) / n - 1, float(j) / n - 0.5]) * 2

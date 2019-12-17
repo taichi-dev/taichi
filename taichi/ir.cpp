@@ -191,7 +191,10 @@ FrontendForStmt::FrontendForStmt(const Expr &loop_var,
     vectorize = 1;
     parallelize = 1;
   } else {
-    block_dim = 1;
+    if (block_dim == 0)
+      block_dim = 128;  // default cpu block dim
+    if (parallelize == 0)
+      parallelize = std::thread::hardware_concurrency();
   }
   scratch_opt = dec.scratch_opt;
   dec.reset();
@@ -212,6 +215,7 @@ FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
     parallelize = 1;
     TC_ASSERT(block_dim <= max_gpu_block_dim);
   } else {
+    // cpu
     if (block_dim == 0)
       block_dim = 128;  // default cpu block dim
     if (parallelize == 0)

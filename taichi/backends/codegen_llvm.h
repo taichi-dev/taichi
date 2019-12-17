@@ -555,7 +555,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
         ("[llvm codegen debug] " + tag + " = " + format + "\n").c_str(),
         "format_string"));
     args.push_back(value);
-    builder->CreateCall(get_runtime_function("printf"), args, "debug_printf");
+    return builder->CreateCall(get_runtime_function("printf"), args, "debug_printf");
   }
 
   void visit(PrintStmt *stmt) override {
@@ -1131,10 +1131,6 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
 
       body = guard.body;
 
-      auto body_bb = BasicBlock::Create(*llvm_context, "loop_body", func);
-      builder->CreateBr(body_bb);
-      builder->SetInsertPoint(body_bb);
-
       // per-leaf-block for loop
       auto loop_index =
           create_entry_block_alloca(Type::getInt32Ty(*llvm_context));
@@ -1143,6 +1139,8 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
 
       auto lower_bound = get_arg(2);
       auto upper_bound = get_arg(3);
+      // create_print("lower", DataType::i32, lower_bound);
+      // create_print("upper", DataType::i32, upper_bound);
 
       if (spmd) {
         threadIdx = builder->CreateIntrinsic(
@@ -1154,6 +1152,10 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       } else {
         builder->CreateStore(lower_bound, loop_index);
       }
+
+      auto body_bb = BasicBlock::Create(*llvm_context, "loop_body", func);
+      builder->CreateBr(body_bb);
+      builder->SetInsertPoint(body_bb);
 
       // initialize the coordinates
       auto refine =
@@ -1204,8 +1206,6 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       } else {
         create_increment(loop_index, tlctx->get_constant(1));
       }
-
-      create_print("loop_var", DataType::i32, builder->CreateLoad(loop_index));
 
       auto cond =
           builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_SLT,

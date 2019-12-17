@@ -43,6 +43,7 @@ def cache_l1(v):
 
 
 parallelize = core.parallelize
+serialize = lambda: parallelize(1)
 vectorize = core.vectorize
 block_dim = core.block_dim
 cache = core.cache

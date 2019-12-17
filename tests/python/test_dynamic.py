@@ -34,6 +34,7 @@ def test_dynamic2():
 
   @ti.kernel
   def func():
+    ti.serialize()
     for i in range(n):
       x[i] = i
 
@@ -57,6 +58,7 @@ def test_dynamic_matrix():
 
   @ti.kernel
   def func():
+    ti.serialize()
     for i in range(n // 4):
       x[i * 4][1, 0] = i
 

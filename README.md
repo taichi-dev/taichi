@@ -38,14 +38,14 @@ python3 -m pip install taichi-nightly-cuda-10-1
 - Language documentation
 ## Updates
 - (Dec  16, 2019) v0.2.6 released.
-   - `ti.GUI.set_image(nparray or Taichi tensor)`
+   - `ti.GUI.set_image(np.ndarray/Taichi tensor)`
    - Inplace adds are *atomic* by default. E.g., `x[i] += j` is equivalent to `ti.atomic_add(x[i], j)`
    - `ti.func` arguments are forced to pass by value
    - `min/max` can now take more than two arguments, e.g. `max(a, b, c, d)`
-   - Matrix operators `transposed`, `trace`, `polar_decompose`, `determinant`, promoted to `ti` scope. I.e., users can now use `ti.transposed(M)` instead of `ti.Matrix.transposed(M)`
+   - Matrix operators `transposed`, `trace`, `polar_decompose`, `determinant` promoted to `ti` scope. I.e., users can now use `ti.transposed(M)` instead of `ti.Matrix.transposed(M)`
    - `ti.get_runtime().set_verbose(False)` to eliminate verbose outputs
    - LLVM backend now supports multithreading on CPUs
-   - LLVM backend now supports random number generators (supported types = `ti.i32`, `ti.i64`, `ti.f32`, `ti.f64`)
+   - LLVM backend now supports random number generators (`ti.random(ti.i32/i64/f32/f64`)
 - (Dec  5, 2019) v0.2.3 released.
    - Simplified interaction between `Taichi`, `numpy` and `PyTorch`
      - `taichi_scalar_tensor.to_numpy()/from_numpy(numpy_array)`

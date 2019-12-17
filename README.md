@@ -35,6 +35,7 @@ python3 -m pip install taichi-nightly-cuda-10-1
 - (Dec  17, 2019) v0.3.1 released.
    - Removed dependency on `glibc 2.27`
 - (Dec  17, 2019) v0.3.0 released.
+   - Documentation significantly improved
    - `break` statements supported in while loops
    - CPU multithreading enabled by default
 - (Dec  16, 2019) v0.2.6 released.

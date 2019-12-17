@@ -1,7 +1,8 @@
 Tensors and matrices
 ==========================
 
-Tensors are global variables provided by Taichi. Tensors can be either sparse or dense. A element of a tensor can be either a scalar, or a vector/matrix.
+Tensors are global variables provided by Taichi. Tensors can be either sparse or dense.
+An element of a tensor can be either a scalar or a vector/matrix.
 
 Although mathematically matrices are treated as 2D tensors, in Taichi, **tensor** and **matrix** are two completely different things. Matrices can be used as tensor elements, so you have tensors of matrices.
 

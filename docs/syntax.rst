@@ -53,9 +53,6 @@ Kernel arguments must be type-hinted. Kernels can have at most 8 parameters, e.g
         ...
 
 
-.. note::
-    **Taichi-scope v.s. Python-scope**: everything decorated by ``ti.kernel`` and ``ti.func`` is in Taichi-scope, which will be compiled by the Taichi compiler. Code outside Taichi-scopes are just normal Python code.
-
 Functions
 -----------------------------------------------
 

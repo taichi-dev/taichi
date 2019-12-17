@@ -1,7 +1,8 @@
 The life of a Taichi kernel
 ===============================================
 
-Sometimes it is helpful to understand the life cycle of a Taichi kernel. In short, compilation will only happen on the first invocation of a instance of a kernel.
+Sometimes it is helpful to understand the life cycle of a Taichi kernel.
+In short, compilation will only happen on the first invocation of an instance of a kernel.
 
 Life cycle of a Taichi kernel looks like this:
 
@@ -62,7 +63,7 @@ Arguments hinted with ``ti.template()`` are template arguments, and will incur t
 will lead to a new instantiation of **add**.
 
 .. note::
-  **Template signatures** are what distinguishes different instantiations of a same kernel.
+  **Template signatures** are what distinguish different instantiations of a kernel template.
   The signature of ``add(x, 42)`` is ``(x, ti.i32)``, which is the same as that of ``add(x, 1)``. Therefore, the latter can reuse the previously compiled binary.
   The signature of ``add(y, 42)`` is ``(y, ti.i32)``, a different value from the previous signature, therefore a new instantiation and compilation will happen.
 
@@ -79,7 +80,7 @@ will lead to a new instantiation of **add**.
 Code transformation and optimizations
 ---------------------------------------
 
-When an new instantiation happens, the Taichi frontend compiler will transform the kernel body AST
+When a new instantiation happens, the Taichi frontend compiler will transform the kernel body AST
 into a Python script, which, when executed, emits a Taichi frontend AST.
 Basically, some patches are applied to the Python AST so that the Taichi frontend can recognize it.
 

@@ -65,11 +65,12 @@ Taichi is an embedded domain-specific language (DSL) in Python.
 It pretends to be a plain Python package, although heavy engineering has been done to make this happen.
 
 This design decision virtually makes every Python programmer capable of writing Taichi programs, after minimal learning efforts.
-You can also reuse the package management system, Python IDEs, and existing Python pcakges.
+You can also reuse the package management system, Python IDEs, and existing Python packages.
 
 Portability
 -----------------
-By default, Taichi supports both CPUs and NVIDIA GPUs.
+
+Taichi supports both CPUs and NVIDIA GPUs.
 
 .. code-block:: python
 
@@ -100,15 +101,15 @@ You can also define Taichi **functions** with ``ti.func``, which can be called a
 
 .. note::
 
-  **Taichi-scope v.s. Python-scope**: everything decorated by ``ti.kernel`` and ``ti.func`` is in Taichi-scope, which will be compiled by the Taichi compiler.
-  Code outside the Taichi-scopes are just normal Python code.
+  **Taichi-scope v.s. Python-scope**: everything decorated with ``ti.kernel`` and ``ti.func`` is in Taichi-scope, which will be compiled by the Taichi compiler.
+  Code outside the Taichi-scopes is simply native Python code.
 
 .. warning::
 
   Taichi kernels must be called in the Python-scope. I.e., **nested Taichi kernels are not supported**.
   Nested functions that are allowed. **Recursive functions are not supported for now**.
 
-  Taichi functions can be called in Taichi-scope only.
+  Taichi functions can only be called in Taichi-scope.
 
 For those who came from the world of CUDA, ``ti.func`` corresponds to ``__device__``, and ``ti.kernel`` corresponds to ``__global__``.
 
@@ -149,7 +150,7 @@ In the fractal code above, ``for i, j in pixels`` loops over all the pixel coord
 Interacting with Python
 ------------------------
 
-Everything outside Taichi-scope (``ti.func`` and ``ti.kernel``) is simply Python. You can use your favourite Python packages (e.g. ``numpy``, ``pytorch``, ``matplotlib``) with Taichi.
+Everything outside Taichi-scope (``ti.func`` and ``ti.kernel``) is simply Python. You can use your favorite Python packages (e.g. ``numpy``, ``pytorch``, ``matplotlib``) with Taichi.
 
 In Python-scope, you can access Taichi tensors using plain indexing syntax, and helper functions such as ``from_numpy`` and ``to_torch``:
 

@@ -1,5 +1,7 @@
 <div align="center">
   <img width="500px" src="https://github.com/yuanming-hu/taichi/raw/master/misc/logo.png">
+  <br>
+  <h3> <a href="https://taichi.readthedocs.io/en/latest/"> Documentation </a> </h3>
 </div>        
 
 ### | [Documentation](https://readthedocs.org/projects/taichi/badge/?version=latest) | [Tutorial](https://taichi.readthedocs.io/en/latest/hello.html) | [Examples](https://github.com/yuanming-hu/taichi/tree/master/examples) | [FAQ](https://github.com/yuanming-hu/taichi/tree/master/misc#faq) | [Forum]( https://forum.taichi.graphics/) |

@@ -9,6 +9,12 @@
 #include <algorithm>
 #include <type_traits>
 
+#if defined(__linux__) && !ARCH_cuda
+__asm__(".symver logf,logf@GLIBC_2.2.5");
+__asm__(".symver powf,powf@GLIBC_2.2.5");
+__asm__(".symver expf,expf@GLIBC_2.2.5");
+#endif
+
 #define STRUCT_FIELD(S, F)                              \
   extern "C" decltype(S::F) S##_get_##F(S *s) {         \
     return s->F;                                        \

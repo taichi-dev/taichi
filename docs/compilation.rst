@@ -1,41 +1,39 @@
 The life of a Taichi kernel
 ===============================================
 
-Sometimes it is helpful to understand the life cycle of a Taichi kernel.
+Sometimes it is helpful to understand the life cycle of a Taichi kernel. In short, compilation will only happen on the first invocation of a instance of a kernel.
 
-In short, compilation will only happen on the first invocation of the kernel.
+Life cycle of a Taichi kernel looks like this:
 
-The compilation steps are: TODO: update
-
- - Function registration
- - AST transform
- - Template instantiation (if template kernels exist)
- - Taichi IR compilation and optimization and offloading
- - Kernel launching
+ - Kernel registration
+ - Template instantiation and caching
+ - Python AST transforms
+ - Taichi IR compilation, optimization, and binary generation
+ - Launching
 
 Let's consider the following simple kernel:
 
 .. code-block:: python
-  x = ti.var(dt=ti.f32, shape=128)
-  y = ti.var(dt=ti.f32, shape=16)
 
   @ti.kernel
   def add(tensor: ti.template(), delta: ti.i32):
     for i in tensor:
       tensor[i] += delta
 
+
+We also allocate two 1D tensors to simplify discussion:
+
+.. code-block:: python
+
+  x = ti.var(dt=ti.f32, shape=128)
+  y = ti.var(dt=ti.f32, shape=16)
+
+
 Kernel registration
 ---------------------------------------
 When the ``ti.kernel`` decorator is executed, a kernel named ``add`` is registered. Specifically, the
 Python Abstract Syntax Tree (AST) of the ``add`` function will be memorized.
-No compilation will happen until the first invocation of ``add``:
-
-.. code-block:: python
-
-  add(x, 42)
-
-When ``add`` is called for the first time, the Taichi frontend compiler will transform
-the Python (AST) of ``add`` into a Taichi AST, or the Taichi frontend intermediate representation (FIR).
+No compilation will happen until the first invocation of ``add``.
 
 
 Template instantiation and caching
@@ -43,19 +41,30 @@ Template instantiation and caching
 
 .. code-block:: python
 
-    @ti.kernel
-    def
+  add(x, 42)
 
-Template instantiation is lazy. Common use cases are...
+When ``add`` is called for the first time, the Taichi frontend compiler will instantiate the kernel.
+
+When you have a second call with the same template signature (explained later), e.g.,
 
 .. code-block:: python
 
   add(x, 1)
 
+Taichi will directly reuse the previously compiled binary.
+
+Arguments hinted with ``ti.template()`` are template arguments, and will incur template instantiation. For example,
+
+.. code-block:: python
+
+  add(y, 42)
+
+will lead to a new instantiation of **add**.
+
 .. note::
   **Template signatures** are what distinguishes different instantiations of a same kernel.
-  The signature of ``add(x, 42)`` is ``(x, ti.i32)``, which is the same as ``add(x, 1)``.
-  The signature of ``add(y, 42)`` is ``(y, ti.i32)``, a different value from the previous signature, therefore a new instantiation will be created.
+  The signature of ``add(x, 42)`` is ``(x, ti.i32)``, which is the same as that of ``add(x, 1)``. Therefore, the latter can reuse the previously compiled binary.
+  The signature of ``add(y, 42)`` is ``(y, ti.i32)``, a different value from the previous signature, therefore a new instantiation and compilation will happen.
 
 .. note::
 
@@ -68,10 +77,11 @@ Template instantiation is lazy. Common use cases are...
   As mentioned before, the second time you call the same operation, the cached compiled kernel will be reused and no further compilation is needed.
 
 Code transformation and optimizations
------------------------------------------
+---------------------------------------
 
-The first time the registered function is called, an AST transformer will transform the kernel body
+When an new instantiation happens, the Taichi frontend compiler will transform the kernel body AST
 into a Python script, which, when executed, emits a Taichi frontend AST.
+Basically, some patches are applied to the Python AST so that the Taichi frontend can recognize it.
 
 The Taichi AST lowering pass translates Taichi frontend IR into hierarchical static single assignment (SSA) IR,
 which allows a series of further IR passes to happen, such as
@@ -92,4 +102,5 @@ Finally, the optimized SSA IR is fed into the LLVM IR codegen, and LLVM JIT gene
 
 Kernel launching
 ----------------
+
 Taichi kernels will be ultimately launched as multi-threaded CPU tasks or CUDA kernels.

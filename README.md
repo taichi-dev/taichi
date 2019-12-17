@@ -2,9 +2,9 @@
   <img width="500px" src="https://github.com/yuanming-hu/taichi/raw/master/misc/logo.png">
 </div>        
 
-Forum: https://forum.taichi.graphics/
 
-[[FAQ]](https://github.com/yuanming-hu/taichi/tree/master/misc#faq)
+### | [Tutorial](https://taichi.readthedocs.io/en/latest/hello.html) | [Examples](https://github.com/yuanming-hu/taichi/tree/master/examples) | [FAQ](https://github.com/yuanming-hu/taichi/tree/master/misc#faq) | [Forum]( https://forum.taichi.graphics/) |
+
 
 | **Documentation** | **Chat** | taichi-nightly | taichi-nightly-cuda-10-0 | taichi-nightly-cuda-10-1 |
 |:-----|:-----|:----|:----|:----|
@@ -25,8 +25,6 @@ python3 -m pip install taichi-nightly-cuda-10-1
 |:------|:-----|:-----|:-----|
 |**Build**|[![Build Status](http://f11.csail.mit.edu:8080/job/taichi/badge/icon)](http://f11.csail.mit.edu:8080/job/taichi/)|[![Build Status](https://travis-ci.com/yuanming-hu/taichi.svg?branch=master)](https://travis-ci.com/yuanming-hu/taichi) | [![Build Status](https://ci.appveyor.com/api/projects/status/github/yuanming-hu/taichi?branch=master&svg=true)](https://ci.appveyor.com/project/IteratorAdvance/taichi) |
 |**PyPI**|[![Build Status](https://travis-ci.com/yuanming-hu/taichi-wheels-test.svg?branch=master)](https://travis-ci.com/yuanming-hu/taichi-wheels-test)|[![Build Status](https://travis-ci.com/yuanming-hu/taichi-wheels-test.svg?branch=master)](https://travis-ci.com/yuanming-hu/taichi-wheels-test)|[![Build status](https://ci.appveyor.com/api/projects/status/39ar9wa8yd49je7o?svg=true)](https://ci.appveyor.com/project/IteratorAdvance/taichi-wheels-test)|
-
-### [Tutorial](https://taichi.readthedocs.io/en/latest/hello.html) and [Examples](https://github.com/yuanming-hu/taichi/tree/master/examples)
 
 **High-Performance Computation on Sparse Data Structures** [[Paper]](http://taichi.graphics/wp-content/uploads/2019/09/taichi_lang.pdf) [[Video]](https://youtu.be/wKw8LMF3Djo) [[Language Details]](https://github.com/yuanming-hu/taichi/blob/master/python/taichi/README.md) [[Taichi Compiler Developer Installation]](https://taichi.readthedocs.io/en/latest/dev_install.html)
 

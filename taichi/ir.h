@@ -368,10 +368,12 @@ struct LaneAttribute {
   }
 
   T &operator[](int i) {
+    TC_ASSERT(0 <= i && i < (int)data.size());
     return data[i];
   }
 
   const T &operator[](int i) const {
+    TC_ASSERT(0 <= i && i < (int)data.size());
     return data[i];
   }
 
@@ -381,9 +383,10 @@ struct LaneAttribute {
   }
 
   // for initializing single lane
-  void operator=(const T &t) {
+  LaneAttribute &operator=(const T &t) {
     TC_ASSERT(data.size() == 1);
     data[0] = t;
+    return *this;
   }
 
   void repeat(int factor) {

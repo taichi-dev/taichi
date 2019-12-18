@@ -23,10 +23,10 @@ project = 'taichi'
 copyright = '2018, Yuanming Hu'
 author = 'Yuanming Hu'
 
+from version import taichi_version
 # The short X.Y version
-version = ''
+version = taichi_version
 # The full version, including alpha/beta/rc tags
-from .version import taichi_version
 release = taichi_version
 
 

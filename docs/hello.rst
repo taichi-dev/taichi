@@ -142,7 +142,7 @@ In the fractal code above, ``for i, j in pixels`` loops over all the pixel coord
 
 .. note::
 
-    Struct-for is the key to :ref:`sparse` in Taichi, as it will only loop over active elements in a sparse tensor. For dense tensors, all elements are active.
+    Struct-for is the key to :ref:`sparse` in Taichi, as it will only loop over active elements in a sparse tensor. In dense tensors, all elements are active.
 
 .. warning::
 

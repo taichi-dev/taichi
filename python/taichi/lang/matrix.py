@@ -420,9 +420,9 @@ class Matrix:
       ret = ret + self.entries[i]
     return ret
 
-  def norm(self, l=2):
+  def norm(self, l=2, eps=0):
     assert l == 2
-    return impl.sqrt(self.norm_sqr())
+    return impl.sqrt(self.norm_sqr() + eps)
 
   def norm_sqr(self):
     return impl.sqr(self).sum()

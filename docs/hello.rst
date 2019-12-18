@@ -8,6 +8,8 @@ Depending on your hardware and OS, please execute one of the following commands:
 
 .. code-block:: bash
 
+  # Python 3.6+ needed
+
   # CPU only. No GPU/CUDA needed. (Linux, OS X and Windows)
   python3 -m pip install taichi-nightly
 

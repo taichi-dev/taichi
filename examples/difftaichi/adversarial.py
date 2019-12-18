@@ -7,8 +7,7 @@ import torch.nn as nn
 from torch.autograd import Variable
 from torchvision import models, transforms
 import numpy as np
-from scipy.misc import imread, imresize
-import os
+import cv2
 import matplotlib.pyplot as plt
 import torch.nn.functional as F
 import json
@@ -89,10 +88,10 @@ def vgg_grad(img):
 def main():
   # everything is RGB instead of BGR in this file
   # import cv2
-  peppers = imread("squirrel.jpg")
+  peppers = cv2.imread("squirrel.jpg")
   # cv2.imshow('p', peppers)
   # cv2.waitKey(0)
-  img = (imresize(peppers, (224, 224)) / 255.0).astype(np.float32)
+  img = (cv2.resize(peppers, (224, 224)) / 255.0).astype(np.float32)
   img = torch.tensor(img)
 
   imgvar = Variable(img, requires_grad=False)
@@ -124,8 +123,8 @@ def main():
 
 
 def test_interface():
-  peppers = imread("squirrel.jpg")
-  img = (imresize(peppers, (224, 224)) / 255.0).astype(np.float32)
+  peppers = cv2.imread("squirrel.jpg")
+  img = (cv2.resize(peppers, (224, 224)) / 255.0).astype(np.float32)
 
   print(img)
 

@@ -5,6 +5,22 @@ Please check out `the DiffTaichi paper <https://arxiv.org/pdf/1910.00935.pdf>`_ 
 
 The `DiffTaichi repo <https://github.com/yuanming-hu/difftaichi>`_ contains 10 differentiable physical simulators built with Taichi differentiable programming.
 
+.. note::
+    Unlike tools such as TensorFlow where **immutable** output buffers are generated,
+    the **imperative** programming paradigm adopted in Taichi allows programmers to freely modify global tensors.
+    To make automatic differentiation well-defined under this setting,
+    we make the following assumption on Taichi programs:
+
+    **Global Data Access Rules:**
+
+      - If a global tensor element is written more than once, then starting from the second write, the
+        write **must** come in the form of an atomic add (“accumulation", using ``ti.atomic_add`` or simply ``+=``).
+      - No read accesses happen to a global tensor element, until its accumulation is done.
+
+    Taichi programs that violate this rule will lead to a undefined gradient behavior.
+
+    `Note that currently the Taichi compiler is not able to detect such violation automatically - please be careful.`
+
 A few examples with neural network controllers optimized using differentiable simulators and brute-force gradient descent:
 
 .. image:: https://github.com/yuanming-hu/public_files/raw/master/learning/difftaichi/ms3_final-cropped.gif

@@ -1075,7 +1075,12 @@ void GPUCodeGen::lower_llvm() {
     // TC_TRACE("Primal:");
     // irpass::print(ir);
     irpass::demote_atomics(ir);
-    irpass::simplify(ir);
+    irpass::full_simplify(ir);
+    irpass::typecheck(ir);
+    if (prog->config.print_ir) {
+      TC_TRACE("Before make_adjoint:");
+      irpass::print(ir);
+    }
     irpass::make_adjoint(ir);
     irpass::typecheck(ir);
     // irpass::re_id(ir);

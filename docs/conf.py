@@ -23,7 +23,11 @@ project = 'taichi'
 copyright = '2018, Yuanming Hu'
 author = 'Yuanming Hu'
 
-from version import taichi_version
+version_fn = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'version')
+with open(version_fn) as f:
+  taichi_version = f.readline().strip()
+  print('Building doc version', taichi_version)
+
 # The short X.Y version
 version = taichi_version
 # The full version, including alpha/beta/rc tags

@@ -34,8 +34,8 @@ FILE(WRITE ${CMAKE_CURRENT_LIST_DIR}/taichi/common/version.h
         "#define TI_COMMIT_HASH \"${TI_COMMIT_HASH}\"\n"
         )
 
-FILE(WRITE ${CMAKE_CURRENT_LIST_DIR}/docs/version.py
-        "taichi_version = '${TI_VERSION_MAJOR}.${TI_VERSION_MINOR}.${TI_VERSION_PATCH}'\n"
+FILE(WRITE ${CMAKE_CURRENT_LIST_DIR}/docs/version
+        "${TI_VERSION_MAJOR}.${TI_VERSION_MINOR}.${TI_VERSION_PATCH}\n"
         )
 
 if(NOT CMAKE_BUILD_TYPE)

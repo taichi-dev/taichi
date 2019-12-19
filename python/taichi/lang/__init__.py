@@ -136,7 +136,7 @@ def must_throw(ex):
         assert False, 'Exception {} instead of {} thrown'.format(
             str(type(err_actual)), str(ex))
       if finishes:
-        assert False, 'Test finishes instead of throwing {}'.format(str(ex))
+        assert False, 'Test successfully finished instead of throwing {}'.format(str(ex))
 
     return func__
 

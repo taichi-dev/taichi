@@ -226,6 +226,9 @@ class Kernel:
     # Do not change the name of 'taichi_ast_generator'
     # The warning system needs this identifier to remove unnecessary messages
     def taichi_ast_generator():
+      if self.runtime.inside_kernel:
+        import taichi as ti
+        raise ti.TaichiSyntaxError("Kernels cannot call other kernels. I.e., nested kernels are not allowed. Please check if you have direct/indirect invocation of kernels within kernels. Note that some methods provided by the Taichi standard library may invoke kernels, and please move their invocations to Python-scope.")
       self.runtime.inside_kernel = True
       compiled()
       self.runtime.inside_kernel = False

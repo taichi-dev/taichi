@@ -89,6 +89,8 @@ auto test_exception_handling_auto = []() {
   TC_ASSERT(test_throw("AAC") == 2);
   TC_ASSERT(test_throw("AACB") == 2);
   TC_ASSERT(test_throw("AABC") == 1);
+
+  TC_INFO("Test was successful");
 };
 
 TC_REGISTER_TASK(test_exception_handling);

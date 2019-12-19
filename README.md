@@ -26,8 +26,10 @@ python3 -m pip install taichi-nightly-cuda-10-1
 |**PyPI**|[![Build Status](https://travis-ci.com/yuanming-hu/taichi-wheels-test.svg?branch=master)](https://travis-ci.com/yuanming-hu/taichi-wheels-test)|[![Build Status](https://travis-ci.com/yuanming-hu/taichi-wheels-test.svg?branch=master)](https://travis-ci.com/yuanming-hu/taichi-wheels-test)|[![Build status](https://ci.appveyor.com/api/projects/status/39ar9wa8yd49je7o?svg=true)](https://ci.appveyor.com/project/IteratorAdvance/taichi-wheels-test)|
 
 Related paper: **High-Performance Computation on Sparse Data Structures**
+
 [[Paper]](http://taichi.graphics/wp-content/uploads/2019/09/taichi_lang.pdf) [[Video]](https://youtu.be/wKw8LMF3Djo) [[Language Details]](https://taichi.readthedocs.io/en/latest/hello.html) [[Taichi Compiler Developer Installation]](https://taichi.readthedocs.io/en/latest/dev_install.html)
-By *Yuanming Hu, Tzu-Mao Li, Luke Anderson, Jonathan Ragan-Kelley, Fredo Durand*
+
+by *Yuanming Hu, Tzu-Mao Li, Luke Anderson, Jonathan Ragan-Kelley and Fredo Durand*
 
 ## Short-term goals (by the end of Dec 2019)
 - Fully implement the LLVM backend to replace the legacy source-to-source C++/CUDA backends

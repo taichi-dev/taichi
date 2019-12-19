@@ -1,9 +1,14 @@
-Installing the Legacy Taichi Library
+Installing the legacy Taichi Library
 ===============================================
 
 .. note::
- This is NOT for installing the Taichi programming language. Unless you are building a legacy project based on the Taichi **library**,
+ This is NOT for installing the Taichi programming language. Unless you are building a legacy project
+ based on the `legacy Taichi library <https://github.com/yuanming-hu/taichi/tree/legacy>`_ (e.g.
+ `taichi_mpm <https://github.com/yuanming-hu/taichi_mpm>`_ and
+ `spgrid_topo_opt <https://github.com/yuanming-hu/spgrid_topo_opt>`_)
  you should always install Taichi using ``pip``.
+
+ If you are working on the Taichi compiler and need to build from scratch, see :ref:`dev_install`.
 
 Supported platforms:
 
@@ -11,7 +16,7 @@ Supported platforms:
  - Mac OS X (gcc 5+, clang 4.0+)
  - Windows (Microsoft Visual Studio 2017)
 
-Make sure you have ``python 3.5``+.
+Make sure you have ``python 3.5`` +.
 
 
 Ubuntu, Arch Linux, and Mac OS X

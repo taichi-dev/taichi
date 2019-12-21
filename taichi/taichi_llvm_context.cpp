@@ -363,6 +363,9 @@ llvm::Value *TaichiLLVMContext::get_constant(DataType dt, T t) {
 }
 
 template llvm::Value *TaichiLLVMContext::get_constant(DataType dt, int32 t);
+template llvm::Value *TaichiLLVMContext::get_constant(DataType dt, int64 t);
+template llvm::Value *TaichiLLVMContext::get_constant(DataType dt, float32 t);
+template llvm::Value *TaichiLLVMContext::get_constant(DataType dt, float64 t);
 
 template <typename T>
 llvm::Value *TaichiLLVMContext::get_constant(T t) {

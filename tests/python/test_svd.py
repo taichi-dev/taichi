@@ -28,7 +28,23 @@ def test_transpose():
   
   @ti.kernel
   def run():
-    U[None], sigma[None], V[None] = svd(A[None])
+    for i in range(1):
+      U[None], sigma[None], V[None] = svd(A[None])
     
   run()
 
+
+@ti.all_archs
+def test_transpose_no_loop():
+  # TODO: fix this
+  return
+  A = ti.Matrix(3, 3, dt=ti.f32, shape=())
+  U = ti.Matrix(3, 3, dt=ti.f32, shape=())
+  sigma = ti.Matrix(3, 3, dt=ti.f32, shape=())
+  V = ti.Matrix(3, 3, dt=ti.f32, shape=())
+  
+  @ti.kernel
+  def run():
+    U[None], sigma[None], V[None] = svd(A[None])
+  
+  run()

@@ -315,6 +315,14 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
         llvm::Function *sqrt_fn = Intrinsic::getDeclaration(
             module.get(), Intrinsic::sqrt, input->getType());
         stmt->value = builder->CreateCall(sqrt_fn, input, "sqrt");
+      } else if (op == UnaryOpType::rsqrt) {
+        llvm::Function *sqrt_fn = Intrinsic::getDeclaration(
+            module.get(), Intrinsic::sqrt, input->getType());
+        auto intermediate = builder->CreateCall(sqrt_fn, input, "rsqrt");
+        stmt->value = builder->CreateFDiv(
+            tlctx->get_constant(stmt->ret_type.data_type, 1.0), intermediate);
+      } else if (op == UnaryOpType::bit_not) {
+        stmt->value = builder->CreateNot(input);
       } else if (op == UnaryOpType::neg) {
         if (is_real(stmt->operand->ret_type.data_type)) {
           stmt->value = builder->CreateFNeg(input, "neg");

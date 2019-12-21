@@ -1082,6 +1082,10 @@ void GPUCodeGen::lower_llvm() {
       irpass::print(ir);
     }
     irpass::make_adjoint(ir);
+    if (prog->config.print_ir) {
+      TC_TRACE("After make_adjoint:");
+      irpass::print(ir);
+    }
     irpass::typecheck(ir);
     // irpass::re_id(ir);
     // TC_TRACE("Adjoint:");
@@ -1139,6 +1143,9 @@ void GPUCodeGen::lower_llvm() {
     TC_TRACE("Simplified III:");
     irpass::re_id(ir);
     irpass::print(ir);
+  }
+  if (kernel->grad) {
+    irpass::reverse_offloads(ir);
   }
 }
 

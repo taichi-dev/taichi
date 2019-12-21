@@ -97,6 +97,7 @@ void replace_statements_with(IRNode *root,
                              std::function<bool(Stmt *)> filter,
                              std::function<std::unique_ptr<Stmt>()> generator);
 void demote_atomics(IRNode *root);
+void reverse_offloads(IRNode *root);
 std::unique_ptr<ScratchPads> initialize_scratch_pad(StructForStmt *root);
 }  // namespace irpass
 

@@ -5,6 +5,7 @@
 #include <pybind11/pybind11.h>
 #include <taichi/common/interface.h>
 #include <taichi/python/export.h>
+#include "svd.h"
 
 TC_NAMESPACE_BEGIN
 
@@ -32,6 +33,8 @@ std::vector<std::unique_ptr<IRBuilder::ScopeGuard>> scope_stack;
 
 void compile_runtimes();
 std::string libdevice_path();
+
+
 
 TLANG_NAMESPACE_END
 
@@ -374,6 +377,8 @@ void export_lang(py::module &m) {
   m.def("get_max_num_indices", [] { return max_num_indices; });
   m.def("get_max_num_args", [] { return max_num_args; });
   m.def("test_threading", test_threading);
+  m.def("sifakis_svd_f32", sifakis_svd_export<float32, int32>);
+  m.def("sifakis_svd_f64", sifakis_svd_export<float64, int64>);
 }
 
 TC_NAMESPACE_END

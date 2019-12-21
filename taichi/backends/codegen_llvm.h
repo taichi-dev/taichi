@@ -618,6 +618,9 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     } else if (val.dt == DataType::i32) {
       stmt->value = llvm::ConstantInt::get(
           *llvm_context, llvm::APInt(32, val.val_int32(), true));
+    } else if (val.dt == DataType::i64) {
+      stmt->value = llvm::ConstantInt::get(
+          *llvm_context, llvm::APInt(64, val.val_int64(), true));
     } else {
       TC_NOT_IMPLEMENTED;
     }

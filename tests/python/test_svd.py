@@ -2,10 +2,15 @@ import taichi as ti
 import numpy as np
 from pytest import approx
 
-def svd(A, dt, iters=5):
+def svd(A, dt, iters=None):
   assert A.n == 3 and A.m == 3
   inputs = tuple([e.ptr for e in A.entries])
   assert dt in [ti.f32, ti.f64]
+  if iters is None:
+    if dt == ti.f32:
+      iters = 5
+    else:
+      iters = 8
   if dt == ti.f32:
     rets = ti.core.sifakis_svd_f32(*inputs, iters)
   else:
@@ -24,8 +29,8 @@ def svd(A, dt, iters=5):
     sigma(i, i).assign(sig_entries[i])
   return U, sigma, V
 
-def mat_equal(A, B):
-  return np.max(np.abs(A - B)) < 1e-5
+def mat_equal(A, B, tol=1e-6):
+  return np.max(np.abs(A - B)) < tol
 
 @ti.all_archs
 def _test_svd(dt):
@@ -53,7 +58,7 @@ def _test_svd(dt):
   
   assert mat_equal(UtU.to_numpy(), np.eye(3))
   assert mat_equal(VtV.to_numpy(), np.eye(3))
-  assert mat_equal(A_reconstructed.to_numpy(), A.to_numpy())
+  assert mat_equal(A_reconstructed.to_numpy(), A.to_numpy(), tol=1e-5 if dt == ti.f32 else 1e-12)
   for i in range(3):
     for j in range(3):
       if i != j:

@@ -317,10 +317,31 @@ class Matrix:
     return sum
 
   def inverse(self):
-    assert self.n == 2 and self.m == 2
-    inv_det = impl.expr_init(1.0 / self.determinant(self))
-    return inv_det * Matrix([[self(1, 1), -self(0, 1)],
-                             [-self(1, 0), self(0, 0)]])
+    assert self.n == self.m, 'Only square matrices are invertible'
+    if self.n == 1:
+      return Matrix([1 / self(0, 0)])
+    elif self.n == 2:
+      inv_det = impl.expr_init(1.0 / self.determinant(self))
+      return inv_det * Matrix([[self(1, 1), -self(0, 1)],
+                               [-self(1, 0), self(0, 0)]])
+    elif self.n == 3:
+      n = 3
+      import taichi as ti
+      inv_determinant = ti.expr_init(1.0 / ti.determinant(self))
+      entries = [[0] * n for _ in range(n)]
+
+      def E(x, y):
+        return self(x % n, y % n)
+
+      for i in range(n):
+        for j in range(n):
+          entries[j][i] = ti.expr_init(
+              inv_determinant * (E(i + 1, j + 1) * E(i + 2, j + 2) -
+                                 E(i + 2, j + 1) * E(i + 1, j + 2)))
+      return Matrix(entries)
+    else:
+      raise Exception(
+          "Inversions of matrices with sizes >= 4 are not supported")
 
   @staticmethod
   def normalized(a):

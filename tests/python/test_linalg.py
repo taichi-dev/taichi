@@ -1,6 +1,6 @@
 import taichi as ti
 from pytest import approx
-
+import numpy as np
 
 @ti.all_archs
 def test_transpose():
@@ -86,3 +86,27 @@ def test_matrix():
   for i in range(10):
     assert x[i][0, 0] == 6 + i
     assert x[i][1, 1] == 1 + i
+    
+@ti.all_archs
+def _test_mat_inverse_size(n):
+  m = ti.Matrix(n, n, dt=ti.f32, shape=())
+  M = np.empty(shape=(n, n), dtype=np.float32)
+  for i in range(n):
+    for j in range(n):
+      M[i, j] = i * j + i * 3 + j + 1 + int(i == j) * 4
+  assert np.linalg.det(M) != 0
+  
+  m.from_numpy(M)
+  
+  @ti.kernel
+  def invert():
+    m[None] = ti.Matrix.inverse(m[None])
+    
+  invert()
+  
+  m_np = m.to_numpy()
+  np.testing.assert_almost_equal(m_np, np.linalg.inv(M))
+  
+def test_mat_inverse():
+  for n in range(1, 4):
+    _test_mat_inverse_size(n)

@@ -100,7 +100,7 @@ def _test_mat_inverse_size(n):
   
   @ti.kernel
   def invert():
-    m[None] = ti.Matrix.inverse(m[None])
+    m[None] = ti.inversed(m[None])
     
   invert()
   

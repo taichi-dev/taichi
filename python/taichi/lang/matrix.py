@@ -342,6 +342,9 @@ class Matrix:
     else:
       raise Exception(
           "Inversions of matrices with sizes >= 4 are not supported")
+    
+  def inversed(self):
+    return self.inverse()
 
   @staticmethod
   def normalized(a):

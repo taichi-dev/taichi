@@ -48,6 +48,9 @@ vectorize = core.vectorize
 block_dim = core.block_dim
 cache = core.cache
 
+def inversed(x):
+  return x.inversed()
+
 transposed = Matrix.transposed
 polar_decompose = Matrix.polar_decompose
 determinant = Matrix.determinant

@@ -545,9 +545,17 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     std::string format;
     if (dt == DataType::i32) {
       format = "%d";
+    } else if (dt == DataType::i64) {
+#if defined(TC_PLATFORM_UNIX)
+      format = "%lld";
+#else
+      format = "%I64d";
+#endif
     } else if (dt == DataType::f32) {
       format = "%f";
       value = builder->CreateFPExt(value, tlctx->get_data_type(DataType::f64));
+    } else if (dt == DataType::f64) {
+      format = "%f";
     } else {
       TC_NOT_IMPLEMENTED
     }
@@ -555,7 +563,8 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
         ("[llvm codegen debug] " + tag + " = " + format + "\n").c_str(),
         "format_string"));
     args.push_back(value);
-    return builder->CreateCall(get_runtime_function("printf"), args, "debug_printf");
+    return builder->CreateCall(get_runtime_function("printf"), args,
+                               "debug_printf");
   }
 
   void visit(PrintStmt *stmt) override {
@@ -563,11 +572,20 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     std::vector<Value *> args;
     std::string format;
     auto value = stmt->stmt->value;
-    if (stmt->stmt->ret_type.data_type == DataType::i32) {
+    auto dt = stmt->stmt->ret_type.data_type;
+    if (dt == DataType::i32) {
       format = "%d";
-    } else if (stmt->stmt->ret_type.data_type == DataType::f32) {
+    } else if (dt == DataType::i64) {
+#if defined(TC_PLATFORM_UNIX)
+      format = "%lld";
+#else
+      format = "%I64d";
+#endif
+    } else if (dt == DataType::f32) {
       format = "%f";
       value = builder->CreateFPExt(value, tlctx->get_data_type(DataType::f64));
+    } else if (dt == DataType::f64) {
+      format = "%f";
     } else {
       TC_NOT_IMPLEMENTED
     }

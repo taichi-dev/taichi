@@ -108,6 +108,8 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
 
     if (stmt->stmt->ret_type.data_type == DataType::i32) {
       format = "%d";
+    } else if (stmt->stmt->ret_type.data_type == DataType::i64) {
+      format = "%lld";
     } else if (stmt->stmt->ret_type.data_type == DataType::f32) {
       value_type = llvm::Type::getDoubleTy(*llvm_context);
       value = builder->CreateFPExt(value, value_type);
@@ -188,9 +190,7 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
   }
 
   void visit(AtomicOpStmt *stmt) override {
-    auto mask = stmt->parent->mask();
     TC_ASSERT(stmt->width() == 1);
-    int addr_space;
     // https://llvm.org/docs/NVPTXUsage.html#address-spaces
     bool is_local = stmt->dest->is<AllocaStmt>();
     if (is_local) {

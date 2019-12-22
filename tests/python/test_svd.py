@@ -18,78 +18,10 @@ def test_precision():
   assert v[None] ** 2 == approx(3.25, abs=1e-12)
   assert w[None] * 3 == approx(7, abs=1e-12)
 
-# https://www.seas.upenn.edu/~cffjiang/research/svd/svd.pdf
-@ti.func
-def svd2d(A, dt):
-  R, S = ti.polar_decompose(A)
-  c, s = ti.cast(0.0, dt), ti.cast(0.0, dt)
-  s1, s2 = ti.cast(0.0, dt), ti.cast(0.0, dt)
-  if S[0, 1] == 0:
-    c, s = 1, 0
-    s1, s2 = S[0, 0], S[1, 1]
-  else:
-    tao = ti.cast(0.5, dt) * (S[0, 0] - S[1, 1])
-    w = ti.sqrt(tao ** 2 + S[0, 1] ** 2)
-    t = ti.cast(0.0, dt)
-    if tao > 0:
-      t = S[0, 1] / (tao + w)
-    else:
-      t = S[0, 1] / (tao - w)
-    c = 1 / ti.sqrt(t ** 2 + 1)
-    s = -t * c
-    s1 = c ** 2 * S[0, 0] - 2 * c * s * S[0, 1] + s ** 2 * S[1, 1]
-    s2 = s ** 2 * S[0, 0] + 2 * c * s * S[0, 1] + c ** 2 * S[1, 1]
-  V = ti.Matrix.zero(dt, 2, 2)
-  if s1 < s2:
-    tmp = s1
-    s1 = s2
-    s2 = tmp
-    V = [[-s, c], [-c, -s]]
-  else:
-    V = [[c, s], [-s, c]]
-  U = R @ V
-  return U, ti.Matrix([[s1, ti.cast(0, dt)], [ti.cast(0, dt), s2]]), V
 
-
-def svd3d(A, dt, iters=None):
-  assert A.n == 3 and A.m == 3
-  inputs = tuple([e.ptr for e in A.entries])
-  assert dt in [ti.f32, ti.f64]
-  if iters is None:
-    if dt == ti.f32:
-      iters = 5
-    else:
-      iters = 8
-  if dt == ti.f32:
-    rets = ti.core.sifakis_svd_f32(*inputs, iters)
-  else:
-    rets = ti.core.sifakis_svd_f64(*inputs, iters)
-  assert len(rets) == 21
-  U_entries = rets[:9]
-  V_entries = rets[9:18]
-  sig_entries = rets[18:]
-  U = ti.expr_init(ti.Matrix.zero(dt, 3, 3))
-  V = ti.expr_init(ti.Matrix.zero(dt, 3, 3))
-  sigma = ti.expr_init(ti.Matrix.zero(dt, 3, 3))
-  for i in range(3):
-    for j in range(3):
-      U(i, j).assign(U_entries[i * 3 + j])
-      V(i, j).assign(V_entries[i * 3 + j])
-    sigma(i, i).assign(sig_entries[i])
-  return U, sigma, V
 
 def mat_equal(A, B, tol=1e-6):
   return np.max(np.abs(A - B)) < tol
-
-@ti.func
-def svd(A, dt):
-  if ti.static(A.n == 2):
-    ret = svd2d(A, dt)
-    return ret
-  elif ti.static(A.n == 3):
-    return svd3d(A, dt)
-  else:
-    raise Exception("SVD only supports 2D and 3D matrices")
 
 @ti.all_archs
 def _test_svd(n, dt):
@@ -107,7 +39,7 @@ def _test_svd(n, dt):
   @ti.kernel
   def run():
     for i in range(1):
-      U[None], sigma[None], V[None] = svd(A[None], dt)
+      U[None], sigma[None], V[None] = ti.svd(A[None], dt)
       UtU[None] = ti.transposed(U[None]) @ U[None]
       VtV[None] = ti.transposed(V[None]) @ V[None]
       A_reconstructed[None] = U[None] @ sigma[None] @ ti.transposed(V[None])

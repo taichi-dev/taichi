@@ -53,6 +53,11 @@ def inversed(x):
 
 transposed = Matrix.transposed
 polar_decompose = Matrix.polar_decompose
+
+def svd(A, dt):
+  from .linalg import svd
+  return svd(A, dt)
+
 determinant = Matrix.determinant
 trace = Matrix.trace
 

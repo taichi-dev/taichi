@@ -28,13 +28,13 @@ def test_transpose():
 
 
 @ti.all_archs
-def test_polar_decomp():
+def _test_polar_decomp(dt):
   dim = 2
-  m = ti.Matrix(dim, dim, ti.f32)
-  r = ti.Matrix(dim, dim, ti.f32)
-  s = ti.Matrix(dim, dim, ti.f32)
-  I = ti.Matrix(dim, dim, ti.f32)
-  D = ti.Matrix(dim, dim, ti.f32)
+  m = ti.Matrix(dim, dim, dt)
+  r = ti.Matrix(dim, dim, dt)
+  s = ti.Matrix(dim, dim, dt)
+  I = ti.Matrix(dim, dim, dt)
+  D = ti.Matrix(dim, dim, dt)
 
   @ti.layout
   def place():
@@ -54,12 +54,19 @@ def test_polar_decomp():
       m(i, j)[None] = i * 2 + j * 7
 
   polar()
+  
+  tol = 1e-5 if dt == ti.f32 else 1e-12
 
   for i in range(dim):
     for j in range(dim):
-      assert m(i, j)[None] == approx(i * 2 + j * 7, abs=1e-5)
-      assert I(i, j)[None] == approx(int(i == j), abs=1e-5)
-      assert D(i, j)[None] == approx(0, abs=1e-5)
+      assert m(i, j)[None] == approx(i * 2 + j * 7, abs=tol)
+      assert I(i, j)[None] == approx(int(i == j), abs=tol)
+      assert D(i, j)[None] == approx(0, abs=tol)
+      
+ 
+def test_polar_decomp():
+  _test_polar_decomp(ti.f32)
+  _test_polar_decomp(ti.f64)
 
 
 @ti.all_archs

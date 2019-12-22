@@ -563,7 +563,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       format = "%f";
       value = builder->CreateFPExt(value, tlctx->get_data_type(DataType::f64));
     } else if (dt == DataType::f64) {
-      format = "%f";
+      format = "%.12f";
     } else {
       TC_NOT_IMPLEMENTED
     }
@@ -593,7 +593,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       format = "%f";
       value = builder->CreateFPExt(value, tlctx->get_data_type(DataType::f64));
     } else if (dt == DataType::f64) {
-      format = "%f";
+      format = "%.12f";
     } else {
       TC_NOT_IMPLEMENTED
     }

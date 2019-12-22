@@ -115,7 +115,7 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
       value = builder->CreateFPExt(value, value_type);
       format = "%f";
     } else if (stmt->stmt->ret_type.data_type == DataType::f64) {
-      format = "%f";
+      format = "%.12f";
     } else {
       TC_NOT_IMPLEMENTED
     }

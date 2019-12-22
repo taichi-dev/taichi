@@ -1,6 +1,6 @@
 <div align="center">
   <img width="500px" src="https://github.com/yuanming-hu/taichi/raw/master/misc/logo.png">
-  <h3> | <a href="https://taichi.readthedocs.io/en/latest/"> Docs </a> | <a href="https://taichi.readthedocs.io/en/latest/hello.html"> Tutorial </a> | <a href="https://github.com/yuanming-hu/difftaichi"> DiffTaichi </a> | <a href="https://github.com/yuanming-hu/taichi/tree/master/examples"> Examples </a> | <a href="https://github.com/yuanming-hu/taichi/tree/master/misc#faq"> FAQ </a> | <a href="https://forum.taichi.graphics/"> Forum </a> | </h3>
+  <h3> <a href="https://taichi.readthedocs.io/en/latest/"> Docs </a> | <a href="https://taichi.readthedocs.io/en/latest/hello.html"> Tutorial </a> | <a href="https://github.com/yuanming-hu/difftaichi"> DiffTaichi </a> | <a href="https://github.com/yuanming-hu/taichi/tree/master/examples"> Examples </a> | <a href="https://github.com/yuanming-hu/taichi/tree/master/misc#faq"> FAQ </a> | <a href="https://forum.taichi.graphics/"> Forum </a> </h3>
 </div>        
 
 | **Documentations** | **Chat** | taichi-nightly | taichi-nightly-cuda-10-0 | taichi-nightly-cuda-10-1 |

@@ -140,6 +140,7 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
     // functions from libdevice
     auto input = stmt->operand->value;
     auto input_taichi_type = stmt->operand->ret_type.data_type;
+    auto input_type = input->getType();
     auto op = stmt->op_type;
 
 #define UNARY_STD(x)                                                        \
@@ -166,6 +167,23 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
       } else if (input_taichi_type == DataType::i32) {
         stmt->value =
             builder->CreateCall(get_runtime_function("__nv_abs"), input);
+      } else {
+        TC_NOT_IMPLEMENTED
+      }
+    } else if (op == UnaryOpType::sqrt) {
+      if (input_taichi_type == DataType::f32) {
+        // stmt->value =
+        // builder->CreateIntrinsic(llvm::Intrinsic::nvvm_sqrt_rn_f,
+        //                                       {input_type}, {input});
+
+        stmt->value =
+            builder->CreateCall(get_runtime_function("__nv_sqrtf"), input);
+      } else if (input_taichi_type == DataType::f64) {
+        stmt->value =
+        builder->CreateIntrinsic(llvm::Intrinsic::nvvm_sqrt_rn_d,
+                                              {input_type}, {input});
+        //stmt->value =
+        //    builder->CreateCall(get_runtime_function("__nv_sqrt"), input);
       } else {
         TC_NOT_IMPLEMENTED
       }

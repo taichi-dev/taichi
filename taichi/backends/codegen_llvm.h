@@ -267,6 +267,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     auto input = stmt->operand->value;
     auto input_taichi_type = stmt->operand->ret_type.data_type;
     auto op = stmt->op_type;
+    auto input_type = input->getType();
 
 #define UNARY_STD(x)                                                   \
   else if (op == UnaryOpType::x) {                                     \
@@ -292,6 +293,10 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     UNARY_STD(tanh)
     UNARY_STD(sgn)
     UNARY_STD(logic_not)
+    else if (op == UnaryOpType::sqrt) {
+      stmt->value = builder->CreateIntrinsic(llvm::Intrinsic::sqrt,
+                                             {input_type}, {input});
+    }
     else {
       TC_P(unary_op_type_name(op));
       TC_NOT_IMPLEMENTED
@@ -311,14 +316,10 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   }
 
     if (stmt->op_type != UnaryOpType::cast) {
-      if (op == UnaryOpType::sqrt) {
+      if (op == UnaryOpType::rsqrt) {
         llvm::Function *sqrt_fn = Intrinsic::getDeclaration(
             module.get(), Intrinsic::sqrt, input->getType());
-        stmt->value = builder->CreateCall(sqrt_fn, input, "sqrt");
-      } else if (op == UnaryOpType::rsqrt) {
-        llvm::Function *sqrt_fn = Intrinsic::getDeclaration(
-            module.get(), Intrinsic::sqrt, input->getType());
-        auto intermediate = builder->CreateCall(sqrt_fn, input, "rsqrt");
+        auto intermediate = builder->CreateCall(sqrt_fn, input, "sqrt");
         stmt->value = builder->CreateFDiv(
             tlctx->get_constant(stmt->ret_type.data_type, 1.0), intermediate);
       } else if (op == UnaryOpType::bit_not) {
@@ -332,7 +333,6 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       }
       UNARY_INTRINSIC(sin)
       UNARY_INTRINSIC(cos)
-      UNARY_INTRINSIC(sqrt)
       UNARY_INTRINSIC(floor)
       UNARY_INTRINSIC(ceil)
       else emit_extra_unary(stmt);

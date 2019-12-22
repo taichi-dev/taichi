@@ -2,7 +2,6 @@ import taichi as ti
 import numpy as np
 from pytest import approx
 
-
 # https://www.seas.upenn.edu/~cffjiang/research/svd/svd.pdf
 @ti.func
 def svd2d(A, dt):
@@ -68,9 +67,10 @@ def mat_equal(A, B, tol=1e-6):
 
 #@ti.func
 def svd(A, dt):
-  if (A.n == 2):
-    return svd2d(A, dt)
-  elif (A.n == 3):
+  if A.n == 2:
+    ret = svd2d(A, dt)
+    return ret
+  elif A.n == 3:
     return svd3d(A, dt)
   else:
     raise Exception("SVD only supports 2D and 3D matrices")
@@ -111,6 +111,8 @@ def _test_svd(n, dt):
         assert sigma[None][i, j] == approx(0)
         
 def test_svd():
+  _test_svd(2, ti.f32)
+  _test_svd(2, ti.f64)
   _test_svd(3, ti.f32)
   _test_svd(3, ti.f64)
 

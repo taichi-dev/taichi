@@ -68,8 +68,6 @@ def test_svd():
 
 @ti.all_archs
 def test_transpose_no_loop():
-  # TODO: fix this
-  return
   A = ti.Matrix(3, 3, dt=ti.f32, shape=())
   U = ti.Matrix(3, 3, dt=ti.f32, shape=())
   sigma = ti.Matrix(3, 3, dt=ti.f32, shape=())
@@ -77,7 +75,8 @@ def test_transpose_no_loop():
   
   @ti.kernel
   def run():
-    U[None], sigma[None], V[None] = svd(A[None])
+    U[None], sigma[None], V[None] = ti.svd(A[None])
   
   run()
+  # As long as it passes compilation we are good
   

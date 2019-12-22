@@ -38,6 +38,17 @@ by *Yuanming Hu, Tzu-Mao Li, Luke Anderson, Jonathan Ragan-Kelley and Fredo Dura
 - Tune the performance of the LLVM backend to match that of the legacy source-to-source backends
 - Language documentation
 ## Updates
+- (Dec  22, 2019) v0.3.4 released.
+   - 2D and 3D polar decomposition (`R, S = ti.polar_decompose(A, ti.f32)`) and svd (`U, sigma, V = ti.svd(A, ti.f32)`) support. Note that `sigma` is a `3x3` diagonal matrix.
+   - Fixed documentation versioning
+   - Allow `expr_init` with `ti.core.DataType` as inputs, so that `ti.core.DataType` can be used as `ti.func` parameter
+- (Dec  20, 2019) v0.3.3 released.
+   - Loud failure message when calling nested kernels. Closed #310
+   - `DiffTaichi` examples moved to [a standalone repo](https://github.com/yuanming-hu/difftaichi)
+   - Fixed documentation versioning
+   - Correctly differentiating kernels with multiple offloaded statements
+- (Dec  18, 2019) v0.3.2 released
+   - `Vector.norm` now comes with a parameter `eps` (`=0` by default), and returns `sqrt(\sum_i(x_i ^ 2) + eps)`. A non-zero `eps` safe guards the operator's gradient on zero vectors during differentiable programming.
 - (Dec  17, 2019) v0.3.1 released.
    - Removed dependency on `glibc 2.27`
 - (Dec  17, 2019) v0.3.0 released.

@@ -34,8 +34,6 @@ std::vector<std::unique_ptr<IRBuilder::ScopeGuard>> scope_stack;
 void compile_runtimes();
 std::string libdevice_path();
 
-
-
 TLANG_NAMESPACE_END
 
 TC_NAMESPACE_BEGIN
@@ -67,7 +65,8 @@ void export_lang(py::module &m) {
                      &CompileConfig::verbose_kernel_launches)
       .def_readwrite("verbose", &CompileConfig::verbose)
       .def_readwrite("enable_profiler", &CompileConfig::enable_profiler)
-      .def_readwrite("gradient_dt", &CompileConfig::gradient_dt);
+      .def_readwrite("gradient_dt", &CompileConfig::gradient_dt)
+      .def_readwrite("fast_math", &CompileConfig::fast_math);
 
   m.def("reset_default_compile_config",
         [&]() { default_compile_config = CompileConfig(); });

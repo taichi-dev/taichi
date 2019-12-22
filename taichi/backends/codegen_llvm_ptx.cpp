@@ -172,18 +172,11 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
       }
     } else if (op == UnaryOpType::sqrt) {
       if (input_taichi_type == DataType::f32) {
-        // stmt->value =
-        // builder->CreateIntrinsic(llvm::Intrinsic::nvvm_sqrt_rn_f,
-        //                                       {input_type}, {input});
-
         stmt->value =
             builder->CreateCall(get_runtime_function("__nv_sqrtf"), input);
       } else if (input_taichi_type == DataType::f64) {
         stmt->value =
-        builder->CreateIntrinsic(llvm::Intrinsic::nvvm_sqrt_rn_d,
-                                              {input_type}, {input});
-        //stmt->value =
-        //    builder->CreateCall(get_runtime_function("__nv_sqrt"), input);
+            builder->CreateCall(get_runtime_function("__nv_sqrt"), input);
       } else {
         TC_NOT_IMPLEMENTED
       }

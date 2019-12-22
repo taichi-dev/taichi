@@ -107,6 +107,7 @@ def svd(A, dt):
 def _test_svd(n, dt):
   ti.get_runtime().set_default_fp(dt)
   ti.get_runtime().set_verbose(False)
+  ti.cfg.fast_math = False
   # ti.cfg.print_ir = True
   # ti.cfg.print_kernel_llvm_ir = True
   A = ti.Matrix(n, n, dt=dt, shape=())

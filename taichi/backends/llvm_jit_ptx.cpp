@@ -15,13 +15,13 @@
 
 TLANG_NAMESPACE_BEGIN
 
-// This file is based on Halide:CodeGen_PTX_Dev.cpp
 std::string cuda_mattrs() {
   return "+ptx50";
 }
 
 #if defined(TLANG_WITH_CUDA)
 std::string compile_module_to_ptx(std::unique_ptr<llvm::Module> &module) {
+  // Part of this function is borrowed from Halide::CodeGen_PTX_Dev.cpp
   using namespace llvm;
 
   llvm::Triple triple(module->getTargetTriple());
@@ -33,15 +33,26 @@ std::string compile_module_to_ptx(std::unique_ptr<llvm::Module> &module) {
       TargetRegistry::lookupTarget(triple.str(), err_str);
   TC_ERROR_UNLESS(target, err_str);
 
+  bool fast_math = get_current_program().config.fast_math;
+
   TargetOptions options;
-  options.PrintMachineCode = false;
-  options.AllowFPOpFusion = FPOpFusion::Fast;
-  options.UnsafeFPMath = true;
-  options.NoInfsFPMath = true;
-  options.NoNaNsFPMath = true;
-  options.HonorSignDependentRoundingFPMathOption = false;
-  options.NoZerosInBSS = false;
-  options.GuaranteedTailCallOpt = false;
+  options.PrintMachineCode = 0;
+  if (fast_math) {
+    options.AllowFPOpFusion = FPOpFusion::Fast;
+    // See NVPTXISelLowering.cpp
+    // Setting UnsafeFPMath true will result in approximations such as sqrt.approx in PTX for both f32 and f64
+    options.UnsafeFPMath = 1;
+    options.NoInfsFPMath = 1;
+    options.NoNaNsFPMath = 1;
+  } else {
+    options.AllowFPOpFusion = FPOpFusion::Strict;
+    options.UnsafeFPMath = 0;
+    options.NoInfsFPMath = 0;
+    options.NoNaNsFPMath = 0;
+  }
+  options.HonorSignDependentRoundingFPMathOption = 0;
+  options.NoZerosInBSS = 0;
+  options.GuaranteedTailCallOpt = 0;
   options.StackAlignmentOverride = 0;
 
   std::unique_ptr<TargetMachine> target_machine(target->createTargetMachine(

@@ -339,6 +339,7 @@ struct CompileConfig {
   bool verbose_kernel_launches;
   bool enable_profiler;
   bool verbose;
+  bool fast_math;
   DataType gradient_dt;
   std::string extra_flags;
   int default_gpu_block_dim;

@@ -17,7 +17,7 @@ def polar_decompose3d(A, dt):
 # https://www.seas.upenn.edu/~cffjiang/research/svd/svd.pdf
 @ti.func
 def svd2d(A, dt):
-  R, S = polar_decompose2d(A)
+  R, S = polar_decompose2d(A, dt)
   c, s = ti.cast(0.0, dt), ti.cast(0.0, dt)
   s1, s2 = ti.cast(0.0, dt), ti.cast(0.0, dt)
   if S[0, 1] == 0:

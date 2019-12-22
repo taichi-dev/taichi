@@ -140,6 +140,7 @@ class DecoratorRecorder {
  public:
   int vectorize;
   int parallelize;
+  bool strictly_serialized;
   ScratchPadOptions scratch_opt;
   int block_dim;
   bool uniform;
@@ -154,6 +155,7 @@ class DecoratorRecorder {
     uniform = false;
     scratch_opt.clear();
     block_dim = 0;
+    strictly_serialized = false;
   }
 };
 
@@ -1801,6 +1803,7 @@ class FrontendForStmt : public Stmt {
   std::vector<Ident> loop_var_id;
   int vectorize;
   int parallelize;
+  bool strictly_serialized;
   ScratchPadOptions scratch_opt;
   int block_dim;
 
@@ -1832,6 +1835,7 @@ class RangeForStmt : public Stmt {
   bool reversed;
   int vectorize;
   int parallelize;
+  bool strictly_serialized;
   int block_dim;
 
   RangeForStmt(Stmt *loop_var,
@@ -1839,13 +1843,15 @@ class RangeForStmt : public Stmt {
                Stmt *end,
                std::unique_ptr<Block> &&body,
                int vectorize,
-               int parallelize)
+               int parallelize,
+               bool strictly_serialized)
       : loop_var(loop_var),
         begin(begin),
         end(end),
         body(std::move(body)),
         vectorize(vectorize),
-        parallelize(parallelize) {
+        parallelize(parallelize),
+        strictly_serialized(strictly_serialized) {
     reversed = false;
     add_operand(this->loop_var);
     add_operand(this->begin);
@@ -2130,6 +2136,10 @@ inline void Parallelize(int v) {
 #else
   dec.parallelize = v;
 #endif
+}
+
+inline void StrictlySerialize() {
+  dec.strictly_serialized = true;
 }
 
 inline void Cache(int v, const Expr &var) {

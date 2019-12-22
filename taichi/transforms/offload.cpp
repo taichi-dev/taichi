@@ -46,7 +46,7 @@ class Offloader {
 
     for (int i = 0; i < (int)root_statements.size(); i++) {
       auto &stmt = root_statements[i];
-      if (auto s = stmt->cast<RangeForStmt>()) {
+      if (auto s = stmt->cast<RangeForStmt>(); s && !s->strictly_serialized) {
         assemble_serial_statements();
         auto offloaded =
             Stmt::make_typed<OffloadedStmt>(OffloadedStmt::TaskType::range_for);

@@ -186,6 +186,7 @@ FrontendForStmt::FrontendForStmt(const Expr &loop_var,
     : begin(begin), end(end) {
   vectorize = dec.vectorize;
   parallelize = dec.parallelize;
+  strictly_serialized = dec.strictly_serialized;
   block_dim = dec.block_dim;
   if (get_current_program().config.arch == Arch::gpu) {
     vectorize = 1;
@@ -209,6 +210,7 @@ FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
     : global_var(global_var) {
   vectorize = dec.vectorize;
   parallelize = dec.parallelize;
+  strictly_serialized = dec.strictly_serialized;
   block_dim = dec.block_dim;
   if (get_current_program().config.arch == Arch::gpu) {
     vectorize = 1;

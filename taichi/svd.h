@@ -157,6 +157,7 @@ sifakis_svd_export(const Expr &a00,
   Ss33 = Stmp1 + Ss33;
   Stmp1 = Sa33 * Sa33;
   Ss33 = Stmp1 + Ss33;
+  StrictlySerialize();
   For(0, num_iters, [&](Expr sweep) {
     Ssh = Ss21 * Sone_half;
     Stmp5 = Ss11 - Ss22;

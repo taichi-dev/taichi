@@ -11,7 +11,6 @@ def polar_decompose2d(a, dt):
 
 @ti.func
 def polar_decompose3d(A, dt):
-  assert A.n == 3 and A.m == 3
   U, sig, V = ti.svd(A, dt)
   return U @ ti.transposed(V), V @ sig @ ti.transposed(V)
 

@@ -28,8 +28,7 @@ def test_transpose():
 
 
 @ti.all_archs
-def _test_polar_decomp(dt):
-  dim = 2
+def _test_polar_decomp(dim, dt):
   m = ti.Matrix(dim, dim, dt)
   r = ti.Matrix(dim, dim, dt)
   s = ti.Matrix(dim, dim, dt)
@@ -42,31 +41,37 @@ def _test_polar_decomp(dt):
 
   @ti.kernel
   def polar():
-    R, S = ti.polar_decompose(m[None])
+    R, S = ti.polar_decompose(m[None], dt)
     r[None] = R
     s[None] = S
     m[None] = R @ S
     I[None] = R @ ti.transposed(R)
     D[None] = S - ti.transposed(S)
+    
+  def V(i, j):
+    return i * 2 + j * 7 + int(i == j) * 3
+    
 
   for i in range(dim):
     for j in range(dim):
-      m(i, j)[None] = i * 2 + j * 7
+      m(i, j)[None] = V(i, j)
 
   polar()
   
-  tol = 1e-5 if dt == ti.f32 else 1e-12
+  tol = 5e-5 if dt == ti.f32 else 1e-12
 
   for i in range(dim):
     for j in range(dim):
-      assert m(i, j)[None] == approx(i * 2 + j * 7, abs=tol)
+      assert m(i, j)[None] == approx(V(i, j), abs=tol)
       assert I(i, j)[None] == approx(int(i == j), abs=tol)
       assert D(i, j)[None] == approx(0, abs=tol)
       
  
 def test_polar_decomp():
-  _test_polar_decomp(ti.f32)
-  _test_polar_decomp(ti.f64)
+  _test_polar_decomp(2, ti.f32)
+  _test_polar_decomp(2, ti.f64)
+  _test_polar_decomp(3, ti.f32)
+  _test_polar_decomp(3, ti.f64)
 
 
 @ti.all_archs

@@ -169,7 +169,8 @@ class LowerAST : public IRVisitor {
       end->flatten(flattened);
       auto &&new_for = std::make_unique<RangeForStmt>(
           stmt->parent->lookup_var(stmt->loop_var_id[0]), begin->stmt,
-          end->stmt, std::move(stmt->body), stmt->vectorize, stmt->parallelize);
+          end->stmt, std::move(stmt->body), stmt->vectorize, stmt->parallelize,
+          stmt->strictly_serialized);
       new_for->block_dim = stmt->block_dim;
       flattened.push_back(std::move(new_for));
     } else {

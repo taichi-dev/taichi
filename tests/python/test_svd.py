@@ -18,8 +18,6 @@ def test_precision():
   assert v[None] ** 2 == approx(3.25, abs=1e-12)
   assert w[None] * 3 == approx(7, abs=1e-12)
 
-
-
 def mat_equal(A, B, tol=1e-6):
   return np.max(np.abs(A - B)) < tol
 

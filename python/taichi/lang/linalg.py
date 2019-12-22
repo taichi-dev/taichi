@@ -1,9 +1,24 @@
 import taichi as ti
 
+@ti.func
+def polar_decompose2d(a, dt):
+  x, y = a(0, 0) + a(1, 1), a(1, 0) - a(0, 1)
+  scale = (1.0 / ti.sqrt(x * x + y * y))
+  c = x * scale
+  s = y * scale
+  r = ti.Matrix([[c, -s], [s, c]])
+  return r, ti.Matrix.transposed(r) @ a
+
+@ti.func
+def polar_decompose3d(A, dt):
+  assert A.n == 3 and A.m == 3
+  U, sig, V = ti.svd(A, dt)
+  return U @ ti.transposed(V), V @ sig @ ti.transposed(V)
+
 # https://www.seas.upenn.edu/~cffjiang/research/svd/svd.pdf
 @ti.func
 def svd2d(A, dt):
-  R, S = ti.polar_decompose(A)
+  R, S = polar_decompose2d(A)
   c, s = ti.cast(0.0, dt), ti.cast(0.0, dt)
   s1, s2 = ti.cast(0.0, dt), ti.cast(0.0, dt)
   if S[0, 1] == 0:
@@ -68,4 +83,14 @@ def svd(A, dt):
   elif ti.static(A.n == 3):
     return svd3d(A, dt)
   else:
-    raise Exception("SVD only supports 2D and 3D matrices")
+    raise Exception("SVD only supports 2D and 3D matrices.")
+  
+@ti.func
+def polar_decompose(A, dt):
+  if ti.static(A.n == 2):
+    ret = polar_decompose2d(A, dt)
+    return ret
+  elif ti.static(A.n == 3):
+    return polar_decompose3d(A, dt)
+  else:
+    raise Exception("Polar decomposition only supports 2D and 3D matrices.")

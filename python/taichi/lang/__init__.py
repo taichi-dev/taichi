@@ -52,9 +52,16 @@ def inversed(x):
   return x.inversed()
 
 transposed = Matrix.transposed
-polar_decompose = Matrix.polar_decompose
 
-def svd(A, dt):
+def polar_decompose(A, dt=None):
+  if dt is None:
+    dt = get_runtime().default_fp
+  from .linalg import polar_decompose
+  return polar_decompose(A, dt)
+
+def svd(A, dt=None):
+  if dt is None:
+    dt = get_runtime().default_fp
   from .linalg import svd
   return svd(A, dt)
 

@@ -129,13 +129,20 @@ std::string compile_module_to_ptx(std::unique_ptr<llvm::Module> &module) {
   return buffer;
 }
 
-#define checkCudaErrors(err) \
-  if ((err) != CUDA_SUCCESS) \
-    TC_ERROR("Cuda Error {}", get_error_name(err));
+#define checkCudaErrors(err)                                \
+  if ((err) != CUDA_SUCCESS)                                \
+    TC_ERROR("Cuda Error {}: {}", get_cuda_error_name(err), \
+             get_cuda_error_string(err));
 
-std::string get_error_name(CUresult err) {
+std::string get_cuda_error_name(CUresult err) {
   const char *ptr;
   cuGetErrorName(err, &ptr);
+  return std::string(ptr);
+}
+
+std::string get_cuda_error_string(CUresult err) {
+  const char *ptr;
+  cuGetErrorString(err, &ptr);
   return std::string(ptr);
 }
 

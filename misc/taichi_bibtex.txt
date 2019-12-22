@@ -1,0 +1,10 @@
+@article{hu2019taichi,
+  title={Taichi: a language for high-performance computation on spatially sparse data structures},
+  author={Hu, Yuanming and Li, Tzu-Mao and Anderson, Luke and Ragan-Kelley, Jonathan and Durand, Fr{\'e}do},
+  journal={ACM Transactions on Graphics (TOG)},
+  volume={38},
+  number={6},
+  pages={201},
+  year={2019},
+  publisher={ACM}
+}

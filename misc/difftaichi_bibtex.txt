@@ -1,0 +1,6 @@
+@article{hu2019difftaichi,
+  title={DiffTaichi: Differentiable Programming for Physical Simulation},
+  author={Hu, Yuanming and Anderson, Luke and Li, Tzu-Mao and Sun, Qi and Carr, Nathan and Ragan-Kelley, Jonathan and Durand, Fr{\'e}do},
+  journal={ICLR},
+  year={2020}
+}

@@ -6,15 +6,15 @@ from pytest import approx
 @ti.func
 def svd2d(A, dt):
   R, S = ti.polar_decompose(A)
-  c, s = 0.0, 0.0
-  s1, s2 = 0.0, 0.0
+  c, s = ti.cast(0.0, dt), ti.cast(0.0, dt)
+  s1, s2 = ti.cast(0.0, dt), ti.cast(0.0, dt)
   if S[0, 1] == 0:
     c, s = 1, 0
     s1, s2 = S[0, 0], S[1, 1]
   else:
     tao = 0.5 * (S[0, 0] - S[1, 1])
     w = ti.sqrt(tao ** 2 + S[0, 1] ** 2)
-    t = 0.0
+    t = ti.cast(0.0, dt)
     if tao > 0:
       t = S[0, 1] / (tao + w)
     else:
@@ -65,20 +65,19 @@ def mat_equal(A, B, tol=1e-6):
   return np.max(np.abs(A - B)) < tol
 
 
-#@ti.func
+@ti.func
 def svd(A, dt):
-  if A.n == 2:
+  if ti.static(A.n == 2):
     ret = svd2d(A, dt)
     return ret
-  elif A.n == 3:
+  elif ti.static(A.n == 3):
     return svd3d(A, dt)
   else:
     raise Exception("SVD only supports 2D and 3D matrices")
 
 @ti.all_archs
 def _test_svd(n, dt):
-  ti.get_runtime().set_default_fp(dt)
-  
+  ti.cfg.print_ir = True
   A = ti.Matrix(n, n, dt=dt, shape=())
   A_reconstructed = ti.Matrix(n, n, dt=dt, shape=())
   U = ti.Matrix(n, n, dt=dt, shape=())

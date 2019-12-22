@@ -379,11 +379,12 @@ class Matrix:
 
   @staticmethod
   def polar_decompose(a):
+    import taichi as ti
     assert a.n == 2 and a.m == 2
     x, y = a(0, 0) + a(1, 1), a(1, 0) - a(0, 1)
     scale = impl.expr_init(1.0 / impl.sqrt(x * x + y * y))
-    c = x * scale
-    s = y * scale
+    c = ti.expr_init(x * scale)
+    s = ti.expr_init(y * scale)
     r = Matrix([[c, -s], [s, c]])
     return r, Matrix.transposed(r) @ a
 

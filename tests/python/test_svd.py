@@ -1,10 +1,10 @@
 import taichi as ti
 import numpy as np
-import random
 from pytest import approx
 
 @ti.all_archs
 def test_precision():
+  ti.cfg.fast_math = False
   u = ti.var(ti.f64, shape=())
   v = ti.var(ti.f64, shape=())
   w = ti.var(ti.f64, shape=())
@@ -12,11 +12,11 @@ def test_precision():
   @ti.kernel
   def forward():
     v[None] = ti.sqrt(ti.cast(u[None] + 3.25, ti.f64))
-    w[None] = ti.cast(u[None] + 7, ti.f64) / 3
+    w[None] = ti.cast(u[None] + 7, ti.f64) / ti.cast(u[None] + 3, ti.f64)
   
   forward()
-  print(v[None] ** 2 - 3.25)
-  print(w[None] * 3 - 7)
+  assert v[None] ** 2 == approx(3.25, abs=1e-12)
+  assert w[None] * 3 == approx(7, abs=1e-12)
 
 # https://www.seas.upenn.edu/~cffjiang/research/svd/svd.pdf
 @ti.func
@@ -29,22 +29,14 @@ def svd2d(A, dt):
     s1, s2 = S[0, 0], S[1, 1]
   else:
     tao = ti.cast(0.5, dt) * (S[0, 0] - S[1, 1])
-    print(S[0, 0])
-    print(S[1, 1])
-    print(tao)
     w = ti.sqrt(tao ** 2 + S[0, 1] ** 2)
     t = ti.cast(0.0, dt)
-    print(tao ** 2 + S[0, 1] ** 2)
-    print(w)
     if tao > 0:
       t = S[0, 1] / (tao + w)
     else:
       t = S[0, 1] / (tao - w)
-    print(t)
     c = 1 / ti.sqrt(t ** 2 + 1)
     s = -t * c
-    print(s)
-    print(c)
     s1 = c ** 2 * S[0, 0] - 2 * c * s * S[0, 1] + s ** 2 * S[1, 1]
     s2 = s ** 2 * S[0, 0] + 2 * c * s * S[0, 1] + c ** 2 * S[1, 1]
   V = ti.Matrix.zero(dt, 2, 2)
@@ -56,10 +48,7 @@ def svd2d(A, dt):
   else:
     V = [[c, s], [-s, c]]
   U = R @ V
-  print(s1)
-  print(s2)
   return U, ti.Matrix([[s1, ti.cast(0, dt)], [ti.cast(0, dt), s2]]), V
-  
 
 
 def svd3d(A, dt, iters=None):
@@ -92,7 +81,6 @@ def svd3d(A, dt, iters=None):
 def mat_equal(A, B, tol=1e-6):
   return np.max(np.abs(A - B)) < tol
 
-
 @ti.func
 def svd(A, dt):
   if ti.static(A.n == 2):
@@ -108,8 +96,6 @@ def _test_svd(n, dt):
   ti.get_runtime().set_default_fp(dt)
   ti.get_runtime().set_verbose(False)
   ti.cfg.fast_math = False
-  # ti.cfg.print_ir = True
-  # ti.cfg.print_kernel_llvm_ir = True
   A = ti.Matrix(n, n, dt=dt, shape=())
   A_reconstructed = ti.Matrix(n, n, dt=dt, shape=())
   U = ti.Matrix(n, n, dt=dt, shape=())
@@ -125,7 +111,6 @@ def _test_svd(n, dt):
       UtU[None] = ti.transposed(U[None]) @ U[None]
       VtV[None] = ti.transposed(V[None]) @ V[None]
       A_reconstructed[None] = U[None] @ sigma[None] @ ti.transposed(V[None])
-      print(10000 * (A_reconstructed[None][0, 0] - A[None][0, 0]))
     
   if n == 3:
     A[None] = [[1, 1, 3], [9, -3, 2], [-3, 4, 2]]
@@ -145,10 +130,10 @@ def _test_svd(n, dt):
         assert sigma[None][i, j] == approx(0)
         
 def test_svd():
-  # _test_svd(2, ti.f32)
+  _test_svd(2, ti.f32)
   _test_svd(2, ti.f64)
-  #_test_svd(3, ti.f32)
-  # _test_svd(3, ti.f64)
+  _test_svd(3, ti.f32)
+  _test_svd(3, ti.f64)
 
 
 @ti.all_archs

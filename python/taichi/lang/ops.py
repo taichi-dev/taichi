@@ -4,6 +4,16 @@ import numbers
 
 unary_ops = []
 
+def stack_info():
+  s = traceback.extract_stack()[3:-1]
+  for i, l in enumerate(s):
+    if 'taichi_ast_generator' in l:
+      s = s[i + 1:]
+      break
+  raw = ''.join(traceback.format_list(s))
+  # remove the confusing last line
+  return '\n'.join(raw.split('\n')[:-5]) + '\n'
+
 
 def unary(x):
 
@@ -61,32 +71,36 @@ def sqr(obj):
 
 @unary
 def sin(expr):
-  return Expr(taichi_lang_core.expr_sin(expr.ptr))
+  return Expr(taichi_lang_core.expr_sin(expr.ptr), tb=stack_info())
 
 
 @unary
 def cos(expr):
-  return Expr(taichi_lang_core.expr_cos(expr.ptr))
+  return Expr(taichi_lang_core.expr_cos(expr.ptr), tb=stack_info())
 
 
 @unary
 def asin(expr):
-  return Expr(taichi_lang_core.expr_asin(expr.ptr))
+  return Expr(taichi_lang_core.expr_asin(expr.ptr), tb=stack_info())
 
 
 @unary
 def acos(expr):
-  return Expr(taichi_lang_core.expr_acos(expr.ptr))
+  return Expr(taichi_lang_core.expr_acos(expr.ptr), tb=stack_info())
 
 
 @unary
 def sqrt(expr):
-  return Expr(taichi_lang_core.expr_sqrt(expr.ptr))
+  return Expr(taichi_lang_core.expr_sqrt(expr.ptr), tb=stack_info())
 
 
 @unary
 def floor(expr):
-  return Expr(taichi_lang_core.expr_floor(expr.ptr))
+  return Expr(taichi_lang_core.expr_floor(expr.ptr), tb=stack_info())
+
+@unary
+def ceil(expr):
+  return Expr(taichi_lang_core.expr_ceil(expr.ptr), tb=stack_info())
 
 
 @unary

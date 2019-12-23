@@ -1060,6 +1060,7 @@ class UnaryOpExpression : public Expression {
       unary->cast_by_value = cast_by_value;
     }
     stmt = unary.get();
+    stmt->tb = tb;
     ret.push_back(std::move(unary));
   }
 };

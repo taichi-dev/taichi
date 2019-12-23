@@ -118,8 +118,8 @@ class TypeCheck : public IRVisitor {
                                            stmt->ptr->ret_type.data_type);
     }
     if (stmt->ptr->ret_type.data_type != promoted) {
-      TC_WARN("Global store may lose precision: {} <- {}",
-              stmt->ptr->ret_data_type_name(), input_type);
+      TC_WARN("Global store may lose precision: {} <- {}, at",
+              stmt->ptr->ret_data_type_name(), input_type, stmt->tb);
     }
     stmt->ret_type = stmt->ptr->ret_type;
   }
@@ -153,7 +153,11 @@ class TypeCheck : public IRVisitor {
     }
     if (is_trigonometric(stmt->op_type) &&
         !is_real(stmt->operand->ret_type.data_type)) {
-      TC_ERROR("Trigonometric operator takes real inputs only.");
+      TC_ERROR("Trigonometric operator takes real inputs only. At {}", stmt->tb);
+    }
+    if ((stmt->op_type == UnaryOpType::floor || stmt->op_type == UnaryOpType::ceil) &&
+        !is_real(stmt->operand->ret_type.data_type)) {
+      TC_ERROR("floor/ceil takes real inputs only. At {}", stmt->tb);
     }
   }
 

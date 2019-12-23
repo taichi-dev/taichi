@@ -193,6 +193,8 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
     UNARY_STD(tan)
     UNARY_STD(tanh)
     UNARY_STD(sgn)
+    UNARY_STD(acos)
+    UNARY_STD(asin)
     else {
       TC_P(unary_op_type_name(op));
       TC_NOT_IMPLEMENTED

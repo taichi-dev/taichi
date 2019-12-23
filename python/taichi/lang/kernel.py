@@ -25,8 +25,6 @@ def remove_indent(lines):
 
 
 # The ti.func decorator
-
-
 def func(foo):
   from .impl import get_runtime
   src = remove_indent(inspect.getsource(foo))
@@ -330,29 +328,22 @@ class DifferentiableMethod:
     self.func(*args, **kwargs)
 
 def data_oriented(cls):
-  class new_class:
-    def __init__(self, *args, **kwargs):
-      self.instance = cls(*args, **kwargs)
+  def getattr(self, item):
+    x = super(cls, self).__getattribute__(item)
+    if hasattr(x, '_classkernel'):
+      return DifferentiableMethod(x)
+    else:
+      return x
     
-    def __getattribute__(self, item):
-      if item == 'instance':
-        return super().__getattribute__(item)
-      
-      x = self.instance.__getattribute__(item)
-      if hasattr(x, '_classkernel'):
-        print('Calling classkernel')
-        return DifferentiableMethod(x)
-      else:
-        return x
+  cls.__getattribute__ = getattr
   
-  return new_class
+  return cls
 
 def classkernel(foo):
   primal = Kernel(foo, False, classkernel=True)
   adjoint = Kernel(foo, True, classkernel=True)
 
   def decorated(*args, _gradient=False, **kwargs):
-    print(kwargs)
     if _gradient:
       adjoint(*args, **kwargs)
     else:

@@ -152,6 +152,16 @@ class MakeAdjoint : public IRVisitor {
     } else if (stmt->op_type == UnaryOpType::tanh) {
       accumulate(stmt->operand,
                  mul(adjoint(stmt), sub(constant(1), sqr(stmt))));
+    } else if (stmt->op_type == UnaryOpType::asin) {
+      accumulate(
+          stmt->operand,
+          mul(adjoint(stmt),
+              div(constant(1), sqrt(sub(constant(1), sqr(stmt->operand))))));
+    } else if (stmt->op_type == UnaryOpType::acos) {
+      accumulate(stmt->operand,
+                 mul(adjoint(stmt),
+                     negate(div(constant(1),
+                                sqrt(sub(constant(1), sqr(stmt->operand)))))));
     } else if (stmt->op_type == UnaryOpType::exp) {
       accumulate(stmt->operand, mul(adjoint(stmt), stmt));
     } else if (stmt->op_type == UnaryOpType::log) {

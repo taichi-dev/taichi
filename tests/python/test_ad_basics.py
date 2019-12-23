@@ -61,6 +61,8 @@ def test_trigonometric():
   grad_test(lambda x: ti.tanh(x), lambda x: np.tanh(x))
   grad_test(lambda x: ti.sin(x), lambda x: np.sin(x))
   grad_test(lambda x: ti.cos(x), lambda x: np.cos(x))
+  grad_test(lambda x: ti.acos(x), lambda x: np.arccos(x))
+  grad_test(lambda x: ti.asin(x), lambda x: np.arcsin(x))
 
 
 def test_frac():

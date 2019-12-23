@@ -38,6 +38,8 @@ by *Yuanming Hu, Luke Anderson, Tzu-Mao Li, Qi Sun, Nathan Carr, Jonathan Ragan-
 - Tune the performance of the LLVM backend to match that of the legacy source-to-source backends
 - Language documentation
 ## Updates
+- (Dec  22, 2019) v0.3.5 released.
+   - Maximum tensor dimensionality is 8 now (used to be 4). I.e., you can now allocate up to 8-D tensors.
 - (Dec  22, 2019) v0.3.4 released.
    - 2D and 3D polar decomposition (`R, S = ti.polar_decompose(A, ti.f32)`) and svd (`U, sigma, V = ti.svd(A, ti.f32)`) support. Note that `sigma` is a `3x3` diagonal matrix.
    - Fixed documentation versioning

@@ -1,4 +1,5 @@
 #pragma once
+#include "constants.h"
 
 #define FUNC_DECL
 
@@ -151,8 +152,10 @@ inline double get_time() {
 
 using size_t = std::size_t;
 
-constexpr int max_num_indices = 4;
-constexpr int max_num_args = 8;
+constexpr int max_num_indices = taichi_max_num_indices;
+constexpr int max_num_args = taichi_max_num_args;
+constexpr int max_num_snodes = taichi_max_num_snodes;
+constexpr int max_gpu_block_dim = 1024;
 
 struct SNodeMeta {
   int indices[max_num_indices];
@@ -171,9 +174,6 @@ struct AllocatorStat {
   size_t num_recycled_blocks;
   SNodeMeta *resident_metas;
 };
-
-constexpr int max_num_snodes = 1024;
-constexpr int max_gpu_block_dim = 1024;
 
 template <typename T, typename G>
 __device__ __host__ T union_cast(G g) {

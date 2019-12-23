@@ -8,6 +8,7 @@
 #include <cstdlib>
 #include <algorithm>
 #include <type_traits>
+#include "../constants.h"
 
 #if defined(__linux__) && !ARCH_cuda
 __asm__(".symver logf,logf@GLIBC_2.2.5");
@@ -55,11 +56,6 @@ using u32 = uint32;
 using u64 = uint64;
 using f32 = float32;
 using f64 = float64;
-
-// TODO: DRY. merge this with taichi_core
-constexpr int taichi_max_num_indices = 4;
-constexpr int taichi_max_num_args = 8;
-constexpr int taichi_max_num_snodes = 1024;
 
 using uint8 = uint8_t;
 using Ptr = uint8 *;

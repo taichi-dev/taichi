@@ -423,6 +423,14 @@ void element_listgen(Runtime *runtime, StructMeta *parent, StructMeta *child) {
   }
 }
 
+void mutex_lock_i32(Ptr mutex) {
+  while (atomic_exchange_i32((i32 *)mutex, 1) == 1);
+}
+
+void mutex_unlock_i32(Ptr mutex) {
+  atomic_exchange_i32((i32 *)mutex, 0);
+}
+
 int32 thread_idx() {
   return 0;
 }

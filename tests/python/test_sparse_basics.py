@@ -19,7 +19,7 @@ def test_bitmasked():
   @ti.kernel
   def func():
     for i in x:
-      ti.atomic_add(s[None], 1)
+      s[None] += 1
 
   x[0] = 1
   x[127] = 1
@@ -77,7 +77,7 @@ def test_pointer2():
   @ti.kernel
   def func():
     for i in x:
-      ti.atomic_add(s[None], 1)
+      s[None] += 1
 
   x[0] = 1
   x[127] = 1

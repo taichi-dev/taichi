@@ -180,7 +180,6 @@ void StructCompilerLLVM::generate_leaf_accessors(SNode &snode) {
 
   // SNode::place & indirect
   // emit end2end accessors for leaf (place) nodes, using chain accessors
-  TC_ASSERT(max_num_indices == 4);
   constexpr int mode_weak_access = 0;
   constexpr int mode_strong_access = 1;
   constexpr int mode_activate = 2;

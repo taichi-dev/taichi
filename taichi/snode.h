@@ -41,7 +41,9 @@ class Index {
     value = 0;
   }
   Index(int value) : value(value) {
-    TC_ASSERT(0 <= value && value < max_num_indices);
+    TC_ERROR_UNLESS(0 <= value && value < max_num_indices,
+                    "Too many dimensions. The maximum dimensionality is {}",
+                    max_num_indices);
   }
 };
 
@@ -255,18 +257,19 @@ class SNode {
     return *this;
   }
 
-  TC_FORCE_INLINE void *evaluate(void *ds, int i, int j, int k, int l) {
+  void *evaluate(void *ds, int i, int j, int k, int l) {
     TC_ASSERT(access_func);
+    TC_ASSERT(max_num_indices == 4);
     return access_func(ds, i, j, k, l);
   }
 
   // for float and double
-  void write_float(int i, int j, int k, int l, float64);
-  float64 read_float(int i, int j, int k, int l);
+  void write_float(const std::vector<int> &I, float64);
+  float64 read_float(const std::vector<int> &I);
 
   // for int32 and int64
-  void write_int(int i, int j, int k, int l, int64);
-  int64 read_int(int i, int j, int k, int l);
+  void write_int(const std::vector<int> &I, int64);
+  int64 read_int(const std::vector<int> &I);
 
   TC_FORCE_INLINE AllocatorStat stat() {
     TC_ASSERT(stat_func);
@@ -329,7 +332,7 @@ class SNode {
 
   int num_elements_along_axis(int i) const;
 
-  void set_kernel_args(Kernel *kernel, int i, int j, int k, int l);
+  void set_kernel_args(Kernel *kernel, const std::vector<int> &I);
 
   llvm::Type *get_body_type();
   llvm::Type *get_aux_type();

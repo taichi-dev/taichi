@@ -120,29 +120,24 @@ SNode *SNode::get_grad() const {
 }
 
 // for float and double
-void SNode::write_float(int i, int j, int k, int l, float64 val) {
+void SNode::write_float(const std::vector<int> &I, float64 val) {
   if (writer_kernel == nullptr) {
     writer_kernel = &get_current_program().get_snode_writer(this);
   }
-  set_kernel_args(writer_kernel, i, j, k, l);
-  if (num_active_indices >= 1)
-    writer_kernel->set_arg_int(0, i);
-  if (num_active_indices >= 2)
-    writer_kernel->set_arg_int(1, j);
-  if (num_active_indices >= 3)
-    writer_kernel->set_arg_int(2, k);
-  if (num_active_indices >= 4)
-    writer_kernel->set_arg_int(3, l);
+  set_kernel_args(writer_kernel, I);
+  for (int i = 0; i < num_active_indices; i++) {
+    writer_kernel->set_arg_int(i, I[i]);
+  }
   writer_kernel->set_arg_float(num_active_indices, val);
   get_current_program().synchronize();
   (*writer_kernel)();
 }
 
-float64 SNode::read_float(int i, int j, int k, int l) {
+float64 SNode::read_float(const std::vector<int> &I) {
   if (reader_kernel == nullptr) {
     reader_kernel = &get_current_program().get_snode_reader(this);
   }
-  set_kernel_args(reader_kernel, i, j, k, l);
+  set_kernel_args(reader_kernel, I);
   get_current_program().synchronize();
   (*reader_kernel)();
   if (dt == DataType::f32) {
@@ -155,21 +150,21 @@ float64 SNode::read_float(int i, int j, int k, int l) {
 }
 
 // for int32 and int64
-void SNode::write_int(int i, int j, int k, int l, int64 val) {
+void SNode::write_int(const std::vector<int> &I, int64 val) {
   if (writer_kernel == nullptr) {
     writer_kernel = &get_current_program().get_snode_writer(this);
   }
-  set_kernel_args(writer_kernel, i, j, k, l);
+  set_kernel_args(writer_kernel, I);
   writer_kernel->set_arg_float(num_active_indices, val);
   get_current_program().synchronize();
   (*writer_kernel)();
 }
 
-int64 SNode::read_int(int i, int j, int k, int l) {
+int64 SNode::read_int(const std::vector<int> &I) {
   if (reader_kernel == nullptr) {
     reader_kernel = &get_current_program().get_snode_reader(this);
   }
-  set_kernel_args(reader_kernel, i, j, k, l);
+  set_kernel_args(reader_kernel, I);
   get_current_program().synchronize();
   (*reader_kernel)();
   if (dt == DataType::i32) {
@@ -185,15 +180,10 @@ int SNode::num_elements_along_axis(int i) const {
   return extractors[physical_index_position[i]].num_elements;
 }
 
-void SNode::set_kernel_args(Kernel *kernel, int i, int j, int k, int l) {
-  if (num_active_indices >= 1)
-    kernel->set_arg_int(0, i);
-  if (num_active_indices >= 2)
-    kernel->set_arg_int(1, j);
-  if (num_active_indices >= 3)
-    kernel->set_arg_int(2, k);
-  if (num_active_indices >= 4)
-    kernel->set_arg_int(3, l);
+void SNode::set_kernel_args(Kernel *kernel, const std::vector<int> &I) {
+  for (int i = 0; i < num_active_indices; i++) {
+    kernel->set_arg_int(i, I[i]);
+  }
 }
 
 TLANG_NAMESPACE_END

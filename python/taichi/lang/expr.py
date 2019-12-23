@@ -168,19 +168,21 @@ class Expr:
     snode = self.ptr.snode()
 
     if self.snode().data_type() == f32 or self.snode().data_type() == f64:
-
       def getter(*key):
-        return snode.read_float(key[0], key[1], key[2], key[3])
+        assert len(key) == taichi_lang_core.get_max_num_indices()
+        return snode.read_float(key)
 
       def setter(value, *key):
-        snode.write_float(key[0], key[1], key[2], key[3], value)
+        assert len(key) == taichi_lang_core.get_max_num_indices()
+        snode.write_float(key, value)
     else:
-
       def getter(*key):
-        return snode.read_int(key[0], key[1], key[2], key[3])
+        assert len(key) == taichi_lang_core.get_max_num_indices()
+        return snode.read_int(key)
 
       def setter(value, *key):
-        snode.write_int(key[0], key[1], key[2], key[3], value)
+        assert len(key) == taichi_lang_core.get_max_num_indices()
+        snode.write_int(key, value)
 
     self.getter = getter
     self.setter = setter
@@ -205,7 +207,7 @@ class Expr:
       key = ()
     if not isinstance(key, tuple):
       key = (key,)
-    key = key + ((0,) * (4 - len(key)))
+    key = key + ((0,) * (taichi_lang_core.get_max_num_indices() - len(key)))
     return self.getter(*key)
 
   def loop_range(self):

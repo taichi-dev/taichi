@@ -213,7 +213,6 @@ void Program::clear_all_gradients() {
 Kernel &Program::get_snode_reader(SNode *snode) {
   TC_ASSERT(snode->type == SNodeType::place);
   auto kernel_name = fmt::format("snode_reader_{}", snode->id);
-  TC_ASSERT(snode->num_active_indices <= 4);
   auto &ker = kernel([&] {
     ExprGroup indices;
     for (int i = 0; i < snode->num_active_indices; i++) {
@@ -235,7 +234,6 @@ Kernel &Program::get_snode_reader(SNode *snode) {
 Kernel &Program::get_snode_writer(SNode *snode) {
   TC_ASSERT(snode->type == SNodeType::place);
   auto kernel_name = fmt::format("snode_writer_{}", snode->id);
-  TC_ASSERT(snode->num_active_indices <= 4);
   auto &ker = kernel([&] {
     ExprGroup indices;
     for (int i = 0; i < snode->num_active_indices; i++) {

@@ -8,17 +8,16 @@ struct PointerMeta : public StructMeta {
 STRUCT_FIELD(PointerMeta, _);
 
 void Pointer_activate(Ptr meta, Ptr node, int i) {
-  // TODO: lock
   Ptr lock = node + 8;
-  mutex_lock_i32(lock);
-  Ptr &data_ptr = *(Ptr *)(node + 0);
-  if (data_ptr == nullptr) {
-    auto smeta = (StructMeta *)meta;
-    auto rt = (Runtime *)smeta->context->runtime;
-    auto alloc = rt->node_allocators[smeta->snode_id];
-    data_ptr = NodeAllocator_allocate(alloc);
-  }
-  mutex_unlock_i32(lock);
+  locked_task(lock, [&] {
+    Ptr &data_ptr = *(Ptr *)(node + 0);
+    if (data_ptr == nullptr) {
+      auto smeta = (StructMeta *)meta;
+      auto rt = (Runtime *)smeta->context->runtime;
+      auto alloc = rt->node_allocators[smeta->snode_id];
+      data_ptr = NodeAllocator_allocate(alloc);
+    }
+  });
 }
 
 bool Pointer_is_active(Ptr meta, Ptr node, int i) {

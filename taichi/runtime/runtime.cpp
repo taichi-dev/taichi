@@ -62,6 +62,9 @@ using Ptr = uint8 *;
 
 using ContextArgType = long long;
 
+template <typename T>
+void locked_task(Ptr lock, const T &func);
+
 extern "C" {
 
 #if ARCH_cuda
@@ -435,6 +438,14 @@ int32 thread_idx() {
   return 0;
 }
 
+i32 warp_size() {
+  return 32;
+}
+
+i32 warp_idx() {
+  return thread_idx() % warp_size();
+}
+
 int32 block_idx() {
   return 0;
 }
@@ -612,4 +623,21 @@ i64 cuda_rand_i64(Context *context) {
 #include "node_pointer.h"
 #include "node_root.h"
 }
+template <typename T>
+class lock_guard {
+  Ptr lock;
+public:
+  lock_guard(Ptr lock, const T &func) : lock(lock) {
+    mutex_lock_i32(lock);
+    func();
+  }
+  ~lock_guard() {
+    mutex_unlock_i32(lock);
+  }
+};
+template <typename T>
+void locked_task(Ptr lock, const T &func) {
+  lock_guard<T> _(lock, func);
+}
+
 #endif

@@ -4,6 +4,7 @@ import taichi as ti
 @ti.host_arch
 def test_oop():
 
+  @ti.data_oriented
   class Array2D:
 
     def __init__(self, n, m, increment):
@@ -44,9 +45,7 @@ def test_oop():
     ti.root.lazy_grad()
 
   arr.inc()
-  arr.inc(
-      __gradient=True
-  )  # instead of arr.inc.grad due to python method bounding... Or just use ti.Tape
+  arr.inc.grad()
   assert arr.val[3, 4] == 3
   arr.inc2(4)
   assert arr.val[3, 4] == 7

@@ -96,7 +96,7 @@ def test_complex_kernels_oop():
 
     @ti.complex_kernel_grad(forward)
     def backward(self, mul):
-      self.func(mul, __gradient=True)
+      self.func(mul, _gradient=True)
 
   a = A()
 
@@ -140,7 +140,7 @@ def test_complex_kernels_oop2():
 
     @ti.complex_kernel_grad(forward)
     def backward(self, mul):
-      self.func(mul, __gradient=True)
+      self.func(mul, _gradient=True)
 
   a = A()
 

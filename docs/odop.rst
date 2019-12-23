@@ -57,9 +57,7 @@ A brief example:
     ti.root.lazy_grad()
 
   arr.inc()
-  arr.inc(
-      __gradient=True
-  )  # instead of arr.inc.grad due to python method bounding... Or just use ti.Tape
+  arr.inc.grad()
   assert arr.val[3, 4] == 3
   arr.inc2(4)
   assert arr.val[3, 4] == 7

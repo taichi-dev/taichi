@@ -317,13 +317,43 @@ def kernel(foo):
   ret.grad = Kernel(foo, True)
   return ret
 
+class DifferentiableMethod:
+  def __init__(self, func):
+    self.func = func
+    
+    def gradient(*args, **kwargs):
+      func(*args, **kwargs, _gradient=True)
+    
+    self.grad = gradient
+  
+  def __call__(self, *args, **kwargs):
+    self.func(*args, **kwargs)
+
+def data_oriented(cls):
+  class new_class:
+    def __init__(self, *args, **kwargs):
+      self.instance = cls(*args, **kwargs)
+    
+    def __getattribute__(self, item):
+      if item == 'instance':
+        return super().__getattribute__(item)
+      
+      x = self.instance.__getattribute__(item)
+      if hasattr(x, '_classkernel'):
+        print('Calling classkernel')
+        return DifferentiableMethod(x)
+      else:
+        return x
+  
+  return new_class
 
 def classkernel(foo):
   primal = Kernel(foo, False, classkernel=True)
   adjoint = Kernel(foo, True, classkernel=True)
 
-  def decorated(*args, __gradient=False, **kwargs):
-    if __gradient:
+  def decorated(*args, _gradient=False, **kwargs):
+    print(kwargs)
+    if _gradient:
       adjoint(*args, **kwargs)
     else:
       primal(*args, **kwargs)
@@ -332,5 +362,7 @@ def classkernel(foo):
     runtime = ti.get_runtime()
     if runtime.target_tape and not runtime.inside_complex_kernel:
       runtime.target_tape.insert(decorated, args)
+      
+  decorated._classkernel = True
 
   return decorated

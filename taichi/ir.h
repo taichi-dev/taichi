@@ -2220,6 +2220,33 @@ class For {
     func(i, j, k, l);
   }
 
+  For(Expr global, const std::function<void(Expr, Expr, Expr, Expr, Expr)> &func) {
+    auto i = Expr(std::make_shared<IdExpression>());
+    auto j = Expr(std::make_shared<IdExpression>());
+    auto k = Expr(std::make_shared<IdExpression>());
+    auto l = Expr(std::make_shared<IdExpression>());
+    auto a = Expr(std::make_shared<IdExpression>());
+    auto stmt_unique = std::make_unique<FrontendForStmt>((i, j, k, l, a), global);
+    auto stmt = stmt_unique.get();
+    current_ast_builder().insert(std::move(stmt_unique));
+    auto _ = current_ast_builder().create_scope(stmt->body);
+    func(i, j, k, l, a);
+  }
+
+  For(Expr global, const std::function<void(Expr, Expr, Expr, Expr, Expr, Expr)> &func) {
+    auto i = Expr(std::make_shared<IdExpression>());
+    auto j = Expr(std::make_shared<IdExpression>());
+    auto k = Expr(std::make_shared<IdExpression>());
+    auto l = Expr(std::make_shared<IdExpression>());
+    auto a = Expr(std::make_shared<IdExpression>());
+    auto b = Expr(std::make_shared<IdExpression>());
+    auto stmt_unique = std::make_unique<FrontendForStmt>((i, j, k, l, a, b), global);
+    auto stmt = stmt_unique.get();
+    current_ast_builder().insert(std::move(stmt_unique));
+    auto _ = current_ast_builder().create_scope(stmt->body);
+    func(i, j, k, l, a, b);
+  }
+
   For(Expr s, Expr e, const std::function<void(Expr)> &func);
 };
 

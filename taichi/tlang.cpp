@@ -34,6 +34,7 @@ void Program::initialize_gradient_clearers() {
     }
     auto kernel_name = fmt::format("clear_gradient_{}", node->id);
     if (!places.empty()) {
+      TC_ASSERT(max_num_indices == 8);
       auto &ker = kernel([&] {
         if (places[0]->num_active_indices == 1) {
           For(*places[0]->expr, [&](Expr i) {
@@ -57,6 +58,18 @@ void Program::initialize_gradient_clearers() {
           For(*places[0]->expr, [&](Expr i, Expr j, Expr k, Expr l) {
             for (auto s : places) {
               (*s->expr)[i, j, k, l] = 0;
+            }
+          });
+        } else if (places[0]->num_active_indices == 5) {
+          For(*places[0]->expr, [&](Expr i, Expr j, Expr k, Expr l, Expr a) {
+            for (auto s : places) {
+              (*s->expr)[i, j, k, l, a] = 0;
+            }
+          });
+        } else if (places[0]->num_active_indices == 6) {
+          For(*places[0]->expr, [&](Expr i, Expr j, Expr k, Expr l, Expr a, Expr b) {
+            for (auto s : places) {
+              (*s->expr)[i, j, k, l, a, b] = 0;
             }
           });
         } else if (places[0]->num_active_indices == 0) {

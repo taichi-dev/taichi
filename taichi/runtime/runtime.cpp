@@ -346,7 +346,8 @@ Ptr Runtime_initialize(Runtime **runtime_ptr,
                        int num_snodes,
                        uint64_t root_size,
                        int root_id,
-                       void *_vm_allocator, bool verbose) {
+                       void *_vm_allocator,
+                       bool verbose) {
   auto vm_allocator = (vm_allocator_type)_vm_allocator;
   *runtime_ptr = (Runtime *)vm_allocator(sizeof(Runtime), 128);
   Runtime *runtime = *runtime_ptr;
@@ -427,7 +428,8 @@ void element_listgen(Runtime *runtime, StructMeta *parent, StructMeta *child) {
 }
 
 void mutex_lock_i32(Ptr mutex) {
-  while (atomic_exchange_i32((i32 *)mutex, 1) == 1);
+  while (atomic_exchange_i32((i32 *)mutex, 1) == 1)
+    ;
 }
 
 void mutex_unlock_i32(Ptr mutex) {
@@ -469,6 +471,9 @@ int32 warp_active_mask() {
 }
 
 void block_memfence() {
+}
+
+void threadfence() {
 }
 
 using BlockTask = void(Context *, Element *, int, int);
@@ -519,7 +524,8 @@ void for_each_block(Context *context,
   ctx.list = list->elements;
   ctx.element_size = element_size;
   ctx.element_split = element_split;
-  // printf("size %d spilt %d tail %d\n", ctx.element_size, ctx.element_split, list_tail);
+  // printf("size %d spilt %d tail %d\n", ctx.element_size, ctx.element_split,
+  // list_tail);
   auto runtime = (Runtime *)context->runtime;
   runtime->parallel_for(runtime->thread_pool, list_tail * element_split,
                         num_threads, &ctx, block_helper);
@@ -626,13 +632,25 @@ i64 cuda_rand_i64(Context *context) {
 template <typename T>
 class lock_guard {
   Ptr lock;
-public:
+
+ public:
   lock_guard(Ptr lock, const T &func) : lock(lock) {
+#if ARCH_x86_64
     mutex_lock_i32(lock);
     func();
-  }
-  ~lock_guard() {
     mutex_unlock_i32(lock);
+#else
+    // CUDA
+    for (int i = 0; i < warp_size(); i++) {
+      if (warp_idx() == i) {
+        // TODO: should it be atomicCAS?
+        mutex_lock_i32(lock);
+        threadfence(); // TODO
+        func();
+        mutex_unlock_i32(lock);
+      }
+    }
+#endif
   }
 };
 template <typename T>

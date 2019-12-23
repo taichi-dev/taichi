@@ -21,6 +21,11 @@ A brief example:
       self.total = ti.var(ti.f32)
       self.increment = increment
 
+    @staticmethod
+    @ti.func
+    def clamp(x):  # Clamp to [0, 1)
+        return max(0, min(1 - 1e-6, x))
+
     def place(self, root):
       root.dense(ti.ij, (self.n, self.m)).place(self.val)
       root.place(self.total)

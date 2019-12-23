@@ -70,7 +70,7 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
   } else if (type == SNodeType::dynamic) {
     body_type = llvm::PointerType::getInt8PtrTy(*ctx);
     // TODO: maybe load a struct from runtime?
-    // n (number of elements), and the mutex
+    // mutex and n (number of elements)
     aux_type =
         llvm::StructType::get(*ctx, {llvm::PointerType::getInt32Ty(*ctx),
                                      llvm::PointerType::getInt32Ty(*ctx)});

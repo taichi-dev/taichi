@@ -46,7 +46,6 @@ def test_dynamic2():
 
 @ti.all_archs
 def test_dynamic_matrix():
-  return
   if ti.cfg.arch == ti.cuda:
     return
 
@@ -59,7 +58,6 @@ def test_dynamic_matrix():
 
   @ti.kernel
   def func():
-    ti.serialize()
     for i in range(n // 4):
       x[i * 4][1, 0] = i
 

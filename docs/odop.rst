@@ -13,6 +13,7 @@ A brief example:
 
 .. code-block:: python
 
+  @ti.data_oriented
   class Array2D:
     def __init__(self, n, m, increment):
       self.n = n

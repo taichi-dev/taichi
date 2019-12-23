@@ -14,6 +14,9 @@ Matrices
 - ``ti.trace(A)``
 - ``ti.determinant(A, type)``
 - ``A.cast(type)``
+- ``R, S = ti.polar_decompose(A, ti.f32)``
+- ``U, sigma, V = ti.svd(A, ti.f32)`` (Note that ``sigma`` is a ``3x3`` diagonal matrix)
+
 
 Vectors
 ---------------------------------------
@@ -21,3 +24,7 @@ Vectors are special matrices with only 1 column. In fact, ``ti.Vector`` is just 
 
 - Dot product: ``a.dot(b)``, where ``a`` and ``b`` are vectors. ``ti.transposed(a) @ b`` will give you a ``matrix`` of size ``1x1``, which is not a `scalar`.
 - Outer product: ``ti.outer_product(a, b)``
+- l-2 norm: ``a.norm(eps = 0)``
+
+    - returns ``sqrt(\sum_i(x_i ^ 2) + eps)``
+    - Set ``eps = 1e-5`` for example, to safe guards the operator's gradient on zero vectors during differentiable programming.

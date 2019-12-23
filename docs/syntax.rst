@@ -1,8 +1,7 @@
 Syntax
 ==========================
 
-
-Defining your kernels
+Kernels
 ---------------------
 
 Kernel arguments must be type-hinted. Kernels can have at most 8 parameters, e.g.,
@@ -18,7 +17,6 @@ Kernel arguments must be type-hinted. Kernels can have at most 8 parameters, e.g
       for i in x:
         y[i] = x[i]
 
-* Restart the Taichi runtime system (clear memory, destroy all variables and kernels): ``ti.reset()``
 * For differentiable programming kernels should better have either serial statements or a single parallel for-loop. If you don't use differentiable programming, feel free to ignore this tip.
 
 .. code-block:: python
@@ -101,6 +99,10 @@ Use ``@ti.func`` to decorate your Taichi functions. These functions are callable
           rst = 0.0
         return rst
 
+.. warning::
+
+    All functions are force-inlined. Function arguments are passed by value.
+
 
 Data layout
 -------------------
@@ -127,6 +129,7 @@ Supported scalar functions:
 * ``max(a, b)``
 * ``min(a, b)``
 * ``ti.length(dynamic_snode)``
+* Inplace adds are atomic on global data. I.e., ``a += b`` is equivalent to ``ti.atomic_add(a, b)``
 
 Debugging
 -------------------------------------------

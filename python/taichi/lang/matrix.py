@@ -478,7 +478,7 @@ class Matrix:
       for j in range(self.m):
         ret[..., i, j] = self.get_entry(i, j).to_numpy()
     if as_vector:
-      assert self.m == 1
+      assert self.m == 1, "This matrix is not a vector"
       ret = ret[..., 0]
     return ret
 

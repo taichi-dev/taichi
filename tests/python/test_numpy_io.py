@@ -111,3 +111,38 @@ def test_matrix():
   val.from_numpy(nparr)
   new_nparr = val.to_numpy()
   assert (nparr == new_nparr).all()
+  
+@ti.all_archs
+def test_numpy_io_example():
+  n = 4
+  m = 7
+  
+  # Taichi tensors
+  val = ti.var(ti.i32, shape=(n, m))
+  vec = ti.Vector(3, dt=ti.i32, shape=(n, m))
+  mat = ti.Matrix(3, 4, dt=ti.i32, shape=(n, m))
+  
+  # Scalar
+  arr = np.ones(shape=(n, m), dtype=np.int32)
+  val.from_numpy(arr)
+  arr = val.to_numpy()
+  
+  # Vector
+  arr = np.ones(shape=(n, m, 3), dtype=np.int32)
+  vec.from_numpy(arr)
+  arr = np.ones(shape=(n, m, 3, 1), dtype=np.int32)
+  vec.from_numpy(arr)
+  
+  arr = vec.to_numpy()
+  assert arr.shape == (n, m, 3, 1)
+  
+  arr = vec.to_numpy(as_vector=True)
+  assert arr.shape == (n, m, 3)
+  
+  # Matrix
+  arr = np.ones(shape=(n, m, 3, 4), dtype=np.int32)
+  mat.from_numpy(arr)
+  arr = mat.to_numpy()
+  assert arr.shape == (n, m, 3, 4)
+
+  # For PyTorch tensors, use to_torch/from_torch instead

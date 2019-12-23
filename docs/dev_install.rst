@@ -7,7 +7,13 @@ Note this is for the compiler developers of Taichi lang. End users should use th
 Supports Ubuntu 14.04/16.04/18.04, ArchLinux, Mac OS X. For NVIDIA GPU support, CUDA 9.0+ is needed. 
 See below for installing CUDA.
 
-- Execute ``python3 -m pip install setuptools astpretty astor pytest opencv-python pybind11 Pillow numpy scipy GitPython yapf colorama psutil autograd``
+- Execute
+
+  .. code-block:: bash
+
+    python3 -m pip install setuptools astpretty astor pytest opencv-python pybind11
+    python3 -m pip install Pillow numpy scipy GitPython yapf colorama psutil autograd
+
 - Execute ``sudo apt install libtinfo-dev clang-7`` on Ubuntu.
 - Make sure you have LLVM 8.0.1 built from scratch, with (in the llvm source)
 
@@ -55,7 +61,7 @@ These instructions were copied from the webiste above for x86_64 architecture
   sudo apt-get update
   sudo apt-get -y install cuda
 
-Preparing Prebuilt LLVM for Windows CI
+Prebuilt LLVM for Windows CI
 -------------------------------------------------
 
 .. code-block:: bash
@@ -64,22 +70,21 @@ Preparing Prebuilt LLVM for Windows CI
 
 Then use Visual Studio to build. After building the "INSTALL" project, find your LLVM binaries/headers in `build/include`.
 
-Folder Structure
+Folder structure
 *************************************
 
 Key folders are
+
 - *analysis*: static analysis passes
 - *backends*: codegen to x86 and CUDA
 - *transforms*: IR transform passes
-- *ir*: the intermediate representation system
-- *program*: the context for taichi programs
 - ...
 
 Troubleshooting
 ----------------------------------
 
-- Run with debug mode to see if there's any illegal memory access; (TODO: this is broken in new releases)
-- Disable compiler optimizations to quickly confirm that the issue is not cause by optimization;
+- Run with debug mode to see if there's any illegal memory access
+- Disable compiler optimizations to quickly confirm that the issue is not cause by optimization
 
 Bibtex
 ------------------------------------

@@ -21,6 +21,10 @@ The Taichi Programming Language
 
    tensor_matrix
 
+   global_settings
+
+   external
+
 .. toctree::
    :caption: Advanced Programming
    :maxdepth: 3

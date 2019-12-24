@@ -15,6 +15,8 @@
 
 TLANG_NAMESPACE_BEGIN
 
+std::unique_ptr<CUDAContext> cuda_context;  // TODO:..
+
 std::string cuda_mattrs() {
   return "+ptx50";
 }
@@ -185,6 +187,7 @@ CUDAContext::CUDAContext() {
 }
 
 CUmodule CUDAContext::compile(const std::string &ptx) {
+  cuda_context->make_current();
   // Create module for object
   CUmodule cudaModule;
   TC_INFO("PTX size: {:.2f}KB", ptx.size() / 1024.0);
@@ -197,6 +200,7 @@ CUmodule CUDAContext::compile(const std::string &ptx) {
 
 CUfunction CUDAContext::get_function(CUmodule module,
                                      const std::string &func_name) {
+  cuda_context->make_current();
   CUfunction func;
   // auto t = Time::get_time();
   checkCudaErrors(cuModuleGetFunction(&func, module, func_name.c_str()));
@@ -209,6 +213,7 @@ void CUDAContext::launch(CUfunction func,
                          void *context_ptr,
                          unsigned gridDim,
                          unsigned blockDim) {
+  cuda_context->make_current();
   // Kernel parameters
 
   checkCudaErrors(cuMemcpyHtoD(context_buffer, context_ptr, sizeof(Context)));
@@ -240,7 +245,6 @@ CUDAContext::~CUDAContext() {
   */
 }
 
-std::unique_ptr<CUDAContext> cuda_context;  // TODO:..
 
 #else
 std::string compile_module_to_ptx(std::unique_ptr<llvm::Module> &module) {

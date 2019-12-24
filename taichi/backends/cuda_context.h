@@ -30,6 +30,10 @@ class CUDAContext {
     return mcpu;
   }
 
+  void make_current() {
+    cuCtxSetCurrent(context);
+  }
+
   ~CUDAContext();
 };
 

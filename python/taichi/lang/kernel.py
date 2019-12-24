@@ -51,6 +51,10 @@ def func(foo):
   compiled = locals()[foo.__name__]
   return compiled
 
+def classfunc(foo):
+  import taichi as ti
+  return func(foo)
+
 
 class KernelTemplateMapper:
 
@@ -336,6 +340,7 @@ def data_oriented(cls):
       return x
     
   cls.__getattribute__ = getattr
+  cls._data_oriented = True
   
   return cls
 

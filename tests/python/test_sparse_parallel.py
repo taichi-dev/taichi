@@ -24,7 +24,7 @@ def test_pointer():
   @ti.kernel
   def func():
     for i in x:
-      ti.atomic_add(s[None], 1)
+      s[None] += 1
 
   activate()
   func()

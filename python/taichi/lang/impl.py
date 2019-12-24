@@ -18,6 +18,8 @@ def expr_init(rhs):
       return tuple(expr_init(e) for e in rhs)
     elif isinstance(rhs, taichi_lang_core.DataType):
       return rhs
+    elif hasattr(rhs, '_data_oriented'):
+      return rhs
     else:
       return Expr(taichi_lang_core.expr_var(Expr(rhs).ptr))
 

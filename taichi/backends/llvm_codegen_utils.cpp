@@ -9,7 +9,7 @@ std::string type_name(llvm::Type *type) {
   return type_name_str;
 }
 
-bool check_func_call_signature(llvm::Value *func,
+void check_func_call_signature(llvm::Value *func,
                                std::vector<Value *> arglist) {
   auto func_type = func->getType()->getPointerElementType();
   int num_params = func_type->getFunctionNumParams();
@@ -30,11 +30,9 @@ bool check_func_call_signature(llvm::Value *func,
       }
       TC_INFO("  parameter {} mismatch: required={}, provided={}", i,
               type_name(required), type_name(provided));
-      TC_WARN("Bad function signature.");
-      return false;
+      TC_ERROR("Bad function signature.");
     }
   }
-  return true;
 }
 
 TLANG_NAMESPACE_END

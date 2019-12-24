@@ -39,7 +39,7 @@ TLANG_NAMESPACE_BEGIN
 
 std::string type_name(llvm::Type *type);
 
-bool check_func_call_signature(llvm::Value *func, std::vector<Value *> arglist);
+void check_func_call_signature(llvm::Value *func, std::vector<Value *> arglist);
 
 template <typename... Args>
 inline bool check_func_call_signature(llvm::Value *func, Args &&... args) {

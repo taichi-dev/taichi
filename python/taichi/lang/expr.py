@@ -12,8 +12,6 @@ class Expr:
     self.getter = None
     self.setter = None
     self.tb = tb
-    self.from_torch_ = None
-    self.to_torch_ = None
     if len(args) == 1:
       if isinstance(args[0], taichi_lang_core.Expr):
         self.ptr = args[0]
@@ -291,19 +289,19 @@ class Expr:
     return tuple(s)
 
   def to_numpy(self):
-    from .meta import tensor_to_numpy
+    from .meta import tensor_to_ext_arr
     import numpy as np
     arr = np.empty(
         shape=self.shape(), dtype=to_numpy_type(self.snode().data_type()))
-    tensor_to_numpy(self, arr)
+    tensor_to_ext_arr(self, arr)
     return arr
 
-  def to_torch(self):
-    from .meta import tensor_to_numpy
+  def to_torch(self, device=None):
+    from .meta import tensor_to_ext_arr
     import torch
     arr = torch.empty(
-        size=self.shape(), dtype=to_pytorch_type(self.snode().data_type()))
-    tensor_to_numpy(self, arr)
+        size=self.shape(), dtype=to_pytorch_type(self.snode().data_type()), device=device)
+    tensor_to_ext_arr(self, arr)
     return arr
 
   def from_numpy(self, arr):
@@ -311,10 +309,10 @@ class Expr:
     s = self.shape()
     for i in range(self.dim()):
       assert s[i] == arr.shape[i]
-    from .meta import numpy_to_tensor
+    from .meta import ext_arr_to_tensor
     if hasattr(arr, 'contiguous'):
       arr = arr.contiguous()
-    numpy_to_tensor(arr, self)
+    ext_arr_to_tensor(arr, self)
 
   def from_torch(self, arr):
     self.from_numpy(arr.contiguous())

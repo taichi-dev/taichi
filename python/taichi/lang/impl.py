@@ -81,6 +81,9 @@ class PyTaichi:
     self.inside_complex_kernel = False
     self.kernels = kernels
     Expr.materialize_layout_callback = self.materialize
+    
+  def get_num_compiled_functions(self):
+    return len(self.compiled_functions) + len(self.compiled_grad_functions)
 
   def set_verbose(self, verbose):
     import taichi as ti

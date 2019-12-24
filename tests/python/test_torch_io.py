@@ -172,3 +172,30 @@ def test_io_simple():
 
   zeros = mat.to_torch()
   assert zeros[1, 2] == 4
+  
+@torch_test
+def test_fused_kernels():
+  pass
+  return
+  n = 32
+  
+  x1 = ti.var(ti.f32, shape=(n, n))
+  t1 = torch.tensor(2 * np.ones((n, n), dtype=np.float32))
+  
+  x2 = ti.Matrix(2, 3, ti.f32, shape=(n, n))
+  t2 = torch.tensor(2 * np.ones((n, n, 2, 3), dtype=np.float32))
+  
+  x1.from_torch(t1)
+  for i in range(n):
+    for j in range(n):
+      assert x1[i, j] == 2
+  
+  x2.from_torch(t2)
+  for i in range(n):
+    for j in range(n):
+      for k in range(2):
+        for l in range(3):
+          assert x2[i, j][k, l] == 2
+  
+  t3 = x2.to_torch()
+  assert (t2 == t3).all()

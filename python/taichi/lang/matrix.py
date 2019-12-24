@@ -469,7 +469,7 @@ class Matrix:
       for i in range(self.n):
         for j in range(self.m):
           self.get_entry(i, j).fill(val.get_entry(i, j))
-
+          
   def to_numpy(self, as_vector=False):
     ret = np.empty(
         self.loop_range().shape() + (self.n, self.m),

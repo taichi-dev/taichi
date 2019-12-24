@@ -38,6 +38,11 @@ python3 -m pip install taichi-nightly-cuda-10-1
 - Tune the performance of the LLVM backend to match that of the legacy source-to-source backends
 - Language documentation
 ## Updates
+- (Dec  24, 2019) v0.3.9 released.
+   - `ti.classfunc` decorator for functions within a `data_oriented` class
+   - `[Expr/Vector/Matrix].to_torch` now has a extra argument `device`, which specifies the device placement for returned torch tensor, and should have type `torch.device`. Default=`None`. 
+   - Cross-device (CPU/GPU) taichi/PyTorch interaction support, when using `to_torch/from_torch`.
+   - #kernels compiled during external array IO significantly reduced (from `matrix size` to `1`)
 - (Dec  23, 2019) v0.3.8 released.
    - **Breaking change**: `ti.data_oriented` decorator introduced. Please decorate all your Taichi data-oriented objects using this decorator. To invoke the gradient versions of `classmethod`, for example, `A.forward`, simply use `A.forward.grad()` instead of `A.forward(__gradient=True)` (obsolete).
 - (Dec  22, 2019) v0.3.5 released.

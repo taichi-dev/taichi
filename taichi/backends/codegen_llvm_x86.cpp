@@ -44,10 +44,18 @@ void global_optimize_module_x86_64(std::unique_ptr<llvm::Module> &module) {
 
   TargetOptions options;
   options.PrintMachineCode = false;
-  options.AllowFPOpFusion = FPOpFusion::Fast;
-  options.UnsafeFPMath = true;
-  options.NoInfsFPMath = true;
-  options.NoNaNsFPMath = true;
+  bool fast_math = get_current_program().config.fast_math;
+  if (fast_math) {
+    options.AllowFPOpFusion = FPOpFusion::Fast;
+    options.UnsafeFPMath = 1;
+    options.NoInfsFPMath = 1;
+    options.NoNaNsFPMath = 1;
+  } else {
+    options.AllowFPOpFusion = FPOpFusion::Strict;
+    options.UnsafeFPMath = 0;
+    options.NoInfsFPMath = 0;
+    options.NoNaNsFPMath = 0;
+  }
   options.HonorSignDependentRoundingFPMathOption = false;
   options.NoZerosInBSS = false;
   options.GuaranteedTailCallOpt = false;

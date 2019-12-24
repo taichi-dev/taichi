@@ -3,7 +3,6 @@ import taichi as ti
 
 @ti.all_archs
 def test_dynamic():
-  return
   x = ti.var(ti.f32)
   n = 128
 
@@ -24,7 +23,6 @@ def test_dynamic():
 
 @ti.all_archs
 def test_dynamic2():
-  return
   if ti.cfg.arch == ti.cuda:
     return
   x = ti.var(ti.f32)
@@ -48,7 +46,6 @@ def test_dynamic2():
 
 @ti.all_archs
 def test_dynamic_matrix():
-  return
   if ti.cfg.arch == ti.cuda:
     return
 

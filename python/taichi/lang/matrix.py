@@ -482,17 +482,13 @@ class Matrix:
       ret = ret[..., 0]
     return ret
 
-  def to_torch(self, as_vector=False):
+  def to_torch(self, as_vector=False, device=None):
     import torch
     ret = torch.empty(
         self.loop_range().shape() + (self.n, self.m),
-        dtype=to_pytorch_type(self.loop_range().snode().data_type()))
-    for i in range(self.n):
-      for j in range(self.m):
-        ret[..., i, j] = self.get_entry(i, j).to_torch()
-    if as_vector:
-      assert self.m == 1
-      ret = ret[..., 0]
+        dtype=to_pytorch_type(self.loop_range().snode().data_type()), device=device)
+    from .meta import matrix_to_ext_arr
+    matrix_to_ext_arr(self, ret, as_vector)
     return ret
 
   def from_numpy(self, ndarray):

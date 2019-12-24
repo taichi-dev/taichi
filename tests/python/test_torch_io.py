@@ -179,7 +179,7 @@ def test_fused_kernels():
   X = ti.Matrix(3, 2, ti.f32, shape=(n, n, n))
   s = ti.get_runtime().get_num_compiled_functions()
   t = X.to_torch()
-  assert ti.get_runtime().get_num_compiled_functions() == s + 6
+  assert ti.get_runtime().get_num_compiled_functions() == s + 1
   X.from_torch(t)
-  assert ti.get_runtime().get_num_compiled_functions() == s + 12
+  assert ti.get_runtime().get_num_compiled_functions() == s + 7
 

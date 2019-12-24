@@ -857,6 +857,10 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     TC_ASSERT(!stmt->parent->mask() || stmt->width() == 1);
     TC_ASSERT(stmt->data->value);
     TC_ASSERT(stmt->ptr->value);
+    TC_P(type_name(stmt->data->value->getType()));
+    TC_P(type_name(stmt->ptr->value->getType()));
+    TC_P((void *)(&stmt->data->value->getType()->getContext()));
+    TC_P((void *)(&stmt->ptr->value->getType()->getContext()));
     builder->CreateStore(stmt->data->value, stmt->ptr->value);
   }
 

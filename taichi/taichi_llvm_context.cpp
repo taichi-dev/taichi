@@ -368,8 +368,8 @@ template llvm::Value *TaichiLLVMContext::get_constant(DataType dt, float64 t);
 
 template <typename T>
 llvm::Value *TaichiLLVMContext::get_constant(T t) {
-  TC_P(arch_name(arch));
-  TC_INFO("{}", (void *)ctx.get());
+  // TC_P(arch_name(arch));
+  // TC_INFO("{}", (void *)ctx.get());
   using TargetType = T;
   if constexpr (std::is_same_v<TargetType, float32> ||
                 std::is_same_v<TargetType, float64>) {

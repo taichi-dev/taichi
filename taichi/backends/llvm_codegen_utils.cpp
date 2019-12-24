@@ -18,11 +18,11 @@ void check_func_call_signature(llvm::Value *func,
   for (int i = 0; i < (int)arglist.size(); i++) {
     auto required = func_type->getFunctionParamType(i);
     auto provided = arglist[i]->getType();
-    TC_INFO("    required from context {}", (void *)&required->getContext());
-    TC_INFO("    provided from context {}", (void *)&provided->getContext());
+    // TC_INFO("    required from context {}", (void *)&required->getContext());
+    // TC_INFO("    provided from context {}", (void *)&provided->getContext());
     if (required != provided) {
-      TC_INFO("Function : {}", std::string(func->getName()));
-      TC_INFO("    Type : {}", type_name(func->getType()));
+      // TC_INFO("Function : {}", std::string(func->getName()));
+      // TC_INFO("    Type : {}", type_name(func->getType()));
       if (&required->getContext() != &provided->getContext()) {
         TC_INFO("  parameter {} types are from different contexts", i);
         TC_INFO("    required from context {}",

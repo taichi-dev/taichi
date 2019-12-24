@@ -8,9 +8,9 @@ struct PointerMeta : public StructMeta {
 STRUCT_FIELD(PointerMeta, _);
 
 void Pointer_activate(Ptr meta, Ptr node, int i) {
-  Ptr lock = node + 8;
+  Ptr lock = node;
   locked_task(lock, [&] {
-    Ptr &data_ptr = *(Ptr *)(node + 0);
+    Ptr &data_ptr = *(Ptr *)(node + 8);
     if (data_ptr == nullptr) {
       auto smeta = (StructMeta *)meta;
       auto rt = (Runtime *)smeta->context->runtime;
@@ -21,12 +21,12 @@ void Pointer_activate(Ptr meta, Ptr node, int i) {
 }
 
 bool Pointer_is_active(Ptr meta, Ptr node, int i) {
-  auto data_ptr = *(Ptr *)(node + 0);
+  auto data_ptr = *(Ptr *)(node + 8);
   return data_ptr != nullptr;
 }
 
 void *Pointer_lookup_element(Ptr meta, Ptr node, int i) {
-  auto data_ptr = *(Ptr *)(node + 0);
+  auto data_ptr = *(Ptr *)(node + 8);
   if (data_ptr == nullptr) {
     auto smeta = (StructMeta *)meta;
     auto context = smeta->context;
@@ -38,3 +38,4 @@ void *Pointer_lookup_element(Ptr meta, Ptr node, int i) {
 int Pointer_get_num_elements(Ptr meta, Ptr node) {
   return 1;
 }
+

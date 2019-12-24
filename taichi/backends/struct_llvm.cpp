@@ -64,9 +64,9 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
       body_type = llvm::Type::getDoubleTy(*ctx);
     }
   } else if (type == SNodeType::pointer) {
-    body_type = llvm::PointerType::getInt8PtrTy(*ctx);
     // mutex
-    aux_type = llvm::PointerType::getInt32Ty(*ctx);
+    aux_type = llvm::PointerType::getInt64Ty(*ctx);
+    body_type = llvm::PointerType::getInt8PtrTy(*ctx);
   } else if (type == SNodeType::dynamic) {
     body_type = llvm::PointerType::getInt8PtrTy(*ctx);
     // TODO: maybe load a struct from runtime?
@@ -79,7 +79,7 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
     TC_NOT_IMPLEMENTED;
   }
   if (aux_type != nullptr) {
-    llvm_type = llvm::StructType::create(*ctx, {body_type, aux_type}, "");
+    llvm_type = llvm::StructType::create(*ctx, {aux_type, body_type}, "");
     snode.has_aux_structure = true;
   } else {
     llvm_type = body_type;
@@ -88,8 +88,8 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
 
   TC_ASSERT(llvm_type != nullptr);
   snode_attr[snode].llvm_type = llvm_type;
-  snode_attr[snode].llvm_body_type = body_type;
   snode_attr[snode].llvm_aux_type = aux_type;
+  snode_attr[snode].llvm_body_type = body_type;
 }
 
 void StructCompilerLLVM::generate_refine_coordinates(SNode *snode) {

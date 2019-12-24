@@ -6,6 +6,10 @@
 
 TLANG_NAMESPACE_BEGIN
 
+class SNodeLLVMAttributes {
+ public:
+};
+
 class StructCompilerLLVM : public StructCompiler, public ModuleBuilder {
  public:
   StructCompilerLLVM(Arch arch);
@@ -14,9 +18,7 @@ class StructCompilerLLVM : public StructCompiler, public ModuleBuilder {
   TaichiLLVMContext *tlctx;
   llvm::LLVMContext *llvm_ctx;
 
-  std::map<SNode *, llvm::Function *> chain_accessors;
-  std::map<SNode *, llvm::Function *> leaf_accessors;
-  std::map<SNode *, std::string> leaf_accessor_names;
+  SNodeLLVMAttributes snode_llvm_attr;
 
   virtual void generate_types(SNode &snode) override;
 

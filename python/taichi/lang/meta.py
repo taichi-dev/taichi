@@ -26,3 +26,13 @@ def matrix_to_ext_arr(mat: ti.template(), arr: ti.ext_arr(), as_vector: ti.templ
           arr[I, p] = mat[I][p]
         else:
           arr[I, p, q] = mat[I][p, q]
+          
+@ti.kernel
+def ext_arr_to_matrix(arr: ti.ext_arr(), mat: ti.template(), as_vector: ti.template()):
+  for I in ti.grouped(mat):
+    for p in ti.static(range(mat.n)):
+      for q in ti.static(range(mat.m)):
+        if ti.static(as_vector):
+          mat[I][p] = arr[I, p]
+        else:
+          mat[I][p, q] = arr[I, p, q]

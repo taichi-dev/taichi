@@ -471,33 +471,42 @@ class Matrix:
           self.get_entry(i, j).fill(val.get_entry(i, j))
           
   def to_numpy(self, as_vector=False):
-    ret = np.empty(
-        self.loop_range().shape() + (self.n, self.m),
-        dtype=to_numpy_type(self.loop_range().snode().data_type()))
-    for i in range(self.n):
-      for j in range(self.m):
-        ret[..., i, j] = self.get_entry(i, j).to_numpy()
     if as_vector:
       assert self.m == 1, "This matrix is not a vector"
-      ret = ret[..., 0]
+      dim_ext = (self.n,)
+    else:
+      dim_ext = (self.n, self.m)
+    ret = np.empty(
+      self.loop_range().shape() + dim_ext,
+      dtype=to_numpy_type(self.loop_range().snode().data_type()))
+    from .meta import matrix_to_ext_arr
+    matrix_to_ext_arr(self, ret, as_vector)
     return ret
 
   def to_torch(self, as_vector=False, device=None):
     import torch
+    if as_vector:
+      assert self.m == 1, "This matrix is not a vector"
+      dim_ext = (self.n,)
+    else:
+      dim_ext = (self.n, self.m)
     ret = torch.empty(
-        self.loop_range().shape() + (self.n, self.m),
+        self.loop_range().shape() + dim_ext,
         dtype=to_pytorch_type(self.loop_range().snode().data_type()), device=device)
     from .meta import matrix_to_ext_arr
     matrix_to_ext_arr(self, ret, as_vector)
     return ret
 
   def from_numpy(self, ndarray):
-    if len(ndarray.shape) < self.loop_range().dim() + 2:
-      ndarray = ndarray[..., None]
-    for i in range(self.n):
-      for j in range(self.m):
-        self.get_entry(i, j).from_numpy(ndarray[..., i, j])
-
+    if len(ndarray.shape) == self.loop_range().dim() + 1:
+      as_vector = True
+      assert self.m == 1, "This matrix is not a vector"
+    else:
+      as_vector = False
+      assert len(ndarray.shape) == self.loop_range().dim() + 2
+    from .meta import ext_arr_to_matrix
+    ext_arr_to_matrix(ndarray, self, as_vector)
+    
   def from_torch(self, torch_tensor):
     return self.from_numpy(torch_tensor.contiguous())
 

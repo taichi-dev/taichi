@@ -181,5 +181,5 @@ def test_fused_kernels():
   t = X.to_torch()
   assert ti.get_runtime().get_num_compiled_functions() == s + 1
   X.from_torch(t)
-  assert ti.get_runtime().get_num_compiled_functions() == s + 7
+  assert ti.get_runtime().get_num_compiled_functions() == s + 2
 

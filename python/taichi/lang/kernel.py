@@ -284,7 +284,7 @@ class Kernel:
             
             if str(v.device).startswith('cuda'):
               # External tensor on cuda
-              if taichi_arch != taichi_lang_core.Arch.cuda:
+              if taichi_arch != taichi_lang_core.Arch.gpu:
                 # copy data back to cpu
                 host_v = v.to(device='cpu', copy=True)
                 tmp = host_v

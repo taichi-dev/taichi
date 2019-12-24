@@ -9,6 +9,42 @@ def torch_test(func):
     return ti.all_archs(func)
   else:
     return lambda x: None
+  
+@torch_test
+def test_io_devices():
+  n = 32
+  x = ti.var(dt=ti.i32, shape=n)
+  
+  @ti.kernel
+  def load(y: ti.ext_arr()):
+    for i in x:
+      x[i] = y[i] + 10
+      
+  @ti.kernel
+  def inc():
+    for i in x:
+      x[i] += i
+      
+  @ti.kernel
+  def store(y: ti.ext_arr()):
+    for i in x:
+      y[i] = x[i] * 2
+
+
+  devices = ['cpu']
+  if torch.cuda.is_available():
+    devices.append('cuda:0')
+  for device in devices:
+    y = torch.Tensor(np.ones(shape=n, dtype=np.int32)).to(device)
+
+    load(y)
+    inc()
+    store(y)
+    
+    y = y.cpu().numpy()
+    
+    for i in range(n):
+      assert y[i] == (11 + i) * 2
 
 @torch_test
 def test_io():

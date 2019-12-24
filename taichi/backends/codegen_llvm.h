@@ -732,9 +732,9 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   }
 
   void visit(ArgLoadStmt *stmt) override {
-    auto raw_arg =
-        builder->CreateCall(get_runtime_function("Context_get_args"),
-                            {get_context(), tlctx->get_constant(stmt->arg_id)});
+    auto raw_arg = call(builder, "Context_get_args", get_context(),
+                        tlctx->get_constant(stmt->arg_id));
+
     llvm::Type *dest_ty = nullptr;
     if (stmt->is_ptr) {
       dest_ty = PointerType::get(tlctx->get_data_type(DataType::i32), 0);

@@ -126,12 +126,11 @@ void StructCompilerLLVM::generate_refine_coordinates(SNode *snode) {
       addition = builder.CreateShl(
           addition, tlctx->get_constant(snode->extractors[i].start));
     }
-    auto in =
-        builder.CreateCall(get_runtime_function("PhysicalCoordinates_get_val"),
-                           {inp_coords, tlctx->get_constant(i)});
+    auto in = call(&builder, "PhysicalCoordinates_get_val", inp_coords,
+                   tlctx->get_constant(i));
     auto added = builder.CreateOr(in, addition);
-    builder.CreateCall(get_runtime_function("PhysicalCoordinates_set_val"),
-                       {outp_coords, tlctx->get_constant(i), added});
+    call(&builder, "PhysicalCoordinates_set_val", outp_coords,
+         tlctx->get_constant(i), added);
   }
   builder.CreateRetVoid();
 }
@@ -268,7 +267,8 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
       TC_INFO("Allocating data structure of size {}", root_size);
       auto root_ptr = initialize_data_structure(
           &get_current_program().llvm_runtime, (int)snodes.size(), root_size,
-          root_id, (void *)&::taichi_allocate_aligned, get_current_program().config.verbose);
+          root_id, (void *)&::taichi_allocate_aligned,
+          get_current_program().config.verbose);
       for (int i = 0; i < (int)snodes.size(); i++) {
         if (snodes[i]->type == SNodeType::pointer ||
             snodes[i]->type == SNodeType::dynamic) {

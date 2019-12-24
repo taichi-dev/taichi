@@ -8,7 +8,7 @@ def torch_test(func):
   if ti.has_pytorch():
     return ti.all_archs(func)
   else:
-    return lambda x: None
+    return lambda: None
   
 @torch_test
 def test_io_devices():

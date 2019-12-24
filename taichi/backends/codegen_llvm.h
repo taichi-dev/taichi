@@ -33,7 +33,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   int task_counter;
 
   void initialize_context() {
-    if (get_current_program().config.arch == Arch::gpu) {
+    if (kernel->arch == Arch::gpu) {
       tlctx = get_current_program().llvm_context_device.get();
     } else {
       tlctx = get_current_program().llvm_context_host.get();
@@ -60,7 +60,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       func = nullptr;
     }
 
-    void begin(std::string name) {
+    void begin(const std::string &name) {
       this->name = name;
     }
 

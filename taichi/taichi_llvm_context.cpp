@@ -358,7 +358,6 @@ llvm::Value *TaichiLLVMContext::get_constant(DataType dt, T t) {
     return llvm::ConstantInt::get(*ctx, llvm::APInt(64, t, false));
   } else {
     TC_NOT_IMPLEMENTED
-    return nullptr;
   }
 }
 
@@ -369,6 +368,8 @@ template llvm::Value *TaichiLLVMContext::get_constant(DataType dt, float64 t);
 
 template <typename T>
 llvm::Value *TaichiLLVMContext::get_constant(T t) {
+  TC_P(arch_name(arch));
+  TC_INFO("{}", (void *)ctx.get());
   using TargetType = T;
   if constexpr (std::is_same_v<TargetType, float32> ||
                 std::is_same_v<TargetType, float64>) {
@@ -383,7 +384,6 @@ llvm::Value *TaichiLLVMContext::get_constant(T t) {
     return llvm::ConstantInt::get(*ctx, llvm::APInt(64, (uint64)t, true));
   } else {
     TC_NOT_IMPLEMENTED
-    return nullptr;
   }
 }
 

@@ -1,9 +1,10 @@
 import taichi as ti
 
 
-@ti.all_archs
+# @ti.all_archs
 def test_dynamic():
   x = ti.var(ti.f32)
+  ti.cfg.arch = ti.cuda
   n = 128
 
   @ti.layout
@@ -66,3 +67,5 @@ def test_dynamic_matrix():
   for i in range(n // 4):
     assert x[i * 4][1, 0] == i
     assert x[i * 4 + 1][1, 0] == 0
+
+test_dynamic()

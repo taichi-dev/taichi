@@ -46,7 +46,7 @@ class TypeCheck : public IRVisitor {
   void visit(AtomicOpStmt *stmt) {
     TC_ASSERT(stmt->width() == 1);
     if (stmt->val->ret_type.data_type != stmt->dest->ret_type.data_type) {
-      TC_WARN("Atomically add {} to {} may lose precision.",
+      TC_WARN("Atomic add ({} to {}) may lose precision.",
               data_type_name(stmt->val->ret_type.data_type),
               data_type_name(stmt->dest->ret_type.data_type));
       stmt->val = insert_type_cast_before(stmt, stmt->val,

@@ -28,16 +28,11 @@ setuptools.setup(
     url='https://github.com/yuanming-hu/taichi',
     install_requires=[
         'numpy',
-        'Pillow',
-        'scipy',
         'pybind11',
         'colorama',
         'setuptools',
-        'astor',
-        'matplotlib',
         # For testing:
         'pytest',
-        'autograd',
     ],
     data_files=[('lib', data_files)],
     keywords=['graphics', 'simulation'],

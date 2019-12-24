@@ -643,7 +643,6 @@ class lock_guard {
     // CUDA
     for (int i = 0; i < warp_size(); i++) {
       if (warp_idx() == i) {
-        // TODO: should it be atomicCAS?
         mutex_lock_i32(lock);
         threadfence(); // TODO
         func();

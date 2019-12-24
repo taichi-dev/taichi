@@ -151,8 +151,7 @@ static_assert(__cplusplus >= 201402L, "C++14 required.");
 #define TC_STATIC_ASSERT(x) static_assert((x), #x);
 #define TC_ASSERT(x) TC_ASSERT_INFO((x), #x)
 #define TC_ASSERT_INFO assert_info
-// TODO: this should be part of logging
-#define TC_NOT_IMPLEMENTED TC_ERROR("Not Implemented.");
+#define TC_NOT_IMPLEMENTED TC_ERROR("Not supported.");
 
 #define TC_NAMESPACE_BEGIN namespace taichi {
 #define TC_NAMESPACE_END }

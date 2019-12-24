@@ -183,3 +183,48 @@ def test_fused_kernels():
   X.from_torch(t)
   assert ti.get_runtime().get_num_compiled_functions() == s + 2
 
+
+@torch_test
+def test_device():
+  n = 12
+  X = ti.Matrix(3, 2, ti.f32, shape=(n, n, n))
+  assert X.to_torch(device='cpu').device == torch.device('cpu')
+  
+  if torch.cuda.is_available():
+    assert X.to_torch(device='cuda:0').device == torch.device('cuda:0')
+
+
+@torch_test
+def test_shape_matrix():
+  n = 12
+  x = ti.Matrix(3, 2, ti.f32, shape=(n, n))
+  X = x.to_torch()
+  for i in range(n):
+    for j in range(n):
+      for k in range(3):
+        for l in range(2):
+          X[i, j, k, l] = i * 10 + j + k * 100 + l * 1000
+          
+  x.from_torch(X)
+  X1 = x.to_torch()
+  x.from_torch(X1)
+  X1 = x.to_torch()
+  
+  assert (X == X1).all()
+
+@torch_test
+def test_shape_vector():
+  n = 12
+  x = ti.Matrix(3, 1, ti.f32, shape=(n, n))
+  X = x.to_torch(as_vector=True)
+  for i in range(n):
+    for j in range(n):
+      for k in range(3):
+          X[i, j, k] = i * 10 + j + k * 100
+
+  x.from_torch(X)
+  X1 = x.to_torch(as_vector=True)
+  x.from_torch(X1)
+  X1 = x.to_torch(as_vector=True)
+
+  assert (X == X1).all()

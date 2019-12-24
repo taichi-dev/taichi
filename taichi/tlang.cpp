@@ -37,44 +37,44 @@ void Program::initialize_gradient_clearers() {
       TC_ASSERT(max_num_indices == 8);
       auto &ker = kernel([&] {
         if (places[0]->num_active_indices == 1) {
-          For(*places[0]->expr, [&](Expr i) {
+          For(places[0]->expr, [&](Expr i) {
             for (auto s : places) {
-              (*s->expr)[i] = 0;
+              (s->expr)[i] = 0;
             }
           });
         } else if (places[0]->num_active_indices == 2) {
-          For(*places[0]->expr, [&](Expr i, Expr j) {
+          For(places[0]->expr, [&](Expr i, Expr j) {
             for (auto s : places) {
-              (*s->expr)[i, j] = 0;
+              (s->expr)[i, j] = 0;
             }
           });
         } else if (places[0]->num_active_indices == 3) {
-          For(*places[0]->expr, [&](Expr i, Expr j, Expr k) {
+          For(places[0]->expr, [&](Expr i, Expr j, Expr k) {
             for (auto s : places) {
-              (*s->expr)[i, j, k] = 0;
+              (s->expr)[i, j, k] = 0;
             }
           });
         } else if (places[0]->num_active_indices == 4) {
-          For(*places[0]->expr, [&](Expr i, Expr j, Expr k, Expr l) {
+          For(places[0]->expr, [&](Expr i, Expr j, Expr k, Expr l) {
             for (auto s : places) {
-              (*s->expr)[i, j, k, l] = 0;
+              (s->expr)[i, j, k, l] = 0;
             }
           });
         } else if (places[0]->num_active_indices == 5) {
-          For(*places[0]->expr, [&](Expr i, Expr j, Expr k, Expr l, Expr a) {
+          For(places[0]->expr, [&](Expr i, Expr j, Expr k, Expr l, Expr a) {
             for (auto s : places) {
-              (*s->expr)[i, j, k, l, a] = 0;
+              (s->expr)[i, j, k, l, a] = 0;
             }
           });
         } else if (places[0]->num_active_indices == 6) {
-          For(*places[0]->expr, [&](Expr i, Expr j, Expr k, Expr l, Expr a, Expr b) {
+          For(places[0]->expr, [&](Expr i, Expr j, Expr k, Expr l, Expr a, Expr b) {
             for (auto s : places) {
-              (*s->expr)[i, j, k, l, a, b] = 0;
+              (s->expr)[i, j, k, l, a, b] = 0;
             }
           });
         } else if (places[0]->num_active_indices == 0) {
           for (auto s : places) {
-            (*s->expr)[Expr(0)] = 0;
+            (s->expr)[Expr(0)] = 0;
           }
         } else {
           TC_NOT_IMPLEMENTED

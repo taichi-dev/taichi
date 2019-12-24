@@ -219,7 +219,7 @@ Kernel &Program::get_snode_reader(SNode *snode) {
       indices.push_back(Expr::make<ArgLoadExpression>(i));
     }
     auto ret = Stmt::make<FrontendArgStoreStmt>(
-        snode->num_active_indices, load_if_ptr((*snode->expr)[indices]));
+        snode->num_active_indices, load_if_ptr((snode->expr)[indices]));
     current_ast_builder().insert(std::move(ret));
   });
   ker.set_arch(get_host_arch());
@@ -239,7 +239,7 @@ Kernel &Program::get_snode_writer(SNode *snode) {
     for (int i = 0; i < snode->num_active_indices; i++) {
       indices.push_back(Expr::make<ArgLoadExpression>(i));
     }
-    (*snode->expr)[indices] =
+    (snode->expr)[indices] =
         Expr::make<ArgLoadExpression>(snode->num_active_indices);
   });
   ker.set_arch(get_host_arch());

@@ -35,7 +35,7 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
 
   std::vector<llvm::Type *> ch_types;
   for (int i = 0; i < snode.ch.size(); i++) {
-    auto ch = snode.ch[i]->llvm_type;
+    auto ch = snode_attr[snode.ch[i]].llvm_type;
     ch_types.push_back(ch);
   }
 
@@ -43,7 +43,7 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
       llvm::StructType::create(*ctx, ch_types, snode.node_type_name + "_ch");
   ch_type->setName(snode.node_type_name + "_ch");
 
-  snode.llvm_element_type = ch_type;
+  snode_attr[snode].llvm_element_type = ch_type;
 
   llvm::Type *body_type = nullptr, *aux_type = nullptr;
   if (type == SNodeType::dense) {
@@ -87,9 +87,9 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
   }
 
   TC_ASSERT(llvm_type != nullptr);
-  snode.llvm_type = llvm_type;
-  snode.llvm_body_type = body_type;
-  snode.llvm_aux_type = aux_type;
+  snode_attr[snode].llvm_type = llvm_type;
+  snode_attr[snode].llvm_body_type = body_type;
+  snode_attr[snode].llvm_aux_type = aux_type;
 }
 
 void StructCompilerLLVM::generate_refine_coordinates(SNode *snode) {
@@ -149,7 +149,8 @@ void StructCompilerLLVM::generate_leaf_accessors(SNode &snode) {
     // create the get ch function
     auto parent = snode.parent;
 
-    auto inp_type = llvm::PointerType::get(parent->llvm_element_type, 0);
+    auto inp_type =
+        llvm::PointerType::get(snode_attr[parent].llvm_element_type, 0);
     // auto ret_type = llvm::PointerType::get(snode.llvm_type, 0);
 
     auto ft =
@@ -225,7 +226,8 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
 
   TC_ASSERT((int)snodes.size() <= max_num_snodes);
 
-  auto root_size = tlctx->jit->getDataLayout().getTypeAllocSize(root.llvm_type);
+  auto root_size =
+      tlctx->jit->getDataLayout().getTypeAllocSize(snode_attr[root].llvm_type);
 
   module->setDataLayout(tlctx->jit->getDataLayout());
 
@@ -274,13 +276,14 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
             snodes[i]->type == SNodeType::dynamic) {
           std::size_t chunk_size;
           if (snodes[i]->type == SNodeType::pointer)
-            chunk_size = tlctx->get_type_size(snodes[i]->ch[0]->llvm_body_type);
+            chunk_size = tlctx->get_type_size(
+                snode_attr[snodes[i]->ch[0]].llvm_body_type);
           else {
             // dynamic. Allocators are for the chunks
-            chunk_size =
-                sizeof(void *) +
-                tlctx->get_type_size(snodes[i]->ch[0]->llvm_body_type) *
-                    snodes[i]->chunk_size;
+            chunk_size = sizeof(void *) +
+                         tlctx->get_type_size(
+                             snode_attr[snodes[i]->ch[0]].llvm_body_type) *
+                             snodes[i]->chunk_size;
           }
           TC_INFO("Initializing allocator for snode {} (chunk size {})",
                   snodes[i]->id, chunk_size);
@@ -300,6 +303,7 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
       return (void *)root_ptr;
     };
   }
+  tlctx->snode_attr = snode_attr;
 }
 
 std::unique_ptr<StructCompiler> StructCompiler::make(bool use_llvm, Arch arch) {
@@ -308,13 +312,6 @@ std::unique_ptr<StructCompiler> StructCompiler::make(bool use_llvm, Arch arch) {
   } else {
     return std::make_unique<StructCompiler>();
   }
-}
-
-llvm::Type *SNode::get_body_type() {
-  return llvm_body_type;
-}
-llvm::Type *SNode::get_aux_type() {
-  return llvm_aux_type;
 }
 
 bool SNode::need_activation() const {

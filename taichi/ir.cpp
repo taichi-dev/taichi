@@ -104,16 +104,21 @@ std::unique_ptr<IRBuilder::ScopeGuard> IRBuilder::create_scope(
   return std::make_unique<ScopeGuard>(this, list.get());
 }
 
-void Expr::operator=(const Expr &o) {
-  if (expr == nullptr) {
-    set(o.eval());
-  } else if (expr->is_lvalue()) {
-    current_ast_builder().insert(std::make_unique<FrontendAssignStmt>(
-        ptr_if_global(*this), load_if_ptr(o)));
+Expr &Expr::operator=(const Expr &o) {
+  if (get_current_program().current_kernel) {
+    if (expr == nullptr) {
+      set(o.eval());
+    } else if (expr->is_lvalue()) {
+      current_ast_builder().insert(std::make_unique<FrontendAssignStmt>(
+          ptr_if_global(*this), load_if_ptr(o)));
+    } else {
+      // set(o.eval());
+      TC_ERROR("Cannot assign to non-lvalue: {}", serialize());
+    }
   } else {
-    // set(o.eval());
-    TC_ERROR("Cannot assign to non-lvalue: {}", serialize());
+    set(o);
   }
+  return *this;
 }
 
 FrontendContext::FrontendContext() {

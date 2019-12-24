@@ -6,27 +6,23 @@
 
 TLANG_NAMESPACE_BEGIN
 
-class SNodeLLVMAttributes {
- public:
-};
-
 class StructCompilerLLVM : public StructCompiler, public ModuleBuilder {
  public:
   StructCompilerLLVM(Arch arch);
+
+  SNodeAttributes snode_attr;
 
   Arch arch;
   TaichiLLVMContext *tlctx;
   llvm::LLVMContext *llvm_ctx;
 
-  SNodeLLVMAttributes snode_llvm_attr;
+  void generate_types(SNode &snode) override;
 
-  virtual void generate_types(SNode &snode) override;
+  void generate_leaf_accessors(SNode &snode) override;
 
-  virtual void generate_leaf_accessors(SNode &snode) override;
+  void load_accessors(SNode &snode) override;
 
-  virtual void load_accessors(SNode &snode) override;
-
-  virtual void run(SNode &node, bool host) override;
+  void run(SNode &node, bool host) override;
 
   void generate_refine_coordinates(SNode *snode);
 };

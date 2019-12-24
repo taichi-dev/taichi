@@ -30,6 +30,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   llvm::BasicBlock *while_after_loop;
   llvm::FunctionType *task_function_type;
   OffloadedStmt *current_offloaded_stmt;
+  SNodeAttributes &snode_attr;
   int task_counter;
 
   void initialize_context() {
@@ -91,6 +92,8 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
                           .get_llvm_context(kernel->arch)
                           ->clone_struct_module()),
         kernel(kernel),
+        snode_attr(
+            get_current_program().get_llvm_context(kernel->arch)->snode_attr),
         task_counter(0) {
     initialize_context();
 
@@ -136,19 +139,19 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
         runtime_ptr, llvm::PointerType::get(get_runtime_type("Runtime"), 0));
   }
 
-  void emit_struct_meta_base(std::string name,
+  void emit_struct_meta_base(const std::string &name,
                              llvm::Value *node_meta,
                              SNode *snode) {
     RuntimeObject common("StructMeta", this, builder, node_meta);
     std::size_t element_size;
     if (snode->type == SNodeType::dense) {
-      auto element_ty = snode->get_body_type()->getArrayElementType();
+      auto element_ty = snode_attr[snode].llvm_body_type->getArrayElementType();
       element_size = tlctx->get_type_size(element_ty);
     } else if (snode->type == SNodeType::pointer) {
-      auto element_ty = snode->ch[0]->llvm_type;
+      auto element_ty = tlctx->snode_attr[snode->ch[0]].llvm_type;
       element_size = tlctx->get_type_size(element_ty);
     } else {
-      auto element_ty = snode->llvm_type;
+      auto element_ty = tlctx->snode_attr[snode].llvm_type;
       element_size = tlctx->get_type_size(element_ty);
     }
     common.set("snode_id", tlctx->get_constant(snode->id));
@@ -857,10 +860,12 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     TC_ASSERT(!stmt->parent->mask() || stmt->width() == 1);
     TC_ASSERT(stmt->data->value);
     TC_ASSERT(stmt->ptr->value);
+    /*
     TC_P(type_name(stmt->data->value->getType()));
     TC_P(type_name(stmt->ptr->value->getType()));
     TC_P((void *)(&stmt->data->value->getType()->getContext()));
     TC_P((void *)(&stmt->ptr->value->getType()->getContext()));
+    */
     builder->CreateStore(stmt->data->value, stmt->ptr->value);
   }
 
@@ -949,7 +954,8 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     } else {
       parent = builder->CreateBitCast(
           get_root(),
-          PointerType::get(get_current_program().snode_root->llvm_type, 0));
+          PointerType::get(
+              snode_attr[get_current_program().snode_root].llvm_type, 0));
     }
     TC_ASSERT(parent);
     // This part may need a redesign - why do we need both global indices and
@@ -975,7 +981,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       auto elem =
           builder->CreateCall(get_runtime_function(prefix + "_lookup_element"),
                               {s_ptr, node_ptr, stmt->input_index->value});
-      auto element_ty = snode->get_body_type();
+      auto element_ty = snode_attr[snode].llvm_body_type;
       stmt->value =
           builder->CreateBitCast(elem, PointerType::get(element_ty, 0));
     } else {
@@ -990,7 +996,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
         {builder->CreateBitCast(stmt->input_ptr->value,
                                 PointerType::getInt8PtrTy(*llvm_context))});
     stmt->value = builder->CreateBitCast(
-        ch, PointerType::get(stmt->output_snode->llvm_type, 0));
+        ch, PointerType::get(snode_attr[stmt->output_snode].llvm_type, 0));
   }
 
   void visit(ExternalPtrStmt *stmt) override {

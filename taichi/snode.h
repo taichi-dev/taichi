@@ -1,6 +1,7 @@
 #pragma once
 #include "tlang_util.h"
 #include "llvm_fwd.h"
+#include "expr.h"
 #include <taichi/common/bit.h>
 
 TLANG_NAMESPACE_BEGIN
@@ -53,9 +54,9 @@ class SNode {
   std::vector<Handle<SNode>> ch;
 
   IndexExtractor extractors[max_num_indices];
-  int taken_bits[max_num_indices];  // counting from the tail
-  int num_active_indices;
-  int physical_index_position[max_num_indices];
+  int taken_bits[max_num_indices]{};  // counting from the tail
+  int num_active_indices{};
+  int physical_index_position[max_num_indices]{};
   // physical indices are (ti.i, ti.j, ti.k, ti.l, ...)
   // physical_index_position[i] =
   // which physical index does the i-th virtual index (the one exposed to
@@ -64,22 +65,22 @@ class SNode {
 
   static int counter;
   int id;
-  int depth;
-  bool _verbose;
-  bool _multi_threaded;
+  int depth{};
+  bool _verbose{};
+  bool _multi_threaded{};
 
   std::string name;
-  int64 n;
-  int total_num_bits, total_bit_start;
-  int chunk_size;
+  int64 n{};
+  int total_num_bits{}, total_bit_start{};
+  int chunk_size{};
   DataType dt;
-  bool has_ambient;
+  bool has_ambient{};
   TypedConstant ambient_val;
   // Note: parent will not be set until structural nodes are compiled!
-  SNode *parent;
-  Kernel *reader_kernel;
-  Kernel *writer_kernel;
-  std::unique_ptr<Expr> expr;
+  SNode *parent{};
+  Kernel *reader_kernel{};
+  Kernel *writer_kernel{};
+  Expr expr;
 
   std::string data_type_name() {
     return Tlang::data_type_name(dt);
@@ -91,57 +92,24 @@ class SNode {
   AccessorFunction access_func;
   StatFunction stat_func;
   ClearFunction clear_func;
-  void *clear_kernel, *clear_and_deactivate_kernel;
+  void *clear_kernel{}, *clear_and_deactivate_kernel{};
 
   std::string node_type_name;
   SNodeType type;
-  int index_id;
-  bool _morton;
-  bool _bitmasked;
-  llvm::Type *llvm_type, *llvm_body_type, *llvm_aux_type;
-  llvm::Type *llvm_element_type;
-  bool has_aux_structure;
+  int index_id{};
+  bool _morton{};
+  bool _bitmasked{};
+  bool has_aux_structure{};
 
   std::string get_node_type_name() {
     return fmt::format("S{}", id);
   }
 
-  SNode() {
-    id = counter++;
-    node_type_name = get_node_type_name();
-  }
+  SNode();
 
-  SNode(int depth, SNodeType t) : depth(depth), type(t) {
-    id = counter++;
-    node_type_name = get_node_type_name();
-    total_num_bits = 0;
-    total_bit_start = 0;
-    num_active_indices = 0;
-    std::memset(taken_bits, 0, sizeof(taken_bits));
-    std::memset(physical_index_position, -1, sizeof(physical_index_position));
-    access_func = nullptr;
-    stat_func = nullptr;
-    parent = nullptr;
-    _verbose = false;
-    _multi_threaded = false;
-    index_id = -1;
-    has_ambient = false;
-    dt = DataType::unknown;
-    _morton = false;
-    _bitmasked = false;
+  SNode(int depth, SNodeType t);
 
-    clear_func = nullptr;
-    clear_kernel = nullptr;
-    clear_and_deactivate_kernel = nullptr;
-
-    expr = nullptr;
-
-    llvm_type = nullptr;
-    llvm_element_type = nullptr;
-
-    reader_kernel = nullptr;
-    writer_kernel = nullptr;
-  }
+  ~SNode();
 
   SNode &insert_children(SNodeType t) {
     ch.push_back(create(depth + 1, t));
@@ -333,9 +301,30 @@ class SNode {
   int num_elements_along_axis(int i) const;
 
   void set_kernel_args(Kernel *kernel, const std::vector<int> &I);
+};
 
-  llvm::Type *get_body_type();
-  llvm::Type *get_aux_type();
+class SNodeAttribute {
+ public:
+  llvm::Type *llvm_type, *llvm_body_type, *llvm_aux_type;
+  llvm::Type *llvm_element_type;
+};
+
+class SNodeAttributes {
+ private:
+  std::map<SNode *, SNodeAttribute> snode_llvm_attr;
+
+ public:
+  SNodeAttribute &operator[](SNode *snode) {
+    return snode_llvm_attr[snode];
+  }
+
+  SNodeAttribute &operator[](SNode &snode) {
+    return snode_llvm_attr[&snode];
+  }
+
+  SNodeAttribute &operator[](const Handle<SNode> &snode) {
+    return snode_llvm_attr[snode.get()];
+  }
 };
 
 TLANG_NAMESPACE_END

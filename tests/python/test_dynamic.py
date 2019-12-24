@@ -4,7 +4,7 @@ import taichi as ti
 # @ti.all_archs
 def test_dynamic():
   x = ti.var(ti.f32)
-  ti.cfg.arch = ti.cuda
+  # ti.cfg.arch = ti.cuda
   n = 128
 
   @ti.layout

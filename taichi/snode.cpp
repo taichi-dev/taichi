@@ -18,7 +18,7 @@ SNode &SNode::place(Expr &expr_) {
     expr->snode->has_ambient = true;
     expr->snode->ambient_val = expr->ambient_value;
   }
-  expr->snode->expr = std::make_unique<Expr>(expr);
+  expr->snode->expr.set(Expr(expr));
   child.dt = expr->dt;
   return *this;
 }
@@ -92,7 +92,7 @@ void SNode::lazy_grad() {
   for (auto c : ch) {
     if (c->type == SNodeType::place && c->is_primal() && needs_grad(c->dt) &&
         !c->has_grad()) {
-      new_grads.push_back(c->expr->cast<GlobalVariableExpression>()->adjoint);
+      new_grads.push_back(c->expr.cast<GlobalVariableExpression>()->adjoint);
     }
   }
   for (auto p : new_grads) {
@@ -101,20 +101,19 @@ void SNode::lazy_grad() {
 }
 
 bool SNode::is_primal() const {
-  TC_ASSERT(expr != nullptr);
-  return (*expr).cast<GlobalVariableExpression>()->is_primal;
+  TC_ASSERT(expr.expr != nullptr);
+  return expr.cast<GlobalVariableExpression>()->is_primal;
 }
 
 bool SNode::has_grad() const {
-  auto adjoint = (*expr).cast<GlobalVariableExpression>()->adjoint;
+  auto adjoint = expr.cast<GlobalVariableExpression>()->adjoint;
   return is_primal() && adjoint.expr != nullptr &&
          adjoint.cast<GlobalVariableExpression>()->snode != nullptr;
 }
 
 SNode *SNode::get_grad() const {
   TC_ASSERT(has_grad());
-  return (*expr)
-      .cast<GlobalVariableExpression>()
+  return expr.cast<GlobalVariableExpression>()
       ->adjoint.cast<GlobalVariableExpression>()
       ->snode;
 }
@@ -184,6 +183,41 @@ void SNode::set_kernel_args(Kernel *kernel, const std::vector<int> &I) {
   for (int i = 0; i < num_active_indices; i++) {
     kernel->set_arg_int(i, I[i]);
   }
+}
+
+SNode::SNode() {
+  id = counter++;
+  node_type_name = get_node_type_name();
+}
+
+SNode::SNode(int depth, SNodeType t) : depth(depth), type(t) {
+  id = counter++;
+  node_type_name = get_node_type_name();
+  total_num_bits = 0;
+  total_bit_start = 0;
+  num_active_indices = 0;
+  std::memset(taken_bits, 0, sizeof(taken_bits));
+  std::memset(physical_index_position, -1, sizeof(physical_index_position));
+  access_func = nullptr;
+  stat_func = nullptr;
+  parent = nullptr;
+  _verbose = false;
+  _multi_threaded = false;
+  index_id = -1;
+  has_ambient = false;
+  dt = DataType::unknown;
+  _morton = false;
+  _bitmasked = false;
+
+  clear_func = nullptr;
+  clear_kernel = nullptr;
+  clear_and_deactivate_kernel = nullptr;
+
+  reader_kernel = nullptr;
+  writer_kernel = nullptr;
+}
+
+SNode::~SNode() {
 }
 
 TLANG_NAMESPACE_END

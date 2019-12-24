@@ -3,6 +3,7 @@
 
 #include "tlang_util.h"
 #include "llvm_fwd.h"
+#include "snode.h"
 
 TLANG_NAMESPACE_BEGIN
 class TaichiLLVMJIT;
@@ -15,6 +16,8 @@ class TaichiLLVMContext {
   std::unique_ptr<TaichiLLVMJIT> jit;
   std::unique_ptr<llvm::Module> runtime_module, struct_module;
   Arch arch;
+
+  SNodeAttributes snode_attr;
 
   TaichiLLVMContext(Arch arch);
 

@@ -121,6 +121,13 @@ def all_archs(func):
   return test
 
 
+def torch_test(func):
+  import taichi as ti
+  if ti.has_pytorch():
+    return ti.all_archs(func)
+  else:
+    return lambda: None
+
 # test with host arch only
 def host_arch(func):
   import taichi as ti

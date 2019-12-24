@@ -4,13 +4,7 @@ import numpy as np
 if ti.has_pytorch():
   import torch
 
-def torch_test(func):
-  if ti.has_pytorch():
-    return ti.all_archs(func)
-  else:
-    return lambda: None
-  
-@torch_test
+@ti.torch_test
 def test_io_devices():
   n = 32
   x = ti.var(dt=ti.i32, shape=n)
@@ -46,7 +40,7 @@ def test_io_devices():
     for i in range(n):
       assert y[i] == (11 + i) * 2
 
-@torch_test
+@ti.torch_test
 def test_io():
   n = 32
 
@@ -86,7 +80,7 @@ def test_io():
     assert ret[i] == 4
 
 
-@torch_test
+@ti.torch_test
 def test_io_2d():
   n = 32
 
@@ -110,7 +104,7 @@ def test_io_2d():
   assert val == 2 * 2 * n * n
 
 
-@torch_test
+@ti.torch_test
 def test_io_3d():
   n = 16
 
@@ -135,7 +129,7 @@ def test_io_3d():
   assert val == 2 * 2 * n * n * n
 
 
-@torch_test
+@ti.torch_test
 def test_io_simple():
   n = 32
 
@@ -161,7 +155,7 @@ def test_io_simple():
   assert (t2 == t3).all()
 
 
-@torch_test
+@ti.torch_test
 def test_io_simple():
   mat = ti.Matrix(2, 6, dt=ti.f32, shape=(), needs_grad=True)
   zeros = torch.zeros((2, 6))
@@ -173,7 +167,7 @@ def test_io_simple():
   zeros = mat.to_torch()
   assert zeros[1, 2] == 4
   
-@torch_test
+@ti.torch_test
 def test_fused_kernels():
   n = 12
   X = ti.Matrix(3, 2, ti.f32, shape=(n, n, n))
@@ -184,7 +178,7 @@ def test_fused_kernels():
   assert ti.get_runtime().get_num_compiled_functions() == s + 2
 
 
-@torch_test
+@ti.torch_test
 def test_device():
   n = 12
   X = ti.Matrix(3, 2, ti.f32, shape=(n, n, n))
@@ -194,7 +188,7 @@ def test_device():
     assert X.to_torch(device='cuda:0').device == torch.device('cuda:0')
 
 
-@torch_test
+@ti.torch_test
 def test_shape_matrix():
   n = 12
   x = ti.Matrix(3, 2, ti.f32, shape=(n, n))
@@ -212,7 +206,7 @@ def test_shape_matrix():
   
   assert (X == X1).all()
 
-@torch_test
+@ti.torch_test
 def test_shape_vector():
   n = 12
   x = ti.Matrix(3, 1, ti.f32, shape=(n, n))

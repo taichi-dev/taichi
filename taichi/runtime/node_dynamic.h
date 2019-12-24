@@ -1,9 +1,9 @@
 #pragma once
 
 struct DynamicNode {
-  Ptr ptr;
   i32 lock;
   i32 n;
+  Ptr ptr;
 };
 
 // Specialized Attributes and functions

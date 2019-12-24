@@ -22,8 +22,6 @@ def test_dynamic():
 
 @ti.all_archs
 def test_dynamic2():
-  if ti.cfg.arch == ti.cuda:
-    return
   x = ti.var(ti.f32)
   n = 128
 
@@ -33,7 +31,6 @@ def test_dynamic2():
 
   @ti.kernel
   def func():
-    ti.serialize()
     for i in range(n):
       x[i] = i
 
@@ -45,9 +42,6 @@ def test_dynamic2():
 
 @ti.all_archs
 def test_dynamic_matrix():
-  if ti.cfg.arch == ti.cuda:
-    return
-
   x = ti.Matrix(3, 2, dt=ti.f32)
   n = 8192
 

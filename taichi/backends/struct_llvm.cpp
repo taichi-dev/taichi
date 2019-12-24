@@ -68,12 +68,11 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
     aux_type = llvm::PointerType::getInt64Ty(*ctx);
     body_type = llvm::PointerType::getInt8PtrTy(*ctx);
   } else if (type == SNodeType::dynamic) {
-    body_type = llvm::PointerType::getInt8PtrTy(*ctx);
-    // TODO: maybe load a struct from runtime?
     // mutex and n (number of elements)
     aux_type =
         llvm::StructType::get(*ctx, {llvm::PointerType::getInt32Ty(*ctx),
                                      llvm::PointerType::getInt32Ty(*ctx)});
+    body_type = llvm::PointerType::getInt8PtrTy(*ctx);
   } else {
     TC_P(snode.type_name());
     TC_NOT_IMPLEMENTED;

@@ -38,7 +38,7 @@ by *Yuanming Hu, Luke Anderson, Tzu-Mao Li, Qi Sun, Nathan Carr, Jonathan Ragan-
 - Tune the performance of the LLVM backend to match that of the legacy source-to-source backends
 - Language documentation
 ## Updates
-- (Dec  22, 2019) v0.3.7 released.
+- (Dec  23, 2019) v0.3.8 released.
    - **Breaking change**: `ti.data_oriented` decorator introduced. Please decorate all your Taichi data-oriented objects using this decorator. To invoke the gradient versions of `classmethod`, for example, `A.forward`, simply use `A.forward.grad()` instead of `A.forward(__gradient=True)` (obsolete).
 - (Dec  22, 2019) v0.3.5 released.
    - Maximum tensor dimensionality is 8 now (used to be 4). I.e., you can now allocate up to 8-D tensors.

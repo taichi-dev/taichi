@@ -15,13 +15,14 @@
 
 TLANG_NAMESPACE_BEGIN
 
-std::unique_ptr<CUDAContext> cuda_context;  // TODO:..
+#if defined(TLANG_WITH_CUDA)
 
 std::string cuda_mattrs() {
   return "+ptx50";
 }
 
-#if defined(TLANG_WITH_CUDA)
+std::unique_ptr<CUDAContext> cuda_context;  // TODO:..
+
 std::string compile_module_to_ptx(std::unique_ptr<llvm::Module> &module) {
   // Part of this function is borrowed from Halide::CodeGen_PTX_Dev.cpp
   using namespace llvm;
@@ -42,7 +43,8 @@ std::string compile_module_to_ptx(std::unique_ptr<llvm::Module> &module) {
   if (fast_math) {
     options.AllowFPOpFusion = FPOpFusion::Fast;
     // See NVPTXISelLowering.cpp
-    // Setting UnsafeFPMath true will result in approximations such as sqrt.approx in PTX for both f32 and f64
+    // Setting UnsafeFPMath true will result in approximations such as
+    // sqrt.approx in PTX for both f32 and f64
     options.UnsafeFPMath = 1;
     options.NoInfsFPMath = 1;
     options.NoNaNsFPMath = 1;
@@ -244,7 +246,6 @@ CUDAContext::~CUDAContext() {
   checkCudaErrors(cuCtxDestroy(context));
   */
 }
-
 
 #else
 std::string compile_module_to_ptx(std::unique_ptr<llvm::Module> &module) {

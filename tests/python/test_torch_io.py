@@ -1,13 +1,17 @@
 import taichi as ti
 import numpy as np
 
-
-@ti.host_arch
-def test_io():
-  if not ti.has_pytorch():
-    return
+if ti.has_pytorch():
   import torch
 
+def torch_test(func):
+  if ti.has_pytorch():
+    return ti.all_archs(func)
+  else:
+    return lambda x: None
+
+@torch_test
+def test_io():
   n = 32
 
   @ti.kernel
@@ -38,8 +42,6 @@ def test_io():
       torch_kernel_2(inp_grad, inp, outp_grad)
       return inp_grad
 
-  #, device=torch.device('cuda:0')
-
   sqr = Sqr.apply
   X = torch.tensor(2 * np.ones((n,), dtype=np.float32), requires_grad=True)
   sqr(X).sum().backward()
@@ -48,11 +50,8 @@ def test_io():
     assert ret[i] == 4
 
 
-@ti.host_arch
+@torch_test
 def test_io_2d():
-  if not ti.has_pytorch():
-    return
-  import torch
   n = 32
 
   @ti.kernel
@@ -75,11 +74,8 @@ def test_io_2d():
   assert val == 2 * 2 * n * n
 
 
-@ti.host_arch
+@torch_test
 def test_io_3d():
-  if not ti.has_pytorch():
-    return
-  import torch
   n = 16
 
   @ti.kernel
@@ -103,11 +99,8 @@ def test_io_3d():
   assert val == 2 * 2 * n * n * n
 
 
-@ti.host_arch
+@torch_test
 def test_io_simple():
-  if not ti.has_pytorch():
-    return
-  import torch
   n = 32
 
   x1 = ti.var(ti.f32, shape=(n, n))
@@ -132,11 +125,8 @@ def test_io_simple():
   assert (t2 == t3).all()
 
 
-@ti.host_arch
+@torch_test
 def test_io_simple():
-  if not ti.has_pytorch():
-    return
-  import torch
   mat = ti.Matrix(2, 6, dt=ti.f32, shape=(), needs_grad=True)
   zeros = torch.zeros((2, 6))
   zeros[1, 2] = 3

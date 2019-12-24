@@ -246,6 +246,8 @@ class Kernel:
       assert len(args) == len(
           self.arguments), '{} arguments needed but {} provided'.format(
               len(self.arguments), len(args))
+      
+      callbacks = []
 
       actual_argument_slot = 0
       for i, v in enumerate(args):
@@ -272,12 +274,27 @@ class Kernel:
             t_kernel.set_arg_nparray(actual_argument_slot, int(tmp.ctypes.data),
                                      tmp.nbytes)
           else:
+            def get_call_back(u, v):
+              def call_back():
+                u.copy_(v)
+              return call_back
             assert has_torch and isinstance(v, torch.Tensor)
             tmp = v
+            taichi_arch = self.runtime.prog.config.arch
+            
             if str(v.device).startswith('cuda'):
-              assert self.runtime.prog.config.arch == taichi_lang_core.Arch.gpu, 'Torch tensor on GPU yet taichi is on CPU'
+              # External tensor on cuda
+              if taichi_arch != taichi_lang_core.Arch.cuda:
+                # copy data back to cpu
+                host_v = v.to(device='cpu', copy=True)
+                tmp = host_v
+                callbacks.append(get_call_back(v, host_v))
             else:
-              assert self.runtime.prog.config.arch == taichi_lang_core.Arch.x86_64, 'Torch tensor on CPU yet taichi is on GPU'
+              # External tensor on cpu
+              if taichi_arch != taichi_lang_core.Arch.x86_64:
+                gpu_v = v.cuda()
+                tmp = gpu_v
+                callbacks.append(get_call_back(v, gpu_v))
             t_kernel.set_arg_nparray(actual_argument_slot, int(tmp.data_ptr()),
                                      tmp.element_size() * tmp.nelement())
           shape = v.shape
@@ -294,6 +311,8 @@ class Kernel:
       if not self.classkernel and self.runtime.target_tape and not self.runtime.inside_complex_kernel:
         self.runtime.target_tape.insert(self, args)
       t_kernel()
+      for c in callbacks:
+        c()
 
     return func__
 

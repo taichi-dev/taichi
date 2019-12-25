@@ -325,6 +325,7 @@ void initialize_rand_state(RandState *state, u32 i) {
 // materialized?
 struct Runtime {
   vm_allocator_type vm_allocator;
+  assert_failed_type assert_failed;
   Ptr thread_pool;
   parallel_for_type parallel_for;
   ElementList *element_lists[taichi_max_num_snodes];
@@ -337,6 +338,7 @@ struct Runtime {
 STRUCT_FIELD_ARRAY(Runtime, element_lists);
 STRUCT_FIELD_ARRAY(Runtime, node_allocators);
 STRUCT_FIELD(Runtime, temporaries);
+STRUCT_FIELD(Runtime, assert_failed);
 
 void *allocate_aligned(Runtime *runtime, std::size_t size, int alignment) {
   return runtime->vm_allocator(size, alignment);
@@ -557,6 +559,24 @@ void parallel_range_for_task(void *range_context, int task_id) {
     }
   }
 }
+
+#if ARCH_x86_64
+void taichi_assert(Context *context, i32 test, const char *msg) {
+  if (test == 0) {
+    auto runtime = (Runtime *)context->runtime;
+    runtime->assert_failed(msg);
+  }
+}
+#else
+void __assertfail(Ptr message, Ptr file, i32 line, Ptr function, std::size_t charSize);
+
+void taichi_assert(Context *context, i32 test, const char *msg) {
+  if (test == 0) {
+    auto runtime = (Runtime *)context->runtime;
+    runtime->assert_failed(msg);
+  }
+}
+#endif
 
 void cpu_parallel_range_for(Context *context,
                             int num_threads,

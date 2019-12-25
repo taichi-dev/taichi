@@ -783,6 +783,11 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     }
   }
 
+  void visit(AssertStmt *stmt) {
+    stmt->value = call("taichi_assert", get_context(), stmt->val->value,
+                       builder->CreateGlobalStringPtr(stmt->text));
+  }
+
   void visit(SNodeOpStmt *stmt) override {
     stmt->ret_type.data_type = DataType::i32;
     if (stmt->op_type == SNodeOpType::probe) {
@@ -889,12 +894,6 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       emit("const {} {} ({});", stmt->ret_data_type_name(), stmt->raw_name(),
            init);
     }
-  }
-
-  void visit(AssertStmt *stmt) override {
-    emit("#if defined(TL_DEBUG)");
-    emit(R"(TC_ASSERT_INFO({}, "{}");)", stmt->val->raw_name(), stmt->text);
-    emit("#endif");
   }
 
   void visit(OffsetAndExtractBitsStmt *stmt) override {

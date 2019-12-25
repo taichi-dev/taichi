@@ -12,6 +12,10 @@ extern "C" void *taichi_allocate_aligned(std::size_t size, int alignment);
 
 TLANG_NAMESPACE_BEGIN
 
+void assert_failed_host(const char *msg) {
+  TC_ERROR("Assertion failure: {}", msg);
+}
+
 StructCompilerLLVM::StructCompilerLLVM(Arch arch)
     : StructCompiler(),
       ModuleBuilder(
@@ -249,6 +253,10 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
         tlctx->lookup_function<std::function<void *(void *, int)>>(
             "Runtime_get_node_allocators");
 
+    auto set_assert_failed =
+        tlctx->lookup_function<std::function<void(void *, void *)>>(
+            "Runtime_set_assert_failed");
+
     auto allocate_ambient =
         tlctx->lookup_function<std::function<void(void *, int)>>(
             "Runtime_allocate_ambient");
@@ -298,6 +306,7 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
       runtime_initialize_thread_pool(get_current_program().llvm_runtime,
                                      &get_current_program().thread_pool,
                                      (void *)ThreadPool::static_run);
+      set_assert_failed(get_current_program().llvm_runtime, (void *)assert_failed_host);
 
       return (void *)root_ptr;
     };

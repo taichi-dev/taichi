@@ -60,7 +60,7 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(AssertStmt *assert) override {
-    print("{} : assert {}", assert->id, assert->val->name());
+    print("{} : assert {}, \"{}\"", assert->id, assert->val->name(), assert->text);
   }
 
   void visit(FrontendSNodeOpStmt *stmt) override {

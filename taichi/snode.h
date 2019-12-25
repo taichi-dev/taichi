@@ -274,7 +274,7 @@ class SNode {
 
   bool is_place() const;
 
-  Expr get_expr() const {
+  const Expr &get_expr() const {
     return expr;
   }
 

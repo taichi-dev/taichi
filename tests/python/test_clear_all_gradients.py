@@ -2,8 +2,6 @@ import taichi as ti
 
 @ti.all_archs
 def test_clear_all_gradients():
-  ti.get_runtime().print_preprocessed = True
-  ti.cfg.print_ir = True
   x = ti.var(ti.f32)
   y = ti.var(ti.f32)
   z = ti.var(ti.f32)
@@ -26,6 +24,7 @@ def test_clear_all_gradients():
       w.grad[i, j] = 6
       
   ti.clear_all_gradients()
+  assert ti.get_runtime().get_num_compiled_functions() == 3
 
   assert x.grad[None] == 0
   for i in range(n):
@@ -33,4 +32,7 @@ def test_clear_all_gradients():
     for j in range(n):
       assert z.grad[i, j] == 0
       assert w.grad[i, j] == 0
-      
+
+  ti.clear_all_gradients()
+  # No more kernel compilation
+  assert ti.get_runtime().get_num_compiled_functions() == 3

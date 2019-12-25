@@ -89,7 +89,6 @@ def clear_all_gradients():
     places = []
     for i in range(node.ptr.get_num_ch()):
       ch = node.ptr.get_ch(i)
-      print(i, ch)
       if not ch.is_place():
         visit(SNode(ch))
       else:

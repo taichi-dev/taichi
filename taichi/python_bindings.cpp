@@ -121,7 +121,7 @@ void export_lang(py::module &m) {
       .def("has_grad", &SNode::has_grad)
       .def("is_primal", &SNode::is_primal)
       .def("is_place", &SNode::is_place)
-      .def("get_expr", &SNode::get_expr, py::return_value_policy::copy)
+      .def("get_expr", &SNode::get_expr, py::return_value_policy::reference)
       .def("write_int", &SNode::write_int)
       .def("write_float", &SNode::write_float)
       .def("get_num_elements_along_axis", &SNode::num_elements_along_axis)

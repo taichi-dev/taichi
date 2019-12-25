@@ -514,3 +514,13 @@ if 1:
       new_node = make_node(new_node, node.values[i], token)
 
     return new_node
+  
+  def visit_Assert(self, node):
+    import astpretty
+    self.generic_visit(node.test)
+    new_node = self.parse_stmt('ti.core.create_assert_stmt(ti.Expr(0).ptr, 0)')
+    astpretty.pprint(new_node)
+    new_node.value.args[0].value.args[0] = node.test
+    new_node.value.args[1] = self.parse_expr("'assertion'")
+    astpretty.pprint(node)
+    return new_node

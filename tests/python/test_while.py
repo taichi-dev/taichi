@@ -25,7 +25,6 @@ def test_while():
 
 @ti.all_archs
 def test_break():
-  ti.cfg.print_ir = True
   ret = ti.var(ti.i32, shape=())
 
   @ti.kernel

@@ -165,6 +165,17 @@ class LowerAccess : public IRVisitor {
     }
   }
 
+  void visit(SNodeOpStmt *stmt) override {
+    return;
+    /*
+    auto lowered = lower_scalar_ptr(stmt->ptr->as<GlobalPtrStmt>(), true);
+    stmt->ptr = lowered.back().get();
+    // insert micro snode op
+    stmt->parent->insert_before(stmt, std::move(lowered));
+    throw IRModified();
+    */
+  }
+
   void visit(AtomicOpStmt *stmt) override {
     if (!lower_atomic_ptr)
       return;

@@ -165,6 +165,11 @@ void export_lang(py::module &m) {
     return Probe(snode, indices);
   });
 
+  m.def("create_assert_stmt", [&](const Expr &cond, const std::string &msg) {
+    auto stmt_unique = std::make_unique<FrontendAssertStmt>(msg, cond);
+    current_ast_builder().insert(std::move(stmt_unique));
+  });
+
   m.def("begin_frontend_while", [&](const Expr &cond) {
     auto stmt_unique = std::make_unique<FrontendWhileStmt>(cond);
     auto stmt = stmt_unique.get();

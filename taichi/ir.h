@@ -1414,6 +1414,24 @@ class SNodeOpStmt : public Stmt {
   DEFINE_ACCEPT
 };
 
+class SNodeMicroOpStmt : public Stmt {
+ public:
+  SNodeOpType op_type;
+  Stmt *val;
+
+  SNodeMicroOpStmt(SNodeOpType op_type, Stmt *val = nullptr)
+      : op_type(op_type), val(val) {
+    TC_ASSERT((val == nullptr) != (op_type == SNodeOpType::append));
+    if (val) {
+      add_operand(this->val);
+    }
+    width() = 1;
+    element_type() = DataType::i32;
+  }
+
+  DEFINE_ACCEPT
+};
+
 class FrontendAssertStmt : public Stmt {
  public:
   std::string text;
@@ -2105,27 +2123,31 @@ class For {
     func(i, j, k, l);
   }
 
-  For(Expr global, const std::function<void(Expr, Expr, Expr, Expr, Expr)> &func) {
+  For(Expr global,
+      const std::function<void(Expr, Expr, Expr, Expr, Expr)> &func) {
     auto i = Expr(std::make_shared<IdExpression>());
     auto j = Expr(std::make_shared<IdExpression>());
     auto k = Expr(std::make_shared<IdExpression>());
     auto l = Expr(std::make_shared<IdExpression>());
     auto a = Expr(std::make_shared<IdExpression>());
-    auto stmt_unique = std::make_unique<FrontendForStmt>((i, j, k, l, a), global);
+    auto stmt_unique =
+        std::make_unique<FrontendForStmt>((i, j, k, l, a), global);
     auto stmt = stmt_unique.get();
     current_ast_builder().insert(std::move(stmt_unique));
     auto _ = current_ast_builder().create_scope(stmt->body);
     func(i, j, k, l, a);
   }
 
-  For(Expr global, const std::function<void(Expr, Expr, Expr, Expr, Expr, Expr)> &func) {
+  For(Expr global,
+      const std::function<void(Expr, Expr, Expr, Expr, Expr, Expr)> &func) {
     auto i = Expr(std::make_shared<IdExpression>());
     auto j = Expr(std::make_shared<IdExpression>());
     auto k = Expr(std::make_shared<IdExpression>());
     auto l = Expr(std::make_shared<IdExpression>());
     auto a = Expr(std::make_shared<IdExpression>());
     auto b = Expr(std::make_shared<IdExpression>());
-    auto stmt_unique = std::make_unique<FrontendForStmt>((i, j, k, l, a, b), global);
+    auto stmt_unique =
+        std::make_unique<FrontendForStmt>((i, j, k, l, a, b), global);
     auto stmt = stmt_unique.get();
     current_ast_builder().insert(std::move(stmt_unique));
     auto _ = current_ast_builder().create_scope(stmt->body);

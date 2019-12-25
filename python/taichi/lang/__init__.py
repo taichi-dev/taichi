@@ -83,6 +83,7 @@ def Tape(loss, clear_gradients=True):
 
 def clear_all_gradients():
   get_runtime().materialize()
+  # for var in get_runtime().global_vars:
   core.get_current_program().clear_all_gradients()
 
 

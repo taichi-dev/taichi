@@ -41,7 +41,6 @@ class Program {
   Context context;
   std::unique_ptr<TaichiLLVMContext> llvm_context_host, llvm_context_device;
   bool sync;  // device/host synchronized?
-  bool clear_all_gradients_initialized;
   bool finalized;
   float64 total_compilation_time;
   static std::atomic<int> num_instances;
@@ -178,12 +177,6 @@ class Program {
       return llvm_context_device.get();
     }
   }
-
-  std::vector<std::function<void()>> gradient_clearers;
-
-  void initialize_gradient_clearers();
-
-  void clear_all_gradients();
 
   Kernel &get_snode_reader(SNode *snode);
 

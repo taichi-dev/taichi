@@ -189,7 +189,6 @@ Program::Program(Arch arch) {
   snode_root = nullptr;
   sync = true;
   llvm_runtime = nullptr;
-  clear_all_gradients_initialized = false;
   finalized = false;
 }
 
@@ -197,16 +196,6 @@ void Program::initialize_device_llvm_context() {
   if (config.arch == Arch::gpu && config.use_llvm) {
     if (llvm_context_device == nullptr)
       llvm_context_device = std::make_unique<TaichiLLVMContext>(Arch::gpu);
-  }
-}
-
-void Program::clear_all_gradients() {
-  if (!clear_all_gradients_initialized) {
-    initialize_gradient_clearers();
-    clear_all_gradients_initialized = true;
-  }
-  for (auto &f : gradient_clearers) {
-    f();
   }
 }
 

@@ -567,13 +567,17 @@ void taichi_assert(Context *context, i32 test, const char *msg) {
     runtime->assert_failed(msg);
   }
 }
-#else
-void __assertfail(Ptr message, Ptr file, i32 line, Ptr function, std::size_t charSize);
+#endif
+#if ARCH_cuda
+void __assertfail(const char *message,
+                  const char *file,
+                  i32 line,
+                  const char *function,
+                  std::size_t charSize);
 
 void taichi_assert(Context *context, i32 test, const char *msg) {
   if (test == 0) {
-    auto runtime = (Runtime *)context->runtime;
-    runtime->assert_failed(msg);
+    __assertfail(msg, "", 1, "", 1);
   }
 }
 #endif
@@ -664,7 +668,7 @@ class lock_guard {
     for (int i = 0; i < warp_size(); i++) {
       if (warp_idx() == i) {
         mutex_lock_i32(lock);
-        threadfence(); // TODO
+        threadfence();  // TODO
         func();
         mutex_unlock_i32(lock);
       }

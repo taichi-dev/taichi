@@ -39,7 +39,6 @@ def ext_arr_to_matrix(arr: ti.ext_arr(), mat: ti.template(), as_vector: ti.templ
 
 @ti.kernel
 def clear_gradients(vars: ti.template()):
-  for I in ti.grouped(vars[0]):
+  for I in ti.grouped(ti.Expr(vars[0])):
     for s in ti.static(vars):
-      s[I] = 0
-  
+      ti.Expr(s)[I] = 0

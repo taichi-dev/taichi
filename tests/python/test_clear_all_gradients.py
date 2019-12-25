@@ -2,6 +2,8 @@ import taichi as ti
 
 @ti.all_archs
 def test_clear_all_gradients():
+  ti.get_runtime().print_preprocessed = True
+  ti.cfg.print_ir = True
   x = ti.var(ti.f32)
   y = ti.var(ti.f32)
   z = ti.var(ti.f32)

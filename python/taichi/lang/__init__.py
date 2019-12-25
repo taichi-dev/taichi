@@ -97,9 +97,9 @@ def clear_all_gradients():
           places.append(ch.get_expr())
       
     places = tuple(places)
-    print(places)
-    from .meta import clear_gradients
-    clear_gradients(places)
+    if places:
+      from .meta import clear_gradients
+      clear_gradients(places)
     
   visit(ti.root)
 

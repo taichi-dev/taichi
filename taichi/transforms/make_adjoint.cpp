@@ -359,6 +359,10 @@ class MakeAdjoint : public IRVisitor {
     TC_NOT_IMPLEMENTED
   }
 
+  void visit(AssertStmt *stmt) override {
+    // do nothing
+  }
+
   void visit(RangeAssumptionStmt *stmt) override {
     // do nothing
   }

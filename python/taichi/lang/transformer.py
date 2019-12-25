@@ -489,6 +489,26 @@ if 1:
       new_node.args[0] = node.operand
       node = new_node
     return node
+  
+  def visit_Compare(self, node):
+    self.generic_visit(node)
+    ret = None
+    comparators = [node.left] + node.comparators
+    for i in range(len(node.comparators)):
+      new_cmp = ast.Compare(left=comparators[i], ops=[node.ops[i]], comparators=[comparators[i + 1]])
+      ast.copy_location(new_cmp, node)
+      if ret is None:
+        ret = new_cmp
+      else:
+        ret = ast.BoolOp(op=ast.And(), values=[ret, new_cmp])
+        ret = self.visit_BoolOp(ret)
+        ast.copy_location(ret, node)
+        
+    self.generic_visit(ret)
+    # import astpretty
+    # astpretty.pprint(ret)
+    return ret
+    
 
   def visit_BoolOp(self, node):
     self.generic_visit(node)
@@ -517,9 +537,9 @@ if 1:
   
   def visit_Assert(self, node):
     import astor
-    self.generic_visit(node.test)
+    msg = astor.to_source(node.test)
+    self.generic_visit(node)
     new_node = self.parse_stmt('ti.core.create_assert_stmt(ti.Expr(0).ptr, 0)')
     new_node.value.args[0].value.args[0] = node.test
-    msg = astor.to_source(node.test)
     new_node.value.args[1] = self.parse_expr("'{}'".format(msg.strip()))
     return new_node

@@ -105,6 +105,10 @@ bool SNode::is_primal() const {
   return expr.cast<GlobalVariableExpression>()->is_primal;
 }
 
+bool SNode::is_place() const {
+  return type == SNodeType::place;
+}
+
 bool SNode::has_grad() const {
   auto adjoint = expr.cast<GlobalVariableExpression>()->adjoint;
   return is_primal() && adjoint.expr != nullptr &&

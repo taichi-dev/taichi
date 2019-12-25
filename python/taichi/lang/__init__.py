@@ -83,8 +83,25 @@ def Tape(loss, clear_gradients=True):
 
 def clear_all_gradients():
   get_runtime().materialize()
-  # for var in get_runtime().global_vars:
-  core.get_current_program().clear_all_gradients()
+  
+  import taichi as ti
+  def visit(node):
+    places = []
+    for i in range(node.ptr.get_num_ch()):
+      ch = node.ptr.get_ch(i)
+      print(i, ch)
+      if not ch.is_place():
+        visit(SNode(ch))
+      else:
+        if not ch.is_primal():
+          places.append(ch.get_expr())
+      
+    places = tuple(places)
+    print(places)
+    from .meta import clear_gradients
+    clear_gradients(places)
+    
+  visit(ti.root)
 
 
 schedules = [parallelize, vectorize, block_dim, cache]

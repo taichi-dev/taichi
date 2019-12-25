@@ -110,13 +110,20 @@ void export_lang(py::module &m) {
       .def("place", (SNode & (SNode::*)(Expr &))(&SNode::place),
            py::return_value_policy::reference)
       .def("data_type", [](SNode *snode) { return snode->dt; })
+      .def("get_num_ch",
+           [](SNode *snode) -> int { return (int)snode->ch.size(); })
+      .def("get_ch",
+           [](SNode *snode, int i) -> SNode * { return snode->ch[i].get(); },
+           py::return_value_policy::reference)
       .def("lazy_grad", &SNode::lazy_grad)
       .def("read_int", &SNode::read_int)
       .def("read_float", &SNode::read_float)
       .def("has_grad", &SNode::has_grad)
+      .def("is_primal", &SNode::is_primal)
+      .def("is_place", &SNode::is_place)
+      .def("get_expr", &SNode::get_expr, py::return_value_policy::copy)
       .def("write_int", &SNode::write_int)
       .def("write_float", &SNode::write_float)
-      .def("ch", &SNode::ch)
       .def("get_num_elements_along_axis", &SNode::num_elements_along_axis)
       .def("num_active_indices",
            [](SNode *snode) { return snode->num_active_indices; });

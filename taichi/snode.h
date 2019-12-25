@@ -272,6 +272,12 @@ class SNode {
 
   bool is_primal() const;
 
+  bool is_place() const;
+
+  Expr get_expr() const {
+    return expr;
+  }
+
   bool has_grad() const;
 
   SNode *get_grad() const;

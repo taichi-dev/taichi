@@ -8,18 +8,22 @@ TLANG_NAMESPACE_BEGIN
 int SNode::counter = 0;
 
 SNode &SNode::place(Expr &expr_) {
-  TC_ASSERT(expr_.is<GlobalVariableExpression>());
-  auto expr = expr_.cast<GlobalVariableExpression>();
-  TC_ERROR_UNLESS(expr->snode == nullptr, "This variable has been placed.");
-  auto &child = insert_children(SNodeType::place);
-  expr->set_snode(&child);
-  child.name = expr->ident.raw_name();
-  if (expr->has_ambient) {
-    expr->snode->has_ambient = true;
-    expr->snode->ambient_val = expr->ambient_value;
+  if (type == SNodeType::root) { // never directly place to root
+    this->dense(std::vector<Index>(), {}).place(expr_);
+  } else {
+    TC_ASSERT(expr_.is<GlobalVariableExpression>());
+    auto expr = expr_.cast<GlobalVariableExpression>();
+    TC_ERROR_UNLESS(expr->snode == nullptr, "This variable has been placed.");
+    auto &child = insert_children(SNodeType::place);
+    expr->set_snode(&child);
+    child.name = expr->ident.raw_name();
+    if (expr->has_ambient) {
+      expr->snode->has_ambient = true;
+      expr->snode->ambient_val = expr->ambient_value;
+    }
+    expr->snode->expr.set(Expr(expr));
+    child.dt = expr->dt;
   }
-  expr->snode->expr.set(Expr(expr));
-  child.dt = expr->dt;
   return *this;
 }
 

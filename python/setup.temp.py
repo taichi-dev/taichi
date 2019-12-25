@@ -31,6 +31,7 @@ setuptools.setup(
         'pybind11',
         'colorama',
         'setuptools',
+        'astor',
         # For testing:
         'pytest',
     ],

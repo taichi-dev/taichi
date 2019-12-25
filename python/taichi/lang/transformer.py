@@ -516,8 +516,10 @@ if 1:
     return new_node
   
   def visit_Assert(self, node):
+    import astor
     self.generic_visit(node.test)
     new_node = self.parse_stmt('ti.core.create_assert_stmt(ti.Expr(0).ptr, 0)')
     new_node.value.args[0].value.args[0] = node.test
-    new_node.value.args[1] = self.parse_expr("'assertion'")
+    msg = astor.to_source(node.test)
+    new_node.value.args[1] = self.parse_expr("'{}'".format(msg.strip()))
     return new_node

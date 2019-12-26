@@ -185,8 +185,9 @@ def ti_min(*args):
 
 
 def append(l, indices, val):
-  taichi_lang_core.insert_append(l.snode().ptr, make_expr_group(indices), Expr(val).ptr)
-
+  import taichi as ti
+  a = ti.expr_init(taichi_lang_core.insert_append(l.snode().ptr, make_expr_group(indices), Expr(val).ptr))
+  return a
 
 def length(l, indices):
-  return taichi_lang_core.insert_len(l.parent().ptr, make_expr_group(indices))
+  return taichi_lang_core.insert_len(l.snode().ptr, make_expr_group(indices))

@@ -38,10 +38,11 @@ void Dynamic_activate(Ptr meta_, Ptr node_, int i) {
   });
 }
 
-void Dynamic_append(Ptr meta_, Ptr node_, i32 data) {
+i32 Dynamic_append(Ptr meta_, Ptr node_, i32 data) {
   auto meta = (DynamicMeta *)(meta_);
   auto node = (DynamicNode *)(node_);
   auto chunk_size = meta->chunk_size;
+  i32 tail;
   locked_task(Ptr(&node->lock), [&] {
     auto i = node->n;
     int chunk_start = 0;
@@ -53,6 +54,7 @@ void Dynamic_append(Ptr meta_, Ptr node_, i32 data) {
         *p_chunk_ptr = NodeAllocator_allocate(alloc);
       }
       if (i < chunk_start + chunk_size) {
+        tail = node->n;
         node->n += 1;
         *(i32 *)(*p_chunk_ptr + sizeof(Ptr) +
                  (i - chunk_start) * meta->element_size) = data;
@@ -62,6 +64,7 @@ void Dynamic_append(Ptr meta_, Ptr node_, i32 data) {
       chunk_start += chunk_size;
     }
   });
+  return tail;
 }
 
 i32 Dynamic_get_length(Ptr meta_, Ptr node_) {

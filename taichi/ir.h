@@ -1902,13 +1902,24 @@ class ProbeExpression : public Expression {
  public:
   SNode *snode;
   ExprGroup indices;
+  Expr value;
+
   ProbeExpression(SNode *snode, const ExprGroup &indices)
       : snode(snode), indices(indices) {
   }
 
+  ProbeExpression(SNode *snode, const ExprGroup &indices, const Expr &value)
+      : snode(snode), indices(indices), value(value) {
+  }
+
   std::string serialize() override {
-    return fmt::format("probe({}, [{}])", snode->node_type_name,
-                       indices.serialize());
+    if (value.expr) {
+      return fmt::format("append({}, [{}], {})", snode->node_type_name,
+                         indices.serialize(), value.serialize());
+    } else {
+      return fmt::format("probe({}, [{}])", snode->node_type_name,
+                         indices.serialize());
+    }
   }
 
   void flatten(VecStatement &ret) override {
@@ -1917,8 +1928,15 @@ class ProbeExpression : public Expression {
       indices[i]->flatten(ret);
       indices_stmt.push_back(indices[i]->stmt);
     }
-    auto ptr = ret.push_back<GlobalPtrStmt>(snode, indices_stmt);
-    ret.push_back<SNodeOpStmt>(SNodeOpType::probe, snode, ptr, nullptr);
+    auto ptr = ret.push_back<GlobalPtrStmt>(snode->parent, indices_stmt);
+    if (value.expr) {
+      value->flatten(ret);
+      ret.push_back<SNodeOpStmt>(SNodeOpType::append, snode->parent, ptr,
+                                 ret.back().get());
+    } else {
+      ret.push_back<SNodeOpStmt>(SNodeOpType::probe, snode->parent, ptr,
+                                 nullptr);
+    }
     stmt = ret.back().get();
   }
 };

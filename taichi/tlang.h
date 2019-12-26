@@ -152,15 +152,14 @@ inline void Deactivate(SNode *snode, const ExprGroup &expr_group) {
       SNodeOpType::deactivate, snode, expr_group));
 }
 
-inline void Append(SNode *snode, const ExprGroup &indices, const Expr &val) {
-  current_ast_builder().insert(Stmt::make<FrontendSNodeOpStmt>(
-      SNodeOpType::append, snode, indices, val));
+inline Expr Append(SNode *snode, const ExprGroup &indices, const Expr &val) {
+  return Expr::make<ProbeExpression>(snode, indices, val);
 }
 
-inline void Append(const Expr &expr,
+inline Expr Append(const Expr &expr,
                    const ExprGroup &indices,
                    const Expr &val) {
-  Append(expr.snode(), indices, val);
+  return Append(expr.snode(), indices, val);
 }
 
 inline void InsertAssert(const std::string &text, const Expr &expr) {

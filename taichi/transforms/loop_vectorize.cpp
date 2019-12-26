@@ -46,7 +46,9 @@ class LoopVectorize : public IRVisitor {
   }
 
   void visit(SNodeOpStmt *stmt) override {
-    TC_NOT_IMPLEMENTED;
+    if (vectorize == 1)
+      return;
+    // TC_NOT_IMPLEMENTED;
     /*
     stmt->snodes.repeat(vectorize);
     stmt->ret_type.width *= vectorize;

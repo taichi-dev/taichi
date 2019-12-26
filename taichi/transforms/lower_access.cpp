@@ -134,6 +134,7 @@ class LowerAccess : public IRVisitor {
         lowered.push_back(std::move(extractor));
       }
       lower_scalar_ptr(lowered, ptr->snodes[i], indices, activate);
+      TC_ASSERT(lowered.size());
       lowered_pointers.push_back(lowered.back().get());
     }
     // create shuffle
@@ -166,14 +167,10 @@ class LowerAccess : public IRVisitor {
   }
 
   void visit(SNodeOpStmt *stmt) override {
-    return;
-    /*
-    auto lowered = lower_scalar_ptr(stmt->ptr->as<GlobalPtrStmt>(), true);
+    auto lowered = lower_vector_ptr(stmt->ptr->as<GlobalPtrStmt>(), true);
     stmt->ptr = lowered.back().get();
-    // insert micro snode op
     stmt->parent->insert_before(stmt, std::move(lowered));
     throw IRModified();
-    */
   }
 
   void visit(AtomicOpStmt *stmt) override {

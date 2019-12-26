@@ -789,6 +789,20 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   }
 
   void visit(SNodeOpStmt *stmt) override {
+    auto snode = stmt->snode;
+    if (stmt->op_type == SNodeOpType::append) {
+      TC_ASSERT(snode->type == SNodeType::dynamic);
+      TC_ASSERT(stmt->ret_type.data_type == DataType::i32);
+      /*
+      if (snode)
+        stmt->snode->get
+        call(builder, "Dynamic_append", );
+      */
+    } else if (stmt->op_type == SNodeOpType::probe) {
+      TC_NOT_IMPLEMENTED
+    } else {
+      TC_NOT_IMPLEMENTED
+    }
     TC_NOT_IMPLEMENTED
   }
 

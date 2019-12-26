@@ -167,10 +167,12 @@ class LowerAccess : public IRVisitor {
   }
 
   void visit(SNodeOpStmt *stmt) override {
-    auto lowered = lower_vector_ptr(stmt->ptr->as<GlobalPtrStmt>(), true);
-    stmt->ptr = lowered.back().get();
-    stmt->parent->insert_before(stmt, std::move(lowered));
-    throw IRModified();
+    if (stmt->ptr->is<GlobalPtrStmt>()) {
+      auto lowered = lower_vector_ptr(stmt->ptr->as<GlobalPtrStmt>(), true);
+      stmt->ptr = lowered.back().get();
+      stmt->parent->insert_before(stmt, std::move(lowered));
+      throw IRModified();
+    }
   }
 
   void visit(AtomicOpStmt *stmt) override {

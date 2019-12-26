@@ -63,6 +63,7 @@ def test_dynamic_matrix():
 # @ti.all_archs
 def test_append():
   return
+  ti.cfg.print_ir = True
   x = ti.var(ti.f32)
   n = 8192
   

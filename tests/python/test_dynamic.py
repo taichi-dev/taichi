@@ -135,4 +135,53 @@ def test_append_ret_value():
     assert x[i] + 1 == y[i]
     assert x[i] + 3 == z[i]
 
-# test_append()
+@ti.all_archs
+def test_dense_dynamic():
+  n = 128
+  x = ti.var(ti.i32)
+  l = ti.var(ti.i32, shape=n)
+  
+  @ti.layout
+  def place():
+    ti.root.dense(ti.i, n).dynamic(ti.j, n, 8).place(x)
+  
+  ti.cfg.print_ir = True
+  
+  @ti.kernel
+  def func():
+    ti.serialize()
+    for i in range(n):
+      for j in range(n):
+        print(i)
+        print(j)
+        ti.append(x, j, i)
+        
+    for i in range(n):
+      l[i] = ti.length(x, i)
+  
+  func()
+  
+  for i in range(n):
+    assert l[i] == n
+  
+@ti.all_archs
+def test_dense_dynamic_len():
+  n = 128
+  x = ti.var(ti.i32)
+  l = ti.var(ti.i32, shape=n)
+  
+  @ti.layout
+  def place():
+    ti.root.dense(ti.i, n).dynamic(ti.i, n, 32).place(x)
+  
+  @ti.kernel
+  def func():
+    for i in range(n):
+      l[i] = ti.length(x, i)
+  
+  func()
+  
+  for i in range(n):
+    assert l[i] == 0
+
+test_dense_dynamic()

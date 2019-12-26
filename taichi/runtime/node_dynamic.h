@@ -47,6 +47,7 @@ i32 Dynamic_append(Ptr meta_, Ptr node_, i32 data) {
     auto i = node->n;
     int chunk_start = 0;
     auto p_chunk_ptr = &node->ptr;
+    // printf("ptr %p\n", node->ptr);
     auto rt = (Runtime *)meta->context->runtime;
     auto alloc = rt->node_allocators[meta->snode_id];
     while (true) {

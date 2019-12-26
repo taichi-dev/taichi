@@ -514,6 +514,8 @@ def main():
   num_part = num_sand_particles
   np_x = np.random.rand(num_part, 3).astype(np.float) * 0.2 + 0.4
   np_v = np.random.rand(num_part, 3).astype(np.float) * 0
+  print(np_x)
+  print(np_v)
   np_c = np.zeros((num_part, 3)).astype(np.float32) + 127
 
   for i in range(3):

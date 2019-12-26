@@ -60,22 +60,13 @@ void StructCompiler::infer_snode_properties(SNode &snode) {
         snode.physical_index_position[snode.num_active_indices++] = i;
       }
     }
-    /*
-    TC_TAG;
-    for (int i = 0; i < max_num_indices; i++) {
-      fmt::print("{}, ", snode.physical_index_position[i]);
-    }
-    fmt::print("\n");
-    */
+
     std::memcpy(ch->physical_index_position, snode.physical_index_position,
                 sizeof(snode.physical_index_position));
     ch->num_active_indices = snode.num_active_indices;
     infer_snode_properties(*ch);
 
-    // TC_P(ch->type_name());
     int total_bits_start_inferred = ch->total_bit_start + ch->total_num_bits;
-    // TC_P(ch->total_bit_start);
-    // TC_P(ch->total_num_bits);
     if (ch_id == 0) {
       snode.total_bit_start = total_bits_start_inferred;
     } else if (snode.parent != nullptr) {  // root is ok
@@ -98,6 +89,23 @@ void StructCompiler::infer_snode_properties(SNode &snode) {
                        */
       }
       acc_offsets += snode.extractors[i].num_bits;
+    }
+    if (snode.type == SNodeType::dynamic) {
+      int active_extractor_counder = 0;
+      for (int i = 0; i < max_num_indices; i++) {
+        if (snode.extractors[i].num_bits != 0) {
+          active_extractor_counder += 1;
+          SNode *p = snode.parent;
+          while (p) {
+            TC_ASSERT_INFO(
+                p->extractors[i].num_bits == 0,
+                "Dynamic SNode must have a standalone dimensionality.");
+            p = p->parent;
+          }
+        }
+      }
+      TC_ASSERT_INFO(active_extractor_counder == 1,
+                     "Dynamic SNode can have only one index extractor.");
     }
   }
 

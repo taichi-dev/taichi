@@ -294,6 +294,7 @@ void NodeAllocator_initialize(Runtime *runtime,
 
 Ptr NodeAllocator_allocate(NodeAllocator *node_allocator) {
   int p = atomic_add_i32(&node_allocator->tail, 1);
+  // printf("node_size %d\n", (int)node_allocator->node_size);
   return node_allocator->pool + node_allocator->node_size * p;
 }
 

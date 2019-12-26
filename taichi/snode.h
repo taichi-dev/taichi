@@ -11,7 +11,8 @@ class Expr;
 class Kernel;
 
 struct IndexExtractor {
-  int start, num_bits;
+  int start;
+  int num_bits;
   int acc_offset;
   int num_elements;
 
@@ -181,12 +182,7 @@ class SNode {
   }
 
   SNode &dynamic(const Index &expr, int n) {
-    TC_ASSERT(bit::is_power_of_two(n));
-    auto &child = insert_children(SNodeType::dynamic);
-    child.extractors[expr.value].activate(bit::log2int(n));
-    child.n = n;
-    child.chunk_size = n;
-    return child;
+    return dynamic_chunked(expr, n, n);
   }
 
   SNode &dynamic_chunked(const Index &expr, int n, int chunk_size) {

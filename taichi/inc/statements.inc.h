@@ -40,6 +40,7 @@ PER_STATEMENT(AssertStmt)
 PER_STATEMENT(ArgStoreStmt)
 
 // SNode Micro Ops
+PER_STATEMENT(GetRootStmt)
 PER_STATEMENT(IntegerOffsetStmt)
 PER_STATEMENT(OffsetAndExtractBitsStmt)
 PER_STATEMENT(LinearizeStmt)

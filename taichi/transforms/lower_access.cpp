@@ -63,7 +63,7 @@ class LowerAccess : public IRVisitor {
     for (; snode != nullptr; snode = snode->parent)
       snodes.push_front(snode);
 
-    Stmt *last = nullptr;
+    Stmt *last = lowered.push_back<GetRootStmt>();
     for (int i = 0; i < (int)snodes.size() - 1; i++) {
       auto snode = snodes[i];
       std::vector<Stmt *> lowered_indices;

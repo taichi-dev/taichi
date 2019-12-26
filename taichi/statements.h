@@ -99,6 +99,13 @@ class OffsetAndExtractBitsStmt : public Stmt {
   DEFINE_ACCEPT;
 };
 
+class GetRootStmt : public Stmt {
+ public:
+  GetRootStmt() {}
+
+  DEFINE_ACCEPT
+};
+
 class SNodeLookupStmt : public Stmt {
  public:
   SNode *snode;

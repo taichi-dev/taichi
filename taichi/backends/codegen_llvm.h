@@ -789,50 +789,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   }
 
   void visit(SNodeOpStmt *stmt) override {
-    /*
-    stmt->ret_type.data_type = DataType::i32;
-    if (stmt->op_type == SNodeOpType::probe) {
-      emit("{} {};", stmt->ret_data_type_name(), stmt->raw_name());
-    }
-
-    for (auto l = 0; l < stmt->width(); l++) {
-      auto snode = stmt->snodes[l];
-      auto indices = indices_str(snode, l, stmt->indices);
-
-      emit("{{");
-      if (stmt->op_type != SNodeOpType::activate &&
-          stmt->op_type != SNodeOpType::probe) {
-        emit("{} *{}_tmp = access_{}(root, {});", snode->node_type_name,
-             snode->node_type_name, snode->node_type_name,
-             make_list(indices, ""));
-      }
-      if (stmt->op_type == SNodeOpType::append) {
-        TC_ASSERT(stmt->val->width() == 1);
-        emit("{}_tmp->append({}({}[{}]));", snode->node_type_name,
-             snode->ch[0]->node_type_name, stmt->val->raw_name(), l);
-      } else if (stmt->op_type == SNodeOpType::clear) {
-        emit("{}_tmp->clear();", snode->node_type_name);
-      } else if (stmt->op_type == SNodeOpType::probe) {
-        emit("{}[{}] = query_{}(root, {});", stmt->raw_name(), l,
-             snode->node_type_name, make_list(indices, ""));
-        if (snode->type == SNodeType::dynamic) {
-          emit("if ({}[{}]) {{", stmt->raw_name(), l);
-          emit("{} *{}_tmp = access_{}(root, {});", snode->node_type_name,
-               snode->node_type_name, snode->node_type_name,
-               make_list(indices, ""));
-          emit("{}[{}] = {}_tmp->get_n();", stmt->raw_name(), l,
-               snode->node_type_name);
-          emit("}}");
-        }
-      } else if (stmt->op_type == SNodeOpType::activate) {
-        emit("activate_{}(root, {});", snode->node_type_name,
-             make_list(indices, ""));
-      } else {
-        TC_NOT_IMPLEMENTED
-      }
-      emit("}}");
-    }
-    */
+    TC_NOT_IMPLEMENTED
   }
 
   virtual void visit(AtomicOpStmt *stmt) override {
@@ -948,16 +905,16 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     }
   }
 
+  void visit(GetRootStmt *stmt) override {
+    stmt->value = builder->CreateBitCast(
+        get_root(),
+        PointerType::get(snode_attr[get_current_program().snode_root].llvm_type,
+                         0));
+  }
+
   void visit(SNodeLookupStmt *stmt) override {
     llvm::Value *parent = nullptr;
-    if (stmt->input_snode) {
-      parent = stmt->input_snode->value;
-    } else {
-      parent = builder->CreateBitCast(
-          get_root(),
-          PointerType::get(
-              snode_attr[get_current_program().snode_root].llvm_type, 0));
-    }
+    parent = stmt->input_snode->value;
     TC_ASSERT(parent);
     // This part may need a redesign - why do we need both global indices and
     // linearized indices?

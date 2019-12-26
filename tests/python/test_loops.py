@@ -96,3 +96,17 @@ def test_zero_outer_loop():
   test()
   
   assert x[None] == 0
+  
+@ti.all_archs
+def test_zero_inner_loop():
+  x = ti.var(ti.i32, shape=())
+  
+  @ti.kernel
+  def test():
+    for i in range(1):
+      for j in range(0):
+        x[None] = 1
+  
+  test()
+  
+  assert x[None] == 0

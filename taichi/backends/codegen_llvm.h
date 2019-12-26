@@ -33,6 +33,8 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   SNodeAttributes &snode_attr;
   int task_counter;
 
+  using ModuleBuilder::call;
+
   void initialize_context() {
     if (kernel->arch == Arch::gpu) {
       tlctx = get_current_program().llvm_context_device.get();
@@ -926,10 +928,10 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
                          0));
   }
 
-  llvm::Value *call_snode(SNode *snode,
-                          llvm::Value *node_ptr,
-                          const std::string &method,
-                          const std::vector<llvm::Value *> &arguments) {
+  llvm::Value *call(SNode *snode,
+                    llvm::Value *node_ptr,
+                    const std::string &method,
+                    const std::vector<llvm::Value *> &arguments) {
     auto prefix = get_runtime_snode_name(snode);
     auto s = emit_struct_meta(snode);
     auto s_ptr =
@@ -955,32 +957,12 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     } else if (snode->type == SNodeType::dense ||
                snode->type == SNodeType::pointer ||
                snode->type == SNodeType::dynamic) {
-      /*
-      auto prefix = get_runtime_snode_name(snode);
-      auto s = emit_struct_meta(stmt->snode);
-      auto s_ptr =
-          builder->CreateBitCast(s, llvm::Type::getInt8PtrTy(*llvm_context));
-
-      // call look up
-      auto node_ptr = builder->CreateBitCast(
-          stmt->input_snode->value, llvm::Type::getInt8PtrTy(*llvm_context));
       if (stmt->activate) {
-        builder->CreateCall(get_runtime_function(prefix + "_activate"),
-                            {s_ptr, node_ptr, stmt->input_index->value});
+        call(snode, stmt->input_snode->value, "activate",
+             {stmt->input_index->value});
       }
-      auto elem =
-          builder->CreateCall(get_runtime_function(prefix + "_lookup_element"),
-                              {s_ptr, node_ptr, stmt->input_index->value});
-      auto element_ty = snode_attr[snode].llvm_body_type;
-      stmt->value =
-          builder->CreateBitCast(elem, PointerType::get(element_ty, 0));
-          */
-      if (stmt->activate) {
-        call_snode(snode, stmt->input_snode->value, "activate",
-                   {stmt->input_index->value});
-      }
-      stmt->value = call_snode(snode, stmt->input_snode->value,
-                               "lookup_element", {stmt->input_index->value});
+      stmt->value = call(snode, stmt->input_snode->value, "lookup_element",
+                         {stmt->input_index->value});
     } else {
       TC_INFO(snode_type_name(snode->type));
       TC_NOT_IMPLEMENTED

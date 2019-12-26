@@ -63,7 +63,6 @@ def test_dynamic_matrix():
 
 @ti.all_archs
 def test_append():
-  ti.cfg.print_ir = True
   x = ti.var(ti.i32)
   n = 128
   
@@ -81,30 +80,6 @@ def test_append():
   elements = []
   for i in range(n):
     elements.append(x[i])
-  print(elements)
   elements.sort()
-  print(elements)
   for i in range(n):
     assert elements[i] == i
-
-# test_append()
-
-# @ti.all_archs
-def test_append2():
-  return
-  ti.cfg.print_ir = True
-  x = ti.var(ti.f32)
-  n = 8192
-  
-  @ti.layout
-  def place():
-    ti.root.dense(ti.i, n).place(x)
-  
-  @ti.kernel
-  def func():
-    for i in range(n):
-      x[i] = i
-  
-  func()
-
-test_append()

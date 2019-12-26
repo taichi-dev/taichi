@@ -104,6 +104,7 @@ def voxel_color(pos):
   p = pos * grid_resolution
 
   p -= ti.Matrix.floor(p)
+  
   boundary = 0.1
   count = 0
   for i in ti.static(range(3)):
@@ -119,22 +120,22 @@ n_pillars = 9
 
 
 @ti.func
-def sdf(o_):
+def sdf(o):
   dist = 0.0
   if ti.static(supporter == 0):
-    o = o_ - ti.Vector([0.5, 0.002, 0.5])
+    o -= ti.Vector([0.5, 0.002, 0.5])
     p = o
     h = 0.02
     ra = 0.29
     rb = 0.005
-    d = (ti.Vector([p[0], p[2]]).norm() - 2.0 * ra + rb, ti.abs(p[1]) - h)
-    dist = ti.min(ti.max(d[0], d[1]), 0.0) + ti.Vector(
-        [ti.max(d[0], 0.0), ti.max(d[1], 0)]).norm() - rb
+    d = (ti.Vector([p[0], p[2]]).norm() - 2.0 * ra + rb, abs(p[1]) - h)
+    dist = min(max(d[0], d[1]), 0.0) + ti.Vector(
+        [max(d[0], 0.0), max(d[1], 0)]).norm() - rb
   elif ti.static(supporter == 1):
-    o = o_ - ti.Vector([0.5, 0.002, 0.5])
+    o -= ti.Vector([0.5, 0.002, 0.5])
     dist = (o.abs() - ti.Vector([0.5, 0.02, 0.5])).max()
   else:
-    dist = o_[1] - 0.027
+    dist = o[1] - 0.027
 
   return dist
 
@@ -176,7 +177,7 @@ def sdf_color(p):
 @ti.func
 def dda(eye_pos, d):
   for i in ti.static(range(3)):
-    if ti.abs(d[i]) < 1e-6:
+    if abs(d[i]) < 1e-6:
       d[i] = 1e-6
   rinv = 1.0 / d
   rsign = ti.Vector([0, 0, 0])
@@ -193,7 +194,7 @@ def dda(eye_pos, d):
   normal = ti.Vector([0.0, 0.0, 0.0])
   c = ti.Vector([0.0, 0.0, 0.0])
   if inter:
-    near = ti.max(0, near)
+    near = max(0, near)
 
     pos = eye_pos + d * (near + 5 * eps)
 
@@ -392,7 +393,7 @@ def render():
 
     if hit_sky:
       if ray_depth != 1:
-        # contrib *= ti.max(d[1], 0.05)
+        # contrib *= max(d[1], 0.05)
         pass
       else:
         # directly hit sky
@@ -435,7 +436,7 @@ def copy(img: ti.ext_arr()):
     u = 1.0 * i / res[0]
     v = 1.0 * j / res[1]
 
-    darken = 1.0 - vignette_strength * ti.max((ti.sqrt(
+    darken = 1.0 - vignette_strength * max((ti.sqrt(
         ti.sqr(u - vignette_center[0]) + ti.sqr(v - vignette_center[1])) -
                                                vignette_radius), 0)
 

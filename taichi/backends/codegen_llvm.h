@@ -926,18 +926,36 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
                          0));
   }
 
+  llvm::Value *call_snode(SNode *snode,
+                          llvm::Value *node_ptr,
+                          const std::string &method,
+                          const std::vector<llvm::Value *> &arguments) {
+    auto prefix = get_runtime_snode_name(snode);
+    auto s = emit_struct_meta(snode);
+    auto s_ptr =
+        builder->CreateBitCast(s, llvm::Type::getInt8PtrTy(*llvm_context));
+
+    node_ptr = builder->CreateBitCast(node_ptr,
+                                      llvm::Type::getInt8PtrTy(*llvm_context));
+
+    std::vector<llvm::Value *> func_arguments{s_ptr, node_ptr};
+    func_arguments.insert(func_arguments.end(), arguments.begin(),
+                          arguments.end());
+
+    return call(builder, prefix + "_" + method, func_arguments);
+  }
+
   void visit(SNodeLookupStmt *stmt) override {
     llvm::Value *parent = nullptr;
     parent = stmt->input_snode->value;
     TC_ASSERT(parent);
-    // This part may need a redesign - why do we need both global indices and
-    // linearized indices?
     auto snode = stmt->snode;
     if (snode->type == SNodeType::root) {
       stmt->value = builder->CreateGEP(parent, stmt->input_index->value);
     } else if (snode->type == SNodeType::dense ||
                snode->type == SNodeType::pointer ||
                snode->type == SNodeType::dynamic) {
+      /*
       auto prefix = get_runtime_snode_name(snode);
       auto s = emit_struct_meta(stmt->snode);
       auto s_ptr =
@@ -956,6 +974,13 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       auto element_ty = snode_attr[snode].llvm_body_type;
       stmt->value =
           builder->CreateBitCast(elem, PointerType::get(element_ty, 0));
+          */
+      if (stmt->activate) {
+        call_snode(snode, stmt->input_snode->value, "activate",
+                   {stmt->input_index->value});
+      }
+      stmt->value = call_snode(snode, stmt->input_snode->value,
+                               "lookup_element", {stmt->input_index->value});
     } else {
       TC_INFO(snode_type_name(snode->type));
       TC_NOT_IMPLEMENTED

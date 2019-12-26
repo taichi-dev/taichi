@@ -88,6 +88,14 @@ class ModuleBuilder {
     return f;
   }
 
+  llvm::Value *call(llvm::IRBuilder<> *builder,
+                    const std::string &func_name,
+                    const std::vector<llvm::Value *> &arglist) {
+    auto func = get_runtime_function(func_name);
+    check_func_call_signature(func, arglist);
+    return builder->CreateCall(func, arglist);
+  }
+
   template <typename... Args>
   llvm::Value *call(llvm::IRBuilder<> *builder,
                     const std::string &func_name,

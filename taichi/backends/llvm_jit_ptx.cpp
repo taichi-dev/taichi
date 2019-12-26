@@ -226,8 +226,10 @@ void CUDAContext::launch(CUfunction func,
   TC_WARN_IF(
       gridDim * blockDim > 1024 * 1024,
       "random number generator only initialized for 1024 * 1024 threads.");
-  checkCudaErrors(cuLaunchKernel(func, gridDim, 1, 1, blockDim, 1, 1, 0,
-                                 nullptr, KernelParams, nullptr));
+  if (gridDim > 0) {
+    checkCudaErrors(cuLaunchKernel(func, gridDim, 1, 1, blockDim, 1, 1, 0,
+                                   nullptr, KernelParams, nullptr));
+  }
 
   if (get_current_program().config.debug) {
     cudaDeviceSynchronize();

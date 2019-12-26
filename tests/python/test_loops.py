@@ -83,3 +83,16 @@ def test_nested_loops():
         x[0, 0] = i
 
   paint()
+  
+@ti.all_archs
+def test_zero_outer_loop():
+  x = ti.var(ti.i32, shape=())
+  
+  @ti.kernel
+  def test():
+    for i in range(0):
+      x[None] = 1
+  
+  test()
+  
+  assert x[None] == 0

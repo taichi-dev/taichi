@@ -11,7 +11,6 @@ import sys
 res = 1280, 720
 num_spheres = 1024
 color_buffer = ti.Vector(3, dt=ti.f32)
-sphere_pos = ti.Vector(3, dt=ti.f32)
 bbox = ti.Vector(3, dt=ti.f32)
 grid_density = ti.var(dt=ti.i32)
 voxel_has_particle = ti.var(dt=ti.i32)
@@ -20,7 +19,7 @@ use_directional_light = True
 
 particle_x = ti.Vector(3, dt=ti.f32)
 particle_v = ti.Vector(3, dt=ti.f32)
-particle_color = ti.var(ti.i32)
+particle_color = ti.Vector(3, dt=ti.f32)
 pid = ti.var(ti.i32)
 num_particles = ti.var(ti.i32)
 
@@ -42,42 +41,26 @@ ti.cfg.arch = ti.cuda
 grid_visualization_block_size = 16
 grid_resolution = 256 // grid_visualization_block_size
 
-# scene = sys.argv[1]
-# folder = sys.argv[2]
-# frame_id = int(sys.argv[3])
-scene = 'snow'
-folder = 'output'
 frame_id = 0
-assert scene in ['sand', 'fluid', 'snow']
 
 render_voxel = False
 inv_dx = 256.0
 dx = 1.0 / inv_dx
 
-if scene == 'fluid':
-  supporter = 1
-  shutter_time = 1e-3
-  sphere_radius = 0.0018
-  particle_grid_res = 256
-  max_num_particles_per_cell = 8192
-  max_num_particles = 1024 * 1024 * 4
-elif scene == 'snow':
-  camera_pos = ti.Vector([0.5, 0.27, 2.7])
-  supporter = 2
-  shutter_time = 0.5e-3
-  sphere_radius = 0.0015
-  particle_grid_res = 256
-  max_num_particles_per_cell = 8192
-  max_num_particles = 1024 * 1024 * 4
+camera_pos = ti.Vector([0.5, 0.27, 2.7])
+supporter = 2
+shutter_time = 0.5e-3
+sphere_radius = 0.0015
+particle_grid_res = 256
+max_num_particles_per_cell = 8192
+max_num_particles = 1024 * 1024 * 4
 
 assert sphere_radius * 2 * particle_grid_res < 1
-
 
 @ti.layout
 def buffers():
   ti.root.dense(ti.ij, (res[0] // 8, res[1] // 8)).dense(ti.ij,
                                                          8).place(color_buffer)
-  ti.root.dense(ti.i, num_spheres).place(sphere_pos)
 
   ti.root.dense(ti.ijk, 2).dense(ti.ijk, particle_grid_res // 8).dense(
       ti.ijk, 8).place(voxel_has_particle)
@@ -246,27 +229,6 @@ def dda(eye_pos, d):
       i += 1
   return hit_distance, normal, c
 
-
-@ti.func
-def intersect_spheres(pos, d):
-  normal = ti.Vector([0.0, 0.0, 0.0])
-  c = ti.Vector([0.0, 0.0, 0.0])
-  min_dist = inf
-  sid = -1
-
-  for i in range(num_spheres):
-    dist = intersect_sphere(pos, d, sphere_pos[i], 0.05)
-    if dist < min_dist:
-      min_dist = dist
-      sid = i
-
-  if min_dist < inf:
-    hit_pos = pos + d * min_dist
-    normal = ti.Matrix.normalized(hit_pos - sphere_pos[sid])
-    c = [0.3, 0.5, 0.2]
-
-  return min_dist, normal, c
-
 @ti.func
 def inside_particle_grid(ipos):
   pos = ipos * dx
@@ -325,10 +287,7 @@ def dda_particle(eye_pos, d, t):
             hit_pos = eye_pos + dist * d
             closest_intersection = dist
             normal = ti.Matrix.normalized(hit_pos - x)
-            c = [
-                color // 256**2 / 255.0, color / 256 % 256 / 255.0,
-                color % 256 / 255.0
-            ]
+            c = color
       else:
         running = 0
         normal = [0, 0, 0]
@@ -470,18 +429,6 @@ def initialize_particle_grid():
                 ti.append(pid, box_ipos, p)
                 voxel_has_particle[box_ipos] = 1
 
-
-@ti.func
-def color_f32_to_i8(x):
-  return ti.cast(ti.min(ti.max(x, 0.0), 1.0) * 255, ti.i32)
-
-
-@ti.func
-def rgb_to_i32(r, g, b):
-  return color_f32_to_i8(r) * 65536 + color_f32_to_i8(
-      g) * 256 + color_f32_to_i8(b)
-
-
 @ti.kernel
 def copy(img: ti.ext_arr()):
   for i, j in color_buffer:
@@ -497,11 +444,13 @@ def copy(img: ti.ext_arr()):
 
 
 def main():
-  num_sand_particles = 100000
-  num_part = num_sand_particles
+  num_part = 100000
   np_x = np.random.rand(num_part, 3).astype(np.float) * 0.4 + 0.2
   np_v = np.random.rand(num_part, 3).astype(np.float) * 0
-  np_c = np.zeros((num_part, 3)).astype(np.float32) + 127
+  np_c = np.zeros((num_part, 3)).astype(np.float32)
+  np_c[:, 0] = 0.85
+  np_c[:, 1] = 0.9
+  np_c[:, 2] = 1
 
   for i in range(3):
     # bbox values must be multiples of dx
@@ -519,18 +468,8 @@ def main():
       if i < num_particles:
         for c in ti.static(range(3)):
           particle_x[i][c] = x[i, c]
-        for c in ti.static(range(3)):
           particle_v[i][c] = v[i, c]
-        # v_c = ti.min(1, particle_v[i].norm()) * 1.5
-        # ti.print(v_c)
-        if ti.static(scene == 'fluid'):
-          v_c = ti.min(particle_v[i].norm() * 0.1, 1)
-          particle_color[i] = rgb_to_i32(v_c * 0.3 + 0.3, v_c * 0.4 + 0.4,
-                                         0.5 + v_c * 0.5)
-        elif ti.static(scene == 'sand'):
-          particle_color[i] = ti.cast(color[i], ti.i32)
-        else:
-          particle_color[i] = rgb_to_i32(0.85, 0.90, 1.0)
+          particle_color[i][c] = color[i, c]
 
         # reconstruct grid using particle position and MPM p2g.
         for k in ti.static(range(27)):

@@ -54,7 +54,9 @@ void Dynamic_append(Ptr meta_, Ptr node_, i32 data) {
       }
       if (i < chunk_start + chunk_size) {
         node->n += 1;
-        return *p_chunk_ptr + sizeof(Ptr) + (i - chunk_start) * meta->element_size;
+        *(i32 *)(*p_chunk_ptr + sizeof(Ptr) +
+                 (i - chunk_start) * meta->element_size) = data;
+        return;
       }
       p_chunk_ptr = (Ptr *)*p_chunk_ptr;
       chunk_start += chunk_size;

@@ -96,11 +96,12 @@ class TypeCheck : public IRVisitor {
     else
       TC_WARN("Type inference failed: snode is nullptr.");
     for (int l = 0; l < stmt->snodes.size(); l++) {
-      if (stmt->snodes[l]->num_active_indices != 0 &&
-          stmt->snodes[l]->num_active_indices != stmt->indices.size()) {
+      if (stmt->snodes[l]->parent->num_active_indices != 0 &&
+          stmt->snodes[l]->parent->num_active_indices != stmt->indices.size()) {
         TC_ERROR("{} has {} indices. Indexed with {}.",
-                 stmt->snodes[l]->node_type_name,
-                 stmt->snodes[l]->num_active_indices, stmt->indices.size());
+                 stmt->snodes[l]->parent->node_type_name,
+                 stmt->snodes[l]->parent->num_active_indices,
+                 stmt->indices.size());
       }
     }
     for (int i = 0; i < stmt->indices.size(); i++) {
@@ -153,9 +154,11 @@ class TypeCheck : public IRVisitor {
     }
     if (is_trigonometric(stmt->op_type) &&
         !is_real(stmt->operand->ret_type.data_type)) {
-      TC_ERROR("Trigonometric operator takes real inputs only. At {}", stmt->tb);
+      TC_ERROR("Trigonometric operator takes real inputs only. At {}",
+               stmt->tb);
     }
-    if ((stmt->op_type == UnaryOpType::floor || stmt->op_type == UnaryOpType::ceil) &&
+    if ((stmt->op_type == UnaryOpType::floor ||
+         stmt->op_type == UnaryOpType::ceil) &&
         !is_real(stmt->operand->ret_type.data_type)) {
       TC_ERROR("floor/ceil takes real inputs only. At {}", stmt->tb);
     }

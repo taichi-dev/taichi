@@ -321,21 +321,21 @@ def dda_particle(eye_pos, d, t):
         num_particles = voxel_has_particle[ipos]
         if num_particles != 0:
           num_particles = ti.length(pid, ipos)
-          for k in range(num_particles):
-            p = pid[ipos[0], ipos[1], ipos[2], k]
-            v = particle_v[p]
-            x = particle_x[p] + t * v
-            color = particle_color[p]
-            dist, poss = intersect_sphere(eye_pos, d, x, sphere_radius)
-            hit_pos = poss
-            if dist < closest_intersection and dist > 0:
-              hit_pos = eye_pos + dist * d
-              closest_intersection = dist
-              normal = ti.Matrix.normalized(hit_pos - x)
-              c = [
-                  color // 256**2 / 255.0, color / 256 % 256 / 255.0,
-                  color % 256 / 255.0
-              ]
+        for k in range(num_particles):
+          p = pid[ipos[0], ipos[1], ipos[2], k]
+          v = particle_v[p]
+          x = particle_x[p] + t * v
+          color = particle_color[p]
+          dist, poss = intersect_sphere(eye_pos, d, x, sphere_radius)
+          hit_pos = poss
+          if dist < closest_intersection and dist > 0:
+            hit_pos = eye_pos + dist * d
+            closest_intersection = dist
+            normal = ti.Matrix.normalized(hit_pos - x)
+            c = [
+                color // 256**2 / 255.0, color / 256 % 256 / 255.0,
+                color % 256 / 255.0
+            ]
       else:
         running = 0
         normal = [0, 0, 0]

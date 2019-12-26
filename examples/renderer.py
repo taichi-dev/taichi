@@ -1,7 +1,6 @@
 import taichi as ti
 import os
 import numpy as np
-import cv2
 import math
 import time
 import random
@@ -396,68 +395,67 @@ aspect_ratio = res[0] / res[1]
 @ti.kernel
 def render():
   ti.parallelize(6)
-  for u, v in color_buffer(0):
+  for u, v in color_buffer:
     pos = camera_pos
     d = ti.Vector([(
         2 * fov * (u + ti.random(ti.f32)) / res[1] - fov * aspect_ratio - 1e-5),
                    2 * fov * (v + ti.random(ti.f32)) / res[1] - fov - 1e-5,
                    -1.0])
     d = ti.Matrix.normalized(d)
-    if u < res[0] and v < res[1]:
-      t = (ti.random() - 0.5) * shutter_time
+    t = (ti.random() - 0.5) * shutter_time
 
-      contrib = ti.Vector([0.0, 0.0, 0.0])
-      throughput = ti.Vector([1.0, 1.0, 1.0])
+    contrib = ti.Vector([0.0, 0.0, 0.0])
+    throughput = ti.Vector([1.0, 1.0, 1.0])
 
-      depth = 0
-      hit_sky = 1
-      ray_depth = 0
+    depth = 0
+    hit_sky = 1
+    ray_depth = 0
 
-      while depth < max_ray_depth:
-        closest, normal, c = next_hit(pos, d, t)
-        hit_pos = pos + closest * d
-        depth += 1
-        ray_depth = depth
-        if normal.norm() != 0:
-          d = out_dir(normal)
-          pos = hit_pos + 1e-4 * d
-          throughput *= c
+    while depth < max_ray_depth:
+      closest, normal, c = next_hit(pos, d, t)
+      hit_pos = pos + closest * d
+      depth += 1
+      ray_depth = depth
+      if normal.norm() != 0:
+        d = out_dir(normal)
+        pos = hit_pos + 1e-4 * d
+        throughput *= c
 
-          if ti.static(use_directional_light):
-            dir_noise = ti.Vector(
-                [ti.random() - 0.5,
-                 ti.random() - 0.5,
-                 ti.random() - 0.5]) * light_direction_noise
-            direct = ti.Matrix.normalized(
-                ti.Vector(light_direction) + dir_noise)
-            dot = direct.dot(normal)
-            if dot > 0:
-              dist, _, _ = next_hit(pos, direct, t)
-              if dist > dist_limit:
-                contrib += throughput * ti.Vector(light_color) * dot
-        else:  # hit sky
-          hit_sky = 1
-          depth = max_ray_depth
+        if ti.static(use_directional_light):
+          dir_noise = ti.Vector(
+              [ti.random() - 0.5,
+               ti.random() - 0.5,
+               ti.random() - 0.5]) * light_direction_noise
+          direct = ti.Matrix.normalized(
+              ti.Vector(light_direction) + dir_noise)
+          dot = direct.dot(normal)
+          if dot > 0:
+            dist, _, _ = next_hit(pos, direct, t)
+            if dist > dist_limit:
+              contrib += throughput * ti.Vector(light_color) * dot
+      else:  # hit sky
+        hit_sky = 1
+        depth = max_ray_depth
 
-        max_c = throughput.max()
-        if ti.random() > max_c:
-          depth = max_ray_depth
-          throughput = [0, 0, 0]
-        else:
-          throughput /= max_c
-
-      if hit_sky:
-        if ray_depth != 1:
-          # contrib *= ti.max(d[1], 0.05)
-          pass
-        else:
-          # directly hit sky
-          pass
+      max_c = throughput.max()
+      if ti.random() > max_c:
+        depth = max_ray_depth
+        throughput = [0, 0, 0]
       else:
-        throughput *= 0
+        throughput /= max_c
 
-      # contrib += throughput
-      color_buffer[u, v] += contrib
+    if hit_sky:
+      if ray_depth != 1:
+        # contrib *= ti.max(d[1], 0.05)
+        pass
+      else:
+        # directly hit sky
+        pass
+    else:
+      throughput *= 0
+
+    # contrib += throughput
+    color_buffer[u, v] += contrib
 
 
 support = 2
@@ -465,7 +463,7 @@ support = 2
 
 @ti.kernel
 def initialize_particle_grid():
-  for p in particle_x(0):
+  for p in particle_x:
     if p < num_particles:
       x = particle_x[p]
       v = particle_v[p]
@@ -499,18 +497,16 @@ def rgb_to_i32(r, g, b):
 
 @ti.kernel
 def copy(img: ti.ext_arr()):
-  for i in range(res[0]):
-    for j in range(res[1]):
-      u = 1.0 * i / res[0]
-      v = 1.0 * j / res[1]
+  for i, j in color_buffer:
+    u = 1.0 * i / res[0]
+    v = 1.0 * j / res[1]
 
-      darken = 1.0 - vignette_strength * ti.max((ti.sqrt(
-          ti.sqr(u - vignette_center[0]) + ti.sqr(v - vignette_center[1])) -
-                                                 vignette_radius), 0)
+    darken = 1.0 - vignette_strength * ti.max((ti.sqrt(
+        ti.sqr(u - vignette_center[0]) + ti.sqr(v - vignette_center[1])) -
+                                               vignette_radius), 0)
 
-      coord = ((res[1] - 1 - j) * res[0] + i) * 3
-      for c in ti.static(range(3)):
-        img[coord + c] = color_buffer[i, j][2 - c] * darken
+    for c in ti.static(range(3)):
+      img[i, j, c] = color_buffer[i, j][c] * darken
 
 
 def main():
@@ -558,26 +554,24 @@ def main():
   initialize_particle_x(np_x, np_v, np_c)
   initialize_particle_grid()
 
-  output_folder = 'outputs_' + folder
+  gui = ti.core.GUI('Particle Renderer', ti.veci(*res))
 
   last_t = 0
   for i in range(500):
     render()
 
-    interval = 50
+    interval = 10
     if i % interval == 0:
-      img = np.zeros((res[1] * res[0] * 3,), dtype=np.float32)
+      img = np.zeros((res[0], res[1], 3), dtype=np.float32)
       copy(img)
       if last_t != 0:
         print("time per spp = {:.2f} ms".format(
             (time.time() - last_t) * 1000 / interval))
       last_t = time.time()
-      img = img.reshape(res[1], res[0], 3) * (1 / (i + 1)) * exposure
+      img = img * (1 / (i + 1)) * exposure
       img = np.sqrt(img)
-      cv2.imshow('img', img)
-      cv2.waitKey(1)
-  os.makedirs(output_folder, exist_ok=True)
-  cv2.imwrite(output_folder + '/{:04d}.png'.format(frame_id), img * 255)
+      gui.set_image(img)
+      gui.update()
 
 
 if __name__ == '__main__':

@@ -172,7 +172,7 @@ def test_dense_dynamic_len():
   
   @ti.layout
   def place():
-    ti.root.dense(ti.i, n).dynamic(ti.i, n, 32).place(x)
+    ti.root.dense(ti.i, n).dynamic(ti.j, n, 32).place(x)
   
   @ti.kernel
   def func():
@@ -184,4 +184,3 @@ def test_dense_dynamic_len():
   for i in range(n):
     assert l[i] == 0
 
-test_dense_dynamic()

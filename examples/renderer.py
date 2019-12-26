@@ -183,8 +183,7 @@ def sdf_normal(p):
 
 
 @ti.func
-def sdf_color(p_):
-  p = p_
+def sdf_color(p):
   scale = 0.4
   if inside_taichi(ti.Vector([p[0], p[2]])):
     scale = 1
@@ -192,8 +191,7 @@ def sdf_color(p_):
 
 
 @ti.func
-def dda(eye_pos, d_):
-  d = d_
+def dda(eye_pos, d):
   for i in ti.static(range(3)):
     if ti.abs(d[i]) < 1e-6:
       d[i] = 1e-6
@@ -271,14 +269,9 @@ def intersect_spheres(pos, d):
 
 @ti.func
 def inside_particle_grid(ipos):
-  return bbox[0][0] * inv_dx <= ipos[0] and ipos[0] < bbox[1][0] * inv_dx and bbox[
-      0][1] * inv_dx <= ipos[1] and ipos[1] < bbox[1][1] * inv_dx and bbox[0][
-          2] * inv_dx <= ipos[2] and ipos[2] < bbox[1][2] * inv_dx
-
-  # pos = ipos * dx
-  # return bbox[0][0] - 0.1 < pos[0] and pos[0] < bbox[1][0] + 0.1 and bbox[0][1] - 0.1 < pos[1] and \
-  #       pos[1] < bbox[1][1] + 0.1 and bbox[0][2] - 0.1 < pos[2] and pos[2] < bbox[1][2] + 0.1
-
+  pos = ipos * dx
+  return bbox[0][0]  <= pos[0] and pos[0] < bbox[1][0] and bbox[
+      0][1] <= pos[1] and pos[1] < bbox[1][1] and bbox[0][2] <= pos[2] and pos[2] < bbox[1][2]
 
 @ti.func
 def dda_particle(eye_pos, d, t):
@@ -358,8 +351,7 @@ def dda_particle(eye_pos, d, t):
 
 
 @ti.func
-def next_hit(pos_, d, t):
-  pos = pos_
+def next_hit(pos, d, t):
   closest = inf
   normal = ti.Vector([0.0, 0.0, 0.0])
   c = ti.Vector([0.0, 0.0, 0.0])

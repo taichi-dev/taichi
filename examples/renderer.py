@@ -58,7 +58,7 @@ if scene == 'fluid':
   supporter = 1
   shutter_time = 1e-3
   sphere_radius = 0.0018
-  particle_grid_res = 128
+  particle_grid_res = 256
   max_num_particles_per_cell = 8192
   max_num_particles = 1024 * 1024 * 4
 elif scene == 'snow':
@@ -269,11 +269,9 @@ def intersect_spheres(pos, d):
 
   return min_dist, normal, c
 
-
 @ti.func
 def inside_particle_grid(ipos):
-  grid_res = particle_grid_res
-  return bbox[0][0] <= ipos[0] * dx and ipos[0] < bbox[1][0] * inv_dx and bbox[
+  return bbox[0][0] * inv_dx <= ipos[0] and ipos[0] < bbox[1][0] * inv_dx and bbox[
       0][1] * inv_dx <= ipos[1] and ipos[1] < bbox[1][1] * inv_dx and bbox[0][
           2] * inv_dx <= ipos[2] and ipos[2] < bbox[1][2] * inv_dx
 
@@ -283,7 +281,7 @@ def inside_particle_grid(ipos):
 
 
 @ti.func
-def dda_particle(eye_pos, d_, t):
+def dda_particle(eye_pos, d, t):
   grid_res = particle_grid_res
 
   bbox_min = bbox[0]
@@ -292,16 +290,15 @@ def dda_particle(eye_pos, d_, t):
   hit_pos = ti.Vector([0.0, 0.0, 0.0])
   normal = ti.Vector([0.0, 0.0, 0.0])
   c = ti.Vector([0.0, 0.0, 0.0])
-  d = d_
   for i in ti.static(range(3)):
-    if ti.abs(d[i]) < 1e-6:
+    if abs(d[i]) < 1e-6:
       d[i] = 1e-6
 
   inter, near, far = ray_aabb_intersection(bbox_min, bbox_max, eye_pos, d)
-  near = ti.max(0, near)
+  near = max(0, near)
 
   closest_intersection = inf
-
+  
   if inter:
     pos = eye_pos + d * (near + eps)
 
@@ -324,21 +321,21 @@ def dda_particle(eye_pos, d_, t):
         num_particles = voxel_has_particle[ipos]
         if num_particles != 0:
           num_particles = ti.length(pid, ipos)
-        for k in range(num_particles):
-          p = pid[ipos[0], ipos[1], ipos[2], k]
-          v = particle_v[p]
-          x = particle_x[p] + t * v
-          color = particle_color[p]
-          dist, poss = intersect_sphere(eye_pos, d, x, sphere_radius)
-          hit_pos = poss
-          if dist < closest_intersection and dist > 0:
-            hit_pos = eye_pos + dist * d
-            closest_intersection = dist
-            normal = ti.Matrix.normalized(hit_pos - x)
-            c = [
-                color // 256**2 / 255.0, color / 256 % 256 / 255.0,
-                color % 256 / 255.0
-            ]
+          for k in range(num_particles):
+            p = pid[ipos[0], ipos[1], ipos[2], k]
+            v = particle_v[p]
+            x = particle_x[p] + t * v
+            color = particle_color[p]
+            dist, poss = intersect_sphere(eye_pos, d, x, sphere_radius)
+            hit_pos = poss
+            if dist < closest_intersection and dist > 0:
+              hit_pos = eye_pos + dist * d
+              closest_intersection = dist
+              normal = ti.Matrix.normalized(hit_pos - x)
+              c = [
+                  color // 256**2 / 255.0, color / 256 % 256 / 255.0,
+                  color % 256 / 255.0
+              ]
       else:
         running = 0
         normal = [0, 0, 0]
@@ -366,12 +363,10 @@ def next_hit(pos_, d, t):
   closest = inf
   normal = ti.Vector([0.0, 0.0, 0.0])
   c = ti.Vector([0.0, 0.0, 0.0])
-  '''
   if ti.static(render_voxel):
     closest, normal, c = dda(pos, d)
   else:
     closest, normal, c = dda_particle(pos, d, t)
-  '''
 
   if d[2] != 0:
     ray_closest = -(pos[2] + 5.5) / d[2]
@@ -510,12 +505,10 @@ def copy(img: ti.ext_arr()):
 
 
 def main():
-  num_sand_particles = 10
+  num_sand_particles = 100000
   num_part = num_sand_particles
-  np_x = np.random.rand(num_part, 3).astype(np.float) * 0.2 + 0.4
+  np_x = np.random.rand(num_part, 3).astype(np.float) * 0.4 + 0.2
   np_v = np.random.rand(num_part, 3).astype(np.float) * 0
-  print(np_x)
-  print(np_v)
   np_c = np.zeros((num_part, 3)).astype(np.float32) + 127
 
   for i in range(3):

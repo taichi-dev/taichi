@@ -450,6 +450,20 @@ class BasicBlockSimplify : public IRVisitor {
     set_done(stmt);
   }
 
+  void visit(GetRootStmt *stmt) override {
+    if (is_done(stmt))
+      return;
+    for (int i = 0; i < current_stmt_id; i++) {
+      auto &bstmt = block->statements[i];
+      if (bstmt->is<GetRootStmt>()) {
+        stmt->replace_with(bstmt.get());
+        stmt->parent->erase(current_stmt_id);
+        throw IRModified();
+      }
+    }
+    set_done(stmt);
+  }
+
   void visit(UnaryOpStmt *stmt) override {
     if (is_done(stmt))
       return;

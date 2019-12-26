@@ -104,9 +104,12 @@ class KernelArgError(Exception):
 
 
 class Kernel:
+  counter = 0
 
   def __init__(self, func, is_grad, classkernel=False):
     self.func = func
+    self.kernel_counter = Kernel.counter
+    Kernel.counter += 1
     self.is_grad = is_grad
     self.arguments = []
     self.argument_names = []
@@ -172,7 +175,7 @@ class Kernel:
     grad_suffix = ""
     if self.is_grad:
       grad_suffix = "_grad"
-    kernel_name = "{}_{}_{}".format(self.func.__name__, key[1], grad_suffix)
+    kernel_name = "{}_c{}_{}_{}".format(self.func.__name__, self.kernel_counter, key[1], grad_suffix)
     import taichi as ti
     ti.info("Compiling kernel {}...".format(kernel_name))
 

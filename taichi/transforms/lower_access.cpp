@@ -105,20 +105,16 @@ class LowerAccess : public IRVisitor {
       }
 
       // linearize
-      auto linearized = Stmt::make<LinearizeStmt>(lowered_indices, strides);
+      auto linearized =
+          lowered.push_back<LinearizeStmt>(lowered_indices, strides);
 
       int chid = snode->child_id(snodes[i + 1]);
-      auto lookup = Stmt::make<SNodeLookupStmt>(
-          snode, last, linearized.get(),
+      auto lookup = lowered.push_back<SNodeLookupStmt>(
+          snode, last, linearized,
           snode->need_activation() && activate && !on_loop_tree,
           indices);  // if snode has no possibility of null child, set activate
       // = false
-      auto get_ch = Stmt::make<GetChStmt>(lookup.get(), chid);
-
-      lowered.push_back(std::move(linearized));
-      last = get_ch.get();
-      lowered.push_back(std::move(lookup));
-      lowered.push_back(std::move(get_ch));
+      last = lowered.push_back<GetChStmt>(lookup, chid);
     }
   }
 

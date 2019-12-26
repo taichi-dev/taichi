@@ -795,6 +795,10 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     if (stmt->op_type == SNodeOpType::append) {
       TC_ASSERT(snode->type == SNodeType::dynamic);
       TC_ASSERT(stmt->ret_type.data_type == DataType::i32);
+      int chid = snode->parent->child_id(snode);
+      auto get_ch = std::make_unique<GetChStmt>(stmt->ptr, chid);
+      get_ch->accept(this);
+      call(snode, get_ch->value, "append", {stmt->val->value});
       /*
       if (snode)
         stmt->snode->get

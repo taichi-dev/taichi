@@ -60,6 +60,7 @@ def test_dynamic_matrix():
     assert x[i * 4][1, 0] == i
     assert x[i * 4 + 1][1, 0] == 0
 
+
 # @ti.all_archs
 def test_append():
   return
@@ -85,4 +86,24 @@ def test_append():
   for i in range(n):
     assert elements[i] == i
 
-test_append()
+# test_append()
+
+# @ti.all_archs
+def test_append2():
+  return
+  ti.cfg.print_ir = True
+  x = ti.var(ti.f32)
+  n = 8192
+  
+  @ti.layout
+  def place():
+    ti.root.dense(ti.i, n).place(x)
+  
+  @ti.kernel
+  def func():
+    for i in range(n):
+      x[i] = i
+  
+  func()
+
+# test_append2()

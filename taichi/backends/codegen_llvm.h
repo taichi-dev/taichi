@@ -789,6 +789,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   }
 
   void visit(SNodeOpStmt *stmt) override {
+    /*
     stmt->ret_type.data_type = DataType::i32;
     if (stmt->op_type == SNodeOpType::probe) {
       emit("{} {};", stmt->ret_data_type_name(), stmt->raw_name());
@@ -831,6 +832,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       }
       emit("}}");
     }
+    */
   }
 
   virtual void visit(AtomicOpStmt *stmt) override {

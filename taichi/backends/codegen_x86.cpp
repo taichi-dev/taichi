@@ -279,6 +279,8 @@ class CPUIRCodeGen : public IRVisitor {
   }
 
   void visit(SNodeOpStmt *stmt) {
+    TC_NOT_IMPLEMENTED
+    /*
     stmt->ret_type.data_type = DataType::i32;
     if (stmt->op_type == SNodeOpType::probe) {
       emit("{} {};", stmt->ret_data_type_name(), stmt->raw_name());
@@ -321,6 +323,7 @@ class CPUIRCodeGen : public IRVisitor {
       }
       emit("}}");
     }
+    */
   }
 
   void visit(AtomicOpStmt *stmt) {

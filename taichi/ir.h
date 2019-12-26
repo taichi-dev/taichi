@@ -1386,47 +1386,18 @@ class FrontendSNodeOpStmt : public Stmt {
 class SNodeOpStmt : public Stmt {
  public:
   SNodeOpType op_type;
-  LaneAttribute<SNode *> snodes;
-  std::vector<Stmt *> indices;
+  SNode *snode;
+  Stmt *ptr;
   Stmt *val;
 
-  SNodeOpStmt(SNodeOpType op_type,
-              const LaneAttribute<SNode *> &snodes,
-              const std::vector<Stmt *> &indices,
-              Stmt *val = nullptr)
-      : op_type(op_type), snodes(snodes), indices(indices), val(val) {
-    TC_ASSERT_INFO(snodes.size() == 1, "SNodeOpStmt cannot be vectorized");
+  SNodeOpStmt(SNodeOpType op_type, SNode *snode, Stmt *ptr, Stmt *val = nullptr)
+      : op_type(op_type), snode(snode), ptr(ptr), val(val) {
     TC_ASSERT((val == nullptr) != (op_type == SNodeOpType::append));
-    for (int i = 0; i < (int)snodes.size(); i++) {
-      TC_ASSERT(snodes[i] != nullptr);
-      TC_ASSERT(snodes[0]->dt == snodes[i]->dt);
-    }
-    for (int i = 0; i < (int)indices.size(); i++) {
-      add_operand(this->indices[i]);
-    }
-    if (val) {
+    add_operand(this->ptr);
+    if (val)
       add_operand(this->val);
-    }
-    width() = snodes.size();
-    element_type() = snodes[0]->dt;
-  }
-
-  DEFINE_ACCEPT
-};
-
-class SNodeMicroOpStmt : public Stmt {
- public:
-  SNodeOpType op_type;
-  Stmt *val;
-
-  SNodeMicroOpStmt(SNodeOpType op_type, Stmt *val = nullptr)
-      : op_type(op_type), val(val) {
-    TC_ASSERT((val == nullptr) != (op_type == SNodeOpType::append));
-    if (val) {
-      add_operand(this->val);
-    }
     width() = 1;
-    element_type() = DataType::i32;
+    element_type() = snode->dt;
   }
 
   DEFINE_ACCEPT
@@ -1946,8 +1917,8 @@ class ProbeExpression : public Expression {
       indices[i]->flatten(ret);
       indices_stmt.push_back(indices[i]->stmt);
     }
-    ret.push_back(std::make_unique<SNodeOpStmt>(SNodeOpType::probe, snode,
-                                                indices_stmt, nullptr));
+    auto ptr = ret.push_back<GlobalPtrStmt>(snode, indices_stmt);
+    ret.push_back<SNodeOpStmt>(SNodeOpType::probe, snode, ptr, nullptr);
     stmt = ret.back().get();
   }
 };

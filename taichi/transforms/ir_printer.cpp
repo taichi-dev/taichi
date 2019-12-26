@@ -60,7 +60,8 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(AssertStmt *assert) override {
-    print("{} : assert {}, \"{}\"", assert->id, assert->val->name(), assert->text);
+    print("{} : assert {}, \"{}\"", assert->id, assert->val->name(),
+          assert->text);
   }
 
   void visit(FrontendSNodeOpStmt *stmt) override {
@@ -79,24 +80,13 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(SNodeOpStmt *stmt) override {
-    std::string extras = "[";
-    for (int i = 0; i < (int)stmt->indices.size(); i++) {
-      extras += stmt->indices[i]->name();
-      if (i + 1 < (int)stmt->indices.size())
-        extras += ", ";
-    }
-    extras += "]";
+    std::string extras = stmt->ptr->raw_name();
     if (stmt->val) {
       extras += ", " + stmt->val->name();
     }
-    std::string snodes;
-    for (int l = 0; l < stmt->width(); l++) {
-      snodes += stmt->snodes[l]->node_type_name;
-      if (l > 0)
-        snodes += ", ";
-    }
+    std::string snode = stmt->snode->node_type_name;
     print("{} : {} [{}] {}", stmt->name(), snode_op_type_name(stmt->op_type),
-          snodes, extras);
+          snode, extras);
   }
 
   void visit(AllocaStmt *alloca) override {

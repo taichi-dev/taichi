@@ -271,8 +271,8 @@ class LowerAST : public IRVisitor {
       indices_stmt[i] = stmt->indices[i]->stmt;
     }
 
-    flattened.push_back(Stmt::make<SNodeOpStmt>(stmt->op_type, stmt->snode,
-                                                indices_stmt, val_stmt));
+    auto ptr = flattened.push_back<GlobalPtrStmt>(stmt->snode, indices_stmt);
+    flattened.push_back<SNodeOpStmt>(stmt->op_type, stmt->snode, ptr, val_stmt);
 
     stmt->parent->replace_with(stmt, flattened);
     throw IRModified();

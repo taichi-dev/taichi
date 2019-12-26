@@ -44,7 +44,6 @@ PER_STATEMENT(IntegerOffsetStmt)
 PER_STATEMENT(OffsetAndExtractBitsStmt)
 PER_STATEMENT(LinearizeStmt)
 PER_STATEMENT(SNodeLookupStmt)
-PER_STATEMENT(SNodeMicroOptmt)
 PER_STATEMENT(GetChStmt)
 
 // With per-lane attributes

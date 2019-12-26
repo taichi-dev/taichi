@@ -633,6 +633,7 @@ class GPUIRCodeGen : public IRVisitor {
   }
 
   void visit(SNodeOpStmt *stmt) {
+    /*
     TC_ASSERT(stmt->width() == 1);
     auto snode = stmt->snodes[0];
     auto indices = indices_str(snode, -1, stmt->indices);
@@ -672,6 +673,7 @@ class GPUIRCodeGen : public IRVisitor {
       TC_NOT_IMPLEMENTED;
     }
     emit("}}");
+    */
   }
 
   void visit(GlobalStoreStmt *stmt) override {

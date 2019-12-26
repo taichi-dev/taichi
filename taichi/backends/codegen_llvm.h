@@ -797,7 +797,8 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       TC_ASSERT(stmt->ret_type.data_type == DataType::i32);
       call(snode, stmt->ptr->value, "append", {stmt->val->value});
     } else if (stmt->op_type == SNodeOpType::probe) {
-      TC_NOT_IMPLEMENTED
+      TC_ASSERT(snode->type == SNodeType::dynamic);
+      stmt->value = call(snode, stmt->ptr->value, "get_length", {});
     } else {
       TC_NOT_IMPLEMENTED
     }

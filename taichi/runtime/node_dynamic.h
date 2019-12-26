@@ -64,6 +64,12 @@ void Dynamic_append(Ptr meta_, Ptr node_, i32 data) {
   });
 }
 
+i32 Dynamic_get_length(Ptr meta_, Ptr node_) {
+  auto meta = (DynamicMeta *)(meta_);
+  auto node = (DynamicNode *)(node_);
+  return node->n;
+}
+
 bool Dynamic_is_active(Ptr meta_, Ptr node_, int i) {
   auto node = (DynamicNode *)(node_);
   return i < node->n;

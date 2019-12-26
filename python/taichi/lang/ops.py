@@ -189,4 +189,4 @@ def append(l, indices, val):
 
 
 def length(l, indices):
-  return taichi_lang_core.insert_len(l.ptr, make_expr_group(indices))
+  return taichi_lang_core.insert_len(l.parent().ptr, make_expr_group(indices))

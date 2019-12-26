@@ -83,3 +83,28 @@ def test_append():
   elements.sort()
   for i in range(n):
     assert elements[i] == i
+    
+@ti.all_archs
+def test_length():
+  x = ti.var(ti.i32)
+  y = ti.var(ti.f32, shape=())
+  n = 128
+  
+  @ti.layout
+  def place():
+    ti.root.dynamic(ti.i, n, 32).place(x)
+  
+  @ti.kernel
+  def func():
+    for i in range(n):
+      ti.append(x, [], i)
+  
+  func()
+  
+  @ti.kernel
+  def get_len():
+    y[None] = ti.length(x, [])
+    
+  get_len()
+  
+  assert y[None] == n

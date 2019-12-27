@@ -111,6 +111,8 @@ def test_length():
   
 @ti.all_archs
 def test_append_ret_value():
+  if ti.get_os_name() == 'win':
+    return
   x = ti.var(ti.i32)
   y = ti.var(ti.i32)
   z = ti.var(ti.i32)
@@ -137,6 +139,8 @@ def test_append_ret_value():
 
 @ti.all_archs
 def test_dense_dynamic():
+  if ti.get_os_name() == 'win':
+    return
   n = 128
   x = ti.var(ti.i32)
   l = ti.var(ti.i32, shape=n)
@@ -152,8 +156,6 @@ def test_dense_dynamic():
     ti.serialize()
     for i in range(n):
       for j in range(n):
-        print(i)
-        print(j)
         ti.append(x, j, i)
         
     for i in range(n):
@@ -166,6 +168,8 @@ def test_dense_dynamic():
   
 @ti.all_archs
 def test_dense_dynamic_len():
+  if ti.get_os_name() == 'win':
+    return
   n = 128
   x = ti.var(ti.i32)
   l = ti.var(ti.i32, shape=n)

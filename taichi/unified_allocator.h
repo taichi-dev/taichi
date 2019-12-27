@@ -60,15 +60,8 @@ class UnifiedAllocator {
   static void free();
 };
 
-TC_FORCE_INLINE void *allocate(std::size_t size,
-                                                   int alignment = 1) {
-#if __CUDA_ARCH__
-  auto addr = allocator()->alloc_gpu(*device_head, size, alignment);
-#else
-  auto addr = allocator()->alloc(size, alignment);
-#endif
-  return addr;
+TC_FORCE_INLINE void *allocate(std::size_t size, int alignment = 1) {
+  return allocator()->alloc(size, alignment);
 }
-
 
 TLANG_NAMESPACE_END

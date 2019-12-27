@@ -1,7 +1,7 @@
 // Virtual memory allocator for CPU/GPU
 
 #if defined(CUDA_FOUND)
-#include <cuda_runtime.h>
+#include "cuda_utils.h"
 #endif
 #include "tlang_util.h"
 #include <taichi/unified_allocator.h>
@@ -20,12 +20,12 @@ taichi::Tlang::UnifiedAllocator::UnifiedAllocator(std::size_t size, bool gpu)
   size += 4096;
   if (gpu) {
 #if defined(CUDA_FOUND)
-    cudaMallocManaged(&_cuda_data, size + 4096);
+    check_cuda_errors(cudaMallocManaged(&_cuda_data, size + 4096));
     if (_cuda_data == nullptr) {
       TC_ERROR("GPU memory allocation failed.");
     }
-    cudaMemAdvise(_cuda_data, size + 4096, cudaMemAdviseSetPreferredLocation,
-                  0);
+    check_cuda_errors(cudaMemAdvise(_cuda_data, size + 4096,
+                                    cudaMemAdviseSetPreferredLocation, 0));
     // http://on-demand.gputechconf.com/gtc/2017/presentation/s7285-nikolay-sakharnykh-unified-memory-on-pascal-and-volta.pdf
     /*
     cudaMemAdvise(_cuda_data, size + 4096, cudaMemAdviseSetReadMostly,
@@ -60,7 +60,7 @@ taichi::Tlang::UnifiedAllocator::~UnifiedAllocator() {
   }
   if (gpu) {
 #if defined(CUDA_FOUND)
-    cudaFree(_cuda_data);
+    check_cuda_errors(cudaFree(_cuda_data));
 #else
     TC_ERROR("No CUDA support");
 #endif
@@ -73,7 +73,7 @@ void taichi::Tlang::UnifiedAllocator::create(bool gpu) {
   if (gpu) {
 #if defined(CUDA_FOUND)
     gpu = true;
-    cudaMallocManaged(&dst, sizeof(UnifiedAllocator));
+    check_cuda_errors(cudaMallocManaged(&dst, sizeof(UnifiedAllocator)));
 #else
     TC_NOT_IMPLEMENTED
 #endif
@@ -98,7 +98,7 @@ void taichi::Tlang::UnifiedAllocator::free() {
   (*allocator()).~UnifiedAllocator();
   if (allocator()->gpu) {
 #if defined(CUDA_FOUND)
-    cudaFree(allocator());
+    check_cuda_errors(cudaFree(allocator()));
 #else
     TC_NOT_IMPLEMENTED
 #endif

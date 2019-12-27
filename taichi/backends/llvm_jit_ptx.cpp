@@ -3,9 +3,7 @@
 #include <llvm/Support/TargetRegistry.h>
 #include <llvm/Target/TargetMachine.h>
 #if defined(TLANG_WITH_CUDA)
-#include <cuda.h>
-#include <cuda_runtime_api.h>
-#include <driver_types.h>
+#include <taichi/cuda_utils.h>
 #endif
 #include "cuda_context.h"
 #include "llvm_jit.h"
@@ -144,44 +142,27 @@ std::string compile_module_to_ptx(std::unique_ptr<llvm::Module> &module) {
   return buffer;
 }
 
-#define checkCudaErrors(err)                                \
-  if ((err) != CUDA_SUCCESS)                                \
-    TC_ERROR("Cuda Error {}: {}", get_cuda_error_name(err), \
-             get_cuda_error_string(err));
-
-std::string get_cuda_error_name(CUresult err) {
-  const char *ptr;
-  cuGetErrorName(err, &ptr);
-  return std::string(ptr);
-}
-
-std::string get_cuda_error_string(CUresult err) {
-  const char *ptr;
-  cuGetErrorString(err, &ptr);
-  return std::string(ptr);
-}
-
 CUDAContext::CUDAContext() {
   // CUDA initialization
   dev_count = 0;
   if (cuInit(0) == CUDA_SUCCESS) {
-    checkCudaErrors(cuDeviceGetCount(&dev_count));
-    checkCudaErrors(cuDeviceGet(&device, 0));
+    check_cuda_errors(cuDeviceGetCount(&dev_count));
+    check_cuda_errors(cuDeviceGet(&device, 0));
 
     char name[128];
-    checkCudaErrors(cuDeviceGetName(name, 128, device));
+    check_cuda_errors(cuDeviceGetName(name, 128, device));
     std::cout << "Using CUDA Device [0]: " << name << "\n";
 
     int devMajor, devMinor;
-    checkCudaErrors(cuDeviceComputeCapability(&devMajor, &devMinor, device));
+    check_cuda_errors(cuDeviceComputeCapability(&devMajor, &devMinor, device));
     std::cout << "Device Compute Capability: " << devMajor << "." << devMinor
               << "\n";
     if (devMajor < 2) {
       TC_ERROR("Device 0 is not SM 2.0 or greater");
     }
     // Create driver context
-    checkCudaErrors(cuCtxCreate(&context, 0, device));
-    checkCudaErrors(cuMemAlloc(&context_buffer, sizeof(Context)));
+    check_cuda_errors(cuCtxCreate(&context, 0, device));
+    check_cuda_errors(cuMemAlloc(&context_buffer, sizeof(Context)));
 
     int cap_major, cap_minor;
     cudaDeviceGetAttribute(&cap_major, cudaDevAttrComputeCapabilityMajor, 0);
@@ -196,7 +177,7 @@ CUmodule CUDAContext::compile(const std::string &ptx) {
   CUmodule cudaModule;
   TC_INFO("PTX size: {:.2f}KB", ptx.size() / 1024.0);
   // auto t = Time::get_time();
-  checkCudaErrors(cuModuleLoadDataEx(&cudaModule, ptx.c_str(), 0, 0, 0));
+  check_cuda_errors(cuModuleLoadDataEx(&cudaModule, ptx.c_str(), 0, 0, 0));
   // TC_INFO("CUDA module load time : {}ms", (Time::get_time() - t) * 1000);
   cudaModules.push_back(cudaModule);
   return cudaModule;
@@ -207,7 +188,7 @@ CUfunction CUDAContext::get_function(CUmodule module,
   auto _ = cuda_context->get_guard();
   CUfunction func;
   // auto t = Time::get_time();
-  checkCudaErrors(cuModuleGetFunction(&func, module, func_name.c_str()));
+  check_cuda_errors(cuModuleGetFunction(&func, module, func_name.c_str()));
   // t = Time::get_time() - t;
   // TC_INFO("Kernel {} compilation time: {}ms", func_name, t * 1000);
   return func;
@@ -220,7 +201,7 @@ void CUDAContext::launch(CUfunction func,
   auto _ = cuda_context->get_guard();
   // Kernel parameters
 
-  checkCudaErrors(cuMemcpyHtoD(context_buffer, context_ptr, sizeof(Context)));
+  check_cuda_errors(cuMemcpyHtoD(context_buffer, context_ptr, sizeof(Context)));
 
   void *KernelParams[] = {&context_buffer};
 
@@ -229,8 +210,8 @@ void CUDAContext::launch(CUfunction func,
       gridDim * blockDim > 1024 * 1024,
       "random number generator only initialized for 1024 * 1024 threads.");
   if (gridDim > 0) {
-    checkCudaErrors(cuLaunchKernel(func, gridDim, 1, 1, blockDim, 1, 1, 0,
-                                   nullptr, KernelParams, nullptr));
+    check_cuda_errors(cuLaunchKernel(func, gridDim, 1, 1, blockDim, 1, 1, 0,
+                                     nullptr, KernelParams, nullptr));
   }
 
   if (get_current_program().config.debug) {
@@ -244,10 +225,10 @@ void CUDAContext::launch(CUfunction func,
 
 CUDAContext::~CUDAContext() {
   /*
-  checkCudaErrors(cuMemFree(context_buffer));
+  check_cuda_errors(cuMemFree(context_buffer));
   for (auto cudaModule: cudaModules)
-    checkCudaErrors(cuModuleUnload(cudaModule));
-  checkCudaErrors(cuCtxDestroy(context));
+    check_cuda_errors(cuModuleUnload(cudaModule));
+  check_cuda_errors(cuCtxDestroy(context));
   */
 }
 

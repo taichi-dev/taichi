@@ -188,7 +188,17 @@ class Kernel:
 
     func_body = tree.body[0]
     func_body.decorator_list = []
-
+    
+    local_vars = {}
+    # Discussions: https://github.com/yuanming-hu/taichi/issues/282
+    import copy
+    global_vars = copy.copy(self.func.__globals__)
+    
+    for i, arg in enumerate(func_body.args.args):
+      anno = arg.annotation
+      if isinstance(anno, ast.Name):
+        global_vars[anno.id] = self.arguments[i]
+      
     visitor = ASTTransformer(
         excluded_paremeters=self.template_slot_locations,
         func=self,
@@ -196,7 +206,7 @@ class Kernel:
 
     visitor.visit(tree)
     ast.fix_missing_locations(tree)
-
+    
     if self.runtime.print_preprocessed:
       import astor
       print('After preprocessing:')
@@ -204,9 +214,6 @@ class Kernel:
 
     ast.increment_lineno(tree, inspect.getsourcelines(self.func)[1] - 1)
 
-    # Discussions: https://github.com/yuanming-hu/taichi/issues/282
-    import copy
-    global_vars = copy.copy(self.func.__globals__)
 
     freevar_names = self.func.__code__.co_freevars
     closure = self.func.__closure__
@@ -220,7 +227,6 @@ class Kernel:
       template_var_name = self.argument_names[i]
       global_vars[template_var_name] = args[i]
 
-    local_vars = {}
     exec(
         compile(tree, filename=inspect.getsourcefile(self.func), mode='exec'),
         global_vars, local_vars)

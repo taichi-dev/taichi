@@ -391,7 +391,8 @@ CompileConfig::CompileConfig() {
   lower_access = true;
   simplify_after_lower_access = true;
   attempt_vectorized_load_cpu = true;
-  gradient_dt = DataType::f32;
+  default_fp = DataType::f32;
+  default_ip = DataType::i32;
   verbose_kernel_launches = false;
   enable_profiler = false;
   default_gpu_block_dim = 64;

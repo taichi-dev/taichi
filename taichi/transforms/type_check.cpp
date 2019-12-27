@@ -213,7 +213,7 @@ class TypeCheck : public IRVisitor {
     // lower truediv and floordiv into div
 
     if (stmt->op_type == BinaryOpType::floordiv) {
-      auto default_ip = DataType::i32;
+      auto default_ip = get_current_program().config.default_ip;
       if (!is_integral(stmt->lhs->ret_type.data_type)) {
         cast(stmt->lhs, default_ip);
       }
@@ -224,7 +224,7 @@ class TypeCheck : public IRVisitor {
     }
 
     if (stmt->op_type == BinaryOpType::truediv) {
-      auto default_fp = DataType::f32;
+      auto default_fp = get_current_program().config.default_fp;
       if (!is_real(stmt->lhs->ret_type.data_type)) {
         cast(stmt->lhs, default_fp);
       }

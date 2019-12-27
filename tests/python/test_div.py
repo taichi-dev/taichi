@@ -37,3 +37,17 @@ def test_true_div():
   _test_true_div(ti.i32, 3, ti.f32, 2, ti.f32, 1.5)
   _test_true_div(ti.f32, 3, ti.i32, 2, ti.f32, 1.5)
   _test_true_div(ti.f32, 3, ti.i32, 2, ti.i32, 1)
+  
+@ti.all_archs
+def test_div_default_ip():
+  ti.get_runtime().set_default_ip(ti.i64)
+  z = ti.var(ti.f32, shape=())
+  
+  @ti.kernel
+  def func():
+    a = 1e15 + 1e9
+    z[None] = a // 1e10
+  
+  func()
+  assert z[None] == 100000
+

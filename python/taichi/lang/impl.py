@@ -101,10 +101,12 @@ class PyTaichi:
   def set_default_fp(self, fp):
     assert fp in [f32, f64]
     self.default_fp = fp
+    default_cfg().default_fp = self.default_fp
 
   def set_default_ip(self, ip):
     assert ip in [i32, i64]
     self.default_ip = ip
+    default_cfg().default_ip = self.default_ip
 
   def materialize(self):
     if self.materialized:

@@ -65,7 +65,8 @@ void export_lang(py::module &m) {
                      &CompileConfig::verbose_kernel_launches)
       .def_readwrite("verbose", &CompileConfig::verbose)
       .def_readwrite("enable_profiler", &CompileConfig::enable_profiler)
-      .def_readwrite("gradient_dt", &CompileConfig::gradient_dt)
+      .def_readwrite("default_fp", &CompileConfig::default_fp)
+      .def_readwrite("default_ip", &CompileConfig::default_ip)
       .def_readwrite("fast_math", &CompileConfig::fast_math);
 
   m.def("reset_default_compile_config",

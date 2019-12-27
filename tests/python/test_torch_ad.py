@@ -82,3 +82,5 @@ def test_torch_ad_gpu():
     ret = X.grad.cpu().numpy()
     for j in range(n):
       assert ret[j] == 4
+  
+    

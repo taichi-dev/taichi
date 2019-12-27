@@ -38,6 +38,26 @@ class CUDAContext {
   }
 
   ~CUDAContext();
+
+  class ContextGuard {
+   private:
+    CUDAContext *ctx;
+    CUcontext old_ctx;
+
+   public:
+    ContextGuard(CUDAContext *ctx) : ctx(ctx) {
+      cuCtxGetCurrent(&old_ctx);
+      cuCtxSetCurrent(ctx->context);
+    }
+
+    ~ContextGuard() {
+      cuCtxSetCurrent(old_ctx);
+    }
+  };
+
+  ContextGuard get_guard() {
+    return ContextGuard(this);
+  }
 };
 
 extern std::unique_ptr<CUDAContext> cuda_context;

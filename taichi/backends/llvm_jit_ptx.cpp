@@ -191,7 +191,7 @@ CUDAContext::CUDAContext() {
 }
 
 CUmodule CUDAContext::compile(const std::string &ptx) {
-  cuda_context->make_current();
+  auto _ = cuda_context->get_guard();
   // Create module for object
   CUmodule cudaModule;
   TC_INFO("PTX size: {:.2f}KB", ptx.size() / 1024.0);
@@ -204,7 +204,7 @@ CUmodule CUDAContext::compile(const std::string &ptx) {
 
 CUfunction CUDAContext::get_function(CUmodule module,
                                      const std::string &func_name) {
-  cuda_context->make_current();
+  auto _ = cuda_context->get_guard();
   CUfunction func;
   // auto t = Time::get_time();
   checkCudaErrors(cuModuleGetFunction(&func, module, func_name.c_str()));
@@ -217,7 +217,7 @@ void CUDAContext::launch(CUfunction func,
                          void *context_ptr,
                          unsigned gridDim,
                          unsigned blockDim) {
-  cuda_context->make_current();
+  auto _ = cuda_context->get_guard();
   // Kernel parameters
 
   checkCudaErrors(cuMemcpyHtoD(context_buffer, context_ptr, sizeof(Context)));

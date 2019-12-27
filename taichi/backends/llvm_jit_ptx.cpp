@@ -163,29 +163,31 @@ std::string get_cuda_error_string(CUresult err) {
 
 CUDAContext::CUDAContext() {
   // CUDA initialization
-  checkCudaErrors(cuInit(0));
-  checkCudaErrors(cuDeviceGetCount(&devCount));
-  checkCudaErrors(cuDeviceGet(&device, 0));
+  dev_count = 0;
+  if (cuInit(0) == CUDA_SUCCESS) {
+    checkCudaErrors(cuDeviceGetCount(&dev_count));
+    checkCudaErrors(cuDeviceGet(&device, 0));
 
-  char name[128];
-  checkCudaErrors(cuDeviceGetName(name, 128, device));
-  std::cout << "Using CUDA Device [0]: " << name << "\n";
+    char name[128];
+    checkCudaErrors(cuDeviceGetName(name, 128, device));
+    std::cout << "Using CUDA Device [0]: " << name << "\n";
 
-  int devMajor, devMinor;
-  checkCudaErrors(cuDeviceComputeCapability(&devMajor, &devMinor, device));
-  std::cout << "Device Compute Capability: " << devMajor << "." << devMinor
-            << "\n";
-  if (devMajor < 2) {
-    TC_ERROR("Device 0 is not SM 2.0 or greater");
+    int devMajor, devMinor;
+    checkCudaErrors(cuDeviceComputeCapability(&devMajor, &devMinor, device));
+    std::cout << "Device Compute Capability: " << devMajor << "." << devMinor
+              << "\n";
+    if (devMajor < 2) {
+      TC_ERROR("Device 0 is not SM 2.0 or greater");
+    }
+    // Create driver context
+    checkCudaErrors(cuCtxCreate(&context, 0, device));
+    checkCudaErrors(cuMemAlloc(&context_buffer, sizeof(Context)));
+
+    int cap_major, cap_minor;
+    cudaDeviceGetAttribute(&cap_major, cudaDevAttrComputeCapabilityMajor, 0);
+    cudaDeviceGetAttribute(&cap_minor, cudaDevAttrComputeCapabilityMinor, 0);
+    mcpu = fmt::format("sm_{}{}", cap_major, cap_minor);
   }
-  // Create driver context
-  checkCudaErrors(cuCtxCreate(&context, 0, device));
-  checkCudaErrors(cuMemAlloc(&context_buffer, sizeof(Context)));
-
-  int cap_major, cap_minor;
-  cudaDeviceGetAttribute(&cap_major, cudaDevAttrComputeCapabilityMajor, 0);
-  cudaDeviceGetAttribute(&cap_minor, cudaDevAttrComputeCapabilityMinor, 0);
-  mcpu = fmt::format("sm_{}{}", cap_major, cap_minor);
 }
 
 CUmodule CUDAContext::compile(const std::string &ptx) {

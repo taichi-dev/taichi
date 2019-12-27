@@ -9,13 +9,16 @@ class CUDAContext {
   CUdevice device;
   std::vector<CUmodule> cudaModules;
   CUcontext context;
-  // CUlinkState linker;
-  int devCount;
+  int dev_count;
   CUdeviceptr context_buffer;
   std::string mcpu;
 
  public:
   CUDAContext();
+
+  bool detected() const {
+    return dev_count != 0;
+  }
 
   CUmodule compile(const std::string &ptx);
 

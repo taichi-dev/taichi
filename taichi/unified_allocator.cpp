@@ -18,25 +18,29 @@ UnifiedAllocator *&allocator() {
 taichi::Tlang::UnifiedAllocator::UnifiedAllocator(std::size_t size, bool gpu)
     : size(size), gpu(gpu) {
   size += 4096;
+  if (gpu) {
 #if defined(CUDA_FOUND)
-  cudaMallocManaged(&_cuda_data, size + 4096);
-  if (_cuda_data == nullptr) {
-    TC_ERROR("GPU memory allocation failed.");
-  }
-  cudaMemAdvise(_cuda_data, size + 4096, cudaMemAdviseSetPreferredLocation, 0);
-  // http://on-demand.gputechconf.com/gtc/2017/presentation/s7285-nikolay-sakharnykh-unified-memory-on-pascal-and-volta.pdf
-  /*
-  cudaMemAdvise(_cuda_data, size + 4096, cudaMemAdviseSetReadMostly,
-                cudaCpuDeviceId);
-  cudaMemAdvise(_cuda_data, size + 4096, cudaMemAdviseSetAccessedBy,
-                0);
-                */
-  data = _cuda_data;
+    cudaMallocManaged(&_cuda_data, size + 4096);
+    if (_cuda_data == nullptr) {
+      TC_ERROR("GPU memory allocation failed.");
+    }
+    cudaMemAdvise(_cuda_data, size + 4096, cudaMemAdviseSetPreferredLocation, 0);
+    // http://on-demand.gputechconf.com/gtc/2017/presentation/s7285-nikolay-sakharnykh-unified-memory-on-pascal-and-volta.pdf
+    /*
+    cudaMemAdvise(_cuda_data, size + 4096, cudaMemAdviseSetReadMostly,
+                  cudaCpuDeviceId);
+    cudaMemAdvise(_cuda_data, size + 4096, cudaMemAdviseSetAccessedBy,
+                  0);
+                  */
+    data = _cuda_data;
 #else
-  cpu_vm = std::make_unique<VirtualMemoryAllocator>(size);
-  data = cpu_vm->ptr;
-  TC_ASSERT(data != nullptr);
+    TC_NOT_IMPLEMENTED
 #endif
+  } else {
+    cpu_vm = std::make_unique<VirtualMemoryAllocator>(size);
+    data = cpu_vm->ptr;
+  }
+  TC_ASSERT(data != nullptr);
   auto p = reinterpret_cast<uint64>(data);
   data = (void *)(p + (4096 - p % 4096));
 
@@ -62,16 +66,19 @@ taichi::Tlang::UnifiedAllocator::~UnifiedAllocator() {
   }
 }
 
-void taichi::Tlang::UnifiedAllocator::create() {
+void taichi::Tlang::UnifiedAllocator::create(bool gpu) {
   TC_ASSERT(allocator() == nullptr);
   void *dst;
-  bool gpu = false;
+  if (gpu) {
 #if defined(CUDA_FOUND)
-  gpu = true;
-  cudaMallocManaged(&dst, sizeof(UnifiedAllocator));
+    gpu = true;
+    cudaMallocManaged(&dst, sizeof(UnifiedAllocator));
 #else
-  dst = std::malloc(sizeof(UnifiedAllocator));
+    TC_NOT_IMPLEMENTED
 #endif
+  } else {
+    dst = std::malloc(sizeof(UnifiedAllocator));
+  }
 #if !defined(TC_PLATFORM_WINDOWS)
   allocator() = new (dst) UnifiedAllocator(1LL << 44, gpu);
 #else

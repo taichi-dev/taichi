@@ -1,3 +1,4 @@
+#if (0)
 #pragma once
 
 #include "common.h"
@@ -768,3 +769,4 @@ struct LeafContext {
 // *****************************************************************************
 
 TLANG_NAMESPACE_END
+#endif

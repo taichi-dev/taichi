@@ -155,13 +155,18 @@ void Program::visualize_layout(const std::string &fn) {
 Program::Program(Arch arch) {
 #if !defined(CUDA_FOUND)
   if (arch == Arch::gpu) {
-    TC_WARN("CUDA not found. GPU is not supported.");
+    TC_WARN("Taichi is not compiled with CUDA.");
     TC_WARN("Falling back to x86_64");
     arch = Arch::x86_64;
   }
 #else
   if (!cuda_context) {
     cuda_context = std::make_unique<CUDAContext>();
+    if (!cuda_context->detected()) {
+      TC_WARN("No CUDA device detected.");
+      TC_WARN("Falling back to x86_64");
+      arch = Arch::x86_64;
+    }
   }
 #endif
   TC_ASSERT_INFO(num_instances == 0, "Only one instance at a time");
@@ -169,7 +174,7 @@ Program::Program(Arch arch) {
   num_instances += 1;
   SNode::counter = 0;
   // llvm_context_device is initialized before kernel compilation
-  UnifiedAllocator::create();
+  UnifiedAllocator::create(arch == Arch::gpu);
   TC_ASSERT(current_program == nullptr);
   current_program = this;
   config = default_compile_config;

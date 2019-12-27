@@ -41,13 +41,12 @@ class CUDAContext {
 
   class ContextGuard {
    private:
-    CUDAContext *ctx;
     CUcontext old_ctx;
 
    public:
-    ContextGuard(CUDAContext *ctx) : ctx(ctx) {
+    ContextGuard(CUDAContext *ctx) {
       cuCtxGetCurrent(&old_ctx);
-      cuCtxSetCurrent(ctx->context);
+      ctx->make_current();
     }
 
     ~ContextGuard() {

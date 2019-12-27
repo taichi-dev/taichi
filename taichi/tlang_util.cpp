@@ -177,6 +177,8 @@ std::string binary_op_type_name(BinaryOpType type) {
     REGISTER_TYPE(mul);
     REGISTER_TYPE(add);
     REGISTER_TYPE(sub);
+    REGISTER_TYPE(truediv);
+    REGISTER_TYPE(floordiv);
     REGISTER_TYPE(div);
     REGISTER_TYPE(mod);
     REGISTER_TYPE(max);

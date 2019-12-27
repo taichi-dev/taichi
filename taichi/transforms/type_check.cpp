@@ -176,6 +176,23 @@ class TypeCheck : public IRVisitor {
     return stmt;
   }
 
+  Stmt *insert_type_cast_after(Stmt *anchor,
+                                Stmt *input,
+                                DataType output_type) {
+    auto &&cast_stmt = Stmt::make_typed<UnaryOpStmt>(UnaryOpType::cast, input);
+    cast_stmt->cast_type = output_type;
+    cast_stmt->cast_by_value = true;
+    cast_stmt->accept(this);
+    auto stmt = cast_stmt.get();
+    anchor->insert_after_me(std::move(cast_stmt));
+    return stmt;
+  }
+
+  void cast(Stmt *&val, DataType dt) {
+    auto cast_stmt = insert_type_cast_after(val, val, dt);
+    val = cast_stmt;
+  }
+
   void visit(BinaryOpStmt *stmt) {
     auto error = [&](std::string comment = "") {
       if (comment == "") {
@@ -189,9 +206,23 @@ class TypeCheck : public IRVisitor {
       TC_WARN("Compilation stopped due to type mismatch.");
       exit(-1);
     };
-    if (!(stmt->lhs->ret_type.data_type != DataType::unknown ||
-          stmt->rhs->ret_type.data_type != DataType::unknown))
+    if (stmt->lhs->ret_type.data_type == DataType::unknown &&
+        stmt->rhs->ret_type.data_type == DataType::unknown)
       error();
+
+    // lower truediv and floordiv into div
+
+    if (stmt->op_type == BinaryOpType::floordiv) {
+      auto default_ip = DataType::i32;
+      if (!is_integral(stmt->lhs->ret_type.data_type)) {
+        cast(stmt->lhs, default_ip);
+      }
+      if (!is_integral(stmt->rhs->ret_type.data_type)) {
+        cast(stmt->rhs, default_ip);
+      }
+      stmt->op_type = BinaryOpType::div;
+    }
+
     if (stmt->lhs->ret_type.data_type != stmt->rhs->ret_type.data_type) {
       auto ret_type = promoted_type(stmt->lhs->ret_type.data_type,
                                     stmt->rhs->ret_type.data_type);

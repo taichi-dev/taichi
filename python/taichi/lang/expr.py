@@ -71,17 +71,14 @@ class Expr:
     self.assign(Expr(taichi_lang_core.expr_mul(self.ptr, other.ptr)))
 
   def __itruediv__(self, other):
-    self.assign(Expr(taichi_lang_core.expr_div(self.ptr, other.ptr)))
+    self.assign(Expr(taichi_lang_core.expr_truediv(self.ptr, Expr(other).ptr)))
 
   def __ifloordiv__(self, other):
-    self.assign(Expr(taichi_lang_core.expr_div(self.ptr, other.ptr)))
+    self.assign(Expr(taichi_lang_core.expr_floordiv(self.ptr, Expr(other).ptr)))
 
   def __rsub__(self, other):
     other = Expr(other)
     return Expr(taichi_lang_core.expr_sub(other.ptr, self.ptr))
-
-  def __isub__(self, other):
-    self.assign(Expr(taichi_lang_core.expr_sub(self.ptr, other.ptr)))
 
   def __mul__(self, other):
     if is_taichi_class(other) and hasattr(other, '__rmul__'):
@@ -93,19 +90,19 @@ class Expr:
   __rmul__ = __mul__
 
   def __mod__(self, other):
-    other = Expr(other)
-    return Expr(taichi_lang_core.expr_mod(self.ptr, other.ptr))
+    return Expr(taichi_lang_core.expr_mod(self.ptr, Expr(other).ptr))
 
   def __truediv__(self, other):
-    other = Expr(other)
-    return Expr(taichi_lang_core.expr_div(self.ptr, other.ptr))
+    return Expr(taichi_lang_core.expr_truediv(self.ptr, Expr(other).ptr))
 
   def __rtruediv__(self, other):
-    other = Expr(other)
-    return Expr(taichi_lang_core.expr_div(other.ptr, self.ptr))
+    return Expr(taichi_lang_core.expr_truediv(Expr(other).ptr, self.ptr))
+  
+  def __floordiv__(self, other):
+    return Expr(taichi_lang_core.expr_floordiv(self.ptr, Expr(other).ptr))
 
-  __floordiv__ = __truediv__
-  __rfloordiv__ = __rtruediv__
+  def __rfloordiv__(self, other):
+    return Expr(taichi_lang_core.expr_floordiv(Expr(other).ptr, self.ptr))
 
   def __le__(self, other):
     other = Expr(other)

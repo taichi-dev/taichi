@@ -145,6 +145,8 @@ enum class BinaryOpType : int {
   mul,
   add,
   sub,
+  truediv, // will be lower into div in type checking
+  floordiv, // will be lower into div in type checking
   div,
   mod,
   max,

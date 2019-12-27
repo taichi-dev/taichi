@@ -239,7 +239,8 @@ void export_lang(py::module &m) {
   m.def("expr_add", expr_add);
   m.def("expr_sub", expr_sub);
   m.def("expr_mul", expr_mul);
-  m.def("expr_div", expr_div);
+  m.def("expr_truediv", expr_truediv);
+  m.def("expr_floordiv", expr_floordiv);
   m.def("expr_mod", expr_mod);
   m.def("expr_max", expr_max);
   m.def("expr_min", expr_min);

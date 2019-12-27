@@ -235,6 +235,11 @@ class LowerAST : public IRVisitor {
   }
 
   void visit(FrontendAtomicStmt *stmt) override {
+    // replace atomic sub with negative atomic add
+    if (stmt->op_type == AtomicOpType::sub) {
+      stmt->val.set(Expr::make<UnaryOpExpression>(UnaryOpType::neg, stmt->val));
+      stmt->op_type = AtomicOpType::add;
+    }
     // expand rhs
     auto expr = stmt->val;
     VecStatement flattened;

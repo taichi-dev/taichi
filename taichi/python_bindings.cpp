@@ -166,8 +166,10 @@ void export_lang(py::module &m) {
            },
            py::return_value_policy::reference);
 
-  m.def("insert_append", [](SNode *snode, const ExprGroup &indices,
-                            const Expr &val) { return Append(snode, indices, val); });
+  m.def("insert_append",
+        [](SNode *snode, const ExprGroup &indices, const Expr &val) {
+          return Append(snode, indices, val);
+        });
 
   m.def("insert_len", [](SNode *snode, const ExprGroup &indices) {
     return Probe(snode, indices);
@@ -235,6 +237,11 @@ void export_lang(py::module &m) {
   m.def("expr_atomic_add", [&](const Expr &a, const Expr &b) {
     current_ast_builder().insert(Stmt::make<FrontendAtomicStmt>(
         AtomicOpType::add, ptr_if_global(a), load_if_ptr(b)));
+  });
+
+  m.def("expr_atomic_sub", [&](const Expr &a, const Expr &b) {
+    current_ast_builder().insert(Stmt::make<FrontendAtomicStmt>(
+        AtomicOpType::sub, ptr_if_global(a), load_if_ptr(b)));
   });
 
   m.def("expr_add", expr_add);

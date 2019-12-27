@@ -18,6 +18,9 @@ Binary operations on different types will give you a promoted type, following th
 - ``f32 + f64 = f64``
 - ``i32 + i64 = i64``
 
+
+.. _default_precisions:
+
 Default precisions
 ---------------------------------------
 

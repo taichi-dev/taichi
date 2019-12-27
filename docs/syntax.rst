@@ -131,6 +131,17 @@ Supported scalar functions:
 * ``ti.length(dynamic_snode)``
 * Inplace adds are atomic on global data. I.e., ``a += b`` is equivalent to ``ti.atomic_add(a, b)``
 
+.. note::
+
+  Python 3 distinguishes ``/`` (true division) and ``//`` (floor division). For example, ``1.0 / 2.0 = 0.5``,
+  ``1 / 2 = 0.5``, ``1 // 2 = 0``, ``4.2 // 2 = 2``. Taichi follows this design:
+
+     - *true divisions* on integral types will first cast their operands to the default float point type.
+     - *floor divisions* on float-point types will first cast their operands to the default integer type.
+
+  To avoid such implicit casting, you can manually cast your operands to desired types, using ``ti.cast``.
+  Read :ref:`default_precisions` for more details on default numerical types.
+
 Debugging
 -------------------------------------------
 

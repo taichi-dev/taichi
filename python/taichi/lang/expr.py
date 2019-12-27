@@ -70,10 +70,8 @@ class Expr:
   def __imul__(self, other):
     self.assign(Expr(taichi_lang_core.expr_mul(self.ptr, other.ptr)))
 
-  def __idiv__(self, other):
+  def __itruediv__(self, other):
     self.assign(Expr(taichi_lang_core.expr_div(self.ptr, other.ptr)))
-
-  __itruediv__ = __idiv__
 
   def __ifloordiv__(self, other):
     self.assign(Expr(taichi_lang_core.expr_div(self.ptr, other.ptr)))

@@ -333,6 +333,9 @@ class Kernel:
     instance_id = self.mapper.lookup(args)
     key = (self.func, instance_id)
     self.materialize(key=key, args=args, arg_features=self.mapper.extract(args))
+    if self.runtime.verbose_kernel_launch:
+      import taichi as ti
+      ti.debug('Launching kernel {}...'.format(self.func.__name__))
     return self.compiled_functions[key](*args)
 
 

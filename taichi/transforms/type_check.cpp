@@ -223,6 +223,17 @@ class TypeCheck : public IRVisitor {
       stmt->op_type = BinaryOpType::div;
     }
 
+    if (stmt->op_type == BinaryOpType::truediv) {
+      auto default_fp = DataType::f32;
+      if (!is_real(stmt->lhs->ret_type.data_type)) {
+        cast(stmt->lhs, default_fp);
+      }
+      if (!is_real(stmt->rhs->ret_type.data_type)) {
+        cast(stmt->rhs, default_fp);
+      }
+      stmt->op_type = BinaryOpType::div;
+    }
+
     if (stmt->lhs->ret_type.data_type != stmt->rhs->ret_type.data_type) {
       auto ret_type = promoted_type(stmt->lhs->ret_type.data_type,
                                     stmt->rhs->ret_type.data_type);

@@ -309,8 +309,9 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
       stmt->block_dim = kernel_block_dim;
       create_offload_struct_for(stmt, true);
     } else if (stmt->task_type == Type::listgen) {
+      int branching = stmt->snode->max_num_elements();
       kernel_grid_dim = num_SMs * 32;
-      kernel_block_dim = 32;
+      kernel_block_dim = std::min(branching, max_gpu_block_dim);
       emit_list_gen(stmt);
     } else {
       TC_NOT_IMPLEMENTED

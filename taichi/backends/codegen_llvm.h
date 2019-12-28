@@ -714,13 +714,15 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       builder->SetInsertPoint(test);
       llvm::Value *cond;
       if (!for_stmt->reversed) {
-        cond = builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_SLT,
-                                   builder->CreateLoad(for_stmt->loop_var->value),
-                                   for_stmt->end->value);
+        cond =
+            builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_SLT,
+                                builder->CreateLoad(for_stmt->loop_var->value),
+                                for_stmt->end->value);
       } else {
-        cond = builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_SGE,
-                                   builder->CreateLoad(for_stmt->loop_var->value),
-                                   for_stmt->begin->value);
+        cond =
+            builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_SGE,
+                                builder->CreateLoad(for_stmt->loop_var->value),
+                                for_stmt->begin->value);
       }
       builder->CreateCondBr(cond, body, after_loop);
     }
@@ -817,24 +819,21 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
 
   virtual void visit(AtomicOpStmt *stmt) override {
     auto mask = stmt->parent->mask();
+    // TODO: deal with mask when vectorized
     for (int l = 0; l < stmt->width(); l++) {
-      if (mask) {
-        emit("if ({}[{}]) ", mask->raw_name(), l);
+      TC_ASSERT(stmt->op_type == AtomicOpType::add);
+      if (stmt->val->ret_type.data_type == DataType::i32)
+        builder->CreateAtomicRMW(llvm::AtomicRMWInst::BinOp::Add,
+                                 stmt->dest->value, stmt->val->value,
+                                 llvm::AtomicOrdering::SequentiallyConsistent);
+      else if (stmt->val->ret_type.data_type == DataType::f32) {
+        builder->CreateCall(get_runtime_function("atomic_add_cpu_f32"),
+                            {stmt->dest->value, stmt->val->value});
+      } else if (stmt->val->ret_type.data_type == DataType::f64) {
+        builder->CreateCall(get_runtime_function("atomic_add_cpu_f64"),
+                            {stmt->dest->value, stmt->val->value});
       } else {
-        TC_ASSERT(stmt->op_type == AtomicOpType::add);
-        if (stmt->val->ret_type.data_type == DataType::i32)
-          builder->CreateAtomicRMW(
-              llvm::AtomicRMWInst::BinOp::Add, stmt->dest->value,
-              stmt->val->value, llvm::AtomicOrdering::SequentiallyConsistent);
-        else if (stmt->val->ret_type.data_type == DataType::f32) {
-          builder->CreateCall(get_runtime_function("atomic_add_cpu_f32"),
-                              {stmt->dest->value, stmt->val->value});
-        } else if (stmt->val->ret_type.data_type == DataType::f64) {
-          builder->CreateCall(get_runtime_function("atomic_add_cpu_f64"),
-                              {stmt->dest->value, stmt->val->value});
-        } else {
-          TC_NOT_IMPLEMENTED
-        }
+        TC_NOT_IMPLEMENTED
       }
     }
   }
@@ -847,12 +846,6 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     TC_ASSERT(!stmt->parent->mask() || stmt->width() == 1);
     TC_ASSERT(stmt->data->value);
     TC_ASSERT(stmt->ptr->value);
-    /*
-    TC_P(type_name(stmt->data->value->getType()));
-    TC_P(type_name(stmt->ptr->value->getType()));
-    TC_P((void *)(&stmt->data->value->getType()->getContext()));
-    TC_P((void *)(&stmt->ptr->value->getType()->getContext()));
-    */
     builder->CreateStore(stmt->data->value, stmt->ptr->value);
   }
 

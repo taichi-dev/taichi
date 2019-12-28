@@ -205,5 +205,8 @@ def main(debug=False):
   print(">>> Running time: {:.2f}s".format(time.time() - t))
 
 
+def main_debug():
+  main(debug=True)
+
 if __name__ == '__main__':
   exit(main())

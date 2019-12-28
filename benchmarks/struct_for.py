@@ -4,13 +4,13 @@ import taichi as ti
 import time
 # ti.cfg.arch = ti.x86_64
 ti.cfg.arch = ti.cuda
-ti.cfg.print_ir = True
+# ti.cfg.print_ir = True
 
 ti.cfg.enable_profiler = True
 ti.cfg.verbose_kernel_launches = True
 
 a = ti.var(dt=ti.f32)
-N = 128
+N = 512
 
 @ti.layout
 def place():

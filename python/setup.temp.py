@@ -40,5 +40,11 @@ setuptools.setup(
     license='MIT',
     platforms=['Linux'],
     include_package_data=True,
+    entry_points = {
+        'console_scripts': [
+            'ti=taichi.main:main',
+            'tid=taichi.main:main_debug',
+        ],
+    },
     classifiers=classifiers,
     has_ext_modules=lambda: True)

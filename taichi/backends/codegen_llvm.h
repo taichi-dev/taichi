@@ -1,4 +1,4 @@
-// A work-in-progress llvm backend
+// The LLVM backend
 #pragma once
 
 #include <set>

@@ -38,6 +38,19 @@ python3 -m pip install taichi-nightly-cuda-10-1
 - Tune the performance of the LLVM backend to match that of the legacy source-to-source backends
 - Language documentation
 ## Updates
+- (Dec  26, 2019) v0.3.13 released.
+   - `ti.append` now returns the list length before appending
+   - Fixed for loops with 0 iterations
+   - Set `ti.get_runtime().set_verbose_kernel_launch(True)` to log kernel launches
+   - Distinguish `/` and `//` following the Python convention
+   - Allow using local variables as kernel argument type annotations
+- (Dec  25, 2019) v0.3.11 released.
+   - Support multiple kernels with the same name, especially in the OOP cases where multiple member kernels share the same name
+   - Basic `dynamic` node support (`ti.append`, `ti.length`) in the new LLVM backend
+   - Fixed struct-for loops on 0-D tensors 
+- (Dec  24, 2019) v0.3.10 released.
+   - `assert <condition>` statement supported in Taichi kernels.
+   - Comparison operator chaining (e.g. `1 < x <3`) supported in Taichi kernels.
 - (Dec  24, 2019) v0.3.9 released.
    - `ti.classfunc` decorator for functions within a `data_oriented` class
    - `[Expr/Vector/Matrix].to_torch` now has a extra argument `device`, which specifies the device placement for returned torch tensor, and should have type `torch.device`. Default=`None`. 

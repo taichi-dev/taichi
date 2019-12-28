@@ -206,9 +206,6 @@ void CUDAContext::launch(CUfunction func,
   void *KernelParams[] = {&context_buffer};
 
   // Kernel launch
-  TC_WARN_IF(
-      gridDim * blockDim > 1024 * 1024,
-      "random number generator only initialized for 1024 * 1024 threads.");
   if (gridDim > 0) {
     check_cuda_errors(cuLaunchKernel(func, gridDim, 1, 1, blockDim, 1, 1, 0,
                                      nullptr, KernelParams, nullptr));

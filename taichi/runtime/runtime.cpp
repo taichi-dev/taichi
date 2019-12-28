@@ -63,7 +63,7 @@ using Ptr = uint8 *;
 using ContextArgType = long long;
 
 template <typename T>
-void locked_task(Ptr lock, const T &func);
+void locked_task(void *lock, const T &func);
 
 extern "C" {
 
@@ -306,13 +306,14 @@ using parallel_for_type = void (*)(void *thread_pool,
                                    void *context,
                                    void (*func)(void *, int i));
 
-constexpr int max_rand_states = 1024 * 1024;
+constexpr int num_rand_states = 1024 * 32;
 
 struct RandState {
   u32 x;
   u32 y;
   u32 z;
   u32 w;
+  i32 lock;
 };
 
 void initialize_rand_state(RandState *state, u32 i) {
@@ -320,6 +321,7 @@ void initialize_rand_state(RandState *state, u32 i) {
   state->y = 362436069;
   state->z = 521288629;
   state->w = 88675123;
+  state->lock = 0;
 }
 
 // Is "runtime" a correct name, even if it is created after the data layout is
@@ -381,8 +383,8 @@ Ptr Runtime_initialize(Runtime **runtime_ptr,
   }
   ElementList_insert(runtime->element_lists[root_id], &elem);
   runtime->rand_states = (RandState *)allocate_aligned(
-      runtime, sizeof(RandState) * max_rand_states, 4096);
-  for (int i = 0; i < max_rand_states; i++)
+      runtime, sizeof(RandState) * num_rand_states, 4096);
+  for (int i = 0; i < num_rand_states; i++)
     initialize_rand_state(&runtime->rand_states[i], i);
   if (verbose)
     printf("Runtime initialized.\n");
@@ -607,47 +609,9 @@ void cpu_parallel_range_for(Context *context,
                         &ctx, parallel_range_for_task);
 }
 
-i32 linear_thread_id() {
+i32 linear_thread_idx() {
   return block_idx() * block_dim() + thread_idx();
 }
-
-#if ARCH_cuda
-
-u32 cuda_rand_u32(Context *context) {
-  auto state = &((Runtime *)context->runtime)
-                    ->rand_states[linear_thread_id() % max_rand_states];
-  auto &x = state->x;
-  auto &y = state->y;
-  auto &z = state->z;
-  auto &w = state->w;
-  auto t = x ^ (x << 11);
-  x = y;
-  y = z;
-  z = w;
-  return (w = (w ^ (w >> 19)) ^ (t ^ (t >> 8)));
-}
-
-uint64 cuda_rand_u64(Context *context) {
-  return ((u64)cuda_rand_u32(context) << 32) + cuda_rand_u32(context);
-}
-
-f32 cuda_rand_f32(Context *context) {
-  return cuda_rand_u32(context) * (1.0f / 4294967296.0f);
-}
-
-f32 cuda_rand_f64(Context *context) {
-  return cuda_rand_f32(context);
-}
-
-i32 cuda_rand_i32(Context *context) {
-  return cuda_rand_u32(context);
-}
-
-i64 cuda_rand_i64(Context *context) {
-  return cuda_rand_u64(context);
-}
-
-#endif
 
 #include "node_dense.h"
 #include "node_dynamic.h"
@@ -674,12 +638,78 @@ class lock_guard {
         mutex_unlock_i32(lock);
       }
     }
+    // Unfortunately critical sections on CUDA has undefined behavior (deadlock
+    // or not), if more than one thread in a warp try to acquire locks
+    /*
+    bool done = false;
+    while (!done) {
+      if (atomic_exchange_i32((i32 *)lock, 1) == 1) {
+        func();
+        done = true;
+        mutex_unlock_i32(lock);
+      }
+    }
+    */
 #endif
   }
 };
 template <typename T>
-void locked_task(Ptr lock, const T &func) {
-  lock_guard<T> _(lock, func);
+void locked_task(void *lock, const T &func) {
+  lock_guard<T> _((Ptr)lock, func);
 }
+
+#if ARCH_cuda
+
+extern "C" {
+
+u32 cuda_rand_u32(Context *context) {
+  auto state = &((Runtime *)context->runtime)
+                    ->rand_states[linear_thread_idx() % num_rand_states];
+  u32 ret;
+  auto lock = (Ptr)&state->lock;
+
+  bool done = false;
+  // TODO: whether this leads to a deadlock depends on how nvcc schedules the instructions...
+  while (!done) {
+    if (atomic_exchange_i32((i32*)lock, 1) == 1) {
+      auto &x = state->x;
+      auto &y = state->y;
+      auto &z = state->z;
+      auto &w = state->w;
+      auto t = x ^ (x << 11);
+      x = y;
+      y = z;
+      z = w;
+      w = (w ^ (w >> 19)) ^ (t ^ (t >> 8));
+      ret = w;
+      done = true;
+      mutex_unlock_i32(lock);
+    }
+  }
+  return ret;
+}
+
+uint64 cuda_rand_u64(Context *context) {
+  return ((u64)cuda_rand_u32(context) << 32) + cuda_rand_u32(context);
+}
+
+f32 cuda_rand_f32(Context *context) {
+  return cuda_rand_u32(context) * (1.0f / 4294967296.0f);
+}
+
+f32 cuda_rand_f64(Context *context) {
+  return cuda_rand_f32(context);
+}
+
+i32 cuda_rand_i32(Context *context) {
+  return cuda_rand_u32(context);
+}
+
+i64 cuda_rand_i64(Context *context) {
+  return cuda_rand_u64(context);
+}
+};
+
+#endif
 
 #endif

@@ -85,6 +85,10 @@ class Offloader {
 
     for (int i = 1; i < path.size(); i++) {
       auto snode_child = path[i];
+      auto offloaded_clear_list =
+          Stmt::make_typed<OffloadedStmt>(OffloadedStmt::TaskType::clear_list);
+      offloaded_clear_list->snode = snode_child;
+      root_block->insert(std::move(offloaded_clear_list));
       auto offloaded_listgen =
           Stmt::make_typed<OffloadedStmt>(OffloadedStmt::TaskType::listgen);
       offloaded_listgen->snode = snode_child;

@@ -382,6 +382,9 @@ class IRPrinter : public IRVisitor {
     if (stmt->task_type == OffloadedStmt::TaskType::listgen) {
       print("{} = offloaded listgen {}", stmt->name(),
             stmt->snode->get_node_type_name());
+    } else if (stmt->task_type == OffloadedStmt::TaskType::clear_list) {
+      print("{} = offloaded clear_list {}", stmt->name(),
+            stmt->snode->get_node_type_name());
     } else {
       print("{} = offloaded {} {{", stmt->name(), details);
       TC_ASSERT(stmt->body);

@@ -885,7 +885,8 @@ class BasicBlockSimplify : public IRVisitor {
   }
 
   void visit(OffloadedStmt *stmt) override {
-    if (stmt->task_type != OffloadedStmt::TaskType ::listgen &&
+    if (stmt->task_type != OffloadedStmt::TaskType::listgen &&
+        stmt->task_type != OffloadedStmt::TaskType::clear_list &&
         stmt->body->statements.empty()) {
       stmt->parent->erase(stmt);
       throw IRModified();

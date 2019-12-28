@@ -1,6 +1,7 @@
 #if !defined(TC_INCLUDED) || !defined(_WIN32)
 // This file will only be compiled with clang into llvm bitcode
 // Generated bitcode will likely get inline for performance.
+// Most function calls here will be inlined
 
 #include <atomic>
 #include <cstdint>
@@ -402,7 +403,6 @@ void Runtime_allocate_ambient(Runtime *runtime, int snode_id) {
       NodeAllocator_allocate(runtime->node_allocators[snode_id]);
 }
 
-
 void mutex_lock_i32(Ptr mutex) {
   while (atomic_exchange_i32((i32 *)mutex, 1) == 1)
     ;
@@ -454,13 +454,16 @@ void threadfence() {
 
 // "Element", "component" are different concepts
 
-// ultimately all function calls here will be inlined
+void clear_list(Runtime *runtime, StructMeta *parent, StructMeta *child) {
+  auto child_list = runtime->element_lists[child->snode_id];
+  child_list->head = 0;
+  child_list->tail = 0;
+}
+
 void element_listgen(Runtime *runtime, StructMeta *parent, StructMeta *child) {
   auto parent_list = runtime->element_lists[parent->snode_id];
   int num_parent_elements = parent_list->tail;
   auto child_list = runtime->element_lists[child->snode_id];
-  child_list->head = 0;
-  child_list->tail = 0;
 #if ARCH_cuda
   int i_start = block_idx();
   int i_step = grid_dim();
@@ -680,9 +683,10 @@ u32 cuda_rand_u32(Context *context) {
   auto lock = (Ptr)&state->lock;
 
   bool done = false;
-  // TODO: whether this leads to a deadlock depends on how nvcc schedules the instructions...
+  // TODO: whether this leads to a deadlock depends on how nvcc schedules the
+  // instructions...
   while (!done) {
-    if (atomic_exchange_i32((i32*)lock, 1) == 1) {
+    if (atomic_exchange_i32((i32 *)lock, 1) == 1) {
       auto &x = state->x;
       auto &y = state->y;
       auto &z = state->z;

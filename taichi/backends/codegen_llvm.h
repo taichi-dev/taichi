@@ -670,6 +670,15 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
         llvm::PointerType::get(get_runtime_type(dest_ty_name), addr_space));
   }
 
+  void emit_clear_list(OffloadedStmt *listgen) {
+    auto snode_child = listgen->snode;
+    auto snode_parent = listgen->snode->parent;
+    auto meta_child = cast_pointer(emit_struct_meta(snode_child), "StructMeta");
+    auto meta_parent =
+        cast_pointer(emit_struct_meta(snode_parent), "StructMeta");
+    call("clear_list", get_runtime(), meta_parent, meta_child);
+  }
+
   void emit_list_gen(OffloadedStmt *listgen) {
     auto snode_child = listgen->snode;
     auto snode_parent = listgen->snode->parent;
@@ -1277,6 +1286,8 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       stmt->block_dim =
           std::min(stmt->snode->parent->max_num_elements(), stmt->block_dim);
       create_offload_struct_for(stmt);
+    } else if (stmt->task_type == Type::clear_list) {
+      emit_clear_list(stmt);
     } else if (stmt->task_type == Type::listgen) {
       emit_list_gen(stmt);
     } else {

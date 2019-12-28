@@ -163,6 +163,7 @@ class OffloadedStmt : public Stmt {
     serial,
     range_for,
     struct_for,
+    clear_list,
     listgen,
   };
 

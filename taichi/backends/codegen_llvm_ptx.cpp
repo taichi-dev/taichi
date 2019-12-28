@@ -308,6 +308,8 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
           std::min(stmt->snode->parent->max_num_elements(), kernel_block_dim);
       stmt->block_dim = kernel_block_dim;
       create_offload_struct_for(stmt, true);
+    } else if (stmt->task_type == Type::clear_list) {
+      emit_clear_list(stmt);
     } else if (stmt->task_type == Type::listgen) {
       int branching = stmt->snode->max_num_elements();
       kernel_grid_dim = num_SMs * 32;

@@ -7,6 +7,7 @@ ti.cfg.arch = ti.cuda
 ti.cfg.print_ir = True
 
 ti.cfg.enable_profiler = True
+ti.cfg.verbose_kernel_launches = True
 
 a = ti.var(dt=ti.f32)
 N = 128

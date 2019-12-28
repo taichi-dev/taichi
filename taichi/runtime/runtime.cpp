@@ -254,8 +254,8 @@ STRUCT_FIELD_ARRAY(Element, loop_bounds);
 
 struct ElementList {
   Element *elements;
-  int head;
-  int tail;
+  i32 head;
+  i32 tail;
 };
 
 void ElementList_initialize(Runtime *runtime, ElementList *element_list) {
@@ -269,8 +269,7 @@ void ElementList_initialize(Runtime *runtime, ElementList *element_list) {
 }
 
 void ElementList_insert(ElementList *element_list, Element *element) {
-  element_list->elements[element_list->tail] = *element;
-  element_list->tail++;
+  element_list->elements[atomic_add_i32(&element_list->tail, 1)] = *element;
 }
 
 void ElementList_clear(ElementList *element_list) {
@@ -403,34 +402,6 @@ void Runtime_allocate_ambient(Runtime *runtime, int snode_id) {
       NodeAllocator_allocate(runtime->node_allocators[snode_id]);
 }
 
-// "Element", "component" are different concepts
-
-// ultimately all function calls here will be inlined
-void element_listgen(Runtime *runtime, StructMeta *parent, StructMeta *child) {
-  auto parent_list = runtime->element_lists[parent->snode_id];
-  int num_parent_elements = parent_list->tail;
-  auto child_list = runtime->element_lists[child->snode_id];
-  child_list->head = 0;
-  child_list->tail = 0;
-  for (int i = 0; i < num_parent_elements; i++) {
-    auto element = parent_list->elements[i];
-    auto ch_component = child->from_parent_element(element.element);
-    int ch_num_elements = child->get_num_elements((Ptr)child, ch_component);
-    for (int j = 0; j < ch_num_elements; j++) {
-      if (child->is_active((Ptr)child, ch_component, j)) {
-        auto ch_element = child->lookup_element((Ptr)child, element.element, j);
-        Element elem;
-        elem.element = ch_element;
-        elem.loop_bounds[0] = 0;
-        elem.loop_bounds[1] = child->get_num_elements((Ptr)child, ch_element);
-        PhysicalCoordinates refined_coord;
-        child->refine_coordinates(&element.pcoord, &refined_coord, j);
-        elem.pcoord = refined_coord;
-        ElementList_insert(child_list, &elem);
-      }
-    }
-  }
-}
 
 void mutex_lock_i32(Ptr mutex) {
   while (atomic_exchange_i32((i32 *)mutex, 1) == 1)
@@ -479,6 +450,46 @@ void block_memfence() {
 }
 
 void threadfence() {
+}
+
+// "Element", "component" are different concepts
+
+// ultimately all function calls here will be inlined
+void element_listgen(Runtime *runtime, StructMeta *parent, StructMeta *child) {
+  auto parent_list = runtime->element_lists[parent->snode_id];
+  int num_parent_elements = parent_list->tail;
+  auto child_list = runtime->element_lists[child->snode_id];
+  child_list->head = 0;
+  child_list->tail = 0;
+#if ARCH_cuda
+  int i_start = block_idx();
+  int i_step = grid_dim();
+  int j_start = thread_idx();
+  int j_step = block_dim();
+#else
+  int i_start = 0;
+  int i_step = 1;
+  int j_start = 0;
+  int j_step = 1;
+#endif
+  for (int i = i_start; i < num_parent_elements; i += i_step) {
+    auto element = parent_list->elements[i];
+    auto ch_component = child->from_parent_element(element.element);
+    int ch_num_elements = child->get_num_elements((Ptr)child, ch_component);
+    for (int j = j_start; j < ch_num_elements; j += j_step) {
+      if (child->is_active((Ptr)child, ch_component, j)) {
+        auto ch_element = child->lookup_element((Ptr)child, element.element, j);
+        Element elem;
+        elem.element = ch_element;
+        elem.loop_bounds[0] = 0;
+        elem.loop_bounds[1] = child->get_num_elements((Ptr)child, ch_element);
+        PhysicalCoordinates refined_coord;
+        child->refine_coordinates(&element.pcoord, &refined_coord, j);
+        elem.pcoord = refined_coord;
+        ElementList_insert(child_list, &elem);
+      }
+    }
+  }
 }
 
 using BlockTask = void(Context *, Element *, int, int);

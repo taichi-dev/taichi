@@ -287,6 +287,10 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
 
   void visit(OffloadedStmt *stmt) override {
 #if defined(TLANG_WITH_CUDA)
+    int num_SMs;
+    cudaDeviceGetAttribute(&num_SMs, cudaDevAttrMultiProcessorCount, 0);
+    int max_block_dim;
+    cudaDeviceGetAttribute(&max_block_dim, cudaDevAttrMaxBlockDimX, 0);
     using Type = OffloadedStmt::TaskType;
     kernel_grid_dim = 1;
     kernel_block_dim = 1;
@@ -296,10 +300,6 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
     } else if (stmt->task_type == Type::range_for) {
       create_offload_range_for(stmt);
     } else if (stmt->task_type == Type::struct_for) {
-      int num_SMs;
-      cudaDeviceGetAttribute(&num_SMs, cudaDevAttrMultiProcessorCount, 0);
-      int max_block_dim;
-      cudaDeviceGetAttribute(&max_block_dim, cudaDevAttrMaxBlockDimX, 0);
       kernel_grid_dim = num_SMs * 32;  // each SM can have 16-32 resident blocks
       kernel_block_dim = stmt->block_dim;
       if (kernel_block_dim == 0)
@@ -309,6 +309,8 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
       stmt->block_dim = kernel_block_dim;
       create_offload_struct_for(stmt, true);
     } else if (stmt->task_type == Type::listgen) {
+      kernel_grid_dim = num_SMs * 32;
+      kernel_block_dim = 32;
       emit_list_gen(stmt);
     } else {
       TC_NOT_IMPLEMENTED

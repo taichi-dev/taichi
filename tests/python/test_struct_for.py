@@ -32,6 +32,7 @@ def test_singleton2():
 
 @ti.all_archs
 def test_linear():
+  ti.cfg.print_ir = True
   x = ti.var(ti.i32)
   y = ti.var(ti.i32)
 
@@ -172,3 +173,5 @@ def test_linear_k():
 
   for i in range(n):
     assert x[i] == i
+    
+test_linear()

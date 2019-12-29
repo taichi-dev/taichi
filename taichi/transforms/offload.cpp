@@ -78,7 +78,7 @@ class Offloader {
     // leaf is the place (scalar)
     // leaf->parent is the leaf block
     // so listgen should be invoked from the root to leaf->parent->parent
-    for (auto p = leaf->parent->parent; p; p = p->parent) {
+    for (auto p = leaf->parent; p; p = p->parent) {
       path.push_back(p);
     }
     std::reverse(path.begin(), path.end());

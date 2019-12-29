@@ -76,7 +76,7 @@ class IRPrinter : public IRVisitor {
       extras += ", " + stmt->val.serialize();
     }
     print("{} : {} {} {}", stmt->name(), snode_op_type_name(stmt->op_type),
-          stmt->snode->node_type_name, extras);
+          stmt->snode->get_node_type_name_hinted(), extras);
   }
 
   void visit(SNodeOpStmt *stmt) override {
@@ -84,7 +84,7 @@ class IRPrinter : public IRVisitor {
     if (stmt->val) {
       extras += ", " + stmt->val->name();
     }
-    std::string snode = stmt->snode->node_type_name;
+    std::string snode = stmt->snode->get_node_type_name_hinted();
     print("{} : {} [{}] {}", stmt->name(), snode_op_type_name(stmt->op_type),
           snode, extras);
   }
@@ -200,7 +200,7 @@ class IRPrinter : public IRVisitor {
     } else {
       print("for {} where {} active {{", vars,
             for_stmt->global_var.cast<GlobalVariableExpression>()
-                ->snode->node_type_name);
+                ->snode->get_node_type_name_hinted());
     }
     for_stmt->body->accept(this);
     print("}}");
@@ -219,7 +219,7 @@ class IRPrinter : public IRVisitor {
         for_stmt->loop_vars,
         [](Stmt *const &stmt) -> std::string { return stmt->name(); });
     print("for {} where {} active, step {} {{", loop_vars,
-          for_stmt->snode->node_type_name, for_stmt->vectorize);
+          for_stmt->snode->get_node_type_name_hinted(), for_stmt->vectorize);
     for_stmt->body->accept(this);
     print("}}");
   }
@@ -231,7 +231,7 @@ class IRPrinter : public IRVisitor {
     for (int l = 0; l < stmt->width(); l++) {
       std::string snode_name;
       if (stmt->snodes[l]) {
-        snode_name = stmt->snodes[l]->node_type_name;
+        snode_name = stmt->snodes[l]->get_node_type_name_hinted();
       } else {
         snode_name = "unknown";
       }
@@ -332,7 +332,7 @@ class IRPrinter : public IRVisitor {
   void visit(SNodeLookupStmt *stmt) override {
     print(
         "{} = [{}][{}]::lookup({}, {}) coord = {} activate = {}", stmt->name(),
-        stmt->snode->node_type_name, stmt->snode->type_name(),
+        stmt->snode->get_node_type_name_hinted(), stmt->snode->type_name(),
         stmt->input_snode->name(), stmt->input_index->name(),
         make_list<Stmt *>(stmt->global_indices,
                           [&](Stmt *const &stmt) { return stmt->name(); }, "{"),
@@ -341,13 +341,14 @@ class IRPrinter : public IRVisitor {
 
   void visit(GetChStmt *stmt) override {
     print("{} = get child [{}->{}] {}", stmt->name(),
-          stmt->input_snode->node_type_name, stmt->output_snode->node_type_name,
+          stmt->input_snode->get_node_type_name_hinted(),
+          stmt->output_snode->get_node_type_name_hinted(),
           stmt->input_ptr->name());
   }
 
   void visit(ClearAllStmt *stmt) override {
     print("{} = clear {} deactivate={}", stmt->name(),
-          stmt->snode->node_type_name, stmt->deactivate);
+          stmt->snode->get_node_type_name_hinted(), stmt->deactivate);
   }
 
   void visit(ExternalPtrStmt *stmt) override {
@@ -374,17 +375,17 @@ class IRPrinter : public IRVisitor {
   void visit(OffloadedStmt *stmt) override {
     std::string details;
     if (stmt->task_type == stmt->range_for) {
-      details = fmt::format(" range_for({}, {})", stmt->begin, stmt->end);
+      details = fmt::format("range_for({}, {})", stmt->begin, stmt->end);
     } else if (stmt->task_type == stmt->struct_for) {
-      details =
-          fmt::format(" struct_for({})", stmt->snode->get_node_type_name());
+      details = fmt::format("struct_for({})",
+                            stmt->snode->get_node_type_name_hinted());
     }
     if (stmt->task_type == OffloadedStmt::TaskType::listgen) {
       print("{} = offloaded listgen {}", stmt->name(),
-            stmt->snode->get_node_type_name());
+            stmt->snode->get_node_type_name_hinted());
     } else if (stmt->task_type == OffloadedStmt::TaskType::clear_list) {
       print("{} = offloaded clear_list {}", stmt->name(),
-            stmt->snode->get_node_type_name());
+            stmt->snode->get_node_type_name_hinted());
     } else {
       print("{} = offloaded {} {{", stmt->name(), details);
       TC_ASSERT(stmt->body);

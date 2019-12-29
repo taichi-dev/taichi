@@ -106,6 +106,10 @@ class SNode {
     return fmt::format("S{}", id);
   }
 
+  std::string get_node_type_name_hinted() {
+    return fmt::format("S{}{}", id, snode_type_name(type));
+  }
+
   SNode();
 
   SNode(int depth, SNodeType t);

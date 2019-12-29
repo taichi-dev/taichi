@@ -1,6 +1,5 @@
 sudo: required
-git:
-  depth: 1
+
 common_sources: &1
 - ubuntu-toolchain-r-test
 language: cpp

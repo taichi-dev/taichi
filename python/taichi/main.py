@@ -64,7 +64,7 @@ def main(debug=False):
         "           ti gif                    |-> Convert mp4 file to gif\n"
         "           ti doc                    |-> Build documentation\n"
         "           ti debug [script.py]      |-> Debug script\n")
-    exit(-1)
+    exit(0)
   mode = sys.argv[1]
 
   t = time.time()

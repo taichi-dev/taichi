@@ -1,10 +1,22 @@
 import taichi as ti
 from pytest import approx
-import math
-import autograd.numpy as np
-from autograd import grad
 
+has_autograd = False
 
+try:
+  import autograd.numpy as np
+  from autograd import grad
+  has_autograd = True
+except:
+  pass
+
+def if_has_autograd(func):
+  def wrapper(*args, **kwargs):
+    if has_autograd:
+      func(*args, **kwargs)
+  return wrapper
+
+@if_has_autograd
 @ti.all_archs
 def grad_test(tifunc, npfunc=None):
   if npfunc is None:
@@ -32,7 +44,7 @@ def grad_test(tifunc, npfunc=None):
   assert y[0] == approx(npfunc(v))
   assert x.grad[0] == approx(grad(npfunc)(v))
 
-
+@if_has_autograd
 def test_size1():
   ti.reset()
   x = ti.var(ti.i32)
@@ -45,6 +57,7 @@ def test_size1():
   assert x[0] == 1
 
 
+@if_has_autograd
 def test_poly():
   grad_test(lambda x: x)
   grad_test(lambda x: -x)
@@ -57,6 +70,7 @@ def test_poly():
   grad_test(lambda x: (x - 3) * (x - 1) + x * x)
 
 
+@if_has_autograd
 def test_trigonometric():
   grad_test(lambda x: ti.tanh(x), lambda x: np.tanh(x))
   grad_test(lambda x: ti.sin(x), lambda x: np.sin(x))
@@ -71,12 +85,14 @@ def test_frac():
   grad_test(lambda x: (x + 1) * (x + 2) / ((x - 1) * (x + 3)))
 
 
+@if_has_autograd
 def test_unary():
   grad_test(lambda x: ti.sqrt(x), lambda x: np.sqrt(x))
   grad_test(lambda x: ti.exp(x), lambda x: np.exp(x))
   grad_test(lambda x: ti.log(x), lambda x: np.log(x))
 
 
+@if_has_autograd
 def test_minmax():
   grad_test(lambda x: ti.min(x, 0), lambda x: np.minimum(x, 0))
   grad_test(lambda x: ti.min(x, 1), lambda x: np.minimum(x, 1))
@@ -89,6 +105,7 @@ def test_minmax():
   grad_test(lambda x: ti.max(1, x), lambda x: np.maximum(1, x))
 
 
+@if_has_autograd
 def test_mod():
   ti.reset()
   ti.cfg.use_llvm = True

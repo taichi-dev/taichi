@@ -38,8 +38,17 @@ python3 -m pip install taichi-nightly-cuda-10-1
 - Tune the performance of the LLVM backend to match that of the legacy source-to-source backends (WIP)
 - Language documentation
 ## Updates
+- (Dec  28, 2019) v0.3.15 released.
+   - Multi-dimensional parallel range-for using `ti.ndrange`:
+```python
+  @ti.kernel
+  def fill_3d():
+    # Parallelized for all 3 <= i < 8, 1 <= j < 6, 0 <= k < 9
+    for i, j, k in ti.ndrange((3, 8), (1, 6), 9):
+      x[i, j, k] = i + j + k
+```
 - (Dec  28, 2019) v0.3.14 released.
-   - Gpu random number generator support for more than 1024x1024 threads
+   - GPU random number generator support for more than 1024x1024 threads
    - Parallelized element list generation on GPUs. Struct-fors significantly sped up.
    - `ti` and `tid` (debug mode) CLI commands
 - (Dec  26, 2019) v0.3.13 released.

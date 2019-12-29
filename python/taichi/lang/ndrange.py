@@ -13,8 +13,8 @@ class ndrange:
     
     self.dimensions = [None] * len(args)
     for i in range(len(self.bounds)):
-      self.dimensions[i] = ti.expr_init(self.bounds[i][1] - self.bounds[i][0])
+      self.dimensions[i] = self.bounds[i][1] - self.bounds[i][0]
 
     self.acc_dimensions = self.dimensions.copy()
     for i in reversed(range(len(self.bounds) - 1)):
-       self.acc_dimensions[i] = ti.expr_init(self.acc_dimensions[i] * self.acc_dimensions[i + 1])
+       self.acc_dimensions[i] = self.acc_dimensions[i] * self.acc_dimensions[i + 1]

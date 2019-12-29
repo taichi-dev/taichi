@@ -101,7 +101,7 @@ def test_mpm88():
       0.07810827,
   ]
   for i in range(4):
-    assert (pos**(i + 1)).mean() == approx(regression[i], rel=2e-4)
+    assert (pos**(i + 1)).mean() == approx(regression[i], rel=1e-2)
   '''
   canvas.clear(0x112F41)
   for i in range(n_particles):

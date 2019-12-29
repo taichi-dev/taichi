@@ -1,6 +1,7 @@
 from .impl import *
 from .matrix import Matrix
 from .transformer import TaichiSyntaxError
+from .ndrange import ndrange
 
 core = taichi_lang_core
 runtime = get_runtime()

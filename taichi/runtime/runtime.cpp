@@ -244,7 +244,8 @@ void ___stubs___() {
 }
 
 struct Element {
-  uint8 *element;
+  Ptr element;
+  int self_idx;
   int loop_bounds[2];
   PhysicalCoordinates pcoord;
 };
@@ -367,21 +368,23 @@ Ptr Runtime_initialize(Runtime **runtime_ptr,
     runtime->node_allocators[i] =
         (NodeAllocator *)allocate(runtime, sizeof(NodeAllocator));
   }
-  // Assuming num_snodes - 1 is the root
   auto root_ptr = allocate_aligned(runtime, root_size, 4096);
 
   // The same "1048576" is also used in offload.cpp
   // TODO: DRY
   runtime->temporaries = (Ptr)allocate_aligned(runtime, 1048576, 1024);
 
+  // initialize the root node element list
   Element elem;
   elem.loop_bounds[0] = 0;
   elem.loop_bounds[1] = 1;
+  elem.self_idx = 0;
   elem.element = (Ptr)root_ptr;
   for (int i = 0; i < taichi_max_num_indices; i++) {
     elem.pcoord.val[i] = 0;
   }
   ElementList_insert(runtime->element_lists[root_id], &elem);
+
   runtime->rand_states = (RandState *)allocate_aligned(
       runtime, sizeof(RandState) * num_rand_states, 4096);
   for (int i = 0; i < num_rand_states; i++)
@@ -460,6 +463,9 @@ void clear_list(Runtime *runtime, StructMeta *parent, StructMeta *child) {
   child_list->tail = 0;
 }
 
+/*
+ * The element list of a SNode, maintains pointers to its instances, and instances' parents' coordinates
+ */
 void element_listgen(Runtime *runtime, StructMeta *parent, StructMeta *child) {
   auto parent_list = runtime->element_lists[parent->snode_id];
   int num_parent_elements = parent_list->tail;
@@ -476,18 +482,21 @@ void element_listgen(Runtime *runtime, StructMeta *parent, StructMeta *child) {
   int j_step = 1;
 #endif
   for (int i = i_start; i < num_parent_elements; i += i_step) {
+    PhysicalCoordinates refined_coord;
     auto element = parent_list->elements[i];
-    auto ch_component = child->from_parent_element(element.element);
-    int ch_num_elements = child->get_num_elements((Ptr)child, ch_component);
-    for (int j = j_start; j < ch_num_elements; j += j_step) {
-      if (child->is_active((Ptr)child, ch_component, j)) {
-        auto ch_element = child->lookup_element((Ptr)child, element.element, j);
+    parent->refine_coordinates(&element.pcoord, &refined_coord, element.self_idx);
+    // auto ch_component = child->from_parent_element(element.element);
+    // int ch_num_elements = child->get_num_elements((Ptr)child, ch_component);
+    for (int j = element.loop_bounds[0] + j_start; j < element.loop_bounds[1];
+         j += j_step) {
+      if (parent->is_active((Ptr)parent, element.element, j)) {
+        auto ch_element = parent->lookup_element((Ptr)parent, element.element, j);
+        ch_element = child->from_parent_element((Ptr)ch_element);
         Element elem;
         elem.element = ch_element;
         elem.loop_bounds[0] = 0;
         elem.loop_bounds[1] = child->get_num_elements((Ptr)child, ch_element);
-        PhysicalCoordinates refined_coord;
-        child->refine_coordinates(&element.pcoord, &refined_coord, j);
+        elem.self_idx = j;
         elem.pcoord = refined_coord;
         ElementList_insert(child_list, &elem);
       }

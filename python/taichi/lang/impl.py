@@ -7,6 +7,7 @@ import numpy as np
 
 
 def expr_init(rhs):
+  import taichi as ti
   if rhs is None:
     return Expr(taichi_lang_core.expr_alloca())
   if is_taichi_class(rhs):
@@ -17,6 +18,8 @@ def expr_init(rhs):
     elif isinstance(rhs, tuple):
       return tuple(expr_init(e) for e in rhs)
     elif isinstance(rhs, taichi_lang_core.DataType):
+      return rhs
+    elif isinstance(rhs, ti.ndrange):
       return rhs
     elif hasattr(rhs, '_data_oriented'):
       return rhs

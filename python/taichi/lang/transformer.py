@@ -259,17 +259,63 @@ if 1:
     self.generic_visit(node, ['body'])
     decorated = isinstance(node.iter, ast.Call) and isinstance(
         node.iter.func, ast.Attribute)
+    is_ndrange_for = False
     is_static_for = False
     is_grouped = False
+    
     if decorated:
       attr = node.iter.func
       if attr.attr == 'static':
         is_static_for = True
       elif attr.attr == 'grouped':
         is_grouped = True
+      elif attr.attr == 'ndrange':
+        is_ndrange_for = True
+      else:
+        raise Exception('Not supported')
     is_range_for = isinstance(node.iter, ast.Call) and isinstance(
         node.iter.func, ast.Name) and node.iter.func.id == 'range'
-    if is_static_for:
+    ast.fix_missing_locations(node)
+    # import astpretty
+    # astpretty.pprint(node)
+    if is_ndrange_for:
+      template = '''
+if ti.static(1):
+  __ndrange = 0
+  for __ndrange_I in range(0):
+    __I = __ndrange_I
+      '''
+      t = ast.parse(template).body[0]
+      t.body[0].value = node.iter
+      t.body[1].iter.args[0] = self.parse_expr('__ndrange.acc_dimensions[0]')
+      import astpretty
+      targets = node.target
+      if isinstance(targets, ast.Tuple):
+        targets = [name.id for name in targets.elts]
+      else:
+        targets = [targets.id]
+      # print(targets)
+      loop_body = t.body[1].body
+      for i in range(len(targets)):
+        if i + 1 < len(targets):
+          stmt = '__{} = __I // __ndrange.acc_dimensions[{}]'.format(targets[i], i + 1)
+        else:
+          stmt = '__{} = __I'.format(targets[i])
+        loop_body.append(self.parse_stmt(stmt))
+        stmt = '{} = __{} + __ndrange.bounds[{}][0]'.format(targets[i], targets[i], i)
+        loop_body.append(self.parse_stmt(stmt))
+        if i + 1 < len(targets):
+          stmt = '__I = __I - __{} * __ndrange.acc_dimensions[{}]'.format(targets[i], i + 1)
+          loop_body.append(self.parse_stmt(stmt))
+      # t = ast.fix_missing_locations(t)
+      astpretty.pprint(t)
+      loop_body += node.body
+      # import astor
+      # print(astor.to_source(t))
+      
+      node = ast.copy_location(t, node)
+      return self.visit(node) # further translate as a range for
+    elif is_static_for:
       return node
     elif is_range_for:
       loop_var = node.target.id

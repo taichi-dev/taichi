@@ -8,7 +8,7 @@ class ndrange:
       if not isinstance(args[i], tuple):
         args[i] = (0, args[i])
       assert len(args[i]) == 2
-      args = ti.Expr(args[0]), ti.Expr(args[1])
+      args[i] = ti.Expr(args[i][0]), ti.Expr(args[i][1])
     self.bounds = args
     
     self.dimensions = [None] * len(args)

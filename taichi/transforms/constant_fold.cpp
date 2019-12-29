@@ -57,6 +57,15 @@ class ConstantFold : public BasicStmtVisitor {
       stmt->parent->insert_before(stmt, VecStatement(std::move(evaluated)));
       stmt->parent->erase(stmt);
       throw IRModified();
+    } else if (stmt->op_type == BinaryOpType::mul) {
+      new_constant.val_int32() =
+          lhs->val[0].val_int32() * rhs->val[0].val_int32();
+      auto evaluated =
+          Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(new_constant));
+      stmt->replace_with(evaluated.get());
+      stmt->parent->insert_before(stmt, VecStatement(std::move(evaluated)));
+      stmt->parent->erase(stmt);
+      throw IRModified();
     }
   }
 

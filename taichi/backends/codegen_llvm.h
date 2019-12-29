@@ -820,7 +820,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       stmt->value = call(snode, stmt->ptr->value, "append", {stmt->val->value});
     } else if (stmt->op_type == SNodeOpType::probe) {
       TC_ASSERT(snode->type == SNodeType::dynamic);
-      stmt->value = call(snode, stmt->ptr->value, "get_length", {});
+      stmt->value = call(snode, stmt->ptr->value, "get_num_elements", {});
     } else {
       TC_NOT_IMPLEMENTED
     }

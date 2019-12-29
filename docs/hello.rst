@@ -137,6 +137,12 @@ when used as the outermost level. Range-for loops can be nested.
 
       y[i] = s
 
+  @ti.kernel
+  def fill_3d():
+    # Parallelized for all 3 <= i < 8, 1 <= j < 6, 0 <= k < 9
+    for i, j, k in ti.ndrange((3, 8), (1, 6), 9):
+      x[i, j, k] = i + j + k
+
 **Struct-for loops** have a cleaner syntax, and are particularly useful when iterating over tensor elements.
 In the fractal code above, ``for i, j in pixels`` loops over all the pixel coordinates, i.e. ``(0, 0), (0, 1), (0, 2), ... , (0, 319), (1, 0), ..., (639, 319)``.
 

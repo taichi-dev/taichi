@@ -38,6 +38,28 @@ class ConstantFold : public BasicStmtVisitor {
     }
   }
 
+  void visit(BinaryOpStmt *stmt) override {
+    auto lhs = stmt->lhs->cast<ConstStmt>();
+    auto rhs = stmt->rhs->cast<ConstStmt>();
+    if (!lhs || !rhs)
+      return;
+    if (stmt->width() != 1 || stmt->ret_type.data_type != DataType::i32) {
+      return;
+    }
+    auto dst_type = DataType::i32;
+    TypedConstant new_constant(dst_type);
+    if (stmt->op_type == BinaryOpType::sub) {
+      new_constant.val_int32() =
+          lhs->val[0].val_int32() - rhs->val[0].val_int32();
+      auto evaluated =
+          Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(new_constant));
+      stmt->replace_with(evaluated.get());
+      stmt->parent->insert_before(stmt, VecStatement(std::move(evaluated)));
+      stmt->parent->erase(stmt);
+      throw IRModified();
+    }
+  }
+
   static void run(IRNode *node) {
     ConstantFold folder;
     while (true) {

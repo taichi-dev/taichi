@@ -24,10 +24,13 @@ def test_2d():
   # ti.cfg.print_ir = True
   x = ti.var(ti.f32, shape=(16, 32))
   
+  t = 8
+  
   @ti.kernel
   def func():
-    for i, j in ti.ndrange((4, 10), (3, 8)):
-      x[i, j] = i + j * 10
+    for i, j in ti.ndrange((4, 10), (3, t)):
+      val = i + j * 10
+      x[i, j] = val
   
   func()
   for i in range(16):
@@ -40,7 +43,7 @@ def test_2d():
 @ti.all_archs
 def test_3d():
   # ti.get_runtime().print_preprocessed = True
-  ti.cfg.print_ir = True
+  # ti.cfg.print_ir = True
   x = ti.var(ti.f32, shape=(16, 32, 64))
   
   @ti.kernel

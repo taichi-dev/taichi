@@ -173,5 +173,4 @@ def test_linear_k():
 
   for i in range(n):
     assert x[i] == i
-    
-test_linear()
+

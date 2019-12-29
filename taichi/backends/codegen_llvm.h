@@ -1248,7 +1248,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     int num_splits = leaf_block->max_num_elements() / stmt->block_dim;
     // traverse leaf node
     create_call("for_each_block",
-                {get_context(), tlctx->get_constant(leaf_block->parent->id),
+                {get_context(), tlctx->get_constant(leaf_block->id),
                  tlctx->get_constant(leaf_block->max_num_elements()),
                  tlctx->get_constant(num_splits), body,
                  tlctx->get_constant(stmt->num_cpu_threads)});

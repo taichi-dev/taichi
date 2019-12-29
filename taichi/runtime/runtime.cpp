@@ -482,13 +482,11 @@ void element_listgen(Runtime *runtime, StructMeta *parent, StructMeta *child) {
   int j_step = 1;
 #endif
   for (int i = i_start; i < num_parent_elements; i += i_step) {
-    PhysicalCoordinates refined_coord;
     auto element = parent_list->elements[i];
-    parent->refine_coordinates(&element.pcoord, &refined_coord, element.self_idx);
-    // auto ch_component = child->from_parent_element(element.element);
-    // int ch_num_elements = child->get_num_elements((Ptr)child, ch_component);
     for (int j = element.loop_bounds[0] + j_start; j < element.loop_bounds[1];
          j += j_step) {
+      PhysicalCoordinates refined_coord;
+      parent->refine_coordinates(&element.pcoord, &refined_coord, j);
       if (parent->is_active((Ptr)parent, element.element, j)) {
         auto ch_element = parent->lookup_element((Ptr)parent, element.element, j);
         ch_element = child->from_parent_element((Ptr)ch_element);

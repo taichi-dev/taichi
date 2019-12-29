@@ -38,6 +38,8 @@ python3 -m pip install taichi-nightly-cuda-10-1
 - Tune the performance of the LLVM backend to match that of the legacy source-to-source backends (WIP)
 - Language documentation
 ## Updates
+- (Dec  29, 2019) v0.3.16 released.
+   - Fixed ndrange-fors with local variables (thanks to Xingzhe He for reporting this issue)
 - (Dec  28, 2019) v0.3.15 released.
    - Multi-dimensional parallel range-for using `ti.ndrange`:
 ```python

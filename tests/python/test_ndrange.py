@@ -2,7 +2,6 @@ import taichi as ti
 
 @ti.all_archs
 def test_1d():
-  return
   x = ti.var(ti.f32, shape=(16))
 
   @ti.kernel
@@ -11,6 +10,7 @@ def test_1d():
       x[i] = i
 
   func()
+  
   for i in range(16):
     if 4 <= i < 10:
       assert x[i] == i
@@ -19,9 +19,9 @@ def test_1d():
 
 
 @ti.all_archs
-def test_1d():
-  ti.get_runtime().print_preprocessed = True
-  ti.cfg.print_ir = True
+def test_2d():
+  # ti.get_runtime().print_preprocessed = True
+  # ti.cfg.print_ir = True
   x = ti.var(ti.f32, shape=(16, 32))
   
   @ti.kernel
@@ -33,6 +33,6 @@ def test_1d():
   for i in range(16):
     for j in range(32):
       if 4 <= i < 10 and 3 <= j < 8:
-        assert x[i] == i + j * 10
+        assert x[i, j] == i + j * 10
       else:
-        assert x[i] == 0
+        assert x[i, j] == 0

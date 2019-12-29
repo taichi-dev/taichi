@@ -276,8 +276,6 @@ if 1:
     is_range_for = isinstance(node.iter, ast.Call) and isinstance(
         node.iter.func, ast.Name) and node.iter.func.id == 'range'
     ast.fix_missing_locations(node)
-    # import astpretty
-    # astpretty.pprint(node)
     if is_ndrange_for:
       template = '''
 if ti.static(1):
@@ -288,7 +286,6 @@ if ti.static(1):
       t = ast.parse(template).body[0]
       t.body[0].value = node.iter
       t.body[1].iter.args[0] = self.parse_expr('__ndrange.acc_dimensions[0]')
-      import astpretty
       targets = node.target
       if isinstance(targets, ast.Tuple):
         targets = [name.id for name in targets.elts]
@@ -308,10 +305,7 @@ if ti.static(1):
           stmt = '__I = __I - __{} * __ndrange.acc_dimensions[{}]'.format(targets[i], i + 1)
           loop_body.append(self.parse_stmt(stmt))
       # t = ast.fix_missing_locations(t)
-      astpretty.pprint(t)
       loop_body += node.body
-      # import astor
-      # print(astor.to_source(t))
       
       node = ast.copy_location(t, node)
       return self.visit(node) # further translate as a range for
@@ -551,8 +545,6 @@ if 1:
         ast.copy_location(ret, node)
         
     self.generic_visit(ret)
-    # import astpretty
-    # astpretty.pprint(ret)
     return ret
     
 

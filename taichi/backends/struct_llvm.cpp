@@ -83,6 +83,7 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
   }
   if (aux_type != nullptr) {
     llvm_type = llvm::StructType::create(*ctx, {aux_type, body_type}, "");
+    TC_P(tlctx->get_type_size(llvm_type));
     snode.has_aux_structure = true;
   } else {
     llvm_type = body_type;

@@ -34,7 +34,7 @@ def test_dense_dynamic():
   
   @ti.layout
   def place():
-    ti.root.dense(ti.i, n).dynamic(ti.j, n * 2).place(x)
+    ti.root.dense(ti.i, n).dynamic(ti.j, n).place(x)
   
   @ti.kernel
   def append():
@@ -45,8 +45,20 @@ def test_dense_dynamic():
   append()
   
   @ti.kernel
+  def get_len():
+    for i in range(n):
+      y[i] = ti.length(x, i)
+      
+  get_len()
+  for i in range(n):
+    assert y[i] == i
+    y[i] = 0
+  
+  @ti.kernel
   def count():
+    ti.serialize()
     for i, j in x:
+      assert x[i, j] == j * 2
       y[i] += x[i, j]
   
   count()

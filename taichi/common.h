@@ -9,15 +9,6 @@ __device__ __constant__ void *device_data;
 __device__ __constant__ int *error_code;
 #endif
 
-#if !defined(TLANG_GPU)
-#if !defined(__device__)
-#define __device__
-#endif
-#if !defined(__host__)
-#define __host__
-#endif
-#endif
-
 #define TLANG_NAMESPACE_BEGIN \
   namespace taichi {          \
   namespace Tlang {
@@ -176,7 +167,7 @@ struct AllocatorStat {
 };
 
 template <typename T, typename G>
-__device__ __host__ T union_cast(G g) {
+T union_cast(G g) {
   static_assert(sizeof(T) == sizeof(G), "");
   union {
     T t;
@@ -187,7 +178,7 @@ __device__ __host__ T union_cast(G g) {
 }
 
 template <typename T, typename G>
-__device__ __host__ T union_cast_different_size(G g) {
+T union_cast_different_size(G g) {
   union {
     T t;
     G g;

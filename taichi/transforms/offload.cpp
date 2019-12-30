@@ -139,7 +139,7 @@ class IdentifyLocalVars : public BasicStmtVisitor {
     TC_ASSERT(type.width == 1);
     auto ret = global_offset;
     global_offset += data_type_size(type.data_type);
-    TC_ASSERT(global_offset < 1048576);
+    TC_ASSERT(global_offset < taichi_max_num_global_vars);
     return ret;
   }
 

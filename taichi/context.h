@@ -29,12 +29,12 @@ struct Context {
   }
 
   template <typename T>
-  __host__ __device__ T get_arg(int i) {
+  T get_arg(int i) {
     return union_cast_different_size<T>(args[i]);
   }
 
   template <typename T>
-  __host__ __device__ void set_arg(int i, T v) {
+  void set_arg(int i, T v) {
     args[i] = union_cast_different_size<uint64>(v);
   }
 };

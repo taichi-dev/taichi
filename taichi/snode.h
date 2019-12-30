@@ -185,9 +185,11 @@ class SNode {
     return child;
   }
 
+  /*
   SNode &dynamic(const Index &expr, int n) {
     return dynamic_chunked(expr, n, n);
   }
+  */
 
   SNode &dynamic_chunked(const Index &expr, int n, int chunk_size) {
     TC_ASSERT(bit::is_power_of_two(n));
@@ -196,6 +198,7 @@ class SNode {
     child.extractors[expr.value].activate(bit::log2int(n));
     child.n = n;
     child.chunk_size = chunk_size;
+    TC_P(chunk_size);
     return child;
   }
 

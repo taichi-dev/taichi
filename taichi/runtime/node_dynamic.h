@@ -45,13 +45,17 @@ i32 Dynamic_append(Ptr meta_, Ptr node_, i32 data) {
   i32 tail;
   locked_task(Ptr(&node->lock), [&] {
     auto i = node->n;
+    // printf("%d\n", node->n);
     int chunk_start = 0;
     auto p_chunk_ptr = &node->ptr;
     // printf("ptr %p\n", node->ptr);
     auto rt = (Runtime *)meta->context->runtime;
     auto alloc = rt->node_allocators[meta->snode_id];
     while (true) {
+      printf("csize %d\n", chunk_size);
+      printf("cstart %d\n", chunk_start);
       if (*p_chunk_ptr == nullptr) {
+        printf("%d\n", node->n);
         *p_chunk_ptr = NodeAllocator_allocate(alloc);
       }
       if (i < chunk_start + chunk_size) {

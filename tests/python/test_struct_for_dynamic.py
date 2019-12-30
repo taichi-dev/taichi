@@ -4,7 +4,8 @@ import taichi as ti
 def test_dynamic():
   x = ti.var(ti.i32)
   y = ti.var(ti.i32, shape=())
-  ti.cfg.print_ir = True
+  # ti.cfg.print_ir = True
+  # ti.cfg.print_kernel_llvm_ir = True
 
   n = 128
 

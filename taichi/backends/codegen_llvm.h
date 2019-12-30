@@ -204,7 +204,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       emit_struct_meta_base("Root", meta->ptr, snode);
     } else if (snode->type == SNodeType::dynamic) {
       meta = std::make_unique<RuntimeObject>("DynamicMeta", this, builder);
-      emit_struct_meta_base("Root", meta->ptr, snode);
+      emit_struct_meta_base("Dynamic", meta->ptr, snode);
       meta->call("set_chunk_size",
                  tlctx->get_constant((int)snode->max_num_elements()));
     } else {

@@ -185,12 +185,6 @@ class SNode {
     return child;
   }
 
-  /*
-  SNode &dynamic(const Index &expr, int n) {
-    return dynamic_chunked(expr, n, n);
-  }
-  */
-
   SNode &dynamic_chunked(const Index &expr, int n, int chunk_size) {
     TC_ASSERT(bit::is_power_of_two(n));
     TC_ASSERT(bit::is_power_of_two(chunk_size));

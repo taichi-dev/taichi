@@ -1183,8 +1183,20 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
         builder->CreateStore(lower_bound, loop_index);
       }
 
+      // test bb
+      auto test_bb = BasicBlock::Create(*llvm_context, "test", func);
       auto body_bb = BasicBlock::Create(*llvm_context, "loop_body", func);
-      builder->CreateBr(body_bb);
+      auto after_loop = BasicBlock::Create(*llvm_context, "after_loop", func);
+
+      builder->CreateBr(test_bb);
+      {
+        builder->SetInsertPoint(test_bb);
+        auto cond =
+            builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_SLT,
+                                builder->CreateLoad(loop_index), upper_bound);
+        builder->CreateCondBr(cond, body_bb, after_loop);
+      }
+
       builder->SetInsertPoint(body_bb);
 
       // initialize the coordinates
@@ -1235,14 +1247,10 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       } else {
         create_increment(loop_index, tlctx->get_constant(1));
       }
+      builder->CreateBr(test_bb);
 
-      auto cond =
-          builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_SLT,
-                              builder->CreateLoad(loop_index), upper_bound);
-
-      BasicBlock *after_loop = BasicBlock::Create(*llvm_context, "block", func);
-      builder->CreateCondBr(cond, body_bb, after_loop);
       builder->SetInsertPoint(after_loop);
+      builder->CreateRetVoid();
     }
 
     int num_splits = leaf_block->max_num_elements() / stmt->block_dim;

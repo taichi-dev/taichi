@@ -545,9 +545,12 @@ void for_each_block(Context *context,
     if (element_id >= list_tail)
       break;
     auto part_id = i % element_split;
-    auto lower = part_size * part_id;
-    auto upper = part_size * (part_id + 1);
-    task(context, &list->elements[element_id], lower, upper);
+    auto &e = list->elements[element_id];
+    int lower = e.loop_bounds[0] + part_id * part_size;
+    int upper = e.loop_bounds[0] + (part_id + 1) * part_size;
+    upper = std::min(upper, e.loop_bounds[1]);
+    if (lower < upper)
+      task(context, &list->elements[element_id], lower, upper);
     i += grid_dim();
   }
 #else

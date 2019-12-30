@@ -1,6 +1,6 @@
 import taichi as ti
 
-# @ti.all_archs
+@ti.all_archs
 def test_dynamic():
   x = ti.var(ti.i32)
   y = ti.var(ti.i32, shape=())
@@ -22,7 +22,5 @@ def test_dynamic():
 
   count()
 
-  print(y[None])
   assert y[None] == n // 3 + 1
 
-test_dynamic()

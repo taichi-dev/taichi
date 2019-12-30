@@ -464,7 +464,8 @@ void clear_list(Runtime *runtime, StructMeta *parent, StructMeta *child) {
 }
 
 /*
- * The element list of a SNode, maintains pointers to its instances, and instances' parents' coordinates
+ * The element list of a SNode, maintains pointers to its instances, and
+ * instances' parents' coordinates
  */
 void element_listgen(Runtime *runtime, StructMeta *parent, StructMeta *child) {
   auto parent_list = runtime->element_lists[parent->snode_id];
@@ -488,7 +489,8 @@ void element_listgen(Runtime *runtime, StructMeta *parent, StructMeta *child) {
       PhysicalCoordinates refined_coord;
       parent->refine_coordinates(&element.pcoord, &refined_coord, j);
       if (parent->is_active((Ptr)parent, element.element, j)) {
-        auto ch_element = parent->lookup_element((Ptr)parent, element.element, j);
+        auto ch_element =
+            parent->lookup_element((Ptr)parent, element.element, j);
         ch_element = child->from_parent_element((Ptr)ch_element);
         Element elem;
         elem.element = ch_element;
@@ -518,8 +520,13 @@ void block_helper(void *ctx_, int i) {
   int part_size = ctx->element_size / ctx->element_split;
   int part_id = i % ctx->element_split;
   // printf("%d %d %d\n", element_id, part_size, part_id);
-  (*ctx->task)(ctx->context, &ctx->list[element_id], part_id * part_size,
-               (part_id + 1) * part_size);
+  auto &e = ctx->list[element_id];
+  int lower = e.loop_bounds[0] + part_id * part_size;
+  int upper = e.loop_bounds[0] + (part_id + 1) * part_size;
+  upper = std::min(upper, e.loop_bounds[1]);
+  if (lower < upper) {
+    (*ctx->task)(ctx->context, &ctx->list[element_id], lower, upper);
+  }
 }
 
 void for_each_block(Context *context,

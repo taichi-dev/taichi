@@ -1166,6 +1166,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
 
       llvm::Value *threadIdx = nullptr, *blockDim = nullptr;
 
+      RuntimeObject element("Element", this, builder, get_arg(1));
       auto lower_bound = get_arg(2);
       auto upper_bound = get_arg(3);
       // create_print("lower", DataType::i32, lower_bound);
@@ -1190,7 +1191,6 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       auto refine =
           get_runtime_function(leaf_block->refine_coordinates_func_name());
       auto new_coordinates = create_entry_block_alloca(physical_coordinate_ty);
-      RuntimeObject element("Element", this, builder, get_arg(1));
       create_call(refine, {element.get_ptr("pcoord"), new_coordinates,
                            builder->CreateLoad(loop_index)});
 

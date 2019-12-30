@@ -32,7 +32,7 @@ def test_dense_dynamic():
   
   @ti.layout
   def place():
-    ti.root.dense(ti.i, n).dynamic(ti.j, n, 32).place(x)
+    ti.root.dense(ti.i, n).dynamic(ti.j, n, 128).place(x)
   
   @ti.kernel
   def append1():
@@ -42,7 +42,6 @@ def test_dense_dynamic():
         ti.append(x, i, j * 2)
     
   append1()
-  return
 
   print(x[33, 65])
   assert x[33, 65] == 130

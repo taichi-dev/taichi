@@ -198,7 +198,6 @@ class SNode {
     child.extractors[expr.value].activate(bit::log2int(n));
     child.n = n;
     child.chunk_size = chunk_size;
-    TC_P(chunk_size);
     return child;
   }
 

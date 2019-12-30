@@ -153,7 +153,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       auto element_ty = tlctx->snode_attr[snode->ch[0]].llvm_type;
       element_size = tlctx->get_type_size(element_ty);
     } else {
-      auto element_ty = tlctx->snode_attr[snode].llvm_type;
+      auto element_ty = tlctx->snode_attr[snode].llvm_element_type;
       element_size = tlctx->get_type_size(element_ty);
     }
     common.set("snode_id", tlctx->get_constant(snode->id));

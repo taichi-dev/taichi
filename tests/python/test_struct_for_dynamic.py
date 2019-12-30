@@ -4,8 +4,6 @@ import taichi as ti
 def test_dynamic():
   x = ti.var(ti.i32)
   y = ti.var(ti.i32, shape=())
-  # ti.cfg.print_ir = True
-  # ti.cfg.print_kernel_llvm_ir = True
 
   n = 128
 
@@ -34,30 +32,33 @@ def test_dense_dynamic():
   
   @ti.layout
   def place():
-    ti.root.dense(ti.i, n).dynamic(ti.j, n).place(x)
+    ti.root.dense(ti.i, n).dynamic(ti.j, n, 128).place(x)
   
   @ti.kernel
   def append():
-    for i in range(n):
-      for j in range(i):
+    for i in range(n // 2):
+      for j in range(i * 2):
         ti.append(x, i, j * 2)
     
   append()
   
   @ti.kernel
   def get_len():
-    for i in range(n):
+    for i in range(n // 2):
       y[i] = ti.length(x, i)
       
   get_len()
-  for i in range(n):
-    assert y[i] == i
+  for i in range(n // 2):
+    assert y[i] == i * 2
     y[i] = 0
   
   @ti.kernel
   def count():
     ti.serialize()
     for i, j in x:
+      print(i)
+      print(j)
+      print(x[i, j])
       assert x[i, j] == j * 2
       y[i] += x[i, j]
   

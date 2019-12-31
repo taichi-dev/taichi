@@ -129,7 +129,7 @@ void ThreadPool::target() {
     }
 
     {
-      std::unique_lock<std::mutex> lock(mutex);
+      std::lock_guard<std::mutex> lock(mutex);
       running_threads--;
       if (running_threads == 0)
         master_cv.notify_one();

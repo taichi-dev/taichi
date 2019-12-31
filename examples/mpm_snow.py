@@ -2,7 +2,7 @@ import taichi as ti
 import random
 
 dim = 2
-n_particles = 8192
+n_particles = 8192 // 4
 n_grid = 80
 dx = 1 / n_grid
 inv_dx = 1 / dx
@@ -32,6 +32,7 @@ grid_m = ti.var(dt=ti.f32, shape=(n_grid, n_grid))
 
 @ti.kernel
 def substep():
+  # ti.serialize()
   for p in x:
     base = (x[p] * inv_dx - 0.5).cast(int)
     fx = x[p] * inv_dx - base.cast(float)
@@ -66,6 +67,7 @@ def substep():
       grid_v[base + offset] += weight * (p_mass * v[p] + affine @ dpos)
       grid_m[base + offset] += weight * p_mass
 
+  # ti.serialize()
   for i, j in grid_m:
     if grid_m[i, j] > 0:
       bound = 3
@@ -81,6 +83,7 @@ def substep():
       if j > n_grid - bound and grid_v[i, j][1] > 0:
         grid_v[i, j][1] = 0
 
+  # ti.serialize()
   for p in x:
     base = (x[p] * inv_dx - 0.5).cast(int)
     fx = x[p] * inv_dx - base.cast(float)
@@ -101,7 +104,7 @@ gui = ti.core.GUI("MPM88", ti.veci(512, 512))
 canvas = gui.get_canvas()
 
 for i in range(n_particles):
-  x[i] = [random.random() * 0.4 + 0.2, random.random() * 0.4 + 0.4]
+  x[i] = [random.random() * 0.1 + 0.2, random.random() * 0.4 + 0.4]
   v[i] = [0, -10]
   F[i] = [[1, 0], [0, 1]]
   Jp[i] = 1

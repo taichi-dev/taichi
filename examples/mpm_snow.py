@@ -2,27 +2,21 @@ import taichi as ti
 import random
 
 dim = 2
-n_particles = 8192
-n_grid = 80
+n_particles, n_grid = 9000, 128
 dx = 1 / n_grid
 inv_dx = 1 / dx
 dt = 1e-4
-# p_vol = (dx * 0.5)**2
-# p_rho = 1
-# TODO: improve
-p_mass = 1.0
-p_vol = 1.0
-# p_mass = p_vol * p_rho
+p_vol, p_rho = (dx * 0.5)**2, 1
+p_mass = p_vol * p_rho
 harderning = 10
-E = 1e4 # 1e0
-nu = 0.2
-mu_0 = E / (2 * (1 + nu))
-lambda_0 = E * nu / ((1+nu) * (1 - 2 * nu))
+E, nu = 0.1e4, 0.2 # Young's modulus and Poisson's ratio
+mu_0, lambda_0 = E / (2 * (1 + nu)), E * nu / ((1+nu) * (1 - 2 * nu)) # Lame parameters
 
 x = ti.Vector(dim, dt=ti.f32, shape=n_particles)
 v = ti.Vector(dim, dt=ti.f32, shape=n_particles)
 C = ti.Matrix(dim, dim, dt=ti.f32, shape=n_particles)
 F = ti.Matrix(dim, dim, dt=ti.f32, shape=n_particles)
+material = ti.var(dt=ti.i32, shape=n_particles)
 Jp = ti.var(dt=ti.f32, shape=n_particles)
 grid_v = ti.Vector(dim, dt=ti.f32, shape=(n_grid, n_grid))
 grid_m = ti.var(dt=ti.f32, shape=(n_grid, n_grid))
@@ -35,12 +29,12 @@ def substep():
     base = (x[p] * inv_dx - 0.5).cast(int)
     fx = x[p] * inv_dx - base.cast(float)
     w = [0.5 * ti.sqr(1.5 - fx), 0.75 - ti.sqr(fx - 1), 0.5 * ti.sqr(fx - 0.5)]
-    
-    F[p] = (ti.Matrix.identity(ti.f32, 2) + dt * C[p]) @ F[p]
-    
+    F[p] = (ti.Matrix.identity(ti.f32, 2) + dt * C[p]) @ F[p] # deformation gradient update
     e = ti.exp(harderning * (1.0 - Jp[p]))
-    mu = mu_0*e
-    la = lambda_0*e
+    mu, la = mu_0 * e, lambda_0 * e
+    
+    if material[p] == 0:
+      mu = 0.0
     
     U, sig, V = ti.svd(F[p])
     
@@ -52,9 +46,7 @@ def substep():
       J *= new_sig
     
     F[p] = U @ sig @ V.T()
-    
-    R = U @ V.T()
-    stress = 2 * mu * (F[p] - R) @ F[p].T() + ti.Matrix.identity(ti.f32, 2) * la * J * (J - 1)
+    stress = 2 * mu * (F[p] - U @ V.T()) @ F[p].T() + ti.Matrix.identity(ti.f32, 2) * la * J * (J - 1)
     stress = (-dt * p_vol * 4 * inv_dx * inv_dx) * stress
     affine = stress + p_mass * C[p]
     
@@ -67,18 +59,13 @@ def substep():
 
   for i, j in grid_m:
     if grid_m[i, j] > 0:
-      bound = 3
       inv_m = 1 / grid_m[i, j]
       grid_v[i, j] = inv_m * grid_v[i, j]
       grid_v[i, j][1] -= dt * 9.8
-      if i < bound and grid_v[i, j][0] < 0:
-        grid_v[i, j][0] = 0
-      if i > n_grid - bound and grid_v[i, j][0] > 0:
-        grid_v[i, j][0] = 0
-      if j < bound and grid_v[i, j][1] < 0:
-        grid_v[i, j][1] = 0
-      if j > n_grid - bound and grid_v[i, j][1] > 0:
-        grid_v[i, j][1] = 0
+      if i < 3 and grid_v[i, j][0] < 0:          grid_v[i, j][0] = 0
+      if i > n_grid - 3 and grid_v[i, j][0] > 0: grid_v[i, j][0] = 0
+      if j < 3 and grid_v[i, j][1] < 0:          grid_v[i, j][1] = 0
+      if j > n_grid - 3 and grid_v[i, j][1] > 0: grid_v[i, j][1] = 0
 
   for p in x:
     base = (x[p] * inv_dx - 0.5).cast(int)
@@ -92,15 +79,15 @@ def substep():
       weight = w[i][0] * w[j][1]
       new_v += weight * g_v
       new_C += 4 * weight * ti.outer_product(g_v, dpos) * inv_dx
-    v[p] = new_v
+    v[p], C[p] = new_v, new_C
     x[p] += dt * v[p]
-    C[p] = new_C
 
 gui = ti.core.GUI("MPM88", ti.veci(512, 512))
 canvas = gui.get_canvas()
 
 for i in range(n_particles):
-  x[i] = [random.random() * 0.4 + 0.2, random.random() * 0.4 + 0.4]
+  x[i] = [random.random() * 0.1 + 0.2 + 0.1 * (i // 3000), random.random() * 0.4 + 0.4]
+  material[i] = (i // 3000)
   v[i] = [0, -3]
   F[i] = [[1, 0], [0, 1]]
   Jp[i] = 1

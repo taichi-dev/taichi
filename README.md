@@ -34,9 +34,8 @@ python3 -m pip install taichi-nightly-cuda-10-1
 ## Short-term goals (by the end of Dec 2019)
 - Fully implement the LLVM backend to replace the legacy source-to-source C++/CUDA backends
   - Dense computation (done)
-  - Sparse data structures (mostly done)
+  - Sparse data structures (done)
 - Tune the performance of the LLVM backend to match that of the legacy source-to-source backends (WIP)
-- Language documentation
 ## Updates
 - (Dec  29, 2019) v0.3.16 released.
    - Fixed ndrange-fors with local variables (thanks to Xingzhe He for reporting this issue)

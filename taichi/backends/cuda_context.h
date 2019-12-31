@@ -34,7 +34,7 @@ class CUDAContext {
   }
 
   void make_current() {
-    cuCtxSetCurrent(context);
+    check_cuda_errors(cuCtxSetCurrent(context));
   }
 
   ~CUDAContext();
@@ -45,12 +45,12 @@ class CUDAContext {
 
    public:
     ContextGuard(CUDAContext *ctx) {
-      cuCtxGetCurrent(&old_ctx);
+      check_cuda_errors(cuCtxGetCurrent(&old_ctx));
       ctx->make_current();
     }
 
     ~ContextGuard() {
-      cuCtxSetCurrent(old_ctx);
+      check_cuda_errors(cuCtxSetCurrent(old_ctx));
     }
   };
 

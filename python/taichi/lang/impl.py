@@ -264,10 +264,11 @@ index = indices
 
 
 def static(x):
+  import taichi as ti
   assert get_runtime(
   ).inside_kernel, 'ti.static can only be used inside Taichi kernels'
   assert isinstance(
-      x, (bool, int, float, range, list, tuple)
+      x, (bool, int, float, range, list, tuple, ti.ndrange)
   ), 'Input to ti.static must have compile-time constant values, instead of {}'.format(
       type(x))
   return x

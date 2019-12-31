@@ -8,7 +8,7 @@ class ndrange:
       if not isinstance(args[i], tuple):
         args[i] = (0, args[i])
       assert len(args[i]) == 2
-      args[i] = ti.Expr(args[i][0]), ti.Expr(args[i][1])
+      # args[i] = ti.Expr(args[i][0]), ti.Expr(args[i][1])
     self.bounds = args
     
     self.dimensions = [None] * len(args)
@@ -18,3 +18,13 @@ class ndrange:
     self.acc_dimensions = self.dimensions.copy()
     for i in reversed(range(len(self.bounds) - 1)):
        self.acc_dimensions[i] = self.acc_dimensions[i] * self.acc_dimensions[i + 1]
+       
+  def __iter__(self):
+    def gen(d, prefix):
+      if d == len(self.bounds):
+        yield prefix
+      else:
+        for t in range(self.bounds[d][0], self.bounds[d][1]):
+          yield from gen(d + 1, prefix + (t,))
+      
+    yield from gen(0, ())

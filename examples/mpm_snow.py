@@ -28,6 +28,7 @@ grid_v = ti.Vector(dim, dt=ti.f32, shape=(n_grid, n_grid))
 grid_m = ti.var(dt=ti.f32, shape=(n_grid, n_grid))
 
 # ti.cfg.arch = ti.cuda
+ti.get_runtime().print_preprocessed = True
 
 @ti.kernel
 def substep():
@@ -51,13 +52,12 @@ def substep():
     stress = (-dt * p_vol * 4 * inv_dx * inv_dx) * stress
     affine = stress + p_mass * C[p]
     
-    for i in ti.static(range(3)):
-      for j in ti.static(range(3)):
-        offset = ti.Vector([i, j])
-        dpos = (offset.cast(float) - fx) * dx
-        weight = w[i][0] * w[j][1]
-        grid_v[base + offset] += weight * (p_mass * v[p] + affine @ dpos)
-        grid_m[base + offset] += weight * p_mass
+    for i in ti.static(ti.ndrange(3, 3)):
+      offset = ti.Vector([i, j])
+      dpos = (offset.cast(float) - fx) * dx
+      weight = w[i][0] * w[j][1]
+      grid_v[base + offset] += weight * (p_mass * v[p] + affine @ dpos)
+      grid_m[base + offset] += weight * p_mass
 
   for i, j in grid_m:
     if grid_m[i, j] > 0:

@@ -376,6 +376,9 @@ class Matrix:
       for j in range(a.m):
         ret.set_entry(j, i, a(i, j))
     return ret
+  
+  def T(self):
+    return self.transposed(self)
 
   @staticmethod
   def determinant(a):

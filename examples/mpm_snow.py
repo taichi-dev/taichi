@@ -14,7 +14,7 @@ p_mass = 1.0
 p_vol = 1.0
 # p_mass = p_vol * p_rho
 harderning = 10
-E = 1e4 # 1e0
+E = 5e3 # 1e0
 nu = 0.2
 mu_0 = E / (2 * (1 + nu))
 lambda_0 = E * nu / ((1+nu) * (1 - 2 * nu))
@@ -52,10 +52,10 @@ def substep():
       sig[d, d] = new_sig
       J *= new_sig
     
-    F[p] = U @ sig @ ti.transposed(V)
+    F[p] = U @ sig @ V.T()
     
-    R = U @ ti.transposed(V)
-    stress = 2 * mu * (F[p] - R) @ ti.transposed(F[p]) + ti.Matrix.identity(ti.f32, 2) * la * J * (J - 1)
+    R = U @ V.T()
+    stress = 2 * mu * (F[p] - R) @ F[p].T() + ti.Matrix.identity(ti.f32, 2) * la * J * (J - 1)
     # print(Jp)
     # stress = ti.Matrix.identity(ti.f32, 2) * (Jp - 1) * E
     stress = (-dt * p_vol * 4 * inv_dx * inv_dx) * stress

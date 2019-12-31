@@ -28,7 +28,7 @@ grid_v = ti.Vector(dim, dt=ti.f32, shape=(n_grid, n_grid))
 grid_m = ti.var(dt=ti.f32, shape=(n_grid, n_grid))
 
 # ti.cfg.arch = ti.cuda
-ti.get_runtime().print_preprocessed = True
+# ti.get_runtime().print_preprocessed = True
 
 @ti.kernel
 def substep():
@@ -52,7 +52,7 @@ def substep():
     stress = (-dt * p_vol * 4 * inv_dx * inv_dx) * stress
     affine = stress + p_mass * C[p]
     
-    for i in ti.static(ti.ndrange(3, 3)):
+    for i, j in ti.static(ti.ndrange(3, 3)):
       offset = ti.Vector([i, j])
       dpos = (offset.cast(float) - fx) * dx
       weight = w[i][0] * w[j][1]
@@ -80,13 +80,12 @@ def substep():
     w = [0.5 * ti.sqr(1.5 - fx), 0.75 - ti.sqr(fx - 1.0), 0.5 * ti.sqr(fx - 0.5)]
     new_v = ti.Vector.zero(ti.f32, 2)
     new_C = ti.Matrix.zero(ti.f32, 2, 2)
-    for i in ti.static(range(3)):
-      for j in ti.static(range(3)):
-        dpos = ti.Vector([i, j]).cast(float) - fx
-        g_v = grid_v[base + ti.Vector([i, j])]
-        weight = w[i][0] * w[j][1]
-        new_v += weight * g_v
-        new_C += 4 * weight * ti.outer_product(g_v, dpos) * inv_dx
+    for i, j in ti.static(ti.ndrange(3, 3)):
+      dpos = ti.Vector([i, j]).cast(float) - fx
+      g_v = grid_v[base + ti.Vector([i, j])]
+      weight = w[i][0] * w[j][1]
+      new_v += weight * g_v
+      new_C += 4 * weight * ti.outer_product(g_v, dpos) * inv_dx
     v[p] = new_v
     x[p] += dt * v[p]
     C[p] = new_C

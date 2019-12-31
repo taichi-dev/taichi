@@ -38,7 +38,7 @@ def substep():
     for d in ti.static(range(2)):
       new_sig = sig[d, d]
       if material[p] == 2:  # Snow
-        new_sig = min(max(sig[d, d], 1 - 2.5e-2), 1 + 7.5e-3)  # Plasticity
+        new_sig = min(max(sig[d, d], 1 - 2.5e-2), 1 + 4.5e-3)  # Plasticity
       Jp[p] *= sig[d, d] / new_sig
       sig[d, d] = new_sig
       J *= new_sig
@@ -85,7 +85,7 @@ def substep():
 gui = ti.GUI("Taichi MLS-MPM-99", res=(512, 512), background_color=0x112F41)
 
 for i in range(n_particles):
-  x[i] = [random.random() * 0.18 + 0.2 + 0.2 * (i // 3000), random.random() * 0.3 + 0.4]
+  x[i] = [random.random() * 0.2 + 0.3 + 0.10 * (i // 3000), random.random() * 0.2 + 0.1 + 0.24 * (i // 3000)]
   material[i] = (i // 3000)
   v[i] = [0, -3]
   F[i] = [[1, 0], [0, 1]]

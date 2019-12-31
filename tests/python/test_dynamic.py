@@ -40,14 +40,14 @@ def test_dynamic2():
     assert x[i] == i
 
 
-# @ti.all_archs
+@ti.all_archs
 def test_dynamic_matrix():
   x = ti.Matrix(2, 1, dt=ti.i32)
   n = 8192
 
   @ti.layout
   def place():
-    ti.root.dynamic(ti.i, n, chunk_size=8).place(x)
+    ti.root.dynamic(ti.i, n, chunk_size=128).place(x)
 
   @ti.kernel
   def func():
@@ -63,8 +63,6 @@ def test_dynamic_matrix():
     if i + 1 < n // 4:
       b = x[i * 4 + 1][1, 0]
       assert b == 0
-    
-test_dynamic_matrix()
 
 
 @ti.all_archs

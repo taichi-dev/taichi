@@ -37,7 +37,7 @@ python3 -m pip install taichi-nightly-cuda-10-1
   - Sparse data structures (done)
 - Tune the performance of the LLVM backend to match that of the legacy source-to-source backends (WIP)
 ## Updates
-- (Dec  31, 2019) v0.3.16 released.
+- (Dec  31, 2019) v0.3.17 released.
    - Fixed cuda context conflict with PyTorch  (thanks to @Xingzhe He for reporting)
    - Support `ti.Matrix.T()` for transposing a matrix
    - Iteratable `ti.static(ti.ndrange)`

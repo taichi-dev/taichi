@@ -516,6 +516,11 @@ class Matrix:
     return ti.Matrix([[ti.cast(0, dt) for _ in range(m)] for _ in range(n)])
 
   @staticmethod
-  def identity(dt, n):
+  def one(dt, n):
     import taichi as ti
     return ti.Matrix([[ti.cast(1, dt) for _ in range(n)] for _ in range(n)])
+  
+  @staticmethod
+  def identity(dt, n):
+    import taichi as ti
+    return ti.Matrix([[ti.cast(int(i == j), dt) for j in range(n)] for i in range(n)])

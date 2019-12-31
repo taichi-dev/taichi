@@ -43,11 +43,11 @@ def test_dynamic2():
 # @ti.all_archs
 def test_dynamic_matrix():
   x = ti.Matrix(2, 1, dt=ti.i32)
-  n = 8192
+  n = 16
 
   @ti.layout
   def place():
-    ti.root.dynamic(ti.i, n, chunk_size=16).place(x)
+    ti.root.dynamic(ti.i, n, chunk_size=8).place(x)
 
   @ti.kernel
   def func():
@@ -56,13 +56,16 @@ def test_dynamic_matrix():
       x[i * 4][1, 0] = i
 
   func()
+  
+  print('here')
 
   for i in range(n // 4):
-    print('i', i)
-    print(x[i * 4][1, 0])
-    print(x[i * 4 + 1][1, 0])
+    print('i=', i, ' i*4=', i * 4)
+    print('a', x[i * 4][1, 0])
+    print('b', x[i * 4 + 1][1, 0])
     assert x[i * 4][1, 0] == i
-    assert x[i * 4 + 1][1, 0] == 0
+    if i + 1 < n // 4:
+      assert x[i * 4 + 1][1, 0] == 0
     
 test_dynamic_matrix()
 

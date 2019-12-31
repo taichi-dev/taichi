@@ -40,25 +40,31 @@ def test_dynamic2():
     assert x[i] == i
 
 
-@ti.all_archs
+# @ti.all_archs
 def test_dynamic_matrix():
-  x = ti.Matrix(3, 2, dt=ti.f32)
+  x = ti.Matrix(2, 1, dt=ti.i32)
   n = 8192
 
   @ti.layout
   def place():
-    ti.root.dynamic(ti.i, n, chunk_size=128).place(x)
+    ti.root.dynamic(ti.i, n, chunk_size=16).place(x)
 
   @ti.kernel
   def func():
+    ti.serialize()
     for i in range(n // 4):
       x[i * 4][1, 0] = i
 
   func()
 
   for i in range(n // 4):
+    print('i', i)
+    print(x[i * 4][1, 0])
+    print(x[i * 4 + 1][1, 0])
     assert x[i * 4][1, 0] == i
     assert x[i * 4 + 1][1, 0] == 0
+    
+test_dynamic_matrix()
 
 
 @ti.all_archs
@@ -148,8 +154,6 @@ def test_dense_dynamic():
   @ti.layout
   def place():
     ti.root.dense(ti.i, n).dynamic(ti.j, n, 8).place(x)
-  
-  ti.cfg.print_ir = True
   
   @ti.kernel
   def func():

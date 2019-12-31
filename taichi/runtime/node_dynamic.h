@@ -75,17 +75,22 @@ bool Dynamic_is_active(Ptr meta_, Ptr node_, int i) {
 void *Dynamic_lookup_element(Ptr meta_, Ptr node_, int i) {
   auto meta = (DynamicMeta *)(meta_);
   auto node = (DynamicNode *)(node_);
-  int chunk_start = 0;
-  auto chunk_ptr = node->ptr;
-  auto chunk_size = meta->chunk_size;
-  while (true) {
-    if (i < chunk_start + chunk_size) {
-      return chunk_ptr + sizeof(Ptr) + (i - chunk_start) * meta->element_size;
+  printf("looking up dynamic...\n");
+  if (Dynamic_is_active(meta_, node_, i)) {
+    int chunk_start = 0;
+    auto chunk_ptr = node->ptr;
+    auto chunk_size = meta->chunk_size;
+    while (true) {
+      if (i < chunk_start + chunk_size) {
+        return chunk_ptr + sizeof(Ptr) + (i - chunk_start) * meta->element_size;
+      }
+      chunk_ptr = *(Ptr *)chunk_ptr;
+      chunk_start += chunk_size;
     }
-    chunk_ptr = *(Ptr *)chunk_ptr;
-    chunk_start += chunk_size;
+  } else {
+    printf("Returning ambient dynamic...\n");
+    return ((Runtime *)meta->context->runtime)->ambient_elements[meta->snode_id];
   }
-  return nullptr;
 }
 
 int Dynamic_get_num_elements(Ptr meta_, Ptr node_) {

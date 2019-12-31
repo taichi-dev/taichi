@@ -85,7 +85,7 @@ gui = ti.core.GUI("Taichi MLS-MPM-99", ti.veci(512, 512))
 canvas = gui.get_canvas()
 
 for i in range(n_particles):
-  x[i] = [random.random() * 0.1 + 0.2 + 0.2 * (i // 3000), random.random() * 0.3 + 0.4]
+  x[i] = [random.random() * 0.18 + 0.2 + 0.2 * (i // 3000), random.random() * 0.3 + 0.4]
   material[i] = (i // 3000)
   v[i] = [0, -3]
   F[i] = [[1, 0], [0, 1]]
@@ -99,7 +99,9 @@ for frame in range(20000):
 
   canvas.clear(0x112F41)
   pos = x.to_numpy(as_vector=True)
+  m = material.to_numpy()
   for i in range(n_particles):
+    color = [0x068587, 0xED553B, 0xEEEEF0][m[i]]
     canvas.circle(ti.vec(pos[i, 0],
-                         pos[i, 1])).radius(1.5).color(0x068587).finish()
+                         pos[i, 1])).radius(1.5).color(color).finish()
   gui.update()

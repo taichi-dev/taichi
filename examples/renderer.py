@@ -116,9 +116,6 @@ def voxel_color(pos):
   return ti.Vector([0.2, 0.3, 0.2]) * (2.3 - 2 * f)
 
 
-n_pillars = 9
-
-
 @ti.func
 def sdf(o):
   dist = 0.0
@@ -199,7 +196,7 @@ def dda(eye_pos, d):
     pos = eye_pos + d * (near + 5 * eps)
 
     o = grid_resolution * pos
-    ipos = ti.Matrix.floor(o).cast(ti.i32)
+    ipos = ti.Matrix.floor(o).cast(int)
     dis = (ipos - o + 0.5 + rsign * 0.5) * rinv
     running = 1
     i = 0
@@ -267,7 +264,7 @@ def dda_particle(eye_pos, d, t):
         rsign[i] = -1
 
     o = grid_res * pos
-    ipos = ti.Matrix.floor(o).cast(ti.i32)
+    ipos = ti.Matrix.floor(o).cast(int)
     dis = (ipos - o + 0.5 + rsign * 0.5) * rinv
     running = 1
     while running:
@@ -476,12 +473,12 @@ def main():
         for k in ti.static(range(27)):
           base_coord = (inv_dx * particle_x[i] - 0.5).cast(ti.i32) + ti.Vector(
               [k // 9, k // 3 % 3, k % 3])
-          grid_density[base_coord / grid_visualization_block_size] = 1
+          grid_density[base_coord // grid_visualization_block_size] = 1
 
   initialize_particle_x(np_x, np_v, np_c)
   initialize_particle_grid()
 
-  gui = ti.core.GUI('Particle Renderer', ti.veci(*res))
+  gui = ti.GUI('Particle Renderer', res)
 
   last_t = 0
   for i in range(500):
@@ -498,7 +495,7 @@ def main():
       img = img * (1 / (i + 1)) * exposure
       img = np.sqrt(img)
       gui.set_image(img)
-      gui.update()
+      gui.show()
 
 
 if __name__ == '__main__':

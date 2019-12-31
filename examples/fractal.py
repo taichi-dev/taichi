@@ -18,9 +18,9 @@ def paint(t: ti.f32):
       iterations += 1
     pixels[i, j] = 1 - iterations * 0.02
 
-gui = ti.core.GUI("Julia Set", ti.veci(n * 2, n))
+gui = ti.GUI("Julia Set", res=(n * 2, n))
 
 for i in range(1000000):
   paint(i * 0.03)
   gui.set_image(pixels)
-  gui.update()
+  gui.show()

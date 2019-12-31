@@ -50,12 +50,12 @@ Now you are ready to run the Taichi code below (``python3 fractal.py``) to compu
         iterations += 1
       pixels[i, j] = 1 - iterations * 0.02
 
-  gui = ti.core.GUI("Fractal", ti.veci(n * 2, n))
+  gui = ti.GUI("Fractal", (n * 2, n))
 
   for i in range(1000000):
     paint(i * 0.03)
     gui.set_image(pixels)
-    gui.update()
+    gui.show()
 
 
 

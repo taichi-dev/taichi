@@ -81,8 +81,7 @@ def substep():
     v[p], C[p] = new_v, new_C
     x[p] += dt * v[p]
 
-gui = ti.core.GUI("Taichi MLS-MPM-99", ti.veci(512, 512))
-canvas = gui.get_canvas()
+gui = ti.GUI("Taichi MLS-MPM-99", res=(512, 512), background_color=0x112F41)
 
 for i in range(n_particles):
   x[i] = [random.random() * 0.18 + 0.2 + 0.2 * (i // 3000), random.random() * 0.3 + 0.4]
@@ -97,11 +96,9 @@ for frame in range(20000):
     grid_m.fill(0)
     substep()
 
-  canvas.clear(0x112F41)
   pos = x.to_numpy(as_vector=True)
   m = material.to_numpy()
   for i in range(n_particles):
     color = [0x068587, 0xED553B, 0xEEEEF0][m[i]]
-    canvas.circle(ti.vec(pos[i, 0],
-                         pos[i, 1])).radius(1.5).color(color).finish()
-  gui.update()
+    gui.circle((pos[i, 0], pos[i, 1]), radius=1.5, color=color)
+  gui.show()

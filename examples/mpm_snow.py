@@ -35,19 +35,21 @@ def substep():
     base = (x[p] * inv_dx - 0.5).cast(int)
     fx = x[p] * inv_dx - base.cast(float)
     w = [0.5 * ti.sqr(1.5 - fx), 0.75 - ti.sqr(fx - 1), 0.5 * ti.sqr(fx - 0.5)]
+    
+    F[p] = (ti.Matrix.identity(ti.f32, 2) + dt * C[p]) @ F[p]
+    
     # e = ti.exp(harderning * (1.0 - J[p]))
     e = 1
-    # mu = mu_0*e
-    # la = lambda_0*e
+    mu = mu_0*e
+    la = lambda_0*e
     
-    # R, S = ti.polar_decompose(F[p], ti.f32)
-    # stress = 2 * mu * (F[p] - R) * ti.transposed(F[p]) + ti.Matrix.identity(ti.f32, 2) * la * J[p] * (J[p] - 1)
+    R, S = ti.polar_decompose(F[p], ti.f32)
     Jp = ti.determinant(F[p])
+    stress = 2 * mu * (F[p] - R) @ ti.transposed(F[p]) + ti.Matrix.identity(ti.f32, 2) * la * Jp * (Jp - 1)
     # print(Jp)
-    stress = ti.Matrix.identity(ti.f32, 2) * (Jp - 1) * E
+    # stress = ti.Matrix.identity(ti.f32, 2) * (Jp - 1) * E
     stress = (-dt * p_vol * 4 * inv_dx * inv_dx) * stress
     affine = stress + p_mass * C[p]
-    F[p] = (ti.Matrix.identity(ti.f32, 2) + dt * C[p]) @ F[p]
     
     for i in ti.static(range(3)):
       for j in ti.static(range(3)):
@@ -87,7 +89,6 @@ def substep():
         new_C += 4 * weight * ti.outer_product(g_v, dpos) * inv_dx
     v[p] = new_v
     x[p] += dt * v[p]
-    J[p] *= 1 + dt * new_C.trace()
     C[p] = new_C
 
 

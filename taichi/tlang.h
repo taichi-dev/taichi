@@ -153,7 +153,7 @@ inline void Deactivate(SNode *snode, const ExprGroup &expr_group) {
 }
 
 inline Expr Append(SNode *snode, const ExprGroup &indices, const Expr &val) {
-  return Expr::make<ProbeExpression>(snode, indices, val);
+  return Expr::make<SNodeOpExpression>(snode, indices, val);
 }
 
 inline Expr Append(const Expr &expr,
@@ -176,7 +176,7 @@ inline void Clear(const Expr &expr, const ExprGroup &indices) {
 }
 
 inline Expr Probe(SNode *snode, const ExprGroup &indices) {
-  return Expr::make<ProbeExpression>(snode, indices);
+  return Expr::make<SNodeOpExpression>(snode, indices);
 }
 
 inline Expr Probe(const Expr &expr, const ExprGroup &indices) {

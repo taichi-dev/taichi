@@ -1898,17 +1898,17 @@ class IdExpression : public Expression {
   }
 };
 
-class ProbeExpression : public Expression {
+class SNodeOpExpression : public Expression {
  public:
   SNode *snode;
   ExprGroup indices;
   Expr value;
 
-  ProbeExpression(SNode *snode, const ExprGroup &indices)
+  SNodeOpExpression(SNode *snode, const ExprGroup &indices)
       : snode(snode), indices(indices) {
   }
 
-  ProbeExpression(SNode *snode, const ExprGroup &indices, const Expr &value)
+  SNodeOpExpression(SNode *snode, const ExprGroup &indices, const Expr &value)
       : snode(snode), indices(indices), value(value) {
   }
 
@@ -1933,6 +1933,12 @@ class ProbeExpression : public Expression {
       value->flatten(ret);
       ret.push_back<SNodeOpStmt>(SNodeOpType::append, snode->parent, ptr,
                                  ret.back().get());
+      TC_ERROR_IF(snode->type != SNodeType::place,
+                  "ti.append only works on leaf nodes.");
+      TC_ERROR_IF(snode->parent->ch.size() != 1,
+                  "ti.append only works on single-child dynamic nodes.");
+      TC_ERROR_IF(snode->dt != DataType::i32,
+                  "ti.append only works on i32 nodes.");
     } else {
       ret.push_back<SNodeOpStmt>(SNodeOpType::probe, snode->parent, ptr,
                                  nullptr);

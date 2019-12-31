@@ -98,7 +98,7 @@ void global_optimize_module_x86_64(std::unique_ptr<llvm::Module> &module) {
   auto t = Time::get_time();
   module_pass_manager.run(*module);
   t = Time::get_time() - t;
-  TC_INFO("Global optimization time: {} ms", t * 1000);
+  // TC_INFO("Global optimization time: {} ms", t * 1000);
   // module->print(llvm::errs(), nullptr);
 }
 

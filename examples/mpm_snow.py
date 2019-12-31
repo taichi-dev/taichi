@@ -1,7 +1,6 @@
 import taichi as ti
 import random
 
-dim = 2
 n_particles, n_grid = 9000, 128
 dx = 1 / n_grid
 inv_dx = 1 / dx
@@ -11,13 +10,13 @@ p_mass = p_vol * p_rho
 E, nu = 0.1e4, 0.2 # Young's modulus and Poisson's ratio
 mu_0, lambda_0 = E / (2 * (1 + nu)), E * nu / ((1+nu) * (1 - 2 * nu)) # Lame parameters
 
-x = ti.Vector(dim, dt=ti.f32, shape=n_particles)
-v = ti.Vector(dim, dt=ti.f32, shape=n_particles)
-C = ti.Matrix(dim, dim, dt=ti.f32, shape=n_particles)
-F = ti.Matrix(dim, dim, dt=ti.f32, shape=n_particles)
+x = ti.Vector(2, dt=ti.f32, shape=n_particles)
+v = ti.Vector(2, dt=ti.f32, shape=n_particles)
+C = ti.Matrix(2, 2, dt=ti.f32, shape=n_particles)
+F = ti.Matrix(2, 2, dt=ti.f32, shape=n_particles)
 material = ti.var(dt=ti.i32, shape=n_particles)
 Jp = ti.var(dt=ti.f32, shape=n_particles)
-grid_v = ti.Vector(dim, dt=ti.f32, shape=(n_grid, n_grid))
+grid_v = ti.Vector(2, dt=ti.f32, shape=(n_grid, n_grid))
 grid_m = ti.var(dt=ti.f32, shape=(n_grid, n_grid))
 ti.cfg.arch = ti.cuda # Run on a GPU if equipped
 

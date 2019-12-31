@@ -283,14 +283,14 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
             snodes[i]->type == SNodeType::dynamic) {
           std::size_t chunk_size;
           if (snodes[i]->type == SNodeType::pointer)
-            chunk_size = tlctx->get_type_size(
-                snode_attr[snodes[i]->ch[0]].llvm_body_type);
+            chunk_size =
+                tlctx->get_type_size(snode_attr[snodes[i]].llvm_element_type);
           else {
             // dynamic. Allocators are for the chunks
-            chunk_size = sizeof(void *) +
-                         tlctx->get_type_size(
-                             snode_attr[snodes[i]->ch[0]].llvm_body_type) *
-                             snodes[i]->chunk_size;
+            chunk_size =
+                sizeof(void *) +
+                tlctx->get_type_size(snode_attr[snodes[i]].llvm_element_type) *
+                    snodes[i]->chunk_size;
           }
           TC_INFO("Initializing allocator for snode {} (chunk size {})",
                   snodes[i]->id, chunk_size);
@@ -306,7 +306,8 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
       runtime_initialize_thread_pool(get_current_program().llvm_runtime,
                                      &get_current_program().thread_pool,
                                      (void *)ThreadPool::static_run);
-      set_assert_failed(get_current_program().llvm_runtime, (void *)assert_failed_host);
+      set_assert_failed(get_current_program().llvm_runtime,
+                        (void *)assert_failed_host);
 
       return (void *)root_ptr;
     };

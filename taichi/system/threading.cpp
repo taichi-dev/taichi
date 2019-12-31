@@ -92,8 +92,6 @@ void ThreadPool::run(int splits,
     std::unique_lock<std::mutex> lock(mutex);
     // TODO: the workers may have finished before master waiting on master_cv
     master_cv.wait(lock, [this] {
-      // TC_P(started);
-      // TC_P(running_threads);
       return started && running_threads == 0;
     });
   }

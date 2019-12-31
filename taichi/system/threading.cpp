@@ -73,20 +73,29 @@ void ThreadPool::run(int splits,
                      int desired_num_threads,
                      void *context,
                      CPUTaskFunc *func) {
-  this->context = context;
-  this->func = func;
-  this->desired_num_threads = std::min(desired_num_threads, max_num_threads);
-  TC_ASSERT(this->desired_num_threads > 0);
-  started = false;
-  task_head = 0;
-  task_tail = splits;
-  timestamp++;
+  {
+    std::lock_guard _(mutex);
+    this->context = context;
+    this->func = func;
+    this->desired_num_threads = std::min(desired_num_threads, max_num_threads);
+    TC_ASSERT(this->desired_num_threads > 0);
+    // TC_P(this->desired_num_threads);
+    started = false;
+    task_head = 0;
+    task_tail = splits;
+    timestamp++;
+  }
 
-  // wake all slaves
+  // wake up all slaves
   slave_cv.notify_all();
   {
     std::unique_lock<std::mutex> lock(mutex);
-    master_cv.wait(lock, [this] { return started && running_threads == 0; });
+    // TODO: the workers may have finished before master waiting on master_cv
+    master_cv.wait(lock, [this] {
+      // TC_P(started);
+      // TC_P(running_threads);
+      return started && running_threads == 0;
+    });
   }
   TC_ASSERT(task_head == task_tail);
 }
@@ -128,12 +137,15 @@ void ThreadPool::target() {
       func(context, task_id);
     }
 
+    bool all_finished = false;
     {
       std::lock_guard<std::mutex> lock(mutex);
       running_threads--;
       if (running_threads == 0)
-        master_cv.notify_one();
+        all_finished = true;
     }
+    if (all_finished)
+      master_cv.notify_one();
   }
 }
 

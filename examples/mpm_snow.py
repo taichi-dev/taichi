@@ -3,7 +3,7 @@ import random
 
 dim = 2
 n_particles = 8192
-n_grid = 128
+n_grid = 80
 dx = 1 / n_grid
 inv_dx = 1 / dx
 dt = 1.0e-4
@@ -14,7 +14,7 @@ p_mass = 1.0
 p_vol = 1.0
 # p_mass = p_vol * p_rho
 harderning = 10
-E = 1e2# 1e0
+E = 1e4 # 1e0
 nu = 0.2
 mu_0 = E / (2 * (1 + nu))
 lambda_0 = E * nu / ((1+nu) * (1 - 2 * nu))
@@ -23,7 +23,7 @@ x = ti.Vector(dim, dt=ti.f32, shape=n_particles)
 v = ti.Vector(dim, dt=ti.f32, shape=n_particles)
 C = ti.Matrix(dim, dim, dt=ti.f32, shape=n_particles)
 F = ti.Matrix(dim, dim, dt=ti.f32, shape=n_particles)
-J = ti.var(dt=ti.f32, shape=n_particles)
+Jp = ti.var(dt=ti.f32, shape=n_particles)
 grid_v = ti.Vector(dim, dt=ti.f32, shape=(n_grid, n_grid))
 grid_m = ti.var(dt=ti.f32, shape=(n_grid, n_grid))
 
@@ -39,14 +39,23 @@ def substep():
     
     F[p] = (ti.Matrix.identity(ti.f32, 2) + dt * C[p]) @ F[p]
     
-    # e = ti.exp(harderning * (1.0 - J[p]))
-    e = 1
+    e = ti.exp(harderning * (1.0 - Jp[p]))
     mu = mu_0*e
     la = lambda_0*e
     
-    R, S = ti.polar_decompose(F[p], ti.f32)
-    Jp = ti.determinant(F[p])
-    stress = 2 * mu * (F[p] - R) @ ti.transposed(F[p]) + ti.Matrix.identity(ti.f32, 2) * la * Jp * (Jp - 1)
+    U, sig, V = ti.svd(F[p])
+    
+    J = 1.0
+    for d in ti.static(range(2)):
+      new_sig = min(max(sig[d, d], 1 - 2.5e-2), 1 + 7.5e-3)
+      Jp[p] *= sig[d, d] / new_sig
+      sig[d, d] = new_sig
+      J *= new_sig
+    
+    F[p] = U @ sig @ ti.transposed(V)
+    
+    R = U @ ti.transposed(V)
+    stress = 2 * mu * (F[p] - R) @ ti.transposed(F[p]) + ti.Matrix.identity(ti.f32, 2) * la * J * (J - 1)
     # print(Jp)
     # stress = ti.Matrix.identity(ti.f32, 2) * (Jp - 1) * E
     stress = (-dt * p_vol * 4 * inv_dx * inv_dx) * stress
@@ -95,10 +104,10 @@ gui = ti.core.GUI("MPM88", ti.veci(512, 512))
 canvas = gui.get_canvas()
 
 for i in range(n_particles):
-  x[i] = [random.random() * 0.4 + 0.2, random.random() * 0.4 + 0.2]
-  v[i] = [0, -1]
+  x[i] = [random.random() * 0.4 + 0.2, random.random() * 0.4 + 0.4]
+  v[i] = [0, -3]
   F[i] = [[1, 0], [0, 1]]
-  J[i] = 1
+  Jp[i] = 1
 
 for frame in range(200):
   for s in range(50):

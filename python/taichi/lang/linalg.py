@@ -20,7 +20,7 @@ def svd2d(A, dt):
   R, S = polar_decompose2d(A, dt)
   c, s = ti.cast(0.0, dt), ti.cast(0.0, dt)
   s1, s2 = ti.cast(0.0, dt), ti.cast(0.0, dt)
-  if S[0, 1] == 0:
+  if abs(S[0, 1]) < 1e-5:
     c, s = 1, 0
     s1, s2 = S[0, 0], S[1, 1]
   else:

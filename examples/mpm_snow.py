@@ -6,7 +6,7 @@ n_particles = 8192
 n_grid = 80
 dx = 1 / n_grid
 inv_dx = 1 / dx
-dt = 1.0e-4
+dt = 0.5e-4
 # p_vol = (dx * 0.5)**2
 # p_rho = 1
 # TODO: improve
@@ -14,7 +14,7 @@ p_mass = 1.0
 p_vol = 1.0
 # p_mass = p_vol * p_rho
 harderning = 10
-E = 5e3 # 1e0
+E = 1e4 # 1e0
 nu = 0.2
 mu_0 = E / (2 * (1 + nu))
 lambda_0 = E * nu / ((1+nu) * (1 - 2 * nu))
@@ -56,8 +56,6 @@ def substep():
     
     R = U @ V.T()
     stress = 2 * mu * (F[p] - R) @ F[p].T() + ti.Matrix.identity(ti.f32, 2) * la * J * (J - 1)
-    # print(Jp)
-    # stress = ti.Matrix.identity(ti.f32, 2) * (Jp - 1) * E
     stress = (-dt * p_vol * 4 * inv_dx * inv_dx) * stress
     affine = stress + p_mass * C[p]
     
@@ -99,18 +97,17 @@ def substep():
     x[p] += dt * v[p]
     C[p] = new_C
 
-
 gui = ti.core.GUI("MPM88", ti.veci(512, 512))
 canvas = gui.get_canvas()
 
 for i in range(n_particles):
   x[i] = [random.random() * 0.4 + 0.2, random.random() * 0.4 + 0.4]
-  v[i] = [0, -3]
+  v[i] = [0, -10]
   F[i] = [[1, 0], [0, 1]]
   Jp[i] = 1
 
-for frame in range(200):
-  for s in range(50):
+for frame in range(20000):
+  for s in range(100):
     grid_v.fill([0, 0])
     grid_m.fill(0)
     substep()

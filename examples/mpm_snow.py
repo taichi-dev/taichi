@@ -1,4 +1,5 @@
 import taichi as ti
+import numpy as np
 import random
 
 n_particles, n_grid = 9000, 128
@@ -96,9 +97,6 @@ for frame in range(20000):
     grid_m.fill(0)
     substep()
 
-  pos = x.to_numpy(as_vector=True)
-  m = material.to_numpy()
-  for i in range(n_particles):
-    color = [0x068587, 0xED553B, 0xEEEEF0][m[i]]
-    gui.circle((pos[i, 0], pos[i, 1]), radius=1.5, color=color)
+  colors = np.array([int(0x068587), int(0xED553B), int(0xEEEEF0)], dtype=np.uint32)
+  gui.circles(x.to_numpy(), radius=1.5, color=colors[material.to_numpy()])
   gui.show()

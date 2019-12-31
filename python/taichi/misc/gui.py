@@ -42,6 +42,12 @@ class GUI:
     self.canvas.circle(ti.vec(pos[0],
                          pos[1])).radius(radius).color(color).finish()
     
+  def circles(self, pos, color, radius=1):
+    import taichi as ti
+    for i in range(len(pos)):
+      self.canvas.circle(ti.vec(pos[i, 0],
+                                pos[i, 1])).radius(radius).color(color[i]).finish()
+    
   def show(self):
     self.core.update()
     self.clear(self.background_color)

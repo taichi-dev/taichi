@@ -338,6 +338,7 @@ struct CompileConfig {
   bool use_llvm;
   bool print_struct_llvm_ir;
   bool print_kernel_llvm_ir;
+  bool print_kernel_llvm_ir_optimized;
   bool verbose_kernel_launches;
   bool enable_profiler;
   bool verbose;

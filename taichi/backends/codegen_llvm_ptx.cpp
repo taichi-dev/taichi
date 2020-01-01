@@ -69,6 +69,9 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
     }
 
     auto ptx = compile_module_to_ptx(module);
+    if (get_current_program().config.print_kernel_llvm_ir_optimized) {
+      TC_P(ptx);
+    }
     auto cuda_module = cuda_context->compile(ptx);
 
     for (auto &task : offloaded_local) {

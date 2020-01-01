@@ -54,6 +54,8 @@ void export_lang(py::module &m) {
                      &CompileConfig::print_struct_llvm_ir)
       .def_readwrite("print_kernel_llvm_ir",
                      &CompileConfig::print_kernel_llvm_ir)
+      .def_readwrite("print_kernel_llvm_ir_optimized",
+                     &CompileConfig::print_kernel_llvm_ir_optimized)
       .def_readwrite("simplify_before_lower_access",
                      &CompileConfig::simplify_before_lower_access)
       .def_readwrite("simplify_after_lower_access",

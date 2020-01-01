@@ -42,3 +42,10 @@ def clear_gradients(vars: ti.template()):
   for I in ti.grouped(ti.Expr(vars[0])):
     for s in ti.static(vars):
       ti.Expr(s)[I] = 0
+      
+@ti.kernel
+def fill_matrix(mat: ti.template(), vals: ti.template()):
+  for I in ti.grouped(mat):
+    for p in ti.static(range(mat.n)):
+      for q in ti.static(range(mat.m)):
+        mat[I][p, q] = vals[p][q]

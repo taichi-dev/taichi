@@ -462,17 +462,15 @@ class Matrix:
 
   def fill(self, val):
     if isinstance(val, numbers.Number):
-      for e in self.entries:
-        e.fill(val)
-    else:
-      if not isinstance(val, Matrix):
-        val = Matrix(val)
-      assert val.n == self.n
-      assert val.m == self.m
-      for i in range(self.n):
-        for j in range(self.m):
-          self.get_entry(i, j).fill(val.get_entry(i, j))
-          
+      val = tuple([tuple([val for _ in range(self.m)]) for _ in range(self.n)])
+    elif isinstance(val[0], numbers.Number):
+      assert self.m == 1
+      val = tuple([(v,) for v in val])
+    assert len(val) == self.n
+    assert len(val[0]) == self.m
+    from .meta import fill_matrix
+    fill_matrix(self, val)
+    
   def to_numpy(self, as_vector=False):
     if as_vector:
       assert self.m == 1, "This matrix is not a vector"

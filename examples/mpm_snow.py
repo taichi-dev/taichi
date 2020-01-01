@@ -21,9 +21,9 @@ Jp = ti.var(dt=ti.f32, shape=n_particles)
 grid_v = ti.Vector(2, dt=ti.f32, shape=(n_grid, n_grid))
 grid_m = ti.var(dt=ti.f32, shape=(n_grid, n_grid))
 ti.cfg.arch = ti.cuda # Run on a GPU if equipped
-ti.cfg.enable_profiler = True
-ti.cfg.print_kernel_llvm_ir = True
-ti.cfg.print_kernel_llvm_ir_optimized = True
+# ti.cfg.enable_profiler = True
+# ti.cfg.print_kernel_llvm_ir = True
+# ti.cfg.print_kernel_llvm_ir_optimized = True
 
 @ti.kernel
 def substep():
@@ -95,7 +95,7 @@ for frame in range(20000):
   t = time.time()
   for s in range(100):
     grid_v.fill([0, 0])
-    exit(0)
+    # exit(0)
     grid_m.fill(0)
     substep()
   print('{:.4f} ms'.format((time.time() - t) * 10))

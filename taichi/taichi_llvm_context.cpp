@@ -253,6 +253,11 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
           builder.CreateIntrinsic(intrin, {}, {});
           builder.CreateRetVoid();
         }
+        func->removeAttribute(AttributeList::FunctionIndex,
+                           llvm::Attribute::OptimizeNone);
+        func->removeAttribute(AttributeList::FunctionIndex, llvm::Attribute::NoInline);
+        func->addAttribute(AttributeList::FunctionIndex,
+                        llvm::Attribute::AlwaysInline);
       };
 
       patch_intrinsic("thread_idx", Intrinsic::nvvm_read_ptx_sreg_tid_x);

@@ -68,6 +68,10 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
       mark_function_as_cuda_kernel(func);
     }
 
+    if (get_current_program().config.print_kernel_llvm_ir) {
+      TC_INFO("IR before global optimization");
+      module->print(errs(), nullptr);
+    }
     auto ptx = compile_module_to_ptx(module);
     if (get_current_program().config.print_kernel_llvm_ir_optimized) {
       TC_P(ptx);

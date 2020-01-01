@@ -45,7 +45,7 @@ SNode &SNode::create_node(std::vector<Index> indices,
     auto s = sizes[i];
     if (!bit::is_power_of_two(s)) {
       auto promoted_s = bit::least_pot_bound(s);
-      TC_WARN("Non-power-of-two node size {} promoted to {}.", s, promoted_s);
+      TC_DEBUG("Non-power-of-two node size {} promoted to {}.", s, promoted_s);
       s = promoted_s;
     }
     TC_ASSERT(bit::is_power_of_two(s));

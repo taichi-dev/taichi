@@ -1,7 +1,11 @@
+import numbers
+
 class GUI:
-  def __init__(self, name, res=(512, 512), background_color=0x0):
+  def __init__(self, name, res=512, background_color=0x0):
     import taichi as ti
     self.name = name
+    if isinstance(res, numbers.Number):
+      res = (res, res)
     self.res = res
     self.core = ti.core.GUI(name, ti.veci(*res))
     self.canvas = self.core.get_canvas()
@@ -48,6 +52,8 @@ class GUI:
       self.canvas.circle(ti.vec(pos[i, 0],
                                 pos[i, 1])).radius(radius).color(color[i]).finish()
     
-  def show(self):
+  def show(self, file=None):
     self.core.update()
+    if file:
+      self.core.screenshot(file)
     self.clear(self.background_color)

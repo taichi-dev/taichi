@@ -167,6 +167,14 @@ std::unique_ptr<llvm::Module> module_from_bitcode_file(std::string bitcode_path,
     llvm::errs() << error << "\n";
     TC_ERROR("Runtime bitcode load failure.");
   }
+
+  for (auto &f : *(runtime.get())) {
+    f.removeAttribute(AttributeList::FunctionIndex,
+                      llvm::Attribute::OptimizeNone);
+    f.removeAttribute(AttributeList::FunctionIndex, llvm::Attribute::NoInline);
+    f.addAttribute(AttributeList::FunctionIndex, llvm::Attribute::AlwaysInline);
+  }
+
   bool module_broken = llvm::verifyModule(*runtime.get(), &llvm::errs());
   TC_ERROR_IF(module_broken, "Module broken");
   return std::move(runtime.get());
@@ -254,10 +262,11 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
           builder.CreateRetVoid();
         }
         func->removeAttribute(AttributeList::FunctionIndex,
-                           llvm::Attribute::OptimizeNone);
-        func->removeAttribute(AttributeList::FunctionIndex, llvm::Attribute::NoInline);
+                              llvm::Attribute::OptimizeNone);
+        func->removeAttribute(AttributeList::FunctionIndex,
+                              llvm::Attribute::NoInline);
         func->addAttribute(AttributeList::FunctionIndex,
-                        llvm::Attribute::AlwaysInline);
+                           llvm::Attribute::AlwaysInline);
       };
 
       patch_intrinsic("thread_idx", Intrinsic::nvvm_read_ptx_sreg_tid_x);

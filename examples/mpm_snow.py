@@ -1,12 +1,8 @@
 import taichi as ti
-import time
-import numpy as np
-import random
-
-n_particles, n_grid = 9000, 128
-dx = 1 / n_grid
-inv_dx = 1 / dx
-dt = 1e-4
+quality = 4
+n_particles, n_grid = 9000 * quality ** 2, 128 * quality
+dx, inv_dx = 1 / n_grid, float(n_grid)
+dt = 1e-4 / quality
 p_vol, p_rho = (dx * 0.5)**2, 1
 p_mass = p_vol * p_rho
 E, nu = 0.1e4, 0.2 # Young's modulus and Poisson's ratio
@@ -20,21 +16,23 @@ material = ti.var(dt=ti.i32, shape=n_particles)
 Jp = ti.var(dt=ti.f32, shape=n_particles)
 grid_v = ti.Vector(2, dt=ti.f32, shape=(n_grid, n_grid))
 grid_m = ti.var(dt=ti.f32, shape=(n_grid, n_grid))
-# ti.cfg.arch = ti.cuda # Run on a GPU if equipped
-ti.cfg.enable_profiler = True
-# ti.cfg.print_kernel_llvm_ir = True
-# ti.cfg.print_kernel_llvm_ir_optimized = True
+ti.cfg.arch = ti.cuda # Try to run on GPU
 
 @ti.kernel
 def substep():
-  ti.serialize()
-  for p in x: # Particle state update and scatter to grid (P2G)
+  for i, j in ti.ndrange(n_grid, n_grid):
+    grid_v[i, j] = [0, 0]
+    grid_m[i, j] = 0
+  for p in range(n_particles): # Particle state update and scatter to grid (P2G)
     base = (x[p] * inv_dx - 0.5).cast(int)
     fx = x[p] * inv_dx - base.cast(float)
+    # Quadratic kernels  [http://mpm.graphics   Eqn. 123, with x=fx, fx-1,fx-2]
     w = [0.5 * ti.sqr(1.5 - fx), 0.75 - ti.sqr(fx - 1), 0.5 * ti.sqr(fx - 0.5)]
     F[p] = (ti.Matrix.identity(ti.f32, 2) + dt * C[p]) @ F[p] # deformation gradient update
-    e = ti.exp(10 * (1.0 - Jp[p])) # Hardening
-    mu, la = mu_0 * e, lambda_0 * e
+    h = ti.exp(10 * (1.0 - Jp[p])) # Hardening
+    if material[p] == 1: # jelly, make it softer
+      h = 0.3
+    mu, la = mu_0 * h, lambda_0 * h
     if material[p] == 0: # liquid
       mu = 0.0
     U, sig, V = ti.svd(F[p])
@@ -59,19 +57,15 @@ def substep():
       weight = w[i][0] * w[j][1]
       grid_v[base + offset] += weight * (p_mass * v[p] + affine @ dpos)
       grid_m[base + offset] += weight * p_mass
-
-  ti.serialize()
-  for i, j in grid_m:
+  for i, j in ti.ndrange(n_grid, n_grid):
     if grid_m[i, j] > 0:
       grid_v[i, j] = (1 / grid_m[i, j]) * grid_v[i, j] # Momentum to velocity
-      grid_v[i, j][1] -= dt * 9.8 # gravity
+      grid_v[i, j][1] -= dt * 50 # gravity
       if i < 3 and grid_v[i, j][0] < 0:          grid_v[i, j][0] = 0 # Boundary conditions
       if i > n_grid - 3 and grid_v[i, j][0] > 0: grid_v[i, j][0] = 0
       if j < 3 and grid_v[i, j][1] < 0:          grid_v[i, j][1] = 0
       if j > n_grid - 3 and grid_v[i, j][1] > 0: grid_v[i, j][1] = 0
-
-  ti.serialize()
-  for p in x: # grid to particle (G2P)
+  for p in range(n_particles): # grid to particle (G2P)
     base = (x[p] * inv_dx - 0.5).cast(int)
     fx = x[p] * inv_dx - base.cast(float)
     w = [0.5 * ti.sqr(1.5 - fx), 0.75 - ti.sqr(fx - 1.0), 0.5 * ti.sqr(fx - 0.5)]
@@ -86,23 +80,20 @@ def substep():
     v[p], C[p] = new_v, new_C
     x[p] += dt * v[p]
 
+import random
+group_size = n_particles // 3
 for i in range(n_particles):
-  x[i] = [random.random() * 0.2 + 0.3 + 0.10 * (i // 3000), random.random() * 0.2 + 0.1 + 0.24 * (i // 3000)]
-  material[i] = (i // 3000)
-  v[i] = [0, -3]
+  x[i] = [random.random() * 0.2 + 0.3 + 0.10 * (i // group_size), random.random() * 0.2 + 0.05 + 0.32 * (i // group_size)]
+  material[i] = i // group_size
+  v[i] = [0, 0]
   F[i] = [[1, 0], [0, 1]]
   Jp[i] = 1
 
-gui = ti.GUI("Taichi MLS-MPM-99", res=(512, 512), background_color=0x112F41)
+import numpy as np
+gui = ti.GUI("Taichi MLS-MPM-99", res=1024, background_color=0x112F41)
 for frame in range(20000):
-  t = time.time()
-  for s in range(100):
-    grid_v.fill([0, 0])
-    # exit(0)
-    grid_m.fill(0)
+  for s in range(int(2e-3 // dt)):
     substep()
-  print('{:.4f} ms'.format((time.time() - t) * 10))
   colors = np.array([0x068587, 0xED553B, 0xEEEEF0], dtype=np.uint32)
-  gui.circles(x.to_numpy(), radius=1.5, color=colors[material.to_numpy()])
-  gui.show()
-  ti.profiler_print()
+  gui.circles(x.to_numpy(), radius=1.0, color=colors[material.to_numpy()])
+  gui.show(f'{frame:06d}.png') # Change to gui.show(f'{frame:06d}.png') to write to disk

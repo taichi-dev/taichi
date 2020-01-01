@@ -99,8 +99,10 @@ void global_optimize_module_x86_64(std::unique_ptr<llvm::Module> &module) {
   module_pass_manager.run(*module);
   t = Time::get_time() - t;
   // TC_INFO("Global optimization time: {} ms", t * 1000);
-  if (get_current_program().config.print_kernel_llvm_ir_optimized)
+  if (get_current_program().config.print_kernel_llvm_ir_optimized) {
+    TC_INFO("Global optimized IR:");
     module->print(llvm::errs(), nullptr);
+  }
 }
 
 TLANG_NAMESPACE_END

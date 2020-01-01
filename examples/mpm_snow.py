@@ -1,4 +1,5 @@
 import taichi as ti
+import time
 import numpy as np
 import random
 
@@ -20,6 +21,7 @@ Jp = ti.var(dt=ti.f32, shape=n_particles)
 grid_v = ti.Vector(2, dt=ti.f32, shape=(n_grid, n_grid))
 grid_m = ti.var(dt=ti.f32, shape=(n_grid, n_grid))
 ti.cfg.arch = ti.cuda # Run on a GPU if equipped
+ti.cfg.enable_profiler = True
 
 @ti.kernel
 def substep():
@@ -33,7 +35,6 @@ def substep():
     if material[p] == 0: # liquid
       mu = 0.0
     U, sig, V = ti.svd(F[p])
-    
     J = 1.0
     for d in ti.static(range(2)):
       new_sig = sig[d, d]
@@ -42,7 +43,6 @@ def substep():
       Jp[p] *= sig[d, d] / new_sig
       sig[d, d] = new_sig
       J *= new_sig
-
     if material[p] == 0:  # Reset deformation gradient to avoid numerical instability
       F[p] = ti.Matrix.identity(ti.f32, 2) * ti.sqrt(J)
     elif material[p] == 2:
@@ -50,7 +50,6 @@ def substep():
     stress = 2 * mu * (F[p] - U @ V.T()) @ F[p].T() + ti.Matrix.identity(ti.f32, 2) * la * J * (J - 1)
     stress = (-dt * p_vol * 4 * inv_dx * inv_dx) * stress
     affine = stress + p_mass * C[p]
-    
     for i, j in ti.static(ti.ndrange(3, 3)): # Loop over 3x3 grid node neighborhood
       offset = ti.Vector([i, j])
       dpos = (offset.cast(float) - fx) * dx
@@ -82,8 +81,6 @@ def substep():
     v[p], C[p] = new_v, new_C
     x[p] += dt * v[p]
 
-gui = ti.GUI("Taichi MLS-MPM-99", res=(512, 512), background_color=0x112F41)
-
 for i in range(n_particles):
   x[i] = [random.random() * 0.2 + 0.3 + 0.10 * (i // 3000), random.random() * 0.2 + 0.1 + 0.24 * (i // 3000)]
   material[i] = (i // 3000)
@@ -91,12 +88,15 @@ for i in range(n_particles):
   F[i] = [[1, 0], [0, 1]]
   Jp[i] = 1
 
+gui = ti.GUI("Taichi MLS-MPM-99", res=(512, 512), background_color=0x112F41)
 for frame in range(20000):
+  t = time.time()
   for s in range(100):
     grid_v.fill([0, 0])
     grid_m.fill(0)
     substep()
-
-  colors = np.array([int(0x068587), int(0xED553B), int(0xEEEEF0)], dtype=np.uint32)
+  print('{:.4f} ms'.format((time.time() - t) * 10))
+  colors = np.array([0x068587, 0xED553B, 0xEEEEF0], dtype=np.uint32)
   gui.circles(x.to_numpy(), radius=1.5, color=colors[material.to_numpy()])
   gui.show()
+  ti.profiler_print()

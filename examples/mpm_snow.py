@@ -20,13 +20,14 @@ material = ti.var(dt=ti.i32, shape=n_particles)
 Jp = ti.var(dt=ti.f32, shape=n_particles)
 grid_v = ti.Vector(2, dt=ti.f32, shape=(n_grid, n_grid))
 grid_m = ti.var(dt=ti.f32, shape=(n_grid, n_grid))
-ti.cfg.arch = ti.cuda # Run on a GPU if equipped
-# ti.cfg.enable_profiler = True
+# ti.cfg.arch = ti.cuda # Run on a GPU if equipped
+ti.cfg.enable_profiler = True
 # ti.cfg.print_kernel_llvm_ir = True
 # ti.cfg.print_kernel_llvm_ir_optimized = True
 
 @ti.kernel
 def substep():
+  ti.serialize()
   for p in x: # Particle state update and scatter to grid (P2G)
     base = (x[p] * inv_dx - 0.5).cast(int)
     fx = x[p] * inv_dx - base.cast(float)
@@ -59,6 +60,7 @@ def substep():
       grid_v[base + offset] += weight * (p_mass * v[p] + affine @ dpos)
       grid_m[base + offset] += weight * p_mass
 
+  ti.serialize()
   for i, j in grid_m:
     if grid_m[i, j] > 0:
       grid_v[i, j] = (1 / grid_m[i, j]) * grid_v[i, j] # Momentum to velocity
@@ -68,6 +70,7 @@ def substep():
       if j < 3 and grid_v[i, j][1] < 0:          grid_v[i, j][1] = 0
       if j > n_grid - 3 and grid_v[i, j][1] > 0: grid_v[i, j][1] = 0
 
+  ti.serialize()
   for p in x: # grid to particle (G2P)
     base = (x[p] * inv_dx - 0.5).cast(int)
     fx = x[p] * inv_dx - base.cast(float)

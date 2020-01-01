@@ -466,6 +466,15 @@ class Matrix:
     elif isinstance(val[0], numbers.Number):
       assert self.m == 1
       val = tuple([(v,) for v in val])
+    if isinstance(val, Matrix):
+      val_tuple = []
+      for i in range(val.n):
+        row = []
+        for j in range(val.m):
+          row.append(val.get_entry(i, j))
+        row = tuple(row)
+        val_tuple.append(row)
+      val = tuple(val_tuple)
     assert len(val) == self.n
     assert len(val[0]) == self.m
     from .meta import fill_matrix

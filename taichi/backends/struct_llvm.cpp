@@ -273,7 +273,7 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
     auto tlctx = this->tlctx;
     auto root_id = root.id;
     creator = [=]() {
-      TC_INFO("Allocating data structure of size {}", root_size);
+      TC_INFO("Allocating data structure of size {} B", root_size);
       auto root_ptr = initialize_data_structure(
           &get_current_program().llvm_runtime, (int)snodes.size(), root_size,
           root_id, (void *)&::taichi_allocate_aligned,

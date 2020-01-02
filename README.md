@@ -31,12 +31,15 @@ python3 -m pip install taichi-nightly-cuda-10-1
 - [**(ICLR 2020) Differentiable Programming for Physical Simulation**](https://arxiv.org/abs/1910.00935) [[Video]](https://www.youtube.com/watch?v=Z1xvAZve9aE) [[BibTex]](https://raw.githubusercontent.com/yuanming-hu/taichi/master/misc/difftaichi_bibtex.txt) [[Code]](https://github.com/yuanming-hu/difftaichi)
   - by *Yuanming Hu, Luke Anderson, Tzu-Mao Li, Qi Sun, Nathan Carr, Jonathan Ragan-Kelley, and Frédo Durand*
 
-## Short-term goals (by the end of Dec 2019)
+## Short-term goals
 - Fully implement the LLVM backend to replace the legacy source-to-source C++/CUDA backends
   - Dense computation (done)
   - Sparse data structures (done)
 - Tune the performance of the LLVM backend to match that of the legacy source-to-source backends (WIP)
 ## Updates
+- (Jan   1, 2020) v0.3.18 released.
+   - Added `ti.GUI` class
+   - Improved the performance of performance `ti.Matrix.fill`
 - (Dec  31, 2019) v0.3.17 released.
    - Fixed cuda context conflict with PyTorch  (thanks to @Xingzhe He for reporting)
    - Support `ti.Matrix.T()` for transposing a matrix

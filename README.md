@@ -37,6 +37,8 @@ python3 -m pip install taichi-nightly-cuda-10-1
   - Sparse data structures (done)
 - Tune the performance of the LLVM backend to match that of the legacy source-to-source backends (WIP)
 ## Updates
+- (Jan   3, 2020) v0.3.20 released.
+   - Support for loops with `ti.static(ti.grouped(ti.ndrange(...)))`
 - (Jan   2, 2020) v0.3.19 released.
    - Added `ti.atan2(y, x)`
    - Improved error msg when using float point numbers as tensor indices

@@ -197,6 +197,10 @@ class MakeAdjoint : public IRVisitor {
       accumulate(bin->lhs, div(adjoint(bin), bin->rhs));
       accumulate(bin->rhs, negate(div(mul(adjoint(bin), bin->lhs),
                                       mul(bin->rhs, bin->rhs))));
+    } else if (bin->op_type == BinaryOpType::atan2) {
+      auto numerator = add(sqr(bin->lhs), sqr(bin->rhs));
+      accumulate(bin->lhs, div(mul(adjoint(bin), bin->rhs), numerator));
+      accumulate(bin->rhs, negate(div(mul(adjoint(bin), bin->lhs), numerator)));
     } else if (bin->op_type == BinaryOpType::min ||
                bin->op_type == BinaryOpType::max) {
       auto cmp = bin->op_type == BinaryOpType::min ? cmp_lt(bin->lhs, bin->rhs)

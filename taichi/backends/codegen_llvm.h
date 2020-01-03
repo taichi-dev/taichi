@@ -449,6 +449,17 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
         TC_P(data_type_name(ret_type));
         TC_NOT_IMPLEMENTED
       }
+    } else if (op == BinaryOpType::atan2) {
+      if (ret_type == DataType::f32) {
+        stmt->value =
+            create_call("atan2_f32", {stmt->lhs->value, stmt->rhs->value});
+      } else if (ret_type == DataType::f64) {
+        stmt->value =
+            create_call("atan2_f64", {stmt->lhs->value, stmt->rhs->value});
+      } else {
+        TC_P(data_type_name(ret_type));
+        TC_NOT_IMPLEMENTED
+      }
     } else if (op == BinaryOpType::min) {
       if (is_real(ret_type)) {
         stmt->value = builder->CreateMinNum(stmt->lhs->value, stmt->rhs->value);

@@ -165,6 +165,14 @@ float64 sgn_f64(float64 a) {
   return b;
 }
 
+f32 atan2_f32(f32 a, f32 b) {
+  return std::atan2(a, b);
+}
+
+f64 atan2_f64(f64 a, f64 b) {
+  return std::atan2(a, b);
+}
+
 f32 __nv_sgnf(f32 x) {
   return sgn_f32(x);
 }

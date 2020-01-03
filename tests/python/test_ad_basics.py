@@ -16,6 +16,7 @@ def if_has_autograd(func):
       func(*args, **kwargs)
   return wrapper
 
+# Note: test happens at v = 0.2
 @if_has_autograd
 @ti.all_archs
 def grad_test(tifunc, npfunc=None):
@@ -134,7 +135,14 @@ def test_mod():
   
 @if_has_autograd
 def test_atan2():
-  grad_test(lambda x: ti.atan2(0.3, x), lambda x: np.atan2(0.3, x))
-  grad_test(lambda y: ti.atan2(y, 0.2), lambda y: np.atan2(y, 0.2))
+  grad_test(lambda x: ti.atan2(0.4, x), lambda x: np.arctan2(0.4, x))
+  grad_test(lambda y: ti.atan2(y, 0.4), lambda y: np.arctan2(y, 0.4))
+  
+@if_has_autograd
+def test_atan2_f64():
+  ti.set_default_fp(ti.f64)
+  grad_test(lambda x: ti.atan2(0.4, x), lambda x: np.arctan2(0.4, x))
+  grad_test(lambda y: ti.atan2(y, 0.4), lambda y: np.arctan2(y, 0.4))
 
 test_atan2()
+test_atan2_f64()

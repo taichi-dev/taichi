@@ -20,8 +20,6 @@ def test_1d():
 
 @ti.all_archs
 def test_2d():
-  # ti.get_runtime().print_preprocessed = True
-  # ti.cfg.print_ir = True
   x = ti.var(ti.f32, shape=(16, 32))
   
   t = 8
@@ -60,8 +58,6 @@ def test_3d():
 
 @ti.all_archs
 def test_static_grouped():
-  ti.get_runtime().print_preprocessed = True
-  ti.cfg.print_ir = True
   x = ti.var(ti.f32, shape=(16, 32, 64))
 
   @ti.kernel
@@ -77,3 +73,20 @@ def test_static_grouped():
           assert x[i, j, k] == i + j * 10 + k * 100
         else:
           assert x[i, j, k] == 0
+
+@ti.all_archs
+def test_static_grouped_static():
+  x = ti.Matrix(2, 3, dt=ti.f32, shape=(16, 4))
+
+  @ti.kernel
+  def func():
+    for i, j in ti.ndrange(16, 4):
+      for I in ti.static(ti.grouped(ti.ndrange(2, 3))):
+        x[i, j][I] = I[0] + I[1] * 10 + i + j * 4
+
+  func()
+  for i in range(16):
+    for j in range(4):
+      for k in range(2):
+        for l in range(3):
+          assert x[i, j][k, l] == k + l * 10 + i + j * 4

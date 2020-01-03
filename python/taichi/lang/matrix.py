@@ -26,7 +26,8 @@ class Matrix:
                empty=False,
                shape=None,
                layout=None,
-               needs_grad=False):
+               needs_grad=False,
+               keep_raw=False):
     self.grad = None
     if isinstance(n, list):
       if n == []:
@@ -34,7 +35,10 @@ class Matrix:
       elif not isinstance(n[0], list):
         if impl.get_runtime().inside_kernel:
           # wrap potential constants with Expr
-          mat = [list([expr.Expr(x)]) for x in n]
+          if keep_raw:
+            mat = [list([x]) for x in n]
+          else:
+            mat = [list([expr.Expr(x)]) for x in n]
         else:
           mat = [[x] for x in n]
       else:

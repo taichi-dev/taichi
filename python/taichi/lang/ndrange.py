@@ -1,6 +1,5 @@
 class ndrange:
   def __init__(self, *args):
-    import taichi as ti
     args = list(args)
     for i in range(len(args)):
       if isinstance(args[i], list):
@@ -8,7 +7,6 @@ class ndrange:
       if not isinstance(args[i], tuple):
         args[i] = (0, args[i])
       assert len(args[i]) == 2
-      # args[i] = ti.Expr(args[i][0]), ti.Expr(args[i][1])
     self.bounds = args
     
     self.dimensions = [None] * len(args)
@@ -28,3 +26,15 @@ class ndrange:
           yield from gen(d + 1, prefix + (t,))
       
     yield from gen(0, ())
+
+  def grouped(self):
+    return GroupedNDRange(self)
+
+class GroupedNDRange:
+  def __init__(self, r):
+    self.r = r
+
+  def __iter__(self):
+    import taichi as ti
+    for ind in self.r:
+      yield ti.Vector(list(ind))

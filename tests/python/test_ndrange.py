@@ -42,8 +42,6 @@ def test_2d():
         
 @ti.all_archs
 def test_3d():
-  # ti.get_runtime().print_preprocessed = True
-  # ti.cfg.print_ir = True
   x = ti.var(ti.f32, shape=(16, 32, 64))
   
   @ti.kernel
@@ -56,6 +54,26 @@ def test_3d():
     for j in range(32):
       for k in range(64):
         if 4 <= i < 10 and 3 <= j < 8 and k < 17:
+          assert x[i, j, k] == i + j * 10 + k * 100
+        else:
+          assert x[i, j, k] == 0
+
+@ti.all_archs
+def test_static_grouped():
+  ti.get_runtime().print_preprocessed = True
+  ti.cfg.print_ir = True
+  x = ti.var(ti.f32, shape=(16, 32, 64))
+
+  @ti.kernel
+  def func():
+    for I in ti.static(ti.grouped(ti.ndrange((4, 5), (3, 5), 5))):
+      x[I] = I[0] + I[1] * 10 + I[2] * 100
+
+  func()
+  for i in range(16):
+    for j in range(32):
+      for k in range(64):
+        if 4 <= i < 5 and 3 <= j < 5 and k < 5:
           assert x[i, j, k] == i + j * 10 + k * 100
         else:
           assert x[i, j, k] == 0

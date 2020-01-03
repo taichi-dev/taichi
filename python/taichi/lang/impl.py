@@ -268,16 +268,19 @@ def static(x):
   assert get_runtime(
   ).inside_kernel, 'ti.static can only be used inside Taichi kernels'
   assert isinstance(
-      x, (bool, int, float, range, list, tuple, ti.ndrange)
+      x, (bool, int, float, range, list, tuple, ti.ndrange, ti.GroupedNDRange)
   ), 'Input to ti.static must have compile-time constant values, instead of {}'.format(
       type(x))
   return x
 
 
 def grouped(x):
-  assert get_runtime(
-  ).inside_kernel, 'ti.grouped can only be used inside Taichi kernels'
-  return x
+  import taichi as ti
+  assert get_runtime().inside_kernel, 'ti.grouped can only be used inside Taichi kernels'
+  if isinstance(x, ti.ndrange):
+    return x.grouped()
+  else:
+    return x
 
 
 def stop_grad(x):

@@ -149,6 +149,9 @@ def max(a, b):
 def min(a, b):
   return Expr(taichi_lang_core.expr_min(a.ptr, b.ptr))
 
+@binary
+def atan2(a, b):
+  return Expr(taichi_lang_core.expr_atan2(a.ptr, b.ptr))
 
 def ti_max(*args):
   num_args = len(args)

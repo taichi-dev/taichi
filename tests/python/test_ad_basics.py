@@ -131,3 +131,10 @@ def test_mod():
 
   func2()
   func2.grad()
+  
+@if_has_autograd
+def test_atan2():
+  grad_test(lambda x: ti.atan2(0.3, x), lambda x: np.atan2(0.3, x))
+  grad_test(lambda y: ti.atan2(y, 0.2), lambda y: np.atan2(y, 0.2))
+
+test_atan2()

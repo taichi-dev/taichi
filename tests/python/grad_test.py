@@ -1,9 +1,8 @@
 import taichi as ti
 from pytest import approx
-from autograd import grad
-
 
 def grad_test(tifunc, npfunc=None):
+  from autograd import grad
   if npfunc is None:
     npfunc = tifunc
   ti.reset()

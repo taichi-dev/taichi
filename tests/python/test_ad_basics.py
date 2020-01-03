@@ -143,6 +143,3 @@ def test_atan2_f64():
   ti.set_default_fp(ti.f64)
   grad_test(lambda x: ti.atan2(0.4, x), lambda x: np.arctan2(0.4, x))
   grad_test(lambda y: ti.atan2(y, 0.4), lambda y: np.arctan2(y, 0.4))
-
-test_atan2()
-test_atan2_f64()

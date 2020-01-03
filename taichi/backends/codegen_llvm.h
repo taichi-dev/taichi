@@ -35,6 +35,10 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
 
   using ModuleBuilder::call;
 
+  Arch current_arch() {
+    return kernel->arch;
+  }
+
   void initialize_context() {
     if (kernel->arch == Arch::gpu) {
       tlctx = get_current_program().llvm_context_device.get();
@@ -450,14 +454,29 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
         TC_NOT_IMPLEMENTED
       }
     } else if (op == BinaryOpType::atan2) {
-      if (ret_type == DataType::f32) {
-        stmt->value =
-            create_call("atan2_f32", {stmt->lhs->value, stmt->rhs->value});
-      } else if (ret_type == DataType::f64) {
-        stmt->value =
-            create_call("atan2_f64", {stmt->lhs->value, stmt->rhs->value});
+      if (current_arch() == Arch::x86_64) {
+        if (ret_type == DataType::f32) {
+          stmt->value =
+              create_call("atan2_f32", {stmt->lhs->value, stmt->rhs->value});
+        } else if (ret_type == DataType::f64) {
+          stmt->value =
+              create_call("atan2_f64", {stmt->lhs->value, stmt->rhs->value});
+        } else {
+          TC_P(data_type_name(ret_type));
+          TC_NOT_IMPLEMENTED
+        }
+      } else if (current_arch() == Arch::gpu) {
+        if (ret_type == DataType::f32) {
+          stmt->value =
+              create_call("__nv_atan2f", {stmt->lhs->value, stmt->rhs->value});
+        } else if (ret_type == DataType::f64) {
+          stmt->value =
+              create_call("__nv_atan2", {stmt->lhs->value, stmt->rhs->value});
+        } else {
+          TC_P(data_type_name(ret_type));
+          TC_NOT_IMPLEMENTED
+        }
       } else {
-        TC_P(data_type_name(ret_type));
         TC_NOT_IMPLEMENTED
       }
     } else if (op == BinaryOpType::min) {

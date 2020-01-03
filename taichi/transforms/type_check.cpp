@@ -105,7 +105,12 @@ class TypeCheck : public IRVisitor {
       }
     }
     for (int i = 0; i < stmt->indices.size(); i++) {
-      TC_ASSERT(is_integral(stmt->indices[i]->ret_type.data_type));
+      TC_ASSERT_INFO(
+          is_integral(stmt->indices[i]->ret_type.data_type),
+          "Taichi tensors must be accessed with integral indices (e.g., "
+          "i32/i64). It seems that you have used a float point number as "
+          "an index. You can cast that to an integer using int(). Also note "
+          "that ti.floor(ti.f32) returns f32.");
       TC_ASSERT(stmt->indices[i]->ret_type.width == stmt->snodes.size());
     }
   }
@@ -177,8 +182,8 @@ class TypeCheck : public IRVisitor {
   }
 
   Stmt *insert_type_cast_after(Stmt *anchor,
-                                Stmt *input,
-                                DataType output_type) {
+                               Stmt *input,
+                               DataType output_type) {
     auto &&cast_stmt = Stmt::make_typed<UnaryOpStmt>(UnaryOpType::cast, input);
     cast_stmt->cast_type = output_type;
     cast_stmt->cast_by_value = true;

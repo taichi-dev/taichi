@@ -1,4 +1,3 @@
-import atexit
 import os
 import shutil
 import sys
@@ -276,10 +275,7 @@ def at_startup():
     if not os.path.exists(output_dir):
       print('Making output directory')
       os.mkdir(output_dir)
-
-  # Load modules
-  # load_module('lang_core')
-
+      
   tc_core.set_core_state_python_imported(True)
 
 
@@ -305,12 +301,20 @@ def start_memory_monitoring(output_fn, pid=-1, interval=1):
 
   proc = multiprocessing.Process(target=task, daemon=True)
   proc.start()
-
-
-@atexit.register
-def clean_libs():
-  pass
-
+  
+def require_version(major, minor=None, patch=None):
+  versions = [
+    int(tc_core.get_version_major()),
+    int(tc_core.get_version_minor()),
+    int(tc_core.get_version_patch()),
+  ]
+  match = major == versions[0] and (minor < versions[1] or minor == versions[1] and patch <= versions[2])
+  if match:
+    return
+  else:
+    print("Taichi version mismatch. required >= {}.{}.{}".format(major, minor, patch))
+    print("Installed =", tc_core.get_version_string())
+    raise Exception("Taichi version mismatch")
 
 at_startup()
 

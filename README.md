@@ -32,10 +32,13 @@ python3 -m pip install taichi-nightly-cuda-10-1
   - by *Yuanming Hu, Luke Anderson, Tzu-Mao Li, Qi Sun, Nathan Carr, Jonathan Ragan-Kelley, and Frédo Durand*
 
 ## Short-term goals
-- Fully implement the LLVM backend to replace the legacy source-to-source C++/CUDA backends
-  - Dense computation (done)
-  - Sparse data structures (done)
-- Tune the performance of the LLVM backend to match that of the legacy source-to-source backends (WIP)
+- (Done) Fully implement the LLVM backend to replace the legacy source-to-source C++/CUDA backends (By Dec 2019)
+  - The only missing features compared to the old source-to-source backends:
+    - Vectorization on CPUs. Given most users who want performance are using GPUs (CUDA), this is given low priprity.
+    - Automatic shared memory utilization. Postponed until Feb/March 2020.
+- (WIP) Tune the performance of the LLVM backend to match that of the legacy source-to-source backends (By the end of Jan 2020)
+- (WIP) Redesign memory allocator
+
 ## Updates
 - (Jan   3, 2020) v0.3.20 released.
    - Support for loops with `ti.static(ti.grouped(ti.ndrange(...)))`

@@ -14,7 +14,7 @@ class Case:
     return self.name == other.name
   
   def pprint(self):
-    print(f' * {self.name[10:]:15}', end='')
+    print(f' * {self.name[10:]:25}', end='')
     for i, arch in enumerate(sorted(self.records.keys())):
       ms = self.records[arch] * 1000
       arch_name = str(arch)[5:]

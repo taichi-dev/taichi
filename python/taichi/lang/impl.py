@@ -140,6 +140,7 @@ class PyTaichi:
     return Tape(self, loss)
 
   def sync(self):
+    self.materialize()
     self.prog.synchronize()
 
 

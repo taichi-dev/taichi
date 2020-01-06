@@ -21,7 +21,7 @@ def benchmark_range():
   ti.get_runtime().sync()
   t = time.time()
   for n in range(100):
-    set()
+    fill()
   elapsed = time.time() - t
   ti.get_runtime().sync()
   return elapsed / 100
@@ -40,8 +40,8 @@ def benchmark_struct():
       for i in range(N * 8):
         a[i, j] = 2.0
   
-  t = time.time()
   ti.get_runtime().sync()
+  t = time.time()
   for n in range(100):
     fill()
   ti.get_runtime().sync()

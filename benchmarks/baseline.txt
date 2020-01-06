@@ -1,0 +1,7 @@
+fill_dense:
+ * range           x86_64    49.450 ms       gpu       18.888 ms
+ * range_blocked   x86_64     4.238 ms       gpu        6.564 ms
+ * struct          x86_64    11.295 ms       gpu        1.196 ms
+mpm2d:
+ * range           x86_64     0.790 ms       gpu        0.044 ms
+ * struct          x86_64     0.786 ms       gpu        1.563 ms

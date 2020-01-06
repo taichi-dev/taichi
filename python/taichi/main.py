@@ -51,6 +51,7 @@ def main(debug=False):
   if argc == 1 or sys.argv[1] == 'help':
     print(
         "    Usage: ti run [task name]        |-> Run a specific task\n"
+        "           ti benchmark              |-> Run performance benchmark\n"
         "           ti test                   |-> Run all tests\n"
         "           ti test_python            |-> Run python tests\n"
         "           ti test_cpp               |-> Run cpp tests\n"

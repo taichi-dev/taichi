@@ -13,11 +13,35 @@ def benchmark_range():
 
   @ti.kernel
   def fill():
-    for i,j in a:
+    for i, j in a:
       a[i, j] = 2.0
 
   fill()
 
+  ti.get_runtime().sync()
+  t = time.time()
+  for n in range(100):
+    fill()
+  elapsed = time.time() - t
+  ti.get_runtime().sync()
+  return elapsed / 100
+
+def benchmark_range_blocked():
+  a = ti.var(dt=ti.f32)
+  N = 512
+  
+  @ti.layout
+  def place():
+    ti.root.dense(ti.ij, [N,N]).dense(ti.ij, [8, 8]).place(a)
+  
+  @ti.kernel
+  def fill():
+    for X in range(N * N):
+      for Y in range(64):
+        a[X // N * 8 + Y // 8, X % N * 8 + Y % 8] = 2.0
+  
+  fill()
+  
   ti.get_runtime().sync()
   t = time.time()
   for n in range(100):

@@ -14,10 +14,14 @@ class Case:
     return self.name == other.name
   
   def pprint(self):
-    print(' *', self.name)
-    for arch in sorted(self.records.keys()):
+    print(f' * {self.name[10:]:15}', end='')
+    for i, arch in enumerate(sorted(self.records.keys())):
       ms = self.records[arch] * 1000
-      print(f'     * {str(arch):15} {ms:7.3f}ms/iter')
+      arch_name = str(arch)[5:]
+      print(f' {arch_name:8} {ms:7.3f} ms', end='')
+      if i < len(self.records) - 1:
+        print('      ', end='')
+    print()
     
   def run(self, arch):
     ti.reset()
@@ -37,12 +41,12 @@ class Suite:
     self.cases = [Case(k, getattr(suite, k)) for k in case_keys]
     
   def print(self):
-    print(f'suite {self.name}:')
+    print(f'{self.name}:')
     for b in self.cases:
       b.pprint()
       
   def run(self, arch):
-    print(f'  suite {self.name}:')
+    print(f'{self.name}:')
     for case in sorted(self.cases):
       case.run(arch)
       
@@ -68,4 +72,5 @@ b = TaichiBenchmark()
 b.pprint()
 b.run(ti.x86_64)
 b.run(ti.cuda)
+print()
 b.pprint()

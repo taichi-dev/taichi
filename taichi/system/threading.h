@@ -28,7 +28,7 @@ class ThreadPool {
   std::condition_variable slave_cv;
   std::condition_variable master_cv;
   std::mutex mutex;
-  int task_head;
+  std::atomic<int> task_head;
   int task_tail;
   int running_threads;
   int max_num_threads;

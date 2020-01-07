@@ -95,7 +95,7 @@ void ThreadPool::run(int splits,
       return started && running_threads == 0;
     });
   }
-  TC_ASSERT(task_head == task_tail);
+  TC_ASSERT(task_head >= task_tail);
 }
 
 void ThreadPool::target() {
@@ -126,11 +126,9 @@ void ThreadPool::target() {
       // For a single parallel task
       int task_id;
       {
-        std::lock_guard<std::mutex> lock(mutex);
-        task_id = task_head;
+        task_id = task_head.fetch_add(1, std::memory_order_seq_cst);
         if (task_id >= task_tail)
           break;
-        task_head++;
       }
       func(context, task_id);
     }

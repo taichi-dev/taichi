@@ -165,7 +165,7 @@ Embedding the language in ``python`` has the following advantages:
 
 However, this design has drawbacks as well:
 
-* Taichi kernels must parse-able by Python parsers. This means Taichi syntax cannot go beyond Taichi syntax.
+* Taichi kernels must parse-able by Python parsers. This means Taichi syntax cannot go beyond Python syntax.
 
   * For example, indexing is always needed when accessing elements in Taichi tensors, even if the tensor is 0D. Use ``x[None] = 123`` to set the value in ``x`` if ``x`` is 0D. This is because ``x = 123`` will set ``x`` itself (instead of its containing value) to be the constant ``123`` in python syntax, and, unfortunately, we cannot modify this behavior.
 

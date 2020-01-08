@@ -1,5 +1,7 @@
 #pragma once
 
+// These instructions should be replaced by CUDA intrinsics on GPUs
+
 int32 atomic_exchange_i32(volatile int32 *dest, int32 val) {
   i32 ret;
   __atomic_exchange(dest, &val, &ret, std::memory_order::memory_order_seq_cst);
@@ -26,7 +28,7 @@ uint64 atomic_and_u64(volatile uint64 *dest, uint64 val) {
   return __atomic_fetch_and(dest, val, std::memory_order::memory_order_seq_cst);
 }
 
-float32 atomic_add_cpu_f32(volatile float32 *dest, float32 inc) {
+float32 atomic_add_f32(volatile float32 *dest, float32 inc) {
   float32 old_val;
   float32 new_val;
   do {
@@ -38,7 +40,7 @@ float32 atomic_add_cpu_f32(volatile float32 *dest, float32 inc) {
   return old_val;
 }
 
-float64 atomic_add_cpu_f64(volatile float64 *dest, float64 inc) {
+float64 atomic_add_f64(volatile float64 *dest, float64 inc) {
   float64 old_val;
   float64 new_val;
   do {

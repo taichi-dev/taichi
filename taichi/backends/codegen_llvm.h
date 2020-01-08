@@ -865,10 +865,10 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
                                  stmt->dest->value, stmt->val->value,
                                  llvm::AtomicOrdering::SequentiallyConsistent);
       else if (stmt->val->ret_type.data_type == DataType::f32) {
-        builder->CreateCall(get_runtime_function("atomic_add_cpu_f32"),
+        builder->CreateCall(get_runtime_function("atomic_add_f32"),
                             {stmt->dest->value, stmt->val->value});
       } else if (stmt->val->ret_type.data_type == DataType::f64) {
-        builder->CreateCall(get_runtime_function("atomic_add_cpu_f64"),
+        builder->CreateCall(get_runtime_function("atomic_add_f64"),
                             {stmt->dest->value, stmt->val->value});
       } else {
         TC_NOT_IMPLEMENTED

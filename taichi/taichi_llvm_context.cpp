@@ -248,17 +248,21 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
       runtime_module->setTargetTriple("nvptx64-nvidia-cuda");
 
       auto patch_intrinsic = [&](std::string name, Intrinsic::ID intrin,
-                                 bool ret = true) {
+                                 bool ret = true,
+                                 std::vector<Type *> types = {}) {
         TC_PROFILER("patch intrinsic");
         auto func = runtime_module->getFunction(name);
-        func->getEntryBlock().eraseFromParent();
+        func->deleteBody();
         auto bb = llvm::BasicBlock::Create(*ctx, "entry", func);
         IRBuilder<> builder(*ctx);
         builder.SetInsertPoint(bb);
+        std::vector<llvm::Value *> args;
+        for (auto &arg : func->args())
+          args.push_back(&arg);
         if (ret) {
-          builder.CreateRet(builder.CreateIntrinsic(intrin, {}, {}));
+          builder.CreateRet(builder.CreateIntrinsic(intrin, types, args));
         } else {
-          builder.CreateIntrinsic(intrin, {}, {});
+          builder.CreateIntrinsic(intrin, types, args);
           builder.CreateRetVoid();
         }
         func->removeAttribute(AttributeList::FunctionIndex,
@@ -274,6 +278,26 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
       patch_intrinsic("block_dim", Intrinsic::nvvm_read_ptx_sreg_ntid_x);
       patch_intrinsic("grid_dim", Intrinsic::nvvm_read_ptx_sreg_nctaid_x);
       patch_intrinsic("block_barrier", Intrinsic::nvvm_barrier0, false);
+
+      patch_intrinsic(
+          "atomic_add_i32", Intrinsic::nvvm_atomic_add_gen_i_sys, true,
+          {get_data_type(DataType::i32),
+           llvm::PointerType::get(get_data_type(DataType::i32), 0)});
+
+      patch_intrinsic(
+          "atomic_add_i64", Intrinsic::nvvm_atomic_add_gen_i_sys, true,
+          {get_data_type(DataType::i64),
+           llvm::PointerType::get(get_data_type(DataType::i64), 0)});
+
+      patch_intrinsic(
+          "atomic_add_f32", Intrinsic::nvvm_atomic_add_gen_f_sys, true,
+          {get_data_type(DataType::f32),
+           llvm::PointerType::get(get_data_type(DataType::f32), 0)});
+
+      patch_intrinsic(
+          "atomic_add_f64", Intrinsic::nvvm_atomic_add_gen_f_sys, true,
+          {get_data_type(DataType::f64),
+           llvm::PointerType::get(get_data_type(DataType::f64), 0)});
 
       // patch_intrinsic("sync_warp", Intrinsic::nvvm_bar_warp_sync, false);
       // patch_intrinsic("warp_ballot", Intrinsic::nvvm_vote_ballot, false);

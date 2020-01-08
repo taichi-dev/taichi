@@ -4,8 +4,8 @@ from .util import to_taichi_type
 
 class TaichiSyntaxError(Exception):
 
-  def __init__(self, *args, **kwargs):
-    super().__init__(*args, **kwargs)
+  def __init__(self, *args):
+    super().__init__(*args)
 
 
 class ScopeGuard:

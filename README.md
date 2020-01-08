@@ -7,6 +7,12 @@
 |:-----|:-----|:----|:----|:----|
 | [![Documentation Status](https://readthedocs.org/projects/taichi/badge/?version=latest)](http://taichi.readthedocs.io/en/latest/?badge=latest) | [![Join the chat at https://gitter.im/taichi-dev/Lobby](https://badges.gitter.im/taichi-dev/Lobby.svg)](https://gitter.im/taichi-dev/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) | [![Downloads](https://pepy.tech/badge/taichi-nightly/month)](https://pepy.tech/project/taichi-nightly/month)| [![Downloads](https://pepy.tech/badge/taichi-nightly-cuda-10-0/month)](https://pepy.tech/project/taichi-nightly-cuda-10-0/month) | [![Downloads](https://pepy.tech/badge/taichi-nightly-cuda-10-0/month)](https://pepy.tech/project/taichi-nightly-cuda-10-1/month) |
 
+#  The Taichi Library [[Legacy branch]](https://github.com/yuanming-hu/taichi/tree/legacy)
+**Taichi** is an open-source computer graphics library that aims to provide easy-to-use infrastructures for computer graphics R&D. It's written in C++14 and wrapped friendly with Python.
+
+<img src="https://github.com/yuanming-hu/public_files/raw/master/graphics/topopt/bird-beak.gif">
+
+## Installation
 ```bash
 # Python 3.6/3.7 needed
 

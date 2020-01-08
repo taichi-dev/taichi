@@ -34,7 +34,7 @@ python3 -m pip install taichi-nightly-cuda-10-1
 ## Short-term goals
 - (Done) Fully implement the LLVM backend to replace the legacy source-to-source C++/CUDA backends (By Dec 2019)
   - The only missing features compared to the old source-to-source backends:
-    - Vectorization on CPUs. Given most users who want performance are using GPUs (CUDA), this is given low priprity.
+    - Vectorization on CPUs. Given most users who want performance are using GPUs (CUDA), this is given low priority.
     - Automatic shared memory utilization. Postponed until Feb/March 2020.
 - (WIP) Tune the performance of the LLVM backend to match that of the legacy source-to-source backends (By the end of Jan 2020)
 - (WIP) Redesign memory allocator

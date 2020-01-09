@@ -12,6 +12,8 @@ Life cycle of a Taichi kernel looks like this:
  - Taichi IR compilation, optimization, and binary generation
  - Launching
 
+.. image:: life_of_kernel_lowres.jpg
+
 Let's consider the following simple kernel:
 
 .. code-block:: python

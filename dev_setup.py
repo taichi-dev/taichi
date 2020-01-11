@@ -208,6 +208,7 @@ class Installer:
     
     # TODO: Make sure there is no existing Taichi ENV
     if self.build_type != 'ci':
+      self.repo_dir = os.getcwd()
       set_env('TAICHI_REPO_DIR', self.repo_dir)
 
       set_env('PYTHONPATH',

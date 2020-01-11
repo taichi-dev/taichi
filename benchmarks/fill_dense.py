@@ -3,7 +3,7 @@ import time
 
 # originally by @KLozes
 
-def benchmark_flat_range():
+def benchmark_flat_struct():
   a = ti.var(dt=ti.f32)
   N = 512
   
@@ -26,7 +26,7 @@ def benchmark_flat_range():
   ti.get_runtime().sync()
   return elapsed / 100
 
-def benchmark_flat_struct():
+def benchmark_flat_range():
   a = ti.var(dt=ti.f32)
   N = 512
   
@@ -48,13 +48,13 @@ def benchmark_flat_struct():
   elapsed = time.time() - t
   return elapsed / 100
 
-def benchmark_nested_range():
+def benchmark_nested_struct():
   a = ti.var(dt=ti.f32)
   N = 512
 
   @ti.layout
   def place():
-    ti.root.dense(ti.ij, [N,N]).dense(ti.ij, [8, 8]).place(a)
+    ti.root.dense(ti.ij, [N, N]).dense(ti.ij, [8, 8]).place(a)
 
   @ti.kernel
   def fill():
@@ -95,7 +95,7 @@ def benchmark_nested_range_blocked():
   ti.get_runtime().sync()
   return elapsed / 100
   
-def benchmark_nested_struct():
+def benchmark_nested_range():
   a = ti.var(dt=ti.f32)
   N = 512
   

@@ -33,8 +33,9 @@ This installation guide works for Ubuntu 16.04+ and OS X 10.14+.
 
     cd taichi
     mkdir build
+    cd build
     cmake ..
-    # if you are building with CUDA 10.0, use "cmake .. -DCUDA_VERSION=10.0 -DTLANG_WITH_CUDA:BOOL=True"
+    # if you are building with CUDA, say, 10.0, then please use "cmake .. -DCUDA_VERSION=10.0 -DTLANG_WITH_CUDA:BOOL=True"
     make -j 8
 
 - Add the following to your ``~/.bashrc`` (or ``~/.zshrc`` if you use ``zsh``)
@@ -95,17 +96,3 @@ Troubleshooting
 
 - Run with debug mode to see if there's any illegal memory access
 - Disable compiler optimizations to quickly confirm that the issue is not cause by optimization
-
-Bibtex
-------------------------------------
-
-.. code-block:: python
-
-  @inproceedings{hu2019taichi,
-    title={Taichi: A Language for High-Performance Computation on Spatially Sparse Data Structures},
-    author={Hu, Yuanming and Li, Tzu-Mao and Anderson, Luke and Ragan-Kelley, Jonathan and Durand, Fr\'edo},
-    booktitle={SIGGRAPH Asia 2019 Technical Papers},
-    pages={201},
-    year={2019},
-    organization={ACM}
-  }

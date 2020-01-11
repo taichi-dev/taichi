@@ -36,7 +36,7 @@ build_script:
   - set PYTHONPATH=%TAICHI_REPO_DIR%/python
   - clang --version
   - cd C:\taichi
-  - "%PYTHON% dev_setup.py ci"
+  - "%PYTHON% ci_setup.py ci"
   - mkdir build
   - cd build
   - cmake .. -G"Visual Studio 15 2017 Win64" -DPYTHON_EXECUTABLE="%PYTHON%" -DLLVM_DIR="C:\taichi_llvm\lib\cmake\llvm"

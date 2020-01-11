@@ -180,6 +180,8 @@ class OffloadedStmt : public Stmt {
 
   OffloadedStmt(TaskType task_type);
 
+  std::string task_name() const;
+
   DEFINE_ACCEPT
 };
 

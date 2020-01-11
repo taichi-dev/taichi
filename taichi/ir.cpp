@@ -532,4 +532,22 @@ OffloadedStmt::OffloadedStmt(taichi::Tlang::OffloadedStmt::TaskType task_type)
   }
 }
 
+std::string OffloadedStmt::task_name() const {
+  if (task_type == TaskType::serial) {
+    return "serial";
+  } else if (task_type == TaskType::range_for) {
+    return "range_for";
+  } else if (task_type == TaskType::struct_for) {
+    return "struct_for";
+  } else if (task_type == TaskType::clear_list) {
+    TC_ASSERT(snode);
+    return fmt::format("clear_list_{}", snode->get_name());
+  } else if (task_type == TaskType::listgen) {
+    TC_ASSERT(snode);
+    return fmt::format("listgen_{}", snode->name);
+  } else {
+    TC_NOT_IMPLEMENTED
+  }
+}
+
 TLANG_NAMESPACE_END

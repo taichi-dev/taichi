@@ -1055,7 +1055,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
         llvm::FunctionType::get(llvm::Type::getVoidTy(*llvm_context),
                                 {PointerType::get(context_ty, 0)}, false);
 
-    auto task_kernel_name = fmt::format("{}_{}", kernel_name, task_counter);
+    auto task_kernel_name = fmt::format("{}_{}_{}", kernel_name, task_counter, stmt->task_name());
     task_counter += 1;
     func = Function::Create(task_function_type, Function::ExternalLinkage,
                             task_kernel_name, module.get());

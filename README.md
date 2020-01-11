@@ -190,28 +190,6 @@ for i, j in x:
    - `ti.stop_grad` for stopping gradients during backpropagation. [[Example]](https://github.com/yuanming-hu/taichi/blob/master/tests/python/test_stop_grad.py#L75);
    - Compatibility improvements on Linux and OS X;
    - Minor bug fixes.
-- (Nov 1, 2019) v0.0.77 released.
-   - **Python wheels now support OS X 10.14+**;
-   - LLVM is now the default backend. No need to install `gcc-7` or `clang-7` anymore. To use legacy backends, ```export TI_LLVM=0```;
-   - LLVM compilation speed is improved by 2x;
-   - More friendly syntax error messages.
- - (Oct 30, 2019) v0.0.72 released.
-   - LLVM GPU backend now as fast as the legacy (yet optimized) CUDA backend. To enable, ```export TI_LLVM=1```;
-   - Bug fixes: LLVM `struct for` list generation.
- - (Oct 29, 2019) v0.0.71 released. LLVM GPU backend performance greatly improved. Frontend compiler now emits readable syntax error messages.
- - (Oct 28, 2019) v0.0.70 released. This version comes with experimental LLVM backends for x86_64 and CUDA (via NVVM/PTX). GPU kernel compilation speed is improved by 10x. To enable, update the taichi package and ```export TI_LLVM=1```.
- - (Oct 24, 2019) Python wheels (v0.0.61) released for Python 3.6/3.7 and CUDA 10.0/10.1 on Ubuntu 16.04+. Contributors of this release include *Yuanming Hu, robbertvc, Zhoutong Zhang, Tao Du, Srinivas Kaza, and Kenneth Lozes*.
- - (Oct 22, 2019) Added support for [kernel templates](https://github.com/yuanming-hu/taichi/blob/master/tests/python/test_kernel_templates.py). Kernel templates allow users to pass in taichi tensors and compile-time constants as kernel parameters.
- - (Oct 9, 2019) Compatibility improvements. Added a basic PyTorch interface. [[Example]](https://github.com/yuanming-hu/taichi/blob/master/examples/pytorch_tensor_ad.py).
-
-Notes: 
-   - You still need to clone this repo for demo scripts under `examples`. You *do not* need to execute `install.py` or `dev_setup.py`.
-   After installation using `pip` you can simply go to `examples` and execute, e.g., `python3 mpm_fluid.py`.
-   - Make sure you clear your legacy Taichi installation (if applicable) by cleaning the environment variables (delete `TAICHI_REPO_DIR`, and remove legacy taichi from `PYTHONPATH`) in your `.bashrc` or `.zshrc`. Or you can simply do this in your shell to temporarily clear them:
-   ```
-   export PYTHONPATH=
-   export TAICHI_REPO_DIR=
-   ```
 
 <!---
 | **Linux, Mac OS X** | **Windows** | Doc (WIP) | **Chat** |

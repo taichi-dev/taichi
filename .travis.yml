@@ -30,7 +30,7 @@ before_install:
 
 script:
 - cd $TRAVIS_BUILD_DIR
-- $PYTHON dev_setup.py ci
+- $PYTHON ci_setup.py ci
 - export TAICHI_REPO_DIR=$TRAVIS_BUILD_DIR
 - export PYTHONPATH=$TAICHI_REPO_DIR/python
 - export PATH=$TAICHI_REPO_DIR/bin:$PATH

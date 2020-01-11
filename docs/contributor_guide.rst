@@ -1,34 +1,25 @@
-Contributor guide
+Contribution guidelines (WIP)
 ===============================================
 
-Naming
---------------------------------------------------------------------------
-- Variable names should consist of lowercase words connected by underscores, e.g. ``llvm_context``.
-- Class and struct names should consist of words with first letters capitalized, e.g. ``CodegenLLVM``.
-- Macros should be capital start with ``TC``, such as ``TC_INFO``, ``TC_IMPLEMENTATION``.
+First of all, thank you for contributing! We welcome contributions of
+all forms, including but not limited to
 
-   - We do not encourage the use of macro, although there are cases where macros are inevitable.
+- Bug fixes
+- New features
+- Documentation
+- New example programs
+- Compiler performance patches
+- Minor typo fixes in the documentation, code, comments (please directly make a pull request for minor issues like these)
 
-- Filenames should consist of lowercase words connected by underscores, e.g. ``ir_printer.cpp``.
+How to contribute bug fixes and new features
+--------------------------------------------------
 
-Dos
--------------------------------------------------------------------------------
-- Use ``auto`` for local variables when appropriate.
-- Mark ``override`` and ``const`` when necessary.
+If you are interested in resolving an issue marked with `"welcome contribution" <https://github.com/taichi-dev/taichi/issues?q=is%3Aopen+is%3Aissue+label%3A%22welcome+contribution%22>`_.
+Please first leave a note (e.g. *I know how to fix this and would like to help!*) on the issue, so that
+people know some one is already working on it.
 
-Don'ts
---------------------------------------------------------------------------------
-- C language legacies:
+If no lead developer has commented and described a potential solution on the issue, please also briefly
+describe your plan and wait for a lead developer to reply before you start.
 
-   -  ``printf`` (use ``fmtlib::print`` instead).
-   -  ``new`` & ``free``. Use smart pointers (``std::unique_ptr, std::shared_ptr`` instead for ownership management).
-
-- Prefix member functions with ``m_`` or ``_``.
-- Virtual function call in constructors/destructors.
-- ``NULL``, use ``nullptr`` instead.
-- ``using namespace std;`` in global scope.
-- ``typedef``. Use ``using`` instead.
-
-Documentation
--------------------------------------------------------------------------------
-- To build the documentation: ``ti doc``
+Following this rule will prevent contributors from doing redundant work,
+while keeping the solution simple and effective.

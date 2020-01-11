@@ -716,12 +716,12 @@ class GUI : public GUIBase {
         height(height),
         key_pressed(false) {
     memset(button_status, 0, sizeof(button_status));
-    create_window();
-    set_title(window_name);
     start_time = taichi::Time::get_time();
     buffer.initialize(Vector2i(width, height));
     canvas = std::make_unique<Canvas>(buffer);
     last_frame_time = taichi::Time::get_time();
+    create_window();
+    set_title(window_name);
     if (!normalized_coord) {
       canvas->set_idendity_transform_matrix();
     }

@@ -124,6 +124,8 @@ void GUI::create_window() {
     fprintf(stderr, "Failed to initialized NSApplication.\nterminating.\n");
     return;
   }
+  img_data_length = width * height * 4;
+  img_data.resize(img_data_length);
   auto appDelObj = call("AppDelegate", "alloc");
   appDelObj = call(appDelObj, "init");
   call(NSApp, "setDelegate:", appDelObj);
@@ -137,10 +139,8 @@ void GUI::create_window() {
   gui_from_id[view] = this;
   call(window, "setContentView:", view);
   call(window, "becomeFirstResponder");
-  call(window, "makeKeyAndOrderFront:", window);
   call(window, "setAcceptsMouseMovedEvents:", YES);
-  img_data_length = width * height * 4;
-  img_data.resize(img_data_length);
+  call(window, "makeKeyAndOrderFront:", window);
 }
 
 void GUI::process_event() {

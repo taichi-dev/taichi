@@ -5,7 +5,8 @@ Developer installation
 
 Note this is for the compiler developers of the Taichi programming language.
 End users should use the pip packages instead of building from scratch.
-For NVIDIA GPU support, CUDA 10.0+ is needed.
+To build with NVIDIA GPU support, CUDA 10.0+ is needed.
+This installation guide works for Ubuntu 16.04+ and OS X 10.14+.
 
 - Make sure you are using Python 3.6/3.7
 - Execute
@@ -15,7 +16,7 @@ For NVIDIA GPU support, CUDA 10.0+ is needed.
     python3 -m pip install --user setuptools astpretty astor pytest opencv-python pybind11
     python3 -m pip install --user Pillow numpy scipy GitPython yapf colorama psutil autograd
 
-- Execute ``sudo apt install libtinfo-dev clang-7`` on Ubuntu.
+- (If on Ubuntu) Execute ``sudo apt install libtinfo-dev clang-7`` .
 - Make sure you have LLVM 8.0.1 built from scratch (`Download <https://github.com/llvm/llvm-project/releases/download/llvmorg-8.0.1/llvm-8.0.1.src.tar.xz>`_). To do so, download and unzip the llvm source, move to the llvm folder, and execute
 
   .. code-block:: bash
@@ -44,7 +45,7 @@ For NVIDIA GPU support, CUDA 10.0+ is needed.
     export PYTHONPATH=$TAICHI_REPO_DIR/python/:$PYTHONPATH
     export PATH=$TAICHI_REPO_DIR/bin/:$PATH
 
-- Execute ``source ~/.bashrc``  to reload shell config
+- Execute ``source ~/.bashrc`` to reload shell config
 - Execute ``ti test`` to run all the tests. It may take up to 5 minutes to run all tests.
 - Check out ``examples`` for runnable examples. Run them with ``python3``.
 

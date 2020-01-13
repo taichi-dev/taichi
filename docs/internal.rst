@@ -1,4 +1,4 @@
-Internal Designs (WIP)
+Internal designs (WIP)
 ===============================================
 
 Vector type system

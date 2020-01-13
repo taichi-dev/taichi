@@ -155,9 +155,14 @@ uint64 Time::get_cycles() {
 #else
 
 uint64 Time::get_cycles() {
+#if defined(TI_ARCH_x86_64)
   unsigned int lo, hi;
   __asm__ __volatile__("rdtsc" : "=a"(lo), "=d"(hi));
   return ((uint64)hi << 32) | lo;
+#else
+  TC_WARN("get_cycles is not implemented in this platform. Returning 0.");
+  return 0;
+#endif
 }
 
 #endif

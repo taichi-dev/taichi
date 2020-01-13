@@ -856,7 +856,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   }
 
   virtual void visit(AtomicOpStmt *stmt) override {
-    auto mask = stmt->parent->mask();
+    // auto mask = stmt->parent->mask();
     // TODO: deal with mask when vectorized
     for (int l = 0; l < stmt->width(); l++) {
       TC_ASSERT(stmt->op_type == AtomicOpType::add);
@@ -889,7 +889,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
 
   void visit(GlobalLoadStmt *stmt) override {
     int width = stmt->width();
-    TC_ASSERT(stmt->width() == 1);
+    TC_ASSERT(width == 1);
     stmt->value = builder->CreateLoad(
         tlctx->get_data_type(stmt->ret_type.data_type), stmt->ptr->value);
   }

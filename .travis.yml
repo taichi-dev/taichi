@@ -3,14 +3,22 @@ sudo: required
 common_sources: &1
 - ubuntu-toolchain-r-test
 language: cpp
+
 matrix:
   include:
+  - os: osx
+    osx_image: xcode10.3
+    python:
+      - "3.6"
+    env:
+      - MATRIX_EVAL="CC=clang && CXX=clang++ && PYTHON=python3.6"
   - os: osx
     osx_image: xcode10.3
     python:
       - "3.7"
     env:
       - MATRIX_EVAL="CC=clang && CXX=clang++ && PYTHON=python3.7"
+
 before_install:
 - eval "${MATRIX_EVAL}"
 - echo $CXX

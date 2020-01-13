@@ -357,6 +357,7 @@ CompileConfig::CompileConfig() {
   internal_optimization = true;
   external_optimization_level = 3;
   print_ir = false;
+  print_accessor_ir = false;
   use_llvm = true;
   auto use_llvm_char = getenv("TI_LLVM");
   if (use_llvm_char != nullptr && use_llvm_char[0] == '0') {

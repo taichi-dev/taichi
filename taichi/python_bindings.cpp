@@ -49,6 +49,7 @@ void export_lang(py::module &m) {
       .def(py::init<>())
       .def_readwrite("arch", &CompileConfig::arch)
       .def_readwrite("print_ir", &CompileConfig::print_ir)
+      .def_readwrite("print_accessor_ir", &CompileConfig::print_accessor_ir)
       .def_readwrite("use_llvm", &CompileConfig::use_llvm)
       .def_readwrite("print_struct_llvm_ir",
                      &CompileConfig::print_struct_llvm_ir)

@@ -13,6 +13,7 @@ Kernel::Kernel(Program &program,
                bool grad)
     : program(program), name(name), grad(grad) {
   program.initialize_device_llvm_context();
+  is_accessor = false;
   is_reduction = false;
   compiled = nullptr;
   benchmarking = false;

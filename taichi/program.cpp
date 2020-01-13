@@ -218,6 +218,7 @@ Kernel &Program::get_snode_reader(SNode *snode) {
   });
   ker.set_arch(get_host_arch());
   ker.name = kernel_name;
+  ker.is_accessor = true;
   for (int i = 0; i < snode->num_active_indices; i++)
     ker.insert_arg(DataType::i32, false);
   auto ret_val = ker.insert_arg(snode->dt, false);
@@ -238,6 +239,7 @@ Kernel &Program::get_snode_writer(SNode *snode) {
   });
   ker.set_arch(get_host_arch());
   ker.name = kernel_name;
+  ker.is_accessor = true;
   for (int i = 0; i < snode->num_active_indices; i++)
     ker.insert_arg(DataType::i32, false);
   ker.insert_arg(snode->dt, false);

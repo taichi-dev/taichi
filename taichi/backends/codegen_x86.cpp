@@ -605,141 +605,56 @@ class CPUIRCodeGen : public IRVisitor {
 };
 
 void CPUCodeGen::lower_cpp() {
-  auto ir = kernel->ir;
-  if (prog->config.print_ir) {
-    TC_TRACE("Initial IR:");
-    irpass::re_id(ir);
-    irpass::print(ir);
-  }
-  irpass::lower(ir);
-  if (prog->config.print_ir) {
-    TC_TRACE("Lowered:");
-    irpass::re_id(ir);
-    irpass::print(ir);
-  }
-  irpass::typecheck(ir);
-  if (prog->config.print_ir) {
-    TC_TRACE("Typechecked:");
-    irpass::re_id(ir);
-    irpass::print(ir);
-  }
-  irpass::slp_vectorize(ir);
-  if (prog->config.print_ir) {
-    TC_TRACE("SLPed:");
-    irpass::re_id(ir);
-    irpass::print(ir);
-  }
-  irpass::loop_vectorize(ir);
-  if (prog->config.print_ir) {
-    TC_TRACE("LoopVeced:");
-    irpass::re_id(ir);
-    irpass::print(ir);
-  }
-  irpass::vector_split(ir, prog->config.max_vector_width,
-                       prog->config.serial_schedule);
-  if (prog->config.print_ir) {
-    TC_TRACE("LoopSplitted:");
-    irpass::re_id(ir);
-    irpass::print(ir);
-  }
-  if (prog->config.simplify_before_lower_access) {
-    irpass::simplify(ir);
-    if (prog->config.print_ir) {
-      TC_TRACE("Simplified I:");
-      irpass::re_id(ir);
-      irpass::print(ir);
-    }
-  }
-  if (kernel->grad) {
-    // irpass::re_id(ir);
-    // TC_TRACE("Primal:");
-    // irpass::print(ir);
-    irpass::make_adjoint(ir);
-    irpass::typecheck(ir);
-    if (prog->config.print_ir) {
-      TC_TRACE("Adjoint:");
-      irpass::re_id(ir);
-      irpass::print(ir);
-    }
-  }
-  if (prog->config.lower_access) {
-    irpass::lower_access(ir, true);
-    if (prog->config.print_ir) {
-      TC_TRACE("Access Lowered:");
-      irpass::re_id(ir);
-      irpass::print(ir);
-    }
-    if (prog->config.simplify_after_lower_access) {
-      irpass::die(ir);
-      if (prog->config.print_ir) {
-        TC_TRACE("DIEd:");
-        irpass::re_id(ir);
-        irpass::print(ir);
-      }
-      irpass::simplify(ir);
-      if (prog->config.print_ir) {
-        TC_TRACE("Simplified II:");
-        irpass::re_id(ir);
-        irpass::print(ir);
-      }
-    }
-  }
-  irpass::die(ir);
-  if (prog->config.print_ir) {
-    TC_TRACE("DIEd:");
-    irpass::re_id(ir);
-    irpass::print(ir);
-  }
-
-  irpass::flag_access(ir);
-  if (prog->config.print_ir) {
-    TC_TRACE("Access Flagged:");
-    irpass::re_id(ir);
-    irpass::print(ir);
-  }
+  TC_NOT_IMPLEMENTED
 }
 
 void CPUCodeGen::lower_llvm() {
   auto ir = kernel->ir;
-  if (prog->config.print_ir) {
+  bool print_ir = false;
+  if (kernel->is_accessor) {
+    print_ir = prog->config.print_accessor_ir;
+  } else {
+    print_ir = prog->config.print_ir;
+  }
+  if (print_ir) {
     TC_TRACE("Initial IR:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
   irpass::lower(ir);
-  if (prog->config.print_ir) {
+  if (print_ir) {
     TC_TRACE("Lowered:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
   irpass::typecheck(ir);
-  if (prog->config.print_ir) {
+  if (print_ir) {
     TC_TRACE("Typechecked:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
   irpass::slp_vectorize(ir);
-  if (prog->config.print_ir) {
+  if (print_ir) {
     TC_TRACE("SLPed:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
   irpass::loop_vectorize(ir);
-  if (prog->config.print_ir) {
+  if (print_ir) {
     TC_TRACE("LoopVeced:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
   irpass::vector_split(ir, prog->config.max_vector_width,
                        prog->config.serial_schedule);
-  if (prog->config.print_ir) {
+  if (print_ir) {
     TC_TRACE("LoopSplitted:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
   if (prog->config.simplify_before_lower_access) {
     irpass::simplify(ir);
-    if (prog->config.print_ir) {
+    if (print_ir) {
       TC_TRACE("Simplified I:");
       irpass::re_id(ir);
       irpass::print(ir);
@@ -753,7 +668,7 @@ void CPUCodeGen::lower_llvm() {
     irpass::simplify(ir);
     irpass::make_adjoint(ir);
     irpass::typecheck(ir);
-    if (prog->config.print_ir) {
+    if (print_ir) {
       TC_TRACE("Adjoint:");
       irpass::re_id(ir);
       irpass::print(ir);
@@ -761,20 +676,20 @@ void CPUCodeGen::lower_llvm() {
   }
   if (prog->config.lower_access) {
     irpass::lower_access(ir, true);
-    if (prog->config.print_ir) {
+    if (print_ir) {
       TC_TRACE("Access Lowered:");
       irpass::re_id(ir);
       irpass::print(ir);
     }
     if (prog->config.simplify_after_lower_access) {
       irpass::die(ir);
-      if (prog->config.print_ir) {
+      if (print_ir) {
         TC_TRACE("DIEd:");
         irpass::re_id(ir);
         irpass::print(ir);
       }
       irpass::simplify(ir);
-      if (prog->config.print_ir) {
+      if (print_ir) {
         TC_TRACE("Simplified II:");
         irpass::re_id(ir);
         irpass::print(ir);
@@ -782,42 +697,42 @@ void CPUCodeGen::lower_llvm() {
     }
   }
   irpass::die(ir);
-  if (prog->config.print_ir) {
+  if (print_ir) {
     TC_TRACE("DIEd:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
 
   irpass::flag_access(ir);
-  if (prog->config.print_ir) {
+  if (print_ir) {
     TC_TRACE("Access Flagged:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
 
   irpass::constant_fold(ir);
-  if (prog->config.print_ir) {
+  if (print_ir) {
     TC_TRACE("Constant folded:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
 
   irpass::offload(ir);
-  if (prog->config.print_ir) {
+  if (print_ir) {
     TC_TRACE("Offloaded:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
 
   irpass::full_simplify(ir);
-  if (prog->config.print_ir) {
+  if (print_ir) {
     TC_TRACE("Simplified III:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
 
   irpass::demote_atomics(ir);
-  if (prog->config.print_ir) {
+  if (print_ir) {
     TC_TRACE("Atomics demoted:");
     irpass::re_id(ir);
     irpass::print(ir);

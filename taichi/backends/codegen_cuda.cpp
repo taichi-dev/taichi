@@ -978,96 +978,35 @@ class GPUIRCodeGen : public IRVisitor {
 };
 
 void GPUCodeGen::lower_cuda() {
-  auto ir = kernel->ir;
-  if (prog->config.print_ir) {
-    irpass::print(ir);
-  }
-  irpass::lower(ir);
-  irpass::re_id(ir);
-  if (prog->config.print_ir) {
-    irpass::print(ir);
-  }
-  irpass::typecheck(ir);
-  irpass::re_id(ir);
-  if (prog->config.print_ir) {
-    irpass::print(ir);
-  }
-  irpass::constant_fold(ir);
-  if (prog->config.simplify_before_lower_access) {
-    irpass::simplify(ir);
-    irpass::re_id(ir);
-    if (prog->config.print_ir) {
-      TC_TRACE("Simplified I:");
-      irpass::print(ir);
-    }
-  }
-  if (kernel->grad) {
-    // irpass::re_id(ir);
-    // TC_TRACE("Primal:");
-    // irpass::print(ir);
-    irpass::make_adjoint(ir);
-    irpass::typecheck(ir);
-    // irpass::re_id(ir);
-    // TC_TRACE("Adjoint:");
-    // irpass::print(ir);
-  }
-  if (prog->config.lower_access || prog->config.use_llvm) {
-    TC_INFO("Always lower access when using llvm");
-    irpass::lower_access(ir, prog->config.use_llvm);
-    if (prog->config.print_ir) {
-      TC_TRACE("Access Lowered:");
-      irpass::re_id(ir);
-      irpass::print(ir);
-    }
-    if (prog->config.simplify_after_lower_access) {
-      irpass::die(ir);
-      if (prog->config.print_ir) {
-        TC_TRACE("DIEd:");
-        irpass::re_id(ir);
-        irpass::print(ir);
-      }
-      irpass::simplify(ir);
-      if (prog->config.print_ir) {
-        TC_TRACE("Simplified II:");
-        irpass::re_id(ir);
-        irpass::print(ir);
-      }
-    }
-  }
-  irpass::die(ir);
-  if (prog->config.print_ir) {
-    TC_TRACE("DIEd:");
-    irpass::re_id(ir);
-    irpass::print(ir);
-  }
-  irpass::flag_access(ir);
-  if (prog->config.print_ir) {
-    TC_TRACE("Access Flagged:");
-    irpass::re_id(ir);
-    irpass::print(ir);
-  }
+  TC_NOT_IMPLEMENTED
 }
 
 void GPUCodeGen::lower_llvm() {
   auto ir = kernel->ir;
-  if (prog->config.print_ir) {
+  bool print_ir = false;
+  if (kernel->is_accessor) {
+    print_ir = prog->config.print_accessor_ir;
+  } else {
+    print_ir = prog->config.print_ir;
+  }
+  if (print_ir) {
     irpass::print(ir);
   }
   irpass::lower(ir);
   irpass::re_id(ir);
-  if (prog->config.print_ir) {
+  if (print_ir) {
     irpass::print(ir);
   }
   irpass::typecheck(ir);
   irpass::re_id(ir);
-  if (prog->config.print_ir) {
+  if (print_ir) {
     irpass::print(ir);
   }
   irpass::constant_fold(ir);
   if (prog->config.simplify_before_lower_access) {
     irpass::simplify(ir);
     irpass::re_id(ir);
-    if (prog->config.print_ir) {
+    if (print_ir) {
       TC_TRACE("Simplified I:");
       irpass::print(ir);
     }
@@ -1079,12 +1018,12 @@ void GPUCodeGen::lower_llvm() {
     irpass::demote_atomics(ir);
     irpass::full_simplify(ir);
     irpass::typecheck(ir);
-    if (prog->config.print_ir) {
+    if (print_ir) {
       TC_TRACE("Before make_adjoint:");
       irpass::print(ir);
     }
     irpass::make_adjoint(ir);
-    if (prog->config.print_ir) {
+    if (print_ir) {
       TC_TRACE("After make_adjoint:");
       irpass::print(ir);
     }
@@ -1096,20 +1035,20 @@ void GPUCodeGen::lower_llvm() {
   if (prog->config.lower_access || prog->config.use_llvm) {
     // TC_DEBUG("Always lower access when using llvm");
     irpass::lower_access(ir, prog->config.use_llvm);
-    if (prog->config.print_ir) {
+    if (print_ir) {
       TC_TRACE("Access Lowered:");
       irpass::re_id(ir);
       irpass::print(ir);
     }
     if (prog->config.simplify_after_lower_access) {
       irpass::die(ir);
-      if (prog->config.print_ir) {
+      if (print_ir) {
         TC_TRACE("DIEd:");
         irpass::re_id(ir);
         irpass::print(ir);
       }
       irpass::simplify(ir);
-      if (prog->config.print_ir) {
+      if (print_ir) {
         TC_TRACE("Simplified II:");
         irpass::re_id(ir);
         irpass::print(ir);
@@ -1117,31 +1056,31 @@ void GPUCodeGen::lower_llvm() {
     }
   }
   irpass::die(ir);
-  if (prog->config.print_ir) {
+  if (print_ir) {
     TC_TRACE("DIEd:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
   irpass::flag_access(ir);
-  if (prog->config.print_ir) {
+  if (print_ir) {
     TC_TRACE("Access Flagged:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
   irpass::offload(ir);
-  if (prog->config.print_ir) {
+  if (print_ir) {
     TC_TRACE("Offloaded:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
   irpass::demote_atomics(ir);
-  if (prog->config.print_ir) {
+  if (print_ir) {
     TC_TRACE("Atomics Demoted:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
   irpass::full_simplify(ir);
-  if (prog->config.print_ir) {
+  if (print_ir) {
     TC_TRACE("Simplified III:");
     irpass::re_id(ir);
     irpass::print(ir);

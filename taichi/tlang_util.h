@@ -330,6 +330,7 @@ struct CompileConfig {
   int external_optimization_level;
   int max_vector_width;
   bool print_ir;
+  bool print_accessor_ir;
   bool serial_schedule;
   bool simplify_before_lower_access;
   bool lower_access;

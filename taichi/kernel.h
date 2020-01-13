@@ -34,6 +34,7 @@ class Kernel {
   };
   std::vector<Arg> args;
   bool benchmarking;
+  bool is_accessor;
   bool is_reduction;  // TODO: systematically treat all types of reduction
   bool grad;
 

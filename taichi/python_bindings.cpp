@@ -238,13 +238,13 @@ void export_lang(py::module &m) {
   m.def("value_cast", static_cast<Expr (*)(const Expr &expr, DataType)>(cast));
 
   m.def("expr_atomic_add", [&](const Expr &a, const Expr &b) {
-    current_ast_builder().insert(Stmt::make<FrontendAtomicStmt>(
-        AtomicOpType::add, ptr_if_global(a), load_if_ptr(b)));
+    return Expr::make<AtomicOpExpression>(AtomicOpType::add, ptr_if_global(a),
+                                          load_if_ptr(b));
   });
 
   m.def("expr_atomic_sub", [&](const Expr &a, const Expr &b) {
-    current_ast_builder().insert(Stmt::make<FrontendAtomicStmt>(
-        AtomicOpType::sub, ptr_if_global(a), load_if_ptr(b)));
+    return Expr::make<AtomicOpExpression>(AtomicOpType::sub, ptr_if_global(a),
+                                          load_if_ptr(b));
   });
 
   m.def("expr_add", expr_add);

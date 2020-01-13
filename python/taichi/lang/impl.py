@@ -35,8 +35,7 @@ def wrap_scalar(x):
 
 
 def atomic_add(a, b):
-  a.atomic_add(wrap_scalar(b))
-
+  return a.atomic_add(b)
 
 def subscript(value, *indices):
   import numpy as np

@@ -54,7 +54,7 @@ class Expr:
   __radd__ = __add__
 
   def __iadd__(self, other):
-    taichi_lang_core.expr_atomic_add(self.ptr, other.ptr)
+    self.atomic_add(other)
 
   def __neg__(self):
     return Expr(taichi_lang_core.expr_neg(self.ptr), tb=self.stack_info())
@@ -65,7 +65,9 @@ class Expr:
         taichi_lang_core.expr_sub(self.ptr, other.ptr), tb=self.stack_info())
 
   def __isub__(self, other):
-    taichi_lang_core.expr_atomic_sub(self.ptr, other.ptr)
+    # TODO: add atomic_sub()
+    import taichi as ti
+    ti.expr_init(taichi_lang_core.expr_atomic_sub(self.ptr, other.ptr))
 
   def __imul__(self, other):
     self.assign(Expr(taichi_lang_core.expr_mul(self.ptr, other.ptr)))
@@ -97,7 +99,7 @@ class Expr:
 
   def __rtruediv__(self, other):
     return Expr(taichi_lang_core.expr_truediv(Expr(other).ptr, self.ptr))
-  
+
   def __floordiv__(self, other):
     return Expr(taichi_lang_core.expr_floordiv(self.ptr, Expr(other).ptr))
 
@@ -237,7 +239,9 @@ class Expr:
     fill_tensor(self, val)
 
   def atomic_add(self, other):
-    taichi_lang_core.expr_atomic_add(self.ptr, other.ptr)
+    import taichi as ti
+    other_ptr = ti.wrap_scalar(other).ptr
+    return ti.expr_init(taichi_lang_core.expr_atomic_add(self.ptr, other_ptr))
 
   def __pow__(self, power, modulo=None):
     assert isinstance(power, int) and power >= 0

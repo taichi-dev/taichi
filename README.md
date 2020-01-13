@@ -45,6 +45,8 @@ python3 -m pip install taichi-nightly-cuda-10-1
 - (Jan  11, 2020) v0.3.21 released.
    - Experimental GUI fix for OS X 10.14 and 10.15 (by @k-ye). Let us know if it solves your problem!
    - Minor improvements on documentation and profiler
+- (Jan   2, 2020) v0.3.20 released.
+   - Support `ti.static(ti.grouped(ti.ndrange(...)))`
 - (Jan   2, 2020) v0.3.19 released.
    - Added `ti.atan2(y, x)`
    - Improved error msg when using float point numbers as tensor indices

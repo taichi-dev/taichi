@@ -7,9 +7,7 @@ Taichi provides metaprogramming infrastructures. Metaprogramming can
 * Improve run-time performance by from run-time costs to compile time
 * Simplify the development of Taichi standard library
 
-
-* Lazily instantiated
-* Compile-time evaluation
+Taichi kernels are *lazily instantiated* and a lot of computation can happen at *compile-time*. Every kernel in Taichi is a template kernel, even if it has no template arguments.
 
 Dimensionality-independent programming using grouped indices
 --------------------------------------------------------------

@@ -52,6 +52,9 @@ class TypeCheck : public IRVisitor {
       stmt->val = insert_type_cast_before(stmt, stmt->val,
                                           stmt->dest->ret_type.data_type);
     }
+    if (stmt->element_type() == DataType::unknown) {
+      stmt->ret_type = stmt->dest->ret_type;
+    }
   }
 
   void visit(LocalLoadStmt *stmt) {

@@ -1898,6 +1898,41 @@ class IdExpression : public Expression {
   }
 };
 
+// This is just a wrapper class of FrontendAtomicStmt, so that we can turn
+// ti.atomic_op() into an expression (with side effect).
+class AtomicOpExpression : public Expression {
+  // TODO(issue#332): Flatten this into AtomicOpStmt directly, then we can
+  // deprecate FrontendAtomicStmt.
+ public:
+  AtomicOpType op_type;
+  Expr dest, val;
+
+  AtomicOpExpression(AtomicOpType op_type, Expr dest, Expr val)
+      : op_type(op_type), dest(dest), val(val) {
+  }
+
+  std::string serialize() override {
+    if (op_type == AtomicOpType::add) {
+      return fmt::format("atomic_add({}, {})", dest.serialize(),
+                         val.serialize());
+    } else if (op_type == AtomicOpType::sub) {
+      return fmt::format("atomic_sub({}, {})", dest.serialize(),
+                         val.serialize());
+    } else {
+      // min/max not supported in the LLVM backend yet.
+      TC_NOT_IMPLEMENTED;
+    }
+  }
+
+  void flatten(VecStatement &ret) override {
+    // FrontendAtomicStmt is the correct place to flatten sub-exprs like |dest|
+    // and |val| (See LowerAST). This class only wraps the frontend atomic_op()
+    // stmt as an expression.
+    ret.push_back<FrontendAtomicStmt>(op_type, dest, val);
+    stmt = ret.back().get();
+  }
+};
+
 class SNodeOpExpression : public Expression {
  public:
   SNode *snode;

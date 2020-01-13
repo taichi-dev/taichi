@@ -1,4 +1,5 @@
 #include <set>
+#include <unordered_set>
 #include "../ir.h"
 
 TLANG_NAMESPACE_BEGIN
@@ -342,6 +343,15 @@ class BasicBlockSimplify : public IRVisitor {
                       stmt->ptr)) {
                 has_load = true;
               }
+              if (block->statements[j]->is<AtomicOpStmt>() &&
+                  (block->statements[j]->as<AtomicOpStmt>()->dest ==
+                   stmt->ptr)) {
+                // $a = alloca
+                // $b : local store [$a <- v1]  <-- prev lstore |bstmt_|
+                // $c = atomic add($a, v2)      <-- cannot eliminate $b
+                // $d : local store [$a <- v3]
+                has_load = true;
+              }
             }
             if (!has_load) {
               stmt->parent->erase(bstmt_);
@@ -353,7 +363,6 @@ class BasicBlockSimplify : public IRVisitor {
     }
 
     // has following load?
-
     if (stmt->parent->locate(stmt->ptr) != -1) {
       // optimize local variables only
       bool has_related = false;
@@ -367,6 +376,16 @@ class BasicBlockSimplify : public IRVisitor {
         if (bstmt->is<LocalLoadStmt>()) {
           auto bstmt_ = bstmt->as<LocalLoadStmt>();
           if (bstmt_->has_source(stmt->ptr)) {
+            has_related = true;
+            break;
+          }
+        }
+        if (bstmt->is<AtomicOpStmt>()) {
+          // $a = alloca
+          // $b : local store [$a <- v1]
+          // $c = atomic add($a, v2)      <-- cannot eliminate $b
+          auto bstmt_ = bstmt->as<AtomicOpStmt>();
+          if (bstmt_->dest == stmt->ptr) {
             has_related = true;
             break;
           }
@@ -783,6 +802,21 @@ class BasicBlockSimplify : public IRVisitor {
     return stmt->is<GlobalStoreStmt>() || stmt->is<AtomicOpStmt>();
   }
 
+  static bool is_atomic_value_used(const std::vector<pStmt> &clause,
+                                   int atomic_stmt_i) {
+    // Cast type to check precondition
+    const auto *stmt = clause[atomic_stmt_i]->as<AtomicOpStmt>();
+    for (size_t i = atomic_stmt_i + 1; i < clause.size(); ++i) {
+      for (const auto &op : clause[i]->get_operands()) {
+        // Simpler to do pointer comparison?
+        if (op && (op->instance_id == stmt->instance_id)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
   void visit(IfStmt *if_stmt) override {
     auto flatten = [&](std::vector<pStmt> &clause, bool true_branch) {
       bool plain_clause = true;  // no global store, no container
@@ -792,7 +826,7 @@ class BasicBlockSimplify : public IRVisitor {
       // global side effects. LocalStore is kept and specially treated later.
 
       bool global_state_changed = false;
-      for (int i = 0; i < (int)clause.size(); i++) {
+      for (int i = 0; i < (int)clause.size() && plain_clause; i++) {
         bool has_side_effects = clause[i]->is_container_statement() ||
                                 clause[i]->has_global_side_effect();
 
@@ -802,9 +836,11 @@ class BasicBlockSimplify : public IRVisitor {
           plain_clause = false;
         }
 
-        if (is_global_write(clause[i].get()) ||
+        if (clause[i]->is<GlobalStoreStmt>() ||
             clause[i]->is<LocalStoreStmt>() || !has_side_effects) {
           // This stmt can be kept.
+        } else if (clause[i]->is<AtomicOpStmt>()) {
+          plain_clause = plain_clause && !is_atomic_value_used(clause, i);
         } else {
           plain_clause = false;
         }
@@ -816,7 +852,9 @@ class BasicBlockSimplify : public IRVisitor {
         for (int i = 0; i < (int)clause.size(); i++) {
           if (is_global_write(clause[i].get())) {
             // do nothing. Keep the statement.
-          } else if (clause[i]->is<LocalStoreStmt>()) {
+            continue;
+          }
+          if (clause[i]->is<LocalStoreStmt>()) {
             auto store = clause[i]->as<LocalStoreStmt>();
             auto lanes = LaneAttribute<LocalAddress>();
             for (int l = 0; l < store->width(); l++) {

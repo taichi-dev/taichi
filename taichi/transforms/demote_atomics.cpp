@@ -32,19 +32,41 @@ class DemoteAtomics : public BasicStmtVisitor {
         auto val = stmt->val;
 
         auto new_stmts = VecStatement();
+        Stmt *load;
         if (is_local) {
           TC_ASSERT(stmt->width() == 1);
-          auto load = new_stmts.push_back<LocalLoadStmt>(LocalAddress(ptr, 0));
+          load = new_stmts.push_back<LocalLoadStmt>(LocalAddress(ptr, 0));
           auto add =
               new_stmts.push_back<BinaryOpStmt>(BinaryOpType::add, load, val);
           new_stmts.push_back<LocalStoreStmt>(ptr, add);
         } else {
-          auto load = new_stmts.push_back<GlobalLoadStmt>(ptr);
+          load = new_stmts.push_back<GlobalLoadStmt>(ptr);
           auto add =
               new_stmts.push_back<BinaryOpStmt>(BinaryOpType::add, load, val);
           new_stmts.push_back<GlobalStoreStmt>(ptr, add);
         }
-        stmt->parent->replace_with(stmt, new_stmts);
+        // For a taichi program like `c = ti.atomic_add(a, b)`, the IR looks
+        // like the following
+        //
+        // $c  = # lhs memory
+        // $d  = atomic add($a, $b)
+        // $e  : store [$c <- $d]
+        //
+        // If this gets demoted, the IR is translated into:
+        //
+        // $c  = # lhs memory
+        // $d' = load $a             <-- added by demote_atomic
+        // $e' = add $d' $b
+        // $f  : store [$a <- $e']   <-- added by demote_atomic
+        // $g  : store [$c <- ???]   <-- store the old value into lhs $c
+        //
+        // Naively relying on Block::replace_with() would incorrectly fill $f
+        // into ???, because $f is a store stmt that doesn't have a return
+        // value. The correct thing is to replace |stmt| $d with the loaded
+        // old value $d'.
+        // See also: https://github.com/taichi-dev/taichi/issues/332
+        stmt->replace_with(load);
+        stmt->parent->replace_with(stmt, new_stmts, /*replace_usages=*/false);
         throw IRModified();
       }
     }

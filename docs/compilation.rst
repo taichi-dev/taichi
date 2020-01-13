@@ -1,3 +1,5 @@
+.. _compilation:
+
 The life of a Taichi kernel
 ===============================================
 

@@ -23,3 +23,16 @@ describe your plan and wait for a lead developer to reply before you start.
 
 Following this rule will prevent contributors from doing redundant work,
 while keeping the solution simple and effective.
+
+Tips on Taichi compiler development
+--------------------------------------------------
+
+:ref:`compilation` may worth checking out. It explains the whole compilation process.
+
+Set ``ti.get_runtime().print_preprocessed = True``
+to inspect results of the frontend Python AST transform. The resulting scripts will generate a Taichi Frontend AST when executed.
+
+Set ``ti.cfg.print_ir = True`` to inspect the IR transformation process of compilation.
+
+Set ``ti.cfg.print_kernel_llvm_ir = True`` to inspect the emitted LLVM IR for each invoked kernel.
+

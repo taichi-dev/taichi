@@ -52,6 +52,7 @@ The Taichi Programming Language
    dev_install
    contributor_guide
    cpp_style
+   internal
    acknowledgments
 
 .. toctree::

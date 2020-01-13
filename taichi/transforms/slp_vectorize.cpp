@@ -286,8 +286,9 @@ class BasicBlockSLP : public IRVisitor {
 
       // from the back, find the other (width - 1) statements of the same type
       for (int i = (int)stmts.size() - 1; i >= 0; i--) {
-        if (visited.find(stmts[i]) == visited.end() &&
-            typeid(*last_stmt) == typeid(*stmts[i])) {
+        auto s = stmts[i];
+        if (visited.find(s) == visited.end() &&
+            typeid(*last_stmt) == typeid(*s)) {
           // found a stmt of the same type.
           seed_statements.push_back(stmts[i]);
         }

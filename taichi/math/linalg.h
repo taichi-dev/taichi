@@ -10,11 +10,9 @@
 #include <functional>
 #include <vector>
 #include <array>
-#include <immintrin.h>
 #include <taichi/common/util.h>
 #include "scalar.h"
 #include "array_fwd.h"
-
 TC_NAMESPACE_BEGIN
 
 // Instruction Set Extension

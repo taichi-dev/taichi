@@ -1,5 +1,4 @@
 #include <cmath>
-#include <immintrin.h>
 #include <algorithm>
 
 namespace SifakisSVD {
@@ -39,12 +38,7 @@ A. McAdams, A. Selle, R. Tamstorf, J. Teran and E. Sifakis
 //#####################################################################
 
 TC_FORCE_INLINE float rsqrt(const float f) {
-  float buf[4];
-  buf[0] = f;
-  __m128 v = _mm_loadu_ps(buf);
-  v = _mm_rsqrt_ss(v);
-  _mm_storeu_ps(buf, v);
-  return buf[0];
+  return 1.0f / std::sqrt(f);
 }
 
 constexpr float Four_Gamma_Squared = 5.82842712474619f;  // sqrt(8.) + 3.;

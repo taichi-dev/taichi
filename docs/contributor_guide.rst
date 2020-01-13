@@ -37,9 +37,9 @@ Set ``ti.cfg.print_accessor_ir = True`` to inspect the IR transformation process
 
 .. note::
 
-  Data accesses in Python-scope are implemented as special Taichi kernels.
-  For example, ``x[1, 2, 3] = 3`` will call the writer kernel of ``x``,
-  and ``print(y[42])`` will call the reader kernel of ``y``.
+  Data accessors in Python-scope are implemented as special Taichi kernels.
+  For example, ``x[1, 2, 3] = 3`` will call the writing accessor of ``x``,
+  and ``print(y[42])`` will call the reading accessor of ``y``.
 
 Set ``ti.cfg.print_kernel_llvm_ir = True`` to inspect the emitted LLVM IR for each invoked kernel.
 

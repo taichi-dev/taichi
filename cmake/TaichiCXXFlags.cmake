@@ -32,7 +32,7 @@ else()
 endif ()
 
 message("Building for processor ${CMAKE_SYSTEM_PROCESSOR}")
-if ("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "x86_64")
+if ("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "x86_64" OR "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "AMD64")
     if (MSVC)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /D \"TI_ARCH_x86_64\"")
     else()

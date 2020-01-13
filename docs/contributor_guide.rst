@@ -7,6 +7,7 @@ all forms, including but not limited to
 - Bug fixes
 - New features
 - Documentation
+- More human-readable syntax error messages
 - New example programs
 - Compiler performance patches
 - Minor typo fixes in the documentation, code, comments (please directly make a pull request for minor issues like these)
@@ -20,8 +21,7 @@ Issues marked with `"welcome contribution" <https://github.com/taichi-dev/taichi
 
 - If no lead developer has commented and described a potential solution on the issue, please also briefly describe your plan and wait for a lead developer to reply before you start.
 
-Following these rules will prevent contributors from doing redundant work,
-while keeping the solution simple and effective.
+Following these rules will prevent contributors from doing redundant work, and keep solutions simple and effective.
 
 Tips on Taichi compiler development
 --------------------------------------------------

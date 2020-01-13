@@ -20,7 +20,7 @@ python3 -m pip install taichi-nightly-cuda-10-0
 python3 -m pip install taichi-nightly-cuda-10-1
 ```
 
-|| **Linux (CUDA)** | **OS X (10.14)** | **Windows** |
+|| **Linux (CUDA)** | **OS X (10.14+)** | **Windows** |
 |:------|:-----|:-----|:-----|
 |**Build**|[![Build Status](http://f11.csail.mit.edu:8080/job/taichi/badge/icon)](http://f11.csail.mit.edu:8080/job/taichi/)| [![Build Status](https://travis-ci.com/taichi-dev/taichi.svg?branch=master)](https://travis-ci.com/taichi-dev/taichi) | [![Build status](https://ci.appveyor.com/api/projects/status/09hrcv404n5o62wf/branch/master?svg=true)](https://ci.appveyor.com/project/IteratorAdvance/taichi/branch/master)|
 |**PyPI**|[![Build Status](https://travis-ci.com/yuanming-hu/taichi-wheels-test.svg?branch=master)](https://travis-ci.com/yuanming-hu/taichi-wheels-test)|[![Build Status](https://travis-ci.com/yuanming-hu/taichi-wheels-test.svg?branch=master)](https://travis-ci.com/yuanming-hu/taichi-wheels-test)|[![Build status](https://ci.appveyor.com/api/projects/status/39ar9wa8yd49je7o?svg=true)](https://ci.appveyor.com/project/IteratorAdvance/taichi-wheels-test)|

@@ -11,7 +11,7 @@
 #include <type_traits>
 #include "../constants.h"
 
-#if defined(__linux__) && !ARCH_cuda
+#if defined(__linux__) && !ARCH_cuda && defined(TI_ARCH_x86_64)
 __asm__(".symver logf,logf@GLIBC_2.2.5");
 __asm__(".symver powf,powf@GLIBC_2.2.5");
 __asm__(".symver expf,expf@GLIBC_2.2.5");

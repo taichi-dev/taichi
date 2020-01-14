@@ -56,7 +56,7 @@ static_assert(false, "32-bit Windows systems are not supported")
 #endif
 
 // Avoid dependency on glibc 2.27
-#if defined(TC_PLATFORM_LINUX)
+#if defined(TC_PLATFORM_LINUX) && defined(TI_ARCH_x86_64)
 // objdump -T libtaichi_core.so| grep  GLIBC_2.27
 __asm__(".symver logf,logf@GLIBC_2.2.5");
 __asm__(".symver powf,powf@GLIBC_2.2.5");

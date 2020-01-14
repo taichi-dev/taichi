@@ -836,7 +836,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     }
   }
 
-  void visit(AssertStmt *stmt) {
+  void visit(AssertStmt *stmt) override {
     stmt->value = call("taichi_assert", get_context(), stmt->val->value,
                        builder->CreateGlobalStringPtr(stmt->text));
   }
@@ -855,7 +855,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     }
   }
 
-  virtual void visit(AtomicOpStmt *stmt) override {
+  void visit(AtomicOpStmt *stmt) override {
     // auto mask = stmt->parent->mask();
     // TODO: deal with mask when vectorized
     for (int l = 0; l < stmt->width(); l++) {

@@ -379,7 +379,7 @@ class GPUIRCodeGen : public IRVisitor {
     }
   }
 
-  void visit(Block *stmt_list) {
+  void visit(Block *stmt_list) override {
     if (first_level) {
       first_level = false;
       // Check structure
@@ -446,17 +446,17 @@ class GPUIRCodeGen : public IRVisitor {
     }
   }
 
-  void visit(AllocaStmt *alloca) {
+  void visit(AllocaStmt *alloca) override {
     emit("{} {}(0);", alloca->ret_data_type_name(), alloca->raw_name());
   }
 
-  void visit(RandStmt *stmt) {
+  void visit(RandStmt *stmt) override {
     TC_ASSERT(stmt->ret_type.data_type == DataType::f32);
     emit("const auto {} = randf();", stmt->raw_name(),
          stmt->ret_data_type_name());
   }
 
-  void visit(UnaryOpStmt *stmt) {
+  void visit(UnaryOpStmt *stmt) override {
     if (stmt->op_type != UnaryOpType::cast) {
       emit("const {} {}({}({}));", stmt->ret_data_type_name(), stmt->raw_name(),
            unary_op_type_name(stmt->op_type), stmt->operand->raw_name());
@@ -472,7 +472,7 @@ class GPUIRCodeGen : public IRVisitor {
     }
   }
 
-  void visit(BinaryOpStmt *bin) {
+  void visit(BinaryOpStmt *bin) override {
     std::string ns;
     if (bin->op_type == BinaryOpType::div) {
       ns = "taichi::Tlang::";
@@ -482,14 +482,14 @@ class GPUIRCodeGen : public IRVisitor {
          bin->lhs->raw_name(), bin->rhs->raw_name());
   }
 
-  void visit(TernaryOpStmt *tri) {
+  void visit(TernaryOpStmt *tri) override {
     TC_ASSERT(tri->op_type == TernaryOpType::select);
     emit("const {} {} = {} ? {} : {};", tri->ret_data_type_name(),
          tri->raw_name(), tri->op1->raw_name(), tri->op2->raw_name(),
          tri->op3->raw_name());
   }
 
-  void visit(IfStmt *if_stmt) {
+  void visit(IfStmt *if_stmt) override {
     emit("if ({}) {{", if_stmt->cond->raw_name());
     if (if_stmt->true_statements)
       if_stmt->true_statements->accept(this);
@@ -500,7 +500,7 @@ class GPUIRCodeGen : public IRVisitor {
     emit("}}");
   }
 
-  void visit(PrintStmt *print_stmt) {
+  void visit(PrintStmt *print_stmt) override {
     if (print_stmt->stmt->ret_type.data_type == DataType::i32) {
       emit("printf(\"[debug] {}\" \" = %d\\n\", {});", print_stmt->str,
            print_stmt->stmt->raw_name());
@@ -515,23 +515,23 @@ class GPUIRCodeGen : public IRVisitor {
     }
   }
 
-  void visit(ConstStmt *const_stmt) {
+  void visit(ConstStmt *const_stmt) override {
     emit("const {} {}({});", const_stmt->ret_type.str(), const_stmt->raw_name(),
          const_stmt->val.serialize(
              [&](const TypedConstant &t) { return t.stringify(); }, "{"));
   }
 
-  void visit(WhileControlStmt *stmt) {
+  void visit(WhileControlStmt *stmt) override {
     emit("if (!{}) break;", stmt->cond->raw_name());
   }
 
-  void visit(WhileStmt *stmt) {
+  void visit(WhileStmt *stmt) override {
     emit("while (1) {{");
     stmt->body->accept(this);
     emit("}}");
   }
 
-  void visit(StructForStmt *for_stmt) {
+  void visit(StructForStmt *for_stmt) override {
     // generate_loop_header(for_stmt->snode, for_stmt, true);
     TC_ASSERT_INFO(current_struct_for == nullptr,
                    "StructFor cannot be nested.");
@@ -541,7 +541,7 @@ class GPUIRCodeGen : public IRVisitor {
     // generate_loop_tail(for_stmt->snode, for_stmt, true);
   }
 
-  void visit(RangeForStmt *for_stmt) {
+  void visit(RangeForStmt *for_stmt) override {
     auto loop_var = for_stmt->loop_var;
     if (loop_var->ret_type.width == 1 &&
         loop_var->ret_type.data_type == DataType::i32) {
@@ -571,7 +571,7 @@ class GPUIRCodeGen : public IRVisitor {
     emit("}}");
   }
 
-  void visit(ArgLoadStmt *stmt) {
+  void visit(ArgLoadStmt *stmt) override {
     if (stmt->is_ptr) {
       auto dt = data_type_name(stmt->ret_type.data_type);
       emit("const {} * {}(context.get_arg<{} *>({}));", dt, stmt->raw_name(),
@@ -583,13 +583,13 @@ class GPUIRCodeGen : public IRVisitor {
     }
   }
 
-  void visit(LocalLoadStmt *stmt) {
+  void visit(LocalLoadStmt *stmt) override {
     auto ptr = stmt->ptr[0].var;
     emit("const {} {}({});", stmt->ret_data_type_name(), stmt->raw_name(),
          ptr->raw_name());
   }
 
-  void visit(LocalStoreStmt *stmt) {
+  void visit(LocalStoreStmt *stmt) override {
     emit("{} = {};", stmt->ptr->raw_name(), stmt->data->raw_name());
   }
 
@@ -632,7 +632,7 @@ class GPUIRCodeGen : public IRVisitor {
     }
   }
 
-  void visit(SNodeOpStmt *stmt) {
+  void visit(SNodeOpStmt *stmt) override {
     /*
     TC_ASSERT(stmt->width() == 1);
     auto snode = stmt->snodes[0];

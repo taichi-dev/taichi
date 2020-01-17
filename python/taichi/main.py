@@ -33,13 +33,10 @@ def main(debug=False):
   lines = []
   print()
   lines.append(u' *******************************************')
-  lines.append(u' **                Taichi                 **')
-  lines.append(u' **                                       **')
-  lines.append(u' ** High-Performance Programming Language **')
+  lines.append(u' **     Taichi Programming Language       **')
   lines.append(u' *******************************************')
   if debug:
     lines.append(u' *****************Debug Mode****************')
-    lines.append(u' *******************************************')
     os.environ['TI_DEBUG'] = '1'
   print(u'\n'.join(lines))
   print()

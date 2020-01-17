@@ -34,6 +34,7 @@ class ThreadPool {
   int max_num_threads;
   int desired_num_threads;
   uint64 timestamp;
+  uint64 last_finished;
   bool started;
   bool exiting;
   CPUTaskFunc *func;

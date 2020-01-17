@@ -58,7 +58,8 @@ ThreadPool::ThreadPool() {
   exiting = false;
   started = false;
   running_threads = 0;
-  timestamp = 0;
+  timestamp = 1;
+  last_finished = 0;
   task_head = 0;
   task_tail = 0;
   thread_counter = 0;
@@ -84,6 +85,7 @@ void ThreadPool::run(int splits,
     task_head = 0;
     task_tail = splits;
     timestamp++;
+    TC_ASSERT(timestamp < (1LL << 62)); // avoid overflowing here
   }
 
   // wake up all slaves
@@ -117,8 +119,14 @@ void ThreadPool::target() {
       if (exiting) {
         break;
       } else {
-        started = true;
-        running_threads++;
+        if (last_finished >= last_timestamp) {
+          continue;
+          // This could happen when part of the desired threads wake up and finish all the task,
+          // and then this thread wake up finding nothing to do. Should skip this task directly.
+        } else {
+          started = true;
+          running_threads++;
+        }
       }
     }
 
@@ -137,8 +145,10 @@ void ThreadPool::target() {
     {
       std::lock_guard<std::mutex> lock(mutex);
       running_threads--;
-      if (running_threads == 0)
+      if (running_threads == 0) {
         all_finished = true;
+        last_finished = last_timestamp;
+      }
     }
     if (all_finished)
       master_cv.notify_one();

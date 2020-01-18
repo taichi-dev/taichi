@@ -83,10 +83,16 @@ void taichi::Tlang::UnifiedAllocator::create(bool gpu) {
 #if !defined(TC_PLATFORM_WINDOWS)
   allocator() = new (dst) UnifiedAllocator(1LL << 44, gpu);
 #else
-  std::size_t phys_mem_size;
-  GetPhysicallyInstalledSystemMemory(&phys_mem_size);  // KB
-  phys_mem_size /= 1024;                               // MB
-  TC_INFO("Physical memory size {} MB", phys_mem_size);
+  std::size_t phys_mem_size;  
+  if (GetPhysicallyInstalledSystemMemory(&phys_mem_size)) {   // KB
+    phys_mem_size /= 1024;                                    // MB
+    TC_INFO("Physical memory size {} MB", phys_mem_size);
+  } else {
+    auto err = GetLastError();
+    /* Error Codes: https://docs.microsoft.com/en-us/windows/win32/debug/system-error-codes */
+    TC_ERROR("Unable to get physical memory size [ Win32 Error Code {} ].", err);
+    phys_mem_size = 4096 * 4;   // allocate 4 GB later 
+  }
   auto virtual_mem_to_allocate = (phys_mem_size << 20) / 4;
   TC_INFO("Allocating virtual memory pool (size = {} MB)",
           virtual_mem_to_allocate / 1024 / 1024);

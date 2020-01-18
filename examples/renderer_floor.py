@@ -1,20 +1,13 @@
 import taichi as ti
 
 res = 1280, 720
-color_buffer = ti.Vector(3, dt=ti.f32)
+ret = ti.var(dt=ti.f32, shape=())
 
 dist_limit = 100
 
 # ti.runtime.print_preprocessed = True
 # ti.cfg.print_ir = True
 ti.cfg.arch = ti.cuda
-
-camera_pos = ti.Vector([0.5, 0.27, 2.7])
-
-@ti.layout
-def buffers():
-  ti.root.dense(ti.ij, (res[0] // 8, res[1] // 8)).dense(ti.ij, 8).place(color_buffer)
-
 
 @ti.func
 def sdf(o):
@@ -65,21 +58,10 @@ def next_hit(pos, d):
 
 @ti.kernel
 def render():
-  for u, v in color_buffer:
-    pos = camera_pos
-    closest, normal, c = next_hit(pos, ti.Vector([0.0, 0.0, -1.0]))
-    n = normal.norm()
-    color_buffer[u, v] = [0, 0, 0]
+  pos = ti.Vector([0.5, 0.27, 2.7])
+  closest, normal, c = next_hit(pos, ti.Vector([0.0, 0.0, -1.0]))
+  n = normal.norm()
+  ret[None] = n
 
-
-def main():
-  gui = ti.GUI('Particle Renderer', res)
-
-  render()
-  while True:
-    gui.set_image(color_buffer.to_numpy(as_vector=True))
-    gui.show()
-
-
-if __name__ == '__main__':
-  main()
+render()
+print(ret[None])

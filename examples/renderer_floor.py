@@ -66,17 +66,10 @@ def sdf_normal(p):
 
 
 @ti.func
-def next_hit(pos, d, t):
+def next_hit(pos, d):
   closest = inf
   normal = ti.Vector([0.0, 0.0, 0.0])
   c = ti.Vector([0.0, 0.0, 0.0])
-
-  if d[2] != 0:
-    ray_closest = -(pos[2] + 5.5) / d[2]
-    if ray_closest > 0 and ray_closest < closest:
-      closest = ray_closest
-      normal = ti.Vector([0.0, 0.0, 1.0])
-      c = ti.Vector([0.6, 0.7, 0.7])
 
   ray_march_dist = ray_march(pos, d)
   if ray_march_dist < dist_limit and ray_march_dist < closest:
@@ -93,41 +86,11 @@ aspect_ratio = res[0] / res[1]
 def render():
   for u, v in color_buffer:
     pos = camera_pos
-    d = ti.Vector([(
-        2 * fov * (u + ti.random(ti.f32)) / res[1] - fov * aspect_ratio - 1e-5),
-                   2 * fov * (v + ti.random(ti.f32)) / res[1] - fov - 1e-5,
-                   -1.0])
-    d = ti.Matrix.normalized(d)
-    t = 0
-
+    
     contrib = ti.Vector([0.0, 0.0, 0.0])
-    throughput = ti.Vector([1.0, 1.0, 1.0])
-
-    depth = 0
-
-    while depth < max_ray_depth:
-      closest, normal, c = next_hit(pos, d, t)
-      hit_pos = pos + closest * d
-      depth += 1
-      if normal.norm() != 0:
-        d = out_dir(normal)
-        pos = hit_pos + 1e-4 * d
-        throughput *= c
-
-        if ti.static(use_directional_light):
-          dir_noise = ti.Vector(
-              [ti.random() - 0.5,
-               ti.random() - 0.5,
-               ti.random() - 0.5]) * light_direction_noise
-          direct = ti.Matrix.normalized(
-              ti.Vector(light_direction) + dir_noise)
-          dot = direct.dot(normal)
-          if dot > 0:
-            dist, _, _ = next_hit(pos, direct, t)
-            if dist > dist_limit:
-              contrib += throughput * ti.Vector(light_color) * dot
-      else:  # hit sky
-        depth = max_ray_depth
+    closest, normal, c = next_hit(pos, ti.Vector([0.0, 0.0, -1.0]))
+    n = normal.norm()
+    contrib = [n, n, n]
 
     color_buffer[u, v] = contrib
 

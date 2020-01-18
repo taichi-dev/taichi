@@ -188,15 +188,15 @@ def test_atomic_add_with_if_simplify():
     assert x[i] == expect
 
 @ti.all_archs
-def test_atomic_with_if():
-  ret = ti.var(dt=ti.f32, shape=())
+def test_local_atomic_with_if():
+  ret = ti.var(dt=ti.i32, shape=())
 
   @ti.kernel
   def test():
     if True:
-      inc = 0
-      inc += 1
-      ret[None] = inc
+      x = 0
+      x += 1
+      ret[None] = x
 
   test()
   assert ret[None] == 1

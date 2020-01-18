@@ -362,9 +362,9 @@ class BasicBlockSimplify : public IRVisitor {
       }
     }
 
-    // has following load?
+    // Does it have a following load? If not, delete.
     if (stmt->parent->locate(stmt->ptr) != -1) {
-      // optimize local variables only
+      // optimize variables local to this block only
       bool has_related = false;
       for (int i = current_stmt_id + 1; i < (int)block->statements.size();
            i++) {
@@ -806,10 +806,12 @@ class BasicBlockSimplify : public IRVisitor {
                                    int atomic_stmt_i) {
     // Cast type to check precondition
     const auto *stmt = clause[atomic_stmt_i]->as<AtomicOpStmt>();
-    for (size_t i = atomic_stmt_i + 1; i < clause.size(); ++i) {
+    auto alloca = stmt->dest;
+
+    for (std::size_t i = atomic_stmt_i + 1; i < clause.size(); ++i) {
       for (const auto &op : clause[i]->get_operands()) {
-        // Simpler to do pointer comparison?
-        if (op && (op->instance_id == stmt->instance_id)) {
+        if (op && (op->instance_id == stmt->instance_id ||
+                   op->instance_id == alloca->instance_id)) {
           return true;
         }
       }

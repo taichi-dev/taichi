@@ -293,6 +293,8 @@ class Expr:
     arr = np.empty(
         shape=self.shape(), dtype=to_numpy_type(self.snode().data_type()))
     tensor_to_ext_arr(self, arr)
+    import taichi as ti
+    ti.sync()
     return arr
 
   def to_torch(self, device=None):
@@ -301,6 +303,8 @@ class Expr:
     arr = torch.empty(
         size=self.shape(), dtype=to_pytorch_type(self.snode().data_type()), device=device)
     tensor_to_ext_arr(self, arr)
+    import taichi as ti
+    ti.sync()
     return arr
 
   def from_numpy(self, arr):
@@ -312,6 +316,8 @@ class Expr:
     if hasattr(arr, 'contiguous'):
       arr = arr.contiguous()
     ext_arr_to_tensor(arr, self)
+    import taichi as ti
+    ti.sync()
 
   def from_torch(self, arr):
     self.from_numpy(arr.contiguous())

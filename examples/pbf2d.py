@@ -4,7 +4,7 @@ import taichi as ti
 import numpy as np
 import math
 
-ti.cfg.arch = ti.x86_64
+ti.cfg.arch = ti.cuda   # Try CUDA by default
 
 screen_res = (800, 400)
 screen_to_world_ratio = 10.0
@@ -27,7 +27,7 @@ boundary_color = 0xebaca2
 num_particles_x = 60
 num_particles = num_particles_x * 20
 max_num_particles_per_cell = 100
-max_num_neighbors = 50
+max_num_neighbors = 100
 time_delta = 1.0 / 20.0
 epsilon = 1e-5
 particle_radius = 3.0
@@ -321,11 +321,11 @@ def init_particles():
 def print_stats():
   print('PBF stats:')
   num = grid_num_particles.to_numpy()
-  avg, max = int(np.mean(num)), np.max(num)
-  print(f'  #particles per cell: avg={avg} max={max}')
+  avg, max = np.mean(num), np.max(num)
+  print(f'  #particles per cell: avg={avg:.2f} max={max}')
   num = particle_num_neighbors.to_numpy()
-  avg, max = int(np.mean(num)), np.max(num)
-  print(f'  #neighbors per particle: avg={avg} max={max}')
+  avg, max = np.mean(num), np.max(num)
+  print(f'  #neighbors per particle: avg={avg:.2f} max={max}')
 
 
 def main():

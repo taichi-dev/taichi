@@ -210,5 +210,7 @@ def complex_kernel_grad(primal):
 
   return decorator
 
+def sync():
+  get_runtime().sync()
 
 __all__ = [s for s in dir() if not s.startswith('_')]

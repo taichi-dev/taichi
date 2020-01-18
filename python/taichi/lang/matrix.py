@@ -495,6 +495,8 @@ class Matrix:
       dtype=to_numpy_type(self.loop_range().snode().data_type()))
     from .meta import matrix_to_ext_arr
     matrix_to_ext_arr(self, ret, as_vector)
+    import taichi as ti
+    ti.sync()
     return ret
 
   def to_torch(self, as_vector=False, device=None):
@@ -509,6 +511,8 @@ class Matrix:
         dtype=to_pytorch_type(self.loop_range().snode().data_type()), device=device)
     from .meta import matrix_to_ext_arr
     matrix_to_ext_arr(self, ret, as_vector)
+    import taichi as ti
+    ti.sync()
     return ret
 
   def from_numpy(self, ndarray):
@@ -520,6 +524,8 @@ class Matrix:
       assert len(ndarray.shape) == self.loop_range().dim() + 2
     from .meta import ext_arr_to_matrix
     ext_arr_to_matrix(ndarray, self, as_vector)
+    import taichi as ti
+    ti.sync()
     
   def from_torch(self, torch_tensor):
     return self.from_numpy(torch_tensor.contiguous())

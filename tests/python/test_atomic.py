@@ -186,3 +186,17 @@ def test_atomic_add_with_if_simplify():
   for i in range(n):
     expect = i * 3 if i > boundary else (i + step)
     assert x[i] == expect
+
+@ti.all_archs
+def test_atomic_with_if():
+  ret = ti.var(dt=ti.f32, shape=())
+
+  @ti.kernel
+  def test():
+    if True:
+      inc = 0
+      inc += 1
+      ret[None] = inc
+
+  test()
+  assert ret[None] == 1

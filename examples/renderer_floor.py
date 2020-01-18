@@ -11,10 +11,7 @@ import sys
 res = 1280, 720
 num_spheres = 1024
 color_buffer = ti.Vector(3, dt=ti.f32)
-bbox = ti.Vector(3, dt=ti.f32)
-grid_density = ti.var(dt=ti.i32)
-voxel_has_particle = ti.var(dt=ti.i32)
-max_ray_depth = 4
+max_ray_depth = 1
 use_directional_light = True
 
 fov = 0.23
@@ -29,55 +26,17 @@ light_color = [1.0, 1.0, 1.0]
 # ti.runtime.print_preprocessed = True
 # ti.cfg.print_ir = True
 ti.cfg.arch = ti.cuda
-grid_visualization_block_size = 16
-grid_resolution = 256 // grid_visualization_block_size
-
-frame_id = 0
-
-render_voxel = False
-inv_dx = 256.0
-dx = 1.0 / inv_dx
 
 camera_pos = ti.Vector([0.5, 0.27, 2.7])
-supporter = 2
-shutter_time = 0.5e-3
-sphere_radius = 0.0015
-particle_grid_res = 256
-max_num_particles_per_cell = 8192
-max_num_particles = 1024 * 1024 * 4
-
-assert sphere_radius * 2 * particle_grid_res < 1
 
 @ti.layout
 def buffers():
-  ti.root.dense(ti.ij, (res[0] // 8, res[1] // 8)).dense(ti.ij,
-                                                         8).place(color_buffer)
-
-  ti.root.dense(ti.ijk, 2).dense(ti.ijk, particle_grid_res // 8).dense(
-      ti.ijk, 8).place(voxel_has_particle)
-  ti.root.dense(ti.ijk, grid_resolution // 8).dense(ti.ijk,
-                                                    8).place(grid_density)
-  ti.root.dense(ti.i, 2).place(bbox)
+  ti.root.dense(ti.ij, (res[0] // 8, res[1] // 8)).dense(ti.ij, 8).place(color_buffer)
 
 
 @ti.func
 def sdf(o):
-  dist = 0.0
-  if ti.static(supporter == 0):
-    o -= ti.Vector([0.5, 0.002, 0.5])
-    p = o
-    h = 0.02
-    ra = 0.29
-    rb = 0.005
-    d = (ti.Vector([p[0], p[2]]).norm() - 2.0 * ra + rb, abs(p[1]) - h)
-    dist = min(max(d[0], d[1]), 0.0) + ti.Vector(
-        [max(d[0], 0.0), max(d[1], 0)]).norm() - rb
-  elif ti.static(supporter == 1):
-    o -= ti.Vector([0.5, 0.002, 0.5])
-    dist = (o.abs() - ti.Vector([0.5, 0.02, 0.5])).max()
-  else:
-    dist = o[1] - 0.027
-
+  dist = o[1] - 0.027
   return dist
 
 
@@ -140,10 +99,8 @@ def next_hit(pos, d, t):
 
 aspect_ratio = res[0] / res[1]
 
-
 @ti.kernel
 def render():
-  ti.parallelize(6)
   for u, v in color_buffer:
     pos = camera_pos
     d = ti.Vector([(
@@ -203,7 +160,7 @@ def render():
     else:
       throughput *= 0
 
-    color_buffer[u, v] += contrib
+    color_buffer[u, v] = contrib
 
 
 @ti.kernel
@@ -216,22 +173,10 @@ def copy(img: ti.ext_arr()):
 def main():
   gui = ti.GUI('Particle Renderer', res)
 
-  last_t = 0
-  for i in range(500):
-    render()
-
-    interval = 10
-    if i % interval == 0:
-      img = np.zeros((res[0], res[1], 3), dtype=np.float32)
-      copy(img)
-      if last_t != 0:
-        print("time per spp = {:.2f} ms".format(
-            (time.time() - last_t) * 1000 / interval))
-      last_t = time.time()
-      img = img * (1 / (i + 1)) * exposure
-      img = np.sqrt(img)
-      gui.set_image(img)
-      gui.show()
+  render()
+  while True:
+    gui.set_image(color_buffer.to_numpy(as_vector=True))
+    gui.show()
 
 
 if __name__ == '__main__':

@@ -1,11 +1,10 @@
 import taichi as ti
 
-
 @ti.all_archs
-def test_abs():
+def test_empty():
 
   @ti.kernel
   def func():
-    print(1)
+    pass
 
   func()

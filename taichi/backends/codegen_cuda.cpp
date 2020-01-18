@@ -1032,27 +1032,24 @@ void GPUCodeGen::lower_llvm() {
     // TC_TRACE("Adjoint:");
     // irpass::print(ir);
   }
-  if (prog->config.lower_access || prog->config.use_llvm) {
-    // TC_DEBUG("Always lower access when using llvm");
-    irpass::lower_access(ir, prog->config.use_llvm);
+  irpass::lower_access(ir, prog->config.use_llvm);
+  if (print_ir) {
+    TC_TRACE("Access Lowered:");
+    irpass::re_id(ir);
+    irpass::print(ir);
+  }
+  if (prog->config.simplify_after_lower_access) {
+    irpass::die(ir);
     if (print_ir) {
-      TC_TRACE("Access Lowered:");
+      TC_TRACE("DIEd:");
       irpass::re_id(ir);
       irpass::print(ir);
     }
-    if (prog->config.simplify_after_lower_access) {
-      irpass::die(ir);
-      if (print_ir) {
-        TC_TRACE("DIEd:");
-        irpass::re_id(ir);
-        irpass::print(ir);
-      }
-      irpass::simplify(ir);
-      if (print_ir) {
-        TC_TRACE("Simplified II:");
-        irpass::re_id(ir);
-        irpass::print(ir);
-      }
+    irpass::simplify(ir);
+    if (print_ir) {
+      TC_TRACE("Simplified II:");
+      irpass::re_id(ir);
+      irpass::print(ir);
     }
   }
   irpass::die(ir);

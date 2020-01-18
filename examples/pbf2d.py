@@ -172,9 +172,9 @@ def update_grid():
   for p_i in positions:
     cell = get_cell(positions[p_i])
     # ti.Vector doesn't seem to support unpacking yet
-    cx, cy = cell[0], cell[1]
-    offs = grid_num_particles[cx, cy].atomic_add(1)
-    grid2particles[cx, cy, offs] = p_i
+    # but we can directly use int Vectors as indices
+    offs = grid_num_particles[cell].atomic_add(1)
+    grid2particles[cell, offs] = p_i
 
 
 @ti.kernel
@@ -183,17 +183,14 @@ def find_particle_neighbors():
     pos_i = positions[p_i]
     cell = get_cell(pos_i)
     nb_i = 0
-    for dx in ti.static(range(-1, dim)):
-      for dy in ti.static(range(-1, dim)):
-        offs = ti.Vector([dx, dy])
-        cell_to_check = cell + offs
-        if is_in_grid(cell_to_check):
-          cx, cy = cell_to_check[0], cell_to_check[1]
-          for j in range(grid_num_particles[cell_to_check]):
-            p_j = grid2particles[cx, cy, j]
-            if nb_i < max_num_neighbors and p_j != p_i and (pos_i - positions[p_j]).norm() < neighbor_radius:
-              particle_neighbors[p_i, nb_i] = p_j
-              nb_i += 1
+    for offs in ti.static(ti.grouped(ti.ndrange((-1, 2), (-1, 2)))):
+      cell_to_check = cell + offs
+      if is_in_grid(cell_to_check):
+        for j in range(grid_num_particles[cell_to_check]):
+          p_j = grid2particles[cell_to_check, j]
+          if nb_i < max_num_neighbors and p_j != p_i and (pos_i - positions[p_j]).norm() < neighbor_radius:
+            particle_neighbors[p_i, nb_i] = p_j
+            nb_i += 1
     particle_num_neighbors[p_i] = nb_i
 
 

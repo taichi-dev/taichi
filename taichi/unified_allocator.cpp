@@ -81,7 +81,12 @@ void taichi::Tlang::UnifiedAllocator::create(bool gpu) {
     dst = std::malloc(sizeof(UnifiedAllocator));
   }
 #if !defined(TC_PLATFORM_WINDOWS)
+#if defined(TI_ARCH_ARM)
+  // Try to allocate only 2GB RAM on ARM devices such as Jetson nano
+  allocator() = new (dst) UnifiedAllocator(1LL << 31, gpu);
+#else
   allocator() = new (dst) UnifiedAllocator(1LL << 44, gpu);
+#endif
 #else
   std::size_t phys_mem_size;  
   if (GetPhysicallyInstalledSystemMemory(&phys_mem_size)) {   // KB

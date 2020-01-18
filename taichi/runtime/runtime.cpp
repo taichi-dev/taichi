@@ -272,7 +272,12 @@ void ElementList_initialize(Runtime *runtime, ElementList *element_list) {
 #if defined(_WIN32)
   auto list_size = 4 * 1024 * 1024;
 #else
+#if defined(ARCH_arm)
+  // smaller element list on ARM
+  auto list_size = 1024 * 1024;
+#else
   auto list_size = 1024 * 1024 * 1024;
+#endif
 #endif
   element_list->elements = (Element *)allocate(runtime, list_size);
   element_list->tail = 0;

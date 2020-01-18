@@ -112,6 +112,9 @@ void compile_runtime_bitcode(Arch arch) {
     TC_TRACE("Compiling runtime module bitcode...");
     auto runtime_folder = get_runtime_dir();
     std::string macro = fmt::format(" -D ARCH_{} ", arch_name(arch));
+#if defined(TI_ARCH_ARM)
+    macro += " -D ARCH_arm";
+#endif
     int ret = std::system(
         fmt::format(
             "{} -S {}runtime.cpp -o {}runtime.ll -emit-llvm -std=c++17 {}",

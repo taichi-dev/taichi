@@ -125,9 +125,9 @@ def confine_position_to_boundary(p):
       boundary[1]]) - particle_radius_in_world
   for i in ti.static(range(dim)):
     if p[i] <= bmin:
-      p[i] = bmin + epsilon
+      p[i] = bmin + epsilon * ti.random()
     elif bmax[i] <= p[i]:
-      p[i] = bmax[i] - epsilon
+      p[i] = bmax[i] - epsilon * ti.random()
   return p
 
 

@@ -124,6 +124,7 @@ def confine_position_to_boundary(p):
       board_states[None][0],
       boundary[1]]) - particle_radius_in_world
   for i in ti.static(range(dim)):
+    # Use randomness to prevent particles from sticking into each other after clamping
     if p[i] <= bmin:
       p[i] = bmin + epsilon * ti.random()
     elif bmax[i] <= p[i]:

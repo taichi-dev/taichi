@@ -1,6 +1,6 @@
 #pragma once
 
-#include <taichi/math.h>
+#include <taichi/math/math.h>
 #include <taichi/system/timer.h>
 #include <ctime>
 #include <numeric>

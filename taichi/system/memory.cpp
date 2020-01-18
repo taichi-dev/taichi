@@ -1,6 +1,5 @@
 #include <taichi/system/memory.h>
 #include <taichi/system/timer.h>
-#include <taichi/math.h>
 #include <taichi/util.h>
 #include <taichi/system/threading.h>
 #include <taichi/system/timer.h>

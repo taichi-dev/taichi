@@ -36,8 +36,7 @@ def buffers():
 
 @ti.func
 def sdf(o):
-  dist = o[1] - 0.027
-  return dist
+  return o[1] - 0.027
 
 
 @ti.func
@@ -67,15 +66,6 @@ def sdf_normal(p):
 
 
 @ti.func
-def sdf_color(p):
-  scale = 0.4
-  if inside_taichi(ti.Vector([p[0], p[2]])):
-    scale = 1
-  return ti.Vector([0.3, 0.5, 0.7]) * scale
-
-
-
-@ti.func
 def next_hit(pos, d, t):
   closest = inf
   normal = ti.Vector([0.0, 0.0, 0.0])
@@ -92,7 +82,7 @@ def next_hit(pos, d, t):
   if ray_march_dist < dist_limit and ray_march_dist < closest:
     closest = ray_march_dist
     normal = sdf_normal(pos + d * closest)
-    c = sdf_color(pos + d * closest)
+    c = [1, 0.5, 0.5]
 
   return closest, normal, c
 
@@ -114,14 +104,11 @@ def render():
     throughput = ti.Vector([1.0, 1.0, 1.0])
 
     depth = 0
-    hit_sky = 1
-    ray_depth = 0
 
     while depth < max_ray_depth:
       closest, normal, c = next_hit(pos, d, t)
       hit_pos = pos + closest * d
       depth += 1
-      ray_depth = depth
       if normal.norm() != 0:
         d = out_dir(normal)
         pos = hit_pos + 1e-4 * d
@@ -140,25 +127,7 @@ def render():
             if dist > dist_limit:
               contrib += throughput * ti.Vector(light_color) * dot
       else:  # hit sky
-        hit_sky = 1
         depth = max_ray_depth
-
-      max_c = throughput.max()
-      if ti.random() > max_c:
-        depth = max_ray_depth
-        throughput = [0, 0, 0]
-      else:
-        throughput /= max_c
-
-    if hit_sky:
-      if ray_depth != 1:
-        # contrib *= max(d[1], 0.05)
-        pass
-      else:
-        # directly hit sky
-        pass
-    else:
-      throughput *= 0
 
     color_buffer[u, v] = contrib
 

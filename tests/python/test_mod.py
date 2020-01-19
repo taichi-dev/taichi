@@ -47,3 +47,21 @@ def test_c_style_mod():
   func(-10, 3)
   func(10, -3)
   func(-10, -3)
+
+
+@ti.all_archs
+def test_mod_scan():
+  z = ti.var(ti.i32, shape=())
+  w = ti.var(ti.i32, shape=())
+  
+  @ti.kernel
+  def func(x: ti.i32, y: ti.i32):
+    z[None] = x % y
+    w[None] = ti.raw_mod(x, y)
+  
+  for i in range(-10, 11):
+    for j in range(-10, 11):
+      if j != 0:
+        func(i, j)
+        assert z[None] == i % j
+        assert w[None] == _c_mod(i, j)

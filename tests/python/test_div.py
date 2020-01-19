@@ -50,3 +50,17 @@ def test_div_default_ip():
   
   func()
   assert z[None] == 100000
+  
+@ti.all_archs
+def test_floor_div_pythonic():
+  z = ti.var(ti.i32, shape=())
+  
+  @ti.kernel
+  def func(x: ti.i32, y: ti.i32):
+    z[None] = x // y
+  
+  for i in range(-10, 11):
+    for j in range(-10, 11):
+      if j != 0:
+        func(i, j)
+        assert z[None] == i // j

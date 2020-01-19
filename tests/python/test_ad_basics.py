@@ -82,6 +82,7 @@ def test_trigonometric():
 
 def test_frac():
   grad_test(lambda x: 1 / x)
+  grad_test(lambda x: 100 // x)
   grad_test(lambda x: (x + 1) / (x - 1))
   grad_test(lambda x: (x + 1) * (x + 2) / ((x - 1) * (x + 3)))
 

@@ -93,7 +93,7 @@ class Expr:
 
   def __mod__(self, other):
     other = Expr(other)
-    quotient = Expr(taichi_lang_core.expr_truediv(self.ptr, other.ptr))
+    quotient = Expr(taichi_lang_core.expr_floordiv(self.ptr, other.ptr))
     multiply = Expr(taichi_lang_core.expr_mul(other.ptr, quotient.ptr))
     return Expr(taichi_lang_core.expr_sub(self.ptr, multiply.ptr))
 

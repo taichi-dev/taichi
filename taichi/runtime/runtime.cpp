@@ -66,6 +66,13 @@ using ContextArgType = long long;
 template <typename T>
 void locked_task(void *lock, const T &func);
 
+template <typename T>
+T ifloordiv(T a, T b) {
+  auto r = a / b;
+  r -= T(a * b < 0 && b * r != a);
+  return r;
+}
+
 extern "C" {
 
 #if ARCH_cuda
@@ -130,6 +137,14 @@ i64 rand_i64() {
 }
 
 #endif
+
+i32 floordiv_i32(i32 a, i32 b) {
+  return ifloordiv(a, b);
+}
+
+i64 floordiv_i64(i64 a, i64 b) {
+  return ifloordiv(a, b);
+}
 
 int max_i32(int a, int b) {
   return a > b ? a : b;

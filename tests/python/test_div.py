@@ -50,4 +50,3 @@ def test_div_default_ip():
   
   func()
   assert z[None] == 100000
-

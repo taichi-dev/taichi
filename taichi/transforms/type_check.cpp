@@ -218,18 +218,7 @@ class TypeCheck : public IRVisitor {
         stmt->rhs->ret_type.data_type == DataType::unknown)
       error();
 
-    // lower truediv and floordiv into div
-
-    if (stmt->op_type == BinaryOpType::floordiv) {
-      auto default_ip = get_current_program().config.default_ip;
-      if (!is_integral(stmt->lhs->ret_type.data_type)) {
-        cast(stmt->lhs, default_ip);
-      }
-      if (!is_integral(stmt->rhs->ret_type.data_type)) {
-        cast(stmt->rhs, default_ip);
-      }
-      stmt->op_type = BinaryOpType::div;
-    }
+    // lower truediv into div
 
     if (stmt->op_type == BinaryOpType::truediv) {
       auto default_fp = get_current_program().config.default_fp;

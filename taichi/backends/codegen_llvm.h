@@ -429,6 +429,16 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       } else {
         stmt->value = builder->CreateMul(stmt->lhs->value, stmt->rhs->value);
       }
+    } else if (op == BinaryOpType::floordiv) {
+      if (is_integral(ret_type))
+        stmt->value = create_call(
+            fmt::format("floordiv_{}", data_type_short_name(ret_type)),
+            {stmt->lhs->value, stmt->rhs->value});
+      else {
+        auto div = builder->CreateFDiv(stmt->lhs->value, stmt->rhs->value);
+        stmt->value = builder->CreateIntrinsic(
+            llvm::Intrinsic::floor, {tlctx->get_data_type(ret_type)}, {div});
+      }
     } else if (op == BinaryOpType::div) {
       if (is_real(stmt->ret_type.data_type)) {
         stmt->value = builder->CreateFDiv(stmt->lhs->value, stmt->rhs->value);
@@ -1058,7 +1068,8 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
         llvm::FunctionType::get(llvm::Type::getVoidTy(*llvm_context),
                                 {PointerType::get(context_ty, 0)}, false);
 
-    auto task_kernel_name = fmt::format("{}_{}_{}", kernel_name, task_counter, stmt->task_name());
+    auto task_kernel_name =
+        fmt::format("{}_{}_{}", kernel_name, task_counter, stmt->task_name());
     task_counter += 1;
     func = Function::Create(task_function_type, Function::ExternalLinkage,
                             task_kernel_name, module.get());

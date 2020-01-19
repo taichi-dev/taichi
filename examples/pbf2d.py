@@ -1,4 +1,5 @@
 # Macklin, M. and Müller, M., 2013. Position based fluids. ACM Transactions on Graphics (TOG), 32(4), p.104.
+# Taichi implementation by Ye Kuang (k-ye)
 
 import taichi as ti
 import numpy as np

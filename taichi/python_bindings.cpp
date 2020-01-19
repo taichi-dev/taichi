@@ -136,7 +136,10 @@ void export_lang(py::module &m) {
       .def("set_extra_arg_int", &Kernel::set_extra_arg_int)
       .def("set_arg_float", &Kernel::set_arg_float)
       .def("set_arg_nparray", &Kernel::set_arg_nparray)
-      .def("__call__", &Kernel::operator());
+      .def("__call__", [](Kernel *kernel) {
+        py::gil_scoped_release release;
+        kernel->operator()();
+      });
 
   py::class_<Expr> expr(m, "Expr");
   expr.def("serialize", &Expr::serialize)

@@ -153,6 +153,10 @@ def min(a, b):
 def atan2(a, b):
   return Expr(taichi_lang_core.expr_atan2(a.ptr, b.ptr))
 
+@binary
+def raw_mod(a, b):
+  return Expr(taichi_lang_core.expr_mod(a.ptr, b.ptr))
+
 def ti_max(*args):
   num_args = len(args)
   assert num_args >= 1

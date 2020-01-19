@@ -47,6 +47,8 @@ python3 -m pip install taichi-nightly-cuda-10-1
 - (WIP) Redesign memory allocator
 
 ## Updates
+- (Jan  18, 2020) v0.3.23 released.
+   - Taichi kernel calls now releases Python GIL
 - (Jan  17, 2020) v0.3.22 released.
    - `ti.atomic_add()` now returns the old value (by Ye Kuang [k-ye])
    - Experimental patch to Windows systems with malformed BIOS info (by Chujie Zeng [Psycho7])

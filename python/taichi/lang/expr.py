@@ -92,7 +92,11 @@ class Expr:
   __rmul__ = __mul__
 
   def __mod__(self, other):
-    return Expr(taichi_lang_core.expr_mod(self.ptr, Expr(other).ptr))
+    import taichi as ti
+    other = Expr(other)
+    quotient = ti.floor(Expr(taichi_lang_core.expr_truediv(self.ptr, other.ptr)))
+    multiply = Expr(taichi_lang_core.expr_mul(other.ptr, quotient.ptr))
+    return Expr(taichi_lang_core.expr_sub(self.ptr, multiply.ptr))
 
   def __truediv__(self, other):
     return Expr(taichi_lang_core.expr_truediv(self.ptr, Expr(other).ptr))

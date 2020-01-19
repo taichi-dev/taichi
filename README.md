@@ -47,8 +47,17 @@ python3 -m pip install taichi-nightly-cuda-10-1
 - (WIP) Redesign memory allocator
 
 ## Updates
+- (Jan  17, 2020) v0.3.22 released.
+   - `ti.atomic_add()` now returns the old value (by Ye Kuang [k-ye])
+   - Experimental patch to Windows systems with malformed BIOS info (by Chujie Zeng [Psycho7])
+   - `ti.__version__` now returns the version triple, e.g. `(0, 3, 22)`
+   - Fixed a CPU multithreading bug
+   - Avoid accessor IR printing when setting `ti.cfg.print_ir = True`
+   - Added `ti.cfg.print_accessor_ir`
+   - Removed dependency on x86_64 SIMD intrinsics
+   - Improved doc
 - (Jan  11, 2020) v0.3.21 released.
-   - Experimental GUI fix for OS X 10.14 and 10.15 (by @k-ye). Let us know if it solves your problem!
+   - GUI fix for OS X 10.14 and 10.15 (by Ye Kuang(k-ye)). Let us know if it solves your problem!
    - Minor improvements on documentation and profiler
 - (Jan   2, 2020) v0.3.20 released.
    - Support `ti.static(ti.grouped(ti.ndrange(...)))`

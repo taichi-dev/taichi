@@ -42,3 +42,42 @@ def test_offload_with_cross_block_locals2():
   ker()
 
   assert ret[None] == 45 * 21
+  
+@ti.all_archs
+def test_offload_with_cross_block_locals2():
+  ti.cfg.print_ir = True
+  ret = ti.var(ti.f32, shape=())
+  
+  @ti.kernel
+  def ker():
+    s = 1
+    t = s
+    for i in range(10):
+      s += i
+    ret[None] = t
+  
+  ker()
+  
+  assert ret[None] == 1
+  
+@ti.all_archs
+def test_offload_with_flexible_bounds():
+  return
+  ti.cfg.print_ir = True
+  s = ti.var(ti.f32, shape=())
+  lower = ti.var(ti.f32, shape=())
+  upper = ti.var(ti.f32, shape=())
+  
+  @ti.kernel
+  def ker():
+    for i in range(lower[None], upper[None]):
+      s[None] += i
+  
+  
+  lower[None] = 10
+  upper[None] = 20
+  ker()
+  
+  assert s[None] == 28 * 10 // 2
+  
+# test_offload_with_flexible_bounds()

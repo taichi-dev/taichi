@@ -122,7 +122,7 @@ This pass promote these local variables into global variables.
 
 Steps:
   1. Traverse offloaded blocks to identify out-of-block local LD/ST
-  2. Replace alloca with global var initializtion (set to 0)
+  2. Replace alloca with global var initialization (set to 0)
      Replace local LD/ST with global LD/ST
 */
 
@@ -203,9 +203,15 @@ class PromoteLocals : public BasicStmtVisitor {
   std::map<Stmt *, std::size_t> local_to_global_offset;
   std::map<Stmt *, VectorType> local_to_global_vector_type;
 
-  PromoteLocals(std::map<Stmt *, std::size_t> local_to_global_offset)
+  explicit PromoteLocals(
+      const std::map<Stmt *, std::size_t> &local_to_global_offset)
       : local_to_global_offset(local_to_global_offset) {
     allow_undefined_visitor = true;
+  }
+
+  void visit(OffloadedStmt *stmt) override {
+    if (stmt->body)
+      stmt->body->accept(this);
   }
 
   void visit(AllocaStmt *stmt) override {

@@ -1,4 +1,3 @@
-
 // Intermediate representations
 
 #include "ir.h"

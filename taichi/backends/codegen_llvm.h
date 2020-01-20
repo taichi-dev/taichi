@@ -1334,6 +1334,10 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     stmt->value = builder->CreatePointerCast(addr, ptr_type);
   }
 
+  void visit(InternalFuncStmt *stmt) override {
+    create_call(stmt->func_name, {get_context()});
+  }
+
   void visit(OffloadedStmt *stmt) override {
     using Type = OffloadedStmt::TaskType;
     init_offloaded_task_function(stmt);

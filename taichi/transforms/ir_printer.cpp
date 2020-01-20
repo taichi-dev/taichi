@@ -402,6 +402,10 @@ class IRPrinter : public IRVisitor {
     print("{}{} = global tmp var (offset = {} B)", stmt->type_hint(),
           stmt->name(), stmt->offset);
   }
+
+  void visit(InternalFuncStmt *stmt) override {
+    print("{} = call internal \"{}\"", stmt->name(), stmt->func_name);
+  }
 };
 
 namespace irpass {

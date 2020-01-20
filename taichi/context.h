@@ -11,14 +11,10 @@ struct Context {
   uint64 args[max_num_args];
   int32 extra_args[max_num_args][max_num_indices];
 
-  void *leaves;
-  int num_leaves;
   CPUProfiler *cpu_profiler;
   void *runtime;
 
   Context() {
-    leaves = 0;
-    num_leaves = 0;
     root = nullptr;
   }
 

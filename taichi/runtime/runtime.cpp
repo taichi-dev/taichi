@@ -206,8 +206,6 @@ struct Context {
   void *root;
   ContextArgType args[taichi_max_num_args];
   int32 extra_args[taichi_max_num_args][taichi_max_num_indices];
-  void *leaves;
-  int num_leaves;
   void *cpu_profiler;
   Ptr runtime;
 };

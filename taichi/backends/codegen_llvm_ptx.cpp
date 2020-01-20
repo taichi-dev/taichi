@@ -31,11 +31,13 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
 
   CodeGenLLVMGPU(CodeGenBase *codegen_base, Kernel *kernel)
       : CodeGenLLVM(codegen_base, kernel) {
+#if defined(TLANG_WITH_CUDA)
     cudaDeviceGetAttribute(&num_SMs, cudaDevAttrMultiProcessorCount, 0);
     cudaDeviceGetAttribute(&max_block_dim, cudaDevAttrMaxBlockDimX, 0);
 
     // each SM can have 16-32 resident blocks
     saturating_num_blocks = num_SMs * 32;
+#endif
   }
 
   void mark_function_as_cuda_kernel(llvm::Function *func) {

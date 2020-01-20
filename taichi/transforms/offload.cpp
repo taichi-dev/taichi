@@ -5,6 +5,7 @@ TLANG_NAMESPACE_BEGIN
 
 namespace irpass {
 
+// Break kernel into multiple parts and emit struct for listgens
 class Offloader {
  public:
   Offloader(IRNode *root) {
@@ -51,8 +52,10 @@ class Offloader {
         auto offloaded =
             Stmt::make_typed<OffloadedStmt>(OffloadedStmt::TaskType::range_for);
         offloaded->body = std::make_unique<Block>();
-        offloaded->begin = s->begin->as<ConstStmt>()->val[0].val_int32();
-        offloaded->end = s->end->as<ConstStmt>()->val[0].val_int32();
+        offloaded->begin = 0;  // s->begin->as<ConstStmt>()->val[0].val_int32();
+        offloaded->end = 0;    // s->end->as<ConstStmt>()->val[0].val_int32();
+        offloaded->begin_stmt = s->begin;
+        offloaded->end_stmt = s->end;
         offloaded->block_dim = s->block_dim;
         offloaded->num_cpu_threads = s->parallelize;
         fix_loop_index_load(s, s->loop_var, 0, false);
@@ -117,11 +120,12 @@ class Offloader {
 };
 
 /*
-After offloading, some local variables are accessed across offloaded blocks.
-This pass promote these local variables into global variables.
+After offloading, some local variables/instructions are accessed across
+offloaded blocks. This pass promote these local values into global variables.
 
 Steps:
-  1. Traverse offloaded blocks to identify out-of-block local LD/ST
+  1. Traverse offloaded blocks to identify out-of-block local LD/ST, instruction
+references
   2. Replace alloca with global var initialization (set to 0)
      Replace local LD/ST with global LD/ST
 */
@@ -130,8 +134,11 @@ class IdentifyLocalVars : public BasicStmtVisitor {
  public:
   using BasicStmtVisitor::visit;
 
+  // Local variables to global temporary offsets (in bytes)
   std::map<Stmt *, std::size_t> local_to_global;
-  std::map<Stmt *, Stmt *> local_to_offloaded;
+  // Local variables alloc to its containing offloaded statement
+  std::map<Stmt *, Stmt *> inst_to_offloaded;
+
   Stmt *current_offloaded;
   std::size_t global_offset;
 
@@ -151,6 +158,12 @@ class IdentifyLocalVars : public BasicStmtVisitor {
 
   void visit(OffloadedStmt *stmt) override {
     current_offloaded = stmt;
+    if (stmt->begin_stmt) {
+      test_and_allocate(stmt->begin_stmt);
+    }
+    if (stmt->end_stmt) {
+      test_and_allocate(stmt->end_stmt);
+    }
     if (stmt->body)
       stmt->body->accept(this);
     current_offloaded = nullptr;
@@ -158,13 +171,14 @@ class IdentifyLocalVars : public BasicStmtVisitor {
 
   void visit(AllocaStmt *stmt) override {
     TC_ASSERT(current_offloaded);
-    local_to_offloaded[stmt] = current_offloaded;
+    inst_to_offloaded[stmt] = current_offloaded;
   }
 
   void test_and_allocate(Stmt *stmt) {
-    if (local_to_offloaded[stmt] == current_offloaded)
+    if (inst_to_offloaded[stmt] == current_offloaded)
       return;
     if (local_to_global.find(stmt) == local_to_global.end()) {
+      // Not yet allocated
       local_to_global[stmt] = allocate_global(stmt->ret_type);
     }
   }
@@ -189,10 +203,67 @@ class IdentifyLocalVars : public BasicStmtVisitor {
     }
   }
 
+  void generic_visit(Stmt *stmt) {
+    if (current_offloaded != nullptr) {
+      // inside a offloaded stmt, record its belong offloaded_stmt
+      inst_to_offloaded[stmt] = current_offloaded;
+    }
+    int n_op = stmt->num_operands();
+    for (int i = 0; i < n_op; i++) {
+      auto op = stmt->operand(i);
+      test_and_allocate(op);
+    }
+  }
+
+  void visit(Stmt *stmt) override {
+    generic_visit(stmt);
+  }
+
   static std::map<Stmt *, std::size_t> run(IRNode *root) {
     IdentifyLocalVars pass;
     root->accept(&pass);
     return pass.local_to_global;
+  }
+};
+
+class PromoteIntermediate : public BasicStmtVisitor {
+ public:
+  using BasicStmtVisitor::visit;
+
+  std::map<Stmt *, std::size_t> local_to_global_offset;
+  std::set<Stmt *> stored_to_global;
+
+  explicit PromoteIntermediate(
+      const std::map<Stmt *, std::size_t> &local_to_global_offset)
+      : local_to_global_offset(local_to_global_offset) {
+    allow_undefined_visitor = true;
+    invoke_default_visitor = true;
+  }
+
+  void visit(Stmt *stmt) override {
+    if (!stmt->is<AllocaStmt>() &&
+        local_to_global_offset.find(stmt) != local_to_global_offset.end() &&
+        stored_to_global.find(stmt) == stored_to_global.end()) {
+      stored_to_global.insert(stmt);
+      auto offset = local_to_global_offset[stmt];
+      auto ptr = stmt->insert_after_me(
+          Stmt::make<GlobalTemporaryStmt>(offset, stmt->ret_type));
+      ptr->insert_after_me(Stmt::make<GlobalStoreStmt>(ptr, stmt));
+      throw IRModified();
+    }
+  }
+
+  static void run(IRNode *root,
+                  std::map<Stmt *, std::size_t> local_to_global_offset) {
+    PromoteIntermediate pass(local_to_global_offset);
+    while (true) {
+      try {
+        root->accept(&pass);
+      } catch (IRModified) {
+        continue;
+      }
+      break;
+    }
   }
 };
 
@@ -202,6 +273,7 @@ class PromoteLocals : public BasicStmtVisitor {
 
   std::map<Stmt *, std::size_t> local_to_global_offset;
   std::map<Stmt *, VectorType> local_to_global_vector_type;
+  std::set<Stmt *> stored_to_global;
 
   explicit PromoteLocals(
       const std::map<Stmt *, std::size_t> &local_to_global_offset)
@@ -212,6 +284,10 @@ class PromoteLocals : public BasicStmtVisitor {
   void visit(OffloadedStmt *stmt) override {
     if (stmt->body)
       stmt->body->accept(this);
+    if (stmt->task_type == OffloadedStmt::TaskType::range_for) {
+      stmt->begin = local_to_global_offset[stmt->begin_stmt];
+      stmt->end = local_to_global_offset[stmt->end_stmt];
+    }
   }
 
   void visit(AllocaStmt *stmt) override {
@@ -302,6 +378,7 @@ void offload(IRNode *root) {
   irpass::fix_block_parents(root);
   {
     auto local_to_global = IdentifyLocalVars::run(root);
+    PromoteIntermediate::run(root, local_to_global);
     PromoteLocals::run(root, local_to_global);
   }
   irpass::typecheck(root);

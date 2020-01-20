@@ -169,7 +169,9 @@ class OffloadedStmt : public Stmt {
 
   TaskType task_type;
   SNode *snode;
-  int begin, end, step;
+  Stmt *begin_stmt, *end_stmt;
+  std::size_t begin, end;
+  int step;
   int block_dim;
   bool reversed;
   int num_cpu_threads;

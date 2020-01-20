@@ -521,8 +521,12 @@ Stmt *IRBuilder::get_last_stmt() {
 
 OffloadedStmt::OffloadedStmt(taichi::Tlang::OffloadedStmt::TaskType task_type)
     : task_type(task_type) {
+  add_operand(begin_stmt);
+  add_operand(end_stmt);
   num_cpu_threads = 1;
   begin = end = step = 0;
+  begin_stmt = nullptr;
+  end_stmt = nullptr;
   block_dim = 0;
   reversed = false;
   device = get_current_program().config.arch;

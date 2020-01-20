@@ -1182,11 +1182,19 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       body = guard.body;
     }
 
-    create_call("cpu_parallel_range_for",
-                {get_arg(0), tlctx->get_constant(stmt->num_cpu_threads),
-                 tlctx->get_constant(stmt->begin),
-                 tlctx->get_constant(stmt->end), tlctx->get_constant(step),
-                 tlctx->get_constant(stmt->block_dim), body});
+    auto begin_ptr = Stmt::make<GlobalTemporaryStmt>(
+        stmt->begin, VectorType(1, DataType::i32));
+    auto end_ptr = Stmt::make<GlobalTemporaryStmt>(
+        stmt->end, VectorType(1, DataType::i32));
+    begin_ptr->accept(this);
+    end_ptr->accept(this);
+
+    create_call(
+        "cpu_parallel_range_for",
+        {get_arg(0), tlctx->get_constant(stmt->num_cpu_threads),
+         builder->CreateLoad(begin_ptr->value, "begin"),
+         builder->CreateLoad(end_ptr->value, "end"), tlctx->get_constant(step),
+         tlctx->get_constant(stmt->block_dim), body});
   }
 
   void create_offload_struct_for(OffloadedStmt *stmt, bool spmd = false) {

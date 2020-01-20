@@ -24,8 +24,11 @@ taichi::Tlang::UnifiedAllocator::UnifiedAllocator(std::size_t size, bool gpu)
     if (_cuda_data == nullptr) {
       TC_ERROR("GPU memory allocation failed.");
     }
+#if !defined(TI_ARCH_ARM)
+    // Assuming ARM devices have shared CPU/GPU memory and do no support memAdvise
     check_cuda_errors(cudaMemAdvise(_cuda_data, size + 4096,
                                     cudaMemAdviseSetPreferredLocation, 0));
+#endif
     // http://on-demand.gputechconf.com/gtc/2017/presentation/s7285-nikolay-sakharnykh-unified-memory-on-pascal-and-volta.pdf
     /*
     cudaMemAdvise(_cuda_data, size + 4096, cudaMemAdviseSetReadMostly,

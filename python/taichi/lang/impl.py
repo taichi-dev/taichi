@@ -298,3 +298,6 @@ def default_cfg():
 from .kernel import *
 from .ops import *
 from .kernel_arguments import *
+
+def call_internal(name):
+  taichi_lang_core.create_internal_func_stmt(name)

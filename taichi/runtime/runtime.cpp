@@ -777,6 +777,16 @@ i32 cuda_rand_i32(Context *context) {
 i64 cuda_rand_i64(Context *context) {
   return cuda_rand_u64(context);
 }
+
+i32 do_nothing(Context *context) {
+}
+
+i32 loop_forever(Context *context) {
+  while (1) {
+
+  }
+}
+
 };
 
 #endif

@@ -101,7 +101,8 @@ class OffsetAndExtractBitsStmt : public Stmt {
 
 class GetRootStmt : public Stmt {
  public:
-  GetRootStmt() {}
+  GetRootStmt() {
+  }
 
   DEFINE_ACCEPT
 };
@@ -206,6 +207,17 @@ class GlobalTemporaryStmt : public Stmt {
   GlobalTemporaryStmt(std::size_t offset, VectorType ret_type)
       : offset(offset) {
     this->ret_type = ret_type;
+  }
+
+  DEFINE_ACCEPT
+};
+
+class InternalFuncStmt : public Stmt {
+ public:
+  std::string func_name;
+
+  InternalFuncStmt(const std::string &func_name) : func_name(func_name) {
+    this->ret_type = VectorType(1, DataType::i32);
   }
 
   DEFINE_ACCEPT

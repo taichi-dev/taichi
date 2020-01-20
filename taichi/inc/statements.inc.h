@@ -12,7 +12,7 @@ PER_STATEMENT(FrontendSNodeOpStmt)  // activate, deactivate, append, clear
 PER_STATEMENT(FrontendAssertStmt)
 PER_STATEMENT(FrontendArgStoreStmt)
 
-// Midend statement
+// Middle-end statement
 
 // Without per-lane attributes
 PER_STATEMENT(RangeForStmt)
@@ -62,3 +62,6 @@ PER_STATEMENT(ClearAllStmt)
 PER_STATEMENT(OffloadedStmt)
 PER_STATEMENT(LoopIndexStmt)
 PER_STATEMENT(GlobalTemporaryStmt)
+
+// Special
+PER_STATEMENT(InternalFuncStmt)

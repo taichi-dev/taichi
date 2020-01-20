@@ -666,6 +666,17 @@ void cpu_parallel_range_for(Context *context,
                         &ctx, parallel_range_for_task);
 }
 
+void gpu_parallel_range_for(Context *context,
+                            int begin,
+                            int end,
+                            CPUTaskFunc *func) {
+  int idx = thread_idx() + block_dim() * block_idx() + begin;
+  while (idx < end) {
+    func(context, idx);
+    idx += block_dim() * grid_dim();
+  }
+}
+
 i32 linear_thread_idx() {
   return block_idx() * block_dim() + thread_idx();
 }

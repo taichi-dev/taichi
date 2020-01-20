@@ -25,9 +25,17 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
  public:
   int kernel_grid_dim;
   int kernel_block_dim;
+  int num_SMs;
+  int max_block_dim;
+  int saturating_num_blocks;
 
   CodeGenLLVMGPU(CodeGenBase *codegen_base, Kernel *kernel)
       : CodeGenLLVM(codegen_base, kernel) {
+    cudaDeviceGetAttribute(&num_SMs, cudaDevAttrMultiProcessorCount, 0);
+    cudaDeviceGetAttribute(&max_block_dim, cudaDevAttrMaxBlockDimX, 0);
+
+    // each SM can have 16-32 resident blocks
+    saturating_num_blocks = num_SMs * 32;
   }
 
   void mark_function_as_cuda_kernel(llvm::Function *func) {
@@ -251,54 +259,42 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
   }
 
   void create_offload_range_for(OffloadedStmt *stmt) {
-    auto loop_var = create_entry_block_alloca(DataType::i32);
-    stmt->loop_vars_llvm.push_back(loop_var);
-    auto loop_begin = stmt->begin;
-    auto loop_end = stmt->end;
     auto loop_block_dim = stmt->block_dim;
     if (loop_block_dim == 0) {
       loop_block_dim = get_current_program().config.default_gpu_block_dim;
     }
-    kernel_grid_dim =
-        (loop_end - loop_begin + loop_block_dim - 1) / loop_block_dim;
+    kernel_grid_dim = saturating_num_blocks;
     kernel_block_dim = loop_block_dim;
-    BasicBlock *body = BasicBlock::Create(*llvm_context, "loop_body", func);
-    BasicBlock *after_loop = BasicBlock::Create(*llvm_context, "block", func);
 
-    auto threadIdx =
-        builder->CreateIntrinsic(Intrinsic::nvvm_read_ptx_sreg_tid_x, {}, {});
-    auto blockIdx =
-        builder->CreateIntrinsic(Intrinsic::nvvm_read_ptx_sreg_ctaid_x, {}, {});
-    auto blockDim =
-        builder->CreateIntrinsic(Intrinsic::nvvm_read_ptx_sreg_ntid_x, {}, {});
+    llvm::Function *body;
 
-    auto loop_id = builder->CreateAdd(
-        tlctx->get_constant(stmt->begin),
-        builder->CreateAdd(threadIdx, builder->CreateMul(blockIdx, blockDim)));
-
-    builder->CreateStore(loop_id, loop_var);
-
-    auto cond = builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_SLT,
-                                    builder->CreateLoad(loop_var),
-                                    tlctx->get_constant(stmt->end));
-
-    builder->CreateCondBr(cond, body, after_loop);
     {
-      // body cfg
-      builder->SetInsertPoint(body);
+      auto guard = get_function_creation_gurad(
+          {llvm::PointerType::get(get_runtime_type("Context"), 0),
+           tlctx->get_data_type<int>()});
+
+      auto loop_var = create_entry_block_alloca(DataType::i32);
+      stmt->loop_vars_llvm.push_back(loop_var);
+      builder->CreateStore(get_arg(1), loop_var);
       stmt->body->accept(this);
-      builder->CreateBr(after_loop);
+
+      body = guard.body;
     }
 
-    builder->SetInsertPoint(after_loop);
+    auto begin_ptr = Stmt::make<GlobalTemporaryStmt>(
+        stmt->begin, VectorType(1, DataType::i32));
+    auto end_ptr = Stmt::make<GlobalTemporaryStmt>(
+        stmt->end, VectorType(1, DataType::i32));
+    begin_ptr->accept(this);
+    end_ptr->accept(this);
+
+    create_call("gpu_parallel_range_for",
+                {get_arg(0), builder->CreateLoad(begin_ptr->value, "begin"),
+                 builder->CreateLoad(end_ptr->value, "end"), body});
   }
 
   void visit(OffloadedStmt *stmt) override {
 #if defined(TLANG_WITH_CUDA)
-    int num_SMs;
-    cudaDeviceGetAttribute(&num_SMs, cudaDevAttrMultiProcessorCount, 0);
-    int max_block_dim;
-    cudaDeviceGetAttribute(&max_block_dim, cudaDevAttrMaxBlockDimX, 0);
     using Type = OffloadedStmt::TaskType;
     kernel_grid_dim = 1;
     kernel_block_dim = 1;
@@ -308,7 +304,7 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
     } else if (stmt->task_type == Type::range_for) {
       create_offload_range_for(stmt);
     } else if (stmt->task_type == Type::struct_for) {
-      kernel_grid_dim = num_SMs * 32;  // each SM can have 16-32 resident blocks
+      kernel_grid_dim = saturating_num_blocks;
       kernel_block_dim = stmt->block_dim;
       if (kernel_block_dim == 0)
         kernel_block_dim = get_current_program().config.default_gpu_block_dim;
@@ -320,7 +316,7 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
       emit_clear_list(stmt);
     } else if (stmt->task_type == Type::listgen) {
       int branching = stmt->snode->max_num_elements();
-      kernel_grid_dim = num_SMs * 32;
+      kernel_grid_dim = saturating_num_blocks;
       kernel_block_dim = std::min(branching, 64);
       emit_list_gen(stmt);
     } else {

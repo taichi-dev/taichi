@@ -62,7 +62,6 @@ def test_offload_with_cross_block_locals2():
   
 @ti.all_archs
 def test_offload_with_flexible_bounds():
-  ti.cfg.print_ir = True
   s = ti.var(ti.i32, shape=())
   lower = ti.var(ti.i32, shape=())
   upper = ti.var(ti.i32, shape=())
@@ -78,5 +77,4 @@ def test_offload_with_flexible_bounds():
   ker()
   
   assert s[None] == 29 * 10 // 2
-  
-test_offload_with_flexible_bounds()
+

@@ -7,8 +7,7 @@ TLANG_NAMESPACE_BEGIN
 class CPUProfiler;
 
 struct Context {
-  using Buffer = void *;
-  Buffer buffers[1];
+  void *root;
   uint64 args[max_num_args];
   int32 extra_args[max_num_args][max_num_indices];
 
@@ -20,12 +19,11 @@ struct Context {
   Context() {
     leaves = 0;
     num_leaves = 0;
-    for (int i = 0; i < 1; i++)
-      buffers[i] = nullptr;
+    root = nullptr;
   }
 
   Context(void *x) : Context() {
-    buffers[0] = x;
+    root = x;
   }
 
   template <typename T>

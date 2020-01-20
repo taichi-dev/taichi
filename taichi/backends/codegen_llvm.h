@@ -134,13 +134,11 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   }
 
   llvm::Value *get_root() {
-    return builder->CreateCall(get_runtime_function("Context_get_buffer"),
-                               get_context());
+    return create_call("Context_get_root", {get_context()});
   }
 
   llvm::Value *get_runtime() {
-    auto runtime_ptr = builder->CreateCall(
-        get_runtime_function("Context_get_runtime"), get_context());
+    auto runtime_ptr = create_call("Context_get_runtime", {get_context()});
     return builder->CreateBitCast(
         runtime_ptr, llvm::PointerType::get(get_runtime_type("Runtime"), 0));
   }

@@ -203,7 +203,7 @@ struct PhysicalCoordinates {
 STRUCT_FIELD_ARRAY(PhysicalCoordinates, val);
 
 struct Context {
-  void *buffer;
+  void *root;
   ContextArgType args[taichi_max_num_args];
   int32 extra_args[taichi_max_num_args][taichi_max_num_indices];
   void *leaves;
@@ -214,7 +214,7 @@ struct Context {
 
 STRUCT_FIELD_ARRAY(Context, args);
 STRUCT_FIELD(Context, runtime);
-STRUCT_FIELD(Context, buffer);
+STRUCT_FIELD(Context, root);
 
 int32 Context_get_extra_args(Context *ctx, int32 i, int32 j) {
   return ctx->extra_args[i][j];
@@ -779,6 +779,7 @@ i32 cuda_rand_i32(Context *context) {
 i64 cuda_rand_i64(Context *context) {
   return cuda_rand_u64(context);
 }
+
 };
 
 #endif

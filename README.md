@@ -47,6 +47,8 @@ python3 -m pip install taichi-nightly-cuda-10-1
 - (WIP) Redesign memory allocator
 
 ## Updates
+- (Jan  20, 2020) v0.3.25 released.
+   - Experimental [CPU-only support for NVIDIA Jetson Nano](https://user-images.githubusercontent.com/34827518/72769070-62b1b200-3c34-11ea-8f6e-0f339b5b09ca.jpg) (with ARM CPUs. Building from source required.)
 - (Jan  19, 2020) v0.3.24 released.
    - `%` and `//` now follow Python semantics. Use `ti.raw_mod` for C-style `%` semantics (by **Chujie Zeng [Psycho7]**)
    - Parallel range-fors now supports non-compile-time constant bounds. For example, `for i in range(bound[0])` is supported

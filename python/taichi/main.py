@@ -61,6 +61,7 @@ def main(debug=False):
         "           ti video_speed            |-> Speed up video\n"
         "           ti gif                    |-> Convert mp4 file to gif\n"
         "           ti doc                    |-> Build documentation\n"
+        "           ti release                |-> Make source code release\n"
         "           ti debug [script.py]      |-> Debug script\n")
     exit(0)
   mode = sys.argv[1]
@@ -182,18 +183,28 @@ def main(debug=False):
       shutil.move(fn, tmp_fn)
       command = r'sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g"'
       os.system('{} {} > {}'.format(command, tmp_fn, fn))
-  elif mode == "merge":
-    import cv2  # TODO: remove this dependency
-    import numpy as np
-    folders = sys.argv[2:]
-    os.makedirs('merged', exist_ok=True)
-    for fn in sorted(os.listdir(folders[0])):
-      imgs = []
-      for fld in folders:
-        img = cv2.imread(os.path.join(fld, fn))
-        imgs.append(img)
-      img = np.hstack(imgs)
-      cv2.imwrite(os.path.join('merged', fn), img)
+  elif mode == "release":
+    from git import Git
+    import zipfile
+    import hashlib
+    g = Git(ti.get_repo_directory())
+    g.init()
+    with zipfile.ZipFile('release.zip', 'w') as zip:
+      files = g.ls_files().split('\n')
+      os.chdir(ti.get_repo_directory())
+      for f in files:
+        if not os.path.isdir(f):
+          zip.write(f)
+    ver = ti.__version__
+    md5 = hashlib.md5()
+    with open('release.zip', "rb") as f:
+      for chunk in iter(lambda: f.read(4096), b""):
+        md5.update(chunk)
+    md5 = md5.hexdigest()
+    commit = ti.core.get_commit_hash()[:8]
+    fn = f'taichi-src-v{ver[0]}-{ver[1]}-{ver[2]}-{commit}-{md5}.zip'
+    import shutil
+    shutil.move('release.zip', fn)
   else:
     name = sys.argv[1]
     print('Running task [{}]...'.format(name))

@@ -19,11 +19,9 @@ T union_cast_with_different_sizes(G g) {
 
 struct Context {
   void *root;
+  void *runtime;
   uint64 args[taichi_max_num_args];
   int32 extra_args[taichi_max_num_args][taichi_max_num_indices];
-
-  void *cpu_profiler;
-  void *runtime;
 
   Context() {
     root = nullptr;

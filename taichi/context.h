@@ -15,14 +15,12 @@ T union_cast_with_different_sizes(G g) {
   u.g = g;
   return u.t;
 }
-#else
-extern "C" {
 #endif
 
 struct Context {
   void *root;
-  uint64 args[max_num_args];
-  int32 extra_args[max_num_args][max_num_indices];
+  uint64 args[taichi_max_num_args];
+  int32 extra_args[taichi_max_num_args][taichi_max_num_indices];
 
   void *cpu_profiler;
   void *runtime;
@@ -47,4 +45,6 @@ struct Context {
   }
 #endif
 };
+#if defined(TI_RUNTIME_HOST)
 }
+#endif

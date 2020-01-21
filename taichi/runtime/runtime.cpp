@@ -197,22 +197,16 @@ f64 __nv_sgn(f64 x) {
 }
 
 struct PhysicalCoordinates {
-  int val[taichi_max_num_indices];
+  i32 val[taichi_max_num_indices];
 };
 
 STRUCT_FIELD_ARRAY(PhysicalCoordinates, val);
 
-struct Context {
-  void *root;
-  ContextArgType args[taichi_max_num_args];
-  int32 extra_args[taichi_max_num_args][taichi_max_num_indices];
-  void *cpu_profiler;
-  Ptr runtime;
-};
+#include "../context.h"
 
+STRUCT_FIELD(Context, root);
 STRUCT_FIELD_ARRAY(Context, args);
 STRUCT_FIELD(Context, runtime);
-STRUCT_FIELD(Context, root);
 
 int32 Context_get_extra_args(Context *ctx, int32 i, int32 j) {
   return ctx->extra_args[i][j];

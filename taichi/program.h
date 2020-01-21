@@ -2,6 +2,7 @@
 
 #pragma once
 
+#define TI_RUNTIME_HOST
 #include "ir.h"
 #include "kernel.h"
 #include "snode.h"

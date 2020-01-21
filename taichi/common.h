@@ -3,12 +3,6 @@
 
 #define FUNC_DECL
 
-#if defined(TLANG_GPU)
-__device__ __constant__ void **device_head;
-__device__ __constant__ void *device_data;
-__device__ __constant__ int *error_code;
-#endif
-
 #define TLANG_NAMESPACE_BEGIN \
   namespace taichi {          \
   namespace Tlang {
@@ -55,40 +49,6 @@ using int16 = std::int16_t;
 using int32 = std::int32_t;
 using int64 = std::int64_t;
 
-#if defined(TLANG_GPU)
-#include <cuda_runtime.h>
-#undef FUNC_DECL
-#define FUNC_DECL __host__ __device__
-#endif
-
-__device__ __host__ void exit() {
-#if __CUDA_ARCH__
-  assert(0);
-#else
-  exit(-1);
-#endif
-}
-
-#if defined(TL_DEBUG)
-#define TC_ASSERT(x)                                                     \
-  if (!(x)) {                                                            \
-    printf("Assertion failed (%s@Ln %d): %s\n", __FILE__, __LINE__, #x); \
-    exit();                                                              \
-  }
-
-#define TC_ASSERT_INFO(x, t)                                            \
-  if (!(x)) {                                                           \
-    printf("Assertion failed (%s@Ln %d): %s\n", __FILE__, __LINE__, t); \
-    exit();                                                             \
-  }
-#else
-#define TC_ASSERT(x)
-#define TC_ASSERT_INFO(x, t)
-#endif
-
-#define TC_P(x)                                                          \
-  std::cout << __FILE__ << "@" << __LINE__ << ": " << #x << " = " << (x) \
-            << std::endl;
 namespace taichi {
 TC_FORCE_INLINE uint32 rand_int() noexcept {
   static unsigned int x = 123456789, y = 362436069, z = 521288629, w = 88675123;

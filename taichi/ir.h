@@ -1397,7 +1397,7 @@ class SNodeOpStmt : public Stmt {
     if (val)
       add_operand(this->val);
     width() = 1;
-    element_type() = snode->dt;
+    element_type() = DataType::i32;
   }
 
   DEFINE_ACCEPT

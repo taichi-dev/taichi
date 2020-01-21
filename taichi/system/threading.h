@@ -13,8 +13,8 @@
 
 TC_NAMESPACE_BEGIN
 
-using CPUTaskFunc = void(void *, int i);
-using ParallelFor = void(int n, int num_threads, void *, CPUTaskFunc func);
+using RangeForTaskFunc = void(void *, int i);
+using ParallelFor = void(int n, int num_threads, void *, RangeForTaskFunc func);
 
 class PID {
  public:
@@ -37,7 +37,7 @@ class ThreadPool {
   uint64 last_finished;
   bool started;
   bool exiting;
-  CPUTaskFunc *func;
+  RangeForTaskFunc *func;
   void *context;
   int thread_counter;
 
@@ -46,13 +46,13 @@ class ThreadPool {
   void run(int splits,
            int desired_num_threads,
            void *context,
-           CPUTaskFunc *func);
+           RangeForTaskFunc *func);
 
   static void static_run(ThreadPool *pool,
                          int splits,
                          int desired_num_threads,
                          void *context,
-                         CPUTaskFunc *func) {
+                         RangeForTaskFunc *func) {
     return pool->run(splits, desired_num_threads, context, func);
   }
 

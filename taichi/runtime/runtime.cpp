@@ -318,7 +318,7 @@ Ptr NodeAllocator_allocate(NodeAllocator *node_allocator) {
 }
 
 using vm_allocator_type = void *(*)(std::size_t, int);
-using CPUTaskFunc = void(Context *, int i);
+using RangeForTaskFunc = void(Context *, int i);
 using parallel_for_type = void (*)(void *thread_pool,
                                    int splits,
                                    int num_desired_threads,
@@ -589,7 +589,7 @@ void for_each_block(Context *context,
 
 struct range_task_helper_context {
   Context *context;
-  CPUTaskFunc *task;
+  RangeForTaskFunc *task;
   int begin;
   int end;
   int block_size;
@@ -641,7 +641,7 @@ void cpu_parallel_range_for(Context *context,
                             int end,
                             int step,
                             int block_dim,
-                            CPUTaskFunc *task) {
+                            RangeForTaskFunc *task) {
   range_task_helper_context ctx;
   ctx.context = context;
   ctx.task = task;
@@ -662,7 +662,7 @@ void cpu_parallel_range_for(Context *context,
 void gpu_parallel_range_for(Context *context,
                             int begin,
                             int end,
-                            CPUTaskFunc *func) {
+                            RangeForTaskFunc *func) {
   int idx = thread_idx() + block_dim() * block_idx() + begin;
   while (idx < end) {
     func(context, idx);
@@ -732,7 +732,7 @@ u32 cuda_rand_u32(Context *context) {
   auto lock = (Ptr)&state->lock;
 
   bool done = false;
-  // TODO: whether this leads to a deadlock depends on how nvcc schedules the
+  // TODO: whether this leads to a deadlock or not depends on how nvcc schedules the
   // instructions...
   while (!done) {
     if (atomic_exchange_i32((i32 *)lock, 1) == 1) {

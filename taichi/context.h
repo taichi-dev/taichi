@@ -7,6 +7,7 @@ namespace taichi::Tlang {
 using namespace taichi;
 #endif
 
+// "Context" holds necessary data for function calls, such as arguments and Runtime struct
 struct Context {
   void *runtime;
   uint64 args[taichi_max_num_args];

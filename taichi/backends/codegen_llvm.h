@@ -134,7 +134,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   }
 
   llvm::Value *get_root() {
-    return create_call("Context_get_root", {get_context()});
+    return create_call("Runtime_get_root", {get_runtime()});
   }
 
   llvm::Value *get_runtime() {

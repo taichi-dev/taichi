@@ -36,7 +36,6 @@ class Program {
   // pointer to the data structure. assigned to context.buffers[0] during kernel
   // launches
   void *llvm_runtime;
-  void *data_structure;
   CompileConfig config;
   CPUProfiler cpu_profiler;
   Context context;
@@ -80,8 +79,6 @@ class Program {
   }
 
   Context &get_context() {
-    context.root = data_structure;
-    context.cpu_profiler = &cpu_profiler;
     context.runtime = llvm_runtime;
     return context;
   }

@@ -13,7 +13,7 @@ class StructCompiler : public CodeGenBase {
   std::vector<SNode *> snodes;
   std::vector<SNode *> ambient_snodes;
   std::string root_type;
-  std::function<void *()> creator;
+  std::function<void()> creator;
   std::function<void()> profiler_print;
   std::function<void()> profiler_clear;
   LoopGenerator loopgen;

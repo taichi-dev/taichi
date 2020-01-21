@@ -269,15 +269,19 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
         tlctx->lookup_function<std::function<void(void *, void *, void *)>>(
             "Runtime_initialize_thread_pool");
 
+    auto runtime_set_root =
+        tlctx->lookup_function<std::function<void(void *, void *)>>(
+            "Runtime_set_root");
+
     auto snodes = this->snodes;
     auto tlctx = this->tlctx;
     auto root_id = root.id;
     creator = [=]() {
+      auto &prog = get_current_program();
       TC_INFO("Allocating data structure of size {} B", root_size);
-      auto root_ptr = initialize_data_structure(
-          &get_current_program().llvm_runtime, (int)snodes.size(), root_size,
-          root_id, (void *)&::taichi_allocate_aligned,
-          get_current_program().config.verbose);
+      auto root = initialize_data_structure(
+          &prog.llvm_runtime, (int)snodes.size(), root_size, root_id,
+          (void *)&::taichi_allocate_aligned, prog.config.verbose);
       for (int i = 0; i < (int)snodes.size(); i++) {
         if (snodes[i]->type == SNodeType::pointer ||
             snodes[i]->type == SNodeType::dynamic) {
@@ -303,13 +307,11 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
         }
       }
 
-      runtime_initialize_thread_pool(get_current_program().llvm_runtime,
-                                     &get_current_program().thread_pool,
+      runtime_initialize_thread_pool(prog.llvm_runtime, &prog.thread_pool,
                                      (void *)ThreadPool::static_run);
-      set_assert_failed(get_current_program().llvm_runtime,
-                        (void *)assert_failed_host);
+      set_assert_failed(prog.llvm_runtime, (void *)assert_failed_host);
 
-      return (void *)root_ptr;
+      runtime_set_root(prog.llvm_runtime, root);
     };
   }
   tlctx->snode_attr = snode_attr;

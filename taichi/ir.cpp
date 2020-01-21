@@ -265,10 +265,9 @@ std::atomic<int> Stmt::instance_id_counter(0);
 
 std::unique_ptr<FrontendContext> context;
 
+// TODO: clean this part up
 void *Expr::evaluate_addr(int i, int j, int k, int l) {
-  auto snode = this->cast<GlobalVariableExpression>()->snode;
-  get_current_program().synchronize();
-  return snode->evaluate(get_current_program().data_structure, i, j, k, l);
+  TC_NOT_IMPLEMENTED
 }
 
 template <int i, typename... Indices>

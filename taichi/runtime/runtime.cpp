@@ -204,7 +204,6 @@ STRUCT_FIELD_ARRAY(PhysicalCoordinates, val);
 
 #include "../context.h"
 
-STRUCT_FIELD(Context, root);
 STRUCT_FIELD_ARRAY(Context, args);
 STRUCT_FIELD(Context, runtime);
 
@@ -349,6 +348,7 @@ void initialize_rand_state(RandState *state, u32 i) {
 struct Runtime {
   vm_allocator_type vm_allocator;
   assert_failed_type assert_failed;
+  Ptr root;
   Ptr thread_pool;
   parallel_for_type parallel_for;
   ElementList *element_lists[taichi_max_num_snodes];
@@ -360,6 +360,7 @@ struct Runtime {
 
 STRUCT_FIELD_ARRAY(Runtime, element_lists);
 STRUCT_FIELD_ARRAY(Runtime, node_allocators);
+STRUCT_FIELD(Runtime, root);
 STRUCT_FIELD(Runtime, temporaries);
 STRUCT_FIELD(Runtime, assert_failed);
 

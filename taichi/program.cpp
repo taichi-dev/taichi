@@ -44,7 +44,7 @@ void Program::materialize_layout() {
       StructCompiler::make(config.use_llvm, Arch::x86_64);
   scomp->run(root, true);
   layout_fn = scomp->get_source_path();
-  data_structure = scomp->creator();
+  scomp->creator();
   profiler_print_gpu = scomp->profiler_print;
   profiler_clear_gpu = scomp->profiler_clear;
 

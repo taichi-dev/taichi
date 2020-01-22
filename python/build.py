@@ -31,7 +31,7 @@ def get_os_name():
   assert False, "Unknown platform name %s" % name
 
 
-if os.environ.get('PYPI_PWD', '') is '':
+if os.environ.get('PYPI_PWD', '') == '':
   assert False, "Missing environment variable PYPI_PWD"
 
 

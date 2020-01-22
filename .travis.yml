@@ -7,21 +7,14 @@ matrix:
   - os: osx
     osx_image: xcode10.3
     env:
-      - MATRIX_EVAL="CC=clang && CXX=clang++ && PYVER=3.6"
+      - MATRIX_EVAL="CC=clang && CXX=clang++ && TOXENV=py37 && PYTHON=python3.7"
   - os: osx
     osx_image: xcode10.3
     env:
-      - MATRIX_EVAL="CC=clang && CXX=clang++ && PYVER=3.7"
-  - os: osx
-    osx_image: xcode10.3
-    env:
-      - MATRIX_EVAL="CC=clang && CXX=clang++ && PYVER=3.8"
+      - MATRIX_EVAL="CC=clang && CXX=clang++ && TOXENV=py36 && PYTHON=python3.6"
 
 before_install:
 - eval "${MATRIX_EVAL}"
-- brew update
-- brew install python@${PYVER}
-- export PYTHON=python${PYVER}
 - echo $CXX
 - echo $PYTHON
 - sysctl -n hw.ncpu

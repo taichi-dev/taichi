@@ -31,7 +31,9 @@ Tips on Taichi compiler development
 Set ``ti.get_runtime().print_preprocessed = True``
 to inspect results of the frontend Python AST transform. The resulting scripts will generate a Taichi Frontend AST when executed.
 
-Set ``ti.cfg.print_ir = True`` to inspect the IR transformation process of kernel (excluding accessors) compilation .
+Set ``ti.cfg.print_ir = True`` to inspect the Taichi IR transformation process of kernel (excluding accessors) compilation .
+
+Set ``ti.cfg.print_kernel_llvm_ir = True`` to inspect the emitted LLVM IR by Taichi.
 
 Set ``ti.cfg.print_accessor_ir = True`` to inspect the IR transformation process of data accessors, which are special and simple kernels. (This is rarely used, unless you are debugging the compilation of data accessors.)
 

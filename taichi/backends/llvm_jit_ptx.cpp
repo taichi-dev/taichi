@@ -145,30 +145,25 @@ std::string compile_module_to_ptx(std::unique_ptr<llvm::Module> &module) {
 CUDAContext::CUDAContext() {
   // CUDA initialization
   dev_count = 0;
-  if (cuInit(0) == CUDA_SUCCESS) {
-    check_cuda_errors(cuDeviceGetCount(&dev_count));
-    check_cuda_errors(cuDeviceGet(&device, 0));
+  check_cuda_errors(cuInit(0));
+  check_cuda_errors(cuDeviceGetCount(&dev_count));
+  check_cuda_errors(cuDeviceGet(&device, 0));
 
-    char name[128];
-    check_cuda_errors(cuDeviceGetName(name, 128, device));
-    std::cout << "Using CUDA Device [0]: " << name << "\n";
+  char name[128];
+  check_cuda_errors(cuDeviceGetName(name, 128, device));
+  TC_INFO("Using CUDA Device [id=0]: {}", name);
 
-    int devMajor, devMinor;
-    check_cuda_errors(cuDeviceComputeCapability(&devMajor, &devMinor, device));
-    std::cout << "Device Compute Capability: " << devMajor << "." << devMinor
-              << "\n";
-    if (devMajor < 2) {
-      TC_ERROR("Device 0 is not SM 2.0 or greater");
-    }
-    // Create driver context
-    check_cuda_errors(cuCtxCreate(&context, 0, device));
-    check_cuda_errors(cuMemAlloc(&context_buffer, sizeof(Context)));
+  int cc_major, cc_minor;
+  check_cuda_errors(cuDeviceGetAttribute(
+      &cc_major, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, device));
+  check_cuda_errors(cuDeviceGetAttribute(
+      &cc_minor, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR, device));
 
-    int cap_major, cap_minor;
-    cudaDeviceGetAttribute(&cap_major, cudaDevAttrComputeCapabilityMajor, 0);
-    cudaDeviceGetAttribute(&cap_minor, cudaDevAttrComputeCapabilityMinor, 0);
-    mcpu = fmt::format("sm_{}{}", cap_major, cap_minor);
-  }
+  TC_INFO("CUDA Device Compute Capability: {}.{}", cc_major, cc_minor);
+  check_cuda_errors(cuCtxCreate(&context, 0, device));
+  check_cuda_errors(cuMemAlloc(&context_buffer, sizeof(Context)));
+
+  mcpu = fmt::format("sm_{}{}", cc_major, cc_minor);
 }
 
 CUmodule CUDAContext::compile(const std::string &ptx) {

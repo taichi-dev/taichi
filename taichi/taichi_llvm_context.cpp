@@ -171,23 +171,12 @@ std::unique_ptr<llvm::Module> module_from_bitcode_file(std::string bitcode_path,
     TC_ERROR("Runtime bitcode load failure.");
   }
 
-  for (auto &f : *(runtime.get())) {
-    f.removeAttribute(AttributeList::FunctionIndex,
-                      llvm::Attribute::OptimizeNone);
-    f.removeAttribute(AttributeList::FunctionIndex, llvm::Attribute::NoInline);
-    f.addAttribute(AttributeList::FunctionIndex, llvm::Attribute::AlwaysInline);
-  }
+  for (auto &f : *(runtime.get()))
+    TaichiLLVMContext::force_inline(&f);
 
   bool module_broken = llvm::verifyModule(*runtime.get(), &llvm::errs());
   TC_ERROR_IF(module_broken, "Module broken");
   return std::move(runtime.get());
-}
-
-int num_instructions(llvm::Function *func) {
-  int counter = 0;
-  for (BasicBlock &bb : *func)
-    counter += std::distance(bb.begin(), bb.end());
-  return counter;
 }
 
 void remove_useless_libdevice_functions(llvm::Module *module) {
@@ -267,12 +256,7 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
           builder.CreateIntrinsic(intrin, types, args);
           builder.CreateRetVoid();
         }
-        func->removeAttribute(AttributeList::FunctionIndex,
-                              llvm::Attribute::OptimizeNone);
-        func->removeAttribute(AttributeList::FunctionIndex,
-                              llvm::Attribute::NoInline);
-        func->addAttribute(AttributeList::FunctionIndex,
-                           llvm::Attribute::AlwaysInline);
+        TaichiLLVMContext::force_inline(func);
       };
 
       auto patch_atomic_add_int = [&](std::string name) {
@@ -287,12 +271,7 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
         builder.CreateRet(builder.CreateAtomicRMW(
             llvm::AtomicRMWInst::Add, args[0], args[1],
             llvm::AtomicOrdering::SequentiallyConsistent));
-        func->removeAttribute(AttributeList::FunctionIndex,
-                              llvm::Attribute::OptimizeNone);
-        func->removeAttribute(AttributeList::FunctionIndex,
-                              llvm::Attribute::NoInline);
-        func->addAttribute(AttributeList::FunctionIndex,
-                           llvm::Attribute::AlwaysInline);
+        TaichiLLVMContext::force_inline(func);
       };
 
       patch_intrinsic("thread_idx", Intrinsic::nvvm_read_ptx_sreg_tid_x);
@@ -322,29 +301,14 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
 
       // runtime_module->print(llvm::errs(), nullptr);
     }
-
-    /*
-    int total_inst = 0;
-    int total_big_inst = 0;
-
-    for (auto &f : *runtime_module) {
-      int c = num_instructions(&f);
-      if (c > 100) {
-        total_big_inst += c;
-        TC_INFO("Loaded runtime function: {} (inst. count= {})",
-                std::string(f.getName()), c);
-      }
-      total_inst += c;
-    }
-    TC_P(total_inst);
-    TC_P(total_big_inst);
-    */
   }
+
   std::unique_ptr<llvm::Module> cloned;
   {
     TC_PROFILER("clone module");
     cloned = llvm::CloneModule(*runtime_module);
   }
+
   return cloned;
 }
 
@@ -448,6 +412,37 @@ std::string TaichiLLVMContext::type_name(llvm::Type *type) {
 
 std::size_t TaichiLLVMContext::get_type_size(llvm::Type *type) {
   return jit->get_type_size(type);
+}
+
+void TaichiLLVMContext::force_inline(llvm::Function *f) {
+  f->removeAttribute(AttributeList::FunctionIndex,
+                     llvm::Attribute::OptimizeNone);
+  f->removeAttribute(AttributeList::FunctionIndex, llvm::Attribute::NoInline);
+  f->addAttribute(AttributeList::FunctionIndex, llvm::Attribute::AlwaysInline);
+}
+
+int TaichiLLVMContext::num_instructions(llvm::Function *func) {
+  int counter = 0;
+  for (BasicBlock &bb : *func)
+    counter += std::distance(bb.begin(), bb.end());
+  return counter;
+}
+
+void TaichiLLVMContext::print_huge_functions() {
+  int total_inst = 0;
+  int total_big_inst = 0;
+
+  for (auto &f : *runtime_module) {
+    int c = num_instructions(&f);
+    if (c > 100) {
+      total_big_inst += c;
+      TC_INFO("Loaded runtime function: {} (inst. count= {})",
+              std::string(f.getName()), c);
+    }
+    total_inst += c;
+  }
+  TC_P(total_inst);
+  TC_P(total_big_inst);
 }
 
 template llvm::Value *TaichiLLVMContext::get_constant(float32 t);

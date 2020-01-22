@@ -56,6 +56,12 @@ class TaichiLLVMContext {
   std::string type_name(llvm::Type *type);
 
   void link_module_with_libdevice(std::unique_ptr<llvm::Module> &module);
+
+  static void force_inline(llvm::Function *func);
+
+  void print_huge_functions();
+
+  static int num_instructions(llvm::Function *func);
 };
 
 TLANG_NAMESPACE_END

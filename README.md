@@ -20,6 +20,27 @@ python3 -m pip install taichi-nightly-cuda-10-0
 python3 -m pip install taichi-nightly-cuda-10-1
 ```
 
+```bash
+# mac build from source 
+brew install python3
+#install llvm for source code 
+git clone https://github.com/llvm/llvm-project.git
+cd llvm-project;
+git checkout llvmorg-8.0.0;
+mkdir -p build;cd build; cmake -DCMAKE_BUILD_TYPE=Release ../llvm
+make;sudo make install
+
+git clone  https://github.com/taichi-dev/taichi.git
+cd taichi;mkdir -p build;cd build;
+cmake .. -DLLVM_ENABLE_RTTI:BOOL=ON \
+-DBUILD_SHARED_LIBS:BOOL=OFF -DCMAKE_BUILD_TYPE=Release \
+-DLLVM_TARGETS_TO_BUILD="X86;NVPTX" -DLLVM_ENABLE_ASSERTIONS=ON  -DUSE_STDCPP=ON \
+-DLLVM_DIR=cmake .. -DLLVM_ENABLE_RTTI:BOOL=ON \
+           -DBUILD_SHARED_LIBS:BOOL=OFF -DCMAKE_BUILD_TYPE=Release \
+           -DLLVM_TARGETS_TO_BUILD="X86;NVPTX" -DLLVM_ENABLE_ASSERTIONS=ON \
+           -DLLVM_DIR=/usr/local/lib/cmake/llvm/;
+```
+
 || **Linux (CUDA)** | **OS X (10.14+)** | **Windows** |
 |:------|:-----|:-----|:-----|
 |**Build**|[![Build Status](http://f11.csail.mit.edu:8080/job/taichi/badge/icon)](http://f11.csail.mit.edu:8080/job/taichi/)| [![Build Status](https://travis-ci.com/taichi-dev/taichi.svg?branch=master)](https://travis-ci.com/taichi-dev/taichi) | [![Build status](https://ci.appveyor.com/api/projects/status/09hrcv404n5o62wf/branch/master?svg=true)](https://ci.appveyor.com/project/IteratorAdvance/taichi/branch/master)|
@@ -47,17 +68,11 @@ python3 -m pip install taichi-nightly-cuda-10-1
 - (WIP) Redesign memory allocator
 
 ## Updates
-- (Jan  20, 2020) v0.3.25 released.
-   - Experimental [CPU-only support for NVIDIA Jetson Nano](https://user-images.githubusercontent.com/34827518/72769070-62b1b200-3c34-11ea-8f6e-0f339b5b09ca.jpg) (with ARM CPUs. Building from source required.) (thanks to **Walter liu
- [hgnan]**)
-- (Jan  19, 2020) v0.3.24 released.
-   - `%` and `//` now follow Python semantics. Use `ti.raw_mod` for C-style `%` semantics (by **Chujie Zeng [Psycho7]**)
-   - Parallel range-fors now supports non-compile-time constant bounds. For example, `for i in range(bound[0])` is supported
 - (Jan  18, 2020) v0.3.23 released.
    - Taichi kernel calls now releases Python GIL
 - (Jan  17, 2020) v0.3.22 released.
-   - `ti.atomic_add()` now returns the old value (by **Ye Kuang [k-ye]**)
-   - Experimental patch to Windows systems with malformed BIOS info (by **Chujie Zeng [Psycho7]**)
+   - `ti.atomic_add()` now returns the old value (by Ye Kuang [k-ye])
+   - Experimental patch to Windows systems with malformed BIOS info (by Chujie Zeng [Psycho7])
    - `ti.__version__` now returns the version triple, e.g. `(0, 3, 22)`
    - Fixed a CPU multithreading bug
    - Avoid accessor IR printing when setting `ti.cfg.print_ir = True`
@@ -65,7 +80,7 @@ python3 -m pip install taichi-nightly-cuda-10-1
    - Removed dependency on x86_64 SIMD intrinsics
    - Improved doc
 - (Jan  11, 2020) v0.3.21 released.
-   - GUI fix for OS X 10.14 and 10.15 (by **Ye Kuang [k-ye]**).
+   - GUI fix for OS X 10.14 and 10.15 (by Ye Kuang(k-ye)). Let us know if it solves your problem!
    - Minor improvements on documentation and profiler
 - (Jan   2, 2020) v0.3.20 released.
    - Support `ti.static(ti.grouped(ti.ndrange(...)))`

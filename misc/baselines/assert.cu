@@ -3,7 +3,8 @@
 
 __global__ void init_random_numbers(unsigned int seed) {
   printf("seed = %d\n", seed);
-  atomicAdd(int *(12312433432), 123);
+  atomicAdd((int *)(12312433432), 123);
+  atomicAdd((float *)(12312433432), 123.0f);
   assert(seed != 0);
 }
 

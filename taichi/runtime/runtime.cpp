@@ -259,7 +259,6 @@ void ___stubs___() {
 
 struct Element {
   Ptr element;
-  int self_idx;
   int loop_bounds[2];
   PhysicalCoordinates pcoord;
 };
@@ -397,7 +396,6 @@ Ptr Runtime_initialize(Runtime **runtime_ptr,
   Element elem;
   elem.loop_bounds[0] = 0;
   elem.loop_bounds[1] = 1;
-  elem.self_idx = 0;
   elem.element = (Ptr)root_ptr;
   for (int i = 0; i < taichi_max_num_indices; i++) {
     elem.pcoord.val[i] = 0;
@@ -515,7 +513,6 @@ void element_listgen(Runtime *runtime, StructMeta *parent, StructMeta *child) {
         elem.element = ch_element;
         elem.loop_bounds[0] = 0;
         elem.loop_bounds[1] = child->get_num_elements((Ptr)child, ch_element);
-        elem.self_idx = j;
         elem.pcoord = refined_coord;
         ElementList_insert(child_list, &elem);
       }

@@ -80,7 +80,6 @@ llvm::Type *TaichiLLVMContext::get_data_type(DataType dt) {
     TC_INFO(data_type_name(dt));
     TC_NOT_IMPLEMENTED
   }
-  return nullptr;
 }
 
 std::string find_existing_command(const std::vector<std::string> &commands) {

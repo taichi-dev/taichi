@@ -102,7 +102,6 @@ if (NOT WIN32)
     endif()
 endif ()
 message("PYTHON_LIBRARIES" ${PYTHON_LIBRARIES})
-# target_link_libraries(${CORE_LIBRARY_NAME} ${PYTHON_LIBRARIES})
 
 foreach (source IN LISTS TAICHI_CORE_SOURCE)
     file(RELATIVE_PATH source_rel ${CMAKE_CURRENT_LIST_DIR} ${source})
@@ -119,18 +118,3 @@ if (WIN32)
     set_target_properties(${CORE_LIBRARY_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY
             "${CMAKE_CURRENT_SOURCE_DIR}/runtimes")
 endif ()
-
-#add_custom_target(
-#        clangformat
-#        COMMAND clang-format-6.0
-#        -style=file
-#        -i
-#        ${TAICHI_CORE_SOURCE} ${TAICHI_PROJECT_SOURCE}
-#)
-#
-#add_custom_target(
-#        yapfformat
-#        COMMAND yapf
-#        -irp
-#        ${CMAKE_CURRENT_LIST_DIR}/../
-#)

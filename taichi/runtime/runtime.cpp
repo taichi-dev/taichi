@@ -9,6 +9,7 @@
 #include <cstdlib>
 #include <algorithm>
 #include <type_traits>
+#include <cstring>
 #include "../constants.h"
 
 #if defined(__linux__) && !ARCH_cuda && defined(TI_ARCH_x86_64)
@@ -256,6 +257,50 @@ void ___stubs___() {
   vprintf(nullptr, nullptr);
 #endif
 }
+
+/*
+A simple list data structure
+Data are organized in chunks, where each chunk is a piece of virtual memory
+*/
+
+struct ListManager {
+  static constexpr int max_num_chunks = 1024;
+  static constexpr int max_num_elements_per_chunk = 1024 * 1024;
+  i32 lock;
+  i32 element_size;
+  i32 num_elements;
+  Ptr chunks[max_num_chunks];
+
+  ListManager() {
+  }
+
+  void append(void *data_ptr) {
+    auto i = atomic_add_i32(&num_elements, 1);
+    auto chunk_id = i / max_num_elements_per_chunk;
+    auto item_id = i % max_num_elements_per_chunk;
+    if (!chunks[chunk_id]) {
+      // TODO: allocate the trunk
+    }
+    std::memcpy((Ptr)(chunks[chunk_id] + element_size * item_id), data_ptr,
+                element_size);
+  }
+
+  void clear() {
+    num_elements = 0;
+  }
+};
+
+struct NodeManager {
+  static constexpr int max_num_chunks = 1024;
+  static constexpr int max_num_elements_per_chunk = 1024 * 1024;
+  i32 lock;
+  i32 element_size;
+  ListManager resident_list, recycled_list, task_list, data_list;
+
+  Ptr allocate() {
+    return nullptr;
+  }
+};
 
 struct Element {
   Ptr element;
@@ -729,8 +774,8 @@ u32 cuda_rand_u32(Context *context) {
   auto lock = (Ptr)&state->lock;
 
   bool done = false;
-  // TODO: whether this leads to a deadlock or not depends on how nvcc schedules the
-  // instructions...
+  // TODO: whether this leads to a deadlock or not depends on how nvcc schedules
+  // the instructions...
   while (!done) {
     if (atomic_exchange_i32((i32 *)lock, 1) == 1) {
       auto &x = state->x;
@@ -769,7 +814,6 @@ i32 cuda_rand_i32(Context *context) {
 i64 cuda_rand_i64(Context *context) {
   return cuda_rand_u64(context);
 }
-
 };
 
 #endif

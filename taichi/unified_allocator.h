@@ -34,7 +34,7 @@ class UnifiedAllocator {
  public:
   UnifiedAllocator();
 
-  UnifiedAllocator(std::size_t size, bool gpu);
+  UnifiedAllocator(bool gpu);
 
   ~UnifiedAllocator();
 

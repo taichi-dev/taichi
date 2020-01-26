@@ -15,8 +15,35 @@ UnifiedAllocator *&allocator() {
   return allocator_instance;
 }
 
-taichi::Tlang::UnifiedAllocator::UnifiedAllocator(std::size_t size, bool gpu)
-    : size(size), gpu(gpu) {
+UnifiedAllocator::UnifiedAllocator(bool gpu) : gpu(gpu) {
+#if !defined(TC_PLATFORM_WINDOWS)
+
+#if defined(TI_ARCH_ARM)
+  // Try to allocate only 2GB RAM on ARM devices such as Jetson nano
+  std::size_t size = 1LL << 31;
+#else
+  std::size_t size = 1LL << 44;
+#endif
+
+#else
+  std::size_t phys_mem_size;
+  if (GetPhysicallyInstalledSystemMemory(&phys_mem_size)) {  // KB
+    phys_mem_size /= 1024;                                   // MB
+    TC_INFO("Physical memory size {} MB", phys_mem_size);
+  } else {
+    auto err = GetLastError();
+    /* Error Codes:
+     * https://docs.microsoft.com/en-us/windows/win32/debug/system-error-codes
+     */
+    TC_WARN("Unable to get physical memory size [ Win32 Error Code {} ].", err);
+    phys_mem_size = 4096 * 4;  // allocate 4 GB later
+  }
+  auto virtual_mem_to_allocate = (phys_mem_size << 20) / 4;
+  TC_INFO("Allocating virtual memory pool (size = {} MB)",
+          virtual_mem_to_allocate / 1024 / 1024);
+  std::size_t size = virtual_mem_to_allocate;
+#endif
+  this->size = size;
   if (gpu) {
 #if defined(CUDA_FOUND)
     check_cuda_errors(cudaMallocManaged(&_cuda_data, size));
@@ -31,9 +58,9 @@ taichi::Tlang::UnifiedAllocator::UnifiedAllocator(std::size_t size, bool gpu)
 #endif
     // http://on-demand.gputechconf.com/gtc/2017/presentation/s7285-nikolay-sakharnykh-unified-memory-on-pascal-and-volta.pdf
     /*
-    cudaMemAdvise(_cuda_data, size + 4096, cudaMemAdviseSetReadMostly,
+    cudaMemAdvise(_cuda_data, size, cudaMemAdviseSetReadMostly,
                   cudaCpuDeviceId);
-    cudaMemAdvise(_cuda_data, size + 4096, cudaMemAdviseSetAccessedBy,
+    cudaMemAdvise(_cuda_data, size, cudaMemAdviseSetAccessedBy,
                   0);
                   */
     data = (uint8 *)_cuda_data;
@@ -65,56 +92,11 @@ taichi::Tlang::UnifiedAllocator::~UnifiedAllocator() {
 }
 
 void taichi::Tlang::UnifiedAllocator::create(bool gpu) {
-  TC_ASSERT(allocator() == nullptr);
-  void *dst;
-  if (gpu) {
-#if defined(CUDA_FOUND)
-    gpu = true;
-    check_cuda_errors(cudaMallocManaged(&dst, sizeof(UnifiedAllocator)));
-#else
-    TC_NOT_IMPLEMENTED
-#endif
-  } else {
-    dst = std::malloc(sizeof(UnifiedAllocator));
-  }
-#if !defined(TC_PLATFORM_WINDOWS)
-#if defined(TI_ARCH_ARM)
-  // Try to allocate only 2GB RAM on ARM devices such as Jetson nano
-  allocator() = new (dst) UnifiedAllocator(1LL << 31, gpu);
-#else
-  allocator() = new (dst) UnifiedAllocator(1LL << 44, gpu);
-#endif
-#else
-  std::size_t phys_mem_size;
-  if (GetPhysicallyInstalledSystemMemory(&phys_mem_size)) {  // KB
-    phys_mem_size /= 1024;                                   // MB
-    TC_INFO("Physical memory size {} MB", phys_mem_size);
-  } else {
-    auto err = GetLastError();
-    /* Error Codes:
-     * https://docs.microsoft.com/en-us/windows/win32/debug/system-error-codes
-     */
-    TC_WARN("Unable to get physical memory size [ Win32 Error Code {} ].", err);
-    phys_mem_size = 4096 * 4;  // allocate 4 GB later
-  }
-  auto virtual_mem_to_allocate = (phys_mem_size << 20) / 4;
-  TC_INFO("Allocating virtual memory pool (size = {} MB)",
-          virtual_mem_to_allocate / 1024 / 1024);
-  allocator() = new (dst) UnifiedAllocator(virtual_mem_to_allocate, gpu);
-#endif
+  allocator() = new UnifiedAllocator(gpu);
 }
 
 void taichi::Tlang::UnifiedAllocator::free() {
   (*allocator()).~UnifiedAllocator();
-  if (allocator()->gpu) {
-#if defined(CUDA_FOUND)
-    check_cuda_errors(cudaFree(allocator()));
-#else
-    TC_NOT_IMPLEMENTED
-#endif
-  } else {
-    std::free(allocator());
-  }
   allocator() = nullptr;
 }
 

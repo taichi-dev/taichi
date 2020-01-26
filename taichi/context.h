@@ -35,6 +35,18 @@ struct Context {
   }
 #endif
 };
+
+struct MemRequest {
+  std::size_t size;
+  std::size_t ptr;
+};
+
+struct MemRequestQueue {
+  MemRequest requests[taichi_max_num_mem_requests];
+  int tail;
+  int processed;
+};
+
 #if defined(TI_RUNTIME_HOST)
 }
 #endif

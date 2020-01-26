@@ -400,6 +400,7 @@ struct Runtime {
   Ptr ambient_elements[taichi_max_num_snodes];
   Ptr temporaries;
   RandState *rand_states;
+  MemRequestQueue *mem_req_queue;
 };
 
 STRUCT_FIELD_ARRAY(Runtime, element_lists);
@@ -407,6 +408,7 @@ STRUCT_FIELD_ARRAY(Runtime, node_allocators);
 STRUCT_FIELD(Runtime, root);
 STRUCT_FIELD(Runtime, temporaries);
 STRUCT_FIELD(Runtime, assert_failed);
+STRUCT_FIELD(Runtime, mem_req_queue);
 
 void *allocate_aligned(Runtime *runtime, std::size_t size, int alignment) {
   return runtime->vm_allocator(size, alignment);
@@ -451,6 +453,10 @@ Ptr Runtime_initialize(Runtime **runtime_ptr,
       runtime, sizeof(RandState) * num_rand_states, 4096);
   for (int i = 0; i < num_rand_states; i++)
     initialize_rand_state(&runtime->rand_states[i], i);
+
+  runtime->mem_req_queue = (MemRequestQueue *)allocate_aligned(
+      runtime, sizeof(MemRequestQueue), 4096);
+
   if (verbose)
     printf("Runtime initialized.\n");
   return (Ptr)root_ptr;

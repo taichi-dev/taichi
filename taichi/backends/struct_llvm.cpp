@@ -312,6 +312,11 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
       set_assert_failed(prog.llvm_runtime, (void *)assert_failed_host);
 
       runtime_set_root(prog.llvm_runtime, root);
+
+      auto mem_req_queue =
+          tlctx->lookup_function<std::function<void *(void *)>>(
+              "Runtime_get_mem_req_queue")(prog.llvm_runtime);
+      TC_P(mem_req_queue);
     };
   }
   tlctx->snode_attr = snode_attr;

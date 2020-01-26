@@ -154,12 +154,12 @@ class CPUProfiler : public ProfilerBase {
   }
 
   void start(const std::string &kernel_name) override {
-    start_t = get_time();
+    start_t = Time::get_time();
     event_name = kernel_name;
   }
 
   void stop() override {
-    auto t = get_time() - start_t;
+    auto t = Time::get_time() - start_t;
     auto ms = t * 1000.0;
     auto it =
         std::find_if(records.begin(), records.end(),

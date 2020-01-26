@@ -15,9 +15,6 @@
 #include <mutex>
 #include <unordered_map>
 #include <iostream>
-#if !defined(TC_PLATFORM_WINDOWS)
-#include <sys/time.h>
-#endif
 
 #if !defined(TC_INCLUDED)
 
@@ -88,18 +85,6 @@ TC_FORCE_INLINE T rand() noexcept;
 #endif
 
 TLANG_NAMESPACE_BEGIN
-
-#if !defined(TC_PLATFORM_WINDOWS)
-inline double get_time() {
-  struct timeval tv;
-  gettimeofday(&tv, nullptr);
-  return tv.tv_sec + 1e-6 * tv.tv_usec;
-}
-#else
-inline double get_time() {
-  TC_NOT_IMPLEMENTED;
-}
-#endif
 
 using size_t = std::size_t;
 

@@ -17,17 +17,17 @@ UnifiedAllocator *&allocator() {
 
 taichi::Tlang::UnifiedAllocator::UnifiedAllocator(std::size_t size, bool gpu)
     : size(size), gpu(gpu) {
-  size += 4096;
   if (gpu) {
 #if defined(CUDA_FOUND)
-    check_cuda_errors(cudaMallocManaged(&_cuda_data, size + 4096));
+    check_cuda_errors(cudaMallocManaged(&_cuda_data, size));
     if (_cuda_data == nullptr) {
       TC_ERROR("GPU memory allocation failed.");
     }
 #if !defined(TI_ARCH_ARM)
-    // Assuming ARM devices have shared CPU/GPU memory and do no support memAdvise
-    check_cuda_errors(cudaMemAdvise(_cuda_data, size + 4096,
-                                    cudaMemAdviseSetPreferredLocation, 0));
+    // Assuming ARM devices have shared CPU/GPU memory and do no support
+    // memAdvise
+    check_cuda_errors(
+        cudaMemAdvise(_cuda_data, size, cudaMemAdviseSetPreferredLocation, 0));
 #endif
     // http://on-demand.gputechconf.com/gtc/2017/presentation/s7285-nikolay-sakharnykh-unified-memory-on-pascal-and-volta.pdf
     /*
@@ -36,25 +36,19 @@ taichi::Tlang::UnifiedAllocator::UnifiedAllocator(std::size_t size, bool gpu)
     cudaMemAdvise(_cuda_data, size + 4096, cudaMemAdviseSetAccessedBy,
                   0);
                   */
-    data = _cuda_data;
+    data = (uint8 *)_cuda_data;
 #else
     TC_NOT_IMPLEMENTED
 #endif
   } else {
     cpu_vm = std::make_unique<VirtualMemoryAllocator>(size);
-    data = cpu_vm->ptr;
+    data = (uint8 *)cpu_vm->ptr;
   }
   TC_ASSERT(data != nullptr);
-  auto p = reinterpret_cast<uint64>(data);
-  data = (void *)(p + (4096 - p % 4096));
+  TC_ASSERT(uint64(data) % 4096 == 0);
 
-  // allocate head/tail ptrs on unified memory
-  head = (void **)data;
-  tail = (void **)((char *)data + sizeof(void *));
-
-  data = (char *)data + 4096;
-  *head = data;
-  *tail = (void *)(((char *)head) + size);
+  head = data;
+  tail = head + size;
 }
 
 taichi::Tlang::UnifiedAllocator::~UnifiedAllocator() {
@@ -91,15 +85,17 @@ void taichi::Tlang::UnifiedAllocator::create(bool gpu) {
   allocator() = new (dst) UnifiedAllocator(1LL << 44, gpu);
 #endif
 #else
-  std::size_t phys_mem_size;  
-  if (GetPhysicallyInstalledSystemMemory(&phys_mem_size)) {   // KB
-    phys_mem_size /= 1024;                                    // MB
+  std::size_t phys_mem_size;
+  if (GetPhysicallyInstalledSystemMemory(&phys_mem_size)) {  // KB
+    phys_mem_size /= 1024;                                   // MB
     TC_INFO("Physical memory size {} MB", phys_mem_size);
   } else {
     auto err = GetLastError();
-    /* Error Codes: https://docs.microsoft.com/en-us/windows/win32/debug/system-error-codes */
+    /* Error Codes:
+     * https://docs.microsoft.com/en-us/windows/win32/debug/system-error-codes
+     */
     TC_WARN("Unable to get physical memory size [ Win32 Error Code {} ].", err);
-    phys_mem_size = 4096 * 4;   // allocate 4 GB later 
+    phys_mem_size = 4096 * 4;  // allocate 4 GB later
   }
   auto virtual_mem_to_allocate = (phys_mem_size << 20) / 4;
   TC_INFO("Allocating virtual memory pool (size = {} MB)",

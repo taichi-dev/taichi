@@ -19,16 +19,16 @@ extern UnifiedAllocator *allocator_instance;
 class UnifiedAllocator {
   std::unique_ptr<VirtualMemoryAllocator> cpu_vm;
 #if defined(TLANG_WITH_CUDA)
-  void *_cuda_data{};
+  void *_cuda_data;
 #endif
-  std::size_t size{};
-  bool gpu{};
+  std::size_t size;
+  bool gpu;
 
   // put these two on the unified memory so that GPU can have access
  public:
-  void *data;
-  void **head{};
-  void **tail{};
+  uint8 *data;
+  uint8 *head;
+  uint8 *tail;
   std::mutex lock;
 
  public:
@@ -38,12 +38,19 @@ class UnifiedAllocator {
 
   ~UnifiedAllocator();
 
-  void *alloc(std::size_t size, int alignment) {
+  void *alloc(std::size_t size, std::size_t alignment) {
     std::lock_guard<std::mutex> _(lock);
-    auto ret = (char *)(*head) + alignment - 1 -
-               ((std::size_t)(char *)(*head) + alignment - 1) % alignment;
-    *head = (char *)ret + size;
-    return ret;
+    auto ret =
+        head + alignment - 1 - ((std::size_t)head + alignment - 1) % alignment;
+    head = ret + size;
+    if (head > tail) {
+      // allocation failed
+      return nullptr;
+    } else {
+      // success
+      TC_ASSERT((std::size_t)ret % alignment == 0);
+      return ret;
+    }
   }
 
   void memset(unsigned char val);

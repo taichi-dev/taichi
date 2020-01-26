@@ -24,6 +24,10 @@ void MemoryPool::set_queue(MemRequestQueue *queue) {
   this->queue = queue;
 }
 
+void *MemoryPool::allocate(std::size_t size) {
+  return nullptr;
+}
+
 void MemoryPool::daemon() {
   while (1) {
     Time::usleep(1000);

@@ -21,6 +21,4 @@ def test_host_polling():
   for i in range(10):
     print('updating tail to', i)
     test()
-    time.sleep(1)
-    
-test_host_polling()
+    time.sleep(0.1)

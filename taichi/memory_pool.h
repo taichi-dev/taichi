@@ -29,6 +29,8 @@ class MemoryPool {
 
   MemoryPool(Program *prog);
 
+  void *allocate(std::size_t size);
+
   void set_queue(MemRequestQueue *queue);
 
   void daemon();

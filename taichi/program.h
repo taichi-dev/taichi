@@ -1,4 +1,4 @@
-// Program, which is a context for a taichi program execution
+// Program class - a context for a Taichi program execution
 
 #pragma once
 
@@ -13,6 +13,7 @@
 #include <taichi/profiler.h>
 #include <taichi/system/threading.h>
 #include <taichi/unified_allocator.h>
+#include "memory_pool.h"
 #if defined(TC_PLATFORM_UNIX)
 #include <dlfcn.h>
 #endif

@@ -29,7 +29,6 @@ class UnifiedAllocator {
   void *data;
   void **head{};
   void **tail{};
-  int gpu_error_code;
   std::mutex lock;
 
  public:
@@ -60,7 +59,7 @@ class UnifiedAllocator {
   static void free();
 };
 
-TC_FORCE_INLINE void *allocate(std::size_t size, int alignment = 1) {
+inline void *allocate(std::size_t size, int alignment = 1) {
   return allocator()->alloc(size, alignment);
 }
 

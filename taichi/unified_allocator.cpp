@@ -128,7 +128,6 @@ void taichi::Tlang::UnifiedAllocator::memset(unsigned char val) {
 
 UnifiedAllocator::UnifiedAllocator() {
   data = nullptr;
-  gpu_error_code = 0;
 }
 
 TLANG_NAMESPACE_END

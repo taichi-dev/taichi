@@ -920,6 +920,50 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     }
   }
 
+  static std::string get_runtime_snode_name(SNode *snode) {
+    if (snode->type == SNodeType::root) {
+      return "Root";
+    } else if (snode->type == SNodeType::dense) {
+      return "Dense";
+    } else if (snode->type == SNodeType::dynamic) {
+      return "Dynamic";
+    } else if (snode->type == SNodeType::pointer) {
+      return "Pointer";
+    } else if (snode->type == SNodeType::hash) {
+      return "Hash";
+    } else {
+      TC_P(snode_type_name(snode->type));
+      TC_NOT_IMPLEMENTED
+    }
+  }
+
+  llvm::Value *call(SNode *snode,
+                    llvm::Value *node_ptr,
+                    const std::string &method,
+                    const std::vector<llvm::Value *> &arguments) {
+    auto prefix = get_runtime_snode_name(snode);
+    auto s = emit_struct_meta(snode);
+    auto s_ptr =
+        builder->CreateBitCast(s, llvm::Type::getInt8PtrTy(*llvm_context));
+
+    node_ptr = builder->CreateBitCast(node_ptr,
+                                      llvm::Type::getInt8PtrTy(*llvm_context));
+
+    std::vector<llvm::Value *> func_arguments{s_ptr, node_ptr};
+    func_arguments.insert(func_arguments.end(), arguments.begin(),
+                          arguments.end());
+
+    return call(builder, prefix + "_" + method, func_arguments);
+  }
+
+
+  void visit(GetRootStmt *stmt) override {
+    stmt->value = builder->CreateBitCast(
+        get_root(),
+        PointerType::get(snode_attr[get_current_program().snode_root].llvm_type,
+                         0));
+  }
+
   void visit(OffsetAndExtractBitsStmt *stmt) override {
     auto shifted = builder->CreateAdd(stmt->input->value,
                                       tlctx->get_constant((int32)stmt->offset));
@@ -953,48 +997,6 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     }
   }
 
-  static std::string get_runtime_snode_name(SNode *snode) {
-    if (snode->type == SNodeType::root) {
-      return "Root";
-    } else if (snode->type == SNodeType::dense) {
-      return "Dense";
-    } else if (snode->type == SNodeType::dynamic) {
-      return "Dynamic";
-    } else if (snode->type == SNodeType::pointer) {
-      return "Pointer";
-    } else if (snode->type == SNodeType::hash) {
-      return "Hash";
-    } else {
-      TC_P(snode_type_name(snode->type));
-      TC_NOT_IMPLEMENTED
-    }
-  }
-
-  void visit(GetRootStmt *stmt) override {
-    stmt->value = builder->CreateBitCast(
-        get_root(),
-        PointerType::get(snode_attr[get_current_program().snode_root].llvm_type,
-                         0));
-  }
-
-  llvm::Value *call(SNode *snode,
-                    llvm::Value *node_ptr,
-                    const std::string &method,
-                    const std::vector<llvm::Value *> &arguments) {
-    auto prefix = get_runtime_snode_name(snode);
-    auto s = emit_struct_meta(snode);
-    auto s_ptr =
-        builder->CreateBitCast(s, llvm::Type::getInt8PtrTy(*llvm_context));
-
-    node_ptr = builder->CreateBitCast(node_ptr,
-                                      llvm::Type::getInt8PtrTy(*llvm_context));
-
-    std::vector<llvm::Value *> func_arguments{s_ptr, node_ptr};
-    func_arguments.insert(func_arguments.end(), arguments.begin(),
-                          arguments.end());
-
-    return call(builder, prefix + "_" + method, func_arguments);
-  }
 
   void visit(SNodeLookupStmt *stmt) override {
     llvm::Value *parent = nullptr;

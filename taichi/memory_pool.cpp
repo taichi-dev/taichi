@@ -1,17 +1,21 @@
 #include "memory_pool.h"
 #include <taichi/system/timer.h>
+#include "cuda_utils.h"
 #if TLANG_WITH_CUDA
 #include "cuda_runtime.h"
+#include "program.h"
+
 #endif
 
 TLANG_NAMESPACE_BEGIN
 
-MemoryPool::MemoryPool() {
+MemoryPool::MemoryPool(Program *prog) : prog(prog) {
   TC_INFO("Memory pool created. Pre allocator buffer size = {}",
           allocator_size);
   terminating = false;
   killed = false;
   processed_tail = 0;
+  queue = nullptr;
   th = std::make_unique<std::thread>([this] { this->daemon(); });
 }
 
@@ -35,11 +39,16 @@ void MemoryPool::daemon() {
     // poll allocation requests.
     using tail_type = decltype(MemRequestQueue::tail);
     tail_type tail;
+    if (prog->config.arch == Arch::gpu) {
 #if TLANG_WITH_CUDA
-    cudaMemcpy(&tail, &queue->tail, sizeof(tail), cudaMemcpyDeviceToHost);
+      check_cuda_errors(cudaMemcpy(&tail, &queue->tail, sizeof(tail),
+                                   cudaMemcpyDeviceToHost));
 #else
-    tail = queue->tail;
+      TC_NOT_IMPLEMENTED
 #endif
+    } else {
+      tail = queue->tail;
+    }
     if (tail > processed_tail) {
       // allocate new buffer
       auto i = processed_tail;

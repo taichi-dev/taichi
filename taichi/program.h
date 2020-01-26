@@ -88,10 +88,6 @@ class Program {
   Program() : Program(default_compile_config.arch) {
   }
 
-  Program(const Program &){
-      TC_NOT_IMPLEMENTED  // for pybind11..
-  }
-
   Program(Arch arch);
 
   void initialize_device_llvm_context();

@@ -11,6 +11,8 @@
 
 TLANG_NAMESPACE_BEGIN
 
+class Program;
+
 // A memory pool that runs on the host
 
 class MemoryPool {
@@ -21,10 +23,11 @@ class MemoryPool {
   std::mutex mut;
   std::unique_ptr<std::thread> th;
   int processed_tail;
+  Program *prog;
 
   MemRequestQueue *queue;
 
-  MemoryPool();
+  MemoryPool(Program *prog);
 
   void set_queue(MemRequestQueue *queue);
 

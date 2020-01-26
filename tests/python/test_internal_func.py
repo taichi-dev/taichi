@@ -13,11 +13,14 @@ def test_basic():
 
 @ti.all_archs
 def test_host_polling():
+  
   @ti.kernel
   def test():
     ti.call_internal("refresh_counter")
   
   for i in range(10):
-    print(i)
+    print('updating tail to', i)
     test()
     time.sleep(1)
+    
+test_host_polling()

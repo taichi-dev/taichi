@@ -152,7 +152,7 @@ void Program::visualize_layout(const std::string &fn) {
   trash(system(fmt::format("pdflatex {}", fn).c_str()));
 }
 
-Program::Program(Arch arch) {
+Program::Program(Arch arch) : memory_pool(this) {
 #if !defined(CUDA_FOUND)
   if (arch == Arch::gpu) {
     TC_WARN("Taichi is not compiled with CUDA.");

@@ -94,24 +94,9 @@ class Program {
 
   void synchronize();
 
-  void finalize() {
-    current_program = nullptr;
-    for (auto &dll : loaded_dlls) {
-#if defined(TC_PLATFORM_UNIX)
-      dlclose(dll);
-#else
-      TC_NOT_IMPLEMENTED
-#endif
-    }
-    UnifiedAllocator::free();
-    finalized = true;
-    num_instances -= 1;
-  }
+  void finalize();
 
-  ~Program() {
-    if (!finalized)
-      finalize();
-  }
+  ~Program();
 
   void layout(std::function<void()> func) {
     root = SNode(0, SNodeType::root);

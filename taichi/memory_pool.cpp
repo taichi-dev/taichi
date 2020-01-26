@@ -58,13 +58,20 @@ void MemoryPool::daemon() {
   }
 }
 
-MemoryPool::~MemoryPool() {
+void MemoryPool::terminate() {
   {
     std::lock_guard<std::mutex> _(mut);
     terminating = true;
   }
   th->join();
   TC_ASSERT(killed);
+}
+
+
+MemoryPool::~MemoryPool() {
+  if (!killed) {
+    terminate();
+  }
 }
 
 TLANG_NAMESPACE_END

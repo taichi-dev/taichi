@@ -246,4 +246,24 @@ Kernel &Program::get_snode_writer(SNode *snode) {
   return ker;
 }
 
+void Program::finalize() {
+  current_program = nullptr;
+  for (auto &dll : loaded_dlls) {
+#if defined(TC_PLATFORM_UNIX)
+    dlclose(dll);
+#else
+    TC_NOT_IMPLEMENTED
+#endif
+  }
+  memory_pool.terminate();
+  UnifiedAllocator::free();
+  finalized = true;
+  num_instances -= 1;
+}
+
+Program::~Program() {
+  if (!finalized)
+    finalize();
+}
+
 TLANG_NAMESPACE_END

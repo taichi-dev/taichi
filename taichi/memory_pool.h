@@ -33,6 +33,8 @@ class MemoryPool {
 
   void daemon();
 
+  void terminate();
+
   ~MemoryPool();
 };
 

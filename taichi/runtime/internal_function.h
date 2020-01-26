@@ -3,9 +3,8 @@ i32 do_nothing(Context *context) {
 }
 
 i32 refresh_counter(Context *context) {
-  while (1) {
-
-  }
+  auto runtime = (Runtime *)context->runtime;
+  auto queue = runtime->mem_req_queue;
+  queue->tail++;
   return 0;
 }
-

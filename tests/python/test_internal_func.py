@@ -1,9 +1,8 @@
 import taichi as ti
+import time
 
 @ti.all_archs
 def test_basic():
-  ti.cfg.print_ir = True
-  
   @ti.kernel
   def test():
     for i in range(10):
@@ -11,3 +10,14 @@ def test_basic():
     
   test()
 
+
+@ti.all_archs
+def test_host_polling():
+  @ti.kernel
+  def test():
+    ti.call_internal("refresh_counter")
+  
+  for i in range(10):
+    print(i)
+    test()
+    time.sleep(1)

@@ -95,8 +95,8 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
 
   CodeGenLLVM(CodeGenBase *codegen, Kernel *kernel)
       // TODO: simplify ModuleBuilder ctor input
-      : ModuleBuilder(
-            kernel->program.get_llvm_context(kernel->arch)->clone_struct_module()),
+      : ModuleBuilder(kernel->program.get_llvm_context(kernel->arch)
+                          ->clone_struct_module()),
         kernel(kernel),
         prog(&kernel->program),
         snode_attr(prog->get_llvm_context(kernel->arch)->snode_attr),

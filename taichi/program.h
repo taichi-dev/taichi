@@ -46,6 +46,7 @@ class Program {
   float64 total_compilation_time;
   static std::atomic<int> num_instances;
   ThreadPool thread_pool;
+  MemoryPool memory_pool;
 
   std::vector<std::unique_ptr<Kernel>> functions;
 

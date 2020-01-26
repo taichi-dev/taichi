@@ -1,10 +1,9 @@
+#pragma once
 #include <algorithm>
 #include <map>
 #include <string>
 #include <vector>
-#if defined(TC_PLATFORM_UNIX)
-#include <sys/time.h>
-#endif
+#include <taichi/system/timer.h>
 #include "common.h"
 
 #if defined(TC_PLATFORM_WINDOWS)

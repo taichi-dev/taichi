@@ -317,13 +317,15 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
       auto mem_req_queue =
           tlctx->lookup_function<std::function<void *(void *)>>(
               "Runtime_get_mem_req_queue")(prog->llvm_runtime);
-      TC_P(mem_req_queue);
+      prog->memory_pool.set_queue((MemRequestQueue *)mem_req_queue);
     };
   }
   tlctx->snode_attr = snode_attr;
 }
 
-std::unique_ptr<StructCompiler> StructCompiler::make(bool use_llvm, Program *prog, Arch arch) {
+std::unique_ptr<StructCompiler> StructCompiler::make(bool use_llvm,
+                                                     Program *prog,
+                                                     Arch arch) {
   if (use_llvm) {
     return std::make_unique<StructCompilerLLVM>(prog, arch);
   } else {
@@ -333,8 +335,7 @@ std::unique_ptr<StructCompiler> StructCompiler::make(bool use_llvm, Program *pro
 
 bool SNode::need_activation() const {
   return type == SNodeType::pointer || type == SNodeType::hash ||
-         (type == SNodeType::dense && _bitmasked) ||
-         type == SNodeType::dynamic;
+         (type == SNodeType::dense && _bitmasked) || type == SNodeType::dynamic;
 }
 
 TLANG_NAMESPACE_END

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "constants.h"
+
 #if defined(TI_RUNTIME_HOST)
 #include "common.h"
 

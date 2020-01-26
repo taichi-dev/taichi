@@ -31,8 +31,6 @@
 
 TLANG_NAMESPACE_BEGIN
 
-static llvm::ExitOnError exit_on_err;
-
 TaichiLLVMContext::TaichiLLVMContext(Arch arch) : arch(arch) {
   llvm::remove_fatal_error_handler();
   llvm::install_fatal_error_handler(
@@ -57,6 +55,7 @@ TaichiLLVMContext::TaichiLLVMContext(Arch arch) : arch(arch) {
   }
   ctx = std::make_unique<llvm::LLVMContext>();
   TC_INFO("Creating llvm context for arch: {}", arch_name(arch));
+  llvm::ExitOnError exit_on_err;
   jit = exit_on_err(TaichiLLVMJIT::create(arch));
 }
 

@@ -299,7 +299,7 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
           }
           TC_INFO("Initializing allocator for snode {} (chunk size {})",
                   snodes[i]->id, chunk_size);
-          auto rt = get_current_program().llvm_runtime;
+          auto rt = prog->llvm_runtime;
           auto allocator = get_allocator(rt, i);
           initialize_allocator(rt, allocator, chunk_size);
           TC_INFO("Allocating ambient element for snode {} (chunk size {})",
@@ -334,7 +334,7 @@ std::unique_ptr<StructCompiler> StructCompiler::make(bool use_llvm, Program *pro
 bool SNode::need_activation() const {
   return type == SNodeType::pointer || type == SNodeType::hash ||
          (type == SNodeType::dense && _bitmasked) ||
-         (get_current_program().config.use_llvm && type == SNodeType::dynamic);
+         type == SNodeType::dynamic;
 }
 
 TLANG_NAMESPACE_END

@@ -21,6 +21,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
 
   CodeGenBase *codegen;
   Kernel *kernel;
+  Program *prog;
   std::string kernel_name;
   std::vector<Value *> kernel_args;
   llvm::Type *context_ty;
@@ -41,9 +42,9 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
 
   void initialize_context() {
     if (kernel->arch == Arch::gpu) {
-      tlctx = get_current_program().llvm_context_device.get();
+      tlctx = prog->llvm_context_device.get();
     } else {
-      tlctx = get_current_program().llvm_context_host.get();
+      tlctx = prog->llvm_context_host.get();
     }
     llvm_context = tlctx->ctx.get();
     jit = tlctx->jit.get();
@@ -94,12 +95,11 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
 
   CodeGenLLVM(CodeGenBase *codegen, Kernel *kernel)
       // TODO: simplify ModuleBuilder ctor input
-      : ModuleBuilder(get_current_program()
-                          .get_llvm_context(kernel->arch)
-                          ->clone_struct_module()),
+      : ModuleBuilder(
+            kernel->program.get_llvm_context(kernel->arch)->clone_struct_module()),
         kernel(kernel),
-        snode_attr(
-            get_current_program().get_llvm_context(kernel->arch)->snode_attr),
+        prog(&kernel->program),
+        snode_attr(prog->get_llvm_context(kernel->arch)->snode_attr),
         task_counter(0) {
     initialize_context();
 
@@ -956,12 +956,10 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     return call(builder, prefix + "_" + method, func_arguments);
   }
 
-
   void visit(GetRootStmt *stmt) override {
     stmt->value = builder->CreateBitCast(
         get_root(),
-        PointerType::get(snode_attr[get_current_program().snode_root].llvm_type,
-                         0));
+        PointerType::get(snode_attr[prog->snode_root].llvm_type, 0));
   }
 
   void visit(OffsetAndExtractBitsStmt *stmt) override {
@@ -996,7 +994,6 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
            stmt->offset);
     }
   }
-
 
   void visit(SNodeLookupStmt *stmt) override {
     llvm::Value *parent = nullptr;
@@ -1097,7 +1094,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     builder->SetInsertPoint(entry_block);
     builder->CreateBr(func_body_bb);
 
-    if (get_current_program().config.print_kernel_llvm_ir) {
+    if (prog->config.print_kernel_llvm_ir) {
       TC_INFO("Kernel Module IR");
       module->print(errs(), nullptr);
       TC_INFO("Kernel Module IR printed.");

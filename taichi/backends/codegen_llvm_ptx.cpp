@@ -76,12 +76,12 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
       mark_function_as_cuda_kernel(func);
     }
 
-    if (get_current_program().config.print_kernel_llvm_ir) {
+    if (prog->config.print_kernel_llvm_ir) {
       TC_INFO("IR before global optimization");
       module->print(errs(), nullptr);
     }
     auto ptx = compile_module_to_ptx(module);
-    if (get_current_program().config.print_kernel_llvm_ir_optimized) {
+    if (prog->config.print_kernel_llvm_ir_optimized) {
       TC_P(ptx);
     }
     auto cuda_module = cuda_context->compile(ptx);
@@ -90,19 +90,20 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
       task.cuda_func =
           (void *)cuda_context->get_function(cuda_module, task.name);
     }
-    return [offloaded_local](Context context) {
+    auto prog = this->prog;
+    return [offloaded_local, prog](Context context) {
       for (auto task : offloaded_local) {
-        if (get_current_program().config.verbose_kernel_launches)
+        if (prog->config.verbose_kernel_launches)
           TC_INFO("Launching kernel {}<<<{}, {}>>>", task.name, task.grid_dim,
                   task.block_dim);
 
-        if (get_current_program().config.enable_profiler) {
-          get_current_program().profiler_llvm->start(task.name);
+        if (prog->config.enable_profiler) {
+          prog->profiler_llvm->start(task.name);
         }
         cuda_context->launch((CUfunction)task.cuda_func, &context,
                              task.grid_dim, task.block_dim);
-        if (get_current_program().config.enable_profiler) {
-          get_current_program().profiler_llvm->stop();
+        if (prog->config.enable_profiler) {
+          prog->profiler_llvm->stop();
         }
       }
     };
@@ -263,7 +264,7 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
   void create_offload_range_for(OffloadedStmt *stmt) {
     auto loop_block_dim = stmt->block_dim;
     if (loop_block_dim == 0) {
-      loop_block_dim = get_current_program().config.default_gpu_block_dim;
+      loop_block_dim = prog->config.default_gpu_block_dim;
     }
     kernel_grid_dim = saturating_num_blocks;
     kernel_block_dim = loop_block_dim;
@@ -309,7 +310,7 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
       kernel_grid_dim = saturating_num_blocks;
       kernel_block_dim = stmt->block_dim;
       if (kernel_block_dim == 0)
-        kernel_block_dim = get_current_program().config.default_gpu_block_dim;
+        kernel_block_dim = prog->config.default_gpu_block_dim;
       kernel_block_dim =
           std::min(stmt->snode->parent->max_num_elements(), kernel_block_dim);
       stmt->block_dim = kernel_block_dim;

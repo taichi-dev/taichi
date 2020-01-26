@@ -187,7 +187,7 @@ void StructCompiler::generate_types(SNode &snode) {
   }
 
   if (snode.has_null()) {
-    if (get_current_program().config.arch == Arch::gpu) {
+    if (get_current_program().config.arch == Arch::cuda) {
       emit("__device__ __constant__ {}::child_type *{}_ambient_ptr;",
            snode.node_type_name, snode.node_type_name);
     }
@@ -406,7 +406,7 @@ void StructCompiler::run(SNode &root, bool host) {
     }
   }
 
-  if (get_current_program().config.arch == Arch::gpu) {
+  if (get_current_program().config.arch == Arch::cuda) {
     for (int i = 0; i < (int)ambient_snodes.size(); i++) {
       emit("{{");
       auto ntn = ambient_snodes[i]->node_type_name;

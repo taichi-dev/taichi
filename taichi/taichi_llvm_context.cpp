@@ -131,7 +131,7 @@ void compile_runtime_bitcode(Arch arch) {
 void compile_runtimes() {
   compile_runtime_bitcode(Arch::x86_64);
 #if defined(TLANG_WITH_CUDA)
-  compile_runtime_bitcode(Arch::gpu);
+  compile_runtime_bitcode(Arch::cuda);
 #endif
 }
 
@@ -234,7 +234,7 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
           fmt::format("{}/{}", get_runtime_dir(), get_runtime_fn(arch)),
           ctx.get());
     }
-    if (arch == Arch::gpu) {
+    if (arch == Arch::cuda) {
       runtime_module->setTargetTriple("nvptx64-nvidia-cuda");
 
       auto patch_intrinsic = [&](std::string name, Intrinsic::ID intrin,

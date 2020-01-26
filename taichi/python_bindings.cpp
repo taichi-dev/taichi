@@ -41,8 +41,9 @@ void export_lang(py::module &m) {
   using namespace taichi::Tlang;
 
   py::enum_<Arch>(m, "Arch", py::arithmetic())
-      .value("gpu", Arch::gpu)
-      .value("x86_64", Arch::x86_64)
+#define PER_ARCH(x) .value(#x, Arch::x)
+#include "inc/archs.inc.h"
+#undef PER_ARCH
       .export_values();
 
   py::class_<CompileConfig>(m, "CompileConfig")

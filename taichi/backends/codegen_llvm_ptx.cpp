@@ -337,7 +337,7 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
 };
 
 FunctionType GPUCodeGen::codegen_llvm() {
-  TC_PROFILER("gpu codegen");
+  TC_PROFILER("cuda codegen");
   return CodeGenLLVMGPU(this, kernel).gen();
 }
 

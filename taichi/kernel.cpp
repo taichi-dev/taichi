@@ -44,7 +44,7 @@ void Kernel::operator()() {
     compile();
   std::vector<void *> host_buffers(args.size());
   std::vector<void *> device_buffers(args.size());
-  if (arch == Arch::gpu) {
+  if (arch == Arch::cuda) {
 #if defined(CUDA_FOUND)
     // copy data to GRAM
     bool has_buffer = false;

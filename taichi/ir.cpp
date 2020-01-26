@@ -192,7 +192,7 @@ FrontendForStmt::FrontendForStmt(const Expr &loop_var,
   parallelize = dec.parallelize;
   strictly_serialized = dec.strictly_serialized;
   block_dim = dec.block_dim;
-  if (get_current_program().config.arch == Arch::gpu) {
+  if (get_current_program().config.arch == Arch::cuda) {
     vectorize = 1;
     parallelize = 1;
   } else {
@@ -216,7 +216,7 @@ FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
   parallelize = dec.parallelize;
   strictly_serialized = dec.strictly_serialized;
   block_dim = dec.block_dim;
-  if (get_current_program().config.arch == Arch::gpu) {
+  if (get_current_program().config.arch == Arch::cuda) {
     vectorize = 1;
     parallelize = 1;
     TC_ASSERT(block_dim <= max_gpu_block_dim);

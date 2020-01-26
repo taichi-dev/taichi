@@ -63,7 +63,7 @@ real measure_cpe(std::function<void()> target,
 int default_simd_width(Arch arch) {
   if (arch == Arch::x86_64) {
     return default_simd_width_x86_64;
-  } else if (arch == Arch::gpu) {
+  } else if (arch == Arch::cuda) {
     return 32;
   } else {
     TC_NOT_IMPLEMENTED;

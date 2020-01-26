@@ -107,7 +107,7 @@ class TaichiLLVMJIT {
         return JTMB.takeError();
       jtmb = std::make_unique<JITTargetMachineBuilder>(std::move(*JTMB));
     } else {
-      TC_ASSERT(arch == Arch::gpu);
+      TC_ASSERT(arch == Arch::cuda);
       Triple triple("nvptx64", "nvidia", "cuda");
       jtmb = std::make_unique<JITTargetMachineBuilder>(triple);
     }

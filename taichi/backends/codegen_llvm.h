@@ -41,7 +41,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   }
 
   void initialize_context() {
-    if (kernel->arch == Arch::gpu) {
+    if (kernel->arch == Arch::cuda) {
       tlctx = prog->llvm_context_device.get();
     } else {
       tlctx = prog->llvm_context_host.get();
@@ -473,7 +473,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
           TC_P(data_type_name(ret_type));
           TC_NOT_IMPLEMENTED
         }
-      } else if (current_arch() == Arch::gpu) {
+      } else if (current_arch() == Arch::cuda) {
         if (ret_type == DataType::f32) {
           stmt->value =
               create_call("__nv_atan2f", {stmt->lhs->value, stmt->rhs->value});

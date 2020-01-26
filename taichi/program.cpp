@@ -27,7 +27,7 @@ FunctionType Program::compile(Kernel &kernel) {
   if (kernel.arch == Arch::x86_64) {
     CPUCodeGen codegen(kernel.name);
     ret = codegen.compile(*this, kernel);
-  } else if (kernel.arch == Arch::gpu) {
+  } else if (kernel.arch == Arch::cuda) {
     GPUCodeGen codegen(kernel.name);
     ret = codegen.compile(*this, kernel);
   } else {
@@ -48,18 +48,18 @@ void Program::materialize_layout() {
   profiler_print_gpu = scomp->profiler_print;
   profiler_clear_gpu = scomp->profiler_clear;
 
-  if (config.arch == Arch::gpu && config.use_llvm) {
+  if (config.arch == Arch::cuda && config.use_llvm) {
     initialize_device_llvm_context();
     // llvm_context_device->get_init_module();
     std::unique_ptr<StructCompiler> scomp_gpu =
-        StructCompiler::make(config.use_llvm, this, Arch::gpu);
+        StructCompiler::make(config.use_llvm, this, Arch::cuda);
     scomp_gpu->run(root, false);
   }
 }
 
 void Program::synchronize() {
   if (!sync) {
-    if (config.arch == Arch::gpu) {
+    if (config.arch == Arch::cuda) {
 #if defined(CUDA_FOUND)
       cudaDeviceSynchronize();
 #else
@@ -154,7 +154,7 @@ void Program::visualize_layout(const std::string &fn) {
 
 Program::Program(Arch arch) : memory_pool(this) {
 #if !defined(CUDA_FOUND)
-  if (arch == Arch::gpu) {
+  if (arch == Arch::cuda) {
     TC_WARN("Taichi is not compiled with CUDA.");
     TC_WARN("Falling back to x86_64");
     arch = Arch::x86_64;
@@ -174,7 +174,7 @@ Program::Program(Arch arch) : memory_pool(this) {
   num_instances += 1;
   SNode::counter = 0;
   // llvm_context_device is initialized before kernel compilation
-  allocator = std::make_unique<UnifiedAllocator>(arch == Arch::gpu);
+  allocator = std::make_unique<UnifiedAllocator>(arch == Arch::cuda);
   TC_ASSERT(current_program == nullptr);
   current_program = this;
   config = default_compile_config;
@@ -198,9 +198,9 @@ Program::Program(Arch arch) : memory_pool(this) {
 }
 
 void Program::initialize_device_llvm_context() {
-  if (config.arch == Arch::gpu && config.use_llvm) {
+  if (config.arch == Arch::cuda && config.use_llvm) {
     if (llvm_context_device == nullptr)
-      llvm_context_device = std::make_unique<TaichiLLVMContext>(Arch::gpu);
+      llvm_context_device = std::make_unique<TaichiLLVMContext>(Arch::cuda);
   }
 }
 

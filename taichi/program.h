@@ -61,7 +61,7 @@ class Program {
     if (config.use_llvm) {
       profiler_llvm->print();
     } else {
-      if (config.arch == Arch::gpu) {
+      if (config.arch == Arch::cuda) {
         profiler_print_gpu();
       } else {
         cpu_profiler.print();
@@ -73,7 +73,7 @@ class Program {
     if (config.use_llvm) {
       profiler_llvm->clear();
     } else {
-      if (config.arch == Arch::gpu) {
+      if (config.arch == Arch::cuda) {
         profiler_clear_gpu();
       } else {
         cpu_profiler.clear();

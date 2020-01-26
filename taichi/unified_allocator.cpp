@@ -10,7 +10,7 @@
 
 TLANG_NAMESPACE_BEGIN
 
-UnifiedAllocator::UnifiedAllocator(bool gpu) : gpu(gpu) {
+UnifiedAllocator::UnifiedAllocator(bool cuda) : cuda(cuda) {
 #if !defined(TC_PLATFORM_WINDOWS)
 
 #if defined(TI_ARCH_ARM)
@@ -39,7 +39,7 @@ UnifiedAllocator::UnifiedAllocator(bool gpu) : gpu(gpu) {
   std::size_t size = virtual_mem_to_allocate;
 #endif
   this->size = size;
-  if (gpu) {
+  if (cuda) {
 #if defined(CUDA_FOUND)
     check_cuda_errors(cudaMallocManaged(&_cuda_data, size));
     if (_cuda_data == nullptr) {
@@ -77,7 +77,7 @@ taichi::Tlang::UnifiedAllocator::~UnifiedAllocator() {
   if (!initialized()) {
     return;
   }
-  if (gpu) {
+  if (cuda) {
 #if defined(CUDA_FOUND)
     check_cuda_errors(cudaFree(_cuda_data));
 #else

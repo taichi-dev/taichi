@@ -43,7 +43,7 @@ void MemoryPool::daemon() {
     // poll allocation requests.
     using tail_type = decltype(MemRequestQueue::tail);
     tail_type tail;
-    if (prog->config.arch == Arch::gpu) {
+    if (prog->config.arch == Arch::cuda) {
 #if TLANG_WITH_CUDA
       check_cuda_errors(cudaMemcpy(&tail, &queue->tail, sizeof(tail),
                                    cudaMemcpyDeviceToHost));

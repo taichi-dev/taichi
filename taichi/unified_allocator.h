@@ -22,7 +22,7 @@ class UnifiedAllocator {
   void *_cuda_data;
 #endif
   std::size_t size;
-  bool gpu;
+  bool cuda;
 
   // put these two on the unified memory so that GPU can have access
  public:
@@ -32,7 +32,7 @@ class UnifiedAllocator {
   std::mutex lock;
 
  public:
-  UnifiedAllocator(bool gpu);
+  UnifiedAllocator(bool cuda);
 
   ~UnifiedAllocator();
 

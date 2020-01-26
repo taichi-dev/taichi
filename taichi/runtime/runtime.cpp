@@ -245,7 +245,7 @@ STRUCT_FIELD(StructMeta, is_active);
 STRUCT_FIELD(StructMeta, context);
 
 struct Runtime;
-void *allocate_aligned(Runtime *, std::size_t size, int alignment);
+void *allocate_aligned(Runtime *, std::size_t size, std::size_t alignment);
 
 void *allocate(Runtime *runtime, std::size_t size) {
   return allocate_aligned(runtime, size, 1);
@@ -361,7 +361,7 @@ Ptr NodeAllocator_allocate(NodeAllocator *node_allocator) {
   return node_allocator->pool + node_allocator->node_size * p;
 }
 
-using vm_allocator_type = void *(*)(std::size_t, int);
+using vm_allocator_type = void *(*)(void *, std::size_t, std::size_t);
 using RangeForTaskFunc = void(Context *, int i);
 using parallel_for_type = void (*)(void *thread_pool,
                                    int splits,
@@ -392,6 +392,7 @@ void initialize_rand_state(RandState *state, u32 i) {
 struct Runtime {
   vm_allocator_type vm_allocator;
   assert_failed_type assert_failed;
+  Ptr prog;
   Ptr root;
   Ptr thread_pool;
   parallel_for_type parallel_for;
@@ -410,20 +411,24 @@ STRUCT_FIELD(Runtime, temporaries);
 STRUCT_FIELD(Runtime, assert_failed);
 STRUCT_FIELD(Runtime, mem_req_queue);
 
-void *allocate_aligned(Runtime *runtime, std::size_t size, int alignment) {
-  return runtime->vm_allocator(size, alignment);
+void *allocate_aligned(Runtime *runtime,
+                       std::size_t size,
+                       std::size_t alignment) {
+  return runtime->vm_allocator(runtime->prog, size, alignment);
 }
 
 Ptr Runtime_initialize(Runtime **runtime_ptr,
+                       Ptr prog,
                        int num_snodes,
                        uint64_t root_size,
                        int root_id,
                        void *_vm_allocator,
                        bool verbose) {
   auto vm_allocator = (vm_allocator_type)_vm_allocator;
-  *runtime_ptr = (Runtime *)vm_allocator(sizeof(Runtime), 128);
+  *runtime_ptr = (Runtime *)vm_allocator(prog, sizeof(Runtime), 128);
   Runtime *runtime = *runtime_ptr;
   runtime->vm_allocator = vm_allocator;
+  runtime->prog = prog;
   if (verbose)
     printf("Initializing runtime with %d elements\n", num_snodes);
   for (int i = 0; i < num_snodes; i++) {

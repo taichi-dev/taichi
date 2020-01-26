@@ -174,7 +174,7 @@ Program::Program(Arch arch) : memory_pool(this) {
   num_instances += 1;
   SNode::counter = 0;
   // llvm_context_device is initialized before kernel compilation
-  UnifiedAllocator::create(arch == Arch::gpu);
+  allocator = std::make_unique<UnifiedAllocator>(arch == Arch::gpu);
   TC_ASSERT(current_program == nullptr);
   current_program = this;
   config = default_compile_config;
@@ -256,7 +256,6 @@ void Program::finalize() {
 #endif
   }
   memory_pool.terminate();
-  UnifiedAllocator::free();
   finalized = true;
   num_instances -= 1;
 }

@@ -47,6 +47,7 @@ class Program {
   static std::atomic<int> num_instances;
   ThreadPool thread_pool;
   MemoryPool memory_pool;
+  std::unique_ptr<UnifiedAllocator> allocator;
 
   std::vector<std::unique_ptr<Kernel>> functions;
 

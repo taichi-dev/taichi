@@ -10,11 +10,6 @@
 
 TLANG_NAMESPACE_BEGIN
 
-UnifiedAllocator *allocator_instance = nullptr;
-UnifiedAllocator *&allocator() {
-  return allocator_instance;
-}
-
 UnifiedAllocator::UnifiedAllocator(bool gpu) : gpu(gpu) {
 #if !defined(TC_PLATFORM_WINDOWS)
 
@@ -91,25 +86,8 @@ taichi::Tlang::UnifiedAllocator::~UnifiedAllocator() {
   }
 }
 
-void taichi::Tlang::UnifiedAllocator::create(bool gpu) {
-  allocator() = new UnifiedAllocator(gpu);
-}
-
-void taichi::Tlang::UnifiedAllocator::free() {
-  (*allocator()).~UnifiedAllocator();
-  allocator() = nullptr;
-}
-
 void taichi::Tlang::UnifiedAllocator::memset(unsigned char val) {
   std::memset(data, val, size);
 }
 
-UnifiedAllocator::UnifiedAllocator() {
-  data = nullptr;
-}
-
 TLANG_NAMESPACE_END
-
-extern "C" void *taichi_allocate_aligned(std::size_t size, int alignment) {
-  return taichi::Tlang::allocate(size, alignment);
-}

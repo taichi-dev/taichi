@@ -32,8 +32,6 @@ class UnifiedAllocator {
   std::mutex lock;
 
  public:
-  UnifiedAllocator();
-
   UnifiedAllocator(bool gpu);
 
   ~UnifiedAllocator();
@@ -60,10 +58,6 @@ class UnifiedAllocator {
   }
 
   UnifiedAllocator operator=(const UnifiedAllocator &) = delete;
-
-  static void create(bool gpu);
-
-  static void free();
 };
 
 inline void *allocate(std::size_t size, int alignment = 1) {

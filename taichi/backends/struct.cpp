@@ -6,7 +6,7 @@
 
 TLANG_NAMESPACE_BEGIN
 
-StructCompiler::StructCompiler() : CodeGenBase(), loopgen(this) {
+StructCompiler::StructCompiler(Program *prog) : CodeGenBase(), loopgen(this), prog(prog) {
   creator = [] {
     TC_ERROR("Not Specified");
     return nullptr;

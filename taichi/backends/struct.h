@@ -17,8 +17,9 @@ class StructCompiler : public CodeGenBase {
   std::function<void()> profiler_print;
   std::function<void()> profiler_clear;
   LoopGenerator loopgen;
+  Program *prog;
 
-  StructCompiler();
+  StructCompiler(Program *prog);
 
   virtual ~StructCompiler() {
   }
@@ -37,7 +38,7 @@ class StructCompiler : public CodeGenBase {
 
   virtual void run(SNode &node, bool host);
 
-  static std::unique_ptr<StructCompiler> make(bool use_llvm, Arch arch);
+  static std::unique_ptr<StructCompiler> make(bool use_llvm, Program *prog, Arch arch);
 };
 
 TLANG_NAMESPACE_END

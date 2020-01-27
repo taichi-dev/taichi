@@ -3,9 +3,6 @@ import taichi as ti
 
 @ti.all_archs
 def test_bitmasked():
-  if ti.get_os_name() == 'win':
-    # This test not supported on Windows due to the VirtualAlloc issue #251
-    return
   x = ti.var(ti.f32)
   s = ti.var(ti.i32)
 
@@ -32,9 +29,6 @@ def test_bitmasked():
 
 @ti.all_archs
 def test_pointer():
-  if ti.get_os_name() == 'win':
-    # This test not supported on Windows due to the VirtualAlloc issue #251
-    return
   x = ti.var(ti.f32)
   s = ti.var(ti.i32)
 
@@ -60,9 +54,6 @@ def test_pointer():
 
 @ti.all_archs
 def test_pointer2():
-  if ti.get_os_name() == 'win':
-    # This test not supported on Windows due to the VirtualAlloc issue #251
-    return
   x = ti.var(ti.f32)
   s = ti.var(ti.i32)
 

@@ -287,6 +287,13 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
       auto root = initialize_runtime(
           &prog->llvm_runtime, prog, (int)snodes.size(), root_size, root_id,
           (void *)&taichi_allocate_aligned, prog->config.verbose);
+
+      auto mem_req_queue =
+          tlctx->lookup_function<std::function<void *(void *)>>(
+              "Runtime_get_mem_req_queue")(prog->llvm_runtime);
+      prog->memory_pool.set_queue((MemRequestQueue *)mem_req_queue);
+
+      initialize_runtime2(prog->llvm_runtime, root, root_id);
       for (int i = 0; i < (int)snodes.size(); i++) {
         if (snodes[i]->type == SNodeType::pointer ||
             snodes[i]->type == SNodeType::dynamic) {
@@ -317,12 +324,6 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
 
       runtime_set_root(prog->llvm_runtime, root);
 
-      auto mem_req_queue =
-          tlctx->lookup_function<std::function<void *(void *)>>(
-              "Runtime_get_mem_req_queue")(prog->llvm_runtime);
-      prog->memory_pool.set_queue((MemRequestQueue *)mem_req_queue);
-
-      initialize_runtime2(prog->llvm_runtime, root, root_id);
     };
   }
   tlctx->snode_attr = snode_attr;

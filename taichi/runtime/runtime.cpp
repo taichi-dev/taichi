@@ -251,12 +251,6 @@ void taichi_assert(Context *context, i32 test, const char *msg);
 #define TC_ASSERT_INFO(x, msg) taichi_assert(context, (int)(x), msg)
 #define TC_ASSERT(x) TC_ASSERT_INFO(x, #x)
 
-void *allocate_aligned(Runtime *, std::size_t size, std::size_t alignment);
-
-void *allocate(Runtime *runtime, std::size_t size) {
-  return allocate_aligned(runtime, size, 1);
-}
-
 void ___stubs___() {
   printf("");
 #if ARCH_cuda
@@ -345,19 +339,8 @@ struct ElementList {
   i32 tail;
 };
 
-void ElementList_initialize(Runtime *runtime, ElementList *element_list) {
-  auto list_size = 4 * 1024 * 1024;
-  element_list->elements = (Element *)allocate(runtime, list_size);
-  element_list->tail = 0;
-}
-
-void ElementList_insert(ElementList *element_list, Element *element) {
-  element_list->elements[atomic_add_i32(&element_list->tail, 1)] = *element;
-}
-
-void ElementList_clear(ElementList *element_list) {
-  element_list->tail = 0;
-}
+void ElementList_initialize(Runtime *runtime, ElementList *element_list);
+void ElementList_insert(ElementList *element_list, Element *element);
 
 struct NodeAllocator {
   Ptr pool;
@@ -367,12 +350,7 @@ struct NodeAllocator {
 
 void NodeAllocator_initialize(Runtime *runtime,
                               NodeAllocator *node_allocator,
-                              std::size_t node_size) {
-  node_allocator->pool =
-      (Ptr)allocate_aligned(runtime, 1024 * 1024 * 1024, 4096);
-  node_allocator->node_size = node_size;
-  node_allocator->tail = 0;
-}
+                              std::size_t node_size);
 
 Ptr NodeAllocator_allocate(NodeAllocator *node_allocator) {
   int p = atomic_add_i32(&node_allocator->tail, 1);
@@ -420,7 +398,9 @@ struct Runtime {
   Ptr temporaries;
   RandState *rand_states;
   MemRequestQueue *mem_req_queue;
+  Ptr allocate(std::size_t size);
   Ptr allocate_aligned(std::size_t size, std::size_t alignment);
+  Ptr request_allocate_aligned(std::size_t size, std::size_t alignment);
 };
 
 STRUCT_FIELD_ARRAY(Runtime, element_lists);
@@ -451,14 +431,12 @@ void taichi_assert(Context *context, i32 test, const char *msg) {
 }
 #endif
 
-void *allocate_aligned(Runtime *runtime,
-                       std::size_t size,
-                       std::size_t alignment) {
-  return runtime->vm_allocator(runtime->prog, size, alignment);
-}
-
 Ptr Runtime::allocate_aligned(std::size_t size, std::size_t alignment) {
   return (Ptr)vm_allocator(prog, size, alignment);
+}
+
+Ptr Runtime::allocate(std::size_t size) {
+  return allocate_aligned(size, 1);
 }
 
 Ptr Runtime_initialize(Runtime **runtime_ptr,
@@ -477,16 +455,16 @@ Ptr Runtime_initialize(Runtime **runtime_ptr,
     printf("Initializing runtime with %d elements\n", num_snodes);
   for (int i = 0; i < num_snodes; i++) {
     runtime->element_lists[i] =
-        (ElementList *)allocate(runtime, sizeof(ElementList));
+        (ElementList *)runtime->allocate(sizeof(ElementList));
     ElementList_initialize(runtime, runtime->element_lists[i]);
 
     runtime->node_allocators[i] =
-        (NodeAllocator *)allocate(runtime, sizeof(NodeAllocator));
+        (NodeAllocator *)runtime->allocate(sizeof(NodeAllocator));
   }
-  auto root_ptr = allocate_aligned(runtime, root_size, 4096);
+  auto root_ptr = runtime->allocate_aligned(root_size, 4096);
 
   runtime->temporaries =
-      (Ptr)allocate_aligned(runtime, taichi_max_num_global_vars, 1024);
+      (Ptr)runtime->allocate_aligned(taichi_max_num_global_vars, 1024);
 
   // initialize the root node element list
   Element elem;
@@ -498,13 +476,13 @@ Ptr Runtime_initialize(Runtime **runtime_ptr,
   }
   ElementList_insert(runtime->element_lists[root_id], &elem);
 
-  runtime->rand_states = (RandState *)allocate_aligned(
-      runtime, sizeof(RandState) * num_rand_states, 4096);
+  runtime->rand_states = (RandState *)runtime->allocate_aligned(
+      sizeof(RandState) * num_rand_states, 4096);
   for (int i = 0; i < num_rand_states; i++)
     initialize_rand_state(&runtime->rand_states[i], i);
 
-  runtime->mem_req_queue = (MemRequestQueue *)allocate_aligned(
-      runtime, sizeof(MemRequestQueue), 4096);
+  runtime->mem_req_queue = (MemRequestQueue *)runtime->allocate_aligned(
+      sizeof(MemRequestQueue), 4096);
 
   if (verbose)
     printf("Runtime initialized.\n");
@@ -774,46 +752,25 @@ void ListManager::append(void *data_ptr) {
   std::memcpy((Ptr)(chunks[chunk_id] + element_size * item_id), data_ptr,
               element_size);
 }
+
+void ElementList_initialize(Runtime *runtime, ElementList *element_list) {
+  auto list_size = 4 * 1024 * 1024;
+  element_list->elements = (Element *)runtime->allocate(list_size);
+  element_list->tail = 0;
 }
 
-template <typename T>
-class lock_guard {
-  Ptr lock;
+void ElementList_insert(ElementList *element_list, Element *element) {
+  element_list->elements[atomic_add_i32(&element_list->tail, 1)] = *element;
+}
 
- public:
-  lock_guard(Ptr lock, const T &func) : lock(lock) {
-#if ARCH_x86_64
-    mutex_lock_i32(lock);
-    func();
-    mutex_unlock_i32(lock);
-#else
-    // CUDA
-    for (int i = 0; i < warp_size(); i++) {
-      if (warp_idx() == i) {
-        mutex_lock_i32(lock);
-        threadfence();  // TODO
-        func();
-        mutex_unlock_i32(lock);
-      }
-    }
-    // Unfortunately critical sections on CUDA has undefined behavior (deadlock
-    // or not), if more than one thread in a warp try to acquire locks
-    /*
-    bool done = false;
-    while (!done) {
-      if (atomic_exchange_i32((i32 *)lock, 1) == 1) {
-        func();
-        done = true;
-        mutex_unlock_i32(lock);
-      }
-    }
-    */
-#endif
-  }
-};
-template <typename T>
-void locked_task(void *lock, const T &func) {
-  lock_guard<T> _((Ptr)lock, func);
+void NodeAllocator_initialize(Runtime *runtime,
+                              NodeAllocator *node_allocator,
+                              std::size_t node_size) {
+  node_allocator->pool =
+      (Ptr)runtime->allocate_aligned(1024 * 1024 * 1024, 4096);
+  node_allocator->node_size = node_size;
+  node_allocator->tail = 0;
+}
 }
 
 #if ARCH_cuda
@@ -870,5 +827,7 @@ i64 cuda_rand_i64(Context *context) {
 };
 
 #endif
+
+#include "locked_task.h"
 
 #endif

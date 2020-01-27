@@ -755,6 +755,7 @@ void ListManager::append(void *data_ptr) {
   auto item_id = i & ((1 << log2chunk_num_elements) - 1);
   if (!chunks[chunk_id]) {
     locked_task(&lock, [&] {
+      // may have been allocated during lock contention
       if (!chunks[chunk_id]) {
         chunks[chunk_id] = runtime->allocate_aligned(
             max_num_elements_per_chunk * element_size, 4096);

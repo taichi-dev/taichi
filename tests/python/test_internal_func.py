@@ -1,6 +1,7 @@
 import taichi as ti
 import time
 
+# TODO: these are not really tests...
 @ti.all_archs
 def test_basic():
   @ti.kernel
@@ -13,7 +14,6 @@ def test_basic():
 
 @ti.all_archs
 def test_host_polling():
-  
   @ti.kernel
   def test():
     ti.call_internal("refresh_counter")
@@ -22,3 +22,14 @@ def test_host_polling():
     print('updating tail to', i)
     test()
     time.sleep(0.1)
+    
+# @ti.all_archs
+@ti.host_arch
+def test_list_manager():
+  @ti.kernel
+  def test():
+    ti.call_internal("test_list_manager")
+  
+  test()
+  
+test_list_manager()

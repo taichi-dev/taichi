@@ -38,5 +38,6 @@ inline std::string get_cuda_error_string(cudaError_t err) {
   return std::string(ptr);
 }
 
-#endif
 TLANG_NAMESPACE_END
+
+#endif

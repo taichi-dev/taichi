@@ -23,13 +23,13 @@ def test_host_polling():
     test()
     time.sleep(0.1)
     
-# @ti.all_archs
+@ti.all_archs
 def test_list_manager():
-  ti.cfg.arch = ti.cuda
   @ti.kernel
   def test():
     ti.call_internal("test_list_manager")
   
   test()
-  
+  # test()
+
 test_list_manager()

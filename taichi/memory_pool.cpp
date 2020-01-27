@@ -17,7 +17,11 @@ MemoryPool::MemoryPool(Program *prog) : prog(prog) {
   processed_tail = 0;
   queue = nullptr;
 #ifdef TLANG_WITH_CUDA
-  check_cuda_errors(cudaStreamCreate(&cuda_stream));
+  // http://on-demand.gputechconf.com/gtc/2014/presentations/S4158-cuda-streams-best-practices-common-pitfalls.pdf
+  // Stream 0 has special synchronization rules: Operations in stream 0 cannot overlap other streams
+  // except for those streams with cudaStreamNonBlocking
+  // Do not use cudaCreateStream (with no flags) here!
+  check_cuda_errors(cudaStreamCreateWithFlags(&cuda_stream, cudaStreamNonBlocking));
 #endif
   th = std::make_unique<std::thread>([this] { this->daemon(); });
 }

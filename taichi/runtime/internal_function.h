@@ -15,8 +15,12 @@ i32 test_list_manager(Context *context) {
                                              sizeof(ListManager), 4096);
   list = new (ptr) ListManager(context, 4, 16);
   for (int i = 0; i < 320; i++) {
-    printf("appending %d\n", i);
-    list->append(&i);
+    // printf("appending %d\n", i);
+    auto j = i + 5;
+    list->append(&j);
+  }
+  for (int i = 0; i < 320; i++) {
+    TC_ASSERT(*(i32 *)list->get(i) == i + 5);
   }
   return 0;
 }

@@ -23,8 +23,7 @@ def test_host_polling():
     test()
     time.sleep(0.1)
     
-# @ti.all_archs
-@ti.host_arch
+@ti.all_archs
 def test_list_manager():
   @ti.kernel
   def test():

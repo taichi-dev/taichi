@@ -2062,14 +2062,7 @@ inline void Vectorize(int v) {
 }
 
 inline void Parallelize(int v) {
-#if !defined(OPENMP_FOUND)
-  if (v != 1) {
-    TC_WARN("OpenMP not found. Falling back to single threading.");
-    v = 1;
-  }
-#else
   dec.parallelize = v;
-#endif
 }
 
 inline void StrictlySerialize() {

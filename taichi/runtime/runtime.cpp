@@ -37,7 +37,7 @@ __asm__(".symver expf,expf@GLIBC_2.2.5");
   extern "C" void S##_set_##F(S *s, int i,                                   \
                               std::remove_all_extents_t<decltype(S::F)> f) { \
     s->F[i] = f;                                                             \
-  }
+  };
 
 using int8 = int8_t;
 using int16 = int16_t;
@@ -227,13 +227,19 @@ struct StructMeta {
   int snode_id;
   std::size_t element_size;
   int max_num_elements;
+
   Ptr (*lookup_element)(Ptr, Ptr, int i);
+
   Ptr (*from_parent_element)(Ptr);
+
   bool (*is_active)(Ptr, Ptr, int i);
+
   int (*get_num_elements)(Ptr, Ptr);
+
   void (*refine_coordinates)(PhysicalCoordinates *inp_coord,
                              PhysicalCoordinates *refined_coord,
                              int index);
+
   Context *context;
 };
 
@@ -259,6 +265,7 @@ void ___stubs___() {
 #if ARCH_cuda
   vprintf(nullptr, nullptr);
 #endif
+}
 }
 
 /*
@@ -305,6 +312,16 @@ struct ListManager {
 
   void append(void *data_ptr);
 
+  /*
+  template <typename T>
+  void append(const T &t) {
+    this->append((void *)&t);
+  }
+
+  Ptr allocate() {
+  }
+  */
+
   void clear() {
     num_elements = 0;
   }
@@ -328,6 +345,8 @@ struct NodeManager {
     return nullptr;
   }
 };
+
+extern "C" {
 
 struct Element {
   Ptr element;
@@ -468,7 +487,6 @@ Ptr Runtime_initialize(Runtime **runtime_ptr,
   if (verbose)
     printf("Initializing runtime with %d element(s)...\n", num_snodes);
 
-  Printf("here %d\n", 1);
   // runtime->allocate ready to use
   runtime->mem_req_queue = (MemRequestQueue *)runtime->allocate_aligned(
       sizeof(MemRequestQueue), 4096);
@@ -483,7 +501,6 @@ Ptr Runtime_initialize(Runtime **runtime_ptr,
         (NodeAllocator *)runtime->allocate(sizeof(NodeAllocator));
   }
   auto root_ptr = runtime->allocate_aligned(root_size, 4096);
-  Printf("here %d\n", 1);
 
   runtime->temporaries =
       (Ptr)runtime->allocate_aligned(taichi_max_num_global_vars, 1024);
@@ -510,9 +527,7 @@ void Runtime_initialize2(Runtime *runtime, Ptr root_ptr, int root_id) {
     elem.pcoord.val[i] = 0;
   }
 
-  Printf("here %d\n", 2);
   runtime->element_lists[root_id]->append(&elem);
-  Printf("here %d\n", 3);
 }
 void Runtime_initialize_thread_pool(Runtime *runtime,
                                     void *thread_pool,

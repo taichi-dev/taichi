@@ -174,27 +174,9 @@ std::string unary_op_type_name(UnaryOpType type) {
 std::string binary_op_type_name(BinaryOpType type) {
   static std::map<BinaryOpType, std::string> type_names;
   if (type_names.empty()) {
-#define REGISTER_TYPE(i) type_names[BinaryOpType::i] = #i;
-    REGISTER_TYPE(mul);
-    REGISTER_TYPE(add);
-    REGISTER_TYPE(sub);
-    REGISTER_TYPE(truediv);
-    REGISTER_TYPE(floordiv);
-    REGISTER_TYPE(div);
-    REGISTER_TYPE(mod);
-    REGISTER_TYPE(max);
-    REGISTER_TYPE(min);
-    REGISTER_TYPE(bit_and);
-    REGISTER_TYPE(bit_or);
-    REGISTER_TYPE(bit_xor);
-    REGISTER_TYPE(cmp_lt);
-    REGISTER_TYPE(cmp_le);
-    REGISTER_TYPE(cmp_gt);
-    REGISTER_TYPE(cmp_ge);
-    REGISTER_TYPE(cmp_ne);
-    REGISTER_TYPE(cmp_eq);
-    REGISTER_TYPE(atan2);
-#undef REGISTER_TYPE
+#define PER_BINARY_OP(x) type_names[BinaryOpType::x] = #x;
+#include "inc/binary_op.inc.h"
+#undef PER_BINARY_OP
   }
   return type_names[type];
 }

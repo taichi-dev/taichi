@@ -152,26 +152,9 @@ inline bool needs_grad(DataType dt) {
 // type
 
 enum class BinaryOpType : int {
-  mul,
-  add,
-  sub,
-  truediv,   // will be lower into div in type checking
-  floordiv,  // will be lower into div in type checking
-  div,
-  mod,
-  max,
-  min,
-  bit_and,
-  bit_or,
-  bit_xor,
-  cmp_lt,
-  cmp_le,
-  cmp_gt,
-  cmp_ge,
-  cmp_eq,
-  cmp_ne,
-  atan2,
-  undefined
+#define PER_BINARY_OP(x) x,
+#include "inc/binary_op.inc.h"
+#undef PER_BINARY_OP
 };
 
 inline bool binary_is_bitwise(BinaryOpType t) {

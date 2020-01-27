@@ -15,7 +15,7 @@ void Pointer_activate(Ptr meta, Ptr node, int i) {
       auto smeta = (StructMeta *)meta;
       auto rt = (Runtime *)smeta->context->runtime;
       auto alloc = rt->node_allocators[smeta->snode_id];
-      data_ptr = NodeAllocator_allocate(alloc);
+      data_ptr = alloc->allocate();
     }
   });
 }

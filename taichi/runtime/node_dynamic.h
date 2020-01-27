@@ -27,7 +27,7 @@ void Dynamic_activate(Ptr meta_, Ptr node_, int i) {
     auto alloc = rt->node_allocators[meta->snode_id];
     while (true) {
       if (*p_chunk_ptr == nullptr) {
-        *p_chunk_ptr = NodeAllocator_allocate(alloc);
+        *p_chunk_ptr = alloc->allocate();
       }
       if (i < chunk_start + chunk_size) {
         return;
@@ -51,7 +51,7 @@ i32 Dynamic_append(Ptr meta_, Ptr node_, i32 data) {
     auto alloc = rt->node_allocators[meta->snode_id];
     while (true) {
       if (*p_chunk_ptr == nullptr) {
-        *p_chunk_ptr = NodeAllocator_allocate(alloc);
+        *p_chunk_ptr = alloc->allocate();
       }
       if (i < chunk_start + chunk_size) {
         tail = node->n;

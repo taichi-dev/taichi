@@ -357,21 +357,6 @@ STRUCT_FIELD(Element, element);
 STRUCT_FIELD(Element, pcoord);
 STRUCT_FIELD_ARRAY(Element, loop_bounds);
 
-struct NodeAllocator {
-  Ptr pool;
-  std::size_t node_size;
-  int tail;
-};
-
-void NodeAllocator_initialize(Runtime *runtime,
-                              NodeAllocator *node_allocator,
-                              std::size_t node_size);
-
-Ptr NodeAllocator_allocate(NodeAllocator *node_allocator) {
-  int p = atomic_add_i32(&node_allocator->tail, 1);
-  return node_allocator->pool + node_allocator->node_size * p;
-}
-
 using vm_allocator_type = void *(*)(void *, std::size_t, std::size_t);
 using RangeForTaskFunc = void(Context *, int i);
 using parallel_for_type = void (*)(void *thread_pool,
@@ -408,7 +393,7 @@ struct Runtime {
   Ptr thread_pool;
   parallel_for_type parallel_for;
   ListManager *element_lists[taichi_max_num_snodes];
-  NodeAllocator *node_allocators[taichi_max_num_snodes];
+  ListManager *node_allocators[taichi_max_num_snodes];
   Ptr ambient_elements[taichi_max_num_snodes];
   Ptr temporaries;
   RandState *rand_states;
@@ -484,7 +469,7 @@ Ptr Runtime_initialize(Runtime **runtime_ptr,
   runtime->vm_allocator = vm_allocator;
   runtime->prog = prog;
   if (verbose)
-    printf("Initializing runtime with %d element(s)...\n", num_snodes);
+    printf("Initializing runtime with %d snode(s)...\n", num_snodes);
 
   // runtime->allocate ready to use
   runtime->mem_req_queue = (MemRequestQueue *)runtime->allocate_aligned(
@@ -495,9 +480,6 @@ Ptr Runtime_initialize(Runtime **runtime_ptr,
         (ListManager *)runtime->allocate_aligned(sizeof(ListManager), 4096);
     new (runtime->element_lists[i])
         ListManager(runtime, sizeof(Element), 1024 * 64);
-
-    runtime->node_allocators[i] =
-        (NodeAllocator *)runtime->allocate(sizeof(NodeAllocator));
   }
   auto root_ptr = runtime->allocate_aligned(root_size, 4096);
 
@@ -535,9 +517,18 @@ void Runtime_initialize_thread_pool(Runtime *runtime,
   runtime->parallel_for = (parallel_for_type)parallel_for;
 }
 
+void NodeAllocator_initialize(Runtime *runtime,
+                              int snode_id,
+                              std::size_t node_size) {
+  runtime->node_allocators[snode_id] =
+      (ListManager *)runtime->allocate_aligned(sizeof(ListManager), 4096);
+  new (runtime->node_allocators[snode_id])
+      ListManager(runtime, node_size, 1024 * 16);
+}
+
 void Runtime_allocate_ambient(Runtime *runtime, int snode_id) {
   runtime->ambient_elements[snode_id] =
-      NodeAllocator_allocate(runtime->node_allocators[snode_id]);
+      runtime->node_allocators[snode_id]->allocate();
 }
 
 void mutex_lock_i32(Ptr mutex) {
@@ -787,7 +778,6 @@ void ListManager::touch_chunk(int chunk_id) {
   }
 }
 
-
 void ListManager::append(void *data_ptr) {
   auto i = atomic_add_i32(&num_elements, 1);
   auto chunk_id = i >> log2chunk_num_elements;
@@ -802,15 +792,6 @@ Ptr ListManager::allocate() {
   auto chunk_id = i >> log2chunk_num_elements;
   touch_chunk(chunk_id);
   return get(i);
-}
-
-void NodeAllocator_initialize(Runtime *runtime,
-                              NodeAllocator *node_allocator,
-                              std::size_t node_size) {
-  node_allocator->pool =
-      (Ptr)runtime->allocate_aligned(1024 * 1024 * 1024, 4096);
-  node_allocator->node_size = node_size;
-  node_allocator->tail = 0;
 }
 }
 

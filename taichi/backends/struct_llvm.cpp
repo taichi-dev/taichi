@@ -256,10 +256,6 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
         tlctx->lookup_function<std::function<void(void *, void *, int)>>(
             "Runtime_initialize2");
 
-    auto get_allocator =
-        tlctx->lookup_function<std::function<void *(void *, int)>>(
-            "Runtime_get_node_allocators");
-
     auto set_assert_failed =
         tlctx->lookup_function<std::function<void(void *, void *)>>(
             "Runtime_set_assert_failed");
@@ -269,7 +265,7 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
             "Runtime_allocate_ambient");
 
     auto initialize_allocator = tlctx->lookup_function<
-        std::function<void *(void *, void *, std::size_t)>>(
+        std::function<void *(void *, int, std::size_t)>>(
         "NodeAllocator_initialize");
 
     auto runtime_initialize_thread_pool =
@@ -294,24 +290,23 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
       for (int i = 0; i < (int)snodes.size(); i++) {
         if (snodes[i]->type == SNodeType::pointer ||
             snodes[i]->type == SNodeType::dynamic) {
-          std::size_t chunk_size;
+          std::size_t node_size;
           if (snodes[i]->type == SNodeType::pointer)
-            chunk_size =
+            node_size =
                 tlctx->get_type_size(snode_attr[snodes[i]].llvm_element_type);
           else {
             // dynamic. Allocators are for the chunks
-            chunk_size =
+            node_size =
                 sizeof(void *) +
                 tlctx->get_type_size(snode_attr[snodes[i]].llvm_element_type) *
                     snodes[i]->chunk_size;
           }
-          TC_INFO("Initializing allocator for snode {} (chunk size {})",
-                  snodes[i]->id, chunk_size);
+          TC_INFO("Initializing allocator for snode {} (node size {})",
+                  snodes[i]->id, node_size);
           auto rt = prog->llvm_runtime;
-          auto allocator = get_allocator(rt, i);
-          initialize_allocator(rt, allocator, chunk_size);
-          TC_INFO("Allocating ambient element for snode {} (chunk size {})",
-                  snodes[i]->id, chunk_size);
+          initialize_allocator(rt, i, node_size);
+          TC_INFO("Allocating ambient element for snode {} (node size {})",
+                  snodes[i]->id, node_size);
           allocate_ambient(rt, i);
         }
       }

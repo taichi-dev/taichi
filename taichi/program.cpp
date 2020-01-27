@@ -246,6 +246,7 @@ Kernel &Program::get_snode_writer(SNode *snode) {
 }
 
 void Program::finalize() {
+  synchronize();
   current_program = nullptr;
   for (auto &dll : loaded_dlls) {
 #if defined(TC_PLATFORM_UNIX)

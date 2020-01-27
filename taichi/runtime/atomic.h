@@ -8,6 +8,19 @@ int32 atomic_exchange_i32(volatile int32 *dest, int32 val) {
   return ret;
 }
 
+i64 atomic_exchange_i64(volatile int64 *dest, int64 val) {
+  i64 ret;
+  __atomic_exchange(dest, &val, &ret, std::memory_order::memory_order_seq_cst);
+  return ret;
+}
+
+u64 atomic_exchange_u64(volatile u64 *dest, u64 val) {
+  u64 ret;
+  __atomic_exchange(dest, &val, &ret, std::memory_order::memory_order_seq_cst);
+  return ret;
+}
+
+
 int32 atomic_add_i32(volatile int32 *dest, int32 val) {
   return __atomic_fetch_add(dest, val, std::memory_order::memory_order_seq_cst);
 }

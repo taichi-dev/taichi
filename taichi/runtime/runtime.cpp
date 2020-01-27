@@ -74,6 +74,9 @@ T ifloordiv(T a, T b) {
   return r;
 }
 
+template <typename T>
+void Printf(const char *format, T t);
+
 extern "C" {
 
 #if ARCH_cuda
@@ -247,9 +250,10 @@ STRUCT_FIELD(StructMeta, context);
 struct Runtime;
 
 void taichi_assert(Context *context, i32 test, const char *msg);
-
+void taichi_assert_runtime(Runtime *runtime, i32 test, const char *msg);
 #define TC_ASSERT_INFO(x, msg) taichi_assert(context, (int)(x), msg)
 #define TC_ASSERT(x) TC_ASSERT_INFO(x, #x)
+
 
 void ___stubs___() {
   printf("");
@@ -417,19 +421,22 @@ void __assertfail(const char *message,
                   const char *function,
                   std::size_t charSize);
 
-void taichi_assert(Context *context, i32 test, const char *msg) {
+void taichi_assert_runtime(Runtime *runtime, i32 test, const char *msg) {
   if (test == 0) {
     __assertfail(msg, "", 1, "", 1);
   }
 }
 #else
-void taichi_assert(Context *context, i32 test, const char *msg) {
+void taichi_assert_runtime(Runtime *runtime, i32 test, const char *msg) {
   if (test == 0) {
-    auto runtime = (Runtime *)context->runtime;
     runtime->assert_failed(msg);
   }
 }
 #endif
+
+void taichi_assert(Context *context, i32 test, const char *msg) {
+  taichi_assert_runtime((Runtime *)context->runtime, test, msg);
+}
 
 Ptr Runtime::allocate_aligned(std::size_t size, std::size_t alignment) {
   return (Ptr)vm_allocator(prog, size, alignment);
@@ -441,9 +448,10 @@ Ptr Runtime::allocate(std::size_t size) {
 
 Ptr Runtime::request_allocate_aligned(std::size_t size, std::size_t alignment) {
   auto i = atomic_add_i32(&mem_req_queue->tail, 1);
+  taichi_assert_runtime(this, i <= taichi_max_num_mem_requests, "Too many memory allocation requests.");
   auto volatile r = &mem_req_queue->requests[i];
-  r->size = size;
-  r->alignment = alignment;
+  atomic_exchange_u64(&r->size, size);
+  atomic_exchange_u64(&r->alignment, alignment);
   // wait for host to allocate
   while (r->ptr == nullptr);
   return r->ptr;
@@ -746,10 +754,11 @@ i32 linear_thread_idx() {
 
 void ListManager::append(void *data_ptr) {
   auto i = atomic_add_i32(&num_elements, 1);
-  // printf("i %d\n", i);
   auto chunk_id = i >> log2chunk_num_elements;
   auto item_id = i & ((1 << log2chunk_num_elements) - 1);
+  // Printf("data_ptr %p\n", data_ptr);
   if (!chunks[chunk_id]) {
+    // Printf("chunkid %d\n", chunk_id);
     locked_task(&lock, [&] {
       // may have been allocated during lock contention
       if (!chunks[chunk_id]) {
@@ -837,6 +846,15 @@ i64 cuda_rand_i64(Context *context) {
 };
 
 #endif
+
+template <typename T>
+void Printf(const char *format, T t) {
+#if ARCH_cuda
+  vprintf((Ptr)format, (Ptr)&t);
+#else
+  printf(format, t);
+#endif
+}
 
 #include "locked_task.h"
 

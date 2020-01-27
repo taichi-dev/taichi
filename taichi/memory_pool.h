@@ -1,5 +1,4 @@
 #pragma once
-
 #include <taichi/common/util.h>
 #include "common.h"
 #include <mutex>
@@ -8,6 +7,9 @@
 #include <thread>
 #include "unified_allocator.h"
 #include "legacy_kernel.h"
+#ifdef TLANG_WITH_CUDA
+#include <cuda_runtime.h>
+#endif
 
 TLANG_NAMESPACE_BEGIN
 
@@ -27,15 +29,19 @@ class MemoryPool {
   int processed_tail;
   Program *prog;
 
+#ifdef TLANG_WITH_CUDA
+  cudaStream_t cuda_stream;
+#endif
+
   MemRequestQueue *queue;
 
   MemoryPool(Program *prog);
 
   template <typename T>
-  T fetch(void *ptr);
+  T fetch(volatile void *ptr);
 
   template <typename T>
-  void push(T *dest, const T &val);
+  void push(volatile T *dest, const T &val);
 
   void *allocate(std::size_t size, std::size_t alignment);
 

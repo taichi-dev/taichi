@@ -16,6 +16,9 @@ MemoryPool::MemoryPool(Program *prog) : prog(prog) {
   killed = false;
   processed_tail = 0;
   queue = nullptr;
+#ifdef TLANG_WITH_CUDA
+  check_cuda_errors(cudaStreamCreate(&cuda_stream));
+#endif
   th = std::make_unique<std::thread>([this] { this->daemon(); });
 }
 
@@ -43,11 +46,13 @@ void *MemoryPool::allocate(std::size_t size, std::size_t alignment) {
 }
 
 template <typename T>
-T MemoryPool::fetch(void *ptr) {
+T MemoryPool::fetch(volatile void *ptr) {
   T ret;
   if (prog->config.arch == Arch::cuda) {
 #if TLANG_WITH_CUDA
-    check_cuda_errors(cudaMemcpy(&ret, ptr, sizeof(T), cudaMemcpyDeviceToHost));
+    check_cuda_errors(cudaMemcpyAsync(&ret, (void *)ptr, sizeof(T),
+                                      cudaMemcpyDeviceToHost, cuda_stream));
+    check_cuda_errors(cudaStreamSynchronize(cuda_stream));
 #else
     TC_NOT_IMPLEMENTED
 #endif
@@ -58,11 +63,12 @@ T MemoryPool::fetch(void *ptr) {
 }
 
 template <typename T>
-void MemoryPool::push(T *dest, const T &val) {
+void MemoryPool::push(volatile T *dest, const T &val) {
   if (prog->config.arch == Arch::cuda) {
 #if TLANG_WITH_CUDA
-    check_cuda_errors(
-        cudaMemcpy(dest, &val, sizeof(T), cudaMemcpyHostToDevice));
+    check_cuda_errors(cudaMemcpyAsync((void *)dest, &val, sizeof(T),
+                                      cudaMemcpyHostToDevice, cuda_stream));
+    check_cuda_errors(cudaStreamSynchronize(cuda_stream));
 #else
     TC_NOT_IMPLEMENTED
 #endif
@@ -92,7 +98,8 @@ void MemoryPool::daemon() {
       processed_tail += 1;
       TC_INFO("Processing memory request {}", i);
       auto req = fetch<MemRequest>(&queue->requests[i]);
-      TC_INFO("  Allocating memory {} B (alignment {}B) ", req.size, req.alignment);
+      TC_INFO("  Allocating memory {} B (alignment {}B) ", req.size,
+              req.alignment);
       auto ptr = allocate(req.size, req.alignment);
       TC_INFO("  Allocated. Ptr = {:p}", ptr);
       push(&queue->requests[i].ptr, (uint8 *)ptr);
@@ -107,6 +114,9 @@ void MemoryPool::terminate() {
   }
   th->join();
   TC_ASSERT(killed);
+#ifdef TLANG_WITH_CUDA
+  check_cuda_errors(cudaStreamDestroy(cuda_stream));
+#endif
 }
 
 MemoryPool::~MemoryPool() {

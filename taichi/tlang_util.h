@@ -113,7 +113,8 @@ std::string snode_type_name(SNodeType t);
 
 enum class UnaryOpType : int {
 #define PER_UNARY_OP(x) x,
-#include "inc/unary_op.h"
+#include "taichi/inc/unary_op.inc.h"
+
 #undef PER_UNARY_OP
 };
 

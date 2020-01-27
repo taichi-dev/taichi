@@ -245,6 +245,12 @@ STRUCT_FIELD(StructMeta, is_active);
 STRUCT_FIELD(StructMeta, context);
 
 struct Runtime;
+
+void taichi_assert(Context *context, i32 test, const char *msg);
+
+#define TC_ASSERT_INFO(x, msg) taichi_assert(context, (int)(x), msg)
+#define TC_ASSERT(x) TC_ASSERT_INFO(x, #x)
+
 void *allocate_aligned(Runtime *, std::size_t size, std::size_t alignment);
 
 void *allocate(Runtime *runtime, std::size_t size) {
@@ -263,27 +269,43 @@ A simple list data structure
 Data are organized in chunks, where each chunk is a piece of virtual memory
 */
 
+bool is_power_of_two(uint32 x) {
+  return x != 0 && (x & (x - 1)) == 0;
+}
+
+uint32 log2int(uint64 value) {
+  uint32 ret = 0;
+  value >>= 1;
+  while (value) {
+    value >>= 1;
+    ret += 1;
+  }
+  return ret;
+}
+
 struct ListManager {
-  static constexpr int max_num_chunks = 1024;
-  static constexpr int max_num_elements_per_chunk = 1024 * 1024;
-  i32 lock;
+  static constexpr std::size_t max_num_chunks = 1024;
   i32 element_size;
+  std::size_t max_num_elements_per_chunk;
+  i32 log2chunk_num_elements;
+  i32 lock;
   i32 num_elements;
   Ptr chunks[max_num_chunks];
+  Context *context;
+  Runtime *runtime;
 
-  ListManager() {
+  ListManager(Context *context,
+              std::size_t element_size,
+              std::size_t num_elements_per_chunk)
+      : element_size(element_size),
+        max_num_elements_per_chunk(num_elements_per_chunk),
+        context(context),
+        runtime((Runtime *)context->runtime) {
+    TC_ASSERT(is_power_of_two(max_num_elements_per_chunk));
+    log2chunk_num_elements = log2int(num_elements_per_chunk);
   }
 
-  void append(void *data_ptr) {
-    auto i = atomic_add_i32(&num_elements, 1);
-    auto chunk_id = i / max_num_elements_per_chunk;
-    auto item_id = i % max_num_elements_per_chunk;
-    if (!chunks[chunk_id]) {
-      // TODO: allocate the trunk
-    }
-    std::memcpy((Ptr)(chunks[chunk_id] + element_size * item_id), data_ptr,
-                element_size);
-  }
+  void append(void *data_ptr);
 
   void clear() {
     num_elements = 0;
@@ -291,8 +313,6 @@ struct ListManager {
 };
 
 struct NodeManager {
-  static constexpr int max_num_chunks = 1024;
-  static constexpr int max_num_elements_per_chunk = 1024 * 1024;
   i32 lock;
   i32 element_size;
   ListManager resident_list, recycled_list, data_list;
@@ -393,6 +413,7 @@ struct Runtime {
   Ptr temporaries;
   RandState *rand_states;
   MemRequestQueue *mem_req_queue;
+  Ptr allocate_aligned(std::size_t size, std::size_t alignment);
 };
 
 STRUCT_FIELD_ARRAY(Runtime, element_lists);
@@ -402,10 +423,35 @@ STRUCT_FIELD(Runtime, temporaries);
 STRUCT_FIELD(Runtime, assert_failed);
 STRUCT_FIELD(Runtime, mem_req_queue);
 
+#if ARCH_cuda
+void __assertfail(const char *message,
+                  const char *file,
+                  i32 line,
+                  const char *function,
+                  std::size_t charSize);
+
+void taichi_assert(Context *context, i32 test, const char *msg) {
+  if (test == 0) {
+    __assertfail(msg, "", 1, "", 1);
+  }
+}
+#else
+void taichi_assert(Context *context, i32 test, const char *msg) {
+  if (test == 0) {
+    auto runtime = (Runtime *)context->runtime;
+    runtime->assert_failed(msg);
+  }
+}
+#endif
+
 void *allocate_aligned(Runtime *runtime,
                        std::size_t size,
                        std::size_t alignment) {
   return runtime->vm_allocator(runtime->prog, size, alignment);
+}
+
+Ptr Runtime::allocate_aligned(std::size_t size, std::size_t alignment) {
+  return (Ptr)vm_allocator(prog, size, alignment);
 }
 
 Ptr Runtime_initialize(Runtime **runtime_ptr,
@@ -657,28 +703,6 @@ void parallel_range_for_task(void *range_context, int task_id) {
   }
 }
 
-#if ARCH_x86_64
-void taichi_assert(Context *context, i32 test, const char *msg) {
-  if (test == 0) {
-    auto runtime = (Runtime *)context->runtime;
-    runtime->assert_failed(msg);
-  }
-}
-#endif
-#if ARCH_cuda
-void __assertfail(const char *message,
-                  const char *file,
-                  i32 line,
-                  const char *function,
-                  std::size_t charSize);
-
-void taichi_assert(Context *context, i32 test, const char *msg) {
-  if (test == 0) {
-    __assertfail(msg, "", 1, "", 1);
-  }
-}
-#endif
-
 void cpu_parallel_range_for(Context *context,
                             int num_threads,
                             int begin,
@@ -724,7 +748,24 @@ i32 linear_thread_idx() {
 #include "node_root.h"
 
 #include "internal_function.h"
+
+void ListManager::append(void *data_ptr) {
+  auto i = atomic_add_i32(&num_elements, 1);
+  auto chunk_id = i >> log2chunk_num_elements;
+  auto item_id = i & ((1 << log2chunk_num_elements) - 1);
+  if (!chunks[chunk_id]) {
+    locked_task(&lock, [&] {
+      if (!chunks[chunk_id]) {
+        chunks[chunk_id] = runtime->allocate_aligned(
+            max_num_elements_per_chunk * element_size, 4096);
+      }
+    });
+  }
+  std::memcpy((Ptr)(chunks[chunk_id] + element_size * item_id), data_ptr,
+              element_size);
 }
+}
+
 template <typename T>
 class lock_guard {
   Ptr lock;

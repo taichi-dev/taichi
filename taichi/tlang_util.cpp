@@ -164,7 +164,8 @@ std::string unary_op_type_name(UnaryOpType type) {
   static std::map<UnaryOpType, std::string> type_names;
   if (type_names.empty()) {
 #define PER_UNARY_OP(i) type_names[UnaryOpType::i] = #i;
-#include "inc/unary_op.h"
+#include "taichi/inc/unary_op.inc.h"
+
 #undef PER_UNARY_OP
   }
   return type_names[type];

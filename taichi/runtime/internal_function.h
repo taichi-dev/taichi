@@ -12,7 +12,7 @@ i32 refresh_counter(Context *context) {
 i32 test_list_manager(Context *context) {
   ListManager *list;
   auto runtime = (Runtime *)context->runtime;
-  auto ptr = (ListManager *)(Runtime *)runtime->allocate_aligned(
+  auto ptr = (ListManager *)(Runtime *)runtime->request_allocate_aligned(
       sizeof(ListManager), 4096);
   list = new (ptr) ListManager(context, 4, 16);
   for (int i = 0; i < 320; i++) {

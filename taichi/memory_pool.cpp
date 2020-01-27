@@ -25,7 +25,7 @@ void MemoryPool::set_queue(MemRequestQueue *queue) {
 }
 
 void *MemoryPool::allocate(std::size_t size, std::size_t alignment) {
-  std::lock_guard<std::mutex> _(mut);
+  std::lock_guard<std::mutex> _(mut_allocators);
   bool use_cuda = prog->config.arch == Arch::cuda;
   void *ret = nullptr;
   if (!allocators.empty()) {
@@ -57,6 +57,20 @@ T MemoryPool::fetch(void *ptr) {
   return ret;
 }
 
+template <typename T>
+void MemoryPool::push(T *dest, const T &val) {
+  if (prog->config.arch == Arch::cuda) {
+#if TLANG_WITH_CUDA
+    check_cuda_errors(
+        cudaMemcpy(dest, &val, sizeof(T), cudaMemcpyHostToDevice));
+#else
+    TC_NOT_IMPLEMENTED
+#endif
+  } else {
+    *(T *)dest = val;
+  }
+}
+
 void MemoryPool::daemon() {
   while (1) {
     Time::usleep(1000);
@@ -77,6 +91,11 @@ void MemoryPool::daemon() {
       auto i = processed_tail;
       processed_tail += 1;
       TC_INFO("Processing memory request {}", i);
+      auto req = fetch<MemRequest>(&queue->requests[i]);
+      TC_INFO("  Allocating memory {} B (alignment {}B) ", req.size, req.alignment);
+      auto ptr = allocate(req.size, req.alignment);
+      TC_INFO("  Allocated. Ptr = {:p}", ptr);
+      push(&queue->requests[i].ptr, (uint8 *)ptr);
     }
   }
 }

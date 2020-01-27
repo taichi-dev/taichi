@@ -9,7 +9,8 @@ namespace taichi::Tlang {
 using namespace taichi;
 #endif
 
-// "Context" holds necessary data for function calls, such as arguments and Runtime struct
+// "Context" holds necessary data for function calls, such as arguments and
+// Runtime struct
 struct Context {
   void *runtime;
   uint64 args[taichi_max_num_args];
@@ -40,7 +41,9 @@ struct Context {
 
 struct MemRequest {
   std::size_t size;
-  std::size_t ptr;
+  std::size_t alignment;
+  uint8 *ptr;
+  std::size_t __padding;
 };
 
 struct MemRequestQueue {

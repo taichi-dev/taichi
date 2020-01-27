@@ -439,6 +439,17 @@ Ptr Runtime::allocate(std::size_t size) {
   return allocate_aligned(size, 1);
 }
 
+Ptr Runtime::request_allocate_aligned(std::size_t size, std::size_t alignment) {
+  auto i = atomic_add_i32(&mem_req_queue->tail, 1);
+  auto volatile r = &mem_req_queue->requests[i];
+  r->size = size;
+  r->alignment = alignment;
+  // wait for host to allocate
+  while (r->ptr == nullptr) {
+  }
+  return r->ptr;
+}
+
 Ptr Runtime_initialize(Runtime **runtime_ptr,
                        Ptr prog,
                        int num_snodes,
@@ -744,7 +755,7 @@ void ListManager::append(void *data_ptr) {
       // may have been allocated during lock contention
       if (!chunks[chunk_id]) {
         // printf("Allocating chunk %d\n", chunk_id);
-        chunks[chunk_id] = runtime->allocate_aligned(
+        chunks[chunk_id] = runtime->request_allocate_aligned(
             max_num_elements_per_chunk * element_size, 4096);
       }
     });

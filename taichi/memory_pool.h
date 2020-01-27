@@ -22,6 +22,7 @@ class MemoryPool {
       1 << 30;  // 1 GB per allocator
   bool terminating, killed;
   std::mutex mut;
+  std::mutex mut_allocators;
   std::unique_ptr<std::thread> th;
   int processed_tail;
   Program *prog;
@@ -32,6 +33,9 @@ class MemoryPool {
 
   template <typename T>
   T fetch(void *ptr);
+
+  template <typename T>
+  void push(T *dest, const T &val);
 
   void *allocate(std::size_t size, std::size_t alignment);
 

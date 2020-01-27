@@ -27,7 +27,7 @@ class UnifiedAllocator {
   std::mutex lock;
 
  public:
-  UnifiedAllocator(bool cuda);
+  UnifiedAllocator(std::size_t size, bool cuda);
 
   ~UnifiedAllocator();
 

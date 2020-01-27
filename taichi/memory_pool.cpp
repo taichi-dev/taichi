@@ -3,9 +3,9 @@
 #include "cuda_utils.h"
 #if TLANG_WITH_CUDA
 #include "cuda_runtime.h"
-#include "program.h"
-
 #endif
+
+#include "program.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -25,12 +25,20 @@ void MemoryPool::set_queue(MemRequestQueue *queue) {
 }
 
 void *MemoryPool::allocate(std::size_t size, std::size_t alignment) {
+  TC_DEBUG("Allocating {} MB", size / 1024 / 1024);
   std::lock_guard<std::mutex> _(mut);
   bool use_cuda = prog->config.arch == Arch::cuda;
-  if (allocators.empty()) {
-    allocators.emplace_back(std::make_unique<UnifiedAllocator>(use_cuda));
+  void *ret = nullptr;
+  if (!allocators.empty()) {
+    ret = allocators.back()->allocate(size, alignment);
   }
-  auto ret = allocators.back()->allocate(size, alignment);
+  if (!ret) {
+    // allocation have failed
+    auto new_buffer_size = std::max(size, default_allocator_size);
+    allocators.emplace_back(
+        std::make_unique<UnifiedAllocator>(new_buffer_size, use_cuda));
+    ret = allocators.back()->allocate(size, alignment);
+  }
   TC_ASSERT(ret);
   return ret;
 }

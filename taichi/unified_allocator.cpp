@@ -10,36 +10,11 @@
 
 TLANG_NAMESPACE_BEGIN
 
-UnifiedAllocator::UnifiedAllocator(bool cuda) : cuda(cuda) {
-#if !defined(TC_PLATFORM_WINDOWS)
-
-#if defined(TI_ARCH_ARM)
-  // Try to allocate only 2GB RAM on ARM devices such as Jetson nano
-  std::size_t size = 1LL << 31;
-#else
-  std::size_t size = 1LL << 44;
-#endif
-
-#else
-  std::size_t phys_mem_size;
-  if (GetPhysicallyInstalledSystemMemory(&phys_mem_size)) {  // KB
-    phys_mem_size /= 1024;                                   // MB
-    TC_INFO("Physical memory size {} MB", phys_mem_size);
-  } else {
-    auto err = GetLastError();
-    /* Error Codes:
-     * https://docs.microsoft.com/en-us/windows/win32/debug/system-error-codes
-     */
-    TC_WARN("Unable to get physical memory size [ Win32 Error Code {} ].", err);
-    phys_mem_size = 4096 * 4;  // allocate 4 GB later
-  }
-  auto virtual_mem_to_allocate = (phys_mem_size << 20) / 4;
-  TC_INFO("Allocating virtual memory pool (size = {} MB)",
-          virtual_mem_to_allocate / 1024 / 1024);
-  std::size_t size = virtual_mem_to_allocate;
-#endif
-  this->size = size;
+UnifiedAllocator::UnifiedAllocator(std::size_t size, bool cuda)
+    : size(size), cuda(cuda) {
   if (cuda) {
+    TC_INFO("Allocating unified (CPU+GPU) address space of size {} MB",
+            size / 1024 / 1024);
 #if defined(CUDA_FOUND)
     check_cuda_errors(cudaMallocManaged(&_cuda_data, size));
     if (_cuda_data == nullptr) {
@@ -63,6 +38,8 @@ UnifiedAllocator::UnifiedAllocator(bool cuda) : cuda(cuda) {
     TC_NOT_IMPLEMENTED
 #endif
   } else {
+    TC_INFO("Allocating virtual address space of size {} MB",
+            size / 1024 / 1024);
     cpu_vm = std::make_unique<VirtualMemoryAllocator>(size);
     data = (uint8 *)cpu_vm->ptr;
   }

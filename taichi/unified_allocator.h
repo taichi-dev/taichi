@@ -31,7 +31,7 @@ class UnifiedAllocator {
 
   ~UnifiedAllocator();
 
-  void *alloc(std::size_t size, std::size_t alignment) {
+  void *allocate(std::size_t size, std::size_t alignment) {
     std::lock_guard<std::mutex> _(lock);
     auto ret =
         head + alignment - 1 - ((std::size_t)head + alignment - 1) % alignment;

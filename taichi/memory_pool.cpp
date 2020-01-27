@@ -10,8 +10,8 @@
 TLANG_NAMESPACE_BEGIN
 
 MemoryPool::MemoryPool(Program *prog) : prog(prog) {
-  TC_INFO("Memory pool created. Pre allocator buffer size = {}",
-          allocator_size);
+  TC_INFO("Memory pool created. Default buffer size per allocator = {} MB",
+          default_allocator_size / 1024 / 1024);
   terminating = false;
   killed = false;
   processed_tail = 0;
@@ -24,8 +24,15 @@ void MemoryPool::set_queue(MemRequestQueue *queue) {
   this->queue = queue;
 }
 
-void *MemoryPool::allocate(std::size_t size) {
-  return nullptr;
+void *MemoryPool::allocate(std::size_t size, std::size_t alignment) {
+  std::lock_guard<std::mutex> _(mut);
+  bool use_cuda = prog->config.arch == Arch::cuda;
+  if (allocators.empty()) {
+    allocators.emplace_back(std::make_unique<UnifiedAllocator>(use_cuda));
+  }
+  auto ret = allocators.back()->allocate(size, alignment);
+  TC_ASSERT(ret);
+  return ret;
 }
 
 void MemoryPool::daemon() {
@@ -70,7 +77,6 @@ void MemoryPool::terminate() {
   th->join();
   TC_ASSERT(killed);
 }
-
 
 MemoryPool::~MemoryPool() {
   if (!killed) {

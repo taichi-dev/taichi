@@ -47,7 +47,6 @@ class Program {
   static std::atomic<int> num_instances;
   ThreadPool thread_pool;
   MemoryPool memory_pool;
-  std::unique_ptr<UnifiedAllocator> allocator;
 
   std::vector<std::unique_ptr<Kernel>> functions;
 
@@ -56,6 +55,11 @@ class Program {
   std::unique_ptr<ProfilerBase> profiler_llvm;
 
   std::string layout_fn;
+
+  Program() : Program(default_compile_config.arch) {
+  }
+
+  Program(Arch arch);
 
   void profiler_print() {
     if (config.use_llvm) {
@@ -85,19 +89,9 @@ class Program {
     context.runtime = llvm_runtime;
     return context;
   }
-
-  Program() : Program(default_compile_config.arch) {
-  }
-
-  Program(Arch arch);
-
   void initialize_device_llvm_context();
 
   void synchronize();
-
-  void finalize();
-
-  ~Program();
 
   void layout(std::function<void()> func) {
     root = SNode(0, SNodeType::root);
@@ -171,6 +165,10 @@ class Program {
   float64 get_total_compilation_time() {
     return total_compilation_time;
   }
+
+  void finalize();
+
+  ~Program();
 };
 
 TLANG_NAMESPACE_END

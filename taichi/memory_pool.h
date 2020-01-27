@@ -18,7 +18,8 @@ class Program;
 class MemoryPool {
  public:
   std::vector<std::unique_ptr<UnifiedAllocator>> allocators;
-  static constexpr std::size_t allocator_size = 1 << 30;  // 1 GB per allocator
+  static constexpr std::size_t default_allocator_size =
+      1 << 30;  // 1 GB per allocator
   bool terminating, killed;
   std::mutex mut;
   std::unique_ptr<std::thread> th;
@@ -29,7 +30,7 @@ class MemoryPool {
 
   MemoryPool(Program *prog);
 
-  void *allocate(std::size_t size);
+  void *allocate(std::size_t size, std::size_t alignment);
 
   void set_queue(MemRequestQueue *queue);
 

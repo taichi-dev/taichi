@@ -27,7 +27,7 @@ StructCompilerLLVM::StructCompilerLLVM(Program *prog, Arch arch)
 }
 
 void *taichi_allocate_aligned(Program *prog, std::size_t size, std::size_t alignment) {
-  return prog->allocator->alloc(size, alignment);
+  return prog->memory_pool.allocate(size, alignment);
 }
 
 void StructCompilerLLVM::generate_types(SNode &snode) {

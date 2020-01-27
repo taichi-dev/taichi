@@ -756,9 +756,9 @@ void ListManager::append(void *data_ptr) {
   auto i = atomic_add_i32(&num_elements, 1);
   auto chunk_id = i >> log2chunk_num_elements;
   auto item_id = i & ((1 << log2chunk_num_elements) - 1);
-  Printf("data_ptr %p\n", data_ptr);
+  // Printf("data_ptr %p\n", data_ptr);
   if (!chunks[chunk_id]) {
-    Printf("chunkid %d\n", chunk_id);
+    // Printf("chunkid %d\n", chunk_id);
     locked_task(&lock, [&] {
       // may have been allocated during lock contention
       if (!chunks[chunk_id]) {

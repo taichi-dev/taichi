@@ -447,8 +447,8 @@ Ptr Runtime::request_allocate_aligned(std::size_t size, std::size_t alignment) {
   taichi_assert_runtime(this, i <= taichi_max_num_mem_requests,
                         "Too many memory allocation requests.");
   auto volatile r = &mem_req_queue->requests[i];
-  atomic_exchange_u64(&r->size, size);
-  atomic_exchange_u64(&r->alignment, alignment);
+  atomic_exchange_u64((uint64 *)&r->size, size);
+  atomic_exchange_u64((uint64 *)&r->alignment, alignment);
   // wait for host to allocate
   while (r->ptr == nullptr)
     ;

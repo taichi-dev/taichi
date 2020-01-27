@@ -52,7 +52,7 @@ void *MemoryPool::allocate(std::size_t size, std::size_t alignment) {
 template <typename T>
 T MemoryPool::fetch(volatile void *ptr) {
   T ret;
-  if (prog->config.arch == Arch::cuda) {
+  if (false && prog->config.arch == Arch::cuda) {
 #if TLANG_WITH_CUDA
     check_cuda_errors(cudaMemcpyAsync(&ret, (void *)ptr, sizeof(T),
                                       cudaMemcpyDeviceToHost, cuda_stream));
@@ -68,7 +68,7 @@ T MemoryPool::fetch(volatile void *ptr) {
 
 template <typename T>
 void MemoryPool::push(volatile T *dest, const T &val) {
-  if (prog->config.arch == Arch::cuda) {
+  if (false && prog->config.arch == Arch::cuda) {
 #if TLANG_WITH_CUDA
     check_cuda_errors(cudaMemcpyAsync((void *)dest, &val, sizeof(T),
                                       cudaMemcpyHostToDevice, cuda_stream));

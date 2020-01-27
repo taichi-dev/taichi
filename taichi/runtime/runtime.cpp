@@ -312,15 +312,14 @@ struct ListManager {
 
   void append(void *data_ptr);
 
-  /*
   template <typename T>
-  void append(const T &t) {
+  void push_back(const T &t) {
     this->append((void *)&t);
   }
 
-  Ptr allocate() {
-  }
-  */
+  Ptr allocate();
+
+  void touch_chunk(int chunk_id);
 
   void clear() {
     num_elements = 0;
@@ -774,12 +773,7 @@ i32 linear_thread_idx() {
 
 #include "internal_function.h"
 
-void ListManager::append(void *data_ptr) {
-  auto i = atomic_add_i32(&num_elements, 1);
-  auto chunk_id = i >> log2chunk_num_elements;
-  auto item_id = i & ((1 << log2chunk_num_elements) - 1);
-  // Printf("this %p\n", this);
-  // Printf("data_ptr %p\n", data_ptr);
+void ListManager::touch_chunk(int chunk_id) {
   if (!chunks[chunk_id]) {
     // Printf("chunkid %d\n", chunk_id);
     locked_task(&lock, [&] {
@@ -791,8 +785,23 @@ void ListManager::append(void *data_ptr) {
       }
     });
   }
+}
+
+
+void ListManager::append(void *data_ptr) {
+  auto i = atomic_add_i32(&num_elements, 1);
+  auto chunk_id = i >> log2chunk_num_elements;
+  touch_chunk(chunk_id);
+  auto item_id = i & ((1 << log2chunk_num_elements) - 1);
   std::memcpy((Ptr)(chunks[chunk_id] + element_size * item_id), data_ptr,
               element_size);
+}
+
+Ptr ListManager::allocate() {
+  auto i = atomic_add_i32(&num_elements, 1);
+  auto chunk_id = i >> log2chunk_num_elements;
+  touch_chunk(chunk_id);
+  return get(i);
 }
 
 void NodeAllocator_initialize(Runtime *runtime,

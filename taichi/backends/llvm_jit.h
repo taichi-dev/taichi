@@ -184,7 +184,7 @@ class TaichiLLVMJIT {
 inline void *jit_lookup_name(TaichiLLVMJIT *jit, const std::string &name) {
   auto ExprSymbol = jit->lookup(name);
   if (!ExprSymbol)
-    TC_ERROR("Function not found");
+    TC_ERROR("Function \"{}\" not found", name);
   return (void *)(llvm::cantFail(ExprSymbol.getAddress()));
 }
 

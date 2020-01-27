@@ -15,7 +15,7 @@ i32 test_list_manager(Context *context) {
   Printf("Runtime %p\n", runtime);
   auto ptr = (ListManager *)(Runtime *)runtime->request_allocate_aligned(
       sizeof(ListManager), 4096);
-  list = new (ptr) ListManager(context, 4, 16);
+  list = new (ptr) ListManager((Runtime *)context->runtime, 4, 16);
   for (int i = 0; i < 320; i++) {
     Printf("appending %d\n", i);
     auto j = i + 5;

@@ -254,7 +254,6 @@ void taichi_assert_runtime(Runtime *runtime, i32 test, const char *msg);
 #define TC_ASSERT_INFO(x, msg) taichi_assert(context, (int)(x), msg)
 #define TC_ASSERT(x) TC_ASSERT_INFO(x, #x)
 
-
 void ___stubs___() {
   printf("");
 #if ARCH_cuda
@@ -283,23 +282,22 @@ uint32 log2int(uint64 value) {
 
 struct ListManager {
   static constexpr std::size_t max_num_chunks = 1024;
+  Ptr chunks[max_num_chunks];
   i32 element_size;
   std::size_t max_num_elements_per_chunk;
   i32 log2chunk_num_elements;
   i32 lock;
   i32 num_elements;
-  Ptr chunks[max_num_chunks];
-  Context *context;
   Runtime *runtime;
 
-  ListManager(Context *context,
+  ListManager(Runtime *runtime,
               std::size_t element_size,
               std::size_t num_elements_per_chunk)
       : element_size(element_size),
         max_num_elements_per_chunk(num_elements_per_chunk),
-        context(context),
-        runtime((Runtime *)context->runtime) {
-    TC_ASSERT(is_power_of_two(max_num_elements_per_chunk));
+        runtime(runtime) {
+    taichi_assert_runtime(runtime, is_power_of_two(max_num_elements_per_chunk),
+                          "max_num_elements_per_chunk must be POT.");
     lock = 0;
     num_elements = 0;
     log2chunk_num_elements = log2int(num_elements_per_chunk);
@@ -314,6 +312,10 @@ struct ListManager {
   Ptr get(i32 i) {
     return chunks[i >> log2chunk_num_elements] +
            element_size * (i & ((1 << log2chunk_num_elements) - 1));
+  }
+
+  i32 size() {
+    return num_elements;
   }
 };
 
@@ -336,15 +338,6 @@ struct Element {
 STRUCT_FIELD(Element, element);
 STRUCT_FIELD(Element, pcoord);
 STRUCT_FIELD_ARRAY(Element, loop_bounds);
-
-struct ElementList {
-  Element *elements;
-  i32 head;
-  i32 tail;
-};
-
-void ElementList_initialize(Runtime *runtime, ElementList *element_list);
-void ElementList_insert(ElementList *element_list, Element *element);
 
 struct NodeAllocator {
   Ptr pool;
@@ -396,7 +389,7 @@ struct Runtime {
   Ptr root;
   Ptr thread_pool;
   parallel_for_type parallel_for;
-  ElementList *element_lists[taichi_max_num_snodes];
+  ListManager *element_lists[taichi_max_num_snodes];
   NodeAllocator *node_allocators[taichi_max_num_snodes];
   Ptr ambient_elements[taichi_max_num_snodes];
   Ptr temporaries;
@@ -448,12 +441,14 @@ Ptr Runtime::allocate(std::size_t size) {
 
 Ptr Runtime::request_allocate_aligned(std::size_t size, std::size_t alignment) {
   auto i = atomic_add_i32(&mem_req_queue->tail, 1);
-  taichi_assert_runtime(this, i <= taichi_max_num_mem_requests, "Too many memory allocation requests.");
+  taichi_assert_runtime(this, i <= taichi_max_num_mem_requests,
+                        "Too many memory allocation requests.");
   auto volatile r = &mem_req_queue->requests[i];
   atomic_exchange_u64(&r->size, size);
   atomic_exchange_u64(&r->alignment, alignment);
   // wait for host to allocate
-  while (r->ptr == nullptr);
+  while (r->ptr == nullptr)
+    ;
   return r->ptr;
 }
 
@@ -464,6 +459,7 @@ Ptr Runtime_initialize(Runtime **runtime_ptr,
                        int root_id,
                        void *_vm_allocator,
                        bool verbose) {
+  // bootstrap
   auto vm_allocator = (vm_allocator_type)_vm_allocator;
   *runtime_ptr = (Runtime *)vm_allocator(prog, sizeof(Runtime), 128);
   Runtime *runtime = *runtime_ptr;
@@ -471,18 +467,39 @@ Ptr Runtime_initialize(Runtime **runtime_ptr,
   runtime->prog = prog;
   if (verbose)
     printf("Initializing runtime with %d element(s)...\n", num_snodes);
+
+  Printf("here %d\n", 1);
+  // runtime->allocate ready to use
+  runtime->mem_req_queue = (MemRequestQueue *)runtime->allocate_aligned(
+      sizeof(MemRequestQueue), 4096);
+
   for (int i = 0; i < num_snodes; i++) {
     runtime->element_lists[i] =
-        (ElementList *)runtime->allocate(sizeof(ElementList));
-    ElementList_initialize(runtime, runtime->element_lists[i]);
+        (ListManager *)runtime->allocate_aligned(sizeof(ListManager), 4096);
+    new (runtime->element_lists[i])
+        ListManager(runtime, sizeof(Element), 1024 * 64);
 
     runtime->node_allocators[i] =
         (NodeAllocator *)runtime->allocate(sizeof(NodeAllocator));
   }
   auto root_ptr = runtime->allocate_aligned(root_size, 4096);
+  Printf("here %d\n", 1);
 
   runtime->temporaries =
       (Ptr)runtime->allocate_aligned(taichi_max_num_global_vars, 1024);
+
+  runtime->rand_states = (RandState *)runtime->allocate_aligned(
+      sizeof(RandState) * num_rand_states, 4096);
+  for (int i = 0; i < num_rand_states; i++)
+    initialize_rand_state(&runtime->rand_states[i], i);
+
+  if (verbose)
+    printf("Runtime initialized.\n");
+  return (Ptr)root_ptr;
+}
+
+void Runtime_initialize2(Runtime *runtime, Ptr root_ptr, int root_id) {
+  // runtime->request_allocate_aligned ready to use
 
   // initialize the root node element list
   Element elem;
@@ -492,21 +509,11 @@ Ptr Runtime_initialize(Runtime **runtime_ptr,
   for (int i = 0; i < taichi_max_num_indices; i++) {
     elem.pcoord.val[i] = 0;
   }
-  ElementList_insert(runtime->element_lists[root_id], &elem);
 
-  runtime->rand_states = (RandState *)runtime->allocate_aligned(
-      sizeof(RandState) * num_rand_states, 4096);
-  for (int i = 0; i < num_rand_states; i++)
-    initialize_rand_state(&runtime->rand_states[i], i);
-
-  runtime->mem_req_queue = (MemRequestQueue *)runtime->allocate_aligned(
-      sizeof(MemRequestQueue), 4096);
-
-  if (verbose)
-    printf("Runtime initialized.\n");
-  return (Ptr)root_ptr;
+  Printf("here %d\n", 2);
+  runtime->element_lists[root_id]->append(&elem);
+  Printf("here %d\n", 3);
 }
-
 void Runtime_initialize_thread_pool(Runtime *runtime,
                                     void *thread_pool,
                                     void *parallel_for) {
@@ -572,8 +579,7 @@ void threadfence() {
 
 void clear_list(Runtime *runtime, StructMeta *parent, StructMeta *child) {
   auto child_list = runtime->element_lists[child->snode_id];
-  child_list->head = 0;
-  child_list->tail = 0;
+  child_list->clear();
 }
 
 /*
@@ -582,7 +588,7 @@ void clear_list(Runtime *runtime, StructMeta *parent, StructMeta *child) {
  */
 void element_listgen(Runtime *runtime, StructMeta *parent, StructMeta *child) {
   auto parent_list = runtime->element_lists[parent->snode_id];
-  int num_parent_elements = parent_list->tail;
+  int num_parent_elements = parent_list->size();
   auto child_list = runtime->element_lists[child->snode_id];
 #if ARCH_cuda
   int i_start = block_idx();
@@ -596,7 +602,7 @@ void element_listgen(Runtime *runtime, StructMeta *parent, StructMeta *child) {
   int j_step = 1;
 #endif
   for (int i = i_start; i < num_parent_elements; i += i_step) {
-    auto element = parent_list->elements[i];
+    auto element = *(Element *)parent_list->get(i);
     for (int j = element.loop_bounds[0] + j_start; j < element.loop_bounds[1];
          j += j_step) {
       PhysicalCoordinates refined_coord;
@@ -610,7 +616,7 @@ void element_listgen(Runtime *runtime, StructMeta *parent, StructMeta *child) {
         elem.loop_bounds[0] = 0;
         elem.loop_bounds[1] = child->get_num_elements((Ptr)child, ch_element);
         elem.pcoord = refined_coord;
-        ElementList_insert(child_list, &elem);
+        child_list->append(&elem);
       }
     }
   }
@@ -621,7 +627,7 @@ using BlockTask = void(Context *, Element *, int, int);
 struct block_task_helper_context {
   Context *context;
   BlockTask *task;
-  Element *list;
+  ListManager *list;
   int element_size;
   int element_split;
 };
@@ -632,12 +638,13 @@ void block_helper(void *ctx_, int i) {
   int part_size = ctx->element_size / ctx->element_split;
   int part_id = i % ctx->element_split;
   // printf("%d %d %d\n", element_id, part_size, part_id);
-  auto &e = ctx->list[element_id];
+  auto &e = *(Element *)ctx->list->get(element_id);
   int lower = e.loop_bounds[0] + part_id * part_size;
   int upper = e.loop_bounds[0] + (part_id + 1) * part_size;
   upper = std::min(upper, e.loop_bounds[1]);
   if (lower < upper) {
-    (*ctx->task)(ctx->context, &ctx->list[element_id], lower, upper);
+    (*ctx->task)(ctx->context, (Element *)ctx->list->get(element_id), lower,
+                 upper);
   }
 }
 
@@ -648,7 +655,7 @@ void for_each_block(Context *context,
                     BlockTask *task,
                     int num_threads) {
   auto list = ((Runtime *)context->runtime)->element_lists[snode_id];
-  auto list_tail = list->tail;
+  auto list_tail = list->size();
 #if ARCH_cuda
   int i = block_idx();
   const auto part_size = element_size / element_split;
@@ -657,19 +664,19 @@ void for_each_block(Context *context,
     if (element_id >= list_tail)
       break;
     auto part_id = i % element_split;
-    auto &e = list->elements[element_id];
+    auto &e = *(Element *)list->get(element_id);
     int lower = e.loop_bounds[0] + part_id * part_size;
     int upper = e.loop_bounds[0] + (part_id + 1) * part_size;
     upper = std::min(upper, e.loop_bounds[1]);
     if (lower < upper)
-      task(context, &list->elements[element_id], lower, upper);
+      task(context, (Element *)list->get(element_id), lower, upper);
     i += grid_dim();
   }
 #else
   block_task_helper_context ctx;
   ctx.context = context;
   ctx.task = task;
-  ctx.list = list->elements;
+  ctx.list = list;
   ctx.element_size = element_size;
   ctx.element_split = element_split;
   // printf("size %d spilt %d tail %d\n", ctx.element_size, ctx.element_split,
@@ -756,13 +763,14 @@ void ListManager::append(void *data_ptr) {
   auto i = atomic_add_i32(&num_elements, 1);
   auto chunk_id = i >> log2chunk_num_elements;
   auto item_id = i & ((1 << log2chunk_num_elements) - 1);
+  // Printf("this %p\n", this);
   // Printf("data_ptr %p\n", data_ptr);
   if (!chunks[chunk_id]) {
     // Printf("chunkid %d\n", chunk_id);
     locked_task(&lock, [&] {
       // may have been allocated during lock contention
       if (!chunks[chunk_id]) {
-        // printf("Allocating chunk %d\n", chunk_id);
+        // Printf("Allocating chunk %d\n", chunk_id);
         chunks[chunk_id] = runtime->request_allocate_aligned(
             max_num_elements_per_chunk * element_size, 4096);
       }
@@ -770,16 +778,6 @@ void ListManager::append(void *data_ptr) {
   }
   std::memcpy((Ptr)(chunks[chunk_id] + element_size * item_id), data_ptr,
               element_size);
-}
-
-void ElementList_initialize(Runtime *runtime, ElementList *element_list) {
-  auto list_size = 4 * 1024 * 1024;
-  element_list->elements = (Element *)runtime->allocate(list_size);
-  element_list->tail = 0;
-}
-
-void ElementList_insert(ElementList *element_list, Element *element) {
-  element_list->elements[atomic_add_i32(&element_list->tail, 1)] = *element;
 }
 
 void NodeAllocator_initialize(Runtime *runtime,

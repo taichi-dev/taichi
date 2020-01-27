@@ -26,7 +26,9 @@ StructCompilerLLVM::StructCompilerLLVM(Program *prog, Arch arch)
   llvm_ctx = tlctx->ctx.get();
 }
 
-void *taichi_allocate_aligned(Program *prog, std::size_t size, std::size_t alignment) {
+void *taichi_allocate_aligned(Program *prog,
+                              std::size_t size,
+                              std::size_t alignment) {
   return prog->memory_pool.allocate(size, alignment);
 }
 
@@ -246,10 +248,13 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
       load_accessors(*n);
     }
 
-    auto initialize_data_structure =
-        tlctx->lookup_function<std::function<void *(
-            void *, void *, int, std::size_t, int, void *, bool)>>(
-            "Runtime_initialize");
+    auto initialize_runtime = tlctx->lookup_function<std::function<void *(
+        void *, void *, int, std::size_t, int, void *, bool)>>(
+        "Runtime_initialize");
+
+    auto initialize_runtime2 =
+        tlctx->lookup_function<std::function<void(void *, void *, int)>>(
+            "Runtime_initialize2");
 
     auto get_allocator =
         tlctx->lookup_function<std::function<void *(void *, int)>>(
@@ -283,7 +288,7 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
     auto prog = this->prog;
     creator = [=]() {
       TC_INFO("Allocating data structure of size {} B", root_size);
-      auto root = initialize_data_structure(
+      auto root = initialize_runtime(
           &prog->llvm_runtime, prog, (int)snodes.size(), root_size, root_id,
           (void *)&taichi_allocate_aligned, prog->config.verbose);
       for (int i = 0; i < (int)snodes.size(); i++) {
@@ -321,6 +326,8 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
           tlctx->lookup_function<std::function<void *(void *)>>(
               "Runtime_get_mem_req_queue")(prog->llvm_runtime);
       prog->memory_pool.set_queue((MemRequestQueue *)mem_req_queue);
+
+      initialize_runtime2(prog->llvm_runtime, root, root_id);
     };
   }
   tlctx->snode_attr = snode_attr;

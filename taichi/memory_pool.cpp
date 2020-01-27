@@ -25,7 +25,6 @@ void MemoryPool::set_queue(MemRequestQueue *queue) {
 }
 
 void *MemoryPool::allocate(std::size_t size, std::size_t alignment) {
-  TC_DEBUG("Allocating {} MB", size / 1024 / 1024);
   std::lock_guard<std::mutex> _(mut);
   bool use_cuda = prog->config.arch == Arch::cuda;
   void *ret = nullptr;
@@ -43,6 +42,21 @@ void *MemoryPool::allocate(std::size_t size, std::size_t alignment) {
   return ret;
 }
 
+template <typename T>
+T MemoryPool::fetch(void *ptr) {
+  T ret;
+  if (prog->config.arch == Arch::cuda) {
+#if TLANG_WITH_CUDA
+    check_cuda_errors(cudaMemcpy(&ret, ptr, sizeof(T), cudaMemcpyDeviceToHost));
+#else
+    TC_NOT_IMPLEMENTED
+#endif
+  } else {
+    ret = *(T *)ptr;
+  }
+  return ret;
+}
+
 void MemoryPool::daemon() {
   while (1) {
     Time::usleep(1000);
@@ -57,17 +71,7 @@ void MemoryPool::daemon() {
 
     // poll allocation requests.
     using tail_type = decltype(MemRequestQueue::tail);
-    tail_type tail;
-    if (prog->config.arch == Arch::cuda) {
-#if TLANG_WITH_CUDA
-      check_cuda_errors(cudaMemcpy(&tail, &queue->tail, sizeof(tail),
-                                   cudaMemcpyDeviceToHost));
-#else
-      TC_NOT_IMPLEMENTED
-#endif
-    } else {
-      tail = queue->tail;
-    }
+    auto tail = fetch<tail_type>(&queue->tail);
     if (tail > processed_tail) {
       // allocate new buffer
       auto i = processed_tail;

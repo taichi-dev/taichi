@@ -30,6 +30,9 @@ class MemoryPool {
 
   MemoryPool(Program *prog);
 
+  template <typename T>
+  T fetch(void *ptr);
+
   void *allocate(std::size_t size, std::size_t alignment);
 
   void set_queue(MemRequestQueue *queue);

@@ -302,6 +302,8 @@ struct ListManager {
         context(context),
         runtime((Runtime *)context->runtime) {
     TC_ASSERT(is_power_of_two(max_num_elements_per_chunk));
+    lock = 0;
+    num_elements = 0;
     log2chunk_num_elements = log2int(num_elements_per_chunk);
   }
 
@@ -751,12 +753,14 @@ i32 linear_thread_idx() {
 
 void ListManager::append(void *data_ptr) {
   auto i = atomic_add_i32(&num_elements, 1);
+  printf("i %d\n", i);
   auto chunk_id = i >> log2chunk_num_elements;
   auto item_id = i & ((1 << log2chunk_num_elements) - 1);
   if (!chunks[chunk_id]) {
     locked_task(&lock, [&] {
       // may have been allocated during lock contention
       if (!chunks[chunk_id]) {
+        printf("Allocating chunk %d\n", chunk_id);
         chunks[chunk_id] = runtime->allocate_aligned(
             max_num_elements_per_chunk * element_size, 4096);
       }

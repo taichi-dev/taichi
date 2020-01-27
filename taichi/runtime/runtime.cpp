@@ -445,8 +445,7 @@ Ptr Runtime::request_allocate_aligned(std::size_t size, std::size_t alignment) {
   r->size = size;
   r->alignment = alignment;
   // wait for host to allocate
-  while (r->ptr == nullptr) {
-  }
+  while (r->ptr == nullptr);
   return r->ptr;
 }
 
@@ -463,7 +462,7 @@ Ptr Runtime_initialize(Runtime **runtime_ptr,
   runtime->vm_allocator = vm_allocator;
   runtime->prog = prog;
   if (verbose)
-    printf("Initializing runtime with %d elements\n", num_snodes);
+    printf("Initializing runtime with %d element(s)...\n", num_snodes);
   for (int i = 0; i < num_snodes; i++) {
     runtime->element_lists[i] =
         (ElementList *)runtime->allocate(sizeof(ElementList));

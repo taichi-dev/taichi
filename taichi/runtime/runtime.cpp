@@ -337,6 +337,11 @@ struct ListManager {
            element_size * (i & ((1 << log2chunk_num_elements) - 1));
   }
 
+  Ptr touch_and_get(i32 i) {
+    touch_chunk(i >> log2chunk_num_elements);
+    return get(i);
+  }
+
   i32 size() {
     return num_elements;
   }
@@ -344,8 +349,8 @@ struct ListManager {
   i32 ptr2index(Ptr ptr) {
     auto chunk_size = max_num_elements_per_chunk * element_size;
     for (int i = 0; i < max_num_chunks; i++) {
-      Printf("i %d\n", i);
-      Printf("chunk %p\n", chunks[i]);
+      // Printf("i %d\n", i);
+      // Printf("chunk %p\n", chunks[i]);
       taichi_assert_runtime(runtime, chunks[i] != nullptr, "ptr not found.");
       if (chunks[i] <= ptr && ptr < chunks[i] + chunk_size) {
         return (i << log2chunk_num_elements) +
@@ -444,7 +449,9 @@ struct NodeManager {
 
   Ptr allocate() {
     auto *l = (list_data_type *)resident_list->allocate();
+    // Printf("&l %d\n", *l);
     if (*l != 0) {
+      // Printf("Reusing %d\n", *l - 1);
       // reuse
     } else {
       // allocate new
@@ -464,12 +471,17 @@ struct NodeManager {
   }
 
   void gc_serial() {
+    auto resident_tail = resident_list->size();
     for (int i = 0; i < recycled_list->size(); i++) {
-      auto ptr = recycled_list->get(i);
+      auto idx = *(list_data_type *)recycled_list->get(i);
+      auto ptr = data_list->get(idx);
       std::memset(ptr, 0, element_size);
-      resident_list->push_back<list_data_type>(*(list_data_type *)ptr);
+      // Printf("recycling %d\n", idx);
+      // Printf("resident_tail %d\n", resident_tail);
+      *(list_data_type *)resident_list->touch_and_get(resident_tail + i) = idx + 1;
     }
     recycled_list->clear();
+    // TODO: remove recycled indices from resident list
   }
 };
 

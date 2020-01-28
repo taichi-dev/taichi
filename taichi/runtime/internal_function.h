@@ -39,6 +39,7 @@ i32 test_node_allocator(Context *context) {
     Printf("ptr %p\n", ptrs[i]);
     nodes->recycle(ptrs[i]);
   }
+  nodes->gc_serial();
   for (int i = 19; i < 24; i++) {
     Printf("allocating %d\n", i);
     ptrs[i] = nodes->allocate();
@@ -48,7 +49,10 @@ i32 test_node_allocator(Context *context) {
   }
 
   for (int i = 19; i < 24; i++) {
-    TC_ASSERT(nodes->locate(ptrs[i]) == i - 19);
+    auto idx = nodes->locate(ptrs[i]);
+    Printf("i %d", i);
+    Printf("idx %d", idx);
+    TC_ASSERT(idx == i - 19);
   }
   return 0;
 }

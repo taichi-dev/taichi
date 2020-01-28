@@ -344,6 +344,8 @@ struct ListManager {
   i32 ptr2index(Ptr ptr) {
     auto chunk_size = max_num_elements_per_chunk * element_size;
     for (int i = 0; i < max_num_chunks; i++) {
+      Printf("i %d\n", i);
+      Printf("chunk %p\n", chunks[i]);
       taichi_assert_runtime(runtime, chunks[i] != nullptr, "ptr not found.");
       if (chunks[i] <= ptr && ptr < chunks[i] + chunk_size) {
         return (i << log2chunk_num_elements) +
@@ -454,7 +456,7 @@ struct NodeManager {
   }
 
   i32 locate(Ptr ptr) {
-    return recycled_list->ptr2index(ptr);
+    return resident_list->ptr2index(ptr);
   }
 
   void recycle(Ptr ptr) {

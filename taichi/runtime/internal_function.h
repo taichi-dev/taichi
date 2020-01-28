@@ -32,6 +32,7 @@ i32 test_node_allocator(Context *context) {
   for (int i = 0; i < 19; i++) {
     Printf("allocating %d\n", i);
     ptrs[i] = nodes->allocate();
+    Printf("ptr %p\n", ptrs[i]);
   }
   for (int i = 0; i < 5; i++) {
     Printf("deallocating %d\n", i);

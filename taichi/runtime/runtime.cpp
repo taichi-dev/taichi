@@ -382,9 +382,8 @@ void initialize_rand_state(RandState *state, u32 i) {
   state->w = 88675123;
   state->lock = 0;
 }
+}
 
-// Is "runtime" a correct name, even if it is created after the data layout is
-// materialized?
 struct Runtime {
   vm_allocator_type vm_allocator;
   assert_failed_type assert_failed;
@@ -401,8 +400,16 @@ struct Runtime {
   Ptr allocate(std::size_t size);
   Ptr allocate_aligned(std::size_t size, std::size_t alignment);
   Ptr request_allocate_aligned(std::size_t size, std::size_t alignment);
+
+  template <typename T, typename... Args>
+  T *create(Args &&... args) {
+    auto ptr = (T *)allocate_aligned(sizeof(T), 4096);
+    new (ptr) T(std::forward<Args>(args)...);
+    return ptr;
+  }
 };
 
+extern "C" {
 STRUCT_FIELD_ARRAY(Runtime, element_lists);
 STRUCT_FIELD_ARRAY(Runtime, node_allocators);
 STRUCT_FIELD(Runtime, root);
@@ -477,9 +484,7 @@ Ptr Runtime_initialize(Runtime **runtime_ptr,
 
   for (int i = 0; i < num_snodes; i++) {
     runtime->element_lists[i] =
-        (ListManager *)runtime->allocate_aligned(sizeof(ListManager), 4096);
-    new (runtime->element_lists[i])
-        ListManager(runtime, sizeof(Element), 1024 * 64);
+        runtime->create<ListManager>(runtime, sizeof(Element), 1024 * 64);
   }
   auto root_ptr = runtime->allocate_aligned(root_size, 4096);
 
@@ -521,9 +526,7 @@ void NodeAllocator_initialize(Runtime *runtime,
                               int snode_id,
                               std::size_t node_size) {
   runtime->node_allocators[snode_id] =
-      (ListManager *)runtime->allocate_aligned(sizeof(ListManager), 4096);
-  new (runtime->node_allocators[snode_id])
-      ListManager(runtime, node_size, 1024 * 16);
+      runtime->create<ListManager>(runtime, node_size, 1024 * 16);
 }
 
 void Runtime_allocate_ambient(Runtime *runtime, int snode_id) {

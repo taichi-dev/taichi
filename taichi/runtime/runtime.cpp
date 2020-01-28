@@ -312,6 +312,13 @@ struct ListManager {
 
   void append(void *data_ptr);
 
+  i32 reserve_new_element() {
+    auto i = atomic_add_i32(&num_elements, 1);
+    auto chunk_id = i >> log2chunk_num_elements;
+    touch_chunk(chunk_id);
+    return i;
+  }
+
   template <typename T>
   void push_back(const T &t) {
     this->append((void *)&t);
@@ -333,15 +340,17 @@ struct ListManager {
   i32 size() {
     return num_elements;
   }
-};
 
-struct NodeManager {
-  i32 lock;
-  i32 element_size;
-  ListManager resident_list, recycled_list, data_list;
-
-  Ptr allocate() {
-    return nullptr;
+  i32 ptr2index(Ptr ptr) {
+    auto chunk_size = max_num_elements_per_chunk * element_size;
+    for (int i = 0; i < max_num_chunks; i++) {
+      taichi_assert_runtime(runtime, chunks[i] != nullptr, "ptr not found.");
+      if (chunks[i] <= ptr && ptr < chunks[i] + chunk_size) {
+        return (i << log2chunk_num_elements) +
+               i32((ptr - chunks[i]) / element_size);
+      }
+    }
+    return -1;
   }
 };
 
@@ -406,6 +415,43 @@ struct Runtime {
     auto ptr = (T *)allocate_aligned(sizeof(T), 4096);
     new (ptr) T(std::forward<Args>(args)...);
     return ptr;
+  }
+};
+
+struct NodeManager {
+  i32 lock;
+  i32 element_size;
+  ListManager *resident_list, *recycled_list, *data_list;
+  Runtime *runtime;
+
+  using list_data_type = i32;
+
+  NodeManager(Runtime *runtime, i32 element_size) : runtime(runtime) {
+    i32 chunk_num_elements = 16 * 1024;  // 16K elements per chunk
+    resident_list = runtime->create<ListManager>(
+        runtime, sizeof(list_data_type), chunk_num_elements);
+    recycled_list = runtime->create<ListManager>(
+        runtime, sizeof(list_data_type), chunk_num_elements);
+    data_list =
+        runtime->create<ListManager>(runtime, element_size, chunk_num_elements);
+  }
+
+  Ptr allocate() {
+    auto *l = (list_data_type *)resident_list->allocate();
+    if (*l != 0) {
+      // reuse
+      return data_list->get(*l - 1);  // -1 since 0 is `uninitialized`
+    } else {
+      // allocate new
+      *l = data_list->reserve_new_element() +
+           1;  // +1 to reserve 0 for `uninitialized`
+      return data_list->get(*l);
+    }
+  }
+
+  void recycle(Ptr ptr) {
+    auto index = recycled_list->ptr2index(ptr);
+    recycled_list->append(&index);
   }
 };
 
@@ -782,18 +828,12 @@ void ListManager::touch_chunk(int chunk_id) {
 }
 
 void ListManager::append(void *data_ptr) {
-  auto i = atomic_add_i32(&num_elements, 1);
-  auto chunk_id = i >> log2chunk_num_elements;
-  touch_chunk(chunk_id);
-  auto item_id = i & ((1 << log2chunk_num_elements) - 1);
-  std::memcpy((Ptr)(chunks[chunk_id] + element_size * item_id), data_ptr,
-              element_size);
+  auto ptr = allocate();
+  std::memcpy(ptr, data_ptr, element_size);
 }
 
 Ptr ListManager::allocate() {
-  auto i = atomic_add_i32(&num_elements, 1);
-  auto chunk_id = i >> log2chunk_num_elements;
-  touch_chunk(chunk_id);
+  auto i = reserve_new_element();
   return get(i);
 }
 }

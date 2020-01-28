@@ -1948,10 +1948,11 @@ class SNodeOpExpression : public Expression {
 
   std::string serialize() override {
     if (value.expr) {
-      return fmt::format("append({}, [{}], {})", snode->node_type_name,
+      return fmt::format("append({}, [{}], {})",
+                         snode->get_node_type_name_hinted(),
                          indices.serialize(), value.serialize());
     } else {
-      return fmt::format("probe({}, [{}])", snode->node_type_name,
+      return fmt::format("probe({}, [{}])", snode->get_node_type_name_hinted(),
                          indices.serialize());
     }
   }
@@ -1962,10 +1963,10 @@ class SNodeOpExpression : public Expression {
       indices[i]->flatten(ret);
       indices_stmt.push_back(indices[i]->stmt);
     }
-    auto ptr = ret.push_back<GlobalPtrStmt>(snode->parent, indices_stmt);
+    auto ptr = ret.push_back<GlobalPtrStmt>(snode, indices_stmt);
     if (value.expr) {
       value->flatten(ret);
-      ret.push_back<SNodeOpStmt>(SNodeOpType::append, snode->parent, ptr,
+      ret.push_back<SNodeOpStmt>(SNodeOpType::append, snode, ptr,
                                  ret.back().get());
       TC_ERROR_IF(snode->type != SNodeType::dynamic,
                   "ti.append only works on dynamic nodes.");
@@ -1974,8 +1975,7 @@ class SNodeOpExpression : public Expression {
       TC_ERROR_IF(data_type_size(snode->ch[0]->dt) != 4,
                   "ti.append only works on i32/f32 nodes.");
     } else {
-      ret.push_back<SNodeOpStmt>(SNodeOpType::probe, snode->parent, ptr,
-                                 nullptr);
+      ret.push_back<SNodeOpStmt>(SNodeOpType::probe, snode, ptr, nullptr);
     }
     stmt = ret.back().get();
   }

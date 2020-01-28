@@ -79,4 +79,3 @@ def test_dynamic():
   for i in range(n):
     assert s[i] == i * i * 4
 
-test_dynamic()

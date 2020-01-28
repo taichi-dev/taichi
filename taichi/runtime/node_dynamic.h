@@ -38,6 +38,23 @@ void Dynamic_activate(Ptr meta_, Ptr node_, int i) {
   });
 }
 
+void Dynamic_deactivate(Ptr meta_, Ptr node_) {
+  auto meta = (DynamicMeta *)(meta_);
+  auto node = (DynamicNode *)(node_);
+  if (node->n > 0) {
+    locked_task(Ptr(&node->lock), [&] {
+      node->n = 0;
+      auto p_chunk_ptr = &node->ptr;
+      auto rt = (Runtime *)meta->context->runtime;
+      auto alloc = rt->node_allocators[meta->snode_id];
+      while (*p_chunk_ptr) {
+        alloc->recycle(*p_chunk_ptr);
+        p_chunk_ptr = (Ptr *)*p_chunk_ptr;
+      }
+    });
+  }
+}
+
 i32 Dynamic_append(Ptr meta_, Ptr node_, i32 data) {
   auto meta = (DynamicMeta *)(meta_);
   auto node = (DynamicNode *)(node_);

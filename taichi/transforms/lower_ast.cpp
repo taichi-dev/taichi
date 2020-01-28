@@ -179,8 +179,8 @@ class LowerAST : public IRVisitor {
         vars[i] = stmt->parent->lookup_var(stmt->loop_var_id[i]);
       }
       auto &&new_for = std::make_unique<StructForStmt>(
-          vars, stmt->snode, std::move(stmt->body), stmt->vectorize,
-          stmt->parallelize);
+          vars, stmt->global_var.cast<GlobalVariableExpression>()->snode,
+          std::move(stmt->body), stmt->vectorize, stmt->parallelize);
       new_for->scratch_opt = stmt->scratch_opt;
       new_for->block_dim = stmt->block_dim;
       flattened.push_back(std::move(new_for));

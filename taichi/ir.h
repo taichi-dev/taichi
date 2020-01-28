@@ -1168,16 +1168,15 @@ class GlobalVariableExpression : public Expression {
     is_primal = true;
   }
 
+  GlobalVariableExpression(SNode *snode) : snode(snode) {
+    dt = snode->dt;
+    has_ambient = false;
+    is_primal = true;
+  }
+
   void set_snode(SNode *snode) {
     this->snode = snode;
     set_attribute("dim", std::to_string(snode->num_active_indices));
-  }
-
-  GlobalVariableExpression(SNode *snode) : snode(snode) {
-    dt = DataType::unknown;
-    snode = nullptr;
-    has_ambient = false;
-    is_primal = true;
   }
 
   std::string serialize() override {
@@ -1673,7 +1672,7 @@ class ConstStmt : public Stmt {
 class FrontendForStmt : public Stmt {
  public:
   Expr begin, end;
-  SNode *snode;
+  Expr global_var;
   std::unique_ptr<Block> body;
   std::vector<Ident> loop_var_id;
   int vectorize;
@@ -1683,7 +1682,7 @@ class FrontendForStmt : public Stmt {
   int block_dim;
 
   bool is_ranged() const {
-    if (snode == nullptr) {
+    if (global_var.expr == nullptr) {
       return true;
     } else {
       return false;
@@ -1691,8 +1690,6 @@ class FrontendForStmt : public Stmt {
   }
 
   FrontendForStmt(const ExprGroup &loop_var, const Expr &global_var);
-
-  FrontendForStmt(const ExprGroup &loop_var, const SNode *snode);
 
   FrontendForStmt(const Expr &loop_var, const Expr &begin, const Expr &end);
 

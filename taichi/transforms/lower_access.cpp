@@ -55,7 +55,6 @@ class LowerAccess : public IRVisitor {
     std::set<SNode *> nodes_on_loop;
     if (current_struct_for) {
       for (SNode *s = current_struct_for->snode; s != nullptr; s = s->parent) {
-        TC_P(s);
         nodes_on_loop.insert(s);
       }
     }

@@ -3,7 +3,7 @@ import taichi as ti
 @ti.all_archs
 def test_singleton():
   x = ti.var(ti.i32, shape=()) # actually, ti.root.dense.place(x)
-  
+
   @ti.kernel
   def fill():
     for I in ti.grouped(x):
@@ -12,7 +12,7 @@ def test_singleton():
   fill()
   
   assert x[None] == 3
-  
+
 @ti.all_archs
 def test_singleton2():
   x = ti.var(ti.i32)

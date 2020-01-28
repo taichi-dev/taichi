@@ -199,7 +199,8 @@ class IRPrinter : public IRVisitor {
             for_stmt->end->serialize());
     } else {
       print("for {} where {} active {{", vars,
-            for_stmt->snode->get_node_type_name_hinted());
+            for_stmt->global_var.cast<GlobalVariableExpression>()
+                ->snode->get_node_type_name_hinted());
     }
     for_stmt->body->accept(this);
     print("}}");

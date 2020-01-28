@@ -400,6 +400,8 @@ void initialize_rand_state(RandState *state, u32 i) {
 }
 }
 
+struct NodeManager;
+
 struct Runtime {
   vm_allocator_type vm_allocator;
   assert_failed_type assert_failed;
@@ -408,7 +410,7 @@ struct Runtime {
   Ptr thread_pool;
   parallel_for_type parallel_for;
   ListManager *element_lists[taichi_max_num_snodes];
-  ListManager *node_allocators[taichi_max_num_snodes];
+  NodeManager *node_allocators[taichi_max_num_snodes];
   Ptr ambient_elements[taichi_max_num_snodes];
   Ptr temporaries;
   RandState *rand_states;
@@ -605,7 +607,7 @@ void NodeAllocator_initialize(Runtime *runtime,
                               int snode_id,
                               std::size_t node_size) {
   runtime->node_allocators[snode_id] =
-      runtime->create<ListManager>(runtime, node_size, 1024 * 16);
+      runtime->create<NodeManager>(runtime, node_size, 1024 * 16);
 }
 
 void Runtime_allocate_ambient(Runtime *runtime, int snode_id) {

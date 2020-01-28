@@ -49,4 +49,5 @@ class SNode:
     return self.ptr.get_num_elements_along_axis(i)
 
   def loop_range(self):
-    return self
+    import taichi as ti
+    return ti.Expr(ti.core.global_var_expr_from_snode(self.ptr))

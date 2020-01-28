@@ -411,6 +411,9 @@ void export_lang(py::module &m) {
   m.def("test_threading", test_threading);
   m.def("sifakis_svd_f32", sifakis_svd_export<float32, int32>);
   m.def("sifakis_svd_f64", sifakis_svd_export<float64, int64>);
+  m.def("global_var_expr_from_snode", [](SNode *snode) {
+    return Expr::make<GlobalVariableExpression>(snode);
+  });
 }
 
 TC_NAMESPACE_END

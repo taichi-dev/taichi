@@ -2,22 +2,23 @@ import taichi as ti
 
 @ti.all_archs
 def test_nested():
-  return
   x = ti.var(ti.i32)
 
-  n = 2
+  p, q = 3, 7
+  n, m = 2, 4
 
   @ti.layout
   def place():
-    ti.root.dense(ti.ij, n).dense(ti.ij, n).place(x)
+    ti.root.dense(ti.ij, (p, q)).dense(ti.ij, (n, m)).place(x)
 
   @ti.kernel
   def iterate():
     for i, j in x.parent():
-      print(i)
-      print(j)
-      x[i, j] = i + j * 2
+      x[i, j] += 1
 
   iterate()
 
-test_nested()
+  for i in range(p):
+    for j in range(q):
+      assert x[i * n, j * m] == 1
+

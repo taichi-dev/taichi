@@ -75,7 +75,6 @@ class Offloader {
 
   void emit_struct_for(StructForStmt *for_stmt, Block *root_block) {
     auto leaf = for_stmt->snode;
-    TC_ASSERT(leaf->type == SNodeType::place)
     // make a list of nodes, from the leaf block (instead of 'place') to root
     std::vector<SNode *> path;
     // leaf is the place (scalar)

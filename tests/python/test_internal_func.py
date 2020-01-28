@@ -42,5 +42,4 @@ def test_node_manager():
   
   test()
   test()
-  
-test_node_manager()
+

@@ -45,4 +45,3 @@ def test_dense_dynamic():
     for j in range(i):
       assert x[i, j] == j * 2
 
-test_dense_dynamic()

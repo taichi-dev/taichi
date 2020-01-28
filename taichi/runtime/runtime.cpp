@@ -432,7 +432,9 @@ struct NodeManager {
   i32 lock;
   i32 element_size;
   i32 chunk_num_elements;
-  ListManager *resident_list, *recycled_list, *data_list;
+
+  i32 free_list_used;
+  ListManager *free_list, *recycled_list, *data_list;
 
   using list_data_type = i32;
 
@@ -441,8 +443,9 @@ struct NodeManager {
     // 16K elements per chunk
     if (chunk_num_elements == -1)
       chunk_num_elements = 16 * 1024;
-    resident_list = runtime->create<ListManager>(
-        runtime, sizeof(list_data_type), chunk_num_elements);
+    free_list_used = 0;
+    free_list = runtime->create<ListManager>(runtime, sizeof(list_data_type),
+                                             chunk_num_elements);
     recycled_list = runtime->create<ListManager>(
         runtime, sizeof(list_data_type), chunk_num_elements);
     data_list =
@@ -450,17 +453,16 @@ struct NodeManager {
   }
 
   Ptr allocate() {
-    auto *l = (list_data_type *)resident_list->allocate();
-    // Printf("&l %d\n", *l);
-    if (*l != 0) {
-      // Printf("Reusing %d\n", *l - 1);
-      // reuse
+    int old_cursor = atomic_add_i32(&free_list_used, 1);
+    i32 l;
+    if (old_cursor >= free_list->size()) {
+      // running out of free list. allocate new.
+      l = data_list->reserve_new_element();
     } else {
-      // allocate new
-      *l = data_list->reserve_new_element() + 1;
-      // +1 to reserve 0 for `uninitialized`
+      // reuse
+      l = *(list_data_type *)free_list->get(old_cursor);
     }
-    return data_list->get(*l - 1);  // -1 since 0 is `uninitialized`
+    return data_list->get(l);
   }
 
   i32 locate(Ptr ptr) {
@@ -473,17 +475,21 @@ struct NodeManager {
   }
 
   void gc_serial() {
-    auto resident_tail = resident_list->size();
+    // compact free list
+    for (int i = free_list_used; i < free_list->size(); i++) {
+      *(list_data_type *)free_list->get(i - free_list_used) =
+          *(list_data_type *)free_list->get(i);
+    }
+    free_list_used = 0;
+
+    // zero-fill recycled and push to free list
     for (int i = 0; i < recycled_list->size(); i++) {
       auto idx = *(list_data_type *)recycled_list->get(i);
       auto ptr = data_list->get(idx);
       std::memset(ptr, 0, element_size);
-      // Printf("recycling %d\n", idx);
-      // Printf("resident_tail %d\n", resident_tail);
-      *(list_data_type *)resident_list->touch_and_get(resident_tail + i) = idx + 1;
+      free_list->push_back(idx);
     }
     recycled_list->clear();
-    // TODO: remove recycled indices from resident list
   }
 };
 

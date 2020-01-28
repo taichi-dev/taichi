@@ -173,6 +173,11 @@ void export_lang(py::module &m) {
            },
            py::return_value_policy::reference);
 
+  m.def("insert_deactivate",
+        [](SNode *snode, const ExprGroup &indices) {
+          return Deactivate(snode, indices);
+        });
+
   m.def("insert_append",
         [](SNode *snode, const ExprGroup &indices, const Expr &val) {
           return Append(snode, indices, val);

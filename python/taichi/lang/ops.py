@@ -200,5 +200,8 @@ def append(l, indices, val):
   a = ti.expr_init(taichi_lang_core.insert_append(l.snode().ptr, make_expr_group(indices), Expr(val).ptr))
   return a
 
+def deactivate(l, indices):
+  taichi_lang_core.insert_deactivate(l.snode().ptr, make_expr_group(indices))
+
 def length(l, indices):
   return taichi_lang_core.insert_len(l.snode().ptr, make_expr_group(indices))

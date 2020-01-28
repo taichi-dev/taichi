@@ -70,10 +70,7 @@ def test_dynamic():
   for i in range(n):
     assert s[i] == i * i * 3
 
-
   clear()
-
-
   func(4)
 
   for i in range(n):

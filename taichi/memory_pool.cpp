@@ -18,10 +18,11 @@ MemoryPool::MemoryPool(Program *prog) : prog(prog) {
   queue = nullptr;
 #ifdef TLANG_WITH_CUDA
   // http://on-demand.gputechconf.com/gtc/2014/presentations/S4158-cuda-streams-best-practices-common-pitfalls.pdf
-  // Stream 0 has special synchronization rules: Operations in stream 0 cannot overlap other streams
-  // except for those streams with cudaStreamNonBlocking
+  // Stream 0 has special synchronization rules: Operations in stream 0 cannot
+  // overlap other streams except for those streams with cudaStreamNonBlocking
   // Do not use cudaCreateStream (with no flags) here!
-  check_cuda_errors(cudaStreamCreateWithFlags(&cuda_stream, cudaStreamNonBlocking));
+  check_cuda_errors(
+      cudaStreamCreateWithFlags(&cuda_stream, cudaStreamNonBlocking));
 #endif
   th = std::make_unique<std::thread>([this] { this->daemon(); });
 }
@@ -99,14 +100,18 @@ void MemoryPool::daemon() {
     if (tail > processed_tail) {
       // allocate new buffer
       auto i = processed_tail;
-      processed_tail += 1;
       TC_DEBUG("Processing memory request {}", i);
       auto req = fetch<MemRequest>(&queue->requests[i]);
+      if (req.size == 0 || req.alignment == 0) {
+        TC_DEBUG(" Incomplete memory request {} fetched. Skipping", i);
+        continue;
+      }
       TC_DEBUG("  Allocating memory {} B (alignment {}B) ", req.size,
-              req.alignment);
+               req.alignment);
       auto ptr = allocate(req.size, req.alignment);
       TC_DEBUG("  Allocated. Ptr = {:p}", ptr);
       push(&queue->requests[i].ptr, (uint8 *)ptr);
+      processed_tail += 1;
     }
   }
 }

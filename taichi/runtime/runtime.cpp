@@ -412,22 +412,26 @@ struct Runtime {
 
   template <typename T, typename... Args>
   T *create(Args &&... args) {
-    auto ptr = (T *)allocate_aligned(sizeof(T), 4096);
+    auto ptr = (T *)request_allocate_aligned(sizeof(T), 4096);
     new (ptr) T(std::forward<Args>(args)...);
     return ptr;
   }
 };
 
 struct NodeManager {
+  Runtime *runtime;
   i32 lock;
   i32 element_size;
+  i32 chunk_num_elements;
   ListManager *resident_list, *recycled_list, *data_list;
-  Runtime *runtime;
 
   using list_data_type = i32;
 
-  NodeManager(Runtime *runtime, i32 element_size) : runtime(runtime) {
-    i32 chunk_num_elements = 16 * 1024;  // 16K elements per chunk
+  NodeManager(Runtime *runtime, i32 element_size, i32 chunk_num_elements = -1)
+      : runtime(runtime), chunk_num_elements(chunk_num_elements) {
+    // 16K elements per chunk
+    if (chunk_num_elements == -1)
+      chunk_num_elements = 16 * 1024;
     resident_list = runtime->create<ListManager>(
         runtime, sizeof(list_data_type), chunk_num_elements);
     recycled_list = runtime->create<ListManager>(
@@ -449,9 +453,22 @@ struct NodeManager {
     }
   }
 
+  i32 locate(Ptr ptr) {
+    return recycled_list->ptr2index(ptr);
+  }
+
   void recycle(Ptr ptr) {
-    auto index = recycled_list->ptr2index(ptr);
+    auto index = locate(ptr);
     recycled_list->append(&index);
+  }
+
+  void gc_serial() {
+    for (int i = 0; i < recycled_list->size(); i++) {
+      auto ptr = recycled_list->get(i);
+      std::memset(ptr, 0, element_size);
+      resident_list->push_back<list_data_type>(*(list_data_type *)ptr);
+    }
+    recycled_list->clear();
   }
 };
 
@@ -528,10 +545,6 @@ Ptr Runtime_initialize(Runtime **runtime_ptr,
   runtime->mem_req_queue = (MemRequestQueue *)runtime->allocate_aligned(
       sizeof(MemRequestQueue), 4096);
 
-  for (int i = 0; i < num_snodes; i++) {
-    runtime->element_lists[i] =
-        runtime->create<ListManager>(runtime, sizeof(Element), 1024 * 64);
-  }
   auto root_ptr = runtime->allocate_aligned(root_size, 4096);
 
   runtime->temporaries =
@@ -547,10 +560,14 @@ Ptr Runtime_initialize(Runtime **runtime_ptr,
   return (Ptr)root_ptr;
 }
 
-void Runtime_initialize2(Runtime *runtime, Ptr root_ptr, int root_id) {
+void Runtime_initialize2(Runtime *runtime, Ptr root_ptr, int root_id, int num_snodes) {
   // runtime->request_allocate_aligned ready to use
 
   // initialize the root node element list
+  for (int i = 0; i < num_snodes; i++) {
+    runtime->element_lists[i] =
+        runtime->create<ListManager>(runtime, sizeof(Element), 1024 * 64);
+  }
   Element elem;
   elem.loop_bounds[0] = 0;
   elem.loop_bounds[1] = 1;

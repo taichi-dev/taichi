@@ -86,7 +86,7 @@ class Program {
   }
 
   Context &get_context() {
-    context.runtime = llvm_runtime;
+    context.runtime = (Runtime *)llvm_runtime;
     return context;
   }
   void initialize_device_llvm_context();

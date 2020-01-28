@@ -257,7 +257,8 @@ if 1:
       raise TaichiSyntaxError(
           "'else' clause for 'for' not supported in Taichi kernels")
     decorated = isinstance(node.iter, ast.Call) and isinstance(
-        node.iter.func, ast.Attribute)
+        node.iter.func, ast.Attribute) and isinstance(node.iter.func.value, ast.Name)\
+                and node.iter.func.value.id == 'ti'
     is_ndrange_for = False
     is_static_for = False
     is_grouped = False

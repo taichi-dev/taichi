@@ -47,3 +47,6 @@ class SNode:
 
   def get_shape(self, i):
     return self.ptr.get_num_elements_along_axis(i)
+
+  def loop_range(self):
+    return self

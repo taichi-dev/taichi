@@ -188,6 +188,7 @@ FrontendForStmt::FrontendForStmt(const Expr &loop_var,
                                  const Expr &begin,
                                  const Expr &end)
     : begin(begin), end(end) {
+  snode = nullptr;
   vectorize = dec.vectorize;
   parallelize = dec.parallelize;
   strictly_serialized = dec.strictly_serialized;
@@ -211,7 +212,12 @@ FrontendForStmt::FrontendForStmt(const Expr &loop_var,
 
 FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
                                  const Expr &global_var)
-    : global_var(global_var) {
+    : FrontendForStmt(loop_var,
+                      global_var.cast<GlobalVariableExpression>()->snode) {
+}
+
+FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
+                                 const SNode *snode) {
   vectorize = dec.vectorize;
   parallelize = dec.parallelize;
   strictly_serialized = dec.strictly_serialized;

@@ -1673,7 +1673,7 @@ class ConstStmt : public Stmt {
 class FrontendForStmt : public Stmt {
  public:
   Expr begin, end;
-  Expr global_var;
+  SNode *snode;
   std::unique_ptr<Block> body;
   std::vector<Ident> loop_var_id;
   int vectorize;
@@ -1683,7 +1683,7 @@ class FrontendForStmt : public Stmt {
   int block_dim;
 
   bool is_ranged() const {
-    if (global_var.expr == nullptr) {
+    if (snode == nullptr) {
       return true;
     } else {
       return false;
@@ -1691,6 +1691,8 @@ class FrontendForStmt : public Stmt {
   }
 
   FrontendForStmt(const ExprGroup &loop_var, const Expr &global_var);
+
+  FrontendForStmt(const ExprGroup &loop_var, const SNode *snode);
 
   FrontendForStmt(const Expr &loop_var, const Expr &begin, const Expr &end);
 

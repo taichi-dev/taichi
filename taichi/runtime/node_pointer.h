@@ -13,9 +13,23 @@ void Pointer_activate(Ptr meta, Ptr node, int i) {
     Ptr &data_ptr = *(Ptr *)(node + 8);
     if (data_ptr == nullptr) {
       auto smeta = (StructMeta *)meta;
-      auto rt = (Runtime *)smeta->context->runtime;
+      auto rt = smeta->context->runtime;
       auto alloc = rt->node_allocators[smeta->snode_id];
       data_ptr = alloc->allocate();
+    }
+  });
+}
+
+void Pointer_deactivate(Ptr meta, Ptr node) {
+  Ptr lock = node;
+  locked_task(lock, [&] {
+    Ptr &data_ptr = *(Ptr *)(node + 8);
+    if (data_ptr != nullptr) {
+      auto smeta = (StructMeta *)meta;
+      auto rt = smeta->context->runtime;
+      auto alloc = rt->node_allocators[smeta->snode_id];
+      alloc->recycle(data_ptr);
+      data_ptr = nullptr;
     }
   });
 }
@@ -38,4 +52,3 @@ void *Pointer_lookup_element(Ptr meta, Ptr node, int i) {
 int Pointer_get_num_elements(Ptr meta, Ptr node) {
   return 1;
 }
-

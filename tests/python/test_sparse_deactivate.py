@@ -27,7 +27,8 @@ def test_pointer():
 
   @ti.kernel
   def deactivate():
-    ti.deactivate(x.parent().parent(), 4)
+    # TODO: why not x.parent().parent()?
+    ti.deactivate(x.parent(), 4)
 
   deactivate()
   s[None] = 0

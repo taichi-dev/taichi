@@ -858,6 +858,10 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     } else if (stmt->op_type == SNodeOpType::probe) {
       TC_ASSERT(snode->type == SNodeType::dynamic);
       stmt->value = call(snode, stmt->ptr->value, "get_num_elements", {});
+    } else if (stmt->op_type == SNodeOpType::deactivate) {
+      TC_ASSERT(snode->type == SNodeType::pointer ||
+                snode->type == SNodeType::dynamic);
+      stmt->value = call(snode, stmt->ptr->value, "deactivate", {});
     } else {
       TC_NOT_IMPLEMENTED
     }

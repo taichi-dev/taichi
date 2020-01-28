@@ -446,17 +446,16 @@ struct NodeManager {
     auto *l = (list_data_type *)resident_list->allocate();
     if (*l != 0) {
       // reuse
-      return data_list->get(*l - 1);  // -1 since 0 is `uninitialized`
     } else {
       // allocate new
-      *l = data_list->reserve_new_element() +
-           1;  // +1 to reserve 0 for `uninitialized`
-      return data_list->get(*l);
+      *l = data_list->reserve_new_element() + 1;
+      // +1 to reserve 0 for `uninitialized`
     }
+    return data_list->get(*l - 1);  // -1 since 0 is `uninitialized`
   }
 
   i32 locate(Ptr ptr) {
-    return resident_list->ptr2index(ptr);
+    return data_list->ptr2index(ptr);
   }
 
   void recycle(Ptr ptr) {
@@ -562,7 +561,10 @@ Ptr Runtime_initialize(Runtime **runtime_ptr,
   return (Ptr)root_ptr;
 }
 
-void Runtime_initialize2(Runtime *runtime, Ptr root_ptr, int root_id, int num_snodes) {
+void Runtime_initialize2(Runtime *runtime,
+                         Ptr root_ptr,
+                         int root_id,
+                         int num_snodes) {
   // runtime->request_allocate_aligned ready to use
 
   // initialize the root node element list

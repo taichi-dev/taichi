@@ -36,6 +36,7 @@ i32 test_node_allocator(Context *context) {
   }
   for (int i = 0; i < 5; i++) {
     Printf("deallocating %d\n", i);
+    Printf("ptr %p\n", ptrs[i]);
     nodes->recycle(ptrs[i]);
   }
   for (int i = 19; i < 24; i++) {

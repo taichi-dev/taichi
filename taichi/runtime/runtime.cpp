@@ -332,14 +332,19 @@ struct ListManager {
     num_elements = 0;
   }
 
-  Ptr get(i32 i) {
+  Ptr get_element_ptr(i32 i) {
     return chunks[i >> log2chunk_num_elements] +
            element_size * (i & ((1 << log2chunk_num_elements) - 1));
   }
 
+  template <typename T>
+  T &get(i32 i) {
+    return *(T *)get_element_ptr(i);
+  }
+
   Ptr touch_and_get(i32 i) {
     touch_chunk(i >> log2chunk_num_elements);
-    return get(i);
+    return get_element_ptr(i);
   }
 
   i32 size() {
@@ -460,9 +465,9 @@ struct NodeManager {
       l = data_list->reserve_new_element();
     } else {
       // reuse
-      l = *(list_data_type *)free_list->get(old_cursor);
+      l = free_list->get<list_data_type>(old_cursor);
     }
-    return data_list->get(l);
+    return data_list->get_element_ptr(l);
   }
 
   i32 locate(Ptr ptr) {
@@ -477,15 +482,15 @@ struct NodeManager {
   void gc_serial() {
     // compact free list
     for (int i = free_list_used; i < free_list->size(); i++) {
-      *(list_data_type *)free_list->get(i - free_list_used) =
-          *(list_data_type *)free_list->get(i);
+      free_list->get<list_data_type>(i - free_list_used) =
+          free_list->get<list_data_type>(i);
     }
     free_list_used = 0;
 
     // zero-fill recycled and push to free list
     for (int i = 0; i < recycled_list->size(); i++) {
-      auto idx = *(list_data_type *)recycled_list->get(i);
-      auto ptr = data_list->get(idx);
+      auto idx = recycled_list->get<list_data_type>(i);
+      auto ptr = data_list->get_element_ptr(idx);
       std::memset(ptr, 0, element_size);
       free_list->push_back(idx);
     }
@@ -697,7 +702,7 @@ void element_listgen(Runtime *runtime, StructMeta *parent, StructMeta *child) {
   int j_step = 1;
 #endif
   for (int i = i_start; i < num_parent_elements; i += i_step) {
-    auto element = *(Element *)parent_list->get(i);
+    auto element = parent_list->get<Element>(i);
     for (int j = element.loop_bounds[0] + j_start; j < element.loop_bounds[1];
          j += j_step) {
       PhysicalCoordinates refined_coord;
@@ -733,12 +738,12 @@ void block_helper(void *ctx_, int i) {
   int part_size = ctx->element_size / ctx->element_split;
   int part_id = i % ctx->element_split;
   // printf("%d %d %d\n", element_id, part_size, part_id);
-  auto &e = *(Element *)ctx->list->get(element_id);
+  auto &e = ctx->list->get<Element>(element_id);
   int lower = e.loop_bounds[0] + part_id * part_size;
   int upper = e.loop_bounds[0] + (part_id + 1) * part_size;
   upper = std::min(upper, e.loop_bounds[1]);
   if (lower < upper) {
-    (*ctx->task)(ctx->context, (Element *)ctx->list->get(element_id), lower,
+    (*ctx->task)(ctx->context, &ctx->list->get<Element>(element_id), lower,
                  upper);
   }
 }
@@ -759,12 +764,12 @@ void for_each_block(Context *context,
     if (element_id >= list_tail)
       break;
     auto part_id = i % element_split;
-    auto &e = *(Element *)list->get(element_id);
+    auto &e = list->get<Element>(element_id);
     int lower = e.loop_bounds[0] + part_id * part_size;
     int upper = e.loop_bounds[0] + (part_id + 1) * part_size;
     upper = std::min(upper, e.loop_bounds[1]);
     if (lower < upper)
-      task(context, (Element *)list->get(element_id), lower, upper);
+      task(context, &list->get<Element>(element_id), lower, upper);
     i += grid_dim();
   }
 #else
@@ -875,7 +880,7 @@ void ListManager::append(void *data_ptr) {
 
 Ptr ListManager::allocate() {
   auto i = reserve_new_element();
-  return get(i);
+  return get_element_ptr(i);
 }
 }
 

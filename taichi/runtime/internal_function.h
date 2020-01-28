@@ -19,7 +19,7 @@ i32 test_list_manager(Context *context) {
     list->append(&j);
   }
   for (int i = 0; i < 320; i++) {
-    TC_ASSERT(*(i32 *)list->get(i) == i + 5);
+    TC_ASSERT(list->get<i32>(i) == i + 5);
   }
   return 0;
 }

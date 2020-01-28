@@ -27,10 +27,56 @@ def test_pointer():
 
   @ti.kernel
   def deactivate():
-    # TODO: why not x.parent().parent()?
-    ti.deactivate(x.parent(), 4)
+    ti.deactivate(x.parent().parent(), 4)
 
   deactivate()
   s[None] = 0
   func()
   assert s[None] == 16
+
+@ti.all_archs
+def test_dynamic():
+  ti.cfg.print_ir = True
+  x = ti.var(ti.i32)
+  s = ti.var(ti.i32)
+
+  n = 16
+
+  @ti.layout
+  def place():
+    ti.root.dense(ti.i, n).dynamic(ti.j, 4096).place(x)
+    ti.root.dense(ti.i, n).place(s)
+
+  @ti.kernel
+  def func(mul: ti.i32):
+    for i in range(n):
+      for j in range(i * i * mul):
+        ti.append(x.parent(), i, j)
+      s[i] = ti.length(x.parent(), i)
+
+
+  func(1)
+
+  for i in range(n):
+    assert s[i] == i * i
+
+  @ti.kernel
+  def clear():
+    for i in range(n):
+      ti.deactivate(x.parent(), i)
+
+  func(2)
+
+  for i in range(n):
+    assert s[i] == i * i * 3
+
+
+  clear()
+
+
+  func(4)
+
+  for i in range(n):
+    assert s[i] == i * i * 4
+
+test_dynamic()

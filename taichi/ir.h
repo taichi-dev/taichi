@@ -1967,12 +1967,12 @@ class SNodeOpExpression : public Expression {
       value->flatten(ret);
       ret.push_back<SNodeOpStmt>(SNodeOpType::append, snode->parent, ptr,
                                  ret.back().get());
-      TC_ERROR_IF(snode->type != SNodeType::place,
-                  "ti.append only works on leaf nodes.");
-      TC_ERROR_IF(snode->parent->ch.size() != 1,
+      TC_ERROR_IF(snode->type != SNodeType::dynamic,
+                  "ti.append only works on dynamic nodes.");
+      TC_ERROR_IF(snode->ch.size() != 1,
                   "ti.append only works on single-child dynamic nodes.");
-      TC_ERROR_IF(snode->dt != DataType::i32,
-                  "ti.append only works on i32 nodes.");
+      TC_ERROR_IF(data_type_size(snode->ch[0]->dt) != 4,
+                  "ti.append only works on i32/f32 nodes.");
     } else {
       ret.push_back<SNodeOpStmt>(SNodeOpType::probe, snode->parent, ptr,
                                  nullptr);

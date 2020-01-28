@@ -273,7 +273,7 @@ def dda_particle(eye_pos, d, t):
       if inside:
         num_particles = voxel_has_particle[ipos]
         if num_particles != 0:
-          num_particles = ti.length(pid, ipos)
+          num_particles = ti.length(pid.parent(), ipos)
         for k in range(num_particles):
           p = pid[ipos[0], ipos[1], ipos[2], k]
           v = particle_v[p]
@@ -424,7 +424,7 @@ def initialize_particle_grid():
               if sphere_aabb_intersect_motion(
                   box_min, box_max, x - 0.5 * shutter_time * v,
                   x + 0.5 * shutter_time * v, sphere_radius):
-                ti.append(pid, box_ipos, p)
+                ti.append(pid.parent(), box_ipos, p)
                 voxel_has_particle[box_ipos] = 1
 
 @ti.kernel

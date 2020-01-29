@@ -166,6 +166,7 @@ class OffloadedStmt : public Stmt {
     struct_for,
     clear_list,
     listgen,
+    gc,
   };
 
   TaskType task_type;
@@ -182,6 +183,8 @@ class OffloadedStmt : public Stmt {
   std::unique_ptr<Block> body;
 
   OffloadedStmt(TaskType task_type);
+
+  OffloadedStmt(TaskType task_type, SNode *snode);
 
   std::string task_name() const;
 

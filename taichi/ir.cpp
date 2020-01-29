@@ -518,8 +518,12 @@ Stmt *IRBuilder::get_last_stmt() {
   return stack.back()->back();
 }
 
-OffloadedStmt::OffloadedStmt(taichi::Tlang::OffloadedStmt::TaskType task_type)
-    : task_type(task_type) {
+OffloadedStmt::OffloadedStmt(OffloadedStmt::TaskType task_type)
+    : OffloadedStmt(task_type, nullptr) {
+}
+
+OffloadedStmt::OffloadedStmt(OffloadedStmt::TaskType task_type, SNode *snode)
+    : task_type(task_type), snode(snode) {
   add_operand(begin_stmt);
   add_operand(end_stmt);
   num_cpu_threads = 1;

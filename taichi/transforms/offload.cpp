@@ -371,7 +371,24 @@ class PromoteLocals : public BasicStmtVisitor {
   }
 };
 
+void insert_gc(IRNode *root) {
+  auto *b = dynamic_cast<Block *>(root);
+  TC_ASSERT(b);
+  std::vector<std::pair<int, std::vector<SNode *>>> gc_statements;
+  for (int i = 0; i < (int)b->statements.size(); i++) {
+    auto snodes = irpass::gather_deactivations(b->statements[i].get());
+    gc_statements.emplace_back(std::make_pair(i, snodes));
+  }
 
+  for (int i = (int)b->statements.size() - 1; i >= 0; i--) {
+    auto snodes = gc_statements[i].second;
+    for (auto j = 0; j < snodes.size(); j++) {
+      b->statements.insert(
+          b->statements.begin() + j,
+          Stmt::make<OffloadedStmt>(OffloadedStmt::TaskType::gc, snodes[j]));
+    }
+  }
+}
 
 void offload(IRNode *root) {
   Offloader _(root);

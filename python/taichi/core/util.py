@@ -4,9 +4,9 @@ import sys
 import ctypes
 from pathlib import Path
 
-if sys.version_info[0] < 3 or sys.version_info[1] < 5:
-  print("\nPlease restart with python3. \n(Taichi supports Python 3.5+)\n")
-  print("Current version:", sys.version_info)
+if sys.version_info[0] < 3 or sys.version_info[1] <= 5:
+  print("\nPlease restart with Python 3.6+\n")
+  print("Current Python version:", sys.version_info)
   exit(-1)
 
 tc_core = None

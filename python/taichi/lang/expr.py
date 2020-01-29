@@ -133,10 +133,6 @@ class Expr:
     other = Expr(other)
     return Expr(taichi_lang_core.expr_cmp_ne(self.ptr, other.ptr))
 
-  def __getitem__(self, item):
-    item = Expr(item)
-    return Expr(expr_index(self, item.ptr))
-
   def __and__(self, item):
     item = Expr(item)
     return Expr(taichi_lang_core.expr_bit_and(self.ptr, item.ptr))

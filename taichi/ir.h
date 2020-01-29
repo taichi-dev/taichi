@@ -100,6 +100,7 @@ void replace_statements_with(IRNode *root,
 void demote_atomics(IRNode *root);
 void reverse_offloads(IRNode *root);
 std::unique_ptr<ScratchPads> initialize_scratch_pad(StructForStmt *root);
+std::vector<SNode *> gather_deactivations(IRNode *root);
 }  // namespace irpass
 
 // Analysis

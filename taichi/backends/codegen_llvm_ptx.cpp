@@ -322,6 +322,8 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
       kernel_grid_dim = saturating_num_blocks;
       kernel_block_dim = std::min(branching, 64);
       emit_list_gen(stmt);
+    } else if (stmt->task_type == Type::gc) {
+      emit_gc(stmt);
     } else {
       TC_NOT_IMPLEMENTED
     }

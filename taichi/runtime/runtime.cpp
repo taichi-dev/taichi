@@ -882,6 +882,10 @@ Ptr ListManager::allocate() {
   auto i = reserve_new_element();
   return get_element_ptr(i);
 }
+
+void node_gc(Runtime *runtime, int snode_id) {
+  runtime->node_allocators[snode_id]->gc_serial();
+}
 }
 
 #if ARCH_cuda

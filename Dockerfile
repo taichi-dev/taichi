@@ -66,6 +66,9 @@ RUN export CUDA_BIN_PATH=/usr/local/cuda-10.0 && \
     ldd libtaichi_core.so
 
 WORKDIR /app/taichi/python
+ENV PATH="/app/taichi/bin:$PATH"
+ENV PYTHONPATH="$TAICHI_REPO_DIR/python:$PYTHONPATH"
+RUN ti test
 
 WORKDIR /app
 CMD /bin/bash

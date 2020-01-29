@@ -11,7 +11,7 @@ import sys
 res = 1280, 720
 num_spheres = 1024
 color_buffer = ti.Vector(3, dt=ti.f32)
-bbox = ti.Vector(3, dt=ti.f32)
+bbox = ti.Vector(3, dt=ti.f32, shape=2)
 grid_density = ti.var(dt=ti.i32)
 voxel_has_particle = ti.var(dt=ti.i32)
 max_ray_depth = 4
@@ -21,7 +21,7 @@ particle_x = ti.Vector(3, dt=ti.f32)
 particle_v = ti.Vector(3, dt=ti.f32)
 particle_color = ti.Vector(3, dt=ti.f32)
 pid = ti.var(ti.i32)
-num_particles = ti.var(ti.i32)
+num_particles = ti.var(ti.i32, shape=())
 
 fov = 0.23
 dist_limit = 100
@@ -35,8 +35,6 @@ light_direction = [1.2, 0.3, 0.7]
 light_direction_noise = 0.03
 light_color = [1.0, 1.0, 1.0]
 
-# ti.runtime.print_preprocessed = True
-# ti.cfg.print_ir = True
 ti.cfg.arch = ti.cuda
 grid_visualization_block_size = 16
 grid_resolution = 256 // grid_visualization_block_size
@@ -70,10 +68,8 @@ def buffers():
 
   ti.root.dense(ti.l, max_num_particles).place(particle_x, particle_v,
                                                particle_color)
-  ti.root.place(num_particles)
   ti.root.dense(ti.ijk, grid_resolution // 8).dense(ti.ijk,
                                                     8).place(grid_density)
-  ti.root.dense(ti.i, 2).place(bbox)
 
 
 @ti.func
@@ -428,7 +424,7 @@ def initialize_particle_grid():
                 voxel_has_particle[box_ipos] = 1
 
 @ti.kernel
-def copy(img: ti.ext_arr()):
+def copy(img: ti.ext_arr(), samples:ti.i32):
   for i, j in color_buffer:
     u = 1.0 * i / res[0]
     v = 1.0 * j / res[1]
@@ -438,7 +434,7 @@ def copy(img: ti.ext_arr()):
                                                vignette_radius), 0)
 
     for c in ti.static(range(3)):
-      img[i, j, c] = color_buffer[i, j][c] * darken
+      img[i, j, c] = ti.sqrt(color_buffer[i, j][c] * darken * exposure / samples)
 
 
 def main():
@@ -487,13 +483,11 @@ def main():
     interval = 10
     if i % interval == 0:
       img = np.zeros((res[0], res[1], 3), dtype=np.float32)
-      copy(img)
+      copy(img, i + 1)
       if last_t != 0:
         print("time per spp = {:.2f} ms".format(
             (time.time() - last_t) * 1000 / interval))
       last_t = time.time()
-      img = img * (1 / (i + 1)) * exposure
-      img = np.sqrt(img)
       gui.set_image(img)
       gui.show()
 

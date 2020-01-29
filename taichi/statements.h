@@ -188,6 +188,10 @@ class OffloadedStmt : public Stmt {
 
   std::string task_name() const;
 
+  bool has_body() const {
+    return task_type != clear_list && task_type != listgen && task_type != gc;
+  }
+
   DEFINE_ACCEPT
 };
 

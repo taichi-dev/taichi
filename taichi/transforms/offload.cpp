@@ -384,7 +384,7 @@ void insert_gc(IRNode *root) {
     auto snodes = gc_statements[i].second;
     for (auto j = 0; j < snodes.size(); j++) {
       b->statements.insert(
-          b->statements.begin() + j,
+          b->statements.begin() + i + 1,
           Stmt::make<OffloadedStmt>(OffloadedStmt::TaskType::gc, snodes[j]));
     }
   }
@@ -399,6 +399,7 @@ void offload(IRNode *root) {
     PromoteIntermediate::run(root, local_to_global);
     PromoteLocals::run(root, local_to_global);
   }
+  irpass::insert_gc(root);
   irpass::typecheck(root);
   irpass::re_id(root);
 }

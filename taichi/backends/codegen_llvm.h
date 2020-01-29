@@ -725,6 +725,11 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     call("element_listgen", get_runtime(), meta_parent, meta_child);
   }
 
+  void emit_gc(OffloadedStmt *stmt) {
+    auto snode = stmt->snode->id;
+    call("node_gc", get_runtime(), tlctx->get_constant(snode));
+  }
+
   llvm::Value *create_call(llvm::Value *func, std::vector<Value *> args = {}) {
     check_func_call_signature(func, args);
     return builder->CreateCall(func, args);
@@ -1354,6 +1359,8 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       emit_clear_list(stmt);
     } else if (stmt->task_type == Type::listgen) {
       emit_list_gen(stmt);
+    } else if (stmt->task_type == Type::gc) {
+      emit_gc(stmt);
     } else {
       TC_NOT_IMPLEMENTED
     }

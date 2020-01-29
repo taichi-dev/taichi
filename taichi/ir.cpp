@@ -551,6 +551,9 @@ std::string OffloadedStmt::task_name() const {
   } else if (task_type == TaskType::listgen) {
     TC_ASSERT(snode);
     return fmt::format("listgen_{}", snode->name);
+  } else if (task_type == TaskType::gc) {
+    TC_ASSERT(snode);
+    return fmt::format("gc_{}", snode->name);
   } else {
     TC_NOT_IMPLEMENTED
   }

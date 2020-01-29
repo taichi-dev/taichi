@@ -66,7 +66,8 @@ class DemoteAtomics : public BasicStmtVisitor {
         // old value $d'.
         // See also: https://github.com/taichi-dev/taichi/issues/332
         stmt->replace_with(load);
-        stmt->parent->replace_with(stmt, new_stmts, /*replace_usages=*/false);
+        stmt->parent->replace_with(stmt, std::move(new_stmts),
+                                   /*replace_usages=*/false);
         throw IRModified();
       }
     }

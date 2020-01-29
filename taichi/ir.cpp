@@ -376,6 +376,10 @@ void Stmt::replace_with(Stmt *new_stmt) {
   // Note: the current structure should have been destroyed now..
 }
 
+void Stmt::replace_with(VecStatement &&new_statements, bool replace_usages) {
+  parent->replace_with(this, std::move(new_statements), replace_usages);
+}
+
 void Stmt::replace_operand_with(Stmt *old_stmt, Stmt *new_stmt) {
   operand_bitmap = 0;
   int n_op = num_operands();
@@ -479,7 +483,7 @@ void Block::replace_with(Stmt *old_statement,
                          std::unique_ptr<Stmt> &&new_statement) {
   VecStatement vec;
   vec.push_back(std::move(new_statement));
-  replace_with(old_statement, vec);
+  replace_with(old_statement, std::move(vec));
 }
 
 Stmt *Block::lookup_var(taichi::Tlang::Ident ident) const {

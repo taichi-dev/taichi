@@ -302,7 +302,7 @@ class PromoteLocals : public BasicStmtVisitor {
     auto const_zeros = replacement.push_back<ConstStmt>(zeros);
     replacement.push_back<GlobalStoreStmt>(ptr, const_zeros);
 
-    stmt->parent->replace_with(stmt, replacement, false);
+    stmt->parent->replace_with(stmt, std::move(replacement), false);
     throw IRModified();
   }
 
@@ -319,7 +319,7 @@ class PromoteLocals : public BasicStmtVisitor {
         local_to_global_offset[alloca], ret_type);
     replacement.push_back<GlobalLoadStmt>(ptr);
 
-    stmt->parent->replace_with(stmt, replacement);
+    stmt->parent->replace_with(stmt, std::move(replacement));
     throw IRModified();
   }
 
@@ -336,7 +336,7 @@ class PromoteLocals : public BasicStmtVisitor {
         local_to_global_offset[alloca], ret_type);
     replacement.push_back<GlobalStoreStmt>(ptr, stmt->data);
 
-    stmt->parent->replace_with(stmt, replacement);
+    stmt->parent->replace_with(stmt, std::move(replacement));
     throw IRModified();
   }
 
@@ -353,7 +353,7 @@ class PromoteLocals : public BasicStmtVisitor {
         local_to_global_offset[alloca], ret_type);
     replacement.push_back<AtomicOpStmt>(stmt->op_type, ptr, stmt->val);
 
-    stmt->parent->replace_with(stmt, replacement);
+    stmt->parent->replace_with(stmt, std::move(replacement));
     throw IRModified();
   }
 

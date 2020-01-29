@@ -598,6 +598,8 @@ class Stmt : public IRNode {
 
   void replace_with(Stmt *new_stmt);
 
+  void replace_with(VecStatement &&new_statements, bool replace_usages = true);
+
   virtual void replace_operand_with(Stmt *old_stmt, Stmt *new_stmt);
 
   IRNode *get_ir_root();
@@ -1320,7 +1322,7 @@ class Block : public IRNode {
   }
 
   void replace_with(Stmt *old_statement,
-                    VecStatement &new_statements,
+                    VecStatement &&new_statements,
                     bool replace_usages = true) {
     int location = -1;
     for (int i = 0; i < (int)statements.size(); i++) {

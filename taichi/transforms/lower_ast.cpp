@@ -78,7 +78,7 @@ class LowerAST : public IRVisitor {
     }
 
     flattened.push_back(std::move(new_if));
-    stmt->parent->replace_with(stmt, flattened);
+    stmt->parent->replace_with(stmt, std::move(flattened));
     throw IRModified();
   }
 
@@ -96,7 +96,7 @@ class LowerAST : public IRVisitor {
     VecStatement flattened;
     expr->flatten(flattened);
     flattened.push_back<PrintStmt>(expr->stmt, stmt->str);
-    stmt->parent->replace_with(stmt, flattened);
+    stmt->parent->replace_with(stmt, std::move(flattened));
     throw IRModified();
   }
 
@@ -108,7 +108,7 @@ class LowerAST : public IRVisitor {
     VecStatement stmts;
     auto const_true = stmts.push_back<ConstStmt>(TypedConstant((int32)0));
     stmts.push_back<WhileControlStmt>(while_stmt->mask, const_true);
-    stmt->parent->replace_with(stmt, stmts);
+    stmt->parent->replace_with(stmt, std::move(stmts));
     throw IRModified();
   }
 
@@ -185,7 +185,7 @@ class LowerAST : public IRVisitor {
       new_for->block_dim = stmt->block_dim;
       flattened.push_back(std::move(new_for));
     }
-    stmt->parent->replace_with(stmt, flattened);
+    stmt->parent->replace_with(stmt, std::move(flattened));
     throw IRModified();
   }
 
@@ -209,7 +209,7 @@ class LowerAST : public IRVisitor {
     VecStatement flattened;
     expr->flatten(flattened);
     stmt->eval_expr.cast<EvalExpression>()->stmt_ptr = stmt->expr->stmt;
-    stmt->parent->replace_with(stmt, flattened);
+    stmt->parent->replace_with(stmt, std::move(flattened));
     throw IRModified();
   }
 
@@ -230,7 +230,7 @@ class LowerAST : public IRVisitor {
       flattened.push_back<GlobalStoreStmt>(flattened.back().get(), expr->stmt);
     }
     flattened.back()->set_tb(assign->tb);
-    assign->parent->replace_with(assign, flattened);
+    assign->parent->replace_with(assign, std::move(flattened));
     throw IRModified();
   }
 
@@ -256,7 +256,7 @@ class LowerAST : public IRVisitor {
       flattened.push_back<AtomicOpStmt>(stmt->op_type, flattened.back().get(),
                                         expr->stmt);
     }
-    stmt->parent->replace_with(stmt, flattened);
+    stmt->parent->replace_with(stmt, std::move(flattened));
     throw IRModified();
   }
 
@@ -279,7 +279,7 @@ class LowerAST : public IRVisitor {
     auto ptr = flattened.push_back<GlobalPtrStmt>(stmt->snode, indices_stmt);
     flattened.push_back<SNodeOpStmt>(stmt->op_type, stmt->snode, ptr, val_stmt);
 
-    stmt->parent->replace_with(stmt, flattened);
+    stmt->parent->replace_with(stmt, std::move(flattened));
     throw IRModified();
   }
 
@@ -293,7 +293,7 @@ class LowerAST : public IRVisitor {
       val_stmt = expr->stmt;
     }
     flattened.push_back(Stmt::make<AssertStmt>(stmt->text, val_stmt));
-    stmt->parent->replace_with(stmt, flattened);
+    stmt->parent->replace_with(stmt, std::move(flattened));
     throw IRModified();
   }
 
@@ -303,7 +303,7 @@ class LowerAST : public IRVisitor {
     stmt->expr->flatten(flattened);
     flattened.push_back(
         Stmt::make<ArgStoreStmt>(stmt->arg_id, flattened.back().get()));
-    stmt->parent->replace_with(stmt, flattened);
+    stmt->parent->replace_with(stmt, std::move(flattened));
     throw IRModified();
   }
 

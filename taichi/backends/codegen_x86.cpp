@@ -652,13 +652,11 @@ void CPUCodeGen::lower_llvm() {
     irpass::re_id(ir);
     irpass::print(ir);
   }
-  if (prog->config.simplify_before_lower_access) {
-    irpass::simplify(ir);
-    if (print_ir) {
-      TC_TRACE("Simplified I:");
-      irpass::re_id(ir);
-      irpass::print(ir);
-    }
+  irpass::simplify(ir);
+  if (print_ir) {
+    TC_TRACE("Simplified I:");
+    irpass::re_id(ir);
+    irpass::print(ir);
   }
   if (kernel->grad) {
     // irpass::re_id(ir);
@@ -674,27 +672,23 @@ void CPUCodeGen::lower_llvm() {
       irpass::print(ir);
     }
   }
-  if (prog->config.lower_access) {
-    irpass::lower_access(ir, true);
-    if (print_ir) {
-      TC_TRACE("Access Lowered:");
-      irpass::re_id(ir);
-      irpass::print(ir);
-    }
-    if (prog->config.simplify_after_lower_access) {
-      irpass::die(ir);
-      if (print_ir) {
-        TC_TRACE("DIEd:");
-        irpass::re_id(ir);
-        irpass::print(ir);
-      }
-      irpass::simplify(ir);
-      if (print_ir) {
-        TC_TRACE("Simplified II:");
-        irpass::re_id(ir);
-        irpass::print(ir);
-      }
-    }
+  irpass::lower_access(ir, true);
+  if (print_ir) {
+    TC_TRACE("Access Lowered:");
+    irpass::re_id(ir);
+    irpass::print(ir);
+  }
+  irpass::die(ir);
+  if (print_ir) {
+    TC_TRACE("DIEd:");
+    irpass::re_id(ir);
+    irpass::print(ir);
+  }
+  irpass::simplify(ir);
+  if (print_ir) {
+    TC_TRACE("Simplified II:");
+    irpass::re_id(ir);
+    irpass::print(ir);
   }
   irpass::die(ir);
   if (print_ir) {

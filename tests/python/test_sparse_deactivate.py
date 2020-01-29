@@ -36,7 +36,6 @@ def test_pointer():
 
 @ti.all_archs
 def test_dynamic():
-  ti.cfg.print_ir = True
   x = ti.var(ti.i32)
   s = ti.var(ti.i32)
 

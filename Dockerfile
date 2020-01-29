@@ -4,15 +4,11 @@
 FROM nvidia/cuda:10.0-devel-ubuntu16.04
 
 RUN apt-get update && \
-    apt-get install -y software-properties-common && \
-    add-apt-repository ppa:jonathonf/python-3.6
+    apt-get install -y software-properties-common
 
 RUN apt-get update && apt-get install -y \
     build-essential \
-    python3.6 \
-    python3.6-dev \
-    python3-pip \
-    python3.6-venv \
+    python3-dev \
     git \
     cmake \
     libtinfo-dev \
@@ -39,7 +35,9 @@ RUN curl -SL https://github.com/llvm/llvm-project/releases/download/llvmorg-8.0.
 RUN cd llvm-8.0.1.src && mkdir build && cd build && cmake .. -DLLVM_ENABLE_RTTI:BOOL=ON -DBUILD_SHARED_LIBS:BOOL=OFF -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD="X86;NVPTX" -DLLVM_ENABLE_ASSERTIONS=ON && make -j `nproc --all` && make install
 
 # install python dependencies
-RUN python3.6 -m pip install \
+RUN curl https://bootstrap.pypa.io/get-pip.py --output ./get-pip.py \
+    && python3 ./get-pip.py \
+    && python3 -m pip install \
     astpretty \
     astor \
     pytest \
@@ -60,9 +58,14 @@ WORKDIR /app
 
 ENV SHELL=bash
 RUN cd /app && git clone https://github.com/yuanming-hu/taichi.git
-RUN cd /app/taichi && python3.6 dev_setup.py
-RUN cd /app/taichi && mkdir build && cd build && cmake .. -DPYTHON_EXECUTABLE=python3.6
-RUN cd /app/taichi/build && make -j `nproc --all`
+RUN mkdir /app/taichi/build
+WORKDIR /app/taichi/build
+RUN export CUDA_BIN_PATH=/usr/local/cuda-10.0 && \
+    cmake .. -DPYTHON_EXECUTABLE=$(which python3) -DCUDA_VERSION=10.0 -DTLANG_WITH_CUDA:BOOL="True" && \
+    make -j 15 && \
+    ldd libtaichi_core.so
+
+WORKDIR /app/taichi/python
 
 WORKDIR /app
 CMD /bin/bash

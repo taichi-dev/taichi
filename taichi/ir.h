@@ -1296,6 +1296,8 @@ class Block : public IRNode {
 
   void insert(std::unique_ptr<Stmt> &&stmt, int location = -1);
 
+  void insert(VecStatement &&stmt, int location = -1);
+
   void replace_statements_in_range(int start, int end, VecStatement &&stmts);
 
   void set_statements(VecStatement &&stmts) {

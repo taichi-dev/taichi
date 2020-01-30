@@ -7,7 +7,7 @@ VecStatement convert_to_range_for(StructForStmt *struct_for) {
   auto loop_var = ret.push_back<AllocaStmt>(DataType::i32);
   auto lower = ret.push_back<ConstStmt>(TypedConstant(0));
   std::vector<SNode *> snodes;
-  auto snode = struct_for->snode->parent;
+  auto snode = struct_for->snode;
   int total_bits = 0;
   while (snode->type != SNodeType::root) {
     snodes.push_back(snode);
@@ -38,6 +38,8 @@ VecStatement convert_to_range_for(StructForStmt *struct_for) {
       body_header.push_back<LocalLoadStmt>(LocalAddress(loop_var, 0));
 
   int offset = total_bits;
+  Stmt *test = body_header.push_back<ConstStmt>(TypedConstant(-1));
+  bool has_test = false;
   for (int i = 0; i < (int)snodes.size(); i++) {
     auto snode = snodes[i];
     offset -= snode->total_num_bits;
@@ -56,12 +58,36 @@ VecStatement convert_to_range_for(StructForStmt *struct_for) {
     }
   }
 
+  for (int i = 0; i < (int)snodes.size(); i++) {
+    auto snode = snodes[i];
+    for (int j = 0; j < (int)physical_indices.size(); j++) {
+      auto p = physical_indices[j];
+      auto num_elements = snode->extractors[p].num_elements;
+      if (!bit::is_power_of_two(num_elements)) {
+        has_test = true;
+        auto bound =
+            body_header.push_back<ConstStmt>(TypedConstant(num_elements));
+        auto cmp = body_header.push_back<BinaryOpStmt>(BinaryOpType::cmp_lt,
+                                                       new_loop_vars[j], bound);
+        test = body_header.push_back<BinaryOpStmt>(BinaryOpType::bit_and, test,
+                                                   cmp);
+      }
+    }
+  }
+
   for (int i = 0; i < (int)old_loop_vars.size(); i++) {
     auto alloca = body_header.push_back<AllocaStmt>(DataType::i32);
     body_header.push_back<LocalStoreStmt>(alloca, new_loop_vars[i]);
     irpass::replace_all_usages_with(body.get(), old_loop_vars[i], alloca);
   }
 
+  if (has_test) {
+    // Createa an If statement
+    auto if_stmt = Stmt::make_typed<IfStmt>(test);
+    if_stmt->true_statements = std::move(body);
+    body = std::make_unique<Block>();
+    body->insert(std::move(if_stmt));
+  }
   body->insert(std::move(body_header), 0);
 
   auto range_for = Stmt::make<RangeForStmt>(

@@ -68,6 +68,8 @@ void export_lang(py::module &m) {
       .def_readwrite("verbose_kernel_launches",
                      &CompileConfig::verbose_kernel_launches)
       .def_readwrite("verbose", &CompileConfig::verbose)
+      .def_readwrite("demote_dense_struct_fors",
+                     &CompileConfig::demote_dense_struct_fors)
       .def_readwrite("enable_profiler", &CompileConfig::enable_profiler)
       .def_readwrite("default_fp", &CompileConfig::default_fp)
       .def_readwrite("default_ip", &CompileConfig::default_ip)
@@ -173,10 +175,9 @@ void export_lang(py::module &m) {
            },
            py::return_value_policy::reference);
 
-  m.def("insert_deactivate",
-        [](SNode *snode, const ExprGroup &indices) {
-          return Deactivate(snode, indices);
-        });
+  m.def("insert_deactivate", [](SNode *snode, const ExprGroup &indices) {
+    return Deactivate(snode, indices);
+  });
 
   m.def("insert_append",
         [](SNode *snode, const ExprGroup &indices, const Expr &val) {

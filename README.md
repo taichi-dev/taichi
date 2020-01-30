@@ -52,6 +52,7 @@ python3 -m pip install taichi-nightly-cuda-10-1
    - Struct-fors with pure dense data structures will be demoted into a range-for, which is faster since no element list generation is needed
    - Python 3.5 support is dropped. Please use Python 3.6(pip)/3.7(pip)/3.8(Windows: pip; OS X & Linux: build from source) (thanks to **Chujie Zeng [Psycho7]**)
    - `ti.deactivate` now supported on sparse data structures
+   - `GUI.circles` (batched circle drawing) performance improved by 30x
    - Minor bug fixes (thanks to **Yubing Peng [archibate], Ye Kuang [k-ye]**)
    - Doc updated
 - (Jan  20, 2020) v0.3.25 released.

@@ -37,13 +37,16 @@ VecStatement convert_to_range_for(StructForStmt *struct_for) {
   auto main_loop_var =
       body_header.push_back<LocalLoadStmt>(LocalAddress(loop_var, 0));
 
+  int offset = total_bits;
   for (int i = 0; i < (int)snodes.size(); i++) {
     auto snode = snodes[i];
+    offset -= snode->total_num_bits;
     for (int j = 0; j < (int)physical_indices.size(); j++) {
       auto p = physical_indices[j];
       auto ext = snode->extractors[p];
       Stmt *delta = body_header.push_back<OffsetAndExtractBitsStmt>(
-          main_loop_var, ext.start, ext.start + ext.num_bits, 0);
+          main_loop_var, ext.acc_offset + offset,
+          ext.acc_offset + offset + ext.num_bits, 0);
       auto multiplier =
           body_header.push_back<ConstStmt>(TypedConstant(1 << ext.start));
       delta = body_header.push_back<BinaryOpStmt>(BinaryOpType::mul, delta,

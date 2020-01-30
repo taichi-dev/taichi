@@ -105,7 +105,6 @@ def test_nested2():
     assert x[i] == i
     assert y[i] == i * 2
 
-
 @ti.all_archs
 def test_nested_2d():
   x = ti.var(ti.i32)
@@ -127,7 +126,6 @@ def test_nested_2d():
   for i in range(n):
     for j in range(n):
       assert x[i, j] == i + j * 2
-
 
 @ti.all_archs
 def test_nested_2d_more_nests():

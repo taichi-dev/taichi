@@ -16,8 +16,6 @@ struct IndexExtractor {
   int acc_offset;
   int num_elements;
 
-  TC_IO_DEF(start, num_bits, acc_offset);
-
   // TODO: rename start to src_offset
 
   bool active;

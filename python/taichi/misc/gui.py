@@ -1,4 +1,5 @@
 import numbers
+import numpy as np
 
 class GUI:
   def __init__(self, name, res=512, background_color=0x0):
@@ -48,9 +49,14 @@ class GUI:
     
   def circles(self, pos, color, radius=1):
     import taichi as ti
-    for i in range(len(pos)):
-      self.canvas.circle(ti.vec(pos[i, 0],
-                                pos[i, 1])).radius(radius).color(color[i]).finish()
+    if isinstance(color, int):
+      for i in range(len(pos)):
+        self.canvas.circle(ti.vec(pos[i, 0],
+                                  pos[i, 1])).radius(radius).color(color).finish()
+    else:
+      for i in range(len(pos)):
+        self.canvas.circle(ti.vec(pos[i, 0],
+                                  pos[i, 1])).radius(radius).color(color[i]).finish()
     
   def show(self, file=None):
     self.core.update()

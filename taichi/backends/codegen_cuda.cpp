@@ -1007,8 +1007,8 @@ void GPUCodeGen::lower_llvm() {
     irpass::typecheck(ir);
     if (print_ir) {
       TC_TRACE("Dense Struct-for demoted:");
+      irpass::print(ir);
     }
-    irpass::print(ir);
   }
   irpass::constant_fold(ir);
   if (prog->config.simplify_before_lower_access) {

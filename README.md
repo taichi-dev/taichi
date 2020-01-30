@@ -43,10 +43,17 @@ python3 -m pip install taichi-nightly-cuda-10-1
   - The only missing features compared to the old source-to-source backends:
     - Vectorization on CPUs. Given most users who want performance are using GPUs (CUDA), this is given low priority.
     - Automatic shared memory utilization. Postponed until Feb/March 2020.
-- (WIP) Tune the performance of the LLVM backend to match that of the legacy source-to-source backends (By the end of Jan 2020, ~60% done)
-- (WIP) Redesign & reimplement (GPU) memory allocator (~50% done)
+- (WIP) Tune the performance of the LLVM backend to match that of the legacy source-to-source backends (By the end of Jan 2020, ~70% done)
+- (WIP) Redesign & reimplement (GPU) memory allocator (~90% done)
 
 ## Updates
+- **(Jan  30, 2020) v0.4.0 released.**
+   - Memory allocator redesigned
+   - Struct-fors with pure dense data structures will be demoted into a range-for, which is faster since no element list generation is needed
+   - Python 3.5 support is dropped. Please use Python 3.6(pip)/3.7(pip)/3.8(Windows: pip; OS X & Linux: build from source) (thanks to **Chujie Zeng [Psycho7]**)
+   - `ti.deactivate` now supported on sparse data structures
+   - Minor bug fixes (thanks to **Yubing Peng [archibate], Ye Kuang [k-ye]**)
+   - Doc updated
 - (Jan  20, 2020) v0.3.25 released.
    - Experimental [CPU-only support for NVIDIA Jetson Nano](https://user-images.githubusercontent.com/34827518/72769070-62b1b200-3c34-11ea-8f6e-0f339b5b09ca.jpg) (with ARM CPUs. Building from source required.) (thanks to **Walter liu
  [hgnan]**)

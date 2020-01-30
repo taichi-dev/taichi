@@ -48,24 +48,39 @@ class GUI:
     self.canvas.circle(ti.vec(pos[0],
                          pos[1])).radius(radius).color(color).finish()
     
-  def circles(self, pos, color, radius=1):
+  def circles(self, pos, color=0xFFFFFF, radius=1):
     n = pos.shape[0]
     if len(pos.shape) == 3:
       assert pos.shape[2] == 1
       pos = pos[:, :, 0]
-    import taichi as ti
-    if isinstance(color, int):
-      for i in range(len(pos)):
-        self.canvas.circle(ti.vec(pos[i, 0],
-                                  pos[i, 1])).radius(radius).color(color).finish()
-    else:
-      assert pos.shape == (n, 2)
+      
+    assert pos.shape == (n, 2)
+    pos = np.ascontiguousarray(pos.astype(np.float32))
+    pos = int(pos.ctypes.data)
+    
+    if isinstance(color, np.ndarray):
       assert color.shape == (n,)
-      pos = np.ascontiguousarray(pos.astype(np.float32))
-      pos = int(pos.ctypes.data)
       color = np.ascontiguousarray(color.astype(np.uint32))
-      color = int(color.ctypes.data)
-      self.canvas.circles_batched(n, pos, color, radius)
+      color_array = int(color.ctypes.data)
+      color_single = 0
+    elif isinstance(color, int):
+      color_array = 0
+      color_single = color
+    else:
+      raise ValueError('Color must be an ndarray or int (e.g., 0x956333)')
+
+    if isinstance(radius, np.ndarray):
+      assert radius.shape == (n,)
+      radius = np.ascontiguousarray(radius.astype(np.float32))
+      radius_array = int(radius.ctypes.data)
+      radius_single = 0
+    elif isinstance(radius, numbers.Number):
+      radius_array = 0
+      radius_single = radius
+    else:
+      raise ValueError('Radius must be an ndarray or float (e.g., 0.4)')
+    
+    self.canvas.circles_batched(n, pos, color_single, color_array, radius_single, radius_array)
     
   def show(self, file=None):
     self.core.update()

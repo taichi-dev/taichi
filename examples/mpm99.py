@@ -95,11 +95,5 @@ for frame in range(20000):
   for s in range(int(2e-3 // dt)):
     substep()
   colors = np.array([0x068587, 0xED553B, 0xEEEEF0], dtype=np.uint32)
-  pos = x.to_numpy()
-  c = colors[material.to_numpy()]
-  ti.sync()
-  import time
-  t = time.time()
-  gui.circles(pos, radius=1.5, color=c)
-  print((time.time() - t) * 1000, 'ms')
+  gui.circles(x.to_numpy(), radius=1.5, color=colors[material.to_numpy()])
   gui.show() # Change to gui.show(f'{frame:06d}.png') to write images to disk

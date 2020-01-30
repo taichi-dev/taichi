@@ -309,7 +309,12 @@ class Canvas {
     return circles.back();
   }
 
-  void circles_batched(int n, std::size_t x, std::size_t color, real radius);
+  void circles_batched(int n,
+                       std::size_t x,
+                       uint32 color_single,
+                       std::size_t color_array,
+                       real radius_single,
+                       std::size_t radius_array);
 
   Line &path(real xa, real ya, real xb, real yb) {
     return path(Vector2(xa, ya), Vector2(xb, yb));

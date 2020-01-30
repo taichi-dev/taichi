@@ -55,7 +55,6 @@ def test_linear():
     assert x[i] == i
     assert y[i] == i * 2
 
-
 @ti.all_archs
 def test_nested():
   x = ti.var(ti.i32)

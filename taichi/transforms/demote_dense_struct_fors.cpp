@@ -60,8 +60,10 @@ VecStatement convert_to_range_for(StructForStmt *struct_for) {
 
   auto range_for = Stmt::make<RangeForStmt>(
       loop_var, lower, upper, std::move(body), struct_for->vectorize,
-      struct_for->parallelize, false);
+      struct_for->parallelize, struct_for->block_dim, false);
   ret.push_back(std::move(range_for));
+
+  // TODO: safe guard range
   return ret;
 }
 

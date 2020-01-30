@@ -170,8 +170,7 @@ class LowerAST : public IRVisitor {
       auto &&new_for = std::make_unique<RangeForStmt>(
           stmt->parent->lookup_var(stmt->loop_var_id[0]), begin->stmt,
           end->stmt, std::move(stmt->body), stmt->vectorize, stmt->parallelize,
-          stmt->strictly_serialized);
-      new_for->block_dim = stmt->block_dim;
+          stmt->block_dim, stmt->strictly_serialized);
       flattened.push_back(std::move(new_for));
     } else {
       std::vector<Stmt *> vars(stmt->loop_var_id.size());
@@ -180,9 +179,9 @@ class LowerAST : public IRVisitor {
       }
       auto &&new_for = std::make_unique<StructForStmt>(
           vars, stmt->global_var.cast<GlobalVariableExpression>()->snode,
-          std::move(stmt->body), stmt->vectorize, stmt->parallelize);
+          std::move(stmt->body), stmt->vectorize, stmt->parallelize,
+          stmt->block_dim);
       new_for->scratch_opt = stmt->scratch_opt;
-      new_for->block_dim = stmt->block_dim;
       flattened.push_back(std::move(new_for));
     }
     stmt->parent->replace_with(stmt, std::move(flattened));

@@ -1715,8 +1715,8 @@ class RangeForStmt : public Stmt {
   bool reversed;
   int vectorize;
   int parallelize;
-  bool strictly_serialized;
   int block_dim;
+  bool strictly_serialized;
 
   RangeForStmt(Stmt *loop_var,
                Stmt *begin,
@@ -1724,6 +1724,7 @@ class RangeForStmt : public Stmt {
                std::unique_ptr<Block> &&body,
                int vectorize,
                int parallelize,
+               int block_dim,
                bool strictly_serialized)
       : loop_var(loop_var),
         begin(begin),
@@ -1731,12 +1732,12 @@ class RangeForStmt : public Stmt {
         body(std::move(body)),
         vectorize(vectorize),
         parallelize(parallelize),
+        block_dim(block_dim),
         strictly_serialized(strictly_serialized) {
     reversed = false;
     add_operand(this->loop_var);
     add_operand(this->begin);
     add_operand(this->end);
-    block_dim = 0;
   }
 
   bool is_container_statement() const override {
@@ -1767,16 +1768,17 @@ class StructForStmt : public Stmt {
                 SNode *snode,
                 std::unique_ptr<Block> &&body,
                 int vectorize,
-                int parallelize)
+                int parallelize,
+                int block_dim)
       : loop_vars(loop_vars),
         snode(snode),
         body(std::move(body)),
         vectorize(vectorize),
-        parallelize(parallelize) {
+        parallelize(parallelize),
+        block_dim(block_dim) {
     for (auto &v : this->loop_vars) {
       add_operand(v);
     }
-    block_dim = 0;
   }
 
   bool is_container_statement() const override {

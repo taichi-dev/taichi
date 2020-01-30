@@ -312,17 +312,18 @@ class IRPrinter : public IRVisitor {
         stmt->strides,
         [&](const int &stride) { return std::to_string(stride); }, "{");
 
-    print("{} = linearized(ind {}, stride {})", stmt->name(), ind, stride);
+    print("{}{} = linearized(ind {}, stride {})", stmt->type_hint(),
+          stmt->name(), ind, stride);
   }
 
   void visit(IntegerOffsetStmt *stmt) override {
-    print("{} = offset {} + {}", stmt->name(), stmt->input->name(),
-          stmt->offset);
+    print("{}{} = offset {} + {}", stmt->type_hint(), stmt->name(),
+          stmt->input->name(), stmt->offset);
   }
 
   void visit(OffsetAndExtractBitsStmt *stmt) override {
-    print("{} = bit_extract({} + {}, {}~{})", stmt->name(), stmt->input->name(),
-          stmt->offset, stmt->bit_begin, stmt->bit_end);
+    print("{}{} = bit_extract({} + {}, {}~{})", stmt->type_hint(), stmt->name(),
+          stmt->input->name(), stmt->offset, stmt->bit_begin, stmt->bit_end);
   }
 
   void visit(GetRootStmt *stmt) override {

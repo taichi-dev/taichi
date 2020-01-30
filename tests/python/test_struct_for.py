@@ -13,8 +13,6 @@ def test_singleton():
   fill()
   
   assert x[None] == 3
-  
-test_singleton()
 
 @ti.all_archs
 def test_singleton2():

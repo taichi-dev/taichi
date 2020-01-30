@@ -89,6 +89,7 @@ void demote_dense_struct_fors(IRNode *root) {
       }
     }
   }
+  irpass::re_id(root);
 }
 
 }  // namespace irpass

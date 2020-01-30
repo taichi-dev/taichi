@@ -1195,6 +1195,8 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     begin_ptr->accept(this);
     end_ptr->accept(this);
 
+    TC_ASSERT(stmt->block_dim != 0);
+
     create_call(
         "cpu_parallel_range_for",
         {get_arg(0), tlctx->get_constant(stmt->num_cpu_threads),

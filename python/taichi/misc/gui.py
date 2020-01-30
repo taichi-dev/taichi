@@ -1,5 +1,6 @@
 import numbers
 import numpy as np
+import ctypes
 
 class GUI:
   def __init__(self, name, res=512, background_color=0x0):
@@ -48,15 +49,23 @@ class GUI:
                          pos[1])).radius(radius).color(color).finish()
     
   def circles(self, pos, color, radius=1):
+    n = pos.shape[0]
+    if len(pos.shape) == 3:
+      assert pos.shape[2] == 1
+      pos = pos[:, :, 0]
     import taichi as ti
     if isinstance(color, int):
       for i in range(len(pos)):
         self.canvas.circle(ti.vec(pos[i, 0],
                                   pos[i, 1])).radius(radius).color(color).finish()
     else:
-      for i in range(len(pos)):
-        self.canvas.circle(ti.vec(pos[i, 0],
-                                  pos[i, 1])).radius(radius).color(color[i]).finish()
+      assert pos.shape == (n, 2)
+      assert color.shape == (n,)
+      pos = np.ascontiguousarray(pos.astype(np.float32))
+      pos = int(pos.ctypes.data)
+      color = np.ascontiguousarray(color.astype(np.uint32))
+      color = int(color.ctypes.data)
+      self.canvas.circles_batched(n, pos, color, radius)
     
   def show(self, file=None):
     self.core.update()

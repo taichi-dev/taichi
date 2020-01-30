@@ -101,5 +101,5 @@ for frame in range(20000):
   import time
   t = time.time()
   gui.circles(pos, radius=1.5, color=c)
-  gui.show() # Change to gui.show(f'{frame:06d}.png') to write images to disk
   print((time.time() - t) * 1000, 'ms')
+  gui.show() # Change to gui.show(f'{frame:06d}.png') to write images to disk

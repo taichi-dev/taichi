@@ -98,4 +98,5 @@ GUI::~GUI() {
 }
 
 TC_NAMESPACE_END
+
 #endif

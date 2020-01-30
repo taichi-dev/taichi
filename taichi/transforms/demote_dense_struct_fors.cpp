@@ -7,7 +7,7 @@ VecStatement convert_to_range_for(StructForStmt *struct_for) {
   auto loop_var = ret.push_back<AllocaStmt>(DataType::i32);
   auto lower = ret.push_back<ConstStmt>(TypedConstant(0));
   std::vector<SNode *> snodes;
-  auto snode = struct_for->snode;
+  auto snode = struct_for->snode->parent;
   int total_bits = 0;
   while (snode->type != SNodeType::root) {
     snodes.push_back(snode);
@@ -50,7 +50,7 @@ VecStatement convert_to_range_for(StructForStmt *struct_for) {
           main_loop_var, ext.acc_offset + offset,
           ext.acc_offset + offset + ext.num_bits, 0);
       auto multiplier =
-          body_header.push_back<ConstStmt>(TypedConstant(1 << ext.start));
+          body_header.push_back<ConstStmt>(TypedConstant(1 << (ext.start)));
       delta = body_header.push_back<BinaryOpStmt>(BinaryOpType::mul, delta,
                                                   multiplier);
       new_loop_vars[j] = body_header.push_back<BinaryOpStmt>(
@@ -62,7 +62,8 @@ VecStatement convert_to_range_for(StructForStmt *struct_for) {
     auto snode = snodes[i];
     for (int j = 0; j < (int)physical_indices.size(); j++) {
       auto p = physical_indices[j];
-      auto num_elements = snode->extractors[p].num_elements;
+      auto num_elements = snode->extractors[p].num_elements
+                          << snode->extractors[p].start;
       if (!bit::is_power_of_two(num_elements)) {
         has_test = true;
         auto bound =

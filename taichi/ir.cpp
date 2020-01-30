@@ -540,7 +540,9 @@ OffloadedStmt::OffloadedStmt(OffloadedStmt::TaskType task_type, SNode *snode)
   add_operand(begin_stmt);
   add_operand(end_stmt);
   num_cpu_threads = 1;
-  begin = end = step = 0;
+  begin = 0;
+  end = 0;
+  step = 0;
   begin_stmt = nullptr;
   end_stmt = nullptr;
   block_dim = 0;

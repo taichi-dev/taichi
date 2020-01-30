@@ -2,7 +2,8 @@ import taichi as ti
 
 @ti.all_archs
 def test_singleton():
-  x = ti.var(ti.i32, shape=()) # actually, ti.root.dense.place(x)
+  ti.cfg.print_ir = True
+  x = ti.var(ti.i32, shape=())
 
   @ti.kernel
   def fill():
@@ -12,6 +13,8 @@ def test_singleton():
   fill()
   
   assert x[None] == 3
+  
+test_singleton()
 
 @ti.all_archs
 def test_singleton2():
@@ -32,7 +35,6 @@ def test_singleton2():
 
 @ti.all_archs
 def test_linear():
-  ti.cfg.print_ir = True
   x = ti.var(ti.i32)
   y = ti.var(ti.i32)
 

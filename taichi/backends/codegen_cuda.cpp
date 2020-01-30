@@ -1002,6 +1002,14 @@ void GPUCodeGen::lower_llvm() {
   if (print_ir) {
     irpass::print(ir);
   }
+  if (prog->config.demote_dense_struct_fors) {
+    irpass::demote_dense_struct_fors(ir);
+    irpass::typecheck(ir);
+    if (print_ir) {
+      TC_TRACE("Dense Struct-for demoted:");
+    }
+    irpass::print(ir);
+  }
   irpass::constant_fold(ir);
   if (prog->config.simplify_before_lower_access) {
     irpass::simplify(ir);

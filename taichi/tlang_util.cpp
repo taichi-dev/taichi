@@ -350,6 +350,7 @@ CompileConfig::CompileConfig() {
   print_struct_llvm_ir = false;
   print_kernel_llvm_ir = false;
   print_kernel_llvm_ir_optimized = false;
+  demote_dense_struct_fors = true;
   max_vector_width = 8;
   force_vectorized_global_load = false;
   force_vectorized_global_store = false;

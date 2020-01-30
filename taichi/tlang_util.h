@@ -329,6 +329,7 @@ struct CompileConfig {
   bool lower_access;
   bool simplify_after_lower_access;
   bool attempt_vectorized_load_cpu;
+  bool demote_dense_struct_fors;
   bool use_llvm;
   bool print_struct_llvm_ir;
   bool print_kernel_llvm_ir;

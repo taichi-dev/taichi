@@ -7,11 +7,12 @@ VecStatement convert_to_range_for(StructForStmt *struct_for) {
   auto loop_var = ret.push_back<AllocaStmt>(DataType::i32);
   auto lower = ret.push_back<ConstStmt>(TypedConstant(0));
   std::vector<SNode *> snodes;
-  auto snode = struct_for->snode;
+  auto snode = struct_for->snode->parent;
   int total_bits = 0;
   while (snode->type != SNodeType::root) {
     snodes.push_back(snode);
     total_bits += snode->total_num_bits;
+    snode = snode->parent;
   }
   std::reverse(snodes.begin(), snodes.end());
   TC_ASSERT(total_bits <= 31);
@@ -50,7 +51,9 @@ VecStatement convert_to_range_for(StructForStmt *struct_for) {
   }
 
   for (int i = 0; i < (int)old_loop_vars.size(); i++) {
-    // TODO: replace old loop var with the new one
+    auto alloca = body_header.push_back<AllocaStmt>(DataType::i32);
+    body_header.push_back<LocalStoreStmt>(alloca, new_loop_vars[i]);
+    irpass::replace_all_usages_with(body.get(), old_loop_vars[i], alloca);
   }
 
   body->insert(std::move(body_header), 0);
@@ -63,6 +66,7 @@ VecStatement convert_to_range_for(StructForStmt *struct_for) {
 }
 
 namespace irpass {
+
 void demote_dense_struct_fors(IRNode *root) {
   auto *block = dynamic_cast<Block *>(root);
   std::vector<Stmt *> block_body;
@@ -71,8 +75,8 @@ void demote_dense_struct_fors(IRNode *root) {
   }
   for (int i = 0; i < (int)block_body.size(); i++) {
     auto s_ = block_body[i];
-    if (auto s = s_->as<StructForStmt>()) {
-      auto snode = s->snode;
+    if (auto s = s_->cast<StructForStmt>()) {
+      auto snode = s->snode->parent;
       bool all_dense = true;
       while (snode->type != SNodeType::root) {
         if (snode->type != SNodeType::dense) {
@@ -86,6 +90,7 @@ void demote_dense_struct_fors(IRNode *root) {
     }
   }
 }
+
 }  // namespace irpass
 
 TLANG_NAMESPACE_END

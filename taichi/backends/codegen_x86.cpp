@@ -633,6 +633,14 @@ void CPUCodeGen::lower_llvm() {
     irpass::re_id(ir);
     irpass::print(ir);
   }
+  if (prog->config.demote_dense_struct_fors) {
+    irpass::demote_dense_struct_fors(ir);
+    irpass::typecheck(ir);
+    if (print_ir) {
+      TC_TRACE("Dense Struct-for demoted:");
+      irpass::print(ir);
+    }
+  }
   irpass::slp_vectorize(ir);
   if (print_ir) {
     TC_TRACE("SLPed:");

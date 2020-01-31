@@ -104,6 +104,9 @@ class GetRootStmt : public Stmt {
   GetRootStmt() {
   }
 
+  virtual bool has_global_side_effect() const override {
+    return false;
+  }
   DEFINE_ACCEPT
 };
 
@@ -132,6 +135,10 @@ class SNodeLookupStmt : public Stmt {
     }
   }
 
+  virtual bool has_global_side_effect() const override {
+    return activate;
+  }
+
   DEFINE_ACCEPT
 };
 
@@ -142,6 +149,10 @@ class GetChStmt : public Stmt {
   int chid;
 
   GetChStmt(Stmt *input_ptr, int chid);
+
+  virtual bool has_global_side_effect() const override {
+    return false;
+  }
 
   DEFINE_ACCEPT
 };

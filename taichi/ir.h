@@ -1834,10 +1834,6 @@ class FrontendWhileStmt : public Stmt {
 
 void Print_(const Expr &a, std::string str);
 
-// TODO: fix this hack...
-// for current ast
-extern Block *current_block;
-
 class EvalExpression : public Expression {
  public:
   Stmt *stmt_ptr;
@@ -1881,6 +1877,10 @@ class RangeAssumptionExpression : public Expression {
     stmt = ret.back().get();
   }
 };
+
+// TODO: fix this hack...
+// for current ast
+extern Block *current_block;
 
 class IdExpression : public Expression {
  public:

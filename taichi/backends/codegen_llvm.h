@@ -1334,12 +1334,13 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
 
   void visit(GlobalTemporaryStmt *stmt) override {
     auto runtime = get_runtime();
-    auto addr =
-        builder->CreateGEP(runtime, tlctx->get_constant((int64)stmt->offset));
+    auto buffer = call("Runtime_get_temporary_pointer", runtime,
+                       tlctx->get_constant((int64)stmt->offset));
+
     TC_ASSERT(stmt->width() == 1);
     auto ptr_type = llvm::PointerType::get(
         tlctx->get_data_type(stmt->ret_type.data_type), 0);
-    stmt->value = builder->CreatePointerCast(addr, ptr_type);
+    stmt->value = builder->CreatePointerCast(buffer, ptr_type);
   }
 
   void visit(InternalFuncStmt *stmt) override {

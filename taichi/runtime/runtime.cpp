@@ -502,7 +502,10 @@ extern "C" {
 STRUCT_FIELD_ARRAY(Runtime, element_lists);
 STRUCT_FIELD_ARRAY(Runtime, node_allocators);
 STRUCT_FIELD(Runtime, root);
-STRUCT_FIELD(Runtime, temporaries);
+Ptr Runtime_get_temporary_pointer(Runtime *runtime, u64 offset) {
+  return runtime->temporaries + offset;
+}
+
 STRUCT_FIELD(Runtime, assert_failed);
 STRUCT_FIELD(Runtime, mem_req_queue);
 

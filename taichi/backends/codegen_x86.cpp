@@ -739,9 +739,6 @@ void CPUCodeGen::lower_llvm() {
     irpass::re_id(ir);
     irpass::print(ir);
   }
-  if (kernel->grad) {
-    irpass::reverse_offloads(ir);
-  }
 }
 
 void CPUCodeGen::lower() {

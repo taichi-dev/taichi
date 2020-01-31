@@ -99,7 +99,7 @@ void replace_statements_with(IRNode *root,
                              std::function<std::unique_ptr<Stmt>()> generator);
 void demote_dense_struct_fors(IRNode *root);
 void demote_atomics(IRNode *root);
-void reverse_offloads(IRNode *root);
+void reverse_segments(IRNode *root); // for autograd
 std::unique_ptr<ScratchPads> initialize_scratch_pad(StructForStmt *root);
 std::vector<SNode *> gather_deactivations(IRNode *root);
 }  // namespace irpass

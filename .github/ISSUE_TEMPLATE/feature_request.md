@@ -7,11 +7,12 @@ assignees: ''
 
 ---
 
-**Is your feature request related to a problem? Please describe.**
-A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
+**Concisely describe the proposed feature**
+A clear and concise description of what you want. Ex. 
+> I would like to add an Apple Metal backend to the compiler so that my Macbook GPU can be utilized.
 
 **Describe the solution you'd like**
 A clear and concise description of what you want to achieve and implement.
 
-**Additional context**
+**Additional comments**
 Add any other context or screenshots about the feature request here.

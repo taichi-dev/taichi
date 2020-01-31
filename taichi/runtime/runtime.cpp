@@ -577,7 +577,7 @@ Ptr Runtime_initialize(Runtime **runtime_ptr,
   auto root_ptr = runtime->allocate_aligned(root_size, 4096);
 
   runtime->temporaries =
-      (Ptr)runtime->allocate_aligned(taichi_max_num_global_vars, 1024);
+      (Ptr)runtime->allocate_aligned(taichi_global_tmp_buffer_size, 1024);
 
   runtime->rand_states = (RandState *)runtime->allocate_aligned(
       sizeof(RandState) * num_rand_states, 4096);

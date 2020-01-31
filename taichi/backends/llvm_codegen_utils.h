@@ -48,13 +48,14 @@ inline bool check_func_call_signature(llvm::Value *func, Args &&... args) {
 
 class ModuleBuilder {
  public:
-  std::unique_ptr<Module> module;
+  std::unique_ptr<llvm::Module> module;
   llvm::BasicBlock *entry_block;
   llvm::IRBuilder<> *builder;
   TaichiLLVMContext *tlctx;
   llvm::LLVMContext *llvm_context;
 
-  ModuleBuilder(std::unique_ptr<Module> &&module) : module(std::move(module)) {
+  ModuleBuilder(std::unique_ptr<llvm::Module> &&module)
+      : module(std::move(module)) {
   }
 
   llvm::Value *create_entry_block_alloca(llvm::Type *type) {

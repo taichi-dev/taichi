@@ -59,3 +59,29 @@ def test_reduce_separate():
     assert b.grad[i] == 1
   for i in range(16):
     assert a.grad[i] == 1
+    
+@ti.all_archs
+def test_reduce_merged():
+  a = ti.var(ti.f32, shape=(16))
+  b = ti.var(ti.f32, shape=(4))
+  c = ti.var(ti.f32, shape=())
+  
+  @ti.layout
+  def l():
+    ti.root.lazy_grad()
+  
+  @ti.kernel
+  def reduce():
+    for i in range(16):
+      b[i // 4] += a[i]
+  
+    for i in range(4):
+      c[None] += b[i]
+  
+  c.grad[None] = 1
+  reduce.grad()
+  
+  for i in range(4):
+    assert b.grad[i] == 1
+  for i in range(16):
+    assert a.grad[i] == 1

@@ -19,6 +19,19 @@ if gpu:
 assert gpu in [0, 1]
 mode = sys.argv[1]
 
+env_pypi_pwd = os.environ.get('PYPI_PWD', '')
+
+if mode == 'try_upload':
+  if env_pypi_pwd == '':
+    print("Missing environment variable PYPI_PWD")
+    print("Giving up and exiting 0 [try_upload mode]")
+    exit(0)
+  mode = 'upload'
+
+
+if env_pypi_pwd == '':
+  assert False, "Missing environment variable PYPI_PWD"
+
 
 def get_os_name():
   name = platform.platform()
@@ -30,9 +43,6 @@ def get_os_name():
     return 'linux'
   assert False, "Unknown platform name %s" % name
 
-
-if os.environ.get('PYPI_PWD', '') == '':
-  assert False, "Missing environment variable PYPI_PWD"
 
 
 def get_python_executable():

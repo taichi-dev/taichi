@@ -100,10 +100,10 @@ void MemoryPool::daemon() {
     if (tail > processed_tail) {
       // allocate new buffer
       auto i = processed_tail;
-      TC_DEBUG("Processing memory request {}", i);
+      TC_DEBUG("Processing memory alloc request {}", i);
       auto req = fetch<MemRequest>(&queue->requests[i]);
       if (req.size == 0 || req.alignment == 0) {
-        TC_DEBUG(" Incomplete memory request {} fetched. Skipping", i);
+        TC_DEBUG(" Incomplete memory alloc request {} fetched. Skipping", i);
         continue;
       }
       TC_DEBUG("  Allocating memory {} B (alignment {}B) ", req.size,

@@ -993,8 +993,12 @@ void GPUCodeGen::lower_llvm() {
     irpass::print(ir);
   }
   if (kernel->grad) {
-    TC_TRACE("Segment reversed (for autodiff):");
     irpass::reverse_segments(ir);
+    if (print_ir) {
+      TC_TRACE("Segment reversed (for autodiff):");
+      irpass::re_id(ir);
+      irpass::print(ir);
+    }
   }
   irpass::lower(ir);
   irpass::re_id(ir);

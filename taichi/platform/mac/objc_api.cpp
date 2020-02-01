@@ -1,8 +1,7 @@
+#include "objc_api.h"
 #include <taichi/common/util.h>
 
-#if defined(TC_GUI_COCOA)
-
-#include "objc_api.h"
+#ifdef TC_PLATFORM_OSX
 
 namespace taichi {
 namespace mac {
@@ -20,4 +19,4 @@ nsobj_unique_ptr<TC_NSString> wrap_string_as_ns_string(const std::string &str) {
 }  // namespace mac
 }  // namespace taichi
 
-#endif
+#endif  // TC_PLATFORM_OSX

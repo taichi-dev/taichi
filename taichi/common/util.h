@@ -49,6 +49,10 @@ static_assert(false, "32-bit Windows systems are not supported")
 // OSX
 #if defined(__APPLE__)
 #define TC_PLATFORM_OSX
+// According to https://developer.apple.com/documentation/metal?language=objc,
+// Metal is supported since macOS 10.11+, so we can just assume that it is
+// available for all Mac users?
+#define TC_SUPPORTS_METAL
 #endif
 
 #if (defined(TC_PLATFORM_LINUX) || defined(TC_PLATFORM_OSX))

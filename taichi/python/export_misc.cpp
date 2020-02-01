@@ -13,6 +13,7 @@
 #include <taichi/system/unit_dll.h>
 #include <taichi/visual/texture.h>
 #include <taichi/geometry/factory.h>
+#include <taichi/common/version.h>
 #if defined(TLANG_WITH_CUDA)
 #include <cuda_runtime_api.h>
 #endif

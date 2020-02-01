@@ -1,9 +1,10 @@
 #include <taichi/common/bit.h>
 #include <taichi/common/task.h>
-#include <taichi/platform/mac/objc_api.h>
 #include <taichi/visual/gui.h>
 
 #if defined(TC_GUI_COCOA)
+
+#include <taichi/platform/mac/objc_api.h>
 
 // https://stackoverflow.com/questions/4356441/mac-os-cocoa-draw-a-simple-pixel-on-a-canvas
 // http://cocoadevcentral.com/d/intro_to_quartz/

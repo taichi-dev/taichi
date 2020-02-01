@@ -88,7 +88,7 @@ endif()
 # Optional dependencies
 
 if (APPLE)
-    target_link_libraries(${CORE_LIBRARY_NAME} "-framework Cocoa")
+    target_link_libraries(${CORE_LIBRARY_NAME} "-framework Cocoa -framework Metal")
 endif ()
 
 if (NOT WIN32)

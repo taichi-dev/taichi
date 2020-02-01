@@ -43,6 +43,9 @@ nsobj_unique_ptr<O> wrap_as_nsobj_unique_ptr(O *nsobj) {
 // Prepend "TC_" to native ObjC type names, otherwise clang-format thinks this
 // is an ObjC file and is not happy formatting it.
 struct TC_NSString;
+
+// |str| must exist during the entire lifetime of the returned object, as it
+// does not own the underlying memory. Think of it as std::string_view.
 nsobj_unique_ptr<TC_NSString> wrap_string_as_ns_string(const std::string &str);
 
 }  // namespace mac

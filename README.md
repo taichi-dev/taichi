@@ -43,8 +43,8 @@ python3 -m pip install taichi-nightly-cuda-10-1
   - The only missing features compared to the old source-to-source backends:
     - Vectorization on CPUs. Given most users who want performance are using GPUs (CUDA), this is given low priority.
     - Automatic shared memory utilization. Postponed until Feb/March 2020.
-- (WIP) Tune the performance of the LLVM backend to match that of the legacy source-to-source backends (By the end of Jan 2020, ~70% done)
-- (WIP) Redesign & reimplement (GPU) memory allocator (~90% done)
+- (WIP) Tune the performance of the LLVM backend to match that of the legacy source-to-source backends (Hopefully by Feb 6,  2020. ~70% done.)
+- (Done) Redesign & reimplement (GPU) memory allocator (by the end of Jan 2020)
 
 ## Updates
 - **(Jan  31, 2020) v0.4.1 released.**

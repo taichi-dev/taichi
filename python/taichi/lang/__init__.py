@@ -111,6 +111,17 @@ lang_core = core
 def static_print(*args, __p=print, **kwargs):
   __p(*args, **kwargs)
 
+def benchmark(func, repeat=100, args=()):
+  import taichi as ti
+  import time
+  func(*args) # compile the kernel first
+  ti.sync()
+  t = time.time()
+  for n in range(repeat):
+    func(*args)
+  elapsed = time.time() - t
+  ti.get_runtime().sync()
+  return elapsed / repeat
 
 # test x86_64 only
 def simple_test(func):

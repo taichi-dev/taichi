@@ -262,18 +262,19 @@ class Canvas {
       auto center = canvas.transform(_center);
       auto center_i = (center + Vector2(0.5_f)).template cast<int>();
       auto radius_i = (int)std::ceil(_radius + 0.5_f);
-      for (int i = -radius_i; i <= radius_i; i++) {
-        for (int j = -radius_i; j <= radius_i; j++) {
-          if (0 <= center_i(0) + i &&
-              center_i(0) + i < canvas.img.get_width() &&
-              0 <= center_i(1) + j &&
-              center_i(1) + j < canvas.img.get_height()) {
-            real dist =
-                length(center - center_i.template cast<real>() - Vector2(i, j));
-            auto alpha = _color.w * clamp(_radius - dist);
-            auto &dest = canvas.img[center_i + Vector2i(i, j)];
-            dest = lerp(alpha, dest, _color);
-          }
+      auto const canvas_witdh = canvas.img.get_width();
+      auto const canvas_height = canvas.img.get_height();
+      int i_lower = std::max(0, center_i(0) - radius_i);
+      int j_lower = std::max(0, center_i(1) - radius_i);
+      int i_higher = std::min(center_i(0) + radius_i, canvas_witdh - 1);
+      int j_higher = std::min(center_i(1) + radius_i, canvas_height - 1);
+      for (int i = i_lower; i <= i_higher; i++) {
+        for (int j = j_lower; j <= j_higher; j++) {
+          real dist =
+              length(center - Vector2(i, j));
+          auto alpha = _color.w * clamp(_radius - dist);
+          auto &dest = canvas.img[Vector2i(i, j)];
+          dest = lerp(alpha, dest, _color);
         }
       }
     }

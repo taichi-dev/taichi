@@ -1,7 +1,5 @@
 import taichi as ti
 
-# Memory bound operations
-
 N = 1024 ** 3 // 4
 
 # 4 B/it

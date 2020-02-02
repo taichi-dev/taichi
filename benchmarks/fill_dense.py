@@ -19,8 +19,8 @@ def benchmark_flat_range():
   
   @ti.kernel
   def fill():
-    for j in range(N):
-      for i in range(N):
+    for i in range(N):
+      for j in range(N):
         a[i, j] = 2.0
   
   return ti.benchmark(fill)

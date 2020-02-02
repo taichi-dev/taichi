@@ -138,8 +138,14 @@ void compile_runtimes() {
 
 std::string libdevice_path() {
 #if defined(TLANG_WITH_CUDA)
+#if defined(TC_PLATFORM_WINDOWS)
+  auto folder =
+      fmt::format("{}/nvvm/libdevice/", TLANG_CUDA_ROOT_DIR, TLANG_CUDA_VERSION);
+#else
   auto folder =
       fmt::format("/usr/local/cuda-{}/nvvm/libdevice/", TLANG_CUDA_VERSION);
+#endif
+
   if (is_release()) {
     folder = compiled_lib_dir;
   }
@@ -167,7 +173,7 @@ std::unique_ptr<llvm::Module> module_from_bitcode_file(std::string bitcode_path,
     auto error = runtime.takeError();
     TC_WARN("Bitcode loading error message:");
     llvm::errs() << error << "\n";
-    TC_ERROR("Runtime bitcode load failure.");
+    TC_ERROR("Bitcode {} load failure.", bitcode_path);
   }
 
   for (auto &f : *(runtime.get()))

@@ -19,8 +19,7 @@ def benchmark_flat_range():
   
   @ti.kernel
   def fill():
-    for i in range(N):
-      for j in range(N):
+    for i, j in ti.ndrange(N, N):
         a[i, j] = 2.0
   
   return ti.benchmark(fill)
@@ -40,6 +39,42 @@ def benchmark_nested_struct():
 
   fill()
 
+  return ti.benchmark(fill)
+
+def benchmark_nested_struct_listgen_8x8():
+  a = ti.var(dt=ti.f32)
+  ti.cfg.demote_dense_struct_fors = False
+  N = 512
+  
+  @ti.layout
+  def place():
+    ti.root.dense(ti.ij, [N, N]).dense(ti.ij, [8, 8]).place(a)
+  
+  @ti.kernel
+  def fill():
+    for i, j in a:
+      a[i, j] = 2.0
+  
+  fill()
+  
+  return ti.benchmark(fill)
+
+def benchmark_nested_struct_listgen_16x16():
+  a = ti.var(dt=ti.f32)
+  ti.cfg.demote_dense_struct_fors = False
+  N = 256
+  
+  @ti.layout
+  def place():
+    ti.root.dense(ti.ij, [N, N]).dense(ti.ij, [16, 16]).place(a)
+  
+  @ti.kernel
+  def fill():
+    for i, j in a:
+      a[i, j] = 2.0
+  
+  fill()
+  
   return ti.benchmark(fill)
 
 def benchmark_nested_range_blocked():

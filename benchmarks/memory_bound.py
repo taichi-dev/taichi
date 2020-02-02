@@ -4,7 +4,6 @@ N = 1024 ** 3 // 4 # 1 GB per buffer
 
 # 4 B/it
 def benchmark_memset():
-  ti.cfg.print_ir = True
   a = ti.var(dt=ti.f32, shape=N)
   
   @ti.kernel

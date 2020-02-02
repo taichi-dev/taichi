@@ -523,6 +523,10 @@ std::string get_version_string();
 
 std::string get_commit_hash();
 
+std::string get_cuda_version_string();
+
+std::string get_cuda_root_dir();
+
 TC_NAMESPACE_END
 
 #include "asset_manager.h"

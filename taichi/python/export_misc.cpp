@@ -13,7 +13,6 @@
 #include <taichi/system/unit_dll.h>
 #include <taichi/visual/texture.h>
 #include <taichi/geometry/factory.h>
-#include <taichi/common/version.h>
 #if defined(TLANG_WITH_CUDA)
 #include <cuda_runtime_api.h>
 #endif
@@ -75,14 +74,6 @@ FILE *file = freopen(fn.c_str(), "w", file_fd);
 
 void stop_duplicating_stdout_to_file(const std::string &fn) {
   TC_NOT_IMPLEMENTED;
-}
-
-std::string cuda_version() {
-#if defined(TLANG_WITH_CUDA)
-  return TLANG_CUDA_VERSION;
-#else
-  return "0.0";
-#endif
 }
 
 bool with_cuda() {
@@ -157,7 +148,7 @@ void export_misc(py::module &m) {
   m.def("get_repo_dir", get_repo_dir);
   m.def("get_python_package_dir", get_python_package_dir);
   m.def("set_python_package_dir", set_python_package_dir);
-  m.def("cuda_version", cuda_version);
+  m.def("cuda_version", get_cuda_version_string);
   m.def("test_cpp_exception", [] {
     try {
       throw std::exception();

@@ -25,7 +25,6 @@
 #include <llvm/Linker/Linker.h>
 #include <llvm/Demangle/Demangle.h>
 
-#include <taichi/common/version.h>
 #include "tlang_util.h"
 #include "taichi_llvm_context.h"
 #include "backends/llvm_jit.h"
@@ -138,18 +137,13 @@ void compile_runtimes() {
 
 std::string libdevice_path() {
 #if defined(TLANG_WITH_CUDA)
-#if defined(TC_PLATFORM_WINDOWS)
-  auto folder =
-      fmt::format("{}/nvvm/libdevice/", TLANG_CUDA_ROOT_DIR, TLANG_CUDA_VERSION);
-#else
-  auto folder =
-      fmt::format("/usr/local/cuda-{}/nvvm/libdevice/", TLANG_CUDA_VERSION);
-#endif
-
+  auto folder = fmt::format("{}/nvvm/libdevice/", get_cuda_root_dir(),
+                            get_cuda_version_string());
   if (is_release()) {
     folder = compiled_lib_dir;
   }
-  auto cuda_version_major = int(std::atof(TLANG_CUDA_VERSION));
+  auto cuda_version_string = get_cuda_version_string();
+  auto cuda_version_major = int(std::atof(cuda_version_string.c_str()));
   return fmt::format("{}/libdevice.{}.bc", folder, cuda_version_major);
 #else
   TC_NOT_IMPLEMENTED;

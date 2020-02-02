@@ -341,6 +341,7 @@ struct CompileConfig {
   DataType default_fp;
   DataType default_ip;
   std::string extra_flags;
+  int default_cpu_block_dim;
   int default_gpu_block_dim;
 
   CompileConfig();

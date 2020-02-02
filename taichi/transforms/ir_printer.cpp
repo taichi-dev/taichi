@@ -376,10 +376,13 @@ class IRPrinter : public IRVisitor {
   void visit(OffloadedStmt *stmt) override {
     std::string details;
     if (stmt->task_type == stmt->range_for) {
-      details = fmt::format("range_for(&{}, &{})", stmt->begin, stmt->end);
+      details = fmt::format(
+          "range_for(&{}, &{}) block_dim={}", stmt->begin, stmt->end,
+          stmt->block_dim == 0 ? "adaptive" : std::to_string(stmt->block_dim));
     } else if (stmt->task_type == stmt->struct_for) {
-      details = fmt::format("struct_for({})",
-                            stmt->snode->get_node_type_name_hinted());
+      details = fmt::format("struct_for({}) block_dim={}",
+                            stmt->snode->get_node_type_name_hinted(),
+                            stmt->block_dim);
     }
     if (stmt->task_type == OffloadedStmt::TaskType::listgen) {
       print("{} = offloaded listgen {}", stmt->name(),

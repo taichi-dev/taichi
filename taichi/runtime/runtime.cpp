@@ -835,13 +835,20 @@ void cpu_parallel_range_for(Context *context,
   ctx.task = task;
   ctx.begin = begin;
   ctx.end = end;
-  ctx.block_size = block_dim;
   ctx.step = step;
   if (step != 1 && step != -1) {
     printf("step must not be %d\n", step);
     exit(-1);
   }
-  auto runtime = (Runtime *)context->runtime;
+  if (block_dim == 0) {
+    // adaptive block dim
+    auto num_items = (ctx.end - ctx.begin) / std::abs(step);
+    // ensure each thread have at least ~20 tasks for load balancing
+    // and each task has at least 512 items to amortize scheduler overhead
+    block_dim = std::min(512, std::max(1, num_items / (num_threads * 20)));
+  }
+  ctx.block_size = block_dim;
+  auto runtime = context->runtime;
   runtime->parallel_for(runtime->thread_pool,
                         (end - begin + block_dim - 1) / block_dim, num_threads,
                         &ctx, parallel_range_for_task);

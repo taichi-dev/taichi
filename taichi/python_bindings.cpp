@@ -64,6 +64,8 @@ void export_lang(py::module &m) {
       .def_readwrite("simplify_after_lower_access",
                      &CompileConfig::simplify_after_lower_access)
       .def_readwrite("lower_access", &CompileConfig::lower_access)
+      .def_readwrite("default_cpu_block_dim",
+                     &CompileConfig::default_cpu_block_dim)
       .def_readwrite("default_gpu_block_dim",
                      &CompileConfig::default_gpu_block_dim)
       .def_readwrite("verbose_kernel_launches",

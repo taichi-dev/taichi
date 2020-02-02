@@ -81,7 +81,7 @@ for i in range(n_particles):
   v[i] = [0, -1]
   J[i] = 1
 
-for frame in range(200):
+for frame in range(20000):
   for s in range(50):
     grid_v.fill([0, 0])
     grid_m.fill(0)

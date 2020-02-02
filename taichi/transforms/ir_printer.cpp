@@ -376,8 +376,19 @@ class IRPrinter : public IRVisitor {
   void visit(OffloadedStmt *stmt) override {
     std::string details;
     if (stmt->task_type == stmt->range_for) {
+      std::string begin_str, end_str;
+      if (stmt->const_begin) {
+        begin_str = std::to_string(stmt->begin_value);
+      } else {
+        begin_str = fmt::format("tmp(offset={}B)", stmt->begin_offset);
+      }
+      if (stmt->const_end) {
+        end_str = std::to_string(stmt->end_value);
+      } else {
+        end_str = fmt::format("tmp(offset={}B)", stmt->end_offset);
+      }
       details = fmt::format(
-          "range_for(&{}, &{}) block_dim={}", stmt->begin, stmt->end,
+          "range_for({}, {}) block_dim={}", begin_str, end_str,
           stmt->block_dim == 0 ? "adaptive" : std::to_string(stmt->block_dim));
     } else if (stmt->task_type == stmt->struct_for) {
       details = fmt::format("struct_for({}) block_dim={}",

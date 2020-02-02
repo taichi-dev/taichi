@@ -183,7 +183,10 @@ class OffloadedStmt : public Stmt {
   TaskType task_type;
   SNode *snode;
   Stmt *begin_stmt, *end_stmt;
-  std::size_t begin, end;
+  std::size_t begin_offset;
+  std::size_t end_offset;
+  bool const_begin, const_end;
+  int32 begin_value, end_value;
   int step;
   int block_dim;
   bool reversed;

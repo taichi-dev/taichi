@@ -25,7 +25,7 @@ int main() {
     t = get_time();
     std::memcpy(x.data(), y.data(), sizeof(float) * n);
     double memcpy = get_time() - t;
-    printf("GPU time           memset(1) %f ms memcpy(2) %f ms\n", memset * 1000, memcpy * 1000);
+    printf("CPU time           memset(1) %f ms memcpy(2) %f ms\n", memset * 1000, memcpy * 1000);
     printf("Memory bandwidth:  memset(1) %.2f GB/s memcpy(2) %.2f GB/s\n", 1.0f / memset,
            2.0f / memcpy);
   }

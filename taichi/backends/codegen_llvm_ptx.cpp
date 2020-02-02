@@ -284,16 +284,9 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
       body = guard.body;
     }
 
-    auto begin_ptr = Stmt::make<GlobalTemporaryStmt>(
-        stmt->begin, VectorType(1, DataType::i32));
-    auto end_ptr = Stmt::make<GlobalTemporaryStmt>(
-        stmt->end, VectorType(1, DataType::i32));
-    begin_ptr->accept(this);
-    end_ptr->accept(this);
+    auto [begin, end] = get_range_for_bounds(stmt);
 
-    create_call("gpu_parallel_range_for",
-                {get_arg(0), builder->CreateLoad(begin_ptr->value, "begin"),
-                 builder->CreateLoad(end_ptr->value, "end"), body});
+    create_call("gpu_parallel_range_for", {get_arg(0), begin, end, body});
   }
 
   void visit(OffloadedStmt *stmt) override {

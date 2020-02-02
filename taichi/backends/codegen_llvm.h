@@ -1167,6 +1167,27 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     return FunctionCreationGuard(this, argument_types);
   }
 
+  auto get_range_for_bounds(OffloadedStmt *stmt) {
+    llvm::Value *begin, *end;
+    if (stmt->const_begin) {
+      begin = tlctx->get_constant(stmt->begin_value);
+    } else {
+      auto begin_stmt = Stmt::make<GlobalTemporaryStmt>(
+          stmt->begin_offset, VectorType(1, DataType::i32));
+      begin_stmt->accept(this);
+      begin = builder->CreateLoad(begin_stmt->value);
+    }
+    if (stmt->const_end) {
+      end = tlctx->get_constant(stmt->end_value);
+    } else {
+      auto end_stmt = Stmt::make<GlobalTemporaryStmt>(
+          stmt->end_offset, VectorType(1, DataType::i32));
+      end_stmt->accept(this);
+      end = builder->CreateLoad(end_stmt->value);
+    }
+    return std::tuple(begin, end);
+  }
+
   void create_offload_range_for(OffloadedStmt *stmt) {
     int step = 1;
     if (stmt->reversed) {
@@ -1188,19 +1209,11 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       body = guard.body;
     }
 
-    auto begin_ptr = Stmt::make<GlobalTemporaryStmt>(
-        stmt->begin, VectorType(1, DataType::i32));
-    auto end_ptr = Stmt::make<GlobalTemporaryStmt>(
-        stmt->end, VectorType(1, DataType::i32));
-    begin_ptr->accept(this);
-    end_ptr->accept(this);
-
-    create_call(
-        "cpu_parallel_range_for",
-        {get_arg(0), tlctx->get_constant(stmt->num_cpu_threads),
-         builder->CreateLoad(begin_ptr->value, "begin"),
-         builder->CreateLoad(end_ptr->value, "end"), tlctx->get_constant(step),
-         tlctx->get_constant(stmt->block_dim), body});
+    auto [begin, end] = get_range_for_bounds(stmt);
+    create_call("cpu_parallel_range_for",
+                {get_arg(0), tlctx->get_constant(stmt->num_cpu_threads), begin,
+                 end, tlctx->get_constant(step),
+                 tlctx->get_constant(stmt->block_dim), body});
   }
 
   void create_offload_struct_for(OffloadedStmt *stmt, bool spmd = false) {

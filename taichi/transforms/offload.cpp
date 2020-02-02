@@ -52,10 +52,18 @@ class Offloader {
         auto offloaded =
             Stmt::make_typed<OffloadedStmt>(OffloadedStmt::TaskType::range_for);
         offloaded->body = std::make_unique<Block>();
-        offloaded->begin = 0;  // s->begin->as<ConstStmt>()->val[0].val_int32();
-        offloaded->end = 0;    // s->end->as<ConstStmt>()->val[0].val_int32();
-        offloaded->begin_stmt = s->begin;
-        offloaded->end_stmt = s->end;
+        if (auto val = s->begin->cast<ConstStmt>()) {
+          offloaded->const_begin = true;
+          offloaded->begin_value = val->val[0].val_int32();
+        } else {
+          offloaded->begin_stmt = s->begin;
+        }
+        if (auto val = s->end->cast<ConstStmt>()) {
+          offloaded->const_end = true;
+          offloaded->end_value = val->val[0].val_int32();
+        } else {
+          offloaded->end_stmt = s->end;
+        }
         offloaded->block_dim = s->block_dim;
         offloaded->num_cpu_threads = s->parallelize;
         fix_loop_index_load(s, s->loop_var, 0, false);
@@ -284,8 +292,10 @@ class PromoteLocals : public BasicStmtVisitor {
     if (stmt->body)
       stmt->body->accept(this);
     if (stmt->task_type == OffloadedStmt::TaskType::range_for) {
-      stmt->begin = local_to_global_offset[stmt->begin_stmt];
-      stmt->end = local_to_global_offset[stmt->end_stmt];
+      if (!stmt->const_begin)
+        stmt->begin_offset = local_to_global_offset[stmt->begin_stmt];
+      if (!stmt->const_end)
+        stmt->end_offset = local_to_global_offset[stmt->end_stmt];
     }
   }
 

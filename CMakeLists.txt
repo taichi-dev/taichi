@@ -57,6 +57,11 @@ include(cmake/TaichiMain.cmake)
 message("C++ Flags: ${CMAKE_CXX_FLAGS}")
 message("Build type: ${CMAKE_BUILD_TYPE}")
 
+if (NOT TLANG_WITH_CUDA)
+    set(CUDA_VERSION "0.0")
+    set(CUDA_TOOLKIT_ROOT_DIR "")
+endif()
+
 FILE(WRITE ${CMAKE_CURRENT_LIST_DIR}/taichi/common/version.h
         "#pragma once\n"
         "#define TI_VERSION_MAJOR \"${TI_VERSION_MAJOR}\"\n"

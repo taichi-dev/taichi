@@ -23,7 +23,7 @@ endif()
 
 
 option(USE_STDCPP "Use -stdlib=libc++" OFF)
-option(TLANG_WITH_CUDA "Build with GPU support" ON)
+option(TLANG_WITH_CUDA "Build with GPU support" OFF)
 
 include_directories(${CMAKE_SOURCE_DIR})
 include_directories(external/xxhash)
@@ -49,7 +49,7 @@ if (TLANG_WITH_CUDA)
             target_link_libraries(${LIBRARY_NAME} /usr/local/cuda-${CUDA_VERSION}/lib64/libcudart.so cuda)
         endif()
     else()
-        message("CUDA not found.")
+        message(FATAL_ERROR "CUDA not found.")
     endif()
 endif()
 

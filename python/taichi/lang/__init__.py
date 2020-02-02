@@ -120,8 +120,8 @@ def benchmark(func, repeat=100, args=()):
   t = time.time()
   for n in range(repeat):
     func(*args)
-  elapsed = time.time() - t
   ti.get_runtime().sync()
+  elapsed = time.time() - t
   return elapsed / repeat
 
 # test x86_64 only

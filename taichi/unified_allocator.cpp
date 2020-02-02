@@ -20,9 +20,9 @@ UnifiedAllocator::UnifiedAllocator(std::size_t size, bool cuda)
     if (_cuda_data == nullptr) {
       TC_ERROR("GPU memory allocation failed.");
     }
-#if !defined(TI_ARCH_ARM)
+#if !defined(TI_ARCH_ARM) && !defined(TC_PLATFORM_WINDOWS)
     // Assuming ARM devices have shared CPU/GPU memory and do no support
-    // memAdvise
+    // memAdvise; CUDA on Windows has limited support for unified memory
     check_cuda_errors(
         cudaMemAdvise(_cuda_data, size, cudaMemAdviseSetPreferredLocation, 0));
 #endif

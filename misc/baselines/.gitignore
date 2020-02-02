@@ -8,3 +8,4 @@ rand_nvcc
 rand_clang
 *.ll
 *.ptx
+gpu_memory_bound

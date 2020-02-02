@@ -114,7 +114,8 @@ def static_print(*args, __p=print, **kwargs):
 def benchmark(func, repeat=100, args=()):
   import taichi as ti
   import time
-  func(*args) # compile the kernel first
+  for i in range(repeat // 3):
+    func(*args) # compile the kernel first
   ti.sync()
   t = time.time()
   for n in range(repeat):

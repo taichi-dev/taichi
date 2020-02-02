@@ -1310,6 +1310,9 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       builder->CreateRetVoid();
     }
 
+    if (stmt->block_dim == 0) {
+      stmt->block_dim = std::min(leaf_block->max_num_elements(), 256);
+    }
     int num_splits = leaf_block->max_num_elements() / stmt->block_dim;
     // traverse leaf node
     create_call("for_each_block",

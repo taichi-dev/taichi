@@ -1,5 +1,4 @@
 import taichi as ti
-import time
 
 # originally by @KLozes
 

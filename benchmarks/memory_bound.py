@@ -1,6 +1,6 @@
 import taichi as ti
 
-N = 1024 ** 3 // 4
+N = 1024 ** 3 // 4 # 1 GB per buffer
 
 # 4 B/it
 def benchmark_memset():
@@ -12,6 +12,17 @@ def benchmark_memset():
       a[i] = 1.0
   
   return ti.benchmark(memset, repeat=10)
+
+# 8 B/it
+def benchmark_sscal():
+  a = ti.var(dt=ti.f32, shape=N)
+  
+  @ti.kernel
+  def task():
+    for i in a:
+      a[i] = 0.5 * a[i]
+  
+  return ti.benchmark(task, repeat=10)
 
 # 8 B/it
 def benchmark_memcpy():

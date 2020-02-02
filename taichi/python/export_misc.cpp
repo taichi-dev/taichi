@@ -11,7 +11,6 @@
 #include <taichi/system/profiler.h>
 #include <taichi/system/memory.h>
 #include <taichi/system/unit_dll.h>
-#include <taichi/visual/texture.h>
 #include <taichi/geometry/factory.h>
 #if defined(TLANG_WITH_CUDA)
 #include <cuda_runtime_api.h>
@@ -85,6 +84,7 @@ bool with_cuda() {
 }
 
 void export_misc(py::module &m) {
+  py::class_<Config>(m, "Config");
   py::register_exception_translator([](std::exception_ptr p) {
     try {
       if (p)

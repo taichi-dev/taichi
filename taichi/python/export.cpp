@@ -5,7 +5,6 @@
 
 #include <taichi/python/export.h>
 #include <taichi/common/interface.h>
-#include <taichi/visualization/rgb.h>
 #include <taichi/io/io.h>
 #include <taichi/geometry/factory.h>
 
@@ -20,9 +19,8 @@ PYBIND11_MODULE(taichi_core, m) {
     kv.second(&m);
   }
 
-  export_math(m);
   export_visual(m);
-  export_io(m);
+  export_math(m);
   export_misc(m);
   export_lang(m);
 }

@@ -38,10 +38,6 @@ void export_visual(py::module &m);
 
 void export_misc(py::module &m);
 
-void export_io(py::module &m);
-
-void export_ndarray(py::module &m);
-
 #define DEFINE_VECTOR_OF_NAMED(x, name)                                   \
   py::class_<std::vector<x>>(m, name)                                     \
       .def(py::init<>())                                                  \

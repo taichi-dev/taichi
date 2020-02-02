@@ -3,9 +3,11 @@
 // Generated bitcode will likely get inline for performance.
 // Most function calls here will be inlined
 
+#if defined(_WIN32)
 #define vprintf vprintf_windows
 #include <cstdio>
 #undef vprintf
+#endif
 
 
 #include <atomic>

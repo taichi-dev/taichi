@@ -63,6 +63,6 @@ FILE(WRITE ${CMAKE_CURRENT_LIST_DIR}/taichi/common/version.h
         "#define TI_VERSION_MINOR \"${TI_VERSION_MINOR}\"\n"
         "#define TI_VERSION_PATCH \"${TI_VERSION_PATCH}\"\n"
         "#define TI_COMMIT_HASH \"${TI_COMMIT_HASH}\"\n"
-        "#define TLANG_CUDA_VERSION \"${TLANG_CUDA_VERSION}\"\n"
+        "#define TLANG_CUDA_VERSION \"${CUDA_VERSION}\"\n"
         )
 

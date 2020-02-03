@@ -243,7 +243,7 @@ for i, j in x:
 
 
 #  The Taichi Library [[Legacy branch]](https://github.com/yuanming-hu/taichi/tree/legacy)
-**Taichi** is an open-source computer graphics library that aims to provide easy-to-use infrastructures for computer graphics R&D. It's written in C++14 and wrapped friendly with Python.
+The legacy **Taichi** library is an open-source computer graphics library written in C++14 and wrapped friendly with Python. It is no longer maintained since we have switched to the Taichi programming language and compiler.
 
 ## News
  - May 17, 2019: [Giga-Voxel SPGrid Topology Optimization Solver](https://github.com/yuanming-hu/spgrid_topo_opt) is released!

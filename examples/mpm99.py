@@ -1,5 +1,5 @@
 import taichi as ti
-quality = 1 # Use a larger value for higher-res simulations
+quality = 2 # Use a larger value for higher-res simulations
 n_particles, n_grid = 9000 * quality ** 2, 128 * quality
 dx, inv_dx = 1 / n_grid, float(n_grid)
 dt = 1e-4 / quality
@@ -95,5 +95,8 @@ for frame in range(20000):
   for s in range(int(2e-3 // dt)):
     substep()
   colors = np.array([0x068587, 0xED553B, 0xEEEEF0], dtype=np.uint32)
-  gui.circles(x.to_numpy(), radius=1.5, color=colors[material.to_numpy()])
+  import time
+  t = time.time()
+  gui.circles(x.to_numpy(), radius=1, color=colors[material.to_numpy()])
+  print((time.time() - t) * 1000)
   gui.show() # Change to gui.show(f'{frame:06d}.png') to write images to disk

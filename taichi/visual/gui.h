@@ -272,7 +272,7 @@ class Canvas {
       for (int i = i_lower; i <= i_higher; i++) {
         for (int j = j_lower; j <= j_higher; j++) {
           real dist = length(center - Vector2(i, j));
-          auto alpha = w * std::min(1.0f, r - dist);
+          auto alpha = w * clamp(r - dist);
           auto &dest = canvas.img[Vector2i(i, j)];
           dest = lerp(alpha, dest, _color);
         }

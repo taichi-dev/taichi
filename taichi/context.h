@@ -18,6 +18,8 @@ struct Context {
   uint64 args[taichi_max_num_args];
   int32 extra_args[taichi_max_num_args][taichi_max_num_indices];
 
+  static constexpr size_t extra_args_size = sizeof(extra_args);
+
 #if defined(TI_RUNTIME_HOST)
   template <typename T, typename G>
   static T union_cast_with_different_sizes(G g) {

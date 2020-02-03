@@ -47,7 +47,11 @@ python3 -m pip install taichi-nightly-cuda-10-1
 - (Done) Redesign & reimplement (GPU) memory allocator (by the end of Jan 2020)
 
 ## Updates
-- **(Jan  31, 2020) v0.4.1 released.**
+- (Feb   2, 2020) v0.4.2 released.
+   - GUI framerates are now more stable
+   - Optimized OffloadedRangeFor with const bounds. Light computation programs such as `mpm88.py` is 30% faster on CUDA due to reduced kernel launches
+   - Optimized CPU parallel range for performance
+- (Jan  31, 2020) v0.4.1 released.
    - **Fixed an autodiff bug introduced in v0.3.24. Please update if you are using Taichi differentiable programming.**
    - Updated `Dockerfile` (by **Shenghang Tsai [jackalcooper]**)
    - `pbf2d.py` visualization performance boosted (by **Ye Kuang [k-ye]**)

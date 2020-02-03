@@ -566,10 +566,10 @@ std::string OffloadedStmt::task_name() const {
     return "struct_for";
   } else if (task_type == TaskType::clear_list) {
     TC_ASSERT(snode);
-    return fmt::format("clear_list_{}", snode->get_name());
+    return fmt::format("clear_list_{}", snode->get_node_type_name_hinted());
   } else if (task_type == TaskType::listgen) {
     TC_ASSERT(snode);
-    return fmt::format("listgen_{}", snode->name);
+    return fmt::format("listgen_{}", snode->get_node_type_name_hinted());
   } else if (task_type == TaskType::gc) {
     TC_ASSERT(snode);
     return fmt::format("gc_{}", snode->name);

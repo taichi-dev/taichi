@@ -9,7 +9,6 @@
 #undef vprintf
 #endif
 
-
 #include <atomic>
 #include <cstdint>
 #include <cmath>
@@ -700,6 +699,7 @@ void element_listgen(Runtime *runtime, StructMeta *parent, StructMeta *child) {
   auto parent_list = runtime->element_lists[parent->snode_id];
   int num_parent_elements = parent_list->size();
   auto child_list = runtime->element_lists[child->snode_id];
+  int max_range = 1024;
 #if ARCH_cuda
   int i_start = block_idx();
   int i_step = grid_dim();
@@ -711,10 +711,14 @@ void element_listgen(Runtime *runtime, StructMeta *parent, StructMeta *child) {
   int j_start = 0;
   int j_step = 1;
 #endif
-  for (int i = i_start; i < num_parent_elements; i += i_step) {
-    auto element = parent_list->get<Element>(i);
-    for (int j = element.loop_bounds[0] + j_start; j < element.loop_bounds[1];
-         j += j_step) {
+  int parent_split = std::max(parent->max_num_elements / max_range, 1);
+  int range = (parent->max_num_elements + parent_split - 1) / parent_split;
+  for (int i = i_start; i < num_parent_elements * parent_split; i += i_step) {
+    auto element = parent_list->get<Element>(i / parent_split);
+    int split_id = i % parent_split;
+    int j_lower = element.loop_bounds[0] + split_id * range + j_start;
+    int j_higher = std::min(element.loop_bounds[1], j_lower + range);
+    for (int j = j_lower; j < j_higher; j += j_step) {
       PhysicalCoordinates refined_coord;
       parent->refine_coordinates(&element.pcoord, &refined_coord, j);
       if (parent->is_active((Ptr)parent, element.element, j)) {
@@ -843,9 +847,9 @@ void cpu_parallel_range_for(Context *context,
   if (block_dim == 0) {
     // adaptive block dim
     auto num_items = (ctx.end - ctx.begin) / std::abs(step);
-    // ensure each thread have at least ~20 tasks for load balancing
+    // ensure each thread have at least ~32 tasks for load balancing
     // and each task has at least 512 items to amortize scheduler overhead
-    block_dim = std::min(512, std::max(1, num_items / (num_threads * 20)));
+    block_dim = std::min(512, std::max(1, num_items / (num_threads * 32)));
   }
   ctx.block_size = block_dim;
   auto runtime = context->runtime;

@@ -260,19 +260,19 @@ class Canvas {
       TC_ASSERT(finished == false);
       finished = true;
       auto center = canvas.transform(_center);
-      auto const canvas_witdh = canvas.img.get_width();
+      auto const canvas_width = canvas.img.get_width();
       auto const canvas_height = canvas.img.get_height();
       const auto r = _radius;
       int i_lower = std::max(0, (int)std::ceil(center(0) - r));
       int j_lower = std::max(0, (int)std::ceil(center(1) - r));
-      int i_higher = std::min((int)std::floor(center(0) + r), canvas_witdh - 1);
+      int i_higher = std::min((int)std::floor(center(0) + r), canvas_width - 1);
       int j_higher =
           std::min((int)std::floor(center(1) + r), canvas_height - 1);
       const auto w = _color.w;
       for (int i = i_lower; i <= i_higher; i++) {
         for (int j = j_lower; j <= j_higher; j++) {
           real dist = length(center - Vector2(i, j));
-          auto alpha = w * clamp((r - dist));
+          auto alpha = w * std::min(1.0f, r - dist);
           auto &dest = canvas.img[Vector2i(i, j)];
           dest = lerp(alpha, dest, _color);
         }

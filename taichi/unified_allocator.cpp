@@ -10,9 +10,9 @@
 
 TLANG_NAMESPACE_BEGIN
 
-UnifiedAllocator::UnifiedAllocator(std::size_t size, bool cuda)
-    : size(size), cuda(cuda) {
-  if (cuda) {
+UnifiedAllocator::UnifiedAllocator(std::size_t size, Arch arch)
+    : size(size), arch_(arch) {
+  if (arch_ == Arch::cuda) {
     TC_INFO("Allocating unified (CPU+GPU) address space of size {} MB",
             size / 1024 / 1024);
 #if defined(CUDA_FOUND)
@@ -54,7 +54,7 @@ taichi::Tlang::UnifiedAllocator::~UnifiedAllocator() {
   if (!initialized()) {
     return;
   }
-  if (cuda) {
+  if (arch_ == Arch::cuda) {
 #if defined(CUDA_FOUND)
     check_cuda_errors(cudaFree(_cuda_data));
 #else

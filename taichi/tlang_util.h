@@ -1,6 +1,7 @@
 // Definitions of utility functions and enums
 
 #pragma once
+#include <taichi/arch.h>
 #include <taichi/common/util.h>
 #include <taichi/io/io.h>
 #include <taichi/common.h>
@@ -12,25 +13,6 @@ template <typename T>
 using Handle = std::shared_ptr<T>;
 
 constexpr int default_simd_width_x86_64 = 8;
-
-enum class Arch {
-#define PER_ARCH(x) x,
-#include "inc/archs.inc.h"
-#undef PER_ARCH
-};
-
-inline std::string arch_name(Arch arch) {
-  switch (arch) {
-#define PER_ARCH(x) \
-  case Arch::x:     \
-    return #x;      \
-    break;
-#include "inc/archs.inc.h"
-#undef PER_ARCH
-    default:
-      TC_NOT_IMPLEMENTED
-  }
-}
 
 int default_simd_width(Arch arch);
 

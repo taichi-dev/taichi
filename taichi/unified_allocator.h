@@ -1,4 +1,5 @@
 #pragma once
+#include "arch.h"
 #include "common.h"
 #include <mutex>
 #include <vector>
@@ -17,7 +18,7 @@ class UnifiedAllocator {
   void *_cuda_data;
 #endif
   std::size_t size;
-  bool cuda;
+  Arch arch_;
 
   // put these two on the unified memory so that GPU can have access
  public:
@@ -27,7 +28,7 @@ class UnifiedAllocator {
   std::mutex lock;
 
  public:
-  UnifiedAllocator(std::size_t size, bool cuda);
+  UnifiedAllocator(std::size_t size, Arch arch);
 
   ~UnifiedAllocator();
 

@@ -301,6 +301,8 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     UNARY_STD(logic_not)
     UNARY_STD(acos)
     UNARY_STD(asin)
+    UNARY_STD(cos)
+    UNARY_STD(sin)
     else if (op == UnaryOpType::sqrt) {
       stmt->value = builder->CreateIntrinsic(llvm::Intrinsic::sqrt,
                                              {input_type}, {input});
@@ -339,8 +341,6 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
           stmt->value = builder->CreateNeg(input, "neg");
         }
       }
-      UNARY_INTRINSIC(sin)
-      UNARY_INTRINSIC(cos)
       UNARY_INTRINSIC(floor)
       UNARY_INTRINSIC(ceil)
       else emit_extra_unary(stmt);

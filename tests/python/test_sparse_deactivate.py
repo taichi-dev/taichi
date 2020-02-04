@@ -36,8 +36,6 @@ def test_pointer():
 
 @ti.all_archs
 def test_pointer2():
-  return
-  # test that cleared memory is zeroed out
   x = ti.var(ti.f32)
 
   n = 16
@@ -63,13 +61,16 @@ def test_pointer2():
   func()
   clear()
 
-  for i in range(n*n):
-    assert(x[i] == 0.0)
+  for i in range(n * n):
+    assert x[i] == 0.0
 
   set10()
 
   for i in range(n*n):
-    assert(x[i] != 1.0)
+    if i != 10:
+      assert x[i] == 0.0
+    else:
+      assert x[i] == 10.0
 
 
 @ti.all_archs

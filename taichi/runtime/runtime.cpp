@@ -439,20 +439,22 @@ struct Runtime {
   }
 };
 
+// NodeManager of node S (hash, pointer) managers the memory allocation of S_ch
 struct NodeManager {
   Runtime *runtime;
   i32 lock;
   i32 element_size;
   i32 chunk_num_elements;
-
   i32 free_list_used;
   ListManager *free_list, *recycled_list, *data_list;
 
   using list_data_type = i32;
 
   NodeManager(Runtime *runtime, i32 element_size, i32 chunk_num_elements = -1)
-      : runtime(runtime), chunk_num_elements(chunk_num_elements) {
-    // 16K elements per chunk
+      : runtime(runtime),
+        element_size(element_size),
+        chunk_num_elements(chunk_num_elements) {
+    // 16K elements per chunk, by default
     if (chunk_num_elements == -1)
       chunk_num_elements = 16 * 1024;
     free_list_used = 0;

@@ -57,9 +57,19 @@ class MetalRuntime {
       size_t global_tmps_size,
       const MetalKernelArgsAttributes &args_attribs);
 
+  // Launch the given |taichi_kernel_name|.
+  // Kernel launching is asynchronous, therefore the Metal memory is not valid
+  // to access until after a synchronize() call.
+  void launch_taichi_kernel(const std::string &taichi_kernel_name,
+                            Context *ctx);
+
+  // Synchronize the memory content from Metal to host (x86_64).
+  void synchronize();
+
  private:
   void create_new_command_buffer();
 
+  class HostMetalArgsBlitter;
   // Info for launching a compiled Metal kernel
   class CompiledMtlKernel {
    public:
@@ -67,6 +77,15 @@ class MetalRuntime {
                       MTLDevice *device,
                       MTLFunction *func,
                       CPUProfiler *profiler);
+
+    void launch(MTLBuffer *root_buffer,
+                MTLBuffer *global_tmp_buffer,
+                MTLBuffer *args_buffer,
+                MTLCommandBuffer *command_buffer);
+
+    inline MetalKernelAttributes *kernel_attribs() {
+      return &kernel_attribs_;
+    }
 
    private:
     MetalKernelAttributes kernel_attribs_;
@@ -90,6 +109,11 @@ class MetalRuntime {
         CPUProfiler *profiler);
 
    private:
+    friend void MetalRuntime::launch_taichi_kernel(
+        const std::string &taichi_kernel_name,
+        Context *ctx);
+    friend class HostMetalArgsBlitter;
+
     std::string mtl_source_code_;
     std::vector<std::unique_ptr<CompiledMtlKernel>> compiled_mtl_kernels_;
     BufferMemoryView global_tmps_mem_;

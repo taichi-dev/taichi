@@ -34,7 +34,6 @@ void MemoryPool::set_queue(MemRequestQueue *queue) {
 
 void *MemoryPool::allocate(std::size_t size, std::size_t alignment) {
   std::lock_guard<std::mutex> _(mut_allocators);
-  bool use_cuda = prog->config.arch == Arch::cuda;
   void *ret = nullptr;
   if (!allocators.empty()) {
     ret = allocators.back()->allocate(size, alignment);
@@ -43,7 +42,7 @@ void *MemoryPool::allocate(std::size_t size, std::size_t alignment) {
     // allocation have failed
     auto new_buffer_size = std::max(size, default_allocator_size);
     allocators.emplace_back(
-        std::make_unique<UnifiedAllocator>(new_buffer_size, use_cuda));
+        std::make_unique<UnifiedAllocator>(new_buffer_size, prog->config.arch));
     ret = allocators.back()->allocate(size, alignment);
   }
   TC_ASSERT(ret);

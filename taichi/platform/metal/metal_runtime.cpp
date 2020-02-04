@@ -243,13 +243,16 @@ void MetalRuntime::launch_taichi_kernel(const std::string &taichi_kernel_name,
       // the previous serial kernel. We need to read it back to the host side to
       // decide how many kernel threads to launch.
       synchronize();
-      // TODO: optimize to check if begin/end is const separately.
       const char *global_tmps_mem_begin = (char *)ctk.global_tmps_mem_.ptr();
       auto load_global_tmp = [=](int offset) -> int {
         return *reinterpret_cast<const int *>(global_tmps_mem_begin + offset);
       };
-      const int begin = load_global_tmp(ka->range_for_attribs.begin);
-      const int end = load_global_tmp(ka->range_for_attribs.end);
+      const int begin = ka->range_for_attribs.const_begin
+                            ? ka->range_for_attribs.begin
+                            : load_global_tmp(ka->range_for_attribs.begin);
+      const int end = ka->range_for_attribs.const_end
+                          ? ka->range_for_attribs.end
+                          : load_global_tmp(ka->range_for_attribs.end);
       TC_ASSERT(ka->num_threads == 0);
       ka->num_threads = end - begin;
     }

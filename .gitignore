@@ -57,4 +57,3 @@ libpython_path.txt
 .vscode
 _build
 *.bin
-assets/

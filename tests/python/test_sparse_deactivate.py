@@ -35,6 +35,44 @@ def test_pointer():
   assert s[None] == 16
 
 @ti.all_archs
+def test_pointer2():
+  return
+  # test that cleared memory is zeroed out
+  x = ti.var(ti.f32)
+
+  n = 16
+
+  @ti.layout
+  def place():
+    ti.root.dense(ti.i, n).pointer().dense(ti.i, n).place(x)
+
+  @ti.kernel
+  def func():
+    for i in range(n*n):
+      x[i] = 1.0
+
+  @ti.kernel
+  def set10():
+    x[10] = 10.0
+
+  @ti.kernel
+  def clear():
+    for i in x.parent().parent():
+      ti.deactivate(x.parent().parent(),i)
+
+  func()
+  clear()
+
+  for i in range(n*n):
+    assert(x[i] == 0.0)
+
+  set10()
+
+  for i in range(n*n):
+    assert(x[i] != 1.0)
+
+
+@ti.all_archs
 def test_dynamic():
   x = ti.var(ti.i32)
   s = ti.var(ti.i32)
@@ -74,4 +112,3 @@ def test_dynamic():
 
   for i in range(n):
     assert s[i] == i * i * 4
-

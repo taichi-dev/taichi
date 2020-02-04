@@ -47,6 +47,9 @@ python3 -m pip install taichi-nightly-cuda-10-1
 - (Done) Redesign & reimplement (GPU) memory allocator (by the end of Jan 2020)
 
 ## Updates
+- (Feb   3, 2020) v0.4.3 released.
+   - `GUI.circles` 2.4x faster
+   - General performance improvements
 - (Feb   2, 2020) v0.4.2 released.
    - GUI framerates are now more stable
    - Optimized OffloadedRangeFor with const bounds. Light computation programs such as `mpm88.py` is 30% faster on CUDA due to reduced kernel launches

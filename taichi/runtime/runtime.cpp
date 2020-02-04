@@ -98,7 +98,6 @@ i32 printf(const char *, ...);
     return std::F(x);             \
   }
 
-// sin and cos are already included in llvm intrinsics
 DEFINE_UNARY_REAL_FUNC(exp)
 DEFINE_UNARY_REAL_FUNC(log)
 DEFINE_UNARY_REAL_FUNC(tan)
@@ -106,6 +105,8 @@ DEFINE_UNARY_REAL_FUNC(tanh)
 DEFINE_UNARY_REAL_FUNC(abs)
 DEFINE_UNARY_REAL_FUNC(acos)
 DEFINE_UNARY_REAL_FUNC(asin)
+DEFINE_UNARY_REAL_FUNC(cos)
+DEFINE_UNARY_REAL_FUNC(sin)
 
 int abs_i32(int a) {
   if (a > 0) {

@@ -27,7 +27,12 @@ def import_tc_core():
   else:
     pyddir = os.path.join(package_root(), 'lib')
     os.environ['PATH'] += ';' + pyddir
-  import taichi_core as core
+  try:
+    import taichi_core as core
+  except Exception as e:
+    if isinstance(e, ImportError):
+      print("Share object taichi_core import failed. If you are on Windows, please consider installing \"Microsoft Visual C++ Redistributable\" (https://aka.ms/vs/16/release/vc_redist.x64.exe)")
+    raise e
   tc_core = core
   if get_os_name() != 'win':
     sys.setdlopenflags(old_flags)

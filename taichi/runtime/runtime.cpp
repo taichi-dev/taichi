@@ -297,7 +297,7 @@ uint32 log2int(uint64 value) {
 struct ListManager {
   static constexpr std::size_t max_num_chunks = 1024;
   Ptr chunks[max_num_chunks];
-  i32 element_size;
+  std::size_t element_size;
   std::size_t max_num_elements_per_chunk;
   i32 log2chunk_num_elements;
   i32 lock;
@@ -342,6 +342,13 @@ struct ListManager {
   Ptr get_element_ptr(i32 i) {
     return chunks[i >> log2chunk_num_elements] +
            element_size * (i & ((1 << log2chunk_num_elements) - 1));
+
+    /*
+    auto c = chunks[i >> log2chunk_num_elements];
+    auto ret = c + element_size * (i & ((1 << log2chunk_num_elements) - 1));
+    Printf("allocating c %p ret %p i %d\n", c, ret, i);
+    return ret;
+     */
   }
 
   template <typename T>
@@ -360,13 +367,18 @@ struct ListManager {
 
   i32 ptr2index(Ptr ptr) {
     auto chunk_size = max_num_elements_per_chunk * element_size;
+    // int sum = 0;
     for (int i = 0; i < max_num_chunks; i++) {
-      Printf("i %d Ptr %p chunk %p\n", i, ptr, chunks[i]);
+      /*
+      Printf("i %d sum %d Ptr %p chunk %p ptr-chunk %lld chunk_size %lld\n", i,
+             sum, ptr, chunks[i], ptr - chunks[i], chunk_size);
+             */
       taichi_assert_runtime(runtime, chunks[i] != nullptr, "ptr not found.");
       if (chunks[i] <= ptr && ptr < chunks[i] + chunk_size) {
         return (i << log2chunk_num_elements) +
                i32((ptr - chunks[i]) / element_size);
       }
+      // sum += (i + 1);
     }
     return -1;
   }
@@ -911,8 +923,9 @@ void ListManager::touch_chunk(int chunk_id) {
       // may have been allocated during lock contention
       if (!chunks[chunk_id]) {
         // Printf("Allocating chunk %d\n", chunk_id);
-        chunks[chunk_id] = runtime->request_allocate_aligned(
+        auto chunk_ptr = runtime->request_allocate_aligned(
             max_num_elements_per_chunk * element_size, 4096);
+        atomic_exchange_u64((u64 *)&chunks[chunk_id], (u64)chunk_ptr);
       }
     });
   }
@@ -1000,7 +1013,10 @@ struct printf_helper {
   template <typename... Args, typename T>
   void push_back(T t, Args &&... args) {
     *(T *)&buffer[tail] = t;
-    tail += 8;//sizeof(T);
+    if (tail % sizeof(T) != 0)
+      tail += sizeof(T) - tail % sizeof(T);
+    // align
+    tail += sizeof(T);
     if constexpr ((sizeof...(args)) != 0) {
       push_back(std::forward<Args>(args)...);
     }

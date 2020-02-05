@@ -3,6 +3,7 @@
 #pragma once
 
 #include <atomic>
+#include <unordered_map>
 #include <taichi/util.h>
 #include <taichi/common/bit.h>
 #include "tlang_util.h"
@@ -77,6 +78,13 @@ class ScratchPads;
 // IR passes
 namespace irpass {
 
+struct OffloadedResult {
+  // Total size in bytes of the global temporary variables
+  std::size_t total_size;
+  // Offloaded local variables to its offset in the global tmps memory.
+  std::unordered_map<const Stmt *, std::size_t> local_to_global_offset;
+};
+
 void re_id(IRNode *root);
 void flag_access(IRNode *root);
 void die(IRNode *root);
@@ -92,7 +100,7 @@ void replace_all_usages_with(IRNode *root, Stmt *old_stmt, Stmt *new_stmt);
 void lower_access(IRNode *root, bool lower_atomic);
 void make_adjoint(IRNode *root);
 void constant_fold(IRNode *root);
-void offload(IRNode *root);
+OffloadedResult offload(IRNode *root);
 void fix_block_parents(IRNode *root);
 void replace_statements_with(IRNode *root,
                              std::function<bool(Stmt *)> filter,

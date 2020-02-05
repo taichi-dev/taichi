@@ -56,7 +56,16 @@ class ProfilerBase {
   virtual std::string title() = 0;
 
   virtual void start(const std::string &kernel_name) = 0;
+
+  static void profiler_start(ProfilerBase *profiler, const char *kernel_name) {
+    profiler->start(std::string(kernel_name));
+  }
+
   virtual void stop() = 0;
+
+  static void profiler_stop(ProfilerBase *profiler) {
+    profiler->stop();
+  }
 
   void print() {
     sync();

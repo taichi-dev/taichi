@@ -1094,9 +1094,17 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     // The real function body
     func_body_bb = BasicBlock::Create(*llvm_context, "body", func);
     builder->SetInsertPoint(func_body_bb);
+
+    if (prog->config.enable_profiler) {
+      call(builder, "Runtime_profiler_start",
+           {get_runtime(), builder->CreateGlobalStringPtr(task_kernel_name)});
+    }
   }
 
   void finalize_offloaded_task_function() {
+    if (prog->config.enable_profiler) {
+      call(builder, "Runtime_profiler_stop", {get_runtime()});
+    }
     builder->CreateRetVoid();
 
     // entry_block should jump to the body after all allocas are inserted
@@ -1361,6 +1369,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     create_call(stmt->func_name, {get_context()});
   }
 
+  // TODO: move this to CodeGenLLVMX64
   void visit(OffloadedStmt *stmt) override {
     using Type = OffloadedStmt::TaskType;
     init_offloaded_task_function(stmt);

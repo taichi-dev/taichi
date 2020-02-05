@@ -430,6 +430,9 @@ struct Runtime {
   Ptr allocate(std::size_t size);
   Ptr allocate_aligned(std::size_t size, std::size_t alignment);
   Ptr request_allocate_aligned(std::size_t size, std::size_t alignment);
+  Ptr profiler;
+  void (*profiler_start)(Ptr, Ptr);
+  void (*profiler_stop)(Ptr);
 
   template <typename T, typename... Args>
   T *create(Args &&... args) {
@@ -438,6 +441,15 @@ struct Runtime {
     return ptr;
   }
 };
+
+STRUCT_FIELD_ARRAY(Runtime, element_lists);
+STRUCT_FIELD_ARRAY(Runtime, node_allocators);
+STRUCT_FIELD(Runtime, root);
+STRUCT_FIELD(Runtime, assert_failed);
+STRUCT_FIELD(Runtime, mem_req_queue);
+STRUCT_FIELD(Runtime, profiler);
+STRUCT_FIELD(Runtime, profiler_start);
+STRUCT_FIELD(Runtime, profiler_stop);
 
 // NodeManager of node S (hash, pointer) managers the memory allocation of S_ch
 struct NodeManager {
@@ -508,15 +520,22 @@ struct NodeManager {
 };
 
 extern "C" {
-STRUCT_FIELD_ARRAY(Runtime, element_lists);
-STRUCT_FIELD_ARRAY(Runtime, node_allocators);
-STRUCT_FIELD(Runtime, root);
+
+void Runtime_profiler_start(Runtime *runtime, Ptr kernel_name) {
+  printf("1\n");
+  runtime->profiler_start(runtime->profiler, kernel_name);
+  printf("2\n");
+}
+
+void Runtime_profiler_stop(Runtime *runtime) {
+  printf("3\n");
+  runtime->profiler_stop(runtime->profiler);
+  printf("4\n");
+}
+
 Ptr Runtime_get_temporary_pointer(Runtime *runtime, u64 offset) {
   return runtime->temporaries + offset;
 }
-
-STRUCT_FIELD(Runtime, assert_failed);
-STRUCT_FIELD(Runtime, mem_req_queue);
 
 #if ARCH_cuda
 void __assertfail(const char *message,

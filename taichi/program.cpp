@@ -180,11 +180,7 @@ Program::Program(Arch arch) : memory_pool(this) {
   config.arch = arch;
   if (config.use_llvm) {
     llvm_context_host = std::make_unique<TaichiLLVMContext>(Arch::x86_64);
-    if (config.arch == Arch::x86_64) {
-      profiler_llvm = std::make_unique<CPUProfiler>();
-    } else {
-      profiler_llvm = std::make_unique<GPUProfiler>();
-    }
+    profiler_llvm = make_profiler(arch);
   }
   auto env_debug = getenv("TI_DEBUG");
   if (env_debug && env_debug == std::string("1"))

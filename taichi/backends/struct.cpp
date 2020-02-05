@@ -433,7 +433,7 @@ void StructCompiler::run(SNode &root, bool host) {
   emit("TC_EXPORT void profiler_print()");
   emit("{{");
   emit("#if defined(TLANG_GPU)");
-  emit("GPUProfiler::get_instance().print();");
+  emit("CUDAProfiler::get_instance().print();");
   emit("#else");
   // emit("profiler.print();");
   emit("#endif");
@@ -442,7 +442,7 @@ void StructCompiler::run(SNode &root, bool host) {
   emit("TC_EXPORT void profiler_clear()");
   emit("{{");
   emit("#if defined(TLANG_GPU)");
-  emit("GPUProfiler::get_instance().clear();");
+  emit("CUDAProfiler::get_instance().clear();");
   emit("#else");
   // emit("profiler.print();");
   emit("#endif");

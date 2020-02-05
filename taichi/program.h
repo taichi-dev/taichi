@@ -38,7 +38,7 @@ class Program {
   // launches
   void *llvm_runtime;
   CompileConfig config;
-  CPUProfiler cpu_profiler;
+  ProfilerBase *cpu_profiler;
   Context context;
   std::unique_ptr<TaichiLLVMContext> llvm_context_host, llvm_context_device;
   bool sync;  // device/host synchronized?
@@ -68,7 +68,7 @@ class Program {
       if (config.arch == Arch::cuda) {
         profiler_print_gpu();
       } else {
-        cpu_profiler.print();
+        cpu_profiler->print();
       }
     }
   }
@@ -80,7 +80,7 @@ class Program {
       if (config.arch == Arch::cuda) {
         profiler_clear_gpu();
       } else {
-        cpu_profiler.clear();
+        cpu_profiler->clear();
       }
     }
   }

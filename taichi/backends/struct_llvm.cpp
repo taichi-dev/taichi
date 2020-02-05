@@ -327,14 +327,15 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
       runtime_set_root(prog->llvm_runtime, root);
 
       tlctx->lookup_function<std::function<void(void *, void *)>>(
-          "Runtime_set_profiler")(prog->llvm_runtime, &prog->cpu_profiler);
+          "Runtime_set_profiler")(prog->llvm_runtime,
+                                  prog->profiler_llvm.get());
 
       tlctx->lookup_function<std::function<void(void *, void *)>>(
           "Runtime_set_profiler_start")(prog->llvm_runtime,
-                                        (void *)&CPUProfiler::profiler_start);
+                                        (void *)&ProfilerBase::profiler_start);
       tlctx->lookup_function<std::function<void(void *, void *)>>(
           "Runtime_set_profiler_start")(prog->llvm_runtime,
-                                        (void *)&CPUProfiler::profiler_stop);
+                                        (void *)&ProfilerBase::profiler_stop);
     };
   }
   tlctx->snode_attr = snode_attr;

@@ -6,14 +6,20 @@ import random
 from taichi.tools.video import make_video, interpolate_frames, mp4_to_gif, scale_video, crop_video, accelerate_video
 
 
-def test_python():
+def test_python(verbose=False):
   print("\nRunning python tests...\n")
   import taichi as ti
   import pytest
   if ti.is_release():
-    return int(pytest.main([os.path.join(ti.package_root(), 'tests')]))
+    test_dir = os.path.join(ti.package_root(), 'tests')
   else:
-    return int(pytest.main([os.path.join(ti.get_repo_directory(), 'tests')]))
+    test_dir = os.path.join(ti.get_repo_directory(), 'tests')
+
+  args = [test_dir]
+  if verbose:
+    args += ['-s']
+
+  return int(pytest.main(args))
 
 
 def test_cpp():
@@ -50,6 +56,7 @@ def main(debug=False):
         "    Usage: ti run [task name]        |-> Run a specific task\n"
         "           ti benchmark              |-> Run performance benchmark\n"
         "           ti test                   |-> Run all tests\n"
+        "           ti test_verbose           |-> Run all tests with verbose outputs\n"
         "           ti test_python            |-> Run python tests\n"
         "           ti test_cpp               |-> Run cpp tests\n"
         "           ti format                 |-> Reformat modified source files\n"
@@ -92,6 +99,10 @@ def main(debug=False):
     return test_cpp()
   elif mode == "test":
     if test_python() != 0:
+      return -1
+    return test_cpp()
+  elif mode == "test_verbose":
+    if test_python(True) != 0:
       return -1
     return test_cpp()
   elif mode == "build":

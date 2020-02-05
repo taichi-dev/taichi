@@ -507,6 +507,7 @@ struct NodeManager {
           free_list->get<list_data_type>(i);
     }
     free_list_used = 0;
+    free_list->clear();
 
     // zero-fill recycled and push to free list
     for (int i = 0; i < recycled_list->size(); i++) {

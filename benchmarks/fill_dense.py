@@ -111,11 +111,29 @@ def benchmark_nested_range():
   
   return ti.benchmark(fill)
 
+def benchmark_root_listgen():
+  a = ti.var(dt=ti.f32)
+  ti.cfg.demote_dense_struct_fors = False
+  N = 512
+  
+  @ti.layout
+  def place():
+    ti.root.dense(ti.ij, [N, N]).dense(ti.ij, [8, 8]).place(a)
+  
+  @ti.kernel
+  def fill():
+    for i, j in a.parent():
+      a[i, j] = 2.0
+  
+  fill()
+  
+  return ti.benchmark(fill)
 
 ti.cfg.arch = ti.cuda
 # ti.cfg.print_kernel_llvm_ir_optimized = True
 # ti.cfg.print_kernel_llvm_ir = True
 ti.cfg.enable_profiler = True
 # ti.cfg.verbose_kernel_launches = True
-print(benchmark_nested_struct_listgen_8x8())
+# print(benchmark_nested_struct_listgen_8x8())
+print(benchmark_root_listgen())
 ti.profiler_print()

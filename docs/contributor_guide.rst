@@ -46,3 +46,17 @@ Set ``ti.cfg.print_accessor_ir = True`` to inspect the IR transformation process
 Set ``ti.cfg.print_kernel_llvm_ir = True`` to inspect the emitted LLVM IR for each invoked kernel.
 
 To navigate around the code base, [ffi-navigator](https://github.com/tqchen/ffi-navigator) allows you to jump from C++ extension symbols exported via taichi_core in Python code to their defintion in C++. Follow their README to set up your editor.
+
+Testing
+-------------
+
+Tests should be added to ``taichi/tests/python``.
+
+Use ``ti test`` to run all the tests.
+(On Windows use, ``python -m taichi test``)
+
+Documentation
+-------------
+
+Use ``ti doc`` to build the documentation locally.
+Open the documentation at ``taichi/doc/build/index.html``.

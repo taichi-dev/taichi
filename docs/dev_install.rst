@@ -7,8 +7,9 @@ Note this is for the compiler developers of the Taichi programming language.
 End users should use the pip packages instead of building from scratch.
 To build with NVIDIA GPU support, CUDA 10.0+ is needed.
 This installation guide works for Ubuntu 16.04+ and OS X 10.14+.
+For precise build instructions on Windows, please check out `appveyor.yml <https://github.com/taichi-dev/taichi/blob/master/appveyor.yml>`_, which does basically the same thing as the following instructions.
 
-- Make sure you are using Python 3.6/3.7
+- Make sure you are using Python 3.6/3.7/3.8
 - Execute
 
   .. code-block:: bash
@@ -47,7 +48,7 @@ This installation guide works for Ubuntu 16.04+ and OS X 10.14+.
     export PATH=$TAICHI_REPO_DIR/bin/:$PATH
 
 - Execute ``source ~/.bashrc`` to reload shell config
-- Execute ``ti test`` to run all the tests. It may take up to 5 minutes to run all tests.
+- Execute ``ti test`` to run all the tests. It may take up to 5 minutes to run all tests. (On Windows the ``ti`` command should be replaced by ``python -m taichi``)
 - Check out ``examples`` for runnable examples. Run them with ``python3``.
 
 

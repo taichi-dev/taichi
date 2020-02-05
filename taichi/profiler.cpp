@@ -1,4 +1,5 @@
 #include "profiler.h"
+
 #include <taichi/system/timer.h>
 
 #if defined(TLANG_WITH_CUDA)
@@ -39,37 +40,44 @@ void ProfilerBase::print() {
   }
 }
 
+namespace {
 // A simple profiler that uses Time::get_time()
 class DefaultProfiler : public ProfilerBase {
  public:
-  double start_t;
-  std::string event_name;
+  explicit DefaultProfiler(Arch arch)
+      : title_(fmt::format("{} Profiler", arch_name(arch))) {
+  }
 
   void sync() override {
   }
 
-  std::string title() override {
-    return "Default Profiler";
+  std::string title() const override {
+    return title_;
   }
 
   void start(const std::string &kernel_name) override {
-    start_t = Time::get_time();
-    event_name = kernel_name;
+    start_t_ = Time::get_time();
+    event_name_ = kernel_name;
   }
 
   void stop() override {
-    auto t = Time::get_time() - start_t;
+    auto t = Time::get_time() - start_t_;
     auto ms = t * 1000.0;
     auto it =
         std::find_if(records.begin(), records.end(),
-                     [&](ProfileRecord &r) { return r.name == event_name; });
+                     [&](ProfileRecord &r) { return r.name == event_name_; });
     if (it == records.end()) {
-      records.emplace_back(event_name);
+      records.emplace_back(event_name_);
       it = std::prev(records.end());
     }
     it->insert_sample(ms);
     total_time += ms;
   }
+
+ private:
+  double start_t_;
+  std::string event_name_;
+  std::string title_;
 };
 
 // A CUDA kernel profiler that uses CUDA timing events
@@ -103,7 +111,7 @@ class CUDAProfiler : public ProfilerBase {
 #endif
   }
 
-  std::string title() override {
+  std::string title() const override {
     return "CUDA Profiler";
   }
 
@@ -138,10 +146,11 @@ class CUDAProfiler : public ProfilerBase {
     return profiler;
   }
 };
+}  // namespace
 
 std::unique_ptr<ProfilerBase> make_profiler(Arch arch) {
   if (arch == Arch::x86_64 || arch == Arch::arm || arch == Arch::metal) {
-    return std::make_unique<DefaultProfiler>();
+    return std::make_unique<DefaultProfiler>(arch);
   } else if (arch == Arch::cuda) {
     return std::make_unique<CUDAProfiler>();
   } else {

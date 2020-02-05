@@ -18,13 +18,13 @@ void ProfileRecord::insert_sample(double t) {
   total += t;
 }
 
-void ProfilerBase::profiler_stop(taichi::Tlang::ProfilerBase *profiler) {
-  profiler->stop();
-}
-
-void ProfilerBase::profiler_start(taichi::Tlang::ProfilerBase *profiler,
+void ProfilerBase::profiler_start(ProfilerBase *profiler,
                                   const char *kernel_name) {
   profiler->start(std::string(kernel_name));
+}
+
+void ProfilerBase::profiler_stop(ProfilerBase *profiler) {
+  profiler->stop();
 }
 
 void ProfilerBase::print() {
@@ -57,7 +57,7 @@ class CUDAProfiler : public ProfilerBase {
     outstanding_events[kernel_name].push_back(std::make_pair(start, stop));
     current_stop = stop;
 #else
-    printf("GPU Profiler not implemented;\n");
+    printf("CUDA Profiler not implemented;\n");
 #endif
   }
 
@@ -65,12 +65,12 @@ class CUDAProfiler : public ProfilerBase {
 #if defined(TLANG_WITH_CUDA)
     cudaEventRecord(current_stop);
 #else
-    printf("GPU Profiler not implemented;\n");
+    printf("CUDA Profiler not implemented;\n");
 #endif
   }
 
   std::string title() override {
-    return "GPU Profiler";
+    return "CUDA Profiler";
   }
 
   void sync() override {

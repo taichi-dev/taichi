@@ -522,15 +522,11 @@ struct NodeManager {
 extern "C" {
 
 void Runtime_profiler_start(Runtime *runtime, Ptr kernel_name) {
-  printf("1\n");
   runtime->profiler_start(runtime->profiler, kernel_name);
-  printf("2\n");
 }
 
 void Runtime_profiler_stop(Runtime *runtime) {
-  printf("3\n");
   runtime->profiler_stop(runtime->profiler);
-  printf("4\n");
 }
 
 Ptr Runtime_get_temporary_pointer(Runtime *runtime, u64 offset) {

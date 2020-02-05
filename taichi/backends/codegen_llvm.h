@@ -1114,7 +1114,6 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     if (prog->config.print_kernel_llvm_ir) {
       TC_INFO("Kernel Module IR");
       module->print(errs(), nullptr);
-      TC_INFO("Kernel Module IR printed.");
     }
     TC_ASSERT(!llvm::verifyFunction(*func, &errs()));
     // TC_INFO("Kernel function verified.");

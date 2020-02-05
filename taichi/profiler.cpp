@@ -39,6 +39,40 @@ void ProfilerBase::print() {
   }
 }
 
+// A simple profiler that uses Time::get_time()
+class DefaultProfiler : public ProfilerBase {
+ public:
+  double start_t;
+  std::string event_name;
+
+  void sync() override {
+  }
+
+  std::string title() override {
+    return "Default Profiler";
+  }
+
+  void start(const std::string &kernel_name) override {
+    start_t = Time::get_time();
+    event_name = kernel_name;
+  }
+
+  void stop() override {
+    auto t = Time::get_time() - start_t;
+    auto ms = t * 1000.0;
+    auto it =
+        std::find_if(records.begin(), records.end(),
+                     [&](ProfileRecord &r) { return r.name == event_name; });
+    if (it == records.end()) {
+      records.emplace_back(event_name);
+      it = std::prev(records.end());
+    }
+    it->insert_sample(ms);
+    total_time += ms;
+  }
+};
+
+// A CUDA kernel profiler that uses CUDA timing events
 class CUDAProfiler : public ProfilerBase {
  public:
 #if defined(TLANG_WITH_CUDA)
@@ -105,42 +139,9 @@ class CUDAProfiler : public ProfilerBase {
   }
 };
 
-class CPUProfiler : public ProfilerBase {
- public:
-  double start_t;
-  std::string event_name;
-
-  void sync() override {
-  }
-
-  std::string title() override {
-    return "CPU Profiler";
-  }
-
-  void start(const std::string &kernel_name) override {
-    start_t = Time::get_time();
-    event_name = kernel_name;
-  }
-
-  void stop() override {
-    auto t = Time::get_time() - start_t;
-    auto ms = t * 1000.0;
-    auto it =
-        std::find_if(records.begin(), records.end(),
-                     [&](ProfileRecord &r) { return r.name == event_name; });
-    if (it == records.end()) {
-      records.emplace_back(event_name);
-      it = std::prev(records.end());
-    }
-    it->insert_sample(ms);
-    total_time += ms;
-  }
-};
-
 std::unique_ptr<ProfilerBase> make_profiler(Arch arch) {
-  if (arch == Arch::x86_64 || arch == Arch::arm) {
-    // TODO: Arch::metal also uses CPUProfiler, rename it to DefaultProfiler?
-    return std::make_unique<CPUProfiler>();
+  if (arch == Arch::x86_64 || arch == Arch::arm || arch == Arch::metal) {
+    return std::make_unique<DefaultProfiler>();
   } else if (arch == Arch::cuda) {
     return std::make_unique<CUDAProfiler>();
   } else {

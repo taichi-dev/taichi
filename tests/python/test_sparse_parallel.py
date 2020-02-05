@@ -55,10 +55,11 @@ def test_pointer2():
   N = n * n
   assert s[None] == N * (N - 1) / 2
 
-@ti.all_archs
+# @ti.all_archs
 def test_nested_struct_fill_and_clear():
+  ti.cfg.arch = ti.cuda
   a = ti.var(dt=ti.f32)
-  N = 512
+  N = 256
 
   @ti.layout
   def place():
@@ -79,7 +80,7 @@ def test_nested_struct_fill_and_clear():
     fill()
     clear()
 
-  for i in range(10):
-    task()
+  # for i in range(10):
+  task()
 
 test_nested_struct_fill_and_clear()

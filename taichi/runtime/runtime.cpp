@@ -80,8 +80,8 @@ T ifloordiv(T a, T b) {
   return r;
 }
 
-template <typename T>
-void Printf(const char *format, T t);
+template <typename... Args>
+void Printf(const char *format, Args &&... args);
 
 extern "C" {
 
@@ -361,8 +361,7 @@ struct ListManager {
   i32 ptr2index(Ptr ptr) {
     auto chunk_size = max_num_elements_per_chunk * element_size;
     for (int i = 0; i < max_num_chunks; i++) {
-      // Printf("i %d\n", i);
-      // Printf("chunk %p\n", chunks[i]);
+      Printf("i %d Ptr %p chunk %p\n", i, ptr, chunks[i]);
       taichi_assert_runtime(runtime, chunks[i] != nullptr, "ptr not found.");
       if (chunks[i] <= ptr && ptr < chunks[i] + chunk_size) {
         return (i << log2chunk_num_elements) +
@@ -989,12 +988,37 @@ i64 cuda_rand_i64(Context *context) {
 
 #endif
 
-template <typename T>
-void Printf(const char *format, T t) {
+struct printf_helper {
+  char buffer[1024];
+  int tail;
+
+  printf_helper() {
+    std::memset(buffer, 0, sizeof(buffer));
+    tail = 0;
+  }
+
+  template <typename... Args, typename T>
+  void push_back(T t, Args &&... args) {
+    *(T *)&buffer[tail] = t;
+    tail += 8;//sizeof(T);
+    if constexpr ((sizeof...(args)) != 0) {
+      push_back(std::forward<Args>(args)...);
+    }
+  }
+
+  Ptr ptr() {
+    return (Ptr) & (buffer[0]);
+  }
+};
+
+template <typename... Args>
+void Printf(const char *format, Args &&... args) {
 #if ARCH_cuda
-  vprintf((Ptr)format, (Ptr)&t);
+  printf_helper helper;
+  helper.push_back(std::forward<Args>(args)...);
+  vprintf((Ptr)format, helper.ptr());
 #else
-  printf(format, t);
+  printf(format, args...);
 #endif
 }
 

@@ -42,7 +42,7 @@ class BufferMemoryView {
 // series of Metal kernels generated from a Taichi kernel.
 class MetalRuntime {
  public:
-  MetalRuntime(size_t root_size, MemoryPool *mem_pool, CPUProfiler *profiler);
+  MetalRuntime(size_t root_size, MemoryPool *mem_pool, ProfilerBase *profiler);
 
   // Register a Taichi kernel to the Metal runtime.
   // * |mtl_kernel_source_code| is the complete source code compiled from a
@@ -76,7 +76,7 @@ class MetalRuntime {
     CompiledMtlKernel(const MetalKernelAttributes &md,
                       MTLDevice *device,
                       MTLFunction *func,
-                      CPUProfiler *profiler);
+                      ProfilerBase *profiler);
 
     void launch(MTLBuffer *root_buffer,
                 MTLBuffer *global_tmp_buffer,
@@ -90,7 +90,7 @@ class MetalRuntime {
    private:
     MetalKernelAttributes kernel_attribs_;
     nsobj_unique_ptr<MTLComputePipelineState> pipeline_state_{nullptr};
-    CPUProfiler *const profiler_;
+    ProfilerBase *const profiler_;
     const std::string profiler_id_;
   };
 
@@ -106,7 +106,7 @@ class MetalRuntime {
         const MetalKernelArgsAttributes &args_attribs,
         MTLDevice *device,
         MemoryPool *mem_pool,
-        CPUProfiler *profiler);
+        ProfilerBase *profiler);
 
    private:
     friend void MetalRuntime::launch_taichi_kernel(
@@ -121,11 +121,11 @@ class MetalRuntime {
     MetalKernelArgsAttributes args_attribs_;
     std::unique_ptr<BufferMemoryView> args_mem_{nullptr};
     nsobj_unique_ptr<MTLBuffer> args_buffer_{nullptr};
-    CPUProfiler *const profiler_;
+    ProfilerBase *const profiler_;
   };
 
   MemoryPool *const mem_pool_;
-  CPUProfiler *const profiler_;
+  ProfilerBase *const profiler_;
   BufferMemoryView root_buffer_mem_;
   nsobj_unique_ptr<MTLDevice> device_{nullptr};
   nsobj_unique_ptr<MTLCommandQueue> command_queue_{nullptr};

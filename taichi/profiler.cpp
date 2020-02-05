@@ -139,6 +139,7 @@ class CPUProfiler : public ProfilerBase {
 
 std::unique_ptr<ProfilerBase> make_profiler(Arch arch) {
   if (arch == Arch::x86_64 || arch == Arch::arm) {
+    // TODO: Arch::metal also uses CPUProfiler, rename it to DefaultProfiler?
     return std::make_unique<CPUProfiler>();
   } else if (arch == Arch::cuda) {
     return std::make_unique<CUDAProfiler>();

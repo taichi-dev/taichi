@@ -48,6 +48,7 @@ UnifiedAllocator::UnifiedAllocator(std::size_t size, Arch arch)
 
   head = data;
   tail = head + size;
+  TC_INFO("Memory allocated.");
 }
 
 taichi::Tlang::UnifiedAllocator::~UnifiedAllocator() {

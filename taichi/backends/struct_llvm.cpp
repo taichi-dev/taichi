@@ -29,7 +29,7 @@ StructCompilerLLVM::StructCompilerLLVM(Program *prog, Arch arch)
 void *taichi_allocate_aligned(Program *prog,
                               std::size_t size,
                               std::size_t alignment) {
-  return prog->memory_pool.allocate(size, alignment);
+  return prog->memory_pool->allocate(size, alignment);
 }
 
 void StructCompilerLLVM::generate_types(SNode &snode) {
@@ -292,7 +292,7 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
       auto mem_req_queue =
           tlctx->lookup_function<std::function<void *(void *)>>(
               "Runtime_get_mem_req_queue")(prog->llvm_runtime);
-      prog->memory_pool.set_queue((MemRequestQueue *)mem_req_queue);
+      prog->memory_pool->set_queue((MemRequestQueue *)mem_req_queue);
 
       initialize_runtime2(prog->llvm_runtime, root, root_id,
                           (int)snodes.size());

@@ -2,7 +2,8 @@
 #include <taichi/system/timer.h>
 #include "cuda_utils.h"
 #if TLANG_WITH_CUDA
-#include "cuda_runtime.h"
+#include <cuda_runtime.h>
+#include "backends/cuda_context.h"
 #endif
 
 #include "program.h"

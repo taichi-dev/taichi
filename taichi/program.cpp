@@ -152,7 +152,7 @@ void Program::visualize_layout(const std::string &fn) {
   trash(system(fmt::format("pdflatex {}", fn).c_str()));
 }
 
-Program::Program(Arch arch) : memory_pool(this) {
+Program::Program(Arch arch) {
 #if !defined(CUDA_FOUND)
   if (arch == Arch::cuda) {
     TC_WARN("Taichi is not compiled with CUDA.");
@@ -169,6 +169,7 @@ Program::Program(Arch arch) : memory_pool(this) {
     }
   }
 #endif
+  memory_pool = std::make_unique<MemoryPool>(this);
   TC_ASSERT_INFO(num_instances == 0, "Only one instance at a time");
   total_compilation_time = 0;
   num_instances += 1;
@@ -251,7 +252,7 @@ void Program::finalize() {
     TC_NOT_IMPLEMENTED
 #endif
   }
-  memory_pool.terminate();
+  memory_pool->terminate();
   finalized = true;
   num_instances -= 1;
 }

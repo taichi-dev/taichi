@@ -192,6 +192,8 @@ CUfunction CUDAContext::get_function(CUmodule module,
 }
 
 void CUDAContext::launch(CUfunction func,
+                         const std::string &task_name,
+                         ProfilerBase *profiler,
                          void *context_ptr,
                          unsigned gridDim,
                          unsigned blockDim) {
@@ -203,10 +205,16 @@ void CUDAContext::launch(CUfunction func,
 
   void *KernelParams[] = {&context_buffer};
 
+  if (profiler) {
+    profiler->start(task_name);
+  }
   // Kernel launch
   if (gridDim > 0) {
     check_cuda_errors(cuLaunchKernel(func, gridDim, 1, 1, blockDim, 1, 1, 0,
                                      nullptr, KernelParams, nullptr));
+  }
+  if (profiler) {
+    profiler->stop();
   }
 
   if (get_current_program().config.debug) {

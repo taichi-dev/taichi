@@ -97,14 +97,12 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
           TC_INFO("Launching kernel {}<<<{}, {}>>>", task.name, task.grid_dim,
                   task.block_dim);
 
+        ProfilerBase *profiler = nullptr;
         if (prog->config.enable_profiler) {
-          prog->profiler_llvm->start(task.name);
+          profiler = prog->profiler_llvm.get();
         }
-        cuda_context->launch((CUfunction)task.cuda_func, &context,
+        cuda_context->launch((CUfunction)task.cuda_func, task.name, profiler, &context,
                              task.grid_dim, task.block_dim);
-        if (prog->config.enable_profiler) {
-          prog->profiler_llvm->stop();
-        }
       }
     };
 #else

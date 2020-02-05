@@ -118,6 +118,7 @@ class RuntimeObject {
   std::string cls_name;
   llvm::Value *ptr;
   ModuleBuilder *mb;
+  llvm::Type *type;
   llvm::IRBuilder<> *builder;
 
   RuntimeObject(const std::string &cls_name,
@@ -125,12 +126,11 @@ class RuntimeObject {
                 llvm::IRBuilder<> *builder,
                 llvm::Value *init = nullptr)
       : cls_name(cls_name), mb(mb), builder(builder) {
+    type = mb->get_runtime_type(cls_name);
     if (init == nullptr) {
-      auto type = mb->get_runtime_type(cls_name);
       ptr = mb->create_entry_block_alloca(type);
     } else {
-      ptr = builder->CreateBitCast(
-          init, llvm::PointerType::get(mb->get_runtime_type(cls_name), 0));
+      ptr = builder->CreateBitCast(init, llvm::PointerType::get(type, 0));
     }
   }
 

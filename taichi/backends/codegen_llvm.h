@@ -212,6 +212,14 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       TC_P(snode_type_name(snode->type));
       TC_NOT_IMPLEMENTED;
     }
+    if (false) {
+      // auto ptr_type = llvm::Type::getInt8PtrTy(*llvm_context, 0);
+      auto ptr_type = llvm::PointerType::get(meta->type, 0);
+      auto ptr = meta->ptr;  // builder->CreatePointerCast(meta->ptr, ptr_type);
+      auto struct_meta_size = tlctx->get_type_size(meta->type);
+      builder->CreateIntrinsic(llvm::Intrinsic::invariant_start, {ptr_type},
+                               {tlctx->get_constant(struct_meta_size), ptr});
+    }
     return meta;
   }
 
@@ -1066,7 +1074,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
 
   BasicBlock *func_body_bb;
 
-  void init_offloaded_task_function(OffloadedStmt *stmt) {
+  std::string init_offloaded_task_function(OffloadedStmt *stmt) {
     while_after_loop = nullptr;
     current_offloaded_stmt = stmt;
 
@@ -1094,17 +1102,10 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     // The real function body
     func_body_bb = BasicBlock::Create(*llvm_context, "body", func);
     builder->SetInsertPoint(func_body_bb);
-
-    if (prog->config.enable_profiler) {
-      call(builder, "Runtime_profiler_start",
-           {get_runtime(), builder->CreateGlobalStringPtr(task_kernel_name)});
-    }
+    return task_kernel_name;
   }
 
   void finalize_offloaded_task_function() {
-    if (prog->config.enable_profiler) {
-      call(builder, "Runtime_profiler_stop", {get_runtime()});
-    }
     builder->CreateRetVoid();
 
     // entry_block should jump to the body after all allocas are inserted
@@ -1371,7 +1372,12 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   // TODO: move this to CodeGenLLVMX64
   void visit(OffloadedStmt *stmt) override {
     using Type = OffloadedStmt::TaskType;
-    init_offloaded_task_function(stmt);
+    auto offloaded_task_name = init_offloaded_task_function(stmt);
+    if (prog->config.enable_profiler) {
+      call(
+          builder, "Runtime_profiler_start",
+          {get_runtime(), builder->CreateGlobalStringPtr(offloaded_task_name)});
+    }
     if (stmt->task_type == Type::serial) {
       stmt->body->accept(this);
     } else if (stmt->task_type == Type::range_for) {
@@ -1388,6 +1394,9 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       emit_gc(stmt);
     } else {
       TC_NOT_IMPLEMENTED
+    }
+    if (prog->config.enable_profiler) {
+      call(builder, "Runtime_profiler_stop", {get_runtime()});
     }
     finalize_offloaded_task_function();
     current_task->end();

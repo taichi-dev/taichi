@@ -112,8 +112,9 @@ def benchmark_nested_range():
   return ti.benchmark(fill)
 
 
-# ti.cfg.arch = ti.cuda
-ti.cfg.print_kernel_llvm_ir_optimized = True
+ti.cfg.arch = ti.cuda
+# ti.cfg.print_kernel_llvm_ir_optimized = True
+# ti.cfg.print_kernel_llvm_ir = True
 ti.cfg.enable_profiler = True
 # ti.cfg.verbose_kernel_launches = True
 print(benchmark_nested_struct_listgen_8x8())

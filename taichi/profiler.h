@@ -41,7 +41,7 @@ class ProfilerBase {
 
   virtual void sync() = 0;
 
-  virtual std::string title() = 0;
+  virtual std::string title() const = 0;
 
   virtual void start(const std::string &kernel_name) = 0;
 

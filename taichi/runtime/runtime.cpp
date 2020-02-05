@@ -717,6 +717,12 @@ void element_listgen(Runtime *runtime, StructMeta *parent, StructMeta *child) {
   auto parent_list = runtime->element_lists[parent->snode_id];
   int num_parent_elements = parent_list->size();
   auto child_list = runtime->element_lists[child->snode_id];
+  // Cache the func pointers here for better compiler optimization
+  auto parent_refine_coordinates = parent->refine_coordinates;
+  auto parent_is_active = parent->is_active;
+  auto parent_lookup_element = parent->lookup_element;
+  auto child_get_num_elements = child->get_num_elements;
+  auto child_from_parent_element = child->from_parent_element;
   int max_range = 1024;
 #if ARCH_cuda
   int i_start = block_idx();
@@ -738,15 +744,15 @@ void element_listgen(Runtime *runtime, StructMeta *parent, StructMeta *child) {
     int j_higher = std::min(element.loop_bounds[1], j_lower + range);
     for (int j = j_lower; j < j_higher; j += j_step) {
       PhysicalCoordinates refined_coord;
-      parent->refine_coordinates(&element.pcoord, &refined_coord, j);
-      if (parent->is_active((Ptr)parent, element.element, j)) {
+      parent_refine_coordinates(&element.pcoord, &refined_coord, j);
+      if (parent_is_active((Ptr)parent, element.element, j)) {
         auto ch_element =
-            parent->lookup_element((Ptr)parent, element.element, j);
-        ch_element = child->from_parent_element((Ptr)ch_element);
+            parent_lookup_element((Ptr)parent, element.element, j);
+        ch_element = child_from_parent_element((Ptr)ch_element);
         Element elem;
         elem.element = ch_element;
         elem.loop_bounds[0] = 0;
-        elem.loop_bounds[1] = child->get_num_elements((Ptr)child, ch_element);
+        elem.loop_bounds[1] = child_get_num_elements((Ptr)child, ch_element);
         elem.pcoord = refined_coord;
         child_list->append(&elem);
       }

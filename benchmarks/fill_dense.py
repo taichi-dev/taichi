@@ -114,8 +114,8 @@ def benchmark_nested_range():
 
 '''
 ti.cfg.arch = ti.cuda
-ti.cfg.enable_profiler = True
-ti.cfg.verbose_kernel_launches = True
+# ti.cfg.enable_profiler = True
+# ti.cfg.verbose_kernel_launches = True
 print(benchmark_nested_struct_listgen_8x8())
 ti.profiler_print()
 '''

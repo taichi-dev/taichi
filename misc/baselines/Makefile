@@ -15,3 +15,7 @@ gpu_memory_bound: gpu_memory_bound.cu
 
 cpu_memory_bound: cpu_memory_bound.cpp
 	g++ -std=c++14 cpu_memory_bound.cpp -O3 -o cpu_memory_bound
+
+cuda_atomic_reduce: cuda_atomic_reduce.cu
+	nvcc -std=c++14 cuda_atomic_reduce.cu -o cuda_atomic_reduce
+

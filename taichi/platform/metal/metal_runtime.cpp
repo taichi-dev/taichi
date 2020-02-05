@@ -124,7 +124,7 @@ MetalRuntime::CompiledMtlKernel::CompiledMtlKernel(
     const MetalKernelAttributes &md,
     MTLDevice *device,
     MTLFunction *func,
-    CPUProfiler *profiler)
+    ProfilerBase *profiler)
     : kernel_attribs_(md),
       pipeline_state_(new_compute_pipeline_state_with_function(device, func)),
       profiler_(profiler),
@@ -172,7 +172,7 @@ MetalRuntime::CompiledTaichiKernel::CompiledTaichiKernel(
     const MetalKernelArgsAttributes &args_attribs,
     MTLDevice *device,
     MemoryPool *mem_pool,
-    CPUProfiler *profiler)
+    ProfilerBase *profiler)
     : mtl_source_code_(source_code),
       global_tmps_mem_(global_tmps_size, mem_pool),
       args_attribs_(args_attribs),
@@ -198,7 +198,7 @@ MetalRuntime::CompiledTaichiKernel::CompiledTaichiKernel(
 
 MetalRuntime::MetalRuntime(size_t root_size,
                            MemoryPool *mem_pool,
-                           CPUProfiler *profiler)
+                           ProfilerBase *profiler)
     : mem_pool_(mem_pool),
       profiler_(profiler),
       root_buffer_mem_(root_size, mem_pool) {

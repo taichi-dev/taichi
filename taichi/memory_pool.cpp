@@ -86,12 +86,12 @@ void MemoryPool::daemon() {
   while (1) {
     Time::usleep(1000);
     std::lock_guard<std::mutex> _(mut);
-    if (!queue) {
-      continue;
-    }
     if (terminating) {
       killed = true;
       break;
+    }
+    if (!queue) {
+      continue;
     }
 
     // poll allocation requests.

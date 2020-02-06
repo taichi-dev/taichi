@@ -931,7 +931,6 @@ void ListManager::touch_chunk(int chunk_id) {
         auto chunk_ptr = runtime->request_allocate_aligned(
             max_num_elements_per_chunk * element_size, 4096);
         atomic_exchange_u64((u64 *)&chunks[chunk_id], (u64)chunk_ptr);
-        grid_memfence();
       }
     });
   }

@@ -36,9 +36,9 @@ def reset():
 
 def init(**kwargs):
   import taichi as ti
+  ti.reset()
   for k, v in kwargs.items():
     setattr(ti.cfg, k, v)
-  ti.reset()
   ti.get_runtime().create_program()
 
 def cache_shared(v):
@@ -150,8 +150,7 @@ def all_archs(func):
     if ti.core.with_cuda():
       archs.append(cuda)
     for arch in archs:
-      reset()
-      cfg.arch = arch
+      ti.init(arch=arch)
       func(*args, **kwargs)
 
   return test
@@ -171,8 +170,7 @@ def host_arch(func):
   def test(*args, **kwargs):
     archs = [x86_64]
     for arch in archs:
-      reset()
-      cfg.arch = arch
+      ti.init(arch=arch)
       func(*args, **kwargs)
 
   return test

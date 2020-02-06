@@ -46,8 +46,7 @@ def test_range_loops():
 
 
 @ti.all_archs
-def test_io():
-  ti.cfg.arch = ti.cuda
+def test_python_access():
   x = ti.var(ti.i32)
 
   n = 128

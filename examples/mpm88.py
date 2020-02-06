@@ -1,6 +1,8 @@
 import taichi as ti
 import random
 
+ti.init(arch=ti.cuda)
+
 dim = 2
 n_particles = 8192
 n_grid = 128
@@ -18,8 +20,6 @@ C = ti.Matrix(dim, dim, dt=ti.f32, shape=n_particles)
 J = ti.var(dt=ti.f32, shape=n_particles)
 grid_v = ti.Vector(dim, dt=ti.f32, shape=(n_grid, n_grid))
 grid_m = ti.var(dt=ti.f32, shape=(n_grid, n_grid))
-
-ti.cfg.arch = ti.cuda
 
 @ti.kernel
 def substep():

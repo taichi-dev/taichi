@@ -24,8 +24,7 @@ class Case:
     print()
     
   def run(self, arch):
-    ti.reset()
-    ti.cfg.arch = arch
+    ti.init(arch=arch)
     t = self.func()
     self.records[arch] = t
     

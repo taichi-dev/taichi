@@ -1,4 +1,5 @@
 import taichi as ti
+ti.init(arch=ti.cuda) # Try to run on GPU
 quality = 1 # Use a larger value for higher-res simulations
 n_particles, n_grid = 9000 * quality ** 2, 128 * quality
 dx, inv_dx = 1 / n_grid, float(n_grid)
@@ -16,7 +17,6 @@ material = ti.var(dt=ti.i32, shape=n_particles) # material id
 Jp = ti.var(dt=ti.f32, shape=n_particles) # plastic deformation
 grid_v = ti.Vector(2, dt=ti.f32, shape=(n_grid, n_grid)) # grid node momentum/velocity
 grid_m = ti.var(dt=ti.f32, shape=(n_grid, n_grid)) # grid node mass
-ti.cfg.arch = ti.cuda # Try to run on GPU
 
 @ti.kernel
 def substep():

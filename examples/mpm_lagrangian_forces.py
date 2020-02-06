@@ -26,7 +26,7 @@ restT = mat()
 total_energy = scalar()
 vertices = ti.var(ti.i32)
 
-ti.cfg.arch = ti.cuda
+ti.init(arch=ti.cuda)
 
 
 @ti.layout

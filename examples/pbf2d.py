@@ -5,7 +5,7 @@ import taichi as ti
 import numpy as np
 import math
 
-ti.cfg.arch = ti.cuda   # Try CUDA by default
+ti.init(arch=ti.cuda)   # Try CUDA by default
 
 screen_res = (800, 400)
 screen_to_world_ratio = 10.0

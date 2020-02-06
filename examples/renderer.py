@@ -8,6 +8,8 @@ from renderer_utils import out_dir, ray_aabb_intersection, inf, eps, \
   intersect_sphere, sphere_aabb_intersect_motion, inside_taichi
 import sys
 
+ti.init(arch=ti.cuda)
+
 res = 1280, 720
 num_spheres = 1024
 color_buffer = ti.Vector(3, dt=ti.f32)
@@ -35,7 +37,6 @@ light_direction = [1.2, 0.3, 0.7]
 light_direction_noise = 0.03
 light_color = [1.0, 1.0, 1.0]
 
-ti.cfg.arch = ti.cuda
 grid_visualization_block_size = 16
 grid_resolution = 256 // grid_visualization_block_size
 

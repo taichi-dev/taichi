@@ -8,6 +8,10 @@ TLANG_NAMESPACE_BEGIN
 namespace metal {
 namespace {
 
+constexpr char kKernelThreadIdName[] = "utid_";  // 'u' for unsigned
+constexpr char kGlobalTmpsBufferName[] = "global_tmps_addr";
+constexpr char kArgsContextName[] = "args_ctx_";
+
 class MetalKernelCodegen : public IRVisitor {
  public:
   MetalKernelCodegen(const std::string &mtl_kernel_prefix)
@@ -41,7 +45,153 @@ class MetalKernelCodegen : public IRVisitor {
   }
 
   void generate_kernel_args_struct(Kernel *kernel) {
-    TC_NOT_IMPLEMENTED
+    args_attribs_ = MetalKernelArgsAttributes();
+    for (int i = 0; i < kernel->args.size(); ++i) {
+      const auto &a = kernel->args[i];
+      args_attribs_.insert_arg(a.dt, a.is_nparray, a.size, a.is_return_value);
+    }
+    args_attribs_.finalize();
+
+    if (args_attribs_.has_args()) {
+      const auto class_name = kernel_args_classname();
+      emit("namespace {{");
+      emit("class {} {{", class_name);
+      emit(" public:");
+      push_indent();
+      emit("explicit {}(device byte* addr) : addr_(addr) {{}}", class_name);
+      for (const auto &arg : args_attribs_.args()) {
+        const auto dt_name = metal_data_type_name(arg.dt);
+        emit("device {}* arg{}() {{", dt_name, arg.index);
+        if (arg.is_array) {
+          emit("  // array, size={} B", arg.stride);
+        } else {
+          emit("  // scalar, size={} B", arg.stride);
+        }
+        emit("  return (device {}*)(addr_ + {});", dt_name, arg.offset_in_mem);
+        emit("}}");
+      }
+      emit("");
+      emit("int32_t extra_arg(int i, int j) {{");
+      emit("  device int32_t* base = (device int32_t*)(addr_ + {});",
+           args_attribs_.args_bytes());
+      emit("  return *(base + (i * {}) + j);", taichi_max_num_indices);
+      emit("}}");
+      pop_indent();
+      emit(" private:");
+      emit("  device byte* addr_;");
+      emit("}};");
+      emit("}}  // namespace");
+      emit("");
+    }
+  }
+
+  void generate_serial_kernel(OffloadedStmt *stmt) {
+    TC_ASSERT(stmt->task_type == OffloadedStmt::TaskType::serial);
+    const std::string mtl_kernel_name = make_kernel_name();
+    emit_mtl_kernel_func_sig(mtl_kernel_name);
+    emit("  // serial");
+    emit("  if ({} > 0) return;", kKernelThreadIdName);
+
+    MetalKernelAttributes ka;
+    ka.name = mtl_kernel_name;
+    ka.task_type = stmt->task_type;
+    ka.num_threads = 1;
+
+    current_kernel_attribs_ = &ka;
+    stmt->body->accept(this);
+    emit("}}\n");
+    current_kernel_attribs_ = nullptr;
+
+    mtl_kernels_attribs_.push_back(ka);
+  }
+
+  void generate_range_for_kernel(OffloadedStmt *stmt) {
+    TC_ASSERT(stmt->task_type == OffloadedStmt::TaskType::range_for);
+    const std::string mtl_kernel_name = make_kernel_name();
+    emit_mtl_kernel_func_sig(mtl_kernel_name);
+
+    MetalKernelAttributes ka;
+    ka.name = mtl_kernel_name;
+    ka.task_type = stmt->task_type;
+
+    auto &range_for_attribs = ka.range_for_attribs;
+    range_for_attribs.const_begin = stmt->const_begin;
+    range_for_attribs.const_end = stmt->const_end;
+    range_for_attribs.begin =
+        (stmt->const_begin ? stmt->begin_value : stmt->begin_offset);
+    range_for_attribs.end =
+        (stmt->const_end ? stmt->end_value : stmt->end_offset);
+
+    push_indent();
+    if (range_for_attribs.const_range()) {
+      ka.num_threads = range_for_attribs.end - range_for_attribs.begin;
+      emit("// range_for, range known at compile time");
+      emit("if ({} >= {}) return;", kKernelThreadIdName, ka.num_threads);
+    } else {
+      ka.num_threads = -1;
+      emit("// range_for, range known at runtime");
+      emit("{{");
+      push_indent();
+      const auto begin_stmt = stmt->const_begin
+                                  ? std::to_string(stmt->begin_value)
+                                  : inject_load_global_tmp(stmt->begin_offset);
+      const auto end_stmt = stmt->const_end
+                                ? std::to_string(stmt->end_value)
+                                : inject_load_global_tmp(stmt->end_offset);
+      emit("if ({} >= ({} - {})) return;", kKernelThreadIdName, end_stmt,
+           begin_stmt);
+      pop_indent();
+      emit("}}");
+    }
+    pop_indent();
+
+    current_kernel_attribs_ = &ka;
+    stmt->body->accept(this);
+    emit("}}\n");
+    current_kernel_attribs_ = nullptr;
+
+    mtl_kernels_attribs_.push_back(ka);
+  }
+
+  std::string inject_load_global_tmp(int offset, DataType dt = DataType::i32) {
+    const auto vt = VectorType(/*width=*/1, dt);
+    auto gtmp = Stmt::make<GlobalTemporaryStmt>(offset, vt);
+    gtmp->accept(this);
+    auto gload = Stmt::make<GlobalLoadStmt>(gtmp.get());
+    gload->ret_type = vt;
+    gload->accept(this);
+    return gload->raw_name();
+  }
+
+  std::string make_kernel_name() {
+    return fmt::format("{}_{}", mtl_kernel_prefix_, mtl_kernel_count_++);
+  }
+
+  inline std::string kernel_args_classname() const {
+    return fmt::format("{}_args", mtl_kernel_prefix_);
+  }
+
+  void emit_mtl_kernel_func_sig(const std::string &kernel_name) {
+    emit("kernel void {}(", kernel_name);
+    emit("    device byte* addr [[buffer(0)]],");
+    emit("    device byte* {} [[buffer(1)]],", kGlobalTmpsBufferName);
+    if (args_attribs_.has_args()) {
+      emit("    device byte* args_addr [[buffer(2)]],");
+    }
+    emit("    const uint {} [[thread_position_in_grid]]) {{",
+         kKernelThreadIdName);
+    if (args_attribs_.has_args()) {
+      emit("  {} {}(args_addr);", kernel_args_classname(), kArgsContextName);
+    }
+  }
+
+  void push_indent() {
+    indent_ += "  ";
+  }
+
+  void pop_indent() {
+    indent_.pop_back();
+    indent_.pop_back();
   }
 
   template <typename... Args>

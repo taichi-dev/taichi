@@ -187,8 +187,19 @@ def inside_kernel():
 def index_nd(dim):
   return indices(*range(dim))
 
+class Root:
+  def __init__(self):
+    pass
+  
+  def __getattribute__(self, item):
+    import taichi as ti
+    ti.get_runtime().create_program()
+    root = SNode(ti.get_runtime().prog.get_root())
+    return getattr(root, item)
 
-def global_var(dt, shape=None, needs_grad=False):
+root = Root()
+
+def var(dt, shape=None, needs_grad=False):
   if isinstance(shape, numbers.Number):
     shape = (shape,)
 
@@ -206,40 +217,21 @@ def global_var(dt, shape=None, needs_grad=False):
     x.set_grad(x_grad)
 
   if shape is not None:
-
-    @layout
-    def place():
-      import taichi as ti
-      dim = len(shape)
-      ti.root.dense(index_nd(dim), shape).place(x)
-      if needs_grad:
-        ti.root.dense(index_nd(dim), shape).place(x.grad)
+    dim = len(shape)
+    root.dense(index_nd(dim), shape).place(x)
+    if needs_grad:
+      root.dense(index_nd(dim), shape).place(x.grad)
 
   return x
 
 
 class Layout:
-
   def __init__(self, soa=False):
     self.soa = soa
 
 
 SOA = Layout(soa=True)
 AOS = Layout(soa=False)
-
-var = global_var
-
-class Root:
-  def __init__(self):
-    pass
-    
-  def __getattribute__(self, item):
-    import taichi as ti
-    ti.get_runtime().create_program()
-    root = SNode(ti.get_runtime().prog.get_root())
-    return getattr(root, item)
-  
-root = Root()
 
 
 def layout(func):

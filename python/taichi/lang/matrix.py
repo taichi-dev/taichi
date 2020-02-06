@@ -75,22 +75,20 @@ class Matrix:
       if layout is None:
         layout = ti.AOS
 
-      @ti.layout
-      def place():
-        dim = len(shape)
-        if layout.soa:
-          for i, e in enumerate(self.entries):
-            ti.root.dense(ti.index_nd(dim), shape).place(e)
-            if needs_grad:
-              ti.root.dense(ti.index_nd(dim), shape).place(e.grad)
-        else:
-          var_list = []
-          for i, e in enumerate(self.entries):
-            var_list.append(e)
+      dim = len(shape)
+      if layout.soa:
+        for i, e in enumerate(self.entries):
+          ti.root.dense(ti.index_nd(dim), shape).place(e)
           if needs_grad:
-            for i, e in enumerate(self.entries):
-              var_list.append(e.grad)
-          ti.root.dense(ti.index_nd(dim), shape).place(*tuple(var_list))
+            ti.root.dense(ti.index_nd(dim), shape).place(e.grad)
+      else:
+        var_list = []
+        for i, e in enumerate(self.entries):
+          var_list.append(e)
+        if needs_grad:
+          for i, e in enumerate(self.entries):
+            var_list.append(e.grad)
+        ti.root.dense(ti.index_nd(dim), shape).place(*tuple(var_list))
 
   def is_global(self):
     results = [False for _ in self.entries]

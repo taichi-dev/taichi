@@ -9,4 +9,3 @@ def test_1D():
   x[0] = 42
   assert x[0] == 42
   assert x[1] == 0
-

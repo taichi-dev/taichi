@@ -72,6 +72,70 @@ def test_pointer2():
     else:
       assert x[i] == 10.0
 
+@ti.all_archs
+def test_pointer3():
+  x = ti.var(ti.f32)
+  x_temp = ti.var(ti.f32)
+
+  n = 16
+
+  @ti.layout
+  def place():
+    ti.root.dense(ti.ij, n).pointer().dense(ti.ij, n).place(x)
+    ti.root.dense(ti.ij, n).pointer().dense(ti.ij, n).place(x_temp)
+
+  @ti.kernel
+  def fill():
+    for j in range(n*n):
+      for i in range(n*n):
+        x[i,j] = i+j
+
+  @ti.kernel
+  def fill2():
+    for i,j in x_temp:
+      if x_temp[i,j] < 100:
+        x[i,j] = x_temp[i,j]
+
+  @ti.kernel
+  def copy_to_temp():
+    for i,j in x:
+      x_temp[i,j] = x[i,j]
+
+  @ti.kernel
+  def copy_from_temp():
+    for i,j in x_temp:
+      x[i,j] = x_temp[i,j]
+
+  @ti.kernel
+  def clear():
+    for i,j in x.parent().parent():
+      ti.deactivate(x.parent().parent(),[i,j])
+
+  @ti.kernel
+  def clear_temp():
+    for i,j in x_temp.parent().parent():
+      ti.deactivate(x_temp.parent().parent(),[i,j])
+
+  fill()
+  copy_to_temp()
+  clear()
+  fill2()
+  clear_temp()
+
+
+  for iter in range(100):
+    print(iter)
+    copy_to_temp()
+    clear()
+    copy_from_temp()
+    clear_temp()
+
+    for j in range(n * n):
+      for i in range(n * n):
+        if i+j < 100:
+          assert x[i,j] == i+j
+
+
 
 @ti.all_archs
 def test_dynamic():
@@ -113,4 +177,3 @@ def test_dynamic():
 
   for i in range(n):
     assert s[i] == i * i * 4
-

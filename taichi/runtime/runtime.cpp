@@ -981,6 +981,7 @@ void gc_parallel_1(Runtime *runtime, int snode_id) {
   free_list->clear();
   allocator->free_list_used = 0;
   allocator->recycle_list_size_backup = allocator->recycled_list->size();
+  allocator->recycled_list->clear();
 }
 
 void gc_parallel_2(Runtime *runtime, int snode_id) {

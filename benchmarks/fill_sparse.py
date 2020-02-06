@@ -41,7 +41,7 @@ def benchmark_nested_struct_fill_and_clear():
     fill()
     clear()
 
-  return ti.benchmark(task, repeat=10)
+  return ti.benchmark(task, repeat=30)
 
 '''
 ti.cfg.arch = ti.cuda

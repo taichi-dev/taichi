@@ -1000,13 +1000,20 @@ void gc_parallel_2(Runtime *runtime, int snode_id) {
     }
     // memset
     auto ptr_stop = ptr + element_size;
-    while ((uint64)ptr % 4 != 0 && ptr < ptr_stop) {
-      *ptr = 0;
-      ptr++;
+    if ((uint64)ptr % 4 != 0) {
+      auto new_ptr = ptr + 4 - (uint64)ptr % 4;
+      if (thread_idx() == 0) {
+        for (uint8 *p = ptr; p < new_ptr; p++) {
+          *p = 0;
+        }
+      }
+      ptr = new_ptr;
     }
-    while (ptr + 4 < ptr_stop) {
+    // now ptr is a multiple of 4
+    ptr += thread_idx() * sizeof(uint32);
+    while (ptr + sizeof(uint32) <= ptr_stop) {
       *(uint32 *)ptr = 0;
-      ptr += 4;
+      ptr += sizeof(uint32) * block_dim();
     }
     while (ptr < ptr_stop) {
       *ptr = 0;

@@ -18,7 +18,47 @@ TLANG_NAMESPACE_BEGIN
 
 Program *current_program = nullptr;
 std::atomic<int> Program::num_instances;
-SNode root;
+
+Program::Program(Arch arch) {
+#if !defined(CUDA_FOUND)
+  if (arch == Arch::cuda) {
+    TC_WARN("Taichi is not compiled with CUDA.");
+    TC_WARN("Falling back to x86_64");
+    arch = Arch::x86_64;
+  }
+#else
+  if (!cuda_context) {
+    cuda_context = std::make_unique<CUDAContext>();
+    if (!cuda_context->detected()) {
+      TC_WARN("No CUDA device detected.");
+      TC_WARN("Falling back to x86_64");
+      arch = Arch::x86_64;
+    }
+  }
+#endif
+  memory_pool = std::make_unique<MemoryPool>(this);
+  TC_ASSERT_INFO(num_instances == 0, "Only one instance at a time");
+  total_compilation_time = 0;
+  num_instances += 1;
+  SNode::counter = 0;
+  // llvm_context_device is initialized before kernel compilation
+  TC_ASSERT(current_program == nullptr);
+  current_program = this;
+  config = default_compile_config;
+  config.arch = arch;
+  if (config.use_llvm) {
+    llvm_context_host = std::make_unique<TaichiLLVMContext>(Arch::x86_64);
+    profiler_llvm = make_profiler(arch);
+  }
+  auto env_debug = getenv("TI_DEBUG");
+  if (env_debug && env_debug == std::string("1"))
+    config.debug = true;
+  current_kernel = nullptr;
+  sync = true;
+  llvm_runtime = nullptr;
+  finalized = false;
+  snode_root = std::make_unique<SNode>(0, SNodeType::root);
+}
 
 FunctionType Program::compile(Kernel &kernel) {
   auto start_t = Time::get_time();
@@ -42,7 +82,7 @@ void Program::materialize_layout() {
   // always use arch=x86_64 since this is for host accessors
   std::unique_ptr<StructCompiler> scomp =
       StructCompiler::make(config.use_llvm, this, Arch::x86_64);
-  scomp->run(root, true);
+  scomp->run(*snode_root, true);
   layout_fn = scomp->get_source_path();
   scomp->creator();
   profiler_print_gpu = scomp->profiler_print;
@@ -53,7 +93,7 @@ void Program::materialize_layout() {
     // llvm_context_device->get_init_module();
     std::unique_ptr<StructCompiler> scomp_gpu =
         StructCompiler::make(config.use_llvm, this, Arch::cuda);
-    scomp_gpu->run(root, false);
+    scomp_gpu->run(*snode_root, false);
   }
 }
 
@@ -141,7 +181,7 @@ void Program::visualize_layout(const std::string &fn) {
       emit("]");
     };
 
-    visit(snode_root);
+    visit(snode_root.get());
 
     auto tail = R"(
 \end{tikzpicture}
@@ -152,49 +192,8 @@ void Program::visualize_layout(const std::string &fn) {
   trash(system(fmt::format("pdflatex {}", fn).c_str()));
 }
 
-Program::Program(Arch arch) {
-#if !defined(CUDA_FOUND)
-  if (arch == Arch::cuda) {
-    TC_WARN("Taichi is not compiled with CUDA.");
-    TC_WARN("Falling back to x86_64");
-    arch = Arch::x86_64;
-  }
-#else
-  if (!cuda_context) {
-    cuda_context = std::make_unique<CUDAContext>();
-    if (!cuda_context->detected()) {
-      TC_WARN("No CUDA device detected.");
-      TC_WARN("Falling back to x86_64");
-      arch = Arch::x86_64;
-    }
-  }
-#endif
-  memory_pool = std::make_unique<MemoryPool>(this);
-  TC_ASSERT_INFO(num_instances == 0, "Only one instance at a time");
-  total_compilation_time = 0;
-  num_instances += 1;
-  SNode::counter = 0;
-  // llvm_context_device is initialized before kernel compilation
-  TC_ASSERT(current_program == nullptr);
-  current_program = this;
-  config = default_compile_config;
-  config.arch = arch;
-  if (config.use_llvm) {
-    llvm_context_host = std::make_unique<TaichiLLVMContext>(Arch::x86_64);
-    profiler_llvm = make_profiler(arch);
-  }
-  auto env_debug = getenv("TI_DEBUG");
-  if (env_debug && env_debug == std::string("1"))
-    config.debug = true;
-  current_kernel = nullptr;
-  snode_root = nullptr;
-  sync = true;
-  llvm_runtime = nullptr;
-  finalized = false;
-}
-
 void Program::initialize_device_llvm_context() {
-  if (config.arch == Arch::cuda && config.use_llvm) {
+  if (config.arch == Arch::cuda) {
     if (llvm_context_device == nullptr)
       llvm_context_device = std::make_unique<TaichiLLVMContext>(Arch::cuda);
   }

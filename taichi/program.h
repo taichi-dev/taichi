@@ -21,7 +21,6 @@
 TLANG_NAMESPACE_BEGIN
 
 extern Program *current_program;
-extern SNode root;
 
 TC_FORCE_INLINE Program &get_current_program() {
   return *current_program;
@@ -33,7 +32,7 @@ class Program {
   // Should be copiable
   std::vector<void *> loaded_dlls;
   Kernel *current_kernel;
-  SNode *snode_root;
+  std::unique_ptr<SNode> snode_root;
   // pointer to the data structure. assigned to context.buffers[0] during kernel
   // launches
   void *llvm_runtime;
@@ -94,8 +93,6 @@ class Program {
   void synchronize();
 
   void layout(std::function<void()> func) {
-    root = SNode(0, SNodeType::root);
-    snode_root = &root;
     func();
     materialize_layout();
   }

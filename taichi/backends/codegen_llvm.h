@@ -976,7 +976,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   void visit(GetRootStmt *stmt) override {
     stmt->value = builder->CreateBitCast(
         get_root(),
-        PointerType::get(snode_attr[prog->snode_root].llvm_type, 0));
+        PointerType::get(snode_attr[prog->snode_root.get()].llvm_type, 0));
   }
 
   void visit(OffsetAndExtractBitsStmt *stmt) override {

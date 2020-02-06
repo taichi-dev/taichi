@@ -47,6 +47,13 @@ python3 -m pip install taichi-nightly-cuda-10-1
 - (Done) Redesign & reimplement (GPU) memory allocator (by the end of Jan 2020)
 
 ## Updates
+- (Feb   5, 2020) v0.4.4 released.
+   - For developers: [ffi-navigator](https://github.com/tqchen/ffi-navigator) support [[doc]()]. (by **masahi**)
+   - Fixed `f64` precision support of `sin` and `cos` on CUDA backends (by **Kenneth Lozes [KLozes]**)
+   - Make Profiler print the arch name in its title (by **Ye Kuang [k-ye]**)
+   - Tons of invisible contributions by **Ye Kuang [k-ye]**, for the WIP Metal backend
+   - `Profiler` working on CPU devices. To enable, `ti.cfg.enable_profiler = True`. Call `ti.profiler_print()` to print kernel running times
+   - General performance improvements
 - (Feb   3, 2020) v0.4.3 released.
    - `GUI.circles` 2.4x faster
    - General performance improvements

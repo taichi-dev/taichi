@@ -1,7 +1,12 @@
 import taichi as ti
 
 n = 512
-x = ti.var(ti.f32, shape=[n, n])
+x = ti.var(ti.f32)
+img = ti.var(ti.f32, shape=(n, n))
+
+@ti.layout
+def place():
+  ti.root.dense(ti.ij, n // 64).pointer().dense(ti.ij, n // 8).pointer().dense(ti.ij, 8).place(x)
 
 @ti.func
 def Vector2(x, y):
@@ -44,15 +49,23 @@ def inside_taichi(p):
   return ret
 
 @ti.kernel
+def activate():
+  for i, j in ti.ndrange(n, n):
+      t = inside_taichi(Vector2(i / n, j / n))
+      if t != 0:
+        x[i, j] = t
+
+
+@ti.kernel
 def paint():
-  for i, j in ti.ndrange(n * 4, n * 4):
-      ret = 1 - inside_taichi(Vector2(i / n / 4, j / n / 4))
-      x[i // 4, j // 4] += ret / 16
-
-
+  for i, j in x:
+    t = x[i, j]
+    img[i, j] = t * 0.5 + 0.5
+    
+activate()
 paint()
 
 gui = ti.GUI('Logo', (512, 512))
 while True:
-  gui.set_image(x.to_numpy())
+  gui.set_image(1 - img.to_numpy())
   gui.show()

@@ -137,7 +137,6 @@ def test_pointer3():
           assert x[i,j] == i+j
 
 
-
 @ti.archs_support_sparse
 def test_dynamic():
   x = ti.var(ti.i32)

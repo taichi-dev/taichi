@@ -50,7 +50,12 @@ class LowerAccess : public IRVisitor {
   void lower_scalar_ptr(VecStatement &lowered,
                         SNode *snode,
                         std::vector<Stmt *> indices,
-                        bool activate) {
+                        bool activate,
+                        bool return_is_active) {
+    if (return_is_active) {
+      // For ti.is_active
+      TC_ASSERT(!activate);
+    }
     // emit a sequence of micro access ops
     std::set<SNode *> nodes_on_loop;
     if (current_struct_for) {
@@ -108,17 +113,27 @@ class LowerAccess : public IRVisitor {
       auto linearized =
           lowered.push_back<LinearizeStmt>(lowered_indices, strides);
 
-      int chid = snode->child_id(snodes[i + 1]);
-      auto lookup = lowered.push_back<SNodeLookupStmt>(
-          snode, last, linearized,
-          snode->need_activation() && activate && !on_loop_tree,
-          indices);  // if snode has no possibility of null child, set activate
-      // = false
-      last = lowered.push_back<GetChStmt>(lookup, chid);
+      if (return_is_active && i == (int)snodes.size() - 2) {
+        // Create a SNodeOp querying if element i(linearized) of node is active
+        TC_TAG;
+        lowered.push_back<SNodeOpStmt>(SNodeOpType::is_active, snode, nullptr,
+                                       linearized);
+      } else {
+        auto lookup = lowered.push_back<SNodeLookupStmt>(
+            snode, last, linearized,
+            snode->need_activation() && activate && !on_loop_tree,
+            indices);  // if snode has no possibility of null child, set
+                       // activate
+        // = false
+        int chid = snode->child_id(snodes[i + 1]);
+        last = lowered.push_back<GetChStmt>(lookup, chid);
+      }
     }
   }
 
-  VecStatement lower_vector_ptr(GlobalPtrStmt *ptr, bool activate) {
+  VecStatement lower_vector_ptr(GlobalPtrStmt *ptr,
+                                bool activate,
+                                bool return_is_active = false) {
     VecStatement lowered;
     std::vector<Stmt *> lowered_pointers;
     for (int i = 0; i < ptr->width(); i++) {
@@ -129,7 +144,8 @@ class LowerAccess : public IRVisitor {
         indices.push_back(extractor.get());
         lowered.push_back(std::move(extractor));
       }
-      lower_scalar_ptr(lowered, ptr->snodes[i], indices, activate);
+      lower_scalar_ptr(lowered, ptr->snodes[i], indices, activate,
+                       return_is_active);
       TC_ASSERT(lowered.size());
       lowered_pointers.push_back(lowered.back().get());
     }
@@ -163,11 +179,20 @@ class LowerAccess : public IRVisitor {
   }
 
   void visit(SNodeOpStmt *stmt) override {
-    if (stmt->ptr->is<GlobalPtrStmt>()) {
-      auto lowered = lower_vector_ptr(stmt->ptr->as<GlobalPtrStmt>(), true);
-      stmt->ptr = lowered.back().get();
-      stmt->parent->insert_before(stmt, std::move(lowered));
+    if (stmt->op_type == SNodeOpType::is_active) {
+      std::vector<SNode *> snodes(stmt->width(), stmt->snode);
+      auto proxy_ptr = Stmt::make_typed<GlobalPtrStmt>(snodes, stmt->indices);
+      auto lowered = lower_vector_ptr(proxy_ptr.get(), false, true);
+      stmt->replace_with(std::move(lowered), true);
       throw IRModified();
+    } else {
+      if (stmt->ptr->is<GlobalPtrStmt>()) {
+        // TODO: return do not activate for read only accesses such as ti.length
+        auto lowered = lower_vector_ptr(stmt->ptr->as<GlobalPtrStmt>(), true);
+        stmt->ptr = lowered.back().get();
+        stmt->parent->insert_before(stmt, std::move(lowered));
+        throw IRModified();
+      }
     }
   }
 
@@ -200,7 +225,8 @@ class LowerAccess : public IRVisitor {
 namespace irpass {
 
 void lower_access(IRNode *root, bool lower_atomic) {
-  return LowerAccess::run(root, lower_atomic);
+  LowerAccess::run(root, lower_atomic);
+  typecheck(root);
 }
 
 }  // namespace irpass

@@ -1406,7 +1406,8 @@ class SNodeOpStmt : public Stmt {
 
   SNodeOpStmt(SNodeOpType op_type, SNode *snode, Stmt *ptr, Stmt *val = nullptr)
       : op_type(op_type), snode(snode), ptr(ptr), val(val) {
-    TC_ASSERT((val == nullptr) != (op_type == SNodeOpType::append));
+    TC_ASSERT((val == nullptr) != (op_type == SNodeOpType::append ||
+                                   op_type == SNodeOpType::is_active));
     add_operand(this->ptr);
     if (val)
       add_operand(this->val);
@@ -1416,6 +1417,8 @@ class SNodeOpStmt : public Stmt {
 
   SNodeOpStmt(SNodeOpType op_type, SNode *snode, std::vector<Stmt *> indices)
       : op_type(op_type), snode(snode), indices(indices) {
+    ptr = nullptr;
+    val = nullptr;
     TC_ASSERT(op_type == SNodeOpType::is_active);
     add_operand(this->ptr);
     for (int i = 0; i < (int)indices.size(); i++) {

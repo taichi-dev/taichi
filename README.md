@@ -48,7 +48,7 @@ python3 -m pip install taichi-nightly-cuda-10-1
 
 ## Updates
 - (Feb   5, 2020) v0.4.4 released.
-   - For developers: [ffi-navigator](https://github.com/tqchen/ffi-navigator) support [[doc]()]. (by **masahi**)
+   - For developers: [ffi-navigator](https://github.com/tqchen/ffi-navigator) support [[doc](https://taichi.readthedocs.io/en/latest/contributor_guide.html#efficient-code-navigation-across-python-c)]. (by **masahi**)
    - Fixed `f64` precision support of `sin` and `cos` on CUDA backends (by **Kenneth Lozes [KLozes]**)
    - Make Profiler print the arch name in its title (by **Ye Kuang [k-ye]**)
    - Tons of invisible contributions by **Ye Kuang [k-ye]**, for the WIP Metal backend

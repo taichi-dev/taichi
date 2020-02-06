@@ -164,7 +164,14 @@ enum class AtomicOpType : int { add, sub, max, min };
 
 std::string atomic_op_type_name(AtomicOpType type);
 
-enum class SNodeOpType : int { probe, activate, deactivate, append, clear };
+enum class SNodeOpType : int {
+  is_active,
+  length,
+  activate,
+  deactivate,
+  append,
+  clear
+};
 
 std::string snode_op_type_name(SNodeOpType type);
 

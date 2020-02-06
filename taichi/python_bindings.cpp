@@ -192,8 +192,12 @@ void export_lang(py::module &m) {
           return Append(snode, indices, val);
         });
 
+  m.def("insert_is_active", [](SNode *snode, const ExprGroup &indices) {
+    return is_active(snode, indices);
+  });
+
   m.def("insert_len", [](SNode *snode, const ExprGroup &indices) {
-    return Probe(snode, indices);
+    return Length(snode, indices);
   });
 
   m.def("create_assert_stmt", [&](const Expr &cond, const std::string &msg) {

@@ -45,7 +45,11 @@ Set ``ti.cfg.print_accessor_ir = True`` to inspect the IR transformation process
 
 Set ``ti.cfg.print_kernel_llvm_ir = True`` to inspect the emitted LLVM IR for each invoked kernel.
 
-To navigate around the code base, [ffi-navigator](https://github.com/tqchen/ffi-navigator) allows you to jump from C++ extension symbols exported via taichi_core in Python code to their defintion in C++. Follow their README to set up your editor.
+Efficient Code Navigation across Python/C++
+------------------------------------------------
+If you work on the language frontend (Python/C++ interface), to navigate around the code base, `ffi-navigator <https://github.com/tqchen/ffi-navigator>`_
+allows you to jump from Python bindings to their definitions in C++.
+Follow their README to set up your editor.
 
 Testing
 -------------

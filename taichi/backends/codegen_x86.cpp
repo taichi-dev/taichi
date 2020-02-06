@@ -282,7 +282,7 @@ class CPUIRCodeGen : public IRVisitor {
     TC_NOT_IMPLEMENTED
     /*
     stmt->ret_type.data_type = DataType::i32;
-    if (stmt->op_type == SNodeOpType::probe) {
+    if (stmt->op_type == SNodeOpType::length) {
       emit("{} {};", stmt->ret_data_type_name(), stmt->raw_name());
     }
 
@@ -292,7 +292,7 @@ class CPUIRCodeGen : public IRVisitor {
 
       emit("{{");
       if (stmt->op_type != SNodeOpType::activate &&
-          stmt->op_type != SNodeOpType::probe) {
+          stmt->op_type != SNodeOpType::length) {
         emit("{} *{}_tmp = access_{}(root, {});", snode->node_type_name,
              snode->node_type_name, snode->node_type_name,
              make_list(indices, ""));
@@ -303,7 +303,7 @@ class CPUIRCodeGen : public IRVisitor {
              snode->ch[0]->node_type_name, stmt->val->raw_name(), l);
       } else if (stmt->op_type == SNodeOpType::clear) {
         emit("{}_tmp->clear();", snode->node_type_name);
-      } else if (stmt->op_type == SNodeOpType::probe) {
+      } else if (stmt->op_type == SNodeOpType::length) {
         emit("{}[{}] = query_{}(root, {});", stmt->raw_name(), l,
              snode->node_type_name, make_list(indices, ""));
         if (snode->type == SNodeType::dynamic) {

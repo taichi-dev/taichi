@@ -152,7 +152,8 @@ inline void Deactivate(SNode *snode, const ExprGroup &expr_group) {
 }
 
 inline Expr Append(SNode *snode, const ExprGroup &indices, const Expr &val) {
-  return Expr::make<SNodeOpExpression>(snode, indices, val);
+  return Expr::make<SNodeOpExpression>(snode, SNodeOpType::append, indices,
+                                       val);
 }
 
 inline Expr Append(const Expr &expr,
@@ -170,16 +171,20 @@ inline void Clear(SNode *snode, const ExprGroup &indices) {
       Stmt::make<FrontendSNodeOpStmt>(SNodeOpType::clear, snode, indices));
 }
 
+inline Expr is_active(SNode *snode, const ExprGroup &indices) {
+  return Expr::make<SNodeOpExpression>(snode, SNodeOpType::is_active, indices);
+}
+
 inline void Clear(const Expr &expr, const ExprGroup &indices) {
   return Clear(expr.snode(), indices);
 }
 
-inline Expr Probe(SNode *snode, const ExprGroup &indices) {
-  return Expr::make<SNodeOpExpression>(snode, indices);
+inline Expr Length(SNode *snode, const ExprGroup &indices) {
+  return Expr::make<SNodeOpExpression>(snode, SNodeOpType::length, indices);
 }
 
-inline Expr Probe(const Expr &expr, const ExprGroup &indices) {
-  return Probe(expr.snode(), indices);
+inline Expr Length(const Expr &expr, const ExprGroup &indices) {
+  return Length(expr.snode(), indices);
 }
 
 inline Expr AssumeInRange(const Expr &expr,

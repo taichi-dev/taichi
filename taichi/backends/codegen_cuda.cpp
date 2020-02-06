@@ -638,13 +638,13 @@ class GPUIRCodeGen : public IRVisitor {
     auto snode = stmt->snodes[0];
     auto indices = indices_str(snode, -1, stmt->indices);
 
-    if (stmt->op_type == SNodeOpType::probe) {
+    if (stmt->op_type == SNodeOpType::length) {
       emit("int32x1 {};", stmt->raw_name());
     }
 
     emit("{{");
     if (stmt->op_type != SNodeOpType::activate &&
-        stmt->op_type != SNodeOpType::probe)
+        stmt->op_type != SNodeOpType::length)
       emit("{} *{}_tmp = access_{}(root, {});", snode->node_type_name,
            snode->node_type_name, snode->node_type_name,
            make_list(indices, ""));
@@ -655,7 +655,7 @@ class GPUIRCodeGen : public IRVisitor {
            snode->ch[0]->node_type_name, stmt->val->raw_name());
     } else if (stmt->op_type == SNodeOpType::clear) {
       emit("{}_tmp->clear();", snode->node_type_name);
-    } else if (stmt->op_type == SNodeOpType::probe) {
+    } else if (stmt->op_type == SNodeOpType::length) {
       emit("{} = query_{}(root, {});", stmt->raw_name(), snode->node_type_name,
            make_list(indices, ""));
       if (snode->type == SNodeType::dynamic) {

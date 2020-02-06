@@ -107,7 +107,7 @@ void replace_statements_with(IRNode *root,
                              std::function<std::unique_ptr<Stmt>()> generator);
 void demote_dense_struct_fors(IRNode *root);
 void demote_atomics(IRNode *root);
-void reverse_segments(IRNode *root); // for autograd
+void reverse_segments(IRNode *root);  // for autograd
 std::unique_ptr<ScratchPads> initialize_scratch_pad(StructForStmt *root);
 std::vector<SNode *> gather_deactivations(IRNode *root);
 }  // namespace irpass
@@ -1951,15 +1951,19 @@ class AtomicOpExpression : public Expression {
 class SNodeOpExpression : public Expression {
  public:
   SNode *snode;
+  SNodeOpType op_type;
   ExprGroup indices;
   Expr value;
 
-  SNodeOpExpression(SNode *snode, const ExprGroup &indices)
-      : snode(snode), indices(indices) {
+  SNodeOpExpression(SNode *snode, SNodeOpType op_type, const ExprGroup &indices)
+      : snode(snode), op_type(op_type), indices(indices) {
   }
 
-  SNodeOpExpression(SNode *snode, const ExprGroup &indices, const Expr &value)
-      : snode(snode), indices(indices), value(value) {
+  SNodeOpExpression(SNode *snode,
+                    SNodeOpType op_type,
+                    const ExprGroup &indices,
+                    const Expr &value)
+      : snode(snode), op_type(op_type), indices(indices), value(value) {
   }
 
   std::string serialize() override {
@@ -1980,7 +1984,7 @@ class SNodeOpExpression : public Expression {
       indices_stmt.push_back(indices[i]->stmt);
     }
     auto ptr = ret.push_back<GlobalPtrStmt>(snode, indices_stmt);
-    if (value.expr) {
+    if (op_type == SNodeOpType::append) {
       value->flatten(ret);
       ret.push_back<SNodeOpStmt>(SNodeOpType::append, snode, ptr,
                                  ret.back().get());
@@ -1990,8 +1994,10 @@ class SNodeOpExpression : public Expression {
                   "ti.append only works on single-child dynamic nodes.");
       TC_ERROR_IF(data_type_size(snode->ch[0]->dt) != 4,
                   "ti.append only works on i32/f32 nodes.");
-    } else {
-      ret.push_back<SNodeOpStmt>(SNodeOpType::probe, snode, ptr, nullptr);
+    } else if (op_type == SNodeOpType::length) {
+      ret.push_back<SNodeOpStmt>(SNodeOpType::length, snode, ptr, nullptr);
+    } else if (op_type == SNodeOpType::is_active) {
+      ret.push_back<SNodeOpStmt>(SNodeOpType::is_active, snode, ptr, nullptr);
     }
     stmt = ret.back().get();
   }

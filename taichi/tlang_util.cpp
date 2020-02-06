@@ -2,6 +2,7 @@
 
 #include "tlang_util.h"
 #include <taichi/system/timer.h>
+#include <taichi/math/linalg.h>
 
 TC_NAMESPACE_BEGIN
 
@@ -232,7 +233,8 @@ std::string snode_op_type_name(SNodeOpType type) {
   static std::map<SNodeOpType, std::string> type_names;
   if (type_names.empty()) {
 #define REGISTER_TYPE(i) type_names[SNodeOpType::i] = #i;
-    REGISTER_TYPE(probe);
+    REGISTER_TYPE(is_active);
+    REGISTER_TYPE(length);
     REGISTER_TYPE(activate);
     REGISTER_TYPE(deactivate);
     REGISTER_TYPE(append);

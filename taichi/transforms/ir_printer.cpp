@@ -80,7 +80,9 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(SNodeOpStmt *stmt) override {
-    std::string extras = stmt->ptr->raw_name();
+    std::string extras;
+    if (stmt->ptr)
+      extras = stmt->ptr->raw_name();
     if (stmt->val) {
       extras += ", " + stmt->val->name();
     }

@@ -4,9 +4,9 @@ n = 512
 x = ti.var(ti.f32)
 img = ti.var(ti.f32, shape=(n, n))
 
-@ti.layout
-def place():
-  ti.root.dense(ti.ij, n // 64).pointer().dense(ti.ij, n // 8).pointer().dense(ti.ij, 8).place(x)
+block1 = ti.root.dense(ti.ij, n // 64).pointer()
+block2 = block1.dense(ti.ij, n // 8).pointer()
+block2.dense(ti.ij, 8).place(x)
 
 @ti.func
 def Vector2(x, y):

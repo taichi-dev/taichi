@@ -5,7 +5,7 @@ from pytest import approx
 @ti.all_archs
 def test_random_float():
   for precision in [ti.f32, ti.f64]:
-    ti.reset()
+    ti.init()
     n = 1024
     x = ti.var(ti.f32, shape=(n, n))
 
@@ -23,7 +23,7 @@ def test_random_float():
 @ti.all_archs
 def test_random_int():
   for precision in [ti.i32, ti.i64]:
-    ti.reset()
+    ti.init()
     n = 1024
     x = ti.var(ti.f32, shape=(n, n))
     ti.get_runtime().set_default_fp(ti.f64)

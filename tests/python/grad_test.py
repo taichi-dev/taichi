@@ -5,7 +5,6 @@ def grad_test(tifunc, npfunc=None):
   from autograd import grad
   if npfunc is None:
     npfunc = tifunc
-  ti.reset()
 
   x = ti.var(ti.f32)
   y = ti.var(ti.f32)

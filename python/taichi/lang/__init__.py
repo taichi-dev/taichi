@@ -34,6 +34,12 @@ def reset():
   global runtime
   runtime = get_runtime()
 
+def init(**kwargs):
+  import taichi as ti
+  for k, v in kwargs.items():
+    setattr(ti.cfg, k, v)
+  ti.reset()
+  ti.get_runtime().create_program()
 
 def cache_shared(v):
   taichi_lang_core.cache(0, v.ptr)

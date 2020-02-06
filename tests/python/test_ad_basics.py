@@ -46,8 +46,8 @@ def grad_test(tifunc, npfunc=None):
   assert x.grad[0] == approx(grad(npfunc)(v))
 
 @if_has_autograd
+@ti.all_archs
 def test_size1():
-  ti.reset()
   x = ti.var(ti.i32)
 
   @ti.layout
@@ -107,10 +107,8 @@ def test_minmax():
 
 
 @if_has_autograd
+@ti.all_archs
 def test_mod():
-  ti.reset()
-  ti.cfg.use_llvm = True
-
   x = ti.var(ti.i32)
   y = ti.var(ti.i32)
 

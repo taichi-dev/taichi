@@ -81,4 +81,3 @@ def test_nested_struct_fill_and_clear():
 
   for i in range(10):
     task()
-

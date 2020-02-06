@@ -957,12 +957,12 @@ void gc_parallel_0(Runtime *runtime, int snode_id) {
   using T = NodeManager::list_data_type;
 
   int i = linear_thread_idx();
-  if (free_list_used * 2 <= free_list_size) {
+  if (free_list_used * 2 > free_list_size) {
     // Directly copy. Dst and src does not overlap
     auto items_to_copy = free_list_size - free_list_used;
     while (i < items_to_copy) {
       free_list->get<T>(i) = free_list->get<T>(free_list_used + i);
-      i += grid_dim() * block_idx();
+      i += grid_dim() * block_dim();
     }
   } else {
     // Move only non-overlapping parts
@@ -970,7 +970,7 @@ void gc_parallel_0(Runtime *runtime, int snode_id) {
     while (i < items_to_copy) {
       free_list->get<T>(i) =
           free_list->get<T>(free_list_size - items_to_copy + i);
-      i += grid_dim() * block_idx();
+      i += grid_dim() * block_dim();
     }
   }
 }
@@ -1079,6 +1079,9 @@ struct printf_helper {
   printf_helper() {
     std::memset(buffer, 0, sizeof(buffer));
     tail = 0;
+  }
+
+  void push_back() {
   }
 
   template <typename... Args, typename T>

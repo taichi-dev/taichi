@@ -1074,7 +1074,8 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
 
   BasicBlock *func_body_bb;
 
-  std::string init_offloaded_task_function(OffloadedStmt *stmt) {
+  std::string init_offloaded_task_function(OffloadedStmt *stmt,
+                                           std::string suffix = "") {
     while_after_loop = nullptr;
     current_offloaded_stmt = stmt;
 
@@ -1082,8 +1083,8 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
         llvm::FunctionType::get(llvm::Type::getVoidTy(*llvm_context),
                                 {PointerType::get(context_ty, 0)}, false);
 
-    auto task_kernel_name =
-        fmt::format("{}_{}_{}", kernel_name, task_counter, stmt->task_name());
+    auto task_kernel_name = fmt::format("{}_{}_{}{}", kernel_name, task_counter,
+                                        stmt->task_name(), suffix);
     task_counter += 1;
     func = Function::Create(task_function_type, Function::ExternalLinkage,
                             task_kernel_name, module.get());

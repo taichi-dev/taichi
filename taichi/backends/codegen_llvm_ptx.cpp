@@ -101,8 +101,8 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
         if (prog->config.enable_profiler) {
           profiler = prog->profiler_llvm.get();
         }
-        cuda_context->launch((CUfunction)task.cuda_func, task.name, profiler, &context,
-                             task.grid_dim, task.block_dim);
+        cuda_context->launch((CUfunction)task.cuda_func, task.name, profiler,
+                             &context, task.grid_dim, task.block_dim);
       }
     };
 #else
@@ -289,42 +289,77 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
     create_call("gpu_parallel_range_for", {get_arg(0), begin, end, body});
   }
 
+  void emit_cuda_gc(OffloadedStmt *stmt) {
+    auto snode_id = tlctx->get_constant(stmt->snode->id);
+    {
+      init_offloaded_task_function(stmt, "gather_list");
+      call("gc_parallel_0", get_runtime(), snode_id);
+      finalize_offloaded_task_function();
+      current_task->grid_dim = saturating_num_blocks;
+      current_task->block_dim = 64;
+      current_task->end();
+      current_task = nullptr;
+    }
+    {
+      init_offloaded_task_function(stmt, "reinit_lists");
+      call("gc_parallel_1", get_runtime(), snode_id);
+      finalize_offloaded_task_function();
+      current_task->grid_dim = 1;
+      current_task->block_dim = 1;
+      current_task->end();
+      current_task = nullptr;
+    }
+    {
+      init_offloaded_task_function(stmt, "zero_fill");
+      call("gc_parallel_2", get_runtime(), snode_id);
+      finalize_offloaded_task_function();
+      current_task->grid_dim = saturating_num_blocks;
+      current_task->block_dim = 64;
+      current_task->end();
+      current_task = nullptr;
+    }
+  }
+
   void visit(OffloadedStmt *stmt) override {
 #if defined(TLANG_WITH_CUDA)
     using Type = OffloadedStmt::TaskType;
-    kernel_grid_dim = 1;
-    kernel_block_dim = 1;
-    init_offloaded_task_function(stmt);
-    if (stmt->task_type == Type::serial) {
-      stmt->body->accept(this);
-    } else if (stmt->task_type == Type::range_for) {
-      create_offload_range_for(stmt);
-    } else if (stmt->task_type == Type::struct_for) {
-      kernel_grid_dim = saturating_num_blocks;
-      kernel_block_dim = stmt->block_dim;
-      if (kernel_block_dim == 0)
-        kernel_block_dim = prog->config.default_gpu_block_dim;
-      kernel_block_dim =
-          std::min(stmt->snode->parent->max_num_elements(), kernel_block_dim);
-      stmt->block_dim = kernel_block_dim;
-      create_offload_struct_for(stmt, true);
-    } else if (stmt->task_type == Type::clear_list) {
-      emit_clear_list(stmt);
-    } else if (stmt->task_type == Type::listgen) {
-      int branching = stmt->snode->max_num_elements();
-      kernel_grid_dim = saturating_num_blocks;
-      kernel_block_dim = std::min(branching, 64);
-      emit_list_gen(stmt);
-    } else if (stmt->task_type == Type::gc) {
-      emit_gc(stmt);
+    if (stmt->task_type == Type::gc) {
+      // gc has 3 kernels, so we treat it specially
+      emit_cuda_gc(stmt);
+      return;
     } else {
-      TC_NOT_IMPLEMENTED
+      kernel_grid_dim = 1;
+      kernel_block_dim = 1;
+      init_offloaded_task_function(stmt);
+      if (stmt->task_type == Type::serial) {
+        stmt->body->accept(this);
+      } else if (stmt->task_type == Type::range_for) {
+        create_offload_range_for(stmt);
+      } else if (stmt->task_type == Type::struct_for) {
+        kernel_grid_dim = saturating_num_blocks;
+        kernel_block_dim = stmt->block_dim;
+        if (kernel_block_dim == 0)
+          kernel_block_dim = prog->config.default_gpu_block_dim;
+        kernel_block_dim =
+            std::min(stmt->snode->parent->max_num_elements(), kernel_block_dim);
+        stmt->block_dim = kernel_block_dim;
+        create_offload_struct_for(stmt, true);
+      } else if (stmt->task_type == Type::clear_list) {
+        emit_clear_list(stmt);
+      } else if (stmt->task_type == Type::listgen) {
+        int branching = stmt->snode->max_num_elements();
+        kernel_grid_dim = saturating_num_blocks;
+        kernel_block_dim = std::min(branching, 64);
+        emit_list_gen(stmt);
+      } else {
+        TC_NOT_IMPLEMENTED
+      }
+      finalize_offloaded_task_function();
+      current_task->grid_dim = kernel_grid_dim;
+      current_task->block_dim = kernel_block_dim;
+      current_task->end();
+      current_task = nullptr;
     }
-    finalize_offloaded_task_function();
-    current_task->grid_dim = kernel_grid_dim;
-    current_task->block_dim = kernel_block_dim;
-    current_task->end();
-    current_task = nullptr;
 #else
     TC_NOT_IMPLEMENTED
 #endif

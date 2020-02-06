@@ -15,8 +15,8 @@ public:
     for (int i = 0; i < warp_size(); i++) {
       if (warp_idx() == i) {
         mutex_lock_i32(lock);
-        threadfence();  // TODO
         func();
+        block_memfence();
         mutex_unlock_i32(lock);
       }
     }

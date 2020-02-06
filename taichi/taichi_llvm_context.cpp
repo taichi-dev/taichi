@@ -278,6 +278,9 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
       patch_intrinsic("block_dim", Intrinsic::nvvm_read_ptx_sreg_ntid_x);
       patch_intrinsic("grid_dim", Intrinsic::nvvm_read_ptx_sreg_nctaid_x);
       patch_intrinsic("block_barrier", Intrinsic::nvvm_barrier0, false);
+      patch_intrinsic("block_memfence", Intrinsic::nvvm_membar_cta, false);
+      patch_intrinsic("grid_memfence", Intrinsic::nvvm_membar_gl, false);
+      patch_intrinsic("system_memfence", Intrinsic::nvvm_membar_sys, false);
 
       patch_atomic_add_int("atomic_add_i32");
 

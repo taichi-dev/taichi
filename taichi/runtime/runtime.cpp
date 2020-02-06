@@ -711,7 +711,10 @@ int32 warp_active_mask() {
 void block_memfence() {
 }
 
-void threadfence() {
+void grid_memfence() {
+}
+
+void system_memfence() {
 }
 
 // "Element", "component" are different concepts

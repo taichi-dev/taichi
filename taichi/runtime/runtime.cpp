@@ -470,6 +470,7 @@ struct NodeManager {
   i32 chunk_num_elements;
   i32 free_list_used;
   ListManager *free_list, *recycled_list, *data_list;
+  i32 recycle_list_size_backup;
 
   using list_data_type = i32;
 
@@ -807,7 +808,7 @@ void for_each_block(Context *context,
                     int element_split,
                     BlockTask *task,
                     int num_threads) {
-  auto list = ((Runtime *)context->runtime)->element_lists[snode_id];
+  auto list = (context->runtime)->element_lists[snode_id];
   auto list_tail = list->size();
 #if ARCH_cuda
   int i = block_idx();
@@ -834,7 +835,7 @@ void for_each_block(Context *context,
   ctx.element_split = element_split;
   // printf("size %d spilt %d tail %d\n", ctx.element_size, ctx.element_split,
   // list_tail);
-  auto runtime = (Runtime *)context->runtime;
+  auto runtime = context->runtime;
   runtime->parallel_for(runtime->thread_pool, list_tail * element_split,
                         num_threads, &ctx, block_helper);
 #endif
@@ -946,6 +947,73 @@ Ptr ListManager::allocate() {
 
 void node_gc(Runtime *runtime, int snode_id) {
   runtime->node_allocators[snode_id]->gc_serial();
+}
+
+void gc_parallel_0(Runtime *runtime, int snode_id) {
+  auto allocator = runtime->node_allocators[snode_id];
+  auto free_list = allocator->free_list;
+  auto free_list_size = free_list->size();
+  auto free_list_used = allocator->free_list_used;
+  using T = NodeManager::list_data_type;
+
+  int i = linear_thread_idx();
+  if (free_list_used * 2 <= free_list_size) {
+    // Directly copy. Dst and src does not overlap
+    auto items_to_copy = free_list_size - free_list_used;
+    while (i < items_to_copy) {
+      free_list->get<T>(i) = free_list->get<T>(free_list_used + i);
+      i += grid_dim() * block_idx();
+    }
+  } else {
+    // Move only non-overlapping parts
+    auto items_to_copy = free_list_used;
+    while (i < items_to_copy) {
+      free_list->get<T>(i) =
+          free_list->get<T>(free_list_size - items_to_copy + i);
+      i += grid_dim() * block_idx();
+    }
+  }
+}
+
+void gc_parallel_1(Runtime *runtime, int snode_id) {
+  auto allocator = runtime->node_allocators[snode_id];
+  auto free_list = allocator->free_list;
+  free_list->clear();
+  allocator->free_list_used = 0;
+  allocator->recycle_list_size_backup = allocator->recycled_list->size();
+}
+
+void gc_parallel_2(Runtime *runtime, int snode_id) {
+  auto allocator = runtime->node_allocators[snode_id];
+  auto elements = allocator->recycle_list_size_backup;
+  auto free_list = allocator->free_list;
+  auto recycled_list = allocator->recycled_list;
+  auto data_list = allocator->data_list;
+  auto element_size = allocator->element_size;
+  using T = NodeManager::list_data_type;
+  auto i = block_idx();
+  while (i < elements) {
+    auto idx = recycled_list->get<T>(i);
+    auto ptr = data_list->get_element_ptr(idx);
+    if (thread_idx() == 0) {
+      free_list->push_back(idx);
+    }
+    // memset
+    auto ptr_stop = ptr + element_size;
+    while ((uint64)ptr % 4 != 0 && ptr < ptr_stop) {
+      *ptr = 0;
+      ptr++;
+    }
+    while (ptr + 4 < ptr_stop) {
+      *(uint32 *)ptr = 0;
+      ptr += 4;
+    }
+    while (ptr < ptr_stop) {
+      *ptr = 0;
+      ptr++;
+    }
+    i += grid_dim();
+  }
 }
 }
 

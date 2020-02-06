@@ -55,9 +55,9 @@ def test_pointer2():
   N = n * n
   assert s[None] == N * (N - 1) / 2
 
-@ti.all_archs
+# @ti.all_archs
 def test_nested_struct_fill_and_clear():
-  return # Until we fix this on Turing GPUs
+  ti.cfg.arch = ti.cuda
   a = ti.var(dt=ti.f32)
   N = 512
 
@@ -80,5 +80,9 @@ def test_nested_struct_fill_and_clear():
     fill()
     clear()
 
-  for i in range(10):
+  for i in range(1000):
+    print(i)
     task()
+    ti.sync()
+
+test_nested_struct_fill_and_clear()

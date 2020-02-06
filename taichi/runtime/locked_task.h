@@ -15,9 +15,11 @@ public:
     for (int i = 0; i < warp_size(); i++) {
       if (warp_idx() == i) {
         mutex_lock_i32(lock);
+        grid_memfence();
         func();
-        block_memfence();
+        grid_memfence();
         mutex_unlock_i32(lock);
+        grid_memfence();
       }
     }
     // Unfortunately critical sections on CUDA has undefined behavior (deadlock

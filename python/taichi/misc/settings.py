@@ -20,8 +20,7 @@ def get_repo_directory():
   else:
     repo_dir = os.environ.get('TAICHI_REPO_DIR')
     if not os.path.exists(repo_dir):
-      print('Error: TAICHI_REPO_DIR "' + repo_dir + '" invalid. Try remove TAICHI_REPO_DIR from your environment variables (.bashrc)')
-      assert False
+      raise ValueError(f"TAICHI_REPO_DIR [{repo_dir}] does not exist.")
   return repo_dir
 
 

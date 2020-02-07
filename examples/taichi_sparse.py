@@ -1,12 +1,15 @@
 import taichi as ti
 
+ti.init(arch=ti.cuda)
+
 n = 512
 x = ti.var(ti.f32)
 img = ti.var(ti.f32, shape=(n, n))
 
 block1 = ti.root.dense(ti.ij, n // 64).pointer()
-block2 = block1.dense(ti.ij, n // 8).pointer()
-block2.dense(ti.ij, 8).place(x)
+block2 = block1.dense(ti.ij, 4).pointer()
+block3 = block2.dense(ti.ij, 4).pointer()
+block3.dense(ti.ij, 4).place(x)
 
 @ti.func
 def Vector2(x, y):
@@ -58,9 +61,12 @@ def activate():
 
 @ti.kernel
 def paint():
-  for i, j in x:
-    t = x[i, j]
-    img[i, j] = t * 0.5 + 0.5
+  for i, j in ti.ndrange(n, n):
+    t = x[i, j] * 0.2
+    t += 0.2 * ti.is_active(block1, [i, j])
+    t += 0.2 * ti.is_active(block2, [i, j])
+    t += 0.2 * ti.is_active(block3, [i, j])
+    img[i, j] = t
     
 activate()
 paint()

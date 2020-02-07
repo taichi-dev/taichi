@@ -1422,7 +1422,7 @@ class SNodeOpStmt : public Stmt {
     TC_ASSERT(op_type == SNodeOpType::is_active);
     add_operand(this->ptr);
     for (int i = 0; i < (int)indices.size(); i++) {
-      add_operand(indices[i]);
+      add_operand(this->indices[i]);
     }
     width() = 1;
     element_type() = DataType::i32;

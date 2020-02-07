@@ -21,7 +21,7 @@ void Dense_activate(Ptr meta, Ptr node, int i) {
   }
 }
 
-bool Dense_is_active(Ptr meta, Ptr node, int i) {
+i32 Dense_is_active(Ptr meta, Ptr node, int i) {
   auto smeta = (StructMeta *)meta;
   auto dmeta = (DenseMeta *)meta;
   if (DenseMeta_get_bitmasked(dmeta)) {
@@ -29,16 +29,16 @@ bool Dense_is_active(Ptr meta, Ptr node, int i) {
     auto num_elements = StructMeta_get_element_size(smeta);
     auto data_section_size = element_size * num_elements;
     auto mask_begin = node + data_section_size;
-    return bool((mask_begin[i / 8] >> (i % 8)) & 1);
+    return i32(bool((mask_begin[i / 8] >> (i % 8)) & 1));
   } else {
-    return true;
+    return 1;
   }
 }
 
-void *Dense_lookup_element(Ptr meta, Ptr node, int i) {
+Ptr Dense_lookup_element(Ptr meta, Ptr node, int i) {
   return node + ((StructMeta *)meta)->element_size * i;
 }
 
-int Dense_get_num_elements(Ptr meta, Ptr node) {
+i32 Dense_get_num_elements(Ptr meta, Ptr node) {
   return ((StructMeta *)meta)->max_num_elements;
 }

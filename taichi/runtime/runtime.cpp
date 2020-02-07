@@ -231,17 +231,17 @@ int32 Context_get_extra_args(Context *ctx, int32 i, int32 j) {
 
 // Common Attributes
 struct StructMeta {
-  int snode_id;
+  i32 snode_id;
   std::size_t element_size;
-  int max_num_elements;
+  i32 max_num_elements;
 
   Ptr (*lookup_element)(Ptr, Ptr, int i);
 
   Ptr (*from_parent_element)(Ptr);
 
-  bool (*is_active)(Ptr, Ptr, int i);
+  i32 (*is_active)(Ptr, Ptr, int i);
 
-  int (*get_num_elements)(Ptr, Ptr);
+  i32 (*get_num_elements)(Ptr, Ptr);
 
   void (*refine_coordinates)(PhysicalCoordinates *inp_coord,
                              PhysicalCoordinates *refined_coord,

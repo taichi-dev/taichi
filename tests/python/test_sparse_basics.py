@@ -51,9 +51,8 @@ def test_pointer():
   func()
   assert s[None] == 256
   
-# @ti.all_archs
+@ti.all_archs
 def test_pointer_is_active():
-  ti.init(print_ir = True)
   x = ti.var(ti.f32)
   s = ti.var(ti.i32)
 
@@ -106,5 +105,3 @@ def test_pointer2():
   assert s[None] == 5 * n
   print(x[257 + n * n * 7])
   assert s[None] == 5 * n
-
-test_pointer_is_active()

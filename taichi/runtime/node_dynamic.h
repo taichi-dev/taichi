@@ -84,12 +84,12 @@ i32 Dynamic_append(Ptr meta_, Ptr node_, i32 data) {
   return tail;
 }
 
-bool Dynamic_is_active(Ptr meta_, Ptr node_, int i) {
+i32 Dynamic_is_active(Ptr meta_, Ptr node_, int i) {
   auto node = (DynamicNode *)(node_);
-  return i < node->n;
+  return i32(i < node->n);
 }
 
-void *Dynamic_lookup_element(Ptr meta_, Ptr node_, int i) {
+Ptr Dynamic_lookup_element(Ptr meta_, Ptr node_, int i) {
   auto meta = (DynamicMeta *)(meta_);
   auto node = (DynamicNode *)(node_);
   if (Dynamic_is_active(meta_, node_, i)) {
@@ -98,18 +98,19 @@ void *Dynamic_lookup_element(Ptr meta_, Ptr node_, int i) {
     auto chunk_size = meta->chunk_size;
     while (true) {
       if (i < chunk_start + chunk_size) {
-        auto addr = chunk_ptr + sizeof(Ptr) + (i - chunk_start) * meta->element_size;
+        auto addr =
+            chunk_ptr + sizeof(Ptr) + (i - chunk_start) * meta->element_size;
         return addr;
       }
       chunk_ptr = *(Ptr *)chunk_ptr;
       chunk_start += chunk_size;
     }
   } else {
-    return ((Runtime *)meta->context->runtime)->ambient_elements[meta->snode_id];
+    return (meta->context->runtime)->ambient_elements[meta->snode_id];
   }
 }
 
-int Dynamic_get_num_elements(Ptr meta_, Ptr node_) {
+i32 Dynamic_get_num_elements(Ptr meta_, Ptr node_) {
   auto node = (DynamicNode *)(node_);
   return node->n;
 }

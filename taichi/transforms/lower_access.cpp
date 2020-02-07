@@ -69,7 +69,7 @@ class LowerAccess : public IRVisitor {
       snodes.push_front(snode);
 
     Stmt *last = lowered.push_back<GetRootStmt>();
-    for (int i = 0; i < (int)snodes.size() - 1; i++) {
+    for (int i = 0; i < (int)snodes.size() - 1 + int(return_is_active); i++) {
       auto snode = snodes[i];
       std::vector<Stmt *> lowered_indices;
       std::vector<int> strides;
@@ -113,11 +113,10 @@ class LowerAccess : public IRVisitor {
       auto linearized =
           lowered.push_back<LinearizeStmt>(lowered_indices, strides);
 
-      if (return_is_active && i == (int)snodes.size() - 2) {
+      if (return_is_active && i == (int)snodes.size() - 1) {
         // Create a SNodeOp querying if element i(linearized) of node is active
-        TC_TAG;
-        lowered.push_back<SNodeOpStmt>(SNodeOpType::is_active, snode, nullptr,
-                                       linearized);
+        lowered.push_back<SNodeOpStmt>(SNodeOpType::is_active, snodes[i],
+                                       last, linearized);
       } else {
         auto lookup = lowered.push_back<SNodeLookupStmt>(
             snode, last, linearized,
@@ -180,11 +179,15 @@ class LowerAccess : public IRVisitor {
 
   void visit(SNodeOpStmt *stmt) override {
     if (stmt->op_type == SNodeOpType::is_active) {
-      std::vector<SNode *> snodes(stmt->width(), stmt->snode);
-      auto proxy_ptr = Stmt::make_typed<GlobalPtrStmt>(snodes, stmt->indices);
-      auto lowered = lower_vector_ptr(proxy_ptr.get(), false, true);
-      stmt->replace_with(std::move(lowered), true);
-      throw IRModified();
+      if (stmt->val == nullptr) {
+        std::vector<SNode *> snodes(stmt->width(), stmt->snode);
+        auto proxy_ptr = Stmt::make_typed<GlobalPtrStmt>(snodes, stmt->indices);
+        auto lowered = lower_vector_ptr(proxy_ptr.get(), false, true);
+        stmt->replace_with(std::move(lowered), true);
+        throw IRModified();
+      } else {
+        // already lowered, do nothing
+      }
     } else {
       if (stmt->ptr->is<GlobalPtrStmt>()) {
         // TODO: return do not activate for read only accesses such as ti.length

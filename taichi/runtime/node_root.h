@@ -9,15 +9,15 @@ STRUCT_FIELD(RootMeta, tag);
 void Root_activate(Ptr meta, Ptr node, int i) {
 }
 
-bool Root_is_active(Ptr meta, Ptr node, int i) {
-  return true;
+i32 Root_is_active(Ptr meta, Ptr node, int i) {
+  return 1;
 }
 
-void *Root_lookup_element(Ptr meta, Ptr node, int i) {
+Ptr Root_lookup_element(Ptr meta, Ptr node, int i) {
   // only one element
   return node;
 }
 
-int Root_get_num_elements(Ptr meta, Ptr node) {
+i32 Root_get_num_elements(Ptr meta, Ptr node) {
   return 1;
 }

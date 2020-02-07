@@ -38,12 +38,12 @@ void Pointer_deactivate(Ptr meta, Ptr node) {
   }
 }
 
-bool Pointer_is_active(Ptr meta, Ptr node, int i) {
+i32 Pointer_is_active(Ptr meta, Ptr node, int i) {
   auto data_ptr = *(Ptr *)(node + 8);
   return data_ptr != nullptr;
 }
 
-void *Pointer_lookup_element(Ptr meta, Ptr node, int i) {
+Ptr Pointer_lookup_element(Ptr meta, Ptr node, int i) {
   auto data_ptr = *(Ptr *)(node + 8);
   if (data_ptr == nullptr) {
     auto smeta = (StructMeta *)meta;
@@ -53,6 +53,6 @@ void *Pointer_lookup_element(Ptr meta, Ptr node, int i) {
   return data_ptr;
 }
 
-int Pointer_get_num_elements(Ptr meta, Ptr node) {
+i32 Pointer_get_num_elements(Ptr meta, Ptr node) {
   return 1;
 }

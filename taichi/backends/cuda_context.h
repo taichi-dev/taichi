@@ -10,7 +10,7 @@ class CUDAContext {
   std::vector<CUmodule> cudaModules;
   CUcontext context;
   int dev_count;
-  CUdeviceptr context_buffer;
+  void *context_buffer;
   std::string mcpu;
 
  public:

@@ -50,9 +50,6 @@ Program::Program(Arch arch) {
     llvm_context_host = std::make_unique<TaichiLLVMContext>(Arch::x86_64);
     profiler_llvm = make_profiler(arch);
   }
-  auto env_debug = getenv("TI_DEBUG");
-  if (env_debug && env_debug == std::string("1"))
-    config.debug = true;
   current_kernel = nullptr;
   sync = true;
   llvm_runtime = nullptr;

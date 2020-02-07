@@ -4,6 +4,8 @@
 #include <llvm/Target/TargetMachine.h>
 #if defined(TLANG_WITH_CUDA)
 #include <taichi/cuda_utils.h>
+#include <cuda_runtime_api.h>
+#include <cuda.h>
 #endif
 #include "cuda_context.h"
 #include "llvm_jit.h"
@@ -161,7 +163,7 @@ CUDAContext::CUDAContext() {
 
   TC_INFO("CUDA Device Compute Capability: {}.{}", cc_major, cc_minor);
   check_cuda_errors(cuCtxCreate(&context, 0, device));
-  check_cuda_errors(cuMemAlloc(&context_buffer, sizeof(Context)));
+  check_cuda_errors(cudaMalloc(&context_buffer, sizeof(Context)));
 
   mcpu = fmt::format("sm_{}{}", cc_major, cc_minor);
 }
@@ -171,10 +173,10 @@ CUmodule CUDAContext::compile(const std::string &ptx) {
   make_current();
   // Create module for object
   CUmodule cudaModule;
-  TC_INFO("PTX size: {:.2f}KB", ptx.size() / 1024.0);
-  // auto t = Time::get_time();
+  TC_TRACE("PTX size: {:.2f}KB", ptx.size() / 1024.0);
+  auto t = Time::get_time();
   check_cuda_errors(cuModuleLoadDataEx(&cudaModule, ptx.c_str(), 0, 0, 0));
-  // TC_INFO("CUDA module load time : {}ms", (Time::get_time() - t) * 1000);
+  TC_DEBUG("CUDA module load time : {}ms", (Time::get_time() - t) * 1000);
   cudaModules.push_back(cudaModule);
   return cudaModule;
 }
@@ -184,10 +186,10 @@ CUfunction CUDAContext::get_function(CUmodule module,
   // auto _ = cuda_context->get_guard();
   make_current();
   CUfunction func;
-  // auto t = Time::get_time();
+  auto t = Time::get_time();
   check_cuda_errors(cuModuleGetFunction(&func, module, func_name.c_str()));
-  // t = Time::get_time() - t;
-  // TC_INFO("Kernel {} compilation time: {}ms", func_name, t * 1000);
+  t = Time::get_time() - t;
+  TC_DEBUG("Kernel {} compilation time: {}ms", func_name, t * 1000);
   return func;
 }
 
@@ -201,7 +203,8 @@ void CUDAContext::launch(CUfunction func,
   make_current();
   // Kernel parameters
 
-  check_cuda_errors(cuMemcpyHtoD(context_buffer, context_ptr, sizeof(Context)));
+  check_cuda_errors(cudaMemcpy(context_buffer, context_ptr, sizeof(Context),
+                               cudaMemcpyHostToDevice));
 
   void *KernelParams[] = {&context_buffer};
 
@@ -218,7 +221,7 @@ void CUDAContext::launch(CUfunction func,
   }
 
   if (get_current_program().config.debug) {
-    cudaDeviceSynchronize();
+    check_cuda_errors(cudaDeviceSynchronize());
     auto err = cudaGetLastError();
     if (err) {
       TC_ERROR("CUDA Kernel Launch Error: {}", cudaGetErrorString(err));

@@ -48,7 +48,7 @@ def init(default_fp=None, default_ip=None, print_processed=None, debug=None, **k
   if print_processed is not None:
     ti.get_runtime().print_preprocessed = print_processed
   if debug:
-    ti.set_logging_level('debug')
+    ti.set_logging_level(ti.DEBUG)
   ti.cfg.debug = debug
   for k, v in kwargs.items():
     setattr(ti.cfg, k, v)

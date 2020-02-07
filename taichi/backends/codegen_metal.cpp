@@ -14,9 +14,11 @@ constexpr char kArgsContextName[] = "args_ctx_";
 
 class MetalKernelCodegen : public IRVisitor {
  public:
-  MetalKernelCodegen(const std::string &mtl_kernel_prefix)
-      : mtl_kernel_prefix_(mtl_kernel_prefix) {
-    allow_undefined_visitor = true;
+  MetalKernelCodegen(const std::string &mtl_kernel_prefix,
+                     const std::string &root_snode_type_name)
+      : mtl_kernel_prefix_(mtl_kernel_prefix),
+        root_snode_type_name_(root_snode_type_name) {
+    // allow_undefined_visitor = true;
   }
 
   const std::string &kernel_source_code() const {
@@ -31,6 +33,345 @@ class MetalKernelCodegen : public IRVisitor {
     generate_mtl_header(snode_structs_source_code);
     generate_kernel_args_struct(kernel);
     kernel->ir->accept(this);
+  }
+
+  void visit(Block *stmt) override {
+    if (!is_top_level_) {
+      push_indent();
+    }
+    for (auto &s : stmt->statements) {
+      s->accept(this);
+    }
+    if (!is_top_level_) {
+      pop_indent();
+    }
+  }
+
+  void visit(AllocaStmt *alloca) override {
+    emit(R"({} {}(0);)", metal_data_type_name(alloca->element_type()),
+         alloca->raw_name());
+  }
+
+  void visit(ConstStmt *const_stmt) override {
+    TC_ASSERT(const_stmt->width() == 1);
+    emit("const {} {} = {};", metal_data_type_name(const_stmt->element_type()),
+         const_stmt->raw_name(), const_stmt->val[0].stringify());
+  }
+
+  void visit(LocalLoadStmt *stmt) override {
+    // TODO: optimize for partially vectorized load...
+    bool linear_index = true;
+    for (int i = 0; i < (int)stmt->ptr.size(); i++) {
+      if (stmt->ptr[i].offset != i) {
+        linear_index = false;
+      }
+    }
+    if (stmt->same_source() && linear_index &&
+        stmt->width() == stmt->ptr[0].var->width()) {
+      auto ptr = stmt->ptr[0].var;
+      emit("const {} {}({});", metal_data_type_name(stmt->element_type()),
+           stmt->raw_name(), ptr->raw_name());
+    } else {
+      TC_NOT_IMPLEMENTED;
+    }
+  }
+
+  void visit(LocalStoreStmt *stmt) override {
+    emit(R"({} = {};)", stmt->ptr->raw_name(), stmt->data->raw_name());
+  }
+
+  void visit(GetRootStmt *stmt) override {
+    // Should we assert |root_stmt_| is assigned only once?
+    root_stmt_ = stmt;
+    emit(R"({} {}(addr);)", root_snode_type_name_, stmt->raw_name());
+  }
+
+  void visit(GetChStmt *stmt) override {
+    if (stmt->output_snode->is_place()) {
+      emit(R"(device {}* {} = {}.get{}().val;)",
+           metal_data_type_name(stmt->output_snode->dt), stmt->raw_name(),
+           stmt->input_ptr->raw_name(), stmt->chid);
+    } else {
+      emit(R"({} {} = {}.get{}();)", stmt->output_snode->node_type_name,
+           stmt->raw_name(), stmt->input_ptr->raw_name(), stmt->chid);
+    }
+  }
+
+  void visit(LinearizeStmt *stmt) override {
+    std::string val = "0";
+    for (int i = 0; i < (int)stmt->inputs.size(); i++) {
+      val = fmt::format("({} * {} + {})", val, stmt->strides[i],
+                        stmt->inputs[i]->raw_name());
+    }
+    emit(R"(auto {} = {};)", stmt->raw_name(), val);
+  }
+
+  void visit(OffsetAndExtractBitsStmt *stmt) override {
+    emit(R"(auto {} = ((({} + {}) >> {}) & ((1 << {}) - 1));)",
+         stmt->raw_name(), stmt->offset, stmt->input->raw_name(),
+         stmt->bit_begin, stmt->bit_end - stmt->bit_begin);
+  }
+
+  void visit(SNodeLookupStmt *stmt) override {
+    std::string parent;
+    if (stmt->input_snode) {
+      parent = stmt->input_snode->raw_name();
+    } else {
+      TC_ASSERT(root_stmt_ != nullptr);
+      parent = root_stmt_->raw_name();
+    }
+
+    emit(R"({}_ch {} = {}.children({});)", stmt->snode->node_type_name,
+         stmt->raw_name(), parent, stmt->input_index->raw_name());
+  }
+
+  void visit(GlobalStoreStmt *stmt) override {
+    TC_ASSERT(stmt->width() == 1);
+    emit(R"(*{} = {};)", stmt->ptr->raw_name(), stmt->data->raw_name());
+  }
+
+  void visit(GlobalLoadStmt *stmt) override {
+    TC_ASSERT(stmt->width() == 1);
+    emit(R"({} {} = *{};)", metal_data_type_name(stmt->element_type()),
+         stmt->raw_name(), stmt->ptr->raw_name());
+  }
+
+  void visit(ArgLoadStmt *stmt) override {
+    const auto dt = metal_data_type_name(stmt->element_type());
+    if (stmt->is_ptr) {
+      emit("device {} *{} = {}.arg{}();", dt, stmt->raw_name(),
+           kArgsContextName, stmt->arg_id);
+    } else {
+      emit("const {} {} = *{}.arg{}();", dt, stmt->raw_name(), kArgsContextName,
+           stmt->arg_id);
+    }
+  }
+
+  void visit(ArgStoreStmt *stmt) override {
+    const auto dt = metal_data_type_name(stmt->element_type());
+    TC_ASSERT(!stmt->is_ptr);
+    emit("*{}.arg{}() = {};", kArgsContextName, stmt->arg_id,
+         stmt->val->raw_name());
+  }
+
+  void visit(ExternalPtrStmt *stmt) override {
+    // Used mostly for transferring data between host (e.g. numpy array) and
+    // Metal.
+    TC_ASSERT(stmt->width() == 1);
+    const auto linear_index_name =
+        fmt::format("{}_linear_index_", stmt->raw_name());
+    emit("int {} = 0;", linear_index_name);
+    emit("{{");
+    push_indent();
+    const auto *argload = stmt->base_ptrs[0]->as<ArgLoadStmt>();
+    const int arg_id = argload->arg_id;
+    const int num_indices = stmt->indices.size();
+    std::vector<std::string> size_var_names;
+    for (int i = 0; i < num_indices; i++) {
+      std::string var_name = fmt::format("{}_size{}_", stmt->raw_name(), i);
+      emit("const int {} = {}.extra_arg({}, {});", var_name, kArgsContextName,
+           arg_id, i);
+      size_var_names.push_back(std::move(var_name));
+    }
+    for (int i = 0; i < num_indices; i++) {
+      emit("{} *= {};", linear_index_name, size_var_names[i]);
+      emit("{} += {};", linear_index_name, stmt->indices[i]->raw_name());
+    }
+
+    pop_indent();
+    emit("}}");
+
+    const auto dt = metal_data_type_name(stmt->element_type());
+    emit("device {} *{} = ({} + {});", dt, stmt->raw_name(),
+         stmt->base_ptrs[0]->raw_name(), linear_index_name);
+  }
+
+  void visit(GlobalTemporaryStmt *stmt) override {
+    TC_ASSERT(stmt->width() == 1);
+    const auto dt = metal_data_type_name(stmt->element_type());
+    emit("device {}* {} = reinterpret_cast<device {}*>({} + {});", dt,
+         stmt->raw_name(), dt, kGlobalTmpsBufferName, stmt->offset);
+  }
+
+  void visit(LoopIndexStmt *stmt) override {
+    TC_ASSERT(current_kernel_attribs_->task_type ==
+              OffloadedStmt::TaskType::range_for);
+    TC_ASSERT(!stmt->is_struct_for && stmt->index == 0);
+    if (current_kernel_attribs_->range_for_attribs.const_begin) {
+      emit("const int {} = (static_cast<int>({}) + {});", stmt->raw_name(),
+           kKernelThreadIdName,
+           current_kernel_attribs_->range_for_attribs.begin);
+    } else {
+      auto begin_stmt = inject_load_global_tmp(
+          current_kernel_attribs_->range_for_attribs.begin);
+      emit("const int {} = (static_cast<int>({}) + {});", stmt->raw_name(),
+           kKernelThreadIdName, begin_stmt);
+    }
+  }
+
+  void visit(UnaryOpStmt *stmt) override {
+    if (stmt->op_type != UnaryOpType::cast) {
+      emit("const {} {} = {}({});", metal_data_type_name(stmt->element_type()),
+           stmt->raw_name(), metal_unary_op_type_symbol(stmt->op_type),
+           stmt->operand->raw_name());
+    } else {
+      emit("const {} {} = static_cast<{}>({});",
+           metal_data_type_name(stmt->element_type()), stmt->raw_name(),
+           metal_data_type_name(stmt->cast_type), stmt->operand->raw_name());
+    }
+  }
+
+  void visit(BinaryOpStmt *bin) override {
+    const auto dt_name = metal_data_type_name(bin->element_type());
+    const auto lhs_name = bin->lhs->raw_name();
+    const auto rhs_name = bin->rhs->raw_name();
+    const auto bin_name = bin->raw_name();
+    if (bin->op_type == BinaryOpType::floordiv) {
+      if (is_integral(bin->element_type())) {
+        const auto intm = fmt::format("{}_intermediate_", bin_name);
+        emit("const {} {} = ({} / {});", dt_name, intm, lhs_name, rhs_name);
+        // Should we construct an AST for this?
+        const auto expr_str = fmt::format(
+            "(({lhs} * {rhs} < 0) && ({rhs} * {intm} != {lhs})) ? ({intm} - 1) "
+            ": {intm}",
+            fmt::arg("lhs", lhs_name), fmt::arg("rhs", rhs_name),
+            fmt::arg("intm", intm));
+        emit("const {} {} = ({});", dt_name, bin_name, expr_str);
+      } else {
+        emit("const {} {} = floor({} / {});", dt_name, bin_name, lhs_name,
+             rhs_name);
+      }
+      return;
+    }
+    const auto binop = metal_binary_op_type_symbol(bin->op_type);
+    if (is_metal_binary_op_infix(bin->op_type)) {
+      emit("const {} {} = ({} {} {});", dt_name, bin_name, lhs_name, binop,
+           rhs_name);
+    } else {
+      // This is a function call
+      emit("const {} {} =  {}({}, {});", dt_name, bin_name, binop, lhs_name,
+           rhs_name);
+    }
+  }
+
+  void visit(TernaryOpStmt *tri) override {
+    TC_ASSERT(tri->op_type == TernaryOpType::select);
+    emit("const {} {} = ({}) ? ({}) : ({});",
+         metal_data_type_name(tri->element_type()), tri->raw_name(),
+         tri->op1->raw_name(), tri->op2->raw_name(), tri->op3->raw_name());
+  }
+
+  void visit(AtomicOpStmt *stmt) override {
+    TC_ASSERT(stmt->width() == 1);
+    TC_ASSERT(stmt->op_type == AtomicOpType::add);
+    const auto dt = stmt->val->element_type();
+    if (dt == DataType::i32) {
+      emit(
+          "const auto {} = atomic_fetch_add_explicit((device atomic_int*){}, "
+          "{}, "
+          "metal::memory_order_relaxed);",
+          stmt->raw_name(), stmt->dest->raw_name(), stmt->val->raw_name());
+    } else if (dt == DataType::f32) {
+      // A huge hack! Metal does not support atomic floating point numbers
+      // natively.
+      const auto dest_name = stmt->dest->raw_name();
+      const auto cas_ok = fmt::format("{}_cas_ok_", dest_name);
+      const auto old_val = fmt::format("{}_old_", dest_name);
+      const auto new_val = fmt::format("{}_new_", dest_name);
+      emit("bool {} = false;", cas_ok);
+      emit("float {} = 0.0f;", stmt->raw_name());
+      emit("while (!{}) {{", cas_ok);
+      push_indent();
+      emit("float {} = *{};", old_val, dest_name);
+      emit("float {} = ({} + {});", new_val, old_val, stmt->val->raw_name());
+      emit("{} = atomic_compare_exchange_weak_explicit(", cas_ok);
+      emit("            (device atomic_int *){},", dest_name);
+      emit("            (thread int*)(&{}),", old_val);
+      emit("            *((thread int *)(&{})),", new_val);
+      emit("            metal::memory_order_relaxed,");
+      emit("            metal::memory_order_relaxed);");
+      emit("{} = {};", stmt->raw_name(), old_val);
+      pop_indent();
+      emit("}}");
+    } else {
+      TC_NOT_IMPLEMENTED;
+    }
+  }
+
+  void visit(IfStmt *if_stmt) override {
+    emit("if ({}) {{", if_stmt->cond->raw_name());
+    if (if_stmt->true_statements) {
+      if_stmt->true_statements->accept(this);
+    }
+    emit("}} else {{");
+    if (if_stmt->false_statements) {
+      if_stmt->false_statements->accept(this);
+    }
+    emit("}}");
+  }
+
+  void visit(RangeForStmt *for_stmt) override {
+    TC_ASSERT(for_stmt->width() == 1);
+    auto *loop_var = for_stmt->loop_var;
+    if (loop_var->ret_type.data_type == DataType::i32) {
+      if (!for_stmt->reversed) {
+        emit("for (int {}_ = {}; {}_ < {}; {}_ = {}_ + {}) {{",
+             loop_var->raw_name(), for_stmt->begin->raw_name(),
+             loop_var->raw_name(), for_stmt->end->raw_name(),
+             loop_var->raw_name(), loop_var->raw_name(), 1);
+        emit("  int {} = {}_;", loop_var->raw_name(), loop_var->raw_name());
+      } else {
+        // reversed for loop
+        emit("for (int {}_ = {} - 1; {}_ >= {}; {}_ = {}_ - {}) {{",
+             loop_var->raw_name(), for_stmt->end->raw_name(),
+             loop_var->raw_name(), for_stmt->begin->raw_name(),
+             loop_var->raw_name(), loop_var->raw_name(), 1);
+        emit("  int {} = {}_;", loop_var->raw_name(), loop_var->raw_name());
+      }
+    } else {
+      TC_ASSERT(!for_stmt->reversed);
+      const auto type_name = metal_data_type_name(loop_var->element_type());
+      emit("for ({} {} = {}; {} < {}; {} = {} + ({})1) {{", type_name,
+           loop_var->raw_name(), for_stmt->begin->raw_name(),
+           loop_var->raw_name(), for_stmt->end->raw_name(),
+           loop_var->raw_name(), loop_var->raw_name(), type_name);
+    }
+    for_stmt->body->accept(this);
+    emit("}}");
+  }
+
+  void visit(StructForStmt *) override {
+    TC_ERROR("Struct for cannot be nested.");
+  }
+
+  void visit(OffloadedStmt *stmt) override {
+    TC_ASSERT(is_top_level_);
+    is_top_level_ = false;
+    using Type = OffloadedStmt::TaskType;
+    if (stmt->task_type == Type::serial) {
+      generate_serial_kernel(stmt);
+    } else if (stmt->task_type == Type::range_for) {
+      generate_range_for_kernel(stmt);
+    } else {
+      // struct_for is automatically lowered to ranged_for for dense snodes
+      // (#378). So we only need to support serial and range_for tasks.
+      TC_ERROR("Unsupported offload type={} on Metal arch", stmt->task_name());
+    }
+    is_top_level_ = true;
+  }
+
+  void visit(WhileControlStmt *stmt) override {
+    emit("if (!{}) break;", stmt->cond->raw_name());
+  }
+
+  void visit(WhileStmt *stmt) override {
+    emit("while (true) {{");
+    stmt->body->accept(this);
+    emit("}}");
+  }
+
+  void visit(RandStmt *stmt) override {
+    TC_ERROR("Metal arch doesn't support ti.random() yet");
   }
 
  private:
@@ -201,6 +542,7 @@ class MetalKernelCodegen : public IRVisitor {
   }
 
   const std::string mtl_kernel_prefix_;
+  const std::string root_snode_type_name_;
 
   bool is_top_level_{true};
   int mtl_kernel_count_{0};
@@ -227,7 +569,7 @@ FunctionType MetalCodeGen::compile(Program &,
   this->prog_ = &kernel.program;
   this->kernel_ = &kernel;
   lower();
-  return gen(runtime);
+  return gen(*prog_->snode_root, runtime);
 }
 
 void MetalCodeGen::lower() {
@@ -345,10 +687,10 @@ void MetalCodeGen::lower() {
   }
 }
 
-FunctionType MetalCodeGen::gen(MetalRuntime *runtime) {
+FunctionType MetalCodeGen::gen(const SNode &root_snode, MetalRuntime *runtime) {
   // Make a copy of the name!
   const std::string taichi_kernel_name = taichi_kernel_name_;
-  MetalKernelCodegen codegen(taichi_kernel_name);
+  MetalKernelCodegen codegen(taichi_kernel_name, root_snode.node_type_name);
   codegen.run(struct_compiled_->source_code, kernel_);
   metal::MetalKernelArgsAttributes mtl_args_attribs;
   for (const auto &arg : kernel_->args) {

@@ -23,6 +23,11 @@ class Template:
     self.dim = dim
 
   def extract(self, x):
+    import taichi as ti
+    if isinstance(x, ti.SNode):
+      return x.ptr
+    if isinstance(x, ti.Expr):
+      return x.ptr
     return x
 
 

@@ -81,14 +81,9 @@ std::string data_type_name(DataType t);
 std::string data_type_short_name(DataType t);
 
 enum class SNodeType {
-  undefined,
-  root,
-  dense,
-  dynamic,
-  place,
-  hash,
-  pointer,
-  indirect,
+#define PER_SNODE(x) x,
+#include "taichi/inc/snodes.inc.h"
+#undef PER_SNODE
 };
 
 std::string snode_type_name(SNodeType t);
@@ -96,7 +91,6 @@ std::string snode_type_name(SNodeType t);
 enum class UnaryOpType : int {
 #define PER_UNARY_OP(x) x,
 #include "taichi/inc/unary_op.inc.h"
-
 #undef PER_UNARY_OP
 };
 

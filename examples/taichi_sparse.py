@@ -16,11 +16,9 @@ block3.dense(ti.ij, 4).place(x)
 def Vector2(x, y):
   return ti.Vector([x, y])
 
-
 @ti.func
 def inside(p, c, r):
   return (p - c).norm_sqr() <= r * r
-
 
 @ti.func
 def inside_taichi(p):
@@ -81,12 +79,9 @@ def paint():
     
 img.fill(0.05)
 
-
 gui = ti.GUI('Sparse Grids', (res, res))
 
 for i in range(100000):
-  block3.deactivate_all()
-  block2.deactivate_all()
   block1.deactivate_all()
   activate(i * 0.05)
   paint()

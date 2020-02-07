@@ -6,7 +6,8 @@
 
 TLANG_NAMESPACE_BEGIN
 
-StructCompiler::StructCompiler(Program *prog) : CodeGenBase(), loopgen(this), prog(prog) {
+StructCompiler::StructCompiler(Program *prog)
+    : CodeGenBase(), loopgen(this), prog(prog) {
   creator = [] {
     TC_ERROR("Not Specified");
     return nullptr;
@@ -124,8 +125,7 @@ void StructCompiler::infer_snode_properties(SNode &snode) {
   }
 
   if (snode.ch.empty()) {
-    if (snode.type != SNodeType::indirect && snode.type != SNodeType::place &&
-        snode.type != SNodeType::root) {
+    if (snode.type != SNodeType::place && snode.type != SNodeType::root) {
       TC_ERROR("{} node must have at least one child.",
                snode_type_name(snode.type));
     }
@@ -135,8 +135,7 @@ void StructCompiler::infer_snode_properties(SNode &snode) {
 void StructCompiler::generate_types(SNode &snode) {
   auto type = snode.type;
 
-  if (snode.type != SNodeType::indirect && snode.type != SNodeType::place &&
-      snode.ch.empty()) {
+  if (snode.type != SNodeType::place && snode.ch.empty()) {
     TC_ERROR("Non-place node should have at least one child.");
   }
 
@@ -166,8 +165,6 @@ void StructCompiler::generate_types(SNode &snode) {
   } else if (type == SNodeType::dynamic) {
     emit("using {} = dynamic<{}_ch, {}>;", snode.node_type_name,
          snode.node_type_name, snode.n);
-  } else if (type == SNodeType::indirect) {
-    emit("using {} = indirect<{}_ch>;", snode.node_type_name, snode.n);
   } else if (type == SNodeType::pointer) {
     emit("using {} = pointer<{}_ch>;", snode.node_type_name,
          snode.node_type_name);

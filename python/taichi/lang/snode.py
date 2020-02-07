@@ -54,7 +54,18 @@ class SNode:
   
   def snode(self):
     return self
+  
+  def get_children(self):
+    children = []
+    for i in range(self.ptr.get_num_ch()):
+      children.append(SNode(self.ptr.get_ch(i)))
+    return children
 
   def deactivate_all(self):
-    from .meta import snode_deactivate
-    snode_deactivate(self)
+    ch = self.get_children()
+    for c in ch:
+      c.deactivate_all()
+    import taichi as ti
+    if self.ptr.type == ti.core.SNodeType.pointer:
+      from .meta import snode_deactivate
+      snode_deactivate(self)

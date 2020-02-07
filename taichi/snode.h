@@ -176,13 +176,6 @@ class SNode {
 
   SNode &place(Expr &expr);
 
-  SNode &indirect(const Index &expr, int n) {
-    auto &child = insert_children(SNodeType::indirect);
-    child.index_id = expr.value;
-    child.n = n;
-    return child;
-  }
-
   SNode &dynamic_chunked(const Index &expr, int n, int chunk_size) {
     TC_ASSERT(bit::is_power_of_two(n));
     TC_ASSERT(bit::is_power_of_two(chunk_size));

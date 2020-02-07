@@ -46,6 +46,12 @@ void export_lang(py::module &m) {
 #undef PER_ARCH
       .export_values();
 
+  py::enum_<SNodeType>(m, "SNodeType", py::arithmetic())
+#define PER_SNODE(x) .value(#x, SNodeType::x)
+#include "inc/snodes.inc.h"
+#undef PER_SNODE
+      .export_values();
+
   py::class_<CompileConfig>(m, "CompileConfig")
       .def(py::init<>())
       .def_readwrite("arch", &CompileConfig::arch)
@@ -113,6 +119,7 @@ void export_lang(py::module &m) {
       .def("clear_data", &SNode::clear_data)
       .def("clear_data_and_deactivate", &SNode::clear_data_and_deactivate)
       .def_readwrite("parent", &SNode::parent)
+      .def_readonly("type", &SNode::type)
       .def("dense",
            (SNode & (SNode::*)(const std::vector<Index> &,
                                const std::vector<int> &))(&SNode::dense),

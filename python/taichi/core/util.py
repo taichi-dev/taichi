@@ -36,7 +36,17 @@ def import_tc_core():
   tc_core = core
   if get_os_name() != 'win':
     sys.setdlopenflags(old_flags)
-  core.set_lib_dir(os.path.join(package_root(), 'lib'))
+  lib_dir = os.path.join(package_root(), 'lib')
+  core.set_lib_dir(locale_encode(lib_dir))
+
+
+def locale_encode(s):
+  try:
+    import locale
+    encoding = locale.getdefaultlocale()[1]
+  except:
+    encoding = 'utf8'
+  return s.encode(encoding)
 
 
 def is_ci():

@@ -26,15 +26,15 @@ Default precisions
 
 By default, numerical literals have 32-bit precisions.
 For example, ``42`` has type ``ti.i32`` and ``3.14`` has type ``ti.f32``.
-Default precisions can be altered using 
+Default precisions can be specified when initializing Taichi:
 
 .. code-block:: python
 
-  ti.get_runtime().set_default_fp(ti.f32)
-  ti.get_runtime().set_default_fp(ti.f64)
+  ti.init(..., default_fp=ti.f32)
+  ti.init(..., default_fp=ti.f64)
 
-  ti.get_runtime().set_default_ip(ti.i32)
-  ti.get_runtime().set_default_ip(ti.i64)
+  ti.init(..., default_ip=ti.i32)
+  ti.init(..., default_ip=ti.i64)
 
 
 Type casts

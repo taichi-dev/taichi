@@ -2,9 +2,8 @@ import taichi as ti
 import numpy as np
 from pytest import approx
 
-@ti.all_archs
+@ti.all_archs_with(fast_math=False)
 def test_precision():
-  ti.cfg.fast_math = False
   u = ti.var(ti.f64, shape=())
   v = ti.var(ti.f64, shape=())
   w = ti.var(ti.f64, shape=())
@@ -21,11 +20,9 @@ def test_precision():
 def mat_equal(A, B, tol=1e-6):
   return np.max(np.abs(A - B)) < tol
 
-@ti.all_archs
-def _test_svd(n, dt):
-  ti.get_runtime().set_default_fp(dt)
-  ti.get_runtime().set_verbose(False)
-  ti.cfg.fast_math = False
+def _test_svd(arch, dt, n):
+  ti.init(arch=arch, default_fp=dt, fast_math=False)
+  
   A = ti.Matrix(n, n, dt=dt, shape=())
   A_reconstructed = ti.Matrix(n, n, dt=dt, shape=())
   U = ti.Matrix(n, n, dt=dt, shape=())
@@ -36,11 +33,10 @@ def _test_svd(n, dt):
   
   @ti.kernel
   def run():
-    for i in range(1):
-      U[None], sigma[None], V[None] = ti.svd(A[None], dt)
-      UtU[None] = ti.transposed(U[None]) @ U[None]
-      VtV[None] = ti.transposed(V[None]) @ V[None]
-      A_reconstructed[None] = U[None] @ sigma[None] @ ti.transposed(V[None])
+    U[None], sigma[None], V[None] = ti.svd(A[None], dt)
+    UtU[None] = ti.transposed(U[None]) @ U[None]
+    VtV[None] = ti.transposed(V[None]) @ V[None]
+    A_reconstructed[None] = U[None] @ sigma[None] @ ti.transposed(V[None])
     
   if n == 3:
     A[None] = [[1, 1, 3], [9, -3, 2], [-3, 4, 2]]
@@ -60,11 +56,11 @@ def _test_svd(n, dt):
         assert sigma[None][i, j] == approx(0)
         
 def test_svd():
-  _test_svd(2, ti.f32)
-  _test_svd(2, ti.f64)
-  _test_svd(3, ti.f32)
-  _test_svd(3, ti.f64)
-
+  for arch in ti.supported_archs():
+    for fp in [ti.f32, ti.f64]:
+      for d in [2, 3]:
+        print(arch, fp, d)
+        _test_svd(arch, fp, d)
 
 @ti.all_archs
 def test_transpose_no_loop():
@@ -79,4 +75,4 @@ def test_transpose_no_loop():
   
   run()
   # As long as it passes compilation we are good
-  
+

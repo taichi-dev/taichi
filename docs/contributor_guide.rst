@@ -28,13 +28,13 @@ Tips on Taichi compiler development
 
 :ref:`compilation` may worth checking out. It explains the whole compilation process.
 
-Set ``ti.get_runtime().print_preprocessed = True``
-to inspect results of the frontend Python AST transform. The resulting scripts will generate a Taichi Frontend AST when executed.
 
 When creating a Taichi program using ``ti.init(arch=desired_arch, **kwargs)``, pass in the following parameters to make the Taichi compiler print out IR:
 
-    - ``print_ir = True``: print the Taichi IR transformation process of kernel (excluding accessors) compilation .
+    - ``print_preprocessed = True``: print results of the frontend Python AST transform. The resulting scripts will generate a Taichi Frontend AST when executed.
+    - ``print_ir = True``: print the Taichi IR transformation process of kernel (excluding accessors) compilation.
     - ``print_kernel_llvm_ir = True``: print the emitted LLVM IR by Taichi.
+    - ``ti.cfg.print_kernel_llvm_ir = True``: print the emitted LLVM IR for each invoked kernel.
     - ``print_accessor_ir = True``: print the IR transformation process of data accessors, which are special and simple kernels. (This is rarely used, unless you are debugging the compilation of data accessors.)
 
 .. note::
@@ -42,8 +42,6 @@ When creating a Taichi program using ``ti.init(arch=desired_arch, **kwargs)``, p
   Data accessors in Python-scope are implemented as special Taichi kernels.
   For example, ``x[1, 2, 3] = 3`` will call the writing accessor kernel of ``x``,
   and ``print(y[42])`` will call the reading accessor kernel of ``y``.
-
-Set ``ti.cfg.print_kernel_llvm_ir = True`` to inspect the emitted LLVM IR for each invoked kernel.
 
 Efficient Code Navigation across Python/C++
 ------------------------------------------------

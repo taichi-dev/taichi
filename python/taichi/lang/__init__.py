@@ -34,9 +34,15 @@ def reset():
   global runtime
   runtime = get_runtime()
 
-def init(**kwargs):
+def init(default_fp=None, default_ip=None, print_processed=None, **kwargs):
   import taichi as ti
   ti.reset()
+  if default_fp is not None:
+    ti.get_runtime().set_default_fp(default_fp)
+  if default_ip is not None:
+    ti.get_runtime().set_default_ip(default_ip)
+  if print_processed is not None:
+    ti.get_runtime().print_preprocessed = print_processed
   for k, v in kwargs.items():
     setattr(ti.cfg, k, v)
   ti.get_runtime().create_program()
@@ -74,8 +80,6 @@ def svd(A, dt=None):
 
 determinant = Matrix.determinant
 trace = Matrix.trace
-
-set_default_fp = pytaichi.set_default_fp
 
 
 def Tape(loss, clear_gradients=True):
@@ -140,20 +144,29 @@ def simple_test(func):
 
   return test
 
+def supported_archs():
+  import taichi as ti
+  archs = [x86_64]
+  if ti.core.with_cuda():
+    archs.append(cuda)
+  return archs
+    
+# test with all archs
+def all_archs_with(**kwargs):
+  def decorator(func):
+    import taichi as ti
+    def test(*func_args, **func_kwargs):
+      for arch in ti.supported_archs():
+        ti.init(arch=arch, **kwargs)
+        func(*func_args, **func_kwargs)
+  
+    return test
+  
+  return decorator
 
 # test with all archs
 def all_archs(func):
-  import taichi as ti
-
-  def test(*args, **kwargs):
-    archs = [x86_64]
-    if ti.core.with_cuda():
-      archs.append(cuda)
-    for arch in archs:
-      ti.init(arch=arch)
-      func(*args, **kwargs)
-
-  return test
+  return all_archs_with()(func)
 
 
 def torch_test(func):

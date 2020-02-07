@@ -26,7 +26,6 @@ def test_random_int():
     ti.init()
     n = 1024
     x = ti.var(ti.f32, shape=(n, n))
-    ti.get_runtime().set_default_fp(ti.f64)
 
     @ti.kernel
     def fill():

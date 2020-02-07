@@ -34,7 +34,7 @@ When creating a Taichi program using ``ti.init(arch=desired_arch, **kwargs)``, p
     - ``print_preprocessed = True``: print results of the frontend Python AST transform. The resulting scripts will generate a Taichi Frontend AST when executed.
     - ``print_ir = True``: print the Taichi IR transformation process of kernel (excluding accessors) compilation.
     - ``print_kernel_llvm_ir = True``: print the emitted LLVM IR by Taichi.
-    - ``ti.cfg.print_kernel_llvm_ir = True``: print the emitted LLVM IR for each invoked kernel.
+    - ``print_kernel_llvm_ir_optimized = True``: print the optimized LLVM IR for each kernel.
     - ``print_accessor_ir = True``: print the IR transformation process of data accessors, which are special and simple kernels. (This is rarely used, unless you are debugging the compilation of data accessors.)
 
 .. note::
@@ -55,7 +55,7 @@ Testing
 Tests should be added to ``taichi/tests/python``.
 
 Use ``ti test`` to run all the tests.
-(On Windows use, ``python -m taichi test``)
+(On Windows, please use ``python -m taichi test``)
 
 Documentation
 -------------

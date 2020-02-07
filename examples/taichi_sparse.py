@@ -4,7 +4,8 @@ ti.init(arch=ti.cuda)
 
 n = 512
 x = ti.var(ti.f32)
-img = ti.var(ti.f32, shape=(n, n))
+res = n + n // 4 + n // 16 + n // 64
+img = ti.var(ti.f32, shape=(res, res))
 
 block1 = ti.root.dense(ti.ij, n // 64).pointer()
 block2 = block1.dense(ti.ij, 4).pointer()
@@ -23,7 +24,7 @@ def inside(p, c, r):
 
 @ti.func
 def inside_taichi(p):
-  p = Vector2(0.5, 0.5) + (p - Vector2(0.5, 0.5)) * 1.11
+  p = p * 1.11 + Vector2(0.5, 0.5)
   ret = -1
   if not inside(p, Vector2(0.50, 0.50), 0.55):
     if ret == -1:
@@ -51,13 +52,23 @@ def inside_taichi(p):
       ret = 0
   return ret
 
-@ti.kernel
-def activate():
-  for i, j in ti.ndrange(n, n):
-      t = inside_taichi(Vector2(i / n, j / n))
-      if t != 0:
-        x[i, j] = t
+@ti.func
+def rotation_matrix2d(alpha):
+  return ti.Matrix([[ti.cos(alpha), -ti.sin(alpha)], [ti.sin(alpha), ti.cos(alpha)]])
 
+@ti.kernel
+def activate(t: ti.f32):
+  for i, j in ti.ndrange(n, n):
+    p = Vector2(i / n, j / n) - Vector2(0.5, 0.5)
+    p = rotation_matrix2d(t) @ p
+    
+    t = inside_taichi(p)
+    if t != 0:
+      x[i, j] = t
+
+@ti.func
+def scatter(i):
+  return i + i // 4 + i // 16 + i // 64
 
 @ti.kernel
 def paint():
@@ -66,12 +77,21 @@ def paint():
     t += 0.2 * ti.is_active(block1, [i, j])
     t += 0.2 * ti.is_active(block2, [i, j])
     t += 0.2 * ti.is_active(block3, [i, j])
-    img[i, j] = t
+    img[scatter(i), scatter(j)] = 1 - t
     
-activate()
-paint()
 
-gui = ti.GUI('Logo', (512, 512))
-while True:
-  gui.set_image(1 - img.to_numpy())
+@ti.kernel
+def deactivate(b: ti.template()):
+  for I in ti.grouped(b):
+    ti.deactivate(b, I)
+    
+
+gui = ti.GUI('Logo', (res, res))
+for i in range(100000):
+  deactivate(block3)
+  deactivate(block2)
+  deactivate(block1)
+  activate(i * 0.05)
+  paint()
+  gui.set_image(img.to_numpy())
   gui.show()

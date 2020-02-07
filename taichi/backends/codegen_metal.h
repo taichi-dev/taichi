@@ -28,7 +28,7 @@ class MetalCodeGen {
 
  private:
   void lower();
-  FunctionType gen(MetalRuntime *runtime);
+  FunctionType gen(const SNode &root_snode, MetalRuntime *runtime);
 
   const int id_;
   const std::string taichi_kernel_name_;

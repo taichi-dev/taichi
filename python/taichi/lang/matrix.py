@@ -542,3 +542,8 @@ class Matrix:
   def identity(dt, n):
     import taichi as ti
     return ti.Matrix([[ti.cast(int(i == j), dt) for j in range(n)] for i in range(n)])
+  
+  @staticmethod
+  def rotation2d(alpha):
+    import taichi as ti
+    return ti.Matrix([[ti.cos(alpha), -ti.sin(alpha)], [ti.sin(alpha), ti.cos(alpha)]])

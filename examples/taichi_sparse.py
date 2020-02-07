@@ -50,19 +50,14 @@ def inside_taichi(p):
       ret = 0
   return ret
 
-@ti.func
-def rotation_matrix2d(alpha):
-  return ti.Matrix([[ti.cos(alpha), -ti.sin(alpha)], [ti.sin(alpha), ti.cos(alpha)]])
-
 @ti.kernel
 def activate(t: ti.f32):
   for i, j in ti.ndrange(n, n):
     p = Vector2(i / n, j / n) - Vector2(0.5, 0.5)
-    p = rotation_matrix2d(ti.sin(t)) @ p
+    p = ti.Matrix.rotation2d(ti.sin(t)) @ p
     
-    t = inside_taichi(p)
-    if t != 0:
-      x[i, j] = t
+    if inside_taichi(p):
+      x[i, j] = 1
 
 @ti.func
 def scatter(i):

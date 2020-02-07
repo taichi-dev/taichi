@@ -60,7 +60,9 @@ def subscript(value, *indices):
       indices_expr_group = make_expr_group()
     else:
       indices_expr_group = make_expr_group(*indices)
-    assert int(value.ptr.get_attribute("dim")) == indices_expr_group.size()
+    tensor_dim = int(value.ptr.get_attribute("dim"))
+    index_dim = indices_expr_group.size()
+    assert tensor_dim == index_dim, f'Tensor with dim {tensor_dim} accessed with indices of dim {index_dim}'
     return Expr(taichi_lang_core.subscript(value.ptr, indices_expr_group))
 
 
@@ -81,24 +83,11 @@ class PyTaichi:
     self.target_tape = None
     self.inside_complex_kernel = False
     self.kernels = kernels
-    self.verbose_kernel_launch = False
     Expr.materialize_layout_callback = self.materialize
     
   def get_num_compiled_functions(self):
     return len(self.compiled_functions) + len(self.compiled_grad_functions)
   
-  def set_verbose_kernel_launch(self, val):
-    self.verbose_kernel_launch = val
-
-  def set_verbose(self, verbose):
-    import taichi as ti
-    if verbose:
-      default_cfg().verbose = True
-      ti.set_logging_level('trace')
-    else:
-      default_cfg().verbose = False
-      ti.set_logging_level('error')
-
   def set_default_fp(self, fp):
     assert fp in [f32, f64]
     self.default_fp = fp

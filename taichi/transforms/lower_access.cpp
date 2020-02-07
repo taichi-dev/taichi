@@ -115,8 +115,8 @@ class LowerAccess : public IRVisitor {
 
       if (return_is_active && i == (int)snodes.size() - 1) {
         // Create a SNodeOp querying if element i(linearized) of node is active
-        lowered.push_back<SNodeOpStmt>(SNodeOpType::is_active, snodes[i],
-                                       last, linearized);
+        lowered.push_back<SNodeOpStmt>(SNodeOpType::is_active, snodes[i], last,
+                                       linearized);
       } else {
         auto lookup = lowered.push_back<SNodeLookupStmt>(
             snode, last, linearized,

@@ -93,9 +93,8 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
     auto prog = this->prog;
     return [offloaded_local, prog](Context context) {
       for (auto task : offloaded_local) {
-        if (prog->config.verbose_kernel_launches)
-          TC_INFO("Launching kernel {}<<<{}, {}>>>", task.name, task.grid_dim,
-                  task.block_dim);
+        TC_DEBUG("Launching kernel {}<<<{}, {}>>>", task.name, task.grid_dim,
+                 task.block_dim);
 
         ProfilerBase *profiler = nullptr;
         if (prog->config.enable_profiler) {

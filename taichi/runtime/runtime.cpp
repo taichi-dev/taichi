@@ -262,6 +262,8 @@ STRUCT_FIELD(StructMeta, context);
 
 struct Runtime;
 
+constexpr bool enable_assert = true;
+
 void taichi_assert(Context *context, i32 test, const char *msg);
 void taichi_assert_runtime(Runtime *runtime, i32 test, const char *msg);
 #define TC_ASSERT_INFO(x, msg) taichi_assert(context, (int)(x), msg)
@@ -554,14 +556,18 @@ void __assertfail(const char *message,
                   std::size_t charSize);
 
 void taichi_assert_runtime(Runtime *runtime, i32 test, const char *msg) {
-  if (test == 0) {
-    __assertfail(msg, "", 1, "", 1);
+  if (enable_assert) {
+    if (test == 0) {
+      __assertfail(msg, "", 1, "", 1);
+    }
   }
 }
 #else
 void taichi_assert_runtime(Runtime *runtime, i32 test, const char *msg) {
-  if (test == 0) {
-    runtime->assert_failed(msg);
+  if (enable_assert) {
+    if (test == 0) {
+      runtime->assert_failed(msg);
+    }
   }
 }
 #endif

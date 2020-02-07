@@ -6,9 +6,8 @@ import time
 import random
 from renderer_utils import out_dir, ray_aabb_intersection, inf, eps, \
   intersect_sphere, sphere_aabb_intersect_motion, inside_taichi
-import sys
 
-ti.init(arch=ti.cuda)
+ti.init(arch=ti.cuda, verbose_kernel_launches=True)
 
 res = 1280, 720
 num_spheres = 1024
@@ -51,7 +50,7 @@ supporter = 2
 shutter_time = 0.5e-3
 sphere_radius = 0.0015
 particle_grid_res = 256
-max_num_particles_per_cell = 8192
+max_num_particles_per_cell = 8192 * 1024
 max_num_particles = 1024 * 1024 * 4
 
 assert sphere_radius * 2 * particle_grid_res < 1
@@ -65,7 +64,7 @@ def buffers():
       ti.ijk, 8).place(voxel_has_particle)
   ti.root.dense(ti.ijk, 4).dense(
       ti.ijk, particle_grid_res // 8).pointer().dense(ti.ijk, 8).dynamic(
-          ti.l, max_num_particles_per_cell, 128).place(pid)
+          ti.l, max_num_particles_per_cell, 512).place(pid)
 
   ti.root.dense(ti.l, max_num_particles).place(particle_x, particle_v,
                                                particle_color)
@@ -335,7 +334,6 @@ aspect_ratio = res[0] / res[1]
 
 @ti.kernel
 def render():
-  ti.parallelize(6)
   for u, v in color_buffer:
     pos = camera_pos
     d = ti.Vector([(
@@ -404,25 +402,24 @@ support = 2
 
 @ti.kernel
 def initialize_particle_grid():
-  for p in particle_x:
-    if p < num_particles:
-      x = particle_x[p]
-      v = particle_v[p]
-      ipos = ti.Matrix.floor(x * particle_grid_res).cast(ti.i32)
-      for i in range(-support, support + 1):
-        for j in range(-support, support + 1):
-          for k in range(-support, support + 1):
-            offset = ti.Vector([i, j, k])
-            box_ipos = ipos + offset
-            if inside_particle_grid(box_ipos):
-              box_min = box_ipos * (1 / particle_grid_res)
-              box_max = (box_ipos + ti.Vector([1, 1, 1])) * (
-                  1 / particle_grid_res)
-              if sphere_aabb_intersect_motion(
-                  box_min, box_max, x - 0.5 * shutter_time * v,
-                  x + 0.5 * shutter_time * v, sphere_radius):
-                ti.append(pid.parent(), box_ipos, p)
-                voxel_has_particle[box_ipos] = 1
+  for p in range(num_particles[None]):
+    x = particle_x[p]
+    v = particle_v[p]
+    ipos = ti.Matrix.floor(x * particle_grid_res).cast(ti.i32)
+    for i in range(-support, support + 1):
+      for j in range(-support, support + 1):
+        for k in range(-support, support + 1):
+          offset = ti.Vector([i, j, k])
+          box_ipos = ipos + offset
+          if inside_particle_grid(box_ipos):
+            box_min = box_ipos * (1 / particle_grid_res)
+            box_max = (box_ipos + ti.Vector([1, 1, 1])) * (
+                1 / particle_grid_res)
+            if sphere_aabb_intersect_motion(
+                box_min, box_max, x - 0.5 * shutter_time * v,
+                x + 0.5 * shutter_time * v, sphere_radius):
+              ti.append(pid.parent(), box_ipos, p)
+              voxel_has_particle[box_ipos] = 1
 
 @ti.kernel
 def copy(img: ti.ext_arr(), samples:ti.i32):
@@ -459,18 +456,16 @@ def main():
 
   @ti.kernel
   def initialize_particle_x(x: ti.ext_arr(), v: ti.ext_arr(), color: ti.ext_arr()):
-    for i in range(max_num_particles):
-      if i < num_particles:
-        for c in ti.static(range(3)):
-          particle_x[i][c] = x[i, c]
-          particle_v[i][c] = v[i, c]
-          particle_color[i][c] = color[i, c]
+    for i in range(num_particles[None]):
+      for c in ti.static(range(3)):
+        particle_x[i][c] = x[i, c]
+        particle_v[i][c] = v[i, c]
+        particle_color[i][c] = color[i, c]
 
-        # reconstruct grid using particle position and MPM p2g.
-        for k in ti.static(range(27)):
-          base_coord = (inv_dx * particle_x[i] - 0.5).cast(ti.i32) + ti.Vector(
-              [k // 9, k // 3 % 3, k % 3])
-          grid_density[base_coord // grid_visualization_block_size] = 1
+      for k in ti.static(range(27)):
+        base_coord = (inv_dx * particle_x[i] - 0.5).cast(ti.i32) + ti.Vector(
+            [k // 9, k // 3 % 3, k % 3])
+        grid_density[base_coord // grid_visualization_block_size] = 1
 
   initialize_particle_x(np_x, np_v, np_c)
   initialize_particle_grid()

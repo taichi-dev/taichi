@@ -13,6 +13,8 @@ TC_NAMESPACE_BEGIN
 
 Function11 python_at_exit;
 
+const auto default_logging_level = spdlog::level::info;
+
 void signal_handler(int signo);
 
 #define TC_REGISTER_SIGNAL_HANDLER(name, handler)                   \
@@ -64,8 +66,12 @@ Logger::Logger() {
   TC_REGISTER_SIGNAL_HANDLER(SIGBUS, signal_handler);
 #endif
   TC_REGISTER_SIGNAL_HANDLER(SIGFPE, signal_handler);
-  spdlog::set_level(spdlog::level::trace);
+  set_level_default();
   TC_TRACE("Taichi core started. Thread ID = {}", PID::get_pid());
+}
+
+void Logger::set_level_default() {
+  console->set_level(default_logging_level);
 }
 
 void Logger::trace(const std::string &s) {

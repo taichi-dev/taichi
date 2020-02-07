@@ -349,7 +349,7 @@ CompileConfig::CompileConfig() {
   max_vector_width = 8;
   force_vectorized_global_load = false;
   force_vectorized_global_store = false;
-  debug = CoreState::get_debug();
+  debug = false;
 #if defined(TC_PLATFORM_OSX)
   gcc_version = -1;
 #else

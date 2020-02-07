@@ -172,7 +172,6 @@ class CoreState {
  public:
   bool python_imported = false;
   bool trigger_gdb_when_crash = false;
-  bool debug = false;
 
   static CoreState &get_instance();
 
@@ -182,14 +181,6 @@ class CoreState {
 
   static void set_trigger_gdb_when_crash(bool val) {
     get_instance().trigger_gdb_when_crash = val;
-  }
-
-  static void set_debug(bool val) {
-    get_instance().debug = val;
-  }
-
-  static bool get_debug() {
-    return get_instance().debug;
   }
 };
 
@@ -379,6 +370,7 @@ class Logger {
   void critical(const std::string &s, bool raise_signal = true);
   void flush();
   void set_level(const std::string &level);
+  void set_level_default();
 };
 
 extern Logger logger;

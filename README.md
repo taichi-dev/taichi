@@ -50,7 +50,8 @@ python3 -m pip install taichi-nightly-cuda-10-1
 - (Feb   6, 2020) v0.4.5 released.
    - **`ti.init(arch=..., print_ir=..., default_fp=..., default_ip=...)`** now supported. `ti.cfg.xxx` is deprecated
    - **Immediate data layout specification** supported after `ti.init`. No need to wrap data layout definition with `@ti.layout` anymore (unless you intend to do so)
-   - `ti.is_active`, `ti.deactivate`, `SNode.deactivate_all` supported. [Example](https://github.com/taichi-dev/taichi/blob/8b575a8ec2d8c7112191eef2a8316b793ba2452d/examples/taichi_sparse.py)
+   - `ti.is_active`, `ti.deactivate`, `SNode.deactivate_all` supported in the new LLVM x64/CUDA backend. [Example](https://github.com/taichi-dev/taichi/blob/8b575a8ec2d8c7112191eef2a8316b793ba2452d/examples/taichi_sparse.py) <img src="https://github.com/yuanming-hu/public_files/raw/master/graphics/taichi/sparse_grids.gif">
+   - Experimental [Windows non-UTF-8 path](https://github.com/taichi-dev/taichi/issues/428) fix (by **Yubin Peng [archibate]**)
    - `ti.global_var` (which duplicates `ti.var`) is removed
    - `ti.Matrix.rotation2d(angle)` added
 - (Feb   5, 2020) v0.4.4 released.
@@ -78,7 +79,7 @@ python3 -m pip install taichi-nightly-cuda-10-1
    - Python 3.5 support is dropped. Please use Python 3.6(pip)/3.7(pip)/3.8(Windows: pip; OS X & Linux: build from source) (by **Chujie Zeng [Psycho7]**)
    - `ti.deactivate` now supported on sparse data structures
    - `GUI.circles` (batched circle drawing) performance improved by 30x
-   - Minor bug fixes (by **Yubing Peng [archibate], Ye Kuang [k-ye]**)
+   - Minor bug fixes (by **Yubin Peng [archibate], Ye Kuang [k-ye]**)
    - Doc updated
 - (Jan  20, 2020) v0.3.25 released.
    - Experimental [CPU-only support for NVIDIA Jetson Nano](https://user-images.githubusercontent.com/34827518/72769070-62b1b200-3c34-11ea-8f6e-0f339b5b09ca.jpg) (with ARM CPUs. Building from source required.) (thanks to **Walter liu

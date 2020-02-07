@@ -60,7 +60,7 @@ def rotation_matrix2d(alpha):
 def activate(t: ti.f32):
   for i, j in ti.ndrange(n, n):
     p = Vector2(i / n, j / n) - Vector2(0.5, 0.5)
-    p = rotation_matrix2d(t) @ p
+    p = rotation_matrix2d(ti.sin(t)) @ p
     
     t = inside_taichi(p)
     if t != 0:
@@ -68,29 +68,26 @@ def activate(t: ti.f32):
 
 @ti.func
 def scatter(i):
-  return i + i // 4 + i // 16 + i // 64
+  return i + i // 4 + i // 16 + i // 64 + 2
 
 @ti.kernel
 def paint():
   for i, j in ti.ndrange(n, n):
-    t = x[i, j] * 0.2
-    t += 0.2 * ti.is_active(block1, [i, j])
-    t += 0.2 * ti.is_active(block2, [i, j])
-    t += 0.2 * ti.is_active(block3, [i, j])
-    img[scatter(i), scatter(j)] = 1 - t
+    t = x[i, j]
+    t += ti.is_active(block1, [i, j])
+    t += ti.is_active(block2, [i, j])
+    t += ti.is_active(block3, [i, j])
+    img[scatter(i), scatter(j)] = 1 - t / 4
     
+img.fill(0.05)
 
-@ti.kernel
-def deactivate(b: ti.template()):
-  for I in ti.grouped(b):
-    ti.deactivate(b, I)
-    
 
-gui = ti.GUI('Logo', (res, res))
+gui = ti.GUI('Sparse Grids', (res, res))
+
 for i in range(100000):
-  deactivate(block3)
-  deactivate(block2)
-  deactivate(block1)
+  block3.deactivate_all()
+  block2.deactivate_all()
+  block1.deactivate_all()
   activate(i * 0.05)
   paint()
   gui.set_image(img.to_numpy())

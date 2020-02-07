@@ -54,3 +54,7 @@ class SNode:
   
   def snode(self):
     return self
+
+  def deactivate_all(self):
+    from .meta import snode_deactivate
+    snode_deactivate(self)

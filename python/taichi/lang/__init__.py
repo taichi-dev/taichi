@@ -34,7 +34,11 @@ def reset():
   global runtime
   runtime = get_runtime()
 
-def init(default_fp=None, default_ip=None, print_processed=None, **kwargs):
+def init(default_fp=None, default_ip=None, print_processed=None, debug=None, **kwargs):
+  if debug is None:
+    import os
+    debug = bool(int(os.environ.get('TI_DEBUG', '0')))
+
   import taichi as ti
   ti.reset()
   if default_fp is not None:
@@ -43,6 +47,9 @@ def init(default_fp=None, default_ip=None, print_processed=None, **kwargs):
     ti.get_runtime().set_default_ip(default_ip)
   if print_processed is not None:
     ti.get_runtime().print_preprocessed = print_processed
+  if debug:
+    ti.set_logging_level('debug')
+  ti.cfg.debug = debug
   for k, v in kwargs.items():
     setattr(ti.cfg, k, v)
   ti.get_runtime().create_program()

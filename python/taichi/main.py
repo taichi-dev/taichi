@@ -40,6 +40,10 @@ def main(debug=False):
   lines.append(u' *******************************************')
   lines.append(u' **     Taichi Programming Language       **')
   lines.append(u' *******************************************')
+  if 'TI_DEBUG' in os.environ:
+    val = os.environ['TI_DEBUG']
+    if val not in ['0', '1']:
+      raise ValueError("Environment variable TI_DEBUG can only have value 0 or 1.")
   if debug:
     lines.append(u' *****************Debug Mode****************')
     os.environ['TI_DEBUG'] = '1'

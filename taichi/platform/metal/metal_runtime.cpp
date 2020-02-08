@@ -137,7 +137,8 @@ void MetalRuntime::CompiledMtlKernel::launch(
     MTLBuffer *global_tmps_buffer,
     MTLBuffer *args_buffer,
     MTLCommandBuffer *command_buffer) {
-  TC_ASSERT(kernel_attribs_.num_threads > 0);
+  // 0 is valid for |num_threads|!
+  TC_ASSERT(kernel_attribs_.num_threads >= 0);
   profiler_->start(profiler_id_);
   auto encoder = new_compute_command_encoder(command_buffer);
   TC_ASSERT(encoder != nullptr);
@@ -159,8 +160,9 @@ void MetalRuntime::CompiledMtlKernel::launch(
   profiler_->stop();
   if ((kernel_attribs_.task_type == KernelTaskType::range_for) &&
       !kernel_attribs_.range_for_attribs.const_range()) {
-    // Reset |num_thread| because this can change in different launches.
-    kernel_attribs_.num_threads = 0;
+    // Set |num_thread| to an invalid number to make sure the next launch
+    // re-computes it correctly.
+    kernel_attribs_.num_threads = -1;
   }
 }
 
@@ -253,7 +255,7 @@ void MetalRuntime::launch_taichi_kernel(const std::string &taichi_kernel_name,
       const int end = ka->range_for_attribs.const_end
                           ? ka->range_for_attribs.end
                           : load_global_tmp(ka->range_for_attribs.end);
-      TC_ASSERT(ka->num_threads == 0);
+      TC_ASSERT(ka->num_threads == -1);
       ka->num_threads = end - begin;
     }
     mk->launch(root_buffer_.get(), ctk.global_tmps_buffer_.get(),

@@ -186,6 +186,7 @@ std::string binary_op_type_symbol(BinaryOpType type) {
     REGISTER_TYPE(mod, %);
     REGISTER_TYPE(max, max);
     REGISTER_TYPE(min, min);
+    REGISTER_TYPE(atan2, atan2);
     REGISTER_TYPE(cmp_lt, <);
     REGISTER_TYPE(cmp_le, <=);
     REGISTER_TYPE(cmp_gt, >);

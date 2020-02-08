@@ -14,8 +14,15 @@
 #include <taichi/system/threading.h>
 #include <taichi/unified_allocator.h>
 #include "memory_pool.h"
+
 #if defined(TC_PLATFORM_UNIX)
 #include <dlfcn.h>
+#endif
+
+#if defined(TC_SUPPORTS_METAL)
+#include <optional>
+#include <taichi/platform/metal/metal_kernel_util.h>
+#include <taichi/platform/metal/metal_runtime.h>
 #endif
 
 TLANG_NAMESPACE_BEGIN
@@ -166,6 +173,12 @@ class Program {
   void finalize();
 
   ~Program();
+
+ private:
+#if defined(TC_SUPPORTS_METAL)
+  std::optional<metal::StructCompiledResult> metal_struct_compiled_;
+  std::unique_ptr<metal::MetalRuntime> metal_runtime_;
+#endif
 };
 
 TLANG_NAMESPACE_END

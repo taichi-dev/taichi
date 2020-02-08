@@ -50,6 +50,7 @@ class Index {
 // "Structural" nodes
 class SNode {
  public:
+  // Children
   std::vector<Handle<SNode>> ch;
 
   IndexExtractor extractors[max_num_indices];
@@ -100,11 +101,11 @@ class SNode {
   bool _bitmasked{};
   bool has_aux_structure{};
 
-  std::string get_node_type_name() {
+  std::string get_node_type_name() const {
     return fmt::format("S{}", id);
   }
 
-  std::string get_node_type_name_hinted() {
+  std::string get_node_type_name_hinted() const {
     return fmt::format("S{}{}", id, snode_type_name(type));
   }
 

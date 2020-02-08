@@ -4,8 +4,10 @@
 #include "program.h"
 #include "snode.h"
 #include "backends/struct.h"
+#include "backends/struct_metal.h"
 #include "backends/codegen_x86.h"
 #include "backends/codegen_cuda.h"
+#include "backends/codegen_metal.h"
 
 #if defined(CUDA_FOUND)
 
@@ -67,6 +69,13 @@ FunctionType Program::compile(Kernel &kernel) {
   } else if (kernel.arch == Arch::cuda) {
     GPUCodeGen codegen(kernel.name);
     ret = codegen.compile(*this, kernel);
+  } else if (kernel.arch == Arch::metal) {
+#if defined(TC_SUPPORTS_METAL)
+    metal::MetalCodeGen codegen(kernel.name, &metal_struct_compiled_.value());
+    ret = codegen.compile(*this, kernel, metal_runtime_.get());
+#else
+    TC_ERROR("Metal not supported on the current OS");
+#endif  // TC_SUPPORTS_METAL
   } else {
     TC_NOT_IMPLEMENTED;
   }
@@ -91,6 +100,19 @@ void Program::materialize_layout() {
     std::unique_ptr<StructCompiler> scomp_gpu =
         StructCompiler::make(config.use_llvm, this, Arch::cuda);
     scomp_gpu->run(*snode_root, false);
+  } else if (config.arch == Arch::metal) {
+#if defined(TC_SUPPORTS_METAL)
+    metal::MetalStructCompiler scomp;
+    metal_struct_compiled_ = scomp.run(*snode_root);
+    if (metal_runtime_ == nullptr) {
+      metal_runtime_ = std::make_unique<metal::MetalRuntime>(
+          metal_struct_compiled_->root_size, memory_pool.get(),
+          profiler_llvm.get());
+    }
+    TC_DEBUG("Metal root buffer size={}", metal_struct_compiled_->root_size);
+#else
+    TC_ERROR("Metal not supported on the current OS");
+#endif  // TC_SUPPORTS_METAL
   }
 }
 
@@ -102,6 +124,12 @@ void Program::synchronize() {
 #else
       TC_ERROR("No CUDA support");
 #endif
+    } else if (config.arch == Arch::metal) {
+#if defined(TC_SUPPORTS_METAL)
+      metal_runtime_->synchronize();
+#else
+      TC_ERROR("No Metal support");
+#endif  // TC_SUPPORTS_METAL
     }
     sync = true;
   }
@@ -208,7 +236,17 @@ Kernel &Program::get_snode_reader(SNode *snode) {
         snode->num_active_indices, load_if_ptr((snode->expr)[indices]));
     current_ast_builder().insert(std::move(ret));
   });
-  ker.set_arch(get_host_arch());
+  if (config.arch == Arch::metal) {
+    // For now, we launch a Metal kernel to read back the memory. This is not
+    // efficient, but should be improved once we have batch + async reader.
+#if defined(TC_SUPPORTS_METAL)
+    ker.set_arch(Arch::metal);
+#else
+    TC_ERROR("Metal not supported on the current OS");
+#endif  // TC_SUPPORTS_METAL
+  } else {
+    ker.set_arch(get_host_arch());
+  }
   ker.name = kernel_name;
   ker.is_accessor = true;
   for (int i = 0; i < snode->num_active_indices; i++)
@@ -229,7 +267,17 @@ Kernel &Program::get_snode_writer(SNode *snode) {
     (snode->expr)[indices] =
         Expr::make<ArgLoadExpression>(snode->num_active_indices);
   });
-  ker.set_arch(get_host_arch());
+  if (config.arch == Arch::metal) {
+    // For now, we launch a Metal kernel to read back the memory. This is not
+    // efficient, but should be improved once we have batch + async writer.
+#if defined(TC_SUPPORTS_METAL)
+    ker.set_arch(Arch::metal);
+#else
+    TC_ERROR("Metal not supported on the current OS");
+#endif  // TC_SUPPORTS_METAL
+  } else {
+    ker.set_arch(get_host_arch());
+  }
   ker.name = kernel_name;
   ker.is_accessor = true;
   for (int i = 0; i < snode->num_active_indices; i++)

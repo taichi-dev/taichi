@@ -24,6 +24,7 @@ cfg = default_cfg()
 current_cfg = current_cfg()
 x86_64 = core.x86_64
 cuda = core.cuda
+metal = core.metal
 profiler_print = lambda: core.get_current_program().profiler_print()
 profiler_clear = lambda: core.get_current_program().profiler_clear()
 

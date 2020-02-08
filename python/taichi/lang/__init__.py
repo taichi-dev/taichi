@@ -28,6 +28,14 @@ metal = core.metal
 profiler_print = lambda: core.get_current_program().profiler_print()
 profiler_clear = lambda: core.get_current_program().profiler_clear()
 
+class _Extension(object):
+  def __init__(self):
+    self.sparse = core.sparse
+    self.data64 = core.data64
+
+extension = _Extension()
+is_supported = core.is_supported
+
 
 def reset():
   from .impl import reset as impl_reset
@@ -158,23 +166,99 @@ def supported_archs():
   if ti.core.with_cuda():
     archs.append(cuda)
   return archs
-    
+
+class _ArchCheckers(object):
+  def __init__(self):
+    self._checkers = []
+
+  def register(self, c):
+    self._checkers.append(c)
+
+  def __call__(self, arch):
+    assert isinstance(arch, core.Arch) 
+    return all([c(arch) for c in self._checkers])
+
+_tests_arch_checkers_argname = '_tests_arch_checkers'
+
+def _get_or_make_arch_checkers(kwargs):
+  k = _tests_arch_checkers_argname
+  if k not in kwargs:
+    kwargs[k] = _ArchCheckers()
+  return kwargs[k]
+
 # test with all archs
 def all_archs_with(**kwargs):
   def decorator(func):
-    import taichi as ti
     def test(*func_args, **func_kwargs):
+      import taichi as ti
+      can_run_on = func_kwargs.pop(
+          _tests_arch_checkers_argname, _ArchCheckers())
+      # Filter away archs that don't support 64-bit data.
+      fp = func_kwargs.get('default_fp', ti.get_runtime().default_fp)
+      ip = func_kwargs.get('default_ip', ti.get_runtime().default_ip)
+      if fp == ti.f64 or ip == ti.i64:
+        can_run_on.register(lambda arch: is_supported(arch, extension.data64))
+
       for arch in ti.supported_archs():
-        ti.init(arch=arch, **kwargs)
-        func(*func_args, **func_kwargs)
-  
+        if can_run_on(arch):
+          ti.init(arch=arch, **kwargs)
+          func(*func_args, **func_kwargs)
+
     return test
-  
+
   return decorator
 
 # test with all archs
 def all_archs(func):
   return all_archs_with()(func)
+
+
+# Exclude the given archs when running the tests
+#
+# Example usage:
+#
+# ti.archs_excluding(ti.cuda, ti.metal)
+# def test_xx():
+#   ...
+#
+# ti.archs_excluding(ti.cuda, default_fp=ti.f64)
+# def test_yy():
+#   ...
+def archs_excluding(*excluded_archs, **kwargs):
+  # |kwargs| will be passed to all_archs_with(**kwargs)
+  assert all([isinstance(a, core.Arch) for a in excluded_archs])
+  excluded_archs = set(excluded_archs)
+
+  def decorator(func):
+    def wrap(*func_args, **func_kwargs):
+      def checker(arch): return arch not in excluded_archs
+      _get_or_make_arch_checkers(func_kwargs).register(checker)
+      return all_archs_with(**kwargs)(func)(*func_args, **func_kwargs)
+    return wrap
+  return decorator
+
+
+# Specifies the extension features the archs are required to support in order
+# to run the test.
+#
+# Example usage:
+#
+# ti.require(ti.extension.data64)
+# ti.all_archs(default_fp=ti.f64)
+# def test_xx():
+#   ...
+def require(*exts):
+  # Because this decorator injects an arch checker, its usage must be followed
+  # with all_archs_with(), either directly or indirectly.
+  assert all([isinstance(e, core.Extension) for e in exts])
+
+  def decorator(func):
+    def wrapped(*func_args, **func_kwargs):
+      def checker(arch): return all([is_supported(arch, e) for e in exts])
+      _get_or_make_arch_checkers(func_kwargs).register(checker)
+      func(*func_args, **func_kwargs)
+    return wrapped
+  return decorator
 
 
 def torch_test(func):

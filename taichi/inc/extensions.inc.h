@@ -1,0 +1,3 @@
+// Lists of extension features
+PER_EXTENSION(sparse)
+PER_EXTENSION(data64)  // Metal doesn't support 64-bit data buffers yet...

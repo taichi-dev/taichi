@@ -3,6 +3,7 @@
 #include "tlang.h"
 #include <pybind11/functional.h>
 #include <pybind11/pybind11.h>
+#include <taichi/extension.h>
 #include <taichi/common/interface.h>
 #include <taichi/python/export.h>
 #include "svd.h"
@@ -50,6 +51,12 @@ void export_lang(py::module &m) {
 #define PER_SNODE(x) .value(#x, SNodeType::x)
 #include "inc/snodes.inc.h"
 #undef PER_SNODE
+      .export_values();
+
+  py::enum_<Extension>(m, "Extension", py::arithmetic())
+#define PER_EXTENSION(x) .value(#x, Extension::x)
+#include "inc/extensions.inc.h"
+#undef PER_EXTENSION
       .export_values();
 
   py::class_<CompileConfig>(m, "CompileConfig")
@@ -436,6 +443,7 @@ void export_lang(py::module &m) {
   m.def("global_var_expr_from_snode", [](SNode *snode) {
     return Expr::make<GlobalVariableExpression>(snode);
   });
+  m.def("is_supported", is_supported);
 }
 
 TC_NAMESPACE_END

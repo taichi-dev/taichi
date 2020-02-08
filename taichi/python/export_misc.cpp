@@ -3,6 +3,7 @@
     The use of this software is governed by the LICENSE file.
 *******************************************************************************/
 
+#include <taichi/common/util.h>
 #include <taichi/common/task.h>
 #include <taichi/math/math.h>
 #include <taichi/python/exception.h>
@@ -77,6 +78,14 @@ void stop_duplicating_stdout_to_file(const std::string &fn) {
 
 bool with_cuda() {
 #if defined(TLANG_WITH_CUDA)
+  return true;
+#else
+  return false;
+#endif
+}
+
+bool with_metal() {
+#if defined(TC_SUPPORTS_METAL)
   return true;
 #else
   return false;
@@ -158,6 +167,7 @@ void export_misc(py::module &m) {
     printf("test was successful.\n");
   });
   m.def("with_cuda", with_cuda);
+  m.def("with_metal", with_metal);
 }
 
 TC_NAMESPACE_END

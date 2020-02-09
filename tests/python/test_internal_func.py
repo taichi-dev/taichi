@@ -2,7 +2,12 @@ import taichi as ti
 import time
 
 # TODO: these are not really tests...
-@ti.all_archs
+def all_archs_for_this(test):
+  # ti.call_internal() is not supported on Metal yet
+  return ti.archs_excluding(ti.metal)(test)
+
+
+@all_archs_for_this
 def test_basic():
   @ti.kernel
   def test():
@@ -12,7 +17,7 @@ def test_basic():
   test()
 
 
-@ti.all_archs
+@all_archs_for_this
 def test_host_polling():
   return
   @ti.kernel
@@ -24,7 +29,7 @@ def test_host_polling():
     test()
     time.sleep(0.1)
     
-@ti.all_archs
+@all_archs_for_this
 def test_list_manager():
   @ti.kernel
   def test():
@@ -34,7 +39,7 @@ def test_list_manager():
   test()
 
 
-@ti.all_archs
+@all_archs_for_this
 def test_node_manager():
   @ti.kernel
   def test():

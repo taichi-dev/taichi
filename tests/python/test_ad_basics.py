@@ -17,13 +17,13 @@ def if_has_autograd(func):
   return wrapper
 
 # Note: test happens at v = 0.2
-@if_has_autograd
 def grad_test(tifunc, npfunc=None, default_fp=ti.f32):
-  for arch in ti.supported_archs():
-    ti.init(arch=arch, default_fp=default_fp)
-    if npfunc is None:
+  if npfunc is None:
       npfunc = tifunc
 
+  @ti.all_archs_with(default_fp=default_fp)
+  def impl():
+    print(f'arch={ti.cfg.arch} default_fp={ti.cfg.default_fp}')
     x = ti.var(default_fp)
     y = ti.var(default_fp)
 
@@ -45,6 +45,8 @@ def grad_test(tifunc, npfunc=None, default_fp=ti.f32):
 
     assert y[0] == approx(npfunc(v))
     assert x.grad[0] == approx(grad(npfunc)(v))
+  impl()
+
 
 @if_has_autograd
 @ti.all_archs
@@ -81,6 +83,7 @@ def test_trigonometric():
   grad_test(lambda x: ti.asin(x), lambda x: np.arcsin(x))
 
 
+@if_has_autograd
 def test_frac():
   grad_test(lambda x: 1 / x)
   grad_test(lambda x: (x + 1) / (x - 1))
@@ -136,7 +139,8 @@ def test_mod():
 def test_atan2():
   grad_test(lambda x: ti.atan2(0.4, x), lambda x: np.arctan2(0.4, x))
   grad_test(lambda y: ti.atan2(y, 0.4), lambda y: np.arctan2(y, 0.4))
-  
+
+
 @if_has_autograd
 def test_atan2_f64():
   grad_test(lambda x: ti.atan2(0.4, x), lambda x: np.arctan2(0.4, x), default_fp=ti.f64)

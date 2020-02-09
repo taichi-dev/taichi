@@ -1,11 +1,11 @@
 import taichi as ti
 import numpy as np
 
-@ti.all_archs
+
 def _test_op(dt, taichi_op, np_op):
+  print('arch={} default_fp={}'.format(ti.cfg.arch, ti.cfg.default_fp))
   n = 4
   val = ti.var(dt, shape=n)
-  ti.get_runtime().default_fp = dt
 
   def f(i):
     return i * 0.1 + 0.4
@@ -26,12 +26,20 @@ def _test_op(dt, taichi_op, np_op):
 
 
 def test_f64_trig():
+  op_pairs = [
+    (ti.sin, np.sin),
+    (ti.cos, np.cos),
+    (ti.asin, np.arcsin),
+    (ti.acos, np.arccos),
+    (ti.tan, np.tan),
+    (ti.tanh, np.tanh),
+    (ti.exp, np.exp),
+    (ti.log, np.log),
+  ]
   for dt in [ti.f32, ti.f64]:
-    _test_op(dt, ti.sin, np.sin)
-    _test_op(dt, ti.cos, np.cos)
-    _test_op(dt, ti.asin, np.arcsin)
-    _test_op(dt, ti.acos, np.arccos)
-    _test_op(dt, ti.tan, np.tan)
-    _test_op(dt, ti.tanh, np.tanh)
-    _test_op(dt, ti.exp, np.exp)
-    _test_op(dt, ti.log, np.log)
+    for taichi_op, np_op in op_pairs:
+      @ti.all_archs_with(default_fp=dt)
+      def wrapped():
+        _test_op(dt, taichi_op, np_op)
+      wrapped()
+

@@ -73,6 +73,7 @@ def test_to_numpy_2d():
       assert val[i, j] == i + j * 3
 
 
+@ti.require(ti.extension.data64)
 @ti.all_archs
 def test_f64():
   val = ti.var(ti.f64)
@@ -101,7 +102,7 @@ def test_matrix():
   m = 7
   val = ti.Matrix(2, 3, ti.f32, shape=(n, m))
 
-  nparr = np.empty(shape=(n, m, 2, 3))
+  nparr = np.empty(shape=(n, m, 2, 3), dtype=np.float32)
   for i in range(n):
     for j in range(m):
       for k in range(2):

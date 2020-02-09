@@ -18,6 +18,29 @@ def test_arg_load():
   def set_f32(v: ti.f32):
     y[None] = v
 
+  set_i32(123)
+  assert x[None] == 123
+
+  set_i32(456)
+  assert x[None] == 456
+
+  set_f32(0.125)
+  assert y[None] == 0.125
+
+  set_f32(1.5)
+  assert y[None] == 1.5
+
+
+@ti.require(ti.extension.data64)
+@ti.all_archs
+def test_arg_load_f64():
+  x = ti.var(ti.i32)
+  y = ti.var(ti.f32)
+
+  @ti.layout
+  def layout():
+    ti.root.place(x, y)
+
   @ti.kernel
   def set_f64(v: ti.f64):
     y[None] = ti.cast(v, ti.f32)
@@ -26,20 +49,8 @@ def test_arg_load():
   def set_i64(v: ti.i64):
     y[None] = v
 
-  set_i32(123)
-  assert x[None] == 123
-
-  set_i32(456)
-  assert x[None] == 456
-
   set_i64(789)
   assert y[None] == 789
-
-  set_f32(0.125)
-  assert y[None] == 0.125
-
-  set_f32(1.5)
-  assert y[None] == 1.5
 
   set_f64(2.5)
   assert y[None] == 2.5

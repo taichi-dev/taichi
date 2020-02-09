@@ -1,7 +1,7 @@
 import taichi as ti
 
 
-@ti.all_archs
+@ti.archs_support_sparse
 def test_bitmasked():
   x = ti.var(ti.f32)
   s = ti.var(ti.i32)
@@ -27,7 +27,7 @@ def test_bitmasked():
   assert s[None] == 256
 
 
-@ti.all_archs
+@ti.archs_support_sparse
 def test_pointer():
   x = ti.var(ti.f32)
   s = ti.var(ti.i32)
@@ -51,7 +51,7 @@ def test_pointer():
   func()
   assert s[None] == 256
   
-@ti.all_archs
+@ti.archs_support_sparse
 def test_pointer_is_active():
   x = ti.var(ti.f32)
   s = ti.var(ti.i32)
@@ -74,7 +74,7 @@ def test_pointer_is_active():
   assert s[None] == 256
 
 
-@ti.all_archs
+@ti.archs_support_sparse
 def test_pointer2():
   x = ti.var(ti.f32)
   s = ti.var(ti.i32)

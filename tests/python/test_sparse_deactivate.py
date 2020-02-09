@@ -1,6 +1,7 @@
 import taichi as ti
 
-@ti.all_archs
+
+@ti.archs_support_sparse
 def test_pointer():
   x = ti.var(ti.f32)
   s = ti.var(ti.i32)
@@ -34,7 +35,7 @@ def test_pointer():
   func()
   assert s[None] == 16
 
-@ti.all_archs
+@ti.archs_support_sparse
 def test_pointer2():
   x = ti.var(ti.f32)
 
@@ -72,7 +73,7 @@ def test_pointer2():
     else:
       assert x[i] == 10.0
 
-@ti.all_archs
+@ti.archs_support_sparse
 def test_pointer3():
   x = ti.var(ti.f32)
   x_temp = ti.var(ti.f32)
@@ -137,7 +138,7 @@ def test_pointer3():
 
 
 
-@ti.all_archs
+@ti.archs_support_sparse
 def test_dynamic():
   x = ti.var(ti.i32)
   s = ti.var(ti.i32)

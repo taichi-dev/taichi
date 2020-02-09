@@ -27,7 +27,6 @@ def test_transpose():
       assert m(j, i)[None] == approx(i * 2 + j * 7)
 
 
-@ti.all_archs
 def _test_polar_decomp(dim, dt):
   m = ti.Matrix(dim, dim, dt)
   r = ti.Matrix(dim, dim, dt)
@@ -68,10 +67,13 @@ def _test_polar_decomp(dim, dt):
       
  
 def test_polar_decomp():
-  _test_polar_decomp(2, ti.f32)
-  _test_polar_decomp(2, ti.f64)
-  _test_polar_decomp(3, ti.f32)
-  _test_polar_decomp(3, ti.f64)
+  for dim in [2, 3]:
+    for dt in [ti.f32, ti.f64]:
+      @ti.all_archs_with(default_fp=dt)
+      def wrapped():
+        _test_polar_decomp(dim, dt)
+
+      wrapped()
 
 
 @ti.all_archs

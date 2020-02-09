@@ -106,10 +106,10 @@ void Program::materialize_layout() {
     metal_struct_compiled_ = scomp.run(*snode_root);
     if (metal_runtime_ == nullptr) {
       metal_runtime_ = std::make_unique<metal::MetalRuntime>(
-          metal_struct_compiled_->root_size, memory_pool.get(),
+          metal_struct_compiled_->root_size, &config, memory_pool.get(),
           profiler_llvm.get());
     }
-    TC_DEBUG("Metal root buffer size={}", metal_struct_compiled_->root_size);
+    TC_INFO("Metal root buffer size: {} B", metal_struct_compiled_->root_size);
 #else
     TC_ERROR("Metal not supported on the current OS");
 #endif  // TC_SUPPORTS_METAL

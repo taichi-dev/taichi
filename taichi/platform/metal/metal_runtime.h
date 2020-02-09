@@ -6,6 +6,7 @@
 
 #include "metal_api.h"
 #include "metal_kernel_util.h"
+#include <taichi/tlang_util.h>
 #include <taichi/memory_pool.h>
 #include <taichi/profiler.h>
 
@@ -42,7 +43,7 @@ class BufferMemoryView {
 // series of Metal kernels generated from a Taichi kernel.
 class MetalRuntime {
  public:
-  MetalRuntime(size_t root_size, MemoryPool *mem_pool, ProfilerBase *profiler);
+  MetalRuntime(size_t root_size, CompileConfig* config, MemoryPool *mem_pool, ProfilerBase *profiler);
 
   // Register a Taichi kernel to the Metal runtime.
   // * |mtl_kernel_source_code| is the complete source code compiled from a
@@ -124,6 +125,7 @@ class MetalRuntime {
     ProfilerBase *const profiler_;
   };
 
+  CompileConfig* const config_;
   MemoryPool *const mem_pool_;
   ProfilerBase *const profiler_;
   BufferMemoryView root_buffer_mem_;

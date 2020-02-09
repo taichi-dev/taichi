@@ -215,9 +215,21 @@ class MetalKernelCodegen : public IRVisitor {
            stmt->raw_name(), metal_unary_op_type_symbol(stmt->op_type),
            stmt->operand->raw_name());
     } else {
-      emit("const {} {} = static_cast<{}>({});",
-           metal_data_type_name(stmt->element_type()), stmt->raw_name(),
-           metal_data_type_name(stmt->cast_type), stmt->operand->raw_name());
+      // cast
+      if (stmt->cast_by_value) {
+        emit("const {} {} = static_cast<{}>({});",
+             metal_data_type_name(stmt->element_type()), stmt->raw_name(),
+             metal_data_type_name(stmt->cast_type), stmt->operand->raw_name());
+      } else {
+        // reinterpret the bit pattern
+        const auto to_type = to_metal_type(stmt->cast_type);
+        const auto to_type_name = metal_data_type_name(to_type);
+        TC_ASSERT(metal_data_type_bytes(
+                      to_metal_type(stmt->operand->element_type())) ==
+                  metal_data_type_bytes(to_type));
+        emit("const {} {} = union_cast<{}>({});", to_type_name,
+             stmt->raw_name(), to_type_name, stmt->operand->raw_name());
+      }
     }
   }
 
@@ -374,15 +386,34 @@ class MetalKernelCodegen : public IRVisitor {
     TC_ERROR("Metal arch doesn't support ti.random() yet");
   }
 
+  void visit(PrintStmt *stmt) override {
+    // TODO: Add a flag to control whether ignoring print() stmt is allowed.
+    TC_WARN("Cannot print inside Metal kernel, ignored");
+  }
+
  private:
   void generate_mtl_header(const std::string &snode_structs_source_code) {
     emit("#include <metal_stdlib>");
     emit("using namespace metal;");
     emit("");
     emit("namespace {{");
+    emit("");
+    generate_common_functions();
+    emit("");
     kernel_src_code_ += snode_structs_source_code;
     emit("}}  // namespace");
     emit("");
+  }
+
+  void generate_common_functions() {
+    // For some reason, if I emit taichi/common.h's union_cast(), Metal failed
+    // to compile. More strangely, if I copy the generated code to XCode as a
+    // Metal kernel, it compiled successfully...
+    emit("template <typename T, typename G>");
+    emit("T union_cast(G g) {{");
+    emit("  static_assert(sizeof(T) == sizeof(G), \"Size mismatch\");");
+    emit("  return *reinterpret_cast<thread const T*>(&g);");
+    emit("}}");
   }
 
   void generate_kernel_args_struct(Kernel *kernel) {
@@ -665,7 +696,7 @@ void MetalCodeGen::lower() {
   }
 
   global_tmps_buffer_size_ =
-      std::max(irpass::offload(ir).total_size, (size_t)(8));
+      std::max(irpass::offload(ir).total_size, (size_t)(1));
   if (print_ir) {
     TC_TRACE("Offloaded:");
     irpass::re_id(ir);

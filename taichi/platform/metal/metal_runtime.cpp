@@ -154,8 +154,8 @@ void MetalRuntime::CompiledMtlKernel::launch(
   const int num_threads = kernel_attribs_.num_threads;
   const int num_groups =
       ((num_threads + kThreadsPerGroup - 1) / kThreadsPerGroup);
-  dispatch_threadgroups(encoder.get(), std::min(num_threads, kThreadsPerGroup),
-                        num_groups);
+  dispatch_threadgroups(encoder.get(), num_groups,
+                        std::min(num_threads, kThreadsPerGroup));
   end_encoding(encoder.get());
   profiler_->stop();
   if ((kernel_attribs_.task_type == KernelTaskType::range_for) &&
@@ -199,11 +199,13 @@ MetalRuntime::CompiledTaichiKernel::CompiledTaichiKernel(
 }
 
 MetalRuntime::MetalRuntime(size_t root_size,
+                           CompileConfig *config,
                            MemoryPool *mem_pool,
                            ProfilerBase *profiler)
-    : mem_pool_(mem_pool),
+    : config_(config),
+      mem_pool_(mem_pool),
       profiler_(profiler),
-      root_buffer_mem_(root_size, mem_pool) {
+      root_buffer_mem_(std::max(root_size, 1UL), mem_pool) {
   device_ = mtl_create_system_default_device();
   TC_ASSERT(device_ != nullptr);
   command_queue_ = new_command_queue(device_.get());
@@ -222,18 +224,28 @@ void MetalRuntime::register_taichi_kernel(
     const MetalKernelArgsAttributes &args_attribs) {
   TC_ASSERT(compiled_taichi_kernels_.find(taichi_kernel_name) ==
             compiled_taichi_kernels_.end());
-  TC_INFO("Registering taichi kernel \"{}\", Metal source code:\n{}",
-          taichi_kernel_name, mtl_kernel_source_code);
+
+  if (config_->print_kernel_llvm_ir) {
+    // If users have enabled |print_kernel_llvm_ir|, it probably means that they
+    // want to see the compiled code on the given arch. Maybe rename this flag,
+    // or add another flag (e.g. |print_kernel_source_code|)?
+    TC_INFO("Metal source code for kernel <{}>\n{}", taichi_kernel_name,
+            mtl_kernel_source_code);
+  }
   compiled_taichi_kernels_[taichi_kernel_name] =
       std::make_unique<CompiledTaichiKernel>(
           taichi_kernel_name, mtl_kernel_source_code, kernels_attribs,
           global_tmps_size, args_attribs, device_.get(), mem_pool_, profiler_);
+  TC_INFO("Registered Taichi kernel <{}>", taichi_kernel_name);
 }
 
 void MetalRuntime::launch_taichi_kernel(const std::string &taichi_kernel_name,
                                         Context *ctx) {
   auto &ctk = *compiled_taichi_kernels_.find(taichi_kernel_name)->second;
   auto args_blitter = HostMetalArgsBlitter::make_if_has_args(ctk, ctx);
+  if (config_->verbose_kernel_launches) {
+    TC_INFO("Lauching Taichi kernel <{}>", taichi_kernel_name);
+  }
   if (args_blitter) {
     args_blitter->host_to_metal();
   }

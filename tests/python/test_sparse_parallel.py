@@ -1,7 +1,7 @@
 import taichi as ti
 
 
-@ti.all_archs
+@ti.archs_support_sparse
 def test_pointer():
   x = ti.var(ti.f32)
   s = ti.var(ti.i32)
@@ -28,7 +28,7 @@ def test_pointer():
   assert s[None] == n * n
 
 
-@ti.all_archs
+@ti.archs_support_sparse
 def test_pointer2():
   x = ti.var(ti.f32)
   s = ti.var(ti.i32)
@@ -55,7 +55,7 @@ def test_pointer2():
   N = n * n
   assert s[None] == N * (N - 1) / 2
 
-@ti.all_archs
+@ti.archs_support_sparse
 def test_nested_struct_fill_and_clear():
   a = ti.var(dt=ti.f32)
   N = 512

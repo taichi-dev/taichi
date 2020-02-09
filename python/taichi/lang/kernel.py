@@ -302,7 +302,7 @@ class Kernel:
                 callbacks.append(get_call_back(v, host_v))
             else:
               # External tensor on cpu
-              if taichi_arch != taichi_lang_core.Arch.x86_64:
+              if taichi_arch == taichi_lang_core.Arch.cuda:
                 gpu_v = v.cuda()
                 tmp = gpu_v
                 callbacks.append(get_call_back(v, gpu_v))

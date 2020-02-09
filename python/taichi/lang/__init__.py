@@ -2,6 +2,7 @@ from .impl import *
 from .matrix import Matrix
 from .transformer import TaichiSyntaxError
 from .ndrange import ndrange, GroupedNDRange
+from copy import deepcopy as _deepcopy
 
 core = taichi_lang_core
 runtime = get_runtime()
@@ -48,6 +49,12 @@ def init(default_fp=None, default_ip=None, print_processed=None, debug=None, **k
     import os
     debug = bool(int(os.environ.get('TI_DEBUG', '0')))
 
+  # Make a deepcopy in case these args reference to items from ti.cfg, which are
+  # actually references. If no copy is made and the args are indeed references,
+  # ti.reset() could override the args to their default values.
+  default_fp = _deepcopy(default_fp)
+  default_ip = _deepcopy(default_ip)
+  kwargs = _deepcopy(kwargs)
   import taichi as ti
   ti.reset()
   if default_fp is not None:
@@ -165,6 +172,8 @@ def supported_archs():
   archs = [x86_64]
   if ti.core.with_cuda():
     archs.append(cuda)
+  if ti.core.with_metal():
+    archs.append(metal)
   return archs
 
 class _ArchCheckers(object):
@@ -188,29 +197,33 @@ def _get_or_make_arch_checkers(kwargs):
 
 # test with all archs
 def all_archs_with(**kwargs):
-  def decorator(func):
-    def test(*func_args, **func_kwargs):
+  kwargs = _deepcopy(kwargs)
+  def decorator(test):
+    def wrapped(*test_args, **test_kwargs):
       import taichi as ti
-      can_run_on = func_kwargs.pop(
+      can_run_on = test_kwargs.pop(
           _tests_arch_checkers_argname, _ArchCheckers())
       # Filter away archs that don't support 64-bit data.
-      fp = func_kwargs.get('default_fp', ti.get_runtime().default_fp)
-      ip = func_kwargs.get('default_ip', ti.get_runtime().default_ip)
+      fp = kwargs.get('default_fp', ti.f32)
+      ip = kwargs.get('default_ip', ti.i32)
       if fp == ti.f64 or ip == ti.i64:
         can_run_on.register(lambda arch: is_supported(arch, extension.data64))
 
       for arch in ti.supported_archs():
         if can_run_on(arch):
+          print('Running test on arch={}'.format(arch))
           ti.init(arch=arch, **kwargs)
-          func(*func_args, **func_kwargs)
+          test(*test_args, **test_kwargs)
+        else:
+          print('Skipped test on arch={}'.format(arch))
 
-    return test
+    return wrapped
 
   return decorator
 
 # test with all archs
-def all_archs(func):
-  return all_archs_with()(func)
+def all_archs(test):
+  return all_archs_with()(test)
 
 
 # Exclude the given archs when running the tests
@@ -229,12 +242,12 @@ def archs_excluding(*excluded_archs, **kwargs):
   assert all([isinstance(a, core.Arch) for a in excluded_archs])
   excluded_archs = set(excluded_archs)
 
-  def decorator(func):
-    def wrap(*func_args, **func_kwargs):
+  def decorator(test):
+    def wrapped(*test_args, **test_kwargs):
       def checker(arch): return arch not in excluded_archs
-      _get_or_make_arch_checkers(func_kwargs).register(checker)
-      return all_archs_with(**kwargs)(func)(*func_args, **func_kwargs)
-    return wrap
+      _get_or_make_arch_checkers(test_kwargs).register(checker)
+      return all_archs_with(**kwargs)(test)(*test_args, **test_kwargs)
+    return wrapped
   return decorator
 
 
@@ -244,7 +257,7 @@ def archs_excluding(*excluded_archs, **kwargs):
 # Example usage:
 #
 # ti.require(ti.extension.data64)
-# ti.all_archs(default_fp=ti.f64)
+# ti.all_archs_with(default_fp=ti.f64)
 # def test_xx():
 #   ...
 def require(*exts):
@@ -252,14 +265,18 @@ def require(*exts):
   # with all_archs_with(), either directly or indirectly.
   assert all([isinstance(e, core.Extension) for e in exts])
 
-  def decorator(func):
-    def wrapped(*func_args, **func_kwargs):
+  def decorator(test):
+    def wrapped(*test_args, **test_kwargs):
       def checker(arch): return all([is_supported(arch, e) for e in exts])
-      _get_or_make_arch_checkers(func_kwargs).register(checker)
-      func(*func_args, **func_kwargs)
+      _get_or_make_arch_checkers(test_kwargs).register(checker)
+      test(*test_args, **test_kwargs)
     return wrapped
   return decorator
 
+
+def archs_support_sparse(test, **kwargs):
+  wrapped = all_archs_with(**kwargs)(test)
+  return require(extension.sparse)(wrapped)
 
 def torch_test(func):
   import taichi as ti

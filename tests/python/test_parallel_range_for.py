@@ -14,6 +14,7 @@ def test_parallel_range_for():
       val[i] = i
 
   fill()
-
+  # To speed up
+  val_np = val.to_numpy()
   for i in range(n):
-    assert val[i] == i
+    assert val_np[i] == i

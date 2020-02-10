@@ -140,7 +140,7 @@ void build_taichi() {
     [ -e build ] && rm -rf build
     mkdir build && cd build
     export CUDA_BIN_PATH=/usr/local/cuda-${CUDA_VERSION}
-    cmake .. -DPYTHON_EXECUTABLE=$PYTHON_EXECUTABLE -DCUDA_VERSION=$CUDA_VERSION -DTLANG_WITH_CUDA:BOOL=$TI_WITH_CUDA
+    cmake .. -DPYTHON_EXECUTABLE=$PYTHON_EXECUTABLE -DCUDA_VERSION=$CUDA_VERSION -DTI_WITH_CUDA:BOOL=$TI_WITH_CUDA
     make -j 15
     ldd libtaichi_core.so
     cd ../python

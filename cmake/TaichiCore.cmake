@@ -23,7 +23,7 @@ endif()
 
 
 option(USE_STDCPP "Use -stdlib=libc++" OFF)
-option(TLANG_WITH_CUDA "Build with GPU support" OFF)
+option(TI_WITH_CUDA "Build with GPU support" OFF)
 
 include_directories(${CMAKE_SOURCE_DIR})
 include_directories(external/xxhash)
@@ -31,7 +31,7 @@ include_directories(external/include)
 
 set(LIBRARY_NAME ${CORE_LIBRARY_NAME})
 
-if (TLANG_WITH_CUDA)
+if (TI_WITH_CUDA)
     if(NOT CUDA_VERSION)
         set(CUDA_VERSION 10.0)
     endif()
@@ -40,7 +40,7 @@ if (TLANG_WITH_CUDA)
         message("Building with CUDA ${CUDA_VERSION}")
         set(CUDA_ARCH 61)
         message("Found CUDA. Arch = ${CUDA_ARCH}")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DCUDA_FOUND -DTLANG_WITH_CUDA")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DCUDA_FOUND -DTI_WITH_CUDA")
         if (MSVC)
             include_directories(${CUDA_TOOLKIT_ROOT_DIR}/include)
             target_link_libraries(${LIBRARY_NAME} ${CUDA_TOOLKIT_ROOT_DIR}/lib/x64/cudart.lib ${CUDA_TOOLKIT_ROOT_DIR}/lib/x64/cuda.lib)

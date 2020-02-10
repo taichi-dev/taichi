@@ -8,7 +8,7 @@
 #include "codegen_cuda.h"
 #include "cuda_context.h"
 
-#if defined(TLANG_WITH_CUDA)
+#if defined(TI_WITH_CUDA)
 #include "cuda_runtime.h"
 #endif
 
@@ -31,7 +31,7 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
 
   CodeGenLLVMGPU(CodeGenBase *codegen_base, Kernel *kernel)
       : CodeGenLLVM(codegen_base, kernel) {
-#if defined(TLANG_WITH_CUDA)
+#if defined(TI_WITH_CUDA)
     cudaDeviceGetAttribute(&num_SMs, cudaDevAttrMultiProcessorCount, 0);
     cudaDeviceGetAttribute(&max_block_dim, cudaDevAttrMaxBlockDimX, 0);
 
@@ -68,7 +68,7 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
   }
 
   FunctionType compile_module_to_executable() override {
-#if defined(TLANG_WITH_CUDA)
+#if defined(TI_WITH_CUDA)
     auto offloaded_local = offloaded_tasks;
     for (auto &task : offloaded_local) {
       llvm::Function *func = module->getFunction(task.name);
@@ -320,7 +320,7 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
   }
 
   void visit(OffloadedStmt *stmt) override {
-#if defined(TLANG_WITH_CUDA)
+#if defined(TI_WITH_CUDA)
     using Type = OffloadedStmt::TaskType;
     if (stmt->task_type == Type::gc) {
       // gc has 3 kernels, so we treat it specially

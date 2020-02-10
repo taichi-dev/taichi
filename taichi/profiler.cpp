@@ -2,7 +2,7 @@
 
 #include <taichi/system/timer.h>
 
-#if defined(TLANG_WITH_CUDA)
+#if defined(TI_WITH_CUDA)
 #include <cuda_runtime.h>
 #endif
 
@@ -83,7 +83,7 @@ class DefaultProfiler : public ProfilerBase {
 // A CUDA kernel profiler that uses CUDA timing events
 class CUDAProfiler : public ProfilerBase {
  public:
-#if defined(TLANG_WITH_CUDA)
+#if defined(TI_WITH_CUDA)
   cudaEvent_t current_stop;
 
   std::map<std::string, std::vector<std::pair<cudaEvent_t, cudaEvent_t>>>
@@ -91,7 +91,7 @@ class CUDAProfiler : public ProfilerBase {
 #endif
 
   void start(const std::string &kernel_name) override {
-#if defined(TLANG_WITH_CUDA)
+#if defined(TI_WITH_CUDA)
     cudaEvent_t start, stop;
     cudaEventCreate(&start);
     cudaEventCreate(&stop);
@@ -104,7 +104,7 @@ class CUDAProfiler : public ProfilerBase {
   }
 
   virtual void stop() override {
-#if defined(TLANG_WITH_CUDA)
+#if defined(TI_WITH_CUDA)
     cudaEventRecord(current_stop);
 #else
     printf("CUDA Profiler not implemented;\n");
@@ -116,7 +116,7 @@ class CUDAProfiler : public ProfilerBase {
   }
 
   void sync() override {
-#if defined(TLANG_WITH_CUDA)
+#if defined(TI_WITH_CUDA)
     cudaDeviceSynchronize();
     for (auto &map_elem : outstanding_events) {
       auto &list = map_elem.second;

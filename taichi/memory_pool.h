@@ -7,7 +7,7 @@
 #include <thread>
 #include "unified_allocator.h"
 #include "legacy_kernel.h"
-#ifdef TLANG_WITH_CUDA
+#ifdef TI_WITH_CUDA
 #include <cuda_runtime.h>
 #endif
 
@@ -29,7 +29,7 @@ class MemoryPool {
   int processed_tail;
   Program *prog;
 
-#ifdef TLANG_WITH_CUDA
+#ifdef TI_WITH_CUDA
   cudaStream_t cuda_stream;
 #endif
 

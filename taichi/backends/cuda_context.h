@@ -1,4 +1,4 @@
-#if defined(TLANG_WITH_CUDA)
+#if defined(TI_WITH_CUDA)
 #include "llvm_jit.h"
 #include <taichi/profiler.h>
 #include <taichi/cuda_utils.h>

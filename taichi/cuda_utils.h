@@ -1,5 +1,5 @@
 #pragma once
-#if defined(TLANG_WITH_CUDA)
+#if defined(TI_WITH_CUDA)
 
 #include <taichi/tlang_util.h>
 #include <cuda.h>

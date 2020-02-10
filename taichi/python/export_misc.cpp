@@ -13,7 +13,7 @@
 #include <taichi/system/memory.h>
 #include <taichi/system/unit_dll.h>
 #include <taichi/geometry/factory.h>
-#if defined(TLANG_WITH_CUDA)
+#if defined(TI_WITH_CUDA)
 #include <cuda_runtime_api.h>
 #endif
 
@@ -77,7 +77,7 @@ void stop_duplicating_stdout_to_file(const std::string &fn) {
 }
 
 bool with_cuda() {
-#if defined(TLANG_WITH_CUDA)
+#if defined(TI_WITH_CUDA)
   return true;
 #else
   return false;

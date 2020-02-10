@@ -36,7 +36,7 @@ For precise build instructions on Windows, please check out `appveyor.yml <https
     mkdir build
     cd build
     cmake ..
-    # if you are building with CUDA, say, 10.0, then please use "cmake .. -DCUDA_VERSION=10.0 -DTLANG_WITH_CUDA:BOOL=True"
+    # if you are building with CUDA, say, 10.0, then please use "cmake .. -DCUDA_VERSION=10.0 -DTI_WITH_CUDA:BOOL=True"
     make -j 8
 
 - Add the following to your ``~/.bashrc`` (or ``~/.zshrc`` if you use ``zsh``)

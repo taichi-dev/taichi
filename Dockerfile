@@ -59,7 +59,7 @@ RUN cd /app && git clone https://github.com/yuanming-hu/taichi.git
 RUN mkdir /app/taichi/build
 WORKDIR /app/taichi/build
 RUN export CUDA_BIN_PATH=/usr/local/cuda-10.0 && \
-    cmake .. -DPYTHON_EXECUTABLE=$(which python3.6) -DCUDA_VERSION=10.0 -DTLANG_WITH_CUDA:BOOL="False" && \
+    cmake .. -DPYTHON_EXECUTABLE=$(which python3.6) -DCUDA_VERSION=10.0 -DTI_WITH_CUDA:BOOL="False" && \
     make -j 15 && \
     ldd libtaichi_core.so
 

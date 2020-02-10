@@ -44,7 +44,7 @@ TaichiLLVMContext::TaichiLLVMContext(Arch arch) : arch(arch) {
     llvm::InitializeNativeTargetAsmPrinter();
     llvm::InitializeNativeTargetAsmParser();
   } else {
-#if defined(TLANG_WITH_CUDA)
+#if defined(TI_WITH_CUDA)
     LLVMInitializeNVPTXTarget();
     LLVMInitializeNVPTXTargetMC();
     LLVMInitializeNVPTXTargetInfo();
@@ -130,13 +130,13 @@ void compile_runtime_bitcode(Arch arch) {
 
 void compile_runtimes() {
   compile_runtime_bitcode(Arch::x86_64);
-#if defined(TLANG_WITH_CUDA)
+#if defined(TI_WITH_CUDA)
   compile_runtime_bitcode(Arch::cuda);
 #endif
 }
 
 std::string libdevice_path() {
-#if defined(TLANG_WITH_CUDA)
+#if defined(TI_WITH_CUDA)
   auto folder = fmt::format("{}/nvvm/libdevice/", get_cuda_root_dir(),
                             get_cuda_version_string());
   if (is_release()) {

@@ -2,7 +2,7 @@
 #include <llvm/Analysis/TargetTransformInfo.h>
 #include <llvm/Support/TargetRegistry.h>
 #include <llvm/Target/TargetMachine.h>
-#if defined(TLANG_WITH_CUDA)
+#if defined(TI_WITH_CUDA)
 #include <taichi/cuda_utils.h>
 #include <cuda_runtime_api.h>
 #include <cuda.h>
@@ -15,7 +15,7 @@
 
 TLANG_NAMESPACE_BEGIN
 
-#if defined(TLANG_WITH_CUDA)
+#if defined(TI_WITH_CUDA)
 
 std::string cuda_mattrs() {
   return "+ptx50";

@@ -1,7 +1,7 @@
 #include "memory_pool.h"
 #include <taichi/system/timer.h>
 #include "cuda_utils.h"
-#if TLANG_WITH_CUDA
+#if TI_WITH_CUDA
 #include <cuda_runtime.h>
 #include "backends/cuda_context.h"
 #endif
@@ -17,7 +17,7 @@ MemoryPool::MemoryPool(Program *prog) : prog(prog) {
   killed = false;
   processed_tail = 0;
   queue = nullptr;
-#ifdef TLANG_WITH_CUDA
+#ifdef TI_WITH_CUDA
   // http://on-demand.gputechconf.com/gtc/2014/presentations/S4158-cuda-streams-best-practices-common-pitfalls.pdf
   // Stream 0 has special synchronization rules: Operations in stream 0 cannot
   // overlap other streams except for those streams with cudaStreamNonBlocking
@@ -54,7 +54,7 @@ template <typename T>
 T MemoryPool::fetch(volatile void *ptr) {
   T ret;
   if (false && prog->config.arch == Arch::cuda) {
-#if TLANG_WITH_CUDA
+#if TI_WITH_CUDA
     check_cuda_errors(cudaMemcpyAsync(&ret, (void *)ptr, sizeof(T),
                                       cudaMemcpyDeviceToHost, cuda_stream));
     check_cuda_errors(cudaStreamSynchronize(cuda_stream));
@@ -70,7 +70,7 @@ T MemoryPool::fetch(volatile void *ptr) {
 template <typename T>
 void MemoryPool::push(volatile T *dest, const T &val) {
   if (false && prog->config.arch == Arch::cuda) {
-#if TLANG_WITH_CUDA
+#if TI_WITH_CUDA
     check_cuda_errors(cudaMemcpyAsync((void *)dest, &val, sizeof(T),
                                       cudaMemcpyHostToDevice, cuda_stream));
     check_cuda_errors(cudaStreamSynchronize(cuda_stream));
@@ -123,7 +123,7 @@ void MemoryPool::terminate() {
   }
   th->join();
   TC_ASSERT(killed);
-#ifdef TLANG_WITH_CUDA
+#ifdef TI_WITH_CUDA
   check_cuda_errors(cudaStreamDestroy(cuda_stream));
 #endif
 }

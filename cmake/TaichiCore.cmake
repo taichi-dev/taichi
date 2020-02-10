@@ -4,7 +4,7 @@ include(cmake/PythonNumpyPybind11.cmake)
 
 file(GLOB TAICHI_CORE_SOURCE
         "taichi/*/*/*/*.cpp" "taichi/*/*/*.cpp" "taichi/*/*.cpp" "taichi/*.cpp"
-        "taichi/*/*/*/*.h" "taichi/*/*/*.h" "taichi/*/*.h" "taichi/*.h" "external/xxhash/*.c")
+        "taichi/*/*/*/*.h" "taichi/*/*/*.h" "taichi/*/*.h" "taichi/*.h" "external/xxhash/*.c" "tests/*.cpp")
 
 option(BUILD_CPP_EXAMPLES "Build legacy C++ examples" OFF)
 

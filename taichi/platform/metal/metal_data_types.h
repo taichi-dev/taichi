@@ -1,10 +1,7 @@
 #pragma once
 
-#include <taichi/common/util.h>
 #include <taichi/tlang_util.h>
 #include <string>
-
-#ifdef TC_SUPPORTS_METAL
 
 TLANG_NAMESPACE_BEGIN
 
@@ -46,5 +43,3 @@ inline bool is_metal_binary_op_infix(BinaryOpType type) {
 }
 
 TLANG_NAMESPACE_END
-
-#endif  // TC_SUPPORTS_METAL

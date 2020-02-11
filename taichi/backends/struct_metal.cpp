@@ -1,7 +1,5 @@
 #include "struct_metal.h"
 
-#ifdef TC_SUPPORTS_METAL
-
 TLANG_NAMESPACE_BEGIN
 namespace metal {
 
@@ -108,5 +106,3 @@ size_t MetalStructCompiler::compute_snode_size(const SNode &sn) {
 
 }  // namespace metal
 TLANG_NAMESPACE_END
-
-#endif  // TC_SUPPORTS_METAL

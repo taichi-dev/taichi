@@ -4,7 +4,7 @@ TLANG_NAMESPACE_BEGIN
 
 namespace metal {
 
-#ifdef TC_SUPPORTS_METAL
+#ifdef TC_PLATFORM_OSX
 
 extern "C" {
 id MTLCreateSystemDefaultDevice();
@@ -18,7 +18,7 @@ using mac::clscall;
 using mac::nsobj_unique_ptr;
 using mac::wrap_as_nsobj_unique_ptr;
 
-} // namespace
+}  // namespace
 
 nsobj_unique_ptr<MTLDevice> mtl_create_system_default_device() {
   id dev = MTLCreateSystemDefaultDevice();
@@ -35,15 +35,15 @@ nsobj_unique_ptr<MTLCommandBuffer> new_command_buffer(MTLCommandQueue *queue) {
   return wrap_as_nsobj_unique_ptr(buffer);
 }
 
-nsobj_unique_ptr<MTLComputeCommandEncoder>
-new_compute_command_encoder(MTLCommandBuffer *buffer) {
+nsobj_unique_ptr<MTLComputeCommandEncoder> new_compute_command_encoder(
+    MTLCommandBuffer *buffer) {
   auto *encoder =
       cast_call<MTLComputeCommandEncoder *>(buffer, "computeCommandEncoder");
   return wrap_as_nsobj_unique_ptr(encoder);
 }
 
-nsobj_unique_ptr<MTLLibrary>
-new_library_with_source(MTLDevice *device, const std::string &source) {
+nsobj_unique_ptr<MTLLibrary> new_library_with_source(
+    MTLDevice *device, const std::string &source) {
   auto source_str = mac::wrap_string_as_ns_string(source);
 
   id options = clscall("MTLCompileOptions", "alloc");
@@ -118,7 +118,7 @@ void dispatch_threadgroups(MTLComputeCommandEncoder *encoder, int32_t blocks_x,
        threads_per_threadgroup);
 }
 
-#endif  // TC_SUPPORTS_METAL
+#endif  // TC_PLATFORM_OSX
 
 bool is_metal_api_available() {
 #ifdef TC_PLATFORM_OSX
@@ -131,6 +131,6 @@ bool is_metal_api_available() {
 #endif
 }
 
-} // namespace metal
+}  // namespace metal
 
 TLANG_NAMESPACE_END

@@ -1,7 +1,5 @@
 #include "metal_data_types.h"
 
-#ifdef TC_SUPPORTS_METAL
-
 TLANG_NAMESPACE_BEGIN
 
 MetalDataType to_metal_type(DataType dt) {
@@ -138,5 +136,3 @@ std::string metal_unary_op_type_symbol(UnaryOpType type) {
 }
 
 TLANG_NAMESPACE_END
-
-#endif  // TC_SUPPORTS_METAL

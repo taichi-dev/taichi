@@ -14,8 +14,6 @@
 // compiled to more than one Metal compute kernels. Concretely, each offloaded
 // task in the Taichi kernel maps to a Metal kernel.
 
-#ifdef TC_SUPPORTS_METAL
-
 TLANG_NAMESPACE_BEGIN
 
 class SNode;
@@ -109,5 +107,3 @@ class MetalKernelArgsAttributes {
 }  // namespace metal
 
 TLANG_NAMESPACE_END
-
-#endif  // TC_SUPPORTS_METAL

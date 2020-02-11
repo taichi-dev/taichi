@@ -5,27 +5,8 @@
 
 #include <taichi/python/export.h>
 #include <taichi/common/dict.h>
-#include <taichi/visualization/rgb.h>
-#include <taichi/image/operations.h>
-
-// TODO: these "make_opaque" macros disables pybind11 from resolving [1] as
-// std::vector<int>. Why?
-/*
-PYBIND11_MAKE_OPAQUE(std::vector<int>);
-PYBIND11_MAKE_OPAQUE(std::vector<taichi::float32>);
-PYBIND11_MAKE_OPAQUE(std::vector<taichi::float64>);
-PYBIND11_MAKE_OPAQUE(std::vector<taichi::Vector2>);
-PYBIND11_MAKE_OPAQUE(std::vector<taichi::Vector3>);
-PYBIND11_MAKE_OPAQUE(std::vector<taichi::Vector4>);
-PYBIND11_MAKE_OPAQUE(std::vector<taichi::Vector2i>);
-PYBIND11_MAKE_OPAQUE(std::vector<taichi::Vector3i>);
-PYBIND11_MAKE_OPAQUE(std::vector<taichi::Vector4i>);
- */
 
 TC_NAMESPACE_BEGIN
-std::vector<real> make_range(real start, real end, real delta) {
-  return std::vector<real>{start, end, delta};
-}
 
 template <typename T, int ret>
 int return_constant(T *) {
@@ -205,16 +186,16 @@ struct get_vec_field<3, VEC> {
 };
 
 template <int i,
-          typename VEC,
-          typename Class,
-          std::enable_if_t<get_dim<VEC>::value<i + 1, int> = 0> void
-              register_vec_field(Class &cls) {
+    typename VEC,
+    typename Class,
+    std::enable_if_t<get_dim<VEC>::value<i + 1, int> = 0> void
+register_vec_field(Class &cls) {
 }
 
 template <int i,
-          typename VEC,
-          typename Class,
-          std::enable_if_t<get_dim<VEC>::value >= i + 1, int> = 0>
+    typename VEC,
+    typename Class,
+    std::enable_if_t<get_dim<VEC>::value >= i + 1, int> = 0>
 void register_vec_field(Class &cls) {
   static const char *names[4] = {"x", "y", "z", "w"};
   cls.def_readwrite(names[i], get_vec_field<i, VEC>::get());
@@ -279,8 +260,6 @@ struct VectorRegistration<VectorND<dim, T, ISE>> {
 };
 
 void export_math(py::module &m) {
-  py::class_<Config>(m, "Config");
-
 #define EXPORT_ARRAY_2D_OF(T, C)                             \
   py::class_<Array2D<real>> PyArray2D##T(m, "Array2D" #T);   \
   PyArray2D##T.def(py::init<Vector2i>())                     \
@@ -328,23 +307,6 @@ void export_math(py::module &m) {
       .def("rasterize_scale", &Array2D<Vector4>::rasterize_scale)
       .def("to_ndarray", &array2d_to_ndarray<Array2D<Vector4>, 4>);
 
-  m.def("points_inside_polygon", points_inside_polygon);
-  m.def("points_inside_sphere", points_inside_sphere);
-  m.def("make_range", make_range);
-
-  py::class_<Matrix4>(m, "Matrix4")
-      .def(py::init<real>())
-      .def(real() * py::self)
-      .def(py::self + py::self)
-      .def(py::self - py::self)
-      .def(py::self * py::self)
-      .def("translate", &matrix4_translate)
-      .def("scale", &matrix4_scale)
-      .def("scale_s", &matrix4_scale_s)
-      .def("rotate_euler", &matrix4_rotate_euler)
-      .def("rotate_angle_axis", &matrix4_rotate_angle_axis)
-      .def("get_ptr_string", &Config::get_ptr_string<Matrix4>);
-
   // VectorRegistration<Vector1>::run(m);
   VectorRegistration<Vector2f>::run(m);
   VectorRegistration<Vector3f>::run(m);
@@ -359,9 +321,6 @@ void export_math(py::module &m) {
   VectorRegistration<Vector2i>::run(m);
   VectorRegistration<Vector3i>::run(m);
   VectorRegistration<Vector4i>::run(m);
-
-  DEFINE_VECTOR_OF(real);
-  DEFINE_VECTOR_OF(int);
 }
 
 TC_NAMESPACE_END

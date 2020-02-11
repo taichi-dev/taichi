@@ -6,23 +6,25 @@ import random
 from taichi.tools.video import make_video, interpolate_frames, mp4_to_gif, scale_video, crop_video, accelerate_video
 
 
-def test_python():
+def test_python(verbose=False):
   print("\nRunning python tests...\n")
   import taichi as ti
   import pytest
   if ti.is_release():
-    return int(pytest.main([os.path.join(ti.package_root(), 'tests')]))
+    test_dir = os.path.join(ti.package_root(), 'tests')
   else:
-    return int(pytest.main([os.path.join(ti.get_repo_directory(), 'tests')]))
+    test_dir = os.path.join(ti.get_repo_directory(), 'tests')
+
+  args = [test_dir]
+  if verbose:
+    args += ['-s']
+
+  return int(pytest.main(args))
 
 
 def test_cpp():
   import taichi as ti
-  if not ti.core.with_cuda():
-    print("Skipping legacy tests (no GPU support)")
-    return 0
   # Cpp tests use the legacy non LLVM backend
-  os.environ['TI_LLVM'] = '0'
   ti.reset()
   print("Running C++ tests...")
   task = ti.Task('test')
@@ -35,6 +37,10 @@ def main(debug=False):
   lines.append(u' *******************************************')
   lines.append(u' **     Taichi Programming Language       **')
   lines.append(u' *******************************************')
+  if 'TI_DEBUG' in os.environ:
+    val = os.environ['TI_DEBUG']
+    if val not in ['0', '1']:
+      raise ValueError("Environment variable TI_DEBUG can only have value 0 or 1.")
   if debug:
     lines.append(u' *****************Debug Mode****************')
     os.environ['TI_DEBUG'] = '1'
@@ -42,14 +48,13 @@ def main(debug=False):
   print()
   import taichi as ti
 
-  ti.tc_core.set_core_debug(debug)
-
   argc = len(sys.argv)
   if argc == 1 or sys.argv[1] == 'help':
     print(
         "    Usage: ti run [task name]        |-> Run a specific task\n"
         "           ti benchmark              |-> Run performance benchmark\n"
         "           ti test                   |-> Run all tests\n"
+        "           ti test_verbose           |-> Run all tests with verbose outputs\n"
         "           ti test_python            |-> Run python tests\n"
         "           ti test_cpp               |-> Run cpp tests\n"
         "           ti format                 |-> Reformat modified source files\n"
@@ -92,6 +97,10 @@ def main(debug=False):
     return test_cpp()
   elif mode == "test":
     if test_python() != 0:
+      return -1
+    return test_cpp()
+  elif mode == "test_verbose":
+    if test_python(True) != 0:
       return -1
     return test_cpp()
   elif mode == "build":

@@ -3,7 +3,6 @@
     The use of this software is governed by the LICENSE file.
 *******************************************************************************/
 
-#include <taichi/visualization/image_buffer.h>
 #include <taichi/math/math.h>
 #include <taichi/math/linalg.h>
 #include <taichi/io/base64.h>

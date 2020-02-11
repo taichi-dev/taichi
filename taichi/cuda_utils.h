@@ -1,15 +1,18 @@
 #pragma once
-#if defined(TLANG_WITH_CUDA)
+#if defined(TI_WITH_CUDA)
 
 #include <taichi/tlang_util.h>
 #include <cuda.h>
 #include <cuda_runtime_api.h>
 #include <driver_types.h>
 
-#define check_cuda_errors(err)                              \
-  if (int(err))                                             \
-    TC_ERROR("Cuda Error {}: {}", get_cuda_error_name(err), \
-             get_cuda_error_string(err));
+#define check_cuda_errors(err)                                  \
+  {                                                             \
+    auto __err = (err);                                         \
+    if (int(__err))                                             \
+      TC_ERROR("Cuda Error {}: {}", get_cuda_error_name(__err), \
+               get_cuda_error_string(__err));                   \
+  }
 
 TLANG_NAMESPACE_BEGIN
 
@@ -35,5 +38,6 @@ inline std::string get_cuda_error_string(cudaError_t err) {
   return std::string(ptr);
 }
 
-#endif
 TLANG_NAMESPACE_END
+
+#endif

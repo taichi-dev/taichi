@@ -192,12 +192,13 @@ FrontendForStmt::FrontendForStmt(const Expr &loop_var,
   parallelize = dec.parallelize;
   strictly_serialized = dec.strictly_serialized;
   block_dim = dec.block_dim;
-  if (get_current_program().config.arch == Arch::gpu) {
+  auto cfg = get_current_program().config;
+  if (cfg.arch == Arch::cuda) {
     vectorize = 1;
     parallelize = 1;
   } else {
     if (block_dim == 0)
-      block_dim = 128;  // default cpu block dim
+      block_dim = cfg.default_cpu_block_dim;
     if (parallelize == 0)
       parallelize = std::thread::hardware_concurrency();
   }
@@ -216,14 +217,15 @@ FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
   parallelize = dec.parallelize;
   strictly_serialized = dec.strictly_serialized;
   block_dim = dec.block_dim;
-  if (get_current_program().config.arch == Arch::gpu) {
+  auto cfg = get_current_program().config;
+  if (cfg.arch == Arch::cuda) {
     vectorize = 1;
     parallelize = 1;
     TC_ASSERT(block_dim <= max_gpu_block_dim);
   } else {
     // cpu
     if (block_dim == 0)
-      block_dim = 128;  // default cpu block dim
+      block_dim = cfg.default_cpu_block_dim;
     if (parallelize == 0)
       parallelize = std::thread::hardware_concurrency();
   }
@@ -376,6 +378,10 @@ void Stmt::replace_with(Stmt *new_stmt) {
   // Note: the current structure should have been destroyed now..
 }
 
+void Stmt::replace_with(VecStatement &&new_statements, bool replace_usages) {
+  parent->replace_with(this, std::move(new_statements), replace_usages);
+}
+
 void Stmt::replace_operand_with(Stmt *old_stmt, Stmt *new_stmt) {
   operand_bitmap = 0;
   int n_op = num_operands();
@@ -462,6 +468,15 @@ void Block::insert(std::unique_ptr<Stmt> &&stmt, int location) {
   }
 }
 
+void Block::insert(VecStatement &&stmt, int location) {
+  if (location == -1) {
+    location = (int)statements.size() - 1;
+  }
+  for (int i = 0; i < stmt.size(); i++) {
+    insert(std::move(stmt[i]), location + i);
+  }
+}
+
 void Block::replace_statements_in_range(int start,
                                         int end,
                                         VecStatement &&stmts) {
@@ -479,7 +494,7 @@ void Block::replace_with(Stmt *old_statement,
                          std::unique_ptr<Stmt> &&new_statement) {
   VecStatement vec;
   vec.push_back(std::move(new_statement));
-  replace_with(old_statement, vec);
+  replace_with(old_statement, std::move(vec));
 }
 
 Stmt *Block::lookup_var(taichi::Tlang::Ident ident) const {
@@ -518,12 +533,20 @@ Stmt *IRBuilder::get_last_stmt() {
   return stack.back()->back();
 }
 
-OffloadedStmt::OffloadedStmt(taichi::Tlang::OffloadedStmt::TaskType task_type)
-    : task_type(task_type) {
+OffloadedStmt::OffloadedStmt(OffloadedStmt::TaskType task_type)
+    : OffloadedStmt(task_type, nullptr) {
+}
+
+OffloadedStmt::OffloadedStmt(OffloadedStmt::TaskType task_type, SNode *snode)
+    : task_type(task_type), snode(snode) {
   add_operand(begin_stmt);
   add_operand(end_stmt);
   num_cpu_threads = 1;
-  begin = end = step = 0;
+  const_begin = false;
+  const_end = false;
+  begin_value = 0;
+  end_value = 0;
+  step = 0;
   begin_stmt = nullptr;
   end_stmt = nullptr;
   block_dim = 0;
@@ -543,10 +566,13 @@ std::string OffloadedStmt::task_name() const {
     return "struct_for";
   } else if (task_type == TaskType::clear_list) {
     TC_ASSERT(snode);
-    return fmt::format("clear_list_{}", snode->get_name());
+    return fmt::format("clear_list_{}", snode->get_node_type_name_hinted());
   } else if (task_type == TaskType::listgen) {
     TC_ASSERT(snode);
-    return fmt::format("listgen_{}", snode->name);
+    return fmt::format("listgen_{}", snode->get_node_type_name_hinted());
+  } else if (task_type == TaskType::gc) {
+    TC_ASSERT(snode);
+    return fmt::format("gc_{}", snode->name);
   } else {
     TC_NOT_IMPLEMENTED
   }

@@ -27,7 +27,7 @@ void Dynamic_activate(Ptr meta_, Ptr node_, int i) {
     auto alloc = rt->node_allocators[meta->snode_id];
     while (true) {
       if (*p_chunk_ptr == nullptr) {
-        *p_chunk_ptr = NodeAllocator_allocate(alloc);
+        *p_chunk_ptr = alloc->allocate();
       }
       if (i < chunk_start + chunk_size) {
         return;
@@ -36,6 +36,23 @@ void Dynamic_activate(Ptr meta_, Ptr node_, int i) {
       chunk_start += chunk_size;
     }
   });
+}
+
+void Dynamic_deactivate(Ptr meta_, Ptr node_) {
+  auto meta = (DynamicMeta *)(meta_);
+  auto node = (DynamicNode *)(node_);
+  if (node->n > 0) {
+    locked_task(Ptr(&node->lock), [&] {
+      node->n = 0;
+      auto p_chunk_ptr = &node->ptr;
+      auto rt = (Runtime *)meta->context->runtime;
+      auto alloc = rt->node_allocators[meta->snode_id];
+      while (*p_chunk_ptr) {
+        alloc->recycle(*p_chunk_ptr);
+        p_chunk_ptr = (Ptr *)*p_chunk_ptr;
+      }
+    });
+  }
 }
 
 i32 Dynamic_append(Ptr meta_, Ptr node_, i32 data) {
@@ -51,7 +68,7 @@ i32 Dynamic_append(Ptr meta_, Ptr node_, i32 data) {
     auto alloc = rt->node_allocators[meta->snode_id];
     while (true) {
       if (*p_chunk_ptr == nullptr) {
-        *p_chunk_ptr = NodeAllocator_allocate(alloc);
+        *p_chunk_ptr = alloc->allocate();
       }
       if (i < chunk_start + chunk_size) {
         tail = node->n;
@@ -67,12 +84,12 @@ i32 Dynamic_append(Ptr meta_, Ptr node_, i32 data) {
   return tail;
 }
 
-bool Dynamic_is_active(Ptr meta_, Ptr node_, int i) {
+i32 Dynamic_is_active(Ptr meta_, Ptr node_, int i) {
   auto node = (DynamicNode *)(node_);
-  return i < node->n;
+  return i32(i < node->n);
 }
 
-void *Dynamic_lookup_element(Ptr meta_, Ptr node_, int i) {
+Ptr Dynamic_lookup_element(Ptr meta_, Ptr node_, int i) {
   auto meta = (DynamicMeta *)(meta_);
   auto node = (DynamicNode *)(node_);
   if (Dynamic_is_active(meta_, node_, i)) {
@@ -81,18 +98,19 @@ void *Dynamic_lookup_element(Ptr meta_, Ptr node_, int i) {
     auto chunk_size = meta->chunk_size;
     while (true) {
       if (i < chunk_start + chunk_size) {
-        auto addr = chunk_ptr + sizeof(Ptr) + (i - chunk_start) * meta->element_size;
+        auto addr =
+            chunk_ptr + sizeof(Ptr) + (i - chunk_start) * meta->element_size;
         return addr;
       }
       chunk_ptr = *(Ptr *)chunk_ptr;
       chunk_start += chunk_size;
     }
   } else {
-    return ((Runtime *)meta->context->runtime)->ambient_elements[meta->snode_id];
+    return (meta->context->runtime)->ambient_elements[meta->snode_id];
   }
 }
 
-int Dynamic_get_num_elements(Ptr meta_, Ptr node_) {
+i32 Dynamic_get_num_elements(Ptr meta_, Ptr node_) {
   auto node = (DynamicNode *)(node_);
   return node->n;
 }

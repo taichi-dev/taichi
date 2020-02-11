@@ -17,37 +17,40 @@ def if_has_autograd(func):
   return wrapper
 
 # Note: test happens at v = 0.2
+def grad_test(tifunc, npfunc=None, default_fp=ti.f32):
+  if npfunc is None:
+      npfunc = tifunc
+
+  @ti.all_archs_with(default_fp=default_fp)
+  def impl():
+    print(f'arch={ti.cfg.arch} default_fp={ti.cfg.default_fp}')
+    x = ti.var(default_fp)
+    y = ti.var(default_fp)
+
+    @ti.layout
+    def place():
+      ti.root.dense(ti.i, 1).place(x, x.grad, y, y.grad)
+
+    @ti.kernel
+    def func():
+      for i in x:
+        y[i] = tifunc(x[i])
+
+    v = 0.234
+
+    y.grad[0] = 1
+    x[0] = v
+    func()
+    func.grad()
+
+    assert y[0] == approx(npfunc(v))
+    assert x.grad[0] == approx(grad(npfunc)(v))
+  impl()
+
+
 @if_has_autograd
 @ti.all_archs
-def grad_test(tifunc, npfunc=None):
-  if npfunc is None:
-    npfunc = tifunc
-
-  x = ti.var(ti.f32)
-  y = ti.var(ti.f32)
-
-  @ti.layout
-  def place():
-    ti.root.dense(ti.i, 1).place(x, x.grad, y, y.grad)
-
-  @ti.kernel
-  def func():
-    for i in x:
-      y[i] = tifunc(x[i])
-
-  v = 0.234
-
-  y.grad[0] = 1
-  x[0] = v
-  func()
-  func.grad()
-
-  assert y[0] == approx(npfunc(v))
-  assert x.grad[0] == approx(grad(npfunc)(v))
-
-@if_has_autograd
 def test_size1():
-  ti.reset()
   x = ti.var(ti.i32)
 
   @ti.layout
@@ -80,6 +83,7 @@ def test_trigonometric():
   grad_test(lambda x: ti.asin(x), lambda x: np.arcsin(x))
 
 
+@if_has_autograd
 def test_frac():
   grad_test(lambda x: 1 / x)
   grad_test(lambda x: (x + 1) / (x - 1))
@@ -107,10 +111,8 @@ def test_minmax():
 
 
 @if_has_autograd
+@ti.all_archs
 def test_mod():
-  ti.reset()
-  ti.cfg.use_llvm = True
-
   x = ti.var(ti.i32)
   y = ti.var(ti.i32)
 
@@ -137,9 +139,9 @@ def test_mod():
 def test_atan2():
   grad_test(lambda x: ti.atan2(0.4, x), lambda x: np.arctan2(0.4, x))
   grad_test(lambda y: ti.atan2(y, 0.4), lambda y: np.arctan2(y, 0.4))
-  
+
+
 @if_has_autograd
 def test_atan2_f64():
-  ti.set_default_fp(ti.f64)
-  grad_test(lambda x: ti.atan2(0.4, x), lambda x: np.arctan2(0.4, x))
-  grad_test(lambda y: ti.atan2(y, 0.4), lambda y: np.arctan2(y, 0.4))
+  grad_test(lambda x: ti.atan2(0.4, x), lambda x: np.arctan2(0.4, x), default_fp=ti.f64)
+  grad_test(lambda y: ti.atan2(y, 0.4), lambda y: np.arctan2(y, 0.4), default_fp=ti.f64)

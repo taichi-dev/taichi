@@ -1,5 +1,6 @@
-#if defined(TLANG_WITH_CUDA)
+#if defined(TI_WITH_CUDA)
 #include "llvm_jit.h"
+#include <taichi/profiler.h>
 #include <taichi/cuda_utils.h>
 
 TLANG_NAMESPACE_BEGIN
@@ -9,7 +10,7 @@ class CUDAContext {
   std::vector<CUmodule> cudaModules;
   CUcontext context;
   int dev_count;
-  CUdeviceptr context_buffer;
+  void *context_buffer;
   std::string mcpu;
 
  public:
@@ -24,6 +25,8 @@ class CUDAContext {
   CUfunction get_function(CUmodule module, const std::string &func_name);
 
   void launch(CUfunction func,
+              const std::string &task_name,
+              ProfilerBase *profiler,
               void *context_ptr,
               unsigned gridDim,
               unsigned blockDim);

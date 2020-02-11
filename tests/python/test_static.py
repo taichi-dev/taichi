@@ -4,7 +4,7 @@ import taichi as ti
 @ti.all_archs
 def test_static_if():
   for val in [0, 1]:
-    ti.reset()
+    ti.init()
     x = ti.var(ti.i32)
 
     @ti.layout

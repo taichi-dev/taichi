@@ -2,8 +2,9 @@ import taichi as ti
 
 @ti.all_archs
 def test_singleton():
-  x = ti.var(ti.i32, shape=()) # actually, ti.root.dense.place(x)
-  
+  ti.cfg.print_ir = True
+  x = ti.var(ti.i32, shape=())
+
   @ti.kernel
   def fill():
     for I in ti.grouped(x):
@@ -12,7 +13,7 @@ def test_singleton():
   fill()
   
   assert x[None] == 3
-  
+
 @ti.all_archs
 def test_singleton2():
   x = ti.var(ti.i32)
@@ -32,7 +33,6 @@ def test_singleton2():
 
 @ti.all_archs
 def test_linear():
-  ti.cfg.print_ir = True
   x = ti.var(ti.i32)
   y = ti.var(ti.i32)
 
@@ -54,7 +54,6 @@ def test_linear():
   for i in range(n):
     assert x[i] == i
     assert y[i] == i * 2
-
 
 @ti.all_archs
 def test_nested():
@@ -105,7 +104,52 @@ def test_nested2():
   for i in range(n):
     assert x[i] == i
     assert y[i] == i * 2
+    
+@ti.all_archs
+def test_2d():
+  x = ti.var(ti.i32)
+  y = ti.var(ti.i32)
+  
+  n, m = 32, 16
+  
+  @ti.layout
+  def place():
+    ti.root.dense(ti.ij, n).place(x, y)
+  
+  @ti.kernel
+  def fill():
+    for i, j in x:
+      x[i, j] = i + j * 2
+  
+  fill()
+  
+  for i in range(n):
+    for j in range(m):
+      assert x[i, j] == i + j * 2
+      
+@ti.all_archs
+def test_2d_non_POT():
+  x = ti.var(ti.i32)
+  y = ti.var(ti.i32, shape=())
+  
+  n, m = 13, 17
+  
+  @ti.layout
+  def place():
+    ti.root.dense(ti.ij, (n, m)).place(x)
+  
+  @ti.kernel
+  def fill():
+    for i, j in x:
+      y[None] += i + j * j
+  
+  fill()
 
+  tot = 0
+  for i in range(n):
+    for j in range(m):
+      tot += i + j * j
+  assert y[None] == tot
 
 @ti.all_archs
 def test_nested_2d():
@@ -128,7 +172,6 @@ def test_nested_2d():
   for i in range(n):
     for j in range(n):
       assert x[i, j] == i + j * 2
-
 
 @ti.all_archs
 def test_nested_2d_more_nests():
@@ -173,4 +216,6 @@ def test_linear_k():
 
   for i in range(n):
     assert x[i] == i
+
+
 

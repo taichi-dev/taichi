@@ -134,7 +134,7 @@ void ThreadPool::target() {
       // For a single parallel task
       int task_id;
       {
-        task_id = task_head.fetch_add(1, std::memory_order_seq_cst);
+        task_id = task_head.fetch_add(1, std::memory_order_relaxed);
         if (task_id >= task_tail)
           break;
       }

@@ -282,7 +282,7 @@ class CPUIRCodeGen : public IRVisitor {
     TC_NOT_IMPLEMENTED
     /*
     stmt->ret_type.data_type = DataType::i32;
-    if (stmt->op_type == SNodeOpType::probe) {
+    if (stmt->op_type == SNodeOpType::length) {
       emit("{} {};", stmt->ret_data_type_name(), stmt->raw_name());
     }
 
@@ -292,7 +292,7 @@ class CPUIRCodeGen : public IRVisitor {
 
       emit("{{");
       if (stmt->op_type != SNodeOpType::activate &&
-          stmt->op_type != SNodeOpType::probe) {
+          stmt->op_type != SNodeOpType::length) {
         emit("{} *{}_tmp = access_{}(root, {});", snode->node_type_name,
              snode->node_type_name, snode->node_type_name,
              make_list(indices, ""));
@@ -303,7 +303,7 @@ class CPUIRCodeGen : public IRVisitor {
              snode->ch[0]->node_type_name, stmt->val->raw_name(), l);
       } else if (stmt->op_type == SNodeOpType::clear) {
         emit("{}_tmp->clear();", snode->node_type_name);
-      } else if (stmt->op_type == SNodeOpType::probe) {
+      } else if (stmt->op_type == SNodeOpType::length) {
         emit("{}[{}] = query_{}(root, {});", stmt->raw_name(), l,
              snode->node_type_name, make_list(indices, ""));
         if (snode->type == SNodeType::dynamic) {
@@ -621,6 +621,14 @@ void CPUCodeGen::lower_llvm() {
     irpass::re_id(ir);
     irpass::print(ir);
   }
+  if (kernel->grad) {
+    irpass::reverse_segments(ir);
+    if (print_ir) {
+      TC_TRACE("Segment reversed (for autodiff):");
+      irpass::re_id(ir);
+      irpass::print(ir);
+    }
+  }
   irpass::lower(ir);
   if (print_ir) {
     TC_TRACE("Lowered:");
@@ -632,6 +640,14 @@ void CPUCodeGen::lower_llvm() {
     TC_TRACE("Typechecked:");
     irpass::re_id(ir);
     irpass::print(ir);
+  }
+  if (prog->config.demote_dense_struct_fors) {
+    irpass::demote_dense_struct_fors(ir);
+    irpass::typecheck(ir);
+    if (print_ir) {
+      TC_TRACE("Dense Struct-for demoted:");
+      irpass::print(ir);
+    }
   }
   irpass::slp_vectorize(ir);
   if (print_ir) {
@@ -652,13 +668,11 @@ void CPUCodeGen::lower_llvm() {
     irpass::re_id(ir);
     irpass::print(ir);
   }
-  if (prog->config.simplify_before_lower_access) {
-    irpass::simplify(ir);
-    if (print_ir) {
-      TC_TRACE("Simplified I:");
-      irpass::re_id(ir);
-      irpass::print(ir);
-    }
+  irpass::simplify(ir);
+  if (print_ir) {
+    TC_TRACE("Simplified I:");
+    irpass::re_id(ir);
+    irpass::print(ir);
   }
   if (kernel->grad) {
     // irpass::re_id(ir);
@@ -674,27 +688,23 @@ void CPUCodeGen::lower_llvm() {
       irpass::print(ir);
     }
   }
-  if (prog->config.lower_access) {
-    irpass::lower_access(ir, true);
-    if (print_ir) {
-      TC_TRACE("Access Lowered:");
-      irpass::re_id(ir);
-      irpass::print(ir);
-    }
-    if (prog->config.simplify_after_lower_access) {
-      irpass::die(ir);
-      if (print_ir) {
-        TC_TRACE("DIEd:");
-        irpass::re_id(ir);
-        irpass::print(ir);
-      }
-      irpass::simplify(ir);
-      if (print_ir) {
-        TC_TRACE("Simplified II:");
-        irpass::re_id(ir);
-        irpass::print(ir);
-      }
-    }
+  irpass::lower_access(ir, true);
+  if (print_ir) {
+    TC_TRACE("Access Lowered:");
+    irpass::re_id(ir);
+    irpass::print(ir);
+  }
+  irpass::die(ir);
+  if (print_ir) {
+    TC_TRACE("DIEd:");
+    irpass::re_id(ir);
+    irpass::print(ir);
+  }
+  irpass::simplify(ir);
+  if (print_ir) {
+    TC_TRACE("Simplified II:");
+    irpass::re_id(ir);
+    irpass::print(ir);
   }
   irpass::die(ir);
   if (print_ir) {
@@ -736,9 +746,6 @@ void CPUCodeGen::lower_llvm() {
     TC_TRACE("Atomics demoted:");
     irpass::re_id(ir);
     irpass::print(ir);
-  }
-  if (kernel->grad) {
-    irpass::reverse_offloads(ir);
   }
 }
 

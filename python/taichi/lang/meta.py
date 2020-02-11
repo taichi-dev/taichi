@@ -49,3 +49,8 @@ def fill_matrix(mat: ti.template(), vals: ti.template()):
     for p in ti.static(range(mat.n)):
       for q in ti.static(range(mat.m)):
         mat[I][p, q] = vals[p][q]
+        
+@ti.kernel
+def snode_deactivate(b: ti.template()):
+  for I in ti.grouped(b):
+    ti.deactivate(b, I)

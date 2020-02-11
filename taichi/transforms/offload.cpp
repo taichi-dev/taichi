@@ -4,6 +4,9 @@
 TLANG_NAMESPACE_BEGIN
 
 namespace irpass {
+namespace {
+using StmtToOffsetMap = decltype(OffloadedResult::local_to_global_offset);
+}  // namespace
 
 // Break kernel into multiple parts and emit struct for listgens
 class Offloader {
@@ -52,13 +55,21 @@ class Offloader {
         auto offloaded =
             Stmt::make_typed<OffloadedStmt>(OffloadedStmt::TaskType::range_for);
         offloaded->body = std::make_unique<Block>();
-        offloaded->begin = 0;  // s->begin->as<ConstStmt>()->val[0].val_int32();
-        offloaded->end = 0;    // s->end->as<ConstStmt>()->val[0].val_int32();
-        offloaded->begin_stmt = s->begin;
-        offloaded->end_stmt = s->end;
+        if (auto val = s->begin->cast<ConstStmt>()) {
+          offloaded->const_begin = true;
+          offloaded->begin_value = val->val[0].val_int32();
+        } else {
+          offloaded->begin_stmt = s->begin;
+        }
+        if (auto val = s->end->cast<ConstStmt>()) {
+          offloaded->const_end = true;
+          offloaded->end_value = val->val[0].val_int32();
+        } else {
+          offloaded->end_stmt = s->end;
+        }
         offloaded->block_dim = s->block_dim;
         offloaded->num_cpu_threads = s->parallelize;
-        fix_loop_index_load(s, s->loop_var, 0, false);
+        fix_loop_index_load(s, s->loop_var, 0, /*is_struct_for=*/false);
         for (int j = 0; j < (int)s->body->statements.size(); j++) {
           offloaded->body->insert(std::move(s->body->statements[j]));
         }
@@ -75,7 +86,6 @@ class Offloader {
 
   void emit_struct_for(StructForStmt *for_stmt, Block *root_block) {
     auto leaf = for_stmt->snode;
-    TC_ASSERT(leaf->type == SNodeType::place)
     // make a list of nodes, from the leaf block (instead of 'place') to root
     std::vector<SNode *> path;
     // leaf is the place (scalar)
@@ -103,7 +113,8 @@ class Offloader {
 
     for (int i = 0; i < for_stmt->loop_vars.size(); i++) {
       fix_loop_index_load(for_stmt, for_stmt->loop_vars[i],
-                          leaf->physical_index_position[i], true);
+                          leaf->physical_index_position[i],
+                          /*is_struct_for=*/true);
     }
 
     for (int i = 0; i < (int)for_stmt->body->statements.size(); i++) {
@@ -135,7 +146,7 @@ class IdentifyLocalVars : public BasicStmtVisitor {
   using BasicStmtVisitor::visit;
 
   // Local variables to global temporary offsets (in bytes)
-  std::map<Stmt *, std::size_t> local_to_global;
+  StmtToOffsetMap local_to_global;
   // Local variables alloc to its containing offloaded statement
   std::map<Stmt *, Stmt *> inst_to_offloaded;
 
@@ -146,7 +157,7 @@ class IdentifyLocalVars : public BasicStmtVisitor {
     TC_ASSERT(type.width == 1);
     auto ret = global_offset;
     global_offset += data_type_size(type.data_type);
-    TC_ASSERT(global_offset < taichi_max_num_global_vars);
+    TC_ASSERT(global_offset < taichi_global_tmp_buffer_size);
     return ret;
   }
 
@@ -219,10 +230,13 @@ class IdentifyLocalVars : public BasicStmtVisitor {
     generic_visit(stmt);
   }
 
-  static std::map<Stmt *, std::size_t> run(IRNode *root) {
+  static OffloadedResult run(IRNode *root) {
     IdentifyLocalVars pass;
     root->accept(&pass);
-    return pass.local_to_global;
+    OffloadedResult result;
+    result.total_size = pass.global_offset;
+    result.local_to_global_offset = std::move(pass.local_to_global);
+    return result;
   }
 };
 
@@ -230,11 +244,10 @@ class PromoteIntermediate : public BasicStmtVisitor {
  public:
   using BasicStmtVisitor::visit;
 
-  std::map<Stmt *, std::size_t> local_to_global_offset;
+  StmtToOffsetMap local_to_global_offset;
   std::set<Stmt *> stored_to_global;
 
-  explicit PromoteIntermediate(
-      const std::map<Stmt *, std::size_t> &local_to_global_offset)
+  explicit PromoteIntermediate(const StmtToOffsetMap &local_to_global_offset)
       : local_to_global_offset(local_to_global_offset) {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
@@ -253,8 +266,7 @@ class PromoteIntermediate : public BasicStmtVisitor {
     }
   }
 
-  static void run(IRNode *root,
-                  std::map<Stmt *, std::size_t> local_to_global_offset) {
+  static void run(IRNode *root, const StmtToOffsetMap &local_to_global_offset) {
     PromoteIntermediate pass(local_to_global_offset);
     while (true) {
       try {
@@ -271,12 +283,11 @@ class PromoteLocals : public BasicStmtVisitor {
  public:
   using BasicStmtVisitor::visit;
 
-  std::map<Stmt *, std::size_t> local_to_global_offset;
+  StmtToOffsetMap local_to_global_offset;
   std::map<Stmt *, VectorType> local_to_global_vector_type;
   std::set<Stmt *> stored_to_global;
 
-  explicit PromoteLocals(
-      const std::map<Stmt *, std::size_t> &local_to_global_offset)
+  explicit PromoteLocals(const StmtToOffsetMap &local_to_global_offset)
       : local_to_global_offset(local_to_global_offset) {
     allow_undefined_visitor = true;
   }
@@ -285,8 +296,10 @@ class PromoteLocals : public BasicStmtVisitor {
     if (stmt->body)
       stmt->body->accept(this);
     if (stmt->task_type == OffloadedStmt::TaskType::range_for) {
-      stmt->begin = local_to_global_offset[stmt->begin_stmt];
-      stmt->end = local_to_global_offset[stmt->end_stmt];
+      if (!stmt->const_begin)
+        stmt->begin_offset = local_to_global_offset[stmt->begin_stmt];
+      if (!stmt->const_end)
+        stmt->end_offset = local_to_global_offset[stmt->end_stmt];
     }
   }
 
@@ -303,7 +316,7 @@ class PromoteLocals : public BasicStmtVisitor {
     auto const_zeros = replacement.push_back<ConstStmt>(zeros);
     replacement.push_back<GlobalStoreStmt>(ptr, const_zeros);
 
-    stmt->parent->replace_with(stmt, replacement, false);
+    stmt->parent->replace_with(stmt, std::move(replacement), false);
     throw IRModified();
   }
 
@@ -320,7 +333,7 @@ class PromoteLocals : public BasicStmtVisitor {
         local_to_global_offset[alloca], ret_type);
     replacement.push_back<GlobalLoadStmt>(ptr);
 
-    stmt->parent->replace_with(stmt, replacement);
+    stmt->parent->replace_with(stmt, std::move(replacement));
     throw IRModified();
   }
 
@@ -337,7 +350,7 @@ class PromoteLocals : public BasicStmtVisitor {
         local_to_global_offset[alloca], ret_type);
     replacement.push_back<GlobalStoreStmt>(ptr, stmt->data);
 
-    stmt->parent->replace_with(stmt, replacement);
+    stmt->parent->replace_with(stmt, std::move(replacement));
     throw IRModified();
   }
 
@@ -354,12 +367,11 @@ class PromoteLocals : public BasicStmtVisitor {
         local_to_global_offset[alloca], ret_type);
     replacement.push_back<AtomicOpStmt>(stmt->op_type, ptr, stmt->val);
 
-    stmt->parent->replace_with(stmt, replacement);
+    stmt->parent->replace_with(stmt, std::move(replacement));
     throw IRModified();
   }
 
-  static void run(IRNode *root,
-                  std::map<Stmt *, std::size_t> local_to_global_offset) {
+  static void run(IRNode *root, const StmtToOffsetMap &local_to_global_offset) {
     PromoteLocals pass(local_to_global_offset);
     while (true) {
       try {
@@ -372,17 +384,39 @@ class PromoteLocals : public BasicStmtVisitor {
   }
 };
 
-void offload(IRNode *root) {
+void insert_gc(IRNode *root) {
+  auto *b = dynamic_cast<Block *>(root);
+  TC_ASSERT(b);
+  std::vector<std::pair<int, std::vector<SNode *>>> gc_statements;
+  for (int i = 0; i < (int)b->statements.size(); i++) {
+    auto snodes = irpass::gather_deactivations(b->statements[i].get());
+    gc_statements.emplace_back(std::make_pair(i, snodes));
+  }
+
+  for (int i = (int)b->statements.size() - 1; i >= 0; i--) {
+    auto snodes = gc_statements[i].second;
+    for (auto j = 0; j < snodes.size(); j++) {
+      b->statements.insert(
+          b->statements.begin() + i + 1,
+          Stmt::make<OffloadedStmt>(OffloadedStmt::TaskType::gc, snodes[j]));
+    }
+  }
+}
+
+OffloadedResult offload(IRNode *root) {
+  OffloadedResult result;
   Offloader _(root);
   irpass::typecheck(root);
   irpass::fix_block_parents(root);
   {
-    auto local_to_global = IdentifyLocalVars::run(root);
-    PromoteIntermediate::run(root, local_to_global);
-    PromoteLocals::run(root, local_to_global);
+    result = IdentifyLocalVars::run(root);
+    PromoteIntermediate::run(root, result.local_to_global_offset);
+    PromoteLocals::run(root, result.local_to_global_offset);
   }
+  irpass::insert_gc(root);
   irpass::typecheck(root);
   irpass::re_id(root);
+  return result;
 }
 
 }  // namespace irpass

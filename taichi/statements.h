@@ -104,6 +104,9 @@ class GetRootStmt : public Stmt {
   GetRootStmt() {
   }
 
+  virtual bool has_global_side_effect() const override {
+    return false;
+  }
   DEFINE_ACCEPT
 };
 
@@ -132,6 +135,10 @@ class SNodeLookupStmt : public Stmt {
     }
   }
 
+  virtual bool has_global_side_effect() const override {
+    return activate;
+  }
+
   DEFINE_ACCEPT
 };
 
@@ -142,6 +149,10 @@ class GetChStmt : public Stmt {
   int chid;
 
   GetChStmt(Stmt *input_ptr, int chid);
+
+  virtual bool has_global_side_effect() const override {
+    return false;
+  }
 
   DEFINE_ACCEPT
 };
@@ -166,12 +177,16 @@ class OffloadedStmt : public Stmt {
     struct_for,
     clear_list,
     listgen,
+    gc,
   };
 
   TaskType task_type;
   SNode *snode;
   Stmt *begin_stmt, *end_stmt;
-  std::size_t begin, end;
+  std::size_t begin_offset;
+  std::size_t end_offset;
+  bool const_begin, const_end;
+  int32 begin_value, end_value;
   int step;
   int block_dim;
   bool reversed;
@@ -183,7 +198,13 @@ class OffloadedStmt : public Stmt {
 
   OffloadedStmt(TaskType task_type);
 
+  OffloadedStmt(TaskType task_type, SNode *snode);
+
   std::string task_name() const;
+
+  bool has_body() const {
+    return task_type != clear_list && task_type != listgen && task_type != gc;
+  }
 
   DEFINE_ACCEPT
 };

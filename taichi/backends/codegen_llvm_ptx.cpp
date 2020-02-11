@@ -8,7 +8,7 @@
 #include "codegen_cuda.h"
 #include "cuda_context.h"
 
-#if defined(TLANG_WITH_CUDA)
+#if defined(TI_WITH_CUDA)
 #include "cuda_runtime.h"
 #endif
 
@@ -31,7 +31,7 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
 
   CodeGenLLVMGPU(CodeGenBase *codegen_base, Kernel *kernel)
       : CodeGenLLVM(codegen_base, kernel) {
-#if defined(TLANG_WITH_CUDA)
+#if defined(TI_WITH_CUDA)
     cudaDeviceGetAttribute(&num_SMs, cudaDevAttrMultiProcessorCount, 0);
     cudaDeviceGetAttribute(&max_block_dim, cudaDevAttrMaxBlockDimX, 0);
 
@@ -68,7 +68,7 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
   }
 
   FunctionType compile_module_to_executable() override {
-#if defined(TLANG_WITH_CUDA)
+#if defined(TI_WITH_CUDA)
     auto offloaded_local = offloaded_tasks;
     for (auto &task : offloaded_local) {
       llvm::Function *func = module->getFunction(task.name);
@@ -76,12 +76,12 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
       mark_function_as_cuda_kernel(func);
     }
 
-    if (get_current_program().config.print_kernel_llvm_ir) {
+    if (prog->config.print_kernel_llvm_ir) {
       TC_INFO("IR before global optimization");
       module->print(errs(), nullptr);
     }
     auto ptx = compile_module_to_ptx(module);
-    if (get_current_program().config.print_kernel_llvm_ir_optimized) {
+    if (prog->config.print_kernel_llvm_ir_optimized) {
       TC_P(ptx);
     }
     auto cuda_module = cuda_context->compile(ptx);
@@ -90,20 +90,18 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
       task.cuda_func =
           (void *)cuda_context->get_function(cuda_module, task.name);
     }
-    return [offloaded_local](Context context) {
+    auto prog = this->prog;
+    return [offloaded_local, prog](Context context) {
       for (auto task : offloaded_local) {
-        if (get_current_program().config.verbose_kernel_launches)
-          TC_INFO("Launching kernel {}<<<{}, {}>>>", task.name, task.grid_dim,
-                  task.block_dim);
+        TC_DEBUG("Launching kernel {}<<<{}, {}>>>", task.name, task.grid_dim,
+                 task.block_dim);
 
-        if (get_current_program().config.enable_profiler) {
-          get_current_program().profiler_llvm->start(task.name);
+        ProfilerBase *profiler = nullptr;
+        if (prog->config.enable_profiler) {
+          profiler = prog->profiler_llvm.get();
         }
-        cuda_context->launch((CUfunction)task.cuda_func, &context,
-                             task.grid_dim, task.block_dim);
-        if (get_current_program().config.enable_profiler) {
-          get_current_program().profiler_llvm->stop();
-        }
+        cuda_context->launch((CUfunction)task.cuda_func, task.name, profiler,
+                             &context, task.grid_dim, task.block_dim);
       }
     };
 #else
@@ -209,6 +207,8 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
     UNARY_STD(sgn)
     UNARY_STD(acos)
     UNARY_STD(asin)
+    UNARY_STD(cos)
+    UNARY_STD(sin)
     else {
       TC_P(unary_op_type_name(op));
       TC_NOT_IMPLEMENTED
@@ -263,7 +263,7 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
   void create_offload_range_for(OffloadedStmt *stmt) {
     auto loop_block_dim = stmt->block_dim;
     if (loop_block_dim == 0) {
-      loop_block_dim = get_current_program().config.default_gpu_block_dim;
+      loop_block_dim = prog->config.default_gpu_block_dim;
     }
     kernel_grid_dim = saturating_num_blocks;
     kernel_block_dim = loop_block_dim;
@@ -283,52 +283,82 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
       body = guard.body;
     }
 
-    auto begin_ptr = Stmt::make<GlobalTemporaryStmt>(
-        stmt->begin, VectorType(1, DataType::i32));
-    auto end_ptr = Stmt::make<GlobalTemporaryStmt>(
-        stmt->end, VectorType(1, DataType::i32));
-    begin_ptr->accept(this);
-    end_ptr->accept(this);
+    auto [begin, end] = get_range_for_bounds(stmt);
 
-    create_call("gpu_parallel_range_for",
-                {get_arg(0), builder->CreateLoad(begin_ptr->value, "begin"),
-                 builder->CreateLoad(end_ptr->value, "end"), body});
+    create_call("gpu_parallel_range_for", {get_arg(0), begin, end, body});
+  }
+
+  void emit_cuda_gc(OffloadedStmt *stmt) {
+    auto snode_id = tlctx->get_constant(stmt->snode->id);
+    {
+      init_offloaded_task_function(stmt, "gather_list");
+      call("gc_parallel_0", get_runtime(), snode_id);
+      finalize_offloaded_task_function();
+      current_task->grid_dim = saturating_num_blocks;
+      current_task->block_dim = 64;
+      current_task->end();
+      current_task = nullptr;
+    }
+    {
+      init_offloaded_task_function(stmt, "reinit_lists");
+      call("gc_parallel_1", get_runtime(), snode_id);
+      finalize_offloaded_task_function();
+      current_task->grid_dim = 1;
+      current_task->block_dim = 1;
+      current_task->end();
+      current_task = nullptr;
+    }
+    {
+      init_offloaded_task_function(stmt, "zero_fill");
+      call("gc_parallel_2", get_runtime(), snode_id);
+      finalize_offloaded_task_function();
+      current_task->grid_dim = saturating_num_blocks;
+      current_task->block_dim = 64;
+      current_task->end();
+      current_task = nullptr;
+    }
   }
 
   void visit(OffloadedStmt *stmt) override {
-#if defined(TLANG_WITH_CUDA)
+#if defined(TI_WITH_CUDA)
     using Type = OffloadedStmt::TaskType;
-    kernel_grid_dim = 1;
-    kernel_block_dim = 1;
-    init_offloaded_task_function(stmt);
-    if (stmt->task_type == Type::serial) {
-      stmt->body->accept(this);
-    } else if (stmt->task_type == Type::range_for) {
-      create_offload_range_for(stmt);
-    } else if (stmt->task_type == Type::struct_for) {
-      kernel_grid_dim = saturating_num_blocks;
-      kernel_block_dim = stmt->block_dim;
-      if (kernel_block_dim == 0)
-        kernel_block_dim = get_current_program().config.default_gpu_block_dim;
-      kernel_block_dim =
-          std::min(stmt->snode->parent->max_num_elements(), kernel_block_dim);
-      stmt->block_dim = kernel_block_dim;
-      create_offload_struct_for(stmt, true);
-    } else if (stmt->task_type == Type::clear_list) {
-      emit_clear_list(stmt);
-    } else if (stmt->task_type == Type::listgen) {
-      int branching = stmt->snode->max_num_elements();
-      kernel_grid_dim = saturating_num_blocks;
-      kernel_block_dim = std::min(branching, 64);
-      emit_list_gen(stmt);
+    if (stmt->task_type == Type::gc) {
+      // gc has 3 kernels, so we treat it specially
+      emit_cuda_gc(stmt);
+      return;
     } else {
-      TC_NOT_IMPLEMENTED
+      kernel_grid_dim = 1;
+      kernel_block_dim = 1;
+      init_offloaded_task_function(stmt);
+      if (stmt->task_type == Type::serial) {
+        stmt->body->accept(this);
+      } else if (stmt->task_type == Type::range_for) {
+        create_offload_range_for(stmt);
+      } else if (stmt->task_type == Type::struct_for) {
+        kernel_grid_dim = saturating_num_blocks;
+        kernel_block_dim = stmt->block_dim;
+        if (kernel_block_dim == 0)
+          kernel_block_dim = prog->config.default_gpu_block_dim;
+        kernel_block_dim =
+            std::min(stmt->snode->parent->max_num_elements(), kernel_block_dim);
+        stmt->block_dim = kernel_block_dim;
+        create_offload_struct_for(stmt, true);
+      } else if (stmt->task_type == Type::clear_list) {
+        emit_clear_list(stmt);
+      } else if (stmt->task_type == Type::listgen) {
+        int branching = stmt->snode->max_num_elements();
+        kernel_grid_dim = saturating_num_blocks;
+        kernel_block_dim = std::min(branching, 64);
+        emit_list_gen(stmt);
+      } else {
+        TC_NOT_IMPLEMENTED
+      }
+      finalize_offloaded_task_function();
+      current_task->grid_dim = kernel_grid_dim;
+      current_task->block_dim = kernel_block_dim;
+      current_task->end();
+      current_task = nullptr;
     }
-    finalize_offloaded_task_function();
-    current_task->grid_dim = kernel_grid_dim;
-    current_task->block_dim = kernel_block_dim;
-    current_task->end();
-    current_task = nullptr;
 #else
     TC_NOT_IMPLEMENTED
 #endif
@@ -336,7 +366,7 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
 };
 
 FunctionType GPUCodeGen::codegen_llvm() {
-  TC_PROFILER("gpu codegen");
+  TC_PROFILER("cuda codegen");
   return CodeGenLLVMGPU(this, kernel).gen();
 }
 

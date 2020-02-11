@@ -3,6 +3,7 @@
 #include "tlang.h"
 #include <pybind11/functional.h>
 #include <pybind11/pybind11.h>
+#include <taichi/extension.h>
 #include <taichi/common/interface.h>
 #include <taichi/python/export.h>
 #include "svd.h"
@@ -41,14 +42,28 @@ void export_lang(py::module &m) {
   using namespace taichi::Tlang;
 
   py::enum_<Arch>(m, "Arch", py::arithmetic())
-      .value("gpu", Arch::gpu)
-      .value("x86_64", Arch::x86_64)
+#define PER_ARCH(x) .value(#x, Arch::x)
+#include "inc/archs.inc.h"
+#undef PER_ARCH
+      .export_values();
+
+  py::enum_<SNodeType>(m, "SNodeType", py::arithmetic())
+#define PER_SNODE(x) .value(#x, SNodeType::x)
+#include "inc/snodes.inc.h"
+#undef PER_SNODE
+      .export_values();
+
+  py::enum_<Extension>(m, "Extension", py::arithmetic())
+#define PER_EXTENSION(x) .value(#x, Extension::x)
+#include "inc/extensions.inc.h"
+#undef PER_EXTENSION
       .export_values();
 
   py::class_<CompileConfig>(m, "CompileConfig")
       .def(py::init<>())
       .def_readwrite("arch", &CompileConfig::arch)
       .def_readwrite("print_ir", &CompileConfig::print_ir)
+      .def_readwrite("debug", &CompileConfig::debug)
       .def_readwrite("print_accessor_ir", &CompileConfig::print_accessor_ir)
       .def_readwrite("use_llvm", &CompileConfig::use_llvm)
       .def_readwrite("print_struct_llvm_ir",
@@ -62,11 +77,15 @@ void export_lang(py::module &m) {
       .def_readwrite("simplify_after_lower_access",
                      &CompileConfig::simplify_after_lower_access)
       .def_readwrite("lower_access", &CompileConfig::lower_access)
+      .def_readwrite("default_cpu_block_dim",
+                     &CompileConfig::default_cpu_block_dim)
       .def_readwrite("default_gpu_block_dim",
                      &CompileConfig::default_gpu_block_dim)
       .def_readwrite("verbose_kernel_launches",
                      &CompileConfig::verbose_kernel_launches)
       .def_readwrite("verbose", &CompileConfig::verbose)
+      .def_readwrite("demote_dense_struct_fors",
+                     &CompileConfig::demote_dense_struct_fors)
       .def_readwrite("enable_profiler", &CompileConfig::enable_profiler)
       .def_readwrite("default_fp", &CompileConfig::default_fp)
       .def_readwrite("default_ip", &CompileConfig::default_ip)
@@ -85,6 +104,11 @@ void export_lang(py::module &m) {
       .def("profiler_print", &Program::profiler_print)
       .def("profiler_print", &Program::profiler_clear)
       .def("finalize", &Program::finalize)
+      .def("get_root",
+           [&](Program *program) -> SNode * {
+             return program->snode_root.get();
+           },
+           py::return_value_policy::reference)
       .def("get_snode_writer", &Program::get_snode_writer)
       .def("get_total_compilation_time", &Program::get_total_compilation_time)
       .def("synchronize", &Program::synchronize);
@@ -102,6 +126,7 @@ void export_lang(py::module &m) {
       .def("clear_data", &SNode::clear_data)
       .def("clear_data_and_deactivate", &SNode::clear_data_and_deactivate)
       .def_readwrite("parent", &SNode::parent)
+      .def_readonly("type", &SNode::type)
       .def("dense",
            (SNode & (SNode::*)(const std::vector<Index> &,
                                const std::vector<int> &))(&SNode::dense),
@@ -172,13 +197,21 @@ void export_lang(py::module &m) {
            },
            py::return_value_policy::reference);
 
+  m.def("insert_deactivate", [](SNode *snode, const ExprGroup &indices) {
+    return Deactivate(snode, indices);
+  });
+
   m.def("insert_append",
         [](SNode *snode, const ExprGroup &indices, const Expr &val) {
           return Append(snode, indices, val);
         });
 
+  m.def("insert_is_active", [](SNode *snode, const ExprGroup &indices) {
+    return is_active(snode, indices);
+  });
+
   m.def("insert_len", [](SNode *snode, const ExprGroup &indices) {
-    return Probe(snode, indices);
+    return Length(snode, indices);
   });
 
   m.def("create_assert_stmt", [&](const Expr &cond, const std::string &msg) {
@@ -238,9 +271,6 @@ void export_lang(py::module &m) {
   });
 
   m.def("layout", layout);
-
-  m.def("get_root", [&]() -> SNode * { return &root; },
-        py::return_value_policy::reference);
 
   m.def("value_cast", static_cast<Expr (*)(const Expr &expr, DataType)>(cast));
 
@@ -410,6 +440,10 @@ void export_lang(py::module &m) {
   m.def("test_threading", test_threading);
   m.def("sifakis_svd_f32", sifakis_svd_export<float32, int32>);
   m.def("sifakis_svd_f64", sifakis_svd_export<float64, int64>);
+  m.def("global_var_expr_from_snode", [](SNode *snode) {
+    return Expr::make<GlobalVariableExpression>(snode);
+  });
+  m.def("is_supported", is_supported);
 }
 
 TC_NAMESPACE_END

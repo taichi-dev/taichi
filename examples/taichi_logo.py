@@ -1,9 +1,9 @@
-# TODO: this program crashes clang-7 when compiled with ti.x86_64. Why?
 import taichi as ti
-import cv2
-import numpy as np
 
+n = 512
+x = ti.var(ti.f32, shape=[n, n])
 
+@ti.func
 def Vector2(x, y):
   return ti.Vector([x, y])
 
@@ -14,8 +14,7 @@ def inside(p, c, r):
 
 
 @ti.func
-def inside_taichi(p_):
-  p = p_
+def inside_taichi(p):
   p = Vector2(0.5, 0.5) + (p - Vector2(0.5, 0.5)) * 1.11
   ret = -1
   if not inside(p, Vector2(0.50, 0.50), 0.55):
@@ -44,33 +43,16 @@ def inside_taichi(p_):
       ret = 0
   return ret
 
-
-x = ti.var(ti.f32)
-
-n = 512
-ti.cfg.use_llvm = True
-
-
-@ti.layout
-def layout():
-  ti.root.dense(ti.ij, n).place(x)
-
-
 @ti.kernel
 def paint():
-  for i in range(n * 4):
-    for j in range(n * 4):
-      ret = 1.0 - inside_taichi(Vector2(1.0 * i / n / 4, 1.0 * j / n / 4))
+  for i, j in ti.ndrange(n * 4, n * 4):
+      ret = 1 - inside_taichi(Vector2(i / n / 4, j / n / 4))
       x[i // 4, j // 4] += ret / 16
 
 
 paint()
 
-img = np.empty((n, n), dtype=np.float32)
-for i in range(n):
-  for j in range(n):
-    img[i, j] = x[j, n - 1 - i]
-
-cv2.imshow('Taichi', img)
-cv2.imwrite('taichi.png', img * 255)
-cv2.waitKey(0)
+gui = ti.GUI('Logo', (512, 512))
+while True:
+  gui.set_image(x.to_numpy())
+  gui.show()

@@ -7,8 +7,9 @@ Note this is for the compiler developers of the Taichi programming language.
 End users should use the pip packages instead of building from scratch.
 To build with NVIDIA GPU support, CUDA 10.0+ is needed.
 This installation guide works for Ubuntu 16.04+ and OS X 10.14+.
+For precise build instructions on Windows, please check out `appveyor.yml <https://github.com/taichi-dev/taichi/blob/master/appveyor.yml>`_, which does basically the same thing as the following instructions.
 
-- Make sure you are using Python 3.6/3.7
+- Make sure you are using Python 3.6/3.7/3.8
 - Execute
 
   .. code-block:: bash
@@ -35,7 +36,7 @@ This installation guide works for Ubuntu 16.04+ and OS X 10.14+.
     mkdir build
     cd build
     cmake ..
-    # if you are building with CUDA, say, 10.0, then please use "cmake .. -DCUDA_VERSION=10.0 -DTLANG_WITH_CUDA:BOOL=True"
+    # if you are building with CUDA, say, 10.0, then please use "cmake .. -DCUDA_VERSION=10.0 -DTI_WITH_CUDA:BOOL=True"
     make -j 8
 
 - Add the following to your ``~/.bashrc`` (or ``~/.zshrc`` if you use ``zsh``)
@@ -47,7 +48,7 @@ This installation guide works for Ubuntu 16.04+ and OS X 10.14+.
     export PATH=$TAICHI_REPO_DIR/bin/:$PATH
 
 - Execute ``source ~/.bashrc`` to reload shell config
-- Execute ``ti test`` to run all the tests. It may take up to 5 minutes to run all tests.
+- Execute ``ti test`` to run all the tests. It may take up to 5 minutes to run all tests. (On Windows the ``ti`` command should be replaced by ``python -m taichi``)
 - Check out ``examples`` for runnable examples. Run them with ``python3``.
 
 
@@ -77,9 +78,9 @@ Prebuilt LLVM for Windows CI
 
 .. code-block:: bash
 
-  cmake .. -G"Visual Studio 15 2017 Win64"  -DLLVM_ENABLE_RTTI:BOOL=ON -DBUILD_SHARED_LIBS:BOOL=OFF -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD="X86" -DLLVM_ENABLE_ASSERTIONS=ON -Thost=x64 -DLLVM_BUILD_TESTS:BOOL=OFF -DCMAKE_INSTALL_PREFIX=installed
+  cmake .. -G"Visual Studio 15 2017 Win64"  -DLLVM_ENABLE_RTTI:BOOL=ON -DBUILD_SHARED_LIBS:BOOL=OFF -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD="X86;NVPTX" -DLLVM_ENABLE_ASSERTIONS=ON -Thost=x64 -DLLVM_BUILD_TESTS:BOOL=OFF -DCMAKE_INSTALL_PREFIX=installed
 
-Then use Visual Studio to build. After building the "INSTALL" project, find your LLVM binaries/headers in `build/include`.
+Then use Visual Studio to build. After building the ``INSTALL`` project (under folder "CMakePredefinedTargets"). After build completes, find your LLVM binaries/headers in `build/include`.
 
 Folder structure
 *************************************

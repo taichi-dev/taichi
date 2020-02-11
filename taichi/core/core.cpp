@@ -71,4 +71,12 @@ std::string get_commit_hash() {
   return TI_COMMIT_HASH;
 }
 
+std::string get_cuda_version_string() {
+  return TI_CUDAVERSION;
+}
+
+std::string get_cuda_root_dir() {
+  return TI_CUDAROOT_DIR;
+}
+
 TC_NAMESPACE_END

@@ -21,6 +21,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
 
   CodeGenBase *codegen;
   Kernel *kernel;
+  Program *prog;
   std::string kernel_name;
   std::vector<Value *> kernel_args;
   llvm::Type *context_ty;
@@ -40,10 +41,10 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   }
 
   void initialize_context() {
-    if (kernel->arch == Arch::gpu) {
-      tlctx = get_current_program().llvm_context_device.get();
+    if (kernel->arch == Arch::cuda) {
+      tlctx = prog->llvm_context_device.get();
     } else {
-      tlctx = get_current_program().llvm_context_host.get();
+      tlctx = prog->llvm_context_host.get();
     }
     llvm_context = tlctx->ctx.get();
     jit = tlctx->jit.get();
@@ -94,12 +95,11 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
 
   CodeGenLLVM(CodeGenBase *codegen, Kernel *kernel)
       // TODO: simplify ModuleBuilder ctor input
-      : ModuleBuilder(get_current_program()
-                          .get_llvm_context(kernel->arch)
+      : ModuleBuilder(kernel->program.get_llvm_context(kernel->arch)
                           ->clone_struct_module()),
         kernel(kernel),
-        snode_attr(
-            get_current_program().get_llvm_context(kernel->arch)->snode_attr),
+        prog(&kernel->program),
+        snode_attr(prog->get_llvm_context(kernel->arch)->snode_attr),
         task_counter(0) {
     initialize_context();
 
@@ -212,6 +212,14 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       TC_P(snode_type_name(snode->type));
       TC_NOT_IMPLEMENTED;
     }
+    if (false) {
+      // auto ptr_type = llvm::Type::getInt8PtrTy(*llvm_context, 0);
+      auto ptr_type = llvm::PointerType::get(meta->type, 0);
+      auto ptr = meta->ptr;  // builder->CreatePointerCast(meta->ptr, ptr_type);
+      auto struct_meta_size = tlctx->get_type_size(meta->type);
+      builder->CreateIntrinsic(llvm::Intrinsic::invariant_start, {ptr_type},
+                               {tlctx->get_constant(struct_meta_size), ptr});
+    }
     return meta;
   }
 
@@ -301,6 +309,8 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     UNARY_STD(logic_not)
     UNARY_STD(acos)
     UNARY_STD(asin)
+    UNARY_STD(cos)
+    UNARY_STD(sin)
     else if (op == UnaryOpType::sqrt) {
       stmt->value = builder->CreateIntrinsic(llvm::Intrinsic::sqrt,
                                              {input_type}, {input});
@@ -339,8 +349,6 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
           stmt->value = builder->CreateNeg(input, "neg");
         }
       }
-      UNARY_INTRINSIC(sin)
-      UNARY_INTRINSIC(cos)
       UNARY_INTRINSIC(floor)
       UNARY_INTRINSIC(ceil)
       else emit_extra_unary(stmt);
@@ -473,7 +481,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
           TC_P(data_type_name(ret_type));
           TC_NOT_IMPLEMENTED
         }
-      } else if (current_arch() == Arch::gpu) {
+      } else if (current_arch() == Arch::cuda) {
         if (ret_type == DataType::f32) {
           stmt->value =
               create_call("__nv_atan2f", {stmt->lhs->value, stmt->rhs->value});
@@ -725,6 +733,11 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     call("element_listgen", get_runtime(), meta_parent, meta_child);
   }
 
+  void emit_gc(OffloadedStmt *stmt) {
+    auto snode = stmt->snode->id;
+    call("node_gc", get_runtime(), tlctx->get_constant(snode));
+  }
+
   llvm::Value *create_call(llvm::Value *func, std::vector<Value *> args = {}) {
     check_func_call_signature(func, args);
     return builder->CreateCall(func, args);
@@ -855,9 +868,15 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       TC_ASSERT(snode->type == SNodeType::dynamic);
       TC_ASSERT(stmt->ret_type.data_type == DataType::i32);
       stmt->value = call(snode, stmt->ptr->value, "append", {stmt->val->value});
-    } else if (stmt->op_type == SNodeOpType::probe) {
+    } else if (stmt->op_type == SNodeOpType::length) {
       TC_ASSERT(snode->type == SNodeType::dynamic);
       stmt->value = call(snode, stmt->ptr->value, "get_num_elements", {});
+    } else if (stmt->op_type == SNodeOpType::is_active) {
+      stmt->value = call(snode, stmt->ptr->value, "is_active", {stmt->val->value});
+    } else if (stmt->op_type == SNodeOpType::deactivate) {
+      TC_ASSERT(snode->type == SNodeType::pointer ||
+                snode->type == SNodeType::dynamic);
+      stmt->value = call(snode, stmt->ptr->value, "deactivate", {});
     } else {
       TC_NOT_IMPLEMENTED
     }
@@ -920,6 +939,48 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     }
   }
 
+  static std::string get_runtime_snode_name(SNode *snode) {
+    if (snode->type == SNodeType::root) {
+      return "Root";
+    } else if (snode->type == SNodeType::dense) {
+      return "Dense";
+    } else if (snode->type == SNodeType::dynamic) {
+      return "Dynamic";
+    } else if (snode->type == SNodeType::pointer) {
+      return "Pointer";
+    } else if (snode->type == SNodeType::hash) {
+      return "Hash";
+    } else {
+      TC_P(snode_type_name(snode->type));
+      TC_NOT_IMPLEMENTED
+    }
+  }
+
+  llvm::Value *call(SNode *snode,
+                    llvm::Value *node_ptr,
+                    const std::string &method,
+                    const std::vector<llvm::Value *> &arguments) {
+    auto prefix = get_runtime_snode_name(snode);
+    auto s = emit_struct_meta(snode);
+    auto s_ptr =
+        builder->CreateBitCast(s, llvm::Type::getInt8PtrTy(*llvm_context));
+
+    node_ptr = builder->CreateBitCast(node_ptr,
+                                      llvm::Type::getInt8PtrTy(*llvm_context));
+
+    std::vector<llvm::Value *> func_arguments{s_ptr, node_ptr};
+    func_arguments.insert(func_arguments.end(), arguments.begin(),
+                          arguments.end());
+
+    return call(builder, prefix + "_" + method, func_arguments);
+  }
+
+  void visit(GetRootStmt *stmt) override {
+    stmt->value = builder->CreateBitCast(
+        get_root(),
+        PointerType::get(snode_attr[prog->snode_root.get()].llvm_type, 0));
+  }
+
   void visit(OffsetAndExtractBitsStmt *stmt) override {
     auto shifted = builder->CreateAdd(stmt->input->value,
                                       tlctx->get_constant((int32)stmt->offset));
@@ -951,49 +1012,6 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       emit(R"(auto {} = {} + {};)", stmt->raw_name(), stmt->input->raw_name(),
            stmt->offset);
     }
-  }
-
-  static std::string get_runtime_snode_name(SNode *snode) {
-    if (snode->type == SNodeType::root) {
-      return "Root";
-    } else if (snode->type == SNodeType::dense) {
-      return "Dense";
-    } else if (snode->type == SNodeType::dynamic) {
-      return "Dynamic";
-    } else if (snode->type == SNodeType::pointer) {
-      return "Pointer";
-    } else if (snode->type == SNodeType::hash) {
-      return "Hash";
-    } else {
-      TC_P(snode_type_name(snode->type));
-      TC_NOT_IMPLEMENTED
-    }
-  }
-
-  void visit(GetRootStmt *stmt) override {
-    stmt->value = builder->CreateBitCast(
-        get_root(),
-        PointerType::get(snode_attr[get_current_program().snode_root].llvm_type,
-                         0));
-  }
-
-  llvm::Value *call(SNode *snode,
-                    llvm::Value *node_ptr,
-                    const std::string &method,
-                    const std::vector<llvm::Value *> &arguments) {
-    auto prefix = get_runtime_snode_name(snode);
-    auto s = emit_struct_meta(snode);
-    auto s_ptr =
-        builder->CreateBitCast(s, llvm::Type::getInt8PtrTy(*llvm_context));
-
-    node_ptr = builder->CreateBitCast(node_ptr,
-                                      llvm::Type::getInt8PtrTy(*llvm_context));
-
-    std::vector<llvm::Value *> func_arguments{s_ptr, node_ptr};
-    func_arguments.insert(func_arguments.end(), arguments.begin(),
-                          arguments.end());
-
-    return call(builder, prefix + "_" + method, func_arguments);
   }
 
   void visit(SNodeLookupStmt *stmt) override {
@@ -1058,7 +1076,8 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
 
   BasicBlock *func_body_bb;
 
-  void init_offloaded_task_function(OffloadedStmt *stmt) {
+  std::string init_offloaded_task_function(OffloadedStmt *stmt,
+                                           std::string suffix = "") {
     while_after_loop = nullptr;
     current_offloaded_stmt = stmt;
 
@@ -1066,8 +1085,8 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
         llvm::FunctionType::get(llvm::Type::getVoidTy(*llvm_context),
                                 {PointerType::get(context_ty, 0)}, false);
 
-    auto task_kernel_name =
-        fmt::format("{}_{}_{}", kernel_name, task_counter, stmt->task_name());
+    auto task_kernel_name = fmt::format("{}_{}_{}{}", kernel_name, task_counter,
+                                        stmt->task_name(), suffix);
     task_counter += 1;
     func = Function::Create(task_function_type, Function::ExternalLinkage,
                             task_kernel_name, module.get());
@@ -1086,6 +1105,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     // The real function body
     func_body_bb = BasicBlock::Create(*llvm_context, "body", func);
     builder->SetInsertPoint(func_body_bb);
+    return task_kernel_name;
   }
 
   void finalize_offloaded_task_function() {
@@ -1095,10 +1115,9 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     builder->SetInsertPoint(entry_block);
     builder->CreateBr(func_body_bb);
 
-    if (get_current_program().config.print_kernel_llvm_ir) {
+    if (prog->config.print_kernel_llvm_ir) {
       TC_INFO("Kernel Module IR");
       module->print(errs(), nullptr);
-      TC_INFO("Kernel Module IR printed.");
     }
     TC_ASSERT(!llvm::verifyFunction(*func, &errs()));
     // TC_INFO("Kernel function verified.");
@@ -1159,6 +1178,27 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     return FunctionCreationGuard(this, argument_types);
   }
 
+  auto get_range_for_bounds(OffloadedStmt *stmt) {
+    llvm::Value *begin, *end;
+    if (stmt->const_begin) {
+      begin = tlctx->get_constant(stmt->begin_value);
+    } else {
+      auto begin_stmt = Stmt::make<GlobalTemporaryStmt>(
+          stmt->begin_offset, VectorType(1, DataType::i32));
+      begin_stmt->accept(this);
+      begin = builder->CreateLoad(begin_stmt->value);
+    }
+    if (stmt->const_end) {
+      end = tlctx->get_constant(stmt->end_value);
+    } else {
+      auto end_stmt = Stmt::make<GlobalTemporaryStmt>(
+          stmt->end_offset, VectorType(1, DataType::i32));
+      end_stmt->accept(this);
+      end = builder->CreateLoad(end_stmt->value);
+    }
+    return std::tuple(begin, end);
+  }
+
   void create_offload_range_for(OffloadedStmt *stmt) {
     int step = 1;
     if (stmt->reversed) {
@@ -1180,19 +1220,11 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       body = guard.body;
     }
 
-    auto begin_ptr = Stmt::make<GlobalTemporaryStmt>(
-        stmt->begin, VectorType(1, DataType::i32));
-    auto end_ptr = Stmt::make<GlobalTemporaryStmt>(
-        stmt->end, VectorType(1, DataType::i32));
-    begin_ptr->accept(this);
-    end_ptr->accept(this);
-
-    create_call(
-        "cpu_parallel_range_for",
-        {get_arg(0), tlctx->get_constant(stmt->num_cpu_threads),
-         builder->CreateLoad(begin_ptr->value, "begin"),
-         builder->CreateLoad(end_ptr->value, "end"), tlctx->get_constant(step),
-         tlctx->get_constant(stmt->block_dim), body});
+    auto [begin, end] = get_range_for_bounds(stmt);
+    create_call("cpu_parallel_range_for",
+                {get_arg(0), tlctx->get_constant(stmt->num_cpu_threads), begin,
+                 end, tlctx->get_constant(step),
+                 tlctx->get_constant(stmt->block_dim), body});
   }
 
   void create_offload_struct_for(OffloadedStmt *stmt, bool spmd = false) {
@@ -1302,6 +1334,9 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       builder->CreateRetVoid();
     }
 
+    if (stmt->block_dim == 0) {
+      stmt->block_dim = std::min(leaf_block->max_num_elements(), 256);
+    }
     int num_splits = leaf_block->max_num_elements() / stmt->block_dim;
     // traverse leaf node
     create_call("for_each_block",
@@ -1324,21 +1359,28 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
 
   void visit(GlobalTemporaryStmt *stmt) override {
     auto runtime = get_runtime();
-    auto addr =
-        builder->CreateGEP(runtime, tlctx->get_constant((int64)stmt->offset));
+    auto buffer = call("Runtime_get_temporary_pointer", runtime,
+                       tlctx->get_constant((int64)stmt->offset));
+
     TC_ASSERT(stmt->width() == 1);
     auto ptr_type = llvm::PointerType::get(
         tlctx->get_data_type(stmt->ret_type.data_type), 0);
-    stmt->value = builder->CreatePointerCast(addr, ptr_type);
+    stmt->value = builder->CreatePointerCast(buffer, ptr_type);
   }
 
   void visit(InternalFuncStmt *stmt) override {
     create_call(stmt->func_name, {get_context()});
   }
 
+  // TODO: move this to CodeGenLLVMX64
   void visit(OffloadedStmt *stmt) override {
     using Type = OffloadedStmt::TaskType;
-    init_offloaded_task_function(stmt);
+    auto offloaded_task_name = init_offloaded_task_function(stmt);
+    if (prog->config.enable_profiler) {
+      call(
+          builder, "Runtime_profiler_start",
+          {get_runtime(), builder->CreateGlobalStringPtr(offloaded_task_name)});
+    }
     if (stmt->task_type == Type::serial) {
       stmt->body->accept(this);
     } else if (stmt->task_type == Type::range_for) {
@@ -1351,8 +1393,13 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       emit_clear_list(stmt);
     } else if (stmt->task_type == Type::listgen) {
       emit_list_gen(stmt);
+    } else if (stmt->task_type == Type::gc) {
+      emit_gc(stmt);
     } else {
       TC_NOT_IMPLEMENTED
+    }
+    if (prog->config.enable_profiler) {
+      call(builder, "Runtime_profiler_stop", {get_runtime()});
     }
     finalize_offloaded_task_function();
     current_task->end();

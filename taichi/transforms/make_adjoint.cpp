@@ -372,6 +372,18 @@ class MakeAdjoint : public IRVisitor {
   void visit(RangeAssumptionStmt *stmt) override {
     // do nothing
   }
+
+  void visit(LinearizeStmt *stmt) override {
+    // do nothing
+  }
+
+  void visit(OffsetAndExtractBitsStmt *stmt) override {
+    // do nothing
+  }
+
+  void visit(IntegerOffsetStmt *stmt) override {
+    // do nothing
+  }
 };
 
 namespace irpass {

@@ -6,7 +6,8 @@
 
 TLANG_NAMESPACE_BEGIN
 
-StructCompiler::StructCompiler() : CodeGenBase(), loopgen(this) {
+StructCompiler::StructCompiler(Program *prog)
+    : CodeGenBase(), loopgen(this), prog(prog) {
   creator = [] {
     TC_ERROR("Not Specified");
     return nullptr;
@@ -124,8 +125,7 @@ void StructCompiler::infer_snode_properties(SNode &snode) {
   }
 
   if (snode.ch.empty()) {
-    if (snode.type != SNodeType::indirect && snode.type != SNodeType::place &&
-        snode.type != SNodeType::root) {
+    if (snode.type != SNodeType::place && snode.type != SNodeType::root) {
       TC_ERROR("{} node must have at least one child.",
                snode_type_name(snode.type));
     }
@@ -135,8 +135,7 @@ void StructCompiler::infer_snode_properties(SNode &snode) {
 void StructCompiler::generate_types(SNode &snode) {
   auto type = snode.type;
 
-  if (snode.type != SNodeType::indirect && snode.type != SNodeType::place &&
-      snode.ch.empty()) {
+  if (snode.type != SNodeType::place && snode.ch.empty()) {
     TC_ERROR("Non-place node should have at least one child.");
   }
 
@@ -166,8 +165,6 @@ void StructCompiler::generate_types(SNode &snode) {
   } else if (type == SNodeType::dynamic) {
     emit("using {} = dynamic<{}_ch, {}>;", snode.node_type_name,
          snode.node_type_name, snode.n);
-  } else if (type == SNodeType::indirect) {
-    emit("using {} = indirect<{}_ch>;", snode.node_type_name, snode.n);
   } else if (type == SNodeType::pointer) {
     emit("using {} = pointer<{}_ch>;", snode.node_type_name,
          snode.node_type_name);
@@ -187,7 +184,7 @@ void StructCompiler::generate_types(SNode &snode) {
   }
 
   if (snode.has_null()) {
-    if (get_current_program().config.arch == Arch::gpu) {
+    if (get_current_program().config.arch == Arch::cuda) {
       emit("__device__ __constant__ {}::child_type *{}_ambient_ptr;",
            snode.node_type_name, snode.node_type_name);
     }
@@ -406,7 +403,7 @@ void StructCompiler::run(SNode &root, bool host) {
     }
   }
 
-  if (get_current_program().config.arch == Arch::gpu) {
+  if (get_current_program().config.arch == Arch::cuda) {
     for (int i = 0; i < (int)ambient_snodes.size(); i++) {
       emit("{{");
       auto ntn = ambient_snodes[i]->node_type_name;
@@ -433,7 +430,7 @@ void StructCompiler::run(SNode &root, bool host) {
   emit("TC_EXPORT void profiler_print()");
   emit("{{");
   emit("#if defined(TLANG_GPU)");
-  emit("GPUProfiler::get_instance().print();");
+  emit("CUDAProfiler::get_instance().print();");
   emit("#else");
   // emit("profiler.print();");
   emit("#endif");
@@ -442,7 +439,7 @@ void StructCompiler::run(SNode &root, bool host) {
   emit("TC_EXPORT void profiler_clear()");
   emit("{{");
   emit("#if defined(TLANG_GPU)");
-  emit("GPUProfiler::get_instance().clear();");
+  emit("CUDAProfiler::get_instance().clear();");
   emit("#else");
   // emit("profiler.print();");
   emit("#endif");

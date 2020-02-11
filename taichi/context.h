@@ -1,5 +1,7 @@
 #pragma once
 
+#include "constants.h"
+
 #if defined(TI_RUNTIME_HOST)
 #include "common.h"
 
@@ -7,11 +9,16 @@ namespace taichi::Tlang {
 using namespace taichi;
 #endif
 
-// "Context" holds necessary data for function calls, such as arguments and Runtime struct
+struct Runtime;
+
+// "Context" holds necessary data for function calls, such as arguments and
+// Runtime struct
 struct Context {
-  void *runtime;
+  Runtime *runtime;
   uint64 args[taichi_max_num_args];
   int32 extra_args[taichi_max_num_args][taichi_max_num_indices];
+
+  static constexpr size_t extra_args_size = sizeof(extra_args);
 
 #if defined(TI_RUNTIME_HOST)
   template <typename T, typename G>
@@ -35,6 +42,22 @@ struct Context {
   }
 #endif
 };
+
+struct MemRequest {
+  std::size_t size;
+  std::size_t alignment;
+  uint8 *ptr;
+  std::size_t __padding;
+};
+
+static_assert((sizeof(MemRequest) & (sizeof(MemRequest) - 1)) == 0);
+
+struct MemRequestQueue {
+  MemRequest requests[taichi_max_num_mem_requests];
+  int tail;
+  int processed;
+};
+
 #if defined(TI_RUNTIME_HOST)
 }
 #endif

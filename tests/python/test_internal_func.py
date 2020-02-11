@@ -1,13 +1,50 @@
 import taichi as ti
+import time
 
-@ti.all_archs
+# TODO: these are not really tests...
+def all_archs_for_this(test):
+  # ti.call_internal() is not supported on Metal yet
+  return ti.archs_excluding(ti.metal)(test)
+
+
+@all_archs_for_this
 def test_basic():
-  ti.cfg.print_ir = True
-  
   @ti.kernel
   def test():
     for i in range(10):
       ti.call_internal("do_nothing")
     
+  test()
+
+
+@all_archs_for_this
+def test_host_polling():
+  return
+  @ti.kernel
+  def test():
+    ti.call_internal("refresh_counter")
+  
+  for i in range(10):
+    print('updating tail to', i)
+    test()
+    time.sleep(0.1)
+    
+@all_archs_for_this
+def test_list_manager():
+  @ti.kernel
+  def test():
+    ti.call_internal("test_list_manager")
+  
+  test()
+  test()
+
+
+@all_archs_for_this
+def test_node_manager():
+  @ti.kernel
+  def test():
+    ti.call_internal("test_node_allocator")
+  
+  test()
   test()
 

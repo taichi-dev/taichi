@@ -1,4 +1,4 @@
-// Program, which is a context for a taichi program execution
+// Program class - a context for a Taichi program execution
 
 #pragma once
 
@@ -13,14 +13,21 @@
 #include <taichi/profiler.h>
 #include <taichi/system/threading.h>
 #include <taichi/unified_allocator.h>
+#include "memory_pool.h"
+
 #if defined(TC_PLATFORM_UNIX)
 #include <dlfcn.h>
+#endif
+
+#if defined(TC_SUPPORTS_METAL)
+#include <optional>
+#include <taichi/platform/metal/metal_kernel_util.h>
+#include <taichi/platform/metal/metal_runtime.h>
 #endif
 
 TLANG_NAMESPACE_BEGIN
 
 extern Program *current_program;
-extern SNode root;
 
 TC_FORCE_INLINE Program &get_current_program() {
   return *current_program;
@@ -32,12 +39,12 @@ class Program {
   // Should be copiable
   std::vector<void *> loaded_dlls;
   Kernel *current_kernel;
-  SNode *snode_root;
+  std::unique_ptr<SNode> snode_root;
   // pointer to the data structure. assigned to context.buffers[0] during kernel
   // launches
   void *llvm_runtime;
   CompileConfig config;
-  CPUProfiler cpu_profiler;
+  ProfilerBase *cpu_profiler;
   Context context;
   std::unique_ptr<TaichiLLVMContext> llvm_context_host, llvm_context_device;
   bool sync;  // device/host synchronized?
@@ -45,6 +52,7 @@ class Program {
   float64 total_compilation_time;
   static std::atomic<int> num_instances;
   ThreadPool thread_pool;
+  std::unique_ptr<MemoryPool> memory_pool;
 
   std::vector<std::unique_ptr<Kernel>> functions;
 
@@ -54,14 +62,19 @@ class Program {
 
   std::string layout_fn;
 
+  Program() : Program(default_compile_config.arch) {
+  }
+
+  Program(Arch arch);
+
   void profiler_print() {
     if (config.use_llvm) {
       profiler_llvm->print();
     } else {
-      if (config.arch == Arch::gpu) {
+      if (config.arch == Arch::cuda) {
         profiler_print_gpu();
       } else {
-        cpu_profiler.print();
+        cpu_profiler->print();
       }
     }
   }
@@ -70,54 +83,23 @@ class Program {
     if (config.use_llvm) {
       profiler_llvm->clear();
     } else {
-      if (config.arch == Arch::gpu) {
+      if (config.arch == Arch::cuda) {
         profiler_clear_gpu();
       } else {
-        cpu_profiler.clear();
+        cpu_profiler->clear();
       }
     }
   }
 
   Context &get_context() {
-    context.runtime = llvm_runtime;
+    context.runtime = (Runtime *)llvm_runtime;
     return context;
   }
-
-  Program() : Program(default_compile_config.arch) {
-  }
-
-  Program(const Program &){
-      TC_NOT_IMPLEMENTED  // for pybind11..
-  }
-
-  Program(Arch arch);
-
   void initialize_device_llvm_context();
 
   void synchronize();
 
-  void finalize() {
-    current_program = nullptr;
-    for (auto &dll : loaded_dlls) {
-#if defined(TC_PLATFORM_UNIX)
-      dlclose(dll);
-#else
-      TC_NOT_IMPLEMENTED
-#endif
-    }
-    UnifiedAllocator::free();
-    finalized = true;
-    num_instances -= 1;
-  }
-
-  ~Program() {
-    if (!finalized)
-      finalize();
-  }
-
   void layout(std::function<void()> func) {
-    root = SNode(0, SNodeType::root);
-    snode_root = &root;
     func();
     materialize_layout();
   }
@@ -187,6 +169,16 @@ class Program {
   float64 get_total_compilation_time() {
     return total_compilation_time;
   }
+
+  void finalize();
+
+  ~Program();
+
+ private:
+#if defined(TC_SUPPORTS_METAL)
+  std::optional<metal::StructCompiledResult> metal_struct_compiled_;
+  std::unique_ptr<metal::MetalRuntime> metal_runtime_;
+#endif
 };
 
 TLANG_NAMESPACE_END

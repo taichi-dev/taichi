@@ -1,4 +1,4 @@
-Contribution guidelines (WIP)
+Contribution guidelines
 ===============================================
 
 First of all, thank you for contributing! We welcome contributions of
@@ -28,18 +28,37 @@ Tips on Taichi compiler development
 
 :ref:`compilation` may worth checking out. It explains the whole compilation process.
 
-Set ``ti.get_runtime().print_preprocessed = True``
-to inspect results of the frontend Python AST transform. The resulting scripts will generate a Taichi Frontend AST when executed.
 
-Set ``ti.cfg.print_ir = True`` to inspect the IR transformation process of kernel (excluding accessors) compilation .
+When creating a Taichi program using ``ti.init(arch=desired_arch, **kwargs)``, pass in the following parameters to make the Taichi compiler print out IR:
 
-Set ``ti.cfg.print_accessor_ir = True`` to inspect the IR transformation process of data accessors, which are special and simple kernels. (This is rarely used, unless you are debugging the compilation of data accessors.)
+    - ``print_preprocessed = True``: print results of the frontend Python AST transform. The resulting scripts will generate a Taichi Frontend AST when executed.
+    - ``print_ir = True``: print the Taichi IR transformation process of kernel (excluding accessors) compilation.
+    - ``print_kernel_llvm_ir = True``: print the emitted LLVM IR by Taichi.
+    - ``print_kernel_llvm_ir_optimized = True``: print the optimized LLVM IR for each kernel.
+    - ``print_accessor_ir = True``: print the IR transformation process of data accessors, which are special and simple kernels. (This is rarely used, unless you are debugging the compilation of data accessors.)
 
 .. note::
 
   Data accessors in Python-scope are implemented as special Taichi kernels.
-  For example, ``x[1, 2, 3] = 3`` will call the writing accessor of ``x``,
-  and ``print(y[42])`` will call the reading accessor of ``y``.
+  For example, ``x[1, 2, 3] = 3`` will call the writing accessor kernel of ``x``,
+  and ``print(y[42])`` will call the reading accessor kernel of ``y``.
 
-Set ``ti.cfg.print_kernel_llvm_ir = True`` to inspect the emitted LLVM IR for each invoked kernel.
+Efficient Code Navigation across Python/C++
+------------------------------------------------
+If you work on the language frontend (Python/C++ interface), to navigate around the code base, `ffi-navigator <https://github.com/tqchen/ffi-navigator>`_
+allows you to jump from Python bindings to their definitions in C++.
+Follow their README to set up your editor.
 
+Testing
+-------------
+
+Tests should be added to ``taichi/tests/python``.
+
+Use ``ti test`` to run all the tests.
+(On Windows, please use ``python -m taichi test``)
+
+Documentation
+-------------
+
+Use ``ti doc`` to build the documentation locally.
+Open the documentation at ``taichi/doc/build/index.html``.

@@ -8,7 +8,7 @@ TLANG_NAMESPACE_BEGIN
 int SNode::counter = 0;
 
 SNode &SNode::place(Expr &expr_) {
-  if (type == SNodeType::root) { // never directly place to root
+  if (type == SNodeType::root) {  // never directly place to root
     this->dense(std::vector<Index>(), {}).place(expr_);
   } else {
     TC_ASSERT(expr_.is<GlobalVariableExpression>());
@@ -196,6 +196,7 @@ void SNode::set_kernel_args(Kernel *kernel, const std::vector<int> &I) {
 SNode::SNode() {
   id = counter++;
   node_type_name = get_node_type_name();
+  type = SNodeType::undefined;
 }
 
 SNode::SNode(int depth, SNodeType t) : depth(depth), type(t) {

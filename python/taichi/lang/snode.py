@@ -47,3 +47,25 @@ class SNode:
 
   def get_shape(self, i):
     return self.ptr.get_num_elements_along_axis(i)
+
+  def loop_range(self):
+    import taichi as ti
+    return ti.Expr(ti.core.global_var_expr_from_snode(self.ptr))
+  
+  def snode(self):
+    return self
+  
+  def get_children(self):
+    children = []
+    for i in range(self.ptr.get_num_ch()):
+      children.append(SNode(self.ptr.get_ch(i)))
+    return children
+
+  def deactivate_all(self):
+    ch = self.get_children()
+    for c in ch:
+      c.deactivate_all()
+    import taichi as ti
+    if self.ptr.type == ti.core.SNodeType.pointer:
+      from .meta import snode_deactivate
+      snode_deactivate(self)

@@ -1,6 +1,6 @@
 import taichi as ti
 
-@ti.all_archs
+@ti.archs_support_sparse
 def test_dynamic():
   x = ti.var(ti.i32)
   y = ti.var(ti.i32, shape=())
@@ -23,7 +23,7 @@ def test_dynamic():
   assert y[None] == n // 3 + 1
 
 
-@ti.all_archs
+@ti.archs_support_sparse
 def test_dense_dynamic():
   n = 128
   
@@ -37,7 +37,7 @@ def test_dense_dynamic():
   def append():
     for i in range(n):
       for j in range(i):
-        ti.append(x, i, j * 2)
+        ti.append(x.parent(), i, j * 2)
     
   append()
 
@@ -45,4 +45,3 @@ def test_dense_dynamic():
     for j in range(i):
       assert x[i, j] == j * 2
 
-test_dense_dynamic()

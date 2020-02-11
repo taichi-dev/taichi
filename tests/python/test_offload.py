@@ -30,3 +30,58 @@ def test_running_loss():
   for i in range(steps):
     assert running_loss[i] == 2
   assert additional_loss.grad[None] == 3
+
+@ti.all_archs
+def test_reduce_separate():
+  a = ti.var(ti.f32, shape=(16))
+  b = ti.var(ti.f32, shape=(4))
+  c = ti.var(ti.f32, shape=())
+  
+  @ti.layout
+  def l():
+    ti.root.lazy_grad()
+  
+  @ti.kernel
+  def reduce1():
+    for i in range(16):
+      b[i // 4] += a[i]
+      
+  @ti.kernel
+  def reduce2():
+    for i in range(4):
+      c[None] += b[i]
+  
+  c.grad[None] = 1
+  reduce2.grad()
+  reduce1.grad()
+  
+  for i in range(4):
+    assert b.grad[i] == 1
+  for i in range(16):
+    assert a.grad[i] == 1
+    
+@ti.all_archs
+def test_reduce_merged():
+  a = ti.var(ti.f32, shape=(16))
+  b = ti.var(ti.f32, shape=(4))
+  c = ti.var(ti.f32, shape=())
+  
+  @ti.layout
+  def l():
+    ti.root.lazy_grad()
+  
+  @ti.kernel
+  def reduce():
+    for i in range(16):
+      b[i // 4] += a[i]
+  
+    for i in range(4):
+      c[None] += b[i]
+  
+  c.grad[None] = 1
+  reduce.grad()
+  
+  for i in range(4):
+    assert b.grad[i] == 1
+  for i in range(16):
+    assert a.grad[i] == 1

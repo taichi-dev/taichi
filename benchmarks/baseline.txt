@@ -1,9 +1,9 @@
 fill_dense:
- * flat_range                x86_64    83.230 ms       gpu        1.284 ms
- * flat_struct               x86_64     4.662 ms       gpu        2.192 ms
- * nested_range              x86_64    11.367 ms       gpu        1.222 ms
- * nested_range_blocked      x86_64     4.242 ms       gpu        6.570 ms
- * nested_struct             x86_64    12.860 ms       gpu       17.888 ms
+ * flat_range                x86_64    83.230 ms       cuda        1.284 ms
+ * flat_struct               x86_64     4.662 ms       cuda        2.192 ms
+ * nested_range              x86_64    11.367 ms       cuda        1.222 ms
+ * nested_range_blocked      x86_64     4.242 ms       cuda        6.570 ms
+ * nested_struct             x86_64    12.860 ms       cuda       17.888 ms
 mpm2d:
- * range                     x86_64     0.764 ms       gpu        0.045 ms
- * struct                    x86_64     0.747 ms       gpu        0.206 ms
+ * range                     x86_64     0.764 ms       cuda        0.045 ms
+ * struct                    x86_64     0.747 ms       cuda        0.206 ms

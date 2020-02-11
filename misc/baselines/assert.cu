@@ -1,9 +1,13 @@
 #include <cstdio>
 #include <cassert>
 
-// https://cs.calvin.edu/courses/cs/374/CUDA/CUDA-Thread-Indexing-Cheatsheet.pdf
 __global__ void init_random_numbers(unsigned int seed) {
   printf("seed = %d\n", seed);
+  atomicAdd((int *)(12312433432), 123);
+  atomicAdd((float *)(12312433432), 123.0f);
+  __threadfence_block(); // membar.cta
+  __threadfence(); // membar.gl
+  __threadfence_system();  // membar.sys
   assert(seed != 0);
 }
 

@@ -1,4 +1,5 @@
 import taichi as ti
+ti.init(arch=ti.cuda) # Try to run on GPU
 quality = 1 # Use a larger value for higher-res simulations
 n_particles, n_grid = 9000 * quality ** 2, 128 * quality
 dx, inv_dx = 1 / n_grid, float(n_grid)
@@ -14,16 +15,15 @@ C = ti.Matrix(2, 2, dt=ti.f32, shape=n_particles) # affine velocity field
 F = ti.Matrix(2, 2, dt=ti.f32, shape=n_particles) # deformation gradient
 material = ti.var(dt=ti.i32, shape=n_particles) # material id
 Jp = ti.var(dt=ti.f32, shape=n_particles) # plastic deformation
-grid_v = ti.Vector(2, dt=ti.f32, shape=(n_grid, n_grid)) # grid node momemtum/velocity
+grid_v = ti.Vector(2, dt=ti.f32, shape=(n_grid, n_grid)) # grid node momentum/velocity
 grid_m = ti.var(dt=ti.f32, shape=(n_grid, n_grid)) # grid node mass
-ti.cfg.arch = ti.cuda # Try to run on GPU
 
 @ti.kernel
 def substep():
-  for i, j in ti.ndrange(n_grid, n_grid):
+  for i, j in grid_m:
     grid_v[i, j] = [0, 0]
     grid_m[i, j] = 0
-  for p in range(n_particles): # Particle state update and scatter to grid (P2G)
+  for p in x: # Particle state update and scatter to grid (P2G)
     base = (x[p] * inv_dx - 0.5).cast(int)
     fx = x[p] * inv_dx - base.cast(float)
     # Quadratic kernels  [http://mpm.graphics   Eqn. 123, with x=fx, fx-1,fx-2]
@@ -57,7 +57,7 @@ def substep():
       weight = w[i][0] * w[j][1]
       grid_v[base + offset] += weight * (p_mass * v[p] + affine @ dpos)
       grid_m[base + offset] += weight * p_mass
-  for i, j in ti.ndrange(n_grid, n_grid):
+  for i, j in grid_m:
     if grid_m[i, j] > 0: # No need for epsilon here
       grid_v[i, j] = (1 / grid_m[i, j]) * grid_v[i, j] # Momentum to velocity
       grid_v[i, j][1] -= dt * 50 # gravity
@@ -65,7 +65,7 @@ def substep():
       if i > n_grid - 3 and grid_v[i, j][0] > 0: grid_v[i, j][0] = 0
       if j < 3 and grid_v[i, j][1] < 0:          grid_v[i, j][1] = 0
       if j > n_grid - 3 and grid_v[i, j][1] > 0: grid_v[i, j][1] = 0
-  for p in range(n_particles): # grid to particle (G2P)
+  for p in x: # grid to particle (G2P)
     base = (x[p] * inv_dx - 0.5).cast(int)
     fx = x[p] * inv_dx - base.cast(float)
     w = [0.5 * ti.sqr(1.5 - fx), 0.75 - ti.sqr(fx - 1.0), 0.5 * ti.sqr(fx - 0.5)]

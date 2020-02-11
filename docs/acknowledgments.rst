@@ -12,3 +12,4 @@ which are shipped with taichi and users do not have to install manually:
 `ffmpeg <https://www.ffmpeg.org/>`_,
 `miniz <https://github.com/richgel999/miniz>`_.
 
+`Halide <https://halide-lang.org/>`_ has been a great reference for us to learn about the Apple Metal API and the LLVM NVPTX backend API.

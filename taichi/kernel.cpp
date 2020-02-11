@@ -3,6 +3,7 @@
 #include "program.h"
 #if defined(CUDA_FOUND)
 #include <cuda_runtime.h>
+#include "cuda_utils.h"
 #endif
 
 TLANG_NAMESPACE_BEGIN
@@ -42,34 +43,34 @@ void Kernel::compile() {
 void Kernel::operator()() {
   if (!compiled)
     compile();
-  std::vector<void *> host_buffers(args.size());
-  std::vector<void *> device_buffers(args.size());
-  if (arch == Arch::gpu) {
+  if (arch == Arch::cuda) {
+    std::vector<void *> host_buffers(args.size());
+    std::vector<void *> device_buffers(args.size());
 #if defined(CUDA_FOUND)
     // copy data to GRAM
     bool has_buffer = false;
     for (int i = 0; i < (int)args.size(); i++) {
       if (args[i].is_nparray) {
         has_buffer = true;
-        cudaMalloc(&device_buffers[i], args[i].size);
+        check_cuda_errors(cudaMalloc(&device_buffers[i], args[i].size));
         // replace host buffer with device buffer
         host_buffers[i] = program.context.get_arg<void *>(i);
         set_arg_nparray(i, (uint64)device_buffers[i], args[i].size);
-        cudaMemcpy(device_buffers[i], host_buffers[i], args[i].size,
-                   cudaMemcpyHostToDevice);
+        check_cuda_errors(cudaMemcpy(device_buffers[i], host_buffers[i],
+                                     args[i].size, cudaMemcpyHostToDevice));
       }
     }
     if (has_buffer)
-      cudaDeviceSynchronize();
+      check_cuda_errors(cudaDeviceSynchronize());
     auto c = program.get_context();
     compiled(c);
     if (has_buffer)
-      cudaDeviceSynchronize();
+      check_cuda_errors(cudaDeviceSynchronize());
     for (int i = 0; i < (int)args.size(); i++) {
       if (args[i].is_nparray) {
-        cudaMemcpy(host_buffers[i], device_buffers[i], args[i].size,
-                   cudaMemcpyDeviceToHost);
-        cudaFree(device_buffers[i]);
+        check_cuda_errors(cudaMemcpy(host_buffers[i], device_buffers[i],
+                                     args[i].size, cudaMemcpyDeviceToHost));
+        check_cuda_errors(cudaFree(device_buffers[i]));
       }
     }
 #else

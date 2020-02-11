@@ -2,8 +2,10 @@
 #include <llvm/Analysis/TargetTransformInfo.h>
 #include <llvm/Support/TargetRegistry.h>
 #include <llvm/Target/TargetMachine.h>
-#if defined(TLANG_WITH_CUDA)
+#if defined(TI_WITH_CUDA)
 #include <taichi/cuda_utils.h>
+#include <cuda_runtime_api.h>
+#include <cuda.h>
 #endif
 #include "cuda_context.h"
 #include "llvm_jit.h"
@@ -13,7 +15,7 @@
 
 TLANG_NAMESPACE_BEGIN
 
-#if defined(TLANG_WITH_CUDA)
+#if defined(TI_WITH_CUDA)
 
 std::string cuda_mattrs() {
   return "+ptx50";
@@ -145,41 +147,36 @@ std::string compile_module_to_ptx(std::unique_ptr<llvm::Module> &module) {
 CUDAContext::CUDAContext() {
   // CUDA initialization
   dev_count = 0;
-  if (cuInit(0) == CUDA_SUCCESS) {
-    check_cuda_errors(cuDeviceGetCount(&dev_count));
-    check_cuda_errors(cuDeviceGet(&device, 0));
+  check_cuda_errors(cuInit(0));
+  check_cuda_errors(cuDeviceGetCount(&dev_count));
+  check_cuda_errors(cuDeviceGet(&device, 0));
 
-    char name[128];
-    check_cuda_errors(cuDeviceGetName(name, 128, device));
-    std::cout << "Using CUDA Device [0]: " << name << "\n";
+  char name[128];
+  check_cuda_errors(cuDeviceGetName(name, 128, device));
+  TC_INFO("Using CUDA Device [id=0]: {}", name);
 
-    int devMajor, devMinor;
-    check_cuda_errors(cuDeviceComputeCapability(&devMajor, &devMinor, device));
-    std::cout << "Device Compute Capability: " << devMajor << "." << devMinor
-              << "\n";
-    if (devMajor < 2) {
-      TC_ERROR("Device 0 is not SM 2.0 or greater");
-    }
-    // Create driver context
-    check_cuda_errors(cuCtxCreate(&context, 0, device));
-    check_cuda_errors(cuMemAlloc(&context_buffer, sizeof(Context)));
+  int cc_major, cc_minor;
+  check_cuda_errors(cuDeviceGetAttribute(
+      &cc_major, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, device));
+  check_cuda_errors(cuDeviceGetAttribute(
+      &cc_minor, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR, device));
 
-    int cap_major, cap_minor;
-    cudaDeviceGetAttribute(&cap_major, cudaDevAttrComputeCapabilityMajor, 0);
-    cudaDeviceGetAttribute(&cap_minor, cudaDevAttrComputeCapabilityMinor, 0);
-    mcpu = fmt::format("sm_{}{}", cap_major, cap_minor);
-  }
+  TC_INFO("CUDA Device Compute Capability: {}.{}", cc_major, cc_minor);
+  check_cuda_errors(cuCtxCreate(&context, 0, device));
+  check_cuda_errors(cudaMalloc(&context_buffer, sizeof(Context)));
+
+  mcpu = fmt::format("sm_{}{}", cc_major, cc_minor);
 }
 
 CUmodule CUDAContext::compile(const std::string &ptx) {
   // auto _ = cuda_context->get_guard();
-  cuda_context->make_current();
+  make_current();
   // Create module for object
   CUmodule cudaModule;
-  TC_INFO("PTX size: {:.2f}KB", ptx.size() / 1024.0);
-  // auto t = Time::get_time();
+  TC_TRACE("PTX size: {:.2f}KB", ptx.size() / 1024.0);
+  auto t = Time::get_time();
   check_cuda_errors(cuModuleLoadDataEx(&cudaModule, ptx.c_str(), 0, 0, 0));
-  // TC_INFO("CUDA module load time : {}ms", (Time::get_time() - t) * 1000);
+  TC_DEBUG("CUDA module load time : {}ms", (Time::get_time() - t) * 1000);
   cudaModules.push_back(cudaModule);
   return cudaModule;
 }
@@ -187,35 +184,44 @@ CUmodule CUDAContext::compile(const std::string &ptx) {
 CUfunction CUDAContext::get_function(CUmodule module,
                                      const std::string &func_name) {
   // auto _ = cuda_context->get_guard();
-  cuda_context->make_current();
+  make_current();
   CUfunction func;
-  // auto t = Time::get_time();
+  auto t = Time::get_time();
   check_cuda_errors(cuModuleGetFunction(&func, module, func_name.c_str()));
-  // t = Time::get_time() - t;
-  // TC_INFO("Kernel {} compilation time: {}ms", func_name, t * 1000);
+  t = Time::get_time() - t;
+  TC_DEBUG("Kernel {} compilation time: {}ms", func_name, t * 1000);
   return func;
 }
 
 void CUDAContext::launch(CUfunction func,
+                         const std::string &task_name,
+                         ProfilerBase *profiler,
                          void *context_ptr,
                          unsigned gridDim,
                          unsigned blockDim) {
   // auto _ = cuda_context->get_guard();
-  cuda_context->make_current();
+  make_current();
   // Kernel parameters
 
-  check_cuda_errors(cuMemcpyHtoD(context_buffer, context_ptr, sizeof(Context)));
+  check_cuda_errors(cudaMemcpy(context_buffer, context_ptr, sizeof(Context),
+                               cudaMemcpyHostToDevice));
 
   void *KernelParams[] = {&context_buffer};
 
+  if (profiler) {
+    profiler->start(task_name);
+  }
   // Kernel launch
   if (gridDim > 0) {
     check_cuda_errors(cuLaunchKernel(func, gridDim, 1, 1, blockDim, 1, 1, 0,
                                      nullptr, KernelParams, nullptr));
   }
+  if (profiler) {
+    profiler->stop();
+  }
 
   if (get_current_program().config.debug) {
-    cudaDeviceSynchronize();
+    check_cuda_errors(cudaDeviceSynchronize());
     auto err = cudaGetLastError();
     if (err) {
       TC_ERROR("CUDA Kernel Launch Error: {}", cudaGetErrorString(err));

@@ -332,6 +332,18 @@ class TypeCheck : public IRVisitor {
       stmt->body->accept(this);
   }
 
+  void visit(OffsetAndExtractBitsStmt *stmt) {
+    stmt->ret_type.data_type = DataType::i32;
+  }
+
+  void visit(LinearizeStmt *stmt) {
+    stmt->ret_type.data_type = DataType::i32;
+  }
+
+  void visit(IntegerOffsetStmt *stmt) {
+    stmt->ret_type.data_type = DataType::i32;
+  }
+
   static void run(IRNode *node) {
     TypeCheck inst;
     node->accept(&inst);

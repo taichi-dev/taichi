@@ -1,6 +1,7 @@
 // Definitions of utility functions and enums
 
 #pragma once
+#include <taichi/arch.h>
 #include <taichi/common/util.h>
 #include <taichi/io/io.h>
 #include <taichi/common.h>
@@ -12,16 +13,6 @@ template <typename T>
 using Handle = std::shared_ptr<T>;
 
 constexpr int default_simd_width_x86_64 = 8;
-
-enum class Arch { x86_64, gpu };
-
-inline std::string arch_name(Arch arch) {
-  if (arch == Arch::x86_64) {
-    return "x86_64";
-  } else {
-    return "cuda";
-  }
-}
 
 int default_simd_width(Arch arch);
 
@@ -90,21 +81,16 @@ std::string data_type_name(DataType t);
 std::string data_type_short_name(DataType t);
 
 enum class SNodeType {
-  undefined,
-  root,
-  dense,
-  dynamic,
-  place,
-  hash,
-  pointer,
-  indirect,
+#define PER_SNODE(x) x,
+#include "taichi/inc/snodes.inc.h"
+#undef PER_SNODE
 };
 
 std::string snode_type_name(SNodeType t);
 
 enum class UnaryOpType : int {
 #define PER_UNARY_OP(x) x,
-#include "inc/unary_op.h"
+#include "taichi/inc/unary_op.inc.h"
 #undef PER_UNARY_OP
 };
 
@@ -142,26 +128,9 @@ inline bool needs_grad(DataType dt) {
 // type
 
 enum class BinaryOpType : int {
-  mul,
-  add,
-  sub,
-  truediv, // will be lower into div in type checking
-  floordiv, // will be lower into div in type checking
-  div,
-  mod,
-  max,
-  min,
-  bit_and,
-  bit_or,
-  bit_xor,
-  cmp_lt,
-  cmp_le,
-  cmp_gt,
-  cmp_ge,
-  cmp_eq,
-  cmp_ne,
-  atan2,
-  undefined
+#define PER_BINARY_OP(x) x,
+#include "inc/binary_op.inc.h"
+#undef PER_BINARY_OP
 };
 
 inline bool binary_is_bitwise(BinaryOpType t) {
@@ -189,7 +158,14 @@ enum class AtomicOpType : int { add, sub, max, min };
 
 std::string atomic_op_type_name(AtomicOpType type);
 
-enum class SNodeOpType : int { probe, activate, deactivate, append, clear };
+enum class SNodeOpType : int {
+  is_active,
+  length,
+  activate,
+  deactivate,
+  append,
+  clear
+};
 
 std::string snode_op_type_name(SNodeOpType type);
 
@@ -336,6 +312,7 @@ struct CompileConfig {
   bool lower_access;
   bool simplify_after_lower_access;
   bool attempt_vectorized_load_cpu;
+  bool demote_dense_struct_fors;
   bool use_llvm;
   bool print_struct_llvm_ir;
   bool print_kernel_llvm_ir;
@@ -347,6 +324,7 @@ struct CompileConfig {
   DataType default_fp;
   DataType default_ip;
   std::string extra_flags;
+  int default_cpu_block_dim;
   int default_gpu_block_dim;
 
   CompileConfig();

@@ -7,8 +7,8 @@ cmake_minimum_required(VERSION 3.0)
 project(taichi)
 
 SET(TI_VERSION_MAJOR 0)
-SET(TI_VERSION_MINOR 3)
-SET(TI_VERSION_PATCH 25)
+SET(TI_VERSION_MINOR 4)
+SET(TI_VERSION_PATCH 5)
 
 execute_process(
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} 
@@ -25,14 +25,6 @@ string(STRIP ${TI_COMMIT_SHORT_HASH} TI_COMMIT_SHORT_HASH)
 
 message("Taichi Version ${TI_VERSION_MAJOR}.${TI_VERSION_MINOR}.${TI_VERSION_PATCH}")
 message("       Commit ${TI_COMMIT_HASH}")
-
-FILE(WRITE ${CMAKE_CURRENT_LIST_DIR}/taichi/common/version.h
-        "#pragma once\n"
-        "#define TI_VERSION_MAJOR \"${TI_VERSION_MAJOR}\"\n"
-        "#define TI_VERSION_MINOR \"${TI_VERSION_MINOR}\"\n"
-        "#define TI_VERSION_PATCH \"${TI_VERSION_PATCH}\"\n"
-        "#define TI_COMMIT_HASH \"${TI_COMMIT_HASH}\"\n"
-        )
 
 FILE(WRITE ${CMAKE_CURRENT_LIST_DIR}/docs/version
         "${TI_VERSION_MAJOR}.${TI_VERSION_MINOR}.${TI_VERSION_PATCH}\n"
@@ -64,3 +56,19 @@ include(cmake/TaichiMain.cmake)
 
 message("C++ Flags: ${CMAKE_CXX_FLAGS}")
 message("Build type: ${CMAKE_BUILD_TYPE}")
+
+if (NOT TI_WITH_CUDA)
+    set(CUDA_VERSION "0.0")
+    set(CUDA_TOOLKIT_ROOT_DIR "")
+endif()
+
+FILE(WRITE ${CMAKE_CURRENT_LIST_DIR}/taichi/common/version.h
+        "#pragma once\n"
+        "#define TI_VERSION_MAJOR \"${TI_VERSION_MAJOR}\"\n"
+        "#define TI_VERSION_MINOR \"${TI_VERSION_MINOR}\"\n"
+        "#define TI_VERSION_PATCH \"${TI_VERSION_PATCH}\"\n"
+        "#define TI_COMMIT_HASH \"${TI_COMMIT_HASH}\"\n"
+        "#define TI_CUDAVERSION \"${CUDA_VERSION}\"\n"
+        "#define TI_CUDAROOT_DIR \"${CUDA_TOOLKIT_ROOT_DIR}\"\n"
+        )
+

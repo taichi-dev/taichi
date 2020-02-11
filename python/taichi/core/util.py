@@ -4,9 +4,9 @@ import sys
 import ctypes
 from pathlib import Path
 
-if sys.version_info[0] < 3 or sys.version_info[1] < 5:
-  print("\nPlease restart with python3. \n(Taichi supports Python 3.5+)\n")
-  print("Current version:", sys.version_info)
+if sys.version_info[0] < 3 or sys.version_info[1] <= 5:
+  print("\nPlease restart with Python 3.6+\n")
+  print("Current Python version:", sys.version_info)
   exit(-1)
 
 tc_core = None
@@ -27,11 +27,26 @@ def import_tc_core():
   else:
     pyddir = os.path.join(package_root(), 'lib')
     os.environ['PATH'] += ';' + pyddir
-  import taichi_core as core
+  try:
+    import taichi_core as core
+  except Exception as e:
+    if isinstance(e, ImportError):
+      print("Share object taichi_core import failed. If you are on Windows, please consider installing \"Microsoft Visual C++ Redistributable\" (https://aka.ms/vs/16/release/vc_redist.x64.exe)")
+    raise e
   tc_core = core
   if get_os_name() != 'win':
     sys.setdlopenflags(old_flags)
-  core.set_lib_dir(os.path.join(package_root(), 'lib'))
+  lib_dir = os.path.join(package_root(), 'lib')
+  core.set_lib_dir(locale_encode(lib_dir))
+
+
+def locale_encode(s):
+  try:
+    import locale
+    encoding = locale.getdefaultlocale()[1]
+  except:
+    encoding = 'utf8'
+  return s.encode(encoding)
 
 
 def is_ci():

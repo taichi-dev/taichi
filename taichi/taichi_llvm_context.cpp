@@ -31,8 +31,6 @@
 
 TLANG_NAMESPACE_BEGIN
 
-static llvm::ExitOnError exit_on_err;
-
 TaichiLLVMContext::TaichiLLVMContext(Arch arch) : arch(arch) {
   llvm::remove_fatal_error_handler();
   llvm::install_fatal_error_handler(
@@ -46,7 +44,7 @@ TaichiLLVMContext::TaichiLLVMContext(Arch arch) : arch(arch) {
     llvm::InitializeNativeTargetAsmPrinter();
     llvm::InitializeNativeTargetAsmParser();
   } else {
-#if defined(TLANG_WITH_CUDA)
+#if defined(TI_WITH_CUDA)
     LLVMInitializeNVPTXTarget();
     LLVMInitializeNVPTXTargetMC();
     LLVMInitializeNVPTXTargetInfo();
@@ -57,6 +55,7 @@ TaichiLLVMContext::TaichiLLVMContext(Arch arch) : arch(arch) {
   }
   ctx = std::make_unique<llvm::LLVMContext>();
   TC_INFO("Creating llvm context for arch: {}", arch_name(arch));
+  llvm::ExitOnError exit_on_err;
   jit = exit_on_err(TaichiLLVMJIT::create(arch));
 }
 
@@ -80,7 +79,6 @@ llvm::Type *TaichiLLVMContext::get_data_type(DataType dt) {
     TC_INFO(data_type_name(dt));
     TC_NOT_IMPLEMENTED
   }
-  return nullptr;
 }
 
 std::string find_existing_command(const std::vector<std::string> &commands) {
@@ -132,19 +130,20 @@ void compile_runtime_bitcode(Arch arch) {
 
 void compile_runtimes() {
   compile_runtime_bitcode(Arch::x86_64);
-#if defined(TLANG_WITH_CUDA)
-  compile_runtime_bitcode(Arch::gpu);
+#if defined(TI_WITH_CUDA)
+  compile_runtime_bitcode(Arch::cuda);
 #endif
 }
 
 std::string libdevice_path() {
-#if defined(TLANG_WITH_CUDA)
-  auto folder =
-      fmt::format("/usr/local/cuda-{}/nvvm/libdevice/", TLANG_CUDA_VERSION);
+#if defined(TI_WITH_CUDA)
+  auto folder = fmt::format("{}/nvvm/libdevice/", get_cuda_root_dir(),
+                            get_cuda_version_string());
   if (is_release()) {
     folder = compiled_lib_dir;
   }
-  auto cuda_version_major = int(std::atof(TLANG_CUDA_VERSION));
+  auto cuda_version_string = get_cuda_version_string();
+  auto cuda_version_major = int(std::atof(cuda_version_string.c_str()));
   return fmt::format("{}/libdevice.{}.bc", folder, cuda_version_major);
 #else
   TC_NOT_IMPLEMENTED;
@@ -168,26 +167,15 @@ std::unique_ptr<llvm::Module> module_from_bitcode_file(std::string bitcode_path,
     auto error = runtime.takeError();
     TC_WARN("Bitcode loading error message:");
     llvm::errs() << error << "\n";
-    TC_ERROR("Runtime bitcode load failure.");
+    TC_ERROR("Bitcode {} load failure.", bitcode_path);
   }
 
-  for (auto &f : *(runtime.get())) {
-    f.removeAttribute(AttributeList::FunctionIndex,
-                      llvm::Attribute::OptimizeNone);
-    f.removeAttribute(AttributeList::FunctionIndex, llvm::Attribute::NoInline);
-    f.addAttribute(AttributeList::FunctionIndex, llvm::Attribute::AlwaysInline);
-  }
+  for (auto &f : *(runtime.get()))
+    TaichiLLVMContext::force_inline(&f);
 
   bool module_broken = llvm::verifyModule(*runtime.get(), &llvm::errs());
   TC_ERROR_IF(module_broken, "Module broken");
   return std::move(runtime.get());
-}
-
-int num_instructions(llvm::Function *func) {
-  int counter = 0;
-  for (BasicBlock &bb : *func)
-    counter += std::distance(bb.begin(), bb.end());
-  return counter;
 }
 
 void remove_useless_libdevice_functions(llvm::Module *module) {
@@ -247,13 +235,12 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
           fmt::format("{}/{}", get_runtime_dir(), get_runtime_fn(arch)),
           ctx.get());
     }
-    if (arch == Arch::gpu) {
+    if (arch == Arch::cuda) {
       runtime_module->setTargetTriple("nvptx64-nvidia-cuda");
 
       auto patch_intrinsic = [&](std::string name, Intrinsic::ID intrin,
                                  bool ret = true,
                                  std::vector<Type *> types = {}) {
-        TC_PROFILER("patch intrinsic");
         auto func = runtime_module->getFunction(name);
         func->deleteBody();
         auto bb = llvm::BasicBlock::Create(*ctx, "entry", func);
@@ -268,12 +255,22 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
           builder.CreateIntrinsic(intrin, types, args);
           builder.CreateRetVoid();
         }
-        func->removeAttribute(AttributeList::FunctionIndex,
-                              llvm::Attribute::OptimizeNone);
-        func->removeAttribute(AttributeList::FunctionIndex,
-                              llvm::Attribute::NoInline);
-        func->addAttribute(AttributeList::FunctionIndex,
-                           llvm::Attribute::AlwaysInline);
+        TaichiLLVMContext::force_inline(func);
+      };
+
+      auto patch_atomic_add_int = [&](std::string name) {
+        auto func = runtime_module->getFunction(name);
+        func->deleteBody();
+        auto bb = llvm::BasicBlock::Create(*ctx, "entry", func);
+        IRBuilder<> builder(*ctx);
+        builder.SetInsertPoint(bb);
+        std::vector<llvm::Value *> args;
+        for (auto &arg : func->args())
+          args.push_back(&arg);
+        builder.CreateRet(builder.CreateAtomicRMW(
+            llvm::AtomicRMWInst::Add, args[0], args[1],
+            llvm::AtomicOrdering::SequentiallyConsistent));
+        TaichiLLVMContext::force_inline(func);
       };
 
       patch_intrinsic("thread_idx", Intrinsic::nvvm_read_ptx_sreg_tid_x);
@@ -281,26 +278,21 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
       patch_intrinsic("block_dim", Intrinsic::nvvm_read_ptx_sreg_ntid_x);
       patch_intrinsic("grid_dim", Intrinsic::nvvm_read_ptx_sreg_nctaid_x);
       patch_intrinsic("block_barrier", Intrinsic::nvvm_barrier0, false);
+      patch_intrinsic("block_memfence", Intrinsic::nvvm_membar_cta, false);
+      patch_intrinsic("grid_memfence", Intrinsic::nvvm_membar_gl, false);
+      patch_intrinsic("system_memfence", Intrinsic::nvvm_membar_sys, false);
+
+      patch_atomic_add_int("atomic_add_i32");
+
+      patch_atomic_add_int("atomic_add_i64");
 
       patch_intrinsic(
-          "atomic_add_i32", Intrinsic::nvvm_atomic_add_gen_i_sys, true,
-          {get_data_type(DataType::i32),
-           llvm::PointerType::get(get_data_type(DataType::i32), 0)});
+          "atomic_add_f32", Intrinsic::nvvm_atomic_load_add_f32, true,
+          {llvm::PointerType::get(get_data_type(DataType::f32), 0)});
 
       patch_intrinsic(
-          "atomic_add_i64", Intrinsic::nvvm_atomic_add_gen_i_sys, true,
-          {get_data_type(DataType::i64),
-           llvm::PointerType::get(get_data_type(DataType::i64), 0)});
-
-      patch_intrinsic(
-          "atomic_add_f32", Intrinsic::nvvm_atomic_add_gen_f_sys, true,
-          {get_data_type(DataType::f32),
-           llvm::PointerType::get(get_data_type(DataType::f32), 0)});
-
-      patch_intrinsic(
-          "atomic_add_f64", Intrinsic::nvvm_atomic_add_gen_f_sys, true,
-          {get_data_type(DataType::f64),
-           llvm::PointerType::get(get_data_type(DataType::f64), 0)});
+          "atomic_add_f64", Intrinsic::nvvm_atomic_load_add_f64, true,
+          {llvm::PointerType::get(get_data_type(DataType::f64), 0)});
 
       // patch_intrinsic("sync_warp", Intrinsic::nvvm_bar_warp_sync, false);
       // patch_intrinsic("warp_ballot", Intrinsic::nvvm_vote_ballot, false);
@@ -311,29 +303,14 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
 
       // runtime_module->print(llvm::errs(), nullptr);
     }
-
-    /*
-    int total_inst = 0;
-    int total_big_inst = 0;
-
-    for (auto &f : *runtime_module) {
-      int c = num_instructions(&f);
-      if (c > 100) {
-        total_big_inst += c;
-        TC_INFO("Loaded runtime function: {} (inst. count= {})",
-                std::string(f.getName()), c);
-      }
-      total_inst += c;
-    }
-    TC_P(total_inst);
-    TC_P(total_big_inst);
-    */
   }
+
   std::unique_ptr<llvm::Module> cloned;
   {
     TC_PROFILER("clone module");
     cloned = llvm::CloneModule(*runtime_module);
   }
+
   return cloned;
 }
 
@@ -409,8 +386,6 @@ template llvm::Value *TaichiLLVMContext::get_constant(DataType dt, float64 t);
 
 template <typename T>
 llvm::Value *TaichiLLVMContext::get_constant(T t) {
-  // TC_P(arch_name(arch));
-  // TC_INFO("{}", (void *)ctx.get());
   using TargetType = T;
   if constexpr (std::is_same_v<TargetType, float32> ||
                 std::is_same_v<TargetType, float64>) {
@@ -437,6 +412,37 @@ std::string TaichiLLVMContext::type_name(llvm::Type *type) {
 
 std::size_t TaichiLLVMContext::get_type_size(llvm::Type *type) {
   return jit->get_type_size(type);
+}
+
+void TaichiLLVMContext::force_inline(llvm::Function *f) {
+  f->removeAttribute(AttributeList::FunctionIndex,
+                     llvm::Attribute::OptimizeNone);
+  f->removeAttribute(AttributeList::FunctionIndex, llvm::Attribute::NoInline);
+  f->addAttribute(AttributeList::FunctionIndex, llvm::Attribute::AlwaysInline);
+}
+
+int TaichiLLVMContext::num_instructions(llvm::Function *func) {
+  int counter = 0;
+  for (BasicBlock &bb : *func)
+    counter += std::distance(bb.begin(), bb.end());
+  return counter;
+}
+
+void TaichiLLVMContext::print_huge_functions() {
+  int total_inst = 0;
+  int total_big_inst = 0;
+
+  for (auto &f : *runtime_module) {
+    int c = num_instructions(&f);
+    if (c > 100) {
+      total_big_inst += c;
+      TC_INFO("Loaded runtime function: {} (inst. count= {})",
+              std::string(f.getName()), c);
+    }
+    total_inst += c;
+  }
+  TC_P(total_inst);
+  TC_P(total_big_inst);
 }
 
 template llvm::Value *TaichiLLVMContext::get_constant(float32 t);

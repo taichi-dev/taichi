@@ -1,4 +1,5 @@
 #pragma once
+#include "arch.h"
 #include "common.h"
 #include <mutex>
 #include <vector>
@@ -10,41 +11,40 @@ class VirtualMemoryAllocator;
 
 TLANG_NAMESPACE_BEGIN
 
-class UnifiedAllocator;
-
-extern UnifiedAllocator *&allocator();
-extern UnifiedAllocator *allocator_instance;
-
 // This class can only have one instance
 class UnifiedAllocator {
   std::unique_ptr<VirtualMemoryAllocator> cpu_vm;
-#if defined(TLANG_WITH_CUDA)
-  void *_cuda_data{};
+#if defined(TI_WITH_CUDA)
+  void *_cuda_data;
 #endif
-  std::size_t size{};
-  bool gpu{};
+  std::size_t size;
+  Arch arch_;
 
   // put these two on the unified memory so that GPU can have access
  public:
-  void *data;
-  void **head{};
-  void **tail{};
-  int gpu_error_code;
+  uint8 *data;
+  uint8 *head;
+  uint8 *tail;
   std::mutex lock;
 
  public:
-  UnifiedAllocator();
-
-  UnifiedAllocator(std::size_t size, bool gpu);
+  UnifiedAllocator(std::size_t size, Arch arch);
 
   ~UnifiedAllocator();
 
-  void *alloc(std::size_t size, int alignment) {
+  void *allocate(std::size_t size, std::size_t alignment) {
     std::lock_guard<std::mutex> _(lock);
-    auto ret = (char *)(*head) + alignment - 1 -
-               ((std::size_t)(char *)(*head) + alignment - 1) % alignment;
-    *head = (char *)ret + size;
-    return ret;
+    auto ret =
+        head + alignment - 1 - ((std::size_t)head + alignment - 1) % alignment;
+    head = ret + size;
+    if (head > tail) {
+      // allocation failed
+      return nullptr;
+    } else {
+      // success
+      TC_ASSERT((std::size_t)ret % alignment == 0);
+      return ret;
+    }
   }
 
   void memset(unsigned char val);
@@ -54,14 +54,6 @@ class UnifiedAllocator {
   }
 
   UnifiedAllocator operator=(const UnifiedAllocator &) = delete;
-
-  static void create(bool gpu);
-
-  static void free();
 };
-
-TC_FORCE_INLINE void *allocate(std::size_t size, int alignment = 1) {
-  return allocator()->alloc(size, alignment);
-}
 
 TLANG_NAMESPACE_END

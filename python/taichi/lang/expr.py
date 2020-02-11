@@ -133,10 +133,6 @@ class Expr:
     other = Expr(other)
     return Expr(taichi_lang_core.expr_cmp_ne(self.ptr, other.ptr))
 
-  def __getitem__(self, item):
-    item = Expr(item)
-    return Expr(expr_index(self, item.ptr))
-
   def __and__(self, item):
     item = Expr(item)
     return Expr(taichi_lang_core.expr_bit_and(self.ptr, item.ptr))
@@ -268,8 +264,8 @@ class Expr:
     return ti.cast(self, ti.get_runtime().default_fp)
 
   def parent(self):
-    from .snode import SNode
-    return SNode(self.ptr.snode().parent)
+    import taichi as ti
+    return Expr(ti.core.global_var_expr_from_snode(self.ptr.snode().parent))
 
   def snode(self):
     from .snode import SNode

@@ -1,23 +1,7 @@
 import taichi as ti
 
-
-def test_clear():
-  return
-  ti.reset()
-  x = ti.var(ti.i32)
-
-  @ti.layout
-  def place():
-    ti.root.dense(ti.i, 1).place(x)
-
-  x[0] = 1
-  assert x[0] == 1
-  x.clear()
-  assert x[0] == 0
-
-
+@ti.all_archs
 def test_nested_subscript():
-  ti.reset()
   x = ti.var(ti.i32)
   y = ti.var(ti.i32)
 

@@ -5,7 +5,7 @@ import taichi as ti
 import numpy as np
 import math
 
-ti.cfg.arch = ti.cuda   # Try CUDA by default
+ti.init(arch=ti.cuda)   # Try CUDA by default
 
 screen_res = (800, 400)
 screen_to_world_ratio = 10.0
@@ -276,16 +276,17 @@ def run_pbf():
   # no vorticity/xsph because we cannot do cross product in 2D...
 
 
-def render(gui, canvas):
+def render(gui):
+  canvas = gui.canvas
   canvas.clear(bg_color)
-  for pos in positions.to_numpy():
+  pos_np = positions.to_numpy()
+  for pos in pos_np:
     for j in range(dim):
       pos[j] *= screen_to_world_ratio / screen_res[j]
-    canvas.circle(ti.vec(pos[0], pos[1])).radius(
-        particle_radius).color(particle_color).finish()
+  gui.circles(pos_np, radius=particle_radius, color=particle_color)
   canvas.rect(ti.vec(0, 0), ti.vec(
       board_states[None][0] / boundary[0], 1.0)).radius(1.5).color(boundary_color).close().finish()
-  gui.update()
+  gui.show()
 
 
 def init_particles():
@@ -330,8 +331,7 @@ def print_stats():
 def main():
   init_particles()
   print(f'boundary={boundary} grid={grid_size} cell_size={cell_size}')
-  gui = ti.core.GUI('PBF2D', ti.veci(screen_res[0], screen_res[1]))
-  canvas = gui.get_canvas()
+  gui = ti.GUI('PBF2D', screen_res)
   print_counter = 0
   while True:
     move_board()
@@ -340,7 +340,7 @@ def main():
     if print_counter == 20:
       print_stats()
       print_counter = 0
-    render(gui, canvas)
+    render(gui)
 
 
 if __name__ == '__main__':

@@ -8,7 +8,7 @@ TLANG_NAMESPACE_BEGIN
 
 class StructCompilerLLVM : public StructCompiler, public ModuleBuilder {
  public:
-  StructCompilerLLVM(Arch arch);
+  StructCompilerLLVM(Program* prog, Arch arch);
 
   SNodeAttributes snode_attr;
 

@@ -110,3 +110,25 @@ def test_zero_inner_loop():
   test()
   
   assert x[None] == 0
+
+@ti.all_archs
+def test_dynamic_loop_range():
+  x = ti.var(ti.i32)
+  c = ti.var(ti.i32)
+  n = 2000
+
+  @ti.layout
+  def layout():
+    ti.root.dense(ti.i, n).place(x)
+    ti.root.place(c)
+
+  @ti.kernel
+  def test():
+    for i in x:
+      x[i] = ti.atomic_add(c[None], 1)
+    for i in range(c[None], c[None] * 2):
+      x[i - n] += c[None]
+
+  test()
+  assert c[None] == n
+  assert sum(x.to_numpy()) == (n * (n - 1) // 2) + n * n

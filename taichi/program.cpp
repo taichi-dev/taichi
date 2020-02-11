@@ -4,8 +4,10 @@
 #include "program.h"
 #include "snode.h"
 #include "backends/struct.h"
+#include "backends/struct_metal.h"
 #include "backends/codegen_x86.h"
 #include "backends/codegen_cuda.h"
+#include "backends/codegen_metal.h"
 
 #if defined(CUDA_FOUND)
 
@@ -18,7 +20,44 @@ TLANG_NAMESPACE_BEGIN
 
 Program *current_program = nullptr;
 std::atomic<int> Program::num_instances;
-SNode root;
+
+Program::Program(Arch arch) {
+#if !defined(CUDA_FOUND)
+  if (arch == Arch::cuda) {
+    TC_WARN("Taichi is not compiled with CUDA.");
+    TC_WARN("Falling back to x86_64");
+    arch = Arch::x86_64;
+  }
+#else
+  if (!cuda_context) {
+    cuda_context = std::make_unique<CUDAContext>();
+    if (!cuda_context->detected()) {
+      TC_WARN("No CUDA device detected.");
+      TC_WARN("Falling back to x86_64");
+      arch = Arch::x86_64;
+    }
+  }
+#endif
+  memory_pool = std::make_unique<MemoryPool>(this);
+  TC_ASSERT_INFO(num_instances == 0, "Only one instance at a time");
+  total_compilation_time = 0;
+  num_instances += 1;
+  SNode::counter = 0;
+  // llvm_context_device is initialized before kernel compilation
+  TC_ASSERT(current_program == nullptr);
+  current_program = this;
+  config = default_compile_config;
+  config.arch = arch;
+  if (config.use_llvm) {
+    llvm_context_host = std::make_unique<TaichiLLVMContext>(Arch::x86_64);
+    profiler_llvm = make_profiler(arch);
+  }
+  current_kernel = nullptr;
+  sync = true;
+  llvm_runtime = nullptr;
+  finalized = false;
+  snode_root = std::make_unique<SNode>(0, SNodeType::root);
+}
 
 FunctionType Program::compile(Kernel &kernel) {
   auto start_t = Time::get_time();
@@ -27,9 +66,16 @@ FunctionType Program::compile(Kernel &kernel) {
   if (kernel.arch == Arch::x86_64) {
     CPUCodeGen codegen(kernel.name);
     ret = codegen.compile(*this, kernel);
-  } else if (kernel.arch == Arch::gpu) {
+  } else if (kernel.arch == Arch::cuda) {
     GPUCodeGen codegen(kernel.name);
     ret = codegen.compile(*this, kernel);
+  } else if (kernel.arch == Arch::metal) {
+#if defined(TC_SUPPORTS_METAL)
+    metal::MetalCodeGen codegen(kernel.name, &metal_struct_compiled_.value());
+    ret = codegen.compile(*this, kernel, metal_runtime_.get());
+#else
+    TC_ERROR("Metal not supported on the current OS");
+#endif  // TC_SUPPORTS_METAL
   } else {
     TC_NOT_IMPLEMENTED;
   }
@@ -41,30 +87,49 @@ FunctionType Program::compile(Kernel &kernel) {
 void Program::materialize_layout() {
   // always use arch=x86_64 since this is for host accessors
   std::unique_ptr<StructCompiler> scomp =
-      StructCompiler::make(config.use_llvm, Arch::x86_64);
-  scomp->run(root, true);
+      StructCompiler::make(config.use_llvm, this, Arch::x86_64);
+  scomp->run(*snode_root, true);
   layout_fn = scomp->get_source_path();
   scomp->creator();
   profiler_print_gpu = scomp->profiler_print;
   profiler_clear_gpu = scomp->profiler_clear;
 
-  if (config.arch == Arch::gpu && config.use_llvm) {
+  if (config.arch == Arch::cuda && config.use_llvm) {
     initialize_device_llvm_context();
     // llvm_context_device->get_init_module();
     std::unique_ptr<StructCompiler> scomp_gpu =
-        StructCompiler::make(config.use_llvm, Arch::gpu);
-    scomp_gpu->run(root, false);
+        StructCompiler::make(config.use_llvm, this, Arch::cuda);
+    scomp_gpu->run(*snode_root, false);
+  } else if (config.arch == Arch::metal) {
+#if defined(TC_SUPPORTS_METAL)
+    metal::MetalStructCompiler scomp;
+    metal_struct_compiled_ = scomp.run(*snode_root);
+    if (metal_runtime_ == nullptr) {
+      metal_runtime_ = std::make_unique<metal::MetalRuntime>(
+          metal_struct_compiled_->root_size, &config, memory_pool.get(),
+          profiler_llvm.get());
+    }
+    TC_INFO("Metal root buffer size: {} B", metal_struct_compiled_->root_size);
+#else
+    TC_ERROR("Metal not supported on the current OS");
+#endif  // TC_SUPPORTS_METAL
   }
 }
 
 void Program::synchronize() {
   if (!sync) {
-    if (config.arch == Arch::gpu) {
+    if (config.arch == Arch::cuda) {
 #if defined(CUDA_FOUND)
       cudaDeviceSynchronize();
 #else
       TC_ERROR("No CUDA support");
 #endif
+    } else if (config.arch == Arch::metal) {
+#if defined(TC_SUPPORTS_METAL)
+      metal_runtime_->synchronize();
+#else
+      TC_ERROR("No Metal support");
+#endif  // TC_SUPPORTS_METAL
     }
     sync = true;
   }
@@ -141,7 +206,7 @@ void Program::visualize_layout(const std::string &fn) {
       emit("]");
     };
 
-    visit(snode_root);
+    visit(snode_root.get());
 
     auto tail = R"(
 \end{tikzpicture}
@@ -152,55 +217,10 @@ void Program::visualize_layout(const std::string &fn) {
   trash(system(fmt::format("pdflatex {}", fn).c_str()));
 }
 
-Program::Program(Arch arch) {
-#if !defined(CUDA_FOUND)
-  if (arch == Arch::gpu) {
-    TC_WARN("Taichi is not compiled with CUDA.");
-    TC_WARN("Falling back to x86_64");
-    arch = Arch::x86_64;
-  }
-#else
-  if (!cuda_context) {
-    cuda_context = std::make_unique<CUDAContext>();
-    if (!cuda_context->detected()) {
-      TC_WARN("No CUDA device detected.");
-      TC_WARN("Falling back to x86_64");
-      arch = Arch::x86_64;
-    }
-  }
-#endif
-  TC_ASSERT_INFO(num_instances == 0, "Only one instance at a time");
-  total_compilation_time = 0;
-  num_instances += 1;
-  SNode::counter = 0;
-  // llvm_context_device is initialized before kernel compilation
-  UnifiedAllocator::create(arch == Arch::gpu);
-  TC_ASSERT(current_program == nullptr);
-  current_program = this;
-  config = default_compile_config;
-  config.arch = arch;
-  if (config.use_llvm) {
-    llvm_context_host = std::make_unique<TaichiLLVMContext>(Arch::x86_64);
-    if (config.arch == Arch::x86_64) {
-      profiler_llvm = std::make_unique<CPUProfiler>();
-    } else {
-      profiler_llvm = std::make_unique<GPUProfiler>();
-    }
-  }
-  auto env_debug = getenv("TI_DEBUG");
-  if (env_debug && env_debug == std::string("1"))
-    config.debug = true;
-  current_kernel = nullptr;
-  snode_root = nullptr;
-  sync = true;
-  llvm_runtime = nullptr;
-  finalized = false;
-}
-
 void Program::initialize_device_llvm_context() {
-  if (config.arch == Arch::gpu && config.use_llvm) {
+  if (config.arch == Arch::cuda) {
     if (llvm_context_device == nullptr)
-      llvm_context_device = std::make_unique<TaichiLLVMContext>(Arch::gpu);
+      llvm_context_device = std::make_unique<TaichiLLVMContext>(Arch::cuda);
   }
 }
 
@@ -216,7 +236,17 @@ Kernel &Program::get_snode_reader(SNode *snode) {
         snode->num_active_indices, load_if_ptr((snode->expr)[indices]));
     current_ast_builder().insert(std::move(ret));
   });
-  ker.set_arch(get_host_arch());
+  if (config.arch == Arch::metal) {
+    // For now, we launch a Metal kernel to read back the memory. This is not
+    // efficient, but should be improved once we have batch + async reader.
+#if defined(TC_SUPPORTS_METAL)
+    ker.set_arch(Arch::metal);
+#else
+    TC_ERROR("Metal not supported on the current OS");
+#endif  // TC_SUPPORTS_METAL
+  } else {
+    ker.set_arch(get_host_arch());
+  }
   ker.name = kernel_name;
   ker.is_accessor = true;
   for (int i = 0; i < snode->num_active_indices; i++)
@@ -237,13 +267,43 @@ Kernel &Program::get_snode_writer(SNode *snode) {
     (snode->expr)[indices] =
         Expr::make<ArgLoadExpression>(snode->num_active_indices);
   });
-  ker.set_arch(get_host_arch());
+  if (config.arch == Arch::metal) {
+    // For now, we launch a Metal kernel to read back the memory. This is not
+    // efficient, but should be improved once we have batch + async writer.
+#if defined(TC_SUPPORTS_METAL)
+    ker.set_arch(Arch::metal);
+#else
+    TC_ERROR("Metal not supported on the current OS");
+#endif  // TC_SUPPORTS_METAL
+  } else {
+    ker.set_arch(get_host_arch());
+  }
   ker.name = kernel_name;
   ker.is_accessor = true;
   for (int i = 0; i < snode->num_active_indices; i++)
     ker.insert_arg(DataType::i32, false);
   ker.insert_arg(snode->dt, false);
   return ker;
+}
+
+void Program::finalize() {
+  synchronize();
+  current_program = nullptr;
+  for (auto &dll : loaded_dlls) {
+#if defined(TC_PLATFORM_UNIX)
+    dlclose(dll);
+#else
+    TC_NOT_IMPLEMENTED
+#endif
+  }
+  memory_pool->terminate();
+  finalized = true;
+  num_instances -= 1;
+}
+
+Program::~Program() {
+  if (!finalized)
+    finalize();
 }
 
 TLANG_NAMESPACE_END

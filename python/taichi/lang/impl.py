@@ -3,7 +3,6 @@ from .core import taichi_lang_core
 from .expr import Expr
 from .snode import SNode
 from .util import *
-import numpy as np
 
 
 def expr_init(rhs):
@@ -61,7 +60,9 @@ def subscript(value, *indices):
       indices_expr_group = make_expr_group()
     else:
       indices_expr_group = make_expr_group(*indices)
-    assert int(value.ptr.get_attribute("dim")) == indices_expr_group.size()
+    tensor_dim = int(value.ptr.get_attribute("dim"))
+    index_dim = indices_expr_group.size()
+    assert tensor_dim == index_dim, f'Tensor with dim {tensor_dim} accessed with indices of dim {index_dim}'
     return Expr(taichi_lang_core.subscript(value.ptr, indices_expr_group))
 
 
@@ -82,24 +83,11 @@ class PyTaichi:
     self.target_tape = None
     self.inside_complex_kernel = False
     self.kernels = kernels
-    self.verbose_kernel_launch = False
     Expr.materialize_layout_callback = self.materialize
     
   def get_num_compiled_functions(self):
     return len(self.compiled_functions) + len(self.compiled_grad_functions)
   
-  def set_verbose_kernel_launch(self, val):
-    self.verbose_kernel_launch = val
-
-  def set_verbose(self, verbose):
-    import taichi as ti
-    if verbose:
-      default_cfg().verbose = True
-      ti.set_logging_level('trace')
-    else:
-      default_cfg().verbose = False
-      ti.set_logging_level('error')
-
   def set_default_fp(self, fp):
     assert fp in [f32, f64]
     self.default_fp = fp
@@ -109,12 +97,16 @@ class PyTaichi:
     assert ip in [i32, i64]
     self.default_ip = ip
     default_cfg().default_ip = self.default_ip
+    
+  def create_program(self):
+    if self.prog is None:
+      self.prog = taichi_lang_core.Program()
 
   def materialize(self):
     if self.materialized:
       return
+    self.create_program()
     Expr.layout_materialized = True
-    self.prog = taichi_lang_core.Program()
 
     def layout():
       for func in self.layout_functions:
@@ -169,14 +161,12 @@ def make_constant_expr(val):
 
 def reset():
   global pytaichi
-  global root
   old_kernels = pytaichi.kernels
   pytaichi.clear()
   pytaichi = PyTaichi(old_kernels)
   for k in old_kernels:
     k.reset()
   taichi_lang_core.reset_default_compile_config()
-  root = SNode(taichi_lang_core.get_root())
 
 
 def inside_kernel():
@@ -186,8 +176,19 @@ def inside_kernel():
 def index_nd(dim):
   return indices(*range(dim))
 
+class Root:
+  def __init__(self):
+    pass
+  
+  def __getattribute__(self, item):
+    import taichi as ti
+    ti.get_runtime().create_program()
+    root = SNode(ti.get_runtime().prog.get_root())
+    return getattr(root, item)
 
-def global_var(dt, shape=None, needs_grad=False):
+root = Root()
+
+def var(dt, shape=None, needs_grad=False):
   if isinstance(shape, numbers.Number):
     shape = (shape,)
 
@@ -205,30 +206,21 @@ def global_var(dt, shape=None, needs_grad=False):
     x.set_grad(x_grad)
 
   if shape is not None:
-
-    @layout
-    def place():
-      import taichi as ti
-      dim = len(shape)
-      ti.root.dense(index_nd(dim), shape).place(x)
-      if needs_grad:
-        ti.root.dense(index_nd(dim), shape).place(x.grad)
+    dim = len(shape)
+    root.dense(index_nd(dim), shape).place(x)
+    if needs_grad:
+      root.dense(index_nd(dim), shape).place(x.grad)
 
   return x
 
 
 class Layout:
-
   def __init__(self, soa=False):
     self.soa = soa
 
 
 SOA = Layout(soa=True)
 AOS = Layout(soa=False)
-
-var = global_var
-
-root = SNode(taichi_lang_core.get_root())
 
 
 def layout(func):

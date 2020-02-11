@@ -80,13 +80,25 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(SNodeOpStmt *stmt) override {
-    std::string extras = stmt->ptr->raw_name();
+    std::string extras;
+    if (stmt->ptr)
+      extras = "ptr = " + stmt->ptr->name();
     if (stmt->val) {
-      extras += ", " + stmt->val->name();
+      extras += ", val = " + stmt->val->name();
+    }
+    if (!stmt->indices.empty()){
+      extras += " index [";
+      for (int i = 0; i < (int)stmt->indices.size(); i++) {
+        extras += fmt::format("{}", stmt->indices[i]->name());
+        if (i + 1 < (int)stmt->indices.size()) {
+          extras += ", ";
+        }
+      }
+      extras += "]";
     }
     std::string snode = stmt->snode->get_node_type_name_hinted();
-    print("{} : {} [{}] {}", stmt->name(), snode_op_type_name(stmt->op_type),
-          snode, extras);
+    print("{}{} = {} [{}] {}", stmt->type_hint(), stmt->name(),
+          snode_op_type_name(stmt->op_type), snode, extras);
   }
 
   void visit(AllocaStmt *alloca) override {
@@ -312,17 +324,18 @@ class IRPrinter : public IRVisitor {
         stmt->strides,
         [&](const int &stride) { return std::to_string(stride); }, "{");
 
-    print("{} = linearized(ind {}, stride {})", stmt->name(), ind, stride);
+    print("{}{} = linearized(ind {}, stride {})", stmt->type_hint(),
+          stmt->name(), ind, stride);
   }
 
   void visit(IntegerOffsetStmt *stmt) override {
-    print("{} = offset {} + {}", stmt->name(), stmt->input->name(),
-          stmt->offset);
+    print("{}{} = offset {} + {}", stmt->type_hint(), stmt->name(),
+          stmt->input->name(), stmt->offset);
   }
 
   void visit(OffsetAndExtractBitsStmt *stmt) override {
-    print("{} = bit_extract({} + {}, {}~{})", stmt->name(), stmt->input->name(),
-          stmt->offset, stmt->bit_begin, stmt->bit_end);
+    print("{}{} = bit_extract({} + {}, {}~{})", stmt->type_hint(), stmt->name(),
+          stmt->input->name(), stmt->offset, stmt->bit_begin, stmt->bit_end);
   }
 
   void visit(GetRootStmt *stmt) override {
@@ -375,16 +388,33 @@ class IRPrinter : public IRVisitor {
   void visit(OffloadedStmt *stmt) override {
     std::string details;
     if (stmt->task_type == stmt->range_for) {
-      details = fmt::format("range_for(&{}, &{})", stmt->begin, stmt->end);
+      std::string begin_str, end_str;
+      if (stmt->const_begin) {
+        begin_str = std::to_string(stmt->begin_value);
+      } else {
+        begin_str = fmt::format("tmp(offset={}B)", stmt->begin_offset);
+      }
+      if (stmt->const_end) {
+        end_str = std::to_string(stmt->end_value);
+      } else {
+        end_str = fmt::format("tmp(offset={}B)", stmt->end_offset);
+      }
+      details = fmt::format(
+          "range_for({}, {}) block_dim={}", begin_str, end_str,
+          stmt->block_dim == 0 ? "adaptive" : std::to_string(stmt->block_dim));
     } else if (stmt->task_type == stmt->struct_for) {
-      details = fmt::format("struct_for({})",
-                            stmt->snode->get_node_type_name_hinted());
+      details = fmt::format("struct_for({}) block_dim={}",
+                            stmt->snode->get_node_type_name_hinted(),
+                            stmt->block_dim);
     }
     if (stmt->task_type == OffloadedStmt::TaskType::listgen) {
       print("{} = offloaded listgen {}", stmt->name(),
             stmt->snode->get_node_type_name_hinted());
     } else if (stmt->task_type == OffloadedStmt::TaskType::clear_list) {
       print("{} = offloaded clear_list {}", stmt->name(),
+            stmt->snode->get_node_type_name_hinted());
+    } else if (stmt->task_type == OffloadedStmt::TaskType::gc) {
+      print("{} = offloaded garbage collect {}", stmt->name(),
             stmt->snode->get_node_type_name_hinted());
     } else {
       print("{} = offloaded {} {{", stmt->name(), details);

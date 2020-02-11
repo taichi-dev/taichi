@@ -2,6 +2,7 @@
 
 #include "tlang_util.h"
 #include <taichi/system/timer.h>
+#include <taichi/math/linalg.h>
 
 TC_NAMESPACE_BEGIN
 
@@ -63,7 +64,7 @@ real measure_cpe(std::function<void()> target,
 int default_simd_width(Arch arch) {
   if (arch == Arch::x86_64) {
     return default_simd_width_x86_64;
-  } else if (arch == Arch::gpu) {
+  } else if (arch == Arch::cuda) {
     return 32;
   } else {
     TC_NOT_IMPLEMENTED;
@@ -146,16 +147,9 @@ std::string data_type_short_name(DataType t) {
 std::string snode_type_name(SNodeType t) {
   static std::map<SNodeType, std::string> type_names;
   if (type_names.empty()) {
-#define REGISTER_TYPE(i) type_names[SNodeType::i] = #i;
-    REGISTER_TYPE(undefined);
-    REGISTER_TYPE(root);
-    REGISTER_TYPE(dense);
-    REGISTER_TYPE(dynamic);
-    REGISTER_TYPE(place);
-    REGISTER_TYPE(hash);
-    REGISTER_TYPE(pointer);
-    REGISTER_TYPE(indirect);
-#undef REGISTER_TYPE
+#define PER_SNODE(i) type_names[SNodeType::i] = #i;
+#include "inc/snodes.inc.h"
+#undef PER_SNODE
   }
   return type_names[t];
 }
@@ -164,7 +158,8 @@ std::string unary_op_type_name(UnaryOpType type) {
   static std::map<UnaryOpType, std::string> type_names;
   if (type_names.empty()) {
 #define PER_UNARY_OP(i) type_names[UnaryOpType::i] = #i;
-#include "inc/unary_op.h"
+#include "taichi/inc/unary_op.inc.h"
+
 #undef PER_UNARY_OP
   }
   return type_names[type];
@@ -173,27 +168,9 @@ std::string unary_op_type_name(UnaryOpType type) {
 std::string binary_op_type_name(BinaryOpType type) {
   static std::map<BinaryOpType, std::string> type_names;
   if (type_names.empty()) {
-#define REGISTER_TYPE(i) type_names[BinaryOpType::i] = #i;
-    REGISTER_TYPE(mul);
-    REGISTER_TYPE(add);
-    REGISTER_TYPE(sub);
-    REGISTER_TYPE(truediv);
-    REGISTER_TYPE(floordiv);
-    REGISTER_TYPE(div);
-    REGISTER_TYPE(mod);
-    REGISTER_TYPE(max);
-    REGISTER_TYPE(min);
-    REGISTER_TYPE(bit_and);
-    REGISTER_TYPE(bit_or);
-    REGISTER_TYPE(bit_xor);
-    REGISTER_TYPE(cmp_lt);
-    REGISTER_TYPE(cmp_le);
-    REGISTER_TYPE(cmp_gt);
-    REGISTER_TYPE(cmp_ge);
-    REGISTER_TYPE(cmp_ne);
-    REGISTER_TYPE(cmp_eq);
-    REGISTER_TYPE(atan2);
-#undef REGISTER_TYPE
+#define PER_BINARY_OP(x) type_names[BinaryOpType::x] = #x;
+#include "inc/binary_op.inc.h"
+#undef PER_BINARY_OP
   }
   return type_names[type];
 }
@@ -209,6 +186,7 @@ std::string binary_op_type_symbol(BinaryOpType type) {
     REGISTER_TYPE(mod, %);
     REGISTER_TYPE(max, max);
     REGISTER_TYPE(min, min);
+    REGISTER_TYPE(atan2, atan2);
     REGISTER_TYPE(cmp_lt, <);
     REGISTER_TYPE(cmp_le, <=);
     REGISTER_TYPE(cmp_gt, >);
@@ -249,7 +227,8 @@ std::string snode_op_type_name(SNodeOpType type) {
   static std::map<SNodeOpType, std::string> type_names;
   if (type_names.empty()) {
 #define REGISTER_TYPE(i) type_names[SNodeOpType::i] = #i;
-    REGISTER_TYPE(probe);
+    REGISTER_TYPE(is_active);
+    REGISTER_TYPE(length);
     REGISTER_TYPE(activate);
     REGISTER_TYPE(deactivate);
     REGISTER_TYPE(append);
@@ -359,18 +338,14 @@ CompileConfig::CompileConfig() {
   print_ir = false;
   print_accessor_ir = false;
   use_llvm = true;
-  auto use_llvm_char = getenv("TI_LLVM");
-  if (use_llvm_char != nullptr && use_llvm_char[0] == '0') {
-    use_llvm = false;
-    TC_INFO("LLVM disabled (env TI_LLVM=0)");
-  }
   print_struct_llvm_ir = false;
   print_kernel_llvm_ir = false;
   print_kernel_llvm_ir_optimized = false;
+  demote_dense_struct_fors = true;
   max_vector_width = 8;
   force_vectorized_global_load = false;
   force_vectorized_global_store = false;
-  debug = CoreState::get_debug();
+  debug = false;
 #if defined(TC_PLATFORM_OSX)
   gcc_version = -1;
 #else
@@ -397,6 +372,7 @@ CompileConfig::CompileConfig() {
   default_ip = DataType::i32;
   verbose_kernel_launches = false;
   enable_profiler = false;
+  default_cpu_block_dim = 0;  // 0 = adaptive
   default_gpu_block_dim = 64;
   verbose = true;
   fast_math = true;

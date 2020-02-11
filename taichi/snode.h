@@ -16,8 +16,6 @@ struct IndexExtractor {
   int acc_offset;
   int num_elements;
 
-  TC_IO_DEF(start, num_bits, acc_offset);
-
   // TODO: rename start to src_offset
 
   bool active;
@@ -52,6 +50,7 @@ class Index {
 // "Structural" nodes
 class SNode {
  public:
+  // Children
   std::vector<Handle<SNode>> ch;
 
   IndexExtractor extractors[max_num_indices];
@@ -102,11 +101,11 @@ class SNode {
   bool _bitmasked{};
   bool has_aux_structure{};
 
-  std::string get_node_type_name() {
+  std::string get_node_type_name() const {
     return fmt::format("S{}", id);
   }
 
-  std::string get_node_type_name_hinted() {
+  std::string get_node_type_name_hinted() const {
     return fmt::format("S{}{}", id, snode_type_name(type));
   }
 
@@ -177,13 +176,6 @@ class SNode {
   }
 
   SNode &place(Expr &expr);
-
-  SNode &indirect(const Index &expr, int n) {
-    auto &child = insert_children(SNodeType::indirect);
-    child.index_id = expr.value;
-    child.n = n;
-    return child;
-  }
 
   SNode &dynamic_chunked(const Index &expr, int n, int chunk_size) {
     TC_ASSERT(bit::is_power_of_two(n));

@@ -36,10 +36,10 @@ def test_kernel_template_basic():
 
 @ti.all_archs
 def test_kernel_template_gradient():
-  x = ti.global_var(ti.f32)
-  y = ti.global_var(ti.f32)
-  z = ti.global_var(ti.f32)
-  loss = ti.global_var(ti.f32)
+  x = ti.var(ti.f32)
+  y = ti.var(ti.f32)
+  z = ti.var(ti.f32)
+  loss = ti.var(ti.f32)
 
   @ti.layout
   def tensors():

@@ -255,7 +255,8 @@ class Kernel:
       assert len(args) == len(
           self.arguments), '{} arguments needed but {} provided'.format(
               len(self.arguments), len(args))
-      
+
+      tmps = []
       callbacks = []
 
       actual_argument_slot = 0
@@ -280,6 +281,7 @@ class Kernel:
           is_numpy = isinstance(v, np.ndarray)
           if is_numpy:
             tmp = np.ascontiguousarray(v)
+            tmps.append(tmp)  # Purpose: do not GC tmp!
             t_kernel.set_arg_nparray(actual_argument_slot, int(tmp.ctypes.data),
                                      tmp.nbytes)
           else:
@@ -293,14 +295,14 @@ class Kernel:
             
             if str(v.device).startswith('cuda'):
               # External tensor on cuda
-              if taichi_arch != taichi_lang_core.Arch.gpu:
+              if taichi_arch != taichi_lang_core.Arch.cuda:
                 # copy data back to cpu
                 host_v = v.to(device='cpu', copy=True)
                 tmp = host_v
                 callbacks.append(get_call_back(v, host_v))
             else:
               # External tensor on cpu
-              if taichi_arch != taichi_lang_core.Arch.x86_64:
+              if taichi_arch == taichi_lang_core.Arch.cuda:
                 gpu_v = v.cuda()
                 tmp = gpu_v
                 callbacks.append(get_call_back(v, gpu_v))
@@ -319,9 +321,14 @@ class Kernel:
         actual_argument_slot += 1
       if not self.classkernel and self.runtime.target_tape and not self.runtime.inside_complex_kernel:
         self.runtime.target_tape.insert(self, args)
+
       t_kernel()
-      for c in callbacks:
-        c()
+
+      if callbacks:
+        import taichi as ti
+        ti.sync()
+        for c in callbacks:
+          c()
 
     return func__
 
@@ -339,9 +346,8 @@ class Kernel:
     instance_id = self.mapper.lookup(args)
     key = (self.func, instance_id)
     self.materialize(key=key, args=args, arg_features=self.mapper.extract(args))
-    if self.runtime.verbose_kernel_launch:
-      import taichi as ti
-      ti.debug('Launching kernel {}...'.format(self.func.__name__))
+    import taichi as ti
+    ti.debug('Launching Taichi kernel {}...'.format(self.func.__name__))
     return self.compiled_functions[key](*args)
 
 

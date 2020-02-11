@@ -23,6 +23,7 @@ environment:
   matrix:
     - PYTHON: C:\Python36-x64\python.exe
     - PYTHON: C:\Python37-x64\python.exe
+    - PYTHON: C:\Python38-x64\python.exe
 
 build_script:
   - cd C:\
@@ -45,4 +46,4 @@ build_script:
   - '%PYTHON% -c "import taichi"'
   - "%PYTHON% examples/laplace.py"
   - "%PYTHON% -m taichi test"
-  - "cd python && %PYTHON% build.py upload"
+  - "cd python && %PYTHON% build.py try_upload"

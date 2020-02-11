@@ -260,20 +260,21 @@ class Canvas {
       TC_ASSERT(finished == false);
       finished = true;
       auto center = canvas.transform(_center);
-      auto center_i = (center + Vector2(0.5_f)).template cast<int>();
-      auto radius_i = (int)std::ceil(_radius + 0.5_f);
-      for (int i = -radius_i; i <= radius_i; i++) {
-        for (int j = -radius_i; j <= radius_i; j++) {
-          if (0 <= center_i(0) + i &&
-              center_i(0) + i < canvas.img.get_width() &&
-              0 <= center_i(1) + j &&
-              center_i(1) + j < canvas.img.get_height()) {
-            real dist =
-                length(center - center_i.template cast<real>() - Vector2(i, j));
-            auto alpha = _color.w * clamp(_radius - dist);
-            auto &dest = canvas.img[center_i + Vector2i(i, j)];
-            dest = lerp(alpha, dest, _color);
-          }
+      auto const canvas_width = canvas.img.get_width();
+      auto const canvas_height = canvas.img.get_height();
+      const auto r = _radius;
+      int i_lower = std::max(0, (int)std::ceil(center(0) - r));
+      int j_lower = std::max(0, (int)std::ceil(center(1) - r));
+      int i_higher = std::min((int)std::floor(center(0) + r), canvas_width - 1);
+      int j_higher =
+          std::min((int)std::floor(center(1) + r), canvas_height - 1);
+      const auto w = _color.w;
+      for (int i = i_lower; i <= i_higher; i++) {
+        for (int j = j_lower; j <= j_higher; j++) {
+          real dist = length(center - Vector2(i, j));
+          auto alpha = w * clamp(r - dist);
+          auto &dest = canvas.img[Vector2i(i, j)];
+          dest = lerp(alpha, dest, _color);
         }
       }
     }
@@ -308,6 +309,13 @@ class Canvas {
     circles.emplace_back(*this, Vector2(x, y));
     return circles.back();
   }
+
+  void circles_batched(int n,
+                       std::size_t x,
+                       uint32 color_single,
+                       std::size_t color_array,
+                       real radius_single,
+                       std::size_t radius_array);
 
   Line &path(real xa, real ya, real xb, real yb) {
     return path(Vector2(xa, ya), Vector2(xb, yb));
@@ -757,8 +765,12 @@ class GUI : public GUIBase {
   void update() {
     frame_id++;
     redraw_widgets();
-    while (taichi::Time::get_time() < start_time + frame_id / (real)fps)
+    while (taichi::Time::get_time() < last_frame_time + 1 / (real)fps)
       ;
+    if (last_frame_time != 0) {
+      last_frame_interval.push_back(taichi::Time::get_time() - last_frame_time);
+    }
+    last_frame_time = taichi::Time::get_time();
     redraw();
     process_event();
     while (last_frame_interval.size() > 30) {
@@ -767,11 +779,8 @@ class GUI : public GUIBase {
     auto real_fps = last_frame_interval.size() /
                     (std::accumulate(last_frame_interval.begin(),
                                      last_frame_interval.end(), 0.0_f));
-    set_title(fmt::format("{} ({:.02f} FPS)", window_name, real_fps));
-    if (last_frame_time != 0) {
-      last_frame_interval.push_back(taichi::Time::get_time() - last_frame_time);
-    }
-    last_frame_time = taichi::Time::get_time();
+    if (frame_id % 10 == 0)
+      set_title(fmt::format("{} ({:.02f} FPS)", window_name, real_fps));
   }
 
   void wait_key() {

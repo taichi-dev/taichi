@@ -49,6 +49,10 @@ static_assert(false, "32-bit Windows systems are not supported")
 // OSX
 #if defined(__APPLE__)
 #define TC_PLATFORM_OSX
+// According to https://developer.apple.com/documentation/metal?language=objc,
+// Metal is supported since macOS 10.11+, so we can just assume that it is
+// available for all Mac users?
+#define TC_SUPPORTS_METAL
 #endif
 
 #if (defined(TC_PLATFORM_LINUX) || defined(TC_PLATFORM_OSX))
@@ -168,7 +172,6 @@ class CoreState {
  public:
   bool python_imported = false;
   bool trigger_gdb_when_crash = false;
-  bool debug = false;
 
   static CoreState &get_instance();
 
@@ -178,14 +181,6 @@ class CoreState {
 
   static void set_trigger_gdb_when_crash(bool val) {
     get_instance().trigger_gdb_when_crash = val;
-  }
-
-  static void set_debug(bool val) {
-    get_instance().debug = val;
-  }
-
-  static bool get_debug() {
-    return get_instance().debug;
   }
 };
 
@@ -375,6 +370,7 @@ class Logger {
   void critical(const std::string &s, bool raise_signal = true);
   void flush();
   void set_level(const std::string &level);
+  void set_level_default();
 };
 
 extern Logger logger;
@@ -518,6 +514,10 @@ int get_version_patch();
 std::string get_version_string();
 
 std::string get_commit_hash();
+
+std::string get_cuda_version_string();
+
+std::string get_cuda_root_dir();
 
 TC_NAMESPACE_END
 

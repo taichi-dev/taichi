@@ -3,6 +3,7 @@
     The use of this software is governed by the LICENSE file.
 *******************************************************************************/
 
+#include <taichi/common/util.h>
 #include <taichi/common/task.h>
 #include <taichi/math/math.h>
 #include <taichi/python/exception.h>
@@ -11,9 +12,8 @@
 #include <taichi/system/profiler.h>
 #include <taichi/system/memory.h>
 #include <taichi/system/unit_dll.h>
-#include <taichi/visual/texture.h>
 #include <taichi/geometry/factory.h>
-#if defined(TLANG_WITH_CUDA)
+#if defined(TI_WITH_CUDA)
 #include <cuda_runtime_api.h>
 #endif
 
@@ -76,16 +76,16 @@ void stop_duplicating_stdout_to_file(const std::string &fn) {
   TC_NOT_IMPLEMENTED;
 }
 
-std::string cuda_version() {
-#if defined(TLANG_WITH_CUDA)
-  return TLANG_CUDA_VERSION;
+bool with_cuda() {
+#if defined(TI_WITH_CUDA)
+  return true;
 #else
-  return "0.0";
+  return false;
 #endif
 }
 
-bool with_cuda() {
-#if defined(TLANG_WITH_CUDA)
+bool with_metal() {
+#if defined(TC_SUPPORTS_METAL)
   return true;
 #else
   return false;
@@ -93,6 +93,7 @@ bool with_cuda() {
 }
 
 void export_misc(py::module &m) {
+  py::class_<Config>(m, "Config");
   py::register_exception_translator([](std::exception_ptr p) {
     try {
       if (p)
@@ -134,9 +135,9 @@ void export_misc(py::module &m) {
 
   m.def("print_all_units", print_all_units);
   m.def("set_core_state_python_imported", CoreState::set_python_imported);
-  m.def("set_core_debug", CoreState::set_debug);
   m.def("set_logging_level",
         [](const std::string &level) { logger.set_level(level); });
+  m.def("set_logging_level_default", []() { logger.set_level_default(); });
   m.def("set_core_trigger_gdb_when_crash",
         CoreState::set_trigger_gdb_when_crash);
   m.def("test_raise_error", test_raise_error);
@@ -156,7 +157,7 @@ void export_misc(py::module &m) {
   m.def("get_repo_dir", get_repo_dir);
   m.def("get_python_package_dir", get_python_package_dir);
   m.def("set_python_package_dir", set_python_package_dir);
-  m.def("cuda_version", cuda_version);
+  m.def("cuda_version", get_cuda_version_string);
   m.def("test_cpp_exception", [] {
     try {
       throw std::exception();
@@ -166,6 +167,7 @@ void export_misc(py::module &m) {
     printf("test was successful.\n");
   });
   m.def("with_cuda", with_cuda);
+  m.def("with_metal", with_metal);
 }
 
 TC_NAMESPACE_END

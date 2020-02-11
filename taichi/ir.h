@@ -3,6 +3,7 @@
 #pragma once
 
 #include <atomic>
+#include <unordered_map>
 #include <taichi/util.h>
 #include <taichi/common/bit.h>
 #include "tlang_util.h"
@@ -77,10 +78,18 @@ class ScratchPads;
 // IR passes
 namespace irpass {
 
+struct OffloadedResult {
+  // Total size in bytes of the global temporary variables
+  std::size_t total_size;
+  // Offloaded local variables to its offset in the global tmps memory.
+  std::unordered_map<const Stmt *, std::size_t> local_to_global_offset;
+};
+
 void re_id(IRNode *root);
 void flag_access(IRNode *root);
 void die(IRNode *root);
 void simplify(IRNode *root);
+void alg_simp(IRNode *root);
 void full_simplify(IRNode *root);
 void print(IRNode *root);
 void lower(IRNode *root);
@@ -92,14 +101,16 @@ void replace_all_usages_with(IRNode *root, Stmt *old_stmt, Stmt *new_stmt);
 void lower_access(IRNode *root, bool lower_atomic);
 void make_adjoint(IRNode *root);
 void constant_fold(IRNode *root);
-void offload(IRNode *root);
+OffloadedResult offload(IRNode *root);
 void fix_block_parents(IRNode *root);
 void replace_statements_with(IRNode *root,
                              std::function<bool(Stmt *)> filter,
                              std::function<std::unique_ptr<Stmt>()> generator);
+void demote_dense_struct_fors(IRNode *root);
 void demote_atomics(IRNode *root);
-void reverse_offloads(IRNode *root);
+void reverse_segments(IRNode *root);  // for autograd
 std::unique_ptr<ScratchPads> initialize_scratch_pad(StructForStmt *root);
+std::vector<SNode *> gather_deactivations(IRNode *root);
 }  // namespace irpass
 
 // Analysis
@@ -596,6 +607,8 @@ class Stmt : public IRNode {
   }
 
   void replace_with(Stmt *new_stmt);
+
+  void replace_with(VecStatement &&new_statements, bool replace_usages = true);
 
   virtual void replace_operand_with(Stmt *old_stmt, Stmt *new_stmt);
 
@@ -1168,16 +1181,15 @@ class GlobalVariableExpression : public Expression {
     is_primal = true;
   }
 
+  GlobalVariableExpression(SNode *snode) : snode(snode) {
+    dt = snode->dt;
+    has_ambient = false;
+    is_primal = true;
+  }
+
   void set_snode(SNode *snode) {
     this->snode = snode;
     set_attribute("dim", std::to_string(snode->num_active_indices));
-  }
-
-  GlobalVariableExpression(SNode *snode) : snode(snode) {
-    dt = DataType::unknown;
-    snode = nullptr;
-    has_ambient = false;
-    is_primal = true;
   }
 
   std::string serialize() override {
@@ -1294,6 +1306,8 @@ class Block : public IRNode {
 
   void insert(std::unique_ptr<Stmt> &&stmt, int location = -1);
 
+  void insert(VecStatement &&stmt, int location = -1);
+
   void replace_statements_in_range(int start, int end, VecStatement &&stmts);
 
   void set_statements(VecStatement &&stmts) {
@@ -1320,7 +1334,7 @@ class Block : public IRNode {
   }
 
   void replace_with(Stmt *old_statement,
-                    VecStatement &new_statements,
+                    VecStatement &&new_statements,
                     bool replace_usages = true) {
     int location = -1;
     for (int i = 0; i < (int)statements.size(); i++) {
@@ -1345,6 +1359,20 @@ class Block : public IRNode {
 
   Stmt *back() const {
     return statements.back().get();
+  }
+
+  template <typename T, typename... Args>
+  Stmt *push_back(Args &&... args) {
+    statements.emplace_back(std::make_unique<T>(std::forward<Args>(args)...));
+    return back();
+  }
+
+  std::size_t size() {
+    return statements.size();
+  }
+
+  pStmt &operator[](int i) {
+    return statements[i];
   }
 
   DEFINE_ACCEPT
@@ -1389,13 +1417,28 @@ class SNodeOpStmt : public Stmt {
   SNode *snode;
   Stmt *ptr;
   Stmt *val;
+  std::vector<Stmt *> indices;
 
   SNodeOpStmt(SNodeOpType op_type, SNode *snode, Stmt *ptr, Stmt *val = nullptr)
       : op_type(op_type), snode(snode), ptr(ptr), val(val) {
-    TC_ASSERT((val == nullptr) != (op_type == SNodeOpType::append));
+    TC_ASSERT((val == nullptr) != (op_type == SNodeOpType::append ||
+                                   op_type == SNodeOpType::is_active));
     add_operand(this->ptr);
     if (val)
       add_operand(this->val);
+    width() = 1;
+    element_type() = DataType::i32;
+  }
+
+  SNodeOpStmt(SNodeOpType op_type, SNode *snode, std::vector<Stmt *> indices)
+      : op_type(op_type), snode(snode), indices(indices) {
+    ptr = nullptr;
+    val = nullptr;
+    TC_ASSERT(op_type == SNodeOpType::is_active);
+    add_operand(this->ptr);
+    for (int i = 0; i < (int)indices.size(); i++) {
+      add_operand(this->indices[i]);
+    }
     width() = 1;
     element_type() = DataType::i32;
   }
@@ -1710,8 +1753,8 @@ class RangeForStmt : public Stmt {
   bool reversed;
   int vectorize;
   int parallelize;
-  bool strictly_serialized;
   int block_dim;
+  bool strictly_serialized;
 
   RangeForStmt(Stmt *loop_var,
                Stmt *begin,
@@ -1719,6 +1762,7 @@ class RangeForStmt : public Stmt {
                std::unique_ptr<Block> &&body,
                int vectorize,
                int parallelize,
+               int block_dim,
                bool strictly_serialized)
       : loop_var(loop_var),
         begin(begin),
@@ -1726,12 +1770,12 @@ class RangeForStmt : public Stmt {
         body(std::move(body)),
         vectorize(vectorize),
         parallelize(parallelize),
+        block_dim(block_dim),
         strictly_serialized(strictly_serialized) {
     reversed = false;
     add_operand(this->loop_var);
     add_operand(this->begin);
     add_operand(this->end);
-    block_dim = 0;
   }
 
   bool is_container_statement() const override {
@@ -1762,16 +1806,17 @@ class StructForStmt : public Stmt {
                 SNode *snode,
                 std::unique_ptr<Block> &&body,
                 int vectorize,
-                int parallelize)
+                int parallelize,
+                int block_dim)
       : loop_vars(loop_vars),
         snode(snode),
         body(std::move(body)),
         vectorize(vectorize),
-        parallelize(parallelize) {
+        parallelize(parallelize),
+        block_dim(block_dim) {
     for (auto &v : this->loop_vars) {
       add_operand(v);
     }
-    block_dim = 0;
   }
 
   bool is_container_statement() const override {
@@ -1827,10 +1872,6 @@ class FrontendWhileStmt : public Stmt {
 
 void Print_(const Expr &a, std::string str);
 
-// TODO: fix this hack...
-// for current ast
-extern Block *current_block;
-
 class EvalExpression : public Expression {
  public:
   Stmt *stmt_ptr;
@@ -1874,6 +1915,10 @@ class RangeAssumptionExpression : public Expression {
     stmt = ret.back().get();
   }
 };
+
+// TODO: fix this hack...
+// for current ast
+extern Block *current_block;
 
 class IdExpression : public Expression {
  public:
@@ -1936,23 +1981,29 @@ class AtomicOpExpression : public Expression {
 class SNodeOpExpression : public Expression {
  public:
   SNode *snode;
+  SNodeOpType op_type;
   ExprGroup indices;
   Expr value;
 
-  SNodeOpExpression(SNode *snode, const ExprGroup &indices)
-      : snode(snode), indices(indices) {
+  SNodeOpExpression(SNode *snode, SNodeOpType op_type, const ExprGroup &indices)
+      : snode(snode), op_type(op_type), indices(indices) {
   }
 
-  SNodeOpExpression(SNode *snode, const ExprGroup &indices, const Expr &value)
-      : snode(snode), indices(indices), value(value) {
+  SNodeOpExpression(SNode *snode,
+                    SNodeOpType op_type,
+                    const ExprGroup &indices,
+                    const Expr &value)
+      : snode(snode), op_type(op_type), indices(indices), value(value) {
   }
 
   std::string serialize() override {
     if (value.expr) {
-      return fmt::format("append({}, [{}], {})", snode->node_type_name,
+      return fmt::format("{}({}, [{}], {})", snode_op_type_name(op_type),
+                         snode->get_node_type_name_hinted(),
                          indices.serialize(), value.serialize());
     } else {
-      return fmt::format("probe({}, [{}])", snode->node_type_name,
+      return fmt::format("{}({}, [{}])", snode_op_type_name(op_type),
+                         snode->get_node_type_name_hinted(),
                          indices.serialize());
     }
   }
@@ -1963,20 +2014,28 @@ class SNodeOpExpression : public Expression {
       indices[i]->flatten(ret);
       indices_stmt.push_back(indices[i]->stmt);
     }
-    auto ptr = ret.push_back<GlobalPtrStmt>(snode->parent, indices_stmt);
-    if (value.expr) {
-      value->flatten(ret);
-      ret.push_back<SNodeOpStmt>(SNodeOpType::append, snode->parent, ptr,
-                                 ret.back().get());
-      TC_ERROR_IF(snode->type != SNodeType::place,
-                  "ti.append only works on leaf nodes.");
-      TC_ERROR_IF(snode->parent->ch.size() != 1,
-                  "ti.append only works on single-child dynamic nodes.");
-      TC_ERROR_IF(snode->dt != DataType::i32,
-                  "ti.append only works on i32 nodes.");
+    if (op_type == SNodeOpType::is_active) {
+      // is_active cannot be lowered all the way to a global pointer.
+      // It should be lowered into a pointer to parent and an index.
+      TC_ERROR_IF(
+          snode->type != SNodeType::pointer && snode->type != SNodeType::hash,
+          "ti.is_active only works on hash and pointer nodes.");
+      ret.push_back<SNodeOpStmt>(SNodeOpType::is_active, snode, indices_stmt);
     } else {
-      ret.push_back<SNodeOpStmt>(SNodeOpType::probe, snode->parent, ptr,
-                                 nullptr);
+      auto ptr = ret.push_back<GlobalPtrStmt>(snode, indices_stmt);
+      if (op_type == SNodeOpType::append) {
+        value->flatten(ret);
+        ret.push_back<SNodeOpStmt>(SNodeOpType::append, snode, ptr,
+                                   ret.back().get());
+        TC_ERROR_IF(snode->type != SNodeType::dynamic,
+                    "ti.append only works on dynamic nodes.");
+        TC_ERROR_IF(snode->ch.size() != 1,
+                    "ti.append only works on single-child dynamic nodes.");
+        TC_ERROR_IF(data_type_size(snode->ch[0]->dt) != 4,
+                    "ti.append only works on i32/f32 nodes.");
+      } else if (op_type == SNodeOpType::length) {
+        ret.push_back<SNodeOpStmt>(SNodeOpType::length, snode, ptr, nullptr);
+      }
     }
     stmt = ret.back().get();
   }
@@ -2062,14 +2121,7 @@ inline void Vectorize(int v) {
 }
 
 inline void Parallelize(int v) {
-#if !defined(OPENMP_FOUND)
-  if (v != 1) {
-    TC_WARN("OpenMP not found. Falling back to single threading.");
-    v = 1;
-  }
-#else
   dec.parallelize = v;
-#endif
 }
 
 inline void StrictlySerialize() {
@@ -2109,79 +2161,6 @@ class For {
     current_ast_builder().insert(std::move(stmt_unique));
     auto _ = current_ast_builder().create_scope(stmt->body);
     func();
-  }
-
-  For(Expr global, const std::function<void(Expr)> &func) {
-    auto i = Expr(std::make_shared<IdExpression>());
-    auto stmt_unique = std::make_unique<FrontendForStmt>(i, global);
-    auto stmt = stmt_unique.get();
-    current_ast_builder().insert(std::move(stmt_unique));
-    auto _ = current_ast_builder().create_scope(stmt->body);
-    func(i);
-  }
-
-  For(Expr global, const std::function<void(Expr, Expr)> &func) {
-    auto i = Expr(std::make_shared<IdExpression>());
-    auto j = Expr(std::make_shared<IdExpression>());
-    auto stmt_unique = std::make_unique<FrontendForStmt>((i, j), global);
-    auto stmt = stmt_unique.get();
-    current_ast_builder().insert(std::move(stmt_unique));
-    auto _ = current_ast_builder().create_scope(stmt->body);
-    func(i, j);
-  }
-
-  For(Expr global, const std::function<void(Expr, Expr, Expr)> &func) {
-    auto i = Expr(std::make_shared<IdExpression>());
-    auto j = Expr(std::make_shared<IdExpression>());
-    auto k = Expr(std::make_shared<IdExpression>());
-    auto stmt_unique = std::make_unique<FrontendForStmt>((i, j, k), global);
-    auto stmt = stmt_unique.get();
-    current_ast_builder().insert(std::move(stmt_unique));
-    auto _ = current_ast_builder().create_scope(stmt->body);
-    func(i, j, k);
-  }
-
-  For(Expr global, const std::function<void(Expr, Expr, Expr, Expr)> &func) {
-    auto i = Expr(std::make_shared<IdExpression>());
-    auto j = Expr(std::make_shared<IdExpression>());
-    auto k = Expr(std::make_shared<IdExpression>());
-    auto l = Expr(std::make_shared<IdExpression>());
-    auto stmt_unique = std::make_unique<FrontendForStmt>((i, j, k, l), global);
-    auto stmt = stmt_unique.get();
-    current_ast_builder().insert(std::move(stmt_unique));
-    auto _ = current_ast_builder().create_scope(stmt->body);
-    func(i, j, k, l);
-  }
-
-  For(Expr global,
-      const std::function<void(Expr, Expr, Expr, Expr, Expr)> &func) {
-    auto i = Expr(std::make_shared<IdExpression>());
-    auto j = Expr(std::make_shared<IdExpression>());
-    auto k = Expr(std::make_shared<IdExpression>());
-    auto l = Expr(std::make_shared<IdExpression>());
-    auto a = Expr(std::make_shared<IdExpression>());
-    auto stmt_unique =
-        std::make_unique<FrontendForStmt>((i, j, k, l, a), global);
-    auto stmt = stmt_unique.get();
-    current_ast_builder().insert(std::move(stmt_unique));
-    auto _ = current_ast_builder().create_scope(stmt->body);
-    func(i, j, k, l, a);
-  }
-
-  For(Expr global,
-      const std::function<void(Expr, Expr, Expr, Expr, Expr, Expr)> &func) {
-    auto i = Expr(std::make_shared<IdExpression>());
-    auto j = Expr(std::make_shared<IdExpression>());
-    auto k = Expr(std::make_shared<IdExpression>());
-    auto l = Expr(std::make_shared<IdExpression>());
-    auto a = Expr(std::make_shared<IdExpression>());
-    auto b = Expr(std::make_shared<IdExpression>());
-    auto stmt_unique =
-        std::make_unique<FrontendForStmt>((i, j, k, l, a, b), global);
-    auto stmt = stmt_unique.get();
-    current_ast_builder().insert(std::move(stmt_unique));
-    auto _ = current_ast_builder().create_scope(stmt->body);
-    func(i, j, k, l, a, b);
   }
 
   For(Expr s, Expr e, const std::function<void(Expr)> &func);

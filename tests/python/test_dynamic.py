@@ -1,6 +1,7 @@
 import taichi as ti
 
-@ti.all_archs
+
+@ti.archs_support_sparse
 def test_dynamic():
   x = ti.var(ti.f32)
   n = 128
@@ -20,7 +21,7 @@ def test_dynamic():
     assert x[i] == i
 
 
-@ti.all_archs
+@ti.archs_support_sparse
 def test_dynamic2():
   x = ti.var(ti.f32)
   n = 128
@@ -40,7 +41,7 @@ def test_dynamic2():
     assert x[i] == i
 
 
-@ti.all_archs
+@ti.archs_support_sparse
 def test_dynamic_matrix():
   x = ti.Matrix(2, 1, dt=ti.i32)
   n = 8192
@@ -65,7 +66,7 @@ def test_dynamic_matrix():
       assert b == 0
 
 
-@ti.all_archs
+@ti.archs_support_sparse
 def test_append():
   x = ti.var(ti.i32)
   n = 128
@@ -77,7 +78,7 @@ def test_append():
   @ti.kernel
   def func():
     for i in range(n):
-      ti.append(x, [], i)
+      ti.append(x.parent(), [], i)
   
   func()
   
@@ -87,8 +88,9 @@ def test_append():
   elements.sort()
   for i in range(n):
     assert elements[i] == i
-    
-@ti.all_archs
+
+
+@ti.archs_support_sparse
 def test_length():
   x = ti.var(ti.i32)
   y = ti.var(ti.f32, shape=())
@@ -101,22 +103,21 @@ def test_length():
   @ti.kernel
   def func():
     for i in range(n):
-      ti.append(x, [], i)
+      ti.append(x.parent(), [], i)
   
   func()
   
   @ti.kernel
   def get_len():
-    y[None] = ti.length(x, [])
+    y[None] = ti.length(x.parent(), [])
     
   get_len()
   
   assert y[None] == n
-  
-@ti.all_archs
+
+
+@ti.archs_support_sparse
 def test_append_ret_value():
-  if ti.get_os_name() == 'win':
-    return
   x = ti.var(ti.i32)
   y = ti.var(ti.i32)
   z = ti.var(ti.i32)
@@ -131,7 +132,7 @@ def test_append_ret_value():
   @ti.kernel
   def func():
     for i in range(n):
-      u = ti.append(x, [], i)
+      u = ti.append(x.parent(), [], i)
       y[u] = i + 1
       z[u] = i + 3
   
@@ -141,10 +142,9 @@ def test_append_ret_value():
     assert x[i] + 1 == y[i]
     assert x[i] + 3 == z[i]
 
-@ti.all_archs
+
+@ti.archs_support_sparse
 def test_dense_dynamic():
-  if ti.get_os_name() == 'win':
-    return
   n = 128
   x = ti.var(ti.i32)
   l = ti.var(ti.i32, shape=n)
@@ -158,20 +158,19 @@ def test_dense_dynamic():
     ti.serialize()
     for i in range(n):
       for j in range(n):
-        ti.append(x, j, i)
+        ti.append(x.parent(), j, i)
         
     for i in range(n):
-      l[i] = ti.length(x, i)
+      l[i] = ti.length(x.parent(), i)
   
   func()
   
   for i in range(n):
     assert l[i] == n
-  
-@ti.all_archs
+
+
+@ti.archs_support_sparse
 def test_dense_dynamic_len():
-  if ti.get_os_name() == 'win':
-    return
   n = 128
   x = ti.var(ti.i32)
   l = ti.var(ti.i32, shape=n)
@@ -183,7 +182,7 @@ def test_dense_dynamic_len():
   @ti.kernel
   def func():
     for i in range(n):
-      l[i] = ti.length(x, i)
+      l[i] = ti.length(x.parent(), i)
   
   func()
   

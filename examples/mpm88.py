@@ -1,6 +1,8 @@
 import taichi as ti
 import random
 
+ti.init(arch=ti.cuda)
+
 dim = 2
 n_particles = 8192
 n_grid = 128
@@ -18,8 +20,6 @@ C = ti.Matrix(dim, dim, dt=ti.f32, shape=n_particles)
 J = ti.var(dt=ti.f32, shape=n_particles)
 grid_v = ti.Vector(dim, dt=ti.f32, shape=(n_grid, n_grid))
 grid_m = ti.var(dt=ti.f32, shape=(n_grid, n_grid))
-
-ti.cfg.arch = ti.cuda
 
 @ti.kernel
 def substep():
@@ -74,23 +74,20 @@ def substep():
     C[p] = new_C
 
 
-gui = ti.core.GUI("MPM88", ti.veci(512, 512))
-canvas = gui.get_canvas()
+gui = ti.GUI("MPM88", (512, 512))
 
 for i in range(n_particles):
   x[i] = [random.random() * 0.4 + 0.2, random.random() * 0.4 + 0.2]
   v[i] = [0, -1]
   J[i] = 1
 
-for frame in range(200):
+for frame in range(20000):
   for s in range(50):
     grid_v.fill([0, 0])
     grid_m.fill(0)
     substep()
 
-  canvas.clear(0x112F41)
+  gui.clear(0x112F41)
   pos = x.to_numpy(as_vector=True)
-  for i in range(n_particles):
-    canvas.circle(ti.vec(pos[i, 0],
-                         pos[i, 1])).radius(1.5).color(0x068587).finish()
-  gui.update()
+  gui.circles(pos, radius=1.5, color=0x068587)
+  gui.show()

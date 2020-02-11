@@ -16,8 +16,12 @@ def get_directory(dir):
 
 def get_repo_directory():
   if 'TAICHI_REPO_DIR' not in os.environ:
-    return os.path.join(os.environ.get('HOME'), ".taichi")
-  return os.environ.get('TAICHI_REPO_DIR')
+    repo_dir = os.path.join(os.environ.get('HOME'), ".taichi")
+  else:
+    repo_dir = os.environ.get('TAICHI_REPO_DIR')
+    if not os.path.exists(repo_dir):
+      raise ValueError(f"TAICHI_REPO_DIR [{repo_dir}] does not exist.")
+  return repo_dir
 
 
 def get_project_directory(project=None):

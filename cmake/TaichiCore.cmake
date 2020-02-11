@@ -4,7 +4,7 @@ include(cmake/PythonNumpyPybind11.cmake)
 
 file(GLOB TAICHI_CORE_SOURCE
         "taichi/*/*/*/*.cpp" "taichi/*/*/*.cpp" "taichi/*/*.cpp" "taichi/*.cpp"
-        "taichi/*/*/*/*.h" "taichi/*/*/*.h" "taichi/*/*.h" "taichi/*.h" "external/xxhash/*.c")
+        "taichi/*/*/*/*.h" "taichi/*/*/*.h" "taichi/*/*.h" "taichi/*.h" "external/xxhash/*.c" "tests/cpp/*.cpp")
 
 option(BUILD_CPP_EXAMPLES "Build legacy C++ examples" OFF)
 
@@ -23,7 +23,7 @@ endif()
 
 
 option(USE_STDCPP "Use -stdlib=libc++" OFF)
-option(TLANG_WITH_CUDA "Build with GPU support" ON)
+option(TI_WITH_CUDA "Build with GPU support" OFF)
 
 include_directories(${CMAKE_SOURCE_DIR})
 include_directories(external/xxhash)
@@ -31,7 +31,7 @@ include_directories(external/include)
 
 set(LIBRARY_NAME ${CORE_LIBRARY_NAME})
 
-if (TLANG_WITH_CUDA)
+if (TI_WITH_CUDA)
     if(NOT CUDA_VERSION)
         set(CUDA_VERSION 10.0)
     endif()
@@ -40,11 +40,16 @@ if (TLANG_WITH_CUDA)
         message("Building with CUDA ${CUDA_VERSION}")
         set(CUDA_ARCH 61)
         message("Found CUDA. Arch = ${CUDA_ARCH}")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DCUDA_FOUND -DTLANG_WITH_CUDA -D TLANG_CUDA_VERSION='\"${CUDA_VERSION}\"'")
-        include_directories(/usr/local/cuda-${CUDA_VERSION}/include)
-        target_link_libraries(${LIBRARY_NAME} /usr/local/cuda-${CUDA_VERSION}/lib64/libcudart.so cuda)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DCUDA_FOUND -DTI_WITH_CUDA")
+        if (MSVC)
+            include_directories(${CUDA_TOOLKIT_ROOT_DIR}/include)
+            target_link_libraries(${LIBRARY_NAME} ${CUDA_TOOLKIT_ROOT_DIR}/lib/x64/cudart.lib ${CUDA_TOOLKIT_ROOT_DIR}/lib/x64/cuda.lib)
+        else()
+            include_directories(/usr/local/cuda-${CUDA_VERSION}/include)
+            target_link_libraries(${LIBRARY_NAME} /usr/local/cuda-${CUDA_VERSION}/lib64/libcudart.so cuda)
+        endif()
     else()
-        message("CUDA not found.")
+        message(FATAL_ERROR "CUDA not found.")
     endif()
 endif()
 
@@ -88,7 +93,7 @@ endif()
 # Optional dependencies
 
 if (APPLE)
-    target_link_libraries(${CORE_LIBRARY_NAME} "-framework Cocoa")
+    target_link_libraries(${CORE_LIBRARY_NAME} "-framework Cocoa -framework Metal")
 endif ()
 
 if (NOT WIN32)
@@ -102,7 +107,6 @@ if (NOT WIN32)
     endif()
 endif ()
 message("PYTHON_LIBRARIES" ${PYTHON_LIBRARIES})
-# target_link_libraries(${CORE_LIBRARY_NAME} ${PYTHON_LIBRARIES})
 
 foreach (source IN LISTS TAICHI_CORE_SOURCE)
     file(RELATIVE_PATH source_rel ${CMAKE_CURRENT_LIST_DIR} ${source})
@@ -119,18 +123,3 @@ if (WIN32)
     set_target_properties(${CORE_LIBRARY_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY
             "${CMAKE_CURRENT_SOURCE_DIR}/runtimes")
 endif ()
-
-#add_custom_target(
-#        clangformat
-#        COMMAND clang-format-6.0
-#        -style=file
-#        -i
-#        ${TAICHI_CORE_SOURCE} ${TAICHI_PROJECT_SOURCE}
-#)
-#
-#add_custom_target(
-#        yapfformat
-#        COMMAND yapf
-#        -irp
-#        ${CMAKE_CURRENT_LIST_DIR}/../
-#)

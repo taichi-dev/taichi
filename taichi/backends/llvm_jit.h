@@ -54,8 +54,8 @@ class TaichiLLVMJIT {
   LegacyRTDyldObjectLinkingLayer ObjectLayer;
   LegacyIRCompileLayer<decltype(ObjectLayer), SimpleCompiler> CompileLayer;
 
-  using OptimizeFunction =
-      std::function<std::unique_ptr<Module>(std::unique_ptr<Module>)>;
+  using OptimizeFunction = std::function<std::unique_ptr<llvm::Module>(
+      std::unique_ptr<llvm::Module>)>;
 
   LegacyIRTransformLayer<decltype(CompileLayer), OptimizeFunction>
       OptimizeLayer;
@@ -75,23 +75,24 @@ class TaichiLLVMJIT {
                     }),
         CompileLayer(ObjectLayer, SimpleCompiler(*TM)),
         OptimizeLayer(CompileLayer,
-                      [this](std::unique_ptr<Module> M) {
+                      [this](std::unique_ptr<llvm::Module> M) {
                         return optimizeModule(std::move(M));
                       }),
         CompileCallbackManager(cantFail(
             orc::createLocalCompileCallbackManager(TM->getTargetTriple(),
                                                    ES,
                                                    0))),
-        CODLayer(ES,
-                 OptimizeLayer,
-                 [&](orc::VModuleKey K) { return Resolvers[K]; },
-                 [&](orc::VModuleKey K, std::shared_ptr<SymbolResolver> R) {
-                   Resolvers[K] = std::move(R);
-                 },
-                 [](Function &F) { return std::set<Function *>({&F}); },
-                 *CompileCallbackManager,
-                 orc::createLocalIndirectStubsManagerBuilder(
-                     TM->getTargetTriple())) {
+        CODLayer(
+            ES,
+            OptimizeLayer,
+            [&](orc::VModuleKey K) { return Resolvers[K]; },
+            [&](orc::VModuleKey K, std::shared_ptr<SymbolResolver> R) {
+              Resolvers[K] = std::move(R);
+            },
+            [](Function &F) { return std::set<Function *>({&F}); },
+            *CompileCallbackManager,
+            orc::createLocalIndirectStubsManagerBuilder(
+                TM->getTargetTriple())) {
     llvm::sys::DynamicLibrary::LoadLibraryPermanently(nullptr);
   }
 
@@ -107,7 +108,7 @@ class TaichiLLVMJIT {
         return JTMB.takeError();
       jtmb = std::make_unique<JITTargetMachineBuilder>(std::move(*JTMB));
     } else {
-      TC_ASSERT(arch == Arch::gpu);
+      TC_ASSERT(arch == Arch::cuda);
       Triple triple("nvptx64", "nvidia", "cuda");
       jtmb = std::make_unique<JITTargetMachineBuilder>(triple);
     }
@@ -119,7 +120,7 @@ class TaichiLLVMJIT {
     return llvm::make_unique<TaichiLLVMJIT>(std::move(*jtmb), std::move(*DL));
   }
 
-  VModuleKey addModule(std::unique_ptr<Module> M) {
+  VModuleKey addModule(std::unique_ptr<llvm::Module> M) {
     global_optimize_module_x86_64(M);
     // Create a new VModuleKey.
     VModuleKey K = ES.allocateVModule();
@@ -156,7 +157,8 @@ class TaichiLLVMJIT {
   }
 
  private:
-  std::unique_ptr<Module> optimizeModule(std::unique_ptr<Module> M) {
+  std::unique_ptr<llvm::Module> optimizeModule(
+      std::unique_ptr<llvm::Module> M) {
     // Create a function pass manager.
     auto FPM = llvm::make_unique<legacy::FunctionPassManager>(M.get());
 
@@ -184,7 +186,7 @@ class TaichiLLVMJIT {
 inline void *jit_lookup_name(TaichiLLVMJIT *jit, const std::string &name) {
   auto ExprSymbol = jit->lookup(name);
   if (!ExprSymbol)
-    TC_ERROR("Function not found");
+    TC_ERROR("Function \"{}\" not found", name);
   return (void *)(llvm::cantFail(ExprSymbol.getAddress()));
 }
 

@@ -1,8 +1,10 @@
-#include <taichi/visual/gui.h>
-#include <taichi/common/task.h>
 #include <taichi/common/bit.h>
+#include <taichi/common/task.h>
+#include <taichi/visual/gui.h>
 
 #if defined(TC_GUI_COCOA)
+
+#include <taichi/platform/mac/objc_api.h>
 
 // https://stackoverflow.com/questions/4356441/mac-os-cocoa-draw-a-simple-pixel-on-a-canvas
 // http://cocoadevcentral.com/d/intro_to_quartz/
@@ -12,28 +14,16 @@
 // Obj-c runtime doc:
 // https://developer.apple.com/documentation/objectivec/objective-c_runtime?language=objc
 
-#include <objc/objc.h>
-#include <objc/message.h>
-#include <objc/runtime.h>
-#include <objc/runtime.h>
-#include <objc/message.h>
-#include <objc/NSObjCRuntime.h>
+#include <ApplicationServices/ApplicationServices.h>
 #include <CoreGraphics/CGBase.h>
 #include <CoreGraphics/CGGeometry.h>
-#include <ApplicationServices/ApplicationServices.h>
+#include <objc/NSObjCRuntime.h>
 
-template <typename C = id, typename... Args>
-C call(id i, const char *select, Args... args) {
-  using func = C (*)(id, SEL, Args...);
-  return ((func)(objc_msgSend))(i, sel_getUid(select), args...);
-}
-
-template <typename C = id, typename... Args>
-C call(const char *class_name, const char *select, Args... args) {
-  using func = C (*)(id, SEL, Args...);
-  return ((func)(objc_msgSend))((id)objc_getClass(class_name),
-                                sel_getUid(select), args...);
-}
+namespace {
+using taichi::mac::call;
+using taichi::mac::cast_call;
+using taichi::mac::clscall;
+}  // namespace
 
 extern id NSApp;
 extern id const NSDefaultRunLoopMode;
@@ -88,9 +78,8 @@ void redraw(id self, SEL _, CGRect __) {
       CGImageCreate(width, height, 8, 32, width * 4, colorspace,
                     kCGBitmapByteOrder32Big | kCGImageAlphaPremultipliedLast,
                     provider, nullptr, true, kCGRenderingIntentDefault);
-  CGContextRef context = call<CGContextRef>(
-      call((id)objc_getClass("NSGraphicsContext"), "currentContext"),
-      "graphicsPort");
+  CGContextRef context = cast_call<CGContextRef>(
+      clscall("NSGraphicsContext", "currentContext"), "graphicsPort");
 
   CGRect rect{{0, 0}, {CGFloat(width), CGFloat(height)}};
   CGContextDrawImage(context, rect, image);
@@ -119,23 +108,23 @@ __attribute__((constructor)) static void initView() {
 TC_NAMESPACE_BEGIN
 
 void GUI::create_window() {
-  call("NSApplication", "sharedApplication");
+  clscall("NSApplication", "sharedApplication");
   if (NSApp == nullptr) {
     fprintf(stderr, "Failed to initialized NSApplication.\nterminating.\n");
     return;
   }
   img_data_length = width * height * 4;
   img_data.resize(img_data_length);
-  auto appDelObj = call("AppDelegate", "alloc");
+  auto appDelObj = clscall("AppDelegate", "alloc");
   appDelObj = call(appDelObj, "init");
   call(NSApp, "setDelegate:", appDelObj);
-  window = call("NSWindow", "alloc");
+  window = clscall("NSWindow", "alloc");
   auto rect = (CGRect){{0, 0}, {CGFloat(width), CGFloat(height)}};
   call(window, "initWithContentRect:styleMask:backing:defer:", rect,
        (NSTitledWindowMask | NSClosableWindowMask | NSResizableWindowMask |
         NSMiniaturizableWindowMask),
        0, false);
-  view = call(call("View", "alloc"), "initWithFrame:", rect);
+  view = call(clscall("View", "alloc"), "initWithFrame:", rect);
   gui_from_id[view] = this;
   call(window, "setContentView:", view);
   call(window, "becomeFirstResponder");
@@ -144,18 +133,18 @@ void GUI::create_window() {
 }
 
 void GUI::process_event() {
-  call(call("NSRunLoop", "currentRunLoop"),
+  call(clscall("NSRunLoop", "currentRunLoop"),
        "runMode:beforeDate:", NSDefaultRunLoopMode,
-       call("NSDate", "distantPast"));
+       clscall("NSDate", "distantPast"));
   while (1) {
     auto event = call(
         NSApp, "nextEventMatchingMask:untilDate:inMode:dequeue:", NSUIntegerMax,
-        call("NSDate", "distantPast"), NSDefaultRunLoopMode, YES);
+        clscall("NSDate", "distantPast"), NSDefaultRunLoopMode, YES);
     if (event != nullptr) {
-      auto event_type = call<NSInteger>(event, "type");
+      auto event_type = cast_call<NSInteger>(event, "type");
       call(NSApp, "sendEvent:", event);
       call(NSApp, "updateWindows");
-      auto p = call<CGPoint>(event, "locationInWindow");
+      auto p = cast_call<CGPoint>(event, "locationInWindow");
       switch (event_type) {
         case 1:  // NSLeftMouseDown
           set_mouse_pos(p.x, p.y);
@@ -180,17 +169,14 @@ void GUI::process_event() {
 }
 
 void GUI::set_title(std::string title) {
-  auto str = call("NSString", "stringWithUTF8String:", title.c_str());
+  auto str = clscall("NSString", "stringWithUTF8String:", title.c_str());
   call(window, "setTitle:", str);
   call(str, "release");
 }
 
-void GUI::redraw() {
-  call(view, "setNeedsDisplay:", YES);
-}
+void GUI::redraw() { call(view, "setNeedsDisplay:", YES); }
 
-GUI::~GUI() {
-}
+GUI::~GUI() {}
 
 TC_NAMESPACE_END
 

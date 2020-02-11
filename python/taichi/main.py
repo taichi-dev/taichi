@@ -24,9 +24,6 @@ def test_python(verbose=False):
 
 def test_cpp():
   import taichi as ti
-  if not ti.core.with_cuda():
-    print("Skipping legacy tests (no GPU support)")
-    return 0
   # Cpp tests use the legacy non LLVM backend
   ti.reset()
   print("Running C++ tests...")

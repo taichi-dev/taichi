@@ -57,3 +57,5 @@ libpython_path.txt
 .vscode
 _build
 *.bin
+*.gif
+*.mp4

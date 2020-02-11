@@ -89,6 +89,7 @@ void re_id(IRNode *root);
 void flag_access(IRNode *root);
 void die(IRNode *root);
 void simplify(IRNode *root);
+void alg_simp(IRNode *root);
 void full_simplify(IRNode *root);
 void print(IRNode *root);
 void lower(IRNode *root);
@@ -1358,6 +1359,20 @@ class Block : public IRNode {
 
   Stmt *back() const {
     return statements.back().get();
+  }
+
+  template <typename T, typename... Args>
+  Stmt *push_back(Args &&... args) {
+    statements.emplace_back(std::make_unique<T>(std::forward<Args>(args)...));
+    return back();
+  }
+
+  std::size_t size() {
+    return statements.size();
+  }
+
+  pStmt &operator[](int i) {
+    return statements[i];
   }
 
   DEFINE_ACCEPT

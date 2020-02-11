@@ -1,17 +1,16 @@
 // Codegen for the hierarchical data structure
 #pragma once
 
+#include <taichi/platform/metal/metal_data_types.h>
+#include <taichi/platform/metal/metal_kernel_util.h>
+#include <taichi/snode.h>
+
 #include <algorithm>
 #include <functional>
 #include <string>
 #include <vector>
 
-#include <taichi/snode.h>
-#include <taichi/platform/metal/metal_data_types.h>
-#include <taichi/platform/metal/metal_kernel_util.h>
 #include "base.h"
-
-#ifdef TC_SUPPORTS_METAL
 
 TLANG_NAMESPACE_BEGIN
 namespace metal {
@@ -38,5 +37,3 @@ class MetalStructCompiler {
 
 }  // namespace metal
 TLANG_NAMESPACE_END
-
-#endif  // TC_SUPPORTS_METAL

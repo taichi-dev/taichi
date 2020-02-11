@@ -49,9 +49,6 @@ static_assert(false, "32-bit Windows systems are not supported")
 // OSX
 #if defined(__APPLE__)
 #define TC_PLATFORM_OSX
-// This is wrong, we cannot detect the Metal availability just at compilation
-// time. Deprecate it.
-#define TC_SUPPORTS_METAL
 #endif
 
 #if (defined(TC_PLATFORM_LINUX) || defined(TC_PLATFORM_OSX))

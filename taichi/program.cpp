@@ -1,19 +1,21 @@
 // Program, which is a context for a taichi program execution
 
+#include "program.h"
+
 #include <taichi/common/task.h>
 #include <taichi/platform/metal/metal_api.h>
 
-#include "program.h"
-#include "snode.h"
-#include "backends/struct.h"
-#include "backends/struct_metal.h"
-#include "backends/codegen_x86.h"
 #include "backends/codegen_cuda.h"
 #include "backends/codegen_metal.h"
+#include "backends/codegen_x86.h"
+#include "backends/struct.h"
+#include "backends/struct_metal.h"
+#include "snode.h"
 
 #if defined(CUDA_FOUND)
 
 #include <cuda_runtime.h>
+
 #include "backends/cuda_context.h"
 
 #endif
@@ -65,6 +67,10 @@ Program::Program(Arch arch) {
   llvm_runtime = nullptr;
   finalized = false;
   snode_root = std::make_unique<SNode>(0, SNodeType::root);
+
+  if (config.debug) {
+    TC_DEBUG("Program arch={}", arch_name(arch));
+  }
 }
 
 FunctionType Program::compile(Kernel &kernel) {
@@ -78,12 +84,8 @@ FunctionType Program::compile(Kernel &kernel) {
     GPUCodeGen codegen(kernel.name);
     ret = codegen.compile(*this, kernel);
   } else if (kernel.arch == Arch::metal) {
-#if defined(TC_SUPPORTS_METAL)
     metal::MetalCodeGen codegen(kernel.name, &metal_struct_compiled_.value());
     ret = codegen.compile(*this, kernel, metal_runtime_.get());
-#else
-    TC_ERROR("Metal not supported on the current OS");
-#endif  // TC_SUPPORTS_METAL
   } else {
     TC_NOT_IMPLEMENTED;
   }
@@ -109,7 +111,6 @@ void Program::materialize_layout() {
         StructCompiler::make(config.use_llvm, this, Arch::cuda);
     scomp_gpu->run(*snode_root, false);
   } else if (config.arch == Arch::metal) {
-#if defined(TC_SUPPORTS_METAL)
     metal::MetalStructCompiler scomp;
     metal_struct_compiled_ = scomp.run(*snode_root);
     if (metal_runtime_ == nullptr) {
@@ -118,9 +119,6 @@ void Program::materialize_layout() {
           profiler_llvm.get());
     }
     TC_INFO("Metal root buffer size: {} B", metal_struct_compiled_->root_size);
-#else
-    TC_ERROR("Metal not supported on the current OS");
-#endif  // TC_SUPPORTS_METAL
   }
 }
 
@@ -133,11 +131,7 @@ void Program::synchronize() {
       TC_ERROR("No CUDA support");
 #endif
     } else if (config.arch == Arch::metal) {
-#if defined(TC_SUPPORTS_METAL)
       metal_runtime_->synchronize();
-#else
-      TC_ERROR("No Metal support");
-#endif  // TC_SUPPORTS_METAL
     }
     sync = true;
   }
@@ -247,11 +241,7 @@ Kernel &Program::get_snode_reader(SNode *snode) {
   if (config.arch == Arch::metal) {
     // For now, we launch a Metal kernel to read back the memory. This is not
     // efficient, but should be improved once we have batch + async reader.
-#if defined(TC_SUPPORTS_METAL)
     ker.set_arch(Arch::metal);
-#else
-    TC_ERROR("Metal not supported on the current OS");
-#endif  // TC_SUPPORTS_METAL
   } else {
     ker.set_arch(get_host_arch());
   }
@@ -278,11 +268,7 @@ Kernel &Program::get_snode_writer(SNode *snode) {
   if (config.arch == Arch::metal) {
     // For now, we launch a Metal kernel to read back the memory. This is not
     // efficient, but should be improved once we have batch + async writer.
-#if defined(TC_SUPPORTS_METAL)
     ker.set_arch(Arch::metal);
-#else
-    TC_ERROR("Metal not supported on the current OS");
-#endif  // TC_SUPPORTS_METAL
   } else {
     ker.set_arch(get_host_arch());
   }

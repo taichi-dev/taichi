@@ -1,20 +1,19 @@
 #pragma once
 
-#include <string>
-#include <unordered_map>
-#include <unordered_set>
-#include <vector>
-
 #include <taichi/common.h>
 #include <taichi/constants.h>
 #include <taichi/platform/metal/metal_data_types.h>
 #include <taichi/platform/metal/metal_kernel_util.h>
 #include <taichi/platform/metal/metal_runtime.h>
 #include <taichi/tlang_util.h>
+
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
+
 #include "base.h"
 #include "kernel.h"
-
-#ifdef TC_SUPPORTS_METAL
 
 TLANG_NAMESPACE_BEGIN
 namespace metal {
@@ -42,5 +41,3 @@ class MetalCodeGen {
 }  // namespace metal
 
 TLANG_NAMESPACE_END
-
-#endif  // TC_SUPPORTS_METAL

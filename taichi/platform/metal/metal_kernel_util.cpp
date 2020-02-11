@@ -4,8 +4,6 @@
 #include <taichi/context.h>
 #undef TI_RUNTIME_HOST
 
-#ifdef TC_SUPPORTS_METAL
-
 TLANG_NAMESPACE_BEGIN
 
 namespace metal {
@@ -61,5 +59,3 @@ void MetalKernelArgsAttributes::finalize() {
 }  // namespace metal
 
 TLANG_NAMESPACE_END
-
-#endif  // TC_SUPPORTS_METAL

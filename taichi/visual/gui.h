@@ -783,8 +783,10 @@ class GUI : public GUIBase {
       set_title(fmt::format("{} ({:.02f} FPS)", window_name, real_fps));
   }
 
-  bool get_key_pressed() {
-    return key_pressed;
+  bool get_key() {
+    bool was_key_pressed = key_pressed;
+    key_pressed = false;
+    return was_key_pressed;
   }
 
   void wait_key() {

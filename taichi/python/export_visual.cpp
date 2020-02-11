@@ -25,7 +25,7 @@ void export_visual(py::module &m) {
                          img.get_data_size());
            })
       .def("screenshot", &GUI::screenshot)
-      .def("get_key_pressed", &GUI::get_key_pressed)
+      .def("get_key", &GUI::get_key)
       .def("wait_key", &GUI::wait_key)
       .def("update", &GUI::update);
   py::class_<Canvas>(m, "Canvas")

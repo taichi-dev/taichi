@@ -3,6 +3,20 @@ import numpy as np
 import ctypes
 
 class GUI:
+
+  SHIFT = 'Shift'
+  ALT = 'Alt'
+  CTRL = 'Control'
+  ESCAPE = 'Escape'
+  RETURN = 'Return'
+  TAB = 'Tab'
+  BACKSPACE = 'BackSpace'
+  SPACE = ' '
+  UP = 'Up'
+  DOWN = 'Down'
+  LEFT = 'Left'
+  RIGHT = 'Right'
+
   def __init__(self, name, res=512, background_color=0x0):
     import taichi as ti
     self.name = name

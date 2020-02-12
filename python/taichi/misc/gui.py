@@ -103,7 +103,9 @@ class GUI:
     self.core.pop_key_event_head()
     return key, type
 
-  def is_key_pressed(self, key):
+  def is_pressed(self, key):
+    if key in ['Shift', 'Alt', 'Control']:
+      return key + '_L' in self.key_pressed or key + '_R' in self.key_pressed
     return key in self.key_pressed
 
   def wait_key():

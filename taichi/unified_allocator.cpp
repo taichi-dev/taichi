@@ -16,7 +16,6 @@ UnifiedAllocator::UnifiedAllocator(std::size_t size, Arch arch)
     : size(size), arch_(arch) {
   auto t = Time::get_time();
   if (arch_ == Arch::cuda) {
-    std::lock_guard<std::mutex> _(cuda_context->lock);
     // CUDA gets stuck when
     //  - kernel A requests memory
     //  - the memory allocator trys to allocate memory (and get stuck at
@@ -27,6 +26,7 @@ UnifiedAllocator::UnifiedAllocator(std::size_t size, Arch arch)
     TC_TRACE("Allocating unified (CPU+GPU) address space of size {} MB",
              size / 1024 / 1024);
 #if defined(CUDA_FOUND)
+    std::lock_guard<std::mutex> _(cuda_context->lock);
     check_cuda_error(cudaMallocManaged(&_cuda_data, size));
     if (_cuda_data == nullptr) {
       TC_ERROR("GPU memory allocation failed.");

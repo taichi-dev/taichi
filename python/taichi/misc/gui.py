@@ -1,6 +1,5 @@
 import numbers
 import numpy as np
-import ctypes
 
 class GUI:
   def __init__(self, name, res=512, background_color=0x0):
@@ -82,8 +81,16 @@ class GUI:
     
     self.canvas.circles_batched(n, pos, color_single, color_array, radius_single, radius_array)
     
+  def line(self, begin, end, radius, color):
+    import taichi as ti
+    self.canvas.path(ti.vec(*begin), ti.vec(*end)).radius(radius).color(color).finish()
+    
   def show(self, file=None):
     self.core.update()
     if file:
       self.core.screenshot(file)
     self.clear(self.background_color)
+
+def rgb_to_hex(c):
+  to255 = lambda x: min(255, max(0, int(x * 255)))
+  return 65536 * to255(c[0]) + 256 * to255(c[1]) + to255(c[2])

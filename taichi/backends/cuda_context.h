@@ -13,9 +13,10 @@ class CUDAContext {
   int dev_count;
   void *context_buffer;
   std::string mcpu;
-  std::mutex lock;
 
  public:
+  std::mutex lock;
+
   CUDAContext();
 
   bool detected() const {
@@ -62,8 +63,8 @@ class CUDAContext {
     return ContextGuard(this);
   }
 
-  std::lock_guard<std::mutex> get_lock_guard() {
-    return std::lock_guard<std::mutex>(lock);
+  std::lock_guard<std::mutex> &&get_lock_guard() {
+    return std::move(std::lock_guard<std::mutex>(lock));
   }
 };
 

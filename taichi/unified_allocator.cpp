@@ -6,6 +6,7 @@
 #include "tlang_util.h"
 #include <taichi/unified_allocator.h>
 #include <taichi/system/virtual_memory.h>
+#include <taichi/system/timer.h>
 #include <string>
 #include "backends/cuda_context.h"
 
@@ -13,13 +14,14 @@ TLANG_NAMESPACE_BEGIN
 
 UnifiedAllocator::UnifiedAllocator(std::size_t size, Arch arch)
     : size(size), arch_(arch) {
+  auto t = Time::get_time();
   if (arch_ == Arch::cuda) {
-    auto lock = cuda_context->get_lock_guard();
+    std::lock_guard<std::mutex> _(cuda_context->lock);
     // CUDA gets stuck when
     //  - kernel A requests memory
-    //  - the memory allocator trys to allocate memory (and get stuck for some reason)
-    //  - kernel B is launched (and never finish for some reason)
-    // So we need a mutex.
+    //  - the memory allocator trys to allocate memory (and get stuck at cudaMallocManaged for some reason)
+    //  - kernel B is getting loaded via cuModuleLoadDataEx (and get stuck for some reason)
+    // So we need a mutex here...
     TC_TRACE("Allocating unified (CPU+GPU) address space of size {} MB",
              size / 1024 / 1024);
 #if defined(CUDA_FOUND)
@@ -55,7 +57,7 @@ UnifiedAllocator::UnifiedAllocator(std::size_t size, Arch arch)
 
   head = data;
   tail = head + size;
-  TC_TRACE("Memory allocated.");
+  TC_TRACE("Memory allocated. Allocation time = {:.3} s", Time::get_time() - t);
 }
 
 taichi::Tlang::UnifiedAllocator::~UnifiedAllocator() {

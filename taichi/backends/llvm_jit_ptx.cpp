@@ -175,8 +175,11 @@ CUmodule CUDAContext::compile(const std::string &ptx) {
   CUmodule cudaModule;
   TC_TRACE("PTX size: {:.2f}KB", ptx.size() / 1024.0);
   auto t = Time::get_time();
-  check_cuda_errors(cuModuleLoadDataEx(&cudaModule, ptx.c_str(), 0, 0, 0));
-  TC_DEBUG("CUDA module load time : {}ms", (Time::get_time() - t) * 1000);
+  TC_TRACE("Loading module...");
+  auto _ = std::lock_guard<std::mutex>(cuda_context->lock);
+  check_cuda_errors(
+      cuModuleLoadDataEx(&cudaModule, ptx.c_str(), 0, nullptr, nullptr));
+  TC_TRACE("CUDA module load time : {}ms", (Time::get_time() - t) * 1000);
   cudaModules.push_back(cudaModule);
   return cudaModule;
 }
@@ -189,7 +192,7 @@ CUfunction CUDAContext::get_function(CUmodule module,
   auto t = Time::get_time();
   check_cuda_errors(cuModuleGetFunction(&func, module, func_name.c_str()));
   t = Time::get_time() - t;
-  TC_DEBUG("Kernel {} compilation time: {}ms", func_name, t * 1000);
+  TC_TRACE("Kernel {} compilation time: {}ms", func_name, t * 1000);
   return func;
 }
 
@@ -213,7 +216,7 @@ void CUDAContext::launch(CUfunction func,
   }
   // Kernel launch
   if (gridDim > 0) {
-    auto _ = get_lock_guard();
+    std::lock_guard<std::mutex> _(lock);
     check_cuda_errors(cuLaunchKernel(func, gridDim, 1, 1, blockDim, 1, 1, 0,
                                      nullptr, KernelParams, nullptr));
   }

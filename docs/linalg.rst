@@ -11,7 +11,7 @@ Matrices
 - ``ti.transposed(A)`` or simply ``A.T()``
 - ``ti.inverse(A)``
 - ``ti.Matrix.abs(A)``
-- ``ti.trace(A)``
+- ``ti.tr(A)``
 - ``ti.determinant(A, type)``
 - ``A.cast(type)``
 - ``R, S = ti.polar_decompose(A, ti.f32)``

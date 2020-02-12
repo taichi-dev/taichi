@@ -3,6 +3,7 @@ from .matrix import Matrix
 from .transformer import TaichiSyntaxError
 from .ndrange import ndrange, GroupedNDRange
 from copy import deepcopy as _deepcopy
+import os
 
 core = taichi_lang_core
 runtime = get_runtime()
@@ -46,7 +47,6 @@ def reset():
 
 def init(default_fp=None, default_ip=None, print_processed=None, debug=None, **kwargs):
   if debug is None:
-    import os
     debug = bool(int(os.environ.get('TI_DEBUG', '0')))
 
   # Make a deepcopy in case these args reference to items from ti.cfg, which are
@@ -66,6 +66,10 @@ def init(default_fp=None, default_ip=None, print_processed=None, debug=None, **k
   if debug:
     ti.set_logging_level(ti.DEBUG)
   ti.cfg.debug = debug
+
+  log_level = os.environ.get('TI_LOG_LEVEL', '')
+  if log_level:
+    ti.set_logging_level(log_level)
   for k, v in kwargs.items():
     setattr(ti.cfg, k, v)
   ti.get_runtime().create_program()
@@ -102,7 +106,7 @@ def svd(A, dt=None):
   return svd(A, dt)
 
 determinant = Matrix.determinant
-trace = Matrix.trace
+tr = Matrix.trace
 
 
 def Tape(loss, clear_gradients=True):

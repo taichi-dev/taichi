@@ -3,11 +3,10 @@ import os
 import numpy as np
 import math
 import time
-import random
 from renderer_utils import out_dir, ray_aabb_intersection, inf, eps, \
   intersect_sphere, sphere_aabb_intersect_motion, inside_taichi
 
-ti.init(arch=ti.cuda, verbose_kernel_launches=True)
+ti.init(arch=ti.cuda)
 
 res = 1280, 720
 num_spheres = 1024
@@ -437,8 +436,8 @@ def copy(img: ti.ext_arr(), samples:ti.i32):
 
 def main():
   num_part = 100000
-  np_x = np.random.rand(num_part, 3).astype(np.float) * 0.4 + 0.2
-  np_v = np.random.rand(num_part, 3).astype(np.float) * 0
+  np_x = np.random.rand(num_part, 3).astype(np.float32) * 0.4 + 0.2
+  np_v = np.random.rand(num_part, 3).astype(np.float32) * 0
   np_c = np.zeros((num_part, 3)).astype(np.float32)
   np_c[:, 0] = 0.85
   np_c[:, 1] = 0.9

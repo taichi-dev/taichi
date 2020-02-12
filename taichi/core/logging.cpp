@@ -13,7 +13,7 @@ TC_NAMESPACE_BEGIN
 
 Function11 python_at_exit;
 
-const auto default_logging_level = spdlog::level::info;
+const auto default_logging_level = "info";
 
 void signal_handler(int signo);
 
@@ -23,7 +23,7 @@ void signal_handler(int signo);
       std::printf("Cannot register signal handler for" #name "\n"); \
   }
 
-void Logger::set_level(const std::string &level) {
+void Logger::set_level(const std::string &level_name) {
   /*
   trace = 0,
   debug = 1,
@@ -33,26 +33,31 @@ void Logger::set_level(const std::string &level) {
   critical = 5,
   off = 6
   */
-  if (level == "trace") {
-    spdlog::set_level(spdlog::level::trace);
-  } else if (level == "debug") {
-    spdlog::set_level(spdlog::level::debug);
-  } else if (level == "info") {
-    spdlog::set_level(spdlog::level::info);
-  } else if (level == "warn") {
-    spdlog::set_level(spdlog::level::warn);
-  } else if (level == "error") {
-    spdlog::set_level(spdlog::level::err);
-  } else if (level == "critical") {
-    spdlog::set_level(spdlog::level::critical);
-  } else if (level == "off") {
-    spdlog::set_level(spdlog::level::off);
+  if (level_name == "trace") {
+    level = spdlog::level::trace;
+  } else if (level_name == "debug") {
+    level = spdlog::level::debug;
+  } else if (level_name == "info") {
+    level = spdlog::level::info;
+  } else if (level_name == "warn") {
+    level = spdlog::level::warn;
+  } else if (level_name == "error") {
+    level = spdlog::level::err;
+  } else if (level_name == "critical") {
+    level = spdlog::level::critical;
+  } else if (level_name == "off") {
+    level = spdlog::level::off;
   } else {
     TC_ERROR(
         "Unknown logging level [{}]. Levels = trace, debug, info, warn, error, "
         "critical, off",
         level);
   }
+  spdlog::set_level((spdlog::level::level_enum)level);
+}
+
+int Logger::get_level() {
+  return level;
 }
 
 Logger::Logger() {
@@ -71,7 +76,7 @@ Logger::Logger() {
 }
 
 void Logger::set_level_default() {
-  console->set_level(default_logging_level);
+  set_level(default_logging_level);
 }
 
 void Logger::trace(const std::string &s) {

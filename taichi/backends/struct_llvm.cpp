@@ -250,7 +250,7 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
 
     // TODO(yuanming-hu): move runtime initialization to somewhere else
     auto initialize_runtime = tlctx->lookup_function<std::function<void *(
-        void *, void *, int, std::size_t, int, void *, bool)>>(
+        void *, void *, int, std::size_t, void *, bool)>>(
         "Runtime_initialize");
 
     auto initialize_runtime2 =
@@ -286,8 +286,8 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
     creator = [=]() {
       TC_TRACE("Allocating data structure of size {} B", root_size);
       auto root = initialize_runtime(
-          &prog->llvm_runtime, prog, (int)snodes.size(), root_size, root_id,
-          (void *)&taichi_allocate_aligned, prog->config.verbose);
+          &prog->llvm_runtime, prog, (int)snodes.size(), root_size,
+          (void *)&taichi_allocate_aligned, logger.get_level() <= 1);
 
       auto mem_req_queue =
           tlctx->lookup_function<std::function<void *(void *)>>(

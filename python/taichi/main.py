@@ -221,6 +221,7 @@ def main(debug=False):
     task.run(*sys.argv[2:])
   print()
   print(">>> Running time: {:.2f}s".format(time.time() - t))
+  return 0
 
 
 def main_debug():

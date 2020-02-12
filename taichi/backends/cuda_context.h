@@ -2,6 +2,7 @@
 #include "llvm_jit.h"
 #include <taichi/profiler.h>
 #include <taichi/cuda_utils.h>
+#include <mutex>
 
 TLANG_NAMESPACE_BEGIN
 
@@ -12,6 +13,7 @@ class CUDAContext {
   int dev_count;
   void *context_buffer;
   std::string mcpu;
+  std::mutex lock;
 
  public:
   CUDAContext();
@@ -59,8 +61,13 @@ class CUDAContext {
   ContextGuard get_guard() {
     return ContextGuard(this);
   }
+
+  std::lock_guard<std::mutex> get_lock_guard() {
+    return std::lock_guard<std::mutex>(lock);
+  }
 };
 
+// TODO: remove this global var
 extern std::unique_ptr<CUDAContext> cuda_context;
 
 TLANG_NAMESPACE_END

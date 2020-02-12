@@ -213,6 +213,7 @@ void CUDAContext::launch(CUfunction func,
   }
   // Kernel launch
   if (gridDim > 0) {
+    auto _ = get_lock_guard();
     check_cuda_errors(cuLaunchKernel(func, gridDim, 1, 1, blockDim, 1, 1, 0,
                                      nullptr, KernelParams, nullptr));
   }

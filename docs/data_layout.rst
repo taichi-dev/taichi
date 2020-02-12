@@ -94,3 +94,20 @@ Examples
     ti.root.dense(ti.i, 1024).place(pos(i))
   for i in range(3):
     ti.root.dense(ti.i, 1024).place(vel(i))
+
+
+Struct-fors on advanced (dense) data layouts
+-----------------------------------------------
+
+Struct-fors on nested dense data structures will automatically follow their data order in memory. For example, if 2D scalar tensor ``A`` is stored in row-major order,
+
+.. code-block:: python
+
+  for i, j in A:
+    A[i, j] += 1
+
+will iterate over elements of ``A`` following row-major order. If ``A`` is column-major, then the iteration follows the column-major order.
+
+If ``A`` is blocked, the iteration will happen within each block first. This maximizes memory bandwidth utilization in most cases.
+
+Struct-fors on sparse tensors follows the same philosophy, and will be discussed further in :ref:`sparse`.

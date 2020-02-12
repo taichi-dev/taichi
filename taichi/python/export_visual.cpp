@@ -25,8 +25,11 @@ void export_visual(py::module &m) {
                          img.get_data_size());
            })
       .def("screenshot", &GUI::screenshot)
-      .def("get_key", &GUI::get_key)
-      .def("wait_key", &GUI::wait_key)
+      .def("has_key_event", &GUI::has_key_event)
+      .def("wait_key_event", &GUI::wait_key_event)
+      .def("get_key_event_head_key", &GUI::get_key_event_head_key)
+      .def("get_key_event_head_type", &GUI::get_key_event_head_type)
+      .def("pop_key_event_head", &GUI::pop_key_event_head)
       .def("update", &GUI::update);
   py::class_<Canvas>(m, "Canvas")
       .def("clear", static_cast<void (Canvas::*)(int)>(&Canvas::clear))

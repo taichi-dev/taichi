@@ -493,6 +493,14 @@ class GUI : public GUIBase {
     bool button_status[3];
   };
 
+  struct KeyEvent {
+    enum class Type { press, release };
+    Type type;
+    std::string key;
+  };
+
+  std::vector<KeyEvent> key_events;
+
   struct Rect {
     Vector2i pos;
     Vector2i size;
@@ -783,10 +791,26 @@ class GUI : public GUIBase {
       set_title(fmt::format("{} ({:.02f} FPS)", window_name, real_fps));
   }
 
-  bool get_key() {
-    bool was_key_pressed = key_pressed;
-    key_pressed = false;
-    return was_key_pressed;
+  bool has_key_event() {
+    return !!key_events.size();
+  }
+
+  void wait_key_event() {
+    while (!key_events.size()) {
+      update();
+    }
+  }
+
+  std::string get_key_event_head_key() {
+    return key_events[0].key;
+  }
+
+  bool get_key_event_head_type() {
+    return key_events[0].type == KeyEvent::Type::press;
+  }
+
+  void pop_key_event_head() {
+    key_events.erase(key_events.begin());
   }
 
   void wait_key() {

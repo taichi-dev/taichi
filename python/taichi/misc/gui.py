@@ -12,6 +12,7 @@ class GUI:
     self.core = ti.core.GUI(name, ti.veci(*res))
     self.canvas = self.core.get_canvas()
     self.background_color = background_color
+    self.key_pressed = set()
     self.clear()
     
   def clear(self, color=None):
@@ -87,3 +88,27 @@ class GUI:
     if file:
       self.core.screenshot(file)
     self.clear(self.background_color)
+
+  def has_key_event(self):
+    return self.core.has_key_event()
+
+  def get_key_event(self):
+    self.core.wait_key_event()
+    key = self.core.get_key_event_head_key()
+    type = self.core.get_key_event_head_type()
+    if type is True:
+      self.key_pressed.add(key)
+    else:
+      self.key_pressed.discard(key)
+    self.core.pop_key_event_head()
+    return key, type
+
+  def is_key_pressed(self, key):
+    return key in self.key_pressed
+
+  def wait_key():
+    while True:
+      key, type = self.get_key_event()
+      if type is True:
+        return key
+

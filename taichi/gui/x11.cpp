@@ -45,6 +45,15 @@ class CXImage {
   }
 };
 
+static std::string lookup_keysym(XEvent *ev)
+{
+  int key = XLookupKeysym(&ev->xkey, 0);
+  if (isascii(key))
+    return std::string(1, key);
+  else
+    return XKeysymToString(key);
+}
+
 void GUI::process_event() {
   while (XPending((Display *)display)) {
     XEvent ev;
@@ -64,6 +73,10 @@ void GUI::process_event() {
         break;
       case KeyPress:
         key_pressed = true;
+        key_events.push_back(KeyEvent{KeyEvent::Type::press, lookup_keysym(&ev)});
+        break;
+      case KeyRelease:
+        key_events.push_back(KeyEvent{KeyEvent::Type::release, lookup_keysym(&ev)});
         break;
     }
   }

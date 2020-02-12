@@ -4,7 +4,7 @@ Utilities
 TODO: update
 
 Logging
-----------------------------------
+-------
 
 .. code-block:: python
 
@@ -19,7 +19,9 @@ Logging
     '''
     ti.set_logging_level(level)
 
-
+The default logging level is ``ti.INFO``.
+You can also override default logging level by setting the environment variable
+``TI_LOG_LEVEL`` to values such as ``trace`` and ``warn``.
 
 Trigger GDB when the program crashes:
 --------------------------------------

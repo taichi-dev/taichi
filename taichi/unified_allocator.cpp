@@ -19,20 +19,22 @@ UnifiedAllocator::UnifiedAllocator(std::size_t size, Arch arch)
     std::lock_guard<std::mutex> _(cuda_context->lock);
     // CUDA gets stuck when
     //  - kernel A requests memory
-    //  - the memory allocator trys to allocate memory (and get stuck at cudaMallocManaged for some reason)
-    //  - kernel B is getting loaded via cuModuleLoadDataEx (and get stuck for some reason)
+    //  - the memory allocator trys to allocate memory (and get stuck at
+    //  cudaMallocManaged for some reason)
+    //  - kernel B is getting loaded via cuModuleLoadDataEx (and get stuck for
+    //  some reason)
     // So we need a mutex here...
     TC_TRACE("Allocating unified (CPU+GPU) address space of size {} MB",
              size / 1024 / 1024);
 #if defined(CUDA_FOUND)
-    check_cuda_errors(cudaMallocManaged(&_cuda_data, size));
+    check_cuda_error(cudaMallocManaged(&_cuda_data, size));
     if (_cuda_data == nullptr) {
       TC_ERROR("GPU memory allocation failed.");
     }
 #if !defined(TI_ARCH_ARM) && !defined(TC_PLATFORM_WINDOWS)
     // Assuming ARM devices have shared CPU/GPU memory and do no support
     // memAdvise; CUDA on Windows has limited support for unified memory
-    check_cuda_errors(
+    check_cuda_error_as_warning(
         cudaMemAdvise(_cuda_data, size, cudaMemAdviseSetPreferredLocation, 0));
 #endif
     // http://on-demand.gputechconf.com/gtc/2017/presentation/s7285-nikolay-sakharnykh-unified-memory-on-pascal-and-volta.pdf
@@ -66,7 +68,7 @@ taichi::Tlang::UnifiedAllocator::~UnifiedAllocator() {
   }
   if (arch_ == Arch::cuda) {
 #if defined(CUDA_FOUND)
-    check_cuda_errors(cudaFree(_cuda_data));
+    check_cuda_error(cudaFree(_cuda_data));
 #else
     TC_ERROR("No CUDA support");
 #endif

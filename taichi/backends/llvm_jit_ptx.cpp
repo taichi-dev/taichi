@@ -147,23 +147,23 @@ std::string compile_module_to_ptx(std::unique_ptr<llvm::Module> &module) {
 CUDAContext::CUDAContext() {
   // CUDA initialization
   dev_count = 0;
-  check_cuda_errors(cuInit(0));
-  check_cuda_errors(cuDeviceGetCount(&dev_count));
-  check_cuda_errors(cuDeviceGet(&device, 0));
+  check_cuda_error(cuInit(0));
+  check_cuda_error(cuDeviceGetCount(&dev_count));
+  check_cuda_error(cuDeviceGet(&device, 0));
 
   char name[128];
-  check_cuda_errors(cuDeviceGetName(name, 128, device));
+  check_cuda_error(cuDeviceGetName(name, 128, device));
   TC_TRACE("Using CUDA Device [id=0]: {}", name);
 
   int cc_major, cc_minor;
-  check_cuda_errors(cuDeviceGetAttribute(
+  check_cuda_error(cuDeviceGetAttribute(
       &cc_major, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, device));
-  check_cuda_errors(cuDeviceGetAttribute(
+  check_cuda_error(cuDeviceGetAttribute(
       &cc_minor, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR, device));
 
   TC_TRACE("CUDA Device Compute Capability: {}.{}", cc_major, cc_minor);
-  check_cuda_errors(cuCtxCreate(&context, 0, device));
-  check_cuda_errors(cudaMalloc(&context_buffer, sizeof(Context)));
+  check_cuda_error(cuCtxCreate(&context, 0, device));
+  check_cuda_error(cudaMalloc(&context_buffer, sizeof(Context)));
 
   mcpu = fmt::format("sm_{}{}", cc_major, cc_minor);
 }
@@ -177,7 +177,7 @@ CUmodule CUDAContext::compile(const std::string &ptx) {
   auto t = Time::get_time();
   TC_TRACE("Loading module...");
   auto _ = std::lock_guard<std::mutex>(cuda_context->lock);
-  check_cuda_errors(
+  check_cuda_error(
       cuModuleLoadDataEx(&cudaModule, ptx.c_str(), 0, nullptr, nullptr));
   TC_TRACE("CUDA module load time : {}ms", (Time::get_time() - t) * 1000);
   cudaModules.push_back(cudaModule);
@@ -190,7 +190,7 @@ CUfunction CUDAContext::get_function(CUmodule module,
   make_current();
   CUfunction func;
   auto t = Time::get_time();
-  check_cuda_errors(cuModuleGetFunction(&func, module, func_name.c_str()));
+  check_cuda_error(cuModuleGetFunction(&func, module, func_name.c_str()));
   t = Time::get_time() - t;
   TC_TRACE("Kernel {} compilation time: {}ms", func_name, t * 1000);
   return func;
@@ -206,7 +206,7 @@ void CUDAContext::launch(CUfunction func,
   make_current();
   // Kernel parameters
 
-  check_cuda_errors(cudaMemcpy(context_buffer, context_ptr, sizeof(Context),
+  check_cuda_error(cudaMemcpy(context_buffer, context_ptr, sizeof(Context),
                                cudaMemcpyHostToDevice));
 
   void *KernelParams[] = {&context_buffer};
@@ -217,7 +217,7 @@ void CUDAContext::launch(CUfunction func,
   // Kernel launch
   if (gridDim > 0) {
     std::lock_guard<std::mutex> _(lock);
-    check_cuda_errors(cuLaunchKernel(func, gridDim, 1, 1, blockDim, 1, 1, 0,
+    check_cuda_error(cuLaunchKernel(func, gridDim, 1, 1, blockDim, 1, 1, 0,
                                      nullptr, KernelParams, nullptr));
   }
   if (profiler) {
@@ -225,7 +225,7 @@ void CUDAContext::launch(CUfunction func,
   }
 
   if (get_current_program().config.debug) {
-    check_cuda_errors(cudaDeviceSynchronize());
+    check_cuda_error(cudaDeviceSynchronize());
     auto err = cudaGetLastError();
     if (err) {
       TC_ERROR("CUDA Kernel Launch Error: {}", cudaGetErrorString(err));
@@ -235,10 +235,10 @@ void CUDAContext::launch(CUfunction func,
 
 CUDAContext::~CUDAContext() {
   /*
-  check_cuda_errors(cuMemFree(context_buffer));
+  check_cuda_error(cuMemFree(context_buffer));
   for (auto cudaModule: cudaModules)
-    check_cuda_errors(cuModuleUnload(cudaModule));
-  check_cuda_errors(cuCtxDestroy(context));
+    check_cuda_error(cuModuleUnload(cudaModule));
+  check_cuda_error(cuCtxDestroy(context));
   */
 }
 

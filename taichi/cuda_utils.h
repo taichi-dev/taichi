@@ -6,12 +6,20 @@
 #include <cuda_runtime_api.h>
 #include <driver_types.h>
 
-#define check_cuda_errors(err)                                  \
+#define check_cuda_error(err)                                  \
   {                                                             \
     auto __err = (err);                                         \
     if (int(__err))                                             \
       TC_ERROR("Cuda Error {}: {}", get_cuda_error_name(__err), \
                get_cuda_error_string(__err));                   \
+  }
+
+#define check_cuda_error_as_warning(err)                                 \
+  {                                                                      \
+    auto __err = (err);                                                  \
+    if (int(__err))                                                      \
+      TC_WARN("Cuda Error {} (treated as warning): {}",                  \
+              get_cuda_error_name(__err), get_cuda_error_string(__err)); \
   }
 
 TLANG_NAMESPACE_BEGIN

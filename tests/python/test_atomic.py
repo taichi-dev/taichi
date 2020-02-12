@@ -1,9 +1,7 @@
 import taichi as ti
 from pytest import approx
 
-ti.cfg.print_ir = True
 n = 128
-
 
 def run_atomic_add_global_case(vartype, step, valproc=lambda x: x):
   x = ti.var(vartype)

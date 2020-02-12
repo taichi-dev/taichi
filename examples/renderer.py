@@ -1,5 +1,4 @@
 import taichi as ti
-import os
 import numpy as np
 import math
 import time

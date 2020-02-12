@@ -113,7 +113,7 @@ class PyTaichi:
         func()
 
     import taichi as ti
-    ti.info("Materializing layout...".format())
+    ti.trace("Materializing layout...".format())
     taichi_lang_core.layout(layout)
     self.materialized = True
     for var in self.global_vars:

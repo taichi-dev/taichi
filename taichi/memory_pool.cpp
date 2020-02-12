@@ -11,7 +11,7 @@
 TLANG_NAMESPACE_BEGIN
 
 MemoryPool::MemoryPool(Program *prog) : prog(prog) {
-  TC_INFO("Memory pool created. Default buffer size per allocator = {} MB",
+  TC_TRACE("Memory pool created. Default buffer size per allocator = {} MB",
           default_allocator_size / 1024 / 1024);
   terminating = false;
   killed = false;

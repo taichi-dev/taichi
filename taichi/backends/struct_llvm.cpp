@@ -284,7 +284,7 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
     auto root_id = root.id;
     auto prog = this->prog;
     creator = [=]() {
-      TC_INFO("Allocating data structure of size {} B", root_size);
+      TC_TRACE("Allocating data structure of size {} B", root_size);
       auto root = initialize_runtime(
           &prog->llvm_runtime, prog, (int)snodes.size(), root_size, root_id,
           (void *)&taichi_allocate_aligned, prog->config.verbose);
@@ -310,11 +310,11 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
                 tlctx->get_type_size(snode_attr[snodes[i]].llvm_element_type) *
                     snodes[i]->chunk_size;
           }
-          TC_INFO("Initializing allocator for snode {} (node size {})",
+          TC_TRACE("Initializing allocator for snode {} (node size {})",
                   snodes[i]->id, node_size);
           auto rt = prog->llvm_runtime;
           initialize_allocator(rt, i, node_size);
-          TC_INFO("Allocating ambient element for snode {} (node size {})",
+          TC_TRACE("Allocating ambient element for snode {} (node size {})",
                   snodes[i]->id, node_size);
           allocate_ambient(rt, i);
         }

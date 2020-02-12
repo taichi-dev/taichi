@@ -153,7 +153,7 @@ CUDAContext::CUDAContext() {
 
   char name[128];
   check_cuda_errors(cuDeviceGetName(name, 128, device));
-  TC_INFO("Using CUDA Device [id=0]: {}", name);
+  TC_TRACE("Using CUDA Device [id=0]: {}", name);
 
   int cc_major, cc_minor;
   check_cuda_errors(cuDeviceGetAttribute(
@@ -161,7 +161,7 @@ CUDAContext::CUDAContext() {
   check_cuda_errors(cuDeviceGetAttribute(
       &cc_minor, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR, device));
 
-  TC_INFO("CUDA Device Compute Capability: {}.{}", cc_major, cc_minor);
+  TC_TRACE("CUDA Device Compute Capability: {}.{}", cc_major, cc_minor);
   check_cuda_errors(cuCtxCreate(&context, 0, device));
   check_cuda_errors(cudaMalloc(&context_buffer, sizeof(Context)));
 

@@ -5,7 +5,6 @@
 #include <taichi/common/task.h>
 #include <taichi/visual/gui.h>
 #include <map>
-#include <format>
 
 // Note: some code is copied from MSDN:
 // https://docs.microsoft.com/en-us/windows/desktop/learnwin32/introduction-to-windows-programming-in-c--
@@ -53,11 +52,11 @@ static std::string lookup_keysym(WPARAM wParam, LPARAM lParam)
   /*** TODO: win32 keyboard WIP, add more cases, match XKeysymToString() ***/
   default:
     if (VK_F1 <= key && key <= VK_F12)
-      return std::format("F{}", key - VK_F1);
+      return fmt::format("F{}", key - VK_F1);
     else if (isascii(key))
       return std::string(1, key);
     else
-      return std::format("Vk{}", key);
+      return fmt::format("Vk{}", key);
   }
 }
 

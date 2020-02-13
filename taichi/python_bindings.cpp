@@ -131,9 +131,16 @@ void export_lang(py::module &m) {
            (SNode & (SNode::*)(const std::vector<Index> &,
                                const std::vector<int> &))(&SNode::dense),
            py::return_value_policy::reference)
+      .def("pointer",
+          (SNode & (SNode::*)(const std::vector<Index> &,
+                              const std::vector<int> &))(&SNode::pointer),
+          py::return_value_policy::reference)
+      .def("hash",
+          (SNode & (SNode::*)(const std::vector<Index> &,
+                              const std::vector<int> &))(&SNode::hash),
+          py::return_value_policy::reference)
       .def("dynamic", &SNode::dynamic_chunked,
            py::return_value_policy::reference)
-      .def("pointer", &SNode::pointer, py::return_value_policy::reference)
       .def("bitmasked", &SNode::bitmasked)
       .def("place", (SNode & (SNode::*)(Expr &))(&SNode::place),
            py::return_value_policy::reference)

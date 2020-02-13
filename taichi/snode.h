@@ -139,6 +139,32 @@ class SNode {
     return SNode::dense(std::vector<Index>{index}, size);
   }
 
+  SNode &pointer(const std::vector<Index> &indices,
+               const std::vector<int> &sizes) {
+    return create_node(indices, sizes, SNodeType::pointer);
+  }
+
+  SNode &pointer(const std::vector<Index> &indices, int sizes) {
+    return create_node(indices, std::vector<int>{sizes}, SNodeType::pointer);
+  }
+
+  SNode &pointer(const Index &index, int size) {
+    return SNode::pointer(std::vector<Index>{index}, size);
+  }
+
+  SNode &hash(const std::vector<Index> &indices,
+              const std::vector<int> &sizes) {
+    return create_node(indices, sizes, SNodeType::hash);
+  }
+
+  SNode &hash(const std::vector<Index> &indices, int sizes) {
+    return create_node(indices, std::vector<int>{sizes}, SNodeType::hash);
+  }
+
+  SNode &hash(const Index &index, int size) {
+    return hash(std::vector<Index>{index}, size);
+  }
+
   SNode &multi_threaded(bool val = true) {
     this->_multi_threaded = val;
     return *this;
@@ -185,22 +211,6 @@ class SNode {
     child.n = n;
     child.chunk_size = chunk_size;
     return child;
-  }
-
-  SNode &hash(const std::vector<Index> indices, std::vector<int> sizes) {
-    return create_node(indices, sizes, SNodeType::hash);
-  }
-
-  SNode &hash(const std::vector<Index> indices, int sizes) {
-    return create_node(indices, std::vector<int>{sizes}, SNodeType::hash);
-  }
-
-  SNode &hash(const Index &expr, int n) {
-    return hash(std::vector<Index>{expr}, n);
-  }
-
-  SNode &pointer() {
-    return insert_children(SNodeType::pointer);
   }
 
   SNode &morton(bool val = true) {

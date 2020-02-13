@@ -8,14 +8,21 @@ class SNode:
       dimensions = [dimensions] * len(indices)
     return SNode(self.ptr.dense(indices, dimensions))
 
+  def pointer(self, indices, dimensions):
+    if isinstance(dimensions, int):
+      dimensions = [dimensions] * len(indices)
+    return SNode(self.ptr.pointer(indices, dimensions))
+
+  def hash(self, indices, dimensions):
+    if isinstance(dimensions, int):
+      dimensions = [dimensions] * len(indices)
+    return SNode(self.ptr.hash(indices, dimensions))
+
   def dynamic(self, index, dimension, chunk_size=None):
     assert len(index) == 1
     if chunk_size is None:
       chunk_size = dimension
     return SNode(self.ptr.dynamic(index[0], dimension, chunk_size))
-
-  def pointer(self):
-    return SNode(self.ptr.pointer())
 
   def bitmasked(self, val=True):
     self.ptr.bitmasked(val)
@@ -51,10 +58,10 @@ class SNode:
   def loop_range(self):
     import taichi as ti
     return ti.Expr(ti.core.global_var_expr_from_snode(self.ptr))
-  
+
   def snode(self):
     return self
-  
+
   def get_children(self):
     children = []
     for i in range(self.ptr.get_num_ch()):

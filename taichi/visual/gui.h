@@ -475,7 +475,7 @@ class GUI : public GUIBase {
   std::unique_ptr<Canvas> canvas;
   float64 last_frame_time;
   bool key_pressed;
-  std::vector<std::string> log_entries;
+  td::vector<std::string> log_entries;
   Vector2i cursor_pos;
   bool button_status[3];
   int widget_height;

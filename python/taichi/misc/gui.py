@@ -43,9 +43,7 @@ class GUI:
     self.core.set_img(np.ascontiguousarray(img).ctypes.data)
     
   def circle(self, pos, color, radius=1):
-    import taichi as ti
-    self.canvas.circle(ti.vec(pos[0],
-                         pos[1])).radius(radius).color(color).finish()
+    self.canvas.circle_single(pos[0], pos[1], color, radius)
     
   def circles(self, pos, color=0xFFFFFF, radius=1):
     n = pos.shape[0]

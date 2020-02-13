@@ -610,7 +610,8 @@ Ptr Runtime_initialize(Runtime **runtime_ptr,
   runtime->vm_allocator = vm_allocator;
   runtime->prog = prog;
   if (verbose)
-    printf("[runtime.cpp: Initializing runtime with %d snode(s)...]\n", num_snodes);
+    printf("[runtime.cpp: Initializing runtime with %d snode(s)...]\n",
+           num_snodes);
 
   // runtime->allocate ready to use
   runtime->mem_req_queue = (MemRequestQueue *)runtime->allocate_aligned(

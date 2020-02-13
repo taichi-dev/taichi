@@ -14,21 +14,7 @@ std::map<HWND, taichi::GUI *> gui_from_hwnd;
 
 static std::string lookup_keysym(WPARAM wParam, LPARAM lParam)
 {
-  /*** TODO: lParam has modifier info according to MSDN (?) ***/
-  int key = wParam;
-  if (isascii(key))
-    return std::string(1, key);
-  switch (key) {
-  case VK_RETURN:
-    return "Return";
-  case VK_F1:
-    return "F1";
-  case VK_LSHIFT:
-    return "Shift_L";
-  /*** TODO: win32 keyboard WIP, add more cases, match XKeysymToString() ***/
-  default:
-    return std::format("Vk{}", key);
-  }
+  return std::string("VirtualKey");
 }
 
 LRESULT CALLBACK WindowProc(HWND hwnd,

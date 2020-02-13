@@ -8,7 +8,3 @@ def benchmark_fill_scalar():
     a[None] = 1.0
   
   return ti.benchmark(fill)
-
-ti.init(arch=ti.x86_64)
-print(benchmark_fill_scalar())
-

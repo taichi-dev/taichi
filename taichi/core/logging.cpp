@@ -24,40 +24,40 @@ void signal_handler(int signo);
   }
 
 void Logger::set_level(const std::string &level_name) {
-  /*
-  trace = 0,
-  debug = 1,
-  info = 2,
-  warn = 3,
-  err = 4,
-  critical = 5,
-  off = 6
-  */
-  if (level_name == "trace") {
-    level = spdlog::level::trace;
-  } else if (level_name == "debug") {
-    level = spdlog::level::debug;
-  } else if (level_name == "info") {
-    level = spdlog::level::info;
-  } else if (level_name == "warn") {
-    level = spdlog::level::warn;
-  } else if (level_name == "error") {
-    level = spdlog::level::err;
-  } else if (level_name == "critical") {
-    level = spdlog::level::critical;
-  } else if (level_name == "off") {
-    level = spdlog::level::off;
-  } else {
-    TC_ERROR(
-        "Unknown logging level [{}]. Levels = trace, debug, info, warn, error, "
-        "critical, off",
-        level);
-  }
+  auto new_level = level_enum_from_string(level_name);
+  level = new_level;
   spdlog::set_level((spdlog::level::level_enum)level);
 }
 
 int Logger::get_level() {
   return level;
+}
+
+bool Logger::is_level_effective(const std::string &level_name) {
+  return get_level() <= level_enum_from_string(level_name);
+}
+
+int Logger::level_enum_from_string(const std::string &level_name) {
+  if (level_name == "trace") {
+    return spdlog::level::trace;
+  } else if (level_name == "debug") {
+    return spdlog::level::debug;
+  } else if (level_name == "info") {
+    return spdlog::level::info;
+  } else if (level_name == "warn") {
+    return spdlog::level::warn;
+  } else if (level_name == "error") {
+    return spdlog::level::err;
+  } else if (level_name == "critical") {
+    return spdlog::level::critical;
+  } else if (level_name == "off") {
+    return spdlog::level::off;
+  } else {
+    TC_ERROR(
+        "Unknown logging level [{}]. Levels = trace, debug, info, warn, error, "
+        "critical, off",
+        level_name);
+  }
 }
 
 Logger::Logger() {

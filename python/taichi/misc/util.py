@@ -4,7 +4,6 @@ import platform
 import random
 import taichi
 
-
 def get_os_name():
   name = platform.platform()
   if name.lower().startswith('darwin'):
@@ -296,7 +295,6 @@ class Tee():
 
 import inspect
 
-
 def get_file_name(asc=0):
   return inspect.stack()[1 + asc][1]
 
@@ -309,20 +307,17 @@ def get_line_number(asc=0):
   return inspect.stack()[1 + asc][2]
 
 
-def log_info(fmt, *args, **kwargs):
-  tc.core.log_info(fmt.format(*args, **kwargs))
-
 def get_logging(name):
 
   def logger(msg, *args, **kwargs):
-    msg_formatted = msg.format(*args, **kwargs)
-    func = getattr(taichi.core, name)
-    stk = inspect.stack()[2]
-    file_name = stk[1]
-    lineno = stk[2]
-    func_name = stk[3]
-    msg = f'[{file_name}:{func_name}@{lineno}] {msg_formatted}'
-    func(msg)
+    # Python inspection takes time (~0.1ms) so avoid it as much as possible
+    if taichi.tc_core.logging_effective(name):
+      msg_formatted = msg.format(*args, **kwargs)
+      func = getattr(taichi.tc_core, name)
+      frame = inspect.currentframe().f_back.f_back
+      file_name, lineno, func_name, _, _ = inspect.getframeinfo(frame)
+      msg = f'[{file_name}:{func_name}@{lineno}] {msg_formatted}'
+      func(msg)
 
   return logger
 

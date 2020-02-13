@@ -137,6 +137,9 @@ void export_misc(py::module &m) {
   m.def("set_core_state_python_imported", CoreState::set_python_imported);
   m.def("set_logging_level",
         [](const std::string &level) { logger.set_level(level); });
+  m.def("logging_effective", [](const std::string &level) {
+    return logger.is_level_effective(level);
+  });
   m.def("set_logging_level_default", []() { logger.set_level_default(); });
   m.def("set_core_trigger_gdb_when_crash",
         CoreState::set_trigger_gdb_when_crash);

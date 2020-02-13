@@ -113,7 +113,7 @@ class GUI:
     self.core.wait_key_event()
     key = self.core.get_key_event_head_key()
     type = self.core.get_key_event_head_type()
-    if type == PRESS:
+    if type == GUI.PRESS:
       self.key_pressed.add(key)
     else:
       self.key_pressed.discard(key)
@@ -133,7 +133,7 @@ class GUI:
   def wait_key():
     while True:
       key, type = self.get_key_event()
-      if type == PRESS:
+      if type == GUI.PRESS:
         return key
 
 def rgb_to_hex(c):

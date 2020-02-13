@@ -54,6 +54,16 @@ static std::string lookup_keysym(XEvent *ev)
     return XKeysymToString(key);
 }
 
+static std::string lookup_button(XEvent *ev)
+{
+  switch (ev->xbutton.button) {
+  case 1: return "LMB";
+  case 2: return "MMB";
+  case 3: return "RMB";
+  default: return fmt::format("Button{}", ev->xbutton.button);
+  }
+}
+
 void GUI::process_event() {
   while (XPending((Display *)display)) {
     XEvent ev;
@@ -64,19 +74,31 @@ void GUI::process_event() {
       case MotionNotify:
         set_mouse_pos(ev.xbutton.x, height - ev.xbutton.y - 1);
         mouse_event(MouseEvent{MouseEvent::Type::move, cursor_pos});
+        key_events.push_back(
+            KeyEvent{KeyEvent::Type::move, "Motion", cursor_pos});
         break;
       case ButtonPress:
+        set_mouse_pos(ev.xbutton.x, height - ev.xbutton.y - 1);
         mouse_event(MouseEvent{MouseEvent::Type::press, cursor_pos});
+        key_events.push_back(
+            KeyEvent{KeyEvent::Type::press, lookup_button(&ev), cursor_pos});
         break;
       case ButtonRelease:
+        set_mouse_pos(ev.xbutton.x, height - ev.xbutton.y - 1);
         mouse_event(MouseEvent{MouseEvent::Type::release, cursor_pos});
+        key_events.push_back(
+            KeyEvent{KeyEvent::Type::release, lookup_button(&ev), cursor_pos});
         break;
       case KeyPress:
+        set_mouse_pos(ev.xkey.x, height - ev.xkey.y - 1);
         key_pressed = true;
-        key_events.push_back(KeyEvent{KeyEvent::Type::press, lookup_keysym(&ev)});
+        key_events.push_back(
+            KeyEvent{KeyEvent::Type::press, lookup_keysym(&ev), cursor_pos});
         break;
       case KeyRelease:
-        key_events.push_back(KeyEvent{KeyEvent::Type::release, lookup_keysym(&ev)});
+        set_mouse_pos(ev.xkey.x, height - ev.xkey.y - 1);
+        key_events.push_back(
+            KeyEvent{KeyEvent::Type::release, lookup_keysym(&ev), cursor_pos});
         break;
     }
   }

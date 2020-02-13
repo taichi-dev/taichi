@@ -297,6 +297,10 @@ class Canvas {
     return Vector2(transform_matrix * Vector3(x, 1.0_f));
   }
 
+  TC_FORCE_INLINE Vector2 untransform(Vector2 x) const {
+    return Vector2(inversed(transform_matrix) * Vector3(x, 1.0_f));
+  }
+
   std::vector<Circle> circles;
   std::vector<Line> lines;
 
@@ -496,9 +500,10 @@ class GUI : public GUIBase {
   };
 
   struct KeyEvent {
-    enum class Type { press, release };
+    enum class Type { move, press, release };
     Type type;
     std::string key;
+    Vector2i pos;
   };
 
   std::vector<KeyEvent> key_events;
@@ -809,6 +814,14 @@ class GUI : public GUIBase {
 
   bool get_key_event_head_type() {
     return key_events[0].type == KeyEvent::Type::press;
+  }
+
+  Vector2 get_key_event_head_pos() {
+    return canvas->untransform(Vector2(key_events[0].pos));
+  }
+
+  Vector2 get_cursor_pos() {
+    return canvas->untransform(Vector2(cursor_pos));
   }
 
   void pop_key_event_head() {

@@ -29,9 +29,12 @@ void export_visual(py::module &m) {
       .def("wait_key_event", &GUI::wait_key_event)
       .def("get_key_event_head_key", &GUI::get_key_event_head_key)
       .def("get_key_event_head_type", &GUI::get_key_event_head_type)
+      .def("get_key_event_head_pos", &GUI::get_key_event_head_pos)
       .def("pop_key_event_head", &GUI::pop_key_event_head)
+      .def("get_cursor_pos", &GUI::get_cursor_pos)
       .def("update", &GUI::update);
   py::class_<Canvas>(m, "Canvas")
+      .def("get_cursor_pos", &GUI::get_cursor_pos)
       .def("clear", static_cast<void (Canvas::*)(int)>(&Canvas::clear))
       .def("rect", &Canvas::rect, py::return_value_policy::reference)
       .def("path",

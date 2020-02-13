@@ -93,11 +93,11 @@ LRESULT CALLBACK WindowProc(HWND hwnd,
     case WM_KEYDOWN:
       gui->key_pressed = true;
       gui->key_events.push_back(
-          GUI::KeyEvent{GUI::KeyEvent::Type::press, lookup_keysym(wParam, lParam)});
+          GUI::KeyEvent{GUI::KeyEvent::Type::press, lookup_keysym(wParam, lParam), cursor_pos});
       break;
     case WM_KEYUP:
       gui->key_events.push_back(
-          GUI::KeyEvent{GUI::KeyEvent::Type::release, lookup_keysym(wParam, lParam)});
+          GUI::KeyEvent{GUI::KeyEvent::Type::release, lookup_keysym(wParam, lParam), cursor_pos});
       break;
     case WM_CLOSE:
       exit(0);

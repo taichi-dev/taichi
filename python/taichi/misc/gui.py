@@ -3,6 +3,9 @@ import numpy as np
 
 class GUI:
 
+  class Event:
+    pass
+
   SHIFT = 'Shift'
   ALT = 'Alt'
   CTRL = 'Control'
@@ -16,6 +19,9 @@ class GUI:
   LEFT = 'Left'
   RIGHT = 'Right'
   CAPSLOCK = 'Caps_Lock'
+  LMB = 'LMB'
+  MMB = 'MMB'
+  RMB = 'RMB'
   RELEASE = False
   PRESS = True
 
@@ -112,14 +118,16 @@ class GUI:
 
   def get_key_event(self):
     self.core.wait_key_event()
-    key = self.core.get_key_event_head_key()
-    type = self.core.get_key_event_head_type()
-    if type == GUI.PRESS:
-      self.key_pressed.add(key)
+    e = GUI.Event()
+    e.key = self.core.get_key_event_head_key()
+    e.type = self.core.get_key_event_head_type()
+    e.pos = self.core.get_key_event_head_pos()
+    if e.type == GUI.PRESS:
+      self.key_pressed.add(e.key)
     else:
-      self.key_pressed.discard(key)
+      self.key_pressed.discard(e.key)
     self.core.pop_key_event_head()
-    return key, type
+    return e
 
   def is_pressed(self, *keys):
     for key in keys:
@@ -130,6 +138,9 @@ class GUI:
         return True
     else:
       return False
+
+  def get_cursor_pos(self):
+    return self.core.get_cursor_pos()
 
   def wait_key():
     while True:

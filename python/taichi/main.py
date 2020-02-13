@@ -28,7 +28,7 @@ def test_cpp():
   ti.reset()
   print("Running C++ tests...")
   task = ti.Task('test')
-  return task.run(*sys.argv[2:])
+  return int(task.run(*sys.argv[2:]))
 
 
 def main(debug=False):

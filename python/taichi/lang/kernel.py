@@ -265,14 +265,12 @@ class Kernel:
         if isinstance(needed, template):
           continue
         provided = type(v)
-        if isinstance(needed,
-                      taichi_lang_core.DataType) and needed in [f32, f64]:
-          if type(v) not in [float, int]:
+        if needed == f32 or needed == f64:
+          if not isinstance(v, (float, int)):
             raise KernelArgError(i, needed, provided)
           t_kernel.set_arg_float(actual_argument_slot, float(v))
-        elif isinstance(needed,
-                        taichi_lang_core.DataType) and needed in [i32, i64]:
-          if type(v) not in [int]:
+        elif needed == i32 or needed == i64:
+          if not isinstance(v, int):
             raise KernelArgError(i, needed, provided)
           t_kernel.set_arg_int(actual_argument_slot, int(v))
         elif self.match_ext_arr(v, needed):
@@ -346,8 +344,6 @@ class Kernel:
     instance_id = self.mapper.lookup(args)
     key = (self.func, instance_id)
     self.materialize(key=key, args=args, arg_features=self.mapper.extract(args))
-    import taichi as ti
-    ti.debug('Launching Taichi kernel {}...'.format(self.func.__name__))
     return self.compiled_functions[key](*args)
 
 

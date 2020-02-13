@@ -23,7 +23,7 @@ endif()
 
 
 option(USE_STDCPP "Use -stdlib=libc++" OFF)
-option(TI_WITH_CUDA "Build with GPU support" OFF)
+option(TI_WITH_CUDA "Build with CUDA support" OFF)
 
 include_directories(${CMAKE_SOURCE_DIR})
 include_directories(external/xxhash)

@@ -15,6 +15,7 @@ class GUI:
   DOWN = 'Down'
   LEFT = 'Left'
   RIGHT = 'Right'
+  CAPSLOCK = 'Caps_Lock'
   RELEASE = False
   PRESS = True
 

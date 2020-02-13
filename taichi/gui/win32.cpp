@@ -32,18 +32,23 @@ static std::string lookup_keysym(WPARAM wParam, LPARAM lParam)
     return "BackSpace";
   case VK_ESCAPE:
     return "Escape";
+  case VK_SHIFT:
   case VK_LSHIFT:
     return "Shift_L";
   case VK_RSHIFT:
     return "Shift_R";
-  case VK_LCTRL:
+  case VK_CONTROL:
+  case VK_LCONTROL:
     return "Control_L";
-  case VK_RCTRL:
+  case VK_RCONTROL:
     return "Control_R";
-  case VK_LALT:
+  case VK_MENU:
+  case VK_LMENU:
     return "Alt_L";
-  case VK_RALT:
+  case VK_RMENU:
     return "Alt_R";
+  case VK_CAPITAL:
+    return "Caps_Lock";
   /*** TODO: win32 keyboard WIP, add more cases, match XKeysymToString() ***/
   default:
     if (isascii(key))

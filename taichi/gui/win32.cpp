@@ -52,10 +52,10 @@ static std::string lookup_keysym(WPARAM wParam, LPARAM lParam)
     return "Caps_Lock";
   /*** TODO: win32 keyboard WIP, add more cases, match XKeysymToString() ***/
   default:
-    if (isascii(key))
-      return std::string(1, key);
-    else if (VK_F1 <= key && key <= VK_F24)
+    if (VK_F1 <= key && key <= VK_F12)
       return std::format("F{}", key - VK_F1);
+    else if (isascii(key))
+      return std::string(1, key);
     else
       return std::format("Vk{}", key);
   }

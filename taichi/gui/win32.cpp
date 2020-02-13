@@ -5,6 +5,7 @@
 #include <taichi/common/task.h>
 #include <taichi/visual/gui.h>
 #include <map>
+#include <format>
 
 // Note: some code is copied from MSDN:
 // https://docs.microsoft.com/en-us/windows/desktop/learnwin32/introduction-to-windows-programming-in-c--

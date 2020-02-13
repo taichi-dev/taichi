@@ -19,6 +19,7 @@ class GUI:
   LEFT = 'Left'
   RIGHT = 'Right'
   CAPSLOCK = 'Caps_Lock'
+  MOTION = 'Motion'
   LMB = 'LMB'
   MMB = 'MMB'
   RMB = 'RMB'

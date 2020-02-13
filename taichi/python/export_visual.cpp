@@ -34,7 +34,6 @@ void export_visual(py::module &m) {
       .def("get_cursor_pos", &GUI::get_cursor_pos)
       .def("update", &GUI::update);
   py::class_<Canvas>(m, "Canvas")
-      .def("get_cursor_pos", &GUI::get_cursor_pos)
       .def("clear", static_cast<void (Canvas::*)(int)>(&Canvas::clear))
       .def("rect", &Canvas::rect, py::return_value_policy::reference)
       .def("path",

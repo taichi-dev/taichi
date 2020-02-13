@@ -5,12 +5,30 @@
 #include <taichi/common/task.h>
 #include <taichi/visual/gui.h>
 #include <map>
-#include <cctype>
 
 // Note: some code is copied from MSDN:
 // https://docs.microsoft.com/en-us/windows/desktop/learnwin32/introduction-to-windows-programming-in-c--
 
 std::map<HWND, taichi::GUI *> gui_from_hwnd;
+
+static std::string lookup_keysym(WPARAM wParam, LPARAM lParam)
+{
+  /*** TODO: lParam has modifier info according to MSDN (?) ***/
+  int key = wParam;
+  if (isascii(key))
+    return std::string(1, key);
+  switch (key) {
+  case VK_RETURN:
+    return "Return";
+  case VK_F1:
+    return "F1";
+  case VK_LSHIFT:
+    return "Shift_L";
+  /*** TODO: win32 keyboard WIP, add more cases, match XKeysymToString() ***/
+  default:
+    return std::format("Vk{}", key);
+  }
+}
 
 LRESULT CALLBACK WindowProc(HWND hwnd,
                             UINT uMsg,
@@ -41,6 +59,13 @@ LRESULT CALLBACK WindowProc(HWND hwnd,
           GUI::MouseEvent{GUI::MouseEvent::Type::move, gui->cursor_pos});
       break;
     case WM_PAINT:
+      break;
+    case WM_KEYDOWN:
+      gui->key_pressed = true;
+      gui->key_events.push_back(GUI::KeyEvent{GUI::KeyEvent::Type::press, lookup_keysym(wParam, lParam)});
+      break;
+    case WM_KEYUP:
+      gui->key_events.push_back(GUI::KeyEvent{GUI::KeyEvent::Type::release, lookup_keysym(wParam, lParam)});
       break;
     case WM_CLOSE:
       exit(0);

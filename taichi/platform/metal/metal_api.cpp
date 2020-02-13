@@ -1,10 +1,10 @@
 #include "metal_api.h"
 
-#ifdef TC_SUPPORTS_METAL
-
 TLANG_NAMESPACE_BEGIN
 
 namespace metal {
+
+#ifdef TC_SUPPORTS_METAL
 
 extern "C" {
 id MTLCreateSystemDefaultDevice();
@@ -118,8 +118,19 @@ void dispatch_threadgroups(MTLComputeCommandEncoder *encoder, int32_t blocks_x,
        threads_per_threadgroup);
 }
 
+#endif  // TC_SUPPORTS_METAL
+
+bool is_metal_api_available() {
+#ifdef TC_PLATFORM_OSX
+  // If the macOS is provided by a VM (e.g. Travis CI), it's possible that there
+  // is no GPU device, so we still have to do a runtime check.
+  auto device = mtl_create_system_default_device();
+  return device != nullptr;
+#else
+  return false;
+#endif
+}
+
 } // namespace metal
 
 TLANG_NAMESPACE_END
-
-#endif  // TC_SUPPORTS_METAL

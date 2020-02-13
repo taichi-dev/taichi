@@ -7,8 +7,6 @@
 #include <taichi/common.h>
 #include <taichi/common/util.h>
 
-#ifdef TC_SUPPORTS_METAL
-
 #include <taichi/platform/mac/objc_api.h>
 
 TLANG_NAMESPACE_BEGIN
@@ -24,6 +22,8 @@ struct MTLComputeCommandEncoder;
 struct MTLFunction;
 struct MTLComputePipelineState;
 struct MTLBuffer;
+
+#ifdef TC_SUPPORTS_METAL
 
 using mac::nsobj_unique_ptr;
 
@@ -89,8 +89,10 @@ inline void *mtl_buffer_contents(MTLBuffer *buffer) {
   return mac::cast_call<void *>(buffer, "contents");
 }
 
+#endif  // TC_SUPPORTS_METAL
+
+bool is_metal_api_available();
+
 } // namespace metal
 
 TLANG_NAMESPACE_END
-
-#endif  // TC_SUPPORTS_METAL

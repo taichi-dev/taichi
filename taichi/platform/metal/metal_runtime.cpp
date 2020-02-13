@@ -206,6 +206,7 @@ MetalRuntime::MetalRuntime(size_t root_size,
       mem_pool_(mem_pool),
       profiler_(profiler),
       root_buffer_mem_(std::max(root_size, 1UL), mem_pool) {
+  TC_ASSERT(is_metal_api_available());
   device_ = mtl_create_system_default_device();
   TC_ASSERT(device_ != nullptr);
   command_queue_ = new_command_queue(device_.get());

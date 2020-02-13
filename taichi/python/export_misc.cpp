@@ -13,6 +13,7 @@
 #include <taichi/system/memory.h>
 #include <taichi/system/unit_dll.h>
 #include <taichi/geometry/factory.h>
+#include <taichi/platform/metal/metal_api.h>
 #if defined(TI_WITH_CUDA)
 #include <cuda_runtime_api.h>
 #endif
@@ -78,14 +79,6 @@ void stop_duplicating_stdout_to_file(const std::string &fn) {
 
 bool with_cuda() {
 #if defined(TI_WITH_CUDA)
-  return true;
-#else
-  return false;
-#endif
-}
-
-bool with_metal() {
-#if defined(TC_SUPPORTS_METAL)
   return true;
 #else
   return false;
@@ -170,7 +163,7 @@ void export_misc(py::module &m) {
     printf("test was successful.\n");
   });
   m.def("with_cuda", with_cuda);
-  m.def("with_metal", with_metal);
+  m.def("with_metal", taichi::Tlang::metal::is_metal_api_available);
 }
 
 TC_NAMESPACE_END

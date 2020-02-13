@@ -1,6 +1,8 @@
 // Program, which is a context for a taichi program execution
 
 #include <taichi/common/task.h>
+#include <taichi/platform/metal/metal_api.h>
+
 #include "program.h"
 #include "snode.h"
 #include "backends/struct.h"
@@ -38,6 +40,12 @@ Program::Program(Arch arch) {
     }
   }
 #endif
+  if (arch == Arch::metal) {
+    if (!metal::is_metal_api_available()) {
+      TC_WARN("No Metal API detected, falling back to x86_64");
+      arch = Arch::x86_64;
+    }
+  }
   memory_pool = std::make_unique<MemoryPool>(this);
   TC_ASSERT_INFO(num_instances == 0, "Only one instance at a time");
   total_compilation_time = 0;

@@ -42,9 +42,6 @@ LRESULT CALLBACK WindowProc(HWND hwnd,
       break;
     case WM_PAINT:
       break;
-    case WM_KEYDOWN:
-      key_pressed = true;
-      break;
     case WM_CLOSE:
       exit(0);
       break;

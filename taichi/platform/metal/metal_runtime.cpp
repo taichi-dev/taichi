@@ -20,8 +20,6 @@ namespace metal {
 #ifdef TC_PLATFORM_OSX
 
 namespace {
-// TODO(k-ye): Figure this out at runtime, or make it configurable?
-constexpr int kThreadsPerGroup = 512;
 using KernelTaskType = OffloadedStmt::TaskType;
 
 // This class requests the Metal buffer memory of |size| bytes from |mem_pool|.
@@ -61,6 +59,29 @@ class CompiledMtlKernel {
               MTLBuffer *args_buffer, MTLCommandBuffer *command_buffer) {
     // 0 is valid for |num_threads|!
     TC_ASSERT(kernel_attribs_.num_threads >= 0);
+    launch_if_not_empty(root_buffer, global_tmps_buffer, args_buffer,
+                        command_buffer);
+    if ((kernel_attribs_.task_type == KernelTaskType::range_for) &&
+        !kernel_attribs_.range_for_attribs.const_range()) {
+      // Set |num_thread| to an invalid number to make sure the next launch
+      // re-computes it correctly.
+      kernel_attribs_.num_threads = -1;
+    }
+  }
+
+  inline MetalKernelAttributes *kernel_attribs() {
+    return &kernel_attribs_;
+  }
+
+ private:
+  void launch_if_not_empty(MTLBuffer *root_buffer,
+                           MTLBuffer *global_tmps_buffer,
+                           MTLBuffer *args_buffer,
+                           MTLCommandBuffer *command_buffer) {
+    const int num_threads = kernel_attribs_.num_threads;
+    if (num_threads == 0) {
+      return;
+    }
     profiler_->start(profiler_id_);
     auto encoder = new_compute_command_encoder(command_buffer);
     TC_ASSERT(encoder != nullptr);
@@ -73,24 +94,16 @@ class CompiledMtlKernel {
     if (args_buffer) {
       set_mtl_buffer(encoder.get(), args_buffer, /*offset=*/0, buffer_index++);
     }
-    const int num_threads = kernel_attribs_.num_threads;
+    const int num_threads_per_group =
+        get_max_total_threads_per_threadgroup(pipeline_state_.get());
     const int num_groups =
-        ((num_threads + kThreadsPerGroup - 1) / kThreadsPerGroup);
+        ((num_threads + num_threads_per_group - 1) / num_threads_per_group);
     dispatch_threadgroups(encoder.get(), num_groups,
-                          std::min(num_threads, kThreadsPerGroup));
+                          std::min(num_threads, num_threads_per_group));
     end_encoding(encoder.get());
     profiler_->stop();
-    if ((kernel_attribs_.task_type == KernelTaskType::range_for) &&
-        !kernel_attribs_.range_for_attribs.const_range()) {
-      // Set |num_thread| to an invalid number to make sure the next launch
-      // re-computes it correctly.
-      kernel_attribs_.num_threads = -1;
-    }
   }
 
-  inline MetalKernelAttributes *kernel_attribs() { return &kernel_attribs_; }
-
- private:
   MetalKernelAttributes kernel_attribs_;
   nsobj_unique_ptr<MTLComputePipelineState> pipeline_state_{nullptr};
   ProfilerBase *const profiler_;

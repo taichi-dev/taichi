@@ -91,6 +91,8 @@ inline void *mtl_buffer_contents(MTLBuffer *buffer) {
   return mac::cast_call<void *>(buffer, "contents");
 }
 
+size_t get_max_total_threads_per_threadgroup(
+    MTLComputePipelineState *pipeline_state);
 #endif  // TC_PLATFORM_OSX
 
 bool is_metal_api_available();

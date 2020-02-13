@@ -12,11 +12,6 @@
 
 std::map<HWND, taichi::GUI *> gui_from_hwnd;
 
-static std::string lookup_keysym(WPARAM wParam, LPARAM lParam)
-{
-  return std::string("VirtualKey");
-}
-
 LRESULT CALLBACK WindowProc(HWND hwnd,
                             UINT uMsg,
                             WPARAM wParam,
@@ -49,10 +44,6 @@ LRESULT CALLBACK WindowProc(HWND hwnd,
       break;
     case WM_KEYDOWN:
       key_pressed = true;
-      key_events.push_back(KeyEvent{KeyEvent::Type::press, lookup_keysym(wParam, lParam)});
-      break;
-    case WM_KEYUP:
-      key_events.push_back(KeyEvent{KeyEvent::Type::release, lookup_keysym(wParam, lParam)});
       break;
     case WM_CLOSE:
       exit(0);

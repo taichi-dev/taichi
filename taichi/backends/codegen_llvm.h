@@ -872,7 +872,8 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       TC_ASSERT(snode->type == SNodeType::dynamic);
       stmt->value = call(snode, stmt->ptr->value, "get_num_elements", {});
     } else if (stmt->op_type == SNodeOpType::is_active) {
-      stmt->value = call(snode, stmt->ptr->value, "is_active", {stmt->val->value});
+      stmt->value =
+          call(snode, stmt->ptr->value, "is_active", {stmt->val->value});
     } else if (stmt->op_type == SNodeOpType::deactivate) {
       TC_ASSERT(snode->type == SNodeType::pointer ||
                 snode->type == SNodeType::dynamic);
@@ -1076,6 +1077,10 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
 
   BasicBlock *func_body_bb;
 
+  virtual bool kernel_argument_by_val() const {
+    return false;  // on CPU devices just pass in a pointer
+  }
+
   std::string init_offloaded_task_function(OffloadedStmt *stmt,
                                            std::string suffix = "") {
     while_after_loop = nullptr;
@@ -1098,6 +1103,9 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       kernel_args.push_back(&arg);
     }
     kernel_args[0]->setName("context");
+
+    if (kernel_argument_by_val())
+      func->addParamAttr(0, llvm::Attribute::ByVal);
 
     // entry_block has all the allocas
     this->entry_block = BasicBlock::Create(*llvm_context, "entry", func);

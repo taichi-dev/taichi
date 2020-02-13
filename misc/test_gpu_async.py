@@ -14,3 +14,5 @@ for i in range(100):
   t = time.time()
   fill(i)
   print(time.time() - t)
+
+print(a[0])

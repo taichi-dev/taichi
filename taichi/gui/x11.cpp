@@ -90,13 +90,11 @@ void GUI::process_event() {
             KeyEvent{KeyEvent::Type::release, lookup_button(&ev), cursor_pos});
         break;
       case KeyPress:
-        set_mouse_pos(ev.xkey.x, height - ev.xkey.y - 1);
         key_pressed = true;
         key_events.push_back(
             KeyEvent{KeyEvent::Type::press, lookup_keysym(&ev), cursor_pos});
         break;
       case KeyRelease:
-        set_mouse_pos(ev.xkey.x, height - ev.xkey.y - 1);
         key_events.push_back(
             KeyEvent{KeyEvent::Type::release, lookup_keysym(&ev), cursor_pos});
         break;

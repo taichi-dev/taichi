@@ -76,10 +76,30 @@ LRESULT CALLBACK WindowProc(HWND hwnd,
     case WM_LBUTTONDOWN:
       gui->mouse_event(
           GUI::MouseEvent{GUI::MouseEvent::Type::press, gui->cursor_pos});
+      gui->key_events.push_back(
+          GUI::KeyEvent{GUI::KeyEvent::Type::press, "LMB", gui->cursor_pos});
       break;
     case WM_LBUTTONUP:
       gui->mouse_event(
           GUI::MouseEvent{GUI::MouseEvent::Type::release, gui->cursor_pos});
+      gui->key_events.push_back(
+          GUI::KeyEvent{GUI::KeyEvent::Type::release, "LMB", gui->cursor_pos});
+      break;
+    case WM_MBUTTONDOWN:
+      gui->key_events.push_back(
+          GUI::KeyEvent{GUI::KeyEvent::Type::press, "MMB", gui->cursor_pos});
+      break;
+    case WM_MBUTTONUP:
+      gui->key_events.push_back(
+          GUI::KeyEvent{GUI::KeyEvent::Type::release, "MMB", gui->cursor_pos});
+      break;
+    case WM_RBUTTONDOWN:
+      gui->key_events.push_back(
+          GUI::KeyEvent{GUI::KeyEvent::Type::press, "RMB", gui->cursor_pos});
+      break;
+    case WM_RBUTTONUP:
+      gui->key_events.push_back(
+          GUI::KeyEvent{GUI::KeyEvent::Type::release, "RMB", gui->cursor_pos});
       break;
     case WM_MOUSEMOVE:
       x = GET_X_LPARAM(lParam);
@@ -93,11 +113,13 @@ LRESULT CALLBACK WindowProc(HWND hwnd,
     case WM_KEYDOWN:
       gui->key_pressed = true;
       gui->key_events.push_back(
-          GUI::KeyEvent{GUI::KeyEvent::Type::press, lookup_keysym(wParam, lParam), cursor_pos});
+          GUI::KeyEvent{GUI::KeyEvent::Type::press,
+          lookup_keysym(wParam, lParam), gui->cursor_pos});
       break;
     case WM_KEYUP:
       gui->key_events.push_back(
-          GUI::KeyEvent{GUI::KeyEvent::Type::release, lookup_keysym(wParam, lParam), cursor_pos});
+          GUI::KeyEvent{GUI::KeyEvent::Type::release,
+          lookup_keysym(wParam, lParam), gui->cursor_pos});
       break;
     case WM_CLOSE:
       exit(0);

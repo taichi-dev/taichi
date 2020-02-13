@@ -118,6 +118,12 @@ void dispatch_threadgroups(MTLComputeCommandEncoder *encoder, int32_t blocks_x,
        threads_per_threadgroup);
 }
 
+size_t get_max_total_threads_per_threadgroup(
+    MTLComputePipelineState *pipeline_state) {
+  // The value of the pointer returned by call is the actual result
+  return (size_t)call(pipeline_state, "maxTotalThreadsPerThreadgroup");
+}
+
 #endif  // TC_PLATFORM_OSX
 
 bool is_metal_api_available() {

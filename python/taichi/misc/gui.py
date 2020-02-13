@@ -16,6 +16,8 @@ class GUI:
   DOWN = 'Down'
   LEFT = 'Left'
   RIGHT = 'Right'
+  RELEASE = False
+  PRESS = True
 
   def __init__(self, name, res=512, background_color=0x0):
     import taichi as ti
@@ -110,21 +112,26 @@ class GUI:
     self.core.wait_key_event()
     key = self.core.get_key_event_head_key()
     type = self.core.get_key_event_head_type()
-    if type is True:
+    if type == PRESS:
       self.key_pressed.add(key)
     else:
       self.key_pressed.discard(key)
     self.core.pop_key_event_head()
     return key, type
 
-  def is_pressed(self, key):
-    if key in ['Shift', 'Alt', 'Control']:
-      return key + '_L' in self.key_pressed or key + '_R' in self.key_pressed
-    return key in self.key_pressed
+  def is_pressed(self, *keys):
+    for key in keys:
+      if key in ['Shift', 'Alt', 'Control']:
+        if key + '_L' in self.key_pressed or key + '_R' in self.key_pressed:
+          return True
+      elif key in self.key_pressed:
+        return True
+    else:
+      return False
 
   def wait_key():
     while True:
       key, type = self.get_key_event()
-      if type is True:
+      if type == PRESS:
         return key
 

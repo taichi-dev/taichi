@@ -601,7 +601,6 @@ Ptr Runtime_initialize(Runtime **runtime_ptr,
                        Ptr prog,
                        int num_snodes,
                        uint64_t root_size,
-                       int root_id,
                        void *_vm_allocator,
                        bool verbose) {
   // bootstrap
@@ -611,7 +610,8 @@ Ptr Runtime_initialize(Runtime **runtime_ptr,
   runtime->vm_allocator = vm_allocator;
   runtime->prog = prog;
   if (verbose)
-    printf("Initializing runtime with %d snode(s)...\n", num_snodes);
+    printf("[runtime.cpp: Initializing runtime with %d snode(s)...]\n",
+           num_snodes);
 
   // runtime->allocate ready to use
   runtime->mem_req_queue = (MemRequestQueue *)runtime->allocate_aligned(
@@ -628,7 +628,7 @@ Ptr Runtime_initialize(Runtime **runtime_ptr,
     initialize_rand_state(&runtime->rand_states[i], i);
 
   if (verbose)
-    printf("Runtime initialized.\n");
+    printf("[runtime.cpp: Runtime initialized.]\n");
   return (Ptr)root_ptr;
 }
 

@@ -2,6 +2,7 @@
 #include "llvm_jit.h"
 #include <taichi/profiler.h>
 #include <taichi/cuda_utils.h>
+#include <mutex>
 
 TLANG_NAMESPACE_BEGIN
 
@@ -14,6 +15,8 @@ class CUDAContext {
   std::string mcpu;
 
  public:
+  std::mutex lock;
+
   CUDAContext();
 
   bool detected() const {
@@ -36,7 +39,7 @@ class CUDAContext {
   }
 
   void make_current() {
-    check_cuda_errors(cuCtxSetCurrent(context));
+    check_cuda_error(cuCtxSetCurrent(context));
   }
 
   ~CUDAContext();
@@ -47,20 +50,25 @@ class CUDAContext {
 
    public:
     ContextGuard(CUDAContext *ctx) {
-      check_cuda_errors(cuCtxGetCurrent(&old_ctx));
+      check_cuda_error(cuCtxGetCurrent(&old_ctx));
       ctx->make_current();
     }
 
     ~ContextGuard() {
-      check_cuda_errors(cuCtxSetCurrent(old_ctx));
+      check_cuda_error(cuCtxSetCurrent(old_ctx));
     }
   };
 
   ContextGuard get_guard() {
     return ContextGuard(this);
   }
+
+  std::lock_guard<std::mutex> &&get_lock_guard() {
+    return std::move(std::lock_guard<std::mutex>(lock));
+  }
 };
 
+// TODO: remove this global var
 extern std::unique_ptr<CUDAContext> cuda_context;
 
 TLANG_NAMESPACE_END

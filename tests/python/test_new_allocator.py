@@ -64,3 +64,18 @@ def test_matrix():
 
   for i in range(N):
     assert x[i][1, 1] == i + 3
+    
+@ti.all_archs
+def test_alloc_in_kernel():
+  return # build bots may not have this much memory to tests...
+  x = ti.var(ti.f32)
+  
+  ti.root.dense(ti.i, 8192).pointer().dense(ti.i, 1024 * 1024).place(x)
+  
+
+  @ti.kernel
+  def touch():
+    for i in range(4096):
+      x[i * 1024 * 1024] = 1
+      
+  touch()

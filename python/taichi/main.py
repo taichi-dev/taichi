@@ -28,7 +28,7 @@ def test_cpp():
   ti.reset()
   print("Running C++ tests...")
   task = ti.Task('test')
-  return task.run(*sys.argv[2:])
+  return int(task.run(*sys.argv[2:]))
 
 
 def main(debug=False):
@@ -221,6 +221,7 @@ def main(debug=False):
     task.run(*sys.argv[2:])
   print()
   print(">>> Running time: {:.2f}s".format(time.time() - t))
+  return 0
 
 
 def main_debug():

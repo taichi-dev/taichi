@@ -317,6 +317,8 @@ class Canvas {
                        real radius_single,
                        std::size_t radius_array);
 
+  void circle_single(real x, real y, uint32 color, real radius);
+
   Line &path(real xa, real ya, real xb, real yb) {
     return path(Vector2(xa, ya), Vector2(xb, yb));
   }

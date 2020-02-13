@@ -319,6 +319,10 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
     }
   }
 
+  bool kernel_argument_by_val() const override {
+    return true;  // on CUDA, pass the argument by value
+  }
+
   void visit(OffloadedStmt *stmt) override {
 #if defined(TI_WITH_CUDA)
     using Type = OffloadedStmt::TaskType;

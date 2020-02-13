@@ -38,6 +38,7 @@ void export_visual(py::module &m) {
            static_cast<Line &(Canvas::*)(Vector2, Vector2)>(&Canvas::path),
            py::return_value_policy::reference)
       .def("circles_batched", &Canvas::circles_batched)
+      .def("circle_single", &Canvas::circle_single)
       .def("circle", static_cast<Circle &(Canvas::*)(Vector2)>(&Canvas::circle),
            py::return_value_policy::reference);
   py::class_<Line>(m, "Line")

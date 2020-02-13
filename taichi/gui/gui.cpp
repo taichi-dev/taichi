@@ -26,4 +26,8 @@ void Canvas::circles_batched(int n,
   }
 }
 
+void Canvas::circle_single(real x, real y, uint32 color, real radius) {
+  circle(x, y).radius(radius).color(color).finish();
+}
+
 TC_NAMESPACE_END

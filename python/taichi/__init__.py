@@ -8,6 +8,7 @@ from taichi.misc import *
 from taichi.misc.gui import GUI
 from taichi.misc.task import Task
 from taichi.misc import settings as settings
+from taichi.misc.gui import rgb_to_hex
 from taichi.misc.settings import *
 from taichi.tools.video import VideoManager
 from taichi.tools.file import *

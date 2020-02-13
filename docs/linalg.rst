@@ -8,10 +8,10 @@ Matrices
 - ``ti.Matrix`` is for small matrices (e.g. `3x3`) only. If you have `64x64` matrices, you should consider using a 2D tensor of scalars.
 - ``ti.Vector`` is the same as ``ti.Matrix``, except that it has only one column.
 - Differentiate element-wise product ``*`` and matrix product ``@``.
-- ``ti.transposed(A)``
+- ``ti.transposed(A)`` or simply ``A.T()``
 - ``ti.inverse(A)``
 - ``ti.Matrix.abs(A)``
-- ``ti.trace(A)``
+- ``ti.tr(A)``
 - ``ti.determinant(A, type)``
 - ``A.cast(type)``
 - ``R, S = ti.polar_decompose(A, ti.f32)``

@@ -2,7 +2,6 @@ import taichi as ti
 
 @ti.all_archs
 def test_singleton():
-  ti.cfg.print_ir = True
   x = ti.var(ti.i32, shape=())
 
   @ti.kernel

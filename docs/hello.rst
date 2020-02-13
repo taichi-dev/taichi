@@ -30,7 +30,7 @@ Now you are ready to run the Taichi code below (``python3 fractal.py``) to compu
 
   import taichi as ti
 
-  ti.cfg.arch = ti.cuda # Run on GPU by default
+  ti.init(arch=ti.cuda) # Run on GPU by default
 
   n = 320
   pixels = ti.var(dt=ti.f32, shape=(n * 2, n))

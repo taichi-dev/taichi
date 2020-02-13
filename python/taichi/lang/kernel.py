@@ -265,11 +265,12 @@ class Kernel:
         if isinstance(needed, template):
           continue
         provided = type(v)
-        if needed == f32 or needed == f64:
+        # Note: use needed is f32 instead of needed == f32. The latter is slow.
+        if needed is f32 or needed is f64:
           if not isinstance(v, (float, int)):
             raise KernelArgError(i, needed, provided)
           t_kernel.set_arg_float(actual_argument_slot, float(v))
-        elif needed == i32 or needed == i64:
+        elif needed is i32 or needed is i64:
           if not isinstance(v, int):
             raise KernelArgError(i, needed, provided)
           t_kernel.set_arg_int(actual_argument_slot, int(v))

@@ -322,6 +322,7 @@ class Kernel:
       if not self.classkernel and self.runtime.target_tape and not self.runtime.inside_complex_kernel:
         self.runtime.target_tape.insert(self, args)
 
+      
       t_kernel()
 
       if callbacks:

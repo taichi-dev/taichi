@@ -3,7 +3,6 @@ import datetime
 import platform
 import random
 import taichi
-import time
 
 
 def get_os_name():
@@ -313,15 +312,17 @@ def get_line_number(asc=0):
 def log_info(fmt, *args, **kwargs):
   tc.core.log_info(fmt.format(*args, **kwargs))
 
-
 def get_logging(name):
 
   def logger(msg, *args, **kwargs):
     msg_formatted = msg.format(*args, **kwargs)
     func = getattr(taichi.core, name)
-    func('[{}:{}@{}] {}'.format(
-        get_file_name(1), get_function_name(1), get_line_number(1),
-        msg_formatted))
+    stk = inspect.stack()[2]
+    file_name = stk[1]
+    lineno = stk[2]
+    func_name = stk[3]
+    msg = f'[{file_name}:{func_name}@{lineno}] {msg_formatted}'
+    func(msg)
 
   return logger
 

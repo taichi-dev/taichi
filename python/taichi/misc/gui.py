@@ -122,6 +122,10 @@ class GUI:
     e.key = self.core.get_key_event_head_key()
     e.type = self.core.get_key_event_head_type()
     e.pos = self.core.get_key_event_head_pos()
+    e.modifier = []
+    for mod in ['Shift', 'Alt', 'Control']:
+      if self.is_pressed(mod):
+        e.modifier.append(mod)
     if e.type == GUI.PRESS:
       self.key_pressed.add(e.key)
     else:

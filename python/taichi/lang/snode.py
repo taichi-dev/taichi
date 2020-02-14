@@ -8,13 +8,10 @@ class SNode:
       dimensions = [dimensions] * len(indices)
     return SNode(self.ptr.dense(indices, dimensions))
 
-  def dense_pointer(self, indices, dimensions):
+  def pointer(self, indices, dimensions):
     if isinstance(dimensions, int):
       dimensions = [dimensions] * len(indices)
-    return SNode(self.ptr.dense_pointer(indices, dimensions))
-  
-  def pointer(self, *args, **kwargs):
-    return self.dense_pointer(*args, **kwargs)
+    return SNode(self.ptr.pointer(indices, dimensions))
 
   def hash(self, indices, dimensions):
     if isinstance(dimensions, int):
@@ -76,6 +73,6 @@ class SNode:
     for c in ch:
       c.deactivate_all()
     import taichi as ti
-    if self.ptr.type == ti.core.SNodeType.dense_pointer:
+    if self.ptr.type == ti.core.SNodeType.pointer:
       from .meta import snode_deactivate
       snode_deactivate(self)

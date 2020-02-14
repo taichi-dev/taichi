@@ -151,7 +151,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     if (snode->type == SNodeType::dense) {
       auto element_ty = snode_attr[snode].llvm_body_type->getArrayElementType();
       element_size = tlctx->get_type_size(element_ty);
-    } else if (snode->type == SNodeType::dense_pointer) {
+    } else if (snode->type == SNodeType::pointer) {
       auto element_ty = tlctx->snode_attr[snode->ch[0]].llvm_type;
       element_size = tlctx->get_type_size(element_ty);
     } else {
@@ -198,9 +198,9 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       emit_struct_meta_base("Dense", meta->ptr, snode);
       meta->call("set_bitmasked", tlctx->get_constant(snode->_bitmasked));
       meta->call("set_morton_dim", tlctx->get_constant((int)snode->_morton));
-    } else if (snode->type == SNodeType::dense_pointer) {
-      meta = std::make_unique<RuntimeObject>("Dense_PointerMeta", this, builder);
-      emit_struct_meta_base("Dense_Pointer", meta->ptr, snode);
+    } else if (snode->type == SNodeType::pointer) {
+      meta = std::make_unique<RuntimeObject>("pointerMeta", this, builder);
+      emit_struct_meta_base("pointer", meta->ptr, snode);
     } else if (snode->type == SNodeType::root) {
       meta = std::make_unique<RuntimeObject>("RootMeta", this, builder);
       emit_struct_meta_base("Root", meta->ptr, snode);
@@ -913,7 +913,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       stmt->value =
           call(snode, stmt->ptr->value, "is_active", {stmt->val->value});
     } else if (stmt->op_type == SNodeOpType::deactivate) {
-      if (snode->type == SNodeType::dense_pointer || snode->type == SNodeType::hash) {
+      if (snode->type == SNodeType::pointer || snode->type == SNodeType::hash) {
         stmt->value =
             call(snode, stmt->ptr->value, "deactivate", {stmt->val->value});
       } else if (snode->type == SNodeType::dynamic) {
@@ -988,8 +988,8 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       return "Dense";
     } else if (snode->type == SNodeType::dynamic) {
       return "Dynamic";
-    } else if (snode->type == SNodeType::dense_pointer) {
-      return "Dense_Pointer";
+    } else if (snode->type == SNodeType::pointer) {
+      return "pointer";
     } else if (snode->type == SNodeType::hash) {
       return "Hash";
     } else {
@@ -1065,7 +1065,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     if (snode->type == SNodeType::root) {
       stmt->value = builder->CreateGEP(parent, stmt->input_index->value);
     } else if (snode->type == SNodeType::dense ||
-               snode->type == SNodeType::dense_pointer ||
+               snode->type == SNodeType::pointer ||
                snode->type == SNodeType::dynamic) {
       if (stmt->activate) {
         call(snode, stmt->input_snode->value, "activate",

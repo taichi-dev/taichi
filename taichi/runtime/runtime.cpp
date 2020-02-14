@@ -951,7 +951,7 @@ i32 linear_thread_idx() {
 
 #include "node_dense.h"
 #include "node_dynamic.h"
-#include "node_dense_pointer.h"
+#include "node_pointer.h"
 #include "node_root.h"
 
 #include "internal_function.h"

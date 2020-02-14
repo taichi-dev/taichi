@@ -1,10 +1,10 @@
 #include "metal_api.h"
 
-#ifdef TC_SUPPORTS_METAL
-
 TLANG_NAMESPACE_BEGIN
 
 namespace metal {
+
+#ifdef TC_PLATFORM_OSX
 
 extern "C" {
 id MTLCreateSystemDefaultDevice();
@@ -18,7 +18,7 @@ using mac::clscall;
 using mac::nsobj_unique_ptr;
 using mac::wrap_as_nsobj_unique_ptr;
 
-} // namespace
+}  // namespace
 
 nsobj_unique_ptr<MTLDevice> mtl_create_system_default_device() {
   id dev = MTLCreateSystemDefaultDevice();
@@ -35,15 +35,15 @@ nsobj_unique_ptr<MTLCommandBuffer> new_command_buffer(MTLCommandQueue *queue) {
   return wrap_as_nsobj_unique_ptr(buffer);
 }
 
-nsobj_unique_ptr<MTLComputeCommandEncoder>
-new_compute_command_encoder(MTLCommandBuffer *buffer) {
+nsobj_unique_ptr<MTLComputeCommandEncoder> new_compute_command_encoder(
+    MTLCommandBuffer *buffer) {
   auto *encoder =
       cast_call<MTLComputeCommandEncoder *>(buffer, "computeCommandEncoder");
   return wrap_as_nsobj_unique_ptr(encoder);
 }
 
-nsobj_unique_ptr<MTLLibrary>
-new_library_with_source(MTLDevice *device, const std::string &source) {
+nsobj_unique_ptr<MTLLibrary> new_library_with_source(
+    MTLDevice *device, const std::string &source) {
   auto source_str = mac::wrap_string_as_ns_string(source);
 
   id options = clscall("MTLCompileOptions", "alloc");
@@ -118,8 +118,25 @@ void dispatch_threadgroups(MTLComputeCommandEncoder *encoder, int32_t blocks_x,
        threads_per_threadgroup);
 }
 
-} // namespace metal
+size_t get_max_total_threads_per_threadgroup(
+    MTLComputePipelineState *pipeline_state) {
+  // The value of the pointer returned by call is the actual result
+  return (size_t)call(pipeline_state, "maxTotalThreadsPerThreadgroup");
+}
+
+#endif  // TC_PLATFORM_OSX
+
+bool is_metal_api_available() {
+#ifdef TC_PLATFORM_OSX
+  // If the macOS is provided by a VM (e.g. Travis CI), it's possible that there
+  // is no GPU device, so we still have to do a runtime check.
+  auto device = mtl_create_system_default_device();
+  return device != nullptr;
+#else
+  return false;
+#endif
+}
+
+}  // namespace metal
 
 TLANG_NAMESPACE_END
-
-#endif  // TC_SUPPORTS_METAL

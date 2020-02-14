@@ -1,5 +1,9 @@
 #include <string>
 
+#include <taichi/common/util.h>
+
+#ifdef TC_PLATFORM_OSX
+
 #include <objc/message.h>
 #include <objc/objc.h>
 #include <objc/runtime.h>
@@ -50,3 +54,5 @@ nsobj_unique_ptr<TC_NSString> wrap_string_as_ns_string(const std::string &str);
 
 }  // namespace mac
 }  // namespace taichi
+
+#endif  // TC_PLATFORM_OSX

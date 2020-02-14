@@ -44,13 +44,13 @@ When creating a Taichi program using ``ti.init(arch=desired_arch, **kwargs)``, p
   and ``print(y[42])`` will call the reading accessor kernel of ``y``.
 
 Efficient Code Navigation across Python/C++
-------------------------------------------------
+-------------------------------------------
 If you work on the language frontend (Python/C++ interface), to navigate around the code base, `ffi-navigator <https://github.com/tqchen/ffi-navigator>`_
 allows you to jump from Python bindings to their definitions in C++.
 Follow their README to set up your editor.
 
 Testing
--------------
+-------
 
 Tests should be added to ``taichi/tests/python``.
 
@@ -62,3 +62,9 @@ Documentation
 
 Use ``ti doc`` to build the documentation locally.
 Open the documentation at ``taichi/doc/build/index.html``.
+
+C++ and Python standards
+------------------------
+
+The C++ part of Taichi is written in C++17, and Python part in 3.6+.
+You can assume that C++17 and Python 3.6 features are always available.

@@ -52,25 +52,25 @@ void Kernel::operator()() {
     for (int i = 0; i < (int)args.size(); i++) {
       if (args[i].is_nparray) {
         has_buffer = true;
-        check_cuda_errors(cudaMalloc(&device_buffers[i], args[i].size));
+        check_cuda_error(cudaMalloc(&device_buffers[i], args[i].size));
         // replace host buffer with device buffer
         host_buffers[i] = program.context.get_arg<void *>(i);
         set_arg_nparray(i, (uint64)device_buffers[i], args[i].size);
-        check_cuda_errors(cudaMemcpy(device_buffers[i], host_buffers[i],
+        check_cuda_error(cudaMemcpy(device_buffers[i], host_buffers[i],
                                      args[i].size, cudaMemcpyHostToDevice));
       }
     }
     if (has_buffer)
-      check_cuda_errors(cudaDeviceSynchronize());
+      check_cuda_error(cudaDeviceSynchronize());
     auto c = program.get_context();
     compiled(c);
     if (has_buffer)
-      check_cuda_errors(cudaDeviceSynchronize());
+      check_cuda_error(cudaDeviceSynchronize());
     for (int i = 0; i < (int)args.size(); i++) {
       if (args[i].is_nparray) {
-        check_cuda_errors(cudaMemcpy(host_buffers[i], device_buffers[i],
+        check_cuda_error(cudaMemcpy(host_buffers[i], device_buffers[i],
                                      args[i].size, cudaMemcpyDeviceToHost));
-        check_cuda_errors(cudaFree(device_buffers[i]));
+        check_cuda_error(cudaFree(device_buffers[i]));
       }
     }
 #else

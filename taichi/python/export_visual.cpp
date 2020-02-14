@@ -25,6 +25,13 @@ void export_visual(py::module &m) {
                          img.get_data_size());
            })
       .def("screenshot", &GUI::screenshot)
+      .def("has_key_event", &GUI::has_key_event)
+      .def("wait_key_event", &GUI::wait_key_event)
+      .def("get_key_event_head_key", &GUI::get_key_event_head_key)
+      .def("get_key_event_head_type", &GUI::get_key_event_head_type)
+      .def("get_key_event_head_pos", &GUI::get_key_event_head_pos)
+      .def("pop_key_event_head", &GUI::pop_key_event_head)
+      .def("get_cursor_pos", &GUI::get_cursor_pos)
       .def("update", &GUI::update);
   py::class_<Canvas>(m, "Canvas")
       .def("clear", static_cast<void (Canvas::*)(int)>(&Canvas::clear))
@@ -33,6 +40,7 @@ void export_visual(py::module &m) {
            static_cast<Line &(Canvas::*)(Vector2, Vector2)>(&Canvas::path),
            py::return_value_policy::reference)
       .def("circles_batched", &Canvas::circles_batched)
+      .def("circle_single", &Canvas::circle_single)
       .def("circle", static_cast<Circle &(Canvas::*)(Vector2)>(&Canvas::circle),
            py::return_value_policy::reference);
   py::class_<Line>(m, "Line")

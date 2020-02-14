@@ -3,8 +3,9 @@ Why new programming language
 
 Taichi is a high-performance programming language for computer graphics applications. The design goals are
 
-- Performance
 - Productivity
+- Performance
+- Portability
 - Spatially sparse computation
 - Differentiable programming
 - Metaprogramming

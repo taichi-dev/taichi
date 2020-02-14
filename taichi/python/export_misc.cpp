@@ -13,6 +13,7 @@
 #include <taichi/system/memory.h>
 #include <taichi/system/unit_dll.h>
 #include <taichi/geometry/factory.h>
+#include <taichi/platform/metal/metal_api.h>
 #if defined(TI_WITH_CUDA)
 #include <cuda_runtime_api.h>
 #endif
@@ -84,14 +85,6 @@ bool with_cuda() {
 #endif
 }
 
-bool with_metal() {
-#if defined(TC_SUPPORTS_METAL)
-  return true;
-#else
-  return false;
-#endif
-}
-
 void export_misc(py::module &m) {
   py::class_<Config>(m, "Config");
   py::register_exception_translator([](std::exception_ptr p) {
@@ -137,6 +130,9 @@ void export_misc(py::module &m) {
   m.def("set_core_state_python_imported", CoreState::set_python_imported);
   m.def("set_logging_level",
         [](const std::string &level) { logger.set_level(level); });
+  m.def("logging_effective", [](const std::string &level) {
+    return logger.is_level_effective(level);
+  });
   m.def("set_logging_level_default", []() { logger.set_level_default(); });
   m.def("set_core_trigger_gdb_when_crash",
         CoreState::set_trigger_gdb_when_crash);
@@ -167,7 +163,7 @@ void export_misc(py::module &m) {
     printf("test was successful.\n");
   });
   m.def("with_cuda", with_cuda);
-  m.def("with_metal", with_metal);
+  m.def("with_metal", taichi::Tlang::metal::is_metal_api_available);
 }
 
 TC_NAMESPACE_END

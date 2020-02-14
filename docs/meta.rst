@@ -49,7 +49,7 @@ Compile-time evaluations
 Using compile-time evaluation will allow certain computation to happen when kernels are instantiated.
 Such computation has no overhead at runtime.
 
-* Use ``ti.static`` for compile-time branching (for those who come from C++17, this is `if constexpr <https://en.cppreference.com/w/cpp/language/if>`_.
+* Use ``ti.static`` for compile-time branching (for those who come from C++17, this is `if constexpr <https://en.cppreference.com/w/cpp/language/if>`_.)
 
 .. code-block:: python
 

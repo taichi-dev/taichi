@@ -49,10 +49,6 @@ static_assert(false, "32-bit Windows systems are not supported")
 // OSX
 #if defined(__APPLE__)
 #define TC_PLATFORM_OSX
-// According to https://developer.apple.com/documentation/metal?language=objc,
-// Metal is supported since macOS 10.11+, so we can just assume that it is
-// available for all Mac users?
-#define TC_SUPPORTS_METAL
 #endif
 
 #if (defined(TC_PLATFORM_LINUX) || defined(TC_PLATFORM_OSX))
@@ -357,8 +353,11 @@ TC_NAMESPACE_BEGIN
 #define TC_FLUSH_LOGGER \
   { taichi::logger.flush(); };
 
+
 class Logger {
+private:
   std::shared_ptr<spdlog::logger> console;
+  int level;
 
  public:
   Logger();
@@ -370,6 +369,9 @@ class Logger {
   void critical(const std::string &s, bool raise_signal = true);
   void flush();
   void set_level(const std::string &level);
+  bool is_level_effective(const std::string &level_name);
+  int get_level();
+  static int level_enum_from_string(const std::string &level);
   void set_level_default();
 };
 

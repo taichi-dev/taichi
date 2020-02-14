@@ -60,17 +60,15 @@ class KernelTemplateMapper:
 
   def __init__(self, annotations, template_slot_locations):
     self.annotations = annotations
+    self.extractors = tuple((i, anno.extract) for (i, anno) in enumerate(self.annotations) if hasattr(anno, 'extract'))
     self.num_args = len(annotations)
     self.template_slot_locations = template_slot_locations
     self.mapping = {}
 
   def extract(self, args):
     extracted = []
-    for i in range(self.num_args):
-      if hasattr(self.annotations[i], 'extract'):
-        extracted.append(self.annotations[i].extract(args[i]))
-      else:
-        extracted.append(None)
+    for i, extractor in self.extractors:
+      extracted.append(extractor(args[i]))
     return tuple(extracted)
 
   def lookup(self, args):
@@ -82,7 +80,7 @@ class KernelTemplateMapper:
     if key not in self.mapping:
       count = len(self.mapping)
       self.mapping[key] = count
-    return self.mapping[key]
+    return self.mapping[key], key
 
 
 class KernelDefError(Exception):
@@ -177,7 +175,7 @@ class Kernel:
       grad_suffix = "_grad"
     kernel_name = "{}_c{}_{}_{}".format(self.func.__name__, self.kernel_counter, key[1], grad_suffix)
     import taichi as ti
-    ti.info("Compiling kernel {}...".format(kernel_name))
+    ti.trace("Compiling kernel {}...".format(kernel_name))
 
     src = remove_indent(inspect.getsource(self.func))
     tree = ast.parse(src)
@@ -265,14 +263,13 @@ class Kernel:
         if isinstance(needed, template):
           continue
         provided = type(v)
-        if isinstance(needed,
-                      taichi_lang_core.DataType) and needed in [f32, f64]:
-          if type(v) not in [float, int]:
+        # Note: use needed is f32 instead of needed == f32. The latter is slow.
+        if needed is f32 or needed is f64:
+          if not isinstance(v, (float, int)):
             raise KernelArgError(i, needed, provided)
           t_kernel.set_arg_float(actual_argument_slot, float(v))
-        elif isinstance(needed,
-                        taichi_lang_core.DataType) and needed in [i32, i64]:
-          if type(v) not in [int]:
+        elif needed is i32 or needed is i64:
+          if not isinstance(v, int):
             raise KernelArgError(i, needed, provided)
           t_kernel.set_arg_int(actual_argument_slot, int(v))
         elif self.match_ext_arr(v, needed):
@@ -321,7 +318,7 @@ class Kernel:
         actual_argument_slot += 1
       if not self.classkernel and self.runtime.target_tape and not self.runtime.inside_complex_kernel:
         self.runtime.target_tape.insert(self, args)
-
+      
       t_kernel()
 
       if callbacks:
@@ -341,13 +338,13 @@ class Kernel:
       has_array = isinstance(v, torch.Tensor)
     return has_array and needs_array
 
+  # For small kernels (< 3us), the performance can be pretty sensitive to overhead in __call__
+  # Thus this part needs to be fast. (i.e. < 3us on a 4 GHz x64 CPU)
   def __call__(self, *args, **kwargs):
     assert len(kwargs) == 0, 'kwargs not supported for Taichi kernels'
-    instance_id = self.mapper.lookup(args)
+    instance_id, arg_features = self.mapper.lookup(args)
     key = (self.func, instance_id)
-    self.materialize(key=key, args=args, arg_features=self.mapper.extract(args))
-    import taichi as ti
-    ti.debug('Launching Taichi kernel {}...'.format(self.func.__name__))
+    self.materialize(key=key, args=args, arg_features=arg_features)
     return self.compiled_functions[key](*args)
 
 

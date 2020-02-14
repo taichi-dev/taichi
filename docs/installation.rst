@@ -45,4 +45,3 @@ Build with Double Precision (64 bit) Float Point
 
    export TC_USE_DOUBLE=1
    ti build
-

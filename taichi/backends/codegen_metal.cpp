@@ -2,8 +2,6 @@
 
 #include <taichi/ir.h>
 
-#ifdef TC_SUPPORTS_METAL
-
 TLANG_NAMESPACE_BEGIN
 namespace metal {
 namespace {
@@ -21,9 +19,7 @@ class MetalKernelCodegen : public IRVisitor {
     // allow_undefined_visitor = true;
   }
 
-  const std::string &kernel_source_code() const {
-    return kernel_src_code_;
-  }
+  const std::string &kernel_source_code() const { return kernel_src_code_; }
 
   const std::vector<MetalKernelAttributes> &kernels_attribs() const {
     return mtl_kernels_attribs_;
@@ -557,9 +553,7 @@ class MetalKernelCodegen : public IRVisitor {
     }
   }
 
-  void push_indent() {
-    indent_ += "  ";
-  }
+  void push_indent() { indent_ += "  "; }
 
   void pop_indent() {
     indent_.pop_back();
@@ -591,11 +585,9 @@ MetalCodeGen::MetalCodeGen(const std::string &kernel_name,
                            const StructCompiledResult *struct_compiled)
     : id_(CodeGenBase::get_kernel_id()),
       taichi_kernel_name_(fmt::format("mtl_k{:04d}_{}", id_, kernel_name)),
-      struct_compiled_(struct_compiled) {
-}
+      struct_compiled_(struct_compiled) {}
 
-FunctionType MetalCodeGen::compile(Program &,
-                                   Kernel &kernel,
+FunctionType MetalCodeGen::compile(Program &, Kernel &kernel,
                                    MetalRuntime *runtime) {
   this->prog_ = &kernel.program;
   this->kernel_ = &kernel;
@@ -739,5 +731,3 @@ FunctionType MetalCodeGen::gen(const SNode &root_snode, MetalRuntime *runtime) {
 
 }  // namespace metal
 TLANG_NAMESPACE_END
-
-#endif  // TC_SUPPORTS_METAL

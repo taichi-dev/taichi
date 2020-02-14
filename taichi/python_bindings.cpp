@@ -102,7 +102,7 @@ void export_lang(py::module &m) {
       .def(py::init<>())
       .def_readonly("config", &Program::config)
       .def("profiler_print", &Program::profiler_print)
-      .def("profiler_print", &Program::profiler_clear)
+      .def("profiler_clear", &Program::profiler_clear)
       .def("finalize", &Program::finalize)
       .def("get_root",
            [&](Program *program) -> SNode * {

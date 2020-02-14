@@ -1,8 +1,6 @@
-#include <taichi/common/util.h>
+#include "objc_api.h"
 
 #ifdef TC_PLATFORM_OSX
-
-#include "objc_api.h"
 
 namespace taichi {
 namespace mac {

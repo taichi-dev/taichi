@@ -250,7 +250,7 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
 
     // TODO(yuanming-hu): move runtime initialization to somewhere else
     auto initialize_runtime = tlctx->lookup_function<std::function<void *(
-        void *, void *, int, std::size_t, int, void *, bool)>>(
+        void *, void *, int, std::size_t, void *, bool)>>(
         "Runtime_initialize");
 
     auto initialize_runtime2 =
@@ -284,10 +284,10 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
     auto root_id = root.id;
     auto prog = this->prog;
     creator = [=]() {
-      TC_INFO("Allocating data structure of size {} B", root_size);
+      TC_TRACE("Allocating data structure of size {} B", root_size);
       auto root = initialize_runtime(
-          &prog->llvm_runtime, prog, (int)snodes.size(), root_size, root_id,
-          (void *)&taichi_allocate_aligned, prog->config.verbose);
+          &prog->llvm_runtime, prog, (int)snodes.size(), root_size,
+          (void *)&taichi_allocate_aligned, logger.get_level() <= 1);
 
       auto mem_req_queue =
           tlctx->lookup_function<std::function<void *(void *)>>(
@@ -310,11 +310,11 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
                 tlctx->get_type_size(snode_attr[snodes[i]].llvm_element_type) *
                     snodes[i]->chunk_size;
           }
-          TC_INFO("Initializing allocator for snode {} (node size {})",
+          TC_TRACE("Initializing allocator for snode {} (node size {})",
                   snodes[i]->id, node_size);
           auto rt = prog->llvm_runtime;
           initialize_allocator(rt, i, node_size);
-          TC_INFO("Allocating ambient element for snode {} (node size {})",
+          TC_TRACE("Allocating ambient element for snode {} (node size {})",
                   snodes[i]->id, node_size);
           allocate_ambient(rt, i);
         }

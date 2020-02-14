@@ -33,8 +33,6 @@ The Taichi Programming Language
 
    data_layout
 
-   performance
-
    sparse
 
    differentiable_programming

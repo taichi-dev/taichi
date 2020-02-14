@@ -178,7 +178,8 @@ class LowerAccess : public IRVisitor {
   }
 
   void visit(SNodeOpStmt *stmt) override {
-    if (SNodeOpStmt::activation_related(stmt->op_type)) {
+    if (SNodeOpStmt::activation_related(stmt->op_type) &&
+        stmt->snode->type != SNodeType::dynamic) {
       if (stmt->val == nullptr) {
         std::vector<SNode *> snodes(stmt->width(), stmt->snode);
         auto proxy_ptr = Stmt::make_typed<GlobalPtrStmt>(snodes, stmt->indices);

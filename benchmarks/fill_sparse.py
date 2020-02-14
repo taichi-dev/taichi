@@ -31,15 +31,15 @@ def benchmark_nested_struct_fill_and_clear():
     for i, j in ti.ndrange(N * 8, N * 8):
       a[i, j] = 2.0
 
-  @ti.kernel
-  def clear():
-    for i, j in a.parent():
-      ti.deactivate(a.parent().parent(), [i, j])
+  #@ti.kernel
+  #def clear():
+  #  for i, j in a.parent():
+  #    ti.deactivate(a.parent().parent(), [i, j])
 
 
   def task():
     fill()
-    clear()
+  #  clear()
 
   return ti.benchmark(task, repeat=30)
 

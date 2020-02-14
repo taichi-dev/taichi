@@ -913,7 +913,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       stmt->value =
           call(snode, stmt->ptr->value, "is_active", {stmt->val->value});
     } else if (stmt->op_type == SNodeOpType::deactivate) {
-      if (snode->type == SNodeType::pointer || snode->type == SNodeType::hash) {
+      if (snode->type == SNodeType::dense_pointer || snode->type == SNodeType::hash) {
         stmt->value =
             call(snode, stmt->ptr->value, "deactivate", {stmt->val->value});
       } else if (snode->type == SNodeType::dynamic) {

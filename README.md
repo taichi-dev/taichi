@@ -48,6 +48,11 @@ python3 -m pip install taichi-nightly-cuda-10-1
 ## Updates
 - (Feb  14, 2020) **v0.5.0 released with a new Apple Metal GPU backend for Mac OS X users!** (by **Ye Kuang [k-ye]**)
    - Just initialize your program with `ti.init(..., arch=ti.metal)` and run Taichi on your Mac GPUs!
+   - A few takeaways if you do want to use the Metal backend:
+     - For now, the Metal backend only supports `dense` SNodes and 32-bit data types. It doesn't support `ti.random()` or `print()`.
+     - Pre-2015 models may encounter some undefined behaviors under certain conditions (e.g. read-after-write). According to our tests, it seems like the memory order on a single GPU thread could go inconsistent on these models.
+     - The `[]` operator in Python is slow in the current implementation. If you need to do a large number of reads, consider dumping all the data to a `numpy` array via `to_numpy()` as a workaround. For writes, consider first generating the data into a `numpy` array, then copying that to the Taichi variables as a whole.
+     - Do NOT expect a performance boost yet, and we are still profiling and tuning the new backend. (So far we only saw a big performance improvement on a 2015 MBP 13-inch model.)
 - (Feb  12, 2020) v0.4.6 released.
    - (For compiler developers) An error will be raised when `TAICHI_REPO_DIR` is not a valid path (by **Yubin Peng [archibate]**)
    - Fixed a CUDA backend deadlock bug

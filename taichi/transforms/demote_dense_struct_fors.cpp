@@ -112,8 +112,8 @@ void demote_dense_struct_fors(IRNode *root) {
     auto s_ = block_body[i];
     if (auto s = s_->cast<StructForStmt>()) {
       auto snode = s->snode->parent;
-      bool all_dense = true;
-      while (snode->type != SNodeType::root) {
+      bool all_dense = snode->type == SNodeType::place;
+      while (all_dense && snode->type != SNodeType::root) {
         if (snode->type != SNodeType::dense) {
           all_dense = false;
         }

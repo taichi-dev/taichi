@@ -76,8 +76,10 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
     }
   } else if (type == SNodeType::pointer) {
     // mutex
-    aux_type = llvm::PointerType::getInt64Ty(*ctx);
-    body_type = llvm::PointerType::getInt8PtrTy(*ctx);
+    aux_type = llvm::ArrayType::get(llvm::PointerType::getInt64Ty(*ctx),
+                                    snode.max_num_elements());
+    body_type = llvm::ArrayType::get(llvm::PointerType::getInt8PtrTy(*ctx),
+                                     snode.max_num_elements());
   } else if (type == SNodeType::dynamic) {
     // mutex and n (number of elements)
     aux_type =

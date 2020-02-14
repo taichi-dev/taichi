@@ -7,9 +7,14 @@ struct PointerMeta : public StructMeta {
 
 STRUCT_FIELD(PointerMeta, _);
 
+i32 Pointer_get_num_elements(Ptr meta, Ptr node) {
+  return ((StructMeta *)meta)->max_num_elements;
+}
+
 void Pointer_activate(Ptr meta, Ptr node, int i) {
-  Ptr lock = node;
-  Ptr &data_ptr = *(Ptr *)(node + 8 + i);
+  auto num_elements = Pointer_get_num_elements(meta, node);
+  Ptr lock = node + 8*i;
+  Ptr &data_ptr = *(Ptr *)(node + 8*(num_elements + i));
   if (data_ptr == nullptr) {
     locked_task(lock, [&] {
       if (data_ptr == nullptr) {
@@ -22,9 +27,10 @@ void Pointer_activate(Ptr meta, Ptr node, int i) {
   }
 }
 
-void Pointer_deactivate(Ptr meta, Ptr node) {
-  Ptr lock = node;
-  Ptr &data_ptr = *(Ptr *)(node + 8);
+void Pointer_deactivate(Ptr meta, Ptr node, int i) {
+  auto num_elements = Pointer_get_num_elements(meta, node);
+  Ptr lock = node + 8*i;
+  Ptr &data_ptr = *(Ptr *)(node + 8*(num_elements + i));
   if (data_ptr != nullptr) {
     locked_task(lock, [&] {
       if (data_ptr != nullptr) {
@@ -39,20 +45,18 @@ void Pointer_deactivate(Ptr meta, Ptr node) {
 }
 
 i32 Pointer_is_active(Ptr meta, Ptr node, int i) {
-  auto data_ptr = *(Ptr *)(node + 8 + i);
+  auto num_elements = Pointer_get_num_elements(meta, node);
+  auto data_ptr = *(Ptr *)(node + 8*(num_elements + i));
   return data_ptr != nullptr;
 }
 
 Ptr Pointer_lookup_element(Ptr meta, Ptr node, int i) {
-  auto data_ptr = *(Ptr *)(node + 8 + i);
+  auto num_elements = Pointer_get_num_elements(meta, node);
+  auto data_ptr = *(Ptr *)(node + 8*(num_elements + i));
   if (data_ptr == nullptr) {
     auto smeta = (StructMeta *)meta;
     auto context = smeta->context;
     data_ptr = (context->runtime)->ambient_elements[smeta->snode_id];
   }
   return data_ptr;
-}
-
-i32 Pointer_get_num_elements(Ptr meta, Ptr node) {
-  return ((StructMeta *)meta)->max_num_elements;;
 }

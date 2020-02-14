@@ -1046,7 +1046,8 @@ u32 cuda_rand_u32(Context *context) {
   // TODO: whether this leads to a deadlock or not depends on how nvcc schedules
   // the instructions...
   while (!done) {
-    if (atomic_exchange_i32((i32 *)lock, 1) == 1) {
+    if (atomic_exchange_i32((i32 *)lock, 1) == 0) {
+      grid_memfence();
       auto &x = state->x;
       auto &y = state->y;
       auto &z = state->z;
@@ -1058,6 +1059,7 @@ u32 cuda_rand_u32(Context *context) {
       w = (w ^ (w >> 19)) ^ (t ^ (t >> 8));
       ret = w;
       done = true;
+      grid_memfence();
       mutex_unlock_i32(lock);
     }
   }

@@ -164,7 +164,8 @@ enum class SNodeOpType : int {
   activate,
   deactivate,
   append,
-  clear
+  clear,
+  undefined
 };
 
 std::string snode_op_type_name(SNodeOpType type);

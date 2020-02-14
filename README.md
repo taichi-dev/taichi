@@ -46,6 +46,20 @@ python3 -m pip install taichi-nightly-cuda-10-1
 - (WIP) Tune the performance of the LLVM backend to match that of the legacy source-to-source backends (Hopefully by mid Feb, 2020. Current progress: setting up/tuning for final benchmarks)
 
 ## Updates
+- (Feb  12, 2020) v0.4.6 released.
+   - (For compiler developers) An error will be raised when `TAICHI_REPO_DIR` is not a valid path (by **Yubin Peng [archibate]**)
+   - Fixed a CUDA backend deadlock bug
+   - Added test selectors `ti.require()` and `ti.archs_excluding()` (by **Ye Kuang [k-ye]**)
+   - `ti.init(**kwargs)` now takes a parameter `debug=True/False`, which turns on debug mode if true
+   - ... or use `TI_DEBUG=1` to turn on debug mode non-intrusively
+   - Fixed `ti.profiler_clear`
+   - Added `GUI.line(begin, end, color, radius)` and `ti.rgb_to_hex`
+   - 
+   - Renamed `ti.trace` (Matrix trace) to `ti.tr`. `ti.trace` is now for logging with `ti.TRACE` level 
+   - Fixed return value of `ti test_cpp` (thanks to **Ye Kuang [k-ye]**)
+   - Raise default loggineg level to `ti.INFO` instead of trace to make the world quiter
+   - General performance/compatibility improvements
+   - Doc updated
 - (Feb   6, 2020) v0.4.5 released.
    - **`ti.init(arch=..., print_ir=..., default_fp=..., default_ip=...)`** now supported. `ti.cfg.xxx` is deprecated
    - **Immediate data layout specification** supported after `ti.init`. No need to wrap data layout definition with `@ti.layout` anymore (unless you intend to do so)

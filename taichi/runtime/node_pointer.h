@@ -1,18 +1,18 @@
 #pragma once
 
 // Specialized Attributes and functions
-struct Dense_PointerMeta : public StructMeta {
+struct pointerMeta : public StructMeta {
   bool _;
 };
 
-STRUCT_FIELD(Dense_PointerMeta, _);
+STRUCT_FIELD(pointerMeta, _);
 
-i32 Dense_Pointer_get_num_elements(Ptr meta, Ptr node) {
+i32 pointer_get_num_elements(Ptr meta, Ptr node) {
   return ((StructMeta *)meta)->max_num_elements;
 }
 
-void Dense_Pointer_activate(Ptr meta, Ptr node, int i) {
-  auto num_elements = Dense_Pointer_get_num_elements(meta, node);
+void pointer_activate(Ptr meta, Ptr node, int i) {
+  auto num_elements = pointer_get_num_elements(meta, node);
   Ptr lock = node + 8*i;
   Ptr &data_ptr = *(Ptr *)(node + 8*(num_elements + i));
   if (data_ptr == nullptr) {
@@ -27,8 +27,8 @@ void Dense_Pointer_activate(Ptr meta, Ptr node, int i) {
   }
 }
 
-void Dense_Pointer_deactivate(Ptr meta, Ptr node, int i) {
-  auto num_elements = Dense_Pointer_get_num_elements(meta, node);
+void pointer_deactivate(Ptr meta, Ptr node, int i) {
+  auto num_elements = pointer_get_num_elements(meta, node);
   Ptr lock = node + 8*i;
   Ptr &data_ptr = *(Ptr *)(node + 8*(num_elements + i));
   if (data_ptr != nullptr) {
@@ -44,14 +44,14 @@ void Dense_Pointer_deactivate(Ptr meta, Ptr node, int i) {
   }
 }
 
-i32 Dense_Pointer_is_active(Ptr meta, Ptr node, int i) {
-  auto num_elements = Dense_Pointer_get_num_elements(meta, node);
+i32 pointer_is_active(Ptr meta, Ptr node, int i) {
+  auto num_elements = pointer_get_num_elements(meta, node);
   auto data_ptr = *(Ptr *)(node + 8*(num_elements + i));
   return data_ptr != nullptr;
 }
 
-Ptr Dense_Pointer_lookup_element(Ptr meta, Ptr node, int i) {
-  auto num_elements = Dense_Pointer_get_num_elements(meta, node);
+Ptr pointer_lookup_element(Ptr meta, Ptr node, int i) {
+  auto num_elements = pointer_get_num_elements(meta, node);
   auto data_ptr = *(Ptr *)(node + 8*(num_elements + i));
   if (data_ptr == nullptr) {
     auto smeta = (StructMeta *)meta;

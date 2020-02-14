@@ -74,7 +74,7 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
     } else {
       TC_NOT_IMPLEMENTED
     }
-  } else if (type == SNodeType::dense_pointer) {
+  } else if (type == SNodeType::pointer) {
     // mutex
     aux_type = llvm::ArrayType::get(llvm::PointerType::getInt64Ty(*ctx),
                                     snode.max_num_elements());
@@ -298,10 +298,10 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
       initialize_runtime2(prog->llvm_runtime, root, root_id,
                           (int)snodes.size());
       for (int i = 0; i < (int)snodes.size(); i++) {
-        if (snodes[i]->type == SNodeType::dense_pointer ||
+        if (snodes[i]->type == SNodeType::pointer ||
             snodes[i]->type == SNodeType::dynamic) {
           std::size_t node_size;
-          if (snodes[i]->type == SNodeType::dense_pointer)
+          if (snodes[i]->type == SNodeType::pointer)
             node_size =
                 tlctx->get_type_size(snode_attr[snodes[i]].llvm_element_type);
           else {
@@ -351,7 +351,7 @@ std::unique_ptr<StructCompiler> StructCompiler::make(bool use_llvm,
 }
 
 bool SNode::need_activation() const {
-  return type == SNodeType::dense_pointer || type == SNodeType::hash ||
+  return type == SNodeType::pointer || type == SNodeType::hash ||
          (type == SNodeType::dense && _bitmasked) || type == SNodeType::dynamic;
 }
 

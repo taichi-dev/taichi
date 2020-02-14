@@ -2024,7 +2024,7 @@ class SNodeOpExpression : public Expression {
       // is_active cannot be lowered all the way to a global pointer.
       // It should be lowered into a pointer to parent and an index.
       TC_ERROR_IF(
-          snode->type != SNodeType::dense_pointer && snode->type != SNodeType::hash,
+          snode->type != SNodeType::pointer && snode->type != SNodeType::hash,
           "ti.is_active only works on hash and pointer nodes.");
       ret.push_back<SNodeOpStmt>(SNodeOpType::is_active, snode, indices_stmt);
     } else {

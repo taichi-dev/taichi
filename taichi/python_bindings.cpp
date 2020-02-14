@@ -131,9 +131,9 @@ void export_lang(py::module &m) {
            (SNode & (SNode::*)(const std::vector<Index> &,
                                const std::vector<int> &))(&SNode::dense),
            py::return_value_policy::reference)
-      .def("dense_pointer",
+      .def("pointer",
           (SNode & (SNode::*)(const std::vector<Index> &,
-                              const std::vector<int> &))(&SNode::dense_pointer),
+                              const std::vector<int> &))(&SNode::pointer),
           py::return_value_policy::reference)
       .def("hash",
           (SNode & (SNode::*)(const std::vector<Index> &,

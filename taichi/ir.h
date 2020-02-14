@@ -1423,8 +1423,6 @@ class SNodeOpStmt : public Stmt {
 
   SNodeOpStmt(SNodeOpType op_type, SNode *snode, Stmt *ptr, Stmt *val = nullptr)
       : op_type(op_type), snode(snode), ptr(ptr), val(val) {
-    TC_ASSERT((val == nullptr) != (op_type == SNodeOpType::append ||
-                                   op_type == SNodeOpType::is_active));
     add_operand(this->ptr);
     if (val)
       add_operand(this->val);
@@ -1443,6 +1441,11 @@ class SNodeOpStmt : public Stmt {
     }
     width() = 1;
     element_type() = DataType::i32;
+  }
+
+  static bool activation_related(SNodeOpType op) {
+    return op == SNodeOpType::activate || op == SNodeOpType::deactivate ||
+           op == SNodeOpType::is_active;
   }
 
   DEFINE_ACCEPT

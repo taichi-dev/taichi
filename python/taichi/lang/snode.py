@@ -12,6 +12,9 @@ class SNode:
     if isinstance(dimensions, int):
       dimensions = [dimensions] * len(indices)
     return SNode(self.ptr.dense_pointer(indices, dimensions))
+  
+  def pointer(self, *args, **kwargs):
+    return self.dense_pointer(*args, **kwargs)
 
   def hash(self, indices, dimensions):
     if isinstance(dimensions, int):

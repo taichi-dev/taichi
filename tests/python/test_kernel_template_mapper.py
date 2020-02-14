@@ -48,4 +48,4 @@ def test_kernel_template_mapper_numpy():
   mapper = ti.KernelTemplateMapper(annotations, (0, 1, 2))
   assert mapper.lookup((0, 0, np.ones(shape=(1, 2, 3), dtype=np.float32)))[0] == 0
   assert mapper.lookup((0, 0, np.ones(shape=(1, 2, 4), dtype=np.float32)))[0] == 0
-  assert mapper.lookup((0, 0, np.ones(shape=(1, 2, 1), dtype=np.int32)))[0t cm] == 1
+  assert mapper.lookup((0, 0, np.ones(shape=(1, 2, 1), dtype=np.int32)))[0] == 1

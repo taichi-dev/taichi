@@ -10,7 +10,7 @@ def test_pointer():
 
   @ti.layout
   def place():
-    ti.root.dense(ti.i, n).pointer().dense(ti.i, n).place(x)
+    ti.root.pointer(ti.i, n).dense(ti.i, n).place(x)
     ti.root.place(s)
 
   @ti.kernel
@@ -37,7 +37,7 @@ def test_pointer2():
 
   @ti.layout
   def place():
-    ti.root.dense(ti.i, n).pointer().dense(ti.i, n).place(x)
+    ti.root.pointer(ti.i, n).dense(ti.i, n).place(x)
     ti.root.place(s)
 
   @ti.kernel
@@ -62,7 +62,7 @@ def test_nested_struct_fill_and_clear():
 
   @ti.layout
   def place():
-    ti.root.dense(ti.ij, [N, N]).pointer().dense(ti.ij, [8, 8]).place(a)
+    ti.root.pointer(ti.ij, [N, N]).dense(ti.ij, [8, 8]).place(a)
 
   @ti.kernel
   def fill():

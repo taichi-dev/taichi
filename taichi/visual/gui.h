@@ -297,6 +297,10 @@ class Canvas {
     return Vector2(transform_matrix * Vector3(x, 1.0_f));
   }
 
+  TC_FORCE_INLINE Vector2 untransform(Vector2 x) const {
+    return Vector2(inversed(transform_matrix) * Vector3(x, 1.0_f));
+  }
+
   std::vector<Circle> circles;
   std::vector<Line> lines;
 
@@ -494,6 +498,15 @@ class GUI : public GUIBase {
     Vector2i pos;
     bool button_status[3];
   };
+
+  struct KeyEvent {
+    enum class Type { move, press, release };
+    Type type;
+    std::string key;
+    Vector2i pos;
+  };
+
+  std::vector<KeyEvent> key_events;
 
   struct Rect {
     Vector2i pos;
@@ -783,6 +796,36 @@ class GUI : public GUIBase {
                                      last_frame_interval.end(), 0.0_f));
     if (frame_id % 10 == 0)
       set_title(fmt::format("{} ({:.02f} FPS)", window_name, real_fps));
+  }
+
+  bool has_key_event() {
+    return !!key_events.size();
+  }
+
+  void wait_key_event() {
+    while (!key_events.size()) {
+      update();
+    }
+  }
+
+  std::string get_key_event_head_key() {
+    return key_events[0].key;
+  }
+
+  bool get_key_event_head_type() {
+    return key_events[0].type == KeyEvent::Type::press;
+  }
+
+  Vector2 get_key_event_head_pos() {
+    return canvas->untransform(Vector2(key_events[0].pos));
+  }
+
+  Vector2 get_cursor_pos() {
+    return canvas->untransform(Vector2(cursor_pos));
+  }
+
+  void pop_key_event_head() {
+    key_events.erase(key_events.begin());
   }
 
   void wait_key() {

@@ -2,6 +2,30 @@ import numbers
 import numpy as np
 
 class GUI:
+
+  class Event:
+    pass
+
+  SHIFT = 'Shift'
+  ALT = 'Alt'
+  CTRL = 'Control'
+  ESCAPE = 'Escape'
+  RETURN = 'Return'
+  TAB = 'Tab'
+  BACKSPACE = 'BackSpace'
+  SPACE = ' '
+  UP = 'Up'
+  DOWN = 'Down'
+  LEFT = 'Left'
+  RIGHT = 'Right'
+  CAPSLOCK = 'Caps_Lock'
+  MOTION = 'Motion'
+  LMB = 'LMB'
+  MMB = 'MMB'
+  RMB = 'RMB'
+  RELEASE = False
+  PRESS = True
+
   def __init__(self, name, res=512, background_color=0x0):
     import taichi as ti
     self.name = name
@@ -11,6 +35,7 @@ class GUI:
     self.core = ti.core.GUI(name, ti.veci(*res))
     self.canvas = self.core.get_canvas()
     self.background_color = background_color
+    self.key_pressed = set()
     self.clear()
     
   def clear(self, color=None):
@@ -88,6 +113,45 @@ class GUI:
     if file:
       self.core.screenshot(file)
     self.clear(self.background_color)
+
+  def has_key_event(self):
+    return self.core.has_key_event()
+
+  def get_key_event(self):
+    self.core.wait_key_event()
+    e = GUI.Event()
+    e.key = self.core.get_key_event_head_key()
+    e.type = self.core.get_key_event_head_type()
+    e.pos = self.core.get_key_event_head_pos()
+    e.modifier = []
+    for mod in ['Shift', 'Alt', 'Control']:
+      if self.is_pressed(mod):
+        e.modifier.append(mod)
+    if e.type == GUI.PRESS:
+      self.key_pressed.add(e.key)
+    else:
+      self.key_pressed.discard(e.key)
+    self.core.pop_key_event_head()
+    return e
+
+  def is_pressed(self, *keys):
+    for key in keys:
+      if key in ['Shift', 'Alt', 'Control']:
+        if key + '_L' in self.key_pressed or key + '_R' in self.key_pressed:
+          return True
+      elif key in self.key_pressed:
+        return True
+    else:
+      return False
+
+  def get_cursor_pos(self):
+    return self.core.get_cursor_pos()
+
+  def wait_key():
+    while True:
+      key, type = self.get_key_event()
+      if type == GUI.PRESS:
+        return key
 
 def rgb_to_hex(c):
   to255 = lambda x: min(255, max(0, int(x * 255)))

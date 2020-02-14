@@ -136,7 +136,6 @@ def test_pointer3():
         if i+j < 100:
           assert x[i,j] == i+j
 
-
 @ti.archs_support_sparse
 def test_dynamic():
   x = ti.var(ti.i32)
@@ -169,7 +168,7 @@ def test_dynamic():
   @ti.kernel
   def clear():
     for i in range(n):
-      ti.deactivate(x.parent(), i)
+      ti.deactivate(x.parent(), [i])
 
   func(2)
   fetch_length()

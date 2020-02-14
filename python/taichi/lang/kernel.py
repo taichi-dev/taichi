@@ -60,17 +60,15 @@ class KernelTemplateMapper:
 
   def __init__(self, annotations, template_slot_locations):
     self.annotations = annotations
+    self.extractors = tuple((i, anno.extract) for (i, anno) in enumerate(self.annotations) if hasattr(anno, 'extract'))
     self.num_args = len(annotations)
     self.template_slot_locations = template_slot_locations
     self.mapping = {}
 
   def extract(self, args):
     extracted = []
-    for i in range(self.num_args):
-      if hasattr(self.annotations[i], 'extract'):
-        extracted.append(self.annotations[i].extract(args[i]))
-      else:
-        extracted.append(None)
+    for i, extractor in self.extractors:
+      extracted.append(extractor(args[i]))
     return tuple(extracted)
 
   def lookup(self, args):
@@ -82,7 +80,7 @@ class KernelTemplateMapper:
     if key not in self.mapping:
       count = len(self.mapping)
       self.mapping[key] = count
-    return self.mapping[key]
+    return self.mapping[key], key
 
 
 class KernelDefError(Exception):
@@ -340,11 +338,13 @@ class Kernel:
       has_array = isinstance(v, torch.Tensor)
     return has_array and needs_array
 
+  # For small kernels (< 3us), the performance can be pretty sensitive to overhead in __call__
+  # Thus this part needs to be fast. (i.e. < 3us on a 4 GHz x64 CPU)
   def __call__(self, *args, **kwargs):
     assert len(kwargs) == 0, 'kwargs not supported for Taichi kernels'
-    instance_id = self.mapper.lookup(args)
+    instance_id, arg_features = self.mapper.lookup(args)
     key = (self.func, instance_id)
-    self.materialize(key=key, args=args, arg_features=self.mapper.extract(args))
+    self.materialize(key=key, args=args, arg_features=arg_features)
     return self.compiled_functions[key](*args)
 
 

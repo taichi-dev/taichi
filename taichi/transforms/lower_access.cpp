@@ -51,8 +51,8 @@ class LowerAccess : public IRVisitor {
                         SNode *snode,
                         std::vector<Stmt *> indices,
                         bool activate,
-                        bool return_is_active) {
-    if (return_is_active) {
+                        SNodeOpType snode_op = SNodeOpType::undefined) {
+    if (snode_op == SNodeOpType::is_active) {
       // For ti.is_active
       TC_ASSERT(!activate);
     }
@@ -69,7 +69,9 @@ class LowerAccess : public IRVisitor {
       snodes.push_front(snode);
 
     Stmt *last = lowered.push_back<GetRootStmt>();
-    for (int i = 0; i < (int)snodes.size() - 1 + int(return_is_active); i++) {
+    for (int i = 0;
+         i < (int)snodes.size() - 1 + int(snode_op != SNodeOpType::undefined);
+         i++) {
       auto snode = snodes[i];
       std::vector<Stmt *> lowered_indices;
       std::vector<int> strides;
@@ -113,10 +115,9 @@ class LowerAccess : public IRVisitor {
       auto linearized =
           lowered.push_back<LinearizeStmt>(lowered_indices, strides);
 
-      if (return_is_active && i == (int)snodes.size() - 1) {
+      if (snode_op != SNodeOpType::undefined && i == (int)snodes.size() - 1) {
         // Create a SNodeOp querying if element i(linearized) of node is active
-        lowered.push_back<SNodeOpStmt>(SNodeOpType::is_active, snodes[i], last,
-                                       linearized);
+        lowered.push_back<SNodeOpStmt>(snode_op, snodes[i], last, linearized);
       } else {
         auto lookup = lowered.push_back<SNodeLookupStmt>(
             snode, last, linearized,
@@ -132,7 +133,7 @@ class LowerAccess : public IRVisitor {
 
   VecStatement lower_vector_ptr(GlobalPtrStmt *ptr,
                                 bool activate,
-                                bool return_is_active = false) {
+                                SNodeOpType snode_op = SNodeOpType::undefined) {
     VecStatement lowered;
     std::vector<Stmt *> lowered_pointers;
     for (int i = 0; i < ptr->width(); i++) {
@@ -143,8 +144,7 @@ class LowerAccess : public IRVisitor {
         indices.push_back(extractor.get());
         lowered.push_back(std::move(extractor));
       }
-      lower_scalar_ptr(lowered, ptr->snodes[i], indices, activate,
-                       return_is_active);
+      lower_scalar_ptr(lowered, ptr->snodes[i], indices, activate, snode_op);
       TC_ASSERT(lowered.size());
       lowered_pointers.push_back(lowered.back().get());
     }
@@ -178,11 +178,11 @@ class LowerAccess : public IRVisitor {
   }
 
   void visit(SNodeOpStmt *stmt) override {
-    if (stmt->op_type == SNodeOpType::is_active) {
+    if (SNodeOpStmt::activation_related(stmt->op_type)) {
       if (stmt->val == nullptr) {
         std::vector<SNode *> snodes(stmt->width(), stmt->snode);
         auto proxy_ptr = Stmt::make_typed<GlobalPtrStmt>(snodes, stmt->indices);
-        auto lowered = lower_vector_ptr(proxy_ptr.get(), false, true);
+        auto lowered = lower_vector_ptr(proxy_ptr.get(), false, stmt->op_type);
         stmt->replace_with(std::move(lowered), true);
         throw IRModified();
       } else {

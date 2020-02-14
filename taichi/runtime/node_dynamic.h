@@ -38,7 +38,7 @@ void Dynamic_activate(Ptr meta_, Ptr node_, int i) {
   });
 }
 
-void Dynamic_deactivate(Ptr meta_, Ptr node_) {
+void Dynamic_deactivate(Ptr meta_, Ptr node_, int i) {
   auto meta = (DynamicMeta *)(meta_);
   auto node = (DynamicNode *)(node_);
   if (node->n > 0) {

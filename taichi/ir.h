@@ -1423,9 +1423,6 @@ class SNodeOpStmt : public Stmt {
 
   SNodeOpStmt(SNodeOpType op_type, SNode *snode, Stmt *ptr, Stmt *val = nullptr)
       : op_type(op_type), snode(snode), ptr(ptr), val(val) {
-    TC_ASSERT((val == nullptr) != (op_type == SNodeOpType::append ||
-                                   op_type == SNodeOpType::is_active ||
-                                   op_type == SNodeOpType::deactivate));
     add_operand(this->ptr);
     if (val)
       add_operand(this->val);

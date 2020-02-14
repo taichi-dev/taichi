@@ -102,7 +102,7 @@ class LoopGenerator {
       single_loop_body_head(snode);
 
     auto l = loop_variable(snode);
-    if (snode->type == SNodeType::pointer) {
+    if (snode->type == SNodeType::dense_pointer) {
       emit("if (!{}_cache->data) continue;", snode->node_type_name, l);
     }
     if (snode->type != SNodeType::hash || true) {
@@ -148,7 +148,7 @@ class LoopGenerator {
       emit("if ({}_cache && {}_cache->get_n())", leaf->node_type_name,
            leaf->node_type_name);
     }
-    if (leaf->type == SNodeType::pointer) {
+    if (leaf->type == SNodeType::dense_pointer) {
       emit("if ({}_cache->data)", leaf->node_type_name, leaf->node_type_name);
     }
     emit("{{");

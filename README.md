@@ -46,6 +46,8 @@ python3 -m pip install taichi-nightly-cuda-10-1
 - (WIP) Tune the performance of the LLVM backend to match that of the legacy source-to-source backends (Hopefully by mid Feb, 2020. Current progress: setting up/tuning for final benchmarks)
 
 ## Updates
+- (Feb  14, 2020) **v0.5.0 released with a new Apple Metal GPU backend for Mac OS X users!** (by **Ye Kuang [k-ye]**)
+   - Just initialize your program with `ti.init(..., arch=ti.metal)` and run Taichi on your Mac GPUs!
 - (Feb  12, 2020) v0.4.6 released.
    - (For compiler developers) An error will be raised when `TAICHI_REPO_DIR` is not a valid path (by **Yubin Peng [archibate]**)
    - Fixed a CUDA backend deadlock bug

@@ -233,6 +233,7 @@ std::string snode_op_type_name(SNodeOpType type) {
     REGISTER_TYPE(deactivate);
     REGISTER_TYPE(append);
     REGISTER_TYPE(clear);
+    REGISTER_TYPE(undefined);
 #undef REGISTER_TYPE
   }
   return type_names[type];

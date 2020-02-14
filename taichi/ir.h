@@ -1423,6 +1423,9 @@ class SNodeOpStmt : public Stmt {
 
   SNodeOpStmt(SNodeOpType op_type, SNode *snode, Stmt *ptr, Stmt *val = nullptr)
       : op_type(op_type), snode(snode), ptr(ptr), val(val) {
+    TC_ASSERT((val == nullptr) != (op_type == SNodeOpType::append ||
+                                   op_type == SNodeOpType::is_active ||
+                                   op_type == SNodeOpType::deactivate));
     add_operand(this->ptr);
     if (val)
       add_operand(this->val);
@@ -1434,7 +1437,8 @@ class SNodeOpStmt : public Stmt {
       : op_type(op_type), snode(snode), indices(indices) {
     ptr = nullptr;
     val = nullptr;
-    TC_ASSERT(op_type == SNodeOpType::is_active);
+    TC_ASSERT(op_type == SNodeOpType::is_active ||
+              op_type == SNodeOpType::deactivate);
     add_operand(this->ptr);
     for (int i = 0; i < (int)indices.size(); i++) {
       add_operand(this->indices[i]);
@@ -2023,7 +2027,7 @@ class SNodeOpExpression : public Expression {
       // is_active cannot be lowered all the way to a global pointer.
       // It should be lowered into a pointer to parent and an index.
       TC_ERROR_IF(
-          snode->type != SNodeType::pointer && snode->type != SNodeType::hash,
+          snode->type != SNodeType::dense_pointer && snode->type != SNodeType::hash,
           "ti.is_active only works on hash and pointer nodes.");
       ret.push_back<SNodeOpStmt>(SNodeOpType::is_active, snode, indices_stmt);
     } else {

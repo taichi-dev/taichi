@@ -165,7 +165,7 @@ void StructCompiler::generate_types(SNode &snode) {
   } else if (type == SNodeType::dynamic) {
     emit("using {} = dynamic<{}_ch, {}>;", snode.node_type_name,
          snode.node_type_name, snode.n);
-  } else if (type == SNodeType::pointer) {
+  } else if (type == SNodeType::dense_pointer) {
     emit("using {} = pointer<{}_ch>;", snode.node_type_name,
          snode.node_type_name);
   } else if (type == SNodeType::hash) {
@@ -375,7 +375,7 @@ void StructCompiler::run(SNode &root, bool host) {
           "TC_EXPORT AllocatorStat stat_{}() {{return "
           "Managers::get_allocator<{}>()->get_stat();}} ",
           snodes[i]->node_type_name, snodes[i]->node_type_name);
-    if (snodes[i]->type == SNodeType::pointer ||
+    if (snodes[i]->type == SNodeType::dense_pointer ||
         snodes[i]->type == SNodeType::hash) {
       emit(
           "TC_EXPORT void clear_{}(int flags) {{"
@@ -393,7 +393,7 @@ void StructCompiler::run(SNode &root, bool host) {
 
   TC_ASSERT((int)snodes.size() <= max_num_snodes);
   for (int i = 0; i < (int)snodes.size(); i++) {
-    // if (snodes[i]->type == SNodeType::pointer ||
+    // if (snodes[i]->type == SNodeType::dense_pointer ||
     // snodes[i]->type == SNodeType::hashed) {
     if (snodes[i]->type != SNodeType::place) {
       emit(

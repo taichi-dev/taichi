@@ -139,17 +139,17 @@ class SNode {
     return SNode::dense(std::vector<Index>{index}, size);
   }
 
-  SNode &pointer(const std::vector<Index> &indices,
+  SNode &dense_pointer(const std::vector<Index> &indices,
                const std::vector<int> &sizes) {
-    return create_node(indices, sizes, SNodeType::pointer);
+    return create_node(indices, sizes, SNodeType::dense_pointer);
   }
 
-  SNode &pointer(const std::vector<Index> &indices, int sizes) {
-    return create_node(indices, std::vector<int>{sizes}, SNodeType::pointer);
+  SNode &dense_pointer(const std::vector<Index> &indices, int sizes) {
+    return create_node(indices, std::vector<int>{sizes}, SNodeType::dense_pointer);
   }
 
-  SNode &pointer(const Index &index, int size) {
-    return SNode::pointer(std::vector<Index>{index}, size);
+  SNode &dense_pointer(const Index &index, int size) {
+    return SNode::dense_pointer(std::vector<Index>{index}, size);
   }
 
   SNode &hash(const std::vector<Index> &indices,
@@ -256,11 +256,11 @@ class SNode {
   void clear_data_and_deactivate();
 
   bool has_null() const {
-    return type == SNodeType::pointer || type == SNodeType::hash;
+    return type == SNodeType::dense_pointer || type == SNodeType::hash;
   }
 
   bool has_allocator() const {
-    return type == SNodeType::pointer || type == SNodeType::hash ||
+    return type == SNodeType::dense_pointer || type == SNodeType::hash ||
            type == SNodeType::root;
   }
 

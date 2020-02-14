@@ -43,6 +43,8 @@ def benchmark_nested_struct_fill_and_clear():
 
   return ti.benchmark(task, repeat=30)
 
+'''
 ti.init(arch=ti.cuda, enable_profiler=True)
 benchmark_nested_struct_fill_and_clear()
 ti.profiler_print()
+'''

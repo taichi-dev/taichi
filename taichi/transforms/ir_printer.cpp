@@ -86,7 +86,7 @@ class IRPrinter : public IRVisitor {
     if (stmt->val) {
       extras += ", val = " + stmt->val->name();
     }
-    if (!stmt->indices.empty()){
+    if (!stmt->indices.empty()) {
       extras += " index [";
       for (int i = 0; i < (int)stmt->indices.size(); i++) {
         extras += fmt::format("{}", stmt->indices[i]->name());
@@ -343,13 +343,9 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(SNodeLookupStmt *stmt) override {
-    print(
-        "{} = [{}][{}]::lookup({}, {}) coord = {} activate = {}", stmt->name(),
-        stmt->snode->get_node_type_name_hinted(), stmt->snode->type_name(),
-        stmt->input_snode->name(), stmt->input_index->name(),
-        make_list<Stmt *>(stmt->global_indices,
-                          [&](Stmt *const &stmt) { return stmt->name(); }, "{"),
-        stmt->activate);
+    print("{} = [{}][{}]::lookup({}, {}) activate = {}", stmt->name(),
+          stmt->snode->get_node_type_name_hinted(), stmt->snode->type_name(),
+          stmt->input_snode->name(), stmt->input_index->name(), stmt->activate);
   }
 
   void visit(GetChStmt *stmt) override {

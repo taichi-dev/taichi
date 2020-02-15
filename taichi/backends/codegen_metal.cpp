@@ -9,10 +9,6 @@ namespace {
 constexpr char kKernelThreadIdName[] = "utid_";  // 'u' for unsigned
 constexpr char kGlobalTmpsBufferName[] = "global_tmps_addr";
 constexpr char kArgsContextName[] = "args_ctx_";
-// Atomic fetch add for float32
-constexpr char kFAtomicFetchAddFunc[] = "fatomic_fetch_add";
-// Floor div for int32
-constexpr char kIFloordivFunc[] = "ifloordiv";
 
 class MetalKernelCodegen : public IRVisitor {
  public:
@@ -240,8 +236,8 @@ class MetalKernelCodegen : public IRVisitor {
     const auto bin_name = bin->raw_name();
     if (bin->op_type == BinaryOpType::floordiv) {
       if (is_integral(bin->element_type())) {
-        emit("const {} {} = {}({}, {});", dt_name, bin_name, kIFloordivFunc,
-             lhs_name, rhs_name);
+        emit("const {} {} = ifloordiv({}, {});", dt_name, bin_name, lhs_name,
+             rhs_name);
       } else {
         emit("const {} {} = floor({} / {});", dt_name, bin_name, lhs_name,
              rhs_name);
@@ -277,8 +273,8 @@ class MetalKernelCodegen : public IRVisitor {
           "metal::memory_order_relaxed);",
           stmt->raw_name(), stmt->dest->raw_name(), stmt->val->raw_name());
     } else if (dt == DataType::f32) {
-      emit("const float {} = {}({}, {});", stmt->raw_name(),
-           kFAtomicFetchAddFunc, stmt->dest->raw_name(), stmt->val->raw_name());
+      emit("const float {} = fatomic_fetch_add({}, {});", stmt->raw_name(),
+           stmt->dest->raw_name(), stmt->val->raw_name());
     } else {
       TC_NOT_IMPLEMENTED;
     }
@@ -373,13 +369,18 @@ class MetalKernelCodegen : public IRVisitor {
     emit("namespace {{");
     emit("");
     generate_common_functions();
-    emit("");
     kernel_src_code_ += snode_structs_source_code;
     emit("}}  // namespace");
     emit("");
   }
 
   void generate_common_functions() {
+    gen_union_cast();
+    gen_ifloordiv();
+    gen_fatomic_fetch_add_func();
+  }
+
+  void gen_union_cast() {
     // For some reason, if I emit taichi/common.h's union_cast(), Metal failed
     // to compile. More strangely, if I copy the generated code to XCode as a
     // Metal kernel, it compiled successfully...
@@ -389,25 +390,14 @@ class MetalKernelCodegen : public IRVisitor {
     emit("  return *reinterpret_cast<thread const T*>(&g);");
     emit("}}");
     emit("");
-
-    gen_ifloordiv();
-    gen_fatomic_fetch_add_func();
   }
 
   void gen_ifloordiv() {
-    constexpr char kLhs[] = "lhs";
-    constexpr char kRhs[] = "rhs";
-    emit("inline int {}(int {}, int {}) {{", kIFloordivFunc, kLhs, kRhs);
-    push_indent();
-    constexpr char kIntm[] = "intermediate";
-    emit("const int {} = ({} / {});", kIntm, kLhs, kRhs);
-    // Should we construct an AST for this?
-    const auto expr_str = fmt::format(
-        "(({lhs} * {rhs} < 0) && ({rhs} * {intm} != {lhs})) ? ({intm} - 1) "
-        ": {intm}",
-        fmt::arg("lhs", kLhs), fmt::arg("rhs", kRhs), fmt::arg("intm", kIntm));
-    emit("return ({});", expr_str);
-    pop_indent();
+    emit("inline int ifloordiv(int lhs, int rhs) {{");
+    emit("  const int intm = (lhs / rhs);");
+    emit(
+        "  return (((lhs * rhs < 0) && (rhs * intm != lhs)) ? (intm - 1) : "
+        "intm);");
     emit("}}");
     emit("");
   }
@@ -415,31 +405,21 @@ class MetalKernelCodegen : public IRVisitor {
   void gen_fatomic_fetch_add_func() {
     // A huge hack! Metal does not support atomic floating point numbers
     // natively.
-    constexpr char kDest[] = "dest";
-    constexpr char kOperand[] = "operand";
-    emit("float {}(device float* {}, const float {}) {{", kFAtomicFetchAddFunc,
-         kDest, kOperand);
-    push_indent();
-    constexpr char kOk[] = "ok";
-    constexpr char kOldVal[] = "old_val";
-    constexpr char kNewVal[] = "new_val";
-    emit("bool {} = false;", kOk);
-    emit("float {} = 0.0f;", kOldVal);
-    emit("while (!{}) {{", kOk);
-    push_indent();
-    emit("{} = *{};", kOldVal, kDest);
-    emit("float {} = ({} + {});", kNewVal, kOldVal, kOperand);
-    emit("{} = atomic_compare_exchange_weak_explicit(", kOk);
-    emit("            (device atomic_int *){},", kDest);
-    emit("            (thread int*)(&{}),", kOldVal);
-    emit("            *((thread int *)(&{})),", kNewVal);
-    emit("            metal::memory_order_relaxed,");
-    emit("            metal::memory_order_relaxed);");
-    pop_indent();
-    emit("}}");  // while
-    emit("return {};", kOldVal);
-    pop_indent();
-    emit("}}");  // kFAtomicFetchAddFunc
+    emit("float fatomic_fetch_add(device float* dest, const float operand) {{");
+    emit("  bool ok = false;");
+    emit("  float old_val = 0.0f;");
+    emit("  while (!ok) {{");
+    emit("    old_val = *dest;");
+    emit("    float new_val = (old_val + operand);");
+    emit("    ok = atomic_compare_exchange_weak_explicit(");
+    emit("                (device atomic_int *)dest,");
+    emit("                (thread int*)(&old_val),");
+    emit("                *((thread int *)(&new_val)),");
+    emit("                metal::memory_order_relaxed,");
+    emit("                metal::memory_order_relaxed);");
+    emit("  }}");
+    emit("  return old_val;");
+    emit("}}");
     emit("");
   }
 

@@ -1,5 +1,6 @@
 #include "codegen_metal.h"
 
+#include <string>
 #include <taichi/ir.h>
 
 TLANG_NAMESPACE_BEGIN
@@ -375,52 +376,11 @@ class MetalKernelCodegen : public IRVisitor {
   }
 
   void generate_common_functions() {
-    gen_union_cast();
-    gen_ifloordiv();
-    gen_fatomic_fetch_add_func();
-  }
-
-  void gen_union_cast() {
-    // For some reason, if I emit taichi/common.h's union_cast(), Metal failed
-    // to compile. More strangely, if I copy the generated code to XCode as a
-    // Metal kernel, it compiled successfully...
-    emit("template <typename T, typename G>");
-    emit("T union_cast(G g) {{");
-    emit("  static_assert(sizeof(T) == sizeof(G), \"Size mismatch\");");
-    emit("  return *reinterpret_cast<thread const T*>(&g);");
-    emit("}}");
-    emit("");
-  }
-
-  void gen_ifloordiv() {
-    emit("inline int ifloordiv(int lhs, int rhs) {{");
-    emit("  const int intm = (lhs / rhs);");
-    emit(
-        "  return (((lhs * rhs < 0) && (rhs * intm != lhs)) ? (intm - 1) : "
-        "intm);");
-    emit("}}");
-    emit("");
-  }
-
-  void gen_fatomic_fetch_add_func() {
-    // A huge hack! Metal does not support atomic floating point numbers
-    // natively.
-    emit("float fatomic_fetch_add(device float* dest, const float operand) {{");
-    emit("  bool ok = false;");
-    emit("  float old_val = 0.0f;");
-    emit("  while (!ok) {{");
-    emit("    old_val = *dest;");
-    emit("    float new_val = (old_val + operand);");
-    emit("    ok = atomic_compare_exchange_weak_explicit(");
-    emit("                (device atomic_int *)dest,");
-    emit("                (thread int*)(&old_val),");
-    emit("                *((thread int *)(&new_val)),");
-    emit("                metal::memory_order_relaxed,");
-    emit("                metal::memory_order_relaxed);");
-    emit("  }}");
-    emit("  return old_val;");
-    emit("}}");
-    emit("");
+#define TC_INSIDE_METAL_CODEGEN
+#include <taichi/platform/metal/helpers.metal.h>
+    kernel_src_code_ += kMetalHelpersSourceCode;
+#undef TC_INSIDE_METAL_CODEGEN
+    emit("\n");
   }
 
   void generate_kernel_args_struct(Kernel *kernel) {

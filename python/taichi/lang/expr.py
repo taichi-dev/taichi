@@ -243,7 +243,8 @@ class Expr:
     return ti.expr_init(taichi_lang_core.expr_atomic_add(self.ptr, other_ptr))
 
   def __pow__(self, power, modulo=None):
-    assert isinstance(power, int) and power >= 0
+    if not isinstance(power, int) or power < 0:
+      return Expr(taichi_lang_core.expr_pow(self.ptr, Expr(power).ptr))
     if power == 0:
       return Expr(1)
     ret = self

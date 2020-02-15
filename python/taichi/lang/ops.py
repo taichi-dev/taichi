@@ -37,7 +37,8 @@ def binary(foo):
 
 
 def pow(x, n):
-  assert isinstance(n, int) and n >= 0
+  if not isinstance(n, int) or n < 0:
+    return Expr(taichi_lang_core.expr_pow(x.ptr, Expr(n).ptr))
   if n == 0:
     return 1
   ret = x

@@ -495,6 +495,32 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       } else {
         TC_NOT_IMPLEMENTED
       }
+    } else if (op == BinaryOpType::pow) {
+      if (current_arch() == Arch::x86_64) {
+        if (ret_type == DataType::f32) {
+          stmt->value =
+              create_call("pow_f32", {stmt->lhs->value, stmt->rhs->value});
+        } else if (ret_type == DataType::f64) {
+          stmt->value =
+              create_call("pow_f64", {stmt->lhs->value, stmt->rhs->value});
+        } else {
+          TC_P(data_type_name(ret_type));
+          TC_NOT_IMPLEMENTED
+        }
+      } else if (current_arch() == Arch::cuda) {
+        if (ret_type == DataType::f32) {
+          stmt->value =
+              create_call("__nv_powf", {stmt->lhs->value, stmt->rhs->value});
+        } else if (ret_type == DataType::f64) {
+          stmt->value =
+              create_call("__nv_pow", {stmt->lhs->value, stmt->rhs->value});
+        } else {
+          TC_P(data_type_name(ret_type));
+          TC_NOT_IMPLEMENTED
+        }
+      } else {
+        TC_NOT_IMPLEMENTED
+      }
     } else if (op == BinaryOpType::min) {
       if (is_real(ret_type)) {
         stmt->value = builder->CreateMinNum(stmt->lhs->value, stmt->rhs->value);

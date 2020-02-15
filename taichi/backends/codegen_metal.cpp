@@ -9,6 +9,10 @@ namespace {
 constexpr char kKernelThreadIdName[] = "utid_";  // 'u' for unsigned
 constexpr char kGlobalTmpsBufferName[] = "global_tmps_addr";
 constexpr char kArgsContextName[] = "args_ctx_";
+// Atomic fetch add for float32
+constexpr char kFAtomicFetchAddFunc[] = "fatomic_fetch_add";
+// Floor div for int32
+constexpr char kIFloordivFunc[] = "ifloordiv";
 
 class MetalKernelCodegen : public IRVisitor {
  public:
@@ -236,15 +240,8 @@ class MetalKernelCodegen : public IRVisitor {
     const auto bin_name = bin->raw_name();
     if (bin->op_type == BinaryOpType::floordiv) {
       if (is_integral(bin->element_type())) {
-        const auto intm = fmt::format("{}_intermediate_", bin_name);
-        emit("const {} {} = ({} / {});", dt_name, intm, lhs_name, rhs_name);
-        // Should we construct an AST for this?
-        const auto expr_str = fmt::format(
-            "(({lhs} * {rhs} < 0) && ({rhs} * {intm} != {lhs})) ? ({intm} - 1) "
-            ": {intm}",
-            fmt::arg("lhs", lhs_name), fmt::arg("rhs", rhs_name),
-            fmt::arg("intm", intm));
-        emit("const {} {} = ({});", dt_name, bin_name, expr_str);
+        emit("const {} {} = {}({}, {});", dt_name, bin_name, kIFloordivFunc,
+             lhs_name, rhs_name);
       } else {
         emit("const {} {} = floor({} / {});", dt_name, bin_name, lhs_name,
              rhs_name);
@@ -280,27 +277,8 @@ class MetalKernelCodegen : public IRVisitor {
           "metal::memory_order_relaxed);",
           stmt->raw_name(), stmt->dest->raw_name(), stmt->val->raw_name());
     } else if (dt == DataType::f32) {
-      // A huge hack! Metal does not support atomic floating point numbers
-      // natively.
-      const auto dest_name = stmt->dest->raw_name();
-      const auto cas_ok = fmt::format("{}_cas_ok_", dest_name);
-      const auto old_val = fmt::format("{}_old_", dest_name);
-      const auto new_val = fmt::format("{}_new_", dest_name);
-      emit("bool {} = false;", cas_ok);
-      emit("float {} = 0.0f;", stmt->raw_name());
-      emit("while (!{}) {{", cas_ok);
-      push_indent();
-      emit("float {} = *{};", old_val, dest_name);
-      emit("float {} = ({} + {});", new_val, old_val, stmt->val->raw_name());
-      emit("{} = atomic_compare_exchange_weak_explicit(", cas_ok);
-      emit("            (device atomic_int *){},", dest_name);
-      emit("            (thread int*)(&{}),", old_val);
-      emit("            *((thread int *)(&{})),", new_val);
-      emit("            metal::memory_order_relaxed,");
-      emit("            metal::memory_order_relaxed);");
-      emit("{} = {};", stmt->raw_name(), old_val);
-      pop_indent();
-      emit("}}");
+      emit("const float {} = {}({}, {});", stmt->raw_name(),
+           kFAtomicFetchAddFunc, stmt->dest->raw_name(), stmt->val->raw_name());
     } else {
       TC_NOT_IMPLEMENTED;
     }
@@ -410,6 +388,59 @@ class MetalKernelCodegen : public IRVisitor {
     emit("  static_assert(sizeof(T) == sizeof(G), \"Size mismatch\");");
     emit("  return *reinterpret_cast<thread const T*>(&g);");
     emit("}}");
+    emit("");
+
+    gen_ifloordiv();
+    gen_fatomic_fetch_add_func();
+  }
+
+  void gen_ifloordiv() {
+    constexpr char kLhs[] = "lhs";
+    constexpr char kRhs[] = "rhs";
+    emit("inline int {}(int {}, int {}) {{", kIFloordivFunc, kLhs, kRhs);
+    push_indent();
+    constexpr char kIntm[] = "intermediate";
+    emit("const int {} = ({} / {});", kIntm, kLhs, kRhs);
+    // Should we construct an AST for this?
+    const auto expr_str = fmt::format(
+        "(({lhs} * {rhs} < 0) && ({rhs} * {intm} != {lhs})) ? ({intm} - 1) "
+        ": {intm}",
+        fmt::arg("lhs", kLhs), fmt::arg("rhs", kRhs), fmt::arg("intm", kIntm));
+    emit("return ({});", expr_str);
+    pop_indent();
+    emit("}}");
+    emit("");
+  }
+
+  void gen_fatomic_fetch_add_func() {
+    // A huge hack! Metal does not support atomic floating point numbers
+    // natively.
+    constexpr char kDest[] = "dest";
+    constexpr char kOperand[] = "operand";
+    emit("float {}(device float* {}, const float {}) {{", kFAtomicFetchAddFunc,
+         kDest, kOperand);
+    push_indent();
+    constexpr char kOk[] = "ok";
+    constexpr char kOldVal[] = "old_val";
+    constexpr char kNewVal[] = "new_val";
+    emit("bool {} = false;", kOk);
+    emit("float {} = 0.0f;", kOldVal);
+    emit("while (!{}) {{", kOk);
+    push_indent();
+    emit("{} = *{};", kOldVal, kDest);
+    emit("float {} = ({} + {});", kNewVal, kOldVal, kOperand);
+    emit("{} = atomic_compare_exchange_weak_explicit(", kOk);
+    emit("            (device atomic_int *){},", kDest);
+    emit("            (thread int*)(&{}),", kOldVal);
+    emit("            *((thread int *)(&{})),", kNewVal);
+    emit("            metal::memory_order_relaxed,");
+    emit("            metal::memory_order_relaxed);");
+    pop_indent();
+    emit("}}");  // while
+    emit("return {};", kOldVal);
+    pop_indent();
+    emit("}}");  // kFAtomicFetchAddFunc
+    emit("");
   }
 
   void generate_kernel_args_struct(Kernel *kernel) {

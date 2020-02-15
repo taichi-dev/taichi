@@ -503,6 +503,12 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
         } else if (ret_type == DataType::f64) {
           stmt->value =
               create_call("pow_f64", {stmt->lhs->value, stmt->rhs->value});
+        } else if (ret_type == DataType::i32) {
+          stmt->value =
+              create_call("pow_i32", {stmt->lhs->value, stmt->rhs->value});
+        } else if (ret_type == DataType::i64) {
+          stmt->value =
+              create_call("pow_i64", {stmt->lhs->value, stmt->rhs->value});
         } else {
           TC_P(data_type_name(ret_type));
           TC_NOT_IMPLEMENTED
@@ -514,6 +520,12 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
         } else if (ret_type == DataType::f64) {
           stmt->value =
               create_call("__nv_pow", {stmt->lhs->value, stmt->rhs->value});
+        } else if (ret_type == DataType::i32) {
+          stmt->value =
+              create_call("nv_pow_i32", {stmt->lhs->value, stmt->rhs->value});
+        } else if (ret_type == DataType::i64) {
+          stmt->value =
+              create_call("nv_pow_i64", {stmt->lhs->value, stmt->rhs->value});
         } else {
           TC_P(data_type_name(ret_type));
           TC_NOT_IMPLEMENTED

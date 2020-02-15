@@ -9,14 +9,8 @@ def test_pow_scan():
   @ti.kernel
   def func(x: ti.f32, y: ti.f32):
     z[None] = x ** y
-    w[None] = ti.pow(x, y)
   
   for x in [2, 1.4, 3, 5.11, 6.12, 10.0]:
     for y in [2, 0.5, 4, 8, 1.12, -1, -9, 2.01, -3.3]:
-      print(x, '**', y)
       func(x, y)
-      print(z[None], 'vs', x ** y)
       assert abs(z[None] / x ** y - 1) < 0.0001
-      assert abs(w[None] / pow(x, y) - 1) < 0.0001
-
-test_pow_scan()

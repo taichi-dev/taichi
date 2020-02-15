@@ -36,17 +36,6 @@ def binary(foo):
   return x_
 
 
-def pow(x, n):
-  if not isinstance(n, int) or n < 0:
-    return Expr(taichi_lang_core.expr_pow(x.ptr, Expr(n).ptr))
-  if n == 0:
-    return 1
-  ret = x
-  for i in range(n - 1):
-    ret = ret * x
-  return ret
-
-
 def logical_and(a, b):
   return a.logical_and(b)
 

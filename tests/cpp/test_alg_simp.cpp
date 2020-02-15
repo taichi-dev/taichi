@@ -6,7 +6,6 @@ TLANG_NAMESPACE_BEGIN
 // Basic tests within a basic block
 
 TC_TEST("simplify_add_zero") {
-  return; // uncomment to enable
   auto block = std::make_unique<Block>();
 
   auto global_load_addr =
@@ -24,7 +23,7 @@ TC_TEST("simplify_add_zero") {
 
   irpass::print(block.get());
 
-  irpass::alg_simp(block.get());  // should eliminate add (TODO)
+  irpass::alg_simp(block.get());  // should eliminate add
   irpass::die(block.get());       // should eliminate zero
 
   irpass::print(block.get());

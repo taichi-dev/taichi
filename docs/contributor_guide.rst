@@ -55,7 +55,7 @@ Testing
 Tests should be added to ``taichi/tests/python``.
 
 Use ``ti test`` to run all the tests.
-(On Windows, please use ``python -m taichi test``)
+(On Windows, please add ``%TAICHI_REPO_DIR%\bin\RelWithDebInfo`` into ``%PATH%`` and then run ``ti test``, or just use ``python -m taichi test``)
 
 Documentation
 -------------

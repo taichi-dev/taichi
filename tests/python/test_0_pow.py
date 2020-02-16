@@ -20,11 +20,11 @@ def _test_pow_i(dt):
   z = ti.var(dt, shape=())
 
   @ti.kernel
-  def func(x: dt, y: dt):
+  def func(x: dt, y: ti.template()):
     z[None] = x ** y
 
   for x in range(-5, 5):
-    for y in range(-4, 4):
+    for y in range(0, 4):
       func(x, y)
       assert z[None] == x ** y
 
@@ -34,3 +34,9 @@ def test_pow_f32():
 
 def test_pow_f64():
   _test_pow_f(ti.f64)
+
+def test_pow_i32():
+  _test_pow_i(ti.i32)
+
+def _test_pow_i64():
+  _test_pow_i(ti.i64) # TODO: not pass

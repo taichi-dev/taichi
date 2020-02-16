@@ -22,8 +22,15 @@ configuration: Release
 environment:
   matrix:
     - PYTHON: C:\Python36-x64\python.exe
-    - PYTHON: C:\Python37-x64\python.exe
-    - PYTHON: C:\Python38-x64\python.exe
+
+skip_commits:
+  files:
+    - README.md
+    - docs
+    - benchmarks
+    - examples
+    - misc
+    - '.*'
 
 build_script:
   - cd C:\
@@ -35,6 +42,7 @@ build_script:
   - set PATH=C:\taichi_clang\bin;%PATH%
   - set TAICHI_REPO_DIR=C:\taichi
   - set PYTHONPATH=%TAICHI_REPO_DIR%/python
+  - set PATH=%TAICHI_REPO_DIR%\bin;%PATH%
   - clang --version
   - cd C:\taichi
   - "%PYTHON% ci_setup.py ci"
@@ -45,5 +53,5 @@ build_script:
   - cd ..
   - '%PYTHON% -c "import taichi"'
   - "%PYTHON% examples/laplace.py"
-  - "%PYTHON% -m taichi test"
+  - "ti test"
   - "cd python && %PYTHON% build.py try_upload"

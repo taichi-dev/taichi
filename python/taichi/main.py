@@ -40,6 +40,7 @@ def test_python(test_files=None, verbose=False):
     print(f'Starting {cpu_count} testing thread(s)...')
     args += ['-n', str(cpu_count)]
 
+  print('XXX')
   return int(pytest.main(args))
 
 
@@ -121,7 +122,7 @@ def main(debug=False):
       return -1
     return test_cpp()
   elif mode == "test_verbose":
-    if test_python(verbose=True) != 0:
+    if test_python(test_files=sys.argv[2:], verbose=True) != 0:
       return -1
     return test_cpp()
   elif mode == "build":

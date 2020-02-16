@@ -15,15 +15,29 @@ def test_python(verbose=False):
   else:
     test_dir = os.path.join(ti.get_repo_directory(), 'tests')
 
-  args = [test_dir]
+  test_files = sys.argv[2:] # XXX
+  if not len(test_files):
+    test_files = None
+  if test_files is not None:
+    args = []
+    for tf in test_files:
+      if not tf.startswith('test_'):
+        tf = 'test_' + tf
+      if not tf.endswith('.py'):
+        tf = tf + '.py'
+      args.append(os.path.join('tests', 'python', tf))
+  else:
+    args = [test_dir]
   if verbose:
     args += ['-s']
-  try:
-    from multiprocessing import cpu_count
-    cpu_count = cpu_count()
-  except:
-    cpu_count = 4
-  args += ['-n', str(cpu_count)]
+  if test_files is None:
+    try:
+      from multiprocessing import cpu_count
+      cpu_count = cpu_count()
+      print('Starting 4 thread(s) to test...')
+    except:
+      cpu_count = 4
+    args += ['-n', str(cpu_count)]
 
   return int(pytest.main(args))
 

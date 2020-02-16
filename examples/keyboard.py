@@ -1,5 +1,4 @@
 import taichi as ti
-import sys
 
 x, y = 0.5, 0.5
 delta = 0.01
@@ -12,7 +11,7 @@ while True:
     if e.type == ti.GUI.RELEASE:
       continue
     if e.key == ti.GUI.ESCAPE:
-      sys.exit()
+      exit()
     elif e.key == ti.GUI.RMB:
       x, y = e.pos[0], e.pos[1]
 

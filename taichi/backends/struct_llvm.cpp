@@ -67,8 +67,12 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
       body_type = llvm::Type::getFloatTy(*ctx);
     } else if (snode.dt == DataType::i32) {
       body_type = llvm::Type::getInt32Ty(*ctx);
-    } else {
+    } else if (snode.dt == DataType::i64) {
+      body_type = llvm::Type::getInt64Ty(*ctx);
+    } else if (snode.dt == DataType::f64){
       body_type = llvm::Type::getDoubleTy(*ctx);
+    } else {
+      TC_NOT_IMPLEMENTED
     }
   } else if (type == SNodeType::pointer) {
     // mutex

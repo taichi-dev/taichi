@@ -80,13 +80,15 @@ T ifloordiv(T a, T b) {
   return r;
 }
 
+struct Runtime;
 template <typename... Args>
-void Printf(const char *format, Args &&... args);
+void taichi_printf(Runtime *runtime, const char *format, Args &&... args);
+#define Printf(...) taichi_printf(runtime, __VA_ARGS__)
 
 extern "C" {
 
 #if ARCH_cuda
-void vprintf(Ptr format, Ptr arg);
+//void vprintf(Ptr format, Ptr arg);
 #endif
 i32 printf(const char *, ...);
 
@@ -460,6 +462,7 @@ struct NodeManager;
 struct Runtime {
   vm_allocator_type vm_allocator;
   assert_failed_type assert_failed;
+  vvprintf_type vvprintf;
   Ptr prog;
   Ptr root;
   Ptr thread_pool;
@@ -489,6 +492,7 @@ STRUCT_FIELD_ARRAY(Runtime, element_lists);
 STRUCT_FIELD_ARRAY(Runtime, node_allocators);
 STRUCT_FIELD(Runtime, root);
 STRUCT_FIELD(Runtime, assert_failed);
+STRUCT_FIELD(Runtime, vvprintf);
 STRUCT_FIELD(Runtime, mem_req_queue);
 STRUCT_FIELD(Runtime, profiler);
 STRUCT_FIELD(Runtime, profiler_start);
@@ -1149,11 +1153,11 @@ struct printf_helper {
 };
 
 template <typename... Args>
-void Printf(const char *format, Args &&... args) {
+void taichi_printf(Runtime *runtime, const char *format, Args &&... args) {
 #if ARCH_cuda
   printf_helper helper;
   helper.push_back(std::forward<Args>(args)...);
-  vprintf((Ptr)format, helper.ptr());
+  runtime->vvprintf(format, (const char *)helper.ptr());
 #else
   printf(format, args...);
 #endif

@@ -35,7 +35,7 @@ UnifiedAllocator::UnifiedAllocator(std::size_t size, Arch arch)
     // Assuming ARM devices have shared CPU/GPU memory and do no support
     // memAdvise; CUDA on Windows has limited support for unified memory
     check_cuda_error_as_warning(
-        cudaMemAdvise(_cuda_data, size, cudaMemAdviseSetPreferredLocation, 0));
+        cudaMemAdvise(_cuda_data, size, cudaMemAdviseSetPreferredLocation, cudaCpuDeviceId));
 #endif
     // http://on-demand.gputechconf.com/gtc/2017/presentation/s7285-nikolay-sakharnykh-unified-memory-on-pascal-and-volta.pdf
     /*

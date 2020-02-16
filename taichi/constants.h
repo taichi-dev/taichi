@@ -8,3 +8,4 @@ constexpr int taichi_max_num_mem_requests = 1024 * 64;
 
 
 using assert_failed_type = void (*)(const char *);
+using vvprintf_type = void (*)(const char *, const char *);

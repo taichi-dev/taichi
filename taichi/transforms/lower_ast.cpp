@@ -275,8 +275,18 @@ class LowerAST : public IRVisitor {
       indices_stmt[i] = stmt->indices[i]->stmt;
     }
 
-    auto ptr = flattened.push_back<GlobalPtrStmt>(stmt->snode, indices_stmt);
-    flattened.push_back<SNodeOpStmt>(stmt->op_type, stmt->snode, ptr, val_stmt);
+    if (stmt->snode->type == SNodeType::dynamic) {
+      auto ptr = flattened.push_back<GlobalPtrStmt>(stmt->snode, indices_stmt);
+      flattened.push_back<SNodeOpStmt>(stmt->op_type, stmt->snode, ptr,
+                                       val_stmt);
+    } else if (stmt->snode->type == SNodeType::pointer ||
+               stmt->snode->type == SNodeType::hash ||
+               stmt->snode->type == SNodeType::dynamic) {
+      TC_ASSERT(SNodeOpStmt::activation_related(stmt->op_type));
+      flattened.push_back<SNodeOpStmt>(stmt->op_type, stmt->snode, indices_stmt);
+    } else {
+      TC_NOT_IMPLEMENTED
+    }
 
     stmt->parent->replace_with(stmt, std::move(flattened));
     throw IRModified();

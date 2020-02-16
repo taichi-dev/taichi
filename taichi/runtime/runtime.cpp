@@ -1077,26 +1077,20 @@ u32 cuda_rand_u32(Context *context) {
   auto lock = (Ptr)&state->lock;
 
   bool done = false;
-  // TODO: whether this leads to a deadlock or not depends on how nvcc schedules
-  // the instructions...
-  while (!done) {
-    if (atomic_exchange_i32((i32 *)lock, 1) == 0) {
-      grid_memfence();
-      auto &x = state->x;
-      auto &y = state->y;
-      auto &z = state->z;
-      auto &w = state->w;
-      auto t = x ^ (x << 11);
-      x = y;
-      y = z;
-      z = w;
-      w = (w ^ (w >> 19)) ^ (t ^ (t >> 8));
-      ret = w;
-      done = true;
-      grid_memfence();
-      mutex_unlock_i32(lock);
-    }
-  }
+  // TODO: locking here is very slow...
+  locked_task(lock, [&] {
+    auto &x = state->x;
+    auto &y = state->y;
+    auto &z = state->z;
+    auto &w = state->w;
+    auto t = x ^ (x << 11);
+    x = y;
+    y = z;
+    z = w;
+    w = (w ^ (w >> 19)) ^ (t ^ (t >> 8));
+    ret = w;
+    done = true;
+  });
   return ret;
 }
 

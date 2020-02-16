@@ -38,5 +38,5 @@ def test_pow_f64():
 def test_pow_i32():
   _test_pow_i(ti.i32)
 
-def _test_pow_i64():
-  _test_pow_i(ti.i64) # TODO: not pass
+def test_pow_i64():
+  _test_pow_i(ti.i64)

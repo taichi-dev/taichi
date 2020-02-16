@@ -73,8 +73,12 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
       body_type = llvm::Type::getFloatTy(*ctx);
     } else if (snode.dt == DataType::i32) {
       body_type = llvm::Type::getInt32Ty(*ctx);
-    } else {
+    } else if (snode.dt == DataType::i64) {
+      body_type = llvm::Type::getInt64Ty(*ctx);
+    } else if (snode.dt == DataType::f64){
       body_type = llvm::Type::getDoubleTy(*ctx);
+    } else {
+      TC_NOT_IMPLEMENTED
     }
   } else if (type == SNodeType::pointer) {
     // mutex
@@ -255,37 +259,33 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
     }
 
     // TODO(yuanming-hu): move runtime initialization to somewhere else
-    auto initialize_runtime = tlctx->lookup_function<std::function<void *(
-        void *, void *, int, std::size_t, void *, bool)>>(
-        "Runtime_initialize");
+    auto initialize_runtime = tlctx->lookup_function<void *(
+        void *, void *, int, std::size_t, void *, bool)>("Runtime_initialize");
 
     auto initialize_runtime2 =
-        tlctx->lookup_function<std::function<void(void *, void *, int, int)>>(
+        tlctx->lookup_function<void(void *, void *, int, int)>(
             "Runtime_initialize2");
 
-    auto set_assert_failed =
-        tlctx->lookup_function<std::function<void(void *, void *)>>(
-            "Runtime_set_assert_failed");
+    auto set_assert_failed = tlctx->lookup_function<void(void *, void *)>(
+        "Runtime_set_assert_failed");
 
     auto set_vvprintf =
         tlctx->lookup_function<std::function<void(void *, void *)>>(
             "Runtime_set_vvprintf");
 
     auto allocate_ambient =
-        tlctx->lookup_function<std::function<void(void *, int)>>(
-            "Runtime_allocate_ambient");
+        tlctx->lookup_function<void(void *, int)>("Runtime_allocate_ambient");
 
     auto initialize_allocator =
-        tlctx->lookup_function<std::function<void *(void *, int, std::size_t)>>(
+        tlctx->lookup_function<void *(void *, int, std::size_t)>(
             "NodeAllocator_initialize");
 
     auto runtime_initialize_thread_pool =
-        tlctx->lookup_function<std::function<void(void *, void *, void *)>>(
+        tlctx->lookup_function<void(void *, void *, void *)>(
             "Runtime_initialize_thread_pool");
 
     auto runtime_set_root =
-        tlctx->lookup_function<std::function<void(void *, void *)>>(
-            "Runtime_set_root");
+        tlctx->lookup_function<void(void *, void *)>("Runtime_set_root");
 
     // By the time when creator is called, "this" is already destoried. Therefor
     // it is necessary to capture members by values.
@@ -299,9 +299,8 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
           &prog->llvm_runtime, prog, (int)snodes.size(), root_size,
           (void *)&taichi_allocate_aligned, logger.get_level() <= 1);
 
-      auto mem_req_queue =
-          tlctx->lookup_function<std::function<void *(void *)>>(
-              "Runtime_get_mem_req_queue")(prog->llvm_runtime);
+      auto mem_req_queue = tlctx->lookup_function<void *(void *)>(
+          "Runtime_get_mem_req_queue")(prog->llvm_runtime);
       prog->memory_pool->set_queue((MemRequestQueue *)mem_req_queue);
 
       initialize_runtime2(prog->llvm_runtime, root, root_id,
@@ -337,16 +336,14 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
 
       runtime_set_root(prog->llvm_runtime, root);
 
-      tlctx->lookup_function<std::function<void(void *, void *)>>(
-          "Runtime_set_profiler")(prog->llvm_runtime,
-                                  prog->profiler_llvm.get());
+      tlctx->lookup_function<void(void *, void *)>("Runtime_set_profiler")(
+          prog->llvm_runtime, prog->profiler_llvm.get());
 
-      tlctx->lookup_function<std::function<void(void *, void *)>>(
+      tlctx->lookup_function<void(void *, void *)>(
           "Runtime_set_profiler_start")(prog->llvm_runtime,
                                         (void *)&ProfilerBase::profiler_start);
-      tlctx->lookup_function<std::function<void(void *, void *)>>(
-          "Runtime_set_profiler_stop")(prog->llvm_runtime,
-                                       (void *)&ProfilerBase::profiler_stop);
+      tlctx->lookup_function<void(void *, void *)>("Runtime_set_profiler_stop")(
+          prog->llvm_runtime, (void *)&ProfilerBase::profiler_stop);
     };
   }
   tlctx->snode_attr = snode_attr;

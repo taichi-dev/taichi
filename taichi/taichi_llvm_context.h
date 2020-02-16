@@ -1,6 +1,8 @@
 #pragma once
 // A helper for the llvm backend
 
+#include <functional>
+
 #include "tlang_util.h"
 #include "llvm_fwd.h"
 #include "snode.h"
@@ -30,8 +32,10 @@ class TaichiLLVMContext {
   void set_struct_module(const std::unique_ptr<llvm::Module> &module);
 
   template <typename T>
-  T lookup_function(const std::string &name) {
-    auto ret = T((function_pointer_type<T>)jit_lookup_name(jit.get(), name));
+  auto lookup_function(const std::string &name) {
+    using FuncT = typename std::function<T>;
+    auto ret =
+        FuncT((function_pointer_type<FuncT>)jit_lookup_name(jit.get(), name));
     TC_ASSERT(ret != nullptr);
     return ret;
   }

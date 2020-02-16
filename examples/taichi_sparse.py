@@ -7,9 +7,9 @@ x = ti.var(ti.f32)
 res = n + n // 4 + n // 16 + n // 64
 img = ti.var(ti.f32, shape=(res, res))
 
-block1 = ti.root.dense(ti.ij, n // 64).pointer()
-block2 = block1.dense(ti.ij, 4).pointer()
-block3 = block2.dense(ti.ij, 4).pointer()
+block1 = ti.root.pointer(ti.ij, n // 64)
+block2 = block1.pointer(ti.ij, 4)
+block3 = block2.pointer(ti.ij, 4)
 block3.dense(ti.ij, 4).place(x)
 
 @ti.func

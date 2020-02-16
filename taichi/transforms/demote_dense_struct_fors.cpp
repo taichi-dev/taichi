@@ -15,7 +15,7 @@ VecStatement convert_to_range_for(StructForStmt *struct_for) {
     snode = snode->parent;
   }
   std::reverse(snodes.begin(), snodes.end());
-  TC_ASSERT(total_bits <= 31);
+  TI_ASSERT(total_bits <= 31);
 
   auto upper_bound = 1 << total_bits;
   auto upper = ret.push_back<ConstStmt>(TypedConstant(upper_bound));
@@ -28,7 +28,7 @@ VecStatement convert_to_range_for(StructForStmt *struct_for) {
 
   std::vector<int> physical_indices;
 
-  TC_ASSERT(snodes.back()->num_active_indices == (int)old_loop_vars.size());
+  TI_ASSERT(snodes.back()->num_active_indices == (int)old_loop_vars.size());
   for (int i = 0; i < (int)old_loop_vars.size(); i++) {
     new_loop_vars.push_back(body_header.push_back<ConstStmt>(TypedConstant(0)));
     physical_indices.push_back(snodes.back()->physical_index_position[i]);

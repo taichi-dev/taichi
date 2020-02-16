@@ -1,14 +1,14 @@
 #include "objc_api.h"
 
-#ifdef TC_PLATFORM_OSX
+#ifdef TI_PLATFORM_OSX
 
 namespace taichi {
 namespace mac {
 
-nsobj_unique_ptr<TC_NSString> wrap_string_as_ns_string(const std::string &str) {
+nsobj_unique_ptr<TI_NSString> wrap_string_as_ns_string(const std::string &str) {
   constexpr int kNSUTF8StringEncoding = 4;
   id ns_string = clscall("NSString", "alloc");
-  auto *ptr = cast_call<TC_NSString *>(
+  auto *ptr = cast_call<TI_NSString *>(
       ns_string,
       "initWithBytesNoCopy:length:encoding:freeWhenDone:", str.data(),
       str.size(), kNSUTF8StringEncoding, false);
@@ -18,4 +18,4 @@ nsobj_unique_ptr<TC_NSString> wrap_string_as_ns_string(const std::string &str) {
 }  // namespace mac
 }  // namespace taichi
 
-#endif  // TC_PLATFORM_OSX
+#endif  // TI_PLATFORM_OSX

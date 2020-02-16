@@ -14,43 +14,43 @@
 #include <memory>
 #include <iostream>
 
-TC_NAMESPACE_BEGIN
+TI_NAMESPACE_BEGIN
 
 template <typename T>
-TC_EXPORT std::shared_ptr<T> create_instance(const std::string &alias);
+TI_EXPORT std::shared_ptr<T> create_instance(const std::string &alias);
 
 template <typename T>
-TC_EXPORT std::shared_ptr<T> create_instance(const std::string &alias,
+TI_EXPORT std::shared_ptr<T> create_instance(const std::string &alias,
                                              const Config &config);
 
 template <typename T>
-TC_EXPORT std::unique_ptr<T> create_instance_unique(const std::string &alias);
+TI_EXPORT std::unique_ptr<T> create_instance_unique(const std::string &alias);
 
 template <typename T>
-TC_EXPORT std::unique_ptr<T> create_instance_unique(const std::string &alias,
+TI_EXPORT std::unique_ptr<T> create_instance_unique(const std::string &alias,
                                                     const Config &config);
 template <typename T>
-TC_EXPORT std::unique_ptr<T> create_instance_unique_ctor(
+TI_EXPORT std::unique_ptr<T> create_instance_unique_ctor(
     const std::string &alias,
     const Config &config);
 
 template <typename T>
-TC_EXPORT T *create_instance_raw(const std::string &alias);
+TI_EXPORT T *create_instance_raw(const std::string &alias);
 
 template <typename T>
-TC_EXPORT T *create_instance_raw(const std::string &alias,
+TI_EXPORT T *create_instance_raw(const std::string &alias,
                                  const Config &config);
 
 template <typename T>
-TC_EXPORT T *create_instance_placement(const std::string &alias, void *place);
+TI_EXPORT T *create_instance_placement(const std::string &alias, void *place);
 
 template <typename T>
-TC_EXPORT T *create_instance_placement(const std::string &alias,
+TI_EXPORT T *create_instance_placement(const std::string &alias,
                                        void *place,
                                        const Config &config);
 
 template <typename T>
-TC_EXPORT std::vector<std::string> get_implementation_names();
+TI_EXPORT std::vector<std::string> get_implementation_names();
 
 class Unit {
  public:
@@ -65,12 +65,12 @@ class Unit {
   }
 
   virtual std::string get_name() const {
-    TC_NOT_IMPLEMENTED;
+    TI_NOT_IMPLEMENTED;
     return "";
   }
 
   virtual std::string general_action(const Config &config) {
-    TC_NOT_IMPLEMENTED;
+    TI_NOT_IMPLEMENTED;
     return "";
   }
 
@@ -78,8 +78,8 @@ class Unit {
   }
 };
 
-#define TC_IMPLEMENTATION_HOLDER_NAME(T) ImplementationHolder_##T
-#define TC_IMPLEMENTATION_HOLDER_PTR(T) instance_ImplementationHolder_##T
+#define TI_IMPLEMENTATION_HOLDER_NAME(T) ImplementationHolder_##T
+#define TI_IMPLEMENTATION_HOLDER_PTR(T) instance_ImplementationHolder_##T
 
 class ImplementationHolderBase {
  public:
@@ -114,12 +114,12 @@ class InterfaceHolder {
   }
 };
 
-#define TC_INTERFACE(T)                                                       \
+#define TI_INTERFACE(T)                                                       \
   extern void *get_implementation_holder_instance_##T();                      \
-  class TC_IMPLEMENTATION_HOLDER_NAME(T) final                                \
+  class TI_IMPLEMENTATION_HOLDER_NAME(T) final                                \
       : public ImplementationHolderBase {                                     \
    public:                                                                    \
-    TC_IMPLEMENTATION_HOLDER_NAME(T)(const std::string &name) {               \
+    TI_IMPLEMENTATION_HOLDER_NAME(T)(const std::string &name) {               \
       this->name = name;                                                      \
     }                                                                         \
     using FactoryMethod = std::function<std::shared_ptr<T>()>;                \
@@ -225,66 +225,66 @@ class InterfaceHolder {
                   "Implementation [" + name + "::" + alias + "] not found!"); \
       return (factory->second)(place);                                        \
     }                                                                         \
-    static TC_IMPLEMENTATION_HOLDER_NAME(T) * get_instance() {                \
-      return static_cast<TC_IMPLEMENTATION_HOLDER_NAME(T) *>(                 \
+    static TI_IMPLEMENTATION_HOLDER_NAME(T) * get_instance() {                \
+      return static_cast<TI_IMPLEMENTATION_HOLDER_NAME(T) *>(                 \
           get_implementation_holder_instance_##T());                          \
     }                                                                         \
   };                                                                          \
-  extern TC_IMPLEMENTATION_HOLDER_NAME(T) * TC_IMPLEMENTATION_HOLDER_PTR(T);
+  extern TI_IMPLEMENTATION_HOLDER_NAME(T) * TI_IMPLEMENTATION_HOLDER_PTR(T);
 
-#define TC_INTERFACE_DEF(class_name, base_alias)                              \
+#define TI_INTERFACE_DEF(class_name, base_alias)                              \
   template <>                                                                 \
-  TC_EXPORT std::shared_ptr<class_name> create_instance(                      \
+  TI_EXPORT std::shared_ptr<class_name> create_instance(                      \
       const std::string &alias) {                                             \
-    return TC_IMPLEMENTATION_HOLDER_NAME(class_name)::get_instance()->create( \
+    return TI_IMPLEMENTATION_HOLDER_NAME(class_name)::get_instance()->create( \
         alias);                                                               \
   }                                                                           \
   template <>                                                                 \
-  TC_EXPORT std::shared_ptr<class_name> create_instance(                      \
+  TI_EXPORT std::shared_ptr<class_name> create_instance(                      \
       const std::string &alias, const Config &config) {                       \
     auto instance = create_instance<class_name>(alias);                       \
     instance->initialize(config);                                             \
     return instance;                                                          \
   }                                                                           \
   template <>                                                                 \
-  TC_EXPORT std::unique_ptr<class_name> create_instance_unique(               \
+  TI_EXPORT std::unique_ptr<class_name> create_instance_unique(               \
       const std::string &alias) {                                             \
-    return TC_IMPLEMENTATION_HOLDER_NAME(class_name)::get_instance()          \
+    return TI_IMPLEMENTATION_HOLDER_NAME(class_name)::get_instance()          \
         ->create_unique(alias);                                               \
   }                                                                           \
   template <>                                                                 \
-  TC_EXPORT std::unique_ptr<class_name> create_instance_unique(               \
+  TI_EXPORT std::unique_ptr<class_name> create_instance_unique(               \
       const std::string &alias, const Config &config) {                       \
     auto instance = create_instance_unique<class_name>(alias);                \
     instance->initialize(config);                                             \
     return instance;                                                          \
   }                                                                           \
   template <>                                                                 \
-  TC_EXPORT std::unique_ptr<class_name> create_instance_unique_ctor(          \
+  TI_EXPORT std::unique_ptr<class_name> create_instance_unique_ctor(          \
       const std::string &alias, const Dict &config) {                         \
-    return TC_IMPLEMENTATION_HOLDER_NAME(class_name)::get_instance()          \
+    return TI_IMPLEMENTATION_HOLDER_NAME(class_name)::get_instance()          \
         ->create_unique_ctor(alias, config);                                  \
   }                                                                           \
   template <>                                                                 \
-  TC_EXPORT class_name *create_instance_raw(const std::string &alias) {       \
-    return TC_IMPLEMENTATION_HOLDER_NAME(class_name)::get_instance()          \
+  TI_EXPORT class_name *create_instance_raw(const std::string &alias) {       \
+    return TI_IMPLEMENTATION_HOLDER_NAME(class_name)::get_instance()          \
         ->create_raw(alias);                                                  \
   }                                                                           \
   template <>                                                                 \
-  TC_EXPORT class_name *create_instance_placement(const std::string &alias,   \
+  TI_EXPORT class_name *create_instance_placement(const std::string &alias,   \
                                                   void *place) {              \
-    return TC_IMPLEMENTATION_HOLDER_NAME(class_name)::get_instance()          \
+    return TI_IMPLEMENTATION_HOLDER_NAME(class_name)::get_instance()          \
         ->create_placement(alias, place);                                     \
   }                                                                           \
   template <>                                                                 \
-  TC_EXPORT class_name *create_instance_placement(                            \
+  TI_EXPORT class_name *create_instance_placement(                            \
       const std::string &alias, void *place, const Config &config) {          \
     auto instance = create_instance_placement<class_name>(alias, place);      \
     instance->initialize(config);                                             \
     return instance;                                                          \
   }                                                                           \
   template <>                                                                 \
-  TC_EXPORT class_name *create_instance_raw(const std::string &alias,         \
+  TI_EXPORT class_name *create_instance_raw(const std::string &alias,         \
                                             const Config &config) {           \
     auto instance = create_instance_raw<class_name>(alias);                   \
     instance->initialize(config);                                             \
@@ -292,17 +292,17 @@ class InterfaceHolder {
   }                                                                           \
   template <>                                                                 \
   std::vector<std::string> get_implementation_names<class_name>() {           \
-    return TC_IMPLEMENTATION_HOLDER_NAME(class_name)::get_instance()          \
+    return TI_IMPLEMENTATION_HOLDER_NAME(class_name)::get_instance()          \
         ->get_implementation_names();                                         \
   }                                                                           \
-  TC_IMPLEMENTATION_HOLDER_NAME(class_name) *                                 \
-      TC_IMPLEMENTATION_HOLDER_PTR(class_name) = nullptr;                     \
+  TI_IMPLEMENTATION_HOLDER_NAME(class_name) *                                 \
+      TI_IMPLEMENTATION_HOLDER_PTR(class_name) = nullptr;                     \
   void *get_implementation_holder_instance_##class_name() {                   \
-    if (!TC_IMPLEMENTATION_HOLDER_PTR(class_name)) {                          \
-      TC_IMPLEMENTATION_HOLDER_PTR(class_name) =                              \
-          new TC_IMPLEMENTATION_HOLDER_NAME(class_name)(base_alias);          \
+    if (!TI_IMPLEMENTATION_HOLDER_PTR(class_name)) {                          \
+      TI_IMPLEMENTATION_HOLDER_PTR(class_name) =                              \
+          new TI_IMPLEMENTATION_HOLDER_NAME(class_name)(base_alias);          \
     }                                                                         \
-    return TC_IMPLEMENTATION_HOLDER_PTR(class_name);                          \
+    return TI_IMPLEMENTATION_HOLDER_PTR(class_name);                          \
   }                                                                           \
   class InterfaceInjector_##class_name {                                      \
    public:                                                                    \
@@ -329,25 +329,25 @@ class InterfaceHolder {
     }                                                                         \
   } ImplementationInjector_##base_class_name##class_name##instance(base_alias);
 
-#define TC_IMPLEMENTATION(base_class_name, class_name, alias)        \
+#define TI_IMPLEMENTATION(base_class_name, class_name, alias)        \
   class ImplementationInjector_##base_class_name##class_name {       \
    public:                                                           \
     ImplementationInjector_##base_class_name##class_name() {         \
-      TC_IMPLEMENTATION_HOLDER_NAME(base_class_name)::get_instance() \
+      TI_IMPLEMENTATION_HOLDER_NAME(base_class_name)::get_instance() \
           ->insert<class_name>(alias);                               \
     }                                                                \
   } ImplementationInjector_##base_class_name##class_name##instance;
 
-#define TC_IMPLEMENTATION_NEW(base_class_name, class_name)           \
+#define TI_IMPLEMENTATION_NEW(base_class_name, class_name)           \
   class ImplementationInjector_##base_class_name##class_name {       \
    public:                                                           \
     ImplementationInjector_##base_class_name##class_name() {         \
-      TC_IMPLEMENTATION_HOLDER_NAME(base_class_name)::get_instance() \
+      TI_IMPLEMENTATION_HOLDER_NAME(base_class_name)::get_instance() \
           ->insert_new<class_name>(class_name::get_name_static());   \
     }                                                                \
   } ImplementationInjector_##base_class_name##class_name##instance;
 
-#define TC_NAME(alias)                            \
+#define TI_NAME(alias)                            \
   virtual std::string get_name() const override { \
     return get_name_static();                     \
   }                                               \
@@ -355,4 +355,4 @@ class InterfaceHolder {
     return alias;                                 \
   }
 
-TC_NAMESPACE_END
+TI_NAMESPACE_END

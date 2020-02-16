@@ -11,7 +11,7 @@
 TLANG_NAMESPACE_BEGIN
 
 void assert_failed_host(const char *msg) {
-  TC_ERROR("Assertion failure: {}", msg);
+  TI_ERROR("Assertion failure: {}", msg);
 }
 
 StructCompilerLLVM::StructCompilerLLVM(Program *prog, Arch arch)
@@ -19,7 +19,7 @@ StructCompilerLLVM::StructCompilerLLVM(Program *prog, Arch arch)
       ModuleBuilder(prog->get_llvm_context(arch)->get_init_module()),
       arch(arch) {
   creator = [] {
-    TC_WARN("Data structure creation not implemented");
+    TI_WARN("Data structure creation not implemented");
     return nullptr;
   };
   tlctx = prog->get_llvm_context(arch);
@@ -54,7 +54,7 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
 
   llvm::Type *body_type = nullptr, *aux_type = nullptr;
   if (type == SNodeType::dense) {
-    TC_ASSERT(snode._morton == false);
+    TI_ASSERT(snode._morton == false);
     body_type = llvm::ArrayType::get(ch_type, snode.max_num_elements());
     if (snode._bitmasked) {
       aux_type = llvm::ArrayType::get(Type::getInt32Ty(*llvm_ctx),
@@ -72,7 +72,7 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
     } else if (snode.dt == DataType::f64){
       body_type = llvm::Type::getDoubleTy(*ctx);
     } else {
-      TC_NOT_IMPLEMENTED
+      TI_NOT_IMPLEMENTED
     }
   } else if (type == SNodeType::pointer) {
     // mutex
@@ -87,8 +87,8 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
                                      llvm::PointerType::getInt32Ty(*ctx)});
     body_type = llvm::PointerType::getInt8PtrTy(*ctx);
   } else {
-    TC_P(snode.type_name());
-    TC_NOT_IMPLEMENTED;
+    TI_P(snode.type_name());
+    TI_NOT_IMPLEMENTED;
   }
   if (aux_type != nullptr) {
     llvm_type = llvm::StructType::create(*ctx, {aux_type, body_type}, "");
@@ -98,7 +98,7 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
     snode.has_aux_structure = false;
   }
 
-  TC_ASSERT(llvm_type != nullptr);
+  TI_ASSERT(llvm_type != nullptr);
   snode_attr[snode].llvm_type = llvm_type;
   snode_attr[snode].llvm_aux_type = aux_type;
   snode_attr[snode].llvm_body_type = body_type;
@@ -232,11 +232,11 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
   generate_leaf_accessors(root);
 
   if (prog->config.print_struct_llvm_ir) {
-    TC_INFO("Struct Module IR");
+    TI_INFO("Struct Module IR");
     module->print(errs(), nullptr);
   }
 
-  TC_ASSERT((int)snodes.size() <= max_num_snodes);
+  TI_ASSERT((int)snodes.size() <= max_num_snodes);
 
   auto root_size =
       tlctx->jit->getDataLayout().getTypeAllocSize(snode_attr[root].llvm_type);
@@ -286,7 +286,7 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
     auto root_id = root.id;
     auto prog = this->prog;
     creator = [=]() {
-      TC_TRACE("Allocating data structure of size {} B", root_size);
+      TI_TRACE("Allocating data structure of size {} B", root_size);
       auto root = initialize_runtime(
           &prog->llvm_runtime, prog, (int)snodes.size(), root_size,
           (void *)&taichi_allocate_aligned, logger.get_level() <= 1);
@@ -311,11 +311,11 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
                 tlctx->get_type_size(snode_attr[snodes[i]].llvm_element_type) *
                     snodes[i]->chunk_size;
           }
-          TC_TRACE("Initializing allocator for snode {} (node size {})",
+          TI_TRACE("Initializing allocator for snode {} (node size {})",
                   snodes[i]->id, node_size);
           auto rt = prog->llvm_runtime;
           initialize_allocator(rt, i, node_size);
-          TC_TRACE("Allocating ambient element for snode {} (node size {})",
+          TI_TRACE("Allocating ambient element for snode {} (node size {})",
                   snodes[i]->id, node_size);
           allocate_ambient(rt, i);
         }

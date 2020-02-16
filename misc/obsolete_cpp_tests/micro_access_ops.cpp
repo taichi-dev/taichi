@@ -3,7 +3,7 @@
 
 TLANG_NAMESPACE_BEGIN
 
-TC_TEST("lower_access_basics") {
+TI_TEST("lower_access_basics") {
   for (auto arch : {Arch::x86_64, Arch::gpu}) {
     for (auto vec : {1, 4, 8}) {
       CoreState::set_trigger_gdb_when_crash(true);
@@ -21,7 +21,7 @@ TC_TEST("lower_access_basics") {
       func();
 
       for (int i = 0; i < n; i++) {
-        TC_CHECK(a.val<int32>(i) == i);
+        TI_CHECK(a.val<int32>(i) == i);
       }
     }
   }

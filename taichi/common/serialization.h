@@ -16,19 +16,19 @@
 #include <iostream>
 #include <type_traits>
 
-#ifdef TC_INCLUDED
-TC_NAMESPACE_BEGIN
+#ifdef TI_INCLUDED
+TI_NAMESPACE_BEGIN
 #else
-#define TC_NAMESPACE_BEGIN
-#define TC_NAMESPACE_END
-#define TC_EXPORT
-#define TC_TRACE
-#define TC_CRITICAL
-#define TC_ASSERT assert
+#define TI_NAMESPACE_BEGIN
+#define TI_NAMESPACE_END
+#define TI_EXPORT
+#define TI_TRACE
+#define TI_CRITICAL
+#define TI_ASSERT assert
 #endif
 
 template <typename T>
-TC_EXPORT std::unique_ptr<T> create_instance_unique(const std::string &alias);
+TI_EXPORT std::unique_ptr<T> create_instance_unique(const std::string &alias);
 
 ////////////////////////////////////////////////////////////////////////////////
 //                   A Minimalist Serializer for Taichi                       //
@@ -53,7 +53,7 @@ template <typename T>
 using is_unit_t = typename is_unit<T>::type;
 }  // namespace type
 
-#define TC_IO_DECL_INST                               \
+#define TI_IO_DECL_INST                               \
   void binary_io(BinaryOutputSerializer &ser) const { \
     ser(*this);                                       \
   }                                                   \
@@ -61,7 +61,7 @@ using is_unit_t = typename is_unit<T>::type;
     ser(*this);                                       \
   }
 
-#define TC_IO_DECL_INST_VIRT                                  \
+#define TI_IO_DECL_INST_VIRT                                  \
   virtual void binary_io(BinaryOutputSerializer &ser) const { \
     ser(*this);                                               \
   }                                                           \
@@ -69,7 +69,7 @@ using is_unit_t = typename is_unit<T>::type;
     ser(*this);                                               \
   }
 
-#define TC_IO_DECL_INST_VIRT_OVERRIDE                                  \
+#define TI_IO_DECL_INST_VIRT_OVERRIDE                                  \
   virtual void binary_io(BinaryOutputSerializer &ser) const override { \
     ser(*this);                                                        \
   }                                                                    \
@@ -77,47 +77,47 @@ using is_unit_t = typename is_unit<T>::type;
     ser(*this);                                                        \
   }
 
-#define TC_IO_DECL      \
-  TC_IO_DECL_INST       \
+#define TI_IO_DECL      \
+  TI_IO_DECL_INST       \
   template <typename S> \
   void io(S &serializer) const
 
-#define TC_IO_DECL_VIRT \
-  TC_IO_DECL_INST_VIRT  \
+#define TI_IO_DECL_VIRT \
+  TI_IO_DECL_INST_VIRT  \
   template <typename S> \
   void io(S &serializer) const
 
-#define TC_IO_DECL_VIRT_OVERRIDE \
-  TC_IO_DECL_INST_VIRT_OVERRIDE  \
+#define TI_IO_DECL_VIRT_OVERRIDE \
+  TI_IO_DECL_INST_VIRT_OVERRIDE  \
   template <typename S>          \
   void io(S &serializer) const
 
-#define TC_IO_DEF(...)           \
-  TC_IO_DECL_INST                \
+#define TI_IO_DEF(...)           \
+  TI_IO_DECL_INST                \
   template <typename S>          \
   void io(S &serializer) const { \
-    TC_IO(__VA_ARGS__)           \
+    TI_IO(__VA_ARGS__)           \
   }
 
-#define TC_IO_DEF_VIRT(...)      \
-  TC_IO_DECL_INST_VIRT           \
+#define TI_IO_DEF_VIRT(...)      \
+  TI_IO_DECL_INST_VIRT           \
   template <typename S>          \
   void io(S &serializer) const { \
-    TC_IO(__VA_ARGS__)           \
+    TI_IO(__VA_ARGS__)           \
   }
 
-#define TC_IO_DEF_WITH_BASE(...) \
-  TC_IO_DECL_INST_VIRT_OVERRIDE  \
+#define TI_IO_DEF_WITH_BASE(...) \
+  TI_IO_DECL_INST_VIRT_OVERRIDE  \
   template <typename S>          \
   void io(S &serializer) const { \
     Base::io(serializer);        \
-    TC_IO(__VA_ARGS__)           \
+    TI_IO(__VA_ARGS__)           \
   }
 
-#define TC_IO(...) \
+#define TI_IO(...) \
   { serializer(#__VA_ARGS__, __VA_ARGS__); }
 
-#define TC_SERIALIZER_IS(T)                                                 \
+#define TI_SERIALIZER_IS(T)                                                 \
   (std::is_same<typename std::remove_reference<decltype(serializer)>::type, \
                 T>())
 
@@ -180,7 +180,7 @@ inline std::vector<uint8> read_data_from_file(const std::string &fn) {
   std::vector<uint8_t> data;
   std::FILE *f = fopen(fn.c_str(), "rb");
   if (f == nullptr) {
-    TC_ERROR("Cannot open file: {}", fn);
+    TI_ERROR("Cannot open file: {}", fn);
     return std::vector<uint8_t>();
   }
   if (ends_with(fn, ".zip")) {
@@ -212,7 +212,7 @@ inline void write_data_to_file(const std::string &fn,
                                std::size_t size) {
   std::FILE *f = fopen(fn.c_str(), "wb");
   if (f == nullptr) {
-    TC_ERROR("Cannot open file [{}] for writing. (Does the directory exist?)",
+    TI_ERROR("Cannot open file [{}] for writing. (Does the directory exist?)",
              fn);
     assert(f != nullptr);
   }
@@ -223,7 +223,7 @@ inline void write_data_to_file(const std::string &fn,
     fwrite(data, sizeof(uint8_t), size, f);
     std::fclose(f);
   } else {
-    TC_ERROR("File must end with .tcb or .tcb.zip. [Filename = {}]", fn);
+    TI_ERROR("File must end with .tcb or .tcb.zip. [Filename = {}]", fn);
   }
 }
 
@@ -263,7 +263,7 @@ class BinarySerializer : public Serializer {
     std::size_t n = 0;
     head = 0;
     if (preserved_ != 0) {
-      TC_TRACE("perserved = {}", preserved_);
+      TI_TRACE("perserved = {}", preserved_);
       // Preserved mode
       this->preserved = preserved_;
       assert(c_data != nullptr);
@@ -352,7 +352,7 @@ class BinarySerializer : public Serializer {
       std::size_t new_size = head + sizeof(T);
       if (c_data) {
         if (new_size > preserved) {
-          TC_CRITICAL("Preserved Buffer (size {}) Overflow.", preserved);
+          TI_CRITICAL("Preserved Buffer (size {}) Overflow.", preserved);
         }
         //*reinterpret_cast<typename type::remove_cvref_t<T> *>(&c_data[head]) =
         //    val;
@@ -444,7 +444,7 @@ class BinarySerializer : public Serializer {
     if (writing) {
       this->operator()("", ptr_to_int(val));
       if (val != nullptr) {
-        TC_ASSERT_INFO(assets.find(ptr_to_int(val)) != assets.end(),
+        TI_ASSERT_INFO(assets.find(ptr_to_int(val)) != assets.end(),
                        "Cannot find the address with a smart pointer pointing "
                        "to. Make sure the smart pointer is serialized before "
                        "the raw pointer.");
@@ -453,7 +453,7 @@ class BinarySerializer : public Serializer {
       std::size_t val_ptr;
       this->operator()("", val_ptr);
       if (val_ptr != 0) {
-        TC_ASSERT(assets.find(val_ptr) != assets.end());
+        TI_ASSERT(assets.find(val_ptr) != assets.end());
         val = reinterpret_cast<typename std::remove_pointer<T>::type *>(
             assets[val_ptr]);
       }
@@ -759,4 +759,4 @@ static_assert(
         std::vector<std::unique_ptr<int>> &>(),
     "");
 
-TC_NAMESPACE_END
+TI_NAMESPACE_END

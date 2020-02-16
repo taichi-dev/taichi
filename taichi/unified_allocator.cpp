@@ -23,15 +23,15 @@ UnifiedAllocator::UnifiedAllocator(std::size_t size, Arch arch)
     //  - kernel B is getting loaded via cuModuleLoadDataEx (and get stuck for
     //  some reason)
     // So we need a mutex here...
-    TC_TRACE("Allocating unified (CPU+GPU) address space of size {} MB",
+    TI_TRACE("Allocating unified (CPU+GPU) address space of size {} MB",
              size / 1024 / 1024);
 #if defined(CUDA_FOUND)
     std::lock_guard<std::mutex> _(cuda_context->lock);
     check_cuda_error(cudaMallocManaged(&_cuda_data, size));
     if (_cuda_data == nullptr) {
-      TC_ERROR("GPU memory allocation failed.");
+      TI_ERROR("GPU memory allocation failed.");
     }
-#if !defined(TI_ARCH_ARM) && !defined(TC_PLATFORM_WINDOWS)
+#if !defined(TI_ARCH_ARM) && !defined(TI_PLATFORM_WINDOWS)
     // Assuming ARM devices have shared CPU/GPU memory and do no support
     // memAdvise; CUDA on Windows has limited support for unified memory
     check_cuda_error_as_warning(
@@ -46,20 +46,20 @@ UnifiedAllocator::UnifiedAllocator(std::size_t size, Arch arch)
                   */
     data = (uint8 *)_cuda_data;
 #else
-    TC_NOT_IMPLEMENTED
+    TI_NOT_IMPLEMENTED
 #endif
   } else {
-    TC_TRACE("Allocating virtual address space of size {} MB",
+    TI_TRACE("Allocating virtual address space of size {} MB",
              size / 1024 / 1024);
     cpu_vm = std::make_unique<VirtualMemoryAllocator>(size);
     data = (uint8 *)cpu_vm->ptr;
   }
-  TC_ASSERT(data != nullptr);
-  TC_ASSERT(uint64(data) % 4096 == 0);
+  TI_ASSERT(data != nullptr);
+  TI_ASSERT(uint64(data) % 4096 == 0);
 
   head = data;
   tail = head + size;
-  TC_TRACE("Memory allocated. Allocation time = {:.3} s", Time::get_time() - t);
+  TI_TRACE("Memory allocated. Allocation time = {:.3} s", Time::get_time() - t);
 }
 
 taichi::Tlang::UnifiedAllocator::~UnifiedAllocator() {
@@ -70,7 +70,7 @@ taichi::Tlang::UnifiedAllocator::~UnifiedAllocator() {
 #if defined(CUDA_FOUND)
     check_cuda_error(cudaFree(_cuda_data));
 #else
-    TC_ERROR("No CUDA support");
+    TI_ERROR("No CUDA support");
 #endif
   }
 }

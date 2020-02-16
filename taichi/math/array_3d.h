@@ -14,7 +14,7 @@
 #include "array_fwd.h"
 #include "linalg.h"
 
-TC_NAMESPACE_BEGIN
+TI_NAMESPACE_BEGIN
 
 template <>
 class IndexND<3> {
@@ -25,7 +25,7 @@ class IndexND<3> {
   int i, j, k;
   Vector3 storage_offset;
 
-  TC_IO_DEF(i, j, k, x, y, z, storage_offset);
+  TI_IO_DEF(i, j, k, x, y, z, storage_offset);
   using Index3D = IndexND<3>;
 
   IndexND() {
@@ -127,11 +127,11 @@ class IndexND<3> {
     return *this;
   }
 
-  TC_FORCE_INLINE int operator[](int c) {
+  TI_FORCE_INLINE int operator[](int c) {
     return *(&i + c);
   }
 
-  TC_FORCE_INLINE int operator[](int c) const {
+  TI_FORCE_INLINE int operator[](int c) const {
     return *(&i + c);
   }
 
@@ -229,13 +229,13 @@ class RegionND<3> {
     return index_end;
   }
 
-  TC_IO_DECL {
-    TC_IO(x);
-    TC_IO(y);
-    TC_IO(z);
-    TC_IO(index_begin);
-    TC_IO(index_end);
-    TC_IO(storage_offset);
+  TI_IO_DECL {
+    TI_IO(x);
+    TI_IO(y);
+    TI_IO(z);
+    TI_IO(index_begin);
+    TI_IO(index_end);
+    TI_IO(storage_offset);
   }
 };
 
@@ -255,11 +255,11 @@ class ArrayND<3, T> {
     T *data;
     int offset;
 
-    TC_FORCE_INLINE Accessor2D(T *data, int offset)
+    TI_FORCE_INLINE Accessor2D(T *data, int offset)
         : data(data), offset(offset) {
     }
 
-    TC_FORCE_INLINE T *operator[](int i) const {
+    TI_FORCE_INLINE T *operator[](int i) const {
       return data + offset * i;
     }
   };
@@ -268,11 +268,11 @@ class ArrayND<3, T> {
     const T *data;
     int offset;
 
-    TC_FORCE_INLINE ConstAccessor2D(const T *data, int offset)
+    TI_FORCE_INLINE ConstAccessor2D(const T *data, int offset)
         : data(data), offset(offset) {
     }
 
-    TC_FORCE_INLINE const T *operator[](int i) const {
+    TI_FORCE_INLINE const T *operator[](int i) const {
       return data + offset * i;
     }
   };
@@ -282,15 +282,15 @@ class ArrayND<3, T> {
   template <typename S>
   using Array3D = ArrayND<3, S>;
 
-  TC_FORCE_INLINE int get_size() const {
+  TI_FORCE_INLINE int get_size() const {
     return size;
   }
 
-  TC_FORCE_INLINE const Region3D &get_region() const {
+  TI_FORCE_INLINE const Region3D &get_region() const {
     return region;
   }
 
-  TC_FORCE_INLINE ArrayND(const Vector3i &resolution,
+  TI_FORCE_INLINE ArrayND(const Vector3i &resolution,
                           T init = T(0),
                           Vector3 storage_offset = Vector3(0.5f)) {
     initialize(resolution, init, storage_offset);
@@ -422,11 +422,11 @@ class ArrayND<3, T> {
     }
   }
 
-  TC_FORCE_INLINE const Accessor2D operator[](int i) {
+  TI_FORCE_INLINE const Accessor2D operator[](int i) {
     return Accessor2D(&data[0] + i * stride, res[2]);
   }
 
-  TC_FORCE_INLINE const ConstAccessor2D operator[](int i) const {
+  TI_FORCE_INLINE const ConstAccessor2D operator[](int i) const {
     return ConstAccessor2D(&data[0] + i * stride, res[2]);
   }
 
@@ -612,19 +612,19 @@ class ArrayND<3, T> {
     return data.cend();
   }
 
-  TC_FORCE_INLINE T &operator[](const Vector3i &pos) {
+  TI_FORCE_INLINE T &operator[](const Vector3i &pos) {
     return data[(pos.x * res[1] + pos.y) * res[2] + pos.z];
   }
 
-  TC_FORCE_INLINE const T &operator[](const Vector3i &pos) const {
+  TI_FORCE_INLINE const T &operator[](const Vector3i &pos) const {
     return (*this)[pos.x][pos.y][pos.z];
   }
 
-  TC_FORCE_INLINE T &operator[](const Index3D &index) {
+  TI_FORCE_INLINE T &operator[](const Index3D &index) {
     return (*this)[index.i][index.j][index.k];
   }
 
-  TC_FORCE_INLINE const T &operator[](const Index3D &index) const {
+  TI_FORCE_INLINE const T &operator[](const Index3D &index) const {
     return (*this)[index.i][index.j][index.k];
   }
 
@@ -708,4 +708,4 @@ void print(const Array3D<T> &arr) {
 }
 
 void test_array_3d();
-TC_NAMESPACE_END
+TI_NAMESPACE_END

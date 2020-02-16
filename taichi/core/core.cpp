@@ -6,7 +6,7 @@
 #include <taichi/common/util.h>
 #include <taichi/common/version.h>
 
-TC_NAMESPACE_BEGIN
+TI_NAMESPACE_BEGIN
 
 bool is_release() {
   auto dir = std::getenv("TAICHI_REPO_DIR");
@@ -31,11 +31,11 @@ std::string get_repo_dir() {
   auto dir = std::getenv("TAICHI_REPO_DIR");
   if (is_release()) {
     // release mode. Use ~/.taichi as root
-#if defined(TC_PLATFORM_WINDOWS)
+#if defined(TI_PLATFORM_WINDOWS)
     return "C:/taichi_cache/";
 #else
     auto home = std::getenv("HOME");
-    TC_ASSERT(home != nullptr);
+    TI_ASSERT(home != nullptr);
     return std::string(home) + "/.taichi/";
 #endif
   } else {
@@ -79,4 +79,4 @@ std::string get_cuda_root_dir() {
   return TI_CUDAROOT_DIR;
 }
 
-TC_NAMESPACE_END
+TI_NAMESPACE_END

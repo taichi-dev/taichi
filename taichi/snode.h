@@ -41,7 +41,7 @@ class Index {
     value = 0;
   }
   Index(int value) : value(value) {
-    TC_ERROR_UNLESS(0 <= value && value < max_num_indices,
+    TI_ERROR_UNLESS(0 <= value && value < max_num_indices,
                     "Too many dimensions. The maximum dimensionality is {}",
                     max_num_indices);
   }
@@ -204,8 +204,8 @@ class SNode {
   SNode &place(Expr &expr);
 
   SNode &dynamic_chunked(const Index &expr, int n, int chunk_size) {
-    TC_ASSERT(bit::is_power_of_two(n));
-    TC_ASSERT(bit::is_power_of_two(chunk_size));
+    TI_ASSERT(bit::is_power_of_two(n));
+    TI_ASSERT(bit::is_power_of_two(chunk_size));
     auto &child = insert_children(SNodeType::dynamic);
     child.extractors[expr.value].activate(bit::log2int(n));
     child.n = n;
@@ -224,8 +224,8 @@ class SNode {
   }
 
   void *evaluate(void *ds, int i, int j, int k, int l) {
-    TC_ASSERT(access_func);
-    TC_ASSERT(max_num_indices == 4);
+    TI_ASSERT(access_func);
+    TI_ASSERT(max_num_indices == 4);
     return access_func(ds, i, j, k, l);
   }
 
@@ -237,8 +237,8 @@ class SNode {
   void write_int(const std::vector<int> &I, int64);
   int64 read_int(const std::vector<int> &I);
 
-  TC_FORCE_INLINE AllocatorStat stat() {
-    TC_ASSERT(stat_func);
+  TI_FORCE_INLINE AllocatorStat stat() {
+    TI_ASSERT(stat_func);
     return stat_func();
   }
 
@@ -289,12 +289,12 @@ class SNode {
   }
 
   std::string get_ch_from_parent_func_name() const {
-    TC_ASSERT(parent != nullptr);
+    TI_ASSERT(parent != nullptr);
     return fmt::format("get_ch_{}_to_{}", parent->get_name(), get_name());
   }
 
   std::string refine_coordinates_func_name() const {
-    TC_ASSERT(type != SNodeType::place);
+    TI_ASSERT(type != SNodeType::place);
     return fmt::format("{}_refine_coordinates", get_name());
   }
 

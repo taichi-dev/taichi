@@ -10,7 +10,7 @@
   do {                                                          \
     auto __err = (err);                                         \
     if (int(__err))                                             \
-      TC_ERROR("Cuda Error {}: {}", get_cuda_error_name(__err), \
+      TI_ERROR("Cuda Error {}: {}", get_cuda_error_name(__err), \
                get_cuda_error_string(__err));                   \
   } while (0)
 
@@ -18,7 +18,7 @@
   do {                                                                   \
     auto __err = (err);                                                  \
     if (int(__err))                                                      \
-      TC_WARN("Cuda Error {} (treated as warning): {}",                  \
+      TI_WARN("Cuda Error {} (treated as warning): {}",                  \
               get_cuda_error_name(__err), get_cuda_error_string(__err)); \
   } while (0)
 

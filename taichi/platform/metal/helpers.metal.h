@@ -1,4 +1,4 @@
-#ifdef TC_INSIDE_METAL_CODEGEN
+#ifdef TI_INSIDE_METAL_CODEGEN
 
 #define METAL_BEGIN_HELPERS_DEF constexpr auto kMetalHelpersSourceCode =
 #define METAL_END_HELPERS_DEF ;
@@ -27,7 +27,7 @@ namespace metal {
 bool memory_order_relaxed = false;
 }  // namespace metal
 
-#endif  // TC_INSIDE_METAL_CODEGEN
+#endif  // TI_INSIDE_METAL_CODEGEN
 
 METAL_BEGIN_HELPERS_DEF
 STR(

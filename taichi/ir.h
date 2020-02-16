@@ -29,7 +29,7 @@ class DiffRange {
   }
 
   DiffRange(bool related, int coeff) : DiffRange(related, 0, 0) {
-    TC_ASSERT(related == false);
+    TI_ASSERT(related == false);
   }
 
   DiffRange(bool related, int coeff, int low)
@@ -52,7 +52,7 @@ class DiffRange {
   }
 
   bool certain() {
-    TC_ASSERT(related);
+    TI_ASSERT(related);
     return high == low + 1;
   }
 };
@@ -321,7 +321,7 @@ class IRVisitor {
   // default visitor
   virtual void visit(Stmt *stmt) {
     if (!allow_undefined_visitor) {
-      TC_ERROR(
+      TI_ERROR(
           "missing visitor function. Is the statement class registered via "
           "DEFINE_VISIT?");
     }
@@ -333,7 +333,7 @@ class IRVisitor {
       if (invoke_default_visitor)  \
         visit((Stmt *)stmt);       \
     } else                         \
-      TC_NOT_IMPLEMENTED;          \
+      TI_NOT_IMPLEMENTED;          \
   }
 
   DEFINE_VISIT(Block);
@@ -345,7 +345,7 @@ class IRVisitor {
 class IRNode {
  public:
   virtual void accept(IRVisitor *visitor) {
-    TC_NOT_IMPLEMENTED
+    TI_NOT_IMPLEMENTED
   }
   virtual ~IRNode() = default;
 };
@@ -383,12 +383,12 @@ struct LaneAttribute {
   }
 
   T &operator[](int i) {
-    TC_ASSERT(0 <= i && i < (int)data.size());
+    TI_ASSERT(0 <= i && i < (int)data.size());
     return data[i];
   }
 
   const T &operator[](int i) const {
-    TC_ASSERT(0 <= i && i < (int)data.size());
+    TI_ASSERT(0 <= i && i < (int)data.size());
     return data[i];
   }
 
@@ -399,7 +399,7 @@ struct LaneAttribute {
 
   // for initializing single lane
   LaneAttribute &operator=(const T &t) {
-    TC_ASSERT(data.size() == 1);
+    TI_ASSERT(data.size() == 1);
     data[0] = t;
     return *this;
   }
@@ -432,8 +432,8 @@ struct LaneAttribute {
     } else if (bracket == "(") {
       ret += ")";
     } else if (bracket != "") {
-      TC_P(bracket);
-      TC_NOT_IMPLEMENTED
+      TI_P(bracket);
+      TI_NOT_IMPLEMENTED
     }
     return ret;
   }
@@ -453,14 +453,14 @@ struct LaneAttribute {
     } else if (bracket == "(") {
       ret += ")";
     } else if (bracket != "") {
-      TC_P(bracket);
-      TC_NOT_IMPLEMENTED
+      TI_P(bracket);
+      TI_NOT_IMPLEMENTED
     }
     return ret;
   }
 
   operator T() const {
-    TC_ASSERT(data.size() == 1);
+    TI_ASSERT(data.size() == 1);
     return data[0];
   }
 
@@ -551,7 +551,7 @@ class Stmt : public IRNode {
 
   template <typename T>
   T *as() {
-    TC_ASSERT(is<T>());
+    TI_ASSERT(is<T>());
     return dynamic_cast<T *>(this);
   }
 
@@ -560,12 +560,12 @@ class Stmt : public IRNode {
     return dynamic_cast<T *>(this);
   }
 
-  TC_FORCE_INLINE int num_operands() const {
+  TI_FORCE_INLINE int num_operands() const {
     return (int)operands.size();
   }
 
-  TC_FORCE_INLINE Stmt *operand(int i) const {
-    // TC_ASSERT(0 <= i && i < (int)operands.size());
+  TI_FORCE_INLINE Stmt *operand(int i) const {
+    // TI_ASSERT(0 <= i && i < (int)operands.size());
     return *operands[i];
   }
 
@@ -599,10 +599,10 @@ class Stmt : public IRNode {
   }
 
   virtual void rebuild_operands() {
-    TC_NOT_IMPLEMENTED;
+    TI_NOT_IMPLEMENTED;
   }
 
-  TC_FORCE_INLINE bool may_have_operand(Stmt *stmt) const {
+  TI_FORCE_INLINE bool may_have_operand(Stmt *stmt) const {
     return (operand_bitmap & operand_hash(stmt)) != 0;
   }
 
@@ -669,7 +669,7 @@ class Expression {
   virtual std::string serialize() = 0;
 
   virtual void flatten(VecStatement &ret) {
-    TC_NOT_IMPLEMENTED;
+    TI_NOT_IMPLEMENTED;
   };
 
   virtual bool is_lvalue() const {
@@ -685,7 +685,7 @@ class Expression {
 
   std::string get_attribute(const std::string &key) const {
     if (auto it = attributes.find(key); it == attributes.end()) {
-      TC_ERROR("Attribute {} not found.", key);
+      TI_ERROR("Attribute {} not found.", key);
     } else {
       return it->second;
     }
@@ -805,7 +805,7 @@ class UnaryOpStmt : public Stmt {
 
   UnaryOpStmt(UnaryOpType op_type, Stmt *operand)
       : op_type(op_type), operand(operand) {
-    TC_ASSERT(!operand->is<AllocaStmt>());
+    TI_ASSERT(!operand->is<AllocaStmt>());
     add_operand(this->operand);
     cast_type = DataType::unknown;
     cast_by_value = true;
@@ -970,8 +970,8 @@ class BinaryOpStmt : public Stmt {
 
   BinaryOpStmt(BinaryOpType op_type, Stmt *lhs, Stmt *rhs)
       : op_type(op_type), lhs(lhs), rhs(rhs) {
-    TC_ASSERT(!lhs->is<AllocaStmt>());
-    TC_ASSERT(!rhs->is<AllocaStmt>());
+    TI_ASSERT(!lhs->is<AllocaStmt>());
+    TI_ASSERT(!rhs->is<AllocaStmt>());
     add_operand(this->lhs);
     add_operand(this->rhs);
   }
@@ -989,9 +989,9 @@ class TernaryOpStmt : public Stmt {
 
   TernaryOpStmt(TernaryOpType op_type, Stmt *op1, Stmt *op2, Stmt *op3)
       : op_type(op_type), op1(op1), op2(op2), op3(op3) {
-    TC_ASSERT(!op1->is<AllocaStmt>());
-    TC_ASSERT(!op2->is<AllocaStmt>());
-    TC_ASSERT(!op3->is<AllocaStmt>());
+    TI_ASSERT(!op1->is<AllocaStmt>());
+    TI_ASSERT(!op2->is<AllocaStmt>());
+    TI_ASSERT(!op3->is<AllocaStmt>());
     add_operand(this->op1);
     add_operand(this->op2);
     add_operand(this->op3);
@@ -1087,8 +1087,8 @@ class ExternalPtrStmt : public Stmt {
       : base_ptrs(base_ptrs), indices(indices) {
     DataType dt = DataType::f32;
     for (int i = 0; i < (int)base_ptrs.size(); i++) {
-      TC_ASSERT(base_ptrs[i] != nullptr);
-      TC_ASSERT(base_ptrs[i]->is<ArgLoadStmt>());
+      TI_ASSERT(base_ptrs[i] != nullptr);
+      TI_ASSERT(base_ptrs[i]->is<ArgLoadStmt>());
     }
     for (int i = 0; i < (int)base_ptrs.size(); i++) {
       add_operand(this->base_ptrs[i]);
@@ -1118,8 +1118,8 @@ class GlobalPtrStmt : public Stmt {
       : snodes(snodes), indices(indices) {
     activate = true;  // use a strong access by default
     for (int i = 0; i < (int)snodes.size(); i++) {
-      TC_ASSERT(snodes[i] != nullptr);
-      TC_ASSERT(snodes[0]->dt == snodes[i]->dt);
+      TI_ASSERT(snodes[i] != nullptr);
+      TI_ASSERT(snodes[0]->dt == snodes[i]->dt);
     }
     for (int i = 0; i < (int)indices.size(); i++) {
       add_operand(this->indices[i]);
@@ -1197,7 +1197,7 @@ class GlobalVariableExpression : public Expression {
   }
 
   void flatten(VecStatement &ret) override {
-    TC_ASSERT(snode->num_active_indices == 0);
+    TI_ASSERT(snode->num_active_indices == 0);
     auto ptr = Stmt::make<GlobalPtrStmt>(LaneAttribute<SNode *>(snode),
                                          std::vector<Stmt *>());
     ret.push_back(std::move(ptr));
@@ -1234,7 +1234,7 @@ class GlobalPtrExpression : public Expression {
       ret.push_back(std::make_unique<GlobalPtrStmt>(
           var.cast<GlobalVariableExpression>()->snode, index_stmts));
     } else {
-      TC_ASSERT(var.is<ExternalTensorExpression>());
+      TI_ASSERT(var.is<ExternalTensorExpression>());
       var->flatten(ret);
       ret.push_back(std::make_unique<ExternalPtrStmt>(
           var.cast<ExternalTensorExpression>()->stmt, index_stmts));
@@ -1327,7 +1327,7 @@ class Block : public IRNode {
         break;
       }
     }
-    TC_ASSERT(location != -1);
+    TI_ASSERT(location != -1);
     for (int i = (int)new_statements.size() - 1; i >= 0; i--) {
       insert(std::move(new_statements[i]), location);
     }
@@ -1343,7 +1343,7 @@ class Block : public IRNode {
         break;
       }
     }
-    TC_ASSERT(location != -1);
+    TI_ASSERT(location != -1);
     if (replace_usages)
       old_statement->replace_with(new_statements.back().get());
     trash_bin.push_back(std::move(statements[location]));
@@ -1403,10 +1403,10 @@ class FrontendSNodeOpStmt : public Stmt {
                       Expr val = Expr(nullptr))
       : op_type(op_type), snode(snode), indices(indices.loaded()), val(val) {
     if (val.expr != nullptr) {
-      TC_ASSERT(op_type == SNodeOpType::append);
+      TI_ASSERT(op_type == SNodeOpType::append);
       this->val.set(load_if_ptr(val));
     } else {
-      TC_ASSERT(op_type != SNodeOpType::append);
+      TI_ASSERT(op_type != SNodeOpType::append);
     }
   }
 
@@ -1434,7 +1434,7 @@ class SNodeOpStmt : public Stmt {
       : op_type(op_type), snode(snode), indices(indices) {
     ptr = nullptr;
     val = nullptr;
-    TC_ASSERT(op_type == SNodeOpType::is_active ||
+    TI_ASSERT(op_type == SNodeOpType::is_active ||
               op_type == SNodeOpType::deactivate);
     add_operand(this->ptr);
     for (int i = 0; i < (int)indices.size(); i++) {
@@ -1470,7 +1470,7 @@ class AssertStmt : public Stmt {
 
   AssertStmt(const std::string &text, Stmt *val) : text(text), val(val) {
     add_operand(this->val);
-    TC_ASSERT(val);
+    TI_ASSERT(val);
   }
 
   DEFINE_ACCEPT
@@ -1704,7 +1704,7 @@ class ConstStmt : public Stmt {
     width() = val.size();
     element_type() = val[0].dt;
     for (int i = 0; i < ret_type.width; i++) {
-      TC_ASSERT(val[0].dt == val[i].dt);
+      TI_ASSERT(val[0].dt == val[i].dt);
     }
   }
 
@@ -1971,7 +1971,7 @@ class AtomicOpExpression : public Expression {
                          val.serialize());
     } else {
       // min/max not supported in the LLVM backend yet.
-      TC_NOT_IMPLEMENTED;
+      TI_NOT_IMPLEMENTED;
     }
   }
 
@@ -2023,7 +2023,7 @@ class SNodeOpExpression : public Expression {
     if (op_type == SNodeOpType::is_active) {
       // is_active cannot be lowered all the way to a global pointer.
       // It should be lowered into a pointer to parent and an index.
-      TC_ERROR_IF(
+      TI_ERROR_IF(
           snode->type != SNodeType::pointer && snode->type != SNodeType::hash,
           "ti.is_active only works on hash and pointer nodes.");
       ret.push_back<SNodeOpStmt>(SNodeOpType::is_active, snode, indices_stmt);
@@ -2033,11 +2033,11 @@ class SNodeOpExpression : public Expression {
         value->flatten(ret);
         ret.push_back<SNodeOpStmt>(SNodeOpType::append, snode, ptr,
                                    ret.back().get());
-        TC_ERROR_IF(snode->type != SNodeType::dynamic,
+        TI_ERROR_IF(snode->type != SNodeType::dynamic,
                     "ti.append only works on dynamic nodes.");
-        TC_ERROR_IF(snode->ch.size() != 1,
+        TI_ERROR_IF(snode->ch.size() != 1,
                     "ti.append only works on single-child dynamic nodes.");
-        TC_ERROR_IF(data_type_size(snode->ch[0]->dt) != 4,
+        TI_ERROR_IF(data_type_size(snode->ch[0]->dt) != 4,
                     "ti.append only works on i32/f32 nodes.");
       } else if (op_type == SNodeOpType::length) {
         ret.push_back<SNodeOpStmt>(SNodeOpType::length, snode, ptr, nullptr);
@@ -2085,12 +2085,12 @@ class ConstExpression : public Expression {
 template <typename T, typename... Indices>
 T &Expr::val(Indices... indices) {
   auto e = this->cast<GlobalVariableExpression>();
-  TC_ASSERT(is<GlobalVariableExpression>());
+  TI_ASSERT(is<GlobalVariableExpression>());
   return *(T *)val_tmp(get_data_type<T>(), indices...);
 }
 
 inline Expr load(Expr ptr) {
-  TC_ASSERT(ptr.is<GlobalPtrExpression>());
+  TI_ASSERT(ptr.is<GlobalPtrExpression>());
   return Expr::make<GlobalLoadExpression>(ptr);
 }
 
@@ -2098,7 +2098,7 @@ inline Expr load_if_ptr(const Expr &ptr) {
   if (ptr.is<GlobalPtrExpression>()) {
     return load(ptr);
   } else if (ptr.is<GlobalVariableExpression>()) {
-    TC_ASSERT(ptr.cast<GlobalVariableExpression>()->snode->num_active_indices ==
+    TI_ASSERT(ptr.cast<GlobalVariableExpression>()->snode->num_active_indices ==
               0);
     return load(ptr[ExprGroup()]);
   } else
@@ -2108,7 +2108,7 @@ inline Expr load_if_ptr(const Expr &ptr) {
 inline Expr ptr_if_global(const Expr &var) {
   if (var.is<GlobalVariableExpression>()) {
     // singleton global variable
-    TC_ASSERT(var.snode()->num_active_indices == 0);
+    TI_ASSERT(var.snode()->num_active_indices == 0);
     return var[ExprGroup()];
   } else {
     // may be any local or global expr
@@ -2143,7 +2143,7 @@ inline void CacheL1(const Expr &var) {
 }
 
 inline void BlockDim(int v) {
-  TC_ASSERT(bit::is_power_of_two(v));
+  TI_ASSERT(bit::is_power_of_two(v));
   dec.block_dim = v;
 }
 

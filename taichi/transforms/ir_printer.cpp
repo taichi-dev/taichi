@@ -414,7 +414,7 @@ class IRPrinter : public IRVisitor {
             stmt->snode->get_node_type_name_hinted());
     } else {
       print("{} = offloaded {} {{", stmt->name(), details);
-      TC_ASSERT(stmt->body);
+      TI_ASSERT(stmt->body);
       stmt->body->accept(this);
       print("}}");
     }

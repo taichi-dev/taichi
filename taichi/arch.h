@@ -21,7 +21,7 @@ inline std::string arch_name(Arch arch) {
 #include "inc/archs.inc.h"
 #undef PER_ARCH
     default:
-      TC_NOT_IMPLEMENTED
+      TI_NOT_IMPLEMENTED
   }
 }
 

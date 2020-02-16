@@ -1,6 +1,6 @@
 #include <taichi/common/util.h>
 
-TC_NAMESPACE_BEGIN
+TI_NAMESPACE_BEGIN
 /*
    base64.cpp and base64.h
 
@@ -129,4 +129,4 @@ inline std::string base64_decode(std::string const &encoded_string) {
   return ret;
 }
 
-TC_NAMESPACE_END
+TI_NAMESPACE_END

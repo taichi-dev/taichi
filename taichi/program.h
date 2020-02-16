@@ -18,7 +18,7 @@
 #include <taichi/platform/metal/metal_kernel_util.h>
 #include <taichi/platform/metal/metal_runtime.h>
 
-#if defined(TC_PLATFORM_UNIX)
+#if defined(TI_PLATFORM_UNIX)
 #include <dlfcn.h>
 #endif
 
@@ -26,7 +26,7 @@ TLANG_NAMESPACE_BEGIN
 
 extern Program *current_program;
 
-TC_FORCE_INLINE Program &get_current_program() {
+TI_FORCE_INLINE Program &get_current_program() {
   return *current_program;
 }
 
@@ -143,7 +143,7 @@ class Program {
   void materialize_layout();
 
   inline Kernel &get_current_kernel() {
-    TC_ASSERT(current_kernel);
+    TI_ASSERT(current_kernel);
     return *current_kernel;
   }
 

@@ -9,14 +9,14 @@ TLANG_NAMESPACE_BEGIN
 StructCompiler::StructCompiler(Program *prog)
     : CodeGenBase(), loopgen(this), prog(prog) {
   creator = [] {
-    TC_ERROR("Not Specified");
+    TI_ERROR("Not Specified");
     return nullptr;
   };
   profiler_clear = [] {
-    TC_WARN("Profiler not yet implemented in this backend.");
+    TI_WARN("Profiler not yet implemented in this backend.");
   };
   profiler_print = [] {
-    TC_WARN("Profiler not yet implemented in this backend.");
+    TI_WARN("Profiler not yet implemented in this backend.");
   };
 
   if (get_current_program().config.arch == Arch::x86_64)
@@ -42,7 +42,7 @@ void StructCompiler::collect_snodes(SNode &snode) {
 }
 
 void StructCompiler::infer_snode_properties(SNode &snode) {
-  // TC_P(snode.type_name());
+  // TI_P(snode.type_name());
   for (int ch_id = 0; ch_id < (int)snode.ch.size(); ch_id++) {
     auto &ch = snode.ch[ch_id];
     ch->parent = &snode;
@@ -71,7 +71,7 @@ void StructCompiler::infer_snode_properties(SNode &snode) {
     if (ch_id == 0) {
       snode.total_bit_start = total_bits_start_inferred;
     } else if (snode.parent != nullptr) {  // root is ok
-      // TC_ASSERT(snode.total_bit_start == total_bits_start_inferred);
+      // TI_ASSERT(snode.total_bit_start == total_bits_start_inferred);
     }
     // infer extractors
     int acc_offsets = 0;
@@ -82,9 +82,9 @@ void StructCompiler::infer_snode_properties(SNode &snode) {
         snode.extractors[i].acc_offset = acc_offsets;
       } else if (snode.parent != nullptr) {  // root is OK
         /*
-        TC_ASSERT_INFO(snode.extractors[i].start == inferred,
+        TI_ASSERT_INFO(snode.extractors[i].start == inferred,
                        "Inconsistent bit configuration");
-        TC_ASSERT_INFO(snode.extractors[i].dest_offset ==
+        TI_ASSERT_INFO(snode.extractors[i].dest_offset ==
                            snode.total_bit_start + acc_offsets,
                        "Inconsistent bit configuration");
                        */
@@ -98,14 +98,14 @@ void StructCompiler::infer_snode_properties(SNode &snode) {
           active_extractor_counder += 1;
           SNode *p = snode.parent;
           while (p) {
-            TC_ASSERT_INFO(
+            TI_ASSERT_INFO(
                 p->extractors[i].num_bits == 0,
                 "Dynamic SNode must have a standalone dimensionality.");
             p = p->parent;
           }
         }
       }
-      TC_ASSERT_INFO(active_extractor_counder == 1,
+      TI_ASSERT_INFO(active_extractor_counder == 1,
                      "Dynamic SNode can have only one index extractor.");
     }
   }
@@ -126,7 +126,7 @@ void StructCompiler::infer_snode_properties(SNode &snode) {
 
   if (snode.ch.empty()) {
     if (snode.type != SNodeType::place && snode.type != SNodeType::root) {
-      TC_ERROR("{} node must have at least one child.",
+      TI_ERROR("{} node must have at least one child.",
                snode_type_name(snode.type));
     }
   }
@@ -136,7 +136,7 @@ void StructCompiler::generate_types(SNode &snode) {
   auto type = snode.type;
 
   if (snode.type != SNodeType::place && snode.ch.empty()) {
-    TC_ERROR("Non-place node should have at least one child.");
+    TI_ERROR("Non-place node should have at least one child.");
   }
 
   // create children type that supports forking...
@@ -145,12 +145,12 @@ void StructCompiler::generate_types(SNode &snode) {
     emit("{} member{};", snode.ch[i]->node_type_name, i);
   }
   if (snode.ch.size() == 1 && snode.ch[0]->type == SNodeType::place) {
-    emit("TC_DEVICE {}_ch({} v) {{*get0()=v;}}", snode.node_type_name,
+    emit("TI_DEVICE {}_ch({} v) {{*get0()=v;}}", snode.node_type_name,
          snode.ch[0]->node_type_name);
-    emit("TC_DEVICE {}_ch() = default;", snode.node_type_name);
+    emit("TI_DEVICE {}_ch() = default;", snode.node_type_name);
   }
   for (int i = 0; i < (int)snode.ch.size(); i++) {
-    emit("TC_DEVICE {} *get{}() {{return &member{};}} ",
+    emit("TI_DEVICE {} *get{}() {{return &member{};}} ",
          snode.ch[i]->node_type_name, i, i);
   }
   emit("}};");
@@ -172,15 +172,15 @@ void StructCompiler::generate_types(SNode &snode) {
     emit("using {} = hash<{}_ch>;", snode.node_type_name, snode.node_type_name);
   } else if (type == SNodeType::place) {
     emit(
-        "struct {} {{ using val_type = {}; val_type val; TC_DEVICE operator "
+        "struct {} {{ using val_type = {}; val_type val; TI_DEVICE operator "
         "{}() {{return val;}} "
-        "TC_DEVICE {}(){{}} TC_DEVICE {}({} val) "
+        "TI_DEVICE {}(){{}} TI_DEVICE {}({} val) "
         ": val(val){{ }} }};",
         snode.node_type_name, snode.data_type_name(), snode.data_type_name(),
         snode.node_type_name, snode.node_type_name, snode.data_type_name());
   } else {
-    TC_P(snode.type_name());
-    TC_NOT_IMPLEMENTED;
+    TI_P(snode.type_name());
+    TI_NOT_IMPLEMENTED;
   }
 
   if (snode.has_null()) {
@@ -203,14 +203,14 @@ void StructCompiler::generate_leaf_accessors(SNode &snode) {
 
   if (!is_leaf) {
     // Chain accessors for non-leaf nodes
-    TC_ASSERT(snode.ch.size() > 0);
+    TI_ASSERT(snode.ch.size() > 0);
     for (int i = 0; i < (int)snode.ch.size(); i++) {
       auto ch = snode.ch[i];
       emit(
           "TLANG_ACCESSOR {} *access_{}({} *parent, int i "
           ") {{",
           ch->node_type_name, ch->node_type_name, snode.node_type_name);
-      // emit("#if defined(TC_STRUCT)");
+      // emit("#if defined(TI_STRUCT)");
       // emit("parent->activate(i, index);");
       // emit("#endif");
       emit("auto lookup = parent->look_up(i); ");
@@ -225,7 +225,7 @@ void StructCompiler::generate_leaf_accessors(SNode &snode) {
   }
   // SNode::place & indirect
   // emit end2end accessors for leaf (place) nodes, using chain accessors
-  TC_ASSERT(max_num_indices == 4);
+  TI_ASSERT(max_num_indices == 4);
   constexpr int mode_weak_access = 0;
   constexpr int mode_strong_access = 1;
   constexpr int mode_activate = 2;
@@ -245,7 +245,7 @@ void StructCompiler::generate_leaf_accessors(SNode &snode) {
     auto ret_type =
         mode == mode_query ? "bool" : fmt::format("{} *", snode.node_type_name);
     emit(
-        "TLANG_ACCESSOR TC_EXPORT {} {}_{}(void *root, int i0=0, int i1=0, "
+        "TLANG_ACCESSOR TI_EXPORT {} {}_{}(void *root, int i0=0, int i1=0, "
         "int "
         "i2=0, "
         "int i3=0) {{",
@@ -268,7 +268,7 @@ void StructCompiler::generate_leaf_accessors(SNode &snode) {
             emit("tmp = (tmp << {}) + ((i{} >> {}) & ((1 << {}) - 1));",
                  e.num_bits, j, e.start, e.num_bits);
           } else {
-            TC_WARN("Emitting shortcut indexing");
+            TI_WARN("Emitting shortcut indexing");
             emit("tmp = i{};", j);
           }
         }
@@ -278,7 +278,7 @@ void StructCompiler::generate_leaf_accessors(SNode &snode) {
         if (force_activate)
           emit("#if 1");
         else
-          emit("#if defined(TC_STRUCT)");
+          emit("#if defined(TI_STRUCT)");
       }
       if (stack[i]->type != SNodeType::place) {
         if (mode == mode_query) {
@@ -372,13 +372,13 @@ void StructCompiler::run(SNode &root, bool host) {
   for (int i = 0; i < (int)snodes.size(); i++) {
     if (snodes[i]->type != SNodeType::place)
       emit(
-          "TC_EXPORT AllocatorStat stat_{}() {{return "
+          "TI_EXPORT AllocatorStat stat_{}() {{return "
           "Managers::get_allocator<{}>()->get_stat();}} ",
           snodes[i]->node_type_name, snodes[i]->node_type_name);
     if (snodes[i]->type == SNodeType::pointer ||
         snodes[i]->type == SNodeType::hash) {
       emit(
-          "TC_EXPORT void clear_{}(int flags) {{"
+          "TI_EXPORT void clear_{}(int flags) {{"
           "Managers::get_allocator<{}>()->clear(flags);}} ",
           snodes[i]->node_type_name, snodes[i]->node_type_name);
     }
@@ -386,12 +386,12 @@ void StructCompiler::run(SNode &root, bool host) {
 
   root_type = root.node_type_name;
   generate_leaf_accessors(root);
-  emit("#if defined(TC_STRUCT)");
-  emit("TC_EXPORT void *create_data_structure() {{");
+  emit("#if defined(TI_STRUCT)");
+  emit("TI_EXPORT void *create_data_structure() {{");
 
   emit("Managers::initialize();");
 
-  TC_ASSERT((int)snodes.size() <= max_num_snodes);
+  TI_ASSERT((int)snodes.size() <= max_num_snodes);
   for (int i = 0; i < (int)snodes.size(); i++) {
     // if (snodes[i]->type == SNodeType::pointer ||
     // snodes[i]->type == SNodeType::hashed) {
@@ -424,10 +424,10 @@ void StructCompiler::run(SNode &root, bool host) {
   // emit("CPUProfiler profiler;");
   emit("#endif");
 
-  emit("TC_EXPORT void release_data_structure(void *ds) {{delete ({} *)ds;}}",
+  emit("TI_EXPORT void release_data_structure(void *ds) {{delete ({} *)ds;}}",
        root_type);
 
-  emit("TC_EXPORT void profiler_print()");
+  emit("TI_EXPORT void profiler_print()");
   emit("{{");
   emit("#if defined(TLANG_GPU)");
   emit("CUDAProfiler::get_instance().print();");
@@ -436,7 +436,7 @@ void StructCompiler::run(SNode &root, bool host) {
   emit("#endif");
   emit("}}");
 
-  emit("TC_EXPORT void profiler_clear()");
+  emit("TI_EXPORT void profiler_clear()");
   emit("{{");
   emit("#if defined(TLANG_GPU)");
   emit("CUDAProfiler::get_instance().clear();");
@@ -452,7 +452,7 @@ void StructCompiler::run(SNode &root, bool host) {
   emit("}} }}");
   write_source();
 
-  generate_binary("-DTC_STRUCT");
+  generate_binary("-DTI_STRUCT");
   load_dll();
   creator = load_function<void *(*)()>("create_data_structure");
   profiler_print = load_function<void (*)()>("profiler_print");

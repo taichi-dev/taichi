@@ -54,7 +54,7 @@ class LowerAccess : public IRVisitor {
                         SNodeOpType snode_op = SNodeOpType::undefined) {
     if (snode_op == SNodeOpType::is_active) {
       // For ti.is_active
-      TC_ASSERT(!activate);
+      TI_ASSERT(!activate);
     }
     // emit a sequence of micro access ops
     std::set<SNode *> nodes_on_loop;
@@ -144,7 +144,7 @@ class LowerAccess : public IRVisitor {
         lowered.push_back(std::move(extractor));
       }
       lower_scalar_ptr(lowered, ptr->snodes[i], indices, activate, snode_op);
-      TC_ASSERT(lowered.size());
+      TI_ASSERT(lowered.size());
       lowered_pointers.push_back(lowered.back().get());
     }
     // create shuffle

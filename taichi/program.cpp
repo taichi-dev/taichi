@@ -28,33 +28,33 @@ std::atomic<int> Program::num_instances;
 Program::Program(Arch arch) {
 #if !defined(CUDA_FOUND)
   if (arch == Arch::cuda) {
-    TC_WARN("Taichi is not compiled with CUDA.");
-    TC_WARN("Falling back to x86_64");
+    TI_WARN("Taichi is not compiled with CUDA.");
+    TI_WARN("Falling back to x86_64");
     arch = Arch::x86_64;
   }
 #else
   if (!cuda_context) {
     cuda_context = std::make_unique<CUDAContext>();
     if (!cuda_context->detected()) {
-      TC_WARN("No CUDA device detected.");
-      TC_WARN("Falling back to x86_64");
+      TI_WARN("No CUDA device detected.");
+      TI_WARN("Falling back to x86_64");
       arch = Arch::x86_64;
     }
   }
 #endif
   if (arch == Arch::metal) {
     if (!metal::is_metal_api_available()) {
-      TC_WARN("No Metal API detected, falling back to x86_64");
+      TI_WARN("No Metal API detected, falling back to x86_64");
       arch = Arch::x86_64;
     }
   }
   memory_pool = std::make_unique<MemoryPool>(this);
-  TC_ASSERT_INFO(num_instances == 0, "Only one instance at a time");
+  TI_ASSERT_INFO(num_instances == 0, "Only one instance at a time");
   total_compilation_time = 0;
   num_instances += 1;
   SNode::counter = 0;
   // llvm_context_device is initialized before kernel compilation
-  TC_ASSERT(current_program == nullptr);
+  TI_ASSERT(current_program == nullptr);
   current_program = this;
   config = default_compile_config;
   config.arch = arch;
@@ -69,7 +69,7 @@ Program::Program(Arch arch) {
   snode_root = std::make_unique<SNode>(0, SNodeType::root);
 
   if (config.debug) {
-    TC_DEBUG("Program arch={}", arch_name(arch));
+    TI_DEBUG("Program arch={}", arch_name(arch));
   }
 }
 
@@ -87,9 +87,9 @@ FunctionType Program::compile(Kernel &kernel) {
     metal::MetalCodeGen codegen(kernel.name, &metal_struct_compiled_.value());
     ret = codegen.compile(*this, kernel, metal_runtime_.get());
   } else {
-    TC_NOT_IMPLEMENTED;
+    TI_NOT_IMPLEMENTED;
   }
-  TC_ASSERT(ret);
+  TI_ASSERT(ret);
   total_compilation_time += Time::get_time() - start_t;
   return ret;
 }
@@ -118,7 +118,7 @@ void Program::materialize_layout() {
           metal_struct_compiled_->root_size, &config, memory_pool.get(),
           profiler_llvm.get());
     }
-    TC_INFO("Metal root buffer size: {} B", metal_struct_compiled_->root_size);
+    TI_INFO("Metal root buffer size: {} B", metal_struct_compiled_->root_size);
   }
 }
 
@@ -128,7 +128,7 @@ void Program::synchronize() {
 #if defined(CUDA_FOUND)
       cudaDeviceSynchronize();
 #else
-      TC_ERROR("No CUDA support");
+      TI_ERROR("No CUDA support");
 #endif
     } else if (config.arch == Arch::metal) {
       metal_runtime_->synchronize();
@@ -146,7 +146,7 @@ std::string latex_short_digit(int v) {
   std::string units = "KMGT";
   int unit_id = -1;
   while (v >= 1024 && unit_id + 1 < (int)units.size()) {
-    TC_ASSERT(v % 1024 == 0);
+    TI_ASSERT(v % 1024 == 0);
     v /= 1024;
     unit_id++;
   }
@@ -159,7 +159,7 @@ std::string latex_short_digit(int v) {
 void Program::visualize_layout(const std::string &fn) {
   {
     std::ofstream ofs(fn);
-    TC_ASSERT(ofs);
+    TI_ASSERT(ofs);
     auto emit = [&](std::string str) { ofs << str; };
 
     auto header = R"(
@@ -227,7 +227,7 @@ void Program::initialize_device_llvm_context() {
 }
 
 Kernel &Program::get_snode_reader(SNode *snode) {
-  TC_ASSERT(snode->type == SNodeType::place);
+  TI_ASSERT(snode->type == SNodeType::place);
   auto kernel_name = fmt::format("snode_reader_{}", snode->id);
   auto &ker = kernel([&] {
     ExprGroup indices;
@@ -255,7 +255,7 @@ Kernel &Program::get_snode_reader(SNode *snode) {
 }
 
 Kernel &Program::get_snode_writer(SNode *snode) {
-  TC_ASSERT(snode->type == SNodeType::place);
+  TI_ASSERT(snode->type == SNodeType::place);
   auto kernel_name = fmt::format("snode_writer_{}", snode->id);
   auto &ker = kernel([&] {
     ExprGroup indices;
@@ -284,10 +284,10 @@ void Program::finalize() {
   synchronize();
   current_program = nullptr;
   for (auto &dll : loaded_dlls) {
-#if defined(TC_PLATFORM_UNIX)
+#if defined(TI_PLATFORM_UNIX)
     dlclose(dll);
 #else
-    TC_NOT_IMPLEMENTED
+    TI_NOT_IMPLEMENTED
 #endif
   }
   memory_pool->terminate();

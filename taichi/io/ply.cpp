@@ -6,7 +6,7 @@
 #include <taichi/io/ply_writer.h>
 #include <taichi/io/io.h>
 
-TC_NAMESPACE_BEGIN
+TI_NAMESPACE_BEGIN
 
 class TestPLY : public Task {
   std::string run() override {
@@ -23,7 +23,7 @@ class TestPLY : public Task {
   }
 };
 
-TC_IMPLEMENTATION(Task, TestPLY, "test_ply");
+TI_IMPLEMENTATION(Task, TestPLY, "test_ply");
 
 // n, data_ptr, fn, name0, name1, name2, name3, ...
 auto write_tcb_c_2 = [](const std::vector<std::string> &parameters) {
@@ -42,6 +42,6 @@ auto write_tcb_c_2 = [](const std::vector<std::string> &parameters) {
   write_to_binary_file(data, fn);
 };
 
-TC_REGISTER_TASK(write_tcb_c_2);
+TI_REGISTER_TASK(write_tcb_c_2);
 
-TC_NAMESPACE_END
+TI_NAMESPACE_END

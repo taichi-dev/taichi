@@ -3,7 +3,7 @@
 
 TLANG_NAMESPACE_BEGIN
 
-TC_TEST("hash") {
+TI_TEST("hash") {
   for (auto arch : {Arch::gpu, Arch::x86_64}) {
     Program prog(arch);
     CoreState::set_trigger_gdb_when_crash(true);
@@ -22,10 +22,10 @@ TC_TEST("hash") {
     })();
 
     for (int i = 0; i < n * n / 2; i++) {
-      TC_CHECK(u.val<int32>(i) == i * 2);
+      TI_CHECK(u.val<int32>(i) == i * 2);
     }
     for (int i = n * n / 2; i < n * n; i++) {
-      TC_CHECK(u.val<int32>(i) == 0);
+      TI_CHECK(u.val<int32>(i) == 0);
     }
   }
 }

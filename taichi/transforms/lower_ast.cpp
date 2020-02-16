@@ -45,7 +45,7 @@ class LowerAST : public IRVisitor {
   void visit(FrontendAllocaStmt *stmt) override {
     auto block = stmt->parent;
     auto ident = stmt->ident;
-    TC_ASSERT(block->local_var_alloca.find(ident) ==
+    TI_ASSERT(block->local_var_alloca.find(ident) ==
               block->local_var_alloca.end());
     auto lowered = std::make_unique<AllocaStmt>(stmt->ret_type.data_type);
     block->local_var_alloca.insert(std::make_pair(ident, lowered.get()));
@@ -101,7 +101,7 @@ class LowerAST : public IRVisitor {
   }
 
   void visit(FrontendBreakStmt *stmt) override {
-    TC_ASSERT_INFO(
+    TI_ASSERT_INFO(
         capturing_loop->is<WhileStmt>(),
         "The loop capturing 'break' must be a while loop instead of for loop.");
     auto while_stmt = capturing_loop->as<WhileStmt>();
@@ -162,7 +162,7 @@ class LowerAST : public IRVisitor {
     }
 
     if (stmt->is_ranged()) {
-      TC_ASSERT(stmt->loop_var_id.size() == 1);
+      TI_ASSERT(stmt->loop_var_id.size() == 1);
       auto begin = stmt->begin;
       auto end = stmt->end;
       begin->flatten(flattened);
@@ -223,7 +223,7 @@ class LowerAST : public IRVisitor {
           assign->parent->lookup_var(assign->lhs.cast<IdExpression>()->id),
           expr->stmt);
     } else {  // global variable
-      TC_ASSERT(assign->lhs.is<GlobalPtrExpression>());
+      TI_ASSERT(assign->lhs.is<GlobalPtrExpression>());
       auto global_ptr = assign->lhs.cast<GlobalPtrExpression>();
       global_ptr->flatten(flattened);
       flattened.push_back<GlobalStoreStmt>(flattened.back().get(), expr->stmt);
@@ -249,7 +249,7 @@ class LowerAST : public IRVisitor {
           stmt->parent->lookup_var(stmt->dest.cast<IdExpression>()->id);
       flattened.push_back<AtomicOpStmt>(stmt->op_type, alloca, expr->stmt);
     } else {  // global variable
-      TC_ASSERT(stmt->dest.is<GlobalPtrExpression>());
+      TI_ASSERT(stmt->dest.is<GlobalPtrExpression>());
       auto global_ptr = stmt->dest.cast<GlobalPtrExpression>();
       global_ptr->flatten(flattened);
       flattened.push_back<AtomicOpStmt>(stmt->op_type, flattened.back().get(),
@@ -282,10 +282,10 @@ class LowerAST : public IRVisitor {
     } else if (stmt->snode->type == SNodeType::pointer ||
                stmt->snode->type == SNodeType::hash ||
                stmt->snode->type == SNodeType::dynamic) {
-      TC_ASSERT(SNodeOpStmt::activation_related(stmt->op_type));
+      TI_ASSERT(SNodeOpStmt::activation_related(stmt->op_type));
       flattened.push_back<SNodeOpStmt>(stmt->op_type, stmt->snode, indices_stmt);
     } else {
-      TC_NOT_IMPLEMENTED
+      TI_NOT_IMPLEMENTED
     }
 
     stmt->parent->replace_with(stmt, std::move(flattened));

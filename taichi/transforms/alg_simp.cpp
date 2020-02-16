@@ -49,7 +49,7 @@ class AlgSimp : public BasicStmtVisitor {
     else if (data_type == DataType::f64)
       return val.val_float64() == 0;
     else {
-      TC_NOT_IMPLEMENTED
+      TI_NOT_IMPLEMENTED
       return false;
     }
   }
@@ -70,7 +70,7 @@ class AlgSimp : public BasicStmtVisitor {
     else if (data_type == DataType::f64)
       return val.val_float64() == 1;
     else {
-      TC_NOT_IMPLEMENTED
+      TI_NOT_IMPLEMENTED
       return false;
     }
   }

@@ -74,7 +74,7 @@ void Kernel::operator()() {
       }
     }
 #else
-    TC_ERROR("No CUDA");
+    TI_ERROR("No CUDA");
 #endif
   } else {
     auto &c = program.get_context();
@@ -84,7 +84,7 @@ void Kernel::operator()() {
 }
 
 void Kernel::set_arg_float(int i, float64 d) {
-  TC_ASSERT_INFO(args[i].is_nparray == false,
+  TI_ASSERT_INFO(args[i].is_nparray == false,
                  "Setting scalar value to numpy array argument is not allowed");
   auto dt = args[i].dt;
   if (dt == DataType::f32) {
@@ -104,7 +104,7 @@ void Kernel::set_arg_float(int i, float64 d) {
   } else if (dt == DataType::u64) {
     program.context.set_arg(i, (uint64)d);
   } else {
-    TC_NOT_IMPLEMENTED
+    TI_NOT_IMPLEMENTED
   }
 }
 
@@ -113,7 +113,7 @@ void Kernel::set_extra_arg_int(int i, int j, int32 d) {
 }
 
 void Kernel::set_arg_int(int i, int64 d) {
-  TC_ASSERT_INFO(args[i].is_nparray == false,
+  TI_ASSERT_INFO(args[i].is_nparray == false,
                  "Setting scalar value to numpy array argument is not allowed");
   auto dt = args[i].dt;
   if (dt == DataType::i32) {
@@ -133,7 +133,7 @@ void Kernel::set_arg_int(int i, int64 d) {
   } else if (dt == DataType::f64) {
     program.context.set_arg(i, (float64)d);
   } else {
-    TC_NOT_IMPLEMENTED
+    TI_NOT_IMPLEMENTED
   }
 }
 
@@ -142,14 +142,14 @@ void Kernel::mark_arg_return_value(int i, bool is_return) {
 }
 
 void Kernel::set_arg_nparray(int i, uint64 d, uint64 size) {
-  TC_ASSERT_INFO(args[i].is_nparray,
+  TI_ASSERT_INFO(args[i].is_nparray,
                  "Setting numpy array to scalar argument is not allowed");
   args[i].size = size;
   program.context.set_arg(i, d);
 }
 
 void Kernel::set_arch(Arch arch) {
-  TC_ASSERT(!compiled);
+  TI_ASSERT(!compiled);
   this->arch = arch;
 }
 

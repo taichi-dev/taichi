@@ -71,7 +71,7 @@ inline DataType get_data_type() {
   } else if (std::is_same<T, uint64>()) {
     return DataType::u64;
   } else {
-    TC_NOT_IMPLEMENTED;
+    TI_NOT_IMPLEMENTED;
   }
   return DataType::unknown;
 }
@@ -213,8 +213,8 @@ class TypedConstant {
     } else if (dt == DataType::f64) {
       return fmt::format("{}", val_f64);
     } else {
-      TC_P(data_type_name(dt));
-      TC_NOT_IMPLEMENTED
+      TI_P(data_type_name(dt));
+      TI_NOT_IMPLEMENTED
       return "";
     }
   }
@@ -231,28 +231,28 @@ class TypedConstant {
     } else if (dt == DataType::f64) {
       return val_f64 == o.val_f64;
     } else {
-      TC_NOT_IMPLEMENTED
+      TI_NOT_IMPLEMENTED
       return false;
     }
   }
 
   int32 &val_int32() {
-    TC_ASSERT(get_data_type<int32>() == dt);
+    TI_ASSERT(get_data_type<int32>() == dt);
     return val_i32;
   }
 
   float32 &val_float32() {
-    TC_ASSERT(get_data_type<float32>() == dt);
+    TI_ASSERT(get_data_type<float32>() == dt);
     return val_f32;
   }
 
   int64 &val_int64() {
-    TC_ASSERT(get_data_type<int64>() == dt);
+    TI_ASSERT(get_data_type<int64>() == dt);
     return val_i64;
   }
 
   float64 &val_float64() {
-    TC_ASSERT(get_data_type<float64>() == dt);
+    TI_ASSERT(get_data_type<float64>() == dt);
     return val_f64;
   }
 };
@@ -275,8 +275,8 @@ inline std::string make_list(const std::vector<std::string> &data,
   } else if (bracket == "(") {
     ret += ")";
   } else if (bracket != "") {
-    TC_P(bracket);
-    TC_NOT_IMPLEMENTED
+    TI_P(bracket);
+    TI_NOT_IMPLEMENTED
   }
   return ret;
 }
@@ -354,7 +354,7 @@ bool command_exist(const std::string &command);
 
 TLANG_NAMESPACE_END
 
-TC_NAMESPACE_BEGIN
+TI_NAMESPACE_BEGIN
 void initialize_benchmark();
 
 template <typename T, typename... Args, typename FP = T (*)(Args...)>
@@ -371,4 +371,4 @@ template <typename T>
 using function_pointer_type =
     decltype(function_pointer_helper(std::declval<T>()));
 
-TC_NAMESPACE_END
+TI_NAMESPACE_END

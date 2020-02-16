@@ -5,7 +5,7 @@
 #include <taichi/system/profiler.h>
 #include "volume_renderer.h"
 
-TC_NAMESPACE_BEGIN
+TI_NAMESPACE_BEGIN
 
 using namespace Tlang;
 
@@ -37,16 +37,16 @@ auto mpm_full = [](std::vector<std::string> cli_param) {
   int seeding_frames = param.get("seeding_frames", 300);
 
   real G = -1000.0f;
-  TC_P(total_frames);
-  TC_P(seeding_frames);
-  TC_P(dt);
+  TI_P(total_frames);
+  TI_P(seeding_frames);
+  TI_P(dt);
   dt = frame_dt / std::ceil(frame_dt / dt - 1e-5f);
-  TC_P(dt);
-  TC_P(frame_dt);
+  TI_P(dt);
+  TI_P(frame_dt);
   int visualize_interval = param.get<int32>("visualize_interval", 5);
-  TC_P(visualize_interval);
+  TI_P(visualize_interval);
   real ground_friction = param.get<real>("ground_friction", 0.2f);
-  TC_P(ground_friction);
+  TI_P(ground_friction);
   auto particle_mass = 1.0_f, vol = 1.0_f;
   auto E = param.get<real>("E", 1e4), nu = 0.3f;
   real mu_0 = E / (2 * (1 + nu)), lambda_0 = E * nu / ((1 + nu) * (1 - 2 * nu));
@@ -61,7 +61,7 @@ auto mpm_full = [](std::vector<std::string> cli_param) {
   bool bbox = param.get("bbox", false);
   int scene = param.get("scene", 0);
   if (scene == 0) {
-    TC_INFO(
+    TI_INFO(
         "Scene: [1] ball smash    [2] one jet    [3] two static jets   [4] two "
         "moving jets  [5] particle curtain");
     exit(0);
@@ -78,12 +78,12 @@ auto mpm_full = [](std::vector<std::string> cli_param) {
   } else if (material_name == "jelly") {
     material = MPMMaterial::jelly;
   } else {
-    TC_ERROR("Unknown material {}", material_name);
+    TI_ERROR("Unknown material {}", material_name);
   }
 
-  TC_P(material_name);
-  TC_P(bbox);
-  TC_P(scene);
+  TI_P(material_name);
+  TI_P(bbox);
+  TI_P(scene);
 
   Vector particle_x("x", f32, dim), particle_v("v", f32, dim);
   Global(particle_color, i32);
@@ -105,9 +105,9 @@ auto mpm_full = [](std::vector<std::string> cli_param) {
   if (benchmark_dragon) {
     n_particles = 775196;
     p_x.resize(n_particles);
-    TC_ASSERT(n_particles <= max_n_particles);
+    TI_ASSERT(n_particles <= max_n_particles);
     auto f = fopen("dragon_particles.bin", "rb");
-    TC_ASSERT_INFO(f, "./dragon_particles.bin not found");
+    TI_ASSERT_INFO(f, "./dragon_particles.bin not found");
     benchmark_particles.resize(n_particles * 3);
     if (std::fread(benchmark_particles.data(), sizeof(float), n_particles * 3,
                    f)) {
@@ -141,7 +141,7 @@ auto mpm_full = [](std::vector<std::string> cli_param) {
     }
   }
 
-  TC_ASSERT(n_particles <= max_n_particles);
+  TI_ASSERT(n_particles <= max_n_particles);
 
   auto sample_unit_sphere = [&] {
     Vector3 offset = Vector3::rand() - Vector3(0.5_f);
@@ -186,7 +186,7 @@ auto mpm_full = [](std::vector<std::string> cli_param) {
     place(particle_J);
     place(particle_color);
 
-    TC_ASSERT(n % grid_block_size == 0);
+    TI_ASSERT(n % grid_block_size == 0);
     auto &block = root.dense({i, j, k}, grid_n / 4 / grid_block_size)
                       .pointer()
                       .dense({i, j, k}, 4)
@@ -215,7 +215,7 @@ auto mpm_full = [](std::vector<std::string> cli_param) {
 
   // prog.visualize_layout("layout.tex");
 
-  TC_ASSERT(bit::is_power_of_two(n));
+  TI_ASSERT(bit::is_power_of_two(n));
 
   Kernel(summarize).def([&] {
     BlockDim(512);
@@ -560,15 +560,15 @@ auto mpm_full = [](std::vector<std::string> cli_param) {
         ->clear_data_and_deactivate();
     auto t = Time::get_time();
     for (int f = 0; f < std::round(frame_dt / dt); f++) {
-      TC_PROFILE("p2g", p2g());
-      TC_PROFILE("grid_op", grid_op());
-      TC_PROFILE("g2p", g2p());
+      TI_PROFILE("p2g", p2g());
+      TI_PROFILE("grid_op", grid_op());
+      TI_PROFILE("g2p", g2p());
     }
     prog.profiler_print();
     auto ms_per_substep = (Time::get_time() - t) / 200 * 1000;
-    TC_P(ms_per_substep);
+    TI_P(ms_per_substep);
     auto sec_per_frame = Time::get_time() - t;
-    TC_P(sec_per_frame);
+    TI_P(sec_per_frame);
   };
 
   Kernel(set_renderer_volume).def([&] {
@@ -584,7 +584,7 @@ auto mpm_full = [](std::vector<std::string> cli_param) {
   for (int frame = 0; frame < total_frames; frame++) {
     float32 current_t = frame_dt * frame;
     if (frame < seeding_frames) {
-      TC_P(scene);
+      TI_P(scene);
       if (scene == 2) {
         int N = 10000;
         if (n_particles + N <= max_n_particles) {
@@ -625,7 +625,7 @@ auto mpm_full = [](std::vector<std::string> cli_param) {
         n_particles += N;
       } else if (scene == 5) {
         int N = 10000;
-        TC_P(N);
+        TI_P(N);
         if (n_particles + N <= max_n_particles) {
           for (int i = 0; i < N; i++) {
             Vector3 color(0.5, 0.6, 0.4);
@@ -640,7 +640,7 @@ auto mpm_full = [](std::vector<std::string> cli_param) {
         }
       }
     }
-    TC_P(n_particles)
+    TI_P(n_particles)
     simulate_frame();
     // auto res = canvas.img.get_res();
 
@@ -660,7 +660,7 @@ auto mpm_full = [](std::vector<std::string> cli_param) {
     cudaMemcpy(particle_data.data(), &particle_buffer.val<float32>(0),
                particle_data.size() * sizeof(float), cudaMemcpyDeviceToHost);
 #else
-    TC_ERROR("No CUDA.");
+    TI_ERROR("No CUDA.");
 #endif
 
     for (int i = 0; i < n_particles; i++) {
@@ -672,7 +672,7 @@ auto mpm_full = [](std::vector<std::string> cli_param) {
             std::max(renderer.parameters.box_max[k], v);
       }
     }
-    TC_P(Time::get_time() - ot);
+    TI_P(Time::get_time() - ot);
     create_directories(fmt::format("final_particles/{}", output));
     /*
     write_to_binary_file(
@@ -714,9 +714,9 @@ auto mpm_full = [](std::vector<std::string> cli_param) {
     print_profile_info();
   }
 };
-TC_REGISTER_TASK(mpm_full);
+TI_REGISTER_TASK(mpm_full);
 
-TC_NAMESPACE_END
+TI_NAMESPACE_END
 
 // demos:
 // two sand jets:

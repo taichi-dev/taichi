@@ -66,7 +66,7 @@ class Amalgamator:
           if l == '#endif':
             protected = False
           continue
-        if l == '#if !defined(TC_AMALGAMATED)':
+        if l == '#if !defined(TI_AMALGAMATED)':
           protected = True
           continue
         match = re.search(include_template, l)
@@ -109,9 +109,9 @@ class Amalgamator:
     print(
         "// DO NOT EDIT MANUALLY, unless you know that you are doing.",
         file=self.output_f)
-    print("#define TC_INCLUDED", file=self.output_f)
-    print("#define TC_AMALGAMATED", file=self.output_f)
-    print("#define TC_ISE_NONE", file=self.output_f)
+    print("#define TI_INCLUDED", file=self.output_f)
+    print("#define TI_AMALGAMATED", file=self.output_f)
+    print("#define TI_ISE_NONE", file=self.output_f)
     for f in self.files:
       self.include(f)
     print("Included files:")
@@ -130,7 +130,7 @@ int main() {
   Vector4 v(21);
   auto x = v + v;
   fmt::print("{}\\n", x.x);
-  TC_P(x);
+  TI_P(x);
 }
 ''')
     t = time.time()

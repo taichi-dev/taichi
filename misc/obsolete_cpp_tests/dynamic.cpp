@@ -4,7 +4,7 @@
 
 TLANG_NAMESPACE_BEGIN
 
-TC_TEST("append_and_probe") {
+TI_TEST("append_and_probe") {
   CoreState::set_trigger_gdb_when_crash(true);
   for (auto arch : {Arch::x86_64, Arch::gpu}) {
     int n = 32;
@@ -31,12 +31,12 @@ TC_TEST("append_and_probe") {
     })();
 
     for (int i = 0; i < n; i++)
-      TC_CHECK(x.val<int>(i) == i);
-    TC_CHECK(len.val<int>() == n);
+      TI_CHECK(x.val<int>(i) == i);
+    TI_CHECK(len.val<int>() == n);
   }
 };
 
-TC_TEST("activate") {
+TI_TEST("activate") {
   for (auto arch : {Arch::x86_64, Arch::gpu}) {
     int n = 32;
     Program prog(arch);
@@ -66,13 +66,13 @@ TC_TEST("activate") {
 
     for (int i = 0; i < n; i++) {
       for (int j = 0; j < i; j++) {
-        TC_CHECK(x.val<int>(i, j) == i + j);
+        TI_CHECK(x.val<int>(i, j) == i + j);
       }
     }
   }
 };
 
-TC_TEST("task_list") {
+TI_TEST("task_list") {
   for (auto arch : {Arch::gpu}) {
     int n = 262144;
     int m = 64;
@@ -105,13 +105,13 @@ TC_TEST("task_list") {
     for (int i = 0; i < n; i++) {
       if (i % 5 == 4)
         for (int j = 0; j < m; j++) {
-          TC_CHECK(x.val<int>(i, j) == i + j + P);
+          TI_CHECK(x.val<int>(i, j) == i + j + P);
         }
     }
   }
 };
 
-TC_TEST("task_list_dynamic") {
+TI_TEST("task_list_dynamic") {
   for (auto arch : {Arch::gpu}) {
     int n = 262144;
     int m = 64;
@@ -142,13 +142,13 @@ TC_TEST("task_list_dynamic") {
     for (int i = 0; i < n; i++) {
       if (i % 5 == 4)
         for (int j = 0; j < 1; j++) {
-          TC_CHECK(x.val<int>(i, j) == i + j + P);
+          TI_CHECK(x.val<int>(i, j) == i + j + P);
         }
     }
   }
 };
 
-TC_TEST("parallel_append") {
+TI_TEST("parallel_append") {
   for (auto arch : {Arch::gpu}) {
     int n = 32;
     Program prog(arch);
@@ -178,18 +178,18 @@ TC_TEST("parallel_append") {
       else
         append();
       auto stat = x.parent().parent().snode()->stat();
-      TC_CHECK(stat.num_resident_blocks == n);
+      TI_CHECK(stat.num_resident_blocks == n);
       if (i % 2)
         for (int i = 0; i < n; i++) {
           for (int j = 0; j < n; j++) {
-            TC_CHECK(x.val<int>(i, j) == 0);
+            TI_CHECK(x.val<int>(i, j) == 0);
           }
         }
     }
   }
 };
 
-TC_TEST("append_2d") {
+TI_TEST("append_2d") {
   for (auto arch : {Arch::x86_64, Arch::gpu}) {
     int n = 32;
     Program prog(arch);
@@ -211,13 +211,13 @@ TC_TEST("append_2d") {
 
     for (int i = 0; i < n; i++) {
       for (int j = 0; j < i; j++) {
-        TC_CHECK(x.val<int>(i, j) == i + j);
+        TI_CHECK(x.val<int>(i, j) == i + j);
       }
     }
   }
 };
 
-TC_TEST("clear") {
+TI_TEST("clear") {
   CoreState::set_trigger_gdb_when_crash(true);
   for (auto arch : {Arch::x86_64, Arch::gpu}) {
     int n = 32;
@@ -249,15 +249,15 @@ TC_TEST("clear") {
     for (int i = 0; i < n; i++) {
       for (int j = 0; j < n; j++) {
         if (j < i)
-          TC_CHECK(x.val<int>(i, j) == i + j);
+          TI_CHECK(x.val<int>(i, j) == i + j);
         else
-          TC_CHECK(x.val<int>(i, j) == 0);
+          TI_CHECK(x.val<int>(i, j) == 0);
       }
     }
   }
 };
 
-TC_TEST("sort") {
+TI_TEST("sort") {
   for (auto arch : {Arch::x86_64, Arch::gpu}) {
     int n = 4;
     Program prog(arch);
@@ -273,7 +273,7 @@ TC_TEST("sort") {
     Global(c, i32);
     Global(coord, i32);
     Global(p, i32);
-    TC_P(particles);
+    TI_P(particles);
     layout([&]() {
       auto i = Index(0);
       auto j = Index(1);
@@ -309,12 +309,12 @@ TC_TEST("sort") {
     })();
 
     for (int i = 0; i < n * n; i++) {
-      TC_CHECK(c.val<int>(i) == count[i]);
+      TI_CHECK(c.val<int>(i) == count[i]);
     }
   }
 };
 
-TC_TEST("dilate") {
+TI_TEST("dilate") {
   for (auto arch : {Arch::x86_64, Arch::gpu}) {
     for (auto ds : {1}) {
       int n = 32;
@@ -350,16 +350,16 @@ TC_TEST("dilate") {
 
       for (int i = 0; i < n; i++) {
         int bid = i / bs;
-        TC_CHECK(x.val<int32>(i) == (1 <= bid && bid < 4));
+        TI_CHECK(x.val<int32>(i) == (1 <= bid && bid < 4));
       }
       for (int i = 0; i < n / bs; i++) {
-        TC_CHECK(y.val<int32>(i) == (1 <= i && i < 4));
+        TI_CHECK(y.val<int32>(i) == (1 <= i && i < 4));
       }
     }
   }
 };
 
-TC_TEST("dynamic_sort") {
+TI_TEST("dynamic_sort") {
   for (auto arch : {Arch::x86_64, Arch::gpu}) {
     int n = 4;
     Program prog(arch);
@@ -375,7 +375,7 @@ TC_TEST("dynamic_sort") {
     Global(c, i32);
     Global(coord, i32);
     Global(p, i32);
-    TC_P(particles);
+    TI_P(particles);
     layout([&]() {
       auto i = Index(0);
       auto j = Index(1);
@@ -414,7 +414,7 @@ TC_TEST("dynamic_sort") {
     })();
 
     for (int i = 0; i < n * n; i++) {
-      TC_CHECK(c.val<int>(i) == count[i]);
+      TI_CHECK(c.val<int>(i) == count[i]);
     }
   }
 };
@@ -434,7 +434,7 @@ auto reset_grid_benchmark = []() {
   auto i = Index(0), j = Index(1), k = Index(2);
 
   layout([&]() {
-    TC_ASSERT(n % grid_block_size == 0);
+    TI_ASSERT(n % grid_block_size == 0);
     auto &block = root.dense({i, j, k}, n / grid_block_size);
     constexpr bool block_soa = false;
     if (block_soa) {
@@ -449,7 +449,7 @@ auto reset_grid_benchmark = []() {
     }
   });
 
-  TC_ASSERT(bit::is_power_of_two(n));
+  TI_ASSERT(bit::is_power_of_two(n));
 
   auto &reset_grid = kernel([&]() {
     Declare(i);
@@ -464,8 +464,8 @@ auto reset_grid_benchmark = []() {
   });
 
   while (1)
-    TC_TIME(reset_grid());
+    TI_TIME(reset_grid());
 };
-TC_REGISTER_TASK(reset_grid_benchmark);
+TI_REGISTER_TASK(reset_grid_benchmark);
 
 TLANG_NAMESPACE_END

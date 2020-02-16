@@ -2,7 +2,7 @@
 #include <taichi/common/task.h>
 #include <taichi/visual/gui.h>
 
-#if defined(TC_GUI_COCOA)
+#if defined(TI_GUI_COCOA)
 
 #include <taichi/platform/mac/objc_api.h>
 
@@ -145,7 +145,7 @@ typedef struct AppDel {
 class IdComparator {
  public:
   bool operator()(id a, id b) const {
-    TC_STATIC_ASSERT(sizeof(a) == sizeof(taichi::int64));
+    TI_STATIC_ASSERT(sizeof(a) == sizeof(taichi::int64));
     return taichi::bit::reinterpret_bits<taichi::int64>(a) <
            taichi::bit::reinterpret_bits<taichi::int64>(b);
   }
@@ -214,7 +214,7 @@ __attribute__((constructor)) static void initView() {
   objc_registerClassPair(AppDelClass);
 }
 
-TC_NAMESPACE_BEGIN
+TI_NAMESPACE_BEGIN
 
 void GUI::create_window() {
   clscall("NSApplication", "sharedApplication");
@@ -324,6 +324,6 @@ void GUI::redraw() { call(view, "setNeedsDisplay:", YES); }
 
 GUI::~GUI() {}
 
-TC_NAMESPACE_END
+TI_NAMESPACE_END
 
 #endif

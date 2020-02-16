@@ -13,9 +13,9 @@ auto volume_renderer = [](std::vector<std::string> cli_param) {
   auto param = parse_param(cli_param);
 
   bool gpu = param.get("gpu", true);
-  TC_P(gpu);
+  TI_P(gpu);
   std::string fn = param.get("fn", "snow_density_256.bin");
-  TC_P(fn);
+  TI_P(fn);
   CoreState::set_trigger_gdb_when_crash(true);
   Program prog(gpu ? Arch::gpu : Arch::x86_64);
   TRenderer renderer((Dict()));
@@ -71,7 +71,7 @@ auto volume_renderer = [](std::vector<std::string> cli_param) {
     last_voxel_level = voxel_level;
     std::vector<Vector3> particles;
     auto f = fopen(fn.c_str(), "rb");
-    TC_WARN_IF(!f, "{} not found", fn);
+    TI_WARN_IF(!f, "{} not found", fn);
 
     if (!f)
       return;
@@ -91,7 +91,7 @@ auto volume_renderer = [](std::vector<std::string> cli_param) {
         max_density = std::max(max_density, density_field[i]);
       }
 
-      TC_P(max_density);
+      TI_P(max_density);
 
       for (int i = 0; i < pow<3>(grid_resolution); i++) {
         density_field[i] /= max_density;             // normalize to 1 first
@@ -135,11 +135,11 @@ auto volume_renderer = [](std::vector<std::string> cli_param) {
       } else if (voxel_level == 4) {
         coarsening = 64;
       } else {
-        TC_ASSERT(false);
+        TI_ASSERT(false);
       }
       renderer.parameters.grid_resolution = 256 / coarsening;
       renderer.check_param_update();
-      TC_P(particles.size());
+      TI_P(particles.size());
       rasterize();
     }
     for (int d = 0; d < 3; d++) {
@@ -267,17 +267,17 @@ auto volume_renderer = [](std::vector<std::string> cli_param) {
       frame += video_step - 1;
     gui->canvas->img.write_as_image(fmt::format("gui/{:05d}.png", frame));
     Time::sleep(0.03);
-    TC_P(Time::get_time() - ft);
+    TI_P(Time::get_time() - ft);
   }
 };
-TC_REGISTER_TASK(volume_renderer);
+TI_REGISTER_TASK(volume_renderer);
 
 auto volume_renderer_gui = [](std::vector<std::string> cli_param) {
   use_gui = true;
   volume_renderer(cli_param);
 };
 
-TC_REGISTER_TASK(volume_renderer_gui);
+TI_REGISTER_TASK(volume_renderer_gui);
 
 TLANG_NAMESPACE_END
 #endif

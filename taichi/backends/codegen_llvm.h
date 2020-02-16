@@ -77,15 +77,15 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     }
 
     void compile() {
-      TC_ASSERT(!func);
+      TI_ASSERT(!func);
       auto kernel_symbol = codegen->jit->lookup(name);
-      TC_ASSERT_INFO(kernel_symbol, "Function not found");
+      TI_ASSERT_INFO(kernel_symbol, "Function not found");
 
       func = (task_fp_type)(void *)(llvm::cantFail(kernel_symbol.getAddress()));
     }
 
     void operator()(Context *context) {
-      TC_ASSERT(func);
+      TI_ASSERT(func);
       func(context);
     }
   };
@@ -209,8 +209,8 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       emit_struct_meta_base("Dynamic", meta->ptr, snode);
       meta->call("set_chunk_size", tlctx->get_constant(snode->chunk_size));
     } else {
-      TC_P(snode_type_name(snode->type));
-      TC_NOT_IMPLEMENTED;
+      TI_P(snode_type_name(snode->type));
+      TI_NOT_IMPLEMENTED;
     }
     if (false) {
       // auto ptr_type = llvm::Type::getInt8PtrTy(*llvm_context, 0);
@@ -225,7 +225,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
 
   llvm::Value *emit_struct_meta(SNode *snode) {
     auto obj = emit_struct_meta_object(snode);
-    TC_ASSERT(obj != nullptr);
+    TI_ASSERT(obj != nullptr);
     return obj->ptr;
   }
 
@@ -254,7 +254,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
 
   template <typename... Args>
   void emit(std::string f, Args &&... args) {
-    TC_NOT_IMPLEMENTED
+    TI_NOT_IMPLEMENTED
     codegen->emit(f, std::forward<Args>(args)...);
   }
 
@@ -265,7 +265,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   }
 
   void visit(AllocaStmt *stmt) override {
-    TC_ASSERT(stmt->width() == 1);
+    TI_ASSERT(stmt->width() == 1);
     stmt->value = create_entry_block_alloca(stmt->ret_type.data_type);
     // initialize as zero
     builder->CreateStore(tlctx->get_constant(stmt->ret_type.data_type, 0),
@@ -295,7 +295,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       stmt->value =                                                    \
           builder->CreateCall(get_runtime_function(#x "_i32"), input); \
     } else {                                                           \
-      TC_NOT_IMPLEMENTED                                               \
+      TI_NOT_IMPLEMENTED                                               \
     }                                                                  \
   }
     if (false) {
@@ -316,8 +316,8 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
                                              {input_type}, {input});
     }
     else {
-      TC_P(unary_op_type_name(op));
-      TC_NOT_IMPLEMENTED
+      TI_P(unary_op_type_name(op));
+      TI_NOT_IMPLEMENTED
     }
 #undef UNARY_STD
   }
@@ -359,16 +359,16 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
         llvm::CastInst::CastOps cast_op;
         auto from = stmt->operand->ret_type.data_type;
         auto to = stmt->cast_type;
-        TC_ASSERT(from != to);
+        TI_ASSERT(from != to);
         if (is_real(from) != is_real(to)) {
           if (is_real(from) && is_integral(to)) {
             cast_op = llvm::Instruction::CastOps::FPToSI;
           } else if (is_integral(from) && is_real(to)) {
             cast_op = llvm::Instruction::CastOps::SIToFP;
           } else {
-            TC_P(data_type_name(from));
-            TC_P(data_type_name(to));
-            TC_NOT_IMPLEMENTED;
+            TI_P(data_type_name(from));
+            TI_P(data_type_name(to));
+            TI_NOT_IMPLEMENTED;
           }
           stmt->value =
               builder->CreateCast(cast_op, stmt->operand->value,
@@ -391,7 +391,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
           }
         }
       } else {
-        TC_ASSERT(data_type_size(stmt->ret_type.data_type) ==
+        TI_ASSERT(data_type_size(stmt->ret_type.data_type) ==
                   data_type_size(stmt->cast_type));
         stmt->value = builder->CreateBitCast(
             stmt->operand->value, tlctx->get_data_type(stmt->cast_type));
@@ -409,7 +409,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     } else if (dt == DataType::f64) {
       return llvm::Type::getDoubleTy(*llvm_context);
     } else {
-      TC_NOT_IMPLEMENTED;
+      TI_NOT_IMPLEMENTED;
     }
     return nullptr;
   }
@@ -466,8 +466,8 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
         stmt->value =
             create_call("max_i32", {stmt->lhs->value, stmt->rhs->value});
       } else {
-        TC_P(data_type_name(ret_type));
-        TC_NOT_IMPLEMENTED
+        TI_P(data_type_name(ret_type));
+        TI_NOT_IMPLEMENTED
       }
     } else if (op == BinaryOpType::atan2) {
       if (current_arch() == Arch::x86_64) {
@@ -478,8 +478,8 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
           stmt->value =
               create_call("atan2_f64", {stmt->lhs->value, stmt->rhs->value});
         } else {
-          TC_P(data_type_name(ret_type));
-          TC_NOT_IMPLEMENTED
+          TI_P(data_type_name(ret_type));
+          TI_NOT_IMPLEMENTED
         }
       } else if (current_arch() == Arch::cuda) {
         if (ret_type == DataType::f32) {
@@ -489,11 +489,11 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
           stmt->value =
               create_call("__nv_atan2", {stmt->lhs->value, stmt->rhs->value});
         } else {
-          TC_P(data_type_name(ret_type));
-          TC_NOT_IMPLEMENTED
+          TI_P(data_type_name(ret_type));
+          TI_NOT_IMPLEMENTED
         }
       } else {
-        TC_NOT_IMPLEMENTED
+        TI_NOT_IMPLEMENTED
       }
     } else if (op == BinaryOpType::pow) {
       if (current_arch() == Arch::x86_64) {
@@ -510,8 +510,8 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
           stmt->value =
               create_call("pow_i64", {stmt->lhs->value, stmt->rhs->value});
         } else {
-          TC_P(data_type_name(ret_type));
-          TC_NOT_IMPLEMENTED
+          TI_P(data_type_name(ret_type));
+          TI_NOT_IMPLEMENTED
         }
       } else if (current_arch() == Arch::cuda) {
         if (ret_type == DataType::f32) {
@@ -527,11 +527,11 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
           stmt->value =
               create_call("pow_i64", {stmt->lhs->value, stmt->rhs->value});
         } else {
-          TC_P(data_type_name(ret_type));
-          TC_NOT_IMPLEMENTED
+          TI_P(data_type_name(ret_type));
+          TI_NOT_IMPLEMENTED
         }
       } else {
-        TC_NOT_IMPLEMENTED
+        TI_NOT_IMPLEMENTED
       }
     } else if (op == BinaryOpType::min) {
       if (is_real(ret_type)) {
@@ -540,8 +540,8 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
         stmt->value =
             create_call("min_i32", {stmt->lhs->value, stmt->rhs->value});
       } else {
-        TC_P(data_type_name(ret_type));
-        TC_NOT_IMPLEMENTED
+        TI_P(data_type_name(ret_type));
+        TI_NOT_IMPLEMENTED
       }
     } else if (is_comparison(op)) {
       llvm::Value *cmp = nullptr;
@@ -599,17 +599,17 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
           cmp = builder->CreateICmpNE(stmt->lhs->value, stmt->rhs->value);
         }
       } else {
-        TC_NOT_IMPLEMENTED
+        TI_NOT_IMPLEMENTED
       }
       stmt->value = builder->CreateSExt(cmp, llvm_type(DataType::i32));
     } else {
-      TC_P(binary_op_type_name(op));
-      TC_NOT_IMPLEMENTED
+      TI_P(binary_op_type_name(op));
+      TI_NOT_IMPLEMENTED
     }
   }
 
   void visit(TernaryOpStmt *stmt) override {
-    TC_ASSERT(stmt->op_type == TernaryOpType::select);
+    TI_ASSERT(stmt->op_type == TernaryOpType::select);
     stmt->value = builder->CreateSelect(
         builder->CreateTrunc(stmt->op1->value, llvm_type(DataType::i1)),
         stmt->op2->value, stmt->op3->value);
@@ -644,7 +644,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     if (dt == DataType::i32) {
       format = "%d";
     } else if (dt == DataType::i64) {
-#if defined(TC_PLATFORM_UNIX)
+#if defined(TI_PLATFORM_UNIX)
       format = "%lld";
 #else
       format = "%I64d";
@@ -655,7 +655,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     } else if (dt == DataType::f64) {
       format = "%.12f";
     } else {
-      TC_NOT_IMPLEMENTED
+      TI_NOT_IMPLEMENTED
     }
     args.push_back(builder->CreateGlobalStringPtr(
         ("[llvm codegen debug] " + tag + " = " + format + "\n").c_str(),
@@ -666,7 +666,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   }
 
   void visit(PrintStmt *stmt) override {
-    TC_ASSERT(stmt->width() == 1);
+    TI_ASSERT(stmt->width() == 1);
     std::vector<Value *> args;
     std::string format;
     auto value = stmt->stmt->value;
@@ -674,7 +674,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     if (dt == DataType::i32) {
       format = "%d";
     } else if (dt == DataType::i64) {
-#if defined(TC_PLATFORM_UNIX)
+#if defined(TI_PLATFORM_UNIX)
       format = "%lld";
 #else
       format = "%I64d";
@@ -685,7 +685,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     } else if (dt == DataType::f64) {
       format = "%.12f";
     } else {
-      TC_NOT_IMPLEMENTED
+      TI_NOT_IMPLEMENTED
     }
     args.push_back(builder->CreateGlobalStringPtr(
         ("[debug] " + stmt->str + " = " + format + "\n").c_str(),
@@ -697,7 +697,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   }
 
   void visit(ConstStmt *stmt) override {
-    TC_ASSERT(stmt->width() == 1);
+    TI_ASSERT(stmt->width() == 1);
     auto val = stmt->val[0];
     if (val.dt == DataType::f32) {
       stmt->value = llvm::ConstantFP::get(*llvm_context,
@@ -712,14 +712,14 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       stmt->value = llvm::ConstantInt::get(
           *llvm_context, llvm::APInt(64, val.val_int64(), true));
     } else {
-      TC_NOT_IMPLEMENTED;
+      TI_NOT_IMPLEMENTED;
     }
   }
 
   void visit(WhileControlStmt *stmt) override {
     BasicBlock *after_break =
         BasicBlock::Create(*llvm_context, "after_break", func);
-    TC_ASSERT(while_after_loop);
+    TI_ASSERT(while_after_loop);
     auto cond =
         builder->CreateICmpEQ(stmt->cond->value, tlctx->get_constant(0));
     builder->CreateCondBr(cond, while_after_loop, after_break);
@@ -865,7 +865,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
 
   void visit(ArgStoreStmt *stmt) override {
     if (stmt->is_ptr) {
-      TC_NOT_IMPLEMENTED
+      TI_NOT_IMPLEMENTED
     } else {
       auto intermediate_bits =
           tlctx->get_data_type(stmt->val->ret_type.data_type)
@@ -882,14 +882,14 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   }
 
   void visit(LocalLoadStmt *stmt) override {
-    TC_ASSERT(stmt->width() == 1);
+    TI_ASSERT(stmt->width() == 1);
     stmt->value = builder->CreateLoad(stmt->ptr[0].var->value);
   }
 
   void visit(LocalStoreStmt *stmt) override {
     auto mask = stmt->parent->mask();
     if (mask && stmt->width() != 1) {
-      TC_NOT_IMPLEMENTED
+      TI_NOT_IMPLEMENTED
     } else {
       builder->CreateStore(stmt->data->value, stmt->ptr->value);
     }
@@ -903,11 +903,11 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   void visit(SNodeOpStmt *stmt) override {
     auto snode = stmt->snode;
     if (stmt->op_type == SNodeOpType::append) {
-      TC_ASSERT(snode->type == SNodeType::dynamic);
-      TC_ASSERT(stmt->ret_type.data_type == DataType::i32);
+      TI_ASSERT(snode->type == SNodeType::dynamic);
+      TI_ASSERT(stmt->ret_type.data_type == DataType::i32);
       stmt->value = call(snode, stmt->ptr->value, "append", {stmt->val->value});
     } else if (stmt->op_type == SNodeOpType::length) {
-      TC_ASSERT(snode->type == SNodeType::dynamic);
+      TI_ASSERT(snode->type == SNodeType::dynamic);
       stmt->value = call(snode, stmt->ptr->value, "get_num_elements", {});
     } else if (stmt->op_type == SNodeOpType::is_active) {
       stmt->value =
@@ -920,16 +920,16 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
         stmt->value = call(snode, stmt->ptr->value, "deactivate", {});
       }
     } else {
-      TC_NOT_IMPLEMENTED
+      TI_NOT_IMPLEMENTED
     }
   }
 
   void visit(AtomicOpStmt *stmt) override {
     // auto mask = stmt->parent->mask();
     // TODO: deal with mask when vectorized
-    TC_ASSERT(stmt->width() == 1);
+    TI_ASSERT(stmt->width() == 1);
     for (int l = 0; l < stmt->width(); l++) {
-      TC_ASSERT(stmt->op_type == AtomicOpType::add);
+      TI_ASSERT(stmt->op_type == AtomicOpType::add);
       llvm::Value *old_value;
       if (stmt->val->ret_type.data_type == DataType::i32)
         old_value = builder->CreateAtomicRMW(
@@ -942,26 +942,26 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
         old_value = builder->CreateCall(get_runtime_function("atomic_add_f64"),
                                         {stmt->dest->value, stmt->val->value});
       } else {
-        TC_NOT_IMPLEMENTED
+        TI_NOT_IMPLEMENTED
       }
       stmt->value = old_value;
     }
   }
 
   void visit(GlobalPtrStmt *stmt) override {
-    TC_ERROR("Global Ptrs should have been lowered.");
+    TI_ERROR("Global Ptrs should have been lowered.");
   }
 
   void visit(GlobalStoreStmt *stmt) override {
-    TC_ASSERT(!stmt->parent->mask() || stmt->width() == 1);
-    TC_ASSERT(stmt->data->value);
-    TC_ASSERT(stmt->ptr->value);
+    TI_ASSERT(!stmt->parent->mask() || stmt->width() == 1);
+    TI_ASSERT(stmt->data->value);
+    TI_ASSERT(stmt->ptr->value);
     builder->CreateStore(stmt->data->value, stmt->ptr->value);
   }
 
   void visit(GlobalLoadStmt *stmt) override {
     int width = stmt->width();
-    TC_ASSERT(width == 1);
+    TI_ASSERT(width == 1);
     stmt->value = builder->CreateLoad(
         tlctx->get_data_type(stmt->ret_type.data_type), stmt->ptr->value);
   }
@@ -993,8 +993,8 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     } else if (snode->type == SNodeType::hash) {
       return "Hash";
     } else {
-      TC_P(snode_type_name(snode->type));
-      TC_NOT_IMPLEMENTED
+      TI_P(snode_type_name(snode->type));
+      TI_NOT_IMPLEMENTED
     }
   }
 
@@ -1044,7 +1044,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   }
 
   void visit(IntegerOffsetStmt *stmt) override {
-    TC_NOT_IMPLEMENTED
+    TI_NOT_IMPLEMENTED
     if (stmt->input->is<GetChStmt>() &&
         stmt->input->as<GetChStmt>()->output_snode->type == SNodeType::place) {
       auto input = stmt->input->as<GetChStmt>();
@@ -1060,7 +1060,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   void visit(SNodeLookupStmt *stmt) override {
     llvm::Value *parent = nullptr;
     parent = stmt->input_snode->value;
-    TC_ASSERT(parent);
+    TI_ASSERT(parent);
     auto snode = stmt->snode;
     if (snode->type == SNodeType::root) {
       stmt->value = builder->CreateGEP(parent, stmt->input_index->value);
@@ -1074,8 +1074,8 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       stmt->value = call(snode, stmt->input_snode->value, "lookup_element",
                          {stmt->input_index->value});
     } else {
-      TC_INFO(snode_type_name(snode->type));
-      TC_NOT_IMPLEMENTED
+      TI_INFO(snode_type_name(snode->type));
+      TI_NOT_IMPLEMENTED
     }
   }
 
@@ -1089,7 +1089,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   }
 
   void visit(ExternalPtrStmt *stmt) override {
-    TC_ASSERT(stmt->width() == 1);
+    TI_ASSERT(stmt->width() == 1);
 
     auto argload = stmt->base_ptrs[0]->as<ArgLoadStmt>();
     auto arg_id = argload->arg_id;
@@ -1166,11 +1166,11 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     builder->CreateBr(func_body_bb);
 
     if (prog->config.print_kernel_llvm_ir) {
-      TC_INFO("Kernel Module IR");
+      TI_INFO("Kernel Module IR");
       module->print(errs(), nullptr);
     }
-    TC_ASSERT(!llvm::verifyFunction(*func, &errs()));
-    // TC_INFO("Kernel function verified.");
+    TI_ASSERT(!llvm::verifyFunction(*func, &errs()));
+    // TI_INFO("Kernel function verified.");
   }
 
   class FunctionCreationGuard {
@@ -1412,7 +1412,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     auto buffer = call("Runtime_get_temporary_pointer", runtime,
                        tlctx->get_constant((int64)stmt->offset));
 
-    TC_ASSERT(stmt->width() == 1);
+    TI_ASSERT(stmt->width() == 1);
     auto ptr_type = llvm::PointerType::get(
         tlctx->get_data_type(stmt->ret_type.data_type), 0);
     stmt->value = builder->CreatePointerCast(buffer, ptr_type);
@@ -1446,7 +1446,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     } else if (stmt->task_type == Type::gc) {
       emit_gc(stmt);
     } else {
-      TC_NOT_IMPLEMENTED
+      TI_NOT_IMPLEMENTED
     }
     if (prog->config.enable_profiler) {
       call(builder, "Runtime_profiler_stop", {get_runtime()});

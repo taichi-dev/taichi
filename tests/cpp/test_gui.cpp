@@ -3,7 +3,7 @@
 #include <taichi/visual/gui.h>
 #include <taichi/common/task.h>
 
-TC_NAMESPACE_BEGIN
+TI_NAMESPACE_BEGIN
 
 auto test_gui = []() {
   GUI gui("GUI Test", 1000, 400, false);
@@ -11,7 +11,7 @@ auto test_gui = []() {
   real t = 0;
 
   int circle_count = 10;
-  gui.button("ABC", [] { TC_INFO("Triggered"); });
+  gui.button("ABC", [] { TI_INFO("Triggered"); });
   gui.slider("Circles", circle_count, 0, 60);
   real radius = 3;
   gui.slider("Radius", radius, 0.0_f, 10.0_f);
@@ -45,6 +45,6 @@ auto test_gui = []() {
   }
 };
 
-TC_REGISTER_TASK(test_gui);
+TI_REGISTER_TASK(test_gui);
 
-TC_NAMESPACE_END
+TI_NAMESPACE_END

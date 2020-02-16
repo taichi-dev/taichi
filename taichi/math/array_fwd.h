@@ -7,7 +7,7 @@
 
 #include <taichi/common/util.h>
 
-TC_NAMESPACE_BEGIN
+TI_NAMESPACE_BEGIN
 
 template <int dim>
 class IndexND;
@@ -27,4 +27,4 @@ class ArrayND;
 template <typename T, int dim>
 using TArray = ArrayND<dim, T>;
 
-TC_NAMESPACE_END
+TI_NAMESPACE_END

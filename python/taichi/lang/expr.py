@@ -251,15 +251,13 @@ class Expr:
     negative = power < 0
     power = abs(power)
     tmp = self
+    ret = None
     while power:
       if power & 1:
-        ret = tmp
-        break
-      tmp = ti.expr_init(tmp * tmp)
-      power >>= 1
-    while power:
-      if power & 1:
-        ret = ti.expr_init(ret * tmp)
+        if ret is None:
+          ret = tmp
+        else:
+          ret = ti.expr_init(ret * tmp)
       tmp = ti.expr_init(tmp * tmp)
       power >>= 1
     if negative:

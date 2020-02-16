@@ -147,8 +147,8 @@ inline void Activate(const Expr &expr, const ExprGroup &expr_group) {
 }
 
 inline void Deactivate(SNode *snode, const ExprGroup &expr_group) {
-  Expr::make<SNodeOpExpression>(snode, SNodeOpType::deactivate,
-                                       expr_group);
+  current_ast_builder().insert(Stmt::make<FrontendSNodeOpStmt>(
+      SNodeOpType::deactivate, snode, expr_group));
 }
 
 inline Expr Append(SNode *snode, const ExprGroup &indices, const Expr &val) {

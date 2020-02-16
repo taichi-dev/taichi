@@ -199,12 +199,26 @@ f64 atan2_f64(f64 a, f64 b) {
   return std::atan2(a, b);
 }
 
-i32 pow_i32(i32 a, i32 b) {
-  return std::pow(a, b);
+i32 pow_i32(i32 x, i32 n) {
+  i32 tmp = x;
+  i32 ans = 1;
+  while (n) {
+    if (n & 1) ans *= tmp;
+    tmp = tmp * tmp;
+    n >>= 1;
+  }
+  return ans;
 }
 
-i64 pow_i64(i64 a, i64 b) {
-  return std::pow(a, b);
+i64 pow_i64(i64 x, i64 n) {
+  i64 tmp = x;
+  i64 ans = 1;
+  while (n) {
+    if (n & 1) ans *= tmp;
+    tmp = tmp * tmp;
+    n >>= 1;
+  }
+  return ans;
 }
 
 f32 pow_f32(f32 a, f32 b) {
@@ -214,16 +228,6 @@ f32 pow_f32(f32 a, f32 b) {
 f64 pow_f64(f64 a, f64 b) {
   return std::pow(a, b);
 }
-
-#if ARCH_cuda
-i32 nv_pow_i32(i32 a, i32 b) {
-  return __nv_pow(a, b);
-}
-
-i64 nv_pow_i64(i64 a, i64 b) {
-  return __nv_pow(a, b);
-}
-#endif
 
 f32 __nv_sgnf(f32 x) {
   return sgn_f32(x);

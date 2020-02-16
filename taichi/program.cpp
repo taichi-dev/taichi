@@ -12,7 +12,7 @@
 #include "backends/struct_metal.h"
 #include "snode.h"
 
-#if defined(CUDA_FOUND)
+#if defined(TI_WITH_CUDA)
 
 #include <cuda_runtime.h>
 
@@ -26,7 +26,7 @@ Program *current_program = nullptr;
 std::atomic<int> Program::num_instances;
 
 Program::Program(Arch arch) {
-#if !defined(CUDA_FOUND)
+#if !defined(TI_WITH_CUDA)
   if (arch == Arch::cuda) {
     TI_WARN("Taichi is not compiled with CUDA.");
     TI_WARN("Falling back to x86_64");
@@ -125,7 +125,7 @@ void Program::materialize_layout() {
 void Program::synchronize() {
   if (!sync) {
     if (config.arch == Arch::cuda) {
-#if defined(CUDA_FOUND)
+#if defined(TI_WITH_CUDA)
       cudaDeviceSynchronize();
 #else
       TI_ERROR("No CUDA support");

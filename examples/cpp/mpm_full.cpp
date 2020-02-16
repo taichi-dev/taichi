@@ -656,7 +656,7 @@ auto mpm_full = [](std::vector<std::string> cli_param) {
     auto ot = Time::get_time();
     std::vector<float32> particle_data(max_n_particles * 7);
     summarize();
-#if defined(CUDA_FOUND)
+#if defined(TI_WITH_CUDA)
     cudaMemcpy(particle_data.data(), &particle_buffer.val<float32>(0),
                particle_data.size() * sizeof(float), cudaMemcpyDeviceToHost);
 #else

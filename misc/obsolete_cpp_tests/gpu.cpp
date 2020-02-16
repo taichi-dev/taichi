@@ -28,7 +28,7 @@ TI_TEST("compiler_basics_gpu") {
   }
 };
 
-#if defined(CUDA_FOUND)
+#if defined(TI_WITH_CUDA)
 TI_TEST("cuda_malloc_managed") {
   void *ptr;
   cudaMallocManaged(&ptr, 1LL << 40);

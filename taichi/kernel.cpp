@@ -1,7 +1,7 @@
 #include <taichi/common/task.h>
 #include "kernel.h"
 #include "program.h"
-#if defined(CUDA_FOUND)
+#if defined(TI_WITH_CUDA)
 #include <cuda_runtime.h>
 #include "cuda_utils.h"
 #endif
@@ -46,7 +46,7 @@ void Kernel::operator()() {
   if (arch == Arch::cuda) {
     std::vector<void *> host_buffers(args.size());
     std::vector<void *> device_buffers(args.size());
-#if defined(CUDA_FOUND)
+#if defined(TI_WITH_CUDA)
     // copy data to GRAM
     bool has_buffer = false;
     for (int i = 0; i < (int)args.size(); i++) {

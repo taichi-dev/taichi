@@ -2,7 +2,7 @@
 
 #pragma once
 
-#if defined(CUDA_FOUND)
+#if defined(TI_WITH_CUDA)
 #include <cuda_runtime.h>
 #endif
 #include <taichi/common/util.h>

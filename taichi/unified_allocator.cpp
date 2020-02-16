@@ -1,6 +1,6 @@
 // Virtual memory allocator for CPU/GPU
 
-#if defined(CUDA_FOUND)
+#if defined(TI_WITH_CUDA)
 #include "cuda_utils.h"
 #endif
 #include "tlang_util.h"
@@ -25,7 +25,7 @@ UnifiedAllocator::UnifiedAllocator(std::size_t size, Arch arch)
     // So we need a mutex here...
     TI_TRACE("Allocating unified (CPU+GPU) address space of size {} MB",
              size / 1024 / 1024);
-#if defined(CUDA_FOUND)
+#if defined(TI_WITH_CUDA)
     std::lock_guard<std::mutex> _(cuda_context->lock);
     check_cuda_error(cudaMallocManaged(&_cuda_data, size));
     if (_cuda_data == nullptr) {
@@ -67,7 +67,7 @@ taichi::Tlang::UnifiedAllocator::~UnifiedAllocator() {
     return;
   }
   if (arch_ == Arch::cuda) {
-#if defined(CUDA_FOUND)
+#if defined(TI_WITH_CUDA)
     check_cuda_error(cudaFree(_cuda_data));
 #else
     TI_ERROR("No CUDA support");

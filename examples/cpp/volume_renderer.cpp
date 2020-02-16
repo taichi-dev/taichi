@@ -4,7 +4,7 @@ TLANG_NAMESPACE_BEGIN
 bool use_gui = false;
 TLANG_NAMESPACE_END
 
-#if defined(CUDA_FOUND)
+#if defined(TI_WITH_CUDA)
 #include <cuda_runtime_api.h>
 
 TLANG_NAMESPACE_BEGIN

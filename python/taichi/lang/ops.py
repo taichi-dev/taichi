@@ -36,16 +36,6 @@ def binary(foo):
   return x_
 
 
-def pow(x, n):
-  assert isinstance(n, int) and n >= 0
-  if n == 0:
-    return 1
-  ret = x
-  for i in range(n - 1):
-    ret = ret * x
-  return ret
-
-
 def logical_and(a, b):
   return a.logical_and(b)
 

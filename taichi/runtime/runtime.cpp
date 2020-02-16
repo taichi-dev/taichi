@@ -199,6 +199,36 @@ f64 atan2_f64(f64 a, f64 b) {
   return std::atan2(a, b);
 }
 
+i32 pow_i32(i32 x, i32 n) {
+  i32 tmp = x;
+  i32 ans = 1;
+  while (n) {
+    if (n & 1) ans *= tmp;
+    tmp *= tmp;
+    n >>= 1;
+  }
+  return ans;
+}
+
+i64 pow_i64(i64 x, i64 n) {
+  i64 tmp = x;
+  i64 ans = 1;
+  while (n) {
+    if (n & 1) ans *= tmp;
+    tmp *= tmp;
+    n >>= 1;
+  }
+  return ans;
+}
+
+f32 pow_f32(f32 a, f32 b) {
+  return std::pow(a, b);
+}
+
+f64 pow_f64(f64 a, f64 b) {
+  return std::pow(a, b);
+}
+
 f32 __nv_sgnf(f32 x) {
   return sgn_f32(x);
 }
@@ -1043,26 +1073,20 @@ u32 cuda_rand_u32(Context *context) {
   auto lock = (Ptr)&state->lock;
 
   bool done = false;
-  // TODO: whether this leads to a deadlock or not depends on how nvcc schedules
-  // the instructions...
-  while (!done) {
-    if (atomic_exchange_i32((i32 *)lock, 1) == 0) {
-      grid_memfence();
-      auto &x = state->x;
-      auto &y = state->y;
-      auto &z = state->z;
-      auto &w = state->w;
-      auto t = x ^ (x << 11);
-      x = y;
-      y = z;
-      z = w;
-      w = (w ^ (w >> 19)) ^ (t ^ (t >> 8));
-      ret = w;
-      done = true;
-      grid_memfence();
-      mutex_unlock_i32(lock);
-    }
-  }
+  // TODO: locking here is very slow...
+  locked_task(lock, [&] {
+    auto &x = state->x;
+    auto &y = state->y;
+    auto &z = state->z;
+    auto &w = state->w;
+    auto t = x ^ (x << 11);
+    x = y;
+    y = z;
+    z = w;
+    w = (w ^ (w >> 19)) ^ (t ^ (t >> 8));
+    ret = w;
+    done = true;
+  });
   return ret;
 }
 

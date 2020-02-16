@@ -1001,6 +1001,7 @@ void simplify(IRNode *root) {
 
 void full_simplify(IRNode *root) {
   constant_fold(root);
+  alg_simp(root);
   die(root);
   simplify(root);
 }

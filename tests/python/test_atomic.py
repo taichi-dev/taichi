@@ -13,9 +13,12 @@ def run_atomic_add_global_case(vartype, step, valproc=lambda x: x):
     ti.root.dense(ti.i, n).place(x, y)
     ti.root.place(c)
 
+  # Make Taichi correctly infer the type
+  # TODO: Taichi seems to treat numpy.int32 as a float type, fix that.
+  init_ck = 0 if vartype == ti.i32 else 0.0
   @ti.kernel
   def func():
-    ck = ti.to_numpy_type(vartype)(0)
+    ck = init_ck
     for i in range(n):
       x[i] = ti.atomic_add(c[None], step)
       y[i] = ti.atomic_add(ck, step)

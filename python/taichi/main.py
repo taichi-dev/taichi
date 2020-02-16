@@ -18,6 +18,12 @@ def test_python(verbose=False):
   args = [test_dir]
   if verbose:
     args += ['-s']
+  try:
+    from multiprocessing import cpu_count
+    cpu_count = cpu_count()
+  except:
+    cpu_count = 4
+  args += ['-n', str(cpu_count)]
 
   return int(pytest.main(args))
 

@@ -11,14 +11,15 @@
 #include <cstdio>
 #include <cstdlib>
 
-#if !defined(TC_PLATFORM_OSX)
+#if defined(TC_PLATFORM_WINDOWS)
 #include <filesystem>
 #endif
 
 TC_NAMESPACE_BEGIN
 
+// TODO: move to std::filesystem after it's nonexperimental on all platforms
 inline void create_directories(const std::string &dir) {
-#if !defined(TC_PLATFORM_OSX)
+#if defined(TC_PLATFORM_WINDOWS)
   std::filesystem::create_directories(dir);
 #else
   std::system(fmt::format("mkdir -p {}", dir).c_str());

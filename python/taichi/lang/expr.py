@@ -248,9 +248,13 @@ class Expr:
     if power == 0:
       return Expr(1)
     negative = power < 0
-    ret = self
-    for i in range(power - 1):
-      ret = ret * self
+    tmp = self
+    ret = 1
+    while power:
+      if power & 1:
+        ret *= tmp
+      tmp *= tmp
+      n >>= 1
     if negative:
       return 1 / ret
     else:

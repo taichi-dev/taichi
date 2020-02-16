@@ -204,7 +204,7 @@ i32 pow_i32(i32 x, i32 n) {
   i32 ans = 1;
   while (n) {
     if (n & 1) ans *= tmp;
-    tmp = tmp * tmp;
+    tmp *= tmp;
     n >>= 1;
   }
   return ans;
@@ -215,7 +215,7 @@ i64 pow_i64(i64 x, i64 n) {
   i64 ans = 1;
   while (n) {
     if (n & 1) ans *= tmp;
-    tmp = tmp * tmp;
+    tmp *= tmp;
     n >>= 1;
   }
   return ans;

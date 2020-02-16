@@ -1363,10 +1363,9 @@ class Block : public IRNode {
 
   template <typename T, typename... Args>
   Stmt *push_back(Args &&... args) {
-    statements.emplace_back([this](std::unique_ptr<T> stmt) {
-      stmt->parent = this;
-      return stmt;
-    } (std::make_unique<T>(std::forward<Args>(args)...)));
+    auto stmt = std::make_unique<T>(std::forward<Args>(args)...);
+    stmt->parent = this;
+    statements.emplace_back(std::move(stmt));
     return back();
   }
 

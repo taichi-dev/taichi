@@ -63,6 +63,14 @@ class MakeAdjoint : public IRVisitor {
     return insert<UnaryOpStmt>(UnaryOpType::sin, load(op1));
   }
 
+  Stmt *log(Stmt *op1) {
+    return insert<UnaryOpStmt>(UnaryOpType::log, load(op1));
+  }
+
+  Stmt *pow(Stmt *op1, Stmt *op2) {
+    return insert<BinaryOpStmt>(BinaryOpType::pow, load(op1), load(op2));
+  }
+
  public:
   Block *current_block;
   int for_depth;
@@ -189,6 +197,7 @@ class MakeAdjoint : public IRVisitor {
       accumulate(bin->lhs, adjoint(bin));
       accumulate(bin->rhs, negate(adjoint(bin)));
     } else if (bin->op_type == BinaryOpType::mul) {
+      // d (x * y) = y * dx + x * dy
       accumulate(bin->lhs, mul(adjoint(bin), bin->rhs));
       accumulate(bin->rhs, mul(adjoint(bin), bin->lhs));
     } else if (bin->op_type == BinaryOpType::mod) {
@@ -201,6 +210,11 @@ class MakeAdjoint : public IRVisitor {
       auto numerator = add(sqr(bin->lhs), sqr(bin->rhs));
       accumulate(bin->lhs, div(mul(adjoint(bin), bin->rhs), numerator));
       accumulate(bin->rhs, negate(div(mul(adjoint(bin), bin->lhs), numerator)));
+    } else if (bin->op_type == BinaryOpType::pow) {
+      // d (x ^ y) = y * x ^ (y-1)  dx  +  log(x) * x ^ y  dy
+      accumulate(bin->lhs, mul(adjoint(bin),
+            mul(pow(bin->lhs, sub(bin->rhs, constant(1))), bin->rhs)));
+      accumulate(bin->rhs, mul(adjoint(bin), mul(log(bin->lhs), pow(bin->lhs, bin->rhs))));
     } else if (bin->op_type == BinaryOpType::min ||
                bin->op_type == BinaryOpType::max) {
       auto cmp = bin->op_type == BinaryOpType::min ? cmp_lt(bin->lhs, bin->rhs)

@@ -270,7 +270,7 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
         "Runtime_set_assert_failed");
 
     auto set_vvprintf =
-        tlctx->lookup_function<std::function<void(void *, void *)>>(
+        tlctx->lookup_function<void(void *, void *)>(
             "Runtime_set_vvprintf");
 
     auto allocate_ambient =

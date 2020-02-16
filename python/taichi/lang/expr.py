@@ -243,18 +243,20 @@ class Expr:
     return ti.expr_init(taichi_lang_core.expr_atomic_add(self.ptr, other_ptr))
 
   def __pow__(self, power, modulo=None):
+    import taichi as ti
     if not isinstance(power, int) or abs(power) > 12:
       return Expr(taichi_lang_core.expr_pow(self.ptr, Expr(power).ptr))
     if power == 0:
       return Expr(1)
     negative = power < 0
+    power = abs(power)
     tmp = self
     ret = 1
     while power:
       if power & 1:
-        ret *= tmp
-      tmp *= tmp
-      n >>= 1
+        ret = ti.expr_init(ret * tmp)
+      tmp = ti.expr_init(tmp * tmp)
+      power >>= 1
     if negative:
       return 1 / ret
     else:

@@ -20,19 +20,24 @@ def test_python(test_files=None, verbose=False):
   if test_files:
     # run individual tests
     for f in test_files:
+      # auto-compelete
+      if not f.startswith('test_'):
+        f = 'test_' + f
+      if not f.endswith('.py'):
+        f = f + '.py'
       args.append(os.path.join(test_dir, f))
   else:
     # run all the tests
     args = [test_dir]
   if verbose:
     args += ['-s']
-  if test_files is None:
+  if not test_files or len(test_files) > 4:
     try:
       from multiprocessing import cpu_count
       cpu_count = cpu_count()
-      print('Starting 4 thread(s) to test...')
     except:
       cpu_count = 4
+    print(f'Starting {cpu_count} testing thread(s)...')
     args += ['-n', str(cpu_count)]
 
   return int(pytest.main(args))
@@ -112,7 +117,7 @@ def main(debug=False):
   elif mode == "test_cpp":
     return test_cpp()
   elif mode == "test":
-    if test_python() != 0:
+    if test_python(test_files=sys.argv[2:]) != 0 or len(sys.argv) > 2:
       return -1
     return test_cpp()
   elif mode == "test_verbose":

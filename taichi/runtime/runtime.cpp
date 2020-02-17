@@ -87,9 +87,6 @@ void taichi_printf(Runtime *runtime, const char *format, Args &&... args);
 
 extern "C" {
 
-#if ARCH_cuda
-//void vprintf(Ptr format, Ptr arg);
-#endif
 i32 printf(const char *, ...);
 
 #define DEFINE_UNARY_REAL_FUNC(F) \

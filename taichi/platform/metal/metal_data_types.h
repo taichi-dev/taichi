@@ -39,7 +39,7 @@ inline std::string metal_binary_op_type_symbol(BinaryOpType type) {
 
 inline bool is_metal_binary_op_infix(BinaryOpType type) {
   return !((type == BinaryOpType::min) || (type == BinaryOpType::max) ||
-           (type == BinaryOpType::atan2));
+           (type == BinaryOpType::atan2) || (type == BinaryOpType::pow));
 }
 
 TLANG_NAMESPACE_END

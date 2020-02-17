@@ -21,12 +21,12 @@ TI_TEST("simplify_add_zero") {
   irpass::typecheck(block.get());
   TI_CHECK(block->size() == 6);  // two addresses, one load, one store
 
-  irpass::print(block.get());
+  // irpass::print(block.get());
 
   irpass::alg_simp(block.get());  // should eliminate add
   irpass::die(block.get());       // should eliminate zero
 
-  irpass::print(block.get());
+  // irpass::print(block.get());
   TI_CHECK(block->size() == 4);  // two addresses, one load, one store
   TI_CHECK((*block)[0]->is<GlobalTemporaryStmt>());
   // .. more tests, assuming instruction order not shuffled

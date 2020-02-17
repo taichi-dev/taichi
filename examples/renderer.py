@@ -60,8 +60,7 @@ def buffers():
 
   ti.root.dense(ti.ijk, 2).dense(ti.ijk, particle_grid_res // 8).dense(
       ti.ijk, 8).place(voxel_has_particle)
-  ti.root.dense(ti.ijk, 4).dense(
-      ti.ijk, particle_grid_res // 8).pointer().dense(ti.ijk, 8).dynamic(
+  ti.root.dense(ti.ijk, 4).pointer(ti.ijk, particle_grid_res // 8).dense(ti.ijk, 8).dynamic(
           ti.l, max_num_particles_per_cell, 512).place(pid)
 
   ti.root.dense(ti.l, max_num_particles).place(particle_x, particle_v,

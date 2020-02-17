@@ -14,6 +14,7 @@
 #include <taichi/system/unit_dll.h>
 #include <taichi/geometry/factory.h>
 #include <taichi/platform/metal/metal_api.h>
+#include <taichi/platform/opengl/opengl_api.h>
 #if defined(TI_WITH_CUDA)
 #include <cuda_runtime_api.h>
 #endif
@@ -164,6 +165,7 @@ void export_misc(py::module &m) {
   });
   m.def("with_cuda", with_cuda);
   m.def("with_metal", taichi::Tlang::metal::is_metal_api_available);
+  m.def("with_opengl", taichi::Tlang::opengl::is_opengl_api_available);
 }
 
 TI_NAMESPACE_END

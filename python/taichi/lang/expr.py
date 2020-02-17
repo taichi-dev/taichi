@@ -243,7 +243,7 @@ class Expr:
     return ti.expr_init(taichi_lang_core.expr_atomic_add(self.ptr, other_ptr))
 
   def __rpow__(self, power, modulo=None):
-    self.__pow__(Expr(power), self)
+    return self.__pow__(Expr(power), self)
 
   def __pow__(self, power, modulo=None):
     import taichi as ti

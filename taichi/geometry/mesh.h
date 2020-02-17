@@ -11,7 +11,7 @@
 #include <taichi/math.h>
 #include <taichi/visual/scene.h>
 
-TC_NAMESPACE_BEGIN
+TI_NAMESPACE_BEGIN
 
 template <int dim>
 struct Element {
@@ -23,7 +23,7 @@ struct Element {
   Vector v[dim];
   bool open_end[dim];
 
-  TC_IO_DEF(v, open_end);
+  TI_IO_DEF(v, open_end);
 
   Element() {
     for (int i = 0; i < dim; i++) {
@@ -51,15 +51,15 @@ struct Element {
 
   Vector get_normal() const {
     Vector ret;
-    TC_STATIC_IF(dim == 2) {
+    TI_STATIC_IF(dim == 2) {
       Vector d = v[1] - v[0];
       ret = normalized(Vector(d[1], -d[0]));
     }
-    TC_STATIC_ELSE {
+    TI_STATIC_ELSE {
       Vector n = cross(v[1] - v[0], v[2] - v[1]);
       ret = normalized(n);
     }
-    TC_STATIC_END_IF
+    TI_STATIC_END_IF
     return ret;
   }
 };
@@ -73,10 +73,10 @@ struct ElementMesh {
 
   std::vector<Elem> elements;
 
-  TC_IO_DEF(elements);
+  TI_IO_DEF(elements);
 
   void initialize(const Config &config) {
-    TC_STATIC_IF(dim == 2) {
+    TI_STATIC_IF(dim == 2) {
       std::string s = config.get<std::string>("segment_mesh");
       std::stringstream ss(s);
       int n;
@@ -90,8 +90,8 @@ struct ElementMesh {
         elements.push_back(elem);
       }
     }
-    TC_STATIC_ELSE {
-      TC_INFO("Adding mesh, fn={}", config.get<std::string>("mesh_fn"));
+    TI_STATIC_ELSE {
+      TI_INFO("Adding mesh, fn={}", config.get<std::string>("mesh_fn"));
       std::string mesh_fn = config.get<std::string>("mesh_fn");
       auto mesh = std::make_shared<Mesh>();
       Config mesh_config;
@@ -107,11 +107,11 @@ struct ElementMesh {
         elements.push_back(elem);
       }
     }
-    TC_STATIC_END_IF
+    TI_STATIC_END_IF
   }
 };
 
-TC_FORCE_INLINE real distance_to_segment(const Vector2 &pos,
+TI_FORCE_INLINE real distance_to_segment(const Vector2 &pos,
                                          const Vector2 &a,
                                          const Vector2 &b,
                                          bool clamp_to_ends = false,
@@ -134,7 +134,7 @@ TC_FORCE_INLINE real distance_to_segment(const Vector2 &pos,
   }
 }
 
-TC_FORCE_INLINE real distance_to_triangle(const Vector3 &pos,
+TI_FORCE_INLINE real distance_to_triangle(const Vector3 &pos,
                                           const Element<3> &tri) {
   Vector3 normal = tri.get_normal();
   real height = dot(normal, (pos - tri.v[0]));
@@ -153,18 +153,18 @@ TC_FORCE_INLINE real distance_to_triangle(const Vector3 &pos,
 }
 
 // Note: assuming world origin aligns with elem.v[0]
-TC_FORCE_INLINE Matrix2 world_to_element(const Element<2> &elem) {
+TI_FORCE_INLINE Matrix2 world_to_element(const Element<2> &elem) {
   Vector2 v = elem.v[1] - elem.v[0];
   Vector2 n = normalized(Vector2(v.y, -v.x));
   return inversed(Matrix2(v, n));
 }
 
 // Note: assuming world origin aligns with elem.v[0]
-TC_FORCE_INLINE Matrix3 world_to_element(const Element<3> &elem) {
+TI_FORCE_INLINE Matrix3 world_to_element(const Element<3> &elem) {
   Vector3 u = elem.v[1] - elem.v[0];
   Vector3 v = elem.v[2] - elem.v[0];
   Vector3 n = normalized(cross(u, v));
   return inversed(Matrix3(u, v, n));
 }
 
-TC_NAMESPACE_END
+TI_NAMESPACE_END

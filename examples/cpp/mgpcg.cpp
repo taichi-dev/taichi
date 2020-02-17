@@ -4,7 +4,7 @@
 #include <taichi/system/profiler.h>
 #include <taichi/visual/texture.h>
 
-TC_NAMESPACE_BEGIN
+TI_NAMESPACE_BEGIN
 
 using namespace Tlang;
 
@@ -19,15 +19,15 @@ auto mgpcg_poisson = [](std::vector<std::string> cli_param) {
   int block_size = 8;
 
   int threads = param.get("threads", 8);
-  TC_P(threads);
+  TI_P(threads);
   bool vec_option = param.get("vec", true);
   int vec = vec_option ? block_size : 1;
-  TC_ASSERT(vec == 1 || vec == block_size);
-  TC_P(vec);
+  TI_ASSERT(vec == 1 || vec == block_size);
+  TI_P(vec);
   bool load_gt = param.get("load_gt", false);
-  TC_P(load_gt)
+  TI_P(load_gt)
   bool gpu = param.get("gpu", false);
-  TC_P(gpu)
+  TI_P(gpu)
 
   CoreState::set_trigger_gdb_when_crash(true);
 
@@ -35,15 +35,15 @@ auto mgpcg_poisson = [](std::vector<std::string> cli_param) {
   // prog.config.print_ir = true;
 
   prog.config.simplify_before_lower_access = param.get("simp1", true);
-  TC_P(prog.config.simplify_before_lower_access);
+  TI_P(prog.config.simplify_before_lower_access);
   prog.config.lower_access = param.get("lower_access", true);
-  TC_P(prog.config.lower_access);
+  TI_P(prog.config.lower_access);
   prog.config.print_ir = param.get("print_ir", false);
-  TC_P(prog.config.print_ir);
+  TI_P(prog.config.print_ir);
   prog.config.simplify_after_lower_access = param.get("simp2", true);
-  TC_P(prog.config.simplify_after_lower_access);
+  TI_P(prog.config.simplify_after_lower_access);
   prog.config.attempt_vectorized_load_cpu = param.get("vec_load_cpu", true);
-  TC_P(prog.config.attempt_vectorized_load_cpu);
+  TI_P(prog.config.attempt_vectorized_load_cpu);
 
   prog.config.lazy_compilation = false;
 
@@ -278,7 +278,7 @@ auto mgpcg_poisson = [](std::vector<std::string> cli_param) {
   sum.val<float32>() = 0;
   reduce_r();
   auto initial_rTr = sum.val<float32>();
-  TC_P(initial_rTr);
+  TI_P(initial_rTr);
 
   // r = b - Ax = b    since x = 0
   // p = r = r + 0 p
@@ -291,16 +291,16 @@ auto mgpcg_poisson = [](std::vector<std::string> cli_param) {
   // CG
   auto t = Time::get_time();
   for (int i = 0; i < 400; i++) {
-    TC_P(i);
+    TI_P(i);
     compute_Ap();
     sum.val<float32>() = 0;
     reduce_pAp();
     auto pAp = sum.val<float32>();
     // alpha = rTr / pTAp
     alpha.val<float32>() = old_zTr / pAp;
-    // TC_P(old_zTr);
-    // TC_P(pAp);
-    // TC_P(alpha.val<float32>());
+    // TI_P(old_zTr);
+    // TI_P(pAp);
+    // TI_P(alpha.val<float32>());
     // x = x + alpha p
     update_x();
     // r = r - alpha Ap
@@ -311,21 +311,21 @@ auto mgpcg_poisson = [](std::vector<std::string> cli_param) {
     sum.val<float32>() = 0;
     reduce_zTr();
     auto new_zTr = sum.val<float32>();
-    // TC_P(new_zTr);
+    // TI_P(new_zTr);
     sum.val<float32>() = 0;
     reduce_r();
     auto rTr = sum.val<float32>();
-    TC_P(rTr);
+    TI_P(rTr);
     if (rTr < initial_rTr * 1e-12f)
       break;
     // beta = new rTr / old rTr
     beta.val<float32>() = new_zTr / old_zTr;
-    // TC_P(beta.val<float32>());
+    // TI_P(beta.val<float32>());
     // p = z + beta p
     update_p();
     old_zTr = new_zTr;
   }
-  TC_P(Time::get_time() - t);
+  TI_P(Time::get_time() - t);
   get_current_program().profiler_print();
 
   compute_Ap();
@@ -339,8 +339,8 @@ auto mgpcg_poisson = [](std::vector<std::string> cli_param) {
       }
     }
   }
-  TC_P(residual);
-  // TC_P(difference_max);
+  TI_P(residual);
+  // TI_P(difference_max);
 
   std::vector<float32> ref_input(pow<3>(n / 2));
   if (load_gt) {
@@ -351,7 +351,7 @@ auto mgpcg_poisson = [](std::vector<std::string> cli_param) {
   for (auto r : ref_input) {
     absmax = std::max(std::abs(absmax), r);
   }
-  TC_P(absmax);
+  TI_P(absmax);
 
   int gui_res = 512;
   GUI gui("MGPCG Poisson", Vector2i(gui_res + 200, gui_res), false);
@@ -376,6 +376,6 @@ auto mgpcg_poisson = [](std::vector<std::string> cli_param) {
     gui.update();
   }
 };
-TC_REGISTER_TASK(mgpcg_poisson);
+TI_REGISTER_TASK(mgpcg_poisson);
 
-TC_NAMESPACE_END
+TI_NAMESPACE_END

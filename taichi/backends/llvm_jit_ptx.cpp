@@ -34,7 +34,7 @@ std::string compile_module_to_ptx(std::unique_ptr<llvm::Module> &module) {
   std::string err_str;
   const llvm::Target *target =
       TargetRegistry::lookupTarget(triple.str(), err_str);
-  TC_ERROR_UNLESS(target, err_str);
+  TI_ERROR_UNLESS(target, err_str);
 
   bool fast_math = get_current_program().config.fast_math;
 
@@ -63,7 +63,7 @@ std::string compile_module_to_ptx(std::unique_ptr<llvm::Module> &module) {
       triple.str(), cuda_context->get_mcpu(), cuda_mattrs(), options,
       llvm::Reloc::PIC_, llvm::CodeModel::Small, CodeGenOpt::Aggressive));
 
-  TC_ERROR_UNLESS(target_machine.get(), "Could not allocate target machine!");
+  TI_ERROR_UNLESS(target_machine.get(), "Could not allocate target machine!");
 
   module->setDataLayout(target_machine->createDataLayout());
 
@@ -127,7 +127,7 @@ std::string compile_module_to_ptx(std::unique_ptr<llvm::Module> &module) {
       module_pass_manager, ostream, nullptr, TargetMachine::CGFT_AssemblyFile,
       true);
 
-  TC_ERROR_IF(fail, "Failed to set up passes to emit PTX source\n");
+  TI_ERROR_IF(fail, "Failed to set up passes to emit PTX source\n");
 
   // Run optimization passes
   function_pass_manager.doInitialization();
@@ -153,7 +153,7 @@ CUDAContext::CUDAContext() {
 
   char name[128];
   check_cuda_error(cuDeviceGetName(name, 128, device));
-  TC_TRACE("Using CUDA Device [id=0]: {}", name);
+  TI_TRACE("Using CUDA Device [id=0]: {}", name);
 
   int cc_major, cc_minor;
   check_cuda_error(cuDeviceGetAttribute(
@@ -161,7 +161,7 @@ CUDAContext::CUDAContext() {
   check_cuda_error(cuDeviceGetAttribute(
       &cc_minor, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR, device));
 
-  TC_TRACE("CUDA Device Compute Capability: {}.{}", cc_major, cc_minor);
+  TI_TRACE("CUDA Device Compute Capability: {}.{}", cc_major, cc_minor);
   check_cuda_error(cuCtxCreate(&context, 0, device));
   check_cuda_error(cudaMalloc(&context_buffer, sizeof(Context)));
 
@@ -173,13 +173,13 @@ CUmodule CUDAContext::compile(const std::string &ptx) {
   make_current();
   // Create module for object
   CUmodule cudaModule;
-  TC_TRACE("PTX size: {:.2f}KB", ptx.size() / 1024.0);
+  TI_TRACE("PTX size: {:.2f}KB", ptx.size() / 1024.0);
   auto t = Time::get_time();
-  TC_TRACE("Loading module...");
+  TI_TRACE("Loading module...");
   auto _ = std::lock_guard<std::mutex>(cuda_context->lock);
   check_cuda_error(
       cuModuleLoadDataEx(&cudaModule, ptx.c_str(), 0, nullptr, nullptr));
-  TC_TRACE("CUDA module load time : {}ms", (Time::get_time() - t) * 1000);
+  TI_TRACE("CUDA module load time : {}ms", (Time::get_time() - t) * 1000);
   cudaModules.push_back(cudaModule);
   return cudaModule;
 }
@@ -192,7 +192,7 @@ CUfunction CUDAContext::get_function(CUmodule module,
   auto t = Time::get_time();
   check_cuda_error(cuModuleGetFunction(&func, module, func_name.c_str()));
   t = Time::get_time() - t;
-  TC_TRACE("Kernel {} compilation time: {}ms", func_name, t * 1000);
+  TI_TRACE("Kernel {} compilation time: {}ms", func_name, t * 1000);
   return func;
 }
 
@@ -230,7 +230,7 @@ void CUDAContext::launch(CUfunction func,
     check_cuda_error(cudaDeviceSynchronize());
     auto err = cudaGetLastError();
     if (err) {
-      TC_ERROR("CUDA Kernel Launch Error: {}", cudaGetErrorString(err));
+      TI_ERROR("CUDA Kernel Launch Error: {}", cudaGetErrorString(err));
     }
   }
 }
@@ -246,13 +246,13 @@ CUDAContext::~CUDAContext() {
 
 #else
 std::string compile_module_to_ptx(std::unique_ptr<llvm::Module> &module) {
-  TC_NOT_IMPLEMENTED
+  TI_NOT_IMPLEMENTED
 }
 
 int compile_ptx_and_launch(const std::string &ptx,
                            const std::string &kernel_name,
                            void *) {
-  TC_NOT_IMPLEMENTED
+  TI_NOT_IMPLEMENTED
 }
 #endif
 

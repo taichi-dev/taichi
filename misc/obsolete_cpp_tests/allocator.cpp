@@ -4,7 +4,7 @@
 
 TLANG_NAMESPACE_BEGIN
 
-TC_TEST("gpu_gc_basics") {
+TI_TEST("gpu_gc_basics") {
   for (auto arch : {Arch::gpu}) {
     int n = 32;
     Program prog(arch);
@@ -27,26 +27,26 @@ TC_TEST("gpu_gc_basics") {
     })();
 
     auto stat = x.parent().parent().snode()->stat();
-    TC_CHECK(stat.num_resident_blocks == n - 1);
+    TI_CHECK(stat.num_resident_blocks == n - 1);
     for (int i = 0; i < n; i++) {
       for (int j = 0; j < i; j++) {
-        TC_CHECK(x.val<int>(i, j) == i + j);
+        TI_CHECK(x.val<int>(i, j) == i + j);
       }
     }
     x.parent().parent().snode()->clear_data_and_deactivate();
     stat = x.parent().parent().snode()->stat();
-    TC_CHECK(stat.num_resident_blocks == 0);
-    TC_CHECK(stat.num_recycled_blocks == 0);
+    TI_CHECK(stat.num_resident_blocks == 0);
+    TI_CHECK(stat.num_recycled_blocks == 0);
 
     for (int i = 0; i < n; i++) {
       for (int j = 0; j < i; j++) {
-        TC_CHECK(x.val<int>(i, j) == 0);
+        TI_CHECK(x.val<int>(i, j) == 0);
       }
     }
   }
 };
 
-TC_TEST("parallel_particle_sort") {
+TI_TEST("parallel_particle_sort") {
   Program prog(Arch::gpu);
   CoreState::set_trigger_gdb_when_crash(true);
 
@@ -76,7 +76,7 @@ TC_TEST("parallel_particle_sort") {
     p_x[i] = Vector3(0.5_f) + offset * 0.7f;
   }
 
-  TC_ASSERT(n_particles <= max_n_particles);
+  TI_ASSERT(n_particles <= max_n_particles);
 
   auto i = Index(0), j = Index(1), k = Index(2);
   auto p = Index(3);
@@ -89,14 +89,14 @@ TC_TEST("parallel_particle_sort") {
 
     root.dense(i, max_n_particles).place(flag);
 
-    TC_ASSERT(n % grid_block_size == 0);
+    TI_ASSERT(n % grid_block_size == 0);
     root.dense({i, j, k}, n / grid_block_size)
         .pointer()
         .dense({i, j, k}, grid_block_size)
         .place(grid_m);
   });
 
-  TC_ASSERT(bit::is_power_of_two(n));
+  TI_ASSERT(bit::is_power_of_two(n));
 
   Kernel(sort).def([&] {
     BlockDim(256);
@@ -121,7 +121,7 @@ TC_TEST("parallel_particle_sort") {
     sort();
     prog.synchronize();
     for (int k = 0; k < max_n_particles; k++) {
-      TC_CHECK(flag.val<int32>(k) == 1);
+      TI_CHECK(flag.val<int32>(k) == 1);
     }
     auto stat = grid_m.parent().parent().snode()->stat();
     int nb = stat.num_resident_blocks;
@@ -129,14 +129,14 @@ TC_TEST("parallel_particle_sort") {
       last_nb = nb;
     } else {
       if (last_nb != nb) {
-        TC_P(i);
+        TI_P(i);
       }
-      TC_CHECK(last_nb == nb);
+      TI_CHECK(last_nb == nb);
     }
   }
 };
 
-TC_TEST("struct_for") {
+TI_TEST("struct_for") {
   Program prog(Arch::gpu);
   CoreState::set_trigger_gdb_when_crash(true);
 
@@ -166,7 +166,7 @@ TC_TEST("struct_for") {
     p_x[i] = Vector3(0.5_f) + offset * 0.7f;
   }
 
-  TC_ASSERT(n_particles <= max_n_particles);
+  TI_ASSERT(n_particles <= max_n_particles);
 
   auto i = Index(0), j = Index(1), k = Index(2);
   auto p = Index(3);
@@ -201,8 +201,8 @@ TC_TEST("struct_for") {
         big_count += 1;
       }
     }
-    TC_CHECK(zero_count == 0);
-    TC_CHECK(big_count == 0);
+    TI_CHECK(zero_count == 0);
+    TI_CHECK(big_count == 0);
   }
 };
 

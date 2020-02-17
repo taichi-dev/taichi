@@ -11,7 +11,7 @@
 TLANG_NAMESPACE_BEGIN
 
 MemoryPool::MemoryPool(Program *prog) : prog(prog) {
-  TC_TRACE("Memory pool created. Default buffer size per allocator = {} MB",
+  TI_TRACE("Memory pool created. Default buffer size per allocator = {} MB",
           default_allocator_size / 1024 / 1024);
   terminating = false;
   killed = false;
@@ -46,7 +46,7 @@ void *MemoryPool::allocate(std::size_t size, std::size_t alignment) {
         std::make_unique<UnifiedAllocator>(new_buffer_size, prog->config.arch));
     ret = allocators.back()->allocate(size, alignment);
   }
-  TC_ASSERT(ret);
+  TI_ASSERT(ret);
   return ret;
 }
 
@@ -59,7 +59,7 @@ T MemoryPool::fetch(volatile void *ptr) {
                                       cudaMemcpyDeviceToHost, cuda_stream));
     check_cuda_error(cudaStreamSynchronize(cuda_stream));
 #else
-    TC_NOT_IMPLEMENTED
+    TI_NOT_IMPLEMENTED
 #endif
   } else {
     ret = *(T *)ptr;
@@ -75,7 +75,7 @@ void MemoryPool::push(volatile T *dest, const T &val) {
                                       cudaMemcpyHostToDevice, cuda_stream));
     check_cuda_error(cudaStreamSynchronize(cuda_stream));
 #else
-    TC_NOT_IMPLEMENTED
+    TI_NOT_IMPLEMENTED
 #endif
   } else {
     *(T *)dest = val;
@@ -100,16 +100,16 @@ void MemoryPool::daemon() {
     if (tail > processed_tail) {
       // allocate new buffer
       auto i = processed_tail;
-      TC_DEBUG("Processing memory alloc request {}", i);
+      TI_DEBUG("Processing memory alloc request {}", i);
       auto req = fetch<MemRequest>(&queue->requests[i]);
       if (req.size == 0 || req.alignment == 0) {
-        TC_DEBUG(" Incomplete memory alloc request {} fetched. Skipping", i);
+        TI_DEBUG(" Incomplete memory alloc request {} fetched. Skipping", i);
         continue;
       }
-      TC_DEBUG("  Allocating memory {} B (alignment {}B) ", req.size,
+      TI_DEBUG("  Allocating memory {} B (alignment {}B) ", req.size,
                req.alignment);
       auto ptr = allocate(req.size, req.alignment);
-      TC_DEBUG("  Allocated. Ptr = {:p}", ptr);
+      TI_DEBUG("  Allocated. Ptr = {:p}", ptr);
       push(&queue->requests[i].ptr, (uint8 *)ptr);
       processed_tail += 1;
     }
@@ -122,7 +122,7 @@ void MemoryPool::terminate() {
     terminating = true;
   }
   th->join();
-  TC_ASSERT(killed);
+  TI_ASSERT(killed);
 #ifdef TI_WITH_CUDA
   check_cuda_error(cudaStreamDestroy(cuda_stream));
 #endif

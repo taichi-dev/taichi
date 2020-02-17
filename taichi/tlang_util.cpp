@@ -4,7 +4,7 @@
 #include <taichi/system/timer.h>
 #include <taichi/math/linalg.h>
 
-TC_NAMESPACE_BEGIN
+TI_NAMESPACE_BEGIN
 
 namespace Tlang {
 
@@ -17,7 +17,7 @@ real get_cpu_frequency() {
     Time::sleep(1);
     uint64 elapsed_cycles = Time::get_cycles() - cycles;
     auto frequency = real(std::round(elapsed_cycles / 1e8_f64) / 10.0_f64);
-    TC_INFO("CPU frequency = {:.2f} GHz ({} cycles per second)", frequency,
+    TI_INFO("CPU frequency = {:.2f} GHz ({} cycles per second)", frequency,
             elapsed_cycles);
     cpu_frequency = frequency;
   }
@@ -67,7 +67,7 @@ int default_simd_width(Arch arch) {
   } else if (arch == Arch::cuda) {
     return 32;
   } else {
-    TC_NOT_IMPLEMENTED;
+    TI_NOT_IMPLEMENTED;
     return -1;
   }
 }
@@ -196,6 +196,7 @@ std::string binary_op_type_symbol(BinaryOpType type) {
     REGISTER_TYPE(bit_and, &);
     REGISTER_TYPE(bit_or, |);
     REGISTER_TYPE(bit_xor, ^);
+    REGISTER_TYPE(pow, pow);
 #undef REGISTER_TYPE
   }
   return type_names[type];
@@ -233,6 +234,7 @@ std::string snode_op_type_name(SNodeOpType type) {
     REGISTER_TYPE(deactivate);
     REGISTER_TYPE(append);
     REGISTER_TYPE(clear);
+    REGISTER_TYPE(undefined);
 #undef REGISTER_TYPE
   }
   return type_names[type];
@@ -246,7 +248,7 @@ std::string CompileConfig::compiler_config() {
   std::string omp_flag = "";
 #endif
 
-#if defined(TC_PLATFORM_OSX)
+#if defined(TI_PLATFORM_OSX)
   std::string linking = "-undefined dynamic_lookup";
 #else
   std::string linking = "-ltaichi_core";
@@ -315,7 +317,7 @@ std::string CompileConfig::compile_cmd(const std::string &input,
 }
 
 bool command_exist(const std::string &command) {
-#if defined(TC_PLATFORM_UNIX)
+#if defined(TI_PLATFORM_UNIX)
   if (std::system(fmt::format("which {} > /dev/null 2>&1", command).c_str())) {
     return false;
   } else {
@@ -346,7 +348,7 @@ CompileConfig::CompileConfig() {
   force_vectorized_global_load = false;
   force_vectorized_global_store = false;
   debug = false;
-#if defined(TC_PLATFORM_OSX)
+#if defined(TI_PLATFORM_OSX)
   gcc_version = -1;
 #else
   gcc_version = -2;  // not 7 for faster compilation
@@ -354,11 +356,11 @@ CompileConfig::CompileConfig() {
 #endif
   if (!use_llvm) {
     if (gcc_version == -2 && !command_exist("clang-7")) {
-      TC_WARN("Command clang-7 not found. Attempting clang");
+      TI_WARN("Command clang-7 not found. Attempting clang");
       gcc_version = -1;
     }
     if (gcc_version == -1 && !command_exist("clang")) {
-      TC_WARN("Command clang not found. Attempting gcc-6");
+      TI_WARN("Command clang not found. Attempting gcc-6");
       gcc_version = 6;
     }
   }
@@ -389,7 +391,7 @@ std::string CompileConfig::compiler_name() {
 }
 
 std::string CompileConfig::gcc_opt_flag() {
-  TC_ASSERT(0 <= external_optimization_level &&
+  TI_ASSERT(0 <= external_optimization_level &&
             external_optimization_level < 5);
   if (external_optimization_level < 4) {
     return fmt::format("-O{}", external_optimization_level);
@@ -438,13 +440,13 @@ void initialize_benchmark() {
     return;
   }
   initialized = true;
-#if defined(TC_PLATFORM_LINUX)
+#if defined(TI_PLATFORM_LINUX)
   std::ifstream noturbo("/sys/devices/system/cpu/intel_pstate/no_turbo");
   char c;
   noturbo >> c;
-  TC_WARN_IF(c != '1',
+  TI_WARN_IF(c != '1',
              "You seem to be running the benchmark with Intel Turboboost.");
 #endif
 }
 
-TC_NAMESPACE_END
+TI_NAMESPACE_END

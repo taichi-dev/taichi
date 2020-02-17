@@ -58,7 +58,7 @@ public:
 
   template <typename T>
   Handle<T> cast() const {
-    TC_ASSERT(expr != nullptr);
+    TI_ASSERT(expr != nullptr);
     return std::dynamic_pointer_cast<T>(expr);
   }
 

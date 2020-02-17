@@ -13,26 +13,26 @@ void check_func_call_signature(llvm::Value *func,
                                std::vector<Value *> arglist) {
   auto func_type = func->getType()->getPointerElementType();
   int num_params = func_type->getFunctionNumParams();
-  TC_ASSERT(num_params == arglist.size());
+  TI_ASSERT(num_params == arglist.size());
 
   for (int i = 0; i < (int)arglist.size(); i++) {
     auto required = func_type->getFunctionParamType(i);
     auto provided = arglist[i]->getType();
-    // TC_INFO("    required from context {}", (void *)&required->getContext());
-    // TC_INFO("    provided from context {}", (void *)&provided->getContext());
+    // TI_INFO("    required from context {}", (void *)&required->getContext());
+    // TI_INFO("    provided from context {}", (void *)&provided->getContext());
     if (required != provided) {
-      // TC_INFO("Function : {}", std::string(func->getName()));
-      // TC_INFO("    Type : {}", type_name(func->getType()));
+      // TI_INFO("Function : {}", std::string(func->getName()));
+      // TI_INFO("    Type : {}", type_name(func->getType()));
       if (&required->getContext() != &provided->getContext()) {
-        TC_INFO("  parameter {} types are from different contexts", i);
-        TC_INFO("    required from context {}",
+        TI_INFO("  parameter {} types are from different contexts", i);
+        TI_INFO("    required from context {}",
                 (void *)&required->getContext());
-        TC_INFO("    provided from context {}",
+        TI_INFO("    provided from context {}",
                 (void *)&provided->getContext());
       }
-      TC_INFO("  parameter {} mismatch: required={}, provided={}", i,
+      TI_INFO("  parameter {} mismatch: required={}, provided={}", i,
               type_name(required), type_name(provided));
-      TC_ERROR("Bad function signature.");
+      TI_ERROR("Bad function signature.");
     }
   }
 }

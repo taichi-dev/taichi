@@ -10,7 +10,7 @@
 #include <taichi/common/util.h>
 #include "linalg.h"
 
-TC_NAMESPACE_BEGIN
+TI_NAMESPACE_BEGIN
 
 inline bool intersect(const Vector2 &a,
                       const Vector2 &b,
@@ -129,4 +129,4 @@ inline Vector3 reflect(const Vector3 &d, const Vector3 &n) {
   return d - dot(d, n) * 2.0f * n;
 }
 
-TC_NAMESPACE_END
+TI_NAMESPACE_END

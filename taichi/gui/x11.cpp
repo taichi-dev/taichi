@@ -1,6 +1,6 @@
 #include <taichi/visual/gui.h>
 
-#if defined(TC_GUI_X11)
+#if defined(TI_GUI_X11)
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 
@@ -12,7 +12,7 @@
 #undef Success
 #endif
 
-TC_NAMESPACE_BEGIN
+TI_NAMESPACE_BEGIN
 
 class CXImage {
  public:
@@ -24,7 +24,7 @@ class CXImage {
     image_data.resize(width * height * 4);
     image = XCreateImage(display, visual, 24, ZPixmap, 0,
                          (char *)image_data.data(), width, height, 32, 0);
-    TC_ASSERT((void *)image->data == image_data.data());
+    TI_ASSERT((void *)image->data == image_data.data());
   }
 
   void set_data(const Array2D<Vector4> &color) {
@@ -130,6 +130,6 @@ GUI::~GUI() {
   delete img;
 }
 
-TC_NAMESPACE_END
+TI_NAMESPACE_END
 
 #endif

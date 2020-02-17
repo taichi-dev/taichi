@@ -5,7 +5,7 @@
 
 TLANG_NAMESPACE_BEGIN
 
-TC_TEST("compiler_linalg") {
+TI_TEST("compiler_linalg") {
   CoreState::set_trigger_gdb_when_crash(true);
   Program prog(Arch::x86_64);
 
@@ -33,7 +33,7 @@ TC_TEST("compiler_linalg") {
   })();
 };
 
-TC_TEST("select") {
+TI_TEST("select") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 128;
   Program prog(Arch::x86_64);
@@ -53,11 +53,11 @@ TC_TEST("select") {
   })();
 
   for (int i = 0; i < n; i++) {
-    TC_CHECK(a.val<int32>(i) == (2 - i % 2) * i);
+    TI_CHECK(a.val<int32>(i) == (2 - i % 2) * i);
   }
 };
 
-TC_TEST("compiler_basics") {
+TI_TEST("compiler_basics") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 128;
   Program prog(Arch::x86_64);
@@ -79,11 +79,11 @@ TC_TEST("compiler_basics") {
   })();
 
   for (int i = 0; i < n; i++) {
-    TC_CHECK(a.val<int32>(i) == (2 - i % 2) * i);
+    TI_CHECK(a.val<int32>(i) == (2 - i % 2) * i);
   }
 };
 
-TC_TEST("simplify_access") {
+TI_TEST("simplify_access") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 128;
   Program prog(Arch::x86_64);
@@ -96,7 +96,7 @@ TC_TEST("simplify_access") {
   kernel([&]() { For(a, [&](Expr i) { a[i] = b[i] + 1; }); })();
 };
 
-TC_TEST("fancy_for") {
+TI_TEST("fancy_for") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 128;
   Program prog(Arch::x86_64);
@@ -118,11 +118,11 @@ TC_TEST("fancy_for") {
   })();
 
   for (int i = 0; i < n; i++) {
-    TC_CHECK(a.val<int32>(i) == (2 - i % 2) * i);
+    TI_CHECK(a.val<int32>(i) == (2 - i % 2) * i);
   }
 };
 
-TC_TEST("simd_if") {
+TI_TEST("simd_if") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 128;
   Program prog(Arch::x86_64);
@@ -144,11 +144,11 @@ TC_TEST("simd_if") {
   })();
 
   for (int i = 0; i < n; i++) {
-    TC_CHECK(a.val<int32>(i) == (2 - i % 2) * i);
+    TI_CHECK(a.val<int32>(i) == (2 - i % 2) * i);
   }
 };
 
-TC_TEST("simd_if2") {
+TI_TEST("simd_if2") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 32;
   Program prog(Arch::x86_64);
@@ -170,7 +170,7 @@ TC_TEST("simd_if2") {
   })();
 
   for (int i = 0; i < n; i++) {
-    TC_CHECK(a.val<int32>(i) == (1 + i % 3) * i);
+    TI_CHECK(a.val<int32>(i) == (1 + i % 3) * i);
   }
 };
 
@@ -206,9 +206,9 @@ auto test_circle = [] {
     gui.update();
   }
 };
-TC_REGISTER_TASK(test_circle);
+TI_REGISTER_TASK(test_circle);
 
-TC_TEST("vectorize") {
+TI_TEST("vectorize") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 128;
   Program prog(Arch::x86_64);
@@ -223,11 +223,11 @@ TC_TEST("vectorize") {
   })();
 
   for (int i = 0; i < n; i++) {
-    TC_CHECK(a.val<int>(i) == i);
+    TI_CHECK(a.val<int>(i) == i);
   }
 };
 
-TC_TEST("rand") {
+TI_TEST("rand") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 4;
   Program prog(Arch::x86_64);
@@ -239,7 +239,7 @@ TC_TEST("rand") {
   kernel([&]() { For(0, n, [&](Expr i) { Print(Rand<float>()); }); })();
 };
 
-TC_TEST("while") {
+TI_TEST("while") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 4096;
   Program prog(Arch::x86_64);
@@ -262,11 +262,11 @@ TC_TEST("while") {
   })();
 
   for (int i = 0; i < n; i++) {
-    TC_CHECK(a.val<int>(i) == (i - 1) * i / 2);
+    TI_CHECK(a.val<int>(i) == (i - 1) * i / 2);
   }
 };
 
-TC_TEST("slp") {
+TI_TEST("slp") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 16;
   Program prog(Arch::x86_64);
@@ -290,14 +290,14 @@ TC_TEST("slp") {
   })();
 
   for (int i = 0; i < n; i++) {
-    TC_CHECK(a.val<int>(i) == 1);
-    TC_CHECK(b.val<int>(i) == 2);
-    TC_CHECK(c.val<int>(i) == 3);
-    TC_CHECK(d.val<int>(i) == 4);
+    TI_CHECK(a.val<int>(i) == 1);
+    TI_CHECK(b.val<int>(i) == 2);
+    TI_CHECK(c.val<int>(i) == 3);
+    TI_CHECK(d.val<int>(i) == 4);
   }
 };
 
-TC_TEST("slp1") {
+TI_TEST("slp1") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 16;
   for (auto slp1 : {true, false}) {
@@ -322,13 +322,13 @@ TC_TEST("slp1") {
 
     for (int i = 0; i < n; i++) {
       for (int d = 0; d < 4; d++) {
-        TC_CHECK(grid(d).val<float32>(i) == d);
+        TI_CHECK(grid(d).val<float32>(i) == d);
       }
     }
   }
 };
 
-TC_TEST("slp2") {
+TI_TEST("slp2") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 16;
   Program prog(Arch::x86_64);
@@ -348,12 +348,12 @@ TC_TEST("slp2") {
   })();
 
   for (int i = 0; i < n; i++) {
-    TC_CHECK(a.val<int>(i) == 1 + i * 7);
-    TC_CHECK(b.val<int>(i) == 2 + i * 9);
+    TI_CHECK(a.val<int>(i) == 1 + i * 7);
+    TI_CHECK(b.val<int>(i) == 2 + i * 9);
   }
 };
 
-TC_TEST("slp3") {
+TI_TEST("slp3") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 16;
   Program prog(Arch::x86_64);
@@ -375,12 +375,12 @@ TC_TEST("slp3") {
   })();
 
   for (int i = 0; i < n; i++) {
-    TC_CHECK(a.val<int>(i) == 1 + i * 7);
-    TC_CHECK(b.val<int>(i) == 2 + i * 9);
+    TI_CHECK(a.val<int>(i) == 1 + i * 7);
+    TI_CHECK(b.val<int>(i) == 2 + i * 9);
   }
 };
 
-TC_TEST("slpmatvecmul") {
+TI_TEST("slpmatvecmul") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 16;
   Program prog(Arch::x86_64);
@@ -414,14 +414,14 @@ TC_TEST("slpmatvecmul") {
 
   /*
   for (int i = 0; i < n; i++) {
-    TC_CHECK(a.val<int>(i) == 1 + i * 7);
-    TC_CHECK(b.val<int>(i) == 2 + i * 9);
+    TI_CHECK(a.val<int>(i) == 1 + i * 7);
+    TI_CHECK(b.val<int>(i) == 2 + i * 9);
   }
   */
 };
 
 // scalar a * scalar b * vec c
-TC_TEST("mixed_simd1") {
+TI_TEST("mixed_simd1") {
   for (auto vec_size : {4, 8, 16}) {
     Program prog;
 
@@ -461,14 +461,14 @@ TC_TEST("mixed_simd1") {
       for (int j = 0; j < vec_size; j++) {
         auto val = v(j).val<float32>(i);
         float32 gt = i * j * 2;
-        TC_CHECK_EQUAL(gt, val, 1e-3_f);
+        TI_CHECK_EQUAL(gt, val, 1e-3_f);
       }
     }
   }
 }
 
 // Vec<vec_size> reduction
-TC_TEST("mixed_simd2") {
+TI_TEST("mixed_simd2") {
   int n = 64;
 
   for (auto vec_size : {4, 8, 16}) {
@@ -514,13 +514,13 @@ TC_TEST("mixed_simd2") {
     for (int i = 0; i < n; i++) {
       auto val = sum.val<float32>(i);
       float32 gt = vec_size * (vec_size - 1) / 2 + i * vec_size;
-      TC_CHECK_EQUAL(gt, val, 1e-5_f);
+      TI_CHECK_EQUAL(gt, val, 1e-5_f);
     }
   }
 }
 
 // reduce(vec_a<n> ** 2 - vec_b<n> ** 2) * vec_c<2n>
-TC_TEST("mixed_simd3_slp") {
+TI_TEST("mixed_simd3_slp") {
   for (auto vec_size : {16}) {
     // why vec_size = 16 fails??
     Program prog;
@@ -581,13 +581,13 @@ TC_TEST("mixed_simd3_slp") {
       for (int j = 0; j < vec_size * 2; j++) {
         auto val = c(j).val<float32>(i);
         auto gt = s * (i - 2 + j);
-        TC_CHECK_EQUAL(gt, val, 1e-3_f);
+        TI_CHECK_EQUAL(gt, val, 1e-3_f);
       }
     }
   }
 }
 
-TC_TEST("vector_split1") {
+TI_TEST("vector_split1") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 32;
   Program prog(Arch::x86_64);
@@ -603,11 +603,11 @@ TC_TEST("vector_split1") {
   })();
 
   for (int i = 0; i < n; i++) {
-    TC_CHECK(a.val<int>(i) == i);
+    TI_CHECK(a.val<int>(i) == i);
   }
 };
 
-TC_TEST("vector_split_slp") {
+TI_TEST("vector_split_slp") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 256;
   Program prog(Arch::x86_64);
@@ -632,14 +632,14 @@ TC_TEST("vector_split_slp") {
   })();
 
   for (int i = 0; i < n; i++) {
-    TC_CHECK(a.val<int>(i) == 1 + i);
-    TC_CHECK(b.val<int>(i) == 2 + i);
-    TC_CHECK(c.val<int>(i) == 3 + i);
-    TC_CHECK(d.val<int>(i) == 4 + i);
+    TI_CHECK(a.val<int>(i) == 1 + i);
+    TI_CHECK(b.val<int>(i) == 2 + i);
+    TI_CHECK(c.val<int>(i) == 3 + i);
+    TI_CHECK(d.val<int>(i) == 4 + i);
   }
 };
 
-TC_TEST("union_cast") {
+TI_TEST("union_cast") {
   CoreState::set_trigger_gdb_when_crash(true);
   for (auto arch : {Arch::x86_64, Arch::gpu}) {
     int n = 16;
@@ -660,13 +660,13 @@ TC_TEST("union_cast") {
     })();
 
     for (int i = 0; i < n; i++) {
-      TC_CHECK(a.val<int>(i) ==
+      TI_CHECK(a.val<int>(i) ==
                union_cast<int32>(union_cast<float32>(i * 1000) + 1234.0f));
     }
   }
 };
 
-TC_TEST("logic_not") {
+TI_TEST("logic_not") {
   CoreState::set_trigger_gdb_when_crash(true);
   for (auto arch : {Arch::x86_64, Arch::gpu}) {
     int n = 16;
@@ -685,14 +685,14 @@ TC_TEST("logic_not") {
     })();
 
     for (int i = 0; i < n; i++) {
-      TC_CHECK(a.val<int>() == 0);
-      TC_CHECK(b.val<int>() != 0);
-      TC_CHECK(c.val<int>() == 0);
+      TI_CHECK(a.val<int>() == 0);
+      TI_CHECK(b.val<int>() != 0);
+      TI_CHECK(c.val<int>() == 0);
     }
   }
 };
 
-TC_TEST("simd_if_5") {
+TI_TEST("simd_if_5") {
   CoreState::set_trigger_gdb_when_crash(true);
   for (auto arch : {Arch::x86_64}) {
     for (auto vec : {1, 4, 8}) {
@@ -713,13 +713,13 @@ TC_TEST("simd_if_5") {
         });
       })();
       for (int i = 0; i < n; i++) {
-        TC_CHECK(c.val<int32>(i) == 1);
+        TI_CHECK(c.val<int32>(i) == 1);
       }
     }
   }
 };
 
-TC_TEST("point_inside_box") {
+TI_TEST("point_inside_box") {
   CoreState::set_trigger_gdb_when_crash(true);
   for (auto arch : {Arch::x86_64}) {
     for (auto vec : {1, 4, 8}) {
@@ -746,13 +746,13 @@ TC_TEST("point_inside_box") {
         });
       })();
       for (int i = 0; i < n; i++) {
-        TC_CHECK(bool(c.val<int32>(i)) == true);
+        TI_CHECK(bool(c.val<int32>(i)) == true);
       }
     }
   }
 };
 
-TC_TEST("while_in_while") {
+TI_TEST("while_in_while") {
   CoreState::set_trigger_gdb_when_crash(true);
   for (auto arch : {Arch::x86_64}) {
     for (auto vec : {1, 4, 8}) {
@@ -782,13 +782,13 @@ TC_TEST("while_in_while") {
         });
       })();
       for (int i = 0; i < n; i++) {
-        TC_CHECK(c.val<int32>(i) == ((i + 1) % 2) * 100);
+        TI_CHECK(c.val<int32>(i) == ((i + 1) % 2) * 100);
       }
     }
   }
 };
 
-TC_TEST("cmp") {
+TI_TEST("cmp") {
   CoreState::set_trigger_gdb_when_crash(true);
   for (auto arch : {Arch::x86_64}) {
     for (auto vec : {1, 4, 8}) {
@@ -812,7 +812,7 @@ TC_TEST("cmp") {
     For(0, n, [&](Expr i) { c[i] = a[i] OP b[i]; });        \
   })();                                                     \
   for (int i = 0; i < n; i++) {                             \
-    TC_CHECK(bool(c.val<int32>(i)) ==                       \
+    TI_CHECK(bool(c.val<int32>(i)) ==                       \
              bool(a.val<float32>(i) OP b.val<float32>(i))); \
   }
 

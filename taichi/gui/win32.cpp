@@ -1,6 +1,6 @@
 #include <taichi/common/util.h>
 
-#if defined(TC_PLATFORM_WINDOWS)
+#if defined(TI_PLATFORM_WINDOWS)
 #include <windowsx.h>
 #include <taichi/common/task.h>
 #include <taichi/visual/gui.h>
@@ -128,7 +128,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd,
   return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
 
-TC_NAMESPACE_BEGIN
+TI_NAMESPACE_BEGIN
 
 void GUI::process_event() {
   MSG msg;
@@ -165,7 +165,7 @@ void GUI::create_window() {
   gui_from_hwnd[hwnd] = this;
 
   if (hwnd == NULL) {
-    TC_ERROR("Window creation failed");
+    TI_ERROR("Window creation failed");
   }
 
   ShowWindow(hwnd, SW_SHOWDEFAULT);
@@ -202,6 +202,6 @@ GUI::~GUI() {
   gui_from_hwnd.erase(hwnd);
 }
 
-TC_NAMESPACE_END
+TI_NAMESPACE_END
 
 #endif

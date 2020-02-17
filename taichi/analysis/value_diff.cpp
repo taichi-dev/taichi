@@ -48,7 +48,7 @@ class ValueDiff : public IRVisitor {
 
   void visit(ElementShuffleStmt *stmt) override {
     int old_lane = lane;
-    TC_ASSERT(stmt->width() == 1);
+    TI_ASSERT(stmt->width() == 1);
     auto src = stmt->elements[lane].stmt;
     lane = stmt->elements[lane].index;
     src->accept(this);

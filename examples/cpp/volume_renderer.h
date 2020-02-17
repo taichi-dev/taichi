@@ -67,7 +67,7 @@ class TRenderer {
   }
 
   void place_data() {
-    TC_ASSERT(output_res == Vector2i(1280, 720));
+    TI_ASSERT(output_res == Vector2i(1280, 720));
     root.dense(Index(0), 1024 * 1024).place(buffer(0), buffer(1), buffer(2));
 
     root.dense(Indices(0, 1, 2), 4)
@@ -669,14 +669,14 @@ class TRenderer {
     std::FILE *f;
     if (use_sky_map) {
       f = fopen("sky_map.bin", "rb");
-      TC_ASSERT_INFO(f, "./sky_map.bin not found");
+      TI_ASSERT_INFO(f, "./sky_map.bin not found");
       std::vector<uint32> sky_map_data(sky_map_size.prod() * 3);
       if (std::fread(sky_map_data.data(), sizeof(uint32), sky_map_data.size(),
                      f)) {
       }
 
       f = fopen("sky_samples.bin", "rb");
-      TC_ASSERT_INFO(f, "./sky_samples.bin not found");
+      TI_ASSERT_INFO(f, "./sky_samples.bin not found");
       std::vector<uint32> sky_sample_data(n_sky_samples * 5);
       if (std::fread(sky_sample_data.data(), sizeof(uint32),
                      (int)sky_sample_data.size(), f)) {

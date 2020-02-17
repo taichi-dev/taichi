@@ -18,9 +18,9 @@ int MetalKernelArgsAttributes::insert_arg(DataType dt,
   if (dt_bytes != 4) {
     // Metal doesn't support 64bit data buffers.
     // TODO(k-ye): See if Metal supports less-than-32bit data buffers.
-    TC_WARN("Metal kernel only supports 32-bit data, got {}",
+    TI_WARN("Metal kernel only supports 32-bit data, got {}",
             metal_data_type_name(a.dt));
-    TC_NOT_IMPLEMENTED;
+    TI_NOT_IMPLEMENTED;
   }
   a.is_array = is_array;
   a.stride = is_array ? size : dt_bytes;

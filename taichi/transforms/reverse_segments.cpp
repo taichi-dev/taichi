@@ -59,7 +59,7 @@ void reverse_segments(IRNode *root) {
   }
     */
   if (has_for && has_non_for)
-    TC_ERROR(
+    TI_ERROR(
         "Invalid program input for autodiff. Please check the documentation "
         "for the \"Kernel Simplicity Rule\".");
   for (auto &sblock : statement_blocks) {

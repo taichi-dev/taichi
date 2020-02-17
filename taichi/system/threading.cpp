@@ -8,7 +8,7 @@
 #include <taichi/system/threading.h>
 #include <thread>
 #include <vector>
-#if defined(TC_PLATFORM_WINDOWS)
+#if defined(TI_PLATFORM_WINDOWS)
 #include <windows.h>
 #else
 // Mac and Linux
@@ -17,7 +17,7 @@
 
 #endif
 
-TC_NAMESPACE_BEGIN
+TI_NAMESPACE_BEGIN
 
 #if defined(min)
 #undef min
@@ -31,14 +31,14 @@ bool test_threading() {
       for (int t = 0; t < 10000000; t++) {
         ret += t * 1e-20;
       }
-      TC_P(int(i + ret + 10 * *(int *)j));
+      TI_P(int(i + ret + 10 * *(int *)j));
     });
   }
   return true;
 }
 
 int PID::get_pid() {
-#if defined(TC_PLATFORM_WINDOWS)
+#if defined(TI_PLATFORM_WINDOWS)
   return (int)GetCurrentProcessId();
 #else
   return (int)getpid();
@@ -46,8 +46,8 @@ int PID::get_pid() {
 }
 
 int PID::get_parent_pid() {
-#if defined(TC_PLATFORM_WINDOWS)
-  TC_NOT_IMPLEMENTED
+#if defined(TI_PLATFORM_WINDOWS)
+  TI_NOT_IMPLEMENTED
   return -1;
 #else
   return (int)getppid();
@@ -79,13 +79,13 @@ void ThreadPool::run(int splits,
     this->context = context;
     this->func = func;
     this->desired_num_threads = std::min(desired_num_threads, max_num_threads);
-    TC_ASSERT(this->desired_num_threads > 0);
-    // TC_P(this->desired_num_threads);
+    TI_ASSERT(this->desired_num_threads > 0);
+    // TI_P(this->desired_num_threads);
     started = false;
     task_head = 0;
     task_tail = splits;
     timestamp++;
-    TC_ASSERT(timestamp < (1LL << 62)); // avoid overflowing here
+    TI_ASSERT(timestamp < (1LL << 62)); // avoid overflowing here
   }
 
   // wake up all slaves
@@ -97,7 +97,7 @@ void ThreadPool::run(int splits,
       return started && running_threads == 0;
     });
   }
-  TC_ASSERT(task_head >= task_tail);
+  TI_ASSERT(task_head >= task_tail);
 }
 
 void ThreadPool::target() {
@@ -165,4 +165,4 @@ ThreadPool::~ThreadPool() {
     th.join();
 }
 
-TC_NAMESPACE_END
+TI_NAMESPACE_END

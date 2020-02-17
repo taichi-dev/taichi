@@ -1,4 +1,4 @@
-#if !defined(TC_INCLUDED) || !defined(_WIN32)
+#if !defined(TI_INCLUDED) || !defined(_WIN32)
 // This file will only be compiled with clang into llvm bitcode
 // Generated bitcode will likely get inline for performance.
 // Most function calls here will be inlined
@@ -296,8 +296,8 @@ constexpr bool enable_assert = true;
 
 void taichi_assert(Context *context, i32 test, const char *msg);
 void taichi_assert_runtime(Runtime *runtime, i32 test, const char *msg);
-#define TC_ASSERT_INFO(x, msg) taichi_assert(context, (int)(x), msg)
-#define TC_ASSERT(x) TC_ASSERT_INFO(x, #x)
+#define TI_ASSERT_INFO(x, msg) taichi_assert(context, (int)(x), msg)
+#define TI_ASSERT(x) TI_ASSERT_INFO(x, #x)
 
 void ___stubs___() {
   printf("");

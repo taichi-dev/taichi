@@ -4,7 +4,7 @@
 
 TLANG_NAMESPACE_BEGIN
 
-TC_TEST("atomics") {
+TI_TEST("atomics") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 10000000;
   Program prog(Arch::x86_64);
@@ -23,11 +23,11 @@ TC_TEST("atomics") {
 
   func();
 
-  TC_CHECK(sum.val<int>() == n);
-  TC_CHECK(fsum.val<float32>() == 0);
+  TI_CHECK(sum.val<int>() == n);
+  TI_CHECK(fsum.val<float32>() == 0);
 };
 
-TC_TEST("atomics2") {
+TI_TEST("atomics2") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 1000;
   Program prog(Arch::x86_64);
@@ -42,10 +42,10 @@ TC_TEST("atomics2") {
 
   func();
 
-  TC_CHECK(fsum.val<float32>() == 1000);
+  TI_CHECK(fsum.val<float32>() == 1000);
 };
 
-TC_TEST("parallel_reduce") {
+TI_TEST("parallel_reduce") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 1024 * 1024 * 32;
   Program prog(Arch::x86_64);
@@ -70,7 +70,7 @@ TC_TEST("parallel_reduce") {
     reduce();
   prog.profiler_print();
 
-  TC_CHECK(fsum.val<int32>() == (n / 2) * (n - 1) * 10);
+  TI_CHECK(fsum.val<int32>() == (n / 2) * (n - 1) * 10);
 };
 
 TLANG_NAMESPACE_END

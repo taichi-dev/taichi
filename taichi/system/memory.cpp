@@ -6,7 +6,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/embed.h>
 
-TC_NAMESPACE_BEGIN
+TI_NAMESPACE_BEGIN
 
 namespace py = pybind11;
 using namespace py::literals;
@@ -74,7 +74,7 @@ void start_memory_monitoring(std::string output_fn, int pid, real interval) {
   if (pid == -1) {
     pid = PID::get_pid();
   }
-  TC_P(pid);
+  TI_P(pid);
   std::thread th([=]() {
     MemoryMonitor monitor(pid, output_fn);
     while (true) {
@@ -88,10 +88,10 @@ void start_memory_monitoring(std::string output_fn, int pid, real interval) {
 class MemoryTest : public Task {
  public:
   std::string run(const std::vector<std::string> &parameters) override {
-    TC_P(get_memory_usage());
+    TI_P(get_memory_usage());
     Time::sleep(3);
     std::vector<uint8> a(1024ul * 1024 * 1024 * 10, 3);
-    TC_P(get_memory_usage());
+    TI_P(get_memory_usage());
     Time::sleep(3);
     return "";
   }
@@ -111,7 +111,7 @@ class MemoryTest2 : public Task {
   }
 };
 
-TC_IMPLEMENTATION(Task, MemoryTest, "mem_test");
-TC_IMPLEMENTATION(Task, MemoryTest2, "mem_test2");
+TI_IMPLEMENTATION(Task, MemoryTest, "mem_test");
+TI_IMPLEMENTATION(Task, MemoryTest2, "mem_test2");
 
-TC_NAMESPACE_END
+TI_NAMESPACE_END

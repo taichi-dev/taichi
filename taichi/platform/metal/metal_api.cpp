@@ -4,7 +4,7 @@ TLANG_NAMESPACE_BEGIN
 
 namespace metal {
 
-#ifdef TC_PLATFORM_OSX
+#ifdef TI_PLATFORM_OSX
 
 extern "C" {
 id MTLCreateSystemDefaultDevice();
@@ -124,10 +124,10 @@ size_t get_max_total_threads_per_threadgroup(
   return (size_t)call(pipeline_state, "maxTotalThreadsPerThreadgroup");
 }
 
-#endif  // TC_PLATFORM_OSX
+#endif  // TI_PLATFORM_OSX
 
 bool is_metal_api_available() {
-#ifdef TC_PLATFORM_OSX
+#ifdef TI_PLATFORM_OSX
   // If the macOS is provided by a VM (e.g. Travis CI), it's possible that there
   // is no GPU device, so we still have to do a runtime check.
   auto device = mtl_create_system_default_device();

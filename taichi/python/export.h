@@ -28,7 +28,7 @@
 #include <taichi/io/io.h>
 #include <taichi/common/util.h>
 
-TC_NAMESPACE_BEGIN
+TI_NAMESPACE_BEGIN
 
 namespace py = pybind11;
 
@@ -56,4 +56,4 @@ void export_misc(py::module &m);
 
 #define DEFINE_VECTOR_OF(x) DEFINE_VECTOR_OF_NAMED(x, #x "List");
 
-TC_NAMESPACE_END
+TI_NAMESPACE_END

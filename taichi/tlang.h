@@ -2,7 +2,7 @@
 
 #pragma once
 
-#if defined(CUDA_FOUND)
+#if defined(TI_WITH_CUDA)
 #include <cuda_runtime.h>
 #endif
 #include <taichi/common/util.h>
@@ -11,7 +11,7 @@
 namespace taichi {
 static_assert(
     sizeof(real) == sizeof(float32),
-    "Please build the taichi compiler with single precision (TC_USE_DOUBLE=0)");
+    "Please build the taichi compiler with single precision (TI_USE_DOUBLE=0)");
 namespace math {
 inline int maximum(int a) {
   return a;
@@ -19,7 +19,7 @@ inline int maximum(int a) {
 }  // namespace math
 }  // namespace taichi
 #include <set>
-#if defined(TC_PLATFORM_UNIX)
+#if defined(TI_PLATFORM_UNIX)
 #include <dlfcn.h>
 #endif
 
@@ -206,21 +206,21 @@ std::tuple<Matrix, Matrix, Matrix> sifakis_svd(const Matrix &a);
 
 TLANG_NAMESPACE_END
 
-TC_NAMESPACE_BEGIN
+TI_NAMESPACE_BEGIN
 inline Dict parse_param(std::vector<std::string> cli_param) {
   Dict dict;
   for (auto &s : cli_param) {
     auto div = s.find('=');
     if (div == std::string::npos) {
-      TC_INFO("CLI parameter format: key=value, e.g. file_name=test.bin.");
+      TI_INFO("CLI parameter format: key=value, e.g. file_name=test.bin.");
       exit(-1);
     }
     dict.set(s.substr(0, div), s.substr(div + 1));
   }
-  TC_P(dict);
+  TI_P(dict);
   return dict;
 }
 
 void write_partio(std::vector<Vector3> positions, const std::string &file_name);
 
-TC_NAMESPACE_END
+TI_NAMESPACE_END

@@ -7,7 +7,7 @@
 #include "common.h"
 #include "tlang_util.h"
 
-#if defined(TC_PLATFORM_WINDOWS)
+#if defined(TI_PLATFORM_WINDOWS)
 #undef min
 #undef max
 #endif

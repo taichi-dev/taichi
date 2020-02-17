@@ -5,23 +5,23 @@
 #include <ctime>
 #include <numeric>
 
-#if defined(TC_PLATFORM_LINUX)
-#define TC_GUI_X11
+#if defined(TI_PLATFORM_LINUX)
+#define TI_GUI_X11
 #endif
 
-#if defined(TC_PLATFORM_WINDOWS)
-#define TC_GUI_WIN32
+#if defined(TI_PLATFORM_WINDOWS)
+#define TI_GUI_WIN32
 #endif
 
-#if defined(TC_PLATFORM_OSX)
-#define TC_GUI_COCOA
+#if defined(TI_PLATFORM_OSX)
+#define TI_GUI_COCOA
 #include <objc/objc.h>
 #endif
 
-TC_NAMESPACE_BEGIN
+TI_NAMESPACE_BEGIN
 
 // https://color.adobe.com/sea-waves-color-theme-11521801/edit/?copy=true&base=2&rule=Custom&selected=1&name=Copy%20of%20sea%20waves&mode=hsv&rgbvalues=0.009800000000000008,0.32993205279993043,0.49,0.006600000000000006,0.5184304355999791,0.66,0.007700000000000007,0.7445879672002016,0.77,0.6643,0.91,0.8608604914000435,0.8827,0.97,0.9059801164000182&swatchOrder=0,1,2,3,4
-TC_FORCE_INLINE Vector4 color_from_hex(uint32 c) {
+TI_FORCE_INLINE Vector4 color_from_hex(uint32 c) {
   return Vector4(c / 65536, c / 256 % 256, c % 256, 255) * (1 / 255.0_f);
 }
 
@@ -53,17 +53,17 @@ class Canvas {
     return *this;
   }
 
-  TC_FORCE_INLINE Canvas &color(real r, real g, real b, real a = 1) {
+  TI_FORCE_INLINE Canvas &color(real r, real g, real b, real a = 1) {
     context._color = Vector4(r, g, b, a);
     return *this;
   }
 
-  TC_FORCE_INLINE Canvas &color(int r, int g, int b, int a = 255) {
+  TI_FORCE_INLINE Canvas &color(int r, int g, int b, int a = 255) {
     context._color = (1.0_f / 255) * Vector4(r, g, b, a);
     return *this;
   }
 
-  TC_FORCE_INLINE Canvas &radius(real radius) {
+  TI_FORCE_INLINE Canvas &radius(real radius) {
     context._radius = radius;
     return *this;
   }
@@ -76,7 +76,7 @@ class Canvas {
     bool finished;
     static Vector2 vertices[128];  // TODO: ...
 
-    TC_FORCE_INLINE Line(Canvas &canvas)
+    TI_FORCE_INLINE Line(Canvas &canvas)
         : canvas(canvas),
           _color(canvas.context._color),
           _radius(canvas.context._radius) {
@@ -84,19 +84,19 @@ class Canvas {
       finished = false;
     }
 
-    TC_FORCE_INLINE Line(Canvas &canvas, Vector2 a, Vector2 b) : Line(canvas) {
+    TI_FORCE_INLINE Line(Canvas &canvas, Vector2 a, Vector2 b) : Line(canvas) {
       push(a);
       push(b);
     }
 
-    TC_FORCE_INLINE Line(Canvas &canvas, Vector2 a, Vector2 b, Vector2 c)
+    TI_FORCE_INLINE Line(Canvas &canvas, Vector2 a, Vector2 b, Vector2 c)
         : Line(canvas) {
       push(a);
       push(b);
       push(c);
     }
 
-    TC_FORCE_INLINE Line(Canvas &canvas,
+    TI_FORCE_INLINE Line(Canvas &canvas,
                          Vector2 a,
                          Vector2 b,
                          Vector2 c,
@@ -108,29 +108,29 @@ class Canvas {
       push(d);
     }
 
-    TC_FORCE_INLINE void push(Vector2 vec) {
+    TI_FORCE_INLINE void push(Vector2 vec) {
       vertices[n_vertices++] = vec;
     }
 
-    TC_FORCE_INLINE Line &path(Vector2 a) {
+    TI_FORCE_INLINE Line &path(Vector2 a) {
       push(a);
       return *this;
     }
 
-    TC_FORCE_INLINE Line &path(Vector2 a, Vector2 b) {
+    TI_FORCE_INLINE Line &path(Vector2 a, Vector2 b) {
       push(a);
       push(b);
       return *this;
     }
 
-    TC_FORCE_INLINE Line &path(Vector2 a, Vector2 b, Vector2 c) {
+    TI_FORCE_INLINE Line &path(Vector2 a, Vector2 b, Vector2 c) {
       push(a);
       push(b);
       push(c);
       return *this;
     }
 
-    TC_FORCE_INLINE Line &path(Vector2 a, Vector2 b, Vector2 c, Vector2 d) {
+    TI_FORCE_INLINE Line &path(Vector2 a, Vector2 b, Vector2 c, Vector2 d) {
       push(a);
       push(b);
       push(c);
@@ -138,37 +138,37 @@ class Canvas {
       return *this;
     }
 
-    TC_FORCE_INLINE Line &close() {
-      TC_ASSERT(n_vertices > 0);
+    TI_FORCE_INLINE Line &close() {
+      TI_ASSERT(n_vertices > 0);
       push(vertices[0]);
       return *this;
     }
 
-    TC_FORCE_INLINE Line &color(Vector4 color) {
+    TI_FORCE_INLINE Line &color(Vector4 color) {
       _color = color;
       return *this;
     }
 
-    TC_FORCE_INLINE Line &color(int c) {
+    TI_FORCE_INLINE Line &color(int c) {
       return color(c / 65536, c / 256 % 256, c % 256, 255);
     }
 
-    TC_FORCE_INLINE Line &color(real r, real g, real b, real a = 1) {
+    TI_FORCE_INLINE Line &color(real r, real g, real b, real a = 1) {
       _color = Vector4(r, g, b, a);
       return *this;
     }
 
-    TC_FORCE_INLINE Line &color(int r, int g, int b, int a = 255) {
+    TI_FORCE_INLINE Line &color(int r, int g, int b, int a = 255) {
       _color = (1.0_f / 255) * Vector4(r, g, b, a);
       return *this;
     }
 
-    TC_FORCE_INLINE Line &width(real width) {
+    TI_FORCE_INLINE Line &width(real width) {
       _radius = width * 0.5;
       return *this;
     }
 
-    TC_FORCE_INLINE Line &radius(real radius) {
+    TI_FORCE_INLINE Line &radius(real radius) {
       _radius = radius;
       return *this;
     }
@@ -208,7 +208,7 @@ class Canvas {
     }
 
     void finish() {
-      TC_ASSERT(!finished);
+      TI_ASSERT(!finished);
       finished = true;
       for (int i = 0; i + 1 < n_vertices; i++) {
         stroke(canvas.transform(vertices[i]),
@@ -224,7 +224,7 @@ class Canvas {
     real _radius;
     bool finished;
 
-    TC_FORCE_INLINE Circle(Canvas &canvas, Vector2 center)
+    TI_FORCE_INLINE Circle(Canvas &canvas, Vector2 center)
         : canvas(canvas),
           _center(center),
           _color(canvas.context._color),
@@ -232,32 +232,32 @@ class Canvas {
       finished = false;
     }
 
-    TC_FORCE_INLINE Circle &color(Vector4 color) {
+    TI_FORCE_INLINE Circle &color(Vector4 color) {
       _color = color;
       return *this;
     }
 
-    TC_FORCE_INLINE Circle &color(real r, real g, real b, real a = 1) {
+    TI_FORCE_INLINE Circle &color(real r, real g, real b, real a = 1) {
       _color = Vector4(r, g, b, a);
       return *this;
     }
 
-    TC_FORCE_INLINE Circle &color(int r, int g, int b, int a = 255) {
+    TI_FORCE_INLINE Circle &color(int r, int g, int b, int a = 255) {
       _color = (1.0_f / 255) * Vector4(r, g, b, a);
       return *this;
     }
 
-    TC_FORCE_INLINE Circle &color(int c) {
+    TI_FORCE_INLINE Circle &color(int c) {
       return color(c / 65536, c / 256 % 256, c % 256, 255);
     }
 
-    TC_FORCE_INLINE Circle &radius(real radius) {
+    TI_FORCE_INLINE Circle &radius(real radius) {
       _radius = radius;
       return *this;
     }
 
     void finish() {
-      TC_ASSERT(finished == false);
+      TI_ASSERT(finished == false);
       finished = true;
       auto center = canvas.transform(_center);
       auto const canvas_width = canvas.img.get_width();
@@ -279,7 +279,7 @@ class Canvas {
       }
     }
 
-    TC_FORCE_INLINE ~Circle() {
+    TI_FORCE_INLINE ~Circle() {
       if (!finished)
         finish();
     }
@@ -293,11 +293,11 @@ class Canvas {
     transform_matrix = Matrix3(Vector3(img.get_res().cast<real>(), 1.0_f));
   }
 
-  TC_FORCE_INLINE Vector2 transform(Vector2 x) const {
+  TI_FORCE_INLINE Vector2 transform(Vector2 x) const {
     return Vector2(transform_matrix * Vector3(x, 1.0_f));
   }
 
-  TC_FORCE_INLINE Vector2 untransform(Vector2 x) const {
+  TI_FORCE_INLINE Vector2 untransform(Vector2 x) const {
     return Vector2(inversed(transform_matrix) * Vector3(x, 1.0_f));
   }
 
@@ -402,7 +402,7 @@ class Canvas {
             real size,
             Vector4 color) {
     position = transform(position);
-#if defined(TC_AMALGAMATED)
+#if defined(TI_AMALGAMATED)
     auto ttf_path = std::string("");  // use amalgamated font
 #else
     std::string root_dir = get_repo_dir();
@@ -429,7 +429,7 @@ class Canvas {
   }
 };
 
-#if defined(TC_GUI_X11)
+#if defined(TI_GUI_X11)
 
 class CXImage;
 
@@ -445,7 +445,7 @@ using GUIBase = GUIBaseX11;
 
 #endif
 
-#if defined(TC_GUI_WIN32)
+#if defined(TI_GUI_WIN32)
 class GUIBaseWin32 {
  public:
   HWND hwnd;
@@ -458,7 +458,7 @@ class GUIBaseWin32 {
 using GUIBase = GUIBaseWin32;
 #endif
 
-#if defined(TC_GUI_COCOA)
+#if defined(TI_GUI_COCOA)
 class GUIBaseCocoa {
  public:
   id window, view;
@@ -511,7 +511,7 @@ class GUI : public GUIBase {
   struct Rect {
     Vector2i pos;
     Vector2i size;
-    TC_IO_DEF(pos, size);
+    TI_IO_DEF(pos, size);
     Rect() {
     }
     Rect(Vector2i pos, Vector2i size) : pos(pos), size(size) {
@@ -866,4 +866,4 @@ class GUI : public GUIBase {
   ~GUI();
 };
 
-TC_NAMESPACE_END
+TI_NAMESPACE_END

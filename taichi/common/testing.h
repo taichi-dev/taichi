@@ -10,9 +10,9 @@
 #include <catch.hpp>
 #undef BENCHMARK
 
-TC_NAMESPACE_BEGIN
+TI_NAMESPACE_BEGIN
 
-#define TC_CHECK_EQUAL(A, B, tolerance)              \
+#define TI_CHECK_EQUAL(A, B, tolerance)              \
   {                                                  \
     if (!taichi::math::equal(A, B, tolerance)) {     \
       std::cout << A << std::endl << B << std::endl; \
@@ -20,17 +20,17 @@ TC_NAMESPACE_BEGIN
     CHECK(taichi::math::equal(A, B, tolerance));     \
   }
 
-#define TC_ASSERT_EQUAL(A, B, tolerance)             \
+#define TI_ASSERT_EQUAL(A, B, tolerance)             \
   {                                                  \
     if (!taichi::math::equal(A, B, tolerance)) {     \
       std::cout << A << std::endl << B << std::endl; \
-      TC_ERROR(#A " != " #B);                        \
+      TI_ERROR(#A " != " #B);                        \
     }                                                \
   }
 
-#define TC_TEST(x) TEST_CASE(x, ("[" x "]"))
-#define TC_CHECK(x) CHECK(x)
+#define TI_TEST(x) TEST_CASE(x, ("[" x "]"))
+#define TI_CHECK(x) CHECK(x)
 
 int run_tests(std::vector<std::string> argv);
 
-TC_NAMESPACE_END
+TI_NAMESPACE_END

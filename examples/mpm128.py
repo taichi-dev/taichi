@@ -98,7 +98,7 @@ def reset():
   Jp.fill(1)
   C.fill(0)
   
-print("[Hint] Use WSAD/arrow keys to control gravity. Use left/right mouse bottons to attract/repel. (OS X not yet supported)")
+print("[Hint] Use WSAD/arrow keys to control gravity. Use left/right mouse bottons to attract/repel.")
 gui = ti.GUI("Taichi MLS-MPM-128", res=512, background_color=0x112F41)
 reset()
 

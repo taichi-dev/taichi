@@ -9,12 +9,12 @@
 #include <cxxabi.h>
 #endif
 
-TC_NAMESPACE_BEGIN
+TI_NAMESPACE_BEGIN
 
 // From https://en.wikipedia.org/wiki/Name_mangling
 
 std::string cpp_demangle(const std::string &mangled_name) {
-#if defined(TC_PLATFORM_UNIX)
+#if defined(TI_PLATFORM_UNIX)
   char *demangled_name;
   int status = -1;
   demangled_name =
@@ -23,7 +23,7 @@ std::string cpp_demangle(const std::string &mangled_name) {
   free(demangled_name);
   return ret;
 #else
-  TC_NOT_IMPLEMENTED
+  TI_NOT_IMPLEMENTED
 #endif
 }
 
@@ -36,13 +36,13 @@ class Demangling : public Task {
 #if !defined(_WIN64)
       printf("Demangled C++ Identifier: %s\n", cpp_demangle(p).c_str());
 #else
-      TC_NOT_IMPLEMENTED
+      TI_NOT_IMPLEMENTED
 #endif
     }
     return "";
   }
 };
 
-TC_IMPLEMENTATION(Task, Demangling, "demangle")
+TI_IMPLEMENTATION(Task, Demangling, "demangle")
 
-TC_NAMESPACE_END
+TI_NAMESPACE_END

@@ -45,7 +45,7 @@ class DIE : public IRVisitor {
   }
 
   void visit(Stmt *stmt) {
-    TC_ASSERT(!stmt->erased);
+    TI_ASSERT(!stmt->erased);
     if (phase == 0) {
       register_usage(stmt);
     } else {

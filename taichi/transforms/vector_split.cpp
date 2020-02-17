@@ -34,11 +34,11 @@ class BasicBlockVectorSplit : public IRVisitor {
 
   Stmt *lookup(Stmt *old, int index) {
     if (origin2split.find(old) == origin2split.end()) {
-      TC_WARN("VectorSplitter looking for statement outside current block?");
+      TI_WARN("VectorSplitter looking for statement outside current block?");
       return old;
     } else {
-      TC_ASSERT(0 <= index);
-      TC_ASSERT(index < (int)origin2split[old].size());
+      TI_ASSERT(0 <= index);
+      TI_ASSERT(index < (int)origin2split[old].size());
       return origin2split[old][index];
     }
   }
@@ -48,7 +48,7 @@ class BasicBlockVectorSplit : public IRVisitor {
     for (int i = 0; i < (int)statements.size(); i++) {
       auto stmt = statements[i].get();
       if (stmt->width() > max_width) {
-        TC_ASSERT(stmt->width() % max_width == 0);
+        TI_ASSERT(stmt->width() % max_width == 0);
         current_split_factor = stmt->width() / max_width;
         current_split.resize(current_split_factor);
         need_split = true;
@@ -115,7 +115,7 @@ class BasicBlockVectorSplit : public IRVisitor {
                 origin2split[old_var][stmt->ptr[l].offset / max_width];
             stmt->ptr[l].var = new_var;
             stmt->ptr[l].offset %= max_width;
-            // TC_WARN("replaced...");
+            // TI_WARN("replaced...");
           }
         }
       }
@@ -253,7 +253,7 @@ class BasicBlockVectorSplit : public IRVisitor {
   }
 
   void visit(WhileControlStmt *stmt) override {
-    TC_ASSERT(need_split == false);
+    TI_ASSERT(need_split == false);
     for (int i = 0; i < current_split_factor; i++) {
       current_split[i] = Stmt::make<WhileControlStmt>(lookup(stmt->mask, i),
                                                       lookup(stmt->cond, i));

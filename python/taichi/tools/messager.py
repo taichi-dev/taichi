@@ -16,9 +16,9 @@ def send_crash_report(message, receiver=None):
     return
   emailed = True
   if receiver is None:
-    receiver = os.environ.get('TC_MONITOR_EMAIL', None)
+    receiver = os.environ.get('TI_MONITOR_EMAIL', None)
   if receiver is None:
-    tc.warning('No receiver in $TC_MONITOR_EMAIL')
+    tc.warning('No receiver in $TI_MONITOR_EMAIL')
     return
   tc.warning('Emailing {}'.format(receiver))
   TO = receiver

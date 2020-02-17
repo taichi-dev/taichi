@@ -7,7 +7,7 @@
 #include <taichi/common/task.h>
 #include <taichi/testing.h>
 
-TC_NAMESPACE_BEGIN
+TI_NAMESPACE_BEGIN
 
 class RunTests : public Task {
   virtual std::string run(const std::vector<std::string> &parameters) {
@@ -15,6 +15,6 @@ class RunTests : public Task {
   }
 };
 
-TC_IMPLEMENTATION(Task, RunTests, "test");
+TI_IMPLEMENTATION(Task, RunTests, "test");
 
-TC_NAMESPACE_END
+TI_NAMESPACE_END

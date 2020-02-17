@@ -10,7 +10,7 @@ void layout(const std::function<void()> &body) {
 }
 
 Expr global_new(Expr id_expr, DataType dt) {
-  TC_ASSERT(id_expr.is<IdExpression>());
+  TI_ASSERT(id_expr.is<IdExpression>());
   auto ret = Expr(std::make_shared<GlobalVariableExpression>(
       dt, id_expr.cast<IdExpression>()->id));
   return ret;

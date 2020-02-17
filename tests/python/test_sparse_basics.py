@@ -36,7 +36,7 @@ def test_pointer():
 
   @ti.layout
   def place():
-    ti.root.dense(ti.i, n).pointer().dense(ti.i, n).place(x)
+    ti.root.pointer(ti.i, n).dense(ti.i, n).place(x)
     ti.root.place(s)
 
   @ti.kernel
@@ -58,7 +58,7 @@ def test_pointer_is_active():
 
   n = 128
   
-  ti.root.dense(ti.i, n).pointer().dense(ti.i, n).place(x)
+  ti.root.pointer(ti.i, n).dense(ti.i, n).place(x)
   ti.root.place(s)
   
   @ti.kernel
@@ -83,8 +83,7 @@ def test_pointer2():
 
   @ti.layout
   def place():
-    ti.root.dense(ti.i, n).pointer().dense(ti.i, n).pointer().dense(ti.i,
-                                                                    n).place(x)
+    ti.root.pointer(ti.i, n).pointer(ti.i, n).dense(ti.i, n).place(x)
     ti.root.place(s)
 
   @ti.kernel

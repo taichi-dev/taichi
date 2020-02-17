@@ -1,6 +1,6 @@
 #include <taichi/visual/gui.h>
 
-TC_NAMESPACE_BEGIN
+TI_NAMESPACE_BEGIN
 
 Vector2 Canvas::Line::vertices[128];
 
@@ -30,4 +30,4 @@ void Canvas::circle_single(real x, real y, uint32 color, real radius) {
   circle(x, y).radius(radius).color(color).finish();
 }
 
-TC_NAMESPACE_END
+TI_NAMESPACE_END

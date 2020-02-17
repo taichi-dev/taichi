@@ -197,7 +197,7 @@ void benchmark_layers() {
     }
   };
 
-  TC_P(measure_cpe(test_hash_table, n));
+  TI_P(measure_cpe(test_hash_table, n));
 
   auto &tile = data.begin()->second;
 
@@ -210,13 +210,13 @@ void benchmark_layers() {
     }
   };
 
-  TC_P(measure_cpe(test_block, n));
-  TC_P(cnt);
+  TI_P(measure_cpe(test_block, n));
+  TI_P(cnt);
 }
 
 TLANG_NAMESPACE_BEGIN
 
-TC_TEST("stencil1d") {
+TI_TEST("stencil1d") {
   CoreState::set_trigger_gdb_when_crash(true);
   Program prog;
 
@@ -277,24 +277,24 @@ TC_TEST("stencil1d") {
         }
       }
     }
-    TC_P(total_tiles);
-    TC_P(total_blocks);
-    TC_P(total_nodes);
+    TI_P(total_tiles);
+    TI_P(total_blocks);
+    TI_P(total_nodes);
   }
   // benchmark_layers();
-  // TC_P(measure_cpe(stencil, total_nodes));
+  // TI_P(measure_cpe(stencil, total_nodes));
 
   for (int i = 0; i < 10; i++)
-    TC_TIME(copy_ref());
+    TI_TIME(copy_ref());
 
   for (int i = 0; i < 10; i++)
-    TC_TIME(copy_optimized());
+    TI_TIME(copy_optimized());
 
   for (int i = 0; i < 10; i++)
-    TC_TIME(copy());
+    TI_TIME(copy());
 
   for (int i = 0; i < 10; i++)
-    TC_TIME(copy_parallelized());
+    TI_TIME(copy_parallelized());
 
   // test copy to x
   for (auto &it : data) {
@@ -305,25 +305,25 @@ TC_TEST("stencil1d") {
         continue;
       for (int n = 0; n < ::Block::size; n++) {
         int i = it.first * dim0 + b * dim1 + n;
-        TC_CHECK(block->nodes[n].y == y.val<float32>(i));
+        TI_CHECK(block->nodes[n].y == y.val<float32>(i));
       }
     }
   }
 
   for (int i = 0; i < 10; i++)
-    TC_TIME(stencil_ref());
+    TI_TIME(stencil_ref());
 
   for (int i = 0; i < 10; i++)
-    TC_TIME(stencil_optimized());
+    TI_TIME(stencil_optimized());
 
   for (int i = 0; i < 10; i++)
-    TC_TIME(stencil_optimized2());
+    TI_TIME(stencil_optimized2());
 
   for (int i = 0; i < 10; i++)
-    TC_TIME(stencil_optimized3());
+    TI_TIME(stencil_optimized3());
 
   for (int i = 0; i < 10; i++)
-    TC_TIME(stencil());
+    TI_TIME(stencil());
 
   // test stencil to x
   for (auto &it : data) {
@@ -334,7 +334,7 @@ TC_TEST("stencil1d") {
         continue;
       for (int n = 0; n < ::Block::size; n++) {
         int i = it.first * dim0 + b * dim1 + n;
-        TC_CHECK_EQUAL(block->nodes[n].y, y.val<float32>(i), 1e-5f);
+        TI_CHECK_EQUAL(block->nodes[n].y, y.val<float32>(i), 1e-5f);
       }
     }
   }

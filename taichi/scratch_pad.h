@@ -43,7 +43,7 @@ class ScratchPad {
   ScratchPad() = default;
 
   ScratchPad(SNode *snode) : snode(snode) {
-    TC_ASSERT(snode != nullptr);
+    TI_ASSERT(snode != nullptr);
     dim = snode->num_active_indices;
     bounds[0].resize(dim);
     bounds[1].resize(dim);
@@ -60,9 +60,9 @@ class ScratchPad {
   }
 
   void access(const std::vector<int> &indices, AccessFlag flags) {
-    TC_ASSERT(!finalized);
+    TI_ASSERT(!finalized);
     empty = true;
-    TC_ASSERT((int)indices.size() == dim);
+    TI_ASSERT((int)indices.size() == dim);
     for (int i = 0; i < dim; i++) {
       bounds[0][i] = std::min(bounds[0][i], indices[i]);
       bounds[1][i] = std::max(bounds[1][i], indices[i] + 1);
@@ -82,8 +82,8 @@ class ScratchPad {
     for (int i = 0; i < dim; i++) {
       block_size[i] =
           1 << snode->extractors[snode->physical_index_position[i]].num_bits;
-      TC_ASSERT(bounds[0][i] != std::numeric_limits<int>::max());
-      TC_ASSERT(bounds[1][i] != std::numeric_limits<int>::min());
+      TI_ASSERT(bounds[0][i] != std::numeric_limits<int>::max());
+      TI_ASSERT(bounds[1][i] != std::numeric_limits<int>::min());
     }
 
     finalized = true;
@@ -107,7 +107,7 @@ class ScratchPad {
   }
 
   int linear_size() {
-    TC_ASSERT(finalized);
+    TI_ASSERT(finalized);
     int s = 1;
     for (int i = 0; i < dim; i++) {
       s *= pad_size[i];
@@ -117,7 +117,7 @@ class ScratchPad {
 
   int linearized_index(const std::vector<int> &indices) {
     int ret = 0;
-    TC_ASSERT(finalized);
+    TI_ASSERT(finalized);
     for (int i = 0; i < dim; i++) {
       ret *= (bounds[1][i] - bounds[0][i]);
       ret += indices[i] - bounds[0][i];
@@ -147,10 +147,10 @@ class ScratchPad {
   std::string global_to_linearized_local(const std::vector<Stmt *> &loop_vars,
                                          const std::vector<Stmt *> &indices) {
     std::string ret = "";
-    TC_ASSERT((int)indices.size() == dim);
+    TI_ASSERT((int)indices.size() == dim);
     int step_size = linear_size();
     for (int i = 0; i < (int)indices.size(); i++) {
-      TC_ASSERT(step_size % pad_size[i] == 0);
+      TI_ASSERT(step_size % pad_size[i] == 0);
       step_size /= pad_size[i];
       ret += fmt::format(" + ({} - {}_base - {}) * {}", indices[i]->raw_name(),
                          loop_vars[i]->raw_name(), bounds[0][i], step_size);
@@ -174,12 +174,12 @@ class ScratchPads {
       pads.emplace(std::piecewise_construct, std::forward_as_tuple(snode),
                    std::forward_as_tuple(snode));
     } else {
-      TC_ERROR("ScratchPad for {} already exists.", snode->node_type_name);
+      TI_ERROR("ScratchPad for {} already exists.", snode->node_type_name);
     }
   }
 
   void access(SNode *snode, const std::vector<int> &indices, AccessFlag flags) {
-    TC_ASSERT(snode != nullptr);
+    TI_ASSERT(snode != nullptr);
     if (pads.find(snode) == pads.end())
       return;
     pads.find(snode)->second.access(indices, flags);
@@ -224,15 +224,15 @@ class ScratchPads {
       }
     } else if (pads.find(snode->parent) != pads.end()) {
     } else {
-      TC_NOT_IMPLEMENTED
+      TI_NOT_IMPLEMENTED
     }
   }
 
   void print() {
     for (auto &it : pads) {
-      TC_P(it.first->node_type_name);
-      TC_P(it.second.bounds[0]);
-      TC_P(it.second.bounds[1]);
+      TI_P(it.first->node_type_name);
+      TI_P(it.second.bounds[0]);
+      TI_P(it.second.bounds[1]);
     }
   }
 
@@ -241,7 +241,7 @@ class ScratchPads {
   }
 
   ScratchPad &get(SNode *snode) {
-    TC_ASSERT(pads.find(snode) != pads.end());
+    TI_ASSERT(pads.find(snode) != pads.end());
     return pads[snode];
   }
 };

@@ -9,10 +9,10 @@ extern bool use_gui;
 auto smoke_renderer = [](std::vector<std::string> cli_param_) {
   auto cli_param = parse_param(cli_param_);
   bool gpu = cli_param.get("gpu", true);
-  TC_P(gpu);
+  TI_P(gpu);
   Program prog(gpu ? Arch::gpu : Arch::x86_64);
   bool benchmark = true;  // benchmark the bunny cloud against tungsten?
-  TC_ASSERT(benchmark);
+  TI_ASSERT(benchmark);
   // CoreState::set_trigger_gdb_when_crash(true);
   // prog.config.print_ir = true;
   float32 target_max_density = 50.f;
@@ -37,7 +37,7 @@ auto smoke_renderer = [](std::vector<std::string> cli_param_) {
 
   if (benchmark) {
     auto f = fopen("bunny_cloud.bin", "rb");
-    TC_ASSERT_INFO(f, "./bunny_cloud.bin not found");
+    TI_ASSERT_INFO(f, "./bunny_cloud.bin not found");
     int box_sizes[3]{584, 576, 440};
     int total_voxels = box_sizes[0] * box_sizes[1] * box_sizes[2];
     std::vector<float32> density_field(total_voxels);
@@ -50,7 +50,7 @@ auto smoke_renderer = [](std::vector<std::string> cli_param_) {
       max_density = std::max(max_density, density_field[i]);
     }
 
-    TC_P(max_density);
+    TI_P(max_density);
 
     for (int i = 0; i < total_voxels; i++) {
       density_field[i] /= max_density;         // normalize to 1 first
@@ -125,13 +125,13 @@ auto smoke_renderer = [](std::vector<std::string> cli_param_) {
     }
   }
 };
-TC_REGISTER_TASK(smoke_renderer);
+TI_REGISTER_TASK(smoke_renderer);
 
 auto smoke_renderer_gui = [](std::vector<std::string> cli_param) {
   use_gui = true;
   smoke_renderer(cli_param);
 };
 
-TC_REGISTER_TASK(smoke_renderer_gui);
+TI_REGISTER_TASK(smoke_renderer_gui);
 
 TLANG_NAMESPACE_END

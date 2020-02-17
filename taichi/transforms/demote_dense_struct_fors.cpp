@@ -7,7 +7,7 @@ VecStatement convert_to_range_for(StructForStmt *struct_for) {
   auto loop_var = ret.push_back<AllocaStmt>(DataType::i32);
   auto lower = ret.push_back<ConstStmt>(TypedConstant(0));
   std::vector<SNode *> snodes;
-  auto snode = struct_for->snode->parent;
+  auto snode = struct_for->snode;
   int total_bits = 0;
   while (snode->type != SNodeType::root) {
     snodes.push_back(snode);
@@ -111,8 +111,9 @@ void demote_dense_struct_fors(IRNode *root) {
   for (int i = 0; i < (int)block_body.size(); i++) {
     auto s_ = block_body[i];
     if (auto s = s_->cast<StructForStmt>()) {
-      auto snode = s->snode->parent;
-      bool all_dense = snode->type == SNodeType::place;
+      auto snode = s->snode;
+      TI_P(snode_type_name(snode->type));
+      bool all_dense = true;
       while (all_dense && snode->type != SNodeType::root) {
         if (snode->type != SNodeType::dense) {
           all_dense = false;

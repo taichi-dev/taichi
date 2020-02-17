@@ -212,9 +212,9 @@ class MakeAdjoint : public IRVisitor {
       accumulate(bin->rhs, negate(div(mul(adjoint(bin), bin->lhs), numerator)));
     } else if (bin->op_type == BinaryOpType::pow) {
       // d (x ^ y) = x ^ (y-1) * (y * dx + log(x) * x * dy)
-      auto numerator = pow(bin->lhs, sub(bin->rhs, constant(1)));
-      accumulate(bin->lhs, mul(adjoint(bin), mul(bin->rhs, numerator)));
-      accumulate(bin->rhs, mul(adjoint(bin), mul(log(bin->lhs), mul(bin->lhs, numerator))));
+      auto common_coeff = pow(bin->lhs, sub(bin->rhs, constant(1))); // x ^ (y-1)
+      accumulate(bin->lhs, mul(adjoint(bin), mul(bin->rhs, common_coeff)));
+      accumulate(bin->rhs, mul(adjoint(bin), mul(log(bin->lhs), mul(bin->lhs, common_coeff))));
     } else if (bin->op_type == BinaryOpType::min ||
                bin->op_type == BinaryOpType::max) {
       auto cmp = bin->op_type == BinaryOpType::min ? cmp_lt(bin->lhs, bin->rhs)

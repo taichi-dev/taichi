@@ -44,13 +44,13 @@ def test_python(test_files=None, verbose=False):
   return int(pytest.main(args))
 
 
-def test_cpp():
+def test_cpp(test_files=None):
   import taichi as ti
   # Cpp tests use the legacy non LLVM backend
   ti.reset()
   print("Running C++ tests...")
   task = ti.Task('test')
-  return int(task.run(*sys.argv[2:]))
+  return int(task.run(*test_files))
 
 
 def main(debug=False):
@@ -116,10 +116,11 @@ def main(debug=False):
   elif mode == "test_python":
     return test_python(test_files=sys.argv[2:])
   elif mode == "test_cpp":
-    return test_cpp()
+    return test_cpp(test_files=sys.argv[2:])
   elif mode == "test":
-    if test_python(test_files=sys.argv[2:]) != 0 or len(sys.argv) > 2:
+    if test_python(test_files=sys.argv[2:]) != 0:
       return -1
+    if len(sys.argv) <= 2:
     return test_cpp()
   elif mode == "test_verbose":
     if test_python(test_files=sys.argv[2:], verbose=True) != 0:

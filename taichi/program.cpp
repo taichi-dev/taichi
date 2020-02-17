@@ -4,9 +4,11 @@
 
 #include <taichi/common/task.h>
 #include <taichi/platform/metal/metal_api.h>
+#include <taichi/platform/opengl/opengl_api.h>
 
 #include "backends/codegen_cuda.h"
 #include "backends/codegen_metal.h"
+#include "backends/codegen_opengl.h"
 #include "backends/codegen_x86.h"
 #include "backends/struct.h"
 #include "backends/struct_metal.h"
@@ -58,6 +60,12 @@ Program::Program(Arch arch) {
       arch = Arch::x64;
     }
   }
+  if (arch == Arch::opengl) {
+    if (!opengl::is_opengl_api_available()) {
+      TI_WARN("No OpenGL API detected, falling back to x86_64");
+      arch = Arch::x86_64;
+    }
+  }
   memory_pool = std::make_unique<MemoryPool>(this);
   TI_ASSERT_INFO(num_instances == 0, "Only one instance at a time");
   total_compilation_time = 0;
@@ -96,6 +104,9 @@ FunctionType Program::compile(Kernel &kernel) {
   } else if (kernel.arch == Arch::metal) {
     metal::MetalCodeGen codegen(kernel.name, &metal_struct_compiled_.value());
     ret = codegen.compile(*this, kernel, metal_runtime_.get());
+  } else if (kernel.arch == Arch::opengl) {
+    opengl::OpenglCodeGen codegen(kernel.name);
+    ret = codegen.compile(*this, kernel);
   } else {
     TI_NOT_IMPLEMENTED;
   }

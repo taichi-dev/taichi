@@ -3,6 +3,7 @@
 #include <taichi/memory_pool.h>
 #include <taichi/profiler.h>
 #include <taichi/tlang_util.h>
+#include <taichi/taichi_llvm_context.h>
 
 #include <memory>
 #include <string>
@@ -22,8 +23,16 @@ namespace metal {
 // series of Metal kernels generated from a Taichi kernel.
 class MetalRuntime {
  public:
-  MetalRuntime(size_t root_size, CompileConfig *config, MemoryPool *mem_pool,
-               ProfilerBase *profiler);
+  struct Options {
+    size_t root_size;
+    void* llvm_runtime;
+    TaichiLLVMContext* llvm_ctx;
+    CompileConfig* config;
+    MemoryPool *mem_pool;
+    ProfilerBase *profiler;
+  };
+
+  explicit MetalRuntime(Options options);
   // To make Pimpl + std::unique_ptr work
   ~MetalRuntime();
 

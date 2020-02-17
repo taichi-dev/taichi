@@ -17,6 +17,7 @@
 #include <type_traits>
 #include <cstring>
 #include "../constants.h"
+#include "../arithmetic.h"
 
 #if defined(__linux__) && !ARCH_cuda && defined(TI_ARCH_x86_64)
 __asm__(".symver logf,logf@GLIBC_2.2.5");
@@ -462,6 +463,7 @@ struct Runtime {
   assert_failed_type assert_failed;
   Ptr prog;
   Ptr root;
+  size_t root_mem_size;
   Ptr thread_pool;
   parallel_for_type parallel_for;
   ListManager *element_lists[taichi_max_num_snodes];
@@ -488,6 +490,8 @@ struct Runtime {
 STRUCT_FIELD_ARRAY(Runtime, element_lists);
 STRUCT_FIELD_ARRAY(Runtime, node_allocators);
 STRUCT_FIELD(Runtime, root);
+STRUCT_FIELD(Runtime, root_mem_size);
+STRUCT_FIELD(Runtime, temporaries);
 STRUCT_FIELD(Runtime, assert_failed);
 STRUCT_FIELD(Runtime, mem_req_queue);
 STRUCT_FIELD(Runtime, profiler);
@@ -643,17 +647,23 @@ Ptr Runtime_initialize(Runtime **runtime_ptr,
     printf("[runtime.cpp: Initializing runtime with %d snode(s)...]\n",
            num_snodes);
 
+  constexpr uint64_t kPageSize = 4096;
   // runtime->allocate ready to use
   runtime->mem_req_queue = (MemRequestQueue *)runtime->allocate_aligned(
-      sizeof(MemRequestQueue), 4096);
+      sizeof(MemRequestQueue), kPageSize);
 
-  auto root_ptr = runtime->allocate_aligned(root_size, 4096);
+  // For Metal runtime, we have to make sure that both the beginning adddress
+  // and the size of the root buffer memory are aligned to page size. I think
+  // it is fine to allocate the memory that is larger than what the LLVM struct
+  // requires?
+  runtime->root_mem_size = taichi::iroundup(root_size, kPageSize);
+  auto root_ptr = runtime->allocate_aligned(runtime->root_mem_size, kPageSize);
 
   runtime->temporaries =
-      (Ptr)runtime->allocate_aligned(taichi_global_tmp_buffer_size, 1024);
+      (Ptr)runtime->allocate_aligned(taichi_global_tmp_buffer_size, kPageSize);
 
   runtime->rand_states = (RandState *)runtime->allocate_aligned(
-      sizeof(RandState) * num_rand_states, 4096);
+      sizeof(RandState) * num_rand_states, kPageSize);
   for (int i = 0; i < num_rand_states; i++)
     initialize_rand_state(&runtime->rand_states[i], i);
 

@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cstring>
 
+#include <taichi/arithmetic.h>
 #define TI_RUNTIME_HOST
 #include <taichi/context.h>
 #undef TI_RUNTIME_HOST
@@ -21,6 +22,7 @@ namespace metal {
 
 namespace {
 using KernelTaskType = OffloadedStmt::TaskType;
+constexpr size_t kPageSize = 4096;
 
 // This class requests the Metal buffer memory of |size| bytes from |mem_pool|.
 // Once allocated, it does not own the memory (hence the name "view"). Instead,
@@ -28,10 +30,9 @@ using KernelTaskType = OffloadedStmt::TaskType;
 class BufferMemoryView {
  public:
   BufferMemoryView(size_t size, MemoryPool *mem_pool) {
-    const size_t pagesize = getpagesize();
     // Both |ptr_| and |size_| must be aligned to page size.
-    size_ = ((size + pagesize - 1) / pagesize) * pagesize;
-    ptr_ = mem_pool->allocate(size_, pagesize);
+    size_ = iroundup(size, kPageSize);
+    ptr_ = mem_pool->allocate(size_, kPageSize);
     TI_ASSERT(ptr_ != nullptr);
   }
 
@@ -243,12 +244,10 @@ class HostMetalArgsBlitter {
 
 class MetalRuntime::Impl {
  public:
-  Impl(size_t root_size, CompileConfig *config, MemoryPool *mem_pool,
-       ProfilerBase *profiler)
-      : config_(config),
-        mem_pool_(mem_pool),
-        profiler_(profiler),
-        root_buffer_mem_(std::max(root_size, 1UL), mem_pool) {
+  explicit Impl(Options options)
+      : config_(options.config),
+        mem_pool_(options.mem_pool),
+        profiler_(options.profiler) {
     if (config_->debug) {
       TI_ASSERT(is_metal_api_available());
     }
@@ -257,9 +256,33 @@ class MetalRuntime::Impl {
     command_queue_ = new_command_queue(device_.get());
     TI_ASSERT(command_queue_ != nullptr);
     create_new_command_buffer();
-    root_buffer_ = new_mtl_buffer_no_copy(device_.get(), root_buffer_mem_.ptr(),
-                                          root_buffer_mem_.size());
+
+    auto *llvm_ctx = options.llvm_ctx;
+    auto *llvm_rtm = options.llvm_runtime;
+    const size_t rtm_root_mem_size = llvm_ctx->lookup_function<size_t(void *)>(
+        "Runtime_get_root_mem_size")(llvm_rtm);
+    if (rtm_root_mem_size > 0) {
+      TI_ASSERT(iroundup(options.root_size, kPageSize) <= rtm_root_mem_size);
+      auto *rtm_root_mem = options.llvm_ctx->lookup_function<uint8 *(void *)>(
+          "Runtime_get_root")(llvm_rtm);
+      root_buffer_ = new_mtl_buffer_no_copy(device_.get(), rtm_root_mem,
+                                            rtm_root_mem_size);
+    } else {
+      // TODO(k-ye) In case no SNodes is defined, we should not allocate
+      // |root_buffer_| at all. However, that requires us to change the Metal
+      // kernels so that |root_buffer_| isn't a required argument.
+      TI_TRACE(
+          "LLVM root buffer size is 0, allocating directly from the memory "
+          "pool");
+      root_buffer_mem_ =
+          std::make_unique<BufferMemoryView>(kPageSize, mem_pool_);
+      root_buffer_ = new_mtl_buffer_no_copy(
+          device_.get(), root_buffer_mem_->ptr(), root_buffer_mem_->size());
+    }
     TI_ASSERT(root_buffer_ != nullptr);
+    // TODO(k-ye): All Metal kernels should share the same global tmp buffer.
+    // In addition, global tmp buffer's memory should also be backed by
+    // Runtime::temporaries.
   }
 
   void register_taichi_kernel(
@@ -344,10 +367,11 @@ class MetalRuntime::Impl {
   CompileConfig *const config_;
   MemoryPool *const mem_pool_;
   ProfilerBase *const profiler_;
-  BufferMemoryView root_buffer_mem_;
   nsobj_unique_ptr<MTLDevice> device_{nullptr};
   nsobj_unique_ptr<MTLCommandQueue> command_queue_{nullptr};
   nsobj_unique_ptr<MTLCommandBuffer> cur_command_buffer_{nullptr};
+  // |root_buffer_mem_| is used only when the LLVM's root size is 0.
+  std::unique_ptr<BufferMemoryView> root_buffer_mem_;
   nsobj_unique_ptr<MTLBuffer> root_buffer_{nullptr};
   std::unordered_map<std::string, std::unique_ptr<CompiledTaichiKernel>>
       compiled_taichi_kernels_;
@@ -357,8 +381,7 @@ class MetalRuntime::Impl {
 
 class MetalRuntime::Impl {
  public:
-  Impl(size_t root_size, CompileConfig *config, MemoryPool *mem_pool,
-       ProfilerBase *profiler) {
+  explicit Impl(Options options) {
     TI_ERROR("Metal not supported on the current OS");
   }
 
@@ -380,9 +403,9 @@ class MetalRuntime::Impl {
 
 #endif  // TI_PLATFORM_OSX
 
-MetalRuntime::MetalRuntime(size_t root_size, CompileConfig *config,
-                           MemoryPool *mem_pool, ProfilerBase *profiler)
-    : impl_(std::make_unique<Impl>(root_size, config, mem_pool, profiler)) {}
+MetalRuntime::MetalRuntime(Options options)
+    : impl_(std::make_unique<Impl>(std::move(options))) {
+}
 
 MetalRuntime::~MetalRuntime() {}
 

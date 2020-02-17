@@ -145,3 +145,15 @@ def test_atan2():
 def test_atan2_f64():
   grad_test(lambda x: ti.atan2(0.4, x), lambda x: np.arctan2(0.4, x), default_fp=ti.f64)
   grad_test(lambda y: ti.atan2(y, 0.4), lambda y: np.arctan2(y, 0.4), default_fp=ti.f64)
+
+  
+@if_has_autograd
+def test_pow():
+  grad_test(lambda x: 0.4 ** x, lambda x: np.pow(0.4, x))
+  grad_test(lambda y: y ** 0.4, lambda y: np.pow(y, 0.4))
+
+  
+@if_has_autograd
+def test_pow_f64():
+  grad_test(lambda x: 0.4 ** x, lambda x: np.pow(0.4, x), default_fp=ti.f64)
+  grad_test(lambda y: y ** 0.4, lambda y: np.pow(y, 0.4), default_fp=ti.f64)

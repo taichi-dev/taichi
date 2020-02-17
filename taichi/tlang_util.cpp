@@ -196,6 +196,7 @@ std::string binary_op_type_symbol(BinaryOpType type) {
     REGISTER_TYPE(bit_and, &);
     REGISTER_TYPE(bit_or, |);
     REGISTER_TYPE(bit_xor, ^);
+    REGISTER_TYPE(pow, pow);
 #undef REGISTER_TYPE
   }
   return type_names[type];

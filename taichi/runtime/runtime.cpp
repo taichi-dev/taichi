@@ -18,6 +18,9 @@
 #include <cstring>
 #include "../constants.h"
 
+using assert_failed_type = void (*)(const char *);
+using vprintf_host_type = void (*)(const char *, const char *);
+
 #if defined(__linux__) && !ARCH_cuda && defined(TI_ARCH_x86_64)
 __asm__(".symver logf,logf@GLIBC_2.2.5");
 __asm__(".symver powf,powf@GLIBC_2.2.5");
@@ -86,8 +89,6 @@ void taichi_printf(Runtime *runtime, const char *format, Args &&... args);
 #define Printf(...) taichi_printf(runtime, __VA_ARGS__)
 
 extern "C" {
-
-i32 printf(const char *, ...);
 
 #define DEFINE_UNARY_REAL_FUNC(F) \
   f32 F##_f32(f32 x) {            \
@@ -459,7 +460,7 @@ struct NodeManager;
 struct Runtime {
   vm_allocator_type vm_allocator;
   assert_failed_type assert_failed;
-  vvprintf_type vvprintf;
+  vprintf_host_type vprintf_host;
   Ptr prog;
   Ptr root;
   Ptr thread_pool;
@@ -489,7 +490,7 @@ STRUCT_FIELD_ARRAY(Runtime, element_lists);
 STRUCT_FIELD_ARRAY(Runtime, node_allocators);
 STRUCT_FIELD(Runtime, root);
 STRUCT_FIELD(Runtime, assert_failed);
-STRUCT_FIELD(Runtime, vvprintf);
+STRUCT_FIELD(Runtime, vprintf_host);
 STRUCT_FIELD(Runtime, mem_req_queue);
 STRUCT_FIELD(Runtime, profiler);
 STRUCT_FIELD(Runtime, profiler_start);
@@ -1145,13 +1146,9 @@ struct printf_helper {
 
 template <typename... Args>
 void taichi_printf(Runtime *runtime, const char *format, Args &&... args) {
-#if ARCH_cuda
   printf_helper helper;
   helper.push_back(std::forward<Args>(args)...);
-  runtime->vvprintf(format, (const char *)helper.ptr());
-#else
-  printf(format, args...);
-#endif
+  runtime->vprintf_host(format, (const char *)helper.ptr());
 }
 
 #include "locked_task.h"

@@ -177,10 +177,21 @@ class LowerAST : public IRVisitor {
       for (int i = 0; i < (int)stmt->loop_var_id.size(); i++) {
         vars[i] = stmt->parent->lookup_var(stmt->loop_var_id[i]);
       }
+      auto snode = stmt->global_var.cast<GlobalVariableExpression>()->snode;
+      if (snode->type == SNodeType::place) {
+        /* Note:
+         * for i in x:
+         *   x[i] = 0
+         *
+         * has the same effect as
+         *
+         * for i in x.parent():
+         *   x[i] = 0 */
+        snode = snode->parent;
+      }
       auto &&new_for = std::make_unique<StructForStmt>(
-          vars, stmt->global_var.cast<GlobalVariableExpression>()->snode,
-          std::move(stmt->body), stmt->vectorize, stmt->parallelize,
-          stmt->block_dim);
+          vars, snode, std::move(stmt->body), stmt->vectorize,
+          stmt->parallelize, stmt->block_dim);
       new_for->scratch_opt = stmt->scratch_opt;
       flattened.push_back(std::move(new_for));
     }
@@ -283,7 +294,8 @@ class LowerAST : public IRVisitor {
                stmt->snode->type == SNodeType::hash ||
                stmt->snode->type == SNodeType::dynamic) {
       TI_ASSERT(SNodeOpStmt::activation_related(stmt->op_type));
-      flattened.push_back<SNodeOpStmt>(stmt->op_type, stmt->snode, indices_stmt);
+      flattened.push_back<SNodeOpStmt>(stmt->op_type, stmt->snode,
+                                       indices_stmt);
     } else {
       TI_NOT_IMPLEMENTED
     }

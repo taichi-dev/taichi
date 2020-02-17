@@ -344,7 +344,7 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
         if (kernel_block_dim == 0)
           kernel_block_dim = prog->config.default_gpu_block_dim;
         kernel_block_dim =
-            std::min(stmt->snode->parent->max_num_elements(), kernel_block_dim);
+            std::min(stmt->snode->max_num_elements(), kernel_block_dim);
         stmt->block_dim = kernel_block_dim;
         create_offload_struct_for(stmt, true);
       } else if (stmt->task_type == Type::clear_list) {

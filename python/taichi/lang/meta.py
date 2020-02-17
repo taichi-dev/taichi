@@ -52,5 +52,5 @@ def fill_matrix(mat: ti.template(), vals: ti.template()):
         
 @ti.kernel
 def snode_deactivate(b: ti.template()):
-  for I in ti.grouped(ti.SNode(b.ptr.get_ch(0))):
+  for I in ti.grouped(b):
     ti.deactivate(b, I)

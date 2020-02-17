@@ -56,7 +56,7 @@ def test_pointer2():
 
   @ti.kernel
   def clear():
-    for i in x.parent():
+    for i in x.parent().parent():
       ti.deactivate(x.parent().parent(), i)
 
   func()

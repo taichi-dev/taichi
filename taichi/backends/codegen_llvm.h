@@ -1279,7 +1279,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
 
   void create_offload_struct_for(OffloadedStmt *stmt, bool spmd = false) {
     llvm::Function *body;
-    auto leaf_block = stmt->snode->parent;
+    auto leaf_block = stmt->snode;
     {
       // Create the loop body function
       auto guard = get_function_creation_gurad({

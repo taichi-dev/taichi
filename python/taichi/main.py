@@ -6,7 +6,7 @@ import random
 from taichi.tools.video import make_video, interpolate_frames, mp4_to_gif, scale_video, crop_video, accelerate_video
 
 
-def test_python(test_files=None, verbose=False):
+def test_python(test_files=(), verbose=False):
   print("\nRunning python tests...\n")
   import taichi as ti
   import pytest
@@ -17,7 +17,7 @@ def test_python(test_files=None, verbose=False):
     test_dir = ti.get_repo_directory()
   test_dir = os.path.join(test_dir, 'tests', 'python')
   args = []
-  if test_files:
+  if len(test_files):
     # run individual tests
     for f in test_files:
       # auto-compelete
@@ -31,7 +31,7 @@ def test_python(test_files=None, verbose=False):
     args = [test_dir]
   if verbose:
     args += ['-s']
-  if not test_files or len(test_files) > 4:
+  if len(test_files) == 0 or len(test_files) > 4:
     if int(pytest.main(['misc/empty_pytest.py', '-n1'])) == 0: # if pytest has xdist
       try:
         from multiprocessing import cpu_count
@@ -43,7 +43,7 @@ def test_python(test_files=None, verbose=False):
   return int(pytest.main(args))
 
 
-def test_cpp(test_files=None):
+def test_cpp(test_files=()):
   import taichi as ti
   # Cpp tests use the legacy non LLVM backend
   ti.reset()

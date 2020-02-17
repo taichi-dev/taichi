@@ -32,16 +32,14 @@ def test_python(test_files=None, verbose=False):
   if verbose:
     args += ['-s']
   if not test_files or len(test_files) > 4:
-    try:
-      from multiprocessing import cpu_count
-      cpu_count = cpu_count()
-    except:
-      cpu_count = 4
-    print(f'Starting {cpu_count} testing thread(s)...')
-    args += ['-n', str(cpu_count)]
-
-  print('pytest.main is', pytest.main)
-  print('main is', main)
+    if int(pytest.main(['misc/empty_pytest.py', '-n1'])) == 0: # if pytest has xdist
+      try:
+        from multiprocessing import cpu_count
+        cpu_count = cpu_count()
+      except:
+        cpu_count = 4
+      print(f'Starting {cpu_count} testing thread(s)...')
+      args += ['-n', str(cpu_count)]
   return int(pytest.main(args))
 
 

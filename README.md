@@ -20,22 +20,12 @@ python3 -m pip install taichi-nightly-cuda-10-0
 python3 -m pip install taichi-nightly-cuda-10-1
 ```
 
+## [Contribution Guidelines](https://taichi.readthedocs.io/en/latest/contributor_guide.html)
+
 || **Linux (CUDA)** | **OS X (10.14+)** | **Windows** |
 |:------|:-----|:-----|:-----|
 |**Build**|[![Build Status](http://f11.csail.mit.edu:8080/job/taichi/badge/icon)](http://f11.csail.mit.edu:8080/job/taichi/)| [![Build Status](https://travis-ci.com/taichi-dev/taichi.svg?branch=master)](https://travis-ci.com/taichi-dev/taichi) | [![Build status](https://ci.appveyor.com/api/projects/status/yxm0uniin8xty4j7/branch/master?svg=true)](https://ci.appveyor.com/project/yuanming-hu/taichi/branch/master)|
 |**PyPI**|[![Build Status](https://travis-ci.com/yuanming-hu/taichi-wheels-test.svg?branch=master)](https://travis-ci.com/yuanming-hu/taichi-wheels-test)|[![Build Status](https://travis-ci.com/yuanming-hu/taichi-wheels-test.svg?branch=master)](https://travis-ci.com/yuanming-hu/taichi-wheels-test)|[![Build status](https://ci.appveyor.com/api/projects/status/39ar9wa8yd49je7o?svg=true)](https://ci.appveyor.com/project/IteratorAdvance/taichi-wheels-test)|
-
-## [Contribution Guidelines](https://taichi.readthedocs.io/en/latest/contributor_guide.html)
-
-## Related papers
-- [**(SIGGRAPH Asia 2019) High-Performance Computation on Sparse Data Structures**](http://taichi.graphics/wp-content/uploads/2019/09/taichi_lang.pdf) [[Video]](https://youtu.be/wKw8LMF3Djo) [[BibTex]](https://raw.githubusercontent.com/yuanming-hu/taichi/master/misc/taichi_bibtex.txt)
-  - by *Yuanming Hu, Tzu-Mao Li, Luke Anderson, Jonathan Ragan-Kelley, and Frédo Durand*
-- [**(ICLR 2020) Differentiable Programming for Physical Simulation**](https://arxiv.org/abs/1910.00935) [[Video]](https://www.youtube.com/watch?v=Z1xvAZve9aE) [[BibTex]](https://raw.githubusercontent.com/yuanming-hu/taichi/master/misc/difftaichi_bibtex.txt) [[Code]](https://github.com/yuanming-hu/difftaichi)
-  - by *Yuanming Hu, Luke Anderson, Tzu-Mao Li, Qi Sun, Nathan Carr, Jonathan Ragan-Kelley, and Frédo Durand*
-
-<div align="center">
-  <img width="800px" src="https://github.com/taichi-dev/taichi/blob/master/docs/life_of_kernel_lowres.jpg">
-</div>        
 
 ## Short-term goals
 - (Done) Fully implement the LLVM backend to replace the legacy source-to-source C++/CUDA backends (By Dec 2019)
@@ -46,6 +36,14 @@ python3 -m pip install taichi-nightly-cuda-10-1
 - (WIP) Tune the performance of the LLVM backend to match that of the legacy source-to-source backends (Hopefully by mid Feb, 2020. Current progress: setting up/tuning for final benchmarks)
 
 ## Updates
+- (Feb  16, 2020) v0.5.1 released
+   - Keyboard and mouse events supported in the GUI system. Check out [mpm128.py](https://github.com/taichi-dev/taichi/blob/master/examples/mpm128.py) for a interactive demo! (by **Yubin Peng [archibate] and Ye Kuang [k-ye]**)
+   - Basic algebraic simplification passes (by **Mingkuan Xu [xumingkuan]**)
+   - (For developers) `ti` (`ti.exe`) command supported on Windows after setting `%PATH%` correctly (by **Mingkuan Xu [xumingkuan]**)
+   - General power operator `x ** y` now supported in Taichi kernels (by **Yubin Peng [archibate]**)
+   - `.dense(...).pointer()` now abbreviated as `.pointer(...)`. `pointer` now stands for a dense pointer array. This leads to cleaner code and better performance. (by **Kenneth Lozes [KLozes]**)
+   - (Advanced struct-fors only) `for i in X` now iterates all child instances of `X` instead of `X` itself. Skip this if you only use `X=leaf node` such as `ti.f32/i32/Vector/Matrix`.
+   - Fixed cuda random number generator racing conditions
 - (Feb  14, 2020) **v0.5.0 released with a new Apple Metal GPU backend for Mac OS X users!** (by **Ye Kuang [k-ye]**)
    - Just initialize your program with `ti.init(..., arch=ti.metal)` and run Taichi on your Mac GPUs!
    - A few takeaways if you do want to use the Metal backend:
@@ -103,3 +101,14 @@ python3 -m pip install taichi-nightly-cuda-10-1
    - Doc updated
 
 - [Full changelog](changelog.md)
+
+
+## Related papers
+- [**(SIGGRAPH Asia 2019) High-Performance Computation on Sparse Data Structures**](http://taichi.graphics/wp-content/uploads/2019/09/taichi_lang.pdf) [[Video]](https://youtu.be/wKw8LMF3Djo) [[BibTex]](https://raw.githubusercontent.com/yuanming-hu/taichi/master/misc/taichi_bibtex.txt)
+  - by *Yuanming Hu, Tzu-Mao Li, Luke Anderson, Jonathan Ragan-Kelley, and Frédo Durand*
+- [**(ICLR 2020) Differentiable Programming for Physical Simulation**](https://arxiv.org/abs/1910.00935) [[Video]](https://www.youtube.com/watch?v=Z1xvAZve9aE) [[BibTex]](https://raw.githubusercontent.com/yuanming-hu/taichi/master/misc/difftaichi_bibtex.txt) [[Code]](https://github.com/yuanming-hu/difftaichi)
+  - by *Yuanming Hu, Luke Anderson, Tzu-Mao Li, Qi Sun, Nathan Carr, Jonathan Ragan-Kelley, and Frédo Durand*
+
+<div align="center">
+  <img width="800px" src="https://github.com/taichi-dev/taichi/blob/master/docs/life_of_kernel_lowres.jpg">
+</div>

@@ -3,7 +3,7 @@
 
 TLANG_NAMESPACE_BEGIN
 
-TC_TEST("snode") {
+TI_TEST("snode") {
   Program prog(Arch::x86_64);
 
   auto i = Index(0);
@@ -19,11 +19,11 @@ TC_TEST("snode") {
   }
 
   for (int i = 0; i < n; i++) {
-    TC_CHECK_EQUAL(u.val<int32>(i), i + 1, 0);
+    TI_CHECK_EQUAL(u.val<int32>(i), i + 1, 0);
   }
 }
 
-TC_TEST("snode_loop") {
+TI_TEST("snode_loop") {
   for (auto arch : {Arch::x86_64, Arch::gpu}) {
     Program prog(arch);
     CoreState::set_trigger_gdb_when_crash(true);
@@ -43,12 +43,12 @@ TC_TEST("snode_loop") {
     })();
 
     for (int i = 0; i < n; i++) {
-      TC_CHECK_EQUAL(u.val<int32>(i), i * 2, 0);
+      TI_CHECK_EQUAL(u.val<int32>(i), i * 2, 0);
     }
   }
 }
 
-TC_TEST("snode_loop2") {
+TI_TEST("snode_loop2") {
   for (auto arch : {Arch::x86_64, Arch::gpu}) {
     Program prog(arch);
     CoreState::set_trigger_gdb_when_crash(true);
@@ -65,10 +65,10 @@ TC_TEST("snode_loop2") {
       root.dense(j, n).place(v);
     });
 
-    TC_ASSERT(
+    TI_ASSERT(
         u.cast<GlobalVariableExpression>()->snode->physical_index_position[0] ==
         0);
-    TC_ASSERT(
+    TI_ASSERT(
         v.cast<GlobalVariableExpression>()->snode->physical_index_position[0] ==
         1);
 
@@ -83,13 +83,13 @@ TC_TEST("snode_loop2") {
     })();
 
     for (int i = 0; i < n; i++) {
-      TC_CHECK_EQUAL(u.val<int32>(i), i * 2, 0);
-      TC_CHECK_EQUAL(v.val<int32>(i), i * 3, 0);
+      TI_CHECK_EQUAL(u.val<int32>(i), i * 2, 0);
+      TI_CHECK_EQUAL(v.val<int32>(i), i * 3, 0);
     }
   }
 }
 
-TC_TEST("2d_blocked_array") {
+TI_TEST("2d_blocked_array") {
   int n = 8, block_size = 4;
 
   for (auto arch : {Arch::x86_64, Arch::gpu})
@@ -103,7 +103,7 @@ TC_TEST("2d_blocked_array") {
         auto i = Index(0);
         auto j = Index(1);
         if (blocked) {
-          TC_ASSERT(n % block_size == 0);
+          TI_ASSERT(n % block_size == 0);
           root.dense({i, j}, {n / block_size, n * 2 / block_size})
               .dense({i, j}, {block_size, block_size})
               .place(a, b);
@@ -124,14 +124,14 @@ TC_TEST("2d_blocked_array") {
 
       for (int i = 0; i < n; i++) {
         for (int j = 0; j < n * 2; j++) {
-          TC_CHECK(a.val<int32>(i, j) == i + j * 3);
-          TC_CHECK(b.val<int32>(i, j) == i * 2 + j * 3);
+          TI_CHECK(a.val<int32>(i, j) == i + j * 3);
+          TI_CHECK(b.val<int32>(i, j) == i * 2 + j * 3);
         }
       }
     }
 }
 
-TC_TEST("2d_blocked_array_morton") {
+TI_TEST("2d_blocked_array_morton") {
   int n = 16, block_size = 4;
 
   for (auto arch : {Arch::x86_64}) {
@@ -143,7 +143,7 @@ TC_TEST("2d_blocked_array_morton") {
     layout([&] {
       auto i = Index(0);
       auto j = Index(1);
-      TC_ASSERT(n % block_size == 0);
+      TI_ASSERT(n % block_size == 0);
       root.dense({i, j}, {n / block_size, n / block_size})
           .morton()
           .dense({i, j}, {block_size, block_size})
@@ -160,14 +160,14 @@ TC_TEST("2d_blocked_array_morton") {
 
     for (int i = 0; i < n; i++) {
       for (int j = 0; j < n; j++) {
-        TC_CHECK(a.val<int32>(i, j) == i + j * 3);
-        TC_CHECK(b.val<int32>(i, j) == i * 2 + j * 3);
+        TI_CHECK(a.val<int32>(i, j) == i + j * 3);
+        TI_CHECK(b.val<int32>(i, j) == i * 2 + j * 3);
       }
     }
   }
 }
 
-TC_TEST("bitmask_clear") {
+TI_TEST("bitmask_clear") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 256, block_size = 16;
 
@@ -180,7 +180,7 @@ TC_TEST("bitmask_clear") {
     layout([&] {
       auto i = Index(0);
       auto j = Index(1);
-      TC_ASSERT(n % block_size == 0);
+      TI_ASSERT(n % block_size == 0);
       root.dense({i, j}, {n / block_size, n / block_size})
           .bitmasked()
           .dense({i, j}, {block_size, block_size})
@@ -197,11 +197,11 @@ TC_TEST("bitmask_clear") {
 
     for (int i = 0; i < n / 2; i++) {
       for (int j = n / 2; j < n; j++) {
-        TC_CHECK(a.val<int32>(i, j) == i + j * 3);
-        TC_CHECK(b.val<int32>(i, j) == i + j * 3 + 1);
+        TI_CHECK(a.val<int32>(i, j) == i + j * 3);
+        TI_CHECK(b.val<int32>(i, j) == i + j * 3 + 1);
       }
     }
-    TC_CHECK(b.val<int32>(1, 1) == 0);
+    TI_CHECK(b.val<int32>(1, 1) == 0);
 
     a.parent().snode()->clear_data();
 
@@ -209,11 +209,11 @@ TC_TEST("bitmask_clear") {
 
     for (int i = 0; i < n / 2; i++) {
       for (int j = n / 2; j < n; j++) {
-        TC_CHECK(a.val<int32>(i, j) == 0);
-        TC_CHECK(b.val<int32>(i, j) == i);
+        TI_CHECK(a.val<int32>(i, j) == 0);
+        TI_CHECK(b.val<int32>(i, j) == i);
       }
     }
-    TC_CHECK(b.val<int32>(block_size + 1, 1) == 0);
+    TI_CHECK(b.val<int32>(block_size + 1, 1) == 0);
 
     a.parent().snode()->clear_data_and_deactivate();
 
@@ -221,15 +221,15 @@ TC_TEST("bitmask_clear") {
 
     for (int i = 0; i < n / 2; i++) {
       for (int j = n / 2; j < n; j++) {
-        TC_CHECK(a.val<int32>(i, j) == 0);
-        TC_CHECK(b.val<int32>(i, j) == 0);
+        TI_CHECK(a.val<int32>(i, j) == 0);
+        TI_CHECK(b.val<int32>(i, j) == 0);
       }
     }
-    TC_CHECK(b.val<int32>(block_size + 1, 1) == 0);
+    TI_CHECK(b.val<int32>(block_size + 1, 1) == 0);
   }
 }
 
-TC_TEST("2d_blocked_array_bitmasked") {
+TI_TEST("2d_blocked_array_bitmasked") {
   int n = 16, block_size = 4;
 
   for (auto arch : {Arch::x86_64, Arch::gpu}) {
@@ -245,7 +245,7 @@ TC_TEST("2d_blocked_array_bitmasked") {
       layout([&] {
         auto i = Index(0);
         auto j = Index(1);
-        TC_ASSERT(n % block_size == 0);
+        TI_ASSERT(n % block_size == 0);
         root.dense({i, j}, {n / block_size, n / block_size})
             .morton(morton)
             .bitmasked()
@@ -264,16 +264,16 @@ TC_TEST("2d_blocked_array_bitmasked") {
 
       for (int i = 0; i < n / 2; i++) {
         for (int j = n / 2; j < n; j++) {
-          TC_CHECK(a.val<int32>(i, j) == i + j * 3);
-          TC_CHECK(b.val<int32>(i, j) == i * 2 + j * 3);
+          TI_CHECK(a.val<int32>(i, j) == i + j * 3);
+          TI_CHECK(b.val<int32>(i, j) == i * 2 + j * 3);
         }
       }
-      TC_CHECK(b.val<int32>(1, 1) == 0);
+      TI_CHECK(b.val<int32>(1, 1) == 0);
     }
   }
 }
 
-TC_TEST("2d_blocked_array_vec") {
+TI_TEST("2d_blocked_array_vec") {
   int n = 8, block_size = 4;
 
   for (auto arch : {Arch::x86_64})
@@ -287,7 +287,7 @@ TC_TEST("2d_blocked_array_vec") {
         auto i = Index(0);
         auto j = Index(1);
         if (blocked) {
-          TC_ASSERT(n % block_size == 0);
+          TI_ASSERT(n % block_size == 0);
           root.dense({i, j}, {n / block_size, n * 2 / block_size})
               .dense({i, j}, {block_size, block_size})
               .place(a, b);
@@ -310,14 +310,14 @@ TC_TEST("2d_blocked_array_vec") {
 
       for (int i = 0; i < n; i++) {
         for (int j = 0; j < n * 2; j++) {
-          TC_CHECK(a.val<int32>(i, j) == i + j * 3);
-          TC_CHECK(b.val<int32>(i, j) == i * 2 + j * 3);
+          TI_CHECK(a.val<int32>(i, j) == i + j * 3);
+          TI_CHECK(b.val<int32>(i, j) == i * 2 + j * 3);
         }
       }
     }
 }
 
-TC_TEST("loop_over_blocks") {
+TI_TEST("loop_over_blocks") {
   int n = 64, block_size = 4;
 
   for (auto arch : {Arch::x86_64, Arch::gpu}) {
@@ -329,7 +329,7 @@ TC_TEST("loop_over_blocks") {
 
     layout([&] {
       auto ij = Indices(0, 1);
-      TC_ASSERT(n % block_size == 0);
+      TI_ASSERT(n % block_size == 0);
       root.dense(ij, n / block_size)
           .dense(ij, {block_size, block_size * 2})
           .place(a);
@@ -351,18 +351,18 @@ TC_TEST("loop_over_blocks") {
         sum_j_gt += j;
       }
     }
-    TC_CHECK(sum_i.val<int32>() == sum_i_gt);
-    TC_CHECK(sum_j.val<int32>() == sum_j_gt);
+    TI_CHECK(sum_i.val<int32>() == sum_i_gt);
+    TI_CHECK(sum_j.val<int32>() == sum_j_gt);
   }
 }
 
 #if (0)
-TC_TEST("spmv") {
+TI_TEST("spmv") {
   initialize_benchmark();
   int n = 8192;
   int band = 256;
   int k = 128;
-  TC_ASSERT(k <= band);
+  TI_ASSERT(k <= band);
   int m = n * k;
 
   Eigen::SparseMatrix<float32, Eigen::RowMajor> M(n, n);
@@ -430,31 +430,31 @@ TC_TEST("spmv") {
     vec_val.val<float32>(i) = val;
   }
 
-  TC_TIME(M.setFromTriplets(entries.begin(), entries.end()));
+  TI_TIME(M.setFromTriplets(entries.begin(), entries.end()));
 
-  TC_TIME(populate());
+  TI_TIME(populate());
 
   int T = 1;
   for (int i = 0; i < T; i++) {
-    TC_TIME(matvecmul());
+    TI_TIME(matvecmul());
   }
 
-  TC_P(n = Eigen::nbThreads());
+  TI_P(n = Eigen::nbThreads());
   for (int i = 0; i < T; i++) {
-    TC_TIME(Vret = M * V);
+    TI_TIME(Vret = M * V);
   }
 
   for (int i = 0; i < n; i++) {
-    TC_CHECK_EQUAL(Vret(i), result.val<float32>(i) / T, 1e-3_f);
+    TI_CHECK_EQUAL(Vret(i), result.val<float32>(i) / T, 1e-3_f);
   }
 }
 
-TC_TEST("spmv_dynamic") {
+TI_TEST("spmv_dynamic") {
   initialize_benchmark();
   int n = 8192;
   int band = 256;
   int k = 128;
-  TC_ASSERT(k <= band);
+  TI_ASSERT(k <= band);
   int m = n * k;
 
   Eigen::SparseMatrix<float32, Eigen::RowMajor> M(n, n);
@@ -524,27 +524,27 @@ TC_TEST("spmv_dynamic") {
     vec_val.val<float32>(i) = val;
   }
 
-  TC_TIME(M.setFromTriplets(entries.begin(), entries.end()));
+  TI_TIME(M.setFromTriplets(entries.begin(), entries.end()));
 
-  TC_TIME(populate());
+  TI_TIME(populate());
 
   int T = 30;
   for (int i = 0; i < T; i++) {
-    TC_TIME(matvecmul());
+    TI_TIME(matvecmul());
   }
 
-  TC_P(n = Eigen::nbThreads());
+  TI_P(n = Eigen::nbThreads());
   for (int i = 0; i < T; i++) {
-    TC_TIME(Vret = M * V);
+    TI_TIME(Vret = M * V);
   }
 
   for (int i = 0; i < n; i++) {
-    TC_CHECK_EQUAL(Vret(i), result.val<float32>(i) / T, 1e-3_f);
+    TI_CHECK_EQUAL(Vret(i), result.val<float32>(i) / T, 1e-3_f);
   }
 }
 
 // array of linked list
-TC_TEST("indirect") {
+TI_TEST("indirect") {
   Program prog;
 
   int n = 4;
@@ -586,12 +586,12 @@ TC_TEST("indirect") {
 
   for (int i = 0; i < n; i++) {
     auto reduced = sum.val<int32>(i);
-    TC_CHECK(reduced == (i * k + (i + 1) * k + 1) * k / 2);
+    TI_CHECK(reduced == (i * k + (i + 1) * k + 1) * k / 2);
   }
 }
 #endif
 
-TC_TEST("leaf_context") {
+TI_TEST("leaf_context") {
   Program prog;
 
   int n = 64;
@@ -620,10 +620,10 @@ TC_TEST("leaf_context") {
     For(i, a, [&] { sum[Expr(0)] += a[i]; });
   })();
 
-  TC_CHECK(sum.val<int32>() == sum_gt);
+  TI_CHECK(sum.val<int32>() == sum_gt);
 }
 
-TC_TEST("pointer") {
+TI_TEST("pointer") {
   for (auto arch : {Arch::x86_64, Arch::gpu}) {
     Program prog(arch);
 
@@ -651,11 +651,11 @@ TC_TEST("pointer") {
     kernel([&]() { For(a, [&](Expr i) { Atomic(sum[Expr(0)]) += a[i]; }); })();
 
     auto reduced = sum.val<int32>();
-    TC_CHECK(reduced == sum_gt);
+    TI_CHECK(reduced == sum_gt);
   }
 }
 
-TC_TEST("gpu_listgen") {
+TI_TEST("gpu_listgen") {
   for (auto arch : {Arch::gpu}) {
     for (auto level : {1, 2, 3}) {
       Program prog(arch);
@@ -691,12 +691,12 @@ TC_TEST("gpu_listgen") {
           [&]() { For(a, [&](Expr i) { Atomic(sum[Expr(0)]) += a[i]; }); })();
 
       auto reduced = sum.val<int32>();
-      TC_CHECK(reduced == sum_gt);
+      TI_CHECK(reduced == sum_gt);
     }
   }
 }
 
-TC_TEST("misaligned") {
+TI_TEST("misaligned") {
   // On the same tree, x has indices i while y has indices i & j
   Program prog;
 
@@ -730,11 +730,11 @@ TC_TEST("misaligned") {
   })();
 
   for (int i = 0; i < n; i++) {
-    TC_CHECK(x_gt[i] == x.val<int32>(i));
+    TI_CHECK(x_gt[i] == x.val<int32>(i));
   }
 }
 
-TC_TEST("hashed") {
+TI_TEST("hashed") {
   Program prog;
 
   int n = 64;
@@ -766,10 +766,10 @@ TC_TEST("hashed") {
   })();
 
   auto reduced = sum.val<int32>();
-  TC_CHECK(reduced == sum_gt);
+  TI_CHECK(reduced == sum_gt);
 }
 
-TC_TEST("mpm_layout") {
+TI_TEST("mpm_layout") {
   Program prog(Arch::gpu);
   // Program prog(Arch::x86_64);
   // prog.config.print_ir = true;
@@ -823,7 +823,7 @@ TC_TEST("mpm_layout") {
       place(particle_v(i));
     place(particle_J);
 
-    TC_ASSERT(n % grid_block_size == 0);
+    TI_ASSERT(n % grid_block_size == 0);
     auto &block = root.dense({i, j, k}, grid_n / 4 / grid_block_size)
                       .pointer()
                       .dense({i, j, k}, 4)

@@ -9,7 +9,7 @@
 #include <cstdio>
 #include <map>
 #include <taichi/common/util.h>
-#if defined(TC_PLATFORM_UNIX)
+#if defined(TI_PLATFORM_UNIX)
 #include <sys/time.h>
 #else
 #pragma warning(push)
@@ -18,7 +18,7 @@
 #pragma warning(pop)
 #endif
 
-TC_NAMESPACE_BEGIN
+TI_NAMESPACE_BEGIN
 
 #define TIME(x)                                                      \
   {                                                                  \
@@ -27,7 +27,7 @@ TC_NAMESPACE_BEGIN
     taichi::Time::Timer _(timer_name);                               \
     x;                                                               \
   }
-#define TC_TIME(x) TIME(x)
+#define TI_TIME(x) TIME(x)
 
 #include <stdint.h>
 
@@ -102,4 +102,4 @@ class Time {
   };
 };
 
-TC_NAMESPACE_END
+TI_NAMESPACE_END

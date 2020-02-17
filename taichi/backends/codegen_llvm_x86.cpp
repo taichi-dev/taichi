@@ -24,7 +24,7 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
 };
 
 FunctionType CPUCodeGen::codegen_llvm() {
-  TC_PROFILER("cpu codegen");
+  TI_PROFILER("cpu codegen");
   return CodeGenLLVMCPU(this, kernel).gen();
 }
 
@@ -32,7 +32,7 @@ void global_optimize_module_x86_64(std::unique_ptr<llvm::Module> &module) {
   TI_AUTO_PROF
   auto JTMB = JITTargetMachineBuilder::detectHost();
   if (!JTMB) {
-    TC_ERROR("Target machine creation failed.");
+    TI_ERROR("Target machine creation failed.");
   }
   module->setTargetTriple(JTMB->getTargetTriple().str());
   llvm::Triple triple(module->getTargetTriple());
@@ -40,7 +40,7 @@ void global_optimize_module_x86_64(std::unique_ptr<llvm::Module> &module) {
   std::string err_str;
   const llvm::Target *target =
       TargetRegistry::lookupTarget(triple.str(), err_str);
-  TC_ERROR_UNLESS(target, err_str);
+  TI_ERROR_UNLESS(target, err_str);
 
   TargetOptions options;
   options.PrintMachineCode = false;
@@ -69,7 +69,7 @@ void global_optimize_module_x86_64(std::unique_ptr<llvm::Module> &module) {
       triple.str(), mcpu.str(), "", options, llvm::Reloc::PIC_,
       llvm::CodeModel::Small, CodeGenOpt::Aggressive));
 
-  TC_ERROR_UNLESS(target_machine.get(), "Could not allocate target machine!");
+  TI_ERROR_UNLESS(target_machine.get(), "Could not allocate target machine!");
 
   module->setDataLayout(target_machine->createDataLayout());
 
@@ -98,9 +98,9 @@ void global_optimize_module_x86_64(std::unique_ptr<llvm::Module> &module) {
   auto t = Time::get_time();
   module_pass_manager.run(*module);
   t = Time::get_time() - t;
-  // TC_INFO("Global optimization time: {} ms", t * 1000);
+  // TI_INFO("Global optimization time: {} ms", t * 1000);
   if (get_current_program().config.print_kernel_llvm_ir_optimized) {
-    TC_INFO("Global optimized IR:");
+    TI_INFO("Global optimized IR:");
     module->print(llvm::errs(), nullptr);
   }
 }

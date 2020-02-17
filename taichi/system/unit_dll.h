@@ -11,7 +11,7 @@
 
 #include <taichi/common/interface.h>
 
-TC_NAMESPACE_BEGIN
+TI_NAMESPACE_BEGIN
 
 class UnitDLL {
  protected:
@@ -26,13 +26,13 @@ class UnitDLL {
  public:
   void load_dll(const std::string dll_path) {
 #ifdef WIN32
-    TC_NOT_IMPLEMENTED
+    TI_NOT_IMPLEMENTED
     // dll = LoadLibrary(dll_path.c_str());
 #else
     dll = dlopen(dll_path.c_str(), RTLD_LAZY);
 #endif
     if (!dll) {
-      TC_ERROR(std::string("Cannot load library: " + dll_path));
+      TI_ERROR(std::string("Cannot load library: " + dll_path));
     }
   }
 
@@ -43,7 +43,7 @@ class UnitDLL {
     auto func = (Func)dlsym(dll, func_name.c_str());
     const char *dlsym_error = dlerror();
     if (dlsym_error) {
-      TC_ERROR(std::string("Cannot load function: ") + dlsym_error);
+      TI_ERROR(std::string("Cannot load function: ") + dlsym_error);
     }
 #endif
     assert_info(func != nullptr, "Function " + func_name + " not found");
@@ -71,7 +71,7 @@ class UnitDLL {
     assert_info(loaded(), "Dll not opened.");
     on_unload();
 #ifdef WIN32
-    TC_P("Not implemented");
+    TI_P("Not implemented");
 #else
     dlclose(dll);
 #endif
@@ -92,4 +92,4 @@ class UnitDLL {
   std::function<void(void)> on_unload;
 };
 
-TC_NAMESPACE_END
+TI_NAMESPACE_END

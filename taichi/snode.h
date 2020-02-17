@@ -41,7 +41,7 @@ class Index {
     value = 0;
   }
   Index(int value) : value(value) {
-    TC_ERROR_UNLESS(0 <= value && value < max_num_indices,
+    TI_ERROR_UNLESS(0 <= value && value < max_num_indices,
                     "Too many dimensions. The maximum dimensionality is {}",
                     max_num_indices);
   }
@@ -139,6 +139,32 @@ class SNode {
     return SNode::dense(std::vector<Index>{index}, size);
   }
 
+  SNode &pointer(const std::vector<Index> &indices,
+               const std::vector<int> &sizes) {
+    return create_node(indices, sizes, SNodeType::pointer);
+  }
+
+  SNode &pointer(const std::vector<Index> &indices, int sizes) {
+    return create_node(indices, std::vector<int>{sizes}, SNodeType::pointer);
+  }
+
+  SNode &pointer(const Index &index, int size) {
+    return SNode::pointer(std::vector<Index>{index}, size);
+  }
+
+  SNode &hash(const std::vector<Index> &indices,
+              const std::vector<int> &sizes) {
+    return create_node(indices, sizes, SNodeType::hash);
+  }
+
+  SNode &hash(const std::vector<Index> &indices, int sizes) {
+    return create_node(indices, std::vector<int>{sizes}, SNodeType::hash);
+  }
+
+  SNode &hash(const Index &index, int size) {
+    return hash(std::vector<Index>{index}, size);
+  }
+
   SNode &multi_threaded(bool val = true) {
     this->_multi_threaded = val;
     return *this;
@@ -178,29 +204,13 @@ class SNode {
   SNode &place(Expr &expr);
 
   SNode &dynamic_chunked(const Index &expr, int n, int chunk_size) {
-    TC_ASSERT(bit::is_power_of_two(n));
-    TC_ASSERT(bit::is_power_of_two(chunk_size));
+    TI_ASSERT(bit::is_power_of_two(n));
+    TI_ASSERT(bit::is_power_of_two(chunk_size));
     auto &child = insert_children(SNodeType::dynamic);
     child.extractors[expr.value].activate(bit::log2int(n));
     child.n = n;
     child.chunk_size = chunk_size;
     return child;
-  }
-
-  SNode &hash(const std::vector<Index> indices, std::vector<int> sizes) {
-    return create_node(indices, sizes, SNodeType::hash);
-  }
-
-  SNode &hash(const std::vector<Index> indices, int sizes) {
-    return create_node(indices, std::vector<int>{sizes}, SNodeType::hash);
-  }
-
-  SNode &hash(const Index &expr, int n) {
-    return hash(std::vector<Index>{expr}, n);
-  }
-
-  SNode &pointer() {
-    return insert_children(SNodeType::pointer);
   }
 
   SNode &morton(bool val = true) {
@@ -214,8 +224,8 @@ class SNode {
   }
 
   void *evaluate(void *ds, int i, int j, int k, int l) {
-    TC_ASSERT(access_func);
-    TC_ASSERT(max_num_indices == 4);
+    TI_ASSERT(access_func);
+    TI_ASSERT(max_num_indices == 4);
     return access_func(ds, i, j, k, l);
   }
 
@@ -227,8 +237,8 @@ class SNode {
   void write_int(const std::vector<int> &I, int64);
   int64 read_int(const std::vector<int> &I);
 
-  TC_FORCE_INLINE AllocatorStat stat() {
-    TC_ASSERT(stat_func);
+  TI_FORCE_INLINE AllocatorStat stat() {
+    TI_ASSERT(stat_func);
     return stat_func();
   }
 
@@ -279,12 +289,12 @@ class SNode {
   }
 
   std::string get_ch_from_parent_func_name() const {
-    TC_ASSERT(parent != nullptr);
+    TI_ASSERT(parent != nullptr);
     return fmt::format("get_ch_{}_to_{}", parent->get_name(), get_name());
   }
 
   std::string refine_coordinates_func_name() const {
-    TC_ASSERT(type != SNodeType::place);
+    TI_ASSERT(type != SNodeType::place);
     return fmt::format("{}_refine_coordinates", get_name());
   }
 

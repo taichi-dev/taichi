@@ -7,7 +7,7 @@
 
 TLANG_NAMESPACE_BEGIN
 
-#define TC_EXPRESSION_IMPLEMENTATION
+#define TI_EXPRESSION_IMPLEMENTATION
 #include "expression.h"
 
 class StatementTypeNameVisitor : public IRVisitor {
@@ -31,19 +31,19 @@ std::string Stmt::type() {
 }
 
 void IRBuilder::insert(std::unique_ptr<Stmt> &&stmt, int location) {
-  TC_ASSERT(!stack.empty());
+  TI_ASSERT(!stack.empty());
   stack.back()->insert(std::move(stmt), location);
 }
 
 void IRBuilder::stop_gradient(SNode *snode) {
-  TC_ASSERT(!stack.empty());
+  TI_ASSERT(!stack.empty());
   stack.back()->stop_gradients.push_back(snode);
 }
 
 GetChStmt::GetChStmt(taichi::Tlang::Stmt *input_ptr, int chid)
     : input_ptr(input_ptr), chid(chid) {
   add_operand(this->input_ptr);
-  TC_ASSERT(input_ptr->is<SNodeLookupStmt>());
+  TI_ASSERT(input_ptr->is<SNodeLookupStmt>());
   input_snode = input_ptr->as<SNodeLookupStmt>()->snode;
   output_snode = input_snode->ch[chid].get();
 }
@@ -76,7 +76,7 @@ Expr bit_cast(const Expr &input, DataType dt) {
 }
 
 Expr Expr::operator[](ExprGroup indices) const {
-  TC_ASSERT(is<GlobalVariableExpression>() || is<ExternalTensorExpression>());
+  TI_ASSERT(is<GlobalVariableExpression>() || is<ExternalTensorExpression>());
   return Expr::make<GlobalPtrExpression>(*this, indices.loaded());
 }
 
@@ -95,7 +95,7 @@ IRBuilder &current_ast_builder() {
 
 std::unique_ptr<IRBuilder::ScopeGuard> IRBuilder::create_scope(
     std::unique_ptr<Block> &list) {
-  TC_ASSERT(list == nullptr);
+  TI_ASSERT(list == nullptr);
   list = std::make_unique<Block>();
   if (!stack.empty()) {
     list->parent = stack.back();
@@ -112,7 +112,7 @@ Expr &Expr::operator=(const Expr &o) {
           ptr_if_global(*this), load_if_ptr(o)));
     } else {
       // set(o.eval());
-      TC_ERROR("Cannot assign to non-lvalue: {}", serialize());
+      TI_ERROR("Cannot assign to non-lvalue: {}", serialize());
     }
   } else {
     set(o);
@@ -146,7 +146,7 @@ Expr::Expr(Identifier id) : Expr() {
 }
 
 Expr Expr::eval() const {
-  TC_ASSERT(expr != nullptr);
+  TI_ASSERT(expr != nullptr);
   if (is<EvalExpression>()) {
     return *this;
   }
@@ -176,11 +176,11 @@ void Expr::operator-=(const Expr &o) {
   }
 }
 void Expr::operator*=(const Expr &o) {
-  TC_ASSERT(!this->atomic);
+  TI_ASSERT(!this->atomic);
   (*this) = (*this) * load_if_ptr(o);
 }
 void Expr::operator/=(const Expr &o) {
-  TC_ASSERT(!this->atomic);
+  TI_ASSERT(!this->atomic);
   (*this) = (*this) / load_if_ptr(o);
 }
 
@@ -221,7 +221,7 @@ FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
   if (cfg.arch == Arch::cuda) {
     vectorize = 1;
     parallelize = 1;
-    TC_ASSERT(block_dim <= max_gpu_block_dim);
+    TI_ASSERT(block_dim <= max_gpu_block_dim);
   } else {
     // cpu
     if (block_dim == 0)
@@ -249,7 +249,7 @@ IRNode *Stmt::get_ir_root() {
 
 FrontendAssignStmt::FrontendAssignStmt(const Expr &lhs, const Expr &rhs)
     : lhs(lhs), rhs(rhs) {
-  TC_ASSERT(lhs->is_lvalue());
+  TI_ASSERT(lhs->is_lvalue());
 }
 
 FrontendAtomicStmt::FrontendAtomicStmt(AtomicOpType op_type,
@@ -269,7 +269,7 @@ std::unique_ptr<FrontendContext> context;
 
 // TODO: clean this part up
 void *Expr::evaluate_addr(int i, int j, int k, int l) {
-  TC_NOT_IMPLEMENTED
+  TI_NOT_IMPLEMENTED
 }
 
 template <int i, typename... Indices>
@@ -290,10 +290,10 @@ template <typename... Indices>
 void *Expr::val_tmp(DataType dt, Indices... indices) {
   auto snode = this->cast<GlobalVariableExpression>()->snode;
   if (dt != snode->dt) {
-    TC_ERROR("Cannot access type {} as type {}", data_type_name(snode->dt),
+    TI_ERROR("Cannot access type {} as type {}", data_type_name(snode->dt),
              data_type_name(dt));
   }
-  TC_ASSERT(sizeof...(indices) == snode->num_active_indices);
+  TI_ASSERT(sizeof...(indices) == snode->num_active_indices);
   int ind[max_num_indices];
   std::memset(ind, 0, sizeof(ind));
   auto tup = std::make_tuple(indices...);
@@ -305,18 +305,18 @@ void *Expr::val_tmp(DataType dt, Indices... indices) {
   LOAD_IND(2);
   LOAD_IND(3);
 #undef LOAD_IND
-  TC_ASSERT(max_num_indices == 4);
+  TI_ASSERT(max_num_indices == 4);
   return evaluate_addr(ind[0], ind[1], ind[2], ind[3]);
 }
 
 Expr Expr::parent() const {
-  TC_ASSERT(is<GlobalVariableExpression>());
+  TI_ASSERT(is<GlobalVariableExpression>());
   return Expr::make<GlobalVariableExpression>(
       cast<GlobalVariableExpression>()->snode->parent);
 }
 
 SNode *Expr::snode() const {
-  TC_ASSERT(is<GlobalVariableExpression>());
+  TI_ASSERT(is<GlobalVariableExpression>());
   return cast<GlobalVariableExpression>()->snode;
 }
 
@@ -340,7 +340,7 @@ template void *Expr::val_tmp<int, int, int, int>(DataType, int, int, int, int);
 
 Stmt *Stmt::insert_before_me(std::unique_ptr<Stmt> &&new_stmt) {
   auto ret = new_stmt.get();
-  TC_ASSERT(parent);
+  TI_ASSERT(parent);
   auto &stmts = parent->statements;
   int loc = -1;
   for (int i = 0; i < (int)stmts.size(); i++) {
@@ -349,7 +349,7 @@ Stmt *Stmt::insert_before_me(std::unique_ptr<Stmt> &&new_stmt) {
       break;
     }
   }
-  TC_ASSERT(loc != -1);
+  TI_ASSERT(loc != -1);
   new_stmt->parent = parent;
   stmts.insert(stmts.begin() + loc, std::move(new_stmt));
   return ret;
@@ -357,7 +357,7 @@ Stmt *Stmt::insert_before_me(std::unique_ptr<Stmt> &&new_stmt) {
 
 Stmt *Stmt::insert_after_me(std::unique_ptr<Stmt> &&new_stmt) {
   auto ret = new_stmt.get();
-  TC_ASSERT(parent);
+  TI_ASSERT(parent);
   auto &stmts = parent->statements;
   int loc = -1;
   for (int i = 0; i < (int)stmts.size(); i++) {
@@ -366,7 +366,7 @@ Stmt *Stmt::insert_after_me(std::unique_ptr<Stmt> &&new_stmt) {
       break;
     }
   }
-  TC_ASSERT(loc != -1);
+  TI_ASSERT(loc != -1);
   new_stmt->parent = parent;
   stmts.insert(stmts.begin() + loc + 1, std::move(new_stmt));
   return ret;
@@ -422,19 +422,19 @@ std::string to_string(const LaneAttribute<LocalAddress> &ptr) {
 
 Stmt *LocalLoadStmt::previous_store_or_alloca_in_block() {
   int position = parent->locate(this);
-  // TC_ASSERT(width() == 1);
-  // TC_ASSERT(this->ptr[0].offset == 0);
+  // TI_ASSERT(width() == 1);
+  // TI_ASSERT(this->ptr[0].offset == 0);
   for (int i = position - 1; i >= 0; i--) {
     if (parent->statements[i]->is<LocalStoreStmt>()) {
       auto store = parent->statements[i]->as<LocalStoreStmt>();
-      // TC_ASSERT(store->width() == 1);
+      // TI_ASSERT(store->width() == 1);
       if (store->ptr == this->ptr[0].var) {
         // found
         return store;
       }
     } else if (parent->statements[i]->is<AllocaStmt>()) {
       auto alloca = parent->statements[i]->as<AllocaStmt>();
-      // TC_ASSERT(alloca->width() == 1);
+      // TI_ASSERT(alloca->width() == 1);
       if (alloca == this->ptr[0].var) {
         return alloca;
       }
@@ -480,7 +480,7 @@ void Block::insert(VecStatement &&stmt, int location) {
 void Block::replace_statements_in_range(int start,
                                         int end,
                                         VecStatement &&stmts) {
-  TC_ASSERT(start <= end);
+  TI_ASSERT(start <= end);
   for (int i = 0; i < end - start; i++) {
     erase(start);
   }
@@ -565,16 +565,16 @@ std::string OffloadedStmt::task_name() const {
   } else if (task_type == TaskType::struct_for) {
     return "struct_for";
   } else if (task_type == TaskType::clear_list) {
-    TC_ASSERT(snode);
+    TI_ASSERT(snode);
     return fmt::format("clear_list_{}", snode->get_node_type_name_hinted());
   } else if (task_type == TaskType::listgen) {
-    TC_ASSERT(snode);
+    TI_ASSERT(snode);
     return fmt::format("listgen_{}", snode->get_node_type_name_hinted());
   } else if (task_type == TaskType::gc) {
-    TC_ASSERT(snode);
+    TI_ASSERT(snode);
     return fmt::format("gc_{}", snode->name);
   } else {
-    TC_NOT_IMPLEMENTED
+    TI_NOT_IMPLEMENTED
   }
 }
 

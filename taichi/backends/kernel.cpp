@@ -12,12 +12,12 @@ FunctionType KernelCodeGen::compile(taichi::Tlang::Program &prog,
   this->kernel = &kernel;
   lower();
   if (prog.config.use_llvm) {
-    TC_PROFILER("codegen llvm")
+    TI_PROFILER("codegen llvm")
     return codegen_llvm();
   } else {
     codegen();
     generate_binary("");
-    // TC_P(Time::get_time() - t);
+    // TI_P(Time::get_time() - t);
     return load_function();
   }
 }

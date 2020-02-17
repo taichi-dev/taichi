@@ -1,7 +1,7 @@
 // The code generator base class
 
 #include "base.h"
-#if !defined(TC_PLATFORM_WINDOWS)
+#if !defined(TI_PLATFORM_WINDOWS)
 #include <xxhash.h>
 #endif
 #include <sstream>
@@ -14,7 +14,7 @@ std::string CodeGenBase::get_source_path() {
 }
 
 std::string CodeGenBase::get_library_path() {
-#if defined(TC_PLATFORM_OSX)
+#if defined(TI_PLATFORM_OSX)
   // Note: use .so here will lead to wired behavior...
   return fmt::format("{}/tmp{:04d}.dylib", folder, id);
 #else
@@ -28,7 +28,7 @@ void CodeGenBase::write_source() {
     std::string firstline;
     std::getline(ifs, firstline);
     if (firstline.find("debug") != firstline.npos) {
-      TC_WARN("Debugging file {}. Code overridden.", get_source_path());
+      TI_WARN("Debugging file {}. Code overridden.", get_source_path());
       return;
     }
   }
@@ -42,24 +42,24 @@ void CodeGenBase::write_source() {
 }
 
 std::string CodeGenBase::get_source() {
-  TC_NOT_IMPLEMENTED
+  TI_NOT_IMPLEMENTED
   return "";
 }
 
 void CodeGenBase::load_dll() {
-#if defined(TC_PLATFORM_UNIX)
+#if defined(TI_PLATFORM_UNIX)
   dll = dlopen((get_library_path()).c_str(), RTLD_LAZY);
   if (dll == nullptr) {
-    TC_ERROR("{}", dlerror());
+    TI_ERROR("{}", dlerror());
   }
-  TC_ASSERT(dll != nullptr);
+  TI_ASSERT(dll != nullptr);
 #else
-  TC_NOT_IMPLEMENTED
+  TI_NOT_IMPLEMENTED
 #endif
 }
 
 void CodeGenBase::disassemble() {
-#if defined(TC_PLATFORM_LINUX)
+#if defined(TI_PLATFORM_LINUX)
   auto objdump_ret = system(fmt::format("objdump {} -d > {}.s",
                                         get_library_path(), get_library_path())
                                 .c_str());
@@ -91,16 +91,16 @@ void CodeGenBase::generate_binary(std::string extra_flags) {
         get_current_program()
             .config.preprocess_cmd(get_source_path(), pp_fn, extra_flags, true)
             .c_str()));
-    TC_ERROR("Preprocessing failed.");
+    TI_ERROR("Preprocessing failed.");
   }
   std::ifstream ifs(pp_fn);
-  TC_ASSERT(ifs);
+  TI_ASSERT(ifs);
   auto hash_input =
       preprocess_cmd + std::string(std::istreambuf_iterator<char>(ifs),
                                    std::istreambuf_iterator<char>());
-  // TC_P(preprocess_cmd);
+  // TI_P(preprocess_cmd);
   auto hash = XXH64(hash_input.data(), hash_input.size(), 0);
-  // TC_P(hash);
+  // TI_P(hash);
 
   std::string cached_binary_fn = db_folder() + fmt::format("/{}.so", hash);
   std::ifstream key_file(cached_binary_fn);
@@ -117,11 +117,11 @@ void CodeGenBase::generate_binary(std::string extra_flags) {
         get_source_path(), get_library_path(), extra_flags);
     auto compile_ret = std::system(cmd.c_str());
     if (compile_ret != 0) {
-      TC_WARN("Compilation cmd: {}", cmd);
+      TI_WARN("Compilation cmd: {}", cmd);
       auto cmd = get_current_program().config.compile_cmd(
           get_source_path(), get_library_path(), extra_flags, true);
       trash(std::system(cmd.c_str()));
-      TC_ERROR("Source {} compilation failed.", get_source_path());
+      TI_ERROR("Source {} compilation failed.", get_source_path());
     } else {
       trash(std::system(
           fmt::format("cp {} {}", get_library_path(), cached_binary_fn)
@@ -129,9 +129,9 @@ void CodeGenBase::generate_binary(std::string extra_flags) {
     }
   }
   trash(std::system(fmt::format("rm {}", pp_fn).c_str()));
-  TC_INFO("Compilation time: {:.1f} ms", 1000 * (Time::get_time() - t));
+  TI_INFO("Compilation time: {:.1f} ms", 1000 * (Time::get_time() - t));
 #else
-  TC_NOT_IMPLEMENTED
+  TI_NOT_IMPLEMENTED
 #endif
 }
 

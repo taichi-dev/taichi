@@ -3,7 +3,7 @@
 #include <taichi/visual/gui.h>
 #include <taichi/system/profiler.h>
 
-TC_NAMESPACE_BEGIN
+TI_NAMESPACE_BEGIN
 
 using namespace Tlang;
 
@@ -12,10 +12,10 @@ constexpr int n = 256;
 constexpr int num_ch1 = 16, num_ch2 = 16;
 
 auto cnn = [](std::vector<std::string> cli_param) {
-  TC_WARN(
+  TI_WARN(
       "After refactoring the Texture class from Taichi is removed. Need to "
       "read from the raw bunny binary.");
-  TC_NOT_IMPLEMENTED
+  TI_NOT_IMPLEMENTED
 #if (0)
   CoreState::set_trigger_gdb_when_crash(true);
   auto param = parse_param(cli_param);
@@ -24,7 +24,7 @@ auto cnn = [](std::vector<std::string> cli_param) {
   auto cache_l1 = param.get("cache_l1", true);
   auto use_dense = param.get("use_dense", false);
   auto write_input_voxel = param.get("write_input", true);
-  TC_P(use_dense);
+  TI_P(use_dense);
 
   Program prog(gpu ? Arch::gpu : Arch::x86_64);
   prog.config.simplify_before_lower_access = opt;
@@ -228,6 +228,6 @@ auto cnn = [](std::vector<std::string> cli_param) {
 #endif
 #endif
 };
-TC_REGISTER_TASK(cnn);
+TI_REGISTER_TASK(cnn);
 
-TC_NAMESPACE_END
+TI_NAMESPACE_END

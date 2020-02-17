@@ -1,6 +1,6 @@
 #include "virtual_memory.h"
 
-TC_NAMESPACE_BEGIN
+TI_NAMESPACE_BEGIN
 
 class MemoryMonitor {
   // avoid including py::dict
@@ -19,4 +19,4 @@ void start_memory_monitoring(std::string output_fn,
                              int pid = -1,
                              real interval = 1);
 
-TC_NAMESPACE_END
+TI_NAMESPACE_END

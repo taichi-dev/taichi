@@ -8,7 +8,7 @@
 #include <taichi/io/io.h>
 #include <taichi/geometry/factory.h>
 
-TC_NAMESPACE_BEGIN
+TI_NAMESPACE_BEGIN
 
 void export_lang(py::module &m);
 
@@ -25,4 +25,4 @@ PYBIND11_MODULE(taichi_core, m) {
   export_lang(m);
 }
 
-TC_NAMESPACE_END
+TI_NAMESPACE_END

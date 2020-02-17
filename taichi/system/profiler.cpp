@@ -1,6 +1,6 @@
 #include <taichi/system/profiler.h>
 
-TC_NAMESPACE_BEGIN
+TI_NAMESPACE_BEGIN
 
 void ProfilerRecords::print(ProfilerRecords::Node *node, int depth) {
   auto make_indent = [depth](int additional) {
@@ -96,4 +96,4 @@ void ProfilerRecords::print(ProfilerRecords::Node *node, int depth) {
   }
 }
 
-TC_NAMESPACE_END
+TI_NAMESPACE_END

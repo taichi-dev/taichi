@@ -45,7 +45,7 @@ class LowerAST : public IRVisitor {
   void visit(FrontendAllocaStmt *stmt) override {
     auto block = stmt->parent;
     auto ident = stmt->ident;
-    TC_ASSERT(block->local_var_alloca.find(ident) ==
+    TI_ASSERT(block->local_var_alloca.find(ident) ==
               block->local_var_alloca.end());
     auto lowered = std::make_unique<AllocaStmt>(stmt->ret_type.data_type);
     block->local_var_alloca.insert(std::make_pair(ident, lowered.get()));
@@ -101,7 +101,7 @@ class LowerAST : public IRVisitor {
   }
 
   void visit(FrontendBreakStmt *stmt) override {
-    TC_ASSERT_INFO(
+    TI_ASSERT_INFO(
         capturing_loop->is<WhileStmt>(),
         "The loop capturing 'break' must be a while loop instead of for loop.");
     auto while_stmt = capturing_loop->as<WhileStmt>();
@@ -162,7 +162,7 @@ class LowerAST : public IRVisitor {
     }
 
     if (stmt->is_ranged()) {
-      TC_ASSERT(stmt->loop_var_id.size() == 1);
+      TI_ASSERT(stmt->loop_var_id.size() == 1);
       auto begin = stmt->begin;
       auto end = stmt->end;
       begin->flatten(flattened);
@@ -177,10 +177,21 @@ class LowerAST : public IRVisitor {
       for (int i = 0; i < (int)stmt->loop_var_id.size(); i++) {
         vars[i] = stmt->parent->lookup_var(stmt->loop_var_id[i]);
       }
+      auto snode = stmt->global_var.cast<GlobalVariableExpression>()->snode;
+      if (snode->type == SNodeType::place) {
+        /* Note:
+         * for i in x:
+         *   x[i] = 0
+         *
+         * has the same effect as
+         *
+         * for i in x.parent():
+         *   x[i] = 0 */
+        snode = snode->parent;
+      }
       auto &&new_for = std::make_unique<StructForStmt>(
-          vars, stmt->global_var.cast<GlobalVariableExpression>()->snode,
-          std::move(stmt->body), stmt->vectorize, stmt->parallelize,
-          stmt->block_dim);
+          vars, snode, std::move(stmt->body), stmt->vectorize,
+          stmt->parallelize, stmt->block_dim);
       new_for->scratch_opt = stmt->scratch_opt;
       flattened.push_back(std::move(new_for));
     }
@@ -223,7 +234,7 @@ class LowerAST : public IRVisitor {
           assign->parent->lookup_var(assign->lhs.cast<IdExpression>()->id),
           expr->stmt);
     } else {  // global variable
-      TC_ASSERT(assign->lhs.is<GlobalPtrExpression>());
+      TI_ASSERT(assign->lhs.is<GlobalPtrExpression>());
       auto global_ptr = assign->lhs.cast<GlobalPtrExpression>();
       global_ptr->flatten(flattened);
       flattened.push_back<GlobalStoreStmt>(flattened.back().get(), expr->stmt);
@@ -249,7 +260,7 @@ class LowerAST : public IRVisitor {
           stmt->parent->lookup_var(stmt->dest.cast<IdExpression>()->id);
       flattened.push_back<AtomicOpStmt>(stmt->op_type, alloca, expr->stmt);
     } else {  // global variable
-      TC_ASSERT(stmt->dest.is<GlobalPtrExpression>());
+      TI_ASSERT(stmt->dest.is<GlobalPtrExpression>());
       auto global_ptr = stmt->dest.cast<GlobalPtrExpression>();
       global_ptr->flatten(flattened);
       flattened.push_back<AtomicOpStmt>(stmt->op_type, flattened.back().get(),
@@ -275,8 +286,19 @@ class LowerAST : public IRVisitor {
       indices_stmt[i] = stmt->indices[i]->stmt;
     }
 
-    auto ptr = flattened.push_back<GlobalPtrStmt>(stmt->snode, indices_stmt);
-    flattened.push_back<SNodeOpStmt>(stmt->op_type, stmt->snode, ptr, val_stmt);
+    if (stmt->snode->type == SNodeType::dynamic) {
+      auto ptr = flattened.push_back<GlobalPtrStmt>(stmt->snode, indices_stmt);
+      flattened.push_back<SNodeOpStmt>(stmt->op_type, stmt->snode, ptr,
+                                       val_stmt);
+    } else if (stmt->snode->type == SNodeType::pointer ||
+               stmt->snode->type == SNodeType::hash ||
+               stmt->snode->type == SNodeType::dynamic) {
+      TI_ASSERT(SNodeOpStmt::activation_related(stmt->op_type));
+      flattened.push_back<SNodeOpStmt>(stmt->op_type, stmt->snode,
+                                       indices_stmt);
+    } else {
+      TI_NOT_IMPLEMENTED
+    }
 
     stmt->parent->replace_with(stmt, std::move(flattened));
     throw IRModified();

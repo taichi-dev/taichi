@@ -50,7 +50,7 @@ def locale_encode(s):
 
 
 def is_ci():
-  return os.environ.get('TC_CI', '') == '1'
+  return os.environ.get('TI_CI', '') == '1'
 
 
 def package_root():

@@ -14,7 +14,7 @@
 #include "array_fwd.h"
 #include "linalg.h"
 
-TC_NAMESPACE_BEGIN
+TI_NAMESPACE_BEGIN
 
 template <>
 class IndexND<2> {
@@ -794,4 +794,4 @@ inline void print(const Array2D<T> &arr) {
   arr.print("");
 }
 
-TC_NAMESPACE_END
+TI_NAMESPACE_END

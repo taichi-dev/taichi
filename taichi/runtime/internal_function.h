@@ -19,7 +19,7 @@ i32 test_list_manager(Context *context) {
     list->append(&j);
   }
   for (int i = 0; i < 320; i++) {
-    TC_ASSERT(list->get<i32>(i) == i + 5);
+    TI_ASSERT(list->get<i32>(i) == i + 5);
   }
   return 0;
 }
@@ -45,14 +45,14 @@ i32 test_node_allocator(Context *context) {
     ptrs[i] = nodes->allocate();
   }
   for (int i = 5; i < 19; i++) {
-    TC_ASSERT(nodes->locate(ptrs[i]) == i);
+    TI_ASSERT(nodes->locate(ptrs[i]) == i);
   }
 
   for (int i = 19; i < 24; i++) {
     auto idx = nodes->locate(ptrs[i]);
     Printf("i %d", i);
     Printf("idx %d", idx);
-    TC_ASSERT(idx == i - 19);
+    TI_ASSERT(idx == i - 19);
   }
   return 0;
 }

@@ -46,7 +46,7 @@ class CPUIRCodeGen : public IRVisitor {
   }
 
   void visit(RandStmt *stmt) {
-    TC_ASSERT(stmt->ret_type.data_type == DataType::f32);
+    TI_ASSERT(stmt->ret_type.data_type == DataType::f32);
     emit("const auto {} = {}::rand();", stmt->raw_name(),
          stmt->ret_data_type_name());
   }
@@ -122,7 +122,7 @@ class CPUIRCodeGen : public IRVisitor {
   }
 
   void visit(StructForStmt *for_stmt) {
-    TC_ASSERT_INFO(current_struct_for == nullptr,
+    TI_ASSERT_INFO(current_struct_for == nullptr,
                    "Struct for cannot be nested.");
     current_struct_for = for_stmt;
     emit("{{");
@@ -209,7 +209,7 @@ class CPUIRCodeGen : public IRVisitor {
         emit("{} = {}_;", loop_var->raw_name(), loop_var->raw_name());
       } else {
         // reversed loop
-        TC_ASSERT(for_stmt->vectorize == 1);
+        TI_ASSERT(for_stmt->vectorize == 1);
         emit("for (int {}_ = {} - 1; {}_ >= {}; {}_ = {}_ - {}) {{",
              loop_var->raw_name(), for_stmt->end->raw_name(),
              loop_var->raw_name(), for_stmt->begin->raw_name(),
@@ -279,7 +279,7 @@ class CPUIRCodeGen : public IRVisitor {
   }
 
   void visit(SNodeOpStmt *stmt) {
-    TC_NOT_IMPLEMENTED
+    TI_NOT_IMPLEMENTED
     /*
     stmt->ret_type.data_type = DataType::i32;
     if (stmt->op_type == SNodeOpType::length) {
@@ -298,7 +298,7 @@ class CPUIRCodeGen : public IRVisitor {
              make_list(indices, ""));
       }
       if (stmt->op_type == SNodeOpType::append) {
-        TC_ASSERT(stmt->val->width() == 1);
+        TI_ASSERT(stmt->val->width() == 1);
         emit("{}_tmp->append({}({}[{}]));", snode->node_type_name,
              snode->ch[0]->node_type_name, stmt->val->raw_name(), l);
       } else if (stmt->op_type == SNodeOpType::clear) {
@@ -319,7 +319,7 @@ class CPUIRCodeGen : public IRVisitor {
         emit("activate_{}(root, {});", snode->node_type_name,
              make_list(indices, ""));
       } else {
-        TC_NOT_IMPLEMENTED
+        TI_NOT_IMPLEMENTED
       }
       emit("}}");
     }
@@ -332,9 +332,9 @@ class CPUIRCodeGen : public IRVisitor {
       if (mask) {
         emit("if ({}[{}]) ", mask->raw_name(), l);
       } else {
-        TC_ASSERT(stmt->val->ret_type.data_type == DataType::f32 ||
+        TI_ASSERT(stmt->val->ret_type.data_type == DataType::f32 ||
                   stmt->val->ret_type.data_type == DataType::i32);
-        TC_ASSERT(stmt->op_type == AtomicOpType::add);
+        TI_ASSERT(stmt->op_type == AtomicOpType::add);
         emit("atomic_add({}[{}], {}[{}]);", stmt->dest->raw_name(), l,
              stmt->val->raw_name(), l);
       }
@@ -352,7 +352,7 @@ class CPUIRCodeGen : public IRVisitor {
       std::vector<std::string> indices(max_num_indices, "0");  // = "(root, ";
       for (int i = 0; i < (int)stmt->indices.size(); i++) {
         if (snode->physical_index_position[i] != -1) {
-          // TC_ASSERT(snode->physical_index_position[i] != -1);
+          // TI_ASSERT(snode->physical_index_position[i] != -1);
           indices[snode->physical_index_position[i]] =
               stmt->indices[i]->raw_name() + fmt::format("[{}]", l);
         }
@@ -378,7 +378,7 @@ class CPUIRCodeGen : public IRVisitor {
             all_offsets_zero = false;
         }
         if (identical_indices) {
-          // TC_WARN("Weakened addressing");
+          // TI_WARN("Weakened addressing");
           weakened = true;
 
           std::string cond;
@@ -427,7 +427,7 @@ class CPUIRCodeGen : public IRVisitor {
     if (!current_program->config.force_vectorized_global_store) {
       for (int i = 0; i < stmt->data->ret_type.width; i++) {
         if (stmt->parent->mask()) {
-          TC_ASSERT(stmt->width() == 1);
+          TI_ASSERT(stmt->width() == 1);
           emit("if ({}[{}])", stmt->parent->mask()->raw_name(), i);
         }
         emit("*({} *){}[{}] = {}[{}];",
@@ -443,7 +443,7 @@ class CPUIRCodeGen : public IRVisitor {
     const int width = stmt->width();
     if (get_current_program().config.attempt_vectorized_load_cpu &&
         width >= 4 && stmt->ptr->is<ElementShuffleStmt>()) {
-      TC_ASSERT(stmt->ret_type.data_type == DataType::i32 ||
+      TI_ASSERT(stmt->ret_type.data_type == DataType::i32 ||
                 stmt->ret_type.data_type == DataType::f32);
 
       auto shuffle = stmt->ptr->as<ElementShuffleStmt>();
@@ -505,8 +505,8 @@ class CPUIRCodeGen : public IRVisitor {
   }
 
   void visit(ExternalPtrStmt *stmt) {
-    TC_ASSERT(stmt->width() == 1);
-    TC_ASSERT(stmt->indices.size() == 1);
+    TI_ASSERT(stmt->width() == 1);
+    TI_ASSERT(stmt->indices.size() == 1);
     auto dt = stmt->ret_type.data_type;
     emit("const {} *{}[1] = {{&{}[{}]}};", data_type_name(dt), stmt->raw_name(),
          stmt->base_ptrs[0]->raw_name(), stmt->indices[0]->raw_name());
@@ -529,7 +529,7 @@ class CPUIRCodeGen : public IRVisitor {
 
   void visit(AssertStmt *stmt) {
     emit("#if defined(TL_DEBUG)");
-    emit(R"(TC_ASSERT_INFO({}, "{}");)", stmt->val->raw_name(), stmt->text);
+    emit(R"(TI_ASSERT_INFO({}, "{}");)", stmt->val->raw_name(), stmt->text);
     emit("#endif");
   }
 
@@ -605,7 +605,7 @@ class CPUIRCodeGen : public IRVisitor {
 };
 
 void CPUCodeGen::lower_cpp() {
-  TC_NOT_IMPLEMENTED
+  TI_NOT_IMPLEMENTED
 }
 
 void CPUCodeGen::lower_llvm() {
@@ -617,27 +617,27 @@ void CPUCodeGen::lower_llvm() {
     print_ir = prog->config.print_ir;
   }
   if (print_ir) {
-    TC_TRACE("Initial IR:");
+    TI_TRACE("Initial IR:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
   if (kernel->grad) {
     irpass::reverse_segments(ir);
     if (print_ir) {
-      TC_TRACE("Segment reversed (for autodiff):");
+      TI_TRACE("Segment reversed (for autodiff):");
       irpass::re_id(ir);
       irpass::print(ir);
     }
   }
   irpass::lower(ir);
   if (print_ir) {
-    TC_TRACE("Lowered:");
+    TI_TRACE("Lowered:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
   irpass::typecheck(ir);
   if (print_ir) {
-    TC_TRACE("Typechecked:");
+    TI_TRACE("Typechecked:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
@@ -645,112 +645,112 @@ void CPUCodeGen::lower_llvm() {
     irpass::demote_dense_struct_fors(ir);
     irpass::typecheck(ir);
     if (print_ir) {
-      TC_TRACE("Dense Struct-for demoted:");
+      TI_TRACE("Dense Struct-for demoted:");
       irpass::print(ir);
     }
   }
   irpass::slp_vectorize(ir);
   if (print_ir) {
-    TC_TRACE("SLPed:");
+    TI_TRACE("SLPed:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
   irpass::loop_vectorize(ir);
   if (print_ir) {
-    TC_TRACE("LoopVeced:");
+    TI_TRACE("LoopVeced:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
   irpass::vector_split(ir, prog->config.max_vector_width,
                        prog->config.serial_schedule);
   if (print_ir) {
-    TC_TRACE("LoopSplitted:");
+    TI_TRACE("LoopSplitted:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
   irpass::simplify(ir);
   if (print_ir) {
-    TC_TRACE("Simplified I:");
+    TI_TRACE("Simplified I:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
   if (kernel->grad) {
     // irpass::re_id(ir);
-    // TC_TRACE("Primal:");
+    // TI_TRACE("Primal:");
     // irpass::print(ir);
     irpass::demote_atomics(ir);
     irpass::simplify(ir);
     irpass::make_adjoint(ir);
     irpass::typecheck(ir);
     if (print_ir) {
-      TC_TRACE("Adjoint:");
+      TI_TRACE("Adjoint:");
       irpass::re_id(ir);
       irpass::print(ir);
     }
   }
   irpass::lower_access(ir, true);
   if (print_ir) {
-    TC_TRACE("Access Lowered:");
+    TI_TRACE("Access Lowered:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
   irpass::die(ir);
   if (print_ir) {
-    TC_TRACE("DIEd:");
+    TI_TRACE("DIEd:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
   irpass::simplify(ir);
   if (print_ir) {
-    TC_TRACE("Simplified II:");
+    TI_TRACE("Simplified II:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
   irpass::die(ir);
   if (print_ir) {
-    TC_TRACE("DIEd:");
+    TI_TRACE("DIEd:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
 
   irpass::flag_access(ir);
   if (print_ir) {
-    TC_TRACE("Access Flagged:");
+    TI_TRACE("Access Flagged:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
 
   irpass::constant_fold(ir);
   if (print_ir) {
-    TC_TRACE("Constant folded:");
+    TI_TRACE("Constant folded:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
 
   irpass::offload(ir);
   if (print_ir) {
-    TC_TRACE("Offloaded:");
+    TI_TRACE("Offloaded:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
 
   irpass::full_simplify(ir);
   if (print_ir) {
-    TC_TRACE("Simplified III:");
+    TI_TRACE("Simplified III:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
 
   irpass::demote_atomics(ir);
   if (print_ir) {
-    TC_TRACE("Atomics demoted:");
+    TI_TRACE("Atomics demoted:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
 }
 
 void CPUCodeGen::lower() {
-  TC_PROFILER(__FUNCTION__)
+  TI_PROFILER(__FUNCTION__)
   if (prog->config.use_llvm) {
     lower_llvm();
   } else {

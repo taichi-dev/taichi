@@ -4,7 +4,7 @@
 
 TLANG_NAMESPACE_BEGIN
 
-TC_TEST("access_simp") {
+TI_TEST("access_simp") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 16;
   Program prog(Arch::x86_64);
@@ -29,10 +29,10 @@ TC_TEST("access_simp") {
     });
   })();
 
-  TC_CHECK(sum.val<int32>() == 16);
+  TI_CHECK(sum.val<int32>() == 16);
 };
 
-TC_TEST("root_leaf_path_weakening") {
+TI_TEST("root_leaf_path_weakening") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 16;
   Program prog(Arch::x86_64);

@@ -7,28 +7,28 @@
 
 #include "interface.h"
 
-TC_NAMESPACE_BEGIN
+TI_NAMESPACE_BEGIN
 
-#define TC_IMPLEMENTATION_LOADER(base_class_name, class_name, alias)          \
+#define TI_IMPLEMENTATION_LOADER(base_class_name, class_name, alias)          \
   class ImplementationLoader_##base_class_name##class_name {                  \
    public:                                                                    \
     ImplementationLoader_##base_class_name##class_name() {                    \
-      TC_IMPLEMENTATION_HOLDER_NAME(base_class_name)::get_instance()          \
+      TI_IMPLEMENTATION_HOLDER_NAME(base_class_name)::get_instance()          \
           ->insert<class_name>(alias);                                        \
     }                                                                         \
     ~ImplementationLoader_##base_class_name##class_name() {                   \
-      TC_IMPLEMENTATION_HOLDER_NAME(base_class_name)::get_instance()->remove( \
+      TI_IMPLEMENTATION_HOLDER_NAME(base_class_name)::get_instance()->remove( \
           alias);                                                             \
     }                                                                         \
   } ImplementationLoader_##base_class_name##class_name##instance;
 
-#define TC_IMPLEMENTATION_UPDATER(base_class_name, class_name, alias) \
+#define TI_IMPLEMENTATION_UPDATER(base_class_name, class_name, alias) \
   class ImplementationUpdater_##base_class_name##class_name {         \
    public:                                                            \
     ImplementationUpdater_##base_class_name##class_name() {           \
-      TC_IMPLEMENTATION_HOLDER_NAME(base_class_name)::get_instance()  \
+      TI_IMPLEMENTATION_HOLDER_NAME(base_class_name)::get_instance()  \
           ->update<class_name>(alias);                                \
     }                                                                 \
   } ImplementationUpdater_##base_class_name##class_name##instance;
 
-TC_NAMESPACE_END
+TI_NAMESPACE_END

@@ -45,7 +45,7 @@ def reset():
   global runtime
   runtime = get_runtime()
 
-def init(default_fp=None, default_ip=None, print_processed=None, debug=None, **kwargs):
+def init(default_fp=None, default_ip=None, print_preprocessed=None, debug=None, **kwargs):
   if debug is None:
     debug = bool(int(os.environ.get('TI_DEBUG', '0')))
 
@@ -61,8 +61,8 @@ def init(default_fp=None, default_ip=None, print_processed=None, debug=None, **k
     ti.get_runtime().set_default_fp(default_fp)
   if default_ip is not None:
     ti.get_runtime().set_default_ip(default_ip)
-  if print_processed is not None:
-    ti.get_runtime().print_preprocessed = print_processed
+  if print_preprocessed is not None:
+    ti.get_runtime().print_preprocessed = print_preprocessed
   if debug:
     ti.set_logging_level(ti.DEBUG)
   ti.cfg.debug = debug

@@ -7,17 +7,17 @@
 #include <taichi/context.h>
 #undef TI_RUNTIME_HOST
 
-#ifdef TC_PLATFORM_OSX
+#ifdef TI_PLATFORM_OSX
 #include <sys/mman.h>
 #include <unistd.h>
 
 #include "metal_api.h"
-#endif  // TC_PLATFORM_OSX
+#endif  // TI_PLATFORM_OSX
 
 TLANG_NAMESPACE_BEGIN
 namespace metal {
 
-#ifdef TC_PLATFORM_OSX
+#ifdef TI_PLATFORM_OSX
 
 namespace {
 using KernelTaskType = OffloadedStmt::TaskType;
@@ -32,7 +32,7 @@ class BufferMemoryView {
     // Both |ptr_| and |size_| must be aligned to page size.
     size_ = ((size + pagesize - 1) / pagesize) * pagesize;
     ptr_ = mem_pool->allocate(size_, pagesize);
-    TC_ASSERT(ptr_ != nullptr);
+    TI_ASSERT(ptr_ != nullptr);
   }
 
   inline size_t size() const { return size_; }
@@ -52,13 +52,13 @@ class CompiledMtlKernel {
         pipeline_state_(new_compute_pipeline_state_with_function(device, func)),
         profiler_(profiler),
         profiler_id_(fmt::format("{}_dispatch", kernel_attribs_.name)) {
-    TC_ASSERT(pipeline_state_ != nullptr);
+    TI_ASSERT(pipeline_state_ != nullptr);
   }
 
   void launch(MTLBuffer *root_buffer, MTLBuffer *global_tmps_buffer,
               MTLBuffer *args_buffer, MTLCommandBuffer *command_buffer) {
     // 0 is valid for |num_threads|!
-    TC_ASSERT(kernel_attribs_.num_threads >= 0);
+    TI_ASSERT(kernel_attribs_.num_threads >= 0);
     launch_if_not_empty(root_buffer, global_tmps_buffer, args_buffer,
                         command_buffer);
     if ((kernel_attribs_.task_type == KernelTaskType::range_for) &&
@@ -84,7 +84,7 @@ class CompiledMtlKernel {
     }
     profiler_->start(profiler_id_);
     auto encoder = new_compute_command_encoder(command_buffer);
-    TC_ASSERT(encoder != nullptr);
+    TI_ASSERT(encoder != nullptr);
 
     set_compute_pipeline_state(encoder.get(), pipeline_state_.get());
     int buffer_index = 0;
@@ -124,10 +124,10 @@ class CompiledTaichiKernel {
         mtl_source_code_(source_code),
         profiler_(profiler) {
     auto kernel_lib = new_library_with_source(device, mtl_source_code_);
-    TC_ASSERT(kernel_lib != nullptr);
+    TI_ASSERT(kernel_lib != nullptr);
     for (const auto &ka : mtl_kernels_attribs) {
       auto kernel_func = new_function_with_name(kernel_lib.get(), ka.name);
-      TC_ASSERT(kernel_func != nullptr);
+      TI_ASSERT(kernel_func != nullptr);
       // Note that CompiledMtlKernel doesn't own |kernel_func|.
       compiled_mtl_kernels.push_back(std::make_unique<CompiledMtlKernel>(
           ka, device, kernel_func.get(), profiler_));
@@ -183,7 +183,7 @@ class HostMetalArgsBlitter {
       } else if (arg.dt == MetalDataType::f32) {
         TO_METAL(float32);
       } else {
-        TC_ERROR("Metal does not support arg type={}",
+        TI_ERROR("Metal does not support arg type={}",
                  metal_data_type_name(arg.dt));
       }
     }
@@ -216,7 +216,7 @@ class HostMetalArgsBlitter {
         } else if (arg.dt == MetalDataType::f32) {
           TO_HOST(float32);
         } else {
-          TC_ERROR("Metal does not support arg type={}",
+          TI_ERROR("Metal does not support arg type={}",
                    metal_data_type_name(arg.dt));
         }
       }
@@ -250,16 +250,16 @@ class MetalRuntime::Impl {
         profiler_(profiler),
         root_buffer_mem_(std::max(root_size, 1UL), mem_pool) {
     if (config_->debug) {
-      TC_ASSERT(is_metal_api_available());
+      TI_ASSERT(is_metal_api_available());
     }
     device_ = mtl_create_system_default_device();
-    TC_ASSERT(device_ != nullptr);
+    TI_ASSERT(device_ != nullptr);
     command_queue_ = new_command_queue(device_.get());
-    TC_ASSERT(command_queue_ != nullptr);
+    TI_ASSERT(command_queue_ != nullptr);
     create_new_command_buffer();
     root_buffer_ = new_mtl_buffer_no_copy(device_.get(), root_buffer_mem_.ptr(),
                                           root_buffer_mem_.size());
-    TC_ASSERT(root_buffer_ != nullptr);
+    TI_ASSERT(root_buffer_ != nullptr);
   }
 
   void register_taichi_kernel(
@@ -267,14 +267,14 @@ class MetalRuntime::Impl {
       const std::string &mtl_kernel_source_code,
       const std::vector<MetalKernelAttributes> &kernels_attribs,
       size_t global_tmps_size, const MetalKernelArgsAttributes &args_attribs) {
-    TC_ASSERT(compiled_taichi_kernels_.find(taichi_kernel_name) ==
+    TI_ASSERT(compiled_taichi_kernels_.find(taichi_kernel_name) ==
               compiled_taichi_kernels_.end());
 
     if (config_->print_kernel_llvm_ir) {
       // If users have enabled |print_kernel_llvm_ir|, it probably means that
       // they want to see the compiled code on the given arch. Maybe rename this
       // flag, or add another flag (e.g. |print_kernel_source_code|)?
-      TC_INFO("Metal source code for kernel <{}>\n{}", taichi_kernel_name,
+      TI_INFO("Metal source code for kernel <{}>\n{}", taichi_kernel_name,
               mtl_kernel_source_code);
     }
     compiled_taichi_kernels_[taichi_kernel_name] =
@@ -282,7 +282,7 @@ class MetalRuntime::Impl {
             taichi_kernel_name, mtl_kernel_source_code, kernels_attribs,
             global_tmps_size, args_attribs, device_.get(), mem_pool_,
             profiler_);
-    TC_INFO("Registered Taichi kernel <{}>", taichi_kernel_name);
+    TI_INFO("Registered Taichi kernel <{}>", taichi_kernel_name);
   }
 
   void launch_taichi_kernel(const std::string &taichi_kernel_name,
@@ -290,7 +290,7 @@ class MetalRuntime::Impl {
     auto &ctk = *compiled_taichi_kernels_.find(taichi_kernel_name)->second;
     auto args_blitter = HostMetalArgsBlitter::make_if_has_args(ctk, ctx);
     if (config_->verbose_kernel_launches) {
-      TC_INFO("Lauching Taichi kernel <{}>", taichi_kernel_name);
+      TI_INFO("Lauching Taichi kernel <{}>", taichi_kernel_name);
     }
     if (args_blitter) {
       args_blitter->host_to_metal();
@@ -313,7 +313,7 @@ class MetalRuntime::Impl {
         const int end = ka->range_for_attribs.const_end
                             ? ka->range_for_attribs.end
                             : load_global_tmp(ka->range_for_attribs.end);
-        TC_ASSERT(ka->num_threads == -1);
+        TI_ASSERT(ka->num_threads == -1);
         ka->num_threads = end - begin;
       }
       mk->launch(root_buffer_.get(), ctk.global_tmps_buffer.get(),
@@ -339,7 +339,7 @@ class MetalRuntime::Impl {
  private:
   void create_new_command_buffer() {
     cur_command_buffer_ = new_command_buffer(command_queue_.get());
-    TC_ASSERT(cur_command_buffer_ != nullptr);
+    TI_ASSERT(cur_command_buffer_ != nullptr);
   }
   CompileConfig *const config_;
   MemoryPool *const mem_pool_;
@@ -359,7 +359,7 @@ class MetalRuntime::Impl {
  public:
   Impl(size_t root_size, CompileConfig *config, MemoryPool *mem_pool,
        ProfilerBase *profiler) {
-    TC_ERROR("Metal not supported on the current OS");
+    TI_ERROR("Metal not supported on the current OS");
   }
 
   void register_taichi_kernel(
@@ -367,18 +367,18 @@ class MetalRuntime::Impl {
       const std::string &mtl_kernel_source_code,
       const std::vector<MetalKernelAttributes> &kernels_attribs,
       size_t global_tmps_size, const MetalKernelArgsAttributes &args_attribs) {
-    TC_ERROR("Metal not supported on the current OS");
+    TI_ERROR("Metal not supported on the current OS");
   }
 
   void launch_taichi_kernel(const std::string &taichi_kernel_name,
                             Context *ctx) {
-    TC_ERROR("Metal not supported on the current OS");
+    TI_ERROR("Metal not supported on the current OS");
   }
 
-  void synchronize() { TC_ERROR("Metal not supported on the current OS"); }
+  void synchronize() { TI_ERROR("Metal not supported on the current OS"); }
 };
 
-#endif  // TC_PLATFORM_OSX
+#endif  // TI_PLATFORM_OSX
 
 MetalRuntime::MetalRuntime(size_t root_size, CompileConfig *config,
                            MemoryPool *mem_pool, ProfilerBase *profiler)

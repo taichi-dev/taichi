@@ -154,7 +154,7 @@ std::unique_ptr<ProfilerBase> make_profiler(Arch arch) {
   } else if (arch == Arch::cuda) {
     return std::make_unique<CUDAProfiler>();
   } else {
-    TC_NOT_IMPLEMENTED;
+    TI_NOT_IMPLEMENTED;
   }
 }
 

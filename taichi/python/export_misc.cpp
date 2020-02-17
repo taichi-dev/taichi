@@ -18,7 +18,7 @@
 #include <cuda_runtime_api.h>
 #endif
 
-TC_NAMESPACE_BEGIN
+TI_NAMESPACE_BEGIN
 
 extern Function11 python_at_exit;
 
@@ -65,16 +65,16 @@ stdout = fdopen(fd[1], "w");
 auto file_fd = fdopen(fd[0], "w");
 FILE *file = freopen(fn.c_str(), "w", file_fd);
 */
-#if defined(TC_PLATFORM_UNIX)
+#if defined(TI_PLATFORM_UNIX)
   std::cerr.rdbuf(std::cout.rdbuf());
   dup2(fileno(popen(fmt::format("tee {}", fn).c_str(), "w")), STDOUT_FILENO);
 #else
-  TC_NOT_IMPLEMENTED;
+  TI_NOT_IMPLEMENTED;
 #endif
 }
 
 void stop_duplicating_stdout_to_file(const std::string &fn) {
-  TC_NOT_IMPLEMENTED;
+  TI_NOT_IMPLEMENTED;
 }
 
 bool with_cuda() {
@@ -112,17 +112,17 @@ void export_misc(py::module &m) {
       .def("close_dll", &UnitDLL::close_dll)
       .def("loaded", &UnitDLL::loaded);
 
-#define TC_EXPORT_LOGGING(X) \
+#define TI_EXPORT_LOGGING(X) \
   m.def(#X, [](const std::string &msg) { taichi::logger.X(msg); });
 
   m.def("flush_log", []() { taichi::logger.flush(); });
 
-  TC_EXPORT_LOGGING(trace);
-  TC_EXPORT_LOGGING(debug);
-  TC_EXPORT_LOGGING(info);
-  TC_EXPORT_LOGGING(warn);
-  TC_EXPORT_LOGGING(error);
-  TC_EXPORT_LOGGING(critical);
+  TI_EXPORT_LOGGING(trace);
+  TI_EXPORT_LOGGING(debug);
+  TI_EXPORT_LOGGING(info);
+  TI_EXPORT_LOGGING(warn);
+  TI_EXPORT_LOGGING(error);
+  TI_EXPORT_LOGGING(critical);
 
   m.def("duplicate_stdout_to_file", duplicate_stdout_to_file);
 
@@ -166,4 +166,4 @@ void export_misc(py::module &m) {
   m.def("with_metal", taichi::Tlang::metal::is_metal_api_available);
 }
 
-TC_NAMESPACE_END
+TI_NAMESPACE_END

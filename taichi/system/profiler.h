@@ -10,11 +10,11 @@
 #include <vector>
 #include <map>
 #include <memory>
-#if defined(TC_PLATFORM_WINDOWS)
+#if defined(TI_PLATFORM_WINDOWS)
 #undef max
 #endif
 
-TC_NAMESPACE_BEGIN
+TI_NAMESPACE_BEGIN
 
 class ProfilerRecords {
  public:
@@ -54,7 +54,7 @@ class ProfilerRecords {
     }
 
     float64 get_averaged_tpe() const {
-      TC_ASSERT(account_tpe);
+      TI_ASSERT(account_tpe);
       return total_time / (float64)total_elements;
     }
 
@@ -162,24 +162,24 @@ class Profiler {
   }
 };
 
-#define TC_PROFILE(name, statements) \
+#define TI_PROFILE(name, statements) \
   {                                  \
     taichi::Profiler _(name);        \
     statements;                      \
   }
 
-#define TC_PROFILER(name) taichi::Profiler _profiler_##__LINE__(name);
+#define TI_PROFILER(name) taichi::Profiler _profiler_##__LINE__(name);
 
-#define TC_PROFILE_TPE(name, statements, elements) \
+#define TI_PROFILE_TPE(name, statements, elements) \
   {                                                \
     taichi::Profiler _(name, elements);            \
     statements;                                    \
   }
 
-#define TI_AUTO_PROF TC_PROFILER(__FUNCTION__)
+#define TI_AUTO_PROF TI_PROFILER(__FUNCTION__)
 
 inline void print_profile_info() {
   ProfilerRecords::get_instance().print();
 }
 
-TC_NAMESPACE_END
+TI_NAMESPACE_END

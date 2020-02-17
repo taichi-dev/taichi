@@ -11,7 +11,7 @@
 #include <taichi/common/util.h>
 #include <thread>
 
-TC_NAMESPACE_BEGIN
+TI_NAMESPACE_BEGIN
 
 using RangeForTaskFunc = void(void *, int i);
 using ParallelFor = void(int n, int num_threads, void *, RangeForTaskFunc func);
@@ -61,4 +61,4 @@ class ThreadPool {
   ~ThreadPool();
 };
 
-TC_NAMESPACE_END
+TI_NAMESPACE_END

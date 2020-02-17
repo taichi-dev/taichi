@@ -34,7 +34,7 @@ class DemoteAtomics : public BasicStmtVisitor {
         auto new_stmts = VecStatement();
         Stmt *load;
         if (is_local) {
-          TC_ASSERT(stmt->width() == 1);
+          TI_ASSERT(stmt->width() == 1);
           load = new_stmts.push_back<LocalLoadStmt>(LocalAddress(ptr, 0));
           auto add =
               new_stmts.push_back<BinaryOpStmt>(BinaryOpType::add, load, val);

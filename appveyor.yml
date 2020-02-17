@@ -33,6 +33,8 @@ skip_commits:
     - '.*'
 
 build_script:
+  - set TAICHI_REPO_DIR=C:\taichi
+  # - 'if %PYTHON% %TAICHI_REPO_DIR%\misc\appveyor_filter.py; then exit 0; fi'
   - cd C:\
   - curl --retry 10 --retry-delay 5 https://github.com/yuanming-hu/taichi_assets/releases/download/llvm8/taichi-llvm-8.0.1-msvc2017.zip -LO
   - 7z x taichi-llvm-8.0.1-msvc2017.zip -otaichi_llvm
@@ -40,7 +42,6 @@ build_script:
   - 7z x clang-7.0.1-win.zip -otaichi_clang
   - set PATH=C:\taichi_llvm\bin;%PATH%;
   - set PATH=C:\taichi_clang\bin;%PATH%
-  - set TAICHI_REPO_DIR=C:\taichi
   - set PYTHONPATH=%TAICHI_REPO_DIR%/python
   - set PATH=%TAICHI_REPO_DIR%\bin;%PATH%
   - clang --version

@@ -38,9 +38,10 @@ def test_python(test_files=None, verbose=False):
     except:
       cpu_count = 4
     print(f'Starting {cpu_count} testing thread(s)...')
-    args += ['-TODO', str(cpu_count)]
+    args += ['-n', str(cpu_count)]
 
-  print('XXX')
+  print('pytest.main is', pytest.main)
+  print('main is', main)
   return int(pytest.main(args))
 
 

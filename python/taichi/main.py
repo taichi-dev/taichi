@@ -121,7 +121,7 @@ def main(debug=False):
     if test_python(test_files=sys.argv[2:]) != 0:
       return -1
     if len(sys.argv) <= 2:
-    return test_cpp()
+      return test_cpp()
   elif mode == "test_verbose":
     if test_python(test_files=sys.argv[2:], verbose=True) != 0:
       return -1

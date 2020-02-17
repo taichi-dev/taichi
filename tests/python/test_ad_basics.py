@@ -149,6 +149,7 @@ def test_atan2_f64():
   
 @if_has_autograd
 def test_pow():
+
   grad_test(lambda x: 0.4 ** x, lambda x: np.power(0.4, x))
   grad_test(lambda y: y ** 0.4, lambda y: np.power(y, 0.4))
 

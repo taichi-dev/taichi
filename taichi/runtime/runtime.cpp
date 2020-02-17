@@ -1146,9 +1146,13 @@ struct printf_helper {
 
 template <typename... Args>
 void taichi_printf(Runtime *runtime, const char *format, Args &&... args) {
+#if ARCH_cuda
   printf_helper helper;
   helper.push_back(std::forward<Args>(args)...);
   runtime->vprintf_host(format, (const char *)helper.ptr());
+#else
+  printf(format, args...);
+#endif
 }
 
 #include "locked_task.h"

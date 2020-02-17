@@ -50,7 +50,7 @@ class MetalRuntime {
 
  private:
   // Use Pimpl so that we can expose this interface without conditionally
-  // compiling on TC_PLATFORM_OSX
+  // compiling on TI_PLATFORM_OSX
   class Impl;
   std::unique_ptr<Impl> impl_;
 };

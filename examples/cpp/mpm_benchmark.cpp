@@ -6,7 +6,7 @@
 #include <taichi/common/bit.h>
 #include <taichi/system/profiler.h>
 
-TC_NAMESPACE_BEGIN
+TI_NAMESPACE_BEGIN
 
 using namespace Tlang;
 
@@ -15,18 +15,18 @@ auto mpm_benchmark = [](std::vector<std::string> cli_param) {
 
   auto param = parse_param(cli_param);
   bool particle_soa = param.get("particle_soa", false);
-  TC_P(particle_soa);
+  TI_P(particle_soa);
   bool block_soa = param.get("block_soa", true);
-  TC_P(block_soa);
+  TI_P(block_soa);
   bool use_cache = param.get("use_cache", true);
-  TC_P(use_cache);
+  TI_P(use_cache);
   bool initial_reorder = param.get("initial_reorder", true);
-  TC_P(initial_reorder);
+  TI_P(initial_reorder);
   bool initial_shuffle = param.get("initial_shuffle", false);
-  TC_P(initial_shuffle);
+  TI_P(initial_shuffle);
   prog.config.lower_access = param.get("lower_access", false);
   int stagger = param.get("stagger", true);
-  TC_P(stagger);
+  TI_P(stagger);
 
   constexpr int dim = 3, n = 256, grid_block_size = 4, n_particles = 775196;
   const real dt = 1e-5_f * 256 / n, dx = 1.0_f / n, inv_dx = 1.0_f / dx;
@@ -45,7 +45,7 @@ auto mpm_benchmark = [](std::vector<std::string> cli_param) {
   p_x.resize(n_particles);
   std::vector<float> benchmark_particles;
   auto f = fopen("dragon_particles.bin", "rb");
-  TC_ASSERT_INFO(f, "./dragon_particles.bin not found");
+  TI_ASSERT_INFO(f, "./dragon_particles.bin not found");
   benchmark_particles.resize(n_particles * 3);
   if (std::fread(benchmark_particles.data(), sizeof(float), n_particles * 3,
                  f)) {
@@ -81,7 +81,7 @@ auto mpm_benchmark = [](std::vector<std::string> cli_param) {
       place(particle_x(i));
     for (int i = 0; i < dim; i++)
       place(particle_v(i));
-    TC_ASSERT(n % grid_block_size == 0);
+    TI_ASSERT(n % grid_block_size == 0);
     auto &block = root.dense({i, j, k}, n / grid_block_size).pointer();
     if (block_soa) {
       block.dense({i, j, k}, grid_block_size).place(grid_v(0));
@@ -253,7 +253,7 @@ auto mpm_benchmark = [](std::vector<std::string> cli_param) {
     }
     prog.profiler_print();
     auto ms_per_substep = (Time::get_time() - t) / 200 * 1000;
-    TC_P(ms_per_substep);
+    TI_P(ms_per_substep);
   };
 
 #if (0)
@@ -323,6 +323,6 @@ auto mpm_benchmark = [](std::vector<std::string> cli_param) {
   }
 #endif
 };
-TC_REGISTER_TASK(mpm_benchmark);
+TI_REGISTER_TASK(mpm_benchmark);
 
-TC_NAMESPACE_END
+TI_NAMESPACE_END

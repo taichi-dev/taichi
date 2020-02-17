@@ -18,11 +18,11 @@
 #include "util.h"
 #include "asset_manager.h"
 
-TC_NAMESPACE_BEGIN
+TI_NAMESPACE_BEGIN
 
 // Declare and then load
 // Load to `this`
-#define TC_LOAD_CONFIG(name, default_val) \
+#define TI_LOAD_CONFIG(name, default_val) \
   this->name = config.get(#name, default_val)
 
 class Dict {
@@ -30,7 +30,7 @@ class Dict {
   std::map<std::string, std::string> data;
 
  public:
-  TC_IO_DEF(data);
+  TI_IO_DEF(data);
 
   Dict() = default;
 
@@ -74,7 +74,7 @@ class Dict {
 
   void check_string_integral(const std::string &str) const {
     if (!is_string_integral(str)) {
-      TC_ERROR(
+      TI_ERROR(
           "Getting integral value out of non-integral string '{}' is not "
           "allowed.",
           str);
@@ -281,7 +281,7 @@ class Dict {
 
   std::string get_string(std::string key) const {
     if (data.find(key) == data.end()) {
-      TC_ERROR("No key named '{}' found.", key);
+      TI_ERROR("No key named '{}' found.", key);
     }
     return data.find(key)->second;
   }
@@ -360,4 +360,4 @@ inline bool Dict::get<bool>(std::string key) const {
 
 using Config = Dict;
 
-TC_NAMESPACE_END
+TI_NAMESPACE_END

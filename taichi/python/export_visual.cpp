@@ -9,7 +9,7 @@
 #include <taichi/geometry/factory.h>
 #include <taichi/visual/gui.h>
 
-TC_NAMESPACE_BEGIN
+TI_NAMESPACE_BEGIN
 
 void export_visual(py::module &m) {
   // GUI
@@ -56,4 +56,4 @@ void export_visual(py::module &m) {
            py::return_value_policy::reference);
 }
 
-TC_NAMESPACE_END
+TI_NAMESPACE_END

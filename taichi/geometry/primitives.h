@@ -9,7 +9,7 @@
 #include <taichi/math/math.h>
 #include <vector>
 
-TC_NAMESPACE_BEGIN
+TI_NAMESPACE_BEGIN
 
 class Ray {
  public:
@@ -196,4 +196,4 @@ class Instance {
   Matrix4 transform;
 };
 
-TC_NAMESPACE_END
+TI_NAMESPACE_END

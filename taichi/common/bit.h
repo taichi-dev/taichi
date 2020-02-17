@@ -5,23 +5,23 @@
 #pragma once
 #include "util.h"
 
-TC_NAMESPACE_BEGIN
+TI_NAMESPACE_BEGIN
 
 namespace bit {
 
-TC_FORCE_INLINE constexpr bool is_power_of_two(int32 x) {
+TI_FORCE_INLINE constexpr bool is_power_of_two(int32 x) {
   return x != 0 && (x & (x - 1)) == 0;
 }
 
-TC_FORCE_INLINE constexpr bool is_power_of_two(uint32 x) {
+TI_FORCE_INLINE constexpr bool is_power_of_two(uint32 x) {
   return x != 0 && (x & (x - 1)) == 0;
 }
 
-TC_FORCE_INLINE constexpr bool is_power_of_two(int64 x) {
+TI_FORCE_INLINE constexpr bool is_power_of_two(int64 x) {
   return x != 0 && (x & (x - 1)) == 0;
 }
 
-TC_FORCE_INLINE constexpr bool is_power_of_two(uint64 x) {
+TI_FORCE_INLINE constexpr bool is_power_of_two(uint64 x) {
   return x != 0 && (x & (x - 1)) == 0;
 }
 
@@ -47,25 +47,25 @@ struct Bits {
   }
 
   template <int start, int bits = 1>
-  TC_FORCE_INLINE T get() const {
+  TI_FORCE_INLINE T get() const {
     return (data >> start) & (((T)1 << bits) - 1);
   }
 
   template <int start, int bits = 1>
-  TC_FORCE_INLINE void set(T val) {
+  TI_FORCE_INLINE void set(T val) {
     data =
         (data & ~mask<start, bits>()) | ((val << start) & mask<start, bits>());
   }
 
-  TC_FORCE_INLINE T operator()(T) const {
+  TI_FORCE_INLINE T operator()(T) const {
     return data;
   }
 
-  TC_FORCE_INLINE T get() const {
+  TI_FORCE_INLINE T get() const {
     return data;
   }
 
-  TC_FORCE_INLINE void set(const T &data) {
+  TI_FORCE_INLINE void set(const T &data) {
     this->data = data;
   }
 };
@@ -78,7 +78,7 @@ constexpr int bit_length() {
   return std::is_same<T, bool>() ? 1 : sizeof(T) * 8;
 }
 
-#define TC_BIT_FIELD(T, name, start)                    \
+#define TI_BIT_FIELD(T, name, start)                    \
   T get_##name() const {                                \
     return (T)Base::get<start, bit::bit_length<T>()>(); \
   }                                                     \
@@ -87,7 +87,7 @@ constexpr int bit_length() {
   }
 
 template <typename T, int N>
-TC_FORCE_INLINE constexpr T product(const std::array<T, N> arr) {
+TI_FORCE_INLINE constexpr T product(const std::array<T, N> arr) {
   T ret(1);
   for (int i = 0; i < N; i++) {
     ret *= arr[i];
@@ -103,11 +103,11 @@ constexpr std::size_t least_pot_bound(std::size_t v) {
   return ret;
 }
 
-TC_FORCE_INLINE constexpr uint32 pot_mask(int x) {
+TI_FORCE_INLINE constexpr uint32 pot_mask(int x) {
   return (1u << x) - 1;
 }
 
-TC_FORCE_INLINE constexpr uint32 log2int(uint64 value) {
+TI_FORCE_INLINE constexpr uint32 log2int(uint64 value) {
   int ret = 0;
   value >>= 1;
   while (value) {
@@ -118,18 +118,18 @@ TC_FORCE_INLINE constexpr uint32 log2int(uint64 value) {
 }
 
 template <typename G, typename T>
-constexpr TC_FORCE_INLINE copy_refcv_t<T, G> &&reinterpret_bits(T &&t) {
-  TC_STATIC_ASSERT(sizeof(G) == sizeof(T));
+constexpr TI_FORCE_INLINE copy_refcv_t<T, G> &&reinterpret_bits(T &&t) {
+  TI_STATIC_ASSERT(sizeof(G) == sizeof(T));
   return std::forward<copy_refcv_t<T, G>>(*reinterpret_cast<G *>(&t));
 };
 
-TC_FORCE_INLINE constexpr float64 compress(float32 h, float32 l) {
+TI_FORCE_INLINE constexpr float64 compress(float32 h, float32 l) {
   uint64 data =
       ((uint64)reinterpret_bits<uint32>(h) << 32) + reinterpret_bits<uint32>(l);
   return reinterpret_bits<float64>(data);
 }
 
-TC_FORCE_INLINE constexpr std::tuple<float32, float32> extract(float64 x) {
+TI_FORCE_INLINE constexpr std::tuple<float32, float32> extract(float64 x) {
   auto data = reinterpret_bits<uint64>(x);
   return std::make_tuple(reinterpret_bits<float32>((uint32)(data >> 32)),
                          reinterpret_bits<float32>((uint32)(data & (-1))));
@@ -137,4 +137,4 @@ TC_FORCE_INLINE constexpr std::tuple<float32, float32> extract(float64 x) {
 
 }  // namespace bit
 
-TC_NAMESPACE_END
+TI_NAMESPACE_END

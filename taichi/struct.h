@@ -2,7 +2,7 @@
 #pragma once
 
 #include "common.h"
-#if !defined(TC_PLATFORM_WINDOWS)
+#if !defined(TI_PLATFORM_WINDOWS)
 #include "arithmetics.h"
 #endif
 #if defined(TLANG_GPU)
@@ -15,19 +15,19 @@
 // bits come from.
 
 #if defined(TLANG_KERNEL)
-#define TC_EXPORT
+#define TI_EXPORT
 #if defined(TLANG_GPU)
-#define TC_DEVICE __device__ __host__
-#define TLANG_ACCESSOR __device__ __host__ TC_FORCE_INLINE
+#define TI_DEVICE __device__ __host__
+#define TLANG_ACCESSOR __device__ __host__ TI_FORCE_INLINE
 #else
-#define TC_DEVICE
-#define TLANG_ACCESSOR TC_FORCE_INLINE
+#define TI_DEVICE
+#define TLANG_ACCESSOR TI_FORCE_INLINE
 #endif
 #else
 #define TLANG_ACCESSOR
-#undef TC_EXPORT
-#define TC_EXPORT extern "C"
-#define TC_DEVICE
+#undef TI_EXPORT
+#define TI_EXPORT extern "C"
+#define TI_DEVICE
 #endif
 
 TLANG_NAMESPACE_BEGIN
@@ -93,16 +93,16 @@ struct SNodeAllocator {
 
   __host__ __device__ SNodeMeta *allocate_node(
       const PhysicalIndexGroup &index) {
-    TC_ASSERT(this != nullptr);
-    TC_ASSERT(data_pool != nullptr);
-    TC_ASSERT(resident_pool != nullptr);
+    TI_ASSERT(this != nullptr);
+    TI_ASSERT(data_pool != nullptr);
+    TI_ASSERT(resident_pool != nullptr);
     auto id = atomic_add(&resident_tail, 1UL);
 #if defined(TL_DEBUG)
     if (id >= pool_size) {
       printf("pool size %lld\n", pool_size);
     }
 #endif
-    TC_ASSERT(id < pool_size);
+    TI_ASSERT(id < pool_size);
     SNodeMeta &meta = resident_pool[id];
     meta.active = true;
     meta.ptr = data_pool + id;
@@ -168,7 +168,7 @@ struct Managers {
 
   __host__ __device__ static void initialize() {
     auto addr = create_unified<Managers>();
-    TC_ASSERT(addr == get_instance());
+    TI_ASSERT(addr == get_instance());
   }
 
   template <typename T>
@@ -328,27 +328,27 @@ template <typename child_type_>
 struct layout_root {
   using child_type = child_type_;
   child_type children;
-  TC_DEVICE TC_FORCE_INLINE child_type *look_up(
+  TI_DEVICE TI_FORCE_INLINE child_type *look_up(
       int i) {  // i is flattened index
     return &children;
   }
 
-  TC_DEVICE TC_FORCE_INLINE int get_n() const {
+  TI_DEVICE TI_FORCE_INLINE int get_n() const {
     return 1;
   }
 
-  TC_DEVICE TC_FORCE_INLINE static int constexpr get_max_n() {
+  TI_DEVICE TI_FORCE_INLINE static int constexpr get_max_n() {
     return 1;
   }
 
-  TC_DEVICE TC_FORCE_INLINE void activate(int i,
+  TI_DEVICE TI_FORCE_INLINE void activate(int i,
                                           const PhysicalIndexGroup &index) {
   }
 
   static constexpr bool has_null = true;
 };
 
-TC_FORCE_INLINE constexpr uint32 log2int(uint64 value) {
+TI_FORCE_INLINE constexpr uint32 log2int(uint64 value) {
   int ret = 0;
   value >>= 1;
   while (value) {
@@ -358,7 +358,7 @@ TC_FORCE_INLINE constexpr uint32 log2int(uint64 value) {
   return ret;
 }
 
-TC_DEVICE TC_FORCE_INLINE uint32 extract_bits(uint32 n, int begin, int end) {
+TI_DEVICE TI_FORCE_INLINE uint32 extract_bits(uint32 n, int begin, int end) {
   return (n >> begin) & ((1 << (end - begin)) - 1);
 }
 
@@ -377,10 +377,10 @@ struct dense {
   // TODO: fix potential alignment issues
   uint64 bitmask[bitmasked ? (n + 63) / 64 : 1];
 
-  TC_DEVICE TC_FORCE_INLINE dense() {
+  TI_DEVICE TI_FORCE_INLINE dense() {
   }
 
-  TC_DEVICE TC_FORCE_INLINE int32 translate(int i) {  // i is flattened index
+  TI_DEVICE TI_FORCE_INLINE int32 translate(int i) {  // i is flattened index
     int i_translated;
     constexpr int dim = morton_dim;
 #if defined(TLANG_GPU)
@@ -400,26 +400,26 @@ struct dense {
           _pdep_u32(extract_bits(i, n_bit_axis * 2, n_bit_axis * 3),
                     0x24924924);
     } else if (dim == 4) {
-      TC_ASSERT(false);
+      TI_ASSERT(false);
       i_translated = 0;
     }
 #endif
     return i_translated;
   }
 
-  TC_DEVICE TC_FORCE_INLINE child_type *look_up(int i) {
+  TI_DEVICE TI_FORCE_INLINE child_type *look_up(int i) {
     return &children[translate(i)];
   }
 
-  TC_DEVICE TC_FORCE_INLINE int get_n() const {
+  TI_DEVICE TI_FORCE_INLINE int get_n() const {
     return n;
   }
 
-  TC_DEVICE TC_FORCE_INLINE static int constexpr get_max_n() {
+  TI_DEVICE TI_FORCE_INLINE static int constexpr get_max_n() {
     return n;
   }
 
-  TC_DEVICE TC_FORCE_INLINE bool is_active(int i_) {
+  TI_DEVICE TI_FORCE_INLINE bool is_active(int i_) {
     if (bitmasked) {
       // int i = translate(i_);
       int i = i_;
@@ -429,7 +429,7 @@ struct dense {
     }
   }
 
-  TC_DEVICE TC_FORCE_INLINE void deactivate(int i_) {
+  TI_DEVICE TI_FORCE_INLINE void deactivate(int i_) {
     if (bitmasked) {
       int i = translate(i_);
 #if __CUDA_ARCH__
@@ -441,7 +441,7 @@ struct dense {
     }
   }
 
-  TC_DEVICE TC_FORCE_INLINE void activate(int i_,
+  TI_DEVICE TI_FORCE_INLINE void activate(int i_,
                                           const PhysicalIndexGroup &index) {
     if (bitmasked) {
       // if (is_active(i_)) {
@@ -504,11 +504,11 @@ struct hash {
     return i * 129 % table_size;
   }
 
-  TC_DEVICE TC_FORCE_INLINE bool is_active(int i) {
+  TI_DEVICE TI_FORCE_INLINE bool is_active(int i) {
     return look_up(i) != nullptr;
   }
 
-  TC_DEVICE TC_FORCE_INLINE child_type *look_up(int i) {
+  TI_DEVICE TI_FORCE_INLINE child_type *look_up(int i) {
     int k = h(i);
     while (1) {
       if (key[k] == i + 1) {
@@ -521,7 +521,7 @@ struct hash {
     }
   }
 
-  TC_DEVICE TC_FORCE_INLINE void activate(int i,
+  TI_DEVICE TI_FORCE_INLINE void activate(int i,
                                           const PhysicalIndexGroup &index) {
     // TODO: speed up
     // serialize...
@@ -578,7 +578,7 @@ struct hash {
     }
   }
 
-  TC_DEVICE TC_FORCE_INLINE int get_n() const {
+  TI_DEVICE TI_FORCE_INLINE int get_n() const {
     return n;
   }
 
@@ -596,7 +596,7 @@ struct hash {
       // std::cout << "initializing hashed" << std::endl;
   };
 
-  TC_DEVICE TC_FORCE_INLINE child_type *look_up(
+  TI_DEVICE TI_FORCE_INLINE child_type *look_up(
       int i) {  // i is flattened index
     if (data.find(i) == data.end()) {
       return nullptr;
@@ -604,11 +604,11 @@ struct hash {
     return data[i];
   }
 
-  TC_DEVICE TC_FORCE_INLINE bool is_active(int i) {
+  TI_DEVICE TI_FORCE_INLINE bool is_active(int i) {
     return data != nullptr;
   }
 
-  TC_DEVICE TC_FORCE_INLINE void activate(int i,
+  TI_DEVICE TI_FORCE_INLINE void activate(int i,
                                           const PhysicalIndexGroup &index) {
     if (data.find(i) == data.end()) {
       auto ptr = (child_type *)Managers::get<hash>()
@@ -619,11 +619,11 @@ struct hash {
     }
   }
 
-  TC_DEVICE TC_FORCE_INLINE bool is_active(int i) {
+  TI_DEVICE TI_FORCE_INLINE bool is_active(int i) {
     return data.find(i) != data.end();
   }
 
-  TC_DEVICE TC_FORCE_INLINE int get_n() const {
+  TI_DEVICE TI_FORCE_INLINE int get_n() const {
     return data.size();
   }
 
@@ -638,27 +638,27 @@ struct pointer {
   int lock;
   // std::mutex mut;
 
-  TC_DEVICE TC_FORCE_INLINE child_type *look_up(
+  TI_DEVICE TI_FORCE_INLINE child_type *look_up(
       int i) {  // i is flattened index
-    // TC_ASSERT(i == 0);
-    // TC_ASSERT(data != nullptr);
+    // TI_ASSERT(i == 0);
+    // TI_ASSERT(data != nullptr);
     // Returning nullptr is allowed.
     return data;
   }
 
-  TC_DEVICE TC_FORCE_INLINE int get_n() const {
+  TI_DEVICE TI_FORCE_INLINE int get_n() const {
     return 1;
   }
 
-  TC_DEVICE TC_FORCE_INLINE static constexpr int get_max_n() {
+  TI_DEVICE TI_FORCE_INLINE static constexpr int get_max_n() {
     return 1;
   }
 
-  TC_DEVICE TC_FORCE_INLINE bool is_active(int i) {
+  TI_DEVICE TI_FORCE_INLINE bool is_active(int i) {
     return data != nullptr;
   }
 
-  TC_DEVICE TC_FORCE_INLINE void activate(int i,
+  TI_DEVICE TI_FORCE_INLINE void activate(int i,
                                           const PhysicalIndexGroup &index) {
     if (data == nullptr) {
 #if defined(__CUDA_ARCH__)
@@ -705,27 +705,27 @@ struct dynamic {
   child_type data[max_n];
   int n;
 
-  TC_DEVICE dynamic() : n(0) {
+  TI_DEVICE dynamic() : n(0) {
   }
 
-  TC_DEVICE TC_FORCE_INLINE child_type *look_up(
+  TI_DEVICE TI_FORCE_INLINE child_type *look_up(
       int i) {  // i is flattened index
 #if defined(TL_HOST)
     // assuming serial
     n = std::max(n, i + 1);
 #else
-    TC_ASSERT(i < n);
+    TI_ASSERT(i < n);
 #endif
     return &data[i];
   }
 
-  __device__ TC_FORCE_INLINE void clear() {
+  __device__ TI_FORCE_INLINE void clear() {
     n = 0;
   }
 
-  __device__ __host__ TC_FORCE_INLINE void append(child_type t) {
+  __device__ __host__ TI_FORCE_INLINE void append(child_type t) {
     auto tail = atomic_add(&n, 1);
-    TC_ASSERT(tail < max_n);
+    TI_ASSERT(tail < max_n);
     atomic_min(&n, max_n);
 #if __CUDA_ARCH__
     tail = min(tail, (int)(max_n - 1));
@@ -735,25 +735,25 @@ struct dynamic {
     data[tail] = t;
   }
 
-  TC_DEVICE TC_FORCE_INLINE bool is_active(int i) {
+  TI_DEVICE TI_FORCE_INLINE bool is_active(int i) {
     return true;
   }
 
-  TC_DEVICE TC_FORCE_INLINE void deactivate(int i_) {
+  TI_DEVICE TI_FORCE_INLINE void deactivate(int i_) {
     n = 0;  // TODO: fix this
   }
 
-  TC_DEVICE TC_FORCE_INLINE void activate(int i,
+  TI_DEVICE TI_FORCE_INLINE void activate(int i,
                                           const PhysicalIndexGroup &index) {
-    // TC_ASSERT();
+    // TI_ASSERT();
     // Do nothing
   }
 
-  TC_DEVICE TC_FORCE_INLINE int get_n() const {
+  TI_DEVICE TI_FORCE_INLINE int get_n() const {
     return n;
   }
 
-  TC_DEVICE TC_FORCE_INLINE static constexpr int get_max_n() {
+  TI_DEVICE TI_FORCE_INLINE static constexpr int get_max_n() {
     return max_n;
   }
 

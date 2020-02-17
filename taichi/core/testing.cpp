@@ -6,7 +6,7 @@
 #define CATCH_CONFIG_RUNNER
 #include <taichi/common/testing.h>
 
-TC_NAMESPACE_BEGIN
+TI_NAMESPACE_BEGIN
 
 int run_tests(std::vector<std::string> argv) {
   char arg[] = "test";
@@ -22,4 +22,4 @@ int run_tests(std::vector<std::string> argv) {
   return session.run();
 }
 
-TC_NAMESPACE_END
+TI_NAMESPACE_END

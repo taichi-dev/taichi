@@ -44,9 +44,9 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(AtomicOpStmt *stmt) {
-    TC_ASSERT(stmt->width() == 1);
+    TI_ASSERT(stmt->width() == 1);
     if (stmt->val->ret_type.data_type != stmt->dest->ret_type.data_type) {
-      TC_WARN("Atomic add ({} to {}) may lose precision.",
+      TI_WARN("Atomic add ({} to {}) may lose precision.",
               data_type_name(stmt->val->ret_type.data_type),
               data_type_name(stmt->dest->ret_type.data_type));
       stmt->val = insert_type_cast_before(stmt, stmt->val,
@@ -58,7 +58,7 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(LocalLoadStmt *stmt) {
-    TC_ASSERT(stmt->width() == 1);
+    TI_ASSERT(stmt->width() == 1);
     auto lookup = stmt->ptr[0].var->ret_type;
     stmt->ret_type = lookup;
   }
@@ -75,7 +75,7 @@ class TypeCheck : public IRVisitor {
                                            stmt->ptr->ret_type.data_type);
     }
     if (stmt->ptr->ret_type.data_type != ret_type) {
-      TC_WARN(
+      TI_WARN(
           "Local store may lose precision (target = {}, value = {}, "
           "stmt_id = {}) at",
           stmt->ptr->ret_data_type_name(), stmt->data->ret_data_type_name(),
@@ -97,24 +97,24 @@ class TypeCheck : public IRVisitor {
     if (stmt->snodes)
       stmt->ret_type.data_type = stmt->snodes[0]->dt;
     else
-      TC_WARN("Type inference failed: snode is nullptr.");
+      TI_WARN("Type inference failed: snode is nullptr.");
     for (int l = 0; l < stmt->snodes.size(); l++) {
       if (stmt->snodes[l]->parent->num_active_indices != 0 &&
           stmt->snodes[l]->parent->num_active_indices != stmt->indices.size()) {
-        TC_ERROR("{} has {} indices. Indexed with {}.",
+        TI_ERROR("{} has {} indices. Indexed with {}.",
                  stmt->snodes[l]->parent->node_type_name,
                  stmt->snodes[l]->parent->num_active_indices,
                  stmt->indices.size());
       }
     }
     for (int i = 0; i < stmt->indices.size(); i++) {
-      TC_ASSERT_INFO(
+      TI_ASSERT_INFO(
           is_integral(stmt->indices[i]->ret_type.data_type),
           "Taichi tensors must be accessed with integral indices (e.g., "
           "i32/i64). It seems that you have used a float point number as "
           "an index. You can cast that to an integer using int(). Also note "
           "that ti.floor(ti.f32) returns f32.");
-      TC_ASSERT(stmt->indices[i]->ret_type.width == stmt->snodes.size());
+      TI_ASSERT(stmt->indices[i]->ret_type.width == stmt->snodes.size());
     }
   }
 
@@ -127,7 +127,7 @@ class TypeCheck : public IRVisitor {
                                            stmt->ptr->ret_type.data_type);
     }
     if (stmt->ptr->ret_type.data_type != promoted) {
-      TC_WARN("Global store may lose precision: {} <- {}, at",
+      TI_WARN("Global store may lose precision: {} <- {}, at",
               stmt->ptr->ret_data_type_name(), input_type, stmt->tb);
     }
     stmt->ret_type = stmt->ptr->ret_type;
@@ -135,7 +135,7 @@ class TypeCheck : public IRVisitor {
 
   void visit(RangeForStmt *stmt) {
     /*
-    TC_ASSERT(block->local_variables.find(stmt->loop_var) ==
+    TI_ASSERT(block->local_variables.find(stmt->loop_var) ==
               block->local_variables.end());
               */
     mark_as_if_const(stmt->begin, VectorType(1, DataType::i32));
@@ -162,13 +162,13 @@ class TypeCheck : public IRVisitor {
     }
     if (is_trigonometric(stmt->op_type) &&
         !is_real(stmt->operand->ret_type.data_type)) {
-      TC_ERROR("Trigonometric operator takes real inputs only. At {}",
+      TI_ERROR("Trigonometric operator takes real inputs only. At {}",
                stmt->tb);
     }
     if ((stmt->op_type == UnaryOpType::floor ||
          stmt->op_type == UnaryOpType::ceil) &&
         !is_real(stmt->operand->ret_type.data_type)) {
-      TC_ERROR("floor/ceil takes real inputs only. At {}", stmt->tb);
+      TI_ERROR("floor/ceil takes real inputs only. At {}", stmt->tb);
     }
   }
 
@@ -204,14 +204,14 @@ class TypeCheck : public IRVisitor {
   void visit(BinaryOpStmt *stmt) {
     auto error = [&](std::string comment = "") {
       if (comment == "") {
-        TC_WARN("Error: type mismatch (left = {}, right = {}, stmt_id = {}) at",
+        TI_WARN("Error: type mismatch (left = {}, right = {}, stmt_id = {}) at",
                 stmt->lhs->ret_data_type_name(),
                 stmt->rhs->ret_data_type_name(), stmt->id);
       } else {
-        TC_WARN(comment + " at");
+        TI_WARN(comment + " at");
       }
       fmt::print(stmt->tb);
-      TC_WARN("Compilation stopped due to type mismatch.");
+      TI_WARN("Compilation stopped due to type mismatch.");
       exit(-1);
     };
     if (stmt->lhs->ret_type.data_type == DataType::unknown &&
@@ -270,9 +270,9 @@ class TypeCheck : public IRVisitor {
     if (stmt->op_type == TernaryOpType::select) {
       auto ret_type = promoted_type(stmt->op2->ret_type.data_type,
                                     stmt->op3->ret_type.data_type);
-      TC_ASSERT(stmt->op1->ret_type.data_type == DataType::i32)
-      TC_ASSERT(stmt->op1->ret_type.width == stmt->op2->ret_type.width);
-      TC_ASSERT(stmt->op2->ret_type.width == stmt->op3->ret_type.width);
+      TI_ASSERT(stmt->op1->ret_type.data_type == DataType::i32)
+      TI_ASSERT(stmt->op1->ret_type.width == stmt->op2->ret_type.width);
+      TI_ASSERT(stmt->op2->ret_type.width == stmt->op3->ret_type.width);
       if (ret_type != stmt->op2->ret_type.data_type) {
         auto cast_stmt = insert_type_cast_before(stmt, stmt->op2, ret_type);
         stmt->op2 = cast_stmt;
@@ -283,34 +283,34 @@ class TypeCheck : public IRVisitor {
       }
       stmt->ret_type = VectorType(stmt->op1->width(), ret_type);
     } else {
-      TC_NOT_IMPLEMENTED
+      TI_NOT_IMPLEMENTED
     }
   }
 
   void visit(ElementShuffleStmt *stmt) {
-    TC_ASSERT(stmt->elements.size() != 0);
+    TI_ASSERT(stmt->elements.size() != 0);
     stmt->element_type() = stmt->elements[0].stmt->element_type();
   }
 
   void visit(RangeAssumptionStmt *stmt) {
-    TC_ASSERT(stmt->input->ret_type == stmt->base->ret_type);
+    TI_ASSERT(stmt->input->ret_type == stmt->base->ret_type);
     stmt->ret_type = stmt->input->ret_type;
   }
 
   void visit(ArgLoadStmt *stmt) {
     auto &args = get_current_program().get_current_kernel().args;
-    TC_ASSERT(0 <= stmt->arg_id && stmt->arg_id < args.size());
-    TC_ASSERT(!args[stmt->arg_id].is_return_value);
+    TI_ASSERT(0 <= stmt->arg_id && stmt->arg_id < args.size());
+    TI_ASSERT(!args[stmt->arg_id].is_return_value);
     stmt->ret_type = VectorType(1, args[stmt->arg_id].dt);
   }
 
   void visit(ArgStoreStmt *stmt) {
     auto &args = get_current_program().get_current_kernel().args;
-    TC_ASSERT(0 <= stmt->arg_id && stmt->arg_id < args.size());
+    TI_ASSERT(0 <= stmt->arg_id && stmt->arg_id < args.size());
     auto arg = args[stmt->arg_id];
     auto arg_type = arg.dt;
-    TC_ASSERT(arg.is_return_value);
-    TC_ASSERT(stmt->val->ret_type.data_type == arg_type);
+    TI_ASSERT(arg.is_return_value);
+    TI_ASSERT(stmt->val->ret_type.data_type == arg_type);
     stmt->ret_type = VectorType(1, arg_type);
   }
 

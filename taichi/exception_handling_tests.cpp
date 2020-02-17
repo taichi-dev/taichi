@@ -22,7 +22,7 @@ class NodeA : public NodeBase {
   }
 
   void visit() override {
-    TC_INFO("Visiting node A");
+    TI_INFO("Visiting node A");
     if (ch)
       ch->visit();
   }
@@ -34,7 +34,7 @@ class NodeB : public NodeBase {
   }
 
   void visit() override {
-    TC_INFO("Visiting node B, throwing std::exception");
+    TI_INFO("Visiting node B, throwing std::exception");
     throw std::exception();
   }
 };
@@ -45,15 +45,15 @@ class NodeC : public NodeBase {
   }
 
   void visit() override {
-    TC_INFO("Visiting node C, throwing IRModified");
+    TI_INFO("Visiting node C, throwing IRModified");
     throw IRModified();
   }
 };
 
 int test_throw(const std::string &seq) {
-  TC_ASSERT(seq.size() >= 0);
+  TI_ASSERT(seq.size() >= 0);
   std::unique_ptr<NodeBase> root;
-  TC_P(seq);
+  TI_P(seq);
   for (int i = (int)seq.size() - 1; i >= 0; i--) {
     auto ch = seq[i];
     if (ch == 'A') {
@@ -63,16 +63,16 @@ int test_throw(const std::string &seq) {
     } else if (ch == 'C') {
       root = std::make_unique<NodeC>(std::move(root));
     } else {
-      TC_NOT_IMPLEMENTED;
+      TI_NOT_IMPLEMENTED;
     }
   }
   try {
     root->visit();
   } catch (const IRModified &) {
-    TC_INFO("Caught IRModified (Node C)");
+    TI_INFO("Caught IRModified (Node C)");
     return 2;
   } catch (const std::exception &) {
-    TC_INFO("Caught std::exception (Node B)");
+    TI_INFO("Caught std::exception (Node B)");
     return 1;
   }
   return 0;
@@ -83,17 +83,17 @@ auto test_exception_handling = [](const std::vector<std::string> &params) {
 };
 
 auto test_exception_handling_auto = []() {
-  TC_ASSERT(test_throw("A") == 0);
-  TC_ASSERT(test_throw("AAA") == 0);
-  TC_ASSERT(test_throw("AAB") == 1);
-  TC_ASSERT(test_throw("AAC") == 2);
-  TC_ASSERT(test_throw("AACB") == 2);
-  TC_ASSERT(test_throw("AABC") == 1);
+  TI_ASSERT(test_throw("A") == 0);
+  TI_ASSERT(test_throw("AAA") == 0);
+  TI_ASSERT(test_throw("AAB") == 1);
+  TI_ASSERT(test_throw("AAC") == 2);
+  TI_ASSERT(test_throw("AACB") == 2);
+  TI_ASSERT(test_throw("AABC") == 1);
 
-  TC_INFO("Test was successful");
+  TI_INFO("Test was successful");
 };
 
-TC_REGISTER_TASK(test_exception_handling);
-TC_REGISTER_TASK(test_exception_handling_auto);
+TI_REGISTER_TASK(test_exception_handling);
+TI_REGISTER_TASK(test_exception_handling_auto);
 
 TLANG_NAMESPACE_END

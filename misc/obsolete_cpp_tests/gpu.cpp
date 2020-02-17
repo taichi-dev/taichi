@@ -4,7 +4,7 @@
 
 TLANG_NAMESPACE_BEGIN
 
-TC_TEST("compiler_basics_gpu") {
+TI_TEST("compiler_basics_gpu") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 128;
   Program prog(Arch::gpu);
@@ -24,18 +24,18 @@ TC_TEST("compiler_basics_gpu") {
   })();
 
   for (int i = 0; i < n; i++) {
-    TC_CHECK(a.val<int32>(i) == (2 - i % 2) * i);
+    TI_CHECK(a.val<int32>(i) == (2 - i % 2) * i);
   }
 };
 
-#if defined(CUDA_FOUND)
-TC_TEST("cuda_malloc_managed") {
+#if defined(TI_WITH_CUDA)
+TI_TEST("cuda_malloc_managed") {
   void *ptr;
   cudaMallocManaged(&ptr, 1LL << 40);
 
   int *data = (int *)ptr;
   for (int i = 0; i < 100000; i++) {
-    TC_CHECK(data[i * 749] == 0);
+    TI_CHECK(data[i * 749] == 0);
   }
   cudaFree(ptr);
 }

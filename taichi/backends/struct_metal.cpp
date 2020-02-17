@@ -4,7 +4,7 @@ TLANG_NAMESPACE_BEGIN
 namespace metal {
 
 MetalStructCompiler::CompiledResult MetalStructCompiler::run(SNode &node) {
-  TC_ASSERT(node.type == SNodeType::root);
+  TI_ASSERT(node.type == SNodeType::root);
   collect_snodes(node);
   // The host side has run this!
   // infer_snode_properties(node);
@@ -85,9 +85,9 @@ void MetalStructCompiler::generate_types(const SNode &snode) {
     emit("  device byte* addr_;");
     emit("}};");
   } else {
-    TC_ERROR("SNodeType={} not supported on Metal",
+    TI_ERROR("SNodeType={} not supported on Metal",
              snode_type_name(snode.type));
-    TC_NOT_IMPLEMENTED;
+    TI_NOT_IMPLEMENTED;
   }
   emit("");
 }

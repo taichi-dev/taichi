@@ -72,17 +72,17 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
     auto offloaded_local = offloaded_tasks;
     for (auto &task : offloaded_local) {
       llvm::Function *func = module->getFunction(task.name);
-      TC_ASSERT(func);
+      TI_ASSERT(func);
       mark_function_as_cuda_kernel(func);
     }
 
     if (prog->config.print_kernel_llvm_ir) {
-      TC_INFO("IR before global optimization");
+      TI_INFO("IR before global optimization");
       module->print(errs(), nullptr);
     }
     auto ptx = compile_module_to_ptx(module);
     if (prog->config.print_kernel_llvm_ir_optimized) {
-      TC_P(ptx);
+      TI_P(ptx);
     }
     auto cuda_module = cuda_context->compile(ptx);
 
@@ -93,7 +93,7 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
     auto prog = this->prog;
     return [offloaded_local, prog](Context context) {
       for (auto task : offloaded_local) {
-        TC_DEBUG("Launching kernel {}<<<{}, {}>>>", task.name, task.grid_dim,
+        TI_DEBUG("Launching kernel {}<<<{}, {}>>>", task.name, task.grid_dim,
                  task.block_dim);
 
         ProfilerBase *profiler = nullptr;
@@ -105,13 +105,13 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
       }
     };
 #else
-    TC_NOT_IMPLEMENTED;
+    TI_NOT_IMPLEMENTED;
     return nullptr;
 #endif
   }
 
   void visit(PrintStmt *stmt) override {
-    TC_ASSERT(stmt->width() == 1);
+    TI_ASSERT(stmt->width() == 1);
 
     auto value_type = tlctx->get_data_type(stmt->stmt->ret_type.data_type);
 
@@ -130,7 +130,7 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
     } else if (stmt->stmt->ret_type.data_type == DataType::f64) {
       format = "%.12f";
     } else {
-      TC_NOT_IMPLEMENTED
+      TI_NOT_IMPLEMENTED
     }
 
     std::vector<llvm::Type *> types{value_type};
@@ -166,7 +166,7 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
     } else if (input_taichi_type == DataType::i32) {                        \
       stmt->value = builder->CreateCall(get_runtime_function(#x), input);   \
     } else {                                                                \
-      TC_NOT_IMPLEMENTED                                                    \
+      TI_NOT_IMPLEMENTED                                                    \
     }                                                                       \
   }
     if (op == UnaryOpType::abs) {
@@ -180,7 +180,7 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
         stmt->value =
             builder->CreateCall(get_runtime_function("__nv_abs"), input);
       } else {
-        TC_NOT_IMPLEMENTED
+        TI_NOT_IMPLEMENTED
       }
     } else if (op == UnaryOpType::sqrt) {
       if (input_taichi_type == DataType::f32) {
@@ -190,14 +190,14 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
         stmt->value =
             builder->CreateCall(get_runtime_function("__nv_sqrt"), input);
       } else {
-        TC_NOT_IMPLEMENTED
+        TI_NOT_IMPLEMENTED
       }
     } else if (op == UnaryOpType::logic_not) {
       if (input_taichi_type == DataType::i32) {
         stmt->value =
             builder->CreateCall(get_runtime_function("logic_not_i32"), input);
       } else {
-        TC_NOT_IMPLEMENTED
+        TI_NOT_IMPLEMENTED
       }
     }
     UNARY_STD(exp)
@@ -210,21 +210,21 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
     UNARY_STD(cos)
     UNARY_STD(sin)
     else {
-      TC_P(unary_op_type_name(op));
-      TC_NOT_IMPLEMENTED
+      TI_P(unary_op_type_name(op));
+      TI_NOT_IMPLEMENTED
     }
 #undef UNARY_STD
   }
 
   void visit(AtomicOpStmt *stmt) override {
-    TC_ASSERT(stmt->width() == 1);
+    TI_ASSERT(stmt->width() == 1);
     // https://llvm.org/docs/NVPTXUsage.html#address-spaces
     bool is_local = stmt->dest->is<AllocaStmt>();
     if (is_local) {
-      TC_ERROR("Local atomics should have been demoted.");
+      TI_ERROR("Local atomics should have been demoted.");
     } else {
       for (int l = 0; l < stmt->width(); l++) {
-        TC_ASSERT(stmt->op_type == AtomicOpType::add);
+        TI_ASSERT(stmt->op_type == AtomicOpType::add);
         llvm::Value *old_value;
         if (is_integral(stmt->val->ret_type.data_type)) {
           old_value = builder->CreateAtomicRMW(
@@ -243,7 +243,7 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
                                        {llvm::PointerType::get(dt, 0)},
                                        {stmt->dest->value, stmt->val->value});
         } else {
-          TC_NOT_IMPLEMENTED
+          TI_NOT_IMPLEMENTED
         }
         stmt->value = old_value;
       }
@@ -344,7 +344,7 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
         if (kernel_block_dim == 0)
           kernel_block_dim = prog->config.default_gpu_block_dim;
         kernel_block_dim =
-            std::min(stmt->snode->parent->max_num_elements(), kernel_block_dim);
+            std::min(stmt->snode->max_num_elements(), kernel_block_dim);
         stmt->block_dim = kernel_block_dim;
         create_offload_struct_for(stmt, true);
       } else if (stmt->task_type == Type::clear_list) {
@@ -355,7 +355,7 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
         kernel_block_dim = std::min(branching, 64);
         emit_list_gen(stmt);
       } else {
-        TC_NOT_IMPLEMENTED
+        TI_NOT_IMPLEMENTED
       }
       finalize_offloaded_task_function();
       current_task->grid_dim = kernel_grid_dim;
@@ -364,13 +364,13 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
       current_task = nullptr;
     }
 #else
-    TC_NOT_IMPLEMENTED
+    TI_NOT_IMPLEMENTED
 #endif
   }
 };
 
 FunctionType GPUCodeGen::codegen_llvm() {
-  TC_PROFILER("cuda codegen");
+  TI_PROFILER("cuda codegen");
   return CodeGenLLVMGPU(this, kernel).gen();
 }
 

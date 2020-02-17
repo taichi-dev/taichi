@@ -1,6 +1,6 @@
 message("Using C++ compiler: " ${CMAKE_CXX_COMPILER})
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTC_ISE_NONE")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_ISE_NONE")
 
 option(BUILD_WITH_ADDRESS_SANITIZER "Build with clang address sanitizer" OFF)
 
@@ -49,19 +49,19 @@ if (USE_STDCPP)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
 endif()
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTC_PASS_EXCEPTION_TO_PYTHON")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_PASS_EXCEPTION_TO_PYTHON")
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTC_INCLUDED")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_INCLUDED")
 
-if ($ENV{TC_USE_DOUBLE})
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTC_USE_DOUBLE")
+if ($ENV{TI_USE_DOUBLE})
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_USE_DOUBLE")
     message("Using float64 (double) precision as real")
 else()
     message("Using float32 (single) precision as real")
 endif()
 
-if (TC_USE_MPI)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTC_USE_MPI")
+if (TI_USE_MPI)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_USE_MPI")
     message("Using MPI")
 endif ()
 

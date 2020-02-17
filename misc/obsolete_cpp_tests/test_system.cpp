@@ -7,9 +7,9 @@
 #include <taichi/testing.h>
 #include <taichi/system/virtual_memory.h>
 
-TC_NAMESPACE_BEGIN
+TI_NAMESPACE_BEGIN
 
-TC_TEST("Virtual Memory") {
+TI_TEST("Virtual Memory") {
   for (int i = 0; i < 3; i++) {
     // Allocate 1 TB of virtual memory
     std::size_t size = 1LL << 40;
@@ -23,4 +23,4 @@ TC_TEST("Virtual Memory") {
   }
 }
 
-TC_NAMESPACE_END
+TI_NAMESPACE_END

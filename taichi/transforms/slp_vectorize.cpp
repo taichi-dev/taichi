@@ -124,7 +124,7 @@ class BasicBlockSLP : public IRVisitor {
         return rec->find(pack[i])->second.first;
       }
     }
-    TC_ASSERT((int)pack.size() == slp_width);
+    TI_ASSERT((int)pack.size() == slp_width);
     for (int i = 0; i < (int)existing_stmts.size(); i++) {
       bool match = true;
       for (int j = 0; j < slp_width; j++) {
@@ -163,7 +163,7 @@ class BasicBlockSLP : public IRVisitor {
         return pack[i];
       }
       // fmt::print(" {} ", pack[i]->id);
-      TC_ASSERT(visited.find(pack[i]) == visited.end());
+      TI_ASSERT(visited.find(pack[i]) == visited.end());
       visited.insert(pack[i]);
     }
     // fmt::print("\n");
@@ -177,7 +177,7 @@ class BasicBlockSLP : public IRVisitor {
         operands.push_back(build(operand_pack));
       }
     } else {
-      TC_ASSERT(pack[0]->width() == 1);
+      TI_ASSERT(pack[0]->width() == 1);
       // Pack previous store or alloca.
       for (int i = 0; i < (int)pack[0]->as<LocalLoadStmt>()->ptr.size(); i++) {
         Pack operand_pack;
@@ -193,19 +193,19 @@ class BasicBlockSLP : public IRVisitor {
             operand_pack.push_back(previous);
         }
         if (operand_pack.size() != 0) {
-          TC_ASSERT((int)operand_pack.size() == slp_width);
+          TI_ASSERT((int)operand_pack.size() == slp_width);
           operands.push_back(build(operand_pack));
         }
       }
     }
     tmp_operands = operands;
     building_pack = pack;
-    TC_ASSERT(tmp_stmt == nullptr);
+    TI_ASSERT(tmp_stmt == nullptr);
     pack[0]->accept(this);
-    TC_ASSERT(tmp_stmt != nullptr);
+    TI_ASSERT(tmp_stmt != nullptr);
     tmp_operands.clear();
     for (int i = 0; i < (int)building_pack.size(); i++) {
-      TC_ASSERT(rec->find(building_pack[i]) == rec->end());
+      TI_ASSERT(rec->find(building_pack[i]) == rec->end());
       (*rec)[building_pack[i]] = std::make_pair(tmp_stmt.get(), i);
     }
     auto ret = new_stmts.push_back(std::move(tmp_stmt));
@@ -217,7 +217,7 @@ class BasicBlockSLP : public IRVisitor {
         break;
       }
     }
-    TC_ASSERT(pos != -1);
+    TI_ASSERT(pos != -1);
     position[ret] = pos;
     existing_stmts.push_back(std::make_pair(pack, ret));
     /*
@@ -231,7 +231,7 @@ class BasicBlockSLP : public IRVisitor {
   }
 
   void replace(Stmt *old_stmt, Stmt *new_stmt, int offset){
-      TC_NOT_IMPLEMENTED
+      TI_NOT_IMPLEMENTED
       /*
       for (int i = 0; i < (int)block->statements.size(); i++) {
         auto stmt = block->statements[i].get();
@@ -239,7 +239,7 @@ class BasicBlockSLP : public IRVisitor {
           continue;  // this is a statement being SLP vectorized..
         for (auto ope : stmt->operands) {
           if (*ope == old_stmt) {
-            TC_ASSERT(old_stmt->width() == 1);
+            TI_ASSERT(old_stmt->width() == 1);
             auto shuffle =
                 Stmt::make<ElementShuffleStmt>(VectorElement(new_stmt, 0));
             *ope = shuffle.get();
@@ -264,7 +264,7 @@ class BasicBlockSLP : public IRVisitor {
     auto &stmts = input_statements;
     Stmt *last_last_stmt = nullptr;
     while (1) {
-      // TC_INFO("Seeding...");
+      // TI_INFO("Seeding...");
       // Find the last statement
       Stmt *last_stmt = nullptr;
       for (int i = stmts.size() - 1; i >= 0; i--) {
@@ -278,7 +278,7 @@ class BasicBlockSLP : public IRVisitor {
         break;
       }
       if (last_stmt == last_last_stmt) {
-        TC_ERROR("Last stmt duplicated. Loop detected.");
+        TI_ERROR("Last stmt duplicated. Loop detected.");
       }
       last_last_stmt = last_stmt;
 
@@ -298,11 +298,11 @@ class BasicBlockSLP : public IRVisitor {
       }
 
       if ((int)seed_statements.size() != width) {
-        TC_ERROR("Cannot find enough {} seed statements to start SLP search.",
+        TI_ERROR("Cannot find enough {} seed statements to start SLP search.",
                  width);
       }
       std::reverse(seed_statements.begin(), seed_statements.end());
-      // TC_P(last_stmt->id);
+      // TI_P(last_stmt->id);
       build(seed_statements);
     }
     sort(new_stmts);
@@ -335,7 +335,7 @@ class BasicBlockSLP : public IRVisitor {
               if (replaced)
                 break;
             }
-            TC_ASSERT(replaced);
+            TI_ASSERT(replaced);
           }
         }
       } else if (stmt_->is<LocalStoreStmt>()) {
@@ -347,18 +347,18 @@ class BasicBlockSLP : public IRVisitor {
           for (auto &rec : existing_stmts) {
             for (int j = 0; j < slp_width; j++) {
               if (rec.first[j] == old_stmt) {
-                TC_ASSERT(j == 0);
+                TI_ASSERT(j == 0);
                 // replace alloca
                 stmt->ptr = rec.second;
                 replaced = true;
-                TC_WARN("Replacing alloca in store");
+                TI_WARN("Replacing alloca in store");
                 break;
               }
             }
             if (replaced)
               break;
           }
-          TC_ASSERT(replaced);
+          TI_ASSERT(replaced);
         }
       }
     }
@@ -422,8 +422,8 @@ class SLPVectorize : public IRVisitor {
       // until the end...
       second_pragma_slp_location = (int)block->statements.size();
     }
-    // TC_P(block->statements[first_pragma_slp_location]->id);
-    TC_ASSERT(
+    // TI_P(block->statements[first_pragma_slp_location]->id);
+    TI_ASSERT(
         block->statements[first_pragma_slp_location]->is<PragmaSLPStmt>());
 
     std::vector<pStmt> shuffles;
@@ -443,7 +443,7 @@ class SLPVectorize : public IRVisitor {
         auto s = stmt->as<ElementShuffleStmt>();
         for (int l = 0; l < stmt->width(); l++) {
           auto old_stmt = s->elements[l].stmt;
-          TC_ASSERT(s->elements[l].index == 0);
+          TI_ASSERT(s->elements[l].index == 0);
           if (rec.find(old_stmt) != rec.end()) {
             s->elements[l].stmt = rec[old_stmt].first;
             s->elements[l].index = rec[old_stmt].second;
@@ -456,7 +456,7 @@ class SLPVectorize : public IRVisitor {
             auto shuffle = Stmt::make<ElementShuffleStmt>(
                 VectorElement(rec[ope].first, rec[ope].second));
             /*
-            TC_INFO("Shuffle {}: replaced {} with {}", shuffle->id, ope->id,
+            TI_INFO("Shuffle {}: replaced {} with {}", shuffle->id, ope->id,
                     rec[ope].first->id);
                     */
             stmt->set_operand(i, shuffle.get());
@@ -467,16 +467,16 @@ class SLPVectorize : public IRVisitor {
     }
 
     for (int i = 0; i < (int)shuffles.size(); i++) {
-      // TC_P(shuffles[i]->id);
+      // TI_P(shuffles[i]->id);
       block->insert(std::move(shuffles[i]), first_pragma_slp_location + i + 1);
     }
     second_pragma_slp_location += (int)shuffles.size();
 
-    // TC_P(block->statements[first_pragma_slp_location]->id);
-    TC_ASSERT(
+    // TI_P(block->statements[first_pragma_slp_location]->id);
+    TI_ASSERT(
         block->statements[first_pragma_slp_location]->is<PragmaSLPStmt>());
     // irpass::print(context->root());
-    // TC_P(block->statements[first_pragma_slp_location]->id);
+    // TI_P(block->statements[first_pragma_slp_location]->id);
     int current_slp_width = block->statements[first_pragma_slp_location]
                                 ->as<PragmaSLPStmt>()
                                 ->slp_width;
@@ -486,15 +486,15 @@ class SLPVectorize : public IRVisitor {
          i++) {
       vec.push_back(block->statements[i].get());
     }
-    // TC_INFO("Before SLP");
+    // TI_INFO("Before SLP");
     auto slp = BasicBlockSLP();
     block->replace_statements_in_range(
         first_pragma_slp_location, second_pragma_slp_location,
         slp.run(block, current_slp_width, vec, &rec));
     /*
-    TC_P(first_pragma_slp_location);
-    TC_P(second_pragma_slp_location);
-    TC_INFO("SLPed...");
+    TI_P(first_pragma_slp_location);
+    TI_P(second_pragma_slp_location);
+    TI_INFO("SLPed...");
     */
     throw IRModified();
   }
@@ -530,8 +530,8 @@ class SLPVectorize : public IRVisitor {
           if (trivial) {
             stmt->ptr = ptr->elements[0].stmt;
           } else {
-            TC_P(stmt->id);
-            TC_ERROR(
+            TI_P(stmt->id);
+            TI_ERROR(
                 "Local store with non trivial shuffling is not yet handled.");
           }
         }

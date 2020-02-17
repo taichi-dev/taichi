@@ -5,7 +5,7 @@
 #include <taichi/visual/texture.h>
 #include <deque>
 
-TC_NAMESPACE_BEGIN
+TI_NAMESPACE_BEGIN
 
 #include "fem_coeff.h"
 
@@ -30,30 +30,30 @@ auto fem = [](std::vector<std::string> cli_param) {
   auto param = parse_param(cli_param);
 
   bool gpu = param.get("gpu", false);
-  TC_P(gpu);
+  TI_P(gpu);
   bool vectorization = param.get("vec", true);
-  TC_P(vectorization);
+  TI_P(vectorization);
   int threads = param.get("threads", 8);
-  TC_P(threads);
+  TI_P(threads);
   bool use_cache = param.get("cache", true);
-  TC_P(use_cache);
+  TI_P(use_cache);
   bool compute_gt = param.get("compute_gt", false);
-  TC_P(compute_gt);
+  TI_P(compute_gt);
   Program prog(gpu ? Arch::gpu : Arch::x86_64);
   prog.config.simplify_before_lower_access = param.get("simp1", true);
-  TC_P(prog.config.simplify_before_lower_access);
+  TI_P(prog.config.simplify_before_lower_access);
   prog.config.lower_access = param.get("lower_access", true);
-  TC_P(prog.config.lower_access);
+  TI_P(prog.config.lower_access);
   prog.config.print_ir = param.get("print_ir", false);
-  TC_P(prog.config.print_ir);
+  TI_P(prog.config.print_ir);
   prog.config.simplify_after_lower_access = param.get("simp2", true);
-  TC_P(prog.config.simplify_after_lower_access);
+  TI_P(prog.config.simplify_after_lower_access);
   prog.config.attempt_vectorized_load_cpu = param.get("vec_load_cpu", true);
-  TC_P(prog.config.attempt_vectorized_load_cpu);
+  TI_P(prog.config.attempt_vectorized_load_cpu);
   bool use_pointer = param.get("use_pointer", true);
-  TC_P(use_pointer);
+  TI_P(use_pointer);
   bool block_soa = param.get("block_soa", true);
-  TC_P(block_soa);
+  TI_P(block_soa);
   prog.config.lazy_compilation = false;
 
   Vector x(DataType::f32, dim), r(DataType::f32, dim), p(DataType::f32, dim),
@@ -261,7 +261,7 @@ auto fem = [](std::vector<std::string> cli_param) {
   for (int i = 0; i < n - 1; i++) {
     for (int j = 0; j < n - 1; j++) {
       for (int k = 0; k < n - 1; k++) {
-        TC_ASSERT(!active[i][j][k]);
+        TI_ASSERT(!active[i][j][k]);
       }
     }
   }
@@ -275,16 +275,16 @@ auto fem = [](std::vector<std::string> cli_param) {
   auto old_rTr = sum.val<float32>();
 
   for (int i = 0; i < 1000; i++) {
-    TC_P(i);
+    TI_P(i);
     compute_Ap();
     sum.val<float32>() = 0;
     reduce_pAp();
     auto pAp = sum.val<float32>();
     // alpha = rTr / pTAp
     alpha.val<float32>() = old_rTr / pAp;
-    TC_P(old_rTr);
-    // TC_P(pAp);
-    // TC_P(alpha.val<float32>());
+    TI_P(old_rTr);
+    // TI_P(pAp);
+    // TI_P(alpha.val<float32>());
     // x = x + alpha p
     update_x();
     // r = r - alpha Ap
@@ -293,12 +293,12 @@ auto fem = [](std::vector<std::string> cli_param) {
     sum.val<float32>() = 0;
     reduce_r();
     auto new_rTr = sum.val<float32>();
-    // TC_P(new_rTr);
+    // TI_P(new_rTr);
     if (new_rTr < 1e-5f)
       break;
     // beta = new rTr / old rTr
     beta.val<float32>() = new_rTr / old_rTr;
-    // TC_P(beta.val<float32>());
+    // TI_P(beta.val<float32>());
     // p = r + beta p
     update_p();
     old_rTr = new_rTr;
@@ -326,7 +326,7 @@ auto fem = [](std::vector<std::string> cli_param) {
       }
     }
   }
-  TC_P(residual);
+  TI_P(residual);
   auto difference = 0.0f;
   auto difference_max = 0.0f;
   for (int i = 0; i < n; i++) {
@@ -341,8 +341,8 @@ auto fem = [](std::vector<std::string> cli_param) {
       }
     }
   }
-  TC_P(difference);
-  TC_P(difference_max);
+  TI_P(difference);
+  TI_P(difference_max);
 
   int gui_res = 512;
   GUI gui("FEM", Vector2i(gui_res + 200, gui_res), false);
@@ -371,6 +371,6 @@ auto fem = [](std::vector<std::string> cli_param) {
     gui.update();
   }
 };
-TC_REGISTER_TASK(fem);
+TI_REGISTER_TASK(fem);
 
-TC_NAMESPACE_END
+TI_NAMESPACE_END

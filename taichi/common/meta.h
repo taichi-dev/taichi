@@ -17,7 +17,7 @@ namespace taichi {
 namespace meta {
 template <template <int> class F, int bgn, int end, typename... Args>
 struct RepeatFunctionHelper {
-  TC_FORCE_INLINE static void run(Args &&... args) {
+  TI_FORCE_INLINE static void run(Args &&... args) {
     F<bgn>::run(args...);
     RepeatFunctionHelper<F, bgn + 1, end, Args...>::run(
         std::forward<Args>(args)...);
@@ -26,13 +26,13 @@ struct RepeatFunctionHelper {
 
 template <template <int> class F, int bgn, typename... Args>
 struct RepeatFunctionHelper<F, bgn, bgn, Args...> {
-  TC_FORCE_INLINE static void run(Args &&... args) {
+  TI_FORCE_INLINE static void run(Args &&... args) {
     return;
   }
 };
 
 template <template <int> class F, int bgn, int end, typename... Args>
-TC_FORCE_INLINE void repeat_function(Args &&... args) {
+TI_FORCE_INLINE void repeat_function(Args &&... args) {
   RepeatFunctionHelper<F, bgn, end, Args...>::run(std::forward<Args>(args)...);
 }
 }  // namespace meta
@@ -104,27 +104,27 @@ using STATIC_IF::static_if;
 
 // Note the the behaviour of 'return' is still different in the following two
 // implementations.
-#if defined(TC_CPP17)
+#if defined(TI_CPP17)
 
-#define TC_STATIC_IF(x) if constexpr (x) {
-#define TC_STATIC_ELSE \
+#define TI_STATIC_IF(x) if constexpr (x) {
+#define TI_STATIC_ELSE \
   }                    \
   else {
-#define TC_STATIC_END_IF }
+#define TI_STATIC_END_IF }
 
 #else
 
-#define TC_STATIC_IF(x) taichi::static_if<(x)>([&](const auto& id) -> void {
-#define TC_STATIC_ELSE \
+#define TI_STATIC_IF(x) taichi::static_if<(x)>([&](const auto& id) -> void {
+#define TI_STATIC_ELSE \
   }).else_([&](const auto &id) -> void {
-#define TC_STATIC_END_IF \
+#define TI_STATIC_END_IF \
   });
 
 #endif
 
 template <typename T, typename G>
 struct copy_refcv {
-  TC_STATIC_ASSERT(
+  TI_STATIC_ASSERT(
       (std::is_same<G, std::remove_cv_t<std::remove_reference_t<G>>>::value));
   static constexpr bool has_lvalue_ref = std::is_lvalue_reference<T>::value;
   static constexpr bool has_rvalue_ref = std::is_rvalue_reference<T>::value;
@@ -141,28 +141,28 @@ struct copy_refcv {
 template <typename T, typename G>
 using copy_refcv_t = typename copy_refcv<T, G>::type;
 
-TC_STATIC_ASSERT((std::is_same<const volatile int, volatile const int>::value));
-TC_STATIC_ASSERT(
+TI_STATIC_ASSERT((std::is_same<const volatile int, volatile const int>::value));
+TI_STATIC_ASSERT(
     (std::is_same<int,
                   std::remove_volatile_t<
                       std::remove_const_t<const volatile int>>>::value));
-TC_STATIC_ASSERT(
+TI_STATIC_ASSERT(
     (std::is_same<int,
                   std::remove_const_t<
                       std::remove_volatile_t<const volatile int>>>::value));
-TC_STATIC_ASSERT((std::is_same<int &, std::add_const_t<int &>>::value));
-TC_STATIC_ASSERT((std::is_same<copy_refcv_t<int, real>, real>::value));
-TC_STATIC_ASSERT((std::is_same<copy_refcv_t<int &, real>, real &>::value));
-TC_STATIC_ASSERT((copy_refcv<const int &, real>::has_lvalue_ref));
-TC_STATIC_ASSERT(
+TI_STATIC_ASSERT((std::is_same<int &, std::add_const_t<int &>>::value));
+TI_STATIC_ASSERT((std::is_same<copy_refcv_t<int, real>, real>::value));
+TI_STATIC_ASSERT((std::is_same<copy_refcv_t<int &, real>, real &>::value));
+TI_STATIC_ASSERT((copy_refcv<const int &, real>::has_lvalue_ref));
+TI_STATIC_ASSERT(
     (std::is_same<copy_refcv<const int &, real>::G2, const real>::value));
-TC_STATIC_ASSERT(
+TI_STATIC_ASSERT(
     (std::is_same<copy_refcv_t<const int &, real>, const real &>::value));
-TC_STATIC_ASSERT((std::is_same<copy_refcv_t<const volatile int &, real>,
+TI_STATIC_ASSERT((std::is_same<copy_refcv_t<const volatile int &, real>,
                                const volatile real &>::value));
 
 // clang-format off
-#define TC_REPEAT27(F) \
+#define TI_REPEAT27(F) \
   F(0);                \
   F(1);                \
   F(2);                \
@@ -191,7 +191,7 @@ TC_STATIC_ASSERT((std::is_same<copy_refcv_t<const volatile int &, real>,
   F(25);               \
   F(26);
 
-#define TC_LIST27(F)   \
+#define TI_LIST27(F)   \
   F(0),             \
   F(1),             \
   F(2),             \

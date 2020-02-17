@@ -69,7 +69,7 @@ class LinearizeStmt : public Stmt {
   LinearizeStmt(const std::vector<Stmt *> &inputs,
                 const std::vector<int> &strides)
       : inputs(inputs), strides(strides) {
-    TC_ASSERT(inputs.size() == strides.size());
+    TI_ASSERT(inputs.size() == strides.size());
     for (auto &op : this->inputs) {
       add_operand(op);
     }

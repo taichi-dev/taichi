@@ -8,14 +8,14 @@
 #if defined(__host__)
 #undef __host__
 #endif
-#if defined(CUDA_FOUND)
+#if defined(TI_WITH_CUDA)
 #include <cuda_runtime.h>
 #endif
 
 TLANG_NAMESPACE_BEGIN
 
 LoopGenerator::LoopGenerator(taichi::Tlang::CodeGenBase *gen) : gen(gen) {
-#if defined(CUDA_FOUND)
+#if defined(TI_WITH_CUDA)
   int num_SMs;
   cudaDeviceGetAttribute(&num_SMs, cudaDevAttrMultiProcessorCount, 0);
   grid_dim = num_SMs * 32;  // each SM can have 16-32 resident blocks
@@ -41,8 +41,8 @@ void LoopGenerator::emit_listgen_func(SNode *snode,
   } else {
     child_block_size /= child_block_division;
   }
-  // TC_P(child_block_size);
-  // TC_P(child_block_division);
+  // TI_P(child_block_size);
+  // TI_P(child_block_division);
 
   auto parent = snode->parent;
 
@@ -106,7 +106,7 @@ void LoopGenerator::emit_listgen_func(SNode *snode,
     emit("auto list_element = ({}::child_type *)leaves[leaf_loop].ptr;",
          parent->node_type_name);
     auto chid = parent->child_id(snode);
-    TC_ASSERT(chid != -1);
+    TI_ASSERT(chid != -1);
     emit("auto {}_cache = list_element->get{}();", snode->node_type_name, chid);
     for (int i = 0; i < max_num_indices; i++) {
       emit("auto {} = leaves[leaf_loop].indices[{}];",
@@ -128,7 +128,7 @@ void LoopGenerator::emit_listgen_func(SNode *snode,
     emit("if (cid >= input_meta.end_loop) break;");
     emit("if (!{}_cache->is_active(cid)) continue;", parent->node_type_name);
     if (deactivate) {
-      TC_ASSERT(child_block_division == 1);
+      TI_ASSERT(child_block_division == 1);
       emit("{}_cache->deactivate(cid);", parent->node_type_name);
     }
   } else {

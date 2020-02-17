@@ -90,8 +90,8 @@ class Offloader {
     std::vector<SNode *> path;
     // leaf is the place (scalar)
     // leaf->parent is the leaf block
-    // so listgen should be invoked from the root to leaf->parent->parent
-    for (auto p = leaf->parent; p; p = p->parent) {
+    // so listgen should be invoked from the root to leaf->parent
+    for (auto p = leaf; p; p = p->parent) {
       path.push_back(p);
     }
     std::reverse(path.begin(), path.end());
@@ -154,10 +154,10 @@ class IdentifyLocalVars : public BasicStmtVisitor {
   std::size_t global_offset;
 
   std::size_t allocate_global(VectorType type) {
-    TC_ASSERT(type.width == 1);
+    TI_ASSERT(type.width == 1);
     auto ret = global_offset;
     global_offset += data_type_size(type.data_type);
-    TC_ASSERT(global_offset < taichi_global_tmp_buffer_size);
+    TI_ASSERT(global_offset < taichi_global_tmp_buffer_size);
     return ret;
   }
 
@@ -181,7 +181,7 @@ class IdentifyLocalVars : public BasicStmtVisitor {
   }
 
   void visit(AllocaStmt *stmt) override {
-    TC_ASSERT(current_offloaded);
+    TI_ASSERT(current_offloaded);
     inst_to_offloaded[stmt] = current_offloaded;
   }
 
@@ -195,20 +195,20 @@ class IdentifyLocalVars : public BasicStmtVisitor {
   }
 
   void visit(LocalLoadStmt *stmt) override {
-    TC_ASSERT(current_offloaded);
-    TC_ASSERT(stmt->width() == 1);
+    TI_ASSERT(current_offloaded);
+    TI_ASSERT(stmt->width() == 1);
     test_and_allocate(stmt->ptr[0].var);
   }
 
   void visit(LocalStoreStmt *stmt) override {
-    TC_ASSERT(current_offloaded);
-    TC_ASSERT(stmt->width() == 1);
+    TI_ASSERT(current_offloaded);
+    TI_ASSERT(stmt->width() == 1);
     test_and_allocate(stmt->ptr);
   }
 
   void visit(AtomicOpStmt *stmt) override {
-    TC_ASSERT(current_offloaded);
-    TC_ASSERT(stmt->width() == 1);
+    TI_ASSERT(current_offloaded);
+    TI_ASSERT(stmt->width() == 1);
     if (stmt->dest->is<AllocaStmt>()) {
       test_and_allocate(stmt->dest);
     }
@@ -321,7 +321,7 @@ class PromoteLocals : public BasicStmtVisitor {
   }
 
   void visit(LocalLoadStmt *stmt) override {
-    TC_ASSERT(stmt->width() == 1);
+    TI_ASSERT(stmt->width() == 1);
     auto alloca = stmt->ptr[0].var;
     if (local_to_global_offset.find(alloca) == local_to_global_offset.end())
       return;
@@ -338,7 +338,7 @@ class PromoteLocals : public BasicStmtVisitor {
   }
 
   void visit(LocalStoreStmt *stmt) override {
-    TC_ASSERT(stmt->width() == 1);
+    TI_ASSERT(stmt->width() == 1);
     auto alloca = stmt->ptr;
     if (local_to_global_offset.find(alloca) == local_to_global_offset.end())
       return;
@@ -355,7 +355,7 @@ class PromoteLocals : public BasicStmtVisitor {
   }
 
   void visit(AtomicOpStmt *stmt) override {
-    TC_ASSERT(stmt->width() == 1);
+    TI_ASSERT(stmt->width() == 1);
     auto alloca = stmt->dest;
     if (local_to_global_offset.find(alloca) == local_to_global_offset.end())
       return;
@@ -386,7 +386,7 @@ class PromoteLocals : public BasicStmtVisitor {
 
 void insert_gc(IRNode *root) {
   auto *b = dynamic_cast<Block *>(root);
-  TC_ASSERT(b);
+  TI_ASSERT(b);
   std::vector<std::pair<int, std::vector<SNode *>>> gc_statements;
   for (int i = 0; i < (int)b->statements.size(); i++) {
     auto snodes = irpass::gather_deactivations(b->statements[i].get());

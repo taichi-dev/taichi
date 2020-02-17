@@ -25,7 +25,7 @@ struct MTLFunction;
 struct MTLComputePipelineState;
 struct MTLBuffer;
 
-#ifdef TC_PLATFORM_OSX
+#ifdef TI_PLATFORM_OSX
 
 using mac::nsobj_unique_ptr;
 
@@ -93,7 +93,7 @@ inline void *mtl_buffer_contents(MTLBuffer *buffer) {
 
 size_t get_max_total_threads_per_threadgroup(
     MTLComputePipelineState *pipeline_state);
-#endif  // TC_PLATFORM_OSX
+#endif  // TI_PLATFORM_OSX
 
 bool is_metal_api_available();
 

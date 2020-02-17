@@ -4,7 +4,7 @@
 
 TLANG_NAMESPACE_BEGIN
 
-TC_TEST("float64") {
+TI_TEST("float64") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 32;
   Program prog(Arch::gpu);
@@ -20,12 +20,12 @@ TC_TEST("float64") {
 
   func();
 
-  // TC_CHECK(sum.val<int>() == n);
+  // TI_CHECK(sum.val<int>() == n);
   for (int i = 0; i < n; i++)
-    TC_CHECK(a.val<float64>(i) == i * 2);
+    TI_CHECK(a.val<float64>(i) == i * 2);
 };
 
-TC_TEST("llvm_exception") {
+TI_TEST("llvm_exception") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 1;
   for (int i = 0; i < 2; i++) {
@@ -41,7 +41,7 @@ TC_TEST("llvm_exception") {
   try {
     throw IRModified();
   } catch (IRModified) {
-    TC_TAG;
+    TI_TAG;
   }
 };
 

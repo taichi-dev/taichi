@@ -36,7 +36,7 @@ class TaichiLLVMContext {
     using FuncT = typename std::function<T>;
     auto ret =
         FuncT((function_pointer_type<FuncT>)jit_lookup_name(jit.get(), name));
-    TC_ASSERT(ret != nullptr);
+    TI_ASSERT(ret != nullptr);
     return ret;
   }
 

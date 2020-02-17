@@ -11,7 +11,7 @@
 
 #endif
 
-TC_NAMESPACE_BEGIN
+TI_NAMESPACE_BEGIN
 
 using namespace std;
 
@@ -20,7 +20,7 @@ std::map<std::string, std::pair<double, int>> Time::Timer::memo;
 std::map<std::string, double> Time::FPSCounter::last_refresh;
 std::map<std::string, int> Time::FPSCounter::counter;
 
-#if defined(TC_PLATFORM_UNIX)
+#if defined(TI_PLATFORM_UNIX)
 
 double Time::get_time() {
   struct timeval tv;
@@ -160,11 +160,11 @@ uint64 Time::get_cycles() {
   __asm__ __volatile__("rdtsc" : "=a"(lo), "=d"(hi));
   return ((uint64)hi << 32) | lo;
 #else
-  TC_WARN("get_cycles is not implemented in this platform. Returning 0.");
+  TI_WARN("get_cycles is not implemented in this platform. Returning 0.");
   return 0;
 #endif
 }
 
 #endif
 
-TC_NAMESPACE_END
+TI_NAMESPACE_END

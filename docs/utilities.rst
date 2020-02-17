@@ -47,45 +47,45 @@ Serialization
 
 The serialization module of taichi allows you to serialize/deserialize objects into/from binary strings.
 
-You can use ``TC_IO`` macros to explicit define fields necessary in Taichi.
+You can use ``TI_IO`` macros to explicit define fields necessary in Taichi.
 
 .. code-block:: cpp
 
-    // TC_IO_DEF
+    // TI_IO_DEF
     struct Particle {
         Vector3f position, velocity;
         real mass;
         string name;
 
-        TC_IO_DEF(position, velocity, mass, name);
+        TI_IO_DEF(position, velocity, mass, name);
     }
 
-    // TC_IO_DECL
+    // TI_IO_DECL
     struct Particle {
         Vector3f position, velocity;
         real mass;
         bool has_name
         string name;
 
-        TC_IO_DECL() {
-            TC_IO(position);
-            TC_IO(velocity);
-            TC_IO(mass);
-            TC_IO(has_name);
+        TI_IO_DECL() {
+            TI_IO(position);
+            TI_IO(velocity);
+            TI_IO(mass);
+            TI_IO(has_name);
             // More flexibility:
             if (has_name) {
-                TC_IO(name);
+                TI_IO(name);
             }
         }
     }
 
-    // TC_IO_DEF_VIRT();
+    // TI_IO_DEF_VIRT();
 
 
 Progress Notification
 ----------------------------------
 
-The taichi messager can send an email to ``$TC_MONITOR_EMAIL`` when the task finished or crashed.
+The taichi messager can send an email to ``$TI_MONITOR_EMAIL`` when the task finished or crashed.
 To enable:
 
 .. code-block:: python

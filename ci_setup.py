@@ -47,7 +47,7 @@ def get_shell_rc_name():
 
 def get_username():
   if build_type == 'ci':
-    os.environ['TC_CI'] = '1'
+    os.environ['TI_CI'] = '1'
     username = 'travis'
   else:
     assert get_os_name() != 'win'

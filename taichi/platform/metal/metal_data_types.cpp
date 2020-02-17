@@ -22,7 +22,7 @@ MetalDataType to_metal_type(DataType dt) {
 #undef METAL_CASE
 
     default:
-      TC_NOT_IMPLEMENTED;
+      TI_NOT_IMPLEMENTED;
       break;
   }
   return MetalDataType::unknown;
@@ -53,7 +53,7 @@ std::string metal_data_type_name(MetalDataType dt) {
     case MetalDataType::unknown:
       return "unknown";
     default:
-      TC_NOT_IMPLEMENTED;
+      TI_NOT_IMPLEMENTED;
       break;
   }
   return "";
@@ -82,7 +82,7 @@ size_t metal_data_type_bytes(MetalDataType dt) {
     case MetalDataType::u64:
       return 8;
     default:
-      TC_NOT_IMPLEMENTED;
+      TI_NOT_IMPLEMENTED;
       break;
   }
   return 0;
@@ -130,7 +130,7 @@ std::string metal_unary_op_type_symbol(UnaryOpType type) {
   // case UnaryOpType::rcp:
   // case UnaryOpType::undefined:
   default:
-    TC_NOT_IMPLEMENTED;
+    TI_NOT_IMPLEMENTED;
   }
   return "";
 }

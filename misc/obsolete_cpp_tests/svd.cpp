@@ -43,7 +43,7 @@ void sifakis_svd_gt(Matrix3 &a, Matrix3 &u, Matrix3 &v, Vector3 &sig) {
   // clang-format on
 }
 
-TC_TEST("svd_scalar") {
+TI_TEST("svd_scalar") {
   using Matrix = TMatrix<float32, 3>;
   using Vector = TVector<float32, 3>;
   float32 tolerance = 2e-3_f32;
@@ -54,30 +54,30 @@ TC_TEST("svd_scalar") {
 
     sifakis_svd_gt<6>(m, U, V, sig_vec);
     sig = Matrix(sig_vec);
-    TC_CHECK_EQUAL(m, U * sig * transposed(V), tolerance);
-    TC_CHECK_EQUAL(Matrix(1), U * transposed(U), tolerance);
-    TC_CHECK_EQUAL(Matrix(1), V * transposed(V), tolerance);
-    TC_CHECK_EQUAL(sig, Matrix(sig.diag()), tolerance);
+    TI_CHECK_EQUAL(m, U * sig * transposed(V), tolerance);
+    TI_CHECK_EQUAL(Matrix(1), U * transposed(U), tolerance);
+    TI_CHECK_EQUAL(Matrix(1), V * transposed(V), tolerance);
+    TI_CHECK_EQUAL(sig, Matrix(sig.diag()), tolerance);
 
     /*
     if (dim == 2) {
       qr_decomp(m, Q, R);
-      TC_CHECK_EQUAL(m, Q * R, tolerance);
-      TC_CHECK_EQUAL(Q * transposed(Q), Matrix(1), tolerance);
+      TI_CHECK_EQUAL(m, Q * R, tolerance);
+      TI_CHECK_EQUAL(Q * transposed(Q), Matrix(1), tolerance);
       CHECK(abs(R[0][1]) < 1e-6_f);
       CHECK(R[0][0] > -1e-6_f);
       CHECK(R[1][1] > -1e-6_f);
     }
 
     polar_decomp(m, R, S);
-    TC_CHECK_EQUAL(m, R * S, tolerance);
-    TC_CHECK_EQUAL(Matrix(1), R * transposed(R), tolerance);
-    TC_CHECK_EQUAL(S, transposed(S), tolerance);
+    TI_CHECK_EQUAL(m, R * S, tolerance);
+    TI_CHECK_EQUAL(Matrix(1), R * transposed(R), tolerance);
+    TI_CHECK_EQUAL(S, transposed(S), tolerance);
     */
   }
 }
 
-TC_TEST("svd_dsl") {
+TI_TEST("svd_dsl") {
   for (auto vec : {1}) {
     CoreState::set_trigger_gdb_when_crash(true);
     using TMat = TMatrix<float32, 3>;
@@ -136,15 +136,15 @@ TC_TEST("svd_dsl") {
         sig(p, p) = gSigma(p).val<float32>(i);
       }
 
-      TC_CHECK_EQUAL(m, U * sig * transposed(V), tolerance);
-      TC_CHECK_EQUAL(TMat(1), U * transposed(U), tolerance);
-      TC_CHECK_EQUAL(TMat(1), V * transposed(V), tolerance);
-      TC_CHECK_EQUAL(sig, TMat(sig.diag()), tolerance);
+      TI_CHECK_EQUAL(m, U * sig * transposed(V), tolerance);
+      TI_CHECK_EQUAL(TMat(1), U * transposed(U), tolerance);
+      TI_CHECK_EQUAL(TMat(1), V * transposed(V), tolerance);
+      TI_CHECK_EQUAL(sig, TMat(sig.diag()), tolerance);
     }
   }
 }
 
-TC_TEST("svd_dsl_float64") {
+TI_TEST("svd_dsl_float64") {
   for (auto vec : {1}) {
     CoreState::set_trigger_gdb_when_crash(true);
     using TMat = TMatrix<float32, 3>;
@@ -204,10 +204,10 @@ TC_TEST("svd_dsl_float64") {
         sig(p, p) = gSigma(p).val<float64>(i);
       }
 
-      TC_CHECK_EQUAL(m, U * sig * transposed(V), tolerance);
-      TC_CHECK_EQUAL(TMat(1), U * transposed(U), tolerance);
-      TC_CHECK_EQUAL(TMat(1), V * transposed(V), tolerance);
-      TC_CHECK_EQUAL(sig, TMat(sig.diag()), tolerance);
+      TI_CHECK_EQUAL(m, U * sig * transposed(V), tolerance);
+      TI_CHECK_EQUAL(TMat(1), U * transposed(U), tolerance);
+      TI_CHECK_EQUAL(TMat(1), V * transposed(V), tolerance);
+      TI_CHECK_EQUAL(sig, TMat(sig.diag()), tolerance);
     }
   }
 }

@@ -88,11 +88,11 @@ struct Runtime;
 template <typename... Args>
 void taichi_printf(Runtime *runtime, const char *format, Args &&... args);
 
+extern "C" {
+
 #if ARCH_cuda
 void vprintf(Ptr format, Ptr arg);
 #endif
-
-extern "C" {
 
 #define DEFINE_UNARY_REAL_FUNC(F) \
   f32 F##_f32(f32 x) {            \

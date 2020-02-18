@@ -14,12 +14,6 @@ void assert_failed_host(const char *msg) {
   TC_ERROR("Assertion failure: {}", msg);
 }
 
-void vprintf_host(const char *a, const char *b) {
-  va_list ap;
-  *(const char **)(void *)&ap = b;
-  vprintf(a, ap);
-}
-
 StructCompilerLLVM::StructCompilerLLVM(Program *prog, Arch arch)
     : StructCompiler(prog),
       ModuleBuilder(prog->get_llvm_context(arch)->get_init_module()),
@@ -332,7 +326,7 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
       runtime_initialize_thread_pool(prog->llvm_runtime, &prog->thread_pool,
                                      (void *)ThreadPool::static_run);
       set_assert_failed(prog->llvm_runtime, (void *)assert_failed_host);
-      set_vprintf_host(prog->llvm_runtime, (void *)vprintf_host);
+      set_vprintf_host(prog->llvm_runtime, (void *)std::printf);
 
       runtime_set_root(prog->llvm_runtime, root);
 

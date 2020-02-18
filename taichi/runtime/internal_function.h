@@ -11,10 +11,10 @@ i32 refresh_counter(Context *context) {
 
 i32 test_list_manager(Context *context) {
   auto runtime = context->runtime;
-  Printf("Runtime %p\n", runtime);
+  taichi_printf(runtime, "Runtime %p\n", runtime);
   auto list = context->runtime->create<ListManager>(runtime, 4, 16);
   for (int i = 0; i < 320; i++) {
-    Printf("appending %d\n", i);
+    taichi_printf(runtime, "appending %d\n", i);
     auto j = i + 5;
     list->append(&j);
   }
@@ -26,22 +26,22 @@ i32 test_list_manager(Context *context) {
 
 i32 test_node_allocator(Context *context) {
   auto runtime = context->runtime;
-  Printf("Runtime %p\n", runtime);
+  taichi_printf(runtime, "Runtime %p\n", runtime);
   auto nodes = context->runtime->create<NodeManager>(runtime, sizeof(i64), 4);
   Ptr ptrs[24];
   for (int i = 0; i < 19; i++) {
-    Printf("allocating %d\n", i);
+    taichi_printf(runtime, "allocating %d\n", i);
     ptrs[i] = nodes->allocate();
-    Printf("ptr %p\n", ptrs[i]);
+    taichi_printf(runtime, "ptr %p\n", ptrs[i]);
   }
   for (int i = 0; i < 5; i++) {
-    Printf("deallocating %d\n", i);
-    Printf("ptr %p\n", ptrs[i]);
+    taichi_printf(runtime, "deallocating %d\n", i);
+    taichi_printf(runtime, "ptr %p\n", ptrs[i]);
     nodes->recycle(ptrs[i]);
   }
   nodes->gc_serial();
   for (int i = 19; i < 24; i++) {
-    Printf("allocating %d\n", i);
+    taichi_printf(runtime, "allocating %d\n", i);
     ptrs[i] = nodes->allocate();
   }
   for (int i = 5; i < 19; i++) {
@@ -50,8 +50,8 @@ i32 test_node_allocator(Context *context) {
 
   for (int i = 19; i < 24; i++) {
     auto idx = nodes->locate(ptrs[i]);
-    Printf("i %d", i);
-    Printf("idx %d", idx);
+    taichi_printf(runtime, "i %d", i);
+    taichi_printf(runtime, "idx %d", idx);
     TC_ASSERT(idx == i - 19);
   }
   return 0;

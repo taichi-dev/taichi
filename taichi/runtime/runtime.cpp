@@ -19,7 +19,7 @@
 #include "../constants.h"
 
 using assert_failed_type = void (*)(const char *);
-using vprintf_host_type = void (*)(const char *, const char *);
+using vprintf_host_type = void (*)(const char *, ...);
 
 #if defined(__linux__) && !ARCH_cuda && defined(TI_ARCH_x86_64)
 __asm__(".symver logf,logf@GLIBC_2.2.5");
@@ -86,7 +86,10 @@ T ifloordiv(T a, T b) {
 struct Runtime;
 template <typename... Args>
 void taichi_printf(Runtime *runtime, const char *format, Args &&... args);
-#define Printf(...) taichi_printf(runtime, __VA_ARGS__)
+
+#if ARCH_cuda
+void vprintf(Ptr format, Ptr arg);
+#endif
 
 extern "C" {
 
@@ -203,7 +206,8 @@ i32 pow_i32(i32 x, i32 n) {
   i32 tmp = x;
   i32 ans = 1;
   while (n) {
-    if (n & 1) ans *= tmp;
+    if (n & 1)
+      ans *= tmp;
     tmp *= tmp;
     n >>= 1;
   }
@@ -214,7 +218,8 @@ i64 pow_i64(i64 x, i64 n) {
   i64 tmp = x;
   i64 ans = 1;
   while (n) {
-    if (n & 1) ans *= tmp;
+    if (n & 1)
+      ans *= tmp;
     tmp *= tmp;
     n >>= 1;
   }
@@ -300,7 +305,6 @@ void taichi_assert_runtime(Runtime *runtime, i32 test, const char *msg);
 #define TC_ASSERT(x) TC_ASSERT_INFO(x, #x)
 
 void ___stubs___() {
-  printf("");
 #if ARCH_cuda
   vprintf(nullptr, nullptr);
 #endif
@@ -642,8 +646,9 @@ Ptr Runtime_initialize(Runtime **runtime_ptr,
   runtime->vm_allocator = vm_allocator;
   runtime->prog = prog;
   if (verbose)
-    printf("[runtime.cpp: Initializing runtime with %d snode(s)...]\n",
-           num_snodes);
+    taichi_printf(runtime,
+                  "[runtime.cpp: Initializing runtime with %d snode(s)...]\n",
+                  num_snodes);
 
   // runtime->allocate ready to use
   runtime->mem_req_queue = (MemRequestQueue *)runtime->allocate_aligned(
@@ -660,7 +665,7 @@ Ptr Runtime_initialize(Runtime **runtime_ptr,
     initialize_rand_state(&runtime->rand_states[i], i);
 
   if (verbose)
-    printf("[runtime.cpp: Runtime initialized.]\n");
+    taichi_printf(runtime, "[runtime.cpp: Runtime initialized.]\n");
   return (Ptr)root_ptr;
 }
 
@@ -919,7 +924,7 @@ void cpu_parallel_range_for(Context *context,
   ctx.end = end;
   ctx.step = step;
   if (step != 1 && step != -1) {
-    printf("step must not be %d\n", step);
+    taichi_printf(context->runtime, "step must not be %d\n", step);
     exit(-1);
   }
   if (block_dim == 0) {
@@ -1149,9 +1154,9 @@ void taichi_printf(Runtime *runtime, const char *format, Args &&... args) {
 #if ARCH_cuda
   printf_helper helper;
   helper.push_back(std::forward<Args>(args)...);
-  runtime->vprintf_host(format, (const char *)helper.ptr());
+  vprintf((Ptr)format, helper.ptr());
 #else
-  printf(format, args...);
+  runtime->vprintf_host(format, args...);
 #endif
 }
 

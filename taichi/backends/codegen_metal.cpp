@@ -616,7 +616,7 @@ void MetalCodeGen::lower() {
 
   if (kernel_->grad) {
     irpass::demote_atomics(ir);
-    irpass::full_simplify(ir);
+    irpass::full_simplify(ir, prog_->config);
     irpass::typecheck(ir);
     if (print_ir) {
       TI_TRACE("Before make_adjoint:");
@@ -666,7 +666,7 @@ void MetalCodeGen::lower() {
     irpass::print(ir);
   }
 
-  irpass::full_simplify(ir);
+  irpass::full_simplify(ir, prog_->config);
   if (print_ir) {
     TI_TRACE("Simplified II:");
     irpass::re_id(ir);

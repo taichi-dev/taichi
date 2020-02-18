@@ -1,4 +1,5 @@
 #include "../ir.h"
+#include "../program.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -6,8 +7,9 @@ TLANG_NAMESPACE_BEGIN
 class AlgSimp : public BasicStmtVisitor {
  public:
   using BasicStmtVisitor::visit;
+  bool fast_math;
 
-  AlgSimp() : BasicStmtVisitor() {
+  AlgSimp(bool fast_math_) : BasicStmtVisitor(), fast_math(fast_math_) {
   }
 
   void visit(BinaryOpStmt *stmt) override {
@@ -20,15 +22,35 @@ class AlgSimp : public BasicStmtVisitor {
     }
     if (stmt->op_type == BinaryOpType::add || stmt->op_type == BinaryOpType::sub) {
       if (alg_is_zero(rhs)) {
+        // a +- 0 -> a
         stmt->replace_with(stmt->lhs);
+        stmt->parent->erase(stmt);
+        throw IRModified();
       } else if (stmt->op_type == BinaryOpType::add && alg_is_zero(lhs)) {
+        // 0 + a -> a
         stmt->replace_with(stmt->rhs);
+        stmt->parent->erase(stmt);
+        throw IRModified();
       }
     } else if (stmt->op_type == BinaryOpType::mul || stmt->op_type == BinaryOpType::div) {
       if (alg_is_one(rhs)) {
+        // a */ 1 -> a
         stmt->replace_with(stmt->lhs);
+        stmt->parent->erase(stmt);
+        throw IRModified();
       } else if (stmt->op_type == BinaryOpType::mul && alg_is_one(lhs)) {
+        // 1 * a -> a
         stmt->replace_with(stmt->rhs);
+        stmt->parent->erase(stmt);
+        throw IRModified();
+      } else if (fast_math && stmt->op_type == BinaryOpType::mul
+          && (alg_is_zero(lhs) || alg_is_zero(rhs))) {
+        // fast_math: 0 * a -> 0, a * 0 -> 0
+        auto zero = Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(stmt->ret_type.data_type));
+        stmt->replace_with(zero.get());
+        stmt->parent->insert_before(stmt, VecStatement(std::move(zero)));
+        stmt->parent->erase(stmt);
+        throw IRModified();
       }
     }
   }
@@ -75,8 +97,8 @@ class AlgSimp : public BasicStmtVisitor {
     }
   }
 
-  static void run(IRNode *node) {
-    AlgSimp simplifier;
+  static void run(IRNode *node, bool fast_math) {
+    AlgSimp simplifier(fast_math);
     while (true) {
       bool modified = false;
       try {
@@ -92,8 +114,8 @@ class AlgSimp : public BasicStmtVisitor {
 
 namespace irpass {
 
-void alg_simp(IRNode *root) {
-  return AlgSimp::run(root);
+void alg_simp(IRNode *root, const CompileConfig &config) {
+  return AlgSimp::run(root, config.fast_math);
 }
 
 }  // namespace irpass

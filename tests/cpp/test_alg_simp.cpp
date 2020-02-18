@@ -1,5 +1,6 @@
 #include <taichi/lang.h>
 #include <taichi/testing.h>
+#include <taichi/program.h>
 
 TLANG_NAMESPACE_BEGIN
 
@@ -19,17 +20,85 @@ TI_TEST("simplify_add_zero") {
   auto global_store = block->push_back<GlobalStoreStmt>(global_store_addr, add);
 
   irpass::typecheck(block.get());
-  TI_CHECK(block->size() == 6);  // two addresses, one load, one store
+  TI_CHECK(block->size() == 6);
 
   // irpass::print(block.get());
 
-  irpass::alg_simp(block.get());  // should eliminate add
+  irpass::alg_simp(block.get(), CompileConfig());  // should eliminate add
   irpass::die(block.get());       // should eliminate zero
 
   // irpass::print(block.get());
   TI_CHECK(block->size() == 4);  // two addresses, one load, one store
   TI_CHECK((*block)[0]->is<GlobalTemporaryStmt>());
   // .. more tests, assuming instruction order not shuffled
+}
+
+TI_TEST("simplify_multiply_one") {
+  auto block = std::make_unique<Block>();
+
+  auto global_load_addr =
+      block->push_back<GlobalTemporaryStmt>(0, VectorType(1, DataType::f32));
+  auto global_load = block->push_back<GlobalLoadStmt>(global_load_addr);
+  auto one = block->push_back<ConstStmt>(TypedConstant(1.0f));
+  auto mul1 =
+      block->push_back<BinaryOpStmt>(BinaryOpType::mul, one, global_load);
+  auto mul2 = block->push_back<BinaryOpStmt>(BinaryOpType::mul, mul1, one);
+  auto zero = block->push_back<ConstStmt>(TypedConstant(0.0f));
+  auto div = block->push_back<BinaryOpStmt>(BinaryOpType::div, zero, one);
+  auto sub = block->push_back<BinaryOpStmt>(BinaryOpType::sub, mul2, div);
+  auto global_store_addr =
+      block->push_back<GlobalTemporaryStmt>(4, VectorType(1, DataType::f32));
+  auto global_store = block->push_back<GlobalStoreStmt>(global_store_addr, sub);
+
+  irpass::typecheck(block.get());
+  TI_CHECK(block->size() == 10);
+
+  // irpass::print(block.get());
+
+  irpass::alg_simp(block.get(), CompileConfig());  // should eliminate mul, div, sub
+  irpass::die(block.get());       // should eliminate zero, one
+
+  // irpass::print(block.get());
+
+  TI_CHECK(block->size() == 4);  // two addresses, one load, one store
+  TI_CHECK((*block)[0]->is<GlobalTemporaryStmt>());
+}
+
+TI_TEST("simplify_multiply_zero_fast_math") {
+  auto block = std::make_unique<Block>();
+
+  auto global_load_addr =
+      block->push_back<GlobalTemporaryStmt>(0, VectorType(1, DataType::i32));
+  auto global_load = block->push_back<GlobalLoadStmt>(global_load_addr);
+  auto zero = block->push_back<ConstStmt>(TypedConstant(0));
+  auto mul =
+      block->push_back<BinaryOpStmt>(BinaryOpType::mul, global_load, zero);
+  auto one = block->push_back<ConstStmt>(TypedConstant(1));
+  auto add = block->push_back<BinaryOpStmt>(BinaryOpType::add, mul, one);
+  auto global_store_addr =
+      block->push_back<GlobalTemporaryStmt>(4, VectorType(1, DataType::i32));
+  auto global_store = block->push_back<GlobalStoreStmt>(global_store_addr, add);
+
+  irpass::typecheck(block.get());
+  TI_CHECK(block->size() == 8);
+
+  // irpass::print(block.get());
+
+  CompileConfig config_without_fast_math;
+  config_without_fast_math.fast_math = false;
+  irpass::alg_simp(block.get(), config_without_fast_math);  // should not eliminate
+  irpass::die(block.get());  // should not eliminate
+  TI_CHECK(block->size() == 8);
+
+  CompileConfig config_with_fast_math;
+  config_with_fast_math.fast_math = true;
+  irpass::alg_simp(block.get(), config_with_fast_math);  // should eliminate mul, add
+  irpass::die(block.get());  // should eliminate zero, load
+
+  // irpass::print(block.get());
+
+  TI_CHECK(block->size() == 4);  // two addresses, one one, one store
+  TI_CHECK((*block)[0]->is<GlobalTemporaryStmt>());
 }
 
 TLANG_NAMESPACE_END

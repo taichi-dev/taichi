@@ -999,9 +999,9 @@ void simplify(IRNode *root) {
   }
 }
 
-void full_simplify(IRNode *root) {
+void full_simplify(IRNode *root, const CompileConfig &config) {
   constant_fold(root);
-  alg_simp(root);
+  alg_simp(root, config);
   die(root);
   simplify(root);
 }

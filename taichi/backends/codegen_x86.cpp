@@ -734,7 +734,7 @@ void CPUCodeGen::lower_llvm() {
     irpass::print(ir);
   }
 
-  irpass::full_simplify(ir);
+  irpass::full_simplify(ir, prog->config);
   if (print_ir) {
     TI_TRACE("Simplified III:");
     irpass::re_id(ir);

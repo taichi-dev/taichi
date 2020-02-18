@@ -1032,7 +1032,7 @@ void GPUCodeGen::lower_llvm() {
     // TI_TRACE("Primal:");
     // irpass::print(ir);
     irpass::demote_atomics(ir);
-    irpass::full_simplify(ir);
+    irpass::full_simplify(ir, prog->config);
     irpass::typecheck(ir);
     if (print_ir) {
       TI_TRACE("Before make_adjoint:");
@@ -1092,7 +1092,7 @@ void GPUCodeGen::lower_llvm() {
     irpass::re_id(ir);
     irpass::print(ir);
   }
-  irpass::full_simplify(ir);
+  irpass::full_simplify(ir, prog->config);
   if (print_ir) {
     TI_TRACE("Simplified III:");
     irpass::re_id(ir);

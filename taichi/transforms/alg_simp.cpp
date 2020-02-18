@@ -77,16 +77,7 @@ class AlgSimp : public BasicStmtVisitor {
 
   static void run(IRNode *node) {
     AlgSimp simplifier;
-    while (true) {
-      bool modified = false;
-      try {
-        node->accept(&simplifier);
-      } catch (IRModified) {
-        modified = true;
-      }
-      if (!modified)
-        break;
-    }
+    node->accept(&simplifier);
   }
 };
 

@@ -132,3 +132,29 @@ def test_dynamic_loop_range():
   test()
   assert c[None] == n
   assert sum(x.to_numpy()) == (n * (n - 1) // 2) + n * n
+
+
+@ti.all_archs
+def test_loop_arg_as_range():
+  # Dynamic range loops are intended to make sure global tmps work
+  x = ti.var(ti.i32)
+  n = 1000
+
+  @ti.layout
+  def layout():
+    ti.root.dense(ti.i, n).place(x)
+
+  @ti.kernel
+  def test(b: ti.i32, e: ti.i32):
+    for i in range(b, e):
+      x[i - b] = i
+
+  pairs = [
+    (0, n // 2),
+    (n // 2, n),
+    (-n // 2, -n // 3),
+  ]
+  for b, e in pairs:
+    test(b, e)
+    for i in range(b, e):
+      assert x[i - b] == i

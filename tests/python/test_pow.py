@@ -47,4 +47,3 @@ def test_pow_i32():
 @ti.all_archs
 def test_pow_i64():
   _test_pow_i(ti.i64)
-

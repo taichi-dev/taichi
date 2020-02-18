@@ -19,6 +19,9 @@
 #include "../constants.h"
 #include "../arithmetic.h"
 
+using assert_failed_type = void (*)(const char *);
+using vprintf_host_type = void (*)(const char *, ...);
+
 #if defined(__linux__) && !ARCH_cuda && defined(TI_ARCH_x86_64)
 __asm__(".symver logf,logf@GLIBC_2.2.5");
 __asm__(".symver powf,powf@GLIBC_2.2.5");
@@ -81,15 +84,15 @@ T ifloordiv(T a, T b) {
   return r;
 }
 
+struct Runtime;
 template <typename... Args>
-void Printf(const char *format, Args &&... args);
-
-extern "C" {
+void taichi_printf(Runtime *runtime, const char *format, Args &&... args);
 
 #if ARCH_cuda
 void vprintf(Ptr format, Ptr arg);
 #endif
-i32 printf(const char *, ...);
+
+extern "C" {
 
 #define DEFINE_UNARY_REAL_FUNC(F) \
   f32 F##_f32(f32 x) {            \
@@ -204,7 +207,8 @@ i32 pow_i32(i32 x, i32 n) {
   i32 tmp = x;
   i32 ans = 1;
   while (n) {
-    if (n & 1) ans *= tmp;
+    if (n & 1)
+      ans *= tmp;
     tmp *= tmp;
     n >>= 1;
   }
@@ -215,7 +219,8 @@ i64 pow_i64(i64 x, i64 n) {
   i64 tmp = x;
   i64 ans = 1;
   while (n) {
-    if (n & 1) ans *= tmp;
+    if (n & 1)
+      ans *= tmp;
     tmp *= tmp;
     n >>= 1;
   }
@@ -301,7 +306,6 @@ void taichi_assert_runtime(Runtime *runtime, i32 test, const char *msg);
 #define TI_ASSERT(x) TI_ASSERT_INFO(x, #x)
 
 void ___stubs___() {
-  printf("");
 #if ARCH_cuda
   vprintf(nullptr, nullptr);
 #endif
@@ -461,6 +465,7 @@ struct NodeManager;
 struct Runtime {
   vm_allocator_type vm_allocator;
   assert_failed_type assert_failed;
+  vprintf_host_type vprintf_host;
   Ptr prog;
   Ptr root;
   size_t root_mem_size;
@@ -493,6 +498,7 @@ STRUCT_FIELD(Runtime, root);
 STRUCT_FIELD(Runtime, root_mem_size);
 STRUCT_FIELD(Runtime, temporaries);
 STRUCT_FIELD(Runtime, assert_failed);
+STRUCT_FIELD(Runtime, vprintf_host);
 STRUCT_FIELD(Runtime, mem_req_queue);
 STRUCT_FIELD(Runtime, profiler);
 STRUCT_FIELD(Runtime, profiler_start);
@@ -644,8 +650,9 @@ Ptr Runtime_initialize(Runtime **runtime_ptr,
   runtime->vm_allocator = vm_allocator;
   runtime->prog = prog;
   if (verbose)
-    printf("[runtime.cpp: Initializing runtime with %d snode(s)...]\n",
-           num_snodes);
+    taichi_printf(runtime,
+                  "[runtime.cpp: Initializing runtime with %d snode(s)...]\n",
+                  num_snodes);
 
   constexpr uint64_t kPageSize = 4096;
   // runtime->allocate ready to use
@@ -668,7 +675,7 @@ Ptr Runtime_initialize(Runtime **runtime_ptr,
     initialize_rand_state(&runtime->rand_states[i], i);
 
   if (verbose)
-    printf("[runtime.cpp: Runtime initialized.]\n");
+    taichi_printf(runtime, "[runtime.cpp: Runtime initialized.]\n");
   return (Ptr)root_ptr;
 }
 
@@ -927,7 +934,7 @@ void cpu_parallel_range_for(Context *context,
   ctx.end = end;
   ctx.step = step;
   if (step != 1 && step != -1) {
-    printf("step must not be %d\n", step);
+    taichi_printf(context->runtime, "step must not be %d\n", step);
     exit(-1);
   }
   if (block_dim == 0) {
@@ -1153,13 +1160,13 @@ struct printf_helper {
 };
 
 template <typename... Args>
-void Printf(const char *format, Args &&... args) {
+void taichi_printf(Runtime *runtime, const char *format, Args &&... args) {
 #if ARCH_cuda
   printf_helper helper;
   helper.push_back(std::forward<Args>(args)...);
   vprintf((Ptr)format, helper.ptr());
 #else
-  printf(format, args...);
+  runtime->vprintf_host(format, args...);
 #endif
 }
 

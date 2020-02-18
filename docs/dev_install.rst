@@ -9,6 +9,8 @@ To build with NVIDIA GPU support, CUDA 10.0+ is needed.
 This installation guide works for Ubuntu 16.04+ and OS X 10.14+.
 For precise build instructions on Windows, please check out `appveyor.yml <https://github.com/taichi-dev/taichi/blob/master/appveyor.yml>`_, which does basically the same thing as the following instructions.
 
+Note that on Linux/OS X, ``clang`` is the only supported compiler for compiling the Taichi compiler. On Windows only MSVC supported.
+
 - Make sure you are using Python 3.6/3.7/3.8
 - Execute
 
@@ -17,7 +19,7 @@ For precise build instructions on Windows, please check out `appveyor.yml <https
     python3 -m pip install --user setuptools astpretty astor pytest opencv-python pybind11
     python3 -m pip install --user Pillow numpy scipy GitPython yapf colorama psutil autograd
 
-- (If on Ubuntu) Execute ``sudo apt install libtinfo-dev clang-7`` .
+- (If on Ubuntu) Execute ``sudo apt install libtinfo-dev clang-8``. ``clang-7`` should work as well.
 - Make sure you have LLVM 8.0.1 built from scratch (`Download <https://github.com/llvm/llvm-project/releases/download/llvmorg-8.0.1/llvm-8.0.1.src.tar.xz>`_). To do so, download and unzip the llvm source, move to the llvm folder, and execute
 
   .. code-block:: bash
@@ -25,6 +27,7 @@ For precise build instructions on Windows, please check out `appveyor.yml <https
     mkdir build
     cd build
     cmake .. -DLLVM_ENABLE_RTTI:BOOL=ON -DBUILD_SHARED_LIBS:BOOL=OFF -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD="X86;NVPTX" -DLLVM_ENABLE_ASSERTIONS=ON
+    # If you are building on NVIDIA Jetson TX2, use -DLLVM_TARGETS_TO_BUILD="ARM;NVPTX"
     make -j 8
     sudo make install
 

@@ -45,3 +45,43 @@ def test_random_int():
     X = x.to_numpy()
     for i in range(4):
       assert (X**i).mean() == approx(1 / (i + 1), rel=1e-2)
+
+@archs_support_random
+def test_random_independent_product():
+  n = 1024
+  x = ti.var(ti.f32, shape=n * n)
+
+  @ti.kernel
+  def fill():
+    for i in range(n * n):
+      a = ti.random()
+      b = ti.random()
+      x[i] = a * b
+
+  fill()
+  X = x.to_numpy()
+  for i in range(4):
+    assert X.mean() == approx(1 / 4, rel=1e-2)
+
+
+@archs_support_random
+def test_random_2d_dist():
+  n = 8192
+
+  x = ti.Vector(2, dt=ti.f32, shape=n)
+
+  @ti.kernel
+  def gen():
+    for i in range(n):
+      x[i] = [ti.random(), ti.random()]
+
+  gen()
+
+  X = x.to_numpy()
+  counters = [0 for _ in range(4)]
+  for i in range(n):
+    c = int(X[i, 0] < 0.5) * 2 + int(X[i, 1] < 0.5)
+    counters[c] += 1
+
+  for c in range(4):
+    assert counters[c] / n == approx(1 / 4, rel=0.05)

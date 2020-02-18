@@ -1105,7 +1105,7 @@ u32 cuda_rand_u32(Context *context) {
     ret = w;
     done = true;
   });
-  return ret;
+  return ret * 1000000007;
 }
 
 uint64 cuda_rand_u64(Context *context) {

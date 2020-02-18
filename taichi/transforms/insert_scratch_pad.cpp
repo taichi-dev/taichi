@@ -16,7 +16,7 @@ class AccessAnalysis : public IRVisitor {
     allow_undefined_visitor = true;
     invoke_default_visitor = false;
 
-    TC_WARN(
+    TI_WARN(
         "Using the size of scratch_opt[0].second as the snode size to cache");
     generate_block_indices(for_stmt->scratch_opt[0].second->parent, {}, 0);
 
@@ -58,9 +58,9 @@ class AccessAnalysis : public IRVisitor {
       /*
       for (auto it: pads->pads) {
         //snodes.push_back(it.first);
-        TC_P(it.first->node_type_name);
+        TI_P(it.first->node_type_name);
       }
-      TC_P(snode->node_type_name);
+      TI_P(snode->node_type_name);
       */
       if (!pads->has(snode)) {
         continue;
@@ -76,24 +76,24 @@ class AccessAnalysis : public IRVisitor {
           offsets[i].first = diff.low;
           offsets[i].second = diff.high;
           /*
-          TC_P(ptr->name());
-          TC_P(diff.low);
-          TC_P(diff.high);
+          TI_P(ptr->name());
+          TI_P(diff.low);
+          TI_P(diff.high);
           */
         } else {
           /*
-          TC_P(i);
-          TC_P(for_stmt->loop_vars[i]->raw_name());
-          TC_P(ptr->indices[i]->raw_name());
+          TI_P(i);
+          TI_P(for_stmt->loop_vars[i]->raw_name());
+          TI_P(ptr->indices[i]->raw_name());
           */
           matching_indices = false;
         }
       }
       if (matching_indices) {
         /*
-        TC_INFO("Detected regular access");
+        TI_INFO("Detected regular access");
         for (int i = 0; i < num_indices; i++) {
-          TC_P(offsets[i]);
+          TI_P(offsets[i]);
         }
         */
         for (const auto &bind : block_indices) {
@@ -117,12 +117,12 @@ class AccessAnalysis : public IRVisitor {
 
   // Do not eliminate global data access
   void visit(GlobalLoadStmt *stmt) override {
-    TC_ASSERT(stmt->width() == 1);  // TODO: support vectorization
+    TI_ASSERT(stmt->width() == 1);  // TODO: support vectorization
     access(stmt->ptr, AccessFlag::read);
   }
 
   void visit(GlobalStoreStmt *stmt) override {
-    TC_ASSERT(stmt->width() == 1);  // TODO: support vectorization
+    TI_ASSERT(stmt->width() == 1);  // TODO: support vectorization
     access(stmt->ptr, AccessFlag::write);
   }
 
@@ -133,7 +133,7 @@ class AccessAnalysis : public IRVisitor {
   }
 
   void visit(Stmt *stmt) override {
-    TC_ASSERT(!stmt->is_container_statement());
+    TI_ASSERT(!stmt->is_container_statement());
   }
 };
 

@@ -34,7 +34,7 @@ class LoopGenerator {
   }
 
   void generate_loop_header(SNode *snode, StructForStmt *stmt) {
-    TC_ASSERT(snode->type != SNodeType::place)
+    TI_ASSERT(snode->type != SNodeType::place)
     if (snode->parent != nullptr) {
       generate_loop_header(snode->parent, stmt);
     }
@@ -72,7 +72,7 @@ class LoopGenerator {
                                  snode->extractors[i].num_bits,
                                  snode->extractors[i].start);
         } else {
-          TC_ASSERT(snode->num_active_indices <= 3);
+          TI_ASSERT(snode->num_active_indices <= 3);
           uint32 mask = mask_base[snode->num_active_indices - 1]
                         << (snode->num_active_indices - morton_id - 1);
           morton_id++;
@@ -111,7 +111,7 @@ class LoopGenerator {
            snode->node_type_name);
     }
     if (snode->_multi_threaded) {
-      TC_NOT_IMPLEMENTED
+      TI_NOT_IMPLEMENTED
     }
 
     if (snode->type == SNodeType::hash) {

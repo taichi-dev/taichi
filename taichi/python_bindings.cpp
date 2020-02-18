@@ -8,11 +8,11 @@
 #include <taichi/python/export.h>
 #include "svd.h"
 
-TC_NAMESPACE_BEGIN
+TI_NAMESPACE_BEGIN
 
 bool test_threading();
 
-TC_NAMESPACE_END
+TI_NAMESPACE_END
 
 TLANG_NAMESPACE_BEGIN
 
@@ -24,7 +24,7 @@ Expr expr_index(const Expr &expr, const Expr &index) {
 
 void expr_assign(const Expr &lhs_, const Expr &rhs, std::string tb) {
   auto lhs = ptr_if_global(lhs_);
-  TC_ASSERT(lhs->is_lvalue());
+  TI_ASSERT(lhs->is_lvalue());
   auto stmt = std::make_unique<FrontendAssignStmt>(lhs, load_if_ptr(rhs));
   stmt->set_tb(tb);
   current_ast_builder().insert(std::move(stmt));
@@ -37,7 +37,7 @@ std::string libdevice_path();
 
 TLANG_NAMESPACE_END
 
-TC_NAMESPACE_BEGIN
+TI_NAMESPACE_BEGIN
 void export_lang(py::module &m) {
   using namespace taichi::Tlang;
 
@@ -131,9 +131,16 @@ void export_lang(py::module &m) {
            (SNode & (SNode::*)(const std::vector<Index> &,
                                const std::vector<int> &))(&SNode::dense),
            py::return_value_policy::reference)
+      .def("pointer",
+          (SNode & (SNode::*)(const std::vector<Index> &,
+                              const std::vector<int> &))(&SNode::pointer),
+          py::return_value_policy::reference)
+      .def("hash",
+          (SNode & (SNode::*)(const std::vector<Index> &,
+                              const std::vector<int> &))(&SNode::hash),
+          py::return_value_policy::reference)
       .def("dynamic", &SNode::dynamic_chunked,
            py::return_value_policy::reference)
-      .def("pointer", &SNode::pointer, py::return_value_policy::reference)
       .def("bitmasked", &SNode::bitmasked)
       .def("place", (SNode & (SNode::*)(Expr &))(&SNode::place),
            py::return_value_policy::reference)
@@ -383,7 +390,7 @@ void export_lang(py::module &m) {
 
   m.def("global_new", static_cast<Expr (*)(Expr, DataType)>(global_new));
   m.def("set_global_grad", [&](const Expr &expr) {
-    TC_ASSERT(expr.is<GlobalVariableExpression>());
+    TI_ASSERT(expr.is<GlobalVariableExpression>());
     expr.cast<GlobalVariableExpression>()->is_primal = false;
   });
   m.def("data_type_name", data_type_name);
@@ -409,7 +416,7 @@ void export_lang(py::module &m) {
     try {
       throw IRModified();
     } catch (IRModified) {
-      TC_INFO("caught");
+      TI_INFO("caught");
     }
   });
   // Schedules
@@ -434,7 +441,7 @@ void export_lang(py::module &m) {
   m.def("get_version_minor", get_version_minor);
   m.def("get_version_patch", get_version_patch);
   m.def("test_printf", [] { printf("test_printf\n"); });
-  m.def("test_logging", [] { TC_INFO("test_logging\n"); });
+  m.def("test_logging", [] { TI_INFO("test_logging\n"); });
   m.def("trigger_crash", [] { *(int *)(1) = 0; });
   m.def("get_max_num_indices", [] { return max_num_indices; });
   m.def("get_max_num_args", [] { return max_num_args; });
@@ -447,4 +454,4 @@ void export_lang(py::module &m) {
   m.def("is_supported", is_supported);
 }
 
-TC_NAMESPACE_END
+TI_NAMESPACE_END

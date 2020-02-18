@@ -12,7 +12,7 @@
 
 #include <taichi/geometry/primitives.h>
 
-TC_NAMESPACE_BEGIN
+TI_NAMESPACE_BEGIN
 
 template <int n, typename T>
 using VectorLengthed = std::conditional_t<n != 1, VectorND<n, T>, T>;
@@ -43,4 +43,4 @@ class Mesh3D {
                                         bool smooth_normal);
 };
 
-TC_NAMESPACE_END
+TI_NAMESPACE_END

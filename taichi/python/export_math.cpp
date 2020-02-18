@@ -6,7 +6,7 @@
 #include <taichi/python/export.h>
 #include <taichi/common/dict.h>
 
-TC_NAMESPACE_BEGIN
+TI_NAMESPACE_BEGIN
 
 template <typename T, int ret>
 int return_constant(T *) {
@@ -59,8 +59,8 @@ void array2d_to_ndarray(T *arr,
                         uint64 output)  // 'output' is actually a pointer...
 {
   int width = arr->get_width(), height = arr->get_height();
-  TC_ASSERT(width > 0);
-  TC_ASSERT(height > 0);
+  TI_ASSERT(width > 0);
+  TI_ASSERT(height > 0);
   for (auto &ind : arr->get_region()) {
     for (int k = 0; k < channels; k++) {
       reinterpret_cast<real *>(
@@ -323,4 +323,4 @@ void export_math(py::module &m) {
   VectorRegistration<Vector4i>::run(m);
 }
 
-TC_NAMESPACE_END
+TI_NAMESPACE_END

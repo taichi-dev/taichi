@@ -8,7 +8,7 @@
 #include <taichi/common/interface.h>
 #include <cstdio>
 
-TC_NAMESPACE_BEGIN
+TI_NAMESPACE_BEGIN
 
 class BinaryFileStreamInput final {
  private:
@@ -42,4 +42,4 @@ class BinaryFileStreamOutput final {
   }
 };
 
-TC_NAMESPACE_END
+TI_NAMESPACE_END

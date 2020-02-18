@@ -5,7 +5,7 @@
 #include "../snode.h"
 #include "../ir.h"
 #include "../program.h"
-#if defined(TC_PLATFORM_UNIX)
+#if defined(TI_PLATFORM_UNIX)
 #include <dlfcn.h>
 #endif
 
@@ -68,7 +68,7 @@ class CodeGenBase {
 
   static int get_kernel_id() {
     static int id = 0;
-    TC_ASSERT(id < 10000);
+    TI_ASSERT(id < 10000);
     return id++;
   }
 
@@ -112,16 +112,16 @@ class CodeGenBase {
 
   template <typename T>
   T load_function(std::string name) {
-#if !defined(TC_PLATFORM_WINDOWS)
+#if !defined(TI_PLATFORM_WINDOWS)
     using FP = decltype(function_pointer_helper(std::declval<T>()));
     if (dll == nullptr) {
       load_dll();
     }
     auto ret = dlsym(dll, name.c_str());
-    TC_ASSERT(ret != nullptr);
+    TI_ASSERT(ret != nullptr);
     return T((FP)ret);
 #else
-    TC_NOT_IMPLEMENTED
+    TI_NOT_IMPLEMENTED
 #endif
   }
 

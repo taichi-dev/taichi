@@ -1,10 +1,10 @@
 #include <taichi/io/base64.h>
 #include <taichi/common/task.h>
 
-TC_NAMESPACE_BEGIN
+TI_NAMESPACE_BEGIN
 
 auto amal_base64 = [](const std::vector<std::string> &param) {
-  TC_ASSERT(param.size() >= 1);
+  TI_ASSERT(param.size() >= 1);
   auto fn = param[0];
   std::ifstream input(fn);
   std::string str((std::istreambuf_iterator<char>(input)),
@@ -17,7 +17,7 @@ auto amal_base64 = [](const std::vector<std::string> &param) {
         65500 / line_width *
         line_width;  // MSVC cannot deal with literal with length > 65535
     fmt::print(fo,
-               "#include <taichi/common/util.h>\n\nTC_NAMESPACE_BEGIN\n\n\n");
+               "#include <taichi/common/util.h>\n\nTI_NAMESPACE_BEGIN\n\n\n");
     int num_literals = 0;
     for (int l = 0; l < (int)encoded.size(); l += maximum_literal_length) {
       fmt::print(fo, "const std::string {}_{:04d} =\n", param[1], num_literals);
@@ -37,11 +37,11 @@ auto amal_base64 = [](const std::vector<std::string> &param) {
         fmt::print(fo, " + ", param[1], i);
     }
 
-    fmt::print(fo, ";\n\nTC_NAMESPACE_END");
+    fmt::print(fo, ";\n\nTI_NAMESPACE_END");
     std::fclose(fo);
   }
 };
 
-TC_REGISTER_TASK(amal_base64);
+TI_REGISTER_TASK(amal_base64);
 
-TC_NAMESPACE_END
+TI_NAMESPACE_END

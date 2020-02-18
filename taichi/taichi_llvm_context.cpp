@@ -35,7 +35,7 @@ TaichiLLVMContext::TaichiLLVMContext(Arch arch) : arch(arch) {
   llvm::remove_fatal_error_handler();
   llvm::install_fatal_error_handler(
       [](void *user_data, const std::string &reason, bool gen_crash_diag) {
-        TC_ERROR("LLVM Fatal Error: {}", reason);
+        TI_ERROR("LLVM Fatal Error: {}", reason);
       },
       nullptr);
 
@@ -50,11 +50,11 @@ TaichiLLVMContext::TaichiLLVMContext(Arch arch) : arch(arch) {
     LLVMInitializeNVPTXTargetInfo();
     LLVMInitializeNVPTXAsmPrinter();
 #else
-    TC_NOT_IMPLEMENTED
+    TI_NOT_IMPLEMENTED
 #endif
   }
   ctx = std::make_unique<llvm::LLVMContext>();
-  TC_TRACE("Creating llvm context for arch: {}", arch_name(arch));
+  TI_TRACE("Creating llvm context for arch: {}", arch_name(arch));
   llvm::ExitOnError exit_on_err;
   jit = exit_on_err(TaichiLLVMJIT::create(arch));
 }
@@ -76,8 +76,8 @@ llvm::Type *TaichiLLVMContext::get_data_type(DataType dt) {
   } else if (dt == DataType::f64) {
     return llvm::Type::getDoubleTy(*ctx);
   } else {
-    TC_INFO(data_type_name(dt));
-    TC_NOT_IMPLEMENTED
+    TI_INFO(data_type_name(dt));
+    TI_NOT_IMPLEMENTED
   }
 }
 
@@ -87,8 +87,8 @@ std::string find_existing_command(const std::vector<std::string> &commands) {
       return cmd;
     }
   }
-  TC_P(commands);
-  TC_ERROR("No command found.");
+  TI_P(commands);
+  TI_ERROR("No command found.");
 }
 
 std::string get_runtime_fn(Arch arch) {
@@ -106,8 +106,8 @@ void compile_runtime_bitcode(Arch arch) {
   static std::set<int> runtime_compiled;
   if (runtime_compiled.find((int)arch) == runtime_compiled.end()) {
     auto clang = find_existing_command({"clang-7", "clang"});
-    TC_ASSERT(command_exist("llvm-as"));
-    TC_TRACE("Compiling runtime module bitcode...");
+    TI_ASSERT(command_exist("llvm-as"));
+    TI_TRACE("Compiling runtime module bitcode...");
     auto runtime_folder = get_runtime_dir();
     std::string macro = fmt::format(" -D ARCH_{} ", arch_name(arch));
 #if defined(TI_ARCH_ARM)
@@ -119,7 +119,7 @@ void compile_runtime_bitcode(Arch arch) {
             clang, runtime_folder, runtime_folder, macro)
             .c_str());
     if (ret) {
-      TC_ERROR("Runtime compilation failed.");
+      TI_ERROR("Runtime compilation failed.");
     }
     std::system(fmt::format("llvm-as {}runtime.ll -o {}{}", runtime_folder,
                             runtime_folder, get_runtime_fn(arch))
@@ -146,7 +146,7 @@ std::string libdevice_path() {
   auto cuda_version_major = int(std::atof(cuda_version_string.c_str()));
   return fmt::format("{}/libdevice.{}.bc", folder, cuda_version_major);
 #else
-  TC_NOT_IMPLEMENTED;
+  TI_NOT_IMPLEMENTED;
   return "";
 #endif
 }
@@ -165,16 +165,16 @@ std::unique_ptr<llvm::Module> module_from_bitcode_file(std::string bitcode_path,
       parseBitcodeFile(MemoryBufferRef(bitcode, "runtime_bitcode"), *ctx);
   if (!runtime) {
     auto error = runtime.takeError();
-    TC_WARN("Bitcode loading error message:");
+    TI_WARN("Bitcode loading error message:");
     llvm::errs() << error << "\n";
-    TC_ERROR("Bitcode {} load failure.", bitcode_path);
+    TI_ERROR("Bitcode {} load failure.", bitcode_path);
   }
 
   for (auto &f : *(runtime.get()))
     TaichiLLVMContext::force_inline(&f);
 
   bool module_broken = llvm::verifyModule(*runtime.get(), &llvm::errs());
-  TC_ERROR_IF(module_broken, "Module broken");
+  TI_ERROR_IF(module_broken, "Module broken");
   return std::move(runtime.get());
 }
 
@@ -307,7 +307,7 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
 
   std::unique_ptr<llvm::Module> cloned;
   {
-    TC_PROFILER("clone module");
+    TI_PROFILER("clone module");
     cloned = llvm::CloneModule(*runtime_module);
   }
 
@@ -333,29 +333,29 @@ void TaichiLLVMContext::link_module_with_libdevice(
 
   bool failed = llvm::Linker::linkModules(*module, std::move(libdevice_module));
   if (failed) {
-    TC_ERROR("CUDA libdevice linking failure.");
+    TI_ERROR("CUDA libdevice linking failure.");
   }
 
   for (auto func_name : libdevice_function_names) {
     auto func = module->getFunction(func_name);
     if (!func) {
-      TC_P(func_name);
+      TI_P(func_name);
     } else
       func->setLinkage(Function::InternalLinkage);
   }
 }
 
 std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_struct_module() {
-  TC_ASSERT(struct_module);
+  TI_ASSERT(struct_module);
   return llvm::CloneModule(*struct_module);
 }
 
 void TaichiLLVMContext::set_struct_module(
     const std::unique_ptr<llvm::Module> &module) {
-  TC_ASSERT(module);
+  TI_ASSERT(module);
   if (llvm::verifyModule(*module, &llvm::errs())) {
     module->print(llvm::errs(), nullptr);
-    TC_ERROR("module broken");
+    TI_ERROR("module broken");
   }
   struct_module = llvm::CloneModule(*module);
 }
@@ -375,7 +375,7 @@ llvm::Value *TaichiLLVMContext::get_constant(DataType dt, T t) {
   } else if (dt == DataType::u64) {
     return llvm::ConstantInt::get(*ctx, llvm::APInt(64, t, false));
   } else {
-    TC_NOT_IMPLEMENTED
+    TI_NOT_IMPLEMENTED
   }
 }
 
@@ -399,7 +399,7 @@ llvm::Value *TaichiLLVMContext::get_constant(T t) {
              std::is_same_v<TargetType, uint64>) {
     return llvm::ConstantInt::get(*ctx, llvm::APInt(64, (uint64)t, true));
   } else {
-    TC_NOT_IMPLEMENTED
+    TI_NOT_IMPLEMENTED
   }
 }
 
@@ -436,13 +436,13 @@ void TaichiLLVMContext::print_huge_functions() {
     int c = num_instructions(&f);
     if (c > 100) {
       total_big_inst += c;
-      TC_INFO("Loaded runtime function: {} (inst. count= {})",
+      TI_INFO("Loaded runtime function: {} (inst. count= {})",
               std::string(f.getName()), c);
     }
     total_inst += c;
   }
-  TC_P(total_inst);
-  TC_P(total_big_inst);
+  TI_P(total_inst);
+  TI_P(total_big_inst);
 }
 
 template llvm::Value *TaichiLLVMContext::get_constant(float32 t);

@@ -63,6 +63,14 @@ class MakeAdjoint : public IRVisitor {
     return insert<UnaryOpStmt>(UnaryOpType::sin, load(op1));
   }
 
+  Stmt *log(Stmt *op1) {
+    return insert<UnaryOpStmt>(UnaryOpType::log, load(op1));
+  }
+
+  Stmt *pow(Stmt *op1, Stmt *op2) {
+    return insert<BinaryOpStmt>(BinaryOpType::pow, load(op1), load(op2));
+  }
+
  public:
   Block *current_block;
   int for_depth;
@@ -105,9 +113,9 @@ class MakeAdjoint : public IRVisitor {
     auto alloca_ = adjoint(primal);
     if (!alloca_ || alloca_->is<ConstStmt>())
       return;  // primal may be int variable
-    TC_ASSERT(alloca_->is<AllocaStmt>());
+    TI_ASSERT(alloca_->is<AllocaStmt>());
     auto alloca = alloca_->as<AllocaStmt>();
-    TC_ASSERT(alloca->width() == 1);
+    TI_ASSERT(alloca->width() == 1);
     auto local_load = insert<LocalLoadStmt>(LocalAddress(alloca, 0));
     insert<LocalStoreStmt>(alloca, add(local_load, value));
   }
@@ -148,7 +156,7 @@ class MakeAdjoint : public IRVisitor {
     } else if (stmt->op_type == UnaryOpType::cos) {
       accumulate(stmt->operand, negate(mul(adjoint(stmt), sin(stmt->operand))));
     } else if (stmt->op_type == UnaryOpType::tan) {
-      TC_NOT_IMPLEMENTED
+      TI_NOT_IMPLEMENTED
     } else if (stmt->op_type == UnaryOpType::tanh) {
       accumulate(stmt->operand,
                  mul(adjoint(stmt), sub(constant(1), sqr(stmt))));
@@ -176,8 +184,8 @@ class MakeAdjoint : public IRVisitor {
     } else if (stmt->op_type == UnaryOpType::logic_not) {
       // do nothing
     } else {
-      TC_P(unary_op_type_name(stmt->op_type));
-      TC_NOT_IMPLEMENTED
+      TI_P(unary_op_type_name(stmt->op_type));
+      TI_NOT_IMPLEMENTED
     }
   }
 
@@ -189,6 +197,7 @@ class MakeAdjoint : public IRVisitor {
       accumulate(bin->lhs, adjoint(bin));
       accumulate(bin->rhs, negate(adjoint(bin)));
     } else if (bin->op_type == BinaryOpType::mul) {
+      // d (x * y) = y * dx + x * dy
       accumulate(bin->lhs, mul(adjoint(bin), bin->rhs));
       accumulate(bin->rhs, mul(adjoint(bin), bin->lhs));
     } else if (bin->op_type == BinaryOpType::mod) {
@@ -201,6 +210,11 @@ class MakeAdjoint : public IRVisitor {
       auto numerator = add(sqr(bin->lhs), sqr(bin->rhs));
       accumulate(bin->lhs, div(mul(adjoint(bin), bin->rhs), numerator));
       accumulate(bin->rhs, negate(div(mul(adjoint(bin), bin->lhs), numerator)));
+    } else if (bin->op_type == BinaryOpType::pow) {
+      // d (x ^ y) = x ^ (y-1) * (y * dx + log(x) * x * dy)
+      auto common_coeff = pow(bin->lhs, sub(bin->rhs, constant(1))); // x ^ (y-1)
+      accumulate(bin->lhs, mul(adjoint(bin), mul(bin->rhs, common_coeff)));
+      accumulate(bin->rhs, mul(adjoint(bin), mul(log(bin->lhs), mul(bin->lhs, common_coeff))));
     } else if (bin->op_type == BinaryOpType::min ||
                bin->op_type == BinaryOpType::max) {
       auto cmp = bin->op_type == BinaryOpType::min ? cmp_lt(bin->lhs, bin->rhs)
@@ -213,13 +227,13 @@ class MakeAdjoint : public IRVisitor {
     } else if (is_comparison(bin->op_type) || is_bit_op(bin->op_type)) {
       // do nothing
     } else {
-      TC_WARN("gradient of binary op {}", binary_op_type_name(bin->op_type));
-      TC_NOT_IMPLEMENTED
+      TI_WARN("gradient of binary op {}", binary_op_type_name(bin->op_type));
+      TI_NOT_IMPLEMENTED
     }
   }
 
   void visit(TernaryOpStmt *stmt) override {
-    TC_ASSERT(stmt->op_type == TernaryOpType::select);
+    TI_ASSERT(stmt->op_type == TernaryOpType::select);
     auto zero = insert<ConstStmt>(TypedConstant(stmt->ret_type.data_type));
     accumulate(stmt->op2,
                insert<TernaryOpStmt>(TernaryOpType::select, stmt->op1,
@@ -238,7 +252,7 @@ class MakeAdjoint : public IRVisitor {
 
       current_block = new_if->true_statements.get();
       for (int i = 0; i < if_stmt->true_statements->statements.size(); i++) {
-        // TC_ASSERT(if_stmt->true_statements[i])
+        // TI_ASSERT(if_stmt->true_statements[i])
         if_stmt->true_statements->statements[i]->accept(this);
       }
 
@@ -257,11 +271,11 @@ class MakeAdjoint : public IRVisitor {
   }
 
   void visit(WhileControlStmt *stmt) override {
-    TC_NOT_IMPLEMENTED
+    TI_NOT_IMPLEMENTED
   }
 
   void visit(WhileStmt *stmt) override {
-    TC_NOT_IMPLEMENTED
+    TI_NOT_IMPLEMENTED
   }
 
   void visit(RangeForStmt *for_stmt) override {
@@ -284,13 +298,13 @@ class MakeAdjoint : public IRVisitor {
 
   void visit(LocalLoadStmt *stmt) override {
     // do nothing
-    // TC_WARN("needs impl when loading something other than loop var");
+    // TI_WARN("needs impl when loading something other than loop var");
   }
 
-  void visit(LocalStoreStmt *stmt) override{TC_NOT_IMPLEMENTED}
+  void visit(LocalStoreStmt *stmt) override{TI_NOT_IMPLEMENTED}
 
   Stmt *load(Stmt *alloc) {
-    TC_ASSERT(alloc != nullptr);
+    TI_ASSERT(alloc != nullptr);
     if (alloc->is<AllocaStmt>()) {
       return insert<LocalLoadStmt>(LocalAddress(alloc, 0));
     } else {
@@ -313,7 +327,7 @@ class MakeAdjoint : public IRVisitor {
   void visit(GlobalLoadStmt *stmt) override {
     // issue global store to adjoint
     GlobalPtrStmt *ptr = stmt->ptr->as<GlobalPtrStmt>();
-    TC_ASSERT(ptr->width() == 1);
+    TI_ASSERT(ptr->width() == 1);
     auto snodes = ptr->snodes;
     if (!snodes[0]->has_grad()) {
       // No adjoint SNode. Do nothing
@@ -323,7 +337,7 @@ class MakeAdjoint : public IRVisitor {
       // gradients stopped, do nothing.
       return;
     }
-    TC_ASSERT(snodes[0]->get_grad() != nullptr);
+    TI_ASSERT(snodes[0]->get_grad() != nullptr);
     snodes[0] = snodes[0]->get_grad();
     auto adj_ptr = insert<GlobalPtrStmt>(snodes, ptr->indices);
     insert<AtomicOpStmt>(AtomicOpType::add, adj_ptr, load(adjoint(stmt)));
@@ -332,13 +346,13 @@ class MakeAdjoint : public IRVisitor {
   void visit(GlobalStoreStmt *stmt) override {
     // erase and replace with global load adjoint
     GlobalPtrStmt *ptr = stmt->ptr->as<GlobalPtrStmt>();
-    TC_ASSERT(ptr->width() == 1);
+    TI_ASSERT(ptr->width() == 1);
     auto snodes = ptr->snodes;
     if (!snodes[0]->has_grad()) {
       // no gradient (likely integer types)
       return;
     }
-    TC_ASSERT(snodes[0]->get_grad() != nullptr);
+    TI_ASSERT(snodes[0]->get_grad() != nullptr);
     snodes[0] = snodes[0]->get_grad();
     auto adjoint_ptr = insert<GlobalPtrStmt>(snodes, ptr->indices);
     accumulate(stmt->data, insert<GlobalLoadStmt>(adjoint_ptr));
@@ -348,10 +362,10 @@ class MakeAdjoint : public IRVisitor {
   void visit(AtomicOpStmt *stmt) override {
     // erase and replace with global load adjoint
     GlobalPtrStmt *ptr = stmt->dest->as<GlobalPtrStmt>();
-    TC_ASSERT(ptr->width() == 1);
+    TI_ASSERT(ptr->width() == 1);
     auto snodes = ptr->snodes;
     if (snodes[0]->has_grad()) {
-      TC_ASSERT(snodes[0]->get_grad() != nullptr);
+      TI_ASSERT(snodes[0]->get_grad() != nullptr);
       snodes[0] = snodes[0]->get_grad();
       auto adjoint_ptr = insert<GlobalPtrStmt>(snodes, ptr->indices);
       accumulate(stmt->val, insert<GlobalLoadStmt>(adjoint_ptr));
@@ -362,7 +376,7 @@ class MakeAdjoint : public IRVisitor {
   }
 
   void visit(ElementShuffleStmt *stmt) override {
-    TC_NOT_IMPLEMENTED
+    TI_NOT_IMPLEMENTED
   }
 
   void visit(AssertStmt *stmt) override {

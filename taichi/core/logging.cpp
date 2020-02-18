@@ -9,7 +9,7 @@
 #include <spdlog/spdlog.h>
 #include <taichi/geometry/factory.h>
 
-TC_NAMESPACE_BEGIN
+TI_NAMESPACE_BEGIN
 
 Function11 python_at_exit;
 
@@ -17,7 +17,7 @@ const auto default_logging_level = "info";
 
 void signal_handler(int signo);
 
-#define TC_REGISTER_SIGNAL_HANDLER(name, handler)                   \
+#define TI_REGISTER_SIGNAL_HANDLER(name, handler)                   \
   {                                                                 \
     if (std::signal(name, handler) == SIG_ERR)                      \
       std::printf("Cannot register signal handler for" #name "\n"); \
@@ -53,7 +53,7 @@ int Logger::level_enum_from_string(const std::string &level_name) {
   } else if (level_name == "off") {
     return spdlog::level::off;
   } else {
-    TC_ERROR(
+    TI_ERROR(
         "Unknown logging level [{}]. Levels = trace, debug, info, warn, error, "
         "critical, off",
         level_name);
@@ -63,16 +63,16 @@ int Logger::level_enum_from_string(const std::string &level_name) {
 Logger::Logger() {
   console = spdlog::stdout_color_mt("console");
   console->flush_on(spdlog::level::trace);
-  TC_LOG_SET_PATTERN("[%L %D %X.%e] %v")
+  TI_LOG_SET_PATTERN("[%L %D %X.%e] %v")
 
-  TC_REGISTER_SIGNAL_HANDLER(SIGSEGV, signal_handler);
-  TC_REGISTER_SIGNAL_HANDLER(SIGABRT, signal_handler);
+  TI_REGISTER_SIGNAL_HANDLER(SIGSEGV, signal_handler);
+  TI_REGISTER_SIGNAL_HANDLER(SIGABRT, signal_handler);
 #if !defined(_WIN64)
-  TC_REGISTER_SIGNAL_HANDLER(SIGBUS, signal_handler);
+  TI_REGISTER_SIGNAL_HANDLER(SIGBUS, signal_handler);
 #endif
-  TC_REGISTER_SIGNAL_HANDLER(SIGFPE, signal_handler);
+  TI_REGISTER_SIGNAL_HANDLER(SIGFPE, signal_handler);
   set_level_default();
-  TC_TRACE("Taichi core started. Thread ID = {}", PID::get_pid());
+  TI_TRACE("Taichi core started. Thread ID = {}", PID::get_pid());
 }
 
 void Logger::set_level_default() {
@@ -137,28 +137,28 @@ bool python_at_exit_called = false;
 void signal_handler(int signo) {
   logger.error(
       fmt::format("Received signal {} ({})", signo, signal_name(signo)), false);
-  TC_FLUSH_LOGGER;
+  TI_FLUSH_LOGGER;
   taichi::print_traceback();
   fmt::print("\n\n\n");
   if (taichi::CoreState::get_instance().trigger_gdb_when_crash) {
-#if defined(TC_PLATFORM_LINUX)
+#if defined(TI_PLATFORM_LINUX)
     trash(system(fmt::format("sudo gdb -p {}", PID::get_pid()).c_str()));
 #endif
   }
   if (python_at_exit && !python_at_exit_called) {
     python_at_exit_called = true;
-    TC_INFO("Invoking registered Python at_exit...");
+    TI_INFO("Invoking registered Python at_exit...");
     python_at_exit(0);
-    TC_INFO("Python-side at_exit returned.");
+    TI_INFO("Python-side at_exit returned.");
   }
   if (taichi::CoreState::get_instance().python_imported) {
     std::string msg = fmt::format("Taichi Core Exception: {} ({})", signo,
                                   signal_name(signo));
-#if !defined(TC_AMALGAMATED)
+#if !defined(TI_AMALGAMATED)
     taichi_raise_assertion_failure_in_python(msg.c_str());
 #endif
   }
   std::exit(-1);
 }
 
-TC_NAMESPACE_END
+TI_NAMESPACE_END

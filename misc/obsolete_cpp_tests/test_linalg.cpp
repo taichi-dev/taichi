@@ -6,7 +6,7 @@
 #include <taichi/util.h>
 #include <taichi/testing.h>
 
-TC_NAMESPACE_BEGIN
+TI_NAMESPACE_BEGIN
 
 template <int dim, typename T>
 void test_matrix() {
@@ -16,16 +16,16 @@ void test_matrix() {
     Matrix m = Matrix::rand();
     if (determinant(m) > tolerance * 1e3_f) {
       if (!math::equal(m * inversed(m), Matrix(1), tolerance)) {
-        TC_P(m * inversed(m) - Matrix(1));
-        TC_P(math::abs(m * inversed(m) - Matrix(1)));
-        TC_P(math::maximum(math::abs(m * inversed(m) - Matrix(1))));
+        TI_P(m * inversed(m) - Matrix(1));
+        TI_P(math::abs(m * inversed(m) - Matrix(1)));
+        TI_P(math::maximum(math::abs(m * inversed(m) - Matrix(1))));
       }
-      TC_CHECK_EQUAL(m * inversed(m), Matrix(1), tolerance);
+      TI_CHECK_EQUAL(m * inversed(m), Matrix(1), tolerance);
     }
   }
 }
 
-TC_TEST("vector arith") {
+TI_TEST("vector arith") {
   Vector3 a(1, 2, 3), b(4, 2, 5);
   CHECK(a + b == Vector3(5, 4, 8));
   CHECK(b - a == Vector3(3, 0, 2));
@@ -46,7 +46,7 @@ TC_TEST("vector arith") {
   CHECK(c + d == Vector2(3, 7));
 
   CHECK(Vector4(1, 2, 3, 1).length2() == 15.0_f);
-#if !defined(TC_USE_DOUBLE) && !defined(TC_ISE_NONE)
+#if !defined(TI_USE_DOUBLE) && !defined(TI_ISE_NONE)
   CHECK(Vector3(1, 2, 3, 1).length2() == 14.0_f);
 #endif
   CHECK(dot(Vector2(1, 2), Vector2(3, 2)) == 7.0_f);
@@ -88,4 +88,4 @@ TC_TEST("vector arith") {
                 "std::string is not VectorND.");
 }
 
-TC_NAMESPACE_END
+TI_NAMESPACE_END

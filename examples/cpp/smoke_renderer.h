@@ -29,8 +29,8 @@ class SmokeRenderer {
     depth_limit = param.get("depth_limit", 128);
     output_res = param.get("output_res", Vector2i(1024, 512));
 
-    TC_ASSERT(bit::is_power_of_two(output_res.x));
-    TC_ASSERT(bit::is_power_of_two(output_res.y));
+    TI_ASSERT(bit::is_power_of_two(output_res.x));
+    TI_ASSERT(bit::is_power_of_two(output_res.y));
 
     sky_map_size = Vector2i(512, 128);
     n_sky_samples = 1024;
@@ -373,12 +373,12 @@ class SmokeRenderer {
     std::FILE *f;
     if (use_sky_map) {
       f = fopen("sky_map.bin", "rb");
-      TC_ASSERT_INFO(f, "./sky_map.bin not found");
+      TI_ASSERT_INFO(f, "./sky_map.bin not found");
       std::vector<uint32> sky_map_data(sky_map_size.prod() * 3);
       std::fread(sky_map_data.data(), sizeof(uint32), sky_map_data.size(), f);
 
       f = fopen("sky_samples.bin", "rb");
-      TC_ASSERT_INFO(f, "./sky_samples.bin not found");
+      TI_ASSERT_INFO(f, "./sky_samples.bin not found");
       std::vector<uint32> sky_sample_data(n_sky_samples * 5);
       trash(std::fread(sky_sample_data.data(), sizeof(uint32),
                        sky_sample_data.size(), f));

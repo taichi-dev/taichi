@@ -137,6 +137,6 @@ auto ray_march = [] {
     gui.update();
   }
 };
-TC_REGISTER_TASK(ray_march);
+TI_REGISTER_TASK(ray_march);
 
 TLANG_NAMESPACE_END

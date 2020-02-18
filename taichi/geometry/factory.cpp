@@ -5,7 +5,7 @@
 
 #include <taichi/geometry/factory.h>
 
-TC_NAMESPACE_BEGIN
+TI_NAMESPACE_BEGIN
 
 std::vector<Triangle> Mesh3D::generate(const Vector2i res,
                                        const Function23 *surf,
@@ -85,4 +85,4 @@ std::vector<Triangle> Mesh3D::generate(const Vector2i res,
   return triangles;
 }
 
-TC_NAMESPACE_END
+TI_NAMESPACE_END

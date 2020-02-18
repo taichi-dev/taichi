@@ -11,7 +11,7 @@
 
 #include "math.h"
 
-TC_NAMESPACE_BEGIN
+TI_NAMESPACE_BEGIN
 
 class DiscreteSampler {
  private:
@@ -110,9 +110,9 @@ inline void test_discrete_sampler() {
     count[ds.sample(rand())]++;
   }
   for (int i = 0; i < n; i++) {
-    TC_P(i);
-    TC_P(count[i]);
+    TI_P(i);
+    TI_P(count[i]);
   }
 }
 
-TC_NAMESPACE_END
+TI_NAMESPACE_END

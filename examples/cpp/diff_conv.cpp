@@ -1,23 +1,23 @@
 #include <taichi/util.h>
 
-TC_NAMESPACE_BEGIN
+TI_NAMESPACE_BEGIN
 
 auto diff_conv = [](const std::vector<std::string> args) {
   int grid_resolution = 254;
-  TC_ASSERT(args.size() == 3);
+  TI_ASSERT(args.size() == 3);
   float th = std::stof(args[2]);
-  TC_P(th);
+  TI_P(th);
   auto f = fopen(args[0].c_str(), "rb");
 
   int n = pow<3>(grid_resolution);
-  TC_ASSERT(f);
+  TI_ASSERT(f);
 
   std::vector<float32> ret1(n);
   trash(std::fread(ret1.data(), sizeof(float32), ret1.size(), f));
   std::fclose(f);
 
   f = fopen(args[1].c_str(), "rb");
-  TC_ASSERT(f);
+  TI_ASSERT(f);
   std::vector<float32> ret2(n);
   trash(std::fread(ret2.data(), sizeof(float32), ret2.size(), f));
   std::fclose(f);
@@ -53,19 +53,19 @@ auto diff_conv = [](const std::vector<std::string> args) {
     // fprintf(stderr, "ret1:%f, ret2:%f\n", ret1[i], ret2[i]);
     //}
   }
-  TC_INFO("same {} {}%", counter[0], 100.0f * counter[0] / n);
-  TC_INFO("non zero same {} {}%", counter[0],
+  TI_INFO("same {} {}%", counter[0], 100.0f * counter[0] / n);
+  TI_INFO("non zero same {} {}%", counter[0],
           100.0f * counter[1] / total_non_zero);
-  TC_P(sum1 / n);
-  TC_P(sum2 / n);
-  TC_P(sum1 / total_non_zero);
-  TC_P(sum2 / total_non_zero);
-  TC_P(max1);
-  TC_P(max2);
-  TC_P(non_zero1);
-  TC_P(non_zero2);
+  TI_P(sum1 / n);
+  TI_P(sum2 / n);
+  TI_P(sum1 / total_non_zero);
+  TI_P(sum2 / total_non_zero);
+  TI_P(max1);
+  TI_P(max2);
+  TI_P(non_zero1);
+  TI_P(non_zero2);
 };
 
-TC_REGISTER_TASK(diff_conv);
+TI_REGISTER_TASK(diff_conv);
 
-TC_NAMESPACE_END
+TI_NAMESPACE_END

@@ -34,7 +34,7 @@
 
 // Windows
 #if defined(_WIN64)
-#define TC_PLATFORM_WINDOWS
+#define TI_PLATFORM_WINDOWS
 #endif
 
 #if defined(_WIN32) && !defined(_WIN64)
@@ -43,20 +43,20 @@ static_assert(false, "32-bit Windows systems are not supported")
 
 // Linux
 #if defined(__linux__)
-#define TC_PLATFORM_LINUX
+#define TI_PLATFORM_LINUX
 #endif
 
 // OSX
 #if defined(__APPLE__)
-#define TC_PLATFORM_OSX
+#define TI_PLATFORM_OSX
 #endif
 
-#if (defined(TC_PLATFORM_LINUX) || defined(TC_PLATFORM_OSX))
-#define TC_PLATFORM_UNIX
+#if (defined(TI_PLATFORM_LINUX) || defined(TI_PLATFORM_OSX))
+#define TI_PLATFORM_UNIX
 #endif
 
 // Avoid dependency on glibc 2.27
-#if defined(TC_PLATFORM_LINUX) && defined(TI_ARCH_x86_64)
+#if defined(TI_PLATFORM_LINUX) && defined(TI_ARCH_x86_64)
 // objdump -T libtaichi_core.so| grep  GLIBC_2.27
 __asm__(".symver logf,logf@GLIBC_2.2.5");
 __asm__(".symver powf,powf@GLIBC_2.2.5");
@@ -67,38 +67,38 @@ __asm__(".symver expf,expf@GLIBC_2.2.5");
 
 // MSVC
 #if defined(_MSC_VER)
-#define TC_COMPILER_MSVC
+#define TI_COMPILER_MSVC
 #endif
 
 // MINGW
 #if defined(__MINGW64__)
-#define TC_COMPILER_MINGW
+#define TI_COMPILER_MINGW
 #endif
 
 // gcc
 #if defined(__GNUC__)
-#define TC_COMPILER__GCC
+#define TI_COMPILER__GCC
 #endif
 
 // clang
 #if defined(__clang__)
-#define TC_COMPILER_CLANG
+#define TI_COMPILER_CLANG
 #endif
 
-#if defined(TC_COMPILER_MSVC)
-#define TC_ALIGNED(x) __declspec(align(x))
+#if defined(TI_COMPILER_MSVC)
+#define TI_ALIGNED(x) __declspec(align(x))
 #else
-#define TC_ALIGNED(x) __attribute__((aligned(x)))
+#define TI_ALIGNED(x) __attribute__((aligned(x)))
 #endif
 
 #if __cplusplus >= 201703L
-#define TC_CPP17
+#define TI_CPP17
 #else
-#if defined(TC_COMPILER_CLANG)
+#if defined(TI_COMPILER_CLANG)
 static_assert(false, "For clang compilers, use -std=c++17");
 #endif
 static_assert(__cplusplus >= 201402L, "C++14 required.");
-#define TC_CPP14
+#define TI_CPP14
 #endif
 
 // Do not disable assert...
@@ -114,14 +114,14 @@ static_assert(__cplusplus >= 201402L, "C++14 required.");
 #include <windows.h>
 #pragma warning(pop)
 #include <intrin.h>
-#define TC_EXPORT __declspec(dllexport)
+#define TI_EXPORT __declspec(dllexport)
 #else
 #define __FILENAME__ \
   (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
-#define TC_EXPORT
+#define TI_EXPORT
 #endif
-#define TC_P(x) \
-  { TC_DEBUG("{}", taichi::TextSerializer::serialize(#x, (x))); }
+#define TI_P(x) \
+  { TI_DEBUG("{}", taichi::TextSerializer::serialize(#x, (x))); }
 
 #ifndef _WIN64
 #define sscanf_s sscanf
@@ -130,7 +130,7 @@ static_assert(__cplusplus >= 201402L, "C++14 required.");
 
 #undef assert
 #ifdef _WIN64
-#ifndef TC_PASS_EXCEPTION_TO_PYTHON
+#ifndef TI_PASS_EXCEPTION_TO_PYTHON
 // For Visual Studio debugging...
 #define DEBUG_TRIGGER __debugbreak()
 #else
@@ -144,21 +144,21 @@ static_assert(__cplusplus >= 201402L, "C++14 required.");
   {                                        \
     bool ___ret___ = static_cast<bool>(x); \
     if (!___ret___) {                      \
-      TC_ERROR(info);                      \
+      TI_ERROR(info);                      \
     }                                      \
   }
 
-#define TC_STATIC_ASSERT(x) static_assert((x), #x);
-#define TC_ASSERT(x) TC_ASSERT_INFO((x), #x)
-#define TC_ASSERT_INFO assert_info
-#define TC_NOT_IMPLEMENTED TC_ERROR("Not supported.");
+#define TI_STATIC_ASSERT(x) static_assert((x), #x);
+#define TI_ASSERT(x) TI_ASSERT_INFO((x), #x)
+#define TI_ASSERT_INFO assert_info
+#define TI_NOT_IMPLEMENTED TI_ERROR("Not supported.");
 
-#define TC_NAMESPACE_BEGIN namespace taichi {
-#define TC_NAMESPACE_END }
+#define TI_NAMESPACE_BEGIN namespace taichi {
+#define TI_NAMESPACE_END }
 
-    TC_EXPORT void taichi_raise_assertion_failure_in_python(const char *msg);
+    TI_EXPORT void taichi_raise_assertion_failure_in_python(const char *msg);
 
-TC_NAMESPACE_BEGIN
+TI_NAMESPACE_BEGIN
 
 //******************************************************************************
 //                                 System State
@@ -200,15 +200,15 @@ using int64 = int64_t;
 using uint64 = uint64_t;
 
 #ifdef _WIN64
-#define TC_FORCE_INLINE __forceinline
+#define TI_FORCE_INLINE __forceinline
 #else
-#define TC_FORCE_INLINE inline __attribute__((always_inline))
+#define TI_FORCE_INLINE inline __attribute__((always_inline))
 #endif
 
 using float32 = float;
 using float64 = double;
 
-#ifdef TC_USE_DOUBLE
+#ifdef TI_USE_DOUBLE
 using real = float64;
 #else
 using real = float32;
@@ -251,9 +251,9 @@ float64 constexpr operator"" _fd(unsigned long long v) {
   return float64(v);
 }
 
-TC_EXPORT void print_traceback();
+TI_EXPORT void print_traceback();
 
-TC_NAMESPACE_END
+TI_NAMESPACE_END
 //******************************************************************************
 //                           Meta-programming
 //******************************************************************************
@@ -268,89 +268,89 @@ namespace spdlog {
 class logger;
 }
 
-TC_NAMESPACE_BEGIN
+TI_NAMESPACE_BEGIN
 
 #define SPD_AUGMENTED_LOG(X, ...)                                        \
   taichi::logger.X(                                                      \
       fmt::format("[{}:{}@{}] ", __FILENAME__, __FUNCTION__, __LINE__) + \
       fmt::format(__VA_ARGS__))
 
-#if defined(TC_PLATFORM_WINDOWS)
+#if defined(TI_PLATFORM_WINDOWS)
 #define TI_UNREACHABLE __assume(0);
 #else
 #define TI_UNREACHABLE __builtin_unreachable();
 #endif
 
-#define TC_TRACE(...) SPD_AUGMENTED_LOG(trace, __VA_ARGS__)
-#define TC_DEBUG(...) SPD_AUGMENTED_LOG(debug, __VA_ARGS__)
-#define TC_INFO(...) SPD_AUGMENTED_LOG(info, __VA_ARGS__)
-#define TC_WARN(...) SPD_AUGMENTED_LOG(warn, __VA_ARGS__)
-#define TC_ERROR(...)                      \
+#define TI_TRACE(...) SPD_AUGMENTED_LOG(trace, __VA_ARGS__)
+#define TI_DEBUG(...) SPD_AUGMENTED_LOG(debug, __VA_ARGS__)
+#define TI_INFO(...) SPD_AUGMENTED_LOG(info, __VA_ARGS__)
+#define TI_WARN(...) SPD_AUGMENTED_LOG(warn, __VA_ARGS__)
+#define TI_ERROR(...)                      \
   {                                        \
     SPD_AUGMENTED_LOG(error, __VA_ARGS__); \
     TI_UNREACHABLE;                        \
   }
-#define TC_CRITICAL(...)                      \
+#define TI_CRITICAL(...)                      \
   {                                           \
     SPD_AUGMENTED_LOG(critical, __VA_ARGS__); \
     TI_UNREACHABLE;                           \
   }
 
-#define TC_TRACE_IF(condition, ...) \
+#define TI_TRACE_IF(condition, ...) \
   if (condition) {                  \
-    TC_TRACE(__VA_ARGS__);          \
+    TI_TRACE(__VA_ARGS__);          \
   }
-#define TC_TRACE_UNLESS(condition, ...) \
+#define TI_TRACE_UNLESS(condition, ...) \
   if (!(condition)) {                   \
-    TC_TRACE(__VA_ARGS__);              \
+    TI_TRACE(__VA_ARGS__);              \
   }
-#define TC_DEBUG_IF(condition, ...) \
+#define TI_DEBUG_IF(condition, ...) \
   if (condition) {                  \
-    TC_DEBUG(__VA_ARGS__);          \
+    TI_DEBUG(__VA_ARGS__);          \
   }
-#define TC_DEBUG_UNLESS(condition, ...) \
+#define TI_DEBUG_UNLESS(condition, ...) \
   if (!(condition)) {                   \
-    TC_DEBUG(__VA_ARGS__);              \
+    TI_DEBUG(__VA_ARGS__);              \
   }
-#define TC_INFO_IF(condition, ...) \
+#define TI_INFO_IF(condition, ...) \
   if (condition) {                 \
-    TC_INFO(__VA_ARGS__);          \
+    TI_INFO(__VA_ARGS__);          \
   }
-#define TC_INFO_UNLESS(condition, ...) \
+#define TI_INFO_UNLESS(condition, ...) \
   if (!(condition)) {                  \
-    TC_INFO(__VA_ARGS__);              \
+    TI_INFO(__VA_ARGS__);              \
   }
-#define TC_WARN_IF(condition, ...) \
+#define TI_WARN_IF(condition, ...) \
   if (condition) {                 \
-    TC_WARN(__VA_ARGS__);          \
+    TI_WARN(__VA_ARGS__);          \
   }
-#define TC_WARN_UNLESS(condition, ...) \
+#define TI_WARN_UNLESS(condition, ...) \
   if (!(condition)) {                  \
-    TC_WARN(__VA_ARGS__);              \
+    TI_WARN(__VA_ARGS__);              \
   }
-#define TC_ERROR_IF(condition, ...) \
+#define TI_ERROR_IF(condition, ...) \
   if (condition) {                  \
-    TC_ERROR(__VA_ARGS__);          \
+    TI_ERROR(__VA_ARGS__);          \
   }
-#define TC_ERROR_UNLESS(condition, ...) \
+#define TI_ERROR_UNLESS(condition, ...) \
   if (!(condition)) {                   \
-    TC_ERROR(__VA_ARGS__);              \
+    TI_ERROR(__VA_ARGS__);              \
   }
-#define TC_CRITICAL_IF(condition, ...) \
+#define TI_CRITICAL_IF(condition, ...) \
   if (condition) {                     \
-    TC_CRITICAL(__VA_ARGS__);          \
+    TI_CRITICAL(__VA_ARGS__);          \
   }
-#define TC_CRITICAL_UNLESS(condition, ...) \
+#define TI_CRITICAL_UNLESS(condition, ...) \
   if (!(condition)) {                      \
-    TC_CRITICAL(__VA_ARGS__);              \
+    TI_CRITICAL(__VA_ARGS__);              \
   }
 
-#define TC_STOP TC_ERROR("Stopping here")
-#define TC_TAG TC_TRACE("Tagging here")
+#define TI_STOP TI_ERROR("Stopping here")
+#define TI_TAG TI_TRACE("Tagging here")
 
-#define TC_LOG_SET_PATTERN(x) spdlog::set_pattern(x);
+#define TI_LOG_SET_PATTERN(x) spdlog::set_pattern(x);
 
-#define TC_FLUSH_LOGGER \
+#define TI_FLUSH_LOGGER \
   { taichi::logger.flush(); };
 
 
@@ -431,7 +431,7 @@ inline bool starts_with(std::string const &str, std::string const &ending) {
     return std::equal(ending.begin(), ending.end(), str.begin());
 }
 
-TC_NAMESPACE_END
+TI_NAMESPACE_END
 
 //******************************************************************************
 //                               Serialization
@@ -443,7 +443,7 @@ TC_NAMESPACE_END
 //                                   Misc.
 //******************************************************************************
 
-TC_NAMESPACE_BEGIN
+TI_NAMESPACE_BEGIN
 
 extern int __trash__;
 template <typename T>
@@ -465,10 +465,10 @@ class DeferedExecution {
   }
 };
 
-#define TC_DEFER(x) taichi::DeferedExecution _defered([&]() { x; });
+#define TI_DEFER(x) taichi::DeferedExecution _defered([&]() { x; });
 
 inline bool running_on_windows() {
-#if defined(TC_PLATFORM_WINDOWS)
+#if defined(TI_PLATFORM_WINDOWS)
   return true;
 #else
   return false;
@@ -495,7 +495,7 @@ inline std::string absolute_path(std::string path) {
   //    C. Those who start with "$" are relative to assets_dir()
   //    D. Others are relative to $ENV{TAICHI_REPO_DIR}
 
-  TC_ASSERT(!path.empty());
+  TI_ASSERT(!path.empty());
   if (path[0] == '$') {
     path = assets_dir() + path.substr(1, (int)path.size() - 1);
   } else if (path[0] != '.' && path[0] != '/' &&
@@ -521,6 +521,6 @@ std::string get_cuda_version_string();
 
 std::string get_cuda_root_dir();
 
-TC_NAMESPACE_END
+TI_NAMESPACE_END
 
 #include "asset_manager.h"

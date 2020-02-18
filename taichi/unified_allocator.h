@@ -42,7 +42,7 @@ class UnifiedAllocator {
       return nullptr;
     } else {
       // success
-      TC_ASSERT((std::size_t)ret % alignment == 0);
+      TI_ASSERT((std::size_t)ret % alignment == 0);
       return ret;
     }
   }

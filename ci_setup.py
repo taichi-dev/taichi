@@ -47,7 +47,7 @@ def get_shell_rc_name():
 
 def get_username():
   if build_type == 'ci':
-    os.environ['TC_CI'] = '1'
+    os.environ['TI_CI'] = '1'
     username = 'travis'
   else:
     assert get_os_name() != 'win'
@@ -167,7 +167,7 @@ class Installer:
     
     subprocess.run([get_python_executable(), "-m", "pip", "install", "--user",
                     "colorama", "numpy", "Pillow", "scipy", "pybind11",
-                    "GitPython", "yapf", "distro", "pytest", "autograd", "astor"])
+                    "GitPython", "yapf", "distro", "pytest", "autograd", "astor", "pytest-xdist"])
     print("importing numpy test:")
     ret = subprocess.run([get_python_executable(), "-c", "import numpy as np"])
     print("ret:", ret)

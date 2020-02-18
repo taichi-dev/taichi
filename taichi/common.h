@@ -16,12 +16,12 @@
 #include <unordered_map>
 #include <iostream>
 
-#if !defined(TC_INCLUDED)
+#if !defined(TI_INCLUDED)
 
 #ifdef _WIN64
-#define TC_FORCE_INLINE __forceinline
+#define TI_FORCE_INLINE __forceinline
 #else
-#define TC_FORCE_INLINE inline __attribute__((always_inline))
+#define TI_FORCE_INLINE inline __attribute__((always_inline))
 #endif
 #include <cstdio>
 #include <string>
@@ -44,7 +44,7 @@ using int32 = std::int32_t;
 using int64 = std::int64_t;
 
 namespace taichi {
-TC_FORCE_INLINE uint32 rand_int() noexcept {
+TI_FORCE_INLINE uint32 rand_int() noexcept {
   static unsigned int x = 123456789, y = 362436069, z = 521288629, w = 88675123;
   unsigned int t = x ^ (x << 11);
   x = y;
@@ -53,30 +53,30 @@ TC_FORCE_INLINE uint32 rand_int() noexcept {
   return (w = (w ^ (w >> 19)) ^ (t ^ (t >> 8)));
 }
 
-TC_FORCE_INLINE uint64 rand_int64() noexcept {
+TI_FORCE_INLINE uint64 rand_int64() noexcept {
   return ((uint64)rand_int() << 32) + rand_int();
 }
 
 template <typename T>
-TC_FORCE_INLINE T rand() noexcept;
+TI_FORCE_INLINE T rand() noexcept;
 
 template <>
-TC_FORCE_INLINE float rand<float>() noexcept {
+TI_FORCE_INLINE float rand<float>() noexcept {
   return rand_int() * (1.0f / 4294967296.0f);
 }
 
 template <>
-TC_FORCE_INLINE double rand<double>() noexcept {
+TI_FORCE_INLINE double rand<double>() noexcept {
   return rand_int() * (1.0 / 4294967296.0);
 }
 
 template <>
-TC_FORCE_INLINE int rand<int>() noexcept {
+TI_FORCE_INLINE int rand<int>() noexcept {
   return rand_int();
 }
 
 template <typename T>
-TC_FORCE_INLINE T rand() noexcept;
+TI_FORCE_INLINE T rand() noexcept;
 }  // namespace taichi
 
 #endif

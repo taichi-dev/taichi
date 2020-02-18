@@ -70,7 +70,7 @@ def test_alloc_in_kernel():
   return # build bots may not have this much memory to tests...
   x = ti.var(ti.f32)
   
-  ti.root.dense(ti.i, 8192).pointer().dense(ti.i, 1024 * 1024).place(x)
+  ti.root.pointer(ti.i, 8192).dense(ti.i, 1024 * 1024).place(x)
   
 
   @ti.kernel

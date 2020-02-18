@@ -11,9 +11,9 @@ SNode &SNode::place(Expr &expr_) {
   if (type == SNodeType::root) {  // never directly place to root
     this->dense(std::vector<Index>(), {}).place(expr_);
   } else {
-    TC_ASSERT(expr_.is<GlobalVariableExpression>());
+    TI_ASSERT(expr_.is<GlobalVariableExpression>());
     auto expr = expr_.cast<GlobalVariableExpression>();
-    TC_ERROR_UNLESS(expr->snode == nullptr, "This variable has been placed.");
+    TI_ERROR_UNLESS(expr->snode == nullptr, "This variable has been placed.");
     auto &child = insert_children(SNodeType::place);
     expr->set_snode(&child);
     child.name = expr->ident.raw_name();
@@ -30,13 +30,13 @@ SNode &SNode::place(Expr &expr_) {
 SNode &SNode::create_node(std::vector<Index> indices,
                           std::vector<int> sizes,
                           SNodeType type) {
-  TC_ASSERT(indices.size() == sizes.size() || sizes.size() == 1);
+  TI_ASSERT(indices.size() == sizes.size() || sizes.size() == 1);
   if (sizes.size() == 1) {
     sizes = std::vector<int>(indices.size(), sizes[0]);
   }
 
   if (type == SNodeType::hash)
-    TC_ASSERT_INFO(depth == 0,
+    TI_ASSERT_INFO(depth == 0,
                    "hashed node must be child of root due to initialization "
                    "memset limitation.");
   auto &new_node = insert_children(type);
@@ -45,10 +45,10 @@ SNode &SNode::create_node(std::vector<Index> indices,
     auto s = sizes[i];
     if (!bit::is_power_of_two(s)) {
       auto promoted_s = bit::least_pot_bound(s);
-      TC_DEBUG("Non-power-of-two node size {} promoted to {}.", s, promoted_s);
+      TI_DEBUG("Non-power-of-two node size {} promoted to {}.", s, promoted_s);
       s = promoted_s;
     }
-    TC_ASSERT(bit::is_power_of_two(s));
+    TI_ASSERT(bit::is_power_of_two(s));
     new_node.n *= s;
   }
   for (int i = 0; i < (int)indices.size(); i++) {
@@ -105,7 +105,7 @@ void SNode::lazy_grad() {
 }
 
 bool SNode::is_primal() const {
-  TC_ASSERT(expr.expr != nullptr);
+  TI_ASSERT(expr.expr != nullptr);
   return expr.cast<GlobalVariableExpression>()->is_primal;
 }
 
@@ -120,7 +120,7 @@ bool SNode::has_grad() const {
 }
 
 SNode *SNode::get_grad() const {
-  TC_ASSERT(has_grad());
+  TI_ASSERT(has_grad());
   return expr.cast<GlobalVariableExpression>()
       ->adjoint.cast<GlobalVariableExpression>()
       ->snode;
@@ -152,7 +152,7 @@ float64 SNode::read_float(const std::vector<int> &I) {
   } else if (dt == DataType::f64) {
     return get_current_program().context.get_arg<float64>(num_active_indices);
   } else {
-    TC_NOT_IMPLEMENTED
+    TI_NOT_IMPLEMENTED
   }
 }
 
@@ -179,7 +179,7 @@ int64 SNode::read_int(const std::vector<int> &I) {
   } else if (dt == DataType::i64) {
     return get_current_program().context.get_arg<int64>(num_active_indices);
   } else {
-    TC_NOT_IMPLEMENTED
+    TI_NOT_IMPLEMENTED
   }
 }
 

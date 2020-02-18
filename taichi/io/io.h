@@ -15,10 +15,11 @@
 #include <filesystem>
 #endif
 
-TC_NAMESPACE_BEGIN
+TI_NAMESPACE_BEGIN
 
+// TODO: move to std::filesystem after it's nonexperimental on all platforms
 inline void create_directories(const std::string &dir) {
-#if defined(TC_PLATFORM_WINDOWS)
+#if defined(TI_PLATFORM_WINDOWS)
   std::filesystem::create_directories(dir);
 #else
   std::system(fmt::format("mkdir -p {}", dir).c_str());
@@ -79,4 +80,4 @@ bool read_vector_from_disk(std::vector<T> *p_vec, std::string fn) {
 
 using WushiParticles = std::map<std::string, std::vector<float32>>;
 
-TC_NAMESPACE_END
+TI_NAMESPACE_END

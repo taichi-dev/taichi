@@ -1,4 +1,4 @@
-#if !defined(TC_INCLUDED) || !defined(_WIN32)
+#if !defined(TI_INCLUDED) || !defined(_WIN32)
 // This file will only be compiled with clang into llvm bitcode
 // Generated bitcode will likely get inline for performance.
 // Most function calls here will be inlined
@@ -17,6 +17,7 @@
 #include <type_traits>
 #include <cstring>
 #include "../constants.h"
+#include "../arithmetic.h"
 
 using assert_failed_type = void (*)(const char *);
 using vprintf_host_type = void (*)(const char *, ...);
@@ -301,8 +302,8 @@ constexpr bool enable_assert = true;
 
 void taichi_assert(Context *context, i32 test, const char *msg);
 void taichi_assert_runtime(Runtime *runtime, i32 test, const char *msg);
-#define TC_ASSERT_INFO(x, msg) taichi_assert(context, (int)(x), msg)
-#define TC_ASSERT(x) TC_ASSERT_INFO(x, #x)
+#define TI_ASSERT_INFO(x, msg) taichi_assert(context, (int)(x), msg)
+#define TI_ASSERT(x) TI_ASSERT_INFO(x, #x)
 
 void ___stubs___() {
 #if ARCH_cuda
@@ -467,6 +468,7 @@ struct Runtime {
   vprintf_host_type vprintf_host;
   Ptr prog;
   Ptr root;
+  size_t root_mem_size;
   Ptr thread_pool;
   parallel_for_type parallel_for;
   ListManager *element_lists[taichi_max_num_snodes];
@@ -493,6 +495,8 @@ struct Runtime {
 STRUCT_FIELD_ARRAY(Runtime, element_lists);
 STRUCT_FIELD_ARRAY(Runtime, node_allocators);
 STRUCT_FIELD(Runtime, root);
+STRUCT_FIELD(Runtime, root_mem_size);
+STRUCT_FIELD(Runtime, temporaries);
 STRUCT_FIELD(Runtime, assert_failed);
 STRUCT_FIELD(Runtime, vprintf_host);
 STRUCT_FIELD(Runtime, mem_req_queue);
@@ -650,17 +654,23 @@ Ptr Runtime_initialize(Runtime **runtime_ptr,
                   "[runtime.cpp: Initializing runtime with %d snode(s)...]\n",
                   num_snodes);
 
+  constexpr uint64_t kPageSize = 4096;
   // runtime->allocate ready to use
   runtime->mem_req_queue = (MemRequestQueue *)runtime->allocate_aligned(
-      sizeof(MemRequestQueue), 4096);
+      sizeof(MemRequestQueue), kPageSize);
 
-  auto root_ptr = runtime->allocate_aligned(root_size, 4096);
+  // For Metal runtime, we have to make sure that both the beginning adddress
+  // and the size of the root buffer memory are aligned to page size. I think
+  // it is fine to allocate the memory that is larger than what the LLVM struct
+  // requires?
+  runtime->root_mem_size = taichi::iroundup(root_size, kPageSize);
+  auto root_ptr = runtime->allocate_aligned(runtime->root_mem_size, kPageSize);
 
   runtime->temporaries =
-      (Ptr)runtime->allocate_aligned(taichi_global_tmp_buffer_size, 1024);
+      (Ptr)runtime->allocate_aligned(taichi_global_tmp_buffer_size, kPageSize);
 
   runtime->rand_states = (RandState *)runtime->allocate_aligned(
-      sizeof(RandState) * num_rand_states, 4096);
+      sizeof(RandState) * num_rand_states, kPageSize);
   for (int i = 0; i < num_rand_states; i++)
     initialize_rand_state(&runtime->rand_states[i], i);
 

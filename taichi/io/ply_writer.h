@@ -4,7 +4,7 @@
 *******************************************************************************/
 #include <taichi/util.h>
 
-TC_NAMESPACE_BEGIN
+TI_NAMESPACE_BEGIN
 
 class PLYWriter {
  public:
@@ -75,4 +75,4 @@ class PLYWriter {
   }
 };
 
-TC_NAMESPACE_END
+TI_NAMESPACE_END

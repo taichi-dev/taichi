@@ -43,7 +43,7 @@ class BasicBlockSimplify : public IRVisitor {
     if (stmt->is_container_statement())
       return;
     else {
-      TC_ERROR("Visitor for non-container stmt undefined.");
+      TI_ERROR("Visitor for non-container stmt undefined.");
     }
   }
 
@@ -287,7 +287,7 @@ class BasicBlockSimplify : public IRVisitor {
       auto block = stmt->parent;
       Stmt *containing_statement = stmt;
       auto stmt_id = block->locate(containing_statement);
-      TC_ASSERT(stmt_id != -1);
+      TI_ASSERT(stmt_id != -1);
       for (int i = stmt_id - 1; i >= 0; i--) {
         auto &bstmt = block->statements[i];
         // Find a previous store
@@ -705,8 +705,8 @@ class BasicBlockSimplify : public IRVisitor {
       auto snode = stmt->snode;
       // compute offset...
       for (int i = 0; i < (int)snode->ch.size(); i++) {
-        TC_ASSERT(snode->ch[i]->type == SNodeType::place);
-        TC_ASSERT(snode->ch[i]->dt == DataType::i32 ||
+        TI_ASSERT(snode->ch[i]->type == SNodeType::place);
+        TI_ASSERT(snode->ch[i]->dt == DataType::i32 ||
                   snode->ch[i]->dt == DataType::f32);
       }
 
@@ -973,7 +973,7 @@ class Simplify : public IRVisitor {
   }
 
   void visit(StructForStmt *for_stmt) override {
-    TC_ASSERT(current_struct_for == nullptr);
+    TI_ASSERT(current_struct_for == nullptr);
     current_struct_for = for_stmt;
     for_stmt->body->accept(this);
     current_struct_for = nullptr;
@@ -999,9 +999,9 @@ void simplify(IRNode *root) {
   }
 }
 
-void full_simplify(IRNode *root) {
+void full_simplify(IRNode *root, const CompileConfig &config) {
   constant_fold(root);
-  alg_simp(root);
+  alg_simp(root, config);
   die(root);
   simplify(root);
 }

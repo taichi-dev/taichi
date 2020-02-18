@@ -33,7 +33,7 @@ class KernelCodeGen : public CodeGenBase {
   virtual void codegen() = 0;
 
   virtual FunctionType codegen_llvm() {
-    TC_NOT_IMPLEMENTED;
+    TI_NOT_IMPLEMENTED;
     return nullptr;
   }
 

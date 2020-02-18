@@ -108,7 +108,7 @@ class TaichiLLVMJIT {
         return JTMB.takeError();
       jtmb = std::make_unique<JITTargetMachineBuilder>(std::move(*JTMB));
     } else {
-      TC_ASSERT(arch == Arch::cuda);
+      TI_ASSERT(arch == Arch::cuda);
       Triple triple("nvptx64", "nvidia", "cuda");
       jtmb = std::make_unique<JITTargetMachineBuilder>(triple);
     }
@@ -186,7 +186,7 @@ class TaichiLLVMJIT {
 inline void *jit_lookup_name(TaichiLLVMJIT *jit, const std::string &name) {
   auto ExprSymbol = jit->lookup(name);
   if (!ExprSymbol)
-    TC_ERROR("Function \"{}\" not found", name);
+    TI_ERROR("Function \"{}\" not found", name);
   return (void *)(llvm::cantFail(ExprSymbol.getAddress()));
 }
 

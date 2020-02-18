@@ -4,7 +4,7 @@
 
 TLANG_NAMESPACE_BEGIN
 
-TC_TEST("scratch_pad_bounds") {
+TI_TEST("scratch_pad_bounds") {
   Program prog;
 
   int N = 8;
@@ -22,26 +22,26 @@ TC_TEST("scratch_pad_bounds") {
 
   pad.access({1, 2, -3}, ScratchPad::AccessFlag::read);
 
-  TC_CHECK(pad.bounds[0][0] == 1);
-  TC_CHECK(pad.bounds[0][1] == 2);
-  TC_CHECK(pad.bounds[0][2] == -3);
+  TI_CHECK(pad.bounds[0][0] == 1);
+  TI_CHECK(pad.bounds[0][1] == 2);
+  TI_CHECK(pad.bounds[0][2] == -3);
 
-  TC_CHECK(pad.bounds[1][0] == 2);
-  TC_CHECK(pad.bounds[1][1] == 3);
-  TC_CHECK(pad.bounds[1][2] == -2);
+  TI_CHECK(pad.bounds[1][0] == 2);
+  TI_CHECK(pad.bounds[1][1] == 3);
+  TI_CHECK(pad.bounds[1][2] == -2);
 
   pad.access({4, -2, 5}, ScratchPad::AccessFlag::read);
 
-  TC_CHECK(pad.bounds[0][0] == 1);
-  TC_CHECK(pad.bounds[0][1] == -2);
-  TC_CHECK(pad.bounds[0][2] == -3);
+  TI_CHECK(pad.bounds[0][0] == 1);
+  TI_CHECK(pad.bounds[0][1] == -2);
+  TI_CHECK(pad.bounds[0][2] == -3);
 
-  TC_CHECK(pad.bounds[1][0] == 5);
-  TC_CHECK(pad.bounds[1][1] == 3);
-  TC_CHECK(pad.bounds[1][2] == 6);
+  TI_CHECK(pad.bounds[1][0] == 5);
+  TI_CHECK(pad.bounds[1][1] == 3);
+  TI_CHECK(pad.bounds[1][2] == 6);
 }
 
-TC_TEST("range_assumption") {
+TI_TEST("range_assumption") {
   CoreState::set_trigger_gdb_when_crash(true);
   Program prog(Arch::gpu);
 
@@ -70,7 +70,7 @@ TC_TEST("range_assumption") {
   })();
 };
 
-TC_TEST("scratch_pad_3d") {
+TI_TEST("scratch_pad_3d") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 10000000;
   Program prog(Arch::gpu);
@@ -157,14 +157,14 @@ TC_TEST("scratch_pad_3d") {
                     x_val(i, j + 1, k) - x_val(i - 1, j, k) -
                     x_val(i + 1, j, k);
           if (std::abs(gt - y.val<float32>(i, j, k)) > 1) {
-            TC_P(d);
-            TC_P(gt);
-            TC_P(y.val<float32>(i, j, k));
-            TC_P(i);
-            TC_P(j);
-            TC_P(k);
+            TI_P(d);
+            TI_P(gt);
+            TI_P(y.val<float32>(i, j, k));
+            TI_P(i);
+            TI_P(j);
+            TI_P(k);
           }
-          TC_CHECK_EQUAL(gt, y.val<float32>(i, j, k),
+          TI_CHECK_EQUAL(gt, y.val<float32>(i, j, k),
                          1e-1f / domain_size / domain_size);
         }
       }

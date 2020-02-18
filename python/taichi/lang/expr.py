@@ -242,6 +242,9 @@ class Expr:
     other_ptr = ti.wrap_scalar(other).ptr
     return ti.expr_init(taichi_lang_core.expr_atomic_add(self.ptr, other_ptr))
 
+  def __rpow__(self, power, modulo=None):
+    return Expr(power).__pow__(self, modulo)
+
   def __pow__(self, power, modulo=None):
     import taichi as ti
     if not isinstance(power, int) or abs(power) > 100:

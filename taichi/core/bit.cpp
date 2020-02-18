@@ -6,18 +6,18 @@
 #include <taichi/testing.h>
 #include <taichi/common/bit.h>
 
-TC_NAMESPACE_BEGIN
+TI_NAMESPACE_BEGIN
 
 using namespace bit;
 
 struct Flags : public Bits<32> {
   using Base = Bits<32>;
-  TC_BIT_FIELD(bool, apple, 0);
-  TC_BIT_FIELD(bool, banana, 1);
-  TC_BIT_FIELD(uint8, cherry, 2);
+  TI_BIT_FIELD(bool, apple, 0);
+  TI_BIT_FIELD(bool, banana, 1);
+  TI_BIT_FIELD(uint8, cherry, 2);
 };
 
-TC_TEST("bit") {
+TI_TEST("bit") {
   Bits<32> b;
   b.set<5>(1);
   CHECK(b.get() == 32);
@@ -66,8 +66,8 @@ TC_TEST("bit") {
 
   // float64 t = 123.456789;
   // auto e = extract(t);
-  // TC_P(std::get<0>(e));
-  // TC_P(std::get<1>(e));
+  // TI_P(std::get<0>(e));
+  // TI_P(std::get<1>(e));
   // CHECK(t == compress(std::get<0>(e), std::get<1>(e)));
 }
-TC_NAMESPACE_END
+TI_NAMESPACE_END

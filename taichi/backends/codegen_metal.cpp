@@ -50,7 +50,7 @@ class MetalKernelCodegen : public IRVisitor {
   }
 
   void visit(ConstStmt *const_stmt) override {
-    TC_ASSERT(const_stmt->width() == 1);
+    TI_ASSERT(const_stmt->width() == 1);
     emit("const {} {} = {};", metal_data_type_name(const_stmt->element_type()),
          const_stmt->raw_name(), const_stmt->val[0].stringify());
   }
@@ -69,7 +69,7 @@ class MetalKernelCodegen : public IRVisitor {
       emit("const {} {}({});", metal_data_type_name(stmt->element_type()),
            stmt->raw_name(), ptr->raw_name());
     } else {
-      TC_NOT_IMPLEMENTED;
+      TI_NOT_IMPLEMENTED;
     }
   }
 
@@ -114,7 +114,7 @@ class MetalKernelCodegen : public IRVisitor {
     if (stmt->input_snode) {
       parent = stmt->input_snode->raw_name();
     } else {
-      TC_ASSERT(root_stmt_ != nullptr);
+      TI_ASSERT(root_stmt_ != nullptr);
       parent = root_stmt_->raw_name();
     }
 
@@ -123,12 +123,12 @@ class MetalKernelCodegen : public IRVisitor {
   }
 
   void visit(GlobalStoreStmt *stmt) override {
-    TC_ASSERT(stmt->width() == 1);
+    TI_ASSERT(stmt->width() == 1);
     emit(R"(*{} = {};)", stmt->ptr->raw_name(), stmt->data->raw_name());
   }
 
   void visit(GlobalLoadStmt *stmt) override {
-    TC_ASSERT(stmt->width() == 1);
+    TI_ASSERT(stmt->width() == 1);
     emit(R"({} {} = *{};)", metal_data_type_name(stmt->element_type()),
          stmt->raw_name(), stmt->ptr->raw_name());
   }
@@ -146,7 +146,7 @@ class MetalKernelCodegen : public IRVisitor {
 
   void visit(ArgStoreStmt *stmt) override {
     const auto dt = metal_data_type_name(stmt->element_type());
-    TC_ASSERT(!stmt->is_ptr);
+    TI_ASSERT(!stmt->is_ptr);
     emit("*{}.arg{}() = {};", kArgsContextName, stmt->arg_id,
          stmt->val->raw_name());
   }
@@ -154,7 +154,7 @@ class MetalKernelCodegen : public IRVisitor {
   void visit(ExternalPtrStmt *stmt) override {
     // Used mostly for transferring data between host (e.g. numpy array) and
     // Metal.
-    TC_ASSERT(stmt->width() == 1);
+    TI_ASSERT(stmt->width() == 1);
     const auto linear_index_name =
         fmt::format("{}_linear_index_", stmt->raw_name());
     emit("int {} = 0;", linear_index_name);
@@ -184,16 +184,16 @@ class MetalKernelCodegen : public IRVisitor {
   }
 
   void visit(GlobalTemporaryStmt *stmt) override {
-    TC_ASSERT(stmt->width() == 1);
+    TI_ASSERT(stmt->width() == 1);
     const auto dt = metal_data_type_name(stmt->element_type());
     emit("device {}* {} = reinterpret_cast<device {}*>({} + {});", dt,
          stmt->raw_name(), dt, kGlobalTmpsBufferName, stmt->offset);
   }
 
   void visit(LoopIndexStmt *stmt) override {
-    TC_ASSERT(current_kernel_attribs_->task_type ==
+    TI_ASSERT(current_kernel_attribs_->task_type ==
               OffloadedStmt::TaskType::range_for);
-    TC_ASSERT(!stmt->is_struct_for && stmt->index == 0);
+    TI_ASSERT(!stmt->is_struct_for && stmt->index == 0);
     if (current_kernel_attribs_->range_for_attribs.const_begin) {
       emit("const int {} = (static_cast<int>({}) + {});", stmt->raw_name(),
            kKernelThreadIdName,
@@ -221,7 +221,7 @@ class MetalKernelCodegen : public IRVisitor {
         // reinterpret the bit pattern
         const auto to_type = to_metal_type(stmt->cast_type);
         const auto to_type_name = metal_data_type_name(to_type);
-        TC_ASSERT(metal_data_type_bytes(
+        TI_ASSERT(metal_data_type_bytes(
                       to_metal_type(stmt->operand->element_type())) ==
                   metal_data_type_bytes(to_type));
         emit("const {} {} = union_cast<{}>({});", to_type_name,
@@ -257,15 +257,15 @@ class MetalKernelCodegen : public IRVisitor {
   }
 
   void visit(TernaryOpStmt *tri) override {
-    TC_ASSERT(tri->op_type == TernaryOpType::select);
+    TI_ASSERT(tri->op_type == TernaryOpType::select);
     emit("const {} {} = ({}) ? ({}) : ({});",
          metal_data_type_name(tri->element_type()), tri->raw_name(),
          tri->op1->raw_name(), tri->op2->raw_name(), tri->op3->raw_name());
   }
 
   void visit(AtomicOpStmt *stmt) override {
-    TC_ASSERT(stmt->width() == 1);
-    TC_ASSERT(stmt->op_type == AtomicOpType::add);
+    TI_ASSERT(stmt->width() == 1);
+    TI_ASSERT(stmt->op_type == AtomicOpType::add);
     const auto dt = stmt->val->element_type();
     if (dt == DataType::i32) {
       emit(
@@ -277,7 +277,7 @@ class MetalKernelCodegen : public IRVisitor {
       emit("const float {} = fatomic_fetch_add({}, {});", stmt->raw_name(),
            stmt->dest->raw_name(), stmt->val->raw_name());
     } else {
-      TC_NOT_IMPLEMENTED;
+      TI_NOT_IMPLEMENTED;
     }
   }
 
@@ -294,7 +294,7 @@ class MetalKernelCodegen : public IRVisitor {
   }
 
   void visit(RangeForStmt *for_stmt) override {
-    TC_ASSERT(for_stmt->width() == 1);
+    TI_ASSERT(for_stmt->width() == 1);
     auto *loop_var = for_stmt->loop_var;
     if (loop_var->ret_type.data_type == DataType::i32) {
       if (!for_stmt->reversed) {
@@ -312,7 +312,7 @@ class MetalKernelCodegen : public IRVisitor {
         emit("  int {} = {}_;", loop_var->raw_name(), loop_var->raw_name());
       }
     } else {
-      TC_ASSERT(!for_stmt->reversed);
+      TI_ASSERT(!for_stmt->reversed);
       const auto type_name = metal_data_type_name(loop_var->element_type());
       emit("for ({} {} = {}; {} < {}; {} = {} + ({})1) {{", type_name,
            loop_var->raw_name(), for_stmt->begin->raw_name(),
@@ -324,11 +324,11 @@ class MetalKernelCodegen : public IRVisitor {
   }
 
   void visit(StructForStmt *) override {
-    TC_ERROR("Struct for cannot be nested.");
+    TI_ERROR("Struct for cannot be nested.");
   }
 
   void visit(OffloadedStmt *stmt) override {
-    TC_ASSERT(is_top_level_);
+    TI_ASSERT(is_top_level_);
     is_top_level_ = false;
     using Type = OffloadedStmt::TaskType;
     if (stmt->task_type == Type::serial) {
@@ -338,7 +338,7 @@ class MetalKernelCodegen : public IRVisitor {
     } else {
       // struct_for is automatically lowered to ranged_for for dense snodes
       // (#378). So we only need to support serial and range_for tasks.
-      TC_ERROR("Unsupported offload type={} on Metal arch", stmt->task_name());
+      TI_ERROR("Unsupported offload type={} on Metal arch", stmt->task_name());
     }
     is_top_level_ = true;
   }
@@ -354,12 +354,12 @@ class MetalKernelCodegen : public IRVisitor {
   }
 
   void visit(RandStmt *stmt) override {
-    TC_ERROR("Metal arch doesn't support ti.random() yet");
+    TI_ERROR("Metal arch doesn't support ti.random() yet");
   }
 
   void visit(PrintStmt *stmt) override {
     // TODO: Add a flag to control whether ignoring print() stmt is allowed.
-    TC_WARN("Cannot print inside Metal kernel, ignored");
+    TI_WARN("Cannot print inside Metal kernel, ignored");
   }
 
  private:
@@ -376,10 +376,10 @@ class MetalKernelCodegen : public IRVisitor {
   }
 
   void generate_common_functions() {
-#define TC_INSIDE_METAL_CODEGEN
+#define TI_INSIDE_METAL_CODEGEN
 #include <taichi/platform/metal/helpers.metal.h>
     kernel_src_code_ += kMetalHelpersSourceCode;
-#undef TC_INSIDE_METAL_CODEGEN
+#undef TI_INSIDE_METAL_CODEGEN
     emit("\n");
   }
 
@@ -425,7 +425,7 @@ class MetalKernelCodegen : public IRVisitor {
   }
 
   void generate_serial_kernel(OffloadedStmt *stmt) {
-    TC_ASSERT(stmt->task_type == OffloadedStmt::TaskType::serial);
+    TI_ASSERT(stmt->task_type == OffloadedStmt::TaskType::serial);
     const std::string mtl_kernel_name = make_kernel_name();
     emit_mtl_kernel_func_sig(mtl_kernel_name);
     emit("  // serial");
@@ -445,7 +445,7 @@ class MetalKernelCodegen : public IRVisitor {
   }
 
   void generate_range_for_kernel(OffloadedStmt *stmt) {
-    TC_ASSERT(stmt->task_type == OffloadedStmt::TaskType::range_for);
+    TI_ASSERT(stmt->task_type == OffloadedStmt::TaskType::range_for);
     const std::string mtl_kernel_name = make_kernel_name();
     emit_mtl_kernel_func_sig(mtl_kernel_name);
 
@@ -570,7 +570,7 @@ void MetalCodeGen::lower() {
   auto ir = kernel_->ir;
   const bool print_ir = prog_->config.print_ir;
   if (print_ir) {
-    TC_TRACE("Initial IR:");
+    TI_TRACE("Initial IR:");
     irpass::print(ir);
   }
 
@@ -578,7 +578,7 @@ void MetalCodeGen::lower() {
     irpass::reverse_segments(ir);
     irpass::re_id(ir);
     if (print_ir) {
-      TC_TRACE("Segment reversed (for autodiff):");
+      TI_TRACE("Segment reversed (for autodiff):");
       irpass::print(ir);
     }
   }
@@ -586,21 +586,21 @@ void MetalCodeGen::lower() {
   irpass::lower(ir);
   irpass::re_id(ir);
   if (print_ir) {
-    TC_TRACE("Lowered:");
+    TI_TRACE("Lowered:");
     irpass::print(ir);
   }
 
   irpass::typecheck(ir);
   irpass::re_id(ir);
   if (print_ir) {
-    TC_TRACE("Typechecked:");
+    TI_TRACE("Typechecked:");
     irpass::print(ir);
   }
 
   irpass::demote_dense_struct_fors(ir);
   irpass::typecheck(ir);
   if (print_ir) {
-    TC_TRACE("Dense Struct-for demoted:");
+    TI_TRACE("Dense Struct-for demoted:");
     irpass::print(ir);
   }
 
@@ -609,22 +609,22 @@ void MetalCodeGen::lower() {
     irpass::simplify(ir);
     irpass::re_id(ir);
     if (print_ir) {
-      TC_TRACE("Simplified I:");
+      TI_TRACE("Simplified I:");
       irpass::print(ir);
     }
   }
 
   if (kernel_->grad) {
     irpass::demote_atomics(ir);
-    irpass::full_simplify(ir);
+    irpass::full_simplify(ir, prog_->config);
     irpass::typecheck(ir);
     if (print_ir) {
-      TC_TRACE("Before make_adjoint:");
+      TI_TRACE("Before make_adjoint:");
       irpass::print(ir);
     }
     irpass::make_adjoint(ir);
     if (print_ir) {
-      TC_TRACE("After make_adjoint:");
+      TI_TRACE("After make_adjoint:");
       irpass::print(ir);
     }
     irpass::typecheck(ir);
@@ -633,27 +633,27 @@ void MetalCodeGen::lower() {
   irpass::lower_access(ir, prog_->config.use_llvm);
   irpass::re_id(ir);
   if (print_ir) {
-    TC_TRACE("Access Lowered:");
+    TI_TRACE("Access Lowered:");
     irpass::print(ir);
   }
 
   irpass::die(ir);
   irpass::re_id(ir);
   if (print_ir) {
-    TC_TRACE("DIEd:");
+    TI_TRACE("DIEd:");
     irpass::print(ir);
   }
 
   irpass::flag_access(ir);
   irpass::re_id(ir);
   if (print_ir) {
-    TC_TRACE("Access Flagged:");
+    TI_TRACE("Access Flagged:");
     irpass::print(ir);
   }
 
   irpass::constant_fold(ir);
   if (print_ir) {
-    TC_TRACE("Constant folded:");
+    TI_TRACE("Constant folded:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
@@ -661,21 +661,21 @@ void MetalCodeGen::lower() {
   global_tmps_buffer_size_ =
       std::max(irpass::offload(ir).total_size, (size_t)(1));
   if (print_ir) {
-    TC_TRACE("Offloaded:");
+    TI_TRACE("Offloaded:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
 
-  irpass::full_simplify(ir);
+  irpass::full_simplify(ir, prog_->config);
   if (print_ir) {
-    TC_TRACE("Simplified II:");
+    TI_TRACE("Simplified II:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
 
   irpass::demote_atomics(ir);
   if (print_ir) {
-    TC_TRACE("Atomics demoted:");
+    TI_TRACE("Atomics demoted:");
     irpass::re_id(ir);
     irpass::print(ir);
   }

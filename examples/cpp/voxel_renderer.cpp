@@ -9,7 +9,7 @@ auto voxel_renderer = [](const std::vector<std::string> &params) {
   int n = 512;
 
   if (params.size() < 2) {
-    TC_INFO("Usage: ti voxel renderer filename.bin resolution");
+    TI_INFO("Usage: ti voxel renderer filename.bin resolution");
     exit(-1);
   }
 
@@ -183,7 +183,7 @@ auto voxel_renderer = [](const std::vector<std::string> &params) {
       fn = fmt::format(params[0], frame);
     }
     auto f = fopen(fn.c_str(), "rb");
-    TC_ERROR_UNLESS(f, "File {} not found", params[0]);
+    TI_ERROR_UNLESS(f, "File {} not found", params[0]);
     std::vector<char> density_field(pow<3>(grid_resolution), 0);
     trash(std::fread(density_field.data(), sizeof(char), density_field.size(),
                      f));
@@ -214,6 +214,6 @@ auto voxel_renderer = [](const std::vector<std::string> &params) {
     gui.canvas->img.write_as_image(fn + ".png");
   }
 };
-TC_REGISTER_TASK(voxel_renderer);
+TI_REGISTER_TASK(voxel_renderer);
 
 TLANG_NAMESPACE_END

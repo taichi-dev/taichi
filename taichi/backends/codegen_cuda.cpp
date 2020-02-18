@@ -41,7 +41,7 @@ class GPUIRCodeGen : public IRVisitor {
   }
 
   void struct_for(Stmt *for_stmt_) {
-    TC_ASSERT_INFO(current_struct_for == nullptr,
+    TI_ASSERT_INFO(current_struct_for == nullptr,
                    "Struct for cannot be nested.");
     auto for_stmt = for_stmt_->as<StructForStmt>();
     current_struct_for = for_stmt;
@@ -52,7 +52,7 @@ class GPUIRCodeGen : public IRVisitor {
           std::min(1 << leaf->total_num_bits, max_gpu_block_dim);
     }
 
-    TC_ASSERT((1 << leaf->total_num_bits) % for_stmt->block_dim == 0);
+    TI_ASSERT((1 << leaf->total_num_bits) % for_stmt->block_dim == 0);
     int block_division = (1 << leaf->total_num_bits) / for_stmt->block_dim;
 
     std::vector<SNode *> path;
@@ -148,7 +148,7 @@ class GPUIRCodeGen : public IRVisitor {
         for (auto &pad : scratch_pads->pads) {
           emit("__shared__ {}::val_type {}[{}];", pad.first->node_type_name,
                pad.second.name(), pad.second.linear_size());
-          TC_ASSERT(pad.second.is_pure());
+          TI_ASSERT(pad.second.is_pure());
           if (pad.second.total_flags == AccessFlag::read ||
               pad.second.total_flags == AccessFlag::accumulate) {
             // read & accumulate case
@@ -302,7 +302,7 @@ class GPUIRCodeGen : public IRVisitor {
     for (auto &o : opt) {
       if (o.first == 1) {
         ldg.insert(o.second);
-        TC_INFO("Caching to L1: {}", o.second->node_type_name);
+        TI_INFO("Caching to L1: {}", o.second->node_type_name);
       } else {
         new_opt.push_back(o);
       }
@@ -321,7 +321,7 @@ class GPUIRCodeGen : public IRVisitor {
     for_stmt_counter += 1;
     if (for_stmt_->is<RangeForStmt>()) {
       auto range_for = for_stmt_->as<RangeForStmt>();
-      TC_ASSERT(range_for->vectorize == 1);
+      TI_ASSERT(range_for->vectorize == 1);
 
       int begin = range_for->begin->as<ConstStmt>()->val[0].val_int32();
       int end = range_for->end->as<ConstStmt>()->val[0].val_int32();
@@ -347,7 +347,7 @@ class GPUIRCodeGen : public IRVisitor {
       emit("{{");
       int block_dim = range_for->block_dim;
       if (block_dim == 0) {
-        TC_WARN("Using default block size = 256");
+        TI_WARN("Using default block size = 256");
         block_dim = 256;
       }
       emit("gpu_runtime_init();");
@@ -361,7 +361,7 @@ class GPUIRCodeGen : public IRVisitor {
       emit("}}");
     } else {
       auto for_stmt = for_stmt_->as<StructForStmt>();
-      TC_ASSERT(for_stmt->vectorize == 1);
+      TI_ASSERT(for_stmt->vectorize == 1);
       extract_ldg(for_stmt->scratch_opt);
       struct_for(for_stmt_);
     }
@@ -451,7 +451,7 @@ class GPUIRCodeGen : public IRVisitor {
   }
 
   void visit(RandStmt *stmt) override {
-    TC_ASSERT(stmt->ret_type.data_type == DataType::f32);
+    TI_ASSERT(stmt->ret_type.data_type == DataType::f32);
     emit("const auto {} = randf();", stmt->raw_name(),
          stmt->ret_data_type_name());
   }
@@ -483,7 +483,7 @@ class GPUIRCodeGen : public IRVisitor {
   }
 
   void visit(TernaryOpStmt *tri) override {
-    TC_ASSERT(tri->op_type == TernaryOpType::select);
+    TI_ASSERT(tri->op_type == TernaryOpType::select);
     emit("const {} {} = {} ? {} : {};", tri->ret_data_type_name(),
          tri->raw_name(), tri->op1->raw_name(), tri->op2->raw_name(),
          tri->op3->raw_name());
@@ -511,7 +511,7 @@ class GPUIRCodeGen : public IRVisitor {
       emit("printf(\"[debug] {}\" \" = %f\\n\", {});", print_stmt->str,
            print_stmt->stmt->raw_name());
     } else {
-      TC_NOT_IMPLEMENTED
+      TI_NOT_IMPLEMENTED
     }
   }
 
@@ -533,7 +533,7 @@ class GPUIRCodeGen : public IRVisitor {
 
   void visit(StructForStmt *for_stmt) override {
     // generate_loop_header(for_stmt->snode, for_stmt, true);
-    TC_ASSERT_INFO(current_struct_for == nullptr,
+    TI_ASSERT_INFO(current_struct_for == nullptr,
                    "StructFor cannot be nested.");
     current_struct_for = for_stmt;
     for_stmt->body->accept(this);
@@ -560,7 +560,7 @@ class GPUIRCodeGen : public IRVisitor {
         emit("{} = {}_;", loop_var->raw_name(), loop_var->raw_name());
       }
     } else {
-      TC_ASSERT(!for_stmt->reversed);
+      TI_ASSERT(!for_stmt->reversed);
       emit("for ({} {} = {}; {} < {}; {} = {} + {}({})) {{",
            loop_var->ret_data_type_name(), loop_var->raw_name(),
            for_stmt->begin->raw_name(), loop_var->raw_name(),
@@ -594,8 +594,8 @@ class GPUIRCodeGen : public IRVisitor {
   }
 
   void visit(ExternalPtrStmt *stmt) override {
-    TC_ASSERT(stmt->width() == 1);
-    TC_ASSERT(stmt->indices.size() == 1);
+    TI_ASSERT(stmt->width() == 1);
+    TI_ASSERT(stmt->indices.size() == 1);
     auto dt = stmt->ret_type.data_type;
     emit("const {} *{}[1] = {{&{}[{}]}};", data_type_name(dt), stmt->raw_name(),
          stmt->base_ptrs[0]->raw_name(), stmt->indices[0]->raw_name());
@@ -607,7 +607,7 @@ class GPUIRCodeGen : public IRVisitor {
       return;
     }
 
-    TC_ASSERT(stmt->width() == 1);
+    TI_ASSERT(stmt->width() == 1);
     emit("{} *{}[{}];", data_type_name(stmt->ret_type.data_type),
          stmt->raw_name(), stmt->ret_type.width);
     for (int l = 0; l < stmt->ret_type.width; l++) {
@@ -618,7 +618,7 @@ class GPUIRCodeGen : public IRVisitor {
       std::vector<std::string> indices(max_num_indices, "0");  // = "(root, ";
       for (int i = 0; i < (int)stmt->indices.size(); i++) {
         if (snode->physical_index_position[i] != -1) {
-          // TC_ASSERT(snode->physical_index_position[i] != -1);
+          // TI_ASSERT(snode->physical_index_position[i] != -1);
           indices[snode->physical_index_position[i]] =
               stmt->indices[i]->raw_name();
         }
@@ -634,7 +634,7 @@ class GPUIRCodeGen : public IRVisitor {
 
   void visit(SNodeOpStmt *stmt) override {
     /*
-    TC_ASSERT(stmt->width() == 1);
+    TI_ASSERT(stmt->width() == 1);
     auto snode = stmt->snodes[0];
     auto indices = indices_str(snode, -1, stmt->indices);
 
@@ -650,7 +650,7 @@ class GPUIRCodeGen : public IRVisitor {
            make_list(indices, ""));
 
     if (stmt->op_type == SNodeOpType::append) {
-      TC_ASSERT(stmt->val->width() == 1);
+      TI_ASSERT(stmt->val->width() == 1);
       emit("{}_tmp->append({}({}));", snode->node_type_name,
            snode->ch[0]->node_type_name, stmt->val->raw_name());
     } else if (stmt->op_type == SNodeOpType::clear) {
@@ -670,7 +670,7 @@ class GPUIRCodeGen : public IRVisitor {
       emit("activate_{}(root, {});", snode->node_type_name,
            make_list(indices, ""));
     } else {
-      TC_NOT_IMPLEMENTED;
+      TI_NOT_IMPLEMENTED;
     }
     emit("}}");
     */
@@ -699,7 +699,7 @@ class GPUIRCodeGen : public IRVisitor {
   }
 
   void visit(GlobalLoadStmt *stmt) override {
-    TC_ASSERT(stmt->width() == 1);
+    TI_ASSERT(stmt->width() == 1);
     if (stmt->ptr->is<GlobalPtrStmt>()) {
       auto ptr = stmt->ptr->as<GlobalPtrStmt>();
       auto snode = ptr->snodes[0];
@@ -737,11 +737,11 @@ class GPUIRCodeGen : public IRVisitor {
   }
 
   void visit(AtomicOpStmt *stmt) override {
-    TC_ASSERT(stmt->val->ret_type.data_type == DataType::f32 ||
+    TI_ASSERT(stmt->val->ret_type.data_type == DataType::f32 ||
               stmt->val->ret_type.data_type == DataType::i32 ||
               stmt->val->ret_type.data_type == DataType::f64 ||
               stmt->val->ret_type.data_type == DataType::i64);
-    TC_ASSERT(stmt->op_type == AtomicOpType::add);
+    TI_ASSERT(stmt->op_type == AtomicOpType::add);
     auto ptr = stmt->dest->as<GlobalPtrStmt>();
     auto snode = ptr->snodes[0];
     if (current_scratch_pads && current_scratch_pads->has(snode)) {
@@ -759,7 +759,7 @@ class GPUIRCodeGen : public IRVisitor {
   void visit(ElementShuffleStmt *stmt) override {
     auto init = stmt->elements.serialize(
         [&](const VectorElement &elem) {
-          TC_ASSERT(elem.index == 0);
+          TI_ASSERT(elem.index == 0);
           if (stmt->pointer) {
             return fmt::format("{}[0]", elem.stmt->raw_name(), elem.index);
           } else {
@@ -780,9 +780,9 @@ class GPUIRCodeGen : public IRVisitor {
     // this does not necessarily hold since any index within the leaf block can
     // be the base
     /*
-    emit("TC_ASSERT({} + {} <= {});", stmt->base->raw_name(), stmt->low,
+    emit("TI_ASSERT({} + {} <= {});", stmt->base->raw_name(), stmt->low,
          stmt->input->raw_name());
-    emit("TC_ASSERT({} < {} + {});", stmt->input->raw_name(),
+    emit("TI_ASSERT({} < {} + {});", stmt->input->raw_name(),
          stmt->base->raw_name(), stmt->high);
          */
     emit("const auto {} = {};", stmt->raw_name(), stmt->input->raw_name());
@@ -790,7 +790,7 @@ class GPUIRCodeGen : public IRVisitor {
 
   void visit(AssertStmt *stmt) override {
     emit("#if defined(TL_DEBUG)");
-    emit(R"(TC_ASSERT_INFO({}, "{}");)", stmt->val->raw_name(), stmt->text);
+    emit(R"(TI_ASSERT_INFO({}, "{}");)", stmt->val->raw_name(), stmt->text);
     emit("#endif");
   }
 
@@ -978,7 +978,7 @@ class GPUIRCodeGen : public IRVisitor {
 };
 
 void GPUCodeGen::lower_cuda() {
-  TC_NOT_IMPLEMENTED
+  TI_NOT_IMPLEMENTED
 }
 
 void GPUCodeGen::lower_llvm() {
@@ -995,7 +995,7 @@ void GPUCodeGen::lower_llvm() {
   if (kernel->grad) {
     irpass::reverse_segments(ir);
     if (print_ir) {
-      TC_TRACE("Segment reversed (for autodiff):");
+      TI_TRACE("Segment reversed (for autodiff):");
       irpass::re_id(ir);
       irpass::print(ir);
     }
@@ -1014,7 +1014,7 @@ void GPUCodeGen::lower_llvm() {
     irpass::demote_dense_struct_fors(ir);
     irpass::typecheck(ir);
     if (print_ir) {
-      TC_TRACE("Dense Struct-for demoted:");
+      TI_TRACE("Dense Struct-for demoted:");
       irpass::print(ir);
     }
   }
@@ -1023,85 +1023,85 @@ void GPUCodeGen::lower_llvm() {
     irpass::simplify(ir);
     irpass::re_id(ir);
     if (print_ir) {
-      TC_TRACE("Simplified I:");
+      TI_TRACE("Simplified I:");
       irpass::print(ir);
     }
   }
   if (kernel->grad) {
     // irpass::re_id(ir);
-    // TC_TRACE("Primal:");
+    // TI_TRACE("Primal:");
     // irpass::print(ir);
     irpass::demote_atomics(ir);
-    irpass::full_simplify(ir);
+    irpass::full_simplify(ir, prog->config);
     irpass::typecheck(ir);
     if (print_ir) {
-      TC_TRACE("Before make_adjoint:");
+      TI_TRACE("Before make_adjoint:");
       irpass::print(ir);
     }
     irpass::make_adjoint(ir);
     if (print_ir) {
-      TC_TRACE("After make_adjoint:");
+      TI_TRACE("After make_adjoint:");
       irpass::print(ir);
     }
     irpass::typecheck(ir);
     // irpass::re_id(ir);
-    // TC_TRACE("Adjoint:");
+    // TI_TRACE("Adjoint:");
     // irpass::print(ir);
   }
   irpass::lower_access(ir, prog->config.use_llvm);
   if (print_ir) {
-    TC_TRACE("Access Lowered:");
+    TI_TRACE("Access Lowered:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
   if (prog->config.simplify_after_lower_access) {
     irpass::die(ir);
     if (print_ir) {
-      TC_TRACE("DIEd:");
+      TI_TRACE("DIEd:");
       irpass::re_id(ir);
       irpass::print(ir);
     }
     irpass::simplify(ir);
     if (print_ir) {
-      TC_TRACE("Simplified II:");
+      TI_TRACE("Simplified II:");
       irpass::re_id(ir);
       irpass::print(ir);
     }
   }
   irpass::die(ir);
   if (print_ir) {
-    TC_TRACE("DIEd:");
+    TI_TRACE("DIEd:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
   irpass::flag_access(ir);
   if (print_ir) {
-    TC_TRACE("Access Flagged:");
+    TI_TRACE("Access Flagged:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
   irpass::offload(ir);
   if (print_ir) {
-    TC_TRACE("Offloaded:");
+    TI_TRACE("Offloaded:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
   irpass::demote_atomics(ir);
   if (print_ir) {
-    TC_TRACE("Atomics Demoted:");
+    TI_TRACE("Atomics Demoted:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
-  irpass::full_simplify(ir);
+  irpass::full_simplify(ir, prog->config);
   if (print_ir) {
-    TC_TRACE("Simplified III:");
+    TI_TRACE("Simplified III:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
 }
 
 void GPUCodeGen::lower() {
-  TC_PROFILER(__FUNCTION__)
+  TI_PROFILER(__FUNCTION__)
   if (prog->config.use_llvm) {
     lower_llvm();
   } else {
@@ -1110,7 +1110,7 @@ void GPUCodeGen::lower() {
 }
 
 void GPUCodeGen::codegen() {
-  emit("#define TC_GPU");
+  emit("#define TI_GPU");
   generate_header();
 
   // Body

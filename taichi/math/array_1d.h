@@ -8,7 +8,7 @@
 #include "math.h"
 #include "array_fwd.h"
 
-TC_NAMESPACE_BEGIN
+TI_NAMESPACE_BEGIN
 
 template <typename T>
 class Array1D {
@@ -65,9 +65,9 @@ class Array1D {
     return 1;
   }
 
-  TC_IO_DECL {
-    TC_IO(size);
-    TC_IO(data);
+  TI_IO_DECL {
+    TI_IO(size);
+    TI_IO(data);
   }
 };
 
@@ -129,7 +129,7 @@ T Array1D<T>::abs_max() {
 
 template <typename T>
 void Array1D<T>::print(std::string name) {
-  TC_NOT_IMPLEMENTED
+  TI_NOT_IMPLEMENTED
 }
 
 template <typename T>
@@ -177,4 +177,4 @@ Array1D<T> &Array1D<T>::operator=(const Array1D<T> &arr) {
 
 typedef Array1D<Vector2> ArrayVec2;
 
-TC_NAMESPACE_END
+TI_NAMESPACE_END

@@ -4,7 +4,7 @@
 TLANG_NAMESPACE_BEGIN
 
 std::string Expr::serialize() const {
-  TC_ASSERT(expr);
+  TI_ASSERT(expr);
   return expr->serialize();
 }
 

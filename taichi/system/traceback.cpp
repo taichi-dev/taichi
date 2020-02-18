@@ -24,9 +24,9 @@
 #include <memory>
 #include <mutex>
 
-TC_NAMESPACE_BEGIN
+TI_NAMESPACE_BEGIN
 
-TC_EXPORT void print_traceback() {
+TI_EXPORT void print_traceback() {
 #ifdef __APPLE__
   static std::mutex traceback_printer_mutex;
   // Modified based on
@@ -171,4 +171,4 @@ TC_EXPORT void print_traceback() {
 #endif
 }
 
-TC_NAMESPACE_END
+TI_NAMESPACE_END

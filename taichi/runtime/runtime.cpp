@@ -1105,7 +1105,7 @@ u32 cuda_rand_u32(Context *context) {
     ret = w;
     done = true;
   });
-  return ret * 1000000007;
+  return ret * 1000000007; // multiply a prime number here is very necessary - it decorrelates streams of PRNGs
 }
 
 uint64 cuda_rand_u64(Context *context) {

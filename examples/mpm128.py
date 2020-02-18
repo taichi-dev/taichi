@@ -86,19 +86,18 @@ def substep():
     v[p], C[p] = new_v, new_C
     x[p] += dt * v[p] # advection
 
-import random
-
+@ti.kernel
 def reset():
   group_size = n_particles // 3
   for i in range(n_particles):
-    x[i] = [random.random() * 0.2 + 0.3 + 0.10 * (i // group_size), random.random() * 0.2 + 0.05 + 0.32 * (i // group_size)]
+    x[i] = [ti.random() * 0.2 + 0.3 + 0.10 * (i // group_size), ti.random() * 0.2 + 0.05 + 0.32 * (i // group_size)]
     material[i] = i // group_size # 0: fluid 1: jelly 2: snow
-  v.fill([0, -1])
-  F.fill(ti.Matrix([[1, 0], [0, 1]]))
-  Jp.fill(1)
-  C.fill(0)
+    v[i] = [0, -1]
+    F[i] = ti.Matrix([[1, 0], [0, 1]])
+    Jp[i] = 1
+    C[i] = ti.Matrix.zero(ti.f32, 2, 2)
   
-print("[Hint] Use WSAD/arrow keys to control gravity. Use left/right mouse bottons to attract/repel.")
+print("[Hint] Use WSAD/arrow keys to control gravity. Use left/right mouse bottons to attract/repel. Press R to reset.")
 gui = ti.GUI("Taichi MLS-MPM-128", res=512, background_color=0x112F41)
 reset()
 

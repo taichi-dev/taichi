@@ -111,12 +111,20 @@ void Program::materialize_layout() {
         StructCompiler::make(config.use_llvm, this, Arch::cuda);
     scomp_gpu->run(*snode_root, false);
   } else if (config.arch == Arch::metal) {
+    TI_ASSERT_INFO(config.use_llvm,
+                   "Metal arch requires that LLVM being enabled");
     metal::MetalStructCompiler scomp;
     metal_struct_compiled_ = scomp.run(*snode_root);
     if (metal_runtime_ == nullptr) {
-      metal_runtime_ = std::make_unique<metal::MetalRuntime>(
-          metal_struct_compiled_->root_size, &config, memory_pool.get(),
-          profiler_llvm.get());
+      metal::MetalRuntime::Options options;
+      options.root_size = metal_struct_compiled_->root_size;
+      options.llvm_runtime = llvm_runtime;
+      options.llvm_ctx = get_llvm_context(get_host_arch());
+      options.config = &config;
+      options.mem_pool = memory_pool.get();
+      options.profiler = profiler_llvm.get();
+      metal_runtime_ =
+          std::make_unique<metal::MetalRuntime>(std::move(options));
     }
     TI_INFO("Metal root buffer size: {} B", metal_struct_compiled_->root_size);
   }
@@ -238,13 +246,7 @@ Kernel &Program::get_snode_reader(SNode *snode) {
         snode->num_active_indices, load_if_ptr((snode->expr)[indices]));
     current_ast_builder().insert(std::move(ret));
   });
-  if (config.arch == Arch::metal) {
-    // For now, we launch a Metal kernel to read back the memory. This is not
-    // efficient, but should be improved once we have batch + async reader.
-    ker.set_arch(Arch::metal);
-  } else {
-    ker.set_arch(get_host_arch());
-  }
+  ker.set_arch(get_host_arch());
   ker.name = kernel_name;
   ker.is_accessor = true;
   for (int i = 0; i < snode->num_active_indices; i++)
@@ -265,13 +267,7 @@ Kernel &Program::get_snode_writer(SNode *snode) {
     (snode->expr)[indices] =
         Expr::make<ArgLoadExpression>(snode->num_active_indices);
   });
-  if (config.arch == Arch::metal) {
-    // For now, we launch a Metal kernel to read back the memory. This is not
-    // efficient, but should be improved once we have batch + async writer.
-    ker.set_arch(Arch::metal);
-  } else {
-    ker.set_arch(get_host_arch());
-  }
+  ker.set_arch(get_host_arch());
   ker.name = kernel_name;
   ker.is_accessor = true;
   for (int i = 0; i < snode->num_active_indices; i++)

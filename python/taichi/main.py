@@ -141,15 +141,6 @@ def main(debug=False):
     os.system(r"sed '/^\s*\.\(L[A-Z]\|[a-z]\)/ d' {0} > clean_{0}".format(fn))
   elif mode == "interpolate":
     interpolate_frames('.')
-  elif mode == "amal":
-    cwd = os.getcwd()
-    os.chdir(ti.get_repo_directory())
-    with open('misc/amalgamate.py') as script:
-      script = script.read()
-    exec(script, {'__name__': '__main__'})
-    os.chdir(cwd)
-    shutil.copy(
-        os.path.join(ti.get_repo_directory(), 'build/taichi.h'), './taichi.h')
   elif mode == "doc":
     os.system('cd {}/docs && sphinx-build -b html . build'.format(ti.get_repo_directory()))
   elif mode == "video":

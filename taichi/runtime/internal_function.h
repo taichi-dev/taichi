@@ -52,7 +52,7 @@ i32 test_node_allocator(Context *context) {
     auto idx = nodes->locate(ptrs[i]);
     taichi_printf(runtime, "i %d", i);
     taichi_printf(runtime, "idx %d", idx);
-    TC_ASSERT(idx == i - 19);
+    TI_ASSERT(idx == i - 19);
   }
   return 0;
 }

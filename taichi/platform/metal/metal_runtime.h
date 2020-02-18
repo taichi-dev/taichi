@@ -23,7 +23,7 @@ namespace metal {
 // series of Metal kernels generated from a Taichi kernel.
 class MetalRuntime {
  public:
-  struct Options {
+  struct Params {
     size_t root_size;
     void* llvm_runtime;
     TaichiLLVMContext* llvm_ctx;
@@ -32,7 +32,7 @@ class MetalRuntime {
     ProfilerBase *profiler;
   };
 
-  explicit MetalRuntime(Options options);
+  explicit MetalRuntime(Params params);
   // To make Pimpl + std::unique_ptr work
   ~MetalRuntime();
 

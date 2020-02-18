@@ -116,15 +116,15 @@ void Program::materialize_layout() {
     metal::MetalStructCompiler scomp;
     metal_struct_compiled_ = scomp.run(*snode_root);
     if (metal_runtime_ == nullptr) {
-      metal::MetalRuntime::Options options;
-      options.root_size = metal_struct_compiled_->root_size;
-      options.llvm_runtime = llvm_runtime;
-      options.llvm_ctx = get_llvm_context(get_host_arch());
-      options.config = &config;
-      options.mem_pool = memory_pool.get();
-      options.profiler = profiler_llvm.get();
+      metal::MetalRuntime::Params params;
+      params.root_size = metal_struct_compiled_->root_size;
+      params.llvm_runtime = llvm_runtime;
+      params.llvm_ctx = get_llvm_context(get_host_arch());
+      params.config = &config;
+      params.mem_pool = memory_pool.get();
+      params.profiler = profiler_llvm.get();
       metal_runtime_ =
-          std::make_unique<metal::MetalRuntime>(std::move(options));
+          std::make_unique<metal::MetalRuntime>(std::move(params));
     }
     TI_INFO("Metal root buffer size: {} B", metal_struct_compiled_->root_size);
   }

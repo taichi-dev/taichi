@@ -349,9 +349,9 @@ class Matrix:
     return self.inverse()
 
   @staticmethod
-  def normalized(a):
+  def normalized(a, eps=0):
     assert a.m == 1
-    invlen = 1.0 / Matrix.norm(a)
+    invlen = 1.0 / (Matrix.norm(a) + eps)
     return invlen * a
 
   @staticmethod

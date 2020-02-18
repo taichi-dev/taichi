@@ -37,7 +37,7 @@ def test_python(test_files=(), verbose=False):
         from multiprocessing import cpu_count
         cpu_count = cpu_count()
       except:
-        cpu_count = 4
+        cpu_count = 2
       print(f'Starting {cpu_count} testing thread(s)...')
       args += ['-n', str(cpu_count)]
   return int(pytest.main(args))

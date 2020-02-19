@@ -20,7 +20,7 @@
 #include "../arithmetic.h"
 
 using assert_failed_type = void (*)(const char *);
-using vprintf_host_type = void (*)(const char *, ...);
+using printf_host_type = void (*)(const char *, ...);
 
 #if defined(__linux__) && !ARCH_cuda && defined(TI_ARCH_x86_64)
 __asm__(".symver logf,logf@GLIBC_2.2.5");
@@ -465,7 +465,7 @@ struct NodeManager;
 struct Runtime {
   vm_allocator_type vm_allocator;
   assert_failed_type assert_failed;
-  vprintf_host_type vprintf_host;
+  printf_host_type printf_host;
   Ptr prog;
   Ptr root;
   size_t root_mem_size;
@@ -498,7 +498,7 @@ STRUCT_FIELD(Runtime, root);
 STRUCT_FIELD(Runtime, root_mem_size);
 STRUCT_FIELD(Runtime, temporaries);
 STRUCT_FIELD(Runtime, assert_failed);
-STRUCT_FIELD(Runtime, vprintf_host);
+STRUCT_FIELD(Runtime, printf_host);
 STRUCT_FIELD(Runtime, mem_req_queue);
 STRUCT_FIELD(Runtime, profiler);
 STRUCT_FIELD(Runtime, profiler_start);
@@ -1167,7 +1167,7 @@ void taichi_printf(Runtime *runtime, const char *format, Args &&... args) {
   helper.push_back(std::forward<Args>(args)...);
   vprintf((Ptr)format, helper.ptr());
 #else
-  runtime->vprintf_host(format, args...);
+  runtime->printf_host(format, args...);
 #endif
 }
 

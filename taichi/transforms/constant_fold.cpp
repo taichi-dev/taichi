@@ -25,6 +25,12 @@ class ConstantFold : public BasicStmtVisitor {
           new_constant.val_i32 = int32(v);
           success = true;
         }
+      } else if (src_type == DataType::i32) {
+        auto v = input.val_int32();
+        if (dst_type == DataType::f32) {
+          new_constant.val_f32 = float32(v);
+          success = true;
+        }
       }
 
       if (success) {

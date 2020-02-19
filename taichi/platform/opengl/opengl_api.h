@@ -10,8 +10,15 @@ TLANG_NAMESPACE_BEGIN
 
 namespace opengl {
 
+struct IOV
+{
+  void *base;
+  size_t size;
+};
+
 bool is_opengl_api_available();
-void *launch_glsl_kernel(std::string source, void *data, size_t data_size);
+std::vector<void *> launch_glsl_kernel(std::string source, std::vector<IOV> iov);
+void unmap_all_ssbo();
 
 }  // namespace opengl
 

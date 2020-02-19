@@ -204,8 +204,10 @@ else:
         print('Warning: taichi_core.so already removed. This may be caused by '
               'simultaneously starting two taichi instances.')
         pass
-    shutil.copy('libtaichi_core.so', '/tmp/taichi_core.so')
-    os.symlink('/tmp/taichi_core.so', 'taichi_core.so')
+    try:
+      os.symlink('libtaichi_core.so', 'taichi_core.so')
+    except:
+      pass
     try:
       import_tc_core()
     except Exception as e:

@@ -23,7 +23,7 @@ static std::string add_line_markers(std::string x)
   int line = 0;
   while (1) {
     npos = x.find_first_of('\n', pos);
-    marker = std::to_string(++line) + " ";
+    marker = fmt::format("{:3d} ", ++line);
     if (npos == std::string::npos)
       break;
     x.insert(pos, marker);

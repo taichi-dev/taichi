@@ -1,5 +1,6 @@
 #include "codegen_opengl.h"
 #include <taichi/platform/opengl/opengl_api.h>
+#include <taichi/platform/opengl/opengl_data_types.h>
 
 #include <string>
 #include <taichi/ir.h>
@@ -8,73 +9,16 @@ TLANG_NAMESPACE_BEGIN
 namespace opengl {
 namespace {
 
-std::string opengl_data_type_name(DataType dt)
-{
-  switch (dt) {
-    case DataType::f32:
-      return "float";
-    case DataType::i32:
-      return "int";
-    case DataType::u32:
-      return "uint";
-    default:
-      TI_NOT_IMPLEMENTED;
-      break;
-  }
-  return "";
-}
-
-std::string opengl_unary_op_type_symbol(UnaryOpType type)
-{
-  switch (type)
-  {
-  case UnaryOpType::neg:
-    return "-";
-  case UnaryOpType::sqrt:
-    return "sqrt";
-  case UnaryOpType::floor:
-    return "floor";
-  case UnaryOpType::ceil:
-    return "ceil";
-  case UnaryOpType::abs:
-    return "abs";
-  case UnaryOpType::sgn:
-    return "sign";
-  case UnaryOpType::sin:
-    return "sin";
-  case UnaryOpType::asin:
-    return "asin";
-  case UnaryOpType::cos:
-    return "cos";
-  case UnaryOpType::acos:
-    return "acos";
-  case UnaryOpType::tan:
-    return "tan";
-  case UnaryOpType::tanh:
-    return "tanh";
-  case UnaryOpType::exp:
-    return "exp";
-  case UnaryOpType::log:
-    return "log";
-  default:
-    TI_NOT_IMPLEMENTED;
-  }
-  return "";
-}
-
-bool is_opengl_binary_op_infix(BinaryOpType type)
-{
-  return !((type == BinaryOpType::min) || (type == BinaryOpType::max) ||
-           (type == BinaryOpType::atan2) || (type == BinaryOpType::pow));
-}
-
 class KernelGen : public IRVisitor
 {
   Kernel *kernel;
 
 public:
-  KernelGen(Kernel *kernel, std::string kernel_name)
-    : kernel(kernel), kernel_name_(kernel_name),
+  KernelGen(Kernel *kernel, std::string kernel_name,
+      const StructCompiledResult *struct_compiled)
+    : kernel(kernel),
+      struct_compiled_(struct_compiled),
+      kernel_name_(kernel_name),
       glsl_kernel_prefix_(kernel_name)
   {
     allow_undefined_visitor = true;
@@ -86,6 +30,7 @@ private: // {{{
   std::string indent_;
   bool is_top_level_{true};
 
+  const StructCompiledResult *struct_compiled_;
   const SNode *root_snode_;
   GetRootStmt *root_stmt_;
   std::string kernel_name_;
@@ -116,9 +61,8 @@ private: // {{{
   {
     emit("#version 430 core");
     emit("#extension GL_ARB_compute_shader: enable");
-    emit("");
+    emit("{}", struct_compiled_->source_code);
     emit("layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;");
-    emit("");
     emit("layout(std430, binding = 0) buffer data");
     emit("{{");
     emit("  int _args_[{}];", taichi_max_num_args);
@@ -129,7 +73,7 @@ private: // {{{
 
   void generate_bottom()
   {
-    // TODO: <kernel_name>() really necessary? How about just main()?
+    // TODO(archibate): <kernel_name>() really necessary? How about just main()?
     emit("void main()");
     emit("{{");
     emit("  {}();", glsl_kernel_name_);
@@ -156,28 +100,6 @@ private: // {{{
     emit("const uint {} = {};", stmt->raw_name(), val);
   }
 
-  void visit(GetRootStmt *stmt) override
-  {
-    // Should we assert |root_stmt_| is assigned only once?
-    root_stmt_ = stmt;
-    emit("const uint {} = 0;", stmt->raw_name());
-  }
-
-  void visit(SNodeLookupStmt *stmt) override
-  {
-    std::string parent;
-    if (stmt->input_snode) {
-      parent = stmt->input_snode->raw_name();
-    } else {
-      TI_ASSERT(root_stmt_ != nullptr);
-      parent = root_stmt_->raw_name();
-    }
-
-    int stride = 1; // XXX
-    emit("const uint {} = {} + {} * {};",
-         stmt->raw_name(), parent, stride, stmt->input_index->raw_name());
-  }
-
   void visit(OffsetAndExtractBitsStmt *stmt) override
   {
     emit("uint {} = ((({} + {}) >> {}) & ((1 << {}) - 1));",
@@ -185,14 +107,43 @@ private: // {{{
          stmt->bit_begin, stmt->bit_end - stmt->bit_begin);
   }
 
+  void visit(GetRootStmt *stmt) override
+  {
+    // Should we assert |root_stmt_| is assigned only once?
+    root_stmt_ = stmt;
+    emit("{} {} = 0;", root_snode_type_name_, stmt->raw_name());
+  }
+
+  void visit(SNodeLookupStmt *stmt) override
+  {
+    Stmt *parent;
+    std::string parent_type;
+    if (stmt->input_snode) {
+      parent = stmt->input_snode;
+      parent_type = stmt->snode->node_type_name;
+    } else {
+      TI_ASSERT(root_stmt_ != nullptr);
+      parent = root_stmt_;
+      parent_type = root_snode_type_name_;
+    }
+
+    emit("{}_ch {} = {}_children({}, {});", stmt->snode->node_type_name,
+         stmt->raw_name(), parent_type, parent->raw_name(),
+         stmt->input_index->raw_name());
+  }
+
   void visit(GetChStmt *stmt) override
   {
     if (stmt->output_snode->is_place()) {
-      emit("const uint {} = {} + 1 * {}; // placed",
-           stmt->raw_name(), stmt->input_ptr->raw_name(), stmt->chid);
+      emit("{} /* place {} */ {} = {}_get{}({});",
+          stmt->output_snode->node_type_name,
+          opengl_data_type_name(stmt->output_snode->dt),
+          stmt->raw_name(), stmt->input_snode->node_type_name,
+          stmt->chid, stmt->input_ptr->raw_name());
     } else {
-      emit("const uint {} = {} + 1 * {};",
-           stmt->raw_name(), stmt->input_ptr->raw_name(), stmt->chid);
+      emit("{} {} = {}_get{}({});", stmt->output_snode->node_type_name,
+          stmt->raw_name(), stmt->input_snode->node_type_name,
+          stmt->chid, stmt->input_ptr->raw_name());
     }
   }
 
@@ -299,7 +250,8 @@ private: // {{{
          const_stmt->raw_name(), const_stmt->val[0].stringify());
   }
 
-  void visit(ArgLoadStmt *stmt) override {
+  void visit(ArgLoadStmt *stmt) override
+  {
     const auto dt = opengl_data_type_name(stmt->element_type());
     if (stmt->is_ptr) {
       emit("const {} {} = _args_[{}]; // is_ptr", dt, stmt->raw_name(), stmt->arg_id);
@@ -308,7 +260,8 @@ private: // {{{
     }
   }
 
-  void visit(ArgStoreStmt *stmt) override {
+  void visit(ArgStoreStmt *stmt) override
+  {
     const auto dt = metal_data_type_name(stmt->element_type());
     TI_ASSERT(!stmt->is_ptr);
     emit("_args_[{}] = {};", stmt->arg_id, stmt->val->raw_name());
@@ -360,7 +313,7 @@ public:
     root_snode_ = &root_snode;
     root_snode_type_name_ = root_snode.node_type_name;
     generate_header();
-    irpass::print(kernel->ir);
+    //irpass::print(kernel->ir);
     kernel->ir->accept(this);
     generate_bottom();
   }
@@ -419,7 +372,7 @@ void OpenglCodeGen::lower()
 
   if (kernel_->grad) {
     irpass::demote_atomics(ir);
-    irpass::full_simplify(ir);
+    irpass::full_simplify(ir, prog_->config);
     irpass::typecheck(ir);
     if (print_ir) {
       TI_TRACE("Before make_adjoint:");
@@ -469,7 +422,7 @@ void OpenglCodeGen::lower()
     irpass::print(ir);
   }
 
-  irpass::full_simplify(ir);
+  irpass::full_simplify(ir, prog_->config);
   if (print_ir) {
     TI_TRACE("Simplified II:");
     irpass::re_id(ir);
@@ -504,10 +457,10 @@ void save_data(Context &ctx, void *data)
 
 FunctionType OpenglCodeGen::gen(void)
 {
-  KernelGen codegen(kernel_, kernel_name_);
+  KernelGen codegen(kernel_, kernel_name_, struct_compiled_);
   codegen.run(*prog_->snode_root);
   const std::string kernel_source_code = codegen.kernel_source_code();
-  TI_INFO("\n{}", kernel_source_code);
+  //TI_INFO("\n{}", kernel_source_code);
 
   return [kernel_source_code](Context &ctx) {
     void *data, *data_r;

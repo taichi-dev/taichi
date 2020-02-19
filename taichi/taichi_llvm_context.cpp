@@ -87,8 +87,10 @@ std::string find_existing_command(const std::vector<std::string> &commands) {
       return cmd;
     }
   }
-  TI_P(commands);
-  TI_ERROR("No command found.");
+  for (auto cmd: commands) {
+    TI_WARN("Potential command {}", cmd);
+  }
+  TI_ERROR("None command found.");
 }
 
 std::string get_runtime_fn(Arch arch) {
@@ -105,7 +107,7 @@ void compile_runtime_bitcode(Arch arch) {
   TI_AUTO_PROF;
   static std::set<int> runtime_compiled;
   if (runtime_compiled.find((int)arch) == runtime_compiled.end()) {
-    auto clang = find_existing_command({"clang-7", "clang"});
+    auto clang = find_existing_command({"clang-7", "clang-8", "clang-9", "clang"});
     TI_ASSERT(command_exist("llvm-as"));
     TI_TRACE("Compiling runtime module bitcode...");
     auto runtime_folder = get_runtime_dir();

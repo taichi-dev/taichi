@@ -159,6 +159,15 @@ def build():
 
   os.chdir(tmp_cwd)
 
+def prepare_sandbox(bin_dir):
+  from tempfile import mkdtemp
+  tmp_dir = mkdtemp(prefix='taichi-')
+  src = os.path.join(bin_dir, 'libtaichi_core.so')
+  dest = os.path.join(tmp_dir, 'taichi_core.so')
+  shutil.copy(src, dest)
+  print(f'[taichi] prepared sandbox at {tmpdir}')
+  os.chdir(tmp_dir)
+
 
 if is_release():
   print("[Release mode]")
@@ -194,17 +203,9 @@ else:
       os.environ['LD_LIBRARY_PATH'] = '/usr/lib64/'
     assert os.path.exists(os.path.join(bin_dir, 'libtaichi_core.so'))
     tmp_cwd = os.getcwd()
-    os.chdir(bin_dir)
-    sys.path.append(bin_dir)
-    # https://stackoverflow.com/questions/3855004/overwriting-library-file-causes-segmentation-fault
-    if os.path.exists('taichi_core.so'):
-      try:
-        os.unlink('taichi_core.so')
-      except:
-        print('Warning: taichi_core.so already removed. This may be caused by '
-              'simultaneously starting two taichi instances.')
-        pass
-    shutil.copy('libtaichi_core.so', 'taichi_core.so')
+    tmp_dir = prepare_sandbox(bin_dir)
+    os.chdir(tmp_dir)
+    sys.path.append(tmp_dir)
     try:
       import_tc_core()
     except Exception as e:

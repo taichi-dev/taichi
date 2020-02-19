@@ -18,6 +18,12 @@ struct StructCompiledResult {
   size_t root_size;
 };
 
+struct IOV
+{
+  void *base;
+  size_t size;
+};
+
 }  // namespace opengl
 
 TLANG_NAMESPACE_END

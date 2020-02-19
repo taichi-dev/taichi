@@ -34,7 +34,7 @@ void OpenglStructCompiler::generate_types(const SNode &snode) {
   const bool is_place = snode.is_place();
   if (!is_place) {
     const std::string class_name = snode.node_type_name + "_ch";
-    emit("#define {} uint", class_name);
+    emit("#define {} int", class_name);
     std::string stride_str;
     for (int i = 0; i < (int)snode.ch.size(); i++) {
       const auto &ch_node_name = snode.ch[i]->node_type_name;
@@ -58,10 +58,10 @@ void OpenglStructCompiler::generate_types(const SNode &snode) {
   const auto &node_name = snode.node_type_name;
   if (is_place) {
     const auto dt_name = opengl_data_type_name(snode.dt);
-    emit("#define {} uint // place {}", node_name, dt_name);
+    emit("#define {} int // place {}", node_name, dt_name);
     emit("#define {}_stride {} // sizeof({})", node_name, data_type_size(snode.dt), dt_name);
   } else if (snode.type == SNodeType::dense || snode.type == SNodeType::root) {
-    emit("#define {} uint // {}", node_name, snode_type_name(snode.type));
+    emit("#define {} int // {}", node_name, snode_type_name(snode.type));
     const int n = (snode.type == SNodeType::dense) ? snode.n : 1;
     emit("#define {}_n {}", node_name, n);
     emit("#define {}_stride ({}_ch_stride * {}_n)", node_name, node_name, node_name);

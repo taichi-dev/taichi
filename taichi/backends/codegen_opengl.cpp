@@ -1,60 +1,14 @@
 #include "codegen_opengl.h"
 #include <taichi/platform/opengl/opengl_api.h>
+#include <taichi/platform/opengl/opengl_kernel.h>
 #include <taichi/platform/opengl/opengl_data_types.h>
 
 #include <string>
-#include <cstdlib>
 #include <taichi/ir.h>
 
 TLANG_NAMESPACE_BEGIN
 namespace opengl {
 namespace {
-
-struct SSBO
-{
-  void *data;
-  const size_t data_size;
-
-  SSBO(size_t data_size)
-    : data_size(data_size)
-  {
-    TI_INFO("[glsl] Allocating {} B SSBO", data_size);
-    data = std::malloc(data_size);
-  }
-
-  void load_arguments_from(Context &ctx)
-  {
-    uint64_t *data_i = (uint64_t *)data;
-    for (int i = 0; i < taichi_max_num_args; i++) {
-      uint64_t value = ctx.get_arg<uint64_t>(i);
-      data_i[i] = value;
-    }
-  }
-
-  void save_returns_to(Context &ctx)
-  {
-    uint64_t *data_i = (uint64_t *)data;
-    for (int i = 0; i < taichi_max_num_args; i++) {
-      uint64_t value = data_i[i];
-      ctx.set_arg<uint64_t>(i, value);
-    }
-  }
-
-  void update(void *data_r)
-  {
-    std::memcpy(data, data_r, data_size);
-  }
-
-  operator IOV()
-  {
-    return IOV{data, data_size};
-  }
-
-  ~SSBO()
-  {
-    std::free(data);
-  }
-};
 
 class KernelGen : public IRVisitor
 {
@@ -110,9 +64,12 @@ private: // {{{
     emit("#extension GL_ARB_compute_shader: enable");
     emit("{}", struct_compiled_->source_code);
     emit("layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;");
-    emit("layout(std430, binding = 0) buffer data");
+    emit("layout(std430, binding = 0) buffer arg");
     emit("{{");
     emit("  int _args_[{}];", taichi_max_num_args);
+    emit("}};");
+    emit("layout(std430, binding = 1) buffer data");
+    emit("{{");
     emit("  int _data_[];");
     emit("}};");
     emit("");
@@ -144,12 +101,12 @@ private: // {{{
       val = fmt::format("({} * {} + {})", val, stmt->strides[i],
                         stmt->inputs[i]->raw_name());
     }
-    emit("const uint {} = {};", stmt->raw_name(), val);
+    emit("const int {} = {};", stmt->raw_name(), val);
   }
 
   void visit(OffsetAndExtractBitsStmt *stmt) override
   {
-    emit("uint {} = ((({} + {}) >> {}) & ((1 << {}) - 1));",
+    emit("int {} = ((({} + {}) >> {}) & ((1 << {}) - 1));",
          stmt->raw_name(), stmt->offset, stmt->input->raw_name(),
          stmt->bit_begin, stmt->bit_end - stmt->bit_begin);
   }
@@ -197,13 +154,13 @@ private: // {{{
   void visit(GlobalStoreStmt *stmt) override
   {
     TI_ASSERT(stmt->width() == 1);
-    emit("_data_[{}] = {};", stmt->ptr->raw_name(), stmt->data->raw_name());
+    emit("_data_[{} >> 2] = {};", stmt->ptr->raw_name(), stmt->data->raw_name());
   }
 
   void visit(GlobalLoadStmt *stmt) override
   {
     TI_ASSERT(stmt->width() == 1);
-    emit("{} {} = _data_[{}];", opengl_data_type_name(stmt->element_type()),
+    emit("{} {} = _data_[{} >> 2];", opengl_data_type_name(stmt->element_type()),
          stmt->raw_name(), stmt->ptr->raw_name());
   }
 
@@ -356,7 +313,12 @@ public:
 
   SSBO *create_root_ssbo()
   {
-    return new SSBO(struct_compiled_->root_size);
+    static SSBO *root_ssbo;
+    if (!root_ssbo) {
+      TI_INFO("[glsl] creating root buffer of size {} B", struct_compiled_->root_size);
+      root_ssbo = new SSBO(struct_compiled_->root_size);
+    }
+    return root_ssbo;
   }
 
   void run(const SNode &root_snode)
@@ -495,22 +457,27 @@ FunctionType OpenglCodeGen::gen(void)
   codegen.run(*prog_->snode_root);
   SSBO *root_sb = codegen.create_root_ssbo();
   const std::string kernel_source_code = codegen.kernel_source_code();
+  //if (prog_->config.print_ir)
+  TI_INFO("source of kernel [{}]:\n{}", kernel_name_, kernel_source_code);
 
   return [kernel_source_code, root_sb](Context &ctx) {
     // TODO(archibate): find out where get_arg<int> stored, and just new SSBO(ctx)
     SSBO *arg_sb = new SSBO(taichi_max_num_args * sizeof(uint64_t));
     arg_sb->load_arguments_from(ctx);
     std::vector<IOV> iov = {*arg_sb, *root_sb};
-    std::vector<void *> res = launch_glsl_kernel(kernel_source_code, iov);
-    arg_sb->update(res[0]);
+    launch_glsl_kernel(kernel_source_code, iov);
     arg_sb->save_returns_to(ctx);
-    unmap_all_ssbo();
   };
 }
 
 FunctionType OpenglCodeGen::compile(Program &program, Kernel &kernel)
 {
-  TI_WARN("OpenGL backend currently WIP, MAY NOT WORK");
+  static bool warned;
+  if (!warned) {
+    TI_WARN("OpenGL backend currently WIP, MAY NOT WORK");
+    warned = true;
+  }
+
   this->prog_ = &program;
   this->kernel_ = &kernel;
 

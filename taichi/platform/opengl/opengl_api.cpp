@@ -129,6 +129,7 @@ struct GLProgram
   }
 };
 
+
 // https://blog.csdn.net/ylbs110/article/details/52074826
 // https://www.khronos.org/opengl/wiki/Shader_Storage_Buffer_Object
 // This is Shader Storage Buffer, we use it to share data between CPU & GPU
@@ -191,7 +192,14 @@ struct GLSSBO
   void *map(size_t offset, size_t length, GLbitfield access = GL_MAP_READ_BIT)
   {
     // map GPU memory to CPU address space, offset within SSBO data
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, id_);
     return glMapBufferRange(GL_SHADER_STORAGE_BUFFER, offset, length, access);
+  }
+
+  void *map(GLbitfield access = GL_MAP_READ_BIT)
+  {
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, id_);
+    return glMapBuffer(GL_SHADER_STORAGE_BUFFER, access);
   }
 };
 
@@ -227,7 +235,7 @@ void initialize_opengl()
     }
 }
 
-void *launch_glsl_kernel(std::string source, void *data, size_t data_size)
+std::vector<void *> launch_glsl_kernel(std::string source, std::vector<IOV> iov)
 {
   static bool gl_inited = false;
   if (!gl_inited) {
@@ -241,9 +249,11 @@ void *launch_glsl_kernel(std::string source, void *data, size_t data_size)
   program.link();
   program.use();
 
-  GLSSBO ssbo;
-  ssbo.bind_index(0);
-  ssbo.bind_data(data, data_size, GL_DYNAMIC_READ); // input
+  std::vector<GLSSBO> ssbo(iov.size());
+  for (int i = 0; i < ssbo.size(); i++) {
+    ssbo[i].bind_index(i);
+    ssbo[i].bind_data(iov[i].base, iov[i].size, GL_DYNAMIC_READ); // input
+  }
 
   // https://www.khronos.org/opengl/wiki/Compute_Shader
   // https://community.arm.com/developer/tools-software/graphics/b/blog/posts/get-started-with-compute-shaders
@@ -253,10 +263,18 @@ void *launch_glsl_kernel(std::string source, void *data, size_t data_size)
   // `layout(local_size_x = X) in;` - the X      == `Threads`  in CUDA
   //
   glDispatchCompute(1, 1, 1);
-  glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+  glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT); // TODO(archibate): move to Program::synchroize()
 
-  void *data_r = ssbo.map(0, data_size); // output
-  return data_r;
+  std::vector<void *> maps(ssbo.size());
+  for (int i = 0; i < ssbo.size(); i++) {
+    maps[i] = ssbo[i].map(0, iov[i].size); // output
+  }
+  return maps;
+}
+
+void unmap_all_ssbo()
+{
+  glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
 }
 
 bool is_opengl_api_available()

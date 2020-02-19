@@ -3,11 +3,58 @@
 #include <taichi/platform/opengl/opengl_data_types.h>
 
 #include <string>
+#include <cstdlib>
 #include <taichi/ir.h>
 
 TLANG_NAMESPACE_BEGIN
 namespace opengl {
 namespace {
+
+struct SSBO
+{
+  void *data;
+  const size_t data_size;
+
+  SSBO(size_t data_size)
+    : data_size(data_size)
+  {
+    TI_INFO("[glsl] Allocating {} B SSBO", data_size);
+    data = std::malloc(data_size);
+  }
+
+  void load_arguments_from(Context &ctx)
+  {
+    uint64_t *data_i = (uint64_t *)data;
+    for (int i = 0; i < taichi_max_num_args; i++) {
+      uint64_t value = ctx.get_arg<uint64_t>(i);
+      data_i[i] = value;
+    }
+  }
+
+  void save_returns_to(Context &ctx)
+  {
+    uint64_t *data_i = (uint64_t *)data;
+    for (int i = 0; i < taichi_max_num_args; i++) {
+      uint64_t value = data_i[i];
+      ctx.set_arg<uint64_t>(i, value);
+    }
+  }
+
+  void update(void *data_r)
+  {
+    std::memcpy(data, data_r, data_size);
+  }
+
+  operator IOV()
+  {
+    return IOV{data, data_size};
+  }
+
+  ~SSBO()
+  {
+    std::free(data);
+  }
+};
 
 class KernelGen : public IRVisitor
 {
@@ -285,7 +332,7 @@ private: // {{{
 
   void visit(OffloadedStmt *stmt) override
   {
-    TI_ASSERT(is_top_level_);
+    TI_ASSERT(is_top_level_); // TODO(archibate): remove for nested kernel (?)
     is_top_level_ = false;
     using Type = OffloadedStmt::TaskType;
     if (stmt->task_type == Type::serial) {
@@ -305,6 +352,11 @@ public:
   const std::string &kernel_source_code() const
   {
     return kernel_src_code_;
+  }
+
+  SSBO *create_root_ssbo()
+  {
+    return new SSBO(struct_compiled_->root_size);
   }
 
   void run(const SNode &root_snode)
@@ -437,39 +489,22 @@ void OpenglCodeGen::lower()
   }
 }
 
-void load_data(Context &ctx, void *data)
-{
-  int *data_ = (int *)data;
-  for (int i = 0; i < taichi_max_num_args; i++) {
-    int value = ctx.get_arg<int>(i);
-    data_[i] = value;
-  }
-}
-
-void save_data(Context &ctx, void *data)
-{
-  int *data_ = (int *)data;
-  for (int i = 0; i < taichi_max_num_args; i++) {
-    int value = data_[i];
-    ctx.set_arg<int>(i, value);
-  }
-}
-
 FunctionType OpenglCodeGen::gen(void)
 {
   KernelGen codegen(kernel_, kernel_name_, struct_compiled_);
   codegen.run(*prog_->snode_root);
+  SSBO *root_sb = codegen.create_root_ssbo();
   const std::string kernel_source_code = codegen.kernel_source_code();
-  //TI_INFO("\n{}", kernel_source_code);
 
-  return [kernel_source_code](Context &ctx) {
-    void *data, *data_r;
-    size_t data_size = 1024; // ...
-    data = malloc(data_size);
-    load_data(ctx, data);
-    data_r = launch_glsl_kernel(kernel_source_code, data, data_size);
-    free(data);
-    save_data(ctx, data_r);
+  return [kernel_source_code, root_sb](Context &ctx) {
+    // TODO(archibate): find out where get_arg<int> stored, and just new SSBO(ctx)
+    SSBO *arg_sb = new SSBO(taichi_max_num_args * sizeof(uint64_t));
+    arg_sb->load_arguments_from(ctx);
+    std::vector<IOV> iov = {*arg_sb, *root_sb};
+    std::vector<void *> res = launch_glsl_kernel(kernel_source_code, iov);
+    arg_sb->update(res[0]);
+    arg_sb->save_returns_to(ctx);
+    unmap_all_ssbo();
   };
 }
 

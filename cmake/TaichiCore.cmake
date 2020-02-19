@@ -88,7 +88,6 @@ if (TI_WITH_CUDA)
     target_link_libraries(${LIBRARY_NAME} ${llvm_ptx_libs})
 endif()
 
-#target_link_libraries(${LIBRARY_NAME} /usr/lib/libGL.so GL)
 target_link_libraries(${LIBRARY_NAME} /usr/lib/libGLEW.so GLEW)
 target_link_libraries(${LIBRARY_NAME} /usr/lib/libglfw.so glfw)
 

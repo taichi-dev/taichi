@@ -12,6 +12,7 @@
 #include "backends/codegen_x86.h"
 #include "backends/struct.h"
 #include "backends/struct_metal.h"
+#include "backends/struct_opengl.h"
 #include "unified_allocator.h"
 #include "snode.h"
 
@@ -105,7 +106,7 @@ FunctionType Program::compile(Kernel &kernel) {
     metal::MetalCodeGen codegen(kernel.name, &metal_struct_compiled_.value());
     ret = codegen.compile(*this, kernel, metal_runtime_.get());
   } else if (kernel.arch == Arch::opengl) {
-    opengl::OpenglCodeGen codegen(kernel.name);
+    opengl::OpenglCodeGen codegen(kernel.name, &opengl_struct_compiled_.value());
     ret = codegen.compile(*this, kernel);
   } else {
     TI_NOT_IMPLEMENTED;
@@ -216,6 +217,10 @@ void Program::materialize_layout() {
       metal_runtime_ = std::make_unique<metal::MetalRuntime>(std::move(params));
     }
     TI_INFO("Metal root buffer size: {} B", metal_struct_compiled_->root_size);
+  } else if (config.arch == Arch::opengl) {
+    opengl::OpenglStructCompiler scomp;
+    opengl_struct_compiled_ = scomp.run(*snode_root);
+    TI_INFO("OpenGL root buffer size: {} B", opengl_struct_compiled_->root_size);
   }
 }
 

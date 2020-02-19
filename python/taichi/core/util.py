@@ -125,7 +125,6 @@ from taichi.misc.util import get_os_name, get_unique_task_id
 create_sand_box_on_windows = True
 
 def build():
-  assert False
   tmp_cwd = os.getcwd()
   bin_dir = get_build_directory()
 
@@ -134,18 +133,6 @@ def build():
   except:
     pass
   os.chdir(bin_dir)
-
-  flags = ' -DPYTHON_EXECUTABLE:FILEPATH="{}"'.format(sys.executable)
-
-  print('Running cmake...')
-  if is_ci():
-    print('  Note: building for CI.')
-  if get_os_name() == 'win':
-    flags += ' -G "Visual Studio 15 Win64"'
-  cmake_ret = os.system('cmake .. ' + flags)
-  if cmake_ret != 0:
-    print('  Error: CMake failed.')
-    exit(-1)
 
   import multiprocessing
   print('Building taichi...')

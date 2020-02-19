@@ -84,4 +84,4 @@ def test_random_2d_dist():
     counters[c] += 1
 
   for c in range(4):
-    assert counters[c] / n == approx(1 / 4, rel=0.05)
+    assert counters[c] / n == approx(1 / 4, rel=0.2)

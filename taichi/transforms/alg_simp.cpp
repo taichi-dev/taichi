@@ -9,7 +9,7 @@ class AlgSimp : public BasicStmtVisitor {
   using BasicStmtVisitor::visit;
   bool fast_math;
 
-  AlgSimp(bool fast_math_) : BasicStmtVisitor(), fast_math(fast_math_) {
+  explicit AlgSimp(bool fast_math_) : BasicStmtVisitor(), fast_math(fast_math_) {
   }
 
   void visit(BinaryOpStmt *stmt) override {
@@ -43,9 +43,10 @@ class AlgSimp : public BasicStmtVisitor {
         stmt->replace_with(stmt->rhs);
         stmt->parent->erase(stmt);
         throw IRModified();
-      } else if (fast_math && stmt->op_type == BinaryOpType::mul
+      } else if ((fast_math || is_integral(stmt->ret_type.data_type))
+          && stmt->op_type == BinaryOpType::mul
           && (alg_is_zero(lhs) || alg_is_zero(rhs))) {
-        // fast_math: 0 * a -> 0, a * 0 -> 0
+        // fast_math or integral operands: 0 * a -> 0, a * 0 -> 0
         auto zero = Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(stmt->ret_type.data_type));
         stmt->replace_with(zero.get());
         stmt->parent->insert_before(stmt, VecStatement(std::move(zero)));

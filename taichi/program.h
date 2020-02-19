@@ -164,6 +164,8 @@ class Program {
     return Arch::x86_64;
   }
 
+  Arch get_snode_io_arch();
+
   float64 get_total_compilation_time() {
     return total_compilation_time;
   }

@@ -235,7 +235,7 @@ void initialize_opengl()
     }
 }
 
-std::vector<void *> launch_glsl_kernel(std::string source, std::vector<IOV> iov)
+void launch_glsl_kernel(std::string source, std::vector<IOV> iov)
 {
   static bool gl_inited = false;
   if (!gl_inited) {
@@ -265,16 +265,11 @@ std::vector<void *> launch_glsl_kernel(std::string source, std::vector<IOV> iov)
   glDispatchCompute(1, 1, 1);
   glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT); // TODO(archibate): move to Program::synchroize()
 
-  std::vector<void *> maps(ssbo.size());
   for (int i = 0; i < ssbo.size(); i++) {
-    maps[i] = ssbo[i].map(0, iov[i].size); // output
+    void *p = ssbo[i].map(0, iov[i].size); // output
+    std::memcpy(iov[i].base, p, iov[i].size);
+    glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
   }
-  return maps;
-}
-
-void unmap_all_ssbo()
-{
-  glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
 }
 
 bool is_opengl_api_available()

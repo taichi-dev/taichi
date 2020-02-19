@@ -116,6 +116,7 @@ void Program::materialize_layout() {
   profiler_print_gpu = scomp->profiler_print;
   profiler_clear_gpu = scomp->profiler_clear;
 
+  TI_INFO("materialize_layout called");
   if (config.arch == Arch::cuda && config.use_llvm) {
     initialize_device_llvm_context();
     // llvm_context_device->get_init_module();
@@ -250,6 +251,15 @@ void Program::initialize_device_llvm_context() {
   }
 }
 
+Arch Program::get_snode_io_arch()
+{
+  if (config.arch == Arch::opengl) {
+    return Arch::opengl;
+  } else {
+    return get_host_arch();
+  }
+}
+
 Kernel &Program::get_snode_reader(SNode *snode) {
   TI_ASSERT(snode->type == SNodeType::place);
   auto kernel_name = fmt::format("snode_reader_{}", snode->id);
@@ -262,7 +272,7 @@ Kernel &Program::get_snode_reader(SNode *snode) {
         snode->num_active_indices, load_if_ptr((snode->expr)[indices]));
     current_ast_builder().insert(std::move(ret));
   });
-  ker.set_arch(get_host_arch());
+  ker.set_arch(get_snode_io_arch());
   ker.name = kernel_name;
   ker.is_accessor = true;
   for (int i = 0; i < snode->num_active_indices; i++)
@@ -283,7 +293,7 @@ Kernel &Program::get_snode_writer(SNode *snode) {
     (snode->expr)[indices] =
         Expr::make<ArgLoadExpression>(snode->num_active_indices);
   });
-  ker.set_arch(get_host_arch());
+  ker.set_arch(get_snode_io_arch());
   ker.name = kernel_name;
   ker.is_accessor = true;
   for (int i = 0; i < snode->num_active_indices; i++)

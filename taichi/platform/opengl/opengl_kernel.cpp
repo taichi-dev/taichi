@@ -13,19 +13,19 @@ SSBO::SSBO(size_t data_size_)
 
 void SSBO::load_arguments_from(Context &ctx)
 {
-  int *data_i = (int *)data;
+  uint64_t *data_i = (uint64_t *)data;
   for (int i = 0; i < taichi_max_num_args; i++) {
-    int value = ctx.get_arg<int>(i);
+    uint64_t value = ctx.get_arg<uint64_t>(i);
     data_i[i] = value;
   }
 }
 
 void SSBO::save_returns_to(Context &ctx)
 {
-  int *data_i = (int *)data;
+  uint64_t *data_i = (uint64_t *)data;
   for (int i = 0; i < taichi_max_num_args; i++) {
-    int value = data_i[i];
-    ctx.set_arg<int>(i, value);
+    uint64_t value = data_i[i];
+    ctx.set_arg<uint64_t>(i, value);
   }
 }
 

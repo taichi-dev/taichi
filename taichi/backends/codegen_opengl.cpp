@@ -64,14 +64,39 @@ private: // {{{
     emit("#extension GL_ARB_compute_shader: enable");
     emit("{}", struct_compiled_->source_code);
     emit("layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;");
-    emit("layout(std430, binding = 0) buffer arg");
+    emit("#define NARGS {}", taichi_max_num_args);
+    emit("layout(std430, binding = 0) buffer args_i32");
     emit("{{");
-    emit("  int _args_[{}];", taichi_max_num_args);
+    emit("  int _args_i32_[NARGS * 2];");
     emit("}};");
-    emit("layout(std430, binding = 1) buffer data");
+    emit("layout(std430, binding = 0) buffer args_f32");
     emit("{{");
-    emit("  int _data_[];");
+    emit("  float _args_f32_[NARGS * 2];");
     emit("}};");
+    emit("layout(std430, binding = 0) buffer args_f64");
+    emit("{{");
+    emit("  double _args_f64_[NARGS];");
+    emit("}};");
+    emit("layout(std430, binding = 1) buffer data_i32");
+    emit("{{");
+    emit("  int _data_i32_[];");
+    emit("}};");
+    emit("layout(std430, binding = 1) buffer data_f32");
+    emit("{{");
+    emit("  float _data_f32_[];");
+    emit("}};");
+    emit("layout(std430, binding = 1) buffer data_f64");
+    emit("{{");
+    emit("  double _data_f64_[];");
+    emit("}};");
+    emit("#define _arg_i32(x) _args_i32_[(x) << 1]"); // skip to 64bit stride
+    emit("#define _arg_f32(x) _args_f32_[(x) << 1]");
+    emit("#define _arg_i64(x) _args_i64_[(x) << 0]");
+    emit("#define _arg_f64(x) _args_f64_[(x) << 0]");
+    emit("#define _mem_i32(x) _data_i32_[(x) >> 2]");
+    emit("#define _mem_f32(x) _data_f32_[(x) >> 2]");
+    emit("#define _mem_i64(x) _data_i64_[(x) >> 3]");
+    emit("#define _mem_f64(x) _data_f64_[(x) >> 3]");
     emit("");
   }
 
@@ -154,14 +179,15 @@ private: // {{{
   void visit(GlobalStoreStmt *stmt) override
   {
     TI_ASSERT(stmt->width() == 1);
-    emit("_data_[{} >> 2] = {};", stmt->ptr->raw_name(), stmt->data->raw_name());
+    emit("_mem_{}({}) = {};", data_type_short_name(stmt->element_type()),
+        stmt->ptr->raw_name(), stmt->data->raw_name());
   }
 
   void visit(GlobalLoadStmt *stmt) override
   {
     TI_ASSERT(stmt->width() == 1);
-    emit("{} {} = _data_[{} >> 2];", opengl_data_type_name(stmt->element_type()),
-         stmt->raw_name(), stmt->ptr->raw_name());
+    emit("{} {} = _mem_{}({});", opengl_data_type_name(stmt->element_type()),
+         stmt->raw_name(), data_type_short_name(stmt->element_type()), stmt->ptr->raw_name());
   }
 
   void visit(UnaryOpStmt *stmt) override
@@ -258,17 +284,19 @@ private: // {{{
   {
     const auto dt = opengl_data_type_name(stmt->element_type());
     if (stmt->is_ptr) {
-      emit("const {} {} = _args_[{}]; // is_ptr", dt, stmt->raw_name(), stmt->arg_id);
+      emit("const {} {} = _arg_{}({}); // is_ptr", dt, stmt->raw_name(),
+          data_type_short_name(stmt->element_type()), stmt->arg_id);
     } else {
-      emit("const {} {} = _args_[{}];", dt, stmt->raw_name(), stmt->arg_id);
+      emit("const {} {} = _arg_{}({});", dt, stmt->raw_name(),
+          data_type_short_name(stmt->element_type()), stmt->arg_id);
     }
   }
 
   void visit(ArgStoreStmt *stmt) override
   {
-    const auto dt = metal_data_type_name(stmt->element_type());
     TI_ASSERT(!stmt->is_ptr);
-    emit("_args_[{}] = {};", stmt->arg_id, stmt->val->raw_name());
+    emit("_arg_{}({}) = {};", data_type_short_name(stmt->element_type()),
+        stmt->arg_id, stmt->val->raw_name());
   }
 
   std::string make_kernel_name()
@@ -457,15 +485,22 @@ FunctionType OpenglCodeGen::gen(void)
   codegen.run(*prog_->snode_root);
   SSBO *root_sb = codegen.create_root_ssbo();
   const std::string kernel_source_code = codegen.kernel_source_code();
-  //if (prog_->config.print_ir)
-  TI_INFO("source of kernel [{}]:\n{}", kernel_name_, kernel_source_code);
+  //TI_INFO("source of kernel [{}]:\n{}", kernel_name_, kernel_source_code);
 
   return [kernel_source_code, root_sb](Context &ctx) {
-    // TODO(archibate): find out where get_arg<int> stored, and just new SSBO(ctx)
+    // TODO(archibate): find out where get_arg<uint64_t> stored, and just new SSBO(ctx)
     SSBO *arg_sb = new SSBO(taichi_max_num_args * sizeof(uint64_t));
     arg_sb->load_arguments_from(ctx);
     std::vector<IOV> iov = {*arg_sb, *root_sb};
+    /*TI_INFO("data[0] = {}", ((int*)root_sb->data)[0]);
+    TI_INFO("data[1] = {}", ((int*)root_sb->data)[1]);
+    TI_INFO("args[0] = {}", ((uint64_t*)arg_sb->data)[0]);
+    TI_INFO("args[1] = {}", ((uint64_t*)arg_sb->data)[1]);*/
     launch_glsl_kernel(kernel_source_code, iov);
+    /*TI_INFO("data[0] = {}", ((int*)root_sb->data)[0]);
+    TI_INFO("data[1] = {}", ((int*)root_sb->data)[1]);
+    TI_INFO("args[0] = {}", ((uint64_t*)arg_sb->data)[0]);
+    TI_INFO("args[1] = {}", ((uint64_t*)arg_sb->data)[1]);*/
     arg_sb->save_returns_to(ctx);
   };
 }

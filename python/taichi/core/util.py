@@ -159,14 +159,14 @@ def build():
 
   os.chdir(tmp_cwd)
 
-def prepare_sandbox(bin_dir):
+def prepare_sandbox(src):
+  assert os.path.exists(src)
   from tempfile import mkdtemp
   tmp_dir = mkdtemp(prefix='taichi-')
-  src = os.path.join(bin_dir, 'libtaichi_core.so')
   dest = os.path.join(tmp_dir, 'taichi_core.so')
   shutil.copy(src, dest)
-  print(f'[taichi] prepared sandbox at {tmpdir}')
-  os.chdir(tmp_dir)
+  print(f'[taichi] prepared sandbox at {tmp_dir}')
+  return tmp_dir
 
 
 if is_release():
@@ -188,22 +188,24 @@ else:
   if get_os_name() == 'osx':
     bin_dir = get_bin_directory()
     os.environ['DYLD_FALLBACK_LIBRARY_PATH'] = get_runtime_directory()
-    assert os.path.exists(os.path.join(bin_dir, 'libtaichi_core.dylib'))
+    lib_path = os.path.join(bin_dir, 'libtaichi_core.dylib')
     tmp_cwd = os.getcwd()
-    os.chdir(bin_dir)
-    shutil.copy('libtaichi_core.dylib', 'taichi_core.so')
-    sys.path.append(bin_dir)
+    tmp_dir = prepare_sandbox(lib_path)
+    os.chdir(tmp_dir)
+    sys.path.append(tmp_dir)
     import taichi_core as tc_core
     os.chdir(tmp_cwd)
+
   elif get_os_name() == 'linux':
     bin_dir = get_bin_directory()
     if 'LD_LIBRARY_PATH' in os.environ:
       os.environ['LD_LIBRARY_PATH'] += ':/usr/lib64/'
     else:
       os.environ['LD_LIBRARY_PATH'] = '/usr/lib64/'
-    assert os.path.exists(os.path.join(bin_dir, 'libtaichi_core.so'))
+    lib_path = os.path.join(bin_dir, 'libtaichi_core.so')
+    assert os.path.exists(lib_path)
     tmp_cwd = os.getcwd()
-    tmp_dir = prepare_sandbox(bin_dir)
+    tmp_dir = prepare_sandbox(lib_path)
     os.chdir(tmp_dir)
     sys.path.append(tmp_dir)
     try:
@@ -213,8 +215,8 @@ else:
       print_red_bold("Taichi core import failed: ", end='')
       print(e)
       exit(-1)
-
     os.chdir(tmp_cwd)
+
   elif get_os_name() == 'win':
     bin_dir = get_bin_directory()
     dll_path1 = os.path.join(bin_dir, 'RelWithDebInfo', 'taichi_core.dll')

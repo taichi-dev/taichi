@@ -66,3 +66,24 @@ def test_type_tensor(dt):
         assert x[i, j] == 3
 
   return tester
+
+@ti.all_archs
+def _test_overflow(dt, n):
+  a = ti.var(dt, shape=())
+  b = ti.var(dt, shape=())
+  c = ti.var(dt, shape=())
+
+  @ti.kernel
+  def func():
+    c[None] = a + b
+
+  a[None] = 2 ** n // 3 * 2
+  b[None] = 2 ** n // 3 * 2
+  func()
+  assert c[None] == 2 ** n // 3 * 2 * 2 % (2 ** n) # or something else for signed operations
+
+def test_overflow():
+  _test_overflow(ti.i8, 8)
+  _test_overflow(ti.i16, 16)
+  _test_overflow(ti.u8, 8)
+  _test_overflow(ti.u16, 16)

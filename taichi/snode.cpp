@@ -178,6 +178,18 @@ int64 SNode::read_int(const std::vector<int> &I) {
     return get_current_program().context.get_arg<int32>(num_active_indices);
   } else if (dt == DataType::i64) {
     return get_current_program().context.get_arg<int64>(num_active_indices);
+  } else if (dt == DataType::i8) {
+    return get_current_program().context.get_arg<int8>(num_active_indices);
+  } else if (dt == DataType::i16) {
+    return get_current_program().context.get_arg<int16>(num_active_indices);
+  } else if (dt == DataType::u8) {
+    return get_current_program().context.get_arg<uint8>(num_active_indices);
+  } else if (dt == DataType::u16) {
+    return get_current_program().context.get_arg<uint16>(num_active_indices);
+  } else if (dt == DataType::u32) {
+    return get_current_program().context.get_arg<uint32>(num_active_indices);
+  } else if (dt == DataType::u64) {
+    return get_current_program().context.get_arg<uint64>(num_active_indices);
   } else {
     TI_NOT_IMPLEMENTED
   }

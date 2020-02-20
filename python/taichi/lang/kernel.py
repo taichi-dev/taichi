@@ -268,7 +268,7 @@ class Kernel:
           if not isinstance(v, (float, int)):
             raise KernelArgError(i, needed, provided)
           t_kernel.set_arg_float(actual_argument_slot, float(v))
-        elif needed is i32 or needed is i64:
+        elif needed is i32 or needed is i64 or needed in [i8, i16, u8, u16, u32, u64]:
           if not isinstance(v, int):
             raise KernelArgError(i, needed, provided)
           t_kernel.set_arg_int(actual_argument_slot, int(v))

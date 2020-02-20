@@ -256,7 +256,7 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
 
     // TODO(yuanming-hu): move runtime initialization to somewhere else
     auto initialize_runtime = tlctx->lookup_function<void *(
-        void *, void *, int, std::size_t, void *, bool)>("Runtime_initialize");
+        void *, void *, int, std::size_t, void *, void *, bool)>("Runtime_initialize");
 
     auto initialize_runtime2 =
         tlctx->lookup_function<void(void *, void *, int, int)>(
@@ -264,10 +264,6 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
 
     auto set_assert_failed = tlctx->lookup_function<void(void *, void *)>(
         "Runtime_set_assert_failed");
-
-    auto set_printf_host =
-        tlctx->lookup_function<void(void *, void *)>(
-            "Runtime_set_printf_host");
 
     auto allocate_ambient =
         tlctx->lookup_function<void(void *, int)>("Runtime_allocate_ambient");
@@ -293,7 +289,8 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
       TI_TRACE("Allocating data structure of size {} B", root_size);
       auto root = initialize_runtime(
           &prog->llvm_runtime, prog, (int)snodes.size(), root_size,
-          (void *)&taichi_allocate_aligned, logger.get_level() <= 1);
+          (void *)&taichi_allocate_aligned, (void *)std::printf,
+          logger.get_level() <= 1);
 
       auto mem_req_queue = tlctx->lookup_function<void *(void *)>(
           "Runtime_get_mem_req_queue")(prog->llvm_runtime);
@@ -328,7 +325,6 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
       runtime_initialize_thread_pool(prog->llvm_runtime, &prog->thread_pool,
                                      (void *)ThreadPool::static_run);
       set_assert_failed(prog->llvm_runtime, (void *)assert_failed_host);
-      set_printf_host(prog->llvm_runtime, (void *)std::printf);
 
       runtime_set_root(prog->llvm_runtime, root);
 

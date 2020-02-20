@@ -1,7 +1,7 @@
+// This file will only be compiled into llvm bitcode by clang.
+// The generated bitcode will likely get inlined for performance.
+
 #if !defined(TI_INCLUDED) || !defined(_WIN32)
-// This file will only be compiled with clang into llvm bitcode
-// Generated bitcode will likely get inline for performance.
-// Most function calls here will be inlined
 
 #if defined(_WIN32)
 #define vprintf vprintf_windows
@@ -19,8 +19,16 @@
 #include "../constants.h"
 #include "../arithmetic.h"
 
+struct Context;
 using assert_failed_type = void (*)(const char *);
-using printf_host_type = void (*)(const char *, ...);
+using host_printf_type = void (*)(const char *, ...);
+using vm_allocator_type = void *(*)(void *, std::size_t, std::size_t);
+using RangeForTaskFunc = void(Context *, int i);
+using parallel_for_type = void (*)(void *thread_pool,
+                                   int splits,
+                                   int num_desired_threads,
+                                   void *context,
+                                   void (*func)(void *, int i));
 
 #if defined(__linux__) && !ARCH_cuda && defined(TI_ARCH_x86_64)
 __asm__(".symver logf,logf@GLIBC_2.2.5");
@@ -433,14 +441,6 @@ STRUCT_FIELD(Element, element);
 STRUCT_FIELD(Element, pcoord);
 STRUCT_FIELD_ARRAY(Element, loop_bounds);
 
-using vm_allocator_type = void *(*)(void *, std::size_t, std::size_t);
-using RangeForTaskFunc = void(Context *, int i);
-using parallel_for_type = void (*)(void *thread_pool,
-                                   int splits,
-                                   int num_desired_threads,
-                                   void *context,
-                                   void (*func)(void *, int i));
-
 constexpr int num_rand_states = 1024 * 32;
 
 struct RandState {
@@ -465,7 +465,7 @@ struct NodeManager;
 struct Runtime {
   vm_allocator_type vm_allocator;
   assert_failed_type assert_failed;
-  printf_host_type printf_host;
+  host_printf_type host_printf;
   Ptr prog;
   Ptr root;
   size_t root_mem_size;
@@ -498,7 +498,7 @@ STRUCT_FIELD(Runtime, root);
 STRUCT_FIELD(Runtime, root_mem_size);
 STRUCT_FIELD(Runtime, temporaries);
 STRUCT_FIELD(Runtime, assert_failed);
-STRUCT_FIELD(Runtime, printf_host);
+STRUCT_FIELD(Runtime, host_printf);
 STRUCT_FIELD(Runtime, mem_req_queue);
 STRUCT_FIELD(Runtime, profiler);
 STRUCT_FIELD(Runtime, profiler_start);
@@ -642,12 +642,15 @@ Ptr Runtime_initialize(Runtime **runtime_ptr,
                        int num_snodes,
                        uint64_t root_size,
                        void *_vm_allocator,
+                       void *_host_printf,
                        bool verbose) {
   // bootstrap
   auto vm_allocator = (vm_allocator_type)_vm_allocator;
+  auto host_printf = (host_printf_type)_host_printf;
   *runtime_ptr = (Runtime *)vm_allocator(prog, sizeof(Runtime), 128);
   Runtime *runtime = *runtime_ptr;
   runtime->vm_allocator = vm_allocator;
+  runtime->host_printf = host_printf;
   runtime->prog = prog;
   if (verbose)
     taichi_printf(runtime,
@@ -1167,7 +1170,7 @@ void taichi_printf(Runtime *runtime, const char *format, Args &&... args) {
   helper.push_back(std::forward<Args>(args)...);
   vprintf((Ptr)format, helper.ptr());
 #else
-  runtime->printf_host(format, args...);
+  runtime->host_printf(format, args...);
 #endif
 }
 

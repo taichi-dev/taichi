@@ -687,7 +687,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     } else {
       TI_NOT_IMPLEMENTED
     }
-    auto runtime_printf = call("Runtime_get_printf_host", get_runtime());
+    auto runtime_printf = call("Runtime_get_host_printf", get_runtime());
     args.push_back(builder->CreateGlobalStringPtr(
         ("[debug] " + stmt->str + " = " + format + "\n").c_str(),
         "format_string"));

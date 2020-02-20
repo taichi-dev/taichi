@@ -75,15 +75,27 @@ def _test_overflow(dt, n):
 
   @ti.kernel
   def func():
-    c[None] = a + b
+    c[None] = a[None] + b[None]
 
-  a[None] = 2 ** n // 3 * 2
-  b[None] = 2 ** n // 3 * 2
+  a[None] = 2 ** n // 3
+  b[None] = 2 ** n // 3
+
   func()
-  assert c[None] == 2 ** n // 3 * 2 * 2 % (2 ** n) # or something else for signed operations
+
+  assert a[None] == 2 ** n // 3
+  assert b[None] == 2 ** n // 3
+
+  if ti.core.is_signed(dt):
+    assert c[None] == 2 ** n // 3 * 2 - (2 ** n) # overflows
+  else:
+    assert c[None] == 2 ** n // 3 * 2 # does not overflow
 
 def test_overflow():
   _test_overflow(ti.i8, 8)
-  _test_overflow(ti.i16, 16)
   _test_overflow(ti.u8, 8)
+  _test_overflow(ti.i16, 16)
   _test_overflow(ti.u16, 16)
+  _test_overflow(ti.i32, 32)
+  _test_overflow(ti.u32, 32)
+  # _test_overflow(ti.i64, 64)
+  # _test_overflow(ti.u64, 64)

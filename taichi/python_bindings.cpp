@@ -388,6 +388,10 @@ void export_lang(py::module &m) {
     data_type.value(data_type_name(DataType(t)).c_str(), DataType(t));
   data_type.export_values();
 
+  m.def("is_integral", is_integral);
+  m.def("is_signed", is_signed);
+  m.def("is_unsigned", is_unsigned);
+
   m.def("global_new", static_cast<Expr (*)(Expr, DataType)>(global_new));
   m.def("set_global_grad", [&](const Expr &expr) {
     TI_ASSERT(expr.is<GlobalVariableExpression>());

@@ -112,7 +112,6 @@ void demote_dense_struct_fors(IRNode *root) {
     auto s_ = block_body[i];
     if (auto s = s_->cast<StructForStmt>()) {
       auto snode = s->snode;
-      TI_P(snode_type_name(snode->type));
       bool all_dense = true;
       while (all_dense && snode->type != SNodeType::root) {
         if (snode->type != SNodeType::dense) {

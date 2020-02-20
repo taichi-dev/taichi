@@ -30,4 +30,41 @@ void Canvas::circle_single(real x, real y, uint32 color, real radius) {
   circle(x, y).radius(radius).color(color).finish();
 }
 
+void Canvas::triangle(Vector2 a, Vector2 b, Vector2 c, Vector4 color) {
+  a = transform(a);
+  b = transform(b);
+  c = transform(c);
+
+  // real points[3] = {a, b, c};
+  // std::sort(points, points + 3, [](const Vector2 &a, const Vector2 &b) {
+  //  return a.y < b.y;
+  //});
+  Vector2 limits[2];
+  limits[0].x = min(a.x, min(b.x, c.x));
+  limits[0].y = min(a.y, min(b.y, c.y));
+  limits[1].x = max(a.x, max(b.x, c.x));
+  limits[1].y = max(a.y, max(b.y, c.y));
+  for (int i = (int)std::floor(limits[0].x); i < (int)std::ceil(limits[1].x);
+       i++) {
+    for (int j = (int)std::floor(limits[0].y);
+         j < (int)std::ceil(limits[1].y); j++) {
+      Vector2 pixel(i + 0.5_f, j + 0.5_f);
+      bool inside_a = cross(pixel - a, b - a) <= 0;
+      bool inside_b = cross(pixel - b, c - b) <= 0;
+      bool inside_c = cross(pixel - c, a - c) <= 0;
+      if (inside_a && inside_b && inside_c && img.inside(i, j)) {
+        img[i][j] = color;
+      }
+    }
+  }
+}
+
+void Canvas::triangle_single(real x0, real y0, real x1, real y1, real x2, real y2, uint32 color_hex) {
+  auto a = Vector2(x0, y0);
+  auto b = Vector2(x1, y1);
+  auto c = Vector2(x2, y2);
+  auto color = color_from_hex(color_hex);
+  triangle(a, b, c, color);
+}
+
 TI_NAMESPACE_END

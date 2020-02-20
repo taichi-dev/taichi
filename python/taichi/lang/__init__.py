@@ -64,12 +64,9 @@ def init(default_fp=None, default_ip=None, print_preprocessed=None, debug=None, 
   if print_preprocessed is not None:
     ti.get_runtime().print_preprocessed = print_preprocessed
   if debug:
-    ti.set_logging_level(ti.DEBUG)
+    ti.set_logging_level(ti.TRACE)
   ti.cfg.debug = debug
 
-  log_level = os.environ.get('TI_LOG_LEVEL', '')
-  if log_level:
-    ti.set_logging_level(log_level)
   for k, v in kwargs.items():
     setattr(ti.cfg, k, v)
   ti.get_runtime().create_program()

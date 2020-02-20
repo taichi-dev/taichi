@@ -34,11 +34,12 @@ void export_visual(py::module &m) {
       .def("get_cursor_pos", &GUI::get_cursor_pos)
       .def("update", &GUI::update);
   py::class_<Canvas>(m, "Canvas")
-      .def("clear", static_cast<void (Canvas::*)(int)>(&Canvas::clear))
+      .def("clear", static_cast<void (Canvas::*)(uint32)>(&Canvas::clear))
       .def("rect", &Canvas::rect, py::return_value_policy::reference)
       .def("path",
            static_cast<Line &(Canvas::*)(Vector2, Vector2)>(&Canvas::path),
            py::return_value_policy::reference)
+      .def("triangle_single", &Canvas::triangle_single)
       .def("circles_batched", &Canvas::circles_batched)
       .def("circle_single", &Canvas::circle_single)
       .def("circle", static_cast<Circle &(Canvas::*)(Vector2)>(&Canvas::circle),

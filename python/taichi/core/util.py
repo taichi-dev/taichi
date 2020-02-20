@@ -255,6 +255,9 @@ else:
 
     os.chdir(old_wd)
 
+log_level = os.environ.get('TI_LOG_LEVEL', '')
+if log_level:
+  tc_core.set_logging_level(log_level)
 
 def get_dll_name(name):
   if get_os_name() == 'linux':

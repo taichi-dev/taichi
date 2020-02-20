@@ -20,7 +20,6 @@
 
 TI_NAMESPACE_BEGIN
 
-// https://color.adobe.com/sea-waves-color-theme-11521801/edit/?copy=true&base=2&rule=Custom&selected=1&name=Copy%20of%20sea%20waves&mode=hsv&rgbvalues=0.009800000000000008,0.32993205279993043,0.49,0.006600000000000006,0.5184304355999791,0.66,0.007700000000000007,0.7445879672002016,0.77,0.6643,0.91,0.8608604914000435,0.8827,0.97,0.9059801164000182&swatchOrder=0,1,2,3,4
 TI_FORCE_INLINE Vector4 color_from_hex(uint32 c) {
   return Vector4(c / 65536, c / 256 % 256, c % 256, 255) * (1 / 255.0_f);
 }
@@ -368,34 +367,9 @@ class Canvas {
     }
   }
 
-  void triangle(Vector2 a, Vector2 b, Vector2 c, Vector4 color) {
-    a = transform(a);
-    b = transform(b);
-    c = transform(c);
+  void triangle(Vector2 a, Vector2 b, Vector2 c, Vector4 color);
 
-    // real points[3] = {a, b, c};
-    // std::sort(points, points + 3, [](const Vector2 &a, const Vector2 &b) {
-    //  return a.y < b.y;
-    //});
-    Vector2 limits[2];
-    limits[0].x = min(a.x, min(b.x, c.x));
-    limits[0].y = min(a.y, min(b.y, c.y));
-    limits[1].x = max(a.x, max(b.x, c.x));
-    limits[1].y = max(a.y, max(b.y, c.y));
-    for (int i = (int)std::floor(limits[0].x); i < (int)std::ceil(limits[1].x);
-         i++) {
-      for (int j = (int)std::floor(limits[0].y);
-           j < (int)std::ceil(limits[1].y); j++) {
-        Vector2 pixel(i + 0.5_f, j + 0.5_f);
-        bool inside_a = cross(pixel - a, b - a) <= 0;
-        bool inside_b = cross(pixel - b, c - b) <= 0;
-        bool inside_c = cross(pixel - c, a - c) <= 0;
-        if (inside_a && inside_b && inside_c && img.inside(i, j)) {
-          img[i][j] = color;
-        }
-      }
-    }
-  }
+  void triangle_single(real x0, real y0, real x1, real y1, real x2, real y2, uint32 color);
 
   void text(const std::string &str,
             Vector2 position,
@@ -417,8 +391,8 @@ class Canvas {
     img.reset(color);
   }
 
-  void clear(int c) {
-    img.reset((1.0_f / 255) * Vector4(c / 65536, c / 256 % 256, c % 256, 255));
+  void clear(uint32 c) {
+    img.reset(color_from_hex(c));
   }
 
   ~Canvas() {

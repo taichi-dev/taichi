@@ -103,7 +103,10 @@ class GUI:
       raise ValueError('Radius must be an ndarray or float (e.g., 0.4)')
     
     self.canvas.circles_batched(n, pos, color_single, color_array, radius_single, radius_array)
-    
+
+  def triangle(self, a, b, c, color=0xFFFFFF):
+    self.canvas.triangle_single(a[0], a[1], b[0], b[1], c[0], c[1], color)
+
   def line(self, begin, end, radius, color):
     import taichi as ti
     self.canvas.path(ti.vec(*begin), ti.vec(*end)).radius(radius).color(color).finish()

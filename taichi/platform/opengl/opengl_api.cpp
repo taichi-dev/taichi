@@ -3,7 +3,7 @@
 #define GLEW_STATIC
 #include <GL/glew.h>
 #else
-//#include <GLES3/gl32.h>
+#include <GLES3/gl32.h>
 #endif
 #include <GLFW/glfw3.h>
 #include "opengl_api.h"

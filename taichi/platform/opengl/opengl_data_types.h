@@ -8,13 +8,14 @@ namespace opengl {
 
 inline std::string opengl_data_type_name(DataType dt)
 {
+  // https://www.khronos.org/opengl/wiki/Data_Type_(GLSL)
   switch (dt) {
     case DataType::f32:
       return "float";
+    case DataType::f64:
+      return "double";
     case DataType::i32:
       return "int";
-    case DataType::u32:
-      return "uint";
     default:
       TI_NOT_IMPLEMENTED;
       break;

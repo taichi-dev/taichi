@@ -1,4 +1,4 @@
-#define _GLSL_DEBUG 1
+//#define _GLSL_DEBUG 1
 #include "codegen_opengl.h"
 #include <taichi/platform/opengl/opengl_api.h>
 #include <taichi/platform/opengl/opengl_kernel.h>
@@ -41,6 +41,7 @@ private: // {{{
   std::string glsl_kernel_prefix_;
   int glsl_kernel_count_{0};
   int num_threads_{1};
+  int num_groups_{1};
 
   void push_indent()
   {
@@ -125,7 +126,11 @@ private: // {{{
       emit("  {}();", glsl_kernel_name_);
     emit("}}");
     emit("");
-    emit("layout(local_size_x = {}, local_size_y = 1, local_size_z = 1) in;", num_threads_);
+    int threads_per_group = 1792;
+    if (num_threads_ < 1792)
+      threads_per_group = num_threads_;
+    num_groups_ = (num_threads_ + 1791) / 1792;
+    emit("layout(local_size_x = {}, local_size_y = 1, local_size_z = 1) in;", threads_per_group);
   }
 
   void visit(Block *stmt) override
@@ -214,10 +219,14 @@ private: // {{{
 
   void visit(UnaryOpStmt *stmt) override
   {
-    if (stmt->op_type != UnaryOpType::cast) {
-      emit("{} {} = {}({});", opengl_data_type_name(stmt->element_type()),
-           stmt->raw_name(), unary_op_type_name(stmt->op_type),
+    if (stmt->op_type == UnaryOpType::logic_not) {
+      emit("{} {} = {}({} == 0);", opengl_data_type_name(stmt->element_type()),
+           stmt->raw_name(), opengl_data_type_name(stmt->element_type()),
            stmt->operand->raw_name());
+    } else if (stmt->op_type != UnaryOpType::cast) {
+      emit("{} {} = {}({}({}));", opengl_data_type_name(stmt->element_type()),
+           stmt->raw_name(), opengl_data_type_name(stmt->element_type()),
+           unary_op_type_name(stmt->op_type), stmt->operand->raw_name());
     } else {
       // cast
       if (stmt->cast_by_value) {
@@ -405,6 +414,18 @@ private: // {{{
     emit("}}");
   }
 
+  void visit(WhileControlStmt *stmt) override
+  {
+    emit("if ({} == 0) break;", stmt->cond->raw_name());
+  }
+
+  void visit(WhileStmt *stmt) override
+  {
+    emit("while (true) {{");
+    stmt->body->accept(this);
+    emit("}}");
+  }
+
   void visit(OffloadedStmt *stmt) override
   {
     TI_ASSERT(is_top_level_); // TODO(archibate): remove for nested kernel (?)
@@ -443,6 +464,11 @@ public:
   const std::string &kernel_source_code() const
   {
     return kernel_src_code_;
+  }
+
+  int get_num_work_groups() const
+  {
+    return num_groups_;
   }
 
   SSBO *create_root_ssbo()
@@ -592,11 +618,11 @@ FunctionType OpenglCodeGen::gen(void)
   codegen.run(*prog_->snode_root);
   SSBO *root_sb = codegen.create_root_ssbo();
   const std::string kernel_source_code = codegen.kernel_source_code();
-#ifdef _GLSL_DEBUG
+  int num_groups = codegen.get_num_work_groups();
   TI_INFO("source of kernel [{}]:\n{}", kernel_name_, kernel_source_code);
-#endif
+  GLProgram *glsl = compile_glsl_program(kernel_source_code);
 
-  return [kernel_source_code, root_sb](Context &ctx) {
+  return [glsl, num_groups, root_sb](Context &ctx) {
     // TODO(archibate): try implement just new_ssbo_from_buffer(ctx.args) and no free like _IOMYBUF
     SSBO *arg_sb = new SSBO(taichi_max_num_args * sizeof(uint64_t));
     SSBO *extarg_sb = new SSBO(Context::extra_args_size);
@@ -611,7 +637,7 @@ FunctionType OpenglCodeGen::gen(void)
     TI_INFO("earg[0] = {}", ((int*)extarg_sb->data)[0]);
     TI_INFO("earg[1] = {}", ((int*)extarg_sb->data)[1]);
 #endif
-    launch_glsl_kernel(kernel_source_code, iov);
+    launch_glsl_kernel(glsl, iov, num_groups);
 #ifdef _GLSL_DEBUG
     TI_INFO("data[0] = {}", ((int*)root_sb->data)[0]);
     TI_INFO("data[1] = {}", ((int*)root_sb->data)[1]);

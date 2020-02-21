@@ -6,7 +6,6 @@
 TLANG_NAMESPACE_BEGIN
 namespace opengl {
 
-<<<<<<< HEAD
 SSBO::SSBO(size_t data_size_)
   : data_(data_size_), data_size(data_size_)
 {}

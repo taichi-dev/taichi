@@ -139,15 +139,21 @@ TI_TEST("simplify_linearized_with_trivial_inputs") {
       block->push_back<SNodeLookupStmt>(&*root.ch[0], get_child, linearized_zero, true, std::vector<Stmt*>());
 
   irpass::typecheck(block.get());
-  irpass::print(block.get());
+  // irpass::print(block.get());
   TI_CHECK(block->size() == 7);
 
-  irpass::simplify(block.get());
+  irpass::simplify(block.get());  // should lower linearized
+  // irpass::print(block.get());
+  // TI_CHECK(block->size() == 8);
 
-  irpass::print(block.get());
+  irpass::typecheck(block.get());  // necessary here
+  // irpass::print(block.get());
 
-  irpass::full_simplify(block.get(), CompileConfig());
-  irpass::print(block.get());
+  irpass::constant_fold(block.get());
+  irpass::alg_simp(block.get(), CompileConfig());
+  irpass::die(block.get());  // should eliminate consts
+  // irpass::print(block.get());
+  TI_CHECK(block->size() == 5);  // get root, const 0, lookup, get child, lookup
 }
 
 TLANG_NAMESPACE_END

@@ -7,15 +7,15 @@ matrix:
   - os: osx
     osx_image: xcode10.3
     env:
-      - MATRIX_EVAL="CC=clang && CXX=clang++ && PYENV_VERSION=3.6.1 && PYTHON=python"
+      - MATRIX_EVAL="CC=clang && CXX=clang++ && PYTHON_VERSION=3.6.1 && PYTHON=python"
   - os: osx
     osx_image: xcode10.3
     env:
-      - MATRIX_EVAL="CC=clang && CXX=clang++ && PYENV_VERSION=3.7.1 && PYTHON=python"
+      - MATRIX_EVAL="CC=clang && CXX=clang++ && PYTHON_VERSION=3.7.1 && PYTHON=python"
   - os: osx
     osx_image: xcode10.3
     env:
-      - MATRIX_EVAL="CC=clang && CXX=clang++ && PYENV_VERSION=3.8.1 && PYTHON=python"
+      - MATRIX_EVAL="CC=clang && CXX=clang++ && PYTHON_VERSION=3.8.1 && PYTHON=python"
 
 before_install:
 - eval "${MATRIX_EVAL}"

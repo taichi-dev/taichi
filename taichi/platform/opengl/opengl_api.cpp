@@ -83,7 +83,11 @@ struct GLProgram
     id_ = glCreateProgram();
   }
 
-  GLProgram(GLShader &shader)
+  explicit GLProgram(GLuint id)
+    : id_(id)
+  {}
+
+  explicit GLProgram(GLShader &shader)
     : GLProgram()
   {
     this->attach(shader);
@@ -235,7 +239,7 @@ void initialize_opengl()
     }
 }
 
-void launch_glsl_kernel(std::string source, std::vector<IOV> iov)
+GLProgram *compile_glsl_program(std::string source)
 {
   static bool gl_inited = false;
   if (!gl_inited) {
@@ -243,11 +247,15 @@ void launch_glsl_kernel(std::string source, std::vector<IOV> iov)
     initialize_opengl();
     gl_inited = true;
   }
-
   GLShader shader(source);
-  GLProgram program(shader);
-  program.link();
-  program.use();
+  GLProgram *program = new GLProgram(shader);
+  program->link();
+  return program;
+}
+
+void launch_glsl_kernel(GLProgram *program, std::vector<IOV> iov, int num_groups)
+{
+  program->use();
 
   std::vector<GLSSBO> ssbo(iov.size());
   for (int i = 0; i < ssbo.size(); i++) {
@@ -262,7 +270,7 @@ void launch_glsl_kernel(std::string source, std::vector<IOV> iov)
   // `glDispatchCompute(X, Y, Z)`   - the X*Y*Z  == `Blocks`   in CUDA
   // `layout(local_size_x = X) in;` - the X      == `Threads`  in CUDA
   //
-  glDispatchCompute(1, 1, 1);
+  glDispatchCompute(num_groups, 1, 1);
   glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT); // TODO(archibate): move to Program::synchroize()
 
   for (int i = 0; i < ssbo.size(); i++) {

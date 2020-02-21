@@ -55,6 +55,8 @@ inline std::string opengl_unary_op_type_symbol(UnaryOpType type)
     return "exp";
   case UnaryOpType::log:
     return "log";
+  case UnaryOpType::logic_not:
+    return "0 == ";
   default:
     TI_NOT_IMPLEMENTED;
   }

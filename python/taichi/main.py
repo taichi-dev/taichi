@@ -38,6 +38,10 @@ def test_python(test_files=(), verbose=False):
         threads = min(8, cpu_count()) # To prevent running out of memory
       except:
         threads = 2
+      env_threads = os.environ.get('TI_TEST_THREADS', '')
+      if env_threads:
+        threads = env_threads
+        print(f'Following TI_TEST_THREADS to use {threads} testing thread(s)...')
       print(f'Starting {threads} testing thread(s)...')
       args += ['-n', str(threads)]
   return int(pytest.main(args))

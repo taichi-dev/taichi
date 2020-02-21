@@ -7,6 +7,7 @@ pipeline {
         CC = "clang-7"
         CXX = "clang++"
         TI_WITH_CUDA = "True"
+        TI_TEST_THREADS = "1"
     }
     stages{
         stage('Build') {

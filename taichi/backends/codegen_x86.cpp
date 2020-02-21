@@ -641,7 +641,7 @@ void CPUCodeGen::lower_llvm() {
     irpass::re_id(ir);
     irpass::print(ir);
   }
-  if (prog->config.demote_dense_struct_fors) {
+  if (!kernel->grad && prog->config.demote_dense_struct_fors) {
     irpass::demote_dense_struct_fors(ir);
     irpass::typecheck(ir);
     if (print_ir) {

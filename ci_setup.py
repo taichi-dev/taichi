@@ -70,16 +70,14 @@ def execute_command(line, allow_nonzero_output = 0):
 
 def get_os_name():
   name = platform.platform()
-  if name.lower().startswith('darwin'):
+  # in python 3.8, platform.platform() uses mac_ver() on macOS
+  # it will return 'macOS-XXXX' instead of 'Darwin-XXXX'
+  if name.lower().startswith('darwin') or name.lower().startswith('macos'):
     return 'osx'
   elif name.lower().startswith('windows'):
     return 'win'
   elif name.lower().startswith('linux'):
     return 'linux'
-  # in python 3.8, platform.platform() uses mac_ver() on macOS
-  # it will return 'macOS-XXXX' instead of 'Darwin-XXXX'
-  elif name.lower().startswith('macos'):
-    return 'osx'
   assert False, "Unknown platform name %s" % name
 
 

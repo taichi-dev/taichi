@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# use brew & pyenv to build specified python on osx
+# use brew & pyenv to build specific python on osx
 if [[ $TRAVIS_OS_NAME == 'osx' ]]; then
     export PATH="$HOME/.pyenv/bin:$PATH"
     eval "${MATRIX_EVAL}"

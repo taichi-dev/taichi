@@ -20,7 +20,7 @@ TI_TEST("simplify_linearized_with_trivial_inputs") {
   auto linearized_zero =
       block->push_back<LinearizeStmt>(std::vector<Stmt*>(2, zero), std::vector<int>({8, 4}));
   auto lookup2 =
-      block->push_back<SNodeLookupStmt>(&*root.ch[0], get_child, linearized_zero, true, std::vector<Stmt*>());
+      block->push_back<SNodeLookupStmt>(root.ch[0].get(), get_child, linearized_zero, true, std::vector<Stmt*>());
 
   irpass::typecheck(block.get());
   // irpass::print(block.get());

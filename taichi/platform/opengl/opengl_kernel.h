@@ -22,9 +22,8 @@ struct SSBO
   SSBO(size_t data_size);
   ~SSBO();
 
-  void load_arguments_from(Context &ctx);
-  void save_returns_to(Context &ctx);
-  void update(void *data_r);
+  void load_from(const void *buffer);
+  void save_to(void *buffer);
 
   operator IOV()
   {

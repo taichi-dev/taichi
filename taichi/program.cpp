@@ -116,7 +116,6 @@ void Program::materialize_layout() {
   profiler_print_gpu = scomp->profiler_print;
   profiler_clear_gpu = scomp->profiler_clear;
 
-  TI_INFO("materialize_layout called");
   if (config.arch == Arch::cuda && config.use_llvm) {
     initialize_device_llvm_context();
     // llvm_context_device->get_init_module();

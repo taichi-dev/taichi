@@ -12,10 +12,10 @@ def test_python(test_files=(), verbose=False):
   import pytest
   test_dir = None
   if ti.is_release():
-    test_dir = ti.package_root()
+    root_dir = ti.package_root()
   else:
-    test_dir = ti.get_repo_directory()
-  test_dir = os.path.join(test_dir, 'tests', 'python')
+    root_dir = ti.get_repo_directory()
+  test_dir = os.path.join(root_dir, 'tests', 'python')
   args = []
   if len(test_files):
     # run individual tests
@@ -32,14 +32,14 @@ def test_python(test_files=(), verbose=False):
   if verbose:
     args += ['-s']
   if len(test_files) == 0 or len(test_files) > 4:
-    if int(pytest.main(['misc/empty_pytest.py', '-n1'])) == 0: # if pytest has xdist
+    if int(pytest.main([os.path.join(root_dir, 'misc/empty_pytest.py'), '-n1'])) == 0: # if pytest has xdist
       try:
         from multiprocessing import cpu_count
-        cpu_count = cpu_count()
+        threads = min(8, cpu_count()) # To prevent running out of memory
       except:
-        cpu_count = 2
-      print(f'Starting {cpu_count} testing thread(s)...')
-      args += ['-n', str(cpu_count)]
+        threads = 2
+      print(f'Starting {threads} testing thread(s)...')
+      args += ['-n', str(threads)]
   return int(pytest.main(args))
 
 

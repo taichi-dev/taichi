@@ -28,3 +28,10 @@ def imread(filename, channels=0):
   # TODO(archibate): Figure out how np.ndarray constructor works and replace:
   ti.core.C_memcpy(img.ctypes.data, ptr, resx * resy * comp)
   return img
+
+def imshow(img, winname='Taichi'):
+  img = cook_image(img)
+  gui = ti.GUI(winname, res=img.shape[:2])
+  while not gui.has_key_pressed():
+    gui.set_image(img)
+    gui.show()

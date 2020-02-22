@@ -162,9 +162,10 @@ def build():
 def prepare_sandbox(src):
   assert os.path.exists(src)
   import atexit
+  import shutil
   from tempfile import mkdtemp
   tmp_dir = mkdtemp(prefix='taichi-')
-  atexit.register(os.unlink, tmp_dir)
+  atexit.register(shutil.rmtree, tmp_dir)
   print(f'[Taichi] preparing sandbox at {tmp_dir}')
   dest = os.path.join(tmp_dir, 'taichi_core.so')
   shutil.copy(src, dest)

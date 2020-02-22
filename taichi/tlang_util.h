@@ -300,10 +300,7 @@ struct CompileConfig {
   bool debug;
   int simd_width;
   int gcc_version;
-  bool internal_optimization;
   bool lazy_compilation;
-  bool force_vectorized_global_load;
-  bool force_vectorized_global_store;
   int external_optimization_level;
   int max_vector_width;
   bool print_ir;
@@ -312,7 +309,6 @@ struct CompileConfig {
   bool simplify_before_lower_access;
   bool lower_access;
   bool simplify_after_lower_access;
-  bool attempt_vectorized_load_cpu;
   bool demote_dense_struct_fors;
   bool use_llvm;
   bool print_struct_llvm_ir;
@@ -322,6 +318,7 @@ struct CompileConfig {
   bool enable_profiler;
   bool verbose;
   bool fast_math;
+  bool use_unified_memory;
   DataType default_fp;
   DataType default_ip;
   std::string extra_flags;

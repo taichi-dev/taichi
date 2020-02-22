@@ -443,6 +443,10 @@ class GUIBaseCocoa {
 using GUIBase = GUIBaseCocoa;
 #endif
 
+namespace Tlang {
+class ProfilerBase;
+}  // namespace Tlang
+
 class GUI : public GUIBase {
  public:
   std::string window_name;
@@ -459,6 +463,7 @@ class GUI : public GUIBase {
   Vector2i cursor_pos;
   bool button_status[3];
   int widget_height;
+  Tlang::ProfilerBase *profiler;
 
   void set_mouse_pos(int x, int y) {
     cursor_pos = Vector2i(x, y);
@@ -838,6 +843,10 @@ class GUI : public GUIBase {
   }
 
   ~GUI();
+
+  void set_profiler(Tlang::ProfilerBase *profiler) {
+    this->profiler = profiler;
+  }
 };
 
 TI_NAMESPACE_END

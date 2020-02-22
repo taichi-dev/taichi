@@ -6,6 +6,7 @@
 #include <taichi/extension.h>
 #include <taichi/common/interface.h>
 #include <taichi/python/export.h>
+#include <taichi/visual/gui.h>
 #include "svd.h"
 
 TI_NAMESPACE_BEGIN
@@ -103,12 +104,22 @@ void export_lang(py::module &m) {
       .def_readonly("config", &Program::config)
       .def("profiler_print", &Program::profiler_print)
       .def("profiler_clear", &Program::profiler_clear)
+      .def("profiler_start", &Program::profiler_start)
+      .def("profiler_stop", &Program::profiler_stop)
+      .def("get_profiler",
+           [](Program *program) -> void * {
+             // We didn't expose the ProfilerBase interface, so the only purpose
+             // of this method is to expose the address of the profiler, so that
+             // other modules (e.g. GUI) can receive the profiler.
+             return (void *)(program->get_profiler());
+           })
       .def("finalize", &Program::finalize)
-      .def("get_root",
-           [&](Program *program) -> SNode * {
-             return program->snode_root.get();
-           },
-           py::return_value_policy::reference)
+      .def(
+          "get_root",
+          [&](Program *program) -> SNode * {
+            return program->snode_root.get();
+          },
+          py::return_value_policy::reference)
       .def("get_snode_writer", &Program::get_snode_writer)
       .def("get_total_compilation_time", &Program::get_total_compilation_time)
       .def("synchronize", &Program::synchronize);

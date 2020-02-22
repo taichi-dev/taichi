@@ -7,7 +7,15 @@ matrix:
   - os: osx
     osx_image: xcode10.3
     env:
-      - MATRIX_EVAL="CC=clang && CXX=clang++ && PYTHON=python3.7"
+      - MATRIX_EVAL="CC=clang && CXX=clang++ && PYTHON_VERSION=3.6.1 && PYTHON=python"
+  - os: osx
+    osx_image: xcode10.3
+    env:
+      - MATRIX_EVAL="CC=clang && CXX=clang++ && PYTHON_VERSION=3.7.1 && PYTHON=python"
+  - os: osx
+    osx_image: xcode10.3
+    env:
+      - MATRIX_EVAL="CC=clang && CXX=clang++ && PYTHON_VERSION=3.8.1 && PYTHON=python"
 
 before_install:
 - eval "${MATRIX_EVAL}"
@@ -26,8 +34,12 @@ before_install:
 - cd ..
 - llvm-config --version
 
+install:
+- .travis/install.sh
+
 script:
 - cd $TRAVIS_BUILD_DIR
+- export PATH="$HOME/.pyenv/shims:$HOME/.pyenv/bin:$PATH"
 - $PYTHON ci_setup.py ci
 - export TAICHI_REPO_DIR=$TRAVIS_BUILD_DIR
 - export PYTHONPATH=$TAICHI_REPO_DIR/python

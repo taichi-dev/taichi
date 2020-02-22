@@ -6,6 +6,7 @@ from taichi.core.util import require_version
 from taichi.tools import *
 from taichi.misc import *
 from taichi.misc.gui import GUI
+from taichi.misc.image import imread, imwrite
 from taichi.misc.task import Task
 from taichi.misc import settings as settings
 from taichi.misc.gui import rgb_to_hex

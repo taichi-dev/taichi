@@ -8,6 +8,7 @@
 
 #include <taichi/geometry/factory.h>
 #include <taichi/visual/gui.h>
+#include <taichi/util/image_io.h>
 
 TI_NAMESPACE_BEGIN
 
@@ -59,6 +60,7 @@ void export_visual(py::module &m) {
       .def("radius", &Circle::radius, py::return_value_policy::reference)
       .def("color", static_cast<Circle &(Circle::*)(int)>(&Circle::color),
            py::return_value_policy::reference);
+  m.def("imwrite", &tc_imwrite);
 }
 
 TI_NAMESPACE_END

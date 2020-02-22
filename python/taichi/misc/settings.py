@@ -32,7 +32,7 @@ def get_project_directory(project=None):
 
 
 def get_runtime_directory():
-  bin_rel_path = ['extneral', 'lib']
+  bin_rel_path = ['external', 'lib']
   return os.environ.get('TAICHI_BIN_DIR',
                         os.path.join(get_repo_directory(), *bin_rel_path))
 

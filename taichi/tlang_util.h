@@ -349,6 +349,7 @@ struct CompileConfig {
 
 extern CompileConfig default_compile_config;
 extern std::string compiled_lib_dir;
+extern std::string runtime_tmp_dir;
 
 bool command_exist(const std::string &command);
 

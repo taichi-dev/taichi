@@ -53,7 +53,10 @@ class GUI:
       img = img.to_numpy()
     assert isinstance(img, np.ndarray)
     assert len(img.shape) in [2, 3]
-    img = img.astype(np.float32)
+    if img.dtype not in [np.float32, np.float64]:
+      img = img.astype(np.float32) * (1.0 / 255)
+    else:
+      img = img.astype(np.float32)
     if len(img.shape) == 2:
       img = img[..., None]
     if img.shape[2] == 1:

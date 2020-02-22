@@ -165,7 +165,7 @@ def prepare_sandbox(src):
   from tempfile import mkdtemp
   tmp_dir = mkdtemp(prefix='taichi-')
   atexit.register(os.unlink, tmp_dir)
-  print(f'[taichi] preparing sandbox at {tmp_dir}')
+  print(f'[Taichi] preparing sandbox at {tmp_dir}')
   dest = os.path.join(tmp_dir, 'taichi_core.so')
   shutil.copy(src, dest)
   return tmp_dir

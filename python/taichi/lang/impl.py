@@ -192,8 +192,6 @@ def var(dt, shape=None, needs_grad=False):
   if isinstance(shape, numbers.Number):
     shape = (shape,)
   
-  assert not get_runtime().materialized, "All variables should be declared before materialization"
-
   assert not get_runtime().materialized, 'No new variables can be declared after kernel invocations or Python-scope tensor accesses.'
 
   # primal

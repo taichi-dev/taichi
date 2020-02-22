@@ -1,4 +1,4 @@
-//#define _GLSL_DEBUG 1
+#define _GLSL_DEBUG 1
 #include "codegen_opengl.h"
 #include <taichi/platform/opengl/opengl_api.h>
 #include <taichi/platform/opengl/opengl_data_types.h>
@@ -81,47 +81,17 @@ private: // {{{
 
   void generate_header()
   { // {{{
-    emit("{}", struct_compiled_->source_code);
-    emit("layout(std430, binding = 0) buffer args_i32");
-    emit("{{");
-    emit("  int _args_i32_[];");
-    emit("}};");
-    emit("layout(std430, binding = 0) buffer args_f32");
-    emit("{{");
-    emit("  float _args_f32_[];");
-    emit("}};");
-    emit("layout(std430, binding = 0) buffer args_f64");
-    emit("{{");
-    emit("  double _args_f64_[];");
-    emit("}};");
-    emit("layout(std430, binding = 1) buffer data_i32");
-    emit("{{");
-    emit("  int _data_i32_[];");
-    emit("}};");
-    emit("layout(std430, binding = 1) buffer data_f32");
-    emit("{{");
-    emit("  float _data_f32_[];");
-    emit("}};");
-    emit("layout(std430, binding = 1) buffer data_f64");
-    emit("{{");
-    emit("  double _data_f64_[];");
-    emit("}};");
-    emit("layout(std430, binding = 2) buffer earg_i32");
-    emit("{{");
-    emit("  int _earg_i32_[];");
-    emit("}};");
-    emit("layout(std430, binding = 3) buffer extr_i32");
-    emit("{{");
-    emit("  int _extr_i32_[];");
-    emit("}};");
-    emit("layout(std430, binding = 3) buffer extr_f32");
-    emit("{{");
-    emit("  float _extr_f32_[];");
-    emit("}};");
-    emit("layout(std430, binding = 3) buffer extr_f64");
-    emit("{{");
-    emit("  double _extr_f64_[];");
-    emit("}};");
+    kernel_src_code_ += struct_compiled_->source_code;
+    emit("layout(std430, binding = 0) buffer args_i32 {{ int _args_i32_[]; }};");
+    emit("layout(std430, binding = 0) buffer args_f32 {{ float _args_f32_[]; }};");
+    emit("layout(std430, binding = 0) buffer args_f64 {{ double _args_f64_[]; }};");
+    emit("layout(std430, binding = 1) buffer data_i32 {{ int _data_i32_[]; }};");
+    emit("layout(std430, binding = 1) buffer data_f32 {{ float _data_f32_[]; }};");
+    emit("layout(std430, binding = 1) buffer data_f64 {{ double _data_f64_[]; }};");
+    emit("layout(std430, binding = 2) buffer earg_i32 {{ int _earg_i32_[]; }};");
+    emit("layout(std430, binding = 3) buffer extr_i32 {{ int _extr_i32_[]; }};");
+    emit("layout(std430, binding = 3) buffer extr_f32 {{ float _extr_f32_[]; }};");
+    emit("layout(std430, binding = 3) buffer extr_f64 {{ double _extr_f64_[]; }};");
     emit("#define _arg_i32(x) _args_i32_[(x) << 1]"); // skip to 64bit stride
     emit("#define _arg_f32(x) _args_f32_[(x) << 1]");
     emit("#define _arg_f64(x) _args_f64_[(x) << 0]");

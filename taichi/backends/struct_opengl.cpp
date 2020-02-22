@@ -54,7 +54,6 @@ void OpenglStructCompiler::generate_types(const SNode &snode) {
     }
     emit("#define {}_stride ({})", class_name, stride_str);
   }
-  emit("");
   const auto &node_name = snode.node_type_name;
   if (is_place) {
     const auto dt_name = opengl_data_type_name(snode.dt);
@@ -71,7 +70,6 @@ void OpenglStructCompiler::generate_types(const SNode &snode) {
              snode_type_name(snode.type));
     TI_NOT_IMPLEMENTED;
   }
-  emit("");
 }
 
 size_t OpenglStructCompiler::compute_snode_size(const SNode &sn) {

@@ -79,7 +79,7 @@ Taichi supports both CPUs and NVIDIA GPUs.
   # Run on GPU
   ti.init(arch=ti.cuda)
   # Run on CPU (default)
-  ti.init(arch=ti.x86_64)
+  ti.init(arch=ti.x64)
 
 If the machine does not have CUDA support, Taichi will fall back to CPUs instead.
 

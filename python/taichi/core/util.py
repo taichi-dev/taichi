@@ -165,18 +165,20 @@ def prepare_sandbox(src):
   global g_tmp_dir
   assert os.path.exists(src)
   import atexit
+  import shutil
   from tempfile import mkdtemp
   tmp_dir = mkdtemp(prefix='taichi-')
-  atexit.register(os.unlink, tmp_dir)
+  atexit.register(shutil.rmtree, tmp_dir)
+  print(f'[Taichi] preparing sandbox at {tmp_dir}')
   dest = os.path.join(tmp_dir, 'taichi_core.so')
   shutil.copy(src, dest)
   os.mkdir(os.path.join(tmp_dir, 'runtime/'))
-  print(f'[Taichi] prepared sandbox at {tmp_dir}')
+  print(f'[Taichi] sandbox prepared')
   return tmp_dir
 
 
 if is_release():
-  print("[Release mode]")
+  print("[Taichi] mode=release")
   sys.path.append(os.path.join(package_root(), 'lib'))
   if get_os_name() != 'win':
     link_src = os.path.join(package_root(), 'lib', 'taichi_core.so')
@@ -191,6 +193,7 @@ if is_release():
   tc_core.set_python_package_dir(package_root())
   os.makedirs(tc_core.get_repo_dir(), exist_ok=True)
 else:
+  print("[Taichi] mode=development")
   if get_os_name() == 'osx':
     bin_dir = get_bin_directory()
     os.environ['DYLD_FALLBACK_LIBRARY_PATH'] = get_runtime_directory()
@@ -347,9 +350,7 @@ at_startup()
 
 device_string = 'cpu only' if not tc_core.with_cuda() else 'cuda {}'.format(
     tc_core.cuda_version())
-print('[Taichi version {}, {}, commit {}]'.format(
-    tc_core.get_version_string(), device_string,
-    tc_core.get_commit_hash()[:8]))
+print(f'[Taichi] version {tc_core.get_version_string()}, {device_string}, commit {tc_core.get_commit_hash()[:8]}, python {sys.version_info[0]}.{sys.version_info[1]}.{sys.version_info[2]}')
 
 if not is_release():
   tc_core.set_core_trigger_gdb_when_crash(True)

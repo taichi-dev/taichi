@@ -245,7 +245,7 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
 
   tlctx->set_struct_module(module);
 
-  if (arch == Arch::x86_64)  // Do not compile the GPU struct module alone since
+  if (arch == Arch::x64)  // Do not compile the GPU struct module alone since
                              // it's useless unless used with kernels
     tlctx->jit->addModule(std::move(module));
 

@@ -27,6 +27,7 @@ class MemoryPool {
   std::mutex mut_allocators;
   std::unique_ptr<std::thread> th;
   int processed_tail;
+  bool use_unified_memory;
   Program *prog;
 
 #ifdef TI_WITH_CUDA

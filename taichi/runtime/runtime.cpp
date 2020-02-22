@@ -30,7 +30,7 @@ using parallel_for_type = void (*)(void *thread_pool,
                                    void *context,
                                    void (*func)(void *, int i));
 
-#if defined(__linux__) && !ARCH_cuda && defined(TI_ARCH_x86_64)
+#if defined(__linux__) && !ARCH_cuda && defined(TI_ARCH_x64)
 __asm__(".symver logf,logf@GLIBC_2.2.5");
 __asm__(".symver powf,powf@GLIBC_2.2.5");
 __asm__(".symver expf,expf@GLIBC_2.2.5");
@@ -128,7 +128,7 @@ int abs_i32(int a) {
   }
 }
 
-#if ARCH_x86_64
+#if ARCH_x64
 
 u32 rand_u32() {
   static u32 x = 123456789, y = 362436069, z = 521288629, w = 88675123;

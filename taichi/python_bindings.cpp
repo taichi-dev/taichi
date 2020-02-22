@@ -88,6 +88,7 @@ void export_lang(py::module &m) {
       .def_readwrite("verbose", &CompileConfig::verbose)
       .def_readwrite("demote_dense_struct_fors",
                      &CompileConfig::demote_dense_struct_fors)
+      .def_readwrite("use_unified_memory", &CompileConfig::use_unified_memory)
       .def_readwrite("enable_profiler", &CompileConfig::enable_profiler)
       .def_readwrite("default_fp", &CompileConfig::default_fp)
       .def_readwrite("default_ip", &CompileConfig::default_ip)
@@ -115,12 +116,11 @@ void export_lang(py::module &m) {
              return (void *)(program->get_profiler());
            })
       .def("finalize", &Program::finalize)
-      .def(
-          "get_root",
-          [&](Program *program) -> SNode * {
-            return program->snode_root.get();
-          },
-          py::return_value_policy::reference)
+      .def("get_root",
+           [&](Program *program) -> SNode * {
+             return program->snode_root.get();
+           },
+           py::return_value_policy::reference)
       .def("get_snode_writer", &Program::get_snode_writer)
       .def("get_total_compilation_time", &Program::get_total_compilation_time)
       .def("synchronize", &Program::synchronize);
@@ -144,13 +144,13 @@ void export_lang(py::module &m) {
                                const std::vector<int> &))(&SNode::dense),
            py::return_value_policy::reference)
       .def("pointer",
-          (SNode & (SNode::*)(const std::vector<Index> &,
-                              const std::vector<int> &))(&SNode::pointer),
-          py::return_value_policy::reference)
+           (SNode & (SNode::*)(const std::vector<Index> &,
+                               const std::vector<int> &))(&SNode::pointer),
+           py::return_value_policy::reference)
       .def("hash",
-          (SNode & (SNode::*)(const std::vector<Index> &,
-                              const std::vector<int> &))(&SNode::hash),
-          py::return_value_policy::reference)
+           (SNode & (SNode::*)(const std::vector<Index> &,
+                               const std::vector<int> &))(&SNode::hash),
+           py::return_value_policy::reference)
       .def("dynamic", &SNode::dynamic_chunked,
            py::return_value_policy::reference)
       .def("bitmasked", &SNode::bitmasked)

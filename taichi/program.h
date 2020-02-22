@@ -163,7 +163,7 @@ class Program {
   }
 
   TaichiLLVMContext *get_llvm_context(Arch arch) {
-    if (arch == Arch::x86_64) {
+    if (arch == Arch::x64) {
       return llvm_context_host.get();
     } else {
       return llvm_context_device.get();
@@ -175,7 +175,7 @@ class Program {
   Kernel &get_snode_writer(SNode *snode);
 
   Arch get_host_arch() {
-    return Arch::x86_64;
+    return Arch::x64;
   }
 
   float64 get_total_compilation_time() {

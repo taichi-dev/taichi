@@ -62,7 +62,7 @@ real measure_cpe(std::function<void()> target,
 }
 
 int default_simd_width(Arch arch) {
-  if (arch == Arch::x86_64) {
+  if (arch == Arch::x64) {
     return default_simd_width_x86_64;
   } else if (arch == Arch::cuda) {
     return 32;
@@ -266,7 +266,7 @@ std::string CompileConfig::compiler_config() {
     linking = fmt::format(" -L{}/build -ltaichi_core ", get_repo_dir());
     include_flag = fmt::format(" -I{}/ ", get_repo_dir());
   }
-  if (arch == Arch::x86_64) {
+  if (arch == Arch::x64) {
     cmd = fmt::format(
         "{} -std=c++14 -shared -fPIC {} -march=native -mfma {} "
         "-ffp-contract=fast "
@@ -333,9 +333,8 @@ bool command_exist(const std::string &command) {
 }
 
 CompileConfig::CompileConfig() {
-  arch = Arch::x86_64;
+  arch = Arch::x64;
   simd_width = default_simd_width(arch);
-  internal_optimization = true;
   external_optimization_level = 3;
   print_ir = false;
   print_accessor_ir = false;
@@ -345,8 +344,6 @@ CompileConfig::CompileConfig() {
   print_kernel_llvm_ir_optimized = false;
   demote_dense_struct_fors = true;
   max_vector_width = 8;
-  force_vectorized_global_load = false;
-  force_vectorized_global_store = false;
   debug = false;
 #if defined(TI_PLATFORM_OSX)
   gcc_version = -1;
@@ -369,7 +366,6 @@ CompileConfig::CompileConfig() {
   simplify_before_lower_access = true;
   lower_access = true;
   simplify_after_lower_access = true;
-  attempt_vectorized_load_cpu = true;
   default_fp = DataType::f32;
   default_ip = DataType::i32;
   verbose_kernel_launches = false;

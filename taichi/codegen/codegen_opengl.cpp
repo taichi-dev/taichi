@@ -586,17 +586,6 @@ public:
     return num_groups_;
   }
 
-  IOV *create_root_buffer()
-  {
-    static IOV *root;
-    if (!root) {
-      size_t size = struct_compiled_->root_size;
-      void *buffer = std::calloc(size, 1);
-      root = new IOV{buffer, size};
-    }
-    return root;
-  }
-
   void run(const SNode &root_snode)
   {
     root_snode_ = &root_snode;
@@ -729,6 +718,41 @@ void OpenglCodeGen::lower()
 #endif
 } // }}}
 
+static const StructCompiledResult *g_struct_compiled; // singleton
+
+const StructCompiledResult *get_opengl_struct_compiled()
+{
+  TI_ASSERT(g_struct_compiled);
+  return g_struct_compiled;
+}
+
+struct OpenglRuntime
+{
+  void *root_buf;
+  size_t root_size;
+
+  OpenglRuntime(const StructCompiledResult *scomp)
+  {
+    root_size = scomp->root_size;
+    root_buf = std::calloc(root_size, 1);
+  }
+
+  IOV get_root_buffer()
+  {
+    return IOV{root_buf, root_size};
+  }
+};
+
+OpenglRuntime *get_opengl_runtime()
+{
+  static OpenglRuntime *runtime; // singleton
+  if (!runtime) {
+    auto scomp = get_opengl_struct_compiled();
+    runtime = new OpenglRuntime(scomp);
+  }
+  return runtime;
+}
+
 struct CompiledKernel
 {
   GLProgram *glsl;
@@ -739,7 +763,6 @@ struct CompiledKernel
 
   explicit CompiledKernel(const KernelGen &codegen)
   {
-    IOV *root_iov = codegen.create_root_buffer();
     const std::string kernel_source_code = codegen.kernel_source_code();
     const std::string kernel_name = codegen.get_kernel_name();
     Kernel *kernel = codegen.get_kernel();
@@ -763,11 +786,12 @@ struct CompiledKernel
     }
   }
 
-  void launch(Context &ctx, IOV *root_iov)
+  void launch(Context &ctx)
   {
+    OpenglRuntime *runtime = get_opengl_runtime();
     std::vector<IOV> iov(3);
     iov[0] = IOV{ctx.args, taichi_max_num_args * sizeof(uint64_t)};
-    iov[1] = *root_iov;
+    iov[1] = runtime->get_root_buffer();
     iov[2] = IOV{ctx.extra_args, Context::extra_args_size};
     if (has_ext_arr) {
       void *extptr = (void *)ctx.args[ext_arr_idx];
@@ -780,12 +804,12 @@ struct CompiledKernel
 
 FunctionType OpenglCodeGen::gen(void)
 {
+  g_struct_compiled = struct_compiled_; // evil singleton getter
   KernelGen codegen(kernel_, kernel_name_, struct_compiled_);
   codegen.run(*prog_->snode_root);
   auto compiled = new CompiledKernel(codegen);
-
-  return [compiled, root_iov](Context &ctx) {
-    compiled->launch(ctx, root_iov);
+  return [compiled](Context &ctx) {
+    compiled->launch(ctx);
   };
 }
 

@@ -160,6 +160,11 @@ class GUI:
       if type == GUI.PRESS:
         return key
 
+  def has_key_pressed(self):
+    if self.has_key_event():
+      self.get_key_event() # pop to update self.key_pressed
+    return len(self.key_pressed) != 0
+
 def rgb_to_hex(c):
   to255 = lambda x: min(255, max(0, int(x * 255)))
   return 65536 * to255(c[0]) + 256 * to255(c[1]) + to255(c[2])

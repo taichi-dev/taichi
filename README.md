@@ -36,8 +36,23 @@ python3 -m pip install taichi-nightly-cuda-10-1
 - (WIP) Tune the performance of the LLVM backend to match that of the legacy source-to-source backends (Hopefully by mid Feb, 2020. Current progress: setting up/tuning for final benchmarks)
 
 ## Updates
+- (Feb  20, 2020) v0.5.2 released
+   - Gradients for `ti.pow` now supported (by **Yubin Peng [archibate]**)
+   - Multi-threaded unit testing (by **Yubin Peng [archibate]**)
+   - Fixed Taichi crashing when starting multiple instances simultaneously (by **Yubin Peng [archibate]**)
+   - Metal backend now supports `ti.pow` (by **Ye Kuang [k-ye]**)
+   - Better algebraic simplification (by **Mingkuan Xu [xumingkuan]**)
+   - `ti.normalized` now optionally takes a argument `eps` to prevent division by zero in differentiable programming
+   - Improved random number generation by decorrelating PRNG streams on CUDA
+   - Set environment variable `TI_LOG_LEVEL` to `trace`, `debug`, `info`, `warn`, `error` to filter out/increase verbosity. Default=`info`
+   - [bug fix] fixed a loud failure on differentiable programming code generation due to a new optimization pass
+   - Added `ti.GUI.triangle` [example](https://github.com/taichi-dev/taichi/blob/master/misc/test_gui.py#L11)
+   - Doc update: added `ti.cross` for 3D cross products
+   - Use environment variable `TI_TEST_THREADS` to override testing threads
+   - [For Taichi developers, bug fix] `ti.init(print_processed=True)` renamed to `ti.init(print_preprocessed=True)`
+   - Various development infrastructure improvements by **Yubin Peng [archibate]**
 - (Feb  16, 2020) v0.5.1 released
-   - Keyboard and mouse events supported in the GUI system. Check out [mpm128.py](https://github.com/taichi-dev/taichi/blob/master/examples/mpm128.py) for a interactive demo! (by **Yubin Peng [archibate] and Ye Kuang [k-ye]**)
+   - Keyboard and mouse events supported in the GUI system. Check out [mpm128.py](https://github.com/taichi-dev/taichi/blob/4f5cc09ae0e35a47ad71fdc582c1ecd5202114d8/examples/mpm128.py) for a interactive demo! (by **Yubin Peng [archibate] and Ye Kuang [k-ye]**)
    - Basic algebraic simplification passes (by **Mingkuan Xu [xumingkuan]**)
    - (For developers) `ti` (`ti.exe`) command supported on Windows after setting `%PATH%` correctly (by **Mingkuan Xu [xumingkuan]**)
    - General power operator `x ** y` now supported in Taichi kernels (by **Yubin Peng [archibate]**)

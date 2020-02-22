@@ -62,7 +62,7 @@ real measure_cpe(std::function<void()> target,
 }
 
 int default_simd_width(Arch arch) {
-  if (arch == Arch::x86_64) {
+  if (arch == Arch::x64) {
     return default_simd_width_x86_64;
   } else if (arch == Arch::cuda) {
     return 32;
@@ -266,7 +266,7 @@ std::string CompileConfig::compiler_config() {
     linking = fmt::format(" -L{}/build -ltaichi_core ", get_repo_dir());
     include_flag = fmt::format(" -I{}/ ", get_repo_dir());
   }
-  if (arch == Arch::x86_64) {
+  if (arch == Arch::x64) {
     cmd = fmt::format(
         "{} -std=c++14 -shared -fPIC {} -march=native -mfma {} "
         "-ffp-contract=fast "
@@ -333,7 +333,7 @@ bool command_exist(const std::string &command) {
 }
 
 CompileConfig::CompileConfig() {
-  arch = Arch::x86_64;
+  arch = Arch::x64;
   simd_width = default_simd_width(arch);
   external_optimization_level = 3;
   print_ir = false;

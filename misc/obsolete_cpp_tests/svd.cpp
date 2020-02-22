@@ -88,7 +88,7 @@ TI_TEST("svd_dsl") {
     Matrix gSigma(DataType::f32, 3, 1);
     Matrix gV(DataType::f32, 3, 3);
 
-    // Program prog(Arch::x86_64);
+    // Program prog(Arch::x64);
     Program prog(Arch::gpu);
 
     constexpr int N = 2048;
@@ -155,7 +155,7 @@ TI_TEST("svd_dsl_float64") {
     Matrix gSigma(DataType::f64, 3, 1);
     Matrix gV(DataType::f64, 3, 3);
 
-    // Program prog(Arch::x86_64);
+    // Program prog(Arch::x64);
     Program prog(Arch::gpu);
     prog.config.lower_access = false;
 

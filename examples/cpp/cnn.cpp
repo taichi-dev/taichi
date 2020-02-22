@@ -26,7 +26,7 @@ auto cnn = [](std::vector<std::string> cli_param) {
   auto write_input_voxel = param.get("write_input", true);
   TI_P(use_dense);
 
-  Program prog(gpu ? Arch::gpu : Arch::x86_64);
+  Program prog(gpu ? Arch::gpu : Arch::x64);
   prog.config.simplify_before_lower_access = opt;
   prog.config.lower_access = opt;
   prog.config.simplify_after_lower_access = opt;

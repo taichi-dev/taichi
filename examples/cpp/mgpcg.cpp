@@ -31,7 +31,7 @@ auto mgpcg_poisson = [](std::vector<std::string> cli_param) {
 
   CoreState::set_trigger_gdb_when_crash(true);
 
-  Program prog(gpu ? Arch::gpu : Arch::x86_64);
+  Program prog(gpu ? Arch::gpu : Arch::x64);
   // prog.config.print_ir = true;
 
   prog.config.simplify_before_lower_access = param.get("simp1", true);

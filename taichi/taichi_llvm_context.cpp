@@ -39,7 +39,7 @@ TaichiLLVMContext::TaichiLLVMContext(Arch arch) : arch(arch) {
       },
       nullptr);
 
-  if (arch == Arch::x86_64) {
+  if (arch == Arch::x64) {
     llvm::InitializeNativeTarget();
     llvm::InitializeNativeTargetAsmPrinter();
     llvm::InitializeNativeTargetAsmParser();
@@ -131,7 +131,7 @@ void compile_runtime_bitcode(Arch arch) {
 }
 
 void compile_runtimes() {
-  compile_runtime_bitcode(Arch::x86_64);
+  compile_runtime_bitcode(Arch::x64);
 #if defined(TI_WITH_CUDA)
   compile_runtime_bitcode(Arch::cuda);
 #endif

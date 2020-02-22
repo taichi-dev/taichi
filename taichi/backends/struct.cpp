@@ -19,7 +19,7 @@ StructCompiler::StructCompiler(Program *prog)
     TI_WARN("Profiler not yet implemented in this backend.");
   };
 
-  if (get_current_program().config.arch == Arch::x86_64)
+  if (get_current_program().config.arch == Arch::x64)
     suffix = "cpp";
   else
     suffix = "cu";

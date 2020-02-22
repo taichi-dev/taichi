@@ -22,7 +22,7 @@ auto mpm_full = [](std::vector<std::string> cli_param) {
   CoreState::set_trigger_gdb_when_crash(true);
 
   bool benchmark_dragon = false;
-  // Program prog(Arch::x86_64);
+  // Program prog(Arch::x64);
   // prog.config.print_ir = true;
   constexpr int dim = 3;
   constexpr bool highres = true;

@@ -39,7 +39,7 @@ auto fem = [](std::vector<std::string> cli_param) {
   TI_P(use_cache);
   bool compute_gt = param.get("compute_gt", false);
   TI_P(compute_gt);
-  Program prog(gpu ? Arch::gpu : Arch::x86_64);
+  Program prog(gpu ? Arch::gpu : Arch::x64);
   prog.config.simplify_before_lower_access = param.get("simp1", true);
   TI_P(prog.config.simplify_before_lower_access);
   prog.config.lower_access = param.get("lower_access", true);

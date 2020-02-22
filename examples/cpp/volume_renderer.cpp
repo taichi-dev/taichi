@@ -17,7 +17,7 @@ auto volume_renderer = [](std::vector<std::string> cli_param) {
   std::string fn = param.get("fn", "snow_density_256.bin");
   TI_P(fn);
   CoreState::set_trigger_gdb_when_crash(true);
-  Program prog(gpu ? Arch::gpu : Arch::x86_64);
+  Program prog(gpu ? Arch::gpu : Arch::x64);
   TRenderer renderer((Dict()));
 
   Vector particle_pos(DataType::f32, 3);

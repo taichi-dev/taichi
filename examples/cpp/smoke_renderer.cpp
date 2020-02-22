@@ -10,7 +10,7 @@ auto smoke_renderer = [](std::vector<std::string> cli_param_) {
   auto cli_param = parse_param(cli_param_);
   bool gpu = cli_param.get("gpu", true);
   TI_P(gpu);
-  Program prog(gpu ? Arch::gpu : Arch::x86_64);
+  Program prog(gpu ? Arch::gpu : Arch::x64);
   bool benchmark = true;  // benchmark the bunny cloud against tungsten?
   TI_ASSERT(benchmark);
   // CoreState::set_trigger_gdb_when_crash(true);

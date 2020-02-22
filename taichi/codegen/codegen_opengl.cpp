@@ -10,6 +10,24 @@ TLANG_NAMESPACE_BEGIN
 namespace opengl {
 namespace {
 
+std::string opengl_atomic_op_type_symbol(AtomicOpType type) {
+  static std::map<AtomicOpType, std::string> type_names;
+  if (type_names.empty()) {
+#define REGISTER_TYPE(i, s) type_names[AtomicOpType::i] = "atomic" #s;
+    REGISTER_TYPE(add, Add);
+    REGISTER_TYPE(sub, Sub);
+    //REGISTER_TYPE(mul, Mul);
+    //REGISTER_TYPE(div, Div);
+    REGISTER_TYPE(max, Max);
+    REGISTER_TYPE(min, Min);
+    //REGISTER_TYPE(bit_and, And);
+    //REGISTER_TYPE(bit_or, Or);
+    //REGISTER_TYPE(bit_xor, Xor);
+#undef REGISTER_TYPE
+  }
+  return type_names[type];
+}
+
 class KernelGen : public IRVisitor
 {
   Kernel *kernel;
@@ -344,6 +362,14 @@ int _rand_i32()\n\
       emit("const {} {} = {}({}, {});", dt_name, bin_name, binop, lhs_name,
           rhs_name);
     }
+  }
+
+  void visit(AtomicOpStmt *stmt) override
+  {
+    TI_ASSERT(stmt->width() == 1);
+    emit("{} {} = {}(_at_{}, {});", opengl_data_type_name(stmt->val->element_type()),
+        stmt->raw_name(), opengl_atomic_op_type_symbol(stmt->op_type),
+        stmt->dest->raw_name(), stmt->val->raw_name());
   }
 
   void visit(TernaryOpStmt *tri) override

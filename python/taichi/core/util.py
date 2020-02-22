@@ -164,8 +164,10 @@ def build():
 def prepare_sandbox(src):
   global g_tmp_dir
   assert os.path.exists(src)
+  import atexit
   from tempfile import mkdtemp
   tmp_dir = mkdtemp(prefix='taichi-')
+  atexit.register(os.unlink, tmp_dir)
   dest = os.path.join(tmp_dir, 'taichi_core.so')
   shutil.copy(src, dest)
   os.mkdir(os.path.join(tmp_dir, 'runtime/'))

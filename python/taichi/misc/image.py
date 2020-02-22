@@ -21,5 +21,10 @@ def imwrite(img, filename):
   img = np.ascontiguousarray(img).ctypes.data
   ti.core.imwrite(filename, img, resx, resy, comp)
 
-def imread(filename):
-  raise NotImplementedError
+def imread(filename, channels=0):
+  ptr, resx, resy, comp = ti.core.imread(filename, channels)
+  img = np.ndarray(shape=(resx, resy, comp), dtype=np.uint8)
+  img = np.ascontiguousarray(img)
+  # TODO(archibate): Figure out how np.ndarray constructor works and replace:
+  ti.core.C_memcpy(img.ctypes.data, ptr, resx * resy * comp)
+  return img

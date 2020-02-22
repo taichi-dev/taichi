@@ -41,6 +41,7 @@ private: // {{{
   int glsl_kernel_count_{0};
   int num_threads_{1};
   int num_groups_{1};
+  bool has_rand_{false};
 
   void push_indent()
   {
@@ -61,9 +62,7 @@ private: // {{{
   }
 
   void generate_header()
-  {
-    emit("#version 430 core");
-    emit("#extension GL_ARB_compute_shader: enable");
+  { // {{{
     emit("{}", struct_compiled_->source_code);
     emit("layout(std430, binding = 0) buffer args_i32");
     emit("{{");
@@ -116,22 +115,67 @@ private: // {{{
     emit("#define _ext_ns_f64(x) _extr_f64_[(x) >> 0]");
     emit("#define _extra_arg(i, j) _earg_i32_[(i) * {} + (j)]", taichi_max_num_indices);
     emit("");
-  }
+  } // }}}
 
   void generate_bottom()
   {
     // TODO(archibate): <kernel_name>() really necessary? How about just main()?
     emit("void main()");
     emit("{{");
+    if (has_rand_)
+    emit("  _init_rand();");
     if (glsl_kernel_name_.size())
       emit("  {}();", glsl_kernel_name_);
     emit("}}");
+    if (has_rand_) {
+      // {{{
+      kernel_src_code_ = std::string("\
+uvec4 _rand_;\n\
+\n\
+void _init_rand()\n\
+{\n\
+  uint i = gl_GlobalInvocationID.x;\n\
+  _rand_.x = 123456789 * i * 1000000007;\n\
+  _rand_.y = 362436069;\n\
+  _rand_.z = 521288629;\n\
+  _rand_.w = 88675123;\n\
+}\n\
+\n\
+uint _rand_u32()\n\
+{\n\
+  uint t = _rand_.x ^ (_rand_.x << 11);\n\
+  _rand_.x = _rand_.y;\n\
+  _rand_.y = _rand_.z;\n\
+  _rand_.z = _rand_.w;\n\
+  _rand_.w = (_rand_.w ^ (_rand_.w >> 19)) ^ (t ^ (t >> 8));\n\
+  return _rand_.w * 1000000007;\n\
+}\n\
+\n\
+float _rand_f32()\n\
+{\n\
+  return float(_rand_u32()) * (1.0 / 4294967296.0);\n\
+}\n\
+\n\
+double _rand_f64()\n\
+{\n\
+  return double(_rand_f32());\n\
+}\n\
+\n\
+int _rand_i32()\n\
+{\n\
+  return int(_rand_u32());\n\
+}\n\
+") + kernel_src_code_; // }}}
+    }
     emit("");
+
     int threads_per_group = 1792;
     if (num_threads_ < 1792)
       threads_per_group = num_threads_;
     num_groups_ = (num_threads_ + 1791) / 1792;
     emit("layout(local_size_x = {}, local_size_y = 1, local_size_z = 1) in;", threads_per_group);
+
+    kernel_src_code_ = std::string("#version 430 core\n") + kernel_src_code_;
   }
 
   void visit(Block *stmt) override
@@ -146,6 +190,13 @@ private: // {{{
   virtual void visit(Stmt *stmt) override
   {
     TI_ERROR("[glsl] unsupported statement type {}", typeid(*stmt).name());
+  }
+
+  void visit(RandStmt *stmt) override
+  {
+    emit("{} {} = _rand_{}();", opengl_data_type_name(stmt->ret_type.data_type),
+        stmt->raw_name(), data_type_short_name(stmt->ret_type.data_type));
+    has_rand_ = true;
   }
 
   void visit(LinearizeStmt *stmt) override
@@ -214,7 +265,8 @@ private: // {{{
          stmt->raw_name(), stmt->ptr->raw_name());
   }
 
-  void visit(ExternalPtrStmt *stmt) override {
+  void visit(ExternalPtrStmt *stmt) override
+{
     // Used mostly for transferring data between host (e.g. numpy array) and
     // Metal.
     TI_ASSERT(stmt->width() == 1);

@@ -296,6 +296,11 @@ bool is_opengl_api_available()
 void initialize_opengl()
 {
 }
+
+GLProgram *compile_glsl_program(std::string source)
+{
+  return nullptr;
+}
 #endif
 
 }

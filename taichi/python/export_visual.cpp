@@ -60,6 +60,11 @@ void export_visual(py::module &m) {
       .def("color", static_cast<Circle &(Circle::*)(int)>(&Circle::color),
            py::return_value_policy::reference);
   m.def("imwrite", &tc_imwrite);
+  m.def("imread", &tc_imread);
+  // TODO(archibate): See misc/image.py
+  m.def("C_memcpy", [](size_t dst, size_t src, size_t size) {
+    std::memcpy((void *)dst, (void *)src, size);
+  });
 }
 
 TI_NAMESPACE_END

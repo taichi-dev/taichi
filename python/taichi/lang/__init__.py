@@ -71,6 +71,8 @@ def init(default_fp=None, default_ip=None, print_preprocessed=None, debug=None, 
   
   use_unified_memory = bool(int(os.environ.get('TI_USE_UNIFIED_MEMORY', '1')))
   ti.cfg.use_unified_memory = use_unified_memory
+  if not use_unified_memory:
+    ti.warn('Unified memory disabled (env TI_USE_UNIFIED_MEMORY=0). This is experimental.')
 
   for k, v in kwargs.items():
     setattr(ti.cfg, k, v)

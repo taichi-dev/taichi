@@ -32,6 +32,10 @@ void export_visual(py::module &m) {
       .def("get_key_event_head_pos", &GUI::get_key_event_head_pos)
       .def("pop_key_event_head", &GUI::pop_key_event_head)
       .def("get_cursor_pos", &GUI::get_cursor_pos)
+      .def("set_profiler",
+           [](GUI *gui, void *profiler) -> void {
+             gui->set_profiler((Tlang::ProfilerBase *)profiler);
+           })
       .def("update", &GUI::update);
   py::class_<Canvas>(m, "Canvas")
       .def("clear", static_cast<void (Canvas::*)(uint32)>(&Canvas::clear))

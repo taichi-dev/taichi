@@ -29,6 +29,8 @@ cuda = core.cuda
 metal = core.metal
 profiler_print = lambda: core.get_current_program().profiler_print()
 profiler_clear = lambda: core.get_current_program().profiler_clear()
+profiler_start = lambda n: core.get_current_program().profiler_start(n)
+profiler_stop = lambda: core.get_current_program().profiler_stop()
 
 class _Extension(object):
   def __init__(self):

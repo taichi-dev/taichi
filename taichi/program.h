@@ -88,6 +88,21 @@ class Program {
     }
   }
 
+  void profiler_start(const std::string &name) {
+    TI_ASSERT(config.use_llvm);
+    profiler_llvm->start(name);
+  }
+
+  void profiler_stop() {
+    TI_ASSERT(config.use_llvm);
+    profiler_llvm->stop();
+  }
+
+  ProfilerBase *get_profiler() {
+    TI_ASSERT(config.use_llvm);
+    return profiler_llvm.get();
+  }
+
   Context &get_context() {
     context.runtime = (Runtime *)llvm_runtime;
     return context;

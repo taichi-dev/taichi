@@ -516,6 +516,16 @@ public:
     return kernel_src_code_;
   }
 
+  const std::string &get_kernel_name() const
+  {
+    return kernel_name_;
+  }
+
+  Kernel *get_kernel() const
+  {
+    return kernel;
+  }
+
   int get_num_work_groups() const
   {
     return num_groups_;
@@ -664,32 +674,42 @@ void OpenglCodeGen::lower()
 #endif
 } // }}}
 
-FunctionType OpenglCodeGen::gen(void)
+struct CompiledKernel
 {
-  KernelGen codegen(kernel_, kernel_name_, struct_compiled_);
-  codegen.run(*prog_->snode_root);
-  IOV *root_iov = codegen.create_root_buffer();
-  const std::string kernel_source_code = codegen.kernel_source_code();
-  int num_groups = codegen.get_num_work_groups();
-#ifdef _GLSL_DEBUG
-  TI_INFO("source of kernel [{}]:\n{}", kernel_name_, kernel_source_code);
-#endif
-  GLProgram *glsl = compile_glsl_program(kernel_source_code);
-
+  GLProgram *glsl;
+  int num_groups;
   int ext_arr_idx;
   size_t ext_arr_size;
-  bool has_ext_arr = false;
-  for (int i = 0; i < kernel_->args.size(); i++) {
-    if (kernel_->args[i].is_nparray) {
-      if (has_ext_arr)
-        TI_ERROR("[glsl] external array argument is supported to at most one in OpenGL for now");
-      ext_arr_idx = i;
-      ext_arr_size = kernel_->args[i].size;
-      has_ext_arr = true;
+  bool has_ext_arr{false};
+
+  explicit CompiledKernel(const KernelGen &codegen)
+  {
+    IOV *root_iov = codegen.create_root_buffer();
+    const std::string kernel_source_code = codegen.kernel_source_code();
+    const std::string kernel_name = codegen.get_kernel_name();
+    Kernel *kernel = codegen.get_kernel();
+    this->num_groups = codegen.get_num_work_groups();
+
+#ifdef _GLSL_DEBUG
+    TI_INFO("source of kernel [{}]:\n{}", kernel_name, kernel_source_code);
+    std::ofstream("/tmp/kernel.comp").write(kernel_source_code.c_str(), kernel_source_code.size());
+#endif
+    this->glsl = compile_glsl_program(kernel_source_code);
+
+    has_ext_arr = false;
+    for (int i = 0; i < kernel->args.size(); i++) {
+      if (kernel->args[i].is_nparray) {
+        if (has_ext_arr)
+          TI_ERROR("[glsl] external array argument is supported to at most one in OpenGL for now");
+        ext_arr_idx = i;
+        ext_arr_size = kernel->args[i].size;
+        has_ext_arr = true;
+      }
     }
   }
 
-  return [glsl, num_groups, has_ext_arr, ext_arr_size, ext_arr_idx, root_iov](Context &ctx) {
+  void launch(Context &ctx, IOV *root_iov)
+  {
     std::vector<IOV> iov(3);
     iov[0] = IOV{ctx.args, taichi_max_num_args * sizeof(uint64_t)};
     iov[1] = *root_iov;
@@ -700,6 +720,17 @@ FunctionType OpenglCodeGen::gen(void)
       iov.push_back(IOV{extptr, ext_arr_size});
     }
     launch_glsl_kernel(glsl, iov, num_groups);
+  }
+};
+
+FunctionType OpenglCodeGen::gen(void)
+{
+  KernelGen codegen(kernel_, kernel_name_, struct_compiled_);
+  codegen.run(*prog_->snode_root);
+  auto compiled = new CompiledKernel(codegen);
+
+  return [compiled, root_iov](Context &ctx) {
+    compiled->launch(ctx, root_iov);
   };
 }
 

@@ -1,7 +1,6 @@
 //#define _GLSL_DEBUG 1
 #include "codegen_opengl.h"
 #include <taichi/platform/opengl/opengl_api.h>
-#include <taichi/platform/opengl/opengl_kernel.h>
 #include <taichi/platform/opengl/opengl_data_types.h>
 
 #include <string>
@@ -500,13 +499,15 @@ public:
     return num_groups_;
   }
 
-  SSBO *create_root_ssbo()
+  IOV *create_root_buffer()
   {
-    static SSBO *root_ssbo;
-    if (!root_ssbo) {
-      root_ssbo = new SSBO(struct_compiled_->root_size);
+    static IOV *root;
+    if (!root) {
+      size_t size = struct_compiled_->root_size;
+      void *buffer = std::calloc(size, 1);
+      root = new IOV{buffer, size};
     }
-    return root_ssbo;
+    return root;
   }
 
   void run(const SNode &root_snode)
@@ -645,7 +646,7 @@ FunctionType OpenglCodeGen::gen(void)
 {
   KernelGen codegen(kernel_, kernel_name_, struct_compiled_);
   codegen.run(*prog_->snode_root);
-  SSBO *root_sb = codegen.create_root_ssbo();
+  IOV *root_iov = codegen.create_root_buffer();
   const std::string kernel_source_code = codegen.kernel_source_code();
   int num_groups = codegen.get_num_work_groups();
 #ifdef _GLSL_DEBUG
@@ -661,38 +662,23 @@ FunctionType OpenglCodeGen::gen(void)
       if (has_ext_arr) TI_ERROR("external array argument is supported to at most one in OpenGL for now");
       TI_INFO("external array argument index {}", i);
       ext_arr_idx = i;
-      ext_arr_size =  kernel_->args[i].size;
+      ext_arr_size = kernel_->args[i].size;
       has_ext_arr = true;
       TI_INFO("external array size {}", ext_arr_size);
     }
   }
 
-  return [glsl, num_groups, has_ext_arr, ext_arr_size, ext_arr_idx, root_sb](Context &ctx) {
-    // TODO(archibate): try implement just new_ssbo_from_buffer(ctx.args) and no free like _IOMYBUF
-    SSBO *arg_sb = new SSBO(taichi_max_num_args * sizeof(uint64_t));
-    SSBO *earg_sb = new SSBO(Context::extra_args_size);
-    arg_sb->load_from((void *)ctx.args);
-    earg_sb->load_from((void *)ctx.extra_args);
-    std::vector<IOV> iov = {*arg_sb, *root_sb, *earg_sb};
-    SSBO *ext_sb = nullptr;
-    void *extptr = nullptr;
+  return [glsl, num_groups, has_ext_arr, ext_arr_size, ext_arr_idx, root_iov](Context &ctx) {
+    std::vector<IOV> iov(3);
+    iov[0] = IOV{ctx.args, taichi_max_num_args * sizeof(uint64_t)};
+    iov[1] = *root_iov;
+    iov[2] = IOV{ctx.extra_args, Context::extra_args_size};
     if (has_ext_arr) {
-      uint64_t *arg_data = (uint64_t *)arg_sb->data();
-      extptr = (void *)arg_data[ext_arr_idx];
-      arg_data[ext_arr_idx] = 0;
-      ext_sb = new SSBO(ext_arr_size);
-      ext_sb->load_from(extptr);
-      iov.push_back(*ext_sb);
+      void *extptr = (void *)ctx.args[ext_arr_idx];
+      ctx.args[ext_arr_idx] = 0;
+      iov.push_back(IOV{extptr, ext_arr_size});
     }
     launch_glsl_kernel(glsl, iov, num_groups);
-    arg_sb->save_to((void *)ctx.args);
-    earg_sb->save_to((void *)ctx.extra_args);
-    delete arg_sb;
-    delete earg_sb;
-    if (has_ext_arr) {
-      ext_sb->save_to(extptr);
-      delete ext_sb;
-    }
   };
 }
 

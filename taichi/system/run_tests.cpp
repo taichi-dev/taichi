@@ -5,7 +5,7 @@
 
 #include <taichi/common/util.h>
 #include <taichi/common/task.h>
-#include <taichi/testing.h>
+#include <taichi/common/testing.h>
 
 TI_NAMESPACE_BEGIN
 

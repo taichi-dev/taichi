@@ -15,10 +15,7 @@ FunctionType KernelCodeGen::compile(taichi::Tlang::Program &prog,
     TI_PROFILER("codegen llvm")
     return codegen_llvm();
   } else {
-    codegen();
-    generate_binary("");
-    // TI_P(Time::get_time() - t);
-    return load_function();
+    TI_NOT_IMPLEMENTED
   }
 }
 

@@ -30,7 +30,9 @@ class KernelCodeGen : public CodeGenBase {
 
   virtual void lower() = 0;
 
-  virtual void codegen() = 0;
+  virtual void codegen() {
+    TI_NOT_IMPLEMENTED
+  }
 
   virtual FunctionType codegen_llvm() {
     TI_NOT_IMPLEMENTED;

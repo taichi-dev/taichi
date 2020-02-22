@@ -69,7 +69,7 @@ class TaichiBenchmark:
 
 b = TaichiBenchmark()
 b.pprint()
-b.run(ti.x86_64)
+b.run(ti.x64)
 b.run(ti.cuda)
 print()
 b.pprint()

@@ -161,11 +161,13 @@ def build():
 
 def prepare_sandbox(src):
   assert os.path.exists(src)
+  import atexit
   from tempfile import mkdtemp
   tmp_dir = mkdtemp(prefix='taichi-')
+  atexit.register(os.unlink, tmp_dir)
+  print(f'[taichi] preparing sandbox at {tmp_dir}')
   dest = os.path.join(tmp_dir, 'taichi_core.so')
   shutil.copy(src, dest)
-  print(f'[taichi] prepared sandbox at {tmp_dir}')
   return tmp_dir
 
 

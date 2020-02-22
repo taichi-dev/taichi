@@ -19,7 +19,7 @@ def in_docker():
     return True
 
 
-def import_tc_core():
+def import_tc_core(tmp_dir=None):
   global tc_core
   if get_os_name() != 'win':
     old_flags = sys.getdlopenflags()
@@ -38,6 +38,8 @@ def import_tc_core():
     sys.setdlopenflags(old_flags)
   lib_dir = os.path.join(package_root(), 'lib')
   core.set_lib_dir(locale_encode(lib_dir))
+  if tmp_dir is not None:
+    core.set_tmp_dir(locale_encode(tmp_dir))
 
 
 def locale_encode(s):
@@ -160,6 +162,7 @@ def build():
   os.chdir(tmp_cwd)
 
 def prepare_sandbox(src):
+  global g_tmp_dir
   assert os.path.exists(src)
   import atexit
   import shutil
@@ -169,6 +172,8 @@ def prepare_sandbox(src):
   print(f'[Taichi] preparing sandbox at {tmp_dir}')
   dest = os.path.join(tmp_dir, 'taichi_core.so')
   shutil.copy(src, dest)
+  os.mkdir(os.path.join(tmp_dir, 'runtime/'))
+  print(f'[Taichi] sandbox prepared')
   return tmp_dir
 
 
@@ -213,7 +218,7 @@ else:
     os.chdir(tmp_dir)
     sys.path.append(tmp_dir)
     try:
-      import_tc_core()
+      import_tc_core(tmp_dir)
     except Exception as e:
       from colorama import Fore, Back, Style
       print_red_bold("Taichi core import failed: ", end='')

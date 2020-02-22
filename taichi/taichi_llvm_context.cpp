@@ -97,8 +97,15 @@ std::string get_runtime_fn(Arch arch) {
   return fmt::format("runtime_{}.bc", arch_name(arch));
 }
 
+std::string get_runtime_src_dir() {
+    return get_repo_dir() + "/taichi/runtime/";
+}
+
 std::string get_runtime_dir() {
-  return get_repo_dir() + "/taichi/runtime/";
+  if (runtime_tmp_dir.size() == 0)
+    return get_runtime_src_dir();
+  else
+    return runtime_tmp_dir + "/runtime/";
 }
 
 void compile_runtime_bitcode(Arch arch) {
@@ -110,6 +117,7 @@ void compile_runtime_bitcode(Arch arch) {
     auto clang = find_existing_command({"clang-7", "clang-8", "clang-9", "clang"});
     TI_ASSERT(command_exist("llvm-as"));
     TI_TRACE("Compiling runtime module bitcode...");
+    auto runtime_src_folder = get_runtime_src_dir();
     auto runtime_folder = get_runtime_dir();
     std::string macro = fmt::format(" -D ARCH_{} ", arch_name(arch));
 #if defined(TI_ARCH_ARM)
@@ -118,7 +126,7 @@ void compile_runtime_bitcode(Arch arch) {
     int ret = std::system(
         fmt::format(
             "{} -S {}runtime.cpp -o {}runtime.ll -emit-llvm -std=c++17 {}",
-            clang, runtime_folder, runtime_folder, macro)
+            clang, runtime_src_folder, runtime_folder, macro)
             .c_str());
     if (ret) {
       TI_ERROR("Runtime compilation failed.");

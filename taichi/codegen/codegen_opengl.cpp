@@ -145,7 +145,7 @@ private: // {{{
 
   virtual void visit(Stmt *stmt) override
   {
-    TI_WARN("[glsl] default visitor called for {}", typeid(*stmt).name());
+    TI_ERROR("[glsl] unsupported statement type {}", typeid(*stmt).name());
   }
 
   void visit(LinearizeStmt *stmt) override
@@ -383,7 +383,7 @@ private: // {{{
     push_indent();
     if (stmt->const_begin && stmt->const_end) {
       TI_ASSERT_INFO(stmt->end_value > stmt->begin_value,
-          "range for end value <= begin value");
+          "[glsl] range for end value <= begin value not supported");
       num_threads_ = stmt->end_value - stmt->begin_value;
       emit("// range known at compile time");
       emit("const int _thread_id_ = int(gl_GlobalInvocationID.x);");
@@ -391,7 +391,7 @@ private: // {{{
       emit("const int _it_value_ = {} + _thread_id_ * {};",
           stmt->begin_value, 1 /* stmt->step? */);
     } else {
-      TI_ERROR("non-const range_for currently unsupported under OpenGL");
+      TI_ERROR("[glsl] non-const range_for currently unsupported under OpenGL");
       /*range_for_attribs.begin =
           (stmt->const_begin ? stmt->begin_value : stmt->begin_offset);
       range_for_attribs.end =
@@ -466,14 +466,14 @@ private: // {{{
     } else {
       // struct_for is automatically lowered to ranged_for for dense snodes
       // (#378). So we only need to support serial and range_for tasks.
-      TI_ERROR("Unsupported offload type={} on OpenGL arch", stmt->task_name());
+      TI_ERROR("[glsl] Unsupported offload type={} on OpenGL arch", stmt->task_name());
     }
     is_top_level_ = true;
   }
 
   void visit(StructForStmt *) override
   {
-    TI_ERROR("Struct for cannot be nested under OpenGL for now");
+    TI_ERROR("[glsl] Struct for cannot be nested under OpenGL for now");
   }
 
   void visit(IfStmt *if_stmt) override {
@@ -659,12 +659,11 @@ FunctionType OpenglCodeGen::gen(void)
   bool has_ext_arr = false;
   for (int i = 0; i < kernel_->args.size(); i++) {
     if (kernel_->args[i].is_nparray) {
-      if (has_ext_arr) TI_ERROR("external array argument is supported to at most one in OpenGL for now");
-      TI_INFO("external array argument index {}", i);
+      if (has_ext_arr)
+        TI_ERROR("[glsl] external array argument is supported to at most one in OpenGL for now");
       ext_arr_idx = i;
       ext_arr_size = kernel_->args[i].size;
       has_ext_arr = true;
-      TI_INFO("external array size {}", ext_arr_size);
     }
   }
 

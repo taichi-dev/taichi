@@ -9,9 +9,6 @@
 
 TLANG_NAMESPACE_BEGIN
 
-template <typename T>
-using Handle = std::shared_ptr<T>;
-
 constexpr int default_simd_width_x86_64 = 8;
 
 int default_simd_width(Arch arch);
@@ -73,7 +70,6 @@ inline DataType get_data_type() {
   } else {
     TI_NOT_IMPLEMENTED;
   }
-  return DataType::unknown;
 }
 
 std::string data_type_name(DataType t);

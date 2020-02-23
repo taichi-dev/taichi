@@ -98,7 +98,6 @@ void Program::materialize_layout() {
   // always use arch=x86_64 since this is for host accessors
   std::unique_ptr<StructCompiler> scomp = StructCompiler::make(this, Arch::x64);
   scomp->run(*snode_root, true);
-  layout_fn = scomp->get_source_path();
   scomp->creator();
   profiler_print_gpu = scomp->profiler_print;
   profiler_clear_gpu = scomp->profiler_clear;

@@ -295,7 +295,6 @@ struct CompileConfig {
   Arch arch;
   bool debug;
   int simd_width;
-  int gcc_version;
   bool lazy_compilation;
   int external_optimization_level;
   int max_vector_width;
@@ -322,22 +321,6 @@ struct CompileConfig {
   int default_gpu_block_dim;
 
   CompileConfig();
-
-  std::string compiler_name();
-
-  std::string gcc_opt_flag();
-
-  std::string compiler_config();
-
-  std::string preprocess_cmd(const std::string &input,
-                             const std::string &output,
-                             const std::string &extra_flags,
-                             bool verbose = false);
-
-  std::string compile_cmd(const std::string &input,
-                          const std::string &output,
-                          const std::string &extra_flags,
-                          bool verbose = false);
 };
 
 extern CompileConfig default_compile_config;

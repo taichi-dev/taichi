@@ -57,8 +57,6 @@ class Program {
   std::function<void()> profiler_clear_gpu;
   std::unique_ptr<ProfilerBase> profiler_llvm;
 
-  std::string layout_fn;
-
   Program() : Program(default_compile_config.arch) {
   }
 

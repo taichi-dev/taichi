@@ -1,6 +1,8 @@
 import taichi as ti
+import numpy as np
+from time import perf_counter
 ti.init(arch=ti.opengl) # Try to run on GPU
-quality = 1 # Use a larger value for higher-res simulations
+quality = 2 # Use a larger value for higher-res simulations
 n_particles, n_grid = 9000 * quality ** 2, 128 * quality
 dx, inv_dx = 1 / n_grid, float(n_grid)
 dt = 1e-4 / quality
@@ -108,11 +110,10 @@ def initialize():
 
 initialize()
 
-import numpy as np
 gui = ti.GUI("Taichi MLS-MPM-99", res=512, background_color=0x112F41)
 for frame in range(20000):
   for s in range(int(2e-3 // dt)):
     substep()
   colors = np.array([0x068587, 0xED553B, 0xEEEEF0], dtype=np.uint32)
   gui.circles(x.to_numpy(), radius=1.5, color=colors[material.to_numpy()])
-  gui.show(f'/tmp/{frame:06d}.png') # Change to gui.show(f'{frame:06d}.png') to write images to disk
+  gui.show() # Change to gui.show(f'{frame:06d}.png') to write images to disk

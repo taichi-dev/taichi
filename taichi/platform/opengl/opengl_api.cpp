@@ -7,6 +7,7 @@
 #endif
 #include <GLFW/glfw3.h>
 #include "opengl_api.h"
+#include <taichi/perf.h>
 
 TLANG_NAMESPACE_BEGIN
 namespace opengl {
@@ -193,6 +194,12 @@ struct GLSSBO
     return *this;
   }
 
+  GLSSBO &bind_range(size_t index, size_t offset, size_t size)
+  {
+    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, index, id_, offset, size);
+    return *this;
+  }
+
   void *map(size_t offset, size_t length, GLbitfield access = GL_MAP_READ_BIT)
   {
     // map GPU memory to CPU address space, offset within SSBO data
@@ -209,48 +216,61 @@ struct GLSSBO
 
 void initialize_opengl()
 {
-    glfwInit();
-    // Compute Shader requires OpenGL 4.3+ (or OpenGL ES 3.1+)
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    // GLEW cannot load GL without a context
-    // And the best way to make context is by creating a window
-    // Then hide it immediately, LOL
-    GLFWwindow *window = glfwCreateWindow(1, 1, "Make GLEW Happy", nullptr, nullptr);
-    if (!window) {
-      const char *desc = nullptr;
-      GLint status = glfwGetError(&desc);
-      if (!desc) desc = "Unknown Error";
-      TI_ERROR("[glsl] cannot create GLFW window: error {}: {}", status, desc);
-    }
-    glfwHideWindow(window);
-    glfwMakeContextCurrent(window);
+  // TODO: move this to somewhere like main()
+  static bool gl_inited = false;
+  if (gl_inited) {
+    return;
+  }
+  glfwInit();
+  // Compute Shader requires OpenGL 4.3+ (or OpenGL ES 3.1+)
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+  // GLEW cannot load GL without a context
+  // And the best way to make context is by creating a window
+  // Then hide it immediately, LOL
+  GLFWwindow *window = glfwCreateWindow(1, 1, "Make GLEW Happy", nullptr, nullptr);
+  if (!window) {
+    const char *desc = nullptr;
+    GLint status = glfwGetError(&desc);
+    if (!desc) desc = "Unknown Error";
+    TI_ERROR("[glsl] cannot create GLFW window: error {}: {}", status, desc);
+  }
+  glfwHideWindow(window);
+  glfwMakeContextCurrent(window);
 #ifdef USE_GLEW
-    GLint status = glewInit();
-    if (status != GLEW_OK) {
-      TI_ERROR("[glsl] cannot initialize GLEW: {}", glewGetErrorString(status));
-    }
+  GLint status = glewInit();
+  if (status != GLEW_OK) {
+    TI_ERROR("[glsl] cannot initialize GLEW: {}", glewGetErrorString(status));
+  }
 #endif
-    const char *gl_version = (const char *)glGetString(GL_VERSION);
-    if (!gl_version) {
-      TI_WARN("[glsl] cannot get OpenGL version");
-    } else {
-      TI_INFO("[glsl] OpenGL {}", gl_version);
-    }
+  const char *gl_version = (const char *)glGetString(GL_VERSION);
+  if (!gl_version) {
+    TI_WARN("[glsl] cannot get OpenGL version");
+  } else {
+    TI_INFO("[glsl] OpenGL {}", gl_version);
+  }
+  gl_inited = true;
 }
 
 GLProgram *compile_glsl_program(std::string source)
 {
-  static bool gl_inited = false;
-  if (!gl_inited) {
-    // TODO: move this to somewhere like main()
-    initialize_opengl();
-    gl_inited = true;
-  }
+  initialize_opengl();
   GLShader shader(source);
   GLProgram *program = new GLProgram(shader);
   program->link();
   return program;
+}
+
+GLSSBO *root_ssbo;
+
+void create_glsl_root_buffer(size_t size)
+{
+  if (root_ssbo)
+    return;
+  root_ssbo = new GLSSBO;
+  void *buffer = std::calloc(size, 1);
+  root_ssbo->bind_data(buffer, size, GL_DYNAMIC_READ);
+  root_ssbo->bind_index(0);
 }
 
 void launch_glsl_kernel(GLProgram *program, std::vector<IOV> iov, int num_groups)
@@ -258,8 +278,9 @@ void launch_glsl_kernel(GLProgram *program, std::vector<IOV> iov, int num_groups
   program->use();
 
   std::vector<GLSSBO> ssbo(iov.size());
+
   for (int i = 0; i < ssbo.size(); i++) {
-    ssbo[i].bind_index(i);
+    ssbo[i].bind_index(i + 1);
     ssbo[i].bind_data(iov[i].base, iov[i].size, GL_DYNAMIC_READ); // input
   }
 
@@ -271,13 +292,13 @@ void launch_glsl_kernel(GLProgram *program, std::vector<IOV> iov, int num_groups
   // `layout(local_size_x = X) in;` - the X      == `Threads`  in CUDA
   //
   glDispatchCompute(num_groups, 1, 1);
-  glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT); // TODO(archibate): move to Program::synchroize()
+  //glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT); // TODO(archibate): move to Program::synchroize()
 
   for (int i = 0; i < ssbo.size(); i++) {
     void *p = ssbo[i].map(0, iov[i].size); // output
     std::memcpy(iov[i].base, p, iov[i].size);
-    glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
   }
+  glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
 }
 
 bool is_opengl_api_available()

@@ -5,6 +5,7 @@
 
 #include <string>
 #include <taichi/ir.h>
+#include <taichi/perf.h>
 
 TLANG_NAMESPACE_BEGIN
 namespace opengl {
@@ -44,6 +45,14 @@ public:
     invoke_default_visitor = true;
   }
 
+  struct UsedFeature
+  {
+    bool random{false};
+    bool argument{false};
+    bool extra_arg{false};
+    bool external_ptr{false};
+  } used;
+
 private: // {{{
   std::string kernel_src_code_;
   std::string indent_;
@@ -59,7 +68,6 @@ private: // {{{
   int glsl_kernel_count_{0};
   int num_threads_{1};
   int num_groups_{1};
-  bool has_rand_{false};
 
   void push_indent()
   {
@@ -82,12 +90,12 @@ private: // {{{
   void generate_header()
   { // {{{
     kernel_src_code_ += struct_compiled_->source_code;
-    emit("layout(std430, binding = 0) buffer args_i32 {{ int _args_i32_[]; }};");
-    emit("layout(std430, binding = 0) buffer args_f32 {{ float _args_f32_[]; }};");
-    emit("layout(std430, binding = 0) buffer args_f64 {{ double _args_f64_[]; }};");
-    emit("layout(std430, binding = 1) buffer data_i32 {{ int _data_i32_[]; }};");
-    emit("layout(std430, binding = 1) buffer data_f32 {{ float _data_f32_[]; }};");
-    emit("layout(std430, binding = 1) buffer data_f64 {{ double _data_f64_[]; }};");
+    emit("layout(std430, binding = 0) buffer data_i32 {{ int _data_i32_[]; }};");
+    emit("layout(std430, binding = 0) buffer data_f32 {{ float _data_f32_[]; }};");
+    emit("layout(std430, binding = 0) buffer data_f64 {{ double _data_f64_[]; }};");
+    emit("layout(std430, binding = 1) buffer args_i32 {{ int _args_i32_[]; }};");
+    emit("layout(std430, binding = 1) buffer args_f32 {{ float _args_f32_[]; }};");
+    emit("layout(std430, binding = 1) buffer args_f64 {{ double _args_f64_[]; }};");
     emit("layout(std430, binding = 2) buffer earg_i32 {{ int _earg_i32_[]; }};");
     emit("layout(std430, binding = 3) buffer extr_i32 {{ int _extr_i32_[]; }};");
     emit("layout(std430, binding = 3) buffer extr_f32 {{ float _extr_f32_[]; }};");
@@ -135,12 +143,12 @@ _Atmf_Def(Min, min, _Acma_, 64, double)\n\
     // TODO(archibate): <kernel_name>() really necessary? How about just main()?
     emit("void main()");
     emit("{{");
-    if (has_rand_)
+    if (used.random)
     emit("  _init_rand();");
     if (glsl_kernel_name_.size())
       emit("  {}();", glsl_kernel_name_);
     emit("}}");
-    if (has_rand_) {
+    if (used.random) {
       // {{{
       kernel_src_code_ = std::string("\
 uvec4 _rand_;\n\
@@ -157,9 +165,7 @@ void _init_rand()\n\
 uint _rand_u32()\n\
 {\n\
   uint t = _rand_.x ^ (_rand_.x << 11);\n\
-  _rand_.x = _rand_.y;\n\
-  _rand_.y = _rand_.z;\n\
-  _rand_.z = _rand_.w;\n\
+  _rand_.xyz = _rand_.yzw;\n\
   _rand_.w = (_rand_.w ^ (_rand_.w >> 19)) ^ (t ^ (t >> 8));\n\
   return _rand_.w * 1000000007;\n\
 }\n\
@@ -207,9 +213,9 @@ int _rand_i32()\n\
 
   void visit(RandStmt *stmt) override
   {
+    used.random = true;
     emit("{} {} = _rand_{}();", opengl_data_type_name(stmt->ret_type.data_type),
         stmt->raw_name(), data_type_short_name(stmt->ret_type.data_type));
-    has_rand_ = true;
   }
 
   void visit(LinearizeStmt *stmt) override
@@ -293,6 +299,7 @@ int _rand_i32()\n\
     const int num_indices = stmt->indices.size();
     std::vector<std::string> size_var_names;
     for (int i = 0; i < num_indices; i++) {
+      used.extra_arg = true;
       std::string var_name = fmt::format("{}_size{}_", stmt->raw_name(), i);
       emit("int {} = _extra_arg({}, {});", var_name, arg_id, i);
       size_var_names.push_back(std::move(var_name));
@@ -307,6 +314,7 @@ int _rand_i32()\n\
 
     emit("int {} = ({} + {});", stmt->raw_name(),
          stmt->base_ptrs[0]->raw_name(), linear_index_name);
+      used.external_ptr = true;
       emit("#define _at_{} _ext_ns_{}({})", stmt->raw_name(),
           data_type_short_name(stmt->element_type()), stmt->raw_name());
   }
@@ -423,6 +431,7 @@ int _rand_i32()\n\
   void visit(ArgLoadStmt *stmt) override
   {
     const auto dt = opengl_data_type_name(stmt->element_type());
+    used.argument = true;
     if (stmt->is_ptr) {
       emit("int {} = _arg_i32({}); // is ext pointer {}", stmt->raw_name(), stmt->arg_id, dt);
     } else {
@@ -434,6 +443,7 @@ int _rand_i32()\n\
   void visit(ArgStoreStmt *stmt) override
   {
     TI_ASSERT(!stmt->is_ptr);
+    used.argument = true;
     emit("_arg_{}({}) = {};", data_type_short_name(stmt->element_type()),
         stmt->arg_id, stmt->val->raw_name());
   }
@@ -731,22 +741,16 @@ const StructCompiledResult *get_opengl_struct_compiled()
 
 struct OpenglRuntime
 {
-  void *root_buf;
   size_t root_size;
 
   OpenglRuntime(const StructCompiledResult *scomp)
   {
     root_size = scomp->root_size;
-    root_buf = std::calloc(root_size, 1);
-  }
-
-  IOV get_root_buffer()
-  {
-    return IOV{root_buf, root_size};
+    create_glsl_root_buffer(root_size);
   }
 };
 
-OpenglRuntime *get_opengl_runtime()
+OpenglRuntime *init_opengl_runtime()
 {
   static OpenglRuntime *runtime; // singleton
   if (!runtime) {
@@ -760,16 +764,20 @@ struct CompiledKernel
 {
   GLProgram *glsl;
   int num_groups;
+  int arg_count;
   int ext_arr_idx;
   size_t ext_arr_size;
   bool has_ext_arr{false};
+  KernelGen::UsedFeature used;
+  std::string kernel_name;
 
   explicit CompiledKernel(const KernelGen &codegen)
   {
     const std::string kernel_source_code = codegen.kernel_source_code();
-    const std::string kernel_name = codegen.get_kernel_name();
     Kernel *kernel = codegen.get_kernel();
+    this->kernel_name = codegen.get_kernel_name();
     this->num_groups = codegen.get_num_work_groups();
+    this->used = codegen.used;
 
 #ifdef _GLSL_DEBUG
     TI_INFO("source of kernel [{}]:\n{}", kernel_name, kernel_source_code);
@@ -779,7 +787,8 @@ struct CompiledKernel
     this->glsl = compile_glsl_program(kernel_source_code);
 
     has_ext_arr = false;
-    for (int i = 0; i < kernel->args.size(); i++) {
+    arg_count = kernel->args.size();
+    for (int i = 0; i < arg_count; i++) {
       if (kernel->args[i].is_nparray) {
         if (has_ext_arr)
           TI_ERROR("[glsl] external array argument is supported to at most one in OpenGL for now");
@@ -792,17 +801,20 @@ struct CompiledKernel
 
   void launch(Context &ctx)
   {
-    OpenglRuntime *runtime = get_opengl_runtime();
-    std::vector<IOV> iov(3);
-    iov[0] = IOV{ctx.args, taichi_max_num_args * sizeof(uint64_t)};
-    iov[1] = runtime->get_root_buffer();
-    iov[2] = IOV{ctx.extra_args, Context::extra_args_size};
-    if (has_ext_arr) {
-      void *extptr = (void *)ctx.args[ext_arr_idx];
-      ctx.args[ext_arr_idx] = 0;
-      iov.push_back(IOV{extptr, ext_arr_size});
+    init_opengl_runtime();
+    std::vector<IOV> iov;
+    if (arg_count) {
+      iov.push_back(IOV{ctx.args, arg_count * sizeof(uint64_t)});
+      if (has_ext_arr) {
+        iov.push_back(IOV{ctx.extra_args, arg_count * taichi_max_num_args * sizeof(int)});
+        void *extptr = (void *)ctx.args[ext_arr_idx];
+        ctx.args[ext_arr_idx] = 0;
+        iov.push_back(IOV{extptr, ext_arr_size});
+      }
     }
+    //TI_PERF();
     launch_glsl_kernel(glsl, iov, num_groups);
+    //TI_PERF(kernel_name.c_str(), kernel_name.size(), 107);
   }
 };
 

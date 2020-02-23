@@ -97,10 +97,9 @@ private: // {{{
     emit("layout(std430, binding = 1) buffer args_f32 {{ float _args_f32_[]; }};");
     emit("layout(std430, binding = 1) buffer args_f64 {{ double _args_f64_[]; }};");
     emit("layout(std430, binding = 2) buffer earg_i32 {{ int _earg_i32_[]; }};");
-    emit("layout(std430, binding = 3) buffer lock_lck {{ int _big_lock_; }};");
-    emit("layout(std430, binding = 4) buffer extr_i32 {{ int _extr_i32_[]; }};");
-    emit("layout(std430, binding = 4) buffer extr_f32 {{ float _extr_f32_[]; }};");
-    emit("layout(std430, binding = 4) buffer extr_f64 {{ double _extr_f64_[]; }};");
+    emit("layout(std430, binding = 3) buffer extr_i32 {{ int _extr_i32_[]; }};");
+    emit("layout(std430, binding = 3) buffer extr_f32 {{ float _extr_f32_[]; }};");
+    emit("layout(std430, binding = 3) buffer extr_f64 {{ double _extr_f64_[]; }};");
     emit("#define _arg_i32(x) _args_i32_[(x) << 1]"); // skip to 64bit stride
     emit("#define _arg_f32(x) _args_f32_[(x) << 1]");
     emit("#define _arg_f64(x) _args_f64_[(x) << 0]");
@@ -112,26 +111,31 @@ private: // {{{
     emit("#define _ext_ns_f64(x) _extr_f64_[(x) >> 0]");
     emit("#define _extra_arg(i, j) _earg_i32_[(i) * {} + (j)]", taichi_max_num_indices);
     kernel_src_code_ += "\n\
-bool _acquire_lock_()\n\
-{\n\
-  int n = 200;\n\
-  while (1 == atomicCompSwap(_big_lock_, 0, 1) && --n > 0);\n\
-  return n > 0;\n\
+#define _Atmf_Def(Add, _f_, _o_, _32, float) \
+float atomic##Add##_f##_32(int addr, float rhs) \
+{ \
+  int old, new, ret; \
+  do { \
+    old = _mem_i##_32(addr); \
+    new = floatBitsToInt(_f_(intBitsToFloat(old) _o_ rhs)); \
+  } while (old != atomicCompSwap(_mem_i##_32(addr), old, new)); \
+  return intBitsToFloat(new); \
 }\n\
-void _release_lock_()\n\
-{\n\
-  atomicCompSwap(_big_lock_, 1, 0);\n\
-}\n\
-float atomicAdd_f32(inout float x, float y)\n\
-{\n\
-  float r;\n\
-  bool got = _acquire_lock_();\n\
-  r = (x += y);\n\
-  if (got) _release_lock_();\n\
-  return r;\n\
-}\n\
-\n\
-"; // discussion: https://github.com/taichi-dev/taichi/pull/495#issuecomment-590074123
+#define _Acma_ ,\n\
+_Atmf_Def(Add,, +, 32, float)\n\
+_Atmf_Def(Sub,, -, 32, float)\n\
+_Atmf_Def(Max, max, _Acma_, 32, float)\n\
+_Atmf_Def(Min, min, _Acma_, 32, float)\n\
+"
+#ifdef _GLSL_INT64
+"\
+_Atmf_Def(Add,, +, 64, double)\n\
+_Atmf_Def(Sub,, -, 64, double)\n\
+_Atmf_Def(Max, max, _Acma_, 64, double)\n\
+_Atmf_Def(Min, min, _Acma_, 64, double)\n\
+"
+#endif
+; // discussion: https://github.com/taichi-dev/taichi/pull/495#issuecomment-590074123
   } // }}}
 
   void generate_bottom()
@@ -404,13 +408,8 @@ int _rand_i32()\n\
     } else {
       TI_ASSERT(stmt->val->element_type() == DataType::f32
         || stmt->val->element_type() == DataType::f64);
-      static bool warned;
-      if (!warned) {
-        TI_WARN("[glsl] floating type atomic operations in OpenGL is DEPRECATED, "
-                "please use an array storage and reduce it outside instead");
-        warned = true;
-      }
-      emit("{} {} = {}_{}(_at_{}, {});", opengl_data_type_name(stmt->val->element_type()),
+      // NOTE: external ptr atomic float operations is not supported by now
+      emit("{} {} = {}_{}({}, {});", opengl_data_type_name(stmt->val->element_type()),
           stmt->raw_name(), opengl_atomic_op_type_cap_name(stmt->op_type),
           data_type_short_name(stmt->val->element_type()),
           stmt->dest->raw_name(), stmt->val->raw_name());

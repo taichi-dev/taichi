@@ -4,7 +4,7 @@
 TLANG_NAMESPACE_BEGIN
 
 TI_TEST("snode") {
-  Program prog(Arch::x86_64);
+  Program prog(Arch::x64);
 
   auto i = Index(0);
   Global(u, i32);
@@ -24,7 +24,7 @@ TI_TEST("snode") {
 }
 
 TI_TEST("snode_loop") {
-  for (auto arch : {Arch::x86_64, Arch::gpu}) {
+  for (auto arch : {Arch::x64, Arch::gpu}) {
     Program prog(arch);
     CoreState::set_trigger_gdb_when_crash(true);
 
@@ -49,7 +49,7 @@ TI_TEST("snode_loop") {
 }
 
 TI_TEST("snode_loop2") {
-  for (auto arch : {Arch::x86_64, Arch::gpu}) {
+  for (auto arch : {Arch::x64, Arch::gpu}) {
     Program prog(arch);
     CoreState::set_trigger_gdb_when_crash(true);
 
@@ -92,7 +92,7 @@ TI_TEST("snode_loop2") {
 TI_TEST("2d_blocked_array") {
   int n = 8, block_size = 4;
 
-  for (auto arch : {Arch::x86_64, Arch::gpu})
+  for (auto arch : {Arch::x64, Arch::gpu})
     for (auto blocked : {false, true}) {
       Program prog(arch);
 
@@ -134,7 +134,7 @@ TI_TEST("2d_blocked_array") {
 TI_TEST("2d_blocked_array_morton") {
   int n = 16, block_size = 4;
 
-  for (auto arch : {Arch::x86_64}) {
+  for (auto arch : {Arch::x64}) {
     Program prog(arch);
 
     Global(a, i32);
@@ -232,7 +232,7 @@ TI_TEST("bitmask_clear") {
 TI_TEST("2d_blocked_array_bitmasked") {
   int n = 16, block_size = 4;
 
-  for (auto arch : {Arch::x86_64, Arch::gpu}) {
+  for (auto arch : {Arch::x64, Arch::gpu}) {
     for (auto morton : {true, false}) {
       if (morton && arch == Arch::gpu) {
         continue;
@@ -276,7 +276,7 @@ TI_TEST("2d_blocked_array_bitmasked") {
 TI_TEST("2d_blocked_array_vec") {
   int n = 8, block_size = 4;
 
-  for (auto arch : {Arch::x86_64})
+  for (auto arch : {Arch::x64})
     for (auto blocked : {false, true}) {
       Program prog(arch);
 
@@ -320,7 +320,7 @@ TI_TEST("2d_blocked_array_vec") {
 TI_TEST("loop_over_blocks") {
   int n = 64, block_size = 4;
 
-  for (auto arch : {Arch::x86_64, Arch::gpu}) {
+  for (auto arch : {Arch::x64, Arch::gpu}) {
     Program prog(arch);
 
     Global(a, i32);
@@ -624,7 +624,7 @@ TI_TEST("leaf_context") {
 }
 
 TI_TEST("pointer") {
-  for (auto arch : {Arch::x86_64, Arch::gpu}) {
+  for (auto arch : {Arch::x64, Arch::gpu}) {
     Program prog(arch);
 
     int n = 32;
@@ -771,7 +771,7 @@ TI_TEST("hashed") {
 
 TI_TEST("mpm_layout") {
   Program prog(Arch::gpu);
-  // Program prog(Arch::x86_64);
+  // Program prog(Arch::x64);
   // prog.config.print_ir = true;
   constexpr int dim = 3;
   constexpr bool highres = true;

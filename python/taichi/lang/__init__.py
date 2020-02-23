@@ -24,12 +24,15 @@ normalized = Matrix.normalized
 
 cfg = default_cfg()
 current_cfg = current_cfg()
-x86_64 = core.x86_64
+x86_64 = core.x64
+x64 = core.x64
 cuda = core.cuda
 metal = core.metal
 opengl = core.opengl
 profiler_print = lambda: core.get_current_program().profiler_print()
 profiler_clear = lambda: core.get_current_program().profiler_clear()
+profiler_start = lambda n: core.get_current_program().profiler_start(n)
+profiler_stop = lambda: core.get_current_program().profiler_stop()
 
 class _Extension(object):
   def __init__(self):
@@ -47,9 +50,6 @@ def reset():
   runtime = get_runtime()
 
 def init(default_fp=None, default_ip=None, print_preprocessed=None, debug=None, **kwargs):
-  if debug is None:
-    debug = bool(int(os.environ.get('TI_DEBUG', '0')))
-
   # Make a deepcopy in case these args reference to items from ti.cfg, which are
   # actually references. If no copy is made and the args are indeed references,
   # ti.reset() could override the args to their default values.
@@ -64,13 +64,18 @@ def init(default_fp=None, default_ip=None, print_preprocessed=None, debug=None, 
     ti.get_runtime().set_default_ip(default_ip)
   if print_preprocessed is not None:
     ti.get_runtime().print_preprocessed = print_preprocessed
+    
+  if debug is None:
+    debug = bool(int(os.environ.get('TI_DEBUG', '0')))
   if debug:
-    ti.set_logging_level(ti.DEBUG)
+    ti.set_logging_level(ti.TRACE)
   ti.cfg.debug = debug
+  
+  use_unified_memory = bool(int(os.environ.get('TI_USE_UNIFIED_MEMORY', '1')))
+  ti.cfg.use_unified_memory = use_unified_memory
+  if not use_unified_memory:
+    ti.warn('Unified memory disabled (env TI_USE_UNIFIED_MEMORY=0). This is experimental.')
 
-  log_level = os.environ.get('TI_LOG_LEVEL', '')
-  if log_level:
-    ti.set_logging_level(log_level)
   for k, v in kwargs.items():
     setattr(ti.cfg, k, v)
   ti.get_runtime().create_program()

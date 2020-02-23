@@ -102,7 +102,7 @@ class TaichiLLVMJIT {
 
   static Expected<std::unique_ptr<TaichiLLVMJIT>> create(Arch arch) {
     std::unique_ptr<JITTargetMachineBuilder> jtmb;
-    if (arch == Arch::x86_64) {
+    if (arch == Arch::x64) {
       auto JTMB = JITTargetMachineBuilder::detectHost();
       if (!JTMB)
         return JTMB.takeError();

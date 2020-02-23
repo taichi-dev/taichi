@@ -13,12 +13,9 @@ class GPUCodeGen : public KernelCodeGen {
     suffix = "cu";
   }
 
-  void lower_cuda();
   void lower_llvm();
 
   void lower() override;
-
-  void codegen() override;
 
   virtual FunctionType codegen_llvm() override;
 };

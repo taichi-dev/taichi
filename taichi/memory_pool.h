@@ -6,7 +6,9 @@
 #include <memory>
 #include <thread>
 #include "unified_allocator.h"
-#include "legacy_kernel.h"
+#define TI_RUNTIME_HOST
+#include "context.h"
+#include "profiler.h"
 #ifdef TI_WITH_CUDA
 #include <cuda_runtime.h>
 #endif
@@ -27,6 +29,7 @@ class MemoryPool {
   std::mutex mut_allocators;
   std::unique_ptr<std::thread> th;
   int processed_tail;
+  bool use_unified_memory;
   Program *prog;
 
 #ifdef TI_WITH_CUDA

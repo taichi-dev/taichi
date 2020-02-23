@@ -470,7 +470,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
         TI_NOT_IMPLEMENTED
       }
     } else if (op == BinaryOpType::atan2) {
-      if (current_arch() == Arch::x86_64) {
+      if (current_arch() == Arch::x64) {
         if (ret_type == DataType::f32) {
           stmt->value =
               create_call("atan2_f32", {stmt->lhs->value, stmt->rhs->value});
@@ -496,7 +496,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
         TI_NOT_IMPLEMENTED
       }
     } else if (op == BinaryOpType::pow) {
-      if (current_arch() == Arch::x86_64) {
+      if (current_arch() == Arch::x64) {
         if (ret_type == DataType::f32) {
           stmt->value =
               create_call("pow_f32", {stmt->lhs->value, stmt->rhs->value});
@@ -687,7 +687,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     } else {
       TI_NOT_IMPLEMENTED
     }
-    auto runtime_printf = call("Runtime_get_printf_host", get_runtime());
+    auto runtime_printf = call("Runtime_get_host_printf", get_runtime());
     args.push_back(builder->CreateGlobalStringPtr(
         ("[debug] " + stmt->str + " = " + format + "\n").c_str(),
         "format_string"));

@@ -6,7 +6,7 @@ TLANG_NAMESPACE_BEGIN
 
 TI_TEST("append_and_probe") {
   CoreState::set_trigger_gdb_when_crash(true);
-  for (auto arch : {Arch::x86_64, Arch::gpu}) {
+  for (auto arch : {Arch::x64, Arch::gpu}) {
     int n = 32;
     Program prog(arch);
 
@@ -37,7 +37,7 @@ TI_TEST("append_and_probe") {
 };
 
 TI_TEST("activate") {
-  for (auto arch : {Arch::x86_64, Arch::gpu}) {
+  for (auto arch : {Arch::x64, Arch::gpu}) {
     int n = 32;
     Program prog(arch);
 
@@ -190,7 +190,7 @@ TI_TEST("parallel_append") {
 };
 
 TI_TEST("append_2d") {
-  for (auto arch : {Arch::x86_64, Arch::gpu}) {
+  for (auto arch : {Arch::x64, Arch::gpu}) {
     int n = 32;
     Program prog(arch);
 
@@ -219,7 +219,7 @@ TI_TEST("append_2d") {
 
 TI_TEST("clear") {
   CoreState::set_trigger_gdb_when_crash(true);
-  for (auto arch : {Arch::x86_64, Arch::gpu}) {
+  for (auto arch : {Arch::x64, Arch::gpu}) {
     int n = 32;
     Program prog(arch);
 
@@ -258,7 +258,7 @@ TI_TEST("clear") {
 };
 
 TI_TEST("sort") {
-  for (auto arch : {Arch::x86_64, Arch::gpu}) {
+  for (auto arch : {Arch::x64, Arch::gpu}) {
     int n = 4;
     Program prog(arch);
 
@@ -315,7 +315,7 @@ TI_TEST("sort") {
 };
 
 TI_TEST("dilate") {
-  for (auto arch : {Arch::x86_64, Arch::gpu}) {
+  for (auto arch : {Arch::x64, Arch::gpu}) {
     for (auto ds : {1}) {
       int n = 32;
       int bs = 4;
@@ -360,7 +360,7 @@ TI_TEST("dilate") {
 };
 
 TI_TEST("dynamic_sort") {
-  for (auto arch : {Arch::x86_64, Arch::gpu}) {
+  for (auto arch : {Arch::x64, Arch::gpu}) {
     int n = 4;
     Program prog(arch);
 

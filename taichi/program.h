@@ -58,8 +58,6 @@ class Program {
   std::function<void()> profiler_clear_gpu;
   std::unique_ptr<ProfilerBase> profiler_llvm;
 
-  std::string layout_fn;
-
   Program() : Program(default_compile_config.arch) {
   }
 
@@ -87,6 +85,21 @@ class Program {
         cpu_profiler->clear();
       }
     }
+  }
+
+  void profiler_start(const std::string &name) {
+    TI_ASSERT(config.use_llvm);
+    profiler_llvm->start(name);
+  }
+
+  void profiler_stop() {
+    TI_ASSERT(config.use_llvm);
+    profiler_llvm->stop();
+  }
+
+  ProfilerBase *get_profiler() {
+    TI_ASSERT(config.use_llvm);
+    return profiler_llvm.get();
   }
 
   Context &get_context() {
@@ -149,7 +162,7 @@ class Program {
   }
 
   TaichiLLVMContext *get_llvm_context(Arch arch) {
-    if (arch == Arch::x86_64) {
+    if (arch == Arch::x64) {
       return llvm_context_host.get();
     } else {
       return llvm_context_device.get();
@@ -161,7 +174,7 @@ class Program {
   Kernel &get_snode_writer(SNode *snode);
 
   Arch get_host_arch() {
-    return Arch::x86_64;
+    return Arch::x64;
   }
 
   Arch get_snode_io_arch();

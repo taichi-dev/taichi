@@ -62,7 +62,7 @@ real measure_cpe(std::function<void()> target,
 }
 
 int default_simd_width(Arch arch) {
-  if (arch == Arch::x86_64) {
+  if (arch == Arch::x64) {
     return default_simd_width_x86_64;
   } else if (arch == Arch::cuda) {
     return 32;
@@ -240,82 +240,6 @@ std::string snode_op_type_name(SNodeOpType type) {
   return type_names[type];
 }
 
-std::string CompileConfig::compiler_config() {
-  std::string cmd;
-#if defined(OPENMP_FOUND)
-  std::string omp_flag = "-fopenmp -DTLANG_WITH_OPENMP";
-#else
-  std::string omp_flag = "";
-#endif
-
-#if defined(TI_PLATFORM_OSX)
-  std::string linking = "-undefined dynamic_lookup";
-#else
-  std::string linking = "-ltaichi_core";
-#endif
-
-  std::string include_flag;
-  std::string link_flag;
-
-  if (is_release()) {
-    linking = fmt::format("-L{}/lib -ltaichi_core", get_python_package_dir());
-    // TODO: this is useless now since python packages no longer support legacy
-    // backends
-    include_flag = fmt::format("-I{}/", get_python_package_dir());
-  } else {
-    linking = fmt::format(" -L{}/build -ltaichi_core ", get_repo_dir());
-    include_flag = fmt::format(" -I{}/ ", get_repo_dir());
-  }
-  if (arch == Arch::x86_64) {
-    cmd = fmt::format(
-        "{} -std=c++14 -shared -fPIC {} -march=native -mfma {} "
-        "-ffp-contract=fast "
-        "{} -Wall -g -DTLANG_CPU "
-        "-lstdc++  {} {}",
-        compiler_name(), gcc_opt_flag(), include_flag, omp_flag, linking,
-        extra_flags);
-  } else {
-    cmd = fmt::format(
-        "nvcc -g -lineinfo -std=c++14 -shared {} -Xcompiler \"-fPIC "
-        "-march=native \" "
-        "--use_fast_math -arch=compute_61 -code=sm_61,compute_61 "
-        "--ptxas-options=-allow-expensive-optimizations=true,-O3,-v -I "
-        "{}/ -I/usr/local/cuda/include/ -ccbin {} "
-        " -lstdc++ {} {} "
-        "-DTLANG_GPU {} ",
-        gcc_opt_flag(), get_repo_dir(), "g++-6", include_flag, linking,
-        extra_flags);
-  }
-  return cmd;
-}
-
-std::string CompileConfig::preprocess_cmd(const std::string &input,
-                                          const std::string &output,
-                                          const std::string &extra_flags,
-                                          bool verbose) {
-  std::string cmd = compiler_config();
-  std::string io = fmt::format(" {} -E {} -o {} ", extra_flags, input, output);
-  if (!verbose) {
-    io += " 2> /dev/null ";
-  }
-  return cmd + io;
-}
-
-std::string CompileConfig::compile_cmd(const std::string &input,
-                                       const std::string &output,
-                                       const std::string &extra_flags,
-                                       bool verbose) {
-  std::string cmd = compiler_config();
-  std::string io = fmt::format(" {} {} -o {} ", extra_flags, input, output);
-
-  cmd += io;
-
-  if (!verbose) {
-    cmd += fmt::format(" 2> {}.log", input);
-  }
-  return cmd;
-}
-
 bool command_exist(const std::string &command) {
 #if defined(TI_PLATFORM_UNIX)
   if (std::system(fmt::format("which {} > /dev/null 2>&1", command).c_str())) {
@@ -333,9 +257,8 @@ bool command_exist(const std::string &command) {
 }
 
 CompileConfig::CompileConfig() {
-  arch = Arch::x86_64;
+  arch = Arch::x64;
   simd_width = default_simd_width(arch);
-  internal_optimization = true;
   external_optimization_level = 3;
   print_ir = false;
   print_accessor_ir = false;
@@ -345,31 +268,12 @@ CompileConfig::CompileConfig() {
   print_kernel_llvm_ir_optimized = false;
   demote_dense_struct_fors = true;
   max_vector_width = 8;
-  force_vectorized_global_load = false;
-  force_vectorized_global_store = false;
   debug = false;
-#if defined(TI_PLATFORM_OSX)
-  gcc_version = -1;
-#else
-  gcc_version = -2;  // not 7 for faster compilation
-                     // Use clang for faster speed
-#endif
-  if (!use_llvm) {
-    if (gcc_version == -2 && !command_exist("clang-7")) {
-      TI_WARN("Command clang-7 not found. Attempting clang");
-      gcc_version = -1;
-    }
-    if (gcc_version == -1 && !command_exist("clang")) {
-      TI_WARN("Command clang not found. Attempting gcc-6");
-      gcc_version = 6;
-    }
-  }
   lazy_compilation = true;
   serial_schedule = false;
   simplify_before_lower_access = true;
   lower_access = true;
   simplify_after_lower_access = true;
-  attempt_vectorized_load_cpu = true;
   default_fp = DataType::f32;
   default_ip = DataType::i32;
   verbose_kernel_launches = false;
@@ -378,25 +282,6 @@ CompileConfig::CompileConfig() {
   default_gpu_block_dim = 64;
   verbose = true;
   fast_math = true;
-}
-
-std::string CompileConfig::compiler_name() {
-  if (gcc_version == -1) {
-    return "clang";
-  } else if (gcc_version == -2) {
-    return "clang-7";
-  } else {
-    return fmt::format("gcc-{}", gcc_version);
-  }
-}
-
-std::string CompileConfig::gcc_opt_flag() {
-  TI_ASSERT(0 <= external_optimization_level &&
-            external_optimization_level < 5);
-  if (external_optimization_level < 4) {
-    return fmt::format("-O{}", external_optimization_level);
-  } else
-    return "-Ofast";
 }
 
 DataType promoted_type(DataType a, DataType b) {

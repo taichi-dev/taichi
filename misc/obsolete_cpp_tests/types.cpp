@@ -30,7 +30,7 @@ TI_TEST("llvm_exception") {
   int n = 1;
   for (int i = 0; i < 2; i++) {
     // Program prog(Arch::gpu);
-    Program prog(Arch::x86_64);
+    Program prog(Arch::x64);
     Global(a, f32);
     // Global(b, f32);
     layout([&]() { root.dense(Index(0), n).place(a); });

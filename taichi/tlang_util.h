@@ -9,9 +9,6 @@
 
 TLANG_NAMESPACE_BEGIN
 
-template <typename T>
-using Handle = std::shared_ptr<T>;
-
 constexpr int default_simd_width_x86_64 = 8;
 
 int default_simd_width(Arch arch);
@@ -73,7 +70,6 @@ inline DataType get_data_type() {
   } else {
     TI_NOT_IMPLEMENTED;
   }
-  return DataType::unknown;
 }
 
 std::string data_type_name(DataType t);
@@ -299,11 +295,7 @@ struct CompileConfig {
   Arch arch;
   bool debug;
   int simd_width;
-  int gcc_version;
-  bool internal_optimization;
   bool lazy_compilation;
-  bool force_vectorized_global_load;
-  bool force_vectorized_global_store;
   int external_optimization_level;
   int max_vector_width;
   bool print_ir;
@@ -312,7 +304,6 @@ struct CompileConfig {
   bool simplify_before_lower_access;
   bool lower_access;
   bool simplify_after_lower_access;
-  bool attempt_vectorized_load_cpu;
   bool demote_dense_struct_fors;
   bool use_llvm;
   bool print_struct_llvm_ir;
@@ -322,6 +313,7 @@ struct CompileConfig {
   bool enable_profiler;
   bool verbose;
   bool fast_math;
+  bool use_unified_memory;
   DataType default_fp;
   DataType default_ip;
   std::string extra_flags;
@@ -329,26 +321,11 @@ struct CompileConfig {
   int default_gpu_block_dim;
 
   CompileConfig();
-
-  std::string compiler_name();
-
-  std::string gcc_opt_flag();
-
-  std::string compiler_config();
-
-  std::string preprocess_cmd(const std::string &input,
-                             const std::string &output,
-                             const std::string &extra_flags,
-                             bool verbose = false);
-
-  std::string compile_cmd(const std::string &input,
-                          const std::string &output,
-                          const std::string &extra_flags,
-                          bool verbose = false);
 };
 
 extern CompileConfig default_compile_config;
 extern std::string compiled_lib_dir;
+extern std::string runtime_tmp_dir;
 
 bool command_exist(const std::string &command);
 

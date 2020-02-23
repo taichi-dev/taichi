@@ -7,7 +7,7 @@ TLANG_NAMESPACE_BEGIN
 
 TI_TEST("compiler_linalg") {
   CoreState::set_trigger_gdb_when_crash(true);
-  Program prog(Arch::x86_64);
+  Program prog(Arch::x64);
 
   Global(a, i32);
   auto i = Index(0);
@@ -36,7 +36,7 @@ TI_TEST("compiler_linalg") {
 TI_TEST("select") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 128;
-  Program prog(Arch::x86_64);
+  Program prog(Arch::x64);
 
   Global(a, i32);
   auto i = Index(0);
@@ -60,7 +60,7 @@ TI_TEST("select") {
 TI_TEST("compiler_basics") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 128;
-  Program prog(Arch::x86_64);
+  Program prog(Arch::x64);
 
   Global(a, i32);
   auto i = Index(0);
@@ -86,7 +86,7 @@ TI_TEST("compiler_basics") {
 TI_TEST("simplify_access") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 128;
-  Program prog(Arch::x86_64);
+  Program prog(Arch::x64);
 
   Global(a, i32);
   Global(b, i32);
@@ -99,7 +99,7 @@ TI_TEST("simplify_access") {
 TI_TEST("fancy_for") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 128;
-  Program prog(Arch::x86_64);
+  Program prog(Arch::x64);
 
   Global(a, i32);
   auto i = Index(0);
@@ -125,7 +125,7 @@ TI_TEST("fancy_for") {
 TI_TEST("simd_if") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 128;
-  Program prog(Arch::x86_64);
+  Program prog(Arch::x64);
 
   Global(a, i32);
   auto i = Index(0);
@@ -151,7 +151,7 @@ TI_TEST("simd_if") {
 TI_TEST("simd_if2") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 32;
-  Program prog(Arch::x86_64);
+  Program prog(Arch::x64);
 
   Global(a, i32);
   auto i = Index(0);
@@ -177,7 +177,7 @@ TI_TEST("simd_if2") {
 auto test_circle = [] {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 128;
-  Program prog(Arch::x86_64);
+  Program prog(Arch::x64);
 
   Global(a, i32);
   auto i = Index(0);
@@ -211,7 +211,7 @@ TI_REGISTER_TASK(test_circle);
 TI_TEST("vectorize") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 128;
-  Program prog(Arch::x86_64);
+  Program prog(Arch::x64);
 
   Global(a, i32);
 
@@ -230,7 +230,7 @@ TI_TEST("vectorize") {
 TI_TEST("rand") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 4;
-  Program prog(Arch::x86_64);
+  Program prog(Arch::x64);
 
   Global(a, i32);
 
@@ -242,7 +242,7 @@ TI_TEST("rand") {
 TI_TEST("while") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 4096;
-  Program prog(Arch::x86_64);
+  Program prog(Arch::x64);
 
   Global(a, i32);
 
@@ -269,7 +269,7 @@ TI_TEST("while") {
 TI_TEST("slp") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 16;
-  Program prog(Arch::x86_64);
+  Program prog(Arch::x64);
 
   Global(a, i32);
   Global(b, i32);
@@ -301,7 +301,7 @@ TI_TEST("slp1") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 16;
   for (auto slp1 : {true, false}) {
-    Program prog(Arch::x86_64);
+    Program prog(Arch::x64);
     Vector grid(DataType::f32, 4);
     layout(
         [&]() { root.dense(0, n).place(grid(0), grid(1), grid(2), grid(3)); });
@@ -331,7 +331,7 @@ TI_TEST("slp1") {
 TI_TEST("slp2") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 16;
-  Program prog(Arch::x86_64);
+  Program prog(Arch::x64);
 
   Global(a, i32);
   Global(b, i32);
@@ -356,7 +356,7 @@ TI_TEST("slp2") {
 TI_TEST("slp3") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 16;
-  Program prog(Arch::x86_64);
+  Program prog(Arch::x64);
 
   Global(a, i32);
   Global(b, i32);
@@ -383,7 +383,7 @@ TI_TEST("slp3") {
 TI_TEST("slpmatvecmul") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 16;
-  Program prog(Arch::x86_64);
+  Program prog(Arch::x64);
 
   int dim = 4;
 
@@ -590,7 +590,7 @@ TI_TEST("mixed_simd3_slp") {
 TI_TEST("vector_split1") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 32;
-  Program prog(Arch::x86_64);
+  Program prog(Arch::x64);
   prog.config.max_vector_width = 8;
 
   Global(a, i32);
@@ -610,7 +610,7 @@ TI_TEST("vector_split1") {
 TI_TEST("vector_split_slp") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 256;
-  Program prog(Arch::x86_64);
+  Program prog(Arch::x64);
   prog.config.max_vector_width = 8;
 
   Global(a, i32);
@@ -641,7 +641,7 @@ TI_TEST("vector_split_slp") {
 
 TI_TEST("union_cast") {
   CoreState::set_trigger_gdb_when_crash(true);
-  for (auto arch : {Arch::x86_64, Arch::gpu}) {
+  for (auto arch : {Arch::x64, Arch::gpu}) {
     int n = 16;
     Program prog(arch);
 
@@ -668,7 +668,7 @@ TI_TEST("union_cast") {
 
 TI_TEST("logic_not") {
   CoreState::set_trigger_gdb_when_crash(true);
-  for (auto arch : {Arch::x86_64, Arch::gpu}) {
+  for (auto arch : {Arch::x64, Arch::gpu}) {
     int n = 16;
     Program prog(arch);
 
@@ -694,7 +694,7 @@ TI_TEST("logic_not") {
 
 TI_TEST("simd_if_5") {
   CoreState::set_trigger_gdb_when_crash(true);
-  for (auto arch : {Arch::x86_64}) {
+  for (auto arch : {Arch::x64}) {
     for (auto vec : {1, 4, 8}) {
       int n = 16;
       Program prog(arch);
@@ -721,7 +721,7 @@ TI_TEST("simd_if_5") {
 
 TI_TEST("point_inside_box") {
   CoreState::set_trigger_gdb_when_crash(true);
-  for (auto arch : {Arch::x86_64}) {
+  for (auto arch : {Arch::x64}) {
     for (auto vec : {1, 4, 8}) {
       int n = 16;
       Program prog(arch);
@@ -754,7 +754,7 @@ TI_TEST("point_inside_box") {
 
 TI_TEST("while_in_while") {
   CoreState::set_trigger_gdb_when_crash(true);
-  for (auto arch : {Arch::x86_64}) {
+  for (auto arch : {Arch::x64}) {
     for (auto vec : {1, 4, 8}) {
       int n = 16;
       Program prog(arch);
@@ -790,7 +790,7 @@ TI_TEST("while_in_while") {
 
 TI_TEST("cmp") {
   CoreState::set_trigger_gdb_when_crash(true);
-  for (auto arch : {Arch::x86_64}) {
+  for (auto arch : {Arch::x64}) {
     for (auto vec : {1, 4, 8}) {
       int n = 16;
       Program prog(arch);

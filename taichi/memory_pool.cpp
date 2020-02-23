@@ -15,6 +15,7 @@ MemoryPool::MemoryPool(Program *prog) : prog(prog) {
           default_allocator_size / 1024 / 1024);
   terminating = false;
   killed = false;
+  use_unified_memory = prog->config.use_unified_memory;
   processed_tail = 0;
   queue = nullptr;
 #ifdef TI_WITH_CUDA

@@ -1,4 +1,4 @@
-// Driver class for kernel codegen
+// Driver class for source2source kernel codegen. This file is OBSOLETE
 
 #pragma once
 
@@ -17,12 +17,6 @@ class KernelCodeGen : public CodeGenBase {
   }
 
   virtual void generate_header() {
-    emit("#define TLANG_KERNEL\n");
-    if (prog->config.debug)
-      emit("#define TL_DEBUG");
-    emit("#include <taichi/legacy_kernel.h>\n");
-    emit("#include \"{}\"", prog->layout_fn);
-    emit("using namespace taichi; using namespace Tlang;");
   }
 
   virtual void generate_tail() {
@@ -30,7 +24,9 @@ class KernelCodeGen : public CodeGenBase {
 
   virtual void lower() = 0;
 
-  virtual void codegen() = 0;
+  virtual void codegen() {
+    TI_NOT_IMPLEMENTED
+  }
 
   virtual FunctionType codegen_llvm() {
     TI_NOT_IMPLEMENTED;

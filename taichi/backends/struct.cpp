@@ -19,6 +19,7 @@ StructCompiler::StructCompiler(Program *prog)
     TI_WARN("Profiler not yet implemented in this backend.");
   };
 
+#if (0)
   if (get_current_program().config.arch == Arch::x64)
     suffix = "cpp";
   else
@@ -31,6 +32,7 @@ StructCompiler::StructCompiler(Program *prog)
   emit(" namespace taichi {{");
   emit(" namespace Tlang {{");
   emit("\n");
+#endif
 }
 
 void StructCompiler::collect_snodes(SNode &snode) {

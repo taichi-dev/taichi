@@ -69,7 +69,7 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
       body_type = llvm::Type::getInt32Ty(*ctx);
     } else if (snode.dt == DataType::i64) {
       body_type = llvm::Type::getInt64Ty(*ctx);
-    } else if (snode.dt == DataType::f64){
+    } else if (snode.dt == DataType::f64) {
       body_type = llvm::Type::getDoubleTy(*ctx);
     } else {
       TI_NOT_IMPLEMENTED
@@ -246,7 +246,7 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
   tlctx->set_struct_module(module);
 
   if (arch == Arch::x64)  // Do not compile the GPU struct module alone since
-                             // it's useless unless used with kernels
+                          // it's useless unless used with kernels
     tlctx->jit->addModule(std::move(module));
 
   if (host) {
@@ -255,8 +255,9 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
     }
 
     // TODO(yuanming-hu): move runtime initialization to somewhere else
-    auto initialize_runtime = tlctx->lookup_function<void *(
-        void *, void *, int, std::size_t, void *, void *, bool)>("Runtime_initialize");
+    auto initialize_runtime =
+        tlctx->lookup_function<void *(void *, void *, std::size_t, void *,
+                                      void *, bool)>("Runtime_initialize");
 
     auto initialize_runtime2 =
         tlctx->lookup_function<void(void *, void *, int, int)>(
@@ -287,10 +288,10 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
     auto prog = this->prog;
     creator = [=]() {
       TI_TRACE("Allocating data structure of size {} B", root_size);
-      auto root = initialize_runtime(
-          &prog->llvm_runtime, prog, (int)snodes.size(), root_size,
-          (void *)&taichi_allocate_aligned, (void *)std::printf,
-          logger.get_level() <= 1);
+      auto root =
+          initialize_runtime(&prog->llvm_runtime, prog, root_size,
+                             (void *)&taichi_allocate_aligned,
+                             (void *)std::printf, logger.get_level() <= 1);
 
       auto mem_req_queue = tlctx->lookup_function<void *(void *)>(
           "Runtime_get_mem_req_queue")(prog->llvm_runtime);
@@ -313,11 +314,11 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
                     snodes[i]->chunk_size;
           }
           TI_TRACE("Initializing allocator for snode {} (node size {})",
-                  snodes[i]->id, node_size);
+                   snodes[i]->id, node_size);
           auto rt = prog->llvm_runtime;
           initialize_allocator(rt, i, node_size);
           TI_TRACE("Allocating ambient element for snode {} (node size {})",
-                  snodes[i]->id, node_size);
+                   snodes[i]->id, node_size);
           allocate_ambient(rt, i);
         }
       }

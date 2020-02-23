@@ -617,6 +617,7 @@ void taichi_assert(Context *context, i32 test, const char *msg) {
 }
 
 Ptr Runtime::allocate_aligned(std::size_t size, std::size_t alignment) {
+  // TODO: change this. Add lock, allocate, return pointer. Assert failure if OOM
   return (Ptr)vm_allocator(prog, size, alignment);
 }
 
@@ -639,7 +640,6 @@ Ptr Runtime::request_allocate_aligned(std::size_t size, std::size_t alignment) {
 
 Ptr Runtime_initialize(Runtime **runtime_ptr,
                        Ptr prog,
-                       int num_snodes,
                        uint64_t root_size,
                        void *_vm_allocator,
                        void *_host_printf,
@@ -652,19 +652,13 @@ Ptr Runtime_initialize(Runtime **runtime_ptr,
   runtime->vm_allocator = vm_allocator;
   runtime->host_printf = host_printf;
   runtime->prog = prog;
-  if (verbose)
-    taichi_printf(runtime,
-                  "[runtime.cpp: Initializing runtime with %d snode(s)...]\n",
-                  num_snodes);
 
   // runtime->allocate ready to use
   runtime->mem_req_queue = (MemRequestQueue *)runtime->allocate_aligned(
       sizeof(MemRequestQueue), taichi_page_size);
 
-  // For Metal runtime, we have to make sure that both the beginning adddress
-  // and the size of the root buffer memory are aligned to page size. I think
-  // it is fine to allocate the memory that is larger than what the LLVM struct
-  // requires?
+  // For Metal runtime, we have to make sure that both the beginning address
+  // and the size of the root buffer memory are aligned to page size.
   runtime->root_mem_size =
       taichi::iroundup((size_t)root_size, taichi_page_size);
   auto root_ptr =
@@ -704,6 +698,7 @@ void Runtime_initialize2(Runtime *runtime,
 
   runtime->element_lists[root_id]->append(&elem);
 }
+
 void Runtime_initialize_thread_pool(Runtime *runtime,
                                     void *thread_pool,
                                     void *parallel_for) {

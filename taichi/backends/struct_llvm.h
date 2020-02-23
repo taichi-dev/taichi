@@ -20,8 +20,6 @@ class StructCompilerLLVM : public StructCompiler, public ModuleBuilder {
 
   void generate_leaf_accessors(SNode &snode) override;
 
-  void load_accessors(SNode &snode) override;
-
   void run(SNode &node, bool host) override;
 
   void generate_refine_coordinates(SNode *snode);

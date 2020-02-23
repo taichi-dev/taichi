@@ -96,8 +96,7 @@ FunctionType Program::compile(Kernel &kernel) {
 
 void Program::materialize_layout() {
   // always use arch=x86_64 since this is for host accessors
-  std::unique_ptr<StructCompiler> scomp =
-      StructCompiler::make(config.use_llvm, this, Arch::x64);
+  std::unique_ptr<StructCompiler> scomp = StructCompiler::make(this, Arch::x64);
   scomp->run(*snode_root, true);
   layout_fn = scomp->get_source_path();
   scomp->creator();
@@ -108,7 +107,7 @@ void Program::materialize_layout() {
     initialize_device_llvm_context();
     // llvm_context_device->get_init_module();
     std::unique_ptr<StructCompiler> scomp_gpu =
-        StructCompiler::make(config.use_llvm, this, Arch::cuda);
+        StructCompiler::make(this, Arch::cuda);
     scomp_gpu->run(*snode_root, false);
   } else if (config.arch == Arch::metal) {
     TI_ASSERT_INFO(config.use_llvm,
@@ -123,8 +122,7 @@ void Program::materialize_layout() {
       params.config = &config;
       params.mem_pool = memory_pool.get();
       params.profiler = profiler_llvm.get();
-      metal_runtime_ =
-          std::make_unique<metal::MetalRuntime>(std::move(params));
+      metal_runtime_ = std::make_unique<metal::MetalRuntime>(std::move(params));
     }
     TI_INFO("Metal root buffer size: {} B", metal_struct_compiled_->root_size);
   }

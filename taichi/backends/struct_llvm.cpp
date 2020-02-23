@@ -210,9 +210,6 @@ void StructCompilerLLVM::generate_leaf_accessors(SNode &snode) {
   stack.pop_back();
 }
 
-void StructCompilerLLVM::load_accessors(SNode &snode) {
-}
-
 void StructCompilerLLVM::run(SNode &root, bool host) {
   // bottom to top
   collect_snodes(root);
@@ -227,8 +224,6 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
     generate_types(*n);
 
   // TODO: general allocators
-
-  root_type = root.node_type_name;
   generate_leaf_accessors(root);
 
   if (prog->config.print_struct_llvm_ir) {
@@ -250,10 +245,6 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
     tlctx->jit->addModule(std::move(module));
 
   if (host) {
-    for (auto n : snodes) {
-      load_accessors(*n);
-    }
-
     // TODO(yuanming-hu): move runtime initialization to somewhere else
     auto initialize_runtime = tlctx->lookup_function<void(
         void *, void *, std::size_t, void *, void *)>("Runtime_initialize");
@@ -337,14 +328,8 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
   tlctx->snode_attr = snode_attr;
 }
 
-std::unique_ptr<StructCompiler> StructCompiler::make(bool use_llvm,
-                                                     Program *prog,
-                                                     Arch arch) {
-  if (use_llvm) {
-    return std::make_unique<StructCompilerLLVM>(prog, arch);
-  } else {
-    return std::make_unique<StructCompiler>(prog);
-  }
+std::unique_ptr<StructCompiler> StructCompiler::make(Program *prog, Arch arch) {
+  return std::make_unique<StructCompilerLLVM>(prog, arch);
 }
 
 bool SNode::need_activation() const {

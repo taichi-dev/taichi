@@ -129,10 +129,6 @@ void StructCompiler::generate_leaf_accessors(SNode &snode) {
   TI_NOT_IMPLEMENTED
 }
 
-void StructCompiler::load_accessors(SNode &snode) {
-  TI_NOT_IMPLEMENTED
-}
-
 void StructCompiler::run(SNode &root, bool host){TI_NOT_IMPLEMENTED}
 
 TLANG_NAMESPACE_END

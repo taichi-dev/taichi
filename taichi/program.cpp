@@ -54,7 +54,7 @@ Program::Program(Arch arch) {
   if (arch == Arch::opengl) {
     if (!opengl::is_opengl_api_available()) {
       TI_WARN("No OpenGL API detected, falling back to x86_64");
-      arch = Arch::x86_64;
+      arch = Arch::x64;
     }
   }
   memory_pool = std::make_unique<MemoryPool>(this);

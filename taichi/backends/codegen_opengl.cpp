@@ -10,7 +10,7 @@ TLANG_NAMESPACE_BEGIN
 namespace opengl {
 namespace {
 
-std::string opengl_atomic_op_type_symbol(AtomicOpType type) {
+std::string opengl_atomic_op_type_cap_name(AtomicOpType type) {
   static std::map<AtomicOpType, std::string> type_names;
   if (type_names.empty()) {
 #define REGISTER_TYPE(i, s) type_names[AtomicOpType::i] = "atomic" #s;
@@ -23,6 +23,33 @@ std::string opengl_atomic_op_type_symbol(AtomicOpType type) {
     //REGISTER_TYPE(bit_and, And);
     //REGISTER_TYPE(bit_or, Or);
     //REGISTER_TYPE(bit_xor, Xor);
+#undef REGISTER_TYPE
+  }
+  return type_names[type];
+}
+
+std::string opengl_atomic_op_type_symbol(AtomicOpType type) {
+  static std::map<AtomicOpType, std::string> type_names;
+  if (type_names.empty()) {
+#define REGISTER_TYPE(i, s) type_names[AtomicOpType::i] = #s;
+    REGISTER_TYPE(add, +);
+    REGISTER_TYPE(sub, -);
+    //REGISTER_TYPE(mul, *);
+    //REGISTER_TYPE(div, /);
+    //REGISTER_TYPE(bit_and, &);
+    //REGISTER_TYPE(bit_or, |);
+    //REGISTER_TYPE(bit_xor, ^);
+#undef REGISTER_TYPE
+  }
+  return type_names[type];
+}
+
+std::string opengl_atomic_op_type_basic_name(AtomicOpType type) {
+  static std::map<AtomicOpType, std::string> type_names;
+  if (type_names.empty()) {
+#define REGISTER_TYPE(i, s) type_names[AtomicOpType::i] = #s;
+    REGISTER_TYPE(max, max);
+    REGISTER_TYPE(min, min);
 #undef REGISTER_TYPE
   }
   return type_names[type];
@@ -334,9 +361,21 @@ int _rand_i32()\n\
   void visit(AtomicOpStmt *stmt) override
   {
     TI_ASSERT(stmt->width() == 1);
-    emit("{} {} = {}(_at_{}, {});", opengl_data_type_name(stmt->val->element_type()),
-        stmt->raw_name(), opengl_atomic_op_type_symbol(stmt->op_type),
-        stmt->dest->raw_name(), stmt->val->raw_name());
+    if (stmt->val->element_type() == DataType::i32
+        || stmt->val->element_type() == DataType::u32) {
+      emit("{} {} = {}(_at_{}, {});", opengl_data_type_name(stmt->val->element_type()),
+          stmt->raw_name(), opengl_atomic_op_type_cap_name(stmt->op_type),
+          stmt->dest->raw_name(), stmt->val->raw_name());
+    } else if (stmt->op_type == AtomicOpType::max || stmt->op_type == AtomicOpType::min) {
+      emit("{} {} = (_at_{} = {}(_at_{}, {}));", opengl_data_type_name(stmt->val->element_type()),
+          stmt->raw_name(), stmt->dest->raw_name(),
+          opengl_atomic_op_type_basic_name(stmt->op_type),
+          stmt->dest->raw_name(), stmt->val->raw_name());
+    } else {
+      emit("{} {} = (_at_{} {}= {});", opengl_data_type_name(stmt->val->element_type()),
+          stmt->raw_name(), stmt->dest->raw_name(),
+          opengl_atomic_op_type_symbol(stmt->op_type), stmt->val->raw_name());
+    }
   }
 
   void visit(TernaryOpStmt *tri) override
@@ -372,7 +411,7 @@ int _rand_i32()\n\
 
   void visit(AllocaStmt *alloca) override
   {
-    emit("{} {};", // need = 0?
+    emit("{} {} = 0;",
         opengl_data_type_name(alloca->element_type()),
         alloca->raw_name());
   }
@@ -737,7 +776,8 @@ struct CompiledKernel
 
 #ifdef _GLSL_DEBUG
     TI_INFO("source of kernel [{}]:\n{}", kernel_name, kernel_source_code);
-    std::ofstream("/tmp/kernel.comp").write(kernel_source_code.c_str(), kernel_source_code.size());
+    std::ofstream(fmt::format("/tmp/{}.comp", kernel_name))
+      .write(kernel_source_code.c_str(), kernel_source_code.size());
 #endif
     this->glsl = compile_glsl_program(kernel_source_code);
 

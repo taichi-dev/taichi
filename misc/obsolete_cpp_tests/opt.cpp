@@ -7,7 +7,7 @@ TLANG_NAMESPACE_BEGIN
 TI_TEST("access_simp") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 16;
-  Program prog(Arch::x86_64);
+  Program prog(Arch::x64);
   // prog.config.print_ir = true;
 
   Global(sum, i32);
@@ -35,7 +35,7 @@ TI_TEST("access_simp") {
 TI_TEST("root_leaf_path_weakening") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 16;
-  Program prog(Arch::x86_64);
+  Program prog(Arch::x64);
   // prog.config.print_ir = true;
   prog.config.lower_access = true;
 

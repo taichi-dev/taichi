@@ -1,7 +1,7 @@
+// This file will only be compiled into llvm bitcode by clang.
+// The generated bitcode will likely get inlined for performance.
+
 #if !defined(TI_INCLUDED) || !defined(_WIN32)
-// This file will only be compiled with clang into llvm bitcode
-// Generated bitcode will likely get inline for performance.
-// Most function calls here will be inlined
 
 #if defined(_WIN32)
 #define vprintf vprintf_windows
@@ -19,10 +19,18 @@
 #include "../constants.h"
 #include "../arithmetic.h"
 
+struct Context;
 using assert_failed_type = void (*)(const char *);
-using printf_host_type = void (*)(const char *, ...);
+using host_printf_type = void (*)(const char *, ...);
+using vm_allocator_type = void *(*)(void *, std::size_t, std::size_t);
+using RangeForTaskFunc = void(Context *, int i);
+using parallel_for_type = void (*)(void *thread_pool,
+                                   int splits,
+                                   int num_desired_threads,
+                                   void *context,
+                                   void (*func)(void *, int i));
 
-#if defined(__linux__) && !ARCH_cuda && defined(TI_ARCH_x86_64)
+#if defined(__linux__) && !ARCH_cuda && defined(TI_ARCH_x64)
 __asm__(".symver logf,logf@GLIBC_2.2.5");
 __asm__(".symver powf,powf@GLIBC_2.2.5");
 __asm__(".symver expf,expf@GLIBC_2.2.5");
@@ -120,7 +128,7 @@ int abs_i32(int a) {
   }
 }
 
-#if ARCH_x86_64
+#if ARCH_x64
 
 u32 rand_u32() {
   static u32 x = 123456789, y = 362436069, z = 521288629, w = 88675123;
@@ -433,14 +441,6 @@ STRUCT_FIELD(Element, element);
 STRUCT_FIELD(Element, pcoord);
 STRUCT_FIELD_ARRAY(Element, loop_bounds);
 
-using vm_allocator_type = void *(*)(void *, std::size_t, std::size_t);
-using RangeForTaskFunc = void(Context *, int i);
-using parallel_for_type = void (*)(void *thread_pool,
-                                   int splits,
-                                   int num_desired_threads,
-                                   void *context,
-                                   void (*func)(void *, int i));
-
 constexpr int num_rand_states = 1024 * 32;
 
 struct RandState {
@@ -465,7 +465,7 @@ struct NodeManager;
 struct Runtime {
   vm_allocator_type vm_allocator;
   assert_failed_type assert_failed;
-  printf_host_type printf_host;
+  host_printf_type host_printf;
   Ptr prog;
   Ptr root;
   size_t root_mem_size;
@@ -498,7 +498,7 @@ STRUCT_FIELD(Runtime, root);
 STRUCT_FIELD(Runtime, root_mem_size);
 STRUCT_FIELD(Runtime, temporaries);
 STRUCT_FIELD(Runtime, assert_failed);
-STRUCT_FIELD(Runtime, printf_host);
+STRUCT_FIELD(Runtime, host_printf);
 STRUCT_FIELD(Runtime, mem_req_queue);
 STRUCT_FIELD(Runtime, profiler);
 STRUCT_FIELD(Runtime, profiler_start);
@@ -617,6 +617,8 @@ void taichi_assert(Context *context, i32 test, const char *msg) {
 }
 
 Ptr Runtime::allocate_aligned(std::size_t size, std::size_t alignment) {
+  // TODO: change this. Add lock, allocate, return pointer. Assert failure if
+  // OOM
   return (Ptr)vm_allocator(prog, size, alignment);
 }
 
@@ -637,34 +639,29 @@ Ptr Runtime::request_allocate_aligned(std::size_t size, std::size_t alignment) {
   return r->ptr;
 }
 
-Ptr Runtime_initialize(Runtime **runtime_ptr,
-                       Ptr prog,
-                       int num_snodes,
-                       uint64_t root_size,
-                       void *_vm_allocator,
-                       bool verbose) {
+void Runtime_initialize(Runtime **runtime_ptr,
+                        Ptr prog,
+                        uint64_t root_size,
+                        void *_vm_allocator,
+                        void *_host_printf) {
   // bootstrap
   auto vm_allocator = (vm_allocator_type)_vm_allocator;
+  auto host_printf = (host_printf_type)_host_printf;
   *runtime_ptr = (Runtime *)vm_allocator(prog, sizeof(Runtime), 128);
   Runtime *runtime = *runtime_ptr;
   runtime->vm_allocator = vm_allocator;
+  runtime->host_printf = host_printf;
   runtime->prog = prog;
-  if (verbose)
-    taichi_printf(runtime,
-                  "[runtime.cpp: Initializing runtime with %d snode(s)...]\n",
-                  num_snodes);
 
   // runtime->allocate ready to use
   runtime->mem_req_queue = (MemRequestQueue *)runtime->allocate_aligned(
       sizeof(MemRequestQueue), taichi_page_size);
 
-  // For Metal runtime, we have to make sure that both the beginning adddress
-  // and the size of the root buffer memory are aligned to page size. I think
-  // it is fine to allocate the memory that is larger than what the LLVM struct
-  // requires?
+  // For Metal runtime, we have to make sure that both the beginning address
+  // and the size of the root buffer memory are aligned to page size.
   runtime->root_mem_size =
       taichi::iroundup((size_t)root_size, taichi_page_size);
-  auto root_ptr =
+  runtime->root =
       runtime->allocate_aligned(runtime->root_mem_size, taichi_page_size);
 
   runtime->temporaries = (Ptr)runtime->allocate_aligned(
@@ -674,16 +671,9 @@ Ptr Runtime_initialize(Runtime **runtime_ptr,
       sizeof(RandState) * num_rand_states, taichi_page_size);
   for (int i = 0; i < num_rand_states; i++)
     initialize_rand_state(&runtime->rand_states[i], i);
-
-  if (verbose)
-    taichi_printf(runtime, "[runtime.cpp: Runtime initialized.]\n");
-  return (Ptr)root_ptr;
 }
 
-void Runtime_initialize2(Runtime *runtime,
-                         Ptr root_ptr,
-                         int root_id,
-                         int num_snodes) {
+void Runtime_initialize2(Runtime *runtime, int root_id, int num_snodes) {
   // runtime->request_allocate_aligned ready to use
 
   // initialize the root node element list
@@ -694,13 +684,14 @@ void Runtime_initialize2(Runtime *runtime,
   Element elem;
   elem.loop_bounds[0] = 0;
   elem.loop_bounds[1] = 1;
-  elem.element = (Ptr)root_ptr;
+  elem.element = runtime->root;
   for (int i = 0; i < taichi_max_num_indices; i++) {
     elem.pcoord.val[i] = 0;
   }
 
   runtime->element_lists[root_id]->append(&elem);
 }
+
 void Runtime_initialize_thread_pool(Runtime *runtime,
                                     void *thread_pool,
                                     void *parallel_for) {
@@ -1105,7 +1096,8 @@ u32 cuda_rand_u32(Context *context) {
     ret = w;
     done = true;
   });
-  return ret * 1000000007; // multiply a prime number here is very necessary - it decorrelates streams of PRNGs
+  return ret * 1000000007;  // multiply a prime number here is very necessary -
+                            // it decorrelates streams of PRNGs
 }
 
 uint64 cuda_rand_u64(Context *context) {
@@ -1167,7 +1159,7 @@ void taichi_printf(Runtime *runtime, const char *format, Args &&... args) {
   helper.push_back(std::forward<Args>(args)...);
   vprintf((Ptr)format, helper.ptr());
 #else
-  runtime->printf_host(format, args...);
+  runtime->host_printf(format, args...);
 #endif
 }
 

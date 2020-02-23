@@ -6,7 +6,9 @@ import taichi
 
 def get_os_name():
   name = platform.platform()
-  if name.lower().startswith('darwin'):
+  # in python 3.8, platform.platform() uses mac_ver() on macOS
+  # it will return 'macOS-XXXX' instead of 'Darwin-XXXX'
+  if name.lower().startswith('darwin') or name.lower().startswith('macos'):
     return 'osx'
   elif name.lower().startswith('windows'):
     return 'win'
@@ -325,14 +327,14 @@ def get_logging(name):
 DEBUG = 'debug'
 TRACE = 'trace'
 INFO = 'info'
-WARNING = 'warn'
+WARN = 'warn'
 ERROR = 'error'
 CRITICAL = 'critical'
 
 debug = get_logging(DEBUG)
 trace = get_logging(TRACE)
 info = get_logging(INFO)
-warning = get_logging(WARNING)
+warn = get_logging(WARN)
 error = get_logging(ERROR)
 critical = get_logging(CRITICAL)
 

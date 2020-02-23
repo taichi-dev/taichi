@@ -12,17 +12,12 @@ enum class Arch {
 #undef PER_ARCH
 };
 
-inline std::string arch_name(Arch arch) {
-  switch (arch) {
-#define PER_ARCH(x) \
-  case Arch::x:     \
-    return #x;      \
-    break;
-#include "inc/archs.inc.h"
-#undef PER_ARCH
-    default:
-      TI_NOT_IMPLEMENTED
-  }
-}
+std::string arch_name(Arch arch);
+
+bool arch_is_cpu(Arch arch);
+
+bool arch_is_gpu(Arch arch);
+
+bool arch_use_host_memory(Arch arch);
 
 TLANG_NAMESPACE_END

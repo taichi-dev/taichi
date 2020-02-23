@@ -6,6 +6,7 @@
 #include <taichi/extension.h>
 #include <taichi/common/interface.h>
 #include <taichi/python/export.h>
+#include <taichi/visual/gui.h>
 #include "svd.h"
 
 TI_NAMESPACE_BEGIN
@@ -17,6 +18,7 @@ TI_NAMESPACE_END
 TLANG_NAMESPACE_BEGIN
 
 std::string compiled_lib_dir;
+std::string runtime_tmp_dir;
 
 Expr expr_index(const Expr &expr, const Expr &index) {
   return expr[index];
@@ -86,6 +88,7 @@ void export_lang(py::module &m) {
       .def_readwrite("verbose", &CompileConfig::verbose)
       .def_readwrite("demote_dense_struct_fors",
                      &CompileConfig::demote_dense_struct_fors)
+      .def_readwrite("use_unified_memory", &CompileConfig::use_unified_memory)
       .def_readwrite("enable_profiler", &CompileConfig::enable_profiler)
       .def_readwrite("default_fp", &CompileConfig::default_fp)
       .def_readwrite("default_ip", &CompileConfig::default_ip)
@@ -103,6 +106,15 @@ void export_lang(py::module &m) {
       .def_readonly("config", &Program::config)
       .def("profiler_print", &Program::profiler_print)
       .def("profiler_clear", &Program::profiler_clear)
+      .def("profiler_start", &Program::profiler_start)
+      .def("profiler_stop", &Program::profiler_stop)
+      .def("get_profiler",
+           [](Program *program) -> void * {
+             // We didn't expose the ProfilerBase interface, so the only purpose
+             // of this method is to expose the address of the profiler, so that
+             // other modules (e.g. GUI) can receive the profiler.
+             return (void *)(program->get_profiler());
+           })
       .def("finalize", &Program::finalize)
       .def("get_root",
            [&](Program *program) -> SNode * {
@@ -132,13 +144,13 @@ void export_lang(py::module &m) {
                                const std::vector<int> &))(&SNode::dense),
            py::return_value_policy::reference)
       .def("pointer",
-          (SNode & (SNode::*)(const std::vector<Index> &,
-                              const std::vector<int> &))(&SNode::pointer),
-          py::return_value_policy::reference)
+           (SNode & (SNode::*)(const std::vector<Index> &,
+                               const std::vector<int> &))(&SNode::pointer),
+           py::return_value_policy::reference)
       .def("hash",
-          (SNode & (SNode::*)(const std::vector<Index> &,
-                              const std::vector<int> &))(&SNode::hash),
-          py::return_value_policy::reference)
+           (SNode & (SNode::*)(const std::vector<Index> &,
+                               const std::vector<int> &))(&SNode::hash),
+           py::return_value_policy::reference)
       .def("dynamic", &SNode::dynamic_chunked,
            py::return_value_policy::reference)
       .def("bitmasked", &SNode::bitmasked)
@@ -438,6 +450,7 @@ void export_lang(py::module &m) {
   m.def("libdevice_path", libdevice_path);
 
   m.def("set_lib_dir", [&](const std::string &dir) { compiled_lib_dir = dir; });
+  m.def("set_tmp_dir", [&](const std::string &dir) { runtime_tmp_dir = dir; });
 
   m.def("get_commit_hash", get_commit_hash);
   m.def("get_version_string", get_version_string);

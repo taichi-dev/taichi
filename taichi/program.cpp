@@ -30,7 +30,7 @@ Program::Program(Arch arch) {
   if (arch == Arch::cuda) {
     TI_WARN("Taichi is not compiled with CUDA.");
     TI_WARN("Falling back to x86_64");
-    arch = Arch::x86_64;
+    arch = Arch::x64;
   }
 #else
   if (!cuda_context) {
@@ -38,14 +38,14 @@ Program::Program(Arch arch) {
     if (!cuda_context->detected()) {
       TI_WARN("No CUDA device detected.");
       TI_WARN("Falling back to x86_64");
-      arch = Arch::x86_64;
+      arch = Arch::x64;
     }
   }
 #endif
   if (arch == Arch::metal) {
     if (!metal::is_metal_api_available()) {
       TI_WARN("No Metal API detected, falling back to x86_64");
-      arch = Arch::x86_64;
+      arch = Arch::x64;
     }
   }
   memory_pool = std::make_unique<MemoryPool>(this);
@@ -59,7 +59,7 @@ Program::Program(Arch arch) {
   config = default_compile_config;
   config.arch = arch;
   if (config.use_llvm) {
-    llvm_context_host = std::make_unique<TaichiLLVMContext>(Arch::x86_64);
+    llvm_context_host = std::make_unique<TaichiLLVMContext>(Arch::x64);
     profiler_llvm = make_profiler(arch);
   }
   current_kernel = nullptr;
@@ -77,7 +77,7 @@ FunctionType Program::compile(Kernel &kernel) {
   auto start_t = Time::get_time();
   TI_AUTO_PROF;
   FunctionType ret = nullptr;
-  if (kernel.arch == Arch::x86_64) {
+  if (kernel.arch == Arch::x64) {
     CPUCodeGen codegen(kernel.name);
     ret = codegen.compile(*this, kernel);
   } else if (kernel.arch == Arch::cuda) {
@@ -96,10 +96,8 @@ FunctionType Program::compile(Kernel &kernel) {
 
 void Program::materialize_layout() {
   // always use arch=x86_64 since this is for host accessors
-  std::unique_ptr<StructCompiler> scomp =
-      StructCompiler::make(config.use_llvm, this, Arch::x86_64);
+  std::unique_ptr<StructCompiler> scomp = StructCompiler::make(this, Arch::x64);
   scomp->run(*snode_root, true);
-  layout_fn = scomp->get_source_path();
   scomp->creator();
   profiler_print_gpu = scomp->profiler_print;
   profiler_clear_gpu = scomp->profiler_clear;
@@ -108,7 +106,7 @@ void Program::materialize_layout() {
     initialize_device_llvm_context();
     // llvm_context_device->get_init_module();
     std::unique_ptr<StructCompiler> scomp_gpu =
-        StructCompiler::make(config.use_llvm, this, Arch::cuda);
+        StructCompiler::make(this, Arch::cuda);
     scomp_gpu->run(*snode_root, false);
   } else if (config.arch == Arch::metal) {
     TI_ASSERT_INFO(config.use_llvm,
@@ -123,8 +121,7 @@ void Program::materialize_layout() {
       params.config = &config;
       params.mem_pool = memory_pool.get();
       params.profiler = profiler_llvm.get();
-      metal_runtime_ =
-          std::make_unique<metal::MetalRuntime>(std::move(params));
+      metal_runtime_ = std::make_unique<metal::MetalRuntime>(std::move(params));
     }
     TI_INFO("Metal root buffer size: {} B", metal_struct_compiled_->root_size);
   }

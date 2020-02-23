@@ -1,6 +1,5 @@
 #include <taichi/lang.h>
-#include <taichi/testing.h>
-#include <taichi/program.h>
+#include <taichi/common/testing.h>
 
 TLANG_NAMESPACE_BEGIN
 

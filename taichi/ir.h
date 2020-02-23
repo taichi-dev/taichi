@@ -9,10 +9,7 @@
 #include "tlang_util.h"
 #include "snode.h"
 #include "expr.h"
-
-namespace llvm {
-class Value;
-}
+#include "llvm_fwd.h"
 
 TLANG_NAMESPACE_BEGIN
 

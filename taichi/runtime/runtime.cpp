@@ -643,8 +643,7 @@ void Runtime_initialize(Runtime **runtime_ptr,
                         Ptr prog,
                         uint64_t root_size,
                         void *_vm_allocator,
-                        void *_host_printf,
-                        bool verbose) {
+                        void *_host_printf) {
   // bootstrap
   auto vm_allocator = (vm_allocator_type)_vm_allocator;
   auto host_printf = (host_printf_type)_host_printf;

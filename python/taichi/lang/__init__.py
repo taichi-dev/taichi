@@ -77,6 +77,14 @@ def init(default_fp=None, default_ip=None, print_preprocessed=None, debug=None, 
 
   for k, v in kwargs.items():
     setattr(ti.cfg, k, v)
+
+  if os.environ.get("TI_PRINT_IR") is not None:
+    ti.print_ir = True
+  arch = os.environ.get("TI_ARCH")
+  if arch is not None:
+    ti.cfg.arch = getattr(core.Arch, arch)
+  # TODO(archibate): TI_DEFAULT_FP/IP in taichi_lang_core.DataType.float32
+
   ti.get_runtime().create_program()
 
 def cache_shared(v):

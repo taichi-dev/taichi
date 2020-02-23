@@ -275,8 +275,8 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
         tlctx->lookup_function<void(void *, void *, void *)>(
             "Runtime_initialize_thread_pool");
 
-    // By the time when creator is called, "this" is already destoried. Therefor
-    // it is necessary to capture members by values.
+    // By the time this creator is called, "this" is already destroyed.
+    // Therefore it is necessary to capture members by values.
     auto snodes = this->snodes;
     auto tlctx = this->tlctx;
     auto root_id = root.id;

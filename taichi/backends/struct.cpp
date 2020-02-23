@@ -132,7 +132,11 @@ void StructCompiler::infer_snode_properties(SNode &snode) {
   }
 }
 
+// Methods below are for the obsolete src2src backend and are not used anymore.
+// Left here as a reference for new backends that are source2source
 void StructCompiler::generate_types(SNode &snode) {
+  TI_NOT_IMPLEMENTED
+#if (0)
   auto type = snode.type;
 
   if (snode.type != SNodeType::place && snode.ch.empty()) {
@@ -193,9 +197,12 @@ void StructCompiler::generate_types(SNode &snode) {
   } else if (snode.type == SNodeType::place) {
     emit("{} {}_ambient;", snode.node_type_name, snode.node_type_name);
   }
+#endif
 }
 
 void StructCompiler::generate_leaf_accessors(SNode &snode) {
+  TI_NOT_IMPLEMENTED
+#if (0)
   auto type = snode.type;
   stack.push_back(&snode);
 
@@ -318,9 +325,12 @@ void StructCompiler::generate_leaf_accessors(SNode &snode) {
   }
 
   stack.pop_back();
+#endif
 }
 
 void StructCompiler::load_accessors(SNode &snode) {
+  TI_NOT_IMPLEMENTED
+#if (0)
   if (snode.type == SNodeType::place) {
     snode.access_func = load_function<SNode::AccessorFunction>(
         fmt::format("access_{}", snode.node_type_name));
@@ -332,9 +342,12 @@ void StructCompiler::load_accessors(SNode &snode) {
     snode.clear_func = load_function<SNode::ClearFunction>(
         fmt::format("clear_{}", snode.node_type_name));
   }
+#endif
 }
 
 void StructCompiler::run(SNode &root, bool host) {
+  TI_NOT_IMPLEMENTED
+#if (0)
   collect_snodes(root);
 
   // bottom to top
@@ -461,6 +474,7 @@ void StructCompiler::run(SNode &root, bool host) {
   for (auto n : snodes) {
     load_accessors(*n);
   }
+#endif
 }
 
 TLANG_NAMESPACE_END

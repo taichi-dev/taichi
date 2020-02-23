@@ -164,6 +164,7 @@ void export_lang(py::module &m) {
            py::return_value_policy::reference)
       .def("lazy_grad", &SNode::lazy_grad)
       .def("read_int", &SNode::read_int)
+      .def("read_uint", &SNode::read_uint)
       .def("read_float", &SNode::read_float)
       .def("has_grad", &SNode::has_grad)
       .def("is_primal", &SNode::is_primal)

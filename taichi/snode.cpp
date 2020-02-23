@@ -195,6 +195,10 @@ int64 SNode::read_int(const std::vector<int> &I) {
   }
 }
 
+uint64 SNode::read_uint(const std::vector<int> &I) {
+  return (uint64)read_int(I);
+}
+
 int SNode::num_elements_along_axis(int i) const {
   return extractors[physical_index_position[i]].num_elements;
 }

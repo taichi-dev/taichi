@@ -28,33 +28,6 @@ std::string opengl_atomic_op_type_cap_name(AtomicOpType type) {
   return type_names[type];
 }
 
-std::string opengl_atomic_op_type_symbol(AtomicOpType type) {
-  static std::map<AtomicOpType, std::string> type_names;
-  if (type_names.empty()) {
-#define REGISTER_TYPE(i, s) type_names[AtomicOpType::i] = #s;
-    REGISTER_TYPE(add, +);
-    REGISTER_TYPE(sub, -);
-    //REGISTER_TYPE(mul, *);
-    //REGISTER_TYPE(div, /);
-    //REGISTER_TYPE(bit_and, &);
-    //REGISTER_TYPE(bit_or, |);
-    //REGISTER_TYPE(bit_xor, ^);
-#undef REGISTER_TYPE
-  }
-  return type_names[type];
-}
-
-std::string opengl_atomic_op_type_basic_name(AtomicOpType type) {
-  static std::map<AtomicOpType, std::string> type_names;
-  if (type_names.empty()) {
-#define REGISTER_TYPE(i, s) type_names[AtomicOpType::i] = #s;
-    REGISTER_TYPE(max, max);
-    REGISTER_TYPE(min, min);
-#undef REGISTER_TYPE
-  }
-  return type_names[type];
-}
-
 class KernelGen : public IRVisitor
 {
   Kernel *kernel;
@@ -116,9 +89,10 @@ private: // {{{
     emit("layout(std430, binding = 1) buffer data_f32 {{ float _data_f32_[]; }};");
     emit("layout(std430, binding = 1) buffer data_f64 {{ double _data_f64_[]; }};");
     emit("layout(std430, binding = 2) buffer earg_i32 {{ int _earg_i32_[]; }};");
-    emit("layout(std430, binding = 3) buffer extr_i32 {{ int _extr_i32_[]; }};");
-    emit("layout(std430, binding = 3) buffer extr_f32 {{ float _extr_f32_[]; }};");
-    emit("layout(std430, binding = 3) buffer extr_f64 {{ double _extr_f64_[]; }};");
+    emit("layout(std430, binding = 3) buffer lock_lck {{ int _big_lock_; }};");
+    emit("layout(std430, binding = 4) buffer extr_i32 {{ int _extr_i32_[]; }};");
+    emit("layout(std430, binding = 4) buffer extr_f32 {{ float _extr_f32_[]; }};");
+    emit("layout(std430, binding = 4) buffer extr_f64 {{ double _extr_f64_[]; }};");
     emit("#define _arg_i32(x) _args_i32_[(x) << 1]"); // skip to 64bit stride
     emit("#define _arg_f32(x) _args_f32_[(x) << 1]");
     emit("#define _arg_f64(x) _args_f64_[(x) << 0]");
@@ -129,7 +103,27 @@ private: // {{{
     emit("#define _ext_ns_f32(x) _extr_f32_[(x) >> 0]");
     emit("#define _ext_ns_f64(x) _extr_f64_[(x) >> 0]");
     emit("#define _extra_arg(i, j) _earg_i32_[(i) * {} + (j)]", taichi_max_num_indices);
-    emit("");
+    kernel_src_code_ += "\n\
+bool _acquire_lock_()\n\
+{\n\
+  int n = 200;\n\
+  while (1 == atomicCompSwap(_big_lock_, 0, 1) && --n > 0);\n\
+  return n > 0;\n\
+}\n\
+void _release_lock_()\n\
+{\n\
+  atomicCompSwap(_big_lock_, 1, 0);\n\
+}\n\
+float atomicAdd_f32(inout float x, float y)\n\
+{\n\
+  float r;\n\
+  bool got = _acquire_lock_();\n\
+  r = (x += y);\n\
+  if (got) _release_lock_();\n\
+  return r;\n\
+}\n\
+\n\
+"; // discussion: https://github.com/taichi-dev/taichi/pull/495#issuecomment-590074123
   } // }}}
 
   void generate_bottom()
@@ -399,15 +393,19 @@ int _rand_i32()\n\
       emit("{} {} = {}(_at_{}, {});", opengl_data_type_name(stmt->val->element_type()),
           stmt->raw_name(), opengl_atomic_op_type_cap_name(stmt->op_type),
           stmt->dest->raw_name(), stmt->val->raw_name());
-    } else if (stmt->op_type == AtomicOpType::max || stmt->op_type == AtomicOpType::min) {
-      emit("{} {} = (_at_{} = {}(_at_{}, {}));", opengl_data_type_name(stmt->val->element_type()),
-          stmt->raw_name(), stmt->dest->raw_name(),
-          opengl_atomic_op_type_basic_name(stmt->op_type),
-          stmt->dest->raw_name(), stmt->val->raw_name());
     } else {
-      emit("{} {} = (_at_{} {}= {});", opengl_data_type_name(stmt->val->element_type()),
-          stmt->raw_name(), stmt->dest->raw_name(),
-          opengl_atomic_op_type_symbol(stmt->op_type), stmt->val->raw_name());
+      TI_ASSERT(stmt->val->element_type() == DataType::f32
+        || stmt->val->element_type() == DataType::f64);
+      static bool warned;
+      if (!warned) {
+        TI_WARN("[glsl] floating type atomic operations in OpenGL is DEPRECATED, "
+                "please use an array storage and reduce it outside instead");
+        warned = true;
+      }
+      emit("{} {} = {}_{}(_at_{}, {});", opengl_data_type_name(stmt->val->element_type()),
+          stmt->raw_name(), opengl_atomic_op_type_cap_name(stmt->op_type),
+          data_type_short_name(stmt->val->element_type()),
+          stmt->dest->raw_name(), stmt->val->raw_name());
     }
   }
 
@@ -829,10 +827,13 @@ struct CompiledKernel
   void launch(Context &ctx)
   {
     OpenglRuntime *runtime = get_opengl_runtime();
-    std::vector<IOV> iov(3);
+    std::vector<IOV> iov(4);
     iov[0] = IOV{ctx.args, taichi_max_num_args * sizeof(uint64_t)};
     iov[1] = runtime->get_root_buffer();
     iov[2] = IOV{ctx.extra_args, Context::extra_args_size};
+    static int lock_lck_ssbo;
+    lock_lck_ssbo = 0;
+    iov[3] = IOV{&lock_lck_ssbo, sizeof(lock_lck_ssbo)};
     if (has_ext_arr) {
       void *extptr = (void *)ctx.args[ext_arr_idx];
       ctx.args[ext_arr_idx] = 0;

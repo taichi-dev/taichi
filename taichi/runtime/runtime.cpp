@@ -617,7 +617,8 @@ void taichi_assert(Context *context, i32 test, const char *msg) {
 }
 
 Ptr Runtime::allocate_aligned(std::size_t size, std::size_t alignment) {
-  // TODO: change this. Add lock, allocate, return pointer. Assert failure if OOM
+  // TODO: change this. Add lock, allocate, return pointer. Assert failure if
+  // OOM
   return (Ptr)vm_allocator(prog, size, alignment);
 }
 
@@ -638,12 +639,12 @@ Ptr Runtime::request_allocate_aligned(std::size_t size, std::size_t alignment) {
   return r->ptr;
 }
 
-Ptr Runtime_initialize(Runtime **runtime_ptr,
-                       Ptr prog,
-                       uint64_t root_size,
-                       void *_vm_allocator,
-                       void *_host_printf,
-                       bool verbose) {
+void Runtime_initialize(Runtime **runtime_ptr,
+                        Ptr prog,
+                        uint64_t root_size,
+                        void *_vm_allocator,
+                        void *_host_printf,
+                        bool verbose) {
   // bootstrap
   auto vm_allocator = (vm_allocator_type)_vm_allocator;
   auto host_printf = (host_printf_type)_host_printf;
@@ -661,7 +662,7 @@ Ptr Runtime_initialize(Runtime **runtime_ptr,
   // and the size of the root buffer memory are aligned to page size.
   runtime->root_mem_size =
       taichi::iroundup((size_t)root_size, taichi_page_size);
-  auto root_ptr =
+  runtime->root =
       runtime->allocate_aligned(runtime->root_mem_size, taichi_page_size);
 
   runtime->temporaries = (Ptr)runtime->allocate_aligned(
@@ -671,16 +672,9 @@ Ptr Runtime_initialize(Runtime **runtime_ptr,
       sizeof(RandState) * num_rand_states, taichi_page_size);
   for (int i = 0; i < num_rand_states; i++)
     initialize_rand_state(&runtime->rand_states[i], i);
-
-  if (verbose)
-    taichi_printf(runtime, "[runtime.cpp: Runtime initialized.]\n");
-  return (Ptr)root_ptr;
 }
 
-void Runtime_initialize2(Runtime *runtime,
-                         Ptr root_ptr,
-                         int root_id,
-                         int num_snodes) {
+void Runtime_initialize2(Runtime *runtime, int root_id, int num_snodes) {
   // runtime->request_allocate_aligned ready to use
 
   // initialize the root node element list
@@ -691,7 +685,7 @@ void Runtime_initialize2(Runtime *runtime,
   Element elem;
   elem.loop_bounds[0] = 0;
   elem.loop_bounds[1] = 1;
-  elem.element = (Ptr)root_ptr;
+  elem.element = runtime->root;
   for (int i = 0; i < taichi_max_num_indices; i++) {
     elem.pcoord.val[i] = 0;
   }
@@ -1103,7 +1097,8 @@ u32 cuda_rand_u32(Context *context) {
     ret = w;
     done = true;
   });
-  return ret * 1000000007; // multiply a prime number here is very necessary - it decorrelates streams of PRNGs
+  return ret * 1000000007;  // multiply a prime number here is very necessary -
+                            // it decorrelates streams of PRNGs
 }
 
 uint64 cuda_rand_u64(Context *context) {

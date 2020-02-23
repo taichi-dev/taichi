@@ -256,12 +256,11 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
 
     // TODO(yuanming-hu): move runtime initialization to somewhere else
     auto initialize_runtime =
-        tlctx->lookup_function<void *(void *, void *, std::size_t, void *,
-                                      void *, bool)>("Runtime_initialize");
+        tlctx->lookup_function<void(void *, void *, std::size_t, void *, void *,
+                                    bool)>("Runtime_initialize");
 
     auto initialize_runtime2 =
-        tlctx->lookup_function<void(void *, void *, int, int)>(
-            "Runtime_initialize2");
+        tlctx->lookup_function<void(void *, int, int)>("Runtime_initialize2");
 
     auto set_assert_failed = tlctx->lookup_function<void(void *, void *)>(
         "Runtime_set_assert_failed");
@@ -277,9 +276,6 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
         tlctx->lookup_function<void(void *, void *, void *)>(
             "Runtime_initialize_thread_pool");
 
-    auto runtime_set_root =
-        tlctx->lookup_function<void(void *, void *)>("Runtime_set_root");
-
     // By the time when creator is called, "this" is already destoried. Therefor
     // it is necessary to capture members by values.
     auto snodes = this->snodes;
@@ -288,17 +284,16 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
     auto prog = this->prog;
     creator = [=]() {
       TI_TRACE("Allocating data structure of size {} B", root_size);
-      auto root =
-          initialize_runtime(&prog->llvm_runtime, prog, root_size,
-                             (void *)&taichi_allocate_aligned,
-                             (void *)std::printf, logger.get_level() <= 1);
+      initialize_runtime(&prog->llvm_runtime, prog, root_size,
+                         (void *)&taichi_allocate_aligned, (void *)std::printf,
+                         logger.get_level() <= 1);
+      TI_TRACE("Runtime initialized");
 
       auto mem_req_queue = tlctx->lookup_function<void *(void *)>(
           "Runtime_get_mem_req_queue")(prog->llvm_runtime);
       prog->memory_pool->set_queue((MemRequestQueue *)mem_req_queue);
 
-      initialize_runtime2(prog->llvm_runtime, root, root_id,
-                          (int)snodes.size());
+      initialize_runtime2(prog->llvm_runtime, root_id, (int)snodes.size());
       for (int i = 0; i < (int)snodes.size(); i++) {
         if (snodes[i]->type == SNodeType::pointer ||
             snodes[i]->type == SNodeType::dynamic) {
@@ -326,8 +321,6 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
       runtime_initialize_thread_pool(prog->llvm_runtime, &prog->thread_pool,
                                      (void *)ThreadPool::static_run);
       set_assert_failed(prog->llvm_runtime, (void *)assert_failed_host);
-
-      runtime_set_root(prog->llvm_runtime, root);
 
       tlctx->lookup_function<void(void *, void *)>("Runtime_set_profiler")(
           prog->llvm_runtime, prog->profiler_llvm.get());

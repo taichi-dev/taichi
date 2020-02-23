@@ -162,7 +162,7 @@ void SNode::write_int(const std::vector<int> &I, int64 val) {
     writer_kernel = &get_current_program().get_snode_writer(this);
   }
   set_kernel_args(writer_kernel, I);
-  writer_kernel->set_arg_float(num_active_indices, val);
+  writer_kernel->set_arg_int(num_active_indices, val);
   get_current_program().synchronize();
   (*writer_kernel)();
 }

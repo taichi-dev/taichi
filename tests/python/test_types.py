@@ -97,5 +97,5 @@ def test_overflow():
   _test_overflow(ti.u16, 16)
   _test_overflow(ti.i32, 32)
   _test_overflow(ti.u32, 32)
-  # _test_overflow(ti.i64, 64)
+  _test_overflow(ti.i64, 64)
   # _test_overflow(ti.u64, 64)

@@ -237,7 +237,7 @@ int _rand_i32()\n\
     if (stmt->output_snode->is_place())
       // The best way I could think to distinguish root_ptr and external_ptr in GLSL
       emit("#define _at_{} _mem_{}({})", stmt->raw_name(),
-          data_type_short_name(stmt->output_snode->dt), stmt->input_ptr->raw_name());
+          data_type_short_name(stmt->output_snode->dt), stmt->raw_name());
   }
 
   void visit(GlobalStoreStmt *stmt) override

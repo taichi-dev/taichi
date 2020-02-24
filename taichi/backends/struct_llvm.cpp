@@ -65,12 +65,24 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
   } else if (type == SNodeType::place) {
     if (snode.dt == DataType::f32) {
       body_type = llvm::Type::getFloatTy(*ctx);
+    } else if (snode.dt == DataType::f64){
+      body_type = llvm::Type::getDoubleTy(*ctx);
     } else if (snode.dt == DataType::i32) {
       body_type = llvm::Type::getInt32Ty(*ctx);
     } else if (snode.dt == DataType::i64) {
       body_type = llvm::Type::getInt64Ty(*ctx);
-    } else if (snode.dt == DataType::f64) {
-      body_type = llvm::Type::getDoubleTy(*ctx);
+    } else if (snode.dt == DataType::i8) {
+      body_type = llvm::Type::getInt8Ty(*ctx);
+    } else if (snode.dt == DataType::i16) {
+      body_type = llvm::Type::getInt16Ty(*ctx);
+    } else if (snode.dt == DataType::u8) {
+      body_type = llvm::Type::getInt8Ty(*ctx);
+    } else if (snode.dt == DataType::u16) {
+      body_type = llvm::Type::getInt16Ty(*ctx);
+    } else if (snode.dt == DataType::u32) {
+      body_type = llvm::Type::getInt32Ty(*ctx);
+    } else if (snode.dt == DataType::u64) {
+      body_type = llvm::Type::getInt64Ty(*ctx);
     } else {
       TI_NOT_IMPLEMENTED
     }

@@ -164,6 +164,7 @@ void export_lang(py::module &m) {
            py::return_value_policy::reference)
       .def("lazy_grad", &SNode::lazy_grad)
       .def("read_int", &SNode::read_int)
+      .def("read_uint", &SNode::read_uint)
       .def("read_float", &SNode::read_float)
       .def("has_grad", &SNode::has_grad)
       .def("is_primal", &SNode::is_primal)
@@ -399,6 +400,10 @@ void export_lang(py::module &m) {
   for (int t = 0; t <= (int)DataType::unknown; t++)
     data_type.value(data_type_name(DataType(t)).c_str(), DataType(t));
   data_type.export_values();
+
+  m.def("is_integral", is_integral);
+  m.def("is_signed", is_signed);
+  m.def("is_unsigned", is_unsigned);
 
   m.def("global_new", static_cast<Expr (*)(Expr, DataType)>(global_new));
   m.def("set_global_grad", [&](const Expr &expr) {

@@ -75,6 +75,14 @@ llvm::Type *TaichiLLVMContext::get_data_type(DataType dt) {
     return llvm::Type::getFloatTy(*ctx);
   } else if (dt == DataType::f64) {
     return llvm::Type::getDoubleTy(*ctx);
+  } else if (dt == DataType::u8) {
+    return llvm::Type::getInt8Ty(*ctx);
+  } else if (dt == DataType::u16) {
+    return llvm::Type::getInt16Ty(*ctx);
+  } else if (dt == DataType::u32) {
+    return llvm::Type::getInt32Ty(*ctx);
+  } else if (dt == DataType::u64) {
+    return llvm::Type::getInt64Ty(*ctx);
   } else {
     TI_INFO(data_type_name(dt));
     TI_NOT_IMPLEMENTED

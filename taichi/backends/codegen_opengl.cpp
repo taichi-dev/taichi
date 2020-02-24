@@ -192,6 +192,8 @@ int _rand_i32()\n\
     if (num_threads_ < 1792)
       threads_per_group = num_threads_;
     num_groups_ = (num_threads_ + 1791) / 1792;
+    if (threads_per_group == 0)
+      threads_per_group = 1;
     emit("layout(local_size_x = {}, local_size_y = 1, local_size_z = 1) in;", threads_per_group);
 
     kernel_src_code_ = std::string("#version 430 core\n") + kernel_src_code_;
@@ -469,14 +471,16 @@ int _rand_i32()\n\
 
     push_indent();
     if (stmt->const_begin && stmt->const_end) {
-      TI_ASSERT_INFO(stmt->end_value > stmt->begin_value,
-          "[glsl] range for end value <= begin value not supported");
-      num_threads_ = stmt->end_value - stmt->begin_value;
+      auto begin_value = stmt->begin_value;
+      auto end_value = stmt->end_value;
+      if (end_value < begin_value)
+        std::swap(end_value, begin_value);
+      num_threads_ = end_value - begin_value;
       emit("// range known at compile time");
       emit("int _thread_id_ = int(gl_GlobalInvocationID.x);");
       emit("if (_thread_id_ >= {}) return;", num_threads_);
       emit("int _it_value_ = {} + _thread_id_ * {};",
-          stmt->begin_value, 1 /* stmt->step? */);
+          begin_value, 1 /* stmt->step? */);
     } else {
       TI_ERROR("[glsl] non-const range_for currently unsupported under OpenGL");
       /*range_for_attribs.begin =

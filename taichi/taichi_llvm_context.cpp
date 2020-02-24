@@ -39,7 +39,7 @@ TaichiLLVMContext::TaichiLLVMContext(Arch arch) : arch(arch) {
       },
       nullptr);
 
-  if (arch == Arch::x64) {
+  if (arch_is_cpu(arch)) {
     llvm::InitializeNativeTarget();
     llvm::InitializeNativeTargetAsmPrinter();
     llvm::InitializeNativeTargetAsmParser();
@@ -57,9 +57,6 @@ TaichiLLVMContext::TaichiLLVMContext(Arch arch) : arch(arch) {
   TI_TRACE("Creating llvm context for arch: {}", arch_name(arch));
   llvm::ExitOnError exit_on_err;
   jit = exit_on_err(TaichiLLVMJITCPU::create(arch));
-}
-
-TaichiLLVMContext::~TaichiLLVMContext() {
 }
 
 llvm::Type *TaichiLLVMContext::get_data_type(DataType dt) {

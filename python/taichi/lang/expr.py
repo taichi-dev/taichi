@@ -170,9 +170,14 @@ class Expr:
         assert len(key) == taichi_lang_core.get_max_num_indices()
         snode.write_float(key, value)
     else:
-      def getter(*key):
-        assert len(key) == taichi_lang_core.get_max_num_indices()
-        return snode.read_int(key)
+      if taichi_lang_core.is_signed(self.snode().data_type()):
+        def getter(*key):
+          assert len(key) == taichi_lang_core.get_max_num_indices()
+          return snode.read_int(key)
+      else:
+        def getter(*key):
+          assert len(key) == taichi_lang_core.get_max_num_indices()
+          return snode.read_uint(key)
 
       def setter(value, *key):
         assert len(key) == taichi_lang_core.get_max_num_indices()

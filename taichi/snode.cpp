@@ -162,7 +162,7 @@ void SNode::write_int(const std::vector<int> &I, int64 val) {
     writer_kernel = &get_current_program().get_snode_writer(this);
   }
   set_kernel_args(writer_kernel, I);
-  writer_kernel->set_arg_float(num_active_indices, val);
+  writer_kernel->set_arg_int(num_active_indices, val);
   get_current_program().synchronize();
   (*writer_kernel)();
 }
@@ -178,9 +178,25 @@ int64 SNode::read_int(const std::vector<int> &I) {
     return get_current_program().context.get_arg<int32>(num_active_indices);
   } else if (dt == DataType::i64) {
     return get_current_program().context.get_arg<int64>(num_active_indices);
+  } else if (dt == DataType::i8) {
+    return get_current_program().context.get_arg<int8>(num_active_indices);
+  } else if (dt == DataType::i16) {
+    return get_current_program().context.get_arg<int16>(num_active_indices);
+  } else if (dt == DataType::u8) {
+    return get_current_program().context.get_arg<uint8>(num_active_indices);
+  } else if (dt == DataType::u16) {
+    return get_current_program().context.get_arg<uint16>(num_active_indices);
+  } else if (dt == DataType::u32) {
+    return get_current_program().context.get_arg<uint32>(num_active_indices);
+  } else if (dt == DataType::u64) {
+    return get_current_program().context.get_arg<uint64>(num_active_indices);
   } else {
     TI_NOT_IMPLEMENTED
   }
+}
+
+uint64 SNode::read_uint(const std::vector<int> &I) {
+  return (uint64)read_int(I);
 }
 
 int SNode::num_elements_along_axis(int i) const {

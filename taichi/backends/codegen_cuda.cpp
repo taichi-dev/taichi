@@ -1,7 +1,6 @@
 // The CUDA backend
 
 #include "codegen_cuda.h"
-#include "loopgen.h"
 #include "../scratch_pad.h"
 
 TLANG_NAMESPACE_BEGIN

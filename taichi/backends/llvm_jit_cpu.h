@@ -9,7 +9,12 @@
 // leads to a JIT that crashes all C++ exception after JIT session
 // destruction...
 
-#include "../tlang_util.h"
+#if defined(min)
+#undef min
+#endif
+#if defined(max)
+#undef max
+#endif
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ExecutionEngine/ExecutionEngine.h"
 #include "llvm/ExecutionEngine/JITSymbol.h"
@@ -33,6 +38,7 @@
 #include "llvm/Transforms/Scalar/GVN.h"
 #include "llvm/Transforms/IPO.h"
 #include <memory>
+#include "../tlang_util.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -43,9 +49,9 @@ std::string compile_module_to_ptx(std::unique_ptr<llvm::Module> &module);
 int compile_ptx_and_launch(const std::string &ptx,
                            const std::string &kernel_name,
                            void *);
-void global_optimize_module_x86_64(std::unique_ptr<llvm::Module> &module);
+void global_optimize_module_cpu(std::unique_ptr<llvm::Module> &module);
 
-class TaichiLLVMJIT {
+class TaichiLLVMJITCPU {
  private:
   ExecutionSession ES;
   std::map<VModuleKey, std::shared_ptr<SymbolResolver>> Resolvers;
@@ -64,7 +70,7 @@ class TaichiLLVMJIT {
   LegacyCompileOnDemandLayer<decltype(OptimizeLayer)> CODLayer;
 
  public:
-  TaichiLLVMJIT(JITTargetMachineBuilder JTMB, DataLayout DL)
+  TaichiLLVMJITCPU(JITTargetMachineBuilder JTMB, DataLayout DL)
       : TM(EngineBuilder().selectTarget()),
         DL(TM->createDataLayout()),
         ObjectLayer(ES,
@@ -82,17 +88,16 @@ class TaichiLLVMJIT {
             orc::createLocalCompileCallbackManager(TM->getTargetTriple(),
                                                    ES,
                                                    0))),
-        CODLayer(
-            ES,
-            OptimizeLayer,
-            [&](orc::VModuleKey K) { return Resolvers[K]; },
-            [&](orc::VModuleKey K, std::shared_ptr<SymbolResolver> R) {
-              Resolvers[K] = std::move(R);
-            },
-            [](Function &F) { return std::set<Function *>({&F}); },
-            *CompileCallbackManager,
-            orc::createLocalIndirectStubsManagerBuilder(
-                TM->getTargetTriple())) {
+        CODLayer(ES,
+                 OptimizeLayer,
+                 [&](orc::VModuleKey K) { return Resolvers[K]; },
+                 [&](orc::VModuleKey K, std::shared_ptr<SymbolResolver> R) {
+                   Resolvers[K] = std::move(R);
+                 },
+                 [](Function &F) { return std::set<Function *>({&F}); },
+                 *CompileCallbackManager,
+                 orc::createLocalIndirectStubsManagerBuilder(
+                     TM->getTargetTriple())) {
     llvm::sys::DynamicLibrary::LoadLibraryPermanently(nullptr);
   }
 
@@ -100,7 +105,7 @@ class TaichiLLVMJIT {
     return DL;
   }
 
-  static Expected<std::unique_ptr<TaichiLLVMJIT>> create(Arch arch) {
+  static Expected<std::unique_ptr<TaichiLLVMJITCPU>> create(Arch arch) {
     std::unique_ptr<JITTargetMachineBuilder> jtmb;
     if (arch == Arch::x64) {
       auto JTMB = JITTargetMachineBuilder::detectHost();
@@ -117,11 +122,12 @@ class TaichiLLVMJIT {
     if (!DL)
       return DL.takeError();
 
-    return llvm::make_unique<TaichiLLVMJIT>(std::move(*jtmb), std::move(*DL));
+    return llvm::make_unique<TaichiLLVMJITCPU>(std::move(*jtmb),
+                                               std::move(*DL));
   }
 
   VModuleKey addModule(std::unique_ptr<llvm::Module> M) {
-    global_optimize_module_x86_64(M);
+    global_optimize_module_cpu(M);
     // Create a new VModuleKey.
     VModuleKey K = ES.allocateVModule();
 
@@ -183,7 +189,7 @@ class TaichiLLVMJIT {
   }
 };
 
-inline void *jit_lookup_name(TaichiLLVMJIT *jit, const std::string &name) {
+inline void *jit_lookup_name(TaichiLLVMJITCPU *jit, const std::string &name) {
   auto ExprSymbol = jit->lookup(name);
   if (!ExprSymbol)
     TI_ERROR("Function \"{}\" not found", name);

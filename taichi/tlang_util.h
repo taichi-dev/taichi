@@ -102,17 +102,21 @@ inline bool constexpr is_real(DataType dt) {
   return dt == DataType::f16 || dt == DataType::f32 || dt == DataType::f64;
 }
 
+inline bool constexpr is_integral(DataType dt) {
+  return dt == DataType::i8 || dt == DataType::i16 || dt == DataType::i32 ||
+         dt == DataType::i64 || dt == DataType::u8 || dt == DataType::u16 ||
+         dt == DataType::u32 || dt == DataType::u64;
+}
+
 inline bool constexpr is_signed(DataType dt) {
-  return dt == DataType::i32 || dt == DataType::i64;
+  TI_ASSERT(is_integral(dt));
+  return dt == DataType::i8 || dt == DataType::i16 || dt == DataType::i32 ||
+         dt == DataType::i64;
 }
 
 inline bool constexpr is_unsigned(DataType dt) {
-  return dt == DataType::u32 || dt == DataType::u64;
-}
-
-inline bool constexpr is_integral(DataType dt) {
-  return dt == DataType::i8 || dt == DataType::i16 || dt == DataType::i32 ||
-         dt == DataType::i64;
+  TI_ASSERT(is_integral(dt));
+  return !is_signed(dt);
 }
 
 inline bool needs_grad(DataType dt) {

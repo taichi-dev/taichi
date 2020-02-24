@@ -2,6 +2,7 @@
 
 #include <taichi/math/math.h>
 #include <taichi/system/timer.h>
+#include <taichi/profiler.h>
 #include <ctime>
 #include <numeric>
 
@@ -442,10 +443,6 @@ class GUIBaseCocoa {
 
 using GUIBase = GUIBaseCocoa;
 #endif
-
-namespace Tlang {
-class ProfilerBase;
-}  // namespace Tlang
 
 class GUI : public GUIBase {
  public:

@@ -27,7 +27,7 @@
 
 #include "tlang_util.h"
 #include "taichi_llvm_context.h"
-#include "backends/llvm_jit.h"
+#include "taichi/backends/llvm_jit_cpu.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -56,7 +56,7 @@ TaichiLLVMContext::TaichiLLVMContext(Arch arch) : arch(arch) {
   ctx = std::make_unique<llvm::LLVMContext>();
   TI_TRACE("Creating llvm context for arch: {}", arch_name(arch));
   llvm::ExitOnError exit_on_err;
-  jit = exit_on_err(TaichiLLVMJIT::create(arch));
+  jit = exit_on_err(TaichiLLVMJITCPU::create(arch));
 }
 
 TaichiLLVMContext::~TaichiLLVMContext() {
@@ -75,6 +75,14 @@ llvm::Type *TaichiLLVMContext::get_data_type(DataType dt) {
     return llvm::Type::getFloatTy(*ctx);
   } else if (dt == DataType::f64) {
     return llvm::Type::getDoubleTy(*ctx);
+  } else if (dt == DataType::u8) {
+    return llvm::Type::getInt8Ty(*ctx);
+  } else if (dt == DataType::u16) {
+    return llvm::Type::getInt16Ty(*ctx);
+  } else if (dt == DataType::u32) {
+    return llvm::Type::getInt32Ty(*ctx);
+  } else if (dt == DataType::u64) {
+    return llvm::Type::getInt64Ty(*ctx);
   } else {
     TI_INFO(data_type_name(dt));
     TI_NOT_IMPLEMENTED

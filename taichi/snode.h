@@ -236,6 +236,7 @@ class SNode {
   // for int32 and int64
   void write_int(const std::vector<int> &I, int64);
   int64 read_int(const std::vector<int> &I);
+  uint64 read_uint(const std::vector<int> &I);
 
   TI_FORCE_INLINE AllocatorStat stat() {
     TI_ASSERT(stat_func);

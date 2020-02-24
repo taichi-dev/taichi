@@ -8,7 +8,7 @@
 #include <cuda.h>
 #endif
 #include "cuda_context.h"
-#include "llvm_jit.h"
+#include "llvm_jit_cpu.h"
 #include <taichi/program.h>
 #include <taichi/context.h>
 #include <taichi/system/timer.h>
@@ -205,11 +205,6 @@ void CUDAContext::launch(CUfunction func,
   // auto _ = cuda_context->get_guard();
   make_current();
   // Kernel parameters
-
-  /*
-  check_cuda_error(cudaMemcpy(context_buffer, context_ptr, sizeof(Context),
-                               cudaMemcpyHostToDevice));
-                               */
 
   void *KernelParams[] = {context_ptr};
 

@@ -15,7 +15,9 @@ namespace opengl {
 struct GLProgram;
 bool is_opengl_api_available();
 void create_glsl_root_buffer(size_t size);
-void launch_glsl_kernel(GLProgram *program, std::vector<IOV> iov, int num_groups);
+void begin_glsl_kernels(const std::vector<IOV> &iov);
+void launch_glsl_kernel(GLProgram *program, int num_groups);
+void end_glsl_kernels(const std::vector<IOV> &iov);
 GLProgram *compile_glsl_program(std::string source);
 
 }  // namespace opengl

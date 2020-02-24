@@ -41,15 +41,11 @@ struct CompiledKernel
 {
   GLProgram *glsl;
   int num_groups;
-  int arg_count;
-  int ext_arr_idx;
-  size_t ext_arr_size;
-  bool has_ext_arr{false};
   UsedFeature used;
   std::string kernel_name;
 
   explicit CompiledKernel(const std::string &kernel_name_,
-      const std::string &kernel_source_code, Kernel *kernel,
+      const std::string &kernel_source_code,
       int num_groups_, UsedFeature used_)
     : num_groups(num_groups_), used(used_), kernel_name(kernel_name_)
   {
@@ -59,7 +55,26 @@ struct CompiledKernel
       .write(kernel_source_code.c_str(), kernel_source_code.size());
 #endif
     this->glsl = compile_glsl_program(kernel_source_code);
+  }
 
+  void launch() const
+  {
+    //TI_PERF();
+    launch_glsl_kernel(glsl, num_groups);
+    //TI_PERF(kernel_name.c_str(), kernel_name.size(), 107);
+  }
+};
+
+struct CompiledProgram
+{
+  std::vector<CompiledKernel> kernels;
+  int arg_count;
+  int ext_arr_idx;
+  size_t ext_arr_size;
+  bool has_ext_arr{false};
+
+  explicit CompiledProgram(Kernel *kernel)
+  {
     has_ext_arr = false;
     arg_count = kernel->args.size();
     for (int i = 0; i < arg_count; i++) {
@@ -85,9 +100,11 @@ struct CompiledKernel
         iov.push_back(IOV{extptr, ext_arr_size});
       }
     }
-    //TI_PERF();
-    launch_glsl_kernel(glsl, iov, num_groups);
-    //TI_PERF(kernel_name.c_str(), kernel_name.size(), 107);
+    begin_glsl_kernels(iov);
+    for (const auto &ker: kernels) {
+      ker.launch();
+    }
+    end_glsl_kernels(iov);
   }
 };
 
@@ -99,6 +116,7 @@ public:
   KernelGen(Kernel *kernel, std::string kernel_name,
       const StructCompiledResult *struct_compiled)
     : kernel(kernel),
+      compiled_program_(kernel),
       struct_compiled_(struct_compiled),
       kernel_name_(kernel_name),
       glsl_kernel_prefix_(kernel_name)
@@ -109,7 +127,7 @@ public:
 
 private: // {{{
   std::string kernel_src_code_;
-  std::vector<CompiledKernel> compiled_kernels_;
+  CompiledProgram compiled_program_;
   UsedFeature used;
 
   std::string indent_;
@@ -254,8 +272,8 @@ int _rand_i32()\n\
     emit("layout(local_size_x = {}, local_size_y = 1, local_size_z = 1) in;", threads_per_group);
 
     kernel_src_code_ = std::string("#version 430 core\n") + kernel_src_code_;
-    compiled_kernels_.push_back(CompiledKernel(std::move(glsl_kernel_name_),
-        std::move(kernel_src_code_), kernel, num_groups_, used));
+    compiled_program_.kernels.push_back(CompiledKernel(std::move(glsl_kernel_name_),
+        std::move(kernel_src_code_), num_groups_, used));
     kernel_src_code_ = "";
   }
 
@@ -652,9 +670,9 @@ public:
     return kernel;
   }
 
-  std::vector<CompiledKernel> compiled_kernels() const
+  CompiledProgram get_compiled_program() const
   {
-    return compiled_kernels_;
+    return compiled_program_;
   }
 
   void run(const SNode &root_snode)
@@ -791,10 +809,9 @@ FunctionType OpenglCodeGen::gen(void)
 {
   KernelGen codegen(kernel_, kernel_name_, struct_compiled_);
   codegen.run(*prog_->snode_root);
-  auto compiled_kernels = codegen.compiled_kernels();
-  return [compiled_kernels](Context &ctx) {
-    for (const auto &ker: compiled_kernels)
-      ker.launch(ctx);
+  auto compiled = codegen.get_compiled_program();
+  return [compiled](Context &ctx) {
+    compiled.launch(ctx);
   };
 }
 

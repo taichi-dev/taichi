@@ -2,7 +2,7 @@ import taichi as ti
 import numpy as np
 from time import perf_counter
 ti.init(arch=ti.opengl) # Try to run on GPU
-quality = 2 # Use a larger value for higher-res simulations
+quality = 1 # Use a larger value for higher-res simulations
 n_particles, n_grid = 9000 * quality ** 2, 128 * quality
 dx, inv_dx = 1 / n_grid, float(n_grid)
 dt = 1e-4 / quality
@@ -21,13 +21,10 @@ grid_v = ti.Vector(2, dt=ti.f32, shape=(n_grid, n_grid)) # grid node momentum/ve
 grid_m = ti.var(dt=ti.f32, shape=(n_grid, n_grid)) # grid node mass
 
 @ti.kernel
-def substep1():
+def substep():
   for i, j in grid_m:
     grid_v[i, j] = [0, 0]
     grid_m[i, j] = 0
-
-@ti.kernel
-def substep2():
   for p in x: # Particle state update and scatter to grid (P2G)
     base = (x[p] * inv_dx - 0.5).cast(int)
     fx = x[p] * inv_dx - base.cast(float)
@@ -62,9 +59,6 @@ def substep2():
       weight = w[i][0] * w[j][1]
       grid_v[base + offset] += weight * (p_mass * v[p] + affine @ dpos)
       grid_m[base + offset] += weight * p_mass
-
-@ti.kernel
-def substep3():
   for i, j in grid_m:
     if grid_m[i, j] > 0: # No need for epsilon here
       grid_v[i, j] = (1 / grid_m[i, j]) * grid_v[i, j] # Momentum to velocity
@@ -73,9 +67,6 @@ def substep3():
       if i > n_grid - 3 and grid_v[i, j][0] > 0: grid_v[i, j][0] = 0
       if j < 3 and grid_v[i, j][1] < 0:          grid_v[i, j][1] = 0
       if j > n_grid - 3 and grid_v[i, j][1] > 0: grid_v[i, j][1] = 0
-
-@ti.kernel
-def substep4():
   for p in x: # grid to particle (G2P)
     base = (x[p] * inv_dx - 0.5).cast(int)
     fx = x[p] * inv_dx - base.cast(float)
@@ -90,12 +81,6 @@ def substep4():
       new_C += 4 * inv_dx * weight * ti.outer_product(g_v, dpos)
     v[p], C[p] = new_v, new_C
     x[p] += dt * v[p] # advection
-
-def substep():
-  substep1()
-  substep2()
-  substep3()
-  substep4()
 
 group_size = n_particles // 3
 

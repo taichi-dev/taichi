@@ -29,6 +29,68 @@ std::string opengl_atomic_op_type_cap_name(AtomicOpType type) {
   return type_names[type];
 }
 
+struct UsedFeature
+{
+  bool random{false};
+  bool argument{false};
+  bool extra_arg{false};
+  bool external_ptr{false};
+};
+
+struct CompiledKernel
+{
+  GLProgram *glsl;
+  int num_groups;
+  int arg_count;
+  int ext_arr_idx;
+  size_t ext_arr_size;
+  bool has_ext_arr{false};
+  UsedFeature used;
+  std::string kernel_name;
+
+  explicit CompiledKernel(const std::string &kernel_name_,
+      const std::string &kernel_source_code, Kernel *kernel,
+      int num_groups_, UsedFeature used_)
+    : num_groups(num_groups_), used(used_), kernel_name(kernel_name_)
+  {
+#ifdef _GLSL_DEBUG
+    TI_INFO("source of kernel [{}] * {}:\n{}", kernel_name, num_groups, kernel_source_code);
+    std::ofstream(fmt::format("/tmp/{}.comp", kernel_name))
+      .write(kernel_source_code.c_str(), kernel_source_code.size());
+#endif
+    this->glsl = compile_glsl_program(kernel_source_code);
+
+    has_ext_arr = false;
+    arg_count = kernel->args.size();
+    for (int i = 0; i < arg_count; i++) {
+      if (kernel->args[i].is_nparray) {
+        if (has_ext_arr)
+          TI_ERROR("[glsl] external array argument is supported to at most one in OpenGL for now");
+        ext_arr_idx = i;
+        ext_arr_size = kernel->args[i].size;
+        has_ext_arr = true;
+      }
+    }
+  }
+
+  void launch(Context &ctx) const
+  {
+    std::vector<IOV> iov;
+    if (arg_count) {
+      iov.push_back(IOV{ctx.args, arg_count * sizeof(uint64_t)});
+      if (has_ext_arr) {
+        iov.push_back(IOV{ctx.extra_args, arg_count * taichi_max_num_args * sizeof(int)});
+        void *extptr = (void *)ctx.args[ext_arr_idx];
+        ctx.args[ext_arr_idx] = 0;
+        iov.push_back(IOV{extptr, ext_arr_size});
+      }
+    }
+    //TI_PERF();
+    launch_glsl_kernel(glsl, iov, num_groups);
+    //TI_PERF(kernel_name.c_str(), kernel_name.size(), 107);
+  }
+};
+
 class KernelGen : public IRVisitor
 {
   Kernel *kernel;
@@ -45,16 +107,11 @@ public:
     invoke_default_visitor = true;
   }
 
-  struct UsedFeature
-  {
-    bool random{false};
-    bool argument{false};
-    bool extra_arg{false};
-    bool external_ptr{false};
-  } used;
-
 private: // {{{
   std::string kernel_src_code_;
+  std::vector<CompiledKernel> compiled_kernels_;
+  UsedFeature used;
+
   std::string indent_;
   bool is_top_level_{true};
 
@@ -148,7 +205,7 @@ _Atmf_Def(Min, min, _Acma_, 64, double)\n\
     if (glsl_kernel_name_.size())
       emit("  {}();", glsl_kernel_name_);
     emit("}}");
-    if (used.random) {
+    if (used.random) { // TODO(archibate): random in different offloads should share rand seed?
       // {{{
       kernel_src_code_ = std::string("\
 uvec4 _rand_;\n\
@@ -197,6 +254,9 @@ int _rand_i32()\n\
     emit("layout(local_size_x = {}, local_size_y = 1, local_size_z = 1) in;", threads_per_group);
 
     kernel_src_code_ = std::string("#version 430 core\n") + kernel_src_code_;
+    compiled_kernels_.push_back(CompiledKernel(std::move(glsl_kernel_name_),
+        std::move(kernel_src_code_), kernel, num_groups_, used));
+    kernel_src_code_ = "";
   }
 
   void visit(Block *stmt) override
@@ -211,6 +271,11 @@ int _rand_i32()\n\
   virtual void visit(Stmt *stmt) override
   {
     TI_ERROR("[glsl] unsupported statement type {}", typeid(*stmt).name());
+  }
+
+  void visit(PrintStmt *stmt) override
+  {
+    TI_WARN("Cannot print inside OpenGL kernel, ignored");
   }
 
   void visit(RandStmt *stmt) override
@@ -580,7 +645,8 @@ int _rand_i32()\n\
 
   void visit(OffloadedStmt *stmt) override
   {
-    TI_ASSERT(is_top_level_); // TODO(archibate): remove for nested kernel (?)
+    generate_header();
+    TI_ASSERT(is_top_level_);
     is_top_level_ = false;
     using Type = OffloadedStmt::TaskType;
     if (stmt->task_type == Type::serial) {
@@ -593,6 +659,7 @@ int _rand_i32()\n\
       TI_ERROR("[glsl] Unsupported offload type={} on OpenGL arch", stmt->task_name());
     }
     is_top_level_ = true;
+    generate_bottom();
   }
 
   void visit(StructForStmt *) override
@@ -613,33 +680,21 @@ int _rand_i32()\n\
   }
 
 public:
-  const std::string &kernel_source_code() const
-  {
-    return kernel_src_code_;
-  }
-
-  const std::string &get_kernel_name() const
-  {
-    return kernel_name_;
-  }
-
   Kernel *get_kernel() const
   {
     return kernel;
   }
 
-  int get_num_work_groups() const
+  std::vector<CompiledKernel> compiled_kernels() const
   {
-    return num_groups_;
+    return compiled_kernels_;
   }
 
   void run(const SNode &root_snode)
   {
     root_snode_ = &root_snode;
     root_snode_type_name_ = root_snode.node_type_name;
-    generate_header();
     kernel->ir->accept(this);
-    generate_bottom();
   }
 };
 
@@ -765,6 +820,7 @@ void OpenglCodeGen::lower()
 #endif
 } // }}}
 
+<<<<<<< HEAD:taichi/codegen/codegen_opengl.cpp
 struct CompiledKernel
 {
   GLProgram *glsl;
@@ -822,13 +878,16 @@ struct CompiledKernel
   }
 };
 
+=======
+>>>>>>> c5e875f... [skip ci] multi offload support:taichi/backends/codegen_opengl.cpp
 FunctionType OpenglCodeGen::gen(void)
 {
   KernelGen codegen(kernel_, kernel_name_, struct_compiled_);
   codegen.run(*prog_->snode_root);
-  auto compiled = new CompiledKernel(codegen);
-  return [compiled](Context &ctx) {
-    compiled->launch(ctx);
+  auto compiled_kernels = codegen.compiled_kernels();
+  return [compiled_kernels](Context &ctx) {
+    for (const auto &ker: compiled_kernels)
+      ker.launch(ctx);
   };
 }
 

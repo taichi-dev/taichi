@@ -14,22 +14,18 @@ def _test_type_assign_argument(dt):
   func(3)
   assert x[None] == 3
 
-@pytest.mark.parametrize('dt', _TI_TYPES)
+@ti.parametrize('dt', _TI_TYPES)
+# Metal backend doesn't support arg type other than 32-bit yet.
+@ti.archs_excluding(ti.metal)
 def test_type_assign_argument(dt):
-  # Metal backend doesn't support arg type other than 32-bit yet.
-  @ti.archs_excluding(ti.metal)
-  def run():
-    _test_type_assign_argument(dt)
-  run()
+  _test_type_assign_argument(dt)
 
 
-@pytest.mark.parametrize('dt', _TI_64_TYPES)
+@ti.parametrize('dt', _TI_64_TYPES)
+@ti.require(ti.extension.data64)
+@ti.all_archs
 def test_type_assign_argument64(dt):
-  @ti.require(ti.extension.data64)
-  @ti.all_archs
-  def run():
-    _test_type_assign_argument(dt)
-  run()
+  _test_type_assign_argument(dt)
 
 def _test_type_operator(dt):
   x = ti.var(dt, shape=())
@@ -50,20 +46,16 @@ def _test_type_operator(dt):
       assert add[None] == x[None] + y[None]
       assert mul[None] == x[None] * y[None]
 
-@pytest.mark.parametrize('dt', _TI_TYPES)
+@ti.parametrize('dt', _TI_TYPES)
+@ti.all_archs
 def test_type_operator(dt):
-  @ti.all_archs
-  def run():
-    _test_type_operator(dt)
-  run()
+  _test_type_operator(dt)
 
-@pytest.mark.parametrize('dt', _TI_64_TYPES)
+@ti.parametrize('dt', _TI_64_TYPES)
+@ti.require(ti.extension.data64)
+@ti.all_archs
 def test_type_operator64(dt):
-  @ti.require(ti.extension.data64)
-  @ti.all_archs
-  def run():
-    _test_type_operator(dt)
-  run()
+  _test_type_operator(dt)
 
 def _test_type_tensor(dt):
   x = ti.var(dt, shape=(3, 2))
@@ -78,20 +70,16 @@ def _test_type_tensor(dt):
       assert x[i, j] == 3
 
 
-@pytest.mark.parametrize('dt', _TI_TYPES)
+@ti.parametrize('dt', _TI_TYPES)
+@ti.all_archs
 def test_type_tensor(dt):
-  @ti.all_archs
-  def run():
-    _test_type_tensor(dt)
-  run()
+  _test_type_tensor(dt)
 
-@pytest.mark.parametrize('dt', _TI_64_TYPES)
+@ti.parametrize('dt', _TI_64_TYPES)
+@ti.require(ti.extension.data64)
+@ti.all_archs
 def test_type_tensor64(dt):
-  @ti.require(ti.extension.data64)
-  @ti.all_archs
-  def run():
-    _test_type_tensor(dt)
-  run()
+  _test_type_tensor(dt)
 
 def _test_overflow(dt, n):
   a = ti.var(dt, shape=())
@@ -115,7 +103,7 @@ def _test_overflow(dt, n):
   else:
     assert c[None] == 2 ** n // 3 * 2 # does not overflow
 
-@pytest.mark.parametrize('dt,n', [
+@ti.parametrize('dt,n', [
   (ti.i8, 8),
   (ti.u8, 8),
   (ti.i16, 16),
@@ -123,19 +111,15 @@ def _test_overflow(dt, n):
   (ti.i32, 32),
   (ti.u32, 32),
 ])
+@ti.all_archs
 def test_overflow(dt, n):
-  @ti.all_archs
-  def run():
-    _test_overflow(dt, n)
-  run()
+  _test_overflow(dt, n)
 
-@pytest.mark.parametrize('dt,n', [
+@ti.parametrize('dt,n', [
   (ti.i64, 64),
   (ti.u64, 64),
 ])
+@ti.require(ti.extension.data64)
+@ti.all_archs
 def test_overflow64(dt, n):
-  @ti.require(ti.extension.data64)
-  @ti.all_archs
-  def run():
-    _test_overflow(dt, n)
-  run()
+  _test_overflow(dt, n)

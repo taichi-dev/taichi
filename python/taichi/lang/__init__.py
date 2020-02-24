@@ -330,6 +330,48 @@ def must_throw(ex):
   return decorator
 
 
+# Poor man's parametrized test decorator
+# The usage is identical to how @pytest.mark.parametrize is commonly used. For
+# example:
+#
+# @ti.parametrize('foo', [1, 2, 3])
+# @ti.all_archs
+# def test_xx(foo):
+#    ...
+#
+# @ti.parametrize('foo,bar', [
+#   (1, 'a'),
+#   (2, 'b'),
+#   (3, 'c'),
+# ])
+# @ti.all_archs
+# def test_yy(foo, bar):
+#    ...
+def parametrize(argnames: str, argvalues):
+  # @pytest.mark.parametrize only works for canonical function args, and doesn't
+  # support *args or **kwargs. This makes it difficult to play along with other
+  # decorators like @ti.all_archs. As a result, we implement our own.
+  argnames = [s.strip() for s in argnames.split(',')]
+  def iterable(x):
+    try:
+      _ = iter(x)
+      return True
+    except:
+      return False
+
+  def decorator(test):
+    def wrapped(*test_args, **test_kwargs):
+      for vals in argvalues:
+        if isinstance(vals, str) or not iterable(vals):
+          vals = (vals, )
+        kwargs = {k: v for k, v in zip(argnames, vals)}
+        assert len(kwargs.keys() & test_kwargs.keys()) == 0
+        kwargs.update(test_kwargs)
+        test(*test_args, **kwargs)
+    return wrapped
+  return decorator
+
+
 def complex_kernel(func):
 
   def decorated(*args, **kwargs):

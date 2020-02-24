@@ -110,7 +110,7 @@ private: // {{{
     emit("#define _ext_ns_f32(x) _extr_f32_[(x) >> 0]");
     emit("#define _ext_ns_f64(x) _extr_f64_[(x) >> 0]");
     emit("#define _extra_arg(i, j) _earg_i32_[(i) * {} + (j)]", taichi_max_num_indices);
-    kernel_src_code_ += "\n\
+    kernel_src_code_ += "\
 #define _Atmf_Def(Add, _f_, _o_, _32, float) \
 float atomic##Add##_f##_32(int addr, float rhs) \
 { \
@@ -135,7 +135,7 @@ _Atmf_Def(Max, max, _Acma_, 64, double)\n\
 _Atmf_Def(Min, min, _Acma_, 64, double)\n\
 "
 #endif
-; // discussion: https://github.com/taichi-dev/taichi/pull/495#issuecomment-590074123
+"\n"; // discussion: https://github.com/taichi-dev/taichi/pull/495#issuecomment-590074123
   } // }}}
 
   void generate_bottom()
@@ -344,13 +344,10 @@ int _rand_i32()\n\
     const auto rhs_name = bin->rhs->raw_name();
     const auto bin_name = bin->raw_name();
     if (bin->op_type == BinaryOpType::floordiv) {
-      if (is_integral(bin->element_type())) {
-        emit("{} {} = int(floor({} / {}));", dt_name, bin_name, lhs_name,
-             rhs_name);
-      } else {
-        emit("{} {} = floor({} / {});", dt_name, bin_name, lhs_name,
-             rhs_name);
-      }
+      // TODO(archibate): add a lossless version for (int // int)
+      // NOTE: the 1e-6 here is for precision reason, or `7 // 7` will obtain 0 instead of 1
+      emit("{} {} = {}(floor((float({}) * (1 + sign({} * {}) * 1e-6)) / float({})));",
+          dt_name, bin_name, dt_name, lhs_name, lhs_name, rhs_name, rhs_name);
       return;
     }
     const auto binop = binary_op_type_symbol(bin->op_type);

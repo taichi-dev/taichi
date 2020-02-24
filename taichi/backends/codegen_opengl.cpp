@@ -35,6 +35,8 @@ struct UsedFeature
   bool argument{false};
   bool extra_arg{false};
   bool external_ptr{false};
+  bool atomic_float{false};
+  bool global_temp{false};
 };
 
 struct CompiledKernel
@@ -167,33 +169,61 @@ private: // {{{
   { // {{{
     num_threads_ = 1;
     kernel_src_code_ = struct_compiled_->source_code;
-    emit("layout(std430, binding = 0) buffer data_i32 {{ int _data_i32_[]; }};");
-    emit("layout(std430, binding = 0) buffer data_f32 {{ float _data_f32_[]; }};");
-    emit("layout(std430, binding = 0) buffer data_f64 {{ double _data_f64_[]; }};");
-    emit("layout(std430, binding = 1) buffer args_i32 {{ int _args_i32_[]; }};");
-    emit("layout(std430, binding = 1) buffer args_f32 {{ float _args_f32_[]; }};");
-    //emit("layout(std430, binding = 1) buffer args_f64 {{ double _args_f64_[]; }};");
-    emit("layout(std430, binding = 2) buffer gtmp_i32 {{ int _gtmp_i32_[]; }};");
-    emit("layout(std430, binding = 2) buffer gtmp_f32 {{ float _gtmp_f32_[]; }};");
-    emit("layout(std430, binding = 2) buffer gtmp_f64 {{ double _gtmp_f64_[]; }};");
-    emit("layout(std430, binding = 3) buffer earg_i32 {{ int _earg_i32_[]; }};");
-    emit("layout(std430, binding = 4) buffer extr_i32 {{ int _extr_i32_[]; }};");
-    emit("layout(std430, binding = 4) buffer extr_f32 {{ float _extr_f32_[]; }};");
-    emit("layout(std430, binding = 4) buffer extr_f64 {{ double _extr_f64_[]; }};");
-    emit("#define _arg_i32(x) _args_i32_[(x) << 1]"); // skip to 64bit stride
-    emit("#define _arg_f32(x) _args_f32_[(x) << 1]");
-    emit("#define _arg_f64(x) _args_f64_[(x) << 0]");
-    emit("#define _mem_i32(x) _data_i32_[(x) >> 2]");
-    emit("#define _mem_f32(x) _data_f32_[(x) >> 2]");
-    emit("#define _mem_f64(x) _data_f64_[(x) >> 3]");
-    emit("#define _gtx_i32(x) _gtmp_i32_[(x) >> 2]");
-    emit("#define _gtx_f32(x) _gtmp_f32_[(x) >> 2]");
-    emit("#define _gtx_f64(x) _gtmp_f64_[(x) >> 3]");
-    emit("#define _ext_ns_i32(x) _extr_i32_[(x) >> 0]");
-    emit("#define _ext_ns_f32(x) _extr_f32_[(x) >> 0]");
-    emit("#define _ext_ns_f64(x) _extr_f64_[(x) >> 0]");
-    emit("#define _extra_arg(i, j) _earg_i32_[(i) * {} + (j)]", taichi_max_num_indices);
-    kernel_src_code_ += "\
+  } // }}}
+
+  void generate_bottom()
+  {
+    // TODO(archibate): <kernel_name>() really necessary? How about just main()?
+    emit("void main()");
+    emit("{{");
+    if (used.random)
+      emit("  _init_rand();");
+    if (glsl_kernel_name_.size())
+      emit("  {}();", glsl_kernel_name_);
+    emit("}}");
+
+    std::string kernel_header =
+    "layout(std430, binding = 0) buffer data_i32 { int _data_i32_[]; };\n"
+    "layout(std430, binding = 0) buffer data_f32 { float _data_f32_[]; };\n"
+    "layout(std430, binding = 0) buffer data_f64 { double _data_f64_[]; };\n"
+    "#define _mem_i32(x) _data_i32_[(x) >> 2]\n"
+    "#define _mem_f32(x) _data_f32_[(x) >> 2]\n"
+    "#define _mem_f64(x) _data_f64_[(x) >> 3]\n";
+
+    if (used.argument) {
+      kernel_header +=
+        "layout(std430, binding = 1) buffer args_i32 { int _args_i32_[]; };\n"
+        "layout(std430, binding = 1) buffer args_f32 { float _args_f32_[]; };\n"
+        "layout(std430, binding = 1) buffer args_f64 { double _args_f64_[]; };\n"
+        "#define _arg_i32(x) _args_i32_[(x) << 1]\n" // skip to 64bit stride
+        "#define _arg_f32(x) _args_f32_[(x) << 1]\n"
+        "#define _arg_f64(x) _args_f64_[(x) << 0]\n";
+    }
+    if (used.global_temp) {
+      kernel_header +=
+        "layout(std430, binding = 2) buffer gtmp_i32 { int _gtmp_i32_[]; };\n"
+        "layout(std430, binding = 2) buffer gtmp_f32 { float _gtmp_f32_[]; };\n"
+        "layout(std430, binding = 2) buffer gtmp_f64 { double _gtmp_f64_[]; };\n"
+        "#define _gtx_i32(x) _gtmp_i32_[(x) >> 2]\n"
+        "#define _gtx_f32(x) _gtmp_f32_[(x) >> 2]\n"
+        "#define _gtx_f64(x) _gtmp_f64_[(x) >> 3]\n";
+    }
+    if (used.extra_arg) {
+      kernel_header +=
+        "layout(std430, binding = 3) buffer earg_i32 { int _earg_i32_[]; };\n"
+        + fmt::format("#define _extra_arg(i, j) _earg_i32_[(i) * {} + (j)]\n", taichi_max_num_indices);
+    }
+    if (used.external_ptr) {
+      kernel_header +=
+        "layout(std430, binding = 4) buffer extr_i32 { int _extr_i32_[]; };\n"
+        "layout(std430, binding = 4) buffer extr_f32 { float _extr_f32_[]; };\n"
+        "layout(std430, binding = 4) buffer extr_f64 { double _extr_f64_[]; };\n"
+        "#define _ext_ns_i32(x) _extr_i32_[(x) >> 0]\n"
+        "#define _ext_ns_f32(x) _extr_f32_[(x) >> 0]\n"
+        "#define _ext_ns_f64(x) _extr_f64_[(x) >> 0]\n";
+    }
+    if (used.atomic_float) { // {{{
+      kernel_header += "\
 #define _Atmf_Def(Add, _f_, _o_, _32, float) \
 float atomic##Add##_f##_32(int addr, float rhs) \
 { \
@@ -219,21 +249,9 @@ _Atmf_Def(Min, min, _Acma_, 64, double)\n\
 "
 #endif
 "\n"; // discussion: https://github.com/taichi-dev/taichi/pull/495#issuecomment-590074123
-  } // }}}
-
-  void generate_bottom()
-  {
-    // TODO(archibate): <kernel_name>() really necessary? How about just main()?
-    emit("void main()");
-    emit("{{");
-    if (used.random)
-    emit("  _init_rand();");
-    if (glsl_kernel_name_.size())
-      emit("  {}();", glsl_kernel_name_);
-    emit("}}");
-    if (used.random) { // TODO(archibate): random in different offloads should share rand seed?
-      // {{{
-      kernel_src_code_ = std::string("\
+    } // }}}
+    if (used.random) { // TODO(archibate): random in different offloads should share rand seed? {{{
+      kernel_header += "\
 uvec4 _rand_;\n\
 \n\
 void _init_rand()\n\
@@ -267,9 +285,10 @@ int _rand_i32()\n\
 {\n\
   return int(_rand_u32());\n\
 }\n\
-") + kernel_src_code_; // }}}
-    }
-    emit("");
+";
+    } // }}}
+
+    kernel_src_code_ = kernel_header + kernel_src_code_;
 
     int threads_per_group = 1792;
     if (num_threads_ < 1792)
@@ -465,6 +484,7 @@ int _rand_i32()\n\
     } else {
       TI_ASSERT(stmt->val->element_type() == DataType::f32
         || stmt->val->element_type() == DataType::f64);
+      used.atomic_float = true;
       // NOTE: external ptr atomic float operations is not supported by now
       emit("{} {} = {}_{}({}, {});", opengl_data_type_name(stmt->val->element_type()),
           stmt->raw_name(), opengl_atomic_op_type_cap_name(stmt->op_type),
@@ -587,6 +607,7 @@ int _rand_i32()\n\
 
   void visit(GlobalTemporaryStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
+    used.global_temp = true;
     emit("#define _at_{} _gtx_{}({})", stmt->raw_name(),
         data_type_short_name(stmt->element_type()), stmt->offset);
   }

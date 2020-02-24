@@ -152,6 +152,7 @@ In the fractal code above, ``for i, j in pixels`` loops over all the pixel coord
 
 .. note::
     It is the loop **at the outermost scope** that gets parallelized, not the outermost loop.
+
     .. code-block:: python
 
       # Good kernel

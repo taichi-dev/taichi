@@ -14,14 +14,14 @@ def _test_type_assign_argument(dt):
   func(3)
   assert x[None] == 3
 
-@ti.parametrize('dt', _TI_TYPES)
+@pytest.mark.parametrize('dt', _TI_TYPES)
 # Metal backend doesn't support arg type other than 32-bit yet.
 @ti.archs_excluding(ti.metal)
 def test_type_assign_argument(dt):
   _test_type_assign_argument(dt)
 
 
-@ti.parametrize('dt', _TI_64_TYPES)
+@pytest.mark.parametrize('dt', _TI_64_TYPES)
 @ti.require(ti.extension.data64)
 @ti.all_archs
 def test_type_assign_argument64(dt):
@@ -46,12 +46,12 @@ def _test_type_operator(dt):
       assert add[None] == x[None] + y[None]
       assert mul[None] == x[None] * y[None]
 
-@ti.parametrize('dt', _TI_TYPES)
+@pytest.mark.parametrize('dt', _TI_TYPES)
 @ti.all_archs
 def test_type_operator(dt):
   _test_type_operator(dt)
 
-@ti.parametrize('dt', _TI_64_TYPES)
+@pytest.mark.parametrize('dt', _TI_64_TYPES)
 @ti.require(ti.extension.data64)
 @ti.all_archs
 def test_type_operator64(dt):
@@ -70,12 +70,12 @@ def _test_type_tensor(dt):
       assert x[i, j] == 3
 
 
-@ti.parametrize('dt', _TI_TYPES)
+@pytest.mark.parametrize('dt', _TI_TYPES)
 @ti.all_archs
 def test_type_tensor(dt):
   _test_type_tensor(dt)
 
-@ti.parametrize('dt', _TI_64_TYPES)
+@pytest.mark.parametrize('dt', _TI_64_TYPES)
 @ti.require(ti.extension.data64)
 @ti.all_archs
 def test_type_tensor64(dt):
@@ -103,7 +103,7 @@ def _test_overflow(dt, n):
   else:
     assert c[None] == 2 ** n // 3 * 2 # does not overflow
 
-@ti.parametrize('dt,n', [
+@pytest.mark.parametrize('dt,n', [
   (ti.i8, 8),
   (ti.u8, 8),
   (ti.i16, 16),
@@ -115,7 +115,7 @@ def _test_overflow(dt, n):
 def test_overflow(dt, n):
   _test_overflow(dt, n)
 
-@ti.parametrize('dt,n', [
+@pytest.mark.parametrize('dt,n', [
   (ti.i64, 64),
   (ti.u64, 64),
 ])

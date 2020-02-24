@@ -1,6 +1,6 @@
 #include <taichi/common/bit.h>
 #include <taichi/common/task.h>
-#include <taichi/visual/gui.h>
+#include <taichi/gui/gui.h>
 
 #if defined(TI_GUI_COCOA)
 

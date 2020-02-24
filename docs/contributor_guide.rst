@@ -24,8 +24,9 @@ Issues marked with `"welcome contribution" <https://github.com/taichi-dev/taichi
 High-level guidelines
 ---------------------
 
-- Changesets should be small so that sources of bugs can be easily pinpointed;
-- No overkills: always use the easiest solutions to solve easy problems so that you have time and energy for real hard problems;
+- Almost every design decision has pros and cons. Good decisions are good because their pros outweigh their cons. Always think of both sides of your decision.
+- No overkills: always use the *easiest* solutions to solve easy problems, so that you have time and energy for real hard ones.
+- Debugging is hard. Changesets should be small so that sources of bugs can be easily pinpointed.
 - Unit/integration tests are our friends.
 
 Commit rules

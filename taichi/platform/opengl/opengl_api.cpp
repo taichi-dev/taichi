@@ -260,9 +260,9 @@ GLSSBO *root_ssbo;
 
 void create_glsl_root_buffer(size_t size)
 {
-  if (root_ssbo)
-    return;
-  root_ssbo = new GLSSBO;
+  //if (root_ssbo) return;
+  initialize_opengl();
+  root_ssbo = new GLSSBO; // TODO(archibate): mem leaking
   void *buffer = std::calloc(size, 1);
   root_ssbo->bind_data(buffer, size, GL_DYNAMIC_READ);
   root_ssbo->bind_index(0);

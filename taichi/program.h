@@ -30,6 +30,8 @@ TI_FORCE_INLINE Program &get_current_program() {
   return *current_program;
 }
 
+class StructCompiler;
+
 class Program {
  public:
   using Kernel = taichi::Tlang::Kernel;
@@ -152,6 +154,8 @@ class Program {
   }
 
   FunctionType compile(Kernel &kernel);
+
+  void initialize_runtime_system(StructCompiler *scomp);
 
   void materialize_layout();
 

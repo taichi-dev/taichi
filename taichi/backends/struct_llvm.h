@@ -10,8 +10,6 @@ class StructCompilerLLVM : public StructCompiler, public ModuleBuilder {
  public:
   StructCompilerLLVM(Program* prog, Arch arch);
 
-  SNodeAttributes snode_attr;
-
   Arch arch;
   TaichiLLVMContext *tlctx;
   llvm::LLVMContext *llvm_ctx;

@@ -7,10 +7,8 @@
 TLANG_NAMESPACE_BEGIN
 
 StructCompiler::StructCompiler(Program *prog) : prog(prog) {
-  creator = [] {
-    TI_ERROR("Not Specified");
-    return nullptr;
-  };
+  root_size = 0;
+  creator = [] { TI_ERROR("Not Specified"); };
   profiler_clear = [] {
     TI_WARN("Profiler not yet implemented in this backend.");
   };

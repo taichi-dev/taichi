@@ -14,7 +14,10 @@ class StructCompiler {
   std::function<void()> creator;
   std::function<void()> profiler_print;
   std::function<void()> profiler_clear;
+  std::size_t root_size;
   Program *prog;
+
+  SNodeAttributes snode_attr;
 
   StructCompiler(Program *prog);
 

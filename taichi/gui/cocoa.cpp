@@ -1,6 +1,6 @@
 #include <taichi/common/bit.h>
 #include <taichi/common/task.h>
-#include <taichi/visual/gui.h>
+#include <taichi/gui/gui.h>
 
 #if defined(TI_GUI_COCOA)
 
@@ -161,9 +161,7 @@ enum {
   NSResizableWindowMask = 1 << 3,
 };
 
-Class ViewClass;
-
-void redraw(id self, SEL _, CGRect __) {
+void updateLayer(id self, SEL _) {
   using namespace taichi;
   auto *gui = gui_from_id[self];
   auto width = gui->width, height = gui->height;
@@ -187,26 +185,37 @@ void redraw(id self, SEL _, CGRect __) {
       CGImageCreate(width, height, 8, 32, width * 4, colorspace,
                     kCGBitmapByteOrder32Big | kCGImageAlphaPremultipliedLast,
                     provider, nullptr, true, kCGRenderingIntentDefault);
-  CGContextRef context = cast_call<CGContextRef>(
-      clscall("NSGraphicsContext", "currentContext"), "graphicsPort");
-
-  CGRect rect{{0, 0}, {CGFloat(width), CGFloat(height)}};
-  CGContextDrawImage(context, rect, image);
-
+  // Profiling showed that CGContextDrawImage can be rather slow (~50ms per
+  // frame!), so we instead set the image as the content of the view's layer.
+  // See also:
+  // * slow CGContextDrawImage: https://stackoverflow.com/a/7599794/12003165
+  // * CALayer + CGImage: https://stackoverflow.com/a/48310419/12003165
+  // * profiling:
+  // https://github.com/taichi-dev/taichi/issues/489#issuecomment-589955458
+  call(call(gui->view, "layer"), "setContents:", image);
   CGImageRelease(image);
   CGDataProviderRelease(provider);
   CGColorSpaceRelease(colorspace);
 }
 
+Class ViewClass;
 Class AppDelClass;
+
 __attribute__((constructor)) static void initView() {
   ViewClass = objc_allocateClassPair((Class)objc_getClass("NSView"), "View", 0);
-  // and again, we tell the runtime to add a function called -drawRect:
-  // to our custom view. Note that there is an error in the type-specification
-  // of this method, as I do not know the @encode sequence of 'CGRect' off
-  // of the top of my head. As a result, there is a chance that the rect
-  // parameter of the method may not get passed properly.
-  class_addMethod(ViewClass, sel_getUid("drawRect:"), (IMP)redraw, "v@:");
+  // There are two ways to update NSView's content, either via "drawRect:" or
+  // "updateLayer". Updating via layer can be a lot faster, so we use this
+  // method. See also:
+  // https://developer.apple.com/documentation/appkit/nsview/1483461-wantsupdatelayer?language=objc
+  // https://stackoverflow.com/a/51899686/12003165
+  //
+  // Also, it should be noted that if NSView's layer is enabled (via
+  // [view setWantsLyaer:YES]), but "drawRect:" is used, then the content is
+  // drawn and cleared rapidly, causing a flickering screen. It seems that the
+  // view itself and the underlying layer were overwriting each other's content.
+  // https://stackoverflow.com/a/11321521/12003165
+  class_addMethod(ViewClass, sel_getUid("updateLayer" /* no colon */),
+                  (IMP)updateLayer, "v@:");
   objc_registerClassPair(ViewClass);
 
   AppDelClass = objc_allocateClassPair((Class)objc_getClass("NSObject"),
@@ -249,6 +258,9 @@ void GUI::create_window() {
        0, false);
   view = call(clscall("View", "alloc"), "initWithFrame:", rect);
   gui_from_id[view] = this;
+  // Use layer to speed up the draw
+  // https://developer.apple.com/documentation/appkit/nsview/1483695-wantslayer?language=objc
+  call(view, "setWantsLayer:", YES);
   call(window, "setContentView:", view);
   call(window, "becomeFirstResponder");
   call(window, "setAcceptsMouseMovedEvents:", YES);

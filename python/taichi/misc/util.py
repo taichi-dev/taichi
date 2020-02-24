@@ -327,14 +327,14 @@ def get_logging(name):
 DEBUG = 'debug'
 TRACE = 'trace'
 INFO = 'info'
-WARNING = 'warn'
+WARN = 'warn'
 ERROR = 'error'
 CRITICAL = 'critical'
 
 debug = get_logging(DEBUG)
 trace = get_logging(TRACE)
 info = get_logging(INFO)
-warning = get_logging(WARNING)
+warn = get_logging(WARN)
 error = get_logging(ERROR)
 critical = get_logging(CRITICAL)
 

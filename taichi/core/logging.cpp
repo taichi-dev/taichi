@@ -7,11 +7,10 @@
 #include <taichi/system/threading.h>
 #include <csignal>
 #include <spdlog/spdlog.h>
-#include <taichi/geometry/factory.h>
 
 TI_NAMESPACE_BEGIN
 
-Function11 python_at_exit;
+std::function<void(int)> python_at_exit;
 
 const auto default_logging_level = "info";
 

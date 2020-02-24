@@ -12,15 +12,12 @@
 #include <taichi/system/profiler.h>
 #include <taichi/system/memory.h>
 #include <taichi/system/unit_dll.h>
-#include <taichi/geometry/factory.h>
 #include <taichi/platform/metal/metal_api.h>
 #if defined(TI_WITH_CUDA)
 #include <cuda_runtime_api.h>
 #endif
 
 TI_NAMESPACE_BEGIN
-
-extern Function11 python_at_exit;
 
 Config config_from_py_dict(py::dict &c) {
   Config config;
@@ -139,8 +136,6 @@ void export_misc(py::module &m) {
   m.def("test_raise_error", test_raise_error);
   m.def("config_from_dict", config_from_py_dict);
   m.def("get_default_float_size", []() { return sizeof(real); });
-  m.def("register_at_exit",
-        [&](uint64 ptr) { python_at_exit = *(Function11 *)(ptr); });
   m.def("trigger_sig_fpe", []() {
     int a = 2;
     a -= 2;

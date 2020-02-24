@@ -79,7 +79,7 @@ Taichi supports both CPUs and NVIDIA GPUs.
   # Run on GPU
   ti.init(arch=ti.cuda)
   # Run on CPU (default)
-  ti.init(arch=ti.x86_64)
+  ti.init(arch=ti.x64)
 
 If the machine does not have CUDA support, Taichi will fall back to CPUs instead.
 
@@ -118,11 +118,11 @@ For those who came from the world of CUDA, ``ti.func`` corresponds to ``__device
 
 Parallel for-loops
 -----------------------
-The outermost for-loop in a Taichi kernel is automatically parallelized.
+For loops at the outermost scope in a Taichi kernel is automatically parallelized.
 For loops can have two forms, i.e. `range-for loops` and `struct-for loops`.
 
 **Range-for loops** are no different from that in native Python, except that it will be parallelized
-when used as the outermost level. Range-for loops can be nested.
+when used as the outermost scope. Range-for loops can be nested.
 
 .. code-block:: python
 
@@ -150,9 +150,28 @@ In the fractal code above, ``for i, j in pixels`` loops over all the pixel coord
 
     Struct-for is the key to :ref:`sparse` in Taichi, as it will only loop over active elements in a sparse tensor. In dense tensors, all elements are active.
 
+.. note::
+    It is the loop **at the outermost scope** that gets parallelized, not the outermost loop.
+
+    .. code-block:: python
+
+      # Good kernel
+      @ti.func
+      def foo():
+        for i in x:
+          ...
+
+      # Bad kernel
+      @ti.func
+      def bar(k: ti.i32):
+        # The outermost scope is a `if` statement, not the struct-for loop!
+        if k > 42:
+          for i in x:
+            ...
+
 .. warning::
 
-    Struct-for's must be at the outer-most level of kernels.
+    Struct-for's must be at the outer-most scope of kernels.
 
 
 Interacting with Python

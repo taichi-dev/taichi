@@ -19,7 +19,7 @@ def in_docker():
     return True
 
 
-def import_tc_core():
+def import_tc_core(tmp_dir=None):
   global tc_core
   if get_os_name() != 'win':
     old_flags = sys.getdlopenflags()
@@ -38,6 +38,8 @@ def import_tc_core():
     sys.setdlopenflags(old_flags)
   lib_dir = os.path.join(package_root(), 'lib')
   core.set_lib_dir(locale_encode(lib_dir))
+  if tmp_dir is not None:
+    core.set_tmp_dir(locale_encode(tmp_dir))
 
 
 def locale_encode(s):
@@ -160,17 +162,23 @@ def build():
   os.chdir(tmp_cwd)
 
 def prepare_sandbox(src):
+  global g_tmp_dir
   assert os.path.exists(src)
+  import atexit
+  import shutil
   from tempfile import mkdtemp
   tmp_dir = mkdtemp(prefix='taichi-')
+  atexit.register(shutil.rmtree, tmp_dir)
+  print(f'[Taichi] preparing sandbox at {tmp_dir}')
   dest = os.path.join(tmp_dir, 'taichi_core.so')
   shutil.copy(src, dest)
-  print(f'[taichi] prepared sandbox at {tmp_dir}')
+  os.mkdir(os.path.join(tmp_dir, 'runtime/'))
+  print(f'[Taichi] sandbox prepared')
   return tmp_dir
 
 
 if is_release():
-  print("[Release mode]")
+  print("[Taichi] mode=release")
   sys.path.append(os.path.join(package_root(), 'lib'))
   if get_os_name() != 'win':
     link_src = os.path.join(package_root(), 'lib', 'taichi_core.so')
@@ -185,6 +193,7 @@ if is_release():
   tc_core.set_python_package_dir(package_root())
   os.makedirs(tc_core.get_repo_dir(), exist_ok=True)
 else:
+  print("[Taichi] mode=development")
   if get_os_name() == 'osx':
     bin_dir = get_bin_directory()
     os.environ['DYLD_FALLBACK_LIBRARY_PATH'] = get_runtime_directory()
@@ -209,7 +218,7 @@ else:
     os.chdir(tmp_dir)
     sys.path.append(tmp_dir)
     try:
-      import_tc_core()
+      import_tc_core(tmp_dir)
     except Exception as e:
       from colorama import Fore, Back, Style
       print_red_bold("Taichi core import failed: ", end='')
@@ -341,9 +350,7 @@ at_startup()
 
 device_string = 'cpu only' if not tc_core.with_cuda() else 'cuda {}'.format(
     tc_core.cuda_version())
-print('[Taichi version {}, {}, commit {}]'.format(
-    tc_core.get_version_string(), device_string,
-    tc_core.get_commit_hash()[:8]))
+print(f'[Taichi] version {tc_core.get_version_string()}, {device_string}, commit {tc_core.get_commit_hash()[:8]}, python {sys.version_info[0]}.{sys.version_info[1]}.{sys.version_info[2]}')
 
 if not is_release():
   tc_core.set_core_trigger_gdb_when_crash(True)

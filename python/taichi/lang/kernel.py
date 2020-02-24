@@ -263,12 +263,12 @@ class Kernel:
         if isinstance(needed, template):
           continue
         provided = type(v)
-        # Note: use needed is f32 instead of needed == f32. The latter is slow.
-        if needed is f32 or needed is f64:
+        # Note: do not use sth like needed == f32. That would be slow.
+        if id(needed) in real_type_ids:
           if not isinstance(v, (float, int)):
             raise KernelArgError(i, needed, provided)
           t_kernel.set_arg_float(actual_argument_slot, float(v))
-        elif needed is i32 or needed is i64:
+        elif id(needed) in integer_type_ids:
           if not isinstance(v, int):
             raise KernelArgError(i, needed, provided)
           t_kernel.set_arg_int(actual_argument_slot, int(v))

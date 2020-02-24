@@ -2,7 +2,7 @@
 
 TLANG_NAMESPACE_BEGIN
 
-// Simulate the AST
+// Simulate the AST transforms on the Google Colab Ubuntu kernels to see why it crashes
 
 class NodeBase {
  public:

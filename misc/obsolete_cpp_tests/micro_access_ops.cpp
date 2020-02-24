@@ -4,7 +4,7 @@
 TLANG_NAMESPACE_BEGIN
 
 TI_TEST("lower_access_basics") {
-  for (auto arch : {Arch::x86_64, Arch::gpu}) {
+  for (auto arch : {Arch::x64, Arch::gpu}) {
     for (auto vec : {1, 4, 8}) {
       CoreState::set_trigger_gdb_when_crash(true);
       int n = 32;

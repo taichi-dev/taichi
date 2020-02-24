@@ -34,6 +34,9 @@ skip_commits:
     - misc
     - '.*'
 
+cache:
+  - build -> CMakeLists.txt, cmake/*
+
 build_script:
   - set TAICHI_REPO_DIR=C:\taichi
   - "%PYTHON% %TAICHI_REPO_DIR%/misc/appveyor_filter.py || appveyor exit 0"

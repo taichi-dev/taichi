@@ -1,7 +1,7 @@
 // Codegen for the hierarchical data structure (LLVM)
 
 #include "struct.h"
-#include "llvm_jit.h"
+#include "llvm_jit_cpu.h"
 #include "llvm_codegen_utils.h"
 
 TLANG_NAMESPACE_BEGIN
@@ -10,8 +10,6 @@ class StructCompilerLLVM : public StructCompiler, public ModuleBuilder {
  public:
   StructCompilerLLVM(Program* prog, Arch arch);
 
-  SNodeAttributes snode_attr;
-
   Arch arch;
   TaichiLLVMContext *tlctx;
   llvm::LLVMContext *llvm_ctx;
@@ -19,8 +17,6 @@ class StructCompilerLLVM : public StructCompiler, public ModuleBuilder {
   void generate_types(SNode &snode) override;
 
   void generate_leaf_accessors(SNode &snode) override;
-
-  void load_accessors(SNode &snode) override;
 
   void run(SNode &node, bool host) override;
 

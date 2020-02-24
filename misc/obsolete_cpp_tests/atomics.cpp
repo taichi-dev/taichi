@@ -7,7 +7,7 @@ TLANG_NAMESPACE_BEGIN
 TI_TEST("atomics") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 10000000;
-  Program prog(Arch::x86_64);
+  Program prog(Arch::x64);
 
   Global(sum, i32);
   Global(fsum, f32);
@@ -30,7 +30,7 @@ TI_TEST("atomics") {
 TI_TEST("atomics2") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 1000;
-  Program prog(Arch::x86_64);
+  Program prog(Arch::x64);
 
   Global(fsum, f32);
   layout([&]() { root.place(fsum); });
@@ -48,7 +48,7 @@ TI_TEST("atomics2") {
 TI_TEST("parallel_reduce") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 1024 * 1024 * 32;
-  Program prog(Arch::x86_64);
+  Program prog(Arch::x64);
 
   Global(fsum, i32);
   Global(a, i32);

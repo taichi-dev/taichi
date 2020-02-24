@@ -10,6 +10,7 @@
 #include "backends/codegen_x86.h"
 #include "backends/struct.h"
 #include "backends/struct_metal.h"
+#include "unified_allocator.h"
 #include "snode.h"
 
 #if defined(TI_WITH_CUDA)
@@ -22,6 +23,16 @@
 
 TLANG_NAMESPACE_BEGIN
 
+void assert_failed_host(const char *msg) {
+  TI_ERROR("Assertion failure: {}", msg);
+}
+
+void *taichi_allocate_aligned(Program *prog,
+                              std::size_t size,
+                              std::size_t alignment) {
+  return prog->memory_pool->allocate(size, alignment);
+}
+
 Program *current_program = nullptr;
 std::atomic<int> Program::num_instances;
 
@@ -30,7 +41,7 @@ Program::Program(Arch arch) {
   if (arch == Arch::cuda) {
     TI_WARN("Taichi is not compiled with CUDA.");
     TI_WARN("Falling back to x86_64");
-    arch = Arch::x86_64;
+    arch = Arch::x64;
   }
 #else
   if (!cuda_context) {
@@ -38,14 +49,14 @@ Program::Program(Arch arch) {
     if (!cuda_context->detected()) {
       TI_WARN("No CUDA device detected.");
       TI_WARN("Falling back to x86_64");
-      arch = Arch::x86_64;
+      arch = Arch::x64;
     }
   }
 #endif
   if (arch == Arch::metal) {
     if (!metal::is_metal_api_available()) {
       TI_WARN("No Metal API detected, falling back to x86_64");
-      arch = Arch::x86_64;
+      arch = Arch::x64;
     }
   }
   memory_pool = std::make_unique<MemoryPool>(this);
@@ -59,8 +70,8 @@ Program::Program(Arch arch) {
   config = default_compile_config;
   config.arch = arch;
   if (config.use_llvm) {
-    llvm_context_host = std::make_unique<TaichiLLVMContext>(Arch::x86_64);
-    profiler_llvm = make_profiler(arch);
+    llvm_context_host = std::make_unique<TaichiLLVMContext>(Arch::x64);
+    profiler = make_profiler(arch);
   }
   current_kernel = nullptr;
   sync = true;
@@ -77,7 +88,7 @@ FunctionType Program::compile(Kernel &kernel) {
   auto start_t = Time::get_time();
   TI_AUTO_PROF;
   FunctionType ret = nullptr;
-  if (kernel.arch == Arch::x86_64) {
+  if (kernel.arch == Arch::x64) {
     CPUCodeGen codegen(kernel.name);
     ret = codegen.compile(*this, kernel);
   } else if (kernel.arch == Arch::cuda) {
@@ -94,21 +105,100 @@ FunctionType Program::compile(Kernel &kernel) {
   return ret;
 }
 
+// For CPU and CUDA archs only
+void Program::initialize_runtime_system(StructCompiler *scomp) {
+  auto tlctx = llvm_context_host.get();
+  auto initialize_runtime =
+      tlctx->lookup_function<void(void *, void *, std::size_t, void *, void *)>(
+          "Runtime_initialize");
+
+  auto initialize_runtime2 =
+      tlctx->lookup_function<void(void *, int, int)>("Runtime_initialize2");
+
+  auto set_assert_failed =
+      tlctx->lookup_function<void(void *, void *)>("Runtime_set_assert_failed");
+
+  auto allocate_ambient =
+      tlctx->lookup_function<void(void *, int)>("Runtime_allocate_ambient");
+
+  auto initialize_allocator =
+      tlctx->lookup_function<void *(void *, int, std::size_t)>(
+          "NodeAllocator_initialize");
+
+  auto runtime_initialize_thread_pool =
+      tlctx->lookup_function<void(void *, void *, void *)>(
+          "Runtime_initialize_thread_pool");
+
+  // By the time this creator is called, "this" is already destroyed.
+  // Therefore it is necessary to capture members by values.
+  auto snodes = scomp->snodes;
+  auto root_id = snode_root->id;
+
+  TI_TRACE("Allocating data structure of size {} B", scomp->root_size);
+  initialize_runtime(&llvm_runtime, this, scomp->root_size,
+                     (void *)&taichi_allocate_aligned, (void *)std::printf);
+  TI_TRACE("Runtime initialized");
+
+  auto mem_req_queue = tlctx->lookup_function<void *(void *)>(
+      "Runtime_get_mem_req_queue")(llvm_runtime);
+  memory_pool->set_queue((MemRequestQueue *)mem_req_queue);
+
+  initialize_runtime2(llvm_runtime, root_id, (int)snodes.size());
+  for (int i = 0; i < (int)snodes.size(); i++) {
+    if (snodes[i]->type == SNodeType::pointer ||
+        snodes[i]->type == SNodeType::dynamic) {
+      std::size_t node_size;
+      if (snodes[i]->type == SNodeType::pointer)
+        node_size = tlctx->get_type_size(
+            scomp->snode_attr[snodes[i]].llvm_element_type);
+      else {
+        // dynamic. Allocators are for the chunks
+        node_size = sizeof(void *) +
+                    tlctx->get_type_size(
+                        scomp->snode_attr[snodes[i]].llvm_element_type) *
+                        snodes[i]->chunk_size;
+      }
+      TI_TRACE("Initializing allocator for snode {} (node size {})",
+               snodes[i]->id, node_size);
+      auto rt = llvm_runtime;
+      initialize_allocator(rt, i, node_size);
+      TI_TRACE("Allocating ambient element for snode {} (node size {})",
+               snodes[i]->id, node_size);
+      allocate_ambient(rt, i);
+    }
+  }
+
+  runtime_initialize_thread_pool(llvm_runtime, &thread_pool,
+                                 (void *)ThreadPool::static_run);
+  set_assert_failed(llvm_runtime, (void *)assert_failed_host);
+
+  if (arch_use_host_memory(config.arch)) {
+    // Profiler functions can only be called on host kernels
+    tlctx->lookup_function<void(void *, void *)>("Runtime_set_profiler")(
+        llvm_runtime, profiler.get());
+
+    tlctx->lookup_function<void(void *, void *)>("Runtime_set_profiler_start")(
+        llvm_runtime, (void *)&ProfilerBase::profiler_start);
+    tlctx->lookup_function<void(void *, void *)>("Runtime_set_profiler_stop")(
+        llvm_runtime, (void *)&ProfilerBase::profiler_stop);
+  }
+}
+
 void Program::materialize_layout() {
   // always use arch=x86_64 since this is for host accessors
-  std::unique_ptr<StructCompiler> scomp =
-      StructCompiler::make(config.use_llvm, this, Arch::x86_64);
+  // TODO: arch may also be arm etc.
+  std::unique_ptr<StructCompiler> scomp = StructCompiler::make(this, Arch::x64);
   scomp->run(*snode_root, true);
-  layout_fn = scomp->get_source_path();
-  scomp->creator();
-  profiler_print_gpu = scomp->profiler_print;
-  profiler_clear_gpu = scomp->profiler_clear;
+
+  if (arch_is_cpu(config.arch) || config.arch == Arch::cuda) {
+    initialize_runtime_system(scomp.get());
+  }
 
   if (config.arch == Arch::cuda && config.use_llvm) {
     initialize_device_llvm_context();
     // llvm_context_device->get_init_module();
     std::unique_ptr<StructCompiler> scomp_gpu =
-        StructCompiler::make(config.use_llvm, this, Arch::cuda);
+        StructCompiler::make(this, Arch::cuda);
     scomp_gpu->run(*snode_root, false);
   } else if (config.arch == Arch::metal) {
     TI_ASSERT_INFO(config.use_llvm,
@@ -122,9 +212,8 @@ void Program::materialize_layout() {
       params.llvm_ctx = get_llvm_context(get_host_arch());
       params.config = &config;
       params.mem_pool = memory_pool.get();
-      params.profiler = profiler_llvm.get();
-      metal_runtime_ =
-          std::make_unique<metal::MetalRuntime>(std::move(params));
+      params.profiler = profiler.get();
+      metal_runtime_ = std::make_unique<metal::MetalRuntime>(std::move(params));
     }
     TI_INFO("Metal root buffer size: {} B", metal_struct_compiled_->root_size);
   }

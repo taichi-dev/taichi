@@ -71,8 +71,11 @@ def register_call_back(task_name):
     exit(-1)
 
   keep.append(email_call_back)
-  call_back = tc.function11(email_call_back)
-  tc.core.register_at_exit(call_back)
+  # TODO: email_call_back should be passed to Taichi core (C++). It will then called by the signal handler when Taichi crashes
+  # (std::function<void(int)> python_at_exit)
+  # Simply register a callback in the Python scope will not work in cases when Taichi crashes
+  # call_back = tc.function11(email_call_back)
+  # tc.core.register_at_exit(call_back)
 
   atexit.register(at_exit)
 

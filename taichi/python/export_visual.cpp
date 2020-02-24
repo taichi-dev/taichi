@@ -6,9 +6,8 @@
 #include <taichi/python/export.h>
 #include <taichi/common/asset_manager.h>
 
-#include <taichi/geometry/factory.h>
-#include <taichi/visual/gui.h>
 #include <taichi/util/image_io.h>
+#include <taichi/gui/gui.h>
 
 TI_NAMESPACE_BEGIN
 

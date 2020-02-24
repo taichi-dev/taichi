@@ -17,6 +17,18 @@ matrix:
     env:
       - MATRIX_EVAL="CC=clang && CXX=clang++ && PYTHON_VERSION=3.8.1 && PYTHON=python"
 
+skip_commits:
+  files:
+    - README.md
+    - docs
+    - benchmarks
+    - examples
+    - misc
+    - '.*'
+
+cache:
+  - build -> CMakeLists.txt, cmake/*
+
 before_install:
 - eval "${MATRIX_EVAL}"
 - echo $CXX

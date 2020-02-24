@@ -51,7 +51,7 @@ class Index {
 class SNode {
  public:
   // Children
-  std::vector<Handle<SNode>> ch;
+  std::vector<std::shared_ptr<SNode>> ch;
 
   IndexExtractor extractors[max_num_indices];
   int taken_bits[max_num_indices]{};  // counting from the tail
@@ -140,7 +140,7 @@ class SNode {
   }
 
   SNode &pointer(const std::vector<Index> &indices,
-               const std::vector<int> &sizes) {
+                 const std::vector<int> &sizes) {
     return create_node(indices, sizes, SNodeType::pointer);
   }
 
@@ -183,7 +183,7 @@ class SNode {
   SNode &place(Matrix &mat);
 
   template <typename... Args>
-  static Handle<SNode> create(Args &&... args) {
+  static std::shared_ptr<SNode> create(Args &&... args) {
     return std::make_shared<SNode>(std::forward<Args>(args)...);
   }
 
@@ -236,6 +236,7 @@ class SNode {
   // for int32 and int64
   void write_int(const std::vector<int> &I, int64);
   int64 read_int(const std::vector<int> &I);
+  uint64 read_uint(const std::vector<int> &I);
 
   TI_FORCE_INLINE AllocatorStat stat() {
     TI_ASSERT(stat_func);
@@ -326,7 +327,7 @@ class SNodeAttributes {
     return snode_llvm_attr[&snode];
   }
 
-  SNodeAttribute &operator[](const Handle<SNode> &snode) {
+  SNodeAttribute &operator[](const std::shared_ptr<SNode> &snode) {
     return snode_llvm_attr[snode.get()];
   }
 };

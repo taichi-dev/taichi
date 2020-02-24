@@ -30,6 +30,8 @@ TI_FORCE_INLINE Program &get_current_program() {
   return *current_program;
 }
 
+class StructCompiler;
+
 class Program {
  public:
   using Kernel = taichi::Tlang::Kernel;
@@ -41,7 +43,6 @@ class Program {
   // launches
   void *llvm_runtime;
   CompileConfig config;
-  ProfilerBase *cpu_profiler;
   Context context;
   std::unique_ptr<TaichiLLVMContext> llvm_context_host, llvm_context_device;
   bool sync;  // device/host synchronized?
@@ -53,11 +54,7 @@ class Program {
 
   std::vector<std::unique_ptr<Kernel>> functions;
 
-  std::function<void()> profiler_print_gpu;
-  std::function<void()> profiler_clear_gpu;
-  std::unique_ptr<ProfilerBase> profiler_llvm;
-
-  std::string layout_fn;
+  std::unique_ptr<ProfilerBase> profiler;
 
   Program() : Program(default_compile_config.arch) {
   }
@@ -65,42 +62,23 @@ class Program {
   Program(Arch arch);
 
   void profiler_print() {
-    if (config.use_llvm) {
-      profiler_llvm->print();
-    } else {
-      if (config.arch == Arch::cuda) {
-        profiler_print_gpu();
-      } else {
-        cpu_profiler->print();
-      }
-    }
+    profiler->print();
   }
 
   void profiler_clear() {
-    if (config.use_llvm) {
-      profiler_llvm->clear();
-    } else {
-      if (config.arch == Arch::cuda) {
-        profiler_clear_gpu();
-      } else {
-        cpu_profiler->clear();
-      }
-    }
+    profiler->clear();
   }
 
   void profiler_start(const std::string &name) {
-    TI_ASSERT(config.use_llvm);
-    profiler_llvm->start(name);
+    profiler->start(name);
   }
 
   void profiler_stop() {
-    TI_ASSERT(config.use_llvm);
-    profiler_llvm->stop();
+    profiler->stop();
   }
 
   ProfilerBase *get_profiler() {
-    TI_ASSERT(config.use_llvm);
-    return profiler_llvm.get();
+    return profiler.get();
   }
 
   Context &get_context() {
@@ -155,6 +133,8 @@ class Program {
 
   FunctionType compile(Kernel &kernel);
 
+  void initialize_runtime_system(StructCompiler *scomp);
+
   void materialize_layout();
 
   inline Kernel &get_current_kernel() {
@@ -163,7 +143,7 @@ class Program {
   }
 
   TaichiLLVMContext *get_llvm_context(Arch arch) {
-    if (arch == Arch::x86_64) {
+    if (arch == Arch::x64) {
       return llvm_context_host.get();
     } else {
       return llvm_context_device.get();
@@ -175,7 +155,7 @@ class Program {
   Kernel &get_snode_writer(SNode *snode);
 
   Arch get_host_arch() {
-    return Arch::x86_64;
+    return Arch::x64;
   }
 
   float64 get_total_compilation_time() {

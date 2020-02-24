@@ -3,21 +3,18 @@
 
 #include "../snode.h"
 #include "base.h"
-#include "loopgen.h"
 
 TLANG_NAMESPACE_BEGIN
 
-class StructCompiler : public CodeGenBase {
+class StructCompiler {
  public:
   std::vector<SNode *> stack;
   std::vector<SNode *> snodes;
   std::vector<SNode *> ambient_snodes;
-  std::string root_type;
-  std::function<void()> creator;
-  std::function<void()> profiler_print;
-  std::function<void()> profiler_clear;
-  LoopGenerator loopgen;
+  std::size_t root_size;
   Program *prog;
+
+  SNodeAttributes snode_attr;
 
   StructCompiler(Program *prog);
 
@@ -34,11 +31,9 @@ class StructCompiler : public CodeGenBase {
 
   virtual void generate_leaf_accessors(SNode &snode);
 
-  virtual void load_accessors(SNode &snode);
-
   virtual void run(SNode &node, bool host);
 
-  static std::unique_ptr<StructCompiler> make(bool use_llvm, Program *prog, Arch arch);
+  static std::unique_ptr<StructCompiler> make(Program *prog, Arch arch);
 };
 
 TLANG_NAMESPACE_END

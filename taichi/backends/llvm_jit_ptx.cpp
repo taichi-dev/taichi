@@ -206,11 +206,6 @@ void CUDAContext::launch(CUfunction func,
   make_current();
   // Kernel parameters
 
-  /*
-  check_cuda_error(cudaMemcpy(context_buffer, context_ptr, sizeof(Context),
-                               cudaMemcpyHostToDevice));
-                               */
-
   void *KernelParams[] = {context_ptr};
 
   if (profiler) {

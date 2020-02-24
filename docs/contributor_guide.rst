@@ -116,3 +116,25 @@ Efficient Code Navigation across Python/C++
 If you work on the language frontend (Python/C++ interface), to navigate around the code base, `ffi-navigator <https://github.com/tqchen/ffi-navigator>`_
 allows you to jump from Python bindings to their definitions in C++.
 Follow their README to set up your editor.
+
+
+Folder structure
+*************************************
+
+Key folders are
+
+- ``taichi``: The core compiler implementation
+
+  - ``analysis``: Static analysis passes
+  - ``runtime``: Runtime functions
+  - ``backends``: Code generators
+  - ``transforms``: IR transform passes
+  - ``python_bindings``: C++/Python interfaces
+
+- ``python``: Python frontend implementation
+- ``examples``: Examples
+- ``docs``: Documentation
+- ``tests``: C++ and Python tests
+- ``benchmarks``: Performance benchmarks
+- ``misc``: Random (yet useful) files
+- ...

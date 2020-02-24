@@ -1,13 +1,13 @@
 // Bindings for the python frontend
 
-#include "tlang.h"
+#include "../tlang.h"
 #include <pybind11/functional.h>
 #include <pybind11/pybind11.h>
 #include <taichi/extension.h>
 #include <taichi/common/interface.h>
 #include <taichi/python/export.h>
 #include <taichi/gui/gui.h>
-#include "svd.h"
+#include "../svd.h"
 
 TI_NAMESPACE_BEGIN
 
@@ -45,7 +45,7 @@ void export_lang(py::module &m) {
 
   py::enum_<Arch>(m, "Arch", py::arithmetic())
 #define PER_ARCH(x) .value(#x, Arch::x)
-#include "inc/archs.inc.h"
+#include <taichi/inc/archs.inc.h>
 #undef PER_ARCH
       .export_values();
 
@@ -54,13 +54,13 @@ void export_lang(py::module &m) {
 
   py::enum_<SNodeType>(m, "SNodeType", py::arithmetic())
 #define PER_SNODE(x) .value(#x, SNodeType::x)
-#include "inc/snodes.inc.h"
+#include <taichi/inc/snodes.inc.h>
 #undef PER_SNODE
       .export_values();
 
   py::enum_<Extension>(m, "Extension", py::arithmetic())
 #define PER_EXTENSION(x) .value(#x, Extension::x)
-#include "inc/extensions.inc.h"
+#include <taichi/inc/extensions.inc.h>
 #undef PER_EXTENSION
       .export_values();
 

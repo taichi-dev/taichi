@@ -8,7 +8,7 @@
 #include <cuda.h>
 #endif
 #include "cuda_context.h"
-#include "llvm_jit.h"
+#include "llvm_jit_cpu.h"
 #include <taichi/program.h>
 #include <taichi/context.h>
 #include <taichi/system/timer.h>

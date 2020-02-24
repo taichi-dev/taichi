@@ -27,7 +27,7 @@
 
 #include "tlang_util.h"
 #include "taichi_llvm_context.h"
-#include "backends/llvm_jit.h"
+#include "taichi/backends/llvm_jit_cpu.h"
 
 TLANG_NAMESPACE_BEGIN
 

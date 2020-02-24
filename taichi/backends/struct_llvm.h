@@ -1,7 +1,7 @@
 // Codegen for the hierarchical data structure (LLVM)
 
 #include "struct.h"
-#include "llvm_jit.h"
+#include "llvm_jit_cpu.h"
 #include "llvm_codegen_utils.h"
 
 TLANG_NAMESPACE_BEGIN

@@ -1,4 +1,4 @@
-#define _GLSL_DEBUG 1
+//#define _GLSL_DEBUG 1
 #include "codegen_opengl.h"
 #include <taichi/platform/opengl/opengl_api.h>
 #include <taichi/platform/opengl/opengl_data_types.h>
@@ -731,35 +731,6 @@ void OpenglCodeGen::lower()
 #endif
 } // }}}
 
-static const StructCompiledResult *g_struct_compiled; // singleton
-
-const StructCompiledResult *get_opengl_struct_compiled()
-{
-  TI_ASSERT(g_struct_compiled);
-  return g_struct_compiled;
-}
-
-struct OpenglRuntime
-{
-  size_t root_size;
-
-  OpenglRuntime(const StructCompiledResult *scomp)
-  {
-    root_size = scomp->root_size;
-    create_glsl_root_buffer(root_size);
-  }
-};
-
-OpenglRuntime *init_opengl_runtime()
-{
-  static OpenglRuntime *runtime; // singleton
-  if (!runtime) {
-    auto scomp = get_opengl_struct_compiled();
-    runtime = new OpenglRuntime(scomp);
-  }
-  return runtime;
-}
-
 struct CompiledKernel
 {
   GLProgram *glsl;
@@ -801,7 +772,6 @@ struct CompiledKernel
 
   void launch(Context &ctx)
   {
-    init_opengl_runtime();
     std::vector<IOV> iov;
     if (arg_count) {
       iov.push_back(IOV{ctx.args, arg_count * sizeof(uint64_t)});
@@ -820,7 +790,6 @@ struct CompiledKernel
 
 FunctionType OpenglCodeGen::gen(void)
 {
-  g_struct_compiled = struct_compiled_; // evil singleton getter
   KernelGen codegen(kernel_, kernel_name_, struct_compiled_);
   codegen.run(*prog_->snode_root);
   auto compiled = new CompiledKernel(codegen);

@@ -12,24 +12,25 @@
 
 TI_NAMESPACE_BEGIN
 
-void tc_imwrite(const std::string &filename, size_t ptr, int resx, int resy, int comp)
-{
+void imwrite(const std::string &filename,
+             size_t ptr,
+             int resx,
+             int resy,
+             int comp) {
 #if defined(TI_IMAGE_IO)
   void *data = (void *)ptr;
   TI_ASSERT_INFO(filename.size() >= 5, "Bad image file name");
   int result = 0;
   std::string suffix = filename.substr(filename.size() - 4);
   if (suffix == ".png") {
-    result = stbi_write_png(filename.c_str(), resx, resy,
-                                  comp, data, comp * resx);
+    result =
+        stbi_write_png(filename.c_str(), resx, resy, comp, data, comp * resx);
   } else if (suffix == ".bmp") {
     // TODO: test
-    result = stbi_write_bmp(filename.c_str(), resx, resy,
-                                  comp, data);
+    result = stbi_write_bmp(filename.c_str(), resx, resy, comp, data);
   } else if (suffix == ".jpg") {
     // TODO: test
-    result = stbi_write_jpg(filename.c_str(), resx, resy,
-                                  comp, data, 95);
+    result = stbi_write_jpg(filename.c_str(), resx, resy, comp, data, 95);
   } else {
     TI_ERROR("Unknown image file suffix {}", suffix);
   }
@@ -44,8 +45,7 @@ void tc_imwrite(const std::string &filename, size_t ptr, int resx, int resy, int
 #endif
 }
 
-std::vector<size_t> tc_imread(const std::string &filename, int comp)
-{
+std::vector<size_t> imread(const std::string &filename, int comp) {
 #if defined(TI_IMAGE_IO)
   int resx = 0, resy = 0;
   void *data = stbi_load(filename.c_str(), &resx, &resy, &comp, comp);
@@ -54,7 +54,8 @@ std::vector<size_t> tc_imread(const std::string &filename, int comp)
     TI_ERROR("Cannot read image file [{}]", filename);
   }
 
-  std::vector<size_t> ret = {(size_t)data, (size_t)resx, (size_t)resy, (size_t)comp};
+  std::vector<size_t> ret = {(size_t)data, (size_t)resx, (size_t)resy,
+                             (size_t)comp};
   return ret;
 #else
   TI_ERROR(

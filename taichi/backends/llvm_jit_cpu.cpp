@@ -1,9 +1,9 @@
-#include "llvm_jit_cpu.h"
-#include "../program.h"
 #include <llvm/Support/TargetRegistry.h>
 #include <llvm/Target/TargetMachine.h>
 #include <llvm/Analysis/TargetTransformInfo.h>
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
+#include "llvm_jit_cpu.h"
+#include "../program.h"
 
 TLANG_NAMESPACE_BEGIN
 

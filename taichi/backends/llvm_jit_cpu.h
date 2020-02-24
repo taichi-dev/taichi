@@ -9,7 +9,6 @@
 // leads to a JIT that crashes all C++ exception after JIT session
 // destruction...
 
-#include "../tlang_util.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ExecutionEngine/ExecutionEngine.h"
 #include "llvm/ExecutionEngine/JITSymbol.h"
@@ -33,6 +32,7 @@
 #include "llvm/Transforms/Scalar/GVN.h"
 #include "llvm/Transforms/IPO.h"
 #include <memory>
+#include "../tlang_util.h"
 
 TLANG_NAMESPACE_BEGIN
 

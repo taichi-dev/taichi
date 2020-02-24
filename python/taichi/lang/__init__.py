@@ -111,6 +111,10 @@ def init(default_fp=None, default_ip=None, print_preprocessed=None, debug=None, 
   if arch is not None:
     ti.cfg.arch = getattr(core.Arch, arch)
 
+  log_level = os.environ.get("TI_LOG_LEVEL")
+  if log_level is not None:
+    ti.set_logging_level(log_level.lower())
+
   ti.get_runtime().create_program()
 
 def cache_shared(v):

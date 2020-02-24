@@ -14,6 +14,8 @@ enum class Arch {
 
 std::string arch_name(Arch arch);
 
+Arch arch_from_name(const std::string &arch);
+
 bool arch_is_cpu(Arch arch);
 
 bool arch_is_gpu(Arch arch);

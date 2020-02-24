@@ -49,6 +49,9 @@ void export_lang(py::module &m) {
 #undef PER_ARCH
       .export_values();
 
+  m.def("arch_name", arch_name);
+  m.def("arch_from_name", arch_from_name);
+
   py::enum_<SNodeType>(m, "SNodeType", py::arithmetic())
 #define PER_SNODE(x) .value(#x, SNodeType::x)
 #include "inc/snodes.inc.h"

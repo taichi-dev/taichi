@@ -275,6 +275,8 @@ void begin_glsl_kernels(const std::vector<IOV> &iov)
   ssbo = std::vector<GLSSBO>(iov.size());
 
   for (int i = 0; i < ssbo.size(); i++) {
+    if (!iov[i].size)
+      continue;
     ssbo[i].bind_index(i + 1);
     ssbo[i].bind_data(iov[i].base, iov[i].size, GL_DYNAMIC_READ); // input
   }
@@ -299,6 +301,8 @@ void end_glsl_kernels(const std::vector<IOV> &iov)
   //glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT); // TODO(archibate): move to Program::synchroize()
 
   for (int i = 0; i < ssbo.size(); i++) {
+    if (!iov[i].size)
+      continue;
     void *p = ssbo[i].map(0, iov[i].size); // output
     std::memcpy(iov[i].base, p, iov[i].size);
   }

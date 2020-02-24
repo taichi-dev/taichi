@@ -72,8 +72,9 @@ struct CompiledProgram
   int ext_arr_idx;
   size_t ext_arr_size;
   bool has_ext_arr{false};
+  size_t gtmp_size;
 
-  explicit CompiledProgram(Kernel *kernel)
+  CompiledProgram(Kernel *kernel, size_t gtmp_size)
   {
     has_ext_arr = false;
     arg_count = kernel->args.size();
@@ -91,14 +92,14 @@ struct CompiledProgram
   void launch(Context &ctx) const
   {
     std::vector<IOV> iov;
-    if (arg_count) {
-      iov.push_back(IOV{ctx.args, arg_count * sizeof(uint64_t)});
-      if (has_ext_arr) {
-        iov.push_back(IOV{ctx.extra_args, arg_count * taichi_max_num_args * sizeof(int)});
-        void *extptr = (void *)ctx.args[ext_arr_idx];
-        ctx.args[ext_arr_idx] = 0;
-        iov.push_back(IOV{extptr, ext_arr_size});
-      }
+    iov.push_back(IOV{ctx.args, arg_count * sizeof(uint64_t)});
+    void *gtmp_base = std::calloc(gtmp_size, 1);
+    iov.push_back(IOV{gtmp_base, gtmp_size});
+    if (has_ext_arr) {
+      iov.push_back(IOV{ctx.extra_args, arg_count * taichi_max_num_args * sizeof(int)});
+      void *extptr = (void *)ctx.args[ext_arr_idx];
+      ctx.args[ext_arr_idx] = 0;
+      iov.push_back(IOV{extptr, ext_arr_size});
     }
     begin_glsl_kernels(iov);
     for (const auto &ker: kernels) {
@@ -114,9 +115,9 @@ class KernelGen : public IRVisitor
 
 public:
   KernelGen(Kernel *kernel, std::string kernel_name,
-      const StructCompiledResult *struct_compiled)
+      const StructCompiledResult *struct_compiled, size_t gtmp_size)
     : kernel(kernel),
-      compiled_program_(kernel),
+      compiled_program_(kernel, gtmp_size),
       struct_compiled_(struct_compiled),
       kernel_name_(kernel_name),
       glsl_kernel_prefix_(kernel_name)
@@ -164,23 +165,30 @@ private: // {{{
 
   void generate_header()
   { // {{{
-    kernel_src_code_ += struct_compiled_->source_code;
+    num_threads_ = 1;
+    kernel_src_code_ = struct_compiled_->source_code;
     emit("layout(std430, binding = 0) buffer data_i32 {{ int _data_i32_[]; }};");
     emit("layout(std430, binding = 0) buffer data_f32 {{ float _data_f32_[]; }};");
     emit("layout(std430, binding = 0) buffer data_f64 {{ double _data_f64_[]; }};");
     emit("layout(std430, binding = 1) buffer args_i32 {{ int _args_i32_[]; }};");
     emit("layout(std430, binding = 1) buffer args_f32 {{ float _args_f32_[]; }};");
-    emit("layout(std430, binding = 1) buffer args_f64 {{ double _args_f64_[]; }};");
-    emit("layout(std430, binding = 2) buffer earg_i32 {{ int _earg_i32_[]; }};");
-    emit("layout(std430, binding = 3) buffer extr_i32 {{ int _extr_i32_[]; }};");
-    emit("layout(std430, binding = 3) buffer extr_f32 {{ float _extr_f32_[]; }};");
-    emit("layout(std430, binding = 3) buffer extr_f64 {{ double _extr_f64_[]; }};");
+    //emit("layout(std430, binding = 1) buffer args_f64 {{ double _args_f64_[]; }};");
+    emit("layout(std430, binding = 2) buffer gtmp_i32 {{ int _gtmp_i32_[]; }};");
+    emit("layout(std430, binding = 2) buffer gtmp_f32 {{ float _gtmp_f32_[]; }};");
+    emit("layout(std430, binding = 2) buffer gtmp_f64 {{ double _gtmp_f64_[]; }};");
+    emit("layout(std430, binding = 3) buffer earg_i32 {{ int _earg_i32_[]; }};");
+    emit("layout(std430, binding = 4) buffer extr_i32 {{ int _extr_i32_[]; }};");
+    emit("layout(std430, binding = 4) buffer extr_f32 {{ float _extr_f32_[]; }};");
+    emit("layout(std430, binding = 4) buffer extr_f64 {{ double _extr_f64_[]; }};");
     emit("#define _arg_i32(x) _args_i32_[(x) << 1]"); // skip to 64bit stride
     emit("#define _arg_f32(x) _args_f32_[(x) << 1]");
     emit("#define _arg_f64(x) _args_f64_[(x) << 0]");
     emit("#define _mem_i32(x) _data_i32_[(x) >> 2]");
     emit("#define _mem_f32(x) _data_f32_[(x) >> 2]");
     emit("#define _mem_f64(x) _data_f64_[(x) >> 3]");
+    emit("#define _gtx_i32(x) _gtmp_i32_[(x) >> 2]");
+    emit("#define _gtx_f32(x) _gtmp_f32_[(x) >> 2]");
+    emit("#define _gtx_f64(x) _gtmp_f64_[(x) >> 3]");
     emit("#define _ext_ns_i32(x) _extr_i32_[(x) >> 0]");
     emit("#define _ext_ns_f32(x) _extr_f32_[(x) >> 0]");
     emit("#define _ext_ns_f64(x) _extr_f64_[(x) >> 0]");
@@ -577,6 +585,12 @@ int _rand_i32()\n\
     emit("}}\n");
   }
 
+  void visit(GlobalTemporaryStmt *stmt) override {
+    TI_ASSERT(stmt->width() == 1);
+    emit("#define _at_{} _gtx_{}({})", stmt->raw_name(),
+        data_type_short_name(stmt->element_type()), stmt->offset);
+  }
+
   void visit(LoopIndexStmt *stmt) override
   {
     TI_ASSERT(!stmt->is_struct_for);
@@ -807,7 +821,7 @@ void OpenglCodeGen::lower()
 
 FunctionType OpenglCodeGen::gen(void)
 {
-  KernelGen codegen(kernel_, kernel_name_, struct_compiled_);
+  KernelGen codegen(kernel_, kernel_name_, struct_compiled_, global_tmps_buffer_size_);
   codegen.run(*prog_->snode_root);
   auto compiled = codegen.get_compiled_program();
   return [compiled](Context &ctx) {

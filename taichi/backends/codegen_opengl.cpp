@@ -1,4 +1,4 @@
-//#define _GLSL_DEBUG 1
+#define _GLSL_DEBUG 1
 #include "codegen_opengl.h"
 #include <taichi/platform/opengl/opengl_api.h>
 #include <taichi/platform/opengl/opengl_data_types.h>
@@ -208,7 +208,7 @@ int _rand_i32()\n\
 
   virtual void visit(Stmt *stmt) override
   {
-    TI_ERROR("[glsl] unsupported statement type {}", typeid(*stmt).name());
+    TI_WARN("[glsl] unsupported statement type {}", typeid(*stmt).name());
   }
 
   void visit(RandStmt *stmt) override
@@ -474,7 +474,7 @@ int _rand_i32()\n\
       num_threads_ = stmt->end_value - stmt->begin_value;
       emit("// range known at compile time");
       emit("int _thread_id_ = int(gl_GlobalInvocationID.x);");
-      emit("if (_thread_id_ > {}) return;", num_threads_);
+      emit("if (_thread_id_ >= {}) return;", num_threads_);
       emit("int _it_value_ = {} + _thread_id_ * {};",
           stmt->begin_value, 1 /* stmt->step? */);
     } else {
@@ -748,7 +748,7 @@ struct CompiledKernel
     this->used = codegen.used;
 
 #ifdef _GLSL_DEBUG
-    TI_INFO("source of kernel [{}]:\n{}", kernel_name, kernel_source_code);
+    TI_INFO("source of kernel [{}] * {}:\n{}", kernel_name, num_groups, kernel_source_code);
     std::ofstream(fmt::format("/tmp/{}.comp", kernel_name))
       .write(kernel_source_code.c_str(), kernel_source_code.size());
 #endif

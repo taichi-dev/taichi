@@ -9,6 +9,12 @@
 // leads to a JIT that crashes all C++ exception after JIT session
 // destruction...
 
+#if defined(min)
+#undef min
+#endif
+#if defined(max)
+#undef max
+#endif
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ExecutionEngine/ExecutionEngine.h"
 #include "llvm/ExecutionEngine/JITSymbol.h"

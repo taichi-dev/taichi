@@ -8,13 +8,6 @@ TLANG_NAMESPACE_BEGIN
 
 StructCompiler::StructCompiler(Program *prog) : prog(prog) {
   root_size = 0;
-  creator = [] { TI_ERROR("Not Specified"); };
-  profiler_clear = [] {
-    TI_WARN("Profiler not yet implemented in this backend.");
-  };
-  profiler_print = [] {
-    TI_WARN("Profiler not yet implemented in this backend.");
-  };
 }
 
 void StructCompiler::collect_snodes(SNode &snode) {

@@ -98,7 +98,7 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
 
         ProfilerBase *profiler = nullptr;
         if (prog->config.enable_profiler) {
-          profiler = prog->profiler_llvm.get();
+          profiler = prog->profiler.get();
         }
         cuda_context->launch((CUfunction)task.cuda_func, task.name, profiler,
                              &context, task.grid_dim, task.block_dim);

@@ -11,9 +11,6 @@ class StructCompiler {
   std::vector<SNode *> stack;
   std::vector<SNode *> snodes;
   std::vector<SNode *> ambient_snodes;
-  std::function<void()> creator;
-  std::function<void()> profiler_print;
-  std::function<void()> profiler_clear;
   std::size_t root_size;
   Program *prog;
 

@@ -13,10 +13,6 @@ StructCompilerLLVM::StructCompilerLLVM(Program *prog, Arch arch)
     : StructCompiler(prog),
       ModuleBuilder(prog->get_llvm_context(arch)->get_init_module()),
       arch(arch) {
-  creator = [] {
-    TI_WARN("Data structure creation not implemented");
-    return nullptr;
-  };
   tlctx = prog->get_llvm_context(arch);
   llvm_ctx = tlctx->ctx.get();
 }

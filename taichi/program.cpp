@@ -71,7 +71,7 @@ Program::Program(Arch arch) {
   config.arch = arch;
   if (config.use_llvm) {
     llvm_context_host = std::make_unique<TaichiLLVMContext>(Arch::x64);
-    profiler_llvm = make_profiler(arch);
+    profiler = make_profiler(arch);
   }
   current_kernel = nullptr;
   sync = true;
@@ -175,7 +175,7 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
   if (arch_use_host_memory(config.arch)) {
     // Profiler functions can only be called on host kernels
     tlctx->lookup_function<void(void *, void *)>("Runtime_set_profiler")(
-        llvm_runtime, profiler_llvm.get());
+        llvm_runtime, profiler.get());
 
     tlctx->lookup_function<void(void *, void *)>("Runtime_set_profiler_start")(
         llvm_runtime, (void *)&ProfilerBase::profiler_start);
@@ -189,14 +189,10 @@ void Program::materialize_layout() {
   // TODO: arch may also be arm etc.
   std::unique_ptr<StructCompiler> scomp = StructCompiler::make(this, Arch::x64);
   scomp->run(*snode_root, true);
-  scomp->creator();
 
   if (arch_is_cpu(config.arch) || config.arch == Arch::cuda) {
     initialize_runtime_system(scomp.get());
   }
-
-  profiler_print_gpu = scomp->profiler_print;
-  profiler_clear_gpu = scomp->profiler_clear;
 
   if (config.arch == Arch::cuda && config.use_llvm) {
     initialize_device_llvm_context();
@@ -216,7 +212,7 @@ void Program::materialize_layout() {
       params.llvm_ctx = get_llvm_context(get_host_arch());
       params.config = &config;
       params.mem_pool = memory_pool.get();
-      params.profiler = profiler_llvm.get();
+      params.profiler = profiler.get();
       metal_runtime_ = std::make_unique<metal::MetalRuntime>(std::move(params));
     }
     TI_INFO("Metal root buffer size: {} B", metal_struct_compiled_->root_size);

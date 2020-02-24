@@ -28,7 +28,7 @@ FunctionType CPUCodeGen::codegen_llvm() {
   return CodeGenLLVMCPU(this, kernel).gen();
 }
 
-void global_optimize_module_x86_64(std::unique_ptr<llvm::Module> &module) {
+void global_optimize_module_cpu(std::unique_ptr<llvm::Module> &module) {
   TI_AUTO_PROF
   auto JTMB = JITTargetMachineBuilder::detectHost();
   if (!JTMB) {

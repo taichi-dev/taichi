@@ -17,7 +17,7 @@ using namespace llvm;
 
 class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
  public:
-  TaichiLLVMJIT *jit;
+  TaichiLLVMJITCPU *jit;
 
   CodeGenBase *codegen;
   Kernel *kernel;

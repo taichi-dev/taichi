@@ -8,14 +8,14 @@
 #include "snode.h"
 
 TLANG_NAMESPACE_BEGIN
-class TaichiLLVMJIT;
+class TaichiLLVMJITCPU;
 
-void *jit_lookup_name(TaichiLLVMJIT *jit, const std::string &name);
+void *jit_lookup_name(TaichiLLVMJITCPU *jit, const std::string &name);
 
 class TaichiLLVMContext {
  public:
   std::unique_ptr<llvm::LLVMContext> ctx;
-  std::unique_ptr<TaichiLLVMJIT> jit;
+  std::unique_ptr<TaichiLLVMJITCPU> jit;
   std::unique_ptr<llvm::Module> runtime_module, struct_module;
   Arch arch;
 

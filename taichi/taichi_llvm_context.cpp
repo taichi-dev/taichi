@@ -56,7 +56,7 @@ TaichiLLVMContext::TaichiLLVMContext(Arch arch) : arch(arch) {
   ctx = std::make_unique<llvm::LLVMContext>();
   TI_TRACE("Creating llvm context for arch: {}", arch_name(arch));
   llvm::ExitOnError exit_on_err;
-  jit = exit_on_err(TaichiLLVMJIT::create(arch));
+  jit = exit_on_err(TaichiLLVMJITCPU::create(arch));
 }
 
 TaichiLLVMContext::~TaichiLLVMContext() {

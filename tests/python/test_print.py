@@ -3,7 +3,8 @@ import taichi as ti
 # Not really testable..
 # Just making sure it does not crash
 # Metal doesn't support ti.print() or 64-bit data
-@ti.archs_excluding(ti.metal)
+# So does OpenGL..
+@ti.archs_excluding(ti.metal, ti.opengl)
 def print_dt(dt):
   @ti.kernel
   def func():

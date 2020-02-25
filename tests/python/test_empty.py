@@ -8,3 +8,12 @@ def test_empty():
     pass
 
   func()
+
+@ti.all_archs
+def test_empty_args():
+
+  @ti.kernel
+  def func(x: ti.i32, arr: ti.ext_arr()):
+    pass
+
+  foo(42, np.arange(10, dtype=np.float32))

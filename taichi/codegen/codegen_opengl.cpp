@@ -509,9 +509,13 @@ int _rand_i32()\n\
       emit("const {} {} = {}(floor((float({}) * (1 + sign({} * {}) * 1e-6)) / float({})));",
           dt_name, bin_name, dt_name, lhs_name, lhs_name, rhs_name, rhs_name);
       return;
+    } else if (bin->op_type == BinaryOpType::mod) {
+      // NOTE: the GLSL built-in function `mod()` is a pythonic mod: x - y * floor(x / y)
+      emit("const {} {} = {} - {} * int({} / {});", dt_name, bin_name, lhs_name, rhs_name,
+          lhs_name, rhs_name);
+      return;
     } else if (bin->op_type == BinaryOpType::atan2) {
       emit("const {} {} = atan({}, {});", dt_name, bin_name, lhs_name, rhs_name);
-      return;
     }
     const auto binop = binary_op_type_symbol(bin->op_type);
     if (is_opengl_binary_op_infix(bin->op_type)) {

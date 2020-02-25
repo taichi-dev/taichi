@@ -278,6 +278,7 @@ class MetalRuntime::Impl {
 
     auto *llvm_ctx = params.llvm_ctx;
     auto *llvm_rtm = params.llvm_runtime;
+    TI_ASSERT(llvm_ctx != nullptr && llvm_rtm != nullptr);
     const size_t rtm_root_mem_size = llvm_ctx->lookup_function<size_t(void *)>(
         "Runtime_get_root_mem_size")(llvm_rtm);
     if (rtm_root_mem_size > 0) {
@@ -286,6 +287,7 @@ class MetalRuntime::Impl {
                 rtm_root_mem_size);
       auto *rtm_root_mem = params.llvm_ctx->lookup_function<uint8 *(void *)>(
           "Runtime_get_root")(llvm_rtm);
+      TI_ASSERT(rtm_root_mem != nullptr);
       root_buffer_ = new_mtl_buffer_no_copy(device_.get(), rtm_root_mem,
                                             rtm_root_mem_size);
     } else {

@@ -1,73 +1,86 @@
 import taichi as ti
+import pytest
 
-def all_data_types_and_test(foo):
-  def wrapped():
-    tests = []
-    for dt in [ti.i32, ti.i64, ti.i8, ti.i16, ti.u8, ti.u16, ti.u32, ti.u64, ti.f32, ti.f64]:
-      tests.append(foo(dt))
-    for test in tests:
-      # variables are expected to be declared before kernel invocation, discuss at:
-      # https://github.com/taichi-dev/taichi/pull/505#issuecomment-588644274
-      test()
-  return wrapped
+_TI_TYPES = [ti.i8, ti.i16, ti.i32, ti.u8, ti.u16, ti.u32, ti.f32]
+_TI_64_TYPES = [ti.i64, ti.u64, ti.f64]
 
-@ti.all_archs
-@all_data_types_and_test
-def test_type_assign_argument(dt):
+def _test_type_assign_argument(dt):
   x = ti.var(dt, shape=())
 
-  def tester():
-    @ti.kernel
-    def func(value: dt):
-      x[None] = value
+  @ti.kernel
+  def func(value: dt):
+    x[None] = value
 
-    func(3)
-    assert x[None] == 3
+  func(3)
+  assert x[None] == 3
 
-  return tester
+@pytest.mark.parametrize('dt', _TI_TYPES)
+# Metal backend doesn't support arg type other than 32-bit yet.
+@ti.archs_excluding(ti.metal)
+def test_type_assign_argument(dt):
+  _test_type_assign_argument(dt)
 
+
+@pytest.mark.parametrize('dt', _TI_64_TYPES)
+@ti.require(ti.extension.data64)
 @ti.all_archs
-@all_data_types_and_test
-def test_type_operator(dt):
+def test_type_assign_argument64(dt):
+  _test_type_assign_argument(dt)
+
+def _test_type_operator(dt):
   x = ti.var(dt, shape=())
   y = ti.var(dt, shape=())
   add = ti.var(dt, shape=())
   mul = ti.var(dt, shape=())
 
-  def tester():
-    @ti.kernel
-    def func():
-      add[None] = x[None] + y[None]
-      mul[None] = x[None] * y[None]
+  @ti.kernel
+  def func():
+    add[None] = x[None] + y[None]
+    mul[None] = x[None] * y[None]
 
-    for i in range(0, 3):
-      for j in range(0, 3):
-        x[None] = i
-        y[None] = j
-        func()
-        assert add[None] == x[None] + y[None]
-        assert mul[None] == x[None] * y[None]
+  for i in range(0, 3):
+    for j in range(0, 3):
+      x[None] = i
+      y[None] = j
+      func()
+      assert add[None] == x[None] + y[None]
+      assert mul[None] == x[None] * y[None]
 
-  return tester
-
+@pytest.mark.parametrize('dt', _TI_TYPES)
 @ti.all_archs
-@all_data_types_and_test
-def test_type_tensor(dt):
+def test_type_operator(dt):
+  _test_type_operator(dt)
+
+@pytest.mark.parametrize('dt', _TI_64_TYPES)
+@ti.require(ti.extension.data64)
+@ti.all_archs
+def test_type_operator64(dt):
+  _test_type_operator(dt)
+
+def _test_type_tensor(dt):
   x = ti.var(dt, shape=(3, 2))
 
-  def tester():
-    @ti.kernel
-    def func(i: ti.i32, j: ti.i32):
-      x[i, j] = 3
+  @ti.kernel
+  def func(i: ti.i32, j: ti.i32):
+    x[i, j] = 3
 
-    for i in range(0, 3):
-      for j in range(0, 2):
-        func(i, j)
-        assert x[i, j] == 3
+  for i in range(0, 3):
+    for j in range(0, 2):
+      func(i, j)
+      assert x[i, j] == 3
 
-  return tester
 
+@pytest.mark.parametrize('dt', _TI_TYPES)
 @ti.all_archs
+def test_type_tensor(dt):
+  _test_type_tensor(dt)
+
+@pytest.mark.parametrize('dt', _TI_64_TYPES)
+@ti.require(ti.extension.data64)
+@ti.all_archs
+def test_type_tensor64(dt):
+  _test_type_tensor(dt)
+
 def _test_overflow(dt, n):
   a = ti.var(dt, shape=())
   b = ti.var(dt, shape=())
@@ -90,12 +103,23 @@ def _test_overflow(dt, n):
   else:
     assert c[None] == 2 ** n // 3 * 2 # does not overflow
 
-def test_overflow():
-  _test_overflow(ti.i8, 8)
-  _test_overflow(ti.u8, 8)
-  _test_overflow(ti.i16, 16)
-  _test_overflow(ti.u16, 16)
-  _test_overflow(ti.i32, 32)
-  _test_overflow(ti.u32, 32)
-  _test_overflow(ti.i64, 64)
-  _test_overflow(ti.u64, 64)
+@pytest.mark.parametrize('dt,n', [
+  (ti.i8, 8),
+  (ti.u8, 8),
+  (ti.i16, 16),
+  (ti.u16, 16),
+  (ti.i32, 32),
+  (ti.u32, 32),
+])
+@ti.all_archs
+def test_overflow(dt, n):
+  _test_overflow(dt, n)
+
+@pytest.mark.parametrize('dt,n', [
+  (ti.i64, 64),
+  (ti.u64, 64),
+])
+@ti.require(ti.extension.data64)
+@ti.all_archs
+def test_overflow64(dt, n):
+  _test_overflow(dt, n)

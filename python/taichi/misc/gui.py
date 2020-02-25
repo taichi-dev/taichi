@@ -37,7 +37,8 @@ class GUI:
     self.background_color = background_color
     self.key_pressed = set()
     self.clear()
-    self.core.set_profiler(ti.core.get_current_program().get_profiler())
+    if ti.core.get_current_program():
+      self.core.set_profiler(ti.core.get_current_program().get_profiler())
     
   def clear(self, color=None):
     if color is None:

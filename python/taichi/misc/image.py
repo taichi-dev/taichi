@@ -8,7 +8,12 @@ def cook_image(img):
     img = img.to_numpy()
   assert isinstance(img, np.ndarray)
   assert len(img.shape) in [2, 3]
-  img = img.astype(np.uint8)
+  if img.dtype in [np.uint8, np.uint16, np.uint32, np.uint64]:
+    img = img.astype(np.float32) * (1 / np.iinfo(img.dtype).max)
+  elif img.dtype in [np.float32, np.float64]:
+    img = img.astype(np.float32)
+  else:
+    raise ValueError(f'Data type {img.dtype} not supported for image')
   return img
 
 def imwrite(img, filename):

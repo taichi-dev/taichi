@@ -127,6 +127,7 @@ class TaichiLLVMJITCPU {
   }
 
   VModuleKey addModule(std::unique_ptr<llvm::Module> M) {
+    TI_ASSERT(M);
     global_optimize_module_cpu(M);
     // Create a new VModuleKey.
     VModuleKey K = ES.allocateVModule();

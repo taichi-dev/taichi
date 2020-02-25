@@ -1,4 +1,4 @@
-// A helper for the llvm backend
+// A helper for llvm backends
 
 #include <llvm/Transforms/Utils/Cloning.h>
 #include "llvm/ADT/APFloat.h"
@@ -462,6 +462,18 @@ void TaichiLLVMContext::print_huge_functions() {
 }
 
 TaichiLLVMContext::~TaichiLLVMContext() {
+}
+
+llvm::DataLayout TaichiLLVMContext::get_data_layout() {
+  return jit->getDataLayout();
+}
+
+void TaichiLLVMContext::add_module(std::unique_ptr<llvm::Module> module) {
+  jit->addModule(std::move(module));
+}
+
+llvm::JITSymbol TaichiLLVMContext::lookup_symbol(const std::string &name) {
+  return jit->lookup(name);
 }
 
 template llvm::Value *TaichiLLVMContext::get_constant(float32 t);

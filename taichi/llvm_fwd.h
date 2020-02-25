@@ -6,4 +6,6 @@ class Type;
 class Value;
 class Module;
 class Function;
+class DataLayout;
+class JITSymbol;
 }  // namespace llvm

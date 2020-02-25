@@ -1,5 +1,7 @@
 #pragma once
-// A helper for the llvm backend
+
+// A helper for llvm backends (x64, arm64, cuda, amdgpu etc)
+// in charge of JIT compiling and invoking LLVM modules.
 
 #include <functional>
 
@@ -15,7 +17,11 @@ void *jit_lookup_name(TaichiLLVMJITCPU *jit, const std::string &name);
 class TaichiLLVMContext {
  public:
   std::unique_ptr<llvm::LLVMContext> ctx;
+
+ private:
   std::unique_ptr<TaichiLLVMJITCPU> jit;
+
+ public:
   std::unique_ptr<llvm::Module> runtime_module, struct_module;
   Arch arch;
 
@@ -28,6 +34,10 @@ class TaichiLLVMContext {
   std::unique_ptr<llvm::Module> clone_struct_module();
 
   void set_struct_module(const std::unique_ptr<llvm::Module> &module);
+
+  void add_module(std::unique_ptr<llvm::Module> module);
+
+  llvm::JITSymbol lookup_symbol(const std::string &name);
 
   virtual void *lookup_function_pointer(const std::string &name) {
     auto func_ptr = jit_lookup_name(jit.get(), name);
@@ -60,6 +70,8 @@ class TaichiLLVMContext {
 
   template <typename T>
   llvm::Value *get_constant(DataType dt, T t);
+
+  llvm::DataLayout get_data_layout();
 
   std::string type_name(llvm::Type *type);
 

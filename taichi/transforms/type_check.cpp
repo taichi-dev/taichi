@@ -1,7 +1,7 @@
 // Type checking
 
 #include "../ir.h"
-#include <taichi/lang.h>
+#include <taichi/tlang.h>
 
 TLANG_NAMESPACE_BEGIN
 

@@ -202,7 +202,8 @@ void Program::materialize_layout() {
   std::unique_ptr<StructCompiler> scomp = StructCompiler::make(this, Arch::x64);
   scomp->run(*snode_root, true);
 
-  if (arch_is_cpu(config.arch) || config.arch == Arch::cuda) {
+  if (arch_is_cpu(config.arch) || config.arch == Arch::cuda ||
+      config.arch == Arch::metal) {
     initialize_runtime_system(scomp.get());
   }
 

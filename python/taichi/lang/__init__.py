@@ -3,6 +3,7 @@ from .matrix import Matrix
 from .transformer import TaichiSyntaxError
 from .ndrange import ndrange, GroupedNDRange
 from copy import deepcopy as _deepcopy
+import functools
 import os
 
 core = taichi_lang_core
@@ -211,6 +212,13 @@ def _get_or_make_arch_checkers(kwargs):
 def all_archs_with(**kwargs):
   kwargs = _deepcopy(kwargs)
   def decorator(test):
+    # @pytest.mark.parametrize decorator only knows about regular function args,
+    # without *args or **kwargs. By decorating with @functools.wraps, the
+    # signature of |test| is preserved, so that @ti.all_archs can be used after
+    # the parametrization decorator.
+    #
+    # Full discussion: https://github.com/pytest-dev/pytest/issues/6810
+    @functools.wraps(test)
     def wrapped(*test_args, **test_kwargs):
       import taichi as ti
       can_run_on = test_kwargs.pop(
@@ -255,6 +263,7 @@ def archs_excluding(*excluded_archs, **kwargs):
   excluded_archs = set(excluded_archs)
 
   def decorator(test):
+    @functools.wraps(test)
     def wrapped(*test_args, **test_kwargs):
       def checker(arch): return arch not in excluded_archs
       _get_or_make_arch_checkers(test_kwargs).register(checker)
@@ -278,6 +287,7 @@ def require(*exts):
   assert all([isinstance(e, core.Extension) for e in exts])
 
   def decorator(test):
+    @functools.wraps(test)
     def wrapped(*test_args, **test_kwargs):
       def checker(arch): return all([is_supported(arch, e) for e in exts])
       _get_or_make_arch_checkers(test_kwargs).register(checker)

@@ -235,7 +235,7 @@ float atomic##Add##_##mem##_f##_32(int addr, float rhs) \
     old = _##mem##_i##_32(addr); \
     new = floatBitsToInt(_f_(intBitsToFloat(old) _o_ rhs)); \
   } while (old != atomicCompSwap(_Ax_(_##mem##_i##_32(addr)), old, new)); \
-  return intBitsToFloat(new); \
+  return intBitsToFloat(old); \
 }\n\
 #define _Acma_ ,\n\
 #define _Atm_(func, at, x, rhs) _Ax_(func##at(x, rhs))\n\

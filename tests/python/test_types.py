@@ -16,8 +16,7 @@ def _test_type_assign_argument(dt):
 
 @pytest.mark.parametrize('dt', _TI_TYPES)
 # OpenGL only supports i1, i32, u32, f32, f64 in GLSL.
-# Metal backend doesn't support arg type other than 32-bit yet.
-@ti.archs_excluding(ti.metal, ti.opengl)
+@ti.archs_excluding(ti.opengl)
 def test_type_assign_argument(dt):
   _test_type_assign_argument(dt)
 

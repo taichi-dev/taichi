@@ -222,23 +222,27 @@ private: // {{{
         "#define _ext_ns_f32(x) _extr_f32_[(x) >> 0]\n"
         "#define _ext_ns_f64(x) _extr_f64_[(x) >> 0]\n";
     }
+    kernel_header +=
+      "#define _Ax_(x) x\n"
+      "#define _At_(x) _Ax_(_at_##x(x))\n";
     if (used.atomic_float) { // {{{
       kernel_header += "\
-#define _Atmf_Def(Add, _f_, _o_, _32, float) \
-float atomic##Add##_f##_32(int addr, float rhs) \
+#define _Atmf_Def(Add, _f_, _o_, mem, _32, float) \
+float atomic##Add##_##mem##_f##_32(int addr, float rhs) \
 { \
   int old, new, ret; \
   do { \
-    old = _mem_i##_32(addr); \
+    old = _##mem##_i##_32(addr); \
     new = floatBitsToInt(_f_(intBitsToFloat(old) _o_ rhs)); \
-  } while (old != atomicCompSwap(_mem_i##_32(addr), old, new)); \
+  } while (old != atomicCompSwap(_Ax_(_##mem##_i##_32(addr)), old, new)); \
   return intBitsToFloat(new); \
 }\n\
 #define _Acma_ ,\n\
-_Atmf_Def(Add,, +, 32, float)\n\
-_Atmf_Def(Sub,, -, 32, float)\n\
-_Atmf_Def(Max, max, _Acma_, 32, float)\n\
-_Atmf_Def(Min, min, _Acma_, 32, float)\n\
+#define _Atm_(func, at, x, rhs) _Ax_(func##at(x, rhs))\n\
+_Atmf_Def(Add,, +, mem, 32, float)\n\
+_Atmf_Def(Sub,, -, mem, 32, float)\n\
+_Atmf_Def(Max, max, _Acma_, mem, 32, float)\n\
+_Atmf_Def(Min, min, _Acma_, mem, 32, float)\n\
 "
 #ifdef _GLSL_INT64
 "\
@@ -249,6 +253,20 @@ _Atmf_Def(Min, min, _Acma_, 64, double)\n\
 "
 #endif
 "\n"; // discussion: https://github.com/taichi-dev/taichi/pull/495#issuecomment-590074123
+    if (used.global_temp) {
+      kernel_header +=
+        "_Atmf_Def(Add,, +, gtx, 32, float)\n"
+        "_Atmf_Def(Sub,, -, gtx, 32, float)\n"
+        "_Atmf_Def(Max, max, _Acma_, gtx, 32, float)\n"
+        "_Atmf_Def(Min, min, _Acma_, gtx, 32, float)\n";
+    }
+    if (used.external_ptr) {
+      kernel_header +=
+        "_Atmf_Def(Add,, +, ext_ns, 32, float)\n"
+        "_Atmf_Def(Sub,, -, ext_ns, 32, float)\n"
+        "_Atmf_Def(Max, max, _Acma_, ext_ns, 32, float)\n"
+        "_Atmf_Def(Min, min, _Acma_, ext_ns, 32, float)\n";
+    }
     } // }}}
     if (used.random) { // TODO(archibate): random in different offloads should share rand seed? {{{
       kernel_header += "\
@@ -379,20 +397,20 @@ int _rand_i32()\n\
         stmt->chid, stmt->input_ptr->raw_name());
     if (stmt->output_snode->is_place())
       // The best way I could think to distinguish root_ptr and external_ptr in GLSL
-      emit("#define _at_{} _mem_{}({})", stmt->raw_name(),
-          data_type_short_name(stmt->output_snode->dt), stmt->raw_name());
+      emit("#define _at_{} _mem_{}", stmt->raw_name(),
+          data_type_short_name(stmt->output_snode->dt));
   }
 
   void visit(GlobalStoreStmt *stmt) override
   {
     TI_ASSERT(stmt->width() == 1);
-    emit("_at_{} = {};", stmt->ptr->raw_name(), stmt->data->raw_name());
+    emit("_At_({}) = {};", stmt->ptr->raw_name(), stmt->data->raw_name());
   }
 
   void visit(GlobalLoadStmt *stmt) override
   {
     TI_ASSERT(stmt->width() == 1);
-    emit("const {} {} = _at_{};", opengl_data_type_name(stmt->element_type()),
+    emit("const {} {} = _At_({});", opengl_data_type_name(stmt->element_type()),
          stmt->raw_name(), stmt->ptr->raw_name());
   }
 
@@ -427,8 +445,8 @@ int _rand_i32()\n\
     emit("const int {} = ({} + {});", stmt->raw_name(),
          stmt->base_ptrs[0]->raw_name(), linear_index_name);
       used.external_ptr = true;
-      emit("#define _at_{} _ext_ns_{}({})", stmt->raw_name(),
-          data_type_short_name(stmt->element_type()), stmt->raw_name());
+      emit("#define _at_{} _ext_ns_{}", stmt->raw_name(),
+          data_type_short_name(stmt->element_type()));
   }
 
   void visit(UnaryOpStmt *stmt) override
@@ -511,18 +529,16 @@ int _rand_i32()\n\
     TI_ASSERT(stmt->width() == 1);
     if (stmt->val->element_type() == DataType::i32
         || stmt->val->element_type() == DataType::u32) {
-      emit("{} {} = {}(_at_{}, {});", opengl_data_type_name(stmt->val->element_type()),
+      emit("{} {} = {}(_At_({}), {});", opengl_data_type_name(stmt->val->element_type()),
           stmt->raw_name(), opengl_atomic_op_type_cap_name(stmt->op_type),
           stmt->dest->raw_name(), stmt->val->raw_name());
     } else {
       TI_ASSERT(stmt->val->element_type() == DataType::f32
         || stmt->val->element_type() == DataType::f64);
       used.atomic_float = true;
-      // NOTE: external ptr atomic float operations is not supported by now
-      emit("{} {} = {}_{}({}, {});", opengl_data_type_name(stmt->val->element_type()),
+      emit("{} {} = _Atm_({}, _at_{}, {}, {});", opengl_data_type_name(stmt->val->element_type()),
           stmt->raw_name(), opengl_atomic_op_type_cap_name(stmt->op_type),
-          data_type_short_name(stmt->val->element_type()),
-          stmt->dest->raw_name(), stmt->val->raw_name());
+          stmt->dest->raw_name(), stmt->dest->raw_name(), stmt->val->raw_name());
     }
   }
 
@@ -641,8 +657,9 @@ int _rand_i32()\n\
   void visit(GlobalTemporaryStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
     used.global_temp = true;
-    emit("#define _at_{} _gtx_{}({})", stmt->raw_name(),
-        data_type_short_name(stmt->element_type()), stmt->offset);
+    emit("int {} = {};", stmt->raw_name(), stmt->offset);
+    emit("#define _at_{} _gtx_{}", stmt->raw_name(),
+        data_type_short_name(stmt->element_type()));
   }
 
   void visit(LoopIndexStmt *stmt) override
@@ -873,66 +890,6 @@ void OpenglCodeGen::lower()
 #endif
 } // }}}
 
-<<<<<<< HEAD:taichi/codegen/codegen_opengl.cpp
-struct CompiledKernel
-{
-  GLProgram *glsl;
-  int num_groups;
-  int arg_count;
-  int ext_arr_idx;
-  size_t ext_arr_size;
-  bool has_ext_arr{false};
-  KernelGen::UsedFeature used;
-  std::string kernel_name;
-
-  explicit CompiledKernel(const KernelGen &codegen)
-  {
-    const std::string kernel_source_code = codegen.kernel_source_code();
-    Kernel *kernel = codegen.get_kernel();
-    this->kernel_name = codegen.get_kernel_name();
-    this->num_groups = codegen.get_num_work_groups();
-    this->used = codegen.used;
-
-#ifdef _GLSL_DEBUG
-    TI_INFO("source of kernel [{}]:\n{}", kernel_name, kernel_source_code);
-    std::ofstream(fmt::format("/tmp/{}.comp", kernel_name))
-      .write(kernel_source_code.c_str(), kernel_source_code.size());
-#endif
-    this->glsl = compile_glsl_program(kernel_source_code);
-
-    has_ext_arr = false;
-    arg_count = kernel->args.size();
-    for (int i = 0; i < arg_count; i++) {
-      if (kernel->args[i].is_nparray) {
-        if (has_ext_arr)
-          TI_ERROR("[glsl] external array argument is supported to at most one in OpenGL for now");
-        ext_arr_idx = i;
-        ext_arr_size = kernel->args[i].size;
-        has_ext_arr = true;
-      }
-    }
-  }
-
-  void launch(Context &ctx)
-  {
-    std::vector<IOV> iov;
-    if (arg_count) {
-      iov.push_back(IOV{ctx.args, arg_count * sizeof(uint64_t)});
-      if (has_ext_arr) {
-        iov.push_back(IOV{ctx.extra_args, arg_count * taichi_max_num_args * sizeof(int)});
-        void *extptr = (void *)ctx.args[ext_arr_idx];
-        ctx.args[ext_arr_idx] = 0;
-        iov.push_back(IOV{extptr, ext_arr_size});
-      }
-    }
-    //TI_PERF();
-    launch_glsl_kernel(glsl, iov, num_groups);
-    //TI_PERF(kernel_name.c_str(), kernel_name.size(), 107);
-  }
-};
-
-=======
->>>>>>> c5e875f... [skip ci] multi offload support:taichi/backends/codegen_opengl.cpp
 FunctionType OpenglCodeGen::gen(void)
 {
   KernelGen codegen(kernel_, kernel_name_, struct_compiled_, global_tmps_buffer_size_);

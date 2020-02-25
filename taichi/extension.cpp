@@ -11,6 +11,7 @@ bool is_supported(Arch arch, Extension ext) {
       {Arch::arm64, {Extension::sparse, Extension::data64}},
       {Arch::cuda, {Extension::sparse, Extension::data64}},
       {Arch::metal, {}},
+      {Arch::opengl, {}},
   };
   const auto &exts = arch2ext[arch];
   return exts.find(ext) != exts.end();

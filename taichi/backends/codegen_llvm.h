@@ -75,10 +75,10 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
 
     void compile() {
       TI_ASSERT(!func);
-      auto kernel_symbol = codegen->tlctx->lookup_symbol(name);
+      auto kernel_symbol = codegen->tlctx->lookup_function_pointer(name);
       TI_ASSERT_INFO(kernel_symbol, "Function not found");
 
-      func = (task_fp_type)(void *)(llvm::cantFail(kernel_symbol.getAddress()));
+      func = (task_fp_type)kernel_symbol;
     }
 
     void operator()(Context *context) {

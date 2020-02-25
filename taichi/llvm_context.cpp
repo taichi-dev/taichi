@@ -27,9 +27,11 @@
 
 #include "tlang_util.h"
 #include "llvm_context.h"
-#include "taichi/backends/llvm_jit_cpu.h"
+#include "taichi/backends/jit_session.h"
 
 TLANG_NAMESPACE_BEGIN
+
+using namespace llvm;
 
 TaichiLLVMContext::TaichiLLVMContext(Arch arch) : arch(arch) {
   TI_TRACE("Creating Taichi llvm context for arch: {}", arch_name(arch));
@@ -177,7 +179,7 @@ std::unique_ptr<llvm::Module> module_from_bitcode_file(std::string bitcode_path,
   std::string bitcode(std::istreambuf_iterator<char>(ifs),
                       (std::istreambuf_iterator<char>()));
   auto runtime =
-      parseBitcodeFile(MemoryBufferRef(bitcode, "runtime_bitcode"), *ctx);
+      parseBitcodeFile(llvm::MemoryBufferRef(bitcode, "runtime_bitcode"), *ctx);
   if (!runtime) {
     auto error = runtime.takeError();
     TI_WARN("Bitcode loading error message:");
@@ -469,10 +471,6 @@ llvm::DataLayout TaichiLLVMContext::get_data_layout() {
 
 void TaichiLLVMContext::add_module(std::unique_ptr<llvm::Module> module) {
   jit->add_module(std::move(module));
-}
-
-llvm::JITSymbol TaichiLLVMContext::lookup_symbol(const std::string &name) {
-  return jit->lookup(name);
 }
 
 template llvm::Value *TaichiLLVMContext::get_constant(float32 t);

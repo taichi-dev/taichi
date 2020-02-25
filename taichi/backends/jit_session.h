@@ -44,11 +44,13 @@ class JITSession {
 
   virtual void remove_module(uint64 K) = 0;
 
-  virtual llvm::JITSymbol lookup(const std::string Name) = 0;
+  virtual void *lookup(const std::string Name) = 0;
 
   virtual std::size_t get_type_size(llvm::Type *type) const = 0;
 
   virtual ~JITSession() = default;
 };
+
+std::unique_ptr<JITSession> create_llvm_jit_session_cpu(Arch arch);
 
 TLANG_NAMESPACE_END

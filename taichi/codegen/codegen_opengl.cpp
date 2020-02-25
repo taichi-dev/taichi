@@ -1,4 +1,4 @@
-//#define _GLSL_DEBUG 1
+#define _GLSL_DEBUG 1
 #include "codegen_opengl.h"
 #include <taichi/platform/opengl/opengl_api.h>
 #include <taichi/platform/opengl/opengl_data_types.h>
@@ -504,7 +504,12 @@ int _rand_i32()\n\
     const auto rhs_name = bin->rhs->raw_name();
     const auto bin_name = bin->raw_name();
     if (bin->op_type == BinaryOpType::floordiv) {
-      // TODO(archibate): add a lossless version for (int // int)
+      if (is_integral(bin->lhs->element_type()) && is_integral(bin->rhs->element_type())) {
+        emit("{} {} = {}({} * {} >= 0 ? abs({}) / abs({}) : sign({}) * (abs({}) + abs({}) - 1) / {});",
+            dt_name, bin_name, dt_name, lhs_name, rhs_name, lhs_name, rhs_name,
+            lhs_name, lhs_name, rhs_name, rhs_name);
+        return;
+      }
       // NOTE: the 1e-6 here is for precision reason, or `7 // 7` will obtain 0 instead of 1
       emit("const {} {} = {}(floor((float({}) * (1 + sign({} * {}) * 1e-6)) / float({})));",
           dt_name, bin_name, dt_name, lhs_name, lhs_name, rhs_name, rhs_name);

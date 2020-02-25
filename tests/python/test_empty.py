@@ -16,4 +16,5 @@ def test_empty_args():
   def func(x: ti.i32, arr: ti.ext_arr()):
     pass
 
-  foo(42, np.arange(10, dtype=np.float32))
+  import numpy as np
+  func(42, np.arange(10, dtype=np.float32))

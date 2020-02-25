@@ -55,6 +55,12 @@ inline std::string opengl_unary_op_type_symbol(UnaryOpType type)
     return "exp";
   case UnaryOpType::log:
     return "log";
+  case UnaryOpType::rcp: // TODO(archibate): what's the difference between rcp and inv?
+    return "1 / ";
+  case UnaryOpType::rsqrt:
+    return "1.0 / sqrt";
+  case UnaryOpType::bit_not:
+    return "~";
   case UnaryOpType::logic_not:
     return "0 == ";
   default:

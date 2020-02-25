@@ -47,18 +47,8 @@ class GUI:
   def set_image(self, img):
     import numpy as np
     import taichi as ti
-    if isinstance(img, ti.Matrix):
-      img = img.to_numpy(as_vector=True)
-    if isinstance(img, ti.Expr):
-      img = img.to_numpy()
-    assert isinstance(img, np.ndarray)
-    assert len(img.shape) in [2, 3]
-    if img.dtype in [np.uint8, np.uint16, np.uint32, np.uint64]:
-      img = img.astype(np.float32) * (1 / np.iinfo(img.dtype).max)
-    elif img.dtype in [np.float32, np.float64]:
-      img = img.astype(np.float32)
-    else:
-      raise ValueError(f'Data type {img.dtype} not supported in GUI.set_image')
+    from .image import cook_image
+    img = cook_image(img)
     if len(img.shape) == 2:
       img = img[..., None]
     if img.shape[2] == 1:

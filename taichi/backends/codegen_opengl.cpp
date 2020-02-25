@@ -484,6 +484,9 @@ int _rand_i32()\n\
       emit("{} {} = {} - {} * int({} / {});", dt_name, bin_name, lhs_name, rhs_name,
           lhs_name, rhs_name);
       return;
+    } else if (bin->op_type == BinaryOpType::atan2) {
+      emit("{} {} = atan({}, {});", dt_name, bin_name, lhs_name, rhs_name);
+      return;
     }
     const auto binop = binary_op_type_symbol(bin->op_type);
     if (is_opengl_binary_op_infix(bin->op_type)) {

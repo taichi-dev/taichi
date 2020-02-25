@@ -11,7 +11,8 @@ def all_data_types_and_test(foo):
       test()
   return wrapped
 
-@ti.all_archs
+# OpenGL doesn't support so much types for now
+@ti.archs_excluding(ti.opengl)
 @all_data_types_and_test
 def test_type_assign_argument(dt):
   x = ti.var(dt, shape=())
@@ -26,7 +27,7 @@ def test_type_assign_argument(dt):
 
   return tester
 
-@ti.all_archs
+@ti.archs_excluding(ti.opengl)
 @all_data_types_and_test
 def test_type_operator(dt):
   x = ti.var(dt, shape=())
@@ -50,7 +51,7 @@ def test_type_operator(dt):
 
   return tester
 
-@ti.all_archs
+@ti.archs_excluding(ti.opengl)
 @all_data_types_and_test
 def test_type_tensor(dt):
   x = ti.var(dt, shape=(3, 2))
@@ -67,7 +68,7 @@ def test_type_tensor(dt):
 
   return tester
 
-@ti.all_archs
+@ti.archs_excluding(ti.opengl)
 def _test_overflow(dt, n):
   a = ti.var(dt, shape=())
   b = ti.var(dt, shape=())

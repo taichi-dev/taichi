@@ -32,14 +32,14 @@
 #include <utility>
 #include <vector>
 
-#include "llvm_jit_cpu.h"
 #include "taichi/llvm_context.h"
 
 TLANG_NAMESPACE_BEGIN
 
 std::string type_name(llvm::Type *type);
 
-void check_func_call_signature(llvm::Value *func, std::vector<Value *> arglist);
+void check_func_call_signature(llvm::Value *func,
+                               std::vector<llvm::Value *> arglist);
 
 template <typename... Args>
 inline bool check_func_call_signature(llvm::Value *func, Args &&... args) {
@@ -81,10 +81,11 @@ class ModuleBuilder {
     if (!f) {
       TI_ERROR("Runtime function {} not found.", name);
     }
-    f->removeAttribute(AttributeList::FunctionIndex,
+    f->removeAttribute(llvm::AttributeList::FunctionIndex,
                        llvm::Attribute::OptimizeNone);
-    f->removeAttribute(AttributeList::FunctionIndex, llvm::Attribute::NoInline);
-    f->addAttribute(AttributeList::FunctionIndex,
+    f->removeAttribute(llvm::AttributeList::FunctionIndex,
+                       llvm::Attribute::NoInline);
+    f->addAttribute(llvm::AttributeList::FunctionIndex,
                     llvm::Attribute::AlwaysInline);
     return f;
   }
@@ -102,7 +103,7 @@ class ModuleBuilder {
                     const std::string &func_name,
                     Args &&... args) {
     auto func = get_runtime_function(func_name);
-    auto arglist = std::vector<Value *>({args...});
+    auto arglist = std::vector<llvm::Value *>({args...});
     check_func_call_signature(func, arglist);
     return builder->CreateCall(func, arglist);
   }
@@ -153,7 +154,7 @@ class RuntimeObject {
   template <typename... Args>
   llvm::Value *call(const std::string &func_name, Args &&... args) {
     auto func = get_func(func_name);
-    auto arglist = std::vector<Value *>({ptr, args...});
+    auto arglist = std::vector<llvm::Value *>({ptr, args...});
     check_func_call_signature(func, arglist);
     return builder->CreateCall(func, arglist);
   }

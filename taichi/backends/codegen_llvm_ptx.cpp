@@ -21,6 +21,8 @@ using namespace llvm;
 // NVVM IR Spec:
 // https://docs.nvidia.com/cuda/archive/10.0/pdf/NVVM_IR_Specification.pdf
 
+std::string compile_module_to_ptx(std::unique_ptr<llvm::Module> &module);
+
 class CodeGenLLVMGPU : public CodeGenLLVM {
  public:
   int kernel_grid_dim;

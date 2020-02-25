@@ -1,5 +1,6 @@
+#pragma once
+
 #if defined(TI_WITH_CUDA)
-#include "llvm_jit_cpu.h"
 #include <taichi/profiler.h>
 #include <taichi/cuda_utils.h>
 #include <mutex>

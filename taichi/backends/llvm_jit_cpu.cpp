@@ -49,8 +49,6 @@ TLANG_NAMESPACE_BEGIN
 using namespace llvm;
 using namespace llvm::orc;
 
-void global_optimize_module_cpu(std::unique_ptr<llvm::Module> &module);
-
 class JITSessionCPU : public JITSession {
  private:
   ExecutionSession ES;

@@ -1,5 +1,5 @@
 import taichi as ti
-from pytest import approx
+from taichi import approx
 
 
 def archs_support_random(func):

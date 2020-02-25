@@ -1,6 +1,6 @@
 import taichi as ti
 import numpy as np
-from pytest import approx
+from taichi import approx
 
 @ti.require(ti.extension.data64)
 @ti.all_archs_with(fast_math=False)

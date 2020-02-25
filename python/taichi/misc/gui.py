@@ -37,7 +37,8 @@ class GUI:
     self.background_color = background_color
     self.key_pressed = set()
     self.clear()
-    self.core.set_profiler(ti.core.get_current_program().get_profiler())
+    if ti.core.get_current_program():
+      self.core.set_profiler(ti.core.get_current_program().get_profiler())
     
   def clear(self, color=None):
     if color is None:
@@ -47,13 +48,14 @@ class GUI:
   def set_image(self, img):
     import numpy as np
     import taichi as ti
-    if isinstance(img, ti.Matrix):
-      img = img.to_numpy(as_vector=True)
-    if isinstance(img, ti.Expr):
-      img = img.to_numpy()
-    assert isinstance(img, np.ndarray)
-    assert len(img.shape) in [2, 3]
-    img = img.astype(np.float32)
+    from .image import cook_image
+    img = cook_image(img)
+    if img.dtype in [np.uint8, np.uint16, np.uint32, np.uint64]:
+      img = img.astype(np.float32) * (1 / np.iinfo(img.dtype).max)
+    elif img.dtype in [np.float32, np.float64]:
+      img = img.astype(np.float32)
+    else:
+      raise ValueError(f'Data type {img.dtype} not supported in GUI.set_image')
     if len(img.shape) == 2:
       img = img[..., None]
     if img.shape[2] == 1:
@@ -156,6 +158,11 @@ class GUI:
       key, type = self.get_key_event()
       if type == GUI.PRESS:
         return key
+
+  def has_key_pressed(self):
+    if self.has_key_event():
+      self.get_key_event() # pop to update self.key_pressed
+    return len(self.key_pressed) != 0
 
 def rgb_to_hex(c):
   to255 = lambda x: min(255, max(0, int(x * 255)))

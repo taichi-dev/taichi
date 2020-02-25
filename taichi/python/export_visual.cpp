@@ -6,6 +6,7 @@
 #include <taichi/python/export.h>
 #include <taichi/common/asset_manager.h>
 
+#include <taichi/util/image_io.h>
 #include <taichi/gui/gui.h>
 
 TI_NAMESPACE_BEGIN
@@ -58,6 +59,12 @@ void export_visual(py::module &m) {
       .def("radius", &Circle::radius, py::return_value_policy::reference)
       .def("color", static_cast<Circle &(Circle::*)(int)>(&Circle::color),
            py::return_value_policy::reference);
+  m.def("imwrite", &imwrite);
+  m.def("imread", &imread);
+  // TODO(archibate): See misc/image.py
+  m.def("C_memcpy", [](size_t dst, size_t src, size_t size) {
+    std::memcpy((void *)dst, (void *)src, size);
+  });
 }
 
 TI_NAMESPACE_END

@@ -56,6 +56,8 @@ u64 = uint64
 integer_types = [i8, i16, i32, i64, u8, u16, u32, u64]
 integer_type_ids = [id(t) for t in integer_types]
 
+types = real_types + integer_types
+type_ids = [id(t) for t in types]
 
 def to_numpy_type(dt):
   if dt == f32:

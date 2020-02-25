@@ -300,8 +300,18 @@ int _rand_i32()\n\
         emit("const {} {} = {}({});",
              opengl_data_type_name(stmt->element_type()), stmt->raw_name(),
              opengl_data_type_name(stmt->cast_type), stmt->operand->raw_name());
+      } else if (stmt->cast_type == DataType::f32 &&
+          stmt->operand->element_type() == DataType::i32) {
+        emit("{} {} = intBitsToFloat({});",
+             opengl_data_type_name(stmt->element_type()), stmt->raw_name(),
+             stmt->operand->raw_name());
+      } else if (stmt->cast_type == DataType::i32 &&
+          stmt->operand->element_type() == DataType::f32) {
+        emit("{} {} = floatBitsToInt({});",
+             opengl_data_type_name(stmt->element_type()), stmt->raw_name(),
+             stmt->operand->raw_name());
       } else {
-        TI_NOT_IMPLEMENTED;
+        TI_ERROR("unsupported reinterpret cast");
       }
     }
   }

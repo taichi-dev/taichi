@@ -15,8 +15,7 @@ def _test_type_assign_argument(dt):
   assert x[None] == 3
 
 @pytest.mark.parametrize('dt', _TI_TYPES)
-# Metal backend doesn't support arg type other than 32-bit yet.
-@ti.archs_excluding(ti.metal)
+@ti.all_archs
 def test_type_assign_argument(dt):
   _test_type_assign_argument(dt)
 

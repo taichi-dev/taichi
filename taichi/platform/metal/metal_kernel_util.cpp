@@ -15,12 +15,11 @@ int MetalKernelArgsAttributes::insert_arg(DataType dt,
   ArgAttributes a;
   a.dt = to_metal_type(dt);
   const size_t dt_bytes = metal_data_type_bytes(a.dt);
-  if (dt_bytes != 4) {
+  if (dt_bytes > 4) {
     // Metal doesn't support 64bit data buffers.
     // TODO(k-ye): See if Metal supports less-than-32bit data buffers.
-    TI_WARN("Metal kernel only supports 32-bit data, got {}",
+    TI_ERROR("Metal kernel only supports <= 32-bit data, got {}",
             metal_data_type_name(a.dt));
-    TI_NOT_IMPLEMENTED;
   }
   a.is_array = is_array;
   a.stride = is_array ? size : dt_bytes;

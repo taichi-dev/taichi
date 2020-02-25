@@ -109,7 +109,7 @@ def init(default_fp=None, default_ip=None, print_preprocessed=None, debug=None, 
   boolean_config("fast_math")
   arch = os.environ.get("TI_ARCH")
   if arch is not None:
-    ti.cfg.arch = getattr(core.Arch, arch)
+    ti.cfg.arch = ti.core.arch_from_name(arch)
 
   log_level = os.environ.get("TI_LOG_LEVEL")
   if log_level is not None:

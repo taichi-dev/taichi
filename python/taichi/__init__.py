@@ -8,6 +8,7 @@ from taichi.misc import *
 from taichi.misc.gui import GUI
 from taichi.misc.image import imread, imwrite, imshow
 from taichi.misc.task import Task
+from taichi.misc.test import approx
 from taichi.misc import settings as settings
 from taichi.misc.gui import rgb_to_hex
 from taichi.misc.settings import *

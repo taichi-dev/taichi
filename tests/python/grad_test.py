@@ -1,5 +1,5 @@
 import taichi as ti
-from pytest import approx
+from taichi import approx
 
 def grad_test(tifunc, npfunc=None):
   from autograd import grad

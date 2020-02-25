@@ -58,6 +58,24 @@ def init(default_fp=None, default_ip=None, print_preprocessed=None, debug=None, 
   kwargs = _deepcopy(kwargs)
   import taichi as ti
   ti.reset()
+
+  if default_fp is None: # won't override
+    dfl_fp = os.environ.get("TI_DEFAULT_FP")
+    if dfl_fp == 32:
+      default_fp = core.DataType.f32
+    elif dfl_fp == 64:
+      default_fp = core.DataType.f64
+    elif dfl_fp is not None:
+      raise ValueError(f'Unrecognized TI_DEFAULT_FP: {dfl_fp}, should be 32 or 64')
+  if default_ip is None:
+    dfl_ip = os.environ.get("TI_DEFAULT_IP")
+    if dfl_ip == 32:
+      default_ip = core.DataType.i32
+    elif dfl_ip == 64:
+      default_ip = core.DataType.i64
+    elif dfl_ip is not None:
+      raise ValueError(f'Unrecognized TI_DEFAULT_IP: {dfl_ip}, should be 32 or 64')
+
   if default_fp is not None:
     ti.get_runtime().set_default_fp(default_fp)
   if default_ip is not None:
@@ -78,6 +96,26 @@ def init(default_fp=None, default_ip=None, print_preprocessed=None, debug=None, 
 
   for k, v in kwargs.items():
     setattr(ti.cfg, k, v)
+
+  def boolean_config(key, name=None):
+    if name is None:
+      name = 'TI_' + key.upper()
+    value = os.environ.get(name)
+    if value is not None:
+      setattr(ti.cfg, key, len(value) and bool(int(value)))
+
+  # does override
+  boolean_config("print_ir")
+  boolean_config("verbose")
+  boolean_config("fast_math")
+  arch = os.environ.get("TI_ARCH")
+  if arch is not None:
+    ti.cfg.arch = ti.core.arch_from_name(arch)
+
+  log_level = os.environ.get("TI_LOG_LEVEL")
+  if log_level is not None:
+    ti.set_logging_level(log_level.lower())
+
   ti.get_runtime().create_program()
 
 def cache_shared(v):

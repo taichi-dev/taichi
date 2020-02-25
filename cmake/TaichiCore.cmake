@@ -69,7 +69,7 @@ if (TI_WITH_OPENGL)
     target_link_libraries(${LIBRARY_NAME} /usr/lib/libglfw.so glfw)
     #endif()
   else()
-    message(WARNING "GLEW not found, ignoring TI_WITH_OPENGL.")
+    message(FATAL_ERROR "GLEW not found")
   endif()
 endif()
 

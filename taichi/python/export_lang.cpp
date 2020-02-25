@@ -1,13 +1,13 @@
 // Bindings for the python frontend
 
-#include "tlang.h"
+#include "../tlang.h"
 #include <pybind11/functional.h>
 #include <pybind11/pybind11.h>
 #include <taichi/extension.h>
 #include <taichi/common/interface.h>
 #include <taichi/python/export.h>
-#include <taichi/visual/gui.h>
-#include "svd.h"
+#include <taichi/gui/gui.h>
+#include "../svd.h"
 
 TI_NAMESPACE_BEGIN
 
@@ -45,19 +45,22 @@ void export_lang(py::module &m) {
 
   py::enum_<Arch>(m, "Arch", py::arithmetic())
 #define PER_ARCH(x) .value(#x, Arch::x)
-#include "inc/archs.inc.h"
+#include <taichi/inc/archs.inc.h>
 #undef PER_ARCH
       .export_values();
 
+  m.def("arch_name", arch_name);
+  m.def("arch_from_name", arch_from_name);
+
   py::enum_<SNodeType>(m, "SNodeType", py::arithmetic())
 #define PER_SNODE(x) .value(#x, SNodeType::x)
-#include "inc/snodes.inc.h"
+#include <taichi/inc/snodes.inc.h>
 #undef PER_SNODE
       .export_values();
 
   py::enum_<Extension>(m, "Extension", py::arithmetic())
 #define PER_EXTENSION(x) .value(#x, Extension::x)
-#include "inc/extensions.inc.h"
+#include <taichi/inc/extensions.inc.h>
 #undef PER_EXTENSION
       .export_values();
 
@@ -164,6 +167,7 @@ void export_lang(py::module &m) {
            py::return_value_policy::reference)
       .def("lazy_grad", &SNode::lazy_grad)
       .def("read_int", &SNode::read_int)
+      .def("read_uint", &SNode::read_uint)
       .def("read_float", &SNode::read_float)
       .def("has_grad", &SNode::has_grad)
       .def("is_primal", &SNode::is_primal)
@@ -399,6 +403,10 @@ void export_lang(py::module &m) {
   for (int t = 0; t <= (int)DataType::unknown; t++)
     data_type.value(data_type_name(DataType(t)).c_str(), DataType(t));
   data_type.export_values();
+
+  m.def("is_integral", is_integral);
+  m.def("is_signed", is_signed);
+  m.def("is_unsigned", is_unsigned);
 
   m.def("global_new", static_cast<Expr (*)(Expr, DataType)>(global_new));
   m.def("set_global_grad", [&](const Expr &expr) {

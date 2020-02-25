@@ -17,7 +17,7 @@ class DemoteAtomics : public BasicStmtVisitor {
   void visit(AtomicOpStmt *stmt) override {
     bool demote = false;
     bool is_local = false;
-    if (current_offloaded && current_offloaded->device == Arch::x64 &&
+    if (current_offloaded && arch_is_cpu(current_offloaded->device) &&
         current_offloaded->num_cpu_threads == 1) {
       demote = true;
     }

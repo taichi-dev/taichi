@@ -1,6 +1,52 @@
 # Changelog
-
-
+- (Feb  12, 2020) v0.4.6 released.
+   - (For compiler developers) An error will be raised when `TAICHI_REPO_DIR` is not a valid path (by **Yubin Peng [archibate]**)
+   - Fixed a CUDA backend deadlock bug
+   - Added test selectors `ti.require()` and `ti.archs_excluding()` (by **Ye Kuang [k-ye]**)
+   - `ti.init(**kwargs)` now takes a parameter `debug=True/False`, which turns on debug mode if true
+   - ... or use `TI_DEBUG=1` to turn on debug mode non-intrusively
+   - Fixed `ti.profiler_clear`
+   - Added `GUI.line(begin, end, color, radius)` and `ti.rgb_to_hex`
+   - 
+   - Renamed `ti.trace` (Matrix trace) to `ti.tr`. `ti.trace` is now for logging with `ti.TRACE` level 
+   - Fixed return value of `ti test_cpp` (thanks to **Ye Kuang [k-ye]**)
+   - Raise default loggineg level to `ti.INFO` instead of trace to make the world quiter
+   - General performance/compatibility improvements
+   - Doc updated
+- (Feb   6, 2020) v0.4.5 released.
+   - **`ti.init(arch=..., print_ir=..., default_fp=..., default_ip=...)`** now supported. `ti.cfg.xxx` is deprecated
+   - **Immediate data layout specification** supported after `ti.init`. No need to wrap data layout definition with `@ti.layout` anymore (unless you intend to do so)
+   - `ti.is_active`, `ti.deactivate`, `SNode.deactivate_all` supported in the new LLVM x64/CUDA backend. [Example](https://github.com/taichi-dev/taichi/blob/8b575a8ec2d8c7112191eef2a8316b793ba2452d/examples/taichi_sparse.py) <img src="https://github.com/yuanming-hu/public_files/raw/master/graphics/taichi/sparse_grids.gif">
+   - Experimental [Windows non-UTF-8 path](https://github.com/taichi-dev/taichi/issues/428) fix (by **Yubin Peng [archibate]**)
+   - `ti.global_var` (which duplicates `ti.var`) is removed
+   - `ti.Matrix.rotation2d(angle)` added
+- (Feb   5, 2020) v0.4.4 released.
+   - For developers: [ffi-navigator](https://github.com/tqchen/ffi-navigator) support [[doc](https://taichi.readthedocs.io/en/latest/contributor_guide.html#efficient-code-navigation-across-python-c)]. (by **masahi**)
+   - Fixed `f64` precision support of `sin` and `cos` on CUDA backends (by **Kenneth Lozes [KLozes]**)
+   - Make Profiler print the arch name in its title (by **Ye Kuang [k-ye]**)
+   - Tons of invisible contributions by **Ye Kuang [k-ye]**, for the WIP Metal backend
+   - `Profiler` working on CPU devices. To enable, `ti.cfg.enable_profiler = True`. Call `ti.profiler_print()` to print kernel running times
+   - General performance improvements
+- (Feb   3, 2020) v0.4.3 released.
+   - `GUI.circles` 2.4x faster
+   - General performance improvements
+- (Feb   2, 2020) v0.4.2 released.
+   - GUI framerates are now more stable
+   - Optimized OffloadedRangeFor with const bounds. Light computation programs such as `mpm88.py` is 30% faster on CUDA due to reduced kernel launches
+   - Optimized CPU parallel range for performance
+- (Jan  31, 2020) v0.4.1 released.
+   - **Fixed an autodiff bug introduced in v0.3.24. Please update if you are using Taichi differentiable programming.**
+   - Updated `Dockerfile` (by **Shenghang Tsai [jackalcooper]**)
+   - `pbf2d.py` visualization performance boosted (by **Ye Kuang [k-ye]**)
+   - Fixed `GlobalTemporaryStmt` codegen
+- (Jan  30, 2020) v0.4.0 released.
+   - Memory allocator redesigned
+   - Struct-fors with pure dense data structures will be demoted into a range-for, which is faster since no element list generation is needed
+   - Python 3.5 support is dropped. Please use Python 3.6(pip)/3.7(pip)/3.8(Windows: pip; OS X & Linux: build from source) (by **Chujie Zeng [Psycho7]**)
+   - `ti.deactivate` now supported on sparse data structures
+   - `GUI.circles` (batched circle drawing) performance improved by 30x
+   - Minor bug fixes (by **Yubin Peng [archibate], Ye Kuang [k-ye]**)
+   - Doc updated
 - (Jan  20, 2020) v0.3.25 released.
    - Experimental [CPU-only support for NVIDIA Jetson Nano](https://user-images.githubusercontent.com/34827518/72769070-62b1b200-3c34-11ea-8f6e-0f339b5b09ca.jpg) (with ARM CPUs. Building from source required.) (thanks to **Walter liu
  [hgnan]**)

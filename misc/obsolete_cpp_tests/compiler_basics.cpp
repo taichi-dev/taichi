@@ -1,7 +1,7 @@
 #include <taichi/lang.h>
 #include <taichi/testing.h>
 #include <numeric>
-#include <taichi/visual/gui.h>
+#include <taichi/gui/gui.h>
 
 TLANG_NAMESPACE_BEGIN
 

@@ -85,16 +85,6 @@ Prebuilt LLVM for Windows CI
 
 Then use Visual Studio to build. After building the ``INSTALL`` project (under folder "CMakePredefinedTargets"). After build completes, find your LLVM binaries/headers in `build/include`.
 
-Folder structure
-*************************************
-
-Key folders are
-
-- *analysis*: static analysis passes
-- *backends*: codegen to x86 and CUDA
-- *transforms*: IR transform passes
-- ...
-
 Troubleshooting
 ----------------------------------
 

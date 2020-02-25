@@ -17,8 +17,6 @@ using namespace llvm;
 
 class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
  public:
-  TaichiLLVMJIT *jit;
-
   CodeGenBase *codegen;
   Kernel *kernel;
   Program *prog;
@@ -47,7 +45,6 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       tlctx = prog->llvm_context_host.get();
     }
     llvm_context = tlctx->ctx.get();
-    jit = tlctx->jit.get();
     builder = new llvm::IRBuilder<>(*llvm_context);
   }
 
@@ -78,7 +75,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
 
     void compile() {
       TI_ASSERT(!func);
-      auto kernel_symbol = codegen->jit->lookup(name);
+      auto kernel_symbol = codegen->tlctx->lookup_symbol(name);
       TI_ASSERT_INFO(kernel_symbol, "Function not found");
 
       func = (task_fp_type)(void *)(llvm::cantFail(kernel_symbol.getAddress()));
@@ -105,7 +102,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
 
     context_ty = get_runtime_type("Context");
     physical_coordinate_ty = get_runtime_type("PhysicalCoordinates");
-    module->setDataLayout(jit->getDataLayout());
+    module->setDataLayout(tlctx->get_data_layout());
 
     using namespace llvm;
 
@@ -234,7 +231,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   }
 
   virtual FunctionType compile_module_to_executable() {
-    jit->addModule(std::move(module));
+    tlctx->add_module(std::move(module));
 
     for (auto &task : offloaded_tasks) {
       task.compile();
@@ -470,7 +467,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
         TI_NOT_IMPLEMENTED
       }
     } else if (op == BinaryOpType::atan2) {
-      if (current_arch() == Arch::x64) {
+      if (arch_is_cpu(current_arch())) {
         if (ret_type == DataType::f32) {
           stmt->value =
               create_call("atan2_f32", {stmt->lhs->value, stmt->rhs->value});
@@ -496,7 +493,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
         TI_NOT_IMPLEMENTED
       }
     } else if (op == BinaryOpType::pow) {
-      if (current_arch() == Arch::x64) {
+      if (arch_is_cpu(current_arch())) {
         if (ret_type == DataType::f32) {
           stmt->value =
               create_call("pow_f32", {stmt->lhs->value, stmt->rhs->value});

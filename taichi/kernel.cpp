@@ -95,8 +95,12 @@ void Kernel::set_arg_float(int i, float64 d) {
     program.context.set_arg(i, (int32)d);
   } else if (dt == DataType::i64) {
     program.context.set_arg(i, (int64)d);
+  } else if (dt == DataType::i8) {
+    program.context.set_arg(i, (int8)d);
   } else if (dt == DataType::i16) {
     program.context.set_arg(i, (int16)d);
+  } else if (dt == DataType::u8) {
+    program.context.set_arg(i, (uint8)d);
   } else if (dt == DataType::u16) {
     program.context.set_arg(i, (uint16)d);
   } else if (dt == DataType::u32) {
@@ -120,8 +124,12 @@ void Kernel::set_arg_int(int i, int64 d) {
     program.context.set_arg(i, (int32)d);
   } else if (dt == DataType::i64) {
     program.context.set_arg(i, (int64)d);
+  } else if (dt == DataType::i8) {
+    program.context.set_arg(i, (int8)d);
   } else if (dt == DataType::i16) {
     program.context.set_arg(i, (int16)d);
+  } else if (dt == DataType::u8) {
+    program.context.set_arg(i, (uint8)d);
   } else if (dt == DataType::u16) {
     program.context.set_arg(i, (uint16)d);
   } else if (dt == DataType::u32) {

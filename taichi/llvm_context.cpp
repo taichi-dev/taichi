@@ -1,4 +1,4 @@
-// A helper for the llvm backend
+// A helper for llvm backends
 
 #include <llvm/Transforms/Utils/Cloning.h>
 #include "llvm/ADT/APFloat.h"
@@ -26,12 +26,13 @@
 #include <llvm/Demangle/Demangle.h>
 
 #include "tlang_util.h"
-#include "taichi_llvm_context.h"
-#include "backends/llvm_jit.h"
+#include "llvm_context.h"
+#include "taichi/backends/llvm_jit_cpu.h"
 
 TLANG_NAMESPACE_BEGIN
 
 TaichiLLVMContext::TaichiLLVMContext(Arch arch) : arch(arch) {
+  TI_TRACE("Creating Taichi llvm context for arch: {}", arch_name(arch));
   llvm::remove_fatal_error_handler();
   llvm::install_fatal_error_handler(
       [](void *user_data, const std::string &reason, bool gen_crash_diag) {
@@ -39,7 +40,7 @@ TaichiLLVMContext::TaichiLLVMContext(Arch arch) : arch(arch) {
       },
       nullptr);
 
-  if (arch == Arch::x64) {
+  if (arch_is_cpu(arch)) {
     llvm::InitializeNativeTarget();
     llvm::InitializeNativeTargetAsmPrinter();
     llvm::InitializeNativeTargetAsmParser();
@@ -54,12 +55,7 @@ TaichiLLVMContext::TaichiLLVMContext(Arch arch) : arch(arch) {
 #endif
   }
   ctx = std::make_unique<llvm::LLVMContext>();
-  TI_TRACE("Creating llvm context for arch: {}", arch_name(arch));
-  llvm::ExitOnError exit_on_err;
-  jit = exit_on_err(TaichiLLVMJIT::create(arch));
-}
-
-TaichiLLVMContext::~TaichiLLVMContext() {
+  jit = create_llvm_jit_session_cpu(arch);
 }
 
 llvm::Type *TaichiLLVMContext::get_data_type(DataType dt) {
@@ -75,6 +71,14 @@ llvm::Type *TaichiLLVMContext::get_data_type(DataType dt) {
     return llvm::Type::getFloatTy(*ctx);
   } else if (dt == DataType::f64) {
     return llvm::Type::getDoubleTy(*ctx);
+  } else if (dt == DataType::u8) {
+    return llvm::Type::getInt8Ty(*ctx);
+  } else if (dt == DataType::u16) {
+    return llvm::Type::getInt16Ty(*ctx);
+  } else if (dt == DataType::u32) {
+    return llvm::Type::getInt32Ty(*ctx);
+  } else if (dt == DataType::u64) {
+    return llvm::Type::getInt64Ty(*ctx);
   } else {
     TI_INFO(data_type_name(dt));
     TI_NOT_IMPLEMENTED
@@ -87,7 +91,7 @@ std::string find_existing_command(const std::vector<std::string> &commands) {
       return cmd;
     }
   }
-  for (auto cmd: commands) {
+  for (auto cmd : commands) {
     TI_WARN("Potential command {}", cmd);
   }
   TI_ERROR("None command found.");
@@ -98,7 +102,7 @@ std::string get_runtime_fn(Arch arch) {
 }
 
 std::string get_runtime_src_dir() {
-    return get_repo_dir() + "/taichi/runtime/";
+  return get_repo_dir() + "/taichi/runtime/";
 }
 
 std::string get_runtime_dir() {
@@ -114,7 +118,8 @@ void compile_runtime_bitcode(Arch arch) {
   TI_AUTO_PROF;
   static std::set<int> runtime_compiled;
   if (runtime_compiled.find((int)arch) == runtime_compiled.end()) {
-    auto clang = find_existing_command({"clang-7", "clang-8", "clang-9", "clang"});
+    auto clang =
+        find_existing_command({"clang-7", "clang-8", "clang-9", "clang"});
     TI_ASSERT(command_exist("llvm-as"));
     TI_TRACE("Compiling runtime module bitcode...");
     auto runtime_src_folder = get_runtime_src_dir();
@@ -453,6 +458,21 @@ void TaichiLLVMContext::print_huge_functions() {
   }
   TI_P(total_inst);
   TI_P(total_big_inst);
+}
+
+TaichiLLVMContext::~TaichiLLVMContext() {
+}
+
+llvm::DataLayout TaichiLLVMContext::get_data_layout() {
+  return jit->get_data_layout();
+}
+
+void TaichiLLVMContext::add_module(std::unique_ptr<llvm::Module> module) {
+  jit->add_module(std::move(module));
+}
+
+llvm::JITSymbol TaichiLLVMContext::lookup_symbol(const std::string &name) {
+  return jit->lookup(name);
 }
 
 template llvm::Value *TaichiLLVMContext::get_constant(float32 t);

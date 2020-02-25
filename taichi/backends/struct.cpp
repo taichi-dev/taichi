@@ -6,18 +6,8 @@
 
 TLANG_NAMESPACE_BEGIN
 
-StructCompiler::StructCompiler(Program *prog)
-    : CodeGenBase(), loopgen(this), prog(prog) {
-  creator = [] {
-    TI_ERROR("Not Specified");
-    return nullptr;
-  };
-  profiler_clear = [] {
-    TI_WARN("Profiler not yet implemented in this backend.");
-  };
-  profiler_print = [] {
-    TI_WARN("Profiler not yet implemented in this backend.");
-  };
+StructCompiler::StructCompiler(Program *prog) : prog(prog) {
+  root_size = 0;
 }
 
 void StructCompiler::collect_snodes(SNode &snode) {
@@ -104,8 +94,6 @@ void StructCompiler::infer_snode_properties(SNode &snode) {
   for (int i = 0; i < max_num_indices; i++) {
     snode.total_num_bits += snode.extractors[i].num_bits;
   }
-
-  emit("");
 
   if (snode.has_null()) {
     ambient_snodes.push_back(&snode);

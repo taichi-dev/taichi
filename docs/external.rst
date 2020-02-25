@@ -1,4 +1,4 @@
-Interaction with external arrays
+Interacting with external arrays
 ====================================
 
 Here ``external arrays`` refer to ``numpy.ndarray`` or ``torch.Tensor``.

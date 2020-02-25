@@ -31,8 +31,6 @@
 
 TLANG_NAMESPACE_BEGIN
 
-llvm::ExitOnError exit_on_err;
-
 TaichiLLVMContext::TaichiLLVMContext(Arch arch) : arch(arch) {
   TI_TRACE("Creating Taichi llvm context for arch: {}", arch_name(arch));
   llvm::remove_fatal_error_handler();
@@ -57,7 +55,7 @@ TaichiLLVMContext::TaichiLLVMContext(Arch arch) : arch(arch) {
 #endif
   }
   ctx = std::make_unique<llvm::LLVMContext>();
-  jit = exit_on_err(JITSessionCPU::create(arch));
+  jit = create_llvm_jit_session_cpu(arch);
 }
 
 llvm::Type *TaichiLLVMContext::get_data_type(DataType dt) {

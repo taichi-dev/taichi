@@ -9,18 +9,19 @@
 #include "tlang_util.h"
 #include "llvm_fwd.h"
 #include "snode.h"
+#include "backends/jit_session.h"
 
 TLANG_NAMESPACE_BEGIN
 class JITSessionCPU;
 
-void *jit_lookup_name(JITSessionCPU *jit, const std::string &name);
+void *jit_lookup_name(JITSession *jit, const std::string &name);
 
 class TaichiLLVMContext {
  public:
   std::unique_ptr<llvm::LLVMContext> ctx;
 
  private:
-  std::unique_ptr<JITSessionCPU> jit;
+  std::unique_ptr<JITSession> jit;
 
  public:
   std::unique_ptr<llvm::Module> runtime_module, struct_module;

@@ -39,6 +39,7 @@
 #include "llvm/Transforms/IPO.h"
 #include <memory>
 #include "../tlang_util.h"
+#include "jit_session.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -51,7 +52,7 @@ int compile_ptx_and_launch(const std::string &ptx,
                            void *);
 void global_optimize_module_cpu(std::unique_ptr<llvm::Module> &module);
 
-class JITSessionCPU {
+class JITSessionCPU : public JITSession {
  private:
   ExecutionSession ES;
   std::map<VModuleKey, std::shared_ptr<SymbolResolver>> resolvers;
@@ -101,32 +102,11 @@ class JITSessionCPU {
     llvm::sys::DynamicLibrary::LoadLibraryPermanently(nullptr);
   }
 
-  const DataLayout &get_data_layout() const {
+  const DataLayout &get_data_layout() const override {
     return DL;
   }
 
-  static Expected<std::unique_ptr<JITSessionCPU>> create(Arch arch) {
-    std::unique_ptr<JITTargetMachineBuilder> jtmb;
-    if (arch_is_cpu(arch)) {
-      auto JTMB = JITTargetMachineBuilder::detectHost();
-      if (!JTMB)
-        return JTMB.takeError();
-      jtmb = std::make_unique<JITTargetMachineBuilder>(std::move(*JTMB));
-    } else {
-      TI_ASSERT(arch == Arch::cuda);
-      Triple triple("nvptx64", "nvidia", "cuda");
-      jtmb = std::make_unique<JITTargetMachineBuilder>(triple);
-      TI_WARN("Not actually supported");
-    }
-
-    auto DL = jtmb->getDefaultDataLayoutForTarget();
-    if (!DL)
-      return DL.takeError();
-
-    return llvm::make_unique<JITSessionCPU>(std::move(*jtmb), std::move(*DL));
-  }
-
-  VModuleKey add_module(std::unique_ptr<llvm::Module> M) {
+  VModuleKey add_module(std::unique_ptr<llvm::Module> M) override {
     TI_ASSERT(M);
     global_optimize_module_cpu(M);
     // Create a new VModuleKey.
@@ -152,15 +132,19 @@ class JITSessionCPU {
     return K;
   }
 
-  JITSymbol lookup(const std::string Name) {
+  JITSymbol lookup(const std::string Name) override {
     std::string MangledName;
     raw_string_ostream MangledNameStream(MangledName);
     Mangler::getNameWithPrefix(MangledNameStream, Name, DL);
     return CODLayer.findSymbol(MangledNameStream.str(), true);
   }
 
-  void remove_module(VModuleKey K) {
+  void remove_module(VModuleKey K) override {
     cantFail(CODLayer.removeModule(K));
+  }
+
+  std::size_t get_type_size(llvm::Type *type) const override {
+    return DL.getTypeAllocSize(type);
   }
 
  private:
@@ -183,11 +167,28 @@ class JITSessionCPU {
 
     return M;
   }
-
- public:
-  std::size_t get_type_size(llvm::Type *type) {
-    return DL.getTypeAllocSize(type);
-  }
 };
+
+inline std::unique_ptr<JITSession> create_llvm_jit_session_cpu(Arch arch) {
+  std::unique_ptr<JITTargetMachineBuilder> jtmb;
+  if (arch_is_cpu(arch)) {
+    auto JTMB = JITTargetMachineBuilder::detectHost();
+    if (!JTMB)
+      TI_ERROR("LLVM TargetMachineBuilder has failed.");
+    jtmb = std::make_unique<JITTargetMachineBuilder>(std::move(*JTMB));
+  } else {
+    TI_ASSERT(arch == Arch::cuda);
+    Triple triple("nvptx64", "nvidia", "cuda");
+    jtmb = std::make_unique<JITTargetMachineBuilder>(triple);
+    TI_WARN("Not actually supported");
+  }
+
+  auto DL = jtmb->getDefaultDataLayoutForTarget();
+  if (!DL) {
+    TI_ERROR("LLVM TargetMachineBuilder has failed when getting data layout.");
+  }
+
+  return llvm::make_unique<JITSessionCPU>(std::move(*jtmb), std::move(*DL));
+}
 
 TLANG_NAMESPACE_END

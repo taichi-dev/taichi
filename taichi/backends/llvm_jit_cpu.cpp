@@ -84,7 +84,7 @@ void global_optimize_module_cpu(std::unique_ptr<llvm::Module> &module) {
   }
 }
 
-void *jit_lookup_name(TaichiLLVMJITCPU *jit, const std::string &name) {
+void *jit_lookup_name(JITSessionCPU *jit, const std::string &name) {
   auto ExprSymbol = jit->lookup(name);
   if (!ExprSymbol)
     TI_ERROR("Function \"{}\" not found", name);

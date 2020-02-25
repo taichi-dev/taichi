@@ -31,7 +31,10 @@
 
 TLANG_NAMESPACE_BEGIN
 
+llvm::ExitOnError exit_on_err;
+
 TaichiLLVMContext::TaichiLLVMContext(Arch arch) : arch(arch) {
+  TI_TRACE("Creating Taichi llvm context for arch: {}", arch_name(arch));
   llvm::remove_fatal_error_handler();
   llvm::install_fatal_error_handler(
       [](void *user_data, const std::string &reason, bool gen_crash_diag) {
@@ -54,9 +57,7 @@ TaichiLLVMContext::TaichiLLVMContext(Arch arch) : arch(arch) {
 #endif
   }
   ctx = std::make_unique<llvm::LLVMContext>();
-  TI_TRACE("Creating llvm context for arch: {}", arch_name(arch));
-  llvm::ExitOnError exit_on_err;
-  jit = exit_on_err(TaichiLLVMJITCPU::create(arch));
+  jit = exit_on_err(JITSessionCPU::create(arch));
 }
 
 llvm::Type *TaichiLLVMContext::get_data_type(DataType dt) {
@@ -465,11 +466,11 @@ TaichiLLVMContext::~TaichiLLVMContext() {
 }
 
 llvm::DataLayout TaichiLLVMContext::get_data_layout() {
-  return jit->getDataLayout();
+  return jit->get_data_layout();
 }
 
 void TaichiLLVMContext::add_module(std::unique_ptr<llvm::Module> module) {
-  jit->addModule(std::move(module));
+  jit->add_module(std::move(module));
 }
 
 llvm::JITSymbol TaichiLLVMContext::lookup_symbol(const std::string &name) {

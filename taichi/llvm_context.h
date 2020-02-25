@@ -1,7 +1,8 @@
 #pragma once
 
-// A helper for llvm backends (x64, arm64, cuda, amdgpu etc)
-// in charge of JIT compiling and invoking LLVM modules.
+// llvm backend compiler (x64, arm64, cuda, amdgpu etc)
+// in charge of creating & JITing arch-specific LLVM modules,
+// and invoking compiled functions (kernels).
 
 #include <functional>
 
@@ -10,16 +11,16 @@
 #include "snode.h"
 
 TLANG_NAMESPACE_BEGIN
-class TaichiLLVMJITCPU;
+class JITSessionCPU;
 
-void *jit_lookup_name(TaichiLLVMJITCPU *jit, const std::string &name);
+void *jit_lookup_name(JITSessionCPU *jit, const std::string &name);
 
 class TaichiLLVMContext {
  public:
   std::unique_ptr<llvm::LLVMContext> ctx;
 
  private:
-  std::unique_ptr<TaichiLLVMJITCPU> jit;
+  std::unique_ptr<JITSessionCPU> jit;
 
  public:
   std::unique_ptr<llvm::Module> runtime_module, struct_module;

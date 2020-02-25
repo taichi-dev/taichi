@@ -1,4 +1,5 @@
 import taichi as ti
+import os
 
 pixel = ti.var(ti.u8, shape=(512, 512, 3))
 
@@ -11,9 +12,11 @@ paint()
 pixel = pixel.to_numpy()
 ti.imshow(pixel, 'Random Generated')
 for ext in ['bmp', 'png', 'jpg']:
-  ti.imwrite(pixel, '/tmp/random.' + ext)
-  pixel_r = ti.imread('/tmp/random.' + ext)
+  fn = 'taichi-example-random-img.' + ext
+  ti.imwrite(pixel, fn)
+  pixel_r = ti.imread(fn)
   if ext != 'jpg':
     assert (pixel_r == pixel).all()
   else:
     ti.imshow(pixel_r, 'JPEG Read Result')
+  os.remove(fn)

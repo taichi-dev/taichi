@@ -139,6 +139,16 @@ class JITSessionCPU : public JITSession {
     return (void *)(llvm::cantFail(symbol.getAddress()));
   }
 
+  void *lookup_in_module(VModuleKey key, const std::string Name) {
+    std::string MangledName;
+    raw_string_ostream MangledNameStream(MangledName);
+    Mangler::getNameWithPrefix(MangledNameStream, Name, DL);
+    auto symbol = CODLayer.findSymbolIn(key, MangledNameStream.str(), true);
+    if (!symbol)
+      TI_ERROR("Function \"{}\" not found", Name);
+    return (void *)(llvm::cantFail(symbol.getAddress()));
+  }
+
   void remove_module(VModuleKey K) override {
     cantFail(CODLayer.removeModule(K));
   }

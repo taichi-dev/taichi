@@ -27,7 +27,7 @@ environment:
 
 skip_commits:
   files:
-    - README.md
+    - '*.md'
     - docs
     - benchmarks
     - examples

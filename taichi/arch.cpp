@@ -2,7 +2,7 @@
 
 TLANG_NAMESPACE_BEGIN
 
-std::string arch_name(taichi::Tlang::Arch arch) {
+std::string arch_name(Arch arch) {
   switch (arch) {
 #define PER_ARCH(x) \
   case Arch::x:     \
@@ -13,6 +13,22 @@ std::string arch_name(taichi::Tlang::Arch arch) {
     default:
       TI_NOT_IMPLEMENTED
   }
+}
+
+Arch arch_from_name(const std::string &arch_name) {
+#define PER_ARCH(x)           \
+  else if (arch_name == #x) { \
+    return Arch::x;           \
+  }
+
+  if (false) {
+  }
+#include "inc/archs.inc.h"
+  else {
+    TI_ERROR("Unknown architecture name: {}", arch_name);
+  }
+
+#undef PER_ARCH
 }
 
 // Assuming a processor is either a CPU or a GPU. DSP/TPUs not considered.

@@ -195,16 +195,16 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
   TI_ASSERT((int)snodes.size() <= max_num_snodes);
 
   root_size =
-      tlctx->jit->getDataLayout().getTypeAllocSize(snode_attr[root].llvm_type);
+      tlctx->get_data_layout().getTypeAllocSize(snode_attr[root].llvm_type);
 
-  module->setDataLayout(tlctx->jit->getDataLayout());
+  module->setDataLayout(tlctx->get_data_layout());
 
   tlctx->set_struct_module(module);
 
   // Do not compile the GPU struct module alone since
   // it's useless unless used with kernels
   if (arch_is_cpu(arch))
-    tlctx->jit->addModule(std::move(module));
+    tlctx->add_module(std::move(module));
 
   tlctx->snode_attr = snode_attr;
 }

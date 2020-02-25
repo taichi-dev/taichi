@@ -6,7 +6,7 @@
 #include "ir.h"
 #include "kernel.h"
 #include "snode.h"
-#include "taichi_llvm_context.h"
+#include "llvm_context.h"
 #include "tlang_util.h"
 #include <atomic>
 #include <taichi/context.h>

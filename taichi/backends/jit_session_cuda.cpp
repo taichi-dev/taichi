@@ -7,8 +7,10 @@ class JITSessionCUDA : public JITSession {
   JITSessionCUDA() {
   }
 
+  /*
   void add_module(std::unique_ptr<llvm::Module> &&module) override {
   }
+   */
 };
 
 TLANG_NAMESPACE_END

@@ -3,7 +3,7 @@
 #include <taichi/memory_pool.h>
 #include <taichi/profiler.h>
 #include <taichi/tlang_util.h>
-#include <taichi/taichi_llvm_context.h>
+#include <taichi/llvm_context.h>
 
 #include <memory>
 #include <string>

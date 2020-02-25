@@ -24,8 +24,9 @@ Issues marked with `"welcome contribution" <https://github.com/taichi-dev/taichi
 High-level guidelines
 ---------------------
 
-- Changesets should be small so that sources of bugs can be easily pinpointed;
-- No overkills: always use the easiest solutions to solve easy problems so that you have time and energy for real hard problems;
+- Almost every design decision has pros and cons. Good decisions are good because their pros outweigh their cons. Always think of both sides of your decision.
+- No overkills: always use the *easiest* solutions to solve easy problems, so that you have time and energy for real hard ones.
+- Debugging is hard. Changesets should be small so that sources of bugs can be easily pinpointed.
 - Unit/integration tests are our friends.
 
 Commit rules
@@ -115,3 +116,25 @@ Efficient Code Navigation across Python/C++
 If you work on the language frontend (Python/C++ interface), to navigate around the code base, `ffi-navigator <https://github.com/tqchen/ffi-navigator>`_
 allows you to jump from Python bindings to their definitions in C++.
 Follow their README to set up your editor.
+
+
+Folder structure
+*************************************
+
+Key folders are
+
+- ``taichi``: The core compiler implementation
+
+  - ``analysis``: Static analysis passes
+  - ``runtime``: Runtime functions
+  - ``backends``: Code generators
+  - ``transforms``: IR transform passes
+  - ``python_bindings``: C++/Python interfaces
+
+- ``python``: Python frontend implementation
+- ``examples``: Examples
+- ``docs``: Documentation
+- ``tests``: C++ and Python tests
+- ``benchmarks``: Performance benchmarks
+- ``misc``: Random (yet useful) files
+- ...

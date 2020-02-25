@@ -1,3 +1,34 @@
+#if defined(min)
+#undef min
+#endif
+#if defined(max)
+#undef max
+#endif
+#include "llvm/ADT/StringRef.h"
+#include "llvm/ExecutionEngine/ExecutionEngine.h"
+#include "llvm/ExecutionEngine/JITSymbol.h"
+#include "llvm/ExecutionEngine/Orc/CompileOnDemandLayer.h"
+#include "llvm/ExecutionEngine/Orc/CompileUtils.h"
+#include "llvm/ExecutionEngine/Orc/IRCompileLayer.h"
+#include "llvm/ExecutionEngine/Orc/IRTransformLayer.h"
+#include "llvm/ExecutionEngine/Orc/LambdaResolver.h"
+#include "llvm/ExecutionEngine/Orc/RTDyldObjectLinkingLayer.h"
+#include "llvm/ExecutionEngine/RTDyldMemoryManager.h"
+#include "llvm/ExecutionEngine/RuntimeDyld.h"
+#include "llvm/ExecutionEngine/SectionMemoryManager.h"
+#include "llvm/IR/DataLayout.h"
+#include "llvm/IR/LLVMContext.h"
+#include "llvm/Support/DynamicLibrary.h"
+#include "llvm/Support/raw_ostream.h"
+#include "llvm/Target/TargetMachine.h"
+#include "llvm/IR/LegacyPassManager.h"
+#include "llvm/Transforms/InstCombine/InstCombine.h"
+#include "llvm/Transforms/Scalar.h"
+#include "llvm/Transforms/Scalar/GVN.h"
+#include "llvm/Transforms/IPO.h"
+#include <memory>
+#include "../tlang_util.h"
+#include "jit_session.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
 #include <llvm/Analysis/TargetTransformInfo.h>
 #include <llvm/Support/TargetRegistry.h>
@@ -8,7 +39,6 @@
 #include <cuda.h>
 #endif
 #include "cuda_context.h"
-#include "llvm_jit_cpu.h"
 #include <taichi/program.h>
 #include <taichi/context.h>
 #include <taichi/system/timer.h>
@@ -16,11 +46,6 @@
 TLANG_NAMESPACE_BEGIN
 
 #if defined(TI_WITH_CUDA)
-
-std::string compile_module_to_ptx(std::unique_ptr<llvm::Module> &module);
-int compile_ptx_and_launch(const std::string &ptx,
-                           const std::string &kernel_name,
-                           void *);
 
 std::string cuda_mattrs() {
   return "+ptx50";
@@ -220,7 +245,7 @@ void CUDAContext::launch(CUfunction func,
   if (gridDim > 0) {
     std::lock_guard<std::mutex> _(lock);
     check_cuda_error(cuLaunchKernel(func, gridDim, 1, 1, blockDim, 1, 1, 0,
-                                     nullptr, KernelParams, nullptr));
+                                    nullptr, KernelParams, nullptr));
   }
   if (profiler) {
     profiler->stop();
@@ -246,12 +271,6 @@ CUDAContext::~CUDAContext() {
 
 #else
 std::string compile_module_to_ptx(std::unique_ptr<llvm::Module> &module) {
-  TI_NOT_IMPLEMENTED
-}
-
-int compile_ptx_and_launch(const std::string &ptx,
-                           const std::string &kernel_name,
-                           void *) {
   TI_NOT_IMPLEMENTED
 }
 #endif

@@ -10,7 +10,7 @@ std::string type_name(llvm::Type *type) {
 }
 
 void check_func_call_signature(llvm::Value *func,
-                               std::vector<Value *> arglist) {
+                               std::vector<llvm::Value *> arglist) {
   auto func_type = func->getType()->getPointerElementType();
   int num_params = func_type->getFunctionNumParams();
   TI_ASSERT(num_params == arglist.size());

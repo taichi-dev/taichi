@@ -9,6 +9,8 @@
 
 TLANG_NAMESPACE_BEGIN
 
+using namespace llvm;
+
 StructCompilerLLVM::StructCompilerLLVM(Program *prog, Arch arch)
     : StructCompiler(prog),
       ModuleBuilder(prog->get_llvm_context(arch)->get_init_module()),
@@ -42,7 +44,7 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
     TI_ASSERT(snode._morton == false);
     body_type = llvm::ArrayType::get(ch_type, snode.max_num_elements());
     if (snode._bitmasked) {
-      aux_type = llvm::ArrayType::get(Type::getInt32Ty(*llvm_ctx),
+      aux_type = llvm::ArrayType::get(llvm::Type::getInt32Ty(*llvm_ctx),
                                       (snode.max_num_elements() + 31) / 32);
     }
   } else if (type == SNodeType::root) {

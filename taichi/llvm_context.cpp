@@ -26,7 +26,7 @@
 #include <llvm/Demangle/Demangle.h>
 
 #include "tlang_util.h"
-#include "taichi_llvm_context.h"
+#include "llvm_context.h"
 #include "taichi/backends/llvm_jit_cpu.h"
 
 TLANG_NAMESPACE_BEGIN

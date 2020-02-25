@@ -316,7 +316,7 @@ int _rand_i32()\n\
       threads_per_group = 1;
     emit("layout(local_size_x = {}, local_size_y = 1, local_size_z = 1) in;", threads_per_group);
 
-    kernel_src_code_ = std::string("#version 430 core\n") + kernel_src_code_;
+    kernel_src_code_ = std::string("#version 430 core\nprecision highp float;\n") + kernel_src_code_;
     compiled_program_.kernels.push_back(CompiledKernel(std::move(glsl_kernel_name_),
         std::move(kernel_src_code_), num_groups_, used));
     kernel_src_code_ = "";

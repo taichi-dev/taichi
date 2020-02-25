@@ -92,7 +92,7 @@ std::string find_existing_command(const std::vector<std::string> &commands) {
       return cmd;
     }
   }
-  for (auto cmd: commands) {
+  for (auto cmd : commands) {
     TI_WARN("Potential command {}", cmd);
   }
   TI_ERROR("None command found.");
@@ -103,7 +103,7 @@ std::string get_runtime_fn(Arch arch) {
 }
 
 std::string get_runtime_src_dir() {
-    return get_repo_dir() + "/taichi/runtime/";
+  return get_repo_dir() + "/taichi/runtime/";
 }
 
 std::string get_runtime_dir() {
@@ -119,7 +119,8 @@ void compile_runtime_bitcode(Arch arch) {
   TI_AUTO_PROF;
   static std::set<int> runtime_compiled;
   if (runtime_compiled.find((int)arch) == runtime_compiled.end()) {
-    auto clang = find_existing_command({"clang-7", "clang-8", "clang-9", "clang"});
+    auto clang =
+        find_existing_command({"clang-7", "clang-8", "clang-9", "clang"});
     TI_ASSERT(command_exist("llvm-as"));
     TI_TRACE("Compiling runtime module bitcode...");
     auto runtime_src_folder = get_runtime_src_dir();
@@ -458,6 +459,9 @@ void TaichiLLVMContext::print_huge_functions() {
   }
   TI_P(total_inst);
   TI_P(total_big_inst);
+}
+
+TaichiLLVMContext::~TaichiLLVMContext() {
 }
 
 template llvm::Value *TaichiLLVMContext::get_constant(float32 t);

@@ -71,7 +71,7 @@ class TaichiLLVMContext {
 
   static int num_instructions(llvm::Function *func);
 
-  virtual ~TaichiLLVMContext() = default;
+  virtual ~TaichiLLVMContext();
 };
 
 TLANG_NAMESPACE_END

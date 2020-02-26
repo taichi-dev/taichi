@@ -4,6 +4,7 @@
 *******************************************************************************/
 
 #include <functional>
+#include <taichi/common/interface.h>
 #include <pybind11/pybind11.h>
 #include <taichi/common/task.h>
 #include <taichi/system/benchmark.h>

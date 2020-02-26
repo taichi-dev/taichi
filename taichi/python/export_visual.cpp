@@ -4,8 +4,6 @@
 *******************************************************************************/
 
 #include <taichi/python/export.h>
-#include <taichi/common/asset_manager.h>
-
 #include <taichi/util/image_io.h>
 #include <taichi/gui/gui.h>
 

@@ -6,7 +6,6 @@
 #pragma once
 
 #include <taichi/common/dict.h>
-#include <taichi/common/asset_manager.h>
 #include <cstring>
 #include <string>
 #include <map>
@@ -314,9 +313,6 @@ class InterfaceHolder {
                       static_cast<std::shared_ptr<class_name> (*)(            \
                           const std::string &name)>(                          \
                           &create_instance<class_name>));                     \
-            ((pybind11::module *)m)                                           \
-                ->def("register_" base_alias,                                 \
-                      &AssetManager::insert_asset<class_name>);               \
             ((pybind11::module *)m)                                           \
                 ->def("create_initialized_" base_alias,                       \
                       static_cast<std::shared_ptr<class_name> (*)(            \

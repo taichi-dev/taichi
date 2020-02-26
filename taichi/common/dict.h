@@ -16,7 +16,6 @@
 
 #include <taichi/math/math.h>
 #include "util.h"
-#include "asset_manager.h"
 
 TI_NAMESPACE_BEGIN
 
@@ -201,12 +200,6 @@ class Dict {
     } else {
       return default_value;
     }
-  }
-
-  template <typename T>
-  std::shared_ptr<T> get_asset(std::string key) const {
-    int id = get<int>(key);
-    return AssetManager::get_asset<T>(id);
   }
 
   template <typename T>

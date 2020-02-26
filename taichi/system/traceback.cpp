@@ -58,7 +58,6 @@ TI_EXPORT void print_traceback() {
         abi::__cxa_demangle(function_symbol, NULL, 0, &valid_cpp_name);
 
     char stack_frame[4096] = {};
-    bool is_valid_cpp_name = (valid_cpp_name == 0);
     sprintf(stack_frame, "* %28s | %7d | %s", module_name, offset,
             function_name);
     if (function_name != nullptr)

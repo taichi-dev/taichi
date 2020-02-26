@@ -5,8 +5,10 @@
 #undef max
 #endif
 #include <memory>
+#if defined(TI_WITH_CUDA)
 #include <cuda_runtime_api.h>
 #include <cuda.h>
+#endif
 #include "llvm/ADT/StringRef.h"
 #include "llvm/IR/DataLayout.h"
 #include "llvm/IR/LLVMContext.h"

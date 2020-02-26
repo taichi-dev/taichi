@@ -49,6 +49,30 @@ TLANG_NAMESPACE_BEGIN
 using namespace llvm;
 using namespace llvm::orc;
 
+class JITSessionCPU;
+
+class JITModuleCPU : public JITModule {
+ private:
+  JITSessionCPU *session;
+  VModuleKey key;
+
+ public:
+  JITModuleCPU(JITSessionCPU *session, VModuleKey key)
+      : session(session), key(key) {
+  }
+
+  // Lookup a serial function.
+  // For example, a CPU function, or a serial GPU function
+  // This function returns a function pointer
+  void *lookup_function(const std::string &name) override;
+
+  // Lookup a parallel GPU kernel
+  // The only argument to GPU kernels should be a Context
+  std::function<void()> lookup_spmd_function(const std::string &name) override {
+    TI_NOT_IMPLEMENTED
+  }
+};
+
 class JITSessionCPU : public JITSession {
  private:
   ExecutionSession ES;
@@ -103,7 +127,7 @@ class JITSessionCPU : public JITSession {
     return DL;
   }
 
-  VModuleKey add_module(std::unique_ptr<llvm::Module> M) override {
+  JITModule *add_module(std::unique_ptr<llvm::Module> M) override {
     TI_ASSERT(M);
     global_optimize_module_cpu(M);
     // Create a new VModuleKey.
@@ -126,7 +150,10 @@ class JITSessionCPU : public JITSession {
 
     // Add the module to the JIT with the new key.
     cantFail(CODLayer.addModule(K, std::move(M)));
-    return K;
+    auto new_module = std::make_unique<JITModuleCPU>(this, K);
+    auto new_module_raw_ptr = new_module.get();
+    modules.push_back(std::move(new_module));
+    return new_module_raw_ptr;
   }
 
   void *lookup(const std::string Name) override {
@@ -149,9 +176,11 @@ class JITSessionCPU : public JITSession {
     return (void *)(llvm::cantFail(symbol.getAddress()));
   }
 
+  /*
   void remove_module(VModuleKey K) override {
     cantFail(CODLayer.removeModule(K));
   }
+  */
 
   std::size_t get_type_size(llvm::Type *type) const override {
     return DL.getTypeAllocSize(type);
@@ -277,6 +306,10 @@ std::unique_ptr<JITSession> create_llvm_jit_session_cpu(Arch arch) {
   }
 
   return llvm::make_unique<JITSessionCPU>(std::move(*jtmb), std::move(*DL));
+}
+
+void *JITModuleCPU::lookup_function(const std::string &name) {
+  return session->lookup_in_module(key, name);
 }
 
 TLANG_NAMESPACE_END

@@ -42,6 +42,7 @@
 #include <taichi/program.h>
 #include <taichi/context.h>
 #include <taichi/system/timer.h>
+#include <llvm/ExecutionEngine/Orc/JITTargetMachineBuilder.h>
 
 TLANG_NAMESPACE_BEGIN
 
@@ -52,6 +53,57 @@ std::string cuda_mattrs() {
 }
 
 std::unique_ptr<CUDAContext> cuda_context;  // TODO:..
+std::string compile_module_to_ptx(std::unique_ptr<llvm::Module> &module);
+
+class JITModuleCUDA : public JITModule {
+ private:
+  CUmodule module;
+
+ public:
+  JITModuleCUDA(CUmodule module) : module(module) {
+  }
+
+  virtual void *lookup_function(const std::string &name) {
+    // auto _ = cuda_context->get_guard();
+    cuda_context->make_current();
+    CUfunction func;
+    auto t = Time::get_time();
+    check_cuda_error(cuModuleGetFunction(&func, module, name.c_str()));
+    t = Time::get_time() - t;
+    TI_TRACE("Kernel {} compilation time: {}ms", name, t * 1000);
+    return (void *)func;
+  }
+};
+
+class JITSessionCUDA : public JITSession {
+ public:
+  llvm::DataLayout DL;
+
+  JITSessionCUDA(llvm::DataLayout data_layout) : DL(data_layout) {
+  }
+
+  virtual JITModule *add_module(std::unique_ptr<llvm::Module> M) override {
+    auto ptx = compile_module_to_ptx(M);
+    // auto _ = cuda_context->get_guard();
+    cuda_context->make_current();
+    // Create module for object
+    CUmodule cudaModule;
+    TI_TRACE("PTX size: {:.2f}KB", ptx.size() / 1024.0);
+    auto t = Time::get_time();
+    TI_TRACE("Loading module...");
+    auto _ = std::lock_guard<std::mutex>(cuda_context->lock);
+    check_cuda_error(
+        cuModuleLoadDataEx(&cudaModule, ptx.c_str(), 0, nullptr, nullptr));
+    TI_TRACE("CUDA module load time : {}ms", (Time::get_time() - t) * 1000);
+    // cudaModules.push_back(cudaModule);
+    modules.push_back(std::make_unique<JITModuleCUDA>(cudaModule));
+    return modules.back().get();
+  }
+
+  virtual llvm::DataLayout get_data_layout() override {
+    return DL;
+  }
+};
 
 std::string compile_module_to_ptx(std::unique_ptr<llvm::Module> &module) {
   // Part of this function is borrowed from Halide::CodeGen_PTX_Dev.cpp
@@ -198,35 +250,16 @@ CUDAContext::CUDAContext() {
   mcpu = fmt::format("sm_{}{}", cc_major, cc_minor);
 }
 
-CUmodule CUDAContext::compile(const std::string &ptx) {
-  // auto _ = cuda_context->get_guard();
-  make_current();
-  // Create module for object
-  CUmodule cudaModule;
-  TI_TRACE("PTX size: {:.2f}KB", ptx.size() / 1024.0);
-  auto t = Time::get_time();
-  TI_TRACE("Loading module...");
-  auto _ = std::lock_guard<std::mutex>(cuda_context->lock);
-  check_cuda_error(
-      cuModuleLoadDataEx(&cudaModule, ptx.c_str(), 0, nullptr, nullptr));
-  TI_TRACE("CUDA module load time : {}ms", (Time::get_time() - t) * 1000);
-  cudaModules.push_back(cudaModule);
-  return cudaModule;
-}
+// CUmodule CUDAContext::compile(const std::string &ptx){TI_NOT_IMPLEMENTED}
 
+/*
 CUfunction CUDAContext::get_function(CUmodule module,
                                      const std::string &func_name) {
-  // auto _ = cuda_context->get_guard();
-  make_current();
-  CUfunction func;
-  auto t = Time::get_time();
-  check_cuda_error(cuModuleGetFunction(&func, module, func_name.c_str()));
-  t = Time::get_time() - t;
-  TI_TRACE("Kernel {} compilation time: {}ms", func_name, t * 1000);
-  return func;
+  TI_NOT_IMPLEMENTED
 }
+*/
 
-void CUDAContext::launch(CUfunction func,
+void CUDAContext::launch(void *func,
                          const std::string &task_name,
                          ProfilerBase *profiler,
                          void *context_ptr,
@@ -244,8 +277,8 @@ void CUDAContext::launch(CUfunction func,
   // Kernel launch
   if (gridDim > 0) {
     std::lock_guard<std::mutex> _(lock);
-    check_cuda_error(cuLaunchKernel(func, gridDim, 1, 1, blockDim, 1, 1, 0,
-                                    nullptr, KernelParams, nullptr));
+    check_cuda_error(cuLaunchKernel((CUfunction)func, gridDim, 1, 1, blockDim,
+                                    1, 1, 0, nullptr, KernelParams, nullptr));
   }
   if (profiler) {
     profiler->stop();
@@ -267,6 +300,22 @@ CUDAContext::~CUDAContext() {
     check_cuda_error(cuModuleUnload(cudaModule));
   check_cuda_error(cuCtxDestroy(context));
   */
+}
+
+std::unique_ptr<JITSession> create_llvm_jit_session_cuda(Arch arch) {
+  TI_ASSERT(arch == Arch::cuda);
+  // TODO: assuming CUDA has the same data layout as the host arch
+  std::unique_ptr<llvm::orc::JITTargetMachineBuilder> jtmb;
+  auto JTMB = llvm::orc::JITTargetMachineBuilder::detectHost();
+  if (!JTMB)
+    TI_ERROR("LLVM TargetMachineBuilder has failed.");
+  jtmb = std::make_unique<llvm::orc::JITTargetMachineBuilder>(std::move(*JTMB));
+
+  auto DL = jtmb->getDefaultDataLayoutForTarget();
+  if (!DL) {
+    TI_ERROR("LLVM TargetMachineBuilder has failed when getting data layout.");
+  }
+  return std::make_unique<JITSessionCUDA>(DL.get());
 }
 
 #else

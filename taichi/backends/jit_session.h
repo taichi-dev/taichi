@@ -18,9 +18,7 @@ class JITModule {
   // Lookup a serial function.
   // For example, a CPU function, or a serial GPU function
   // This function returns a function pointer
-  virtual void *lookup_function(const std::string &name) {
-    TI_NOT_IMPLEMENTED
-  }
+  virtual void *lookup_function(const std::string &name) = 0;
 
   // Unfortunately, this can't be virtual since it's a template function
   template <typename... Args>
@@ -56,19 +54,21 @@ class JITSession {
   JITSession() {
   }
 
-  virtual const llvm::DataLayout &get_data_layout() const = 0;
-
   virtual JITModule *add_module(std::unique_ptr<llvm::Module> M) = 0;
 
   // virtual void remove_module(JITModule *module) = 0;
 
-  virtual void *lookup(const std::string Name) = 0;
+  virtual void *lookup(const std::string Name) {
+    TI_NOT_IMPLEMENTED
+  }
 
-  virtual std::size_t get_type_size(llvm::Type *type) const = 0;
+  virtual llvm::DataLayout get_data_layout();
+
+  std::size_t get_type_size(llvm::Type *type);
 
   virtual ~JITSession() = default;
 };
 
-std::unique_ptr<JITSession> create_llvm_jit_session_cpu(Arch arch);
+std::unique_ptr<JITSession> create_llvm_jit_session(Arch arch);
 
 TLANG_NAMESPACE_END

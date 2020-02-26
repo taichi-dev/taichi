@@ -82,15 +82,11 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
       TI_INFO("IR before global optimization");
       module->print(errs(), nullptr);
     }
-    auto ptx = compile_module_to_ptx(module);
-    if (prog->config.print_kernel_llvm_ir_optimized) {
-      TI_INFO(ptx);
-    }
-    auto cuda_module = cuda_context->compile(ptx);
+    auto jit = get_current_program().llvm_context_device->jit.get();
+    auto cuda_module = jit->add_module(std::move(module));
 
     for (auto &task : offloaded_local) {
-      task.cuda_func =
-          (void *)cuda_context->get_function(cuda_module, task.name);
+      task.cuda_func = cuda_module->lookup_function(task.name);
     }
     auto prog = this->prog;
     return [offloaded_local, prog](Context context) {

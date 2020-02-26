@@ -1,6 +1,5 @@
 import taichi as ti
 
-
 @ti.all_archs
 def test_abs():
   x = ti.var(ti.f32)
@@ -8,11 +7,9 @@ def test_abs():
 
   N = 16
 
-  @ti.layout
-  def place():
-    ti.root.dense(ti.i, N).place(x)
-    ti.root.dense(ti.i, N).place(y)
-    ti.root.lazy_grad()
+  ti.root.dense(ti.i, N).place(x)
+  ti.root.dense(ti.i, N).place(y)
+  ti.root.lazy_grad()
 
   @ti.kernel
   def func():
@@ -36,5 +33,3 @@ def test_abs():
   for i in range(N):
     assert x[i] == abs(y[i])
     assert y.grad[i] == sgn(y[i])
-
-test_abs()

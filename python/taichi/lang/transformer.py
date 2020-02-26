@@ -427,7 +427,12 @@ if 1:
     )
 
   def visit_Call(self, node):
-    self.generic_visit(node)
+    if not (isinstance(node.func, ast.Attribute)
+            and isinstance(node.func.value, ast.Name)
+            and node.func.value.id == 'ti'
+            and node.func.attr == 'static'):
+      # Do not apply the generic visitor if the function called is ti.static
+      self.generic_visit(node)
     if isinstance(node.func, ast.Name):
       func_name = node.func.id
       if func_name == 'print':

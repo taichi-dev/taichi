@@ -199,6 +199,8 @@ class Expr:
     self.setter(value, *key)
 
   def __getitem__(self, key):
+    import taichi as ti
+    assert not ti.get_runtime().inside_kernel
     if not Expr.layout_materialized:
       self.materialize_layout_callback()
     self.initialize_accessor()

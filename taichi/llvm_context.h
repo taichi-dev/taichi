@@ -9,7 +9,7 @@
 #include "tlang_util.h"
 #include "llvm_fwd.h"
 #include "snode.h"
-#include "backends/jit_session.h"
+#include "jit/jit_session.h"
 
 TLANG_NAMESPACE_BEGIN
 class JITSessionCPU;

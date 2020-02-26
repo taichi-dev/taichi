@@ -6,7 +6,7 @@
 #include "../program.h"
 #include "../tlang_util.h"
 #include "codegen_cuda.h"
-#include "cuda_context.h"
+#include <taichi/platform/cuda/cuda_context.h>
 
 #if defined(TI_WITH_CUDA)
 #include "cuda_runtime.h"

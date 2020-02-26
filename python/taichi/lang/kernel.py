@@ -33,6 +33,11 @@ def func(foo):
   func_body = tree.body[0]
   func_body.decorator_list = []
 
+  if get_runtime().print_preprocessed:
+    import astor
+    print('Before preprocessing:')
+    print(astor.to_source(tree.body[0], indent_with='  '))
+
   visitor = ASTTransformer(is_kernel=False)
   visitor.visit(tree)
   ast.fix_missing_locations(tree)
@@ -44,11 +49,12 @@ def func(foo):
 
   ast.increment_lineno(tree, inspect.getsourcelines(foo)[1] - 1)
 
+  local_vars = {}
   frame = inspect.currentframe().f_back
   exec(
       compile(tree, filename=inspect.getsourcefile(foo), mode='exec'),
-      dict(frame.f_globals, **frame.f_locals), locals())
-  compiled = locals()[foo.__name__]
+      dict(frame.f_globals, **frame.f_locals), local_vars)
+  compiled = local_vars[foo.__name__]
   return compiled
 
 def classfunc(foo):

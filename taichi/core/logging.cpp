@@ -69,7 +69,7 @@ Logger::Logger() {
     try {
       if (p) std::rethrow_exception(p);
     } catch (const std::string &e) {
-      PyErr_SetString(PyExc_RuntimeError, strchr(e.c_str(), ']') + 2);
+      PyErr_SetString(PyExc_RuntimeError, e.c_str());
     }
   });
 

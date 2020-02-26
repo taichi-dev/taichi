@@ -3,6 +3,7 @@ from .transformer import ASTTransformer
 import ast
 from .kernel_arguments import *
 from .util import *
+import functools
 
 
 def remove_indent(lines):
@@ -26,36 +27,53 @@ def remove_indent(lines):
 
 # The ti.func decorator
 def func(foo):
-  from .impl import get_runtime
-  src = remove_indent(inspect.getsource(foo))
-  tree = ast.parse(src)
+  return Func(foo)
 
-  func_body = tree.body[0]
-  func_body.decorator_list = []
 
-  if get_runtime().print_preprocessed:
-    import astor
-    print('Before preprocessing:')
-    print(astor.to_source(tree.body[0], indent_with='  '))
+class Func:
+  def __init__(self, func):
+    self.func = func
+    self.compiled = None
 
-  visitor = ASTTransformer(is_kernel=False)
-  visitor.visit(tree)
-  ast.fix_missing_locations(tree)
+  def __call__(self, *args):
+    if self.compiled is None:
+      self.do_compile()
+    return self.compiled(*args)
 
-  if get_runtime().print_preprocessed:
-    import astor
-    print('After preprocessing:')
-    print(astor.to_source(tree.body[0], indent_with='  '))
+  def do_compile(self):
+    from .impl import get_runtime
+    src = remove_indent(inspect.getsource(self.func))
+    tree = ast.parse(src)
 
-  ast.increment_lineno(tree, inspect.getsourcelines(foo)[1] - 1)
+    func_body = tree.body[0]
+    func_body.decorator_list = []
 
-  local_vars = {}
-  frame = inspect.currentframe().f_back
-  exec(
-      compile(tree, filename=inspect.getsourcefile(foo), mode='exec'),
-      dict(frame.f_globals, **frame.f_locals), local_vars)
-  compiled = local_vars[foo.__name__]
-  return compiled
+    if get_runtime().print_preprocessed:
+      import astor
+      print('Before preprocessing:')
+      print(astor.to_source(tree.body[0], indent_with='  '))
+
+    visitor = ASTTransformer(is_kernel=False)
+    visitor.visit(tree)
+    ast.fix_missing_locations(tree)
+
+    if get_runtime().print_preprocessed:
+      import astor
+      print('After preprocessing:')
+      print(astor.to_source(tree.body[0], indent_with='  '))
+
+    ast.increment_lineno(tree, inspect.getsourcelines(self.func)[1] - 1)
+
+    local_vars = {}
+    #frame = inspect.currentframe().f_back
+    #global_vars = dict(frame.f_globals, **frame.f_locals)
+    import copy
+    global_vars = copy.copy(self.func.__globals__)
+    exec(
+        compile(tree, filename=inspect.getsourcefile(self.func), mode='exec'),
+        global_vars, local_vars)
+    self.compiled = local_vars[self.func.__name__]
+
 
 def classfunc(foo):
   import taichi as ti

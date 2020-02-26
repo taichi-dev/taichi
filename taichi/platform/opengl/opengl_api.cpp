@@ -221,12 +221,10 @@ void initialize_opengl()
     }
     glfwHideWindow(window);
     glfwMakeContextCurrent(window);
-#ifdef USE_GLEW
     GLint status = glewInit();
     if (status != GLEW_OK) {
       TI_ERROR("[glsl] cannot initialize GLEW: {}", glewGetErrorString(status));
     }
-#endif
     const char *gl_version = (const char *)glGetString(GL_VERSION);
     if (!gl_version) {
       TI_WARN("[glsl] cannot get OpenGL version");

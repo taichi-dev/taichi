@@ -194,7 +194,7 @@ private: // {{{
   {
     if (stmt->op_type != UnaryOpType::cast) {
       emit("const {} {} = {}({});", opengl_data_type_name(stmt->element_type()),
-           stmt->raw_name(), opengl_unary_op_type_symbol(stmt->op_type),
+           stmt->raw_name(), unary_op_type_name(stmt->op_type),
            stmt->operand->raw_name());
     } else {
       // cast

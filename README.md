@@ -30,6 +30,14 @@ python3 -m pip install taichi-nightly-cuda-10-1
 |**PyPI**|[![Build Status](https://travis-ci.com/yuanming-hu/taichi-wheels-test.svg?branch=master)](https://travis-ci.com/yuanming-hu/taichi-wheels-test)|[![Build Status](https://travis-ci.com/yuanming-hu/taichi-wheels-test.svg?branch=master)](https://travis-ci.com/yuanming-hu/taichi-wheels-test)|[![Build status](https://ci.appveyor.com/api/projects/status/39ar9wa8yd49je7o?svg=true)](https://ci.appveyor.com/project/IteratorAdvance/taichi-wheels-test)|
 
 ## Updates
+- (Feb  25, 2020) v0.5.3 released
+   - Better error message when try to declare tensors after kernel invocation (by **Yubin Peng [archibate]**)
+   - Logging: `ti.warning` renamed to `ti.warn`
+   - Arch: `ti.x86_64` renamed to `ti.x64`. `ti.x86_64` is deprecated and will be removed in a future release
+   - (For developers) Improved runtime bit code compilation thread safety (by **Yubin Peng [archibate]**)
+   - Improved OS X GUI performance (by **Ye Kuang [k-ye]**)
+   - Experimental support for new integer types `u8, i8, u16, i16, u32` (by **Yubin Peng [archibate]**)
+   - Update doc (by **Ye Kuang [k-ye]**)
 - (Feb  20, 2020) v0.5.2 released
    - Gradients for `ti.pow` now supported (by **Yubin Peng [archibate]**)
    - Multi-threaded unit testing (by **Yubin Peng [archibate]**)
@@ -45,6 +53,7 @@ python3 -m pip install taichi-nightly-cuda-10-1
    - Use environment variable `TI_TEST_THREADS` to override testing threads
    - [For Taichi developers, bug fix] `ti.init(print_processed=True)` renamed to `ti.init(print_preprocessed=True)`
    - Various development infrastructure improvements by **Yubin Peng [archibate]**
+   - Official Python3.6 - Python3.8 packages on OS X (by **wYw [Detavern]**)
 - (Feb  16, 2020) v0.5.1 released
    - Keyboard and mouse events supported in the GUI system. Check out [mpm128.py](https://github.com/taichi-dev/taichi/blob/4f5cc09ae0e35a47ad71fdc582c1ecd5202114d8/examples/mpm128.py) for a interactive demo! (by **Yubin Peng [archibate] and Ye Kuang [k-ye]**)
    - Basic algebraic simplification passes (by **Mingkuan Xu [xumingkuan]**)

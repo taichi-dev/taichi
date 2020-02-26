@@ -143,7 +143,7 @@ class Program {
   }
 
   TaichiLLVMContext *get_llvm_context(Arch arch) {
-    if (arch == Arch::x64) {
+    if (arch_is_cpu(arch)) {
       return llvm_context_host.get();
     } else {
       return llvm_context_device.get();

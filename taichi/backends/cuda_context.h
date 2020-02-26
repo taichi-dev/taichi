@@ -24,11 +24,11 @@ class CUDAContext {
     return dev_count != 0;
   }
 
-  CUmodule compile(const std::string &ptx);
+  // CUmodule compile(const std::string &ptx);
 
-  CUfunction get_function(CUmodule module, const std::string &func_name);
+  // CUfunction get_function(CUmodule module, const std::string &func_name);
 
-  void launch(CUfunction func,
+  void launch(void *func,
               const std::string &task_name,
               ProfilerBase *profiler,
               void *context_ptr,

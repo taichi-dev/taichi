@@ -57,7 +57,7 @@ TaichiLLVMContext::TaichiLLVMContext(Arch arch) : arch(arch) {
 #endif
   }
   ctx = std::make_unique<llvm::LLVMContext>();
-  jit = create_llvm_jit_session_cpu(arch);
+  jit = create_llvm_jit_session(arch);
 }
 
 llvm::Type *TaichiLLVMContext::get_data_type(DataType dt) {

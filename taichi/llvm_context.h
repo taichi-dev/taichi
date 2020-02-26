@@ -17,11 +17,7 @@ class JITSessionCPU;
 class TaichiLLVMContext {
  public:
   std::unique_ptr<llvm::LLVMContext> ctx;
-
- private:
   std::unique_ptr<JITSession> jit;
-
- public:
   std::unique_ptr<llvm::Module> runtime_module, struct_module;
   JITModule *runtime_jit_module;
   Arch arch;

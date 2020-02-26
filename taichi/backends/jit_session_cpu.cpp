@@ -123,7 +123,7 @@ class JITSessionCPU : public JITSession {
     llvm::sys::DynamicLibrary::LoadLibraryPermanently(nullptr);
   }
 
-  const DataLayout &get_data_layout() const override {
+  DataLayout get_data_layout() override {
     return DL;
   }
 
@@ -181,10 +181,6 @@ class JITSessionCPU : public JITSession {
     cantFail(CODLayer.removeModule(K));
   }
   */
-
-  std::size_t get_type_size(llvm::Type *type) const override {
-    return DL.getTypeAllocSize(type);
-  }
 
  private:
   std::unique_ptr<llvm::Module> optimize_module(
@@ -288,17 +284,11 @@ class JITSessionCPU : public JITSession {
 
 std::unique_ptr<JITSession> create_llvm_jit_session_cpu(Arch arch) {
   std::unique_ptr<JITTargetMachineBuilder> jtmb;
-  if (arch_is_cpu(arch)) {
-    auto JTMB = JITTargetMachineBuilder::detectHost();
-    if (!JTMB)
-      TI_ERROR("LLVM TargetMachineBuilder has failed.");
-    jtmb = std::make_unique<JITTargetMachineBuilder>(std::move(*JTMB));
-  } else {
-    TI_ASSERT(arch == Arch::cuda);
-    Triple triple("nvptx64", "nvidia", "cuda");
-    jtmb = std::make_unique<JITTargetMachineBuilder>(triple);
-    TI_WARN("Not actually supported");
-  }
+  TI_ASSERT(arch_is_cpu(arch));
+  auto JTMB = JITTargetMachineBuilder::detectHost();
+  if (!JTMB)
+    TI_ERROR("LLVM TargetMachineBuilder has failed.");
+  jtmb = std::make_unique<JITTargetMachineBuilder>(std::move(*JTMB));
 
   auto DL = jtmb->getDefaultDataLayoutForTarget();
   if (!DL) {

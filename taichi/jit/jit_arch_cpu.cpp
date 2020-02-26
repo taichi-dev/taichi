@@ -61,16 +61,7 @@ class JITModuleCPU : public JITModule {
       : session(session), key(key) {
   }
 
-  // Lookup a serial function.
-  // For example, a CPU function, or a serial GPU function
-  // This function returns a function pointer
   void *lookup_function(const std::string &name) override;
-
-  // Lookup a parallel GPU kernel
-  // The only argument to GPU kernels should be a Context
-  std::function<void()> lookup_spmd_function(const std::string &name) override {
-    TI_NOT_IMPLEMENTED
-  }
 };
 
 class JITSessionCPU : public JITSession {
@@ -282,6 +273,10 @@ class JITSessionCPU : public JITSession {
   }
 };
 
+void *JITModuleCPU::lookup_function(const std::string &name) {
+  return session->lookup_in_module(key, name);
+}
+
 std::unique_ptr<JITSession> create_llvm_jit_session_cpu(Arch arch) {
   std::unique_ptr<JITTargetMachineBuilder> jtmb;
   TI_ASSERT(arch_is_cpu(arch));
@@ -296,10 +291,6 @@ std::unique_ptr<JITSession> create_llvm_jit_session_cpu(Arch arch) {
   }
 
   return llvm::make_unique<JITSessionCPU>(std::move(*jtmb), std::move(*DL));
-}
-
-void *JITModuleCPU::lookup_function(const std::string &name) {
-  return session->lookup_in_module(key, name);
 }
 
 TLANG_NAMESPACE_END

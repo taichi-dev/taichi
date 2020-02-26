@@ -1,21 +1,14 @@
+#if defined(TI_WITH_CUDA)
 #if defined(min)
 #undef min
 #endif
 #if defined(max)
 #undef max
 #endif
+#include <memory>
+#include <cuda_runtime_api.h>
+#include <cuda.h>
 #include "llvm/ADT/StringRef.h"
-#include "llvm/ExecutionEngine/ExecutionEngine.h"
-#include "llvm/ExecutionEngine/JITSymbol.h"
-#include "llvm/ExecutionEngine/Orc/CompileOnDemandLayer.h"
-#include "llvm/ExecutionEngine/Orc/CompileUtils.h"
-#include "llvm/ExecutionEngine/Orc/IRCompileLayer.h"
-#include "llvm/ExecutionEngine/Orc/IRTransformLayer.h"
-#include "llvm/ExecutionEngine/Orc/LambdaResolver.h"
-#include "llvm/ExecutionEngine/Orc/RTDyldObjectLinkingLayer.h"
-#include "llvm/ExecutionEngine/RTDyldMemoryManager.h"
-#include "llvm/ExecutionEngine/RuntimeDyld.h"
-#include "llvm/ExecutionEngine/SectionMemoryManager.h"
 #include "llvm/IR/DataLayout.h"
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/Support/DynamicLibrary.h"
@@ -26,34 +19,20 @@
 #include "llvm/Transforms/Scalar.h"
 #include "llvm/Transforms/Scalar/GVN.h"
 #include "llvm/Transforms/IPO.h"
-#include <memory>
-#include "../tlang_util.h"
-#include "jit_session.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
 #include <llvm/Analysis/TargetTransformInfo.h>
 #include <llvm/Support/TargetRegistry.h>
 #include <llvm/Target/TargetMachine.h>
-#if defined(TI_WITH_CUDA)
+#include <llvm/ExecutionEngine/Orc/JITTargetMachineBuilder.h>
 #include <taichi/platform/cuda/cuda_utils.h>
-#include <cuda_runtime_api.h>
-#include <cuda.h>
-#endif
 #include <taichi/platform/cuda/cuda_context.h>
 #include <taichi/program.h>
 #include <taichi/context.h>
 #include <taichi/system/timer.h>
-#include <llvm/ExecutionEngine/Orc/JITTargetMachineBuilder.h>
+#include "../tlang_util.h"
+#include "jit_session.h"
 
 TLANG_NAMESPACE_BEGIN
-
-#if defined(TI_WITH_CUDA)
-
-std::string cuda_mattrs() {
-  return "+ptx50";
-}
-
-std::unique_ptr<CUDAContext> cuda_context;  // TODO:..
-std::string compile_module_to_ptx(std::unique_ptr<llvm::Module> &module);
 
 class JITModuleCUDA : public JITModule {
  private:
@@ -103,9 +82,17 @@ class JITSessionCUDA : public JITSession {
   virtual llvm::DataLayout get_data_layout() override {
     return DL;
   }
+
+  static std::string compile_module_to_ptx(
+      std::unique_ptr<llvm::Module> &module);
 };
 
-std::string compile_module_to_ptx(std::unique_ptr<llvm::Module> &module) {
+std::string cuda_mattrs() {
+  return "+ptx50";
+}
+
+std::string JITSessionCUDA::compile_module_to_ptx(
+    std::unique_ptr<llvm::Module> &module) {
   // Part of this function is borrowed from Halide::CodeGen_PTX_Dev.cpp
   using namespace llvm;
 
@@ -242,10 +229,5 @@ std::unique_ptr<JITSession> create_llvm_jit_session_cuda(Arch arch) {
   return std::make_unique<JITSessionCUDA>(DL.get());
 }
 
-#else
-std::string compile_module_to_ptx(std::unique_ptr<llvm::Module> &module) {
-  TI_NOT_IMPLEMENTED
-}
-#endif
-
 TLANG_NAMESPACE_END
+#endif

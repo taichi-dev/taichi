@@ -74,5 +74,7 @@ CUDAContext::~CUDAContext() {
   */
 }
 
+std::unique_ptr<CUDAContext> cuda_context;
+
 TLANG_NAMESPACE_END
 #endif

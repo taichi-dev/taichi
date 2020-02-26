@@ -60,7 +60,10 @@ class KernelTemplateMapper:
 
   def __init__(self, annotations, template_slot_locations):
     self.annotations = annotations
-    self.extractors = tuple((i, anno.extract) for (i, anno) in enumerate(self.annotations) if hasattr(anno, 'extract'))
+    # Make sure extractors's size is the same as the number of args
+    dummy_extract = lambda arg: (type(arg).__name__, )
+    self.extractors = tuple((i, getattr(anno, 'extract', dummy_extract))
+                            for (i, anno) in enumerate(self.annotations))
     self.num_args = len(annotations)
     self.template_slot_locations = template_slot_locations
     self.mapping = {}

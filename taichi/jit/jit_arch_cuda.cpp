@@ -1,4 +1,3 @@
-#if defined(TI_WITH_CUDA)
 #if defined(min)
 #undef min
 #endif
@@ -34,6 +33,7 @@
 
 TLANG_NAMESPACE_BEGIN
 
+#if defined(TI_WITH_CUDA)
 class JITModuleCUDA : public JITModule {
  private:
   CUmodule module;
@@ -228,6 +228,10 @@ std::unique_ptr<JITSession> create_llvm_jit_session_cuda(Arch arch) {
   }
   return std::make_unique<JITSessionCUDA>(DL.get());
 }
+#else
+std::unique_ptr<JITSession> create_llvm_jit_session_cuda(Arch arch) {
+  TI_NOT_IMPLEMENTED
+}
+#endif
 
 TLANG_NAMESPACE_END
-#endif

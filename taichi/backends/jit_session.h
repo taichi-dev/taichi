@@ -32,8 +32,8 @@ class JITModule {
   }
 
   template <typename... Args>
-  void call(const std::string &name, Args &&... args) {
-    get_function<Args...>(name)(std::forward<Args>(args)...);
+  void call(const std::string &name, Args... args) {
+    get_function<Args...>(name)(args...);
   }
 
   // Lookup a parallel GPU kernel

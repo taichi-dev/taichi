@@ -22,6 +22,15 @@ class JITModule {
     TI_NOT_IMPLEMENTED
   }
 
+  // Unfortunately, this can't be virtual since it's a template function
+  template <typename... Args>
+  std::function<void(Args...)> get_function(const std::string &name) {
+    using FuncT = typename std::function<void(Args...)>;
+    auto ret = FuncT((function_pointer_type<FuncT>)lookup_function(name));
+    TI_ASSERT(ret != nullptr);
+    return ret;
+  }
+
   // Lookup a parallel GPU kernel
   // The only argument to GPU kernels should be a Context
   virtual std::function<void()> lookup_spmd_function(const std::string &name) {

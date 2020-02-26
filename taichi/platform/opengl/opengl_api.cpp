@@ -1,16 +1,16 @@
-#define USE_GLEW
-#ifdef USE_GLEW
+#include "opengl_api.h"
+
+#ifdef TI_WITH_OPENGL
+
 #define GLEW_STATIC
 #include <GL/glew.h>
-#else
-#include <GLES3/gl32.h>
-#endif
 #include <GLFW/glfw3.h>
-#include "opengl_api.h"
+#endif
 
 TLANG_NAMESPACE_BEGIN
 namespace opengl {
 
+#ifdef TI_WITH_OPENGL
 void glapi_set_uniform(GLuint loc, float value)
 {
   glUniform1f(loc, value);
@@ -274,10 +274,20 @@ void launch_glsl_kernel(std::string source, std::vector<IOV> iov)
 
 bool is_opengl_api_available()
 {
-  // TODO: do detections here, eg. test -f /lib/libGL.so
-  // We can staticaly link libGLEW.so, but link libGL.so on request by glewInit() (???)
   return true;
 }
+
+#else
+void launch_glsl_kernel(std::string source, std::vector<IOV> iov)
+{
+  TI_NOT_IMPLEMENTED
+}
+
+bool is_opengl_api_available()
+{
+  return false;
+}
+#endif
 
 }
 TLANG_NAMESPACE_END

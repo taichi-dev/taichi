@@ -24,6 +24,7 @@ endif()
 
 option(USE_STDCPP "Use -stdlib=libc++" OFF)
 option(TI_WITH_CUDA "Build with CUDA support" OFF)
+option(TI_WITH_OPENGL "Build with OpenGL backend" ON)
 
 include_directories(${CMAKE_SOURCE_DIR})
 include_directories(external/xxhash)
@@ -51,6 +52,21 @@ if (TI_WITH_CUDA)
     else()
         message(FATAL_ERROR "CUDA not found.")
     endif()
+endif()
+
+if (TI_WITH_OPENGL)
+  if(NOT GLEW_VERSION)
+    set(GLEW_VERSION 2.0.0)
+  endif()
+  find_package(GLEW ${GLEW_VERSION})
+  if (GLEW_FOUND)
+    message("Building with GLEW ${GLEW_VERSION}")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_OPENGL")
+    target_link_libraries(${LIBRARY_NAME} /usr/lib/libGLEW.so GLEW)
+    target_link_libraries(${LIBRARY_NAME} /usr/lib/libglfw.so glfw)
+  else()
+    message(WARNING "GLEW not found.")
+  endif()
 endif()
 
 # http://llvm.org/docs/CMake.html#embedding-llvm-in-your-project
@@ -87,9 +103,6 @@ if (TI_WITH_CUDA)
     llvm_map_components_to_libnames(llvm_ptx_libs NVPTX)
     target_link_libraries(${LIBRARY_NAME} ${llvm_ptx_libs})
 endif()
-
-target_link_libraries(${LIBRARY_NAME} /usr/lib/libGLEW.so GLEW)
-target_link_libraries(${LIBRARY_NAME} /usr/lib/libglfw.so glfw)
 
 # add_executable(runtime runtime/runtime.cpp)
 

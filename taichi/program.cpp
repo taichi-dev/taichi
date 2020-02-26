@@ -329,7 +329,7 @@ void Program::initialize_device_llvm_context() {
   }
 }
 
-Arch Program::get_snode_io_arch()
+Arch Program::get_snode_accessor_arch()
 {
   if (config.arch == Arch::opengl) {
     return Arch::opengl;
@@ -350,7 +350,7 @@ Kernel &Program::get_snode_reader(SNode *snode) {
         snode->num_active_indices, load_if_ptr((snode->expr)[indices]));
     current_ast_builder().insert(std::move(ret));
   });
-  ker.set_arch(get_snode_io_arch());
+  ker.set_arch(get_snode_accessor_arch());
   ker.name = kernel_name;
   ker.is_accessor = true;
   for (int i = 0; i < snode->num_active_indices; i++)
@@ -371,7 +371,7 @@ Kernel &Program::get_snode_writer(SNode *snode) {
     (snode->expr)[indices] =
         Expr::make<ArgLoadExpression>(snode->num_active_indices);
   });
-  ker.set_arch(get_snode_io_arch());
+  ker.set_arch(get_snode_accessor_arch());
   ker.name = kernel_name;
   ker.is_accessor = true;
   for (int i = 0; i < snode->num_active_indices; i++)

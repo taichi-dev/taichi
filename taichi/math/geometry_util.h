@@ -85,48 +85,4 @@ inline std::vector<Vector2> points_inside_sphere(std::vector<float> x_range,
   return ret;
 }
 
-inline Vector3 set_up(const Vector3 &a, const Vector3 &y) {
-  Vector3 x, z;
-  if (std::abs(y.y) > 1.0_f - eps) {
-    x = Vector3(1, 0, 0);
-  } else {
-    x = normalize(cross(y, Vector3(0, 1, 0)));
-  }
-  z = cross(x, y);
-  return a.x * x + a.y * y + a.z * z;
-}
-
-inline Vector3 random_diffuse(const Vector3 &normal, real u, real v) {
-  if (u > v) {
-    std::swap(u, v);
-  }
-  if (v < eps) {
-    v = eps;
-  }
-  u /= v;
-  real xz = v, y = sqrt(1 - v * v);
-  real phi = u * pi * 2;
-  return set_up(Vector3(xz * cos(phi), y, xz * sin(phi)), normal);
-}
-
-inline Vector3 random_diffuse(const Vector3 &normal) {
-  return random_diffuse(normal, rand(), rand());
-}
-
-inline bool inside_unit_cube(const Vector3 &p) {
-  return 0 <= p[0] && p[0] < 1 && 0 <= p[1] && p[1] < 1 && 0 <= p[2] &&
-         p[2] < 1;
-}
-
-inline Vector3 sample_sphere(float u, float v) {
-  float x = u * 2 - 1;
-  float phi = v * 2 * pi;
-  float yz = sqrt(1 - x * x);
-  return Vector3(x, yz * cos(phi), yz * sin(phi));
-}
-
-inline Vector3 reflect(const Vector3 &d, const Vector3 &n) {
-  return d - dot(d, n) * 2.0f * n;
-}
-
 TI_NAMESPACE_END

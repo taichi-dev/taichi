@@ -2,7 +2,7 @@
 
 #if defined(TI_WITH_CUDA)
 #include <taichi/profiler.h>
-#include <taichi/cuda_utils.h>
+#include <taichi/platform/cuda/cuda_utils.h>
 #include <mutex>
 
 TLANG_NAMESPACE_BEGIN

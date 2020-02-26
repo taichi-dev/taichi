@@ -1,7 +1,7 @@
 // Virtual memory allocator for CPU/GPU
 
 #if defined(TI_WITH_CUDA)
-#include "cuda_utils.h"
+#include "taichi/platform/cuda/cuda_utils.h"
 #endif
 #include "tlang_util.h"
 #include <taichi/unified_allocator.h>

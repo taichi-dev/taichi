@@ -156,27 +156,6 @@ inline type::element<T> prod(const T &t) {
 }
 // clang-format on
 
-#define TI_MAKE_VECTORIZED_FROM_STD(op)                  \
-  template <typename T>                                  \
-  inline T op(const T &t) {                              \
-    using Elem = typename type::element<decltype(t)>;    \
-    return map(t, static_cast<Elem (*)(Elem)>(std::op)); \
-  }
-
-TI_MAKE_VECTORIZED_FROM_STD(abs);
-TI_MAKE_VECTORIZED_FROM_STD(log);
-TI_MAKE_VECTORIZED_FROM_STD(exp);
-TI_MAKE_VECTORIZED_FROM_STD(sin);
-TI_MAKE_VECTORIZED_FROM_STD(cos);
-TI_MAKE_VECTORIZED_FROM_STD(tan);
-TI_MAKE_VECTORIZED_FROM_STD(asin);
-TI_MAKE_VECTORIZED_FROM_STD(acos);
-TI_MAKE_VECTORIZED_FROM_STD(atan);
-TI_MAKE_VECTORIZED_FROM_STD(tanh);
-TI_MAKE_VECTORIZED_FROM_STD(ceil);
-TI_MAKE_VECTORIZED_FROM_STD(floor);
-TI_MAKE_VECTORIZED_FROM_STD(sqrt);
-
 template <typename T>
 TI_FORCE_INLINE
     typename std::enable_if_t<!std::is_floating_point<T>::value, bool>

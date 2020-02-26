@@ -34,7 +34,7 @@
 #include <llvm/Support/TargetRegistry.h>
 #include <llvm/Target/TargetMachine.h>
 #if defined(TI_WITH_CUDA)
-#include <taichi/cuda_utils.h>
+#include <taichi/platform/cuda/cuda_utils.h>
 #include <cuda_runtime_api.h>
 #include <cuda.h>
 #endif

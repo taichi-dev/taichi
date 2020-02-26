@@ -9,7 +9,6 @@ TLANG_NAMESPACE_BEGIN
 
 class CUDAContext {
   CUdevice device;
-  std::vector<CUmodule> cudaModules;
   CUcontext context;
   int dev_count;
   void *context_buffer;
@@ -23,10 +22,6 @@ class CUDAContext {
   bool detected() const {
     return dev_count != 0;
   }
-
-  // CUmodule compile(const std::string &ptx);
-
-  // CUfunction get_function(CUmodule module, const std::string &func_name);
 
   void launch(void *func,
               const std::string &task_name,

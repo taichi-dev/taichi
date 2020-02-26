@@ -8,7 +8,7 @@
 #include <taichi/system/virtual_memory.h>
 #include <taichi/system/timer.h>
 #include <string>
-#include "backends/cuda_context.h"
+#include "platform/cuda/cuda_context.h"
 
 TLANG_NAMESPACE_BEGIN
 

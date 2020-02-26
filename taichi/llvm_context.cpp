@@ -469,8 +469,8 @@ llvm::DataLayout TaichiLLVMContext::get_data_layout() {
   return jit->get_data_layout();
 }
 
-void TaichiLLVMContext::add_module(std::unique_ptr<llvm::Module> module) {
-  jit->add_module(std::move(module));
+JITModule *TaichiLLVMContext::add_module(std::unique_ptr<llvm::Module> module) {
+  return jit->add_module(std::move(module));
 }
 
 template llvm::Value *TaichiLLVMContext::get_constant(float32 t);

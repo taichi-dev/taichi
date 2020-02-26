@@ -23,6 +23,7 @@ class TaichiLLVMContext {
 
  public:
   std::unique_ptr<llvm::Module> runtime_module, struct_module;
+  JITModule *runtime_jit_module;
   Arch arch;
 
   SNodeAttributes snode_attr;
@@ -35,7 +36,7 @@ class TaichiLLVMContext {
 
   void set_struct_module(const std::unique_ptr<llvm::Module> &module);
 
-  void add_module(std::unique_ptr<llvm::Module> module);
+  JITModule *add_module(std::unique_ptr<llvm::Module> module);
 
   virtual void *lookup_function_pointer(const std::string &name) {
     return jit->lookup(name);

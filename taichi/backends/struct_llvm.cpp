@@ -206,7 +206,8 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
   // Do not compile the GPU struct module alone since
   // it's useless unless used with kernels
   if (arch_is_cpu(arch))
-    tlctx->add_module(std::move(module));
+    // TODO: move this to TaichiLLVMContext
+    tlctx->runtime_jit_module = tlctx->add_module(std::move(module));
 
   tlctx->snode_attr = snode_attr;
 }

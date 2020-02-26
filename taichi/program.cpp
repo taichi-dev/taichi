@@ -108,9 +108,11 @@ FunctionType Program::compile(Kernel &kernel) {
 // For CPU and CUDA archs only
 void Program::initialize_runtime_system(StructCompiler *scomp) {
   auto tlctx = llvm_context_host.get();
+  auto runtime_jit_module = tlctx->runtime_jit_module;
   auto initialize_runtime =
-      tlctx->lookup_function<void(void *, void *, std::size_t, void *, void *)>(
-          "Runtime_initialize");
+      runtime_jit_module
+          ->get_function<void *, void *, std::size_t, void *, void *>(
+              "Runtime_initialize");
 
   auto initialize_runtime2 =
       tlctx->lookup_function<void(void *, int, int)>("Runtime_initialize2");

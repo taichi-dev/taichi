@@ -1,6 +1,7 @@
 import taichi as ti
 
 
+@ti.require(ti.extension.sparse)
 @ti.all_archs
 def test_compare_basics():
   a = ti.var(ti.i32)
@@ -41,6 +42,7 @@ def test_compare_basics():
   assert a[11]
 
 
+@ti.require(ti.extension.sparse)
 @ti.all_archs
 def test_compare_equality():
   a = ti.var(ti.i32)
@@ -80,6 +82,7 @@ def test_compare_equality():
   assert not a[11]
 
 
+@ti.require(ti.extension.sparse)
 @ti.all_archs
 def test_no_duplicate_eval():
   a = ti.var(ti.i32)
@@ -95,6 +98,7 @@ def test_no_duplicate_eval():
   assert a[2]  # ti.append returns 0
 
 
+@ti.require(ti.extension.sparse)
 @ti.all_archs
 def test_chain_compare():
   a = ti.var(ti.i32)

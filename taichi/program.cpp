@@ -42,7 +42,7 @@ Program::Program(Arch arch) {
 #if !defined(TI_WITH_CUDA)
   if (arch == Arch::cuda) {
     TI_WARN("Taichi is not compiled with CUDA.");
-    TI_WARN("Falling back to x86_64");
+    TI_WARN("Falling back to x64");
     arch = Arch::x64;
   }
 #else
@@ -50,21 +50,21 @@ Program::Program(Arch arch) {
     cuda_context = std::make_unique<CUDAContext>();
     if (!cuda_context->detected()) {
       TI_WARN("No CUDA device detected.");
-      TI_WARN("Falling back to x86_64");
+      TI_WARN("Falling back to x64");
       arch = Arch::x64;
     }
   }
 #endif
   if (arch == Arch::metal) {
     if (!metal::is_metal_api_available()) {
-      TI_WARN("No Metal API detected, falling back to x86_64");
+      TI_WARN("No Metal API detected, falling back to x64");
       arch = Arch::x64;
     }
   }
   if (arch == Arch::opengl) {
     if (!opengl::is_opengl_api_available()) {
-      TI_WARN("No OpenGL API detected, falling back to x86_64");
-      arch = Arch::x86_64;
+      TI_WARN("No OpenGL API detected, falling back to x64");
+      arch = Arch::x64;
     }
   }
   memory_pool = std::make_unique<MemoryPool>(this);
@@ -185,7 +185,7 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
 }
 
 void Program::materialize_layout() {
-  // always use arch=x86_64 since this is for host accessors
+  // always use arch=x64 since this is for host accessors
   // TODO: arch may also be arm etc.
   std::unique_ptr<StructCompiler> scomp = StructCompiler::make(this, Arch::x64);
   scomp->run(*snode_root, true);

@@ -164,13 +164,12 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
 
   if (arch_use_host_memory(config.arch)) {
     // Profiler functions can only be called on host kernels
-    tlctx->lookup_function<void(void *, void *)>("Runtime_set_profiler")(
-        llvm_runtime, profiler.get());
-
-    tlctx->lookup_function<void(void *, void *)>("Runtime_set_profiler_start")(
-        llvm_runtime, (void *)&ProfilerBase::profiler_start);
-    tlctx->lookup_function<void(void *, void *)>("Runtime_set_profiler_stop")(
-        llvm_runtime, (void *)&ProfilerBase::profiler_stop);
+    runtime->call<void *, void *>("Runtime_set_profiler", llvm_runtime,
+                                  profiler.get());
+    runtime->call<void *, void *>("Runtime_set_profiler_start", llvm_runtime,
+                                  (void *)&ProfilerBase::profiler_start);
+    runtime->call<void *, void *>("Runtime_set_profiler_stop", llvm_runtime,
+                                  (void *)&ProfilerBase::profiler_stop);
   }
 }
 

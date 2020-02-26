@@ -524,21 +524,40 @@ if 1:
   
   def visit_Compare(self, node):
     self.generic_visit(node)
-    ret = None
     comparators = [node.left] + node.comparators
-    for i in range(len(node.comparators)):
-      new_cmp = ast.Compare(left=comparators[i], ops=[node.ops[i]], comparators=[comparators[i + 1]])
-      ast.copy_location(new_cmp, node)
-      if ret is None:
-        ret = new_cmp
+    ops = []
+    for i in range(len(node.ops)):
+      if isinstance(node.ops[i], ast.Lt):
+        op_str = 'Lt'
+      elif isinstance(node.ops[i], ast.LtE):
+        op_str = 'LtE'
+      elif isinstance(node.ops[i], ast.Gt):
+        op_str = 'Gt'
+      elif isinstance(node.ops[i], ast.GtE):
+        op_str = 'GtE'
+      elif isinstance(node.ops[i], ast.Eq):
+        op_str = 'Eq'
+      elif isinstance(node.ops[i], ast.NotEq):
+        op_str = 'NotEq'
+      elif isinstance(node.ops[i], ast.In):
+        raise TaichiSyntaxError('"in" is not supported in Taichi kernels.')
+      elif isinstance(node.ops[i], ast.NotIn):
+        raise TaichiSyntaxError('"not in" is not supported in Taichi kernels.')
+      elif isinstance(node.ops[i], ast.Is):
+        raise TaichiSyntaxError('"is" is not supported in Taichi kernels.')
+      elif isinstance(node.ops[i], ast.IsNot):
+        raise TaichiSyntaxError('"is not" is not supported in Taichi kernels.')
       else:
-        ret = ast.BoolOp(op=ast.And(), values=[ret, new_cmp])
-        ret = self.visit_BoolOp(ret)
-        ast.copy_location(ret, node)
-        
-    self.generic_visit(ret)
-    return ret
-    
+        raise Exception(f'Unknown operator {node.ops[i]}')
+      ops += [ast.copy_location(ast.Str(s=op_str), node)]
+
+    call = ast.Call(
+      func=self.parse_expr('ti.chain_compare'),
+      args=[ast.copy_location(ast.List(elts=comparators, ctx=ast.Load()), node),
+            ast.copy_location(ast.List(elts=ops, ctx=ast.Load()), node)],
+      keywords=[])
+    call = ast.copy_location(call, node)
+    return call
 
   def visit_BoolOp(self, node):
     self.generic_visit(node)

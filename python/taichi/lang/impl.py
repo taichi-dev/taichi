@@ -36,6 +36,7 @@ def wrap_scalar(x):
 def atomic_add(a, b):
   return a.atomic_add(b)
 
+
 def subscript(value, *indices):
   import numpy as np
   if isinstance(value, np.ndarray):
@@ -64,6 +65,34 @@ def subscript(value, *indices):
     index_dim = indices_expr_group.size()
     assert tensor_dim == index_dim, f'Tensor with dim {tensor_dim} accessed with indices of dim {index_dim}'
     return Expr(taichi_lang_core.subscript(value.ptr, indices_expr_group))
+
+
+def chain_compare(comparators, ops):
+  assert len(comparators) == len(ops) + 1, \
+    f'Chain comparison invoked with {len(comparators)} comparators but {len(ops)} operators'
+  evaluated_comparators = []
+  for i in range(len(comparators)):
+    evaluated_comparators += [expr_init(comparators[i])]
+  ret = expr_init(True)
+  for i in range(len(ops)):
+    lhs = evaluated_comparators[i]
+    rhs = evaluated_comparators[i + 1]
+    if ops[i] == 'Lt':
+      now = lhs < rhs
+    elif ops[i] == 'LtE':
+      now = lhs <= rhs
+    elif ops[i] == 'Gt':
+      now = lhs > rhs
+    elif ops[i] == 'GtE':
+      now = lhs >= rhs
+    elif ops[i] == 'Eq':
+      now = lhs == rhs
+    elif ops[i] == 'NotEq':
+      now = lhs != rhs
+    else:
+      assert False, f'Unknown operator {ops[i]}'
+    ret = ret.logical_and(now)
+  return ret
 
 
 class PyTaichi:

@@ -1,3 +1,4 @@
+#if defined(TI_WITH_CUDA)
 #define TI_RUNTIME_HOST
 #include <taichi/tlang_util.h>
 #include <taichi/context.h>
@@ -73,5 +74,5 @@ CUDAContext::~CUDAContext() {
   */
 }
 
-
 TLANG_NAMESPACE_END
+#endif

@@ -23,139 +23,6 @@ TI_FORCE_INLINE T radians(T deg) {
   return deg * (pi / type::element<T>(180));
 }
 
-// clang-format off
-template <typename F, typename T>
-inline T map(const T &t, const F &f) {
-  T ret;
-  TI_STATIC_IF(type::is_VectorND<T>()) {
-    for (int i = 0; i < std::decay_t<decltype(t)>::dim; i++) {
-      ret[i] = f(t[i]);
-    }
-  }
-  TI_STATIC_ELSE{
-    TI_STATIC_IF(type::is_MatrixND<T>()){
-      for (int i = 0; i < std::decay_t<decltype(t)>::dim; i++){
-        for (int j = 0; j < std::decay_t<decltype(t)>::dim; j++){
-          ret[i][j] = f(t(i, j));
-        }
-      }
-    }
-    TI_STATIC_ELSE {
-      ret = f(t);
-    }
-    TI_STATIC_END_IF
-  }
-  TI_STATIC_END_IF
-  return ret;
-}
-// clang-format on
-
-// clang-format off
-template <typename T>
-inline type::element<T> maximum(const T &t) {
-  typename type::element<T> ret;
-  TI_STATIC_IF(type::is_VectorND<T>()) {
-    ret = t(0);
-    for (int i = 1; i < T::dim; i++) {
-      ret = std::max(ret, t(i));
-    }
-  }
-  TI_STATIC_ELSE {
-    TI_STATIC_IF(type::is_MatrixND<T>()) {
-      ret = t(0, 0);
-      for (int i = 0; i < T::dim; i++){
-        for (int j = 0; j < T::dim; j++){
-          ret = std::max(ret, t(i, j));
-        }
-      }
-    }
-    TI_STATIC_ELSE {
-      ret = t;
-    }
-    TI_STATIC_END_IF
-  }
-  TI_STATIC_END_IF
-  return ret;
-}
-// clang-format on
-
-// clang-format off
-template <typename T>
-inline type::element<T> minimum(const T &t) {
-  typename type::element<T> ret;
-  TI_STATIC_IF(type::is_VectorND<T>()) {
-    ret = t(0);
-    for (int i = 1; i < T::dim; i++) {
-      ret = std::min(ret, t(i));
-    }
-  }
-  TI_STATIC_ELSE {
-    TI_STATIC_IF(type::is_MatrixND<T>()) {
-      ret = t(0, 0);
-      for (int i = 0; i < T::dim; i++){
-        for (int j = 0; j < T::dim; j++){
-          ret = std::min(ret, t(i, j));
-        }
-      }
-    }
-    TI_STATIC_ELSE {
-      ret = t;
-    }
-    TI_STATIC_END_IF
-  }
-  TI_STATIC_END_IF
-  return ret;
-}
-// clang-format on
-
-// clang-format off
-template <typename T>
-inline type::element<T> sum(const T &t) {
-  typename type::element<T> ret = 0;
-  TI_STATIC_IF(type::is_VectorND<T>()) {
-    for (int i = 0; i < std::decay_t<decltype(t)>::dim; i++) {
-      ret += t(i);
-    }
-  }
-  TI_STATIC_ELSE {
-    TI_STATIC_IF(type::is_MatrixND<T>()) {
-      for (int i = 0; i < std::decay_t<decltype(t)>::dim; i++){
-        for (int j = 0; j < std::decay_t<decltype(t)>::dim; j++){
-          ret += t(i, j);
-        }
-      }
-    }
-    TI_STATIC_ELSE {
-      ret = t;
-    }
-    TI_STATIC_END_IF
-  }
-  TI_STATIC_END_IF
-  return ret;
-}
-
-template <typename T>
-inline type::element<T> prod(const T &t) {
-  typename type::element<T> ret = 1;
-  TI_STATIC_IF(type::is_VectorND<T>()) {
-    for (int i = 0; i < T::dim; i++) {
-      ret *= t(i);
-    }
-  } TI_STATIC_ELSE {
-    TI_STATIC_IF(type::is_MatrixND<T>()) {
-      for (int i = 0; i < T::dim; i++) {
-        for (int j = 0; j < T::dim; j++) {
-          ret *= t(i, j);
-        }
-      }
-    } TI_STATIC_ELSE {
-      ret = t;
-    } TI_STATIC_END_IF
-  } TI_STATIC_END_IF
-  return ret;
-}
-// clang-format on
-
 template <typename T>
 TI_FORCE_INLINE
     typename std::enable_if_t<!std::is_floating_point<T>::value, bool>
@@ -179,10 +46,9 @@ VectorND<dim, T, ISE>::VectorND(const TIndex<dim> &ind) {
   TI_STATIC_ASSERT(2 <= dim && dim <= 3);
   d[0] = ind.i;
   d[1] = ind.j;
-  TI_STATIC_IF(dim == 3) {
+  if constexpr (dim == 3) {
     this->d[2] = ind.k;
   }
-  TI_STATIC_END_IF
 };
 
 TI_NAMESPACE_END

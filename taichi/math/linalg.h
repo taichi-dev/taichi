@@ -875,7 +875,7 @@ struct MatrixND {
   }
 
   TI_IO_DECL {
-    TI_STATIC_IF(TI_SERIALIZER_IS(TextSerializer)) {
+    if constexpr (TI_SERIALIZER_IS(TextSerializer)) {
       for (int i = 0; i < dim; i++) {
         std::string line = "[";
         for (int j = 0; j < dim; j++) {
@@ -884,11 +884,9 @@ struct MatrixND {
         line += "]";
         serializer.add_line(line);
       }
-    }
-    TI_STATIC_ELSE {
+    } else {
       TI_IO(d);
     }
-    TI_STATIC_END_IF
   }
 };
 

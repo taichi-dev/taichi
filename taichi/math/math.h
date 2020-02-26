@@ -39,16 +39,4 @@ TI_FORCE_INLINE
 
 }  // namespace math
 
-template <int dim, typename T, InstSetExt ISE>
-template <typename T_,
-          typename std::enable_if_t<std::is_same<T_, int>::value, int>>
-VectorND<dim, T, ISE>::VectorND(const TIndex<dim> &ind) {
-  TI_STATIC_ASSERT(2 <= dim && dim <= 3);
-  d[0] = ind.i;
-  d[1] = ind.j;
-  if constexpr (dim == 3) {
-    this->d[2] = ind.k;
-  }
-};
-
 TI_NAMESPACE_END

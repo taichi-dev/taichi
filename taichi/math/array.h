@@ -5,7 +5,6 @@
 
 #pragma once
 
-#include "array_1d.h"
 #include "array_2d.h"
 
 TI_NAMESPACE_BEGIN

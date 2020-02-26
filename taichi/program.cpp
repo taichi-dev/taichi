@@ -108,11 +108,7 @@ FunctionType Program::compile(Kernel &kernel) {
 // For CPU and CUDA archs only
 void Program::initialize_runtime_system(StructCompiler *scomp) {
   auto tlctx = llvm_context_host.get();
-  auto runtime_jit_module = tlctx->runtime_jit_module;
-  auto initialize_runtime =
-      runtime_jit_module
-          ->get_function<void *, void *, std::size_t, void *, void *>(
-              "Runtime_initialize");
+  auto runtime = tlctx->runtime_jit_module;
 
   auto initialize_runtime2 =
       tlctx->lookup_function<void(void *, int, int)>("Runtime_initialize2");
@@ -137,8 +133,10 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
   auto root_id = snode_root->id;
 
   TI_TRACE("Allocating data structure of size {} B", scomp->root_size);
-  initialize_runtime(&llvm_runtime, this, scomp->root_size,
-                     (void *)&taichi_allocate_aligned, (void *)std::printf);
+
+  runtime->call<void *, void *, std::size_t, void *, void *>(
+      "Runtime_initialize", &llvm_runtime, this, (std::size_t)scomp->root_size,
+      (void *)&taichi_allocate_aligned, (void *)std::printf);
   TI_TRACE("Runtime initialized");
 
   auto mem_req_queue = tlctx->lookup_function<void *(void *)>(

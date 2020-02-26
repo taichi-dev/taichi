@@ -31,6 +31,11 @@ class JITModule {
     return ret;
   }
 
+  template <typename... Args>
+  void call(const std::string &name, Args &&... args) {
+    get_function<Args...>(name)(std::forward<Args>(args)...);
+  }
+
   // Lookup a parallel GPU kernel
   // The only argument to GPU kernels should be a Context
   virtual std::function<void()> lookup_spmd_function(const std::string &name) {

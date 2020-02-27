@@ -1,14 +1,8 @@
 #include <taichi/common/util.h>
 #include <taichi/util/image_io.h>
 
-#if !defined(TI_AMALGAMATED)
-#define TI_IMAGE_IO
-#endif
-
-#if defined(TI_IMAGE_IO)
 #include <stb_image.h>
 #include <stb_image_write.h>
-#endif
 
 TI_NAMESPACE_BEGIN
 
@@ -17,7 +11,6 @@ void imwrite(const std::string &filename,
              int resx,
              int resy,
              int comp) {
-#if defined(TI_IMAGE_IO)
   void *data = (void *)ptr;
   TI_ASSERT_INFO(filename.size() >= 5, "Bad image file name");
   int result = 0;
@@ -38,15 +31,9 @@ void imwrite(const std::string &filename,
   if (!result) {
     TI_ERROR("Cannot write image file [{}]", filename);
   }
-#else
-  TI_ERROR(
-      "'imwrite' is not implemented. Append -DTI_IMAGE_IO to "
-      "compiler options if you are using taichi.h.");
-#endif
 }
 
 std::vector<size_t> imread(const std::string &filename, int comp) {
-#if defined(TI_IMAGE_IO)
   int resx = 0, resy = 0;
   void *data = stbi_load(filename.c_str(), &resx, &resy, &comp, comp);
   if (!data) {
@@ -57,11 +44,6 @@ std::vector<size_t> imread(const std::string &filename, int comp) {
   std::vector<size_t> ret = {(size_t)data, (size_t)resx, (size_t)resy,
                              (size_t)comp};
   return ret;
-#else
-  TI_ERROR(
-      "'imread' is not implemented. Append -DTI_IMAGE_IO to "
-      "compiler options if you are using taichi.h.");
-#endif
 }
 
 TI_NAMESPACE_END

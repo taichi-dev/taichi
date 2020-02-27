@@ -164,9 +164,7 @@ void signal_handler(int signo) {
   if (taichi::CoreState::get_instance().python_imported) {
     std::string msg = fmt::format("Taichi Core Exception: {} ({})", signo,
                                   signal_name(signo));
-#if !defined(TI_AMALGAMATED)
     taichi_raise_assertion_failure_in_python(msg.c_str());
-#endif
   }
   std::exit(-1);
 }

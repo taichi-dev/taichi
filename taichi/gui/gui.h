@@ -377,12 +377,8 @@ class Canvas {
             real size,
             Vector4 color) {
     position = transform(position);
-#if defined(TI_AMALGAMATED)
-    auto ttf_path = std::string("");  // use amalgamated font
-#else
     std::string root_dir = get_repo_dir();
     auto ttf_path = root_dir + std::string("/assets/fonts/go/Go-Regular.ttf");
-#endif
     img.write_text(ttf_path, str, size, position.x, position.y, color);
   }
 

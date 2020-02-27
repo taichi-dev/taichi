@@ -29,7 +29,7 @@ UnifiedAllocator::UnifiedAllocator(std::size_t size, Arch arch)
     std::lock_guard<std::mutex> _(cuda_context->lock);
     check_cuda_error(cudaMallocManaged(&_cuda_data, size));
     if (_cuda_data == nullptr) {
-      TI_ERROR("GPU memory allocation failed.");
+      TI_ERROR("CUDA memory allocation failed.");
     }
 #if !defined(TI_ARCH_ARM) && !defined(TI_PLATFORM_WINDOWS)
     // Assuming ARM devices have shared CPU/GPU memory and do no support

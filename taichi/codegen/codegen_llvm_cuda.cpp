@@ -1,18 +1,17 @@
-#include <set>
-#include <taichi/common/util.h>
-#include <taichi/io/io.h>
-
+#include "taichi/common/util.h"
+#include "taichi/io/io.h"
 #include "taichi/ir.h"
 #include "taichi/program.h"
 #include "taichi/tlang_util.h"
-#include "codegen_cuda.h"
-#include <taichi/platform/cuda/cuda_context.h>
+#include "taichi/codegen/codegen_cuda.h"
+#include "taichi/codegen/codegen_llvm.h"
+#include "taichi/platform/cuda/cuda_context.h"
+
+#include <set>
 
 #if defined(TI_WITH_CUDA)
 #include "cuda_runtime.h"
 #endif
-
-#include "codegen_llvm.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -21,7 +20,7 @@ using namespace llvm;
 // NVVM IR Spec:
 // https://docs.nvidia.com/cuda/archive/10.0/pdf/NVVM_IR_Specification.pdf
 
-class CodeGenLLVMGPU : public CodeGenLLVM {
+class CodeGenLLVMCUDA : public CodeGenLLVM {
  public:
   int kernel_grid_dim;
   int kernel_block_dim;
@@ -31,7 +30,7 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
 
   using IRVisitor::visit;
 
-  CodeGenLLVMGPU(Kernel *kernel) : CodeGenLLVM(kernel) {
+  CodeGenLLVMCUDA(Kernel *kernel) : CodeGenLLVM(kernel) {
 #if defined(TI_WITH_CUDA)
     cudaDeviceGetAttribute(&num_SMs, cudaDevAttrMultiProcessorCount, 0);
     cudaDeviceGetAttribute(&max_block_dim, cudaDevAttrMaxBlockDimX, 0);
@@ -368,7 +367,7 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
 
 FunctionType CodeGenCUDA::codegen() {
   TI_PROFILER("cuda codegen");
-  return CodeGenLLVMGPU(kernel).gen();
+  return CodeGenLLVMCUDA(kernel).gen();
 }
 
 TLANG_NAMESPACE_END

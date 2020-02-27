@@ -137,7 +137,7 @@ class CUDAProfiler : public ProfilerBase {
     }
     outstanding_events.clear();
 #else
-    printf("GPU Profiler not implemented;\n");
+    printf("CUDA Profiler not implemented;\n");
 #endif
   }
 

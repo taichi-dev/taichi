@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "taichi/tlang_util.h"
 #include "taichi/program.h"
 
 TLANG_NAMESPACE_BEGIN

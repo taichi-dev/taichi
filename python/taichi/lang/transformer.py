@@ -216,6 +216,12 @@ if 1:
     for i, l in enumerate(list_stmt):
       list_stmt[i] = self.visit(l)
 
+  def visit_Return(self, node):
+    #ret = ast.Assign(targets=[ast.Name(id='__retval', ctx=ast.Store())], value=ast.Call(func=ast.Attribute(value=ast.Name(id='ti', ctx=ast.Load()), attr='expr_init', ctx=ast.Load()), args=[node.value], keywords=[]), type_comment=None)
+    ret = self.parse_stmt('__retval.assign(0)')
+    ret.value.args[0] = node.value
+    return ret
+
   def visit_If(self, node):
     self.generic_visit(node, ['body', 'orelse'])
 
@@ -505,9 +511,11 @@ if 1:
           arg_decls.append(arg_init)
       # remove original args
       node.args.args = []
+      ret_stmt = None
     else:
       # Transform as func (all parameters passed by value)
       arg_decls = []
+      arg_decls.append(self.parse_stmt('__retval = ti.expr_init(0)')) # TODO(archibate): init by ret type
       for i, arg in enumerate(args.args):
         if i == 0 and self.is_classfunc:
           continue
@@ -517,9 +525,12 @@ if 1:
         arg_init.value.args[0] = self.parse_expr(arg.arg + '_by_value__')
         args.args[i].arg += '_by_value__'
         arg_decls.append(arg_init)
+      ret_stmt = self.parse_stmt('return __retval')
     with self.variable_scope():
       self.generic_visit(node)
     node.body = arg_decls + node.body
+    if ret_stmt is not None:
+      node.body.append(ret_stmt)
     return node
 
   def visit_UnaryOp(self, node):

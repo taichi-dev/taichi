@@ -17,6 +17,7 @@
 #include <optional>
 #include <taichi/platform/metal/metal_kernel_util.h>
 #include <taichi/platform/metal/metal_runtime.h>
+#include <taichi/platform/opengl/opengl_kernel_util.h>
 
 #if defined(TI_PLATFORM_UNIX)
 #include <dlfcn.h>
@@ -158,6 +159,8 @@ class Program {
     return Arch::x64;
   }
 
+  Arch get_snode_accessor_arch();
+
   float64 get_total_compilation_time() {
     return total_compilation_time;
   }
@@ -168,6 +171,7 @@ class Program {
 
  private:
   std::optional<metal::StructCompiledResult> metal_struct_compiled_;
+  std::optional<opengl::StructCompiledResult> opengl_struct_compiled_;
   std::unique_ptr<metal::MetalRuntime> metal_runtime_;
 };
 

@@ -507,12 +507,6 @@ FunctionType OpenglCodeGen::gen(void)
 
 FunctionType OpenglCodeGen::compile(Program &program, Kernel &kernel)
 {
-  static bool warned;
-  if (!warned) {
-    TI_WARN("OpenGL backend currently WIP, MAY NOT WORK");
-    warned = true;
-  }
-
   this->prog_ = &program;
   this->kernel_ = &kernel;
 

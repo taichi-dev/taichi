@@ -12,6 +12,7 @@ TLANG_NAMESPACE_BEGIN
 
 namespace opengl {
 
+void initialize_opengl();
 bool is_opengl_api_available();
 void launch_glsl_kernel(std::string source, std::vector<IOV> iov);
 

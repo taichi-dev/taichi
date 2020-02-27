@@ -221,6 +221,7 @@ void Program::materialize_layout() {
     opengl::OpenglStructCompiler scomp;
     opengl_struct_compiled_ = scomp.run(*snode_root);
     TI_INFO("OpenGL root buffer size: {} B", opengl_struct_compiled_->root_size);
+    opengl::initialize_opengl();
   }
 }
 

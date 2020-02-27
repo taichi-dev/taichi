@@ -14,20 +14,11 @@ def test_classfunc():
     @ti.classfunc
     def inc(self, i, j):
       self.val[i, j] += i * j
-      
-    @ti.func
-    def inc2(self, i, j):
-      self.val[i, j] += i * j
     
     @ti.classkernel
     def fill(self):
       for i, j in self.val:
         self.inc(i, j)
-        
-    @ti.classkernel
-    def fill2(self):
-      for i, j in self.val:
-        self.inc2(i, j)
   
   arr = Array2D(128, 128)
   
@@ -36,13 +27,6 @@ def test_classfunc():
   for i in range(arr.n):
     for j in range(arr.m):
       assert arr.val[i, j] == i * j
-      
-  arr.fill2()
-
-  for i in range(arr.n):
-    for j in range(arr.m):
-      assert arr.val[i, j] == i * j * 2
-      
 
 @ti.host_arch
 def test_oop():

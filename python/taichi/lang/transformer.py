@@ -33,12 +33,14 @@ class ASTTransformer(ast.NodeTransformer):
   def __init__(self,
                excluded_paremeters=(),
                is_kernel=True,
+               is_classfunc=False,
                func=None,
                arg_features=None):
     super().__init__()
     self.local_scopes = []
     self.excluded_parameters = excluded_paremeters
     self.is_kernel = is_kernel
+    self.is_classfunc = is_classfunc
     self.func = func
     self.arg_features = arg_features
 
@@ -507,6 +509,8 @@ if 1:
       # Transform as func (all parameters passed by value)
       arg_decls = []
       for i, arg in enumerate(args.args):
+        if i == 0 and self.is_classfunc:
+          continue
         arg_init = self.parse_stmt('x = ti.expr_init(0)')
         arg_init.targets[0].id = arg.arg
         self.create_variable(arg.arg)

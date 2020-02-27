@@ -31,14 +31,16 @@ def func(foo):
 
 
 class Func:
-  def __init__(self, func):
+  def __init__(self, func, classfunc=False):
     self.func = func
     self.compiled = None
+    self.classfunc = classfunc
 
   def __call__(self, *args):
     if self.compiled is None:
       self.do_compile()
-    return self.compiled(*args)
+    ret = self.compiled(*args)
+    return ret
 
   def do_compile(self):
     from .impl import get_runtime
@@ -53,7 +55,7 @@ class Func:
       print('Before preprocessing:')
       print(astor.to_source(tree.body[0], indent_with='  '))
 
-    visitor = ASTTransformer(is_kernel=False)
+    visitor = ASTTransformer(is_kernel=False, is_classfunc=self.classfunc)
     visitor.visit(tree)
     ast.fix_missing_locations(tree)
 
@@ -77,7 +79,12 @@ class Func:
 
 def classfunc(foo):
   import taichi as ti
-  return func(foo)
+  func = Func(foo, classfunc=True)
+
+  @functools.wraps(foo)
+  def decorated(*args):
+    func.__call__(*args)
+  return decorated
 
 
 class KernelTemplateMapper:

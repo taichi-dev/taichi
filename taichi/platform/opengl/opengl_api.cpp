@@ -283,6 +283,10 @@ bool is_opengl_api_available()
 {
   return false;
 }
+
+void initialize_opengl()
+{
+}
 #endif
 
 }

@@ -612,5 +612,5 @@ if 1:
 
   def visit_Return(self, node):
     if self.is_kernel:
-      raise TaichiSyntaxError('"return" not allowed in \'ti.kernel\'. Please walk around by using \'ti.func\'.')
+      raise TaichiSyntaxError('"return" not allowed in \'ti.kernel\'. Please walk around by storing the return result to a global variable.')
     return node

@@ -150,3 +150,37 @@ def test_ternary():
     a = 0 if True else 123
 
   func()
+
+
+@ti.must_throw(ti.TaichiSyntaxError)
+def test_func_def_in_kernel():
+
+  @ti.kernel
+  def kernel():
+
+    @ti.func
+    def func():
+      return 1
+
+    print(func())
+
+  kernel()
+
+
+@ti.must_throw(ti.TaichiSyntaxError)
+def test_func_def_in_func():
+
+  @ti.func
+  def func():
+
+    @ti.func
+    def func2():
+      return 1
+
+    return func2()
+
+  @ti.kernel
+  def kernel():
+    print(func())
+
+  kernel()

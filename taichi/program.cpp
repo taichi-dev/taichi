@@ -9,7 +9,7 @@
 #include "taichi/codegen/codegen_cuda.h"
 #include "taichi/codegen/codegen_metal.h"
 #include "taichi/codegen/codegen_opengl.h"
-#include "taichi/codegen/codegen_x86.h"
+#include "taichi/codegen/codegen_cpu.h"
 #include "taichi/struct/struct.h"
 #include "taichi/struct/struct_metal.h"
 #include "taichi/struct/struct_opengl.h"

@@ -3,7 +3,7 @@
 #include "taichi/tlang_util.h"
 #include "taichi/program.h"
 #include "taichi/ir.h"
-#include "codegen_x86.h"
+#include "codegen_cpu.h"
 #include "codegen_llvm.h"
 
 TLANG_NAMESPACE_BEGIN

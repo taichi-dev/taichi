@@ -3,7 +3,7 @@
 #include <taichi/common/util.h>
 #include <taichi/io/io.h>
 #include <set>
-#include "codegen_x86.h"
+#include "codegen_cpu.h"
 #include "taichi/tlang_util.h"
 #include "taichi/program.h"
 #include "taichi/ir.h"

@@ -5,7 +5,7 @@
 
 TLANG_NAMESPACE_BEGIN
 
-void GPUCodeGen::lower_llvm() {
+void GPUCodeGen::lower() {
   auto ir = kernel->ir;
   bool print_ir = false;
   if (kernel->is_accessor) {
@@ -122,11 +122,6 @@ void GPUCodeGen::lower_llvm() {
     irpass::re_id(ir);
     irpass::print(ir);
   }
-}
-
-void GPUCodeGen::lower() {
-  TI_PROFILER(__FUNCTION__)
-  lower_llvm();
 }
 
 TLANG_NAMESPACE_END

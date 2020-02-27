@@ -17,7 +17,7 @@ class KernelCodeGen {
 
   virtual void lower() = 0;
 
-  virtual FunctionType codegen_llvm() = 0;
+  virtual FunctionType codegen() = 0;
 
   virtual FunctionType compile(Program &prog, Kernel &kernel);
 };

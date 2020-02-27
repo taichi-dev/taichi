@@ -50,7 +50,7 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
   }
 };
 
-FunctionType CPUCodeGen::codegen_llvm() {
+FunctionType CPUCodeGen::codegen() {
   TI_PROFILER("cpu codegen");
   return CodeGenLLVMCPU(kernel).gen();
 }

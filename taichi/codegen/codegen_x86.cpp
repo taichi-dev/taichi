@@ -10,7 +10,7 @@
 
 TLANG_NAMESPACE_BEGIN
 
-void CPUCodeGen::lower_llvm() {
+void CPUCodeGen::lower() {
   auto ir = kernel->ir;
   bool print_ir = false;
   if (kernel->is_accessor) {
@@ -149,15 +149,6 @@ void CPUCodeGen::lower_llvm() {
     irpass::re_id(ir);
     irpass::print(ir);
   }
-}
-
-void CPUCodeGen::lower() {
-  TI_PROFILER(__FUNCTION__)
-  lower_llvm();
-}
-
-void CPUCodeGen::codegen(){
-  TI_NOT_IMPLEMENTED
 }
 
 TLANG_NAMESPACE_END

@@ -11,19 +11,13 @@ class KernelCodeGen {
  public:
   Program *prog;
   Kernel *kernel;
+
   KernelCodeGen(const std::string &kernel_name) {
   }
 
   virtual void lower() = 0;
 
-  virtual void codegen() {
-    TI_NOT_IMPLEMENTED
-  }
-
-  virtual FunctionType codegen_llvm() {
-    TI_NOT_IMPLEMENTED;
-    return nullptr;
-  }
+  virtual FunctionType codegen_llvm() = 0;
 
   virtual FunctionType compile(Program &prog, Kernel &kernel);
 };

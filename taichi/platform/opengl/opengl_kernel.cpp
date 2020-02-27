@@ -1,7 +1,7 @@
 #include "opengl_kernel.h"
 #include "opengl_api.h"
 
-#include <taichi/codegen/kernel.h>
+#include <taichi/codegen/codegen.h>
 
 TLANG_NAMESPACE_BEGIN
 namespace opengl {

@@ -2,14 +2,14 @@
 
 #pragma once
 
-#include "kernel.h"
+#include "codegen.h"
 
 TLANG_NAMESPACE_BEGIN
 
 class GPUCodeGen : public KernelCodeGen {
  public:
  public:
-  GPUCodeGen(const std::string &kernel_name) : KernelCodeGen(kernel_name) {
+  GPUCodeGen(Kernel *kernel) : KernelCodeGen(kernel) {
   }
 
   void lower() override;

@@ -9,7 +9,7 @@
 #include <unordered_set>
 #include <vector>
 
-#include "kernel.h"
+#include "codegen.h"
 
 TLANG_NAMESPACE_BEGIN
 namespace opengl {

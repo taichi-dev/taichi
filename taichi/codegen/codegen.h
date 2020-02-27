@@ -8,18 +8,19 @@
 TLANG_NAMESPACE_BEGIN
 
 class KernelCodeGen {
- public:
+ protected:
   Program *prog;
   Kernel *kernel;
-
-  KernelCodeGen(const std::string &kernel_name) {
-  }
 
   virtual void lower() = 0;
 
   virtual FunctionType codegen() = 0;
 
-  virtual FunctionType compile(Program &prog, Kernel &kernel);
+ public:
+  KernelCodeGen(Kernel *kernel) : prog(&kernel->program), kernel(kernel) {
+  }
+
+  virtual FunctionType compile();
 };
 
 TLANG_NAMESPACE_END

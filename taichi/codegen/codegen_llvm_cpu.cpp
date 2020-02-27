@@ -1,8 +1,8 @@
 #include <taichi/common/util.h>
 #include <taichi/io/io.h>
-#include "../tlang_util.h"
-#include "../program.h"
-#include "../ir.h"
+#include "taichi/tlang_util.h"
+#include "taichi/program.h"
+#include "taichi/ir.h"
 #include "codegen_x86.h"
 #include "codegen_llvm.h"
 

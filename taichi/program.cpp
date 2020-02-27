@@ -6,10 +6,10 @@
 #include <taichi/platform/metal/metal_api.h>
 #include <taichi/platform/opengl/opengl_api.h>
 
-#include "backends/codegen_cuda.h"
-#include "backends/codegen_metal.h"
-#include "backends/codegen_opengl.h"
-#include "backends/codegen_x86.h"
+#include "taichi/codegen/codegen_cuda.h"
+#include "taichi/codegen/codegen_metal.h"
+#include "taichi/codegen/codegen_opengl.h"
+#include "taichi/codegen/codegen_x86.h"
 #include "backends/struct.h"
 #include "backends/struct_metal.h"
 #include "backends/struct_opengl.h"

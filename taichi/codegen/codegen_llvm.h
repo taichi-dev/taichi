@@ -5,9 +5,9 @@
 #include <taichi/common/util.h>
 #include <taichi/io/io.h>
 
-#include "../ir.h"
-#include "../program.h"
-#include "../tlang_util.h"
+#include "taichi/ir.h"
+#include "taichi/program.h"
+#include "taichi/tlang_util.h"
 
 #include "llvm_codegen_utils.h"
 

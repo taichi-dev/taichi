@@ -9,7 +9,7 @@
 #include <unordered_set>
 #include <vector>
 
-#include "base.h"
+#include "codegeb_base.h"
 #include "kernel.h"
 
 TLANG_NAMESPACE_BEGIN

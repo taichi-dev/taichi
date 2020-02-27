@@ -2,9 +2,9 @@
 
 #pragma once
 
-#include "base.h"
-#include "../tlang_util.h"
-#include "../program.h"
+#include "taichi/codegen/codegeb_base.h"
+#include "taichi/tlang_util.h"
+#include "taichi/program.h"
 
 TLANG_NAMESPACE_BEGIN
 

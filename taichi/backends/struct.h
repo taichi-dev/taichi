@@ -2,7 +2,7 @@
 #pragma once
 
 #include "../snode.h"
-#include "base.h"
+#include "taichi/codegen/codegeb_base.h"
 
 TLANG_NAMESPACE_BEGIN
 

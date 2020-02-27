@@ -1,10 +1,10 @@
 // The code generator base class
 
 #pragma once
-#include "../tlang_util.h"
-#include "../snode.h"
-#include "../ir.h"
-#include "../program.h"
+#include "taichi/tlang_util.h"
+#include "taichi/snode.h"
+#include "taichi/ir.h"
+#include "taichi/program.h"
 #if defined(TI_PLATFORM_UNIX)
 #include <dlfcn.h>
 #endif

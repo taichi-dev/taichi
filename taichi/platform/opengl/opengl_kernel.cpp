@@ -1,8 +1,8 @@
 #include "opengl_kernel.h"
 #include "opengl_api.h"
 
-#include <taichi/backends/base.h>
-#include <taichi/backends/kernel.h>
+#include <taichi/codegen/codegeb_base.h>
+#include <taichi/codegen/kernel.h>
 
 TLANG_NAMESPACE_BEGIN
 namespace opengl {

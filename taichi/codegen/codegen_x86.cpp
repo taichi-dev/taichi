@@ -1,11 +1,16 @@
-// The CUDA backend
+// x86 backend implementation
 
-#include "codegen_cuda.h"
-#include "../scratch_pad.h"
+#include <taichi/common/util.h>
+#include <taichi/io/io.h>
+#include <set>
+#include "codegen_x86.h"
+#include "taichi/tlang_util.h"
+#include "taichi/program.h"
+#include "taichi/ir.h"
 
 TLANG_NAMESPACE_BEGIN
 
-void GPUCodeGen::lower_llvm() {
+void CPUCodeGen::lower_llvm() {
   auto ir = kernel->ir;
   bool print_ir = false;
   if (kernel->is_accessor) {
@@ -14,6 +19,8 @@ void GPUCodeGen::lower_llvm() {
     print_ir = prog->config.print_ir;
   }
   if (print_ir) {
+    TI_TRACE("Initial IR:");
+    irpass::re_id(ir);
     irpass::print(ir);
   }
   if (kernel->grad) {
@@ -25,13 +32,15 @@ void GPUCodeGen::lower_llvm() {
     }
   }
   irpass::lower(ir);
-  irpass::re_id(ir);
   if (print_ir) {
+    TI_TRACE("Lowered:");
+    irpass::re_id(ir);
     irpass::print(ir);
   }
   irpass::typecheck(ir);
-  irpass::re_id(ir);
   if (print_ir) {
+    TI_TRACE("Typechecked:");
+    irpass::re_id(ir);
     irpass::print(ir);
   }
   if (!kernel->grad && prog->config.demote_dense_struct_fors) {
@@ -42,55 +51,50 @@ void GPUCodeGen::lower_llvm() {
       irpass::print(ir);
     }
   }
-  irpass::constant_fold(ir);
-  if (prog->config.simplify_before_lower_access) {
-    irpass::simplify(ir);
+  irpass::slp_vectorize(ir);
+  if (print_ir) {
+    TI_TRACE("SLPed:");
     irpass::re_id(ir);
-    if (print_ir) {
-      TI_TRACE("Simplified I:");
-      irpass::print(ir);
-    }
+    irpass::print(ir);
+  }
+  irpass::loop_vectorize(ir);
+  if (print_ir) {
+    TI_TRACE("LoopVeced:");
+    irpass::re_id(ir);
+    irpass::print(ir);
+  }
+  irpass::vector_split(ir, prog->config.max_vector_width,
+                       prog->config.serial_schedule);
+  if (print_ir) {
+    TI_TRACE("LoopSplitted:");
+    irpass::re_id(ir);
+    irpass::print(ir);
+  }
+  irpass::simplify(ir);
+  if (print_ir) {
+    TI_TRACE("Simplified I:");
+    irpass::re_id(ir);
+    irpass::print(ir);
   }
   if (kernel->grad) {
     // irpass::re_id(ir);
     // TI_TRACE("Primal:");
     // irpass::print(ir);
     irpass::demote_atomics(ir);
-    irpass::full_simplify(ir, prog->config);
-    irpass::typecheck(ir);
-    if (print_ir) {
-      TI_TRACE("Before make_adjoint:");
-      irpass::print(ir);
-    }
+    irpass::simplify(ir);
     irpass::make_adjoint(ir);
+    irpass::typecheck(ir);
     if (print_ir) {
-      TI_TRACE("After make_adjoint:");
+      TI_TRACE("Adjoint:");
+      irpass::re_id(ir);
       irpass::print(ir);
     }
-    irpass::typecheck(ir);
-    // irpass::re_id(ir);
-    // TI_TRACE("Adjoint:");
-    // irpass::print(ir);
   }
-  irpass::lower_access(ir, prog->config.use_llvm);
+  irpass::lower_access(ir, true);
   if (print_ir) {
     TI_TRACE("Access Lowered:");
     irpass::re_id(ir);
     irpass::print(ir);
-  }
-  if (prog->config.simplify_after_lower_access) {
-    irpass::die(ir);
-    if (print_ir) {
-      TI_TRACE("DIEd:");
-      irpass::re_id(ir);
-      irpass::print(ir);
-    }
-    irpass::simplify(ir);
-    if (print_ir) {
-      TI_TRACE("Simplified II:");
-      irpass::re_id(ir);
-      irpass::print(ir);
-    }
   }
   irpass::die(ir);
   if (print_ir) {
@@ -98,35 +102,62 @@ void GPUCodeGen::lower_llvm() {
     irpass::re_id(ir);
     irpass::print(ir);
   }
+  irpass::simplify(ir);
+  if (print_ir) {
+    TI_TRACE("Simplified II:");
+    irpass::re_id(ir);
+    irpass::print(ir);
+  }
+  irpass::die(ir);
+  if (print_ir) {
+    TI_TRACE("DIEd:");
+    irpass::re_id(ir);
+    irpass::print(ir);
+  }
+
   irpass::flag_access(ir);
   if (print_ir) {
     TI_TRACE("Access Flagged:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
+
+  irpass::constant_fold(ir);
+  if (print_ir) {
+    TI_TRACE("Constant folded:");
+    irpass::re_id(ir);
+    irpass::print(ir);
+  }
+
   irpass::offload(ir);
   if (print_ir) {
     TI_TRACE("Offloaded:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
-  irpass::demote_atomics(ir);
-  if (print_ir) {
-    TI_TRACE("Atomics Demoted:");
-    irpass::re_id(ir);
-    irpass::print(ir);
-  }
+
   irpass::full_simplify(ir, prog->config);
   if (print_ir) {
     TI_TRACE("Simplified III:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
+
+  irpass::demote_atomics(ir);
+  if (print_ir) {
+    TI_TRACE("Atomics demoted:");
+    irpass::re_id(ir);
+    irpass::print(ir);
+  }
 }
 
-void GPUCodeGen::lower() {
+void CPUCodeGen::lower() {
   TI_PROFILER(__FUNCTION__)
   lower_llvm();
+}
+
+void CPUCodeGen::codegen(){
+  TI_NOT_IMPLEMENTED
 }
 
 TLANG_NAMESPACE_END

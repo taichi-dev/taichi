@@ -76,6 +76,11 @@ def init(default_fp=None, default_ip=None, print_preprocessed=None, debug=None, 
     elif dfl_ip is not None:
       raise ValueError(f'Unrecognized TI_DEFAULT_IP: {dfl_ip}, should be 32 or 64')
 
+  if print_preprocessed is None: # won't override
+    print_preprocessed = os.environ.get("TI_PRINT_PREPROCESSED")
+    if print_preprocessed is not None:
+      print_preprocessed = bool(int(print_preprocessed))
+
   if default_fp is not None:
     ti.get_runtime().set_default_fp(default_fp)
   if default_ip is not None:

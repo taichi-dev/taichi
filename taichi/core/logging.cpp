@@ -7,6 +7,7 @@
 #include <taichi/system/threading.h>
 #include <csignal>
 #include <spdlog/spdlog.h>
+#include <taichi/python/export.h>
 
 TI_NAMESPACE_BEGIN
 
@@ -62,7 +63,15 @@ int Logger::level_enum_from_string(const std::string &level_name) {
 Logger::Logger() {
   console = spdlog::stdout_color_mt("console");
   console->flush_on(spdlog::level::trace);
-  TI_LOG_SET_PATTERN("[%L %D %X.%e] %v")
+  TI_LOG_SET_PATTERN("[%L %D %X.%e] %v");
+
+  py::register_exception_translator([](std::exception_ptr p) {
+    try {
+      if (p) std::rethrow_exception(p);
+    } catch (const std::string &e) {
+      PyErr_SetString(PyExc_RuntimeError, e.c_str());
+    }
+  });
 
   TI_REGISTER_SIGNAL_HANDLER(SIGSEGV, signal_handler);
   TI_REGISTER_SIGNAL_HANDLER(SIGABRT, signal_handler);
@@ -93,12 +102,14 @@ void Logger::info(const std::string &s) {
 void Logger::warn(const std::string &s) {
   console->warn(s);
 }
+
 void Logger::error(const std::string &s, bool raise_signal) {
   console->error(s);
   if (raise_signal) {
-    std::raise(SIGABRT);
+    throw s;
   }
 }
+
 void Logger::critical(const std::string &s, bool raise_signal) {
   console->critical(s);
   if (raise_signal) {

@@ -98,8 +98,10 @@ class CompiledMtlKernel {
 
     set_compute_pipeline_state(encoder.get(), pipeline_state_.get());
     int buffer_index = 0;
-    set_mtl_buffer(encoder.get(), data_buffers.root, /*offset=*/0,
-                   buffer_index++);
+    if (data_buffers.root) {
+      set_mtl_buffer(encoder.get(), data_buffers.root, /*offset=*/0,
+                     buffer_index++);
+    }
     set_mtl_buffer(encoder.get(), data_buffers.global_tmps, /*offset=*/0,
                    buffer_index++);
     if (data_buffers.args) {
@@ -284,7 +286,8 @@ class MetalRuntime::Impl {
   explicit Impl(Params params)
       : config_(params.config),
         mem_pool_(params.mem_pool),
-        profiler_(params.profiler) {
+        profiler_(params.profiler),
+        needs_root_buffer_(params.root_size > 0) {
     if (config_->debug) {
       TI_ASSERT(is_metal_api_available());
     }
@@ -300,6 +303,7 @@ class MetalRuntime::Impl {
     const size_t rtm_root_mem_size = llvm_ctx->lookup_function<size_t(void *)>(
         "Runtime_get_root_mem_size")(llvm_rtm);
     if (rtm_root_mem_size > 0) {
+      TI_ASSERT(needs_root_buffer_);
       // Make sure the runtime's root memory is large enough.
       TI_ASSERT(iroundup(params.root_size, taichi_page_size) <=
                 rtm_root_mem_size);
@@ -308,19 +312,12 @@ class MetalRuntime::Impl {
       TI_ASSERT(rtm_root_mem != nullptr);
       root_buffer_ = new_mtl_buffer_no_copy(device_.get(), rtm_root_mem,
                                             rtm_root_mem_size);
+      TI_ASSERT(root_buffer_ != nullptr);
+      TI_DEBUG("Metal root buffer size: {} bytes", rtm_root_mem_size);
     } else {
-      // TODO(k-ye) In case no SNodes is defined, we should not allocate
-      // |root_buffer_| at all. However, that requires us to change the Metal
-      // kernels so that |root_buffer_| isn't a required argument.
-      TI_TRACE(
-          "LLVM root buffer size is 0, allocating directly from the memory "
-          "pool");
-      root_buffer_mem_ =
-          std::make_unique<BufferMemoryView>(taichi_page_size, mem_pool_);
-      root_buffer_ = new_mtl_buffer_no_copy(
-          device_.get(), root_buffer_mem_->ptr(), root_buffer_mem_->size());
+      TI_ASSERT(!needs_root_buffer_);
+      TI_DEBUG("Metal root buffer is empty");
     }
-    TI_ASSERT(root_buffer_ != nullptr);
 
     // Make sure we don't have to round up global temporaries' buffer size.
     TI_ASSERT(iroundup(taichi_global_tmp_buffer_size, taichi_page_size) ==
@@ -427,11 +424,10 @@ class MetalRuntime::Impl {
   CompileConfig *const config_;
   MemoryPool *const mem_pool_;
   ProfilerBase *const profiler_;
+  const bool needs_root_buffer_;
   nsobj_unique_ptr<MTLDevice> device_{nullptr};
   nsobj_unique_ptr<MTLCommandQueue> command_queue_{nullptr};
   nsobj_unique_ptr<MTLCommandBuffer> cur_command_buffer_{nullptr};
-  // |root_buffer_mem_| is used only when the LLVM's root size is 0.
-  std::unique_ptr<BufferMemoryView> root_buffer_mem_;
   nsobj_unique_ptr<MTLBuffer> root_buffer_{nullptr};
   uint8_t *global_tmps_mem_begin_;
   nsobj_unique_ptr<MTLBuffer> global_tmps_buffer_{nullptr};

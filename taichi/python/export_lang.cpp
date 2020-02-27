@@ -7,7 +7,7 @@
 #include <taichi/common/interface.h>
 #include <taichi/python/export.h>
 #include <taichi/gui/gui.h>
-#include "../svd.h"
+#include "taichi/math/svd.h"
 
 TI_NAMESPACE_BEGIN
 

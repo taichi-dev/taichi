@@ -12,8 +12,8 @@
 #include <taichi/context.h>
 #include <taichi/profiler.h>
 #include <taichi/system/threading.h>
-#include <taichi/unified_allocator.h>
-#include "memory_pool.h"
+#include <taichi/system/unified_allocator.h>
+#include "taichi/system/memory_pool.h"
 #include <optional>
 #include <taichi/platform/metal/metal_kernel_util.h>
 #include <taichi/platform/metal/metal_runtime.h>

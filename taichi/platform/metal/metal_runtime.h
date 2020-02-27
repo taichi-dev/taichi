@@ -1,6 +1,6 @@
 #pragma once
 
-#include <taichi/memory_pool.h>
+#include <taichi/system/memory_pool.h>
 #include <taichi/profiler.h>
 #include <taichi/tlang_util.h>
 #include <taichi/llvm_context.h>

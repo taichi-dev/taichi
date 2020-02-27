@@ -10,7 +10,7 @@
 #include <taichi/python/export.h>
 #include <taichi/system/benchmark.h>
 #include <taichi/system/profiler.h>
-#include <taichi/system/memory.h>
+#include <taichi/system/memory_usage_monitor.h>
 #include <taichi/system/unit_dll.h>
 #include <taichi/platform/metal/metal_api.h>
 #include <taichi/platform/opengl/opengl_api.h>

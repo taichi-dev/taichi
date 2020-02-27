@@ -13,7 +13,7 @@
 #include "taichi/struct/struct.h"
 #include "taichi/struct/struct_metal.h"
 #include "taichi/struct/struct_opengl.h"
-#include "unified_allocator.h"
+#include "taichi/system/unified_allocator.h"
 #include "snode.h"
 
 #if defined(TI_WITH_CUDA)

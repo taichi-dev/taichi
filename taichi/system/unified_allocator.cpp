@@ -3,12 +3,12 @@
 #if defined(TI_WITH_CUDA)
 #include "taichi/platform/cuda/cuda_utils.h"
 #endif
-#include "tlang_util.h"
-#include <taichi/unified_allocator.h>
+#include "taichi/tlang_util.h"
+#include <taichi/system/unified_allocator.h>
 #include <taichi/system/virtual_memory.h>
 #include <taichi/system/timer.h>
 #include <string>
-#include "platform/cuda/cuda_context.h"
+#include "taichi/platform/cuda/cuda_context.h"
 
 TLANG_NAMESPACE_BEGIN
 

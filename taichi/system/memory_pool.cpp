@@ -6,7 +6,7 @@
 #include <taichi/platform/cuda/cuda_context.h>
 #endif
 
-#include "program.h"
+#include "taichi/program.h"
 
 TLANG_NAMESPACE_BEGIN
 

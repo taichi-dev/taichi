@@ -1,14 +1,14 @@
 #pragma once
 #include <taichi/common/util.h>
-#include "common.h"
+#include "taichi/common.h"
 #include <mutex>
 #include <vector>
 #include <memory>
 #include <thread>
 #include "unified_allocator.h"
 #define TI_RUNTIME_HOST
-#include "context.h"
-#include "profiler.h"
+#include "taichi/context.h"
+#include "taichi/profiler.h"
 #ifdef TI_WITH_CUDA
 #include <cuda_runtime.h>
 #endif

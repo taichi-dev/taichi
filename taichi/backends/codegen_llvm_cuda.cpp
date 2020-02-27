@@ -21,8 +21,6 @@ using namespace llvm;
 // NVVM IR Spec:
 // https://docs.nvidia.com/cuda/archive/10.0/pdf/NVVM_IR_Specification.pdf
 
-std::string compile_module_to_ptx(std::unique_ptr<llvm::Module> &module);
-
 class CodeGenLLVMGPU : public CodeGenLLVM {
  public:
   int kernel_grid_dim;
@@ -30,6 +28,8 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
   int num_SMs;
   int max_block_dim;
   int saturating_num_blocks;
+
+  using IRVisitor::visit;
 
   CodeGenLLVMGPU(CodeGenBase *codegen_base, Kernel *kernel)
       : CodeGenLLVM(codegen_base, kernel) {
@@ -141,7 +141,7 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
     auto format_str = "[debug] " + stmt->str + " = " + format + "\n";
 
     stmt->value = ModuleBuilder::call(
-        builder, "vprintf",
+        builder.get(), "vprintf",
         builder->CreateGlobalStringPtr(format_str, "format_string"),
         builder->CreateBitCast(values,
                                llvm::Type::getInt8PtrTy(*llvm_context)));

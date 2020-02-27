@@ -50,7 +50,7 @@ class ModuleBuilder {
  public:
   std::unique_ptr<llvm::Module> module;
   llvm::BasicBlock *entry_block;
-  llvm::IRBuilder<> *builder;
+  std::unique_ptr<llvm::IRBuilder<>> builder;
   TaichiLLVMContext *tlctx;
   llvm::LLVMContext *llvm_context;
 
@@ -110,7 +110,7 @@ class ModuleBuilder {
 
   template <typename... Args>
   llvm::Value *call(const std::string &func_name, Args &&... args) {
-    return call(this->builder, func_name, std::forward<Args>(args)...);
+    return call(this->builder.get(), func_name, std::forward<Args>(args)...);
   }
 };
 

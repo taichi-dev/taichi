@@ -32,6 +32,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   SNodeAttributes &snode_attr;
   int task_counter;
 
+  using IRVisitor::visit;
   using ModuleBuilder::call;
 
   Arch current_arch() {
@@ -45,7 +46,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       tlctx = prog->llvm_context_host.get();
     }
     llvm_context = tlctx->ctx.get();
-    builder = new llvm::IRBuilder<>(*llvm_context);
+    builder = std::make_unique<llvm::IRBuilder<>>(*llvm_context);
   }
 
   llvm::Function *func;
@@ -143,7 +144,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   void emit_struct_meta_base(const std::string &name,
                              llvm::Value *node_meta,
                              SNode *snode) {
-    RuntimeObject common("StructMeta", this, builder, node_meta);
+    RuntimeObject common("StructMeta", this, builder.get(), node_meta);
     std::size_t element_size;
     if (snode->type == SNodeType::dense) {
       auto element_ty = snode_attr[snode].llvm_body_type->getArrayElementType();
@@ -191,18 +192,18 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   std::unique_ptr<RuntimeObject> emit_struct_meta_object(SNode *snode) {
     std::unique_ptr<RuntimeObject> meta;
     if (snode->type == SNodeType::dense) {
-      meta = std::make_unique<RuntimeObject>("DenseMeta", this, builder);
+      meta = std::make_unique<RuntimeObject>("DenseMeta", this, builder.get());
       emit_struct_meta_base("Dense", meta->ptr, snode);
       meta->call("set_bitmasked", tlctx->get_constant(snode->_bitmasked));
       meta->call("set_morton_dim", tlctx->get_constant((int)snode->_morton));
     } else if (snode->type == SNodeType::pointer) {
-      meta = std::make_unique<RuntimeObject>("pointerMeta", this, builder);
+      meta = std::make_unique<RuntimeObject>("pointerMeta", this, builder.get());
       emit_struct_meta_base("pointer", meta->ptr, snode);
     } else if (snode->type == SNodeType::root) {
-      meta = std::make_unique<RuntimeObject>("RootMeta", this, builder);
+      meta = std::make_unique<RuntimeObject>("RootMeta", this, builder.get());
       emit_struct_meta_base("Root", meta->ptr, snode);
     } else if (snode->type == SNodeType::dynamic) {
-      meta = std::make_unique<RuntimeObject>("DynamicMeta", this, builder);
+      meta = std::make_unique<RuntimeObject>("DynamicMeta", this, builder.get());
       emit_struct_meta_base("Dynamic", meta->ptr, snode);
       meta->call("set_chunk_size", tlctx->get_constant(snode->chunk_size));
     } else {
@@ -844,7 +845,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   }
 
   void visit(ArgLoadStmt *stmt) override {
-    auto raw_arg = call(builder, "Context_get_args", get_context(),
+    auto raw_arg = call(builder.get(), "Context_get_args", get_context(),
                         tlctx->get_constant(stmt->arg_id));
 
     llvm::Type *dest_ty = nullptr;
@@ -1012,7 +1013,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     func_arguments.insert(func_arguments.end(), arguments.begin(),
                           arguments.end());
 
-    return call(builder, prefix + "_" + method, func_arguments);
+    return call(builder.get(), prefix + "_" + method, func_arguments);
   }
 
   void visit(GetRootStmt *stmt) override {
@@ -1294,7 +1295,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
 
       llvm::Value *threadIdx = nullptr, *blockDim = nullptr;
 
-      RuntimeObject element("Element", this, builder, get_arg(1));
+      RuntimeObject element("Element", this, builder.get(), get_arg(1));
       auto lower_bound = get_arg(2);
       auto upper_bound = get_arg(3);
       // create_print("lower", DataType::i32, lower_bound);
@@ -1340,8 +1341,8 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       auto nonpot_cond = tlctx->get_constant(true);
       auto snode = stmt->snode;
 
-      auto coord_object =
-          RuntimeObject("PhysicalCoordinates", this, builder, new_coordinates);
+      auto coord_object = RuntimeObject("PhysicalCoordinates", this,
+                                        builder.get(), new_coordinates);
       for (int i = 0; i < snode->num_active_indices; i++) {
         auto j = snode->physical_index_position[i];
         if (!bit::is_power_of_two(snode->extractors[j].num_elements)) {
@@ -1419,42 +1420,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     create_call(stmt->func_name, {get_context()});
   }
 
-  // TODO: move this to CodeGenLLVMX64
-  void visit(OffloadedStmt *stmt) override {
-    using Type = OffloadedStmt::TaskType;
-    auto offloaded_task_name = init_offloaded_task_function(stmt);
-    if (prog->config.enable_profiler) {
-      call(
-          builder, "Runtime_profiler_start",
-          {get_runtime(), builder->CreateGlobalStringPtr(offloaded_task_name)});
-    }
-    if (stmt->task_type == Type::serial) {
-      stmt->body->accept(this);
-    } else if (stmt->task_type == Type::range_for) {
-      create_offload_range_for(stmt);
-    } else if (stmt->task_type == Type::struct_for) {
-      stmt->block_dim =
-          std::min(stmt->snode->parent->max_num_elements(), stmt->block_dim);
-      create_offload_struct_for(stmt);
-    } else if (stmt->task_type == Type::clear_list) {
-      emit_clear_list(stmt);
-    } else if (stmt->task_type == Type::listgen) {
-      emit_list_gen(stmt);
-    } else if (stmt->task_type == Type::gc) {
-      emit_gc(stmt);
-    } else {
-      TI_NOT_IMPLEMENTED
-    }
-    if (prog->config.enable_profiler) {
-      call(builder, "Runtime_profiler_stop", {get_runtime()});
-    }
-    finalize_offloaded_task_function();
-    current_task->end();
-    current_task = nullptr;
-  }
-
   ~CodeGenLLVM() {
-    delete builder;
   }
 };
 

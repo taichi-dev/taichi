@@ -217,7 +217,6 @@ void Program::materialize_layout() {
       params.profiler = profiler.get();
       metal_runtime_ = std::make_unique<metal::MetalRuntime>(std::move(params));
     }
-    TI_INFO("Metal root buffer size: {} B", metal_struct_compiled_->root_size);
   } else if (config.arch == Arch::opengl) {
     opengl::OpenglStructCompiler scomp;
     opengl_struct_compiled_ = scomp.run(*snode_root);

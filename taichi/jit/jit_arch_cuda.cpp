@@ -41,7 +41,7 @@ class JITModuleCUDA : public JITModule {
   CUmodule module;
 
  public:
-  JITModuleCUDA(CUmodule module) : module(module) {
+  explicit JITModuleCUDA(CUmodule module) : module(module) {
   }
 
   virtual void *lookup_function(const std::string &name) {
@@ -60,7 +60,7 @@ class JITSessionCUDA : public JITSession {
  public:
   llvm::DataLayout DL;
 
-  JITSessionCUDA(llvm::DataLayout data_layout) : DL(data_layout) {
+  explicit JITSessionCUDA(llvm::DataLayout data_layout) : DL(data_layout) {
   }
 
   virtual JITModule *add_module(std::unique_ptr<llvm::Module> M) override {

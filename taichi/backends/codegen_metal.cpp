@@ -8,15 +8,20 @@ namespace metal {
 namespace {
 
 constexpr char kKernelThreadIdName[] = "utid_";  // 'u' for unsigned
+constexpr char kRootBufferName[] = "root_addr";
 constexpr char kGlobalTmpsBufferName[] = "global_tmps_addr";
+constexpr char kArgsBufferName[] = "args_addr";
 constexpr char kArgsContextName[] = "args_ctx_";
 
 class MetalKernelCodegen : public IRVisitor {
  public:
   MetalKernelCodegen(const std::string &mtl_kernel_prefix,
-                     const std::string &root_snode_type_name)
+                     const std::string &root_snode_type_name,
+                     const StructCompiledResult *compiled_snode_structs)
       : mtl_kernel_prefix_(mtl_kernel_prefix),
-        root_snode_type_name_(root_snode_type_name) {
+        root_snode_type_name_(root_snode_type_name),
+        compiled_snode_structs_(compiled_snode_structs),
+        needs_root_buffer_(compiled_snode_structs_->root_size > 0) {
     // allow_undefined_visitor = true;
   }
 
@@ -26,8 +31,8 @@ class MetalKernelCodegen : public IRVisitor {
     return mtl_kernels_attribs_;
   }
 
-  void run(const std::string &snode_structs_source_code, Kernel *kernel) {
-    generate_mtl_header(snode_structs_source_code);
+  void run(Kernel *kernel) {
+    generate_mtl_header(compiled_snode_structs_->source_code);
     generate_kernel_args_struct(kernel);
     kernel->ir->accept(this);
   }
@@ -79,8 +84,10 @@ class MetalKernelCodegen : public IRVisitor {
 
   void visit(GetRootStmt *stmt) override {
     // Should we assert |root_stmt_| is assigned only once?
+    TI_ASSERT(needs_root_buffer_);
     root_stmt_ = stmt;
-    emit(R"({} {}(addr);)", root_snode_type_name_, stmt->raw_name());
+    emit(R"({} {}({});)", root_snode_type_name_, stmt->raw_name(),
+         kRootBufferName);
   }
 
   void visit(GetChStmt *stmt) override {
@@ -512,15 +519,22 @@ class MetalKernelCodegen : public IRVisitor {
 
   void emit_mtl_kernel_func_sig(const std::string &kernel_name) {
     emit("kernel void {}(", kernel_name);
-    emit("    device byte* addr [[buffer(0)]],");
-    emit("    device byte* {} [[buffer(1)]],", kGlobalTmpsBufferName);
+    int buffer_idx = 0;
+    if (needs_root_buffer_) {
+      emit("    device byte* {} [[buffer({})]],", kRootBufferName,
+           buffer_idx++);
+    }
+    emit("    device byte* {} [[buffer({})]],", kGlobalTmpsBufferName,
+         buffer_idx++);
     if (args_attribs_.has_args()) {
-      emit("    device byte* args_addr [[buffer(2)]],");
+      emit("    device byte* {} [[buffer({})]],", kArgsBufferName,
+           buffer_idx++);
     }
     emit("    const uint {} [[thread_position_in_grid]]) {{",
          kKernelThreadIdName);
     if (args_attribs_.has_args()) {
-      emit("  {} {}(args_addr);", kernel_args_classname(), kArgsContextName);
+      emit("  {} {}({});", kernel_args_classname(), kArgsContextName,
+           kArgsBufferName);
     }
   }
 
@@ -539,6 +553,8 @@ class MetalKernelCodegen : public IRVisitor {
 
   const std::string mtl_kernel_prefix_;
   const std::string root_snode_type_name_;
+  const StructCompiledResult *const compiled_snode_structs_;
+  const bool needs_root_buffer_;
 
   bool is_top_level_{true};
   int mtl_kernel_count_{0};
@@ -684,8 +700,9 @@ void MetalCodeGen::lower() {
 FunctionType MetalCodeGen::gen(const SNode &root_snode, MetalRuntime *runtime) {
   // Make a copy of the name!
   const std::string taichi_kernel_name = taichi_kernel_name_;
-  MetalKernelCodegen codegen(taichi_kernel_name, root_snode.node_type_name);
-  codegen.run(struct_compiled_->source_code, kernel_);
+  MetalKernelCodegen codegen(taichi_kernel_name, root_snode.node_type_name,
+                             struct_compiled_);
+  codegen.run(kernel_);
   metal::MetalKernelArgsAttributes mtl_args_attribs;
   for (const auto &arg : kernel_->args) {
     mtl_args_attribs.insert_arg(arg.dt, arg.is_nparray, arg.size,

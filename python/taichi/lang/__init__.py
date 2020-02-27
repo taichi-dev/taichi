@@ -223,8 +223,8 @@ def supported_archs():
     archs.append(cuda)
   if ti.core.with_metal():
     archs.append(metal)
-  #if ti.core.with_opengl():
-  #  archs.append(opengl)
+  if ti.core.with_opengl():
+    archs.append(opengl)
   return archs
 
 class _ArchCheckers(object):

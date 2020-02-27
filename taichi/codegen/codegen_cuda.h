@@ -6,10 +6,9 @@
 
 TLANG_NAMESPACE_BEGIN
 
-class GPUCodeGen : public KernelCodeGen {
+class CodeGenCUDA : public KernelCodeGen {
  public:
- public:
-  GPUCodeGen(Kernel *kernel) : KernelCodeGen(kernel) {
+  CodeGenCUDA(Kernel *kernel) : KernelCodeGen(kernel) {
   }
 
   void lower() override;

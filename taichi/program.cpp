@@ -94,12 +94,9 @@ FunctionType Program::compile(Kernel &kernel) {
   auto start_t = Time::get_time();
   TI_AUTO_PROF;
   FunctionType ret = nullptr;
-  if (arch_is_cpu(kernel.arch)) {
-    CPUCodeGen codegen(&kernel);
-    ret = codegen.compile();
-  } else if (kernel.arch == Arch::cuda) {
-    GPUCodeGen codegen(&kernel);
-    ret = codegen.compile();
+  if (arch_is_cpu(kernel.arch) || kernel.arch == Arch::cuda) {
+    auto codegen = KernelCodeGen::create(kernel.arch, &kernel);
+    ret = codegen->compile();
   } else if (kernel.arch == Arch::metal) {
     metal::MetalCodeGen codegen(kernel.name, &metal_struct_compiled_.value());
     ret = codegen.compile(*this, kernel, metal_runtime_.get());

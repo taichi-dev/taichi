@@ -5,7 +5,7 @@
 
 TLANG_NAMESPACE_BEGIN
 
-void GPUCodeGen::lower() {
+void CodeGenCUDA::lower() {
   auto ir = kernel->ir;
   bool print_ir = false;
   if (kernel->is_accessor) {

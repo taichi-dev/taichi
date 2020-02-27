@@ -21,6 +21,10 @@ class KernelCodeGen {
   }
 
   virtual FunctionType compile();
+
+  static std::unique_ptr<KernelCodeGen> create(Arch arch, Kernel *kernel);
+
+  virtual ~KernelCodeGen() = default;
 };
 
 TLANG_NAMESPACE_END

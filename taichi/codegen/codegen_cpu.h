@@ -6,9 +6,9 @@
 
 TLANG_NAMESPACE_BEGIN
 
-class CPUCodeGen : public KernelCodeGen {
+class CodeGenCPU : public KernelCodeGen {
  public:
-  CPUCodeGen(Kernel *kernel) : KernelCodeGen(kernel) {
+  CodeGenCPU(Kernel *kernel) : KernelCodeGen(kernel) {
   }
 
   void lower() override;

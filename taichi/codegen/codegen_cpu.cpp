@@ -10,7 +10,7 @@
 
 TLANG_NAMESPACE_BEGIN
 
-void CPUCodeGen::lower() {
+void CodeGenCPU::lower() {
   auto ir = kernel->ir;
   bool print_ir = false;
   if (kernel->is_accessor) {

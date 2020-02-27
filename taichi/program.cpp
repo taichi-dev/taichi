@@ -87,9 +87,7 @@ Program::Program(Arch arch) {
   finalized = false;
   snode_root = std::make_unique<SNode>(0, SNodeType::root);
 
-  if (config.debug) {
-    TI_DEBUG("Program arch={}", arch_name(arch));
-  }
+  TI_TRACE("Program arch={}", arch_name(arch));
 }
 
 FunctionType Program::compile(Kernel &kernel) {
@@ -106,7 +104,8 @@ FunctionType Program::compile(Kernel &kernel) {
     metal::MetalCodeGen codegen(kernel.name, &metal_struct_compiled_.value());
     ret = codegen.compile(*this, kernel, metal_runtime_.get());
   } else if (kernel.arch == Arch::opengl) {
-    opengl::OpenglCodeGen codegen(kernel.name, &opengl_struct_compiled_.value());
+    opengl::OpenglCodeGen codegen(kernel.name,
+                                  &opengl_struct_compiled_.value());
     ret = codegen.compile(*this, kernel);
   } else {
     TI_NOT_IMPLEMENTED;
@@ -220,7 +219,8 @@ void Program::materialize_layout() {
   } else if (config.arch == Arch::opengl) {
     opengl::OpenglStructCompiler scomp;
     opengl_struct_compiled_ = scomp.run(*snode_root);
-    TI_INFO("OpenGL root buffer size: {} B", opengl_struct_compiled_->root_size);
+    TI_INFO("OpenGL root buffer size: {} B",
+            opengl_struct_compiled_->root_size);
     opengl::initialize_opengl();
   }
 }
@@ -329,8 +329,7 @@ void Program::initialize_device_llvm_context() {
   }
 }
 
-Arch Program::get_snode_accessor_arch()
-{
+Arch Program::get_snode_accessor_arch() {
   if (config.arch == Arch::opengl) {
     return Arch::opengl;
   } else {

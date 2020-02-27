@@ -3,6 +3,7 @@ from .transformer import ASTTransformer
 import ast
 from .kernel_arguments import *
 from .util import *
+import functools
 
 
 def remove_indent(lines):
@@ -26,34 +27,64 @@ def remove_indent(lines):
 
 # The ti.func decorator
 def func(foo):
-  from .impl import get_runtime
-  src = remove_indent(inspect.getsource(foo))
-  tree = ast.parse(src)
+  return Func(foo)
 
-  func_body = tree.body[0]
-  func_body.decorator_list = []
 
-  visitor = ASTTransformer(is_kernel=False)
-  visitor.visit(tree)
-  ast.fix_missing_locations(tree)
+class Func:
+  def __init__(self, func, classfunc=False):
+    self.func = func
+    self.compiled = None
+    self.classfunc = classfunc
 
-  if get_runtime().print_preprocessed:
-    import astor
-    print('After preprocessing:')
-    print(astor.to_source(tree.body[0], indent_with='  '))
+  def __call__(self, *args):
+    if self.compiled is None:
+      self.do_compile()
+    ret = self.compiled(*args)
+    return ret
 
-  ast.increment_lineno(tree, inspect.getsourcelines(foo)[1] - 1)
+  def do_compile(self):
+    from .impl import get_runtime
+    src = remove_indent(inspect.getsource(self.func))
+    tree = ast.parse(src)
 
-  frame = inspect.currentframe().f_back
-  exec(
-      compile(tree, filename=inspect.getsourcefile(foo), mode='exec'),
-      dict(frame.f_globals, **frame.f_locals), locals())
-  compiled = locals()[foo.__name__]
-  return compiled
+    func_body = tree.body[0]
+    func_body.decorator_list = []
+
+    if get_runtime().print_preprocessed:
+      import astor
+      print('Before preprocessing:')
+      print(astor.to_source(tree.body[0], indent_with='  '))
+
+    visitor = ASTTransformer(is_kernel=False, is_classfunc=self.classfunc)
+    visitor.visit(tree)
+    ast.fix_missing_locations(tree)
+
+    if get_runtime().print_preprocessed:
+      import astor
+      print('After preprocessing:')
+      print(astor.to_source(tree.body[0], indent_with='  '))
+
+    ast.increment_lineno(tree, inspect.getsourcelines(self.func)[1] - 1)
+
+    local_vars = {}
+    #frame = inspect.currentframe().f_back
+    #global_vars = dict(frame.f_globals, **frame.f_locals)
+    import copy
+    global_vars = copy.copy(self.func.__globals__)
+    exec(
+        compile(tree, filename=inspect.getsourcefile(self.func), mode='exec'),
+        global_vars, local_vars)
+    self.compiled = local_vars[self.func.__name__]
+
 
 def classfunc(foo):
   import taichi as ti
-  return func(foo)
+  func = Func(foo, classfunc=True)
+
+  @functools.wraps(foo)
+  def decorated(*args):
+    func.__call__(*args)
+  return decorated
 
 
 class KernelTemplateMapper:

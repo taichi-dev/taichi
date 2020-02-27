@@ -1,8 +1,8 @@
 // Codegen for the hierarchical data structure
 #pragma once
 
-#include "../snode.h"
-#include "taichi/codegen/codegen_base.h"
+#include "taichi/snode.h"
+#include "taichi/program.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -16,10 +16,9 @@ class StructCompiler {
 
   SNodeAttributes snode_attr;
 
-  StructCompiler(Program *prog);
+  explicit StructCompiler(Program *prog);
 
-  virtual ~StructCompiler() {
-  }
+  virtual ~StructCompiler() = default;
 
   void collect_snodes(SNode &snode);
 

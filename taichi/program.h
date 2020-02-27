@@ -167,6 +167,12 @@ class Program {
 
   void finalize();
 
+  static int get_kernel_id() {
+    static int id = 0;
+    TI_ASSERT(id < 100000);
+    return id++;
+  }
+
   ~Program();
 
  private:

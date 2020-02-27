@@ -10,7 +10,6 @@ class GPUCodeGen : public KernelCodeGen {
  public:
  public:
   GPUCodeGen(const std::string &kernel_name) : KernelCodeGen(kernel_name) {
-    suffix = "cu";
   }
 
   void lower_llvm();

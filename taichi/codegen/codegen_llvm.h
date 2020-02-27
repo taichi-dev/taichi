@@ -17,7 +17,6 @@ using namespace llvm;
 
 class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
  public:
-  CodeGenBase *codegen;
   Kernel *kernel;
   Program *prog;
   std::string kernel_name;
@@ -91,7 +90,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   std::unique_ptr<OffloadedTask> current_task;
   std::vector<OffloadedTask> offloaded_tasks;
 
-  CodeGenLLVM(CodeGenBase *codegen, Kernel *kernel)
+  CodeGenLLVM(Kernel *kernel)
       // TODO: simplify ModuleBuilder ctor input
       : ModuleBuilder(kernel->program.get_llvm_context(kernel->arch)
                           ->clone_struct_module()),
@@ -197,13 +196,15 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       meta->call("set_bitmasked", tlctx->get_constant(snode->_bitmasked));
       meta->call("set_morton_dim", tlctx->get_constant((int)snode->_morton));
     } else if (snode->type == SNodeType::pointer) {
-      meta = std::make_unique<RuntimeObject>("pointerMeta", this, builder.get());
+      meta =
+          std::make_unique<RuntimeObject>("pointerMeta", this, builder.get());
       emit_struct_meta_base("pointer", meta->ptr, snode);
     } else if (snode->type == SNodeType::root) {
       meta = std::make_unique<RuntimeObject>("RootMeta", this, builder.get());
       emit_struct_meta_base("Root", meta->ptr, snode);
     } else if (snode->type == SNodeType::dynamic) {
-      meta = std::make_unique<RuntimeObject>("DynamicMeta", this, builder.get());
+      meta =
+          std::make_unique<RuntimeObject>("DynamicMeta", this, builder.get());
       emit_struct_meta_base("Dynamic", meta->ptr, snode);
       meta->call("set_chunk_size", tlctx->get_constant(snode->chunk_size));
     } else {
@@ -253,7 +254,6 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   template <typename... Args>
   void emit(std::string f, Args &&... args) {
     TI_NOT_IMPLEMENTED
-    codegen->emit(f, std::forward<Args>(args)...);
   }
 
   void visit(Block *stmt_list) override {

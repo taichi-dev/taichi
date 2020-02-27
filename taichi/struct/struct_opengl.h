@@ -10,8 +10,6 @@
 #include <string>
 #include <vector>
 
-#include "taichi/codegen/codegen_base.h"
-
 TLANG_NAMESPACE_BEGIN
 namespace opengl {
 

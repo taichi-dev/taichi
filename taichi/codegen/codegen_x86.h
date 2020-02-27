@@ -12,7 +12,6 @@ class CPUCodeGen : public KernelCodeGen {
 
  public:
   CPUCodeGen(const std::string &kernel_name) : KernelCodeGen(kernel_name) {
-    suffix = "cpp";
   }
 
   void lower() override;

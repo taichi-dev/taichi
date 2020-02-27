@@ -31,8 +31,7 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
 
   using IRVisitor::visit;
 
-  CodeGenLLVMGPU(CodeGenBase *codegen_base, Kernel *kernel)
-      : CodeGenLLVM(codegen_base, kernel) {
+  CodeGenLLVMGPU(Kernel *kernel) : CodeGenLLVM(kernel) {
 #if defined(TI_WITH_CUDA)
     cudaDeviceGetAttribute(&num_SMs, cudaDevAttrMultiProcessorCount, 0);
     cudaDeviceGetAttribute(&max_block_dim, cudaDevAttrMaxBlockDimX, 0);
@@ -369,7 +368,7 @@ class CodeGenLLVMGPU : public CodeGenLLVM {
 
 FunctionType GPUCodeGen::codegen_llvm() {
   TI_PROFILER("cuda codegen");
-  return CodeGenLLVMGPU(this, kernel).gen();
+  return CodeGenLLVMGPU(kernel).gen();
 }
 
 TLANG_NAMESPACE_END

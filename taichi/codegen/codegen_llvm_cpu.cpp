@@ -13,8 +13,7 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
  public:
   using IRVisitor::visit;
 
-  CodeGenLLVMCPU(CodeGenBase *codegen_base, Kernel *kernel)
-      : CodeGenLLVM(codegen_base, kernel) {
+  CodeGenLLVMCPU(Kernel *kernel) : CodeGenLLVM(kernel) {
   }
 
   void visit(OffloadedStmt *stmt) override {
@@ -53,7 +52,7 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
 
 FunctionType CPUCodeGen::codegen_llvm() {
   TI_PROFILER("cpu codegen");
-  return CodeGenLLVMCPU(this, kernel).gen();
+  return CodeGenLLVMCPU(kernel).gen();
 }
 
 TLANG_NAMESPACE_END

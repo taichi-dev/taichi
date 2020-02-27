@@ -9,7 +9,6 @@
 #include <unordered_set>
 #include <vector>
 
-#include "codegen_base.h"
 #include "kernel.h"
 
 TLANG_NAMESPACE_BEGIN

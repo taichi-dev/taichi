@@ -10,9 +10,9 @@
 #include "taichi/codegen/codegen_metal.h"
 #include "taichi/codegen/codegen_opengl.h"
 #include "taichi/codegen/codegen_x86.h"
-#include "backends/struct.h"
-#include "backends/struct_metal.h"
-#include "backends/struct_opengl.h"
+#include "taichi/struct/struct.h"
+#include "taichi/struct/struct_metal.h"
+#include "taichi/struct/struct_opengl.h"
 #include "unified_allocator.h"
 #include "snode.h"
 

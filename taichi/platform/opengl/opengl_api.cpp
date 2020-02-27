@@ -54,9 +54,7 @@ struct GLShader
 
   GLShader &compile(const std::string &source)
   {
-    // Why strcpy? See https://stackoverflow.com/questions/28527956/get-011-error-syntax-error-unexpected-end-when-trying-to-compile-shader
-    GLchar *source_cstr = new GLchar[source.size() + 1];
-    std::strcpy(source_cstr, source.c_str());
+    const GLchar *source_cstr = source.c_str();
     glShaderSource(id_, 1, &source_cstr, nullptr);
 
     glCompileShader(id_);
@@ -65,10 +63,11 @@ struct GLShader
     if (status != GL_TRUE) {
       GLsizei logLength;
       glGetShaderiv(id_, GL_INFO_LOG_LENGTH, &logLength);
-      GLchar *log = new GLchar[logLength];
-      glGetShaderInfoLog(id_, logLength, &logLength, log);
+      auto log = std::vector<GLchar>(logLength + 1);
+      glGetShaderInfoLog(id_, logLength, &logLength, log.data());
+      log[logLength] = 0;
       TI_ERROR("[glsl] error while compiling shader:\n{}\n{}",
-          add_line_markers(source), log);
+          add_line_markers(source), log.data());
     }
     return *this;
   }
@@ -108,9 +107,10 @@ struct GLProgram
     if (status != GL_TRUE) {
       GLsizei logLength;
       glGetProgramiv(id_, GL_INFO_LOG_LENGTH, &logLength);
-      GLchar *log = new GLchar[logLength];
-      glGetProgramInfoLog(id_, logLength, &logLength, log);
-      TI_ERROR("[glsl] error while linking program:\n{}", log);
+      auto log = std::vector<GLchar>(logLength + 1);
+      glGetProgramInfoLog(id_, logLength, &logLength, log.data());
+      log[logLength] = 0;
+      TI_ERROR("[glsl] error while linking program:\n{}", log.data());
     }
     return *this;
   }

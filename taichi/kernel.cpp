@@ -80,7 +80,7 @@ void Kernel::operator()() {
     auto &c = program.get_context();
     compiled(c);
   }
-  program.sync = false;
+  program.sync = (program.sync && arch_is_cpu(arch));
 }
 
 void Kernel::set_arg_float(int i, float64 d) {

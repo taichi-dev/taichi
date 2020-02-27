@@ -2,24 +2,17 @@
 
 #pragma once
 
-#include "taichi/codegen/codegeb_base.h"
+#include "taichi/codegen/codegen_base.h"
 #include "taichi/tlang_util.h"
 #include "taichi/program.h"
 
 TLANG_NAMESPACE_BEGIN
 
-class Program;
 class KernelCodeGen : public CodeGenBase {
  public:
   Program *prog;
   Kernel *kernel;
   KernelCodeGen(const std::string &kernel_name) : CodeGenBase(kernel_name) {
-  }
-
-  virtual void generate_header() {
-  }
-
-  virtual void generate_tail() {
   }
 
   virtual void lower() = 0;

@@ -10,7 +10,7 @@
 #include <string>
 #include <vector>
 
-#include "taichi/codegen/codegeb_base.h"
+#include "taichi/codegen/codegen_base.h"
 
 TLANG_NAMESPACE_BEGIN
 namespace metal {

@@ -1,6 +1,6 @@
 // The code generator base class
 
-#include "codegeb_base.h"
+#include "codegen_base.h"
 #if !defined(TI_PLATFORM_WINDOWS)
 #include <xxhash.h>
 #endif

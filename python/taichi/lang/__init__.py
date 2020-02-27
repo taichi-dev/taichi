@@ -29,6 +29,7 @@ x86_64 = core.x64
 x64 = core.x64
 cuda = core.cuda
 metal = core.metal
+opengl = core.opengl
 profiler_print = lambda: core.get_current_program().profiler_print()
 profiler_clear = lambda: core.get_current_program().profiler_clear()
 profiler_start = lambda n: core.get_current_program().profiler_start(n)
@@ -222,6 +223,8 @@ def supported_archs():
     archs.append(cuda)
   if ti.core.with_metal():
     archs.append(metal)
+  if ti.core.with_opengl():
+    archs.append(opengl)
   return archs
 
 class _ArchCheckers(object):

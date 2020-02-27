@@ -4,12 +4,15 @@
 
 #include <taichi/common/task.h>
 #include <taichi/platform/metal/metal_api.h>
+#include <taichi/platform/opengl/opengl_api.h>
 
 #include "backends/codegen_cuda.h"
 #include "backends/codegen_metal.h"
+#include "backends/codegen_opengl.h"
 #include "backends/codegen_x86.h"
 #include "backends/struct.h"
 #include "backends/struct_metal.h"
+#include "backends/struct_opengl.h"
 #include "unified_allocator.h"
 #include "snode.h"
 
@@ -39,7 +42,7 @@ Program::Program(Arch arch) {
 #if !defined(TI_WITH_CUDA)
   if (arch == Arch::cuda) {
     TI_WARN("Taichi is not compiled with CUDA.");
-    TI_WARN("Falling back to x86_64");
+    TI_WARN("Falling back to x64");
     arch = Arch::x64;
   }
 #else
@@ -47,14 +50,20 @@ Program::Program(Arch arch) {
     cuda_context = std::make_unique<CUDAContext>();
     if (!cuda_context->detected()) {
       TI_WARN("No CUDA device detected.");
-      TI_WARN("Falling back to x86_64");
+      TI_WARN("Falling back to x64");
       arch = Arch::x64;
     }
   }
 #endif
   if (arch == Arch::metal) {
     if (!metal::is_metal_api_available()) {
-      TI_WARN("No Metal API detected, falling back to x86_64");
+      TI_WARN("No Metal API detected, falling back to x64");
+      arch = Arch::x64;
+    }
+  }
+  if (arch == Arch::opengl) {
+    if (!opengl::is_opengl_api_available()) {
+      TI_WARN("No OpenGL API detected, falling back to x64");
       arch = Arch::x64;
     }
   }
@@ -96,6 +105,9 @@ FunctionType Program::compile(Kernel &kernel) {
   } else if (kernel.arch == Arch::metal) {
     metal::MetalCodeGen codegen(kernel.name, &metal_struct_compiled_.value());
     ret = codegen.compile(*this, kernel, metal_runtime_.get());
+  } else if (kernel.arch == Arch::opengl) {
+    opengl::OpenglCodeGen codegen(kernel.name, &opengl_struct_compiled_.value());
+    ret = codegen.compile(*this, kernel);
   } else {
     TI_NOT_IMPLEMENTED;
   }
@@ -173,7 +185,7 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
 }
 
 void Program::materialize_layout() {
-  // always use arch=x86_64 since this is for host accessors
+  // always use arch=x64 since this is for host accessors
   // TODO: arch may also be arm etc.
   std::unique_ptr<StructCompiler> scomp = StructCompiler::make(this, Arch::x64);
   scomp->run(*snode_root, true);
@@ -183,6 +195,7 @@ void Program::materialize_layout() {
     initialize_runtime_system(scomp.get());
   }
 
+  TI_INFO("materialize_layout called");
   if (config.arch == Arch::cuda && config.use_llvm) {
     initialize_device_llvm_context();
     // llvm_context_device->get_init_module();
@@ -204,6 +217,11 @@ void Program::materialize_layout() {
       params.profiler = profiler.get();
       metal_runtime_ = std::make_unique<metal::MetalRuntime>(std::move(params));
     }
+  } else if (config.arch == Arch::opengl) {
+    opengl::OpenglStructCompiler scomp;
+    opengl_struct_compiled_ = scomp.run(*snode_root);
+    TI_INFO("OpenGL root buffer size: {} B", opengl_struct_compiled_->root_size);
+    opengl::initialize_opengl();
   }
 }
 
@@ -311,6 +329,15 @@ void Program::initialize_device_llvm_context() {
   }
 }
 
+Arch Program::get_snode_accessor_arch()
+{
+  if (config.arch == Arch::opengl) {
+    return Arch::opengl;
+  } else {
+    return get_host_arch();
+  }
+}
+
 Kernel &Program::get_snode_reader(SNode *snode) {
   TI_ASSERT(snode->type == SNodeType::place);
   auto kernel_name = fmt::format("snode_reader_{}", snode->id);
@@ -323,7 +350,7 @@ Kernel &Program::get_snode_reader(SNode *snode) {
         snode->num_active_indices, load_if_ptr((snode->expr)[indices]));
     current_ast_builder().insert(std::move(ret));
   });
-  ker.set_arch(get_host_arch());
+  ker.set_arch(get_snode_accessor_arch());
   ker.name = kernel_name;
   ker.is_accessor = true;
   for (int i = 0; i < snode->num_active_indices; i++)
@@ -344,7 +371,7 @@ Kernel &Program::get_snode_writer(SNode *snode) {
     (snode->expr)[indices] =
         Expr::make<ArgLoadExpression>(snode->num_active_indices);
   });
-  ker.set_arch(get_host_arch());
+  ker.set_arch(get_snode_accessor_arch());
   ker.name = kernel_name;
   ker.is_accessor = true;
   for (int i = 0; i < snode->num_active_indices; i++)

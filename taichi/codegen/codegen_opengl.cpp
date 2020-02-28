@@ -350,7 +350,7 @@ int _rand_i32()\n\
   void visit(TernaryOpStmt *tri) override
   {
     TI_ASSERT(tri->op_type == TernaryOpType::select);
-    emit("{} {} = ({}) ? ({}) : ({});",
+    emit("{} {} = ({}) != 0 ? ({}) : ({});",
          opengl_data_type_name(tri->element_type()), tri->raw_name(),
          tri->op1->raw_name(), tri->op2->raw_name(), tri->op3->raw_name());
   }

@@ -81,6 +81,12 @@ Program::Program(Arch arch) {
   llvm_context_host = std::make_unique<TaichiLLVMContext>(Arch::x64);
   profiler = make_profiler(arch);
 
+#if defined(TI_WITH_CUDA)
+  if (config.enable_profiler) {
+    cuda_context->set_profiler(profiler.get());
+  }
+#endif
+
   current_kernel = nullptr;
   sync = true;
   llvm_runtime = nullptr;
@@ -377,6 +383,9 @@ Kernel &Program::get_snode_writer(SNode *snode) {
 }
 
 void Program::finalize() {
+#if defined(TI_WITH_CUDA)
+  cuda_context->set_profiler(nullptr);
+#endif
   synchronize();
   current_program = nullptr;
   for (auto &dll : loaded_dlls) {

@@ -4,6 +4,7 @@
 #include <functional>
 #include "taichi/llvm/llvm_fwd.h"
 #include "taichi/lang_util.h"
+#include "taichi/profiler.h"
 
 TLANG_NAMESPACE_BEGIN
 

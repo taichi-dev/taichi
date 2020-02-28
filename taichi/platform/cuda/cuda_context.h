@@ -26,7 +26,6 @@ class CUDAContext {
 
   void launch(void *func,
               const std::string &task_name,
-              ProfilerBase *profiler,
               std::vector<void *> arg_pointers,
               unsigned gridDim,
               unsigned blockDim);

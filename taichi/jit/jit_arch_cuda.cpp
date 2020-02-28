@@ -60,9 +60,7 @@ class JITModuleCUDA : public JITModule {
                       std::size_t block_dim,
                       const std::vector<void *> &arg_pointers) {
     auto func = lookup_function(name);
-    // TODO: restore CUDA profiler
-    cuda_context->launch(func, name, nullptr, arg_pointers, grid_dim,
-                         block_dim);
+    cuda_context->launch(func, name, arg_pointers, grid_dim, block_dim);
   }
 
   bool direct_dispatch() const override {

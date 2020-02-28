@@ -87,18 +87,11 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       task.cuda_func = cuda_module->lookup_function(task.name);
     }
     auto prog = this->prog;
-    return [offloaded_local, prog, cuda_module](Context context) {
+    return [offloaded_local, cuda_module](Context context) {
       for (auto task : offloaded_local) {
         TI_DEBUG("Launching kernel {}<<<{}, {}>>>", task.name, task.grid_dim,
                  task.block_dim);
 
-        ProfilerBase *profiler = nullptr;
-        if (prog->config.enable_profiler) {
-          profiler = prog->profiler.get();
-        }
-        // TODO: restore profiler
-        // cuda_context->launch((CUfunction)task.cuda_func, task.name, profiler,
-        //                     &context, task.grid_dim, task.block_dim);
         cuda_module->launch(task.name, task.grid_dim, task.block_dim,
                             {&context});
       }

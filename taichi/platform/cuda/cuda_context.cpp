@@ -33,27 +33,23 @@ CUDAContext::CUDAContext() : profiler(nullptr) {
 
 void CUDAContext::launch(void *func,
                          const std::string &task_name,
-                         ProfilerBase *profiler,
                          std::vector<void *> arg_pointers,
                          unsigned gridDim,
                          unsigned blockDim) {
   // auto _ = cuda_context->get_guard();
   make_current();
-  // Kernel parameters
 
-  if (profiler) {
-    profiler->start(task_name);
-  }
   // Kernel launch
+  if (profiler)
+    profiler->start(task_name);
   if (gridDim > 0) {
     std::lock_guard<std::mutex> _(lock);
     check_cuda_error(cuLaunchKernel((CUfunction)func, gridDim, 1, 1, blockDim,
                                     1, 1, 0, nullptr, arg_pointers.data(),
                                     nullptr));
   }
-  if (profiler) {
+  if (profiler)
     profiler->stop();
-  }
 
   if (get_current_program().config.debug) {
     check_cuda_error(cudaDeviceSynchronize());

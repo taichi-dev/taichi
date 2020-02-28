@@ -1,8 +1,9 @@
 #if defined(TI_WITH_CUDA)
 #define TI_RUNTIME_HOST
+
 #include <taichi/lang_util.h>
-#include <taichi/context.h>
 #include <taichi/program.h>
+
 #include "cuda_context.h"
 
 TLANG_NAMESPACE_BEGIN
@@ -26,7 +27,6 @@ CUDAContext::CUDAContext() : profiler(nullptr) {
 
   TI_TRACE("CUDA Device Compute Capability: {}.{}", cc_major, cc_minor);
   check_cuda_error(cuCtxCreate(&context, 0, device));
-  check_cuda_error(cudaMalloc(&context_buffer, sizeof(Context)));
 
   mcpu = fmt::format("sm_{}{}", cc_major, cc_minor);
 }

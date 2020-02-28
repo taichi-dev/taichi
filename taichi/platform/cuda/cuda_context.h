@@ -11,7 +11,6 @@ class CUDAContext {
   CUdevice device;
   CUcontext context;
   int dev_count;
-  void *context_buffer;
   std::string mcpu;
   ProfilerBase *profiler;
 

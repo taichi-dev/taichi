@@ -9,7 +9,7 @@
 #include "taichi/llvm/llvm_context.h"
 #include "lang_util.h"
 #include <atomic>
-#include <taichi/context.h>
+#include <taichi/runtime/context.h>
 #include <taichi/profiler.h>
 #include <taichi/system/threading.h>
 #include <taichi/system/unified_allocator.h>

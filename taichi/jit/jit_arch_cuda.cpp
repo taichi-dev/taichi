@@ -23,7 +23,7 @@
 #include <taichi/platform/cuda/cuda_utils.h>
 #include <taichi/platform/cuda/cuda_context.h>
 #include <taichi/program.h>
-#include <taichi/context.h>
+#include <taichi/runtime/context.h>
 #include <taichi/system/timer.h>
 #include "taichi/lang_util.h"
 #include "jit_session.h"

@@ -3,8 +3,6 @@
 #include "taichi/inc/constants.h"
 
 #if defined(TI_RUNTIME_HOST)
-#include "taichi/inc/constants.h"
-
 namespace taichi::Tlang {
 using namespace taichi;
 #endif

@@ -257,7 +257,7 @@ struct PhysicalCoordinates {
 
 STRUCT_FIELD_ARRAY(PhysicalCoordinates, val);
 
-#include "../context.h"
+#include "context.h"
 
 STRUCT_FIELD_ARRAY(Context, args);
 STRUCT_FIELD(Context, runtime);

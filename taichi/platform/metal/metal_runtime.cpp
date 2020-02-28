@@ -1,7 +1,7 @@
 #include "metal_runtime.h"
 
 #include <taichi/math/arithmetic.h>
-#include <taichi/constants.h>
+#include <taichi/inc/constants.h>
 
 #include <algorithm>
 #include <cstring>

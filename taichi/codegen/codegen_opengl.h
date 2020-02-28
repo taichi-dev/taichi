@@ -1,6 +1,6 @@
 #pragma once
 
-#include "taichi/constants.h"
+#include "taichi/inc/constants.h"
 #include "taichi/lang_util.h"
 
 #include <string>

@@ -1,6 +1,5 @@
 #pragma once
 #include "taichi/common/util.h"
-#include "taichi/constants.h"
 #include "taichi/system/unified_allocator.h"
 #define TI_RUNTIME_HOST
 #include "taichi/context.h"

@@ -16,7 +16,7 @@
 #include <algorithm>
 #include <type_traits>
 #include <cstring>
-#include "../constants.h"
+#include "taichi/inc/constants.h"
 #include "taichi/math/arithmetic.h"
 
 struct Context;

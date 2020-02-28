@@ -1,9 +1,9 @@
 #pragma once
 
-#include "constants.h"
+#include "taichi/inc/constants.h"
 
 #if defined(TI_RUNTIME_HOST)
-#include "taichi/constants.h"
+#include "taichi/inc/constants.h"
 
 namespace taichi::Tlang {
 using namespace taichi;

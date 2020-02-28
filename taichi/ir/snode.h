@@ -4,7 +4,7 @@
 #include "taichi/common/bit.h"
 #include "taichi/llvm/llvm_fwd.h"
 #include "taichi/ir/expr.h"
-#include "taichi/constants.h"
+#include "taichi/inc/constants.h"
 
 TLANG_NAMESPACE_BEGIN
 

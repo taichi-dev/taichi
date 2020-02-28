@@ -9,7 +9,7 @@
 #include "taichi/program.h"
 #include "taichi/lang_util.h"
 
-#include "taichi/llvm_codegen_utils.h"
+#include "taichi/llvm/llvm_codegen_utils.h"
 
 TLANG_NAMESPACE_BEGIN
 

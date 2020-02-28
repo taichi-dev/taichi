@@ -1,6 +1,6 @@
 #pragma once
 #include "lang_util.h"
-#include "llvm_fwd.h"
+#include "taichi/llvm/llvm_fwd.h"
 #include "expr.h"
 #include <taichi/common/bit.h>
 

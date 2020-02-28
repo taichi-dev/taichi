@@ -25,7 +25,7 @@
 #include <llvm/Linker/Linker.h>
 #include <llvm/Demangle/Demangle.h>
 
-#include "lang_util.h"
+#include "taichi/lang_util.h"
 #include "llvm_context.h"
 #include <taichi/jit/jit_session.h>
 

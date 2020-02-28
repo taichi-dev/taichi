@@ -2,7 +2,7 @@
 
 #include <memory>
 #include <functional>
-#include "../llvm_fwd.h"
+#include "taichi/llvm/llvm_fwd.h"
 #include "taichi/lang_util.h"
 #include "jit_module.h"
 

@@ -32,7 +32,7 @@
 #include <utility>
 #include <vector>
 
-#include "taichi/llvm_context.h"
+#include "llvm_context.h"
 
 TLANG_NAMESPACE_BEGIN
 

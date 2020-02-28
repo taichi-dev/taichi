@@ -9,7 +9,7 @@
 #include "lang_util.h"
 #include "snode.h"
 #include "expr.h"
-#include "llvm_fwd.h"
+#include "taichi/llvm/llvm_fwd.h"
 
 TLANG_NAMESPACE_BEGIN
 

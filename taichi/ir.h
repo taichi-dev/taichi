@@ -2079,13 +2079,6 @@ class ConstExpression : public Expression {
   }
 };
 
-template <typename T, typename... Indices>
-T &Expr::val(Indices... indices) {
-  auto e = this->cast<GlobalVariableExpression>();
-  TI_ASSERT(is<GlobalVariableExpression>());
-  return *(T *)val_tmp(get_data_type<T>(), indices...);
-}
-
 inline Expr load(Expr ptr) {
   TI_ASSERT(ptr.is<GlobalPtrExpression>());
   return Expr::make<GlobalLoadExpression>(ptr);

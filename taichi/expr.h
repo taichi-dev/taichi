@@ -73,19 +73,6 @@ public:
 
   std::string serialize() const;
 
-  void *evaluate_addr(int i, int j, int k, int l);
-
-  template <typename... Indices>
-  void *val_tmp(DataType dt, Indices... indices);
-
-  template <typename T, typename... Indices>
-  T &val(Indices... indices);
-
-  template <typename T, typename... Indices>
-  void set_val(const T &v, Indices... indices) {
-    val<T, Indices...>(indices...) = v;
-  }
-
   void operator+=(const Expr &o);
   void operator-=(const Expr &o);
   void operator*=(const Expr &o);

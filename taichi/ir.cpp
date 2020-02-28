@@ -267,48 +267,6 @@ std::atomic<int> Stmt::instance_id_counter(0);
 
 std::unique_ptr<FrontendContext> context;
 
-// TODO: clean this part up
-void *Expr::evaluate_addr(int i, int j, int k, int l) {
-  TI_NOT_IMPLEMENTED
-}
-
-template <int i, typename... Indices>
-std::enable_if_t<(i < sizeof...(Indices)), int> get_if_exists(
-    std::tuple<Indices...> tup) {
-  static_assert(i >= 0, "i must be nonnegative");
-  return std::get<i>(tup);
-}
-
-template <int i, typename... Indices>
-std::enable_if_t<!(i < sizeof...(Indices)), int> get_if_exists(
-    std::tuple<Indices...> tup) {
-  static_assert(i >= 0, "i must be nonnegative");
-  return 0;
-}
-
-template <typename... Indices>
-void *Expr::val_tmp(DataType dt, Indices... indices) {
-  auto snode = this->cast<GlobalVariableExpression>()->snode;
-  if (dt != snode->dt) {
-    TI_ERROR("Cannot access type {} as type {}", data_type_name(snode->dt),
-             data_type_name(dt));
-  }
-  TI_ASSERT(sizeof...(indices) == snode->num_active_indices);
-  int ind[max_num_indices];
-  std::memset(ind, 0, sizeof(ind));
-  auto tup = std::make_tuple(indices...);
-#define LOAD_IND(i)                           \
-  if (snode->physical_index_position[i] >= 0) \
-    ind[snode->physical_index_position[i]] = get_if_exists<i>(tup);
-  LOAD_IND(0);
-  LOAD_IND(1);
-  LOAD_IND(2);
-  LOAD_IND(3);
-#undef LOAD_IND
-  TI_ASSERT(max_num_indices == 4);
-  return evaluate_addr(ind[0], ind[1], ind[2], ind[3]);
-}
-
 Expr Expr::parent() const {
   TI_ASSERT(is<GlobalVariableExpression>());
   return Expr::make<GlobalVariableExpression>(
@@ -331,12 +289,6 @@ void Expr::declare(DataType dt) {
 void Expr::set_grad(const Expr &o) {
   this->cast<GlobalVariableExpression>()->adjoint.set(o);
 }
-
-template void *Expr::val_tmp<>(DataType);
-template void *Expr::val_tmp<int>(DataType, int);
-template void *Expr::val_tmp<int, int>(DataType, int, int);
-template void *Expr::val_tmp<int, int, int>(DataType, int, int, int);
-template void *Expr::val_tmp<int, int, int, int>(DataType, int, int, int, int);
 
 Stmt *Stmt::insert_before_me(std::unique_ptr<Stmt> &&new_stmt) {
   auto ret = new_stmt.get();

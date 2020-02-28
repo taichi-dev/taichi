@@ -4,13 +4,13 @@
 
 #define TI_RUNTIME_HOST
 #include "taichi/ir/ir.h"
-#include "kernel.h"
+#include "taichi/program/kernel.h"
 #include "taichi/ir/snode.h"
 #include "taichi/llvm/llvm_context.h"
-#include "lang_util.h"
+#include "taichi/lang_util.h"
 #include <atomic>
 #include <taichi/runtime/context.h>
-#include <taichi/profiler.h>
+#include <taichi/program/profiler.h>
 #include <taichi/system/threading.h>
 #include <taichi/system/unified_allocator.h>
 #include "taichi/system/memory_pool.h"

@@ -1,7 +1,7 @@
 #pragma once
 
 #if defined(TI_WITH_CUDA)
-#include <taichi/profiler.h>
+#include <taichi/program/profiler.h>
 #include <taichi/platform/cuda/cuda_utils.h>
 #include <mutex>
 

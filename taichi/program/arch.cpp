@@ -8,7 +8,8 @@ std::string arch_name(Arch arch) {
   case Arch::x:     \
     return #x;      \
     break;
-#include "inc/archs.inc.h"
+#include "taichi/inc/archs.inc.h"
+
 #undef PER_ARCH
     default:
       TI_NOT_IMPLEMENTED
@@ -23,7 +24,8 @@ Arch arch_from_name(const std::string &arch_name) {
 
   if (false) {
   }
-#include "inc/archs.inc.h"
+#include "taichi/inc/archs.inc.h"
+
   else {
     TI_ERROR("Unknown architecture name: {}", arch_name);
   }

@@ -9,7 +9,7 @@
 #include "taichi/lang_util.h"
 #include "taichi/ir/snode.h"
 #include "taichi/ir/expr.h"
-#include "taichi/compile_config.h"
+#include "taichi/program/compile_config.h"
 #include "taichi/llvm/llvm_fwd.h"
 
 TLANG_NAMESPACE_BEGIN

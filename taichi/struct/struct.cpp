@@ -1,7 +1,7 @@
 // Codegen for the hierarchical data structure
 
 #include "taichi/ir/ir.h"
-#include "../program.h"
+#include "taichi/program/program.h"
 #include "struct.h"
 
 TLANG_NAMESPACE_BEGIN

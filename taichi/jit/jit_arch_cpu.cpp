@@ -28,7 +28,7 @@
 #include "llvm/Transforms/IPO.h"
 #include <memory>
 #include "taichi/lang_util.h"
-#include "../program.h"
+#include "taichi/program/program.h"
 #include "jit_session.h"
 
 // Based on

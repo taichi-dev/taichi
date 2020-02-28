@@ -1,6 +1,7 @@
 #pragma once
 
-#include "taichi/inc/constants.h"
+// Use relative path here for runtime compilation
+#include "../inc/constants.h"
 
 #if defined(TI_RUNTIME_HOST)
 namespace taichi::Tlang {

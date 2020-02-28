@@ -1,5 +1,5 @@
 #pragma once
-#include "taichi/arch.h"
+#include "taichi/program/arch.h"
 #include <mutex>
 #include <vector>
 #include <memory>

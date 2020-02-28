@@ -2,7 +2,7 @@
 
 #include "struct_llvm.h"
 #include "taichi/ir/ir.h"
-#include "../program.h"
+#include "taichi/program/program.h"
 #include "struct.h"
 #include "llvm/IR/Verifier.h"
 #include <llvm/IR/IRBuilder.h>

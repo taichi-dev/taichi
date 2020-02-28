@@ -25,7 +25,7 @@ inline int maximum(int a) {
 #endif
 
 #include "taichi/lang_util.h"
-#include "taichi/program.h"
+#include "taichi/program/program.h"
 
 TLANG_NAMESPACE_BEGIN
 

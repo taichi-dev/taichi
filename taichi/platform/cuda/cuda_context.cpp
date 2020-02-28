@@ -2,7 +2,7 @@
 #define TI_RUNTIME_HOST
 
 #include <taichi/lang_util.h>
-#include <taichi/program.h>
+#include <taichi/program/program.h>
 
 #include "cuda_context.h"
 

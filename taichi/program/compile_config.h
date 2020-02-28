@@ -1,5 +1,5 @@
 #include "taichi/lang_util.h"
-#include "taichi/arch.h"
+#include "arch.h"
 
 TLANG_NAMESPACE_BEGIN
 

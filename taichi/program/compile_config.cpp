@@ -1,4 +1,4 @@
-#include "taichi/compile_config.h"
+#include "compile_config.h"
 
 TLANG_NAMESPACE_BEGIN
 

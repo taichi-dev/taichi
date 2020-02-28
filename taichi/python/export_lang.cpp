@@ -3,7 +3,7 @@
 #include "taichi/ir/frontend.h"
 #include <pybind11/functional.h>
 #include <pybind11/pybind11.h>
-#include <taichi/extension.h>
+#include <taichi/program/extension.h>
 #include <taichi/common/interface.h>
 #include <taichi/python/export.h>
 #include <taichi/gui/gui.h>

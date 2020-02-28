@@ -2,7 +2,7 @@
 #pragma once
 
 #include "taichi/ir/snode.h"
-#include "taichi/program.h"
+#include "taichi/program/program.h"
 
 TLANG_NAMESPACE_BEGIN
 

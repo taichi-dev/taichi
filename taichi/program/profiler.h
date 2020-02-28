@@ -1,6 +1,6 @@
 #pragma once
 
-#include "taichi/arch.h"
+#include "taichi/program/arch.h"
 #include "taichi/lang_util.h"
 
 #include <algorithm>

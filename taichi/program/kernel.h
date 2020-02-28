@@ -1,6 +1,6 @@
 #pragma once
 
-#include "lang_util.h"
+#include "taichi/lang_util.h"
 #include "taichi/ir/snode.h"
 #include "taichi/ir/ir.h"
 

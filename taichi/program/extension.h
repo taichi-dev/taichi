@@ -1,6 +1,6 @@
 #pragma once
 
-#include "taichi/arch.h"
+#include "arch.h"
 
 #include <string>
 
@@ -16,7 +16,8 @@ TLANG_NAMESPACE_BEGIN
 
 enum class Extension {
 #define PER_EXTENSION(x) x,
-#include "inc/extensions.inc.h"
+#include "taichi/inc/extensions.inc.h"
+
 #undef PER_EXTENSION
 };
 

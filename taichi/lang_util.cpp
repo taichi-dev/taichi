@@ -3,8 +3,8 @@
 #include "lang_util.h"
 #include "taichi/system/timer.h"
 #include "taichi/math/linalg.h"
-#include "taichi/arch.h"
-#include "taichi/compile_config.h"
+#include "taichi/program/arch.h"
+#include "taichi/program/compile_config.h"
 
 TI_NAMESPACE_BEGIN
 

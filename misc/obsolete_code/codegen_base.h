@@ -4,7 +4,7 @@
 #include "taichi/tlang_util.h"
 #include "taichi/ir/snode.h"
 #include "taichi/ir/ir.h"
-#include "taichi/program.h"
+#include "taichi/program/program.h"
 #if defined(TI_PLATFORM_UNIX)
 #include <dlfcn.h>
 #endif

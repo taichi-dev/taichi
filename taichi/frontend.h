@@ -7,7 +7,7 @@
 #endif
 #include <taichi/common/util.h>
 #include <taichi/common/dict.h>
-#include <taichi/io/io.h>
+#include <taichi/util/io.h>
 
 namespace taichi {
 static_assert(

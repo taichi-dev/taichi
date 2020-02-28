@@ -1,7 +1,7 @@
 // x86 backend implementation
 
 #include <taichi/common/util.h>
-#include <taichi/io/io.h>
+#include <taichi/util/io.h>
 #include <set>
 #include "codegen_cpu.h"
 #include "taichi/lang_util.h"

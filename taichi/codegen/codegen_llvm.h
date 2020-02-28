@@ -3,7 +3,7 @@
 
 #include <set>
 #include <taichi/common/util.h>
-#include <taichi/io/io.h>
+#include <taichi/util/io.h>
 
 #include "taichi/ir.h"
 #include "taichi/program.h"

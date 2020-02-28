@@ -3,7 +3,7 @@
 #pragma once
 #include <taichi/arch.h>
 #include <taichi/common/util.h>
-#include <taichi/io/io.h>
+#include <taichi/util/io.h>
 #include <taichi/common.h>
 #include <taichi/system/profiler.h>
 

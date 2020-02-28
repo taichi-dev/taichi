@@ -217,8 +217,11 @@ if 1:
       list_stmt[i] = self.visit(l)
 
   def visit_Return(self, node):
+    if self.is_kernel:
+      raise TaichiSyntaxError('return not allowed in ti.kernel. '
+      'Please walk around by storing the return result to a global variable.')
     ret = self.parse_stmt('__retval.assign(0)')
-    ret.value.args[0] = node.value
+    ret.value.args[0] = self.visit(node.value)
     return ret
 
   def visit_If(self, node):
@@ -526,7 +529,12 @@ if 1:
           raise TaichiSyntaxError("Function definition not allowed in 'ti.func'.")
       # Transform as func (all parameters passed by value)
       arg_decls = []
-      arg_decls.append(self.parse_stmt('__retval = ti.expr_init(0)')) # TODO(archibate): init by ret type
+      if node.returns is not None:
+        ret_init = self.parse_stmt('__retval = ti.type_init(None)')
+        ret_init.value.args[0] = node.returns
+      else:
+        ret_init = self.parse_stmt('__retval = ti.expr_init(None)') # alloca
+      arg_decls.append(ret_init)
       for i, arg in enumerate(args.args):
         if i == 0 and self.is_classfunc:
           continue
@@ -623,8 +631,3 @@ if 1:
     new_node.value.args[0].value.args[0] = node.test
     new_node.value.args[1] = self.parse_expr("'{}'".format(msg.strip()))
     return new_node
-
-  def visit_Return(self, node):
-    if self.is_kernel:
-      raise TaichiSyntaxError('"return" not allowed in \'ti.kernel\'. Please walk around by storing the return result to a global variable.')
-    return node

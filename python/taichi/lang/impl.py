@@ -5,6 +5,18 @@ from .snode import SNode
 from .util import *
 
 
+def type_init(rhs):
+  import taichi as ti
+  if rhs is None:
+    return ti.expr_init(None) # alloca
+  elif isinstance(rhs, taichi_lang_core.DataType):
+    return ti.expr_init(ti.cast(0, rhs))
+  elif isinstance(rhs, ti.mat):
+    return ti.expr_init(rhs.init())
+  else:
+    raise Exception(f'unknown type annotion {rhs}')
+
+
 def expr_init(rhs):
   import taichi as ti
   if rhs is None:

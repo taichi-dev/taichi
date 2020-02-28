@@ -547,3 +547,17 @@ class Matrix:
   def rotation2d(alpha):
     import taichi as ti
     return ti.Matrix([[ti.cos(alpha), -ti.sin(alpha)], [ti.sin(alpha), ti.cos(alpha)]])
+
+
+class mat: # Matrix type with specific NxM
+  is_taichi_class = True
+  __slots__ = ['n', 'm', 'dt']
+
+  def __init__(self, n, m=1, dt=None):
+    self.n = n
+    self.m = m
+    import taichi as ti
+    self.dt = ti.i32 if dt is None else dt
+
+  def init(self):
+    return Matrix.zero(self.dt, self.n, self.m)

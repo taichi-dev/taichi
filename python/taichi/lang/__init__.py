@@ -1,5 +1,5 @@
 from .impl import *
-from .matrix import Matrix
+from .matrix import Matrix, mat
 from .transformer import TaichiSyntaxError
 from .ndrange import ndrange, GroupedNDRange
 from copy import deepcopy as _deepcopy
@@ -17,6 +17,7 @@ ij = indices(0, 1)
 ijk = indices(0, 1, 2)
 ijkl = indices(0, 1, 2, 3)
 Vector = Matrix
+vec = mat
 
 outer_product = Matrix.outer_product
 cross = Matrix.cross

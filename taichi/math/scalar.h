@@ -10,9 +10,6 @@
 
 TI_NAMESPACE_BEGIN
 
-#undef max
-#undef min
-
 using std::abs;
 using std::acos;
 using std::asin;

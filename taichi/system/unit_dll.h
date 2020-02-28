@@ -4,7 +4,7 @@
 *******************************************************************************/
 
 #ifdef WIN32
-#include <windows.h>
+#include "taichi/platform/windows/windows.h"
 #else
 #include <dlfcn.h>
 #endif

@@ -4,12 +4,6 @@
 #include <llvm/Target/TargetMachine.h>
 #include <llvm/Analysis/TargetTransformInfo.h>
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
-#if defined(min)
-#undef min
-#endif
-#if defined(max)
-#undef max
-#endif
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ExecutionEngine/ExecutionEngine.h"
 #include "llvm/ExecutionEngine/JITSymbol.h"

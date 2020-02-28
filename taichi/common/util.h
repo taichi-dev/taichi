@@ -111,7 +111,7 @@ static_assert(__cplusplus >= 201402L, "C++14 required.");
   (strrchr(__FILE__, '\\') ? strrchr(__FILE__, '\\') + 1 : __FILE__)
 #pragma warning(push)
 #pragma warning(disable : 4005)
-#include <windows.h>
+#include "taichi/platform/windows/windows.h"
 #pragma warning(pop)
 #include <intrin.h>
 #define TI_EXPORT __declspec(dllexport)

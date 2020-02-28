@@ -7,11 +7,6 @@
 #include "common.h"
 #include "lang_util.h"
 
-#if defined(TI_PLATFORM_WINDOWS)
-#undef min
-#undef max
-#endif
-
 TLANG_NAMESPACE_BEGIN
 
 struct ProfileRecord {

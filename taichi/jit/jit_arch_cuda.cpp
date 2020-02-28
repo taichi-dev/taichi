@@ -1,9 +1,4 @@
-#if defined(min)
-#undef min
-#endif
-#if defined(max)
-#undef max
-#endif
+
 #include <memory>
 #if defined(TI_WITH_CUDA)
 #include <cuda_runtime_api.h>

@@ -5,7 +5,7 @@
 #if defined(TI_PLATFORM_UNIX)
 #include <sys/mman.h>
 #else
-#include <windows.h>
+#include "taichi/platform/windows/windows.h"
 #endif
 
 TI_NAMESPACE_BEGIN

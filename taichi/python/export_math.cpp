@@ -299,17 +299,14 @@ void export_math(py::module &m) {
       .def("rasterize_scale", &Array2D<Vector4>::rasterize_scale)
       .def("to_ndarray", &array2d_to_ndarray<Array2D<Vector4>, 4>);
 
-  // VectorRegistration<Vector1>::run(m);
   VectorRegistration<Vector2f>::run(m);
   VectorRegistration<Vector3f>::run(m);
   VectorRegistration<Vector4f>::run(m);
 
-  // VectorRegistration<Vector1d>::run(m);
   VectorRegistration<Vector2d>::run(m);
   VectorRegistration<Vector3d>::run(m);
   VectorRegistration<Vector4d>::run(m);
 
-  // VectorRegistration<Vector1i>::run(m);
   VectorRegistration<Vector2i>::run(m);
   VectorRegistration<Vector3i>::run(m);
   VectorRegistration<Vector4i>::run(m);

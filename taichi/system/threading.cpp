@@ -9,7 +9,7 @@
 #include <thread>
 #include <vector>
 #if defined(TI_PLATFORM_WINDOWS)
-#include <windows.h>
+#include "taichi/platform/windows/windows.h"
 #else
 // Mac and Linux
 #include "threading.h"
@@ -18,10 +18,6 @@
 #endif
 
 TI_NAMESPACE_BEGIN
-
-#if defined(min)
-#undef min
-#endif
 
 bool test_threading() {
   auto tp = ThreadPool();

@@ -1,13 +1,13 @@
 // Bindings for the python frontend
 
-#include "../tlang.h"
+#include "taichi/ir/frontend.h"
 #include <pybind11/functional.h>
 #include <pybind11/pybind11.h>
-#include <taichi/extension.h>
+#include <taichi/program/extension.h>
 #include <taichi/common/interface.h>
 #include <taichi/python/export.h>
 #include <taichi/gui/gui.h>
-#include "../svd.h"
+#include "taichi/math/svd.h"
 
 TI_NAMESPACE_BEGIN
 
@@ -138,8 +138,6 @@ void export_lang(py::module &m) {
   py::class_<Index>(m, "Index").def(py::init<int>());
   py::class_<SNode>(m, "SNode")
       .def(py::init<>())
-      .def("clear_data", &SNode::clear_data)
-      .def("clear_data_and_deactivate", &SNode::clear_data_and_deactivate)
       .def_readwrite("parent", &SNode::parent)
       .def_readonly("type", &SNode::type)
       .def("dense",
@@ -464,8 +462,8 @@ void export_lang(py::module &m) {
   m.def("test_printf", [] { printf("test_printf\n"); });
   m.def("test_logging", [] { TI_INFO("test_logging\n"); });
   m.def("trigger_crash", [] { *(int *)(1) = 0; });
-  m.def("get_max_num_indices", [] { return max_num_indices; });
-  m.def("get_max_num_args", [] { return max_num_args; });
+  m.def("get_max_num_indices", [] { return taichi_max_num_indices; });
+  m.def("get_max_num_args", [] { return taichi_max_num_args; });
   m.def("test_threading", test_threading);
   m.def("sifakis_svd_f32", sifakis_svd_export<float32, int32>);
   m.def("sifakis_svd_f64", sifakis_svd_export<float64, int64>);

@@ -27,7 +27,7 @@
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
-#include <windows.h>
+#include "taichi/platform/windows/windows.h"
 #include <process.h> //  _get_pid support
 #include <io.h> // _get_osfhandle and _isatty support
 

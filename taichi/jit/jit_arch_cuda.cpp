@@ -1,9 +1,4 @@
-#if defined(min)
-#undef min
-#endif
-#if defined(max)
-#undef max
-#endif
+
 #include <memory>
 #if defined(TI_WITH_CUDA)
 #include <cuda_runtime_api.h>
@@ -27,10 +22,10 @@
 #include <llvm/ExecutionEngine/Orc/JITTargetMachineBuilder.h>
 #include <taichi/platform/cuda/cuda_utils.h>
 #include <taichi/platform/cuda/cuda_context.h>
-#include <taichi/program.h>
-#include <taichi/context.h>
+#include <taichi/program/program.h>
+#include <taichi/runtime/context.h>
 #include <taichi/system/timer.h>
-#include "../tlang_util.h"
+#include "taichi/lang_util.h"
 #include "jit_session.h"
 
 TLANG_NAMESPACE_BEGIN
@@ -44,7 +39,7 @@ class JITModuleCUDA : public JITModule {
   explicit JITModuleCUDA(CUmodule module) : module(module) {
   }
 
-  virtual void *lookup_function(const std::string &name) {
+  void *lookup_function(const std::string &name) override {
     // auto _ = cuda_context->get_guard();
     cuda_context->make_current();
     CUfunction func;
@@ -53,6 +48,23 @@ class JITModuleCUDA : public JITModule {
     t = Time::get_time() - t;
     TI_TRACE("Kernel {} compilation time: {}ms", name, t * 1000);
     return (void *)func;
+  }
+
+  void call(const std::string &name,
+            const std::vector<void *> &arg_pointers) override {
+    launch(name, 1, 1, arg_pointers);
+  }
+
+  virtual void launch(const std::string &name,
+                      std::size_t grid_dim,
+                      std::size_t block_dim,
+                      const std::vector<void *> &arg_pointers) override {
+    auto func = lookup_function(name);
+    cuda_context->launch(func, name, arg_pointers, grid_dim, block_dim);
+  }
+
+  bool direct_dispatch() const override {
+    return false;
   }
 };
 

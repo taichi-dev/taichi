@@ -16,8 +16,10 @@
 #include <algorithm>
 #include <type_traits>
 #include <cstring>
-#include "../constants.h"
-#include "../arithmetic.h"
+
+// Use relative path here since when compiling runtime bitcode no "-I" is specified to clang
+#include "../inc/constants.h"
+#include "../math/arithmetic.h"
 
 struct Context;
 using assert_failed_type = void (*)(const char *);
@@ -257,7 +259,7 @@ struct PhysicalCoordinates {
 
 STRUCT_FIELD_ARRAY(PhysicalCoordinates, val);
 
-#include "../context.h"
+#include "context.h"
 
 STRUCT_FIELD_ARRAY(Context, args);
 STRUCT_FIELD(Context, runtime);

@@ -1,6 +1,5 @@
 #pragma once
 
-#include <taichi/common.h>
 #include <taichi/common/util.h>
 
 #include <string>

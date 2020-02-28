@@ -2,7 +2,7 @@
 #include <cstdlib>
 #include <string>
 #include <Python.h>
-#include <windows.h>
+#include "taichi/platform/windows/windows.h"
 #include <iostream>
 #include <vector>
 #include <string>

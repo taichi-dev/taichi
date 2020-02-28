@@ -4,12 +4,6 @@
 #include <llvm/Target/TargetMachine.h>
 #include <llvm/Analysis/TargetTransformInfo.h>
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
-#if defined(min)
-#undef min
-#endif
-#if defined(max)
-#undef max
-#endif
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ExecutionEngine/ExecutionEngine.h"
 #include "llvm/ExecutionEngine/JITSymbol.h"
@@ -33,8 +27,8 @@
 #include "llvm/Transforms/Scalar/GVN.h"
 #include "llvm/Transforms/IPO.h"
 #include <memory>
-#include "../tlang_util.h"
-#include "../program.h"
+#include "taichi/lang_util.h"
+#include "taichi/program/program.h"
 #include "jit_session.h"
 
 // Based on
@@ -62,6 +56,10 @@ class JITModuleCPU : public JITModule {
   }
 
   void *lookup_function(const std::string &name) override;
+
+  bool direct_dispatch() const override {
+    return true;
+  }
 };
 
 class JITSessionCPU : public JITSession {

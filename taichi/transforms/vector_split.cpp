@@ -1,6 +1,6 @@
 // Split vectors wider than machine vector width into multiple vectors
 
-#include "../ir.h"
+#include "taichi/ir/ir.h"
 
 TLANG_NAMESPACE_BEGIN
 

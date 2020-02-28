@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-#include <taichi/statements.h>
+#include <taichi/ir/statements.h>
 
 TLANG_NAMESPACE_BEGIN
 

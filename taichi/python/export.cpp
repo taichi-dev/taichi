@@ -5,7 +5,7 @@
 
 #include <taichi/python/export.h>
 #include <taichi/common/interface.h>
-#include <taichi/io/io.h>
+#include <taichi/util/io.h>
 
 TI_NAMESPACE_BEGIN
 

@@ -1,5 +1,5 @@
-#include "../ir.h"
-#include "../scratch_pad.h"
+#include "taichi/ir/ir.h"
+#include "taichi/ir/scratch_pad.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -31,7 +31,7 @@ class AccessAnalysis : public IRVisitor {
 
   void generate_block_indices(SNode *snode, std::vector<int> index, int s) {
     // NOTE: Assuming not vectorized
-    if (s == max_num_indices) {
+    if (s == taichi_max_num_indices) {
       block_indices.push_back(index);
       return;
     }

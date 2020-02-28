@@ -1,14 +1,14 @@
 #include "metal_runtime.h"
 
-#include <taichi/arithmetic.h>
-#include <taichi/constants.h>
+#include <taichi/math/arithmetic.h>
+#include <taichi/inc/constants.h>
 
 #include <algorithm>
 #include <cstring>
 #include <string_view>
 
 #define TI_RUNTIME_HOST
-#include <taichi/context.h>
+#include <taichi/runtime/context.h>
 #undef TI_RUNTIME_HOST
 
 #ifdef TI_PLATFORM_OSX

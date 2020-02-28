@@ -14,7 +14,7 @@
 #else
 #pragma warning(push)
 #pragma warning(disable : 4005)
-#include <windows.h>
+#include "taichi/platform/windows/windows.h"
 #pragma warning(pop)
 #endif
 

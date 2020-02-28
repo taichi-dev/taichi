@@ -1,5 +1,5 @@
-#include "../ir.h"
-#include "../program.h"
+#include "taichi/ir/ir.h"
+#include "taichi/program/program.h"
 
 TLANG_NAMESPACE_BEGIN
 

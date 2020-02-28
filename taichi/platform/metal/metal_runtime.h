@@ -1,9 +1,9 @@
 #pragma once
 
-#include <taichi/memory_pool.h>
-#include <taichi/profiler.h>
-#include <taichi/tlang_util.h>
-#include <taichi/llvm_context.h>
+#include <taichi/system/memory_pool.h>
+#include <taichi/program/profiler.h>
+#include <taichi/lang_util.h>
+#include <taichi/llvm/llvm_context.h>
 
 #include <memory>
 #include <string>

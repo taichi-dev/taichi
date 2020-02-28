@@ -1,6 +1,6 @@
 // Dead Instruction Elimination
 
-#include "../ir.h"
+#include "taichi/ir/ir.h"
 #include <unordered_set>
 
 TLANG_NAMESPACE_BEGIN

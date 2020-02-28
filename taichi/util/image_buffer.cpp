@@ -5,27 +5,20 @@
 
 #include <taichi/math/math.h>
 #include <taichi/math/linalg.h>
-#include <taichi/io/base64.h>
+#include <taichi/util/base64.h>
 
-#if !defined(TI_AMALGAMATED)
-#define TI_IMAGE_IO
-#endif
-
-#if defined(TI_IMAGE_IO)
-#define STB_IMAGE_IMPLEMENTATION
 #define STBI_FAILURE_USERMSG
+#define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image_write.h>
 #define STB_TRUETYPE_IMPLEMENTATION
 #include <stb_truetype.h>
-#endif
 
 TI_NAMESPACE_BEGIN
 
 template <typename T>
 void Array2D<T>::load_image(const std::string &filename, bool linearize) {
-#if !defined(TI_AMALGAMATED)
   int channels;
   FILE *f = fopen(filename.c_str(), "rb");
   assert_info(f != nullptr, "Image file not found: " + filename);
@@ -61,14 +54,10 @@ void Array2D<T>::load_image(const std::string &filename, bool linearize) {
   }
 
   stbi_image_free(data);
-#else
-  TI_NOT_IMPLEMENTED
-#endif
 }
 
 template <typename T>
 void Array2D<T>::write_as_image(const std::string &filename) {
-#if defined(TI_IMAGE_IO)
   int comp = 3;
   std::vector<unsigned char> data(this->res[0] * this->res[1] * comp);
   for (int i = 0; i < this->res[0]; i++) {
@@ -102,17 +91,10 @@ void Array2D<T>::write_as_image(const std::string &filename) {
   }
 
   TI_ASSERT_INFO((bool)write_result, "Cannot write image file");
-#else
-  TI_ERROR(
-      "'write_as_image' is not implemented. Append -DTI_IMAGE_IO to "
-      "compiler options if you are using taichi.h.");
-#endif
 }
 
-#if defined(TI_IMAGE_IO)
 std::map<std::string, stbtt_fontinfo> fonts;
 std::map<std::string, std::vector<uint8>> font_buffers;
-#endif
 
 template <typename T>
 void Array2D<T>::write_text(const std::string &font_fn,
@@ -121,8 +103,6 @@ void Array2D<T>::write_text(const std::string &font_fn,
                             int dx,
                             int dy,
                             T color) {
-#if defined(TI_IMAGE_IO)
-
   std::vector<unsigned char> screen_buffer(
       (size_t)(this->res[0] * this->res[1]), (unsigned char)0);
 
@@ -141,14 +121,7 @@ void Array2D<T>::write_text(const std::string &font_fn,
       trash(fread(&font_buffers[font_fn][0], 1, buffer_size, font_file));
       fclose(font_file);
     } else {
-#if defined(TI_AMALGAMATED)
-      std::string decoded = base64_decode(go_font_str);
-      TI_ASSERT(decoded.size() < buffer_size);
-      std::memcpy(&font_buffers[font_fn][0], &decoded[0],
-                  decoded.size() * sizeof(char));
-#else
       TI_NOT_IMPLEMENTED
-#endif
     }
     stbtt_InitFont(&font, &font_buffers[font_fn][0], 0);
     fonts[font_fn] = font;
@@ -190,12 +163,8 @@ void Array2D<T>::write_text(const std::string &font_fn,
       }
     }
   }
-#else
-  TI_NOT_IMPLEMENTED
-#endif
 }
 
-#if !defined(TI_AMALGAMATED)
 template void Array2D<Vector3>::write_text(const std::string &font_fn,
                                            const std::string &content_,
                                            real size,
@@ -229,7 +198,6 @@ template void Array2D<Vector4f>::write_as_image(const std::string &filename);
 template void Array2D<Vector3d>::write_as_image(const std::string &filename);
 
 template void Array2D<Vector4d>::write_as_image(const std::string &filename);
-#endif
 
 void write_pgm(Array2D<real> img, const std::string &fn) {
   std::ofstream fs(fn, std::ios_base::binary);

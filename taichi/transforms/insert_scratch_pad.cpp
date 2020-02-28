@@ -1,5 +1,5 @@
 #include "taichi/ir/ir.h"
-#include "../scratch_pad.h"
+#include "taichi/ir/scratch_pad.h"
 
 TLANG_NAMESPACE_BEGIN
 

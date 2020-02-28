@@ -1,7 +1,7 @@
 // The CUDA backend
 
 #include "codegen_cuda.h"
-#include "taichi/scratch_pad.h"
+#include "taichi/ir/scratch_pad.h"
 
 TLANG_NAMESPACE_BEGIN
 

@@ -478,6 +478,12 @@ if 1:
     assert args.kwarg is None
     import taichi as ti
     if self.is_kernel:
+      for decorator in node.decorator_list:
+        if (isinstance(decorator, ast.Attribute)
+            and isinstance(decorator.value, ast.Name)
+            and decorator.value.id == 'ti'
+            and decorator.attr == 'func'):
+          raise TaichiSyntaxError("Function definition not allowed in 'ti.kernel'.")
       # Transform as kernel
       arg_decls = []
       for i, arg in enumerate(args.args):
@@ -506,6 +512,12 @@ if 1:
       # remove original args
       node.args.args = []
     else:
+      for decorator in node.decorator_list:
+        if (isinstance(decorator, ast.Attribute)
+            and isinstance(decorator.value, ast.Name)
+            and decorator.value.id == 'ti'
+            and decorator.attr == 'func'):
+          raise TaichiSyntaxError("Function definition not allowed in 'ti.func'.")
       # Transform as func (all parameters passed by value)
       arg_decls = []
       for i, arg in enumerate(args.args):
@@ -601,3 +613,8 @@ if 1:
     new_node.value.args[0].value.args[0] = node.test
     new_node.value.args[1] = self.parse_expr("'{}'".format(msg.strip()))
     return new_node
+
+  def visit_Return(self, node):
+    if self.is_kernel:
+      raise TaichiSyntaxError('"return" not allowed in \'ti.kernel\'. Please walk around by storing the return result to a global variable.')
+    return node

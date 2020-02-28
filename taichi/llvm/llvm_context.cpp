@@ -240,6 +240,8 @@ void remove_useless_libdevice_functions(llvm::Module *module) {
   module->getFunction("__internal_lgamma_pos")->eraseFromParent();
 }
 
+// Note: runtime_module = init_module < struct_module
+
 std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
   TI_AUTO_PROF
   if (!runtime_module) {

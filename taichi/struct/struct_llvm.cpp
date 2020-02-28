@@ -203,12 +203,16 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
 
   tlctx->set_struct_module(module);
 
-  // Do not compile the GPU struct module alone since
-  // it's useless unless used with kernels
-  if (arch_is_cpu(arch))
-    // TODO: move this to TaichiLLVMContext
-    tlctx->runtime_jit_module = tlctx->add_module(std::move(module));
-
+  if (arch == Arch::cuda) {
+    for (auto &f : *module) {
+      if (!f.isDeclaration())
+        f.setLinkage(
+            Function::PrivateLinkage);  // to avoid duplicated symbols and to
+                                        // remove external symbol dependencies
+                                        // such as std::sin
+    }
+  }
+  tlctx->runtime_jit_module = tlctx->add_module(std::move(module));
   tlctx->snode_attr = snode_attr;
 }
 

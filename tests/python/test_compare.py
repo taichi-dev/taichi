@@ -25,7 +25,6 @@ def test_compare_basics():
     a[9] = c >= b
     a[10] = c == b
     a[11] = c != b
-    # a[12] = b is not c  # not supported
 
   func()
   assert a[0]
@@ -118,3 +117,51 @@ def test_chain_compare():
   func()
   assert a[0]
   assert not a[1]
+
+
+@ti.must_throw(ti.TaichiSyntaxError)
+def test_is():
+  b = ti.var(ti.i32, shape=())
+  c = ti.var(ti.i32, shape=())
+
+  @ti.kernel
+  def func():
+    a = b is c
+
+  func()
+
+
+@ti.must_throw(ti.TaichiSyntaxError)
+def test_is_not():
+  b = ti.var(ti.i32, shape=())
+  c = ti.var(ti.i32, shape=())
+
+  @ti.kernel
+  def func():
+    a = b is not c
+
+  func()
+
+
+@ti.must_throw(ti.TaichiSyntaxError)
+def test_in():
+  b = ti.var(ti.i32, shape=())
+  c = ti.var(ti.i32, shape=())
+
+  @ti.kernel
+  def func():
+    a = b in c
+
+  func()
+
+
+@ti.must_throw(ti.TaichiSyntaxError)
+def test_not_in():
+  b = ti.var(ti.i32, shape=())
+  c = ti.var(ti.i32, shape=())
+
+  @ti.kernel
+  def func():
+    a = b not in c
+
+  func()

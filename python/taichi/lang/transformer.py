@@ -217,7 +217,6 @@ if 1:
       list_stmt[i] = self.visit(l)
 
   def visit_Return(self, node):
-    #ret = ast.Assign(targets=[ast.Name(id='__retval', ctx=ast.Store())], value=ast.Call(func=ast.Attribute(value=ast.Name(id='ti', ctx=ast.Load()), attr='expr_init', ctx=ast.Load()), args=[node.value], keywords=[]), type_comment=None)
     ret = self.parse_stmt('__retval.assign(0)')
     ret.value.args[0] = node.value
     return ret

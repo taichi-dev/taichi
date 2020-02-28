@@ -30,7 +30,7 @@
 #include <taichi/program.h>
 #include <taichi/context.h>
 #include <taichi/system/timer.h>
-#include "../tlang_util.h"
+#include "taichi/lang_util.h"
 #include "jit_session.h"
 
 TLANG_NAMESPACE_BEGIN

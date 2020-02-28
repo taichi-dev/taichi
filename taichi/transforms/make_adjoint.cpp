@@ -1,6 +1,6 @@
 #include <typeinfo>
 #include "../ir.h"
-#include <taichi/tlang.h>
+#include <taichi/frontend.h>
 
 TLANG_NAMESPACE_BEGIN
 

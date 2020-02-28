@@ -1,6 +1,6 @@
 // Definitions of utility functions and enums
 
-#include "tlang_util.h"
+#include "lang_util.h"
 #include <taichi/system/timer.h>
 #include <taichi/math/linalg.h>
 
@@ -63,7 +63,7 @@ real measure_cpe(std::function<void()> target,
 
 int default_simd_width(Arch arch) {
   if (arch == Arch::x64) {
-    return default_simd_width_x86_64;
+    return 8;
   } else if (arch == Arch::cuda) {
     return 32;
   } else {

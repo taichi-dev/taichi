@@ -6,7 +6,7 @@
 #include <unordered_map>
 #include <taichi/common/util.h>
 #include <taichi/common/bit.h>
-#include "tlang_util.h"
+#include "lang_util.h"
 #include "snode.h"
 #include "expr.h"
 #include "llvm_fwd.h"

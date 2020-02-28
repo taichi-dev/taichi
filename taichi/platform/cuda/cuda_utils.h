@@ -1,7 +1,7 @@
 #pragma once
 #if defined(TI_WITH_CUDA)
 
-#include <taichi/tlang_util.h>
+#include <taichi/lang_util.h>
 #include <cuda.h>
 #include <cuda_runtime_api.h>
 #include <driver_types.h>

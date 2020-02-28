@@ -3,7 +3,7 @@
 #if defined(TI_WITH_CUDA)
 #include "taichi/platform/cuda/cuda_utils.h"
 #endif
-#include "taichi/tlang_util.h"
+#include "taichi/lang_util.h"
 #include <taichi/system/unified_allocator.h>
 #include <taichi/system/virtual_memory.h>
 #include <taichi/system/timer.h>

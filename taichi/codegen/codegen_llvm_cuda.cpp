@@ -2,7 +2,7 @@
 #include "taichi/io/io.h"
 #include "taichi/ir.h"
 #include "taichi/program.h"
-#include "taichi/tlang_util.h"
+#include "taichi/lang_util.h"
 #include "taichi/codegen/codegen_cuda.h"
 #include "taichi/codegen/codegen_llvm.h"
 #include "taichi/platform/cuda/cuda_context.h"

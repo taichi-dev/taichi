@@ -1,6 +1,6 @@
 #if defined(TI_WITH_CUDA)
 #define TI_RUNTIME_HOST
-#include <taichi/tlang_util.h>
+#include <taichi/lang_util.h>
 #include <taichi/context.h>
 #include <taichi/program.h>
 #include "cuda_context.h"

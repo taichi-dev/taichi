@@ -33,7 +33,7 @@
 #include "llvm/Transforms/Scalar/GVN.h"
 #include "llvm/Transforms/IPO.h"
 #include <memory>
-#include "../tlang_util.h"
+#include "taichi/lang_util.h"
 #include "../program.h"
 #include "jit_session.h"
 

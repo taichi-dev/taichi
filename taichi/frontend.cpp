@@ -1,6 +1,6 @@
 // Frontend constructs
 
-#include "tlang.h"
+#include "frontend.h"
 #include "program.h"
 
 TLANG_NAMESPACE_BEGIN

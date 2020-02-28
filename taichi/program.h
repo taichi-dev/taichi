@@ -7,7 +7,7 @@
 #include "kernel.h"
 #include "snode.h"
 #include "llvm_context.h"
-#include "tlang_util.h"
+#include "lang_util.h"
 #include <atomic>
 #include <taichi/context.h>
 #include <taichi/profiler.h>

@@ -7,7 +7,7 @@
 
 #include "taichi/ir.h"
 #include "taichi/program.h"
-#include "taichi/tlang_util.h"
+#include "taichi/lang_util.h"
 
 #include "taichi/llvm_codegen_utils.h"
 

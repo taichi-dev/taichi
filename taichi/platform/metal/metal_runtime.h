@@ -2,7 +2,7 @@
 
 #include <taichi/system/memory_pool.h>
 #include <taichi/profiler.h>
-#include <taichi/tlang_util.h>
+#include <taichi/lang_util.h>
 #include <taichi/llvm_context.h>
 
 #include <memory>

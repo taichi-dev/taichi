@@ -1,6 +1,6 @@
 #include <taichi/common/util.h>
 #include <taichi/io/io.h>
-#include "taichi/tlang_util.h"
+#include "taichi/lang_util.h"
 #include "taichi/program.h"
 #include "taichi/ir.h"
 #include "codegen_cpu.h"

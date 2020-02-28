@@ -3,7 +3,7 @@
 #include "ir.h"
 #include <thread>
 #include <numeric>
-#include "tlang.h"
+#include "frontend.h"
 
 TLANG_NAMESPACE_BEGIN
 

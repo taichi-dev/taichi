@@ -5,7 +5,7 @@
 #include <taichi/platform/metal/metal_data_types.h>
 #include <taichi/platform/metal/metal_kernel_util.h>
 #include <taichi/platform/metal/metal_runtime.h>
-#include <taichi/tlang_util.h>
+#include <taichi/lang_util.h>
 
 #include <string>
 #include <unordered_map>

@@ -9,8 +9,6 @@
 
 TLANG_NAMESPACE_BEGIN
 
-constexpr int default_simd_width_x86_64 = 8;
-
 int default_simd_width(Arch arch);
 
 real get_cpu_frequency();

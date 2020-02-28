@@ -1,6 +1,6 @@
 #include "snode.h"
 #include "ir.h"
-#include "tlang.h"
+#include "frontend.h"
 // #include "math.h"
 
 TLANG_NAMESPACE_BEGIN

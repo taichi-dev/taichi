@@ -39,7 +39,7 @@ class JITModuleCUDA : public JITModule {
   explicit JITModuleCUDA(CUmodule module) : module(module) {
   }
 
-  virtual void *lookup_function(const std::string &name) {
+  void *lookup_function(const std::string &name) override {
     // auto _ = cuda_context->get_guard();
     cuda_context->make_current();
     CUfunction func;
@@ -48,6 +48,25 @@ class JITModuleCUDA : public JITModule {
     t = Time::get_time() - t;
     TI_TRACE("Kernel {} compilation time: {}ms", name, t * 1000);
     return (void *)func;
+  }
+
+  void call(const std::string &name,
+            const std::vector<void *> &arg_pointers) override {
+    launch(name, 1, 1, arg_pointers);
+  }
+
+  virtual void launch(const std::string &name,
+                      std::size_t grid_dim,
+                      std::size_t block_dim,
+                      const std::vector<void *> &arg_pointers) {
+    auto func = lookup_function(name);
+    // TODO: restore CUDA profiler
+    cuda_context->launch(func, name, nullptr, arg_pointers, grid_dim,
+                         block_dim);
+  }
+
+  bool direct_dispatch() const override {
+    return false;
   }
 };
 

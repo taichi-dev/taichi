@@ -13,6 +13,7 @@ class CUDAContext {
   int dev_count;
   void *context_buffer;
   std::string mcpu;
+  ProfilerBase *profiler;
 
  public:
   std::mutex lock;
@@ -26,9 +27,13 @@ class CUDAContext {
   void launch(void *func,
               const std::string &task_name,
               ProfilerBase *profiler,
-              void *context_ptr,
+              std::vector<void *> arg_pointers,
               unsigned gridDim,
               unsigned blockDim);
+
+  void set_profiler(ProfilerBase *profiler) {
+    this->profiler = profiler;
+  }
 
   std::string get_mcpu() const {
     return mcpu;

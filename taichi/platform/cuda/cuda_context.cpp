@@ -7,7 +7,7 @@
 
 TLANG_NAMESPACE_BEGIN
 
-CUDAContext::CUDAContext() {
+CUDAContext::CUDAContext() : profiler(nullptr) {
   // CUDA initialization
   dev_count = 0;
   check_cuda_error(cuInit(0));
@@ -34,14 +34,12 @@ CUDAContext::CUDAContext() {
 void CUDAContext::launch(void *func,
                          const std::string &task_name,
                          ProfilerBase *profiler,
-                         void *context_ptr,
+                         std::vector<void *> arg_pointers,
                          unsigned gridDim,
                          unsigned blockDim) {
   // auto _ = cuda_context->get_guard();
   make_current();
   // Kernel parameters
-
-  void *KernelParams[] = {context_ptr};
 
   if (profiler) {
     profiler->start(task_name);
@@ -50,7 +48,8 @@ void CUDAContext::launch(void *func,
   if (gridDim > 0) {
     std::lock_guard<std::mutex> _(lock);
     check_cuda_error(cuLaunchKernel((CUfunction)func, gridDim, 1, 1, blockDim,
-                                    1, 1, 0, nullptr, KernelParams, nullptr));
+                                    1, 1, 0, nullptr, arg_pointers.data(),
+                                    nullptr));
   }
   if (profiler) {
     profiler->stop();

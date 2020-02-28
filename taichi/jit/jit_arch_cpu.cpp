@@ -56,6 +56,10 @@ class JITModuleCPU : public JITModule {
   }
 
   void *lookup_function(const std::string &name) override;
+
+  bool direct_dispatch() const override {
+    return true;
+  }
 };
 
 class JITSessionCPU : public JITSession {

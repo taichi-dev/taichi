@@ -77,10 +77,10 @@ Program::Program(Arch arch) {
   current_program = this;
   config = default_compile_config;
   config.arch = arch;
-  if (config.use_llvm) {
-    llvm_context_host = std::make_unique<TaichiLLVMContext>(Arch::x64);
-    profiler = make_profiler(arch);
-  }
+
+  llvm_context_host = std::make_unique<TaichiLLVMContext>(Arch::x64);
+  profiler = make_profiler(arch);
+
   current_kernel = nullptr;
   sync = true;
   llvm_runtime = nullptr;

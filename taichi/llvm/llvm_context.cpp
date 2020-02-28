@@ -381,9 +381,18 @@ void TaichiLLVMContext::set_struct_module(
   if (!arch_is_cpu(arch)) {
     for (auto &f : *struct_module) {
       if (!f.isDeclaration())
-        // set declaration-only functions as internal linking to avoid duplicated
-        // symbols and to remove external symbol dependencies such as std::sin
+        // set declaration-only functions as internal linking to avoid
+        // duplicated symbols and to remove external symbol dependencies such as
+        // std::sin
         f.setLinkage(llvm::Function::PrivateLinkage);
+    }
+  }
+  if (arch == Arch::cuda) {
+    for (auto &f : *struct_module) {
+      std::string func_name = f.getName();
+      if (starts_with(func_name, "Runtime_")) {
+        mark_function_as_cuda_kernel(&f);
+      }
     }
   }
 }

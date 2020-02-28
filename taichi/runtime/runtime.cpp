@@ -17,7 +17,8 @@
 #include <type_traits>
 #include <cstring>
 
-// Use relative path here since when compiling runtime bitcode no "-I" is specified to clang
+// Use relative path here since when compiling runtime bitcode no "-I" is
+// specified to clang
 #include "../inc/constants.h"
 #include "../math/arithmetic.h"
 
@@ -586,7 +587,7 @@ void Runtime_profiler_stop(Runtime *runtime) {
   runtime->profiler_stop(runtime->profiler);
 }
 
-Ptr Runtime_get_temporary_pointer(Runtime *runtime, u64 offset) {
+Ptr get_temporary_pointer(Runtime *runtime, u64 offset) {
   return runtime->temporaries + offset;
 }
 
@@ -701,9 +702,9 @@ void Runtime_initialize_thread_pool(Runtime *runtime,
   runtime->parallel_for = (parallel_for_type)parallel_for;
 }
 
-void NodeAllocator_initialize(Runtime *runtime,
-                              int snode_id,
-                              std::size_t node_size) {
+void Runtime_NodeAllocator_initialize(Runtime *runtime,
+                                      int snode_id,
+                                      std::size_t node_size) {
   runtime->node_allocators[snode_id] =
       runtime->create<NodeManager>(runtime, node_size, 1024 * 16);
 }

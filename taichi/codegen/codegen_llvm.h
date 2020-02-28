@@ -1399,7 +1399,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
 
   void visit(GlobalTemporaryStmt *stmt) override {
     auto runtime = get_runtime();
-    auto buffer = call("Runtime_get_temporary_pointer", runtime,
+    auto buffer = call("get_temporary_pointer", runtime,
                        tlctx->get_constant((int64)stmt->offset));
 
     TI_ASSERT(stmt->width() == 1);

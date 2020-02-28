@@ -160,7 +160,7 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
       TI_TRACE("Initializing allocator for snode {} (node size {})",
                snodes[i]->id, node_size);
       auto rt = llvm_runtime;
-      runtime->call<void *, int, std::size_t>("NodeAllocator_initialize", rt, i,
+      runtime->call<void *, int, std::size_t>("Runtime_NodeAllocator_initialize", rt, i,
                                               node_size);
       TI_TRACE("Allocating ambient element for snode {} (node size {})",
                snodes[i]->id, node_size);

@@ -474,6 +474,34 @@ JITModule *TaichiLLVMContext::add_module(std::unique_ptr<llvm::Module> module) {
   return jit->add_module(std::move(module));
 }
 
+void TaichiLLVMContext::mark_function_as_cuda_kernel(llvm::Function *func) {
+  /*******************************************************************
+  Example annotation from llvm PTX doc:
+
+  define void @kernel(float addrspace(1)* %A,
+                      float addrspace(1)* %B,
+                      float addrspace(1)* %C);
+
+  !nvvm.annotations = !{!0}
+  !0 = !{void (float addrspace(1)*,
+               float addrspace(1)*,
+               float addrspace(1)*)* @kernel, !"kernel", i32 1}
+  *******************************************************************/
+
+  // Mark kernel function as a CUDA __global__ function
+  // Add the nvvm annotation that it is considered a kernel function.
+
+  llvm::Metadata *md_args[] = {llvm::ValueAsMetadata::get(func),
+                               MDString::get(*ctx, "kernel"),
+                               llvm::ValueAsMetadata::get(get_constant(1))};
+
+  MDNode *md_node = MDNode::get(*ctx, md_args);
+
+  func->getParent()
+      ->getOrInsertNamedMetadata("nvvm.annotations")
+      ->addOperand(md_node);
+}
+
 template llvm::Value *TaichiLLVMContext::get_constant(float32 t);
 template llvm::Value *TaichiLLVMContext::get_constant(float64 t);
 

@@ -77,6 +77,8 @@ class TaichiLLVMContext {
 
   static int num_instructions(llvm::Function *func);
 
+  void mark_function_as_cuda_kernel(llvm::Function *func);
+
   virtual ~TaichiLLVMContext();
 };
 

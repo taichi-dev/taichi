@@ -4,7 +4,7 @@
 
 #include <atomic>
 #include <unordered_map>
-#include <taichi/util.h>
+#include <taichi/common/util.h>
 #include <taichi/common/bit.h>
 #include "tlang_util.h"
 #include "snode.h"

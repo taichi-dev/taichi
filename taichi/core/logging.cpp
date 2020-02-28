@@ -3,7 +3,7 @@
     The use of this software is governed by the LICENSE file.
 *******************************************************************************/
 
-#include <taichi/util.h>
+#include <taichi/common/util.h>
 #include <taichi/system/threading.h>
 #include <csignal>
 #include <spdlog/spdlog.h>

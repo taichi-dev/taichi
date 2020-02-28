@@ -1,3 +1,4 @@
+#include <taichi/common/task.h>
 #include <taichi/ir.h>
 
 TLANG_NAMESPACE_BEGIN

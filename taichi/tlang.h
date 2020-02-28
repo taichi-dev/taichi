@@ -6,6 +6,7 @@
 #include <cuda_runtime.h>
 #endif
 #include <taichi/common/util.h>
+#include <taichi/common/dict.h>
 #include <taichi/io/io.h>
 
 namespace taichi {

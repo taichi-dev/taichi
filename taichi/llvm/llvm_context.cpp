@@ -378,6 +378,14 @@ void TaichiLLVMContext::set_struct_module(
     TI_ERROR("module broken");
   }
   struct_module = llvm::CloneModule(*module);
+  if (!arch_is_cpu(arch)) {
+    for (auto &f : *struct_module) {
+      if (!f.isDeclaration())
+        // set declaration-only functions as internal linking to avoid duplicated
+        // symbols and to remove external symbol dependencies such as std::sin
+        f.setLinkage(llvm::Function::PrivateLinkage);
+    }
+  }
 }
 
 template <typename T>

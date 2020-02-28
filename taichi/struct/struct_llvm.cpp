@@ -186,7 +186,6 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
   for (auto &n : snodes_rev)
     generate_types(*n);
 
-  // TODO: general allocators
   generate_leaf_accessors(root);
 
   if (prog->config.print_struct_llvm_ir) {
@@ -203,16 +202,7 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
 
   tlctx->set_struct_module(module);
 
-  if (arch == Arch::cuda) {
-    for (auto &f : *module) {
-      if (!f.isDeclaration())
-        f.setLinkage(
-            Function::PrivateLinkage);  // to avoid duplicated symbols and to
-                                        // remove external symbol dependencies
-                                        // such as std::sin
-    }
-  }
-  tlctx->runtime_jit_module = tlctx->add_module(std::move(module));
+  tlctx->runtime_jit_module = tlctx->add_module(tlctx->clone_struct_module());
   tlctx->snode_attr = snode_attr;
 }
 

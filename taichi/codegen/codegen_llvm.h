@@ -102,14 +102,6 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
 
     context_ty = get_runtime_type("Context");
     physical_coordinate_ty = get_runtime_type("PhysicalCoordinates");
-    module->setDataLayout(tlctx->get_data_layout());
-
-    using namespace llvm;
-
-    for (auto &f : *module) {
-      if (!f.isDeclaration())
-        f.setLinkage(Function::PrivateLinkage);  // to avoid duplicated symbols
-    }
 
     std::string grad_suffix;
     if (kernel->grad) {

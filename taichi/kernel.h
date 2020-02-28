@@ -1,8 +1,8 @@
 #pragma once
 
 #include "lang_util.h"
-#include "snode.h"
-#include "ir.h"
+#include "taichi/ir/snode.h"
+#include "taichi/ir/ir.h"
 
 TLANG_NAMESPACE_BEGIN
 

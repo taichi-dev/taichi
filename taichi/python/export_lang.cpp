@@ -1,6 +1,6 @@
 // Bindings for the python frontend
 
-#include "taichi/frontend.h"
+#include "taichi/ir/frontend.h"
 #include <pybind11/functional.h>
 #include <pybind11/pybind11.h>
 #include <taichi/extension.h>

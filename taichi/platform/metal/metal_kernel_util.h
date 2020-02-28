@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-#include <taichi/statements.h>
+#include <taichi/ir/statements.h>
 #include "metal_data_types.h"
 
 // Data structures defined in this file may overlap with some of the Taichi data

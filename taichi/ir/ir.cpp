@@ -20,7 +20,8 @@ class StatementTypeNameVisitor : public IRVisitor {
   void visit(x *stmt) override { \
     type_name = #x;              \
   }
-#include "inc/statements.inc.h"
+#include "taichi/inc/statements.inc.h"
+
 #undef PER_STATEMENT
 };
 

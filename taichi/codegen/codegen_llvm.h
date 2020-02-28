@@ -5,7 +5,7 @@
 #include <taichi/common/util.h>
 #include <taichi/util/io.h>
 
-#include "taichi/ir.h"
+#include "taichi/ir/ir.h"
 #include "taichi/program.h"
 #include "taichi/lang_util.h"
 

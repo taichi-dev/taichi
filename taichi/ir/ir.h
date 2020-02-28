@@ -6,7 +6,7 @@
 #include <unordered_map>
 #include <taichi/common/util.h>
 #include <taichi/common/bit.h>
-#include "lang_util.h"
+#include "taichi/lang_util.h"
 #include "snode.h"
 #include "expr.h"
 #include "taichi/llvm/llvm_fwd.h"
@@ -69,7 +69,7 @@ class ExprGroup;
 class ScratchPads;
 
 #define PER_STATEMENT(x) class x;
-#include "inc/statements.inc.h"
+#include "taichi/inc/statements.inc.h"
 #undef PER_STATEMENT
 
 // IR passes
@@ -335,7 +335,8 @@ class IRVisitor {
 
   DEFINE_VISIT(Block);
 #define PER_STATEMENT(x) DEFINE_VISIT(x)
-#include "inc/statements.inc.h"
+#include "taichi/inc/statements.inc.h"
+
 #undef PER_STATEMENT
 };
 

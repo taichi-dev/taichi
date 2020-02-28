@@ -8,7 +8,7 @@
 
 #include "taichi/lang_util.h"
 #include "llvm_fwd.h"
-#include "taichi/snode.h"
+#include "taichi/ir/snode.h"
 #include "taichi/jit/jit_session.h"
 
 TLANG_NAMESPACE_BEGIN

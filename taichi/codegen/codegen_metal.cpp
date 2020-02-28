@@ -1,7 +1,7 @@
 #include "codegen_metal.h"
 
 #include <string>
-#include <taichi/ir.h>
+#include <taichi/ir/ir.h>
 
 TLANG_NAMESPACE_BEGIN
 namespace metal {

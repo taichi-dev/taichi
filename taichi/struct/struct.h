@@ -1,7 +1,7 @@
 // Codegen for the hierarchical data structure
 #pragma once
 
-#include "taichi/snode.h"
+#include "taichi/ir/snode.h"
 #include "taichi/program.h"
 
 TLANG_NAMESPACE_BEGIN

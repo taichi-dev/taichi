@@ -2,8 +2,8 @@
 
 #pragma once
 #include "taichi/tlang_util.h"
-#include "taichi/snode.h"
-#include "taichi/ir.h"
+#include "taichi/ir/snode.h"
+#include "taichi/ir/ir.h"
 #include "taichi/program.h"
 #if defined(TI_PLATFORM_UNIX)
 #include <dlfcn.h>

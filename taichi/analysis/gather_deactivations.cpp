@@ -1,4 +1,4 @@
-#include "../ir.h"
+#include "taichi/ir/ir.h"
 #include <set>
 
 TLANG_NAMESPACE_BEGIN

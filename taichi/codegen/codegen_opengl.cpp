@@ -4,7 +4,7 @@
 #include <taichi/platform/opengl/opengl_data_types.h>
 
 #include <string>
-#include <taichi/ir.h>
+#include <taichi/ir/ir.h>
 
 TLANG_NAMESPACE_BEGIN
 namespace opengl {

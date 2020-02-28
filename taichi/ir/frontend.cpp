@@ -1,7 +1,7 @@
 // Frontend constructs
 
 #include "frontend.h"
-#include "program.h"
+#include "taichi/program.h"
 
 TLANG_NAMESPACE_BEGIN
 

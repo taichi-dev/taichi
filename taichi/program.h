@@ -3,9 +3,9 @@
 #pragma once
 
 #define TI_RUNTIME_HOST
-#include "ir.h"
+#include "taichi/ir/ir.h"
 #include "kernel.h"
-#include "snode.h"
+#include "taichi/ir/snode.h"
 #include "taichi/llvm/llvm_context.h"
 #include "lang_util.h"
 #include <atomic>

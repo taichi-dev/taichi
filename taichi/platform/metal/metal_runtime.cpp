@@ -1,6 +1,6 @@
 #include "metal_runtime.h"
 
-#include <taichi/arithmetic.h>
+#include <taichi/math/arithmetic.h>
 #include <taichi/constants.h>
 
 #include <algorithm>

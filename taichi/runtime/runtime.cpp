@@ -17,7 +17,7 @@
 #include <type_traits>
 #include <cstring>
 #include "../constants.h"
-#include "../arithmetic.h"
+#include "taichi/math/arithmetic.h"
 
 struct Context;
 using assert_failed_type = void (*)(const char *);

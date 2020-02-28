@@ -58,7 +58,7 @@ class JITModuleCUDA : public JITModule {
   virtual void launch(const std::string &name,
                       std::size_t grid_dim,
                       std::size_t block_dim,
-                      const std::vector<void *> &arg_pointers) {
+                      const std::vector<void *> &arg_pointers) override {
     auto func = lookup_function(name);
     cuda_context->launch(func, name, arg_pointers, grid_dim, block_dim);
   }

@@ -1,6 +1,5 @@
 #pragma once
 
-#include <taichi/common.h>
 #include <taichi/constants.h>
 #include <taichi/lang_util.h>
 

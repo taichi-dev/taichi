@@ -86,7 +86,6 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     for (auto &task : offloaded_local) {
       task.cuda_func = cuda_module->lookup_function(task.name);
     }
-    auto prog = this->prog;
     return [offloaded_local, cuda_module](Context context) {
       for (auto task : offloaded_local) {
         TI_DEBUG("Launching kernel {}<<<{}, {}>>>", task.name, task.grid_dim,

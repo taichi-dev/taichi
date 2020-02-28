@@ -1,8 +1,7 @@
 #pragma once
 
-#include <taichi/common.h>
-#include <taichi/constants.h>
-#include <taichi/lang_util.h>
+#include "taichi/constants.h"
+#include "taichi/lang_util.h"
 
 #include <string>
 #include <unordered_map>

@@ -106,7 +106,7 @@ void StructCompilerLLVM::generate_refine_coordinates(SNode *snode) {
   auto outp_coords = args[1];
   auto l = args[2];
 
-  for (int i = 0; i < max_num_indices; i++) {
+  for (int i = 0; i < taichi_max_num_indices; i++) {
     auto addition = tlctx->get_constant(0);
     if (snode->extractors[i].num_bits) {
       auto mask = ((1 << snode->extractors[i].num_bits) - 1);
@@ -194,7 +194,7 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
     module->print(errs(), nullptr);
   }
 
-  TI_ASSERT((int)snodes.size() <= max_num_snodes);
+  TI_ASSERT((int)snodes.size() <= taichi_max_num_snodes);
 
   root_size =
       tlctx->get_data_layout().getTypeAllocSize(snode_attr[root].llvm_type);

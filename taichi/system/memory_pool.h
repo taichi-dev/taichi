@@ -1,17 +1,18 @@
 #pragma once
-#include <taichi/common/util.h>
-#include "taichi/common.h"
-#include <mutex>
-#include <vector>
-#include <memory>
-#include <thread>
-#include "unified_allocator.h"
+#include "taichi/common/util.h"
+#include "taichi/constants.h"
+#include "taichi/system/unified_allocator.h"
 #define TI_RUNTIME_HOST
 #include "taichi/context.h"
 #include "taichi/profiler.h"
 #ifdef TI_WITH_CUDA
 #include <cuda_runtime.h>
 #endif
+
+#include <mutex>
+#include <vector>
+#include <memory>
+#include <thread>
 
 TLANG_NAMESPACE_BEGIN
 

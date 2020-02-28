@@ -1,8 +1,10 @@
 #pragma once
+
 #include "taichi/lang_util.h"
+#include "taichi/common/bit.h"
 #include "taichi/llvm/llvm_fwd.h"
-#include "expr.h"
-#include <taichi/common/bit.h>
+#include "taichi/ir/expr.h"
+#include "taichi/constants.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -41,9 +43,9 @@ class Index {
     value = 0;
   }
   Index(int value) : value(value) {
-    TI_ERROR_UNLESS(0 <= value && value < max_num_indices,
+    TI_ERROR_UNLESS(0 <= value && value < taichi_max_num_indices,
                     "Too many dimensions. The maximum dimensionality is {}",
-                    max_num_indices);
+                    taichi_max_num_indices);
   }
 };
 
@@ -53,10 +55,10 @@ class SNode {
   // Children
   std::vector<std::shared_ptr<SNode>> ch;
 
-  IndexExtractor extractors[max_num_indices];
-  int taken_bits[max_num_indices]{};  // counting from the tail
+  IndexExtractor extractors[taichi_max_num_indices];
+  int taken_bits[taichi_max_num_indices]{};  // counting from the tail
   int num_active_indices{};
-  int physical_index_position[max_num_indices]{};
+  int physical_index_position[taichi_max_num_indices]{};
   // physical indices are (ti.i, ti.j, ti.k, ti.l, ...)
   // physical_index_position[i] =
   // which physical index does the i-th virtual index (the one exposed to
@@ -86,12 +88,6 @@ class SNode {
     return Tlang::data_type_name(dt);
   }
 
-  using AccessorFunction = std::function<void *(void *, int, int, int, int)>;
-  using StatFunction = std::function<AllocatorStat()>;
-  using ClearFunction = std::function<void(int)>;
-  AccessorFunction access_func;
-  StatFunction stat_func;
-  ClearFunction clear_func;
   void *clear_kernel{}, *clear_and_deactivate_kernel{};
 
   std::string node_type_name;
@@ -223,12 +219,6 @@ class SNode {
     return *this;
   }
 
-  void *evaluate(void *ds, int i, int j, int k, int l) {
-    TI_ASSERT(access_func);
-    TI_ASSERT(max_num_indices == 4);
-    return access_func(ds, i, j, k, l);
-  }
-
   // for float and double
   void write_float(const std::vector<int> &I, float64);
   float64 read_float(const std::vector<int> &I);
@@ -238,11 +228,6 @@ class SNode {
   int64 read_int(const std::vector<int> &I);
   uint64 read_uint(const std::vector<int> &I);
 
-  TI_FORCE_INLINE AllocatorStat stat() {
-    TI_ASSERT(stat_func);
-    return stat_func();
-  }
-
   int child_id(SNode *c) {
     for (int i = 0; i < (int)ch.size(); i++) {
       if (ch[i].get() == c) {
@@ -251,10 +236,6 @@ class SNode {
     }
     return -1;
   }
-
-  void clear_data();
-
-  void clear_data_and_deactivate();
 
   bool has_null() const {
     return type == SNodeType::pointer || type == SNodeType::hash;

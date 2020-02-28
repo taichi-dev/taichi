@@ -1,11 +1,13 @@
 #pragma once
+
+#include "taichi/arch.h"
+#include "taichi/lang_util.h"
+
 #include <algorithm>
 #include <map>
 #include <string>
 #include <vector>
 #include <memory>
-#include "common.h"
-#include "lang_util.h"
 
 TLANG_NAMESPACE_BEGIN
 

@@ -1,6 +1,5 @@
 #pragma once
 
-#include <taichi/common.h>
 #include <taichi/constants.h>
 #include <taichi/platform/metal/metal_data_types.h>
 #include <taichi/platform/metal/metal_kernel_util.h>

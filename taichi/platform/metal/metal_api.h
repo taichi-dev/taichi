@@ -3,9 +3,8 @@
 // Reference implementation:
 // https://github.com/halide/Halide/blob/master/src/runtime/metal.cpp
 
-#include <taichi/common.h>
-#include <taichi/common/util.h>
-#include <taichi/platform/mac/objc_api.h>
+#include "taichi/lang_util.h"
+#include "taichi/platform/mac/objc_api.h"
 
 #include <string>
 

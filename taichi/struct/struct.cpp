@@ -23,10 +23,10 @@ void StructCompiler::infer_snode_properties(SNode &snode) {
   for (int ch_id = 0; ch_id < (int)snode.ch.size(); ch_id++) {
     auto &ch = snode.ch[ch_id];
     ch->parent = &snode;
-    for (int i = 0; i < max_num_indices; i++) {
+    for (int i = 0; i < taichi_max_num_indices; i++) {
       ch->extractors[i].num_elements *= snode.extractors[i].num_elements;
       bool found = false;
-      for (int k = 0; k < max_num_indices; k++) {
+      for (int k = 0; k < taichi_max_num_indices; k++) {
         if (snode.physical_index_position[k] == i) {
           found = true;
           break;
@@ -52,7 +52,7 @@ void StructCompiler::infer_snode_properties(SNode &snode) {
     }
     // infer extractors
     int acc_offsets = 0;
-    for (int i = max_num_indices - 1; i >= 0; i--) {
+    for (int i = taichi_max_num_indices - 1; i >= 0; i--) {
       int inferred = ch->extractors[i].start + ch->extractors[i].num_bits;
       if (ch_id == 0) {
         snode.extractors[i].start = inferred;
@@ -70,7 +70,7 @@ void StructCompiler::infer_snode_properties(SNode &snode) {
     }
     if (snode.type == SNodeType::dynamic) {
       int active_extractor_counder = 0;
-      for (int i = 0; i < max_num_indices; i++) {
+      for (int i = 0; i < taichi_max_num_indices; i++) {
         if (snode.extractors[i].num_bits != 0) {
           active_extractor_counder += 1;
           SNode *p = snode.parent;
@@ -91,7 +91,7 @@ void StructCompiler::infer_snode_properties(SNode &snode) {
     snode.expr->set_attribute("dim", std::to_string(snode.num_active_indices));
 
   snode.total_num_bits = 0;
-  for (int i = 0; i < max_num_indices; i++) {
+  for (int i = 0; i < taichi_max_num_indices; i++) {
     snode.total_num_bits += snode.extractors[i].num_bits;
   }
 

@@ -4,11 +4,12 @@
 
 #include <atomic>
 #include <unordered_map>
-#include <taichi/common/util.h>
-#include <taichi/common/bit.h>
+#include "taichi/common/util.h"
+#include "taichi/common/bit.h"
 #include "taichi/lang_util.h"
-#include "snode.h"
-#include "expr.h"
+#include "taichi/ir/snode.h"
+#include "taichi/ir/expr.h"
+#include "taichi/compile_config.h"
 #include "taichi/llvm/llvm_fwd.h"
 
 TLANG_NAMESPACE_BEGIN

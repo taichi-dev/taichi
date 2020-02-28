@@ -222,7 +222,7 @@ FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
   if (cfg.arch == Arch::cuda) {
     vectorize = 1;
     parallelize = 1;
-    TI_ASSERT(block_dim <= max_gpu_block_dim);
+    TI_ASSERT(block_dim <= taichi_max_gpu_block_dim);
   } else {
     // cpu
     if (block_dim == 0)

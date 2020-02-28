@@ -76,7 +76,7 @@ class LowerAccess : public IRVisitor {
       std::vector<int> strides;
       // extract bits
       for (int k_ = 0; k_ < (int)indices.size(); k_++) {
-        for (int k = 0; k < max_num_indices; k++) {
+        for (int k = 0; k < taichi_max_num_indices; k++) {
           if (snode->physical_index_position[k_] == k) {
             int begin = snode->extractors[k].start;
             int end = begin + snode->extractors[k].num_bits;

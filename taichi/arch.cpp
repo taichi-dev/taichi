@@ -48,4 +48,15 @@ bool arch_use_host_memory(Arch arch) {
   return arch_is_cpu(arch);
 }
 
+int default_simd_width(Arch arch) {
+  if (arch == Arch::x64) {
+    return 8;
+  } else if (arch == Arch::cuda) {
+    return 32;
+  } else {
+    TI_NOT_IMPLEMENTED;
+    return -1;
+  }
+}
+
 TLANG_NAMESPACE_END

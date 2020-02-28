@@ -1,8 +1,10 @@
 // Definitions of utility functions and enums
 
 #include "lang_util.h"
-#include <taichi/system/timer.h>
-#include <taichi/math/linalg.h>
+#include "taichi/system/timer.h"
+#include "taichi/math/linalg.h"
+#include "taichi/arch.h"
+#include "taichi/compile_config.h"
 
 TI_NAMESPACE_BEGIN
 
@@ -59,17 +61,6 @@ real measure_cpe(std::function<void()> target,
   auto elasped_cycles =
       (Time::get_time() - start_t) * 1e9_f64 * get_cpu_frequency();
   return elasped_cycles / float64(total_batches * elements_per_call);
-}
-
-int default_simd_width(Arch arch) {
-  if (arch == Arch::x64) {
-    return 8;
-  } else if (arch == Arch::cuda) {
-    return 32;
-  } else {
-    TI_NOT_IMPLEMENTED;
-    return -1;
-  }
 }
 
 std::string data_type_name(DataType t) {
@@ -254,34 +245,6 @@ bool command_exist(const std::string &command) {
     return true;
   }
 #endif
-}
-
-CompileConfig::CompileConfig() {
-  arch = Arch::x64;
-  simd_width = default_simd_width(arch);
-  external_optimization_level = 3;
-  print_ir = false;
-  print_accessor_ir = false;
-  use_llvm = true;
-  print_struct_llvm_ir = false;
-  print_kernel_llvm_ir = false;
-  print_kernel_llvm_ir_optimized = false;
-  demote_dense_struct_fors = true;
-  max_vector_width = 8;
-  debug = false;
-  lazy_compilation = true;
-  serial_schedule = false;
-  simplify_before_lower_access = true;
-  lower_access = true;
-  simplify_after_lower_access = true;
-  default_fp = DataType::f32;
-  default_ip = DataType::i32;
-  verbose_kernel_launches = false;
-  enable_profiler = false;
-  default_cpu_block_dim = 0;  // 0 = adaptive
-  default_gpu_block_dim = 64;
-  verbose = true;
-  fast_math = true;
 }
 
 DataType promoted_type(DataType a, DataType b) {

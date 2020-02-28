@@ -60,32 +60,6 @@ SNode &SNode::create_node(std::vector<Index> indices,
   return new_node;
 }
 
-void SNode::clear_data() {
-  if (clear_func == nullptr) {
-    if (clear_kernel == nullptr) {
-      clear_kernel = &kernel([&]() {
-        current_ast_builder().insert(Stmt::make<ClearAllStmt>(this, false));
-      });
-    }
-    (*(Kernel *)clear_kernel)();
-  } else {
-    clear_func(0);
-  }
-}
-
-void SNode::clear_data_and_deactivate() {
-  if (clear_func == nullptr) {
-    if (clear_and_deactivate_kernel == nullptr) {
-      clear_and_deactivate_kernel = &kernel([&]() {
-        current_ast_builder().insert(Stmt::make<ClearAllStmt>(this, true));
-      });
-    }
-    (*(Kernel *)clear_and_deactivate_kernel)();
-  } else {
-    clear_func(1);
-  }
-}
-
 void SNode::lazy_grad() {
   if (this->type == SNodeType::place)
     return;
@@ -223,8 +197,6 @@ SNode::SNode(int depth, SNodeType t) : depth(depth), type(t) {
   num_active_indices = 0;
   std::memset(taken_bits, 0, sizeof(taken_bits));
   std::memset(physical_index_position, -1, sizeof(physical_index_position));
-  access_func = nullptr;
-  stat_func = nullptr;
   parent = nullptr;
   _verbose = false;
   _multi_threaded = false;
@@ -234,7 +206,6 @@ SNode::SNode(int depth, SNodeType t) : depth(depth), type(t) {
   _morton = false;
   _bitmasked = false;
 
-  clear_func = nullptr;
   clear_kernel = nullptr;
   clear_and_deactivate_kernel = nullptr;
 

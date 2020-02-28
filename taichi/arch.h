@@ -1,8 +1,7 @@
 #pragma once
 
 #include <string>
-#include <taichi/common/util.h>
-#include <taichi/common.h>
+#include "taichi/lang_util.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -21,5 +20,7 @@ bool arch_is_cpu(Arch arch);
 bool arch_is_gpu(Arch arch);
 
 bool arch_use_host_memory(Arch arch);
+
+int default_simd_width(Arch arch);
 
 TLANG_NAMESPACE_END

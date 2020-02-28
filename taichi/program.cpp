@@ -291,7 +291,7 @@ void Program::visualize_layout(const std::string &fn) {
       }
 
       std::string indices;
-      for (int i = 0; i < max_num_indices; i++) {
+      for (int i = 0; i < taichi_max_num_indices; i++) {
         if (snode->extractors[i].active) {
           int nb = snode->extractors[i].num_bits;
           int start = snode->extractors[i].start + nb;

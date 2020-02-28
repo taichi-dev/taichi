@@ -1259,14 +1259,14 @@ Expr cast(const Expr &input, DataType dt);
 
 template <typename T>
 Expr cast(const Expr &input) {
-  return taichi::Tlang::cast(input, get_data_type<T>());
+  return taichi::lang::cast(input, get_data_type<T>());
 }
 
 Expr bit_cast(const Expr &input, DataType dt);
 
 template <typename T>
 Expr bit_cast(const Expr &input) {
-  return taichi::Tlang::bit_cast(input, get_data_type<T>());
+  return taichi::lang::bit_cast(input, get_data_type<T>());
 }
 
 class Block : public IRNode {

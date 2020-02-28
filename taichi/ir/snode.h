@@ -85,7 +85,7 @@ class SNode {
   Expr expr;
 
   std::string data_type_name() {
-    return Tlang::data_type_name(dt);
+    return lang::data_type_name(dt);
   }
 
   void *clear_kernel{}, *clear_and_deactivate_kernel{};

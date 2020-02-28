@@ -35,7 +35,7 @@ class StructCompiler;
 
 class Program {
  public:
-  using Kernel = taichi::Tlang::Kernel;
+  using Kernel = taichi::lang::Kernel;
   // Should be copiable
   std::vector<void *> loaded_dlls;
   Kernel *current_kernel;

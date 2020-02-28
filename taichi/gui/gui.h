@@ -456,7 +456,7 @@ class GUI : public GUIBase {
   Vector2i cursor_pos;
   bool button_status[3];
   int widget_height;
-  Tlang::ProfilerBase *profiler;
+  lang::ProfilerBase *profiler;
 
   void set_mouse_pos(int x, int y) {
     cursor_pos = Vector2i(x, y);
@@ -837,7 +837,7 @@ class GUI : public GUIBase {
 
   ~GUI();
 
-  void set_profiler(Tlang::ProfilerBase *profiler) {
+  void set_profiler(lang::ProfilerBase *profiler) {
     this->profiler = profiler;
   }
 };

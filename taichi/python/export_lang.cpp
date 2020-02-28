@@ -41,7 +41,7 @@ TLANG_NAMESPACE_END
 
 TI_NAMESPACE_BEGIN
 void export_lang(py::module &m) {
-  using namespace taichi::Tlang;
+  using namespace taichi::lang;
 
   py::enum_<Arch>(m, "Arch", py::arithmetic())
 #define PER_ARCH(x) .value(#x, Arch::x)

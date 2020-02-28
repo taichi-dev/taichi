@@ -8,7 +8,7 @@
 
 TI_NAMESPACE_BEGIN
 
-namespace Tlang {
+namespace lang {
 
 CompileConfig default_compile_config;
 
@@ -278,11 +278,11 @@ DataType promoted_type(DataType a, DataType b) {
   }
   return mapping[std::make_pair(a, b)];
 }
-}  // namespace Tlang
+}  // namespace lang
 
 void initialize_benchmark() {
   // CoreState::set_trigger_gdb_when_crash(true);
-  Tlang::get_cpu_frequency();
+  lang::get_cpu_frequency();
   static bool initialized = false;
   if (initialized) {
     return;

@@ -4,7 +4,7 @@
 #include "../inc/constants.h"
 
 #if defined(TI_RUNTIME_HOST)
-namespace taichi::Tlang {
+namespace taichi::lang {
 using namespace taichi;
 #endif
 

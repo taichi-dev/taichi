@@ -131,9 +131,17 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
 
   if (config.arch == Arch::cuda && !config.use_unified_memory) {
 #if defined(TI_WITH_CUDA)
-    prealloc_size = 1UL << 30;
-    cudaMalloc(&preallocated_device_buffer, prealloc_size);
-    cudaMemset(preallocated_device_buffer, 0, prealloc_size);
+    auto total_mem = cuda_context->get_total_memory();
+    if (config.device_memory_GB != 0)
+      prealloc_size = std::size_t(config.device_memory_GB * (1UL << 30));
+    else
+      prealloc_size = std::size_t(config.device_memory_fraction * total_mem);
+
+    TI_TRACE("Allocating device memory {:.2f} GB",
+             1.0 * prealloc_size / (1UL << 30));
+
+    check_cuda_error(cudaMalloc(&preallocated_device_buffer, prealloc_size));
+    check_cuda_error(cudaMemset(preallocated_device_buffer, 0, prealloc_size));
     tlctx = llvm_context_device.get();
 #else
     TI_NOT_IMPELENTED

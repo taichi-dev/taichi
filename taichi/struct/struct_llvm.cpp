@@ -198,11 +198,7 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
   root_size =
       tlctx->get_data_layout().getTypeAllocSize(snode_attr[root].llvm_type);
 
-  module->setDataLayout(tlctx->get_data_layout());
-
   tlctx->set_struct_module(module);
-
-  tlctx->runtime_jit_module = tlctx->add_module(tlctx->clone_struct_module());
   tlctx->snode_attr = snode_attr;
 }
 

@@ -642,7 +642,7 @@ Ptr Runtime::request_allocate_aligned(std::size_t size, std::size_t alignment) {
   return r->ptr;
 }
 
-void Runtime_initialize(Runtime **runtime_ptr,
+void runtime_initialize(Runtime **runtime_ptr,
                         Ptr prog,
                         uint64_t root_size,
                         void *_vm_allocator,
@@ -676,7 +676,7 @@ void Runtime_initialize(Runtime **runtime_ptr,
     initialize_rand_state(&runtime->rand_states[i], i);
 }
 
-void Runtime_initialize2(Runtime *runtime, int root_id, int num_snodes) {
+void runtime_initialize2(Runtime *runtime, int root_id, int num_snodes) {
   // runtime->request_allocate_aligned ready to use
 
   // initialize the root node element list
@@ -702,14 +702,14 @@ void Runtime_initialize_thread_pool(Runtime *runtime,
   runtime->parallel_for = (parallel_for_type)parallel_for;
 }
 
-void Runtime_NodeAllocator_initialize(Runtime *runtime,
+void runtime_NodeAllocator_initialize(Runtime *runtime,
                                       int snode_id,
                                       std::size_t node_size) {
   runtime->node_allocators[snode_id] =
       runtime->create<NodeManager>(runtime, node_size, 1024 * 16);
 }
 
-void Runtime_allocate_ambient(Runtime *runtime, int snode_id) {
+void runtime_allocate_ambient(Runtime *runtime, int snode_id) {
   runtime->ambient_elements[snode_id] =
       runtime->node_allocators[snode_id]->allocate();
 }

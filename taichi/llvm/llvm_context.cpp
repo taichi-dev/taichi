@@ -380,21 +380,23 @@ void TaichiLLVMContext::set_struct_module(
   struct_module = llvm::CloneModule(*module);
   if (!arch_is_cpu(arch)) {
     for (auto &f : *struct_module) {
-      if (!f.isDeclaration())
+      bool is_kernel = false;
+      if (arch == Arch::cuda) {
+        std::string func_name = f.getName();
+        if (starts_with(func_name, "runtime_")) {
+          mark_function_as_cuda_kernel(&f);
+          is_kernel = true;
+        }
+      }
+
+      if (!is_kernel && !f.isDeclaration())
         // set declaration-only functions as internal linking to avoid
         // duplicated symbols and to remove external symbol dependencies such as
         // std::sin
         f.setLinkage(llvm::Function::PrivateLinkage);
     }
   }
-  if (arch == Arch::cuda) {
-    for (auto &f : *struct_module) {
-      std::string func_name = f.getName();
-      if (starts_with(func_name, "Runtime_")) {
-        mark_function_as_cuda_kernel(&f);
-      }
-    }
-  }
+  runtime_jit_module = add_module(clone_struct_module());
 }
 
 template <typename T>

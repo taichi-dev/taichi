@@ -120,7 +120,13 @@ FunctionType Program::compile(Kernel &kernel) {
 
 // For CPU and CUDA archs only
 void Program::initialize_runtime_system(StructCompiler *scomp) {
-  auto tlctx = llvm_context_host.get();
+  // auto tlctx = llvm_context_host.get();
+  TaichiLLVMContext *tlctx;
+  if (config.arch == Arch::cuda) {
+    tlctx = llvm_context_host.get();
+  } else {
+    tlctx = llvm_context_host.get();
+  }
   auto runtime = tlctx->runtime_jit_module;
 
   // By the time this creator is called, "this" is already destroyed.
@@ -131,7 +137,7 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
   TI_TRACE("Allocating data structure of size {} B", scomp->root_size);
 
   runtime->call<void *, void *, std::size_t, void *, void *>(
-      "Runtime_initialize", &llvm_runtime, this, (std::size_t)scomp->root_size,
+      "runtime_initialize", &llvm_runtime, this, (std::size_t)scomp->root_size,
       (void *)&taichi_allocate_aligned, (void *)std::printf);
   TI_TRACE("Runtime initialized");
 
@@ -140,7 +146,7 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
 
   memory_pool->set_queue((MemRequestQueue *)mem_req_queue);
 
-  runtime->call<void *, int, int>("Runtime_initialize2", llvm_runtime, root_id,
+  runtime->call<void *, int, int>("runtime_initialize2", llvm_runtime, root_id,
                                   (int)snodes.size());
 
   for (int i = 0; i < (int)snodes.size(); i++) {
@@ -160,22 +166,22 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
       TI_TRACE("Initializing allocator for snode {} (node size {})",
                snodes[i]->id, node_size);
       auto rt = llvm_runtime;
-      runtime->call<void *, int, std::size_t>("Runtime_NodeAllocator_initialize", rt, i,
-                                              node_size);
+      runtime->call<void *, int, std::size_t>(
+          "runtime_NodeAllocator_initialize", rt, i, node_size);
       TI_TRACE("Allocating ambient element for snode {} (node size {})",
                snodes[i]->id, node_size);
-      runtime->call<void *, int>("Runtime_allocate_ambient", rt, i);
+      runtime->call<void *, int>("runtime_allocate_ambient", rt, i);
     }
   }
 
-  runtime->call<void *, void *, void *>("Runtime_initialize_thread_pool",
-                                        llvm_runtime, &thread_pool,
-                                        (void *)ThreadPool::static_run);
-
-  runtime->call<void *, void *>("Runtime_set_assert_failed", llvm_runtime,
-                                (void *)assert_failed_host);
 
   if (arch_use_host_memory(config.arch)) {
+    runtime->call<void *, void *, void *>("Runtime_initialize_thread_pool",
+                                          llvm_runtime, &thread_pool,
+                                          (void *)ThreadPool::static_run);
+
+    runtime->call<void *, void *>("Runtime_set_assert_failed", llvm_runtime,
+                                  (void *)assert_failed_host);
     // Profiler functions can only be called on host kernels
     runtime->call<void *, void *>("Runtime_set_profiler", llvm_runtime,
                                   profiler.get());
@@ -192,18 +198,17 @@ void Program::materialize_layout() {
   std::unique_ptr<StructCompiler> scomp = StructCompiler::make(this, Arch::x64);
   scomp->run(*snode_root, true);
 
-  if (arch_is_cpu(config.arch) || config.arch == Arch::cuda ||
-      config.arch == Arch::metal) {
+  if (arch_is_cpu(config.arch) || config.arch == Arch::metal) {
     initialize_runtime_system(scomp.get());
   }
 
   TI_INFO("materialize_layout called");
-  if (config.arch == Arch::cuda && config.use_llvm) {
+  if (config.arch == Arch::cuda) {
     initialize_device_llvm_context();
-    // llvm_context_device->get_init_module();
     std::unique_ptr<StructCompiler> scomp_gpu =
         StructCompiler::make(this, Arch::cuda);
     scomp_gpu->run(*snode_root, false);
+    initialize_runtime_system(scomp_gpu.get());
   } else if (config.arch == Arch::metal) {
     TI_ASSERT_INFO(config.use_llvm,
                    "Metal arch requires that LLVM being enabled");

@@ -1,3 +1,4 @@
+import re
 import inspect
 from .transformer import ASTTransformer
 import ast
@@ -384,8 +385,25 @@ class Kernel:
     self.materialize(key=key, args=args, arg_features=arg_features)
     return self.compiled_functions[key](*args)
 
-import re
-_DECORATED_CLASS_STACKFRAME_STMT_RE = re.compile(r'@(\w+\.)?data_oriented')
+
+# For a Taichi class definition like below:
+#
+# @ti.data_oriented
+# class X:
+#   @ti.kernel
+#   def foo(self):
+#     ...
+#
+# When ti.kernel runs, the stackframe's |code_context| of Python 3.8(+) is
+# different from that of Python 3.7 and below. In 3.8+, it is 'class X:',
+# whereas in <=3.7, it is '@ti.data_oriented'. More interestingly, if the class
+# inherits, i.e. class X(object):, then in both versions, |code_context| is
+# 'class X(object):'...
+_KERNEL_CLASS_STACKFRAME_STMT_RES = [
+    re.compile(r'@(\w+\.)?data_oriented'),
+    re.compile(r'class '),
+]
+
 
 def _kernel_impl(func, level_of_class_stackframe, verbose=False):
   # Can decorators determine if a function is being defined inside a class?
@@ -397,14 +415,9 @@ def _kernel_impl(func, level_of_class_stackframe, verbose=False):
     maybe_class_frame = frames[level_of_class_stackframe]
     statement_list = maybe_class_frame[4]
     first_statment = statement_list[0].strip()
-    if _DECORATED_CLASS_STACKFRAME_STMT_RE.match(first_statment):
-      is_classkernel = True
-    elif first_statment.startswith('class '):
-      # Class kernels won't work without its class being decorated by
-      # @ti.data_oriented.
-      raise KernelDefError('Please decorate the class with @ti.data_oriented')
-  except KernelDefError:
-    raise
+    for pat in _KERNEL_CLASS_STACKFRAME_STMT_RES:
+      if pat.match(first_statment):
+        is_classkernel = True
   except:
     pass
 
@@ -416,48 +429,61 @@ def _kernel_impl(func, level_of_class_stackframe, verbose=False):
   primal.grad = adjoint
 
   from functools import wraps
-  @wraps(func)
-  def wrapped(*args, **kwargs):
-    primal(*args, **kwargs)
+  if is_classkernel:
+    # For class kernels, their primal/adjoint callables are constructed when the
+    # kernel is accessed via the instance inside BoundedDifferentiableMethod.
+    # This is because we need to bind the kernel or |grad| to the instance
+    # owning the kernel, which is not known until the kernel is accessed.
+    #
+    # See also: BoundedDifferentiableMethod, data_oriented.
+    @wraps(func)
+    def wrapped(*args, **kwargs):
+      # If we reach here (we should never), it means the class is not decorated
+      # with @data_oriented, otherwise getattr would have intercepted the call.
+      clsobj = type(args[0])
+      assert not hasattr(clsobj, '_data_oriented')
+      raise KernelDefError(
+          f'Please decorate class {clsobj.__name__} with @data_oriented')
+  else:
+    @wraps(func)
+    def wrapped(*args, **kwargs):
+      primal(*args, **kwargs)
+    wrapped.grad = adjoint
 
   wrapped._is_wrapped_kernel = True
   wrapped._is_classkernel = is_classkernel
   wrapped._primal = primal
   wrapped._adjoint = adjoint
-  if not is_classkernel:
-    # For plain function kernels, everything is just plain function.
-    def grad(*args, **kwargs):
-      adjoint(*args, **kwargs)
-    wrapped.grad = grad
-  else:
-    # For class kernels, their grad is constructed when the kernel is accessed
-    # via the instance, inside BoundedDifferentiableMethod. This is because we
-    # need to bind |grad| to the instance owning the kernel as well, but we
-    # only know that instance when the kernel is accessed.
-    # See BoundedDifferentiableMethod and data_oriented.
-    pass
   return wrapped
 
 
 def kernel(func):
   return _kernel_impl(func, level_of_class_stackframe=3)
 
+
 def classkernel(func):
   import warnings
-  warnings.warn('@ti.classkernel will be deprecated, please use @ti.kernel directly', DeprecationWarning)
+  warnings.warn(
+      '@ti.classkernel will be deprecated, please use @ti.kernel directly', DeprecationWarning)
   return _kernel_impl(func, level_of_class_stackframe=3)
 
+
 class BoundedDifferentiableMethod:
-  def __init__(self, kernel_owner, wrapped_kernel):
+  def __init__(self, kernel_owner, wrapped_kernel_func):
+    clsobj = type(kernel_owner)
+    if not getattr(clsobj, '_data_oriented', False):
+      raise KernelDefError(
+          f'Please decorate class {clsobj.__name__} with @data_oriented')
     self._kernel_owner = kernel_owner
-    self._primal = wrapped_kernel._primal
-    self._adjoint = wrapped_kernel._adjoint
-  
+    self._primal = wrapped_kernel_func._primal
+    self._adjoint = wrapped_kernel_func._adjoint
+
   def __call__(self, *args, **kwargs):
     return self._primal(self._kernel_owner, *args, **kwargs)
 
   def grad(self, *args, **kwargs):
     return self._adjoint(self._kernel_owner, *args, **kwargs)
+
 
 def data_oriented(cls):
   def getattr(self, item):
@@ -470,8 +496,8 @@ def data_oriented(cls):
       if wrapped._is_classkernel:
         return BoundedDifferentiableMethod(self, wrapped)
     return x
-    
+
   cls.__getattribute__ = getattr
   cls._data_oriented = True
-  
+
   return cls

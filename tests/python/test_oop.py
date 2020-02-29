@@ -155,3 +155,70 @@ def test_oop_two_items():
   for i in range(arr2.n):
     for j in range(arr2.m):
       assert arr2.val.grad[i, j] == arr2_mult
+
+
+@ti.host_arch
+def test_oop_inherit_ok():
+  # Array1D inherits from object, which makes the callstack being 'class Array2D(object)'
+  # instead of '@ti.data_oriented'. Make sure this also works.
+  @ti.data_oriented
+  class Array1D(object):
+
+    def __init__(self, n, mul):
+      self.n = n
+      self.val = ti.var(ti.f32)
+      self.total = ti.var(ti.f32)
+      self.mul = mul
+
+    def place(self, root):
+      root.dense(ti.ij, (self.n,)).place(self.val)
+      root.place(self.total)
+
+    @ti.kernel
+    def reduce(self):
+      for i, j in self.val:
+        ti.atomic_add(self.total, self.val[i, j] * self.mul)
+
+  arr = Array1D(128, 42)
+
+  @ti.layout
+  def place():
+    # Place an object. Make sure you defined place for that obj
+    ti.root.place(arr)
+    ti.root.lazy_grad()
+
+  with ti.Tape(loss=arr.total):
+    arr.reduce()
+  for i in range(arr.n):
+    assert arr.val.grad[i] == 42
+
+
+@ti.must_throw(ti.KernelDefError)
+@ti.host_arch
+def test_oop_class_must_be_data_oriented():
+  class Array1D(object):
+    def __init__(self, n, mul):
+      self.n = n
+      self.val = ti.var(ti.f32)
+      self.total = ti.var(ti.f32)
+      self.mul = mul
+
+    def place(self, root):
+      root.dense(ti.ij, (self.n,)).place(self.val)
+      root.place(self.total)
+
+    @ti.kernel
+    def reduce(self):
+      for i, j in self.val:
+        ti.atomic_add(self.total, self.val[i, j] * self.mul)
+
+  arr = Array1D(128, 42)
+
+  @ti.layout
+  def place():
+    # Place an object. Make sure you defined place for that obj
+    ti.root.place(arr)
+    ti.root.lazy_grad()
+  
+  # Array1D is not properly decorated, this will raise an Exception
+  arr.reduce()

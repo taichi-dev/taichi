@@ -466,7 +466,12 @@ void initialize_rand_state(RandState *state, u32 i) {
 struct NodeManager;
 
 struct Runtime {
-  Ptr result_buffer;
+  bool preallocated;
+  std::size_t preallocated_size;
+
+  Ptr preallocated_head;
+  Ptr preallocated_tail;
+
   vm_allocator_type vm_allocator;
   assert_failed_type assert_failed;
   host_printf_type host_printf;
@@ -484,9 +489,13 @@ struct Runtime {
   Ptr allocate(std::size_t size);
   Ptr allocate_aligned(std::size_t size, std::size_t alignment);
   Ptr request_allocate_aligned(std::size_t size, std::size_t alignment);
+  Ptr allocate_from_buffer(std::size_t size, std::size_t alignment);
   Ptr profiler;
   void (*profiler_start)(Ptr, Ptr);
   void (*profiler_stop)(Ptr);
+
+  Ptr result_buffer;
+  i32 lock;
 
   template <typename T>
   void set_result(T t) {
@@ -621,13 +630,29 @@ void taichi_assert_runtime(Runtime *runtime, i32 test, const char *msg) {
 #endif
 
 void taichi_assert(Context *context, i32 test, const char *msg) {
-  taichi_assert_runtime((Runtime *)context->runtime, test, msg);
+  taichi_assert_runtime(context->runtime, test, msg);
 }
 
 Ptr Runtime::allocate_aligned(std::size_t size, std::size_t alignment) {
-  // TODO: change this. Add lock, allocate, return pointer. Assert failure if
-  // OOM
-  return (Ptr)vm_allocator(prog, size, alignment);
+  if (preallocated)
+    return allocate_from_buffer(size, alignment);
+  else
+    return (Ptr)vm_allocator(prog, size, alignment);
+}
+
+Ptr Runtime::allocate_from_buffer(std::size_t size, std::size_t alignment) {
+  Ptr ret;
+  locked_task(&lock, [&] {
+    preallocated_head +=
+        alignment - 1 -
+        ((std::size_t)preallocated_head + alignment - 1) % alignment;
+    ret = preallocated_head;
+    preallocated_head += size;
+    taichi_printf(this, "%p %p\n", preallocated_head, preallocated_tail);
+    taichi_assert_runtime(this, preallocated_head <= preallocated_tail,
+                          "Out of pre-allocated memory");
+  });
+  return ret;
 }
 
 Ptr Runtime::allocate(std::size_t size) {
@@ -635,31 +660,54 @@ Ptr Runtime::allocate(std::size_t size) {
 }
 
 Ptr Runtime::request_allocate_aligned(std::size_t size, std::size_t alignment) {
-  auto i = atomic_add_i32(&mem_req_queue->tail, 1);
-  taichi_assert_runtime(this, i <= taichi_max_num_mem_requests,
-                        "Too many memory allocation requests.");
-  auto volatile r = &mem_req_queue->requests[i];
-  atomic_exchange_u64((uint64 *)&r->size, size);
-  atomic_exchange_u64((uint64 *)&r->alignment, alignment);
-  // wait for host to allocate
-  while (r->ptr == nullptr)
-    ;
-  return r->ptr;
+  if (preallocated)
+    return allocate_from_buffer(size, alignment);
+  else {
+    auto i = atomic_add_i32(&mem_req_queue->tail, 1);
+    taichi_assert_runtime(this, i <= taichi_max_num_mem_requests,
+                          "Too many memory allocation requests.");
+    auto volatile r = &mem_req_queue->requests[i];
+    atomic_exchange_u64((uint64 *)&r->size, size);
+    atomic_exchange_u64((uint64 *)&r->alignment, alignment);
+    // wait for host to allocate
+    while (r->ptr == nullptr)
+      ;
+    return r->ptr;
+  }
 }
 
 void runtime_get_mem_req_queue(Runtime *runtime) {
   runtime->set_result(runtime->mem_req_queue);
 }
 
-void runtime_initialize(Ptr result_buffer,
-                        Ptr prog,
-                        uint64_t root_size,
-                        void *_vm_allocator,
-                        void *_host_printf) {
+void runtime_initialize(
+    Ptr result_buffer,
+    Ptr prog,
+    std::size_t root_size,
+    std::size_t
+        preallocated_size,  // Non-zero means use the preallocated buffer
+    Ptr preallocated_buffer,
+    void *_vm_allocator,
+    void *_host_printf) {
   // bootstrap
   auto vm_allocator = (vm_allocator_type)_vm_allocator;
   auto host_printf = (host_printf_type)_host_printf;
-  Runtime *runtime = (Runtime *)vm_allocator(prog, sizeof(Runtime), 128);
+  Runtime *runtime = nullptr;
+  Ptr preallocated_tail = preallocated_buffer + preallocated_size;
+  if (preallocated_size) {
+    runtime = (Runtime *)preallocated_buffer;
+    preallocated_buffer += taichi::iroundup(sizeof(Runtime), taichi_page_size);
+  } else {
+    runtime = (Runtime *)vm_allocator(prog, sizeof(Runtime), 128);
+  }
+
+  runtime->root_mem_size =
+      taichi::iroundup((size_t)root_size, taichi_page_size);
+
+  runtime->preallocated = preallocated_size > 0;
+  runtime->preallocated_head = preallocated_buffer;
+  runtime->preallocated_tail = preallocated_tail;
+
   runtime->result_buffer = result_buffer;
   runtime->set_result(runtime);
   runtime->vm_allocator = vm_allocator;

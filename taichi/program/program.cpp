@@ -124,7 +124,14 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
   // auto tlctx = llvm_context_host.get();
   result_buffer = taichi_allocate_aligned(this, 8, 8);
   TaichiLLVMContext *tlctx;
+
+  std::size_t prealloc_size = 0;
+  void *prealloc_ptr = nullptr;
+
   if (config.arch == Arch::cuda && !config.use_unified_memory) {
+    prealloc_size = 1UL << 30;
+    cudaMalloc(&prealloc_ptr, prealloc_size);
+    cudaMemset(prealloc_ptr, 0, prealloc_size);
     tlctx = llvm_context_device.get();
   } else {
     tlctx = llvm_context_host.get();
@@ -138,9 +145,11 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
 
   TI_TRACE("Allocating data structure of size {} B", scomp->root_size);
 
-  runtime->call<void *, void *, std::size_t, void *, void *>(
-      "runtime_initialize", result_buffer, this, (std::size_t)scomp->root_size,
-      (void *)&taichi_allocate_aligned, (void *)std::printf);
+  runtime
+      ->call<void *, void *, std::size_t, std::size_t, void *, void *, void *>(
+          "runtime_initialize", result_buffer, this,
+          (std::size_t)scomp->root_size, prealloc_size, prealloc_ptr,
+          (void *)&taichi_allocate_aligned, (void *)std::printf);
 
   TI_TRACE("Runtime initialized");
   llvm_runtime = runtime->fetch_result<void *>();

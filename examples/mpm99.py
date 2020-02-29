@@ -1,4 +1,5 @@
 import taichi as ti
+import numpy as np
 ti.init(arch=ti.cuda) # Try to run on GPU. Use arch=ti.opengl on old GPUs
 quality = 1 # Use a larger value for higher-res simulations
 n_particles, n_grid = 9000 * quality ** 2, 128 * quality
@@ -8,7 +9,6 @@ p_vol, p_rho = (dx * 0.5)**2, 1
 p_mass = p_vol * p_rho
 E, nu = 0.1e4, 0.2 # Young's modulus and Poisson's ratio
 mu_0, lambda_0 = E / (2 * (1 + nu)), E * nu / ((1+nu) * (1 - 2 * nu)) # Lame parameters
-
 x = ti.Vector(2, dt=ti.f32, shape=n_particles) # position
 v = ti.Vector(2, dt=ti.f32, shape=n_particles) # velocity
 C = ti.Matrix(2, 2, dt=ti.f32, shape=n_particles) # affine velocity field
@@ -80,16 +80,16 @@ def substep():
     v[p], C[p] = new_v, new_C
     x[p] += dt * v[p] # advection
 
-import random
 group_size = n_particles // 3
-for i in range(n_particles):
-  x[i] = [random.random() * 0.2 + 0.3 + 0.10 * (i // group_size), random.random() * 0.2 + 0.05 + 0.32 * (i // group_size)]
-  material[i] = i // group_size # 0: fluid 1: jelly 2: snow
-  v[i] = [0, 0]
-  F[i] = [[1, 0], [0, 1]]
-  Jp[i] = 1
-
-import numpy as np
+@ti.kernel
+def initialize():
+  for i in range(n_particles):
+    x[i] = [ti.random() * 0.2 + 0.3 + 0.10 * (i // group_size), ti.random() * 0.2 + 0.05 + 0.32 * (i // group_size)]
+    material[i] = i // group_size # 0: fluid 1: jelly 2: snow
+    v[i] = ti.Matrix([0, 0])
+    F[i] = ti.Matrix([[1, 0], [0, 1]])
+    Jp[i] = 1
+initialize()
 gui = ti.GUI("Taichi MLS-MPM-99", res=512, background_color=0x112F41)
 for frame in range(20000):
   for s in range(int(2e-3 // dt)):

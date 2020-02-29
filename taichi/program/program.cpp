@@ -124,8 +124,8 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
   // auto tlctx = llvm_context_host.get();
   result_buffer = taichi_allocate_aligned(this, 8, 8);
   TaichiLLVMContext *tlctx;
-  if (config.arch == Arch::cuda) {
-    tlctx = llvm_context_host.get();
+  if (config.arch == Arch::cuda && !config.use_unified_memory) {
+    tlctx = llvm_context_device.get();
   } else {
     tlctx = llvm_context_host.get();
   }
@@ -144,13 +144,13 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
 
   TI_TRACE("Runtime initialized");
   llvm_runtime = runtime->fetch_result<void *>();
-  TI_TRACE("Runtime initialized");
+  TI_TRACE("Runtime pointer fetched");
 
-  runtime->call<void *>("runtime_get_mem_req_queue", llvm_runtime);
-
-  auto mem_req_queue = runtime->fetch_result<void *>();
-
-  memory_pool->set_queue((MemRequestQueue *)mem_req_queue);
+  if (arch_use_host_memory(config.arch) || config.use_unified_memory) {
+    runtime->call<void *>("runtime_get_mem_req_queue", llvm_runtime);
+    auto mem_req_queue = runtime->fetch_result<void *>();
+    memory_pool->set_queue((MemRequestQueue *)mem_req_queue);
+  }
 
   runtime->call<void *, int, int>("runtime_initialize2", llvm_runtime, root_id,
                                   (int)snodes.size());
@@ -207,7 +207,7 @@ void Program::materialize_layout() {
     initialize_runtime_system(scomp.get());
   }
 
-  TI_INFO("materialize_layout called");
+  TI_TRACE("materialize_layout called");
   if (config.arch == Arch::cuda) {
     initialize_device_llvm_context();
     std::unique_ptr<StructCompiler> scomp_gpu =

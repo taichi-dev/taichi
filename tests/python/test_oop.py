@@ -138,6 +138,13 @@ def test_oop_two_items():
     ti.root.place(arr2)
     ti.root.lazy_grad()
 
+  arr1.inc()
+  arr1.inc.grad()
+  arr2.inc()
+  arr2.inc.grad()
+  assert arr1.val[3, 4] == arr1_inc
+  assert arr2.val[8, 6] == arr2_inc
+
   with ti.Tape(loss=arr1.total):
     arr1.reduce()
   with ti.Tape(loss=arr2.total, clear_gradients=False):

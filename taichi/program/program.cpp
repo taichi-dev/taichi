@@ -432,8 +432,6 @@ void Program::finalize() {
 #if defined(TI_WITH_CUDA)
   if (preallocated_device_buffer != nullptr)
     cudaFree(preallocated_device_buffer);
-#else
-  TI_NOT_IMPLEMENTED
 #endif
   finalized = true;
   num_instances -= 1;

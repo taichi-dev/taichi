@@ -27,6 +27,6 @@ class Tape:
     for func, args in reversed(self.calls):
       if hasattr(func, 'grad'):
         func.grad(*args)
-      else:
-        func(*args, _gradient=True)
+      # else:
+      #   func(*args, _gradient=True)
     self.gradient_evaluated = True

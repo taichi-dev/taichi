@@ -350,7 +350,10 @@ class Kernel:
         else:
           assert False
         actual_argument_slot += 1
-      if not self.classkernel and self.runtime.target_tape and not self.runtime.inside_complex_kernel:
+      # Both the class kernels and the plain-function kernels are unified now.
+      # In both cases, |self.grad| is another Kernel instance that computes the
+      # gradient. For class kerenls, args[0] is always the kernel owner.
+      if not self.is_grad and self.runtime.target_tape and not self.runtime.inside_complex_kernel:
         self.runtime.target_tape.insert(self, args)
       
       t_kernel()
@@ -381,52 +384,94 @@ class Kernel:
     self.materialize(key=key, args=args, arg_features=arg_features)
     return self.compiled_functions[key](*args)
 
+import re
+_DECORATED_CLASS_STACKFRAME_STMT_RE = re.compile(r'@\w+\.data_oriented')
 
-def kernel(foo):
-  ret = Kernel(foo, False)
-  ret.grad = Kernel(foo, True)
-  return ret
+def _kernel_impl(func, level_of_class_stackframe, verbose=False):
+  # Can decorators determine if a function is being defined inside a class?
+  # https://stackoverflow.com/a/8793684/12003165
+  is_classkernel = False
+  import inspect
+  frames = inspect.stack()
+  try:
+    maybe_class_frame = frames[level_of_class_stackframe]
+    statement_list = maybe_class_frame[4]
+    first_statment = statement_list[0].strip()
+    if _DECORATED_CLASS_STACKFRAME_STMT_RE.match(first_statment):
+      is_classkernel = True
+    elif first_statment.startswith('class '):
+      # Class kernels won't work without its class being decorated by
+      # @ti.data_oriented.
+      raise KernelDefError('Please decorate the class with @ti.data_oriented')
+  except KernelDefError:
+    raise
+  except:
+    pass
 
-class DifferentiableMethod:
-  def __init__(self, func):
-    self.func = func
-    
-    def gradient(*args, **kwargs):
-      func(*args, **kwargs, _gradient=True)
-    
-    self.grad = gradient
+  if verbose:
+    print(f'kernel={func.__name__} is_classkernel={is_classkernel}')
+  primal = Kernel(func, is_grad=False, classkernel=is_classkernel)
+  adjoint = Kernel(func, is_grad=True, classkernel=is_classkernel)
+  # Having |primal| contains |grad| makes the tape work.
+  primal.grad = adjoint
+
+  from functools import wraps
+  @wraps(func)
+  def wrapped(*args, **kwargs):
+    primal(*args, **kwargs)
+
+  wrapped._is_wrapped_kernel = True
+  wrapped._is_classkernel = is_classkernel
+  wrapped._primal = primal
+  wrapped._adjoint = adjoint
+  if not is_classkernel:
+    # For plain function kernels, everything is just plain function.
+    def grad(*args, **kwargs):
+      adjoint(*args, **kwargs)
+    wrapped.grad = grad
+  else:
+    # For class kernels, their grad is constructed when the kernel is accessed
+    # via the instance, inside BoundedDifferentiableMethod. This is because we
+    # need to bind |grad| to the instance owning the kernel as well, but we
+    # only know that instance when the kernel is accessed.
+    # See BoundedDifferentiableMethod and data_oriented.
+    pass
+  return wrapped
+
+
+def kernel(func):
+  return _kernel_impl(func, level_of_class_stackframe=3)
+
+def classkernel(func):
+  import warnings
+  warnings.warn('@ti.classkernel will be deprecated, please use @ti.kernel directly', DeprecationWarning)
+  return _kernel_impl(func, level_of_class_stackframe=3)
+
+class BoundedDifferentiableMethod:
+  def __init__(self, kernel_owner, wrapped_kernel):
+    self._kernel_owner = kernel_owner
+    self._primal = wrapped_kernel._primal
+    self._adjoint = wrapped_kernel._adjoint
   
   def __call__(self, *args, **kwargs):
-    self.func(*args, **kwargs)
+    return self._primal(self._kernel_owner, *args, **kwargs)
+
+  def grad(self, *args, **kwargs):
+    return self._adjoint(self._kernel_owner, *args, **kwargs)
 
 def data_oriented(cls):
   def getattr(self, item):
     x = super(cls, self).__getattribute__(item)
-    if hasattr(x, '_classkernel'):
-      return DifferentiableMethod(x)
-    else:
-      return x
+    if hasattr(x, '_is_wrapped_kernel'):
+      import inspect
+      assert inspect.ismethod(x)
+      wrapped = x.__func__
+      assert inspect.isfunction(wrapped)
+      if wrapped._is_classkernel:
+        return BoundedDifferentiableMethod(self, wrapped)
+    return x
     
   cls.__getattribute__ = getattr
   cls._data_oriented = True
   
   return cls
-
-def classkernel(foo):
-  primal = Kernel(foo, False, classkernel=True)
-  adjoint = Kernel(foo, True, classkernel=True)
-
-  def decorated(*args, _gradient=False, **kwargs):
-    if _gradient:
-      adjoint(*args, **kwargs)
-    else:
-      primal(*args, **kwargs)
-
-    import taichi as ti
-    runtime = ti.get_runtime()
-    if runtime.target_tape and not runtime.inside_complex_kernel:
-      runtime.target_tape.insert(decorated, args)
-      
-  decorated._classkernel = True
-
-  return decorated

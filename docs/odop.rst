@@ -31,17 +31,17 @@ A brief example:
       root.dense(ti.ij, (self.n, self.m)).place(self.val)
       root.place(self.total)
 
-    @ti.classkernel
+    @ti.kernel
     def inc(self):
       for i, j in self.val:
         ti.atomic_add(self.val[i, j], self.increment)
 
-    @ti.classkernel
+    @ti.kernel
     def inc2(self, increment: ti.i32):
       for i, j in self.val:
         ti.atomic_add(self.val[i, j], increment)
 
-    @ti.classkernel
+    @ti.kernel
     def reduce(self):
       for i, j in self.val:
         ti.atomic_add(self.total, self.val[i, j] * 4)

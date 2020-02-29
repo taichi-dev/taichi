@@ -1,6 +1,6 @@
 from .impl import *
 from .matrix import Matrix, mat
-from .transformer import TaichiSyntaxError
+from .transformer import TaichiSyntaxError, load_ptr
 from .ndrange import ndrange, GroupedNDRange
 from copy import deepcopy as _deepcopy
 import functools

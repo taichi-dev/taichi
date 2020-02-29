@@ -1873,6 +1873,16 @@ class FrontendWhileStmt : public Stmt {
   DEFINE_ACCEPT
 };
 
+class ReturnStmt : public Stmt {
+ public:
+  Expr retval;
+
+  ReturnStmt(Expr retval) : retval(load_if_ptr(retval)) {
+  }
+
+  DEFINE_ACCEPT
+};
+
 #define Print(x) Print_(x, #x);
 
 void Print_(const Expr &a, std::string str);

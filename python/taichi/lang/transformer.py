@@ -2,6 +2,11 @@ import ast
 from .util import to_taichi_type
 
 
+def load_ptr(expr):
+  #print('!!!', expr.ptr)
+  return expr.ptr
+
+
 class TaichiSyntaxError(Exception):
 
   def __init__(self, *args):
@@ -220,8 +225,9 @@ if 1:
     if self.is_kernel:
       raise TaichiSyntaxError('return not allowed in ti.kernel. '
       'Please walk around by storing the return result to a global variable.')
-    ret = self.parse_stmt('__retval.assign(0)')
-    ret.value.args[0] = self.visit(node.value)
+    rhs = self.visit(node.value)
+    ret = self.parse_stmt('ti.core.insert_return_stmt(ti.lang.load_ptr(rhs))')
+    ret.value.args[0].args[0] = rhs
     return ret
 
   def visit_If(self, node):
@@ -519,7 +525,6 @@ if 1:
           arg_decls.append(arg_init)
       # remove original args
       node.args.args = []
-      ret_stmt = None
     else:
       for decorator in node.decorator_list:
         if (isinstance(decorator, ast.Attribute)
@@ -529,12 +534,6 @@ if 1:
           raise TaichiSyntaxError("Function definition not allowed in 'ti.func'.")
       # Transform as func (all parameters passed by value)
       arg_decls = []
-      if node.returns is not None:
-        ret_init = self.parse_stmt('__retval = ti.type_init(None)')
-        ret_init.value.args[0] = node.returns
-      else:
-        ret_init = self.parse_stmt('__retval = ti.expr_init(None)') # alloca
-      arg_decls.append(ret_init)
       for i, arg in enumerate(args.args):
         if i == 0 and self.is_classfunc:
           continue
@@ -544,12 +543,14 @@ if 1:
         arg_init.value.args[0] = self.parse_expr(arg.arg + '_by_value__')
         args.args[i].arg += '_by_value__'
         arg_decls.append(arg_init)
-      ret_stmt = self.parse_stmt('return __retval')
+      enter_stmt = self.parse_stmt('ti.core.initialize_funcion_scope()')
+      node.body.append(enter_stmt)
     with self.variable_scope():
       self.generic_visit(node)
+    if not self.is_kernel:
+      leave_stmt = self.parse_stmt('return ti.core.finalize_funcion_scope()')
+      node.body.append(leave_stmt)
     node.body = arg_decls + node.body
-    if ret_stmt is not None:
-      node.body.append(ret_stmt)
     return node
 
   def visit_UnaryOp(self, node):

@@ -291,6 +291,15 @@ void export_lang(py::module &m) {
     current_ast_builder().insert(Stmt::make<FrontendBreakStmt>());
   });
 
+  m.def("initialize_function_scope", [&]() {
+  });
+  m.def("finalize_function_scope", [&]() {
+  });
+
+  m.def("insert_return_stmt", [&](const Expr &expr) {
+    current_ast_builder().insert(Stmt::make<ReturnStmt>(expr));
+  });
+
   m.def("layout", layout);
 
   m.def("value_cast", static_cast<Expr (*)(const Expr &expr, DataType)>(cast));

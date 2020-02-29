@@ -95,3 +95,56 @@ def test_oop():
   for i in range(arr.n):
     for j in range(arr.m):
       assert arr.val.grad[i, j] == 8
+
+
+
+@ti.host_arch
+def test_oop_two_items():
+
+  @ti.data_oriented
+  class Array2D:
+
+    def __init__(self, n, m, increment, multiplier):
+      self.n = n
+      self.m = m
+      self.val = ti.var(ti.f32)
+      self.total = ti.var(ti.f32)
+      self.increment = increment
+      self.multiplier = multiplier
+
+    def place(self, root):
+      root.dense(ti.ij, (self.n, self.m)).place(self.val)
+      root.place(self.total)
+
+    @ti.kernel
+    def inc(self):
+      for i, j in self.val:
+        ti.atomic_add(self.val[i, j], self.increment)
+
+    @ti.kernel
+    def reduce(self):
+      for i, j in self.val:
+        ti.atomic_add(self.total, self.val[i, j] * self.multiplier)
+
+  arr1_inc, arr1_mult = 3, 4
+  arr2_inc, arr2_mult = 6, 8
+  arr1 = Array2D(128, 128, arr1_inc, arr1_mult)
+  arr2 = Array2D(16, 32, arr2_inc, arr2_mult)
+
+  @ti.layout
+  def place():
+    # Place an object. Make sure you defined place for that obj
+    ti.root.place(arr1)
+    ti.root.place(arr2)
+    ti.root.lazy_grad()
+
+  with ti.Tape(loss=arr1.total):
+    arr1.reduce()
+  with ti.Tape(loss=arr2.total, clear_gradients=False):
+    arr2.reduce()
+  for i in range(arr1.n):
+    for j in range(arr1.m):
+      assert arr1.val.grad[i, j] == arr1_mult
+  for i in range(arr2.n):
+    for j in range(arr2.m):
+      assert arr2.val.grad[i, j] == arr2_mult

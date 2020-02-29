@@ -144,7 +144,7 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
     check_cuda_error(cudaMemset(preallocated_device_buffer, 0, prealloc_size));
     tlctx = llvm_context_device.get();
 #else
-    TI_NOT_IMPELENTED
+    TI_NOT_IMPLEMENTED
 #endif
   } else {
     tlctx = llvm_context_host.get();

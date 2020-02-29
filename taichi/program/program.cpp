@@ -81,6 +81,8 @@ Program::Program(Arch arch) {
   llvm_context_host = std::make_unique<TaichiLLVMContext>(Arch::x64);
   profiler = make_profiler(arch);
 
+  preallocated_device_buffer = nullptr;
+
 #if defined(TI_WITH_CUDA)
   if (config.enable_profiler) {
     cuda_context->set_profiler(profiler.get());
@@ -126,13 +128,16 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
   TaichiLLVMContext *tlctx;
 
   std::size_t prealloc_size = 0;
-  void *prealloc_ptr = nullptr;
 
   if (config.arch == Arch::cuda && !config.use_unified_memory) {
+#if defined(TI_WITH_CUDA)
     prealloc_size = 1UL << 30;
-    cudaMalloc(&prealloc_ptr, prealloc_size);
-    cudaMemset(prealloc_ptr, 0, prealloc_size);
+    cudaMalloc(&preallocated_device_buffer, prealloc_size);
+    cudaMemset(preallocated_device_buffer, 0, prealloc_size);
     tlctx = llvm_context_device.get();
+#else
+    TI_NOT_IMPELENTED
+#endif
   } else {
     tlctx = llvm_context_host.get();
   }
@@ -148,8 +153,9 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
   runtime
       ->call<void *, void *, std::size_t, std::size_t, void *, void *, void *>(
           "runtime_initialize", result_buffer, this,
-          (std::size_t)scomp->root_size, prealloc_size, prealloc_ptr,
-          (void *)&taichi_allocate_aligned, (void *)std::printf);
+          (std::size_t)scomp->root_size, prealloc_size,
+          preallocated_device_buffer, (void *)&taichi_allocate_aligned,
+          (void *)std::printf);
 
   TI_TRACE("Runtime initialized");
   llvm_runtime = runtime->fetch_result<void *>();
@@ -415,6 +421,12 @@ void Program::finalize() {
 #endif
   }
   memory_pool->terminate();
+#if defined(TI_WITH_CUDA)
+  if (preallocated_device_buffer != nullptr)
+    cudaFree(preallocated_device_buffer);
+#else
+  TI_NOT_IMPLEMENTED
+#endif
   finalized = true;
   num_instances -= 1;
 }

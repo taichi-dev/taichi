@@ -28,6 +28,9 @@ CompileConfig::CompileConfig() {
   default_gpu_block_dim = 64;
   verbose = true;
   fast_math = true;
+
+  device_memory_GB = 0;
+  device_memory_fraction = 0.5;  // by default, use 50% GPU memory
 }
 
 TLANG_NAMESPACE_END

@@ -53,6 +53,7 @@ class Program {
   ThreadPool thread_pool;
   std::unique_ptr<MemoryPool> memory_pool;
   void *result_buffer; // TODO: move this
+  void *preallocated_device_buffer; // TODO: move this to memory allocator
 
   std::vector<std::unique_ptr<Kernel>> functions;
 

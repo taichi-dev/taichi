@@ -648,7 +648,6 @@ Ptr Runtime::allocate_from_buffer(std::size_t size, std::size_t alignment) {
         ((std::size_t)preallocated_head + alignment - 1) % alignment;
     ret = preallocated_head;
     preallocated_head += size;
-    taichi_printf(this, "%p %p\n", preallocated_head, preallocated_tail);
     taichi_assert_runtime(this, preallocated_head <= preallocated_tail,
                           "Out of pre-allocated memory");
   });

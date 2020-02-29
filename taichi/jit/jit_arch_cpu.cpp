@@ -57,6 +57,11 @@ class JITModuleCPU : public JITModule {
 
   void *lookup_function(const std::string &name) override;
 
+  uint64 fetch_result_u64() override {
+    // TODO: move this to a new class e.g. "RuntimeEnvironment"
+    return *(uint64 *)get_current_program().result_buffer;
+  }
+
   bool direct_dispatch() const override {
     return true;
   }

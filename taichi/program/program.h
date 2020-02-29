@@ -52,6 +52,7 @@ class Program {
   static std::atomic<int> num_instances;
   ThreadPool thread_pool;
   std::unique_ptr<MemoryPool> memory_pool;
+  void *result_buffer; // TODO: move this
 
   std::vector<std::unique_ptr<Kernel>> functions;
 

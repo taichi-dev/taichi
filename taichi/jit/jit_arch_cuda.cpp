@@ -63,6 +63,13 @@ class JITModuleCUDA : public JITModule {
     cuda_context->launch(func, name, arg_pointers, grid_dim, block_dim);
   }
 
+  uint64 fetch_result_u64() override {
+    uint64 ret;
+    check_cuda_error(cudaMemcpy(&ret, get_current_program().result_buffer,
+                                sizeof(ret), cudaMemcpyDeviceToHost));
+    return ret;
+  }
+
   bool direct_dispatch() const override {
     return false;
   }

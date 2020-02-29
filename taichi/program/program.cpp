@@ -87,6 +87,7 @@ Program::Program(Arch arch) {
   }
 #endif
 
+  result_buffer = nullptr;
   current_kernel = nullptr;
   sync = true;
   llvm_runtime = nullptr;
@@ -121,6 +122,7 @@ FunctionType Program::compile(Kernel &kernel) {
 // For CPU and CUDA archs only
 void Program::initialize_runtime_system(StructCompiler *scomp) {
   // auto tlctx = llvm_context_host.get();
+  result_buffer = taichi_allocate_aligned(this, 8, 8);
   TaichiLLVMContext *tlctx;
   if (config.arch == Arch::cuda) {
     tlctx = llvm_context_host.get();
@@ -137,8 +139,11 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
   TI_TRACE("Allocating data structure of size {} B", scomp->root_size);
 
   runtime->call<void *, void *, std::size_t, void *, void *>(
-      "runtime_initialize", &llvm_runtime, this, (std::size_t)scomp->root_size,
+      "runtime_initialize", result_buffer, this, (std::size_t)scomp->root_size,
       (void *)&taichi_allocate_aligned, (void *)std::printf);
+
+  TI_TRACE("Runtime initialized");
+  llvm_runtime = runtime->fetch_result<void *>();
   TI_TRACE("Runtime initialized");
 
   auto mem_req_queue = tlctx->lookup_function<void *(void *)>(
@@ -173,7 +178,6 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
       runtime->call<void *, int>("runtime_allocate_ambient", rt, i);
     }
   }
-
 
   if (arch_use_host_memory(config.arch)) {
     runtime->call<void *, void *, void *>("Runtime_initialize_thread_pool",

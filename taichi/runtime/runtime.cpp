@@ -466,6 +466,7 @@ void initialize_rand_state(RandState *state, u32 i) {
 struct NodeManager;
 
 struct Runtime {
+  Ptr result_buffer;
   vm_allocator_type vm_allocator;
   assert_failed_type assert_failed;
   host_printf_type host_printf;
@@ -486,6 +487,11 @@ struct Runtime {
   Ptr profiler;
   void (*profiler_start)(Ptr, Ptr);
   void (*profiler_stop)(Ptr);
+
+  template <typename T>
+  void set_result(T t) {
+    *(u64 *)result_buffer = taichi_union_cast<uint64>(t);
+  }
 
   template <typename T, typename... Args>
   T *create(Args &&... args) {
@@ -642,7 +648,7 @@ Ptr Runtime::request_allocate_aligned(std::size_t size, std::size_t alignment) {
   return r->ptr;
 }
 
-void runtime_initialize(Runtime **runtime_ptr,
+void runtime_initialize(Ptr result_buffer,
                         Ptr prog,
                         uint64_t root_size,
                         void *_vm_allocator,
@@ -650,8 +656,9 @@ void runtime_initialize(Runtime **runtime_ptr,
   // bootstrap
   auto vm_allocator = (vm_allocator_type)_vm_allocator;
   auto host_printf = (host_printf_type)_host_printf;
-  *runtime_ptr = (Runtime *)vm_allocator(prog, sizeof(Runtime), 128);
-  Runtime *runtime = *runtime_ptr;
+  Runtime *runtime = (Runtime *)vm_allocator(prog, sizeof(Runtime), 128);
+  runtime->result_buffer = result_buffer;
+  runtime->set_result(runtime);
   runtime->vm_allocator = vm_allocator;
   runtime->host_printf = host_printf;
   runtime->prog = prog;

@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <functional>
+#include "taichi/inc/constants.h"
 #include "taichi/llvm/llvm_fwd.h"
 #include "taichi/lang_util.h"
 #include "taichi/program/profiler.h"
@@ -81,6 +82,14 @@ class JITModule {
   // directly call the function (e.g. on CPU), or via another runtime system
   // (e.g. cudaLaunch)?
   virtual bool direct_dispatch() const = 0;
+
+  virtual uint64 fetch_result_u64() = 0;
+
+  template <typename T>
+  T fetch_result() {
+    static_assert(sizeof(T) <= sizeof(uint64));
+    return taichi_union_cast<T>(fetch_result_u64());
+  }
 
   virtual ~JITModule() {
   }

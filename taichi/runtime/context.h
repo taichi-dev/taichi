@@ -20,24 +20,14 @@ struct Context {
   static constexpr size_t extra_args_size = sizeof(extra_args);
 
 #if defined(TI_RUNTIME_HOST)
-  template <typename T, typename G>
-  static T union_cast_with_different_sizes(G g) {
-    union {
-      T t;
-      G g;
-    } u;
-    u.g = g;
-    return u.t;
-  }
-
   template <typename T>
   T get_arg(int i) {
-    return union_cast_with_different_sizes<T>(args[i]);
+    return taichi_union_cast_with_different_sizes<T>(args[i]);
   }
 
   template <typename T>
   void set_arg(int i, T v) {
-    args[i] = union_cast_with_different_sizes<uint64>(v);
+    args[i] = taichi_union_cast_with_different_sizes<uint64>(v);
   }
 #endif
 };

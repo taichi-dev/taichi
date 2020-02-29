@@ -385,7 +385,7 @@ class Kernel:
     return self.compiled_functions[key](*args)
 
 import re
-_DECORATED_CLASS_STACKFRAME_STMT_RE = re.compile(r'@\w+\.data_oriented')
+_DECORATED_CLASS_STACKFRAME_STMT_RE = re.compile(r'@(\w+\.)?data_oriented')
 
 def _kernel_impl(func, level_of_class_stackframe, verbose=False):
   # Can decorators determine if a function is being defined inside a class?

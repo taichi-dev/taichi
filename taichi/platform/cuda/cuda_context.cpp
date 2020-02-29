@@ -17,7 +17,11 @@ CUDAContext::CUDAContext() : profiler(nullptr) {
 
   char name[128];
   check_cuda_error(cuDeviceGetName(name, 128, device));
-  TI_TRACE("Using CUDA Device [id=0]: {}", name);
+  auto GB = std::pow(1024.0, 3.0);
+  TI_TRACE(
+      "Using CUDA Device [id=0]: {}; Total memory {:.2f} GB; free memory "
+      "{:.2f} GB",
+      name, get_total_memory() / GB, get_free_memory() / GB);
 
   int cc_major, cc_minor;
   check_cuda_error(cuDeviceGetAttribute(
@@ -29,6 +33,18 @@ CUDAContext::CUDAContext() : profiler(nullptr) {
   check_cuda_error(cuCtxCreate(&context, 0, device));
 
   mcpu = fmt::format("sm_{}{}", cc_major, cc_minor);
+}
+
+std::size_t CUDAContext::get_total_memory() {
+  std::size_t ret, _;
+  cudaMemGetInfo(&_, &ret);
+  return ret;
+}
+
+std::size_t CUDAContext::get_free_memory() {
+  std::size_t ret, _;
+  cudaMemGetInfo(&ret, &_);
+  return ret;
 }
 
 void CUDAContext::launch(void *func,

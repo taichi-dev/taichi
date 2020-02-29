@@ -102,14 +102,6 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
 
     context_ty = get_runtime_type("Context");
     physical_coordinate_ty = get_runtime_type("PhysicalCoordinates");
-    module->setDataLayout(tlctx->get_data_layout());
-
-    using namespace llvm;
-
-    for (auto &f : *module) {
-      if (!f.isDeclaration())
-        f.setLinkage(Function::PrivateLinkage);  // to avoid duplicated symbols
-    }
 
     std::string grad_suffix;
     if (kernel->grad) {
@@ -1407,7 +1399,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
 
   void visit(GlobalTemporaryStmt *stmt) override {
     auto runtime = get_runtime();
-    auto buffer = call("Runtime_get_temporary_pointer", runtime,
+    auto buffer = call("get_temporary_pointer", runtime,
                        tlctx->get_constant((int64)stmt->offset));
 
     TI_ASSERT(stmt->width() == 1);

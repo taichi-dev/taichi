@@ -240,6 +240,8 @@ void remove_useless_libdevice_functions(llvm::Module *module) {
   module->getFunction("__internal_lgamma_pos")->eraseFromParent();
 }
 
+// Note: runtime_module = init_module < struct_module
+
 std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
   TI_AUTO_PROF
   if (!runtime_module) {
@@ -376,6 +378,25 @@ void TaichiLLVMContext::set_struct_module(
     TI_ERROR("module broken");
   }
   struct_module = llvm::CloneModule(*module);
+  if (!arch_is_cpu(arch)) {
+    for (auto &f : *struct_module) {
+      bool is_kernel = false;
+      if (arch == Arch::cuda) {
+        std::string func_name = f.getName();
+        if (starts_with(func_name, "runtime_")) {
+          mark_function_as_cuda_kernel(&f);
+          is_kernel = true;
+        }
+      }
+
+      if (!is_kernel && !f.isDeclaration())
+        // set declaration-only functions as internal linking to avoid
+        // duplicated symbols and to remove external symbol dependencies such as
+        // std::sin
+        f.setLinkage(llvm::Function::PrivateLinkage);
+    }
+  }
+  runtime_jit_module = add_module(clone_struct_module());
 }
 
 template <typename T>
@@ -472,6 +493,34 @@ llvm::DataLayout TaichiLLVMContext::get_data_layout() {
 
 JITModule *TaichiLLVMContext::add_module(std::unique_ptr<llvm::Module> module) {
   return jit->add_module(std::move(module));
+}
+
+void TaichiLLVMContext::mark_function_as_cuda_kernel(llvm::Function *func) {
+  /*******************************************************************
+  Example annotation from llvm PTX doc:
+
+  define void @kernel(float addrspace(1)* %A,
+                      float addrspace(1)* %B,
+                      float addrspace(1)* %C);
+
+  !nvvm.annotations = !{!0}
+  !0 = !{void (float addrspace(1)*,
+               float addrspace(1)*,
+               float addrspace(1)*)* @kernel, !"kernel", i32 1}
+  *******************************************************************/
+
+  // Mark kernel function as a CUDA __global__ function
+  // Add the nvvm annotation that it is considered a kernel function.
+
+  llvm::Metadata *md_args[] = {llvm::ValueAsMetadata::get(func),
+                               MDString::get(*ctx, "kernel"),
+                               llvm::ValueAsMetadata::get(get_constant(1))};
+
+  MDNode *md_node = MDNode::get(*ctx, md_args);
+
+  func->getParent()
+      ->getOrInsertNamedMetadata("nvvm.annotations")
+      ->addOperand(md_node);
 }
 
 template llvm::Value *TaichiLLVMContext::get_constant(float32 t);

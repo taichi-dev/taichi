@@ -90,6 +90,15 @@ class LowerAST : public IRVisitor {
     }
   }
 
+  void visit(FrontendReturnStmt *stmt) override {
+    auto expr = load_if_ptr(stmt->retval);
+    VecStatement flattened;
+    expr->flatten(flattened);
+    flattened.push_back<ReturnStmt>(stmt->fs, expr->stmt);
+    stmt->parent->replace_with(stmt, std::move(flattened));
+    throw IRModified();
+  }
+
   void visit(FrontendPrintStmt *stmt) override {
     // expand rhs
     auto expr = load_if_ptr(stmt->expr);

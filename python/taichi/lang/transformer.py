@@ -534,6 +534,8 @@ if 1:
           raise TaichiSyntaxError("Function definition not allowed in 'ti.func'.")
       # Transform as func (all parameters passed by value)
       arg_decls = []
+      enter_stmt = self.parse_stmt('ti.core.initialize_function_scope()')
+      arg_decls.append(enter_stmt)
       for i, arg in enumerate(args.args):
         if i == 0 and self.is_classfunc:
           continue
@@ -543,12 +545,10 @@ if 1:
         arg_init.value.args[0] = self.parse_expr(arg.arg + '_by_value__')
         args.args[i].arg += '_by_value__'
         arg_decls.append(arg_init)
-      enter_stmt = self.parse_stmt('ti.core.initialize_funcion_scope()')
-      node.body.append(enter_stmt)
     with self.variable_scope():
       self.generic_visit(node)
     if not self.is_kernel:
-      leave_stmt = self.parse_stmt('return ti.core.finalize_funcion_scope()')
+      leave_stmt = self.parse_stmt('return ti.core.finalize_function_scope()')
       node.body.append(leave_stmt)
     node.body = arg_decls + node.body
     return node

@@ -432,6 +432,14 @@ class IRPrinter : public IRVisitor {
   void visit(InternalFuncStmt *stmt) override {
     print("{} = call internal \"{}\"", stmt->name(), stmt->func_name);
   }
+
+  void visit(ReturnStmt *stmt) override {
+    print("return {}", stmt->retval->name());
+  }
+
+  void visit(FrontendReturnStmt *stmt) override {
+    print("return {}", stmt->retval.serialize());
+  }
 };
 
 namespace irpass {

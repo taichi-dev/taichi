@@ -508,7 +508,6 @@ STRUCT_FIELD(Runtime, root_mem_size);
 STRUCT_FIELD(Runtime, temporaries);
 STRUCT_FIELD(Runtime, assert_failed);
 STRUCT_FIELD(Runtime, host_printf);
-STRUCT_FIELD(Runtime, mem_req_queue);
 STRUCT_FIELD(Runtime, profiler);
 STRUCT_FIELD(Runtime, profiler_start);
 STRUCT_FIELD(Runtime, profiler_stop);
@@ -646,6 +645,10 @@ Ptr Runtime::request_allocate_aligned(std::size_t size, std::size_t alignment) {
   while (r->ptr == nullptr)
     ;
   return r->ptr;
+}
+
+void runtime_get_mem_req_queue(Runtime *runtime) {
+  runtime->set_result(runtime->mem_req_queue);
 }
 
 void runtime_initialize(Ptr result_buffer,

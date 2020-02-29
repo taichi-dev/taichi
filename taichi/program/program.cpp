@@ -146,8 +146,9 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
   llvm_runtime = runtime->fetch_result<void *>();
   TI_TRACE("Runtime initialized");
 
-  auto mem_req_queue = tlctx->lookup_function<void *(void *)>(
-      "Runtime_get_mem_req_queue")(llvm_runtime);
+  runtime->call<void *>("runtime_get_mem_req_queue", llvm_runtime);
+
+  auto mem_req_queue = runtime->fetch_result<void *>();
 
   memory_pool->set_queue((MemRequestQueue *)mem_req_queue);
 

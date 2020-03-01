@@ -283,7 +283,7 @@ bool is_opengl_api_available()
 }
 
 #else
-void launch_glsl_kernel(std::string source, std::vector<IOV> iov)
+void launch_glsl_kernel(GLProgram *program, std::vector<IOV> iov, int num_groups)
 {
   TI_NOT_IMPLEMENTED
 }

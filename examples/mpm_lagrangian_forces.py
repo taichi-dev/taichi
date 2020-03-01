@@ -130,7 +130,7 @@ def g2p():
     C[p] = new_C
 
 
-gui = ti.GUI("MPM", (1024, 1024), background_color=0x112F41)
+gui = ti.GUI("MPM", (640, 640), background_color=0x112F41)
 
 mesh = lambda i, j: i * n_particle_y + j
 
@@ -174,14 +174,14 @@ def main():
       grid_op()
       g2p()
 
-    gui.circle((0.5, 0.5), radius=72, color=0x068587)
+    gui.circle((0.5, 0.5), radius=45, color=0x068587)
     # TODO: why is visualization so slow?
     particle_pos = x.to_numpy()
     for i in range(n_elements):
       for j in range(3):
         a, b = vertices_[i, j], vertices_[i, (j + 1) % 3]
         gui.line((particle_pos[a][0], particle_pos[a][1]), (particle_pos[b][0], particle_pos[b][1]), radius=1, color=0x4FB99F)
-    gui.circles(particle_pos, radius=2, color=0xF2B134)
+    gui.circles(particle_pos, radius=1.5, color=0xF2B134)
     gui.show()
 
 

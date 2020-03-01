@@ -47,7 +47,6 @@ class GUI:
   
   def set_image(self, img):
     import numpy as np
-    import taichi as ti
     from .image import cook_image
     img = cook_image(img)
     if img.dtype in [np.uint8, np.uint16, np.uint32, np.uint64]:
@@ -111,8 +110,7 @@ class GUI:
     self.canvas.triangle_single(a[0], a[1], b[0], b[1], c[0], c[1], color)
 
   def line(self, begin, end, radius, color):
-    import taichi as ti
-    self.canvas.path(ti.vec(*begin), ti.vec(*end)).radius(radius).color(color).finish()
+    self.canvas.path_single(begin[0], begin[1], end[0], end[1], color, radius)
     
   def show(self, file=None):
     self.core.update()

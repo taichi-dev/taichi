@@ -30,6 +30,15 @@ void Canvas::circle_single(real x, real y, uint32 color, real radius) {
   circle(x, y).radius(radius).color(color).finish();
 }
 
+void Canvas::path_single(real x0,
+                         real y0,
+                         real x1,
+                         real y1,
+                         uint32 color,
+                         real radius) {
+  path(Vector2(x0, y0), Vector2(x1, y1)).radius(radius).color(color).finish();
+}
+
 void Canvas::triangle(Vector2 a, Vector2 b, Vector2 c, Vector4 color) {
   a = transform(a);
   b = transform(b);
@@ -46,8 +55,8 @@ void Canvas::triangle(Vector2 a, Vector2 b, Vector2 c, Vector4 color) {
   limits[1].y = max(a.y, max(b.y, c.y));
   for (int i = (int)std::floor(limits[0].x); i < (int)std::ceil(limits[1].x);
        i++) {
-    for (int j = (int)std::floor(limits[0].y);
-         j < (int)std::ceil(limits[1].y); j++) {
+    for (int j = (int)std::floor(limits[0].y); j < (int)std::ceil(limits[1].y);
+         j++) {
       Vector2 pixel(i + 0.5_f, j + 0.5_f);
       bool inside_a = cross(pixel - a, b - a) <= 0;
       bool inside_b = cross(pixel - b, c - b) <= 0;
@@ -59,7 +68,13 @@ void Canvas::triangle(Vector2 a, Vector2 b, Vector2 c, Vector4 color) {
   }
 }
 
-void Canvas::triangle_single(real x0, real y0, real x1, real y1, real x2, real y2, uint32 color_hex) {
+void Canvas::triangle_single(real x0,
+                             real y0,
+                             real x1,
+                             real y1,
+                             real x2,
+                             real y2,
+                             uint32 color_hex) {
   auto a = Vector2(x0, y0);
   auto b = Vector2(x1, y1);
   auto c = Vector2(x2, y2);

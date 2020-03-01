@@ -593,6 +593,10 @@ struct NodeManager {
 
 extern "C" {
 
+void Runtime_store_result(Runtime *runtime, u64 ret) {
+  *(u64 *)(runtime->result_buffer) = ret;
+}
+
 void Runtime_profiler_start(Runtime *runtime, Ptr kernel_name) {
   runtime->profiler_start(runtime->profiler, kernel_name);
 }

@@ -865,9 +865,18 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       llvm::Type *dest_ty = tlctx->get_data_type<int64>();
       auto extended = builder->CreateZExt(
           builder->CreateBitCast(stmt->val->value, intermediate_type), dest_ty);
-      builder->CreateCall(
-          get_runtime_function("Context_set_args"),
-          {get_context(), tlctx->get_constant(stmt->arg_id), extended});
+      // TODO: refactor this part
+      if (get_current_program().config.arch == Arch::cuda &&
+          !get_current_program().config.use_unified_memory) {
+        // For SNode reader without unified memory. This is a temporary
+        // solution.
+        builder->CreateCall(get_runtime_function("Runtime_store_result"),
+                            {get_runtime(), extended});
+      } else {
+        builder->CreateCall(
+            get_runtime_function("Context_set_args"),
+            {get_context(), tlctx->get_constant(stmt->arg_id), extended});
+      }
     }
   }
 

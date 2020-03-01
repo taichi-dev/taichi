@@ -25,6 +25,10 @@ struct Context {
     return taichi_union_cast_with_different_sizes<T>(args[i]);
   }
 
+  uint64 get_arg_as_uint64(int i) {
+    return args[i];
+  }
+
   template <typename T>
   void set_arg(int i, T v) {
     args[i] = taichi_union_cast_with_different_sizes<uint64>(v);

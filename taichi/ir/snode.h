@@ -287,6 +287,8 @@ class SNode {
   int num_elements_along_axis(int i) const;
 
   void set_kernel_args(Kernel *kernel, const std::vector<int> &I);
+
+  uint64 fetch_reader_result(); // TODO: refactor
 };
 
 class SNodeAttribute {

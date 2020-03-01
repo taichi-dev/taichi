@@ -114,6 +114,23 @@ void SNode::write_float(const std::vector<int> &I, float64 val) {
   (*writer_kernel)();
 }
 
+uint64 SNode::fetch_reader_result() {
+  uint64 ret;
+  if (get_current_program().config.arch == Arch::cuda &&
+      !get_current_program().config.use_unified_memory) {
+    // TODO: refactor
+#if defined(TI_WITH_CUDA)
+    cudaMemcpy(&ret, get_current_program().result_buffer, sizeof(uint64),
+               cudaMemcpyDeviceToHost);
+#else
+    TI_NOT_IMPLEMENTED;
+#endif
+  } else {
+    ret = get_current_program().context.get_arg_as_uint64(num_active_indices);
+  }
+  return ret;
+}
+
 float64 SNode::read_float(const std::vector<int> &I) {
   if (reader_kernel == nullptr) {
     reader_kernel = &get_current_program().get_snode_reader(this);
@@ -121,10 +138,12 @@ float64 SNode::read_float(const std::vector<int> &I) {
   set_kernel_args(reader_kernel, I);
   get_current_program().synchronize();
   (*reader_kernel)();
+  get_current_program().synchronize();
+  auto ret = fetch_reader_result();
   if (dt == DataType::f32) {
-    return get_current_program().context.get_arg<float32>(num_active_indices);
+    return taichi_union_cast_with_different_sizes<float32>(ret);
   } else if (dt == DataType::f64) {
-    return get_current_program().context.get_arg<float64>(num_active_indices);
+    return taichi_union_cast_with_different_sizes<float64>(ret);
   } else {
     TI_NOT_IMPLEMENTED
   }
@@ -148,22 +167,24 @@ int64 SNode::read_int(const std::vector<int> &I) {
   set_kernel_args(reader_kernel, I);
   get_current_program().synchronize();
   (*reader_kernel)();
+  get_current_program().synchronize();
+  auto ret = fetch_reader_result();
   if (dt == DataType::i32) {
-    return get_current_program().context.get_arg<int32>(num_active_indices);
+    return taichi_union_cast_with_different_sizes<int32>(ret);
   } else if (dt == DataType::i64) {
-    return get_current_program().context.get_arg<int64>(num_active_indices);
+    return taichi_union_cast_with_different_sizes<int64>(ret);
   } else if (dt == DataType::i8) {
-    return get_current_program().context.get_arg<int8>(num_active_indices);
+    return taichi_union_cast_with_different_sizes<int8>(ret);
   } else if (dt == DataType::i16) {
-    return get_current_program().context.get_arg<int16>(num_active_indices);
+    return taichi_union_cast_with_different_sizes<int16>(ret);
   } else if (dt == DataType::u8) {
-    return get_current_program().context.get_arg<uint8>(num_active_indices);
+    return taichi_union_cast_with_different_sizes<uint8>(ret);
   } else if (dt == DataType::u16) {
-    return get_current_program().context.get_arg<uint16>(num_active_indices);
+    return taichi_union_cast_with_different_sizes<uint16>(ret);
   } else if (dt == DataType::u32) {
-    return get_current_program().context.get_arg<uint32>(num_active_indices);
+    return taichi_union_cast_with_different_sizes<uint32>(ret);
   } else if (dt == DataType::u64) {
-    return get_current_program().context.get_arg<uint64>(num_active_indices);
+    return taichi_union_cast_with_different_sizes<uint64>(ret);
   } else {
     TI_NOT_IMPLEMENTED
   }

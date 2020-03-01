@@ -1877,10 +1877,9 @@ class FuncBodyStmt;
 
 class FrontendReturnStmt : public Stmt {
  public:
-  FuncBodyStmt *fs;
   Expr retval;
 
-  FrontendReturnStmt(FuncBodyStmt *fs, Expr retval) : fs(fs), retval(load_if_ptr(retval)) {
+  FrontendReturnStmt(Expr retval) : retval(load_if_ptr(retval)) {
   }
 
   DEFINE_ACCEPT
@@ -1888,10 +1887,9 @@ class FrontendReturnStmt : public Stmt {
 
 class ReturnStmt : public Stmt {
  public:
-  FuncBodyStmt *fs;
   Stmt *retval;
 
-  ReturnStmt(FuncBodyStmt *fs, Stmt *retval) : fs(fs), retval(retval) {
+  ReturnStmt(Stmt *retval) : retval(retval) {
   }
 
   DEFINE_ACCEPT
@@ -1901,14 +1899,21 @@ class FuncBodyStmt : public Stmt {
  public:
   std::unique_ptr<Block> body;
 
-  pStmt create_frontend_return(const Expr &expr) {
-    auto stmt = Stmt::make<FrontendReturnStmt>(this, expr);
-    return stmt;
-  }
-
   bool is_container_statement() const override {
     return true;
   }
+
+  DEFINE_ACCEPT
+};
+
+class FuncLeaveStmt : public Stmt {
+ public:
+
+  bool is_container_statement() const override {
+    return false;
+  }
+
+  DEFINE_ACCEPT
 };
 
 #define Print(x) Print_(x, #x);

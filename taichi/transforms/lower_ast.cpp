@@ -17,12 +17,14 @@ std::vector<T *> make_raw_pointer_list(
 class LowerAST : public IRVisitor {
  private:
   Stmt *capturing_loop;
+  Stmt *capturing_function;
 
  public:
   LowerAST() {
     // TODO: change this to false
     allow_undefined_visitor = true;
     capturing_loop = nullptr;
+    capturing_function = nullptr;
   }
 
   Expr load_if_ptr(Expr expr) {
@@ -90,11 +92,22 @@ class LowerAST : public IRVisitor {
     }
   }
 
+  void visit(FuncBodyStmt *stmt) override {
+    capturing_function = (Stmt *)stmt;
+    TI_INFO("FuncBody!!");
+  }
+
+  void visit(FuncLeaveStmt *stmt) override {
+    capturing_function = nullptr;//xx
+    TI_INFO("FuncLeave!!");
+  }
+
   void visit(FrontendReturnStmt *stmt) override {
+    TI_ASSERT_INFO(capturing_function, "return only allowed in ti.func, not ti.kernel");
     auto expr = load_if_ptr(stmt->retval);
     VecStatement flattened;
     expr->flatten(flattened);
-    flattened.push_back<ReturnStmt>(stmt->fs, expr->stmt);
+    flattened.push_back<ReturnStmt>(expr->stmt);
     stmt->parent->replace_with(stmt, std::move(flattened));
     throw IRModified();
   }

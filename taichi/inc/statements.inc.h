@@ -67,3 +67,7 @@ PER_STATEMENT(GlobalTemporaryStmt)
 
 // Special
 PER_STATEMENT(InternalFuncStmt)
+
+// Function
+PER_STATEMENT(FuncBodyStmt)
+PER_STATEMENT(FuncLeaveStmt)

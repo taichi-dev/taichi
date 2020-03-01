@@ -33,7 +33,6 @@ void expr_assign(const Expr &lhs_, const Expr &rhs, std::string tb) {
 }
 
 std::vector<std::unique_ptr<IRBuilder::ScopeGuard>> scope_stack;
-std::vector<std::unique_ptr<FuncBodyStmt>> func_stack;
 
 void compile_runtimes();
 std::string libdevice_path();
@@ -295,16 +294,17 @@ void export_lang(py::module &m) {
   m.def("initialize_function_scope", [&]() {
     auto func = std::make_unique<FuncBodyStmt>();
     scope_stack.push_back(current_ast_builder().create_scope(func->body));
-    func_stack.push_back(std::move(func));
+    current_ast_builder().insert(std::move(func));
   });
   m.def("finalize_function_scope", [&]() {
+    auto leave = std::make_unique<FuncLeaveStmt>();
     scope_stack.pop_back();
-    func_stack.pop_back();
+    current_ast_builder().insert(std::move(leave));
     return Expr(666);
   });
 
   m.def("insert_return_stmt", [&](const Expr &expr) {
-    auto ret = func_stack[0]->create_frontend_return(expr);
+    auto ret = Stmt::make<FrontendReturnStmt>(expr);
     current_ast_builder().insert(std::move(ret));
   });
 

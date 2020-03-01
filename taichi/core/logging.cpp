@@ -106,6 +106,7 @@ void Logger::warn(const std::string &s) {
 void Logger::error(const std::string &s, bool raise_signal) {
   console->error(s);
   if (raise_signal) {
+    std::raise(SIGABRT);
     throw s;
   }
 }

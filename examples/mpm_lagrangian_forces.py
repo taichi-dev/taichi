@@ -1,6 +1,8 @@
 import taichi as ti
 import os
 
+ti.init(arch=ti.cuda)
+
 real = ti.f32
 dim = 2
 n_particle_x = 100
@@ -26,23 +28,11 @@ restT = mat()
 total_energy = scalar()
 vertices = ti.var(ti.i32)
 
-ti.init(arch=ti.cuda)
-
-
-@ti.layout
-def place():
-  ti.root.dense(ti.k, n_particles).place(x, x.grad, v, C)
-  ti.root.dense(ti.ij, n_grid).place(grid_v, grid_m)
-  ti.root.dense(ti.i, n_elements).place(restT, restT.grad)
-  ti.root.dense(ti.ij, (n_elements, 3)).place(vertices)
-  ti.root.place(total_energy, total_energy.grad)
-
-
-@ti.kernel
-def clear_grid():
-  for i, j in grid_m:
-    grid_v[i, j] = [0, 0]
-    grid_m[i, j] = 0
+ti.root.dense(ti.k, n_particles).place(x, x.grad, v, C)
+ti.root.dense(ti.ij, n_grid).place(grid_v, grid_m)
+ti.root.dense(ti.i, n_elements).place(restT, restT.grad)
+ti.root.dense(ti.ij, (n_elements, 3)).place(vertices)
+ti.root.place(total_energy, total_energy.grad)
 
 
 @ti.func
@@ -86,9 +76,8 @@ def p2g():
         offset = ti.Vector([i, j])
         dpos = (ti.cast(ti.Vector([i, j]), ti.f32) - fx) * dx
         weight = w[i](0) * w[j](1)
-        grid_v[base + offset].atomic_add(
-            weight * (p_mass * v[p] - x.grad[p] + affine @ dpos))
-        grid_m[base + offset].atomic_add(weight * p_mass)
+        grid_v[base + offset] += weight * (p_mass * v[p] - x.grad[p] + affine @ dpos)
+        grid_m[base + offset] += weight * p_mass
 
 
 bound = 3
@@ -141,12 +130,9 @@ def g2p():
     C[p] = new_C
 
 
-gui = ti.core.GUI("MPM", ti.veci(1024, 1024))
-canvas = gui.get_canvas()
+gui = ti.GUI("MPM", (1024, 1024), background_color=0x112F41)
 
-
-def mesh(i, j):
-  return i * n_particle_y + j
+mesh = lambda i, j: i * n_particle_y + j
 
 
 def main():
@@ -171,13 +157,13 @@ def main():
       vertices[eid, 2] = mesh(i + 1, j)
 
   compute_rest_T()
-
-  os.makedirs('tmp', exist_ok=True)
+  
+  vertices_ = vertices.to_numpy()
 
   for f in range(600):
-    canvas.clear(0x112F41)
     for s in range(50):
-      clear_grid()
+      grid_m.fill(0)
+      grid_v.fill(0)
       # Note that we are now differentiating the total energy w.r.t. the particle position.
       # Recall that F = - \partial (total_energy) / \partial x
       with ti.Tape(total_energy):
@@ -188,18 +174,15 @@ def main():
       grid_op()
       g2p()
 
-    canvas.circle(ti.vec(0.5, 0.5)).radius(70).color(0x068587).finish()
+    gui.circle((0.5, 0.5), radius=72, color=0x068587)
     # TODO: why is visualization so slow?
+    particle_pos = x.to_numpy()
     for i in range(n_elements):
       for j in range(3):
-        a, b = vertices[i, j], vertices[i, (j + 1) % 3]
-        canvas.path(ti.vec(x[a][0], x[a][1]), ti.vec(
-            x[b][0], x[b][1])).radius(1).color(0x4FB99F).finish()
-    for i in range(n_particles):
-      canvas.circle(ti.vec(x[i][0], x[i][1])).radius(2).color(0xF2B134).finish()
-    gui.update()
-    gui.screenshot("tmp/{:04d}.png".format(f))
-  ti.profiler_print()
+        a, b = vertices_[i, j], vertices_[i, (j + 1) % 3]
+        gui.line((particle_pos[a][0], particle_pos[a][1]), (particle_pos[b][0], particle_pos[b][1]), radius=1, color=0x4FB99F)
+    gui.circles(particle_pos, radius=2, color=0xF2B134)
+    gui.show()
 
 
 if __name__ == '__main__':

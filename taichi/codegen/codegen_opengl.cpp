@@ -380,7 +380,7 @@ int _rand_i32()\n\
 
   void visit(AllocaStmt *alloca) override
   {
-    emit("{} {};", // need = 0?
+    emit("{} {} = 0;",
         opengl_data_type_name(alloca->element_type()),
         alloca->raw_name());
   }

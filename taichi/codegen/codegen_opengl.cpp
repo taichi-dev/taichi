@@ -194,7 +194,7 @@ int _rand_i32()\n\
 
   void visit(RandStmt *stmt) override
   {
-    emit("{} {} = _rand_{}();", opengl_data_type_name(stmt->ret_type.data_type),
+    emit("const {} {} = _rand_{}();", opengl_data_type_name(stmt->ret_type.data_type),
         stmt->raw_name(), data_type_short_name(stmt->ret_type.data_type));
     has_rand_ = true;
   }
@@ -206,12 +206,12 @@ int _rand_i32()\n\
       val = fmt::format("({} * {} + {})", val, stmt->strides[i],
                         stmt->inputs[i]->raw_name());
     }
-    emit("int {} = {};", stmt->raw_name(), val);
+    emit("const int {} = {};", stmt->raw_name(), val);
   }
 
   void visit(OffsetAndExtractBitsStmt *stmt) override
   {
-    emit("int {} = ((({} + {}) >> {}) & ((1 << {}) - 1));",
+    emit("const int {} = ((({} + {}) >> {}) & ((1 << {}) - 1));",
          stmt->raw_name(), stmt->offset, stmt->input->raw_name(),
          stmt->bit_begin, stmt->bit_end - stmt->bit_begin);
   }
@@ -261,7 +261,7 @@ int _rand_i32()\n\
   void visit(GlobalLoadStmt *stmt) override
   {
     TI_ASSERT(stmt->width() == 1);
-    emit("{} {} = _at_{};", opengl_data_type_name(stmt->element_type()),
+    emit("const {} {} = _at_{};", opengl_data_type_name(stmt->element_type()),
          stmt->raw_name(), stmt->ptr->raw_name());
   }
 
@@ -281,7 +281,7 @@ int _rand_i32()\n\
     std::vector<std::string> size_var_names;
     for (int i = 0; i < num_indices; i++) {
       std::string var_name = fmt::format("{}_size{}_", stmt->raw_name(), i);
-      emit("int {} = _extra_arg({}, {});", var_name, arg_id, i);
+      emit("const int {} = _extra_arg({}, {});", var_name, arg_id, i);
       size_var_names.push_back(std::move(var_name));
     }
     for (int i = 0; i < num_indices; i++) {
@@ -292,7 +292,7 @@ int _rand_i32()\n\
     pop_indent();
     emit("}}");
 
-    emit("int {} = ({} + {});", stmt->raw_name(),
+    emit("const int {} = ({} + {});", stmt->raw_name(),
          stmt->base_ptrs[0]->raw_name(), linear_index_name);
       emit("#define _at_{} _ext_ns_{}({})", stmt->raw_name(),
           data_type_short_name(stmt->element_type()), stmt->raw_name());
@@ -301,17 +301,17 @@ int _rand_i32()\n\
   void visit(UnaryOpStmt *stmt) override
   {
     if (stmt->op_type == UnaryOpType::logic_not) {
-      emit("{} {} = {}({} == 0);", opengl_data_type_name(stmt->element_type()),
+      emit("const {} {} = {}({} == 0);", opengl_data_type_name(stmt->element_type()),
            stmt->raw_name(), opengl_data_type_name(stmt->element_type()),
            stmt->operand->raw_name());
     } else if (stmt->op_type != UnaryOpType::cast) {
-      emit("{} {} = {}({}({}));", opengl_data_type_name(stmt->element_type()),
+      emit("const {} {} = {}({}({}));", opengl_data_type_name(stmt->element_type()),
            stmt->raw_name(), opengl_data_type_name(stmt->element_type()),
            unary_op_type_name(stmt->op_type), stmt->operand->raw_name());
     } else {
       // cast
       if (stmt->cast_by_value) {
-        emit("{} {} = {}({});",
+        emit("const {} {} = {}({});",
              opengl_data_type_name(stmt->element_type()), stmt->raw_name(),
              opengl_data_type_name(stmt->cast_type), stmt->operand->raw_name());
       } else {
@@ -328,21 +328,21 @@ int _rand_i32()\n\
     const auto bin_name = bin->raw_name();
     if (bin->op_type == BinaryOpType::floordiv) {
       if (is_integral(bin->element_type())) {
-        emit("{} {} = int(floor({} / {}));", dt_name, bin_name, lhs_name,
+        emit("const {} {} = int(floor({} / {}));", dt_name, bin_name, lhs_name,
              rhs_name);
       } else {
-        emit("{} {} = floor({} / {});", dt_name, bin_name, lhs_name,
+        emit("const {} {} = floor({} / {});", dt_name, bin_name, lhs_name,
              rhs_name);
       }
       return;
     }
     const auto binop = binary_op_type_symbol(bin->op_type);
     if (is_opengl_binary_op_infix(bin->op_type)) {
-      emit("{} {} = {}({} {} {});", dt_name, bin_name, dt_name,
+      emit("const {} {} = {}({} {} {});", dt_name, bin_name, dt_name,
           lhs_name, binop, rhs_name);
     } else {
       // This is a function call
-      emit("{} {} = {}({}, {});", dt_name, bin_name, binop, lhs_name,
+      emit("const {} {} = {}({}, {});", dt_name, bin_name, binop, lhs_name,
           rhs_name);
     }
   }
@@ -350,7 +350,7 @@ int _rand_i32()\n\
   void visit(TernaryOpStmt *tri) override
   {
     TI_ASSERT(tri->op_type == TernaryOpType::select);
-    emit("{} {} = ({}) != 0 ? ({}) : ({});",
+    emit("const {} {} = ({}) != 0 ? ({}) : ({});",
          opengl_data_type_name(tri->element_type()), tri->raw_name(),
          tri->op1->raw_name(), tri->op2->raw_name(), tri->op3->raw_name());
   }
@@ -366,7 +366,7 @@ int _rand_i32()\n\
     if (stmt->same_source() && linear_index &&
         stmt->width() == stmt->ptr[0].var->width()) {
       auto ptr = stmt->ptr[0].var;
-      emit("{} {} = {};", opengl_data_type_name(stmt->element_type()),
+      emit("const {} {} = {};", opengl_data_type_name(stmt->element_type()),
            stmt->raw_name(), ptr->raw_name());
     } else {
       TI_NOT_IMPLEMENTED;
@@ -388,7 +388,7 @@ int _rand_i32()\n\
   void visit(ConstStmt *const_stmt) override
   {
     TI_ASSERT(const_stmt->width() == 1);
-    emit("{} {} = {};", opengl_data_type_name(const_stmt->element_type()),
+    emit("const {} {} = {};", opengl_data_type_name(const_stmt->element_type()),
          const_stmt->raw_name(), const_stmt->val[0].stringify());
   }
 
@@ -396,9 +396,9 @@ int _rand_i32()\n\
   {
     const auto dt = opengl_data_type_name(stmt->element_type());
     if (stmt->is_ptr) {
-      emit("int {} = _arg_i32({}); // is ext pointer {}", stmt->raw_name(), stmt->arg_id, dt);
+      emit("const int {} = _arg_i32({}); // is ext pointer {}", stmt->raw_name(), stmt->arg_id, dt);
     } else {
-      emit("{} {} = _arg_{}({});", dt, stmt->raw_name(),
+      emit("const {} {} = _arg_{}({});", dt, stmt->raw_name(),
           data_type_short_name(stmt->element_type()), stmt->arg_id);
     }
   }
@@ -459,7 +459,7 @@ int _rand_i32()\n\
   {
     TI_ASSERT(!stmt->is_struct_for);
     TI_ASSERT(stmt->index == 0); // TODO: multiple indices
-    emit("int {} = _it_value_;", stmt->raw_name());
+    emit("const int {} = _it_value_;", stmt->raw_name());
   }
 
   void visit(RangeForStmt *for_stmt) override

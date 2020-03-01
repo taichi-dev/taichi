@@ -124,17 +124,18 @@ FunctionType Program::compile(Kernel &kernel) {
 // For CPU and CUDA archs only
 void Program::initialize_runtime_system(StructCompiler *scomp) {
   // auto tlctx = llvm_context_host.get();
-  result_buffer = taichi_allocate_aligned(this, 8, 8);
   TaichiLLVMContext *tlctx;
 
   std::size_t prealloc_size = 0;
 
   if (config.arch == Arch::cuda && !config.use_unified_memory) {
 #if defined(TI_WITH_CUDA)
+    check_cuda_error(cudaMalloc(&result_buffer, sizeof(uint64)));
     auto total_mem = cuda_context->get_total_memory();
-    if (config.device_memory_GB != 0)
+    if (config.device_memory_fraction == 0) {
+      TI_ASSERT(config.device_memory_GB > 0);
       prealloc_size = std::size_t(config.device_memory_GB * (1UL << 30));
-    else
+    } else
       prealloc_size = std::size_t(config.device_memory_fraction * total_mem);
 
     TI_TRACE("Allocating device memory {:.2f} GB",
@@ -147,6 +148,7 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
     TI_NOT_IMPLEMENTED
 #endif
   } else {
+    result_buffer = taichi_allocate_aligned(this, 8, 8);
     tlctx = llvm_context_host.get();
   }
   auto runtime = tlctx->runtime_jit_module;

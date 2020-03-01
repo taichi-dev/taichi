@@ -29,8 +29,8 @@ CompileConfig::CompileConfig() {
   verbose = true;
   fast_math = true;
 
-  device_memory_GB = 0;
-  device_memory_fraction = 0.5;  // by default, use 50% GPU memory
+  device_memory_GB = 1;  // by default, preallocate 1 GB GPU memory
+  device_memory_fraction = 0.0;
 }
 
 TLANG_NAMESPACE_END

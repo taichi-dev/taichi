@@ -67,7 +67,8 @@ Logger::Logger() {
 
   py::register_exception_translator([](std::exception_ptr p) {
     try {
-      if (p) std::rethrow_exception(p);
+      if (p)
+        std::rethrow_exception(p);
     } catch (const std::string &e) {
       PyErr_SetString(PyExc_RuntimeError, e.c_str());
     }
@@ -103,19 +104,14 @@ void Logger::warn(const std::string &s) {
   console->warn(s);
 }
 
-void Logger::error(const std::string &s, bool raise_signal) {
+void Logger::error(const std::string &s) {
   console->error(s);
-  if (raise_signal) {
-    throw s;
-  }
 }
 
-void Logger::critical(const std::string &s, bool raise_signal) {
+void Logger::critical(const std::string &s) {
   console->critical(s);
-  if (raise_signal) {
-    std::raise(SIGABRT);
-  }
 }
+
 void Logger::flush() {
   console->flush();
 }
@@ -145,16 +141,18 @@ std::string signal_name(int sig) {
 bool python_at_exit_called = false;
 
 void signal_handler(int signo) {
-  logger.error(
-      fmt::format("Received signal {} ({})", signo, signal_name(signo)), false);
-  TI_FLUSH_LOGGER;
   taichi::print_traceback();
+  auto sig_name = signal_name(signo);
+  logger.error(fmt::format("Received signal {} ({})", signo, sig_name));
+  TI_FLUSH_LOGGER;
   fmt::print("\n\n\n");
   if (taichi::CoreState::get_instance().trigger_gdb_when_crash) {
 #if defined(TI_PLATFORM_LINUX)
     trash(system(fmt::format("sudo gdb -p {}", PID::get_pid()).c_str()));
 #endif
   }
+  throw sig_name;
+  /*
   if (python_at_exit && !python_at_exit_called) {
     python_at_exit_called = true;
     TI_INFO("Invoking registered Python at_exit...");
@@ -166,6 +164,7 @@ void signal_handler(int signo) {
                                   signal_name(signo));
     taichi_raise_assertion_failure_in_python(msg.c_str());
   }
+  */
   std::exit(-1);
 }
 

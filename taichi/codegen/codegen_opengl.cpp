@@ -349,8 +349,9 @@ private: // {{{
           "range for end value <= begin value");
       num_threads_ = stmt->end_value - stmt->begin_value;
       emit("// range known at compile time");
-      emit("int _thread_id_ = int(gl_LocalInvocationIndex);");
-      emit("int _it_value_ = {} + _thread_id_ * {};",
+      emit("const int _thread_id_ = int(gl_GlobalInvocationID.x);");
+      emit("if (_thread_id_ >= {}) return;", num_threads_);
+      emit("const int _it_value_ = {} + _thread_id_ * {};",
           stmt->begin_value, 1 /* stmt->step? */);
     } else {
       TI_ERROR("non-const range_for currently unsupported under OpenGL");

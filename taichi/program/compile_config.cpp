@@ -29,6 +29,12 @@ CompileConfig::CompileConfig() {
   verbose = true;
   fast_math = true;
 
+#if defined(TI_PLATFORM_WINDOWS)
+  use_unified_memory = false;
+#else
+  use_unified_memory = true;
+#endif
+
   device_memory_GB = 1;  // by default, preallocate 1 GB GPU memory
   device_memory_fraction = 0.0;
 }

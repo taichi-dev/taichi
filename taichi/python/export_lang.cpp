@@ -95,6 +95,9 @@ void export_lang(py::module &m) {
       .def_readwrite("enable_profiler", &CompileConfig::enable_profiler)
       .def_readwrite("default_fp", &CompileConfig::default_fp)
       .def_readwrite("default_ip", &CompileConfig::default_ip)
+      .def_readwrite("device_memory_GB", &CompileConfig::device_memory_GB)
+      .def_readwrite("device_memory_fraction",
+                     &CompileConfig::device_memory_fraction)
       .def_readwrite("fast_math", &CompileConfig::fast_math);
 
   m.def("reset_default_compile_config",

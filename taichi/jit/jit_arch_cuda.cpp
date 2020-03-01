@@ -113,23 +113,24 @@ std::string cuda_mattrs() {
 }
 
 std::string convert(std::string new_name) {
-	// Evil C++ mangling on Windows will lead to "unsupported characters in symbol" error in LLVM PTX printer.
-	// Convert here.
-    for (int i = 0; i < (int)new_name.size(); i++) {
-      if (new_name[i] == '@')
-        new_name.replace(i, 1, "_at_");
-      if (new_name[i] == '?')
-        new_name.replace(i, 1, "_qm_");
-      if (new_name[i] == '$')
-        new_name.replace(i, 1, "_dl_");
-      if (new_name[i] == '<')
-        new_name.replace(i, 1, "_lb_");
-      if (new_name[i] == '>')
-        new_name.replace(i, 1, "_rb_");
-      TI_ASSERT(std::isalpha(new_name[i]) || std::isdigit(new_name[i]) || new_name[i] == '_' || new_name[i] == '.');
-    }
-    TI_ASSERT(isalpha(new_name[0]) || new_name[0] == '_');
-    return new_name;
+  // Evil C++ mangling on Windows will lead to "unsupported characters in
+  // symbol" error in LLVM PTX printer. Convert here.
+  for (int i = 0; i < (int)new_name.size(); i++) {
+    if (new_name[i] == '@')
+      new_name.replace(i, 1, "_at_");
+    if (new_name[i] == '?')
+      new_name.replace(i, 1, "_qm_");
+    if (new_name[i] == '$')
+      new_name.replace(i, 1, "_dl_");
+    if (new_name[i] == '<')
+      new_name.replace(i, 1, "_lb_");
+    if (new_name[i] == '>')
+      new_name.replace(i, 1, "_rb_");
+    TI_ASSERT(std::isalpha(new_name[i]) || std::isdigit(new_name[i]) ||
+              new_name[i] == '_' || new_name[i] == '.');
+  }
+  TI_ASSERT(isalpha(new_name[0]) || new_name[0] == '_' || new_name[0] == '.');
+  return new_name;
 }
 
 std::string JITSessionCUDA::compile_module_to_ptx(
@@ -139,7 +140,7 @@ std::string JITSessionCUDA::compile_module_to_ptx(
 
   for (auto &f : module->globals())
     f.setName(convert(f.getName()));
-  for (auto &f: *module)
+  for (auto &f : *module)
     f.setName(convert(f.getName()));
 
   llvm::Triple triple(module->getTargetTriple());

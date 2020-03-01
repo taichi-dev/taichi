@@ -72,7 +72,7 @@ def test_complex_kernels_indirect():
 
 @ti.all_archs
 def test_complex_kernels_oop():
-
+  @ti.data_oriented
   class A:
 
     def __init__(self):
@@ -84,7 +84,7 @@ def test_complex_kernels_oop():
       ti.root.dense(ti.i, self.n).place(self.x)
       ti.root.place(self.total)
 
-    @ti.classkernel
+    @ti.kernel
     def func(self, mul: ti.f32):
       for i in range(self.n):
         ti.atomic_add(self.total[None], self.x[i] * mul)
@@ -96,7 +96,7 @@ def test_complex_kernels_oop():
 
     @ti.complex_kernel_grad(forward)
     def backward(self, mul):
-      self.func(mul, _gradient=True)
+      self.func.grad(mul)
 
   a = A()
 
@@ -113,7 +113,7 @@ def test_complex_kernels_oop():
 
 @ti.all_archs
 def test_complex_kernels_oop2():
-
+  @ti.data_oriented
   class A:
 
     def __init__(self):
@@ -125,7 +125,7 @@ def test_complex_kernels_oop2():
       ti.root.dense(ti.i, self.n).place(self.x)
       ti.root.place(self.total)
 
-    @ti.classkernel
+    @ti.kernel
     def func(self, mul: ti.f32):
       for i in range(self.n):
         ti.atomic_add(self.total[None], self.x[i] * mul)
@@ -140,7 +140,7 @@ def test_complex_kernels_oop2():
 
     @ti.complex_kernel_grad(forward)
     def backward(self, mul):
-      self.func(mul, _gradient=True)
+      self.func.grad(mul)
 
   a = A()
 

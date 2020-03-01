@@ -368,6 +368,8 @@ void Program::initialize_device_llvm_context() {
 Arch Program::get_snode_accessor_arch() {
   if (config.arch == Arch::opengl) {
     return Arch::opengl;
+  } else if (config.arch == Arch::cuda && !config.use_unified_memory) {
+    return Arch::cuda;
   } else {
     return get_host_arch();
   }

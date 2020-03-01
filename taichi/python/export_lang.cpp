@@ -124,7 +124,6 @@ void export_lang(py::module &m) {
              return program->snode_root.get();
            },
            py::return_value_policy::reference)
-      .def("get_snode_writer", &Program::get_snode_writer)
       .def("get_total_compilation_time", &Program::get_total_compilation_time)
       .def("synchronize", &Program::synchronize);
 

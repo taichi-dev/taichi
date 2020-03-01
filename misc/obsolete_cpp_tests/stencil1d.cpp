@@ -8,7 +8,7 @@
 #include <unordered_map>
 
 using namespace taichi;
-using Tlang::measure_cpe;
+using lang::measure_cpe;
 
 struct Node {
   float x, y;

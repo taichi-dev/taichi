@@ -32,7 +32,7 @@ StructCompiler::StructCompiler(Program *prog)
   emit("#define TL_HOST");
   emit("#include <taichi/legacy_kernel.h>");
   emit(" namespace taichi {{");
-  emit(" namespace Tlang {{");
+  emit(" namespace lang {{");
   emit("\n");
 #endif
 }

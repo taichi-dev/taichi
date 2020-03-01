@@ -32,7 +32,7 @@ void export_visual(py::module &m) {
       .def("get_cursor_pos", &GUI::get_cursor_pos)
       .def("set_profiler",
            [](GUI *gui, void *profiler) -> void {
-             gui->set_profiler((Tlang::ProfilerBase *)profiler);
+             gui->set_profiler((lang::ProfilerBase *)profiler);
            })
       .def("update", &GUI::update);
   py::class_<Canvas>(m, "Canvas")

@@ -62,7 +62,7 @@ UnifiedAllocator::UnifiedAllocator(std::size_t size, Arch arch)
   TI_TRACE("Memory allocated. Allocation time = {:.3} s", Time::get_time() - t);
 }
 
-taichi::Tlang::UnifiedAllocator::~UnifiedAllocator() {
+taichi::lang::UnifiedAllocator::~UnifiedAllocator() {
   if (!initialized()) {
     return;
   }
@@ -75,7 +75,7 @@ taichi::Tlang::UnifiedAllocator::~UnifiedAllocator() {
   }
 }
 
-void taichi::Tlang::UnifiedAllocator::memset(unsigned char val) {
+void taichi::lang::UnifiedAllocator::memset(unsigned char val) {
   std::memset(data, val, size);
 }
 

@@ -35,7 +35,7 @@ class StructCompiler;
 
 class Program {
  public:
-  using Kernel = taichi::Tlang::Kernel;
+  using Kernel = taichi::lang::Kernel;
   // Should be copiable
   std::vector<void *> loaded_dlls;
   Kernel *current_kernel;
@@ -52,6 +52,8 @@ class Program {
   static std::atomic<int> num_instances;
   ThreadPool thread_pool;
   std::unique_ptr<MemoryPool> memory_pool;
+  void *result_buffer; // TODO: move this
+  void *preallocated_device_buffer; // TODO: move this to memory allocator
 
   std::vector<std::unique_ptr<Kernel>> functions;
 

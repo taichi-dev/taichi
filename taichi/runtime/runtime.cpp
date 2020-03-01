@@ -17,7 +17,8 @@
 #include <type_traits>
 #include <cstring>
 
-// Use relative path here since when compiling runtime bitcode no "-I" is specified to clang
+// Use relative path here since when compiling runtime bitcode no "-I" is
+// specified to clang
 #include "../inc/constants.h"
 #include "../math/arithmetic.h"
 
@@ -465,6 +466,12 @@ void initialize_rand_state(RandState *state, u32 i) {
 struct NodeManager;
 
 struct Runtime {
+  bool preallocated;
+  std::size_t preallocated_size;
+
+  Ptr preallocated_head;
+  Ptr preallocated_tail;
+
   vm_allocator_type vm_allocator;
   assert_failed_type assert_failed;
   host_printf_type host_printf;
@@ -482,9 +489,18 @@ struct Runtime {
   Ptr allocate(std::size_t size);
   Ptr allocate_aligned(std::size_t size, std::size_t alignment);
   Ptr request_allocate_aligned(std::size_t size, std::size_t alignment);
+  Ptr allocate_from_buffer(std::size_t size, std::size_t alignment);
   Ptr profiler;
   void (*profiler_start)(Ptr, Ptr);
   void (*profiler_stop)(Ptr);
+
+  Ptr result_buffer;
+  i32 lock;
+
+  template <typename T>
+  void set_result(T t) {
+    *(u64 *)result_buffer = taichi_union_cast<uint64>(t);
+  }
 
   template <typename T, typename... Args>
   T *create(Args &&... args) {
@@ -501,7 +517,6 @@ STRUCT_FIELD(Runtime, root_mem_size);
 STRUCT_FIELD(Runtime, temporaries);
 STRUCT_FIELD(Runtime, assert_failed);
 STRUCT_FIELD(Runtime, host_printf);
-STRUCT_FIELD(Runtime, mem_req_queue);
 STRUCT_FIELD(Runtime, profiler);
 STRUCT_FIELD(Runtime, profiler_start);
 STRUCT_FIELD(Runtime, profiler_stop);
@@ -578,6 +593,10 @@ struct NodeManager {
 
 extern "C" {
 
+void Runtime_store_result(Runtime *runtime, u64 ret) {
+  *(u64 *)(runtime->result_buffer) = ret;
+}
+
 void Runtime_profiler_start(Runtime *runtime, Ptr kernel_name) {
   runtime->profiler_start(runtime->profiler, kernel_name);
 }
@@ -586,7 +605,7 @@ void Runtime_profiler_stop(Runtime *runtime) {
   runtime->profiler_stop(runtime->profiler);
 }
 
-Ptr Runtime_get_temporary_pointer(Runtime *runtime, u64 offset) {
+Ptr get_temporary_pointer(Runtime *runtime, u64 offset) {
   return runtime->temporaries + offset;
 }
 
@@ -615,13 +634,28 @@ void taichi_assert_runtime(Runtime *runtime, i32 test, const char *msg) {
 #endif
 
 void taichi_assert(Context *context, i32 test, const char *msg) {
-  taichi_assert_runtime((Runtime *)context->runtime, test, msg);
+  taichi_assert_runtime(context->runtime, test, msg);
 }
 
 Ptr Runtime::allocate_aligned(std::size_t size, std::size_t alignment) {
-  // TODO: change this. Add lock, allocate, return pointer. Assert failure if
-  // OOM
-  return (Ptr)vm_allocator(prog, size, alignment);
+  if (preallocated)
+    return allocate_from_buffer(size, alignment);
+  else
+    return (Ptr)vm_allocator(prog, size, alignment);
+}
+
+Ptr Runtime::allocate_from_buffer(std::size_t size, std::size_t alignment) {
+  Ptr ret;
+  locked_task(&lock, [&] {
+    preallocated_head +=
+        alignment - 1 -
+        ((std::size_t)preallocated_head + alignment - 1) % alignment;
+    ret = preallocated_head;
+    preallocated_head += size;
+    taichi_assert_runtime(this, preallocated_head <= preallocated_tail,
+                          "Out of pre-allocated memory");
+  });
+  return ret;
 }
 
 Ptr Runtime::allocate(std::size_t size) {
@@ -629,28 +663,56 @@ Ptr Runtime::allocate(std::size_t size) {
 }
 
 Ptr Runtime::request_allocate_aligned(std::size_t size, std::size_t alignment) {
-  auto i = atomic_add_i32(&mem_req_queue->tail, 1);
-  taichi_assert_runtime(this, i <= taichi_max_num_mem_requests,
-                        "Too many memory allocation requests.");
-  auto volatile r = &mem_req_queue->requests[i];
-  atomic_exchange_u64((uint64 *)&r->size, size);
-  atomic_exchange_u64((uint64 *)&r->alignment, alignment);
-  // wait for host to allocate
-  while (r->ptr == nullptr)
-    ;
-  return r->ptr;
+  if (preallocated)
+    return allocate_from_buffer(size, alignment);
+  else {
+    auto i = atomic_add_i32(&mem_req_queue->tail, 1);
+    taichi_assert_runtime(this, i <= taichi_max_num_mem_requests,
+                          "Too many memory allocation requests.");
+    auto volatile r = &mem_req_queue->requests[i];
+    atomic_exchange_u64((uint64 *)&r->size, size);
+    atomic_exchange_u64((uint64 *)&r->alignment, alignment);
+    // wait for host to allocate
+    while (r->ptr == nullptr)
+      ;
+    return r->ptr;
+  }
 }
 
-void Runtime_initialize(Runtime **runtime_ptr,
-                        Ptr prog,
-                        uint64_t root_size,
-                        void *_vm_allocator,
-                        void *_host_printf) {
+void runtime_get_mem_req_queue(Runtime *runtime) {
+  runtime->set_result(runtime->mem_req_queue);
+}
+
+void runtime_initialize(
+    Ptr result_buffer,
+    Ptr prog,
+    std::size_t root_size,
+    std::size_t
+        preallocated_size,  // Non-zero means use the preallocated buffer
+    Ptr preallocated_buffer,
+    void *_vm_allocator,
+    void *_host_printf) {
   // bootstrap
   auto vm_allocator = (vm_allocator_type)_vm_allocator;
   auto host_printf = (host_printf_type)_host_printf;
-  *runtime_ptr = (Runtime *)vm_allocator(prog, sizeof(Runtime), 128);
-  Runtime *runtime = *runtime_ptr;
+  Runtime *runtime = nullptr;
+  Ptr preallocated_tail = preallocated_buffer + preallocated_size;
+  if (preallocated_size) {
+    runtime = (Runtime *)preallocated_buffer;
+    preallocated_buffer += taichi::iroundup(sizeof(Runtime), taichi_page_size);
+  } else {
+    runtime = (Runtime *)vm_allocator(prog, sizeof(Runtime), 128);
+  }
+
+  runtime->root_mem_size =
+      taichi::iroundup((size_t)root_size, taichi_page_size);
+
+  runtime->preallocated = preallocated_size > 0;
+  runtime->preallocated_head = preallocated_buffer;
+  runtime->preallocated_tail = preallocated_tail;
+
+  runtime->result_buffer = result_buffer;
+  runtime->set_result(runtime);
   runtime->vm_allocator = vm_allocator;
   runtime->host_printf = host_printf;
   runtime->prog = prog;
@@ -675,7 +737,7 @@ void Runtime_initialize(Runtime **runtime_ptr,
     initialize_rand_state(&runtime->rand_states[i], i);
 }
 
-void Runtime_initialize2(Runtime *runtime, int root_id, int num_snodes) {
+void runtime_initialize2(Runtime *runtime, int root_id, int num_snodes) {
   // runtime->request_allocate_aligned ready to use
 
   // initialize the root node element list
@@ -701,14 +763,14 @@ void Runtime_initialize_thread_pool(Runtime *runtime,
   runtime->parallel_for = (parallel_for_type)parallel_for;
 }
 
-void NodeAllocator_initialize(Runtime *runtime,
-                              int snode_id,
-                              std::size_t node_size) {
+void runtime_NodeAllocator_initialize(Runtime *runtime,
+                                      int snode_id,
+                                      std::size_t node_size) {
   runtime->node_allocators[snode_id] =
       runtime->create<NodeManager>(runtime, node_size, 1024 * 16);
 }
 
-void Runtime_allocate_ambient(Runtime *runtime, int snode_id) {
+void runtime_allocate_ambient(Runtime *runtime, int snode_id) {
   runtime->ambient_elements[snode_id] =
       runtime->node_allocators[snode_id]->allocate();
 }

@@ -40,40 +40,13 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
 #endif
   }
 
-  void mark_function_as_cuda_kernel(llvm::Function *func) {
-    /*******************************************************************
-    Example annotation from llvm PTX doc:
-
-    define void @kernel(float addrspace(1)* %A,
-                        float addrspace(1)* %B,
-                        float addrspace(1)* %C);
-
-    !nvvm.annotations = !{!0}
-    !0 = !{void (float addrspace(1)*,
-                 float addrspace(1)*,
-                 float addrspace(1)*)* @kernel, !"kernel", i32 1}
-    *******************************************************************/
-
-    // Mark kernel function as a CUDA __global__ function
-    // Add the nvvm annotation that it is considered a kernel function.
-
-    llvm::Metadata *md_args[] = {
-        llvm::ValueAsMetadata::get(func),
-        MDString::get(*llvm_context, "kernel"),
-        llvm::ValueAsMetadata::get(tlctx->get_constant(1))};
-
-    MDNode *md_node = MDNode::get(*llvm_context, md_args);
-
-    module->getOrInsertNamedMetadata("nvvm.annotations")->addOperand(md_node);
-  }
-
   FunctionType compile_module_to_executable() override {
 #if defined(TI_WITH_CUDA)
     auto offloaded_local = offloaded_tasks;
     for (auto &task : offloaded_local) {
       llvm::Function *func = module->getFunction(task.name);
       TI_ASSERT(func);
-      mark_function_as_cuda_kernel(func);
+      tlctx->mark_function_as_cuda_kernel(func);
     }
 
     if (prog->config.print_kernel_llvm_ir) {

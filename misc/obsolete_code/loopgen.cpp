@@ -14,7 +14,7 @@
 
 TLANG_NAMESPACE_BEGIN
 
-LoopGenerator::LoopGenerator(taichi::Tlang::CodeGenBase *gen) : gen(gen) {
+LoopGenerator::LoopGenerator(taichi::lang::CodeGenBase *gen) : gen(gen) {
 #if defined(TI_WITH_CUDA)
   int num_SMs;
   cudaDeviceGetAttribute(&num_SMs, cudaDevAttrMultiProcessorCount, 0);

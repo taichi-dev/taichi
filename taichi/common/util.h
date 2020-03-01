@@ -156,6 +156,15 @@ static_assert(__cplusplus >= 201402L, "C++14 required.");
 #define TI_NAMESPACE_BEGIN namespace taichi {
 #define TI_NAMESPACE_END }
 
+#define TLANG_NAMESPACE_BEGIN \
+  namespace taichi {          \
+  namespace lang {
+
+#define TLANG_NAMESPACE_END \
+  }                         \
+  }
+
+
     TI_EXPORT void taichi_raise_assertion_failure_in_python(const char *msg);
 
 TI_NAMESPACE_BEGIN
@@ -365,8 +374,8 @@ private:
   void debug(const std::string &s);
   void info(const std::string &s);
   void warn(const std::string &s);
-  void error(const std::string &s, bool raise_signal = true);
-  void critical(const std::string &s, bool raise_signal = true);
+  void error(const std::string &s);
+  void critical(const std::string &s);
   void flush();
   void set_level(const std::string &level);
   bool is_level_effective(const std::string &level_name);

@@ -85,7 +85,7 @@ class SNode {
   Expr expr;
 
   std::string data_type_name() {
-    return Tlang::data_type_name(dt);
+    return lang::data_type_name(dt);
   }
 
   void *clear_kernel{}, *clear_and_deactivate_kernel{};
@@ -287,6 +287,8 @@ class SNode {
   int num_elements_along_axis(int i) const;
 
   void set_kernel_args(Kernel *kernel, const std::vector<int> &I);
+
+  uint64 fetch_reader_result(); // TODO: refactor
 };
 
 class SNodeAttribute {

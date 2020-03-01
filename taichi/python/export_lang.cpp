@@ -41,7 +41,7 @@ TLANG_NAMESPACE_END
 
 TI_NAMESPACE_BEGIN
 void export_lang(py::module &m) {
-  using namespace taichi::Tlang;
+  using namespace taichi::lang;
 
   py::enum_<Arch>(m, "Arch", py::arithmetic())
 #define PER_ARCH(x) .value(#x, Arch::x)
@@ -95,6 +95,9 @@ void export_lang(py::module &m) {
       .def_readwrite("enable_profiler", &CompileConfig::enable_profiler)
       .def_readwrite("default_fp", &CompileConfig::default_fp)
       .def_readwrite("default_ip", &CompileConfig::default_ip)
+      .def_readwrite("device_memory_GB", &CompileConfig::device_memory_GB)
+      .def_readwrite("device_memory_fraction",
+                     &CompileConfig::device_memory_fraction)
       .def_readwrite("fast_math", &CompileConfig::fast_math);
 
   m.def("reset_default_compile_config",
@@ -124,7 +127,6 @@ void export_lang(py::module &m) {
              return program->snode_root.get();
            },
            py::return_value_policy::reference)
-      .def("get_snode_writer", &Program::get_snode_writer)
       .def("get_total_compilation_time", &Program::get_total_compilation_time)
       .def("synchronize", &Program::synchronize);
 

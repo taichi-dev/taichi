@@ -27,7 +27,7 @@ inline AccessFlag operator|=(AccessFlag &a, AccessFlag &b) {
 class ScratchPad {
  public:
   SNode *snode;
-  using AccessFlag = taichi::Tlang::AccessFlag;
+  using AccessFlag = taichi::lang::AccessFlag;
 
   std::vector<int> bounds[2];
   std::vector<int> pad_size;

@@ -81,12 +81,15 @@ Program::Program(Arch arch) {
   llvm_context_host = std::make_unique<TaichiLLVMContext>(Arch::x64);
   profiler = make_profiler(arch);
 
+  preallocated_device_buffer = nullptr;
+
 #if defined(TI_WITH_CUDA)
   if (config.enable_profiler) {
     cuda_context->set_profiler(profiler.get());
   }
 #endif
 
+  result_buffer = nullptr;
   current_kernel = nullptr;
   sync = true;
   llvm_runtime = nullptr;
@@ -120,7 +123,34 @@ FunctionType Program::compile(Kernel &kernel) {
 
 // For CPU and CUDA archs only
 void Program::initialize_runtime_system(StructCompiler *scomp) {
-  auto tlctx = llvm_context_host.get();
+  // auto tlctx = llvm_context_host.get();
+  TaichiLLVMContext *tlctx;
+
+  std::size_t prealloc_size = 0;
+
+  if (config.arch == Arch::cuda && !config.use_unified_memory) {
+#if defined(TI_WITH_CUDA)
+    check_cuda_error(cudaMalloc(&result_buffer, sizeof(uint64)));
+    auto total_mem = cuda_context->get_total_memory();
+    if (config.device_memory_fraction == 0) {
+      TI_ASSERT(config.device_memory_GB > 0);
+      prealloc_size = std::size_t(config.device_memory_GB * (1UL << 30));
+    } else
+      prealloc_size = std::size_t(config.device_memory_fraction * total_mem);
+
+    TI_TRACE("Allocating device memory {:.2f} GB",
+             1.0 * prealloc_size / (1UL << 30));
+
+    check_cuda_error(cudaMalloc(&preallocated_device_buffer, prealloc_size));
+    check_cuda_error(cudaMemset(preallocated_device_buffer, 0, prealloc_size));
+    tlctx = llvm_context_device.get();
+#else
+    TI_NOT_IMPLEMENTED
+#endif
+  } else {
+    result_buffer = taichi_allocate_aligned(this, 8, 8);
+    tlctx = llvm_context_host.get();
+  }
   auto runtime = tlctx->runtime_jit_module;
 
   // By the time this creator is called, "this" is already destroyed.
@@ -130,17 +160,24 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
 
   TI_TRACE("Allocating data structure of size {} B", scomp->root_size);
 
-  runtime->call<void *, void *, std::size_t, void *, void *>(
-      "Runtime_initialize", &llvm_runtime, this, (std::size_t)scomp->root_size,
-      (void *)&taichi_allocate_aligned, (void *)std::printf);
+  runtime
+      ->call<void *, void *, std::size_t, std::size_t, void *, void *, void *>(
+          "runtime_initialize", result_buffer, this,
+          (std::size_t)scomp->root_size, prealloc_size,
+          preallocated_device_buffer, (void *)&taichi_allocate_aligned,
+          (void *)std::printf);
+
   TI_TRACE("Runtime initialized");
+  llvm_runtime = runtime->fetch_result<void *>();
+  TI_TRACE("Runtime pointer fetched");
 
-  auto mem_req_queue = tlctx->lookup_function<void *(void *)>(
-      "Runtime_get_mem_req_queue")(llvm_runtime);
+  if (arch_use_host_memory(config.arch) || config.use_unified_memory) {
+    runtime->call<void *>("runtime_get_mem_req_queue", llvm_runtime);
+    auto mem_req_queue = runtime->fetch_result<void *>();
+    memory_pool->set_queue((MemRequestQueue *)mem_req_queue);
+  }
 
-  memory_pool->set_queue((MemRequestQueue *)mem_req_queue);
-
-  runtime->call<void *, int, int>("Runtime_initialize2", llvm_runtime, root_id,
+  runtime->call<void *, int, int>("runtime_initialize2", llvm_runtime, root_id,
                                   (int)snodes.size());
 
   for (int i = 0; i < (int)snodes.size(); i++) {
@@ -160,22 +197,21 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
       TI_TRACE("Initializing allocator for snode {} (node size {})",
                snodes[i]->id, node_size);
       auto rt = llvm_runtime;
-      runtime->call<void *, int, std::size_t>("NodeAllocator_initialize", rt, i,
-                                              node_size);
+      runtime->call<void *, int, std::size_t>(
+          "runtime_NodeAllocator_initialize", rt, i, node_size);
       TI_TRACE("Allocating ambient element for snode {} (node size {})",
                snodes[i]->id, node_size);
-      runtime->call<void *, int>("Runtime_allocate_ambient", rt, i);
+      runtime->call<void *, int>("runtime_allocate_ambient", rt, i);
     }
   }
 
-  runtime->call<void *, void *, void *>("Runtime_initialize_thread_pool",
-                                        llvm_runtime, &thread_pool,
-                                        (void *)ThreadPool::static_run);
-
-  runtime->call<void *, void *>("Runtime_set_assert_failed", llvm_runtime,
-                                (void *)assert_failed_host);
-
   if (arch_use_host_memory(config.arch)) {
+    runtime->call<void *, void *, void *>("Runtime_initialize_thread_pool",
+                                          llvm_runtime, &thread_pool,
+                                          (void *)ThreadPool::static_run);
+
+    runtime->call<void *, void *>("Runtime_set_assert_failed", llvm_runtime,
+                                  (void *)assert_failed_host);
     // Profiler functions can only be called on host kernels
     runtime->call<void *, void *>("Runtime_set_profiler", llvm_runtime,
                                   profiler.get());
@@ -192,18 +228,17 @@ void Program::materialize_layout() {
   std::unique_ptr<StructCompiler> scomp = StructCompiler::make(this, Arch::x64);
   scomp->run(*snode_root, true);
 
-  if (arch_is_cpu(config.arch) || config.arch == Arch::cuda ||
-      config.arch == Arch::metal) {
+  if (arch_is_cpu(config.arch) || config.arch == Arch::metal) {
     initialize_runtime_system(scomp.get());
   }
 
-  TI_INFO("materialize_layout called");
-  if (config.arch == Arch::cuda && config.use_llvm) {
+  TI_TRACE("materialize_layout called");
+  if (config.arch == Arch::cuda) {
     initialize_device_llvm_context();
-    // llvm_context_device->get_init_module();
     std::unique_ptr<StructCompiler> scomp_gpu =
         StructCompiler::make(this, Arch::cuda);
     scomp_gpu->run(*snode_root, false);
+    initialize_runtime_system(scomp_gpu.get());
   } else if (config.arch == Arch::metal) {
     TI_ASSERT_INFO(config.use_llvm,
                    "Metal arch requires that LLVM being enabled");
@@ -335,6 +370,8 @@ void Program::initialize_device_llvm_context() {
 Arch Program::get_snode_accessor_arch() {
   if (config.arch == Arch::opengl) {
     return Arch::opengl;
+  } else if (config.arch == Arch::cuda && !config.use_unified_memory) {
+    return Arch::cuda;
   } else {
     return get_host_arch();
   }
@@ -396,6 +433,10 @@ void Program::finalize() {
 #endif
   }
   memory_pool->terminate();
+#if defined(TI_WITH_CUDA)
+  if (preallocated_device_buffer != nullptr)
+    cudaFree(preallocated_device_buffer);
+#endif
   finalized = true;
   num_instances -= 1;
 }

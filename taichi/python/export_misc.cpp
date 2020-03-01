@@ -159,8 +159,8 @@ void export_misc(py::module &m) {
     printf("test was successful.\n");
   });
   m.def("with_cuda", with_cuda);
-  m.def("with_metal", taichi::Tlang::metal::is_metal_api_available);
-  m.def("with_opengl", taichi::Tlang::opengl::is_opengl_api_available);
+  m.def("with_metal", taichi::lang::metal::is_metal_api_available);
+  m.def("with_opengl", taichi::lang::opengl::is_opengl_api_available);
 }
 
 TI_NAMESPACE_END

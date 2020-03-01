@@ -1,12 +1,9 @@
 import taichi as ti
 
+ti.init(arch=ti.cuda)
 x, y = ti.var(ti.f32), ti.var(ti.f32)
 
-
-@ti.layout
-def xy():
-  ti.root.dense(ti.ij, 16).place(x, y)
-
+ti.root.dense(ti.ij, 16).place(x, y)
 
 @ti.kernel
 def laplace():

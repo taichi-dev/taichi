@@ -28,6 +28,15 @@ CompileConfig::CompileConfig() {
   default_gpu_block_dim = 64;
   verbose = true;
   fast_math = true;
+
+#if defined(TI_PLATFORM_WINDOWS)
+  use_unified_memory = false;
+#else
+  use_unified_memory = true;
+#endif
+
+  device_memory_GB = 1;  // by default, preallocate 1 GB GPU memory
+  device_memory_fraction = 0.0;
 }
 
 TLANG_NAMESPACE_END

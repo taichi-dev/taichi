@@ -19,6 +19,9 @@ class CUDAContext {
 
   CUDAContext();
 
+  std::size_t get_total_memory();
+  std::size_t get_free_memory();
+
   bool detected() const {
     return dev_count != 0;
   }

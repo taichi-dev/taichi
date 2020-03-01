@@ -63,6 +63,13 @@ class JITModuleCUDA : public JITModule {
     cuda_context->launch(func, name, arg_pointers, grid_dim, block_dim);
   }
 
+  uint64 fetch_result_u64() override {
+    uint64 ret;
+    check_cuda_error(cudaMemcpy(&ret, get_current_program().result_buffer,
+                                sizeof(ret), cudaMemcpyDeviceToHost));
+    return ret;
+  }
+
   bool direct_dispatch() const override {
     return false;
   }
@@ -105,10 +112,36 @@ std::string cuda_mattrs() {
   return "+ptx50";
 }
 
+std::string convert(std::string new_name) {
+  // Evil C++ mangling on Windows will lead to "unsupported characters in
+  // symbol" error in LLVM PTX printer. Convert here.
+  for (int i = 0; i < (int)new_name.size(); i++) {
+    if (new_name[i] == '@')
+      new_name.replace(i, 1, "_at_");
+    if (new_name[i] == '?')
+      new_name.replace(i, 1, "_qm_");
+    if (new_name[i] == '$')
+      new_name.replace(i, 1, "_dl_");
+    if (new_name[i] == '<')
+      new_name.replace(i, 1, "_lb_");
+    if (new_name[i] == '>')
+      new_name.replace(i, 1, "_rb_");
+    TI_ASSERT(std::isalpha(new_name[i]) || std::isdigit(new_name[i]) ||
+              new_name[i] == '_' || new_name[i] == '.');
+  }
+  TI_ASSERT(isalpha(new_name[0]) || new_name[0] == '_' || new_name[0] == '.');
+  return new_name;
+}
+
 std::string JITSessionCUDA::compile_module_to_ptx(
     std::unique_ptr<llvm::Module> &module) {
   // Part of this function is borrowed from Halide::CodeGen_PTX_Dev.cpp
   using namespace llvm;
+
+  for (auto &f : module->globals())
+    f.setName(convert(f.getName()));
+  for (auto &f : *module)
+    f.setName(convert(f.getName()));
 
   llvm::Triple triple(module->getTargetTriple());
 

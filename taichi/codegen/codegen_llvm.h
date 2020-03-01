@@ -102,14 +102,6 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
 
     context_ty = get_runtime_type("Context");
     physical_coordinate_ty = get_runtime_type("PhysicalCoordinates");
-    module->setDataLayout(tlctx->get_data_layout());
-
-    using namespace llvm;
-
-    for (auto &f : *module) {
-      if (!f.isDeclaration())
-        f.setLinkage(Function::PrivateLinkage);  // to avoid duplicated symbols
-    }
 
     std::string grad_suffix;
     if (kernel->grad) {
@@ -873,9 +865,18 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       llvm::Type *dest_ty = tlctx->get_data_type<int64>();
       auto extended = builder->CreateZExt(
           builder->CreateBitCast(stmt->val->value, intermediate_type), dest_ty);
-      builder->CreateCall(
-          get_runtime_function("Context_set_args"),
-          {get_context(), tlctx->get_constant(stmt->arg_id), extended});
+      // TODO: refactor this part
+      if (get_current_program().config.arch == Arch::cuda &&
+          !get_current_program().config.use_unified_memory) {
+        // For SNode reader without unified memory. This is a temporary
+        // solution.
+        builder->CreateCall(get_runtime_function("Runtime_store_result"),
+                            {get_runtime(), extended});
+      } else {
+        builder->CreateCall(
+            get_runtime_function("Context_set_args"),
+            {get_context(), tlctx->get_constant(stmt->arg_id), extended});
+      }
     }
   }
 
@@ -1407,7 +1408,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
 
   void visit(GlobalTemporaryStmt *stmt) override {
     auto runtime = get_runtime();
-    auto buffer = call("Runtime_get_temporary_pointer", runtime,
+    auto buffer = call("get_temporary_pointer", runtime,
                        tlctx->get_constant((int64)stmt->offset));
 
     TI_ASSERT(stmt->width() == 1);

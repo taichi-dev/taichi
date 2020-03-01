@@ -5,7 +5,7 @@ import time
 from renderer_utils import out_dir, ray_aabb_intersection, inf, eps, \
   intersect_sphere, sphere_aabb_intersect_motion, inside_taichi
 
-ti.init(arch=ti.cuda)
+ti.init(arch=ti.cuda, device_memory_GB=4)
 
 res = 1280, 720
 num_spheres = 1024

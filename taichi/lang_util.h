@@ -5,15 +5,6 @@
 #include <taichi/common/util.h>
 #include <taichi/system/profiler.h>
 
-#define TLANG_NAMESPACE_BEGIN \
-  namespace taichi {          \
-  namespace Tlang {
-
-#define TLANG_NAMESPACE_END \
-  }                         \
-  }
-
-
 TLANG_NAMESPACE_BEGIN
 
 real get_cpu_frequency();

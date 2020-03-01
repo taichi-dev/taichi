@@ -41,7 +41,7 @@ void IRBuilder::stop_gradient(SNode *snode) {
   stack.back()->stop_gradients.push_back(snode);
 }
 
-GetChStmt::GetChStmt(taichi::Tlang::Stmt *input_ptr, int chid)
+GetChStmt::GetChStmt(taichi::lang::Stmt *input_ptr, int chid)
     : input_ptr(input_ptr), chid(chid) {
   add_operand(this->input_ptr);
   TI_ASSERT(input_ptr->is<SNodeLookupStmt>());
@@ -450,7 +450,7 @@ void Block::replace_with(Stmt *old_statement,
   replace_with(old_statement, std::move(vec));
 }
 
-Stmt *Block::lookup_var(taichi::Tlang::Ident ident) const {
+Stmt *Block::lookup_var(taichi::lang::Ident ident) const {
   auto ptr = local_var_alloca.find(ident);
   if (ptr != local_var_alloca.end()) {
     return ptr->second;

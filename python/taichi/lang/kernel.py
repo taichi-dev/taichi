@@ -232,6 +232,10 @@ class Kernel:
       if isinstance(anno, ast.Name):
         global_vars[anno.id] = self.arguments[i]
       
+    if self.is_grad:
+      from .ast_checker import KernelSimplicityASTChecker
+      KernelSimplicityASTChecker(self.func).visit(tree)
+
     visitor = ASTTransformer(
         excluded_paremeters=self.template_slot_locations,
         func=self,

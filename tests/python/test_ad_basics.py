@@ -157,3 +157,76 @@ def test_pow():
 def test_pow_f64():
   grad_test(lambda x: 0.4 ** x, lambda x: np.power(0.4, x), default_fp=ti.f64)
   grad_test(lambda y: y ** 0.4, lambda y: np.power(y, 0.4), default_fp=ti.f64)
+
+
+@ti.all_archs
+def test_obey_kernel_simplicity():
+  x = ti.var(ti.f32)
+  y = ti.var(ti.f32)
+
+  @ti.layout
+  def place():
+    ti.root.dense(ti.i, 1).place(x, y)
+    ti.root.lazy_grad()
+
+  @ti.kernel
+  def func():
+    for i in x:
+      # OK: nested for loop
+      for j in ti.static(range(3)):
+        # OK: a series of non-for-loop statements
+        y[i] += x[i] * 42
+        y[i] -= x[i] * 5
+
+  y.grad[0] = 1.0
+  x[0] = 0.1
+
+  func()
+  func.grad()
+  assert x.grad[0] == approx((42 - 5) * 3)
+
+
+@ti.must_throw(ti.KernelDefError)
+@ti.all_archs
+def test_violate_kernel_simplicity1():
+  x = ti.var(ti.f32)
+  y = ti.var(ti.f32)
+
+  @ti.layout
+  def place():
+    ti.root.dense(ti.i, 1).place(x, y)
+    ti.root.lazy_grad()
+
+  @ti.kernel
+  def func():
+    for i in x:
+      y[i] = x[i] * 42
+      # Bad: a mix of for-loop and non-for-loop
+      for j in ti.static(range(3)):
+        y[i] += x[i]
+
+  func()
+  func.grad()
+
+
+@ti.must_throw(ti.KernelDefError)
+@ti.all_archs
+def test_violate_kernel_simplicity2():
+  x = ti.var(ti.f32)
+  y = ti.var(ti.f32)
+
+  @ti.layout
+  def place():
+    ti.root.dense(ti.i, 1).place(x, y)
+    ti.root.lazy_grad()
+
+  @ti.kernel
+  def func():
+    for i in x:
+      for j in ti.static(range(3)):
+        y[i] += x[i]
+      # Bad: a mix of for-loop and non-for-loop
+      y[i] += x[i] * 42
+
+  func()
+  func.grad()

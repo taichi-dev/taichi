@@ -26,11 +26,11 @@ class StructCompiler {
   void infer_snode_properties(SNode &snode);
 
   // generate C++/llvm IR
-  virtual void generate_types(SNode &snode);
+  virtual void generate_types(SNode &snode) = 0;
 
-  virtual void generate_leaf_accessors(SNode &snode);
+  virtual void generate_child_accessors(SNode &snode) = 0;
 
-  virtual void run(SNode &node, bool host);
+  virtual void run(SNode &node, bool host) = 0;
 
   static std::unique_ptr<StructCompiler> make(Program *prog, Arch arch);
 };

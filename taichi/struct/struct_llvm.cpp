@@ -124,7 +124,7 @@ void StructCompilerLLVM::generate_refine_coordinates(SNode *snode) {
   builder.CreateRetVoid();
 }
 
-void StructCompilerLLVM::generate_leaf_accessors(SNode &snode) {
+void StructCompilerLLVM::generate_child_accessors(SNode &snode) {
   auto type = snode.type;
   stack.push_back(&snode);
 
@@ -167,7 +167,7 @@ void StructCompilerLLVM::generate_leaf_accessors(SNode &snode) {
   }
 
   for (auto ch : snode.ch) {
-    generate_leaf_accessors(*ch);
+    generate_child_accessors(*ch);
   }
 
   stack.pop_back();
@@ -186,7 +186,7 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
   for (auto &n : snodes_rev)
     generate_types(*n);
 
-  generate_leaf_accessors(root);
+  generate_child_accessors(root);
 
   if (prog->config.print_struct_llvm_ir) {
     TI_INFO("Struct Module IR");

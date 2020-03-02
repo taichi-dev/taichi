@@ -107,16 +107,4 @@ void StructCompiler::infer_snode_properties(SNode &snode) {
   }
 }
 
-// Methods below are for the obsolete src2src backend and are not used anymore.
-// See misc/obsolete_code
-void StructCompiler::generate_types(SNode &snode) {
-  TI_NOT_IMPLEMENTED
-}
-
-void StructCompiler::generate_leaf_accessors(SNode &snode) {
-  TI_NOT_IMPLEMENTED
-}
-
-void StructCompiler::run(SNode &root, bool host){TI_NOT_IMPLEMENTED}
-
 TLANG_NAMESPACE_END

@@ -46,6 +46,16 @@ bool arch_is_gpu(Arch arch) {
   return !arch_is_cpu(arch);
 }
 
+Arch host_arch() {
+#if defined(TI_ARCH_x64)
+  return Arch::x64;
+#endif
+#if defined(TI_ARCH_ARM)
+  return Arch::arm64;
+#endif
+  TI_NOT_IMPLEMENTED
+}
+
 bool arch_use_host_memory(Arch arch) {
   return arch_is_cpu(arch);
 }

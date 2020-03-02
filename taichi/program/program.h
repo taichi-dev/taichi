@@ -158,7 +158,7 @@ class Program {
   Kernel &get_snode_writer(SNode *snode);
 
   Arch get_host_arch() {
-    return Arch::x64;
+    return host_arch();
   }
 
   Arch get_snode_accessor_arch();

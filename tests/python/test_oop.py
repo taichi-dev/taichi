@@ -1,6 +1,6 @@
 import taichi as ti
 
-@ti.host_arch
+@ti.host_arch_only
 def test_classfunc():
   
   @ti.data_oriented
@@ -28,7 +28,7 @@ def test_classfunc():
     for j in range(arr.m):
       assert arr.val[i, j] == i * j
 
-@ti.host_arch
+@ti.host_arch_only
 def test_oop():
 
   @ti.data_oriented
@@ -98,7 +98,7 @@ def test_oop():
 
 
 
-@ti.host_arch
+@ti.host_arch_only
 def test_oop_two_items():
 
   @ti.data_oriented
@@ -157,7 +157,7 @@ def test_oop_two_items():
       assert arr2.val.grad[i, j] == arr2_mult
 
 
-@ti.host_arch
+@ti.host_arch_only
 def test_oop_inherit_ok():
   # Array1D inherits from object, which makes the callstack being 'class Array2D(object)'
   # instead of '@ti.data_oriented'. Make sure this also works.
@@ -194,7 +194,7 @@ def test_oop_inherit_ok():
 
 
 @ti.must_throw(ti.KernelDefError)
-@ti.host_arch
+@ti.host_arch_only
 def test_oop_class_must_be_data_oriented():
   class Array1D(object):
     def __init__(self, n, mul):

@@ -148,7 +148,7 @@ void compile_runtime_bitcode(Arch arch) {
 }
 
 void compile_runtimes() {
-  compile_runtime_bitcode(Arch::x64);
+  compile_runtime_bitcode(host_arch());
 #if defined(TI_WITH_CUDA)
   compile_runtime_bitcode(Arch::cuda);
 #endif

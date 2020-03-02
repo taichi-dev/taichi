@@ -213,19 +213,9 @@ def benchmark(func, repeat=100, args=()):
   elapsed = time.time() - t
   return elapsed / repeat
 
-# test x86_64 only
-def simple_test(func):
-
-  def test(*args, **kwargs):
-    reset()
-    cfg.arch = x86_64
-    func(*args, **kwargs)
-
-  return test
-
 def supported_archs():
   import taichi as ti
-  archs = [x86_64]
+  archs = [ti.core.host_arch()]
   if ti.core.with_cuda():
     archs.append(cuda)
   if ti.core.with_metal():
@@ -353,11 +343,11 @@ def torch_test(func):
     return lambda: None
 
 # test with host arch only
-def host_arch(func):
+def host_arch_only(func):
   import taichi as ti
 
   def test(*args, **kwargs):
-    archs = [x86_64]
+    archs = [ti.core.host_arch()]
     for arch in archs:
       ti.init(arch=arch)
       func(*args, **kwargs)
@@ -372,7 +362,7 @@ def must_throw(ex):
     def func__(*args, **kwargs):
       finishes = False
       try:
-        simple_test(func)(*args, **kwargs)
+        host_arch_only(func)(*args, **kwargs)
         finishes = True
       except ex:
         # throws. test passed

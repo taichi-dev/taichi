@@ -41,45 +41,10 @@ void Kernel::compile() {
 }
 
 void Kernel::operator()() {
-  if (!compiled)
+  if (!compiled) {
     compile();
-  if (arch == Arch::cuda) {
-    std::vector<void *> host_buffers(args.size());
-    std::vector<void *> device_buffers(args.size());
-#if defined(TI_WITH_CUDA)
-    // copy data to GRAM
-    bool has_buffer = false;
-    for (int i = 0; i < (int)args.size(); i++) {
-      if (args[i].is_nparray) {
-        has_buffer = true;
-        check_cuda_error(cudaMalloc(&device_buffers[i], args[i].size));
-        // replace host buffer with device buffer
-        host_buffers[i] = program.context.get_arg<void *>(i);
-        set_arg_nparray(i, (uint64)device_buffers[i], args[i].size);
-        check_cuda_error(cudaMemcpy(device_buffers[i], host_buffers[i],
-                                     args[i].size, cudaMemcpyHostToDevice));
-      }
-    }
-    if (has_buffer)
-      check_cuda_error(cudaDeviceSynchronize());
-    auto c = program.get_context();
-    compiled(c);
-    if (has_buffer)
-      check_cuda_error(cudaDeviceSynchronize());
-    for (int i = 0; i < (int)args.size(); i++) {
-      if (args[i].is_nparray) {
-        check_cuda_error(cudaMemcpy(host_buffers[i], device_buffers[i],
-                                     args[i].size, cudaMemcpyDeviceToHost));
-        check_cuda_error(cudaFree(device_buffers[i]));
-      }
-    }
-#else
-    TI_ERROR("No CUDA");
-#endif
-  } else {
-    auto &c = program.get_context();
-    compiled(c);
   }
+  compiled(program.get_context());
   program.sync = (program.sync && arch_is_cpu(arch));
 }
 
@@ -149,11 +114,11 @@ void Kernel::mark_arg_return_value(int i, bool is_return) {
   args[i].is_return_value = is_return;
 }
 
-void Kernel::set_arg_nparray(int i, uint64 d, uint64 size) {
+void Kernel::set_arg_nparray(int i, uint64 ptr, uint64 size) {
   TI_ASSERT_INFO(args[i].is_nparray,
                  "Setting numpy array to scalar argument is not allowed");
   args[i].size = size;
-  program.context.set_arg(i, d);
+  program.context.set_arg(i, ptr);
 }
 
 void Kernel::set_arch(Arch arch) {

@@ -344,6 +344,7 @@ class IRVisitor {
 class IRNode {
  public:
   virtual void accept(IRVisitor *visitor) {
+    TI_INFO("IRNode of type {}", typeid(*this).name());
     TI_NOT_IMPLEMENTED
   }
   virtual ~IRNode() = default;

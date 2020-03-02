@@ -94,15 +94,16 @@ class LowerAST : public IRVisitor {
 
   void visit(FuncBodyStmt *stmt) override {
     capturing_function = (Stmt *)stmt;
-    TI_INFO("FuncBody!!");
+    TI_INFO("FuncBody!! {}", (uintptr_t)stmt);
   }
 
   void visit(FuncLeaveStmt *stmt) override {
     capturing_function = nullptr;//xx
-    TI_INFO("FuncLeave!!");
+    TI_INFO("FuncLeave!! {}", (uintptr_t)stmt);
   }
 
   void visit(FrontendReturnStmt *stmt) override {
+    TI_INFO("FrontendReturn!! {}", (uintptr_t)stmt);
     TI_ASSERT_INFO(capturing_function, "return only allowed in ti.func, not ti.kernel");
     auto expr = load_if_ptr(stmt->retval);
     VecStatement flattened;

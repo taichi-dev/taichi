@@ -295,18 +295,21 @@ void export_lang(py::module &m) {
 
   m.def("initialize_function_scope", [&]() {
     auto func = std::make_unique<FuncBodyStmt>();
-    scope_stack.push_back(current_ast_builder().create_scope(func->body));
+    TI_INFO("INI");
+    //scope_stack.push_back(current_ast_builder().create_scope(func->body));
     current_ast_builder().insert(std::move(func));
   });
   m.def("finalize_function_scope", [&]() {
     auto leave = std::make_unique<FuncLeaveStmt>();
-    scope_stack.pop_back();
+    TI_INFO("FIN");
     current_ast_builder().insert(std::move(leave));
+    //scope_stack.pop_back();
     return Expr(666);
   });
 
   m.def("insert_return_stmt", [&](const Expr &expr) {
     auto ret = Stmt::make<FrontendReturnStmt>(expr);
+    TI_INFO("IRET");
     current_ast_builder().insert(std::move(ret));
   });
 

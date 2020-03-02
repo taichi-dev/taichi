@@ -250,8 +250,21 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
 
   void visit(Block *stmt_list) override {
     for (auto &stmt : stmt_list->statements) {
+      //TI_INFO("visit(block stmt: {})", typeid(*stmt).name());
       stmt->accept(this);
     }
+  }
+
+  void visit(FuncBodyStmt *func) override {
+    TI_INFO("visit(FuncBody)!");
+  }
+
+  void visit(FuncLeaveStmt *func) override {
+    TI_INFO("visit(FuncLeave)!");
+  }
+
+  void visit(ReturnStmt *func) override {
+    TI_INFO("visit(Return)!");
   }
 
   void visit(AllocaStmt *stmt) override {

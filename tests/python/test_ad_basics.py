@@ -186,22 +186,18 @@ def test_obey_kernel_simplicity():
   assert x.grad[0] == approx((42 - 5) * 3)
 
 
-@ti.must_throw(ti.KernelDefError)
 @ti.all_archs
 def test_violate_kernel_simplicity1():
   x = ti.var(ti.f32)
   y = ti.var(ti.f32)
 
-  @ti.layout
-  def place():
-    ti.root.dense(ti.i, 1).place(x, y)
-    ti.root.lazy_grad()
+  ti.root.dense(ti.i, 1).place(x, y)
+  ti.root.lazy_grad()
 
   @ti.kernel
   def func():
     for i in x:
       y[i] = x[i] * 42
-      # Bad: a mix of for-loop and non-for-loop
       for j in ti.static(range(3)):
         y[i] += x[i]
 
@@ -209,23 +205,19 @@ def test_violate_kernel_simplicity1():
   func.grad()
 
 
-@ti.must_throw(ti.KernelDefError)
 @ti.all_archs
 def test_violate_kernel_simplicity2():
   x = ti.var(ti.f32)
   y = ti.var(ti.f32)
 
-  @ti.layout
-  def place():
-    ti.root.dense(ti.i, 1).place(x, y)
-    ti.root.lazy_grad()
+  ti.root.dense(ti.i, 1).place(x, y)
+  ti.root.lazy_grad()
 
   @ti.kernel
   def func():
     for i in x:
       for j in ti.static(range(3)):
         y[i] += x[i]
-      # Bad: a mix of for-loop and non-for-loop
       y[i] += x[i] * 42
 
   func()

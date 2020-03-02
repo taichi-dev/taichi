@@ -64,6 +64,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     return [offloaded_local, cuda_module,
             kernel = this->kernel](Context &context) {
       // copy data to GRAM
+      auto args = kernel->args;
       std::vector<void *> host_buffers(args.size());
       std::vector<void *> device_buffers(args.size());
       bool has_buffer = false;
@@ -72,8 +73,8 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
           has_buffer = true;
           check_cuda_error(cudaMalloc(&device_buffers[i], args[i].size));
           // replace host buffer with device buffer
-          host_buffers[i] = program.context.get_arg<void *>(i);
-          set_arg_nparray(i, (uint64)device_buffers[i], args[i].size);
+          host_buffers[i] = get_current_program().context.get_arg<void *>(i);
+          kernel->set_arg_nparray(i, (uint64)device_buffers[i], args[i].size);
           check_cuda_error(cudaMemcpy(device_buffers[i], host_buffers[i],
                                       args[i].size, cudaMemcpyHostToDevice));
         }

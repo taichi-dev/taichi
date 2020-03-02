@@ -65,6 +65,8 @@ int default_simd_width(Arch arch) {
     return 8;
   } else if (arch == Arch::cuda) {
     return 32;
+  } else if (arch == Arch::arm64) {
+    return 4;
   } else {
     TI_NOT_IMPLEMENTED;
     return -1;

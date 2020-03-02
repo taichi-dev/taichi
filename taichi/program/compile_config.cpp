@@ -29,7 +29,7 @@ CompileConfig::CompileConfig() {
   verbose = true;
   fast_math = true;
 
-#if defined(TI_PLATFORM_WINDOWS)
+#if defined(TI_PLATFORM_WINDOWS) or defined(TI_ARCH_ARM)
   use_unified_memory = false;
 #else
   use_unified_memory = true;

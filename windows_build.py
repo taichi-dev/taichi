@@ -1,5 +1,6 @@
 import os
 import shutil
+import sys
 
 
 def execute_cmd(cmd):
@@ -32,10 +33,16 @@ def set_env(**kwargs):
     os.environ[k] = v
 
 
-repo_dir = r"E:\repos\taichi"
-set_env(PYTHON='python')
+repo_dir = "E:\\repos\\taichi"
+assert len(sys.argv) == 3, 'Usage: windows_build.py [python_executable] [cuda_version=10.X]'
+python_executable = sys.argv[1]
+cuda_version = sys.argv[2]
+assert cuda_version in ["10.0", "10.1", "10.2"]
+print("Python =", python_executable)
+print("CUDA =", cuda_version)
+set_env(PYTHON=python_executable)
 set_env(TAICHI_REPO_DIR=repo_dir)
-set_env(PYTHONPATH=r"%TAICHI_REPO_DIR%\python")
+set_env(PYTHONPATH="%TAICHI_REPO_DIR%\\python")
 set_env(PATH=r"%TAICHI_REPO_DIR%\bin;%PATH%")
 execute_cmd("clang --version")
 
@@ -45,9 +52,8 @@ if os.path.exists(build_dir):
   shutil.rmtree(build_dir)
 os.mkdir(build_dir)
 os.chdir(build_dir)
-cuda_version = "10.1"
-llvm_dir = r"E:/repos/llvm-8.0.1/build/installed/lib/cmake/llvm"
-cuda_dir = f"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v{cuda_version}"
+llvm_dir = "E:\\repos\\llvm-8.0.1\\build\\installed\\lib\\cmake\\llvm"
+cuda_dir = f"C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v{cuda_version}"
 execute_cmd(
     f'cmake .. -G"Visual Studio 15 2017 Win64" -DPYTHON_EXECUTABLE="%PYTHON%" -DLLVM_DIR="{llvm_dir}" -DTI_WITH_CUDA:BOOL=True -DCUDA_VERSION={cuda_version} -DCUDA_DIR="f{cuda_dir}"'
 )

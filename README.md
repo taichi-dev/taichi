@@ -30,6 +30,22 @@ python3 -m pip install taichi-nightly-cuda-10-1
 |**PyPI**|[![Build Status](https://travis-ci.com/yuanming-hu/taichi-wheels-test.svg?branch=master)](https://travis-ci.com/yuanming-hu/taichi-wheels-test)|[![Build Status](https://travis-ci.com/yuanming-hu/taichi-wheels-test.svg?branch=master)](https://travis-ci.com/yuanming-hu/taichi-wheels-test)|[![Build status](https://ci.appveyor.com/api/projects/status/39ar9wa8yd49je7o?svg=true)](https://ci.appveyor.com/project/IteratorAdvance/taichi-wheels-test)|
 
 ## Updates
+- (Mar   2, 2020) v0.5.5 released: **Experimental CUDA 10.0/10.1 support on Windows. Feedbacks are welcome!**
+- (Mar   1, 2020) v0.5.4 released
+   - Metal backend now supports < 32bit args (#530) (by **Ye Kuang [k-ye]**)
+   - Added `ti.imread/imwrite/imshow` for convenient image IO (by **Yubin Peng [archibate]**)
+   - `ti.GUI.set_image` now takes all numpy unsigned integer types (by **Yubin Peng [archibate]**)
+   - Bug fix: [Make sure KernelTemplateMapper extractors's size is the same as the number of args](https://github.com/taichi-dev/taichi/issues/534) (by **Ye Kuang [k-ye]**)
+   - [Avoid duplicate evaluations in chaining comparison (such as `1 < ti.append(...) < 3 < 4`)](https://github.com/taichi-dev/taichi/issues/540) (by **Mingkuan Xu [xumingkuan]**)
+   - Frontend kernel/function structure checking (#544) (by **Mingkuan Xu [xumingkuan]**)
+   - Throw exception instead of SIGABRT to obtain RuntimeError in Python-scope (by **Yubin Peng [archibate]**)
+   - Mark sync bit only after running a kernel on GPU (by **Ye Kuang [k-ye]**)
+   - Fix ti.func AST transform (due to locals() not saving compile result) #538, #539 (by **Yubin Peng [archibate]**)
+   - Add a KernelSimplicityASTChecker to ensure grad kernel is compliant (#553) (by **Ye Kuang [k-ye]**)
+   - Fixed MSVC C++ mangling which leads to unsupported characters in LLVM NVPTX ASM printer
+   - CUDA unified memory dependency is now removed. Set `TI_USE_UNIFIED_MEMORY=0` to disable unified memory usage
+   - Improved `ti.GUI.line` performance
+   - (For developers) compiler significantly refactored and folder structure reorganized
 - (Feb  25, 2020) v0.5.3 released
    - Better error message when try to declare tensors after kernel invocation (by **Yubin Peng [archibate]**)
    - Logging: `ti.warning` renamed to `ti.warn`

@@ -82,7 +82,15 @@ class KernelSimplicityASTChecker(ast.NodeVisitor):
       self._scope_guards.pop()
 
   def visit_For(self, node):
-    if not (self.top_level or self.current_scope.allows_for_loop):
+    if (isinstance(node.iter, ast.Call)
+        and isinstance(node.iter.func, ast.Attribute)
+        and isinstance(node.iter.func.value, ast.Name)
+        and node.iter.func.value.id == 'ti'
+        and node.iter.func.attr == 'static'):
+      is_static = True
+    else:
+      is_static = False
+    if not (self.top_level or self.current_scope.allows_for_loop or is_static):
       import taichi as ti
       raise ti.KernelDefError(
           f'No more for loops allowed, at {self.get_error_location(node)}')
@@ -90,5 +98,5 @@ class KernelSimplicityASTChecker(ast.NodeVisitor):
     with self.new_scope():
       super().generic_visit(node)
 
-    if not self.top_level:
+    if not (self.top_level or is_static):
       self.current_scope.mark_no_more_stmt()

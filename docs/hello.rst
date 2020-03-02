@@ -83,6 +83,15 @@ Taichi supports both CPUs and NVIDIA GPUs.
 
 If the machine does not have CUDA support, Taichi will fall back to CPUs instead.
 
+.. note::
+
+  When running the CUDA backend on Windows and ARM devices (e.g. NVIDIA Jetson),
+  Taichi will by default allocate 1 GB memory for tensor storage. You can override this by initializing with
+  ``ti.init(arch=ti.cuda, device_memory_GB=3.4)`` to allocate ``3.4`` GB GPU memory, or
+  ``ti.init(arch=ti.cuda, device_memory_fraction=0.3)`` to allocate ``30%`` of total available GPU memory.
+
+  On other platforms Taichi will make use of its on-demand memory allocator to adaptively allocate memory.
+
 (Sparse) Tensors
 -------
 

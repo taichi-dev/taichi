@@ -32,7 +32,7 @@ The `DiffTaichi repo <https://github.com/yuanming-hu/difftaichi>`_ contains 10 d
           for i in range(10):
             for j in range(20):
               for k in range(300):
-                ... do whatever you want, as long as there is no loops
+                ... do whatever you want, as long as there are no loops
 
           # Not allowed. The outer for loop contains two for loops
           for i in range(10):
@@ -43,7 +43,10 @@ The `DiffTaichi repo <https://github.com/yuanming-hu/difftaichi>`_ contains 10 d
 
     Taichi programs that violate this rule has an undefined gradient behavior.
 
-    `Note that currently the Taichi compiler is not able to detect such violation automatically - please be careful.`
+.. note::
+
+  **static for-loops** (e.g. ``for i in ti.static(range(4))``) will get unrolled by the Python frontend preprocessor and does not count as a level of loop.
+
 
 A few examples with neural network controllers optimized using differentiable simulators and brute-force gradient descent:
 

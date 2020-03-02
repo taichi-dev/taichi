@@ -6,7 +6,7 @@ class lock_guard {
 
 public:
   lock_guard(Ptr lock, const T &func) : lock(lock) {
-#if ARCH_x86_64
+#if ARCH_x64 || ARCH_arm64
     mutex_lock_i32(lock);
     func();
     mutex_unlock_i32(lock);

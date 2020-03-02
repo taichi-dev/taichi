@@ -131,7 +131,7 @@ int abs_i32(int a) {
   }
 }
 
-#if ARCH_x64
+#if ARCH_x64 || ARCH_arm64
 
 u32 rand_u32() {
   static u32 x = 123456789, y = 362436069, z = 521288629, w = 88675123;

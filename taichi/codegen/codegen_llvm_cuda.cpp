@@ -7,11 +7,13 @@
 #include "taichi/codegen/codegen_llvm.h"
 #include "taichi/platform/cuda/cuda_context.h"
 
+#include <vector>
 #include <set>
 
-#if defined(TI_WITH_CUDA)
-#include "cuda_runtime.h"
-#endif
+#ifdef TI_WITH_CUDA
+#include <cuda_runtime.h>
+#include "taichi/platform/cuda/cuda_utils.h"
+#endif  // TI_WITH_CUDA
 
 TLANG_NAMESPACE_BEGIN
 
@@ -41,7 +43,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
   }
 
   FunctionType compile_module_to_executable() override {
-#if defined(TI_WITH_CUDA)
+#ifdef TI_WITH_CUDA
     auto offloaded_local = offloaded_tasks;
     for (auto &task : offloaded_local) {
       llvm::Function *func = module->getFunction(task.name);
@@ -59,7 +61,28 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     for (auto &task : offloaded_local) {
       task.cuda_func = cuda_module->lookup_function(task.name);
     }
-    return [offloaded_local, cuda_module](Context context) {
+    return [offloaded_local, cuda_module,
+            kernel = this->kernel](Context &context) {
+      // copy data to GRAM
+      auto args = kernel->args;
+      std::vector<void *> host_buffers(args.size());
+      std::vector<void *> device_buffers(args.size());
+      bool has_buffer = false;
+      for (int i = 0; i < (int)args.size(); i++) {
+        if (args[i].is_nparray) {
+          has_buffer = true;
+          check_cuda_error(cudaMalloc(&device_buffers[i], args[i].size));
+          // replace host buffer with device buffer
+          host_buffers[i] = get_current_program().context.get_arg<void *>(i);
+          kernel->set_arg_nparray(i, (uint64)device_buffers[i], args[i].size);
+          check_cuda_error(cudaMemcpy(device_buffers[i], host_buffers[i],
+                                      args[i].size, cudaMemcpyHostToDevice));
+        }
+      }
+      if (has_buffer) {
+        check_cuda_error(cudaDeviceSynchronize());
+      }
+
       for (auto task : offloaded_local) {
         TI_DEBUG("Launching kernel {}<<<{}, {}>>>", task.name, task.grid_dim,
                  task.block_dim);
@@ -67,11 +90,22 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
         cuda_module->launch(task.name, task.grid_dim, task.block_dim,
                             {&context});
       }
+      // copy data back to host
+      if (has_buffer) {
+        check_cuda_error(cudaDeviceSynchronize());
+      }
+      for (int i = 0; i < (int)args.size(); i++) {
+        if (args[i].is_nparray) {
+          check_cuda_error(cudaMemcpy(host_buffers[i], device_buffers[i],
+                                      args[i].size, cudaMemcpyDeviceToHost));
+          check_cuda_error(cudaFree(device_buffers[i]));
+        }
+      }
     };
 #else
-    TI_NOT_IMPLEMENTED;
+    TI_ERROR("No CUDA");
     return nullptr;
-#endif
+#endif  // TI_WITH_CUDA
   }
 
   void visit(PrintStmt *stmt) override {

@@ -186,8 +186,8 @@ class Canvas {
       range_lower(1) = std::max(0, range_lower(1));
       auto range_higher = Vector2i(std::max(a_i.x, b_i.x) + radius_i,
                                    std::max(a_i.y, b_i.y) + radius_i);
-      range_higher(0) = std::min(canvas.img.get_width(), range_higher(0));
-      range_higher(1) = std::min(canvas.img.get_height(), range_higher(1));
+      range_higher(0) = std::min(canvas.img.get_width() - 1, range_higher(0));
+      range_higher(1) = std::min(canvas.img.get_height() - 1, range_higher(1));
       auto direction = normalized(b - a);
       auto l = length(b - a);
       auto tangent = Vector2(-direction.y, direction.x);

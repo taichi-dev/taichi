@@ -26,6 +26,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
 
   llvm::Value *current_coordinates;
   llvm::BasicBlock *while_after_loop;
+  llvm::BasicBlock *function_after_leave;
   llvm::FunctionType *task_function_type;
   OffloadedStmt *current_offloaded_stmt;
   SNodeAttributes &snode_attr;
@@ -255,16 +256,24 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     }
   }
 
-  void visit(FuncBodyStmt *func) override {
+  void visit(FuncBodyStmt *stmt) override {
     TI_INFO("visit(FuncBody)!");
+    TI_ASSERT_INFO(!function_after_leave,
+        "cannot call function in a function for now"); // todo: scope like while
+    function_after_leave = BasicBlock::Create(*llvm_context, "function_leave", func);
   }
 
-  void visit(FuncLeaveStmt *func) override {
+  void visit(FuncLeaveStmt *stmt) override {
     TI_INFO("visit(FuncLeave)!");
+    TI_ASSERT(function_after_leave);
+    builder->SetInsertPoint(function_after_leave);
+    function_after_leave = nullptr;
   }
 
-  void visit(ReturnStmt *func) override {
+  void visit(ReturnStmt *stmt) override {
     TI_INFO("visit(Return)!");
+    TI_ASSERT_INFO(function_after_leave, "return must be in a function");
+    //builder->CreateBr(function_after_leave);
   }
 
   void visit(AllocaStmt *stmt) override {

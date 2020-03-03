@@ -296,15 +296,16 @@ void export_lang(py::module &m) {
   m.def("initialize_function_scope", [&]() {
     auto func = std::make_unique<FuncBodyStmt>();
     TI_INFO("INI");
-    //scope_stack.push_back(current_ast_builder().create_scope(func->body));
+    auto scope = current_ast_builder().create_scope(func->body);
     current_ast_builder().insert(std::move(func));
+    scope_stack.push_back(std::move(scope));
   });
   m.def("finalize_function_scope", [&]() {
     auto leave = std::make_unique<FuncLeaveStmt>();
     TI_INFO("FIN");
     current_ast_builder().insert(std::move(leave));
-    //scope_stack.pop_back();
-    return Expr(666);
+    scope_stack.pop_back();
+    return Expr(666);//CallExpression(func); // todo CallExpr somehow
   });
 
   m.def("insert_return_stmt", [&](const Expr &expr) {

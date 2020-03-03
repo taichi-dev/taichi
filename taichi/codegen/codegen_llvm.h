@@ -267,13 +267,14 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     TI_INFO("visit(FuncLeave)!");
     TI_ASSERT(function_after_leave);
     builder->SetInsertPoint(function_after_leave);
+    builder->CreateRetVoid();
     function_after_leave = nullptr;
   }
 
   void visit(ReturnStmt *stmt) override {
     TI_INFO("visit(Return)!");
     TI_ASSERT_INFO(function_after_leave, "return must be in a function");
-    //builder->CreateBr(function_after_leave);
+    builder->CreateBr(function_after_leave);
   }
 
   void visit(AllocaStmt *stmt) override {

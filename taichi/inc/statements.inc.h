@@ -71,3 +71,4 @@ PER_STATEMENT(InternalFuncStmt)
 // Function
 PER_STATEMENT(FuncBodyStmt)
 PER_STATEMENT(FuncLeaveStmt)
+PER_STATEMENT(FuncCallStmt)

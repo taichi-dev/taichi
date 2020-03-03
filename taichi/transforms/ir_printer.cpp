@@ -433,12 +433,24 @@ class IRPrinter : public IRVisitor {
     print("{} = call internal \"{}\"", stmt->name(), stmt->func_name);
   }
 
+  void visit(FuncCallStmt *stmt) override {
+    print("{}{} = call {} ()", stmt->type_hint(), stmt->name(), stmt->func->name());
+  }
+
   void visit(ReturnStmt *stmt) override {
     print("return {}", stmt->retval->name());
   }
 
   void visit(FrontendReturnStmt *stmt) override {
     print("return {}", stmt->retval.serialize());
+  }
+
+  void visit(FuncBodyStmt *stmt) override {
+    print("function body");
+  }
+
+  void visit(FuncLeaveStmt *stmt) override {
+    print("function leave");
   }
 };
 

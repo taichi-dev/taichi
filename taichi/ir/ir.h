@@ -1017,6 +1017,36 @@ class AtomicOpStmt : public Stmt {
   DEFINE_ACCEPT
 };
 
+class FuncCallStmt : public Stmt {
+ public:
+  Stmt *func;
+
+  FuncCallStmt(Stmt *func)
+    : func(func) {
+    add_operand(this->func);
+  }
+
+  DEFINE_ACCEPT
+};
+
+class CallExpression : public Expression {
+ public:
+  Expr func;
+
+  CallExpression(const Expr &func) {
+    this->func.set(smart_load(func));
+  }
+
+  void flatten(VecStatement &ret) override {
+    // if (stmt)
+    //  return;
+    func->flatten(ret);
+    ret.push_back(std::make_unique<FuncCallStmt>(func->stmt));
+    ret.back()->tb = tb;
+    stmt = ret.back().get();
+  }
+};
+
 class BinaryOpExpression : public Expression {
  public:
   BinaryOpType type;

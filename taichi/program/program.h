@@ -2,26 +2,23 @@
 
 #pragma once
 
+#include <optional>
+#include <atomic>
+
 #define TI_RUNTIME_HOST
 #include "taichi/ir/ir.h"
 #include "taichi/program/kernel.h"
 #include "taichi/ir/snode.h"
 #include "taichi/llvm/llvm_context.h"
 #include "taichi/lang_util.h"
-#include <atomic>
-#include <taichi/runtime/context.h>
-#include <taichi/program/profiler.h>
-#include <taichi/system/threading.h>
-#include <taichi/system/unified_allocator.h>
+#include "taichi/runtime/context.h"
+#include "taichi/program/profiler.h"
+#include "taichi/system/threading.h"
+#include "taichi/system/unified_allocator.h"
 #include "taichi/system/memory_pool.h"
-#include <optional>
-#include <taichi/platform/metal/metal_kernel_util.h>
-#include <taichi/platform/metal/metal_runtime.h>
-#include <taichi/platform/opengl/opengl_kernel_util.h>
-
-#if defined(TI_PLATFORM_UNIX)
-#include <dlfcn.h>
-#endif
+#include "taichi/platform/metal/metal_kernel_util.h"
+#include "taichi/platform/metal/metal_runtime.h"
+#include "taichi/platform/opengl/opengl_kernel_util.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -36,12 +33,8 @@ class StructCompiler;
 class Program {
  public:
   using Kernel = taichi::lang::Kernel;
-  // Should be copiable
-  std::vector<void *> loaded_dlls;
   Kernel *current_kernel;
-  std::unique_ptr<SNode> snode_root;
-  // pointer to the data structure. assigned to context.buffers[0] during kernel
-  // launches
+  std::unique_ptr<SNode> snode_root;  // pointer to the data structure.
   void *llvm_runtime;
   CompileConfig config;
   Context context;
@@ -52,8 +45,8 @@ class Program {
   static std::atomic<int> num_instances;
   ThreadPool thread_pool;
   std::unique_ptr<MemoryPool> memory_pool;
-  void *result_buffer; // TODO: move this
-  void *preallocated_device_buffer; // TODO: move this to memory allocator
+  void *result_buffer;               // TODO: move this
+  void *preallocated_device_buffer;  // TODO: move this to memory allocator
 
   std::vector<std::unique_ptr<Kernel>> functions;
 

@@ -1,10 +1,10 @@
 // Frontend constructs
-
 #pragma once
 
 #if defined(TI_WITH_CUDA)
 #include <cuda_runtime.h>
 #endif
+
 #include <taichi/common/util.h>
 #include <taichi/common/dict.h>
 #include <taichi/util/io.h>
@@ -37,10 +37,6 @@ inline Kernel &kernel(const std::function<void()> &body) {
 
 inline void kernel_name(std::string name) {
   get_current_program().get_current_kernel().name = name;
-}
-
-inline void mark_reduction() {
-  get_current_program().get_current_kernel().is_reduction = true;
 }
 
 template <typename T>
@@ -194,15 +190,8 @@ inline Expr AssumeInRange(const Expr &expr,
   return Expr::make<RangeAssumptionExpression>(expr, base, low, high);
 }
 
-inline void benchmark_kernel() {
-  get_current_program().get_current_kernel().benchmarking = true;
-}
-
 #define Kernel(x) auto &x = get_current_program().kernel(#x)
 #define Assert(x) InsertAssert(#x, (x))
-
-template <typename Tf = float32, typename Ti = int32>
-std::tuple<Matrix, Matrix, Matrix> sifakis_svd(const Matrix &a);
 
 TLANG_NAMESPACE_END
 
@@ -220,7 +209,5 @@ inline Dict parse_param(std::vector<std::string> cli_param) {
   TI_P(dict);
   return dict;
 }
-
-void write_partio(std::vector<Vector3> positions, const std::string &file_name);
 
 TI_NAMESPACE_END

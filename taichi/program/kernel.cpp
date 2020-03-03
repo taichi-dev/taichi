@@ -15,9 +15,7 @@ Kernel::Kernel(Program &program,
     : program(program), name(name), grad(grad) {
   program.initialize_device_llvm_context();
   is_accessor = false;
-  is_reduction = false;
   compiled = nullptr;
-  benchmarking = false;
   taichi::lang::context = std::make_unique<FrontendContext>();
   ir_holder = taichi::lang::context->get_root();
   ir = ir_holder.get();
@@ -49,8 +47,9 @@ void Kernel::operator()() {
 }
 
 void Kernel::set_arg_float(int i, float64 d) {
-  TI_ASSERT_INFO(args[i].is_nparray == false,
-                 "Setting scalar value to numpy array argument is not allowed");
+  TI_ASSERT_INFO(
+      args[i].is_nparray == false,
+      "Assigning scalar value to numpy array argument is not allowed");
   auto dt = args[i].dt;
   if (dt == DataType::f32) {
     program.context.set_arg(i, (float32)d);
@@ -82,8 +81,9 @@ void Kernel::set_extra_arg_int(int i, int j, int32 d) {
 }
 
 void Kernel::set_arg_int(int i, int64 d) {
-  TI_ASSERT_INFO(args[i].is_nparray == false,
-                 "Setting scalar value to numpy array argument is not allowed");
+  TI_ASSERT_INFO(
+      args[i].is_nparray == false,
+      "Assigning scalar value to numpy array argument is not allowed");
   auto dt = args[i].dt;
   if (dt == DataType::i32) {
     program.context.set_arg(i, (int32)d);
@@ -116,7 +116,7 @@ void Kernel::mark_arg_return_value(int i, bool is_return) {
 
 void Kernel::set_arg_nparray(int i, uint64 ptr, uint64 size) {
   TI_ASSERT_INFO(args[i].is_nparray,
-                 "Setting numpy array to scalar argument is not allowed");
+                 "Assigning numpy array to scalar argument is not allowed");
   args[i].size = size;
   program.context.set_arg(i, ptr);
 }

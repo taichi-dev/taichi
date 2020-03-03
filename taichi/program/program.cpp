@@ -428,13 +428,6 @@ void Program::finalize() {
 #endif
   synchronize();
   current_program = nullptr;
-  for (auto &dll : loaded_dlls) {
-#if defined(TI_PLATFORM_UNIX)
-    dlclose(dll);
-#else
-    TI_NOT_IMPLEMENTED
-#endif
-  }
   memory_pool->terminate();
 #if defined(TI_WITH_CUDA)
   if (preallocated_device_buffer != nullptr)

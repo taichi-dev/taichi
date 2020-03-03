@@ -256,6 +256,11 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     }
   }
 
+  void visit(FuncCallStmt *stmt) override {
+    TI_INFO("visit(FuncCall {})!", stmt->func);
+    TI_NOT_IMPLEMENTED;
+  }
+
   void visit(FuncBodyStmt *stmt) override {
     TI_INFO("visit(FuncBody)!");
     TI_ASSERT_INFO(!function_after_leave,

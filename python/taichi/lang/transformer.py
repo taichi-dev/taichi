@@ -534,7 +534,7 @@ if 1:
           raise TaichiSyntaxError("Function definition not allowed in 'ti.func'.")
       # Transform as func (all parameters passed by value)
       arg_decls = []
-      enter_stmt = self.parse_stmt('ti.core.initialize_function_scope()')
+      enter_stmt = self.parse_stmt('ti.core.initialize_function_scope("func_name_here")')
       arg_decls.append(enter_stmt)
       for i, arg in enumerate(args.args):
         if i == 0 and self.is_classfunc:

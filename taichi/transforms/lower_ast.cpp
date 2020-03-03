@@ -102,6 +102,10 @@ class LowerAST : public IRVisitor {
     TI_INFO("FuncLeave!! {}", (uintptr_t)stmt);
   }
 
+  void visit(FuncCallStmt *stmt) override {
+    TI_INFO("FuncCall!! {} {}", stmt->func, (uintptr_t)stmt);
+  }
+
   void visit(FrontendReturnStmt *stmt) override {
     TI_INFO("FrontendReturn!! {}", (uintptr_t)stmt);
     TI_ASSERT_INFO(capturing_function, "return only allowed in ti.func, not ti.kernel");

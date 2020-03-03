@@ -1017,33 +1017,35 @@ class AtomicOpStmt : public Stmt {
   DEFINE_ACCEPT
 };
 
+typedef std::string FuncId;
+
 class FuncCallStmt : public Stmt {
  public:
-  Stmt *func;
+  FuncId func;
 
-  FuncCallStmt(Stmt *func)
-    : func(func) {
-    add_operand(this->func);
-  }
+  FuncCallStmt(FuncId func)
+    : func(func) {}
 
   DEFINE_ACCEPT
 };
 
 class CallExpression : public Expression {
  public:
-  Expr func;
+  FuncId func;
 
-  CallExpression(const Expr &func) {
-    this->func.set(smart_load(func));
-  }
+  CallExpression(const FuncId &func)
+    : func(func) {}
 
   void flatten(VecStatement &ret) override {
     // if (stmt)
     //  return;
-    func->flatten(ret);
-    ret.push_back(std::make_unique<FuncCallStmt>(func->stmt));
+    ret.push_back(std::make_unique<FuncCallStmt>(func));
     ret.back()->tb = tb;
     stmt = ret.back().get();
+  }
+
+  std::string serialize() override {
+    return fmt::format("call {} ()", func);
   }
 };
 

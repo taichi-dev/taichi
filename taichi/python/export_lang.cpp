@@ -293,19 +293,25 @@ void export_lang(py::module &m) {
     current_ast_builder().insert(Stmt::make<FrontendBreakStmt>());
   });
 
-  m.def("initialize_function_scope", [&]() {
+  static FuncId last_func_name;
+  m.def("initialize_function_scope", [&](std::string name) {
     auto func = std::make_unique<FuncBodyStmt>();
-    TI_INFO("INI");
+    TI_INFO("INI {}", name);
+    last_func_name = name;
     auto scope = current_ast_builder().create_scope(func->body);
     current_ast_builder().insert(std::move(func));
     scope_stack.push_back(std::move(scope));
+          /*auto stmt_unique = std::make_unique<FrontendForStmt>(i, s, e);
+          auto stmt = stmt_unique.get();
+          current_ast_builder().insert(std::move(stmt_unique));
+          scope_stack.push_back(current_ast_builder().create_scope(stmt->body));*/
   });
   m.def("finalize_function_scope", [&]() {
     auto leave = std::make_unique<FuncLeaveStmt>();
-    TI_INFO("FIN");
+    TI_INFO("FIN {}", last_func_name);
     current_ast_builder().insert(std::move(leave));
     scope_stack.pop_back();
-    return Expr(666);//CallExpression(func); // todo CallExpr somehow
+    return CallExpression(last_func_name); // todo CallExpr somehow
   });
 
   m.def("insert_return_stmt", [&](const Expr &expr) {

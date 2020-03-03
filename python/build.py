@@ -96,9 +96,11 @@ if gpu:
   shutil.copy(libdevice_path, 'taichi/lib/libdevice.10.bc')
 
 ti.core.compile_runtimes()
-for f in os.listdir('../taichi/runtime'):
+runtime_dir = ti.core.get_runtime_dir()
+for f in os.listdir(runtime_dir):
   if f.startswith('runtime_') and f.endswith('.bc'):
-    shutil.copy(os.path.join('../taichi/runtime', f), 'taichi/lib')
+    print(f"Fetching runtime file {f}")
+    shutil.copy(os.path.join(runtime_dir, f), 'taichi/lib')
 
 print("Using python executable", get_python_executable())
 os.system('{} -m pip install --user --upgrade twine setuptools wheel'.format(

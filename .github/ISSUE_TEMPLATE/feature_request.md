@@ -11,7 +11,7 @@ assignees: ''
 A clear and concise description of what you want. For example, 
 > I would like to add an Apple Metal backend to the compiler so that my Macbook GPU can be utilized.
 
-**Describe the solution you'd like**
+**Describe the solution you'd like (if any)**
 A clear and concise description of what you want to achieve and implement.
 
 **Additional comments**

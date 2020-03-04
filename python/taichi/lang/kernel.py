@@ -79,12 +79,11 @@ class Func:
 
 
 def classfunc(foo):
-  import taichi as ti
   func = Func(foo, classfunc=True)
 
   @functools.wraps(foo)
   def decorated(*args):
-    func.__call__(*args)
+    return func.__call__(*args)
   return decorated
 
 

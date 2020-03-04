@@ -7,6 +7,7 @@
 
 #include <taichi/common/util.h>
 #include <taichi/system/timer.h>
+#include "spdlog/fmt/bundled/color.h"
 #include <vector>
 #include <map>
 #include <memory>
@@ -84,9 +85,9 @@ class ProfilerRecords {
   void print(Node *node, int depth);
 
   void print() {
-    fmt::print_colored(fmt::CYAN, std::string(80, '>') + "\n");
+    fmt::print(fg(fmt::color::cyan), std::string(80, '>') + "\n");
     print(root.get(), 0);
-    fmt::print_colored(fmt::CYAN, std::string(80, '>') + "\n");
+    fmt::print(fg(fmt::color::cyan), std::string(80, '>') + "\n");
   }
 
   void insert_sample(float64 time) {

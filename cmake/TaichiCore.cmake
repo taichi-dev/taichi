@@ -30,6 +30,7 @@ option(GLEW_USE_STATIC_LIBS OFF)
 include_directories(${CMAKE_SOURCE_DIR})
 include_directories(external/xxhash)
 include_directories(external/include)
+include_directories(external/spdlog/include)
 
 set(LIBRARY_NAME ${CORE_LIBRARY_NAME})
 

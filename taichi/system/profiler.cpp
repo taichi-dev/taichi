@@ -36,21 +36,21 @@ void ProfilerRecords::print(ProfilerRecords::Node *node, int depth) {
   };
 
   float64 total_time = node->total_time;
-  fmt::Color level_color;
+  fmt::color level_color;
   if (depth == 0)
-    level_color = fmt::RED;
+    level_color = fmt::color::red;
   else if (depth == 1)
-    level_color = fmt::GREEN;
+    level_color = fmt::color::green;
   else if (depth == 2)
-    level_color = fmt::YELLOW;
+    level_color = fmt::color::yellow;
   else if (depth == 3)
-    level_color = fmt::BLUE;
+    level_color = fmt::color::blue;
   else if (depth >= 4)
-    level_color = fmt::MAGENTA;
+    level_color = fmt::color::magenta;
   if (depth == 0) {
     // Root node only
     make_indent(0);
-    fmt::print_colored(level_color, "{}\n", node->name.c_str());
+    fmt::print(fg(level_color), "{}\n", node->name.c_str());
   }
   if (total_time < 1e-6f) {
     for (auto &ch : node->childs) {
@@ -58,9 +58,8 @@ void ProfilerRecords::print(ProfilerRecords::Node *node, int depth) {
       auto child_time = ch->total_time;
       auto bulk_statistics =
           fmt::format("{} {}", get_readable_time(child_time), ch->name);
-      fmt::print_colored(level_color, "{:40}", bulk_statistics);
-      fmt::print_colored(
-          fmt::CYAN, " [{} x {}]\n", ch->num_samples,
+      fmt::print(fg(level_color), "{:40}", bulk_statistics);
+      fmt::print(fg(fmt::color::cyan), " [{} x {}]\n", ch->num_samples,
           get_readable_time_with_scale(ch->get_averaged(),
                                        get_time_scale(ch->get_averaged())));
       print(ch.get(), depth + 1);
@@ -74,11 +73,10 @@ void ProfilerRecords::print(ProfilerRecords::Node *node, int depth) {
       std::string bulk_statistics = fmt::format(
           "{} {:5.2f}%  {}", get_readable_time_with_scale(child_time, scale),
           child_time * 100.0 / total_time, ch->name);
-      fmt::print_colored(level_color, "{:40}", bulk_statistics);
-      fmt::print_colored(
-          fmt::CYAN, " [{} x {}]\n", ch->num_samples,
-          get_readable_time_with_scale(ch->get_averaged(),
-                                       get_time_scale(ch->get_averaged())));
+      fmt::print(fg(level_color), "{:40}", bulk_statistics);
+      fmt::print(fg(fmt::color::cyan), " [{} x {}]\n", ch->num_samples,
+                 get_readable_time_with_scale(
+                     ch->get_averaged(), get_time_scale(ch->get_averaged())));
       if (ch->account_tpe) {
         make_indent(1);
         fmt::print("                     [TPE] {}\n",
@@ -89,9 +87,9 @@ void ProfilerRecords::print(ProfilerRecords::Node *node, int depth) {
     }
     if (!node->childs.empty() && (unaccounted > total_time * 0.005)) {
       make_indent(1);
-      fmt::print_colored(level_color, "{} {:5.2f}%  {}\n",
-                         get_readable_time_with_scale(unaccounted, scale),
-                         unaccounted * 100.0 / total_time, "[unaccounted]");
+      fmt::print(fg(level_color), "{} {:5.2f}%  {}\n",
+                 get_readable_time_with_scale(unaccounted, scale),
+                 unaccounted * 100.0 / total_time, "[unaccounted]");
     }
   }
 }

@@ -272,6 +272,10 @@ TI_NAMESPACE_END
 //******************************************************************************
 //                               Logging
 //******************************************************************************
+
+// Must include "spdlog/common.h" to define SPDLOG_HEADER_ONLY
+// before including "spdlog/fmt/fmt.h"
+#include "spdlog/common.h"
 #include "spdlog/fmt/fmt.h"
 namespace spdlog {
 class logger;

@@ -6,8 +6,10 @@
 #include <taichi/common/util.h>
 #include <taichi/system/threading.h>
 #include <csignal>
-#include <spdlog/spdlog.h>
 #include <taichi/python/export.h>
+#include "spdlog/common.h"
+#include "spdlog/spdlog.h"
+#include "spdlog/sinks/stdout_color_sinks.h"
 
 TI_NAMESPACE_BEGIN
 

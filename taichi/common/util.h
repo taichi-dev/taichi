@@ -378,7 +378,7 @@ private:
   void debug(const std::string &s);
   void info(const std::string &s);
   void warn(const std::string &s);
-  void error(const std::string &s);
+  void error(const std::string &s, bool raise_exception=true);
   void critical(const std::string &s);
   void flush();
   void set_level(const std::string &level);

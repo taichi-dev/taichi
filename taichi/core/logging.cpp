@@ -106,12 +106,22 @@ void Logger::warn(const std::string &s) {
   console->warn(s);
 }
 
-void Logger::error(const std::string &s) {
+void Logger::error(const std::string &s, bool raise_exception) {
   console->error(s);
+  fmt::print("\n\n");
+  print_traceback();
+  if (taichi::CoreState::get_instance().trigger_gdb_when_crash) {
+#if defined(TI_PLATFORM_LINUX)
+    trash(system(fmt::format("sudo gdb -p {}", PID::get_pid()).c_str()));
+#endif
+  }
+  if (raise_exception)
+    throw s;
 }
 
 void Logger::critical(const std::string &s) {
-  console->critical(s);
+  Logger::error(s);  // simply forward to Logger::error since we actually never
+                     // use TI_CRITICAL
 }
 
 void Logger::flush() {
@@ -143,17 +153,10 @@ std::string signal_name(int sig) {
 bool python_at_exit_called = false;
 
 void signal_handler(int signo) {
-  taichi::print_traceback();
+  // It seems that there's no way to pass exception to Python in signal handlers?
   auto sig_name = signal_name(signo);
-  logger.error(fmt::format("Received signal {} ({})", signo, sig_name));
-  TI_FLUSH_LOGGER;
-  fmt::print("\n\n\n");
-  if (taichi::CoreState::get_instance().trigger_gdb_when_crash) {
-#if defined(TI_PLATFORM_LINUX)
-    trash(system(fmt::format("sudo gdb -p {}", PID::get_pid()).c_str()));
-#endif
-  }
-  throw sig_name;
+  logger.error(fmt::format("Received signal {} ({})", signo, sig_name), false);
+  exit(-1);
   /*
   if (python_at_exit && !python_at_exit_called) {
     python_at_exit_called = true;
@@ -167,7 +170,7 @@ void signal_handler(int signo) {
     taichi_raise_assertion_failure_in_python(msg.c_str());
   }
   */
-  std::exit(-1);
+  TI_UNREACHABLE
 }
 
 TI_NAMESPACE_END

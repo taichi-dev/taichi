@@ -434,7 +434,7 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(FuncCallStmt *stmt) override {
-    print("{}{} = call {} ()", stmt->type_hint(), stmt->name(), stmt->func->name());
+    print("{}{} = call {} ()", stmt->type_hint(), stmt->name(), stmt->func);
   }
 
   void visit(ReturnStmt *stmt) override {

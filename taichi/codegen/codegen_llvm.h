@@ -15,6 +15,8 @@ TLANG_NAMESPACE_BEGIN
 
 using namespace llvm;
 
+static Function *last_function = nullptr;
+
 class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
  public:
   Kernel *kernel;
@@ -258,7 +260,8 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
 
   void visit(FuncCallStmt *stmt) override {
     TI_INFO("visit(FuncCall {})!", stmt->func);
-    TI_NOT_IMPLEMENTED;
+    TI_ASSERT_INFO(last_function, "no last function");
+    stmt->value = builder->CreateCall(last_function);
   }
 
   void visit(FuncBodyStmt *stmt) override {
@@ -266,6 +269,11 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     TI_ASSERT_INFO(!function_after_leave,
         "cannot call function in a function for now"); // todo: scope like while
     function_after_leave = BasicBlock::Create(*llvm_context, "function_leave", func);
+    auto function_type = llvm::FunctionType::get(
+        llvm::Type::getVoidTy(*llvm_context), {}, false);
+    last_function = llvm::Function::Create(function_type,
+                                    llvm::Function::InternalLinkage,
+                                    "stmt_func_name", module.get());
   }
 
   void visit(FuncLeaveStmt *stmt) override {

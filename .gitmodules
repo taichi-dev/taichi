@@ -3,4 +3,4 @@
 	url = https://github.com/yuanming-hu/taichi_assets
 [submodule "external/spdlog"]
 	path = external/spdlog
-	url = git@github.com:gabime/spdlog.git
+	url = https://github.com/gabime/spdlog

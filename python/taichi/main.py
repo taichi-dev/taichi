@@ -10,12 +10,12 @@ def test_python(test_files=(), verbose=False):
   print("\nRunning python tests...\n")
   import taichi as ti
   import pytest
-  test_dir = None
   if ti.is_release():
     root_dir = ti.package_root()
+    test_dir = os.path.join(root_dir, 'tests')
   else:
     root_dir = ti.get_repo_directory()
-  test_dir = os.path.join(root_dir, 'tests', 'python')
+    test_dir = os.path.join(root_dir, 'tests', 'python')
   args = []
   if len(test_files):
     # run individual tests

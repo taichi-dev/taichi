@@ -12,19 +12,21 @@ TLANG_NAMESPACE_BEGIN
 
 MemoryPool::MemoryPool(Program *prog) : prog(prog) {
   TI_TRACE("Memory pool created. Default buffer size per allocator = {} MB",
-          default_allocator_size / 1024 / 1024);
+           default_allocator_size / 1024 / 1024);
   terminating = false;
   killed = false;
   use_unified_memory = prog->config.use_unified_memory;
   processed_tail = 0;
   queue = nullptr;
-#ifdef TI_WITH_CUDA
+#if 0 && defined(TI_WITH_CUDA)
   // http://on-demand.gputechconf.com/gtc/2014/presentations/S4158-cuda-streams-best-practices-common-pitfalls.pdf
   // Stream 0 has special synchronization rules: Operations in stream 0 cannot
   // overlap other streams except for those streams with cudaStreamNonBlocking
   // Do not use cudaCreateStream (with no flags) here!
-  check_cuda_error(
-      cudaStreamCreateWithFlags(&cuda_stream, cudaStreamNonBlocking));
+  if (prog->config.arch == Arch::cuda) {
+    check_cuda_error(
+        cudaStreamCreateWithFlags(&cuda_stream, cudaStreamNonBlocking));
+  }
 #endif
   th = std::make_unique<std::thread>([this] { this->daemon(); });
 }
@@ -124,8 +126,9 @@ void MemoryPool::terminate() {
   }
   th->join();
   TI_ASSERT(killed);
-#ifdef TI_WITH_CUDA
-  check_cuda_error(cudaStreamDestroy(cuda_stream));
+#if 0 && defined(TI_WITH_CUDA)
+  if (prog->config.arch == Arch::cuda)
+    check_cuda_error(cudaStreamDestroy(cuda_stream));
 #endif
 }
 

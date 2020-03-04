@@ -46,7 +46,7 @@ Program::Program(Arch desired_arch) {
     arch = host_arch();
   }
 #else
-  if (!cuda_context) {
+  if (arch == Arch::cuda && !cuda_context) {
     cuda_context = std::make_unique<CUDAContext>();
     if (!cuda_context->detected()) {
       TI_WARN("No CUDA device detected.");
@@ -228,7 +228,8 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
 
 void Program::materialize_layout() {
   // always use host_arch() this is for host accessors
-  std::unique_ptr<StructCompiler> scomp = StructCompiler::make(this, host_arch());
+  std::unique_ptr<StructCompiler> scomp =
+      StructCompiler::make(this, host_arch());
   scomp->run(*snode_root, true);
 
   if (arch_is_cpu(config.arch) || config.arch == Arch::metal) {
@@ -424,7 +425,8 @@ Kernel &Program::get_snode_writer(SNode *snode) {
 
 void Program::finalize() {
 #if defined(TI_WITH_CUDA)
-  cuda_context->set_profiler(nullptr);
+  if (cuda_context)
+    cuda_context->set_profiler(nullptr);
 #endif
   synchronize();
   current_program = nullptr;

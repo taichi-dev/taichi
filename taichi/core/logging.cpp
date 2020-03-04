@@ -65,7 +65,7 @@ int Logger::level_enum_from_string(const std::string &level_name) {
 Logger::Logger() {
   console = spdlog::stdout_color_mt("console");
   console->flush_on(spdlog::level::trace);
-  TI_LOG_SET_PATTERN("[%L %D %X.%e] %v");
+  TI_LOG_SET_PATTERN("%^[%L %D %X.%e] %v%$");
 
   py::register_exception_translator([](std::exception_ptr p) {
     try {

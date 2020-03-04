@@ -9,7 +9,7 @@ def test_classfunc():
     def __init__(self):
       self.val = ti.Matrix(n=3, m=3, dt=ti.f32, shape=3)
     
-    @ti.classfunc
+    @ti.func
     def add_mat(self, a, b):
       return a + b
 

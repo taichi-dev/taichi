@@ -28,7 +28,14 @@ def remove_indent(lines):
 
 # The ti.func decorator
 def func(foo):
-  return Func(foo)
+  if _inside_class(level_of_class_stackframe=3):
+    func = Func(foo, classfunc=True)
+    @functools.wraps(foo)
+    def decorated(*args):
+      return func.__call__(*args)
+    return decorated
+  else:
+    return Func(foo)
 
 
 class Func:
@@ -79,6 +86,10 @@ class Func:
 
 
 def classfunc(foo):
+  import warnings
+  warnings.warn(
+    '@ti.classfunc is deprecated. Please use @ti.func directly.', DeprecationWarning)
+
   func = Func(foo, classfunc=True)
 
   @functools.wraps(foo)
@@ -407,11 +418,7 @@ _KERNEL_CLASS_STACKFRAME_STMT_RES = [
     re.compile(r'class '),
 ]
 
-
-def _kernel_impl(func, level_of_class_stackframe, verbose=False):
-  # Can decorators determine if a function is being defined inside a class?
-  # https://stackoverflow.com/a/8793684/12003165
-  is_classkernel = False
+def _inside_class(level_of_class_stackframe):
   import inspect
   frames = inspect.stack()
   try:
@@ -420,9 +427,16 @@ def _kernel_impl(func, level_of_class_stackframe, verbose=False):
     first_statment = statement_list[0].strip()
     for pat in _KERNEL_CLASS_STACKFRAME_STMT_RES:
       if pat.match(first_statment):
-        is_classkernel = True
+        return True
   except:
     pass
+  return False
+
+
+def _kernel_impl(func, level_of_class_stackframe, verbose=False):
+  # Can decorators determine if a function is being defined inside a class?
+  # https://stackoverflow.com/a/8793684/12003165
+  is_classkernel = _inside_class(level_of_class_stackframe + 1)
 
   if verbose:
     print(f'kernel={func.__name__} is_classkernel={is_classkernel}')
@@ -467,7 +481,7 @@ def kernel(func):
 def classkernel(func):
   import warnings
   warnings.warn(
-      '@ti.classkernel will be deprecated, please use @ti.kernel directly', DeprecationWarning)
+      '@ti.classkernel is deprecated. Please use @ti.kernel directly.', DeprecationWarning)
   return _kernel_impl(func, level_of_class_stackframe=3)
 
 

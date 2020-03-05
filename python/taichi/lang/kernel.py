@@ -218,7 +218,7 @@ class Kernel:
     grad_suffix = ""
     if self.is_grad:
       grad_suffix = "_grad"
-    kernel_name = "{}_c{}_{}_{}".format(self.func.__name__, self.kernel_counter, key[1], grad_suffix)
+    kernel_name = "{}_c{}_{}{}".format(self.func.__name__, self.kernel_counter, key[1], grad_suffix)
     import taichi as ti
     ti.trace("Compiling kernel {}...".format(kernel_name))
 

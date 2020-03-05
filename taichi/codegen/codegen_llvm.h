@@ -123,13 +123,14 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   }
 
   llvm::Value *get_root() {
-    return create_call("Runtime_get_root", {get_runtime()});
+    return create_call("LLVMRuntime_get_root", {get_runtime()});
   }
 
   llvm::Value *get_runtime() {
     auto runtime_ptr = create_call("Context_get_runtime", {get_context()});
     return builder->CreateBitCast(
-        runtime_ptr, llvm::PointerType::get(get_runtime_type("Runtime"), 0));
+        runtime_ptr,
+        llvm::PointerType::get(get_runtime_type("LLVMRuntime"), 0));
   }
 
   void emit_struct_meta_base(const std::string &name,
@@ -677,7 +678,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     } else {
       TI_NOT_IMPLEMENTED
     }
-    auto runtime_printf = call("Runtime_get_host_printf", get_runtime());
+    auto runtime_printf = call("LLVMRuntime_get_host_printf", get_runtime());
     args.push_back(builder->CreateGlobalStringPtr(
         ("[debug] " + stmt->str + " = " + format + "\n").c_str(),
         "format_string"));
@@ -870,7 +871,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
           !get_current_program().config.use_unified_memory) {
         // For SNode reader without unified memory. This is a temporary
         // solution.
-        builder->CreateCall(get_runtime_function("Runtime_store_result"),
+        builder->CreateCall(get_runtime_function("LLVMRuntime_store_result"),
                             {get_runtime(), extended});
       } else {
         builder->CreateCall(

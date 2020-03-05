@@ -23,7 +23,7 @@ void Dynamic_activate(Ptr meta_, Ptr node_, int i) {
     int chunk_start = 0;
     auto p_chunk_ptr = &node->ptr;
     auto chunk_size = meta->chunk_size;
-    auto rt = (Runtime *)meta->context->runtime;
+    auto rt = meta->context->runtime;
     auto alloc = rt->node_allocators[meta->snode_id];
     while (true) {
       if (*p_chunk_ptr == nullptr) {
@@ -45,7 +45,7 @@ void Dynamic_deactivate(Ptr meta_, Ptr node_) {
     locked_task(Ptr(&node->lock), [&] {
       node->n = 0;
       auto p_chunk_ptr = &node->ptr;
-      auto rt = (Runtime *)meta->context->runtime;
+      auto rt = (LLVMRuntime *)meta->context->runtime;
       auto alloc = rt->node_allocators[meta->snode_id];
       while (*p_chunk_ptr) {
         alloc->recycle(*p_chunk_ptr);
@@ -64,7 +64,7 @@ i32 Dynamic_append(Ptr meta_, Ptr node_, i32 data) {
     auto i = node->n;
     int chunk_start = 0;
     auto p_chunk_ptr = &node->ptr;
-    auto rt = (Runtime *)meta->context->runtime;
+    auto rt = meta->context->runtime;
     auto alloc = rt->node_allocators[meta->snode_id];
     while (true) {
       if (*p_chunk_ptr == nullptr) {

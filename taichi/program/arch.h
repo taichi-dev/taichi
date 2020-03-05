@@ -5,7 +5,7 @@
 
 TLANG_NAMESPACE_BEGIN
 
-enum class Arch {
+enum class Arch : int {
 #define PER_ARCH(x) x,
 #include "taichi/inc/archs.inc.h"
 

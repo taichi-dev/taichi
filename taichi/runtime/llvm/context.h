@@ -8,12 +8,12 @@ namespace taichi::lang {
 using namespace taichi;
 #endif
 
-struct Runtime;
+struct LLVMRuntime;
 
 // "Context" holds necessary data for function calls, such as arguments and
-// Runtime struct
+// LLVMRuntime struct
 struct Context {
-  Runtime *runtime;
+  LLVMRuntime *runtime;
   uint64 args[taichi_max_num_args];
   int32 extra_args[taichi_max_num_args][taichi_max_num_indices];
 

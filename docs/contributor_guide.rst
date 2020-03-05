@@ -126,7 +126,7 @@ Key folders are
 - ``taichi``: The core compiler implementation
 
   - ``analysis``: Static analysis passes
-  - ``runtime``: Runtime functions
+  - ``runtime``: LLVMRuntime functions
   - ``backends``: Code generators
   - ``transforms``: IR transform passes
   - ``python_bindings``: C++/Python interfaces

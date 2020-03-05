@@ -93,9 +93,9 @@ T ifloordiv(T a, T b) {
   return r;
 }
 
-struct Runtime;
+struct LLVMRuntime;
 template <typename... Args>
-void taichi_printf(Runtime *runtime, const char *format, Args &&... args);
+void taichi_printf(LLVMRuntime *runtime, const char *format, Args &&... args);
 
 extern "C" {
 
@@ -305,12 +305,12 @@ STRUCT_FIELD(StructMeta, refine_coordinates);
 STRUCT_FIELD(StructMeta, is_active);
 STRUCT_FIELD(StructMeta, context);
 
-struct Runtime;
+struct LLVMRuntime;
 
 constexpr bool enable_assert = true;
 
 void taichi_assert(Context *context, i32 test, const char *msg);
-void taichi_assert_runtime(Runtime *runtime, i32 test, const char *msg);
+void taichi_assert_runtime(LLVMRuntime *runtime, i32 test, const char *msg);
 #define TI_ASSERT_INFO(x, msg) taichi_assert(context, (int)(x), msg)
 #define TI_ASSERT(x) TI_ASSERT_INFO(x, #x)
 
@@ -348,9 +348,9 @@ struct ListManager {
   i32 log2chunk_num_elements;
   i32 lock;
   i32 num_elements;
-  Runtime *runtime;
+  LLVMRuntime *runtime;
 
-  ListManager(Runtime *runtime,
+  ListManager(LLVMRuntime *runtime,
               std::size_t element_size,
               std::size_t num_elements_per_chunk)
       : element_size(element_size),
@@ -463,7 +463,7 @@ void initialize_rand_state(RandState *state, u32 i) {
 
 struct NodeManager;
 
-struct Runtime {
+struct LLVMRuntime {
   bool preallocated;
   std::size_t preallocated_size;
 
@@ -508,20 +508,20 @@ struct Runtime {
   }
 };
 
-STRUCT_FIELD_ARRAY(Runtime, element_lists);
-STRUCT_FIELD_ARRAY(Runtime, node_allocators);
-STRUCT_FIELD(Runtime, root);
-STRUCT_FIELD(Runtime, root_mem_size);
-STRUCT_FIELD(Runtime, temporaries);
-STRUCT_FIELD(Runtime, assert_failed);
-STRUCT_FIELD(Runtime, host_printf);
-STRUCT_FIELD(Runtime, profiler);
-STRUCT_FIELD(Runtime, profiler_start);
-STRUCT_FIELD(Runtime, profiler_stop);
+STRUCT_FIELD_ARRAY(LLVMRuntime, element_lists);
+STRUCT_FIELD_ARRAY(LLVMRuntime, node_allocators);
+STRUCT_FIELD(LLVMRuntime, root);
+STRUCT_FIELD(LLVMRuntime, root_mem_size);
+STRUCT_FIELD(LLVMRuntime, temporaries);
+STRUCT_FIELD(LLVMRuntime, assert_failed);
+STRUCT_FIELD(LLVMRuntime, host_printf);
+STRUCT_FIELD(LLVMRuntime, profiler);
+STRUCT_FIELD(LLVMRuntime, profiler_start);
+STRUCT_FIELD(LLVMRuntime, profiler_stop);
 
 // NodeManager of node S (hash, pointer) managers the memory allocation of S_ch
 struct NodeManager {
-  Runtime *runtime;
+  LLVMRuntime *runtime;
   i32 lock;
   i32 element_size;
   i32 chunk_num_elements;
@@ -531,7 +531,9 @@ struct NodeManager {
 
   using list_data_type = i32;
 
-  NodeManager(Runtime *runtime, i32 element_size, i32 chunk_num_elements = -1)
+  NodeManager(LLVMRuntime *runtime,
+              i32 element_size,
+              i32 chunk_num_elements = -1)
       : runtime(runtime),
         element_size(element_size),
         chunk_num_elements(chunk_num_elements) {
@@ -591,19 +593,19 @@ struct NodeManager {
 
 extern "C" {
 
-void Runtime_store_result(Runtime *runtime, u64 ret) {
+void LLVMRuntime_store_result(LLVMRuntime *runtime, u64 ret) {
   *(u64 *)(runtime->result_buffer) = ret;
 }
 
-void Runtime_profiler_start(Runtime *runtime, Ptr kernel_name) {
+void LLVMRuntime_profiler_start(LLVMRuntime *runtime, Ptr kernel_name) {
   runtime->profiler_start(runtime->profiler, kernel_name);
 }
 
-void Runtime_profiler_stop(Runtime *runtime) {
+void LLVMRuntime_profiler_stop(LLVMRuntime *runtime) {
   runtime->profiler_stop(runtime->profiler);
 }
 
-Ptr get_temporary_pointer(Runtime *runtime, u64 offset) {
+Ptr get_temporary_pointer(LLVMRuntime *runtime, u64 offset) {
   return runtime->temporaries + offset;
 }
 
@@ -614,7 +616,7 @@ void __assertfail(const char *message,
                   const char *function,
                   std::size_t charSize);
 
-void taichi_assert_runtime(Runtime *runtime, i32 test, const char *msg) {
+void taichi_assert_runtime(LLVMRuntime *runtime, i32 test, const char *msg) {
   if (enable_assert) {
     if (test == 0) {
       __assertfail(msg, "", 1, "", 1);
@@ -622,7 +624,7 @@ void taichi_assert_runtime(Runtime *runtime, i32 test, const char *msg) {
   }
 }
 #else
-void taichi_assert_runtime(Runtime *runtime, i32 test, const char *msg) {
+void taichi_assert_runtime(LLVMRuntime *runtime, i32 test, const char *msg) {
   if (enable_assert) {
     if (test == 0) {
       runtime->assert_failed(msg);
@@ -635,14 +637,14 @@ void taichi_assert(Context *context, i32 test, const char *msg) {
   taichi_assert_runtime(context->runtime, test, msg);
 }
 
-Ptr Runtime::allocate_aligned(std::size_t size, std::size_t alignment) {
+Ptr LLVMRuntime::allocate_aligned(std::size_t size, std::size_t alignment) {
   if (preallocated)
     return allocate_from_buffer(size, alignment);
   else
     return (Ptr)vm_allocator(prog, size, alignment);
 }
 
-Ptr Runtime::allocate_from_buffer(std::size_t size, std::size_t alignment) {
+Ptr LLVMRuntime::allocate_from_buffer(std::size_t size, std::size_t alignment) {
   Ptr ret;
   locked_task(&lock, [&] {
     preallocated_head +=
@@ -656,11 +658,12 @@ Ptr Runtime::allocate_from_buffer(std::size_t size, std::size_t alignment) {
   return ret;
 }
 
-Ptr Runtime::allocate(std::size_t size) {
+Ptr LLVMRuntime::allocate(std::size_t size) {
   return allocate_aligned(size, 1);
 }
 
-Ptr Runtime::request_allocate_aligned(std::size_t size, std::size_t alignment) {
+Ptr LLVMRuntime::request_allocate_aligned(std::size_t size,
+                                          std::size_t alignment) {
   if (preallocated)
     return allocate_from_buffer(size, alignment);
   else {
@@ -677,7 +680,7 @@ Ptr Runtime::request_allocate_aligned(std::size_t size, std::size_t alignment) {
   }
 }
 
-void runtime_get_mem_req_queue(Runtime *runtime) {
+void runtime_get_mem_req_queue(LLVMRuntime *runtime) {
   runtime->set_result(runtime->mem_req_queue);
 }
 
@@ -693,13 +696,14 @@ void runtime_initialize(
   // bootstrap
   auto vm_allocator = (vm_allocator_type)_vm_allocator;
   auto host_printf = (host_printf_type)_host_printf;
-  Runtime *runtime = nullptr;
+  LLVMRuntime *runtime = nullptr;
   Ptr preallocated_tail = preallocated_buffer + preallocated_size;
   if (preallocated_size) {
-    runtime = (Runtime *)preallocated_buffer;
-    preallocated_buffer += taichi::iroundup(sizeof(Runtime), taichi_page_size);
+    runtime = (LLVMRuntime *)preallocated_buffer;
+    preallocated_buffer +=
+        taichi::iroundup(sizeof(LLVMRuntime), taichi_page_size);
   } else {
-    runtime = (Runtime *)vm_allocator(prog, sizeof(Runtime), 128);
+    runtime = (LLVMRuntime *)vm_allocator(prog, sizeof(LLVMRuntime), 128);
   }
 
   runtime->root_mem_size =
@@ -735,7 +739,7 @@ void runtime_initialize(
     initialize_rand_state(&runtime->rand_states[i], i);
 }
 
-void runtime_initialize2(Runtime *runtime, int root_id, int num_snodes) {
+void runtime_initialize2(LLVMRuntime *runtime, int root_id, int num_snodes) {
   // runtime->request_allocate_aligned ready to use
 
   // initialize the root node element list
@@ -754,21 +758,21 @@ void runtime_initialize2(Runtime *runtime, int root_id, int num_snodes) {
   runtime->element_lists[root_id]->append(&elem);
 }
 
-void Runtime_initialize_thread_pool(Runtime *runtime,
+void LLVMRuntime_initialize_thread_pool(LLVMRuntime *runtime,
                                     void *thread_pool,
                                     void *parallel_for) {
   runtime->thread_pool = (Ptr)thread_pool;
   runtime->parallel_for = (parallel_for_type)parallel_for;
 }
 
-void runtime_NodeAllocator_initialize(Runtime *runtime,
+void runtime_NodeAllocator_initialize(LLVMRuntime *runtime,
                                       int snode_id,
                                       std::size_t node_size) {
   runtime->node_allocators[snode_id] =
       runtime->create<NodeManager>(runtime, node_size, 1024 * 16);
 }
 
-void runtime_allocate_ambient(Runtime *runtime, int snode_id) {
+void runtime_allocate_ambient(LLVMRuntime *runtime, int snode_id) {
   runtime->ambient_elements[snode_id] =
       runtime->node_allocators[snode_id]->allocate();
 }
@@ -827,7 +831,7 @@ void system_memfence() {
 
 // "Element", "component" are different concepts
 
-void clear_list(Runtime *runtime, StructMeta *parent, StructMeta *child) {
+void clear_list(LLVMRuntime *runtime, StructMeta *parent, StructMeta *child) {
   auto child_list = runtime->element_lists[child->snode_id];
   child_list->clear();
 }
@@ -836,7 +840,9 @@ void clear_list(Runtime *runtime, StructMeta *parent, StructMeta *child) {
  * The element list of a SNode, maintains pointers to its instances, and
  * instances' parents' coordinates
  */
-void element_listgen(Runtime *runtime, StructMeta *parent, StructMeta *child) {
+void element_listgen(LLVMRuntime *runtime,
+                     StructMeta *parent,
+                     StructMeta *child) {
   auto parent_list = runtime->element_lists[parent->snode_id];
   int num_parent_elements = parent_list->size();
   auto child_list = runtime->element_lists[child->snode_id];
@@ -1053,11 +1059,11 @@ Ptr ListManager::allocate() {
   return get_element_ptr(i);
 }
 
-void node_gc(Runtime *runtime, int snode_id) {
+void node_gc(LLVMRuntime *runtime, int snode_id) {
   runtime->node_allocators[snode_id]->gc_serial();
 }
 
-void gc_parallel_0(Runtime *runtime, int snode_id) {
+void gc_parallel_0(LLVMRuntime *runtime, int snode_id) {
   auto allocator = runtime->node_allocators[snode_id];
   auto free_list = allocator->free_list;
   auto free_list_size = free_list->size();
@@ -1083,7 +1089,7 @@ void gc_parallel_0(Runtime *runtime, int snode_id) {
   }
 }
 
-void gc_parallel_1(Runtime *runtime, int snode_id) {
+void gc_parallel_1(LLVMRuntime *runtime, int snode_id) {
   auto allocator = runtime->node_allocators[snode_id];
   auto free_list = allocator->free_list;
   free_list->clear();
@@ -1092,7 +1098,7 @@ void gc_parallel_1(Runtime *runtime, int snode_id) {
   allocator->recycled_list->clear();
 }
 
-void gc_parallel_2(Runtime *runtime, int snode_id) {
+void gc_parallel_2(LLVMRuntime *runtime, int snode_id) {
   auto allocator = runtime->node_allocators[snode_id];
   auto elements = allocator->recycle_list_size_backup;
   auto free_list = allocator->free_list;
@@ -1138,7 +1144,7 @@ void gc_parallel_2(Runtime *runtime, int snode_id) {
 extern "C" {
 
 u32 cuda_rand_u32(Context *context) {
-  auto state = &((Runtime *)context->runtime)
+  auto state = &((LLVMRuntime *)context->runtime)
                     ->rand_states[linear_thread_idx() % num_rand_states];
   u32 ret;
   auto lock = (Ptr)&state->lock;
@@ -1215,7 +1221,7 @@ struct printf_helper {
 };
 
 template <typename... Args>
-void taichi_printf(Runtime *runtime, const char *format, Args &&... args) {
+void taichi_printf(LLVMRuntime *runtime, const char *format, Args &&... args) {
 #if ARCH_cuda
   printf_helper helper;
   helper.push_back(std::forward<Args>(args)...);

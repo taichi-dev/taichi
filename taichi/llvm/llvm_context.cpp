@@ -134,7 +134,7 @@ void compile_runtime_bitcode(Arch arch) {
         clang, runtime_src_folder, runtime_folder, macro, get_repo_dir());
     int ret = std::system(cmd.c_str());
     if (ret) {
-      TI_ERROR("Runtime compilation failed.");
+      TI_ERROR("LLVMRuntime compilation failed.");
     }
     std::system(fmt::format("llvm-as {}runtime.ll -o {}{}", runtime_folder,
                             runtime_folder, get_runtime_fn(arch))

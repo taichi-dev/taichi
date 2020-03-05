@@ -19,6 +19,7 @@
 #include "taichi/platform/metal/metal_kernel_util.h"
 #include "taichi/platform/metal/metal_runtime.h"
 #include "taichi/platform/opengl/opengl_kernel_util.h"
+#include "taichi/runtime/runtime.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -47,6 +48,8 @@ class Program {
   std::unique_ptr<MemoryPool> memory_pool;
   void *result_buffer;               // TODO: move this
   void *preallocated_device_buffer;  // TODO: move this to memory allocator
+
+  std::unique_ptr<Runtime> runtime;
 
   std::vector<std::unique_ptr<Kernel>> functions;
 
@@ -78,7 +81,7 @@ class Program {
   }
 
   Context &get_context() {
-    context.runtime = (Runtime *)llvm_runtime;
+    context.runtime = (LLVMRuntime *)llvm_runtime;
     return context;
   }
   void initialize_device_llvm_context();

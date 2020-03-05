@@ -16,12 +16,7 @@
 #include "taichi/system/unified_allocator.h"
 #include "taichi/ir/snode.h"
 
-#if defined(TI_WITH_CUDA)
-
-#include <cuda_runtime.h>
-#include <taichi/platform/cuda/cuda_context.h>
-
-#endif
+#include "taichi/backends/cuda/cuda_utils.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -46,9 +41,9 @@ Program::Program(Arch desired_arch) {
     arch = host_arch();
   }
 #else
-  if (arch == Arch::cuda && !cuda_context) {
-    cuda_context = std::make_unique<CUDAContext>();
-    if (!cuda_context->detected()) {
+  if (arch == Arch::cuda) {
+    runtime = Runtime::create(arch);
+    if (!runtime->detected()) {
       TI_WARN("No CUDA device detected.");
       arch = host_arch();
     }
@@ -88,8 +83,8 @@ Program::Program(Arch desired_arch) {
   preallocated_device_buffer = nullptr;
 
 #if defined(TI_WITH_CUDA)
-  if (config.enable_profiler) {
-    cuda_context->set_profiler(profiler.get());
+  if (config.enable_profiler && runtime) {
+    runtime->set_profiler(profiler.get());
   }
 #endif
 
@@ -135,7 +130,7 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
   if (config.arch == Arch::cuda && !config.use_unified_memory) {
 #if defined(TI_WITH_CUDA)
     check_cuda_error(cudaMalloc(&result_buffer, sizeof(uint64)));
-    auto total_mem = cuda_context->get_total_memory();
+    auto total_mem = runtime->get_total_memory();
     if (config.device_memory_fraction == 0) {
       TI_ASSERT(config.device_memory_GB > 0);
       prealloc_size = std::size_t(config.device_memory_GB * (1UL << 30));
@@ -171,9 +166,9 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
           preallocated_device_buffer, (void *)&taichi_allocate_aligned,
           (void *)std::printf);
 
-  TI_TRACE("Runtime initialized");
+  TI_TRACE("LLVMRuntime initialized");
   llvm_runtime = runtime->fetch_result<void *>();
-  TI_TRACE("Runtime pointer fetched");
+  TI_TRACE("LLVMRuntime pointer fetched");
 
   if (arch_use_host_memory(config.arch) || config.use_unified_memory) {
     runtime->call<void *>("runtime_get_mem_req_queue", llvm_runtime);
@@ -210,18 +205,18 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
   }
 
   if (arch_use_host_memory(config.arch)) {
-    runtime->call<void *, void *, void *>("Runtime_initialize_thread_pool",
+    runtime->call<void *, void *, void *>("LLVMRuntime_initialize_thread_pool",
                                           llvm_runtime, &thread_pool,
                                           (void *)ThreadPool::static_run);
 
-    runtime->call<void *, void *>("Runtime_set_assert_failed", llvm_runtime,
+    runtime->call<void *, void *>("LLVMRuntime_set_assert_failed", llvm_runtime,
                                   (void *)assert_failed_host);
     // Profiler functions can only be called on host kernels
-    runtime->call<void *, void *>("Runtime_set_profiler", llvm_runtime,
+    runtime->call<void *, void *>("LLVMRuntime_set_profiler", llvm_runtime,
                                   profiler.get());
-    runtime->call<void *, void *>("Runtime_set_profiler_start", llvm_runtime,
+    runtime->call<void *, void *>("LLVMRuntime_set_profiler_start", llvm_runtime,
                                   (void *)&ProfilerBase::profiler_start);
-    runtime->call<void *, void *>("Runtime_set_profiler_stop", llvm_runtime,
+    runtime->call<void *, void *>("LLVMRuntime_set_profiler_stop", llvm_runtime,
                                   (void *)&ProfilerBase::profiler_stop);
   }
 }
@@ -425,8 +420,8 @@ Kernel &Program::get_snode_writer(SNode *snode) {
 
 void Program::finalize() {
 #if defined(TI_WITH_CUDA)
-  if (cuda_context)
-    cuda_context->set_profiler(nullptr);
+  if (runtime)
+    runtime->set_profiler(nullptr);
 #endif
   synchronize();
   current_program = nullptr;

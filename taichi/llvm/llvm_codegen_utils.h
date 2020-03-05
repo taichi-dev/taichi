@@ -71,7 +71,7 @@ class ModuleBuilder {
   llvm::Type *get_runtime_type(const std::string &name) {
     auto ty = module->getTypeByName("struct." + name);
     if (!ty) {
-      TI_ERROR("Runtime type {} not found.", name);
+      TI_ERROR("LLVMRuntime type {} not found.", name);
     }
     return ty;
   }
@@ -79,7 +79,7 @@ class ModuleBuilder {
   llvm::Function *get_runtime_function(const std::string &name) {
     auto f = module->getFunction(name);
     if (!f) {
-      TI_ERROR("Runtime function {} not found.", name);
+      TI_ERROR("LLVMRuntime function {} not found.", name);
     }
     f->removeAttribute(llvm::AttributeList::FunctionIndex,
                        llvm::Attribute::OptimizeNone);

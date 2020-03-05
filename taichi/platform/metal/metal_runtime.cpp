@@ -301,14 +301,14 @@ class MetalRuntime::Impl {
     auto *llvm_rtm = params.llvm_runtime;
     TI_ASSERT(llvm_ctx != nullptr && llvm_rtm != nullptr);
     const size_t rtm_root_mem_size = llvm_ctx->lookup_function<size_t(void *)>(
-        "Runtime_get_root_mem_size")(llvm_rtm);
+        "LLVMRuntime_get_root_mem_size")(llvm_rtm);
     if (rtm_root_mem_size > 0) {
       TI_ASSERT(needs_root_buffer_);
       // Make sure the runtime's root memory is large enough.
       TI_ASSERT(iroundup(params.root_size, taichi_page_size) <=
                 rtm_root_mem_size);
       auto *rtm_root_mem = params.llvm_ctx->lookup_function<uint8 *(void *)>(
-          "Runtime_get_root")(llvm_rtm);
+          "LLVMRuntime_get_root")(llvm_rtm);
       TI_ASSERT(rtm_root_mem != nullptr);
       root_buffer_ = new_mtl_buffer_no_copy(device_.get(), rtm_root_mem,
                                             rtm_root_mem_size);
@@ -323,7 +323,7 @@ class MetalRuntime::Impl {
     TI_ASSERT(iroundup(taichi_global_tmp_buffer_size, taichi_page_size) ==
               taichi_global_tmp_buffer_size);
     global_tmps_mem_begin_ = params.llvm_ctx->lookup_function<uint8 *(void *)>(
-        "Runtime_get_temporaries")(llvm_rtm);
+        "LLVMRuntime_get_temporaries")(llvm_rtm);
     global_tmps_buffer_ = new_mtl_buffer_no_copy(
         device_.get(), global_tmps_mem_begin_, taichi_global_tmp_buffer_size);
     TI_ASSERT(global_tmps_buffer_ != nullptr);

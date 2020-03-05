@@ -21,7 +21,7 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
     auto offloaded_task_name = init_offloaded_task_function(stmt);
     if (prog->config.enable_profiler) {
       call(
-          builder.get(), "Runtime_profiler_start",
+          builder.get(), "LLVMRuntime_profiler_start",
           {get_runtime(), builder->CreateGlobalStringPtr(offloaded_task_name)});
     }
     if (stmt->task_type == Type::serial) {
@@ -42,7 +42,7 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
       TI_NOT_IMPLEMENTED
     }
     if (prog->config.enable_profiler) {
-      call(builder.get(), "Runtime_profiler_stop", {get_runtime()});
+      call(builder.get(), "LLVMRuntime_profiler_stop", {get_runtime()});
     }
     finalize_offloaded_task_function();
     current_task->end();

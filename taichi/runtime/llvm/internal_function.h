@@ -3,7 +3,7 @@ i32 do_nothing(Context *context) {
 }
 
 i32 refresh_counter(Context *context) {
-  auto runtime = (Runtime *)context->runtime;
+  auto runtime = context->runtime;
   auto queue = runtime->mem_req_queue;
   queue->tail++;
   return 0;
@@ -11,7 +11,7 @@ i32 refresh_counter(Context *context) {
 
 i32 test_list_manager(Context *context) {
   auto runtime = context->runtime;
-  taichi_printf(runtime, "Runtime %p\n", runtime);
+  taichi_printf(runtime, "LLVMRuntime %p\n", runtime);
   auto list = context->runtime->create<ListManager>(runtime, 4, 16);
   for (int i = 0; i < 320; i++) {
     taichi_printf(runtime, "appending %d\n", i);
@@ -26,7 +26,7 @@ i32 test_list_manager(Context *context) {
 
 i32 test_node_allocator(Context *context) {
   auto runtime = context->runtime;
-  taichi_printf(runtime, "Runtime %p\n", runtime);
+  taichi_printf(runtime, "LLVMRuntime %p\n", runtime);
   auto nodes = context->runtime->create<NodeManager>(runtime, sizeof(i64), 4);
   Ptr ptrs[24];
   for (int i = 0; i < 19; i++) {

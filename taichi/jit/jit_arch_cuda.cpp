@@ -20,8 +20,8 @@
 #include <llvm/Support/TargetRegistry.h>
 #include <llvm/Target/TargetMachine.h>
 #include <llvm/ExecutionEngine/Orc/JITTargetMachineBuilder.h>
-#include <taichi/platform/cuda/cuda_utils.h>
-#include <taichi/platform/cuda/cuda_context.h>
+#include <taichi/backends/cuda/cuda_utils.h>
+#include <taichi/backends/cuda/cuda_context.h>
 #include <taichi/program/program.h>
 #include <taichi/runtime/llvm/context.h>
 #include <taichi/system/timer.h>

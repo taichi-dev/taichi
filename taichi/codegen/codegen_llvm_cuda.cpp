@@ -5,14 +5,14 @@
 #include "taichi/lang_util.h"
 #include "taichi/codegen/codegen_cuda.h"
 #include "taichi/codegen/codegen_llvm.h"
-#include "taichi/platform/cuda/cuda_context.h"
+#include "taichi/backends/cuda/cuda_context.h"
 
 #include <vector>
 #include <set>
 
 #ifdef TI_WITH_CUDA
 #include <cuda_runtime.h>
-#include "taichi/platform/cuda/cuda_utils.h"
+#include "taichi/backends/cuda/cuda_utils.h"
 #endif  // TI_WITH_CUDA
 
 TLANG_NAMESPACE_BEGIN

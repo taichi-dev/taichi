@@ -96,6 +96,9 @@ TI_FORCE_INLINE constexpr T product(const std::array<T, N> arr) {
 }
 
 constexpr std::size_t least_pot_bound(std::size_t v) {
+  if (v > std::numeric_limits<std::size_t>::max() / 2 + 1) {
+    TI_ERROR("v({}) too large", v)
+  }
   std::size_t ret = 1;
   while (ret < v) {
     ret *= 2;

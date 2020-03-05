@@ -57,8 +57,8 @@ static_assert(false, "32-bit Windows systems are not supported")
 
 // Avoid dependency on glibc 2.27
 #if defined(TI_PLATFORM_LINUX) && defined(TI_ARCH_x64)
-// objdump -T libtaichi_core.so| grep  GLIBC_2.27
-__asm__(".symver logf,logf@GLIBC_2.2.5");
+    // objdump -T libtaichi_core.so| grep  GLIBC_2.27
+    __asm__(".symver logf,logf@GLIBC_2.2.5");
 __asm__(".symver powf,powf@GLIBC_2.2.5");
 __asm__(".symver expf,expf@GLIBC_2.2.5");
 #endif
@@ -121,7 +121,7 @@ static_assert(__cplusplus >= 201402L, "C++14 required.");
 #define TI_EXPORT
 #endif
 #define TI_P(x) \
-  { TI_DEBUG("{}", taichi::TextSerializer::serialize(#x, (x))); }
+  { TI_INFO("{}", taichi::TextSerializer::serialize(#x, (x))); }
 
 #ifndef _WIN64
 #define sscanf_s sscanf
@@ -164,8 +164,7 @@ static_assert(__cplusplus >= 201402L, "C++14 required.");
   }                         \
   }
 
-
-    TI_EXPORT void taichi_raise_assertion_failure_in_python(const char *msg);
+TI_EXPORT void taichi_raise_assertion_failure_in_python(const char *msg);
 
 TI_NAMESPACE_BEGIN
 
@@ -366,9 +365,8 @@ TI_NAMESPACE_BEGIN
 #define TI_FLUSH_LOGGER \
   { taichi::logger.flush(); };
 
-
 class Logger {
-private:
+ private:
   std::shared_ptr<spdlog::logger> console;
   int level;
 
@@ -378,7 +376,7 @@ private:
   void debug(const std::string &s);
   void info(const std::string &s);
   void warn(const std::string &s);
-  void error(const std::string &s, bool raise_exception=true);
+  void error(const std::string &s, bool raise_exception = true);
   void critical(const std::string &s);
   void flush();
   void set_level(const std::string &level);

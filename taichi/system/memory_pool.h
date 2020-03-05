@@ -2,7 +2,7 @@
 #include "taichi/common/util.h"
 #include "taichi/system/unified_allocator.h"
 #define TI_RUNTIME_HOST
-#include "taichi/runtime/context.h"
+#include "taichi/runtime/llvm/context.h"
 #ifdef TI_WITH_CUDA
 #include <cuda_runtime.h>
 #endif

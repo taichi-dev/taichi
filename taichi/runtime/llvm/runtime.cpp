@@ -17,10 +17,8 @@
 #include <type_traits>
 #include <cstring>
 
-// Use relative path here since when compiling runtime bitcode no "-I" is
-// specified to clang
-#include "../inc/constants.h"
-#include "../math/arithmetic.h"
+#include "taichi/inc/constants.h"
+#include "taichi/math/arithmetic.h"
 
 struct Context;
 using assert_failed_type = void (*)(const char *);

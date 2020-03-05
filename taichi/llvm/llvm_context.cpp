@@ -105,7 +105,7 @@ std::string get_runtime_fn(Arch arch) {
 }
 
 std::string get_runtime_src_dir() {
-  return get_repo_dir() + "/taichi/runtime/";
+  return get_repo_dir() + "/taichi/runtime/llvm/";
 }
 
 std::string get_runtime_dir() {
@@ -128,14 +128,11 @@ void compile_runtime_bitcode(Arch arch) {
     auto runtime_src_folder = get_runtime_src_dir();
     auto runtime_folder = get_runtime_dir();
     std::string macro = fmt::format(" -D ARCH_{} ", arch_name(arch));
-#if defined(TI_ARCH_ARM)
-    macro += " -D ARCH_arm";
-#endif
-    int ret = std::system(
-        fmt::format(
-            "{} -S {}runtime.cpp -o {}runtime.ll -emit-llvm -std=c++17 {}",
-            clang, runtime_src_folder, runtime_folder, macro)
-            .c_str());
+    auto cmd = fmt::format(
+        "{} -S {}runtime.cpp -o {}runtime.ll "
+        "-emit-llvm -std=c++17 {} -I {}",
+        clang, runtime_src_folder, runtime_folder, macro, get_repo_dir());
+    int ret = std::system(cmd.c_str());
     if (ret) {
       TI_ERROR("Runtime compilation failed.");
     }

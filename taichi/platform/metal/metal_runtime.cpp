@@ -8,7 +8,7 @@
 #include <string_view>
 
 #define TI_RUNTIME_HOST
-#include <taichi/runtime/context.h>
+#include <taichi/runtime/llvm/context.h>
 #undef TI_RUNTIME_HOST
 
 #ifdef TI_PLATFORM_OSX

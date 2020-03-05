@@ -11,7 +11,7 @@
 #include "taichi/ir/snode.h"
 #include "taichi/llvm/llvm_context.h"
 #include "taichi/lang_util.h"
-#include "taichi/runtime/context.h"
+#include "taichi/runtime/llvm/context.h"
 #include "taichi/program/profiler.h"
 #include "taichi/system/threading.h"
 #include "taichi/system/unified_allocator.h"

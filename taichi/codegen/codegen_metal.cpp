@@ -17,12 +17,19 @@ class MetalKernelCodegen : public IRVisitor {
  public:
   MetalKernelCodegen(const std::string &mtl_kernel_prefix,
                      const std::string &root_snode_type_name,
+                     Kernel *kernel,
                      const StructCompiledResult *compiled_snode_structs)
       : mtl_kernel_prefix_(mtl_kernel_prefix),
         root_snode_type_name_(root_snode_type_name),
+        kernel_(kernel),
         compiled_snode_structs_(compiled_snode_structs),
-        needs_root_buffer_(compiled_snode_structs_->root_size > 0) {
+        needs_root_buffer_(compiled_snode_structs_->root_size > 0),
+        args_attribs_(kernel_->args) {
     // allow_undefined_visitor = true;
+  }
+
+  const MetalKernelArgsAttributes &kernel_args_attribs() const {
+    return args_attribs_;
   }
 
   const std::string &kernel_source_code() const {
@@ -33,10 +40,10 @@ class MetalKernelCodegen : public IRVisitor {
     return mtl_kernels_attribs_;
   }
 
-  void run(Kernel *kernel) {
+  void run() {
     generate_mtl_header(compiled_snode_structs_->source_code);
-    generate_kernel_args_struct(kernel);
-    kernel->ir->accept(this);
+    generate_kernel_args_struct();
+    kernel_->ir->accept(this);
   }
 
   void visit(Block *stmt) override {
@@ -392,14 +399,7 @@ class MetalKernelCodegen : public IRVisitor {
     emit("\n");
   }
 
-  void generate_kernel_args_struct(Kernel *kernel) {
-    args_attribs_ = MetalKernelArgsAttributes();
-    for (int i = 0; i < kernel->args.size(); ++i) {
-      const auto &a = kernel->args[i];
-      args_attribs_.insert_arg(a.dt, a.is_nparray, a.size, a.is_return_value);
-    }
-    args_attribs_.finalize();
-
+  void generate_kernel_args_struct() {
     if (args_attribs_.has_args()) {
       const auto class_name = kernel_args_classname();
       emit("namespace {{");
@@ -557,13 +557,14 @@ class MetalKernelCodegen : public IRVisitor {
 
   const std::string mtl_kernel_prefix_;
   const std::string root_snode_type_name_;
+  Kernel *const kernel_;
   const StructCompiledResult *const compiled_snode_structs_;
   const bool needs_root_buffer_;
+  const MetalKernelArgsAttributes args_attribs_;
 
   bool is_top_level_{true};
   int mtl_kernel_count_{0};
   std::vector<MetalKernelAttributes> mtl_kernels_attribs_;
-  MetalKernelArgsAttributes args_attribs_;
   GetRootStmt *root_stmt_{nullptr};
   MetalKernelAttributes *current_kernel_attribs_{nullptr};
   std::string kernel_src_code_;
@@ -707,17 +708,12 @@ FunctionType MetalCodeGen::gen(const SNode &root_snode, MetalRuntime *runtime) {
   // Make a copy of the name!
   const std::string taichi_kernel_name = taichi_kernel_name_;
   MetalKernelCodegen codegen(taichi_kernel_name, root_snode.node_type_name,
-                             struct_compiled_);
-  codegen.run(kernel_);
-  metal::MetalKernelArgsAttributes mtl_args_attribs;
-  for (const auto &arg : kernel_->args) {
-    mtl_args_attribs.insert_arg(arg.dt, arg.is_nparray, arg.size,
-                                arg.is_return_value);
-  }
-  mtl_args_attribs.finalize();
+                             kernel_, struct_compiled_);
+  codegen.run();
   runtime->register_taichi_kernel(
       taichi_kernel_name, codegen.kernel_source_code(),
-      codegen.kernels_attribs(), global_tmps_buffer_size_, mtl_args_attribs);
+      codegen.kernels_attribs(), global_tmps_buffer_size_,
+      codegen.kernel_args_attribs());
   return [runtime, taichi_kernel_name](Context &ctx) {
     runtime->launch_taichi_kernel(taichi_kernel_name, &ctx);
   };

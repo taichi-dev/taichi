@@ -3,8 +3,9 @@
 #include <string>
 #include <vector>
 
-#include <taichi/ir/statements.h>
-#include "metal_data_types.h"
+#include "taichi/ir/statements.h"
+#include "taichi/platform/metal/metal_data_types.h"
+#include "taichi/program/kernel.h"
 
 // Data structures defined in this file may overlap with some of the Taichi data
 // structures. However, they serve as a boundary between Taichi and Metal and
@@ -53,29 +54,27 @@ struct MetalKernelAttributes {
   RangeForAttributes range_for_attribs;
 };
 
-// This is mostly the same as Kernel::Arg. It's extended to contain a few Metal
-// kernel specific atrributes, like |stride| and |offset_in_mem|. Note that all
-// Metal kernels belonging to the same Taichi kernel will share the same kernel
-// args (attributes + Metal buffer). This is because kernel arguments is a
-// Taichi-level concept.
-//
-// TODO: We want to create this object by just passing in a Kernel obj. However,
-// we also want to use this inside Kernel::operator(). Without refactoring, it
-// leads to circular dependency.
+// Note that all Metal kernels belonging to the same Taichi kernel will share
+// the same kernel args (attributes + Metal buffer). This is because kernel
+// arguments is a Taichi-level concept.
 class MetalKernelArgsAttributes {
  public:
   // Attribute for a single argument.
+  // This is mostly the same as Kernel::Arg. It's extended to contain a few
+  // Metal kernel specific atrributes, like |stride| and |offset_in_mem|.
   struct ArgAttributes {
     // For array arg, this is #elements * stride(dt). Unit: byte
-    size_t stride{0};
+    size_t stride = 0;
     // Offset in the argument buffer
-    size_t offset_in_mem{0};
+    size_t offset_in_mem = 0;
     // Argument index
-    int index{-1};
+    int index = -1;
     MetalDataType dt;
-    bool is_array{false};
-    bool is_return_val{false};
+    bool is_array = false;
+    bool is_return_val = false;
   };
+
+  explicit MetalKernelArgsAttributes(const std::vector<Kernel::Arg>& args);
 
   inline bool has_args() const { return !arg_attribs_vec_.empty(); }
   inline const std::vector<ArgAttributes> &args() const { return arg_attribs_vec_; }
@@ -89,18 +88,9 @@ class MetalKernelArgsAttributes {
   inline size_t total_bytes() const {
     return args_bytes_ + extra_args_bytes_;
   }
-
-  // Must be inserted in argument order!
-  // If |is_array|, then |size| should be the size of the array in bytes, not
-  // its number of element.
-  int insert_arg(DataType dt, bool is_array, size_t size, bool is_return_val);
-
-  // Call this after inserting all the kernel args.
-  void finalize();
-
  private:
   std::vector<ArgAttributes> arg_attribs_vec_;
-  size_t args_bytes_{0};
+  size_t args_bytes_;
   size_t extra_args_bytes_;
 };
 

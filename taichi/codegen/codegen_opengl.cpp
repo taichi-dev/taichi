@@ -1,4 +1,4 @@
-#define _GLSL_DEBUG 1
+//#define _GLSL_DEBUG 1
 #include "codegen_opengl.h"
 #include <taichi/platform/opengl/opengl_api.h>
 #include <taichi/platform/opengl/opengl_data_types.h>
@@ -272,6 +272,14 @@ int _rand_i32()\n\
   {
     if (stmt->op_type == UnaryOpType::logic_not) {
       emit("const {} {} = {}({} == 0);", opengl_data_type_name(stmt->element_type()),
+           stmt->raw_name(), opengl_data_type_name(stmt->element_type()),
+           stmt->operand->raw_name());
+    } else if (stmt->op_type == UnaryOpType::neg) {
+      emit("const {} {} = {}(-{});", opengl_data_type_name(stmt->element_type()),
+           stmt->raw_name(), opengl_data_type_name(stmt->element_type()),
+           stmt->operand->raw_name());
+    } else if (stmt->op_type == UnaryOpType::rsqrt) {
+      emit("const {} {} = {}(1 / sqrt({}));", opengl_data_type_name(stmt->element_type()),
            stmt->raw_name(), opengl_data_type_name(stmt->element_type()),
            stmt->operand->raw_name());
     } else if (stmt->op_type != UnaryOpType::cast) {

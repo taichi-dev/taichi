@@ -138,6 +138,7 @@ void build_taichi() {
       nvidia-smi
     fi
     cd $TAICHI_REPO_DIR
+    git submodule update --init --recursive
     [ -e build ] && rm -rf build
     mkdir build && cd build
     export CUDA_BIN_PATH=/usr/local/cuda-${CUDA_VERSION}

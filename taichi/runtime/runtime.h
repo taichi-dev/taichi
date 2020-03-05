@@ -4,7 +4,7 @@
 #include "taichi/program/arch.h"
 #include "taichi/program/profiler.h"
 
-#include <unordered_map>
+#include <map>
 #include <memory>
 #include <functional>
 
@@ -32,9 +32,9 @@ class Runtime {
   virtual ~Runtime() {
   }
 
-  using Factories = std::unordered_map<int, std::function<std::unique_ptr<Runtime>()>>;
+  using Factories = std::map<Arch, std::function<std::unique_ptr<Runtime>()>>;
 
-  static Factories &get_factories()  {
+  static Factories &get_factories() {
     static Factories factories;
     return factories;
   }
@@ -48,8 +48,8 @@ class Runtime {
 template <typename RuntimeT>
 void Runtime::register_impl(Arch arch) {
   auto &factories = get_factories();
-  TI_ASSERT(factories.find((int)arch) == factories.end());
-  factories[(int)arch] = [] { return std::make_unique<RuntimeT>(); };
+  TI_ASSERT(factories.find(arch) == factories.end());
+  factories[arch] = [] { return std::make_unique<RuntimeT>(); };
 }
 
 TLANG_NAMESPACE_END

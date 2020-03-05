@@ -262,6 +262,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     TI_INFO("visit(FuncCall {})!", stmt->func);
     TI_ASSERT_INFO(last_function, "no last function");
     stmt->value = builder->CreateCall(last_function);
+    TI_INFO("call ret datatype {}", (int)stmt->ret_type.data_type);
   }
 
   void visit(FuncBodyStmt *stmt) override {
@@ -273,7 +274,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
         llvm::Type::getVoidTy(*llvm_context), {}, false);
     last_function = llvm::Function::Create(function_type,
                                     llvm::Function::InternalLinkage,
-                                    "stmt_func_name", module.get());
+                                    "func_name_here", module.get());
   }
 
   void visit(FuncLeaveStmt *stmt) override {

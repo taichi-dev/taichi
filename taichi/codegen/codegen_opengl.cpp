@@ -282,6 +282,10 @@ int _rand_i32()\n\
       emit("const {} {} = {}(1 / sqrt({}));", opengl_data_type_name(stmt->element_type()),
            stmt->raw_name(), opengl_data_type_name(stmt->element_type()),
            stmt->operand->raw_name());
+    } else if (stmt->op_type == UnaryOpType::sgn) {
+      emit("const {} {} = {}(sign({}));", opengl_data_type_name(stmt->element_type()),
+           stmt->raw_name(), opengl_data_type_name(stmt->element_type()),
+           stmt->operand->raw_name());
     } else if (stmt->op_type != UnaryOpType::cast) {
       emit("const {} {} = {}({}({}));", opengl_data_type_name(stmt->element_type()),
            stmt->raw_name(), opengl_data_type_name(stmt->element_type()),

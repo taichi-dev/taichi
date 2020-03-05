@@ -769,7 +769,7 @@ class GUI : public GUIBase {
                     (std::accumulate(last_frame_interval.begin(),
                                      last_frame_interval.end(), 0.0_f));
     if (frame_id % 10 == 0)
-      set_title(fmt::format("{} ({:.02f} FPS)", window_name, real_fps));
+      set_title(fmt::format("{} ({:.2f} FPS)", window_name, real_fps));
   }
 
   bool has_key_event() {

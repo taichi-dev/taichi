@@ -6,6 +6,8 @@
 #include <taichi/common/util.h>
 #include <vector>
 #include <iostream>
+#include "spdlog/fmt/bundled/color.h"
+
 #ifdef __APPLE__
 #include <execinfo.h>
 #include <cxxabi.h>
@@ -131,9 +133,9 @@ TI_EXPORT void print_traceback() {
     exit(EXIT_FAILURE);
   }
 
-  fmt::print_colored(fmt::MAGENTA, "***********************************\n");
-  fmt::print_colored(fmt::MAGENTA, "* Taichi Compiler Stack Traceback *\n");
-  fmt::print_colored(fmt::MAGENTA, "***********************************\n");
+  fmt::print(fg(fmt::color::magenta), "***********************************\n");
+  fmt::print(fg(fmt::color::magenta), "* Taichi Compiler Stack Traceback *\n");
+  fmt::print(fg(fmt::color::magenta), "***********************************\n");
 
   // j = 0: taichi::print_traceback
   for (int j = 1; j < nptrs; j++) {
@@ -164,7 +166,7 @@ TI_EXPORT void print_traceback() {
     } else {
       line = s;
     }
-    fmt::print_colored(fmt::MAGENTA, "{}\n", line);
+    fmt::print(fg(fmt::color::magenta), "{}\n", line);
   }
   std::free(strings);
 #endif

@@ -6,8 +6,10 @@
 #include <taichi/common/util.h>
 #include <taichi/system/threading.h>
 #include <csignal>
-#include <spdlog/spdlog.h>
 #include <taichi/python/export.h>
+#include "spdlog/common.h"
+#include "spdlog/spdlog.h"
+#include "spdlog/sinks/stdout_color_sinks.h"
 
 TI_NAMESPACE_BEGIN
 
@@ -63,7 +65,7 @@ int Logger::level_enum_from_string(const std::string &level_name) {
 Logger::Logger() {
   console = spdlog::stdout_color_mt("console");
   console->flush_on(spdlog::level::trace);
-  TI_LOG_SET_PATTERN("[%L %D %X.%e] %v");
+  TI_LOG_SET_PATTERN("%^[%L %D %X.%e] %v%$");
 
   py::register_exception_translator([](std::exception_ptr p) {
     try {

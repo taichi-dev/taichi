@@ -8,7 +8,6 @@
 #include <taichi/system/virtual_memory.h>
 #include <taichi/system/timer.h>
 #include <string>
-#include "taichi/backends/cuda/cuda_context.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -26,7 +25,7 @@ UnifiedAllocator::UnifiedAllocator(std::size_t size, Arch arch)
     TI_TRACE("Allocating unified (CPU+GPU) address space of size {} MB",
              size / 1024 / 1024);
 #if defined(TI_WITH_CUDA)
-    std::lock_guard<std::mutex> _(cuda_context->lock);
+    // std::lock_guard<std::mutex> _(cuda_context->lock);
     check_cuda_error(cudaMallocManaged(&_cuda_data, size));
     if (_cuda_data == nullptr) {
       TI_ERROR("CUDA memory allocation failed.");

@@ -7,7 +7,7 @@ std::unique_ptr<Runtime> Runtime::create(Arch arch) {
   if (auto factory = factories.find((int)arch); factory != factories.end()) {
     return factory->second();
   } else {
-    TI_NOT_IMPLEMENTED
+    return nullptr;
   }
 }
 

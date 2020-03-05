@@ -35,20 +35,18 @@ std::atomic<int> Program::num_instances;
 
 Program::Program(Arch desired_arch) {
   auto arch = desired_arch;
-#if !defined(TI_WITH_CUDA)
-  if (arch == Arch::cuda) {
-    TI_WARN("Taichi is not compiled with CUDA.");
-    arch = host_arch();
-  }
-#else
   if (arch == Arch::cuda) {
     runtime = Runtime::create(arch);
-    if (!runtime->detected()) {
+    if (!runtime) {
+      TI_WARN("Taichi is not compiled with CUDA.");
+      arch = host_arch();
+    } else if (!runtime->detected()) {
       TI_WARN("No CUDA device detected.");
       arch = host_arch();
+    } else {
+      // CUDA runtime created successfully
     }
   }
-#endif
   if (arch == Arch::metal) {
     if (!metal::is_metal_api_available()) {
       TI_WARN("No Metal API detected.");
@@ -82,11 +80,9 @@ Program::Program(Arch desired_arch) {
 
   preallocated_device_buffer = nullptr;
 
-#if defined(TI_WITH_CUDA)
   if (config.enable_profiler && runtime) {
     runtime->set_profiler(profiler.get());
   }
-#endif
 
   result_buffer = nullptr;
   current_kernel = nullptr;
@@ -214,7 +210,8 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
     // Profiler functions can only be called on host kernels
     runtime->call<void *, void *>("LLVMRuntime_set_profiler", llvm_runtime,
                                   profiler.get());
-    runtime->call<void *, void *>("LLVMRuntime_set_profiler_start", llvm_runtime,
+    runtime->call<void *, void *>("LLVMRuntime_set_profiler_start",
+                                  llvm_runtime,
                                   (void *)&ProfilerBase::profiler_start);
     runtime->call<void *, void *>("LLVMRuntime_set_profiler_stop", llvm_runtime,
                                   (void *)&ProfilerBase::profiler_stop);
@@ -419,10 +416,8 @@ Kernel &Program::get_snode_writer(SNode *snode) {
 }
 
 void Program::finalize() {
-#if defined(TI_WITH_CUDA)
   if (runtime)
     runtime->set_profiler(nullptr);
-#endif
   synchronize();
   current_program = nullptr;
   memory_pool->terminate();

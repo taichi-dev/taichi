@@ -5,7 +5,6 @@
 #include "taichi/lang_util.h"
 #include "taichi/codegen/codegen_cuda.h"
 #include "taichi/codegen/codegen_llvm.h"
-#include "taichi/backends/cuda/cuda_context.h"
 
 #include <vector>
 #include <set>

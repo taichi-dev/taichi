@@ -3,7 +3,6 @@
 #include "taichi/backends/cuda/cuda_utils.h"
 #if TI_WITH_CUDA
 #include <cuda_runtime.h>
-#include <taichi/backends/cuda/cuda_context.h>
 #endif
 
 #include "taichi/program/program.h"

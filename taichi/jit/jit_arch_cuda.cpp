@@ -1,8 +1,9 @@
 
-#include <memory>
 #if defined(TI_WITH_CUDA)
+#include <memory>
 #include <cuda_runtime_api.h>
 #include <cuda.h>
+#include <taichi/backends/cuda/cuda_context.h>
 #endif
 #include "llvm/ADT/StringRef.h"
 #include "llvm/IR/DataLayout.h"
@@ -21,7 +22,6 @@
 #include <llvm/Target/TargetMachine.h>
 #include <llvm/ExecutionEngine/Orc/JITTargetMachineBuilder.h>
 #include <taichi/backends/cuda/cuda_utils.h>
-#include <taichi/backends/cuda/cuda_context.h>
 #include <taichi/program/program.h>
 #include <taichi/runtime/llvm/context.h>
 #include <taichi/system/timer.h>

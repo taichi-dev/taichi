@@ -6,6 +6,16 @@ file(GLOB TAICHI_CORE_SOURCE
         "taichi/*/*/*/*.cpp" "taichi/*/*/*.cpp" "taichi/*/*.cpp" "taichi/*.cpp"
         "taichi/*/*/*/*.h" "taichi/*/*/*.h" "taichi/*/*.h" "taichi/*.h" "external/xxhash/*.c" "tests/cpp/*.cpp")
 
+file(GLOB TAICHI_BACKEND_SOURCE "taichi/backends/**/*.cpp" "taichi/backends/**/*.h")
+
+file(GLOB TAICHI_CUDA_SOURCE "taichi/backends/cuda/*.cpp" "taichi/backends/cuda/*.h")
+
+list(REMOVE_ITEM TAICHI_CORE_SOURCE ${TAICHI_BACKEND_SOURCE})
+
+if (TI_WITH_CUDA)
+    list(APPEND TAICHI_CORE_SOURCE ${TAICHI_CUDA_SOURCE})
+endif()
+
 option(BUILD_CPP_EXAMPLES "Build legacy C++ examples" OFF)
 
 if (BUILD_CPP_EXAMPLES)

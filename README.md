@@ -22,6 +22,10 @@ python3 -m pip install taichi-nightly-cuda-10-1
 # Build from source if you work in other environments
 ```
 
+**Note:**
+ - On Ubuntu 19.04+, please `sudo apt install libtinfo5`.
+ - On Windows, please install [Microsoft Visual C++ Redistributable](https://aka.ms/vs/16/release/vc_redist.x64.exe) if you haven't.
+
 ## [Contribution Guidelines](https://taichi.readthedocs.io/en/latest/contributor_guide.html)
 
 || **Linux (CUDA)** | **OS X (10.14+)** | **Windows** |

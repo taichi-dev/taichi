@@ -43,6 +43,7 @@ SNode &SNode::create_node(std::vector<Index> indices,
   new_node.n = 1;
   for (int i = 0; i < sizes.size(); i++) {
     auto s = sizes[i];
+    TI_ASSERT(sizes[i] > 0);
     if (!bit::is_power_of_two(s)) {
       auto promoted_s = bit::least_pot_bound(s);
       TI_DEBUG("Non-power-of-two node size {} promoted to {}.", s, promoted_s);

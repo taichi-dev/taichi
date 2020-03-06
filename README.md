@@ -30,7 +30,14 @@ python3 -m pip install taichi-nightly-cuda-10-1
 |**PyPI**|[![Build Status](https://travis-ci.com/yuanming-hu/taichi-wheels-test.svg?branch=master)](https://travis-ci.com/yuanming-hu/taichi-wheels-test)|[![Build Status](https://travis-ci.com/yuanming-hu/taichi-wheels-test.svg?branch=master)](https://travis-ci.com/yuanming-hu/taichi-wheels-test)|[![Build status](https://ci.appveyor.com/api/projects/status/39ar9wa8yd49je7o?svg=true)](https://ci.appveyor.com/project/IteratorAdvance/taichi-wheels-test)|
 
 ## Updates
-- (Mar   3, 2020) v0.5.6 released:
+- (Mar   4, 2020) v0.5.7 released
+   - **Deprecated `ti.classfunc`. Please simply use `ti.func`, even if you are decorating a class member function**
+   - Upgrade spdlog from 0.14.0 to 1.5.0 with git submodule (#565) (by **Mingkuan Xu [xumingkuan]**)
+   - Metal backend refactored (by **Ye Kuang [k-ye]**)
+   - Fixed infinitely looping signal handlers
+   - Fixed `ti test` on release mode
+   - Doc updated
+- (Mar   3, 2020) v0.5.6 released
    - Fixed runtime LLVM bitcode loading failure on Linux
    - Fixed a GUI bug in `ti.GUI.line` (by **Mingkuan Xu [xumingkuan]**)
    - Fixed frontend syntax error false positive (static range-fors) (by **Mingkuan Xu [xumingkuan]**)
@@ -103,10 +110,10 @@ python3 -m pip install taichi-nightly-cuda-10-1
 - (WIP) Tune the performance of the LLVM backend to match that of the legacy source-to-source backends (Hopefully by Feb, 2020. Current progress: setting up/tuning for final benchmarks)
 
 ## Related papers
-- [**(SIGGRAPH Asia 2019) High-Performance Computation on Sparse Data Structures**](http://taichi.graphics/wp-content/uploads/2019/09/taichi_lang.pdf) [[Video]](https://youtu.be/wKw8LMF3Djo) [[BibTex]](https://raw.githubusercontent.com/yuanming-hu/taichi/master/misc/taichi_bibtex.txt)
-  - by *Yuanming Hu, Tzu-Mao Li, Luke Anderson, Jonathan Ragan-Kelley, and Frédo Durand*
 - [**(ICLR 2020) Differentiable Programming for Physical Simulation**](https://arxiv.org/abs/1910.00935) [[Video]](https://www.youtube.com/watch?v=Z1xvAZve9aE) [[BibTex]](https://raw.githubusercontent.com/yuanming-hu/taichi/master/misc/difftaichi_bibtex.txt) [[Code]](https://github.com/yuanming-hu/difftaichi)
   - by *Yuanming Hu, Luke Anderson, Tzu-Mao Li, Qi Sun, Nathan Carr, Jonathan Ragan-Kelley, and Frédo Durand*
+- [**(SIGGRAPH Asia 2019) High-Performance Computation on Sparse Data Structures**](http://taichi.graphics/wp-content/uploads/2019/09/taichi_lang.pdf) [[Video]](https://youtu.be/wKw8LMF3Djo) [[BibTex]](https://raw.githubusercontent.com/yuanming-hu/taichi/master/misc/taichi_bibtex.txt) [[Code]](https://github.com/taichi-dev/taichi)
+  - by *Yuanming Hu, Tzu-Mao Li, Luke Anderson, Jonathan Ragan-Kelley, and Frédo Durand*
 
 <div align="center">
   <img width="800px" src="https://github.com/taichi-dev/taichi/blob/master/docs/life_of_kernel_lowres.jpg">

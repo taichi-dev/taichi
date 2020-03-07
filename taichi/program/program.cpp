@@ -243,8 +243,6 @@ void Program::materialize_layout() {
     if (metal_runtime_ == nullptr) {
       metal::MetalRuntime::Params params;
       params.root_size = metal_struct_compiled_->root_size;
-      params.llvm_runtime = llvm_runtime;
-      params.llvm_ctx = get_llvm_context(get_host_arch());
       params.config = &config;
       params.mem_pool = memory_pool.get();
       params.profiler = profiler.get();
@@ -368,6 +366,8 @@ Arch Program::get_snode_accessor_arch() {
     return Arch::opengl;
   } else if (config.arch == Arch::cuda && !config.use_unified_memory) {
     return Arch::cuda;
+  } else if (config.arch == Arch::metal) {
+    return Arch::metal;
   } else {
     return get_host_arch();
   }

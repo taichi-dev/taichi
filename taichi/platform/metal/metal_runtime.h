@@ -1,15 +1,13 @@
 #pragma once
 
-#include <taichi/system/memory_pool.h>
-#include <taichi/program/profiler.h>
-#include <taichi/lang_util.h>
-#include <taichi/llvm/llvm_context.h>
-
 #include <memory>
 #include <string>
 #include <unordered_map>
 
-#include "metal_kernel_util.h"
+#include "taichi/lang_util.h"
+#include "taichi/platform/metal/metal_kernel_util.h"
+#include "taichi/program/profiler.h"
+#include "taichi/system/memory_pool.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -25,8 +23,6 @@ class MetalRuntime {
  public:
   struct Params {
     size_t root_size;
-    void* llvm_runtime;
-    TaichiLLVMContext* llvm_ctx;
     CompileConfig* config;
     MemoryPool *mem_pool;
     ProfilerBase *profiler;

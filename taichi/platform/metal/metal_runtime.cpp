@@ -1,21 +1,17 @@
-#include "metal_runtime.h"
-
-#include <taichi/math/arithmetic.h>
-#include <taichi/inc/constants.h>
+#include "taichi/platform/metal/metal_runtime.h"
 
 #include <algorithm>
 #include <cstring>
 #include <string_view>
 
-#define TI_RUNTIME_HOST
-#include <taichi/runtime/llvm/context.h>
-#undef TI_RUNTIME_HOST
+#include "taichi/inc/constants.h"
+#include "taichi/math/arithmetic.h"
 
 #ifdef TI_PLATFORM_OSX
 #include <sys/mman.h>
 #include <unistd.h>
 
-#include "metal_api.h"
+#include "taichi/platform/metal/metal_api.h"
 #endif  // TI_PLATFORM_OSX
 
 TLANG_NAMESPACE_BEGIN
@@ -37,6 +33,11 @@ class BufferMemoryView {
     ptr_ = mem_pool->allocate(size_, /*alignment=*/taichi_page_size);
     TI_ASSERT(ptr_ != nullptr);
   }
+  // Move only
+  BufferMemoryView(BufferMemoryView &&) = default;
+  BufferMemoryView &operator=(BufferMemoryView &&) = default;
+  BufferMemoryView(const BufferMemoryView &) = delete;
+  BufferMemoryView &operator=(const BufferMemoryView &) = delete;
 
   inline size_t size() const { return size_; }
   inline void *ptr() const { return ptr_; }
@@ -297,35 +298,19 @@ class MetalRuntime::Impl {
     TI_ASSERT(command_queue_ != nullptr);
     create_new_command_buffer();
 
-    auto *llvm_ctx = params.llvm_ctx;
-    auto *llvm_rtm = params.llvm_runtime;
-    TI_ASSERT(llvm_ctx != nullptr && llvm_rtm != nullptr);
-    const size_t rtm_root_mem_size = llvm_ctx->lookup_function<size_t(void *)>(
-        "LLVMRuntime_get_root_mem_size")(llvm_rtm);
-    if (rtm_root_mem_size > 0) {
-      TI_ASSERT(needs_root_buffer_);
-      // Make sure the runtime's root memory is large enough.
-      TI_ASSERT(iroundup(params.root_size, taichi_page_size) <=
-                rtm_root_mem_size);
-      auto *rtm_root_mem = params.llvm_ctx->lookup_function<uint8 *(void *)>(
-          "LLVMRuntime_get_root")(llvm_rtm);
-      TI_ASSERT(rtm_root_mem != nullptr);
-      root_buffer_ = new_mtl_buffer_no_copy(device_.get(), rtm_root_mem,
-                                            rtm_root_mem_size);
+    if (needs_root_buffer_) {
+      root_mem_ =
+          std::make_unique<BufferMemoryView>(params.root_size, mem_pool_);
+      root_buffer_ = new_mtl_buffer_no_copy(device_.get(), root_mem_->ptr(),
+                                            root_mem_->size());
       TI_ASSERT(root_buffer_ != nullptr);
-      TI_DEBUG("Metal root buffer size: {} bytes", rtm_root_mem_size);
-    } else {
-      TI_ASSERT(!needs_root_buffer_);
-      TI_DEBUG("Metal root buffer is empty");
+      TI_DEBUG("Metal root buffer size: {} bytes", root_mem_->size());
     }
 
-    // Make sure we don't have to round up global temporaries' buffer size.
-    TI_ASSERT(iroundup(taichi_global_tmp_buffer_size, taichi_page_size) ==
-              taichi_global_tmp_buffer_size);
-    global_tmps_mem_begin_ = params.llvm_ctx->lookup_function<uint8 *(void *)>(
-        "LLVMRuntime_get_temporaries")(llvm_rtm);
+    global_tmps_mem_ = std::make_unique<BufferMemoryView>(
+        taichi_global_tmp_buffer_size, mem_pool_);
     global_tmps_buffer_ = new_mtl_buffer_no_copy(
-        device_.get(), global_tmps_mem_begin_, taichi_global_tmp_buffer_size);
+        device_.get(), global_tmps_mem_->ptr(), global_tmps_mem_->size());
     TI_ASSERT(global_tmps_buffer_ != nullptr);
   }
 
@@ -336,8 +321,9 @@ class MetalRuntime::Impl {
       size_t global_tmps_size, const MetalKernelArgsAttributes &args_attribs) {
     TI_ASSERT(compiled_taichi_kernels_.find(taichi_kernel_name) ==
               compiled_taichi_kernels_.end());
+    // Make sure |taichi_global_tmp_buffer_size| is large enough
     TI_ASSERT(iroundup(global_tmps_size, taichi_page_size) <=
-              taichi_global_tmp_buffer_size);
+              global_tmps_mem_->size());
 
     if (config_->print_kernel_llvm_ir) {
       // If users have enabled |print_kernel_llvm_ir|, it probably means that
@@ -418,7 +404,8 @@ class MetalRuntime::Impl {
 
   template <typename T>
   inline T load_global_tmp(int offset) const {
-    return *reinterpret_cast<const T *>(global_tmps_mem_begin_ + offset);
+    return *reinterpret_cast<const T *>((const char *)global_tmps_mem_->ptr() +
+                                        offset);
   }
 
   CompileConfig *const config_;
@@ -428,8 +415,9 @@ class MetalRuntime::Impl {
   nsobj_unique_ptr<MTLDevice> device_{nullptr};
   nsobj_unique_ptr<MTLCommandQueue> command_queue_{nullptr};
   nsobj_unique_ptr<MTLCommandBuffer> cur_command_buffer_{nullptr};
+  std::unique_ptr<BufferMemoryView> root_mem_{nullptr};
   nsobj_unique_ptr<MTLBuffer> root_buffer_{nullptr};
-  uint8_t *global_tmps_mem_begin_;
+  std::unique_ptr<BufferMemoryView> global_tmps_mem_{nullptr};
   nsobj_unique_ptr<MTLBuffer> global_tmps_buffer_{nullptr};
   std::unordered_map<std::string, std::unique_ptr<CompiledTaichiKernel>>
       compiled_taichi_kernels_;

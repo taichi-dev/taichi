@@ -307,7 +307,6 @@ class MetalRuntime::Impl {
       TI_DEBUG("Metal root buffer size: {} bytes", root_mem_->size());
     }
 
-    // Make sure we don't have to round up global temporaries' buffer size.
     global_tmps_mem_ = std::make_unique<BufferMemoryView>(
         taichi_global_tmp_buffer_size, mem_pool_);
     global_tmps_buffer_ = new_mtl_buffer_no_copy(
@@ -322,6 +321,7 @@ class MetalRuntime::Impl {
       size_t global_tmps_size, const MetalKernelArgsAttributes &args_attribs) {
     TI_ASSERT(compiled_taichi_kernels_.find(taichi_kernel_name) ==
               compiled_taichi_kernels_.end());
+    // Make sure |taichi_global_tmp_buffer_size| is large enough
     TI_ASSERT(iroundup(global_tmps_size, taichi_page_size) <=
               global_tmps_mem_->size());
 

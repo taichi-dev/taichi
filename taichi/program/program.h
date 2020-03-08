@@ -7,19 +7,19 @@
 
 #define TI_RUNTIME_HOST
 #include "taichi/ir/ir.h"
-#include "taichi/program/kernel.h"
 #include "taichi/ir/snode.h"
-#include "taichi/llvm/llvm_context.h"
 #include "taichi/lang_util.h"
-#include "taichi/runtime/llvm/context.h"
-#include "taichi/program/profiler.h"
-#include "taichi/system/threading.h"
-#include "taichi/system/unified_allocator.h"
-#include "taichi/system/memory_pool.h"
-#include "taichi/platform/metal/metal_kernel_util.h"
+#include "taichi/llvm/llvm_context.h"
 #include "taichi/platform/metal/metal_runtime.h"
 #include "taichi/platform/opengl/opengl_kernel_util.h"
+#include "taichi/program/kernel.h"
+#include "taichi/program/profiler.h"
+#include "taichi/runtime/llvm/context.h"
 #include "taichi/runtime/runtime.h"
+#include "taichi/struct/struct_metal.h"
+#include "taichi/system/memory_pool.h"
+#include "taichi/system/threading.h"
+#include "taichi/system/unified_allocator.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -174,9 +174,11 @@ class Program {
   ~Program();
 
  private:
+  // Metal related data structures
   std::optional<metal::StructCompiledResult> metal_struct_compiled_;
-  std::optional<opengl::StructCompiledResult> opengl_struct_compiled_;
   std::unique_ptr<metal::MetalRuntime> metal_runtime_;
+  // OpenGL related data structures
+  std::optional<opengl::StructCompiledResult> opengl_struct_compiled_;
 };
 
 TLANG_NAMESPACE_END

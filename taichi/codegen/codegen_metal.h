@@ -1,17 +1,17 @@
 #pragma once
 
-#include <taichi/inc/constants.h>
-#include <taichi/platform/metal/metal_data_types.h>
-#include <taichi/platform/metal/metal_kernel_util.h>
-#include <taichi/platform/metal/metal_runtime.h>
-#include <taichi/lang_util.h>
-
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
-#include "codegen.h"
+#include "taichi/inc/constants.h"
+#include "taichi/lang_util.h"
+#include "taichi/platform/metal/metal_data_types.h"
+#include "taichi/platform/metal/metal_kernel_util.h"
+#include "taichi/platform/metal/metal_runtime.h"
+#include "taichi/program/program.h"
+#include "taichi/struct/struct_metal.h"
 
 TLANG_NAMESPACE_BEGIN
 namespace metal {

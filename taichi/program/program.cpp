@@ -224,7 +224,7 @@ void Program::materialize_layout() {
       StructCompiler::make(this, host_arch());
   scomp->run(*snode_root, true);
 
-  if (arch_is_cpu(config.arch) || config.arch == Arch::metal) {
+  if (arch_is_cpu(config.arch)) {
     initialize_runtime_system(scomp.get());
   }
 
@@ -238,8 +238,7 @@ void Program::materialize_layout() {
   } else if (config.arch == Arch::metal) {
     TI_ASSERT_INFO(config.use_llvm,
                    "Metal arch requires that LLVM being enabled");
-    metal::MetalStructCompiler scomp;
-    metal_struct_compiled_ = scomp.run(*snode_root);
+    metal_struct_compiled_ = metal::compile_structs(*snode_root);
     if (metal_runtime_ == nullptr) {
       metal::MetalRuntime::Params params;
       params.root_size = metal_struct_compiled_->root_size;

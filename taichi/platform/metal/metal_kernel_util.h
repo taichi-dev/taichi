@@ -21,13 +21,6 @@ class SNode;
 
 namespace metal {
 
-struct StructCompiledResult {
-  // Source code of the SNode data structures compiled to Metal
-  std::string source_code;
-  // Root buffer size in bytes.
-  size_t root_size;
-};
-
 // This struct holds the necesary information to launch a Metal kernel.
 struct MetalKernelAttributes {
   std::string name;

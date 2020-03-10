@@ -19,12 +19,6 @@ class CheckOutOfBound : public BasicStmtVisitor {
     visited.insert(stmt->instance_id);
   }
 
-  static std::string to_string(int value) {
-    static char buffer[64];
-    snprintf(buffer, 64, "%d", value);
-    return std::string(buffer);
-  }
-
   void visit(GlobalPtrStmt *stmt) override {
     if (is_done(stmt))
       return;
@@ -49,7 +43,7 @@ class CheckOutOfBound : public BasicStmtVisitor {
           BinaryOpType::bit_and, result, check_i);
       if (i > 0)
         msg += ", ";
-      msg += to_string(size_i);
+      msg += std::to_string(size_i);
       args.emplace_back(stmt->indices[i]);
     }
     msg += "] with indices (";

@@ -114,6 +114,22 @@ class ASTTransformer(ast.NodeTransformer):
     assert (len(node.targets) == 1)
     self.generic_visit(node)
 
+    decorated = isinstance(node.value, ast.Call) and isinstance(
+        node.value.func, ast.Attribute) and isinstance(node.value.func.value, ast.Name) \
+                and node.value.func.value.id == 'ti'
+
+    is_just_assign = False
+    
+    if decorated:
+      attr = node.value.func
+      if attr.attr == 'just':
+        is_just_assign = True
+      else:
+        pass # eg. x = ti.cast(xx) will reach here, but they're not decorators, so no raising errors here
+
+    if is_just_assign:
+      return node
+
     if isinstance(node.targets[0], ast.Tuple):
       targets = node.targets[0].elts
 

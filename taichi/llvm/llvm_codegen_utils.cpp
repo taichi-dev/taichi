@@ -14,11 +14,16 @@ void check_func_call_signature(llvm::Value *func,
   auto func_type = func->getType()->getPointerElementType();
   int num_params = func_type->getFunctionNumParams();
   if (num_params != arglist.size()) {
+    std::cout << num_params << " " << arglist.size() << std::endl;
     std::cout << type_name(func->getType()) << std::endl;
   }
-  TI_ASSERT(num_params == arglist.size());
+  if (func_type->isFunctionVarArg()) {
+    TI_ASSERT(num_params <= arglist.size());
+  } else {
+    TI_ASSERT(num_params == arglist.size());
+  }
 
-  for (int i = 0; i < (int)arglist.size(); i++) {
+  for (int i = 0; i < num_params; i++) {
     auto required = func_type->getFunctionParamType(i);
     auto provided = arglist[i]->getType();
     // TI_INFO("    required from context {}", (void *)&required->getContext());

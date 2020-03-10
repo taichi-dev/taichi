@@ -896,8 +896,18 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   }
 
   void visit(AssertStmt *stmt) override {
-    stmt->value = call("taichi_assert", get_context(), stmt->val->value,
-                       builder->CreateGlobalStringPtr(stmt->text));
+    Value *text;
+    if (stmt->args.empty()) {
+      text = builder->CreateGlobalStringPtr(stmt->text);
+    } else {
+      std::vector<Value *> args;
+      for (auto arg : stmt->args) {
+        args.emplace_back(arg->value);
+      }
+      text = create_call("get_assert_msg", args);
+    }
+    stmt->value = call("taichi_assert", get_context(), stmt->cond->value,
+                       text);
   }
 
   void visit(SNodeOpStmt *stmt) override {

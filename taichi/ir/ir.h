@@ -1465,12 +1465,19 @@ class FrontendAssertStmt : public Stmt {
 
 class AssertStmt : public Stmt {
  public:
+  Stmt *cond;
   std::string text;
-  Stmt *val;
+  std::vector<Stmt *> args;
 
-  AssertStmt(const std::string &text, Stmt *val) : text(text), val(val) {
-    add_operand(this->val);
-    TI_ASSERT(val);
+  AssertStmt(const std::string &text, Stmt *cond) : cond(cond), text(text) {
+    add_operand(this->cond);
+    TI_ASSERT(cond);
+  }
+
+  AssertStmt(Stmt *cond, const std::string &text, const std::vector<Stmt *> &args)
+      : cond(cond), text(text), args(args) {
+    add_operand(this->cond);
+    TI_ASSERT(cond);
   }
 
   DEFINE_ACCEPT

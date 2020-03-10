@@ -39,7 +39,7 @@ class CheckOutOfBound : public BasicStmtVisitor {
       result = new_stmts.push_back<BinaryOpStmt>(
           BinaryOpType::bit_and, result, check_i);
     }
-    new_stmts.push_back<AssertStmt>("Accessing Tensor of Size [...] with indices (...)", result);
+    new_stmts.push_back<AssertStmt>(result, "Accessing Tensor of Size [...] with indices (...)", std::vector<Stmt *>());
     stmt->parent->insert_before(stmt, std::move(new_stmts));
     set_done(stmt);
     throw IRModified();

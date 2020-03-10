@@ -12,6 +12,7 @@
 #include <atomic>
 #include <cstdint>
 #include <cmath>
+#include <cstdarg>
 #include <cstdlib>
 #include <algorithm>
 #include <type_traits>
@@ -635,6 +636,16 @@ void taichi_assert_runtime(LLVMRuntime *runtime, i32 test, const char *msg) {
 
 void taichi_assert(Context *context, i32 test, const char *msg) {
   taichi_assert_runtime(context->runtime, test, msg);
+}
+
+const std::size_t ASSERT_MSG_BUFFER_SIZE = 2048;
+char assert_msg_buffer[ASSERT_MSG_BUFFER_SIZE];
+char *get_assert_msg(const char *format, ...) {
+  std::va_list args;
+  va_start(args, format);
+  std::vsnprintf(assert_msg_buffer, ASSERT_MSG_BUFFER_SIZE, format, args);
+  va_end(args);
+  return assert_msg_buffer;
 }
 
 Ptr LLVMRuntime::allocate_aligned(std::size_t size, std::size_t alignment) {

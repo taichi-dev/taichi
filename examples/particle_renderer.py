@@ -39,13 +39,13 @@ grid_resolution = 256 // grid_visualization_block_size
 
 frame_id = 0
 
-render_voxel = False
+render_voxel = False # see dda()
 inv_dx = 256.0
 dx = 1.0 / inv_dx
 
 camera_pos = ti.Vector([0.5, 0.27, 2.7])
 supporter = 2
-shutter_time = 0.5e-3
+shutter_time = 0.5e-3 # half the frame time (1e-3)
 sphere_radius = 0.0015
 particle_grid_res = 256
 max_num_particles_per_cell = 8192 * 1024
@@ -164,6 +164,7 @@ def sdf_color(p):
   return ti.Vector([0.3, 0.5, 0.7]) * scale
 
 
+# Digital differential analyzer for the grid visualization (render_voxels=True)
 @ti.func
 def dda(eye_pos, d):
   for i in ti.static(range(3)):
@@ -226,10 +227,12 @@ def inside_particle_grid(ipos):
   return bbox[0][0]  <= pos[0] and pos[0] < bbox[1][0] and bbox[
       0][1] <= pos[1] and pos[1] < bbox[1][1] and bbox[0][2] <= pos[2] and pos[2] < bbox[1][2]
 
+# DDA for the particle visualization (render_voxels=False)
 @ti.func
 def dda_particle(eye_pos, d, t):
   grid_res = particle_grid_res
 
+  # bounding box
   bbox_min = bbox[0]
   bbox_max = bbox[1]
 
@@ -260,10 +263,12 @@ def dda_particle(eye_pos, d, t):
     ipos = ti.Matrix.floor(o).cast(int)
     dis = (ipos - o + 0.5 + rsign * 0.5) * rinv
     running = 1
+    # DDA for voxels with at least one particle
     while running:
       inside = inside_particle_grid(ipos)
 
       if inside:
+        # once we actually intersect with a voxel that contains at least one particle, loop over the particle list
         num_particles = voxel_has_particle[ipos]
         if num_particles != 0:
           num_particles = ti.length(pid.parent(), ipos)
@@ -272,6 +277,7 @@ def dda_particle(eye_pos, d, t):
           v = particle_v[p]
           x = particle_x[p] + t * v
           color = particle_color[p]
+          # ray-sphere intersection
           dist, poss = intersect_sphere(eye_pos, d, x, sphere_radius)
           hit_pos = poss
           if dist < closest_intersection and dist > 0:
@@ -443,6 +449,7 @@ def main():
 
   for i in range(3):
     # bbox values must be multiples of dx
+    # bbox values are the min and max particle coordinates, with 3 dx margin
     bbox[0][i] = (math.floor(np_x[:, i].min() * particle_grid_res) -
                   3.0) / particle_grid_res
     bbox[1][i] = (math.floor(np_x[:, i].max() * particle_grid_res) +

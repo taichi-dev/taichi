@@ -23,3 +23,17 @@ def test_cast_f64():
   
   func()
   assert z[None] == 1000
+  
+@ti.all_archs
+def test_cast_within_while():
+  ret = ti.var(ti.i32, shape=())
+  
+  @ti.kernel
+  def func():
+    t = 10
+    while t > 5:
+      t = 1.0
+      break
+    ret[None] = t
+  
+  func()

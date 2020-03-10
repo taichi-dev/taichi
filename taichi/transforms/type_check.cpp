@@ -68,13 +68,13 @@ class TypeCheck : public IRVisitor {
       // Infer data type for alloca
       stmt->ptr->ret_type = stmt->data->ret_type;
     }
-    auto ret_type = promoted_type(stmt->ptr->ret_type.data_type,
-                                  stmt->data->ret_type.data_type);
-    if (ret_type != stmt->data->ret_type.data_type) {
+    auto common_container_type = promoted_type(stmt->ptr->ret_type.data_type,
+                                               stmt->data->ret_type.data_type);
+    if (stmt->ptr->ret_type.data_type != stmt->data->ret_type.data_type) {
       stmt->data = insert_type_cast_before(stmt, stmt->data,
                                            stmt->ptr->ret_type.data_type);
     }
-    if (stmt->ptr->ret_type.data_type != ret_type) {
+    if (stmt->ptr->ret_type.data_type != common_container_type) {
       TI_WARN(
           "Local store may lose precision (target = {}, value = {}, "
           "stmt_id = {}) at",

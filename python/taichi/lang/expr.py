@@ -344,6 +344,12 @@ class Expr:
 
   def from_torch(self, arr):
     self.from_numpy(arr.contiguous())
+  
+  def copy_from(self, other):
+    assert isinstance(other, Expr)
+    from .meta import tensor_to_tensor
+    assert self.dim() == other.dim()
+    tensor_to_tensor(self, other)
 
 
 def make_var_vector(size):

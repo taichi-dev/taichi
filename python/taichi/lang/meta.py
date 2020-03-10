@@ -11,6 +11,11 @@ def fill_tensor(tensor: ti.template(), val: ti.template()):
 def tensor_to_ext_arr(tensor: ti.template(), arr: ti.ext_arr()):
   for I in ti.grouped(tensor):
     arr[I] = tensor[I]
+    
+@ti.kernel
+def tensor_to_tensor(tensor: ti.template(), other: ti.template()):
+  for I in ti.grouped(tensor):
+    tensor[I] = other[I]
 
 @ti.kernel
 def ext_arr_to_tensor(arr: ti.ext_arr(), tensor: ti.template()):

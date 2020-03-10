@@ -13,6 +13,9 @@ void check_func_call_signature(llvm::Value *func,
                                std::vector<llvm::Value *> arglist) {
   auto func_type = func->getType()->getPointerElementType();
   int num_params = func_type->getFunctionNumParams();
+  if (num_params != arglist.size()) {
+    std::cout << type_name(func->getType()) << std::endl;
+  }
   TI_ASSERT(num_params == arglist.size());
 
   for (int i = 0; i < (int)arglist.size(); i++) {

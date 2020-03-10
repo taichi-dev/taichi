@@ -13,7 +13,7 @@ pre_and_post_smoothing = 2
 bottom_smoothing = 50
 
 N_ext = N//2 # number of ext cells set so that that total grid size is still power of 2
-N_tot = 2*N;
+N_tot = 2*N
 
 # setup sparse simulation data arrays
 r     = ti.Vector(n_mg_levels, dt=real) # residual
@@ -24,22 +24,19 @@ Ap    = ti.var(dt=real)                 # matrix-vector product
 alpha = ti.var(dt=real)                 # step size
 beta  = ti.var(dt=real)                 # step size
 sum   = ti.var(dt=real)                 # storage for reductions
-phase = ti.var(dt=real)                 # red/black Gauss-Seidel phase
 pixels = ti.var(dt=real, shape=(N_gui,N_gui))   # image buffer
 
-@ti.layout
-def place():
-  grid = ti.root.pointer(ti.ijk, [N_tot//4]).dense(ti.ijk,4)
-  grid.place(x)
-  grid.place(p)
-  grid.place(Ap)
+grid = ti.root.pointer(ti.ijk, [N_tot//4]).dense(ti.ijk,4)
+grid.place(x)
+grid.place(p)
+grid.place(Ap)
 
-  for l in range(n_mg_levels):
-    grid = ti.root.pointer(ti.ijk, [N_tot//(4*2**l)]).dense(ti.ijk,4)
-    grid.place(r(l))
-    grid.place(z(l))
+for l in range(n_mg_levels):
+  grid = ti.root.pointer(ti.ijk, [N_tot//(4*2**l)]).dense(ti.ijk,4)
+  grid.place(r(l))
+  grid.place(z(l))
 
-  ti.root.place(alpha, beta, sum, phase)
+ti.root.place(alpha, beta, sum)
 
 
 @ti.kernel
@@ -92,63 +89,28 @@ def update_p():
   for i,j,k in p:
     p[i,j,k] = z(0)[i,j,k] + beta[None]*p[i,j,k]
 
-def make_restrict(l):
-  @ti.kernel
-  def kernel():
-    for i,j,k in r(l):
-      res = r(l)[i,j,k] - (6.0*z(l)[i,j,k] \
-                 - z(l)[i+1,j,k] - z(l)[i-1,j,k] \
-                 - z(l)[i,j+1,k] - z(l)[i,j-1,k] \
-                 - z(l)[i,j,k+1] - z(l)[i,j,k-1])
-      r(l+1)[i//2,j//2,k//2] += res*0.5
-  return kernel
+@ti.kernel
+def restrict(l: ti.template()):
+  for i,j,k in r(l):
+    res = r(l)[i,j,k] - (6.0*z(l)[i,j,k] \
+               - z(l)[i+1,j,k] - z(l)[i-1,j,k] \
+               - z(l)[i,j+1,k] - z(l)[i,j-1,k] \
+               - z(l)[i,j,k+1] - z(l)[i,j,k-1])
+    r(l+1)[i//2,j//2,k//2] += res*0.5
 
-def make_prolongate(l):
-  @ti.kernel
-  def kernel():
-    for i,j,k in z(l):
-      z(l)[i,j,k] = z(l+1)[i//2,j//2,k//2]
-  return kernel
+@ti.kernel
+def prolongate(l: ti.template()):
+  for i,j,k in z(l):
+    z(l)[i,j,k] = z(l+1)[i//2,j//2,k//2]
 
-def make_smooth(l):
-  @ti.kernel
-  def kernel():
-    for i,j,k in r(l):
-      ret = 0.0
-      if (i+j+k)&1 == phase[None]:
-        z(l)[i,j,k] = (r(l)[i,j,k] + z(l)[i+1,j,k] + z(l)[i-1,j,k] \
-                                   + z(l)[i,j+1,k] + z(l)[i,j-1,k] \
-                                   + z(l)[i,j,k+1] + z(l)[i,j,k-1])/6.0
-  return kernel
-
-def make_clear_r(l):
-  @ti.kernel
-  def kernel():
-    for i,j,k in r(l):
-      r(l)[i,j,k] = 0.0
-  return kernel
-
-def make_clear_z(l):
-  @ti.kernel
-  def kernel():
-    for i,j,k in z(l):
-      z(l)[i,j,k] = 0.0
-  return kernel
-
-# make kernels for each multigrid level
-restrict = np.zeros(n_mg_levels-1, dtype=ti.Kernel)
-prolongate = np.zeros(n_mg_levels-1, dtype=ti.Kernel)
-for l in range(n_mg_levels-1):
-  restrict[l] = make_restrict(l)
-  prolongate[l] = make_prolongate(l)
-
-smooth = np.zeros(n_mg_levels, dtype=ti.Kernel)
-clear_r = np.zeros(n_mg_levels, dtype=ti.Kernel)
-clear_z = np.zeros(n_mg_levels, dtype=ti.Kernel)
-for l in range(n_mg_levels):
-  smooth[l] = make_smooth(l)
-  clear_r[l] = make_clear_r(l)
-  clear_z[l] = make_clear_z(l)
+@ti.kernel
+def smooth(l: ti.template(), phase: ti.template()):
+  # phase = red/black Gauss-Seidel phase
+  for i,j,k in r(l):
+    if (i+j+k)&1 == phase:
+      z(l)[i,j,k] = (r(l)[i,j,k] + z(l)[i+1,j,k] + z(l)[i-1,j,k] \
+                                 + z(l)[i,j+1,k] + z(l)[i,j-1,k] \
+                                 + z(l)[i,j,k+1] + z(l)[i,j,k-1])/6.0
 
 @ti.kernel
 def identity():
@@ -156,30 +118,24 @@ def identity():
     z(0)[i,j,k] = r(0)[i,j,k]
 
 def apply_preconditioner():
-  clear_z[0]()
+  z(0).fill(0)
   for l in range(n_mg_levels-1):
     for i in range(pre_and_post_smoothing << l):
-      phase[None] = 0
-      smooth[l]()
-      phase[None] = 1
-      smooth[l]()
-    clear_z[l+1]()
-    clear_r[l+1]()
-    restrict[l]()
+      smooth(l, 0)
+      smooth(l, 1)
+    z(l+1).fill(0)
+    r(l+1).fill(0)
+    restrict(l)
 
   for i in range(bottom_smoothing):
-    phase[None] = 0
-    smooth[n_mg_levels-1]()
-    phase[None] = 1
-    smooth[n_mg_levels-1]()
+    smooth(n_mg_levels-1, 0)
+    smooth(n_mg_levels-1, 1)
 
   for l in reversed(range(n_mg_levels-1)):
-    prolongate[l]()
+    prolongate(l)
     for i in range(pre_and_post_smoothing << l):
-      phase[None] = 1
-      smooth[l]()
-      phase[None] = 0
-      smooth[l]()
+      smooth(l, 1)
+      smooth(l, 0)
 
 @ti.kernel
 def paint():

@@ -1477,6 +1477,9 @@ class AssertStmt : public Stmt {
   AssertStmt(Stmt *cond, const std::string &text, const std::vector<Stmt *> &args)
       : cond(cond), text(text), args(args) {
     add_operand(this->cond);
+    for (auto &arg : this->args) {
+      add_operand(arg);
+    }
     TI_ASSERT(cond);
   }
 

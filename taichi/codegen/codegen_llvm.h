@@ -903,6 +903,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       std::vector<Value *> args;
       args.emplace_back(builder->CreateGlobalStringPtr(stmt->text));
       for (auto arg : stmt->args) {
+        TI_ASSERT(arg->value);
         args.emplace_back(arg->value);
       }
       text = create_call("get_assert_msg", args);

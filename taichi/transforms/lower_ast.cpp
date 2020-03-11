@@ -167,11 +167,43 @@ class LowerAST : public IRVisitor {
       auto end = stmt->end;
       begin->flatten(flattened);
       end->flatten(flattened);
-      auto &&new_for = std::make_unique<RangeForStmt>(
-          stmt->parent->lookup_var(stmt->loop_var_id[0]), begin->stmt,
-          end->stmt, std::move(stmt->body), stmt->vectorize, stmt->parallelize,
-          stmt->block_dim, stmt->strictly_serialized);
-      flattened.push_back(std::move(new_for));
+      if (0 /* is_good_range_for */) { // #578
+        auto &&new_for = std::make_unique<RangeForStmt>(
+            stmt->parent->lookup_var(stmt->loop_var_id[0]), begin->stmt,
+            end->stmt, std::move(stmt->body), stmt->vectorize, stmt->parallelize,
+            stmt->block_dim, stmt->strictly_serialized);
+        flattened.push_back(std::move(new_for));
+      } else {
+        // transform into a structure as
+        // while (1) { cond; if (no active) break; original body...}
+        //auto loop_var = Stmt::make<AllocaStmt>(DataType::i32); // may use stmt->parent->lookup_var(stmt->loop_var_id[0])?
+        auto loop_var = stmt->parent->lookup_var(stmt->loop_var_id[0]);
+        flattened.push_back(Stmt::make<LocalStoreStmt>(loop_var, begin->stmt));
+        // Alloca Assign loop_var from begin->stmt;
+        auto cond_stmt = Stmt::make<BinaryOpStmt>(BinaryOpType::cmp_lt, loop_var, end->stmt);
+
+        auto &&new_while = std::make_unique<WhileStmt>(std::move(stmt->body));
+        auto mask = std::make_unique<AllocaStmt>(DataType::i32);
+        new_while->mask = mask.get();
+        auto &stmts = new_while->body;
+        for (int i = 0; i < (int)flattened.size(); i++) {
+          stmts->insert(std::move(flattened[i]), i);
+        }
+        // insert break
+        stmts->insert(
+            std::make_unique<WhileControlStmt>(new_while->mask, std::move(cond_stmt).get()),
+            flattened.size());
+        stmt->insert_before_me(std::make_unique<AllocaStmt>(DataType::i32));
+        auto &&const_stmt =
+          std::make_unique<ConstStmt>(TypedConstant((int32)0xFFFFFFFF));
+        auto const_stmt_ptr = const_stmt.get();
+        stmt->insert_before_me(std::move(mask));
+        stmt->insert_before_me(std::move(const_stmt));
+        stmt->insert_before_me(
+            std::make_unique<LocalStoreStmt>(new_while->mask, const_stmt_ptr));
+        new_while->body->mask_var = new_while->mask;
+        stmt->parent->replace_with(stmt, std::move(new_while));
+      }
     } else {
       std::vector<Stmt *> vars(stmt->loop_var_id.size());
       for (int i = 0; i < (int)stmt->loop_var_id.size(); i++) {

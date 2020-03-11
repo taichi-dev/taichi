@@ -896,9 +896,9 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   }
 
   void visit(AssertStmt *stmt) override {
-    Value *text;
     if (stmt->args.empty()) {
-      text = builder->CreateGlobalStringPtr(stmt->text);
+      stmt->value = call("taichi_assert", get_context(), stmt->cond->value,
+                         builder->CreateGlobalStringPtr(stmt->text));
     } else {
       std::vector<Value *> args;
       args.emplace_back(get_runtime());
@@ -908,10 +908,8 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
         TI_ASSERT(arg->value);
         args.emplace_back(arg->value);
       }
-      text = create_call("get_assert_msg", args);
+      stmt->value = create_call("taichi_assert_format", args);
     }
-    stmt->value = call("taichi_assert", get_context(), stmt->cond->value,
-                       text);
   }
 
   void visit(SNodeOpStmt *stmt) override {

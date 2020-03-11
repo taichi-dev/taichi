@@ -24,7 +24,8 @@
 struct Context;
 using assert_failed_type = void (*)(const char *);
 using host_printf_type = void (*)(const char *, ...);
-using host_vsnprintf_type = int (*)(char *, std::size_t, const char *, std::va_list);
+using host_vsnprintf_type = int (*)(char *, std::size_t, const char *,
+                                    std::va_list);
 using vm_allocator_type = void *(*)(void *, std::size_t, std::size_t);
 using RangeForTaskFunc = void(Context *, int i);
 using parallel_for_type = void (*)(void *thread_pool,
@@ -644,16 +645,18 @@ void taichi_assert(Context *context, i32 test, const char *msg) {
 const std::size_t ASSERT_MSG_BUFFER_SIZE = 2048;
 char assert_msg_buffer[ASSERT_MSG_BUFFER_SIZE];
 i32 assert_msg_buffer_lock = 0;
-const char *get_assert_msg(LLVMRuntime *runtime, int cond, const char *format, ...) {
-  if (cond)
-    return "";
+void taichi_assert_format(LLVMRuntime *runtime, i32 test, const char *format,
+                          ...) {
+  if (!enable_assert || test != 0)
+    return;
   std::va_list args;
   va_start(args, format);
   locked_task(&assert_msg_buffer_lock, [&] {
-    runtime->host_vsnprintf(assert_msg_buffer, ASSERT_MSG_BUFFER_SIZE, format, args);
+    runtime->host_vsnprintf(assert_msg_buffer, ASSERT_MSG_BUFFER_SIZE, format,
+                            args);
+    runtime->assert_failed(assert_msg_buffer);
   });
   va_end(args);
-  return assert_msg_buffer;
 }
 
 Ptr LLVMRuntime::allocate_aligned(std::size_t size, std::size_t alignment) {

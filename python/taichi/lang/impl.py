@@ -286,17 +286,18 @@ def indices(*x):
 index = indices
 
 
-def just(x):
-  return x
-
-
-def static(x):
+def static(*xs):
+  if len(xs) > 1: # for python-ish pointer assign: x, y = ti.static(y, x)
+    return tuple(static(x) for x in xs)
+  else:
+    x = xs[0] # len != 0 -> Error
   import taichi as ti
   assert get_runtime(
   ).inside_kernel, 'ti.static can only be used inside Taichi kernels'
   assert isinstance(
       x, (bool, int, float, range, list, tuple, ti.ndrange, ti.GroupedNDRange)
-  ), 'Input to ti.static must have compile-time constant values, instead of {}'.format(
+  ) or (isinstance(x, ti.lang.expr.Expr) and x.ptr.is_global_var()
+      ), 'Input to ti.static must be compile-time constants or global pointers, instead of {}'.format(
       type(x))
   return x
 

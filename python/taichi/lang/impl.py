@@ -289,15 +289,16 @@ index = indices
 def static(*xs):
   if len(xs) > 1: # for python-ish pointer assign: x, y = ti.static(y, x)
     return tuple(static(x) for x in xs)
+  elif len(xs) == 0:
+    raise ValueError('ti.static takes at least one argument')
   else:
-    x = xs[0] # len != 0 -> Error
+    x = xs[0]
   import taichi as ti
-  assert get_runtime(
-  ).inside_kernel, 'ti.static can only be used inside Taichi kernels'
+  assert get_runtime().inside_kernel, 'ti.static can only be used inside Taichi kernels'
   assert isinstance(
       x, (bool, int, float, range, list, tuple, ti.ndrange, ti.GroupedNDRange)
   ) or (isinstance(x, ti.lang.expr.Expr) and x.ptr.is_global_var()
-      ), 'Input to ti.static must be compile-time constants or global pointers, instead of {}'.format(
+      ), 'Input to ti.static must be compile-time constants or global tensors, instead of {}'.format(
       type(x))
   return x
 

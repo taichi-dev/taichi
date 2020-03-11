@@ -90,6 +90,14 @@ void CodeGenCPU::lower() {
       irpass::print(ir);
     }
   }
+  if (prog->config.debug) {
+    irpass::check_out_of_bound(ir);
+    if (print_ir) {
+      TI_TRACE("Bound checked:");
+      irpass::re_id(ir);
+      irpass::print(ir);
+    }
+  }
   irpass::lower_access(ir, true);
   if (print_ir) {
     TI_TRACE("Access Lowered:");

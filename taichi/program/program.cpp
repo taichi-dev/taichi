@@ -156,11 +156,11 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
   TI_TRACE("Allocating data structure of size {} B", scomp->root_size);
 
   runtime
-      ->call<void *, void *, std::size_t, std::size_t, void *, void *, void *>(
+      ->call<void *, void *, std::size_t, std::size_t, void *, void *, void *, void *>(
           "runtime_initialize", result_buffer, this,
           (std::size_t)scomp->root_size, prealloc_size,
           preallocated_device_buffer, (void *)&taichi_allocate_aligned,
-          (void *)std::printf);
+          (void *)std::printf, (void *)std::vsnprintf);
 
   TI_TRACE("LLVMRuntime initialized");
   llvm_runtime = runtime->fetch_result<void *>();

@@ -96,6 +96,7 @@ void loop_vectorize(IRNode *root);
 void slp_vectorize(IRNode *root);
 void vector_split(IRNode *root, int max_width, bool serial_schedule);
 void replace_all_usages_with(IRNode *root, Stmt *old_stmt, Stmt *new_stmt);
+void check_out_of_bound(IRNode *root);
 void lower_access(IRNode *root, bool lower_atomic);
 void make_adjoint(IRNode *root);
 void constant_fold(IRNode *root);
@@ -1464,12 +1465,22 @@ class FrontendAssertStmt : public Stmt {
 
 class AssertStmt : public Stmt {
  public:
+  Stmt *cond;
   std::string text;
-  Stmt *val;
+  std::vector<Stmt *> args;
 
-  AssertStmt(const std::string &text, Stmt *val) : text(text), val(val) {
-    add_operand(this->val);
-    TI_ASSERT(val);
+  AssertStmt(const std::string &text, Stmt *cond) : cond(cond), text(text) {
+    add_operand(this->cond);
+    TI_ASSERT(cond);
+  }
+
+  AssertStmt(Stmt *cond, const std::string &text, const std::vector<Stmt *> &args)
+      : cond(cond), text(text), args(args) {
+    add_operand(this->cond);
+    for (auto &arg : this->args) {
+      add_operand(arg);
+    }
+    TI_ASSERT(cond);
   }
 
   DEFINE_ACCEPT

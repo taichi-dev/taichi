@@ -286,6 +286,10 @@ def indices(*x):
 index = indices
 
 
+def just(x):
+  return x
+
+
 def static(x):
   import taichi as ti
   assert get_runtime(

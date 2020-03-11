@@ -12,6 +12,8 @@ n_mg_levels = 4
 pre_and_post_smoothing = 2
 bottom_smoothing = 50
 
+use_multigrid = True
+
 N_ext = N // 2  # number of ext cells set so that that total grid size is still power of 2
 N_tot = 2 * N
 
@@ -64,42 +66,40 @@ def compute_Ap():
 
 @ti.kernel
 def reduce(p: ti.template(), q: ti.template()):
-  for i, j, k in p:
-    sum[None] += p[i, j, k] * q[i, j, k]
+  for I in ti.grouped(p):
+    sum[None] += p[I] * q[I]
 
 
 @ti.kernel
 def update_x():
-  for i, j, k in p:
-    x[i, j, k] += alpha[None] * p[i, j, k]
+  for I in ti.grouped(p):
+    x[I] += alpha[None] * p[I]
 
 
 @ti.kernel
 def update_r():
-  for i, j, k in p:
-    r(0)[i, j, k] -= alpha[None] * Ap[i, j, k]
+  for I in ti.grouped(p):
+    r(0)[I] -= alpha[None] * Ap[I]
 
 
 @ti.kernel
 def update_p():
-  for i, j, k in p:
-    p[i, j, k] = z(0)[i, j, k] + beta[None] * p[i, j, k]
+  for I in ti.grouped(p):
+    p[I] = z(0)[I] + beta[None] * p[I]
 
 
 @ti.kernel
 def restrict(l: ti.template()):
   for i, j, k in r(l):
-    res = r(l)[i,j,k] - (6.0*z(l)[i,j,k] \
-               - z(l)[i+1,j,k] - z(l)[i-1,j,k] \
-               - z(l)[i,j+1,k] - z(l)[i,j-1,k] \
-               - z(l)[i,j,k+1] - z(l)[i,j,k-1])
+    res = r(l)[i,j,k] - (6.0*z(l)[i,j,k] - z(l)[i+1,j,k] - z(l)[i-1,j,k]
+                        - z(l)[i,j+1,k] - z(l)[i,j-1,k] - z(l)[i,j,k+1] - z(l)[i,j,k-1])
     r(l + 1)[i // 2, j // 2, k // 2] += res * 0.5
 
 
 @ti.kernel
 def prolongate(l: ti.template()):
-  for i, j, k in z(l):
-    z(l)[i, j, k] = z(l + 1)[i // 2, j // 2, k // 2]
+  for I in ti.grouped(z(l)):
+    z(l)[I] = z(l + 1)[I // 2]
 
 
 @ti.kernel
@@ -110,13 +110,6 @@ def smooth(l: ti.template(), phase: ti.template()):
       z(l)[i,j,k] = (r(l)[i,j,k] + z(l)[i+1,j,k] + z(l)[i-1,j,k] \
                                  + z(l)[i,j+1,k] + z(l)[i,j-1,k] \
                                  + z(l)[i,j,k+1] + z(l)[i,j,k-1])/6.0
-
-
-@ti.kernel
-def identity():
-  for i, j, k in z(0):
-    z(0)[i, j, k] = r(0)[i, j, k]
-
 
 def apply_preconditioner():
   z(0).fill(0)
@@ -158,8 +151,11 @@ initial_rTr = sum[None]
 
 # r = b - Ax = b    since x = 0
 # p = r = r + 0 p
-apply_preconditioner()
-#identity()
+if use_multigrid:
+  apply_preconditioner()
+else:
+  z(0).copy_from(r(0))
+
 update_p()
 
 sum[None] = 0.0
@@ -189,8 +185,10 @@ for i in range(400):
     break
 
   # z = M^-1 r
-  apply_preconditioner()
-  #identity()
+  if use_multigrid:
+    apply_preconditioner()
+  else:
+    z(0).copy_from(r(0))
 
   # beta = new_rTr / old_rTr
   sum[None] = 0.0

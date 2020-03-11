@@ -1129,7 +1129,7 @@ class GlobalPtrStmt : public Stmt {
   }
 
   virtual bool has_global_side_effect() const override {
-    return false;
+    return activate;
   }
 
   std::string accessor_func_name() {

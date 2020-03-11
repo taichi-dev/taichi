@@ -63,21 +63,9 @@ def compute_Ap():
 
 
 @ti.kernel
-def reduce_rTr():
-  for i, j, k in r(0):
-    sum[None] += r(0)[i, j, k] * r(0)[i, j, k]
-
-
-@ti.kernel
-def reduce_zTr():
-  for i, j, k in z(0):
-    sum[None] += z(0)[i, j, k] * r(0)[i, j, k]
-
-
-@ti.kernel
-def reduce_pAp():
+def reduce(p: ti.template(), q: ti.template()):
   for i, j, k in p:
-    sum[None] += p[i, j, k] * Ap[i, j, k]
+    sum[None] += p[i, j, k] * q[i, j, k]
 
 
 @ti.kernel
@@ -165,7 +153,7 @@ gui = ti.GUI("mgpcg", res=(N_gui, N_gui))
 init()
 
 sum[None] = 0.0
-reduce_rTr()
+reduce(r(0), r(0))
 initial_rTr = sum[None]
 
 # r = b - Ax = b    since x = 0
@@ -175,7 +163,7 @@ apply_preconditioner()
 update_p()
 
 sum[None] = 0.0
-reduce_zTr()
+reduce(z(0), r(0))
 old_zTr = sum[None]
 
 # CG
@@ -183,7 +171,7 @@ for i in range(400):
   # alpha = rTr / pTAp
   compute_Ap()
   sum[None] = 0.0
-  reduce_pAp()
+  reduce(p, Ap)
   pAp = sum[None]
   alpha[None] = old_zTr / pAp
 
@@ -195,7 +183,7 @@ for i in range(400):
 
   # check for convergence
   sum[None] = 0.0
-  reduce_rTr()
+  reduce(r(0), r(0))
   rTr = sum[None]
   if rTr < initial_rTr * 1.0e-12:
     break
@@ -206,7 +194,7 @@ for i in range(400):
 
   # beta = new_rTr / old_rTr
   sum[None] = 0.0
-  reduce_zTr()
+  reduce(z(0), r(0))
   new_zTr = sum[None]
   beta[None] = new_zTr / old_zTr
 

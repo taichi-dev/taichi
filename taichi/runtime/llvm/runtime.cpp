@@ -643,7 +643,9 @@ void taichi_assert(Context *context, i32 test, const char *msg) {
 
 const std::size_t ASSERT_MSG_BUFFER_SIZE = 2048;
 char assert_msg_buffer[ASSERT_MSG_BUFFER_SIZE];
-char *get_assert_msg(LLVMRuntime *runtime, const char *format, ...) {
+const char *get_assert_msg(LLVMRuntime *runtime, int cond, const char *format, ...) {
+  if (cond)
+    return "";
   std::va_list args;
   va_start(args, format);
   runtime->host_vsnprintf(assert_msg_buffer, ASSERT_MSG_BUFFER_SIZE, format, args);

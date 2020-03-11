@@ -24,6 +24,7 @@
 struct Context;
 using assert_failed_type = void (*)(const char *);
 using host_printf_type = void (*)(const char *, ...);
+using host_vsnprintf_type = int (*)(char *, std::size_t, const char *, std::va_list);
 using vm_allocator_type = void *(*)(void *, std::size_t, std::size_t);
 using RangeForTaskFunc = void(Context *, int i);
 using parallel_for_type = void (*)(void *thread_pool,
@@ -474,6 +475,7 @@ struct LLVMRuntime {
   vm_allocator_type vm_allocator;
   assert_failed_type assert_failed;
   host_printf_type host_printf;
+  host_vsnprintf_type host_vsnprintf;
   Ptr prog;
   Ptr root;
   size_t root_mem_size;
@@ -516,6 +518,7 @@ STRUCT_FIELD(LLVMRuntime, root_mem_size);
 STRUCT_FIELD(LLVMRuntime, temporaries);
 STRUCT_FIELD(LLVMRuntime, assert_failed);
 STRUCT_FIELD(LLVMRuntime, host_printf);
+STRUCT_FIELD(LLVMRuntime, host_vsnprintf);
 STRUCT_FIELD(LLVMRuntime, profiler);
 STRUCT_FIELD(LLVMRuntime, profiler_start);
 STRUCT_FIELD(LLVMRuntime, profiler_stop);
@@ -640,10 +643,10 @@ void taichi_assert(Context *context, i32 test, const char *msg) {
 
 const std::size_t ASSERT_MSG_BUFFER_SIZE = 2048;
 char assert_msg_buffer[ASSERT_MSG_BUFFER_SIZE];
-char *get_assert_msg(const char *format, ...) {
+char *get_assert_msg(LLVMRuntime *runtime, const char *format, ...) {
   std::va_list args;
   va_start(args, format);
-  std::vsnprintf(assert_msg_buffer, ASSERT_MSG_BUFFER_SIZE, format, args);
+  runtime->host_vsnprintf(assert_msg_buffer, ASSERT_MSG_BUFFER_SIZE, format, args);
   va_end(args);
   return assert_msg_buffer;
 }
@@ -703,10 +706,12 @@ void runtime_initialize(
         preallocated_size,  // Non-zero means use the preallocated buffer
     Ptr preallocated_buffer,
     void *_vm_allocator,
-    void *_host_printf) {
+    void *_host_printf,
+    void *_host_vsnprintf) {
   // bootstrap
   auto vm_allocator = (vm_allocator_type)_vm_allocator;
   auto host_printf = (host_printf_type)_host_printf;
+  auto host_vsnprintf = (host_vsnprintf_type)_host_vsnprintf;
   LLVMRuntime *runtime = nullptr;
   Ptr preallocated_tail = preallocated_buffer + preallocated_size;
   if (preallocated_size) {
@@ -728,6 +733,7 @@ void runtime_initialize(
   runtime->set_result(runtime);
   runtime->vm_allocator = vm_allocator;
   runtime->host_printf = host_printf;
+  runtime->host_vsnprintf = host_vsnprintf;
   runtime->prog = prog;
 
   // runtime->allocate ready to use

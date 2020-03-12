@@ -60,8 +60,13 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(AssertStmt *assert) override {
-    print("{} : assert {}, \"{}\"", assert->id, assert->val->name(),
-          assert->text);
+    std::string extras = "";
+    for (auto &arg : assert->args) {
+      extras += ", ";
+      extras += arg->name();
+    }
+    print("{} : assert {}, \"{}\"{}", assert->id, assert->cond->name(),
+          assert->text, extras);
   }
 
   void visit(FrontendSNodeOpStmt *stmt) override {

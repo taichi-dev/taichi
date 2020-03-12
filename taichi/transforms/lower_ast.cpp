@@ -167,7 +167,9 @@ class LowerAST : public IRVisitor {
       auto end = stmt->end;
       begin->flatten(flattened);
       end->flatten(flattened);
-      if (0 /* is_good_range_for */) { // #578
+      static bool is_good_range_for = true; // TODO(archibate): detect if outer-most one
+      if (1 || is_good_range_for) { // #578
+        is_good_range_for = false;
         auto &&new_for = std::make_unique<RangeForStmt>(
             stmt->parent->lookup_var(stmt->loop_var_id[0]), begin->stmt,
             end->stmt, std::move(stmt->body), stmt->vectorize, stmt->parallelize,
@@ -176,11 +178,15 @@ class LowerAST : public IRVisitor {
       } else {
         // transform into a structure as
         // while (1) { cond; if (no active) break; original body...}
-        //auto loop_var = Stmt::make<AllocaStmt>(DataType::i32); // may use stmt->parent->lookup_var(stmt->loop_var_id[0])?
+        //auto loop_var = Stmt::make<AllocaStmt>(DataType::i32);
         auto loop_var = stmt->parent->lookup_var(stmt->loop_var_id[0]);
         flattened.push_back(Stmt::make<LocalStoreStmt>(loop_var, begin->stmt));
-        // Alloca Assign loop_var from begin->stmt;
-        auto cond_stmt = Stmt::make<BinaryOpStmt>(BinaryOpType::cmp_lt, loop_var, end->stmt);
+        auto loop_var_addr = LaneAttribute<LocalAddress>(
+            LocalAddress(loop_var->as<AllocaStmt>(), 0));
+        // auto loop_var_store = Stmt::make<LocalStoreStmt>(loop_var_addr, begin->stmt);
+        auto loop_var_load = Stmt::make<LocalLoadStmt>(loop_var_addr);
+        auto cond_stmt = Stmt::make<BinaryOpStmt>(BinaryOpType::cmp_lt,
+            std::move(loop_var_load).get(), end->stmt);
 
         auto &&new_while = std::make_unique<WhileStmt>(std::move(stmt->body));
         auto mask = std::make_unique<AllocaStmt>(DataType::i32);
@@ -203,6 +209,7 @@ class LowerAST : public IRVisitor {
             std::make_unique<LocalStoreStmt>(new_while->mask, const_stmt_ptr));
         new_while->body->mask_var = new_while->mask;
         stmt->parent->replace_with(stmt, std::move(new_while));
+        throw IRModified();
       }
     } else {
       std::vector<Stmt *> vars(stmt->loop_var_id.size());

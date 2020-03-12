@@ -41,6 +41,8 @@ The Taichi Programming Language
 
    compilation
 
+   syntax_sugars
+
 
 .. toctree::
    :caption: Miscellaneous

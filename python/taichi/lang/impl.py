@@ -295,7 +295,9 @@ def static(x, *xs):
   ).inside_kernel, 'ti.static can only be used inside Taichi kernels'
   if isinstance(x, (bool, int, float, range, list, tuple, ti.ndrange, ti.GroupedNDRange)):
     return x
-  elif isinstance(x, (ti.lang.expr.Expr, ti.Matrix)) and x.ptr.is_global_var():
+  elif isinstance(x, ti.lang.expr.Expr) and x.ptr.is_global_var():
+    return x
+  elif isinstance(x, ti.Matrix) and x.entries[0].ptr.is_global_var():
     return x
   else:
     raise ValueError(f'Input to ti.static must be compile-time constants or global pointers, instead of {type(x)}')

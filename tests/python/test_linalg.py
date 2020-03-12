@@ -124,3 +124,18 @@ def _test_mat_inverse_size(n):
 def test_mat_inverse():
   for n in range(1, 4):
     _test_mat_inverse_size(n)
+
+@ti.all_archs
+def test_unit_vectors():
+  a = ti.Vector(3, dt=ti.i32, shape=3)
+  
+  @ti.kernel
+  def fill():
+    for i in ti.static(range(3)):
+      a[i] = ti.Vector.unit(3, i)
+      
+  fill()
+  
+  for i in range(3):
+    for j in range(3):
+      assert a[i][j] == int(i == j)

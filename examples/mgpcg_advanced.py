@@ -17,6 +17,7 @@ class MGPCG:
     self.n_mg_levels = 4
     self.pre_and_post_smoothing = 2
     self.bottom_smoothing = 50
+    self.dim = 3
 
 
     self.N_ext = self.N // 2  # number of ext cells set so that that total grid size is still power of 2
@@ -56,12 +57,18 @@ class MGPCG:
       self.x[i, j, k] = 0.0
 
 
+  @ti.func
+  def neighbor_sum(self, x, I):
+    ret = 0.0
+    for i in ti.static(range(self.dim)):
+      offset = ti.Vector.unit(self.dim, i)
+      ret += x[I + offset] + x[I - offset]
+    return ret
+
   @ti.kernel
   def compute_Ap(self):
-    for i, j, k in self.Ap:
-      self.Ap[i,j,k] = 6.0 * self.p[i,j,k] - self.p[i+1,j,k] - self.p[i-1,j,k] \
-                                 - self.p[i,j+1,k] - self.p[i,j-1,k] \
-                                 - self.p[i,j,k+1] - self.p[i,j,k-1]
+    for I in ti.grouped(self.Ap):
+      self.Ap[I] = (2 * self.dim) * self.p[I] - self.neighbor_sum(self.p, I)
 
 
   @ti.kernel

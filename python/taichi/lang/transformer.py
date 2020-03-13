@@ -477,7 +477,7 @@ if 1:
     assert args.kw_defaults == []
     assert args.kwarg is None
     import taichi as ti
-    if self.is_kernel:
+    if self.is_kernel: # ti.kernel
       for decorator in node.decorator_list:
         if (isinstance(decorator, ast.Attribute)
             and isinstance(decorator.value, ast.Name)
@@ -511,7 +511,7 @@ if 1:
           arg_decls.append(arg_init)
       # remove original args
       node.args.args = []
-    else:
+    else: # ti.func
       for decorator in node.decorator_list:
         if (isinstance(decorator, ast.Attribute)
             and isinstance(decorator.value, ast.Name)
@@ -523,7 +523,7 @@ if 1:
       for i, arg in enumerate(args.args):
         if i == 0 and self.is_classfunc:
           continue
-        arg_init = self.parse_stmt('x = ti.expr_init(0)')
+        arg_init = self.parse_stmt('x = ti.expr_init_func(0)')
         arg_init.targets[0].id = arg.arg
         self.create_variable(arg.arg)
         arg_init.value.args[0] = self.parse_expr(arg.arg + '_by_value__')

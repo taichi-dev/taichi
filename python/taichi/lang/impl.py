@@ -24,6 +24,14 @@ def expr_init(rhs):
       return rhs
     else:
       return Expr(taichi_lang_core.expr_var(Expr(rhs).ptr))
+    
+def expr_init_func(rhs): # temporary solution to allow passing in tensors as
+  import taichi as ti
+  if isinstance(rhs, Expr) and rhs.ptr.is_global_var():
+    return rhs
+  if isinstance(rhs, ti.Matrix) and rhs.is_global():
+    return rhs
+  return expr_init(rhs)
 
 
 def wrap_scalar(x):

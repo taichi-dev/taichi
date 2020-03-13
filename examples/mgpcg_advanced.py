@@ -98,10 +98,9 @@ class MGPCG:
 
   @ti.kernel
   def restrict(self, l: ti.template()):
-    for i, j, k in self.r[l]:
-      res = self.r[l][i,j,k] - (6.0*self.z[l][i,j,k] - self.z[l][i+1,j,k] - self.z[l][i-1,j,k]
-                          - self.z[l][i,j+1,k] - self.z[l][i,j-1,k] - self.z[l][i,j,k+1] - self.z[l][i,j,k-1])
-      self.r[l + 1][i // 2, j // 2, k // 2] += res * 0.5
+    for I in ti.grouped(self.r[l]):
+      res = self.r[l][I] - (6.0*self.z[l][I] - self.neighbor_sum(self.z[l], I))
+      self.r[l + 1][I // 2] += res * 0.5
 
 
   @ti.kernel
@@ -113,11 +112,9 @@ class MGPCG:
   @ti.kernel
   def smooth(self, l: ti.template(), phase: ti.template()):
     # phase = red/black Gauss-Seidel phase
-    for i, j, k in self.r[l]:
-      if (i + j + k) & 1 == phase:
-        self.z[l][i,j,k] = (self.r[l][i,j,k] + self.z[l][i+1,j,k] + self.z[l][i-1,j,k] \
-                                   + self.z[l][i,j+1,k] + self.z[l][i,j-1,k] \
-                                   + self.z[l][i,j,k+1] + self.z[l][i,j,k-1])/6.0
+    for I in ti.grouped(self.r[l]):
+      if (I.sum()) & 1 == phase:
+        self.z[l][I] = (self.r[l][I] + self.neighbor_sum(self.z[l], I)) / 6.0
 
   def apply_preconditioner(self):
     self.z[0].fill(0)
@@ -204,9 +201,7 @@ class MGPCG:
       self.update_p()
       old_zTr = new_zTr
 
-      print(' ')
-      print(i)
-      print(rTr)
+      print(f'iter {i}, residual={rTr}')
       self.paint()
       gui.set_image(self.pixels)
       gui.show()

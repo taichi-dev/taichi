@@ -294,15 +294,21 @@ def indices(*x):
 index = indices
 
 
-def static(x):
+def static(x, *xs):
+  if len(xs): # for python-ish pointer assign: x, y = ti.static(y, x)
+    return [static(x)] + [static(x) for x in xs]
+
   import taichi as ti
   assert get_runtime(
   ).inside_kernel, 'ti.static can only be used inside Taichi kernels'
-  assert isinstance(
-      x, (bool, int, float, range, list, tuple, ti.ndrange, ti.GroupedNDRange)
-  ), 'Input to ti.static must have compile-time constant values, instead of {}'.format(
-      type(x))
-  return x
+  if isinstance(x, (bool, int, float, range, list, tuple, ti.ndrange, ti.GroupedNDRange)):
+    return x
+  elif isinstance(x, ti.lang.expr.Expr) and x.ptr.is_global_var():
+    return x
+  elif isinstance(x, ti.Matrix) and x.is_global():
+    return x
+  else:
+    raise ValueError(f'Input to ti.static must be compile-time constants or global pointers, instead of {type(x)}')
 
 
 def grouped(x):

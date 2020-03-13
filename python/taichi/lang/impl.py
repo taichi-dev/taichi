@@ -297,7 +297,7 @@ def static(x, *xs):
     return x
   elif isinstance(x, ti.lang.expr.Expr) and x.ptr.is_global_var():
     return x
-  elif isinstance(x, ti.Matrix) and x.entries[0].ptr.is_global_var():
+  elif isinstance(x, ti.Matrix) and x.is_global():
     return x
   else:
     raise ValueError(f'Input to ti.static must be compile-time constants or global pointers, instead of {type(x)}')

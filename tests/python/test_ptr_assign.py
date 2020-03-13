@@ -48,7 +48,7 @@ def _test_ptr_tensor():
     assert a[2, 0] == x + y
 
 @ti.all_archs
-def test_pythonish_swap():
+def test_pythonish_tuple_assign():
   a = ti.var(dt=ti.f32, shape=())
   b = ti.var(dt=ti.f32, shape=())
 

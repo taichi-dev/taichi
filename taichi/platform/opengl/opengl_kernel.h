@@ -20,8 +20,9 @@ struct SSBO
 
   SSBO(size_t data_size);
 
-  void load_arguments_from(Context &ctx);
-  void save_returns_to(Context &ctx);
+  void load_from(const void *buffer);
+  void save_to(void *buffer);
+
   inline void *data()
   {
     return (void *)data_.data();

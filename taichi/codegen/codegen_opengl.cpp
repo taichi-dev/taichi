@@ -1,7 +1,6 @@
 //#define _GLSL_DEBUG 1
 #include "codegen_opengl.h"
 #include <taichi/platform/opengl/opengl_api.h>
-#include <taichi/platform/opengl/opengl_kernel.h>
 #include <taichi/platform/opengl/opengl_data_types.h>
 
 #include <string>
@@ -90,30 +89,32 @@ private: // {{{
     emit("{{");
     emit("  double _data_f64_[];");
     emit("}};");
-    emit("layout(std430, binding = 2) buffer extra_args_i32");
+    emit("layout(std430, binding = 2) buffer earg_i32");
     emit("{{");
-    emit("  int _extra_args_i32_[];");
+    emit("  int _earg_i32_[];");
     emit("}};");
-    emit("layout(std430, binding = 2) buffer extra_args_f32");
+    emit("layout(std430, binding = 3) buffer extr_i32");
     emit("{{");
-    emit("  float _extra_args_f32_[];");
+    emit("  int _extr_i32_[];");
     emit("}};");
-    emit("layout(std430, binding = 2) buffer extra_args_f64");
+    emit("layout(std430, binding = 3) buffer extr_f32");
     emit("{{");
-    emit("  double _extra_args_f64_[];");
+    emit("  float _extr_f32_[];");
+    emit("}};");
+    emit("layout(std430, binding = 3) buffer extr_f64");
+    emit("{{");
+    emit("  double _extr_f64_[];");
     emit("}};");
     emit("#define _arg_i32(x) _args_i32_[(x) << 1]"); // skip to 64bit stride
     emit("#define _arg_f32(x) _args_f32_[(x) << 1]");
-    emit("#define _arg_i64(x) _args_i64_[(x) << 0]");
     emit("#define _arg_f64(x) _args_f64_[(x) << 0]");
     emit("#define _mem_i32(x) _data_i32_[(x) >> 2]");
     emit("#define _mem_f32(x) _data_f32_[(x) >> 2]");
-    emit("#define _mem_i64(x) _data_i64_[(x) >> 3]");
     emit("#define _mem_f64(x) _data_f64_[(x) >> 3]");
-    emit("#define _extarg_i32(x) _extra_args_i32_[(x) >> 2]");
-    emit("#define _extarg_f32(x) _extra_args_f32_[(x) >> 2]");
-    emit("#define _extarg_i64(x) _extra_args_i64_[(x) >> 3]");
-    emit("#define _extarg_f64(x) _extra_args_f64_[(x) >> 3]");
+    emit("#define _ext_ns_i32(x) _extr_i32_[(x) >> 0]");
+    emit("#define _ext_ns_f32(x) _extr_f32_[(x) >> 0]");
+    emit("#define _ext_ns_f64(x) _extr_f64_[(x) >> 0]");
+    emit("#define _extra_arg(i, j) _earg_i32_[(i) * {} + (j)]", taichi_max_num_indices);
     emit("");
   }
 
@@ -145,11 +146,6 @@ private: // {{{
   virtual void visit(Stmt *stmt) override
   {
     TI_WARN("[glsl] default visitor called for {}", typeid(*stmt).name());
-  }
-
-  void visit(ExternalPtrStmt *stmt) override
-  {
-    TI_ERROR("[glsl] external pointers not supported on OpenGL arch");
   }
 
   void visit(LinearizeStmt *stmt) override
@@ -200,21 +196,54 @@ private: // {{{
         stmt->raw_name(), stmt->input_snode->node_type_name,
         stmt->chid, stmt->input_ptr->raw_name());
     if (stmt->output_snode->is_place())
-      emit("// place {}", opengl_data_type_name(stmt->output_snode->dt));
+      // The best way I could think to distinguish root_ptr and external_ptr in GLSL
+      emit("#define _at_{} _mem_{}({})", stmt->raw_name(),
+          data_type_short_name(stmt->output_snode->dt), stmt->input_ptr->raw_name());
   }
 
   void visit(GlobalStoreStmt *stmt) override
   {
     TI_ASSERT(stmt->width() == 1);
-    emit("_mem_{}({}) = {};", data_type_short_name(stmt->element_type()),
-        stmt->ptr->raw_name(), stmt->data->raw_name());
+    emit("_at_{} = {};", stmt->ptr->raw_name(), stmt->data->raw_name());
   }
 
   void visit(GlobalLoadStmt *stmt) override
   {
     TI_ASSERT(stmt->width() == 1);
-    emit("{} {} = _mem_{}({});", opengl_data_type_name(stmt->element_type()),
-         stmt->raw_name(), data_type_short_name(stmt->element_type()), stmt->ptr->raw_name());
+    emit("{} {} = _at_{};", opengl_data_type_name(stmt->element_type()),
+         stmt->raw_name(), stmt->ptr->raw_name());
+  }
+
+  void visit(ExternalPtrStmt *stmt) override {
+    // Used mostly for transferring data between host (e.g. numpy array) and
+    // Metal.
+    TI_ASSERT(stmt->width() == 1);
+    const auto linear_index_name =
+        fmt::format("{}_linear_index_", stmt->raw_name());
+    emit("int {} = 0;", linear_index_name);
+    emit("{{ // linear seek");
+    push_indent();
+    const auto *argload = stmt->base_ptrs[0]->as<ArgLoadStmt>();
+    const int arg_id = argload->arg_id;
+    const int num_indices = stmt->indices.size();
+    std::vector<std::string> size_var_names;
+    for (int i = 0; i < num_indices; i++) {
+      std::string var_name = fmt::format("{}_size{}_", stmt->raw_name(), i);
+      emit("int {} = _extra_arg({}, {});", var_name, arg_id, i);
+      size_var_names.push_back(std::move(var_name));
+    }
+    for (int i = 0; i < num_indices; i++) {
+      emit("{} *= {};", linear_index_name, size_var_names[i]);
+      emit("{} += {};", linear_index_name, stmt->indices[i]->raw_name());
+    }
+
+    pop_indent();
+    emit("}}");
+
+    emit("int {} = ({} + {});", stmt->raw_name(),
+         stmt->base_ptrs[0]->raw_name(), linear_index_name);
+      emit("#define _at_{} _ext_ns_{}({})", stmt->raw_name(),
+          data_type_short_name(stmt->element_type()), stmt->raw_name());
   }
 
   void visit(UnaryOpStmt *stmt) override
@@ -315,8 +344,7 @@ private: // {{{
   {
     const auto dt = opengl_data_type_name(stmt->element_type());
     if (stmt->is_ptr) {
-      emit("{} {} = _arg_{}({}); // is ext pointer", dt, stmt->raw_name(),
-          data_type_short_name(stmt->element_type()), stmt->arg_id);
+      emit("int {} = _arg_i32({}); // is ext pointer {}", stmt->raw_name(), stmt->arg_id, dt);
     } else {
       emit("{} {} = _arg_{}({});", dt, stmt->raw_name(),
           data_type_short_name(stmt->element_type()), stmt->arg_id);
@@ -471,13 +499,15 @@ public:
     return num_groups_;
   }
 
-  SSBO *create_root_ssbo()
+  IOV *create_root_buffer()
   {
-    static SSBO *root_ssbo;
-    if (!root_ssbo) {
-      root_ssbo = new SSBO(struct_compiled_->root_size);
+    static IOV *root;
+    if (!root) {
+      size_t size = struct_compiled_->root_size;
+      void *buffer = std::calloc(size, 1);
+      root = new IOV{buffer, size};
     }
-    return root_ssbo;
+    return root;
   }
 
   void run(const SNode &root_snode)
@@ -616,40 +646,39 @@ FunctionType OpenglCodeGen::gen(void)
 {
   KernelGen codegen(kernel_, kernel_name_, struct_compiled_);
   codegen.run(*prog_->snode_root);
-  SSBO *root_sb = codegen.create_root_ssbo();
+  IOV *root_iov = codegen.create_root_buffer();
   const std::string kernel_source_code = codegen.kernel_source_code();
   int num_groups = codegen.get_num_work_groups();
+#ifdef _GLSL_DEBUG
   TI_INFO("source of kernel [{}]:\n{}", kernel_name_, kernel_source_code);
+#endif
   GLProgram *glsl = compile_glsl_program(kernel_source_code);
 
-  return [glsl, num_groups, root_sb](Context &ctx) {
-    // TODO(archibate): try implement just new_ssbo_from_buffer(ctx.args) and no free like _IOMYBUF
-    SSBO *arg_sb = new SSBO(taichi_max_num_args * sizeof(uint64_t));
-    SSBO *extarg_sb = new SSBO(Context::extra_args_size);
-    arg_sb->load_from((void *)ctx.args);
-    extarg_sb->load_from((void *)ctx.extra_args);
-    std::vector<IOV> iov = {*arg_sb, *root_sb, *extarg_sb};
-#ifdef _GLSL_DEBUG
-    TI_INFO("data[0] = {}", ((int*)root_sb->data)[0]);
-    TI_INFO("data[1] = {}", ((int*)root_sb->data)[1]);
-    TI_INFO("args[0] = {}", ((uint64_t*)arg_sb->data)[0]);
-    TI_INFO("args[1] = {}", ((uint64_t*)arg_sb->data)[1]);
-    TI_INFO("earg[0] = {}", ((int*)extarg_sb->data)[0]);
-    TI_INFO("earg[1] = {}", ((int*)extarg_sb->data)[1]);
-#endif
+  int ext_arr_idx;
+  size_t ext_arr_size;
+  bool has_ext_arr = false;
+  for (int i = 0; i < kernel_->args.size(); i++) {
+    if (kernel_->args[i].is_nparray) {
+      if (has_ext_arr) TI_ERROR("external array argument is supported to at most one in OpenGL for now");
+      TI_INFO("external array argument index {}", i);
+      ext_arr_idx = i;
+      ext_arr_size = kernel_->args[i].size;
+      has_ext_arr = true;
+      TI_INFO("external array size {}", ext_arr_size);
+    }
+  }
+
+  return [glsl, num_groups, has_ext_arr, ext_arr_size, ext_arr_idx, root_iov](Context &ctx) {
+    std::vector<IOV> iov(3);
+    iov[0] = IOV{ctx.args, taichi_max_num_args * sizeof(uint64_t)};
+    iov[1] = *root_iov;
+    iov[2] = IOV{ctx.extra_args, Context::extra_args_size};
+    if (has_ext_arr) {
+      void *extptr = (void *)ctx.args[ext_arr_idx];
+      ctx.args[ext_arr_idx] = 0;
+      iov.push_back(IOV{extptr, ext_arr_size});
+    }
     launch_glsl_kernel(glsl, iov, num_groups);
-#ifdef _GLSL_DEBUG
-    TI_INFO("data[0] = {}", ((int*)root_sb->data)[0]);
-    TI_INFO("data[1] = {}", ((int*)root_sb->data)[1]);
-    TI_INFO("args[0] = {}", ((uint64_t*)arg_sb->data)[0]);
-    TI_INFO("args[1] = {}", ((uint64_t*)arg_sb->data)[1]);
-    TI_INFO("earg[0] = {}", ((int*)extarg_sb->data)[0]);
-    TI_INFO("earg[1] = {}", ((int*)extarg_sb->data)[1]);
-#endif
-    arg_sb->save_to((void *)ctx.args);
-    extarg_sb->save_to((void *)ctx.extra_args);
-    delete arg_sb;
-    delete extarg_sb;
   };
 }
 

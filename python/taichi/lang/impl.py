@@ -24,7 +24,7 @@ def expr_init(rhs):
       return rhs
     else:
       return Expr(taichi_lang_core.expr_var(Expr(rhs).ptr))
-    
+
 def expr_init_func(rhs): # temporary solution to allow passing in tensors as
   import taichi as ti
   if isinstance(rhs, Expr) and rhs.ptr.is_global_var():
@@ -121,10 +121,10 @@ class PyTaichi:
     self.inside_complex_kernel = False
     self.kernels = kernels
     Expr.materialize_layout_callback = self.materialize
-    
+
   def get_num_compiled_functions(self):
     return len(self.compiled_functions) + len(self.compiled_grad_functions)
-  
+
   def set_default_fp(self, fp):
     assert fp in [f32, f64]
     self.default_fp = fp
@@ -134,7 +134,7 @@ class PyTaichi:
     assert ip in [i32, i64]
     self.default_ip = ip
     default_cfg().default_ip = self.default_ip
-    
+
   def create_program(self):
     if self.prog is None:
       self.prog = taichi_lang_core.Program()
@@ -216,7 +216,7 @@ def index_nd(dim):
 class Root:
   def __init__(self):
     pass
-  
+
   def __getattribute__(self, item):
     import taichi as ti
     ti.get_runtime().create_program()
@@ -228,7 +228,7 @@ root = Root()
 def var(dt, shape=None, needs_grad=False):
   if isinstance(shape, numbers.Number):
     shape = (shape,)
-  
+
   assert not get_runtime().materialized, 'No new variables can be declared after kernel invocations or Python-scope tensor accesses.'
 
   # primal
@@ -297,7 +297,7 @@ index = indices
 def static(x, *xs):
   if len(xs): # for python-ish pointer assign: x, y = ti.static(y, x)
     return [static(x)] + [static(x) for x in xs]
-
+  import types
   import taichi as ti
   assert get_runtime(
   ).inside_kernel, 'ti.static can only be used inside Taichi kernels'
@@ -306,6 +306,8 @@ def static(x, *xs):
   elif isinstance(x, ti.lang.expr.Expr) and x.ptr.is_global_var():
     return x
   elif isinstance(x, ti.Matrix) and x.is_global():
+    return x
+  elif isinstance(x, ti.Func) or isinstance(x, types.MethodType):
     return x
   else:
     raise ValueError(f'Input to ti.static must be compile-time constants or global pointers, instead of {type(x)}')

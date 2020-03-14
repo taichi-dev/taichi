@@ -64,6 +64,7 @@ class TaichiFormatServer(BaseHTTPRequestHandler):
     ssh_url = head['repo']['ssh_url']
     self.exec(f'git remote add {user_id} {ssh_url}')
     self.exec(f'git fetch {user_id} {branch_name}')
+    self.exec(f'git branch -d {user_id}-{branch_name}')
     self.exec(f'git checkout -b {user_id}-{branch_name} {user_id}/{branch_name}')
     self.exec(f'ti format {fork_commit} {fork_commit}')
     self.exec('git add --all')

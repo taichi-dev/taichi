@@ -17,6 +17,14 @@ class TaichiFormatServer(BaseHTTPRequestHandler):
 
   def writeln(self, f):
     self.wfile.write(self._html(f + '<br>'))
+    
+  def exec(self, cmd):
+    self.writeln(f">>> {cmd}")
+    p = subprocess.getoutput(cmd)
+    for l in p.split('\n'):
+      self.writeln(l)
+      
+    return p
 
   def do_GET(self):
     print(self.path)
@@ -45,10 +53,22 @@ class TaichiFormatServer(BaseHTTPRequestHandler):
     repo_url = head["repo"]["html_url"]
     sha = head["sha"]
     self.writeln(f"repo url {repo_url}")
-    self.writeln(f"commit id {sha}")
-    p = subprocess.getoutput("ti format")
-    for l in p.split('\n'):
-      self.writeln(l)
+    self.writeln(f"head commit id {sha}")
+    num_commits = int(ret["commits"])
+    self.writeln(f"#commits id {num_commits}")
+   
+    commits = self.exec(f'git log -n {num_commits + 1} --format="%H"').split('\n')
+    fork_commit = commits[0]
+    user_id = ret['user']['login']
+    branch_name = head['mtl']
+    ssh_url = head['repo']['ssh_url']
+    self.exec(f'git remote add {user_id} {ssh_url}')
+    self.exec(f'git checkout -b {user_id}-{branch_name} {user_id}/{branch_name}')
+    self.exec(f'ti format {fork_commit}')
+    self.exec(f'git commit -m "enforce code format"')
+    self.exec(f'git push {user_id} {user_id}-{branch_name}')
+    self.exec(f'git checkout master')
+    
 
 
 def run(addr, port):

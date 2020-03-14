@@ -133,7 +133,10 @@ def main(debug=False):
   elif mode == "build":
     ti.core.build()
   elif mode == "format":
-    ti.core.format()
+    diff = None
+    if len(sys.argv) >= 3:
+      diff = sys.argv[2]
+    ti.core.format(diff=diff)
   elif mode == "format_all":
     ti.core.format(all=True)
   elif mode == "statement":

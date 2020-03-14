@@ -229,7 +229,7 @@ class Installer:
       execute_command('echo $PYTHONPATH')
     elif get_os_name() != 'win':
       # compile ..
-      os.makedirs('build')
+      os.makedirs('build', exist_ok=True)
       execute_command('cd build && cmake ..')
       execute_command('cd build && make -j 10')
     return

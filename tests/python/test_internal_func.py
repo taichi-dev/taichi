@@ -3,8 +3,8 @@ import time
 
 # TODO: these are not really tests...
 def all_archs_for_this(test):
-  # ti.call_internal() is not supported on Metal yet
-  return ti.archs_excluding(ti.metal)(test)
+  # ti.call_internal() is not supported on Metal and OpenGL yet
+  return ti.archs_excluding(ti.metal, ti.opengl)(test)
 
 
 @all_archs_for_this

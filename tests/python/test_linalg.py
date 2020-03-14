@@ -1,6 +1,6 @@
 import taichi as ti
-from pytest import approx
 import numpy as np
+from taichi import approx
 
 @ti.all_archs
 def test_transpose():

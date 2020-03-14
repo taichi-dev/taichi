@@ -59,7 +59,7 @@ def test_offload_with_cross_block_locals2():
   
   assert ret[None] == 1
   
-@ti.all_archs
+@ti.archs_excluding(ti.opengl) # OpenGL doesn't support dynamic range for now
 def test_offload_with_flexible_bounds():
   s = ti.var(ti.i32, shape=())
   lower = ti.var(ti.i32, shape=())

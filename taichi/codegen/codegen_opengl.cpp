@@ -41,6 +41,7 @@ private: // {{{
   int glsl_kernel_count_{0};
   int num_threads_{1};
   int num_groups_{1};
+  bool has_rand_{false};
 
   void push_indent()
   {
@@ -61,50 +62,18 @@ private: // {{{
   }
 
   void generate_header()
-  {
-    emit("#version 430 core");
-    emit("#extension GL_ARB_compute_shader: enable");
-    emit("{}", struct_compiled_->source_code);
-    emit("layout(std430, binding = 0) buffer args_i32");
-    emit("{{");
-    emit("  int _args_i32_[];");
-    emit("}};");
-    emit("layout(std430, binding = 0) buffer args_f32");
-    emit("{{");
-    emit("  float _args_f32_[];");
-    emit("}};");
-    emit("layout(std430, binding = 0) buffer args_f64");
-    emit("{{");
-    emit("  double _args_f64_[];");
-    emit("}};");
-    emit("layout(std430, binding = 1) buffer data_i32");
-    emit("{{");
-    emit("  int _data_i32_[];");
-    emit("}};");
-    emit("layout(std430, binding = 1) buffer data_f32");
-    emit("{{");
-    emit("  float _data_f32_[];");
-    emit("}};");
-    emit("layout(std430, binding = 1) buffer data_f64");
-    emit("{{");
-    emit("  double _data_f64_[];");
-    emit("}};");
-    emit("layout(std430, binding = 2) buffer earg_i32");
-    emit("{{");
-    emit("  int _earg_i32_[];");
-    emit("}};");
-    emit("layout(std430, binding = 3) buffer extr_i32");
-    emit("{{");
-    emit("  int _extr_i32_[];");
-    emit("}};");
-    emit("layout(std430, binding = 3) buffer extr_f32");
-    emit("{{");
-    emit("  float _extr_f32_[];");
-    emit("}};");
-    emit("layout(std430, binding = 3) buffer extr_f64");
-    emit("{{");
-    emit("  double _extr_f64_[];");
-    emit("}};");
+  { // {{{
+    kernel_src_code_ += struct_compiled_->source_code;
+    emit("layout(std430, binding = 0) buffer args_i32 {{ int _args_i32_[]; }};");
+    emit("layout(std430, binding = 0) buffer args_f32 {{ float _args_f32_[]; }};");
+    emit("layout(std430, binding = 0) buffer args_f64 {{ double _args_f64_[]; }};");
+    emit("layout(std430, binding = 1) buffer data_i32 {{ int _data_i32_[]; }};");
+    emit("layout(std430, binding = 1) buffer data_f32 {{ float _data_f32_[]; }};");
+    emit("layout(std430, binding = 1) buffer data_f64 {{ double _data_f64_[]; }};");
+    emit("layout(std430, binding = 2) buffer earg_i32 {{ int _earg_i32_[]; }};");
+    emit("layout(std430, binding = 3) buffer extr_i32 {{ int _extr_i32_[]; }};");
+    emit("layout(std430, binding = 3) buffer extr_f32 {{ float _extr_f32_[]; }};");
+    emit("layout(std430, binding = 3) buffer extr_f64 {{ double _extr_f64_[]; }};");
     emit("#define _arg_i32(x) _args_i32_[(x) << 1]"); // skip to 64bit stride
     emit("#define _arg_f32(x) _args_f32_[(x) << 1]");
     emit("#define _arg_f64(x) _args_f64_[(x) << 0]");
@@ -116,22 +85,67 @@ private: // {{{
     emit("#define _ext_ns_f64(x) _extr_f64_[(x) >> 0]");
     emit("#define _extra_arg(i, j) _earg_i32_[(i) * {} + (j)]", taichi_max_num_indices);
     emit("");
-  }
+  } // }}}
 
   void generate_bottom()
   {
     // TODO(archibate): <kernel_name>() really necessary? How about just main()?
     emit("void main()");
     emit("{{");
+    if (has_rand_)
+    emit("  _init_rand();");
     if (glsl_kernel_name_.size())
       emit("  {}();", glsl_kernel_name_);
     emit("}}");
+    if (has_rand_) {
+      // {{{
+      kernel_src_code_ = std::string("\
+uvec4 _rand_;\n\
+\n\
+void _init_rand()\n\
+{\n\
+  uint i = gl_GlobalInvocationID.x;\n\
+  _rand_.x = 123456789 * i * 1000000007;\n\
+  _rand_.y = 362436069;\n\
+  _rand_.z = 521288629;\n\
+  _rand_.w = 88675123;\n\
+}\n\
+\n\
+uint _rand_u32()\n\
+{\n\
+  uint t = _rand_.x ^ (_rand_.x << 11);\n\
+  _rand_.x = _rand_.y;\n\
+  _rand_.y = _rand_.z;\n\
+  _rand_.z = _rand_.w;\n\
+  _rand_.w = (_rand_.w ^ (_rand_.w >> 19)) ^ (t ^ (t >> 8));\n\
+  return _rand_.w * 1000000007;\n\
+}\n\
+\n\
+float _rand_f32()\n\
+{\n\
+  return float(_rand_u32()) * (1.0 / 4294967296.0);\n\
+}\n\
+\n\
+double _rand_f64()\n\
+{\n\
+  return double(_rand_f32());\n\
+}\n\
+\n\
+int _rand_i32()\n\
+{\n\
+  return int(_rand_u32());\n\
+}\n\
+") + kernel_src_code_; // }}}
+    }
     emit("");
+
     int threads_per_group = 1792;
     if (num_threads_ < 1792)
       threads_per_group = num_threads_;
     num_groups_ = (num_threads_ + 1791) / 1792;
     emit("layout(local_size_x = {}, local_size_y = 1, local_size_z = 1) in;", threads_per_group);
+
+    kernel_src_code_ = std::string("#version 430 core\n") + kernel_src_code_;
   }
 
   void visit(Block *stmt) override
@@ -145,7 +159,14 @@ private: // {{{
 
   virtual void visit(Stmt *stmt) override
   {
-    TI_WARN("[glsl] default visitor called for {}", typeid(*stmt).name());
+    TI_ERROR("[glsl] unsupported statement type {}", typeid(*stmt).name());
+  }
+
+  void visit(RandStmt *stmt) override
+  {
+    emit("const {} {} = _rand_{}();", opengl_data_type_name(stmt->ret_type.data_type),
+        stmt->raw_name(), data_type_short_name(stmt->ret_type.data_type));
+    has_rand_ = true;
   }
 
   void visit(LinearizeStmt *stmt) override
@@ -155,12 +176,12 @@ private: // {{{
       val = fmt::format("({} * {} + {})", val, stmt->strides[i],
                         stmt->inputs[i]->raw_name());
     }
-    emit("int {} = {};", stmt->raw_name(), val);
+    emit("const int {} = {};", stmt->raw_name(), val);
   }
 
   void visit(OffsetAndExtractBitsStmt *stmt) override
   {
-    emit("int {} = ((({} + {}) >> {}) & ((1 << {}) - 1));",
+    emit("const int {} = ((({} + {}) >> {}) & ((1 << {}) - 1));",
          stmt->raw_name(), stmt->offset, stmt->input->raw_name(),
          stmt->bit_begin, stmt->bit_end - stmt->bit_begin);
   }
@@ -210,11 +231,12 @@ private: // {{{
   void visit(GlobalLoadStmt *stmt) override
   {
     TI_ASSERT(stmt->width() == 1);
-    emit("{} {} = _at_{};", opengl_data_type_name(stmt->element_type()),
+    emit("const {} {} = _at_{};", opengl_data_type_name(stmt->element_type()),
          stmt->raw_name(), stmt->ptr->raw_name());
   }
 
-  void visit(ExternalPtrStmt *stmt) override {
+  void visit(ExternalPtrStmt *stmt) override
+{
     // Used mostly for transferring data between host (e.g. numpy array) and
     // Metal.
     TI_ASSERT(stmt->width() == 1);
@@ -229,7 +251,7 @@ private: // {{{
     std::vector<std::string> size_var_names;
     for (int i = 0; i < num_indices; i++) {
       std::string var_name = fmt::format("{}_size{}_", stmt->raw_name(), i);
-      emit("int {} = _extra_arg({}, {});", var_name, arg_id, i);
+      emit("const int {} = _extra_arg({}, {});", var_name, arg_id, i);
       size_var_names.push_back(std::move(var_name));
     }
     for (int i = 0; i < num_indices; i++) {
@@ -240,7 +262,7 @@ private: // {{{
     pop_indent();
     emit("}}");
 
-    emit("int {} = ({} + {});", stmt->raw_name(),
+    emit("const int {} = ({} + {});", stmt->raw_name(),
          stmt->base_ptrs[0]->raw_name(), linear_index_name);
       emit("#define _at_{} _ext_ns_{}({})", stmt->raw_name(),
           data_type_short_name(stmt->element_type()), stmt->raw_name());
@@ -249,21 +271,47 @@ private: // {{{
   void visit(UnaryOpStmt *stmt) override
   {
     if (stmt->op_type == UnaryOpType::logic_not) {
-      emit("{} {} = {}({} == 0);", opengl_data_type_name(stmt->element_type()),
+      emit("const {} {} = {}({} == 0);", opengl_data_type_name(stmt->element_type()),
+           stmt->raw_name(), opengl_data_type_name(stmt->element_type()),
+           stmt->operand->raw_name());
+    } else if (stmt->op_type == UnaryOpType::neg) {
+      emit("const {} {} = {}(-{});", opengl_data_type_name(stmt->element_type()),
+           stmt->raw_name(), opengl_data_type_name(stmt->element_type()),
+           stmt->operand->raw_name());
+    } else if (stmt->op_type == UnaryOpType::rsqrt) {
+      emit("const {} {} = {}(1 / sqrt({}));", opengl_data_type_name(stmt->element_type()),
+           stmt->raw_name(), opengl_data_type_name(stmt->element_type()),
+           stmt->operand->raw_name());
+    } else if (stmt->op_type == UnaryOpType::sgn) {
+      emit("const {} {} = {}(sign({}));", opengl_data_type_name(stmt->element_type()),
+           stmt->raw_name(), opengl_data_type_name(stmt->element_type()),
+           stmt->operand->raw_name());
+    } else if (stmt->op_type == UnaryOpType::bit_not) {
+      emit("const {} {} = {}(~{});", opengl_data_type_name(stmt->element_type()),
            stmt->raw_name(), opengl_data_type_name(stmt->element_type()),
            stmt->operand->raw_name());
     } else if (stmt->op_type != UnaryOpType::cast) {
-      emit("{} {} = {}({}({}));", opengl_data_type_name(stmt->element_type()),
+      emit("const {} {} = {}({}({}));", opengl_data_type_name(stmt->element_type()),
            stmt->raw_name(), opengl_data_type_name(stmt->element_type()),
            unary_op_type_name(stmt->op_type), stmt->operand->raw_name());
     } else {
       // cast
       if (stmt->cast_by_value) {
-        emit("{} {} = {}({});",
+        emit("const {} {} = {}({});",
              opengl_data_type_name(stmt->element_type()), stmt->raw_name(),
              opengl_data_type_name(stmt->cast_type), stmt->operand->raw_name());
+      } else if (stmt->cast_type == DataType::f32 &&
+          stmt->operand->element_type() == DataType::i32) {
+        emit("{} {} = intBitsToFloat({});",
+             opengl_data_type_name(stmt->element_type()), stmt->raw_name(),
+             stmt->operand->raw_name());
+      } else if (stmt->cast_type == DataType::i32 &&
+          stmt->operand->element_type() == DataType::f32) {
+        emit("{} {} = floatBitsToInt({});",
+             opengl_data_type_name(stmt->element_type()), stmt->raw_name(),
+             stmt->operand->raw_name());
       } else {
-        TI_NOT_IMPLEMENTED;
+        TI_ERROR("unsupported reinterpret cast");
       }
     }
   }
@@ -276,21 +324,24 @@ private: // {{{
     const auto bin_name = bin->raw_name();
     if (bin->op_type == BinaryOpType::floordiv) {
       if (is_integral(bin->element_type())) {
-        emit("{} {} = int(floor({} / {}));", dt_name, bin_name, lhs_name,
+        emit("const {} {} = int(floor({} / {}));", dt_name, bin_name, lhs_name,
              rhs_name);
       } else {
-        emit("{} {} = floor({} / {});", dt_name, bin_name, lhs_name,
+        emit("const {} {} = floor({} / {});", dt_name, bin_name, lhs_name,
              rhs_name);
       }
+      return;
+    } else if (bin->op_type == BinaryOpType::atan2) {
+      emit("const {} {} = atan({}, {});", dt_name, bin_name, lhs_name, rhs_name);
       return;
     }
     const auto binop = binary_op_type_symbol(bin->op_type);
     if (is_opengl_binary_op_infix(bin->op_type)) {
-      emit("{} {} = {}({} {} {});", dt_name, bin_name, dt_name,
+      emit("const {} {} = {}({} {} {});", dt_name, bin_name, dt_name,
           lhs_name, binop, rhs_name);
     } else {
       // This is a function call
-      emit("{} {} = {}({}, {});", dt_name, bin_name, binop, lhs_name,
+      emit("const {} {} = {}({}, {});", dt_name, bin_name, binop, lhs_name,
           rhs_name);
     }
   }
@@ -298,7 +349,7 @@ private: // {{{
   void visit(TernaryOpStmt *tri) override
   {
     TI_ASSERT(tri->op_type == TernaryOpType::select);
-    emit("{} {} = ({}) ? ({}) : ({});",
+    emit("const {} {} = ({}) != 0 ? ({}) : ({});",
          opengl_data_type_name(tri->element_type()), tri->raw_name(),
          tri->op1->raw_name(), tri->op2->raw_name(), tri->op3->raw_name());
   }
@@ -314,7 +365,7 @@ private: // {{{
     if (stmt->same_source() && linear_index &&
         stmt->width() == stmt->ptr[0].var->width()) {
       auto ptr = stmt->ptr[0].var;
-      emit("{} {} = {};", opengl_data_type_name(stmt->element_type()),
+      emit("const {} {} = {};", opengl_data_type_name(stmt->element_type()),
            stmt->raw_name(), ptr->raw_name());
     } else {
       TI_NOT_IMPLEMENTED;
@@ -328,7 +379,7 @@ private: // {{{
 
   void visit(AllocaStmt *alloca) override
   {
-    emit("{} {};", // need = 0?
+    emit("{} {} = 0;",
         opengl_data_type_name(alloca->element_type()),
         alloca->raw_name());
   }
@@ -336,7 +387,7 @@ private: // {{{
   void visit(ConstStmt *const_stmt) override
   {
     TI_ASSERT(const_stmt->width() == 1);
-    emit("{} {} = {};", opengl_data_type_name(const_stmt->element_type()),
+    emit("const {} {} = {};", opengl_data_type_name(const_stmt->element_type()),
          const_stmt->raw_name(), const_stmt->val[0].stringify());
   }
 
@@ -344,9 +395,9 @@ private: // {{{
   {
     const auto dt = opengl_data_type_name(stmt->element_type());
     if (stmt->is_ptr) {
-      emit("int {} = _arg_i32({}); // is ext pointer {}", stmt->raw_name(), stmt->arg_id, dt);
+      emit("const int {} = _arg_i32({}); // is ext pointer {}", stmt->raw_name(), stmt->arg_id, dt);
     } else {
-      emit("{} {} = _arg_{}({});", dt, stmt->raw_name(),
+      emit("const {} {} = _arg_{}({});", dt, stmt->raw_name(),
           data_type_short_name(stmt->element_type()), stmt->arg_id);
     }
   }
@@ -383,7 +434,7 @@ private: // {{{
     push_indent();
     if (stmt->const_begin && stmt->const_end) {
       TI_ASSERT_INFO(stmt->end_value > stmt->begin_value,
-          "range for end value <= begin value");
+          "[glsl] range for end value <= begin value not supported");
       num_threads_ = stmt->end_value - stmt->begin_value;
       emit("// range known at compile time");
       emit("const int _thread_id_ = int(gl_GlobalInvocationID.x);");
@@ -391,7 +442,7 @@ private: // {{{
       emit("const int _it_value_ = {} + _thread_id_ * {};",
           stmt->begin_value, 1 /* stmt->step? */);
     } else {
-      TI_ERROR("non-const range_for currently unsupported under OpenGL");
+      TI_ERROR("[glsl] non-const range_for currently unsupported under OpenGL");
       /*range_for_attribs.begin =
           (stmt->const_begin ? stmt->begin_value : stmt->begin_offset);
       range_for_attribs.end =
@@ -407,7 +458,7 @@ private: // {{{
   {
     TI_ASSERT(!stmt->is_struct_for);
     TI_ASSERT(stmt->index == 0); // TODO: multiple indices
-    emit("int {} = _it_value_;", stmt->raw_name());
+    emit("const int {} = _it_value_;", stmt->raw_name());
   }
 
   void visit(RangeForStmt *for_stmt) override
@@ -466,14 +517,14 @@ private: // {{{
     } else {
       // struct_for is automatically lowered to ranged_for for dense snodes
       // (#378). So we only need to support serial and range_for tasks.
-      TI_ERROR("Unsupported offload type={} on OpenGL arch", stmt->task_name());
+      TI_ERROR("[glsl] Unsupported offload type={} on OpenGL arch", stmt->task_name());
     }
     is_top_level_ = true;
   }
 
   void visit(StructForStmt *) override
   {
-    TI_ERROR("Struct for cannot be nested under OpenGL for now");
+    TI_ERROR("[glsl] Struct for cannot be nested under OpenGL for now");
   }
 
   void visit(IfStmt *if_stmt) override {
@@ -492,6 +543,16 @@ public:
   const std::string &kernel_source_code() const
   {
     return kernel_src_code_;
+  }
+
+  const std::string &get_kernel_name() const
+  {
+    return kernel_name_;
+  }
+
+  Kernel *get_kernel() const
+  {
+    return kernel;
   }
 
   int get_num_work_groups() const
@@ -642,33 +703,42 @@ void OpenglCodeGen::lower()
 #endif
 } // }}}
 
-FunctionType OpenglCodeGen::gen(void)
+struct CompiledKernel
 {
-  KernelGen codegen(kernel_, kernel_name_, struct_compiled_);
-  codegen.run(*prog_->snode_root);
-  IOV *root_iov = codegen.create_root_buffer();
-  const std::string kernel_source_code = codegen.kernel_source_code();
-  int num_groups = codegen.get_num_work_groups();
-#ifdef _GLSL_DEBUG
-  TI_INFO("source of kernel [{}]:\n{}", kernel_name_, kernel_source_code);
-#endif
-  GLProgram *glsl = compile_glsl_program(kernel_source_code);
-
+  GLProgram *glsl;
+  int num_groups;
   int ext_arr_idx;
   size_t ext_arr_size;
-  bool has_ext_arr = false;
-  for (int i = 0; i < kernel_->args.size(); i++) {
-    if (kernel_->args[i].is_nparray) {
-      if (has_ext_arr) TI_ERROR("external array argument is supported to at most one in OpenGL for now");
-      TI_INFO("external array argument index {}", i);
-      ext_arr_idx = i;
-      ext_arr_size = kernel_->args[i].size;
-      has_ext_arr = true;
-      TI_INFO("external array size {}", ext_arr_size);
+  bool has_ext_arr{false};
+
+  explicit CompiledKernel(const KernelGen &codegen)
+  {
+    IOV *root_iov = codegen.create_root_buffer();
+    const std::string kernel_source_code = codegen.kernel_source_code();
+    const std::string kernel_name = codegen.get_kernel_name();
+    Kernel *kernel = codegen.get_kernel();
+    this->num_groups = codegen.get_num_work_groups();
+
+#ifdef _GLSL_DEBUG
+    TI_INFO("source of kernel [{}]:\n{}", kernel_name, kernel_source_code);
+    std::ofstream("/tmp/kernel.comp").write(kernel_source_code.c_str(), kernel_source_code.size());
+#endif
+    this->glsl = compile_glsl_program(kernel_source_code);
+
+    has_ext_arr = false;
+    for (int i = 0; i < kernel->args.size(); i++) {
+      if (kernel->args[i].is_nparray) {
+        if (has_ext_arr)
+          TI_ERROR("[glsl] external array argument is supported to at most one in OpenGL for now");
+        ext_arr_idx = i;
+        ext_arr_size = kernel->args[i].size;
+        has_ext_arr = true;
+      }
     }
   }
 
-  return [glsl, num_groups, has_ext_arr, ext_arr_size, ext_arr_idx, root_iov](Context &ctx) {
+  void launch(Context &ctx, IOV *root_iov)
+  {
     std::vector<IOV> iov(3);
     iov[0] = IOV{ctx.args, taichi_max_num_args * sizeof(uint64_t)};
     iov[1] = *root_iov;
@@ -679,6 +749,17 @@ FunctionType OpenglCodeGen::gen(void)
       iov.push_back(IOV{extptr, ext_arr_size});
     }
     launch_glsl_kernel(glsl, iov, num_groups);
+  }
+};
+
+FunctionType OpenglCodeGen::gen(void)
+{
+  KernelGen codegen(kernel_, kernel_name_, struct_compiled_);
+  codegen.run(*prog_->snode_root);
+  auto compiled = new CompiledKernel(codegen);
+
+  return [compiled, root_iov](Context &ctx) {
+    compiled->launch(ctx, root_iov);
   };
 }
 

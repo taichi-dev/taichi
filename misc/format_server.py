@@ -59,7 +59,7 @@ class TaichiFormatServer(BaseHTTPRequestHandler):
 
     commits = self.exec(f'git log -n {num_commits + 1} --format="%H"').split(
         '\n')
-    fork_commit = commits[0]
+    fork_commit = commits[num_commits - 1]
     user_id = ret['user']['login']
     branch_name = head['ref']
     ssh_url = head['repo']['ssh_url']

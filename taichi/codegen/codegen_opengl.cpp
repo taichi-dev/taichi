@@ -713,6 +713,7 @@ struct CompiledKernel
 
   explicit CompiledKernel(const KernelGen &codegen)
   {
+#if defined(TI_WITH_OPENGL)
     IOV *root_iov = codegen.create_root_buffer();
     const std::string kernel_source_code = codegen.kernel_source_code();
     const std::string kernel_name = codegen.get_kernel_name();
@@ -735,6 +736,9 @@ struct CompiledKernel
         has_ext_arr = true;
       }
     }
+#else
+    TI_NOT_IMPLEMENTED
+#endif
   }
 
   void launch(Context &ctx, IOV *root_iov)
@@ -754,6 +758,7 @@ struct CompiledKernel
 
 FunctionType OpenglCodeGen::gen(void)
 {
+#if defined(TI_WITH_OPENGL)
   KernelGen codegen(kernel_, kernel_name_, struct_compiled_);
   codegen.run(*prog_->snode_root);
   auto compiled = new CompiledKernel(codegen);
@@ -761,6 +766,9 @@ FunctionType OpenglCodeGen::gen(void)
   return [compiled, root_iov](Context &ctx) {
     compiled->launch(ctx, root_iov);
   };
+#else
+  TI_NOT_IMPLEMENTED
+#endif
 }
 
 FunctionType OpenglCodeGen::compile(Program &program, Kernel &kernel)

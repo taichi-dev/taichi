@@ -87,7 +87,7 @@ def print_red_bold(*args, **kwargs):
   print(Style.RESET_ALL, end='')
 
 
-def format(all=False):
+def format(all=False, diff=None):
   import os
   import taichi as tc
   from yapf.yapflib.yapf_api import FormatFile
@@ -100,7 +100,10 @@ def format(all=False):
     for d in directories:
       files += list(Path(os.path.join(tc.get_repo_directory(), d)).rglob('*'))
   else:
-    files = repo.index.diff('HEAD')
+    if diff is None:
+      files = repo.index.diff('HEAD')
+    else:
+      files = repo.index.diff(diff)
     files = list(
         map(lambda x: os.path.join(tc.get_repo_directory(), x.a_path), files))
 

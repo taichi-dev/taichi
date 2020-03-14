@@ -60,11 +60,12 @@ class TaichiFormatServer(BaseHTTPRequestHandler):
     commits = self.exec(f'git log -n {num_commits + 1} --format="%H"').split('\n')
     fork_commit = commits[0]
     user_id = ret['user']['login']
-    branch_name = head['mtl']
+    branch_name = head['ref']
     ssh_url = head['repo']['ssh_url']
     self.exec(f'git remote add {user_id} {ssh_url}')
     self.exec(f'git checkout -b {user_id}-{branch_name} {user_id}/{branch_name}')
     self.exec(f'ti format {fork_commit}')
+    self.exec('git add --all')
     self.exec(f'git commit -m "enforce code format"')
     self.exec(f'git push {user_id} {user_id}-{branch_name}')
     self.exec(f'git checkout master')

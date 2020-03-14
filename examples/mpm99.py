@@ -89,7 +89,7 @@ def initialize():
     v[i] = ti.Matrix([0, 0])
     F[i] = ti.Matrix([[1, 0], [0, 1]])
     Jp[i] = 1
-initialize()
+initialize   ()
 gui = ti.GUI("Taichi MLS-MPM-99", res=512, background_color=0x112F41)
 for frame in range(20000):
   for s in range(int(2e-3 // dt)):

@@ -1,7 +1,7 @@
 import taichi as ti
 
 @ti.all_archs
-def _test_ptr_scalar():
+def test_ptr_scalar():
   a = ti.var(dt=ti.f32, shape=())
 
   @ti.kernel
@@ -17,7 +17,7 @@ def _test_ptr_scalar():
     assert a[None] == x * y + y
 
 @ti.all_archs
-def _test_ptr_matrix():
+def test_ptr_matrix():
   a = ti.Matrix(2, 2, dt=ti.f32, shape=())
 
   @ti.kernel
@@ -31,7 +31,7 @@ def _test_ptr_matrix():
     assert a[None][1, 0] == x
 
 @ti.all_archs
-def _test_ptr_tensor():
+def test_ptr_tensor():
   a = ti.var(dt=ti.f32, shape=(3, 4))
 
   @ti.kernel
@@ -62,3 +62,39 @@ def test_pythonish_tuple_assign():
     func(x, y)
     assert a[None] == y
     assert b[None] == x
+
+@ti.all_archs
+def test_ptr_func():
+  a = ti.var(dt=ti.f32, shape=())
+
+  @ti.func
+  def add2numbers(x,y):
+    return x + y
+
+  @ti.kernel
+  def func():
+    add = ti.static(add2numbers)
+    a[None] = add(2,3)
+
+  func()
+  assert a[None] == 5.0
+
+@ti.all_archs
+def test_ptr_class_func():
+  @ti.data_oriented
+  class MyClass:
+    def __init__(self):
+      self.a = ti.var(dt=ti.f32, shape=())
+
+    @ti.func
+    def add2numbers(self, x, y):
+      return x + y
+
+    @ti.kernel
+    def func(self):
+      a, add = ti.static(self.a, self.add2numbers)
+      a[None] = add(2, 3)
+
+  obj = MyClass()
+  obj.func()
+  assert obj.a[None] == 5.0

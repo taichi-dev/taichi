@@ -76,11 +76,11 @@ class BasicBlockSimplify : public IRVisitor {
             if (bstmt_->activate == stmt->activate || bstmt_->activate) {
               stmt->replace_with(bstmt.get());
               stmt->parent->erase(current_stmt_id);
+              throw IRModified();
             } else {
               // bstmt->active == false && stmt->active == true
               // do nothing.
             }
-            throw IRModified();
           }
         }
       }

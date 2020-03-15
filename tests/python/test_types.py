@@ -15,14 +15,14 @@ def _test_type_assign_argument(dt):
   assert x[None] == 3
 
 @pytest.mark.parametrize('dt', _TI_TYPES)
-@ti.all_archs
+@ti.archs_excluding(ti.opengl)
 def test_type_assign_argument(dt):
   _test_type_assign_argument(dt)
 
 
 @pytest.mark.parametrize('dt', _TI_64_TYPES)
 @ti.require(ti.extension.data64)
-@ti.all_archs
+@ti.archs_excluding(ti.opengl)
 def test_type_assign_argument64(dt):
   _test_type_assign_argument(dt)
 
@@ -46,13 +46,13 @@ def _test_type_operator(dt):
       assert mul[None] == x[None] * y[None]
 
 @pytest.mark.parametrize('dt', _TI_TYPES)
-@ti.all_archs
+@ti.archs_excluding(ti.opengl)
 def test_type_operator(dt):
   _test_type_operator(dt)
 
 @pytest.mark.parametrize('dt', _TI_64_TYPES)
 @ti.require(ti.extension.data64)
-@ti.all_archs
+@ti.archs_excluding(ti.opengl)
 def test_type_operator64(dt):
   _test_type_operator(dt)
 
@@ -70,13 +70,13 @@ def _test_type_tensor(dt):
 
 
 @pytest.mark.parametrize('dt', _TI_TYPES)
-@ti.all_archs
+@ti.archs_excluding(ti.opengl)
 def test_type_tensor(dt):
   _test_type_tensor(dt)
 
 @pytest.mark.parametrize('dt', _TI_64_TYPES)
 @ti.require(ti.extension.data64)
-@ti.all_archs
+@ti.archs_excluding(ti.opengl)
 def test_type_tensor64(dt):
   _test_type_tensor(dt)
 
@@ -110,7 +110,7 @@ def _test_overflow(dt, n):
   (ti.i32, 32),
   (ti.u32, 32),
 ])
-@ti.all_archs
+@ti.archs_excluding(ti.opengl)
 def test_overflow(dt, n):
   _test_overflow(dt, n)
 
@@ -119,6 +119,6 @@ def test_overflow(dt, n):
   (ti.u64, 64),
 ])
 @ti.require(ti.extension.data64)
-@ti.all_archs
+@ti.archs_excluding(ti.opengl)
 def test_overflow64(dt, n):
   _test_overflow(dt, n)

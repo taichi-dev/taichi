@@ -220,16 +220,10 @@ SNode::SNode(int depth, SNodeType t) : depth(depth), type(t) {
   std::memset(taken_bits, 0, sizeof(taken_bits));
   std::memset(physical_index_position, -1, sizeof(physical_index_position));
   parent = nullptr;
-  _verbose = false;
-  _multi_threaded = false;
-  index_id = -1;
   has_ambient = false;
   dt = DataType::unknown;
   _morton = false;
   _bitmasked = false;
-
-  clear_kernel = nullptr;
-  clear_and_deactivate_kernel = nullptr;
 
   reader_kernel = nullptr;
   writer_kernel = nullptr;

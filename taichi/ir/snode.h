@@ -8,7 +8,6 @@
 
 TLANG_NAMESPACE_BEGIN
 
-struct Matrix;
 class Expr;
 class Kernel;
 
@@ -68,8 +67,6 @@ class SNode {
   static int counter;
   int id;
   int depth{};
-  bool _verbose{};
-  bool _multi_threaded{};
 
   std::string name;
   int64 n{};
@@ -88,11 +85,8 @@ class SNode {
     return lang::data_type_name(dt);
   }
 
-  void *clear_kernel{}, *clear_and_deactivate_kernel{};
-
   std::string node_type_name;
   SNodeType type;
-  int index_id{};
   bool _morton{};
   bool _bitmasked{};
   bool has_aux_structure{};
@@ -161,22 +155,10 @@ class SNode {
     return hash(std::vector<Index>{index}, size);
   }
 
-  SNode &multi_threaded(bool val = true) {
-    this->_multi_threaded = val;
-    return *this;
-  }
-
-  SNode &verbose() {
-    this->_verbose = true;
-    return *this;
-  }
-
   template <typename... Args>
   SNode &place(Expr &expr, Args &&... args) {
     return place(expr).place(std::forward<Args>(args)...);
   }
-
-  SNode &place(Matrix &mat);
 
   template <typename... Args>
   static std::shared_ptr<SNode> create(Args &&... args) {
@@ -192,7 +174,7 @@ class SNode {
       fmt::print("  ");
     }
     fmt::print("{}\n", type_name());
-    for (auto c : ch) {
+    for (auto &c : ch) {
       c->print();
     }
   }

@@ -217,7 +217,6 @@ SNode::SNode(int depth, SNodeType t) : depth(depth), type(t) {
   total_num_bits = 0;
   total_bit_start = 0;
   num_active_indices = 0;
-  std::memset(taken_bits, 0, sizeof(taken_bits));
   std::memset(physical_index_position, -1, sizeof(physical_index_position));
   parent = nullptr;
   has_ambient = false;

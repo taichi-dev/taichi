@@ -55,7 +55,6 @@ class SNode {
   std::vector<std::shared_ptr<SNode>> ch;
 
   IndexExtractor extractors[taichi_max_num_indices];
-  int taken_bits[taichi_max_num_indices]{};  // counting from the tail
   int num_active_indices{};
   int physical_index_position[taichi_max_num_indices]{};
   // physical indices are (ti.i, ti.j, ti.k, ti.l, ...)
@@ -89,7 +88,6 @@ class SNode {
   SNodeType type;
   bool _morton{};
   bool _bitmasked{};
-  bool has_aux_structure{};
 
   std::string get_node_type_name() const {
     return fmt::format("S{}", id);

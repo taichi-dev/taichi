@@ -146,7 +146,6 @@ private: // {{{
   int glsl_kernel_count_{0};
   int num_threads_{1};
   int num_groups_{1};
-  bool has_rand_{false};
 
   void push_indent()
   {
@@ -169,27 +168,6 @@ private: // {{{
   void generate_header()
   { // {{{
     kernel_src_code_ += struct_compiled_->source_code;
-    emit("layout(std430, binding = 0) buffer args_i32 {{ int _args_i32_[]; }};");
-    emit("layout(std430, binding = 0) buffer args_f32 {{ float _args_f32_[]; }};");
-    emit("layout(std430, binding = 0) buffer args_f64 {{ double _args_f64_[]; }};");
-    emit("layout(std430, binding = 1) buffer data_i32 {{ int _data_i32_[]; }};");
-    emit("layout(std430, binding = 1) buffer data_f32 {{ float _data_f32_[]; }};");
-    emit("layout(std430, binding = 1) buffer data_f64 {{ double _data_f64_[]; }};");
-    emit("layout(std430, binding = 2) buffer earg_i32 {{ int _earg_i32_[]; }};");
-    emit("layout(std430, binding = 3) buffer extr_i32 {{ int _extr_i32_[]; }};");
-    emit("layout(std430, binding = 3) buffer extr_f32 {{ float _extr_f32_[]; }};");
-    emit("layout(std430, binding = 3) buffer extr_f64 {{ double _extr_f64_[]; }};");
-    emit("#define _arg_i32(x) _args_i32_[(x) << 1]"); // skip to 64bit stride
-    emit("#define _arg_f32(x) _args_f32_[(x) << 1]");
-    emit("#define _arg_f64(x) _args_f64_[(x) << 0]");
-    emit("#define _mem_i32(x) _data_i32_[(x) >> 2]");
-    emit("#define _mem_f32(x) _data_f32_[(x) >> 2]");
-    emit("#define _mem_f64(x) _data_f64_[(x) >> 3]");
-    emit("#define _ext_ns_i32(x) _extr_i32_[(x) >> 0]");
-    emit("#define _ext_ns_f32(x) _extr_f32_[(x) >> 0]");
-    emit("#define _ext_ns_f64(x) _extr_f64_[(x) >> 0]");
-    emit("#define _extra_arg(i, j) _earg_i32_[(i) * {} + (j)]", taichi_max_num_indices);
-    emit("");
   } // }}}
 
   void generate_bottom()
@@ -927,12 +905,13 @@ void OpenglCodeGen::lower()
 #endif
 } // }}}
 
-struct CompiledKernel
+FunctionType OpenglCodeGen::gen(void)
 {
-#ifdef TI_WITH_OPENGL
+#if defined(TI_WITH_OPENGL)
   KernelGen codegen(kernel_, kernel_name_, struct_compiled_, global_tmps_buffer_size_);
   codegen.run(*prog_->snode_root);
   auto compiled = codegen.get_compiled_program();
+
   return [compiled](Context &ctx) {
     compiled.launch(ctx);
   };

@@ -146,6 +146,7 @@ private: // {{{
   int glsl_kernel_count_{0};
   int num_threads_{1};
   int num_groups_{1};
+  bool has_rand_{false};
 
   void push_indent()
   {
@@ -167,8 +168,28 @@ private: // {{{
 
   void generate_header()
   { // {{{
-    num_threads_ = 1;
-    kernel_src_code_ = struct_compiled_->source_code;
+    kernel_src_code_ += struct_compiled_->source_code;
+    emit("layout(std430, binding = 0) buffer args_i32 {{ int _args_i32_[]; }};");
+    emit("layout(std430, binding = 0) buffer args_f32 {{ float _args_f32_[]; }};");
+    emit("layout(std430, binding = 0) buffer args_f64 {{ double _args_f64_[]; }};");
+    emit("layout(std430, binding = 1) buffer data_i32 {{ int _data_i32_[]; }};");
+    emit("layout(std430, binding = 1) buffer data_f32 {{ float _data_f32_[]; }};");
+    emit("layout(std430, binding = 1) buffer data_f64 {{ double _data_f64_[]; }};");
+    emit("layout(std430, binding = 2) buffer earg_i32 {{ int _earg_i32_[]; }};");
+    emit("layout(std430, binding = 3) buffer extr_i32 {{ int _extr_i32_[]; }};");
+    emit("layout(std430, binding = 3) buffer extr_f32 {{ float _extr_f32_[]; }};");
+    emit("layout(std430, binding = 3) buffer extr_f64 {{ double _extr_f64_[]; }};");
+    emit("#define _arg_i32(x) _args_i32_[(x) << 1]"); // skip to 64bit stride
+    emit("#define _arg_f32(x) _args_f32_[(x) << 1]");
+    emit("#define _arg_f64(x) _args_f64_[(x) << 0]");
+    emit("#define _mem_i32(x) _data_i32_[(x) >> 2]");
+    emit("#define _mem_f32(x) _data_f32_[(x) >> 2]");
+    emit("#define _mem_f64(x) _data_f64_[(x) >> 3]");
+    emit("#define _ext_ns_i32(x) _extr_i32_[(x) >> 0]");
+    emit("#define _ext_ns_f32(x) _extr_f32_[(x) >> 0]");
+    emit("#define _ext_ns_f64(x) _extr_f64_[(x) >> 0]");
+    emit("#define _extra_arg(i, j) _earg_i32_[(i) * {} + (j)]", taichi_max_num_indices);
+    emit("");
   } // }}}
 
   void generate_bottom()
@@ -285,6 +306,9 @@ uint _rand_u32()\n\
 {\n\
   uint t = _rand_.x ^ (_rand_.x << 11);\n\
   _rand_.xyz = _rand_.yzw;\n\
+  _rand_.x = _rand_.y;\n\
+  _rand_.y = _rand_.z;\n\
+  _rand_.z = _rand_.w;\n\
   _rand_.w = (_rand_.w ^ (_rand_.w >> 19)) ^ (t ^ (t >> 8));\n\
   return _rand_.w * 1000000007;\n\
 }\n\
@@ -505,7 +529,7 @@ int _rand_i32()\n\
     const auto bin_name = bin->raw_name();
     if (bin->op_type == BinaryOpType::floordiv) {
       if (is_integral(bin->lhs->element_type()) && is_integral(bin->rhs->element_type())) {
-        emit("{} {} = {}({} * {} >= 0 ? abs({}) / abs({}) : sign({}) * (abs({}) + abs({}) - 1) / {});",
+        emit("const {} {} = {}({} * {} >= 0 ? abs({}) / abs({}) : sign({}) * (abs({}) + abs({}) - 1) / {});",
             dt_name, bin_name, dt_name, lhs_name, rhs_name, lhs_name, rhs_name,
             lhs_name, lhs_name, rhs_name, rhs_name);
         return;
@@ -518,6 +542,9 @@ int _rand_i32()\n\
       // NOTE: the GLSL built-in function `mod()` is a pythonic mod: x - y * floor(x / y)
       emit("const {} {} = {} - {} * int({} / {});", dt_name, bin_name, lhs_name, rhs_name,
           lhs_name, rhs_name);
+      return;
+    } else if (bin->op_type == BinaryOpType::atan2) {
+      emit("const {} {} = atan({}, {});", dt_name, bin_name, lhs_name, rhs_name);
       return;
     } else if (bin->op_type == BinaryOpType::atan2) {
       emit("const {} {} = atan({}, {});", dt_name, bin_name, lhs_name, rhs_name);
@@ -900,14 +927,18 @@ void OpenglCodeGen::lower()
 #endif
 } // }}}
 
-FunctionType OpenglCodeGen::gen(void)
+struct CompiledKernel
 {
+#ifdef TI_WITH_OPENGL
   KernelGen codegen(kernel_, kernel_name_, struct_compiled_, global_tmps_buffer_size_);
   codegen.run(*prog_->snode_root);
   auto compiled = codegen.get_compiled_program();
   return [compiled](Context &ctx) {
     compiled.launch(ctx);
   };
+#else
+  TI_NOT_IMPLEMENTED
+#endif
 }
 
 FunctionType OpenglCodeGen::compile(Program &program, Kernel &kernel)

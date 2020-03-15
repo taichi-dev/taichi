@@ -3,6 +3,7 @@ import os
 import shutil
 import time
 import random
+import argparse
 from taichi.tools.video import make_video, interpolate_frames, mp4_to_gif, scale_video, crop_video, accelerate_video
 
 
@@ -30,7 +31,7 @@ def test_python(test_files=(), verbose=False):
     # run all the tests
     args = [test_dir]
   if verbose:
-    args += ['-s']
+    args += ['-s', '-v']
   if len(test_files) == 0 or len(test_files) > 4:
     if int(pytest.main([os.path.join(root_dir, 'misc/empty_pytest.py'), '-n1'])) == 0: # if pytest has xdist
       try:
@@ -57,7 +58,18 @@ def test_cpp(test_files=()):
   return int(task.run(*test_files))
 
 
+def make_argument_parser():
+  parser = argparse.ArgumentParser()
+  parser.add_argument('action', help='See `ti help` for more details')
+  parser.add_argument('-v', '--verbose', action='store_true', help='run with verbose outputs')
+  parser.add_argument('files', nargs='*', help='Files to be tested')
+  return parser
+
+
 def main(debug=False):
+  parser = make_argument_parser()
+  args = parser.parse_args()
+
   lines = []
   print()
   lines.append(u' *******************************************')
@@ -75,13 +87,11 @@ def main(debug=False):
   import taichi as ti
 
   argc = len(sys.argv)
-  if argc == 1 or sys.argv[1] == 'help':
+  if argc == 1 or args.action == 'help':
     print(
         "    Usage: ti run [task name]        |-> Run a specific task\n"
         "           ti benchmark              |-> Run performance benchmark\n"
-        "           ti test                   |-> Run all tests\n"
-        "           ti test_verbose           |-> Run all tests with verbose outputs\n"
-        "           ti test_python            |-> Run python tests\n"
+        "           ti test                   |-> Run python tests\n"
         "           ti test_cpp               |-> Run cpp tests\n"
         "           ti format                 |-> Reformat modified source files\n"
         "           ti format_all             |-> Reformat all source files\n"
@@ -95,7 +105,7 @@ def main(debug=False):
         "           ti release                |-> Make source code release\n"
         "           ti debug [script.py]      |-> Debug script\n")
     exit(0)
-  mode = sys.argv[1]
+  mode = args.action
 
   t = time.time()
   if mode.endswith('.py'):
@@ -117,19 +127,10 @@ def main(debug=False):
     with open(name) as script:
       script = script.read()
     exec(script, {'__name__': '__main__'})
-  elif mode == "test_python":
-    return test_python(test_files=sys.argv[2:])
   elif mode == "test_cpp":
-    return test_cpp(test_files=sys.argv[2:])
+    return test_cpp(test_files=args.files)
   elif mode == "test":
-    if test_python(test_files=sys.argv[2:]) != 0:
-      return -1
-    if len(sys.argv) <= 2:
-      return test_cpp()
-  elif mode == "test_verbose":
-    if test_python(test_files=sys.argv[2:], verbose=True) != 0:
-      return -1
-    return test_cpp()
+    return test_python(test_files=args.files, verbose=args.verbose)
   elif mode == "build":
     ti.core.build()
   elif mode == "format":

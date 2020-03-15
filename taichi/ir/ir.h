@@ -2184,4 +2184,5 @@ Expr Var(Expr x);
 
 TLANG_NAMESPACE_END
 
-#include "statements.h"
+#include "taichi/ir/statements.h"
+#include "taichi/ir/visitors.h"

@@ -39,6 +39,14 @@ PER_STATEMENT(RangeAssumptionStmt)
 PER_STATEMENT(AssertStmt)
 PER_STATEMENT(ArgStoreStmt)
 
+// Locals with reverse-mode autodiff
+PER_STATEMENT(StackAllocaStmt)
+PER_STATEMENT(StackLoadTopStmt)
+PER_STATEMENT(StackLoadTopAdjStmt)
+PER_STATEMENT(StackPopStmt)
+PER_STATEMENT(StackPushStmt)
+PER_STATEMENT(StackAccAdjointStmt)
+
 // SNode Micro Ops
 PER_STATEMENT(GetRootStmt)
 PER_STATEMENT(IntegerOffsetStmt)

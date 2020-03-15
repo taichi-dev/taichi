@@ -5,7 +5,6 @@
 
 #include <string>
 #include <taichi/ir/ir.h>
-#include <taichi/perf.h>
 
 TLANG_NAMESPACE_BEGIN
 namespace opengl {

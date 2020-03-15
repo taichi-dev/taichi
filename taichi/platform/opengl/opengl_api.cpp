@@ -1,5 +1,4 @@
 #include "opengl_api.h"
-#include <taichi/perf.h>
 #include <taichi/program/program.h>
 
 #ifdef TI_WITH_OPENGL

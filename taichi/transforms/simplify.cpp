@@ -52,6 +52,7 @@ class BasicBlockSimplify : public IRVisitor {
       return;
     for (int i = 0; i < current_stmt_id; i++) {
       auto &bstmt = block->statements[i];
+      // A previous GlobalPtrStmt in the basic block
       if (stmt->ret_type == bstmt->ret_type) {
         auto &bstmt_data = *bstmt;
         if (typeid(bstmt_data) == typeid(*stmt)) {
@@ -72,8 +73,13 @@ class BasicBlockSimplify : public IRVisitor {
             }
           }
           if (same) {
-            stmt->replace_with(bstmt.get());
-            stmt->parent->erase(current_stmt_id);
+            if (bstmt_->activate == stmt->activate || bstmt_->activate) {
+              stmt->replace_with(bstmt.get());
+              stmt->parent->erase(current_stmt_id);
+            } else {
+              // bstmt->active == false && stmt->active == true
+              // do nothing.
+            }
             throw IRModified();
           }
         }

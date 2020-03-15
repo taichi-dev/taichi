@@ -214,6 +214,12 @@ def benchmark(func, repeat=100, args=()):
   elapsed = time.time() - t
   return elapsed / repeat
 
+wanted_archs = None
+
+def set_wanted_archs(archs):
+  global wanted_archs
+  wanted_archs = archs
+
 def supported_archs():
   import taichi as ti
   archs = [ti.core.host_arch()]
@@ -223,6 +229,11 @@ def supported_archs():
     archs.append(metal)
   if ti.core.with_opengl():
     archs.append(opengl)
+  if wanted_archs is not None:
+    archs, old_archs = [], archs
+    for arch in old_archs:
+      if ti.core.arch_name(arch) in wanted_archs:
+        archs.append(arch)
   return archs
 
 class _ArchCheckers(object):
@@ -286,11 +297,11 @@ def all_archs(test):
 #
 # Example usage:
 #
-# ti.archs_excluding(ti.cuda, ti.metal)
+# @ti.archs_excluding(ti.cuda, ti.metal)
 # def test_xx():
 #   ...
 #
-# ti.archs_excluding(ti.cuda, default_fp=ti.f64)
+# @ti.archs_excluding(ti.cuda, default_fp=ti.f64)
 # def test_yy():
 #   ...
 def archs_excluding(*excluded_archs, **kwargs):

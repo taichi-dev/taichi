@@ -61,7 +61,8 @@ def test_cpp(test_files=()):
 def make_argument_parser():
   parser = argparse.ArgumentParser()
   parser.add_argument('action', help='See `ti help` for more details')
-  parser.add_argument('-v', '--verbose', action='store_true', help='run with verbose outputs')
+  parser.add_argument('-v', '--verbose', action='store_true', help='Run with verbose outputs')
+  parser.add_argument('-a', '--arch', help='Specify arch(s) to run test on, e.g. -a opengl,metal')
   parser.add_argument('files', nargs='*', help='Files to be tested')
   return parser
 
@@ -85,6 +86,8 @@ def main(debug=False):
   print(u'\n'.join(lines))
   print()
   import taichi as ti
+  if args.arch is not None:
+    ti.set_wanted_archs(args.arch.split(','))
 
   argc = len(sys.argv)
   if argc == 1 or args.action == 'help':

@@ -1836,6 +1836,20 @@ class StructForStmt : public Stmt {
   DEFINE_ACCEPT
 };
 
+class FuncBodyStmt : public Stmt {
+ public:
+  std::unique_ptr<Block> body;
+
+  FuncBodyStmt(std::unique_ptr<Block> &&body) : body(std::move(body)) {
+  }
+
+  bool is_container_statement() const override {
+    return true;
+  }
+
+  DEFINE_ACCEPT
+};
+
 class WhileStmt : public Stmt {
  public:
   Stmt *mask;

@@ -20,6 +20,7 @@ PER_STATEMENT(StructForStmt)
 PER_STATEMENT(IfStmt)
 PER_STATEMENT(WhileStmt)
 PER_STATEMENT(WhileControlStmt)
+PER_STATEMENT(FuncBodyStmt)
 
 PER_STATEMENT(ArgLoadStmt)
 PER_STATEMENT(ExternalPtrStmt)

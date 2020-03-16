@@ -614,6 +614,21 @@ Ptr get_temporary_pointer(LLVMRuntime *runtime, u64 offset) {
   return runtime->temporaries + offset;
 }
 
+struct ErrorMessage {
+  static constexpr std::size_t max_message_length = 2048;
+  char error_message_buffer[max_message_length];
+  i32 lock = 0;
+  i64 error_code = 0;
+} error_message;
+
+void retrieve_error_code(LLVMRuntime *runtime) {
+  runtime->set_result(error_message.error_code);
+}
+
+void retrieve_error_message(LLVMRuntime *runtime) {
+  runtime->set_result(error_message.error_message_buffer);
+}
+
 #if ARCH_cuda
 void __assertfail(const char *message,
                   const char *file,
@@ -642,23 +657,20 @@ void taichi_assert(Context *context, i32 test, const char *msg) {
   taichi_assert_runtime(context->runtime, test, msg);
 }
 
-const std::size_t ASSERT_MSG_BUFFER_SIZE = 2048;
-char assert_msg_buffer[ASSERT_MSG_BUFFER_SIZE];
-i32 assert_msg_buffer_lock = 0;
-i64 error_code = 0;
-void retrieve_error_code(LLVMRuntime *runtime) {
-  runtime->set_result(error_code);
-}
 void taichi_assert_format(LLVMRuntime *runtime, i32 test, const char *format,
                           ...) {
-  if (!enable_assert || test != 0)
+  if (!enable_assert || test != 0 || error_message.error_code)
     return;
   std::va_list args;
   va_start(args, format);
-  locked_task(&assert_msg_buffer_lock, [&] {
-    runtime->host_vsnprintf(assert_msg_buffer, ASSERT_MSG_BUFFER_SIZE, format,
-                            args);
-    runtime->assert_failed(assert_msg_buffer);
+  locked_task(&error_message.lock, [&] {
+    if (!error_message.error_code) {
+      error_message.error_code = 1;
+      runtime->host_vsnprintf(error_message.error_message_buffer,
+                              error_message.max_message_length,
+                              format,
+                              args);
+    }
   });
   va_end(args);
 }

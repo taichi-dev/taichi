@@ -136,6 +136,8 @@ class Program {
 
   void materialize_layout();
 
+  void check_runtime_error();
+
   inline Kernel &get_current_kernel() {
     TI_ASSERT(current_kernel);
     return *current_kernel;

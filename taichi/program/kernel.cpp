@@ -44,6 +44,9 @@ void Kernel::operator()() {
   }
   compiled(program.get_context());
   program.sync = (program.sync && arch_is_cpu(arch));
+  if (program.config.debug && arch_is_cpu(arch)) {
+    program.check_runtime_error();
+  }
 }
 
 void Kernel::set_arg_float(int i, float64 d) {

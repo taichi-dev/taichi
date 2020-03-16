@@ -256,6 +256,15 @@ void Program::materialize_layout() {
   }
 }
 
+void Program::check_runtime_error() {
+  TI_ASSERT(arch_is_cpu(config.arch));
+  auto tlctx = llvm_context_host.get();
+  auto runtime = tlctx->runtime_jit_module;
+  runtime->call<void *>("retrieve_error_code", llvm_runtime);
+  auto error_code = runtime->fetch_result<void *>();
+  std::cout << "error code: " << error_code << std::endl;
+}
+
 void Program::synchronize() {
   if (!sync) {
     if (config.arch == Arch::cuda) {

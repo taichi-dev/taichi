@@ -645,6 +645,10 @@ void taichi_assert(Context *context, i32 test, const char *msg) {
 const std::size_t ASSERT_MSG_BUFFER_SIZE = 2048;
 char assert_msg_buffer[ASSERT_MSG_BUFFER_SIZE];
 i32 assert_msg_buffer_lock = 0;
+i64 error_code = 0;
+void retrieve_error_code(LLVMRuntime *runtime) {
+  runtime->set_result(error_code);
+}
 void taichi_assert_format(LLVMRuntime *runtime, i32 test, const char *format,
                           ...) {
   if (!enable_assert || test != 0)

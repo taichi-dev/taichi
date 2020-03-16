@@ -645,11 +645,15 @@ void taichi_assert_runtime(LLVMRuntime *runtime, i32 test, const char *msg) {
 }
 #else
 void taichi_assert_runtime(LLVMRuntime *runtime, i32 test, const char *msg) {
-  if (enable_assert) {
-    if (test == 0) {
-      runtime->assert_failed(msg);
+  if (!enable_assert || test != 0 || error_message.error_code)
+    return;
+  locked_task(&error_message.lock, [&] {
+    if (!error_message.error_code) {
+      error_message.error_code = 1;
+      memcpy(error_message.error_message_buffer, msg,
+             std::min(strlen(msg), error_message.max_message_length));
     }
-  }
+  });
 }
 #endif
 

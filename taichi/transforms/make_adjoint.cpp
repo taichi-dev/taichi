@@ -6,6 +6,28 @@ TLANG_NAMESPACE_BEGIN
 
 // Do automatic differentiation pass in the reverse order (reverse-mode AD)
 
+class ConvertLocalVar : public BasicStmtVisitor {
+ public:
+  using BasicStmtVisitor::visit;
+
+  void visit(AllocaStmt *stmt) override {
+    TI_ASSERT(stmt->width() == 1);
+    // TODO: remove 16 here
+    stmt->replace_with(
+        Stmt::make<StackAllocaStmt>(stmt->ret_type.data_type, 16));
+  }
+
+  void visit(LocalLoadStmt *stmt) override {
+    TI_ASSERT(stmt->width() == 1);
+    stmt->replace_with(Stmt::make<StackLoadTopStmt>(stmt->ptr[0].var));
+  }
+
+  void visit(LocalStoreStmt *stmt) override {
+    TI_ASSERT(stmt->width() == 1);
+    stmt->replace_with(Stmt::make<StackPushStmt>(stmt->ptr, stmt->data));
+  }
+};
+
 class MakeAdjoint : public IRVisitor {
  private:
   Stmt *constant(float32 x) {
@@ -212,9 +234,11 @@ class MakeAdjoint : public IRVisitor {
       accumulate(bin->rhs, negate(div(mul(adjoint(bin), bin->lhs), numerator)));
     } else if (bin->op_type == BinaryOpType::pow) {
       // d (x ^ y) = x ^ (y-1) * (y * dx + log(x) * x * dy)
-      auto common_coeff = pow(bin->lhs, sub(bin->rhs, constant(1))); // x ^ (y-1)
+      auto common_coeff =
+          pow(bin->lhs, sub(bin->rhs, constant(1)));  // x ^ (y-1)
       accumulate(bin->lhs, mul(adjoint(bin), mul(bin->rhs, common_coeff)));
-      accumulate(bin->rhs, mul(adjoint(bin), mul(log(bin->lhs), mul(bin->lhs, common_coeff))));
+      accumulate(bin->rhs, mul(adjoint(bin), mul(log(bin->lhs),
+                                                 mul(bin->lhs, common_coeff))));
     } else if (bin->op_type == BinaryOpType::min ||
                bin->op_type == BinaryOpType::max) {
       auto cmp = bin->op_type == BinaryOpType::min ? cmp_lt(bin->lhs, bin->rhs)
@@ -403,6 +427,8 @@ class MakeAdjoint : public IRVisitor {
 namespace irpass {
 
 void make_adjoint(IRNode *root) {
+  ConvertLocalVar converter;
+  root->accept(&converter);
   MakeAdjoint::run(root);
   // print(root);
   typecheck(root);

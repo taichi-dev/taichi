@@ -344,6 +344,32 @@ class TypeCheck : public IRVisitor {
     stmt->ret_type.data_type = DataType::i32;
   }
 
+  void visit(StackAllocaStmt *stmt) {
+    stmt->ret_type.data_type = stmt->dt;
+  }
+
+  void visit(StackLoadTopStmt *stmt) {
+    stmt->ret_type = stmt->stack->ret_type;
+  }
+
+  void visit(StackLoadTopAdjStmt *stmt) {
+    stmt->ret_type = stmt->stack->ret_type;
+  }
+
+  void visit(StackPushStmt *stmt) {
+    stmt->ret_type = stmt->stack->ret_type;
+    TI_ASSERT(stmt->ret_type == stmt->v->ret_type);
+  }
+
+  void visit(StackPopStmt *stmt) {
+    stmt->ret_type = stmt->stack->ret_type;
+  }
+
+  void visit(StackAccAdjointStmt *stmt) {
+    stmt->ret_type = stmt->stack->ret_type;
+    TI_ASSERT(stmt->ret_type == stmt->v->ret_type);
+  }
+
   static void run(IRNode *node) {
     TypeCheck inst;
     node->accept(&inst);

@@ -429,6 +429,9 @@ namespace irpass {
 void make_adjoint(IRNode *root) {
   ConvertLocalVar converter;
   root->accept(&converter);
+  irpass::typecheck(root);
+  irpass::re_id(root);
+  irpass::print(root);
   MakeAdjoint::run(root);
   // print(root);
   typecheck(root);

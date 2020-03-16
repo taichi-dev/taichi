@@ -135,18 +135,28 @@ class MakeAdjoint : public IRVisitor {
     auto alloca_ = adjoint(primal);
     if (!alloca_ || alloca_->is<ConstStmt>())
       return;  // primal may be int variable
-    TI_ASSERT(alloca_->is<AllocaStmt>());
-    auto alloca = alloca_->as<AllocaStmt>();
-    TI_ASSERT(alloca->width() == 1);
-    auto local_load = insert<LocalLoadStmt>(LocalAddress(alloca, 0));
-    insert<LocalStoreStmt>(alloca, add(local_load, value));
+    if (alloca_->is<StackAllocaStmt>()) {
+      auto alloca = alloca_->cast<StackAllocaStmt>();
+      insert<StackAccAdjointStmt>(alloca, value);
+    } else {
+      TI_ASSERT(alloca_->is<AllocaStmt>());
+      auto alloca = alloca_->as<AllocaStmt>();
+      TI_ASSERT(alloca->width() == 1);
+      auto local_load = insert<LocalLoadStmt>(LocalAddress(alloca, 0));
+      insert<LocalStoreStmt>(alloca, add(local_load, value));
+    }
   }
 
   Stmt *adjoint(Stmt *stmt) {
     if (!needs_grad(stmt->ret_type.data_type)) {
       return constant(0);
     }
-    if (stmt->adjoint == nullptr) {
+    if (stmt->is<StackLoadTopStmt>()) {
+      // mutable local var
+      return stmt->as<StackLoadTopStmt>()->stack;
+    } else if (stmt->adjoint == nullptr) {
+      // normal SSA cases
+
       // create the alloca
       // auto alloca =
       //    Stmt::make<AllocaStmt>(1, get_current_program().config.gradient_dt);
@@ -159,6 +169,10 @@ class MakeAdjoint : public IRVisitor {
   }
 
   void visit(AllocaStmt *alloca) override {
+    // do nothing.
+  }
+
+  void visit(StackAllocaStmt *alloca) override {
     // do nothing.
   }
 
@@ -320,12 +334,13 @@ class MakeAdjoint : public IRVisitor {
     // do nothing
   }
 
-  void visit(LocalLoadStmt *stmt) override {
-    // do nothing
-    // TI_WARN("needs impl when loading something other than loop var");
+  void visit(StackLoadTopStmt *stmt) override {
+    insert<StackAccAdjointStmt>(stmt->stack, adjoint(stmt));
   }
 
-  void visit(LocalStoreStmt *stmt) override{TI_NOT_IMPLEMENTED}
+  void visit(StackPushStmt *stmt) override {
+    insert<StackPopStmt>(stmt->stack);
+  }
 
   Stmt *load(Stmt *alloc) {
     TI_ASSERT(alloc != nullptr);
@@ -433,8 +448,8 @@ void make_adjoint(IRNode *root) {
   irpass::re_id(root);
   irpass::print(root);
   MakeAdjoint::run(root);
-  // print(root);
   typecheck(root);
+  print(root);
 }
 
 }  // namespace irpass

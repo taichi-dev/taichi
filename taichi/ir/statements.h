@@ -323,6 +323,8 @@ class StackAccAdjointStmt : public Stmt {
     add_operand(this->stack);
     add_operand(this->v);
   }
+
+  DEFINE_ACCEPT
 };
 
 TLANG_NAMESPACE_END

@@ -253,6 +253,18 @@ class StackAllocaStmt : public Stmt {
       : dt(dt), max_size(max_size) {
   }
 
+  std::size_t element_size_in_bytes() const {
+    return data_type_size(ret_type.data_type);
+  }
+
+  std::size_t entry_size_in_bytes() const {
+    return element_size_in_bytes() * 2;
+  }
+
+  std::size_t size_in_bytes() const {
+    return 4 + entry_size_in_bytes() * max_size;
+  }
+
   DEFINE_ACCEPT
 };
 

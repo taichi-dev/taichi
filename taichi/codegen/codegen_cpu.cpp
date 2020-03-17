@@ -157,6 +157,7 @@ void CodeGenCPU::lower() {
     irpass::re_id(ir);
     irpass::print(ir);
   }
+  irpass::print(ir);
 }
 
 TLANG_NAMESPACE_END

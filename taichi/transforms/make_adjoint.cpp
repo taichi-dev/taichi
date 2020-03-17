@@ -137,7 +137,7 @@ class MakeAdjoint : public IRVisitor {
       return;  // primal may be int variable
     if (alloca_->is<StackAllocaStmt>()) {
       auto alloca = alloca_->cast<StackAllocaStmt>();
-      insert<StackAccAdjointStmt>(alloca, value);
+      insert<StackAccAdjointStmt>(alloca, load(value));
     } else {
       TI_ASSERT(alloca_->is<AllocaStmt>());
       auto alloca = alloca_->as<AllocaStmt>();
@@ -151,10 +151,7 @@ class MakeAdjoint : public IRVisitor {
     if (!needs_grad(stmt->ret_type.data_type)) {
       return constant(0);
     }
-    if (stmt->is<StackLoadTopStmt>()) {
-      // mutable local var
-      return stmt->as<StackLoadTopStmt>()->stack;
-    } else if (stmt->adjoint == nullptr) {
+    if (stmt->adjoint == nullptr) {
       // normal SSA cases
 
       // create the alloca
@@ -296,6 +293,9 @@ class MakeAdjoint : public IRVisitor {
 
       current_block = old_current_block;
     }
+    if (if_stmt->false_statements) {
+      TI_NOT_IMPLEMENTED
+    }
     insert_back(std::move(new_if));
   }
 
@@ -335,7 +335,7 @@ class MakeAdjoint : public IRVisitor {
   }
 
   void visit(StackLoadTopStmt *stmt) override {
-    insert<StackAccAdjointStmt>(stmt->stack, adjoint(stmt));
+    insert<StackAccAdjointStmt>(stmt->stack, load(adjoint(stmt)));
   }
 
   void visit(StackPushStmt *stmt) override {

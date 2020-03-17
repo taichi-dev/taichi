@@ -24,7 +24,9 @@
 struct Context;
 using assert_failed_type = void (*)(const char *);
 using host_printf_type = void (*)(const char *, ...);
-using host_vsnprintf_type = int (*)(char *, std::size_t, const char *,
+using host_vsnprintf_type = int (*)(char *,
+                                    std::size_t,
+                                    const char *,
                                     std::va_list);
 using vm_allocator_type = void *(*)(void *, std::size_t, std::size_t);
 using RangeForTaskFunc = void(Context *, int i);
@@ -658,7 +660,12 @@ void taichi_assert(Context *context, i32 test, const char *msg) {
   taichi_assert_runtime(context->runtime, test, msg);
 }
 
-void taichi_assert_format(LLVMRuntime *runtime, i32 test, const char *format,
+const std::size_t ASSERT_MSG_BUFFER_SIZE = 2048;
+char assert_msg_buffer[ASSERT_MSG_BUFFER_SIZE];
+i32 assert_msg_buffer_lock = 0;
+void taichi_assert_format(LLVMRuntime *runtime,
+                          i32 test,
+                          const char *format,
                           ...) {
   if (!enable_assert || test != 0 || runtime->error_code)
     return;
@@ -799,8 +806,8 @@ void runtime_initialize2(LLVMRuntime *runtime, int root_id, int num_snodes) {
 }
 
 void LLVMRuntime_initialize_thread_pool(LLVMRuntime *runtime,
-                                    void *thread_pool,
-                                    void *parallel_for) {
+                                        void *thread_pool,
+                                        void *parallel_for) {
   runtime->thread_pool = (Ptr)thread_pool;
   runtime->parallel_for = (parallel_for_type)parallel_for;
 }
@@ -1272,5 +1279,35 @@ void taichi_printf(LLVMRuntime *runtime, const char *format, Args &&... args) {
 }
 
 #include "locked_task.h"
+
+extern "C" {  // local stack operations
+
+Ptr stack_top_primal(Ptr stack, std::size_t element_size) {
+  auto &n = *(i32 *)stack;
+  return stack + (n - 1) * 2 * element_size;
+}
+
+Ptr stack_top_adjoint(Ptr stack, std::size_t element_size) {
+  return stack_top_primal(stack, element_size) + element_size;
+}
+
+void stack_init(Ptr stack, size_t element_size) {
+  auto &n = *(i32 *)stack;
+  n = 0;
+  std::memset(stack_top_primal(stack, element_size), 0, element_size * 2);
+}
+
+void stack_pop(Ptr stack) {
+  auto &n = *(i32 *)stack;
+  n--;
+}
+
+void stack_push(Ptr stack, size_t max_num_elements, std::size_t element_size) {
+  auto &n = *(i32 *)stack;
+  // TODO: assert n <= max_elements
+  std::memset(stack_top_primal(stack, element_size), 0, element_size * 2);
+  n++;
+}
+}
 
 #endif

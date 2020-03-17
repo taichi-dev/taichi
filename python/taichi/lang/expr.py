@@ -53,9 +53,6 @@ class Expr:
 
   __radd__ = __add__
 
-  def __iadd__(self, other):
-    self.atomic_add(other)
-
   def __neg__(self):
     return Expr(taichi_lang_core.expr_neg(self.ptr), tb=self.stack_info())
 
@@ -63,20 +60,6 @@ class Expr:
     other = Expr(other)
     return Expr(
         taichi_lang_core.expr_sub(self.ptr, other.ptr), tb=self.stack_info())
-
-  def __isub__(self, other):
-    # TODO: add atomic_sub()
-    import taichi as ti
-    ti.expr_init(taichi_lang_core.expr_atomic_sub(self.ptr, other.ptr))
-
-  def __imul__(self, other):
-    self.assign(Expr(taichi_lang_core.expr_mul(self.ptr, other.ptr)))
-
-  def __itruediv__(self, other):
-    self.assign(Expr(taichi_lang_core.expr_truediv(self.ptr, Expr(other).ptr)))
-
-  def __ifloordiv__(self, other):
-    self.assign(Expr(taichi_lang_core.expr_floordiv(self.ptr, Expr(other).ptr)))
 
   def __rsub__(self, other):
     other = Expr(other)
@@ -109,6 +92,30 @@ class Expr:
   def __rfloordiv__(self, other):
     return Expr(taichi_lang_core.expr_floordiv(Expr(other).ptr, self.ptr))
 
+  def __iadd__(self, other):
+    self.atomic_add(other)
+
+  def __isub__(self, other):
+    self.atomic_sub(other)
+
+  def __imul__(self, other):
+    self.assign(Expr(taichi_lang_core.expr_mul(self.ptr, other.ptr)))
+
+  def __itruediv__(self, other):
+    self.assign(Expr(taichi_lang_core.expr_truediv(self.ptr, Expr(other).ptr)))
+
+  def __ifloordiv__(self, other):
+    self.assign(Expr(taichi_lang_core.expr_floordiv(self.ptr, Expr(other).ptr)))
+
+  def __iand__(self, other):
+    self.atomic_and(other)
+
+  def __ior__(self, other):
+    self.atomic_or(other)
+
+  def __ixor__(self, other):
+    self.atomic_xor(other)
+
   def __le__(self, other):
     other = Expr(other)
     return Expr(taichi_lang_core.expr_cmp_le(self.ptr, other.ptr))
@@ -140,6 +147,10 @@ class Expr:
   def __or__(self, item):
     item = Expr(item)
     return Expr(taichi_lang_core.expr_bit_or(self.ptr, item.ptr))
+
+  def __xor__(self, item):
+    item = Expr(item)
+    return Expr(taichi_lang_core.expr_bit_xor(self.ptr, item.ptr))
 
   def logical_and(self, item):
     return self & item
@@ -249,6 +260,36 @@ class Expr:
     other_ptr = ti.wrap_scalar(other).ptr
     return ti.expr_init(taichi_lang_core.expr_atomic_add(self.ptr, other_ptr))
 
+  def atomic_sub(self, other):
+    import taichi as ti
+    other_ptr = ti.wrap_scalar(other).ptr
+    return ti.expr_init(taichi_lang_core.expr_atomic_sub(self.ptr, other_ptr))
+
+  def atomic_min(self, other):
+    import taichi as ti
+    other_ptr = ti.wrap_scalar(other).ptr
+    return ti.expr_init(taichi_lang_core.expr_atomic_min(self.ptr, other_ptr))
+
+  def atomic_max(self, other):
+    import taichi as ti
+    other_ptr = ti.wrap_scalar(other).ptr
+    return ti.expr_init(taichi_lang_core.expr_atomic_max(self.ptr, other_ptr))
+
+  def atomic_and(self, other):
+    import taichi as ti
+    other_ptr = ti.wrap_scalar(other).ptr
+    return ti.expr_init(taichi_lang_core.expr_atomic_bit_and(self.ptr, other_ptr))
+
+  def atomic_or(self, other):
+    import taichi as ti
+    other_ptr = ti.wrap_scalar(other).ptr
+    return ti.expr_init(taichi_lang_core.expr_atomic_bit_or(self.ptr, other_ptr))
+
+  def atomic_xor(self, other):
+    import taichi as ti
+    other_ptr = ti.wrap_scalar(other).ptr
+    return ti.expr_init(taichi_lang_core.expr_atomic_bit_xor(self.ptr, other_ptr))
+
   def __rpow__(self, power, modulo=None):
     return Expr(power).__pow__(self, modulo)
 
@@ -344,7 +385,7 @@ class Expr:
 
   def from_torch(self, arr):
     self.from_numpy(arr.contiguous())
-  
+
   def copy_from(self, other):
     assert isinstance(other, Expr)
     from .meta import tensor_to_tensor

@@ -496,8 +496,12 @@ struct LLVMRuntime {
   void (*profiler_start)(Ptr, Ptr);
   void (*profiler_stop)(Ptr);
 
+  char error_message_buffer[taichi_max_message_length];
+  i32 error_message_lock = 0;
+  i64 error_code = 0;
+
   Ptr result_buffer;
-  i32 lock;
+  i32 allocator_lock;
 
   template <typename T>
   void set_result(T t) {
@@ -614,19 +618,12 @@ Ptr get_temporary_pointer(LLVMRuntime *runtime, u64 offset) {
   return runtime->temporaries + offset;
 }
 
-struct ErrorMessage {
-  static constexpr std::size_t max_message_length = 2048;
-  char error_message_buffer[max_message_length];
-  i32 lock = 0;
-  i64 error_code = 0;
-} error_message;
-
 void retrieve_error_code(LLVMRuntime *runtime) {
-  runtime->set_result(error_message.error_code);
+  runtime->set_result(runtime->error_code);
 }
 
 void retrieve_error_message(LLVMRuntime *runtime) {
-  runtime->set_result(error_message.error_message_buffer);
+  runtime->set_result(runtime->error_message_buffer);
 }
 
 #if ARCH_cuda
@@ -645,13 +642,13 @@ void taichi_assert_runtime(LLVMRuntime *runtime, i32 test, const char *msg) {
 }
 #else
 void taichi_assert_runtime(LLVMRuntime *runtime, i32 test, const char *msg) {
-  if (!enable_assert || test != 0 || error_message.error_code)
+  if (!enable_assert || test != 0 || runtime->error_code)
     return;
-  locked_task(&error_message.lock, [&] {
-    if (!error_message.error_code) {
-      error_message.error_code = 1;
-      memcpy(error_message.error_message_buffer, msg,
-             std::min(strlen(msg), error_message.max_message_length));
+  locked_task(&runtime->error_message_lock, [&] {
+    if (!runtime->error_code) {
+      runtime->error_code = 1;
+      memcpy(runtime->error_message_buffer, msg,
+             std::min(strlen(msg), taichi_max_message_length));
     }
   });
 }
@@ -663,17 +660,15 @@ void taichi_assert(Context *context, i32 test, const char *msg) {
 
 void taichi_assert_format(LLVMRuntime *runtime, i32 test, const char *format,
                           ...) {
-  if (!enable_assert || test != 0 || error_message.error_code)
+  if (!enable_assert || test != 0 || runtime->error_code)
     return;
   std::va_list args;
   va_start(args, format);
-  locked_task(&error_message.lock, [&] {
-    if (!error_message.error_code) {
-      error_message.error_code = 1;
-      runtime->host_vsnprintf(error_message.error_message_buffer,
-                              error_message.max_message_length,
-                              format,
-                              args);
+  locked_task(&runtime->error_message_lock, [&] {
+    if (!runtime->error_code) {
+      runtime->error_code = 1;
+      runtime->host_vsnprintf(runtime->error_message_buffer,
+                              taichi_max_message_length, format, args);
     }
   });
   va_end(args);
@@ -688,7 +683,7 @@ Ptr LLVMRuntime::allocate_aligned(std::size_t size, std::size_t alignment) {
 
 Ptr LLVMRuntime::allocate_from_buffer(std::size_t size, std::size_t alignment) {
   Ptr ret;
-  locked_task(&lock, [&] {
+  locked_task(&allocator_lock, [&] {
     preallocated_head +=
         alignment - 1 -
         ((std::size_t)preallocated_head + alignment - 1) % alignment;

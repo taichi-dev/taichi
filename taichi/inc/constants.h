@@ -9,6 +9,7 @@ constexpr int taichi_max_gpu_block_dim = 1024;
 constexpr std::size_t taichi_global_tmp_buffer_size = 1024 * 1024;
 constexpr int taichi_max_num_mem_requests = 1024 * 64;
 constexpr std::size_t taichi_page_size = 4096;
+constexpr std::size_t taichi_max_message_length = 2048;
 
 template <typename T, typename G>
 T taichi_union_cast_with_different_sizes(G g) {

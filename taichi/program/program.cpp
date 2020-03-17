@@ -265,7 +265,11 @@ void Program::check_runtime_error() {
   if (error_code) {
     runtime_jit_module->call<void *>("retrieve_error_message", llvm_runtime);
     auto error_message = runtime_jit_module->fetch_result<char *>();
-    TI_ERROR("Assertion failure: {}", error_message);
+    if (error_code == 1) {
+      TI_ERROR("Assertion failure: {}", error_message);
+    } else {
+      TI_NOT_IMPLEMENTED
+    }
   }
 }
 

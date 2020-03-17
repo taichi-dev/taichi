@@ -261,11 +261,10 @@ void Program::check_runtime_error() {
   auto tlctx = llvm_context_host.get();
   auto runtime_jit_module = tlctx->runtime_jit_module;
   runtime_jit_module->call<void *>("retrieve_error_code", llvm_runtime);
-  auto error_code = runtime_jit_module->fetch_result<void *>();
-  std::cout << "error code: " << error_code << std::endl;
+  auto error_code = runtime_jit_module->fetch_result<int64>();
   if (error_code) {
     runtime_jit_module->call<void *>("retrieve_error_message", llvm_runtime);
-    auto error_message = runtime_jit_module->fetch_result<void *>();
+    auto error_message = runtime_jit_module->fetch_result<char *>();
     TI_ERROR("Assertion failure: {}", error_message);
   }
 }

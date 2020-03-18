@@ -294,6 +294,19 @@ void export_lang(py::module &m) {
     current_ast_builder().insert(Stmt::make<FrontendBreakStmt>());
   });
 
+  m.def("begin_func", [&]() {
+    // ASK @yuanming-hu: how to make following current_ast_builder insert into func->body?
+  });
+
+  m.def("end_func", [&]() {
+    auto func = Stmt::make<FrontendFuncDefStmt>();
+    current_ast_builder().insert(std::move(func));
+  });
+
+  m.def("func_call", [&](const std::string &name) {
+      TI_INFO("func_call({})", name);
+  });
+
   m.def("layout", layout);
 
   m.def("value_cast", static_cast<Expr (*)(const Expr &expr, DataType)>(cast));

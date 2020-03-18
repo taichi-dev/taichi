@@ -1850,6 +1850,20 @@ class FuncBodyStmt : public Stmt {
   DEFINE_ACCEPT
 };
 
+class FrontendFuncDefStmt : public Stmt {
+ public:
+  std::unique_ptr<Block> body;
+
+  FrontendFuncDefStmt() { // TODO: args
+  }
+
+  bool is_container_statement() const override {
+    return true;
+  }
+
+  DEFINE_ACCEPT
+};
+
 class WhileStmt : public Stmt {
  public:
   Stmt *mask;

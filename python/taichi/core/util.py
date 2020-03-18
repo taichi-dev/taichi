@@ -129,6 +129,8 @@ def format(all=False, diff=None):
         map(lambda x: os.path.join(tc.get_repo_directory(), x.a_path), files))
 
   for fn in map(str, files):
+    if os.path.isdir(fn):
+      continue
     if fn.endswith('.py'):
       print(fn, '...')
       FormatFile(
@@ -140,6 +142,8 @@ def format(all=False, diff=None):
       os.system('clang-format-6.0 -i -style=file {}'.format(fn))
     elif has_suffix(fn, ['txt', 'md', 'rst']):
       format_plain_text(fn)
+    elif has_suffix(fn, ['pyc', 'png', 'jpg', 'bmp']):
+      pass
     else:
       print(f'Skipping {fn}...')
       

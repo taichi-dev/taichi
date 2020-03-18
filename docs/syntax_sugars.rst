@@ -12,8 +12,8 @@ For example, consider the simple kernel:
 
   @ti.kernel
   def my_kernel():
-    for i,j in tensor_a:
-      tensor_b[i,j] = some_function(tensor_a[i,j])
+    for i, j in tensor_a:
+      tensor_b[i, j] = some_function(tensor_a[i, j])
 
 The tensors and function be aliased to new names with ``ti.static``:
 
@@ -27,7 +27,7 @@ The tensors and function be aliased to new names with ``ti.static``:
 
 
 
-Aliases can also be created for class members and methods, which can help prevent cluttering objective data-oriented programming code with ``self.``.   
+Aliases can also be created for class members and methods, which can help prevent cluttering objective data-oriented programming code with ``self``.
 
 For example, consider class kernel to compute the 2-D laplacian of some tensor:
 
@@ -35,9 +35,9 @@ For example, consider class kernel to compute the 2-D laplacian of some tensor:
 
   @ti.kernel
   def compute_laplacian(self):
-    for i,j in a:
-      self.b[i,j] = (self.a[i+1,j] - 2.0*self.a[i,j] + self.a[i-1,j])/(self.dx**2) \
-                  + (self.a[i,j+1] - 2.0*self.a[i,j] + self.a[i,j-1])/(self.dy**2)
+    for i, j in a:
+      self.b[i, j] = (self.a[i + 1,j] - 2.0*self.a[i, j] + self.a[i-1, j])/(self.dx**2) \
+                  + (self.a[i,j + 1] - 2.0*self.a[i, j] + self.a[i, j-1])/(self.dy**2)
 
 Using ``ti.static()``, it can be simplified to:
 
@@ -47,5 +47,11 @@ Using ``ti.static()``, it can be simplified to:
   def compute_laplacian(self):
     a,b,dx,dy = ti.static(self.a,self.b,self.dx,self.dy)
     for i,j in a:
-      b[i,j] = (a[i+1,j] - 2.0*a[i,j] + a[i-1,j])/(dx**2) \
-             + (a[i,j+1] - 2.0*a[i,j] + a[i,j-1])/(dy**2)
+      b[i,j] = (a[i+1, j] - 2.0*a[i, j] + a[i-1, j])/(dx**2) \
+             + (a[i, j+1] - 2.0*a[i, j] + a[i, j-1])/(dy**2)
+
+.. note::
+
+  ``ti.static`` can also be used in combination with ``if`` (compile-time branching) and ``for`` (compile-time unrolling). See :ref:`meta` for more details.
+
+  Here, we are using it for *compile-time const values*, i.e. the **tensor/function handles** are constants at compile time.

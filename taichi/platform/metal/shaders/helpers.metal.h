@@ -1,38 +1,27 @@
+#include "taichi/platform/metal/shaders/prolog.h"
+
 #ifdef TI_INSIDE_METAL_CODEGEN
 
+#ifndef TI_METAL_NESTED_INCLUDE
 #define METAL_BEGIN_HELPERS_DEF constexpr auto kMetalHelpersSourceCode =
 #define METAL_END_HELPERS_DEF ;
-
-#define STR2(...) #__VA_ARGS__
-#define STR(...) STR2(__VA_ARGS__)
+#else
+#define METAL_BEGIN_HELPERS_DEF
+#define METAL_END_HELPERS_DEF
+#endif  // TI_METAL_NESTED_INCLUDE
 
 #else
 
+static_assert(false, "Do not include");
+
 #define METAL_BEGIN_HELPERS_DEF
 #define METAL_END_HELPERS_DEF
-#define STR(...) __VA_ARGS__
-
-#define device
-#define constant
-#define thread
-
-using atomic_int = int;
-
-template <typename... Args>
-bool atomic_compare_exchange_weak_explicit(Args...) {
-  static_assert(false, "Do not include");
-}
-
-namespace metal {
-bool memory_order_relaxed = false;
-}  // namespace metal
 
 #endif  // TI_INSIDE_METAL_CODEGEN
 
 METAL_BEGIN_HELPERS_DEF
 STR(
-    template <typename T, typename G>
-    T union_cast(G g) {
+    template <typename T, typename G> T union_cast(G g) {
       // For some reason, if I emit taichi/common.h's union_cast(), Metal failed
       // to compile. More strangely, if I copy the generated code to XCode as a
       // Metal kernel, it compiled successfully...
@@ -64,5 +53,5 @@ METAL_END_HELPERS_DEF
 
 #undef METAL_BEGIN_HELPERS_DEF
 #undef METAL_END_HELPERS_DEF
-#undef STR2
-#undef STR
+
+#include "taichi/platform/metal/shaders/epilog.h"

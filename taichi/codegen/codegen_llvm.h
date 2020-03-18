@@ -1434,6 +1434,65 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     create_call(stmt->func_name, {get_context()});
   }
 
+  void visit(StackAllocaStmt *stmt) override {
+    TI_ASSERT(stmt->width() == 1);
+    auto type = llvm::ArrayType::get(llvm::Type::getInt8Ty(*llvm_context),
+                                     stmt->size_in_bytes());
+    auto alloca = builder->CreateAlloca(type);
+    stmt->value = builder->CreateBitCast(
+        alloca, llvm::PointerType::getInt8PtrTy(*llvm_context));
+  }
+
+  void visit(StackPopStmt *stmt) override {
+    call("stack_pop", stmt->stack->value);
+  }
+
+  void visit(StackPushStmt *stmt) override {
+    auto stack = stmt->stack->as<StackAllocaStmt>();
+    call("stack_push", stack->value, tlctx->get_constant(stack->max_size),
+         tlctx->get_constant(stack->element_size_in_bytes()));
+    auto primal_ptr = call("stack_top_primal", stack->value,
+                           tlctx->get_constant(stack->element_size_in_bytes()));
+    primal_ptr = builder->CreateBitCast(
+        primal_ptr, llvm::PointerType::get(
+                        tlctx->get_data_type(stmt->ret_type.data_type), 0));
+    builder->CreateStore(stmt->v->value, primal_ptr);
+  }
+
+  void visit(StackLoadTopStmt *stmt) override {
+    auto stack = stmt->stack->as<StackAllocaStmt>();
+    auto primal_ptr = call("stack_top_primal", stack->value,
+                           tlctx->get_constant(stack->element_size_in_bytes()));
+    primal_ptr = builder->CreateBitCast(
+        primal_ptr, llvm::PointerType::get(
+                        tlctx->get_data_type(stmt->ret_type.data_type), 0));
+    stmt->value = builder->CreateLoad(primal_ptr);
+  }
+
+  void visit(StackLoadTopAdjStmt *stmt) override {
+    auto stack = stmt->stack->as<StackAllocaStmt>();
+    auto adjoint = call("stack_top_adjoint", stack->value,
+                        tlctx->get_constant(stack->element_size_in_bytes()));
+    adjoint = builder->CreateBitCast(
+        adjoint, llvm::PointerType::get(
+                     tlctx->get_data_type(stmt->ret_type.data_type), 0));
+    stmt->value = builder->CreateLoad(adjoint);
+  }
+
+  void visit(StackAccAdjointStmt *stmt) override {
+    auto stack = stmt->stack->as<StackAllocaStmt>();
+    auto adjoint_ptr =
+        call("stack_top_adjoint", stack->value,
+             tlctx->get_constant(stack->element_size_in_bytes()));
+    adjoint_ptr = builder->CreateBitCast(
+        adjoint_ptr, llvm::PointerType::get(
+                         tlctx->get_data_type(stack->ret_type.data_type), 0));
+    auto old_val = builder->CreateLoad(adjoint_ptr);
+    TI_ASSERT(is_real(stmt->v->ret_type.data_type));
+    auto new_val = builder->CreateFAdd(old_val, stmt->v->value);
+    builder->CreateStore(new_val, adjoint_ptr);
+  }
+
   ~CodeGenLLVM() {
   }
 };

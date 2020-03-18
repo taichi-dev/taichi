@@ -532,4 +532,8 @@ template llvm::Value *TaichiLLVMContext::get_constant(uint32 t);
 template llvm::Value *TaichiLLVMContext::get_constant(int64 t);
 template llvm::Value *TaichiLLVMContext::get_constant(uint64 t);
 
+#ifdef TI_PLATFORM_OSX
+template llvm::Value *TaichiLLVMContext::get_constant(unsigned long t);
+#endif
+
 TLANG_NAMESPACE_END

@@ -134,7 +134,7 @@ def format(all=False, diff=None):
       continue
     if fn.find('.pytest_cache') != -1:
       continue
-    if fn.find('docs/build/_static') != -1:
+    if fn.find('docs/build/') != -1:
       continue
     if re.match(r'.*examples\/[a-z_]+\d\d+\.py$', fn):
       print(f'Skipping example file {fn}...')

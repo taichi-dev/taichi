@@ -250,8 +250,8 @@ void Program::materialize_layout() {
   } else if (config.arch == Arch::opengl) {
     opengl::OpenglStructCompiler scomp;
     opengl_struct_compiled_ = scomp.run(*snode_root);
-    TI_INFO("OpenGL root buffer size: {} B",
-            opengl_struct_compiled_->root_size);
+    TI_INFO("OpenGL root buffer size: {} B", opengl_struct_compiled_->root_size);
+    opengl::create_glsl_root_buffer(opengl_struct_compiled_->root_size);
     opengl::initialize_opengl();
   }
 }

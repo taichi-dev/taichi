@@ -1,7 +1,7 @@
 #include "opengl_api.h"
+#include <taichi/program/program.h>
 
 #ifdef TI_WITH_OPENGL
-
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #endif
@@ -192,6 +192,12 @@ struct GLSSBO
     return *this;
   }
 
+  GLSSBO &bind_range(size_t index, size_t offset, size_t size)
+  {
+    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, index, id_, offset, size);
+    return *this;
+  }
+
   void *map(size_t offset, size_t length, GLbitfield access = GL_MAP_READ_BIT)
   {
     // map GPU memory to CPU address space, offset within SSBO data
@@ -250,15 +256,35 @@ GLProgram *compile_glsl_program(std::string source)
   return program;
 }
 
-void launch_glsl_kernel(GLProgram *program, std::vector<IOV> iov, int num_groups)
-{
-  program->use();
+GLSSBO *root_ssbo;
 
-  std::vector<GLSSBO> ssbo(iov.size());
+void create_glsl_root_buffer(size_t size)
+{
+  //if (root_ssbo) return;
+  initialize_opengl();
+  root_ssbo = new GLSSBO; // TODO(archibate): mem leaking
+  void *buffer = std::calloc(size, 1);
+  root_ssbo->bind_data(buffer, size, GL_DYNAMIC_READ);
+  root_ssbo->bind_index(0);
+}
+
+std::vector<GLSSBO> ssbo;
+
+void begin_glsl_kernels(const std::vector<IOV> &iov)
+{
+  ssbo = std::vector<GLSSBO>(iov.size());
+
   for (int i = 0; i < ssbo.size(); i++) {
-    ssbo[i].bind_index(i);
+    if (!iov[i].size)
+      continue;
+    ssbo[i].bind_index(i + 1);
     ssbo[i].bind_data(iov[i].base, iov[i].size, GL_DYNAMIC_READ); // input
   }
+}
+
+void launch_glsl_kernel(GLProgram *program, int num_groups)
+{
+  program->use();
 
   // https://www.khronos.org/opengl/wiki/Compute_Shader
   // https://community.arm.com/developer/tools-software/graphics/b/blog/posts/get-started-with-compute-shaders
@@ -268,13 +294,20 @@ void launch_glsl_kernel(GLProgram *program, std::vector<IOV> iov, int num_groups
   // `layout(local_size_x = X) in;` - the X      == `Threads`  in CUDA
   //
   glDispatchCompute(num_groups, 1, 1);
-  glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT); // TODO(archibate): move to Program::synchroize()
+}
+
+void end_glsl_kernels(const std::vector<IOV> &iov)
+{
+  //glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT); // TODO(archibate): move to Program::synchroize()
 
   for (int i = 0; i < ssbo.size(); i++) {
+    if (!iov[i].size)
+      continue;
     void *p = ssbo[i].map(0, iov[i].size); // output
     std::memcpy(iov[i].base, p, iov[i].size);
-    glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
   }
+  glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+  ssbo.clear();
 }
 
 bool is_opengl_api_available()

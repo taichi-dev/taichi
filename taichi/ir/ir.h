@@ -1114,9 +1114,9 @@ class GlobalPtrStmt : public Stmt {
   bool activate;
 
   GlobalPtrStmt(const LaneAttribute<SNode *> &snodes,
-                const std::vector<Stmt *> &indices)
-      : snodes(snodes), indices(indices) {
-    activate = true;  // use a strong access by default
+                const std::vector<Stmt *> &indices,
+                bool activate = true)
+      : snodes(snodes), indices(indices), activate(activate) {
     for (int i = 0; i < (int)snodes.size(); i++) {
       TI_ASSERT(snodes[i] != nullptr);
       TI_ASSERT(snodes[0]->dt == snodes[i]->dt);
@@ -1130,14 +1130,6 @@ class GlobalPtrStmt : public Stmt {
 
   virtual bool has_global_side_effect() const override {
     return activate;
-  }
-
-  std::string accessor_func_name() {
-    if (activate) {
-      return "access";
-    } else {
-      return "weak_access";
-    }
   }
 
   DEFINE_ACCEPT
@@ -1474,7 +1466,9 @@ class AssertStmt : public Stmt {
     TI_ASSERT(cond);
   }
 
-  AssertStmt(Stmt *cond, const std::string &text, const std::vector<Stmt *> &args)
+  AssertStmt(Stmt *cond,
+             const std::string &text,
+             const std::vector<Stmt *> &args)
       : cond(cond), text(text), args(args) {
     add_operand(this->cond);
     for (auto &arg : this->args) {

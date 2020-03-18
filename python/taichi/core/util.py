@@ -102,7 +102,7 @@ def format_plain_text(fn):
         print(f'Warning: found tab in {fn}. Skipping...')
         return
       formatted += l + '\n'
-  while formatted[-1] == '\n':
+  while len(formatted) and formatted[-1] == '\n':
     formatted = formatted[:-1]
   formatted += '\n'
   with open(fn, 'w') as f:
@@ -142,9 +142,9 @@ def format(all=False, diff=None):
                                     '.style.yapf'))
     elif has_suffix(fn, ['cpp', 'h', 'cu', 'cuh']):
       os.system('clang-format-6.0 -i -style=file {}'.format(fn))
-    elif has_suffix(fn, ['txt', 'md', 'rst', 'cfg']):
+    elif has_suffix(fn, ['txt', 'md', 'rst', 'cfg', 'll', 'ptx']):
       format_plain_text(fn)
-    elif has_suffix(fn, ['pyc', 'png', 'jpg', 'bmp', 'gif', 'gitignore', 'whl', '.mp4']):
+    elif has_suffix(fn, ['pyc', 'png', 'jpg', 'bmp', 'gif', 'gitignore', 'whl', 'mp4']):
       pass
     else:
       print(f'Skipping {fn}...')

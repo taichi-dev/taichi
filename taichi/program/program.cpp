@@ -256,6 +256,23 @@ void Program::materialize_layout() {
   }
 }
 
+void Program::check_runtime_error() {
+  TI_ASSERT(arch_is_cpu(config.arch));
+  auto tlctx = llvm_context_host.get();
+  auto runtime_jit_module = tlctx->runtime_jit_module;
+  runtime_jit_module->call<void *>("retrieve_error_code", llvm_runtime);
+  auto error_code = runtime_jit_module->fetch_result<int64>();
+  if (error_code) {
+    runtime_jit_module->call<void *>("retrieve_error_message", llvm_runtime);
+    auto error_message = runtime_jit_module->fetch_result<char *>();
+    if (error_code == 1) {
+      TI_ERROR("Assertion failure: {}", error_message);
+    } else {
+      TI_NOT_IMPLEMENTED
+    }
+  }
+}
+
 void Program::synchronize() {
   if (!sync) {
     if (config.arch == Arch::cuda) {

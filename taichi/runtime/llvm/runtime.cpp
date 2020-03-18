@@ -496,8 +496,12 @@ struct LLVMRuntime {
   void (*profiler_start)(Ptr, Ptr);
   void (*profiler_stop)(Ptr);
 
+  char error_message_buffer[taichi_max_message_length];
+  i32 error_message_lock = 0;
+  i64 error_code = 0;
+
   Ptr result_buffer;
-  i32 lock;
+  i32 allocator_lock;
 
   template <typename T>
   void set_result(T t) {
@@ -614,6 +618,14 @@ Ptr get_temporary_pointer(LLVMRuntime *runtime, u64 offset) {
   return runtime->temporaries + offset;
 }
 
+void retrieve_error_code(LLVMRuntime *runtime) {
+  runtime->set_result(runtime->error_code);
+}
+
+void retrieve_error_message(LLVMRuntime *runtime) {
+  runtime->set_result(runtime->error_message_buffer);
+}
+
 #if ARCH_cuda
 void __assertfail(const char *message,
                   const char *file,
@@ -630,11 +642,15 @@ void taichi_assert_runtime(LLVMRuntime *runtime, i32 test, const char *msg) {
 }
 #else
 void taichi_assert_runtime(LLVMRuntime *runtime, i32 test, const char *msg) {
-  if (enable_assert) {
-    if (test == 0) {
-      runtime->assert_failed(msg);
+  if (!enable_assert || test != 0 || runtime->error_code)
+    return;
+  locked_task(&runtime->error_message_lock, [&] {
+    if (!runtime->error_code) {
+      runtime->error_code = 1; // Assertion failure
+      memcpy(runtime->error_message_buffer, msg,
+             std::min(strlen(msg), taichi_max_message_length));
     }
-  }
+  });
 }
 #endif
 
@@ -642,19 +658,18 @@ void taichi_assert(Context *context, i32 test, const char *msg) {
   taichi_assert_runtime(context->runtime, test, msg);
 }
 
-const std::size_t ASSERT_MSG_BUFFER_SIZE = 2048;
-char assert_msg_buffer[ASSERT_MSG_BUFFER_SIZE];
-i32 assert_msg_buffer_lock = 0;
 void taichi_assert_format(LLVMRuntime *runtime, i32 test, const char *format,
                           ...) {
-  if (!enable_assert || test != 0)
+  if (!enable_assert || test != 0 || runtime->error_code)
     return;
   std::va_list args;
   va_start(args, format);
-  locked_task(&assert_msg_buffer_lock, [&] {
-    runtime->host_vsnprintf(assert_msg_buffer, ASSERT_MSG_BUFFER_SIZE, format,
-                            args);
-    runtime->assert_failed(assert_msg_buffer);
+  locked_task(&runtime->error_message_lock, [&] {
+    if (!runtime->error_code) {
+      runtime->error_code = 1; // Assertion failure
+      runtime->host_vsnprintf(runtime->error_message_buffer,
+                              taichi_max_message_length, format, args);
+    }
   });
   va_end(args);
 }
@@ -668,7 +683,7 @@ Ptr LLVMRuntime::allocate_aligned(std::size_t size, std::size_t alignment) {
 
 Ptr LLVMRuntime::allocate_from_buffer(std::size_t size, std::size_t alignment) {
   Ptr ret;
-  locked_task(&lock, [&] {
+  locked_task(&allocator_lock, [&] {
     preallocated_head +=
         alignment - 1 -
         ((std::size_t)preallocated_head + alignment - 1) % alignment;

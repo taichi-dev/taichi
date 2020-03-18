@@ -99,7 +99,7 @@ def format_plain_text(fn):
     for l in f:
       l = l.rstrip()
       if l.find('\t') != -1:
-        print(f'Warning: found tab in {f}. Skipping...')
+        print(f'Warning: found tab in {fn}. Skipping...')
         return
       formatted += l + '\n'
   while formatted[-1] == '\n':
@@ -140,9 +140,9 @@ def format(all=False, diff=None):
                                     '.style.yapf'))
     elif has_suffix(fn, ['cpp', 'h', 'cu', 'cuh']):
       os.system('clang-format-6.0 -i -style=file {}'.format(fn))
-    elif has_suffix(fn, ['txt', 'md', 'rst']):
+    elif has_suffix(fn, ['txt', 'md', 'rst', 'cfg']):
       format_plain_text(fn)
-    elif has_suffix(fn, ['pyc', 'png', 'jpg', 'bmp']):
+    elif has_suffix(fn, ['pyc', 'png', 'jpg', 'bmp', 'gif', 'gitignore', 'whl']):
       pass
     else:
       print(f'Skipping {fn}...')

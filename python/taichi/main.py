@@ -106,7 +106,7 @@ def main(debug=False):
         "           ti doc                    |-> Build documentation\n"
         "           ti release                |-> Make source code release\n"
         "           ti debug [script.py]      |-> Debug script\n")
-    exit(0)
+    return 0
   mode = args.action
 
   t = time.time()
@@ -116,7 +116,7 @@ def main(debug=False):
   elif mode == "run":
     if argc <= 2:
       print("Please specify [task name], e.g. test_math")
-      exit(-1)
+      return -1
     name = sys.argv[2]
     task = ti.Task(name)
     task.run(*sys.argv[3:])
@@ -124,14 +124,14 @@ def main(debug=False):
     ti.core.set_core_trigger_gdb_when_crash(True)
     if argc <= 2:
       print("Please specify [file name], e.g. render.py")
-      exit(-1)
+      return -1
     name = sys.argv[2]
     with open(name) as script:
       script = script.read()
     exec(script, {'__name__': '__main__'})
   elif mode == "test":
     ret = test_python(test_files=args.files, verbose=args.verbose)
-    if ret: exit(-1)
+    if ret: return -1
     ret = test_cpp(test_files=args.files)
     return ret
   elif mode == "build":
@@ -183,7 +183,7 @@ def main(debug=False):
   elif mode == "video_crop":
     if len(sys.argv) != 7:
       print('Usage: ti video_crop fn x_begin x_end y_begin y_end')
-      exit(-1)
+      return -1
     input_fn = sys.argv[2]
     assert input_fn[-4:] == '.mp4'
     output_fn = input_fn[:-4] + '-cropped.mp4'
@@ -195,7 +195,7 @@ def main(debug=False):
   elif mode == "video_speed":
     if len(sys.argv) != 4:
       print('Usage: ti video_speed fn speed_up_factor')
-      exit(-1)
+      return -1
     input_fn = sys.argv[2]
     assert input_fn[-4:] == '.mp4'
     output_fn = input_fn[:-4] + '-sped.mp4'

@@ -168,7 +168,7 @@ class LowerAST : public IRVisitor {
       begin->flatten(flattened);
       end->flatten(flattened);
       static bool is_good_range_for = true; // TODO(archibate): detect if outer-most one
-      if (1 || is_good_range_for) { // #578
+      if (is_good_range_for) { // #578
         is_good_range_for = false;
         auto &&new_for = std::make_unique<RangeForStmt>(
             stmt->parent->lookup_var(stmt->loop_var_id[0]), begin->stmt,
@@ -187,6 +187,9 @@ class LowerAST : public IRVisitor {
         auto loop_var_load = Stmt::make<LocalLoadStmt>(loop_var_addr);
         auto cond_stmt = Stmt::make<BinaryOpStmt>(BinaryOpType::cmp_lt,
             std::move(loop_var_load).get(), end->stmt);
+        flattened.push_back(std::move(loop_var_load));
+        flattened.push_back(std::move(cond_stmt));
+        auto cond_stmt_got = flattened.back().get();
 
         auto &&new_while = std::make_unique<WhileStmt>(std::move(stmt->body));
         auto mask = std::make_unique<AllocaStmt>(DataType::i32);
@@ -197,7 +200,7 @@ class LowerAST : public IRVisitor {
         }
         // insert break
         stmts->insert(
-            std::make_unique<WhileControlStmt>(new_while->mask, std::move(cond_stmt).get()),
+            std::make_unique<WhileControlStmt>(new_while->mask, cond_stmt_got),
             flattened.size());
         stmt->insert_before_me(std::make_unique<AllocaStmt>(DataType::i32));
         auto &&const_stmt =

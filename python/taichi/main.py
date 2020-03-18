@@ -94,8 +94,7 @@ def main(debug=False):
     print(
         "    Usage: ti run [task name]        |-> Run a specific task\n"
         "           ti benchmark              |-> Run performance benchmark\n"
-        "           ti test                   |-> Run python tests\n"
-        "           ti test_cpp               |-> Run cpp tests\n"
+        "           ti test                   |-> Run all the tests\n"
         "           ti format                 |-> Reformat modified source files\n"
         "           ti format_all             |-> Reformat all source files\n"
         "           ti build                  |-> Build C++ files\n"
@@ -130,10 +129,11 @@ def main(debug=False):
     with open(name) as script:
       script = script.read()
     exec(script, {'__name__': '__main__'})
-  elif mode == "test_cpp":
-    return test_cpp(test_files=args.files)
   elif mode == "test":
-    return test_python(test_files=args.files, verbose=args.verbose)
+    ret = test_python(test_files=args.files, verbose=args.verbose)
+    if ret: exit(-1)
+    ret = test_cpp(test_files=args.files)
+    return ret
   elif mode == "build":
     ti.core.build()
   elif mode == "format":

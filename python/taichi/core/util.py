@@ -1,4 +1,5 @@
 import os
+import re
 import shutil
 import sys
 import ctypes
@@ -133,6 +134,11 @@ def format(all=False, diff=None):
       continue
     if fn.find('.pytest_cache') != -1:
       continue
+    if fn.find('docs/build/_static') != -1:
+      continue
+    if re.match(fn, r'examples\/[a-z_]+\d\d+\.py$'):
+      print(f'Skipping example file {fn}...')
+      continue
     if fn.endswith('.py'):
       print(fn, '...')
       FormatFile(
@@ -144,7 +150,7 @@ def format(all=False, diff=None):
       os.system('clang-format-6.0 -i -style=file {}'.format(fn))
     elif has_suffix(fn, ['txt', 'md', 'rst', 'cfg', 'll', 'ptx']):
       format_plain_text(fn)
-    elif has_suffix(fn, ['pyc', 'png', 'jpg', 'bmp', 'gif', 'gitignore', 'whl', 'mp4']):
+    elif has_suffix(fn, ['pyc', 'png', 'jpg', 'bmp', 'gif', 'gitignore', 'whl', 'mp4', 'html']):
       pass
     else:
       print(f'Skipping {fn}...')

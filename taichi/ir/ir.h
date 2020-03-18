@@ -98,7 +98,7 @@ void vector_split(IRNode *root, int max_width, bool serial_schedule);
 void replace_all_usages_with(IRNode *root, Stmt *old_stmt, Stmt *new_stmt);
 void check_out_of_bound(IRNode *root);
 void lower_access(IRNode *root, bool lower_atomic);
-void make_adjoint(IRNode *root);
+void make_adjoint(IRNode *root, bool use_stack=false);
 void constant_fold(IRNode *root);
 OffloadedResult offload(IRNode *root);
 void fix_block_parents(IRNode *root);

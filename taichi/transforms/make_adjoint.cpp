@@ -334,6 +334,10 @@ class MakeAdjoint : public IRVisitor {
     // do nothing
   }
 
+  void visit(LocalLoadStmt *stmt) override {
+    TI_ASSERT(!needs_grad(stmt->ret_type.data_type));
+  }
+
   void visit(StackLoadTopStmt *stmt) override {
     insert<StackAccAdjointStmt>(stmt->stack, load(adjoint(stmt)));
   }
@@ -441,15 +445,20 @@ class MakeAdjoint : public IRVisitor {
 
 namespace irpass {
 
-void make_adjoint(IRNode *root) {
-  ConvertLocalVar converter;
-  root->accept(&converter);
-  irpass::typecheck(root);
-  irpass::re_id(root);
-  irpass::print(root);
-  MakeAdjoint::run(root);
-  typecheck(root);
-  print(root);
+void make_adjoint(IRNode *root, bool use_stack) {
+  if (use_stack) {
+    ConvertLocalVar converter;
+    root->accept(&converter);
+    typecheck(root);
+    re_id(root);
+    print(root);
+    MakeAdjoint::run(root);
+    typecheck(root);
+    print(root);
+  } else {
+    MakeAdjoint::run(root);
+    typecheck(root);
+  }
 }
 
 }  // namespace irpass

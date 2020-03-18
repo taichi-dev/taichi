@@ -136,7 +136,7 @@ def format(all=False, diff=None):
       continue
     if fn.find('docs/build/_static') != -1:
       continue
-    if re.match(fn, r'examples\/[a-z_]+\d\d+\.py$'):
+    if re.match(r'.*examples\/[a-z_]+\d\d+\.py$', fn):
       print(f'Skipping example file {fn}...')
       continue
     if fn.endswith('.py'):

@@ -1,5 +1,6 @@
 import ast
 from .util import to_taichi_type
+import copy
 
 
 class TaichiSyntaxError(Exception):
@@ -328,7 +329,15 @@ if ti.static(1):
       node = ast.copy_location(t, node)
       return self.visit(node) # further translate as a range for
     elif is_static_for:
-      return node
+      t = self.parse_stmt('if 1: pass; del a')
+      t.body[0] = node
+      target = copy.deepcopy(node.target)
+      target.ctx = ast.Del()
+      if isinstance(target, ast.Tuple):
+        for tar in target.elts:
+          tar.ctx = ast.Del()
+      t.body[1].targets = [target]
+      return t
     elif is_range_for:
       loop_var = node.target.id
       self.check_loop_var(loop_var)

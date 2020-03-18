@@ -113,3 +113,25 @@ def test_local_atomics():
 
   for i in range(n):
     assert val[i] == i + 45
+
+@ti.must_throw(UnboundLocalError)
+@ti.host_arch_only
+def test_loop_var_life():
+  @ti.kernel
+  def test():
+    for i in ti.static(range(8)):
+      pass
+    print(i)
+    
+  test()
+  
+@ti.must_throw(UnboundLocalError)
+@ti.host_arch_only
+def test_loop_var_life_double_iters():
+  @ti.kernel
+  def test():
+    for i, v in ti.static(enumerate(range(8))):
+      pass
+    print(i)
+  
+  test()

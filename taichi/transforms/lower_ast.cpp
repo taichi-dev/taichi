@@ -183,13 +183,12 @@ class LowerAST : public IRVisitor {
         flattened.push_back(Stmt::make<LocalStoreStmt>(loop_var, begin->stmt));
         auto loop_var_addr = LaneAttribute<LocalAddress>(
             LocalAddress(loop_var->as<AllocaStmt>(), 0));
+        VecStatement flattened2;
         // auto loop_var_store = Stmt::make<LocalStoreStmt>(loop_var_addr, begin->stmt);
-        auto loop_var_load = Stmt::make<LocalLoadStmt>(loop_var_addr);
-        auto cond_stmt = Stmt::make<BinaryOpStmt>(BinaryOpType::cmp_lt,
-            std::move(loop_var_load).get(), end->stmt);
-        flattened.push_back(std::move(loop_var_load));
-        flattened.push_back(std::move(cond_stmt));
-        auto cond_stmt_got = flattened.back().get();
+        flattened2.push_back(Stmt::make<LocalLoadStmt>(loop_var_addr));
+        flattened2.push_back(Stmt::make<BinaryOpStmt>(BinaryOpType::cmp_lt,
+            flattened2.back().get(), end->stmt));
+        auto cond_stmt = flattened2.back().get();
 
         auto &&new_while = std::make_unique<WhileStmt>(std::move(stmt->body));
         auto mask = std::make_unique<AllocaStmt>(DataType::i32);
@@ -200,7 +199,7 @@ class LowerAST : public IRVisitor {
         }
         // insert break
         stmts->insert(
-            std::make_unique<WhileControlStmt>(new_while->mask, cond_stmt_got),
+            std::make_unique<WhileControlStmt>(new_while->mask, cond_stmt),
             flattened.size());
         stmt->insert_before_me(std::make_unique<AllocaStmt>(DataType::i32));
         auto &&const_stmt =
@@ -211,7 +210,8 @@ class LowerAST : public IRVisitor {
         stmt->insert_before_me(
             std::make_unique<LocalStoreStmt>(new_while->mask, const_stmt_ptr));
         new_while->body->mask_var = new_while->mask;
-        stmt->parent->replace_with(stmt, std::move(new_while));
+        flattened.push_back(std::move(new_while));
+        stmt->parent->replace_with(stmt, std::move(flattened));
         throw IRModified();
       }
     } else {

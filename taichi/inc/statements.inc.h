@@ -21,6 +21,8 @@ PER_STATEMENT(IfStmt)
 PER_STATEMENT(WhileStmt)
 PER_STATEMENT(WhileControlStmt)
 PER_STATEMENT(FuncBodyStmt)
+PER_STATEMENT(FrontendFuncDefStmt)
+PER_STATEMENT(FuncCallStmt)
 
 PER_STATEMENT(ArgLoadStmt)
 PER_STATEMENT(ExternalPtrStmt)

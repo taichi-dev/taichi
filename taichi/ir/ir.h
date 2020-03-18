@@ -1838,9 +1838,11 @@ class StructForStmt : public Stmt {
 
 class FuncBodyStmt : public Stmt {
  public:
+  std::string funcid;
   std::unique_ptr<Block> body;
 
-  FuncBodyStmt(std::unique_ptr<Block> &&body) : body(std::move(body)) {
+  FuncBodyStmt(const std::string &funcid, std::unique_ptr<Block> &&body)
+    : funcid(funcid), body(std::move(body)) {
   }
 
   bool is_container_statement() const override {
@@ -1852,13 +1854,28 @@ class FuncBodyStmt : public Stmt {
 
 class FrontendFuncDefStmt : public Stmt {
  public:
+  std::string funcid;
   std::unique_ptr<Block> body;
 
-  FrontendFuncDefStmt() { // TODO: args
+  FrontendFuncDefStmt(const std::string &funcid) : funcid(funcid) {
   }
 
   bool is_container_statement() const override {
     return true;
+  }
+
+  DEFINE_ACCEPT
+};
+
+class FuncCallStmt : public Stmt {
+ public:
+  std::string funcid;
+
+  FuncCallStmt(const std::string &funcid) : funcid(funcid) {
+  }
+
+  bool is_container_statement() const override {
+    return false;
   }
 
   DEFINE_ACCEPT

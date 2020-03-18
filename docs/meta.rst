@@ -1,6 +1,6 @@
 .. _meta:
 
-Template metaprogramming
+Metaprogramming
 =================================================
 
 Taichi provides metaprogramming infrastructures. Metaprogramming can

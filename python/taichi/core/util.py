@@ -87,6 +87,27 @@ def print_red_bold(*args, **kwargs):
   print(Style.RESET_ALL, end='')
 
 
+def has_suffix(f, suffixes):
+  for suf in suffixes:
+    if f.endswith('.' + suf):
+      return True
+  return False
+
+def format_plain_text(fn):
+  formatted = ''
+  with open(fn, 'r') as f:
+    for l in f:
+      l = l.rstrip()
+      if l.find('\t') != -1:
+        print(f'Warning: found tab in {f}. Skipping...')
+        return
+      formatted += l + '\n'
+  while formatted[-1] == '\n':
+    formatted = formatted[:-1]
+  formatted += '\n'
+  with open(fn, 'w') as f:
+    f.write(formatted)
+
 def format(all=False, diff=None):
   import os
   import taichi as tc
@@ -95,7 +116,7 @@ def format(all=False, diff=None):
 
   print('Code formatting ...')
   if all:
-    directories = ['taichi', 'tests', 'examples', 'misc', 'python']
+    directories = ['taichi', 'tests', 'examples', 'misc', 'python', 'benchmarks', 'docs', 'misc']
     files = []
     for d in directories:
       files += list(Path(os.path.join(tc.get_repo_directory(), d)).rglob('*'))
@@ -115,10 +136,13 @@ def format(all=False, diff=None):
           in_place=True,
           style_config=os.path.join(tc.get_repo_directory(), 'misc',
                                     '.style.yapf'))
-    if fn.endswith('.cpp') or fn.endswith('.h'):
-      print(fn, '...')
+    elif has_suffix(fn, ['cpp', 'h', 'cu', 'cuh']):
       os.system('clang-format-6.0 -i -style=file {}'.format(fn))
-
+    elif has_suffix(fn, ['txt', 'md', 'rst']):
+      format_plain_text(fn)
+    else:
+      print(f'Skipping {fn}...')
+      
   print('Formatting done!')
 
 

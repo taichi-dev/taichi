@@ -313,7 +313,7 @@ void export_lang(py::module &m) {
                                           load_if_ptr(b));
   });
 
-  m.def("expr_atomic_sub", [&](const Expr &a, const Expr &b) {
+  m.def("expr_atomic_max", [&](const Expr &a, const Expr &b) {
     return Expr::make<AtomicOpExpression>(AtomicOpType::max, ptr_if_global(a),
                                           load_if_ptr(b));
   });

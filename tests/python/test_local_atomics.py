@@ -60,7 +60,7 @@ def test_implicit_local_atomic_sub():
   assert A[None] == -45
 
 @ti.all_archs
-def _test_explicit_local_atomic_min():
+def test_explicit_local_atomic_min():
   A = ti.var(ti.f32, shape=())
 
   @ti.kernel
@@ -74,7 +74,7 @@ def _test_explicit_local_atomic_min():
   assert A[None] == 0
 
 @ti.all_archs
-def _test_explicit_local_atomic_max():
+def test_explicit_local_atomic_max():
   A = ti.var(ti.f32, shape=())
 
   @ti.kernel
@@ -85,10 +85,10 @@ def _test_explicit_local_atomic_max():
     A[None] = a
 
   func()
-  assert A[None] == 10
+  assert A[None] == 9
 
 @ti.all_archs
-def _test_explicit_local_atomic_and():
+def test_explicit_local_atomic_and():
   A = ti.var(ti.i32, shape=())
   max_int = 2147483647
   @ti.kernel
@@ -102,7 +102,7 @@ def _test_explicit_local_atomic_and():
   assert A[None] == 0
 
 @ti.all_archs
-def _test_implicit_local_atomic_and():
+def test_implicit_local_atomic_and():
   A = ti.var(ti.i32, shape=())
   max_int = 2147483647
   @ti.kernel
@@ -116,7 +116,7 @@ def _test_implicit_local_atomic_and():
   assert A[None] == 0
 
 @ti.all_archs
-def _test_explicit_local_atomic_or():
+def test_explicit_local_atomic_or():
   A = ti.var(ti.i32, shape=())
   @ti.kernel
   def func():
@@ -129,20 +129,20 @@ def _test_explicit_local_atomic_or():
   assert A[None] == 1023
 
 @ti.all_archs
-def _test_implicit_local_atomic_or():
+def test_implicit_local_atomic_or():
   A = ti.var(ti.i32, shape=())
   @ti.kernel
   def func():
     a = 0
     for i in range(10):
-      a ^= 2**i
+      a |= 2**i
     A[None] = a
 
   func()
   assert A[None] == 1023
 
 @ti.all_archs
-def _test_explicit_local_atomic_xor():
+def test_explicit_local_atomic_xor():
   A = ti.var(ti.i32, shape=())
   @ti.kernel
   def func():
@@ -155,7 +155,7 @@ def _test_explicit_local_atomic_xor():
   assert A[None] == 0
 
 @ti.all_archs
-def _test_implicit_local_atomic_xor():
+def test_implicit_local_atomic_xor():
   A = ti.var(ti.i32, shape=())
   @ti.kernel
   def func():

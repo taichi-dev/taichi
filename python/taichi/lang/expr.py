@@ -237,6 +237,12 @@ class Expr:
       self /= x
     elif op == 'FloorDiv':
       self //= x
+    elif op == 'BitAnd':
+      self &= x
+    elif op == 'BitOr':
+      self |= x
+    elif op == 'BitXor':
+      self ^= x
     else:
       assert False, op
 

@@ -34,7 +34,7 @@ endif()
 
 option(USE_STDCPP "Use -stdlib=libc++" OFF)
 option(TI_WITH_CUDA "Build with the CUDA backend" OFF)
-option(TI_WITH_OPENGL "Build with the OpenGL backend" OFF)
+option(TI_WITH_OPENGL "Build with the OpenGL backend" ON)
 option(GLEW_USE_STATIC_LIBS OFF)
 
 include_directories(${CMAKE_SOURCE_DIR})

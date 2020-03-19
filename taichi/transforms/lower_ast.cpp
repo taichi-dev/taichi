@@ -167,27 +167,29 @@ class LowerAST : public IRVisitor {
       auto end = stmt->end;
       begin->flatten(flattened);
       end->flatten(flattened);
-      static bool is_good_range_for = true; // TODO(archibate): detect if outer-most one
-      if (is_good_range_for) { // #578
+      static bool is_good_range_for =
+          true;                 // TODO(archibate): detect if outer-most one
+      if (is_good_range_for) {  // #578
         is_good_range_for = false;
         auto &&new_for = std::make_unique<RangeForStmt>(
             stmt->parent->lookup_var(stmt->loop_var_id[0]), begin->stmt,
-            end->stmt, std::move(stmt->body), stmt->vectorize, stmt->parallelize,
-            stmt->block_dim, stmt->strictly_serialized);
+            end->stmt, std::move(stmt->body), stmt->vectorize,
+            stmt->parallelize, stmt->block_dim, stmt->strictly_serialized);
         flattened.push_back(std::move(new_for));
       } else {
         // transform into a structure as
         // while (1) { cond; if (no active) break; original body...}
-        //auto loop_var = Stmt::make<AllocaStmt>(DataType::i32);
+        // auto loop_var = Stmt::make<AllocaStmt>(DataType::i32);
         auto loop_var = stmt->parent->lookup_var(stmt->loop_var_id[0]);
         flattened.push_back(Stmt::make<LocalStoreStmt>(loop_var, begin->stmt));
         auto loop_var_addr = LaneAttribute<LocalAddress>(
             LocalAddress(loop_var->as<AllocaStmt>(), 0));
         VecStatement flattened2;
-        // auto loop_var_store = Stmt::make<LocalStoreStmt>(loop_var_addr, begin->stmt);
+        // auto loop_var_store = Stmt::make<LocalStoreStmt>(loop_var_addr,
+        // begin->stmt);
         flattened2.push_back(Stmt::make<LocalLoadStmt>(loop_var_addr));
-        flattened2.push_back(Stmt::make<BinaryOpStmt>(BinaryOpType::cmp_lt,
-            flattened2.back().get(), end->stmt));
+        flattened2.push_back(Stmt::make<BinaryOpStmt>(
+            BinaryOpType::cmp_lt, flattened2.back().get(), end->stmt));
         auto cond_stmt = flattened2.back().get();
 
         auto &&new_while = std::make_unique<WhileStmt>(std::move(stmt->body));
@@ -203,7 +205,7 @@ class LowerAST : public IRVisitor {
             flattened.size());
         stmt->insert_before_me(std::make_unique<AllocaStmt>(DataType::i32));
         auto &&const_stmt =
-          std::make_unique<ConstStmt>(TypedConstant((int32)0xFFFFFFFF));
+            std::make_unique<ConstStmt>(TypedConstant((int32)0xFFFFFFFF));
         auto const_stmt_ptr = const_stmt.get();
         stmt->insert_before_me(std::move(mask));
         stmt->insert_before_me(std::move(const_stmt));

@@ -275,48 +275,78 @@ if 1:
                 .format(loop_var))
 
     def visit_For(self, node):
+        from astpretty import pprint
+        print('visit for!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+        pprint(node)
         if node.orelse:
             raise TaichiSyntaxError(
                 "'else' clause for 'for' not supported in Taichi kernels")
         decorated = isinstance(node.iter, ast.Call) and isinstance(
             node.iter.func, ast.Attribute) and isinstance(node.iter.func.value, ast.Name) \
                     and node.iter.func.value.id == 'ti'
-        is_ndrange_for = False
-        is_static_for = False
-        is_grouped = False
+        double_decorated = decorated and len(node.iter.args) == 1 and isinstance(
+            node.iter.args[0], ast.Call) and isinstance(node.iter.args[0].func, ast.Attribute) \
+                           and isinstance(node.iter.args[0].func.value, ast.Name) \
+                           and node.iter.args[0].func.value.id == 'ti'
+        is_ndrange_for = 0
+        is_static_for = 0
+        is_grouped = 0
 
         if decorated:
             attr = node.iter.func
+            # outer decorator
             if attr.attr == 'static':
-                is_static_for = True
+                is_static_for = 1
             elif attr.attr == 'grouped':
-                is_grouped = True
+                is_grouped = 1
             elif attr.attr == 'ndrange':
-                is_ndrange_for = True
+                is_ndrange_for = 1
             else:
                 raise Exception('Not supported')
+            if double_decorated:
+                attr = node.iter.args[0].func
+                # inner decorator
+                if attr.attr == 'static':
+                    is_static_for = 2
+                elif attr.attr == 'grouped':
+                    is_grouped = 2
+                elif attr.attr == 'ndrange':
+                    is_ndrange_for = 2
+                else:
+                    raise Exception('Not supported')
+
         is_range_for = isinstance(node.iter, ast.Call) and isinstance(
             node.iter.func, ast.Name) and node.iter.func.id == 'range'
         ast.fix_missing_locations(node)
         if not is_ndrange_for:
             self.generic_visit(node, ['body'])
-        if is_ndrange_for:
+        if is_ndrange_for == 1 or (is_ndrange_for == 2 and is_grouped == 1):
+            dim = len(node.iter.args) if is_ndrange_for == 1 else len(node.iter.args[0].args)
             template = '''
 if ti.static(1):
-  __ndrange = 0
-  for __ndrange_I in range(0):
-    __I = __ndrange_I
-      '''
+    __ndrange = 0
+    for __ndrange_I in range(0):
+        __I = __ndrange_I
+            ''' if is_ndrange_for == 1 else '''
+if ti.static(1):
+    __ndrange = 0
+    {} = ti.make_var_vector(size={})
+    for __ndrange_I in range(0):
+        __I = __ndrange_I
+            '''.format(node.target.id, dim)
             t = ast.parse(template).body[0]
-            t.body[0].value = node.iter
-            t.body[1].iter.args[0] = self.parse_expr(
+            t.body[0].value = node.iter if is_ndrange_for == 1 else node.iter.args[0]
+            t_loop = t.body[1] if is_ndrange_for == 1 else t.body[2]
+            t_loop.iter.args[0] = self.parse_expr(
                 '__ndrange.acc_dimensions[0]')
             targets = node.target
-            if isinstance(targets, ast.Tuple):
+            if is_ndrange_for == 2:
+                targets = ['{}[{}]'.format(targets.id, i) for i in range(dim)]
+            elif isinstance(targets, ast.Tuple):
                 targets = [name.id for name in targets.elts]
             else:
                 targets = [targets.id]
-            loop_body = t.body[1].body
+            loop_body = t_loop.body
             for i in range(len(targets)):
                 if i + 1 < len(targets):
                     stmt = '__{} = __I // __ndrange.acc_dimensions[{}]'.format(
@@ -387,6 +417,7 @@ if 1:
                 for ind in elts)
             vars = ', '.join(ind.id for ind in elts)
             if is_grouped:
+                print('is grouped')
                 template = ''' 
 if 1:
   ___loop_var = 0

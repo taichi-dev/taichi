@@ -20,7 +20,6 @@ u64 atomic_exchange_u64(volatile u64 *dest, u64 val) {
   return ret;
 }
 
-
 int32 atomic_add_i32(volatile int32 *dest, int32 val) {
   return __atomic_fetch_add(dest, val, std::memory_order::memory_order_seq_cst);
 }

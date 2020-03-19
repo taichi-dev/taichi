@@ -19,7 +19,8 @@ using grid_type = float[m / block_size][m / block_size][m / block_size][4]
 
 __global__ void fill(grid_type *grid_) {
   unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
-  if (i >= n) return;
+  if (i >= n)
+    return;
   float *data = (float *)grid_;
   grid_type &grid = *grid_;
   for (int k = 0; k < 4; k++) {

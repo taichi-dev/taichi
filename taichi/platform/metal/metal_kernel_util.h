@@ -67,10 +67,14 @@ class MetalKernelArgsAttributes {
     bool is_return_val = false;
   };
 
-  explicit MetalKernelArgsAttributes(const std::vector<Kernel::Arg>& args);
+  explicit MetalKernelArgsAttributes(const std::vector<Kernel::Arg> &args);
 
-  inline bool has_args() const { return !arg_attribs_vec_.empty(); }
-  inline const std::vector<ArgAttributes> &args() const { return arg_attribs_vec_; }
+  inline bool has_args() const {
+    return !arg_attribs_vec_.empty();
+  }
+  inline const std::vector<ArgAttributes> &args() const {
+    return arg_attribs_vec_;
+  }
 
   inline size_t args_bytes() const {
     return args_bytes_;
@@ -81,6 +85,7 @@ class MetalKernelArgsAttributes {
   inline size_t total_bytes() const {
     return args_bytes_ + extra_args_bytes_;
   }
+
  private:
   std::vector<ArgAttributes> arg_attribs_vec_;
   size_t args_bytes_;

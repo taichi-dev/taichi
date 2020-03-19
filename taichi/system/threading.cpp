@@ -81,7 +81,7 @@ void ThreadPool::run(int splits,
     task_head = 0;
     task_tail = splits;
     timestamp++;
-    TI_ASSERT(timestamp < (1LL << 62)); // avoid overflowing here
+    TI_ASSERT(timestamp < (1LL << 62));  // avoid overflowing here
   }
 
   // wake up all slaves
@@ -89,9 +89,7 @@ void ThreadPool::run(int splits,
   {
     std::unique_lock<std::mutex> lock(mutex);
     // TODO: the workers may have finished before master waiting on master_cv
-    master_cv.wait(lock, [this] {
-      return started && running_threads == 0;
-    });
+    master_cv.wait(lock, [this] { return started && running_threads == 0; });
   }
   TI_ASSERT(task_head >= task_tail);
 }
@@ -117,8 +115,9 @@ void ThreadPool::target() {
       } else {
         if (last_finished >= last_timestamp) {
           continue;
-          // This could happen when part of the desired threads wake up and finish all the task,
-          // and then this thread wake up finding nothing to do. Should skip this task directly.
+          // This could happen when part of the desired threads wake up and
+          // finish all the task, and then this thread wake up finding nothing
+          // to do. Should skip this task directly.
         } else {
           started = true;
           running_threads++;

@@ -26,8 +26,7 @@ static_assert(taichi_max_num_indices == 8,
 #endif  // TI_INSIDE_METAL_CODEGEN
 
 METAL_BEGIN_RUNTIME_STRUCTS_DEF
-STR(
-    constant constexpr int kTaichiMaxNumIndices = 8;
+STR(constant constexpr int kTaichiMaxNumIndices = 8;
 
     struct ListgenElement {
       int32_t coords[kTaichiMaxNumIndices];

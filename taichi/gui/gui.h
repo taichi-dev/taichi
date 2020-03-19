@@ -323,7 +323,12 @@ class Canvas {
 
   void circle_single(real x, real y, uint32 color, real radius);
 
-  void path_single(real x0, real y0, real x1, real y1, uint32 color, real radius);
+  void path_single(real x0,
+                   real y0,
+                   real x1,
+                   real y1,
+                   uint32 color,
+                   real radius);
 
   Line &path(real xa, real ya, real xb, real yb) {
     return path(Vector2(xa, ya), Vector2(xb, yb));
@@ -372,7 +377,13 @@ class Canvas {
 
   void triangle(Vector2 a, Vector2 b, Vector2 c, Vector4 color);
 
-  void triangle_single(real x0, real y0, real x1, real y1, real x2, real y2, uint32 color);
+  void triangle_single(real x0,
+                       real y0,
+                       real x1,
+                       real y1,
+                       real x2,
+                       real y2,
+                       uint32 color);
 
   void text(const std::string &str,
             Vector2 position,

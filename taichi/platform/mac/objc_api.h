@@ -33,7 +33,9 @@ R clscall(const char *class_name, const char *select, Args... args) {
 template <typename O>
 class NsObjDeleter {
  public:
-  void operator()(O *o) { call(o, "release"); }
+  void operator()(O *o) {
+    call(o, "release");
+  }
 };
 
 template <typename O>

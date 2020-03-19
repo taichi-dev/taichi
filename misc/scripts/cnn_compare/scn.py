@@ -16,9 +16,9 @@ input_voxel.fromfile(f, num_ch * n * n * n)
 input_voxel = torch.tensor(input_voxel)
 input_voxel = input_voxel.reshape(1, num_ch, n, n, n)
 for i in range(256):
-  img = np.array(input_voxel[0, 0, i])
-  cv2.imshow('img', img * 255)
-  cv2.waitKey(1)
+    img = np.array(input_voxel[0, 0, i])
+    cv2.imshow('img', img * 255)
+    cv2.waitKey(1)
 print(input_voxel.sum())
 input_voxel = input_voxel.cuda()
 
@@ -46,12 +46,12 @@ conv = conv.cuda()
 conv_sparse_voxel = conv(sparse_voxel)
 min_time = 1e10
 for i in range(1):
-  start = time.time()
-  conv_sparse_voxel = conv(sparse_voxel)
-  end = time.time()
-  if end - start < min_time:
-    min_time = end - start
-  print(min_time)
+    start = time.time()
+    conv_sparse_voxel = conv(sparse_voxel)
+    end = time.time()
+    if end - start < min_time:
+        min_time = end - start
+    print(min_time)
 print(conv_sparse_voxel)
 print('bulk time:', min_time)
 

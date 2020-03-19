@@ -16,9 +16,9 @@ namespace opengl {
 class OpenglCodeGen {
  public:
   OpenglCodeGen(const std::string &kernel_name,
-      const StructCompiledResult *struct_compiled)
-    : kernel_name_(kernel_name), struct_compiled_(struct_compiled)
-  {}
+                const StructCompiledResult *struct_compiled)
+      : kernel_name_(kernel_name), struct_compiled_(struct_compiled) {
+  }
 
   FunctionType compile(Program &program, Kernel &kernel);
 
@@ -34,5 +34,5 @@ class OpenglCodeGen {
   size_t global_tmps_buffer_size_{0};
 };
 
-} // namespace opengl
+}  // namespace opengl
 TLANG_NAMESPACE_END

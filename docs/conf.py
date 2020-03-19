@@ -16,23 +16,22 @@ import os
 import sys
 # sys.path.insert(0, os.path.abspath('.'))
 
-
 # -- Project information -----------------------------------------------------
 
 project = 'taichi'
 copyright = '2018, Yuanming Hu'
 author = 'Yuanming Hu'
 
-version_fn = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'version')
+version_fn = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                          'version')
 with open(version_fn) as f:
-  taichi_version = f.readline().strip()
-  print('Building doc version', taichi_version)
+    taichi_version = f.readline().strip()
+    print('Building doc version', taichi_version)
 
 # The short X.Y version
 version = taichi_version
 # The full version, including alpha/beta/rc tags
 release = taichi_version
-
 
 # -- General configuration ---------------------------------------------------
 
@@ -82,7 +81,6 @@ exclude_patterns = []
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
 
-
 # -- Options for HTML output -------------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
@@ -102,12 +100,12 @@ html_theme = 'sphinx_rtd_theme'
 html_static_path = ['_static']
 
 if os.environ.get('READTHEDOCS', '') != '':
-  css_files = [
-    '//media.readthedocs.org/css/sphinx_rtd_theme.css',
-    '//media.readthedocs.org/css/readthedocs-doc-embed.css'
-  ]
+    css_files = [
+        '//media.readthedocs.org/css/sphinx_rtd_theme.css',
+        '//media.readthedocs.org/css/readthedocs-doc-embed.css'
+    ]
 else:
-  css_files = []
+    css_files = []
 
 html_context = {'css_files': css_files + ['_static/extra.css']}
 
@@ -121,12 +119,10 @@ html_context = {'css_files': css_files + ['_static/extra.css']}
 #
 # html_sidebars = {}
 
-
 # -- Options for HTMLHelp output ---------------------------------------------
 
 # Output file base name for HTML help builder.
 htmlhelp_basename = 'taichidoc'
-
 
 # -- Options for LaTeX output ------------------------------------------------
 
@@ -152,20 +148,15 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'taichi.tex', 'taichi Documentation',
-     'Yuanming Hu', 'manual'),
+    (master_doc, 'taichi.tex', 'taichi Documentation', 'Yuanming Hu',
+     'manual'),
 ]
-
 
 # -- Options for manual page output ------------------------------------------
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [
-    (master_doc, 'taichi', 'taichi Documentation',
-     [author], 1)
-]
-
+man_pages = [(master_doc, 'taichi', 'taichi Documentation', [author], 1)]
 
 # -- Options for Texinfo output ----------------------------------------------
 
@@ -173,11 +164,9 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'taichi', 'taichi Documentation',
-     author, 'taichi', 'One line description of project.',
-     'Miscellaneous'),
+    (master_doc, 'taichi', 'taichi Documentation', author, 'taichi',
+     'One line description of project.', 'Miscellaneous'),
 ]
-
 
 # -- Extension configuration -------------------------------------------------
 

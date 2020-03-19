@@ -49,15 +49,15 @@ __global__ void fd(float *a, float *b, int *c, int n) {
   // b[i] = i;
   // b[i] = c[c[c[i & 64]]];
 
-  //atomicAdd(b_s + ((unsigned)i * 34252345627) % m, 1.0f);
-  //i = int(((((i * 1e-20f)))));
-    //i = (i * 1e-10f);
-    //i = i * i * i * i * i % m;
-  //b_s[i % m] = 1;
-//#define C(x) i += (i >> x);
-//#define C(x) i += (i >> x);
-//  for (int t = 0; t < 240; t++)
-//    C(30);
+  // atomicAdd(b_s + ((unsigned)i * 34252345627) % m, 1.0f);
+  // i = int(((((i * 1e-20f)))));
+  // i = (i * 1e-10f);
+  // i = i * i * i * i * i % m;
+  // b_s[i % m] = 1;
+  //#define C(x) i += (i >> x);
+  //#define C(x) i += (i >> x);
+  //  for (int t = 0; t < 240; t++)
+  //    C(30);
   i += int(sin(i * 1e-20f));
   i += int(sin(i * 1e-20f));
   i += int(sin(i * 1e-20f));
@@ -69,7 +69,7 @@ __global__ void fd(float *a, float *b, int *c, int n) {
   i += int(sin(i * 1e-20f));
   i += int(sin(i * 1e-20f));
   for (int j = 0; j < 27; j++) {
-    atomicAdd(b_s + (unsigned int)(i/4 + j * 431) % (m / 1), 1.0f);
+    atomicAdd(b_s + (unsigned int)(i / 4 + j * 431) % (m / 1), 1.0f);
   }
   __syncthreads();
 

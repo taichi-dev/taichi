@@ -16,20 +16,19 @@ std::string opengl_atomic_op_type_cap_name(AtomicOpType type) {
 #define REGISTER_TYPE(i, s) type_names[AtomicOpType::i] = "atomic" #s;
     REGISTER_TYPE(add, Add);
     REGISTER_TYPE(sub, Sub);
-    //REGISTER_TYPE(mul, Mul);
-    //REGISTER_TYPE(div, Div);
+    // REGISTER_TYPE(mul, Mul);
+    // REGISTER_TYPE(div, Div);
     REGISTER_TYPE(max, Max);
     REGISTER_TYPE(min, Min);
-    //REGISTER_TYPE(bit_and, And);
-    //REGISTER_TYPE(bit_or, Or);
-    //REGISTER_TYPE(bit_xor, Xor);
+    // REGISTER_TYPE(bit_and, And);
+    // REGISTER_TYPE(bit_or, Or);
+    // REGISTER_TYPE(bit_xor, Xor);
 #undef REGISTER_TYPE
   }
   return type_names[type];
 }
 
-struct UsedFeature
-{
+struct UsedFeature {
   bool random{false};
   bool argument{false};
   bool extra_arg{false};
@@ -38,36 +37,34 @@ struct UsedFeature
   bool global_temp{false};
 };
 
-struct CompiledKernel
-{
+struct CompiledKernel {
   GLProgram *glsl;
   int num_groups;
   UsedFeature used;
   std::string kernel_name;
 
   explicit CompiledKernel(const std::string &kernel_name_,
-      const std::string &kernel_source_code,
-      int num_groups_, UsedFeature used_)
-    : num_groups(num_groups_), used(used_), kernel_name(kernel_name_)
-  {
+                          const std::string &kernel_source_code,
+                          int num_groups_,
+                          UsedFeature used_)
+      : num_groups(num_groups_), used(used_), kernel_name(kernel_name_) {
 #ifdef _GLSL_DEBUG
-    TI_INFO("source of kernel [{}] * {}:\n{}", kernel_name, num_groups, kernel_source_code);
+    TI_INFO("source of kernel [{}] * {}:\n{}", kernel_name, num_groups,
+            kernel_source_code);
     std::ofstream(fmt::format("/tmp/{}.comp", kernel_name))
-      .write(kernel_source_code.c_str(), kernel_source_code.size());
+        .write(kernel_source_code.c_str(), kernel_source_code.size());
 #endif
     this->glsl = compile_glsl_program(kernel_source_code);
   }
 
-  void launch() const
-  {
-    //TI_PERF();
+  void launch() const {
+    // TI_PERF();
     launch_glsl_kernel(glsl, num_groups);
-    //TI_PERF(kernel_name.c_str(), kernel_name.size(), 107);
+    // TI_PERF(kernel_name.c_str(), kernel_name.size(), 107);
   }
 };
 
-struct CompiledProgram
-{
+struct CompiledProgram {
   std::vector<CompiledKernel> kernels;
   int arg_count;
   int ext_arr_idx;
@@ -75,14 +72,15 @@ struct CompiledProgram
   bool has_ext_arr{false};
   size_t gtmp_size;
 
-  CompiledProgram(Kernel *kernel, size_t gtmp_size)
-  {
+  CompiledProgram(Kernel *kernel, size_t gtmp_size) {
     has_ext_arr = false;
     arg_count = kernel->args.size();
     for (int i = 0; i < arg_count; i++) {
       if (kernel->args[i].is_nparray) {
         if (has_ext_arr)
-          TI_ERROR("[glsl] external array argument is supported to at most one in OpenGL for now");
+          TI_ERROR(
+              "[glsl] external array argument is supported to at most one in "
+              "OpenGL for now");
         ext_arr_idx = i;
         ext_arr_size = kernel->args[i].size;
         has_ext_arr = true;
@@ -90,44 +88,44 @@ struct CompiledProgram
     }
   }
 
-  void launch(Context &ctx) const
-  {
+  void launch(Context &ctx) const {
     std::vector<IOV> iov;
     iov.push_back(IOV{ctx.args, arg_count * sizeof(uint64_t)});
     void *gtmp_base = std::calloc(gtmp_size, 1);
     iov.push_back(IOV{gtmp_base, gtmp_size});
     if (has_ext_arr) {
-      iov.push_back(IOV{ctx.extra_args, arg_count * taichi_max_num_args * sizeof(int)});
+      iov.push_back(
+          IOV{ctx.extra_args, arg_count * taichi_max_num_args * sizeof(int)});
       void *extptr = (void *)ctx.args[ext_arr_idx];
       ctx.args[ext_arr_idx] = 0;
       iov.push_back(IOV{extptr, ext_arr_size});
     }
     begin_glsl_kernels(iov);
-    for (const auto &ker: kernels) {
+    for (const auto &ker : kernels) {
       ker.launch();
     }
     end_glsl_kernels(iov);
   }
 };
 
-class KernelGen : public IRVisitor
-{
+class KernelGen : public IRVisitor {
   Kernel *kernel;
 
-public:
-  KernelGen(Kernel *kernel, std::string kernel_name,
-      const StructCompiledResult *struct_compiled, size_t gtmp_size)
-    : kernel(kernel),
-      compiled_program_(kernel, gtmp_size),
-      struct_compiled_(struct_compiled),
-      kernel_name_(kernel_name),
-      glsl_kernel_prefix_(kernel_name)
-  {
+ public:
+  KernelGen(Kernel *kernel,
+            std::string kernel_name,
+            const StructCompiledResult *struct_compiled,
+            size_t gtmp_size)
+      : kernel(kernel),
+        compiled_program_(kernel, gtmp_size),
+        struct_compiled_(struct_compiled),
+        kernel_name_(kernel_name),
+        glsl_kernel_prefix_(kernel_name) {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
   }
 
-private: // {{{
+ private:  // {{{
   std::string kernel_src_code_;
   CompiledProgram compiled_program_;
   UsedFeature used;
@@ -146,31 +144,26 @@ private: // {{{
   int num_threads_{1};
   int num_groups_{1};
 
-  void push_indent()
-  {
+  void push_indent() {
     indent_ += "  ";
   }
 
-  void pop_indent()
-  {
+  void pop_indent() {
     indent_.pop_back();
     indent_.pop_back();
   }
 
   template <typename... Args>
-  void emit(std::string f, Args &&... args)
-  {
+  void emit(std::string f, Args &&... args) {
     kernel_src_code_ +=
         indent_ + fmt::format(f, std::forward<Args>(args)...) + "\n";
   }
 
-  void generate_header()
-  { // {{{
+  void generate_header() {  // {{{
     kernel_src_code_ += struct_compiled_->source_code;
-  } // }}}
+  }  // }}}
 
-  void generate_bottom()
-  {
+  void generate_bottom() {
     // TODO(archibate): <kernel_name>() really necessary? How about just main()?
     emit("void main()");
     emit("{{");
@@ -181,50 +174,60 @@ private: // {{{
     emit("}}");
 
     std::string kernel_header =
-    "layout(std430, binding = 0) buffer data_i32 { int _data_i32_[]; };\n"
-    "layout(std430, binding = 0) buffer data_f32 { float _data_f32_[]; };\n"
-    "layout(std430, binding = 0) buffer data_f64 { double _data_f64_[]; };\n"
-    "#define _mem_i32(x) _data_i32_[(x) >> 2]\n"
-    "#define _mem_f32(x) _data_f32_[(x) >> 2]\n"
-    "#define _mem_f64(x) _data_f64_[(x) >> 3]\n";
+        "layout(std430, binding = 0) buffer data_i32 { int _data_i32_[]; };\n"
+        "layout(std430, binding = 0) buffer data_f32 { float _data_f32_[]; };\n"
+        "layout(std430, binding = 0) buffer data_f64 { double _data_f64_[]; "
+        "};\n"
+        "#define _mem_i32(x) _data_i32_[(x) >> 2]\n"
+        "#define _mem_f32(x) _data_f32_[(x) >> 2]\n"
+        "#define _mem_f64(x) _data_f64_[(x) >> 3]\n";
 
     if (used.argument) {
       kernel_header +=
-        "layout(std430, binding = 1) buffer args_i32 { int _args_i32_[]; };\n"
-        "layout(std430, binding = 1) buffer args_f32 { float _args_f32_[]; };\n"
-        "layout(std430, binding = 1) buffer args_f64 { double _args_f64_[]; };\n"
-        "#define _arg_i32(x) _args_i32_[(x) << 1]\n" // skip to 64bit stride
-        "#define _arg_f32(x) _args_f32_[(x) << 1]\n"
-        "#define _arg_f64(x) _args_f64_[(x) << 0]\n";
+          "layout(std430, binding = 1) buffer args_i32 { int _args_i32_[]; };\n"
+          "layout(std430, binding = 1) buffer args_f32 { float _args_f32_[]; "
+          "};\n"
+          "layout(std430, binding = 1) buffer args_f64 { double _args_f64_[]; "
+          "};\n"
+          "#define _arg_i32(x) _args_i32_[(x) << 1]\n"  // skip to 64bit stride
+          "#define _arg_f32(x) _args_f32_[(x) << 1]\n"
+          "#define _arg_f64(x) _args_f64_[(x) << 0]\n";
     }
     if (used.global_temp) {
       kernel_header +=
-        "layout(std430, binding = 2) buffer gtmp_i32 { int _gtmp_i32_[]; };\n"
-        "layout(std430, binding = 2) buffer gtmp_f32 { float _gtmp_f32_[]; };\n"
-        "layout(std430, binding = 2) buffer gtmp_f64 { double _gtmp_f64_[]; };\n"
-        "#define _gtx_i32(x) _gtmp_i32_[(x) >> 2]\n"
-        "#define _gtx_f32(x) _gtmp_f32_[(x) >> 2]\n"
-        "#define _gtx_f64(x) _gtmp_f64_[(x) >> 3]\n";
+          "layout(std430, binding = 2) buffer gtmp_i32 { int _gtmp_i32_[]; };\n"
+          "layout(std430, binding = 2) buffer gtmp_f32 { float _gtmp_f32_[]; "
+          "};\n"
+          "layout(std430, binding = 2) buffer gtmp_f64 { double _gtmp_f64_[]; "
+          "};\n"
+          "#define _gtx_i32(x) _gtmp_i32_[(x) >> 2]\n"
+          "#define _gtx_f32(x) _gtmp_f32_[(x) >> 2]\n"
+          "#define _gtx_f64(x) _gtmp_f64_[(x) >> 3]\n";
     }
     if (used.extra_arg) {
       kernel_header +=
-        "layout(std430, binding = 3) buffer earg_i32 { int _earg_i32_[]; };\n"
-        + fmt::format("#define _extra_arg(i, j) _earg_i32_[(i) * {} + (j)]\n", taichi_max_num_indices);
+          "layout(std430, binding = 3) buffer earg_i32 { int _earg_i32_[]; "
+          "};\n" +
+          fmt::format("#define _extra_arg(i, j) _earg_i32_[(i) * {} + (j)]\n",
+                      taichi_max_num_indices);
     }
     if (used.external_ptr) {
       kernel_header +=
-        "layout(std430, binding = 4) buffer extr_i32 { int _extr_i32_[]; };\n"
-        "layout(std430, binding = 4) buffer extr_f32 { float _extr_f32_[]; };\n"
-        "layout(std430, binding = 4) buffer extr_f64 { double _extr_f64_[]; };\n"
-        "#define _ext_ns_i32(x) _extr_i32_[(x) >> 0]\n"
-        "#define _ext_ns_f32(x) _extr_f32_[(x) >> 0]\n"
-        "#define _ext_ns_f64(x) _extr_f64_[(x) >> 0]\n";
+          "layout(std430, binding = 4) buffer extr_i32 { int _extr_i32_[]; };\n"
+          "layout(std430, binding = 4) buffer extr_f32 { float _extr_f32_[]; "
+          "};\n"
+          "layout(std430, binding = 4) buffer extr_f64 { double _extr_f64_[]; "
+          "};\n"
+          "#define _ext_ns_i32(x) _extr_i32_[(x) >> 0]\n"
+          "#define _ext_ns_f32(x) _extr_f32_[(x) >> 0]\n"
+          "#define _ext_ns_f64(x) _extr_f64_[(x) >> 0]\n";
     }
     kernel_header +=
-      "#define _Ax_(x) x\n"
-      "#define _At_(x) _Ax_(_at_##x(x))\n";
-    if (used.atomic_float) { // {{{
-      kernel_header += "\
+        "#define _Ax_(x) x\n"
+        "#define _At_(x) _Ax_(_at_##x(x))\n";
+    if (used.atomic_float) {  // {{{
+      kernel_header +=
+          "\
 #define _Atmf_Def(Add, _f_, _o_, mem, _32, float) \
 float atomic##Add##_##mem##_f##_32(int addr, float rhs) \
 { \
@@ -243,31 +246,34 @@ _Atmf_Def(Max, max, _Acma_, mem, 32, float)\n\
 _Atmf_Def(Min, min, _Acma_, mem, 32, float)\n\
 "
 #ifdef _GLSL_INT64
-"\
+          "\
 _Atmf_Def(Add,, +, 64, double)\n\
 _Atmf_Def(Sub,, -, 64, double)\n\
 _Atmf_Def(Max, max, _Acma_, 64, double)\n\
 _Atmf_Def(Min, min, _Acma_, 64, double)\n\
 "
 #endif
-"\n"; // discussion: https://github.com/taichi-dev/taichi/pull/495#issuecomment-590074123
-    if (used.global_temp) {
+          "\n";  // discussion:
+                 // https://github.com/taichi-dev/taichi/pull/495#issuecomment-590074123
+      if (used.global_temp) {
+        kernel_header +=
+            "_Atmf_Def(Add,, +, gtx, 32, float)\n"
+            "_Atmf_Def(Sub,, -, gtx, 32, float)\n"
+            "_Atmf_Def(Max, max, _Acma_, gtx, 32, float)\n"
+            "_Atmf_Def(Min, min, _Acma_, gtx, 32, float)\n";
+      }
+      if (used.external_ptr) {
+        kernel_header +=
+            "_Atmf_Def(Add,, +, ext_ns, 32, float)\n"
+            "_Atmf_Def(Sub,, -, ext_ns, 32, float)\n"
+            "_Atmf_Def(Max, max, _Acma_, ext_ns, 32, float)\n"
+            "_Atmf_Def(Min, min, _Acma_, ext_ns, 32, float)\n";
+      }
+    }                   // }}}
+    if (used.random) {  // TODO(archibate): random in different offloads should
+                        // share rand seed? {{{
       kernel_header +=
-        "_Atmf_Def(Add,, +, gtx, 32, float)\n"
-        "_Atmf_Def(Sub,, -, gtx, 32, float)\n"
-        "_Atmf_Def(Max, max, _Acma_, gtx, 32, float)\n"
-        "_Atmf_Def(Min, min, _Acma_, gtx, 32, float)\n";
-    }
-    if (used.external_ptr) {
-      kernel_header +=
-        "_Atmf_Def(Add,, +, ext_ns, 32, float)\n"
-        "_Atmf_Def(Sub,, -, ext_ns, 32, float)\n"
-        "_Atmf_Def(Max, max, _Acma_, ext_ns, 32, float)\n"
-        "_Atmf_Def(Min, min, _Acma_, ext_ns, 32, float)\n";
-    }
-    } // }}}
-    if (used.random) { // TODO(archibate): random in different offloads should share rand seed? {{{
-      kernel_header += "\
+          "\
 uvec4 _rand_;\n\
 \n\
 void _init_rand()\n\
@@ -305,7 +311,7 @@ int _rand_i32()\n\
   return int(_rand_u32());\n\
 }\n\
 ";
-    } // }}}
+    }  // }}}
 
     kernel_src_code_ = kernel_header + kernel_src_code_;
 
@@ -315,42 +321,44 @@ int _rand_i32()\n\
     num_groups_ = (num_threads_ + 1791) / 1792;
     if (threads_per_group == 0)
       threads_per_group = 1;
-    emit("layout(local_size_x = {}, local_size_y = 1, local_size_z = 1) in;", threads_per_group);
+    emit("layout(local_size_x = {}, local_size_y = 1, local_size_z = 1) in;",
+         threads_per_group);
 
-    kernel_src_code_ = std::string("#version 430 core\nprecision highp float;\n") + kernel_src_code_;
-    compiled_program_.kernels.push_back(CompiledKernel(std::move(glsl_kernel_name_),
-        std::move(kernel_src_code_), num_groups_, used));
+    kernel_src_code_ =
+        std::string("#version 430 core\nprecision highp float;\n") +
+        kernel_src_code_;
+    compiled_program_.kernels.push_back(
+        CompiledKernel(std::move(glsl_kernel_name_),
+                       std::move(kernel_src_code_), num_groups_, used));
     kernel_src_code_ = "";
   }
 
-  void visit(Block *stmt) override
-  {
-    if (!is_top_level_) push_indent();
+  void visit(Block *stmt) override {
+    if (!is_top_level_)
+      push_indent();
     for (auto &s : stmt->statements) {
       s->accept(this);
     }
-    if (!is_top_level_) pop_indent();
+    if (!is_top_level_)
+      pop_indent();
   }
 
-  virtual void visit(Stmt *stmt) override
-  {
+  virtual void visit(Stmt *stmt) override {
     TI_ERROR("[glsl] unsupported statement type {}", typeid(*stmt).name());
   }
 
-  void visit(PrintStmt *stmt) override
-  {
+  void visit(PrintStmt *stmt) override {
     TI_WARN("Cannot print inside OpenGL kernel, ignored");
   }
 
-  void visit(RandStmt *stmt) override
-  {
+  void visit(RandStmt *stmt) override {
     used.random = true;
-    emit("const {} {} = _rand_{}();", opengl_data_type_name(stmt->ret_type.data_type),
-        stmt->raw_name(), data_type_short_name(stmt->ret_type.data_type));
+    emit("const {} {} = _rand_{}();",
+         opengl_data_type_name(stmt->ret_type.data_type), stmt->raw_name(),
+         data_type_short_name(stmt->ret_type.data_type));
   }
 
-  void visit(LinearizeStmt *stmt) override
-  {
+  void visit(LinearizeStmt *stmt) override {
     std::string val = "0";
     for (int i = 0; i < (int)stmt->inputs.size(); i++) {
       val = fmt::format("({} * {} + {})", val, stmt->strides[i],
@@ -359,22 +367,19 @@ int _rand_i32()\n\
     emit("const int {} = {};", stmt->raw_name(), val);
   }
 
-  void visit(OffsetAndExtractBitsStmt *stmt) override
-  {
+  void visit(OffsetAndExtractBitsStmt *stmt) override {
     emit("const int {} = ((({} + {}) >> {}) & ((1 << {}) - 1));",
          stmt->raw_name(), stmt->offset, stmt->input->raw_name(),
          stmt->bit_begin, stmt->bit_end - stmt->bit_begin);
   }
 
-  void visit(GetRootStmt *stmt) override
-  {
+  void visit(GetRootStmt *stmt) override {
     // Should we assert |root_stmt_| is assigned only once?
     root_stmt_ = stmt;
     emit("{} {} = 0;", root_snode_type_name_, stmt->raw_name());
   }
 
-  void visit(SNodeLookupStmt *stmt) override
-  {
+  void visit(SNodeLookupStmt *stmt) override {
     Stmt *parent;
     std::string parent_type;
     if (stmt->input_snode) {
@@ -391,32 +396,29 @@ int _rand_i32()\n\
          stmt->input_index->raw_name());
   }
 
-  void visit(GetChStmt *stmt) override
-  {
+  void visit(GetChStmt *stmt) override {
     emit("{} {} = {}_get{}({});", stmt->output_snode->node_type_name,
-        stmt->raw_name(), stmt->input_snode->node_type_name,
-        stmt->chid, stmt->input_ptr->raw_name());
+         stmt->raw_name(), stmt->input_snode->node_type_name, stmt->chid,
+         stmt->input_ptr->raw_name());
     if (stmt->output_snode->is_place())
-      // The best way I could think to distinguish root_ptr and external_ptr in GLSL
+      // The best way I could think to distinguish root_ptr and external_ptr in
+      // GLSL
       emit("#define _at_{} _mem_{}", stmt->raw_name(),
-          data_type_short_name(stmt->output_snode->dt));
+           data_type_short_name(stmt->output_snode->dt));
   }
 
-  void visit(GlobalStoreStmt *stmt) override
-  {
+  void visit(GlobalStoreStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
     emit("_At_({}) = {};", stmt->ptr->raw_name(), stmt->data->raw_name());
   }
 
-  void visit(GlobalLoadStmt *stmt) override
-  {
+  void visit(GlobalLoadStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
     emit("const {} {} = _At_({});", opengl_data_type_name(stmt->element_type()),
          stmt->raw_name(), stmt->ptr->raw_name());
   }
 
-  void visit(ExternalPtrStmt *stmt) override
-{
+  void visit(ExternalPtrStmt *stmt) override {
     // Used mostly for transferring data between host (e.g. numpy array) and
     // Metal.
     TI_ASSERT(stmt->width() == 1);
@@ -445,36 +447,41 @@ int _rand_i32()\n\
 
     emit("const int {} = ({} + {});", stmt->raw_name(),
          stmt->base_ptrs[0]->raw_name(), linear_index_name);
-      used.external_ptr = true;
-      emit("#define _at_{} _ext_ns_{}", stmt->raw_name(),
-          data_type_short_name(stmt->element_type()));
+    used.external_ptr = true;
+    emit("#define _at_{} _ext_ns_{}", stmt->raw_name(),
+         data_type_short_name(stmt->element_type()));
   }
 
-  void visit(UnaryOpStmt *stmt) override
-  {
+  void visit(UnaryOpStmt *stmt) override {
     if (stmt->op_type == UnaryOpType::logic_not) {
-      emit("const {} {} = {}({} == 0);", opengl_data_type_name(stmt->element_type()),
-           stmt->raw_name(), opengl_data_type_name(stmt->element_type()),
+      emit("const {} {} = {}({} == 0);",
+           opengl_data_type_name(stmt->element_type()), stmt->raw_name(),
+           opengl_data_type_name(stmt->element_type()),
            stmt->operand->raw_name());
     } else if (stmt->op_type == UnaryOpType::neg) {
-      emit("const {} {} = {}(-{});", opengl_data_type_name(stmt->element_type()),
-           stmt->raw_name(), opengl_data_type_name(stmt->element_type()),
+      emit("const {} {} = {}(-{});",
+           opengl_data_type_name(stmt->element_type()), stmt->raw_name(),
+           opengl_data_type_name(stmt->element_type()),
            stmt->operand->raw_name());
     } else if (stmt->op_type == UnaryOpType::rsqrt) {
-      emit("const {} {} = {}(1 / sqrt({}));", opengl_data_type_name(stmt->element_type()),
-           stmt->raw_name(), opengl_data_type_name(stmt->element_type()),
+      emit("const {} {} = {}(1 / sqrt({}));",
+           opengl_data_type_name(stmt->element_type()), stmt->raw_name(),
+           opengl_data_type_name(stmt->element_type()),
            stmt->operand->raw_name());
     } else if (stmt->op_type == UnaryOpType::sgn) {
-      emit("const {} {} = {}(sign({}));", opengl_data_type_name(stmt->element_type()),
-           stmt->raw_name(), opengl_data_type_name(stmt->element_type()),
+      emit("const {} {} = {}(sign({}));",
+           opengl_data_type_name(stmt->element_type()), stmt->raw_name(),
+           opengl_data_type_name(stmt->element_type()),
            stmt->operand->raw_name());
     } else if (stmt->op_type == UnaryOpType::bit_not) {
-      emit("const {} {} = {}(~{});", opengl_data_type_name(stmt->element_type()),
-           stmt->raw_name(), opengl_data_type_name(stmt->element_type()),
+      emit("const {} {} = {}(~{});",
+           opengl_data_type_name(stmt->element_type()), stmt->raw_name(),
+           opengl_data_type_name(stmt->element_type()),
            stmt->operand->raw_name());
     } else if (stmt->op_type != UnaryOpType::cast) {
-      emit("const {} {} = {}({}({}));", opengl_data_type_name(stmt->element_type()),
-           stmt->raw_name(), opengl_data_type_name(stmt->element_type()),
+      emit("const {} {} = {}({}({}));",
+           opengl_data_type_name(stmt->element_type()), stmt->raw_name(),
+           opengl_data_type_name(stmt->element_type()),
            unary_op_type_name(stmt->op_type), stmt->operand->raw_name());
     } else {
       // cast
@@ -483,12 +490,12 @@ int _rand_i32()\n\
              opengl_data_type_name(stmt->element_type()), stmt->raw_name(),
              opengl_data_type_name(stmt->cast_type), stmt->operand->raw_name());
       } else if (stmt->cast_type == DataType::f32 &&
-          stmt->operand->element_type() == DataType::i32) {
+                 stmt->operand->element_type() == DataType::i32) {
         emit("{} {} = intBitsToFloat({});",
              opengl_data_type_name(stmt->element_type()), stmt->raw_name(),
              stmt->operand->raw_name());
       } else if (stmt->cast_type == DataType::i32 &&
-          stmt->operand->element_type() == DataType::f32) {
+                 stmt->operand->element_type() == DataType::f32) {
         emit("{} {} = floatBitsToInt({});",
              opengl_data_type_name(stmt->element_type()), stmt->raw_name(),
              stmt->operand->raw_name());
@@ -498,71 +505,78 @@ int _rand_i32()\n\
     }
   }
 
-  void visit(BinaryOpStmt *bin) override
-  {
+  void visit(BinaryOpStmt *bin) override {
     const auto dt_name = opengl_data_type_name(bin->element_type());
     const auto lhs_name = bin->lhs->raw_name();
     const auto rhs_name = bin->rhs->raw_name();
     const auto bin_name = bin->raw_name();
     if (bin->op_type == BinaryOpType::floordiv) {
-      if (is_integral(bin->lhs->element_type()) && is_integral(bin->rhs->element_type())) {
-        emit("const {} {} = {}({} * {} >= 0 ? abs({}) / abs({}) : sign({}) * (abs({}) + abs({}) - 1) / {});",
+      if (is_integral(bin->lhs->element_type()) &&
+          is_integral(bin->rhs->element_type())) {
+        emit(
+            "const {} {} = {}({} * {} >= 0 ? abs({}) / abs({}) : sign({}) * "
+            "(abs({}) + abs({}) - 1) / {});",
             dt_name, bin_name, dt_name, lhs_name, rhs_name, lhs_name, rhs_name,
             lhs_name, lhs_name, rhs_name, rhs_name);
         return;
       }
-      // NOTE: the 1e-6 here is for precision reason, or `7 // 7` will obtain 0 instead of 1
-      emit("const {} {} = {}(floor((float({}) * (1 + sign({} * {}) * 1e-6)) / float({})));",
+      // NOTE: the 1e-6 here is for precision reason, or `7 // 7` will obtain 0
+      // instead of 1
+      emit(
+          "const {} {} = {}(floor((float({}) * (1 + sign({} * {}) * 1e-6)) / "
+          "float({})));",
           dt_name, bin_name, dt_name, lhs_name, lhs_name, rhs_name, rhs_name);
       return;
     } else if (bin->op_type == BinaryOpType::mod) {
-      // NOTE: the GLSL built-in function `mod()` is a pythonic mod: x - y * floor(x / y)
-      emit("const {} {} = {} - {} * int({} / {});", dt_name, bin_name, lhs_name, rhs_name,
-          lhs_name, rhs_name);
+      // NOTE: the GLSL built-in function `mod()` is a pythonic mod: x - y *
+      // floor(x / y)
+      emit("const {} {} = {} - {} * int({} / {});", dt_name, bin_name, lhs_name,
+           rhs_name, lhs_name, rhs_name);
       return;
     } else if (bin->op_type == BinaryOpType::atan2) {
-      emit("const {} {} = atan({}, {});", dt_name, bin_name, lhs_name, rhs_name);
+      emit("const {} {} = atan({}, {});", dt_name, bin_name, lhs_name,
+           rhs_name);
       return;
     }
     const auto binop = binary_op_type_symbol(bin->op_type);
     if (is_opengl_binary_op_infix(bin->op_type)) {
-      emit("const {} {} = {}({} {} {});", dt_name, bin_name, dt_name,
-          lhs_name, binop, rhs_name);
+      emit("const {} {} = {}({} {} {});", dt_name, bin_name, dt_name, lhs_name,
+           binop, rhs_name);
     } else {
       // This is a function call
       emit("const {} {} = {}({}, {});", dt_name, bin_name, binop, lhs_name,
-          rhs_name);
+           rhs_name);
     }
   }
 
-  void visit(AtomicOpStmt *stmt) override
-  {
+  void visit(AtomicOpStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
-    if (stmt->val->element_type() == DataType::i32
-        || stmt->val->element_type() == DataType::u32) {
-      emit("{} {} = {}(_At_({}), {});", opengl_data_type_name(stmt->val->element_type()),
-          stmt->raw_name(), opengl_atomic_op_type_cap_name(stmt->op_type),
-          stmt->dest->raw_name(), stmt->val->raw_name());
+    if (stmt->val->element_type() == DataType::i32 ||
+        stmt->val->element_type() == DataType::u32) {
+      emit("{} {} = {}(_At_({}), {});",
+           opengl_data_type_name(stmt->val->element_type()), stmt->raw_name(),
+           opengl_atomic_op_type_cap_name(stmt->op_type),
+           stmt->dest->raw_name(), stmt->val->raw_name());
     } else {
-      TI_ASSERT(stmt->val->element_type() == DataType::f32
-        || stmt->val->element_type() == DataType::f64);
+      TI_ASSERT(stmt->val->element_type() == DataType::f32 ||
+                stmt->val->element_type() == DataType::f64);
       used.atomic_float = true;
-      emit("{} {} = _Atm_({}, _at_{}, {}, {});", opengl_data_type_name(stmt->val->element_type()),
-          stmt->raw_name(), opengl_atomic_op_type_cap_name(stmt->op_type),
-          stmt->dest->raw_name(), stmt->dest->raw_name(), stmt->val->raw_name());
+      emit("{} {} = _Atm_({}, _at_{}, {}, {});",
+           opengl_data_type_name(stmt->val->element_type()), stmt->raw_name(),
+           opengl_atomic_op_type_cap_name(stmt->op_type),
+           stmt->dest->raw_name(), stmt->dest->raw_name(),
+           stmt->val->raw_name());
     }
   }
 
-  void visit(TernaryOpStmt *tri) override
-  {
+  void visit(TernaryOpStmt *tri) override {
     TI_ASSERT(tri->op_type == TernaryOpType::select);
     emit("const {} {} = ({}) != 0 ? ({}) : ({});",
          opengl_data_type_name(tri->element_type()), tri->raw_name(),
          tri->op1->raw_name(), tri->op2->raw_name(), tri->op3->raw_name());
   }
 
-  void visit(LocalLoadStmt *stmt) override
-  {
+  void visit(LocalLoadStmt *stmt) override {
     bool linear_index = true;
     for (int i = 0; i < (int)stmt->ptr.size(); i++) {
       if (stmt->ptr[i].offset != i) {
@@ -579,47 +593,41 @@ int _rand_i32()\n\
     }
   }
 
-  void visit(LocalStoreStmt *stmt) override
-  {
+  void visit(LocalStoreStmt *stmt) override {
     emit("{} = {};", stmt->ptr->raw_name(), stmt->data->raw_name());
   }
 
-  void visit(AllocaStmt *alloca) override
-  {
-    emit("{} {} = 0;",
-        opengl_data_type_name(alloca->element_type()),
-        alloca->raw_name());
+  void visit(AllocaStmt *alloca) override {
+    emit("{} {} = 0;", opengl_data_type_name(alloca->element_type()),
+         alloca->raw_name());
   }
 
-  void visit(ConstStmt *const_stmt) override
-  {
+  void visit(ConstStmt *const_stmt) override {
     TI_ASSERT(const_stmt->width() == 1);
     emit("const {} {} = {};", opengl_data_type_name(const_stmt->element_type()),
          const_stmt->raw_name(), const_stmt->val[0].stringify());
   }
 
-  void visit(ArgLoadStmt *stmt) override
-  {
+  void visit(ArgLoadStmt *stmt) override {
     const auto dt = opengl_data_type_name(stmt->element_type());
     used.argument = true;
     if (stmt->is_ptr) {
-      emit("const int {} = _arg_i32({}); // is ext pointer {}", stmt->raw_name(), stmt->arg_id, dt);
+      emit("const int {} = _arg_i32({}); // is ext pointer {}",
+           stmt->raw_name(), stmt->arg_id, dt);
     } else {
       emit("const {} {} = _arg_{}({});", dt, stmt->raw_name(),
-          data_type_short_name(stmt->element_type()), stmt->arg_id);
+           data_type_short_name(stmt->element_type()), stmt->arg_id);
     }
   }
 
-  void visit(ArgStoreStmt *stmt) override
-  {
+  void visit(ArgStoreStmt *stmt) override {
     TI_ASSERT(!stmt->is_ptr);
     used.argument = true;
     emit("_arg_{}({}) = {};", data_type_short_name(stmt->element_type()),
-        stmt->arg_id, stmt->val->raw_name());
+         stmt->arg_id, stmt->val->raw_name());
   }
 
-  std::string make_kernel_name()
-  {
+  std::string make_kernel_name() {
     return fmt::format("{}{}", glsl_kernel_prefix_, glsl_kernel_count_++);
   }
 
@@ -650,8 +658,8 @@ int _rand_i32()\n\
       emit("// range known at compile time");
       emit("const int _thread_id_ = int(gl_GlobalInvocationID.x);");
       emit("if (_thread_id_ >= {}) return;", num_threads_);
-      emit("const int _it_value_ = {} + _thread_id_ * {};",
-          begin_value, 1 /* stmt->step? */);
+      emit("const int _it_value_ = {} + _thread_id_ * {};", begin_value,
+           1 /* stmt->step? */);
     } else {
       TI_ERROR("[glsl] non-const range_for currently unsupported under OpenGL");
       /*range_for_attribs.begin =
@@ -670,18 +678,16 @@ int _rand_i32()\n\
     used.global_temp = true;
     emit("int {} = {};", stmt->raw_name(), stmt->offset);
     emit("#define _at_{} _gtx_{}", stmt->raw_name(),
-        data_type_short_name(stmt->element_type()));
+         data_type_short_name(stmt->element_type()));
   }
 
-  void visit(LoopIndexStmt *stmt) override
-  {
+  void visit(LoopIndexStmt *stmt) override {
     TI_ASSERT(!stmt->is_struct_for);
-    TI_ASSERT(stmt->index == 0); // TODO: multiple indices
+    TI_ASSERT(stmt->index == 0);  // TODO: multiple indices
     emit("const int {} = _it_value_;", stmt->raw_name());
   }
 
-  void visit(RangeForStmt *for_stmt) override
-  {
+  void visit(RangeForStmt *for_stmt) override {
     TI_ASSERT(for_stmt->width() == 1);
     auto *loop_var = for_stmt->loop_var;
     if (loop_var->ret_type.data_type == DataType::i32) {
@@ -712,20 +718,17 @@ int _rand_i32()\n\
     emit("}}");
   }
 
-  void visit(WhileControlStmt *stmt) override
-  {
+  void visit(WhileControlStmt *stmt) override {
     emit("if ({} == 0) break;", stmt->cond->raw_name());
   }
 
-  void visit(WhileStmt *stmt) override
-  {
+  void visit(WhileStmt *stmt) override {
     emit("while (true) {{");
     stmt->body->accept(this);
     emit("}}");
   }
 
-  void visit(OffloadedStmt *stmt) override
-  {
+  void visit(OffloadedStmt *stmt) override {
     generate_header();
     TI_ASSERT(is_top_level_);
     is_top_level_ = false;
@@ -737,14 +740,14 @@ int _rand_i32()\n\
     } else {
       // struct_for is automatically lowered to ranged_for for dense snodes
       // (#378). So we only need to support serial and range_for tasks.
-      TI_ERROR("[glsl] Unsupported offload type={} on OpenGL arch", stmt->task_name());
+      TI_ERROR("[glsl] Unsupported offload type={} on OpenGL arch",
+               stmt->task_name());
     }
     is_top_level_ = true;
     generate_bottom();
   }
 
-  void visit(StructForStmt *) override
-  {
+  void visit(StructForStmt *) override {
     TI_ERROR("[glsl] Struct for cannot be nested under OpenGL for now");
   }
 
@@ -760,29 +763,25 @@ int _rand_i32()\n\
     emit("}}");
   }
 
-public:
-  Kernel *get_kernel() const
-  {
+ public:
+  Kernel *get_kernel() const {
     return kernel;
   }
 
-  CompiledProgram get_compiled_program() const
-  {
+  CompiledProgram get_compiled_program() const {
     return compiled_program_;
   }
 
-  void run(const SNode &root_snode)
-  {
+  void run(const SNode &root_snode) {
     root_snode_ = &root_snode;
     root_snode_type_name_ = root_snode.node_type_name;
     kernel->ir->accept(this);
   }
 };
 
-} // namespace
+}  // namespace
 
-void OpenglCodeGen::lower()
-{ // {{{
+void OpenglCodeGen::lower() {  // {{{
   auto ir = kernel_->ir;
   const bool print_ir = prog_->config.print_ir;
   if (print_ir) {
@@ -899,25 +898,22 @@ void OpenglCodeGen::lower()
 #ifdef _GLSL_DEBUG
   irpass::print(ir);
 #endif
-} // }}}
+}  // }}}
 
-FunctionType OpenglCodeGen::gen(void)
-{
+FunctionType OpenglCodeGen::gen(void) {
 #if defined(TI_WITH_OPENGL)
-  KernelGen codegen(kernel_, kernel_name_, struct_compiled_, global_tmps_buffer_size_);
+  KernelGen codegen(kernel_, kernel_name_, struct_compiled_,
+                    global_tmps_buffer_size_);
   codegen.run(*prog_->snode_root);
   auto compiled = codegen.get_compiled_program();
 
-  return [compiled](Context &ctx) {
-    compiled.launch(ctx);
-  };
+  return [compiled](Context &ctx) { compiled.launch(ctx); };
 #else
   TI_NOT_IMPLEMENTED
 #endif
 }
 
-FunctionType OpenglCodeGen::compile(Program &program, Kernel &kernel)
-{
+FunctionType OpenglCodeGen::compile(Program &program, Kernel &kernel) {
   this->prog_ = &program;
   this->kernel_ = &kernel;
 
@@ -925,5 +921,5 @@ FunctionType OpenglCodeGen::compile(Program &program, Kernel &kernel)
   return this->gen();
 }
 
-} // namespace opengl
+}  // namespace opengl
 TLANG_NAMESPACE_END

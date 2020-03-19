@@ -11,52 +11,51 @@
 
 std::map<HWND, taichi::GUI *> gui_from_hwnd;
 
-static std::string lookup_keysym(WPARAM wParam, LPARAM lParam)
-{
+static std::string lookup_keysym(WPARAM wParam, LPARAM lParam) {
   int key = wParam;
   switch (key) {
-  /*** http://kbdedit.com/manual/low_level_vk_list.html ***/
-  case VK_LEFT:
-    return "Left";
-  case VK_RIGHT:
-    return "Right";
-  case VK_UP:
-    return "Up";
-  case VK_DOWN:
-    return "Down";
-  case VK_TAB:
-    return "Tab";
-  case VK_RETURN:
-    return "Return";
-  case VK_BACK:
-    return "BackSpace";
-  case VK_ESCAPE:
-    return "Escape";
-  case VK_SHIFT:
-  case VK_LSHIFT:
-    return "Shift_L";
-  case VK_RSHIFT:
-    return "Shift_R";
-  case VK_CONTROL:
-  case VK_LCONTROL:
-    return "Control_L";
-  case VK_RCONTROL:
-    return "Control_R";
-  case VK_MENU:
-  case VK_LMENU:
-    return "Alt_L";
-  case VK_RMENU:
-    return "Alt_R";
-  case VK_CAPITAL:
-    return "Caps_Lock";
-  /*** TODO: win32 keyboard WIP, add more cases, match XKeysymToString() ***/
-  default:
-    if (VK_F1 <= key && key <= VK_F12)
-      return fmt::format("F{}", key - VK_F1);
-    else if (isascii(key))
-      return std::string(1, key);
-    else
-      return fmt::format("Vk{}", key);
+    /*** http://kbdedit.com/manual/low_level_vk_list.html ***/
+    case VK_LEFT:
+      return "Left";
+    case VK_RIGHT:
+      return "Right";
+    case VK_UP:
+      return "Up";
+    case VK_DOWN:
+      return "Down";
+    case VK_TAB:
+      return "Tab";
+    case VK_RETURN:
+      return "Return";
+    case VK_BACK:
+      return "BackSpace";
+    case VK_ESCAPE:
+      return "Escape";
+    case VK_SHIFT:
+    case VK_LSHIFT:
+      return "Shift_L";
+    case VK_RSHIFT:
+      return "Shift_R";
+    case VK_CONTROL:
+    case VK_LCONTROL:
+      return "Control_L";
+    case VK_RCONTROL:
+      return "Control_R";
+    case VK_MENU:
+    case VK_LMENU:
+      return "Alt_L";
+    case VK_RMENU:
+      return "Alt_R";
+    case VK_CAPITAL:
+      return "Caps_Lock";
+    /*** TODO: win32 keyboard WIP, add more cases, match XKeysymToString() ***/
+    default:
+      if (VK_F1 <= key && key <= VK_F12)
+        return fmt::format("F{}", key - VK_F1);
+      else if (isascii(key))
+        return std::string(1, key);
+      else
+        return fmt::format("Vk{}", key);
   }
 }
 
@@ -112,14 +111,14 @@ LRESULT CALLBACK WindowProc(HWND hwnd,
       break;
     case WM_KEYDOWN:
       gui->key_pressed = true;
-      gui->key_events.push_back(
-          GUI::KeyEvent{GUI::KeyEvent::Type::press,
-          lookup_keysym(wParam, lParam), gui->cursor_pos});
+      gui->key_events.push_back(GUI::KeyEvent{GUI::KeyEvent::Type::press,
+                                              lookup_keysym(wParam, lParam),
+                                              gui->cursor_pos});
       break;
     case WM_KEYUP:
-      gui->key_events.push_back(
-          GUI::KeyEvent{GUI::KeyEvent::Type::release,
-          lookup_keysym(wParam, lParam), gui->cursor_pos});
+      gui->key_events.push_back(GUI::KeyEvent{GUI::KeyEvent::Type::release,
+                                              lookup_keysym(wParam, lParam),
+                                              gui->cursor_pos});
       break;
     case WM_CLOSE:
       exit(0);

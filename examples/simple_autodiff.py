@@ -7,20 +7,20 @@ x, y = ti.var(ti.f32), ti.var(ti.f32)
 
 @ti.layout
 def xy():
-  ti.root.dense(ti.i, N).place(x, x.grad, y, y.grad)
+    ti.root.dense(ti.i, N).place(x, x.grad, y, y.grad)
 
 
 @ti.kernel
 def poly():
-  for i in x:
-    v = x[i]
-    ret = 0.0
-    guard = 0.2
-    if v < -guard or v > guard:
-      ret = 4 / ti.max(v, 0.1)
-    else:
-      ret = 0
-    y[i] = ret
+    for i in x:
+        v = x[i]
+        ret = 0.0
+        guard = 0.2
+        if v < -guard or v > guard:
+            ret = 4 / ti.max(v, 0.1)
+        else:
+            ret = 0
+        y[i] = ret
 
 
 xs = []
@@ -28,22 +28,22 @@ ys = []
 grad_xs = []
 
 for i in range(N):
-  v = ((i + 0.5) / N) * 2 - 1
-  xs.append(v)
-  x[i] = v
+    v = ((i + 0.5) / N) * 2 - 1
+    xs.append(v)
+    x[i] = v
 
 poly()
 
 print('y')
 for i in range(N):
-  y.grad[i] = 1
-  ys.append(y[i])
+    y.grad[i] = 1
+    ys.append(y[i])
 print()
 
 poly.grad()
 print('grad_x')
 for i in range(N):
-  grad_xs.append(x.grad[i])
+    grad_xs.append(x.grad[i])
 
 plt.title('Auto Diff')
 ax = plt.gca()

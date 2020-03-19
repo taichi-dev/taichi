@@ -3,184 +3,180 @@ import taichi as ti
 
 @ti.must_throw(ti.TaichiSyntaxError)
 def test_try():
-  x = ti.var(ti.f32)
+    x = ti.var(ti.f32)
 
-  @ti.layout
-  def layout():
-    ti.root.dense(ti.i, 1).place(x)
+    @ti.layout
+    def layout():
+        ti.root.dense(ti.i, 1).place(x)
 
-  @ti.kernel
-  def func():
-    try:
-      a = 0
-    except:
-      a = 1
+    @ti.kernel
+    def func():
+        try:
+            a = 0
+        except:
+            a = 1
 
-  func()
+    func()
 
 
 @ti.must_throw(ti.TaichiSyntaxError)
 def test_import():
-  x = ti.var(ti.f32)
+    x = ti.var(ti.f32)
 
-  @ti.layout
-  def layout():
-    ti.root.dense(ti.i, 1).place(x)
+    @ti.layout
+    def layout():
+        ti.root.dense(ti.i, 1).place(x)
 
-  @ti.kernel
-  def func():
-    import something
+    @ti.kernel
+    def func():
+        import something
 
-  func()
+    func()
 
 
 @ti.must_throw(ti.TaichiSyntaxError)
 def test_for_else():
-  x = ti.var(ti.f32)
+    x = ti.var(ti.f32)
 
-  @ti.layout
-  def layout():
-    ti.root.dense(ti.i, 1).place(x)
+    @ti.layout
+    def layout():
+        ti.root.dense(ti.i, 1).place(x)
 
-  @ti.kernel
-  def func():
-    for i in range(10):
-      pass
-    else:
-      pass
+    @ti.kernel
+    def func():
+        for i in range(10):
+            pass
+        else:
+            pass
 
-  func()
+    func()
 
 
 @ti.must_throw(ti.TaichiSyntaxError)
 def test_while_else():
-  x = ti.var(ti.f32)
+    x = ti.var(ti.f32)
 
-  @ti.layout
-  def layout():
-    ti.root.dense(ti.i, 1).place(x)
+    @ti.layout
+    def layout():
+        ti.root.dense(ti.i, 1).place(x)
 
-  @ti.kernel
-  def func():
-    while True:
-      pass
-    else:
-      pass
+    @ti.kernel
+    def func():
+        while True:
+            pass
+        else:
+            pass
 
-  func()
+    func()
 
 
 @ti.must_throw(ti.TaichiSyntaxError)
 def test_continue():
-  x = ti.var(ti.f32)
+    x = ti.var(ti.f32)
 
-  @ti.layout
-  def layout():
-    ti.root.dense(ti.i, 1).place(x)
+    @ti.layout
+    def layout():
+        ti.root.dense(ti.i, 1).place(x)
 
-  @ti.kernel
-  def func():
-    while True:
-      continue
+    @ti.kernel
+    def func():
+        while True:
+            continue
 
-  func()
+    func()
 
 
 @ti.must_throw(ti.TaichiSyntaxError)
 def test_loop_var_range():
-  x = ti.var(ti.f32)
+    x = ti.var(ti.f32)
 
-  @ti.layout
-  def layout():
-    ti.root.dense(ti.i, 1).place(x)
+    @ti.layout
+    def layout():
+        ti.root.dense(ti.i, 1).place(x)
 
-  @ti.kernel
-  def func():
-    i = 0
-    for i in range(10):
-      pass
+    @ti.kernel
+    def func():
+        i = 0
+        for i in range(10):
+            pass
 
-  func()
-
-
-@ti.must_throw(ti.TaichiSyntaxError)
-def test_loop_var_struct():
-  x = ti.var(ti.f32)
-
-  @ti.layout
-  def layout():
-    ti.root.dense(ti.i, 1).place(x)
-
-  @ti.kernel
-  def func():
-    i = 0
-    for i in x:
-      pass
-
-  func()
+    func()
 
 
 @ti.must_throw(ti.TaichiSyntaxError)
 def test_loop_var_struct():
-  x = ti.var(ti.f32)
+    x = ti.var(ti.f32)
 
-  @ti.layout
-  def layout():
-    ti.root.dense(ti.i, 1).place(x)
+    @ti.layout
+    def layout():
+        ti.root.dense(ti.i, 1).place(x)
 
-  @ti.kernel
-  def func():
-    j = 0
-    for i, j in x:
-      pass
+    @ti.kernel
+    def func():
+        i = 0
+        for i in x:
+            pass
 
-  func()
+    func()
+
+
+@ti.must_throw(ti.TaichiSyntaxError)
+def test_loop_var_struct():
+    x = ti.var(ti.f32)
+
+    @ti.layout
+    def layout():
+        ti.root.dense(ti.i, 1).place(x)
+
+    @ti.kernel
+    def func():
+        j = 0
+        for i, j in x:
+            pass
+
+    func()
 
 
 @ti.must_throw(ti.TaichiSyntaxError)
 def test_ternary():
-  x = ti.var(ti.f32)
+    x = ti.var(ti.f32)
 
-  @ti.layout
-  def layout():
-    ti.root.dense(ti.i, 1).place(x)
+    @ti.layout
+    def layout():
+        ti.root.dense(ti.i, 1).place(x)
 
-  @ti.kernel
-  def func():
-    a = 0 if True else 123
+    @ti.kernel
+    def func():
+        a = 0 if True else 123
 
-  func()
+    func()
 
 
 @ti.must_throw(ti.TaichiSyntaxError)
 def test_func_def_in_kernel():
+    @ti.kernel
+    def kernel():
+        @ti.func
+        def func():
+            return 1
 
-  @ti.kernel
-  def kernel():
+        print(func())
 
-    @ti.func
-    def func():
-      return 1
-
-    print(func())
-
-  kernel()
+    kernel()
 
 
 @ti.must_throw(ti.TaichiSyntaxError)
 def test_func_def_in_func():
-
-  @ti.func
-  def func():
-
     @ti.func
-    def func2():
-      return 1
+    def func():
+        @ti.func
+        def func2():
+            return 1
 
-    return func2()
+        return func2()
 
-  @ti.kernel
-  def kernel():
-    print(func())
+    @ti.kernel
+    def kernel():
+        print(func())
 
-  kernel()
+    kernel()

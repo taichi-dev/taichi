@@ -20,14 +20,13 @@ static_assert(false, "Do not include");
 #endif  // TI_INSIDE_METAL_CODEGEN
 
 METAL_BEGIN_HELPERS_DEF
-STR(
-    template <typename T, typename G> T union_cast(G g) {
-      // For some reason, if I emit taichi/common.h's union_cast(), Metal failed
-      // to compile. More strangely, if I copy the generated code to XCode as a
-      // Metal kernel, it compiled successfully...
-      static_assert(sizeof(T) == sizeof(G), "Size mismatch");
-      return *reinterpret_cast<thread const T *>(&g);
-    }
+STR(template <typename T, typename G> T union_cast(G g) {
+  // For some reason, if I emit taichi/common.h's union_cast(), Metal failed
+  // to compile. More strangely, if I copy the generated code to XCode as a
+  // Metal kernel, it compiled successfully...
+  static_assert(sizeof(T) == sizeof(G), "Size mismatch");
+  return *reinterpret_cast<thread const T *>(&g);
+}
 
     inline int ifloordiv(int lhs, int rhs) {
       const int intm = (lhs / rhs);

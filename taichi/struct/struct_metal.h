@@ -21,7 +21,7 @@ struct StructCompiledResult {
 };
 
 // Compile all snodes to Metal source code
-StructCompiledResult compile_structs(SNode& root);
+StructCompiledResult compile_structs(SNode &root);
 
 }  // namespace metal
 TLANG_NAMESPACE_END

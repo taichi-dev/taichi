@@ -60,8 +60,8 @@ void ProfilerRecords::print(ProfilerRecords::Node *node, int depth) {
           fmt::format("{} {}", get_readable_time(child_time), ch->name);
       fmt::print(fg(level_color), "{:40}", bulk_statistics);
       fmt::print(fg(fmt::color::cyan), " [{} x {}]\n", ch->num_samples,
-          get_readable_time_with_scale(ch->get_averaged(),
-                                       get_time_scale(ch->get_averaged())));
+                 get_readable_time_with_scale(
+                     ch->get_averaged(), get_time_scale(ch->get_averaged())));
       print(ch.get(), depth + 1);
     }
   } else {

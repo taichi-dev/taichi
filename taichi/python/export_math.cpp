@@ -186,16 +186,16 @@ struct get_vec_field<3, VEC> {
 };
 
 template <int i,
-    typename VEC,
-    typename Class,
-    std::enable_if_t<get_dim<VEC>::value<i + 1, int> = 0> void
-register_vec_field(Class &cls) {
+          typename VEC,
+          typename Class,
+          std::enable_if_t<get_dim<VEC>::value<i + 1, int> = 0> void
+              register_vec_field(Class &cls) {
 }
 
 template <int i,
-    typename VEC,
-    typename Class,
-    std::enable_if_t<get_dim<VEC>::value >= i + 1, int> = 0>
+          typename VEC,
+          typename Class,
+          std::enable_if_t<get_dim<VEC>::value >= i + 1, int> = 0>
 void register_vec_field(Class &cls) {
   static const char *names[4] = {"x", "y", "z", "w"};
   cls.def_readwrite(names[i], get_vec_field<i, VEC>::get());

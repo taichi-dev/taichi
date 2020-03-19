@@ -59,22 +59,29 @@ inline void end_encoding(MTLComputeCommandEncoder *encoder) {
 
 nsobj_unique_ptr<MTLBuffer> new_mtl_buffer(MTLDevice *device, size_t length);
 
-nsobj_unique_ptr<MTLBuffer> new_mtl_buffer_no_copy(MTLDevice *device, void *ptr,
+nsobj_unique_ptr<MTLBuffer> new_mtl_buffer_no_copy(MTLDevice *device,
+                                                   void *ptr,
                                                    size_t length);
 
-inline void set_mtl_buffer(MTLComputeCommandEncoder *encoder, MTLBuffer *buffer,
-                           size_t offset, size_t index) {
+inline void set_mtl_buffer(MTLComputeCommandEncoder *encoder,
+                           MTLBuffer *buffer,
+                           size_t offset,
+                           size_t index) {
   mac::call(encoder, "setBuffer:offset:atIndex:", buffer, offset, index);
 }
 
-void dispatch_threadgroups(MTLComputeCommandEncoder *encoder, int32_t blocks_x,
-                           int32_t blocks_y, int32_t blocks_z,
-                           int32_t threads_x, int32_t threads_y,
+void dispatch_threadgroups(MTLComputeCommandEncoder *encoder,
+                           int32_t blocks_x,
+                           int32_t blocks_y,
+                           int32_t blocks_z,
+                           int32_t threads_x,
+                           int32_t threads_y,
                            int32_t threads_z);
 
 // 1D
 inline void dispatch_threadgroups(MTLComputeCommandEncoder *encoder,
-                                  int32_t blocks_x, int32_t threads_x) {
+                                  int32_t blocks_x,
+                                  int32_t threads_x) {
   dispatch_threadgroups(encoder, blocks_x, 1, 1, threads_x, 1, 1);
 }
 

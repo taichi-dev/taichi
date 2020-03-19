@@ -648,7 +648,7 @@ void taichi_assert_runtime(LLVMRuntime *runtime, i32 test, const char *msg) {
     return;
   locked_task(&runtime->error_message_lock, [&] {
     if (!runtime->error_code) {
-      runtime->error_code = 1; // Assertion failure
+      runtime->error_code = 1;  // Assertion failure
       memcpy(runtime->error_message_buffer, msg,
              std::min(strlen(msg), taichi_max_message_length));
     }
@@ -673,7 +673,7 @@ void taichi_assert_format(LLVMRuntime *runtime,
   va_start(args, format);
   locked_task(&runtime->error_message_lock, [&] {
     if (!runtime->error_code) {
-      runtime->error_code = 1; // Assertion failure
+      runtime->error_code = 1;  // Assertion failure
       runtime->host_vsnprintf(runtime->error_message_buffer,
                               taichi_max_message_length, format, args);
     }

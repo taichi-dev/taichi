@@ -30,4 +30,3 @@ int main() {
     printf("atomic reduce, block_size %d, %.4f ms\n", bs, t * 1000);
   }
 }
-

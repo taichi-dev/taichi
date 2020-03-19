@@ -25,8 +25,7 @@ class OpenglStructCompiler {
   size_t compute_snode_size(const SNode &sn);
 
   template <typename... Args>
-  void emit(std::string f, Args &&... args)
-  {
+  void emit(std::string f, Args &&... args) {
     src_code_ += fmt::format(f, std::forward<Args>(args)...) + '\n';
   }
 

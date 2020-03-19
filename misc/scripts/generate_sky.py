@@ -30,7 +30,7 @@ sz = (sz[1], sz[0] // 2)
 print(img.shape)
 print(sz)
 for i in range(0, sz[1]):
-  l[:, sz[1] - i - 1] *= np.sin((i + 0.5) / sz[1] * np.pi / 2)
+    l[:, sz[1] - i - 1] *= np.sin((i + 0.5) / sz[1] * np.pi / 2)
 l = l.flatten()
 
 nsamples = 1024
@@ -46,13 +46,13 @@ img = np.zeros((512, 128))
 # u, v, r, g, b
 output = np.ndarray(shape=(nsamples, 5), dtype=np.uint32)
 for i in range(nsamples):
-  c = choices[i]
-  u, v = c // sz[1], c % sz[1]
-  output[i, 0] = u
-  output[i, 1] = v
-  img[u, v] += 1
-  print(i, u, v)
-  output[i, 2:5] = img[u, v] * (1 << 20) / l[c]
+    c = choices[i]
+    u, v = c // sz[1], c % sz[1]
+    output[i, 0] = u
+    output[i, 1] = v
+    img[u, v] += 1
+    print(i, u, v)
+    output[i, 2:5] = img[u, v] * (1 << 20) / l[c]
 print(output)
 cv2.imshow('img', img.swapaxes(0, 1)[::-1])
 cv2.waitKey(0)

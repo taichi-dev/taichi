@@ -4,7 +4,7 @@ template <typename T>
 class lock_guard {
   Ptr lock;
 
-public:
+ public:
   lock_guard(Ptr lock, const T &func) : lock(lock) {
 #if ARCH_x64 || ARCH_arm64
     mutex_lock_i32(lock);
@@ -14,7 +14,8 @@ public:
     // CUDA
     for (int i = 0; i < warp_size(); i++) {
       if (warp_idx() == i) {
-        // Memory fences here are necessary since CUDA has a weakly ordered memory model across threads
+        // Memory fences here are necessary since CUDA has a weakly ordered
+        // memory model across threads
         mutex_lock_i32(lock);
         grid_memfence();
         func();
@@ -41,4 +42,3 @@ template <typename T>
 void locked_task(void *lock, const T &func) {
   lock_guard<T> _((Ptr)lock, func);
 }
-

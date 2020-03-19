@@ -4,9 +4,10 @@ import time
 t = time.time()
 ti.init(arch=ti.cuda)
 
+
 @ti.kernel
 def p():
-  print(42)
+    print(42)
 
 
 p()

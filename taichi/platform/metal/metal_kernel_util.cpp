@@ -9,10 +9,10 @@ TLANG_NAMESPACE_BEGIN
 namespace metal {
 
 MetalKernelArgsAttributes::MetalKernelArgsAttributes(
-    const std::vector<Kernel::Arg>& args)
+    const std::vector<Kernel::Arg> &args)
     : args_bytes_(0), extra_args_bytes_(Context::extra_args_size) {
   arg_attribs_vec_.reserve(args.size());
-  for (const auto& ka : args) {
+  for (const auto &ka : args) {
     ArgAttributes ma;
     ma.dt = to_metal_type(ka.dt);
     const size_t dt_bytes = metal_data_type_bytes(ma.dt);
@@ -39,13 +39,13 @@ MetalKernelArgsAttributes::MetalKernelArgsAttributes(
   }
   // Put scalar args in the memory first
   for (int i : scalar_indices) {
-    auto& arg = arg_attribs_vec_[i];
+    auto &arg = arg_attribs_vec_[i];
     arg.offset_in_mem = args_bytes_;
     args_bytes_ += arg.stride;
   }
   // Then the array args
   for (int i : array_indices) {
-    auto& arg = arg_attribs_vec_[i];
+    auto &arg = arg_attribs_vec_[i];
     arg.offset_in_mem = args_bytes_;
     args_bytes_ += arg.stride;
   }

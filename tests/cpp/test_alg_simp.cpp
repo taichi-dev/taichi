@@ -24,7 +24,7 @@ TI_TEST("simplify_add_zero") {
   // irpass::print(block.get());
 
   irpass::alg_simp(block.get(), CompileConfig());  // should eliminate add
-  irpass::die(block.get());       // should eliminate zero
+  irpass::die(block.get());                        // should eliminate zero
 
   // irpass::print(block.get());
   TI_CHECK(block->size() == 4);  // two addresses, one load, one store
@@ -54,8 +54,9 @@ TI_TEST("simplify_multiply_one") {
 
   // irpass::print(block.get());
 
-  irpass::alg_simp(block.get(), CompileConfig());  // should eliminate mul, div, sub
-  irpass::die(block.get());       // should eliminate zero, one
+  irpass::alg_simp(block.get(),
+                   CompileConfig());  // should eliminate mul, div, sub
+  irpass::die(block.get());           // should eliminate zero, one
 
   // irpass::print(block.get());
 
@@ -83,12 +84,12 @@ TI_TEST("simplify_multiply_zero_fast_math") {
 
   CompileConfig config_without_fast_math;
   config_without_fast_math.fast_math = false;
-  irpass::alg_simp(block.get(), config_without_fast_math);  // should eliminate mul, add
-  irpass::die(block.get());  // should eliminate zero, load
+  irpass::alg_simp(block.get(),
+                   config_without_fast_math);  // should eliminate mul, add
+  irpass::die(block.get());                    // should eliminate zero, load
 
   TI_CHECK(block->size() == 4);  // two addresses, one one, one store
   TI_CHECK((*block)[0]->is<GlobalTemporaryStmt>());
-
 
   block = std::make_unique<Block>();
 
@@ -107,14 +108,16 @@ TI_TEST("simplify_multiply_zero_fast_math") {
   TI_CHECK(block->size() == 10);
 
   irpass::constant_fold(block.get());  // should change 2 casts into const
-  irpass::alg_simp(block.get(), config_without_fast_math);  // should not eliminate
-  irpass::die(block.get());  // should eliminate 2 const
+  irpass::alg_simp(block.get(),
+                   config_without_fast_math);  // should not eliminate
+  irpass::die(block.get());                    // should eliminate 2 const
   TI_CHECK(block->size() == 8);
 
   CompileConfig config_with_fast_math;
   config_with_fast_math.fast_math = true;
-  irpass::alg_simp(block.get(), config_with_fast_math);  // should eliminate mul, add
-  irpass::die(block.get());  // should eliminate zero, load
+  irpass::alg_simp(block.get(),
+                   config_with_fast_math);  // should eliminate mul, add
+  irpass::die(block.get());                 // should eliminate zero, load
 
   TI_CHECK(block->size() == 4);  // two addresses, one one, one store
   TI_CHECK((*block)[0]->is<GlobalTemporaryStmt>());

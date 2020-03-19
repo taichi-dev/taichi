@@ -45,8 +45,7 @@ class CXImage {
   }
 };
 
-static std::string lookup_keysym(XEvent *ev)
-{
+static std::string lookup_keysym(XEvent *ev) {
   int key = XLookupKeysym(&ev->xkey, 0);
   if (isascii(key))
     return std::string(1, key);
@@ -54,13 +53,16 @@ static std::string lookup_keysym(XEvent *ev)
     return XKeysymToString(key);
 }
 
-static std::string lookup_button(XEvent *ev)
-{
+static std::string lookup_button(XEvent *ev) {
   switch (ev->xbutton.button) {
-  case 1: return "LMB";
-  case 2: return "MMB";
-  case 3: return "RMB";
-  default: return fmt::format("Button{}", ev->xbutton.button);
+    case 1:
+      return "LMB";
+    case 2:
+      return "MMB";
+    case 3:
+      return "RMB";
+    default:
+      return fmt::format("Button{}", ev->xbutton.button);
   }
 }
 

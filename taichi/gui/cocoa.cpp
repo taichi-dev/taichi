@@ -332,9 +332,12 @@ void GUI::set_title(std::string title) {
   call(str, "release");
 }
 
-void GUI::redraw() { call(view, "setNeedsDisplay:", YES); }
+void GUI::redraw() {
+  call(view, "setNeedsDisplay:", YES);
+}
 
-GUI::~GUI() {}
+GUI::~GUI() {
+}
 
 TI_NAMESPACE_END
 

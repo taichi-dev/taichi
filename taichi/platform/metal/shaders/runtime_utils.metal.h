@@ -29,12 +29,11 @@
 #endif  // TI_INSIDE_METAL_CODEGEN
 
 METAL_BEGIN_RUNTIME_UTILS_DEF
-STR(
-    int num_active(device const ListManager *list) { return list->next; }
+STR(int num_active(device const ListManager *list) { return list->next; }
 
-    template <typename T>
-    int append(device ListManager *list, thread const T &elem,
-               device byte *data_addr) {
+    template <typename T> int append(device ListManager *list,
+                                     thread const T &elem,
+                                     device byte *data_addr) {
       thread char *elem_ptr = (thread char *)(&elem);
       int me = atomic_fetch_add_explicit(
           reinterpret_cast<device atomic_int *>(&(list->next)), 1,
@@ -99,7 +98,8 @@ STR(
 
     void refine_coordinates(thread const ListgenElement &parent_elem,
                             device const SNodeExtractors &child_extrators,
-                            int l, thread ListgenElement *child_elem) {
+                            int l,
+                            thread ListgenElement *child_elem) {
       for (int i = 0; i < kTaichiMaxNumIndices; ++i) {
         device const auto &ex = child_extrators.extractors[i];
         const int mask = ((1 << ex.num_bits) - 1);

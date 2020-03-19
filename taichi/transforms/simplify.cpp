@@ -667,8 +667,8 @@ class BasicBlockSimplify : public IRVisitor {
   }
 
   void visit(LinearizeStmt *stmt) override {
-//    if (is_done(stmt))
-//      return;
+    //    if (is_done(stmt))
+    //      return;
 
     if (stmt->inputs.size() && stmt->inputs.back()->is<IntegerOffsetStmt>()) {
       auto previous_offset = stmt->inputs.back()->as<IntegerOffsetStmt>();
@@ -681,15 +681,18 @@ class BasicBlockSimplify : public IRVisitor {
       offset_stmt->as<IntegerOffsetStmt>()->input = stmt;
       throw IRModified();
     }
-//    set_done(stmt);
+    //    set_done(stmt);
 
     // Lower into a series of adds and muls.
     auto sum = Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(0));
     auto stride_product = 1;
     for (int i = (int)stmt->inputs.size() - 1; i >= 0; i--) {
-      auto stride_stmt = Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(stride_product));
-      auto mul = Stmt::make<BinaryOpStmt>(BinaryOpType::mul, stmt->inputs[i], stride_stmt.get());
-      auto newsum = Stmt::make<BinaryOpStmt>(BinaryOpType::add, sum.get(), mul.get());
+      auto stride_stmt =
+          Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(stride_product));
+      auto mul = Stmt::make<BinaryOpStmt>(BinaryOpType::mul, stmt->inputs[i],
+                                          stride_stmt.get());
+      auto newsum =
+          Stmt::make<BinaryOpStmt>(BinaryOpType::add, sum.get(), mul.get());
       stmt->insert_before_me(std::move(sum));
       sum = std::move(newsum);
       stmt->insert_before_me(std::move(stride_stmt));

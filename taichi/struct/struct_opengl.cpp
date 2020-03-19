@@ -3,8 +3,7 @@
 TLANG_NAMESPACE_BEGIN
 namespace opengl {
 
-OpenglStructCompiler::CompiledResult OpenglStructCompiler::run(SNode &node)
-{
+OpenglStructCompiler::CompiledResult OpenglStructCompiler::run(SNode &node) {
   TI_ASSERT(node.type == SNodeType::root);
   collect_snodes(node);
   // The host side has run this!
@@ -39,12 +38,12 @@ void OpenglStructCompiler::generate_types(const SNode &snode) {
     for (int i = 0; i < (int)snode.ch.size(); i++) {
       const auto &ch_node_name = snode.ch[i]->node_type_name;
       if (stride_str.empty()) {
-        emit("#define {}_get{}(a_) (a_) // {}",
-            snode.node_type_name, i, ch_node_name);
+        emit("#define {}_get{}(a_) (a_) // {}", snode.node_type_name, i,
+             ch_node_name);
         stride_str = ch_node_name + "_stride";
       } else {
-        emit("#define {}_get{}(a_) ((a_) + ({})) // {}",
-            snode.node_type_name, i, stride_str, ch_node_name);
+        emit("#define {}_get{}(a_) ((a_) + ({})) // {}", snode.node_type_name,
+             i, stride_str, ch_node_name);
         stride_str += " + " + ch_node_name + "_stride";
       }
     }
@@ -58,13 +57,16 @@ void OpenglStructCompiler::generate_types(const SNode &snode) {
   if (is_place) {
     const auto dt_name = opengl_data_type_name(snode.dt);
     emit("#define {} const int // place {}", node_name, dt_name);
-    emit("#define {}_stride {} // sizeof({})", node_name, data_type_size(snode.dt), dt_name);
+    emit("#define {}_stride {} // sizeof({})", node_name,
+         data_type_size(snode.dt), dt_name);
   } else if (snode.type == SNodeType::dense || snode.type == SNodeType::root) {
     emit("#define {} const int // {}", node_name, snode_type_name(snode.type));
     const int n = (snode.type == SNodeType::dense) ? snode.n : 1;
     emit("#define {}_n {}", node_name, n);
-    emit("#define {}_stride ({}_ch_stride * {}_n)", node_name, node_name, node_name);
-    emit("#define {}_children(a_, i) ((a_) + {}_ch_stride * (i))", node_name, node_name);
+    emit("#define {}_stride ({}_ch_stride * {}_n)", node_name, node_name,
+         node_name);
+    emit("#define {}_children(a_, i) ((a_) + {}_ch_stride * (i))", node_name,
+         node_name);
   } else {
     TI_ERROR("SNodeType={} not supported on OpenGL",
              snode_type_name(snode.type));
@@ -83,7 +85,6 @@ size_t OpenglStructCompiler::compute_snode_size(const SNode &sn) {
   const int n = (sn.type == SNodeType::dense) ? sn.n : 1;
   return n * ch_size;
 }
-
 
 }  // namespace opengl
 TLANG_NAMESPACE_END

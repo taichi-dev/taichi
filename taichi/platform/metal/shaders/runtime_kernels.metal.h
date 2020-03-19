@@ -40,22 +40,22 @@ struct Runtime {
 #endif  // TI_INSIDE_METAL_CODEGEN
 
 METAL_BEGIN_RUNTIME_KERNELS_DEF
-STR(
-    kernel void clear_list(device byte *runtime_addr [[buffer(0)]],
-                           device int *args [[buffer(1)]],
-                           const uint utid_ [[thread_position_in_grid]]) {
-      if (utid_ > 0) return;
-      int child_snode_id = args[1];
-      device ListManager *child_list =
-          &(reinterpret_cast<device Runtime *>(runtime_addr)
-                ->snode_lists[child_snode_id]);
-      clear(child_list);
-    }
+STR(kernel void clear_list(device byte *runtime_addr[[buffer(0)]],
+                           device int *args[[buffer(1)]],
+                           const uint utid_[[thread_position_in_grid]]) {
+  if (utid_ > 0)
+    return;
+  int child_snode_id = args[1];
+  device ListManager *child_list =
+      &(reinterpret_cast<device Runtime *>(runtime_addr)
+            ->snode_lists[child_snode_id]);
+  clear(child_list);
+}
 
-    kernel void element_listgen(device byte *runtime_addr [[buffer(0)]],
-                                device byte *root_addr [[buffer(1)]],
-                                device int *args [[buffer(2)]],
-                                const uint utid_ [[thread_position_in_grid]]) {
+    kernel void element_listgen(device byte *runtime_addr[[buffer(0)]],
+                                device byte *root_addr[[buffer(1)]],
+                                device int *args[[buffer(2)]],
+                                const uint utid_[[thread_position_in_grid]]) {
       device Runtime *runtime =
           reinterpret_cast<device Runtime *>(runtime_addr);
       device byte *list_data_addr =

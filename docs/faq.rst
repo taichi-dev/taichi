@@ -12,4 +12,3 @@ We do have an `example <https://github.com/yuanming-hu/taichi/blob/master/exampl
 **Does the compiler backend support the same quality of optimizations for the GPU and CPU? For instance, if I switch to using the CUDA backend, do I lose the cool hash-table optimizations?**
 Mostly. The CPU/GPU compilation workflow are basically the same, except for vectorization on SIMD CPUs.
 You still have the hash table optimization on GPUs.
-

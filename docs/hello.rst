@@ -201,5 +201,3 @@ In Python-scope, you can access Taichi tensors using plain indexing syntax, and 
   import matplotlib.pyplot as plt
   plt.imshow(pixels.to_numpy())
   plt.show()
-
-

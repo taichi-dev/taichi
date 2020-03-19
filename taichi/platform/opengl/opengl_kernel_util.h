@@ -18,8 +18,7 @@ struct StructCompiledResult {
   size_t root_size;
 };
 
-struct IOV
-{
+struct IOV {
   void *base;
   size_t size;
 };

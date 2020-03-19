@@ -58,7 +58,7 @@ T MemoryPool::fetch(volatile void *ptr) {
   if (false && prog->config.arch == Arch::cuda) {
 #if TI_WITH_CUDA
     check_cuda_error(cudaMemcpyAsync(&ret, (void *)ptr, sizeof(T),
-                                      cudaMemcpyDeviceToHost, cuda_stream));
+                                     cudaMemcpyDeviceToHost, cuda_stream));
     check_cuda_error(cudaStreamSynchronize(cuda_stream));
 #else
     TI_NOT_IMPLEMENTED
@@ -74,7 +74,7 @@ void MemoryPool::push(volatile T *dest, const T &val) {
   if (false && prog->config.arch == Arch::cuda) {
 #if TI_WITH_CUDA
     check_cuda_error(cudaMemcpyAsync((void *)dest, &val, sizeof(T),
-                                      cudaMemcpyHostToDevice, cuda_stream));
+                                     cudaMemcpyHostToDevice, cuda_stream));
     check_cuda_error(cudaStreamSynchronize(cuda_stream));
 #else
     TI_NOT_IMPLEMENTED

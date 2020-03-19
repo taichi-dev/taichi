@@ -153,7 +153,8 @@ std::string signal_name(int sig) {
 bool python_at_exit_called = false;
 
 void signal_handler(int signo) {
-  // It seems that there's no way to pass exception to Python in signal handlers?
+  // It seems that there's no way to pass exception to Python in signal
+  // handlers?
   auto sig_name = signal_name(signo);
   logger.error(fmt::format("Received signal {} ({})", signo, sig_name), false);
   exit(-1);

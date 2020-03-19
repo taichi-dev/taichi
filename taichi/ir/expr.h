@@ -9,7 +9,7 @@ class ExprGroup;
 class SNode;
 
 class Expr {
-public:
+ public:
   std::shared_ptr<Expression> expr;
   bool const_value;
   bool atomic;
@@ -102,7 +102,4 @@ public:
   std::string get_attribute(const std::string &key) const;
 };
 
-
 TLANG_NAMESPACE_END
-
-

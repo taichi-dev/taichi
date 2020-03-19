@@ -1,42 +1,43 @@
 import taichi as ti
 
+
 @ti.all_archs
 def test_while():
-  x = ti.var(ti.f32)
+    x = ti.var(ti.f32)
 
-  N = 1
+    N = 1
 
-  @ti.layout
-  def place():
-    ti.root.dense(ti.i, N).place(x)
+    @ti.layout
+    def place():
+        ti.root.dense(ti.i, N).place(x)
 
-  @ti.kernel
-  def func():
-    i = 0
-    s = 0
-    while i < 10:
-      s += i
-      i += 1
-    x[0] = s
+    @ti.kernel
+    def func():
+        i = 0
+        s = 0
+        while i < 10:
+            s += i
+            i += 1
+        x[0] = s
 
-  func()
-  assert x[0] == 45
+    func()
+    assert x[0] == 45
 
 
 @ti.all_archs
 def test_break():
-  ret = ti.var(ti.i32, shape=())
+    ret = ti.var(ti.i32, shape=())
 
-  @ti.kernel
-  def func():
-    i = 0
-    s = 0
-    while True:
-      s += i
-      i += 1
-      if i > 10:
-        break
-    ret[None] = s
+    @ti.kernel
+    def func():
+        i = 0
+        s = 0
+        while True:
+            s += i
+            i += 1
+            if i > 10:
+                break
+        ret[None] = s
 
-  func()
-  print(ret[None])
+    func()
+    print(ret[None])

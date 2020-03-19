@@ -220,7 +220,7 @@ SNode::SNode(int depth, SNodeType t) : depth(depth), type(t) {
   std::memset(physical_index_position, -1, sizeof(physical_index_position));
   parent = nullptr;
   has_ambient = false;
-  dt = DataType::unknown;
+  dt = DataType::gen;
   _morton = false;
   _bitmasked = false;
 

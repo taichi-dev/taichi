@@ -1,3 +1,4 @@
+// clang-format off
 #include <cstdio>
 #include <cassert>
 
@@ -78,3 +79,4 @@ int main() {
   test_struct_argument<<<1, 1>>>(arg);
   return 0;
 }
+// clang-format on

@@ -63,9 +63,6 @@ PER_STATEMENT(ElementShuffleStmt)
 // Pragma statements
 PER_STATEMENT(PragmaSLPStmt)
 
-// Clearer
-PER_STATEMENT(ClearAllStmt)
-
 // Offloaded
 PER_STATEMENT(OffloadedStmt)
 PER_STATEMENT(LoopIndexStmt)

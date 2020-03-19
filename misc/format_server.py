@@ -34,7 +34,7 @@ class TaichiFormatServer(BaseHTTPRequestHandler):
         for pr in pulls:
             pr_id = pr["number"]
             title = f'#{pr_id}, {pr["title"]}, by {pr["user"]["login"]}'
-            link = f'https://{server_addr}:{server_port}/{pr_id}'
+            link = f'http://{server_addr}:{server_port}/{pr_id}'
             self.writeln(f'<a href="{link}">{title}</a>')
 
     def do_GET(self):

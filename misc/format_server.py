@@ -3,6 +3,8 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 import requests
 import subprocess
 
+# TODO: remove these globals?
+server_addr, server_port = None, None
 
 class TaichiFormatServer(BaseHTTPRequestHandler):
     def _set_headers(self):
@@ -24,11 +26,23 @@ class TaichiFormatServer(BaseHTTPRequestHandler):
             self.writeln(l)
 
         return p
+    
+    def render_index(self):
+        pulls = requests.get(
+            f'https://api.github.com/repos/taichi-dev/taichi/pulls?state=open').json()
+        self.writeln(f'Click to auto-format PR')
+        for pr in pulls:
+            pr_id = pr["number"]
+            title = f'#{pr_id}, {pr["title"]}, by {pr["user"]["login"]}'
+            link = f'https://{server_addr}:{server_port}/{pr_id}'
+            self.writeln(f'<a href="{link}">{title}</a>')
 
     def do_GET(self):
-        print(self.path)
-        path = self.path[1:]
+        print('GET ', self.path)
         self._set_headers()
+        path = self.path[1:]
+        if path == '':
+            return self.render_index()
         if not path.isdigit():
             self.writeln(
                 "Error: Invalid input format. Usage example: https://server:8000/12345, where '12345' is the PR id"
@@ -72,13 +86,14 @@ class TaichiFormatServer(BaseHTTPRequestHandler):
         self.exec(f'git commit -m "[skip ci] enforce code format"')
         self.exec(f'git push {user_id} {user_id}-{branch_name}:{branch_name}')
 
-        # self.exec(f'git checkout master')
-        def x():
-            a = 1
+        self.exec(f'git checkout master')
 
 
 def run(addr, port):
     server_address = (addr, port)
+    global server_addr, server_port
+    server_addr = addr
+    server_port = port
     httpd = HTTPServer(server_address, TaichiFormatServer)
     print(f"Starting Taichi format server on {addr}:{port}")
     httpd.serve_forever()

@@ -344,17 +344,18 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(GetRootStmt *stmt) override {
-    print("{} = get root", stmt->name());
+    print("{}{} = get root", stmt->type_hint(), stmt->name());
   }
 
   void visit(SNodeLookupStmt *stmt) override {
-    print("{} = [{}][{}]::lookup({}, {}) activate = {}", stmt->name(),
-          stmt->snode->get_node_type_name_hinted(), stmt->snode->type_name(),
-          stmt->input_snode->name(), stmt->input_index->name(), stmt->activate);
+    print("{}{} = [{}][{}]::lookup({}, {}) activate = {}", stmt->type_hint(),
+          stmt->name(), stmt->snode->get_node_type_name_hinted(),
+          stmt->snode->type_name(), stmt->input_snode->name(),
+          stmt->input_index->name(), stmt->activate);
   }
 
   void visit(GetChStmt *stmt) override {
-    print("{} = get child [{}->{}] {}", stmt->name(),
+    print("{}{} = get child [{}->{}] {}", stmt->type_hint(), stmt->name(),
           stmt->input_snode->get_node_type_name_hinted(),
           stmt->output_snode->get_node_type_name_hinted(),
           stmt->input_ptr->name());

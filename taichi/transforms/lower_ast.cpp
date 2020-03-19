@@ -196,8 +196,8 @@ class LowerAST : public IRVisitor {
         auto mask = std::make_unique<AllocaStmt>(DataType::i32);
         new_while->mask = mask.get();
         auto &stmts = new_while->body;
-        for (int i = 0; i < (int)flattened.size(); i++) {
-          stmts->insert(std::move(flattened[i]), i);
+        for (int i = 0; i < (int)flattened2.size(); i++) {
+          stmts->insert(std::move(flattened2[i]), i);
         }
         // insert break
         stmts->insert(

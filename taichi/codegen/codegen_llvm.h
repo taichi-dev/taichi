@@ -393,7 +393,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   llvm::Type *llvm_type(DataType dt) {
     if (dt == DataType::i32) {
       return llvm::Type::getInt32Ty(*llvm_context);
-    } else if (dt == DataType::i1) {
+    } else if (dt == DataType::u1) {
       return llvm::Type::getInt1Ty(*llvm_context);
     } else if (dt == DataType::f32) {
       return llvm::Type::getFloatTy(*llvm_context);
@@ -602,7 +602,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   void visit(TernaryOpStmt *stmt) override {
     TI_ASSERT(stmt->op_type == TernaryOpType::select);
     stmt->value = builder->CreateSelect(
-        builder->CreateTrunc(stmt->op1->value, llvm_type(DataType::i1)),
+        builder->CreateTrunc(stmt->op1->value, llvm_type(DataType::u1)),
         stmt->op2->value, stmt->op3->value);
   }
 

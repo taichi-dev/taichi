@@ -31,8 +31,10 @@ class TaichiFormatServer(BaseHTTPRequestHandler):
     def render_index(self):
         pulls = requests.get(
             f'https://api.github.com/repos/taichi-dev/taichi/pulls?state=open').json()
-        self.writeln(f'Click to auto-format PR')
+        self.writeln(f'Click to auto-format PR. <b>[Please do not click if the PR is not owned/reviewed by you.]</b>')
+        print(pulls)
         for pr in pulls:
+            print('pr', pr)
             pr_id = pr["number"]
             title = f'#{pr_id}, {pr["title"]}, by {pr["user"]["login"]}'
             link = f'http://{server_addr}:{server_port}/{pr_id}'

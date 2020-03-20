@@ -22,7 +22,9 @@ class TypeCheck : public IRVisitor {
   void visit(AllocaStmt *stmt) {
     // Do nothing.
     // Alloca type is determined by first (compile-time) LocalStore
-    stmt->ret_type.set_is_pointer(true);
+    
+    // ret_type stands for its element type.
+    stmt->ret_type.set_is_pointer(false);
   }
 
   void visit(IfStmt *if_stmt) {
@@ -362,7 +364,8 @@ class TypeCheck : public IRVisitor {
 
   void visit(StackAllocaStmt *stmt) {
     stmt->ret_type.data_type = stmt->dt;
-    stmt->ret_type.set_is_pointer(true);
+    // ret_type stands for its element type.
+    stmt->ret_type.set_is_pointer(false);
   }
 
   void visit(StackLoadTopStmt *stmt) {

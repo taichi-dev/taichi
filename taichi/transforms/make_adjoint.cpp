@@ -445,12 +445,28 @@ class MakeAdjoint : public IRVisitor {
 
 class BackupSSA : public BasicStmtVisitor {
  public:
+  using BasicStmtVisitor::visit;
+
   Block *current_block;
+  std::map<Stmt *, Stmt *> backup_alloca;
 
   BackupSSA() {
     current_block = nullptr;
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
+  }
+
+  Stmt *load(Stmt *stmt) {
+    if (backup_alloca.find(stmt) == backup_alloca.end()) {
+      irpass::print(stmt);
+      auto alloca =
+          Stmt::make<AllocaStmt>(stmt->width(), stmt->ret_type.data_type);
+      auto alloca_ptr = alloca.get();
+      current_block->insert(std::move(alloca), 0);
+      stmt->insert_after_me(Stmt::make<LocalStoreStmt>(alloca_ptr, stmt));
+      backup_alloca[stmt] = alloca_ptr;
+    }
+    return backup_alloca[stmt];
   }
 
   void visit(Stmt *stmt) override {
@@ -460,11 +476,15 @@ class BackupSSA : public BasicStmtVisitor {
       leaf_to_root.push_back(t);
       t = t->parent;
     }
-    for (auto &op : stmt->get_operands()) {
+    int num_operands = stmt->get_operands().size();
+    for (int i = 0; i < num_operands; i++) {
+      auto op = stmt->operand(i);
       if (std::find(leaf_to_root.begin(), leaf_to_root.end(), op->parent) ==
           leaf_to_root.end()) {
-        TI_P(stmt->id);
-        TI_P(op->id);
+        auto alloca = load(op);
+        TI_ASSERT(op->width() == 1);
+        stmt->set_operand(i, stmt->insert_before_me(Stmt::make<LocalLoadStmt>(
+                                 LocalAddress(alloca, 0))));
       }
     }
   }
@@ -484,7 +504,7 @@ class BackupSSA : public BasicStmtVisitor {
       stmt->accept(this);
     }
 
-    current_block = nullptr;
+    // current_block = nullptr;
   }
 };
 
@@ -500,10 +520,13 @@ void make_adjoint(IRNode *root, bool use_stack) {
     MakeAdjoint::run(root);
     typecheck(root);
     re_id(root);
+    fix_block_parents(root);
     print(root);
     BackupSSA b;
     root->accept(&b);
-    while(1);
+    // re_id(root);
+    typecheck(root);
+    print(root);
   } else {
     MakeAdjoint::run(root);
     typecheck(root);

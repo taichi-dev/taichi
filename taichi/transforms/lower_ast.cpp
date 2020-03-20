@@ -167,16 +167,16 @@ class LowerAST : public IRVisitor {
       auto end = stmt->end;
       begin->flatten(flattened);
       end->flatten(flattened);
-      static bool is_good_range_for =
-          true;                 // TODO(archibate): detect if outer-most one
+      static bool is_good_range_for = capturing_loop == nullptr;
       if (is_good_range_for) {  // #578
-        is_good_range_for = false;
+        TI_INFO("GOOD FOR");
         auto &&new_for = std::make_unique<RangeForStmt>(
             stmt->parent->lookup_var(stmt->loop_var_id[0]), begin->stmt,
             end->stmt, std::move(stmt->body), stmt->vectorize,
             stmt->parallelize, stmt->block_dim, stmt->strictly_serialized);
         flattened.push_back(std::move(new_for));
       } else {
+        TI_INFO("BAD FOR");
         // transform into a structure as
         // while (1) { cond; if (no active) break; original body...}
         // auto loop_var = Stmt::make<AllocaStmt>(DataType::i32);

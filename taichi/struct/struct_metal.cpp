@@ -232,7 +232,9 @@ class StructCompiler {
     return result;
   }
 
-  void push_indent() { indent_ += "  "; }
+  void push_indent() {
+    indent_ += "  ";
+  }
 
   void pop_indent() {
     indent_.pop_back();

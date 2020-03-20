@@ -28,7 +28,8 @@ constexpr char kListgenElemVarName[] = "listgen_elem_";
 class MetalKernelCodegen : public IRVisitor {
  public:
   MetalKernelCodegen(const std::string &mtl_kernel_prefix,
-                     const std::string &root_snode_type_name, Kernel *kernel,
+                     const std::string &root_snode_type_name,
+                     Kernel *kernel,
                      const StructCompiledResult *compiled_snode_structs)
       : mtl_kernel_prefix_(mtl_kernel_prefix),
         root_snode_type_name_(root_snode_type_name),
@@ -43,7 +44,9 @@ class MetalKernelCodegen : public IRVisitor {
     return args_attribs_;
   }
 
-  const std::string &kernel_source_code() const { return kernel_src_code_; }
+  const std::string &kernel_source_code() const {
+    return kernel_src_code_;
+  }
 
   const std::vector<MetalKernelAttributes> &kernels_attribs() const {
     return mtl_kernels_attribs_;
@@ -719,7 +722,9 @@ class MetalKernelCodegen : public IRVisitor {
     }
   }
 
-  void push_indent() { indent_ += "  "; }
+  void push_indent() {
+    indent_ += "  ";
+  }
 
   void pop_indent() {
     indent_.pop_back();
@@ -754,9 +759,11 @@ MetalCodeGen::MetalCodeGen(const std::string &kernel_name,
                            const StructCompiledResult *struct_compiled)
     : id_(Program::get_kernel_id()),
       taichi_kernel_name_(fmt::format("mtl_k{:04d}_{}", id_, kernel_name)),
-      struct_compiled_(struct_compiled) {}
+      struct_compiled_(struct_compiled) {
+}
 
-FunctionType MetalCodeGen::compile(Program &, Kernel &kernel,
+FunctionType MetalCodeGen::compile(Program &,
+                                   Kernel &kernel,
                                    MetalRuntime *runtime) {
   this->prog_ = &kernel.program;
   this->kernel_ = &kernel;

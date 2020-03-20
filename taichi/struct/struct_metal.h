@@ -9,7 +9,7 @@ TLANG_NAMESPACE_BEGIN
 namespace metal {
 
 struct SNodeDescriptor {
-  const SNode* snode = nullptr;
+  const SNode *snode = nullptr;
   // Stride (bytes) of a single child element of this SNode.
   int element_stride = 0;
   // This is NOT the number of elements per |snode|. Instead, it's that number
@@ -64,7 +64,7 @@ struct StructCompiledResult {
 };
 
 // Compile all snodes to Metal source code
-StructCompiledResult compile_structs(SNode& root);
+StructCompiledResult compile_structs(SNode &root);
 
 }  // namespace metal
 TLANG_NAMESPACE_END

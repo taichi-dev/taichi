@@ -68,7 +68,7 @@ def test_grouped_ndrange():
     x0 = 2
     y0 = 3
     x1 = 1
-    y1 = 7
+    y1 = 6
 
     @ti.kernel
     def test():

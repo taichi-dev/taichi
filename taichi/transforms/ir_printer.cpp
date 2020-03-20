@@ -361,11 +361,6 @@ class IRPrinter : public IRVisitor {
           stmt->input_ptr->name());
   }
 
-  void visit(ClearAllStmt *stmt) override {
-    print("{} = clear {} deactivate={}", stmt->name(),
-          stmt->snode->get_node_type_name_hinted(), stmt->deactivate);
-  }
-
   void visit(ExternalPtrStmt *stmt) override {
     std::string s = "<";
     for (int i = 0; i < (int)stmt->base_ptrs.size(); i++) {

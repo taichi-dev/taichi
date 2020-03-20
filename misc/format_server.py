@@ -6,6 +6,7 @@ import subprocess
 # TODO: remove these globals?
 server_addr, server_port = None, None
 
+
 class TaichiFormatServer(BaseHTTPRequestHandler):
     def _set_headers(self):
         self.send_response(200)
@@ -26,7 +27,7 @@ class TaichiFormatServer(BaseHTTPRequestHandler):
             self.writeln(l)
 
         return p
-    
+
     def render_index(self):
         pulls = requests.get(
             f'https://api.github.com/repos/taichi-dev/taichi/pulls?state=open').json()

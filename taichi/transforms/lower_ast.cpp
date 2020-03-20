@@ -167,7 +167,8 @@ class LowerAST : public IRVisitor {
       auto end = stmt->end;
       begin->flatten(flattened);
       end->flatten(flattened);
-      static bool is_good_range_for = capturing_loop == nullptr;
+      bool is_good_range_for = capturing_loop == nullptr;
+      TI_INFO("!!!!!!!!{}", (uintptr_t)capturing_loop);
       if (is_good_range_for) {  // #578
         TI_INFO("GOOD FOR");
         auto &&new_for = std::make_unique<RangeForStmt>(
@@ -246,6 +247,7 @@ class LowerAST : public IRVisitor {
   void visit(RangeForStmt *for_stmt) override {
     auto old_capturing_loop = capturing_loop;
     capturing_loop = for_stmt;
+    TI_INFO("setting capturing loop to {}", (uintptr_t)capturing_loop);
     for_stmt->body->accept(this);
     capturing_loop = old_capturing_loop;
   }

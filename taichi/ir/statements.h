@@ -157,18 +157,6 @@ class GetChStmt : public Stmt {
   DEFINE_ACCEPT
 };
 
-class ClearAllStmt : public Stmt {
- public:
-  SNode *snode;
-  bool deactivate;
-
-  ClearAllStmt(SNode *snode, bool deactivate)
-      : snode(snode), deactivate(deactivate) {
-  }
-
-  DEFINE_ACCEPT
-};
-
 class OffloadedStmt : public Stmt {
  public:
   enum TaskType : int {

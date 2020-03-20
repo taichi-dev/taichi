@@ -17,9 +17,11 @@ std::vector<T *> make_raw_pointer_list(
 class LowerAST : public IRVisitor {
  private:
   Stmt *capturing_loop;
+  std::vector<Stmt *> detected_fors_with_break;
 
  public:
-  LowerAST() {
+  explicit LowerAST(const std::vector<Stmt *> &_detected_fors_with_break)
+    : detected_fors_with_break(_detected_fors_with_break) {
     // TODO: change this to false
     allow_undefined_visitor = true;
     capturing_loop = nullptr;
@@ -101,9 +103,9 @@ class LowerAST : public IRVisitor {
   }
 
   void visit(FrontendBreakStmt *stmt) override {
-    TI_ASSERT_INFO(
-        capturing_loop->is<WhileStmt>(),
-        "The loop capturing 'break' must be a while loop instead of for loop.");
+    TI_ASSERT(//TI_ASSERT_INFO(
+        capturing_loop->is<WhileStmt>());//,
+        //"The loop capturing 'break' must be a while loop instead of for loop.");
     auto while_stmt = capturing_loop->as<WhileStmt>();
     VecStatement stmts;
     auto const_true = stmts.push_back<ConstStmt>(TypedConstant((int32)0));
@@ -167,8 +169,10 @@ class LowerAST : public IRVisitor {
       auto end = stmt->end;
       begin->flatten(flattened);
       end->flatten(flattened);
-      bool is_good_range_for = capturing_loop == nullptr;
-      TI_INFO("!!!!!!!!{}", (uintptr_t)capturing_loop);
+      bool is_good_range_for = capturing_loop == nullptr || // the outer-most for
+        std::find(detected_fors_with_break.begin(), detected_fors_with_break.end(), stmt)
+        == detected_fors_with_break.end(); // for without break
+      TI_INFO("!!!!!!!!{} {}", (uintptr_t)capturing_loop, detected_fors_with_break.size());
       if (is_good_range_for) {  // #578
         TI_INFO("GOOD FOR");
         auto &&new_for = std::make_unique<RangeForStmt>(
@@ -387,7 +391,7 @@ class LowerAST : public IRVisitor {
   }
 
   static void run(IRNode *node) {
-    LowerAST inst;
+    LowerAST inst(irpass::detect_fors_with_break(node));
     while (true) {
       bool modified = false;
       try {

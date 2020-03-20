@@ -318,7 +318,8 @@ if 1:
         if not is_ndrange_for:
             self.generic_visit(node, ['body'])
         if is_ndrange_for == 1 or (is_ndrange_for == 2 and is_grouped == 1):
-            dim = len(node.iter.args) if is_ndrange_for == 1 else len(node.iter.args[0].args)
+            dim = len(node.iter.args) if is_ndrange_for == 1 else len(
+                node.iter.args[0].args)
             template = '''
 if ti.static(1):
     __ndrange = 0
@@ -332,7 +333,9 @@ if ti.static(1):
         __I = __ndrange_I
             '''.format(node.target.id, dim)
             t = ast.parse(template).body[0]
-            t.body[0].value = node.iter if is_ndrange_for == 1 else node.iter.args[0]
+            t.body[
+                0].value = node.iter if is_ndrange_for == 1 else node.iter.args[
+                    0]
             t_loop = t.body[1] if is_ndrange_for == 1 else t.body[2]
             t_loop.iter.args[0] = self.parse_expr(
                 '__ndrange.acc_dimensions[0]')
@@ -345,7 +348,9 @@ if ti.static(1):
                 targets_tmp = ['__' + name for name in targets]
             else:
                 targets = ['{}[{}]'.format(targets.id, i) for i in range(dim)]
-                targets_tmp = ['__{}_{}'.format(node.target.id, i) for i in range(dim)]
+                targets_tmp = [
+                    '__{}_{}'.format(node.target.id, i) for i in range(dim)
+                ]
             loop_body = t_loop.body
             for i in range(len(targets)):
                 if i + 1 < len(targets):

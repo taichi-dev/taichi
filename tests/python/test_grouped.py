@@ -54,6 +54,7 @@ def test_grouped():
             for k in range(p):
                 assert val[i, j, k] == i + j * 2 + k * 3
 
+
 @ti.all_archs
 def test_grouped_ndrange():
     # ti.get_runtime().print_preprocessed = True

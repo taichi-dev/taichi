@@ -275,9 +275,6 @@ if 1:
                 .format(loop_var))
 
     def visit_For(self, node):
-        from astpretty import pprint
-        print('visit for!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
-        pprint(node)
         if node.orelse:
             raise TaichiSyntaxError(
                 "'else' clause for 'for' not supported in Taichi kernels")
@@ -383,14 +380,14 @@ if ti.static(1):
             self.check_loop_var(loop_var)
             template = ''' 
 if 1:
-  {} = ti.Expr(ti.core.make_id_expr(''))
-  ___begin = ti.Expr(0) 
-  ___end = ti.Expr(0)
-  ___begin = ti.cast(___begin, ti.i32)
-  ___end = ti.cast(___end, ti.i32)
-  ti.core.begin_frontend_range_for({}.ptr, ___begin.ptr, ___end.ptr)
-  ti.core.end_frontend_range_for()
-      '''.format(loop_var, loop_var)
+    {} = ti.Expr(ti.core.make_id_expr(''))
+    ___begin = ti.Expr(0) 
+    ___end = ti.Expr(0)
+    ___begin = ti.cast(___begin, ti.i32)
+    ___end = ti.cast(___end, ti.i32)
+    ti.core.begin_frontend_range_for({}.ptr, ___begin.ptr, ___end.ptr)
+    ti.core.end_frontend_range_for()
+            '''.format(loop_var, loop_var)
             t = ast.parse(template).body[0]
 
             assert len(node.iter.args) in [1, 2]
@@ -420,15 +417,14 @@ if 1:
                 for ind in elts)
             vars = ', '.join(ind.id for ind in elts)
             if is_grouped:
-                print('is grouped')
                 template = ''' 
 if 1:
-  ___loop_var = 0
-  {} = ti.make_var_vector(size=___loop_var.loop_range().dim())
-  ___expr_group = ti.make_expr_group({})
-  ti.core.begin_frontend_struct_for(___expr_group, ___loop_var.loop_range().ptr)
-  ti.core.end_frontend_range_for()
-        '''.format(vars, vars)
+    ___loop_var = 0
+    {} = ti.make_var_vector(size=___loop_var.loop_range().dim())
+    ___expr_group = ti.make_expr_group({})
+    ti.core.begin_frontend_struct_for(___expr_group, ___loop_var.loop_range().ptr)
+    ti.core.end_frontend_range_for()
+                '''.format(vars, vars)
                 t = ast.parse(template).body[0]
                 cut = 4
                 t.body[0].value = node.iter
@@ -437,11 +433,11 @@ if 1:
                 template = ''' 
 if 1:
 {}
-  ___loop_var = 0
-  ___expr_group = ti.make_expr_group({})
-  ti.core.begin_frontend_struct_for(___expr_group, ___loop_var.loop_range().ptr)
-  ti.core.end_frontend_range_for()
-        '''.format(var_decl, vars)
+    ___loop_var = 0
+    ___expr_group = ti.make_expr_group({})
+    ti.core.begin_frontend_struct_for(___expr_group, ___loop_var.loop_range().ptr)
+    ti.core.end_frontend_range_for()
+                '''.format(var_decl, vars)
                 t = ast.parse(template).body[0]
                 cut = len(elts) + 3
                 t.body[cut - 3].value = node.iter

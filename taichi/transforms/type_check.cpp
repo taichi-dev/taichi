@@ -56,12 +56,14 @@ class TypeCheck : public IRVisitor {
     if (stmt->element_type() == DataType::unknown) {
       stmt->ret_type = stmt->dest->ret_type;
     }
+    stmt->ret_type.set_is_pointer(false);
   }
 
   void visit(LocalLoadStmt *stmt) {
     TI_ASSERT(stmt->width() == 1);
     auto lookup = stmt->ptr[0].var->ret_type;
     stmt->ret_type = lookup;
+    stmt->ret_type.set_is_pointer(false);
   }
 
   void visit(LocalStoreStmt *stmt) {
@@ -89,6 +91,7 @@ class TypeCheck : public IRVisitor {
 
   void visit(GlobalLoadStmt *stmt) {
     stmt->ret_type = stmt->ptr->ret_type;
+    stmt->ret_type.set_is_pointer(false);
   }
 
   void visit(SNodeOpStmt *stmt) {
@@ -364,23 +367,28 @@ class TypeCheck : public IRVisitor {
 
   void visit(StackLoadTopStmt *stmt) {
     stmt->ret_type = stmt->stack->ret_type;
+    stmt->ret_type.set_is_pointer(false);
   }
 
   void visit(StackLoadTopAdjStmt *stmt) {
     stmt->ret_type = stmt->stack->ret_type;
+    stmt->ret_type.set_is_pointer(false);
   }
 
   void visit(StackPushStmt *stmt) {
     stmt->ret_type = stmt->stack->ret_type;
+    stmt->ret_type.set_is_pointer(false);
     TI_ASSERT(stmt->ret_type == stmt->v->ret_type);
   }
 
   void visit(StackPopStmt *stmt) {
     stmt->ret_type = stmt->stack->ret_type;
+    stmt->ret_type.set_is_pointer(false);
   }
 
   void visit(StackAccAdjointStmt *stmt) {
     stmt->ret_type = stmt->stack->ret_type;
+    stmt->ret_type.set_is_pointer(false);
     TI_ASSERT(stmt->ret_type == stmt->v->ret_type);
   }
 

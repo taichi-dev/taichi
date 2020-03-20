@@ -82,7 +82,7 @@ void CodeGenCPU::lower() {
     // irpass::print(ir);
     irpass::demote_atomics(ir);
     irpass::simplify(ir);
-    irpass::make_adjoint(ir);
+    irpass::make_adjoint(ir, true);
     irpass::typecheck(ir);
     if (print_ir) {
       TI_TRACE("Adjoint:");

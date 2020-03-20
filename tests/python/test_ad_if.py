@@ -1,9 +1,8 @@
 import taichi as ti
 
 
-@ti.all_archs
+@ti.all_archs_with(print_ir=True)
 def test_ad_if():
-    return
     x = ti.var(ti.f32, shape=2)
     y = ti.var(ti.f32, shape=2)
 

@@ -335,7 +335,7 @@ class MakeAdjoint : public IRVisitor {
   }
 
   void visit(LocalLoadStmt *stmt) override {
-    TI_ASSERT(!needs_grad(stmt->ret_type.data_type));
+    // TI_ASSERT(!needs_grad(stmt->ret_type.data_type));
   }
 
   void visit(StackLoadTopStmt *stmt) override {
@@ -443,6 +443,51 @@ class MakeAdjoint : public IRVisitor {
   }
 };
 
+class BackupSSA : public BasicStmtVisitor {
+ public:
+  Block *current_block;
+
+  BackupSSA() {
+    current_block = nullptr;
+    allow_undefined_visitor = true;
+    invoke_default_visitor = true;
+  }
+
+  void visit(Stmt *stmt) override {
+    std::vector<Block *> leaf_to_root;
+    auto t = stmt->parent;
+    while (t != nullptr) {
+      leaf_to_root.push_back(t);
+      t = t->parent;
+    }
+    for (auto &op : stmt->get_operands()) {
+      if (std::find(leaf_to_root.begin(), leaf_to_root.end(), op->parent) ==
+          leaf_to_root.end()) {
+        TI_P(stmt->id);
+        TI_P(op->id);
+      }
+    }
+  }
+
+  void visit(Block *block) override {
+    // TODO: set only on the top-level autodiff block
+    if (current_block == nullptr) {
+      current_block = block;
+    }
+
+    std::vector<Stmt *> statements;
+    // always make a copy since the list can be modified.
+    for (auto &stmt : block->statements) {
+      statements.push_back(stmt.get());
+    }
+    for (auto stmt : statements) {
+      stmt->accept(this);
+    }
+
+    current_block = nullptr;
+  }
+};
+
 namespace irpass {
 
 void make_adjoint(IRNode *root, bool use_stack) {
@@ -454,7 +499,11 @@ void make_adjoint(IRNode *root, bool use_stack) {
     print(root);
     MakeAdjoint::run(root);
     typecheck(root);
+    re_id(root);
     print(root);
+    BackupSSA b;
+    root->accept(&b);
+    while(1);
   } else {
     MakeAdjoint::run(root);
     typecheck(root);

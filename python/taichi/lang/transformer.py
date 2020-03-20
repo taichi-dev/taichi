@@ -330,7 +330,7 @@ if ti.static(1):
             ''' if is_ndrange_for == 1 else '''
 if ti.static(1):
     __ndrange = 0
-    {} = ti.make_var_vector(size={})
+    {} = ti.Vector([0] * {})
     for __ndrange_I in range(0):
         __I = __ndrange_I
             '''.format(node.target.id, dim)
@@ -340,26 +340,29 @@ if ti.static(1):
             t_loop.iter.args[0] = self.parse_expr(
                 '__ndrange.acc_dimensions[0]')
             targets = node.target
-            if is_ndrange_for == 2:
-                targets = ['{}[{}]'.format(targets.id, i) for i in range(dim)]
-            elif isinstance(targets, ast.Tuple):
-                targets = [name.id for name in targets.elts]
+            if is_ndrange_for == 1:
+                if isinstance(targets, ast.Tuple):
+                    targets = [name.id for name in targets.elts]
+                else:
+                    targets = [targets.id]
+                targets_tmp = ['__' + name for name in targets]
             else:
-                targets = [targets.id]
+                targets = ['{}[{}]'.format(targets.id, i) for i in range(dim)]
+                targets_tmp = ['__{}_{}'.format(node.target.id, i) for i in range(dim)]
             loop_body = t_loop.body
             for i in range(len(targets)):
                 if i + 1 < len(targets):
-                    stmt = '__{} = __I // __ndrange.acc_dimensions[{}]'.format(
-                        targets[i], i + 1)
+                    stmt = '{} = __I // __ndrange.acc_dimensions[{}]'.format(
+                        targets_tmp[i], i + 1)
                 else:
-                    stmt = '__{} = __I'.format(targets[i])
+                    stmt = '{} = __I'.format(targets_tmp[i])
                 loop_body.append(self.parse_stmt(stmt))
-                stmt = '{} = __{} + __ndrange.bounds[{}][0]'.format(
-                    targets[i], targets[i], i)
+                stmt = '{} = {} + __ndrange.bounds[{}][0]'.format(
+                    targets[i], targets_tmp[i], i)
                 loop_body.append(self.parse_stmt(stmt))
                 if i + 1 < len(targets):
-                    stmt = '__I = __I - __{} * __ndrange.acc_dimensions[{}]'.format(
-                        targets[i], i + 1)
+                    stmt = '__I = __I - {} * __ndrange.acc_dimensions[{}]'.format(
+                        targets_tmp[i], i + 1)
                     loop_body.append(self.parse_stmt(stmt))
             loop_body += node.body
 

@@ -71,15 +71,15 @@ def test_grouped_ndrange():
 
     @ti.kernel
     def test():
-        if ti.static(1):
-            I = [0] * 2
-            for i, j in ti.ndrange((x0, y0), (x1, y1)):
-                I[0] = i
-                I[1] = j
-                val[I] = I[0] + I[1] * 2
+        # if ti.static(1):
+        #     I = ti.Vector([0] * 2)
+        #     for i, j in ti.ndrange((x0, y0), (x1, y1)):
+        #         I[0] = i
+        #         I[1] = j
+        #         val[I] = I[0] + I[1] * 2
             # val[i, j] = i + j * 2
-        # for I in ti.grouped(ti.ndrange((x0, y0), (x1, y1))):
-        #     val[I] = I[0] + I[1] * 2
+        for I in ti.grouped(ti.ndrange((x0, y0), (x1, y1))):
+            val[I] = I[0] + I[1] * 2
         # for I in ti.grouped(val):
         #     val[I] = I[0] + I[1] * 2
 

@@ -11,10 +11,13 @@ def test_for_break():
     def func():
         for i in range(N):
             for j in range(M):
-                print(i)
-                print(j)
-                #if j > i: break
+                if j > i: break
                 x[i, j] = 100 * i + j
 
     func()
-    print(x.to_numpy())
+    for i in range(N):
+        for j in range(M):
+            if j > i:
+                assert x[i, j] == 0
+            else:
+                assert x[i, j] == 100 * i + j

@@ -206,7 +206,8 @@ class LowerAST : public IRVisitor {
         flattened3.push_back(Stmt::make<ConstStmt>(TypedConstant((int32)1)));
         flattened3.push_back(Stmt::make<BinaryOpStmt>(
             BinaryOpType::add, loop_var_load_stmt, flattened3.back().get()));
-        flattened3.push_back(Stmt::make<LocalStoreStmt>(loop_var, flattened3.back().get()));
+        flattened3.push_back(
+            Stmt::make<LocalStoreStmt>(loop_var, flattened3.back().get()));
         for (int i = 0; i < (int)flattened3.size(); i++) {
           stmts->insert(std::move(flattened3[i]), stmts->size());
         }

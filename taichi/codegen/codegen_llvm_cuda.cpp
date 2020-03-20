@@ -231,14 +231,14 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
           auto dt = tlctx->get_data_type(DataType::f32);
           old_value =
               builder->CreateIntrinsic(Intrinsic::nvvm_atomic_load_add_f32,
-                                     {llvm::PointerType::get(dt, 0)},
-                                     {stmt->dest->value, stmt->val->value});
+                                       {llvm::PointerType::get(dt, 0)},
+                                       {stmt->dest->value, stmt->val->value});
         } else if (stmt->val->ret_type.data_type == DataType::f64) {
           auto dt = tlctx->get_data_type(DataType::f64);
           old_value =
               builder->CreateIntrinsic(Intrinsic::nvvm_atomic_load_add_f64,
-                                     {llvm::PointerType::get(dt, 0)},
-                                     {stmt->dest->value, stmt->val->value});
+                                       {llvm::PointerType::get(dt, 0)},
+                                       {stmt->dest->value, stmt->val->value});
         } else {
           TI_NOT_IMPLEMENTED
         }
@@ -248,11 +248,13 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
               llvm::AtomicRMWInst::BinOp::Min, stmt->dest->value,
               stmt->val->value, llvm::AtomicOrdering::SequentiallyConsistent);
         } else if (stmt->val->ret_type.data_type == DataType::f32) {
-          old_value = builder->CreateCall(get_runtime_function("atomic_min_f32"),
-                                          {stmt->dest->value, stmt->val->value});
+          old_value =
+              builder->CreateCall(get_runtime_function("atomic_min_f32"),
+                                  {stmt->dest->value, stmt->val->value});
         } else if (stmt->val->ret_type.data_type == DataType::f64) {
-          old_value = builder->CreateCall(get_runtime_function("atomic_min_f64"),
-                                          {stmt->dest->value, stmt->val->value});
+          old_value =
+              builder->CreateCall(get_runtime_function("atomic_min_f64"),
+                                  {stmt->dest->value, stmt->val->value});
         } else {
           TI_NOT_IMPLEMENTED
         }
@@ -262,11 +264,13 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
               llvm::AtomicRMWInst::BinOp::Max, stmt->dest->value,
               stmt->val->value, llvm::AtomicOrdering::SequentiallyConsistent);
         } else if (stmt->val->ret_type.data_type == DataType::f32) {
-          old_value = builder->CreateCall(get_runtime_function("atomic_max_f32"),
-                                          {stmt->dest->value, stmt->val->value});
+          old_value =
+              builder->CreateCall(get_runtime_function("atomic_max_f32"),
+                                  {stmt->dest->value, stmt->val->value});
         } else if (stmt->val->ret_type.data_type == DataType::f64) {
-          old_value = builder->CreateCall(get_runtime_function("atomic_max_f64"),
-                                          {stmt->dest->value, stmt->val->value});
+          old_value =
+              builder->CreateCall(get_runtime_function("atomic_max_f64"),
+                                  {stmt->dest->value, stmt->val->value});
         } else {
           TI_NOT_IMPLEMENTED
         }

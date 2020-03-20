@@ -2006,7 +2006,7 @@ class AtomicOpExpression : public Expression {
     } else if (op_type == AtomicOpType::bit_or) {
       return fmt::format("atomic_bit_or({}, {})", dest.serialize(),
                          val.serialize());
-     } else if (op_type == AtomicOpType::bit_xor) {
+    } else if (op_type == AtomicOpType::bit_xor) {
       return fmt::format("atomic_bit_xor({}, {})", dest.serialize(),
                          val.serialize());
     } else {

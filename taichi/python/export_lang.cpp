@@ -319,18 +319,18 @@ void export_lang(py::module &m) {
   });
 
   m.def("expr_atomic_bit_and", [&](const Expr &a, const Expr &b) {
-    return Expr::make<AtomicOpExpression>(AtomicOpType::bit_and, ptr_if_global(a),
-                                          load_if_ptr(b));
+    return Expr::make<AtomicOpExpression>(AtomicOpType::bit_and,
+                                          ptr_if_global(a), load_if_ptr(b));
   });
 
   m.def("expr_atomic_bit_or", [&](const Expr &a, const Expr &b) {
-    return Expr::make<AtomicOpExpression>(AtomicOpType::bit_or, ptr_if_global(a),
-                                          load_if_ptr(b));
+    return Expr::make<AtomicOpExpression>(AtomicOpType::bit_or,
+                                          ptr_if_global(a), load_if_ptr(b));
   });
 
   m.def("expr_atomic_bit_xor", [&](const Expr &a, const Expr &b) {
-    return Expr::make<AtomicOpExpression>(AtomicOpType::bit_xor, ptr_if_global(a),
-                                          load_if_ptr(b));
+    return Expr::make<AtomicOpExpression>(AtomicOpType::bit_xor,
+                                          ptr_if_global(a), load_if_ptr(b));
   });
 
   m.def("expr_add", expr_add);

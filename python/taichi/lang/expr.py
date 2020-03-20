@@ -48,8 +48,8 @@ class Expr:
 
     def __add__(self, other):
         other = Expr(other)
-        return Expr(
-            taichi_lang_core.expr_add(self.ptr, other.ptr), tb=self.stack_info())
+        return Expr(taichi_lang_core.expr_add(self.ptr, other.ptr),
+                    tb=self.stack_info())
 
     __radd__ = __add__
 
@@ -58,8 +58,8 @@ class Expr:
 
     def __sub__(self, other):
         other = Expr(other)
-        return Expr(
-            taichi_lang_core.expr_sub(self.ptr, other.ptr), tb=self.stack_info())
+        return Expr(taichi_lang_core.expr_sub(self.ptr, other.ptr),
+                    tb=self.stack_info())
 
     def __rsub__(self, other):
         other = Expr(other)
@@ -102,10 +102,14 @@ class Expr:
         self.assign(Expr(taichi_lang_core.expr_mul(self.ptr, other.ptr)))
 
     def __itruediv__(self, other):
-        self.assign(Expr(taichi_lang_core.expr_truediv(self.ptr, Expr(other).ptr)))
+        self.assign(
+            Expr(taichi_lang_core.expr_truediv(self.ptr,
+                                               Expr(other).ptr)))
 
     def __ifloordiv__(self, other):
-        self.assign(Expr(taichi_lang_core.expr_floordiv(self.ptr, Expr(other).ptr)))
+        self.assign(
+            Expr(taichi_lang_core.expr_floordiv(self.ptr,
+                                                Expr(other).ptr)))
 
     def __iand__(self, other):
         self.atomic_and(other)
@@ -159,34 +163,38 @@ class Expr:
         return self | item
 
     def logical_not(self):
-        return Expr(taichi_lang_core.expr_bit_not(self.ptr), tb=self.stack_info())
+        return Expr(taichi_lang_core.expr_bit_not(self.ptr),
+                    tb=self.stack_info())
 
     def assign(self, other):
-        taichi_lang_core.expr_assign(self.ptr, Expr(other).ptr, self.stack_info())
+        taichi_lang_core.expr_assign(self.ptr,
+                                     Expr(other).ptr, self.stack_info())
 
     def __setitem__(self, key, value):
         if not Expr.layout_materialized:
-              self.materialize_layout_callback()
+            self.materialize_layout_callback()
         self.initialize_accessor()
         if key is None:
-              key = ()
+            key = ()
         if not isinstance(key, tuple):
-              key = (key,)
+            key = (key, )
         assert len(key) == self.dim()
-        key = key + ((0,) * (taichi_lang_core.get_max_num_indices() - len(key)))
+        key = key + ((0, ) *
+                     (taichi_lang_core.get_max_num_indices() - len(key)))
         self.setter(value, *key)
 
     def __getitem__(self, key):
         import taichi as ti
         assert not ti.get_runtime().inside_kernel
         if not Expr.layout_materialized:
-              self.materialize_layout_callback()
+            self.materialize_layout_callback()
         self.initialize_accessor()
         if key is None:
-              key = ()
+            key = ()
         if not isinstance(key, tuple):
-              key = (key,)
-        key = key + ((0,) * (taichi_lang_core.get_max_num_indices() - len(key)))
+            key = (key, )
+        key = key + ((0, ) *
+                     (taichi_lang_core.get_max_num_indices() - len(key)))
         return self.getter(*key)
 
     def loop_range(self):
@@ -216,37 +224,44 @@ class Expr:
     def atomic_add(self, other):
         import taichi as ti
         other_ptr = ti.wrap_scalar(other).ptr
-        return ti.expr_init(taichi_lang_core.expr_atomic_add(self.ptr, other_ptr))
+        return ti.expr_init(
+            taichi_lang_core.expr_atomic_add(self.ptr, other_ptr))
 
     def atomic_sub(self, other):
         import taichi as ti
         other_ptr = ti.wrap_scalar(other).ptr
-        return ti.expr_init(taichi_lang_core.expr_atomic_sub(self.ptr, other_ptr))
+        return ti.expr_init(
+            taichi_lang_core.expr_atomic_sub(self.ptr, other_ptr))
 
     def atomic_min(self, other):
         import taichi as ti
         other_ptr = ti.wrap_scalar(other).ptr
-        return ti.expr_init(taichi_lang_core.expr_atomic_min(self.ptr, other_ptr))
+        return ti.expr_init(
+            taichi_lang_core.expr_atomic_min(self.ptr, other_ptr))
 
     def atomic_max(self, other):
         import taichi as ti
         other_ptr = ti.wrap_scalar(other).ptr
-        return ti.expr_init(taichi_lang_core.expr_atomic_max(self.ptr, other_ptr))
+        return ti.expr_init(
+            taichi_lang_core.expr_atomic_max(self.ptr, other_ptr))
 
     def atomic_and(self, other):
         import taichi as ti
         other_ptr = ti.wrap_scalar(other).ptr
-        return ti.expr_init(taichi_lang_core.expr_atomic_bit_and(self.ptr, other_ptr))
+        return ti.expr_init(
+            taichi_lang_core.expr_atomic_bit_and(self.ptr, other_ptr))
 
     def atomic_or(self, other):
         import taichi as ti
         other_ptr = ti.wrap_scalar(other).ptr
-        return ti.expr_init(taichi_lang_core.expr_atomic_bit_or(self.ptr, other_ptr))
+        return ti.expr_init(
+            taichi_lang_core.expr_atomic_bit_or(self.ptr, other_ptr))
 
     def atomic_xor(self, other):
         import taichi as ti
         other_ptr = ti.wrap_scalar(other).ptr
-        return ti.expr_init(taichi_lang_core.expr_atomic_bit_xor(self.ptr, other_ptr))
+        return ti.expr_init(
+            taichi_lang_core.expr_atomic_bit_xor(self.ptr, other_ptr))
 
     def serialize(self):
         return self.ptr.serialize()

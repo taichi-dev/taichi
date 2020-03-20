@@ -524,7 +524,7 @@ void make_adjoint(IRNode *root, bool use_stack) {
     print(root);
     BackupSSA b;
     root->accept(&b);
-    // re_id(root);
+    re_id(root);
     typecheck(root);
     print(root);
   } else {

@@ -179,7 +179,7 @@ class LowerAST : public IRVisitor {
       } else {
         TI_INFO("BAD FOR");
         // transform into a structure as
-        // while (1) { cond; if (no active) break; original body...}
+        // i = begin; while (1) { if (i > end) break; original body; i += 1; }
         // auto loop_var = Stmt::make<AllocaStmt>(DataType::i32);
         auto loop_var = stmt->parent->lookup_var(stmt->loop_var_id[0]);
         flattened.push_back(Stmt::make<LocalStoreStmt>(loop_var, begin->stmt));
@@ -189,6 +189,7 @@ class LowerAST : public IRVisitor {
         // auto loop_var_store = Stmt::make<LocalStoreStmt>(loop_var_addr,
         // begin->stmt);
         flattened2.push_back(Stmt::make<LocalLoadStmt>(loop_var_addr));
+        auto loop_var_load_stmt = flattened2.back().get();
         flattened2.push_back(Stmt::make<BinaryOpStmt>(
             BinaryOpType::cmp_lt, flattened2.back().get(), end->stmt));
         auto cond_stmt = flattened2.back().get();
@@ -200,10 +201,20 @@ class LowerAST : public IRVisitor {
         for (int i = 0; i < (int)flattened2.size(); i++) {
           stmts->insert(std::move(flattened2[i]), i);
         }
+
+        VecStatement flattened3;
+        flattened3.push_back(Stmt::make<ConstStmt>(TypedConstant((int32)1)));
+        flattened3.push_back(Stmt::make<BinaryOpStmt>(
+            BinaryOpType::add, loop_var_load_stmt, flattened3.back().get()));
+        flattened3.push_back(Stmt::make<LocalStoreStmt>(loop_var, flattened3.back().get()));
+        for (int i = 0; i < (int)flattened3.size(); i++) {
+          stmts->insert(std::move(flattened3[i]), stmts->size());
+        }
         // insert break
         stmts->insert(
             std::make_unique<WhileControlStmt>(new_while->mask, cond_stmt),
             flattened2.size());
+
         stmt->insert_before_me(std::make_unique<AllocaStmt>(DataType::i32));
         auto &&const_stmt =
             std::make_unique<ConstStmt>(TypedConstant((int32)0xFFFFFFFF));

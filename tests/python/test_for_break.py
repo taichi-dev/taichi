@@ -11,6 +11,8 @@ def test_for_break():
     def func():
         for i in range(N):
             for j in range(M):
+                print(i)
+                print(j)
                 #if j > i: break
                 x[i, j] = 100 * i + j
 

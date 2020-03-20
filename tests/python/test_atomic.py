@@ -206,3 +206,123 @@ def test_local_atomic_with_if():
 
     test()
     assert ret[None] == 1
+
+@ti.all_archs
+def test_atomic_sub_expr_evaled():
+    c = ti.var(ti.i32)
+    step = 42
+
+    @ti.layout
+    def place():
+        ti.root.place(c)
+
+    @ti.kernel
+    def func():
+        for i in range(n):
+            # this is an expr with side effect, make sure it's not optimized out.
+            ti.atomic_sub(c[None], step)
+
+    func()
+
+    assert c[None] == - n * step
+
+@ti.all_archs
+def test_atomic_max_expr_evaled():
+    c = ti.var(ti.i32)
+    step = 42
+
+    @ti.layout
+    def place():
+        ti.root.place(c)
+
+    @ti.kernel
+    def func():
+        for i in range(n):
+            # this is an expr with side effect, make sure it's not optimized out.
+            ti.atomic_max(c[None], i*step)
+
+    func()
+
+    assert c[None] == (n-1) * step
+
+@ti.all_archs
+def test_atomic_min_expr_evaled():
+    c = ti.var(ti.i32)
+    step = 42
+
+    @ti.layout
+    def place():
+        ti.root.place(c)
+
+    @ti.kernel
+    def func():
+        c[None] = 1000
+        for i in range(n):
+            # this is an expr with side effect, make sure it's not optimized out.
+            ti.atomic_min(c[None], i*step)
+
+    func()
+
+    assert c[None] == 0
+
+@ti.all_archs
+def test_atomic_and_expr_evaled():
+    c = ti.var(ti.i32)
+    step = 42
+
+    @ti.layout
+    def place():
+        ti.root.place(c)
+
+    max_int = 2147483647
+    @ti.kernel
+    def func():
+        c[None] = 1023
+        for i in range(10):
+            # this is an expr with side effect, make sure it's not optimized out.
+            ti.atomic_and(c[None], max_int-2**i)
+
+    func()
+
+    assert c[None] == 0
+
+
+@ti.all_archs
+def test_atomic_or_expr_evaled():
+    c = ti.var(ti.i32)
+    step = 42
+
+    @ti.layout
+    def place():
+        ti.root.place(c)
+
+    @ti.kernel
+    def func():
+        c[None] = 0
+        for i in range(10):
+            # this is an expr with side effect, make sure it's not optimized out.
+            ti.atomic_or(c[None], 2**i)
+
+    func()
+
+    assert c[None] == 1023
+
+@ti.all_archs
+def test_atomic_xor_expr_evaled():
+    c = ti.var(ti.i32)
+    step = 42
+
+    @ti.layout
+    def place():
+        ti.root.place(c)
+
+    @ti.kernel
+    def func():
+        c[None] = 1023
+        for i in range(10):
+            # this is an expr with side effect, make sure it's not optimized out.
+            ti.atomic_xor(c[None], 2**i)
+
+    func()
+
+    assert c[None] == 0

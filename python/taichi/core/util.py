@@ -158,8 +158,10 @@ def format(all=False, diff=None):
     else:
         if diff is None:
             # Finds all modified files from upstream/master to working tree
-            # 1. diffs between the index and upstream/master
+            # 1. diffs between the index and upstream/master. Also inclulde
+            # origin/master for repo owners.
             files = repo.index.diff('upstream/master')
+            files += repo.index.diff('origin/master')
             # 2. diffs between the index and the working tree
             # https://gitpython.readthedocs.io/en/stable/tutorial.html#obtaining-diff-information
             files += repo.index.diff(None)
@@ -169,9 +171,10 @@ def format(all=False, diff=None):
             map(lambda x: os.path.join(tc.get_repo_directory(), x.a_path),
                 files))
 
+    files = set(map(str, files))
     clang_format_bin = _find_clang_format_bin()
     print('Code formatting ...')
-    for fn in map(str, files):
+    for fn in files:
         if os.path.isdir(fn):
             continue
         if fn.find('.pytest_cache') != -1:

@@ -31,7 +31,6 @@ def test_vector_index():
 
 @ti.all_archs
 def test_grouped():
-    # ti.get_runtime().print_preprocessed = True
     val = ti.var(ti.i32)
 
     n = 4
@@ -57,7 +56,6 @@ def test_grouped():
 
 @ti.all_archs
 def test_grouped_ndrange():
-    # ti.get_runtime().print_preprocessed = True
     val = ti.var(ti.i32)
 
     n = 4

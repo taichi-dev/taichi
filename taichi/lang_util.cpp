@@ -70,7 +70,7 @@ std::string data_type_name(DataType t) {
     REGISTER_DATA_TYPE(f16, float16);
     REGISTER_DATA_TYPE(f32, float32);
     REGISTER_DATA_TYPE(f64, float64);
-    REGISTER_DATA_TYPE(i1, int1);
+    REGISTER_DATA_TYPE(u1, int1);
     REGISTER_DATA_TYPE(i8, int8);
     REGISTER_DATA_TYPE(i16, int16);
     REGISTER_DATA_TYPE(i32, int32);
@@ -79,8 +79,7 @@ std::string data_type_name(DataType t) {
     REGISTER_DATA_TYPE(u16, uint16);
     REGISTER_DATA_TYPE(u32, uint32);
     REGISTER_DATA_TYPE(u64, uint64);
-    REGISTER_DATA_TYPE(ptr, void_pointer);
-    REGISTER_DATA_TYPE(none, none);
+    REGISTER_DATA_TYPE(gen, generic);
     REGISTER_DATA_TYPE(unknown, unknown);
 #undef REGISTER_DATA_TYPE
   }
@@ -103,8 +102,7 @@ int data_type_size(DataType t) {
     REGISTER_DATA_TYPE(u16, uint16);
     REGISTER_DATA_TYPE(u32, uint32);
     REGISTER_DATA_TYPE(u64, uint64);
-    type_sizes[DataType::ptr] = sizeof(void *);
-    type_sizes[DataType::none] = 0;
+    type_sizes[DataType::gen] = 0;
     type_sizes[DataType::unknown] = -1;
 #undef REGISTER_DATA_TYPE
   }
@@ -114,23 +112,9 @@ int data_type_size(DataType t) {
 std::string data_type_short_name(DataType t) {
   static std::map<DataType, std::string> type_names;
   if (type_names.empty()) {
-#define REGISTER_DATA_TYPE(i) type_names[DataType::i] = #i;
-    REGISTER_DATA_TYPE(f16);
-    REGISTER_DATA_TYPE(f32);
-    REGISTER_DATA_TYPE(f64);
-    REGISTER_DATA_TYPE(i1);
-    REGISTER_DATA_TYPE(i8);
-    REGISTER_DATA_TYPE(i16);
-    REGISTER_DATA_TYPE(i32);
-    REGISTER_DATA_TYPE(i64);
-    REGISTER_DATA_TYPE(u8);
-    REGISTER_DATA_TYPE(u16);
-    REGISTER_DATA_TYPE(u32);
-    REGISTER_DATA_TYPE(u64);
-    REGISTER_DATA_TYPE(ptr);
-    REGISTER_DATA_TYPE(none);
-    REGISTER_DATA_TYPE(unknown);
-#undef REGISTER_DATA_TYPE
+#define PER_TYPE(i) type_names[DataType::i] = #i;
+#include "taichi/inc/data_type.inc.h"
+#undef PER_TYPE
   }
   return type_names[t];
 }

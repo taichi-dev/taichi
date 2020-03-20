@@ -3,16 +3,15 @@ import taichi as ti
 
 @ti.all_archs
 def test_pass_by_value():
+    @ti.func
+    def set_val(x, i):
+        x = i
 
-  @ti.func
-  def set_val(x, i):
-    x = i
+    ret = ti.var(ti.i32, shape=())
 
-  ret = ti.var(ti.i32, shape=())
+    @ti.kernel
+    def task():
+        set_val(ret[None], 112)
 
-  @ti.kernel
-  def task():
-    set_val(ret[None], 112)
-
-  task()
-  assert ret[None] == 0
+    task()
+    assert ret[None] == 0

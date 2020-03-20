@@ -98,7 +98,7 @@ void vector_split(IRNode *root, int max_width, bool serial_schedule);
 void replace_all_usages_with(IRNode *root, Stmt *old_stmt, Stmt *new_stmt);
 void check_out_of_bound(IRNode *root);
 void lower_access(IRNode *root, bool lower_atomic);
-void make_adjoint(IRNode *root);
+void make_adjoint(IRNode *root, bool use_stack = false);
 void constant_fold(IRNode *root);
 OffloadedResult offload(IRNode *root);
 void fix_block_parents(IRNode *root);
@@ -120,14 +120,18 @@ DiffRange value_diff(Stmt *stmt, int lane, Stmt *alloca);
 IRBuilder &current_ast_builder();
 
 struct VectorType {
+ private:
+  bool _is_pointer;
+
+ public:
   int width;
   DataType data_type;
 
-  VectorType(int width, DataType data_type)
-      : width(width), data_type(data_type) {
+  VectorType(int width, DataType data_type, bool is_pointer = false)
+      : _is_pointer(is_pointer), width(width), data_type(data_type) {
   }
 
-  VectorType() : width(1), data_type(DataType::unknown) {
+  VectorType() : _is_pointer(false), width(1), data_type(DataType::unknown) {
   }
 
   bool operator==(const VectorType &o) const {
@@ -138,12 +142,30 @@ struct VectorType {
     return !(*this == o);
   }
 
-  std::string short_str() const {
-    return fmt::format("{}x{}", data_type_short_name(data_type), width);
+  std::string pointer_suffix() const {
+    if (is_pointer()) {
+      return "*";
+    } else {
+      return "";
+    }
+  }
+
+  std::string element_type_name() const {
+    return fmt::format("{}{}", data_type_short_name(data_type),
+                       pointer_suffix());
   }
 
   std::string str() const {
-    return fmt::format("{}x{}", data_type_name(data_type), width);
+    auto ename = element_type_name();
+    return fmt::format("{:4}x{}", ename, width);
+  }
+
+  bool is_pointer() const {
+    return _is_pointer;
+  }
+
+  void set_is_pointer(bool v) {
+    _is_pointer = v;
   }
 };
 
@@ -532,8 +554,7 @@ class Stmt : public IRNode {
     if (ret_type.data_type == DataType::unknown)
       return "";
     else
-      return fmt::format("<{}> {}", ret_type.short_str(),
-                         is_ptr ? "ptr " : " ");
+      return fmt::format("<{}>{}", ret_type.str(), is_ptr ? "ptr " : " ");
   }
 
   std::string name() const {
@@ -2199,4 +2220,5 @@ Expr Var(Expr x);
 
 TLANG_NAMESPACE_END
 
-#include "statements.h"
+#include "taichi/ir/statements.h"
+#include "taichi/ir/visitors.h"

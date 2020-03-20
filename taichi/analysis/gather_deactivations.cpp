@@ -32,6 +32,6 @@ std::vector<SNode *> gather_deactivations(IRNode *root) {
   GatherDeactivations gather(root);
   return gather.run();
 }
-}  // namespace irpasss
+}  // namespace irpass
 
 TLANG_NAMESPACE_END

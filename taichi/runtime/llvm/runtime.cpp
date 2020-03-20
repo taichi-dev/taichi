@@ -24,7 +24,9 @@
 struct Context;
 using assert_failed_type = void (*)(const char *);
 using host_printf_type = void (*)(const char *, ...);
-using host_vsnprintf_type = int (*)(char *, std::size_t, const char *,
+using host_vsnprintf_type = int (*)(char *,
+                                    std::size_t,
+                                    const char *,
                                     std::va_list);
 using vm_allocator_type = void *(*)(void *, std::size_t, std::size_t);
 using RangeForTaskFunc = void(Context *, int i);
@@ -504,8 +506,12 @@ struct LLVMRuntime {
   void (*profiler_start)(Ptr, Ptr);
   void (*profiler_stop)(Ptr);
 
+  char error_message_buffer[taichi_max_message_length];
+  i32 error_message_lock = 0;
+  i64 error_code = 0;
+
   Ptr result_buffer;
-  i32 lock;
+  i32 allocator_lock;
 
   template <typename T>
   void set_result(T t) {
@@ -622,6 +628,14 @@ Ptr get_temporary_pointer(LLVMRuntime *runtime, u64 offset) {
   return runtime->temporaries + offset;
 }
 
+void retrieve_error_code(LLVMRuntime *runtime) {
+  runtime->set_result(runtime->error_code);
+}
+
+void retrieve_error_message(LLVMRuntime *runtime) {
+  runtime->set_result(runtime->error_message_buffer);
+}
+
 #if ARCH_cuda
 void __assertfail(const char *message,
                   const char *file,
@@ -638,11 +652,15 @@ void taichi_assert_runtime(LLVMRuntime *runtime, i32 test, const char *msg) {
 }
 #else
 void taichi_assert_runtime(LLVMRuntime *runtime, i32 test, const char *msg) {
-  if (enable_assert) {
-    if (test == 0) {
-      runtime->assert_failed(msg);
+  if (!enable_assert || test != 0 || runtime->error_code)
+    return;
+  locked_task(&runtime->error_message_lock, [&] {
+    if (!runtime->error_code) {
+      runtime->error_code = 1;  // Assertion failure
+      memcpy(runtime->error_message_buffer, msg,
+             std::min(strlen(msg), taichi_max_message_length));
     }
-  }
+  });
 }
 #endif
 
@@ -653,16 +671,20 @@ void taichi_assert(Context *context, i32 test, const char *msg) {
 const std::size_t ASSERT_MSG_BUFFER_SIZE = 2048;
 char assert_msg_buffer[ASSERT_MSG_BUFFER_SIZE];
 i32 assert_msg_buffer_lock = 0;
-void taichi_assert_format(LLVMRuntime *runtime, i32 test, const char *format,
+void taichi_assert_format(LLVMRuntime *runtime,
+                          i32 test,
+                          const char *format,
                           ...) {
-  if (!enable_assert || test != 0)
+  if (!enable_assert || test != 0 || runtime->error_code)
     return;
   std::va_list args;
   va_start(args, format);
-  locked_task(&assert_msg_buffer_lock, [&] {
-    runtime->host_vsnprintf(assert_msg_buffer, ASSERT_MSG_BUFFER_SIZE, format,
-                            args);
-    runtime->assert_failed(assert_msg_buffer);
+  locked_task(&runtime->error_message_lock, [&] {
+    if (!runtime->error_code) {
+      runtime->error_code = 1;  // Assertion failure
+      runtime->host_vsnprintf(runtime->error_message_buffer,
+                              taichi_max_message_length, format, args);
+    }
   });
   va_end(args);
 }
@@ -676,7 +698,7 @@ Ptr LLVMRuntime::allocate_aligned(std::size_t size, std::size_t alignment) {
 
 Ptr LLVMRuntime::allocate_from_buffer(std::size_t size, std::size_t alignment) {
   Ptr ret;
-  locked_task(&lock, [&] {
+  locked_task(&allocator_lock, [&] {
     preallocated_head +=
         alignment - 1 -
         ((std::size_t)preallocated_head + alignment - 1) % alignment;
@@ -792,8 +814,8 @@ void runtime_initialize2(LLVMRuntime *runtime, int root_id, int num_snodes) {
 }
 
 void LLVMRuntime_initialize_thread_pool(LLVMRuntime *runtime,
-                                    void *thread_pool,
-                                    void *parallel_for) {
+                                        void *thread_pool,
+                                        void *parallel_for) {
   runtime->thread_pool = (Ptr)thread_pool;
   runtime->parallel_for = (parallel_for_type)parallel_for;
 }
@@ -1265,5 +1287,35 @@ void taichi_printf(LLVMRuntime *runtime, const char *format, Args &&... args) {
 }
 
 #include "locked_task.h"
+
+extern "C" {  // local stack operations
+
+Ptr stack_top_primal(Ptr stack, std::size_t element_size) {
+  auto &n = *(i32 *)stack;
+  return stack + (n - 1) * 2 * element_size;
+}
+
+Ptr stack_top_adjoint(Ptr stack, std::size_t element_size) {
+  return stack_top_primal(stack, element_size) + element_size;
+}
+
+void stack_init(Ptr stack, size_t element_size) {
+  auto &n = *(i32 *)stack;
+  n = 0;
+  std::memset(stack_top_primal(stack, element_size), 0, element_size * 2);
+}
+
+void stack_pop(Ptr stack) {
+  auto &n = *(i32 *)stack;
+  n--;
+}
+
+void stack_push(Ptr stack, size_t max_num_elements, std::size_t element_size) {
+  auto &n = *(i32 *)stack;
+  // TODO: assert n <= max_elements
+  std::memset(stack_top_primal(stack, element_size), 0, element_size * 2);
+  n++;
+}
+}
 
 #endif

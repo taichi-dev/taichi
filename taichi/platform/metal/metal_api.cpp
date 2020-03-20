@@ -43,7 +43,8 @@ nsobj_unique_ptr<MTLComputeCommandEncoder> new_compute_command_encoder(
 }
 
 nsobj_unique_ptr<MTLLibrary> new_library_with_source(
-    MTLDevice *device, const std::string &source) {
+    MTLDevice *device,
+    const std::string &source) {
   auto source_str = mac::wrap_string_as_ns_string(source);
 
   id options = clscall("MTLCompileOptions", "alloc");
@@ -82,7 +83,8 @@ nsobj_unique_ptr<MTLBuffer> new_mtl_buffer(MTLDevice *device, size_t length) {
   return wrap_as_nsobj_unique_ptr(buffer);
 }
 
-nsobj_unique_ptr<MTLBuffer> new_mtl_buffer_no_copy(MTLDevice *device, void *ptr,
+nsobj_unique_ptr<MTLBuffer> new_mtl_buffer_no_copy(MTLDevice *device,
+                                                   void *ptr,
                                                    size_t length) {
   // MTLResourceCPUCacheModeDefaultCache | MTLResourceStorageModeShared
   constexpr int kMtlBufferResourceOptions = 0;
@@ -93,9 +95,12 @@ nsobj_unique_ptr<MTLBuffer> new_mtl_buffer_no_copy(MTLDevice *device, void *ptr,
   return wrap_as_nsobj_unique_ptr(buffer);
 }
 
-void dispatch_threadgroups(MTLComputeCommandEncoder *encoder, int32_t blocks_x,
-                           int32_t blocks_y, int32_t blocks_z,
-                           int32_t threads_x, int32_t threads_y,
+void dispatch_threadgroups(MTLComputeCommandEncoder *encoder,
+                           int32_t blocks_x,
+                           int32_t blocks_y,
+                           int32_t blocks_z,
+                           int32_t threads_x,
+                           int32_t threads_y,
                            int32_t threads_z) {
   struct MTLSize {
     uint64_t width;

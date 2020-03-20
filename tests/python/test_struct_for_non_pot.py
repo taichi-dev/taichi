@@ -3,51 +3,51 @@ import taichi as ti
 
 @ti.all_archs
 def test_1d():
-  x = ti.var(ti.i32)
-  sum = ti.var(ti.i32)
+    x = ti.var(ti.i32)
+    sum = ti.var(ti.i32)
 
-  n = 100
+    n = 100
 
-  @ti.layout
-  def place():
-    ti.root.dense(ti.k, n).place(x)
-    ti.root.place(sum)
+    @ti.layout
+    def place():
+        ti.root.dense(ti.k, n).place(x)
+        ti.root.place(sum)
 
-  @ti.kernel
-  def accumulate():
-    for i in x:
-      ti.atomic_add(sum, i)
+    @ti.kernel
+    def accumulate():
+        for i in x:
+            ti.atomic_add(sum, i)
 
-  accumulate()
+    accumulate()
 
-  for i in range(n):
-    assert sum[None] == 4950
+    for i in range(n):
+        assert sum[None] == 4950
 
 
 @ti.all_archs
 def test_2d():
-  x = ti.var(ti.i32)
-  sum = ti.var(ti.i32)
+    x = ti.var(ti.i32)
+    sum = ti.var(ti.i32)
 
-  n = 100
-  m = 19
+    n = 100
+    m = 19
 
-  @ti.layout
-  def place():
-    ti.root.dense(ti.k, n).dense(ti.i, m).place(x)
-    ti.root.place(sum)
+    @ti.layout
+    def place():
+        ti.root.dense(ti.k, n).dense(ti.i, m).place(x)
+        ti.root.place(sum)
 
-  @ti.kernel
-  def accumulate():
-    for i, j in x:
-      ti.atomic_add(sum, i + j * 2)
+    @ti.kernel
+    def accumulate():
+        for i, j in x:
+            ti.atomic_add(sum, i + j * 2)
 
-  gt = 0
-  for i in range(n):
-    for j in range(m):
-      gt += i + j * 2
+    gt = 0
+    for i in range(n):
+        for j in range(m):
+            gt += i + j * 2
 
-  accumulate()
+    accumulate()
 
-  for i in range(n):
-    assert sum[None] == gt
+    for i in range(n):
+        assert sum[None] == gt

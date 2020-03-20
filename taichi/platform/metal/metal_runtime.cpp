@@ -39,8 +39,12 @@ class BufferMemoryView {
   BufferMemoryView(const BufferMemoryView &) = delete;
   BufferMemoryView &operator=(const BufferMemoryView &) = delete;
 
-  inline size_t size() const { return size_; }
-  inline void *ptr() const { return ptr_; }
+  inline size_t size() const {
+    return size_;
+  }
+  inline void *ptr() const {
+    return ptr_;
+  }
 
  private:
   size_t size_;
@@ -65,8 +69,9 @@ class CompiledMtlKernel {
 
   CompiledMtlKernel(Params params)
       : kernel_attribs_(*params.kerenl_attribs),
-        pipeline_state_(new_compute_pipeline_state_with_function(
-            params.device, params.mtl_func)),
+        pipeline_state_(
+            new_compute_pipeline_state_with_function(params.device,
+                                                     params.mtl_func)),
         profiler_(params.profiler),
         profiler_id_(fmt::format("{}_dispatch", kernel_attribs_.name)) {
     TI_ASSERT(pipeline_state_ != nullptr);
@@ -84,7 +89,9 @@ class CompiledMtlKernel {
     }
   }
 
-  inline MetalKernelAttributes *kernel_attribs() { return &kernel_attribs_; }
+  inline MetalKernelAttributes *kernel_attribs() {
+    return &kernel_attribs_;
+  }
 
  private:
   void launch_if_not_empty(MtlDataBuffers data_buffers,
@@ -181,8 +188,10 @@ class CompiledTaichiKernel {
 class HostMetalArgsBlitter {
  public:
   HostMetalArgsBlitter(const MetalKernelArgsAttributes *args_attribs,
-                       Context *ctx, BufferMemoryView *args_mem)
-      : args_attribs_(args_attribs), ctx_(ctx), args_mem_(args_mem) {}
+                       Context *ctx,
+                       BufferMemoryView *args_mem)
+      : args_attribs_(args_attribs), ctx_(ctx), args_mem_(args_mem) {
+  }
 
   void host_to_metal() {
 #define TO_METAL(type)             \
@@ -266,7 +275,8 @@ class HostMetalArgsBlitter {
   }
 
   static std::unique_ptr<HostMetalArgsBlitter> make_if_has_args(
-      const CompiledTaichiKernel &kernel, Context *ctx) {
+      const CompiledTaichiKernel &kernel,
+      Context *ctx) {
     if (!kernel.args_attribs.has_args()) {
       return nullptr;
     }
@@ -318,7 +328,8 @@ class MetalRuntime::Impl {
       const std::string &taichi_kernel_name,
       const std::string &mtl_kernel_source_code,
       const std::vector<MetalKernelAttributes> &kernels_attribs,
-      size_t global_tmps_size, const MetalKernelArgsAttributes &args_attribs) {
+      size_t global_tmps_size,
+      const MetalKernelArgsAttributes &args_attribs) {
     TI_ASSERT(compiled_taichi_kernels_.find(taichi_kernel_name) ==
               compiled_taichi_kernels_.end());
     // Make sure |taichi_global_tmp_buffer_size| is large enough
@@ -427,13 +438,16 @@ class MetalRuntime::Impl {
 
 class MetalRuntime::Impl {
  public:
-  explicit Impl(Params) { TI_ERROR("Metal not supported on the current OS"); }
+  explicit Impl(Params) {
+    TI_ERROR("Metal not supported on the current OS");
+  }
 
   void register_taichi_kernel(
       const std::string &taichi_kernel_name,
       const std::string &mtl_kernel_source_code,
       const std::vector<MetalKernelAttributes> &kernels_attribs,
-      size_t global_tmps_size, const MetalKernelArgsAttributes &args_attribs) {
+      size_t global_tmps_size,
+      const MetalKernelArgsAttributes &args_attribs) {
     TI_ERROR("Metal not supported on the current OS");
   }
 
@@ -442,21 +456,26 @@ class MetalRuntime::Impl {
     TI_ERROR("Metal not supported on the current OS");
   }
 
-  void synchronize() { TI_ERROR("Metal not supported on the current OS"); }
+  void synchronize() {
+    TI_ERROR("Metal not supported on the current OS");
+  }
 };
 
 #endif  // TI_PLATFORM_OSX
 
 MetalRuntime::MetalRuntime(Params params)
-    : impl_(std::make_unique<Impl>(std::move(params))) {}
+    : impl_(std::make_unique<Impl>(std::move(params))) {
+}
 
-MetalRuntime::~MetalRuntime() {}
+MetalRuntime::~MetalRuntime() {
+}
 
 void MetalRuntime::register_taichi_kernel(
     const std::string &taichi_kernel_name,
     const std::string &mtl_kernel_source_code,
     const std::vector<MetalKernelAttributes> &kernels_attribs,
-    size_t global_tmps_size, const MetalKernelArgsAttributes &args_attribs) {
+    size_t global_tmps_size,
+    const MetalKernelArgsAttributes &args_attribs) {
   impl_->register_taichi_kernel(taichi_kernel_name, mtl_kernel_source_code,
                                 kernels_attribs, global_tmps_size,
                                 args_attribs);
@@ -467,7 +486,9 @@ void MetalRuntime::launch_taichi_kernel(const std::string &taichi_kernel_name,
   impl_->launch_taichi_kernel(taichi_kernel_name, ctx);
 }
 
-void MetalRuntime::synchronize() { impl_->synchronize(); }
+void MetalRuntime::synchronize() {
+  impl_->synchronize();
+}
 
 }  // namespace metal
 TLANG_NAMESPACE_END

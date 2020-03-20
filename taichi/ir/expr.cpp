@@ -20,5 +20,4 @@ std::string Expr::get_attribute(const std::string &key) const {
   return expr->get_attribute(key);
 }
 
-
 TLANG_NAMESPACE_END

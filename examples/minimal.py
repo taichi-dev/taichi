@@ -3,7 +3,7 @@ import taichi as ti
 
 @ti.kernel
 def p():
-  print(42)
+    print(42)
 
 
 p()

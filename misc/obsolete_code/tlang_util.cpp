@@ -93,4 +93,3 @@ std::string CompileConfig::compile_cmd(const std::string &input,
   }
   return cmd;
 }
-

@@ -22,6 +22,7 @@ class TypeCheck : public IRVisitor {
   void visit(AllocaStmt *stmt) {
     // Do nothing.
     // Alloca type is determined by first (compile-time) LocalStore
+    stmt->ret_type.set_is_pointer(true);
   }
 
   void visit(IfStmt *if_stmt) {
@@ -83,6 +84,7 @@ class TypeCheck : public IRVisitor {
       fmt::print(stmt->tb);
     }
     stmt->ret_type = stmt->ptr->ret_type;
+    stmt->ret_type.set_is_pointer(false);
   }
 
   void visit(GlobalLoadStmt *stmt) {
@@ -94,6 +96,7 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(GlobalPtrStmt *stmt) {
+    stmt->ret_type.set_is_pointer(true);
     if (stmt->snodes)
       stmt->ret_type.data_type = stmt->snodes[0]->dt;
     else
@@ -315,6 +318,7 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(ExternalPtrStmt *stmt) {
+    stmt->ret_type.set_is_pointer(true);
     stmt->ret_type = VectorType(stmt->base_ptrs.size(),
                                 stmt->base_ptrs[0]->ret_type.data_type);
   }
@@ -323,8 +327,17 @@ class TypeCheck : public IRVisitor {
     stmt->ret_type = VectorType(1, DataType::i32);
   }
 
+  void visit(GetRootStmt *stmt) {
+    stmt->ret_type = VectorType(1, DataType::gen, true);
+  }
+
+  void visit(SNodeLookupStmt *stmt) {
+    stmt->ret_type = VectorType(1, DataType::gen, true);
+  }
+
   void visit(GetChStmt *stmt) {
     stmt->ret_type = VectorType(1, stmt->output_snode->dt);
+    stmt->ret_type.set_is_pointer(true);
   }
 
   void visit(OffloadedStmt *stmt) {
@@ -342,6 +355,37 @@ class TypeCheck : public IRVisitor {
 
   void visit(IntegerOffsetStmt *stmt) {
     stmt->ret_type.data_type = DataType::i32;
+  }
+
+  void visit(StackAllocaStmt *stmt) {
+    stmt->ret_type.data_type = stmt->dt;
+    stmt->ret_type.set_is_pointer(true);
+  }
+
+  void visit(StackLoadTopStmt *stmt) {
+    stmt->ret_type = stmt->stack->ret_type;
+  }
+
+  void visit(StackLoadTopAdjStmt *stmt) {
+    stmt->ret_type = stmt->stack->ret_type;
+  }
+
+  void visit(StackPushStmt *stmt) {
+    stmt->ret_type = stmt->stack->ret_type;
+    TI_ASSERT(stmt->ret_type == stmt->v->ret_type);
+  }
+
+  void visit(StackPopStmt *stmt) {
+    stmt->ret_type = stmt->stack->ret_type;
+  }
+
+  void visit(StackAccAdjointStmt *stmt) {
+    stmt->ret_type = stmt->stack->ret_type;
+    TI_ASSERT(stmt->ret_type == stmt->v->ret_type);
+  }
+
+  void visit(GlobalTemporaryStmt *stmt) {
+    stmt->ret_type.set_is_pointer(true);
   }
 
   static void run(IRNode *node) {

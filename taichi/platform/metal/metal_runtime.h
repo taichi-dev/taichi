@@ -23,7 +23,7 @@ class MetalRuntime {
  public:
   struct Params {
     size_t root_size;
-    CompileConfig* config;
+    CompileConfig *config;
     MemoryPool *mem_pool;
     ProfilerBase *profiler;
   };
@@ -42,7 +42,8 @@ class MetalRuntime {
       const std::string &taichi_kernel_name,
       const std::string &mtl_kernel_source_code,
       const std::vector<MetalKernelAttributes> &kernels_attribs,
-      size_t global_tmps_size, const MetalKernelArgsAttributes &args_attribs);
+      size_t global_tmps_size,
+      const MetalKernelArgsAttributes &args_attribs);
 
   // Launch the given |taichi_kernel_name|.
   // Kernel launching is asynchronous, therefore the Metal memory is not valid

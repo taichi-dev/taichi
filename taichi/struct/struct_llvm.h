@@ -7,7 +7,7 @@ TLANG_NAMESPACE_BEGIN
 
 class StructCompilerLLVM : public StructCompiler, public ModuleBuilder {
  public:
-  StructCompilerLLVM(Program* prog, Arch arch);
+  StructCompilerLLVM(Program *prog, Arch arch);
 
   Arch arch;
   TaichiLLVMContext *tlctx;

@@ -149,7 +149,8 @@ class CUDAProfiler : public ProfilerBase {
 }  // namespace
 
 std::unique_ptr<ProfilerBase> make_profiler(Arch arch) {
-  if (arch == Arch::x64 || arch == Arch::arm64 || arch == Arch::metal || arch == Arch::opengl) {
+  if (arch == Arch::x64 || arch == Arch::arm64 || arch == Arch::metal ||
+      arch == Arch::opengl) {
     return std::make_unique<DefaultProfiler>(arch);
   } else if (arch == Arch::cuda) {
     return std::make_unique<CUDAProfiler>();

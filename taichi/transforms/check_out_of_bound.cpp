@@ -26,21 +26,24 @@ class CheckOutOfBound : public BasicStmtVisitor {
     auto snode = stmt->snodes[0];
     auto new_stmts = VecStatement();
     auto zero = new_stmts.push_back<ConstStmt>(LaneAttribute<TypedConstant>(0));
-    Stmt *result = new_stmts.push_back<ConstStmt>(LaneAttribute<TypedConstant>(true));
+    Stmt *result =
+        new_stmts.push_back<ConstStmt>(LaneAttribute<TypedConstant>(true));
 
     std::string msg = "Accessing Tensor of Size [";
     std::vector<Stmt *> args;
     for (int i = 0; i < stmt->indices.size(); i++) {
       auto check_zero = new_stmts.push_back<BinaryOpStmt>(
           BinaryOpType::cmp_ge, stmt->indices[i], zero);
-      int size_i = snode->extractors[snode->physical_index_position[i]].num_elements;
-      auto bound = new_stmts.push_back<ConstStmt>(LaneAttribute<TypedConstant>(size_i));
+      int size_i =
+          snode->extractors[snode->physical_index_position[i]].num_elements;
+      auto bound =
+          new_stmts.push_back<ConstStmt>(LaneAttribute<TypedConstant>(size_i));
       auto check_bound = new_stmts.push_back<BinaryOpStmt>(
           BinaryOpType::cmp_lt, stmt->indices[i], bound);
-      auto check_i = new_stmts.push_back<BinaryOpStmt>(
-          BinaryOpType::bit_and, check_zero, check_bound);
-      result = new_stmts.push_back<BinaryOpStmt>(
-          BinaryOpType::bit_and, result, check_i);
+      auto check_i = new_stmts.push_back<BinaryOpStmt>(BinaryOpType::bit_and,
+                                                       check_zero, check_bound);
+      result = new_stmts.push_back<BinaryOpStmt>(BinaryOpType::bit_and, result,
+                                                 check_i);
       if (i > 0)
         msg += ", ";
       msg += std::to_string(size_i);

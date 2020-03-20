@@ -394,7 +394,7 @@ class MetalKernelCodegen : public IRVisitor {
 
   void generate_common_functions() {
 #define TI_INSIDE_METAL_CODEGEN
-#include <taichi/platform/metal/helpers.metal.h>
+#include "taichi/platform/metal/shaders/helpers.metal.h"
     kernel_src_code_ += kMetalHelpersSourceCode;
 #undef TI_INSIDE_METAL_CODEGEN
     emit("\n");

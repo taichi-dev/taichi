@@ -244,51 +244,99 @@ class InternalFuncStmt : public Stmt {
   DEFINE_ACCEPT
 };
 
-// Visits all non-containing statements
-class BasicStmtVisitor : public IRVisitor {
+class StackAllocaStmt : public Stmt {
  public:
-  StructForStmt *current_struct_for;
+  DataType dt;
+  std::size_t max_size;  // TODO: 0 = adaptive
 
-  BasicStmtVisitor() {
-    current_struct_for = nullptr;
-    allow_undefined_visitor = true;
+  StackAllocaStmt(DataType dt, std::size_t max_size)
+      : dt(dt), max_size(max_size) {
   }
 
-  void visit(Block *stmt_list) override {
-    auto backup_block = current_block;
-    current_block = stmt_list;
-    for (auto &stmt : stmt_list->statements) {
-      stmt->accept(this);
-    }
-    current_block = backup_block;
+  std::size_t element_size_in_bytes() const {
+    return data_type_size(ret_type.data_type);
   }
 
-  void visit(IfStmt *if_stmt) override {
-    if (if_stmt->true_statements)
-      if_stmt->true_statements->accept(this);
-    if (if_stmt->false_statements) {
-      if_stmt->false_statements->accept(this);
-    }
+  std::size_t entry_size_in_bytes() const {
+    return element_size_in_bytes() * 2;
   }
 
-  void visit(WhileStmt *stmt) override {
-    stmt->body->accept(this);
+  std::size_t size_in_bytes() const {
+    return 4 + entry_size_in_bytes() * max_size;
   }
 
-  void visit(RangeForStmt *for_stmt) override {
-    for_stmt->body->accept(this);
+  DEFINE_ACCEPT
+};
+
+class StackLoadTopStmt : public Stmt {
+ public:
+  Stmt *stack;
+
+  StackLoadTopStmt(Stmt *stack) {
+    TI_ASSERT(stack->is<StackAllocaStmt>());
+    this->stack = stack;
+    add_operand(this->stack);
   }
 
-  void visit(StructForStmt *for_stmt) override {
-    current_struct_for = for_stmt;
-    for_stmt->body->accept(this);
-    current_struct_for = nullptr;
+  DEFINE_ACCEPT
+};
+
+class StackLoadTopAdjStmt : public Stmt {
+ public:
+  Stmt *stack;
+
+  StackLoadTopAdjStmt(Stmt *stack) {
+    TI_ASSERT(stack->is<StackAllocaStmt>());
+    this->stack = stack;
+    add_operand(this->stack);
   }
 
-  void visit(OffloadedStmt *stmt) override {
-    if (stmt->body)
-      stmt->body->accept(this);
+  DEFINE_ACCEPT
+};
+
+class StackPopStmt : public Stmt {
+ public:
+  Stmt *stack;
+
+  StackPopStmt(Stmt *stack) {
+    TI_ASSERT(stack->is<StackAllocaStmt>());
+    this->stack = stack;
+    add_operand(this->stack);
   }
+
+  DEFINE_ACCEPT
+};
+
+class StackPushStmt : public Stmt {
+ public:
+  Stmt *stack;
+  Stmt *v;
+
+  StackPushStmt(Stmt *stack, Stmt *v) {
+    TI_ASSERT(stack->is<StackAllocaStmt>());
+    this->stack = stack;
+    this->v = v;
+    add_operand(this->stack);
+    add_operand(this->v);
+  }
+
+  DEFINE_ACCEPT
+};
+
+class StackAccAdjointStmt : public Stmt {
+ public:
+  Stmt *stack;
+  Stmt *v;
+
+  StackAccAdjointStmt(Stmt *stack, Stmt *v) {
+    TI_ASSERT(stack->is<StackAllocaStmt>());
+    this->stack = stack;
+    this->v = v;
+    add_operand(this->stack);
+    add_operand(this->v);
+  }
+
+  DEFINE_ACCEPT
 };
 
 TLANG_NAMESPACE_END

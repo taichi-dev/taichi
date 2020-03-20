@@ -89,48 +89,46 @@ size_t metal_data_type_bytes(MetalDataType dt) {
 }
 
 std::string metal_unary_op_type_symbol(UnaryOpType type) {
-  switch (type)
-  {
-  
-  case UnaryOpType::neg:
-    return "-";
-  case UnaryOpType::sqrt:
-    return "sqrt";
-  case UnaryOpType::floor:
-    return "floor";
-  case UnaryOpType::ceil:
-    return "ceil";
-  case UnaryOpType::abs:
-    return "abs";
-  case UnaryOpType::sgn:
-    return "sign";
-  case UnaryOpType::sin:
-    return "sin";
-  case UnaryOpType::asin:
-    return "asin";
-  case UnaryOpType::cos:
-    return "cos";
-  case UnaryOpType::acos:
-    return "acos";
-  case UnaryOpType::tan:
-    return "tan";
-  case UnaryOpType::tanh:
-    return "tanh";
-  case UnaryOpType::exp:
-    return "exp";
-  case UnaryOpType::log:
-    return "log";
-  case UnaryOpType::rsqrt:
-    return "rsqrt";
-  case UnaryOpType::bit_not:
-    return "~";
-  case UnaryOpType::logic_not:
-    return "!";
-  // case UnaryOpType::inv:
-  // case UnaryOpType::rcp:
-  // case UnaryOpType::undefined:
-  default:
-    TI_NOT_IMPLEMENTED;
+  switch (type) {
+    case UnaryOpType::neg:
+      return "-";
+    case UnaryOpType::sqrt:
+      return "sqrt";
+    case UnaryOpType::floor:
+      return "floor";
+    case UnaryOpType::ceil:
+      return "ceil";
+    case UnaryOpType::abs:
+      return "abs";
+    case UnaryOpType::sgn:
+      return "sign";
+    case UnaryOpType::sin:
+      return "sin";
+    case UnaryOpType::asin:
+      return "asin";
+    case UnaryOpType::cos:
+      return "cos";
+    case UnaryOpType::acos:
+      return "acos";
+    case UnaryOpType::tan:
+      return "tan";
+    case UnaryOpType::tanh:
+      return "tanh";
+    case UnaryOpType::exp:
+      return "exp";
+    case UnaryOpType::log:
+      return "log";
+    case UnaryOpType::rsqrt:
+      return "rsqrt";
+    case UnaryOpType::bit_not:
+      return "~";
+    case UnaryOpType::logic_not:
+      return "!";
+    // case UnaryOpType::inv:
+    // case UnaryOpType::rcp:
+    // case UnaryOpType::undefined:
+    default:
+      TI_NOT_IMPLEMENTED;
   }
   return "";
 }

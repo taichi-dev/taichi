@@ -6,6 +6,28 @@ TLANG_NAMESPACE_BEGIN
 
 // Do automatic differentiation pass in the reverse order (reverse-mode AD)
 
+class ConvertLocalVar : public BasicStmtVisitor {
+ public:
+  using BasicStmtVisitor::visit;
+
+  void visit(AllocaStmt *stmt) override {
+    TI_ASSERT(stmt->width() == 1);
+    // TODO: remove 16 here
+    stmt->replace_with(
+        Stmt::make<StackAllocaStmt>(stmt->ret_type.data_type, 16));
+  }
+
+  void visit(LocalLoadStmt *stmt) override {
+    TI_ASSERT(stmt->width() == 1);
+    stmt->replace_with(Stmt::make<StackLoadTopStmt>(stmt->ptr[0].var));
+  }
+
+  void visit(LocalStoreStmt *stmt) override {
+    TI_ASSERT(stmt->width() == 1);
+    stmt->replace_with(Stmt::make<StackPushStmt>(stmt->ptr, stmt->data));
+  }
+};
+
 class MakeAdjoint : public IRVisitor {
  private:
   Stmt *constant(float32 x) {
@@ -113,11 +135,16 @@ class MakeAdjoint : public IRVisitor {
     auto alloca_ = adjoint(primal);
     if (!alloca_ || alloca_->is<ConstStmt>())
       return;  // primal may be int variable
-    TI_ASSERT(alloca_->is<AllocaStmt>());
-    auto alloca = alloca_->as<AllocaStmt>();
-    TI_ASSERT(alloca->width() == 1);
-    auto local_load = insert<LocalLoadStmt>(LocalAddress(alloca, 0));
-    insert<LocalStoreStmt>(alloca, add(local_load, value));
+    if (alloca_->is<StackAllocaStmt>()) {
+      auto alloca = alloca_->cast<StackAllocaStmt>();
+      insert<StackAccAdjointStmt>(alloca, load(value));
+    } else {
+      TI_ASSERT(alloca_->is<AllocaStmt>());
+      auto alloca = alloca_->as<AllocaStmt>();
+      TI_ASSERT(alloca->width() == 1);
+      auto local_load = insert<LocalLoadStmt>(LocalAddress(alloca, 0));
+      insert<LocalStoreStmt>(alloca, add(local_load, value));
+    }
   }
 
   Stmt *adjoint(Stmt *stmt) {
@@ -125,6 +152,8 @@ class MakeAdjoint : public IRVisitor {
       return constant(0);
     }
     if (stmt->adjoint == nullptr) {
+      // normal SSA cases
+
       // create the alloca
       // auto alloca =
       //    Stmt::make<AllocaStmt>(1, get_current_program().config.gradient_dt);
@@ -137,6 +166,10 @@ class MakeAdjoint : public IRVisitor {
   }
 
   void visit(AllocaStmt *alloca) override {
+    // do nothing.
+  }
+
+  void visit(StackAllocaStmt *alloca) override {
     // do nothing.
   }
 
@@ -212,9 +245,11 @@ class MakeAdjoint : public IRVisitor {
       accumulate(bin->rhs, negate(div(mul(adjoint(bin), bin->lhs), numerator)));
     } else if (bin->op_type == BinaryOpType::pow) {
       // d (x ^ y) = x ^ (y-1) * (y * dx + log(x) * x * dy)
-      auto common_coeff = pow(bin->lhs, sub(bin->rhs, constant(1))); // x ^ (y-1)
+      auto common_coeff =
+          pow(bin->lhs, sub(bin->rhs, constant(1)));  // x ^ (y-1)
       accumulate(bin->lhs, mul(adjoint(bin), mul(bin->rhs, common_coeff)));
-      accumulate(bin->rhs, mul(adjoint(bin), mul(log(bin->lhs), mul(bin->lhs, common_coeff))));
+      accumulate(bin->rhs, mul(adjoint(bin), mul(log(bin->lhs),
+                                                 mul(bin->lhs, common_coeff))));
     } else if (bin->op_type == BinaryOpType::min ||
                bin->op_type == BinaryOpType::max) {
       auto cmp = bin->op_type == BinaryOpType::min ? cmp_lt(bin->lhs, bin->rhs)
@@ -258,6 +293,9 @@ class MakeAdjoint : public IRVisitor {
 
       current_block = old_current_block;
     }
+    if (if_stmt->false_statements) {
+      TI_NOT_IMPLEMENTED
+    }
     insert_back(std::move(new_if));
   }
 
@@ -297,11 +335,16 @@ class MakeAdjoint : public IRVisitor {
   }
 
   void visit(LocalLoadStmt *stmt) override {
-    // do nothing
-    // TI_WARN("needs impl when loading something other than loop var");
+    TI_ASSERT(!needs_grad(stmt->ret_type.data_type));
   }
 
-  void visit(LocalStoreStmt *stmt) override{TI_NOT_IMPLEMENTED}
+  void visit(StackLoadTopStmt *stmt) override {
+    insert<StackAccAdjointStmt>(stmt->stack, load(adjoint(stmt)));
+  }
+
+  void visit(StackPushStmt *stmt) override {
+    insert<StackPopStmt>(stmt->stack);
+  }
 
   Stmt *load(Stmt *alloc) {
     TI_ASSERT(alloc != nullptr);
@@ -402,10 +445,20 @@ class MakeAdjoint : public IRVisitor {
 
 namespace irpass {
 
-void make_adjoint(IRNode *root) {
-  MakeAdjoint::run(root);
-  // print(root);
-  typecheck(root);
+void make_adjoint(IRNode *root, bool use_stack) {
+  if (use_stack) {
+    ConvertLocalVar converter;
+    root->accept(&converter);
+    typecheck(root);
+    re_id(root);
+    print(root);
+    MakeAdjoint::run(root);
+    typecheck(root);
+    print(root);
+  } else {
+    MakeAdjoint::run(root);
+    typecheck(root);
+  }
 }
 
 }  // namespace irpass

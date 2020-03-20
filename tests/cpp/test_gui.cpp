@@ -26,8 +26,7 @@ auto test_gui = []() {
           .radius(5)
           .finish();
     }
-    canvas.color(0.0_f, 0.0_f, 1.0_f, 1.0_f)
-        .radius(5 + 2 * std::sin(t * 10_f));
+    canvas.color(0.0_f, 0.0_f, 1.0_f, 1.0_f).radius(5 + 2 * std::sin(t * 10_f));
     canvas.path()
         .path(Vector2(100, 100), Vector2(200, 75 + std::cos(t) * 50_f),
               Vector2(300, 75 + std::cos(t) * 50_f))

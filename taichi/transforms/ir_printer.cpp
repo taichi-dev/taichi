@@ -344,17 +344,18 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(GetRootStmt *stmt) override {
-    print("{} = get root", stmt->name());
+    print("{}{} = get root", stmt->type_hint(), stmt->name());
   }
 
   void visit(SNodeLookupStmt *stmt) override {
-    print("{} = [{}][{}]::lookup({}, {}) activate = {}", stmt->name(),
-          stmt->snode->get_node_type_name_hinted(), stmt->snode->type_name(),
-          stmt->input_snode->name(), stmt->input_index->name(), stmt->activate);
+    print("{}{} = [{}][{}]::lookup({}, {}) activate = {}", stmt->type_hint(),
+          stmt->name(), stmt->snode->get_node_type_name_hinted(),
+          stmt->snode->type_name(), stmt->input_snode->name(),
+          stmt->input_index->name(), stmt->activate);
   }
 
   void visit(GetChStmt *stmt) override {
-    print("{} = get child [{}->{}] {}", stmt->name(),
+    print("{}{} = get child [{}->{}] {}", stmt->type_hint(), stmt->name(),
           stmt->input_snode->get_node_type_name_hinted(),
           stmt->output_snode->get_node_type_name_hinted(),
           stmt->input_ptr->name());
@@ -436,6 +437,36 @@ class IRPrinter : public IRVisitor {
 
   void visit(InternalFuncStmt *stmt) override {
     print("{} = call internal \"{}\"", stmt->name(), stmt->func_name);
+  }
+
+  void visit(StackAllocaStmt *stmt) override {
+    print("{}{} = stack alloc (max_size={})", stmt->type_hint(), stmt->name(),
+          stmt->max_size);
+  }
+
+  void visit(StackLoadTopStmt *stmt) override {
+    print("{}{} = stack load top {}", stmt->type_hint(), stmt->name(),
+          stmt->stack->name());
+  }
+
+  void visit(StackLoadTopAdjStmt *stmt) override {
+    print("{}{} = stack load top adj {}", stmt->type_hint(), stmt->name(),
+          stmt->stack->name());
+  }
+
+  void visit(StackPushStmt *stmt) override {
+    print("{}{} = stack push {}, val = {}", stmt->type_hint(), stmt->name(),
+          stmt->stack->name(), stmt->v->name());
+  }
+
+  void visit(StackPopStmt *stmt) override {
+    print("{}{} : stack pop {}", stmt->type_hint(), stmt->name(),
+          stmt->stack->name());
+  }
+
+  void visit(StackAccAdjointStmt *stmt) override {
+    print("{}{} : stack acc adj {}, val = {}", stmt->type_hint(), stmt->name(),
+          stmt->stack->name(), stmt->v->name());
   }
 };
 

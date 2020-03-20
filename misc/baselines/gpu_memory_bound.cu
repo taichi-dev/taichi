@@ -18,7 +18,7 @@ int main() {
   cudaMalloc(&c, n * sizeof(float));
   for (auto bs : {16, 32, 64, 128, 256}) {
     for (int i = 0; i < 10; i++) {
-      cpy << < n / bs, bs >> > (a, b, c, n);
+      cpy<<<n / bs, bs>>>(a, b, c, n);
     }
     cudaDeviceSynchronize();
     int repeat = 100;
@@ -28,7 +28,7 @@ int main() {
     }
     cudaDeviceSynchronize();
     t = (get_time() - t) / repeat;
-    printf("memcpy 1GB data, block_size %d, %.2f ms   bw %.3f GB/s\n", bs, t * 1000,
-           n * 8.0 / t / (1024 * 1024 * 1024.0f));
+    printf("memcpy 1GB data, block_size %d, %.2f ms   bw %.3f GB/s\n", bs,
+           t * 1000, n * 8.0 / t / (1024 * 1024 * 1024.0f));
   }
 }

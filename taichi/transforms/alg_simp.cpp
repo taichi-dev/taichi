@@ -9,7 +9,8 @@ class AlgSimp : public BasicStmtVisitor {
   using BasicStmtVisitor::visit;
   bool fast_math;
 
-  explicit AlgSimp(bool fast_math_) : BasicStmtVisitor(), fast_math(fast_math_) {
+  explicit AlgSimp(bool fast_math_)
+      : BasicStmtVisitor(), fast_math(fast_math_) {
   }
 
   void visit(BinaryOpStmt *stmt) override {
@@ -20,7 +21,8 @@ class AlgSimp : public BasicStmtVisitor {
     if (stmt->width() != 1) {
       return;
     }
-    if (stmt->op_type == BinaryOpType::add || stmt->op_type == BinaryOpType::sub) {
+    if (stmt->op_type == BinaryOpType::add ||
+        stmt->op_type == BinaryOpType::sub) {
       if (alg_is_zero(rhs)) {
         // a +- 0 -> a
         stmt->replace_with(stmt->lhs);
@@ -32,7 +34,8 @@ class AlgSimp : public BasicStmtVisitor {
         stmt->parent->erase(stmt);
         throw IRModified();
       }
-    } else if (stmt->op_type == BinaryOpType::mul || stmt->op_type == BinaryOpType::div) {
+    } else if (stmt->op_type == BinaryOpType::mul ||
+               stmt->op_type == BinaryOpType::div) {
       if (alg_is_one(rhs)) {
         // a */ 1 -> a
         stmt->replace_with(stmt->lhs);
@@ -43,11 +46,12 @@ class AlgSimp : public BasicStmtVisitor {
         stmt->replace_with(stmt->rhs);
         stmt->parent->erase(stmt);
         throw IRModified();
-      } else if ((fast_math || is_integral(stmt->ret_type.data_type))
-          && stmt->op_type == BinaryOpType::mul
-          && (alg_is_zero(lhs) || alg_is_zero(rhs))) {
+      } else if ((fast_math || is_integral(stmt->ret_type.data_type)) &&
+                 stmt->op_type == BinaryOpType::mul &&
+                 (alg_is_zero(lhs) || alg_is_zero(rhs))) {
         // fast_math or integral operands: 0 * a -> 0, a * 0 -> 0
-        auto zero = Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(stmt->ret_type.data_type));
+        auto zero = Stmt::make<ConstStmt>(
+            LaneAttribute<TypedConstant>(stmt->ret_type.data_type));
         stmt->replace_with(zero.get());
         stmt->parent->insert_before(stmt, VecStatement(std::move(zero)));
         stmt->parent->erase(stmt);

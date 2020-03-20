@@ -37,7 +37,7 @@ TI_EXPORT void print_traceback() {
   // (https://stackoverflow.com/questions/8278691/how-to-fix-backtrace-line-number-error-in-c)
 
   // record stack trace upto 128 frames
-  int callstack[128] = {};
+  void *callstack[128] = {};
   // collect stack frames
   int frames = backtrace((void **)callstack, 128);
   // get the human-readable symbols (mangled)

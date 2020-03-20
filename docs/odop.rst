@@ -81,5 +81,3 @@ A brief example:
   for i in range(arr.n):
     for j in range(arr.m):
       assert arr.val.grad[i, j] == 8
-
-

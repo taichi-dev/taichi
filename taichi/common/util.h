@@ -358,7 +358,7 @@ TI_NAMESPACE_BEGIN
   }
 
 #define TI_STOP TI_ERROR("Stopping here")
-#define TI_TAG TI_TRACE("Tagging here")
+#define TI_TAG TI_INFO("Tagging here")
 
 #define TI_LOG_SET_PATTERN(x) spdlog::set_pattern(x);
 

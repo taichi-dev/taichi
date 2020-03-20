@@ -418,8 +418,8 @@ if 1:
                 self.check_loop_var(loop_var.id)
 
             var_decl = ''.join(
-                '{} = ti.Expr(ti.core.make_id_expr(""))\n'.format(ind.id)
-                for ind in elts)
+                '    {} = ti.Expr(ti.core.make_id_expr(""))\n'.format(ind.id)
+                for ind in elts)  # indent: 4 spaces
             vars = ', '.join(ind.id for ind in elts)
             if is_grouped:
                 template = ''' 
@@ -437,7 +437,7 @@ if 1:
             else:
                 template = ''' 
 if 1:
-    {}
+{}
     ___loop_var = 0
     ___expr_group = ti.make_expr_group({})
     ti.core.begin_frontend_struct_for(___expr_group, ___loop_var.loop_range().ptr)

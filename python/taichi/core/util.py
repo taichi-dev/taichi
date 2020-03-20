@@ -4,6 +4,7 @@ import shutil
 import sys
 import ctypes
 from pathlib import Path
+from colorama import Fore, Back, Style
 
 if sys.version_info[0] < 3 or sys.version_info[1] <= 5:
     print("\nPlease restart with Python 3.6+\n")
@@ -66,9 +67,6 @@ def is_release():
     return os.environ.get('TAICHI_REPO_DIR', '') == ''
 
 
-from colorama import Fore, Back, Style
-
-
 def get_core_shared_object():
     if is_release():
         directory = os.path.join(package_root(), 'lib')
@@ -113,13 +111,37 @@ def format_plain_text(fn):
         f.write(formatted)
 
 
+def _find_clang_format_bin():
+    candidates = ['clang-format-6.0', 'clang-format']
+    result = None
+
+    import subprocess as sp
+    for c in candidates:
+        try:
+            if sp.run([c, '--version'], stdout=sp.DEVNULL,
+                      stderr=sp.DEVNULL).returncode == 0:
+                result = c
+                break
+        except:
+            pass
+    import colorama
+    colorama.init()
+    if result is None:
+        print(Fore.YELLOW +
+              'Did not find any clang-format executable, skipping C++ files',
+              file=sys.stderr)
+    else:
+        print('C++ formatter: {}{}'.format(Fore.GREEN, result))
+    print(Style.RESET_ALL)
+    return result
+
+
 def format(all=False, diff=None):
     import os
     import taichi as tc
     from yapf.yapflib.yapf_api import FormatFile
     repo = get_repo()
 
-    print('Code formatting ...')
     if all:
         directories = [
             'taichi', 'tests', 'examples', 'misc', 'python', 'benchmarks',
@@ -131,14 +153,34 @@ def format(all=False, diff=None):
                 Path(os.path.join(tc.get_repo_directory(), d)).rglob('*'))
     else:
         if diff is None:
-            files = repo.index.diff('HEAD')
+
+            def find_diff_or_empty(s):
+                try:
+                    return repo.index.diff(s)
+                except:
+                    return []
+
+            # TODO(#628): Have a way to customize the repo names, in order to
+            # support noncanonical namings.
+            #
+            # Finds all modified files from upstream/master to working tree
+            # 1. diffs between the index and upstream/master. Also inclulde
+            # origin/master for repo owners.
+            files = find_diff_or_empty('upstream/master')
+            files += find_diff_or_empty('origin/master')
+            # 2. diffs between the index and the working tree
+            # https://gitpython.readthedocs.io/en/stable/tutorial.html#obtaining-diff-information
+            files += repo.index.diff(None)
         else:
             files = repo.index.diff(diff)
         files = list(
             map(lambda x: os.path.join(tc.get_repo_directory(), x.a_path),
                 files))
 
-    for fn in map(str, files):
+    files = sorted(set(map(str, files)))
+    clang_format_bin = _find_clang_format_bin()
+    print('Code formatting ...')
+    for fn in files:
         if os.path.isdir(fn):
             continue
         if fn.find('.pytest_cache') != -1:
@@ -149,14 +191,16 @@ def format(all=False, diff=None):
             print(f'Skipping example file {fn}...')
             continue
         if fn.endswith('.py'):
-            print(fn, '...')
+            print('Formatting "{}"'.format(fn))
             FormatFile(fn,
                        in_place=True,
                        style_config=os.path.join(tc.get_repo_directory(),
                                                  'misc', '.style.yapf'))
-        elif has_suffix(fn, ['cpp', 'h', 'cu', 'cuh']):
-            os.system('clang-format-6.0 -i -style=file {}'.format(fn))
+        elif clang_format_bin and has_suffix(fn, ['cpp', 'h', 'cu', 'cuh']):
+            print('Formatting "{}"'.format(fn))
+            os.system('{} -i -style=file {}'.format(clang_format_bin, fn))
         elif has_suffix(fn, ['txt', 'md', 'rst', 'cfg', 'll', 'ptx']):
+            print('Formatting "{}"'.format(fn))
             format_plain_text(fn)
         elif has_suffix(fn, [
                 'pyc', 'png', 'jpg', 'bmp', 'gif', 'gitignore', 'whl', 'mp4',

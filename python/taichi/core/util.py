@@ -4,6 +4,7 @@ import shutil
 import sys
 import ctypes
 from pathlib import Path
+from colorama import Fore, Back, Style
 
 if sys.version_info[0] < 3 or sys.version_info[1] <= 5:
     print("\nPlease restart with Python 3.6+\n")
@@ -66,9 +67,6 @@ def is_release():
     return os.environ.get('TAICHI_REPO_DIR', '') == ''
 
 
-from colorama import Fore, Back, Style
-
-
 def get_core_shared_object():
     if is_release():
         directory = os.path.join(package_root(), 'lib')
@@ -126,11 +124,15 @@ def _find_clang_format_bin():
                 break
         except:
             pass
+    import colorama
+    colorama.init()
     if result is None:
-        print('Did not find any clang-format executable, skipping C++ files',
+        print(Fore.YELLOW +
+              'Did not find any clang-format executable, skipping C++ files',
               file=sys.stderr)
     else:
-        print('C++ formatter: {}'.format(result))
+        print('C++ formatter: {}{}'.format(Fore.GREEN, result))
+    print(Style.RESET_ALL)
     return result
 
 

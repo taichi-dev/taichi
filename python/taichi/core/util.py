@@ -114,30 +114,24 @@ def format_plain_text(fn):
 
 
 def _find_clang_format_bin():
-    OKGREEN = '\033[92m'
-    WARNING = '\033[93m'
-    ENDC = '\033[0m'
-
-    clang_format_candidates = ['clang-format-6.0', 'clang-format']
-    clang_format_bin = None
+    candidates = ['clang-format-6.0', 'clang-format']
+    result = None
 
     import subprocess as sp
-    for c in clang_format_candidates:
+    for c in candidates:
         try:
             if sp.run([c, '--version'], stdout=sp.DEVNULL,
                       stderr=sp.DEVNULL).returncode == 0:
-                clang_format_bin = c
+                result = c
                 break
         except:
             pass
-    if clang_format_bin is None:
-        print(WARNING +
-              'Did not find any clang-format executable, skipping C++ files' +
-              ENDC,
+    if result is None:
+        print('Did not find any clang-format executable, skipping C++ files',
               file=sys.stderr)
     else:
-        print('C++ formatter: {}{}{}'.format(OKGREEN, clang_format_bin, ENDC))
-    return clang_format_bin
+        print('C++ formatter: {}'.format(result))
+    return result
 
 
 def format(all=False, diff=None):
@@ -157,11 +151,18 @@ def format(all=False, diff=None):
                 Path(os.path.join(tc.get_repo_directory(), d)).rglob('*'))
     else:
         if diff is None:
+
+            def find_diff_or_empty(s):
+                try:
+                    return repo.index.diff(s)
+                except:
+                    return []
+
             # Finds all modified files from upstream/master to working tree
             # 1. diffs between the index and upstream/master. Also inclulde
             # origin/master for repo owners.
-            files = repo.index.diff('upstream/master')
-            files += repo.index.diff('origin/master')
+            files = find_diff_or_empty('upstream/master')
+            files += find_diff_or_empty('origin/master')
             # 2. diffs between the index and the working tree
             # https://gitpython.readthedocs.io/en/stable/tutorial.html#obtaining-diff-information
             files += repo.index.diff(None)

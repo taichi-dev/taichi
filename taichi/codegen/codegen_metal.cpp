@@ -1,5 +1,7 @@
 #include "taichi/codegen/codegen_metal.h"
 
+#include <functional>
+#include <sstream>
 #include <string>
 
 #include "taichi/ir/ir.h"
@@ -8,23 +10,31 @@ TLANG_NAMESPACE_BEGIN
 namespace metal {
 namespace {
 
+namespace shaders {
+#include "taichi/platform/metal/shaders/runtime_structs.metal.h"
+}  // namespace shaders
+
+using BuffersEnum = MetalKernelAttributes::Buffers;
+
 constexpr char kKernelThreadIdName[] = "utid_";  // 'u' for unsigned
 constexpr char kRootBufferName[] = "root_addr";
 constexpr char kGlobalTmpsBufferName[] = "global_tmps_addr";
 constexpr char kArgsBufferName[] = "args_addr";
+constexpr char kRuntimeBufferName[] = "runtime_addr";
 constexpr char kArgsContextName[] = "args_ctx_";
+constexpr char kRuntimeVarName[] = "runtime_";
+constexpr char kListgenElemVarName[] = "listgen_elem_";
 
 class MetalKernelCodegen : public IRVisitor {
  public:
   MetalKernelCodegen(const std::string &mtl_kernel_prefix,
-                     const std::string &root_snode_type_name,
-                     Kernel *kernel,
+                     const std::string &root_snode_type_name, Kernel *kernel,
                      const StructCompiledResult *compiled_snode_structs)
       : mtl_kernel_prefix_(mtl_kernel_prefix),
         root_snode_type_name_(root_snode_type_name),
         kernel_(kernel),
-        compiled_snode_structs_(compiled_snode_structs),
-        needs_root_buffer_(compiled_snode_structs_->root_size > 0),
+        compiled_snodes_(compiled_snode_structs),
+        needs_root_buffer_(compiled_snodes_->root_size > 0),
         args_attribs_(kernel_->args) {
     // allow_undefined_visitor = true;
   }
@@ -33,16 +43,14 @@ class MetalKernelCodegen : public IRVisitor {
     return args_attribs_;
   }
 
-  const std::string &kernel_source_code() const {
-    return kernel_src_code_;
-  }
+  const std::string &kernel_source_code() const { return kernel_src_code_; }
 
   const std::vector<MetalKernelAttributes> &kernels_attribs() const {
     return mtl_kernels_attribs_;
   }
 
   void run() {
-    generate_mtl_header(compiled_snode_structs_->source_code);
+    generate_mtl_header();
     generate_kernel_args_struct();
     kernel_->ir->accept(this);
   }
@@ -134,9 +142,43 @@ class MetalKernelCodegen : public IRVisitor {
       TI_ASSERT(root_stmt_ != nullptr);
       parent = root_stmt_->raw_name();
     }
+    const auto *sn = stmt->snode;
+    const std::string index_name = stmt->input_index->raw_name();
+    emit(R"({}_ch {} = {}.children({});)", sn->node_type_name, stmt->raw_name(),
+         parent, index_name);
+    if (stmt->activate) {
+      TI_ASSERT(sn->type == SNodeType::dense && sn->_bitmasked);
+      emit("{{");
+      push_indent();
+      kernel_src_code_ += make_snode_meta_bm(sn, "sn_meta");
+      emit("activate({}.addr(), sn_meta, {});", stmt->raw_name(), index_name);
+      pop_indent();
+      emit("}}");
+    }
+  }
 
-    emit(R"({}_ch {} = {}.children({});)", stmt->snode->node_type_name,
-         stmt->raw_name(), parent, stmt->input_index->raw_name());
+  void visit(SNodeOpStmt *stmt) override {
+    if (stmt->op_type == SNodeOpType::is_active) {
+      emit("int {};", stmt->raw_name());
+    }
+    emit("{{");
+    push_indent();
+    kernel_src_code_ += make_snode_meta_bm(stmt->snode, "sn_meta");
+    const std::string ch_id = stmt->val->raw_name();
+    const std::string ch_addr =
+        fmt::format("{}.children({}).addr()", stmt->ptr->raw_name(), ch_id);
+    if (stmt->op_type == SNodeOpType::is_active) {
+      // is_active(device byte *addr, SNodeMeta meta, int i);
+      emit("{} = is_active({}, sn_meta, {});", stmt->raw_name(), ch_addr,
+           ch_id);
+    } else if (stmt->op_type == SNodeOpType::deactivate) {
+      // deactivate(device byte *addr, SNodeMeta meta, int i);
+      emit("deactivate({}, sn_meta, {});", ch_addr, ch_id);
+    } else {
+      TI_NOT_IMPLEMENTED
+    }
+    pop_indent();
+    emit("}}");
   }
 
   void visit(GlobalStoreStmt *stmt) override {
@@ -208,18 +250,26 @@ class MetalKernelCodegen : public IRVisitor {
   }
 
   void visit(LoopIndexStmt *stmt) override {
-    TI_ASSERT(current_kernel_attribs_->task_type ==
-              OffloadedStmt::TaskType::range_for);
-    TI_ASSERT(!stmt->is_struct_for && stmt->index == 0);
-    if (current_kernel_attribs_->range_for_attribs.const_begin) {
-      emit("const int {} = (static_cast<int>({}) + {});", stmt->raw_name(),
-           kKernelThreadIdName,
-           current_kernel_attribs_->range_for_attribs.begin);
+    using TaskType = OffloadedStmt::TaskType;
+    const auto type = current_kernel_attribs_->task_type;
+    const auto stmt_name = stmt->raw_name();
+    if (type == TaskType::range_for) {
+      TI_ASSERT(stmt->index == 0);
+      if (current_kernel_attribs_->range_for_attribs.const_begin) {
+        emit("const int {} = (static_cast<int>({}) + {});", stmt_name,
+             kKernelThreadIdName,
+             current_kernel_attribs_->range_for_attribs.begin);
+      } else {
+        auto begin_stmt = inject_load_global_tmp(
+            current_kernel_attribs_->range_for_attribs.begin);
+        emit("const int {} = (static_cast<int>({}) + {});", stmt_name,
+             kKernelThreadIdName, begin_stmt);
+      }
+    } else if (type == TaskType::struct_for) {
+      emit("const int {} = {}.coords[{}];", stmt_name, kListgenElemVarName,
+           stmt->index);
     } else {
-      auto begin_stmt = inject_load_global_tmp(
-          current_kernel_attribs_->range_for_attribs.begin);
-      emit("const int {} = (static_cast<int>({}) + {});", stmt->raw_name(),
-           kKernelThreadIdName, begin_stmt);
+      TI_NOT_IMPLEMENTED;
     }
   }
 
@@ -352,6 +402,14 @@ class MetalKernelCodegen : public IRVisitor {
       generate_serial_kernel(stmt);
     } else if (stmt->task_type == Type::range_for) {
       generate_range_for_kernel(stmt);
+    } else if (stmt->task_type == Type::struct_for) {
+      generate_struct_for_kernel(stmt);
+    } else if (stmt->task_type == Type::clear_list) {
+      add_runtime_list_op_kernel(stmt, "clear_list");
+    } else if (stmt->task_type == Type::listgen) {
+      add_runtime_list_op_kernel(stmt, "element_listgen");
+    } else if (stmt->task_type == Type::gc) {
+      // Ignored
     } else {
       // struct_for is automatically lowered to ranged_for for dense snodes
       // (#378). So we only need to support serial and range_for tasks.
@@ -380,24 +438,27 @@ class MetalKernelCodegen : public IRVisitor {
   }
 
  private:
-  void generate_mtl_header(const std::string &snode_structs_source_code) {
+  void generate_mtl_header() {
     emit("#include <metal_stdlib>");
     emit("using namespace metal;");
     emit("");
     emit("namespace {{");
     emit("");
-    generate_common_functions();
-    kernel_src_code_ += snode_structs_source_code;
-    emit("}}  // namespace");
+    emit("using byte = uchar;");
     emit("");
-  }
-
-  void generate_common_functions() {
 #define TI_INSIDE_METAL_CODEGEN
 #include "taichi/platform/metal/shaders/helpers.metal.h"
     kernel_src_code_ += kMetalHelpersSourceCode;
 #undef TI_INSIDE_METAL_CODEGEN
-    emit("\n");
+    emit("");
+    kernel_src_code_ += compiled_snodes_->snode_structs_source_code;
+    emit("");
+    kernel_src_code_ += compiled_snodes_->runtime_utils_source_code;
+    emit("");
+    emit("}}  // namespace");
+    emit("");
+    kernel_src_code_ += compiled_snodes_->runtime_kernels_source_code;
+    emit("");
   }
 
   void generate_kernel_args_struct() {
@@ -434,20 +495,34 @@ class MetalKernelCodegen : public IRVisitor {
     }
   }
 
+  std::vector<BuffersEnum> get_root_tmps_args_buffers() {
+    std::vector<BuffersEnum> result;
+    if (needs_root_buffer_) {
+      result.push_back(BuffersEnum::Root);
+    }
+    result.push_back(BuffersEnum::GlobalTmps);
+    if (args_attribs_.has_args()) {
+      result.push_back(BuffersEnum::Args);
+    }
+    return result;
+  }
+
   void generate_serial_kernel(OffloadedStmt *stmt) {
     TI_ASSERT(stmt->task_type == OffloadedStmt::TaskType::serial);
     const std::string mtl_kernel_name = make_kernel_name();
-    emit_mtl_kernel_func_sig(mtl_kernel_name);
-    emit("  // serial");
-    emit("  if ({} > 0) return;", kKernelThreadIdName);
-
     MetalKernelAttributes ka;
     ka.name = mtl_kernel_name;
     ka.task_type = stmt->task_type;
+    ka.buffers = get_root_tmps_args_buffers();
     ka.num_threads = 1;
+
+    emit_mtl_kernel_func_sig(mtl_kernel_name, ka.buffers);
+    emit("  // serial");
+    emit("  if ({} > 0) return;", kKernelThreadIdName);
 
     current_kernel_attribs_ = &ka;
     stmt->body->accept(this);
+    // Close kernel
     emit("}}\n");
     current_kernel_attribs_ = nullptr;
 
@@ -457,11 +532,12 @@ class MetalKernelCodegen : public IRVisitor {
   void generate_range_for_kernel(OffloadedStmt *stmt) {
     TI_ASSERT(stmt->task_type == OffloadedStmt::TaskType::range_for);
     const std::string mtl_kernel_name = make_kernel_name();
-    emit_mtl_kernel_func_sig(mtl_kernel_name);
-
     MetalKernelAttributes ka;
     ka.name = mtl_kernel_name;
     ka.task_type = stmt->task_type;
+    ka.buffers = get_root_tmps_args_buffers();
+
+    emit_mtl_kernel_func_sig(mtl_kernel_name, ka.buffers);
 
     auto &range_for_attribs = ka.range_for_attribs;
     range_for_attribs.const_begin = stmt->const_begin;
@@ -496,7 +572,83 @@ class MetalKernelCodegen : public IRVisitor {
 
     current_kernel_attribs_ = &ka;
     stmt->body->accept(this);
+    // Close kernel
     emit("}}\n");
+    current_kernel_attribs_ = nullptr;
+
+    mtl_kernels_attribs_.push_back(ka);
+  }
+
+  void generate_struct_for_kernel(OffloadedStmt *stmt) {
+    TI_ASSERT(stmt->task_type == OffloadedStmt::TaskType::struct_for);
+    const std::string mtl_kernel_name = make_kernel_name();
+
+    MetalKernelAttributes ka;
+    ka.name = mtl_kernel_name;
+    ka.task_type = stmt->task_type;
+    ka.buffers = get_root_tmps_args_buffers();
+    ka.buffers.push_back(BuffersEnum::Runtime);
+
+    emit_mtl_kernel_func_sig(mtl_kernel_name, ka.buffers);
+
+    const int sn_id = stmt->snode->id;
+    ka.num_threads = compiled_snodes_->snode_descriptors.find(sn_id)
+                         ->second.total_num_elems_from_root;
+
+    push_indent();
+    emit("// struct_for");
+    emit("device Runtime *{} = reinterpret_cast<device Runtime *>({});",
+         kRuntimeVarName, kRuntimeBufferName);
+    // Each thread identifies a unique and active ListgenElement. The identified
+    // element contains the coords for the loop index at each dimension.
+    emit("ListgenElement {};", kListgenElemVarName);
+    emit("{{");
+    {
+      push_indent();
+      emit("device ListManager *sn_list = &({}->snode_lists[{}]);",
+           kRuntimeVarName, sn_id);
+      emit("if ((int){} >= num_active(sn_list)) return;", kKernelThreadIdName);
+      emit(
+          "device byte *list_data_addr = reinterpret_cast<device byte *>({} + "
+          "1);",
+          kRuntimeVarName);
+      emit("{} = get<ListgenElement>(sn_list, {}, list_data_addr);",
+           kListgenElemVarName, kKernelThreadIdName);
+      pop_indent();
+    }
+    emit("}}");
+    pop_indent();
+
+    current_kernel_attribs_ = &ka;
+    stmt->body->accept(this);
+    emit("}}\n");
+    current_kernel_attribs_ = nullptr;
+
+    mtl_kernels_attribs_.push_back(ka);
+  }
+
+  void add_runtime_list_op_kernel(OffloadedStmt *stmt,
+                                  const std::string &kernel_name) {
+    using Type = OffloadedStmt::TaskType;
+    const auto type = stmt->task_type;
+    auto *const sn = stmt->snode;
+    MetalKernelAttributes ka;
+    ka.name = kernel_name;
+    ka.task_type = stmt->task_type;
+    if (type == Type::clear_list) {
+      ka.num_threads = 1;
+      ka.buffers = {BuffersEnum::Runtime, BuffersEnum::Args};
+    } else if (type == Type::listgen) {
+      // This launches |total_num_elems_from_root| number of threads, which
+      // could be a huge waste of GPU resources.
+      // TODO(k-ye): use grid-stride loop to reduce #threads.
+      ka.num_threads = compiled_snodes_->snode_descriptors.find(sn->id)
+                           ->second.total_num_elems_from_root;
+      ka.buffers = {BuffersEnum::Runtime, BuffersEnum::Root, BuffersEnum::Args};
+    } else {
+      TI_ERROR("Unsupported offload task type {}", stmt->task_name());
+    }
+    ka.runtime_list_op_attribs.snode = sn;
     current_kernel_attribs_ = nullptr;
 
     mtl_kernels_attribs_.push_back(ka);
@@ -512,6 +664,21 @@ class MetalKernelCodegen : public IRVisitor {
     return gload->raw_name();
   }
 
+  std::string make_snode_meta_bm(const SNode *sn,
+                                 const std::string &var_name) const {
+    TI_ASSERT(sn->type == SNodeType::dense && sn->_bitmasked);
+    const auto &meta = compiled_snodes_->snode_descriptors.find(sn->id)->second;
+    std::stringstream ss;
+    ss << indent_ << "SNodeMeta " << var_name << ";\n";
+    ss << indent_ << var_name << ".element_stride = " << meta.element_stride
+       << ";\n";
+    ss << indent_ << var_name << ".num_slots = " << meta.num_slots << ";\n";
+    ss << indent_ << var_name
+       << ".type = " << (int)shaders::SNodeMeta::DenseBitmask << ";\n";
+
+    return ss.str();
+  }
+
   std::string make_kernel_name() {
     return fmt::format("{}_{}", mtl_kernel_prefix_, mtl_kernel_count_++);
   }
@@ -520,18 +687,29 @@ class MetalKernelCodegen : public IRVisitor {
     return fmt::format("{}_args", mtl_kernel_prefix_);
   }
 
-  void emit_mtl_kernel_func_sig(const std::string &kernel_name) {
+  void emit_mtl_kernel_func_sig(
+      const std::string &kernel_name,
+      const std::vector<MetalKernelAttributes::Buffers> &buffers) {
+    auto buffer_to_name = [](BuffersEnum b) -> std::string {
+      switch (b) {
+        case BuffersEnum::Root:
+          return kRootBufferName;
+        case BuffersEnum::GlobalTmps:
+          return kGlobalTmpsBufferName;
+        case BuffersEnum::Args:
+          return kArgsBufferName;
+        case BuffersEnum::Runtime:
+          return kRuntimeBufferName;
+        default:
+          TI_NOT_IMPLEMENTED;
+          break;
+      }
+      return {};
+    };
     emit("kernel void {}(", kernel_name);
-    int buffer_idx = 0;
-    if (needs_root_buffer_) {
-      emit("    device byte* {} [[buffer({})]],", kRootBufferName,
-           buffer_idx++);
-    }
-    emit("    device byte* {} [[buffer({})]],", kGlobalTmpsBufferName,
-         buffer_idx++);
-    if (args_attribs_.has_args()) {
-      emit("    device byte* {} [[buffer({})]],", kArgsBufferName,
-           buffer_idx++);
+    for (int i = 0; i < buffers.size(); ++i) {
+      emit("    device byte* {} [[buffer({})]],", buffer_to_name(buffers[i]),
+           i);
     }
     emit("    const uint {} [[thread_position_in_grid]]) {{",
          kKernelThreadIdName);
@@ -541,9 +719,7 @@ class MetalKernelCodegen : public IRVisitor {
     }
   }
 
-  void push_indent() {
-    indent_ += "  ";
-  }
+  void push_indent() { indent_ += "  "; }
 
   void pop_indent() {
     indent_.pop_back();
@@ -559,7 +735,7 @@ class MetalKernelCodegen : public IRVisitor {
   const std::string mtl_kernel_prefix_;
   const std::string root_snode_type_name_;
   Kernel *const kernel_;
-  const StructCompiledResult *const compiled_snode_structs_;
+  const StructCompiledResult *const compiled_snodes_;
   const bool needs_root_buffer_;
   const MetalKernelArgsAttributes args_attribs_;
 
@@ -578,11 +754,9 @@ MetalCodeGen::MetalCodeGen(const std::string &kernel_name,
                            const StructCompiledResult *struct_compiled)
     : id_(Program::get_kernel_id()),
       taichi_kernel_name_(fmt::format("mtl_k{:04d}_{}", id_, kernel_name)),
-      struct_compiled_(struct_compiled) {
-}
+      struct_compiled_(struct_compiled) {}
 
-FunctionType MetalCodeGen::compile(Program &,
-                                   Kernel &kernel,
+FunctionType MetalCodeGen::compile(Program &, Kernel &kernel,
                                    MetalRuntime *runtime) {
   this->prog_ = &kernel.program;
   this->kernel_ = &kernel;

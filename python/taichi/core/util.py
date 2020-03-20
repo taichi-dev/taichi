@@ -113,13 +113,39 @@ def format_plain_text(fn):
         f.write(formatted)
 
 
+def _find_clang_format_bin():
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    ENDC = '\033[0m'
+
+    clang_format_candidates = ['clang-format-6.0', 'clang-format']
+    clang_format_bin = None
+
+    import subprocess as sp
+    for c in clang_format_candidates:
+        try:
+            if sp.run([c, '--version'], stdout=sp.DEVNULL,
+                      stderr=sp.DEVNULL).returncode == 0:
+                clang_format_bin = c
+                break
+        except:
+            pass
+    if clang_format_bin is None:
+        print(WARNING +
+              'Did not find any clang-format executable, skipping C++ files' +
+              ENDC,
+              file=sys.stderr)
+    else:
+        print('C++ formatter: {}{}{}'.format(OKGREEN, clang_format_bin, ENDC))
+    return clang_format_bin
+
+
 def format(all=False, diff=None):
     import os
     import taichi as tc
     from yapf.yapflib.yapf_api import FormatFile
     repo = get_repo()
 
-    print('Code formatting ...')
     if all:
         directories = [
             'taichi', 'tests', 'examples', 'misc', 'python', 'benchmarks',
@@ -131,13 +157,20 @@ def format(all=False, diff=None):
                 Path(os.path.join(tc.get_repo_directory(), d)).rglob('*'))
     else:
         if diff is None:
-            files = repo.index.diff('HEAD')
+            # Finds all modified files from upstream/master to working tree
+            # 1. diffs between the index and upstream/master
+            files = repo.index.diff('upstream/master')
+            # 2. diffs between the index and the working tree
+            # https://gitpython.readthedocs.io/en/stable/tutorial.html#obtaining-diff-information
+            files += repo.index.diff(None)
         else:
             files = repo.index.diff(diff)
         files = list(
             map(lambda x: os.path.join(tc.get_repo_directory(), x.a_path),
                 files))
 
+    clang_format_bin = _find_clang_format_bin()
+    print('Code formatting ...')
     for fn in map(str, files):
         if os.path.isdir(fn):
             continue
@@ -149,14 +182,16 @@ def format(all=False, diff=None):
             print(f'Skipping example file {fn}...')
             continue
         if fn.endswith('.py'):
-            print(fn, '...')
+            print('Formatting "{}"'.format(fn))
             FormatFile(fn,
                        in_place=True,
                        style_config=os.path.join(tc.get_repo_directory(),
                                                  'misc', '.style.yapf'))
-        elif has_suffix(fn, ['cpp', 'h', 'cu', 'cuh']):
-            os.system('clang-format-6.0 -i -style=file {}'.format(fn))
+        elif clang_format_bin and has_suffix(fn, ['cpp', 'h', 'cu', 'cuh']):
+            print('Formatting "{}"'.format(fn))
+            os.system('{} -i -style=file {}'.format(clang_format_bin, fn))
         elif has_suffix(fn, ['txt', 'md', 'rst', 'cfg', 'll', 'ptx']):
+            print('Formatting "{}"'.format(fn))
             format_plain_text(fn)
         elif has_suffix(fn, [
                 'pyc', 'png', 'jpg', 'bmp', 'gif', 'gitignore', 'whl', 'mp4',

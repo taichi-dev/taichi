@@ -180,3 +180,13 @@ def test_func_def_in_func():
         print(func())
 
     kernel()
+
+
+@ti.must_throw(ti.TaichiSyntaxError)
+def test_nested_static():
+    @ti.kernel
+    def func():
+        for i in ti.static(ti.static(range(1))):
+            pass
+
+    func()

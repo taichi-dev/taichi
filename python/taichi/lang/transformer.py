@@ -308,6 +308,8 @@ if 1:
                 attr = node.iter.args[0].func
                 # inner decorator
                 if attr.attr == 'static':
+                    if is_static_for == 1:
+                        raise TaichiSyntaxError("'ti.static' cannot be nested")
                     is_static_for = 2
                 elif attr.attr == 'grouped':
                     is_grouped = 2
@@ -425,7 +427,7 @@ if 1:
                 for ind in elts)  # indent: 4 spaces
             vars = ', '.join(ind.id for ind in elts)
             if is_grouped:
-                template = ''' 
+                template = '''
 if 1:
     ___loop_var = 0
     {} = ti.make_var_vector(size=___loop_var.loop_range().dim())

@@ -203,7 +203,7 @@ class LowerAST : public IRVisitor {
         // insert break
         stmts->insert(
             std::make_unique<WhileControlStmt>(new_while->mask, cond_stmt),
-            flattened.size());
+            flattened2.size());
         stmt->insert_before_me(std::make_unique<AllocaStmt>(DataType::i32));
         auto &&const_stmt =
             std::make_unique<ConstStmt>(TypedConstant((int32)0xFFFFFFFF));

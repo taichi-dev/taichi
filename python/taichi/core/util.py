@@ -158,6 +158,9 @@ def format(all=False, diff=None):
                 except:
                     return []
 
+            # TODO(#628): Have a way to customize the repo names, in order to
+            # support noncanonical namings.
+            #
             # Finds all modified files from upstream/master to working tree
             # 1. diffs between the index and upstream/master. Also inclulde
             # origin/master for repo owners.

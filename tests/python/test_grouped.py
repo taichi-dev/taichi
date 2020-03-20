@@ -75,6 +75,7 @@ def test_grouped_ndrange():
 
     test()
 
-    for i in range(x0, y0):
-        for j in range(x1, y1):
-            assert val[i, j] == i + j * 2
+    for i in range(n):
+        for j in range(m):
+            assert val[i, j] == (i + j * 2 if x0 <= i < y0 and x1 <= j < y1
+                                 else 0)

@@ -312,8 +312,12 @@ if 1:
                         raise TaichiSyntaxError("'ti.static' cannot be nested")
                     is_static_for = 2
                 elif attr.attr == 'grouped':
+                    if is_grouped == 1:
+                        raise TaichiSyntaxError("'ti.grouped' cannot be nested")
                     is_grouped = 2
                 elif attr.attr == 'ndrange':
+                    if is_ndrange_for == 1:
+                        raise TaichiSyntaxError("'ti.ndrange' cannot be nested")
                     is_ndrange_for = 2
                 else:
                     raise Exception('Not supported')

@@ -26,7 +26,8 @@ static_assert(taichi_max_num_indices == 8,
 #endif  // TI_INSIDE_METAL_CODEGEN
 
 METAL_BEGIN_RUNTIME_STRUCTS_DEF
-STR(constant constexpr int kTaichiMaxNumIndices = 8;
+STR(
+    constant constexpr int kTaichiMaxNumIndices = 8;
 
     struct ListgenElement {
       int32_t coords[kTaichiMaxNumIndices];
@@ -35,8 +36,12 @@ STR(constant constexpr int kTaichiMaxNumIndices = 8;
 
     struct ListManager {
       int32_t element_stride = 0;
+      // Same as |total_num_elems_from_root| of this SNode
       int32_t max_num_elems = 0;
+      // Index to the next element in this list.
+      // |next| can never go beyond |max_num_elems|.
       int32_t next = 0;
+      // The data offset from the runtime memory beginning.
       int32_t mem_begin = 0;
     };
 

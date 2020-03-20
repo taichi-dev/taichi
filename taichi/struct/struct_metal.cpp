@@ -30,13 +30,13 @@ constexpr size_t kSNodeMetaSize = sizeof(shaders::SNodeMeta);
 constexpr size_t kSNodeExtractorsSize = sizeof(shaders::SNodeExtractors);
 
 inline bool is_bitmasked(const SNode &sn) {
-  // return (sn.type == SNodeType::dense && sn._bitmasked);
-  return (sn.type == SNodeType::dense);
+  return (sn.type == SNodeType::dense && sn._bitmasked);
 }
 
 inline size_t bitmasks_stride(int n) {
   constexpr int kBitsPerByte = 8;
   const int bytes_needed = iroundup(n, kBitsPerByte) / kBitsPerByte;
+  // The roundup is to align the stride to 8-bytes.
   return iroundup(bytes_needed, 8);
 }
 
@@ -64,7 +64,7 @@ class StructCompiler {
       generate_types(*n);
     }
     StructCompiledResult result;
-    result.root_size = compute_snode_size(&root, /*num_elems_sofar=*/1);
+    result.root_size = compute_snode_size(&root);
     result.snode_structs_source_code = std::move(src_code_);
     emit_runtime_structs(&root);
     result.runtime_utils_source_code = std::move(src_code_);
@@ -164,18 +164,17 @@ class StructCompiler {
     emit("");
   }
 
-  size_t compute_snode_size(const SNode *sn, int num_elems_sofar) {
+  size_t compute_snode_size(const SNode *sn) {
     if (sn->is_place()) {
       return metal_data_type_bytes(to_metal_type(sn->dt));
     }
 
     const int n = (sn->type == SNodeType::dense) ? sn->n : 1;
-    num_elems_sofar *= n;
     size_t ch_size = 0;
     for (const auto &ch : sn->ch) {
       const size_t ch_offset = ch_size;
       const auto *ch_sn = ch.get();
-      ch_size += compute_snode_size(ch_sn, num_elems_sofar);
+      ch_size += compute_snode_size(ch_sn);
       if (!ch_sn->is_place()) {
         snode_descriptors_.find(ch_sn->id)->second.mem_offset_in_parent =
             ch_offset;

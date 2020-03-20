@@ -171,7 +171,7 @@ def format(all=False, diff=None):
             map(lambda x: os.path.join(tc.get_repo_directory(), x.a_path),
                 files))
 
-    files = set(map(str, files))
+    files = sorted(set(map(str, files)))
     clang_format_bin = _find_clang_format_bin()
     print('Code formatting ...')
     for fn in files:

@@ -370,7 +370,7 @@ if ti.static(1):
 
             node = ast.copy_location(t, node)
             return self.visit(node)  # further translate as a range for
-        elif is_static_for:
+        elif is_static_for == 1:
             t = self.parse_stmt('if 1: pass; del a')
             t.body[0] = node
             target = copy.deepcopy(node.target)
@@ -380,7 +380,7 @@ if ti.static(1):
                     tar.ctx = ast.Del()
             t.body[1].targets = [target]
             return t
-        elif is_range_for:
+        elif is_range_for == 1:
             loop_var = node.target.id
             self.check_loop_var(loop_var)
             template = ''' 

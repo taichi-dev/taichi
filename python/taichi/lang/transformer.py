@@ -278,13 +278,19 @@ if 1:
         if node.orelse:
             raise TaichiSyntaxError(
                 "'else' clause for 'for' not supported in Taichi kernels")
-        decorated = isinstance(node.iter, ast.Call) and isinstance(
-            node.iter.func, ast.Attribute) and isinstance(node.iter.func.value, ast.Name) \
-                    and node.iter.func.value.id == 'ti' and (node.iter.func.attr == 'static'
-                    or node.iter.func.attr == 'grouped' or node.iter.func.attr == 'ndrange')
-        double_decorated = decorated and len(node.iter.args) == 1 and isinstance(
-            node.iter.args[0], ast.Call) and isinstance(node.iter.args[0].func, ast.Attribute) \
-                           and isinstance(node.iter.args[0].func.value, ast.Name) \
+        decorated = isinstance(node.iter, ast.Call) \
+                    and isinstance(node.iter.func, ast.Attribute) \
+                    and isinstance(node.iter.func.value, ast.Name) \
+                    and node.iter.func.value.id == 'ti' and (
+                            node.iter.func.attr == 'static'
+                            or node.iter.func.attr == 'grouped'
+                            or node.iter.func.attr == 'ndrange')
+        double_decorated = decorated and len(node.iter.args) == 1 \
+                           and isinstance(node.iter.args[0], ast.Call) \
+                           and isinstance(node.iter.args[0].func,
+                                          ast.Attribute) \
+                           and isinstance(node.iter.args[0].func.value,
+                                          ast.Name) \
                            and node.iter.args[0].func.value.id == 'ti' and (
                                    node.iter.args[0].func.attr == 'static'
                                    or node.iter.args[0].func.attr == 'grouped'
@@ -337,9 +343,8 @@ if ti.static(1):
         __I = __ndrange_I
             '''.format(node.target.id, dim)
             t = ast.parse(template).body[0]
-            t.body[
-                0].value = node.iter if is_ndrange_for == 1 else node.iter.args[
-                    0]
+            t.body[0].value = node.iter if is_ndrange_for == 1 \
+                else node.iter.args[0]
             t_loop = t.body[1] if is_ndrange_for == 1 else t.body[2]
             t_loop.iter.args[0] = self.parse_expr(
                 '__ndrange.acc_dimensions[0]')

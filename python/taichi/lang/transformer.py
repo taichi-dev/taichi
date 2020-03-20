@@ -280,11 +280,15 @@ if 1:
                 "'else' clause for 'for' not supported in Taichi kernels")
         decorated = isinstance(node.iter, ast.Call) and isinstance(
             node.iter.func, ast.Attribute) and isinstance(node.iter.func.value, ast.Name) \
-                    and node.iter.func.value.id == 'ti'
+                    and node.iter.func.value.id == 'ti' and (node.iter.func.attr == 'static'
+                    or node.iter.func.attr == 'grouped' or node.iter.func.attr == 'ndrange')
         double_decorated = decorated and len(node.iter.args) == 1 and isinstance(
             node.iter.args[0], ast.Call) and isinstance(node.iter.args[0].func, ast.Attribute) \
                            and isinstance(node.iter.args[0].func.value, ast.Name) \
-                           and node.iter.args[0].func.value.id == 'ti'
+                           and node.iter.args[0].func.value.id == 'ti' and (
+                                   node.iter.args[0].func.attr == 'static'
+                                   or node.iter.args[0].func.attr == 'grouped'
+                                   or node.iter.args[0].func.attr == 'ndrange')
         is_ndrange_for = 0
         is_static_for = 0
         is_grouped = 0

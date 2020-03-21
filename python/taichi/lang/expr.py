@@ -53,9 +53,6 @@ class Expr:
 
     __radd__ = __add__
 
-    def __iadd__(self, other):
-        self.atomic_add(other)
-
     def __neg__(self):
         return Expr(taichi_lang_core.expr_neg(self.ptr), tb=self.stack_info())
 
@@ -63,24 +60,6 @@ class Expr:
         other = Expr(other)
         return Expr(taichi_lang_core.expr_sub(self.ptr, other.ptr),
                     tb=self.stack_info())
-
-    def __isub__(self, other):
-        # TODO: add atomic_sub()
-        import taichi as ti
-        ti.expr_init(taichi_lang_core.expr_atomic_sub(self.ptr, other.ptr))
-
-    def __imul__(self, other):
-        self.assign(Expr(taichi_lang_core.expr_mul(self.ptr, other.ptr)))
-
-    def __itruediv__(self, other):
-        self.assign(
-            Expr(taichi_lang_core.expr_truediv(self.ptr,
-                                               Expr(other).ptr)))
-
-    def __ifloordiv__(self, other):
-        self.assign(
-            Expr(taichi_lang_core.expr_floordiv(self.ptr,
-                                                Expr(other).ptr)))
 
     def __rsub__(self, other):
         other = Expr(other)
@@ -95,12 +74,6 @@ class Expr:
 
     __rmul__ = __mul__
 
-    def __mod__(self, other):
-        other = Expr(other)
-        quotient = Expr(taichi_lang_core.expr_floordiv(self.ptr, other.ptr))
-        multiply = Expr(taichi_lang_core.expr_mul(other.ptr, quotient.ptr))
-        return Expr(taichi_lang_core.expr_sub(self.ptr, multiply.ptr))
-
     def __truediv__(self, other):
         return Expr(taichi_lang_core.expr_truediv(self.ptr, Expr(other).ptr))
 
@@ -112,6 +85,40 @@ class Expr:
 
     def __rfloordiv__(self, other):
         return Expr(taichi_lang_core.expr_floordiv(Expr(other).ptr, self.ptr))
+
+    def __mod__(self, other):
+        other = Expr(other)
+        quotient = Expr(taichi_lang_core.expr_floordiv(self.ptr, other.ptr))
+        multiply = Expr(taichi_lang_core.expr_mul(other.ptr, quotient.ptr))
+        return Expr(taichi_lang_core.expr_sub(self.ptr, multiply.ptr))
+
+    def __iadd__(self, other):
+        self.atomic_add(other)
+
+    def __isub__(self, other):
+        self.atomic_sub(other)
+
+    def __imul__(self, other):
+        self.assign(Expr(taichi_lang_core.expr_mul(self.ptr, other.ptr)))
+
+    def __itruediv__(self, other):
+        self.assign(
+            Expr(taichi_lang_core.expr_truediv(self.ptr,
+                                               Expr(other).ptr)))
+
+    def __ifloordiv__(self, other):
+        self.assign(
+            Expr(taichi_lang_core.expr_floordiv(self.ptr,
+                                                Expr(other).ptr)))
+
+    def __iand__(self, other):
+        self.atomic_and(other)
+
+    def __ior__(self, other):
+        self.atomic_or(other)
+
+    def __ixor__(self, other):
+        self.atomic_xor(other)
 
     def __le__(self, other):
         other = Expr(other)
@@ -145,6 +152,10 @@ class Expr:
         item = Expr(item)
         return Expr(taichi_lang_core.expr_bit_or(self.ptr, item.ptr))
 
+    def __xor__(self, item):
+        item = Expr(item)
+        return Expr(taichi_lang_core.expr_bit_xor(self.ptr, item.ptr))
+
     def logical_and(self, item):
         return self & item
 
@@ -158,42 +169,6 @@ class Expr:
     def assign(self, other):
         taichi_lang_core.expr_assign(self.ptr,
                                      Expr(other).ptr, self.stack_info())
-
-    def serialize(self):
-        return self.ptr.serialize()
-
-    def initialize_accessor(self):
-        if self.getter:
-            return
-        snode = self.ptr.snode()
-
-        if self.snode().data_type() == f32 or self.snode().data_type() == f64:
-
-            def getter(*key):
-                assert len(key) == taichi_lang_core.get_max_num_indices()
-                return snode.read_float(key)
-
-            def setter(value, *key):
-                assert len(key) == taichi_lang_core.get_max_num_indices()
-                snode.write_float(key, value)
-        else:
-            if taichi_lang_core.is_signed(self.snode().data_type()):
-
-                def getter(*key):
-                    assert len(key) == taichi_lang_core.get_max_num_indices()
-                    return snode.read_int(key)
-            else:
-
-                def getter(*key):
-                    assert len(key) == taichi_lang_core.get_max_num_indices()
-                    return snode.read_uint(key)
-
-            def setter(value, *key):
-                assert len(key) == taichi_lang_core.get_max_num_indices()
-                snode.write_int(key, value)
-
-        self.getter = getter
-        self.setter = setter
 
     def __setitem__(self, key, value):
         if not Expr.layout_materialized:
@@ -237,8 +212,92 @@ class Expr:
             self /= x
         elif op == 'FloorDiv':
             self //= x
+        elif op == 'BitAnd':
+            self &= x
+        elif op == 'BitOr':
+            self |= x
+        elif op == 'BitXor':
+            self ^= x
         else:
             assert False, op
+
+    def atomic_add(self, other):
+        import taichi as ti
+        other_ptr = ti.wrap_scalar(other).ptr
+        return ti.expr_init(
+            taichi_lang_core.expr_atomic_add(self.ptr, other_ptr))
+
+    def atomic_sub(self, other):
+        import taichi as ti
+        other_ptr = ti.wrap_scalar(other).ptr
+        return ti.expr_init(
+            taichi_lang_core.expr_atomic_sub(self.ptr, other_ptr))
+
+    def atomic_min(self, other):
+        import taichi as ti
+        other_ptr = ti.wrap_scalar(other).ptr
+        return ti.expr_init(
+            taichi_lang_core.expr_atomic_min(self.ptr, other_ptr))
+
+    def atomic_max(self, other):
+        import taichi as ti
+        other_ptr = ti.wrap_scalar(other).ptr
+        return ti.expr_init(
+            taichi_lang_core.expr_atomic_max(self.ptr, other_ptr))
+
+    def atomic_and(self, other):
+        import taichi as ti
+        other_ptr = ti.wrap_scalar(other).ptr
+        return ti.expr_init(
+            taichi_lang_core.expr_atomic_bit_and(self.ptr, other_ptr))
+
+    def atomic_or(self, other):
+        import taichi as ti
+        other_ptr = ti.wrap_scalar(other).ptr
+        return ti.expr_init(
+            taichi_lang_core.expr_atomic_bit_or(self.ptr, other_ptr))
+
+    def atomic_xor(self, other):
+        import taichi as ti
+        other_ptr = ti.wrap_scalar(other).ptr
+        return ti.expr_init(
+            taichi_lang_core.expr_atomic_bit_xor(self.ptr, other_ptr))
+
+    def serialize(self):
+        return self.ptr.serialize()
+
+    def initialize_accessor(self):
+        if self.getter:
+            return
+        snode = self.ptr.snode()
+
+        if self.snode().data_type() == f32 or self.snode().data_type() == f64:
+
+            def getter(*key):
+                assert len(key) == taichi_lang_core.get_max_num_indices()
+                return snode.read_float(key)
+
+            def setter(value, *key):
+                assert len(key) == taichi_lang_core.get_max_num_indices()
+                snode.write_float(key, value)
+        else:
+            if taichi_lang_core.is_signed(self.snode().data_type()):
+
+                def getter(*key):
+                    assert len(key) == taichi_lang_core.get_max_num_indices()
+                    return snode.read_int(key)
+            else:
+
+                def getter(*key):
+                    assert len(key) == taichi_lang_core.get_max_num_indices()
+                    return snode.read_uint(key)
+
+            def setter(value, *key):
+                assert len(key) == taichi_lang_core.get_max_num_indices()
+                snode.write_int(key, value)
+
+        self.getter = getter
+        self.setter = setter
 
     def set_grad(self, grad):
         self.grad = grad
@@ -254,12 +313,6 @@ class Expr:
         # TODO: avoid too many template instantiations
         from .meta import fill_tensor
         fill_tensor(self, val)
-
-    def atomic_add(self, other):
-        import taichi as ti
-        other_ptr = ti.wrap_scalar(other).ptr
-        return ti.expr_init(
-            taichi_lang_core.expr_atomic_add(self.ptr, other_ptr))
 
     def __rpow__(self, power, modulo=None):
         return Expr(power).__pow__(self, modulo)

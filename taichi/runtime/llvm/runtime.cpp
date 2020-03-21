@@ -175,12 +175,20 @@ i64 floordiv_i64(i64 a, i64 b) {
   return ifloordiv(a, b);
 }
 
-int max_i32(int a, int b) {
+int min_i32(i32 a, i32 b) {
+  return a < b ? a : b;
+}
+
+int min_i64(i64 a, i64 b) {
+  return a < b ? a : b;
+}
+
+int max_i32(i32 a, i32 b) {
   return a > b ? a : b;
 }
 
-int min_i32(int a, int b) {
-  return a < b ? a : b;
+int max_i64(i64 a, i64 b) {
+  return a > b ? a : b;
 }
 
 int32 logic_not_i32(int32 a) {

@@ -214,15 +214,15 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
   }
 
   void visit(AtomicOpStmt *stmt) override {
-    TI_ASSERT(stmt->width() == 1);
     // https://llvm.org/docs/NVPTXUsage.html#address-spaces
     bool is_local = stmt->dest->is<AllocaStmt>();
     if (is_local) {
       TI_ERROR("Local atomics should have been demoted.");
-    } else {
-      for (int l = 0; l < stmt->width(); l++) {
-        TI_ASSERT(stmt->op_type == AtomicOpType::add);
-        llvm::Value *old_value;
+    }
+    TI_ASSERT(stmt->width() == 1);
+    for (int l = 0; l < stmt->width(); l++) {
+      llvm::Value *old_value;
+      if (stmt->op_type == AtomicOpType::add) {
         if (is_integral(stmt->val->ret_type.data_type)) {
           old_value = builder->CreateAtomicRMW(
               llvm::AtomicRMWInst::BinOp::Add, stmt->dest->value,
@@ -242,8 +242,66 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
         } else {
           TI_NOT_IMPLEMENTED
         }
-        stmt->value = old_value;
+      } else if (stmt->op_type == AtomicOpType::min) {
+        if (is_integral(stmt->val->ret_type.data_type)) {
+          old_value = builder->CreateAtomicRMW(
+              llvm::AtomicRMWInst::BinOp::Min, stmt->dest->value,
+              stmt->val->value, llvm::AtomicOrdering::SequentiallyConsistent);
+        } else if (stmt->val->ret_type.data_type == DataType::f32) {
+          old_value =
+              builder->CreateCall(get_runtime_function("atomic_min_f32"),
+                                  {stmt->dest->value, stmt->val->value});
+        } else if (stmt->val->ret_type.data_type == DataType::f64) {
+          old_value =
+              builder->CreateCall(get_runtime_function("atomic_min_f64"),
+                                  {stmt->dest->value, stmt->val->value});
+        } else {
+          TI_NOT_IMPLEMENTED
+        }
+      } else if (stmt->op_type == AtomicOpType::max) {
+        if (is_integral(stmt->val->ret_type.data_type)) {
+          old_value = builder->CreateAtomicRMW(
+              llvm::AtomicRMWInst::BinOp::Max, stmt->dest->value,
+              stmt->val->value, llvm::AtomicOrdering::SequentiallyConsistent);
+        } else if (stmt->val->ret_type.data_type == DataType::f32) {
+          old_value =
+              builder->CreateCall(get_runtime_function("atomic_max_f32"),
+                                  {stmt->dest->value, stmt->val->value});
+        } else if (stmt->val->ret_type.data_type == DataType::f64) {
+          old_value =
+              builder->CreateCall(get_runtime_function("atomic_max_f64"),
+                                  {stmt->dest->value, stmt->val->value});
+        } else {
+          TI_NOT_IMPLEMENTED
+        }
+      } else if (stmt->op_type == AtomicOpType::bit_and) {
+        if (is_integral(stmt->val->ret_type.data_type)) {
+          old_value = builder->CreateAtomicRMW(
+              llvm::AtomicRMWInst::BinOp::And, stmt->dest->value,
+              stmt->val->value, llvm::AtomicOrdering::SequentiallyConsistent);
+        } else {
+          TI_NOT_IMPLEMENTED
+        }
+      } else if (stmt->op_type == AtomicOpType::bit_or) {
+        if (is_integral(stmt->val->ret_type.data_type)) {
+          old_value = builder->CreateAtomicRMW(
+              llvm::AtomicRMWInst::BinOp::Or, stmt->dest->value,
+              stmt->val->value, llvm::AtomicOrdering::SequentiallyConsistent);
+        } else {
+          TI_NOT_IMPLEMENTED
+        }
+      } else if (stmt->op_type == AtomicOpType::bit_xor) {
+        if (is_integral(stmt->val->ret_type.data_type)) {
+          old_value = builder->CreateAtomicRMW(
+              llvm::AtomicRMWInst::BinOp::Xor, stmt->dest->value,
+              stmt->val->value, llvm::AtomicOrdering::SequentiallyConsistent);
+        } else {
+          TI_NOT_IMPLEMENTED
+        }
+      } else {
+        TI_NOT_IMPLEMENTED
       }
+      stmt->value = old_value;
     }
   }
 

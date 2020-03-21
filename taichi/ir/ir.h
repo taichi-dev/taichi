@@ -1994,6 +1994,21 @@ class AtomicOpExpression : public Expression {
     } else if (op_type == AtomicOpType::sub) {
       return fmt::format("atomic_sub({}, {})", dest.serialize(),
                          val.serialize());
+    } else if (op_type == AtomicOpType::min) {
+      return fmt::format("atomic_min({}, {})", dest.serialize(),
+                         val.serialize());
+    } else if (op_type == AtomicOpType::max) {
+      return fmt::format("atomic_max({}, {})", dest.serialize(),
+                         val.serialize());
+    } else if (op_type == AtomicOpType::bit_and) {
+      return fmt::format("atomic_bit_and({}, {})", dest.serialize(),
+                         val.serialize());
+    } else if (op_type == AtomicOpType::bit_or) {
+      return fmt::format("atomic_bit_or({}, {})", dest.serialize(),
+                         val.serialize());
+    } else if (op_type == AtomicOpType::bit_xor) {
+      return fmt::format("atomic_bit_xor({}, {})", dest.serialize(),
+                         val.serialize());
     } else {
       // min/max not supported in the LLVM backend yet.
       TI_NOT_IMPLEMENTED;

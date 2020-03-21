@@ -329,9 +329,10 @@ if 1:
         is_range_for = isinstance(node.iter, ast.Call) and isinstance(
             node.iter.func, ast.Name) and node.iter.func.id == 'range'
         ast.fix_missing_locations(node)
-        if not is_ndrange_for:
+        is_nonstatic_ndrange = is_ndrange_for == 1 or (is_ndrange_for == 2 and is_grouped == 1)
+        if not is_nonstatic_ndrange:
             self.generic_visit(node, ['body'])
-        if is_ndrange_for == 1 or (is_ndrange_for == 2 and is_grouped == 1):
+        if is_nonstatic_ndrange:
             dim = len(node.iter.args) if is_ndrange_for == 1 else len(
                 node.iter.args[0].args)
             template = '''
@@ -422,6 +423,8 @@ if 1:
             t.body.append(self.parse_stmt('del {}'.format(loop_var)))
             return ast.copy_location(t, node)
         else:  # Struct for
+            assert is_static_for == 0
+            assert is_ndrange_for == 0
             if isinstance(node.target, ast.Name):
                 elts = [node.target]
             else:

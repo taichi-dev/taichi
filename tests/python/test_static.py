@@ -38,3 +38,20 @@ def test_static_if_error():
             x[0] = 0
 
     static()
+
+
+@ti.all_archs
+def test_static_ndrange():
+    n = 3
+    x = ti.Matrix(n, n, dt=ti.f32, shape=(n, n))
+    
+    @ti.kernel
+    def fill():
+        w = [0, 1, 2]
+        for i, j in ti.static(ti.ndrange(3, 3)):
+            x[i, j][i, j] = w[i] + w[j] * 2
+            
+    fill()
+    for i in range(3):
+        for j in range(3):
+            assert x[i, j][i, j] == i + j * 2

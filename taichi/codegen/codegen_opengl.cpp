@@ -20,9 +20,9 @@ std::string opengl_atomic_op_type_cap_name(AtomicOpType type) {
     // REGISTER_TYPE(div, Div);
     REGISTER_TYPE(max, Max);
     REGISTER_TYPE(min, Min);
-    // REGISTER_TYPE(bit_and, And);
-    // REGISTER_TYPE(bit_or, Or);
-    // REGISTER_TYPE(bit_xor, Xor);
+    REGISTER_TYPE(bit_and, And);
+    REGISTER_TYPE(bit_or, Or);
+    REGISTER_TYPE(bit_xor, Xor);
 #undef REGISTER_TYPE
   }
   return type_names[type];

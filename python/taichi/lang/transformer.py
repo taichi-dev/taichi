@@ -278,6 +278,7 @@ if 1:
         if node.orelse:
             raise TaichiSyntaxError(
                 "'else' clause for 'for' not supported in Taichi kernels")
+
         def is_decorated(iter):
             return isinstance(iter, ast.Call) \
                    and isinstance(iter.func, ast.Attribute) \
@@ -286,6 +287,7 @@ if 1:
                            iter.func.attr == 'static'
                            or iter.func.attr == 'grouped'
                            or iter.func.attr == 'ndrange')
+
         decorated = is_decorated(node.iter)
         double_decorated = decorated and len(node.iter.args) == 1 \
                            and is_decorated(node.iter.args[0])
@@ -313,11 +315,13 @@ if 1:
                     is_static_for = 2
                 elif attr.attr == 'grouped':
                     if is_grouped == 1:
-                        raise TaichiSyntaxError("'ti.grouped' cannot be nested")
+                        raise TaichiSyntaxError(
+                            "'ti.grouped' cannot be nested")
                     is_grouped = 2
                 elif attr.attr == 'ndrange':
                     if is_ndrange_for == 1:
-                        raise TaichiSyntaxError("'ti.ndrange' cannot be nested")
+                        raise TaichiSyntaxError(
+                            "'ti.ndrange' cannot be nested")
                     is_ndrange_for = 2
                 else:
                     raise Exception('Not supported')

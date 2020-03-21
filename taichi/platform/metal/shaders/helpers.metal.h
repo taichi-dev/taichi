@@ -33,6 +33,18 @@ STR(template <typename T, typename G> T union_cast(G g) {
       return (((lhs * rhs < 0) && (rhs * intm != lhs)) ? (intm - 1) : intm);
     }
 
+    int32_t pow_i32(int32_t x, int32_t n) {
+      int32_t tmp = x;
+      int32_t ans = 1;
+      while (n) {
+        if (n & 1)
+          ans *= tmp;
+        tmp *= tmp;
+        n >>= 1;
+      }
+      return ans;
+    }
+
     float fatomic_fetch_add(device float *dest, const float operand) {
       // A huge hack! Metal does not support atomic floating point numbers
       // natively.
@@ -41,6 +53,34 @@ STR(template <typename T, typename G> T union_cast(G g) {
       while (!ok) {
         old_val = *dest;
         float new_val = (old_val + operand);
+        ok = atomic_compare_exchange_weak_explicit(
+            (device atomic_int *)dest, (thread int *)(&old_val),
+            *((thread int *)(&new_val)), metal::memory_order_relaxed,
+            metal::memory_order_relaxed);
+      }
+      return old_val;
+    }
+
+    float fatomic_fetch_min(device float *dest, const float operand) {
+      bool ok = false;
+      float old_val = 0.0f;
+      while (!ok) {
+        old_val = *dest;
+        float new_val = (old_val < operand) ? old_val : operand;
+        ok = atomic_compare_exchange_weak_explicit(
+            (device atomic_int *)dest, (thread int *)(&old_val),
+            *((thread int *)(&new_val)), metal::memory_order_relaxed,
+            metal::memory_order_relaxed);
+      }
+      return old_val;
+    }
+
+    float fatomic_fetch_max(device float *dest, const float operand) {
+      bool ok = false;
+      float old_val = 0.0f;
+      while (!ok) {
+        old_val = *dest;
+        float new_val = (old_val > operand) ? old_val : operand;
         ok = atomic_compare_exchange_weak_explicit(
             (device atomic_int *)dest, (thread int *)(&old_val),
             *((thread int *)(&new_val)), metal::memory_order_relaxed,

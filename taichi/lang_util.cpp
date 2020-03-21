@@ -1,10 +1,11 @@
 // Definitions of utility functions and enums
 
 #include "lang_util.h"
-#include "taichi/system/timer.h"
+
 #include "taichi/math/linalg.h"
 #include "taichi/program/arch.h"
 #include "taichi/program/compile_config.h"
+#include "taichi/system/timer.h"
 
 TI_NAMESPACE_BEGIN
 
@@ -194,6 +195,9 @@ std::string atomic_op_type_name(AtomicOpType type) {
     REGISTER_TYPE(add);
     REGISTER_TYPE(max);
     REGISTER_TYPE(min);
+    REGISTER_TYPE(bit_and);
+    REGISTER_TYPE(bit_or);
+    REGISTER_TYPE(bit_xor);
 #undef REGISTER_TYPE
   }
   return type_names[type];

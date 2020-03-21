@@ -305,8 +305,9 @@ class MetalKernelCodegen : public IRVisitor {
     const auto lhs_name = bin->lhs->raw_name();
     const auto rhs_name = bin->rhs->raw_name();
     const auto bin_name = bin->raw_name();
-    if (bin->op_type == BinaryOpType::floordiv) {
-      if (is_integral(bin->element_type())) {
+    const auto op_type = bin->op_type;
+    if (op_type == BinaryOpType::floordiv) {
+      if (is_integral(bin->ret_type.data_type)) {
         emit("const {} {} = ifloordiv({}, {});", dt_name, bin_name, lhs_name,
              rhs_name);
       } else {
@@ -315,7 +316,13 @@ class MetalKernelCodegen : public IRVisitor {
       }
       return;
     }
-    const auto binop = metal_binary_op_type_symbol(bin->op_type);
+    if (op_type == BinaryOpType::pow && is_integral(bin->ret_type.data_type)) {
+      // TODO(k-ye): Make sure the type is not i64?
+      emit("const {} {} = pow_i32({}, {});", dt_name, bin_name, lhs_name,
+           rhs_name);
+      return;
+    }
+    const auto binop = metal_binary_op_type_symbol(op_type);
     if (is_metal_binary_op_infix(bin->op_type)) {
       emit("const {} {} = ({} {} {});", dt_name, bin_name, lhs_name, binop,
            rhs_name);
@@ -335,19 +342,48 @@ class MetalKernelCodegen : public IRVisitor {
 
   void visit(AtomicOpStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
-    TI_ASSERT(stmt->op_type == AtomicOpType::add);
     const auto dt = stmt->val->element_type();
-    if (dt == DataType::i32) {
-      emit(
-          "const auto {} = atomic_fetch_add_explicit((device atomic_int*){}, "
-          "{}, "
-          "metal::memory_order_relaxed);",
-          stmt->raw_name(), stmt->dest->raw_name(), stmt->val->raw_name());
-    } else if (dt == DataType::f32) {
-      emit("const float {} = fatomic_fetch_add({}, {});", stmt->raw_name(),
-           stmt->dest->raw_name(), stmt->val->raw_name());
+    const auto op_type = stmt->op_type;
+    std::string op_name;
+    bool handle_float = false;
+    if (op_type == AtomicOpType::add || op_type == AtomicOpType::min ||
+        op_type == AtomicOpType::max) {
+      op_name = atomic_op_type_name(op_type);
+      handle_float = true;
+    } else if (op_type == AtomicOpType::bit_and ||
+               op_type == AtomicOpType::bit_or ||
+               op_type == AtomicOpType::bit_xor) {
+      // Skip "bit_"
+      op_name = atomic_op_type_name(op_type).substr(/*pos=*/4);
+      handle_float = false;
     } else {
       TI_NOT_IMPLEMENTED;
+    }
+
+    if (dt == DataType::i32) {
+      emit(
+          "const auto {} = atomic_fetch_{}_explicit((device atomic_int*){}, "
+          "{}, "
+          "metal::memory_order_relaxed);",
+          stmt->raw_name(), op_name, stmt->dest->raw_name(),
+          stmt->val->raw_name());
+    } else if (dt == DataType::u32) {
+      emit(
+          "const auto {} = atomic_fetch_{}_explicit((device atomic_uint*){}, "
+          "{}, "
+          "metal::memory_order_relaxed);",
+          stmt->raw_name(), op_name, stmt->dest->raw_name(),
+          stmt->val->raw_name());
+    } else if (dt == DataType::f32) {
+      if (handle_float) {
+        emit("const float {} = fatomic_fetch_{}({}, {});", stmt->raw_name(),
+             op_name, stmt->dest->raw_name(), stmt->val->raw_name());
+      } else {
+        TI_ERROR("Metal does not support atomic {} for floating points",
+                 op_name);
+      }
+    } else {
+      TI_ERROR("Metal only supports 32-bit atomic data types");
     }
   }
 

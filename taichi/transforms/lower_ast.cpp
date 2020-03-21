@@ -181,13 +181,13 @@ class LowerAST : public IRVisitor {
         // transform into a structure as
         // i = begin; while (1) { if (i >= end) break; original body; i += 1; }
         auto loop_var = stmt->parent->lookup_var(stmt->loop_var_id[0]);
-        flattened.push_back(Stmt::make<LocalStoreStmt>(loop_var, begin->stmt));
+        flattened.push_back<LocalStoreStmt>(loop_var, begin->stmt);
         auto loop_var_addr = LaneAttribute<LocalAddress>(
             LocalAddress(loop_var->as<AllocaStmt>(), 0));
         VecStatement flattened2;
-        auto loop_var_load_stmt = flattened2.push_back(Stmt::make<LocalLoadStmt>(loop_var_addr));
-        auto cond_stmt = flattened2.push_back(Stmt::make<BinaryOpStmt>(
-            BinaryOpType::cmp_lt, loop_var_load_stmt, end->stmt));
+        auto loop_var_load_stmt = flattened2.push_back<LocalLoadStmt>(loop_var_addr);
+        auto cond_stmt = flattened2.push_back<BinaryOpStmt>(
+            BinaryOpType::cmp_lt, loop_var_load_stmt, end->stmt);
 
         auto &&new_while = std::make_unique<WhileStmt>(std::move(stmt->body));
         auto mask = std::make_unique<AllocaStmt>(DataType::i32);
@@ -198,10 +198,10 @@ class LowerAST : public IRVisitor {
         }
 
         VecStatement flattened3;
-        auto const_one = flattened3.push_back(Stmt::make<ConstStmt>(TypedConstant((int32)1)));
-        auto loop_var_add_one = flattened3.push_back(Stmt::make<BinaryOpStmt>(
-            BinaryOpType::add, loop_var_load_stmt, const_one));
-        flattened3.push_back(Stmt::make<LocalStoreStmt>(loop_var, loop_var_add_one));
+        auto const_one = flattened3.push_back<ConstStmt>(TypedConstant((int32)1));
+        auto loop_var_add_one = flattened3.push_back<BinaryOpStmt>(
+            BinaryOpType::add, loop_var_load_stmt, const_one);
+        flattened3.push_back<LocalStoreStmt>(loop_var, loop_var_add_one);
         for (int i = 0; i < (int)flattened3.size(); i++) {
           stmts->insert(std::move(flattened3[i]), stmts->size());
         }
@@ -364,7 +364,7 @@ class LowerAST : public IRVisitor {
       expr->flatten(flattened);
       val_stmt = expr->stmt;
     }
-    flattened.push_back(Stmt::make<AssertStmt>(stmt->text, val_stmt));
+    flattened.push_back<AssertStmt>(stmt->text, val_stmt);
     stmt->parent->replace_with(stmt, std::move(flattened));
     throw IRModified();
   }
@@ -373,8 +373,7 @@ class LowerAST : public IRVisitor {
     // expand value
     VecStatement flattened;
     stmt->expr->flatten(flattened);
-    flattened.push_back(
-        Stmt::make<ArgStoreStmt>(stmt->arg_id, flattened.back().get()));
+    flattened.push_back<ArgStoreStmt>(stmt->arg_id, flattened.back().get());
     stmt->parent->replace_with(stmt, std::move(flattened));
     throw IRModified();
   }

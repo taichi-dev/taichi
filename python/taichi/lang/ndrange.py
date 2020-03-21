@@ -17,6 +17,8 @@ class ndrange:
         for i in reversed(range(len(self.bounds) - 1)):
             self.acc_dimensions[
                 i] = self.acc_dimensions[i] * self.acc_dimensions[i + 1]
+        if len(self.acc_dimensions) == 0: # for the empty case, e.g. ti.ndrange()
+            self.acc_dimensions = [1]
 
     def __iter__(self):
         def gen(d, prefix):

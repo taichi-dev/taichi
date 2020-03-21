@@ -103,9 +103,7 @@ class LowerAST : public IRVisitor {
   }
 
   void visit(FrontendBreakStmt *stmt) override {
-    TI_ASSERT(//TI_ASSERT_INFO(
-        capturing_loop->is<WhileStmt>());//,
-        //"The loop capturing 'break' must be a while loop instead of for loop.");
+    TI_ASSERT(capturing_loop->is<WhileStmt>());
     auto while_stmt = capturing_loop->as<WhileStmt>();
     VecStatement stmts;
     auto const_true = stmts.push_back<ConstStmt>(TypedConstant((int32)0));
@@ -169,10 +167,11 @@ class LowerAST : public IRVisitor {
       auto end = stmt->end;
       begin->flatten(flattened);
       end->flatten(flattened);
-      bool is_good_range_for = capturing_loop == nullptr || // the outer-most for
+      bool is_good_range_for = capturing_loop == nullptr ||
         std::find(detected_fors_with_break.begin(), detected_fors_with_break.end(), stmt)
-        == detected_fors_with_break.end(); // for without break
-      if (is_good_range_for) {  // #578
+        == detected_fors_with_break.end();
+      // #578: a good range for is a range for that doesn't contains a break statement
+      if (is_good_range_for) {
         auto &&new_for = std::make_unique<RangeForStmt>(
             stmt->parent->lookup_var(stmt->loop_var_id[0]), begin->stmt,
             end->stmt, std::move(stmt->body), stmt->vectorize,
@@ -180,20 +179,15 @@ class LowerAST : public IRVisitor {
         flattened.push_back(std::move(new_for));
       } else {
         // transform into a structure as
-        // i = begin; while (1) { if (i > end) break; original body; i += 1; }
-        // auto loop_var = Stmt::make<AllocaStmt>(DataType::i32);
+        // i = begin; while (1) { if (i >= end) break; original body; i += 1; }
         auto loop_var = stmt->parent->lookup_var(stmt->loop_var_id[0]);
         flattened.push_back(Stmt::make<LocalStoreStmt>(loop_var, begin->stmt));
         auto loop_var_addr = LaneAttribute<LocalAddress>(
             LocalAddress(loop_var->as<AllocaStmt>(), 0));
         VecStatement flattened2;
-        // auto loop_var_store = Stmt::make<LocalStoreStmt>(loop_var_addr,
-        // begin->stmt);
-        flattened2.push_back(Stmt::make<LocalLoadStmt>(loop_var_addr));
-        auto loop_var_load_stmt = flattened2.back().get();
-        flattened2.push_back(Stmt::make<BinaryOpStmt>(
-            BinaryOpType::cmp_lt, flattened2.back().get(), end->stmt));
-        auto cond_stmt = flattened2.back().get();
+        auto loop_var_load_stmt = flattened2.push_back(Stmt::make<LocalLoadStmt>(loop_var_addr));
+        auto cond_stmt = flattened2.push_back(Stmt::make<BinaryOpStmt>(
+            BinaryOpType::cmp_lt, loop_var_load_stmt, end->stmt));
 
         auto &&new_while = std::make_unique<WhileStmt>(std::move(stmt->body));
         auto mask = std::make_unique<AllocaStmt>(DataType::i32);
@@ -204,11 +198,10 @@ class LowerAST : public IRVisitor {
         }
 
         VecStatement flattened3;
-        flattened3.push_back(Stmt::make<ConstStmt>(TypedConstant((int32)1)));
-        flattened3.push_back(Stmt::make<BinaryOpStmt>(
-            BinaryOpType::add, loop_var_load_stmt, flattened3.back().get()));
-        flattened3.push_back(
-            Stmt::make<LocalStoreStmt>(loop_var, flattened3.back().get()));
+        auto const_one = flattened3.push_back(Stmt::make<ConstStmt>(TypedConstant((int32)1)));
+        auto loop_var_add_one = flattened3.push_back(Stmt::make<BinaryOpStmt>(
+            BinaryOpType::add, loop_var_load_stmt, const_one));
+        flattened3.push_back(Stmt::make<LocalStoreStmt>(loop_var, loop_var_add_one));
         for (int i = 0; i < (int)flattened3.size(); i++) {
           stmts->insert(std::move(flattened3[i]), stmts->size());
         }

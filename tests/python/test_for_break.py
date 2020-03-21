@@ -1,7 +1,7 @@
 import taichi as ti
 
 
-@ti.all_archs_with(print_ir=True)
+@ti.all_archs
 def test_for_break():
     x = ti.var(ti.i32)
     N, M = 4, 4

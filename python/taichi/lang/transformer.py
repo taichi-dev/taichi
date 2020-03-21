@@ -329,7 +329,8 @@ if 1:
         is_range_for = isinstance(node.iter, ast.Call) and isinstance(
             node.iter.func, ast.Name) and node.iter.func.id == 'range'
         ast.fix_missing_locations(node)
-        is_nonstatic_ndrange = is_ndrange_for == 1 or (is_ndrange_for == 2 and is_grouped == 1)
+        is_nonstatic_ndrange = is_ndrange_for == 1 or (is_ndrange_for == 2
+                                                       and is_grouped == 1)
         if not is_nonstatic_ndrange:
             self.generic_visit(node, ['body'])
         if is_nonstatic_ndrange:

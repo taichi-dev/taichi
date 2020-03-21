@@ -23,6 +23,12 @@ namespace metal {
 
 // This struct holds the necesary information to launch a Metal kernel.
 struct MetalKernelAttributes {
+  enum class Buffers {
+    Root,
+    GlobalTmps,
+    Args,
+    Runtime,
+  };
   std::string name;
   int num_threads;
   OffloadedStmt::TaskType task_type;
@@ -42,9 +48,16 @@ struct MetalKernelAttributes {
       return (const_begin && const_end);
     }
   };
+
+  struct RuntimeListOpAttributes {
+    const SNode *snode = nullptr;
+  };
+  std::vector<Buffers> buffers;
   // Only valid when |task_type| is range_for.
-  // TODO(k-ye): Use std::optional to wrap this.
+  // TODO(k-ye): Use std::optional to wrap |task_type| dependent attributes.
   RangeForAttributes range_for_attribs;
+  // clear_list + listgen
+  RuntimeListOpAttributes runtime_list_op_attribs;
 };
 
 // Note that all Metal kernels belonging to the same Taichi kernel will share

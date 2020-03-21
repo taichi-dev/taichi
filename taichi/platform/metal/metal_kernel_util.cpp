@@ -1,7 +1,7 @@
-#include "metal_kernel_util.h"
+#include "taichi/platform/metal/metal_kernel_util.h"
 
 #define TI_RUNTIME_HOST
-#include <taichi/runtime/llvm/context.h>
+#include "taichi/runtime/llvm/context.h"
 #undef TI_RUNTIME_HOST
 
 TLANG_NAMESPACE_BEGIN

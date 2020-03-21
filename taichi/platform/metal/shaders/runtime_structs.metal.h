@@ -35,8 +35,12 @@ STR(constant constexpr int kTaichiMaxNumIndices = 8;
 
     struct ListManager {
       int32_t element_stride = 0;
+      // Same as |total_num_elems_from_root| of this SNode
       int32_t max_num_elems = 0;
+      // Index to the next element in this list.
+      // |next| can never go beyond |max_num_elems|.
       int32_t next = 0;
+      // The data offset from the runtime memory beginning.
       int32_t mem_begin = 0;
     };
 

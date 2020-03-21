@@ -544,7 +544,7 @@ int _rand_i32()\n\
            binop, rhs_name);
     } else {
       // This is a function call
-      emit("const {} {} = {}({}, {});", dt_name, bin_name, binop, lhs_name,
+      emit("const {} {} = {}({}({}, {}));", dt_name, bin_name, dt_name, binop, lhs_name,
            rhs_name);
     }
   }

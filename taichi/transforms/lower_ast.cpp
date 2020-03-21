@@ -173,12 +173,14 @@ class LowerAST : public IRVisitor {
         std::find(detected_fors_with_break.begin(), detected_fors_with_break.end(), stmt)
         == detected_fors_with_break.end(); // for without break
       if (is_good_range_for) {  // #578
+        TI_INFO("GOOD FOR");
         auto &&new_for = std::make_unique<RangeForStmt>(
             stmt->parent->lookup_var(stmt->loop_var_id[0]), begin->stmt,
             end->stmt, std::move(stmt->body), stmt->vectorize,
             stmt->parallelize, stmt->block_dim, stmt->strictly_serialized);
         flattened.push_back(std::move(new_for));
       } else {
+        TI_INFO("BAD FOR");
         // transform into a structure as
         // i = begin; while (1) { if (i > end) break; original body; i += 1; }
         // auto loop_var = Stmt::make<AllocaStmt>(DataType::i32);

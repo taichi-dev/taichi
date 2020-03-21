@@ -77,31 +77,33 @@ def test_grouped_ndrange():
 
     for i in range(n):
         for j in range(m):
-            assert val[i, j] == (i + j * 2 if x0 <= i < y0 and x1 <= j < y1
-                                 else 0)
+            assert val[i, j] == (i +
+                                 j * 2 if x0 <= i < y0 and x1 <= j < y1 else 0)
+
 
 @ti.all_archs
 def test_grouped_ndrange_0d():
     val = ti.var(ti.i32, shape=())
-    
+
     @ti.kernel
     def test():
         for I in ti.grouped(ti.ndrange()):
             val[I] = 42
-    
+
     test()
-    
+
     assert val[None] == 42
-    
+
+
 @ti.all_archs
 def test_grouped_ndrange_0d():
     val = ti.var(ti.i32, shape=())
-    
+
     @ti.kernel
     def test():
         for I in ti.static(ti.grouped(ti.ndrange())):
             val[I] = 42
-    
+
     test()
-    
+
     assert val[None] == 42

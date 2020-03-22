@@ -1,5 +1,9 @@
 #include "taichi/platform/metal/metal_kernel_util.h"
 
+#include <sstream>
+
+#include "taichi/ir/statements.h"
+
 #define TI_RUNTIME_HOST
 #include "taichi/runtime/llvm/context.h"
 #undef TI_RUNTIME_HOST

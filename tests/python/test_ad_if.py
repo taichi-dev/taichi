@@ -1,8 +1,27 @@
 import taichi as ti
 
+@ti.all_archs
+def test_ad_if_simple():
+    x = ti.var(ti.f32, shape=())
+    y = ti.var(ti.f32, shape=())
+    
+    ti.root.lazy_grad()
+    
+    @ti.kernel
+    def func():
+        if x[None] > 0.:
+            y[None] = x[None]
+    
+    x[None] = 1
+    y.grad[None] = 1
+    
+    func()
+    func.grad()
+    
+    assert x.grad[None] == 1
 
-# @ti.all_archs_with(print_ir=True)
-@ti.host_arch_only
+
+@ti.all_archs
 def test_ad_if():
     x = ti.var(ti.f32, shape=2)
     y = ti.var(ti.f32, shape=2)

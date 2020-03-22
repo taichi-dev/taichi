@@ -286,8 +286,8 @@ class MakeAdjoint : public IRVisitor {
       auto old_current_block = current_block;
 
       current_block = new_if->true_statements.get();
-      for (int i = 0; i < if_stmt->true_statements->statements.size(); i++) {
-        // TI_ASSERT(if_stmt->true_statements[i])
+      for (int i = if_stmt->true_statements->statements.size() - 1; i >= 0;
+           i--) {
         if_stmt->true_statements->statements[i]->accept(this);
       }
 
@@ -301,7 +301,6 @@ class MakeAdjoint : public IRVisitor {
 
   void visit(PrintStmt *print_stmt) override {
     // do nothing
-    return;
   }
 
   void visit(ConstStmt *const_stmt) override {
@@ -512,6 +511,8 @@ namespace irpass {
 
 void make_adjoint(IRNode *root, bool use_stack) {
   if (use_stack) {
+    re_id(root);
+    print(root);
     ConvertLocalVar converter;
     root->accept(&converter);
     typecheck(root);

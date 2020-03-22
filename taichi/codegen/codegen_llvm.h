@@ -1499,7 +1499,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     TI_ASSERT(stmt->width() == 1);
     auto type = llvm::ArrayType::get(llvm::Type::getInt8Ty(*llvm_context),
                                      stmt->size_in_bytes());
-    auto alloca = builder->CreateAlloca(type);
+    auto alloca = create_entry_block_alloca(type);
     stmt->value = builder->CreateBitCast(
         alloca, llvm::PointerType::getInt8PtrTy(*llvm_context));
   }

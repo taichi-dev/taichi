@@ -61,6 +61,8 @@ def test_ad_if_mutable():
         t = x[i]
         if t > 0:
             y[i] = t
+        else:
+            y[i] = 2 * t
     
     
     x[0] = 0
@@ -73,7 +75,7 @@ def test_ad_if_mutable():
     func(1)
     func.grad(1)
     
-    assert x.grad[0] == 0
+    assert x.grad[0] == 2
     assert x.grad[1] == 1
 
 '''

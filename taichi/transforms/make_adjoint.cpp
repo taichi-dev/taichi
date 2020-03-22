@@ -348,6 +348,7 @@ class MakeAdjoint : public IRVisitor {
   }
 
   void visit(StackPushStmt *stmt) override {
+    accumulate(stmt->v, insert<StackLoadTopAdjStmt>(stmt->stack));
     insert<StackPopStmt>(stmt->stack);
   }
 
@@ -463,7 +464,6 @@ class BackupSSA : public BasicStmtVisitor {
 
   Stmt *load(Stmt *stmt) {
     if (backup_alloca.find(stmt) == backup_alloca.end()) {
-      irpass::print(stmt);
       auto alloca =
           Stmt::make<AllocaStmt>(stmt->width(), stmt->ret_type.data_type);
       auto alloca_ptr = alloca.get();

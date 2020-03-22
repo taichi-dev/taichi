@@ -103,7 +103,6 @@ class LowerAST : public IRVisitor {
   }
 
   void visit(FrontendBreakStmt *stmt) override {
-    TI_ASSERT(capturing_loop->is<WhileStmt>());
     auto while_stmt = capturing_loop->as<WhileStmt>();
     VecStatement stmts;
     auto const_true = stmts.push_back<ConstStmt>(TypedConstant((int32)0));
@@ -184,31 +183,31 @@ class LowerAST : public IRVisitor {
         flattened.push_back<LocalStoreStmt>(loop_var, begin->stmt);
         auto loop_var_addr = LaneAttribute<LocalAddress>(
             LocalAddress(loop_var->as<AllocaStmt>(), 0));
-        VecStatement flattened2;
-        auto loop_var_load_stmt = flattened2.push_back<LocalLoadStmt>(loop_var_addr);
-        auto cond_stmt = flattened2.push_back<BinaryOpStmt>(
+        VecStatement load_and_compare;
+        auto loop_var_load_stmt = load_and_compare.push_back<LocalLoadStmt>(loop_var_addr);
+        auto cond_stmt = load_and_compare.push_back<BinaryOpStmt>(
             BinaryOpType::cmp_lt, loop_var_load_stmt, end->stmt);
 
         auto &&new_while = std::make_unique<WhileStmt>(std::move(stmt->body));
         auto mask = std::make_unique<AllocaStmt>(DataType::i32);
         new_while->mask = mask.get();
         auto &stmts = new_while->body;
-        for (int i = 0; i < (int)flattened2.size(); i++) {
-          stmts->insert(std::move(flattened2[i]), i);
+        for (int i = 0; i < (int)load_and_compare.size(); i++) {
+          stmts->insert(std::move(load_and_compare[i]), i);
         }
 
-        VecStatement flattened3;
-        auto const_one = flattened3.push_back<ConstStmt>(TypedConstant((int32)1));
-        auto loop_var_add_one = flattened3.push_back<BinaryOpStmt>(
+        VecStatement increase_and_store;
+        auto const_one = increase_and_store.push_back<ConstStmt>(TypedConstant((int32)1));
+        auto loop_var_add_one = increase_and_store.push_back<BinaryOpStmt>(
             BinaryOpType::add, loop_var_load_stmt, const_one);
-        flattened3.push_back<LocalStoreStmt>(loop_var, loop_var_add_one);
-        for (int i = 0; i < (int)flattened3.size(); i++) {
-          stmts->insert(std::move(flattened3[i]), stmts->size());
+        increase_and_store.push_back<LocalStoreStmt>(loop_var, loop_var_add_one);
+        for (int i = 0; i < (int)increase_and_store.size(); i++) {
+          stmts->insert(std::move(increase_and_store[i]), stmts->size());
         }
         // insert break
         stmts->insert(
             std::make_unique<WhileControlStmt>(new_while->mask, cond_stmt),
-            flattened2.size());
+            load_and_compare.size());
 
         stmt->insert_before_me(std::make_unique<AllocaStmt>(DataType::i32));
         auto &&const_stmt =

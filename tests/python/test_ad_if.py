@@ -1,5 +1,6 @@
 import taichi as ti
 
+'''
 @ti.all_archs
 def test_ad_if_simple():
     x = ti.var(ti.f32, shape=())
@@ -77,11 +78,10 @@ def test_ad_if_mutable():
     
     assert x.grad[0] == 2
     assert x.grad[1] == 1
-
 '''
+
 @ti.all_archs
 def test_ad_if_prallel():
-    return
     x = ti.var(ti.f32, shape=2)
     y = ti.var(ti.f32, shape=2)
 
@@ -92,7 +92,7 @@ def test_ad_if_prallel():
         for i in range(2):
             t = 0.0
             if x[i] > 0:
-                t = 1 / (x[i] + 1e-10)
+                t = 1 / x[i]
             y[i] = t
 
     x[0] = 0
@@ -105,6 +105,3 @@ def test_ad_if_prallel():
 
     assert x.grad[0] == 0
     assert x.grad[1] == -1
-'''
-
-# TODO: test if with else

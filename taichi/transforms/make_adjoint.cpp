@@ -281,7 +281,6 @@ class MakeAdjoint : public IRVisitor {
   void visit(IfStmt *if_stmt) override {
     auto new_if = Stmt::make_typed<IfStmt>(if_stmt->cond);
     if (if_stmt->true_statements) {
-      // make sure only global store/atomic exists
       new_if->true_statements = std::make_unique<Block>();
       auto old_current_block = current_block;
 
@@ -294,7 +293,14 @@ class MakeAdjoint : public IRVisitor {
       current_block = old_current_block;
     }
     if (if_stmt->false_statements) {
-      TI_NOT_IMPLEMENTED
+      new_if->false_statements = std::make_unique<Block>();
+      auto old_current_block = current_block;
+      current_block = new_if->false_statements.get();
+      for (int i = if_stmt->false_statements->statements.size() - 1; i >= 0;
+           i--) {
+        if_stmt->false_statements->statements[i]->accept(this);
+      }
+      current_block = old_current_block;
     }
     insert_back(std::move(new_if));
   }

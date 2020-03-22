@@ -32,6 +32,9 @@ def test_ad_if():
     def func(i: ti.i32):
         if x[i] > 0:
             y[i] = x[i]
+        else:
+            y[i] = 2 * x[i]
+            
 
     x[0] = 0
     x[1] = 1
@@ -43,7 +46,7 @@ def test_ad_if():
     func(1)
     func.grad(1)
 
-    assert x.grad[0] == 0
+    assert x.grad[0] == 2
     assert x.grad[1] == 1
 
 

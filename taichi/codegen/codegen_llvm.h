@@ -1506,6 +1506,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   }
 
   void visit(StackPopStmt *stmt) override {
+    return;
     call("stack_pop", stmt->stack->value);
   }
 
@@ -1513,6 +1514,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     auto stack = stmt->stack->as<StackAllocaStmt>();
     call("stack_push", stack->value, tlctx->get_constant(stack->max_size),
          tlctx->get_constant(stack->element_size_in_bytes()));
+    return;
     auto primal_ptr = call("stack_top_primal", stack->value,
                            tlctx->get_constant(stack->element_size_in_bytes()));
     primal_ptr = builder->CreateBitCast(
@@ -1544,6 +1546,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   }
 
   void visit(StackAccAdjointStmt *stmt) override {
+    return;
     auto stack = stmt->stack->as<StackAllocaStmt>();
     auto adjoint_ptr =
         call("stack_top_adjoint", stack->value,

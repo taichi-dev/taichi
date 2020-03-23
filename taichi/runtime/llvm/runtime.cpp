@@ -1306,18 +1306,25 @@ void stack_init(Ptr stack, size_t element_size) {
 void stack_pop(Ptr stack) {
   auto &n = *(i32 *)stack;
   n--;
-  // printf("pop %d\n", n);
+  printf("pop %d\n", n);
 }
 
 void stack_push(Ptr stack, size_t max_num_elements, std::size_t element_size) {
+  i32 &n = *(i32 *)stack;
+  printf("old %d\n", n);
+  n += 1;
+  printf("new %d\n", n);
   // TODO: assert n <= max_elements
+  /*
   i32 n = 0;
   memcpy(&n, stack, sizeof(n));
+  printf("push %d max %d ele_size %d\n", n, (i32)max_num_elements, (i32)element_size);
   n = n + 1;
   // printf("push before %d %p %p\n", n, stack, stack_top_primal(stack, element_size));
-  printf("push %d\n", n);
+  printf("push1 %d max %d ele_size %d\n", n, (i32)max_num_elements, (i32)element_size);
   memcpy(stack, &n, sizeof(n));
-  std::memset(stack_top_primal(stack, element_size), 0, element_size * 2);
+  // std::memset(stack_top_primal(stack, element_size), 0, element_size * 2);
+  */
 }
 
 #include "internal_function.h"

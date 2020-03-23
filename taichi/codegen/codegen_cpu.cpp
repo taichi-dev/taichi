@@ -157,6 +157,21 @@ void CodeGenCPU::lower() {
     irpass::re_id(ir);
     irpass::print(ir);
   }
+  {
+    // debugging here
+    auto block = dynamic_cast<Block *>(ir);
+    auto offload = block->statements[0].get()->cast<OffloadedStmt>();
+    offload->body = std::make_unique<Block>();
+    auto *body = offload->body.get();
+    VecStatement new_body;
+    auto alloc = new_body.push_back<StackAllocaStmt>(DataType::i32, 10);
+    auto one = new_body.push_back<ConstStmt>(TypedConstant(42));
+    new_body.push_back<StackPushStmt>(alloc, one);
+    body->insert(std::move(new_body), 0);
+    irpass::typecheck(ir);
+    irpass::re_id(ir);
+    irpass::print(ir);
+  }
 }
 
 TLANG_NAMESPACE_END

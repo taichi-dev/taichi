@@ -48,9 +48,8 @@ class MGPCG:
 
     @ti.kernel
     def init(self):
-        for I in ti.grouped(ti.ndrange((self.N_ext, self.N_tot - self.N_ext),
-                                       (self.N_ext, self.N_tot - self.N_ext),
-                                       (self.N_ext, self.N_tot - self.N_ext))):
+        for I in ti.grouped(ti.ndrange(
+                *(((self.N_ext, self.N_tot - self.N_ext),) * self.dim))):
             self.r[0][I] = 1.0
             for i in ti.static(range(self.dim)):
                 self.r[0][I] *= ti.sin(2.0 * np.pi *

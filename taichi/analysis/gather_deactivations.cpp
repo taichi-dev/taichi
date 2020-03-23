@@ -7,7 +7,7 @@ class GatherDeactivations : public BasicStmtVisitor {
  public:
   using BasicStmtVisitor::visit;
 
-  std::set<SNode *> snodes;
+  std::unordered_set<SNode *> snodes;
   IRNode *root;
 
   GatherDeactivations(IRNode *root) : root(root) {
@@ -21,14 +21,14 @@ class GatherDeactivations : public BasicStmtVisitor {
     }
   }
 
-  std::vector<SNode *> run() {
+  std::unordered_set<SNode *> run() {
     root->accept(this);
-    return std::vector<SNode *>(snodes.begin(), snodes.end());
+    return snodes;
   }
 };
 
 namespace irpass {
-std::vector<SNode *> gather_deactivations(IRNode *root) {
+std::unordered_set<SNode *> gather_deactivations(IRNode *root) {
   GatherDeactivations gather(root);
   return gather.run();
 }

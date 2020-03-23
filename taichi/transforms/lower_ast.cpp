@@ -1,5 +1,7 @@
 #include "taichi/ir/ir.h"
 
+#include <unordered_set>
+
 TLANG_NAMESPACE_BEGIN
 
 template <typename T>
@@ -17,11 +19,11 @@ std::vector<T *> make_raw_pointer_list(
 class LowerAST : public IRVisitor {
  private:
   Stmt *capturing_loop;
-  std::vector<Stmt *> detected_fors_with_break;
+  std::unordered_set<Stmt *> detected_fors_with_break;
 
  public:
-  explicit LowerAST(const std::vector<Stmt *> &_detected_fors_with_break)
-    : detected_fors_with_break(_detected_fors_with_break) {
+  explicit LowerAST(const std::unordered_set<Stmt *> &_detected_fors_with_break)
+      : detected_fors_with_break(_detected_fors_with_break) {
     // TODO: change this to false
     allow_undefined_visitor = true;
     capturing_loop = nullptr;
@@ -166,10 +168,11 @@ class LowerAST : public IRVisitor {
       auto end = stmt->end;
       begin->flatten(flattened);
       end->flatten(flattened);
-      bool is_good_range_for = capturing_loop == nullptr ||
-        std::find(detected_fors_with_break.begin(), detected_fors_with_break.end(), stmt)
-        == detected_fors_with_break.end();
-      // #578: a good range for is a range for that doesn't contains a break statement
+      bool is_good_range_for =
+          capturing_loop == nullptr ||
+          detected_fors_with_break.find(stmt) == detected_fors_with_break.end();
+      // #578: a good range for is a range for that doesn't contains a break
+      // statement
       if (is_good_range_for) {
         auto &&new_for = std::make_unique<RangeForStmt>(
             stmt->parent->lookup_var(stmt->loop_var_id[0]), begin->stmt,
@@ -184,7 +187,8 @@ class LowerAST : public IRVisitor {
         auto loop_var_addr = LaneAttribute<LocalAddress>(
             LocalAddress(loop_var->as<AllocaStmt>(), 0));
         VecStatement load_and_compare;
-        auto loop_var_load_stmt = load_and_compare.push_back<LocalLoadStmt>(loop_var_addr);
+        auto loop_var_load_stmt =
+            load_and_compare.push_back<LocalLoadStmt>(loop_var_addr);
         auto cond_stmt = load_and_compare.push_back<BinaryOpStmt>(
             BinaryOpType::cmp_lt, loop_var_load_stmt, end->stmt);
 
@@ -197,10 +201,12 @@ class LowerAST : public IRVisitor {
         }
 
         VecStatement increase_and_store;
-        auto const_one = increase_and_store.push_back<ConstStmt>(TypedConstant((int32)1));
+        auto const_one =
+            increase_and_store.push_back<ConstStmt>(TypedConstant((int32)1));
         auto loop_var_add_one = increase_and_store.push_back<BinaryOpStmt>(
             BinaryOpType::add, loop_var_load_stmt, const_one);
-        increase_and_store.push_back<LocalStoreStmt>(loop_var, loop_var_add_one);
+        increase_and_store.push_back<LocalStoreStmt>(loop_var,
+                                                     loop_var_add_one);
         for (int i = 0; i < (int)increase_and_store.size(); i++) {
           stmts->insert(std::move(increase_and_store[i]), stmts->size());
         }

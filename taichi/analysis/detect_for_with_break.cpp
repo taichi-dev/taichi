@@ -1,5 +1,6 @@
 #include "taichi/ir/ir.h"
-#include <set>
+
+#include <unordered_set>
 
 TLANG_NAMESPACE_BEGIN
 
@@ -8,7 +9,7 @@ class DetectForWithBreak : public BasicStmtVisitor {
   using BasicStmtVisitor::visit;
 
   std::vector<Stmt *> loop_stack;
-  std::set<Stmt *> fors_with_break;
+  std::unordered_set<Stmt *> fors_with_break;
   IRNode *root;
 
   DetectForWithBreak(IRNode *root) : root(root) {
@@ -40,14 +41,14 @@ class DetectForWithBreak : public BasicStmtVisitor {
       fors_with_break.insert(loop);
   }
 
-  std::vector<Stmt *> run() {
+  std::unordered_set<Stmt *> run() {
     root->accept(this);
-    return std::vector<Stmt *>(fors_with_break.begin(), fors_with_break.end());
+    return fors_with_break;
   }
 };
 
 namespace irpass {
-std::vector<Stmt *> detect_fors_with_break(IRNode *root) {
+std::unordered_set<Stmt *> detect_fors_with_break(IRNode *root) {
   DetectForWithBreak detective(root);
   return detective.run();
 }

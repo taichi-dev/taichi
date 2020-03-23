@@ -1086,8 +1086,6 @@ i32 linear_thread_idx() {
 #include "node_pointer.h"
 #include "node_root.h"
 
-#include "internal_function.h"
-
 void ListManager::touch_chunk(int chunk_id) {
   if (!chunks[chunk_id]) {
     // Printf("chunkid %d\n", chunk_id);
@@ -1291,18 +1289,16 @@ void taichi_printf(LLVMRuntime *runtime, const char *format, Args &&... args) {
 extern "C" {  // local stack operations
 
 Ptr stack_top_primal(Ptr stack, std::size_t element_size) {
-  auto &n = *(i32 *)stack;
-  return stack + (n - 1) * 2 * element_size;
+  auto n = *(i32 *)stack;
+  return stack + sizeof(i32) + (n - 1) * 2 * element_size;
 }
 
 Ptr stack_top_adjoint(Ptr stack, std::size_t element_size) {
   return stack_top_primal(stack, element_size) + element_size;
 }
 
-void stack_init(Ptr stack, size_t element_size) {
-  auto &n = *(i32 *)stack;
-  n = 0;
-  std::memset(stack_top_primal(stack, element_size), 0, element_size * 2);
+void stack_init(Ptr stack) {
+  *(i32 *)stack = 0;
 }
 
 void stack_pop(Ptr stack) {
@@ -1311,11 +1307,13 @@ void stack_pop(Ptr stack) {
 }
 
 void stack_push(Ptr stack, size_t max_num_elements, std::size_t element_size) {
-  auto &n = *(i32 *)stack;
+  i32 &n = *(i32 *)stack;
+  n += 1;
   // TODO: assert n <= max_elements
   std::memset(stack_top_primal(stack, element_size), 0, element_size * 2);
-  n++;
 }
+
+#include "internal_function.h"
 }
 
 #endif

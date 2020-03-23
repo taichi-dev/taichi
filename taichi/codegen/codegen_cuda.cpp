@@ -62,7 +62,7 @@ void CodeGenCUDA::lower() {
       TI_TRACE("Before make_adjoint:");
       irpass::print(ir);
     }
-    irpass::make_adjoint(ir);
+    irpass::make_adjoint(ir, true);
     if (print_ir) {
       TI_TRACE("After make_adjoint:");
       irpass::print(ir);

@@ -250,7 +250,7 @@ class StackAllocaStmt : public Stmt {
   }
 
   std::size_t size_in_bytes() const {
-    return 4 + entry_size_in_bytes() * max_size;
+    return sizeof(int32) + entry_size_in_bytes() * max_size;
   }
 
   DEFINE_ACCEPT

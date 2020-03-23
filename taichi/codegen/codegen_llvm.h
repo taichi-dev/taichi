@@ -1539,7 +1539,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
         adjoint, llvm::PointerType::get(
                      tlctx->get_data_type(stmt->ret_type.data_type), 0));
     auto loaded = builder->CreateLoad(adjoint);
-    // this->create_print("Load adj", stmt->ret_type.data_type, loaded);
+    this->create_print("Load adj", stmt->ret_type.data_type, loaded);
     stmt->value = loaded;
   }
 
@@ -1554,6 +1554,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     auto old_val = builder->CreateLoad(adjoint_ptr);
     TI_ASSERT(is_real(stmt->v->ret_type.data_type));
     auto new_val = builder->CreateFAdd(old_val, stmt->v->value);
+    // this->create_print("acc adj", stmt->ret_type.data_type, stmt->v->value);
     builder->CreateStore(new_val, adjoint_ptr);
   }
 

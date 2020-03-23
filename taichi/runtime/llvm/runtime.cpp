@@ -9,6 +9,7 @@
 #undef vprintf
 #endif
 
+#include <cstdio>
 #include <atomic>
 #include <cstdint>
 #include <cmath>
@@ -1086,8 +1087,6 @@ i32 linear_thread_idx() {
 #include "node_pointer.h"
 #include "node_root.h"
 
-#include "internal_function.h"
-
 void ListManager::touch_chunk(int chunk_id) {
   if (!chunks[chunk_id]) {
     // Printf("chunkid %d\n", chunk_id);
@@ -1291,8 +1290,9 @@ void taichi_printf(LLVMRuntime *runtime, const char *format, Args &&... args) {
 extern "C" {  // local stack operations
 
 Ptr stack_top_primal(Ptr stack, std::size_t element_size) {
-  auto &n = *(i32 *)stack;
-  return stack + (n - 1) * 2 * element_size;
+  auto n = *(i32 *)stack;
+  return stack + sizeof(i32) + (n - 1) * 2 * element_size;
+  // return stack + sizeof(i32);
 }
 
 Ptr stack_top_adjoint(Ptr stack, std::size_t element_size) {
@@ -1300,21 +1300,28 @@ Ptr stack_top_adjoint(Ptr stack, std::size_t element_size) {
 }
 
 void stack_init(Ptr stack, size_t element_size) {
-  auto &n = *(i32 *)stack;
-  n = 0;
+  *(i32 *)stack = 0;
 }
 
 void stack_pop(Ptr stack) {
   auto &n = *(i32 *)stack;
   n--;
+  // printf("pop %d\n", n);
 }
 
 void stack_push(Ptr stack, size_t max_num_elements, std::size_t element_size) {
-  auto &n = *(i32 *)stack;
   // TODO: assert n <= max_elements
-  n++;
+  i32 n = 0;
+  memcpy(&n, stack, sizeof(n));
+  n = n + 1;
+  // printf("push before %d %p %p\n", n, stack, stack_top_primal(stack, element_size));
+  printf("push %d\n", n);
+  memcpy(stack, &n, sizeof(n));
   std::memset(stack_top_primal(stack, element_size), 0, element_size * 2);
 }
+
+#include "internal_function.h"
+
 }
 
 #endif

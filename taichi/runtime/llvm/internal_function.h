@@ -9,6 +9,15 @@ i32 refresh_counter(Context *context) {
   return 0;
 }
 
+i32 test_stack(Context *context) {
+  auto stack = new u8[132];
+  stack_push(stack, 16, 4);
+  stack_push(stack, 16, 4);
+  stack_push(stack, 16, 4);
+  stack_push(stack, 16, 4);
+  return 0;
+}
+
 i32 test_list_manager(Context *context) {
   auto runtime = context->runtime;
   taichi_printf(runtime, "LLVMRuntime %p\n", runtime);

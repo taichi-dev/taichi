@@ -120,7 +120,7 @@ pipeline {
 void build_taichi() {
     sh "echo building"
     sh "echo $PATH"
-    git 'https://github.com/yuanming-hu/taichi.git'
+    git 'https://github.com/taichi-dev/taichi.git'
     sh label: '', script: '''
     echo $PATH
     echo $CC

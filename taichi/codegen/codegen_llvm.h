@@ -629,6 +629,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     builder->SetInsertPoint(after_if);
   }
 
+  // only for debugging on CPU
   llvm::Value *create_print(std::string tag, DataType dt, llvm::Value *value) {
     TI_ASSERT(arch_use_host_memory(kernel->arch));
     std::vector<Value *> args;
@@ -1374,8 +1375,6 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       RuntimeObject element("Element", this, builder.get(), get_arg(1));
       auto lower_bound = get_arg(2);
       auto upper_bound = get_arg(3);
-      // create_print("lower", DataType::i32, lower_bound);
-      // create_print("upper", DataType::i32, upper_bound);
 
       if (spmd) {
         threadIdx = builder->CreateIntrinsic(
@@ -1540,7 +1539,6 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
         adjoint, llvm::PointerType::get(
                      tlctx->get_data_type(stmt->ret_type.data_type), 0));
     auto loaded = builder->CreateLoad(adjoint);
-    this->create_print("Load adj", stmt->ret_type.data_type, loaded);
     stmt->value = loaded;
   }
 
@@ -1555,7 +1553,6 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     auto old_val = builder->CreateLoad(adjoint_ptr);
     TI_ASSERT(is_real(stmt->v->ret_type.data_type));
     auto new_val = builder->CreateFAdd(old_val, stmt->v->value);
-    // this->create_print("acc adj", stmt->ret_type.data_type, stmt->v->value);
     builder->CreateStore(new_val, adjoint_ptr);
   }
 

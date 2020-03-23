@@ -1,17 +1,6 @@
 import taichi as ti
 
-@ti.all_archs_with(print_ir=True, print_kernel_llvm_ir_optimized=True)
-def test_ad_if_simple():
-    @ti.kernel
-    def func():
-        print(1)
-        
-    func()
-    
-    exit(1)
-
-'''
-@ti.all_archs_with(print_ir=True)
+@ti.all_archs
 def test_ad_if_simple():
     x = ti.var(ti.f32, shape=())
     y = ti.var(ti.f32, shape=())
@@ -119,10 +108,7 @@ def test_ad_if_prallel():
     assert x.grad[1] == 1
 
 
-'''
-'''
-# @ti.all_archs_with(print_kernel_llvm_ir=True)
-@ti.host_arch_only
+@ti.all_archs
 def test_ad_if_prallel_complex():
     x = ti.var(ti.f32, shape=2)
     y = ti.var(ti.f32, shape=2)
@@ -148,8 +134,7 @@ def test_ad_if_prallel_complex():
     
     assert x.grad[0] == 0
     assert x.grad[1] == -0.25
-    
-    
+
 # TODO: test f64 stack
 
 @ti.host_arch_only
@@ -159,4 +144,3 @@ def test():
         ti.call_internal("test_stack")
         
     func()
-'''

@@ -9,7 +9,6 @@
 #undef vprintf
 #endif
 
-#include <cstdio>
 #include <atomic>
 #include <cstdint>
 #include <cmath>
@@ -1305,13 +1304,11 @@ void stack_init(Ptr stack) {
 void stack_pop(Ptr stack) {
   auto &n = *(i32 *)stack;
   n--;
-  printf("pop %d\n", n);
 }
 
 void stack_push(Ptr stack, size_t max_num_elements, std::size_t element_size) {
   i32 &n = *(i32 *)stack;
   n += 1;
-  printf("push %d\n", n);
   // TODO: assert n <= max_elements
   std::memset(stack_top_primal(stack, element_size), 0, element_size * 2);
 }

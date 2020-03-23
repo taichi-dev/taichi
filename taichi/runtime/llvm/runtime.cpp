@@ -1314,7 +1314,6 @@ void stack_push(Ptr stack, size_t max_num_elements, std::size_t element_size) {
 }
 
 #include "internal_function.h"
-
 }
 
 #endif

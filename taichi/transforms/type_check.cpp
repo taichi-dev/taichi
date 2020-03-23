@@ -21,7 +21,8 @@ class TypeCheck : public IRVisitor {
 
   void visit(AllocaStmt *stmt) {
     // Do nothing.
-    // Alloca type is determined by the first LocalStore in IR visiting order, at compile time
+    // Alloca type is determined by the first LocalStore in IR visiting order,
+    // at compile time
 
     // ret_type stands for its element type.
     stmt->ret_type.set_is_pointer(false);

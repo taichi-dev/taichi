@@ -1538,8 +1538,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     adjoint = builder->CreateBitCast(
         adjoint, llvm::PointerType::get(
                      tlctx->get_data_type(stmt->ret_type.data_type), 0));
-    auto loaded = builder->CreateLoad(adjoint);
-    stmt->value = loaded;
+    stmt->value = builder->CreateLoad(adjoint);
   }
 
   void visit(StackAccAdjointStmt *stmt) override {

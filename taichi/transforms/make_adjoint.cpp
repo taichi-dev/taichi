@@ -57,8 +57,6 @@ class ConvertLocalVar : public BasicStmtVisitor {
     if (!is_load_only) {
       stmt->replace_with(
           Stmt::make<StackAllocaStmt>(stmt->ret_type.data_type, 16));
-    } else {
-      irpass::print(stmt);
     }
   }
 
@@ -509,7 +507,6 @@ class BackupSSA : public BasicStmtVisitor {
   }
 
   Stmt *load(Stmt *stmt) {
-    irpass::print(stmt);
     if (backup_alloca.find(stmt) == backup_alloca.end()) {
       auto alloca =
           Stmt::make<AllocaStmt>(stmt->width(), stmt->ret_type.data_type);
@@ -583,23 +580,15 @@ namespace irpass {
 void make_adjoint(IRNode *root, bool use_stack) {
   if (use_stack) {
     fix_block_parents(root);
-    re_id(root);
-    print(root);
     ConvertLocalVar converter;
     root->accept(&converter);
     typecheck(root);
-    re_id(root);
-    print(root);
     MakeAdjoint::run(root);
     typecheck(root);
-    re_id(root);
     fix_block_parents(root);
-    print(root);
     BackupSSA b;
     root->accept(&b);
-    re_id(root);
     typecheck(root);
-    print(root);
   } else {
     MakeAdjoint::run(root);
     typecheck(root);

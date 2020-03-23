@@ -41,6 +41,7 @@ class _Extension(object):
     def __init__(self):
         self.sparse = core.sparse
         self.data64 = core.data64
+        self.adstack = core.adstack
 
 
 extension = _Extension()

@@ -1,6 +1,7 @@
 import taichi as ti
 
 
+@ti.require(ti.extension.adstack)
 @ti.all_archs
 def test_ad_if_simple():
     x = ti.var(ti.f32, shape=())
@@ -22,6 +23,7 @@ def test_ad_if_simple():
     assert x.grad[None] == 1
 
 
+@ti.require(ti.extension.adstack)
 @ti.all_archs
 def test_ad_if():
     x = ti.var(ti.f32, shape=2)
@@ -50,6 +52,7 @@ def test_ad_if():
     assert x.grad[1] == 1
 
 
+@ti.require(ti.extension.adstack)
 @ti.all_archs
 def test_ad_if_mutable():
     x = ti.var(ti.f32, shape=2)
@@ -79,6 +82,7 @@ def test_ad_if_mutable():
     assert x.grad[1] == 1
 
 
+@ti.require(ti.extension.adstack)
 @ti.all_archs
 def test_ad_if_prallel():
     x = ti.var(ti.f32, shape=2)
@@ -107,6 +111,7 @@ def test_ad_if_prallel():
     assert x.grad[1] == 1
 
 
+@ti.require(ti.extension.adstack)
 @ti.all_archs
 def test_ad_if_prallel_complex():
     x = ti.var(ti.f32, shape=2)

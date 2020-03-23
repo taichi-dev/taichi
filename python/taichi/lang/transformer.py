@@ -288,6 +288,106 @@ if 1:
                            or iter.func.attr == 'grouped'
                            or iter.func.attr == 'ndrange')
 
+        def get_targets():
+            if isinstance(node.target, ast.Name):
+                return [node.target.id]
+            else:
+                assert isinstance(node.target, ast.Tuple)
+                return [name.id for name in node.target.elts]
+
+
+        def visit_static_for():
+            # for i in ti.static(range(n))
+            # for i, j in ti.static(ti.ndrange(n))
+            # for I in ti.static(ti.grouped(ti.ndrange(n, m)))
+            self.generic_visit(node, ['body'])
+            t = self.parse_stmt('if 1: pass; del a')
+            t.body[0] = node
+            target = copy.deepcopy(node.target)
+            target.ctx = ast.Del()
+            if isinstance(target, ast.Tuple):
+                for tar in target.elts:
+                    tar.ctx = ast.Del()
+            t.body[1].targets = [target]
+            return t
+
+
+        def visit_range_for():
+            # for i in range(n)
+            self.generic_visit(node, ['body'])
+            loop_var = node.target.id
+            self.check_loop_var(loop_var)
+            template = ''' 
+if 1:
+    {} = ti.Expr(ti.core.make_id_expr(''))
+    ___begin = ti.Expr(0) 
+    ___end = ti.Expr(0)
+    ___begin = ti.cast(___begin, ti.i32)
+    ___end = ti.cast(___end, ti.i32)
+    ti.core.begin_frontend_range_for({}.ptr, ___begin.ptr, ___end.ptr)
+    ti.core.end_frontend_range_for()
+            '''.format(loop_var, loop_var)
+            t = ast.parse(template).body[0]
+
+            assert len(node.iter.args) in [1, 2]
+            if len(node.iter.args) == 2:
+                bgn = node.iter.args[0]
+                end = node.iter.args[1]
+            else:
+                bgn = self.make_constant(value=0)
+                end = node.iter.args[0]
+
+            t.body[1].value.args[0] = bgn
+            t.body[2].value.args[0] = end
+            t.body = t.body[:6] + node.body + t.body[6:]
+            t.body.append(self.parse_stmt('del {}'.format(loop_var)))
+            return ast.copy_location(t, node)
+
+
+        def visit_struct_for(is_grouped):
+            # for i, j in x
+            # for I in ti.grouped(x)
+            self.generic_visit(node, ['body'])
+            targets = get_targets()
+
+            for loop_var in targets:
+                self.check_loop_var(loop_var)
+
+            var_decl = ''.join(
+                '    {} = ti.Expr(ti.core.make_id_expr(""))\n'.format(name)
+                for name in targets)  # indent: 4 spaces
+            vars = ', '.join(targets)
+            if is_grouped:
+                template = '''
+if 1:
+    ___loop_var = 0
+    {} = ti.make_var_vector(size=___loop_var.loop_range().dim())
+    ___expr_group = ti.make_expr_group({})
+    ti.core.begin_frontend_struct_for(___expr_group, ___loop_var.loop_range().ptr)
+    ti.core.end_frontend_range_for()
+                '''.format(vars, vars)
+                t = ast.parse(template).body[0]
+                cut = 4
+                t.body[0].value = node.iter
+                t.body = t.body[:cut] + node.body + t.body[cut:]
+            else:
+                template = ''' 
+if 1:
+{}
+    ___loop_var = 0
+    ___expr_group = ti.make_expr_group({})
+    ti.core.begin_frontend_struct_for(___expr_group, ___loop_var.loop_range().ptr)
+    ti.core.end_frontend_range_for()
+                '''.format(var_decl, vars)
+                t = ast.parse(template).body[0]
+                cut = len(targets) + 3
+                t.body[cut - 3].value = node.iter
+                t.body = t.body[:cut] + node.body + t.body[cut:]
+            for loop_var in reversed(targets):
+                t.body.append(self.parse_stmt('del {}'.format(loop_var)))
+            return ast.copy_location(t, node)
+
+
         decorated = is_decorated(node.iter)
         double_decorated = decorated and len(node.iter.args) == 1 \
                            and is_decorated(node.iter.args[0])
@@ -331,8 +431,6 @@ if 1:
         ast.fix_missing_locations(node)
         is_nonstatic_ndrange = is_ndrange_for == 1 or (is_ndrange_for == 2
                                                        and is_grouped == 1)
-        if not is_nonstatic_ndrange:
-            self.generic_visit(node, ['body'])
         if is_nonstatic_ndrange:
             dim = len(node.iter.args) if is_ndrange_for == 1 else len(
                 node.iter.args[0].args)
@@ -386,87 +484,13 @@ if ti.static(1):
             node = ast.copy_location(t, node)
             return self.visit(node)  # further translate as a range for
         elif is_static_for == 1:
-            t = self.parse_stmt('if 1: pass; del a')
-            t.body[0] = node
-            target = copy.deepcopy(node.target)
-            target.ctx = ast.Del()
-            if isinstance(target, ast.Tuple):
-                for tar in target.elts:
-                    tar.ctx = ast.Del()
-            t.body[1].targets = [target]
-            return t
+            return visit_static_for()
         elif is_range_for == 1:
-            loop_var = node.target.id
-            self.check_loop_var(loop_var)
-            template = ''' 
-if 1:
-    {} = ti.Expr(ti.core.make_id_expr(''))
-    ___begin = ti.Expr(0) 
-    ___end = ti.Expr(0)
-    ___begin = ti.cast(___begin, ti.i32)
-    ___end = ti.cast(___end, ti.i32)
-    ti.core.begin_frontend_range_for({}.ptr, ___begin.ptr, ___end.ptr)
-    ti.core.end_frontend_range_for()
-            '''.format(loop_var, loop_var)
-            t = ast.parse(template).body[0]
-
-            assert len(node.iter.args) in [1, 2]
-            if len(node.iter.args) == 2:
-                bgn = node.iter.args[0]
-                end = node.iter.args[1]
-            else:
-                bgn = self.make_constant(value=0)
-                end = node.iter.args[0]
-
-            t.body[1].value.args[0] = bgn
-            t.body[2].value.args[0] = end
-            t.body = t.body[:6] + node.body + t.body[6:]
-            t.body.append(self.parse_stmt('del {}'.format(loop_var)))
-            return ast.copy_location(t, node)
+            return visit_range_for()
         else:  # Struct for
             assert is_static_for == 0
             assert is_ndrange_for == 0
-            if isinstance(node.target, ast.Name):
-                elts = [node.target]
-            else:
-                elts = node.target.elts
-
-            for loop_var in elts:
-                self.check_loop_var(loop_var.id)
-
-            var_decl = ''.join(
-                '    {} = ti.Expr(ti.core.make_id_expr(""))\n'.format(ind.id)
-                for ind in elts)  # indent: 4 spaces
-            vars = ', '.join(ind.id for ind in elts)
-            if is_grouped:
-                template = '''
-if 1:
-    ___loop_var = 0
-    {} = ti.make_var_vector(size=___loop_var.loop_range().dim())
-    ___expr_group = ti.make_expr_group({})
-    ti.core.begin_frontend_struct_for(___expr_group, ___loop_var.loop_range().ptr)
-    ti.core.end_frontend_range_for()
-                '''.format(vars, vars)
-                t = ast.parse(template).body[0]
-                cut = 4
-                t.body[0].value = node.iter
-                t.body = t.body[:cut] + node.body + t.body[cut:]
-            else:
-                template = ''' 
-if 1:
-{}
-    ___loop_var = 0
-    ___expr_group = ti.make_expr_group({})
-    ti.core.begin_frontend_struct_for(___expr_group, ___loop_var.loop_range().ptr)
-    ti.core.end_frontend_range_for()
-                '''.format(var_decl, vars)
-                t = ast.parse(template).body[0]
-                cut = len(elts) + 3
-                t.body[cut - 3].value = node.iter
-                t.body = t.body[:cut] + node.body + t.body[cut:]
-            for loop_var in reversed(elts):
-                t.body.append(self.parse_stmt('del {}'.format(loop_var.id)))
-            return ast.copy_location(t, node)
+            return visit_struct_for(is_grouped)
 
     @staticmethod
     def parse_stmt(stmt):

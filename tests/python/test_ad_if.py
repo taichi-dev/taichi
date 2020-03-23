@@ -90,10 +90,11 @@ def test_ad_if_prallel():
     @ti.kernel
     def func():
         for i in range(2):
-            t = 0.0
-            if x[i] > 0:
-                t = 1 / x[i]
-            y[i] = t
+            t = x[i]
+            if t > 0:
+                y[i] = t
+            else:
+                y[i] = 2 * t
 
     x[0] = 0
     x[1] = 1
@@ -103,5 +104,5 @@ def test_ad_if_prallel():
     func()
     func.grad()
 
-    assert x.grad[0] == 0
-    assert x.grad[1] == -1
+    assert x.grad[0] == 2
+    assert x.grad[1] == 1

@@ -41,27 +41,31 @@ class ConvertLocalVar : public BasicStmtVisitor {
     TI_ASSERT(stmt->width() == 1);
     bool no_store = StmtSearcher<LocalStoreStmt>::run(
                         stmt->parent,
-                        [](Stmt *stmt) {
-                          return stmt->cast<LocalStoreStmt>()->ptr == stmt;
+                        [&](Stmt *store) {
+                          return store->cast<LocalStoreStmt>()->ptr == stmt;
                         })
                         .empty();
-    bool no_atomic =
-        StmtSearcher<AtomicOpStmt>::run(
-            stmt->parent,
-            [](Stmt *stmt) { return stmt->cast<AtomicOpStmt>()->dest == stmt; })
-            .empty();
+    bool no_atomic = StmtSearcher<AtomicOpStmt>::run(
+                         stmt->parent,
+                         [&](Stmt *atomic) {
+                           return atomic->cast<AtomicOpStmt>()->dest == stmt;
+                         })
+                         .empty();
     bool is_load_only =
         no_store && no_atomic;  // for-loop variables etc. No stack needed
     // TODO: remove 16 here
     if (!is_load_only) {
       stmt->replace_with(
           Stmt::make<StackAllocaStmt>(stmt->ret_type.data_type, 16));
+    } else {
+      irpass::print(stmt);
     }
   }
 
   void visit(LocalLoadStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
-    stmt->replace_with(Stmt::make<StackLoadTopStmt>(stmt->ptr[0].var));
+    if (stmt->ptr[0].var->is<StackAllocaStmt>())
+      stmt->replace_with(Stmt::make<StackLoadTopStmt>(stmt->ptr[0].var));
   }
 
   void visit(LocalStoreStmt *stmt) override {
@@ -536,12 +540,25 @@ class BackupSSA : public BasicStmtVisitor {
     }
   }
 
-  void visit(Block *block) override {
-    // TODO: set only on the top-level autodiff block
-    if (current_block == nullptr) {
-      current_block = block;
-    }
+  void visit(RangeForStmt *stmt) override {
+    auto old_current_block = current_block;
+    current_block = stmt->body.get();
+    stmt->body->accept(this);
+    current_block = old_current_block;
+  }
 
+  void visit(StructForStmt *stmt) override {
+    auto old_current_block = current_block;
+    current_block = stmt->body.get();
+    stmt->body->accept(this);
+    current_block = old_current_block;
+  }
+
+  void visit(WhileStmt *stmt) override {
+    TI_ERROR("WhileStmt not supported by autodiff for now");
+  }
+
+  void visit(Block *block) override {
     std::vector<Stmt *> statements;
     // always make a copy since the list can be modified.
     for (auto &stmt : block->statements) {
@@ -550,8 +567,6 @@ class BackupSSA : public BasicStmtVisitor {
     for (auto stmt : statements) {
       stmt->accept(this);
     }
-
-    // current_block = nullptr;
   }
 };
 

@@ -630,6 +630,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   }
 
   llvm::Value *create_print(std::string tag, DataType dt, llvm::Value *value) {
+    TI_ASSERT(arch_use_host_memory(kernel->arch));
     std::vector<Value *> args;
     std::string format;
     if (dt == DataType::i32) {
@@ -648,12 +649,12 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     } else {
       TI_NOT_IMPLEMENTED
     }
+    auto runtime_printf = call("LLVMRuntime_get_host_printf", get_runtime());
     args.push_back(builder->CreateGlobalStringPtr(
         ("[llvm codegen debug] " + tag + " = " + format + "\n").c_str(),
         "format_string"));
     args.push_back(value);
-    return builder->CreateCall(get_runtime_function("printf"), args,
-                               "debug_printf");
+    return builder->CreateCall(runtime_printf, args);
   }
 
   void visit(PrintStmt *stmt) override {
@@ -1537,7 +1538,9 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     adjoint = builder->CreateBitCast(
         adjoint, llvm::PointerType::get(
                      tlctx->get_data_type(stmt->ret_type.data_type), 0));
-    stmt->value = builder->CreateLoad(adjoint);
+    auto loaded = builder->CreateLoad(adjoint);
+    // this->create_print("Load adj", stmt->ret_type.data_type, loaded);
+    stmt->value = loaded;
   }
 
   void visit(StackAccAdjointStmt *stmt) override {

@@ -509,10 +509,12 @@ class BackupSSA : public BasicStmtVisitor {
   }
 
   Stmt *load(Stmt *stmt) {
+    irpass::print(stmt);
     if (backup_alloca.find(stmt) == backup_alloca.end()) {
       auto alloca =
           Stmt::make<AllocaStmt>(stmt->width(), stmt->ret_type.data_type);
       auto alloca_ptr = alloca.get();
+      TI_ASSERT(current_block != nullptr);
       current_block->insert(std::move(alloca), 0);
       stmt->insert_after_me(Stmt::make<LocalStoreStmt>(alloca_ptr, stmt));
       backup_alloca[stmt] = alloca_ptr;
@@ -559,6 +561,10 @@ class BackupSSA : public BasicStmtVisitor {
   }
 
   void visit(Block *block) override {
+    // top-level block case
+    auto old_current_block = current_block;
+    if (old_current_block == nullptr)
+      current_block = block;
     std::vector<Stmt *> statements;
     // always make a copy since the list can be modified.
     for (auto &stmt : block->statements) {
@@ -567,6 +573,8 @@ class BackupSSA : public BasicStmtVisitor {
     for (auto stmt : statements) {
       stmt->accept(this);
     }
+    if (old_current_block == nullptr)
+      current_block = old_current_block;
   }
 };
 

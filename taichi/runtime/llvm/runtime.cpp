@@ -1302,7 +1302,6 @@ Ptr stack_top_adjoint(Ptr stack, std::size_t element_size) {
 void stack_init(Ptr stack, size_t element_size) {
   auto &n = *(i32 *)stack;
   n = 0;
-  std::memset(stack_top_primal(stack, element_size), 0, element_size * 2);
 }
 
 void stack_pop(Ptr stack) {
@@ -1313,8 +1312,8 @@ void stack_pop(Ptr stack) {
 void stack_push(Ptr stack, size_t max_num_elements, std::size_t element_size) {
   auto &n = *(i32 *)stack;
   // TODO: assert n <= max_elements
-  std::memset(stack_top_primal(stack, element_size), 0, element_size * 2);
   n++;
+  std::memset(stack_top_primal(stack, element_size), 0, element_size * 2);
 }
 }
 

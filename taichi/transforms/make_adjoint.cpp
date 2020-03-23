@@ -4,6 +4,33 @@
 
 TLANG_NAMESPACE_BEGIN
 
+template <typename T>
+class StmtSearcher : public BasicStmtVisitor {
+ private:
+  std::function<bool(Stmt *)> test;
+  std::vector<Stmt *> results;
+
+ public:
+  using BasicStmtVisitor::visit;
+
+  StmtSearcher(std::function<bool(Stmt *)> test) : test(test) {
+    allow_undefined_visitor = true;
+    invoke_default_visitor = true;
+  }
+
+  void visit(Stmt *stmt) {
+    if (stmt->is<T>() && test(stmt))
+      results.push_back(stmt);
+  }
+
+  static std::vector<Stmt *> run(IRNode *root,
+                                 std::function<bool(Stmt *)> test) {
+    StmtSearcher<T> searcher(test);
+    root->accept(&searcher);
+    return searcher.results;
+  }
+};
+
 // Do automatic differentiation pass in the reverse order (reverse-mode AD)
 
 class ConvertLocalVar : public BasicStmtVisitor {
@@ -12,9 +39,24 @@ class ConvertLocalVar : public BasicStmtVisitor {
 
   void visit(AllocaStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
+    bool no_store = StmtSearcher<LocalStoreStmt>::run(
+                        stmt->parent,
+                        [](Stmt *stmt) {
+                          return stmt->cast<LocalStoreStmt>()->ptr == stmt;
+                        })
+                        .empty();
+    bool no_atomic =
+        StmtSearcher<AtomicOpStmt>::run(
+            stmt->parent,
+            [](Stmt *stmt) { return stmt->cast<AtomicOpStmt>()->dest == stmt; })
+            .empty();
+    bool is_load_only =
+        no_store && no_atomic;  // for-loop variables etc. No stack needed
     // TODO: remove 16 here
-    stmt->replace_with(
-        Stmt::make<StackAllocaStmt>(stmt->ret_type.data_type, 16));
+    if (!is_load_only) {
+      stmt->replace_with(
+          Stmt::make<StackAllocaStmt>(stmt->ret_type.data_type, 16));
+    }
   }
 
   void visit(LocalLoadStmt *stmt) override {
@@ -517,6 +559,7 @@ namespace irpass {
 
 void make_adjoint(IRNode *root, bool use_stack) {
   if (use_stack) {
+    fix_block_parents(root);
     re_id(root);
     print(root);
     ConvertLocalVar converter;

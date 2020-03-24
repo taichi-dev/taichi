@@ -314,11 +314,11 @@ int _rand_i32()\n\
     emit("layout(local_size_x = {}, local_size_y = 1, local_size_z = 1) in;",
          threads_per_group);
 
-    auto kernel_src_code = "#version 430 core\nprecision highp float;\n"
-      + line_appender_header_.lines() + line_appender_.lines();
-    compiled_program_.kernels.push_back(
-        CompiledKernel(std::move(glsl_kernel_name_),
-                       kernel_src_code, num_groups_, used));
+    auto kernel_src_code = "#version 430 core\nprecision highp float;\n" +
+                           line_appender_header_.lines() +
+                           line_appender_.lines();
+    compiled_program_.kernels.push_back(CompiledKernel(
+        std::move(glsl_kernel_name_), kernel_src_code, num_groups_, used));
     line_appender_header_.clear_all();
     line_appender_.clear_all();
   }

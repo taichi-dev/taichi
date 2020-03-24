@@ -395,7 +395,7 @@ if ti.static(1):
     ___end = 0
     ___begin = ti.cast(___begin, ti.i32)
     ___end = ti.cast(___end, ti.i32)
-    __ndrange_I = ti.Expr(0)
+    __ndrange_I = ti.Expr(ti.core.make_id_expr(''))
     ti.core.begin_frontend_range_for(__ndrange_I.ptr, ___begin.ptr, ___end.ptr)
     __I = __ndrange_I
     for __grouped_I in range(len(__ndrange.dimensions)):

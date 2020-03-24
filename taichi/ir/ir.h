@@ -3,6 +3,7 @@
 #pragma once
 
 #include <atomic>
+#include <unordered_set>
 #include <unordered_map>
 #include "taichi/common/util.h"
 #include "taichi/common/bit.h"
@@ -109,7 +110,8 @@ void demote_dense_struct_fors(IRNode *root);
 void demote_atomics(IRNode *root);
 void reverse_segments(IRNode *root);  // for autograd
 std::unique_ptr<ScratchPads> initialize_scratch_pad(StructForStmt *root);
-std::vector<SNode *> gather_deactivations(IRNode *root);
+std::unordered_set<SNode *> gather_deactivations(IRNode *root);
+std::unordered_set<Stmt *> detect_fors_with_break(IRNode *root);
 }  // namespace irpass
 
 // Analysis

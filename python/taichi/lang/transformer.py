@@ -383,39 +383,41 @@ if ti.static(1):
 
 
         def visit_grouped_ndrange_for(node):
+            from astpretty import pprint
             # for I in ti.grouped(ti.ndrange(n, m))
-            dim = len(node.iter.args[0].args)
+            target = node.target.id
             template = '''
 if ti.static(1):
     __ndrange = 0
     {} = ti.Vector([0] * len(__ndrange.dimensions))
-    for __ndrange_I in range(0):
+    for __ndrange_I in range(__ndrange.acc_dimensions[0]):
         __I = __ndrange_I
-            '''.format(node.target.id)
+        for __grouped_I in range(len(__ndrange.dimensions)):
+            __grouped_I_tmp = 0
+            if __grouped_I + 1 < len(__ndrange.dimensions):
+                __grouped_I_tmp = 233
+            else:
+                __grouped_I_tmp = __I
+            __tmp = 233
+            if __grouped_I + 1 < len(__ndrange.dimensions):
+                __I = 233
+            '''.format(target, target)
             t = ast.parse(template).body[0]
+            print('ttttttttttttttttttttttttttttttttttttttttttttt')
+            pprint(t)
             t.body[0].value = node.iter.args[0]
             t_loop = t.body[2]
-            t_loop.iter.args[0] = self.parse_expr(
-                '__ndrange.acc_dimensions[0]')
-            targets = ['{}[{}]'.format(node.target.id, i) for i in range(dim)]
-            targets_tmp = [
-                '__{}_{}'.format(node.target.id, i) for i in range(dim)
-                ]
             loop_body = t_loop.body
-            for i in range(len(targets)):
-                if i + 1 < len(targets):
-                    stmt = '{} = __I // __ndrange.acc_dimensions[{}]'.format(
-                        targets_tmp[i], i + 1)
-                else:
-                    stmt = '{} = __I'.format(targets_tmp[i])
-                loop_body.append(self.parse_stmt(stmt))
-                stmt = '{} = {} + __ndrange.bounds[{}][0]'.format(
-                    targets[i], targets_tmp[i], i)
-                loop_body.append(self.parse_stmt(stmt))
-                if i + 1 < len(targets):
-                    stmt = '__I = __I - {} * __ndrange.acc_dimensions[{}]'.format(
-                        targets_tmp[i], i + 1)
-                    loop_body.append(self.parse_stmt(stmt))
+            inner_loop_body = loop_body[1].body
+            inner_loop_body[1].body[0].value = self.parse_expr(
+                '__I // __ndrange.acc_dimensions[__grouped_I + 1]')
+            inner_loop_body[2].targets[0] = self.parse_expr(
+                '{}[__grouped_I]'.format(target))
+            inner_loop_body[2].value = self.parse_expr(
+                '__grouped_I_tmp + __ndrange.bounds[__grouped_I][0]')
+            inner_loop_body[3].body[0].value = self.parse_expr(
+                '__I - __grouped_I_tmp * __ndrange.acc_dimensions[__grouped_I + 1]'
+            )
             loop_body += node.body
 
             node = ast.copy_location(t, node)

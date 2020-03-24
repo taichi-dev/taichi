@@ -35,22 +35,20 @@ class MGPCG:
         self.pixels = ti.var(dt=real,
                              shape=(self.N_gui, self.N_gui))  # image buffer
 
-        self.grid = ti.root.pointer(ti.ijk, [self.N_tot // 4]).dense(
-            ti.ijk, 4).place(self.x, self.p, self.Ap)
+        ijk = ti.ijk if self.dim == 3 else ti.ij
+        self.grid = ti.root.pointer(ijk, [self.N_tot // 4]).dense(
+            ijk, 4).place(self.x, self.p, self.Ap)
 
         for l in range(self.n_mg_levels):
-            self.grid = ti.root.pointer(ti.ijk,
-                                        [self.N_tot // (4 * 2**l)]).dense(
-                                            ti.ijk,
-                                            4).place(self.r[l], self.z[l])
+            self.grid = ti.root.pointer(ijk, [self.N_tot // (4 * 2**l)]).dense(
+                ijk, 4).place(self.r[l], self.z[l])
 
         ti.root.place(self.alpha, self.beta, self.sum)
 
     @ti.kernel
     def init(self):
-        for I in ti.grouped(ti.ndrange((self.N_ext, self.N_tot - self.N_ext),
-                                       (self.N_ext, self.N_tot - self.N_ext),
-                                       (self.N_ext, self.N_tot - self.N_ext))):
+        for I in ti.grouped(ti.ndrange(
+                *((self.N_ext, self.N_tot - self.N_ext), ) * self.dim)):
             self.r[0][I] = 1.0
             for i in ti.static(range(self.dim)):
                 self.r[0][I] *= ti.sin(2.0 * np.pi *
@@ -98,7 +96,7 @@ class MGPCG:
     @ti.kernel
     def restrict(self, l: ti.template()):
         for I in ti.grouped(self.r[l]):
-            res = self.r[l][I] - (6.0 * self.z[l][I] -
+            res = self.r[l][I] - (2.0 * self.dim * self.z[l][I] -
                                   self.neighbor_sum(self.z[l], I))
             self.r[l + 1][I // 2] += res * 0.5
 
@@ -112,8 +110,8 @@ class MGPCG:
         # phase = red/black Gauss-Seidel phase
         for I in ti.grouped(self.r[l]):
             if (I.sum()) & 1 == phase:
-                self.z[l][I] = (self.r[l][I] +
-                                self.neighbor_sum(self.z[l], I)) / 6.0
+                self.z[l][I] = (self.r[l][I] + self.neighbor_sum(
+                                self.z[l], I)) / (2.0 * self.dim)
 
     def apply_preconditioner(self):
         self.z[0].fill(0)
@@ -137,11 +135,12 @@ class MGPCG:
 
     @ti.kernel
     def paint(self):
-        kk = self.N_tot * 3 // 8
-        for i, j in self.pixels:
-            ii = int(i * self.N / self.N_gui) + self.N_ext
-            jj = int(j * self.N / self.N_gui) + self.N_ext
-            self.pixels[i, j] = self.x[ii, jj, kk] / self.N_tot
+        if ti.static(self.dim == 3):
+            kk = self.N_tot * 3 // 8
+            for i, j in self.pixels:
+                ii = int(i * self.N / self.N_gui) + self.N_ext
+                jj = int(j * self.N / self.N_gui) + self.N_ext
+                self.pixels[i, j] = self.x[ii, jj, kk] / self.N_tot
 
     def run(self):
         gui = ti.GUI("Multigrid Preconditioned Conjugate Gradients",

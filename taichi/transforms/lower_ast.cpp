@@ -1,5 +1,7 @@
 #include "taichi/ir/ir.h"
 
+#include <unordered_set>
+
 TLANG_NAMESPACE_BEGIN
 
 template <typename T>
@@ -17,9 +19,11 @@ std::vector<T *> make_raw_pointer_list(
 class LowerAST : public IRVisitor {
  private:
   Stmt *capturing_loop;
+  std::unordered_set<Stmt *> detected_fors_with_break;
 
  public:
-  LowerAST() {
+  explicit LowerAST(const std::unordered_set<Stmt *> &_detected_fors_with_break)
+      : detected_fors_with_break(_detected_fors_with_break) {
     // TODO: change this to false
     allow_undefined_visitor = true;
     capturing_loop = nullptr;
@@ -101,9 +105,6 @@ class LowerAST : public IRVisitor {
   }
 
   void visit(FrontendBreakStmt *stmt) override {
-    TI_ASSERT_INFO(
-        capturing_loop->is<WhileStmt>(),
-        "The loop capturing 'break' must be a while loop instead of for loop.");
     auto while_stmt = capturing_loop->as<WhileStmt>();
     VecStatement stmts;
     auto const_true = stmts.push_back<ConstStmt>(TypedConstant((int32)0));
@@ -167,11 +168,66 @@ class LowerAST : public IRVisitor {
       auto end = stmt->end;
       begin->flatten(flattened);
       end->flatten(flattened);
-      auto &&new_for = std::make_unique<RangeForStmt>(
-          stmt->parent->lookup_var(stmt->loop_var_id[0]), begin->stmt,
-          end->stmt, std::move(stmt->body), stmt->vectorize, stmt->parallelize,
-          stmt->block_dim, stmt->strictly_serialized);
-      flattened.push_back(std::move(new_for));
+      bool is_good_range_for =
+          capturing_loop == nullptr ||
+          detected_fors_with_break.find(stmt) == detected_fors_with_break.end();
+      // #578: a good range for is a range for that doesn't contains a break
+      // statement
+      if (is_good_range_for) {
+        auto &&new_for = std::make_unique<RangeForStmt>(
+            stmt->parent->lookup_var(stmt->loop_var_id[0]), begin->stmt,
+            end->stmt, std::move(stmt->body), stmt->vectorize,
+            stmt->parallelize, stmt->block_dim, stmt->strictly_serialized);
+        flattened.push_back(std::move(new_for));
+      } else {
+        // transform into a structure as
+        // i = begin; while (1) { if (i >= end) break; original body; i += 1; }
+        auto loop_var = stmt->parent->lookup_var(stmt->loop_var_id[0]);
+        flattened.push_back<LocalStoreStmt>(loop_var, begin->stmt);
+        auto loop_var_addr = LaneAttribute<LocalAddress>(
+            LocalAddress(loop_var->as<AllocaStmt>(), 0));
+        VecStatement load_and_compare;
+        auto loop_var_load_stmt =
+            load_and_compare.push_back<LocalLoadStmt>(loop_var_addr);
+        auto cond_stmt = load_and_compare.push_back<BinaryOpStmt>(
+            BinaryOpType::cmp_lt, loop_var_load_stmt, end->stmt);
+
+        auto &&new_while = std::make_unique<WhileStmt>(std::move(stmt->body));
+        auto mask = std::make_unique<AllocaStmt>(DataType::i32);
+        new_while->mask = mask.get();
+        auto &stmts = new_while->body;
+        for (int i = 0; i < (int)load_and_compare.size(); i++) {
+          stmts->insert(std::move(load_and_compare[i]), i);
+        }
+
+        VecStatement increase_and_store;
+        auto const_one =
+            increase_and_store.push_back<ConstStmt>(TypedConstant((int32)1));
+        auto loop_var_add_one = increase_and_store.push_back<BinaryOpStmt>(
+            BinaryOpType::add, loop_var_load_stmt, const_one);
+        increase_and_store.push_back<LocalStoreStmt>(loop_var,
+                                                     loop_var_add_one);
+        for (int i = 0; i < (int)increase_and_store.size(); i++) {
+          stmts->insert(std::move(increase_and_store[i]), stmts->size());
+        }
+        // insert break
+        stmts->insert(
+            std::make_unique<WhileControlStmt>(new_while->mask, cond_stmt),
+            load_and_compare.size());
+
+        stmt->insert_before_me(std::make_unique<AllocaStmt>(DataType::i32));
+        auto &&const_stmt =
+            std::make_unique<ConstStmt>(TypedConstant((int32)0xFFFFFFFF));
+        auto const_stmt_ptr = const_stmt.get();
+        stmt->insert_before_me(std::move(mask));
+        stmt->insert_before_me(std::move(const_stmt));
+        stmt->insert_before_me(
+            std::make_unique<LocalStoreStmt>(new_while->mask, const_stmt_ptr));
+        new_while->body->mask_var = new_while->mask;
+        flattened.push_back(std::move(new_while));
+        stmt->parent->replace_with(stmt, std::move(flattened));
+        throw IRModified();
+      }
     } else {
       std::vector<Stmt *> vars(stmt->loop_var_id.size());
       for (int i = 0; i < (int)stmt->loop_var_id.size(); i++) {
@@ -313,7 +369,7 @@ class LowerAST : public IRVisitor {
       expr->flatten(flattened);
       val_stmt = expr->stmt;
     }
-    flattened.push_back(Stmt::make<AssertStmt>(stmt->text, val_stmt));
+    flattened.push_back<AssertStmt>(stmt->text, val_stmt);
     stmt->parent->replace_with(stmt, std::move(flattened));
     throw IRModified();
   }
@@ -322,14 +378,13 @@ class LowerAST : public IRVisitor {
     // expand value
     VecStatement flattened;
     stmt->expr->flatten(flattened);
-    flattened.push_back(
-        Stmt::make<ArgStoreStmt>(stmt->arg_id, flattened.back().get()));
+    flattened.push_back<ArgStoreStmt>(stmt->arg_id, flattened.back().get());
     stmt->parent->replace_with(stmt, std::move(flattened));
     throw IRModified();
   }
 
   static void run(IRNode *node) {
-    LowerAST inst;
+    LowerAST inst(irpass::detect_fors_with_break(node));
     while (true) {
       bool modified = false;
       try {

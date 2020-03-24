@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cstring>
+#include <iostream>
 #include <string_view>
 
 #include "taichi/inc/constants.h"
@@ -20,7 +21,12 @@ namespace metal {
 #ifdef TI_PLATFORM_OSX
 
 namespace {
+namespace shaders {
+#include "taichi/platform/metal/shaders/runtime_utils.metal.h"
+}
+
 using KernelTaskType = OffloadedStmt::TaskType;
+using BufferEnum = MetalKernelAttributes::Buffers;
 
 // This class requests the Metal buffer memory of |size| bytes from |mem_pool|.
 // Once allocated, it does not own the memory (hence the name "view"). Instead,
@@ -51,70 +57,57 @@ class BufferMemoryView {
   void *ptr_;
 };
 
-struct MtlDataBuffers {
-  MTLBuffer *root;
-  MTLBuffer *global_tmps;
-  MTLBuffer *args;  // nullable
-};
+// MetalRuntime maintains a series of MTLBuffers that are shared across all the
+// Metal kernels mapped by a single Taichi kernel. This map stores those buffers
+// from their enum. Each CompiledMtlKernelBase can then decide which specific
+// buffers they will need to use in a launch.
+using InputBuffersMap = std::unordered_map<BufferEnum, MTLBuffer *>;
 
 // Info for launching a compiled Metal kernel
-class CompiledMtlKernel {
+class CompiledMtlKernelBase {
  public:
   struct Params {
     const MetalKernelAttributes *kerenl_attribs;
     MTLDevice *device;
     MTLFunction *mtl_func;
-    ProfilerBase *profiler;
   };
 
-  CompiledMtlKernel(Params params)
+  explicit CompiledMtlKernelBase(Params &params)
       : kernel_attribs_(*params.kerenl_attribs),
         pipeline_state_(
             new_compute_pipeline_state_with_function(params.device,
-                                                     params.mtl_func)),
-        profiler_(params.profiler),
-        profiler_id_(fmt::format("{}_dispatch", kernel_attribs_.name)) {
+                                                     params.mtl_func)) {
     TI_ASSERT(pipeline_state_ != nullptr);
   }
 
-  void launch(MtlDataBuffers data_buffers, MTLCommandBuffer *command_buffer) {
-    // 0 is valid for |num_threads|!
-    TI_ASSERT(kernel_attribs_.num_threads >= 0);
-    launch_if_not_empty(std::move(data_buffers), command_buffer);
-    if ((kernel_attribs_.task_type == KernelTaskType::range_for) &&
-        !kernel_attribs_.range_for_attribs.const_range()) {
-      // Set |num_thread| to an invalid number to make sure the next launch
-      // re-computes it correctly.
-      kernel_attribs_.num_threads = -1;
-    }
-  }
+  virtual ~CompiledMtlKernelBase() = default;
 
   inline MetalKernelAttributes *kernel_attribs() {
     return &kernel_attribs_;
   }
 
- private:
-  void launch_if_not_empty(MtlDataBuffers data_buffers,
+  virtual void launch(InputBuffersMap &input_buffers,
+                      MTLCommandBuffer *command_buffer) = 0;
+
+ protected:
+  using BindBuffers = std::vector<std::pair<MTLBuffer *, BufferEnum>>;
+
+  void launch_if_not_empty(BindBuffers buffers,
                            MTLCommandBuffer *command_buffer) {
     const int num_threads = kernel_attribs_.num_threads;
     if (num_threads == 0) {
       return;
     }
-    profiler_->start(profiler_id_);
+    TI_ASSERT(buffers.size() == kernel_attribs_.buffers.size());
     auto encoder = new_compute_command_encoder(command_buffer);
     TI_ASSERT(encoder != nullptr);
 
     set_compute_pipeline_state(encoder.get(), pipeline_state_.get());
-    int buffer_index = 0;
-    if (data_buffers.root) {
-      set_mtl_buffer(encoder.get(), data_buffers.root, /*offset=*/0,
-                     buffer_index++);
-    }
-    set_mtl_buffer(encoder.get(), data_buffers.global_tmps, /*offset=*/0,
-                   buffer_index++);
-    if (data_buffers.args) {
-      set_mtl_buffer(encoder.get(), data_buffers.args, /*offset=*/0,
-                     buffer_index++);
+
+    for (int bi = 0; bi < buffers.size(); ++bi) {
+      auto &b = buffers[bi];
+      TI_ASSERT(b.second == kernel_attribs_.buffers[bi]);
+      set_mtl_buffer(encoder.get(), b.first, /*offset=*/0, bi);
     }
     const int num_threads_per_group =
         get_max_total_threads_per_threadgroup(pipeline_state_.get());
@@ -123,13 +116,82 @@ class CompiledMtlKernel {
     dispatch_threadgroups(encoder.get(), num_groups,
                           std::min(num_threads, num_threads_per_group));
     end_encoding(encoder.get());
-    profiler_->stop();
   }
 
   MetalKernelAttributes kernel_attribs_;
-  nsobj_unique_ptr<MTLComputePipelineState> pipeline_state_{nullptr};
-  ProfilerBase *const profiler_;
-  const std::string profiler_id_;
+  nsobj_unique_ptr<MTLComputePipelineState> pipeline_state_;
+};
+
+// Metal kernel derived from a user Taichi kernel
+class UserMtlKernel : public CompiledMtlKernelBase {
+ public:
+  using CompiledMtlKernelBase::CompiledMtlKernelBase;
+  void launch(InputBuffersMap &input_buffers,
+              MTLCommandBuffer *command_buffer) override {
+    // 0 is valid for |num_threads|!
+    TI_ASSERT(kernel_attribs_.num_threads >= 0);
+    BindBuffers buffers;
+    for (const auto b : kernel_attribs_.buffers) {
+      buffers.push_back({input_buffers.find(b)->second, b});
+    }
+    launch_if_not_empty(std::move(buffers), command_buffer);
+    if ((kernel_attribs_.task_type == KernelTaskType::range_for) &&
+        !kernel_attribs_.range_for_attribs.const_range()) {
+      // Set |num_thread| to an invalid number to make sure the next launch
+      // re-computes it correctly.
+      kernel_attribs_.num_threads = -1;
+    }
+  }
+};
+
+// Internal Metal kernel used to maintain the kernel runtime data
+class RuntimeListOpsMtlKernel : public CompiledMtlKernelBase {
+ public:
+  struct Params : public CompiledMtlKernelBase::Params {
+    MemoryPool *mem_pool = nullptr;
+    const SNode *snode = nullptr;
+  };
+
+  explicit RuntimeListOpsMtlKernel(Params &params)
+      : CompiledMtlKernelBase(params),
+        parent_snode_id_(params.snode->parent->id),
+        child_snode_id_(params.snode->id),
+        args_mem_(std::make_unique<BufferMemoryView>(
+            /*size=*/sizeof(int32_t) * 2,
+            params.mem_pool)),
+        args_buffer_(new_mtl_buffer_no_copy(params.device,
+                                            args_mem_->ptr(),
+                                            args_mem_->size())) {
+    TI_ASSERT(args_buffer_ != nullptr);
+    auto *mem = reinterpret_cast<int32_t *>(args_mem_->ptr());
+    mem[0] = parent_snode_id_;
+    mem[1] = child_snode_id_;
+  }
+
+  void launch(InputBuffersMap &input_buffers,
+              MTLCommandBuffer *command_buffer) override {
+    BindBuffers buffers;
+    for (const auto b : kernel_attribs_.buffers) {
+      if (b == BufferEnum::Args) {
+        buffers.push_back({args_buffer_.get(), b});
+      } else {
+        buffers.push_back({input_buffers.find(b)->second, b});
+      }
+    }
+    launch_if_not_empty(std::move(buffers), command_buffer);
+  }
+
+ private:
+  const int parent_snode_id_;
+  const int child_snode_id_;
+  // For such Metal kernels, it always takes in an args buffer of two int32's:
+  // args[0] = parent_snode_id
+  // args[1] = child_snode_id
+  // Note that this args buffer has nothing to do with the one passed to Taichi
+  // kernel.
+  // See taichi/platform/metal/shaders/runtime_kernels.metal.h
+  std::unique_ptr<BufferMemoryView> args_mem_;
+  nsobj_unique_ptr<MTLBuffer> args_buffer_;
 };
 
 // Info for launching a compiled Taichi kernel, which consists of a series of
@@ -138,7 +200,7 @@ class CompiledTaichiKernel {
  public:
   struct Params {
     std::string_view taichi_kernel_name;
-    std::string_view mtl_source_code;
+    std::string mtl_source_code;
     const std::vector<MetalKernelAttributes> *mtl_kernels_attribs;
     const MetalKernelArgsAttributes *args_attribs;
     MTLDevice *device;
@@ -146,24 +208,35 @@ class CompiledTaichiKernel {
     ProfilerBase *profiler;
   };
 
-  CompiledTaichiKernel(Params params)
-      : args_attribs(*params.args_attribs),
-        mtl_source_code_(params.mtl_source_code),
-        profiler_(params.profiler) {
+  CompiledTaichiKernel(Params params) : args_attribs(*params.args_attribs) {
     auto *const device = params.device;
-    auto kernel_lib = new_library_with_source(device, mtl_source_code_);
+    auto kernel_lib = new_library_with_source(device, params.mtl_source_code);
     TI_ASSERT(kernel_lib != nullptr);
     for (const auto &ka : *(params.mtl_kernels_attribs)) {
       auto mtl_func = new_function_with_name(kernel_lib.get(), ka.name);
       TI_ASSERT(mtl_func != nullptr);
       // Note that CompiledMtlKernel doesn't own |kernel_func|.
-      CompiledMtlKernel::Params params;
-      params.kerenl_attribs = &ka;
-      params.device = device;
-      params.mtl_func = mtl_func.get();
-      params.profiler = profiler_;
-      compiled_mtl_kernels.push_back(
-          std::make_unique<CompiledMtlKernel>(params));
+      std::unique_ptr<CompiledMtlKernelBase> kernel = nullptr;
+      const auto ktype = ka.task_type;
+      if (ktype == KernelTaskType::clear_list ||
+          ktype == KernelTaskType::listgen) {
+        RuntimeListOpsMtlKernel::Params kparams;
+        kparams.kerenl_attribs = &ka;
+        kparams.device = device;
+        kparams.mtl_func = mtl_func.get();
+        kparams.snode = ka.runtime_list_op_attribs.snode;
+        kparams.mem_pool = params.mem_pool;
+        kernel = std::make_unique<RuntimeListOpsMtlKernel>(kparams);
+      } else {
+        CompiledMtlKernelBase::Params kparams;
+        kparams.kerenl_attribs = &ka;
+        kparams.device = device;
+        kparams.mtl_func = mtl_func.get();
+        kernel = std::make_unique<UserMtlKernel>(kparams);
+      }
+
+      TI_ASSERT(kernel != nullptr);
+      compiled_mtl_kernels.push_back(std::move(kernel));
     }
     if (args_attribs.has_args()) {
       args_mem = std::make_unique<BufferMemoryView>(args_attribs.total_bytes(),
@@ -175,14 +248,12 @@ class CompiledTaichiKernel {
 
   // Have to be exposed as public for Impl to use. We cannot friend the Impl
   // class because it is private.
-  std::vector<std::unique_ptr<CompiledMtlKernel>> compiled_mtl_kernels;
+  std::vector<std::unique_ptr<CompiledMtlKernelBase>> compiled_mtl_kernels;
   MetalKernelArgsAttributes args_attribs;
-  std::unique_ptr<BufferMemoryView> args_mem{nullptr};
-  nsobj_unique_ptr<MTLBuffer> args_buffer{nullptr};
+  std::unique_ptr<BufferMemoryView> args_mem;
+  nsobj_unique_ptr<MTLBuffer> args_buffer;
 
  private:
-  std::string mtl_source_code_;
-  ProfilerBase *const profiler_;
 };
 
 class HostMetalArgsBlitter {
@@ -287,7 +358,7 @@ class HostMetalArgsBlitter {
  private:
   const MetalKernelArgsAttributes *const args_attribs_;
   Context *const ctx_;
-  BufferMemoryView *const args_mem_{nullptr};
+  BufferMemoryView *const args_mem_;
 };
 
 }  // namespace
@@ -296,9 +367,9 @@ class MetalRuntime::Impl {
  public:
   explicit Impl(Params params)
       : config_(params.config),
+        compiled_snodes_(params.compiled_snodes),
         mem_pool_(params.mem_pool),
-        profiler_(params.profiler),
-        needs_root_buffer_(params.root_size > 0) {
+        profiler_(params.profiler) {
     if (config_->debug) {
       TI_ASSERT(is_metal_api_available());
     }
@@ -308,9 +379,9 @@ class MetalRuntime::Impl {
     TI_ASSERT(command_queue_ != nullptr);
     create_new_command_buffer();
 
-    if (needs_root_buffer_) {
-      root_mem_ =
-          std::make_unique<BufferMemoryView>(params.root_size, mem_pool_);
+    if (compiled_snodes_.root_size > 0) {
+      root_mem_ = std::make_unique<BufferMemoryView>(compiled_snodes_.root_size,
+                                                     mem_pool_);
       root_buffer_ = new_mtl_buffer_no_copy(device_.get(), root_mem_->ptr(),
                                             root_mem_->size());
       TI_ASSERT(root_buffer_ != nullptr);
@@ -322,6 +393,16 @@ class MetalRuntime::Impl {
     global_tmps_buffer_ = new_mtl_buffer_no_copy(
         device_.get(), global_tmps_mem_->ptr(), global_tmps_mem_->size());
     TI_ASSERT(global_tmps_buffer_ != nullptr);
+
+    if (compiled_snodes_.runtime_size > 0) {
+      runtime_mem_ = std::make_unique<BufferMemoryView>(
+          compiled_snodes_.runtime_size, mem_pool_);
+      runtime_buffer_ = new_mtl_buffer_no_copy(
+          device_.get(), runtime_mem_->ptr(), runtime_mem_->size());
+      TI_ASSERT(runtime_buffer_ != nullptr);
+      TI_DEBUG("Metal runtime buffer size: {} bytes", runtime_mem_->size());
+      init_runtime(params.root_id);
+    }
   }
 
   void register_taichi_kernel(
@@ -363,8 +444,15 @@ class MetalRuntime::Impl {
     if (config_->verbose_kernel_launches) {
       TI_INFO("Lauching Taichi kernel <{}>", taichi_kernel_name);
     }
+
+    InputBuffersMap input_buffers = {
+        {BufferEnum::Root, root_buffer_.get()},
+        {BufferEnum::GlobalTmps, global_tmps_buffer_.get()},
+        {BufferEnum::Runtime, runtime_buffer_.get()},
+    };
     if (args_blitter) {
       args_blitter->host_to_metal();
+      input_buffers[BufferEnum::Args] = ctk.args_buffer.get();
     }
     for (const auto &mk : ctk.compiled_mtl_kernels) {
       auto *ka = mk->kernel_attribs();
@@ -384,11 +472,7 @@ class MetalRuntime::Impl {
         TI_ASSERT(ka->num_threads == -1);
         ka->num_threads = end - begin;
       }
-      MtlDataBuffers data_buffers;
-      data_buffers.root = root_buffer_.get();
-      data_buffers.global_tmps = global_tmps_buffer_.get();
-      data_buffers.args = ctk.args_buffer.get();
-      mk->launch(std::move(data_buffers), cur_command_buffer_.get());
+      mk->launch(input_buffers, cur_command_buffer_.get());
     }
     if (args_blitter) {
       // TODO(k-ye): One optimization is to synchronize only when we absolutely
@@ -408,6 +492,87 @@ class MetalRuntime::Impl {
   }
 
  private:
+  void init_runtime(int root_id) {
+    using namespace shaders;
+    char *addr = reinterpret_cast<char *>(runtime_mem_->ptr());
+    const int max_snodes = compiled_snodes_.max_snodes;
+    const auto &snode_descriptors = compiled_snodes_.snode_descriptors;
+    // init snode_metas
+    for (int i = 0; i < max_snodes; ++i) {
+      auto iter = snode_descriptors.find(i);
+      if (iter == snode_descriptors.end()) {
+        continue;
+      }
+      const SNodeDescriptor &sn_meta = iter->second;
+      SNodeMeta *rtm_meta = reinterpret_cast<SNodeMeta *>(addr) + i;
+      rtm_meta->element_stride = sn_meta.element_stride;
+      rtm_meta->num_slots = sn_meta.num_slots;
+      rtm_meta->mem_offset_in_parent = sn_meta.mem_offset_in_parent;
+      switch (sn_meta.snode->type) {
+        case SNodeType::root:
+          rtm_meta->type = SNodeMeta::Root;
+          break;
+        case SNodeType::dense:
+          if (sn_meta.snode->_bitmasked) {
+            rtm_meta->type = SNodeMeta::DenseBitmask;
+          } else {
+            rtm_meta->type = SNodeMeta::Dense;
+          }
+          break;
+        default:
+          TI_ERROR("Unsupported SNode type={}",
+                   snode_type_name(sn_meta.snode->type));
+          break;
+      }
+    }
+    addr += sizeof(SNodeMeta) * max_snodes;
+    // init snode_extractors
+    for (int i = 0; i < max_snodes; ++i) {
+      auto iter = snode_descriptors.find(i);
+      if (iter == snode_descriptors.end()) {
+        continue;
+      }
+      const auto *sn = iter->second.snode;
+      SNodeExtractors *rtm_ext = reinterpret_cast<SNodeExtractors *>(addr) + i;
+      for (int j = 0; j < taichi_max_num_indices; ++j) {
+        const auto &ext = sn->extractors[j];
+        rtm_ext->extractors[j].start = ext.start;
+        rtm_ext->extractors[j].num_bits = ext.num_bits;
+        rtm_ext->extractors[j].acc_offset = ext.acc_offset;
+        rtm_ext->extractors[j].num_elements = ext.num_elements;
+      }
+    }
+    addr += sizeof(SNodeExtractors) * max_snodes;
+    // init snode_lists
+    ListManager *const rtm_list_head = reinterpret_cast<ListManager *>(addr);
+    int list_data_mem_begin = 0;
+    for (int i = 0; i < max_snodes; ++i) {
+      auto iter = snode_descriptors.find(i);
+      if (iter == snode_descriptors.end()) {
+        continue;
+      }
+      const SNodeDescriptor &sn_meta = iter->second;
+      ListManager *rtm_list = reinterpret_cast<ListManager *>(addr) + i;
+      rtm_list->element_stride = sizeof(ListgenElement);
+      // This can be really large, especially for other sparse SNodes (e.g.
+      // dynamic, hash). In the future, Metal might also be able to support
+      // dynamic memory allocation from the kernel side. That should help reduce
+      // the initial size.
+      rtm_list->max_num_elems = sn_meta.total_num_elems_from_root;
+      rtm_list->next = 0;
+      rtm_list->mem_begin = list_data_mem_begin;
+      list_data_mem_begin += rtm_list->max_num_elems * rtm_list->element_stride;
+    }
+    addr += sizeof(ListManager) * max_snodes;
+    // root list data are static
+    ListgenElement root_elem;
+    root_elem.root_mem_offset = 0;
+    for (int i = 0; i < taichi_max_num_indices; ++i) {
+      root_elem.coords[i] = 0;
+    }
+    append(rtm_list_head + root_id, root_elem, addr);
+  }
+
   void create_new_command_buffer() {
     cur_command_buffer_ = new_command_buffer(command_queue_.get());
     TI_ASSERT(cur_command_buffer_ != nullptr);
@@ -420,16 +585,18 @@ class MetalRuntime::Impl {
   }
 
   CompileConfig *const config_;
+  const StructCompiledResult compiled_snodes_;
   MemoryPool *const mem_pool_;
   ProfilerBase *const profiler_;
-  const bool needs_root_buffer_;
-  nsobj_unique_ptr<MTLDevice> device_{nullptr};
-  nsobj_unique_ptr<MTLCommandQueue> command_queue_{nullptr};
-  nsobj_unique_ptr<MTLCommandBuffer> cur_command_buffer_{nullptr};
-  std::unique_ptr<BufferMemoryView> root_mem_{nullptr};
-  nsobj_unique_ptr<MTLBuffer> root_buffer_{nullptr};
-  std::unique_ptr<BufferMemoryView> global_tmps_mem_{nullptr};
-  nsobj_unique_ptr<MTLBuffer> global_tmps_buffer_{nullptr};
+  nsobj_unique_ptr<MTLDevice> device_;
+  nsobj_unique_ptr<MTLCommandQueue> command_queue_;
+  nsobj_unique_ptr<MTLCommandBuffer> cur_command_buffer_;
+  std::unique_ptr<BufferMemoryView> root_mem_;
+  nsobj_unique_ptr<MTLBuffer> root_buffer_;
+  std::unique_ptr<BufferMemoryView> global_tmps_mem_;
+  nsobj_unique_ptr<MTLBuffer> global_tmps_buffer_;
+  std::unique_ptr<BufferMemoryView> runtime_mem_;
+  nsobj_unique_ptr<MTLBuffer> runtime_buffer_;
   std::unordered_map<std::string, std::unique_ptr<CompiledTaichiKernel>>
       compiled_taichi_kernels_;
 };

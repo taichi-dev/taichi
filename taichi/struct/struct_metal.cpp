@@ -9,6 +9,7 @@
 #include "taichi/math/arithmetic.h"
 #include "taichi/platform/metal/metal_data_types.h"
 #include "taichi/platform/metal/metal_kernel_util.h"
+#include "taichi/util/line_appender.h"
 
 TLANG_NAMESPACE_BEGIN
 namespace metal {
@@ -65,9 +66,9 @@ class StructCompiler {
     }
     StructCompiledResult result;
     result.root_size = compute_snode_size(&root);
-    result.snode_structs_source_code = std::move(src_code_);
+    line_appender_.dump(&result.snode_structs_source_code);
     emit_runtime_structs(&root);
-    result.runtime_utils_source_code = std::move(src_code_);
+    line_appender_.dump(&result.runtime_utils_source_code);
     result.runtime_kernels_source_code = get_runtime_kernels_source_code();
     result.runtime_size = compute_runtime_size();
     result.max_snodes = max_snodes_;
@@ -199,11 +200,9 @@ class StructCompiler {
   }
 
   void emit_runtime_structs(const SNode *root) {
-    TI_ASSERT(src_code_.empty());
-    src_code_ += shaders::kMetalRuntimeStructsSourceCode;
-    src_code_ += "\n";
-    src_code_ += shaders::kMetalRuntimeUtilsSourceCode;
-    src_code_ += "\n";
+    line_appender_.append_raw(shaders::kMetalRuntimeStructsSourceCode);
+    emit("");
+    line_appender_.append_raw(shaders::kMetalRuntimeUtilsSourceCode);
     emit("");
     emit("struct Runtime {{");
     emit("  SNodeMeta snode_metas[{}];", max_snodes_);
@@ -232,24 +231,14 @@ class StructCompiler {
     return result;
   }
 
-  void push_indent() {
-    indent_ += "  ";
-  }
-
-  void pop_indent() {
-    indent_.pop_back();
-    indent_.pop_back();
-  }
-
   template <typename... Args>
   void emit(std::string f, Args &&... args) {
-    src_code_ += indent_ + fmt::format(f, std::forward<Args>(args)...) + '\n';
+    line_appender_.append(std::move(f), std::move(args)...);
   }
 
   std::vector<SNode *> snodes_;
   int max_snodes_;
-  std::string indent_;
-  std::string src_code_;
+  LineAppender line_appender_;
   std::unordered_map<int, SNodeDescriptor> snode_descriptors_;
 };
 

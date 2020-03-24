@@ -241,10 +241,11 @@ void Program::materialize_layout() {
     metal_struct_compiled_ = metal::compile_structs(*snode_root);
     if (metal_runtime_ == nullptr) {
       metal::MetalRuntime::Params params;
-      params.root_size = metal_struct_compiled_->root_size;
+      params.compiled_snodes = metal_struct_compiled_.value();
       params.config = &config;
       params.mem_pool = memory_pool.get();
       params.profiler = profiler.get();
+      params.root_id = snode_root->id;
       metal_runtime_ = std::make_unique<metal::MetalRuntime>(std::move(params));
     }
   } else if (config.arch == Arch::opengl) {

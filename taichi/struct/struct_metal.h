@@ -53,9 +53,9 @@ struct StructCompiledResult {
   // |---- Runtime ----|--------------- snode_lists data ---------------|
   // |<------------------------ runtime_size -------------------------->|
   //
-  // The actual data region for the i-th ListManager is:
+  // The actual data address for the i-th ListManager is:
   // runtime memory address + list[i].mem_begin
-  // TODO(k-ye): See if Metal ArgumentBuffer can directly store the pointer.
+  // TODO(k-ye): See if Metal ArgumentBuffer can directly store the pointers.
   size_t runtime_size;
   // max(ID of Root or Dense Snode) + 1
   int max_snodes;

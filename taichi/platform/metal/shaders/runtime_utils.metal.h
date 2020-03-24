@@ -28,6 +28,7 @@
 
 #endif  // TI_INSIDE_METAL_CODEGEN
 
+// clang-format off
 METAL_BEGIN_RUNTIME_UTILS_DEF
 STR(
     [[maybe_unused]] int num_active(device const ListManager *list) {
@@ -113,6 +114,7 @@ STR(
       }
     })
 METAL_END_RUNTIME_UTILS_DEF
+// clang-format on
 
 #undef METAL_BEGIN_RUNTIME_UTILS_DEF
 #undef METAL_END_RUNTIME_UTILS_DEF

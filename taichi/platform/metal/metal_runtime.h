@@ -7,6 +7,7 @@
 #include "taichi/lang_util.h"
 #include "taichi/platform/metal/metal_kernel_util.h"
 #include "taichi/program/profiler.h"
+#include "taichi/struct/struct_metal.h"
 #include "taichi/system/memory_pool.h"
 
 TLANG_NAMESPACE_BEGIN
@@ -22,10 +23,11 @@ namespace metal {
 class MetalRuntime {
  public:
   struct Params {
-    size_t root_size;
+    StructCompiledResult compiled_snodes;
     CompileConfig *config;
     MemoryPool *mem_pool;
     ProfilerBase *profiler;
+    int root_id;
   };
 
   explicit MetalRuntime(Params params);

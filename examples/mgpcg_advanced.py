@@ -36,8 +36,9 @@ class MGPCG:
                              shape=(self.N_gui, self.N_gui))  # image buffer
 
         ijk = ti.ijk if self.dim == 3 else ti.ij
-        self.grid = ti.root.pointer(ijk, [self.N_tot // 4]).dense(
-            ijk, 4).place(self.x, self.p, self.Ap)
+        self.grid = ti.root.pointer(ijk,
+                                    [self.N_tot // 4]).dense(ijk, 4).place(
+                                        self.x, self.p, self.Ap)
 
         for l in range(self.n_mg_levels):
             self.grid = ti.root.pointer(ijk, [self.N_tot // (4 * 2**l)]).dense(
@@ -47,8 +48,9 @@ class MGPCG:
 
     @ti.kernel
     def init(self):
-        for I in ti.grouped(ti.ndrange(
-                *((self.N_ext, self.N_tot - self.N_ext), ) * self.dim)):
+        for I in ti.grouped(
+                ti.ndrange(*(
+                    (self.N_ext, self.N_tot - self.N_ext), ) * self.dim)):
             self.r[0][I] = 1.0
             for i in ti.static(range(self.dim)):
                 self.r[0][I] *= ti.sin(2.0 * np.pi * (i - self.N_ext) * 2.0 /
@@ -111,7 +113,7 @@ class MGPCG:
         for I in ti.grouped(self.r[l]):
             if (I.sum()) & 1 == phase:
                 self.z[l][I] = (self.r[l][I] + self.neighbor_sum(
-                                self.z[l], I)) / (2.0 * self.dim)
+                    self.z[l], I)) / (2.0 * self.dim)
 
     def apply_preconditioner(self):
         self.z[0].fill(0)

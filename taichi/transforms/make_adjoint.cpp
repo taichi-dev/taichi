@@ -181,7 +181,9 @@ class MakeAdjoint : public IRVisitor {
       return;  // primal may be int variable
     if (alloca_->is<StackAllocaStmt>()) {
       auto alloca = alloca_->cast<StackAllocaStmt>();
-      insert<StackAccAdjointStmt>(alloca, load(value));
+      if (needs_grad(alloca->ret_type.data_type)) {
+        insert<StackAccAdjointStmt>(alloca, load(value));
+      }
     } else {
       TI_ASSERT(alloca_->is<AllocaStmt>());
       auto alloca = alloca_->as<AllocaStmt>();
@@ -388,7 +390,8 @@ class MakeAdjoint : public IRVisitor {
   }
 
   void visit(StackLoadTopStmt *stmt) override {
-    insert<StackAccAdjointStmt>(stmt->stack, load(adjoint(stmt)));
+    if (needs_grad(stmt->ret_type.data_type))
+      insert<StackAccAdjointStmt>(stmt->stack, load(adjoint(stmt)));
   }
 
   void visit(StackPushStmt *stmt) override {

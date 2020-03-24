@@ -34,14 +34,6 @@ void CodeGenCUDA::lower() {
   if (print_ir) {
     irpass::print(ir);
   }
-  if (!kernel->grad && prog->config.demote_dense_struct_fors) {
-    irpass::demote_dense_struct_fors(ir);
-    irpass::typecheck(ir);
-    if (print_ir) {
-      TI_TRACE("Dense Struct-for demoted:");
-      irpass::print(ir);
-    }
-  }
   irpass::constant_fold(ir);
   if (prog->config.simplify_before_lower_access) {
     irpass::simplify(ir);
@@ -52,9 +44,6 @@ void CodeGenCUDA::lower() {
     }
   }
   if (kernel->grad) {
-    // irpass::re_id(ir);
-    // TI_TRACE("Primal:");
-    // irpass::print(ir);
     irpass::demote_atomics(ir);
     irpass::full_simplify(ir, prog->config);
     irpass::typecheck(ir);
@@ -68,9 +57,14 @@ void CodeGenCUDA::lower() {
       irpass::print(ir);
     }
     irpass::typecheck(ir);
-    // irpass::re_id(ir);
-    // TI_TRACE("Adjoint:");
-    // irpass::print(ir);
+  }
+  if (prog->config.demote_dense_struct_fors) {
+    irpass::demote_dense_struct_fors(ir);
+    irpass::typecheck(ir);
+    if (print_ir) {
+      TI_TRACE("Dense Struct-for demoted:");
+      irpass::print(ir);
+    }
   }
   irpass::lower_access(ir, prog->config.use_llvm);
   if (print_ir) {

@@ -1,10 +1,10 @@
 #include "taichi/codegen/codegen_metal.h"
 
 #include <functional>
-#include <sstream>
 #include <string>
 
 #include "taichi/ir/ir.h"
+#include "taichi/util/line_appender.h"
 
 TLANG_NAMESPACE_BEGIN
 namespace metal {
@@ -45,7 +45,7 @@ class MetalKernelCodegen : public IRVisitor {
   }
 
   const std::string &kernel_source_code() const {
-    return kernel_src_code_;
+    return line_appender_.lines();
   }
 
   const std::vector<MetalKernelAttributes> &kernels_attribs() const {
@@ -60,13 +60,13 @@ class MetalKernelCodegen : public IRVisitor {
 
   void visit(Block *stmt) override {
     if (!is_top_level_) {
-      push_indent();
+      line_appender_.push_indent();
     }
     for (auto &s : stmt->statements) {
       s->accept(this);
     }
     if (!is_top_level_) {
-      pop_indent();
+      line_appender_.pop_indent();
     }
   }
 
@@ -152,10 +152,11 @@ class MetalKernelCodegen : public IRVisitor {
     if (stmt->activate) {
       TI_ASSERT(sn->type == SNodeType::dense && sn->_bitmasked);
       emit("{{");
-      push_indent();
-      kernel_src_code_ += make_snode_meta_bm(sn, "sn_meta");
-      emit("activate({}.addr(), sn_meta, {});", stmt->raw_name(), index_name);
-      pop_indent();
+      {
+        ScopedIndent s(line_appender_);
+        line_appender_.append_raw(make_snode_meta_bm(sn, "sn_meta"));
+        emit("activate({}.addr(), sn_meta, {});", stmt->raw_name(), index_name);
+      }
       emit("}}");
     }
   }
@@ -165,22 +166,23 @@ class MetalKernelCodegen : public IRVisitor {
       emit("int {};", stmt->raw_name());
     }
     emit("{{");
-    push_indent();
-    kernel_src_code_ += make_snode_meta_bm(stmt->snode, "sn_meta");
-    const std::string ch_id = stmt->val->raw_name();
-    const std::string ch_addr =
-        fmt::format("{}.children({}).addr()", stmt->ptr->raw_name(), ch_id);
-    if (stmt->op_type == SNodeOpType::is_active) {
-      // is_active(device byte *addr, SNodeMeta meta, int i);
-      emit("{} = is_active({}, sn_meta, {});", stmt->raw_name(), ch_addr,
-           ch_id);
-    } else if (stmt->op_type == SNodeOpType::deactivate) {
-      // deactivate(device byte *addr, SNodeMeta meta, int i);
-      emit("deactivate({}, sn_meta, {});", ch_addr, ch_id);
-    } else {
-      TI_NOT_IMPLEMENTED
+    {
+      ScopedIndent s(line_appender_);
+      line_appender_.append_raw(make_snode_meta_bm(stmt->snode, "sn_meta"));
+      const std::string ch_id = stmt->val->raw_name();
+      const std::string ch_addr =
+          fmt::format("{}.children({}).addr()", stmt->ptr->raw_name(), ch_id);
+      if (stmt->op_type == SNodeOpType::is_active) {
+        // is_active(device byte *addr, SNodeMeta meta, int i);
+        emit("{} = is_active({}, sn_meta, {});", stmt->raw_name(), ch_addr,
+             ch_id);
+      } else if (stmt->op_type == SNodeOpType::deactivate) {
+        // deactivate(device byte *addr, SNodeMeta meta, int i);
+        emit("deactivate({}, sn_meta, {});", ch_addr, ch_id);
+      } else {
+        TI_NOT_IMPLEMENTED
+      }
     }
-    pop_indent();
     emit("}}");
   }
 
@@ -221,23 +223,23 @@ class MetalKernelCodegen : public IRVisitor {
         fmt::format("{}_linear_index_", stmt->raw_name());
     emit("int {} = 0;", linear_index_name);
     emit("{{");
-    push_indent();
-    const auto *argload = stmt->base_ptrs[0]->as<ArgLoadStmt>();
-    const int arg_id = argload->arg_id;
-    const int num_indices = stmt->indices.size();
-    std::vector<std::string> size_var_names;
-    for (int i = 0; i < num_indices; i++) {
-      std::string var_name = fmt::format("{}_size{}_", stmt->raw_name(), i);
-      emit("const int {} = {}.extra_arg({}, {});", var_name, kArgsContextName,
-           arg_id, i);
-      size_var_names.push_back(std::move(var_name));
+    {
+      ScopedIndent s(line_appender_);
+      const auto *argload = stmt->base_ptrs[0]->as<ArgLoadStmt>();
+      const int arg_id = argload->arg_id;
+      const int num_indices = stmt->indices.size();
+      std::vector<std::string> size_var_names;
+      for (int i = 0; i < num_indices; i++) {
+        std::string var_name = fmt::format("{}_size{}_", stmt->raw_name(), i);
+        emit("const int {} = {}.extra_arg({}, {});", var_name, kArgsContextName,
+             arg_id, i);
+        size_var_names.push_back(std::move(var_name));
+      }
+      for (int i = 0; i < num_indices; i++) {
+        emit("{} *= {};", linear_index_name, size_var_names[i]);
+        emit("{} += {};", linear_index_name, stmt->indices[i]->raw_name());
+      }
     }
-    for (int i = 0; i < num_indices; i++) {
-      emit("{} *= {};", linear_index_name, size_var_names[i]);
-      emit("{} += {};", linear_index_name, stmt->indices[i]->raw_name());
-    }
-
-    pop_indent();
     emit("}}");
 
     const auto dt = metal_data_type_name(stmt->element_type());
@@ -487,16 +489,16 @@ class MetalKernelCodegen : public IRVisitor {
     emit("");
 #define TI_INSIDE_METAL_CODEGEN
 #include "taichi/platform/metal/shaders/helpers.metal.h"
-    kernel_src_code_ += kMetalHelpersSourceCode;
+    line_appender_.append_raw(kMetalHelpersSourceCode);
 #undef TI_INSIDE_METAL_CODEGEN
     emit("");
-    kernel_src_code_ += compiled_snodes_->snode_structs_source_code;
+    line_appender_.append_raw(compiled_snodes_->snode_structs_source_code);
     emit("");
-    kernel_src_code_ += compiled_snodes_->runtime_utils_source_code;
+    line_appender_.append_raw(compiled_snodes_->runtime_utils_source_code);
     emit("");
     emit("}}  // namespace");
     emit("");
-    kernel_src_code_ += compiled_snodes_->runtime_kernels_source_code;
+    line_appender_.append_raw(compiled_snodes_->runtime_kernels_source_code);
     emit("");
   }
 
@@ -506,7 +508,7 @@ class MetalKernelCodegen : public IRVisitor {
       emit("namespace {{");
       emit("class {} {{", class_name);
       emit(" public:");
-      push_indent();
+      line_appender_.push_indent();
       emit("explicit {}(device byte* addr) : addr_(addr) {{}}", class_name);
       for (const auto &arg : args_attribs_.args()) {
         const auto dt_name = metal_data_type_name(arg.dt);
@@ -525,7 +527,7 @@ class MetalKernelCodegen : public IRVisitor {
            args_attribs_.args_bytes());
       emit("  return *(base + (i * {}) + j);", taichi_max_num_indices);
       emit("}}");
-      pop_indent();
+      line_appender_.pop_indent();
       emit(" private:");
       emit("  device byte* addr_;");
       emit("}};");
@@ -586,7 +588,7 @@ class MetalKernelCodegen : public IRVisitor {
     range_for_attribs.end =
         (stmt->const_end ? stmt->end_value : stmt->end_offset);
 
-    push_indent();
+    line_appender_.push_indent();
     if (range_for_attribs.const_range()) {
       ka.num_threads = range_for_attribs.end - range_for_attribs.begin;
       emit("// range_for, range known at compile time");
@@ -595,19 +597,20 @@ class MetalKernelCodegen : public IRVisitor {
       ka.num_threads = -1;
       emit("// range_for, range known at runtime");
       emit("{{");
-      push_indent();
-      const auto begin_stmt = stmt->const_begin
-                                  ? std::to_string(stmt->begin_value)
-                                  : inject_load_global_tmp(stmt->begin_offset);
-      const auto end_stmt = stmt->const_end
-                                ? std::to_string(stmt->end_value)
-                                : inject_load_global_tmp(stmt->end_offset);
-      emit("if ({} >= ({} - {})) return;", kKernelThreadIdName, end_stmt,
-           begin_stmt);
-      pop_indent();
+      {
+        ScopedIndent s(line_appender_);
+        const auto begin_stmt =
+            stmt->const_begin ? std::to_string(stmt->begin_value)
+                              : inject_load_global_tmp(stmt->begin_offset);
+        const auto end_stmt = stmt->const_end
+                                  ? std::to_string(stmt->end_value)
+                                  : inject_load_global_tmp(stmt->end_offset);
+        emit("if ({} >= ({} - {})) return;", kKernelThreadIdName, end_stmt,
+             begin_stmt);
+      }
       emit("}}");
     }
-    pop_indent();
+    line_appender_.pop_indent();
 
     current_kernel_attribs_ = &ka;
     stmt->body->accept(this);
@@ -634,7 +637,7 @@ class MetalKernelCodegen : public IRVisitor {
     ka.num_threads = compiled_snodes_->snode_descriptors.find(sn_id)
                          ->second.total_num_elems_from_root;
 
-    push_indent();
+    line_appender_.push_indent();
     emit("// struct_for");
     emit("device Runtime *{} = reinterpret_cast<device Runtime *>({});",
          kRuntimeVarName, kRuntimeBufferName);
@@ -643,7 +646,7 @@ class MetalKernelCodegen : public IRVisitor {
     emit("ListgenElement {};", kListgenElemVarName);
     emit("{{");
     {
-      push_indent();
+      ScopedIndent s(line_appender_);
       emit("device ListManager *sn_list = &({}->snode_lists[{}]);",
            kRuntimeVarName, sn_id);
       emit("if ((int){} >= num_active(sn_list)) return;", kKernelThreadIdName);
@@ -653,10 +656,9 @@ class MetalKernelCodegen : public IRVisitor {
           kRuntimeVarName);
       emit("{} = get<ListgenElement>(sn_list, {}, list_data_addr);",
            kListgenElemVarName, kKernelThreadIdName);
-      pop_indent();
     }
     emit("}}");
-    pop_indent();
+    line_appender_.pop_indent();
 
     current_kernel_attribs_ = &ka;
     stmt->body->accept(this);
@@ -707,15 +709,15 @@ class MetalKernelCodegen : public IRVisitor {
                                  const std::string &var_name) const {
     TI_ASSERT(sn->type == SNodeType::dense && sn->_bitmasked);
     const auto &meta = compiled_snodes_->snode_descriptors.find(sn->id)->second;
-    std::stringstream ss;
-    ss << indent_ << "SNodeMeta " << var_name << ";\n";
-    ss << indent_ << var_name << ".element_stride = " << meta.element_stride
-       << ";\n";
-    ss << indent_ << var_name << ".num_slots = " << meta.num_slots << ";\n";
-    ss << indent_ << var_name
-       << ".type = " << (int)shaders::SNodeMeta::DenseBitmask << ";\n";
+    LineAppender la = line_appender_;
+    // Keep the indentation settings only
+    la.clear_lines();
 
-    return ss.str();
+    la.append("SNodeMeta {};", var_name);
+    la.append("{}.element_stride = {};", var_name, meta.element_stride);
+    la.append("{}.num_slots = {};", var_name, meta.num_slots);
+    la.append("{}.type = {};", var_name, meta.num_slots);
+    return la.lines();
   }
 
   std::string make_kernel_name() {
@@ -758,19 +760,9 @@ class MetalKernelCodegen : public IRVisitor {
     }
   }
 
-  void push_indent() {
-    indent_ += "  ";
-  }
-
-  void pop_indent() {
-    indent_.pop_back();
-    indent_.pop_back();
-  }
-
   template <typename... Args>
   void emit(std::string f, Args &&... args) {
-    kernel_src_code_ +=
-        indent_ + fmt::format(f, std::forward<Args>(args)...) + "\n";
+    line_appender_.append(std::move(f), std::move(args)...);
   }
 
   const std::string mtl_kernel_prefix_;
@@ -785,8 +777,7 @@ class MetalKernelCodegen : public IRVisitor {
   std::vector<MetalKernelAttributes> mtl_kernels_attribs_;
   GetRootStmt *root_stmt_{nullptr};
   MetalKernelAttributes *current_kernel_attribs_{nullptr};
-  std::string kernel_src_code_;
-  std::string indent_;
+  LineAppender line_appender_;
 };
 
 }  // namespace

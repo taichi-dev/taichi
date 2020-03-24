@@ -58,10 +58,14 @@ class ModuleBuilder {
       : module(std::move(module)) {
   }
 
-  llvm::Value *create_entry_block_alloca(llvm::Type *type) {
+  llvm::Value *create_entry_block_alloca(llvm::Type *type,
+                                         std::size_t alignment = 0) {
     llvm::IRBuilderBase::InsertPointGuard guard(*builder);
     builder->SetInsertPoint(entry_block);
-    return builder->CreateAlloca(type, (unsigned)0);
+    auto alloca = builder->CreateAlloca(type, (unsigned)0);
+    if (alignment != 0)
+      alloca->setAlignment(alignment);
+    return alloca;
   }
 
   llvm::Value *create_entry_block_alloca(DataType dt) {

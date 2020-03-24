@@ -181,6 +181,8 @@ def format(all=False, diff=None):
     clang_format_bin = _find_clang_format_bin()
     print('Code formatting ...')
     for fn in files:
+        if not os.path.exists(fn):
+            continue
         if os.path.isdir(fn):
             continue
         if fn.find('.pytest_cache') != -1:

@@ -4,6 +4,33 @@
 
 TLANG_NAMESPACE_BEGIN
 
+template <typename T>
+class StmtSearcher : public BasicStmtVisitor {
+ private:
+  std::function<bool(Stmt *)> test;
+  std::vector<Stmt *> results;
+
+ public:
+  using BasicStmtVisitor::visit;
+
+  StmtSearcher(std::function<bool(Stmt *)> test) : test(test) {
+    allow_undefined_visitor = true;
+    invoke_default_visitor = true;
+  }
+
+  void visit(Stmt *stmt) {
+    if (stmt->is<T>() && test(stmt))
+      results.push_back(stmt);
+  }
+
+  static std::vector<Stmt *> run(IRNode *root,
+                                 std::function<bool(Stmt *)> test) {
+    StmtSearcher<T> searcher(test);
+    root->accept(&searcher);
+    return searcher.results;
+  }
+};
+
 // Do automatic differentiation pass in the reverse order (reverse-mode AD)
 
 class ConvertLocalVar : public BasicStmtVisitor {
@@ -12,14 +39,31 @@ class ConvertLocalVar : public BasicStmtVisitor {
 
   void visit(AllocaStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
+    bool no_store = StmtSearcher<LocalStoreStmt>::run(
+                        stmt->parent,
+                        [&](Stmt *store) {
+                          return store->cast<LocalStoreStmt>()->ptr == stmt;
+                        })
+                        .empty();
+    bool no_atomic = StmtSearcher<AtomicOpStmt>::run(
+                         stmt->parent,
+                         [&](Stmt *atomic) {
+                           return atomic->cast<AtomicOpStmt>()->dest == stmt;
+                         })
+                         .empty();
+    bool is_load_only =
+        no_store && no_atomic;  // for-loop variables etc. No stack needed
     // TODO: remove 16 here
-    stmt->replace_with(
-        Stmt::make<StackAllocaStmt>(stmt->ret_type.data_type, 16));
+    if (!is_load_only) {
+      stmt->replace_with(
+          Stmt::make<StackAllocaStmt>(stmt->ret_type.data_type, 16));
+    }
   }
 
   void visit(LocalLoadStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
-    stmt->replace_with(Stmt::make<StackLoadTopStmt>(stmt->ptr[0].var));
+    if (stmt->ptr[0].var->is<StackAllocaStmt>())
+      stmt->replace_with(Stmt::make<StackLoadTopStmt>(stmt->ptr[0].var));
   }
 
   void visit(LocalStoreStmt *stmt) override {
@@ -137,7 +181,9 @@ class MakeAdjoint : public IRVisitor {
       return;  // primal may be int variable
     if (alloca_->is<StackAllocaStmt>()) {
       auto alloca = alloca_->cast<StackAllocaStmt>();
-      insert<StackAccAdjointStmt>(alloca, load(value));
+      if (needs_grad(alloca->ret_type.data_type)) {
+        insert<StackAccAdjointStmt>(alloca, load(value));
+      }
     } else {
       TI_ASSERT(alloca_->is<AllocaStmt>());
       auto alloca = alloca_->as<AllocaStmt>();
@@ -281,27 +327,32 @@ class MakeAdjoint : public IRVisitor {
   void visit(IfStmt *if_stmt) override {
     auto new_if = Stmt::make_typed<IfStmt>(if_stmt->cond);
     if (if_stmt->true_statements) {
-      // make sure only global store/atomic exists
       new_if->true_statements = std::make_unique<Block>();
       auto old_current_block = current_block;
 
       current_block = new_if->true_statements.get();
-      for (int i = 0; i < if_stmt->true_statements->statements.size(); i++) {
-        // TI_ASSERT(if_stmt->true_statements[i])
+      for (int i = if_stmt->true_statements->statements.size() - 1; i >= 0;
+           i--) {
         if_stmt->true_statements->statements[i]->accept(this);
       }
 
       current_block = old_current_block;
     }
     if (if_stmt->false_statements) {
-      TI_NOT_IMPLEMENTED
+      new_if->false_statements = std::make_unique<Block>();
+      auto old_current_block = current_block;
+      current_block = new_if->false_statements.get();
+      for (int i = if_stmt->false_statements->statements.size() - 1; i >= 0;
+           i--) {
+        if_stmt->false_statements->statements[i]->accept(this);
+      }
+      current_block = old_current_block;
     }
     insert_back(std::move(new_if));
   }
 
   void visit(PrintStmt *print_stmt) override {
     // do nothing
-    return;
   }
 
   void visit(ConstStmt *const_stmt) override {
@@ -335,14 +386,16 @@ class MakeAdjoint : public IRVisitor {
   }
 
   void visit(LocalLoadStmt *stmt) override {
-    TI_ASSERT(!needs_grad(stmt->ret_type.data_type));
+    // TI_ASSERT(!needs_grad(stmt->ret_type.data_type));
   }
 
   void visit(StackLoadTopStmt *stmt) override {
-    insert<StackAccAdjointStmt>(stmt->stack, load(adjoint(stmt)));
+    if (needs_grad(stmt->ret_type.data_type))
+      insert<StackAccAdjointStmt>(stmt->stack, load(adjoint(stmt)));
   }
 
   void visit(StackPushStmt *stmt) override {
+    accumulate(stmt->v, insert<StackLoadTopAdjStmt>(stmt->stack));
     insert<StackPopStmt>(stmt->stack);
   }
 
@@ -443,18 +496,102 @@ class MakeAdjoint : public IRVisitor {
   }
 };
 
+class BackupSSA : public BasicStmtVisitor {
+ public:
+  using BasicStmtVisitor::visit;
+
+  Block *current_block;
+  std::map<Stmt *, Stmt *> backup_alloca;
+
+  BackupSSA() {
+    current_block = nullptr;
+    allow_undefined_visitor = true;
+    invoke_default_visitor = true;
+  }
+
+  Stmt *load(Stmt *stmt) {
+    if (backup_alloca.find(stmt) == backup_alloca.end()) {
+      auto alloca =
+          Stmt::make<AllocaStmt>(stmt->width(), stmt->ret_type.data_type);
+      auto alloca_ptr = alloca.get();
+      TI_ASSERT(current_block != nullptr);
+      current_block->insert(std::move(alloca), 0);
+      stmt->insert_after_me(Stmt::make<LocalStoreStmt>(alloca_ptr, stmt));
+      backup_alloca[stmt] = alloca_ptr;
+    }
+    return backup_alloca[stmt];
+  }
+
+  void visit(Stmt *stmt) override {
+    std::vector<Block *> leaf_to_root;
+    auto t = stmt->parent;
+    while (t != nullptr) {
+      leaf_to_root.push_back(t);
+      t = t->parent;
+    }
+    int num_operands = stmt->get_operands().size();
+    for (int i = 0; i < num_operands; i++) {
+      auto op = stmt->operand(i);
+      if (std::find(leaf_to_root.begin(), leaf_to_root.end(), op->parent) ==
+          leaf_to_root.end()) {
+        auto alloca = load(op);
+        TI_ASSERT(op->width() == 1);
+        stmt->set_operand(i, stmt->insert_before_me(Stmt::make<LocalLoadStmt>(
+                                 LocalAddress(alloca, 0))));
+      }
+    }
+  }
+
+  void visit(RangeForStmt *stmt) override {
+    auto old_current_block = current_block;
+    current_block = stmt->body.get();
+    stmt->body->accept(this);
+    current_block = old_current_block;
+  }
+
+  void visit(StructForStmt *stmt) override {
+    auto old_current_block = current_block;
+    current_block = stmt->body.get();
+    stmt->body->accept(this);
+    current_block = old_current_block;
+  }
+
+  void visit(WhileStmt *stmt) override {
+    TI_ERROR("WhileStmt not supported by autodiff for now");
+  }
+
+  void visit(Block *block) override {
+    // top-level block case
+    auto old_current_block = current_block;
+    if (old_current_block == nullptr)
+      current_block = block;
+    std::vector<Stmt *> statements;
+    // always make a copy since the list can be modified.
+    for (auto &stmt : block->statements) {
+      statements.push_back(stmt.get());
+    }
+    for (auto stmt : statements) {
+      stmt->accept(this);
+    }
+    if (old_current_block == nullptr)
+      current_block = old_current_block;
+  }
+};
+
 namespace irpass {
 
 void make_adjoint(IRNode *root, bool use_stack) {
   if (use_stack) {
+    fix_block_parents(root);
     ConvertLocalVar converter;
     root->accept(&converter);
     typecheck(root);
-    re_id(root);
-    print(root);
     MakeAdjoint::run(root);
     typecheck(root);
-    print(root);
+    fix_block_parents(root);
+    BackupSSA b;
+    root->accept(&b);
+    typecheck(root);
   } else {
     MakeAdjoint::run(root);
     typecheck(root);

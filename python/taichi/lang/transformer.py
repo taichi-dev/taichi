@@ -344,10 +344,10 @@ if ti.static(1):
             ''' if is_ndrange_for == 1 else '''
 if ti.static(1):
     __ndrange = 0
-    {} = ti.Vector([0] * {})
+    {} = ti.Vector([0] * len(__ndrange.dimensions))
     for __ndrange_I in range(0):
         __I = __ndrange_I
-            '''.format(node.target.id, dim)
+            '''.format(node.target.id)
             t = ast.parse(template).body[0]
             t.body[0].value = node.iter if is_ndrange_for == 1 \
                 else node.iter.args[0]

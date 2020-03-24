@@ -629,7 +629,9 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     builder->SetInsertPoint(after_if);
   }
 
+  // only for debugging on CPU
   llvm::Value *create_print(std::string tag, DataType dt, llvm::Value *value) {
+    TI_ASSERT(arch_use_host_memory(kernel->arch));
     std::vector<Value *> args;
     std::string format;
     if (dt == DataType::i32) {
@@ -648,12 +650,12 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     } else {
       TI_NOT_IMPLEMENTED
     }
+    auto runtime_printf = call("LLVMRuntime_get_host_printf", get_runtime());
     args.push_back(builder->CreateGlobalStringPtr(
         ("[llvm codegen debug] " + tag + " = " + format + "\n").c_str(),
         "format_string"));
     args.push_back(value);
-    return builder->CreateCall(get_runtime_function("printf"), args,
-                               "debug_printf");
+    return builder->CreateCall(runtime_printf, args);
   }
 
   void visit(PrintStmt *stmt) override {
@@ -1373,8 +1375,6 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       RuntimeObject element("Element", this, builder.get(), get_arg(1));
       auto lower_bound = get_arg(2);
       auto upper_bound = get_arg(3);
-      // create_print("lower", DataType::i32, lower_bound);
-      // create_print("upper", DataType::i32, upper_bound);
 
       if (spmd) {
         threadIdx = builder->CreateIntrinsic(
@@ -1499,9 +1499,10 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     TI_ASSERT(stmt->width() == 1);
     auto type = llvm::ArrayType::get(llvm::Type::getInt8Ty(*llvm_context),
                                      stmt->size_in_bytes());
-    auto alloca = builder->CreateAlloca(type);
+    auto alloca = create_entry_block_alloca(type, sizeof(int64));
     stmt->value = builder->CreateBitCast(
         alloca, llvm::PointerType::getInt8PtrTy(*llvm_context));
+    call("stack_init", stmt->value);
   }
 
   void visit(StackPopStmt *stmt) override {

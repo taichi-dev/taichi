@@ -43,14 +43,6 @@ void CodeGenCPU::lower() {
     irpass::re_id(ir);
     irpass::print(ir);
   }
-  if (!kernel->grad && prog->config.demote_dense_struct_fors) {
-    irpass::demote_dense_struct_fors(ir);
-    irpass::typecheck(ir);
-    if (print_ir) {
-      TI_TRACE("Dense Struct-for demoted:");
-      irpass::print(ir);
-    }
-  }
   irpass::slp_vectorize(ir);
   if (print_ir) {
     TI_TRACE("SLPed:");
@@ -77,16 +69,21 @@ void CodeGenCPU::lower() {
     irpass::print(ir);
   }
   if (kernel->grad) {
-    // irpass::re_id(ir);
-    // TI_TRACE("Primal:");
-    // irpass::print(ir);
     irpass::demote_atomics(ir);
     irpass::simplify(ir);
-    irpass::make_adjoint(ir);
+    irpass::make_adjoint(ir, true);
     irpass::typecheck(ir);
     if (print_ir) {
       TI_TRACE("Adjoint:");
       irpass::re_id(ir);
+      irpass::print(ir);
+    }
+  }
+  if (prog->config.demote_dense_struct_fors) {
+    irpass::demote_dense_struct_fors(ir);
+    irpass::typecheck(ir);
+    if (print_ir) {
+      TI_TRACE("Dense Struct-for demoted:");
       irpass::print(ir);
     }
   }

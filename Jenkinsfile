@@ -120,7 +120,7 @@ pipeline {
 void build_taichi() {
     sh "echo building"
     sh "echo $PATH"
-    git 'https://github.com/yuanming-hu/taichi.git'
+    git 'https://github.com/taichi-dev/taichi.git'
     sh label: '', script: '''
     echo $PATH
     echo $CC
@@ -146,7 +146,7 @@ void build_taichi() {
     make -j 15
     ldd libtaichi_core.so
     cd ../python
-    ti test_python
+    ti test
     $PYTHON_EXECUTABLE build.py upload
     '''
 }

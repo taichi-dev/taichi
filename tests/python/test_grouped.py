@@ -121,7 +121,7 @@ def test_grouped_ndrange_starred():
 
     @ti.kernel
     def test():
-        for I in ti.grouped(ti.ndrange(*(((0, n),) * dim))):
+        for I in ti.grouped(ti.ndrange(*(((0, n), ) * dim))):
             val[I] = I[0] + I[1] * 2 + I[2] * 3
 
     test()
@@ -129,8 +129,8 @@ def test_grouped_ndrange_starred():
     for i in range(n):
         for j in range(m):
             for k in range(p):
-                assert val[i, j, k] == (i + j * 2 + k * 3
-                                        if j < n and k < n else 0)
+                assert val[i, j,
+                           k] == (i + j * 2 + k * 3 if j < n and k < n else 0)
 
 
 @ti.all_archs

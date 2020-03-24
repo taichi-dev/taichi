@@ -281,12 +281,11 @@ if 1:
 
         def get_decorator(iter):
             if not (isinstance(iter, ast.Call)
-                   and isinstance(iter.func, ast.Attribute)
-                   and isinstance(iter.func.value, ast.Name)
-                   and iter.func.value.id == 'ti' and (
-                           iter.func.attr == 'static'
-                           or iter.func.attr == 'grouped'
-                           or iter.func.attr == 'ndrange')):
+                    and isinstance(iter.func, ast.Attribute)
+                    and isinstance(iter.func.value, ast.Name)
+                    and iter.func.value.id == 'ti' and
+                    (iter.func.attr == 'static' or iter.func.attr == 'grouped'
+                     or iter.func.attr == 'ndrange')):
                 return ''
             return iter.func.attr
 
@@ -296,7 +295,6 @@ if 1:
             else:
                 assert isinstance(node.target, ast.Tuple)
                 return [name.id for name in node.target.elts]
-
 
         def visit_static_for():
             # for i in ti.static(range(n))
@@ -312,7 +310,6 @@ if 1:
                     tar.ctx = ast.Del()
             t.body[1].targets = [target]
             return t
-
 
         def visit_range_for():
             # for i in range(n)
@@ -344,7 +341,6 @@ if 1:
             t.body = t.body[:6] + node.body + t.body[6:]
             t.body.append(self.parse_stmt('del {}'.format(loop_var)))
             return ast.copy_location(t, node)
-
 
         def visit_ndrange_for(node):
             # for i, j in ti.ndrange(n)
@@ -381,7 +377,6 @@ if ti.static(1):
             node = ast.copy_location(t, node)
             return self.visit(node)  # further translate as a range for
 
-
         def visit_grouped_ndrange_for(node):
             # for I in ti.grouped(ti.ndrange(n, m))
             self.generic_visit(node, ['body'])
@@ -413,7 +408,6 @@ if ti.static(1):
             cut = len(t.body) - 1
             t.body = t.body[:cut] + node.body + t.body[cut:]
             return ast.copy_location(t, node)
-
 
         def visit_struct_for(is_grouped):
             # for i, j in x
@@ -458,7 +452,6 @@ if 1:
                 t.body.append(self.parse_stmt('del {}'.format(loop_var)))
             return ast.copy_location(t, node)
 
-
         decorator = get_decorator(node.iter)
         double_decorator = ''
         if decorator != '' and len(node.iter.args) == 1:
@@ -472,7 +465,8 @@ if 1:
                     len(node.iter.args[0].args) != 1
                     or get_decorator(node.iter.args[0].args[0]) == ''):
                 raise TaichiSyntaxError(
-                    "Static grouped struct for loop is not allowed. Please use 'ti.static(ti.grouped(ti.ndrange(...)))' instead.")
+                    "Static grouped struct for loop is not allowed. Please use 'ti.static(ti.grouped(ti.ndrange(...)))' instead."
+                )
             return visit_static_for()
         elif decorator == 'ndrange':
             if double_decorator != '':

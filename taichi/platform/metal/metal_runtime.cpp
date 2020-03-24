@@ -119,7 +119,7 @@ class CompiledMtlKernelBase {
   }
 
   MetalKernelAttributes kernel_attribs_;
-  nsobj_unique_ptr<MTLComputePipelineState> pipeline_state_{nullptr};
+  nsobj_unique_ptr<MTLComputePipelineState> pipeline_state_;
 };
 
 // Metal kernel derived from a user Taichi kernel
@@ -250,8 +250,8 @@ class CompiledTaichiKernel {
   // class because it is private.
   std::vector<std::unique_ptr<CompiledMtlKernelBase>> compiled_mtl_kernels;
   MetalKernelArgsAttributes args_attribs;
-  std::unique_ptr<BufferMemoryView> args_mem{nullptr};
-  nsobj_unique_ptr<MTLBuffer> args_buffer{nullptr};
+  std::unique_ptr<BufferMemoryView> args_mem;
+  nsobj_unique_ptr<MTLBuffer> args_buffer;
 
  private:
 };
@@ -358,7 +358,7 @@ class HostMetalArgsBlitter {
  private:
   const MetalKernelArgsAttributes *const args_attribs_;
   Context *const ctx_;
-  BufferMemoryView *const args_mem_{nullptr};
+  BufferMemoryView *const args_mem_;
 };
 
 }  // namespace
@@ -554,6 +554,10 @@ class MetalRuntime::Impl {
       const SNodeDescriptor &sn_meta = iter->second;
       ListManager *rtm_list = reinterpret_cast<ListManager *>(addr) + i;
       rtm_list->element_stride = sizeof(ListgenElement);
+      // This can be really large, especially for other sparse SNodes (e.g.
+      // dynamic, hash). In the future, Metal might also be able to support
+      // dynamic memory allocation from the kernel side. That should help reduce
+      // the initial size.
       rtm_list->max_num_elems = sn_meta.total_num_elems_from_root;
       rtm_list->next = 0;
       rtm_list->mem_begin = list_data_mem_begin;
@@ -584,15 +588,15 @@ class MetalRuntime::Impl {
   const StructCompiledResult compiled_snodes_;
   MemoryPool *const mem_pool_;
   ProfilerBase *const profiler_;
-  nsobj_unique_ptr<MTLDevice> device_{nullptr};
-  nsobj_unique_ptr<MTLCommandQueue> command_queue_{nullptr};
-  nsobj_unique_ptr<MTLCommandBuffer> cur_command_buffer_{nullptr};
-  std::unique_ptr<BufferMemoryView> root_mem_{nullptr};
-  nsobj_unique_ptr<MTLBuffer> root_buffer_{nullptr};
-  std::unique_ptr<BufferMemoryView> global_tmps_mem_{nullptr};
-  nsobj_unique_ptr<MTLBuffer> global_tmps_buffer_{nullptr};
-  std::unique_ptr<BufferMemoryView> runtime_mem_{nullptr};
-  nsobj_unique_ptr<MTLBuffer> runtime_buffer_{nullptr};
+  nsobj_unique_ptr<MTLDevice> device_;
+  nsobj_unique_ptr<MTLCommandQueue> command_queue_;
+  nsobj_unique_ptr<MTLCommandBuffer> cur_command_buffer_;
+  std::unique_ptr<BufferMemoryView> root_mem_;
+  nsobj_unique_ptr<MTLBuffer> root_buffer_;
+  std::unique_ptr<BufferMemoryView> global_tmps_mem_;
+  nsobj_unique_ptr<MTLBuffer> global_tmps_buffer_;
+  std::unique_ptr<BufferMemoryView> runtime_mem_;
+  nsobj_unique_ptr<MTLBuffer> runtime_buffer_;
   std::unordered_map<std::string, std::unique_ptr<CompiledTaichiKernel>>
       compiled_taichi_kernels_;
 };

@@ -383,16 +383,15 @@ if ti.static(1):
 
 
         def visit_grouped_ndrange_for(node):
-            self.generic_visit(node, ['body'])
-            from astpretty import pprint
             # for I in ti.grouped(ti.ndrange(n, m))
+            self.generic_visit(node, ['body'])
             target = node.target.id
             template = '''
 if ti.static(1):
     __ndrange = 0
     {} = ti.expr_init(ti.Vector([0] * len(__ndrange.dimensions)))
     ___begin = ti.Expr(0)
-    ___end = 0
+    ___end = __ndrange.acc_dimensions[0]
     ___begin = ti.cast(___begin, ti.i32)
     ___end = ti.cast(___end, ti.i32)
     __ndrange_I = ti.Expr(ti.core.make_id_expr(''))
@@ -410,30 +409,10 @@ if ti.static(1):
     ti.core.end_frontend_range_for()
             '''.format(target, target)
             t = ast.parse(template).body[0]
-            print('ttttttttttttttttttttttttttttttttttttttttttttt')
-            pprint(t)
             t.body[0].value = node.iter.args[0]
-            t.body[3].value = self.parse_expr('__ndrange.acc_dimensions[0]')
-
-            # t_loop = t.body[2]
-            # loop_body = t_loop.body
-            # inner_loop_body = loop_body[1].body
-            # inner_loop_body[1].body[0].value = self.parse_expr(
-            #     '__I // __ndrange.acc_dimensions[__grouped_I + 1]')
-            # inner_loop_body[2].targets[0] = self.parse_expr(
-            #     '{}[__grouped_I]'.format(target))
-            # inner_loop_body[2].value = self.parse_expr(
-            #     '__grouped_I_tmp + __ndrange.bounds[__grouped_I][0]')
-            # inner_loop_body[3].body[0].value = self.parse_expr(
-            #     '__I - __grouped_I_tmp * __ndrange.acc_dimensions[__grouped_I + 1]'
-            # )
-            # loop_body += node.body
-
             cut = len(t.body) - 1
             t.body = t.body[:cut] + node.body + t.body[cut:]
-
-            node = ast.copy_location(t, node)
-            return node
+            return ast.copy_location(t, node)
 
 
         def visit_struct_for(is_grouped):

@@ -34,6 +34,30 @@ python3 -m pip install taichi-nightly-cuda-10-1
 |**PyPI**|[![Build Status](https://travis-ci.com/yuanming-hu/taichi-wheels-test.svg?branch=master)](https://travis-ci.com/yuanming-hu/taichi-wheels-test)|[![Build Status](https://travis-ci.com/yuanming-hu/taichi-wheels-test.svg?branch=master)](https://travis-ci.com/yuanming-hu/taichi-wheels-test)|[![Build status](https://ci.appveyor.com/api/projects/status/39ar9wa8yd49je7o?svg=true)](https://ci.appveyor.com/project/IteratorAdvance/taichi-wheels-test)|
 
 ## Updates
+- (Mar  24, 2020) v0.5.8 released. Visible/notable changes:
+   - **Language features**
+      - Access out-of-bound checking on CPU backends (#572) (by **xumingkuan**)
+      - Testable device-side assertion failures on CPUs (#605) (by **xumingkuan**)
+      - Added `Expr.copy_from` (by **Yuanming Hu**)
+      - Added `ti.Vector.unit` to generate unit vectors (by **Yuanming Hu**)
+      - Use `a = ti.static(a_very_long_variable)` for easy aliasing [[doc]](https://taichi.readthedocs.io/en/latest/syntax_sugars.html#aliases) (#587) (by **彭于斌** and **KLozes**)
+      - Added  `ti.atomic_min`,  `ti.atomic_max`, `ti.atomic_bit_or`, `ti.atomic_bit_and`, `ti.atomic_bit_xor` (CPU and CUDA by **KLozes**, OpenGL by **彭于斌**, Metal by **Ye Kuang**)
+   - **Differentiable programming**
+      - Experimental support for automatically differentiating through conditional global load/stores (by **Yuanming Hu**)
+   - **Bug fixes**
+      - Fixed stack traceback printing on OS X (#610) (by **Yuanming Hu**)
+   - **CLI** 
+      - `ti format` now cover all files from upstream/master to the working tree (#629) (by **Ye Kuang**)
+      - `ti test` now uses `argparse` for better customizability (#601) (by **彭于斌**)
+   - **OpenGL backend**
+      - OpenGL Compute Shader backend will officially release very soon with v0.6! (by **彭于斌**)
+   - **Metal backend**
+      - Metal backend sparsity support work in progress (by **Ye Kuang**)
+   - **Examples**
+      - Added `examples/mgpcg.py` (#573) (by **KLozes**)
+      - Added `examples/sdf_renderer.py` (by **Yuanming Hu**)
+      - Added `examples/mgpcg_advanced.py` (#573) (by **Yuanming Hu**)
+   - [Full log](https://github.com/taichi-dev/taichi/releases/tag/0.5.8)
 - (Mar   4, 2020) v0.5.7 released
    - **Deprecated `ti.classfunc`. Please simply use `ti.func`, even if you are decorating a class member function**
    - Upgrade spdlog from 0.14.0 to 1.5.0 with git submodule (#565) (by **Mingkuan Xu [xumingkuan]**)

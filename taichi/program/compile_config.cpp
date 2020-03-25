@@ -2,6 +2,8 @@
 
 TLANG_NAMESPACE_BEGIN
 
+const bool advanced_optimization = true;
+
 CompileConfig::CompileConfig() {
   arch = host_arch();
   simd_width = default_simd_width(arch);

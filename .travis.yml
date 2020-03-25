@@ -58,7 +58,7 @@ before_install:
 - pwd
 - echo $TRAVIS_BUILD_DIR
 - cd $TRAVIS_BUILD_DIR
-- bash misc/get-taichi-deps.sh
+- .travis/get-taichi-deps.sh
 - export PATH=$TRAVIS_BUILD_DIR/taichi-llvm/bin/:$PATH
 - ls $TRAVIS_BUILD_DIR/taichi-llvm/bin/
 - echo $PATH

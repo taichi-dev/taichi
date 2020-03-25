@@ -4,16 +4,38 @@ language: cpp
 
 matrix:
   include:
-  - os: osx
+  - name: "OS X + Python 3.6"
+    if: commit_message =~ /^\[release\]/
+    os: osx
     osx_image: xcode10.3
     env:
       - MATRIX_EVAL="CC=clang && CXX=clang++ && PYTHON_VERSION=3.6.1 && PYTHON=python"
-  - os: osx
+  - name: "OS X + Python 3.7"
+    os: osx
     osx_image: xcode10.3
     env:
       - MATRIX_EVAL="CC=clang && CXX=clang++ && PYTHON_VERSION=3.7.1 && PYTHON=python"
-  - os: osx
+  - name: "OS X + Python 3.8"
+    if: commit_message =~ /^\[release\]/
+    os: osx
     osx_image: xcode10.3
+    env:
+      - MATRIX_EVAL="CC=clang && CXX=clang++ && PYTHON_VERSION=3.8.1 && PYTHON=python"
+  - name: "Ubuntu 18.04 + Python 3.6"
+    if: commit_message =~ /^\[release\]/
+    os: linux
+    dist: xenial
+    env:
+      - MATRIX_EVAL="CC=clang && CXX=clang++ && PYTHON_VERSION=3.6.1 && PYTHON=python"
+  - name: "Ubuntu 18.04 + Python 3.7"
+    os: linux
+    dist: xenial
+    env:
+      - MATRIX_EVAL="CC=clang && CXX=clang++ && PYTHON_VERSION=3.7.1 && PYTHON=python"
+  - name: "Ubuntu 18.04 + Python 3.8"
+    if: commit_message =~ /^\[release\]/
+    os: linux
+    dist: xenial
     env:
       - MATRIX_EVAL="CC=clang && CXX=clang++ && PYTHON_VERSION=3.8.1 && PYTHON=python"
 
@@ -31,8 +53,7 @@ cache:
 
 before_install:
 - eval "${MATRIX_EVAL}"
-- echo $CXX
-- echo $PYTHON
+- echo "${TRAVIS_OS_NAME} ${MATRIX_EVAL}"
 - sysctl -n hw.ncpu
 - pwd
 - cd $TRAVIS_BUILD_DIR

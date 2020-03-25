@@ -55,6 +55,8 @@ before_install:
 - echo "${MATRIX_EVAL}"
 - eval "${MATRIX_EVAL}"
 - echo $TRAVIS_OS_NAME
+- test $TRAVIS_OS_NAME == 'linux' && grep name /proc/cpuinfo | cut -f2 -d: | uniq -c || true
+- test $TRAVIS_OS_NAME == 'osx' && sysctl -n hw.ncpu || true
 - pwd
 - echo $TRAVIS_BUILD_DIR
 - cd $TRAVIS_BUILD_DIR

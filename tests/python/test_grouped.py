@@ -82,6 +82,58 @@ def test_grouped_ndrange():
 
 
 @ti.all_archs
+def test_static_grouped_ndrange():
+    val = ti.var(ti.i32)
+
+    n = 4
+    m = 8
+
+    ti.root.dense(ti.ij, (n, m)).place(val)
+
+    x0 = 2
+    y0 = 3
+    x1 = 1
+    y1 = 6
+
+    @ti.kernel
+    def test():
+        for I in ti.static(ti.grouped(ti.ndrange((x0, y0), (x1, y1)))):
+            val[I] = I[0] + I[1] * 2
+
+    test()
+
+    for i in range(n):
+        for j in range(m):
+            assert val[i, j] == (i +
+                                 j * 2 if x0 <= i < y0 and x1 <= j < y1 else 0)
+
+
+@ti.all_archs
+def test_grouped_ndrange_starred():
+    val = ti.var(ti.i32)
+
+    n = 4
+    m = 8
+    p = 16
+    dim = 3
+
+    ti.root.dense(ti.ijk, (n, m, p)).place(val)
+
+    @ti.kernel
+    def test():
+        for I in ti.grouped(ti.ndrange(*(((0, n), ) * dim))):
+            val[I] = I[0] + I[1] * 2 + I[2] * 3
+
+    test()
+
+    for i in range(n):
+        for j in range(m):
+            for k in range(p):
+                assert val[i, j,
+                           k] == (i + j * 2 + k * 3 if j < n and k < n else 0)
+
+
+@ti.all_archs
 def test_grouped_ndrange_0d():
     val = ti.var(ti.i32, shape=())
 
@@ -96,7 +148,7 @@ def test_grouped_ndrange_0d():
 
 
 @ti.all_archs
-def test_grouped_ndrange_0d():
+def test_static_grouped_ndrange_0d():
     val = ti.var(ti.i32, shape=())
 
     @ti.kernel

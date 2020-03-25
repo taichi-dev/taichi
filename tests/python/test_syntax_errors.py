@@ -210,3 +210,17 @@ def test_nested_ndrange():
             pass
 
     func()
+
+
+@ti.must_throw(ti.TaichiSyntaxError)
+def test_static_grouped_struct_for():
+    val = ti.var(ti.i32)
+
+    ti.root.dense(ti.ij, (1, 1)).place(val)
+
+    @ti.kernel
+    def test():
+        for I in ti.static(ti.grouped(val)):
+            pass
+
+    test()

@@ -5,6 +5,7 @@
 
 #include <string>
 #include <taichi/ir/ir.h>
+#include <taichi/util/line_appender.h>
 
 TLANG_NAMESPACE_BEGIN
 namespace opengl {
@@ -126,11 +127,10 @@ class KernelGen : public IRVisitor {
   }
 
  private:  // {{{
-  std::string kernel_src_code_;
+  LineAppender line_appender_, line_appender_header_;
   CompiledProgram compiled_program_;
   UsedFeature used;
 
-  std::string indent_;
   bool is_top_level_{true};
 
   const StructCompiledResult *struct_compiled_;
@@ -144,23 +144,13 @@ class KernelGen : public IRVisitor {
   int num_threads_{1};
   int num_groups_{1};
 
-  void push_indent() {
-    indent_ += "  ";
-  }
-
-  void pop_indent() {
-    indent_.pop_back();
-    indent_.pop_back();
-  }
-
   template <typename... Args>
   void emit(std::string f, Args &&... args) {
-    kernel_src_code_ +=
-        indent_ + fmt::format(f, std::forward<Args>(args)...) + "\n";
+    line_appender_.append(std::move(f), std::move(args)...);
   }
 
   void generate_header() {  // {{{
-    kernel_src_code_ += struct_compiled_->source_code;
+    line_appender_header_.append_raw(struct_compiled_->source_code);
   }  // }}}
 
   void generate_bottom() {
@@ -313,7 +303,7 @@ int _rand_i32()\n\
 ";
     }  // }}}
 
-    kernel_src_code_ = kernel_header + kernel_src_code_;
+    line_appender_header_.append_raw(kernel_header);
 
     int threads_per_group = 1792;
     if (num_threads_ < 1792)
@@ -324,23 +314,23 @@ int _rand_i32()\n\
     emit("layout(local_size_x = {}, local_size_y = 1, local_size_z = 1) in;",
          threads_per_group);
 
-    kernel_src_code_ =
-        std::string("#version 430 core\nprecision highp float;\n") +
-        kernel_src_code_;
-    compiled_program_.kernels.push_back(
-        CompiledKernel(std::move(glsl_kernel_name_),
-                       std::move(kernel_src_code_), num_groups_, used));
-    kernel_src_code_ = "";
+    auto kernel_src_code = "#version 430 core\nprecision highp float;\n" +
+                           line_appender_header_.lines() +
+                           line_appender_.lines();
+    compiled_program_.kernels.push_back(CompiledKernel(
+        std::move(glsl_kernel_name_), kernel_src_code, num_groups_, used));
+    line_appender_header_.clear_all();
+    line_appender_.clear_all();
   }
 
   void visit(Block *stmt) override {
     if (!is_top_level_)
-      push_indent();
+      line_appender_.push_indent();
     for (auto &s : stmt->statements) {
       s->accept(this);
     }
     if (!is_top_level_)
-      pop_indent();
+      line_appender_.pop_indent();
   }
 
   virtual void visit(Stmt *stmt) override {
@@ -426,23 +416,23 @@ int _rand_i32()\n\
         fmt::format("{}_linear_index_", stmt->raw_name());
     emit("int {} = 0;", linear_index_name);
     emit("{{ // linear seek");
-    push_indent();
-    const auto *argload = stmt->base_ptrs[0]->as<ArgLoadStmt>();
-    const int arg_id = argload->arg_id;
-    const int num_indices = stmt->indices.size();
-    std::vector<std::string> size_var_names;
-    for (int i = 0; i < num_indices; i++) {
-      used.extra_arg = true;
-      std::string var_name = fmt::format("{}_size{}_", stmt->raw_name(), i);
-      emit("const int {} = _extra_arg({}, {});", var_name, arg_id, i);
-      size_var_names.push_back(std::move(var_name));
+    {
+      ScopedIndent _s(line_appender_);
+      const auto *argload = stmt->base_ptrs[0]->as<ArgLoadStmt>();
+      const int arg_id = argload->arg_id;
+      const int num_indices = stmt->indices.size();
+      std::vector<std::string> size_var_names;
+      for (int i = 0; i < num_indices; i++) {
+        used.extra_arg = true;
+        std::string var_name = fmt::format("{}_size{}_", stmt->raw_name(), i);
+        emit("const int {} = _extra_arg({}, {});", var_name, arg_id, i);
+        size_var_names.push_back(std::move(var_name));
+      }
+      for (int i = 0; i < num_indices; i++) {
+        emit("{} *= {};", linear_index_name, size_var_names[i]);
+        emit("{} += {};", linear_index_name, stmt->indices[i]->raw_name());
+      }
     }
-    for (int i = 0; i < num_indices; i++) {
-      emit("{} *= {};", linear_index_name, size_var_names[i]);
-      emit("{} += {};", linear_index_name, stmt->indices[i]->raw_name());
-    }
-
-    pop_indent();
     emit("}}");
 
     emit("const int {} = ({} + {});", stmt->raw_name(),
@@ -648,8 +638,8 @@ int _rand_i32()\n\
     this->glsl_kernel_name_ = glsl_kernel_name;
     emit("{{ // range for");
 
-    push_indent();
     if (stmt->const_begin && stmt->const_end) {
+      ScopedIndent _s(line_appender_);
       auto begin_value = stmt->begin_value;
       auto end_value = stmt->end_value;
       if (end_value < begin_value)
@@ -667,7 +657,6 @@ int _rand_i32()\n\
       range_for_attribs.end =
           (stmt->const_end ? stmt->end_value : stmt->end_offset);*/
     }
-    pop_indent();
 
     stmt->body->accept(this);
     emit("}}\n");

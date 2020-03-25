@@ -28,12 +28,17 @@
 
 #endif  // TI_INSIDE_METAL_CODEGEN
 
+// clang-format off
 METAL_BEGIN_RUNTIME_UTILS_DEF
-STR(int num_active(device const ListManager *list) { return list->next; }
+STR(
+    [[maybe_unused]] int num_active(device const ListManager *list) {
+      return list->next;
+    }
 
-    template <typename T> int append(device ListManager *list,
-                                     thread const T &elem,
-                                     device byte *data_addr) {
+    template <typename T>
+    int append(device ListManager *list,
+               thread const T &elem,
+               device byte *data_addr) {
       thread char *elem_ptr = (thread char *)(&elem);
       int me = atomic_fetch_add_explicit(
           reinterpret_cast<device atomic_int *>(&(list->next)), 1,
@@ -54,13 +59,13 @@ STR(int num_active(device const ListManager *list) { return list->next; }
                                                  (i * list->element_stride));
     }
 
-    void clear(device ListManager *list) {
+    [[maybe_unused]] void clear(device ListManager *list) {
       atomic_store_explicit(
           reinterpret_cast<device atomic_int *>(&(list->next)), 0,
           metal::memory_order_relaxed);
     }
 
-    int is_active(device byte *addr, SNodeMeta meta, int i) {
+    [[maybe_unused]] int is_active(device byte *addr, SNodeMeta meta, int i) {
       if (meta.type == SNodeMeta::Root || meta.type == SNodeMeta::Dense) {
         return true;
       }
@@ -72,7 +77,7 @@ STR(int num_active(device const ListManager *list) { return list->next; }
       return ((bits >> (i % (sizeof(uint32_t) * 8))) & 1);
     }
 
-    void activate(device byte *addr, SNodeMeta meta, int i) {
+    [[maybe_unused]] void activate(device byte *addr, SNodeMeta meta, int i) {
       if (meta.type == SNodeMeta::Root || meta.type == SNodeMeta::Dense) {
         return;
       }
@@ -84,7 +89,7 @@ STR(int num_active(device const ListManager *list) { return list->next; }
       atomic_fetch_or_explicit(ptr, mask, metal::memory_order_relaxed);
     }
 
-    void deactivate(device byte *addr, SNodeMeta meta, int i) {
+    [[maybe_unused]] void deactivate(device byte *addr, SNodeMeta meta, int i) {
       if (meta.type == SNodeMeta::Root || meta.type == SNodeMeta::Dense) {
         return;
       }
@@ -96,10 +101,11 @@ STR(int num_active(device const ListManager *list) { return list->next; }
       atomic_fetch_and_explicit(ptr, mask, metal::memory_order_relaxed);
     }
 
-    void refine_coordinates(thread const ListgenElement &parent_elem,
-                            device const SNodeExtractors &child_extrators,
-                            int l,
-                            thread ListgenElement *child_elem) {
+    [[maybe_unused]] void refine_coordinates(
+        thread const ListgenElement &parent_elem,
+        device const SNodeExtractors &child_extrators,
+        int l,
+        thread ListgenElement *child_elem) {
       for (int i = 0; i < kTaichiMaxNumIndices; ++i) {
         device const auto &ex = child_extrators.extractors[i];
         const int mask = ((1 << ex.num_bits) - 1);
@@ -108,6 +114,7 @@ STR(int num_active(device const ListManager *list) { return list->next; }
       }
     })
 METAL_END_RUNTIME_UTILS_DEF
+// clang-format on
 
 #undef METAL_BEGIN_RUNTIME_UTILS_DEF
 #undef METAL_END_RUNTIME_UTILS_DEF

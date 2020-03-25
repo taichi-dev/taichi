@@ -54,8 +54,6 @@ cache:
 before_install:
 - eval "${MATRIX_EVAL}"
 - echo "${TRAVIS_OS_NAME} ${MATRIX_EVAL}"
-- [ $TRAVIS_OS_NAME == 'linux' ] && grep name /proc/cpuinfo | cut -f2 -d: | uniq -c || true
-- [ $TRAVIS_OS_NAME == 'osx' ] && sysctl -n hw.ncpu || true
 - pwd
 - cd $TRAVIS_BUILD_DIR
 - pwd

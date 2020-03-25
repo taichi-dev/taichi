@@ -52,9 +52,9 @@ class MGPCG:
                                        (self.N_ext, self.N_tot - self.N_ext),
                                        (self.N_ext, self.N_tot - self.N_ext))):
             self.r[0][I] = 1.0
-            for i in ti.static(range(self.dim)):
+            for k in ti.static(range(self.dim)):
                 self.r[0][I] *= ti.sin(2.0 * np.pi *
-                                       (i - self.N_ext) * 2.0 / self.N_tot)
+                                       (I[k] - self.N_ext) * 2.0 / self.N_tot)
             self.z[0][I] = 0.0
             self.Ap[I] = 0.0
             self.p[I] = 0.0

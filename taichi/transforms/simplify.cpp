@@ -667,8 +667,10 @@ class BasicBlockSimplify : public IRVisitor {
   }
 
   void visit(LinearizeStmt *stmt) override {
-    //    if (is_done(stmt))
-    //      return;
+    if (!advanced_optimization) {
+      if (is_done(stmt))
+        return;
+    }
 
     if (stmt->inputs.size() && stmt->inputs.back()->is<IntegerOffsetStmt>()) {
       auto previous_offset = stmt->inputs.back()->as<IntegerOffsetStmt>();
@@ -681,7 +683,25 @@ class BasicBlockSimplify : public IRVisitor {
       offset_stmt->as<IntegerOffsetStmt>()->input = stmt;
       throw IRModified();
     }
-    //    set_done(stmt);
+    if (!advanced_optimization) {
+      for (int i = 0; i < current_stmt_id; i++) {
+        auto &bstmt = block->statements[i];
+        if (stmt->ret_type == bstmt->ret_type) {
+          auto &bstmt_data = *bstmt;
+          if (typeid(bstmt_data) == typeid(*stmt)) {
+            auto bstmt_ = bstmt->as<LinearizeStmt>();
+            if (identical_vectors(bstmt_->inputs, stmt->inputs) &&
+                identical_vectors(bstmt_->strides, stmt->strides)) {
+              stmt->replace_with(bstmt.get());
+              stmt->parent->erase(current_stmt_id);
+              throw IRModified();
+            }
+          }
+        }
+      }
+      set_done(stmt);
+      return;
+    }
 
     // Lower into a series of adds and muls.
     auto sum = Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(0));
@@ -1014,7 +1034,8 @@ void simplify(IRNode *root) {
 
 void full_simplify(IRNode *root, const CompileConfig &config) {
   constant_fold(root);
-  alg_simp(root, config);
+  if (advanced_optimization)
+    alg_simp(root, config);
   die(root);
   simplify(root);
 }

@@ -36,15 +36,14 @@ class MGPCG:
                              shape=(self.N_gui, self.N_gui))  # image buffer
 
         indices = ti.ijk if self.dim == 3 else ti.ij
-        self.grid = ti.root.pointer(indices,
-                                    [self.N_tot // 4]).dense(indices, 4).place(
-                                        self.x, self.p, self.Ap)
+        self.grid = ti.root.pointer(indices, [self.N_tot // 4]).dense(
+            indices, 4).place(self.x, self.p, self.Ap)
 
         for l in range(self.n_mg_levels):
             self.grid = ti.root.pointer(indices,
                                         [self.N_tot // (4 * 2**l)]).dense(
-                                            indices, 4).place(
-                                                self.r[l], self.z[l])
+                                            indices,
+                                            4).place(self.r[l], self.z[l])
 
         ti.root.place(self.alpha, self.beta, self.sum)
 
@@ -55,8 +54,8 @@ class MGPCG:
                     (self.N_ext, self.N_tot - self.N_ext), ) * self.dim)):
             self.r[0][I] = 1.0
             for k in ti.static(range(self.dim)):
-                self.r[0][I] *= ti.sin(2.0 * np.pi *
-                                       (I[k] - self.N_ext) * 2.0 / self.N_tot)
+                self.r[0][I] *= ti.sin(2.0 * np.pi * (I[k] - self.N_ext) *
+                                       2.0 / self.N_tot)
             self.z[0][I] = 0.0
             self.Ap[I] = 0.0
             self.p[I] = 0.0

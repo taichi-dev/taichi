@@ -1,7 +1,7 @@
 <div align="center">
   <img width="500px" src="https://github.com/yuanming-hu/taichi/raw/master/misc/logo.png">
   <h3> <a href="https://taichi.readthedocs.io/en/latest/"> Docs </a> | <a href="https://taichi.readthedocs.io/en/latest/hello.html"> Tutorial </a> | <a href="https://github.com/yuanming-hu/difftaichi"> DiffTaichi </a> | <a href="https://github.com/yuanming-hu/taichi/tree/master/examples"> Examples </a> | <a href="https://taichi.readthedocs.io/en/latest/contributor_guide.html"> Contribute </a> | <a href="https://forum.taichi.graphics/"> Forum </a> </h3>
-</div>        
+</div>
 
 | **Documentations** | **Chat** | taichi-nightly | taichi-nightly-cuda-10-0 | taichi-nightly-cuda-10-1 |
 |:-----|:-----|:----|:----|:----|
@@ -46,7 +46,7 @@ python3 -m pip install taichi-nightly-cuda-10-1
       - Experimental support for automatically differentiating through conditional global load/stores (by **Yuanming Hu**)
    - **Bug fixes**
       - Fixed stack traceback printing on OS X (#610) (by **Yuanming Hu**)
-   - **CLI** 
+   - **CLI**
       - `ti format` now cover all files from upstream/master to the working tree (#629) (by **Ye Kuang**)
       - `ti test` now uses `argparse` for better customizability (#601) (by **彭于斌**)
    - **OpenGL backend**

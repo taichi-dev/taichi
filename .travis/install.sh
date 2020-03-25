@@ -16,8 +16,8 @@ elif [[ $TRAVIS_OS_NAME == 'linux' ]]; then
     export PATH="$HOME/.pyenv/bin:$PATH"
     eval "${MATRIX_EVAL}"
     echo "python version: $PYTHON_VERSION"
-    apt-get update > /dev/null
-    apt-get upgrade pyenv
+    sudo apt-get update > /dev/null
+    sudo apt-get install pyenv
     # use pyenv to build python
     eval "$(pyenv init -)"
     pyenv install $PYTHON_VERSION

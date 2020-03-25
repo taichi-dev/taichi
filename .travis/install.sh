@@ -12,4 +12,15 @@ if [[ $TRAVIS_OS_NAME == 'osx' ]]; then
     pyenv install $PYTHON_VERSION
     pyenv global $PYTHON_VERSION
     pyenv rehash
+elif [[ $TRAVIS_OS_NAME == 'linux' ]]; then
+    export PATH="$HOME/.pyenv/bin:$PATH"
+    eval "${MATRIX_EVAL}"
+    echo "python version: $PYTHON_VERSION"
+    apt-get update > /dev/null
+    apt-get upgrade pyenv
+    # use pyenv to build python
+    eval "$(pyenv init -)"
+    pyenv install $PYTHON_VERSION
+    pyenv global $PYTHON_VERSION
+    pyenv rehash
 fi

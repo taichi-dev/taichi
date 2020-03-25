@@ -54,9 +54,11 @@ cache:
 before_install:
 - eval "${MATRIX_EVAL}"
 - echo "${TRAVIS_OS_NAME} ${MATRIX_EVAL}"
-- sysctl -n hw.ncpu
+- [ $TRAVIS_OS_NAME == 'linux' ] && grep name /proc/cpuinfo | cut -f2 -d: | uniq -c || true
+- [ $TRAVIS_OS_NAME == 'osx' ] && sysctl -n hw.ncpu || true
 - pwd
 - cd $TRAVIS_BUILD_DIR
+- pwd
 - mkdir taichi-llvm
 - cd taichi-llvm
 - wget https://github.com/yuanming-hu/taichi_assets/releases/download/llvm8/taichi-llvm-8.0.1.zip --retry-on-http-error=403 --waitretry=3 --tries=5

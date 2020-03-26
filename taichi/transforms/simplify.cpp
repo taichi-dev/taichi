@@ -108,6 +108,12 @@ class LocalStoreForwarder : public BasicStmtVisitor {
     }
   }
 
+  void visit(AllocaStmt *stmt) override {
+    if (stmt == var) {
+      result = stmt;
+    }
+  }
+
   void visit(AtomicOpStmt *stmt) override {
     if (stmt->dest == var) {
       result = nullptr;
@@ -449,7 +455,13 @@ class BasicBlockSimplify : public IRVisitor {
             stmt->parent->erase(current_stmt_id);
             throw IRModified();
           } else {
-            TI_NOT_IMPLEMENTED
+            TI_ASSERT(bstmt->is<AllocaStmt>());
+            auto zero = stmt->insert_after_me(Stmt::make<ConstStmt>(
+                LaneAttribute<TypedConstant>(bstmt->ret_type.data_type)));
+            zero->repeat(stmt->width());
+            stmt->replace_with(zero);
+            stmt->parent->erase(current_stmt_id);
+            throw IRModified();
           }
         }
       }

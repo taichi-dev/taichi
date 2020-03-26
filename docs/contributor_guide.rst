@@ -75,7 +75,7 @@ Reviewing & PR merging
 
 PR title tags
 -------------
-Please always prepend tags such as ``[Metal]`` to PR titles. For example, ``[Metal] Support bitmasked SNode``, ``[OpenGL] AtomicMin/Max support``, or ``[Opt] Enhanced constant folding``.
+Please always prepend exactly one tag such as ``[Metal]`` to PR titles. For example, "[Metal] Support bitmasked SNode", "[OpenGL] AtomicMin/Max support", or "[Opt] Enhanced constant folding".
 
 Existing tags:
 
@@ -99,7 +99,8 @@ Existing tags:
   Therefore the changelog will distinguish `what the user should know` from `what the developers are doing`.
   This is done by **capitalizing PR tags**:
 
-   - PRs with visible/notable features to the users should be marked with tags starting with **the first letter capitalized**, e.g. ``[Metal], [OpenGL], [IR], [Lang], [CLI]``;
+   - PRs with visible/notable features to the users should be marked with tags starting with **the first letter capitalized**, e.g. ``[Metal], [OpenGL], [IR], [Lang], [CLI]``.
+     When releasing a new version, a script will generate a changelog with these changes (PR title) highlighted. Therefore it is **important** to make sure the end-users can understand what your PR does based on your PR title.
    - Other PRs (underlying development/intermediate implementation) should use tags with **everything in lowercase letters**: e.g. ``[metal], [opengl], [ir], [lang], [cli]``.
 
 Tips on the Taichi compiler development

@@ -4,30 +4,46 @@
 
 TLANG_NAMESPACE_BEGIN
 
-template <typename T>
-class StmtSearcher : public BasicStmtVisitor {
+// Find if there is a load following a store in a basic block
+class LocalLoadSearcher : public BasicStmtVisitor {
  private:
-  std::function<bool(Stmt *)> test;
-  std::vector<Stmt *> results;
+  Stmt *ptr;
+  bool result;
 
  public:
   using BasicStmtVisitor::visit;
 
-  StmtSearcher(std::function<bool(Stmt *)> test) : test(test) {
+  explicit LocalLoadSearcher(Stmt *ptr) : ptr(ptr), result(false) {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
   }
 
-  void visit(Stmt *stmt) {
-    if (stmt->is<T>() && test(stmt))
-      results.push_back(stmt);
+  void visit(LocalLoadStmt *stmt) override {
+    if (stmt->has_source(ptr)) {
+      result = true;
+    }
   }
 
-  static std::vector<Stmt *> run(IRNode *root,
-                                 std::function<bool(Stmt *)> test) {
-    StmtSearcher<T> searcher(test);
+  void visit(AtomicOpStmt *stmt) override {
+    if (stmt->dest == ptr) {
+      result = true;
+    }
+    // current store: $d
+    // $a = alloca
+    // $b : local store [$a <- v1]  <-- prev lstore |bstmt_|
+    // $c = atomic add($a, v2)      <-- cannot eliminate $b
+    // $d : local store [$a <- v3]
+
+    // current store: $b
+    // $a = alloca
+    // $b : local store [$a <- v1]
+    // $c = atomic add($a, v2)      <-- cannot eliminate $b
+  }
+
+  static bool run(IRNode *root, Stmt *ptr) {
+    LocalLoadSearcher searcher(ptr);
     root->accept(&searcher);
-    return searcher.results;
+    return searcher.result;
   }
 };
 
@@ -351,35 +367,6 @@ class BasicBlockSimplify : public IRVisitor {
     set_done(stmt);
   }
 
-  bool has_load(int start_index, int end_index, LocalStoreStmt *stmt) {
-    for (int j = start_index; j <= end_index; j++) {
-      std::function<bool(Stmt *)> check_load;
-      check_load = [&] (Stmt *stmt_j) {
-        if (stmt_j->is_container_statement()) {
-          // if, while, etc..
-          return true; // TODO
-        }
-        if (stmt_j->is<LocalLoadStmt>() &&
-            stmt_j->as<LocalLoadStmt>()->has_source(stmt->ptr))
-          return true;
-        if (stmt_j->is<AtomicOpStmt>() &&
-            (stmt_j->as<AtomicOpStmt>()->dest ==
-                stmt->ptr)) {
-          // $a = alloca
-          // $b : local store [$a <- v1]  <-- prev lstore |bstmt_|
-          // $c = atomic add($a, v2)      <-- cannot eliminate $b
-          // $d : local store [$a <- v3]
-          return true;
-        }
-        return false;
-      };
-      if (!StmtSearcher<Stmt>::run(block->statements[j].get(), check_load).empty()) {
-        return true;
-      }
-    }
-    return false;
-  }
-
   void visit(LocalStoreStmt *stmt) override {
     if (is_done(stmt))
       return;
@@ -393,7 +380,36 @@ class BasicBlockSimplify : public IRVisitor {
           auto bstmt_ = bstmt->as<LocalStoreStmt>();
           bool same = stmt->ptr == bstmt_->ptr;
           if (same) {
-            if (!has_load(i + 1, current_stmt_id - 1, stmt)) {
+            bool has_load = false;
+            for (int j = i + 1; j < current_stmt_id; j++) {
+              if (!advanced_optimization) {
+                if (block->statements[j]
+                    ->is_container_statement()) {  // no if, while, etc..
+                  has_load = true;
+                  break;
+                }
+                if (block->statements[j]->is<LocalLoadStmt>() &&
+                    block->statements[j]->as<LocalLoadStmt>()->has_source(
+                        stmt->ptr)) {
+                  has_load = true;
+                }
+                if (block->statements[j]->is<AtomicOpStmt>() &&
+                    (block->statements[j]->as<AtomicOpStmt>()->dest ==
+                        stmt->ptr)) {
+                  // $a = alloca
+                  // $b : local store [$a <- v1]  <-- prev lstore |bstmt_|
+                  // $c = atomic add($a, v2)      <-- cannot eliminate $b
+                  // $d : local store [$a <- v3]
+                  has_load = true;
+                }
+                continue;
+              }
+              if (LocalLoadSearcher::run(block->statements[j].get(), stmt->ptr)) {
+                has_load = true;
+                break;
+              }
+            }
+            if (!has_load) {
               stmt->parent->erase(bstmt_);
               throw IRModified();
             }
@@ -408,27 +424,34 @@ class BasicBlockSimplify : public IRVisitor {
       bool has_related = false;
       for (int i = current_stmt_id + 1; i < (int)block->statements.size();
            i++) {
-        auto &bstmt = block->statements[i];
-        if (bstmt->is_container_statement()) {
+        if (!advanced_optimization) {
+          auto &bstmt = block->statements[i];
+          if (bstmt->is_container_statement()) {
+            has_related = true;
+            break;
+          }
+          if (bstmt->is<LocalLoadStmt>()) {
+            auto bstmt_ = bstmt->as<LocalLoadStmt>();
+            if (bstmt_->has_source(stmt->ptr)) {
+              has_related = true;
+              break;
+            }
+          }
+          if (bstmt->is<AtomicOpStmt>()) {
+            // $a = alloca
+            // $b : local store [$a <- v1]
+            // $c = atomic add($a, v2)      <-- cannot eliminate $b
+            auto bstmt_ = bstmt->as<AtomicOpStmt>();
+            if (bstmt_->dest == stmt->ptr) {
+              has_related = true;
+              break;
+            }
+          }
+          continue;
+        }
+        if (LocalLoadSearcher::run(block->statements[i].get(), stmt->ptr)) {
           has_related = true;
           break;
-        }
-        if (bstmt->is<LocalLoadStmt>()) {
-          auto bstmt_ = bstmt->as<LocalLoadStmt>();
-          if (bstmt_->has_source(stmt->ptr)) {
-            has_related = true;
-            break;
-          }
-        }
-        if (bstmt->is<AtomicOpStmt>()) {
-          // $a = alloca
-          // $b : local store [$a <- v1]
-          // $c = atomic add($a, v2)      <-- cannot eliminate $b
-          auto bstmt_ = bstmt->as<AtomicOpStmt>();
-          if (bstmt_->dest == stmt->ptr) {
-            has_related = true;
-            break;
-          }
         }
       }
       if (!has_related) {

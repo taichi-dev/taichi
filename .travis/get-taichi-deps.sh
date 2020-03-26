@@ -9,6 +9,5 @@ if [ $TRAVIS_OS_NAME == 'osx' ]; then
 elif [ $TRAVIS_OS_NAME == 'linux' ]; then
 	wget https://github.com/yuanming-hu/taichi_assets/releases/download/llvm8/taichi-llvm-8.0.1-linux-x64.zip
 	unzip taichi-llvm-8.0.1-linux-x64.zip
-	sudo apt-get install clang-8
 fi
 cd ..

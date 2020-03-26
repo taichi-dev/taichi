@@ -1,5 +1,6 @@
 #include <set>
 #include <unordered_set>
+#include <utility>
 #include "taichi/ir/ir.h"
 
 TLANG_NAMESPACE_BEGIN
@@ -42,6 +43,45 @@ class LocalLoadSearcher : public BasicStmtVisitor {
 
   static bool run(IRNode *root, Stmt *ptr) {
     LocalLoadSearcher searcher(ptr);
+    root->accept(&searcher);
+    return searcher.result;
+  }
+};
+
+// Find if there is a store preceding a load in a basic block
+class LocalStoreSearcher : public BasicStmtVisitor {
+ private:
+  const std::vector<Stmt *> &vars;
+  bool result;
+
+ public:
+  using BasicStmtVisitor::visit;
+
+  explicit LocalStoreSearcher(const std::vector<Stmt *> &vars) : vars(vars), result(false) {
+    allow_undefined_visitor = true;
+    invoke_default_visitor = true;
+  }
+
+  void visit(LocalStoreStmt *stmt) override {
+    for (auto var : vars) {
+      if (stmt->ptr == var) {
+        result = true;
+        break;
+      }
+    }
+  }
+
+  void visit(AtomicOpStmt *stmt) override {
+    for (auto var : vars) {
+      if (stmt->dest == var) {
+        result = true;
+        break;
+      }
+    }
+  }
+
+  static bool run(IRNode *root, const std::vector<Stmt *> &vars) {
+    LocalStoreSearcher searcher(std::move(vars));
     root->accept(&searcher);
     return searcher.result;
   }
@@ -303,13 +343,20 @@ class BasicBlockSimplify : public IRVisitor {
             // no store to the var?
             bool has_related_store = false;
             for (int j = i + 1; j < current_stmt_id; j++) {
-              if (block->statements[j]
-                      ->is_container_statement()) {  // no if, while, etc..
+              if (!advanced_optimization) {
+                if (block->statements[j]
+                        ->is_container_statement()) {  // no if, while, etc..
+                  has_related_store = true;
+                  break;
+                }
+                if (modifies_local(block->statements[j].get(), vars)) {
+                  has_related_store = true;
+                }
+                continue;
+              }
+              if (LocalStoreSearcher::run(block->statements[j].get(), vars)) {
                 has_related_store = true;
                 break;
-              }
-              if (modifies_local(block->statements[j].get(), vars)) {
-                has_related_store = true;
               }
             }
             if (!has_related_store) {

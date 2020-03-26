@@ -8,25 +8,25 @@ TLANG_NAMESPACE_BEGIN
 // Find if there is a load following a store in a basic block
 class LocalLoadSearcher : public BasicStmtVisitor {
  private:
-  Stmt *ptr;
+  Stmt *var;
   bool result;
 
  public:
   using BasicStmtVisitor::visit;
 
-  explicit LocalLoadSearcher(Stmt *ptr) : ptr(ptr), result(false) {
+  explicit LocalLoadSearcher(Stmt *var) : var(var), result(false) {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
   }
 
   void visit(LocalLoadStmt *stmt) override {
-    if (stmt->has_source(ptr)) {
+    if (stmt->has_source(var)) {
       result = true;
     }
   }
 
   void visit(AtomicOpStmt *stmt) override {
-    if (stmt->dest == ptr) {
+    if (stmt->dest == var) {
       result = true;
     }
     // current store: $d
@@ -41,8 +41,8 @@ class LocalLoadSearcher : public BasicStmtVisitor {
     // $c = atomic add($a, v2)      <-- cannot eliminate $b
   }
 
-  static bool run(IRNode *root, Stmt *ptr) {
-    LocalLoadSearcher searcher(ptr);
+  static bool run(IRNode *root, Stmt *var) {
+    LocalLoadSearcher searcher(var);
     root->accept(&searcher);
     return searcher.result;
   }
@@ -81,7 +81,41 @@ class LocalStoreSearcher : public BasicStmtVisitor {
   }
 
   static bool run(IRNode *root, const std::vector<Stmt *> &vars) {
-    LocalStoreSearcher searcher(std::move(vars));
+    LocalStoreSearcher searcher(vars);
+    root->accept(&searcher);
+    return searcher.result;
+  }
+};
+
+
+// Find the **last** store preceding a load in a basic block
+class LocalStoreForwarder : public BasicStmtVisitor {
+ private:
+  Stmt *var;
+  Stmt *result;
+
+ public:
+  using BasicStmtVisitor::visit;
+
+  explicit LocalStoreForwarder(Stmt *var) : var(var), result(nullptr) {
+    allow_undefined_visitor = true;
+    invoke_default_visitor = true;
+  }
+
+  void visit(LocalStoreStmt *stmt) override {
+    if (stmt->ptr == var) {
+      result = stmt;
+    }
+  }
+
+  void visit(AtomicOpStmt *stmt) override {
+    if (stmt->dest == var) {
+      result = nullptr;
+    }
+  }
+
+  static Stmt *run(IRNode *root, Stmt *var) {
+    LocalStoreForwarder searcher(var);
     root->accept(&searcher);
     return searcher.result;
   }
@@ -380,30 +414,43 @@ class BasicBlockSimplify : public IRVisitor {
     if (regular) {
       // Check all previous statements in the current block before the local
       // load
-      auto block = stmt->parent;
       Stmt *containing_statement = stmt;
       auto stmt_id = block->locate(containing_statement);
       TI_ASSERT(stmt_id != -1);
       for (int i = stmt_id - 1; i >= 0; i--) {
-        auto &bstmt = block->statements[i];
-        // Find a previous store
-        if (auto s = bstmt->cast<AtomicOpStmt>()) {
-          if (s->dest == alloca) {
+        if (!advanced_optimization) {
+          auto &bstmt = block->statements[i];
+          // Find a previous store
+          if (auto s = bstmt->cast<AtomicOpStmt>()) {
+            if (s->dest == alloca) {
+              break;
+            }
+          }
+          if (bstmt->is<LocalStoreStmt>()) {
+            auto bstmt_ = bstmt->as<LocalStoreStmt>();
+            // Same alloca
+            if (bstmt_->ptr == alloca) {
+              // Forward to the first local store only
+              stmt->replace_with(bstmt_->data);
+              stmt->parent->erase(current_stmt_id);
+              throw IRModified();
+            }
+          } else if (bstmt->is_container_statement()) {
+            // assume this container may modify the local var
             break;
           }
+          continue;
         }
-        if (bstmt->is<LocalStoreStmt>()) {
-          auto bstmt_ = bstmt->as<LocalStoreStmt>();
-          // Same alloca
-          if (bstmt_->ptr == alloca) {
+        auto bstmt = LocalStoreForwarder::run(block->statements[i].get(), alloca);
+        if (bstmt != nullptr) {
+          if (bstmt->is<LocalStoreStmt>()) {
             // Forward to the first local store only
-            stmt->replace_with(bstmt_->data);
+            stmt->replace_with(bstmt->as<LocalStoreStmt>()->data);
             stmt->parent->erase(current_stmt_id);
             throw IRModified();
+          } else {
+            TI_NOT_IMPLEMENTED
           }
-        } else if (bstmt->is_container_statement()) {
-          // assume this container may modify the local var
-          break;
         }
       }
       // Note: simply checking all statements before stmt is not sufficient

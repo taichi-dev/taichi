@@ -1,5 +1,5 @@
 Contribution guidelines
-===============================================
+=======================
 
 First of all, thank you for contributing! We welcome contributions of
 all forms, including but not limited to
@@ -58,16 +58,49 @@ Making good pull requests
 - All PRs should come with **documentation update**, except for internal compiler implementations;
 - All PRs should always be **rebased** onto the latest master branch before merging;
 - All PRs should pass **continuous integration tests** before they get merged;
-- PR authors **should not squash commits**;
-- If you want early feedback from core developers, open a PR in **Draft** state on GitHub so that you can share your progress;
+- PR authors **should not squash commits on their own**;
+- PR titles should follow :ref:`prtag`;
+- If you want early feedback from core developers, open a PR in **Draft** state on GitHub so that you can share your progress.
 
 
 Reviewing & PR merging
 ----------------------
 
 - The merger should always **squash and merge** PRs into the master branch;
-- The master branch is required to have a **linear history**.
+- The master branch is required to have a **linear history**;
+- Make sure the title follows :ref:`prtag`.
 
+
+.. _prtag:
+
+PR title tags
+-------------
+Please always prepend tags such as ``[Metal]`` to PR titles. For example, ``[Metal] Support bitmasked SNode``, ``[OpenGL] AtomicMin/Max support``, or ``[Opt] Enhanced constant folding``.
+
+Existing tags:
+
+- ``[Metal], [OpenGL], [CPU], [CUDA], [AMDGPU]``: backends;
+- ``[Lang]``: frontend language features, including syntax sugars;
+- ``[Std]``: standard library, e.g. `ti.Matrix` and `ti.Vector`;
+- ``[IR]``: intermediate representation;
+- ``[Opt]``: IR optimization passes;
+- ``[Type]``: type system;
+- ``[Infra]``: general infrastructure, e.g. logging, image reader;
+- ``[GUI]``: the built-in GUI system;
+- ``[CLI]``: commandline interfaces, e.g. the ``ti`` command;
+- ``[Doc]``: documentation;
+- ``[Example]``: examples under ``taichi/examples/``;
+- ``[Misc]``: something that doesn't belong to any category, such as version bump, reformatting;
+- **When introducing a new tag, please update the list here in the first PR with that tag, so that people can follow.**
+
+.. note::
+
+  We do appreciate all kinds of contributions, yet we should not expose the title of every PR to end-users.
+  Therefore the changelog will distinguish `what the user should know` from `what the developers are doing`.
+  This is done by **capitalizing PR tags**:
+
+   - PRs with visible/notable features to the users should be marked with tags starting with **the first letter capitalized**, e.g. ``[Metal], [OpenGL], [IR], [Lang], [CLI]``;
+   - Other PRs (underlying development/intermediate implementation) should use tags with **everything in lowercase letters**: e.g. ``[metal], [opengl], [ir], [lang], [cli]``.
 
 Tips on the Taichi compiler development
 ---------------------------------------

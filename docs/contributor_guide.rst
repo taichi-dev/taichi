@@ -17,7 +17,7 @@ How to contribute bug fixes and new features
 
 Issues marked with `"welcome contribution" <https://github.com/taichi-dev/taichi/issues?q=is%3Aopen+is%3Aissue+label%3A%22welcome+contribution%22>`_ are easy ones to start with.
 
-- Please first leave a note (e.g. *I know how to fix this and would like to help!*) on the issue, so that people know some one is already working on it. This helps prevent redundant work;
+- Please first leave a note (e.g. *I know how to fix this and would like to help!*) on the issue, so that people know someone is already working on it. This helps prevent redundant work;
 
 - If no core developer has commented and described a potential solution on the issue, please briefly describe your plan, and wait for a core developer to reply before you start.
   This helps keep implementations simple and effective.
@@ -28,7 +28,7 @@ High-level guidelines
 - Be pragmatic: practically solving problems is our ultimate goal.
 - No overkills: always use *easy* solutions to solve easy problems, so that you have time and energy for real hard ones.
 - Almost every design decision has pros and cons. A decision is `good` if its pros outweigh its cons. Always think about both sides.
-- Debugging is hard. Changesets should be small so that sourees of bugs can be easily pinpointed.
+- Debugging is hard. Changesets should be small so that sources of bugs can be easily pinpointed.
 - Unit/integration tests are our friends.
 
 .. note::
@@ -48,7 +48,9 @@ Making good pull requests
 -------------------------
 
 - PRs with **small** changesets are preferred. A PR should ideally address **only one issue**.
-- All commits in a PR will always be **squashed and merged into master as a single commit**, to keep a development history, make sure you break down your implementation into smaller PRs.
+- All commits in a PR will always be **squashed and merged into master as a single commit**.
+- When implementing a complex feature, consider breaking it down into small PRs, to keep a more detailed development history and to interact with core developers more frequently.
+- If you want early feedback from core developers, open a PR in **Draft** state on GitHub so that you can share your progress.
 - If you are making multiple PRs
 
   - Independent PRs should be based on **different** branches forking from ``master``;
@@ -60,7 +62,6 @@ Making good pull requests
 - All PRs should pass **continuous integration tests** before they get merged;
 - PR authors **should not squash commits on their own**;
 - PR titles should follow :ref:`prtag`;
-- If you want early feedback from core developers, open a PR in **Draft** state on GitHub so that you can share your progress.
 
 
 Reviewing & PR merging
@@ -68,6 +69,7 @@ Reviewing & PR merging
 
 - The merger should always **squash and merge** PRs into the master branch;
 - The master branch is required to have a **linear history**;
+- Make sure the PR passes **continuous integration tests**, except for cases like documentation updates;
 - Make sure the title follows :ref:`prtag`.
 
 
@@ -100,7 +102,7 @@ Existing tags:
   This is done by **capitalizing PR tags**:
 
    - PRs with visible/notable features to the users should be marked with tags starting with **the first letter capitalized**, e.g. ``[Metal], [OpenGL], [IR], [Lang], [CLI]``.
-     When releasing a new version, a script will generate a changelog with these changes (PR title) highlighted. Therefore it is **important** to make sure the end-users can understand what your PR does based on your PR title.
+     When releasing a new version, a script will generate a changelog with these changes (PR title) highlighted. Therefore it is **important** to make sure the end-users can understand what your PR does, **based on your PR title**.
    - Other PRs (underlying development/intermediate implementation) should use tags with **everything in lowercase letters**: e.g. ``[metal], [opengl], [ir], [lang], [cli]``.
 
 Tips on the Taichi compiler development
@@ -128,10 +130,11 @@ Testing
 -------
 
 Tests should be added to ``taichi/tests``.
-
 Use ``ti test`` to run all the tests.
-Use ``ti test -h`` to see more testing options.
+Use ``ti test -v`` for verbose outputs.
+Use ``ti test <filename(s)>`` to run specific tests. Feel free to omit the ``test_`` prefix and ``.py`` suffix in the filenames.
 
+For more options, see ``ti test -h``.
 
 Documentation
 -------------

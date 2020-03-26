@@ -5,7 +5,7 @@
 
 TLANG_NAMESPACE_BEGIN
 
-// Find if there is a load following a store in a basic block
+// Find if there is a load
 class LocalLoadSearcher : public BasicStmtVisitor {
  private:
   Stmt *var;
@@ -15,6 +15,7 @@ class LocalLoadSearcher : public BasicStmtVisitor {
   using BasicStmtVisitor::visit;
 
   explicit LocalLoadSearcher(Stmt *var) : var(var), result(false) {
+    TI_ASSERT(var->is<AllocaStmt>());
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
   }
@@ -48,7 +49,7 @@ class LocalLoadSearcher : public BasicStmtVisitor {
   }
 };
 
-// Find if there is a store preceding a load in a basic block
+// Find if there is a store
 class LocalStoreSearcher : public BasicStmtVisitor {
  private:
   const std::vector<Stmt *> &vars;
@@ -59,6 +60,9 @@ class LocalStoreSearcher : public BasicStmtVisitor {
 
   explicit LocalStoreSearcher(const std::vector<Stmt *> &vars)
       : vars(vars), result(false) {
+    for (auto var : vars) {
+      TI_ASSERT(var->is<AllocaStmt>());
+    }
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
   }
@@ -88,7 +92,7 @@ class LocalStoreSearcher : public BasicStmtVisitor {
   }
 };
 
-// Find the **last** store preceding a load in a basic block
+// Find the **last** store
 class LocalStoreForwarder : public BasicStmtVisitor {
  private:
   Stmt *var;
@@ -98,6 +102,7 @@ class LocalStoreForwarder : public BasicStmtVisitor {
   using BasicStmtVisitor::visit;
 
   explicit LocalStoreForwarder(Stmt *var) : var(var), result(nullptr) {
+    TI_ASSERT(var->is<AllocaStmt>());
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
   }

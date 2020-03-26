@@ -24,18 +24,18 @@ matrix:
   - name: "Ubuntu 18.04 + Python 3.6"
     if: commit_message =~ /^\[release\]/
     os: linux
-    dist: xenial
+    dist: bionic
     env:
       - MATRIX_EVAL="CC=clang && CXX=clang++ && PYTHON_VERSION=3.6.1 && PYTHON=python"
   - name: "Ubuntu 18.04 + Python 3.7"
     os: linux
-    dist: xenial
+    dist: bionic
     env:
       - MATRIX_EVAL="CC=clang && CXX=clang++ && PYTHON_VERSION=3.7.1 && PYTHON=python"
   - name: "Ubuntu 18.04 + Python 3.8"
     if: commit_message =~ /^\[release\]/
     os: linux
-    dist: xenial
+    dist: bionic
     env:
       - MATRIX_EVAL="CC=clang && CXX=clang++ && PYTHON_VERSION=3.8.1 && PYTHON=python"
 

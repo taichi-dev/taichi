@@ -434,7 +434,7 @@ class MetalRuntime::Impl {
     params.profiler = profiler_;
     compiled_taichi_kernels_[taichi_kernel_name] =
         std::make_unique<CompiledTaichiKernel>(params);
-    TI_INFO("Registered Taichi kernel <{}>", taichi_kernel_name);
+    TI_DEBUG("Registered Taichi kernel <{}>", taichi_kernel_name);
   }
 
   void launch_taichi_kernel(const std::string &taichi_kernel_name,

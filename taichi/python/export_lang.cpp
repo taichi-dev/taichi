@@ -143,6 +143,7 @@ void export_lang(py::module &m) {
       .def(py::init<>())
       .def_readwrite("parent", &SNode::parent)
       .def_readonly("type", &SNode::type)
+      .def_readonly("is_bitmasked", &SNode::_bitmasked)
       .def("dense",
            (SNode & (SNode::*)(const std::vector<Index> &,
                                const std::vector<int> &))(&SNode::dense),

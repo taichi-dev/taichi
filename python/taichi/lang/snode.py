@@ -72,6 +72,8 @@ class SNode:
         for c in ch:
             c.deactivate_all()
         import taichi as ti
-        if self.ptr.type == ti.core.SNodeType.pointer:
+        if self.ptr.type == ti.core.SNodeType.pointer or (
+                self.ptr.type == ti.core.SNodeType.dense
+                and self.ptr.is_bitmasked):
             from .meta import snode_deactivate
             snode_deactivate(self)

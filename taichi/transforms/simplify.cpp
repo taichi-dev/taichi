@@ -4,6 +4,33 @@
 
 TLANG_NAMESPACE_BEGIN
 
+template <typename T>
+class StmtSearcher : public BasicStmtVisitor {
+ private:
+  std::function<bool(Stmt *)> test;
+  std::vector<Stmt *> results;
+
+ public:
+  using BasicStmtVisitor::visit;
+
+  StmtSearcher(std::function<bool(Stmt *)> test) : test(test) {
+    allow_undefined_visitor = true;
+    invoke_default_visitor = true;
+  }
+
+  void visit(Stmt *stmt) {
+    if (stmt->is<T>() && test(stmt))
+      results.push_back(stmt);
+  }
+
+  static std::vector<Stmt *> run(IRNode *root,
+                                 std::function<bool(Stmt *)> test) {
+    StmtSearcher<T> searcher(test);
+    root->accept(&searcher);
+    return searcher.results;
+  }
+};
+
 // Common subexpression elimination, store forwarding, useless local store
 // elimination; Simplify if statements into conditional stores.
 class BasicBlockSimplify : public IRVisitor {
@@ -324,6 +351,35 @@ class BasicBlockSimplify : public IRVisitor {
     set_done(stmt);
   }
 
+  bool has_load(int start_index, int end_index, LocalStoreStmt *stmt) {
+    for (int j = start_index; j <= end_index; j++) {
+      std::function<bool(Stmt *)> check_load;
+      check_load = [&] (Stmt *stmt_j) {
+        if (stmt_j->is_container_statement()) {
+          // if, while, etc..
+          return true; // TODO
+        }
+        if (stmt_j->is<LocalLoadStmt>() &&
+            stmt_j->as<LocalLoadStmt>()->has_source(stmt->ptr))
+          return true;
+        if (stmt_j->is<AtomicOpStmt>() &&
+            (stmt_j->as<AtomicOpStmt>()->dest ==
+                stmt->ptr)) {
+          // $a = alloca
+          // $b : local store [$a <- v1]  <-- prev lstore |bstmt_|
+          // $c = atomic add($a, v2)      <-- cannot eliminate $b
+          // $d : local store [$a <- v3]
+          return true;
+        }
+        return false;
+      };
+      if (!StmtSearcher<Stmt>::run(block->statements[j].get(), check_load).empty()) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   void visit(LocalStoreStmt *stmt) override {
     if (is_done(stmt))
       return;
@@ -337,29 +393,7 @@ class BasicBlockSimplify : public IRVisitor {
           auto bstmt_ = bstmt->as<LocalStoreStmt>();
           bool same = stmt->ptr == bstmt_->ptr;
           if (same) {
-            bool has_load = false;
-            for (int j = i + 1; j < current_stmt_id; j++) {
-              if (block->statements[j]
-                      ->is_container_statement()) {  // no if, while, etc..
-                has_load = true;
-                break;
-              }
-              if (block->statements[j]->is<LocalLoadStmt>() &&
-                  block->statements[j]->as<LocalLoadStmt>()->has_source(
-                      stmt->ptr)) {
-                has_load = true;
-              }
-              if (block->statements[j]->is<AtomicOpStmt>() &&
-                  (block->statements[j]->as<AtomicOpStmt>()->dest ==
-                   stmt->ptr)) {
-                // $a = alloca
-                // $b : local store [$a <- v1]  <-- prev lstore |bstmt_|
-                // $c = atomic add($a, v2)      <-- cannot eliminate $b
-                // $d : local store [$a <- v3]
-                has_load = true;
-              }
-            }
-            if (!has_load) {
+            if (!has_load(i + 1, current_stmt_id - 1, stmt)) {
               stmt->parent->erase(bstmt_);
               throw IRModified();
             }

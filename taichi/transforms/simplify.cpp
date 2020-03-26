@@ -57,7 +57,8 @@ class LocalStoreSearcher : public BasicStmtVisitor {
  public:
   using BasicStmtVisitor::visit;
 
-  explicit LocalStoreSearcher(const std::vector<Stmt *> &vars) : vars(vars), result(false) {
+  explicit LocalStoreSearcher(const std::vector<Stmt *> &vars)
+      : vars(vars), result(false) {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
   }
@@ -86,7 +87,6 @@ class LocalStoreSearcher : public BasicStmtVisitor {
     return searcher.result;
   }
 };
-
 
 // Find the **last** store preceding a load in a basic block
 class LocalStoreForwarder : public BasicStmtVisitor {
@@ -447,7 +447,8 @@ class BasicBlockSimplify : public IRVisitor {
           }
           continue;
         }
-        auto bstmt = LocalStoreForwarder::run(block->statements[i].get(), alloca);
+        auto bstmt =
+            LocalStoreForwarder::run(block->statements[i].get(), alloca);
         if (bstmt != nullptr) {
           if (bstmt->is<LocalStoreStmt>()) {
             // Forward to the first local store only
@@ -490,7 +491,7 @@ class BasicBlockSimplify : public IRVisitor {
             for (int j = i + 1; j < current_stmt_id; j++) {
               if (!advanced_optimization) {
                 if (block->statements[j]
-                    ->is_container_statement()) {  // no if, while, etc..
+                        ->is_container_statement()) {  // no if, while, etc..
                   has_load = true;
                   break;
                 }
@@ -501,7 +502,7 @@ class BasicBlockSimplify : public IRVisitor {
                 }
                 if (block->statements[j]->is<AtomicOpStmt>() &&
                     (block->statements[j]->as<AtomicOpStmt>()->dest ==
-                        stmt->ptr)) {
+                     stmt->ptr)) {
                   // $a = alloca
                   // $b : local store [$a <- v1]  <-- prev lstore |bstmt_|
                   // $c = atomic add($a, v2)      <-- cannot eliminate $b
@@ -510,7 +511,8 @@ class BasicBlockSimplify : public IRVisitor {
                 }
                 continue;
               }
-              if (LocalLoadSearcher::run(block->statements[j].get(), stmt->ptr)) {
+              if (LocalLoadSearcher::run(block->statements[j].get(),
+                                         stmt->ptr)) {
                 has_load = true;
                 break;
               }

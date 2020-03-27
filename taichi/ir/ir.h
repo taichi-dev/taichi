@@ -306,6 +306,10 @@ class VecStatement {
     stmts = std::move(o.stmts);
   }
 
+  VecStatement(std::vector<pStmt> &&other_stmts) {
+    stmts = std::move(other_stmts);
+  }
+
   Stmt *push_back(pStmt &&stmt) {
     auto ret = stmt.get();
     stmts.push_back(std::move(stmt));

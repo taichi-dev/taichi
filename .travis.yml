@@ -63,6 +63,7 @@ before_install:
 - ls $TRAVIS_BUILD_DIR/taichi-llvm/bin/
 - echo $PATH
 - llvm-config --version
+- which llvm-as
 
 install:
 - .travis/install.sh

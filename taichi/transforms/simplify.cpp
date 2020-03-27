@@ -30,16 +30,6 @@ class LocalLoadSearcher : public BasicStmtVisitor {
     if (stmt->dest == var) {
       result = true;
     }
-    // current store: $d
-    // $a = alloca
-    // $b : local store [$a <- v1]  <-- prev lstore |bstmt_|
-    // $c = atomic add($a, v2)      <-- cannot eliminate $b
-    // $d : local store [$a <- v3]
-
-    // current store: $b
-    // $a = alloca
-    // $b : local store [$a <- v1]
-    // $c = atomic add($a, v2)      <-- cannot eliminate $b
   }
 
   static bool run(IRNode *root, Stmt *var) {

@@ -1,8 +1,196 @@
 #include <set>
 #include <unordered_set>
+#include <utility>
 #include "taichi/ir/ir.h"
 
 TLANG_NAMESPACE_BEGIN
+
+// Find if there is a load (or AtomicOpStmt).
+class LocalLoadSearcher : public BasicStmtVisitor {
+ private:
+  Stmt *var;
+  bool result;
+
+ public:
+  using BasicStmtVisitor::visit;
+
+  explicit LocalLoadSearcher(Stmt *var) : var(var), result(false) {
+    TI_ASSERT(var->is<AllocaStmt>());
+    allow_undefined_visitor = true;
+    invoke_default_visitor = true;
+  }
+
+  void visit(LocalLoadStmt *stmt) override {
+    if (stmt->has_source(var)) {
+      result = true;
+    }
+  }
+
+  void visit(AtomicOpStmt *stmt) override {
+    if (stmt->dest == var) {
+      result = true;
+    }
+  }
+
+  static bool run(IRNode *root, Stmt *var) {
+    LocalLoadSearcher searcher(var);
+    root->accept(&searcher);
+    return searcher.result;
+  }
+};
+
+// Find if there is a store (or AtomicOpStmt).
+class LocalStoreSearcher : public BasicStmtVisitor {
+ private:
+  const std::vector<Stmt *> &vars;
+  bool result;
+
+ public:
+  using BasicStmtVisitor::visit;
+
+  explicit LocalStoreSearcher(const std::vector<Stmt *> &vars)
+      : vars(vars), result(false) {
+    for (auto var : vars) {
+      TI_ASSERT(var->is<AllocaStmt>());
+    }
+    allow_undefined_visitor = true;
+    invoke_default_visitor = true;
+  }
+
+  void visit(LocalStoreStmt *stmt) override {
+    for (auto var : vars) {
+      if (stmt->ptr == var) {
+        result = true;
+        break;
+      }
+    }
+  }
+
+  void visit(AtomicOpStmt *stmt) override {
+    for (auto var : vars) {
+      if (stmt->dest == var) {
+        result = true;
+        break;
+      }
+    }
+  }
+
+  static bool run(IRNode *root, const std::vector<Stmt *> &vars) {
+    LocalStoreSearcher searcher(vars);
+    root->accept(&searcher);
+    return searcher.result;
+  }
+};
+
+// Find the **last** store, or return invalid if there is an AtomicOpStmt
+// after the last store.
+class LocalStoreForwarder : public BasicStmtVisitor {
+ private:
+  Stmt *var;
+  bool is_valid;
+  Stmt *result;
+
+ public:
+  using BasicStmtVisitor::visit;
+
+  explicit LocalStoreForwarder(Stmt *var)
+      : var(var), is_valid(true), result(nullptr) {
+    TI_ASSERT(var->is<AllocaStmt>());
+    allow_undefined_visitor = true;
+    invoke_default_visitor = true;
+  }
+
+  void visit(LocalStoreStmt *stmt) override {
+    if (stmt->ptr == var) {
+      is_valid = true;
+      result = stmt;
+    }
+  }
+
+  void visit(AllocaStmt *stmt) override {
+    if (stmt == var) {
+      is_valid = true;
+      result = stmt;
+    }
+  }
+
+  void visit(AtomicOpStmt *stmt) override {
+    if (stmt->dest == var) {
+      is_valid = false;
+    }
+  }
+
+  // Only if **both** branches finally store the variable with exactly the same
+  // data, can we forward it to the local load statement.
+  void visit(IfStmt *if_stmt) override {
+    // the default return value: valid, no stores
+    std::pair<bool, Stmt *> true_branch(true, nullptr);
+    if (if_stmt->true_statements) {
+      // create a new LocalStoreForwarder instance
+      true_branch = run(if_stmt->true_statements.get(), var);
+    }
+    std::pair<bool, Stmt *> false_branch(true, nullptr);
+    if (if_stmt->false_statements) {
+      false_branch = run(if_stmt->false_statements.get(), var);
+    }
+    auto true_stmt = true_branch.second;
+    auto false_stmt = false_branch.second;
+    if (!true_branch.first || !false_branch.first) {
+      // at least one branch finally modifies the variable without storing
+      is_valid = false;
+    } else if (true_stmt == nullptr && false_stmt == nullptr) {
+      // both branches don't modify the variable
+      return;
+    } else if (true_stmt == nullptr || false_stmt == nullptr) {
+      // only one branch modifies the variable
+      is_valid = false;
+    } else {
+      TI_ASSERT(true_stmt->is<LocalStoreStmt>());
+      TI_ASSERT(false_stmt->is<LocalStoreStmt>());
+      if (true_stmt->as<LocalStoreStmt>()->data !=
+          false_stmt->as<LocalStoreStmt>()->data) {
+        // two branches finally store the variable differently
+        is_valid = false;
+      } else {
+        is_valid = true;
+        result = true_stmt;  // same as false_stmt
+      }
+    }
+  }
+
+  // We don't know if a loop's body will be executed, so we cannot forward
+  // the "last" store inside a loop to the local load statement.
+  // What we can do is just check if the loop doesn't modify the variable.
+  void visit(WhileStmt *stmt) override {
+    if (LocalStoreSearcher::run(stmt, {var})) {
+      is_valid = false;
+    }
+  }
+
+  void visit(RangeForStmt *stmt) override {
+    if (LocalStoreSearcher::run(stmt, {var})) {
+      is_valid = false;
+    }
+  }
+
+  void visit(StructForStmt *stmt) override {
+    if (LocalStoreSearcher::run(stmt, {var})) {
+      is_valid = false;
+    }
+  }
+
+  void visit(OffloadedStmt *stmt) override {
+    if (LocalStoreSearcher::run(stmt, {var})) {
+      is_valid = false;
+    }
+  }
+
+  static std::pair<bool, Stmt *> run(IRNode *root, Stmt *var) {
+    LocalStoreForwarder searcher(var);
+    root->accept(&searcher);
+    return std::make_pair(searcher.is_valid, searcher.result);
+  }
+};
 
 // Common subexpression elimination, store forwarding, useless local store
 // elimination; Simplify if statements into conditional stores.
@@ -260,13 +448,20 @@ class BasicBlockSimplify : public IRVisitor {
             // no store to the var?
             bool has_related_store = false;
             for (int j = i + 1; j < current_stmt_id; j++) {
-              if (block->statements[j]
-                      ->is_container_statement()) {  // no if, while, etc..
+              if (!advanced_optimization) {
+                if (block->statements[j]
+                        ->is_container_statement()) {  // no if, while, etc..
+                  has_related_store = true;
+                  break;
+                }
+                if (modifies_local(block->statements[j].get(), vars)) {
+                  has_related_store = true;
+                }
+                continue;
+              }
+              if (LocalStoreSearcher::run(block->statements[j].get(), vars)) {
                 has_related_store = true;
                 break;
-              }
-              if (modifies_local(block->statements[j].get(), vars)) {
-                has_related_store = true;
               }
             }
             if (!has_related_store) {
@@ -290,30 +485,55 @@ class BasicBlockSimplify : public IRVisitor {
     if (regular) {
       // Check all previous statements in the current block before the local
       // load
-      auto block = stmt->parent;
       Stmt *containing_statement = stmt;
       auto stmt_id = block->locate(containing_statement);
       TI_ASSERT(stmt_id != -1);
       for (int i = stmt_id - 1; i >= 0; i--) {
-        auto &bstmt = block->statements[i];
-        // Find a previous store
-        if (auto s = bstmt->cast<AtomicOpStmt>()) {
-          if (s->dest == alloca) {
+        if (!advanced_optimization) {
+          auto &bstmt = block->statements[i];
+          // Find a previous store
+          if (auto s = bstmt->cast<AtomicOpStmt>()) {
+            if (s->dest == alloca) {
+              break;
+            }
+          }
+          if (bstmt->is<LocalStoreStmt>()) {
+            auto bstmt_ = bstmt->as<LocalStoreStmt>();
+            // Same alloca
+            if (bstmt_->ptr == alloca) {
+              // Forward to the first local store only
+              stmt->replace_with(bstmt_->data);
+              stmt->parent->erase(current_stmt_id);
+              throw IRModified();
+            }
+          } else if (bstmt->is_container_statement()) {
+            // assume this container may modify the local var
             break;
           }
+          continue;
         }
-        if (bstmt->is<LocalStoreStmt>()) {
-          auto bstmt_ = bstmt->as<LocalStoreStmt>();
-          // Same alloca
-          if (bstmt_->ptr == alloca) {
+        auto last_store =
+            LocalStoreForwarder::run(block->statements[i].get(), alloca);
+        if (!last_store.first) {
+          // invalid
+          break;
+        }
+        auto bstmt = last_store.second;
+        if (bstmt != nullptr) {
+          if (bstmt->is<LocalStoreStmt>()) {
             // Forward to the first local store only
-            stmt->replace_with(bstmt_->data);
+            stmt->replace_with(bstmt->as<LocalStoreStmt>()->data);
+            stmt->parent->erase(current_stmt_id);
+            throw IRModified();
+          } else {
+            TI_ASSERT(bstmt->is<AllocaStmt>());
+            auto zero = stmt->insert_after_me(Stmt::make<ConstStmt>(
+                LaneAttribute<TypedConstant>(bstmt->ret_type.data_type)));
+            zero->repeat(stmt->width());
+            stmt->replace_with(zero);
             stmt->parent->erase(current_stmt_id);
             throw IRModified();
           }
-        } else if (bstmt->is_container_statement()) {
-          // assume this container may modify the local var
-          break;
         }
       }
       // Note: simply checking all statements before stmt is not sufficient
@@ -339,24 +559,32 @@ class BasicBlockSimplify : public IRVisitor {
           if (same) {
             bool has_load = false;
             for (int j = i + 1; j < current_stmt_id; j++) {
-              if (block->statements[j]
-                      ->is_container_statement()) {  // no if, while, etc..
+              if (!advanced_optimization) {
+                if (block->statements[j]
+                        ->is_container_statement()) {  // no if, while, etc..
+                  has_load = true;
+                  break;
+                }
+                if (block->statements[j]->is<LocalLoadStmt>() &&
+                    block->statements[j]->as<LocalLoadStmt>()->has_source(
+                        stmt->ptr)) {
+                  has_load = true;
+                }
+                if (block->statements[j]->is<AtomicOpStmt>() &&
+                    (block->statements[j]->as<AtomicOpStmt>()->dest ==
+                     stmt->ptr)) {
+                  // $a = alloca
+                  // $b : local store [$a <- v1]  <-- prev lstore |bstmt_|
+                  // $c = atomic add($a, v2)      <-- cannot eliminate $b
+                  // $d : local store [$a <- v3]
+                  has_load = true;
+                }
+                continue;
+              }
+              if (LocalLoadSearcher::run(block->statements[j].get(),
+                                         stmt->ptr)) {
                 has_load = true;
                 break;
-              }
-              if (block->statements[j]->is<LocalLoadStmt>() &&
-                  block->statements[j]->as<LocalLoadStmt>()->has_source(
-                      stmt->ptr)) {
-                has_load = true;
-              }
-              if (block->statements[j]->is<AtomicOpStmt>() &&
-                  (block->statements[j]->as<AtomicOpStmt>()->dest ==
-                   stmt->ptr)) {
-                // $a = alloca
-                // $b : local store [$a <- v1]  <-- prev lstore |bstmt_|
-                // $c = atomic add($a, v2)      <-- cannot eliminate $b
-                // $d : local store [$a <- v3]
-                has_load = true;
               }
             }
             if (!has_load) {
@@ -374,27 +602,34 @@ class BasicBlockSimplify : public IRVisitor {
       bool has_related = false;
       for (int i = current_stmt_id + 1; i < (int)block->statements.size();
            i++) {
-        auto &bstmt = block->statements[i];
-        if (bstmt->is_container_statement()) {
+        if (!advanced_optimization) {
+          auto &bstmt = block->statements[i];
+          if (bstmt->is_container_statement()) {
+            has_related = true;
+            break;
+          }
+          if (bstmt->is<LocalLoadStmt>()) {
+            auto bstmt_ = bstmt->as<LocalLoadStmt>();
+            if (bstmt_->has_source(stmt->ptr)) {
+              has_related = true;
+              break;
+            }
+          }
+          if (bstmt->is<AtomicOpStmt>()) {
+            // $a = alloca
+            // $b : local store [$a <- v1]
+            // $c = atomic add($a, v2)      <-- cannot eliminate $b
+            auto bstmt_ = bstmt->as<AtomicOpStmt>();
+            if (bstmt_->dest == stmt->ptr) {
+              has_related = true;
+              break;
+            }
+          }
+          continue;
+        }
+        if (LocalLoadSearcher::run(block->statements[i].get(), stmt->ptr)) {
           has_related = true;
           break;
-        }
-        if (bstmt->is<LocalLoadStmt>()) {
-          auto bstmt_ = bstmt->as<LocalLoadStmt>();
-          if (bstmt_->has_source(stmt->ptr)) {
-            has_related = true;
-            break;
-          }
-        }
-        if (bstmt->is<AtomicOpStmt>()) {
-          // $a = alloca
-          // $b : local store [$a <- v1]
-          // $c = atomic add($a, v2)      <-- cannot eliminate $b
-          auto bstmt_ = bstmt->as<AtomicOpStmt>();
-          if (bstmt_->dest == stmt->ptr) {
-            has_related = true;
-            break;
-          }
         }
       }
       if (!has_related) {

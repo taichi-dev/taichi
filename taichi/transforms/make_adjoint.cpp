@@ -1,43 +1,8 @@
 #include <typeinfo>
 #include "taichi/ir/ir.h"
-#include <taichi/ir/frontend.h>
+#include "taichi/ir/frontend.h"
 
 TLANG_NAMESPACE_BEGIN
-
-template <typename T>
-class StmtSearcher : public BasicStmtVisitor {
- private:
-  std::function<bool(T *)> test;
-  std::vector<T *> results;
-
- public:
-  using BasicStmtVisitor::visit;
-
-  StmtSearcher(std::function<bool(T *)> test) : test(test) {
-    allow_undefined_visitor = true;
-    invoke_default_visitor = true;
-  }
-
-  void visit(Stmt *stmt) {
-    if (stmt->is<T>()) {
-      auto stmt_cast = stmt->cast<T>();
-      if (test(stmt_cast))
-        results.push_back(stmt_cast);
-    }
-  }
-
-  static std::vector<T *> run(IRNode *root, std::function<bool(T *)> test) {
-    StmtSearcher<T> searcher(test);
-    root->accept(&searcher);
-    return searcher.results;
-  }
-};
-
-template <typename T>
-static std::vector<T *> gather_statements(IRNode *root,
-                                          std::function<bool(T *)> test) {
-  return StmtSearcher<T>::run(root, test);
-}
 
 // Do automatic differentiation pass in the reverse order (reverse-mode AD)
 
@@ -47,18 +12,19 @@ class ConvertLocalVar : public BasicStmtVisitor {
 
   void visit(AllocaStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
-    bool no_store =
-        gather_statements<LocalStoreStmt>(
-            stmt->parent,
-            [&](LocalStoreStmt *store) { return store->ptr == stmt; })
-            .empty();
-    bool no_atomic =
-        gather_statements<AtomicOpStmt>(
-            stmt->parent,
-            [&](AtomicOpStmt *atomic) { return atomic->dest == stmt; })
-            .empty();
     bool is_load_only =
-        no_store && no_atomic;  // for-loop variables etc. No stack needed
+        irpass::gather_statements(
+            stmt->parent,
+            [&](Stmt *stmt) {
+              if (auto store = stmt->cast<LocalStoreStmt>())
+                return store->ptr == stmt;
+              else if (auto atomic = stmt->cast<AtomicOpStmt>()) {
+                return atomic->dest == stmt;
+              } else {
+                return false;
+              }
+            })
+            .empty();
     // TODO: remove 16 here
     if (!is_load_only) {
       stmt->replace_with(

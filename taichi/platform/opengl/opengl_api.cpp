@@ -196,6 +196,7 @@ void initialize_opengl() {
 
   glfwInit();
   // Compute Shader requires OpenGL 4.3+ (or OpenGL ES 3.1+)
+  glfwWindowHint( GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
   // GLEW cannot load GL without a context
@@ -216,12 +217,8 @@ void initialize_opengl() {
   if (status != GLEW_OK) {
     TI_ERROR("[glsl] cannot initialize GLEW: {}", glewGetErrorString(status));
   }
-  const char *gl_version = (const char *)glGetString(GL_VERSION);
-  if (!gl_version) {
-    TI_WARN("[glsl] cannot get OpenGL version");
-  } else {
-    TI_INFO("[glsl] OpenGL {}", gl_version);
-  }
+  TI_INFO("[glsl] OpenGL {}", (const char *)glGetString(GL_VERSION));
+  TI_INFO("[glsl] GLSL {}", (const char *)glGetString(GL_SHADING_LANGUAGE_VERSION));
 }
 
 GLProgram *compile_glsl_program(std::string source) {

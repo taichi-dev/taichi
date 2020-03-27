@@ -287,7 +287,7 @@ bool is_opengl_api_available() {
 }
 
 int opengl_get_threads_per_group() {
-  int ret = 1792;
+  int ret = 1;
   glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS, &ret);
   return ret;
 }

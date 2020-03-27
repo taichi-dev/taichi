@@ -1,14 +1,14 @@
 #ifndef TI_METAL_NESTED_INCLUDE
 
 #define TI_METAL_NESTED_INCLUDE
-#include "taichi/platform/metal/shaders/runtime_utils.metal.h"
+#include "taichi/backends/metal/shaders/runtime_utils.metal.h"
 #undef TI_METAL_NESTED_INCLUDE
 
 #else
-#include "taichi/platform/metal/shaders/runtime_utils.metal.h"
+#include "taichi/backends/metal/shaders/runtime_utils.metal.h"
 #endif  // TI_METAL_NESTED_INCLUDE
 
-#include "taichi/platform/metal/shaders/prolog.h"
+#include "taichi/backends/metal/shaders/prolog.h"
 
 #ifdef TI_INSIDE_METAL_CODEGEN
 
@@ -39,23 +39,26 @@ struct Runtime {
 
 #endif  // TI_INSIDE_METAL_CODEGEN
 
+// clang-format off
 METAL_BEGIN_RUNTIME_KERNELS_DEF
-STR(kernel void clear_list(device byte *runtime_addr[[buffer(0)]],
-                           device int *args[[buffer(1)]],
-                           const uint utid_[[thread_position_in_grid]]) {
-  if (utid_ > 0)
-    return;
-  int child_snode_id = args[1];
-  device ListManager *child_list =
-      &(reinterpret_cast<device Runtime *>(runtime_addr)
-            ->snode_lists[child_snode_id]);
-  clear(child_list);
-}
+STR(
+    // clang-format on
+    kernel void clear_list(device byte *runtime_addr [[buffer(0)]],
+                           device int *args [[buffer(1)]],
+                           const uint utid_ [[thread_position_in_grid]]) {
+      if (utid_ > 0)
+        return;
+      int child_snode_id = args[1];
+      device ListManager *child_list =
+          &(reinterpret_cast<device Runtime *>(runtime_addr)
+                ->snode_lists[child_snode_id]);
+      clear(child_list);
+    }
 
-    kernel void element_listgen(device byte *runtime_addr[[buffer(0)]],
-                                device byte *root_addr[[buffer(1)]],
-                                device int *args[[buffer(2)]],
-                                const uint utid_[[thread_position_in_grid]]) {
+    kernel void element_listgen(device byte *runtime_addr [[buffer(0)]],
+                                device byte *root_addr [[buffer(1)]],
+                                device int *args [[buffer(2)]],
+                                const uint utid_ [[thread_position_in_grid]]) {
       device Runtime *runtime =
           reinterpret_cast<device Runtime *>(runtime_addr);
       device byte *list_data_addr =
@@ -86,10 +89,13 @@ STR(kernel void clear_list(device byte *runtime_addr[[buffer(0)]],
           append(child_list, child_elem, list_data_addr);
         }
       }
-    })
+    }
+    // clang-format off
+)
 METAL_END_RUNTIME_KERNELS_DEF
+// clang-format on
 
 #undef METAL_BEGIN_RUNTIME_KERNELS_DEF
 #undef METAL_END_RUNTIME_KERNELS_DEF
 
-#include "taichi/platform/metal/shaders/epilog.h"
+#include "taichi/backends/metal/shaders/epilog.h"

@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "taichi/ir/statements.h"
-#include "taichi/platform/metal/metal_data_types.h"
+#include "taichi/backends/metal/data_types.h"
 #include "taichi/program/kernel.h"
 
 // Data structures defined in this file may overlap with some of the Taichi data

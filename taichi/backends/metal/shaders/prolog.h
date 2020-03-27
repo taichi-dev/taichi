@@ -24,6 +24,6 @@
 
 #define byte char
 
-#include "taichi/platform/metal/shaders/atomic_stubs.h"
+#include "taichi/backends/metal/shaders/atomic_stubs.h"
 
 #endif  // TI_INSIDE_METAL_CODEGEN

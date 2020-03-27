@@ -1,14 +1,14 @@
 #ifndef TI_METAL_NESTED_INCLUDE
 
 #define TI_METAL_NESTED_INCLUDE
-#include "taichi/platform/metal/shaders/runtime_structs.metal.h"
+#include "taichi/backends/metal/shaders/runtime_structs.metal.h"
 #undef TI_METAL_NESTED_INCLUDE
 
 #else
-#include "taichi/platform/metal/shaders/runtime_structs.metal.h"
+#include "taichi/backends/metal/shaders/runtime_structs.metal.h"
 #endif  // TI_METAL_NESTED_INCLUDE
 
-#include "taichi/platform/metal/shaders/prolog.h"
+#include "taichi/backends/metal/shaders/prolog.h"
 
 #ifdef TI_INSIDE_METAL_CODEGEN
 
@@ -31,6 +31,7 @@
 // clang-format off
 METAL_BEGIN_RUNTIME_UTILS_DEF
 STR(
+    // clang-format on
     [[maybe_unused]] int num_active(device const ListManager *list) {
       return list->next;
     }
@@ -112,11 +113,13 @@ STR(
         const int addition = (((l >> ex.acc_offset) & mask) << ex.start);
         child_elem->coords[i] = (parent_elem.coords[i] | addition);
       }
-    })
+    }
+    // clang-format off
+)
 METAL_END_RUNTIME_UTILS_DEF
 // clang-format on
 
 #undef METAL_BEGIN_RUNTIME_UTILS_DEF
 #undef METAL_END_RUNTIME_UTILS_DEF
 
-#include "taichi/platform/metal/shaders/epilog.h"
+#include "taichi/backends/metal/shaders/epilog.h"

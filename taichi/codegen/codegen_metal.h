@@ -7,9 +7,9 @@
 
 #include "taichi/inc/constants.h"
 #include "taichi/lang_util.h"
-#include "taichi/platform/metal/metal_data_types.h"
-#include "taichi/platform/metal/metal_kernel_util.h"
-#include "taichi/platform/metal/metal_runtime.h"
+#include "taichi/backends/metal/data_types.h"
+#include "taichi/backends/metal/kernel_util.h"
+#include "taichi/backends/metal/runtime.h"
 #include "taichi/program/program.h"
 #include "taichi/struct/struct_metal.h"
 

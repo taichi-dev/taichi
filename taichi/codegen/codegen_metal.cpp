@@ -11,7 +11,7 @@ namespace metal {
 namespace {
 
 namespace shaders {
-#include "taichi/platform/metal/shaders/runtime_structs.metal.h"
+#include "taichi/backends/metal/shaders/runtime_structs.metal.h"
 }  // namespace shaders
 
 using BuffersEnum = MetalKernelAttributes::Buffers;
@@ -488,7 +488,7 @@ class MetalKernelCodegen : public IRVisitor {
     emit("using byte = uchar;");
     emit("");
 #define TI_INSIDE_METAL_CODEGEN
-#include "taichi/platform/metal/shaders/helpers.metal.h"
+#include "taichi/backends/metal/shaders/helpers.metal.h"
     line_appender_.append_raw(kMetalHelpersSourceCode);
 #undef TI_INSIDE_METAL_CODEGEN
     emit("");

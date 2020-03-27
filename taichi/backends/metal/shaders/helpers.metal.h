@@ -23,8 +23,7 @@ static_assert(false, "Do not include");
 METAL_BEGIN_HELPERS_DEF
 STR(
     // clang-format on
-    template <typename T, typename G>
-    T union_cast(G g) {
+    template <typename T, typename G> T union_cast(G g) {
       // For some reason, if I emit taichi/common.h's union_cast(), Metal failed
       // to compile. More strangely, if I copy the generated code to XCode as a
       // Metal kernel, it compiled successfully...

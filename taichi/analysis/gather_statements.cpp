@@ -28,9 +28,11 @@ class StmtSearcher : public BasicStmtVisitor {
   }
 };
 
+namespace irpass {
 std::vector<Stmt *> gather_statements(IRNode *root,
                                       const std::function<bool(Stmt *)> &test) {
   return StmtSearcher::run(root, test);
 }
+}  // namespace irpass
 
 TLANG_NAMESPACE_END

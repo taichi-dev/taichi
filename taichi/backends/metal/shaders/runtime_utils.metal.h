@@ -31,7 +31,6 @@
 // clang-format off
 METAL_BEGIN_RUNTIME_UTILS_DEF
 STR(
-    // clang-format on
     [[maybe_unused]] int num_active(device const ListManager *list) {
       return list->next;
     }
@@ -114,7 +113,6 @@ STR(
         child_elem->coords[i] = (parent_elem.coords[i] | addition);
       }
     }
-    // clang-format off
 )
 METAL_END_RUNTIME_UTILS_DEF
 // clang-format on

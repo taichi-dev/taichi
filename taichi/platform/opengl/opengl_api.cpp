@@ -286,6 +286,12 @@ bool is_opengl_api_available() {
   return true;
 }
 
+int opengl_get_threads_per_group() {
+  int ret = 1792;
+  glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS, &ret);
+  return ret;
+}
+
 #else
 void create_glsl_root_buffer(size_t size) {
   TI_NOT_IMPLEMENTED
@@ -308,10 +314,15 @@ bool is_opengl_api_available() {
 }
 
 void initialize_opengl() {
+  TI_NOT_IMPLEMENTED
 }
 
 GLProgram *compile_glsl_program(std::string source) {
-  return nullptr;
+  TI_NOT_IMPLEMENTED
+}
+
+int opengl_get_threads_per_group() {
+  TI_NOT_IMPLEMENTED
 }
 #endif
 

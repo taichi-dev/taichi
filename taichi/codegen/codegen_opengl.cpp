@@ -305,10 +305,10 @@ int _rand_i32()\n\
 
     line_appender_header_.append_raw(kernel_header);
 
-    int threads_per_group = 1792;
-    if (num_threads_ < 1792)
+    int threads_per_group = opengl_get_threads_per_group();
+    if (num_threads_ < threads_per_group)
       threads_per_group = num_threads_;
-    num_groups_ = (num_threads_ + 1791) / 1792;
+    num_groups_ = (num_threads_ + threads_per_group - 1) / threads_per_group;
     if (threads_per_group == 0)
       threads_per_group = 1;
     emit("layout(local_size_x = {}, local_size_y = 1, local_size_z = 1) in;",

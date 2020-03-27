@@ -19,6 +19,7 @@ void begin_glsl_kernels(const std::vector<IOV> &iov);
 void launch_glsl_kernel(GLProgram *program, int num_groups);
 void end_glsl_kernels(const std::vector<IOV> &iov);
 GLProgram *compile_glsl_program(std::string source);
+int opengl_get_threads_per_group();
 
 }  // namespace opengl
 

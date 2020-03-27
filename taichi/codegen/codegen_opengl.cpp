@@ -386,7 +386,10 @@ int _rand_i32()\n\
          stmt->input_index->raw_name());
   }
 
+  std::map<int, std::string> ptr_signats;
+
   void map_stmt_ptr_signat(Stmt *stmt, std::string signat) {
+    ptr_signats[stmt->id] = signat;
     emit("#define _at_{} {}", stmt->raw_name(), signat);
   }
 
@@ -400,13 +403,15 @@ int _rand_i32()\n\
 
   void visit(GlobalStoreStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
-    emit("_At_({}) = {};", stmt->ptr->raw_name(), stmt->data->raw_name());
+    //emit("_At_({}) = {};", stmt->ptr->raw_name(), stmt->data->raw_name());
+    emit("{}({}) = {};", ptr_signats.at(stmt->ptr->id), // throw out_of_range if not a pointer
+        stmt->ptr->raw_name(), stmt->data->raw_name());
   }
 
   void visit(GlobalLoadStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
-    emit("const {} {} = _At_({});", opengl_data_type_name(stmt->element_type()),
-         stmt->raw_name(), stmt->ptr->raw_name());
+    emit("const {} {} = {}({});", opengl_data_type_name(stmt->element_type()),
+         stmt->raw_name(), ptr_signats.at(stmt->ptr->id), stmt->ptr->raw_name());
   }
 
   void visit(ExternalPtrStmt *stmt) override {
@@ -543,19 +548,18 @@ int _rand_i32()\n\
     TI_ASSERT(stmt->width() == 1);
     if (stmt->val->element_type() == DataType::i32 ||
         stmt->val->element_type() == DataType::u32) {
-      emit("{} {} = {}(_At_({}), {});",
+      emit("{} {} = {}({}({}), {});",
            opengl_data_type_name(stmt->val->element_type()), stmt->raw_name(),
-           opengl_atomic_op_type_cap_name(stmt->op_type),
+           opengl_atomic_op_type_cap_name(stmt->op_type), ptr_signats.at(stmt->dest->id),
            stmt->dest->raw_name(), stmt->val->raw_name());
     } else {
       TI_ASSERT(stmt->val->element_type() == DataType::f32 ||
                 stmt->val->element_type() == DataType::f64);
       used.atomic_float = true;
-      emit("{} {} = _Atm_({}, _at_{}, {}, {});",
+      emit("{} {} = {}{}({}, {});",
            opengl_data_type_name(stmt->val->element_type()), stmt->raw_name(),
-           opengl_atomic_op_type_cap_name(stmt->op_type),
-           stmt->dest->raw_name(), stmt->dest->raw_name(),
-           stmt->val->raw_name());
+           opengl_atomic_op_type_cap_name(stmt->op_type), ptr_signats.at(stmt->dest->id),
+           stmt->dest->raw_name(), stmt->val->raw_name());
     }
   }
 

@@ -2066,8 +2066,9 @@ class SNodeOpExpression : public Expression {
       // is_active cannot be lowered all the way to a global pointer.
       // It should be lowered into a pointer to parent and an index.
       TI_ERROR_IF(
-          snode->type != SNodeType::pointer && snode->type != SNodeType::hash,
-          "ti.is_active only works on hash and pointer nodes.");
+          snode->type != SNodeType::pointer && snode->type != SNodeType::hash &&
+              !(snode->type == SNodeType::dense && snode->_bitmasked),
+          "ti.is_active only works on pointer, hash or bitmasked nodes.");
       ret.push_back<SNodeOpStmt>(SNodeOpType::is_active, snode, indices_stmt);
     } else {
       auto ptr = ret.push_back<GlobalPtrStmt>(snode, indices_stmt);

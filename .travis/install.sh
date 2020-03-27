@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 # use brew & pyenv to build specific python on osx
 if [[ $TRAVIS_OS_NAME == 'osx' ]]; then
     export PATH="$HOME/.pyenv/bin:$PATH"

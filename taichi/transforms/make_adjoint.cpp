@@ -1,35 +1,8 @@
 #include <typeinfo>
 #include "taichi/ir/ir.h"
-#include <taichi/ir/frontend.h>
+#include "taichi/ir/frontend.h"
 
 TLANG_NAMESPACE_BEGIN
-
-template <typename T>
-class StmtSearcher : public BasicStmtVisitor {
- private:
-  std::function<bool(Stmt *)> test;
-  std::vector<Stmt *> results;
-
- public:
-  using BasicStmtVisitor::visit;
-
-  StmtSearcher(std::function<bool(Stmt *)> test) : test(test) {
-    allow_undefined_visitor = true;
-    invoke_default_visitor = true;
-  }
-
-  void visit(Stmt *stmt) {
-    if (stmt->is<T>() && test(stmt))
-      results.push_back(stmt);
-  }
-
-  static std::vector<Stmt *> run(IRNode *root,
-                                 std::function<bool(Stmt *)> test) {
-    StmtSearcher<T> searcher(test);
-    root->accept(&searcher);
-    return searcher.results;
-  }
-};
 
 // Do automatic differentiation pass in the reverse order (reverse-mode AD)
 
@@ -37,26 +10,24 @@ class ConvertLocalVar : public BasicStmtVisitor {
  public:
   using BasicStmtVisitor::visit;
 
-  void visit(AllocaStmt *stmt) override {
-    TI_ASSERT(stmt->width() == 1);
-    bool no_store = StmtSearcher<LocalStoreStmt>::run(
-                        stmt->parent,
-                        [&](Stmt *store) {
-                          return store->cast<LocalStoreStmt>()->ptr == stmt;
-                        })
-                        .empty();
-    bool no_atomic = StmtSearcher<AtomicOpStmt>::run(
-                         stmt->parent,
-                         [&](Stmt *atomic) {
-                           return atomic->cast<AtomicOpStmt>()->dest == stmt;
+  void visit(AllocaStmt *alloc) override {
+    TI_ASSERT(alloc->width() == 1);
+    bool load_only = irpass::gather_statements(
+                         alloc->parent,
+                         [&](Stmt *s) {
+                           if (auto store = s->cast<LocalStoreStmt>())
+                             return store->ptr == alloc;
+                           else if (auto atomic = s->cast<AtomicOpStmt>()) {
+                             return atomic->dest == alloc;
+                           } else {
+                             return false;
+                           }
                          })
                          .empty();
-    bool is_load_only =
-        no_store && no_atomic;  // for-loop variables etc. No stack needed
-    // TODO: remove 16 here
-    if (!is_load_only) {
-      stmt->replace_with(
-          Stmt::make<StackAllocaStmt>(stmt->ret_type.data_type, 16));
+    if (!load_only) {
+      alloc->replace_with(
+          Stmt::make<StackAllocaStmt>(alloc->ret_type.data_type, 16));
+      // TODO: remove 16 here
     }
   }
 

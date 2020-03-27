@@ -74,7 +74,7 @@ class StructCompiler {
     result.max_snodes = max_snodes_;
     result.snode_descriptors = std::move(snode_descriptors_);
     TI_DEBUG("Metal: root_size={} runtime_size={}", result.root_size,
-            result.runtime_size);
+             result.runtime_size);
     return result;
   }
 

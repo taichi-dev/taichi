@@ -111,6 +111,8 @@ void demote_atomics(IRNode *root);
 void reverse_segments(IRNode *root);  // for autograd
 std::unique_ptr<ScratchPads> initialize_scratch_pad(StructForStmt *root);
 std::unordered_set<SNode *> gather_deactivations(IRNode *root);
+std::vector<Stmt *> gather_statements(IRNode *root,
+                                      const std::function<bool(Stmt *)> &test);
 std::unordered_set<Stmt *> detect_fors_with_break(IRNode *root);
 }  // namespace irpass
 

@@ -22,12 +22,12 @@ matrix:
     env:
       - MATRIX_EVAL="CC=clang && CXX=clang++ && PYTHON_VERSION=3.8.1 && PYTHON=python"
   - name: "Ubuntu 18.04 + Python 3.6"
-    if: commit_message =~ /^\[release\]/
     os: linux
     dist: bionic
     env:
       - MATRIX_EVAL="CC=clang && CXX=clang++ && PYTHON_VERSION=3.6.1 && PYTHON=python3"
   - name: "Ubuntu 18.04 + Python 3.7"
+    if: commit_message =~ /^\[release\]/
     os: linux
     dist: bionic
     env:

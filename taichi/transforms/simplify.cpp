@@ -168,7 +168,7 @@ class LocalStoreForwarder : public BasicStmtVisitor {
     }
   }
 
-  // We don't know if these loops' body will be executed, so we cannot forward
+  // We don't know if a loop's body will be executed, so we cannot forward
   // the "last" store inside a loop to the local load statement.
   // What we can do is just check if the loop doesn't modify the variable.
   void visit(WhileStmt *stmt) override {

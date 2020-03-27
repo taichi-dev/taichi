@@ -5,7 +5,7 @@
 
 TLANG_NAMESPACE_BEGIN
 
-// Find if there is a load
+// Find if there is a load (or AtomicOpStmt).
 class LocalLoadSearcher : public BasicStmtVisitor {
  private:
   Stmt *var;
@@ -49,7 +49,7 @@ class LocalLoadSearcher : public BasicStmtVisitor {
   }
 };
 
-// Find if there is a store
+// Find if there is a store (or AtomicOpStmt).
 class LocalStoreSearcher : public BasicStmtVisitor {
  private:
   const std::vector<Stmt *> &vars;
@@ -92,16 +92,18 @@ class LocalStoreSearcher : public BasicStmtVisitor {
   }
 };
 
-// Find the **last** store
+// Find the **last** store, or return invalid if there is an AtomicOpStmt
+// after the last store.
 class LocalStoreForwarder : public BasicStmtVisitor {
  private:
   Stmt *var;
+  bool is_valid;
   Stmt *result;
 
  public:
   using BasicStmtVisitor::visit;
 
-  explicit LocalStoreForwarder(Stmt *var) : var(var), result(nullptr) {
+  explicit LocalStoreForwarder(Stmt *var) : var(var), is_valid(true), result(nullptr) {
     TI_ASSERT(var->is<AllocaStmt>());
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
@@ -109,26 +111,93 @@ class LocalStoreForwarder : public BasicStmtVisitor {
 
   void visit(LocalStoreStmt *stmt) override {
     if (stmt->ptr == var) {
+      is_valid = true;
       result = stmt;
     }
   }
 
   void visit(AllocaStmt *stmt) override {
     if (stmt == var) {
+      is_valid = true;
       result = stmt;
     }
   }
 
   void visit(AtomicOpStmt *stmt) override {
     if (stmt->dest == var) {
-      result = nullptr;
+      is_valid = false;
     }
   }
 
-  static Stmt *run(IRNode *root, Stmt *var) {
+  // Only if **both** branches finally store the variable with exactly the same
+  // data, can we forward it to the local load statement.
+  void visit(IfStmt *if_stmt) override {
+    // the default return value: valid, no stores
+    std::pair<bool, Stmt *> true_branch(true, nullptr);
+    if (if_stmt->true_statements) {
+      // create a new LocalStoreForwarder instance
+      true_branch = run(if_stmt->true_statements.get(), var);
+    }
+    std::pair<bool, Stmt *> false_branch(true, nullptr);
+    if (if_stmt->false_statements) {
+      false_branch = run(if_stmt->false_statements.get(), var);
+    }
+    auto true_stmt = true_branch.second;
+    auto false_stmt = false_branch.second;
+    if (!true_branch.first || !false_branch.first) {
+      // at least one branch finally modifies the variable without storing
+      is_valid = false;
+    } else if (true_stmt == nullptr && false_stmt == nullptr) {
+      // both branches don't modify the variable
+      return;
+    } else if (true_stmt == nullptr || false_stmt == nullptr) {
+      // only one branch modifies the variable
+      is_valid = false;
+    } else {
+      TI_ASSERT(true_stmt->is<LocalStoreStmt>());
+      TI_ASSERT(false_stmt->is<LocalStoreStmt>());
+      if (true_stmt->as<LocalStoreStmt>()->data
+          != false_stmt->as<LocalStoreStmt>()->data) {
+        // two branches finally store the variable differently
+        is_valid = false;
+      } else {
+        is_valid = true;
+        result = true_stmt; // same as false_stmt
+      }
+    }
+  }
+
+  // We don't know if these loops will be operated, so we cannot forward the
+  // "last" store inside a loop to the local load statement.
+  // What we can do is just check if the loop doesn't modify the variable.
+  void visit(WhileStmt *stmt) override {
+    if (LocalStoreSearcher::run(stmt, {var})) {
+      is_valid = false;
+    }
+  }
+
+  void visit(RangeForStmt *stmt) override {
+    if (LocalStoreSearcher::run(stmt, {var})) {
+      is_valid = false;
+    }
+  }
+
+  void visit(StructForStmt *stmt) override {
+    if (LocalStoreSearcher::run(stmt, {var})) {
+      is_valid = false;
+    }
+  }
+
+  void visit(OffloadedStmt *stmt) override {
+    if (LocalStoreSearcher::run(stmt, {var})) {
+      is_valid = false;
+    }
+  }
+
+  static std::pair<bool, Stmt *> run(IRNode *root, Stmt *var) {
     LocalStoreForwarder searcher(var);
     root->accept(&searcher);
-    return searcher.result;
+    return std::make_pair(searcher.is_valid, searcher.result);
   }
 };
 
@@ -452,8 +521,13 @@ class BasicBlockSimplify : public IRVisitor {
           }
           continue;
         }
-        auto bstmt =
+        auto last_store =
             LocalStoreForwarder::run(block->statements[i].get(), alloca);
+        if (!last_store.first) {
+          // invalid
+          break;
+        }
+        auto bstmt = last_store.second;
         if (bstmt != nullptr) {
           if (bstmt->is<LocalStoreStmt>()) {
             // Forward to the first local store only

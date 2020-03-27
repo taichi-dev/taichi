@@ -1,4 +1,4 @@
-#include "metal_data_types.h"
+#include "taichi/backends/metal/data_types.h"
 
 TLANG_NAMESPACE_BEGIN
 

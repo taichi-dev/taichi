@@ -1,4 +1,4 @@
-#include "taichi/platform/metal/shaders/prolog.h"
+#include "taichi/backends/metal/shaders/prolog.h"
 
 #ifdef TI_INSIDE_METAL_CODEGEN
 
@@ -19,14 +19,18 @@ static_assert(false, "Do not include");
 
 #endif  // TI_INSIDE_METAL_CODEGEN
 
+// clang-format off
 METAL_BEGIN_HELPERS_DEF
-STR(template <typename T, typename G> T union_cast(G g) {
-  // For some reason, if I emit taichi/common.h's union_cast(), Metal failed
-  // to compile. More strangely, if I copy the generated code to XCode as a
-  // Metal kernel, it compiled successfully...
-  static_assert(sizeof(T) == sizeof(G), "Size mismatch");
-  return *reinterpret_cast<thread const T *>(&g);
-}
+STR(
+    // clang-format on
+    template <typename T, typename G>
+    T union_cast(G g) {
+      // For some reason, if I emit taichi/common.h's union_cast(), Metal failed
+      // to compile. More strangely, if I copy the generated code to XCode as a
+      // Metal kernel, it compiled successfully...
+      static_assert(sizeof(T) == sizeof(G), "Size mismatch");
+      return *reinterpret_cast<thread const T *>(&g);
+    }
 
     inline int ifloordiv(int lhs, int rhs) {
       const int intm = (lhs / rhs);
@@ -87,10 +91,13 @@ STR(template <typename T, typename G> T union_cast(G g) {
             metal::memory_order_relaxed);
       }
       return old_val;
-    })
+    }
+    // clang-format off
+)
 METAL_END_HELPERS_DEF
+// clang-format on
 
 #undef METAL_BEGIN_HELPERS_DEF
 #undef METAL_END_HELPERS_DEF
 
-#include "taichi/platform/metal/shaders/epilog.h"
+#include "taichi/backends/metal/shaders/epilog.h"

@@ -2,10 +2,9 @@
 
 #include "program.h"
 
-#include <taichi/common/task.h>
-#include <taichi/platform/metal/metal_api.h>
-#include <taichi/platform/opengl/opengl_api.h>
-
+#include "taichi/common/task.h"
+#include "taichi/backends/metal/api.h"
+#include "taichi/platform/opengl/opengl_api.h"
 #include "taichi/codegen/codegen_cuda.h"
 #include "taichi/codegen/codegen_metal.h"
 #include "taichi/codegen/codegen_opengl.h"

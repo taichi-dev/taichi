@@ -5,7 +5,7 @@
 #include <unordered_map>
 
 #include "taichi/lang_util.h"
-#include "taichi/platform/metal/metal_kernel_util.h"
+#include "taichi/backends/metal/kernel_util.h"
 #include "taichi/program/profiler.h"
 #include "taichi/struct/struct_metal.h"
 #include "taichi/system/memory_pool.h"

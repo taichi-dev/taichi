@@ -1,4 +1,4 @@
-#include "taichi/platform/metal/metal_runtime.h"
+#include "taichi/backends/metal/runtime.h"
 
 #include <algorithm>
 #include <cstring>
@@ -12,7 +12,7 @@
 #include <sys/mman.h>
 #include <unistd.h>
 
-#include "taichi/platform/metal/metal_api.h"
+#include "taichi/backends/metal/api.h"
 #endif  // TI_PLATFORM_OSX
 
 TLANG_NAMESPACE_BEGIN
@@ -22,7 +22,7 @@ namespace metal {
 
 namespace {
 namespace shaders {
-#include "taichi/platform/metal/shaders/runtime_utils.metal.h"
+#include "taichi/backends/metal/shaders/runtime_utils.metal.h"
 }
 
 using KernelTaskType = OffloadedStmt::TaskType;
@@ -189,7 +189,7 @@ class RuntimeListOpsMtlKernel : public CompiledMtlKernelBase {
   // args[1] = child_snode_id
   // Note that this args buffer has nothing to do with the one passed to Taichi
   // kernel.
-  // See taichi/platform/metal/shaders/runtime_kernels.metal.h
+  // See taichi/backends/metal/shaders/runtime_kernels.metal.h
   std::unique_ptr<BufferMemoryView> args_mem_;
   nsobj_unique_ptr<MTLBuffer> args_buffer_;
 };

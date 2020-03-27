@@ -7,8 +7,8 @@
 #include <vector>
 
 #include "taichi/math/arithmetic.h"
-#include "taichi/platform/metal/metal_data_types.h"
-#include "taichi/platform/metal/metal_kernel_util.h"
+#include "taichi/backends/metal/data_types.h"
+#include "taichi/backends/metal/kernel_util.h"
 #include "taichi/util/line_appender.h"
 
 TLANG_NAMESPACE_BEGIN
@@ -16,12 +16,12 @@ namespace metal {
 namespace {
 namespace shaders {
 #define TI_INSIDE_METAL_CODEGEN
-#include "taichi/platform/metal/shaders/runtime_kernels.metal.h"
-#include "taichi/platform/metal/shaders/runtime_structs.metal.h"
-#include "taichi/platform/metal/shaders/runtime_utils.metal.h"
+#include "taichi/backends/metal/shaders/runtime_kernels.metal.h"
+#include "taichi/backends/metal/shaders/runtime_structs.metal.h"
+#include "taichi/backends/metal/shaders/runtime_utils.metal.h"
 #undef TI_INSIDE_METAL_CODEGEN
 
-#include "taichi/platform/metal/shaders/runtime_structs.metal.h"
+#include "taichi/backends/metal/shaders/runtime_structs.metal.h"
 
 }  // namespace shaders
 

@@ -1,4 +1,4 @@
-#include "metal_api.h"
+#include "taichi/backends/metal/api.h"
 
 TLANG_NAMESPACE_BEGIN
 

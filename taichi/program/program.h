@@ -10,7 +10,7 @@
 #include "taichi/ir/snode.h"
 #include "taichi/lang_util.h"
 #include "taichi/llvm/llvm_context.h"
-#include "taichi/platform/metal/metal_runtime.h"
+#include "taichi/backends/metal/runtime.h"
 #include "taichi/platform/opengl/opengl_kernel_util.h"
 #include "taichi/program/kernel.h"
 #include "taichi/program/profiler.h"

@@ -9,12 +9,16 @@ file(GLOB TAICHI_CORE_SOURCE
 file(GLOB TAICHI_BACKEND_SOURCE "taichi/backends/**/*.cpp" "taichi/backends/**/*.h")
 
 file(GLOB TAICHI_CUDA_SOURCE "taichi/backends/cuda/*.cpp" "taichi/backends/cuda/*.h")
+file(GLOB TAICHI_METAL_SOURCE "taichi/backends/metal/*.h" "taichi/backends/metal/*.cpp" "taichi/backends/metal/shaders/*")
 
 list(REMOVE_ITEM TAICHI_CORE_SOURCE ${TAICHI_BACKEND_SOURCE})
 
 if (TI_WITH_CUDA)
     list(APPEND TAICHI_CORE_SOURCE ${TAICHI_CUDA_SOURCE})
 endif()
+
+# TODO(#529) include Metal source only on Apple MacOS
+list(APPEND TAICHI_CORE_SOURCE ${TAICHI_METAL_SOURCE})
 
 option(BUILD_CPP_EXAMPLES "Build legacy C++ examples" OFF)
 

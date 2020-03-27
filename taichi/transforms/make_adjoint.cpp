@@ -10,25 +10,24 @@ class ConvertLocalVar : public BasicStmtVisitor {
  public:
   using BasicStmtVisitor::visit;
 
-  void visit(AllocaStmt *stmt) override {
-    TI_ASSERT(stmt->width() == 1);
-    bool is_load_only =
-        irpass::gather_statements(
-            stmt->parent,
-            [&](Stmt *stmt) {
-              if (auto store = stmt->cast<LocalStoreStmt>())
-                return store->ptr == stmt;
-              else if (auto atomic = stmt->cast<AtomicOpStmt>()) {
-                return atomic->dest == stmt;
-              } else {
-                return false;
-              }
-            })
-            .empty();
-    // TODO: remove 16 here
-    if (!is_load_only) {
-      stmt->replace_with(
-          Stmt::make<StackAllocaStmt>(stmt->ret_type.data_type, 16));
+  void visit(AllocaStmt *alloc) override {
+    TI_ASSERT(alloc->width() == 1);
+    bool load_only = irpass::gather_statements(
+                         alloc->parent,
+                         [&](Stmt *s) {
+                           if (auto store = s->cast<LocalStoreStmt>())
+                             return store->ptr == alloc;
+                           else if (auto atomic = s->cast<AtomicOpStmt>()) {
+                             return atomic->dest == alloc;
+                           } else {
+                             return false;
+                           }
+                         })
+                         .empty();
+    if (!load_only) {
+      alloc->replace_with(
+          Stmt::make<StackAllocaStmt>(alloc->ret_type.data_type, 16));
+      // TODO: remove 16 here
     }
   }
 

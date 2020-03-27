@@ -7,29 +7,37 @@ TLANG_NAMESPACE_BEGIN
 template <typename T>
 class StmtSearcher : public BasicStmtVisitor {
  private:
-  std::function<bool(Stmt *)> test;
-  std::vector<Stmt *> results;
+  std::function<bool(T *)> test;
+  std::vector<T *> results;
 
  public:
   using BasicStmtVisitor::visit;
 
-  StmtSearcher(std::function<bool(Stmt *)> test) : test(test) {
+  StmtSearcher(std::function<bool(T *)> test) : test(test) {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
   }
 
   void visit(Stmt *stmt) {
-    if (stmt->is<T>() && test(stmt))
-      results.push_back(stmt);
+    if (stmt->is<T>()) {
+      auto stmt_cast = stmt->cast<T>();
+      if (test(stmt_cast))
+        results.push_back(stmt_cast);
+    }
   }
 
-  static std::vector<Stmt *> run(IRNode *root,
-                                 std::function<bool(Stmt *)> test) {
+  static std::vector<T *> run(IRNode *root, std::function<bool(T *)> test) {
     StmtSearcher<T> searcher(test);
     root->accept(&searcher);
     return searcher.results;
   }
 };
+
+template <typename T>
+static std::vector<T *> gather_statements(IRNode *root,
+                                          std::function<bool(T *)> test) {
+  return StmtSearcher<T>::run(root, test);
+}
 
 // Do automatic differentiation pass in the reverse order (reverse-mode AD)
 
@@ -39,18 +47,16 @@ class ConvertLocalVar : public BasicStmtVisitor {
 
   void visit(AllocaStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
-    bool no_store = StmtSearcher<LocalStoreStmt>::run(
-                        stmt->parent,
-                        [&](Stmt *store) {
-                          return store->cast<LocalStoreStmt>()->ptr == stmt;
-                        })
-                        .empty();
-    bool no_atomic = StmtSearcher<AtomicOpStmt>::run(
-                         stmt->parent,
-                         [&](Stmt *atomic) {
-                           return atomic->cast<AtomicOpStmt>()->dest == stmt;
-                         })
-                         .empty();
+    bool no_store =
+        gather_statements<LocalStoreStmt>(
+            stmt->parent,
+            [&](LocalStoreStmt *store) { return store->ptr == stmt; })
+            .empty();
+    bool no_atomic =
+        gather_statements<AtomicOpStmt>(
+            stmt->parent,
+            [&](AtomicOpStmt *atomic) { return atomic->dest == stmt; })
+            .empty();
     bool is_load_only =
         no_store && no_atomic;  // for-loop variables etc. No stack needed
     // TODO: remove 16 here

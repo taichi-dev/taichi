@@ -21,23 +21,24 @@ matrix:
     osx_image: xcode10.3
     env:
       - MATRIX_EVAL="CC=clang && CXX=clang++ && PYTHON_VERSION=3.8.1 && PYTHON=python"
+  # See https://docs.travis-ci.com/user/reference/bionic/#python-support
   - name: "Ubuntu 18.04 + Python 3.6"
-    os: linux
-    dist: bionic
-    env:
-      - MATRIX_EVAL="CC=clang && CXX=clang++ && PYTHON_VERSION=3.6.1 && PYTHON=python3"
-  - name: "Ubuntu 18.04 + Python 3.7"
     if: commit_message =~ /^\[release\]/
     os: linux
     dist: bionic
     env:
-      - MATRIX_EVAL="CC=clang && CXX=clang++ && PYTHON_VERSION=3.7.1 && PYTHON=python3"
+      - MATRIX_EVAL="CC=clang && CXX=clang++ && PYTHON_VERSION=3.6.1 && PYTHON=python3.6"
+  - name: "Ubuntu 18.04 + Python 3.7"
+    os: linux
+    dist: bionic
+    env:
+      - MATRIX_EVAL="CC=clang && CXX=clang++ && PYTHON_VERSION=3.7.6 && PYTHON=python3.7"
   - name: "Ubuntu 18.04 + Python 3.8"
     if: commit_message =~ /^\[release\]/
     os: linux
     dist: bionic
     env:
-      - MATRIX_EVAL="CC=clang && CXX=clang++ && PYTHON_VERSION=3.8.1 && PYTHON=python3"
+      - MATRIX_EVAL="CC=clang && CXX=clang++ && PYTHON_VERSION=3.8.2 && PYTHON=python3.8"
 
 skip_commits:
   files:

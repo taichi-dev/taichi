@@ -386,15 +386,16 @@ int _rand_i32()\n\
          stmt->input_index->raw_name());
   }
 
+  void map_stmt_ptr_signat(Stmt *stmt, std::string signat) {
+    emit("#define _at_{} {}", stmt->raw_name(), signat);
+  }
+
   void visit(GetChStmt *stmt) override {
     emit("{} {} = {}_get{}({});", stmt->output_snode->node_type_name,
          stmt->raw_name(), stmt->input_snode->node_type_name, stmt->chid,
          stmt->input_ptr->raw_name());
     if (stmt->output_snode->is_place())
-      // The best way I could think to distinguish root_ptr and external_ptr in
-      // GLSL
-      emit("#define _at_{} _mem_{}", stmt->raw_name(),
-           data_type_short_name(stmt->output_snode->dt));
+      map_stmt_ptr_signat(stmt, "_mem_" + data_type_short_name(stmt->output_snode->dt));
   }
 
   void visit(GlobalStoreStmt *stmt) override {
@@ -438,8 +439,7 @@ int _rand_i32()\n\
     emit("const int {} = ({} + {});", stmt->raw_name(),
          stmt->base_ptrs[0]->raw_name(), linear_index_name);
     used.external_ptr = true;
-    emit("#define _at_{} _ext_ns_{}", stmt->raw_name(),
-         data_type_short_name(stmt->element_type()));
+    map_stmt_ptr_signat(stmt, "_ext_ns_" + data_type_short_name(stmt->element_type()));
   }
 
   void visit(UnaryOpStmt *stmt) override {
@@ -666,8 +666,7 @@ int _rand_i32()\n\
     TI_ASSERT(stmt->width() == 1);
     used.global_temp = true;
     emit("int {} = {};", stmt->raw_name(), stmt->offset);
-    emit("#define _at_{} _gtx_{}", stmt->raw_name(),
-         data_type_short_name(stmt->element_type()));
+    map_stmt_ptr_signat(stmt, "_gtx_" + data_type_short_name(stmt->element_type()));
   }
 
   void visit(LoopIndexStmt *stmt) override {

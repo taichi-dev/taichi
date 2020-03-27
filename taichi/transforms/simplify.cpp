@@ -1186,6 +1186,33 @@ class BasicBlockSimplify : public IRVisitor {
       if_stmt->parent->erase(if_stmt);
       throw IRModified();
     }
+
+    if (advanced_optimization) {
+      // Merge adjacent if's with the identical condition.
+      // TODO: What about IfStmt::true_mask and IfStmt::false_mask?
+      if (current_stmt_id > 0 &&
+          block->statements[current_stmt_id - 1]->is<IfStmt>()) {
+        auto bstmt = block->statements[current_stmt_id - 1]->as<IfStmt>();
+        if (bstmt->cond == if_stmt->cond) {
+          auto concatenate = [](std::unique_ptr<Block> &clause1,
+                                std::unique_ptr<Block> &clause2) {
+            if (clause1 == nullptr) {
+              clause1 = std::move(clause2);
+              return;
+            }
+            if (clause2 == nullptr)
+              return;
+            for (auto &stmt : clause2->statements) {
+              clause1->insert(std::move(stmt));
+            }
+          };
+          concatenate(bstmt->true_statements, if_stmt->true_statements);
+          concatenate(bstmt->false_statements, if_stmt->false_statements);
+          if_stmt->parent->erase(if_stmt);
+          throw IRModified();
+        }
+      }
+    }
   }
 
   void visit(RangeAssumptionStmt *stmt) override {

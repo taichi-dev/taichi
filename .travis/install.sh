@@ -20,6 +20,7 @@ elif [[ $TRAVIS_OS_NAME == 'linux' ]]; then
     #sudo apt-get upgrade pyenv
     # use pyenv to build python
     eval "$(pyenv init -)"
+    pyenv install --list
     pyenv install -s $PYTHON_VERSION
     pyenv global $PYTHON_VERSION
     pyenv rehash

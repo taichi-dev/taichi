@@ -23,9 +23,10 @@ class SNode:
             chunk_size = dimension
         return SNode(self.ptr.dynamic(index[0], dimension, chunk_size))
 
-    def bitmasked(self, val=True):
-        self.ptr.bitmasked(val)
-        return self
+    def bitmasked(self, indices, dimensions):
+        if isinstance(dimensions, int):
+            dimensions = [dimensions] * len(indices)
+        return SNode(self.ptr.bitmasked(indices, dimensions))
 
     def place(self, *args):
         from .expr import Expr
@@ -72,8 +73,6 @@ class SNode:
         for c in ch:
             c.deactivate_all()
         import taichi as ti
-        if self.ptr.type == ti.core.SNodeType.pointer or (
-                self.ptr.type == ti.core.SNodeType.dense
-                and self.ptr.is_bitmasked):
+        if self.ptr.type == ti.core.SNodeType.pointer or self.ptr.type == ti.core.SNodeType.bitmasked:
             from .meta import snode_deactivate
             snode_deactivate(self)

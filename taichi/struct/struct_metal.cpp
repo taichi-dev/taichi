@@ -30,15 +30,16 @@ constexpr size_t kListManagerSize = sizeof(shaders::ListManager);
 constexpr size_t kSNodeMetaSize = sizeof(shaders::SNodeMeta);
 constexpr size_t kSNodeExtractorsSize = sizeof(shaders::SNodeExtractors);
 
-inline bool is_bitmasked(const SNode &sn) {
-  return (sn.type == SNodeType::dense && sn._bitmasked);
-}
-
 inline size_t bitmasks_stride(int n) {
   constexpr int kBitsPerByte = 8;
   const int bytes_needed = iroundup(n, kBitsPerByte) / kBitsPerByte;
   // The roundup is to align the stride to 8-bytes.
   return iroundup(bytes_needed, 8);
+}
+
+inline int get_n(const SNode &sn) {
+  // For root, sn.n is 0.
+  return sn.type == SNodeType::root ? 1 : sn.n;
 }
 
 class StructCompiler {
@@ -54,7 +55,8 @@ class StructCompiler {
     {
       max_snodes_ = 0;
       for (const auto &sn : snodes_) {
-        if (sn->type == SNodeType::root || sn->type == SNodeType::dense) {
+        if (sn->type == SNodeType::root || sn->type == SNodeType::dense ||
+            sn->type == SNodeType::bitmasked) {
           max_snodes_ = std::max(max_snodes_, sn->id);
         }
       }
@@ -132,12 +134,13 @@ class StructCompiler {
       emit("  device {}* val;", dt_name);
       emit("}};");
     } else if (snode.type == SNodeType::dense ||
-               snode.type == SNodeType::root) {
-      const bool bitmasked = is_bitmasked(snode);
+               snode.type == SNodeType::root ||
+               snode.type == SNodeType::bitmasked) {
+      const bool bitmasked = snode.type == SNodeType::bitmasked;
       const std::string ch_name = fmt::format("{}_ch", node_name);
       emit("struct {} {{", node_name);
       emit("  // {}", snode_type_name(snode.type));
-      const int n = (snode.type == SNodeType::dense) ? snode.n : 1;
+      const int n = get_n(snode);
       emit("  constant static constexpr int n = {};", n);
       if (bitmasked) {
         emit(
@@ -170,7 +173,7 @@ class StructCompiler {
       return metal_data_type_bytes(to_metal_type(sn->dt));
     }
 
-    const int n = (sn->type == SNodeType::dense) ? sn->n : 1;
+    const int n = get_n(*sn);
     size_t ch_size = 0;
     for (const auto &ch : sn->ch) {
       const size_t ch_offset = ch_size;
@@ -186,7 +189,7 @@ class StructCompiler {
     sn_desc.element_stride = ch_size;
     sn_desc.num_slots = n;
     sn_desc.stride = ch_size * n;
-    if (is_bitmasked(*sn)) {
+    if (sn->type == SNodeType::bitmasked) {
       sn_desc.stride += bitmasks_stride(n);
     }
     sn_desc.total_num_elems_from_root = 1;

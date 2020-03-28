@@ -150,7 +150,7 @@ class MetalKernelCodegen : public IRVisitor {
     emit(R"({}_ch {} = {}.children({});)", sn->node_type_name, stmt->raw_name(),
          parent, index_name);
     if (stmt->activate) {
-      TI_ASSERT(sn->type == SNodeType::dense && sn->_bitmasked);
+      TI_ASSERT(sn->type == SNodeType::bitmasked);
       emit("{{");
       {
         ScopedIndent s(line_appender_);
@@ -707,7 +707,7 @@ class MetalKernelCodegen : public IRVisitor {
 
   std::string make_snode_meta_bm(const SNode *sn,
                                  const std::string &var_name) const {
-    TI_ASSERT(sn->type == SNodeType::dense && sn->_bitmasked);
+    TI_ASSERT(sn->type == SNodeType::bitmasked);
     const auto &meta = compiled_snodes_->snode_descriptors.find(sn->id)->second;
     LineAppender la = line_appender_;
     // Keep the indentation settings only
@@ -716,7 +716,7 @@ class MetalKernelCodegen : public IRVisitor {
     la.append("SNodeMeta {};", var_name);
     la.append("{}.element_stride = {};", var_name, meta.element_stride);
     la.append("{}.num_slots = {};", var_name, meta.num_slots);
-    la.append("{}.type = {};", var_name, meta.num_slots);
+    la.append("{}.type = {};", var_name, (int)shaders::SNodeMeta::Bitmasked);
     return la.lines();
   }
 

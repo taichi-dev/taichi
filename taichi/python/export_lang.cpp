@@ -143,7 +143,6 @@ void export_lang(py::module &m) {
       .def(py::init<>())
       .def_readwrite("parent", &SNode::parent)
       .def_readonly("type", &SNode::type)
-      .def_readonly("is_bitmasked", &SNode::_bitmasked)
       .def("dense",
            (SNode & (SNode::*)(const std::vector<Index> &,
                                const std::vector<int> &))(&SNode::dense),
@@ -158,7 +157,10 @@ void export_lang(py::module &m) {
            py::return_value_policy::reference)
       .def("dynamic", &SNode::dynamic_chunked,
            py::return_value_policy::reference)
-      .def("bitmasked", &SNode::bitmasked)
+      .def("bitmasked",
+           (SNode & (SNode::*)(const std::vector<Index> &,
+                               const std::vector<int> &))(&SNode::bitmasked),
+           py::return_value_policy::reference)
       .def("place", (SNode & (SNode::*)(Expr &))(&SNode::place),
            py::return_value_policy::reference)
       .def("data_type", [](SNode *snode) { return snode->dt; })

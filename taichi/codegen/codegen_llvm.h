@@ -186,7 +186,6 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     if (snode->type == SNodeType::dense) {
       meta = std::make_unique<RuntimeObject>("DenseMeta", this, builder.get());
       emit_struct_meta_base("Dense", meta->ptr, snode);
-      meta->call("set_bitmasked", tlctx->get_constant(snode->_bitmasked));
       meta->call("set_morton_dim", tlctx->get_constant((int)snode->_morton));
     } else if (snode->type == SNodeType::pointer) {
       meta =
@@ -200,6 +199,10 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
           std::make_unique<RuntimeObject>("DynamicMeta", this, builder.get());
       emit_struct_meta_base("Dynamic", meta->ptr, snode);
       meta->call("set_chunk_size", tlctx->get_constant(snode->chunk_size));
+    } else if (snode->type == SNodeType::bitmasked) {
+      meta =
+          std::make_unique<RuntimeObject>("BitmaskedMeta", this, builder.get());
+      emit_struct_meta_base("Bitmasked", meta->ptr, snode);
     } else {
       TI_P(snode_type_name(snode->type));
       TI_NOT_IMPLEMENTED;
@@ -1067,6 +1070,8 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       return "pointer";
     } else if (snode->type == SNodeType::hash) {
       return "Hash";
+    } else if (snode->type == SNodeType::bitmasked) {
+      return "Bitmasked";
     } else {
       TI_P(snode_type_name(snode->type));
       TI_NOT_IMPLEMENTED
@@ -1141,7 +1146,8 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       stmt->value = builder->CreateGEP(parent, stmt->input_index->value);
     } else if (snode->type == SNodeType::dense ||
                snode->type == SNodeType::pointer ||
-               snode->type == SNodeType::dynamic) {
+               snode->type == SNodeType::dynamic ||
+               snode->type == SNodeType::bitmasked) {
       if (stmt->activate) {
         call(snode, stmt->input_snode->value, "activate",
              {stmt->input_index->value});

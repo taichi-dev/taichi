@@ -117,9 +117,6 @@ void demote_dense_struct_fors(IRNode *root) {
         if (snode->type != SNodeType::dense) {
           all_dense = false;
         }
-        if (snode->type == SNodeType::dense && snode->_bitmasked) {
-          all_dense = false;
-        }
         snode = snode->parent;
       }
       if (all_dense) {

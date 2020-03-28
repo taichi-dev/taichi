@@ -19,7 +19,7 @@ elif [[ $TRAVIS_OS_NAME == 'linux' ]]; then
     eval "${MATRIX_EVAL}"
     echo "python version: $PYTHON_VERSION"
     if [[ $PYTHON != 'python3.6' ]]; then
-        sudo apt-get install $PYTHON-dev
+        sudo apt-get install -y $PYTHON-dev
     fi
     $PYTHON --version
 fi

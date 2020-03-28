@@ -31,20 +31,20 @@ matrix:
     dist: bionic
     python: 3.6
     env:
-      - MATRIX_EVAL="CC=clang && CXX=clang++ && PYTHON_VERSION=3.6.1 && PYTHON=python3.6"
+      - MATRIX_EVAL="CC=clang && CXX=clang++ && PYTHON_VERSION=3.6.1 && PYTHON=python"
   - name: "Ubuntu 18.04 + Python 3.7"
     os: linux
     dist: bionic
     python: 3.7
     env:
-      - MATRIX_EVAL="CC=clang && CXX=clang++ && PYTHON_VERSION=3.7.1 && PYTHON=python3.7"
+      - MATRIX_EVAL="CC=clang && CXX=clang++ && PYTHON_VERSION=3.7.1 && PYTHON=python"
   - name: "Ubuntu 18.04 + Python 3.8"
     if: commit_message =~ /^\[release\]/
     os: linux
     dist: bionic
     python: 3.8
     env:
-      - MATRIX_EVAL="CC=clang && CXX=clang++ && PYTHON_VERSION=3.8.1 && PYTHON=python3.8"
+      - MATRIX_EVAL="CC=clang && CXX=clang++ && PYTHON_VERSION=3.8.1 && PYTHON=python"
 
 skip_commits:
   files:

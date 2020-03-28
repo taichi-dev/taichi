@@ -274,11 +274,15 @@ class JITSessionCPU : public JITSession {
     }
 
     if (get_current_program().config.print_kernel_llvm_ir_optimized) {
-      TI_INFO("Global optimized IR:");
+      TI_INFO("Functions with > 100 instructions in optimized LLVM IR:");
+      static int counter = 0;
       std::error_code ec;
-      llvm::raw_fd_ostream fdos("taichi_optimized.ll", ec);
+      auto fn = fmt::format("taichi_optimized_{:04d}.ll", counter);
+      llvm::raw_fd_ostream fdos(fn, ec);
       module->print(fdos, nullptr);
       TaichiLLVMContext::print_huge_functions(module.get());
+      TI_INFO("Optimized LLVM IR emitted to file {}", fn);
+      counter++;
     }
   }
 };

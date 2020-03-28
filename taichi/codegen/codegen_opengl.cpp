@@ -212,52 +212,167 @@ class KernelGen : public IRVisitor {
           "#define _ext_ns_f32(x) _extr_f32_[(x) >> 0]\n"
           "#define _ext_ns_f64(x) _extr_f64_[(x) >> 0]\n";
     }
-    kernel_header +=
-        "#define _Ax_(x) x\n"
-        "#define _At_(x) _Ax_(_at_##x(x))\n";
     if (used.atomic_float) {  // {{{
       kernel_header +=
           "\
-#define _Atmf_Def(Add, _f_, _o_, mem, _32, float) \
-float atomic##Add##_##mem##_f##_32(int addr, float rhs) \
+float atomicAdd_mem_f32(int addr, float rhs) \
 { \
   int old, new, ret; \
   do { \
-    old = _##mem##_i##_32(addr); \
-    new = floatBitsToInt(_f_(intBitsToFloat(old) _o_ rhs)); \
-  } while (old != atomicCompSwap(_Ax_(_##mem##_i##_32(addr)), old, new)); \
+    old = _mem_i32(addr); \
+    new = floatBitsToInt((intBitsToFloat(old) + rhs)); \
+  } while (old != atomicCompSwap((_mem_i32(addr)), old, new)); \
   return intBitsToFloat(old); \
 }\n\
-#define _Acma_ ,\n\
-#define _Atm_(func, at, x, rhs) _Ax_(func##at(x, rhs))\n\
-_Atmf_Def(Add,, +, mem, 32, float)\n\
-_Atmf_Def(Sub,, -, mem, 32, float)\n\
-_Atmf_Def(Max, max, _Acma_, mem, 32, float)\n\
-_Atmf_Def(Min, min, _Acma_, mem, 32, float)\n\
+float atomicSub_mem_f32(int addr, float rhs) \
+{ \
+  int old, new, ret; \
+  do { \
+    old = _mem_i32(addr); \
+    new = floatBitsToInt((intBitsToFloat(old) - rhs)); \
+  } while (old != atomicCompSwap((_mem_i32(addr)), old, new)); \
+  return intBitsToFloat(old); \
+}\n\
+float atomicMax_mem_f32(int addr, float rhs) \
+{ \
+  int old, new, ret; \
+  do { \
+    old = _mem_i32(addr); \
+    new = floatBitsToInt(max(intBitsToFloat(old), rhs)); \
+  } while (old != atomicCompSwap((_mem_i32(addr)), old, new)); \
+  return intBitsToFloat(old); \
+}\n\
+float atomicMin_mem_f32(int addr, float rhs) \
+{ \
+  int old, new, ret; \
+  do { \
+    old = _mem_i32(addr); \
+    new = floatBitsToInt(min(intBitsToFloat(old), rhs)); \
+  } while (old != atomicCompSwap((_mem_i32(addr)), old, new)); \
+  return intBitsToFloat(old); \
+}\n\
 "
 #ifdef _GLSL_INT64
           "\
-_Atmf_Def(Add,, +, 64, double)\n\
-_Atmf_Def(Sub,, -, 64, double)\n\
-_Atmf_Def(Max, max, _Acma_, 64, double)\n\
-_Atmf_Def(Min, min, _Acma_, 64, double)\n\
+double atomicAdd_mem_f64(int addr, double rhs) \
+{ \
+  int old, new, ret; \
+  do { \
+    old = _mem_i64(addr); \
+    new = floatBitsToInt((intBitsToFloat(old) + rhs)); \
+  } while (old != atomicCompSwap((_mem_i64(addr)), old, new)); \
+  return intBitsToFloat(old); \
+}\n\
+double atomicSub_mem_f64(int addr, double rhs) \
+{ \
+  int old, new, ret; \
+  do { \
+    old = _mem_i64(addr); \
+    new = floatBitsToInt((intBitsToFloat(old) - rhs)); \
+  } while (old != atomicCompSwap((_mem_i64(addr)), old, new)); \
+  return intBitsToFloat(old); \
+}\n\
+double atomicMax_mem_f64(int addr, double rhs) \
+{ \
+  int old, new, ret; \
+  do { \
+    old = _mem_i64(addr); \
+    new = floatBitsToInt(max(intBitsToFloat(old), rhs)); \
+  } while (old != atomicCompSwap((_mem_i64(addr)), old, new)); \
+  return intBitsToFloat(old); \
+}\n\
+double atomicMin_mem_f64(int addr, double rhs) \
+{ \
+  int old, new, ret; \
+  do { \
+    old = _mem_i64(addr); \
+    new = floatBitsToInt(min(intBitsToFloat(old), rhs)); \
+  } while (old != atomicCompSwap((_mem_i64(addr)), old, new)); \
+  return intBitsToFloat(old); \
+}\n\
 "
 #endif
           "\n";  // discussion:
                  // https://github.com/taichi-dev/taichi/pull/495#issuecomment-590074123
       if (used.global_temp) {
-        kernel_header +=
-            "_Atmf_Def(Add,, +, gtx, 32, float)\n"
-            "_Atmf_Def(Sub,, -, gtx, 32, float)\n"
-            "_Atmf_Def(Max, max, _Acma_, gtx, 32, float)\n"
-            "_Atmf_Def(Min, min, _Acma_, gtx, 32, float)\n";
+        kernel_header += "\
+float atomicAdd_gtx_f32(int addr, float rhs) \
+{ \
+  int old, new, ret; \
+  do { \
+    old = _gtx_i32(addr); \
+    new = floatBitsToInt((intBitsToFloat(old) + rhs)); \
+  } while (old != atomicCompSwap((_gtx_i32(addr)), old, new)); \
+  return intBitsToFloat(old); \
+}\n\
+float atomicSub_gtx_f32(int addr, float rhs) \
+{ \
+  int old, new, ret; \
+  do { \
+    old = _gtx_i32(addr); \
+    new = floatBitsToInt((intBitsToFloat(old) - rhs)); \
+  } while (old != atomicCompSwap((_gtx_i32(addr)), old, new)); \
+  return intBitsToFloat(old); \
+}\n\
+float atomicMax_gtx_f32(int addr, float rhs) \
+{ \
+  int old, new, ret; \
+  do { \
+    old = _gtx_i32(addr); \
+    new = floatBitsToInt(max(intBitsToFloat(old), rhs)); \
+  } while (old != atomicCompSwap((_gtx_i32(addr)), old, new)); \
+  return intBitsToFloat(old); \
+}\n\
+float atomicMin_gtx_f32(int addr, float rhs) \
+{ \
+  int old, new, ret; \
+  do { \
+    old = _gtx_i32(addr); \
+    new = floatBitsToInt(min(intBitsToFloat(old), rhs)); \
+  } while (old != atomicCompSwap((_gtx_i32(addr)), old, new)); \
+  return intBitsToFloat(old); \
+}\n\
+";
       }
       if (used.external_ptr) {
-        kernel_header +=
-            "_Atmf_Def(Add,, +, ext_ns, 32, float)\n"
-            "_Atmf_Def(Sub,, -, ext_ns, 32, float)\n"
-            "_Atmf_Def(Max, max, _Acma_, ext_ns, 32, float)\n"
-            "_Atmf_Def(Min, min, _Acma_, ext_ns, 32, float)\n";
+        kernel_header += "\
+float atomicAdd_ext_ns_f32(int addr, float rhs) \
+{ \
+  int old, new, ret; \
+  do { \
+    old = _ext_ns_i32(addr); \
+    new = floatBitsToInt((intBitsToFloat(old) + rhs)); \
+  } while (old != atomicCompSwap((_ext_ns_i32(addr)), old, new)); \
+  return intBitsToFloat(old); \
+}\n\
+float atomicSub_ext_ns_f32(int addr, float rhs) \
+{ \
+  int old, new, ret; \
+  do { \
+    old = _ext_ns_i32(addr); \
+    new = floatBitsToInt((intBitsToFloat(old) - rhs)); \
+  } while (old != atomicCompSwap((_ext_ns_i32(addr)), old, new)); \
+  return intBitsToFloat(old); \
+}\n\
+float atomicMax_ext_ns_f32(int addr, float rhs) \
+{ \
+  int old, new, ret; \
+  do { \
+    old = _ext_ns_i32(addr); \
+    new = floatBitsToInt(max(intBitsToFloat(old), rhs)); \
+  } while (old != atomicCompSwap((_ext_ns_i32(addr)), old, new)); \
+  return intBitsToFloat(old); \
+}\n\
+float atomicMin_ext_ns_f32(int addr, float rhs) \
+{ \
+  int old, new, ret; \
+  do { \
+    old = _ext_ns_i32(addr); \
+    new = floatBitsToInt(min(intBitsToFloat(old), rhs)); \
+  } while (old != atomicCompSwap((_ext_ns_i32(addr)), old, new)); \
+  return intBitsToFloat(old); \
+}\n\
+";
       }
     }                   // }}}
     if (used.random) {  // TODO(archibate): random in different offloads should
@@ -390,7 +505,6 @@ int _rand_i32()\n\
 
   void map_stmt_ptr_signat(Stmt *stmt, std::string signat) {
     ptr_signats[stmt->id] = signat;
-    emit("#define _at_{} {}", stmt->raw_name(), signat);
   }
 
   void visit(GetChStmt *stmt) override {
@@ -403,7 +517,6 @@ int _rand_i32()\n\
 
   void visit(GlobalStoreStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
-    //emit("_At_({}) = {};", stmt->ptr->raw_name(), stmt->data->raw_name());
     emit("{}({}) = {};", ptr_signats.at(stmt->ptr->id), // throw out_of_range if not a pointer
         stmt->ptr->raw_name(), stmt->data->raw_name());
   }

@@ -265,10 +265,11 @@ class JITSessionCPU : public JITSession {
 
     function_pass_manager.doFinalization();
 
-    auto t = Time::get_time();
-    module_pass_manager.run(*module);
-    t = Time::get_time() - t;
-    // TI_INFO("Global optimization time: {} ms", t * 1000);
+    {
+      TI_PROFILER("llvm_module_pass");
+      module_pass_manager.run(*module);
+    }
+
     if (get_current_program().config.print_kernel_llvm_ir_optimized) {
       TI_INFO("Global optimized IR:");
       module->print(llvm::errs(), nullptr);

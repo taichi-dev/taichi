@@ -76,9 +76,6 @@ class TaichiFormatServer(BaseHTTPRequestHandler):
         num_commits = int(ret["commits"])
         self.writeln(f"#commits id {num_commits}")
 
-        commits = self.exec(
-            f'git log -n {num_commits + 1} --format="%H"').split('\n')
-        fork_commit = commits[num_commits - 1]
         user_id = ret['user']['login']
         branch_name = head['ref']
         ssh_url = head['repo']['ssh_url']
@@ -87,6 +84,9 @@ class TaichiFormatServer(BaseHTTPRequestHandler):
         self.exec(f'git branch -d {user_id}-{branch_name}')
         self.exec(
             f'git checkout -b {user_id}-{branch_name} {user_id}/{branch_name}')
+        commits = self.exec(
+            f'git log -n {num_commits + 1} --format="%H"').split('\n')
+        fork_commit = commits[num_commits]
         self.exec(f'ti format {fork_commit}')
         self.exec('git add --all')
         self.exec(f'git commit -m "[skip ci] enforce code format"')

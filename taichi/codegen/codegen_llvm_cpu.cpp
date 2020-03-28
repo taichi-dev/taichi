@@ -14,6 +14,7 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
   using IRVisitor::visit;
 
   CodeGenLLVMCPU(Kernel *kernel) : CodeGenLLVM(kernel) {
+    TI_AUTO_PROF
   }
 
   void visit(OffloadedStmt *stmt) override {
@@ -51,7 +52,7 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
 };
 
 FunctionType CodeGenCPU::codegen() {
-  TI_PROFILER("cpu codegen");
+  TI_AUTO_PROF
   return CodeGenLLVMCPU(kernel).gen();
 }
 

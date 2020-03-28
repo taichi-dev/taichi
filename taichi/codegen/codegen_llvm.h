@@ -222,10 +222,12 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   }
 
   virtual void emit_to_module() {
+    TI_AUTO_PROF
     kernel->ir->accept(this);
   }
 
   virtual FunctionType compile_module_to_executable() {
+    TI_AUTO_PROF
     tlctx->add_module(std::move(module));
 
     for (auto &task : offloaded_tasks) {

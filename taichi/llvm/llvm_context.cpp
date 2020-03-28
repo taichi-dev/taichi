@@ -364,6 +364,7 @@ void TaichiLLVMContext::link_module_with_libdevice(
 }
 
 std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_struct_module() {
+  TI_AUTO_PROF
   TI_ASSERT(struct_module);
   return llvm::CloneModule(*struct_module);
 }

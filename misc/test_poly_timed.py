@@ -3,6 +3,7 @@ from taichi import approx
 
 from autograd import grad
 
+
 # Note: test happens at v = 0.2
 def grad_test(tifunc, npfunc=None, default_fp=ti.f32):
     if npfunc is None:
@@ -50,5 +51,6 @@ def test_poly():
     grad_test(lambda x: (x - 3) * (x - 1) + x * x)
     ti.core.print_profile_info()
     print('total_time', time.time() - t)
-    
+
+
 test_poly()

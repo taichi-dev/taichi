@@ -28,7 +28,8 @@ void Pointer_activate(Ptr meta, Ptr node, int i) {
 }
 
 void Pointer_deactivate(Ptr meta, Ptr node, int i) {
-  auto num_elements = Pointer_get_num_elements(meta, node); Ptr lock = node + 8 * i;
+  auto num_elements = Pointer_get_num_elements(meta, node);
+  Ptr lock = node + 8 * i;
   Ptr &data_ptr = *(Ptr *)(node + 8 * (num_elements + i));
   if (data_ptr != nullptr) {
     locked_task(lock, [&] {

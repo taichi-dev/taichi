@@ -220,16 +220,6 @@ class JITSessionCPU : public JITSession {
       legacy::PassManager manager;
       ModuleAnalysisManager ana;
       manager.add(createInternalizePass([&](const GlobalValue &val) -> bool {
-        bool potential_internal = val.getName()[0] == '_' ||
-                                  val.getName().startswith("test_") ||
-                                  val.getName().endswith("_element_listgen") ||
-                                  val.getName().endswith("_activate") ||
-                                  val.getName().endswith("_deactivate") ||
-                                  val.getName().endswith("_append") ||
-                                  val.getName().startswith("gc_parallel");
-        if (potential_internal && !is_kernel(val.getName())) {
-          return false;
-        }
         if (!has_kernel) {
           return val.getName().startswith("runtime_") ||
                  val.getName().startswith("LLVMRuntime_");
@@ -239,13 +229,6 @@ class JITSessionCPU : public JITSession {
       }));
       manager.add(createGlobalDCEPass());
       manager.run(*module);
-      /*
-      std::error_code ec;
-      static int counter = 0;
-      counter += 1;
-      llvm::raw_fd_ostream fdos(fmt::format("taichi_internalized_{}.ll", counter), ec);
-      module->print(fdos, nullptr);
-      */
     }
     module->setTargetTriple(JTMB->getTargetTriple().str());
     llvm::Triple triple(module->getTargetTriple());

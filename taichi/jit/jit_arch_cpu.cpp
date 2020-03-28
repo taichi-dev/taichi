@@ -16,7 +16,6 @@
 #include "llvm/ExecutionEngine/RTDyldMemoryManager.h"
 #include "llvm/ExecutionEngine/RuntimeDyld.h"
 #include "llvm/ExecutionEngine/SectionMemoryManager.h"
-#include "llvm/Transforms/IPO/Internalize.h"
 #include "llvm/IR/DataLayout.h"
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/Support/DynamicLibrary.h"
@@ -238,7 +237,15 @@ class JITSessionCPU : public JITSession {
           return is_kernel(val.getName());
         }
       }));
+      manager.add(createGlobalDCEPass());
       manager.run(*module);
+      /*
+      std::error_code ec;
+      static int counter = 0;
+      counter += 1;
+      llvm::raw_fd_ostream fdos(fmt::format("taichi_internalized_{}.ll", counter), ec);
+      module->print(fdos, nullptr);
+      */
     }
     module->setTargetTriple(JTMB->getTargetTriple().str());
     llvm::Triple triple(module->getTargetTriple());

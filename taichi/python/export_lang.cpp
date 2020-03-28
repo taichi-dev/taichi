@@ -301,12 +301,11 @@ void export_lang(py::module &m) {
     scope_stack.push_back(current_ast_builder().create_scope(stmt->body));
   });
 
-  m.def("end_func", [&](const std::string &funcid) {
-      scope_stack.pop_back();
-  });
+  m.def("end_func", [&](const std::string &funcid) { scope_stack.pop_back(); });
 
   m.def("func_call", [&](const std::string &funcid) {
-    auto func = Stmt::make<FuncCallStmt>(funcid); // TODO: use FuncCallExpr with return values & args
+    auto func = Stmt::make<FuncCallStmt>(
+        funcid);  // TODO: use FuncCallExpr with return values & args
     current_ast_builder().insert(std::move(func));
   });
 

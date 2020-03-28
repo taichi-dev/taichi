@@ -1842,7 +1842,7 @@ class FuncBodyStmt : public Stmt {
   std::unique_ptr<Block> body;
 
   FuncBodyStmt(const std::string &funcid, std::unique_ptr<Block> &&body)
-    : funcid(funcid), body(std::move(body)) {
+      : funcid(funcid), body(std::move(body)) {
   }
 
   bool is_container_statement() const override {

@@ -16,6 +16,7 @@
 #include "llvm/ExecutionEngine/RTDyldMemoryManager.h"
 #include "llvm/ExecutionEngine/RuntimeDyld.h"
 #include "llvm/ExecutionEngine/SectionMemoryManager.h"
+#include "llvm/Transforms/IPO/Internalize.h"
 #include "llvm/IR/DataLayout.h"
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/Support/DynamicLibrary.h"
@@ -197,12 +198,43 @@ class JITSessionCPU : public JITSession {
     return M;
   }
 
+  static bool is_kernel(std::string name) {
+    return name.find("_kernel_") != std::string::npos;
+  }
+
   static void global_optimize_module_cpu(
       std::unique_ptr<llvm::Module> &module) {
     TI_AUTO_PROF
     auto JTMB = JITTargetMachineBuilder::detectHost();
     if (!JTMB) {
       TI_ERROR("Target machine creation failed.");
+    }
+    {
+      bool has_kernel = false;
+      for (auto &f : *module) {
+        if (is_kernel(f.getName())) {
+          has_kernel = true;
+        }
+      }
+      using namespace llvm;
+      legacy::PassManager manager;
+      ModuleAnalysisManager ana;
+      manager.add(createInternalizePass([&](const GlobalValue &val) -> bool {
+        if (val.getName()[0] == '_' || val.getName().startswith("test_") ||
+            val.getName().endswith("_element_listgen") ||
+            val.getName().endswith("_activate") ||
+            val.getName().endswith("_deactivate") ||
+            val.getName().endswith("_append") ||
+            val.getName().startswith("gc_parallel")) {
+          return false;
+        }
+        if (!has_kernel) {
+          return true;
+        } else {
+          return is_kernel(val.getName());
+        }
+      }));
+      manager.run(*module);
     }
     std::error_code EC;
     llvm::raw_fd_ostream fdos("output.ll", EC);

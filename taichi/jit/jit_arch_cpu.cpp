@@ -238,9 +238,6 @@ class JITSessionCPU : public JITSession {
       }));
       manager.run(*module);
     }
-    std::error_code EC;
-    llvm::raw_fd_ostream fdos("output.ll", EC);
-    module->print(fdos, nullptr);
     module->setTargetTriple(JTMB->getTargetTriple().str());
     llvm::Triple triple(module->getTargetTriple());
 
@@ -309,7 +306,8 @@ class JITSessionCPU : public JITSession {
 
     if (get_current_program().config.print_kernel_llvm_ir_optimized) {
       TI_INFO("Global optimized IR:");
-      llvm::raw_fd_ostream fdos("taichi_optimized.ll", EC);
+      std::error_code ec;
+      llvm::raw_fd_ostream fdos("taichi_optimized.ll", ec);
       module->print(fdos, nullptr);
       TaichiLLVMContext::print_huge_functions(module.get());
     }

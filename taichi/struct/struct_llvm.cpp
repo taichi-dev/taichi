@@ -40,10 +40,10 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
   snode_attr[snode].llvm_element_type = ch_type;
 
   llvm::Type *body_type = nullptr, *aux_type = nullptr;
-  if (type == SNodeType::dense) {
+  if (type == SNodeType::dense || type == SNodeType::bitmasked) {
     TI_ASSERT(snode._morton == false);
     body_type = llvm::ArrayType::get(ch_type, snode.max_num_elements());
-    if (snode._bitmasked) {
+    if (type == SNodeType::bitmasked) {
       aux_type = llvm::ArrayType::get(llvm::Type::getInt32Ty(*llvm_ctx),
                                       (snode.max_num_elements() + 31) / 32);
     }
@@ -206,7 +206,7 @@ std::unique_ptr<StructCompiler> StructCompiler::make(Program *prog, Arch arch) {
 
 bool SNode::need_activation() const {
   return type == SNodeType::pointer || type == SNodeType::hash ||
-         (type == SNodeType::dense && _bitmasked) || type == SNodeType::dynamic;
+         type == SNodeType::bitmasked || type == SNodeType::dynamic;
 }
 
 TLANG_NAMESPACE_END

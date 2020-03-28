@@ -2073,7 +2073,7 @@ class SNodeOpExpression : public Expression {
       // It should be lowered into a pointer to parent and an index.
       TI_ERROR_IF(
           snode->type != SNodeType::pointer && snode->type != SNodeType::hash &&
-              !(snode->type == SNodeType::dense && snode->_bitmasked),
+              snode->type != SNodeType::bitmasked,
           "ti.is_active only works on pointer, hash or bitmasked nodes.");
       ret.push_back<SNodeOpStmt>(SNodeOpType::is_active, snode, indices_stmt);
     } else {

@@ -1085,6 +1085,7 @@ i32 linear_thread_idx() {
 #include "node_dynamic.h"
 #include "node_pointer.h"
 #include "node_root.h"
+#include "node_bitmasked.h"
 
 void ListManager::touch_chunk(int chunk_id) {
   if (!chunks[chunk_id]) {

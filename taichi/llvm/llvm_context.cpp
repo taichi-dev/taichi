@@ -136,9 +136,9 @@ void compile_runtime_bitcode(Arch arch) {
     if (ret) {
       TI_ERROR("LLVMRuntime compilation failed.");
     }
-    std::system(fmt::format("llvm-as {}runtime.ll -o {}{}", runtime_folder,
-                            runtime_folder, get_runtime_fn(arch))
-                    .c_str());
+    cmd = fmt::format("llvm-as {}runtime.ll -o {}{}", runtime_folder,
+                      runtime_folder, get_runtime_fn(arch));
+    std::system(cmd.c_str());
     TI_TRACE("runtime module bitcode compiled.");
     runtime_compiled.insert((int)arch);
   }

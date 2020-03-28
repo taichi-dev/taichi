@@ -349,8 +349,7 @@ class LowerAST : public IRVisitor {
     } else if (stmt->snode->type == SNodeType::pointer ||
                stmt->snode->type == SNodeType::hash ||
                stmt->snode->type == SNodeType::dynamic ||
-               (stmt->snode->type == SNodeType::dense &&
-                stmt->snode->_bitmasked)) {
+               stmt->snode->type == SNodeType::bitmasked) {
       TI_ASSERT(SNodeOpStmt::activation_related(stmt->op_type));
       flattened.push_back<SNodeOpStmt>(stmt->op_type, stmt->snode,
                                        indices_stmt);

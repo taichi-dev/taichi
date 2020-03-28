@@ -509,15 +509,14 @@ class MetalRuntime::Impl {
       rtm_meta->num_slots = sn_meta.num_slots;
       rtm_meta->mem_offset_in_parent = sn_meta.mem_offset_in_parent;
       switch (sn_meta.snode->type) {
+        case SNodeType::dense:
+          rtm_meta->type = SNodeMeta::Dense;
+          break;
         case SNodeType::root:
           rtm_meta->type = SNodeMeta::Root;
           break;
-        case SNodeType::dense:
-          if (sn_meta.snode->_bitmasked) {
-            rtm_meta->type = SNodeMeta::DenseBitmask;
-          } else {
-            rtm_meta->type = SNodeMeta::Dense;
-          }
+        case SNodeType::bitmasked:
+          rtm_meta->type = SNodeMeta::Bitmasked;
           break;
         default:
           TI_ERROR("Unsupported SNode type={}",

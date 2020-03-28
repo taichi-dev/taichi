@@ -222,7 +222,6 @@ SNode::SNode(int depth, SNodeType t) : depth(depth), type(t) {
   has_ambient = false;
   dt = DataType::gen;
   _morton = false;
-  _bitmasked = false;
 
   reader_kernel = nullptr;
   writer_kernel = nullptr;

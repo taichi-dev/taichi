@@ -220,12 +220,14 @@ class JITSessionCPU : public JITSession {
       legacy::PassManager manager;
       ModuleAnalysisManager ana;
       manager.add(createInternalizePass([&](const GlobalValue &val) -> bool {
-        if (val.getName()[0] == '_' || val.getName().startswith("test_") ||
-            val.getName().endswith("_element_listgen") ||
-            val.getName().endswith("_activate") ||
-            val.getName().endswith("_deactivate") ||
-            val.getName().endswith("_append") ||
-            val.getName().startswith("gc_parallel")) {
+        bool potential_internal = val.getName()[0] == '_' ||
+                                  val.getName().startswith("test_") ||
+                                  val.getName().endswith("_element_listgen") ||
+                                  val.getName().endswith("_activate") ||
+                                  val.getName().endswith("_deactivate") ||
+                                  val.getName().endswith("_append") ||
+                                  val.getName().startswith("gc_parallel");
+        if (potential_internal && !is_kernel(val.getName())) {
           return false;
         }
         if (!has_kernel) {

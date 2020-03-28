@@ -8,8 +8,7 @@ TLANG_NAMESPACE_BEGIN
 
 namespace metal {
 
-MetalKernelArgsAttributes::MetalKernelArgsAttributes(
-    const std::vector<Kernel::Arg> &args)
+KernelArgsAttributes::KernelArgsAttributes(const std::vector<Kernel::Arg> &args)
     : args_bytes_(0), extra_args_bytes_(Context::extra_args_size) {
   arg_attribs_vec_.reserve(args.size());
   for (const auto &ka : args) {

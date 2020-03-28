@@ -20,19 +20,19 @@ namespace metal {
 // the compiled Metal kernels pipelines and Metal buffers memory. It is the
 // runtime interface between Taichi and Metal, and knows how to locate the
 // series of Metal kernels generated from a Taichi kernel.
-class MetalRuntime {
+class KernelManager {
  public:
   struct Params {
-    StructCompiledResult compiled_snodes;
+    CompiledStructs compiled_structs;
     CompileConfig *config;
     MemoryPool *mem_pool;
     ProfilerBase *profiler;
     int root_id;
   };
 
-  explicit MetalRuntime(Params params);
+  explicit KernelManager(Params params);
   // To make Pimpl + std::unique_ptr work
-  ~MetalRuntime();
+  ~KernelManager();
 
   // Register a Taichi kernel to the Metal runtime.
   // * |mtl_kernel_source_code| is the complete source code compiled from a
@@ -43,9 +43,9 @@ class MetalRuntime {
   void register_taichi_kernel(
       const std::string &taichi_kernel_name,
       const std::string &mtl_kernel_source_code,
-      const std::vector<MetalKernelAttributes> &kernels_attribs,
+      const std::vector<KernelAttributes> &kernels_attribs,
       size_t global_tmps_size,
-      const MetalKernelArgsAttributes &args_attribs);
+      const KernelArgsAttributes &args_attribs);
 
   // Launch the given |taichi_kernel_name|.
   // Kernel launching is asynchronous, therefore the Metal memory is not valid

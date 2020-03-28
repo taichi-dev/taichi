@@ -467,11 +467,12 @@ int TaichiLLVMContext::num_instructions(llvm::Function *func) {
   return counter;
 }
 
-void TaichiLLVMContext::print_huge_functions() {
+void TaichiLLVMContext::print_huge_functions(
+    const std::unique_ptr<llvm::Module> &module) {
   int total_inst = 0;
   int total_big_inst = 0;
 
-  for (auto &f : *runtime_module) {
+  for (auto &f : *module) {
     int c = num_instructions(&f);
     if (c > 100) {
       total_big_inst += c;

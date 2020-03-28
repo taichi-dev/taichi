@@ -204,6 +204,9 @@ class JITSessionCPU : public JITSession {
     if (!JTMB) {
       TI_ERROR("Target machine creation failed.");
     }
+    std::error_code EC;
+    llvm::raw_fd_ostream fdos("output.ll", EC);
+    module->print(fdos, nullptr);
     module->setTargetTriple(JTMB->getTargetTriple().str());
     llvm::Triple triple(module->getTargetTriple());
 
@@ -272,7 +275,8 @@ class JITSessionCPU : public JITSession {
 
     if (get_current_program().config.print_kernel_llvm_ir_optimized) {
       TI_INFO("Global optimized IR:");
-      module->print(llvm::errs(), nullptr);
+      llvm::raw_fd_ostream fdos("taichi_optimized.ll", EC);
+      module->print(fdos, nullptr);
     }
   }
 };

@@ -2,7 +2,7 @@ import taichi as ti
 import time
 
 t = time.time()
-ti.init(arch=ti.cuda)
+ti.init(arch=ti.cuda, print_kernel_llvm_ir_optimized=True)
 
 
 @ti.kernel

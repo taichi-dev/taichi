@@ -73,7 +73,7 @@ class TaichiLLVMContext {
 
   static void force_inline(llvm::Function *func);
 
-  void print_huge_functions();
+  static void print_huge_functions(const std::unique_ptr<llvm::Module> &module);
 
   static int num_instructions(llvm::Function *func);
 

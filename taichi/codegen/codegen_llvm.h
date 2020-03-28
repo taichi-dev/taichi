@@ -228,6 +228,14 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
 
   virtual FunctionType compile_module_to_executable() {
     TI_AUTO_PROF
+    TaichiLLVMContext::eliminate_unused_functions(
+        module.get(), [&](std::string func_name) {
+          for (auto &task : offloaded_tasks) {
+            if (task.name == func_name)
+              return true;
+          }
+          return false;
+        });
     tlctx->add_module(std::move(module));
 
     for (auto &task : offloaded_tasks) {

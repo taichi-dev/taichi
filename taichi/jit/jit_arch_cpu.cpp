@@ -197,38 +197,12 @@ class JITSessionCPU : public JITSession {
     return M;
   }
 
-  static bool is_kernel(std::string name) {
-    return name.find("_kernel_") != std::string::npos;
-  }
-
   static void global_optimize_module_cpu(
       std::unique_ptr<llvm::Module> &module) {
     TI_AUTO_PROF
     auto JTMB = JITTargetMachineBuilder::detectHost();
     if (!JTMB) {
       TI_ERROR("Target machine creation failed.");
-    }
-    {
-      TI_PROFILER("internalize");
-      bool has_kernel = false;
-      for (auto &f : *module) {
-        if (is_kernel(f.getName())) {
-          has_kernel = true;
-        }
-      }
-      using namespace llvm;
-      legacy::PassManager manager;
-      ModuleAnalysisManager ana;
-      manager.add(createInternalizePass([&](const GlobalValue &val) -> bool {
-        if (!has_kernel) {
-          return val.getName().startswith("runtime_") ||
-                 val.getName().startswith("LLVMRuntime_");
-        } else {
-          return is_kernel(val.getName());
-        }
-      }));
-      manager.add(createGlobalDCEPass());
-      manager.run(*module);
     }
     module->setTargetTriple(JTMB->getTargetTriple().str());
     llvm::Triple triple(module->getTargetTriple());

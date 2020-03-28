@@ -628,11 +628,11 @@ Ptr get_temporary_pointer(LLVMRuntime *runtime, u64 offset) {
   return runtime->temporaries + offset;
 }
 
-void retrieve_error_code(LLVMRuntime *runtime) {
+void runtime_retrieve_error_code(LLVMRuntime *runtime) {
   runtime->set_result(runtime->error_code);
 }
 
-void retrieve_error_message(LLVMRuntime *runtime) {
+void runtime_retrieve_error_message(LLVMRuntime *runtime) {
   runtime->set_result(runtime->error_message_buffer);
 }
 

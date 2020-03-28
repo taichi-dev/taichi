@@ -189,8 +189,8 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       meta->call("set_morton_dim", tlctx->get_constant((int)snode->_morton));
     } else if (snode->type == SNodeType::pointer) {
       meta =
-          std::make_unique<RuntimeObject>("pointerMeta", this, builder.get());
-      emit_struct_meta_base("pointer", meta->ptr, snode);
+          std::make_unique<RuntimeObject>("PointerMeta", this, builder.get());
+      emit_struct_meta_base("Pointer", meta->ptr, snode);
     } else if (snode->type == SNodeType::root) {
       meta = std::make_unique<RuntimeObject>("RootMeta", this, builder.get());
       emit_struct_meta_base("Root", meta->ptr, snode);
@@ -225,10 +225,20 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   }
 
   virtual void emit_to_module() {
+    TI_AUTO_PROF
     kernel->ir->accept(this);
   }
 
   virtual FunctionType compile_module_to_executable() {
+    TI_AUTO_PROF
+    TaichiLLVMContext::eliminate_unused_functions(
+        module.get(), [&](std::string func_name) {
+          for (auto &task : offloaded_tasks) {
+            if (task.name == func_name)
+              return true;
+          }
+          return false;
+        });
     tlctx->add_module(std::move(module));
 
     for (auto &task : offloaded_tasks) {
@@ -1067,7 +1077,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     } else if (snode->type == SNodeType::dynamic) {
       return "Dynamic";
     } else if (snode->type == SNodeType::pointer) {
-      return "pointer";
+      return "Pointer";
     } else if (snode->type == SNodeType::hash) {
       return "Hash";
     } else if (snode->type == SNodeType::bitmasked) {

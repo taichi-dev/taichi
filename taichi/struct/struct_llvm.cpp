@@ -20,6 +20,7 @@ StructCompilerLLVM::StructCompilerLLVM(Program *prog, Arch arch)
 }
 
 void StructCompilerLLVM::generate_types(SNode &snode) {
+  TI_AUTO_PROF;
   auto type = snode.type;
   llvm::Type *llvm_type = nullptr;
 
@@ -80,6 +81,7 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
 }
 
 void StructCompilerLLVM::generate_refine_coordinates(SNode *snode) {
+  TI_AUTO_PROF;
   auto coord_type = get_runtime_type("PhysicalCoordinates");
   auto coord_type_ptr = llvm::PointerType::get(coord_type, 0);
 
@@ -123,6 +125,7 @@ void StructCompilerLLVM::generate_refine_coordinates(SNode *snode) {
 }
 
 void StructCompilerLLVM::generate_child_accessors(SNode &snode) {
+  TI_AUTO_PROF;
   auto type = snode.type;
   stack.push_back(&snode);
 
@@ -172,6 +175,7 @@ void StructCompilerLLVM::generate_child_accessors(SNode &snode) {
 }
 
 void StructCompilerLLVM::run(SNode &root, bool host) {
+  TI_AUTO_PROF;
   // bottom to top
   collect_snodes(root);
 

@@ -84,7 +84,7 @@ class TaichiFormatServer(BaseHTTPRequestHandler):
         self.exec(f'git branch -d {user_id}-{branch_name}')
         self.exec(
             f'git checkout -b {user_id}-{branch_name} {user_id}/{branch_name}')
-        commits=self.exec(
+        commits = self.exec(
             f'git log -n {num_commits + 1} --format="%H"').split('\n')
         fork_commit = commits[num_commits]
         self.exec(f'ti format {fork_commit}')

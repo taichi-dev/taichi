@@ -210,6 +210,7 @@ class JITSessionCPU : public JITSession {
       TI_ERROR("Target machine creation failed.");
     }
     {
+      TI_PROFILER("internalize");
       bool has_kernel = false;
       for (auto &f : *module) {
         if (is_kernel(f.getName())) {
@@ -231,7 +232,8 @@ class JITSessionCPU : public JITSession {
           return false;
         }
         if (!has_kernel) {
-          return true;
+          return val.getName().startswith("runtime_") ||
+                 val.getName().startswith("LLVMRuntime_");
         } else {
           return is_kernel(val.getName());
         }
@@ -293,11 +295,14 @@ class JITSessionCPU : public JITSession {
     b.populateFunctionPassManager(function_pass_manager);
     b.populateModulePassManager(module_pass_manager);
 
-    function_pass_manager.doInitialization();
-    for (llvm::Module::iterator i = module->begin(); i != module->end(); i++)
-      function_pass_manager.run(*i);
+    {
+      TI_PROFILER("llvm_function_pass");
+      function_pass_manager.doInitialization();
+      for (llvm::Module::iterator i = module->begin(); i != module->end(); i++)
+        function_pass_manager.run(*i);
 
-    function_pass_manager.doFinalization();
+      function_pass_manager.doFinalization();
+    }
 
     {
       TI_PROFILER("llvm_module_pass");

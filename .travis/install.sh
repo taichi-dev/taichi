@@ -18,5 +18,8 @@ elif [[ $TRAVIS_OS_NAME == 'linux' ]]; then
     export PATH="$HOME/.pyenv/bin:$PATH"
     eval "${MATRIX_EVAL}"
     echo "python version: $PYTHON_VERSION"
+    if [[ $PYTHON != 'python3.6' ]]; then
+        sudo apt-get install $PYTHON-dev
+    fi
     $PYTHON --version
 fi

@@ -467,8 +467,7 @@ int TaichiLLVMContext::num_instructions(llvm::Function *func) {
   return counter;
 }
 
-void TaichiLLVMContext::print_huge_functions(
-    const std::unique_ptr<llvm::Module> &module) {
+void TaichiLLVMContext::print_huge_functions(llvm::Module *module) {
   int total_inst = 0;
   int total_big_inst = 0;
 
@@ -476,8 +475,7 @@ void TaichiLLVMContext::print_huge_functions(
     int c = num_instructions(&f);
     if (c > 100) {
       total_big_inst += c;
-      TI_INFO("Loaded runtime function: {} (inst. count= {})",
-              std::string(f.getName()), c);
+      TI_INFO("{}: {} inst.", std::string(f.getName()), c);
     }
     total_inst += c;
   }

@@ -277,6 +277,7 @@ class JITSessionCPU : public JITSession {
       TI_INFO("Global optimized IR:");
       llvm::raw_fd_ostream fdos("taichi_optimized.ll", EC);
       module->print(fdos, nullptr);
+      TaichiLLVMContext::print_huge_functions(module.get());
     }
   }
 };

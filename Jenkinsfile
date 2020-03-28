@@ -7,7 +7,6 @@ pipeline {
         CC = "clang-7"
         CXX = "clang++"
         TI_WITH_CUDA = "True"
-        TI_TEST_THREADS = "1"
     }
     stages{
         stage('Build') {
@@ -146,7 +145,7 @@ void build_taichi() {
     make -j 15
     ldd libtaichi_core.so
     cd ../python
-    ti test
+    ti test -t 1
     $PYTHON_EXECUTABLE build.py upload
     '''
 }

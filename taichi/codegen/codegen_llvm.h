@@ -1446,7 +1446,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       }
 
       if (snode->type == SNodeType::bitmasked) {
-        // test is active or not
+        // test if current voxel is active or not
         auto is_active = call(snode, element.get("element"), "is_active",
                               {builder->CreateLoad(loop_index)});
         is_active = builder->CreateTrunc(is_active,

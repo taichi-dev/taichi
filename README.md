@@ -13,10 +13,10 @@
 # CPU only. No GPU/CUDA needed. (Linux, OS X and Windows)
 python3 -m pip install taichi-nightly
 
-# With GPU (CUDA 10.0) support (Linux only)
+# With GPU (CUDA 10.0) support (Linux and Windows)
 python3 -m pip install taichi-nightly-cuda-10-0
 
-# With GPU (CUDA 10.1) support (Linux only)
+# With GPU (CUDA 10.1) support (Linux and Windows)
 python3 -m pip install taichi-nightly-cuda-10-1
 
 # Build from source if you work in other environments
@@ -42,17 +42,15 @@ python3 -m pip install taichi-nightly-cuda-10-1
    - **Documentation**
       - Updated contributor guideline (#658) (by **Yuanming Hu**)
    - **Infrastructure**
-      - 6x faster compilation on CPU backends (#673) (by **Yuanming Hu**)
+      - 6x faster compilation on CPU/CUDA backends (#673) (by **Yuanming Hu**)
    - **Language and syntax**
       - Simplify dense.bitmasked to bitmasked (#670) (by **Ye Kuang**)
       - Support break in non-parallel for statements (#583) (by **彭于斌**)
    - **Metal backend**
-      - Changes to enable `bitmasked` on Metal! (#661) (by **Ye Kuang**)
-      - Silence compile warning with [[maybe_unused]] (#650) (by **Ye Kuang**)
-      - Add bitmasked support in MetalRuntime (#638) (by **Ye Kuang**)
+      - Enable `bitmasked` on Metal (#661) (by **Ye Kuang**)
+      - Silence compile warnings (#650) (by **Ye Kuang**)
    - **Optimization**
-      - Merge adjacent if's with identical conditions (#668) (by **xumingkuan**)
-      - Dive into container statements to find local loads/stores for optimization, and optimize loads of new allocas to 0 (#662) (by **xumingkuan**)
+      - Improved Taichi IR optimizers (#662) (#668) (by **xumingkuan**)
       - [Full log](https://github.com/taichi-dev/taichi/releases/tag/0.5.9)
 - (Mar  24, 2020) v0.5.8 released. Visible/notable changes:
    - **Language features**

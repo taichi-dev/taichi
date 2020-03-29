@@ -2,14 +2,9 @@
 #pragma once
 
 #include <set>
-#include <taichi/common/util.h>
-#include <taichi/util/io.h>
-#include <taichi/lang_util.h>
 
 #include "taichi/ir/ir.h"
 #include "taichi/program/program.h"
-#include "taichi/lang_util.h"
-
 #include "taichi/llvm/llvm_codegen_utils.h"
 
 TLANG_NAMESPACE_BEGIN
@@ -1451,7 +1446,8 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
         // test is active or not
         auto is_active = call(stmt->snode, element.get("element"), "is_active",
                               {builder->CreateLoad(loop_index)});
-        is_active = builder->CreateTrunc(is_active, llvm::Type::getInt1Ty(*llvm_context));
+        is_active = builder->CreateTrunc(is_active,
+                                         llvm::Type::getInt1Ty(*llvm_context));
         additional_cond = builder->CreateAnd(additional_cond, is_active);
       }
 

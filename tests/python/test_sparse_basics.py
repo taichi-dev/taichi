@@ -79,50 +79,51 @@ def test_pointer2():
     assert s[None] == 5 * n
     print(x[257 + n * n * 7])
     assert s[None] == 5 * n
-    
+
 
 @ti.archs_support_sparse
 def test_bitmasked_bitmasked():
     x = ti.var(ti.f32)
     s = ti.var(ti.i32)
-    
+
     n = 128
-    
+
     ti.root.bitmasked(ti.i, n).bitmasked(ti.i, n).place(x)
     ti.root.place(s)
-    
+
     @ti.kernel
     def func():
         for i in x:
             s[None] += 1
-    
+
     x[0] = 1
     x[127] = 1
     x[256] = 1
     x[257] = 1
-    
+
     func()
     assert s[None] == 4
+
 
 @ti.archs_support_sparse
 def test_bitmasked_dense():
     x = ti.var(ti.f32)
     s = ti.var(ti.i32)
-    
+
     n = 128
-    
+
     ti.root.bitmasked(ti.i, n).dense(ti.i, n).place(x)
     ti.root.place(s)
-    
+
     @ti.kernel
     def func():
         for i in x:
             s[None] += 1
-    
+
     x[0] = 1
     x[127] = 1
     x[256] = 1
     x[257] = 1
-    
+
     func()
     assert s[None] == 256

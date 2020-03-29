@@ -21,6 +21,7 @@
 #include "llvm/Transforms/Scalar.h"
 #include "llvm/Transforms/Scalar/GVN.h"
 #include "llvm/Transforms/Utils.h"
+#include "llvm/Transforms/IPO.h"
 #include "llvm/Bitcode/BitcodeReader.h"
 #include <llvm/Linker/Linker.h>
 #include <llvm/Demangle/Demangle.h>
@@ -136,9 +137,9 @@ void compile_runtime_bitcode(Arch arch) {
     if (ret) {
       TI_ERROR("LLVMRuntime compilation failed.");
     }
-    std::system(fmt::format("llvm-as {}runtime.ll -o {}{}", runtime_folder,
-                            runtime_folder, get_runtime_fn(arch))
-                    .c_str());
+    cmd = fmt::format("llvm-as {}runtime.ll -o {}{}", runtime_folder,
+                      runtime_folder, get_runtime_fn(arch));
+    std::system(cmd.c_str());
     TI_TRACE("runtime module bitcode compiled.");
     runtime_compiled.insert((int)arch);
   }
@@ -364,6 +365,7 @@ void TaichiLLVMContext::link_module_with_libdevice(
 }
 
 std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_struct_module() {
+  TI_AUTO_PROF
   TI_ASSERT(struct_module);
   return llvm::CloneModule(*struct_module);
 }
@@ -394,7 +396,13 @@ void TaichiLLVMContext::set_struct_module(
         f.setLinkage(llvm::Function::PrivateLinkage);
     }
   }
-  runtime_jit_module = add_module(clone_struct_module());
+
+  auto runtime_module = clone_struct_module();
+  eliminate_unused_functions(runtime_module.get(), [](std::string func_name) {
+    return starts_with(func_name, "runtime_") ||
+           starts_with(func_name, "LLVMRuntime_");
+  });
+  runtime_jit_module = add_module(std::move(runtime_module));
 }
 
 template <typename T>
@@ -467,16 +475,15 @@ int TaichiLLVMContext::num_instructions(llvm::Function *func) {
   return counter;
 }
 
-void TaichiLLVMContext::print_huge_functions() {
+void TaichiLLVMContext::print_huge_functions(llvm::Module *module) {
   int total_inst = 0;
   int total_big_inst = 0;
 
-  for (auto &f : *runtime_module) {
+  for (auto &f : *module) {
     int c = num_instructions(&f);
     if (c > 100) {
       total_big_inst += c;
-      TI_INFO("Loaded runtime function: {} (inst. count= {})",
-              std::string(f.getName()), c);
+      TI_INFO("{}: {} inst.", std::string(f.getName()), c);
     }
     total_inst += c;
   }
@@ -521,6 +528,21 @@ void TaichiLLVMContext::mark_function_as_cuda_kernel(llvm::Function *func) {
   func->getParent()
       ->getOrInsertNamedMetadata("nvvm.annotations")
       ->addOperand(md_node);
+}
+
+void TaichiLLVMContext::eliminate_unused_functions(
+    llvm::Module *module,
+    std::function<bool(const std::string &)> export_indicator) {
+  using namespace llvm;
+  TI_AUTO_PROF
+  using namespace llvm;
+  legacy::PassManager manager;
+  ModuleAnalysisManager ana;
+  manager.add(createInternalizePass([&](const GlobalValue &val) -> bool {
+    return export_indicator(val.getName());
+  }));
+  manager.add(createGlobalDCEPass());
+  manager.run(*module);
 }
 
 template llvm::Value *TaichiLLVMContext::get_constant(float32 t);

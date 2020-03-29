@@ -195,6 +195,22 @@ class IRPrinter : public IRVisitor {
     print("while control {}, {}", stmt->mask->name(), stmt->cond->name());
   }
 
+  void visit(FuncCallStmt *stmt) override {
+    print("{}{} = call \"{}\"", stmt->type_hint(), stmt->name(), stmt->funcid);
+  }
+
+  void visit(FrontendFuncDefStmt *stmt) override {
+    print("function \"{}\" {{", stmt->funcid);
+    stmt->body->accept(this);
+    print("}}");
+  }
+
+  void visit(FuncBodyStmt *stmt) override {
+    print("func \"{}\" {{");
+    stmt->body->accept(this);
+    print("}}");
+  }
+
   void visit(WhileStmt *stmt) override {
     print("while true {{");
     stmt->body->accept(this);

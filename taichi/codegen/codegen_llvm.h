@@ -2,13 +2,9 @@
 #pragma once
 
 #include <set>
-#include <taichi/common/util.h>
-#include <taichi/util/io.h>
 
 #include "taichi/ir/ir.h"
 #include "taichi/program/program.h"
-#include "taichi/lang_util.h"
-
 #include "taichi/llvm/llvm_codegen_utils.h"
 
 TLANG_NAMESPACE_BEGIN
@@ -186,12 +182,11 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     if (snode->type == SNodeType::dense) {
       meta = std::make_unique<RuntimeObject>("DenseMeta", this, builder.get());
       emit_struct_meta_base("Dense", meta->ptr, snode);
-      meta->call("set_bitmasked", tlctx->get_constant(snode->_bitmasked));
       meta->call("set_morton_dim", tlctx->get_constant((int)snode->_morton));
     } else if (snode->type == SNodeType::pointer) {
       meta =
-          std::make_unique<RuntimeObject>("pointerMeta", this, builder.get());
-      emit_struct_meta_base("pointer", meta->ptr, snode);
+          std::make_unique<RuntimeObject>("PointerMeta", this, builder.get());
+      emit_struct_meta_base("Pointer", meta->ptr, snode);
     } else if (snode->type == SNodeType::root) {
       meta = std::make_unique<RuntimeObject>("RootMeta", this, builder.get());
       emit_struct_meta_base("Root", meta->ptr, snode);
@@ -200,6 +195,10 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
           std::make_unique<RuntimeObject>("DynamicMeta", this, builder.get());
       emit_struct_meta_base("Dynamic", meta->ptr, snode);
       meta->call("set_chunk_size", tlctx->get_constant(snode->chunk_size));
+    } else if (snode->type == SNodeType::bitmasked) {
+      meta =
+          std::make_unique<RuntimeObject>("BitmaskedMeta", this, builder.get());
+      emit_struct_meta_base("Bitmasked", meta->ptr, snode);
     } else {
       TI_P(snode_type_name(snode->type));
       TI_NOT_IMPLEMENTED;
@@ -222,10 +221,20 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   }
 
   virtual void emit_to_module() {
+    TI_AUTO_PROF
     kernel->ir->accept(this);
   }
 
   virtual FunctionType compile_module_to_executable() {
+    TI_AUTO_PROF
+    TaichiLLVMContext::eliminate_unused_functions(
+        module.get(), [&](std::string func_name) {
+          for (auto &task : offloaded_tasks) {
+            if (task.name == func_name)
+              return true;
+          }
+          return false;
+        });
     tlctx->add_module(std::move(module));
 
     for (auto &task : offloaded_tasks) {
@@ -1064,9 +1073,11 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
     } else if (snode->type == SNodeType::dynamic) {
       return "Dynamic";
     } else if (snode->type == SNodeType::pointer) {
-      return "pointer";
+      return "Pointer";
     } else if (snode->type == SNodeType::hash) {
       return "Hash";
+    } else if (snode->type == SNodeType::bitmasked) {
+      return "Bitmasked";
     } else {
       TI_P(snode_type_name(snode->type));
       TI_NOT_IMPLEMENTED
@@ -1141,7 +1152,8 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       stmt->value = builder->CreateGEP(parent, stmt->input_index->value);
     } else if (snode->type == SNodeType::dense ||
                snode->type == SNodeType::pointer ||
-               snode->type == SNodeType::dynamic) {
+               snode->type == SNodeType::dynamic ||
+               snode->type == SNodeType::bitmasked) {
       if (stmt->activate) {
         call(snode, stmt->input_snode->value, "activate",
              {stmt->input_index->value});
@@ -1412,8 +1424,11 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
 
       current_coordinates = new_coordinates;
 
-      // Additional compare if non-POT exists
-      auto nonpot_cond = tlctx->get_constant(true);
+      // exec_cond: safe-guard the execution of loop body:
+      //  - if non-POT tensor dim exists, make sure we don't go out of bounds
+      //  - if leaf block is bitmasked, make sure we only loop over active
+      //    voxels
+      auto exec_cond = tlctx->get_constant(true);
       auto snode = stmt->snode;
 
       auto coord_object = RuntimeObject("PhysicalCoordinates", this,
@@ -1422,12 +1437,21 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
         auto j = snode->physical_index_position[i];
         if (!bit::is_power_of_two(snode->extractors[j].num_elements)) {
           auto coord = coord_object.get("val", tlctx->get_constant(j));
-          nonpot_cond = builder->CreateAnd(
-              nonpot_cond,
+          exec_cond = builder->CreateAnd(
+              exec_cond,
               builder->CreateICmp(
                   llvm::CmpInst::ICMP_SLT, coord,
                   tlctx->get_constant(snode->extractors[j].num_elements)));
         }
+      }
+
+      if (snode->type == SNodeType::bitmasked) {
+        // test if current voxel is active or not
+        auto is_active = call(snode, element.get("element"), "is_active",
+                              {builder->CreateLoad(loop_index)});
+        is_active = builder->CreateTrunc(is_active,
+                                         llvm::Type::getInt1Ty(*llvm_context));
+        exec_cond = builder->CreateAnd(exec_cond, is_active);
       }
 
       auto body_bb_tail =
@@ -1435,7 +1459,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       {
         auto bounded_body_bb =
             BasicBlock::Create(*llvm_context, "bound_guarded_loop_body", func);
-        builder->CreateCondBr(nonpot_cond, bounded_body_bb, body_bb_tail);
+        builder->CreateCondBr(exec_cond, bounded_body_bb, body_bb_tail);
         builder->SetInsertPoint(bounded_body_bb);
         // The real loop body
         stmt->body->accept(this);

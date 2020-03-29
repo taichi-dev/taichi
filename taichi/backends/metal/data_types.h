@@ -1,9 +1,11 @@
 #pragma once
 
-#include <taichi/lang_util.h>
 #include <string>
 
+#include "taichi/lang_util.h"
+
 TLANG_NAMESPACE_BEGIN
+namespace metal {
 
 enum class MetalDataType : int {
   f32,
@@ -41,5 +43,7 @@ inline bool is_metal_binary_op_infix(BinaryOpType type) {
   return !((type == BinaryOpType::min) || (type == BinaryOpType::max) ||
            (type == BinaryOpType::atan2) || (type == BinaryOpType::pow));
 }
+
+}  // namespace metal
 
 TLANG_NAMESPACE_END

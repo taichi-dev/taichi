@@ -73,9 +73,15 @@ class TaichiLLVMContext {
 
   static void force_inline(llvm::Function *func);
 
-  void print_huge_functions();
+  static void print_huge_functions(llvm::Module *module);
 
   static int num_instructions(llvm::Function *func);
+
+  // remove all functions that are not (directly & indirectly) used by those
+  // with export_indicator(func_name) = true
+  static void eliminate_unused_functions(
+      llvm::Module *module,
+      std::function<bool(const std::string &)> export_indicator);
 
   void mark_function_as_cuda_kernel(llvm::Function *func);
 

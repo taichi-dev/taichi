@@ -157,7 +157,10 @@ void export_lang(py::module &m) {
            py::return_value_policy::reference)
       .def("dynamic", &SNode::dynamic_chunked,
            py::return_value_policy::reference)
-      .def("bitmasked", &SNode::bitmasked)
+      .def("bitmasked",
+           (SNode & (SNode::*)(const std::vector<Index> &,
+                               const std::vector<int> &))(&SNode::bitmasked),
+           py::return_value_policy::reference)
       .def("place", (SNode & (SNode::*)(Expr &))(&SNode::place),
            py::return_value_policy::reference)
       .def("data_type", [](SNode *snode) { return snode->dt; })
@@ -292,6 +295,21 @@ void export_lang(py::module &m) {
 
   m.def("insert_break_stmt", [&]() {
     current_ast_builder().insert(Stmt::make<FrontendBreakStmt>());
+  });
+
+  m.def("begin_func", [&](const std::string &funcid) {
+    auto stmt_unique = std::make_unique<FrontendFuncDefStmt>(funcid);
+    auto stmt = stmt_unique.get();
+    current_ast_builder().insert(std::move(stmt_unique));
+    scope_stack.push_back(current_ast_builder().create_scope(stmt->body));
+  });
+
+  m.def("end_func", [&](const std::string &funcid) { scope_stack.pop_back(); });
+
+  m.def("func_call", [&](const std::string &funcid) {
+    auto func = Stmt::make<FuncCallStmt>(
+        funcid);  // TODO: use FuncCallExpr with return values & args
+    current_ast_builder().insert(std::move(func));
   });
 
   m.def("layout", layout);

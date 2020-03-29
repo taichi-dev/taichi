@@ -11,6 +11,7 @@
 TLANG_NAMESPACE_BEGIN
 
 void CodeGenCPU::lower() {
+  TI_AUTO_PROF;
   auto ir = kernel->ir;
   bool print_ir = false;
   if (kernel->is_accessor) {

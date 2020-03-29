@@ -1,4 +1,4 @@
-#include "taichi/platform/metal/metal_runtime.h"
+#include "taichi/backends/metal/kernel_manager.h"
 
 #include <algorithm>
 #include <cstring>
@@ -12,7 +12,7 @@
 #include <sys/mman.h>
 #include <unistd.h>
 
-#include "taichi/platform/metal/metal_api.h"
+#include "taichi/backends/metal/api.h"
 #endif  // TI_PLATFORM_OSX
 
 TLANG_NAMESPACE_BEGIN
@@ -22,11 +22,11 @@ namespace metal {
 
 namespace {
 namespace shaders {
-#include "taichi/platform/metal/shaders/runtime_utils.metal.h"
+#include "taichi/backends/metal/shaders/runtime_utils.metal.h"
 }
 
 using KernelTaskType = OffloadedStmt::TaskType;
-using BufferEnum = MetalKernelAttributes::Buffers;
+using BufferEnum = KernelAttributes::Buffers;
 
 // This class requests the Metal buffer memory of |size| bytes from |mem_pool|.
 // Once allocated, it does not own the memory (hence the name "view"). Instead,
@@ -67,7 +67,7 @@ using InputBuffersMap = std::unordered_map<BufferEnum, MTLBuffer *>;
 class CompiledMtlKernelBase {
  public:
   struct Params {
-    const MetalKernelAttributes *kerenl_attribs;
+    const KernelAttributes *kerenl_attribs;
     MTLDevice *device;
     MTLFunction *mtl_func;
   };
@@ -82,7 +82,7 @@ class CompiledMtlKernelBase {
 
   virtual ~CompiledMtlKernelBase() = default;
 
-  inline MetalKernelAttributes *kernel_attribs() {
+  inline KernelAttributes *kernel_attribs() {
     return &kernel_attribs_;
   }
 
@@ -118,7 +118,7 @@ class CompiledMtlKernelBase {
     end_encoding(encoder.get());
   }
 
-  MetalKernelAttributes kernel_attribs_;
+  KernelAttributes kernel_attribs_;
   nsobj_unique_ptr<MTLComputePipelineState> pipeline_state_;
 };
 
@@ -189,7 +189,7 @@ class RuntimeListOpsMtlKernel : public CompiledMtlKernelBase {
   // args[1] = child_snode_id
   // Note that this args buffer has nothing to do with the one passed to Taichi
   // kernel.
-  // See taichi/platform/metal/shaders/runtime_kernels.metal.h
+  // See taichi/backends/metal/shaders/runtime_kernels.metal.h
   std::unique_ptr<BufferMemoryView> args_mem_;
   nsobj_unique_ptr<MTLBuffer> args_buffer_;
 };
@@ -201,8 +201,8 @@ class CompiledTaichiKernel {
   struct Params {
     std::string_view taichi_kernel_name;
     std::string mtl_source_code;
-    const std::vector<MetalKernelAttributes> *mtl_kernels_attribs;
-    const MetalKernelArgsAttributes *args_attribs;
+    const std::vector<KernelAttributes> *mtl_kernels_attribs;
+    const KernelArgsAttributes *args_attribs;
     MTLDevice *device;
     MemoryPool *mem_pool;
     ProfilerBase *profiler;
@@ -249,7 +249,7 @@ class CompiledTaichiKernel {
   // Have to be exposed as public for Impl to use. We cannot friend the Impl
   // class because it is private.
   std::vector<std::unique_ptr<CompiledMtlKernelBase>> compiled_mtl_kernels;
-  MetalKernelArgsAttributes args_attribs;
+  KernelArgsAttributes args_attribs;
   std::unique_ptr<BufferMemoryView> args_mem;
   nsobj_unique_ptr<MTLBuffer> args_buffer;
 
@@ -258,7 +258,7 @@ class CompiledTaichiKernel {
 
 class HostMetalArgsBlitter {
  public:
-  HostMetalArgsBlitter(const MetalKernelArgsAttributes *args_attribs,
+  HostMetalArgsBlitter(const KernelArgsAttributes *args_attribs,
                        Context *ctx,
                        BufferMemoryView *args_mem)
       : args_attribs_(args_attribs), ctx_(ctx), args_mem_(args_mem) {
@@ -356,18 +356,18 @@ class HostMetalArgsBlitter {
   }
 
  private:
-  const MetalKernelArgsAttributes *const args_attribs_;
+  const KernelArgsAttributes *const args_attribs_;
   Context *const ctx_;
   BufferMemoryView *const args_mem_;
 };
 
 }  // namespace
 
-class MetalRuntime::Impl {
+class KernelManager::Impl {
  public:
   explicit Impl(Params params)
       : config_(params.config),
-        compiled_snodes_(params.compiled_snodes),
+        compiled_structs_(params.compiled_structs),
         mem_pool_(params.mem_pool),
         profiler_(params.profiler) {
     if (config_->debug) {
@@ -379,9 +379,9 @@ class MetalRuntime::Impl {
     TI_ASSERT(command_queue_ != nullptr);
     create_new_command_buffer();
 
-    if (compiled_snodes_.root_size > 0) {
-      root_mem_ = std::make_unique<BufferMemoryView>(compiled_snodes_.root_size,
-                                                     mem_pool_);
+    if (compiled_structs_.root_size > 0) {
+      root_mem_ = std::make_unique<BufferMemoryView>(
+          compiled_structs_.root_size, mem_pool_);
       root_buffer_ = new_mtl_buffer_no_copy(device_.get(), root_mem_->ptr(),
                                             root_mem_->size());
       TI_ASSERT(root_buffer_ != nullptr);
@@ -394,9 +394,9 @@ class MetalRuntime::Impl {
         device_.get(), global_tmps_mem_->ptr(), global_tmps_mem_->size());
     TI_ASSERT(global_tmps_buffer_ != nullptr);
 
-    if (compiled_snodes_.runtime_size > 0) {
+    if (compiled_structs_.runtime_size > 0) {
       runtime_mem_ = std::make_unique<BufferMemoryView>(
-          compiled_snodes_.runtime_size, mem_pool_);
+          compiled_structs_.runtime_size, mem_pool_);
       runtime_buffer_ = new_mtl_buffer_no_copy(
           device_.get(), runtime_mem_->ptr(), runtime_mem_->size());
       TI_ASSERT(runtime_buffer_ != nullptr);
@@ -408,9 +408,9 @@ class MetalRuntime::Impl {
   void register_taichi_kernel(
       const std::string &taichi_kernel_name,
       const std::string &mtl_kernel_source_code,
-      const std::vector<MetalKernelAttributes> &kernels_attribs,
+      const std::vector<KernelAttributes> &kernels_attribs,
       size_t global_tmps_size,
-      const MetalKernelArgsAttributes &args_attribs) {
+      const KernelArgsAttributes &args_attribs) {
     TI_ASSERT(compiled_taichi_kernels_.find(taichi_kernel_name) ==
               compiled_taichi_kernels_.end());
     // Make sure |taichi_global_tmp_buffer_size| is large enough
@@ -434,7 +434,7 @@ class MetalRuntime::Impl {
     params.profiler = profiler_;
     compiled_taichi_kernels_[taichi_kernel_name] =
         std::make_unique<CompiledTaichiKernel>(params);
-    TI_INFO("Registered Taichi kernel <{}>", taichi_kernel_name);
+    TI_DEBUG("Registered Taichi kernel <{}>", taichi_kernel_name);
   }
 
   void launch_taichi_kernel(const std::string &taichi_kernel_name,
@@ -495,8 +495,8 @@ class MetalRuntime::Impl {
   void init_runtime(int root_id) {
     using namespace shaders;
     char *addr = reinterpret_cast<char *>(runtime_mem_->ptr());
-    const int max_snodes = compiled_snodes_.max_snodes;
-    const auto &snode_descriptors = compiled_snodes_.snode_descriptors;
+    const int max_snodes = compiled_structs_.max_snodes;
+    const auto &snode_descriptors = compiled_structs_.snode_descriptors;
     // init snode_metas
     for (int i = 0; i < max_snodes; ++i) {
       auto iter = snode_descriptors.find(i);
@@ -509,15 +509,14 @@ class MetalRuntime::Impl {
       rtm_meta->num_slots = sn_meta.num_slots;
       rtm_meta->mem_offset_in_parent = sn_meta.mem_offset_in_parent;
       switch (sn_meta.snode->type) {
+        case SNodeType::dense:
+          rtm_meta->type = SNodeMeta::Dense;
+          break;
         case SNodeType::root:
           rtm_meta->type = SNodeMeta::Root;
           break;
-        case SNodeType::dense:
-          if (sn_meta.snode->_bitmasked) {
-            rtm_meta->type = SNodeMeta::DenseBitmask;
-          } else {
-            rtm_meta->type = SNodeMeta::Dense;
-          }
+        case SNodeType::bitmasked:
+          rtm_meta->type = SNodeMeta::Bitmasked;
           break;
         default:
           TI_ERROR("Unsupported SNode type={}",
@@ -585,7 +584,7 @@ class MetalRuntime::Impl {
   }
 
   CompileConfig *const config_;
-  const StructCompiledResult compiled_snodes_;
+  const CompiledStructs compiled_structs_;
   MemoryPool *const mem_pool_;
   ProfilerBase *const profiler_;
   nsobj_unique_ptr<MTLDevice> device_;
@@ -603,7 +602,7 @@ class MetalRuntime::Impl {
 
 #else
 
-class MetalRuntime::Impl {
+class KernelManager::Impl {
  public:
   explicit Impl(Params) {
     TI_ERROR("Metal not supported on the current OS");
@@ -612,9 +611,9 @@ class MetalRuntime::Impl {
   void register_taichi_kernel(
       const std::string &taichi_kernel_name,
       const std::string &mtl_kernel_source_code,
-      const std::vector<MetalKernelAttributes> &kernels_attribs,
+      const std::vector<KernelAttributes> &kernels_attribs,
       size_t global_tmps_size,
-      const MetalKernelArgsAttributes &args_attribs) {
+      const KernelArgsAttributes &args_attribs) {
     TI_ERROR("Metal not supported on the current OS");
   }
 
@@ -630,30 +629,30 @@ class MetalRuntime::Impl {
 
 #endif  // TI_PLATFORM_OSX
 
-MetalRuntime::MetalRuntime(Params params)
+KernelManager::KernelManager(Params params)
     : impl_(std::make_unique<Impl>(std::move(params))) {
 }
 
-MetalRuntime::~MetalRuntime() {
+KernelManager::~KernelManager() {
 }
 
-void MetalRuntime::register_taichi_kernel(
+void KernelManager::register_taichi_kernel(
     const std::string &taichi_kernel_name,
     const std::string &mtl_kernel_source_code,
-    const std::vector<MetalKernelAttributes> &kernels_attribs,
+    const std::vector<KernelAttributes> &kernels_attribs,
     size_t global_tmps_size,
-    const MetalKernelArgsAttributes &args_attribs) {
+    const KernelArgsAttributes &args_attribs) {
   impl_->register_taichi_kernel(taichi_kernel_name, mtl_kernel_source_code,
                                 kernels_attribs, global_tmps_size,
                                 args_attribs);
 }
 
-void MetalRuntime::launch_taichi_kernel(const std::string &taichi_kernel_name,
-                                        Context *ctx) {
+void KernelManager::launch_taichi_kernel(const std::string &taichi_kernel_name,
+                                         Context *ctx) {
   impl_->launch_taichi_kernel(taichi_kernel_name, ctx);
 }
 
-void MetalRuntime::synchronize() {
+void KernelManager::synchronize() {
   impl_->synchronize();
 }
 

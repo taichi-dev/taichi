@@ -1,4 +1,4 @@
-#include "taichi/platform/metal/shaders/prolog.h"
+#include "taichi/backends/metal/shaders/prolog.h"
 
 #ifdef TI_INSIDE_METAL_CODEGEN
 
@@ -25,8 +25,11 @@ static_assert(taichi_max_num_indices == 8,
 
 #endif  // TI_INSIDE_METAL_CODEGEN
 
+// clang-format off
 METAL_BEGIN_RUNTIME_STRUCTS_DEF
-STR(constant constexpr int kTaichiMaxNumIndices = 8;
+STR(
+    // clang-format on
+    constant constexpr int kTaichiMaxNumIndices = 8;
 
     struct ListgenElement {
       int32_t coords[kTaichiMaxNumIndices];
@@ -45,7 +48,7 @@ STR(constant constexpr int kTaichiMaxNumIndices = 8;
     };
 
     struct SNodeMeta {
-      enum Type { Root = 0, Dense = 1, DenseBitmask = 2 };
+      enum Type { Root = 0, Dense = 1, Bitmasked = 2 };
       int32_t element_stride = 0;
       int32_t num_slots = 0;
       int32_t mem_offset_in_parent = 0;
@@ -61,10 +64,13 @@ STR(constant constexpr int kTaichiMaxNumIndices = 8;
       };
 
       Extractor extractors[kTaichiMaxNumIndices];
-    };)
+    };
+    // clang-format off
+)
 METAL_END_RUNTIME_STRUCTS_DEF
+// clang-format on
 
 #undef METAL_BEGIN_RUNTIME_STRUCTS_DEF
 #undef METAL_END_RUNTIME_STRUCTS_DEF
 
-#include "taichi/platform/metal/shaders/epilog.h"
+#include "taichi/backends/metal/shaders/epilog.h"

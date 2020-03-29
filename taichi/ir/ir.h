@@ -111,6 +111,8 @@ void demote_atomics(IRNode *root);
 void reverse_segments(IRNode *root);  // for autograd
 std::unique_ptr<ScratchPads> initialize_scratch_pad(StructForStmt *root);
 std::unordered_set<SNode *> gather_deactivations(IRNode *root);
+std::vector<Stmt *> gather_statements(IRNode *root,
+                                      const std::function<bool(Stmt *)> &test);
 std::unordered_set<Stmt *> detect_fors_with_break(IRNode *root);
 }  // namespace irpass
 
@@ -302,6 +304,10 @@ class VecStatement {
 
   VecStatement(VecStatement &&o) {
     stmts = std::move(o.stmts);
+  }
+
+  VecStatement(std::vector<pStmt> &&other_stmts) {
+    stmts = std::move(other_stmts);
   }
 
   Stmt *push_back(pStmt &&stmt) {
@@ -1859,6 +1865,51 @@ class StructForStmt : public Stmt {
   DEFINE_ACCEPT
 };
 
+class FuncBodyStmt : public Stmt {
+ public:
+  std::string funcid;
+  std::unique_ptr<Block> body;
+
+  FuncBodyStmt(const std::string &funcid, std::unique_ptr<Block> &&body)
+      : funcid(funcid), body(std::move(body)) {
+  }
+
+  bool is_container_statement() const override {
+    return true;
+  }
+
+  DEFINE_ACCEPT
+};
+
+class FrontendFuncDefStmt : public Stmt {
+ public:
+  std::string funcid;
+  std::unique_ptr<Block> body;
+
+  FrontendFuncDefStmt(const std::string &funcid) : funcid(funcid) {
+  }
+
+  bool is_container_statement() const override {
+    return true;
+  }
+
+  DEFINE_ACCEPT
+};
+
+class FuncCallStmt : public Stmt {
+ public:
+  std::string funcid;
+
+  FuncCallStmt(const std::string &funcid) : funcid(funcid) {
+  }
+
+  bool is_container_statement() const override {
+    return false;
+  }
+
+  DEFINE_ACCEPT
+};
+
 class WhileStmt : public Stmt {
  public:
   Stmt *mask;
@@ -2066,8 +2117,9 @@ class SNodeOpExpression : public Expression {
       // is_active cannot be lowered all the way to a global pointer.
       // It should be lowered into a pointer to parent and an index.
       TI_ERROR_IF(
-          snode->type != SNodeType::pointer && snode->type != SNodeType::hash,
-          "ti.is_active only works on hash and pointer nodes.");
+          snode->type != SNodeType::pointer && snode->type != SNodeType::hash &&
+              snode->type != SNodeType::bitmasked,
+          "ti.is_active only works on pointer, hash or bitmasked nodes.");
       ret.push_back<SNodeOpStmt>(SNodeOpType::is_active, snode, indices_stmt);
     } else {
       auto ptr = ret.push_back<GlobalPtrStmt>(snode, indices_stmt);

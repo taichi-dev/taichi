@@ -259,19 +259,30 @@ class JITSessionCPU : public JITSession {
     b.populateFunctionPassManager(function_pass_manager);
     b.populateModulePassManager(module_pass_manager);
 
-    function_pass_manager.doInitialization();
-    for (llvm::Module::iterator i = module->begin(); i != module->end(); i++)
-      function_pass_manager.run(*i);
+    {
+      TI_PROFILER("llvm_function_pass");
+      function_pass_manager.doInitialization();
+      for (llvm::Module::iterator i = module->begin(); i != module->end(); i++)
+        function_pass_manager.run(*i);
 
-    function_pass_manager.doFinalization();
+      function_pass_manager.doFinalization();
+    }
 
-    auto t = Time::get_time();
-    module_pass_manager.run(*module);
-    t = Time::get_time() - t;
-    // TI_INFO("Global optimization time: {} ms", t * 1000);
+    {
+      TI_PROFILER("llvm_module_pass");
+      module_pass_manager.run(*module);
+    }
+
     if (get_current_program().config.print_kernel_llvm_ir_optimized) {
-      TI_INFO("Global optimized IR:");
-      module->print(llvm::errs(), nullptr);
+      TI_INFO("Functions with > 100 instructions in optimized LLVM IR:");
+      static int counter = 0;
+      std::error_code ec;
+      auto fn = fmt::format("taichi_optimized_{:04d}.ll", counter);
+      llvm::raw_fd_ostream fdos(fn, ec);
+      module->print(fdos, nullptr);
+      TaichiLLVMContext::print_huge_functions(module.get());
+      TI_INFO("Optimized LLVM IR emitted to file {}", fn);
+      counter++;
     }
   }
 };

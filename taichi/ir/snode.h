@@ -87,7 +87,6 @@ class SNode {
   std::string node_type_name;
   SNodeType type;
   bool _morton{};
-  bool _bitmasked{};
 
   std::string get_node_type_name() const {
     return fmt::format("S{}", id);
@@ -138,6 +137,19 @@ class SNode {
 
   SNode &pointer(const Index &index, int size) {
     return SNode::pointer(std::vector<Index>{index}, size);
+  }
+
+  SNode &bitmasked(const std::vector<Index> &indices,
+                   const std::vector<int> &sizes) {
+    return create_node(indices, sizes, SNodeType::bitmasked);
+  }
+
+  SNode &bitmasked(const std::vector<Index> &indices, int sizes) {
+    return create_node(indices, std::vector<int>{sizes}, SNodeType::bitmasked);
+  }
+
+  SNode &bitmasked(const Index &index, int size) {
+    return SNode::bitmasked(std::vector<Index>{index}, size);
   }
 
   SNode &hash(const std::vector<Index> &indices,
@@ -191,11 +203,6 @@ class SNode {
 
   SNode &morton(bool val = true) {
     _morton = val;
-    return *this;
-  }
-
-  SNode &bitmasked(bool val = true) {
-    _bitmasked = val;
     return *this;
   }
 

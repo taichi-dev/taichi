@@ -7,29 +7,29 @@
 
 #include "taichi/inc/constants.h"
 #include "taichi/lang_util.h"
-#include "taichi/platform/metal/metal_data_types.h"
-#include "taichi/platform/metal/metal_kernel_util.h"
-#include "taichi/platform/metal/metal_runtime.h"
+#include "taichi/backends/metal/data_types.h"
+#include "taichi/backends/metal/kernel_util.h"
+#include "taichi/backends/metal/kernel_manager.h"
 #include "taichi/program/program.h"
 #include "taichi/struct/struct_metal.h"
 
 TLANG_NAMESPACE_BEGIN
 namespace metal {
 
-class MetalCodeGen {
+class CodeGen {
  public:
-  MetalCodeGen(const std::string &kernel_name,
-               const StructCompiledResult *struct_compiled);
+  CodeGen(const std::string &kernel_name,
+          const CompiledStructs *compiled_structs);
 
-  FunctionType compile(Program &, Kernel &kernel, MetalRuntime *runtime);
+  FunctionType compile(Program &, Kernel &kernel, KernelManager *kernel_mgr);
 
  private:
   void lower();
-  FunctionType gen(const SNode &root_snode, MetalRuntime *runtime);
+  FunctionType gen(const SNode &root_snode, KernelManager *runtime);
 
   const int id_;
   const std::string taichi_kernel_name_;
-  const StructCompiledResult *const struct_compiled_;
+  const CompiledStructs *const compiled_structs_;
 
   Program *prog_;
   Kernel *kernel_;

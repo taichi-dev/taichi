@@ -2,10 +2,9 @@
 
 #include "program.h"
 
-#include <taichi/common/task.h>
-#include <taichi/platform/metal/metal_api.h>
-#include <taichi/platform/opengl/opengl_api.h>
-
+#include "taichi/common/task.h"
+#include "taichi/backends/metal/api.h"
+#include "taichi/platform/opengl/opengl_api.h"
 #include "taichi/codegen/codegen_cuda.h"
 #include "taichi/codegen/codegen_metal.h"
 #include "taichi/codegen/codegen_opengl.h"
@@ -102,8 +101,8 @@ FunctionType Program::compile(Kernel &kernel) {
     auto codegen = KernelCodeGen::create(kernel.arch, &kernel);
     ret = codegen->compile();
   } else if (kernel.arch == Arch::metal) {
-    metal::MetalCodeGen codegen(kernel.name, &metal_struct_compiled_.value());
-    ret = codegen.compile(*this, kernel, metal_runtime_.get());
+    metal::CodeGen codegen(kernel.name, &metal_compiled_structs_.value());
+    ret = codegen.compile(*this, kernel, metal_kernel_mgr_.get());
   } else if (kernel.arch == Arch::opengl) {
     opengl::OpenglCodeGen codegen(kernel.name,
                                   &opengl_struct_compiled_.value());
@@ -238,15 +237,16 @@ void Program::materialize_layout() {
   } else if (config.arch == Arch::metal) {
     TI_ASSERT_INFO(config.use_llvm,
                    "Metal arch requires that LLVM being enabled");
-    metal_struct_compiled_ = metal::compile_structs(*snode_root);
-    if (metal_runtime_ == nullptr) {
-      metal::MetalRuntime::Params params;
-      params.compiled_snodes = metal_struct_compiled_.value();
+    metal_compiled_structs_ = metal::compile_structs(*snode_root);
+    if (metal_kernel_mgr_ == nullptr) {
+      metal::KernelManager::Params params;
+      params.compiled_structs = metal_compiled_structs_.value();
       params.config = &config;
       params.mem_pool = memory_pool.get();
       params.profiler = profiler.get();
       params.root_id = snode_root->id;
-      metal_runtime_ = std::make_unique<metal::MetalRuntime>(std::move(params));
+      metal_kernel_mgr_ =
+          std::make_unique<metal::KernelManager>(std::move(params));
     }
   } else if (config.arch == Arch::opengl) {
     opengl::OpenglStructCompiler scomp;
@@ -262,10 +262,11 @@ void Program::check_runtime_error() {
   TI_ASSERT(arch_is_cpu(config.arch));
   auto tlctx = llvm_context_host.get();
   auto runtime_jit_module = tlctx->runtime_jit_module;
-  runtime_jit_module->call<void *>("retrieve_error_code", llvm_runtime);
+  runtime_jit_module->call<void *>("runtime_retrieve_error_code", llvm_runtime);
   auto error_code = runtime_jit_module->fetch_result<int64>();
   if (error_code) {
-    runtime_jit_module->call<void *>("retrieve_error_message", llvm_runtime);
+    runtime_jit_module->call<void *>("runtime_retrieve_error_message",
+                                     llvm_runtime);
     auto error_message = runtime_jit_module->fetch_result<char *>();
     if (error_code == 1) {
       TI_ERROR("Assertion failure: {}", error_message);
@@ -284,7 +285,7 @@ void Program::synchronize() {
       TI_ERROR("No CUDA support");
 #endif
     } else if (config.arch == Arch::metal) {
-      metal_runtime_->synchronize();
+      metal_kernel_mgr_->synchronize();
     }
     sync = true;
   }

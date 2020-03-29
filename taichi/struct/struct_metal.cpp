@@ -7,8 +7,8 @@
 #include <vector>
 
 #include "taichi/math/arithmetic.h"
-#include "taichi/platform/metal/metal_data_types.h"
-#include "taichi/platform/metal/metal_kernel_util.h"
+#include "taichi/backends/metal/data_types.h"
+#include "taichi/backends/metal/kernel_util.h"
 #include "taichi/util/line_appender.h"
 
 TLANG_NAMESPACE_BEGIN
@@ -16,12 +16,12 @@ namespace metal {
 namespace {
 namespace shaders {
 #define TI_INSIDE_METAL_CODEGEN
-#include "taichi/platform/metal/shaders/runtime_kernels.metal.h"
-#include "taichi/platform/metal/shaders/runtime_structs.metal.h"
-#include "taichi/platform/metal/shaders/runtime_utils.metal.h"
+#include "taichi/backends/metal/shaders/runtime_kernels.metal.h"
+#include "taichi/backends/metal/shaders/runtime_structs.metal.h"
+#include "taichi/backends/metal/shaders/runtime_utils.metal.h"
 #undef TI_INSIDE_METAL_CODEGEN
 
-#include "taichi/platform/metal/shaders/runtime_structs.metal.h"
+#include "taichi/backends/metal/shaders/runtime_structs.metal.h"
 
 }  // namespace shaders
 
@@ -30,10 +30,6 @@ constexpr size_t kListManagerSize = sizeof(shaders::ListManager);
 constexpr size_t kSNodeMetaSize = sizeof(shaders::SNodeMeta);
 constexpr size_t kSNodeExtractorsSize = sizeof(shaders::SNodeExtractors);
 
-inline bool is_bitmasked(const SNode &sn) {
-  return (sn.type == SNodeType::dense && sn._bitmasked);
-}
-
 inline size_t bitmasks_stride(int n) {
   constexpr int kBitsPerByte = 8;
   const int bytes_needed = iroundup(n, kBitsPerByte) / kBitsPerByte;
@@ -41,9 +37,14 @@ inline size_t bitmasks_stride(int n) {
   return iroundup(bytes_needed, 8);
 }
 
+inline int get_n(const SNode &sn) {
+  // For root, sn.n is 0.
+  return sn.type == SNodeType::root ? 1 : sn.n;
+}
+
 class StructCompiler {
  public:
-  StructCompiledResult run(SNode &root) {
+  CompiledStructs run(SNode &root) {
     TI_ASSERT(root.type == SNodeType::root);
     collect_snodes(root);
     // The host side has run this!
@@ -54,7 +55,8 @@ class StructCompiler {
     {
       max_snodes_ = 0;
       for (const auto &sn : snodes_) {
-        if (sn->type == SNodeType::root || sn->type == SNodeType::dense) {
+        if (sn->type == SNodeType::root || sn->type == SNodeType::dense ||
+            sn->type == SNodeType::bitmasked) {
           max_snodes_ = std::max(max_snodes_, sn->id);
         }
       }
@@ -64,7 +66,7 @@ class StructCompiler {
     for (auto &n : snodes_rev) {
       generate_types(*n);
     }
-    StructCompiledResult result;
+    CompiledStructs result;
     result.root_size = compute_snode_size(&root);
     line_appender_.dump(&result.snode_structs_source_code);
     emit_runtime_structs(&root);
@@ -73,8 +75,8 @@ class StructCompiler {
     result.runtime_size = compute_runtime_size();
     result.max_snodes = max_snodes_;
     result.snode_descriptors = std::move(snode_descriptors_);
-    TI_INFO("Metal: root_size={} runtime_size={}", result.root_size,
-            result.runtime_size);
+    TI_DEBUG("Metal: root_size={} runtime_size={}", result.root_size,
+             result.runtime_size);
     return result;
   }
 
@@ -132,12 +134,13 @@ class StructCompiler {
       emit("  device {}* val;", dt_name);
       emit("}};");
     } else if (snode.type == SNodeType::dense ||
-               snode.type == SNodeType::root) {
-      const bool bitmasked = is_bitmasked(snode);
+               snode.type == SNodeType::root ||
+               snode.type == SNodeType::bitmasked) {
+      const bool bitmasked = snode.type == SNodeType::bitmasked;
       const std::string ch_name = fmt::format("{}_ch", node_name);
       emit("struct {} {{", node_name);
       emit("  // {}", snode_type_name(snode.type));
-      const int n = (snode.type == SNodeType::dense) ? snode.n : 1;
+      const int n = get_n(snode);
       emit("  constant static constexpr int n = {};", n);
       if (bitmasked) {
         emit(
@@ -170,7 +173,7 @@ class StructCompiler {
       return metal_data_type_bytes(to_metal_type(sn->dt));
     }
 
-    const int n = (sn->type == SNodeType::dense) ? sn->n : 1;
+    const int n = get_n(*sn);
     size_t ch_size = 0;
     for (const auto &ch : sn->ch) {
       const size_t ch_offset = ch_size;
@@ -186,7 +189,7 @@ class StructCompiler {
     sn_desc.element_stride = ch_size;
     sn_desc.num_slots = n;
     sn_desc.stride = ch_size * n;
-    if (is_bitmasked(*sn)) {
+    if (sn->type == SNodeType::bitmasked) {
       sn_desc.stride += bitmasks_stride(n);
     }
     sn_desc.total_num_elems_from_root = 1;
@@ -220,13 +223,13 @@ class StructCompiler {
   size_t compute_runtime_size() {
     size_t result = (max_snodes_) *
                     (kSNodeMetaSize + kSNodeExtractorsSize + kListManagerSize);
-    TI_INFO("Metal runtime fields size: {} bytes", result);
+    TI_DEBUG("Metal runtime fields size: {} bytes", result);
     int total_items = 0;
     for (const auto &kv : snode_descriptors_) {
       total_items += kv.second.total_num_elems_from_root;
     }
     const size_t list_data_size = total_items * kListgenElementSize;
-    TI_INFO("Metal runtime list data size: {} bytes", list_data_size);
+    TI_DEBUG("Metal runtime list data size: {} bytes", list_data_size);
     result += list_data_size;
     return result;
   }
@@ -244,7 +247,7 @@ class StructCompiler {
 
 }  // namespace
 
-StructCompiledResult compile_structs(SNode &root) {
+CompiledStructs compile_structs(SNode &root) {
   return StructCompiler().run(root);
 }
 }  // namespace metal

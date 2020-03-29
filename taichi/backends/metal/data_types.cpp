@@ -1,6 +1,7 @@
-#include "metal_data_types.h"
+#include "taichi/backends/metal/data_types.h"
 
 TLANG_NAMESPACE_BEGIN
+namespace metal {
 
 MetalDataType to_metal_type(DataType dt) {
   switch (dt) {
@@ -133,4 +134,5 @@ std::string metal_unary_op_type_symbol(UnaryOpType type) {
   return "";
 }
 
+}  // namespace metal
 TLANG_NAMESPACE_END

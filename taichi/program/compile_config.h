@@ -3,6 +3,10 @@
 
 TLANG_NAMESPACE_BEGIN
 
+// TODO(xumingkuan): Temporary variable for benchmarking.
+// TODO(xumingkuan): Will be removed in the future.
+extern const bool advanced_optimization;
+
 struct CompileConfig {
   Arch arch;
   bool debug;

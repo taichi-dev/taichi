@@ -16,8 +16,8 @@ void Bitmasked_activate(Ptr meta, Ptr node, int i) {
   auto element_size = StructMeta_get_element_size(smeta);
   auto num_elements = Bitmasked_get_num_elements(meta, node);
   auto data_section_size = element_size * num_elements;
-  auto mask_begin = (uint64 *)(node + data_section_size);
-  atomic_or_u64(&mask_begin[i / 64], 1UL << (i % 64));
+  auto mask_begin = (u32 *)(node + data_section_size);
+  atomic_or_u32(&mask_begin[i / 32], 1UL << (i % 32));
 }
 
 i32 Bitmasked_is_active(Ptr meta, Ptr node, int i) {

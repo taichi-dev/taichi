@@ -3,9 +3,10 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
-#include "taichi/lang_util.h"
 #include "taichi/backends/metal/kernel_util.h"
+#include "taichi/lang_util.h"
 #include "taichi/program/profiler.h"
 #include "taichi/struct/struct_metal.h"
 #include "taichi/system/memory_pool.h"

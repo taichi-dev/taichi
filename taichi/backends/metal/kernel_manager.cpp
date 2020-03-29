@@ -611,9 +611,9 @@ class KernelManager::Impl {
   void register_taichi_kernel(
       const std::string &taichi_kernel_name,
       const std::string &mtl_kernel_source_code,
-      const std::vector<MetalKernelAttributes> &kernels_attribs,
+      const std::vector<KernelAttributes> &kernels_attribs,
       size_t global_tmps_size,
-      const MetalKernelArgsAttributes &args_attribs) {
+      const KernelArgsAttributes &args_attribs) {
     TI_ERROR("Metal not supported on the current OS");
   }
 

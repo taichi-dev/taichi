@@ -29,7 +29,7 @@ struct SNodeDescriptor {
   int mem_offset_in_parent = 0;
 };
 
-struct StructCompiledResult {
+struct CompiledStructs {
   // Source code of the SNode data structures compiled to Metal
   std::string snode_structs_source_code;
   // Runtime related source code
@@ -64,7 +64,7 @@ struct StructCompiledResult {
 };
 
 // Compile all snodes to Metal source code
-StructCompiledResult compile_structs(SNode &root);
+CompiledStructs compile_structs(SNode &root);
 
 }  // namespace metal
 TLANG_NAMESPACE_END

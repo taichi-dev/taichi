@@ -21,8 +21,8 @@ class SNode;
 
 namespace metal {
 
-// This struct holds the necesary information to launch a Metal kernel.
-struct MetalKernelAttributes {
+// This struct holds the necessary information to launch a Metal kernel.
+struct KernelAttributes {
   enum class Buffers {
     Root,
     GlobalTmps,
@@ -63,7 +63,7 @@ struct MetalKernelAttributes {
 // Note that all Metal kernels belonging to the same Taichi kernel will share
 // the same kernel args (attributes + Metal buffer). This is because kernel
 // arguments is a Taichi-level concept.
-class MetalKernelArgsAttributes {
+class KernelArgsAttributes {
  public:
   // Attribute for a single argument.
   // This is mostly the same as Kernel::Arg. It's extended to contain a few
@@ -80,7 +80,7 @@ class MetalKernelArgsAttributes {
     bool is_return_val = false;
   };
 
-  explicit MetalKernelArgsAttributes(const std::vector<Kernel::Arg> &args);
+  explicit KernelArgsAttributes(const std::vector<Kernel::Arg> &args);
 
   inline bool has_args() const {
     return !arg_attribs_vec_.empty();

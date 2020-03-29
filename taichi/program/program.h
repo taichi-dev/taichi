@@ -10,7 +10,7 @@
 #include "taichi/ir/snode.h"
 #include "taichi/lang_util.h"
 #include "taichi/llvm/llvm_context.h"
-#include "taichi/backends/metal/runtime.h"
+#include "taichi/backends/metal/kernel_manager.h"
 #include "taichi/platform/opengl/opengl_kernel_util.h"
 #include "taichi/program/kernel.h"
 #include "taichi/program/profiler.h"
@@ -177,8 +177,8 @@ class Program {
 
  private:
   // Metal related data structures
-  std::optional<metal::StructCompiledResult> metal_struct_compiled_;
-  std::unique_ptr<metal::MetalRuntime> metal_runtime_;
+  std::optional<metal::CompiledStructs> metal_compiled_structs_;
+  std::unique_ptr<metal::KernelManager> metal_kernel_mgr_;
   // OpenGL related data structures
   std::optional<opengl::StructCompiledResult> opengl_struct_compiled_;
 };

@@ -44,7 +44,7 @@ inline int get_n(const SNode &sn) {
 
 class StructCompiler {
  public:
-  StructCompiledResult run(SNode &root) {
+  CompiledStructs run(SNode &root) {
     TI_ASSERT(root.type == SNodeType::root);
     collect_snodes(root);
     // The host side has run this!
@@ -66,7 +66,7 @@ class StructCompiler {
     for (auto &n : snodes_rev) {
       generate_types(*n);
     }
-    StructCompiledResult result;
+    CompiledStructs result;
     result.root_size = compute_snode_size(&root);
     line_appender_.dump(&result.snode_structs_source_code);
     emit_runtime_structs(&root);
@@ -247,7 +247,7 @@ class StructCompiler {
 
 }  // namespace
 
-StructCompiledResult compile_structs(SNode &root) {
+CompiledStructs compile_structs(SNode &root) {
   return StructCompiler().run(root);
 }
 }  // namespace metal

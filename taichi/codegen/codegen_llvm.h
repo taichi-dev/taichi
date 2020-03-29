@@ -1424,8 +1424,11 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
 
       current_coordinates = new_coordinates;
 
-      // Additional compare if non-POT exists or leaf block is bitmasked
-      auto additional_cond = tlctx->get_constant(true);
+      // exec_cond: safe-guard the execution of loop body:
+      //  - if non-POT tensor dim exists, make sure we don't go out of bounds
+      //  - if leaf block is bitmasked, make sure we only loop over active
+      //    voxels
+      auto exec_cond = tlctx->get_constant(true);
       auto snode = stmt->snode;
 
       auto coord_object = RuntimeObject("PhysicalCoordinates", this,
@@ -1434,21 +1437,21 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
         auto j = snode->physical_index_position[i];
         if (!bit::is_power_of_two(snode->extractors[j].num_elements)) {
           auto coord = coord_object.get("val", tlctx->get_constant(j));
-          additional_cond = builder->CreateAnd(
-              additional_cond,
+          exec_cond = builder->CreateAnd(
+              exec_cond,
               builder->CreateICmp(
                   llvm::CmpInst::ICMP_SLT, coord,
                   tlctx->get_constant(snode->extractors[j].num_elements)));
         }
       }
 
-      if (stmt->snode->type == SNodeType::bitmasked) {
+      if (snode->type == SNodeType::bitmasked) {
         // test is active or not
-        auto is_active = call(stmt->snode, element.get("element"), "is_active",
+        auto is_active = call(snode, element.get("element"), "is_active",
                               {builder->CreateLoad(loop_index)});
         is_active = builder->CreateTrunc(is_active,
                                          llvm::Type::getInt1Ty(*llvm_context));
-        additional_cond = builder->CreateAnd(additional_cond, is_active);
+        exec_cond = builder->CreateAnd(exec_cond, is_active);
       }
 
       auto body_bb_tail =
@@ -1456,7 +1459,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
       {
         auto bounded_body_bb =
             BasicBlock::Create(*llvm_context, "bound_guarded_loop_body", func);
-        builder->CreateCondBr(additional_cond, bounded_body_bb, body_bb_tail);
+        builder->CreateCondBr(exec_cond, bounded_body_bb, body_bb_tail);
         builder->SetInsertPoint(bounded_body_bb);
         // The real loop body
         stmt->body->accept(this);

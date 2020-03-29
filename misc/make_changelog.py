@@ -25,14 +25,14 @@ details = {
     'cuda': 'CUDA backend',
     'doc': 'Documentation',
     'infra': 'Infrastructure',
-    'ir': 'Intermediate Representation',
-    'lang': 'Language and Syntax',
+    'ir': 'Intermediate representation',
+    'lang': 'Language and syntax',
     'metal': 'Metal backend',
     'misc': 'Miscellaneous',
     'opt': 'Optimization',
 }
 
-print(f'-(, 2020) v{ver} released')
+print(f'- (, 2020) v{ver} released')
 for i, c in enumerate(commits):
     s = format(c)
     if s.startswith('[release]'):

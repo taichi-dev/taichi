@@ -34,31 +34,27 @@ def test_python(args):
         pytest_args = [test_dir]
     if verbose:
         pytest_args += ['-s', '-v']
-    if len(test_files) == 0 or len(test_files) > 4:
-        if int(
-                pytest.main(
-                    [os.path.join(root_dir, 'misc/empty_pytest.py'),
-                     '-n1'])) == 0:  # test if pytest has xdist or not
-            try:
-                from multiprocessing import cpu_count
-                threads = min(8,
-                              cpu_count())  # To prevent running out of memory
-            except:
-                threads = 2
-            arg_threads = None
-            if args.threads is not None:
-                arg_threads = int(args.threads)
-            env_threads = os.environ.get('TI_TEST_THREADS', '')
-            if arg_threads is not None:
-                threads = arg_threads
-            elif env_threads:
-                threads = int(env_threads)
-                print(
-                    f'Following TI_TEST_THREADS to use {threads} testing thread(s)...'
-                )
-            print(f'Starting {threads} testing thread(s)...')
-            if threads > 1:
-                pytest_args += ['-n', str(threads)]
+    if int(pytest.main([os.path.join(root_dir, 'misc/empty_pytest.py'),
+                        '-n1'])) == 0:  # test if pytest has xdist or not
+        try:
+            from multiprocessing import cpu_count
+            threads = min(8, cpu_count())  # To prevent running out of memory
+        except:
+            threads = 2
+        arg_threads = None
+        if args.threads is not None:
+            arg_threads = int(args.threads)
+        env_threads = os.environ.get('TI_TEST_THREADS', '')
+        if arg_threads is not None:
+            threads = arg_threads
+        elif env_threads:
+            threads = int(env_threads)
+            print(
+                f'Following TI_TEST_THREADS to use {threads} testing thread(s)...'
+            )
+        print(f'Starting {threads} testing thread(s)...')
+        if threads > 1:
+            pytest_args += ['-n', str(threads)]
     return int(pytest.main(pytest_args))
 
 

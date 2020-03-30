@@ -379,6 +379,22 @@ class IRNode {
     TI_NOT_IMPLEMENTED
   }
   virtual ~IRNode() = default;
+
+  template <typename T>
+  bool is() const {
+    return dynamic_cast<const T *>(this) != nullptr;
+  }
+
+  template <typename T>
+  T *as() {
+    TI_ASSERT(is<T>());
+    return dynamic_cast<T *>(this);
+  }
+
+  template <typename T>
+  T *cast() {
+    return dynamic_cast<T *>(this);
+  }
 };
 
 #define DEFINE_ACCEPT                        \
@@ -568,22 +584,6 @@ class Stmt : public IRNode {
 
   std::string raw_name() const {
     return fmt::format("tmp{}", id);
-  }
-
-  template <typename T>
-  bool is() const {
-    return dynamic_cast<const T *>(this) != nullptr;
-  }
-
-  template <typename T>
-  T *as() {
-    TI_ASSERT(is<T>());
-    return dynamic_cast<T *>(this);
-  }
-
-  template <typename T>
-  T *cast() {
-    return dynamic_cast<T *>(this);
   }
 
   TI_FORCE_INLINE int num_operands() const {

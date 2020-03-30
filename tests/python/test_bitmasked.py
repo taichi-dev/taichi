@@ -109,6 +109,3 @@ def test_huge_bitmasked():
     func()
     count()
     assert s[None] == (n * n * 2) // 32
-
-
-test_huge_bitmasked()

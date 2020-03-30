@@ -73,7 +73,8 @@ struct CompiledProgram {
   bool has_ext_arr{false};
   size_t gtmp_size;
 
-  CompiledProgram(Kernel *kernel, size_t gtmp_size) {
+  CompiledProgram(Kernel *kernel, size_t gtmp_size)
+    : gtmp_size(gtmp_size) {
     has_ext_arr = false;
     arg_count = kernel->args.size();
     for (int i = 0; i < arg_count; i++) {
@@ -92,7 +93,10 @@ struct CompiledProgram {
   void launch(Context &ctx) const {
     std::vector<IOV> iov;
     iov.push_back(IOV{ctx.args, arg_count * sizeof(uint64_t)});
-    void *gtmp_base = std::calloc(gtmp_size, 1); // TODO: use std::vector
+    TI_INFO("GSIZE {}", (size_t)gtmp_size);
+    auto gtmp_arr = std::vector<char>(gtmp_size);
+    void *gtmp_base = gtmp_arr.data();//std::calloc(gtmp_size, 1);
+    TI_INFO("GBASE {}", (uintptr_t)gtmp_base);
     iov.push_back(IOV{gtmp_base, gtmp_size});
     if (has_ext_arr) {
       iov.push_back(

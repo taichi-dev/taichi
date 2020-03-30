@@ -462,12 +462,6 @@ if 1:
         if decorator == 'static':
             if double_decorator == 'static':
                 raise TaichiSyntaxError("'ti.static' cannot be nested")
-            if double_decorator == 'grouped' and (
-                    len(node.iter.args[0].args) != 1
-                    or self.get_decorator(node.iter.args[0].args[0]) == ''):
-                raise TaichiSyntaxError(
-                    "Static grouped struct for loop is not allowed. Please use 'ti.static(ti.grouped(ti.ndrange(...)))' instead."
-                )
             return self.visit_static_for(node)
         elif decorator == 'ndrange':
             if double_decorator != '':

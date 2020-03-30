@@ -1,4 +1,4 @@
-#define _GLSL_DEBUG 1
+//#define _GLSL_DEBUG 1
 #include "codegen_opengl.h"
 #include <taichi/platform/opengl/opengl_api.h>
 #include <taichi/platform/opengl/opengl_data_types.h>
@@ -92,7 +92,7 @@ struct CompiledProgram {
   void launch(Context &ctx) const {
     std::vector<IOV> iov;
     iov.push_back(IOV{ctx.args, arg_count * sizeof(uint64_t)});
-    void *gtmp_base = std::calloc(gtmp_size, 1);
+    void *gtmp_base = std::calloc(gtmp_size, 1); // TODO: use std::vector
     iov.push_back(IOV{gtmp_base, gtmp_size});
     if (has_ext_arr) {
       iov.push_back(
@@ -101,11 +101,17 @@ struct CompiledProgram {
       ctx.args[ext_arr_idx] = 0;
       iov.push_back(IOV{extptr, ext_arr_size});
     }
+    TI_INFO("1 GTMP0 = {}", ((int*)gtmp_base)[0]);
     begin_glsl_kernels(iov);
+    TI_INFO("2 GTMP0 = {}", ((int*)gtmp_base)[0]);
     for (const auto &ker : kernels) {
+      TI_INFO("BL GTMP0 = {}", ((int*)gtmp_base)[0]);
       ker.launch();
+      TI_INFO("AL GTMP0 = {}", ((int*)gtmp_base)[0]);
     }
+    TI_INFO("3 GTMP0 = {}", ((int*)gtmp_base)[0]);
     end_glsl_kernels(iov);
+    TI_INFO("4 GTMP0 = {}", ((int*)gtmp_base)[0]);
   }
 };
 

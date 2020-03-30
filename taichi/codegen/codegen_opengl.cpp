@@ -1,4 +1,4 @@
-//#define _GLSL_DEBUG 1
+#define _GLSL_DEBUG 1
 #include "codegen_opengl.h"
 #include <taichi/platform/opengl/opengl_api.h>
 #include <taichi/platform/opengl/opengl_data_types.h>
@@ -294,7 +294,7 @@ double atomicMin_mem_f64(int addr, double rhs) \
 #endif
           "\n";  // discussion:
                  // https://github.com/taichi-dev/taichi/pull/495#issuecomment-590074123
-      if (used.global_temp) {
+      if (used.atomic_float && used.global_temp) {
         kernel_header += "\
 float atomicAdd_gtx_f32(int addr, float rhs) \
 { \
@@ -334,7 +334,7 @@ float atomicMin_gtx_f32(int addr, float rhs) \
 }\n\
 ";
       }
-      if (used.external_ptr) {
+      if (used.atomic_float && used.external_ptr) {
         kernel_header += "\
 float atomicAdd_ext_ns_f32(int addr, float rhs) \
 { \

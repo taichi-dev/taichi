@@ -1,11 +1,7 @@
 import ast
 from .util import to_taichi_type
 import copy
-
-
-class TaichiSyntaxError(Exception):
-    def __init__(self, *args):
-        super().__init__(*args)
+from .exception import TaichiSyntaxError
 
 
 class ScopeGuard:
@@ -293,19 +289,35 @@ if 1:
             assert isinstance(node.target, ast.Tuple)
             return [name.id for name in node.target.elts]
 
-    def visit_static_for(self, node):
+    def visit_static_for(self, node, is_grouped):
         # for i in ti.static(range(n))
         # for i, j in ti.static(ti.ndrange(n))
         # for I in ti.static(ti.grouped(ti.ndrange(n, m)))
         self.generic_visit(node, ['body'])
-        t = self.parse_stmt('if 1: pass; del a')
-        t.body[0] = node
+        if is_grouped:
+            assert len(node.iter.args[0].args) == 1
+            template = ''' 
+if 1:
+    __ndrange_arg = 0
+    from taichi.lang.exception import TaichiSyntaxError
+    if not isinstance(__ndrange_arg, ti.ndrange):
+        raise TaichiSyntaxError("Only 'ti.ndrange' is allowed in 'ti.static(ti.grouped(...))'.")
+    pass
+    del a
+            '''
+            t = ast.parse(template).body[0]
+            t.body[0].value = node.iter.args[0].args[0]
+            t.body[3] = node
+            t.body[3].iter.args[0].args[0] = self.parse_expr('__ndrange_arg')
+        else:
+            t = self.parse_stmt('if 1: pass; del a')
+            t.body[0] = node
         target = copy.deepcopy(node.target)
         target.ctx = ast.Del()
         if isinstance(target, ast.Tuple):
             for tar in target.elts:
                 tar.ctx = ast.Del()
-        t.body[1].targets = [target]
+        t.body[-1].targets = [target]
         return t
 
     def visit_range_for(self, node):
@@ -462,7 +474,7 @@ if 1:
         if decorator == 'static':
             if double_decorator == 'static':
                 raise TaichiSyntaxError("'ti.static' cannot be nested")
-            return self.visit_static_for(node)
+            return self.visit_static_for(node, double_decorator == 'grouped')
         elif decorator == 'ndrange':
             if double_decorator != '':
                 raise TaichiSyntaxError(

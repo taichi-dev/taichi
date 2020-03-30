@@ -212,8 +212,6 @@ def test_nested_ndrange():
     func()
 
 
-# Skipping this test case until we figure out a systematic solution to syntax checking here.
-'''
 @ti.must_throw(ti.TaichiSyntaxError)
 def test_static_grouped_struct_for():
     val = ti.var(ti.i32)
@@ -226,4 +224,3 @@ def test_static_grouped_struct_for():
             pass
 
     test()
-'''

@@ -93,10 +93,10 @@ struct CompiledProgram {
   void launch(Context &ctx) const {
     std::vector<IOV> iov;
     iov.push_back(IOV{ctx.args, arg_count * sizeof(uint64_t)});
-    TI_INFO("GSIZE {}", (size_t)gtmp_size);
+    //TI_INFO("GSIZE {}", (size_t)gtmp_size);
     auto gtmp_arr = std::vector<char>(gtmp_size);
     void *gtmp_base = gtmp_arr.data();//std::calloc(gtmp_size, 1);
-    TI_INFO("GBASE {}", (uintptr_t)gtmp_base);
+    //TI_INFO("GBASE {}", (uintptr_t)gtmp_base);
     iov.push_back(IOV{gtmp_base, gtmp_size});
     if (has_ext_arr) {
       iov.push_back(
@@ -105,17 +105,17 @@ struct CompiledProgram {
       ctx.args[ext_arr_idx] = 0;
       iov.push_back(IOV{extptr, ext_arr_size});
     }
-    TI_INFO("1 GTMP0 = {}", ((int*)gtmp_base)[0]);
+    //TI_INFO("1 GTMP0 = {}", ((int*)gtmp_base)[0]);
     begin_glsl_kernels(iov);
-    TI_INFO("2 GTMP0 = {}", ((int*)gtmp_base)[0]);
+    //TI_INFO("2 GTMP0 = {}", ((int*)gtmp_base)[0]);
     for (const auto &ker : kernels) {
-      TI_INFO("BL GTMP0 = {}", ((int*)gtmp_base)[0]);
+      //TI_INFO("BL GTMP0 = {}", ((int*)gtmp_base)[0]);
       ker.launch();
-      TI_INFO("AL GTMP0 = {}", ((int*)gtmp_base)[0]);
+      //TI_INFO("AL GTMP0 = {}", ((int*)gtmp_base)[0]);
     }
-    TI_INFO("3 GTMP0 = {}", ((int*)gtmp_base)[0]);
+    //TI_INFO("3 GTMP0 = {}", ((int*)gtmp_base)[0]);
     end_glsl_kernels(iov);
-    TI_INFO("4 GTMP0 = {}", ((int*)gtmp_base)[0]);
+    //TI_INFO("4 GTMP0 = {}", ((int*)gtmp_base)[0]);
   }
 };
 
@@ -651,8 +651,13 @@ int _rand_i32()\n\
            rhs_name, lhs_name, rhs_name);
       return;
     } else if (bin->op_type == BinaryOpType::atan2) {
-      emit("const {} {} = atan({}, {});", dt_name, bin_name, lhs_name,
-           rhs_name);
+      if (bin->element_type() == DataType::f64) { // don't know why no atan(double, double)
+        emit("const {} {} = {}(atan(float({}), float({})));", dt_name, bin_name,
+            dt_name, lhs_name, rhs_name);
+      } else {
+        emit("const {} {} = atan({}, {});", dt_name, bin_name, lhs_name,
+             rhs_name);
+      }
       return;
     }
     const auto binop = binary_op_type_symbol(bin->op_type);

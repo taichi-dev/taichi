@@ -533,7 +533,6 @@ void TaichiLLVMContext::mark_function_as_cuda_kernel(llvm::Function *func) {
 void TaichiLLVMContext::eliminate_unused_functions(
     llvm::Module *module,
     std::function<bool(const std::string &)> export_indicator) {
-  using namespace llvm;
   TI_AUTO_PROF
   using namespace llvm;
   legacy::PassManager manager;

@@ -423,7 +423,8 @@ int _rand_i32()\n\
     int threads_per_group = opengl_get_threads_per_group();
     if (num_threads_ < threads_per_group)
       threads_per_group = std::max(1, num_threads_);
-    num_groups_ = (num_threads_ + threads_per_group - 1) / threads_per_group;
+    else
+      num_groups_ = (num_threads_ + threads_per_group - 1) / threads_per_group;
     emit("layout(local_size_x = {}, local_size_y = 1, local_size_z = 1) in;",
          threads_per_group);
 

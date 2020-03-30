@@ -1,9 +1,12 @@
 // Intermediate representations
 
-#include "ir.h"
-#include <thread>
+#include "taichi/ir/ir.h"
+
 #include <numeric>
-#include "frontend.h"
+#include <thread>
+#include <unordered_map>
+
+#include "taichi/ir/frontend.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -529,6 +532,19 @@ std::string OffloadedStmt::task_name() const {
   } else {
     TI_NOT_IMPLEMENTED
   }
+}
+
+// static
+std::string OffloadedStmt::task_type_name(TaskType tt) {
+#define REGISTER_NAME(x) \
+  { TaskType::x, #x }
+  const static std::unordered_map<TaskType, std::string> m = {
+      REGISTER_NAME(serial),     REGISTER_NAME(range_for),
+      REGISTER_NAME(struct_for), REGISTER_NAME(clear_list),
+      REGISTER_NAME(listgen),    REGISTER_NAME(gc),
+  };
+#undef REGISTER_NAME
+  return m.find(tt)->second;
 }
 
 TLANG_NAMESPACE_END

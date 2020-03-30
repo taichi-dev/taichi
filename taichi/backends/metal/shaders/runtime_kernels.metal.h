@@ -58,7 +58,8 @@ STR(
     kernel void element_listgen(device byte *runtime_addr [[buffer(0)]],
                                 device byte *root_addr [[buffer(1)]],
                                 device int *args [[buffer(2)]],
-                                const uint utid_ [[thread_position_in_grid]]) {
+                                const uint utid_ [[thread_position_in_grid]],
+                                const uint grid_size [[threads_per_grid]]) {
       device Runtime *runtime =
           reinterpret_cast<device Runtime *>(runtime_addr);
       device byte *list_data_addr =
@@ -72,20 +73,29 @@ STR(
       const SNodeMeta child_meta = runtime->snode_metas[child_snode_id];
       const int child_stride = child_meta.element_stride;
       const int num_slots = child_meta.num_slots;
-      if ((int)utid_ >= num_active(parent_list)) {
-        return;
-      }
-      const auto parent_elem =
-          get<ListgenElement>(parent_list, utid_, list_data_addr);
-      for (int i = 0; i < num_slots; ++i) {
+      const int range = max(
+          (int)((child_list->max_num_elems + grid_size - 1) / grid_size), 1);
+      const int begin = range * (int)utid_;
+
+      for (int ii = begin; ii < (begin + range); ++ii) {
+        const int parent_idx = (ii / num_slots);
+        if (parent_idx >= num_active(parent_list)) {
+          // Since |parent_idx| increases monotonically, we can return directly
+          // once it goes beyond the number of active parent elements.
+          return;
+        }
+        const int child_idx = (ii % num_slots);
+        const auto parent_elem =
+            get<ListgenElement>(parent_list, parent_idx, list_data_addr);
         ListgenElement child_elem;
         child_elem.root_mem_offset = parent_elem.root_mem_offset +
-                                     i * child_stride +
+                                     child_idx * child_stride +
                                      child_meta.mem_offset_in_parent;
-        if (is_active(root_addr + child_elem.root_mem_offset, child_meta, i)) {
+        if (is_active(root_addr + child_elem.root_mem_offset, child_meta,
+                      child_idx)) {
           refine_coordinates(parent_elem,
-                             runtime->snode_extractors[child_snode_id], i,
-                             &child_elem);
+                             runtime->snode_extractors[child_snode_id],
+                             child_idx, &child_elem);
           append(child_list, child_elem, list_data_addr);
         }
       }

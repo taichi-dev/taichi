@@ -1,5 +1,6 @@
 #pragma once
-#include "ir.h"
+
+#include "taichi/ir/ir.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -189,6 +190,8 @@ class OffloadedStmt : public Stmt {
   OffloadedStmt(TaskType task_type, SNode *snode);
 
   std::string task_name() const;
+
+  static std::string task_type_name(TaskType tt);
 
   bool has_body() const {
     return task_type != clear_list && task_type != listgen && task_type != gc;

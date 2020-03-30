@@ -237,6 +237,8 @@ class CompiledTaichiKernel {
 
       TI_ASSERT(kernel != nullptr);
       compiled_mtl_kernels.push_back(std::move(kernel));
+      TI_DEBUG("Added {} for Taichi kernel {}", ka.debug_string(),
+               params.taichi_kernel_name);
     }
     if (args_attribs.has_args()) {
       args_mem = std::make_unique<BufferMemoryView>(args_attribs.total_bytes(),

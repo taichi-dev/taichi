@@ -131,6 +131,7 @@ def init(default_fp=None,
     boolean_config("fast_math")
     arch = os.environ.get("TI_ARCH")
     if arch is not None:
+        print(f'Following TI_ARCH setting up for arch={arch}')
         ti.cfg.arch = ti.core.arch_from_name(arch)
 
     log_level = os.environ.get("TI_LOG_LEVEL")
@@ -358,8 +359,8 @@ def archs_excluding(*excluded_archs, **kwargs):
 #
 # Example usage:
 #
-# ti.require(ti.extension.data64)
-# ti.all_archs_with(default_fp=ti.f64)
+# @ti.require(ti.extension.data64)
+# @ti.all_archs_with(default_fp=ti.f64)
 # def test_xx():
 #   ...
 def require(*exts):

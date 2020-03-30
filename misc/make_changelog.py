@@ -58,8 +58,9 @@ for tag in sorted(notable_changes.keys()):
     for item in notable_changes[tag]:
         print(f'      -{item}')
 print(
-    f'      - [Full log](https://github.com/taichi-dev/taichi/releases/tag/{ver})'
+    f'   - [Full log](https://github.com/taichi-dev/taichi/releases/tag/{ver})'
 )
+print()
 
 print('Full changelog:')
 for c in all_changes:

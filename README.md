@@ -34,6 +34,13 @@ python3 -m pip install taichi-nightly-cuda-10-1
 |**PyPI**|[![Build Status](https://travis-ci.com/yuanming-hu/taichi-wheels-test.svg?branch=master)](https://travis-ci.com/yuanming-hu/taichi-wheels-test)|[![Build Status](https://travis-ci.com/yuanming-hu/taichi-wheels-test.svg?branch=master)](https://travis-ci.com/yuanming-hu/taichi-wheels-test)|[![Build status](https://ci.appveyor.com/api/projects/status/39ar9wa8yd49je7o?svg=true)](https://ci.appveyor.com/project/IteratorAdvance/taichi-wheels-test)|
 
 ## Updates
+- (Mar 29, 2020) v0.5.10 released
+   - **Language and syntax**
+      - Fix `ti.static(ti.grouped(ti.ndrange(...)))` syntax checker false positive (#680) (by **Yuanming Hu**)
+   - **Command line interface**
+      - `ti test` now supports `-t/--threads` for specifying number of testing threads (#674) (by **Yuanming Hu**)
+   - [Full log](https://github.com/taichi-dev/taichi/releases/tag/0.5.10)
+
 - (Mar 28, 2020) v0.5.9 released
    - **CPU backends**
       - Support `bitmasked` as the leaf block structure for `1x1x1` masks (#676) (by **Yuanming Hu**)
@@ -51,7 +58,7 @@ python3 -m pip install taichi-nightly-cuda-10-1
       - Silence compile warnings (#650) (by **Ye Kuang**)
    - **Optimization**
       - Improved Taichi IR optimizers (#662) (#668) (by **xumingkuan**)
-      - [Full log](https://github.com/taichi-dev/taichi/releases/tag/0.5.9)
+   - [Full log](https://github.com/taichi-dev/taichi/releases/tag/0.5.9)
 - (Mar  24, 2020) v0.5.8 released. Visible/notable changes:
    - **Language features**
       - Access out-of-bound checking on CPU backends (#572) (by **xumingkuan**)

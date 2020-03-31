@@ -9,6 +9,7 @@
 #include <functional>
 #include <string>
 #include <vector>
+#include <map>
 
 TLANG_NAMESPACE_BEGIN
 namespace opengl {
@@ -31,6 +32,8 @@ class OpenglStructCompiler {
 
   std::vector<SNode *> snodes_;
   std::string src_code_;
+  std::map<std::string, size_t> stride_map_;
+  std::map<std::string, size_t> length_map_;
 };
 
 }  // namespace opengl

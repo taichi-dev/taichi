@@ -28,30 +28,35 @@ void OpenglStructCompiler::collect_snodes(SNode &snode) {
     collect_snodes(*ch);
   }
 }
-// TODO(archibate): really need fit struct_metal so much?
+
 void OpenglStructCompiler::generate_types(const SNode &snode) {
   const bool is_place = snode.is_place();
   if (!is_place) {
     const std::string class_name = snode.node_type_name + "_ch";
     emit("#define {} const int", class_name);
     std::string stride_str;
+    size_t stride_num = 0;
     for (int i = 0; i < (int)snode.ch.size(); i++) {
       const auto &ch_node_name = snode.ch[i]->node_type_name;
       if (stride_str.empty()) {
         emit("#define {}_get{}(a_) (a_) // {}", snode.node_type_name, i,
              ch_node_name);
         stride_str = ch_node_name + "_stride";
+        stride_num = stride_map_[ch_node_name];
       } else {
-        emit("#define {}_get{}(a_) ((a_) + ({})) // {}", snode.node_type_name,
-             i, stride_str, ch_node_name);
+        emit("#define {}_get{}(a_) ((a_) + {}) // {}", snode.node_type_name,
+             i, stride_num, ch_node_name);
+        TI_INFO("{} vs {}", stride_str, stride_num);
         stride_str += " + " + ch_node_name + "_stride";
+        stride_num += stride_map_[ch_node_name];
       }
     }
     if (stride_str.empty()) {
       // Is it possible for this to have no children?
       stride_str = "0";
     }
-    emit("#define {}_stride ({})", class_name, stride_str);
+    emit("#define {}_stride {}", class_name, stride_num);
+    stride_map_[class_name] = stride_num;
   }
   const auto &node_name = snode.node_type_name;
   if (is_place) {
@@ -59,12 +64,16 @@ void OpenglStructCompiler::generate_types(const SNode &snode) {
     emit("#define {} const int // place {}", node_name, dt_name);
     emit("#define {}_stride {} // sizeof({})", node_name,
          data_type_size(snode.dt), dt_name);
+    stride_map_[node_name] = data_type_size(snode.dt);
   } else if (snode.type == SNodeType::dense || snode.type == SNodeType::root) {
     emit("#define {} const int // {}", node_name, snode_type_name(snode.type));
     const int n = (snode.type == SNodeType::dense) ? snode.n : 1;
     emit("#define {}_n {}", node_name, n);
+    length_map_[node_name] = n;
     emit("#define {}_stride ({}_ch_stride * {}_n)", node_name, node_name,
          node_name);
+    TI_INFO("!!{} len {}", stride_map_[node_name + "_ch"], length_map_[node_name]);
+    stride_map_[node_name] = stride_map_[node_name + "_ch"] * length_map_[node_name];
     emit("#define {}_children(a_, i) ((a_) + {}_ch_stride * (i))", node_name,
          node_name);
   } else {

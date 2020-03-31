@@ -1,4 +1,4 @@
-//#define _GLSL_DEBUG 1
+#define _GLSL_DEBUG 1
 #define _GLSL_NVIDIA 1
 #include "codegen_opengl.h"
 #include <taichi/platform/opengl/opengl_api.h>

@@ -73,10 +73,9 @@ void CodeGenCPU::lower() {
     irpass::demote_atomics(ir);
     irpass::simplify(ir);
     irpass::make_adjoint(ir, true);
-    irpass::typecheck(ir);
+    irpass::full_simplify(ir, prog->config);
     if (print_ir) {
       TI_INFO("Adjoint:");
-      irpass::full_simplify(ir, prog->config);
       irpass::re_id(ir);
       irpass::print(ir);
     }

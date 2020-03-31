@@ -52,19 +52,10 @@ void CodeGenCUDA::lower() {
       irpass::print(ir);
     }
     irpass::make_adjoint(ir, true);
-
+    irpass::full_simplify(ir, prog->config);
     if (print_ir) {
-      using namespace irpass;
       TI_INFO("After make_adjoint:");
-      constant_fold(ir);
-      if (advanced_optimization)
-        alg_simp(ir, prog->config);
-      die(ir);
-      simplify(ir);
-      die(ir);
       irpass::re_id(ir);
-      irpass::print(ir);
-      exit(0);
     }
     irpass::typecheck(ir);
   }

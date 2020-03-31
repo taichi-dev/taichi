@@ -243,41 +243,38 @@ def test_cast():
 test_cast()
 '''
 
-    
-# @ti.all_archs_with(print_ir=True)
+
+@ti.all_archs
 def test_ad_precision_1():
-    ti.init(arch=ti.cuda, print_ir=True)
     loss = ti.var(ti.f32, shape=())
     x = ti.var(ti.f64, shape=())
-    
+
     ti.root.lazy_grad()
 
     ti.get_runtime().prog.print_snode_tree()
+
     @ti.kernel
     def func():
         loss[None] = x[None]
-        
+
     loss.grad[None] = 1
     func.grad()
-    
+
     assert x.grad[None] == 1
-    
-test_ad_precision_1()
-    
+
+
 @ti.all_archs
 def test_ad_precision_2():
-    return
     loss = ti.var(ti.f64, shape=())
     x = ti.var(ti.f32, shape=())
-    
+
     ti.root.lazy_grad()
-    
+
     @ti.kernel
     def func():
         loss[None] = x[None]
-    
-    
+
     with ti.Tape(loss):
         func()
-    
+
     assert x.grad[None] == 1

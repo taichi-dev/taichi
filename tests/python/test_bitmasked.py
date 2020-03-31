@@ -82,3 +82,30 @@ def test_bitmasked_bitmasked():
 
     func()
     assert s[None] == 4
+
+
+@archs_support_bitmasked
+def test_huge_bitmasked():
+    # Mainly for testing Metal listgen's grid-stride loop implementation.
+    x = ti.var(ti.f32)
+    s = ti.var(ti.i32)
+
+    n = 1024
+
+    ti.root.bitmasked(ti.i, n).bitmasked(ti.i, 2 * n).place(x)
+    ti.root.place(s)
+
+    @ti.kernel
+    def func():
+        for i in range(n * n * 2):
+            if i % 32 == 0:
+                x[i] = 1.0
+
+    @ti.kernel
+    def count():
+        for i in x:
+            s[None] += 1
+
+    func()
+    count()
+    assert s[None] == (n * n * 2) // 32

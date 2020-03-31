@@ -1,5 +1,7 @@
 #include "taichi/backends/metal/kernel_util.h"
 
+#include <unordered_map>
+
 #define TI_RUNTIME_HOST
 #include "taichi/runtime/llvm/context.h"
 #undef TI_RUNTIME_HOST
@@ -7,6 +9,38 @@
 TLANG_NAMESPACE_BEGIN
 
 namespace metal {
+
+// static
+std::string KernelAttributes::buffers_name(Buffers b) {
+#define REGISTER_NAME(x) \
+  { Buffers::x, #x }
+  const static std::unordered_map<Buffers, std::string> m = {
+      REGISTER_NAME(Root),
+      REGISTER_NAME(GlobalTmps),
+      REGISTER_NAME(Args),
+      REGISTER_NAME(Runtime),
+  };
+#undef REGISTER_NAME
+  return m.find(b)->second;
+}
+
+std::string KernelAttributes::debug_string() const {
+  std::string result;
+  result += fmt::format(
+      "<KernelAttributes name={} num_threads={} task_type={} buffers=[ ", name,
+      num_threads, OffloadedStmt::task_type_name(task_type));
+  for (auto b : buffers) {
+    result += buffers_name(b) + " ";
+  }
+  result += "]";  // closes |buffers|
+  // TODO(k-ye): show range_for
+  if (task_type == OffloadedStmt::TaskType::clear_list ||
+      task_type == OffloadedStmt::TaskType::listgen) {
+    result += fmt::format(" snode={}", runtime_list_op_attribs.snode->id);
+  }
+  result += ">";
+  return result;
+}
 
 KernelArgsAttributes::KernelArgsAttributes(const std::vector<Kernel::Arg> &args)
     : args_bytes_(0), extra_args_bytes_(Context::extra_args_size) {

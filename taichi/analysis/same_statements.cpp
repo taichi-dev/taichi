@@ -31,6 +31,12 @@ TLANG_NAMESPACE_BEGIN
     return;                          \
   }
 
+#define DEFINE_SNODE_CHECK(snode)                                \
+  if (get_snode_id(stmt->snode) != get_snode_id(other->snode)) { \
+    same = false;                                                \
+    return;                                                      \
+  }
+
 #define DEFINE_MAP_ID map_id(stmt->id, other->id);
 
 #define DEFINE_BASIC_CHECK(Type) \
@@ -52,6 +58,12 @@ class IRNodeComparator : public IRVisitor {
 
   explicit IRNodeComparator(IRNode *other_node) : other_node(other_node) {
     same = true;
+  }
+
+  static int get_snode_id(SNode *snode) {
+    if (snode == nullptr)
+      return -1;
+    return snode->id;
   }
 
   void map_id(int this_id, int other_id) {
@@ -106,7 +118,7 @@ class IRNodeComparator : public IRVisitor {
     DEFINE_BASIC_CHECK(SNodeOpStmt)
     DEFINE_FIELD_CHECK(type_hint())
     DEFINE_FIELD_CHECK(op_type)
-    DEFINE_FIELD_CHECK(snode)
+    DEFINE_SNODE_CHECK(snode)
   }
 
   void visit(AllocaStmt *stmt) override {
@@ -213,7 +225,7 @@ class IRNodeComparator : public IRVisitor {
 
   void visit(StructForStmt *stmt) override {
     DEFINE_BASIC_CHECK(StructForStmt)
-    DEFINE_FIELD_CHECK(snode)
+    DEFINE_SNODE_CHECK(snode)
     DEFINE_FIELD_CHECK(vectorize)
     other_node = other->body.get();
     stmt->body->accept(this);
@@ -226,7 +238,7 @@ class IRNodeComparator : public IRVisitor {
     DEFINE_FIELD_CHECK(width())
     DEFINE_FIELD_CHECK(activate)
     for (int l = 0; l < stmt->width(); l++) {
-      DEFINE_FIELD_CHECK(snodes[l])
+      DEFINE_SNODE_CHECK(snodes[l])
     }
   }
 
@@ -312,15 +324,15 @@ class IRNodeComparator : public IRVisitor {
   void visit(SNodeLookupStmt *stmt) override {
     DEFINE_BASIC_CHECK(SNodeLookupStmt)
     DEFINE_FIELD_CHECK(type_hint())
-    DEFINE_FIELD_CHECK(snode)
+    DEFINE_SNODE_CHECK(snode)
     DEFINE_FIELD_CHECK(activate)
   }
 
   void visit(GetChStmt *stmt) override {
     DEFINE_BASIC_CHECK(GetChStmt)
     DEFINE_FIELD_CHECK(type_hint())
-    DEFINE_FIELD_CHECK(input_snode)
-    DEFINE_FIELD_CHECK(output_snode)
+    DEFINE_SNODE_CHECK(input_snode)
+    DEFINE_SNODE_CHECK(output_snode)
     DEFINE_FIELD_CHECK(chid)
   }
 

@@ -147,6 +147,7 @@ class MakeAdjoint : public IRVisitor {
     return insert_back(Stmt::make<T>(args...));
   }
 
+  // Accumulate [value] to the adjoint of [primal]
   void accumulate(Stmt *primal, Stmt *value) {
     auto alloca_ = adjoint(primal);
     if (!alloca_ || alloca_->is<ConstStmt>())
@@ -229,8 +230,9 @@ class MakeAdjoint : public IRVisitor {
       accumulate(stmt->operand,
                  mul(adjoint(stmt), div(constant(0.5f), sqrt(stmt->operand))));
     } else if (stmt->op_type == UnaryOpType::cast) {
-      if (stmt->cast_by_value && is_real(stmt->cast_type)) {
-        accumulate(stmt->operand, stmt);
+      if (stmt->cast_by_value && is_real(stmt->cast_type) &&
+          is_real(stmt->operand->ret_type.data_type)) {
+        accumulate(stmt->operand, adjoint(stmt));
       }
     } else if (stmt->op_type == UnaryOpType::logic_not) {
       // do nothing
@@ -423,7 +425,8 @@ class MakeAdjoint : public IRVisitor {
     TI_ASSERT(snodes[0]->get_grad() != nullptr);
     snodes[0] = snodes[0]->get_grad();
     auto adjoint_ptr = insert<GlobalPtrStmt>(snodes, ptr->indices);
-    accumulate(stmt->data, insert<GlobalLoadStmt>(adjoint_ptr));
+    auto load = insert<GlobalLoadStmt>(adjoint_ptr);
+    accumulate(stmt->data, load);
     stmt->parent->erase(stmt);
   }
 
@@ -543,6 +546,7 @@ class BackupSSA : public BasicStmtVisitor {
       statements.push_back(stmt.get());
     }
     for (auto stmt : statements) {
+      TI_ASSERT(!stmt->erased);
       stmt->accept(this);
     }
     if (old_current_block == nullptr)

@@ -1297,6 +1297,7 @@ void full_simplify(IRNode *root, const CompileConfig &config) {
     alg_simp(root, config);
   die(root);
   simplify(root);
+  die(root);
 }
 
 }  // namespace irpass

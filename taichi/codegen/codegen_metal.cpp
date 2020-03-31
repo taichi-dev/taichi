@@ -685,7 +685,7 @@ class KernelCodegen : public IRVisitor {
       ka.num_threads =
           std::min(compiled_structs_->snode_descriptors.find(sn->id)
                        ->second.total_num_elems_from_root,
-                   1024 * 1024);
+                   64 * 1024);
       ka.buffers = {BuffersEnum::Runtime, BuffersEnum::Root, BuffersEnum::Args};
     } else {
       TI_ERROR("Unsupported offload task type {}", stmt->task_name());

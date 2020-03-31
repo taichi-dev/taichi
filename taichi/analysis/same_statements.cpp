@@ -346,7 +346,25 @@ class IRNodeComparator : public IRVisitor {
     DEFINE_BASIC_CHECK(OffloadedStmt)
     DEFINE_FIELD_CHECK(type_hint())
     DEFINE_FIELD_CHECK(task_type)
-    // TODO
+    DEFINE_SNODE_CHECK(snode)
+    DEFINE_FIELD_CHECK(begin_offset)
+    DEFINE_FIELD_CHECK(end_offset)
+    DEFINE_FIELD_CHECK(const_begin)
+    DEFINE_FIELD_CHECK(const_end)
+    DEFINE_FIELD_CHECK(begin_value)
+    DEFINE_FIELD_CHECK(end_value)
+    // DEFINE_FIELD_CHECK(step) // seems never used
+    DEFINE_FIELD_CHECK(block_dim)
+    DEFINE_FIELD_CHECK(reversed)
+    DEFINE_FIELD_CHECK(num_cpu_threads) // Is this necessary?
+    DEFINE_FIELD_CHECK(device) // Is this necessary?
+    if (stmt->has_body()) {
+      TI_ASSERT(stmt->body);
+      TI_ASSERT(other->body);
+      other_node = other->body.get();
+      stmt->body->accept(this);
+      other_node = other;
+    }
   }
 
   static bool run(IRNode *root1, IRNode *root2) {

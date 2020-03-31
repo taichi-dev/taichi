@@ -1,7 +1,7 @@
 // Type checking
 
 #include "taichi/ir/ir.h"
-#include <taichi/ir/frontend.h>
+#include "taichi/ir/frontend.h"
 
 TLANG_NAMESPACE_BEGIN
 

@@ -1,5 +1,5 @@
-#include <taichi/common/task.h>
-#include <taichi/ir/ir.h>
+#include "taichi/common/task.h"
+#include "taichi/ir/ir.h"
 
 TLANG_NAMESPACE_BEGIN
 

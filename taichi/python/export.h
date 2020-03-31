@@ -25,8 +25,8 @@
 #pragma GCC diagnostic ignored "-Wunused-function"
 #include <numpy/ndarrayobject.h>
 #pragma GCC diagnostic pop
-#include <taichi/util/io.h>
-#include <taichi/common/util.h>
+#include "taichi/util/io.h"
+#include "taichi/common/util.h"
 
 TI_NAMESPACE_BEGIN
 

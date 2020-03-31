@@ -14,7 +14,7 @@
 #include <sstream>
 #include <typeinfo>
 
-#include <taichi/math/math.h>
+#include "taichi/math/math.h"
 #include "util.h"
 
 TI_NAMESPACE_BEGIN

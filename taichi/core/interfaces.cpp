@@ -4,10 +4,10 @@
 *******************************************************************************/
 
 #include <functional>
-#include <taichi/common/interface.h>
+#include "taichi/common/interface.h"
 #include <pybind11/pybind11.h>
-#include <taichi/common/task.h>
-#include <taichi/system/benchmark.h>
+#include "taichi/common/task.h"
+#include "taichi/system/benchmark.h"
 
 TI_NAMESPACE_BEGIN
 

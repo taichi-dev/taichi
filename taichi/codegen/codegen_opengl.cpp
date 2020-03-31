@@ -1,11 +1,11 @@
 //#define _GLSL_DEBUG 1
 #include "codegen_opengl.h"
-#include <taichi/platform/opengl/opengl_api.h>
-#include <taichi/platform/opengl/opengl_data_types.h>
+#include "taichi/platform/opengl/opengl_api.h"
+#include "taichi/platform/opengl/opengl_data_types.h"
 
 #include <string>
-#include <taichi/ir/ir.h>
-#include <taichi/util/line_appender.h>
+#include "taichi/ir/ir.h"
+#include "taichi/util/line_appender.h"
 
 TLANG_NAMESPACE_BEGIN
 namespace opengl {

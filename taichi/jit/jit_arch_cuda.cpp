@@ -3,7 +3,7 @@
 #include <memory>
 #include <cuda_runtime_api.h>
 #include <cuda.h>
-#include <taichi/backends/cuda/cuda_context.h>
+#include "taichi/backends/cuda/cuda_context.h"
 #endif
 #include "llvm/ADT/StringRef.h"
 #include "llvm/IR/DataLayout.h"
@@ -21,10 +21,10 @@
 #include <llvm/Support/TargetRegistry.h>
 #include <llvm/Target/TargetMachine.h>
 #include <llvm/ExecutionEngine/Orc/JITTargetMachineBuilder.h>
-#include <taichi/backends/cuda/cuda_utils.h>
-#include <taichi/program/program.h>
-#include <taichi/runtime/llvm/context.h>
-#include <taichi/system/timer.h>
+#include "taichi/backends/cuda/cuda_utils.h"
+#include "taichi/program/program.h"
+#include "taichi/runtime/llvm/context.h"
+#include "taichi/system/timer.h"
 #include "taichi/lang_util.h"
 #include "jit_session.h"
 

@@ -5,7 +5,7 @@
 
 #include <algorithm>
 #include <condition_variable>
-#include <taichi/system/threading.h>
+#include "taichi/system/threading.h"
 #include <thread>
 #include <vector>
 #if defined(TI_PLATFORM_WINDOWS)

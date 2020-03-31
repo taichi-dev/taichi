@@ -220,6 +220,123 @@ class IRNodeComparator : public IRVisitor {
     other_node = other;
   }
 
+  void visit(GlobalPtrStmt *stmt) override {
+    DEFINE_BASIC_CHECK(GlobalPtrStmt)
+    DEFINE_FIELD_CHECK(type_hint())
+    DEFINE_FIELD_CHECK(width())
+    DEFINE_FIELD_CHECK(activate)
+    for (int l = 0; l < stmt->width(); l++) {
+      DEFINE_FIELD_CHECK(snodes[l])
+    }
+  }
+
+  void visit(ArgLoadStmt *stmt) override {
+    DEFINE_BASIC_CHECK(ArgLoadStmt)
+    DEFINE_FIELD_CHECK(type_hint())
+    DEFINE_FIELD_CHECK(arg_id)
+  }
+
+  void visit(ArgStoreStmt *stmt) override {
+    DEFINE_BASIC_CHECK(ArgStoreStmt)
+    DEFINE_FIELD_CHECK(type_hint())
+    DEFINE_FIELD_CHECK(arg_id)
+  }
+
+  void visit(LocalLoadStmt *stmt) override {
+    DEFINE_BASIC_CHECK(LocalLoadStmt)
+    DEFINE_FIELD_CHECK(type_hint())
+  }
+
+  void visit(LocalStoreStmt *stmt) override {
+    DEFINE_BASIC_CHECK(LocalStoreStmt)
+    DEFINE_FIELD_CHECK(type_hint())
+  }
+
+  void visit(GlobalLoadStmt *stmt) override {
+    DEFINE_BASIC_CHECK(GlobalLoadStmt)
+    DEFINE_FIELD_CHECK(type_hint())
+  }
+
+  void visit(GlobalStoreStmt *stmt) override {
+    DEFINE_BASIC_CHECK(GlobalStoreStmt)
+    DEFINE_FIELD_CHECK(type_hint())
+  }
+
+  void visit(PragmaSLPStmt *stmt) override {
+    DEFINE_BASIC_CHECK(PragmaSLPStmt)
+    DEFINE_FIELD_CHECK(slp_width)
+  }
+
+  void visit(ElementShuffleStmt *stmt) override {
+    DEFINE_BASIC_CHECK(ElementShuffleStmt)
+    DEFINE_FIELD_CHECK(type_hint())
+    DEFINE_FIELD_CHECK(pointer)
+  }
+
+  void visit(RangeAssumptionStmt *stmt) override {
+    DEFINE_BASIC_CHECK(RangeAssumptionStmt)
+    DEFINE_FIELD_CHECK(type_hint())
+    DEFINE_FIELD_CHECK(low)
+    DEFINE_FIELD_CHECK(high)
+  }
+
+  void visit(LinearizeStmt *stmt) override {
+    DEFINE_BASIC_CHECK(LinearizeStmt)
+    DEFINE_FIELD_CHECK(type_hint())
+    DEFINE_FIELD_CHECK(inputs.size())
+    for (int i = 0; i < (int)stmt->inputs.size(); i++) {
+      DEFINE_FIELD_CHECK(inputs[i])
+    }
+  }
+
+  void visit(IntegerOffsetStmt *stmt) override {
+    DEFINE_BASIC_CHECK(IntegerOffsetStmt)
+    DEFINE_FIELD_CHECK(type_hint())
+    DEFINE_FIELD_CHECK(offset)
+  }
+
+  void visit(OffsetAndExtractBitsStmt *stmt) override {
+    DEFINE_BASIC_CHECK(OffsetAndExtractBitsStmt)
+    DEFINE_FIELD_CHECK(type_hint())
+    DEFINE_FIELD_CHECK(offset)
+    DEFINE_FIELD_CHECK(bit_begin)
+    DEFINE_FIELD_CHECK(bit_end)
+    DEFINE_FIELD_CHECK(simplified) // Is this necessary?
+  }
+
+  void visit(GetRootStmt *stmt) override {
+    DEFINE_BASIC_CHECK(GetRootStmt)
+    DEFINE_FIELD_CHECK(type_hint())
+  }
+
+  void visit(SNodeLookupStmt *stmt) override {
+    DEFINE_BASIC_CHECK(SNodeLookupStmt)
+    DEFINE_FIELD_CHECK(type_hint())
+    DEFINE_FIELD_CHECK(snode->id)
+    DEFINE_FIELD_CHECK(activate)
+  }
+
+  void visit(GetChStmt *stmt) override {
+    DEFINE_BASIC_CHECK(GetChStmt)
+    DEFINE_FIELD_CHECK(type_hint())
+    DEFINE_FIELD_CHECK(input_snode->id)
+    DEFINE_FIELD_CHECK(output_snode->id)
+    DEFINE_FIELD_CHECK(chid)
+  }
+
+  void visit(ExternalPtrStmt *stmt) override {
+    DEFINE_BASIC_CHECK(ExternalPtrStmt)
+    DEFINE_FIELD_CHECK(type_hint())
+    DEFINE_FIELD_CHECK(activate)
+  }
+
+  void visit(OffloadedStmt *stmt) override {
+    DEFINE_BASIC_CHECK(OffloadedStmt)
+    DEFINE_FIELD_CHECK(type_hint())
+    DEFINE_FIELD_CHECK(task_type)
+    // TODO
+  }
+
   static bool run(IRNode *root1, IRNode *root2) {
     IRNodeComparator comparator(root2);
     root1->accept(&comparator);

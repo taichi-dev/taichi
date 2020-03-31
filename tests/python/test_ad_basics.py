@@ -1,4 +1,5 @@
 import taichi as ti
+'''
 from taichi import approx
 
 has_autograd = False
@@ -231,3 +232,52 @@ def test_violate_kernel_simplicity2():
 
     func()
     func.grad()
+
+@ti.all_archs_with(print_ir=True)
+def test_cast():
+    @ti.kernel
+    def func():
+        print(ti.cast(ti.cast(ti.cast(1.0, ti.f64), ti.f32), ti.f64))
+    func()
+    
+test_cast()
+'''
+
+    
+# @ti.all_archs_with(print_ir=True)
+def test_ad_precision_1():
+    ti.init(arch=ti.cuda, print_ir=True)
+    loss = ti.var(ti.f32, shape=())
+    x = ti.var(ti.f64, shape=())
+    
+    ti.root.lazy_grad()
+
+    ti.get_runtime().prog.print_snode_tree()
+    @ti.kernel
+    def func():
+        loss[None] = x[None]
+        
+    loss.grad[None] = 1
+    func.grad()
+    
+    assert x.grad[None] == 1
+    
+test_ad_precision_1()
+    
+@ti.all_archs
+def test_ad_precision_2():
+    return
+    loss = ti.var(ti.f64, shape=())
+    x = ti.var(ti.f32, shape=())
+    
+    ti.root.lazy_grad()
+    
+    @ti.kernel
+    def func():
+        loss[None] = x[None]
+    
+    
+    with ti.Tape(loss):
+        func()
+    
+    assert x.grad[None] == 1

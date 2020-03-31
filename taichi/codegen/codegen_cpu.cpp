@@ -20,52 +20,52 @@ void CodeGenCPU::lower() {
     print_ir = prog->config.print_ir;
   }
   if (print_ir) {
-    TI_TRACE("Initial IR:");
+    TI_INFO("Initial IR:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
   if (kernel->grad) {
     irpass::reverse_segments(ir);
     if (print_ir) {
-      TI_TRACE("Segment reversed (for autodiff):");
+      TI_INFO("Segment reversed (for autodiff):");
       irpass::re_id(ir);
       irpass::print(ir);
     }
   }
   irpass::lower(ir);
   if (print_ir) {
-    TI_TRACE("Lowered:");
+    TI_INFO("Lowered:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
   irpass::typecheck(ir);
   if (print_ir) {
-    TI_TRACE("Typechecked:");
+    TI_INFO("Typechecked:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
   irpass::slp_vectorize(ir);
   if (print_ir) {
-    TI_TRACE("SLPed:");
+    TI_INFO("SLPed:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
   irpass::loop_vectorize(ir);
   if (print_ir) {
-    TI_TRACE("LoopVeced:");
+    TI_INFO("LoopVeced:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
   irpass::vector_split(ir, prog->config.max_vector_width,
                        prog->config.serial_schedule);
   if (print_ir) {
-    TI_TRACE("LoopSplitted:");
+    TI_INFO("LoopSplitted:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
   irpass::simplify(ir);
   if (print_ir) {
-    TI_TRACE("Simplified I:");
+    TI_INFO("Simplified I:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
@@ -75,7 +75,8 @@ void CodeGenCPU::lower() {
     irpass::make_adjoint(ir, true);
     irpass::typecheck(ir);
     if (print_ir) {
-      TI_TRACE("Adjoint:");
+      TI_INFO("Adjoint:");
+      irpass::full_simplify(ir, prog->config);
       irpass::re_id(ir);
       irpass::print(ir);
     }
@@ -84,74 +85,74 @@ void CodeGenCPU::lower() {
     irpass::demote_dense_struct_fors(ir);
     irpass::typecheck(ir);
     if (print_ir) {
-      TI_TRACE("Dense Struct-for demoted:");
+      TI_INFO("Dense Struct-for demoted:");
       irpass::print(ir);
     }
   }
   if (prog->config.debug) {
     irpass::check_out_of_bound(ir);
     if (print_ir) {
-      TI_TRACE("Bound checked:");
+      TI_INFO("Bound checked:");
       irpass::re_id(ir);
       irpass::print(ir);
     }
   }
   irpass::lower_access(ir, true);
   if (print_ir) {
-    TI_TRACE("Access Lowered:");
+    TI_INFO("Access Lowered:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
   irpass::die(ir);
   if (print_ir) {
-    TI_TRACE("DIEd:");
+    TI_INFO("DIEd:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
   irpass::simplify(ir);
   if (print_ir) {
-    TI_TRACE("Simplified II:");
+    TI_INFO("Simplified II:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
   irpass::die(ir);
   if (print_ir) {
-    TI_TRACE("DIEd:");
+    TI_INFO("DIEd:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
 
   irpass::flag_access(ir);
   if (print_ir) {
-    TI_TRACE("Access Flagged:");
+    TI_INFO("Access Flagged:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
 
   irpass::constant_fold(ir);
   if (print_ir) {
-    TI_TRACE("Constant folded:");
+    TI_INFO("Constant folded:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
 
   irpass::offload(ir);
   if (print_ir) {
-    TI_TRACE("Offloaded:");
+    TI_INFO("Offloaded:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
 
   irpass::full_simplify(ir, prog->config);
   if (print_ir) {
-    TI_TRACE("Simplified III:");
+    TI_INFO("Simplified III:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
 
   irpass::demote_atomics(ir);
   if (print_ir) {
-    TI_TRACE("Atomics demoted:");
+    TI_INFO("Atomics demoted:");
     irpass::re_id(ir);
     irpass::print(ir);
   }

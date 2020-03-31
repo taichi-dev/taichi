@@ -420,9 +420,13 @@ class MakeAdjoint : public IRVisitor {
       return;
     }
     TI_ASSERT(snodes[0]->get_grad() != nullptr);
+    TI_INFO("{} grad {}", snodes[0]->get_node_type_name_hinted(), snodes[0]->get_grad()->get_node_type_name_hinted());
     snodes[0] = snodes[0]->get_grad();
     auto adjoint_ptr = insert<GlobalPtrStmt>(snodes, ptr->indices);
-    accumulate(stmt->data, insert<GlobalLoadStmt>(adjoint_ptr));
+    auto load = insert<GlobalLoadStmt>(adjoint_ptr);
+    irpass::print(adjoint_ptr);
+    irpass::print(load);
+    accumulate(stmt->data, load);
     stmt->parent->erase(stmt);
   }
 
@@ -558,11 +562,13 @@ void make_adjoint(IRNode *root, bool use_stack) {
     root->accept(&converter);
     typecheck(root);
     MakeAdjoint::run(root);
+    irpass::print(root);
     typecheck(root);
     fix_block_parents(root);
     BackupSSA b;
     root->accept(&b);
     typecheck(root);
+    irpass::print(root);
   } else {
     MakeAdjoint::run(root);
     typecheck(root);

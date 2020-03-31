@@ -1,6 +1,6 @@
 #include "taichi/ir/ir.h"
-#include <map>
-#include <set>
+#include <unordered_map>
+#include <unordered_set>
 
 TLANG_NAMESPACE_BEGIN
 
@@ -42,8 +42,10 @@ TLANG_NAMESPACE_BEGIN
 class IRNodeComparator : public IRVisitor {
  private:
   IRNode *other_node;
-  std::map<int, int> id_map; // map the id from this node to the other node
-  std::set<int> captured_id; // ids which don't belong to either node
+  // map the id from this node to the other node
+  std::unordered_map<int, int> id_map;
+  // ids which don't belong to either node
+  std::unordered_set<int> captured_id;
 
  public:
   bool same;

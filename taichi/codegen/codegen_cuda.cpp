@@ -49,6 +49,7 @@ void CodeGenCUDA::lower() {
     irpass::typecheck(ir);
     if (print_ir) {
       TI_INFO("Before make_adjoint:");
+      irpass::re_id(ir);
       irpass::print(ir);
     }
     irpass::make_adjoint(ir, true);
@@ -56,6 +57,7 @@ void CodeGenCUDA::lower() {
     if (print_ir) {
       TI_INFO("After make_adjoint:");
       irpass::re_id(ir);
+      irpass::print(ir);
     }
     irpass::typecheck(ir);
   }

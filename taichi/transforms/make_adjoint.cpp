@@ -147,6 +147,7 @@ class MakeAdjoint : public IRVisitor {
     return insert_back(Stmt::make<T>(args...));
   }
 
+  // Accumulate [value] to the adjoint of [primal]
   void accumulate(Stmt *primal, Stmt *value) {
     auto alloca_ = adjoint(primal);
     if (!alloca_ || alloca_->is<ConstStmt>())

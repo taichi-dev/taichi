@@ -1,4 +1,5 @@
 //#define _GLSL_DEBUG 1
+#define _GLSL_NVIDIA 1
 #include "codegen_opengl.h"
 #include <taichi/platform/opengl/opengl_api.h>
 #include <taichi/platform/opengl/opengl_data_types.h>
@@ -222,7 +223,7 @@ class KernelGen : public IRVisitor {
           "#define _ext_ns_f32(x) _extr_f32_[(x) >> 0]\n"
           "#define _ext_ns_f64(x) _extr_f64_[(x) >> 0]\n";
     }
-    if (used.atomic_float) {  // {{{
+    if (used.atomic_float && !_GLSL_NVIDIA) {  // {{{
       kernel_header +=
           "\
 float atomicAdd_mem_f32(int addr, float rhs) \
@@ -304,7 +305,7 @@ double atomicMin_mem_f64(int addr, double rhs) \
 #endif
           "\n";  // discussion:
                  // https://github.com/taichi-dev/taichi/pull/495#issuecomment-590074123
-      if (used.atomic_float && used.global_temp) {
+      if (used.global_temp) {
         kernel_header += "\
 float atomicAdd_gtx_f32(int addr, float rhs) \
 { \
@@ -344,7 +345,7 @@ float atomicMin_gtx_f32(int addr, float rhs) \
 }\n\
 ";
       }
-      if (used.atomic_float && used.external_ptr) {
+      if (used.external_ptr) {
         kernel_header += "\
 float atomicAdd_ext_ns_f32(int addr, float rhs) \
 { \
@@ -437,8 +438,12 @@ int _rand_i32()\n\
       num_groups_ = (num_threads_ + threads_per_group - 1) / threads_per_group;
     emit("layout(local_size_x = {}, local_size_y = 1, local_size_z = 1) in;",
          threads_per_group);
-
-    auto kernel_src_code = "#version 430 core\nprecision highp float;\n" +
+    std::string extensions = "";
+    if (_GLSL_NVIDIA) {
+      extensions += "#extension GL_NV_shader_atomic_float: enable\n";
+    }
+    auto kernel_src_code = "#version 430 core\n" + extensions +
+                           "precision highp float;\n" +
                            line_appender_header_.lines() +
                            line_appender_.lines();
     compiled_program_.kernels.push_back(CompiledKernel(
@@ -674,7 +679,7 @@ int _rand_i32()\n\
   void visit(AtomicOpStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
     if (stmt->val->element_type() == DataType::i32 ||
-        stmt->val->element_type() == DataType::u32) {
+        stmt->val->element_type() == DataType::u32 || _GLSL_NVIDIA) {
       emit("{} {} = {}({}({}), {});",
            opengl_data_type_name(stmt->val->element_type()), stmt->raw_name(),
            opengl_atomic_op_type_cap_name(stmt->op_type), ptr_signats.at(stmt->dest->id),

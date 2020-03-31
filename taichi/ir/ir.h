@@ -516,7 +516,6 @@ class Stmt : public IRNode {
   bool erased;
   std::string tb;
   Stmt *adjoint;
-  llvm::Value *value;
   bool is_ptr;
 
   Stmt(const Stmt &stmt) = delete;
@@ -524,7 +523,6 @@ class Stmt : public IRNode {
   Stmt() {
     adjoint = nullptr;
     parent = nullptr;
-    value = nullptr;
     instance_id = instance_id_counter++;
     id = instance_id;
     operand_bitmap = 0;

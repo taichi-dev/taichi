@@ -1,4 +1,4 @@
-#include <taichi/common/task.h>
+#include "taichi/common/task.h"
 #include "kernel.h"
 #include "program.h"
 #if defined(TI_WITH_CUDA)

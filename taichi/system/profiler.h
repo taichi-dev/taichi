@@ -5,8 +5,8 @@
 
 #pragma once
 
-#include <taichi/common/util.h>
-#include <taichi/system/timer.h>
+#include "taichi/common/util.h"
+#include "taichi/system/timer.h"
 #include "spdlog/fmt/bundled/color.h"
 #include <vector>
 #include <map>

@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <taichi/common/util.h>
+#include "taichi/common/util.h"
 #include "geometry_util.h"
 #include "array.h"
 #include "linalg.h"

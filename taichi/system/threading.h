@@ -8,7 +8,7 @@
 #include <atomic>
 #include <condition_variable>
 #include <functional>
-#include <taichi/common/util.h>
+#include "taichi/common/util.h"
 #include <thread>
 
 TI_NAMESPACE_BEGIN

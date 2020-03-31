@@ -515,14 +515,12 @@ class Stmt : public IRNode {
   uint64 operand_bitmap;
   bool erased;
   std::string tb;
-  llvm::Value *value;
   bool is_ptr;
 
   Stmt(const Stmt &stmt) = delete;
 
   Stmt() {
     parent = nullptr;
-    value = nullptr;
     instance_id = instance_id_counter++;
     id = instance_id;
     operand_bitmap = 0;

@@ -367,6 +367,56 @@ class IRNodeComparator : public IRVisitor {
     }
   }
 
+  void visit(LoopIndexStmt *stmt) override {
+    DEFINE_BASIC_CHECK(LoopIndexStmt)
+    DEFINE_FIELD_CHECK(type_hint())
+    DEFINE_FIELD_CHECK(index)
+    DEFINE_FIELD_CHECK(is_struct_for)
+  }
+
+  void visit(GlobalTemporaryStmt *stmt) override {
+    DEFINE_BASIC_CHECK(GlobalTemporaryStmt)
+    DEFINE_FIELD_CHECK(type_hint())
+    DEFINE_FIELD_CHECK(offset)
+  }
+
+  void visit(InternalFuncStmt *stmt) override {
+    DEFINE_BASIC_CHECK(InternalFuncStmt)
+    DEFINE_FIELD_CHECK(type_hint())
+    DEFINE_FIELD_CHECK(func_name)
+  }
+
+  void visit(StackAllocaStmt *stmt) override {
+    DEFINE_BASIC_CHECK(StackAllocaStmt)
+    DEFINE_FIELD_CHECK(type_hint())
+    DEFINE_FIELD_CHECK(max_size)
+  }
+
+  void visit(StackLoadTopStmt *stmt) override {
+    DEFINE_BASIC_CHECK(StackLoadTopStmt)
+    DEFINE_FIELD_CHECK(type_hint())
+  }
+
+  void visit(StackLoadTopAdjStmt *stmt) override {
+    DEFINE_BASIC_CHECK(StackLoadTopAdjStmt)
+    DEFINE_FIELD_CHECK(type_hint())
+  }
+
+  void visit(StackPushStmt *stmt) override {
+    DEFINE_BASIC_CHECK(StackPushStmt)
+    DEFINE_FIELD_CHECK(type_hint())
+  }
+
+  void visit(StackPopStmt *stmt) override {
+    DEFINE_BASIC_CHECK(StackPopStmt)
+    DEFINE_FIELD_CHECK(type_hint())
+  }
+
+  void visit(StackAccAdjointStmt *stmt) override {
+    DEFINE_BASIC_CHECK(StackAccAdjointStmt)
+    DEFINE_FIELD_CHECK(type_hint())
+  }
+
   static bool run(IRNode *root1, IRNode *root2) {
     IRNodeComparator comparator(root2);
     root1->accept(&comparator);

@@ -110,6 +110,7 @@ class MakeAdjoint : public IRVisitor {
 
  public:
   Block *current_block;
+  std::map<Stmt *, Stmt *> adjoint_stmt;
   int for_depth;
 
   MakeAdjoint() {
@@ -168,7 +169,7 @@ class MakeAdjoint : public IRVisitor {
     if (!needs_grad(stmt->ret_type.data_type)) {
       return constant(0);
     }
-    if (stmt->adjoint == nullptr) {
+    if (adjoint_stmt.find(stmt) == adjoint_stmt.end()) {
       // normal SSA cases
 
       // create the alloca
@@ -176,10 +177,10 @@ class MakeAdjoint : public IRVisitor {
       //    Stmt::make<AllocaStmt>(1, get_current_program().config.gradient_dt);
       // maybe it's better to use the statement data type than the default type
       auto alloca = Stmt::make<AllocaStmt>(1, stmt->ret_type.data_type);
-      stmt->adjoint = alloca.get();
+      adjoint_stmt[stmt] = alloca.get();
       current_block->insert(std::move(alloca), 0);
     }
-    return stmt->adjoint;
+    return adjoint_stmt[stmt];
   }
 
   void visit(AllocaStmt *alloca) override {

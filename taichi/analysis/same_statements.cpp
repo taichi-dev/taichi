@@ -106,7 +106,7 @@ class IRNodeComparator : public IRVisitor {
     DEFINE_BASIC_CHECK(SNodeOpStmt)
     DEFINE_FIELD_CHECK(type_hint())
     DEFINE_FIELD_CHECK(op_type)
-    DEFINE_FIELD_CHECK(snode->id)
+    DEFINE_FIELD_CHECK(snode)
   }
 
   void visit(AllocaStmt *stmt) override {
@@ -213,7 +213,7 @@ class IRNodeComparator : public IRVisitor {
 
   void visit(StructForStmt *stmt) override {
     DEFINE_BASIC_CHECK(StructForStmt)
-    DEFINE_FIELD_CHECK(snode->id)
+    DEFINE_FIELD_CHECK(snode)
     DEFINE_FIELD_CHECK(vectorize)
     other_node = other->body.get();
     stmt->body->accept(this);
@@ -312,15 +312,15 @@ class IRNodeComparator : public IRVisitor {
   void visit(SNodeLookupStmt *stmt) override {
     DEFINE_BASIC_CHECK(SNodeLookupStmt)
     DEFINE_FIELD_CHECK(type_hint())
-    DEFINE_FIELD_CHECK(snode->id)
+    DEFINE_FIELD_CHECK(snode)
     DEFINE_FIELD_CHECK(activate)
   }
 
   void visit(GetChStmt *stmt) override {
     DEFINE_BASIC_CHECK(GetChStmt)
     DEFINE_FIELD_CHECK(type_hint())
-    DEFINE_FIELD_CHECK(input_snode->id)
-    DEFINE_FIELD_CHECK(output_snode->id)
+    DEFINE_FIELD_CHECK(input_snode)
+    DEFINE_FIELD_CHECK(output_snode)
     DEFINE_FIELD_CHECK(chid)
   }
 

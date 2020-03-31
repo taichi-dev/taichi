@@ -150,10 +150,10 @@ def main(debug=False):
             script = script.read()
         exec(script, {'__name__': '__main__'})
     elif mode == "test":
+        ret = test_cpp(args)
         ret = test_python(args)
         if ret:
             return -1
-        ret = test_cpp(args)
         return ret
     elif mode == "build":
         ti.core.build()

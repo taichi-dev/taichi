@@ -1,5 +1,5 @@
 #include "opengl_api.h"
-#include <taichi/program/program.h>
+#include "taichi/program/program.h"
 
 #ifdef TI_WITH_OPENGL
 #include <GL/glew.h>

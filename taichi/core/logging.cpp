@@ -3,10 +3,10 @@
     The use of this software is governed by the LICENSE file.
 *******************************************************************************/
 
-#include <taichi/common/util.h>
-#include <taichi/system/threading.h>
+#include "taichi/common/util.h"
+#include "taichi/system/threading.h"
 #include <csignal>
-#include <taichi/python/export.h>
+#include "taichi/python/export.h"
 #include "spdlog/common.h"
 #include "spdlog/spdlog.h"
 #include "spdlog/sinks/stdout_color_sinks.h"

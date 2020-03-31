@@ -3,9 +3,9 @@
     The use of this software is governed by the LICENSE file.
 *******************************************************************************/
 
-#include <taichi/math/math.h>
-#include <taichi/math/linalg.h>
-#include <taichi/util/base64.h>
+#include "taichi/math/math.h"
+#include "taichi/math/linalg.h"
+#include "taichi/util/base64.h"
 
 #define STBI_FAILURE_USERMSG
 #define STB_IMAGE_IMPLEMENTATION

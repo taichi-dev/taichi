@@ -1,7 +1,7 @@
 // Note: this is not really a test case.
 
-#include <taichi/gui/gui.h>
-#include <taichi/common/task.h>
+#include "taichi/gui/gui.h"
+#include "taichi/common/task.h"
 
 TI_NAMESPACE_BEGIN
 

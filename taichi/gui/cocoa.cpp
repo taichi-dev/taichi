@@ -1,10 +1,10 @@
-#include <taichi/common/bit.h>
-#include <taichi/common/task.h>
-#include <taichi/gui/gui.h>
+#include "taichi/common/bit.h"
+#include "taichi/common/task.h"
+#include "taichi/gui/gui.h"
 
 #if defined(TI_GUI_COCOA)
 
-#include <taichi/platform/mac/objc_api.h>
+#include "taichi/platform/mac/objc_api.h"
 
 #include <algorithm>
 #include <optional>

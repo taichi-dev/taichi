@@ -4,7 +4,7 @@
 *******************************************************************************/
 
 #define CATCH_CONFIG_RUNNER
-#include <taichi/common/testing.h>
+#include "taichi/common/testing.h"
 
 TI_NAMESPACE_BEGIN
 

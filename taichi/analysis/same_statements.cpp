@@ -9,7 +9,7 @@ TLANG_NAMESPACE_BEGIN
     same = false;                     \
     return;                           \
   }                                   \
-  auto other = other_node->as<Type>()  // semicolon intentionally omitted
+  auto other = other_node->as<Type>();
 
 #define DEFINE_OPERAND_CHECK                                           \
   if (stmt->num_operands() != other->num_operands()) {                 \
@@ -17,7 +17,9 @@ TLANG_NAMESPACE_BEGIN
     return;                                                            \
   }                                                                    \
   for (int i = 0; i < stmt->num_operands(); i++) {                     \
-    if (get_other_id(stmt->operand(i)->id) != other->operand(i)->id) { \
+    if (get_other_id(stmt->Stmt::operand(i)->id)                       \
+        != other->Stmt::operand(i)->id) {                              \
+      /*to distinguish from UnaryOpStmt::operand*/                     \
       same = false;                                                    \
       return;                                                          \
     }                                                                  \
@@ -30,6 +32,11 @@ TLANG_NAMESPACE_BEGIN
   }
 
 #define DEFINE_MAP_ID map_id(stmt->id, other->id);
+
+#define DEFINE_BASIC_CHECK(Type) \
+  DEFINE_TYPE_CHECK(Type)        \
+  DEFINE_OPERAND_CHECK           \
+  DEFINE_MAP_ID
 
 // Compare if two IRNodes are equivalent.
 class IRNodeComparator : public IRVisitor {
@@ -74,12 +81,12 @@ class IRNodeComparator : public IRVisitor {
   }
 
   void visit(Block *stmt_list) override {
-    DEFINE_TYPE_CHECK(Block);
-    if (stmt_list->statements.size() != other->statements.size()) {
+    DEFINE_TYPE_CHECK(Block)
+    if (stmt_list->size() != other->size()) {
       same = false;
       return;
     }
-    for (int i = 0; i < (int)stmt_list->statements.size(); i++) {
+    for (int i = 0; i < (int)stmt_list->size(); i++) {
       other_node = other->statements[i].get();
       stmt_list->statements[i]->accept(this);
       if (!same)
@@ -88,44 +95,127 @@ class IRNodeComparator : public IRVisitor {
     other_node = other;
   }
 
-  /*void visit(FrontendBreakStmt *stmt) override {
-    DEFINE_TYPE_CHECK(FrontendBreakStmt);
-  }
-
-  void visit(FrontendAssignStmt *assign) override {
-    DEFINE_TYPE_CHECK(FrontendAssignStmt);
-    if (assign->lhs.serialize() != other->lhs.serialize()
-        || assign->rhs.serialize() != other->rhs.serialize())
-      same = false;
-  }
-
-  void visit(FrontendAllocaStmt *alloca) override {
-    DEFINE_TYPE_CHECK(FrontendAllocaStmt);
-    if (alloca->type_hint() != other->type_hint()) {
-      same = false;
-      return;
-    }
-    if (alloca->ident.name() != other->ident.name()) {
-      same = false;
-      return;
-    }
-    map_id(alloca->id, other->id);
-  }*/
-
   void visit(AssertStmt *stmt) override {
-    DEFINE_TYPE_CHECK(AssertStmt);
-    DEFINE_OPERAND_CHECK
+    DEFINE_BASIC_CHECK(AssertStmt)
     DEFINE_FIELD_CHECK(text)
-    DEFINE_MAP_ID
   }
 
   void visit(SNodeOpStmt *stmt) override {
-    DEFINE_TYPE_CHECK(SNodeOpStmt);
-    DEFINE_OPERAND_CHECK
+    DEFINE_BASIC_CHECK(SNodeOpStmt)
     DEFINE_FIELD_CHECK(type_hint())
     DEFINE_FIELD_CHECK(op_type)
     DEFINE_FIELD_CHECK(snode->id)
-    DEFINE_MAP_ID
+  }
+
+  void visit(AllocaStmt *stmt) override {
+    DEFINE_BASIC_CHECK(AllocaStmt)
+    DEFINE_FIELD_CHECK(type_hint())
+  }
+
+  void visit(RandStmt *stmt) override {
+    DEFINE_BASIC_CHECK(RandStmt)
+    DEFINE_FIELD_CHECK(type_hint())
+  }
+
+  void visit(UnaryOpStmt *stmt) override {
+    DEFINE_BASIC_CHECK(UnaryOpStmt)
+    DEFINE_FIELD_CHECK(type_hint())
+    DEFINE_FIELD_CHECK(op_type)
+  }
+
+  void visit(BinaryOpStmt *stmt) override {
+    DEFINE_BASIC_CHECK(BinaryOpStmt)
+    DEFINE_FIELD_CHECK(type_hint())
+    DEFINE_FIELD_CHECK(op_type)
+  }
+
+  void visit(TernaryOpStmt *stmt) override {
+    DEFINE_BASIC_CHECK(TernaryOpStmt)
+    DEFINE_FIELD_CHECK(type_hint())
+    DEFINE_FIELD_CHECK(op_type)
+  }
+
+  void visit(AtomicOpStmt *stmt) override {
+    DEFINE_BASIC_CHECK(AtomicOpStmt)
+    DEFINE_FIELD_CHECK(type_hint())
+    DEFINE_FIELD_CHECK(op_type)
+  }
+
+  void visit(IfStmt *stmt) override {
+    DEFINE_BASIC_CHECK(IfStmt)
+    if (stmt->true_statements) {
+      if (!other->true_statements) {
+        same = false;
+        return;
+      }
+      other_node = other->true_statements.get();
+      stmt->true_statements->accept(this);
+      other_node = other;
+    }
+    if (stmt->false_statements && same) {
+      if (!other->false_statements) {
+        same = false;
+        return;
+      }
+      other_node = other->false_statements.get();
+      stmt->false_statements->accept(this);
+      other_node = other;
+    }
+  }
+
+  void visit(PrintStmt *stmt) override {
+    DEFINE_BASIC_CHECK(PrintStmt)
+    DEFINE_FIELD_CHECK(type_hint())
+    DEFINE_FIELD_CHECK(str)
+  }
+
+  void visit(ConstStmt *stmt) override {
+    DEFINE_BASIC_CHECK(ConstStmt)
+    DEFINE_FIELD_CHECK(type_hint())
+    DEFINE_FIELD_CHECK(val.serialize(
+        [](const TypedConstant &t) { return t.stringify(); }, "["))
+  }
+
+  void visit(WhileControlStmt *stmt) override {
+    DEFINE_BASIC_CHECK(WhileControlStmt)
+  }
+
+  void visit(FuncCallStmt *stmt) override {
+    DEFINE_BASIC_CHECK(FuncCallStmt)
+    DEFINE_FIELD_CHECK(type_hint())
+    DEFINE_FIELD_CHECK(funcid)
+  }
+
+  void visit(FuncBodyStmt *stmt) override {
+    DEFINE_BASIC_CHECK(FuncBodyStmt)
+    other_node = other->body.get();
+    stmt->body->accept(this);
+    other_node = other;
+  }
+
+  void visit(WhileStmt *stmt) override {
+    DEFINE_BASIC_CHECK(WhileStmt)
+    other_node = other->body.get();
+    stmt->body->accept(this);
+    other_node = other;
+  }
+
+  void visit(RangeForStmt *stmt) override {
+    DEFINE_BASIC_CHECK(RangeForStmt)
+    DEFINE_FIELD_CHECK(reversed)
+    DEFINE_FIELD_CHECK(vectorize)
+    other_node = other->body.get();
+    stmt->body->accept(this);
+    other_node = other;
+  }
+
+  void visit(StructForStmt *stmt) override {
+    DEFINE_BASIC_CHECK(StructForStmt)
+    DEFINE_FIELD_CHECK(snode->id)
+    DEFINE_FIELD_CHECK(vectorize)
+    other_node = other->body.get();
+    stmt->body->accept(this);
+    other_node = other;
   }
 
   static bool run(IRNode *root1, IRNode *root2) {

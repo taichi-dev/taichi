@@ -72,11 +72,6 @@ void SNode::lazy_grad() {
     if (c->type == SNodeType::place && c->is_primal() && needs_grad(c->dt) &&
         !c->has_grad()) {
       new_grads.push_back(c->expr.cast<GlobalVariableExpression>()->adjoint);
-      TI_P(taichi::lang::data_type_name(c->dt));
-      TI_P(taichi::lang::data_type_name(
-          c->expr.cast<GlobalVariableExpression>()
-              ->adjoint.cast<GlobalVariableExpression>()
-              ->dt));
     }
   }
   for (auto p : new_grads) {

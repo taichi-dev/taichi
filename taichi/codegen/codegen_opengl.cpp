@@ -522,9 +522,12 @@ int _rand_i32()\n\
   }
 
   void visit(GetChStmt *stmt) override {
-    emit("{} {} = {}_get{}({});", stmt->output_snode->node_type_name,
+    /*emit("{} {} = {}_get{}({});", stmt->output_snode->node_type_name,
          stmt->raw_name(), stmt->input_snode->node_type_name, stmt->chid,
-         stmt->input_ptr->raw_name());
+         stmt->input_ptr->raw_name());*/
+    emit("{} {} = {} + {};", stmt->output_snode->node_type_name,
+         stmt->raw_name(), stmt->input_ptr->raw_name(),
+         struct_compiled_->class_get_map[stmt->input_snode->node_type_name][stmt->chid]);
     if (stmt->output_snode->is_place())
       map_stmt_ptr_signat(stmt, "_mem_" + data_type_short_name(stmt->output_snode->dt));
   }

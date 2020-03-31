@@ -34,6 +34,7 @@ class OpenglStructCompiler {
   std::string src_code_;
   std::map<std::string, size_t> stride_map_;
   std::map<std::string, size_t> length_map_;
+  std::map<std::string, std::vector<size_t>> class_get_map_;
 };
 
 }  // namespace opengl

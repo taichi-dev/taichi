@@ -160,9 +160,8 @@ class KernelGen : public IRVisitor {
     line_appender_.append(std::move(f), std::move(args)...);
   }
 
-  void generate_header() {  // {{{
-    line_appender_header_.append_raw(struct_compiled_->source_code);
-  }  // }}}
+  void generate_header() {
+  }
 
   void generate_bottom() {
     // TODO(archibate): <kernel_name>() really necessary? How about just main()?
@@ -495,7 +494,7 @@ int _rand_i32()\n\
   void visit(GetRootStmt *stmt) override {
     // Should we assert |root_stmt_| is assigned only once?
     root_stmt_ = stmt;
-    emit("{} {} = 0;", root_snode_type_name_, stmt->raw_name());
+    emit("const int {} = 0;", stmt->raw_name());
   }
 
   void visit(SNodeLookupStmt *stmt) override {
@@ -510,12 +509,9 @@ int _rand_i32()\n\
       parent_type = root_snode_type_name_;
     }
 
-    /*emit("{}_ch {} = {}_children({}, {});", stmt->snode->node_type_name,
-         stmt->raw_name(), parent_type, parent->raw_name(),
-         stmt->input_index->raw_name());*/
-    emit("{}_ch {} = ({} + {} * {});", stmt->snode->node_type_name,
+    emit("const int {} = ({} + {} * {}); // {}",
          stmt->raw_name(), parent->raw_name(), struct_compiled_->class_children_map[parent_type],
-         stmt->input_index->raw_name());
+         stmt->input_index->raw_name(), stmt->snode->node_type_name);
   }
 
   std::map<int, std::string> ptr_signats;
@@ -525,12 +521,9 @@ int _rand_i32()\n\
   }
 
   void visit(GetChStmt *stmt) override {
-    /*emit("{} {} = {}_get{}({});", stmt->output_snode->node_type_name,
-         stmt->raw_name(), stmt->input_snode->node_type_name, stmt->chid,
-         stmt->input_ptr->raw_name());*/
-    emit("{} {} = {} + {};", stmt->output_snode->node_type_name,
-         stmt->raw_name(), stmt->input_ptr->raw_name(),
-         struct_compiled_->class_get_map[stmt->input_snode->node_type_name][stmt->chid]);
+    emit("const int {} = {} + {}; // {}", stmt->raw_name(), stmt->input_ptr->raw_name(),
+         struct_compiled_->class_get_map[stmt->input_snode->node_type_name][stmt->chid],
+         stmt->output_snode->node_type_name);
     if (stmt->output_snode->is_place())
       map_stmt_ptr_signat(stmt, "_mem_" + data_type_short_name(stmt->output_snode->dt));
   }

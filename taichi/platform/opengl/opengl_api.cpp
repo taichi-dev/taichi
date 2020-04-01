@@ -49,9 +49,7 @@ struct GLShader {
     const GLchar *source_cstr = source.c_str();
     glShaderSource(id_, 1, &source_cstr, nullptr);
 
-    TI_INFO("IN:");
     glCompileShader(id_);
-    TI_INFO(":OUT");
     GLint status = GL_TRUE;
     glGetShaderiv(id_, GL_COMPILE_STATUS, &status);
     if (status != GL_TRUE) {

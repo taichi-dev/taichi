@@ -513,9 +513,10 @@ class StmtField {
 
 template <typename T>
 class StmtFieldNumeric final : public StmtField {
- public:
+ private:
   T value;
 
+ public:
   explicit StmtFieldNumeric(T value) : value(value) {
   }
 
@@ -530,26 +531,27 @@ class StmtFieldNumeric final : public StmtField {
 };
 
 class StmtFieldManager {
- public:
+ private:
   Stmt *stmt;
-  std::vector<std::unique_ptr<StmtField>> fields;
 
  public:
+  std::vector<std::unique_ptr<StmtField>> fields;
+
   StmtFieldManager(Stmt *stmt) : stmt(stmt) {
   }
 
   template <typename T>
-  void operator()(const char *key, T &value);
+  void operator()(const char *key, T &&value);
 
   template <typename T, typename... Args>
-  void operator()(const char *key_, T &t, Args &... rest) {
+  void operator()(const char *key_, T &&t, Args &&... rest) {
     std::string key(key_);
     size_t pos = key.find(",");
     std::string first_name = key.substr(0, pos);
     std::string rest_names =
         key.substr(pos + 2, int(key.size()) - (int)pos - 2);
-    this->operator()(first_name.c_str(), t);
-    this->operator()(rest_names.c_str(), rest...);
+    this->operator()(first_name.c_str(), std::forward<T>(t));
+    this->operator()(rest_names.c_str(), std::forward<Args>(rest)...);
   }
 
   bool equal(StmtFieldManager &other) const {
@@ -749,7 +751,7 @@ class Stmt : public IRNode {
 };
 
 template <typename T>
-inline void StmtFieldManager::operator()(const char *key, T &value) {
+inline void StmtFieldManager::operator()(const char *key, T &&value) {
   if constexpr (std::is_same<typename std::decay<T>::type, Stmt *>::value) {
     stmt->add_operand(const_cast<Stmt *&>(value));
   } else {

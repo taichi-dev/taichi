@@ -30,7 +30,8 @@ TI_TEST("test_stmt_field_manager") {
   auto c = Stmt::make<TestStmt>(nullptr, 2, 2.1f);
 
   TI_CHECK(a->field_manager.equal(c->field_manager) == false);
-  // To test two statements are equal: 1) same Stmt type 2) same operands 3) same field_manager
+  // To test two statements are equal: 1) same Stmt type 2) same operands 3)
+  // same field_manager
 }
 
 TLANG_NAMESPACE_END

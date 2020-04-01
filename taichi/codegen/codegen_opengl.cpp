@@ -12,6 +12,14 @@ TLANG_NAMESPACE_BEGIN
 namespace opengl {
 namespace {
 
+int opengl_get_address_shifter(DataType type) {
+  switch (type) {
+    case DataType::f32: case DataType::i32: return 1;
+    case DataType::f64: case DataType::i64: return 0;
+    default: TI_NOT_IMPLEMENTED
+  }
+}
+
 std::string opengl_atomic_op_type_cap_name(AtomicOpType type) {
   static std::map<AtomicOpType, std::string> type_names;
   if (type_names.empty()) {
@@ -738,19 +746,21 @@ int _rand_i32()\n\
     const auto dt = opengl_data_type_name(stmt->element_type());
     used.argument = true;
     if (stmt->is_ptr) {
-      emit("const int {} = _arg_i32({}); // is ext pointer {}",
+      emit("const int {} = _args_i32_[{} << 1]; // is ext pointer {}",
            stmt->raw_name(), stmt->arg_id, dt);
     } else {
-      emit("const {} {} = _arg_{}({});", dt, stmt->raw_name(),
-           data_type_short_name(stmt->element_type()), stmt->arg_id);
+      emit("const {} {} = _args_{}_[{} << {}];", dt, stmt->raw_name(),
+           data_type_short_name(stmt->element_type()), stmt->arg_id,
+           opengl_get_address_shifter(stmt->element_type()));
     }
   }
 
   void visit(ArgStoreStmt *stmt) override {
     TI_ASSERT(!stmt->is_ptr);
     used.argument = true;
-    emit("_arg_{}({}) = {};", data_type_short_name(stmt->element_type()),
-         stmt->arg_id, stmt->val->raw_name());
+    emit("_args_{}_[{} << {}] = {};", data_type_short_name(stmt->element_type()),
+         stmt->arg_id, opengl_get_address_shifter(stmt->element_type()),
+         stmt->val->raw_name());
   }
 
   std::string make_kernel_name() {

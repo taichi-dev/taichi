@@ -126,7 +126,7 @@ class KernelGen : public IRVisitor {
  public:
   KernelGen(Kernel *kernel,
             std::string kernel_name,
-            const StructCompiledResult *struct_compiled,
+            StructCompiledResult *struct_compiled,
             size_t gtmp_size)
       : kernel(kernel),
         compiled_program_(kernel, gtmp_size),
@@ -144,7 +144,7 @@ class KernelGen : public IRVisitor {
 
   bool is_top_level_{true};
 
-  const StructCompiledResult *struct_compiled_;
+  StructCompiledResult *struct_compiled_;
   const SNode *root_snode_;
   GetRootStmt *root_stmt_;
   std::string kernel_name_;

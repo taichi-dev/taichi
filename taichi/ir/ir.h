@@ -506,7 +506,7 @@ class StmtField {
  public:
   StmtField() = default;
 
-  virtual bool equal(const StmtField *other) = 0;
+  virtual bool equal(const StmtField *other) const = 0;
 
   virtual ~StmtField() = default;
 };
@@ -519,7 +519,7 @@ class StmtFieldNumeric final : public StmtField {
   explicit StmtFieldNumeric(T value) : value(value) {
   }
 
-  bool equal(const StmtField *other_generic) override {
+  bool equal(const StmtField *other_generic) const override {
     if (auto other = dynamic_cast<const StmtFieldNumeric *>(other_generic)) {
       return other->value == value;
     } else {
@@ -530,7 +530,7 @@ class StmtFieldNumeric final : public StmtField {
 };
 
 class StmtFieldManager {
- private:
+ public:
   Stmt *stmt;
   std::vector<std::unique_ptr<StmtField>> fields;
 
@@ -538,29 +538,27 @@ class StmtFieldManager {
   StmtFieldManager(Stmt *stmt) : stmt(stmt) {
   }
 
-  void operator()(const char *_, Stmt *&value);
-
   template <typename T>
-  void operator()(const char *key, T value);
+  void operator()(const char *key, T &value);
 
   template <typename T, typename... Args>
-  void operator()(const char *key_, T &t, Args &&... rest) {
+  void operator()(const char *key_, T &t, Args &... rest) {
     std::string key(key_);
     size_t pos = key.find(",");
     std::string first_name = key.substr(0, pos);
     std::string rest_names =
         key.substr(pos + 2, int(key.size()) - (int)pos - 2);
     this->operator()(first_name.c_str(), t);
-    this->operator()(rest_names.c_str(), std::forward<Args>(rest)...);
+    this->operator()(rest_names.c_str(), rest...);
   }
 
-  bool equal(StmtFieldManager *other) {
-    if (fields.size() != other->fields.size()) {
+  bool equal(StmtFieldManager &other) const {
+    if (fields.size() != other.fields.size()) {
       return false;
     }
     auto num_fields = fields.size();
     for (std::size_t i = 0; i < num_fields; i++) {
-      if (!fields[i]->equal(other->fields[i].get())) {
+      if (!fields[i]->equal(other.fields[i].get())) {
         return false;
       }
     }
@@ -750,14 +748,14 @@ class Stmt : public IRNode {
   virtual ~Stmt() override = default;
 };
 
-inline void StmtFieldManager::operator()(const char *_, Stmt *&value) {
-  stmt->add_operand(value);
-}
-
 template <typename T>
-inline void StmtFieldManager::operator()(const char *key, T value) {
-  stmt->field_manager.fields.emplace_back(
-      std::make_unique<StmtFieldNumeric<T>>(value));
+inline void StmtFieldManager::operator()(const char *key, T &value) {
+  if constexpr (std::is_same<typename std::decay<T>::type, Stmt *>::value) {
+    stmt->add_operand(const_cast<Stmt *&>(value));
+  } else {
+    stmt->field_manager.fields.emplace_back(
+        std::make_unique<StmtFieldNumeric<T>>(value));
+  }
 }
 
 // always a tree - used as rvalues

@@ -757,7 +757,7 @@ inline void StmtFieldManager::operator()(const char *key, T &&value) {
     stmt->add_operand(const_cast<Stmt *&>(value));
   } else if constexpr (std::is_same<typename std::decay<T>::type,
       std::vector<Stmt *> >::value) {
-    auto operand_stmts = const_cast<std::vector<Stmt *> &>(value);
+    auto &operand_stmts = const_cast<std::vector<Stmt *> &>(value);
     std::cout << "qqqqqqqq" << operand_stmts.size() << std::endl;
     for (auto &operand_stmt : operand_stmts) {
       std::cout << "q: " << operand_stmt->id << std::endl;

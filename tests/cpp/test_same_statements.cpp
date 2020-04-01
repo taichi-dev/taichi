@@ -3,7 +3,7 @@
 
 TLANG_NAMESPACE_BEGIN
 
-TI_TEST("same_statements") {
+TI_TEST("test_same_block") {
   auto block = std::make_unique<Block>();
 
   auto global_load_addr =
@@ -43,6 +43,42 @@ TI_TEST("same_statements") {
       if_stmt->true_statements.get(), if_stmt->false_statements.get()));
 
   TI_CHECK(!irpass::same_statements(true_store, false_store));
+}
+
+TI_TEST("test_same_assert") {
+  auto block = std::make_unique<Block>();
+  auto zero = block->push_back<ConstStmt>(TypedConstant(0));
+  auto one = block->push_back<ConstStmt>(TypedConstant(1));
+  auto assert_zero_a =
+      block->push_back<AssertStmt>(zero, "a", std::vector<Stmt *>());
+  auto assert_zero_a2 =
+      block->push_back<AssertStmt>(zero, "a", std::vector<Stmt *>());
+  auto assert_zero_b =
+      block->push_back<AssertStmt>(zero, "b", std::vector<Stmt *>());
+  auto assert_one_a =
+      block->push_back<AssertStmt>(one, "a", std::vector<Stmt *>());
+  auto assert_zero_a_one =
+      block->push_back<AssertStmt>(zero, "a", std::vector<Stmt *>(1, one));
+  auto assert_zero_a_one2 =
+      block->push_back<AssertStmt>(zero, "a", std::vector<Stmt *>(1, one));
+  auto assert_zero_a_zero =
+      block->push_back<AssertStmt>(zero, "a", std::vector<Stmt *>(1, zero));
+  auto assert_one_a_zero =
+      block->push_back<AssertStmt>(one, "a", std::vector<Stmt *>(1, zero));
+
+  irpass::typecheck(block.get());
+  irpass::print(block.get());
+  TI_CHECK(block->size() == 10);
+  TI_CHECK(irpass::same_statements(assert_zero_a, assert_zero_a2));
+  TI_CHECK(!irpass::same_statements(assert_zero_a, assert_zero_b));
+  TI_CHECK(!irpass::same_statements(assert_zero_a, assert_one_a));
+  TI_CHECK(!irpass::same_statements(assert_zero_a, assert_zero_a_one));
+  std::cout << "a" << std::endl;
+  TI_CHECK(irpass::same_statements(assert_zero_a_one, assert_zero_a_one2));
+//  std::cout << "b" << std::endl;
+  TI_CHECK(!irpass::same_statements(assert_zero_a_one, assert_zero_a_zero));
+//  std::cout << "c" << std::endl;
+  TI_CHECK(!irpass::same_statements(assert_zero_a_one, assert_one_a_zero));
 }
 
 TLANG_NAMESPACE_END

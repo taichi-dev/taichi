@@ -563,7 +563,7 @@ class StmtFieldManager {
   template <typename T, typename... Args>
   void operator()(const char *key_, T &&t, Args &&... rest) {
     std::string key(key_);
-    size_t pos = key.find(",");
+    size_t pos = key.find(',');
     std::string first_name = key.substr(0, pos);
     std::string rest_names =
         key.substr(pos + 2, int(key.size()) - (int)pos - 2);
@@ -755,6 +755,16 @@ template <typename T>
 inline void StmtFieldManager::operator()(const char *key, T &&value) {
   if constexpr (std::is_same<typename std::decay<T>::type, Stmt *>::value) {
     stmt->add_operand(const_cast<Stmt *&>(value));
+  } else if constexpr (std::is_same<typename std::decay<T>::type,
+      std::vector<Stmt *> >::value) {
+    auto operand_stmts = const_cast<std::vector<Stmt *> &>(value);
+    std::cout << "qqqqqqqq" << operand_stmts.size() << std::endl;
+    for (auto &operand_stmt : operand_stmts) {
+      std::cout << "q: " << operand_stmt->id << std::endl;
+      stmt->add_operand(operand_stmt);
+    }
+    stmt->field_manager.fields.emplace_back(
+        std::make_unique<StmtFieldNumeric<std::size_t>>(operand_stmts.size()));
   } else {
     stmt->field_manager.fields.emplace_back(
         std::make_unique<StmtFieldNumeric<T>>(value));
@@ -1568,7 +1578,7 @@ class AssertStmt : public Stmt {
   std::vector<Stmt *> args;
 
   AssertStmt(const std::string &text, Stmt *cond) : cond(cond), text(text) {
-    add_operand(this->cond);
+    TI_STMT_REG_FIELDS;
     TI_ASSERT(cond);
   }
 
@@ -1576,12 +1586,11 @@ class AssertStmt : public Stmt {
              const std::string &text,
              const std::vector<Stmt *> &args)
       : cond(cond), text(text), args(args) {
-    add_operand(this->cond);
-    for (auto &arg : this->args) {
-      add_operand(arg);
-    }
+    TI_STMT_REG_FIELDS;
     TI_ASSERT(cond);
   }
+
+  TI_STMT_DEF_FIELDS(cond, text, args);
 
   DEFINE_ACCEPT
 };

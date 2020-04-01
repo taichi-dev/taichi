@@ -75,7 +75,7 @@ TI_TEST("test_same_assert") {
   TI_CHECK(!irpass::same_statements(assert_zero_a, assert_zero_a_one));
   std::cout << "a" << std::endl;
   TI_CHECK(irpass::same_statements(assert_zero_a_one, assert_zero_a_one2));
-//  std::cout << "b" << std::endl;
+  std::cout << "b" << std::endl;
   TI_CHECK(!irpass::same_statements(assert_zero_a_one, assert_zero_a_zero));
 //  std::cout << "c" << std::endl;
   TI_CHECK(!irpass::same_statements(assert_zero_a_one, assert_one_a_zero));

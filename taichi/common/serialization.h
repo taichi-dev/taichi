@@ -450,7 +450,7 @@ class BinarySerializer : public Serializer {
                        "the raw pointer.");
       }
     } else {
-      std::size_t val_ptr;
+      std::size_t val_ptr = 0;
       this->operator()("", val_ptr);
       if (val_ptr != 0) {
         TI_ASSERT(assets.find(val_ptr) != assets.end());

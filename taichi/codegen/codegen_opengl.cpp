@@ -198,36 +198,36 @@ float atomicAdd_data_f32(int addr, float rhs) \
 { \
   int old, new, ret; \
   do { \
-    old = _data_f32_[addr]; \
+    old = _data_i32_[addr]; \
     new = floatBitsToInt((intBitsToFloat(old) + rhs)); \
-  } while (old != atomicCompSwap(_data_f32_[addr], old, new)); \
+  } while (old != atomicCompSwap(_data_i32_[addr], old, new)); \
   return intBitsToFloat(old); \
 }\n\
 float atomicSub_data_f32(int addr, float rhs) \
 { \
   int old, new, ret; \
   do { \
-    old = _data_f32_[addr]; \
+    old = _data_i32_[addr]; \
     new = floatBitsToInt((intBitsToFloat(old) - rhs)); \
-  } while (old != atomicCompSwap(_data_f32_[addr], old, new)); \
+  } while (old != atomicCompSwap(_data_i32_[addr], old, new)); \
   return intBitsToFloat(old); \
 }\n\
 float atomicMax_data_f32(int addr, float rhs) \
 { \
   int old, new, ret; \
   do { \
-    old = _data_f32_[addr]; \
+    old = _data_i32_[addr]; \
     new = floatBitsToInt(max(intBitsToFloat(old), rhs)); \
-  } while (old != atomicCompSwap(_data_f32_[addr], old, new)); \
+  } while (old != atomicCompSwap(_data_i32_[addr], old, new)); \
   return intBitsToFloat(old); \
 }\n\
 float atomicMin_data_f32(int addr, float rhs) \
 { \
   int old, new, ret; \
   do { \
-    old = _data_f32_[addr]; \
+    old = _data_i32_[addr]; \
     new = floatBitsToInt(min(intBitsToFloat(old), rhs)); \
-  } while (old != atomicCompSwap(_data_f32_[addr], old, new)); \
+  } while (old != atomicCompSwap(_data_i32_[addr], old, new)); \
   return intBitsToFloat(old); \
 }\n\
 "
@@ -657,10 +657,11 @@ int _rand_i32()\n\
     } else {
       TI_ASSERT(dt == DataType::f32 || dt == DataType::f64);
       used.atomic_float = true;
-      emit("{} {} = {}{}({}, {});",
+      emit("{} {} = {}_{}_{}({} >> {}, {});",
            opengl_data_type_name(stmt->val->element_type()), stmt->short_name(),
            opengl_atomic_op_type_cap_name(stmt->op_type), ptr_signats.at(stmt->dest->id),
-           stmt->dest->short_name(), stmt->val->short_name());
+           data_type_short_name(dt), stmt->dest->short_name(), opengl_data_address_shifter(dt),
+           stmt->val->short_name());
     }
   }
 

@@ -12,6 +12,7 @@
 #include "taichi/ir/expr.h"
 #include "taichi/program/compile_config.h"
 #include "taichi/llvm/llvm_fwd.h"
+#include "taichi/util/short_name.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -567,6 +568,10 @@ class Stmt : public IRNode {
 
   std::string name() const {
     return fmt::format("${}", id);
+  }
+
+  std::string short_name() const {
+    return make_short_name_by_id(id);
   }
 
   std::string raw_name() const {

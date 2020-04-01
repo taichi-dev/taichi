@@ -465,8 +465,8 @@ int _rand_i32()\n\
 
   void visit(RandStmt *stmt) override {
     used.random = true;
-    emit("const {} {} = _rand_{}();",
-         opengl_data_type_name(stmt->ret_type.data_type), stmt->raw_name(),
+    emit("{} {} = _rand_{}();",
+         opengl_data_type_name(stmt->ret_type.data_type), stmt->short_name(),
          data_type_short_name(stmt->ret_type.data_type));
   }
 
@@ -474,21 +474,21 @@ int _rand_i32()\n\
     std::string val = "0";
     for (int i = 0; i < (int)stmt->inputs.size(); i++) {
       val = fmt::format("({} * {} + {})", val, stmt->strides[i],
-                        stmt->inputs[i]->raw_name());
+                        stmt->inputs[i]->short_name());
     }
-    emit("const int {} = {};", stmt->raw_name(), val);
+    emit("int {} = {};", stmt->short_name(), val);
   }
 
   void visit(OffsetAndExtractBitsStmt *stmt) override {
-    emit("const int {} = ((({} + {}) >> {}) & ((1 << {}) - 1));",
-         stmt->raw_name(), stmt->offset, stmt->input->raw_name(),
+    emit("int {} = ((({} + {}) >> {}) & ((1 << {}) - 1));",
+         stmt->short_name(), stmt->offset, stmt->input->short_name(),
          stmt->bit_begin, stmt->bit_end - stmt->bit_begin);
   }
 
   void visit(GetRootStmt *stmt) override {
     // Should we assert |root_stmt_| is assigned only once?
     root_stmt_ = stmt;
-    emit("const int {} = 0;", stmt->raw_name());
+    emit("int {} = 0;", stmt->short_name());
   }
 
   void visit(SNodeLookupStmt *stmt) override {
@@ -503,15 +503,15 @@ int _rand_i32()\n\
       parent_type = root_snode_type_name_;
     }
 
-    emit("const int {} = ({} + {} * {}); // {}",
-         stmt->raw_name(), parent->raw_name(), struct_compiled_->class_children_map[parent_type],
-         stmt->input_index->raw_name(), stmt->snode->node_type_name);
+    emit("int {} = ({} + {} * {}); // {}",
+         stmt->short_name(), parent->short_name(), struct_compiled_->class_children_map[parent_type],
+         stmt->input_index->short_name(), stmt->snode->node_type_name);
   }
 
   std::map<int, std::string> ptr_signats;
 
   void visit(GetChStmt *stmt) override {
-    emit("const int {} = {} + {}; // {}", stmt->raw_name(), stmt->input_ptr->raw_name(),
+    emit("int {} = {} + {}; // {}", stmt->short_name(), stmt->input_ptr->short_name(),
          struct_compiled_->class_get_map[stmt->input_snode->node_type_name][stmt->chid],
          stmt->output_snode->node_type_name);
     if (stmt->output_snode->is_place())
@@ -522,22 +522,22 @@ int _rand_i32()\n\
     TI_ASSERT(stmt->width() == 1);
     auto dt = stmt->data->element_type();
     emit("_{}_{}_[{} >> {}] = {};", ptr_signats.at(stmt->ptr->id), // throw out_of_range if not a pointer
-        data_type_short_name(dt), stmt->ptr->raw_name(), opengl_data_address_shifter(dt),
-        stmt->data->raw_name());
+        data_type_short_name(dt), stmt->ptr->short_name(), opengl_data_address_shifter(dt),
+        stmt->data->short_name());
   }
 
   void visit(GlobalLoadStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
     auto dt = stmt->element_type();
-    emit("const {} {} = _{}_{}_[{} >> {}];", opengl_data_type_name(stmt->element_type()),
-         stmt->raw_name(), ptr_signats.at(stmt->ptr->id), data_type_short_name(dt),
-         stmt->ptr->raw_name(), opengl_data_address_shifter(dt));
+    emit("{} {} = _{}_{}_[{} >> {}];", opengl_data_type_name(stmt->element_type()),
+         stmt->short_name(), ptr_signats.at(stmt->ptr->id), data_type_short_name(dt),
+         stmt->ptr->short_name(), opengl_data_address_shifter(dt));
   }
 
   void visit(ExternalPtrStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
     const auto linear_index_name =
-        fmt::format("{}_linear_index_", stmt->raw_name());
+        fmt::format("_li_{}", stmt->short_name());
     emit("int {} = 0;", linear_index_name);
     emit("{{ // linear seek");
     {
@@ -548,20 +548,20 @@ int _rand_i32()\n\
       std::vector<std::string> size_var_names;
       for (int i = 0; i < num_indices; i++) {
         used.extra_arg = true;
-        std::string var_name = fmt::format("{}_size{}_", stmt->raw_name(), i);
-        emit("const int {} = _earg_i32_[{} * {} + {}];", var_name,
+        std::string var_name = fmt::format("_s{}_{}", i, stmt->short_name());
+        emit("int {} = _earg_i32_[{} * {} + {}];", var_name,
             arg_id, taichi_max_num_indices, i);
         size_var_names.push_back(std::move(var_name));
       }
       for (int i = 0; i < num_indices; i++) {
         emit("{} *= {};", linear_index_name, size_var_names[i]);
-        emit("{} += {};", linear_index_name, stmt->indices[i]->raw_name());
+        emit("{} += {};", linear_index_name, stmt->indices[i]->short_name());
       }
     }
     emit("}}");
 
-    emit("const int {} = (({} + {}) << {});", stmt->raw_name(),
-         stmt->base_ptrs[0]->raw_name(), linear_index_name,
+    emit("int {} = (({} + {}) << {});", stmt->short_name(),
+         stmt->base_ptrs[0]->short_name(), linear_index_name,
          opengl_data_address_shifter(stmt->base_ptrs[0]->element_type()));
     used.external_ptr = true;
     ptr_signats[stmt->id] = "extr";
@@ -569,51 +569,51 @@ int _rand_i32()\n\
 
   void visit(UnaryOpStmt *stmt) override {
     if (stmt->op_type == UnaryOpType::logic_not) {
-      emit("const {} {} = {}({} == 0);",
-           opengl_data_type_name(stmt->element_type()), stmt->raw_name(),
+      emit("{} {} = {}({} == 0);",
+           opengl_data_type_name(stmt->element_type()), stmt->short_name(),
            opengl_data_type_name(stmt->element_type()),
-           stmt->operand->raw_name());
+           stmt->operand->short_name());
     } else if (stmt->op_type == UnaryOpType::neg) {
-      emit("const {} {} = {}(-{});",
-           opengl_data_type_name(stmt->element_type()), stmt->raw_name(),
+      emit("{} {} = {}(-{});",
+           opengl_data_type_name(stmt->element_type()), stmt->short_name(),
            opengl_data_type_name(stmt->element_type()),
-           stmt->operand->raw_name());
+           stmt->operand->short_name());
     } else if (stmt->op_type == UnaryOpType::rsqrt) {
-      emit("const {} {} = {}(1 / sqrt({}));",
-           opengl_data_type_name(stmt->element_type()), stmt->raw_name(),
+      emit("{} {} = {}(1 / sqrt({}));",
+           opengl_data_type_name(stmt->element_type()), stmt->short_name(),
            opengl_data_type_name(stmt->element_type()),
-           stmt->operand->raw_name());
+           stmt->operand->short_name());
     } else if (stmt->op_type == UnaryOpType::sgn) {
-      emit("const {} {} = {}(sign({}));",
-           opengl_data_type_name(stmt->element_type()), stmt->raw_name(),
+      emit("{} {} = {}(sign({}));",
+           opengl_data_type_name(stmt->element_type()), stmt->short_name(),
            opengl_data_type_name(stmt->element_type()),
-           stmt->operand->raw_name());
+           stmt->operand->short_name());
     } else if (stmt->op_type == UnaryOpType::bit_not) {
-      emit("const {} {} = {}(~{});",
-           opengl_data_type_name(stmt->element_type()), stmt->raw_name(),
+      emit("{} {} = {}(~{});",
+           opengl_data_type_name(stmt->element_type()), stmt->short_name(),
            opengl_data_type_name(stmt->element_type()),
-           stmt->operand->raw_name());
+           stmt->operand->short_name());
     } else if (stmt->op_type != UnaryOpType::cast) {
-      emit("const {} {} = {}({}({}));",
-           opengl_data_type_name(stmt->element_type()), stmt->raw_name(),
+      emit("{} {} = {}({}({}));",
+           opengl_data_type_name(stmt->element_type()), stmt->short_name(),
            opengl_data_type_name(stmt->element_type()),
-           unary_op_type_name(stmt->op_type), stmt->operand->raw_name());
+           unary_op_type_name(stmt->op_type), stmt->operand->short_name());
     } else {
       // cast
       if (stmt->cast_by_value) {
-        emit("const {} {} = {}({});",
-             opengl_data_type_name(stmt->element_type()), stmt->raw_name(),
-             opengl_data_type_name(stmt->cast_type), stmt->operand->raw_name());
+        emit("{} {} = {}({});",
+             opengl_data_type_name(stmt->element_type()), stmt->short_name(),
+             opengl_data_type_name(stmt->cast_type), stmt->operand->short_name());
       } else if (stmt->cast_type == DataType::f32 &&
                  stmt->operand->element_type() == DataType::i32) {
         emit("{} {} = intBitsToFloat({});",
-             opengl_data_type_name(stmt->element_type()), stmt->raw_name(),
-             stmt->operand->raw_name());
+             opengl_data_type_name(stmt->element_type()), stmt->short_name(),
+             stmt->operand->short_name());
       } else if (stmt->cast_type == DataType::i32 &&
                  stmt->operand->element_type() == DataType::f32) {
         emit("{} {} = floatBitsToInt({});",
-             opengl_data_type_name(stmt->element_type()), stmt->raw_name(),
-             stmt->operand->raw_name());
+             opengl_data_type_name(stmt->element_type()), stmt->short_name(),
+             stmt->operand->short_name());
       } else {
         TI_ERROR("unsupported reinterpret cast");
       }
@@ -622,14 +622,14 @@ int _rand_i32()\n\
 
   void visit(BinaryOpStmt *bin) override {
     const auto dt_name = opengl_data_type_name(bin->element_type());
-    const auto lhs_name = bin->lhs->raw_name();
-    const auto rhs_name = bin->rhs->raw_name();
-    const auto bin_name = bin->raw_name();
+    const auto lhs_name = bin->lhs->short_name();
+    const auto rhs_name = bin->rhs->short_name();
+    const auto bin_name = bin->short_name();
     if (bin->op_type == BinaryOpType::floordiv) {
       if (is_integral(bin->lhs->element_type()) &&
           is_integral(bin->rhs->element_type())) {
         emit(
-            "const {} {} = {}({} * {} >= 0 ? abs({}) / abs({}) : sign({}) * "
+            "{} {} = {}({} * {} >= 0 ? abs({}) / abs({}) : sign({}) * "
             "(abs({}) + abs({}) - 1) / {});",
             dt_name, bin_name, dt_name, lhs_name, rhs_name, lhs_name, rhs_name,
             lhs_name, lhs_name, rhs_name, rhs_name);
@@ -638,33 +638,33 @@ int _rand_i32()\n\
       // NOTE: the 1e-6 here is for precision reason, or `7 // 7` will obtain 0
       // instead of 1
       emit(
-          "const {} {} = {}(floor((float({}) * (1 + sign({} * {}) * 1e-6)) / "
+          "{} {} = {}(floor((float({}) * (1 + sign({} * {}) * 1e-6)) / "
           "float({})));",
           dt_name, bin_name, dt_name, lhs_name, lhs_name, rhs_name, rhs_name);
       return;
     } else if (bin->op_type == BinaryOpType::mod) {
       // NOTE: the GLSL built-in function `mod()` is a pythonic mod: x - y *
       // floor(x / y)
-      emit("const {} {} = {} - {} * int({} / {});", dt_name, bin_name, lhs_name,
+      emit("{} {} = {} - {} * int({} / {});", dt_name, bin_name, lhs_name,
            rhs_name, lhs_name, rhs_name);
       return;
     } else if (bin->op_type == BinaryOpType::atan2) {
       if (bin->element_type() == DataType::f64) { // don't know why no atan(double, double)
-        emit("const {} {} = {}(atan(float({}), float({})));", dt_name, bin_name,
+        emit("{} {} = {}(atan(float({}), float({})));", dt_name, bin_name,
             dt_name, lhs_name, rhs_name);
       } else {
-        emit("const {} {} = atan({}, {});", dt_name, bin_name, lhs_name,
+        emit("{} {} = atan({}, {});", dt_name, bin_name, lhs_name,
              rhs_name);
       }
       return;
     }
     const auto binop = binary_op_type_symbol(bin->op_type);
     if (is_opengl_binary_op_infix(bin->op_type)) {
-      emit("const {} {} = {}({} {} {});", dt_name, bin_name, dt_name, lhs_name,
+      emit("{} {} = {}({} {} {});", dt_name, bin_name, dt_name, lhs_name,
            binop, rhs_name);
     } else {
       // This is a function call
-      emit("const {} {} = {}({}({}, {}));", dt_name, bin_name, dt_name, binop,
+      emit("{} {} = {}({}({}, {}));", dt_name, bin_name, dt_name, binop,
            lhs_name, rhs_name);
     }
   }
@@ -674,25 +674,25 @@ int _rand_i32()\n\
     auto dt = stmt->dest->element_type();
     if (dt == DataType::i32 || _GLSL_NVIDIA) {
       emit("{} {} = {}(_{}_{}_[{} >> {}], {});",
-           opengl_data_type_name(stmt->val->element_type()), stmt->raw_name(),
+           opengl_data_type_name(stmt->val->element_type()), stmt->short_name(),
            opengl_atomic_op_type_cap_name(stmt->op_type), ptr_signats.at(stmt->dest->id),
-           data_type_short_name(dt), stmt->dest->raw_name(),
-           opengl_data_address_shifter(dt), stmt->val->raw_name());
+           data_type_short_name(dt), stmt->dest->short_name(),
+           opengl_data_address_shifter(dt), stmt->val->short_name());
     } else {
       TI_ASSERT(dt == DataType::f32 || dt == DataType::f64);
       used.atomic_float = true;
       emit("{} {} = {}{}({}, {});",
-           opengl_data_type_name(stmt->val->element_type()), stmt->raw_name(),
+           opengl_data_type_name(stmt->val->element_type()), stmt->short_name(),
            opengl_atomic_op_type_cap_name(stmt->op_type), ptr_signats.at(stmt->dest->id),
-           stmt->dest->raw_name(), stmt->val->raw_name());
+           stmt->dest->short_name(), stmt->val->short_name());
     }
   }
 
   void visit(TernaryOpStmt *tri) override {
     TI_ASSERT(tri->op_type == TernaryOpType::select);
-    emit("const {} {} = ({}) != 0 ? ({}) : ({});",
-         opengl_data_type_name(tri->element_type()), tri->raw_name(),
-         tri->op1->raw_name(), tri->op2->raw_name(), tri->op3->raw_name());
+    emit("{} {} = ({}) != 0 ? ({}) : ({});",
+         opengl_data_type_name(tri->element_type()), tri->short_name(),
+         tri->op1->short_name(), tri->op2->short_name(), tri->op3->short_name());
   }
 
   void visit(LocalLoadStmt *stmt) override {
@@ -705,36 +705,36 @@ int _rand_i32()\n\
     if (stmt->same_source() && linear_index &&
         stmt->width() == stmt->ptr[0].var->width()) {
       auto ptr = stmt->ptr[0].var;
-      emit("const {} {} = {};", opengl_data_type_name(stmt->element_type()),
-           stmt->raw_name(), ptr->raw_name());
+      emit("{} {} = {};", opengl_data_type_name(stmt->element_type()),
+           stmt->short_name(), ptr->short_name());
     } else {
       TI_NOT_IMPLEMENTED;
     }
   }
 
   void visit(LocalStoreStmt *stmt) override {
-    emit("{} = {};", stmt->ptr->raw_name(), stmt->data->raw_name());
+    emit("{} = {};", stmt->ptr->short_name(), stmt->data->short_name());
   }
 
   void visit(AllocaStmt *alloca) override {
     emit("{} {} = 0;", opengl_data_type_name(alloca->element_type()),
-         alloca->raw_name());
+         alloca->short_name());
   }
 
   void visit(ConstStmt *const_stmt) override {
     TI_ASSERT(const_stmt->width() == 1);
-    emit("const {} {} = {};", opengl_data_type_name(const_stmt->element_type()),
-         const_stmt->raw_name(), const_stmt->val[0].stringify());
+    emit("{} {} = {};", opengl_data_type_name(const_stmt->element_type()),
+         const_stmt->short_name(), const_stmt->val[0].stringify());
   }
 
   void visit(ArgLoadStmt *stmt) override {
     const auto dt = opengl_data_type_name(stmt->element_type());
     used.argument = true;
     if (stmt->is_ptr) {
-      emit("const int {} = _args_i32_[{} << 1]; // is ext pointer {}",
-           stmt->raw_name(), stmt->arg_id, dt);
+      emit("int {} = _args_i32_[{} << 1]; // is ext pointer {}",
+           stmt->short_name(), stmt->arg_id, dt);
     } else {
-      emit("const {} {} = _args_{}_[{} << {}];", dt, stmt->raw_name(),
+      emit("{} {} = _args_{}_[{} << {}];", dt, stmt->short_name(),
            data_type_short_name(stmt->element_type()), stmt->arg_id,
            opengl_argument_address_shifter(stmt->element_type()));
     }
@@ -745,7 +745,7 @@ int _rand_i32()\n\
     used.argument = true;
     emit("_args_{}_[{} << {}] = {};", data_type_short_name(stmt->element_type()),
          stmt->arg_id, opengl_argument_address_shifter(stmt->element_type()),
-         stmt->val->raw_name());
+         stmt->val->short_name());
   }
 
   std::string make_kernel_name() {
@@ -777,9 +777,9 @@ int _rand_i32()\n\
         std::swap(end_value, begin_value);
       num_threads_ = end_value - begin_value;
       emit("// range known at compile time");
-      emit("const int _thread_id_ = int(gl_GlobalInvocationID.x);");
-      emit("if (_thread_id_ >= {}) return;", num_threads_);
-      emit("const int _it_value_ = {} + _thread_id_ * {};", begin_value,
+      emit("int _tid = int(gl_GlobalInvocationID.x);");
+      emit("if (_tid >= {}) return;", num_threads_);
+      emit("int _itv = {} + _tid * {};", begin_value,
            1 /* stmt->step? */);
     } else {
       TI_ERROR("[glsl] non-const range_for currently unsupported under OpenGL");
@@ -796,14 +796,14 @@ int _rand_i32()\n\
   void visit(GlobalTemporaryStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
     used.global_temp = true;
-    emit("int {} = {};", stmt->raw_name(), stmt->offset);
+    emit("int {} = {};", stmt->short_name(), stmt->offset);
     ptr_signats[stmt->id] = "gtmp";
   }
 
   void visit(LoopIndexStmt *stmt) override {
     TI_ASSERT(!stmt->is_struct_for);
     TI_ASSERT(stmt->index == 0);  // TODO: multiple indices
-    emit("const int {} = _it_value_;", stmt->raw_name());
+    emit("int {} = _itv;", stmt->short_name());
   }
 
   void visit(RangeForStmt *for_stmt) override {
@@ -812,33 +812,33 @@ int _rand_i32()\n\
     if (loop_var->ret_type.data_type == DataType::i32) {
       if (!for_stmt->reversed) {
         emit("for (int {}_ = {}; {}_ < {}; {}_ = {}_ + {}) {{",
-             loop_var->raw_name(), for_stmt->begin->raw_name(),
-             loop_var->raw_name(), for_stmt->end->raw_name(),
-             loop_var->raw_name(), loop_var->raw_name(), 1);
-        // variable named `loop_var->raw_name()` is already allocated by alloca
-        emit("  {} = {}_;", loop_var->raw_name(), loop_var->raw_name());
+             loop_var->short_name(), for_stmt->begin->short_name(),
+             loop_var->short_name(), for_stmt->end->short_name(),
+             loop_var->short_name(), loop_var->short_name(), 1);
+        // variable named `loop_var->short_name()` is already allocated by alloca
+        emit("  {} = {}_;", loop_var->short_name(), loop_var->short_name());
       } else {
         // reversed for loop
         emit("for (int {}_ = {} - 1; {}_ >= {}; {}_ = {}_ - {}) {{",
-             loop_var->raw_name(), for_stmt->end->raw_name(),
-             loop_var->raw_name(), for_stmt->begin->raw_name(),
-             loop_var->raw_name(), loop_var->raw_name(), 1);
-        emit("  {} = {}_;", loop_var->raw_name(), loop_var->raw_name());
+             loop_var->short_name(), for_stmt->end->short_name(),
+             loop_var->short_name(), for_stmt->begin->short_name(),
+             loop_var->short_name(), loop_var->short_name(), 1);
+        emit("  {} = {}_;", loop_var->short_name(), loop_var->short_name());
       }
     } else {
       TI_ASSERT(!for_stmt->reversed);
       const auto type_name = opengl_data_type_name(loop_var->element_type());
       emit("for ({} {} = {}; {} < {}; {} = {} + 1) {{", type_name,
-           loop_var->raw_name(), for_stmt->begin->raw_name(),
-           loop_var->raw_name(), for_stmt->end->raw_name(),
-           loop_var->raw_name(), loop_var->raw_name());
+           loop_var->short_name(), for_stmt->begin->short_name(),
+           loop_var->short_name(), for_stmt->end->short_name(),
+           loop_var->short_name(), loop_var->short_name());
     }
     for_stmt->body->accept(this);
     emit("}}");
   }
 
   void visit(WhileControlStmt *stmt) override {
-    emit("if ({} == 0) break;", stmt->cond->raw_name());
+    emit("if ({} == 0) break;", stmt->cond->short_name());
   }
 
   void visit(WhileStmt *stmt) override {
@@ -871,7 +871,7 @@ int _rand_i32()\n\
   }
 
   void visit(IfStmt *if_stmt) override {
-    emit("if ({} != 0) {{", if_stmt->cond->raw_name());
+    emit("if ({} != 0) {{", if_stmt->cond->short_name());
     if (if_stmt->true_statements) {
       if_stmt->true_statements->accept(this);
     }

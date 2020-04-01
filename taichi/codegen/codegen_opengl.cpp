@@ -103,11 +103,11 @@ struct CompiledProgram {
       ctx.args[ext_arr_idx] = 0;
       iov.push_back(IOV{extptr, ext_arr_size});
     }
-    begin_glsl_kernels(iov);
     for (const auto &ker : kernels) {
+      begin_glsl_kernels(iov);
       ker.launch();
+      end_glsl_kernels(iov);
     }
-    end_glsl_kernels(iov);
   }
 };
 

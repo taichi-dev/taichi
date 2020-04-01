@@ -519,12 +519,82 @@ struct LaneAttribute {
   }
 };
 
+class StmtField {
+ public:
+  StmtField() = default;
+
+  virtual bool equal(const StmtField *other) const = 0;
+
+  virtual ~StmtField() = default;
+};
+
+template <typename T>
+class StmtFieldNumeric final : public StmtField {
+ private:
+  T value;
+
+ public:
+  explicit StmtFieldNumeric(T value) : value(value) {
+  }
+
+  bool equal(const StmtField *other_generic) const override {
+    if (auto other = dynamic_cast<const StmtFieldNumeric *>(other_generic)) {
+      return other->value == value;
+    } else {
+      // Different types
+      return false;
+    }
+  }
+};
+
+class StmtFieldManager {
+ private:
+  Stmt *stmt;
+
+ public:
+  std::vector<std::unique_ptr<StmtField>> fields;
+
+  StmtFieldManager(Stmt *stmt) : stmt(stmt) {
+  }
+
+  template <typename T>
+  void operator()(const char *key, T &&value);
+
+  template <typename T, typename... Args>
+  void operator()(const char *key_, T &&t, Args &&... rest) {
+    std::string key(key_);
+    size_t pos = key.find(",");
+    std::string first_name = key.substr(0, pos);
+    std::string rest_names =
+        key.substr(pos + 2, int(key.size()) - (int)pos - 2);
+    this->operator()(first_name.c_str(), std::forward<T>(t));
+    this->operator()(rest_names.c_str(), std::forward<Args>(rest)...);
+  }
+
+  bool equal(StmtFieldManager &other) const {
+    if (fields.size() != other.fields.size()) {
+      return false;
+    }
+    auto num_fields = fields.size();
+    for (std::size_t i = 0; i < num_fields; i++) {
+      if (!fields[i]->equal(other.fields[i].get())) {
+        return false;
+      }
+    }
+    return true;
+  }
+};
+
+#define TI_STMT_DEF_FIELDS(...) TI_IO_DEF(__VA_ARGS__)
+#define TI_STMT_REG_FIELDS io(field_manager)
+
 class Stmt : public IRNode {
  protected:  // NOTE: operands should not be directly modified, for the
              // correctness of operand_bitmap
   std::vector<Stmt **> operands;
 
  public:
+  StmtFieldManager field_manager;
   static std::atomic<int> instance_id_counter;
   int instance_id;
   int id;
@@ -536,7 +606,7 @@ class Stmt : public IRNode {
 
   Stmt(const Stmt &stmt) = delete;
 
-  Stmt() {
+  Stmt() : field_manager(this) {
     parent = nullptr;
     instance_id = instance_id_counter++;
     id = instance_id;
@@ -680,6 +750,16 @@ class Stmt : public IRNode {
 
   virtual ~Stmt() override = default;
 };
+
+template <typename T>
+inline void StmtFieldManager::operator()(const char *key, T &&value) {
+  if constexpr (std::is_same<typename std::decay<T>::type, Stmt *>::value) {
+    stmt->add_operand(const_cast<Stmt *&>(value));
+  } else {
+    stmt->field_manager.fields.emplace_back(
+        std::make_unique<StmtFieldNumeric<T>>(value));
+  }
+}
 
 // always a tree - used as rvalues
 class Expression {

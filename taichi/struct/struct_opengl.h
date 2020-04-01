@@ -9,7 +9,7 @@
 #include <functional>
 #include <string>
 #include <vector>
-#include <map>
+#include <unordered_map>
 
 TLANG_NAMESPACE_BEGIN
 namespace opengl {
@@ -32,10 +32,10 @@ class OpenglStructCompiler {
 
   std::vector<SNode *> snodes_;
   std::string src_code_;
-  std::map<std::string, size_t> stride_map_;
-  std::map<std::string, size_t> length_map_;
-  std::map<std::string, std::vector<size_t>> class_get_map_;
-  std::map<std::string, size_t> class_children_map_;
+  std::unordered_map<std::string, size_t> stride_map_;
+  std::unordered_map<std::string, size_t> length_map_;
+  std::unordered_map<std::string, std::vector<size_t>> class_get_map_;
+  std::unordered_map<std::string, size_t> class_children_map_;
 };
 
 }  // namespace opengl

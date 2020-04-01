@@ -18,6 +18,7 @@ OpenglStructCompiler::CompiledResult OpenglStructCompiler::run(SNode &node) {
   CompiledResult result;
   result.source_code = std::move(src_code_);
   result.class_get_map = std::move(class_get_map_);
+  result.class_children_map = std::move(class_children_map_);
   result.root_size = compute_snode_size(node);
   return result;
 }
@@ -79,6 +80,7 @@ void OpenglStructCompiler::generate_types(const SNode &snode) {
     stride_map_[node_name] = stride_map_[node_name + "_ch"] * length_map_[node_name];
     emit("#define {}_children(a_, i) ((a_) + {}_ch_stride * (i))", node_name,
          node_name);
+    class_children_map_[node_name] = stride_map_[node_name + "_ch"];
   } else {
     TI_ERROR("SNodeType={} not supported on OpenGL",
              snode_type_name(snode.type));

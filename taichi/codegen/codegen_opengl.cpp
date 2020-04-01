@@ -510,8 +510,11 @@ int _rand_i32()\n\
       parent_type = root_snode_type_name_;
     }
 
-    emit("{}_ch {} = {}_children({}, {});", stmt->snode->node_type_name,
+    /*emit("{}_ch {} = {}_children({}, {});", stmt->snode->node_type_name,
          stmt->raw_name(), parent_type, parent->raw_name(),
+         stmt->input_index->raw_name());*/
+    emit("{}_ch {} = ({} + {} * {});", stmt->snode->node_type_name,
+         stmt->raw_name(), parent->raw_name(), struct_compiled_->class_children_map[parent_type],
          stmt->input_index->raw_name());
   }
 

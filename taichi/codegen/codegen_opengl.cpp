@@ -12,10 +12,18 @@ TLANG_NAMESPACE_BEGIN
 namespace opengl {
 namespace {
 
-int opengl_get_address_shifter(DataType type) {
+int opengl_argument_address_shifter(DataType type) {
   switch (type) {
     case DataType::f32: case DataType::i32: return 1;
     case DataType::f64: case DataType::i64: return 0;
+    default: TI_NOT_IMPLEMENTED
+  }
+}
+
+int opengl_data_address_shifter(DataType type) {
+  switch (type) {
+    case DataType::f32: case DataType::i32: return 2;
+    case DataType::f64: case DataType::i64: return 3;
     default: TI_NOT_IMPLEMENTED
   }
 }
@@ -184,128 +192,106 @@ class KernelGen : public IRVisitor {
     std::string kernel_header =
         "layout(std430, binding = 0) buffer data_i32 { int _data_i32_[]; };\n"
         "layout(std430, binding = 0) buffer data_f32 { float _data_f32_[]; };\n"
-        "layout(std430, binding = 0) buffer data_f64 { double _data_f64_[]; "
-        "};\n"
-        "#define _mem_i32(x) _data_i32_[(x) >> 2]\n"
-        "#define _mem_f32(x) _data_f32_[(x) >> 2]\n"
-        "#define _mem_f64(x) _data_f64_[(x) >> 3]\n";
+        "layout(std430, binding = 0) buffer data_f64 { double _data_f64_[]; };\n";
 
     if (used.argument) {
       kernel_header +=
           "layout(std430, binding = 1) buffer args_i32 { int _args_i32_[]; };\n"
-          "layout(std430, binding = 1) buffer args_f32 { float _args_f32_[]; "
-          "};\n"
-          "layout(std430, binding = 1) buffer args_f64 { double _args_f64_[]; "
-          "};\n"
-          "#define _arg_i32(x) _args_i32_[(x) << 1]\n"  // skip to 64bit stride
-          "#define _arg_f32(x) _args_f32_[(x) << 1]\n"
-          "#define _arg_f64(x) _args_f64_[(x) << 0]\n";
+          "layout(std430, binding = 1) buffer args_f32 { float _args_f32_[]; };\n"
+          "layout(std430, binding = 1) buffer args_f64 { double _args_f64_[]; };\n";
     }
     if (used.global_temp) {
       kernel_header +=
           "layout(std430, binding = 2) buffer gtmp_i32 { int _gtmp_i32_[]; };\n"
-          "layout(std430, binding = 2) buffer gtmp_f32 { float _gtmp_f32_[]; "
-          "};\n"
-          "layout(std430, binding = 2) buffer gtmp_f64 { double _gtmp_f64_[]; "
-          "};\n"
-          "#define _gtx_i32(x) _gtmp_i32_[(x) >> 2]\n"
-          "#define _gtx_f32(x) _gtmp_f32_[(x) >> 2]\n"
-          "#define _gtx_f64(x) _gtmp_f64_[(x) >> 3]\n";
+          "layout(std430, binding = 2) buffer gtmp_f32 { float _gtmp_f32_[]; };\n"
+          "layout(std430, binding = 2) buffer gtmp_f64 { double _gtmp_f64_[]; };\n";
     }
     if (used.extra_arg) {
       kernel_header +=
-          "layout(std430, binding = 3) buffer earg_i32 { int _earg_i32_[]; "
-          "};\n" +
-          fmt::format("#define _extra_arg(i, j) _earg_i32_[(i) * {} + (j)]\n",
-                      taichi_max_num_indices);
+          "layout(std430, binding = 3) buffer earg_i32 { int _earg_i32_[]; };\n";
     }
     if (used.external_ptr) {
       kernel_header +=
           "layout(std430, binding = 4) buffer extr_i32 { int _extr_i32_[]; };\n"
-          "layout(std430, binding = 4) buffer extr_f32 { float _extr_f32_[]; "
-          "};\n"
-          "layout(std430, binding = 4) buffer extr_f64 { double _extr_f64_[]; "
-          "};\n"
-          "#define _ext_ns_i32(x) _extr_i32_[(x) >> 0]\n"
-          "#define _ext_ns_f32(x) _extr_f32_[(x) >> 0]\n"
-          "#define _ext_ns_f64(x) _extr_f64_[(x) >> 0]\n";
+          "layout(std430, binding = 4) buffer extr_f32 { float _extr_f32_[]; };\n"
+          "layout(std430, binding = 4) buffer extr_f64 { double _extr_f64_[]; };\n";
     }
     if (used.atomic_float && !_GLSL_NVIDIA) {  // {{{
       kernel_header +=
           "\
-float atomicAdd_mem_f32(int addr, float rhs) \
+float atomicAdd_data_f32(int addr, float rhs) \
 { \
   int old, new, ret; \
   do { \
-    old = _mem_i32(addr); \
+    old = _data_f32_[addr]; \
     new = floatBitsToInt((intBitsToFloat(old) + rhs)); \
-  } while (old != atomicCompSwap((_mem_i32(addr)), old, new)); \
+  } while (old != atomicCompSwap(_data_f32_[addr], old, new)); \
   return intBitsToFloat(old); \
 }\n\
-float atomicSub_mem_f32(int addr, float rhs) \
+float atomicSub_data_f32(int addr, float rhs) \
 { \
   int old, new, ret; \
   do { \
-    old = _mem_i32(addr); \
+    old = _data_f32_[addr]; \
     new = floatBitsToInt((intBitsToFloat(old) - rhs)); \
-  } while (old != atomicCompSwap((_mem_i32(addr)), old, new)); \
+  } while (old != atomicCompSwap(_data_f32_[addr], old, new)); \
   return intBitsToFloat(old); \
 }\n\
-float atomicMax_mem_f32(int addr, float rhs) \
+float atomicMax_data_f32(int addr, float rhs) \
 { \
   int old, new, ret; \
   do { \
-    old = _mem_i32(addr); \
+    old = _data_f32_[addr]; \
     new = floatBitsToInt(max(intBitsToFloat(old), rhs)); \
-  } while (old != atomicCompSwap((_mem_i32(addr)), old, new)); \
+  } while (old != atomicCompSwap(_data_f32_[addr], old, new)); \
   return intBitsToFloat(old); \
 }\n\
-float atomicMin_mem_f32(int addr, float rhs) \
+float atomicMin_data_f32(int addr, float rhs) \
 { \
   int old, new, ret; \
   do { \
-    old = _mem_i32(addr); \
+    old = _data_f32_[addr]; \
     new = floatBitsToInt(min(intBitsToFloat(old), rhs)); \
-  } while (old != atomicCompSwap((_mem_i32(addr)), old, new)); \
+  } while (old != atomicCompSwap(_data_f32_[addr], old, new)); \
   return intBitsToFloat(old); \
 }\n\
 "
-#ifdef _GLSL_INT64
+#ifdef _GLSL_INT64 // TODO: gtmp_f64?
           "\
-double atomicAdd_mem_f64(int addr, double rhs) \
+double atomicAdd_data_f64(int addr, double rhs) \
 { \
   int old, new, ret; \
   do { \
-    old = _mem_i64(addr); \
+    old = _data_i64_[addr]; \
     new = floatBitsToInt((intBitsToFloat(old) + rhs)); \
-  } while (old != atomicCompSwap((_mem_i64(addr)), old, new)); \
+  } while (old != atomicCompSwap(_data_i64_[addr], old, new)); \
   return intBitsToFloat(old); \
 }\n\
-double atomicSub_mem_f64(int addr, double rhs) \
+double atomicSub_data_f64(int addr, double rhs) \
 { \
   int old, new, ret; \
   do { \
-    old = _mem_i64(addr); \
+    old = _data_i64_[addr]; \
     new = floatBitsToInt((intBitsToFloat(old) - rhs)); \
-  } while (old != atomicCompSwap((_mem_i64(addr)), old, new)); \
+  } while (old != atomicCompSwap(_data_i64_[addr], old, new)); \
   return intBitsToFloat(old); \
 }\n\
-double atomicMax_mem_f64(int addr, double rhs) \
+double atomicMax_data_f64(int addr, double rhs) \
 { \
   int old, new, ret; \
   do { \
-    old = _mem_i64(addr); \
+    old = _data_i64_[addr]; \
     new = floatBitsToInt(max(intBitsToFloat(old), rhs)); \
-  } while (old != atomicCompSwap((_mem_i64(addr)), old, new)); \
+  } while (old != atomicCompSwap(_data_i64_[addr], old, new)); \
   return intBitsToFloat(old); \
 }\n\
-double atomicMin_mem_f64(int addr, double rhs) \
+double atomicMin_data_f64(int addr, double rhs) \
 { \
   int old, new, ret; \
   do { \
-    old = _mem_i64(addr); \
+    old = _data_i64_[addr]; \
     new = floatBitsToInt(min(intBitsToFloat(old), rhs)); \
-  } while (old != atomicCompSwap((_mem_i64(addr)), old, new)); \
+  } while (old != atomicCompSwap(_data_i64_[addr], old, new)); \
   return intBitsToFloat(old); \
 }\n\
 "
@@ -314,45 +300,45 @@ double atomicMin_mem_f64(int addr, double rhs) \
                  // https://github.com/taichi-dev/taichi/pull/495#issuecomment-590074123
       if (used.global_temp) {
         kernel_header += "\
-float atomicAdd_gtx_f32(int addr, float rhs) \
+float atomicAdd_gtmp_f32(int addr, float rhs) \
 { \
   int old, new, ret; \
   do { \
-    old = _gtx_i32(addr); \
+    old = _gtmp_i32_[addr]; \
     new = floatBitsToInt((intBitsToFloat(old) + rhs)); \
-  } while (old != atomicCompSwap((_gtx_i32(addr)), old, new)); \
+  } while (old != atomicCompSwap(_gtmp_i32_[addr], old, new)); \
   return intBitsToFloat(old); \
 }\n\
-float atomicSub_gtx_f32(int addr, float rhs) \
+float atomicSub_gtmp_f32(int addr, float rhs) \
 { \
   int old, new, ret; \
   do { \
-    old = _gtx_i32(addr); \
+    old = _gtmp_i32_[addr]; \
     new = floatBitsToInt((intBitsToFloat(old) - rhs)); \
-  } while (old != atomicCompSwap((_gtx_i32(addr)), old, new)); \
+  } while (old != atomicCompSwap(_gtmp_i32_[addr], old, new)); \
   return intBitsToFloat(old); \
 }\n\
-float atomicMax_gtx_f32(int addr, float rhs) \
+float atomicMax_gtmp_f32(int addr, float rhs) \
 { \
   int old, new, ret; \
   do { \
-    old = _gtx_i32(addr); \
+    old = _gtmp_i32_[addr]; \
     new = floatBitsToInt(max(intBitsToFloat(old), rhs)); \
-  } while (old != atomicCompSwap((_gtx_i32(addr)), old, new)); \
+  } while (old != atomicCompSwap(_gtmp_i32_[addr], old, new)); \
   return intBitsToFloat(old); \
 }\n\
-float atomicMin_gtx_f32(int addr, float rhs) \
+float atomicMin_gtmp_f32(int addr, float rhs) \
 { \
   int old, new, ret; \
   do { \
-    old = _gtx_i32(addr); \
+    old = _gtmp_i32_[addr]; \
     new = floatBitsToInt(min(intBitsToFloat(old), rhs)); \
-  } while (old != atomicCompSwap((_gtx_i32(addr)), old, new)); \
+  } while (old != atomicCompSwap(_gtmp_i32_[addr], old, new)); \
   return intBitsToFloat(old); \
 }\n\
 ";
       }
-      if (used.external_ptr) {
+      if (used.external_ptr) { // TODO: bake no macro atomics for ext_ns
         kernel_header += "\
 float atomicAdd_ext_ns_f32(int addr, float rhs) \
 { \
@@ -524,33 +510,31 @@ int _rand_i32()\n\
 
   std::map<int, std::string> ptr_signats;
 
-  void map_stmt_ptr_signat(Stmt *stmt, std::string signat) {
-    ptr_signats[stmt->id] = signat;
-  }
-
   void visit(GetChStmt *stmt) override {
     emit("const int {} = {} + {}; // {}", stmt->raw_name(), stmt->input_ptr->raw_name(),
          struct_compiled_->class_get_map[stmt->input_snode->node_type_name][stmt->chid],
          stmt->output_snode->node_type_name);
     if (stmt->output_snode->is_place())
-      map_stmt_ptr_signat(stmt, "_mem_" + data_type_short_name(stmt->output_snode->dt));
+      ptr_signats[stmt->id] = "data";
   }
 
   void visit(GlobalStoreStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
-    emit("{}({}) = {};", ptr_signats.at(stmt->ptr->id), // throw out_of_range if not a pointer
-        stmt->ptr->raw_name(), stmt->data->raw_name());
+    auto dt = stmt->data->element_type();
+    emit("_{}_{}_[{} >> {}] = {};", ptr_signats.at(stmt->ptr->id), // throw out_of_range if not a pointer
+        data_type_short_name(dt), stmt->ptr->raw_name(), opengl_data_address_shifter(dt),
+        stmt->data->raw_name());
   }
 
   void visit(GlobalLoadStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
-    emit("const {} {} = {}({});", opengl_data_type_name(stmt->element_type()),
-         stmt->raw_name(), ptr_signats.at(stmt->ptr->id), stmt->ptr->raw_name());
+    auto dt = stmt->element_type();
+    emit("const {} {} = _{}_{}_[{} >> {}];", opengl_data_type_name(stmt->element_type()),
+         stmt->raw_name(), ptr_signats.at(stmt->ptr->id), data_type_short_name(dt),
+         stmt->ptr->raw_name(), opengl_data_address_shifter(dt));
   }
 
   void visit(ExternalPtrStmt *stmt) override {
-    // Used mostly for transferring data between host (e.g. numpy array) and
-    // Metal.
     TI_ASSERT(stmt->width() == 1);
     const auto linear_index_name =
         fmt::format("{}_linear_index_", stmt->raw_name());
@@ -576,10 +560,11 @@ int _rand_i32()\n\
     }
     emit("}}");
 
-    emit("const int {} = ({} + {});", stmt->raw_name(),
-         stmt->base_ptrs[0]->raw_name(), linear_index_name);
+    emit("const int {} = (({} + {}) << {});", stmt->raw_name(),
+         stmt->base_ptrs[0]->raw_name(), linear_index_name,
+         opengl_data_address_shifter(stmt->base_ptrs[0]->element_type()));
     used.external_ptr = true;
-    map_stmt_ptr_signat(stmt, "_ext_ns_" + data_type_short_name(stmt->element_type()));
+    ptr_signats[stmt->id] = "extr";
   }
 
   void visit(UnaryOpStmt *stmt) override {
@@ -686,15 +671,15 @@ int _rand_i32()\n\
 
   void visit(AtomicOpStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
-    if (stmt->val->element_type() == DataType::i32 ||
-        stmt->val->element_type() == DataType::u32 || _GLSL_NVIDIA) {
-      emit("{} {} = {}({}({}), {});",
+    auto dt = stmt->dest->element_type();
+    if (dt == DataType::i32 || _GLSL_NVIDIA) {
+      emit("{} {} = {}(_{}_{}_[{} >> {}], {});",
            opengl_data_type_name(stmt->val->element_type()), stmt->raw_name(),
            opengl_atomic_op_type_cap_name(stmt->op_type), ptr_signats.at(stmt->dest->id),
-           stmt->dest->raw_name(), stmt->val->raw_name());
+           data_type_short_name(dt), stmt->dest->raw_name(),
+           opengl_data_address_shifter(dt), stmt->val->raw_name());
     } else {
-      TI_ASSERT(stmt->val->element_type() == DataType::f32 ||
-                stmt->val->element_type() == DataType::f64);
+      TI_ASSERT(dt == DataType::f32 || dt == DataType::f64);
       used.atomic_float = true;
       emit("{} {} = {}{}({}, {});",
            opengl_data_type_name(stmt->val->element_type()), stmt->raw_name(),
@@ -751,7 +736,7 @@ int _rand_i32()\n\
     } else {
       emit("const {} {} = _args_{}_[{} << {}];", dt, stmt->raw_name(),
            data_type_short_name(stmt->element_type()), stmt->arg_id,
-           opengl_get_address_shifter(stmt->element_type()));
+           opengl_argument_address_shifter(stmt->element_type()));
     }
   }
 
@@ -759,7 +744,7 @@ int _rand_i32()\n\
     TI_ASSERT(!stmt->is_ptr);
     used.argument = true;
     emit("_args_{}_[{} << {}] = {};", data_type_short_name(stmt->element_type()),
-         stmt->arg_id, opengl_get_address_shifter(stmt->element_type()),
+         stmt->arg_id, opengl_argument_address_shifter(stmt->element_type()),
          stmt->val->raw_name());
   }
 
@@ -812,7 +797,7 @@ int _rand_i32()\n\
     TI_ASSERT(stmt->width() == 1);
     used.global_temp = true;
     emit("int {} = {};", stmt->raw_name(), stmt->offset);
-    map_stmt_ptr_signat(stmt, "_gtx_" + data_type_short_name(stmt->element_type()));
+    ptr_signats[stmt->id] = "gtmp";
   }
 
   void visit(LoopIndexStmt *stmt) override {

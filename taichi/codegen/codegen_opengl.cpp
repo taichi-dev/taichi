@@ -1,5 +1,4 @@
 #define _GLSL_DEBUG 1
-#define _GLSL_NVIDIA 1
 #include "codegen_opengl.h"
 #include <taichi/platform/opengl/opengl_api.h>
 #include <taichi/platform/opengl/opengl_data_types.h>
@@ -192,7 +191,7 @@ class KernelGen : public IRVisitor {
           "layout(std430, binding = 4) buffer extr_f32 { float _extr_f32_[]; };\n"
           "layout(std430, binding = 4) buffer extr_f64 { double _extr_f64_[]; };\n";
     }
-    if (used.atomic_float && !_GLSL_NVIDIA) {  // {{{
+    if (used.atomic_float && !opengl_has_GL_NV_shader_atomic_float) {  // {{{
       kernel_header +=
           "\
 float atomicAdd_data_f32(int addr, float rhs) \
@@ -408,7 +407,7 @@ int _rand_i32()\n\
     emit("layout(local_size_x = {}, local_size_y = 1, local_size_z = 1) in;",
          threads_per_group);
     std::string extensions = "";
-    if (_GLSL_NVIDIA) {
+    if (opengl_has_GL_NV_shader_atomic_float) {
       extensions += "#extension GL_NV_shader_atomic_float: enable\n";
     }
     auto kernel_src_code = "#version 430 core\n" + extensions +
@@ -649,7 +648,7 @@ int _rand_i32()\n\
   void visit(AtomicOpStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
     auto dt = stmt->dest->element_type();
-    if (dt == DataType::i32 || _GLSL_NVIDIA) {
+    if (dt == DataType::i32 || opengl_has_GL_NV_shader_atomic_float) {
       emit("{} {} = {}(_{}_{}_[{} >> {}], {});",
            opengl_data_type_name(stmt->val->element_type()), stmt->short_name(),
            opengl_atomic_op_type_cap_name(stmt->op_type), ptr_signats.at(stmt->dest->id),

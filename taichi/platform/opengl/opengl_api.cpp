@@ -9,6 +9,8 @@
 TLANG_NAMESPACE_BEGIN
 namespace opengl {
 
+bool opengl_has_GL_NV_shader_atomic_float;
+
 #ifdef TI_WITH_OPENGL
 void glapi_set_uniform(GLuint loc, float value) {
   glUniform1f(loc, value);
@@ -196,7 +198,7 @@ void initialize_opengl() {
 
   glfwInit();
   // Compute Shader requires OpenGL 4.3+ (or OpenGL ES 3.1+)
-  glfwWindowHint( GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
   // GLEW cannot load GL without a context
@@ -219,6 +221,12 @@ void initialize_opengl() {
   }
   TI_INFO("[glsl] OpenGL {}", (const char *)glGetString(GL_VERSION));
   TI_INFO("[glsl] GLSL {}", (const char *)glGetString(GL_SHADING_LANGUAGE_VERSION));
+  if (!glewGetExtension("GL_ARB_compute_shader")) {
+    TI_ERROR("Your OpenGL version does not support GL_ARB_compute_shader extension");
+  }
+  if ((opengl_has_GL_NV_shader_atomic_float = glewGetExtension("GL_NV_shader_atomic_float"))) {
+    TI_INFO("[glsl] Found GL_NV_shader_atomic_float");
+  }
 }
 
 GLProgram *compile_glsl_program(std::string source) {

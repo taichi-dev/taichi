@@ -20,6 +20,7 @@ void launch_glsl_kernel(GLProgram *program, int num_groups);
 void end_glsl_kernels(const std::vector<IOV> &iov);
 GLProgram *compile_glsl_program(std::string source);
 int opengl_get_threads_per_group();
+extern bool opengl_has_GL_NV_shader_atomic_float;
 
 }  // namespace opengl
 

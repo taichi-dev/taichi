@@ -12,22 +12,6 @@ TLANG_NAMESPACE_BEGIN
 namespace opengl {
 namespace {
 
-int opengl_argument_address_shifter(DataType type) {
-  switch (type) {
-    case DataType::f32: case DataType::i32: return 1;
-    case DataType::f64: case DataType::i64: return 0;
-    default: TI_NOT_IMPLEMENTED
-  }
-}
-
-int opengl_data_address_shifter(DataType type) {
-  switch (type) {
-    case DataType::f32: case DataType::i32: return 2;
-    case DataType::f64: case DataType::i64: return 3;
-    default: TI_NOT_IMPLEMENTED
-  }
-}
-
 std::string opengl_atomic_op_type_cap_name(AtomicOpType type) {
   static std::map<AtomicOpType, std::string> type_names;
   if (type_names.empty()) {
@@ -503,7 +487,7 @@ int _rand_i32()\n\
       parent_type = root_snode_type_name_;
     }
 
-    emit("int {} = ({} + {} * {}); // {}",
+    emit("int {} = {} + {} * {}; // {}",
          stmt->short_name(), parent->short_name(), struct_compiled_->class_children_map[parent_type],
          stmt->input_index->short_name(), stmt->snode->node_type_name);
   }
@@ -560,7 +544,7 @@ int _rand_i32()\n\
     }
     emit("}}");
 
-    emit("int {} = (({} + {}) << {});", stmt->short_name(),
+    emit("int {} = ({} + {}) << {};", stmt->short_name(),
          stmt->base_ptrs[0]->short_name(), linear_index_name,
          opengl_data_address_shifter(stmt->base_ptrs[0]->element_type()));
     used.external_ptr = true;
@@ -568,51 +552,46 @@ int _rand_i32()\n\
   }
 
   void visit(UnaryOpStmt *stmt) override {
+    auto dt_name = opengl_data_type_name(stmt->element_type());
     if (stmt->op_type == UnaryOpType::logic_not) {
       emit("{} {} = {}({} == 0);",
-           opengl_data_type_name(stmt->element_type()), stmt->short_name(),
-           opengl_data_type_name(stmt->element_type()),
+           dt_name, stmt->short_name(), dt_name,
            stmt->operand->short_name());
     } else if (stmt->op_type == UnaryOpType::neg) {
       emit("{} {} = {}(-{});",
-           opengl_data_type_name(stmt->element_type()), stmt->short_name(),
-           opengl_data_type_name(stmt->element_type()),
+           dt_name, stmt->short_name(), dt_name,
            stmt->operand->short_name());
     } else if (stmt->op_type == UnaryOpType::rsqrt) {
       emit("{} {} = {}(1 / sqrt({}));",
-           opengl_data_type_name(stmt->element_type()), stmt->short_name(),
-           opengl_data_type_name(stmt->element_type()),
+           dt_name, stmt->short_name(), dt_name,
            stmt->operand->short_name());
     } else if (stmt->op_type == UnaryOpType::sgn) {
       emit("{} {} = {}(sign({}));",
-           opengl_data_type_name(stmt->element_type()), stmt->short_name(),
-           opengl_data_type_name(stmt->element_type()),
+           dt_name, stmt->short_name(), dt_name,
            stmt->operand->short_name());
     } else if (stmt->op_type == UnaryOpType::bit_not) {
       emit("{} {} = {}(~{});",
-           opengl_data_type_name(stmt->element_type()), stmt->short_name(),
-           opengl_data_type_name(stmt->element_type()),
+           dt_name, stmt->short_name(), dt_name,
            stmt->operand->short_name());
     } else if (stmt->op_type != UnaryOpType::cast) {
       emit("{} {} = {}({}({}));",
-           opengl_data_type_name(stmt->element_type()), stmt->short_name(),
-           opengl_data_type_name(stmt->element_type()),
+           dt_name, stmt->short_name(), dt_name,
            unary_op_type_name(stmt->op_type), stmt->operand->short_name());
     } else {
       // cast
       if (stmt->cast_by_value) {
         emit("{} {} = {}({});",
-             opengl_data_type_name(stmt->element_type()), stmt->short_name(),
+             dt_name, stmt->short_name(),
              opengl_data_type_name(stmt->cast_type), stmt->operand->short_name());
       } else if (stmt->cast_type == DataType::f32 &&
                  stmt->operand->element_type() == DataType::i32) {
         emit("{} {} = intBitsToFloat({});",
-             opengl_data_type_name(stmt->element_type()), stmt->short_name(),
+             dt_name, stmt->short_name(),
              stmt->operand->short_name());
       } else if (stmt->cast_type == DataType::i32 &&
                  stmt->operand->element_type() == DataType::f32) {
         emit("{} {} = floatBitsToInt({});",
-             opengl_data_type_name(stmt->element_type()), stmt->short_name(),
+             dt_name, stmt->short_name(),
              stmt->operand->short_name());
       } else {
         TI_ERROR("unsupported reinterpret cast");
@@ -660,8 +639,14 @@ int _rand_i32()\n\
     }
     const auto binop = binary_op_type_symbol(bin->op_type);
     if (is_opengl_binary_op_infix(bin->op_type)) {
-      emit("{} {} = {}({} {} {});", dt_name, bin_name, dt_name, lhs_name,
-           binop, rhs_name);
+      if (is_opengl_binary_op_different_return_type(bin->op_type)
+          || bin->element_type() != bin->lhs->element_type()
+          || bin->element_type() != bin->rhs->element_type()) {
+        emit("{} {} = {}({} {} {});", dt_name, bin_name, dt_name, lhs_name,
+            binop, rhs_name);
+      } else {
+        emit("{} {} = {} {} {};", dt_name, bin_name, lhs_name, binop, rhs_name);
+      }
     } else {
       // This is a function call
       emit("{} {} = {}({}({}, {}));", dt_name, bin_name, dt_name, binop,

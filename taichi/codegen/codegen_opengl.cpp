@@ -557,7 +557,8 @@ int _rand_i32()\n\
       for (int i = 0; i < num_indices; i++) {
         used.extra_arg = true;
         std::string var_name = fmt::format("{}_size{}_", stmt->raw_name(), i);
-        emit("const int {} = _extra_arg({}, {});", var_name, arg_id, i);
+        emit("const int {} = _earg_i32_[{} * {} + {}];", var_name,
+            arg_id, taichi_max_num_indices, i);
         size_var_names.push_back(std::move(var_name));
       }
       for (int i = 0; i < num_indices; i++) {

@@ -129,6 +129,7 @@ def init(default_fp=None,
     boolean_config("print_ir")
     boolean_config("verbose")
     boolean_config("fast_math")
+    boolean_config("async")
     arch = os.environ.get("TI_ARCH")
     if arch is not None:
         ti.cfg.arch = ti.core.arch_from_name(arch)

@@ -90,7 +90,7 @@ void die(IRNode *root);
 void simplify(IRNode *root);
 void alg_simp(IRNode *root, const CompileConfig &config);
 void full_simplify(IRNode *root, const CompileConfig &config);
-void print(IRNode *root);
+void print(IRNode *root, std::string *output = nullptr);
 void lower(IRNode *root);
 void typecheck(IRNode *root);
 void loop_vectorize(IRNode *root);

@@ -2,12 +2,10 @@
 #include "codegen_opengl.h"
 #include "taichi/backends/opengl/opengl_api.h"
 #include "taichi/backends/opengl/opengl_data_types.h"
-#define STR2(...) #__VA_ARGS__
-#define STR(...) STR2(__VA_ARGS__)
-
-#include <string>
-#include "taichi/ir/ir.h"
 #include "taichi/util/line_appender.h"
+#include "taichi/util/macros.h"
+#include "taichi/ir/ir.h"
+#include <string>
 
 TLANG_NAMESPACE_BEGIN
 namespace opengl {
@@ -201,157 +199,40 @@ class KernelGen : public IRVisitor {
           "};\n";
     }
     if (used.atomic_float && !opengl_has_GL_NV_shader_atomic_float) {  // {{{
-      // clang-format off
-      kernel_header += STR(
-float atomicAdd_data_f32(int addr, float rhs)
-{
-  int old, new, ret;
-  do {
-    old = _data_i32_[addr];
-    new = floatBitsToInt((intBitsToFloat(old) + rhs));
-  } while (old != atomicCompSwap(_data_i32_[addr], old, new));
-  return intBitsToFloat(old);
-}
-float atomicSub_data_f32(int addr, float rhs)
-{
-  int old, new, ret;
-  do {
-    old = _data_i32_[addr];
-    new = floatBitsToInt((intBitsToFloat(old) - rhs));
-  } while (old != atomicCompSwap(_data_i32_[addr], old, new));
-  return intBitsToFloat(old);
-}
-float atomicMax_data_f32(int addr, float rhs)
-{
-  int old, new, ret;
-  do {
-    old = _data_i32_[addr];
-    new = floatBitsToInt(max(intBitsToFloat(old), rhs));
-  } while (old != atomicCompSwap(_data_i32_[addr], old, new));
-  return intBitsToFloat(old);
-}
-float atomicMin_data_f32(int addr, float rhs)
-{
-  int old, new, ret;
-  do {
-    old = _data_i32_[addr];
-    new = floatBitsToInt(min(intBitsToFloat(old), rhs));
-  } while (old != atomicCompSwap(_data_i32_[addr], old, new));
-  return intBitsToFloat(old);
-}
-);
-#ifdef _GLSL_INT64 // TODO: why no gtmp_f64?
-      kernel_header += STR(
-double atomicAdd_data_f64(int addr, double rhs)
-{
-  int old, new, ret;
-  do {
-    old = _data_i64_[addr];
-    new = floatBitsToInt((intBitsToFloat(old) + rhs));
-  } while (old != atomicCompSwap(_data_i64_[addr], old, new));
-  return intBitsToFloat(old);
-}
-double atomicSub_data_f64(int addr, double rhs)
-{
-  int old, new, ret;
-  do {
-    old = _data_i64_[addr];
-    new = floatBitsToInt((intBitsToFloat(old) - rhs));
-  } while (old != atomicCompSwap(_data_i64_[addr], old, new));
-  return intBitsToFloat(old);
-}
-double atomicMax_data_f64(int addr, double rhs)
-{
-  int old, new, ret;
-  do {
-    old = _data_i64_[addr];
-    new = floatBitsToInt(max(intBitsToFloat(old), rhs));
-  } while (old != atomicCompSwap(_data_i64_[addr], old, new));
-  return intBitsToFloat(old);
-}
-double atomicMin_data_f64(int addr, double rhs)
-{
-  int old, new, ret;
-  do {
-    old = _data_i64_[addr];
-    new = floatBitsToInt(min(intBitsToFloat(old), rhs));
-  } while (old != atomicCompSwap(_data_i64_[addr], old, new));
-  return intBitsToFloat(old);
-}
-);
-#endif // discussion: https://github.com/taichi-dev/taichi/pull/495#issuecomment-590074123
-      if (used.external_ptr) { // TODO: bake no macro atomics for ext_ns
-        kernel_header += STR(
-float atomicAdd_ext_ns_f32(int addr, float rhs)
-{
-  int old, new, ret;
-  do {
-    old = _ext_ns_i32(addr);
-    new = floatBitsToInt((intBitsToFloat(old) + rhs));
-  } while (old != atomicCompSwap((_ext_ns_i32(addr)), old, new));
-  return intBitsToFloat(old);
-}
-float atomicSub_ext_ns_f32(int addr, float rhs)
-{
-  int old, new, ret;
-  do {
-    old = _ext_ns_i32(addr);
-    new = floatBitsToInt((intBitsToFloat(old) - rhs));
-  } while (old != atomicCompSwap((_ext_ns_i32(addr)), old, new));
-  return intBitsToFloat(old);
-}
-float atomicMax_ext_ns_f32(int addr, float rhs)
-{
-  int old, new, ret;
-  do {
-    old = _ext_ns_i32(addr);
-    new = floatBitsToInt(max(intBitsToFloat(old), rhs));
-  } while (old != atomicCompSwap((_ext_ns_i32(addr)), old, new));
-  return intBitsToFloat(old);
-}
-float atomicMin_ext_ns_f32(int addr, float rhs)
-{
-  int old, new, ret;
-  do {
-    old = _ext_ns_i32(addr);
-    new = floatBitsToInt(min(intBitsToFloat(old), rhs));
-  } while (old != atomicCompSwap((_ext_ns_i32(addr)), old, new));
-  return intBitsToFloat(old);
-}
-);
-        // clang-format on
+      kernel_header += (
+#include "taichi/backends/opengl/shaders/atomics_data_f32.glsl.h"
+          );
+#ifdef _GLSL_INT64
+      kernel_header += (
+#include "taichi/backends/opengl/shaders/atomics_data_f64.glsl.h"
+          );
+#endif
+      if (used.global_temp) {
+        kernel_header += (
+#include "taichi/backends/opengl/shaders/atomics_gtmp_f32.glsl.h"
+            );
+#ifdef _GLSL_INT64
+      kernel_header += (
+#include "taichi/backends/opengl/shaders/atomics_gtmp_f64.glsl.h"
+          );
+#endif
+      }
+      if (used.external_ptr) {
+        kernel_header += (
+#include "taichi/backends/opengl/shaders/atomics_extr_f32.glsl.h"
+            );
+#ifdef _GLSL_INT64
+      kernel_header += (
+#include "taichi/backends/opengl/shaders/atomics_extr_f64.glsl.h"
+          );
+#endif
       }
     }                   // }}}
     if (used.random) {  // TODO(archibate): random in different offloads should
                         // share rand seed? {{{
-      kernel_header += STR(uvec4 _rand_;
-
-                           void _init_rand() {
-                             uint i = gl_GlobalInvocationID.x;
-                             _rand_.x = 123456789 * i * 1000000007;
-                             _rand_.y = 362436069;
-                             _rand_.z = 521288629;
-                             _rand_.w = 88675123;
-                           }
-
-                           uint _rand_u32() {
-                             uint t = _rand_.x ^ (_rand_.x << 11);
-                             _rand_.xyz = _rand_.yzw;
-                             _rand_.x = _rand_.y;
-                             _rand_.y = _rand_.z;
-                             _rand_.z = _rand_.w;
-                             _rand_.w =
-                                 (_rand_.w ^ (_rand_.w >> 19)) ^ (t ^ (t >> 8));
-                             return _rand_.w * 1000000007;
-                           }
-
-                           float _rand_f32() {
-                             return float(_rand_u32()) * (1.0 / 4294967296.0);
-                           }
-
-                           double _rand_f64() { return double(_rand_f32()); }
-
-                           int _rand_i32() { return int(_rand_u32()); });
+      kernel_header += (
+#include "taichi/backends/opengl/shaders/random.glsl.h"
+          );
     }  // }}}
 
     line_appender_header_.append_raw(kernel_header);

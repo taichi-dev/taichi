@@ -28,6 +28,7 @@ details = {
     'ir': 'Intermediate representation',
     'lang': 'Language and syntax',
     'metal': 'Metal backend',
+    'opengl': 'OpenGL backend',
     'misc': 'Miscellaneous',
     'opt': 'Optimization',
 }

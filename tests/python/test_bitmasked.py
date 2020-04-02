@@ -109,3 +109,34 @@ def test_huge_bitmasked():
     func()
     count()
     assert s[None] == (n * n * 2) // 32
+
+
+@archs_support_bitmasked
+def test_bitmasked_listgen_bounded():
+    # Mainly for testing Metal's listgen is bounded by the actual number of
+    # elements possible for that SNode. Note that 1) SNode's size is padded
+    # to POT, and 2) Metal ListManager's data size is not padded, we need to
+    # make sure listgen doesn't go beyond ListManager's capacity.
+    x = ti.var(ti.i32)
+    c = ti.var(ti.i32)
+
+    # A prime that is bit higher than 65536, which is Metal's maximum number of
+    # threads for listgen.
+    n = 80173
+
+    ti.root.dense(ti.i, n).bitmasked(ti.i, 1).place(x)
+    ti.root.place(c)
+
+    @ti.kernel
+    def func():
+        for i in range(n):
+            x[i] = 1
+
+    @ti.kernel
+    def count():
+        for i in x:
+            c[None] += 1
+
+    func()
+    count()
+    assert c[None] == n

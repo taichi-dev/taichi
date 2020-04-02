@@ -13,7 +13,7 @@
 #include "taichi/system/memory_usage_monitor.h"
 #include "taichi/system/unit_dll.h"
 #include "taichi/backends/metal/api.h"
-#include "taichi/platform/opengl/opengl_api.h"
+#include "taichi/backends/opengl/opengl_api.h"
 #if defined(TI_WITH_CUDA)
 #include <cuda_runtime_api.h>
 #endif

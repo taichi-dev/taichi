@@ -11,8 +11,6 @@ class CodeGenCPU : public KernelCodeGen {
   CodeGenCPU(Kernel *kernel) : KernelCodeGen(kernel) {
   }
 
-  void lower() override;
-
   virtual FunctionType codegen() override;
 };
 

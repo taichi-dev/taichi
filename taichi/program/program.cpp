@@ -117,6 +117,7 @@ FunctionType Program::compile(Kernel &kernel) {
   TI_AUTO_PROF;
   FunctionType ret = nullptr;
   if (arch_is_cpu(kernel.arch) || kernel.arch == Arch::cuda) {
+    kernel.lower();
     auto codegen = KernelCodeGen::create(kernel.arch, &kernel);
     ret = codegen->compile();
   } else if (kernel.arch == Arch::metal) {

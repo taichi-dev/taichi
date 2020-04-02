@@ -57,9 +57,6 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     auto jit = get_current_program().llvm_context_device->jit.get();
     auto cuda_module = jit->add_module(std::move(module));
 
-    for (auto &task : offloaded_local) {
-      task.cuda_func = cuda_module->lookup_function(task.name);
-    }
     return [offloaded_local, cuda_module,
             kernel = this->kernel](Context &context) {
       // copy data to GRAM

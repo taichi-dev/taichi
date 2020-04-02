@@ -7,14 +7,14 @@
 
 TLANG_NAMESPACE_BEGIN
 
+// TODO(yuanming-hu): split into multiple files
+
 class KernelLaunchRecord {
  public:
   Context context;
   OffloadedStmt *stmt;
 
-  KernelLaunchRecord(Context contxet, OffloadedStmt *stmt)
-      : context(context), stmt(stmt) {
-  }
+  KernelLaunchRecord(Context contxet, OffloadedStmt *stmt);
 };
 
 // In charge of (parallel) compilation to binary and (serial) kernel launching
@@ -28,20 +28,9 @@ class ExecutionQueue {
   ExecutionQueue() {
   }
 
-  void enqueue(KernelLaunchRecord ker) {
-    task_queue.push_back(ker);
-  }
+  void enqueue(KernelLaunchRecord ker);
 
-  uint64 hash(OffloadedStmt *stmt) {
-    // TODO: upgrade this using IR comparisons
-    std::string serialized;
-    irpass::print(stmt, &serialized);
-    uint64 ret = 0;
-    for (uint64 i = 0; i < serialized.size(); i++) {
-      ret = ret * 100000007UL + (uint64)serialized[i];
-    }
-    return ret;
-  }
+  uint64 hash(OffloadedStmt *stmt);
 
   void compile_task() {
   }
@@ -69,18 +58,9 @@ class AsyncEngine {
   void optimize() {
   }
 
-  void launch(KernelLaunchRecord klr) {
-    task_queue.push_back(klr);
-    optimize();
-  }
+  void launch(Kernel *kernel);
 
-  void synchronize() {
-    while (!task_queue.empty()) {
-      Q.enqueue(task_queue.front());
-      task_queue.pop_front();
-    }
-    Q.synchronize();
-  }
+  void synchronize();
 };
 
 TLANG_NAMESPACE_END

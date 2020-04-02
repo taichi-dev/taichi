@@ -16,6 +16,9 @@ class Kernel {
   FunctionType compiled;
   std::string name;
   Arch arch;
+  bool lowered;  // lower inital AST all the way down to a bunch of
+                 // OffloadedStmt for async execution
+
   struct Arg {
     DataType dt;
     bool is_nparray;
@@ -42,6 +45,8 @@ class Kernel {
          bool grad = false);
 
   void compile();
+
+  void lower();
 
   void operator()();
 

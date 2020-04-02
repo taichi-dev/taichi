@@ -48,7 +48,7 @@ class AsyncEngine {
  public:
   // TODO: state machine
 
-  ExecutionQueue Q;
+  ExecutionQueue queue;
 
   std::deque<KernelLaunchRecord> task_queue;
 

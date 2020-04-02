@@ -91,8 +91,10 @@ Program::Program(Arch desired_arch) {
   finalized = false;
   snode_root = std::make_unique<SNode>(0, SNodeType::root);
 
-  if (config.async)
+  if (config.async) {
+    TI_WARN("Running in async mode. This is experimental.");
     engine = std::make_unique<AsyncEngine>();
+  }
 
   TI_TRACE("Program arch={}", arch_name(arch));
 }

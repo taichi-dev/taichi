@@ -39,10 +39,10 @@ void AsyncEngine::launch(taichi::lang::Kernel *kernel) {
 
 void AsyncEngine::synchronize() {
   while (!task_queue.empty()) {
-    Q.enqueue(task_queue.front());
+    queue.enqueue(task_queue.front());
     task_queue.pop_front();
   }
-  Q.synchronize();
+  queue.synchronize();
 }
 
 TLANG_NAMESPACE_END

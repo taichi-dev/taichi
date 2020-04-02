@@ -53,7 +53,7 @@ void Kernel::lower() {
 }
 
 void Kernel::operator()() {
-  if (program.config.async) {
+  if (!program.config.async) {
     if (!compiled) {
       compile();
     }

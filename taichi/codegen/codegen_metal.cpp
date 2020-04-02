@@ -16,7 +16,8 @@ namespace shaders {
 
 using BuffersEnum = KernelAttributes::Buffers;
 
-constexpr char kKernelThreadIdName[] = "utid_";  // 'u' for unsigned
+constexpr char kKernelThreadIdName[] = "utid_";        // 'u' for unsigned
+constexpr char kKernelGridSizeName[] = "ugrid_size_";  // 'u' for unsigned
 constexpr char kRootBufferName[] = "root_addr";
 constexpr char kGlobalTmpsBufferName[] = "global_tmps_addr";
 constexpr char kArgsBufferName[] = "args_addr";
@@ -24,6 +25,7 @@ constexpr char kRuntimeBufferName[] = "runtime_addr";
 constexpr char kArgsContextName[] = "args_ctx_";
 constexpr char kRuntimeVarName[] = "runtime_";
 constexpr char kListgenElemVarName[] = "listgen_elem_";
+constexpr int kMaxNumThreadsGridStrideLoop = 64 * 1024;
 
 class KernelCodegen : public IRVisitor {
  public:
@@ -634,36 +636,77 @@ class KernelCodegen : public IRVisitor {
     emit_mtl_kernel_func_sig(mtl_kernel_name, ka.buffers);
 
     const int sn_id = stmt->snode->id;
-    ka.num_threads = compiled_structs_->snode_descriptors.find(sn_id)
-                         ->second.total_num_elems_from_root;
+    // struct_for kernels use grid-stride loops
+    ka.num_threads = std::min(compiled_structs_->snode_descriptors.find(sn_id)
+                                  ->second.total_num_elems_from_root,
+                              kMaxNumThreadsGridStrideLoop);
+    if (!mtl_kernels_attribs_.empty() &&
+        mtl_kernels_attribs_.back().task_type ==
+            OffloadedStmt::TaskType::listgen) {
+      TI_ASSERT(mtl_kernels_attribs_.size() >= 2);
+      for (int i = 0; i < 2; ++i) {
+        TI_ASSERT(
+            mtl_kernels_attribs_.back().runtime_list_op_attribs.snode->id ==
+            sn_id);
+        mtl_kernels_attribs_.pop_back();
+      }
+    }
 
     line_appender_.push_indent();
     emit("// struct_for");
     emit("device Runtime *{} = reinterpret_cast<device Runtime *>({});",
          kRuntimeVarName, kRuntimeBufferName);
-    // Each thread identifies a unique and active ListgenElement. The identified
-    // element contains the coords for the loop index at each dimension.
-    emit("ListgenElement {};", kListgenElemVarName);
-    emit("{{");
-    {
-      ScopedIndent s(line_appender_);
-      emit("device ListManager *sn_list = &({}->snode_lists[{}]);",
-           kRuntimeVarName, sn_id);
-      emit("if ((int){} >= num_active(sn_list)) return;", kKernelThreadIdName);
-      emit(
-          "device byte *list_data_addr = reinterpret_cast<device byte *>({} + "
-          "1);",
-          kRuntimeVarName);
-      emit("{} = get<ListgenElement>(sn_list, {}, list_data_addr);",
-           kListgenElemVarName, kKernelThreadIdName);
-    }
-    emit("}}");
-    line_appender_.pop_indent();
+    emit(
+        "device byte *list_data_addr = reinterpret_cast<device byte *>({} + "
+        "1);",
+        kRuntimeVarName);
+    emit("device ListManager *parent_list = &({}->snode_lists[{}]);",
+         kRuntimeVarName, stmt->snode->parent->id);
+    emit("device ListManager *child_list = &({}->snode_lists[{}]);",
+         kRuntimeVarName, sn_id);
+    emit("const SNodeMeta child_meta = {}->snode_metas[{}];", kRuntimeVarName,
+         sn_id);
+    emit("const int child_stride = child_meta.element_stride;");
+    emit("const int child_num_slots = child_meta.num_slots;");
+    emit(
+        "const int range_ = max((int)((child_list->max_num_elems + {0} - "
+        "1) / {0}), 1);",
+        kKernelGridSizeName);
+    emit("const int begin_ = range_ * (int){};", kKernelThreadIdName);
+    emit("const int end_ = min(begin_ + range_, child_list->max_num_elems);");
 
-    current_kernel_attribs_ = &ka;
-    stmt->body->accept(this);
-    emit("}}\n");
-    current_kernel_attribs_ = nullptr;
+    emit("for (int ii = begin_; ii < end_; ++ii) {{");
+    {
+      ScopedIndent s2(line_appender_);
+      emit("const int parent_idx_ = (ii / child_num_slots);");
+      emit("if (parent_idx_ >= num_active(parent_list)) return;");
+      emit("const int child_idx_ = (ii % child_num_slots);");
+      emit(
+          "const auto parent_elem_ = get<ListgenElement>(parent_list, "
+          "parent_idx_, list_data_addr);");
+
+      emit("ListgenElement {};", kListgenElemVarName);
+      emit(
+          "{}.root_mem_offset = parent_elem_.root_mem_offset + child_idx_ * "
+          "child_stride + child_meta.mem_offset_in_parent;",
+          kListgenElemVarName);
+      emit(
+          "if (!is_active({} + {}.root_mem_offset, child_meta, child_idx_)) "
+          "continue;",
+          kRootBufferName, kListgenElemVarName);
+      emit(
+          "refine_coordinates(parent_elem_, {}->snode_extractors[{}], "
+          "child_idx_, &{});",
+          kRuntimeVarName, sn_id, kListgenElemVarName);
+      emit("{{");
+      current_kernel_attribs_ = &ka;
+      stmt->body->accept(this);
+      current_kernel_attribs_ = nullptr;
+      emit("}}");
+    }
+    emit("}}");  // closes for loop
+    line_appender_.pop_indent();
+    emit("}}\n");  // closes kernel
 
     mtl_kernels_attribs_.push_back(ka);
   }
@@ -680,12 +723,11 @@ class KernelCodegen : public IRVisitor {
       ka.num_threads = 1;
       ka.buffers = {BuffersEnum::Runtime, BuffersEnum::Args};
     } else if (type == Type::listgen) {
-      // listgen kernels use grid-stride loops, so that we can cap its maximum
-      // number of threads at 1M.
+      // listgen kernels use grid-stride loops
       ka.num_threads =
           std::min(compiled_structs_->snode_descriptors.find(sn->id)
                        ->second.total_num_elems_from_root,
-                   64 * 1024);
+                   kMaxNumThreadsGridStrideLoop);
       ka.buffers = {BuffersEnum::Runtime, BuffersEnum::Root, BuffersEnum::Args};
     } else {
       TI_ERROR("Unsupported offload task type {}", stmt->task_name());
@@ -754,6 +796,7 @@ class KernelCodegen : public IRVisitor {
       emit("    device byte* {} [[buffer({})]],", buffer_to_name(buffers[i]),
            i);
     }
+    emit("    const uint {} [[threads_per_grid]],", kKernelGridSizeName);
     emit("    const uint {} [[thread_position_in_grid]]) {{",
          kKernelThreadIdName);
     if (args_attribs_.has_args()) {

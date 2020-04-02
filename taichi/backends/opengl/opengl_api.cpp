@@ -239,12 +239,12 @@ GLProgram *compile_glsl_program(std::string source) {
   return program;
 }
 
-GLSSBO *root_ssbo;
+std::optional<GLSSBO> root_ssbo;
 
 void create_glsl_root_buffer(size_t size) {
   // if (root_ssbo) return;
   initialize_opengl();
-  root_ssbo = new GLSSBO;  // TODO(archibate): mem leaking, use std::optional instead
+  root_ssbo = std::make_optional<GLSSBO>();
   size += 2 * sizeof(int);
   void *buffer = std::calloc(size, 1);
   root_ssbo->bind_data(buffer, size, GL_DYNAMIC_READ);

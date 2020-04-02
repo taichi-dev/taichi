@@ -164,38 +164,38 @@ class KernelGen : public IRVisitor {
     emit("}}");
 
     std::string kernel_header =
-        "layout(std430, binding = 0) buffer data_i32 { int _data_i32_[]; };\n"
-        "layout(std430, binding = 0) buffer data_f32 { float _data_f32_[]; };\n"
-        "layout(std430, binding = 0) buffer data_f64 { double _data_f64_[]; "
+        "layout(packed, binding = 0) buffer data_i32 { int _data_i32_[]; };\n"
+        "layout(packed, binding = 0) buffer data_f32 { float _data_f32_[]; };\n"
+        "layout(packed, binding = 0) buffer data_f64 { double _data_f64_[]; "
         "};\n";
 
     if (used.argument) {
       kernel_header +=
-          "layout(std430, binding = 1) buffer args_i32 { int _args_i32_[]; };\n"
-          "layout(std430, binding = 1) buffer args_f32 { float _args_f32_[]; "
+          "layout(packed, binding = 1) buffer args_i32 { int _args_i32_[]; };\n"
+          "layout(packed, binding = 1) buffer args_f32 { float _args_f32_[]; "
           "};\n"
-          "layout(std430, binding = 1) buffer args_f64 { double _args_f64_[]; "
+          "layout(packed, binding = 1) buffer args_f64 { double _args_f64_[]; "
           "};\n";
     }
     if (used.global_temp) {
       kernel_header +=
-          "layout(std430, binding = 2) buffer gtmp_i32 { int _gtmp_i32_[]; };\n"
-          "layout(std430, binding = 2) buffer gtmp_f32 { float _gtmp_f32_[]; "
+          "layout(packed, binding = 2) buffer gtmp_i32 { int _gtmp_i32_[]; };\n"
+          "layout(packed, binding = 2) buffer gtmp_f32 { float _gtmp_f32_[]; "
           "};\n"
-          "layout(std430, binding = 2) buffer gtmp_f64 { double _gtmp_f64_[]; "
+          "layout(packed, binding = 2) buffer gtmp_f64 { double _gtmp_f64_[]; "
           "};\n";
     }
     if (used.extra_arg) {
       kernel_header +=
-          "layout(std430, binding = 3) buffer earg_i32 { int _earg_i32_[]; "
+          "layout(packed, binding = 3) buffer earg_i32 { int _earg_i32_[]; "
           "};\n";
     }
     if (used.external_ptr) {
       kernel_header +=
-          "layout(std430, binding = 4) buffer extr_i32 { int _extr_i32_[]; };\n"
-          "layout(std430, binding = 4) buffer extr_f32 { float _extr_f32_[]; "
+          "layout(packed, binding = 4) buffer extr_i32 { int _extr_i32_[]; };\n"
+          "layout(packed, binding = 4) buffer extr_f32 { float _extr_f32_[]; "
           "};\n"
-          "layout(std430, binding = 4) buffer extr_f64 { double _extr_f64_[]; "
+          "layout(packed, binding = 4) buffer extr_f64 { double _extr_f64_[]; "
           "};\n";
     }
     if (used.atomic_float && !opengl_has_GL_NV_shader_atomic_float) {  // {{{
@@ -242,8 +242,8 @@ class KernelGen : public IRVisitor {
       threads_per_group = std::max(1, num_threads_);
     else
       num_groups_ = (num_threads_ + threads_per_group - 1) / threads_per_group;
-    emit("layout(local_size_x = {}, local_size_y = 1, local_size_z = 1) in;",
-         threads_per_group);
+    emit("layout(local_size_x = {} /* {}, {} */, local_size_y = 1, local_size_z = 1) in;",
+         threads_per_group, num_groups_, num_threads_);
     std::string extensions = "";
     if (opengl_has_GL_NV_shader_atomic_float) {
       extensions += "#extension GL_NV_shader_atomic_float: enable\n";

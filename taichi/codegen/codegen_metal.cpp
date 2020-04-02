@@ -643,6 +643,9 @@ class KernelCodegen : public IRVisitor {
     if (!mtl_kernels_attribs_.empty() &&
         mtl_kernels_attribs_.back().task_type ==
             OffloadedStmt::TaskType::listgen) {
+      // TODO(#689): this is somewhat hacky. Once the IR is more polished, we
+      // can easily iterate through all the offloaded tasks beforehand to remove
+      // the (clear, listgen) for leaf node, instead of doing it here.
       TI_ASSERT(mtl_kernels_attribs_.size() >= 2);
       for (int i = 0; i < 2; ++i) {
         TI_ASSERT(

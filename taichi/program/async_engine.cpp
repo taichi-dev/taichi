@@ -26,7 +26,9 @@ void ExecutionQueue::enqueue(KernelLaunchRecord ker) {
   task_queue.push_back(ker);
 }
 
-void AsyncEngine::launch(taichi::lang::Kernel *kernel) {
+void AsyncEngine::launch(Kernel *kernel) {
+  if (!kernel->lowered)
+    kernel->lower();
   auto block = dynamic_cast<Block *>(kernel->ir);
   TI_ASSERT(block);
   auto &offloads = block->statements;

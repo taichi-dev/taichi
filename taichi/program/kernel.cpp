@@ -43,13 +43,17 @@ void Kernel::compile() {
 }
 
 void Kernel::lower() {
+  TI_ASSERT(!lowered);
+  TI_ASSERT(program.current_kernel == nullptr);
+  program.current_kernel = this;
   if (arch_is_cpu(arch) || arch == Arch::cuda) {
     auto codegen = KernelCodeGen::create(arch, this);
     codegen->lower();
-    lowered = true;
   } else {
     TI_NOT_IMPLEMENTED
   }
+  lowered = true;
+  program.current_kernel = nullptr;
 }
 
 void Kernel::operator()() {

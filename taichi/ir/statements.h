@@ -138,7 +138,6 @@ class SNodeLookupStmt : public Stmt {
 
   TI_STMT_DEF_FIELDS(ret_type, snode, input_snode, input_index,
       global_indices, activate);
-
   DEFINE_ACCEPT
 };
 

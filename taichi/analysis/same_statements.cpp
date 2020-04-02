@@ -97,7 +97,12 @@ class IRNodeComparator : public IRVisitor {
   }
 
   void visit(Block *stmt_list) override {
-    DEFINE_TYPE_CHECK(Block)
+    if (!other_node->is<Block>()) {
+      same = false;
+      return;
+    }
+
+    auto other = other_node->as<Block>();
     if (stmt_list->size() != other->size()) {
       same = false;
       return;
@@ -111,7 +116,7 @@ class IRNodeComparator : public IRVisitor {
     other_node = other;
   }
 
-  void visit(Stmt *stmt) override {
+  void basic_check(Stmt *stmt) {
     // type check
     if (typeid(*other_node) != typeid(*stmt)) {
       same = false;
@@ -134,35 +139,22 @@ class IRNodeComparator : public IRVisitor {
     // field check
     if (!stmt->field_manager.equal(other->field_manager)) {
       same = false;
+      return;
     }
+
+    map_id(stmt->id, other->id);
   }
 
-  void visit(UnaryOpStmt *stmt) override {
-    DEFINE_BASIC_CHECK(UnaryOpStmt)
-    DEFINE_FIELD_CHECK(type_hint())
-    DEFINE_FIELD_CHECK(op_type)
-  }
-
-  void visit(BinaryOpStmt *stmt) override {
-    DEFINE_BASIC_CHECK(BinaryOpStmt)
-    DEFINE_FIELD_CHECK(type_hint())
-    DEFINE_FIELD_CHECK(op_type)
-  }
-
-  void visit(TernaryOpStmt *stmt) override {
-    DEFINE_BASIC_CHECK(TernaryOpStmt)
-    DEFINE_FIELD_CHECK(type_hint())
-    DEFINE_FIELD_CHECK(op_type)
-  }
-
-  void visit(AtomicOpStmt *stmt) override {
-    DEFINE_BASIC_CHECK(AtomicOpStmt)
-    DEFINE_FIELD_CHECK(type_hint())
-    DEFINE_FIELD_CHECK(op_type)
+  void visit(Stmt *stmt) override {
+    basic_check(stmt);
   }
 
   void visit(IfStmt *stmt) override {
-    DEFINE_BASIC_CHECK(IfStmt)
+    basic_check(stmt);
+    if (!same)
+      return;
+
+    auto other = other_node->as<IfStmt>();
     if (stmt->true_statements) {
       if (!other->true_statements) {
         same = false;

@@ -926,7 +926,6 @@ class AllocaStmt : public Stmt {
   }
 
   TI_STMT_DEF_FIELDS(ret_type);
-
   DEFINE_ACCEPT
 };
 
@@ -952,9 +951,9 @@ class UnaryOpStmt : public Stmt {
   UnaryOpStmt(UnaryOpType op_type, Stmt *operand)
       : op_type(op_type), operand(operand) {
     TI_ASSERT(!operand->is<AllocaStmt>());
-    add_operand(this->operand);
     cast_type = DataType::unknown;
     cast_by_value = true;
+    TI_STMT_REG_FIELDS;
   }
 
   bool same_operation(UnaryOpStmt *o) const {
@@ -971,6 +970,8 @@ class UnaryOpStmt : public Stmt {
   virtual bool has_global_side_effect() const override {
     return false;
   }
+
+  TI_STMT_DEF_FIELDS(ret_type, op_type, operand, cast_type, cast_by_value);
   DEFINE_ACCEPT
 };
 
@@ -1054,7 +1055,6 @@ class RandStmt : public Stmt {
   }
 
   TI_STMT_DEF_FIELDS(ret_type);
-
   DEFINE_ACCEPT
 };
 
@@ -1122,13 +1122,14 @@ class BinaryOpStmt : public Stmt {
       : op_type(op_type), lhs(lhs), rhs(rhs) {
     TI_ASSERT(!lhs->is<AllocaStmt>());
     TI_ASSERT(!rhs->is<AllocaStmt>());
-    add_operand(this->lhs);
-    add_operand(this->rhs);
+    TI_STMT_REG_FIELDS;
   }
 
   virtual bool has_global_side_effect() const override {
     return false;
   }
+
+  TI_STMT_DEF_FIELDS(ret_type, op_type, lhs, rhs);
   DEFINE_ACCEPT
 };
 
@@ -1142,14 +1143,14 @@ class TernaryOpStmt : public Stmt {
     TI_ASSERT(!op1->is<AllocaStmt>());
     TI_ASSERT(!op2->is<AllocaStmt>());
     TI_ASSERT(!op3->is<AllocaStmt>());
-    add_operand(this->op1);
-    add_operand(this->op2);
-    add_operand(this->op3);
+    TI_STMT_REG_FIELDS;
   }
 
   virtual bool has_global_side_effect() const override {
     return false;
   }
+
+  TI_STMT_DEF_FIELDS(ret_type, op1, op2, op3);
   DEFINE_ACCEPT
 };
 
@@ -1160,10 +1161,10 @@ class AtomicOpStmt : public Stmt {
 
   AtomicOpStmt(AtomicOpType op_type, Stmt *dest, Stmt *val)
       : op_type(op_type), dest(dest), val(val) {
-    add_operand(this->dest);
-    add_operand(this->val);
+    TI_STMT_REG_FIELDS;
   }
 
+  TI_STMT_DEF_FIELDS(ret_type, op_type, dest, val);
   DEFINE_ACCEPT
 };
 
@@ -1587,7 +1588,6 @@ class SNodeOpStmt : public Stmt {
   }
 
   TI_STMT_DEF_FIELDS(ret_type, op_type, snode, ptr, val, indices);
-
   DEFINE_ACCEPT
 };
 
@@ -1622,7 +1622,6 @@ class AssertStmt : public Stmt {
   }
 
   TI_STMT_DEF_FIELDS(cond, text, args);
-
   DEFINE_ACCEPT
 };
 
@@ -1759,13 +1758,14 @@ class IfStmt : public Stmt {
   std::unique_ptr<Block> true_statements, false_statements;
 
   IfStmt(Stmt *cond) : cond(cond) {
-    add_operand(this->cond);
+    TI_STMT_REG_FIELDS;
   }
 
   bool is_container_statement() const override {
     return true;
   }
 
+  TI_STMT_DEF_FIELDS(cond);
   DEFINE_ACCEPT
 };
 

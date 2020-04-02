@@ -10,6 +10,7 @@ file(GLOB TAICHI_BACKEND_SOURCE "taichi/backends/**/*.cpp" "taichi/backends/**/*
 
 file(GLOB TAICHI_CUDA_SOURCE "taichi/backends/cuda/*.cpp" "taichi/backends/cuda/*.h")
 file(GLOB TAICHI_METAL_SOURCE "taichi/backends/metal/*.h" "taichi/backends/metal/*.cpp" "taichi/backends/metal/shaders/*")
+file(GLOB TAICHI_OPENGL_SOURCE "taichi/backends/opengl/*.h" "taichi/backends/opengl/*.cpp" "taichi/backends/opengl/shaders/*")
 
 list(REMOVE_ITEM TAICHI_CORE_SOURCE ${TAICHI_BACKEND_SOURCE})
 
@@ -17,8 +18,9 @@ if (TI_WITH_CUDA)
     list(APPEND TAICHI_CORE_SOURCE ${TAICHI_CUDA_SOURCE})
 endif()
 
-# TODO(#529) include Metal source only on Apple MacOS
+# TODO(#529) include Metal source only on Apple MacOS, and OpenGL only when TI_WITH_OPENGL is ON
 list(APPEND TAICHI_CORE_SOURCE ${TAICHI_METAL_SOURCE})
+list(APPEND TAICHI_CORE_SOURCE ${TAICHI_OPENGL_SOURCE})
 
 option(BUILD_CPP_EXAMPLES "Build legacy C++ examples" OFF)
 
@@ -38,7 +40,7 @@ endif()
 
 option(USE_STDCPP "Use -stdlib=libc++" OFF)
 option(TI_WITH_CUDA "Build with the CUDA backend" OFF)
-option(TI_WITH_OPENGL "Build with the OpenGL backend" OFF)
+option(TI_WITH_OPENGL "Build with the OpenGL backend" ON)
 option(GLEW_USE_STATIC_LIBS OFF)
 
 include_directories(${CMAKE_SOURCE_DIR})

@@ -86,9 +86,9 @@ def substep():
     v[p], C[p] = new_v, new_C
     x[p] += dt * v[p] # advection
 
-group_size = n_particles // 3
 @ti.kernel
 def reset():
+  group_size = n_particles // 3
   for i in range(n_particles):
     x[i] = [ti.random() * 0.2 + 0.3 + 0.10 * (i // group_size), ti.random() * 0.2 + 0.05 + 0.32 * (i // group_size)]
     material[i] = i // group_size # 0: fluid 1: jelly 2: snow

@@ -119,20 +119,17 @@ class IRNodeComparator : public IRVisitor {
     }
 
     // operand check
-    std::cout << "op " << std::endl;
     auto other = other_node->as<Stmt>();
     if (stmt->num_operands() != other->num_operands()) {
       same = false;
       return;
     }
     for (int i = 0; i < stmt->num_operands(); i++) {
-//      std::cout << get_other_id(stmt->operand(i)->id) << " " << other->operand(i)->id << std::endl;
       if (get_other_id(stmt->operand(i)->id) != other->operand(i)->id) {
         same = false;
         return;
       }
     }
-    std::cout << "field" << std::endl;
 
     // field check
     if (!stmt->field_manager.equal(other->field_manager)) {

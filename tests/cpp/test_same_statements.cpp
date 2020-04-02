@@ -67,17 +67,13 @@ TI_TEST("test_same_assert") {
       block->push_back<AssertStmt>(one, "a", std::vector<Stmt *>(1, zero));
 
   irpass::typecheck(block.get());
-  irpass::print(block.get());
   TI_CHECK(block->size() == 10);
   TI_CHECK(irpass::same_statements(assert_zero_a, assert_zero_a2));
   TI_CHECK(!irpass::same_statements(assert_zero_a, assert_zero_b));
   TI_CHECK(!irpass::same_statements(assert_zero_a, assert_one_a));
   TI_CHECK(!irpass::same_statements(assert_zero_a, assert_zero_a_one));
-  std::cout << "a" << std::endl;
   TI_CHECK(irpass::same_statements(assert_zero_a_one, assert_zero_a_one2));
-  std::cout << "b" << std::endl;
   TI_CHECK(!irpass::same_statements(assert_zero_a_one, assert_zero_a_zero));
-//  std::cout << "c" << std::endl;
   TI_CHECK(!irpass::same_statements(assert_zero_a_one, assert_one_a_zero));
 }
 

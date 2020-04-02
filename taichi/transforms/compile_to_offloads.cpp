@@ -11,136 +11,82 @@ void compile_to_offloads(IRNode *ir,
                          bool ad_use_stack,
                          bool verbose) {
   TI_AUTO_PROF;
-  if (verbose) {
-    TI_INFO("Initial IR:");
-    irpass::re_id(ir);
-    irpass::print(ir);
-  }
+
+  auto print = [&](std::string name) {
+    if (verbose) {
+      TI_INFO(name + ":");
+      irpass::re_id(ir);
+      irpass::print(ir);
+    }
+  };
+
+  print("Initial IR");
+
   if (grad) {
     irpass::reverse_segments(ir);
-    if (verbose) {
-      TI_INFO("Segment reversed (for autodiff):");
-      irpass::re_id(ir);
-      irpass::print(ir);
-    }
+    print("Segment reversed (for autodiff)");
   }
+
   irpass::lower(ir);
-  if (verbose) {
-    TI_INFO("Lowered:");
-    irpass::re_id(ir);
-    irpass::print(ir);
-  }
+  print("Lowered");
+
   irpass::typecheck(ir);
-  if (verbose) {
-    TI_INFO("Typechecked:");
-    irpass::re_id(ir);
-    irpass::print(ir);
-  }
+  print("Typechecked");
+
   if (vectorize) {
     irpass::slp_vectorize(ir);
-    if (verbose) {
-      TI_INFO("SLPed:");
-      irpass::re_id(ir);
-      irpass::print(ir);
-    }
+    print("SLP");
+
     irpass::loop_vectorize(ir);
-    if (verbose) {
-      TI_INFO("LoopVeced:");
-      irpass::re_id(ir);
-      irpass::print(ir);
-    }
+    print("Loop Vectorized");
+
     irpass::vector_split(ir, config.max_vector_width, config.serial_schedule);
-    if (verbose) {
-      TI_INFO("LoopSplitted:");
-      irpass::re_id(ir);
-      irpass::print(ir);
-    }
+    print("Loop Split");
   }
   irpass::simplify(ir);
-  if (verbose) {
-    TI_INFO("Simplified I:");
-    irpass::re_id(ir);
-    irpass::print(ir);
-  }
+  print("Simplified I");
+
   if (grad) {
     irpass::demote_atomics(ir);
     irpass::full_simplify(ir, config);
     irpass::make_adjoint(ir, ad_use_stack);
     irpass::full_simplify(ir, config);
-    if (verbose) {
-      TI_INFO("Adjoint:");
-      irpass::re_id(ir);
-      irpass::print(ir);
-    }
+    print("Adjoint");
   }
+
   if (config.demote_dense_struct_fors) {
     irpass::demote_dense_struct_fors(ir);
     irpass::typecheck(ir);
-    if (verbose) {
-      TI_INFO("Dense Struct-for demoted:");
-      irpass::print(ir);
-    }
+    print("Dense struct-for demoted");
   }
+
   if (config.check_out_of_bound) {
     irpass::check_out_of_bound(ir);
-    if (verbose) {
-      TI_INFO("Bound checked:");
-      irpass::re_id(ir);
-      irpass::print(ir);
-    }
+    print("Bound checked");
   }
+
   irpass::lower_access(ir, true);
-  if (verbose) {
-    TI_INFO("Access Lowered:");
-    irpass::re_id(ir);
-    irpass::print(ir);
-  }
+  print("Access lowered");
   irpass::die(ir);
-  if (verbose) {
-    TI_INFO("DIEd:");
-    irpass::re_id(ir);
-    irpass::print(ir);
-  }
+  print("DIE");
+
   irpass::full_simplify(ir, config);
-  if (verbose) {
-    TI_INFO("Simplified II:");
-    irpass::re_id(ir);
-    irpass::print(ir);
-  }
+  print("Simplified II");
+
   irpass::flag_access(ir);
-  if (verbose) {
-    TI_INFO("Access Flagged:");
-    irpass::re_id(ir);
-    irpass::print(ir);
-  }
+  print("Access flagged");
 
   irpass::constant_fold(ir);
-  if (verbose) {
-    TI_INFO("Constant folded:");
-    irpass::re_id(ir);
-    irpass::print(ir);
-  }
+  print("Constant folded");
 
   irpass::offload(ir);
-  if (verbose) {
-    TI_INFO("Offloaded:");
-    irpass::re_id(ir);
-    irpass::print(ir);
-  }
+  print("Offloaded");
 
   irpass::full_simplify(ir, config);
-  if (verbose) {
-    TI_INFO("Simplified III:");
-    irpass::re_id(ir);
-    irpass::print(ir);
-  }
+  print("Simplified III");
 
   irpass::demote_atomics(ir);
-  if (verbose) {
-    TI_INFO("Atomics demoted:");
-    irpass::re_id(ir);
-    irpass::print(ir);
-  }
+  print("Atomics demoted");
 }
 
 }  // namespace irpass

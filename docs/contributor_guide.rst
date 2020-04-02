@@ -86,6 +86,7 @@ Existing tags:
 - ``[Std]``: standard library, e.g. `ti.Matrix` and `ti.Vector`;
 - ``[IR]``: intermediate representation;
 - ``[Opt]``: IR optimization passes;
+- ``[Async]``: asynchronous execution engine;
 - ``[Type]``: type system;
 - ``[Infra]``: general infrastructure, e.g. logging, image reader;
 - ``[GUI]``: the built-in GUI system;

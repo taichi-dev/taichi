@@ -510,6 +510,8 @@ class KernelManager::Impl {
       rtm_meta->element_stride = sn_meta.element_stride;
       rtm_meta->num_slots = sn_meta.num_slots;
       rtm_meta->mem_offset_in_parent = sn_meta.mem_offset_in_parent;
+      TI_DEBUG("SnodeMeta\n  id={}\n  element_stride={}\n  num_slots={}\n\n", i,
+               rtm_meta->element_stride, rtm_meta->num_slots);
       switch (sn_meta.snode->type) {
         case SNodeType::dense:
           rtm_meta->type = SNodeMeta::Dense;
@@ -563,6 +565,8 @@ class KernelManager::Impl {
       rtm_list->next = 0;
       rtm_list->mem_begin = list_data_mem_begin;
       list_data_mem_begin += rtm_list->max_num_elems * rtm_list->element_stride;
+      TI_DEBUG("ListManager\n  id={}\n  num_slots={}\n  mem_begin={}\n\n", i,
+               rtm_list->max_num_elems, rtm_list->mem_begin);
     }
     addr += sizeof(ListManager) * max_snodes;
     // root list data are static

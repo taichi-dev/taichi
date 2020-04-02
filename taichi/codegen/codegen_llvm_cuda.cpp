@@ -114,7 +114,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
 
     std::string format;
 
-    auto value = stmt->stmt->value;
+    auto value = llvm_val[stmt->stmt];
 
     if (stmt->stmt->ret_type.data_type == DataType::i32) {
       format = "%d";
@@ -139,7 +139,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
 
     auto format_str = "[debug] " + stmt->str + " = " + format + "\n";
 
-    stmt->value = ModuleBuilder::call(
+    llvm_val[stmt] = ModuleBuilder::call(
         builder.get(), "vprintf",
         builder->CreateGlobalStringPtr(format_str, "format_string"),
         builder->CreateBitCast(values,
@@ -148,50 +148,50 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
 
   void emit_extra_unary(UnaryOpStmt *stmt) override {
     // functions from libdevice
-    auto input = stmt->operand->value;
+    auto input = llvm_val[stmt->operand];
     auto input_taichi_type = stmt->operand->ret_type.data_type;
     auto op = stmt->op_type;
 
-#define UNARY_STD(x)                                                        \
-  else if (op == UnaryOpType::x) {                                          \
-    if (input_taichi_type == DataType::f32) {                               \
-      stmt->value =                                                         \
-          builder->CreateCall(get_runtime_function("__nv_" #x "f"), input); \
-    } else if (input_taichi_type == DataType::f64) {                        \
-      stmt->value =                                                         \
-          builder->CreateCall(get_runtime_function("__nv_" #x), input);     \
-    } else if (input_taichi_type == DataType::i32) {                        \
-      stmt->value = builder->CreateCall(get_runtime_function(#x), input);   \
-    } else {                                                                \
-      TI_NOT_IMPLEMENTED                                                    \
-    }                                                                       \
+#define UNARY_STD(x)                                                         \
+  else if (op == UnaryOpType::x) {                                           \
+    if (input_taichi_type == DataType::f32) {                                \
+      llvm_val[stmt] =                                                       \
+          builder->CreateCall(get_runtime_function("__nv_" #x "f"), input);  \
+    } else if (input_taichi_type == DataType::f64) {                         \
+      llvm_val[stmt] =                                                       \
+          builder->CreateCall(get_runtime_function("__nv_" #x), input);      \
+    } else if (input_taichi_type == DataType::i32) {                         \
+      llvm_val[stmt] = builder->CreateCall(get_runtime_function(#x), input); \
+    } else {                                                                 \
+      TI_NOT_IMPLEMENTED                                                     \
+    }                                                                        \
   }
     if (op == UnaryOpType::abs) {
       if (input_taichi_type == DataType::f32) {
-        stmt->value =
+        llvm_val[stmt] =
             builder->CreateCall(get_runtime_function("__nv_fabsf"), input);
       } else if (input_taichi_type == DataType::f64) {
-        stmt->value =
+        llvm_val[stmt] =
             builder->CreateCall(get_runtime_function("__nv_fabs"), input);
       } else if (input_taichi_type == DataType::i32) {
-        stmt->value =
+        llvm_val[stmt] =
             builder->CreateCall(get_runtime_function("__nv_abs"), input);
       } else {
         TI_NOT_IMPLEMENTED
       }
     } else if (op == UnaryOpType::sqrt) {
       if (input_taichi_type == DataType::f32) {
-        stmt->value =
+        llvm_val[stmt] =
             builder->CreateCall(get_runtime_function("__nv_sqrtf"), input);
       } else if (input_taichi_type == DataType::f64) {
-        stmt->value =
+        llvm_val[stmt] =
             builder->CreateCall(get_runtime_function("__nv_sqrt"), input);
       } else {
         TI_NOT_IMPLEMENTED
       }
     } else if (op == UnaryOpType::logic_not) {
       if (input_taichi_type == DataType::i32) {
-        stmt->value =
+        llvm_val[stmt] =
             builder->CreateCall(get_runtime_function("logic_not_i32"), input);
       } else {
         TI_NOT_IMPLEMENTED
@@ -225,88 +225,94 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       if (stmt->op_type == AtomicOpType::add) {
         if (is_integral(stmt->val->ret_type.data_type)) {
           old_value = builder->CreateAtomicRMW(
-              llvm::AtomicRMWInst::BinOp::Add, stmt->dest->value,
-              stmt->val->value, llvm::AtomicOrdering::SequentiallyConsistent);
+              llvm::AtomicRMWInst::BinOp::Add, llvm_val[stmt->dest],
+              llvm_val[stmt->val],
+              llvm::AtomicOrdering::SequentiallyConsistent);
         } else if (stmt->val->ret_type.data_type == DataType::f32) {
           auto dt = tlctx->get_data_type(DataType::f32);
-          old_value =
-              builder->CreateIntrinsic(Intrinsic::nvvm_atomic_load_add_f32,
-                                       {llvm::PointerType::get(dt, 0)},
-                                       {stmt->dest->value, stmt->val->value});
+          old_value = builder->CreateIntrinsic(
+              Intrinsic::nvvm_atomic_load_add_f32,
+              {llvm::PointerType::get(dt, 0)},
+              {llvm_val[stmt->dest], llvm_val[stmt->val]});
         } else if (stmt->val->ret_type.data_type == DataType::f64) {
           auto dt = tlctx->get_data_type(DataType::f64);
-          old_value =
-              builder->CreateIntrinsic(Intrinsic::nvvm_atomic_load_add_f64,
-                                       {llvm::PointerType::get(dt, 0)},
-                                       {stmt->dest->value, stmt->val->value});
+          old_value = builder->CreateIntrinsic(
+              Intrinsic::nvvm_atomic_load_add_f64,
+              {llvm::PointerType::get(dt, 0)},
+              {llvm_val[stmt->dest], llvm_val[stmt->val]});
         } else {
           TI_NOT_IMPLEMENTED
         }
       } else if (stmt->op_type == AtomicOpType::min) {
         if (is_integral(stmt->val->ret_type.data_type)) {
           old_value = builder->CreateAtomicRMW(
-              llvm::AtomicRMWInst::BinOp::Min, stmt->dest->value,
-              stmt->val->value, llvm::AtomicOrdering::SequentiallyConsistent);
+              llvm::AtomicRMWInst::BinOp::Min, llvm_val[stmt->dest],
+              llvm_val[stmt->val],
+              llvm::AtomicOrdering::SequentiallyConsistent);
         } else if (stmt->val->ret_type.data_type == DataType::f32) {
           old_value =
               builder->CreateCall(get_runtime_function("atomic_min_f32"),
-                                  {stmt->dest->value, stmt->val->value});
+                                  {llvm_val[stmt->dest], llvm_val[stmt->val]});
         } else if (stmt->val->ret_type.data_type == DataType::f64) {
           old_value =
               builder->CreateCall(get_runtime_function("atomic_min_f64"),
-                                  {stmt->dest->value, stmt->val->value});
+                                  {llvm_val[stmt->dest], llvm_val[stmt->val]});
         } else {
           TI_NOT_IMPLEMENTED
         }
       } else if (stmt->op_type == AtomicOpType::max) {
         if (is_integral(stmt->val->ret_type.data_type)) {
           old_value = builder->CreateAtomicRMW(
-              llvm::AtomicRMWInst::BinOp::Max, stmt->dest->value,
-              stmt->val->value, llvm::AtomicOrdering::SequentiallyConsistent);
+              llvm::AtomicRMWInst::BinOp::Max, llvm_val[stmt->dest],
+              llvm_val[stmt->val],
+              llvm::AtomicOrdering::SequentiallyConsistent);
         } else if (stmt->val->ret_type.data_type == DataType::f32) {
           old_value =
               builder->CreateCall(get_runtime_function("atomic_max_f32"),
-                                  {stmt->dest->value, stmt->val->value});
+                                  {llvm_val[stmt->dest], llvm_val[stmt->val]});
         } else if (stmt->val->ret_type.data_type == DataType::f64) {
           old_value =
               builder->CreateCall(get_runtime_function("atomic_max_f64"),
-                                  {stmt->dest->value, stmt->val->value});
+                                  {llvm_val[stmt->dest], llvm_val[stmt->val]});
         } else {
           TI_NOT_IMPLEMENTED
         }
       } else if (stmt->op_type == AtomicOpType::bit_and) {
         if (is_integral(stmt->val->ret_type.data_type)) {
           old_value = builder->CreateAtomicRMW(
-              llvm::AtomicRMWInst::BinOp::And, stmt->dest->value,
-              stmt->val->value, llvm::AtomicOrdering::SequentiallyConsistent);
+              llvm::AtomicRMWInst::BinOp::And, llvm_val[stmt->dest],
+              llvm_val[stmt->val],
+              llvm::AtomicOrdering::SequentiallyConsistent);
         } else {
           TI_NOT_IMPLEMENTED
         }
       } else if (stmt->op_type == AtomicOpType::bit_or) {
         if (is_integral(stmt->val->ret_type.data_type)) {
           old_value = builder->CreateAtomicRMW(
-              llvm::AtomicRMWInst::BinOp::Or, stmt->dest->value,
-              stmt->val->value, llvm::AtomicOrdering::SequentiallyConsistent);
+              llvm::AtomicRMWInst::BinOp::Or, llvm_val[stmt->dest],
+              llvm_val[stmt->val],
+              llvm::AtomicOrdering::SequentiallyConsistent);
         } else {
           TI_NOT_IMPLEMENTED
         }
       } else if (stmt->op_type == AtomicOpType::bit_xor) {
         if (is_integral(stmt->val->ret_type.data_type)) {
           old_value = builder->CreateAtomicRMW(
-              llvm::AtomicRMWInst::BinOp::Xor, stmt->dest->value,
-              stmt->val->value, llvm::AtomicOrdering::SequentiallyConsistent);
+              llvm::AtomicRMWInst::BinOp::Xor, llvm_val[stmt->dest],
+              llvm_val[stmt->val],
+              llvm::AtomicOrdering::SequentiallyConsistent);
         } else {
           TI_NOT_IMPLEMENTED
         }
       } else {
         TI_NOT_IMPLEMENTED
       }
-      stmt->value = old_value;
+      llvm_val[stmt] = old_value;
     }
   }
 
   void visit(RandStmt *stmt) override {
-    stmt->value =
+    llvm_val[stmt] =
         create_call(fmt::format("cuda_rand_{}",
                                 data_type_short_name(stmt->ret_type.data_type)),
                     {get_context()});

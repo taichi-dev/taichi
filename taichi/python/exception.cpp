@@ -3,7 +3,7 @@
     The use of this software is governed by the LICENSE file.
 *******************************************************************************/
 
-#include <taichi/python/exception.h>
+#include "taichi/python/exception.h"
 
 TI_NAMESPACE_BEGIN
 

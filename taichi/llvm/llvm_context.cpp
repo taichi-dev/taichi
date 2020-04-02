@@ -28,7 +28,7 @@
 
 #include "taichi/lang_util.h"
 #include "llvm_context.h"
-#include <taichi/jit/jit_session.h>
+#include "taichi/jit/jit_session.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -533,7 +533,6 @@ void TaichiLLVMContext::mark_function_as_cuda_kernel(llvm::Function *func) {
 void TaichiLLVMContext::eliminate_unused_functions(
     llvm::Module *module,
     std::function<bool(const std::string &)> export_indicator) {
-  using namespace llvm;
   TI_AUTO_PROF
   using namespace llvm;
   legacy::PassManager manager;

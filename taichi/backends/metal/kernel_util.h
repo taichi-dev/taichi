@@ -58,6 +58,9 @@ struct KernelAttributes {
   RangeForAttributes range_for_attribs;
   // clear_list + listgen
   RuntimeListOpAttributes runtime_list_op_attribs;
+
+  static std::string buffers_name(Buffers b);
+  std::string debug_string() const;
 };
 
 // Note that all Metal kernels belonging to the same Taichi kernel will share

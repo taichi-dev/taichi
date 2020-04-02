@@ -4,7 +4,7 @@ include(cmake/PythonNumpyPybind11.cmake)
 
 file(GLOB TAICHI_CORE_SOURCE
         "taichi/*/*/*/*.cpp" "taichi/*/*/*.cpp" "taichi/*/*.cpp" "taichi/*.cpp"
-        "taichi/*/*/*/*.h" "taichi/*/*/*.h" "taichi/*/*.h" "taichi/*.h" "external/xxhash/*.c" "tests/cpp/*.cpp")
+        "taichi/*/*/*/*.h" "taichi/*/*/*.h" "taichi/*/*.h" "taichi/*.h" "external/*.c" "tests/cpp/*.cpp")
 
 file(GLOB TAICHI_BACKEND_SOURCE "taichi/backends/**/*.cpp" "taichi/backends/**/*.h")
 
@@ -42,7 +42,6 @@ option(TI_WITH_OPENGL "Build with the OpenGL backend" ON)
 option(GLEW_USE_STATIC_LIBS OFF)
 
 include_directories(${CMAKE_SOURCE_DIR})
-include_directories(external/xxhash)
 include_directories(external/include)
 include_directories(external/spdlog/include)
 

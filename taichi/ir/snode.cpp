@@ -13,7 +13,7 @@ SNode &SNode::place(Expr &expr_) {
   } else {
     TI_ASSERT(expr_.is<GlobalVariableExpression>());
     auto expr = expr_.cast<GlobalVariableExpression>();
-    TI_ERROR_UNLESS(expr->snode == nullptr, "This variable has been placed.");
+    TI_ERROR_IF(expr->snode != nullptr, "This variable has been placed.");
     auto &child = insert_children(SNodeType::place);
     expr->set_snode(&child);
     child.name = expr->ident.raw_name();
@@ -64,11 +64,11 @@ SNode &SNode::create_node(std::vector<Index> indices,
 void SNode::lazy_grad() {
   if (this->type == SNodeType::place)
     return;
-  for (auto c : ch) {
+  for (auto &c : ch) {
     c->lazy_grad();
   }
   std::vector<Expr> new_grads;
-  for (auto c : ch) {
+  for (auto &c : ch) {
     if (c->type == SNodeType::place && c->is_primal() && needs_grad(c->dt) &&
         !c->has_grad()) {
       new_grads.push_back(c->expr.cast<GlobalVariableExpression>()->adjoint);
@@ -228,6 +228,27 @@ SNode::SNode(int depth, SNodeType t) : depth(depth), type(t) {
 }
 
 SNode::~SNode() {
+}
+
+std::string SNode::get_node_type_name() const {
+  return fmt::format("S{}", id);
+}
+
+std::string SNode::get_node_type_name_hinted() const {
+  std::string suffix;
+  if (type == SNodeType::place)
+    suffix = fmt::format("_{}", data_type_short_name(dt));
+  return fmt::format("S{}{}{}", id, snode_type_name(type), suffix);
+}
+
+void SNode::print() {
+  for (int i = 0; i < depth; i++) {
+    fmt::print("  ");
+  }
+  fmt::print("{}\n", get_node_type_name_hinted());
+  for (auto &c : ch) {
+    c->print();
+  }
 }
 
 TLANG_NAMESPACE_END

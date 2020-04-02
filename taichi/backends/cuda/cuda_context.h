@@ -1,8 +1,8 @@
 #pragma once
 
 #if defined(TI_WITH_CUDA)
-#include <taichi/program/profiler.h>
-#include <taichi/backends/cuda/cuda_utils.h>
+#include "taichi/program/profiler.h"
+#include "taichi/backends/cuda/cuda_utils.h"
 #include <mutex>
 
 TLANG_NAMESPACE_BEGIN

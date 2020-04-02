@@ -3,8 +3,8 @@
     The use of this software is governed by the LICENSE file.
 *******************************************************************************/
 
-#include <taichi/common/util.h>
-#include <taichi/common/version.h>
+#include "taichi/common/util.h"
+#include "taichi/common/version.h"
 
 TI_NAMESPACE_BEGIN
 

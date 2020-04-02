@@ -680,11 +680,12 @@ class KernelCodegen : public IRVisitor {
       ka.num_threads = 1;
       ka.buffers = {BuffersEnum::Runtime, BuffersEnum::Args};
     } else if (type == Type::listgen) {
-      // This launches |total_num_elems_from_root| number of threads, which
-      // could be a huge waste of GPU resources.
-      // TODO(k-ye): use grid-stride loop to reduce #threads.
-      ka.num_threads = compiled_structs_->snode_descriptors.find(sn->id)
-                           ->second.total_num_elems_from_root;
+      // listgen kernels use grid-stride loops, so that we can cap its maximum
+      // number of threads at 1M.
+      ka.num_threads =
+          std::min(compiled_structs_->snode_descriptors.find(sn->id)
+                       ->second.total_num_elems_from_root,
+                   64 * 1024);
       ka.buffers = {BuffersEnum::Runtime, BuffersEnum::Root, BuffersEnum::Args};
     } else {
       TI_ERROR("Unsupported offload task type {}", stmt->task_name());

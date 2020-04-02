@@ -3,7 +3,7 @@
 #include "codegen.h"
 #include "codegen_cpu.h"
 #include "codegen_cuda.h"
-#include <taichi/system/timer.h>
+#include "taichi/system/timer.h"
 
 TLANG_NAMESPACE_BEGIN
 

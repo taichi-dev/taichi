@@ -7,8 +7,10 @@ import argparse
 from taichi.tools.video import make_video, interpolate_frames, mp4_to_gif, scale_video, crop_video, accelerate_video
 
 
-def test_python(test_files=(), verbose=False):
+def test_python(args):
     print("\nRunning python tests...\n")
+    test_files = args.files
+    verbose = args.verbose
     import taichi as ti
     import pytest
     if ti.is_release():
@@ -17,46 +19,48 @@ def test_python(test_files=(), verbose=False):
     else:
         root_dir = ti.get_repo_directory()
         test_dir = os.path.join(root_dir, 'tests', 'python')
-    args = []
+    pytest_args = []
     if len(test_files):
         # run individual tests
         for f in test_files:
-            # auto-compelete
+            # auto-complete file names
             if not f.startswith('test_'):
                 f = 'test_' + f
             if not f.endswith('.py'):
                 f = f + '.py'
-            args.append(os.path.join(test_dir, f))
+            pytest_args.append(os.path.join(test_dir, f))
     else:
         # run all the tests
-        args = [test_dir]
+        pytest_args = [test_dir]
     if verbose:
-        args += ['-s', '-v']
-    if len(test_files) == 0 or len(test_files) > 4:
-        if int(
-                pytest.main(
-                    [os.path.join(root_dir, 'misc/empty_pytest.py'),
-                     '-n1'])) == 0:  # if pytest has xdist
-            try:
-                from multiprocessing import cpu_count
-                threads = min(8,
-                              cpu_count())  # To prevent running out of memory
-            except:
-                threads = 2
-            env_threads = os.environ.get('TI_TEST_THREADS', '')
-            if env_threads:
-                threads = int(env_threads)
-                print(
-                    f'Following TI_TEST_THREADS to use {threads} testing thread(s)...'
-                )
-            print(f'Starting {threads} testing thread(s)...')
-            if threads > 1:
-                args += ['-n', str(threads)]
-    return int(pytest.main(args))
+        pytest_args += ['-s', '-v']
+    if int(pytest.main([os.path.join(root_dir, 'misc/empty_pytest.py'),
+                        '-n1'])) == 0:  # test if pytest has xdist or not
+        try:
+            from multiprocessing import cpu_count
+            threads = min(8, cpu_count())  # To prevent running out of memory
+        except:
+            threads = 2
+        arg_threads = None
+        if args.threads is not None:
+            arg_threads = int(args.threads)
+        env_threads = os.environ.get('TI_TEST_THREADS', '')
+        if arg_threads is not None:
+            threads = arg_threads
+        elif env_threads:
+            threads = int(env_threads)
+            print(
+                f'Following TI_TEST_THREADS to use {threads} testing thread(s)...'
+            )
+        print(f'Starting {threads} testing thread(s)...')
+        if threads > 1:
+            pytest_args += ['-n', str(threads)]
+    return int(pytest.main(pytest_args))
 
 
-def test_cpp(test_files=()):
+def test_cpp(args):
     import taichi as ti
+    test_files = args.files
     # Cpp tests use the legacy non LLVM backend
     ti.reset()
     print("Running C++ tests...")
@@ -71,6 +75,9 @@ def make_argument_parser():
                         '--verbose',
                         action='store_true',
                         help='Run with verbose outputs')
+    parser.add_argument('-t',
+                        '--threads',
+                        help='Number of threads for parallel testing')
     parser.add_argument(
         '-a',
         '--arch',
@@ -143,9 +150,10 @@ def main(debug=False):
             script = script.read()
         exec(script, {'__name__': '__main__'})
     elif mode == "test":
-        ret = test_python(test_files=args.files, verbose=args.verbose)
-        if ret: return -1
-        ret = test_cpp(test_files=args.files)
+        ret = test_python(args)
+        if ret:
+            return -1
+        ret = test_cpp(args)
         return ret
     elif mode == "build":
         ti.core.build()

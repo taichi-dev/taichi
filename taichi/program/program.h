@@ -173,6 +173,10 @@ class Program {
     return id++;
   }
 
+  void print_snode_tree() {
+    snode_root->print();
+  }
+
   ~Program();
 
  private:

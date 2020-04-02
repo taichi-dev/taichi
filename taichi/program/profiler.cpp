@@ -1,6 +1,6 @@
 #include "profiler.h"
 
-#include <taichi/system/timer.h>
+#include "taichi/system/timer.h"
 
 #if defined(TI_WITH_CUDA)
 #include <cuda_runtime.h>

@@ -77,4 +77,28 @@ TI_TEST("test_same_assert") {
   TI_CHECK(!irpass::same_statements(assert_zero_a_one, assert_one_a_zero));
 }
 
+TI_TEST("test_same_snode_lookup") {
+  auto block = std::make_unique<Block>();
+
+  auto get_root = block->push_back<GetRootStmt>();
+  auto zero = block->push_back<ConstStmt>(LaneAttribute<TypedConstant>(0));
+  SNode root(0, SNodeType::root);
+  auto child = root.insert_children(SNodeType::dense);
+  auto lookup1 = block->push_back<SNodeLookupStmt>(
+      &root, get_root, zero, false, std::vector<Stmt *>());
+  auto lookup2 = block->push_back<SNodeLookupStmt>(
+      &root, get_root, zero, false, std::vector<Stmt *>());
+  auto lookup_activate = block->push_back<SNodeLookupStmt>(
+      &root, get_root, zero, true, std::vector<Stmt *>());
+  auto get_child = block->push_back<GetChStmt>(lookup_activate, 0);
+  auto lookup_child = block->push_back<SNodeLookupStmt>(
+      &child, get_child, zero, false, std::vector<Stmt *>());
+
+  irpass::typecheck(block.get());
+  TI_CHECK(block->size() == 7);
+  TI_CHECK(irpass::same_statements(lookup1, lookup2));
+  TI_CHECK(!irpass::same_statements(lookup1, lookup_activate));
+  TI_CHECK(!irpass::same_statements(lookup1, lookup_child));
+}
+
 TLANG_NAMESPACE_END

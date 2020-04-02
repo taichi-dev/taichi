@@ -129,16 +129,15 @@ class SNodeLookupStmt : public Stmt {
         input_index(input_index),
         global_indices(global_indices),
         activate(activate) {
-    add_operand(this->input_snode);
-    add_operand(this->input_index);
-    for (int i = 0; i < (int)global_indices.size(); i++) {
-      add_operand(this->global_indices[i]);
-    }
+    TI_STMT_REG_FIELDS;
   }
 
   virtual bool has_global_side_effect() const override {
     return activate;
   }
+
+  TI_STMT_DEF_FIELDS(ret_type, snode, input_snode, input_index,
+      global_indices, activate);
 
   DEFINE_ACCEPT
 };

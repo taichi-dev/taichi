@@ -137,13 +137,6 @@ class IRNodeComparator : public IRVisitor {
     }
   }
 
-  void visit(SNodeOpStmt *stmt) override {
-    DEFINE_BASIC_CHECK(SNodeOpStmt)
-    DEFINE_FIELD_CHECK(type_hint())
-    DEFINE_FIELD_CHECK(op_type)
-    DEFINE_SNODE_CHECK(snode)
-  }
-
   void visit(UnaryOpStmt *stmt) override {
     DEFINE_BASIC_CHECK(UnaryOpStmt)
     DEFINE_FIELD_CHECK(type_hint())
@@ -332,13 +325,6 @@ class IRNodeComparator : public IRVisitor {
   void visit(GetRootStmt *stmt) override {
     DEFINE_BASIC_CHECK(GetRootStmt)
     DEFINE_FIELD_CHECK(type_hint())
-  }
-
-  void visit(SNodeLookupStmt *stmt) override {
-    DEFINE_BASIC_CHECK(SNodeLookupStmt)
-    DEFINE_FIELD_CHECK(type_hint())
-    DEFINE_SNODE_CHECK(snode)
-    DEFINE_FIELD_CHECK(activate)
   }
 
   void visit(GetChStmt *stmt) override {

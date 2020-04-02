@@ -547,6 +547,30 @@ class StmtFieldNumeric final : public StmtField {
   }
 };
 
+class StmtFieldSNode final : public StmtField {
+ private:
+  SNode *const &snode;
+
+ public:
+  explicit StmtFieldSNode(SNode *const &snode): snode(snode) {
+  }
+
+  static int get_snode_id(SNode *snode) {
+    if (snode == nullptr)
+      return -1;
+    return snode->id;
+  }
+
+  bool equal(const StmtField *other_generic) const override {
+    if (auto other = dynamic_cast<const StmtFieldSNode *>(other_generic)) {
+      return get_snode_id(snode) == get_snode_id(other->snode);
+    } else {
+      // Different types
+      return false;
+    }
+  }
+};
+
 class StmtFieldManager {
  private:
   Stmt *stmt;
@@ -763,6 +787,10 @@ inline void StmtFieldManager::operator()(const char *key, T &&value) {
     }
     stmt->field_manager.fields.emplace_back(
         std::make_unique<StmtFieldNumeric<std::size_t>>(operand_stmts.size()));
+  } else if constexpr (std::is_same<typename std::decay<T>::type,
+      SNode *>::value) {
+    stmt->field_manager.fields.emplace_back(
+        std::make_unique<StmtFieldSNode>(value));
   } else {
     stmt->field_manager.fields.emplace_back(
         std::make_unique<StmtFieldNumeric<T>>(value));
@@ -1537,11 +1565,9 @@ class SNodeOpStmt : public Stmt {
 
   SNodeOpStmt(SNodeOpType op_type, SNode *snode, Stmt *ptr, Stmt *val = nullptr)
       : op_type(op_type), snode(snode), ptr(ptr), val(val) {
-    add_operand(this->ptr);
-    if (val)
-      add_operand(this->val);
     width() = 1;
     element_type() = DataType::i32;
+    TI_STMT_REG_FIELDS;
   }
 
   SNodeOpStmt(SNodeOpType op_type, SNode *snode, std::vector<Stmt *> indices)
@@ -1550,18 +1576,17 @@ class SNodeOpStmt : public Stmt {
     val = nullptr;
     TI_ASSERT(op_type == SNodeOpType::is_active ||
               op_type == SNodeOpType::deactivate);
-    add_operand(this->ptr);
-    for (int i = 0; i < (int)indices.size(); i++) {
-      add_operand(this->indices[i]);
-    }
     width() = 1;
     element_type() = DataType::i32;
+    TI_STMT_REG_FIELDS;
   }
 
   static bool activation_related(SNodeOpType op) {
     return op == SNodeOpType::activate || op == SNodeOpType::deactivate ||
            op == SNodeOpType::is_active;
   }
+
+  TI_STMT_DEF_FIELDS(ret_type, op_type, snode, ptr, val, indices);
 
   DEFINE_ACCEPT
 };

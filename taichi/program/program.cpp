@@ -108,7 +108,6 @@ Program::Program(Arch desired_arch) {
   // TODO: allow users to run in debug mode without out-of-bound checks
   config.check_out_of_bound = config.debug;
 
-
   TI_TRACE("Program arch={}", arch_name(arch));
 }
 

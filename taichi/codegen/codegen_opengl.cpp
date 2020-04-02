@@ -68,24 +68,19 @@ struct CompiledKernel {
 struct CompiledProgram {
   std::vector<CompiledKernel> kernels;
   int arg_count;
-  int ext_arr_idx;
-  size_t ext_arr_size;
-  bool has_ext_arr{false};
+  std::map<int, size_t> ext_arr_map;
   size_t gtmp_size;
 
   CompiledProgram(Kernel *kernel, size_t gtmp_size) : gtmp_size(gtmp_size) {
-    has_ext_arr = false;
     arg_count = kernel->args.size();
     for (int i = 0; i < arg_count; i++) {
       if (kernel->args[i].is_nparray) {
-        if (has_ext_arr)
-          TI_ERROR(
-              "[glsl] external array argument is supported to at most one in "
-              "OpenGL for now");
-        ext_arr_idx = i;
-        ext_arr_size = kernel->args[i].size;
-        has_ext_arr = true;
+        ext_arr_map[i] = kernel->args[i].size;
       }
+      if (ext_arr_map.size() > 1)
+        TI_ERROR(
+            "[glsl] external array argument is supported to at most one in "
+            "OpenGL for now");
     }
   }
 
@@ -95,7 +90,7 @@ struct CompiledProgram {
     auto gtmp_arr = std::vector<char>(gtmp_size);
     void *gtmp_base = gtmp_arr.data();  // std::calloc(gtmp_size, 1);
     iov.push_back(IOV{gtmp_base, gtmp_size});
-    if (has_ext_arr) {
+    if (ext_arr_map.size() == 1) {
       iov.push_back(
           IOV{ctx.extra_args, arg_count * taichi_max_num_args * sizeof(int)});
       void *extptr = (void *)ctx.args[ext_arr_idx];

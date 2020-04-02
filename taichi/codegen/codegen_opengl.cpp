@@ -321,7 +321,7 @@ float atomicMin_ext_ns_f32(int addr, float rhs)
   return intBitsToFloat(old);
 }
 );
-// clang-format on
+        // clang-format on
       }
     }                   // }}}
     if (used.random) {  // TODO(archibate): random in different offloads should

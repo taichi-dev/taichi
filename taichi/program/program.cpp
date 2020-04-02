@@ -1,4 +1,4 @@
-// Program, which is a context for a taichi program execution
+// Program, context for Taichi program execution
 
 #include "program.h"
 
@@ -14,6 +14,7 @@
 #include "taichi/struct/struct_opengl.h"
 #include "taichi/system/unified_allocator.h"
 #include "taichi/ir/snode.h"
+#include "taichi/program/async_engine.h"
 
 #include "taichi/backends/cuda/cuda_utils.h"
 
@@ -89,6 +90,11 @@ Program::Program(Arch desired_arch) {
   llvm_runtime = nullptr;
   finalized = false;
   snode_root = std::make_unique<SNode>(0, SNodeType::root);
+
+  if (config.async) {
+    TI_WARN("Running in async mode. This is experimental.");
+    engine = std::make_unique<AsyncEngine>();
+  }
 
   TI_TRACE("Program arch={}", arch_name(arch));
 }
@@ -446,6 +452,10 @@ void Program::finalize() {
 #endif
   finalized = true;
   num_instances -= 1;
+}
+
+void Program::launch_async(Kernel *kernel) {
+  engine->launch(kernel);
 }
 
 Program::~Program() {

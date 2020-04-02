@@ -30,6 +30,7 @@ struct CompileConfig {
   bool verbose;
   bool fast_math;
   bool use_unified_memory;
+  bool async;
   DataType default_fp;
   DataType default_ip;
   std::string extra_flags;

@@ -9,7 +9,10 @@ class IRPrinter : public IRVisitor {
  public:
   int current_indent;
 
-  IRPrinter() {
+  std::string *output;
+  std::stringstream ss;
+
+  IRPrinter(std::string *output = nullptr) : output(output) {
     current_indent = 0;
   }
 
@@ -20,18 +23,22 @@ class IRPrinter : public IRVisitor {
 
   void print_raw(std::string f) {
     for (int i = 0; i < current_indent; i++)
-      fmt::print("  ");
-    std::cout << f;
-    fmt::print("\n");
+      f = "  " + f;
+    f += "\n";
+    if (output) {
+      ss << f;
+    } else {
+      std::cout << f;
+    }
   }
 
-  static void run(IRNode *node) {
-    auto p = IRPrinter();
-    fmt::print("==========\n");
-    fmt::print("kernel {{\n");
+  void run(IRNode *node, std::string *output) {
+    auto p = IRPrinter(output);
+    print("==========");
+    print("kernel {{");
     node->accept(&p);
-    fmt::print("}}\n");
-    fmt::print("==========\n");
+    print("}}");
+    print("==========");
   }
 
   void visit(Block *stmt_list) override {
@@ -483,8 +490,9 @@ class IRPrinter : public IRVisitor {
 
 namespace irpass {
 
-void print(IRNode *root) {
-  return IRPrinter::run(root);
+void print(IRNode *root, std::string *output) {
+  IRPrinter printer;
+  return printer.run(root, output);
 }
 
 }  // namespace irpass

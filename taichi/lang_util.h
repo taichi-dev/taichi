@@ -1,6 +1,6 @@
 // Definitions of utility functions and enums
-
 #pragma once
+
 #include "taichi/util/io.h"
 #include "taichi/common/util.h"
 #include "taichi/system/profiler.h"

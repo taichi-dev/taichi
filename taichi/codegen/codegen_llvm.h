@@ -58,7 +58,6 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
 
     int block_dim;
     int grid_dim;
-    void *cuda_func;
 
     OffloadedTask(CodeGenLLVM *codegen) : codegen(codegen) {
       func = nullptr;

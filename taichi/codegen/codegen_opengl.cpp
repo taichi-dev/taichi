@@ -2,6 +2,8 @@
 #include "codegen_opengl.h"
 #include <taichi/platform/opengl/opengl_api.h>
 #include <taichi/platform/opengl/opengl_data_types.h>
+#define STR2(...) #__VA_ARGS__
+#define STR(...) STR2(__VA_ARGS__)
 
 #include <string>
 #include <taichi/ir/ir.h>
@@ -192,209 +194,205 @@ class KernelGen : public IRVisitor {
           "layout(std430, binding = 4) buffer extr_f64 { double _extr_f64_[]; };\n";
     }
     if (used.atomic_float && !opengl_has_GL_NV_shader_atomic_float) {  // {{{
-      kernel_header +=
-          "\
-float atomicAdd_data_f32(int addr, float rhs) \
-{ \
-  int old, new, ret; \
-  do { \
-    old = _data_i32_[addr]; \
-    new = floatBitsToInt((intBitsToFloat(old) + rhs)); \
-  } while (old != atomicCompSwap(_data_i32_[addr], old, new)); \
-  return intBitsToFloat(old); \
-}\n\
-float atomicSub_data_f32(int addr, float rhs) \
-{ \
-  int old, new, ret; \
-  do { \
-    old = _data_i32_[addr]; \
-    new = floatBitsToInt((intBitsToFloat(old) - rhs)); \
-  } while (old != atomicCompSwap(_data_i32_[addr], old, new)); \
-  return intBitsToFloat(old); \
-}\n\
-float atomicMax_data_f32(int addr, float rhs) \
-{ \
-  int old, new, ret; \
-  do { \
-    old = _data_i32_[addr]; \
-    new = floatBitsToInt(max(intBitsToFloat(old), rhs)); \
-  } while (old != atomicCompSwap(_data_i32_[addr], old, new)); \
-  return intBitsToFloat(old); \
-}\n\
-float atomicMin_data_f32(int addr, float rhs) \
-{ \
-  int old, new, ret; \
-  do { \
-    old = _data_i32_[addr]; \
-    new = floatBitsToInt(min(intBitsToFloat(old), rhs)); \
-  } while (old != atomicCompSwap(_data_i32_[addr], old, new)); \
-  return intBitsToFloat(old); \
-}\n\
-"
-#ifdef _GLSL_INT64 // TODO: gtmp_f64?
-          "\
-double atomicAdd_data_f64(int addr, double rhs) \
-{ \
-  int old, new, ret; \
-  do { \
-    old = _data_i64_[addr]; \
-    new = floatBitsToInt((intBitsToFloat(old) + rhs)); \
-  } while (old != atomicCompSwap(_data_i64_[addr], old, new)); \
-  return intBitsToFloat(old); \
-}\n\
-double atomicSub_data_f64(int addr, double rhs) \
-{ \
-  int old, new, ret; \
-  do { \
-    old = _data_i64_[addr]; \
-    new = floatBitsToInt((intBitsToFloat(old) - rhs)); \
-  } while (old != atomicCompSwap(_data_i64_[addr], old, new)); \
-  return intBitsToFloat(old); \
-}\n\
-double atomicMax_data_f64(int addr, double rhs) \
-{ \
-  int old, new, ret; \
-  do { \
-    old = _data_i64_[addr]; \
-    new = floatBitsToInt(max(intBitsToFloat(old), rhs)); \
-  } while (old != atomicCompSwap(_data_i64_[addr], old, new)); \
-  return intBitsToFloat(old); \
-}\n\
-double atomicMin_data_f64(int addr, double rhs) \
-{ \
-  int old, new, ret; \
-  do { \
-    old = _data_i64_[addr]; \
-    new = floatBitsToInt(min(intBitsToFloat(old), rhs)); \
-  } while (old != atomicCompSwap(_data_i64_[addr], old, new)); \
-  return intBitsToFloat(old); \
-}\n\
-"
-#endif
-          "\n";  // discussion:
-                 // https://github.com/taichi-dev/taichi/pull/495#issuecomment-590074123
+      kernel_header += STR(
+float atomicAdd_data_f32(int addr, float rhs)
+{
+  int old, new, ret;
+  do {
+    old = _data_i32_[addr];
+    new = floatBitsToInt((intBitsToFloat(old) + rhs));
+  } while (old != atomicCompSwap(_data_i32_[addr], old, new));
+  return intBitsToFloat(old);
+}
+float atomicSub_data_f32(int addr, float rhs)
+{
+  int old, new, ret;
+  do {
+    old = _data_i32_[addr];
+    new = floatBitsToInt((intBitsToFloat(old) - rhs));
+  } while (old != atomicCompSwap(_data_i32_[addr], old, new));
+  return intBitsToFloat(old);
+}
+float atomicMax_data_f32(int addr, float rhs)
+{
+  int old, new, ret;
+  do {
+    old = _data_i32_[addr];
+    new = floatBitsToInt(max(intBitsToFloat(old), rhs));
+  } while (old != atomicCompSwap(_data_i32_[addr], old, new));
+  return intBitsToFloat(old);
+}
+float atomicMin_data_f32(int addr, float rhs)
+{
+  int old, new, ret;
+  do {
+    old = _data_i32_[addr];
+    new = floatBitsToInt(min(intBitsToFloat(old), rhs));
+  } while (old != atomicCompSwap(_data_i32_[addr], old, new));
+  return intBitsToFloat(old);
+}
+);
+#ifdef _GLSL_INT64 // TODO: why no gtmp_f64?
+      kernel_header += STR(
+double atomicAdd_data_f64(int addr, double rhs)
+{
+  int old, new, ret;
+  do {
+    old = _data_i64_[addr];
+    new = floatBitsToInt((intBitsToFloat(old) + rhs));
+  } while (old != atomicCompSwap(_data_i64_[addr], old, new));
+  return intBitsToFloat(old);
+}
+double atomicSub_data_f64(int addr, double rhs)
+{
+  int old, new, ret;
+  do {
+    old = _data_i64_[addr];
+    new = floatBitsToInt((intBitsToFloat(old) - rhs));
+  } while (old != atomicCompSwap(_data_i64_[addr], old, new));
+  return intBitsToFloat(old);
+}
+double atomicMax_data_f64(int addr, double rhs)
+{
+  int old, new, ret;
+  do {
+    old = _data_i64_[addr];
+    new = floatBitsToInt(max(intBitsToFloat(old), rhs));
+  } while (old != atomicCompSwap(_data_i64_[addr], old, new));
+  return intBitsToFloat(old);
+}
+double atomicMin_data_f64(int addr, double rhs)
+{
+  int old, new, ret;
+  do {
+    old = _data_i64_[addr];
+    new = floatBitsToInt(min(intBitsToFloat(old), rhs));
+  } while (old != atomicCompSwap(_data_i64_[addr], old, new));
+  return intBitsToFloat(old);
+}
+);
+#endif // discussion: https://github.com/taichi-dev/taichi/pull/495#issuecomment-590074123
       if (used.global_temp) {
-        kernel_header += "\
-float atomicAdd_gtmp_f32(int addr, float rhs) \
-{ \
-  int old, new, ret; \
-  do { \
-    old = _gtmp_i32_[addr]; \
-    new = floatBitsToInt((intBitsToFloat(old) + rhs)); \
-  } while (old != atomicCompSwap(_gtmp_i32_[addr], old, new)); \
-  return intBitsToFloat(old); \
-}\n\
-float atomicSub_gtmp_f32(int addr, float rhs) \
-{ \
-  int old, new, ret; \
-  do { \
-    old = _gtmp_i32_[addr]; \
-    new = floatBitsToInt((intBitsToFloat(old) - rhs)); \
-  } while (old != atomicCompSwap(_gtmp_i32_[addr], old, new)); \
-  return intBitsToFloat(old); \
-}\n\
-float atomicMax_gtmp_f32(int addr, float rhs) \
-{ \
-  int old, new, ret; \
-  do { \
-    old = _gtmp_i32_[addr]; \
-    new = floatBitsToInt(max(intBitsToFloat(old), rhs)); \
-  } while (old != atomicCompSwap(_gtmp_i32_[addr], old, new)); \
-  return intBitsToFloat(old); \
-}\n\
-float atomicMin_gtmp_f32(int addr, float rhs) \
-{ \
-  int old, new, ret; \
-  do { \
-    old = _gtmp_i32_[addr]; \
-    new = floatBitsToInt(min(intBitsToFloat(old), rhs)); \
-  } while (old != atomicCompSwap(_gtmp_i32_[addr], old, new)); \
-  return intBitsToFloat(old); \
-}\n\
-";
+        kernel_header += STR(
+float atomicAdd_gtmp_f32(int addr, float rhs)
+{
+  int old, new, ret;
+  do {
+    old = _gtmp_i32_[addr];
+    new = floatBitsToInt((intBitsToFloat(old) + rhs));
+  } while (old != atomicCompSwap(_gtmp_i32_[addr], old, new));
+  return intBitsToFloat(old);
+}
+float atomicSub_gtmp_f32(int addr, float rhs)
+{
+  int old, new, ret;
+  do {
+    old = _gtmp_i32_[addr];
+    new = floatBitsToInt((intBitsToFloat(old) - rhs));
+  } while (old != atomicCompSwap(_gtmp_i32_[addr], old, new));
+  return intBitsToFloat(old);
+}
+float atomicMax_gtmp_f32(int addr, float rhs)
+{
+  int old, new, ret;
+  do {
+    old = _gtmp_i32_[addr];
+    new = floatBitsToInt(max(intBitsToFloat(old), rhs));
+  } while (old != atomicCompSwap(_gtmp_i32_[addr], old, new));
+  return intBitsToFloat(old);
+}
+float atomicMin_gtmp_f32(int addr, float rhs)
+{
+  int old, new, ret;
+  do {
+    old = _gtmp_i32_[addr];
+    new = floatBitsToInt(min(intBitsToFloat(old), rhs));
+  } while (old != atomicCompSwap(_gtmp_i32_[addr], old, new));
+  return intBitsToFloat(old);
+}
+);
       }
       if (used.external_ptr) { // TODO: bake no macro atomics for ext_ns
-        kernel_header += "\
-float atomicAdd_ext_ns_f32(int addr, float rhs) \
-{ \
-  int old, new, ret; \
-  do { \
-    old = _ext_ns_i32(addr); \
-    new = floatBitsToInt((intBitsToFloat(old) + rhs)); \
-  } while (old != atomicCompSwap((_ext_ns_i32(addr)), old, new)); \
-  return intBitsToFloat(old); \
-}\n\
-float atomicSub_ext_ns_f32(int addr, float rhs) \
-{ \
-  int old, new, ret; \
-  do { \
-    old = _ext_ns_i32(addr); \
-    new = floatBitsToInt((intBitsToFloat(old) - rhs)); \
-  } while (old != atomicCompSwap((_ext_ns_i32(addr)), old, new)); \
-  return intBitsToFloat(old); \
-}\n\
-float atomicMax_ext_ns_f32(int addr, float rhs) \
-{ \
-  int old, new, ret; \
-  do { \
-    old = _ext_ns_i32(addr); \
-    new = floatBitsToInt(max(intBitsToFloat(old), rhs)); \
-  } while (old != atomicCompSwap((_ext_ns_i32(addr)), old, new)); \
-  return intBitsToFloat(old); \
-}\n\
-float atomicMin_ext_ns_f32(int addr, float rhs) \
-{ \
-  int old, new, ret; \
-  do { \
-    old = _ext_ns_i32(addr); \
-    new = floatBitsToInt(min(intBitsToFloat(old), rhs)); \
-  } while (old != atomicCompSwap((_ext_ns_i32(addr)), old, new)); \
-  return intBitsToFloat(old); \
-}\n\
-";
+        kernel_header += STR(
+float atomicAdd_ext_ns_f32(int addr, float rhs)
+{
+  int old, new, ret;
+  do {
+    old = _ext_ns_i32(addr);
+    new = floatBitsToInt((intBitsToFloat(old) + rhs));
+  } while (old != atomicCompSwap((_ext_ns_i32(addr)), old, new));
+  return intBitsToFloat(old);
+}
+float atomicSub_ext_ns_f32(int addr, float rhs)
+{
+  int old, new, ret;
+  do {
+    old = _ext_ns_i32(addr);
+    new = floatBitsToInt((intBitsToFloat(old) - rhs));
+  } while (old != atomicCompSwap((_ext_ns_i32(addr)), old, new));
+  return intBitsToFloat(old);
+}
+float atomicMax_ext_ns_f32(int addr, float rhs)
+{
+  int old, new, ret;
+  do {
+    old = _ext_ns_i32(addr);
+    new = floatBitsToInt(max(intBitsToFloat(old), rhs));
+  } while (old != atomicCompSwap((_ext_ns_i32(addr)), old, new));
+  return intBitsToFloat(old);
+}
+float atomicMin_ext_ns_f32(int addr, float rhs)
+{
+  int old, new, ret;
+  do {
+    old = _ext_ns_i32(addr);
+    new = floatBitsToInt(min(intBitsToFloat(old), rhs));
+  } while (old != atomicCompSwap((_ext_ns_i32(addr)), old, new));
+  return intBitsToFloat(old);
+}
+);
       }
     }                   // }}}
     if (used.random) {  // TODO(archibate): random in different offloads should
                         // share rand seed? {{{
-      kernel_header +=
-          "\
-uvec4 _rand_;\n\
-\n\
-void _init_rand()\n\
-{\n\
-  uint i = gl_GlobalInvocationID.x;\n\
-  _rand_.x = 123456789 * i * 1000000007;\n\
-  _rand_.y = 362436069;\n\
-  _rand_.z = 521288629;\n\
-  _rand_.w = 88675123;\n\
-}\n\
-\n\
-uint _rand_u32()\n\
-{\n\
-  uint t = _rand_.x ^ (_rand_.x << 11);\n\
-  _rand_.xyz = _rand_.yzw;\n\
-  _rand_.x = _rand_.y;\n\
-  _rand_.y = _rand_.z;\n\
-  _rand_.z = _rand_.w;\n\
-  _rand_.w = (_rand_.w ^ (_rand_.w >> 19)) ^ (t ^ (t >> 8));\n\
-  return _rand_.w * 1000000007;\n\
-}\n\
-\n\
-float _rand_f32()\n\
-{\n\
-  return float(_rand_u32()) * (1.0 / 4294967296.0);\n\
-}\n\
-\n\
-double _rand_f64()\n\
-{\n\
-  return double(_rand_f32());\n\
-}\n\
-\n\
-int _rand_i32()\n\
-{\n\
-  return int(_rand_u32());\n\
-}\n\
-";
+      kernel_header += STR(
+uvec4 _rand_;
+
+void _init_rand()
+{
+  uint i = gl_GlobalInvocationID.x;
+  _rand_.x = 123456789 * i * 1000000007;
+  _rand_.y = 362436069;
+  _rand_.z = 521288629;
+  _rand_.w = 88675123;
+}
+
+uint _rand_u32()
+{
+  uint t = _rand_.x ^ (_rand_.x << 11);
+  _rand_.xyz = _rand_.yzw;
+  _rand_.x = _rand_.y;
+  _rand_.y = _rand_.z;
+  _rand_.z = _rand_.w;
+  _rand_.w = (_rand_.w ^ (_rand_.w >> 19)) ^ (t ^ (t >> 8));
+  return _rand_.w * 1000000007;
+}
+
+float _rand_f32()
+{
+  return float(_rand_u32()) * (1.0 / 4294967296.0);
+}
+
+double _rand_f64()
+{
+  return double(_rand_f32());
+}
+
+int _rand_i32()
+{
+  return int(_rand_u32());
+}
+);
     }  // }}}
 
     line_appender_header_.append_raw(kernel_header);

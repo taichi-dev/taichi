@@ -153,7 +153,6 @@ class IRNodeComparator : public IRVisitor {
     basic_check(stmt);
     if (!same)
       return;
-
     auto other = other_node->as<IfStmt>();
     if (stmt->true_statements) {
       if (!other->true_statements) {
@@ -175,12 +174,6 @@ class IRNodeComparator : public IRVisitor {
     }
   }
 
-  void visit(PrintStmt *stmt) override {
-    DEFINE_BASIC_CHECK(PrintStmt)
-    DEFINE_FIELD_CHECK(type_hint())
-    DEFINE_FIELD_CHECK(str)
-  }
-
   void visit(ConstStmt *stmt) override {
     DEFINE_BASIC_CHECK(ConstStmt)
     DEFINE_FIELD_CHECK(type_hint())
@@ -188,25 +181,21 @@ class IRNodeComparator : public IRVisitor {
         [](const TypedConstant &t) { return t.stringify(); }, "["))
   }
 
-  void visit(WhileControlStmt *stmt) override {
-    DEFINE_BASIC_CHECK(WhileControlStmt)
-  }
-
-  void visit(FuncCallStmt *stmt) override {
-    DEFINE_BASIC_CHECK(FuncCallStmt)
-    DEFINE_FIELD_CHECK(type_hint())
-    DEFINE_FIELD_CHECK(funcid)
-  }
-
   void visit(FuncBodyStmt *stmt) override {
-    DEFINE_BASIC_CHECK(FuncBodyStmt)
+    basic_check(stmt);
+    if (!same)
+      return;
+    auto other = other_node->as<FuncBodyStmt>();
     other_node = other->body.get();
     stmt->body->accept(this);
     other_node = other;
   }
 
   void visit(WhileStmt *stmt) override {
-    DEFINE_BASIC_CHECK(WhileStmt)
+    basic_check(stmt);
+    if (!same)
+      return;
+    auto other = other_node->as<WhileStmt>();
     other_node = other->body.get();
     stmt->body->accept(this);
     other_node = other;

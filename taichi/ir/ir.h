@@ -940,9 +940,10 @@ class WhileControlStmt : public Stmt {
   Stmt *mask;
   Stmt *cond;
   WhileControlStmt(Stmt *mask, Stmt *cond) : mask(mask), cond(cond) {
-    add_operand(this->mask);
-    add_operand(this->cond);
+    TI_STMT_REG_FIELDS;
   }
+
+  TI_STMT_DEF_FIELDS(mask, cond);
   DEFINE_ACCEPT;
 };
 
@@ -1818,9 +1819,10 @@ class PrintStmt : public Stmt {
   std::string str;
 
   PrintStmt(Stmt *stmt, std::string str) : stmt(stmt), str(str) {
-    add_operand(this->stmt);
+    TI_STMT_REG_FIELDS;
   }
 
+  TI_STMT_DEF_FIELDS(ret_type, stmt, str);
   DEFINE_ACCEPT
 };
 
@@ -1994,12 +1996,14 @@ class FuncBodyStmt : public Stmt {
 
   FuncBodyStmt(const std::string &funcid, std::unique_ptr<Block> &&body)
       : funcid(funcid), body(std::move(body)) {
+    TI_STMT_REG_FIELDS;
   }
 
   bool is_container_statement() const override {
     return true;
   }
 
+  TI_STMT_DEF_FIELDS(funcid);
   DEFINE_ACCEPT
 };
 
@@ -2023,12 +2027,14 @@ class FuncCallStmt : public Stmt {
   std::string funcid;
 
   FuncCallStmt(const std::string &funcid) : funcid(funcid) {
+    TI_STMT_REG_FIELDS;
   }
 
   bool is_container_statement() const override {
     return false;
   }
 
+  TI_STMT_DEF_FIELDS(ret_type, funcid);
   DEFINE_ACCEPT
 };
 
@@ -2044,6 +2050,7 @@ class WhileStmt : public Stmt {
     return true;
   }
 
+  // no fields
   DEFINE_ACCEPT
 };
 

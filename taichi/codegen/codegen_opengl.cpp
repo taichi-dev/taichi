@@ -1,9 +1,7 @@
 //#define _GLSL_DEBUG 1
 #include "codegen_opengl.h"
-#include <taichi/platform/opengl/opengl_api.h>
-#include <taichi/platform/opengl/opengl_data_types.h>
-#include "taichi/platform/opengl/opengl_api.h"
-#include "taichi/platform/opengl/opengl_data_types.h"
+#include "taichi/backends/opengl/opengl_api.h"
+#include "taichi/backends/opengl/opengl_data_types.h"
 #define STR2(...) #__VA_ARGS__
 #define STR(...) STR2(__VA_ARGS__)
 

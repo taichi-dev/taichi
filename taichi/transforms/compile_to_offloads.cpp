@@ -64,7 +64,7 @@ void compile_to_offloads(IRNode *ir,
   }
   if (grad) {
     irpass::demote_atomics(ir);
-    irpass::simplify(ir);
+    irpass::full_simplify(ir, config);
     irpass::make_adjoint(ir, ad_use_stack);
     irpass::full_simplify(ir, config);
     if (verbose) {
@@ -81,7 +81,7 @@ void compile_to_offloads(IRNode *ir,
       irpass::print(ir);
     }
   }
-  if (config.debug) {
+  if (config.check_out_of_bound) {
     irpass::check_out_of_bound(ir);
     if (verbose) {
       TI_INFO("Bound checked:");
@@ -101,19 +101,12 @@ void compile_to_offloads(IRNode *ir,
     irpass::re_id(ir);
     irpass::print(ir);
   }
-  irpass::simplify(ir);
+  irpass::full_simplify(ir, config);
   if (verbose) {
     TI_INFO("Simplified II:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
-  irpass::die(ir);
-  if (verbose) {
-    TI_INFO("DIEd:");
-    irpass::re_id(ir);
-    irpass::print(ir);
-  }
-
   irpass::flag_access(ir);
   if (verbose) {
     TI_INFO("Access Flagged:");

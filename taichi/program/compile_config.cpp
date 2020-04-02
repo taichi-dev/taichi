@@ -17,6 +17,7 @@ CompileConfig::CompileConfig() {
   demote_dense_struct_fors = true;
   max_vector_width = 8;
   debug = false;
+  check_out_of_bound = false;
   lazy_compilation = true;
   serial_schedule = false;
   simplify_before_lower_access = true;

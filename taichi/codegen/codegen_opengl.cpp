@@ -194,6 +194,7 @@ class KernelGen : public IRVisitor {
           "layout(std430, binding = 4) buffer extr_f64 { double _extr_f64_[]; };\n";
     }
     if (used.atomic_float && !opengl_has_GL_NV_shader_atomic_float) {  // {{{
+      // clang-format off
       kernel_header += STR(
 float atomicAdd_data_f32(int addr, float rhs)
 {
@@ -351,6 +352,7 @@ float atomicMin_ext_ns_f32(int addr, float rhs)
   return intBitsToFloat(old);
 }
 );
+      // clang-format on
       }
     }                   // }}}
     if (used.random) {  // TODO(archibate): random in different offloads should

@@ -885,15 +885,19 @@ class AllocaStmt : public Stmt {
  public:
   AllocaStmt(DataType type) {
     ret_type = VectorType(1, type);
+    TI_STMT_REG_FIELDS;
   }
 
   AllocaStmt(int width, DataType type) {
     ret_type = VectorType(width, type);
+    TI_STMT_REG_FIELDS;
   }
 
   virtual bool has_global_side_effect() const override {
     return false;
   }
+
+  TI_STMT_DEF_FIELDS(ret_type);
 
   DEFINE_ACCEPT
 };
@@ -1014,11 +1018,15 @@ class RandStmt : public Stmt {
  public:
   RandStmt(DataType dt) {
     ret_type.data_type = dt;
+    TI_STMT_REG_FIELDS;
   }
 
   virtual bool has_global_side_effect() const override {
     return false;
   }
+
+  TI_STMT_DEF_FIELDS(ret_type);
+
   DEFINE_ACCEPT
 };
 
@@ -1576,16 +1584,16 @@ class AssertStmt : public Stmt {
   std::vector<Stmt *> args;
 
   AssertStmt(const std::string &text, Stmt *cond) : cond(cond), text(text) {
-    TI_STMT_REG_FIELDS;
     TI_ASSERT(cond);
+    TI_STMT_REG_FIELDS;
   }
 
   AssertStmt(Stmt *cond,
              const std::string &text,
              const std::vector<Stmt *> &args)
       : cond(cond), text(text), args(args) {
-    TI_STMT_REG_FIELDS;
     TI_ASSERT(cond);
+    TI_STMT_REG_FIELDS;
   }
 
   TI_STMT_DEF_FIELDS(cond, text, args);

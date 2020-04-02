@@ -137,26 +137,11 @@ class IRNodeComparator : public IRVisitor {
     }
   }
 
-  /*void visit(AssertStmt *stmt) override {
-    DEFINE_BASIC_CHECK(AssertStmt)
-    DEFINE_FIELD_CHECK(text)
-  }*/
-
   void visit(SNodeOpStmt *stmt) override {
     DEFINE_BASIC_CHECK(SNodeOpStmt)
     DEFINE_FIELD_CHECK(type_hint())
     DEFINE_FIELD_CHECK(op_type)
     DEFINE_SNODE_CHECK(snode)
-  }
-
-  void visit(AllocaStmt *stmt) override {
-    DEFINE_BASIC_CHECK(AllocaStmt)
-    DEFINE_FIELD_CHECK(type_hint())
-  }
-
-  void visit(RandStmt *stmt) override {
-    DEFINE_BASIC_CHECK(RandStmt)
-    DEFINE_FIELD_CHECK(type_hint())
   }
 
   void visit(UnaryOpStmt *stmt) override {

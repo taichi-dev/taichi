@@ -4,7 +4,7 @@
 #include <vector>
 #include <unordered_map>
 
-#include <taichi/ir/statements.h>
+#include "taichi/ir/statements.h"
 
 TLANG_NAMESPACE_BEGIN
 

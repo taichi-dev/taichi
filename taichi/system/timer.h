@@ -8,7 +8,7 @@
 #include <string>
 #include <cstdio>
 #include <map>
-#include <taichi/common/util.h>
+#include "taichi/common/util.h"
 #if defined(TI_PLATFORM_UNIX)
 #include <sys/time.h>
 #else

@@ -19,7 +19,7 @@ void CodeGenCUDA::lower() {
   if (kernel->grad) {
     irpass::reverse_segments(ir);
     if (print_ir) {
-      TI_TRACE("Segment reversed (for autodiff):");
+      TI_INFO("Segment reversed (for autodiff):");
       irpass::re_id(ir);
       irpass::print(ir);
     }
@@ -39,7 +39,7 @@ void CodeGenCUDA::lower() {
     irpass::simplify(ir);
     irpass::re_id(ir);
     if (print_ir) {
-      TI_TRACE("Simplified I:");
+      TI_INFO("Simplified I:");
       irpass::print(ir);
     }
   }
@@ -48,12 +48,15 @@ void CodeGenCUDA::lower() {
     irpass::full_simplify(ir, prog->config);
     irpass::typecheck(ir);
     if (print_ir) {
-      TI_TRACE("Before make_adjoint:");
+      TI_INFO("Before make_adjoint:");
+      irpass::re_id(ir);
       irpass::print(ir);
     }
     irpass::make_adjoint(ir, true);
+    irpass::full_simplify(ir, prog->config);
     if (print_ir) {
-      TI_TRACE("After make_adjoint:");
+      TI_INFO("After make_adjoint:");
+      irpass::re_id(ir);
       irpass::print(ir);
     }
     irpass::typecheck(ir);
@@ -62,57 +65,57 @@ void CodeGenCUDA::lower() {
     irpass::demote_dense_struct_fors(ir);
     irpass::typecheck(ir);
     if (print_ir) {
-      TI_TRACE("Dense Struct-for demoted:");
+      TI_INFO("Dense Struct-for demoted:");
       irpass::print(ir);
     }
   }
   irpass::lower_access(ir, prog->config.use_llvm);
   if (print_ir) {
-    TI_TRACE("Access Lowered:");
+    TI_INFO("Access Lowered:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
   if (prog->config.simplify_after_lower_access) {
     irpass::die(ir);
     if (print_ir) {
-      TI_TRACE("DIEd:");
+      TI_INFO("DIEd:");
       irpass::re_id(ir);
       irpass::print(ir);
     }
     irpass::simplify(ir);
     if (print_ir) {
-      TI_TRACE("Simplified II:");
+      TI_INFO("Simplified II:");
       irpass::re_id(ir);
       irpass::print(ir);
     }
   }
   irpass::die(ir);
   if (print_ir) {
-    TI_TRACE("DIEd:");
+    TI_INFO("DIEd:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
   irpass::flag_access(ir);
   if (print_ir) {
-    TI_TRACE("Access Flagged:");
+    TI_INFO("Access Flagged:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
   irpass::offload(ir);
   if (print_ir) {
-    TI_TRACE("Offloaded:");
+    TI_INFO("Offloaded:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
   irpass::demote_atomics(ir);
   if (print_ir) {
-    TI_TRACE("Atomics Demoted:");
+    TI_INFO("Atomics Demoted:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
   irpass::full_simplify(ir, prog->config);
   if (print_ir) {
-    TI_TRACE("Simplified III:");
+    TI_INFO("Simplified III:");
     irpass::re_id(ir);
     irpass::print(ir);
   }

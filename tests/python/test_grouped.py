@@ -159,3 +159,27 @@ def test_static_grouped_ndrange_0d():
     test()
 
     assert val[None] == 42
+
+
+@ti.all_archs
+def test_static_grouped_func():
+
+    K = 3
+    dim = 2
+
+    v = ti.Vector(K, dt=ti.i32, shape=((K, ) * dim))
+
+    def stencil_range():
+        return ti.ndrange(*((K, ) * (dim + 1)))
+
+    @ti.kernel
+    def p2g():
+        for I in ti.static(ti.grouped(stencil_range())):
+            v[I[0], I[1]][I[2]] = I[0] + I[1] * 3 + I[2] * 10
+
+    p2g()
+
+    for i in range(K):
+        for j in range(K):
+            for k in range(K):
+                assert v[i, j][k] == i + j * 3 + k * 10

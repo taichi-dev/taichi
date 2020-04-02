@@ -1,9 +1,9 @@
 // Codegen for the hierarchical data structure
 #pragma once
 
-#include <taichi/platform/opengl/opengl_kernel_util.h>
-#include <taichi/platform/opengl/opengl_data_types.h>
-#include <taichi/ir/snode.h>
+#include "taichi/platform/opengl/opengl_kernel_util.h"
+#include "taichi/platform/opengl/opengl_data_types.h"
+#include "taichi/ir/snode.h"
 
 #include <algorithm>
 #include <functional>

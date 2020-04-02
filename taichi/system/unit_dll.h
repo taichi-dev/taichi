@@ -9,7 +9,7 @@
 #include <dlfcn.h>
 #endif
 
-#include <taichi/common/interface.h>
+#include "taichi/common/interface.h"
 
 TI_NAMESPACE_BEGIN
 

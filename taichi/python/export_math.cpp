@@ -3,8 +3,8 @@
     The use of this software is governed by the LICENSE file.
 *******************************************************************************/
 
-#include <taichi/python/export.h>
-#include <taichi/common/dict.h>
+#include "taichi/python/export.h"
+#include "taichi/common/dict.h"
 
 TI_NAMESPACE_BEGIN
 

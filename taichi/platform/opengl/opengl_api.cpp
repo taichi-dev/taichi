@@ -1,5 +1,5 @@
 #include "opengl_api.h"
-#include <taichi/program/program.h>
+#include "taichi/program/program.h"
 
 #ifdef TI_WITH_OPENGL
 #include <GL/glew.h>
@@ -220,11 +220,14 @@ void initialize_opengl() {
     TI_ERROR("[glsl] cannot initialize GLEW: {}", glewGetErrorString(status));
   }
   TI_INFO("[glsl] OpenGL {}", (const char *)glGetString(GL_VERSION));
-  TI_INFO("[glsl] GLSL {}", (const char *)glGetString(GL_SHADING_LANGUAGE_VERSION));
+  TI_INFO("[glsl] GLSL {}",
+          (const char *)glGetString(GL_SHADING_LANGUAGE_VERSION));
   if (!glewGetExtension("GL_ARB_compute_shader")) {
-    TI_ERROR("Your OpenGL version does not support GL_ARB_compute_shader extension");
+    TI_ERROR(
+        "Your OpenGL version does not support GL_ARB_compute_shader extension");
   }
-  if ((opengl_has_GL_NV_shader_atomic_float = glewGetExtension("GL_NV_shader_atomic_float"))) {
+  if ((opengl_has_GL_NV_shader_atomic_float =
+           glewGetExtension("GL_NV_shader_atomic_float"))) {
     TI_INFO("[glsl] Found GL_NV_shader_atomic_float");
   }
 }
@@ -318,9 +321,7 @@ bool is_opengl_api_available() {
   return false;
 }
 
-void initialize_opengl() {
-  TI_NOT_IMPLEMENTED
-}
+void initialize_opengl(){TI_NOT_IMPLEMENTED}
 
 GLProgram *compile_glsl_program(std::string source) {
   TI_NOT_IMPLEMENTED

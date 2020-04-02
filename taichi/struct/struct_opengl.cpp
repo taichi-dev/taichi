@@ -49,8 +49,8 @@ void OpenglStructCompiler::generate_types(const SNode &snode) {
         stride_str = ch_node_name + "_stride";
         stride_num = stride_map_[ch_node_name];
       } else {
-        emit("#define {}_get{}(a_) ((a_) + {}) // {}", snode.node_type_name,
-             i, stride_num, ch_node_name);
+        emit("#define {}_get{}(a_) ((a_) + {}) // {}", snode.node_type_name, i,
+             stride_num, ch_node_name);
         gimme.push_back(stride_num);
         stride_str += " + " + ch_node_name + "_stride";
         stride_num += stride_map_[ch_node_name];
@@ -77,7 +77,8 @@ void OpenglStructCompiler::generate_types(const SNode &snode) {
     length_map_[node_name] = n;
     emit("#define {}_stride ({}_ch_stride * {}_n)", node_name, node_name,
          node_name);
-    stride_map_[node_name] = stride_map_[node_name + "_ch"] * length_map_[node_name];
+    stride_map_[node_name] =
+        stride_map_[node_name + "_ch"] * length_map_[node_name];
     emit("#define {}_children(a_, i) ((a_) + {}_ch_stride * (i))", node_name,
          node_name);
     class_children_map_[node_name] = stride_map_[node_name + "_ch"];

@@ -89,6 +89,8 @@ Existing tags:
 - ``[Type]``: type system;
 - ``[Infra]``: general infrastructure, e.g. logging, image reader;
 - ``[GUI]``: the built-in GUI system;
+- ``[Refactor]``: code refactoring;
+- ``[AutoDiff]``: automatic differentiation;
 - ``[CLI]``: commandline interfaces, e.g. the ``ti`` command;
 - ``[Doc]``: documentation;
 - ``[Example]``: examples under ``taichi/examples/``;

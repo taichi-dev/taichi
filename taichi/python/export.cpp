@@ -3,9 +3,9 @@
     The use of this software is governed by the LICENSE file.
 *******************************************************************************/
 
-#include <taichi/python/export.h>
-#include <taichi/common/interface.h>
-#include <taichi/util/io.h>
+#include "taichi/python/export.h"
+#include "taichi/common/interface.h"
+#include "taichi/util/io.h"
 
 TI_NAMESPACE_BEGIN
 

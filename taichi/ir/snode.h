@@ -88,13 +88,9 @@ class SNode {
   SNodeType type;
   bool _morton{};
 
-  std::string get_node_type_name() const {
-    return fmt::format("S{}", id);
-  }
+  std::string get_node_type_name() const;
 
-  std::string get_node_type_name_hinted() const {
-    return fmt::format("S{}{}", id, snode_type_name(type));
-  }
+  std::string get_node_type_name_hinted() const;
 
   SNode();
 
@@ -179,15 +175,7 @@ class SNode {
     return snode_type_name(type);
   }
 
-  void print() {
-    for (int i = 0; i < depth; i++) {
-      fmt::print("  ");
-    }
-    fmt::print("{}\n", type_name());
-    for (auto &c : ch) {
-      c->print();
-    }
-  }
+  void print();
 
   SNode &place(Expr &expr);
 

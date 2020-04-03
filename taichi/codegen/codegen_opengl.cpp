@@ -92,33 +92,41 @@ struct CompiledProgram {
     iov.push_back(IOV{gtmp_base, gtmp_size});
     std::optional<std::vector<char>> base_arr;
     std::optional<std::vector<void *>> saved_ctx_ptrs;
-    if (ext_arr_map.size()) { // TODO: optimize for size = 1 // TODO: so dirty from #694
+    // TODO: these dirty codes are introduced by #694
+    if (ext_arr_map.size()) {
       iov.push_back(
           IOV{ctx.extra_args, arg_count * taichi_max_num_args * sizeof(int)});
-      size_t accum_size = 0;
-      std::vector<void *> ptrarr;
-      for (auto it = ext_arr_map.begin(); it != ext_arr_map.end(); it++) {
-        accum_size += it->second;
+      if (ext_arr_map.size() == 1) { // zero-copy for only one ext_arr
+        auto it = ext_arr_map.begin();
+        auto extptr = (void *)ctx.args[it->first];
+        ctx.args[it->first] = 0;
+        iov.push_back(IOV{extptr, it->second});
+      } else {
+        size_t accum_size = 0;
+        std::vector<void *> ptrarr;
+        for (auto it = ext_arr_map.begin(); it != ext_arr_map.end(); it++) {
+          accum_size += it->second;
+        }
+        saved_ctx_ptrs = std::make_optional<std::vector<void *>>();
+        base_arr = std::make_optional<std::vector<char>>(accum_size);
+        void *baseptr = base_arr->data();
+        accum_size = 0;
+        for (auto it = ext_arr_map.begin(); it != ext_arr_map.end(); it++) {
+          auto ptr = (void *)ctx.args[it->first];
+          saved_ctx_ptrs->push_back(ptr);
+          memcpy((char *)baseptr + accum_size, ptr, it->second);
+          ctx.args[it->first] = accum_size;
+          accum_size += it->second;
+        } // concat all extptr into my baseptr
+        iov.push_back(IOV{baseptr, accum_size});
       }
-      saved_ctx_ptrs = std::make_optional<std::vector<void *>>();
-      base_arr = std::make_optional<std::vector<char>>(accum_size);
-      void *baseptr = base_arr->data();
-      accum_size = 0;
-      for (auto it = ext_arr_map.begin(); it != ext_arr_map.end(); it++) {
-        auto ptr = (void *)ctx.args[it->first];
-        saved_ctx_ptrs->push_back(ptr);
-        memcpy((char *)baseptr + accum_size, ptr, it->second);
-        ctx.args[it->first] = accum_size;
-        accum_size += it->second;
-      } // concat all extptr into my baseptr
-      iov.push_back(IOV{baseptr, accum_size});
     }
     for (const auto &ker : kernels) {
       begin_glsl_kernels(iov);
       ker.launch();
       end_glsl_kernels(iov);
     }
-    if (ext_arr_map.size()) { // TODO: optimize for size = 1
+    if (ext_arr_map.size() > 1) {
       void *baseptr = base_arr->data();
       auto cpit = saved_ctx_ptrs->begin();
       size_t accum_size = 0;
@@ -126,7 +134,7 @@ struct CompiledProgram {
         memcpy(*cpit, (char *)baseptr + accum_size, it->second);
         ctx.args[it->first] = accum_size;
         accum_size += it->second;
-      } // concat all extptr into my baseptr
+      } // extract back to all extptr from my baseptr
     }
   }
 };

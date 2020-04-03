@@ -559,7 +559,7 @@ class StmtFieldSNode final : public StmtField {
   SNode *const &snode;
 
  public:
-  explicit StmtFieldSNode(SNode *const &snode): snode(snode) {
+  explicit StmtFieldSNode(SNode *const &snode) : snode(snode) {
   }
 
   static int get_snode_id(SNode *snode) {
@@ -617,7 +617,9 @@ class StmtFieldManager {
 };
 
 #define TI_STMT_DEF_FIELDS(...) TI_IO_DEF(__VA_ARGS__)
-#define TI_STMT_REG_FIELDS io(field_manager)
+#define TI_STMT_REG_FIELDS  \
+  mark_fields_registered(); \
+  io(field_manager)
 
 class Stmt : public IRNode {
  protected:  // NOTE: operands should not be directly modified, for the
@@ -632,12 +634,13 @@ class Stmt : public IRNode {
   Block *parent;
   uint64 operand_bitmap;
   bool erased;
+  bool fields_registered;
   std::string tb;
   bool is_ptr;
 
   Stmt(const Stmt &stmt) = delete;
 
-  Stmt() : field_manager(this) {
+  Stmt() : field_manager(this), fields_registered(false) {
     parent = nullptr;
     instance_id = instance_id_counter++;
     id = instance_id;
@@ -724,9 +727,14 @@ class Stmt : public IRNode {
     rebuild_operand_bitmap();
   }
 
-  void add_operand(Stmt *&stmt) {
+  void register_operand(Stmt *&stmt) {
     operands.push_back(&stmt);
     rebuild_operand_bitmap();
+  }
+
+  void mark_fields_registered() {
+    TI_ASSERT(!fields_registered);
+    fields_registered = true;
   }
 
   virtual void rebuild_operands() {
@@ -1690,7 +1698,7 @@ class LocalLoadStmt : public Stmt {
   void rebuild_operands() override {
     operands.clear();
     for (int i = 0; i < (int)ptr.size(); i++) {
-      add_operand(this->ptr[i].var);
+      register_operand(this->ptr[i].var);
     }
   }
 
@@ -1932,8 +1940,14 @@ class RangeForStmt : public Stmt {
     reversed = !reversed;
   }
 
-  TI_STMT_DEF_FIELDS(loop_var, begin, end, reversed, vectorize,
-      parallelize, block_dim, strictly_serialized);
+  TI_STMT_DEF_FIELDS(loop_var,
+                     begin,
+                     end,
+                     reversed,
+                     vectorize,
+                     parallelize,
+                     block_dim,
+                     strictly_serialized);
   DEFINE_ACCEPT
 };
 
@@ -2400,21 +2414,21 @@ class VectorElement {
 template <typename T>
 inline void StmtFieldManager::operator()(const char *key, T &&value) {
   using decay_T = typename std::decay<T>::type;
-  if constexpr (is_specialization<decay_T, std::vector>::value
-      || is_specialization<decay_T, LaneAttribute>::value) {
+  if constexpr (is_specialization<decay_T, std::vector>::value ||
+                is_specialization<decay_T, LaneAttribute>::value) {
     stmt->field_manager.fields.emplace_back(
         std::make_unique<StmtFieldNumeric<std::size_t>>(value.size()));
     for (int i = 0; i < (int)value.size(); i++) {
       (*this)("__element", value[i]);
     }
   } else if constexpr (std::is_same<decay_T, Stmt *>::value) {
-    stmt->add_operand(const_cast<Stmt *&>(value));
+    stmt->register_operand(const_cast<Stmt *&>(value));
   } else if constexpr (std::is_same<decay_T, LocalAddress>::value) {
-    stmt->add_operand(const_cast<Stmt *&>(value.var));
+    stmt->register_operand(const_cast<Stmt *&>(value.var));
     stmt->field_manager.fields.emplace_back(
         std::make_unique<StmtFieldNumeric<int>>(value.offset));
   } else if constexpr (std::is_same<decay_T, VectorElement>::value) {
-    stmt->add_operand(const_cast<Stmt *&>(value.stmt));
+    stmt->register_operand(const_cast<Stmt *&>(value.stmt));
     stmt->field_manager.fields.emplace_back(
         std::make_unique<StmtFieldNumeric<int>>(value.index));
   } else if constexpr (std::is_same<decay_T, SNode *>::value) {

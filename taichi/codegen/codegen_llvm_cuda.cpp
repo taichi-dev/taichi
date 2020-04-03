@@ -329,7 +329,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     llvm::Function *body;
 
     {
-      auto guard = get_function_creation_gurad(
+      auto guard = get_function_creation_guard(
           {llvm::PointerType::get(get_runtime_type("Context"), 0),
            tlctx->get_data_type<int>()});
 

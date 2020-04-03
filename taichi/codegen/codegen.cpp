@@ -9,7 +9,6 @@ TLANG_NAMESPACE_BEGIN
 
 FunctionType KernelCodeGen::compile() {
   TI_AUTO_PROF;
-  lower();
   return codegen();
 }
 

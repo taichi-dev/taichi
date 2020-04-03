@@ -1,4 +1,4 @@
-// Program class - a context for a Taichi program execution
+// Program  - Taichi program execution context
 
 #pragma once
 
@@ -31,6 +31,8 @@ TI_FORCE_INLINE Program &get_current_program() {
 
 class StructCompiler;
 
+class AsyncEngine;
+
 class Program {
  public:
   using Kernel = taichi::lang::Kernel;
@@ -50,6 +52,7 @@ class Program {
   void *preallocated_device_buffer;  // TODO: move this to memory allocator
 
   std::unique_ptr<Runtime> runtime;
+  std::unique_ptr<AsyncEngine> engine;
 
   std::vector<std::unique_ptr<Kernel>> functions;
 
@@ -176,6 +179,8 @@ class Program {
   void print_snode_tree() {
     snode_root->print();
   }
+
+  void launch_async(Kernel *kernel);
 
   ~Program();
 

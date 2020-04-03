@@ -233,6 +233,7 @@ def test_violate_kernel_simplicity2():
     func.grad()
 
 
+@ti.require(ti.extension.data64)
 @ti.all_archs_with(print_ir=True)
 def test_cast():
     @ti.kernel

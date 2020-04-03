@@ -30,7 +30,6 @@ void compile_to_offloads(IRNode *ir,
   irpass::lower(ir);
   print("Lowered");
 
-  irpass::check_fields_registered(ir);
   irpass::typecheck(ir);
   print("Typechecked");
 
@@ -88,6 +87,9 @@ void compile_to_offloads(IRNode *ir,
 
   irpass::demote_atomics(ir);
   print("Atomics demoted");
+
+  // Final field registration correctness & type checking
+  irpass::typecheck(ir);
 }
 
 }  // namespace irpass

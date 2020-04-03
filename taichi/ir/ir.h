@@ -2043,13 +2043,14 @@ class WhileStmt : public Stmt {
   std::unique_ptr<Block> body;
 
   WhileStmt(std::unique_ptr<Block> &&body) : body(std::move(body)) {
+    TI_STMT_REG_FIELDS;
   }
 
   bool is_container_statement() const override {
     return true;
   }
 
-  // no fields
+  TI_STMT_DEF_FIELDS(mask);
   DEFINE_ACCEPT
 };
 

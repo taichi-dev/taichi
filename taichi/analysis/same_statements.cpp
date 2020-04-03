@@ -174,13 +174,6 @@ class IRNodeComparator : public IRVisitor {
     }
   }
 
-  void visit(ConstStmt *stmt) override {
-    DEFINE_BASIC_CHECK(ConstStmt)
-    DEFINE_FIELD_CHECK(type_hint())
-    DEFINE_FIELD_CHECK(val.serialize(
-        [](const TypedConstant &t) { return t.stringify(); }, "["))
-  }
-
   void visit(FuncBodyStmt *stmt) override {
     basic_check(stmt);
     if (!same)

@@ -90,12 +90,23 @@ struct CompiledProgram {
     auto gtmp_arr = std::vector<char>(gtmp_size);
     void *gtmp_base = gtmp_arr.data();  // std::calloc(gtmp_size, 1);
     iov.push_back(IOV{gtmp_base, gtmp_size});
-    if (ext_arr_map.size() == 1) {
+    if (ext_arr_map.size()) { // TODO: optimize for size = 1
       iov.push_back(
           IOV{ctx.extra_args, arg_count * taichi_max_num_args * sizeof(int)});
-      void *extptr = (void *)ctx.args[ext_arr_idx];
-      ctx.args[ext_arr_idx] = 0;
-      iov.push_back(IOV{extptr, ext_arr_size});
+      size_t accum_size = 0;
+      std::vector<void *> ptrarr;
+      for (auto it = ext_arr_map.begin(); it != ext_arr_map.end(); it++) {
+        accum_size += it->second;
+      }
+      void *baseptr = std::calloc(accum_size, 1); // TODO: leak
+      accum_size = 0;
+      for (auto it = ext_arr_map.begin(); it != ext_arr_map.end(); it++) {
+        auto ptr = (void *)ctx.args[it->first];
+        memcpy((char *)baseptr + accum_size, ptr, it->second);
+        ctx.args[it->first] = accum_size;
+        accum_size += it->second;
+      } // concat all extptr into my baseptr
+      iov.push_back(IOV{baseptr, accum_size});
     }
     for (const auto &ker : kernels) {
       begin_glsl_kernels(iov);

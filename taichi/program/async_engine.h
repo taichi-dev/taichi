@@ -1,8 +1,8 @@
 #include <deque>
 #include <thread>
 
-#include "taichi/ir/ir.h"
 #define TI_RUNTIME_HOST
+#include "taichi/ir/ir.h"
 #include "taichi/runtime/llvm/context.h"
 #include "taichi/lang_util.h"
 

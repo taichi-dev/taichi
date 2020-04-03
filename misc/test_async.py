@@ -19,3 +19,5 @@ def fill():
 
 fill()
 fill()
+
+ti.core.print_stat()

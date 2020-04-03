@@ -1,10 +1,13 @@
+#include "codegen_cpu.h"
+
+#include "taichi/codegen/codegen_llvm.h"
 #include "taichi/common/util.h"
 #include "taichi/util/io.h"
 #include "taichi/lang_util.h"
 #include "taichi/program/program.h"
 #include "taichi/ir/ir.h"
-#include "codegen_cpu.h"
-#include "codegen_llvm.h"
+#include "taichi/util/statistics.h"
+
 
 TLANG_NAMESPACE_BEGIN
 
@@ -17,6 +20,7 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
   }
 
   void visit(OffloadedStmt *stmt) override {
+    stat.add("codegen_offloaded_tasks");
     using Type = OffloadedStmt::TaskType;
     auto offloaded_task_name = init_offloaded_task_function(stmt);
     if (prog->config.enable_profiler) {

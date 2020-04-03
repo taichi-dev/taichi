@@ -33,7 +33,8 @@ void ExecutionQueue::synchronize() {
   while (!task_queue.empty()) {
     auto ker = task_queue.front();
     std::string serialized;
-    // irpass::print(ker.stmt);
+    irpass::re_id(ker.stmt);
+    irpass::print(ker.stmt);
     auto h = hash(ker.stmt);
     if (compiled_func.find(h) == compiled_func.end()) {
       compiled_func[h] = CodeGenCPU(ker.kernel, ker.stmt).codegen();

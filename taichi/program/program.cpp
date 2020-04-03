@@ -93,6 +93,7 @@ Program::Program(Arch desired_arch) {
 
   if (config.async) {
     TI_WARN("Running in async mode. This is experimental.");
+    TI_ASSERT(arch_is_cpu(config.arch));
     async_engine = std::make_unique<AsyncEngine>();
   }
 

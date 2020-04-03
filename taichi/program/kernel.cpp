@@ -47,6 +47,7 @@ void Kernel::lower() {  // TODO: is a "Lowerer" class necessary for each
                         // backend?
   TI_ASSERT(!lowered);
   if (arch_is_cpu(arch) || arch == Arch::cuda) {
+    program.current_kernel = this;
     auto codegen = KernelCodeGen::create(arch, this);
     auto config = program.config;
     bool verbose = config.print_ir;

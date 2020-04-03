@@ -727,6 +727,7 @@ void OpenglCodeGen::lower() {  // {{{
     irpass::print(ir);
   }
 
+  irpass::check_fields_registered(ir);
   irpass::typecheck(ir);
   irpass::re_id(ir);
   if (print_ir) {

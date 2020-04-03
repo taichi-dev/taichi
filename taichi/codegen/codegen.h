@@ -10,11 +10,15 @@ class KernelCodeGen {
  protected:
   Program *prog;
   Kernel *kernel;
+  IRNode *ir;
 
   virtual FunctionType codegen() = 0;
 
  public:
-  KernelCodeGen(Kernel *kernel) : prog(&kernel->program), kernel(kernel) {
+  KernelCodeGen(Kernel *kernel, IRNode *ir)
+      : prog(&kernel->program), kernel(kernel), ir(ir) {
+    if (ir == nullptr)
+      ir = kernel->ir;
   }
 
   virtual FunctionType compile();

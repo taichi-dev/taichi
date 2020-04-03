@@ -8,7 +8,6 @@
 
 TLANG_NAMESPACE_BEGIN
 
-using namespace llvm;
 class CodeGenLLVMCPU : public CodeGenLLVM {
  public:
   using IRVisitor::visit;

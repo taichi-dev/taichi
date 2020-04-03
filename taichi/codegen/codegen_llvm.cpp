@@ -263,14 +263,17 @@ void CodeGenLLVM::emit_struct_meta_base(const std::string &name,
                get_runtime_function(snode->refine_coordinates_func_name()));
 }
 
-CodeGenLLVM::CodeGenLLVM(Kernel *kernel)
+CodeGenLLVM::CodeGenLLVM(Kernel *kernel, IRNode *ir)
     // TODO: simplify ModuleBuilder ctor input
     : ModuleBuilder(kernel->program.get_llvm_context(kernel->arch)
                         ->clone_struct_module()),
       kernel(kernel),
+      ir(ir),
       prog(&kernel->program),
       snode_attr(prog->get_llvm_context(kernel->arch)->snode_attr),
       task_counter(0) {
+  if (ir == nullptr)
+    this->ir = kernel->ir;
   initialize_context();
 
   context_ty = get_runtime_type("Context");
@@ -1594,7 +1597,7 @@ llvm::Value *CodeGenLLVM::emit_struct_meta(SNode *snode) {
 
 void CodeGenLLVM::emit_to_module() {
   TI_AUTO_PROF
-  kernel->ir->accept(this);
+  ir->accept(this);
 }
 
 FunctionType CodeGenLLVM::gen() {

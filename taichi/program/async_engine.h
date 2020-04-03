@@ -12,9 +12,10 @@ TLANG_NAMESPACE_BEGIN
 class KernelLaunchRecord {
  public:
   Context context;
+  Kernel *kernel;  // TODO: remove this
   OffloadedStmt *stmt;
 
-  KernelLaunchRecord(Context contxet, OffloadedStmt *stmt);
+  KernelLaunchRecord(Context contxet, Kernel *kernel, OffloadedStmt *stmt);
 };
 
 // In charge of (parallel) compilation to binary and (serial) kernel launching
@@ -38,8 +39,7 @@ class ExecutionQueue {
   void launch_task() {
   }
 
-  void synchronize() {
-  }
+  void synchronize();
 };
 
 // An engine for asynchronous execution and optimization

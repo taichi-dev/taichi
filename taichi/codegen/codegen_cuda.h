@@ -8,7 +8,8 @@ TLANG_NAMESPACE_BEGIN
 
 class CodeGenCUDA : public KernelCodeGen {
  public:
-  CodeGenCUDA(Kernel *kernel) : KernelCodeGen(kernel) {
+  CodeGenCUDA(Kernel *kernel, IRNode *ir = nullptr)
+      : KernelCodeGen(kernel, ir) {
   }
 
   virtual FunctionType codegen() override;

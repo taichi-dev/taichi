@@ -51,6 +51,7 @@ class FunctionCreationGuard {
 class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
  public:
   Kernel *kernel;
+  IRNode *ir;
   Program *prog;
   std::string kernel_name;
   std::vector<Value *> kernel_args;
@@ -74,7 +75,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   using IRVisitor::visit;
   using ModuleBuilder::call;
 
-  CodeGenLLVM(Kernel *kernel);
+  CodeGenLLVM(Kernel *kernel, IRNode *ir = nullptr);
 
   Arch current_arch() {
     return kernel->arch;

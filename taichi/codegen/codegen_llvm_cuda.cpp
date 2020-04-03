@@ -27,7 +27,8 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
 
   using IRVisitor::visit;
 
-  CodeGenLLVMCUDA(Kernel *kernel) : CodeGenLLVM(kernel) {
+  CodeGenLLVMCUDA(Kernel *kernel, IRNode *ir = nullptr)
+      : CodeGenLLVM(kernel, ir) {
 #if defined(TI_WITH_CUDA)
     CUDADriver::get_instance().device_get_attribute(
         &num_SMs, CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT, 0);

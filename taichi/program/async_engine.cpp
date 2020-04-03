@@ -32,8 +32,15 @@ void ExecutionQueue::enqueue(KernelLaunchRecord ker) {
 void ExecutionQueue::synchronize() {
   while (!task_queue.empty()) {
     auto ker = task_queue.front();
-    irpass::print(ker.stmt);
-    auto func = CodeGenCPU(ker.kernel, ker.stmt).codegen();
+    std::string serialized;
+    auto h = hash(ker.stmt);
+    FunctionType func;
+    if (compiled_func.find(h) == compiled_func.end()) {
+      func = CodeGenCPU(ker.kernel, ker.stmt).codegen();
+      compiled_func[h] = func;
+    } else {
+      func = compiled_func[h];
+    }
     func(ker.context);
     task_queue.pop_front();
   }

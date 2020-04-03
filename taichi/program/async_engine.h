@@ -4,6 +4,7 @@
 #include "taichi/ir/ir.h"
 #define TI_RUNTIME_HOST
 #include "taichi/runtime/llvm/context.h"
+#include "taichi/lang_util.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -25,6 +26,8 @@ class ExecutionQueue {
 
   std::vector<std::thread> compilation_workers;  // parallel
   std::thread launch_worker;                     // serial
+
+  std::unordered_map<uint64, FunctionType> compiled_func;
 
   ExecutionQueue() {
   }

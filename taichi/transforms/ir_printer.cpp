@@ -32,13 +32,11 @@ class IRPrinter : public IRVisitor {
     }
   }
 
-  void run(IRNode *node, std::string *output) {
+  static void run(IRNode *node, std::string *output) {
     auto p = IRPrinter(output);
-    print("==========");
-    print("kernel {{");
+    p.print("kernel {{");
     node->accept(&p);
-    print("}}");
-    print("==========");
+    p.print("}}");
   }
 
   void visit(Block *stmt_list) override {
@@ -503,8 +501,7 @@ class IRPrinter : public IRVisitor {
 namespace irpass {
 
 void print(IRNode *root, std::string *output) {
-  IRPrinter printer;
-  return printer.run(root, output);
+  return IRPrinter::run(root, output);
 }
 
 }  // namespace irpass

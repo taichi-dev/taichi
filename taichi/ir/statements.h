@@ -9,21 +9,11 @@ class PragmaSLPStmt : public Stmt {
   int slp_width;
 
   PragmaSLPStmt(int slp_width) : slp_width(slp_width) {
+    TI_STMT_REG_FIELDS;
   }
 
+  TI_STMT_DEF_FIELDS(slp_width);
   DEFINE_ACCEPT
-};
-
-class VectorElement {
- public:
-  Stmt *stmt;
-  int index;
-
-  VectorElement() : stmt(nullptr), index(0) {
-  }
-
-  VectorElement(Stmt *stmt, int index) : stmt(stmt), index(index) {
-  }
 };
 
 class ElementShuffleStmt : public Stmt {
@@ -36,14 +26,14 @@ class ElementShuffleStmt : public Stmt {
       : elements(elements), pointer(pointer) {
     width() = elements.size();
     element_type() = elements[0].stmt->element_type();
-    for (int i = 0; i < width(); i++) {
-      add_operand(this->elements[i].stmt);
-    }
+    TI_STMT_REG_FIELDS;
   }
 
   virtual bool has_global_side_effect() const override {
     return false;
   }
+
+  TI_STMT_DEF_FIELDS(ret_type, elements, pointer);
   DEFINE_ACCEPT
 };
 

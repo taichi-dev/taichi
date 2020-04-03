@@ -195,74 +195,23 @@ class IRNodeComparator : public IRVisitor {
   }
 
   void visit(RangeForStmt *stmt) override {
-    DEFINE_BASIC_CHECK(RangeForStmt)
-    DEFINE_FIELD_CHECK(reversed)
-    DEFINE_FIELD_CHECK(vectorize)
+    basic_check(stmt);
+    if (!same)
+      return;
+    auto other = other_node->as<RangeForStmt>();
     other_node = other->body.get();
     stmt->body->accept(this);
     other_node = other;
   }
 
   void visit(StructForStmt *stmt) override {
-    DEFINE_BASIC_CHECK(StructForStmt)
-    DEFINE_SNODE_CHECK(snode)
-    DEFINE_FIELD_CHECK(vectorize)
+    basic_check(stmt);
+    if (!same)
+      return;
+    auto other = other_node->as<StructForStmt>();
     other_node = other->body.get();
     stmt->body->accept(this);
     other_node = other;
-  }
-
-  void visit(GlobalPtrStmt *stmt) override {
-    DEFINE_BASIC_CHECK(GlobalPtrStmt)
-    DEFINE_FIELD_CHECK(type_hint())
-    DEFINE_FIELD_CHECK(width())
-    DEFINE_FIELD_CHECK(activate)
-    for (int l = 0; l < stmt->width(); l++) {
-      DEFINE_SNODE_CHECK(snodes[l])
-    }
-  }
-
-  void visit(ArgLoadStmt *stmt) override {
-    DEFINE_BASIC_CHECK(ArgLoadStmt)
-    DEFINE_FIELD_CHECK(type_hint())
-    DEFINE_FIELD_CHECK(arg_id)
-  }
-
-  void visit(ArgStoreStmt *stmt) override {
-    DEFINE_BASIC_CHECK(ArgStoreStmt)
-    DEFINE_FIELD_CHECK(type_hint())
-    DEFINE_FIELD_CHECK(arg_id)
-  }
-
-  void visit(LocalLoadStmt *stmt) override {
-    DEFINE_BASIC_CHECK(LocalLoadStmt)
-    DEFINE_FIELD_CHECK(type_hint())
-  }
-
-  void visit(LocalStoreStmt *stmt) override {
-    DEFINE_BASIC_CHECK(LocalStoreStmt)
-    DEFINE_FIELD_CHECK(type_hint())
-  }
-
-  void visit(GlobalLoadStmt *stmt) override {
-    DEFINE_BASIC_CHECK(GlobalLoadStmt)
-    DEFINE_FIELD_CHECK(type_hint())
-  }
-
-  void visit(GlobalStoreStmt *stmt) override {
-    DEFINE_BASIC_CHECK(GlobalStoreStmt)
-    DEFINE_FIELD_CHECK(type_hint())
-  }
-
-  void visit(PragmaSLPStmt *stmt) override {
-    DEFINE_BASIC_CHECK(PragmaSLPStmt)
-    DEFINE_FIELD_CHECK(slp_width)
-  }
-
-  void visit(ElementShuffleStmt *stmt) override {
-    DEFINE_BASIC_CHECK(ElementShuffleStmt)
-    DEFINE_FIELD_CHECK(type_hint())
-    DEFINE_FIELD_CHECK(pointer)
   }
 
   void visit(RangeAssumptionStmt *stmt) override {

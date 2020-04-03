@@ -971,12 +971,14 @@ class ArgLoadStmt : public Stmt {
 
   ArgLoadStmt(int arg_id, bool is_ptr = false) : arg_id(arg_id) {
     this->is_ptr = is_ptr;
+    TI_STMT_REG_FIELDS;
   }
 
   virtual bool has_global_side_effect() const override {
     return false;
   }
 
+  TI_STMT_DEF_FIELDS(ret_type, arg_id, is_ptr);
   DEFINE_ACCEPT
 };
 
@@ -1022,7 +1024,7 @@ class ArgStoreStmt : public Stmt {
   Stmt *val;
 
   ArgStoreStmt(int arg_id, Stmt *val) : arg_id(arg_id), val(val) {
-    add_operand(this->val);
+    TI_STMT_REG_FIELDS;
   }
 
   // Arguments are considered global (nonlocal)
@@ -1030,6 +1032,7 @@ class ArgStoreStmt : public Stmt {
     return true;
   }
 
+  TI_STMT_DEF_FIELDS(ret_type, arg_id, val);
   DEFINE_ACCEPT
 };
 
@@ -1262,17 +1265,16 @@ class GlobalPtrStmt : public Stmt {
       TI_ASSERT(snodes[i] != nullptr);
       TI_ASSERT(snodes[0]->dt == snodes[i]->dt);
     }
-    for (int i = 0; i < (int)indices.size(); i++) {
-      add_operand(this->indices[i]);
-    }
     width() = snodes.size();
     element_type() = snodes[0]->dt;
+    TI_STMT_REG_FIELDS;
   }
 
   virtual bool has_global_side_effect() const override {
     return activate;
   }
 
+  TI_STMT_DEF_FIELDS(ret_type, snodes, indices, activate);
   DEFINE_ACCEPT
 };
 
@@ -1644,13 +1646,14 @@ class GlobalLoadStmt : public Stmt {
   Stmt *ptr;
 
   GlobalLoadStmt(Stmt *ptr) : ptr(ptr) {
-    add_operand(this->ptr);
+    TI_STMT_REG_FIELDS;
   }
 
   virtual bool has_global_side_effect() const override {
     return false;
   }
 
+  TI_STMT_DEF_FIELDS(ret_type, ptr);
   DEFINE_ACCEPT;
 };
 
@@ -1659,10 +1662,10 @@ class GlobalStoreStmt : public Stmt {
   Stmt *ptr, *data;
 
   GlobalStoreStmt(Stmt *ptr, Stmt *data) : ptr(ptr), data(data) {
-    add_operand(this->ptr);
-    add_operand(this->data);
+    TI_STMT_REG_FIELDS;
   }
 
+  TI_STMT_DEF_FIELDS(ret_type, ptr, data);
   DEFINE_ACCEPT;
 };
 
@@ -1685,9 +1688,7 @@ class LocalLoadStmt : public Stmt {
   LaneAttribute<LocalAddress> ptr;
 
   LocalLoadStmt(LaneAttribute<LocalAddress> ptr) : ptr(ptr) {
-    for (int i = 0; i < (int)ptr.size(); i++) {
-      add_operand(this->ptr[i].var);
-    }
+    TI_STMT_REG_FIELDS;
   }
 
   void rebuild_operands() override {
@@ -1723,6 +1724,7 @@ class LocalLoadStmt : public Stmt {
     return false;
   }
 
+  TI_STMT_DEF_FIELDS(ret_type, ptr);
   DEFINE_ACCEPT;
 };
 
@@ -1734,10 +1736,10 @@ class LocalStoreStmt : public Stmt {
   // LaneAttribute<Stmt *> data;
 
   LocalStoreStmt(Stmt *ptr, Stmt *data) : ptr(ptr), data(data) {
-    add_operand(this->ptr);
-    add_operand(this->data);
+    TI_STMT_REG_FIELDS;
   }
 
+  TI_STMT_DEF_FIELDS(ret_type, ptr, data);
   DEFINE_ACCEPT;
 };
 
@@ -1923,9 +1925,7 @@ class RangeForStmt : public Stmt {
         block_dim(block_dim),
         strictly_serialized(strictly_serialized) {
     reversed = false;
-    add_operand(this->loop_var);
-    add_operand(this->begin);
-    add_operand(this->end);
+    TI_STMT_REG_FIELDS;
   }
 
   bool is_container_statement() const override {
@@ -1936,6 +1936,8 @@ class RangeForStmt : public Stmt {
     reversed = !reversed;
   }
 
+  TI_STMT_DEF_FIELDS(loop_var, begin, end, reversed, vectorize,
+      parallelize, block_dim, strictly_serialized);
   DEFINE_ACCEPT
 };
 
@@ -1964,15 +1966,14 @@ class StructForStmt : public Stmt {
         vectorize(vectorize),
         parallelize(parallelize),
         block_dim(block_dim) {
-    for (auto &v : this->loop_vars) {
-      add_operand(v);
-    }
+    TI_STMT_REG_FIELDS;
   }
 
   bool is_container_statement() const override {
     return true;
   }
 
+  TI_STMT_DEF_FIELDS(loop_vars, snode, vectorize, parallelize, block_dim);
   DEFINE_ACCEPT
 };
 
@@ -2388,6 +2389,18 @@ class While {
 
 Expr Var(Expr x);
 
+class VectorElement {
+ public:
+  Stmt *stmt;
+  int index;
+
+  VectorElement() : stmt(nullptr), index(0) {
+  }
+
+  VectorElement(Stmt *stmt, int index) : stmt(stmt), index(index) {
+  }
+};
+
 template <typename T>
 inline void StmtFieldManager::operator()(const char *key, T &&value) {
   using decay_T = typename std::decay<T>::type;
@@ -2402,6 +2415,12 @@ inline void StmtFieldManager::operator()(const char *key, T &&value) {
     stmt->add_operand(const_cast<Stmt *&>(value));
   } else if constexpr (std::is_same<decay_T, LocalAddress>::value) {
     stmt->add_operand(const_cast<Stmt *&>(value.var));
+    stmt->field_manager.fields.emplace_back(
+        std::make_unique<StmtFieldNumeric<int>>(value.offset));
+  } else if constexpr (std::is_same<decay_T, VectorElement>::value) {
+    stmt->add_operand(const_cast<Stmt *&>(value.stmt));
+    stmt->field_manager.fields.emplace_back(
+        std::make_unique<StmtFieldNumeric<int>>(value.index));
   } else if constexpr (std::is_same<decay_T, SNode *>::value) {
     stmt->field_manager.fields.emplace_back(
         std::make_unique<StmtFieldSNode>(value));

@@ -33,15 +33,12 @@ void ExecutionQueue::synchronize() {
   while (!task_queue.empty()) {
     auto ker = task_queue.front();
     std::string serialized;
+    // irpass::print(ker.stmt);
     auto h = hash(ker.stmt);
-    FunctionType func;
     if (compiled_func.find(h) == compiled_func.end()) {
-      func = CodeGenCPU(ker.kernel, ker.stmt).codegen();
-      compiled_func[h] = func;
-    } else {
-      func = compiled_func[h];
+      compiled_func[h] = CodeGenCPU(ker.kernel, ker.stmt).codegen();
     }
-    func(ker.context);
+    compiled_func[h](ker.context);
     task_queue.pop_front();
   }
 }

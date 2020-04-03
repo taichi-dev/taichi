@@ -50,6 +50,8 @@ class FunctionCreationGuard {
 
 class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
  public:
+  static uint64 task_counter;
+
   Kernel *kernel;
   IRNode *ir;
   Program *prog;
@@ -65,7 +67,6 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   llvm::FunctionType *task_function_type;
   OffloadedStmt *current_offloaded_stmt;
   SNodeAttributes &snode_attr;
-  int task_counter;
   std::unordered_map<Stmt *, llvm::Value *> llvm_val;
   llvm::Function *func;
   std::unique_ptr<OffloadedTask> current_task;

@@ -115,6 +115,8 @@ CodeGenStmtGuard make_while_after_loop_guard(CodeGenLLVM *cg) {
 
 // CodeGenLLVM
 
+uint64 CodeGenLLVM::task_counter = 0;
+
 void CodeGenLLVM::visit(Block *stmt_list) {
   for (auto &stmt : stmt_list->statements) {
     stmt->accept(this);
@@ -270,8 +272,7 @@ CodeGenLLVM::CodeGenLLVM(Kernel *kernel, IRNode *ir)
       kernel(kernel),
       ir(ir),
       prog(&kernel->program),
-      snode_attr(prog->get_llvm_context(kernel->arch)->snode_attr),
-      task_counter(0) {
+      snode_attr(prog->get_llvm_context(kernel->arch)->snode_attr) {
   if (ir == nullptr)
     this->ir = kernel->ir;
   initialize_context();
@@ -279,8 +280,7 @@ CodeGenLLVM::CodeGenLLVM(Kernel *kernel, IRNode *ir)
   context_ty = get_runtime_type("Context");
   physical_coordinate_ty = get_runtime_type("PhysicalCoordinates");
 
-  std::string grad_suffix;
-  kernel_name = kernel->name + grad_suffix + "_kernel";
+  kernel_name = kernel->name + "_kernel";
 }
 
 void CodeGenLLVM::visit(UnaryOpStmt *stmt) {

@@ -53,9 +53,9 @@ class Program {
   void *preallocated_device_buffer;  // TODO: move this to memory allocator
 
   std::unique_ptr<Runtime> runtime;
-  std::unique_ptr<AsyncEngine> engine;
+  std::unique_ptr<AsyncEngine> async_engine;
 
-  std::vector<std::unique_ptr<Kernel>> functions;
+  std::vector<std::unique_ptr<Kernel>> kernels;
 
   std::unique_ptr<ProfilerBase> profiler;
 
@@ -123,8 +123,8 @@ class Program {
     // Expr::set_allow_store(true);
     auto func = std::make_unique<Kernel>(*this, body, name, grad);
     // Expr::set_allow_store(false);
-    functions.emplace_back(std::move(func));
-    return *functions.back();
+    kernels.emplace_back(std::move(func));
+    return *kernels.back();
   }
 
   void start_function_definition(Kernel *func) {

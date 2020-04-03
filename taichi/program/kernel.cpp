@@ -72,7 +72,7 @@ void Kernel::operator()() {
       program.check_runtime_error();
     }
   } else {
-    program.engine->launch(this);
+    program.async_engine->launch(this);
   }
 }
 

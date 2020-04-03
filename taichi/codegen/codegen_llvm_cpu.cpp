@@ -12,7 +12,7 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
  public:
   using IRVisitor::visit;
 
-  CodeGenLLVMCPU(Kernel *kernel) : CodeGenLLVM(kernel) {
+  CodeGenLLVMCPU(Kernel *kernel, IRNode *ir) : CodeGenLLVM(kernel, ir) {
     TI_AUTO_PROF
   }
 
@@ -52,7 +52,7 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
 
 FunctionType CodeGenCPU::codegen() {
   TI_AUTO_PROF
-  return CodeGenLLVMCPU(kernel).gen();
+  return CodeGenLLVMCPU(kernel, ir).gen();
 }
 
 TLANG_NAMESPACE_END

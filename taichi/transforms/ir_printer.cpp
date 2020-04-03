@@ -37,6 +37,8 @@ class IRPrinter : public IRVisitor {
     p.print("kernel {{");
     node->accept(&p);
     p.print("}}");
+    if (output)
+      *output = p.ss.str();
   }
 
   void visit(Block *stmt_list) override {

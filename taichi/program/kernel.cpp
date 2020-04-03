@@ -14,9 +14,9 @@ TLANG_NAMESPACE_BEGIN
 
 Kernel::Kernel(Program &program,
                std::function<void()> func,
-               std::string name,
+               std::string primal_name,
                bool grad)
-    : program(program), name(name), lowered(false), grad(grad) {
+    : program(program), lowered(false), grad(grad) {
   program.initialize_device_llvm_context();
   is_accessor = false;
   compiled = nullptr;
@@ -31,6 +31,12 @@ Kernel::Kernel(Program &program,
   program.current_kernel = nullptr;
 
   arch = program.config.arch;
+
+  if (!grad) {
+    name = primal_name;
+  } else {
+    name = primal_name + "_grad";
+  }
 
   if (!program.config.lazy_compilation)
     compile();

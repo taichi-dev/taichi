@@ -786,35 +786,6 @@ class Stmt : public IRNode {
   virtual ~Stmt() override = default;
 };
 
-template <typename T>
-inline void StmtFieldManager::operator()(const char *key, T &&value) {
-  using decay_T = typename std::decay<T>::type;
-  if constexpr (is_specialization<decay_T, std::vector>::value
-      || is_specialization<decay_T, LaneAttribute>::value) {
-    stmt->field_manager.fields.emplace_back(
-        std::make_unique<StmtFieldNumeric<std::size_t>>(value.size()));
-    if constexpr (std::is_same<decay_T, std::vector<Stmt *> >::value) {
-      auto &operand_stmts = const_cast<std::vector<Stmt *> &>(value);
-      for (auto &operand_stmt : operand_stmts) {
-        stmt->add_operand(operand_stmt);
-      }
-    }
-//    for (int i = 0; i < (int)value.size(); i++) {
-//      (*this)("__element", value[i]);
-//    }
-  } else if constexpr (std::is_same<decay_T, Stmt *>::value) {
-    stmt->add_operand(const_cast<Stmt *&>(value));
-  } else if constexpr (std::is_same<decay_T, LocalAddress>::value) {
-    stmt->add_operand(const_cast<Stmt *&>(value.var));
-  } else if constexpr (std::is_same<decay_T, SNode *>::value) {
-    stmt->field_manager.fields.emplace_back(
-        std::make_unique<StmtFieldSNode>(value));
-  } else {
-    stmt->field_manager.fields.emplace_back(
-        std::make_unique<StmtFieldNumeric<T>>(value));
-  }
-}
-
 // always a tree - used as rvalues
 class Expression {
  public:
@@ -2416,6 +2387,35 @@ class While {
 };
 
 Expr Var(Expr x);
+
+template <typename T>
+inline void StmtFieldManager::operator()(const char *key, T &&value) {
+  using decay_T = typename std::decay<T>::type;
+  if constexpr (is_specialization<decay_T, std::vector>::value
+      || is_specialization<decay_T, LaneAttribute>::value) {
+    stmt->field_manager.fields.emplace_back(
+        std::make_unique<StmtFieldNumeric<std::size_t>>(value.size()));
+    if constexpr (std::is_same<decay_T, std::vector<Stmt *> >::value) {
+      auto &operand_stmts = const_cast<std::vector<Stmt *> &>(value);
+      for (auto &operand_stmt : operand_stmts) {
+        stmt->add_operand(operand_stmt);
+      }
+    }
+//    for (int i = 0; i < (int)value.size(); i++) {
+//      (*this)("__element", value[i]);
+//    }
+  } else if constexpr (std::is_same<decay_T, Stmt *>::value) {
+    stmt->add_operand(const_cast<Stmt *&>(value));
+  } else if constexpr (std::is_same<decay_T, LocalAddress>::value) {
+    stmt->add_operand(const_cast<Stmt *&>(value.var));
+  } else if constexpr (std::is_same<decay_T, SNode *>::value) {
+    stmt->field_manager.fields.emplace_back(
+        std::make_unique<StmtFieldSNode>(value));
+  } else {
+    stmt->field_manager.fields.emplace_back(
+        std::make_unique<StmtFieldNumeric<T>>(value));
+  }
+}
 
 TLANG_NAMESPACE_END
 

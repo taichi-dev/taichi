@@ -1234,20 +1234,16 @@ class ExternalPtrStmt : public Stmt {
       TI_ASSERT(base_ptrs[i] != nullptr);
       TI_ASSERT(base_ptrs[i]->is<ArgLoadStmt>());
     }
-    for (int i = 0; i < (int)base_ptrs.size(); i++) {
-      add_operand(this->base_ptrs[i]);
-    }
-    for (int i = 0; i < (int)indices.size(); i++) {
-      add_operand(this->indices[i]);
-    }
     width() = base_ptrs.size();
     element_type() = dt;
+    TI_STMT_REG_FIELDS;
   }
 
   virtual bool has_global_side_effect() const override {
     return false;
   }
 
+  TI_STMT_DEF_FIELDS(ret_type, base_ptrs, indices, activate);
   DEFINE_ACCEPT
 };
 
@@ -1625,10 +1621,10 @@ class RangeAssumptionStmt : public Stmt {
 
   RangeAssumptionStmt(Stmt *input, Stmt *base, int low, int high)
       : input(input), base(base), low(low), high(high) {
-    add_operand(this->input);
-    add_operand(this->base);
+    TI_STMT_REG_FIELDS;
   }
 
+  TI_STMT_DEF_FIELDS(ret_type, input, base, low, high);
   DEFINE_ACCEPT
 };
 

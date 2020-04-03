@@ -4,46 +4,6 @@
 
 TLANG_NAMESPACE_BEGIN
 
-#define DEFINE_TYPE_CHECK(Type)       \
-  if (!other_node->is<Type>()) {      \
-    same = false;                     \
-    return;                           \
-  }                                   \
-  auto other = other_node->as<Type>();
-
-#define DEFINE_OPERAND_CHECK                                           \
-  if (stmt->num_operands() != other->num_operands()) {                 \
-    same = false;                                                      \
-    return;                                                            \
-  }                                                                    \
-  for (int i = 0; i < stmt->num_operands(); i++) {                     \
-    if (get_other_id(stmt->Stmt::operand(i)->id)                       \
-        != other->Stmt::operand(i)->id) {                              \
-      /*to distinguish from UnaryOpStmt::operand*/                     \
-      same = false;                                                    \
-      return;                                                          \
-    }                                                                  \
-  }
-
-#define DEFINE_FIELD_CHECK(field)    \
-  if (stmt->field != other->field) { \
-    same = false;                    \
-    return;                          \
-  }
-
-#define DEFINE_SNODE_CHECK(snode)                                \
-  if (get_snode_id(stmt->snode) != get_snode_id(other->snode)) { \
-    same = false;                                                \
-    return;                                                      \
-  }
-
-#define DEFINE_MAP_ID map_id(stmt->id, other->id);
-
-#define DEFINE_BASIC_CHECK(Type) \
-  DEFINE_TYPE_CHECK(Type)        \
-  DEFINE_OPERAND_CHECK           \
-  DEFINE_MAP_ID
-
 // Compare if two IRNodes are equivalent.
 class IRNodeComparator : public IRVisitor {
  private:
@@ -60,12 +20,6 @@ class IRNodeComparator : public IRVisitor {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
     same = true;
-  }
-
-  static int get_snode_id(SNode *snode) {
-    if (snode == nullptr)
-      return -1;
-    return snode->id;
   }
 
   void map_id(int this_id, int other_id) {
@@ -214,72 +168,11 @@ class IRNodeComparator : public IRVisitor {
     other_node = other;
   }
 
-  void visit(RangeAssumptionStmt *stmt) override {
-    DEFINE_BASIC_CHECK(RangeAssumptionStmt)
-    DEFINE_FIELD_CHECK(type_hint())
-    DEFINE_FIELD_CHECK(low)
-    DEFINE_FIELD_CHECK(high)
-  }
-
-  void visit(LinearizeStmt *stmt) override {
-    DEFINE_BASIC_CHECK(LinearizeStmt)
-    DEFINE_FIELD_CHECK(type_hint())
-    DEFINE_FIELD_CHECK(inputs.size())
-    for (int i = 0; i < (int)stmt->inputs.size(); i++) {
-      DEFINE_FIELD_CHECK(inputs[i])
-    }
-  }
-
-  void visit(IntegerOffsetStmt *stmt) override {
-    DEFINE_BASIC_CHECK(IntegerOffsetStmt)
-    DEFINE_FIELD_CHECK(type_hint())
-    DEFINE_FIELD_CHECK(offset)
-  }
-
-  void visit(OffsetAndExtractBitsStmt *stmt) override {
-    DEFINE_BASIC_CHECK(OffsetAndExtractBitsStmt)
-    DEFINE_FIELD_CHECK(type_hint())
-    DEFINE_FIELD_CHECK(offset)
-    DEFINE_FIELD_CHECK(bit_begin)
-    DEFINE_FIELD_CHECK(bit_end)
-    DEFINE_FIELD_CHECK(simplified) // Is this necessary?
-  }
-
-  void visit(GetRootStmt *stmt) override {
-    DEFINE_BASIC_CHECK(GetRootStmt)
-    DEFINE_FIELD_CHECK(type_hint())
-  }
-
-  void visit(GetChStmt *stmt) override {
-    DEFINE_BASIC_CHECK(GetChStmt)
-    DEFINE_FIELD_CHECK(type_hint())
-    DEFINE_SNODE_CHECK(input_snode)
-    DEFINE_SNODE_CHECK(output_snode)
-    DEFINE_FIELD_CHECK(chid)
-  }
-
-  void visit(ExternalPtrStmt *stmt) override {
-    DEFINE_BASIC_CHECK(ExternalPtrStmt)
-    DEFINE_FIELD_CHECK(type_hint())
-    DEFINE_FIELD_CHECK(activate)
-  }
-
   void visit(OffloadedStmt *stmt) override {
-    DEFINE_BASIC_CHECK(OffloadedStmt)
-    DEFINE_FIELD_CHECK(type_hint())
-    DEFINE_FIELD_CHECK(task_type)
-    DEFINE_SNODE_CHECK(snode)
-    DEFINE_FIELD_CHECK(begin_offset)
-    DEFINE_FIELD_CHECK(end_offset)
-    DEFINE_FIELD_CHECK(const_begin)
-    DEFINE_FIELD_CHECK(const_end)
-    DEFINE_FIELD_CHECK(begin_value)
-    DEFINE_FIELD_CHECK(end_value)
-    // DEFINE_FIELD_CHECK(step) // seems never used
-    DEFINE_FIELD_CHECK(block_dim)
-    DEFINE_FIELD_CHECK(reversed)
-    DEFINE_FIELD_CHECK(num_cpu_threads) // Is this necessary?
-    DEFINE_FIELD_CHECK(device) // Is this necessary?
+    basic_check(stmt);
+    if (!same)
+      return;
+    auto other = other_node->as<OffloadedStmt>();
     if (stmt->has_body()) {
       TI_ASSERT(stmt->body);
       TI_ASSERT(other->body);
@@ -287,56 +180,6 @@ class IRNodeComparator : public IRVisitor {
       stmt->body->accept(this);
       other_node = other;
     }
-  }
-
-  void visit(LoopIndexStmt *stmt) override {
-    DEFINE_BASIC_CHECK(LoopIndexStmt)
-    DEFINE_FIELD_CHECK(type_hint())
-    DEFINE_FIELD_CHECK(index)
-    DEFINE_FIELD_CHECK(is_struct_for)
-  }
-
-  void visit(GlobalTemporaryStmt *stmt) override {
-    DEFINE_BASIC_CHECK(GlobalTemporaryStmt)
-    DEFINE_FIELD_CHECK(type_hint())
-    DEFINE_FIELD_CHECK(offset)
-  }
-
-  void visit(InternalFuncStmt *stmt) override {
-    DEFINE_BASIC_CHECK(InternalFuncStmt)
-    DEFINE_FIELD_CHECK(type_hint())
-    DEFINE_FIELD_CHECK(func_name)
-  }
-
-  void visit(StackAllocaStmt *stmt) override {
-    DEFINE_BASIC_CHECK(StackAllocaStmt)
-    DEFINE_FIELD_CHECK(type_hint())
-    DEFINE_FIELD_CHECK(max_size)
-  }
-
-  void visit(StackLoadTopStmt *stmt) override {
-    DEFINE_BASIC_CHECK(StackLoadTopStmt)
-    DEFINE_FIELD_CHECK(type_hint())
-  }
-
-  void visit(StackLoadTopAdjStmt *stmt) override {
-    DEFINE_BASIC_CHECK(StackLoadTopAdjStmt)
-    DEFINE_FIELD_CHECK(type_hint())
-  }
-
-  void visit(StackPushStmt *stmt) override {
-    DEFINE_BASIC_CHECK(StackPushStmt)
-    DEFINE_FIELD_CHECK(type_hint())
-  }
-
-  void visit(StackPopStmt *stmt) override {
-    DEFINE_BASIC_CHECK(StackPopStmt)
-    DEFINE_FIELD_CHECK(type_hint())
-  }
-
-  void visit(StackAccAdjointStmt *stmt) override {
-    DEFINE_BASIC_CHECK(StackAccAdjointStmt)
-    DEFINE_FIELD_CHECK(type_hint())
   }
 
   static bool run(IRNode *root1, IRNode *root2) {

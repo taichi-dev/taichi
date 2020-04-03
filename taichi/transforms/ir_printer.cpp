@@ -440,7 +440,8 @@ class IRPrinter : public IRVisitor {
                             stmt->block_dim);
     }
     if (stmt->task_type == OffloadedStmt::TaskType::listgen) {
-      print("{} = offloaded listgen {}", stmt->name(),
+      print("{} = offloaded listgen {}->{}", stmt->name(),
+            stmt->snode->parent->get_node_type_name_hinted(),
             stmt->snode->get_node_type_name_hinted());
     } else if (stmt->task_type == OffloadedStmt::TaskType::clear_list) {
       print("{} = offloaded clear_list {}", stmt->name(),

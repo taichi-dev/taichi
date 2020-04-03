@@ -2042,7 +2042,8 @@ class WhileStmt : public Stmt {
   Stmt *mask;
   std::unique_ptr<Block> body;
 
-  WhileStmt(std::unique_ptr<Block> &&body) : body(std::move(body)) {
+  WhileStmt(std::unique_ptr<Block> &&body)
+      : mask(nullptr), body(std::move(body)) {
     TI_STMT_REG_FIELDS;
   }
 

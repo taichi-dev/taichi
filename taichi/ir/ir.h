@@ -572,6 +572,12 @@ class StmtFieldSNode final : public StmtField {
   }
 };
 
+template <class T, template <class...> class Template>
+struct is_specialization : std::false_type {};
+
+template <template <class...> class Template, class... Args>
+struct is_specialization<Template<Args...>, Template> : std::true_type {};
+
 class StmtFieldManager {
  private:
   Stmt *stmt;
@@ -782,18 +788,19 @@ class Stmt : public IRNode {
 
 template <typename T>
 inline void StmtFieldManager::operator()(const char *key, T &&value) {
-  if constexpr (std::is_same<typename std::decay<T>::type, Stmt *>::value) {
-    stmt->add_operand(const_cast<Stmt *&>(value));
-  } else if constexpr (std::is_same<typename std::decay<T>::type,
-      std::vector<Stmt *> >::value) {
-    auto &operand_stmts = const_cast<std::vector<Stmt *> &>(value);
-    for (auto &operand_stmt : operand_stmts) {
-      stmt->add_operand(operand_stmt);
-    }
+  using decay_T = typename std::decay<T>::type;
+  if constexpr (is_specialization<decay_T, std::vector>::value
+      || is_specialization<decay_T, LaneAttribute>::value) {
     stmt->field_manager.fields.emplace_back(
-        std::make_unique<StmtFieldNumeric<std::size_t>>(operand_stmts.size()));
-  } else if constexpr (std::is_same<typename std::decay<T>::type,
-      SNode *>::value) {
+        std::make_unique<StmtFieldNumeric<std::size_t>>(value.size()));
+    for (int i = 0; i < (int)value.size(); i++) {
+      (*this)("__element", value[i]);
+    }
+  } else if constexpr (std::is_same<decay_T, Stmt *>::value) {
+    stmt->add_operand(const_cast<Stmt *&>(value));
+  } else if constexpr (std::is_same<decay_T, LocalAddress>::value) {
+    stmt->add_operand(const_cast<Stmt *&>(value.var));
+  } else if constexpr (std::is_same<decay_T, SNode *>::value) {
     stmt->field_manager.fields.emplace_back(
         std::make_unique<StmtFieldSNode>(value));
   } else {
@@ -1863,6 +1870,7 @@ class ConstStmt : public Stmt {
     for (int i = 0; i < ret_type.width; i++) {
       TI_ASSERT(val[0].dt == val[i].dt);
     }
+    TI_STMT_REG_FIELDS;
   }
 
   void repeat(int factor) override {
@@ -1873,6 +1881,8 @@ class ConstStmt : public Stmt {
   virtual bool has_global_side_effect() const override {
     return false;
   }
+
+  TI_STMT_DEF_FIELDS(ret_type, val);
   DEFINE_ACCEPT
 };
 

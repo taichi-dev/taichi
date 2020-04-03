@@ -90,7 +90,9 @@ struct CompiledProgram {
     auto gtmp_arr = std::vector<char>(gtmp_size);
     void *gtmp_base = gtmp_arr.data();  // std::calloc(gtmp_size, 1);
     iov.push_back(IOV{gtmp_base, gtmp_size});
-    if (ext_arr_map.size()) { // TODO: optimize for size = 1
+    std::optional<std::vector<char>> base_arr;
+    std::optional<std::vector<void *>> saved_ctx_ptrs;
+    if (ext_arr_map.size()) { // TODO: optimize for size = 1 // TODO: so dirty from #694
       iov.push_back(
           IOV{ctx.extra_args, arg_count * taichi_max_num_args * sizeof(int)});
       size_t accum_size = 0;
@@ -98,10 +100,13 @@ struct CompiledProgram {
       for (auto it = ext_arr_map.begin(); it != ext_arr_map.end(); it++) {
         accum_size += it->second;
       }
-      void *baseptr = std::calloc(accum_size, 1); // TODO: leak
+      saved_ctx_ptrs = std::make_optional<std::vector<void *>>();
+      base_arr = std::make_optional<std::vector<char>>(accum_size);
+      void *baseptr = base_arr->data();
       accum_size = 0;
       for (auto it = ext_arr_map.begin(); it != ext_arr_map.end(); it++) {
         auto ptr = (void *)ctx.args[it->first];
+        saved_ctx_ptrs->push_back(ptr);
         memcpy((char *)baseptr + accum_size, ptr, it->second);
         ctx.args[it->first] = accum_size;
         accum_size += it->second;
@@ -112,6 +117,16 @@ struct CompiledProgram {
       begin_glsl_kernels(iov);
       ker.launch();
       end_glsl_kernels(iov);
+    }
+    if (ext_arr_map.size()) { // TODO: optimize for size = 1
+      void *baseptr = base_arr->data();
+      auto cpit = saved_ctx_ptrs->begin();
+      size_t accum_size = 0;
+      for (auto it = ext_arr_map.begin(); it != ext_arr_map.end(); it++, cpit++) {
+        memcpy(*cpit, (char *)baseptr + accum_size, it->second);
+        ctx.args[it->first] = accum_size;
+        accum_size += it->second;
+      } // concat all extptr into my baseptr
     }
   }
 };

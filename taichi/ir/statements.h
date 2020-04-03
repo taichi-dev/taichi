@@ -133,8 +133,12 @@ class SNodeLookupStmt : public Stmt {
     return activate;
   }
 
-  TI_STMT_DEF_FIELDS(ret_type, snode, input_snode, input_index,
-      global_indices, activate);
+  TI_STMT_DEF_FIELDS(ret_type,
+                     snode,
+                     input_snode,
+                     input_index,
+                     global_indices,
+                     activate);
   DEFINE_ACCEPT
 };
 
@@ -193,10 +197,23 @@ class OffloadedStmt : public Stmt {
     return task_type != clear_list && task_type != listgen && task_type != gc;
   }
 
-  TI_STMT_DEF_FIELDS(ret_type, task_type, snode, begin_stmt, end_stmt,
-      begin_offset, end_offset, const_begin, const_end, begin_value, end_value,
-      step/*unused?*/, block_dim, reversed, num_cpu_threads, device,
-      loop_vars/*unused?*/);
+  TI_STMT_DEF_FIELDS(ret_type,
+                     task_type,
+                     snode,
+                     begin_stmt,
+                     end_stmt,
+                     begin_offset,
+                     end_offset,
+                     const_begin,
+                     const_end,
+                     begin_value,
+                     end_value,
+                     step /*unused?*/,
+                     block_dim,
+                     reversed,
+                     num_cpu_threads,
+                     device,
+                     loop_vars /*unused?*/);
   DEFINE_ACCEPT
 };
 

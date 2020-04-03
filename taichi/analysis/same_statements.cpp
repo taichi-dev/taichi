@@ -23,8 +23,8 @@ class IRNodeComparator : public IRVisitor {
   }
 
   void map_id(int this_id, int other_id) {
-    if (captured_id.find(this_id) != captured_id.end()
-        || captured_id.find(other_id) != captured_id.end()) {
+    if (captured_id.find(this_id) != captured_id.end() ||
+        captured_id.find(other_id) != captured_id.end()) {
       same = false;
       return;
     }

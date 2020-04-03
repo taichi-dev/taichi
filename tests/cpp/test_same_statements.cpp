@@ -16,8 +16,8 @@ TI_TEST("test_same_block") {
 
   auto true_clause = std::make_unique<Block>();
   auto true_one = true_clause->push_back<ConstStmt>(TypedConstant(1));
-  auto true_add = true_clause->push_back<BinaryOpStmt>(
-      BinaryOpType::add, global_load, true_one);
+  auto true_add = true_clause->push_back<BinaryOpStmt>(BinaryOpType::add,
+                                                       global_load, true_one);
   auto true_store =
       true_clause->push_back<GlobalStoreStmt>(global_store_addr, true_add);
   if_stmt->true_statements = std::move(true_clause);
@@ -39,8 +39,8 @@ TI_TEST("test_same_block") {
 
   TI_CHECK(!irpass::same_statements(global_load_addr, global_store_addr));
 
-  TI_CHECK(irpass::same_statements(
-      if_stmt->true_statements.get(), if_stmt->false_statements.get()));
+  TI_CHECK(irpass::same_statements(if_stmt->true_statements.get(),
+                                   if_stmt->false_statements.get()));
 
   TI_CHECK(!irpass::same_statements(true_store, false_store));
 }
@@ -84,10 +84,10 @@ TI_TEST("test_same_snode_lookup") {
   auto zero = block->push_back<ConstStmt>(LaneAttribute<TypedConstant>(0));
   SNode root(0, SNodeType::root);
   auto child = root.insert_children(SNodeType::dense);
-  auto lookup1 = block->push_back<SNodeLookupStmt>(
-      &root, get_root, zero, false, std::vector<Stmt *>());
-  auto lookup2 = block->push_back<SNodeLookupStmt>(
-      &root, get_root, zero, false, std::vector<Stmt *>());
+  auto lookup1 = block->push_back<SNodeLookupStmt>(&root, get_root, zero, false,
+                                                   std::vector<Stmt *>());
+  auto lookup2 = block->push_back<SNodeLookupStmt>(&root, get_root, zero, false,
+                                                   std::vector<Stmt *>());
   auto lookup_activate = block->push_back<SNodeLookupStmt>(
       &root, get_root, zero, true, std::vector<Stmt *>());
   auto get_child = block->push_back<GetChStmt>(lookup_activate, 0);

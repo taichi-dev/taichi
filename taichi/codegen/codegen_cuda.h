@@ -11,8 +11,6 @@ class CodeGenCUDA : public KernelCodeGen {
   CodeGenCUDA(Kernel *kernel) : KernelCodeGen(kernel) {
   }
 
-  void lower() override;
-
   virtual FunctionType codegen() override;
 };
 

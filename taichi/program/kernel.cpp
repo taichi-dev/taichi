@@ -42,18 +42,22 @@ void Kernel::compile() {
   program.current_kernel = nullptr;
 }
 
-void Kernel::lower() {
+void Kernel::lower() {  // TODO: is a "Lowerer" class necessary for each
+                        // backend?
   TI_ASSERT(!lowered);
-  TI_ASSERT(program.current_kernel == nullptr);
-  program.current_kernel = this;
   if (arch_is_cpu(arch) || arch == Arch::cuda) {
     auto codegen = KernelCodeGen::create(arch, this);
-    codegen->lower();
+    auto config = program.config;
+    bool verbose = config.print_ir;
+    if (is_accessor && !config.print_accessor_ir)
+      verbose = false;
+    irpass::compile_to_offloads(ir, config, /*vectorize*/ arch_is_cpu(arch),
+                                grad,
+                                /*ad_use_stack*/ true, verbose);
   } else {
     TI_NOT_IMPLEMENTED
   }
   lowered = true;
-  program.current_kernel = nullptr;
 }
 
 void Kernel::operator()() {

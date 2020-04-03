@@ -17,8 +17,6 @@ class KernelCodeGen {
   KernelCodeGen(Kernel *kernel) : prog(&kernel->program), kernel(kernel) {
   }
 
-  virtual void lower() = 0;
-
   virtual FunctionType compile();
 
   static std::unique_ptr<KernelCodeGen> create(Arch arch, Kernel *kernel);

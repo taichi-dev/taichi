@@ -10,6 +10,7 @@ extern const bool advanced_optimization;
 struct CompileConfig {
   Arch arch;
   bool debug;
+  bool check_out_of_bound;
   int simd_width;
   bool lazy_compilation;
   int external_optimization_level;

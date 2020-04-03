@@ -115,6 +115,12 @@ std::unordered_set<SNode *> gather_deactivations(IRNode *root);
 std::vector<Stmt *> gather_statements(IRNode *root,
                                       const std::function<bool(Stmt *)> &test);
 std::unordered_set<Stmt *> detect_fors_with_break(IRNode *root);
+void compile_to_offloads(IRNode *ir,
+                         CompileConfig config,
+                         bool vectorize,
+                         bool grad,
+                         bool ad_use_stack,
+                         bool verbose);
 }  // namespace irpass
 
 // Analysis

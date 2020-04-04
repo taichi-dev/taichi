@@ -92,7 +92,7 @@ struct CompiledProgram {
     if (ext_arr_map.size()) {
       iov.push_back(
           IOV{ctx.extra_args, arg_count * taichi_max_num_args * sizeof(int)});
-      if (ext_arr_map.size() == 1) { // zero-copy for only one ext_arr
+      if (ext_arr_map.size() == 1) {  // zero-copy for only one ext_arr
         auto it = ext_arr_map.begin();
         auto extptr = (void *)ctx.args[it->first];
         ctx.args[it->first] = 0;
@@ -100,20 +100,20 @@ struct CompiledProgram {
       } else {
         size_t accum_size = 0;
         std::vector<void *> ptrarr;
-        for (const auto &[i, size]: ext_arr_map) {
+        for (const auto &[i, size] : ext_arr_map) {
           accum_size += size;
         }
         saved_ctx_ptrs = std::make_optional<std::vector<void *>>();
         base_arr = std::make_optional<std::vector<char>>(accum_size);
         void *baseptr = base_arr->data();
         accum_size = 0;
-        for (const auto &[i, size]: ext_arr_map) {
+        for (const auto &[i, size] : ext_arr_map) {
           auto ptr = (void *)ctx.args[i];
           saved_ctx_ptrs->push_back(ptr);
           std::memcpy((char *)baseptr + accum_size, ptr, size);
           ctx.args[i] = accum_size;
           accum_size += size;
-        } // concat all extptr into my baseptr
+        }  // concat all extptr into my baseptr
         iov.push_back(IOV{baseptr, accum_size});
       }
     }
@@ -126,11 +126,11 @@ struct CompiledProgram {
       void *baseptr = base_arr->data();
       auto cpit = saved_ctx_ptrs->begin();
       size_t accum_size = 0;
-      for (const auto &[i, size]: ext_arr_map) {
+      for (const auto &[i, size] : ext_arr_map) {
         std::memcpy(*cpit, (char *)baseptr + accum_size, size);
         accum_size += size;
         cpit++;
-      } // extract back to all extptr from my baseptr
+      }  // extract back to all extptr from my baseptr
     }
   }
 };
@@ -226,30 +226,30 @@ class KernelGen : public IRVisitor {
     if (used.atomic_float && !opengl_has_GL_NV_shader_atomic_float) {  // {{{
       kernel_header += (
 #include "taichi/backends/opengl/shaders/atomics_data_f32.glsl.h"
-          );
+      );
 #ifdef _GLSL_INT64
       kernel_header += (
 #include "taichi/backends/opengl/shaders/atomics_data_f64.glsl.h"
-          );
+      );
 #endif
       if (used.global_temp) {
         kernel_header += (
 #include "taichi/backends/opengl/shaders/atomics_gtmp_f32.glsl.h"
-            );
+        );
 #ifdef _GLSL_INT64
-      kernel_header += (
+        kernel_header += (
 #include "taichi/backends/opengl/shaders/atomics_gtmp_f64.glsl.h"
-          );
+        );
 #endif
       }
       if (used.external_ptr) {
         kernel_header += (
 #include "taichi/backends/opengl/shaders/atomics_extr_f32.glsl.h"
-            );
+        );
 #ifdef _GLSL_INT64
-      kernel_header += (
+        kernel_header += (
 #include "taichi/backends/opengl/shaders/atomics_extr_f64.glsl.h"
-          );
+        );
 #endif
       }
     }                   // }}}
@@ -257,7 +257,7 @@ class KernelGen : public IRVisitor {
                         // share rand seed? {{{
       kernel_header += (
 #include "taichi/backends/opengl/shaders/random.glsl.h"
-          );
+      );
     }  // }}}
 
     line_appender_header_.append_raw(kernel_header);
@@ -267,8 +267,10 @@ class KernelGen : public IRVisitor {
       threads_per_group = std::max(1, num_threads_);
     else
       num_groups_ = (num_threads_ + threads_per_group - 1) / threads_per_group;
-    emit("layout(local_size_x = {} /* {}, {} */, local_size_y = 1, local_size_z = 1) in;",
-         threads_per_group, num_groups_, num_threads_);
+    emit(
+        "layout(local_size_x = {} /* {}, {} */, local_size_y = 1, local_size_z "
+        "= 1) in;",
+        threads_per_group, num_groups_, num_threads_);
     std::string extensions = "";
     if (opengl_has_GL_NV_shader_atomic_float) {
       extensions += "#extension GL_NV_shader_atomic_float: enable\n";

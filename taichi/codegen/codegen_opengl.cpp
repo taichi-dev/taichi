@@ -38,8 +38,7 @@ struct UsedFeature {
   bool global_temp{false};
 };
 
-struct CompiledKernel {
-  GLProgram *glsl;
+struct CompiledKernel : public GLProgramIFace {
   int num_groups;
   UsedFeature used;
   std::string kernel_name;
@@ -48,19 +47,20 @@ struct CompiledKernel {
                           const std::string &kernel_source_code,
                           int num_groups_,
                           UsedFeature used_)
-      : num_groups(num_groups_), used(used_), kernel_name(kernel_name_) {
+      : GLProgramIFace(kernel_source_code)
+      , num_groups(num_groups_), used(used_), kernel_name(kernel_name_)
+  {
 #ifdef _GLSL_DEBUG
     TI_INFO("source of kernel [{}] * {}:\n{}", kernel_name, num_groups,
             kernel_source_code);
     std::ofstream(fmt::format("/tmp/{}.comp", kernel_name))
         .write(kernel_source_code.c_str(), kernel_source_code.size());
 #endif
-    this->glsl = compile_glsl_program(kernel_source_code);
   }
 
   void launch() const {
     // TI_PERF();
-    launch_glsl_kernel(glsl, num_groups);
+    this->launch_glsl(num_groups);
     // TI_PERF(kernel_name.c_str(), kernel_name.size(), 107);
   }
 };

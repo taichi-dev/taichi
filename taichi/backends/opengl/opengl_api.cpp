@@ -12,7 +12,7 @@ namespace opengl {
 bool opengl_has_GL_NV_shader_atomic_float;
 
 #ifdef TI_WITH_OPENGL
-void glapi_set_uniform(GLuint loc, float value) {
+void glapi_set_uniform(unsigned loc, float value) {
   glUniform1f(loc, value);
 }
 
@@ -32,13 +32,13 @@ static std::string add_line_markers(std::string x) {
 }
 
 struct GLShader {
-  GLuint id_;
+  unsigned id_;
 
-  GLShader(GLuint type = GL_COMPUTE_SHADER) {
+  GLShader(unsigned type = GL_COMPUTE_SHADER) {
     id_ = glCreateShader(type);
   }
 
-  GLShader(std::string source, GLuint type = GL_COMPUTE_SHADER)
+  GLShader(std::string source, unsigned type = GL_COMPUTE_SHADER)
       : GLShader(type) {
     this->compile(source);
   }
@@ -47,12 +47,12 @@ struct GLShader {
     glDeleteShader(id_);
   }
 
-  GLShader &compile(const std::string &source) {
+  void compile(const std::string &source) const {
     const GLchar *source_cstr = source.c_str();
     glShaderSource(id_, 1, &source_cstr, nullptr);
 
     glCompileShader(id_);
-    GLint status = GL_TRUE;
+    int status = GL_TRUE;
     glGetShaderiv(id_, GL_COMPILE_STATUS, &status);
     if (status != GL_TRUE) {
       GLsizei logLength;
@@ -63,21 +63,20 @@ struct GLShader {
       TI_ERROR("[glsl] error while compiling shader:\n{}\n{}",
                add_line_markers(source), log.data());
     }
-    return *this;
   }
 };
 
 struct GLProgram {
-  GLuint id_;
+  unsigned id_;
 
   GLProgram() {
     id_ = glCreateProgram();
   }
 
-  explicit GLProgram(GLuint id) : id_(id) {
+  explicit GLProgram(unsigned id) : id_(id) {
   }
 
-  explicit GLProgram(GLShader &shader) : GLProgram() {
+  explicit GLProgram(const GLShader &shader) : GLProgram() {
     this->attach(shader);
   }
 
@@ -85,14 +84,13 @@ struct GLProgram {
     glDeleteProgram(id_);
   }
 
-  GLProgram &attach(GLShader &shader) {
+  void attach(const GLShader &shader) const {
     glAttachShader(id_, shader.id_);
-    return *this;
   }
 
-  GLProgram &link() {
+  void link() const {
     glLinkProgram(id_);
-    GLint status = GL_TRUE;
+    int status = GL_TRUE;
     glGetProgramiv(id_, GL_LINK_STATUS, &status);
     if (status != GL_TRUE) {
       GLsizei logLength;
@@ -102,17 +100,15 @@ struct GLProgram {
       log[logLength] = 0;
       TI_ERROR("[glsl] error while linking program:\n{}", log.data());
     }
-    return *this;
   }
 
-  GLProgram &use() {
+  void use() const {
     glUseProgram(id_);
-    return *this;
   }
 
   template <typename T>
-  void set_uniform(std::string name, T value) {
-    GLuint loc = glGetUniformLocation(id_, name.c_str());
+  void set_uniform(std::string name, T value) const {
+    unsigned loc = glGetUniformLocation(id_, name.c_str());
     glapi_set_uniform(loc, value);
   }
 };
@@ -121,7 +117,7 @@ struct GLProgram {
 // https://www.khronos.org/opengl/wiki/Shader_Storage_Buffer_Object
 // This is Shader Storage Buffer, we use it to share data between CPU & GPU
 struct GLSSBO {
-  GLuint id_;
+  unsigned id_;
 
   GLSSBO() {
     glGenBuffers(1, &id_);
@@ -159,31 +155,28 @@ struct GLSSBO {
    used as the source for GL drawing and image specification commands.
    ***/
 
-  GLSSBO &bind_data(void *data, size_t size, GLuint usage = GL_STATIC_READ) {
+  void bind_data(void *data, size_t size, unsigned usage = GL_STATIC_READ) const {
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, id_);
     glBufferData(GL_SHADER_STORAGE_BUFFER, size, data, usage);
-    return *this;
   }
 
-  GLSSBO &bind_index(size_t index) {
+  void bind_index(size_t index) const {
     // SSBO index, is `layout(std430, binding = <index>)` in shader.
     // We use only one SSBO though...
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, index, id_);
-    return *this;
   }
 
-  GLSSBO &bind_range(size_t index, size_t offset, size_t size) {
+  void bind_range(size_t index, size_t offset, size_t size) const {
     glBindBufferRange(GL_SHADER_STORAGE_BUFFER, index, id_, offset, size);
-    return *this;
   }
 
-  void *map(size_t offset, size_t length, GLbitfield access = GL_MAP_READ_BIT) {
+  void *map(size_t offset, size_t length, GLbitfield access = GL_MAP_READ_BIT) const {
     // map GPU memory to CPU address space, offset within SSBO data
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, id_);
     return glMapBufferRange(GL_SHADER_STORAGE_BUFFER, offset, length, access);
   }
 
-  void *map(GLbitfield access = GL_MAP_READ_BIT) {
+  void *map(GLbitfield access = GL_MAP_READ_BIT) const {
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, id_);
     return glMapBuffer(GL_SHADER_STORAGE_BUFFER, access);
   }
@@ -208,14 +201,14 @@ void initialize_opengl() {
       glfwCreateWindow(1, 1, "Make GLEW Happy", nullptr, nullptr);
   if (!window) {
     const char *desc = nullptr;
-    GLint status = glfwGetError(&desc);
+    int status = glfwGetError(&desc);
     if (!desc)
       desc = "Unknown Error";
     TI_ERROR("[glsl] cannot create GLFW window: error {}: {}", status, desc);
   }
   glfwHideWindow(window);
   glfwMakeContextCurrent(window);
-  GLint status = glewInit();
+  int status = glewInit();
   if (status != GLEW_OK) {
     TI_ERROR("[glsl] cannot initialize GLEW: {}", glewGetErrorString(status));
   }
@@ -232,28 +225,25 @@ void initialize_opengl() {
   }
 }
 
-GLProgram *compile_glsl_program(std::string source) {
-  GLShader shader(source);
-  GLProgram *program = new GLProgram(shader);
-  program->link();
-  return program;
+GLProgramIFace::GLProgramIFace(std::string source)
+  : glsl(std::make_shared<GLProgram>(GLShader(source)))
+{
+  glsl->link();
 }
 
 namespace {
-  GLSSBO *root_ssbo;
+  std::unique_ptr<GLSSBO> root_ssbo;
   std::vector<GLSSBO> ssbo;
-  void *root_buffer;
+  std::vector<char> root_buffer;
 }
 
 void create_glsl_root_buffer(size_t size) {
   // if (root_ssbo) return;
   initialize_opengl();
-  if (root_ssbo) delete root_ssbo;
-  root_ssbo = new GLSSBO;  // TODO(archibate): mem leaking, use std::optional instead
+  root_ssbo = std::make_unique<GLSSBO>();
   size += 2 * sizeof(int);
-  if (root_buffer) delete root_buffer;
-  root_buffer = std::calloc(size, 1);
-  root_ssbo->bind_data(root_buffer, size, GL_DYNAMIC_READ);
+  root_buffer = std::vector<char>(size);
+  root_ssbo->bind_data(root_buffer.data(), size, GL_DYNAMIC_READ);
   root_ssbo->bind_index(0);
 }
 
@@ -268,8 +258,8 @@ void begin_glsl_kernels(const std::vector<IOV> &iov) {
   }
 }
 
-void launch_glsl_kernel(GLProgram *program, int num_groups) {
-  program->use();
+void GLProgramIFace::launch_glsl(int num_groups) const {
+  glsl->use();
 
   // https://www.khronos.org/opengl/wiki/Compute_Shader
   // https://community.arm.com/developer/tools-software/graphics/b/blog/posts/get-started-with-compute-shaders
@@ -318,7 +308,7 @@ void end_glsl_kernels(const std::vector<IOV> &iov) {
   TI_NOT_IMPLEMENTED
 }
 
-void launch_glsl_kernel(GLProgram *program, int num_groups) {
+void GLProgramIFace::launch_glsl(int num_groups) const {
   TI_NOT_IMPLEMENTED
 }
 
@@ -328,7 +318,7 @@ bool is_opengl_api_available() {
 
 void initialize_opengl(){TI_NOT_IMPLEMENTED}
 
-GLProgram *compile_glsl_program(std::string source) {
+GLProgramIFace::GLProgramIFace(std::string source) {
   TI_NOT_IMPLEMENTED
 }
 

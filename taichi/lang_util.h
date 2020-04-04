@@ -1,6 +1,6 @@
 // Definitions of utility functions and enums
-
 #pragma once
+
 #include "taichi/util/io.h"
 #include "taichi/common/util.h"
 #include "taichi/system/profiler.h"
@@ -201,7 +201,7 @@ class TypedConstant {
     }
   }
 
-  bool equal_type_and_value(const TypedConstant &o) {
+  bool equal_type_and_value(const TypedConstant &o) const {
     if (dt != o.dt)
       return false;
     if (dt == DataType::f32) {
@@ -216,6 +216,10 @@ class TypedConstant {
       TI_NOT_IMPLEMENTED
       return false;
     }
+  }
+
+  bool operator==(const TypedConstant &o) const {
+    return equal_type_and_value(o);
   }
 
   int32 &val_int32() {

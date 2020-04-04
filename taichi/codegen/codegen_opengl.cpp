@@ -195,30 +195,30 @@ class KernelGen : public IRVisitor {
     if (used.atomic_float && !opengl_has_GL_NV_shader_atomic_float) {  // {{{
       kernel_header += (
 #include "taichi/backends/opengl/shaders/atomics_data_f32.glsl.h"
-          );
+      );
 #ifdef _GLSL_INT64
       kernel_header += (
 #include "taichi/backends/opengl/shaders/atomics_data_f64.glsl.h"
-          );
+      );
 #endif
       if (used.global_temp) {
         kernel_header += (
 #include "taichi/backends/opengl/shaders/atomics_gtmp_f32.glsl.h"
-            );
+        );
 #ifdef _GLSL_INT64
-      kernel_header += (
+        kernel_header += (
 #include "taichi/backends/opengl/shaders/atomics_gtmp_f64.glsl.h"
-          );
+        );
 #endif
       }
       if (used.external_ptr) {
         kernel_header += (
 #include "taichi/backends/opengl/shaders/atomics_extr_f32.glsl.h"
-            );
+        );
 #ifdef _GLSL_INT64
-      kernel_header += (
+        kernel_header += (
 #include "taichi/backends/opengl/shaders/atomics_extr_f64.glsl.h"
-          );
+        );
 #endif
       }
     }                   // }}}
@@ -226,7 +226,7 @@ class KernelGen : public IRVisitor {
                         // share rand seed? {{{
       kernel_header += (
 #include "taichi/backends/opengl/shaders/random.glsl.h"
-          );
+      );
     }  // }}}
 
     line_appender_header_.append_raw(kernel_header);
@@ -236,8 +236,10 @@ class KernelGen : public IRVisitor {
       threads_per_group = std::max(1, num_threads_);
     else
       num_groups_ = (num_threads_ + threads_per_group - 1) / threads_per_group;
-    emit("layout(local_size_x = {} /* {}, {} */, local_size_y = 1, local_size_z = 1) in;",
-         threads_per_group, num_groups_, num_threads_);
+    emit(
+        "layout(local_size_x = {} /* {}, {} */, local_size_y = 1, local_size_z "
+        "= 1) in;",
+        threads_per_group, num_groups_, num_threads_);
     std::string extensions = "";
     if (opengl_has_GL_NV_shader_atomic_float) {
       extensions += "#extension GL_NV_shader_atomic_float: enable\n";

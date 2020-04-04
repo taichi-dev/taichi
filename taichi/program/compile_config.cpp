@@ -17,6 +17,7 @@ CompileConfig::CompileConfig() {
   demote_dense_struct_fors = true;
   max_vector_width = 8;
   debug = false;
+  check_out_of_bound = false;
   lazy_compilation = true;
   serial_schedule = false;
   simplify_before_lower_access = true;
@@ -30,6 +31,7 @@ CompileConfig::CompileConfig() {
   default_gpu_block_dim = 64;
   verbose = true;
   fast_math = true;
+  async = false;
 
 #if defined(TI_PLATFORM_WINDOWS) or defined(TI_ARCH_ARM)
   use_unified_memory = false;

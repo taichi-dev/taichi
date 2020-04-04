@@ -11,8 +11,6 @@ class KernelCodeGen {
   Program *prog;
   Kernel *kernel;
 
-  virtual void lower() = 0;
-
   virtual FunctionType codegen() = 0;
 
  public:

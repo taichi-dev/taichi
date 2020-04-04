@@ -409,6 +409,7 @@ class TypeCheck : public IRVisitor {
 namespace irpass {
 
 void typecheck(IRNode *root) {
+  check_fields_registered(root);
   return TypeCheck::run(root);
 }
 

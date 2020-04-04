@@ -77,6 +77,12 @@ struct copy_refcv {
 template <typename T, typename G>
 using copy_refcv_t = typename copy_refcv<T, G>::type;
 
+template <class T, template <class...> class Template>
+struct is_specialization : std::false_type {};
+
+template <template <class...> class Template, class... Args>
+struct is_specialization<Template<Args...>, Template> : std::true_type {};
+
 TI_STATIC_ASSERT((std::is_same<const volatile int, volatile const int>::value));
 TI_STATIC_ASSERT(
     (std::is_same<int,
@@ -96,5 +102,6 @@ TI_STATIC_ASSERT(
     (std::is_same<copy_refcv_t<const int &, real>, const real &>::value));
 TI_STATIC_ASSERT((std::is_same<copy_refcv_t<const volatile int &, real>,
                                const volatile real &>::value));
+TI_STATIC_ASSERT((is_specialization<std::vector<int>, std::vector>::value));
 
 }  // namespace taichi

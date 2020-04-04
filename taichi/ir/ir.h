@@ -91,8 +91,9 @@ void die(IRNode *root);
 void simplify(IRNode *root);
 void alg_simp(IRNode *root, const CompileConfig &config);
 void full_simplify(IRNode *root, const CompileConfig &config);
-void print(IRNode *root);
+void print(IRNode *root, std::string *output = nullptr);
 void lower(IRNode *root);
+void check_fields_registered(IRNode *root);
 void typecheck(IRNode *root);
 void loop_vectorize(IRNode *root);
 void slp_vectorize(IRNode *root);
@@ -114,7 +115,14 @@ std::unique_ptr<ScratchPads> initialize_scratch_pad(StructForStmt *root);
 std::unordered_set<SNode *> gather_deactivations(IRNode *root);
 std::vector<Stmt *> gather_statements(IRNode *root,
                                       const std::function<bool(Stmt *)> &test);
+bool same_statements(IRNode *root1, IRNode *root2);
 std::unordered_set<Stmt *> detect_fors_with_break(IRNode *root);
+void compile_to_offloads(IRNode *ir,
+                         CompileConfig config,
+                         bool vectorize,
+                         bool grad,
+                         bool ad_use_stack,
+                         bool verbose);
 }  // namespace irpass
 
 // Analysis
@@ -379,6 +387,22 @@ class IRNode {
     TI_NOT_IMPLEMENTED
   }
   virtual ~IRNode() = default;
+
+  template <typename T>
+  bool is() const {
+    return dynamic_cast<const T *>(this) != nullptr;
+  }
+
+  template <typename T>
+  T *as() {
+    TI_ASSERT(is<T>());
+    return dynamic_cast<T *>(this);
+  }
+
+  template <typename T>
+  T *cast() {
+    return dynamic_cast<T *>(this);
+  }
 };
 
 #define DEFINE_ACCEPT                        \
@@ -531,6 +555,30 @@ class StmtFieldNumeric final : public StmtField {
   }
 };
 
+class StmtFieldSNode final : public StmtField {
+ private:
+  SNode *const &snode;
+
+ public:
+  explicit StmtFieldSNode(SNode *const &snode) : snode(snode) {
+  }
+
+  static int get_snode_id(SNode *snode) {
+    if (snode == nullptr)
+      return -1;
+    return snode->id;
+  }
+
+  bool equal(const StmtField *other_generic) const override {
+    if (auto other = dynamic_cast<const StmtFieldSNode *>(other_generic)) {
+      return get_snode_id(snode) == get_snode_id(other->snode);
+    } else {
+      // Different types
+      return false;
+    }
+  }
+};
+
 class StmtFieldManager {
  private:
   Stmt *stmt;
@@ -547,7 +595,7 @@ class StmtFieldManager {
   template <typename T, typename... Args>
   void operator()(const char *key_, T &&t, Args &&... rest) {
     std::string key(key_);
-    size_t pos = key.find(",");
+    size_t pos = key.find(',');
     std::string first_name = key.substr(0, pos);
     std::string rest_names =
         key.substr(pos + 2, int(key.size()) - (int)pos - 2);
@@ -570,7 +618,9 @@ class StmtFieldManager {
 };
 
 #define TI_STMT_DEF_FIELDS(...) TI_IO_DEF(__VA_ARGS__)
-#define TI_STMT_REG_FIELDS io(field_manager)
+#define TI_STMT_REG_FIELDS  \
+  mark_fields_registered(); \
+  io(field_manager)
 
 class Stmt : public IRNode {
  protected:  // NOTE: operands should not be directly modified, for the
@@ -585,12 +635,13 @@ class Stmt : public IRNode {
   Block *parent;
   uint64 operand_bitmap;
   bool erased;
+  bool fields_registered;
   std::string tb;
   bool is_ptr;
 
   Stmt(const Stmt &stmt) = delete;
 
-  Stmt() : field_manager(this) {
+  Stmt() : field_manager(this), fields_registered(false) {
     parent = nullptr;
     instance_id = instance_id_counter++;
     id = instance_id;
@@ -644,22 +695,6 @@ class Stmt : public IRNode {
     return fmt::format("tmp{}", id);
   }
 
-  template <typename T>
-  bool is() const {
-    return dynamic_cast<const T *>(this) != nullptr;
-  }
-
-  template <typename T>
-  T *as() {
-    TI_ASSERT(is<T>());
-    return dynamic_cast<T *>(this);
-  }
-
-  template <typename T>
-  T *cast() {
-    return dynamic_cast<T *>(this);
-  }
-
   TI_FORCE_INLINE int num_operands() const {
     return (int)operands.size();
   }
@@ -693,9 +728,14 @@ class Stmt : public IRNode {
     rebuild_operand_bitmap();
   }
 
-  void add_operand(Stmt *&stmt) {
+  void register_operand(Stmt *&stmt) {
     operands.push_back(&stmt);
     rebuild_operand_bitmap();
+  }
+
+  void mark_fields_registered() {
+    TI_ASSERT(!fields_registered);
+    fields_registered = true;
   }
 
   virtual void rebuild_operands() {
@@ -754,16 +794,6 @@ class Stmt : public IRNode {
 
   virtual ~Stmt() override = default;
 };
-
-template <typename T>
-inline void StmtFieldManager::operator()(const char *key, T &&value) {
-  if constexpr (std::is_same<typename std::decay<T>::type, Stmt *>::value) {
-    stmt->add_operand(const_cast<Stmt *&>(value));
-  } else {
-    stmt->field_manager.fields.emplace_back(
-        std::make_unique<StmtFieldNumeric<T>>(value));
-  }
-}
 
 // always a tree - used as rvalues
 class Expression {
@@ -881,16 +911,19 @@ class AllocaStmt : public Stmt {
  public:
   AllocaStmt(DataType type) {
     ret_type = VectorType(1, type);
+    TI_STMT_REG_FIELDS;
   }
 
   AllocaStmt(int width, DataType type) {
     ret_type = VectorType(width, type);
+    TI_STMT_REG_FIELDS;
   }
 
   virtual bool has_global_side_effect() const override {
     return false;
   }
 
+  TI_STMT_DEF_FIELDS(ret_type);
   DEFINE_ACCEPT
 };
 
@@ -900,9 +933,10 @@ class WhileControlStmt : public Stmt {
   Stmt *mask;
   Stmt *cond;
   WhileControlStmt(Stmt *mask, Stmt *cond) : mask(mask), cond(cond) {
-    add_operand(this->mask);
-    add_operand(this->cond);
+    TI_STMT_REG_FIELDS;
   }
+
+  TI_STMT_DEF_FIELDS(mask, cond);
   DEFINE_ACCEPT;
 };
 
@@ -916,9 +950,9 @@ class UnaryOpStmt : public Stmt {
   UnaryOpStmt(UnaryOpType op_type, Stmt *operand)
       : op_type(op_type), operand(operand) {
     TI_ASSERT(!operand->is<AllocaStmt>());
-    add_operand(this->operand);
     cast_type = DataType::unknown;
     cast_by_value = true;
+    TI_STMT_REG_FIELDS;
   }
 
   bool same_operation(UnaryOpStmt *o) const {
@@ -935,6 +969,8 @@ class UnaryOpStmt : public Stmt {
   virtual bool has_global_side_effect() const override {
     return false;
   }
+
+  TI_STMT_DEF_FIELDS(ret_type, op_type, operand, cast_type, cast_by_value);
   DEFINE_ACCEPT
 };
 
@@ -944,12 +980,14 @@ class ArgLoadStmt : public Stmt {
 
   ArgLoadStmt(int arg_id, bool is_ptr = false) : arg_id(arg_id) {
     this->is_ptr = is_ptr;
+    TI_STMT_REG_FIELDS;
   }
 
   virtual bool has_global_side_effect() const override {
     return false;
   }
 
+  TI_STMT_DEF_FIELDS(ret_type, arg_id, is_ptr);
   DEFINE_ACCEPT
 };
 
@@ -995,7 +1033,7 @@ class ArgStoreStmt : public Stmt {
   Stmt *val;
 
   ArgStoreStmt(int arg_id, Stmt *val) : arg_id(arg_id), val(val) {
-    add_operand(this->val);
+    TI_STMT_REG_FIELDS;
   }
 
   // Arguments are considered global (nonlocal)
@@ -1003,6 +1041,7 @@ class ArgStoreStmt : public Stmt {
     return true;
   }
 
+  TI_STMT_DEF_FIELDS(ret_type, arg_id, val);
   DEFINE_ACCEPT
 };
 
@@ -1010,11 +1049,14 @@ class RandStmt : public Stmt {
  public:
   RandStmt(DataType dt) {
     ret_type.data_type = dt;
+    TI_STMT_REG_FIELDS;
   }
 
   virtual bool has_global_side_effect() const override {
     return false;
   }
+
+  TI_STMT_DEF_FIELDS(ret_type);
   DEFINE_ACCEPT
 };
 
@@ -1082,13 +1124,14 @@ class BinaryOpStmt : public Stmt {
       : op_type(op_type), lhs(lhs), rhs(rhs) {
     TI_ASSERT(!lhs->is<AllocaStmt>());
     TI_ASSERT(!rhs->is<AllocaStmt>());
-    add_operand(this->lhs);
-    add_operand(this->rhs);
+    TI_STMT_REG_FIELDS;
   }
 
   virtual bool has_global_side_effect() const override {
     return false;
   }
+
+  TI_STMT_DEF_FIELDS(ret_type, op_type, lhs, rhs);
   DEFINE_ACCEPT
 };
 
@@ -1102,14 +1145,14 @@ class TernaryOpStmt : public Stmt {
     TI_ASSERT(!op1->is<AllocaStmt>());
     TI_ASSERT(!op2->is<AllocaStmt>());
     TI_ASSERT(!op3->is<AllocaStmt>());
-    add_operand(this->op1);
-    add_operand(this->op2);
-    add_operand(this->op3);
+    TI_STMT_REG_FIELDS;
   }
 
   virtual bool has_global_side_effect() const override {
     return false;
   }
+
+  TI_STMT_DEF_FIELDS(ret_type, op1, op2, op3);
   DEFINE_ACCEPT
 };
 
@@ -1120,10 +1163,10 @@ class AtomicOpStmt : public Stmt {
 
   AtomicOpStmt(AtomicOpType op_type, Stmt *dest, Stmt *val)
       : op_type(op_type), dest(dest), val(val) {
-    add_operand(this->dest);
-    add_operand(this->val);
+    TI_STMT_REG_FIELDS;
   }
 
+  TI_STMT_DEF_FIELDS(ret_type, op_type, dest, val);
   DEFINE_ACCEPT
 };
 
@@ -1200,20 +1243,16 @@ class ExternalPtrStmt : public Stmt {
       TI_ASSERT(base_ptrs[i] != nullptr);
       TI_ASSERT(base_ptrs[i]->is<ArgLoadStmt>());
     }
-    for (int i = 0; i < (int)base_ptrs.size(); i++) {
-      add_operand(this->base_ptrs[i]);
-    }
-    for (int i = 0; i < (int)indices.size(); i++) {
-      add_operand(this->indices[i]);
-    }
     width() = base_ptrs.size();
     element_type() = dt;
+    TI_STMT_REG_FIELDS;
   }
 
   virtual bool has_global_side_effect() const override {
     return false;
   }
 
+  TI_STMT_DEF_FIELDS(ret_type, base_ptrs, indices, activate);
   DEFINE_ACCEPT
 };
 
@@ -1231,17 +1270,16 @@ class GlobalPtrStmt : public Stmt {
       TI_ASSERT(snodes[i] != nullptr);
       TI_ASSERT(snodes[0]->dt == snodes[i]->dt);
     }
-    for (int i = 0; i < (int)indices.size(); i++) {
-      add_operand(this->indices[i]);
-    }
     width() = snodes.size();
     element_type() = snodes[0]->dt;
+    TI_STMT_REG_FIELDS;
   }
 
   virtual bool has_global_side_effect() const override {
     return activate;
   }
 
+  TI_STMT_DEF_FIELDS(ret_type, snodes, indices, activate);
   DEFINE_ACCEPT
 };
 
@@ -1525,11 +1563,9 @@ class SNodeOpStmt : public Stmt {
 
   SNodeOpStmt(SNodeOpType op_type, SNode *snode, Stmt *ptr, Stmt *val = nullptr)
       : op_type(op_type), snode(snode), ptr(ptr), val(val) {
-    add_operand(this->ptr);
-    if (val)
-      add_operand(this->val);
     width() = 1;
     element_type() = DataType::i32;
+    TI_STMT_REG_FIELDS;
   }
 
   SNodeOpStmt(SNodeOpType op_type, SNode *snode, std::vector<Stmt *> indices)
@@ -1538,12 +1574,9 @@ class SNodeOpStmt : public Stmt {
     val = nullptr;
     TI_ASSERT(op_type == SNodeOpType::is_active ||
               op_type == SNodeOpType::deactivate);
-    add_operand(this->ptr);
-    for (int i = 0; i < (int)indices.size(); i++) {
-      add_operand(this->indices[i]);
-    }
     width() = 1;
     element_type() = DataType::i32;
+    TI_STMT_REG_FIELDS;
   }
 
   static bool activation_related(SNodeOpType op) {
@@ -1551,6 +1584,7 @@ class SNodeOpStmt : public Stmt {
            op == SNodeOpType::is_active;
   }
 
+  TI_STMT_DEF_FIELDS(ret_type, op_type, snode, ptr, val, indices);
   DEFINE_ACCEPT
 };
 
@@ -1572,21 +1606,19 @@ class AssertStmt : public Stmt {
   std::vector<Stmt *> args;
 
   AssertStmt(const std::string &text, Stmt *cond) : cond(cond), text(text) {
-    add_operand(this->cond);
     TI_ASSERT(cond);
+    TI_STMT_REG_FIELDS;
   }
 
   AssertStmt(Stmt *cond,
              const std::string &text,
              const std::vector<Stmt *> &args)
       : cond(cond), text(text), args(args) {
-    add_operand(this->cond);
-    for (auto &arg : this->args) {
-      add_operand(arg);
-    }
     TI_ASSERT(cond);
+    TI_STMT_REG_FIELDS;
   }
 
+  TI_STMT_DEF_FIELDS(cond, text, args);
   DEFINE_ACCEPT
 };
 
@@ -1598,10 +1630,10 @@ class RangeAssumptionStmt : public Stmt {
 
   RangeAssumptionStmt(Stmt *input, Stmt *base, int low, int high)
       : input(input), base(base), low(low), high(high) {
-    add_operand(this->input);
-    add_operand(this->base);
+    TI_STMT_REG_FIELDS;
   }
 
+  TI_STMT_DEF_FIELDS(ret_type, input, base, low, high);
   DEFINE_ACCEPT
 };
 
@@ -1619,13 +1651,14 @@ class GlobalLoadStmt : public Stmt {
   Stmt *ptr;
 
   GlobalLoadStmt(Stmt *ptr) : ptr(ptr) {
-    add_operand(this->ptr);
+    TI_STMT_REG_FIELDS;
   }
 
   virtual bool has_global_side_effect() const override {
     return false;
   }
 
+  TI_STMT_DEF_FIELDS(ret_type, ptr);
   DEFINE_ACCEPT;
 };
 
@@ -1634,10 +1667,10 @@ class GlobalStoreStmt : public Stmt {
   Stmt *ptr, *data;
 
   GlobalStoreStmt(Stmt *ptr, Stmt *data) : ptr(ptr), data(data) {
-    add_operand(this->ptr);
-    add_operand(this->data);
+    TI_STMT_REG_FIELDS;
   }
 
+  TI_STMT_DEF_FIELDS(ret_type, ptr, data);
   DEFINE_ACCEPT;
 };
 
@@ -1660,15 +1693,13 @@ class LocalLoadStmt : public Stmt {
   LaneAttribute<LocalAddress> ptr;
 
   LocalLoadStmt(LaneAttribute<LocalAddress> ptr) : ptr(ptr) {
-    for (int i = 0; i < (int)ptr.size(); i++) {
-      add_operand(this->ptr[i].var);
-    }
+    TI_STMT_REG_FIELDS;
   }
 
   void rebuild_operands() override {
     operands.clear();
     for (int i = 0; i < (int)ptr.size(); i++) {
-      add_operand(this->ptr[i].var);
+      register_operand(this->ptr[i].var);
     }
   }
 
@@ -1698,6 +1729,7 @@ class LocalLoadStmt : public Stmt {
     return false;
   }
 
+  TI_STMT_DEF_FIELDS(ret_type, ptr);
   DEFINE_ACCEPT;
 };
 
@@ -1709,10 +1741,10 @@ class LocalStoreStmt : public Stmt {
   // LaneAttribute<Stmt *> data;
 
   LocalStoreStmt(Stmt *ptr, Stmt *data) : ptr(ptr), data(data) {
-    add_operand(this->ptr);
-    add_operand(this->data);
+    TI_STMT_REG_FIELDS;
   }
 
+  TI_STMT_DEF_FIELDS(ret_type, ptr, data);
   DEFINE_ACCEPT;
 };
 
@@ -1722,14 +1754,15 @@ class IfStmt : public Stmt {
   Stmt *true_mask, *false_mask;
   std::unique_ptr<Block> true_statements, false_statements;
 
-  IfStmt(Stmt *cond) : cond(cond) {
-    add_operand(this->cond);
+  IfStmt(Stmt *cond) : cond(cond), true_mask(nullptr), false_mask(nullptr) {
+    TI_STMT_REG_FIELDS;
   }
 
   bool is_container_statement() const override {
     return true;
   }
 
+  TI_STMT_DEF_FIELDS(cond, true_mask, false_mask);
   DEFINE_ACCEPT
 };
 
@@ -1777,9 +1810,10 @@ class PrintStmt : public Stmt {
   std::string str;
 
   PrintStmt(Stmt *stmt, std::string str) : stmt(stmt), str(str) {
-    add_operand(this->stmt);
+    TI_STMT_REG_FIELDS;
   }
 
+  TI_STMT_DEF_FIELDS(ret_type, stmt, str);
   DEFINE_ACCEPT
 };
 
@@ -1820,6 +1854,7 @@ class ConstStmt : public Stmt {
     for (int i = 0; i < ret_type.width; i++) {
       TI_ASSERT(val[0].dt == val[i].dt);
     }
+    TI_STMT_REG_FIELDS;
   }
 
   void repeat(int factor) override {
@@ -1830,6 +1865,8 @@ class ConstStmt : public Stmt {
   virtual bool has_global_side_effect() const override {
     return false;
   }
+
+  TI_STMT_DEF_FIELDS(ret_type, val);
   DEFINE_ACCEPT
 };
 
@@ -1893,9 +1930,7 @@ class RangeForStmt : public Stmt {
         block_dim(block_dim),
         strictly_serialized(strictly_serialized) {
     reversed = false;
-    add_operand(this->loop_var);
-    add_operand(this->begin);
-    add_operand(this->end);
+    TI_STMT_REG_FIELDS;
   }
 
   bool is_container_statement() const override {
@@ -1906,6 +1941,14 @@ class RangeForStmt : public Stmt {
     reversed = !reversed;
   }
 
+  TI_STMT_DEF_FIELDS(loop_var,
+                     begin,
+                     end,
+                     reversed,
+                     vectorize,
+                     parallelize,
+                     block_dim,
+                     strictly_serialized);
   DEFINE_ACCEPT
 };
 
@@ -1934,15 +1977,14 @@ class StructForStmt : public Stmt {
         vectorize(vectorize),
         parallelize(parallelize),
         block_dim(block_dim) {
-    for (auto &v : this->loop_vars) {
-      add_operand(v);
-    }
+    TI_STMT_REG_FIELDS;
   }
 
   bool is_container_statement() const override {
     return true;
   }
 
+  TI_STMT_DEF_FIELDS(loop_vars, snode, vectorize, parallelize, block_dim);
   DEFINE_ACCEPT
 };
 
@@ -1953,12 +1995,14 @@ class FuncBodyStmt : public Stmt {
 
   FuncBodyStmt(const std::string &funcid, std::unique_ptr<Block> &&body)
       : funcid(funcid), body(std::move(body)) {
+    TI_STMT_REG_FIELDS;
   }
 
   bool is_container_statement() const override {
     return true;
   }
 
+  TI_STMT_DEF_FIELDS(funcid);
   DEFINE_ACCEPT
 };
 
@@ -1982,12 +2026,14 @@ class FuncCallStmt : public Stmt {
   std::string funcid;
 
   FuncCallStmt(const std::string &funcid) : funcid(funcid) {
+    TI_STMT_REG_FIELDS;
   }
 
   bool is_container_statement() const override {
     return false;
   }
 
+  TI_STMT_DEF_FIELDS(ret_type, funcid);
   DEFINE_ACCEPT
 };
 
@@ -1996,13 +2042,16 @@ class WhileStmt : public Stmt {
   Stmt *mask;
   std::unique_ptr<Block> body;
 
-  WhileStmt(std::unique_ptr<Block> &&body) : body(std::move(body)) {
+  WhileStmt(std::unique_ptr<Block> &&body)
+      : mask(nullptr), body(std::move(body)) {
+    TI_STMT_REG_FIELDS;
   }
 
   bool is_container_statement() const override {
     return true;
   }
 
+  TI_STMT_DEF_FIELDS(mask);
   DEFINE_ACCEPT
 };
 
@@ -2352,6 +2401,47 @@ class While {
 };
 
 Expr Var(Expr x);
+
+class VectorElement {
+ public:
+  Stmt *stmt;
+  int index;
+
+  VectorElement() : stmt(nullptr), index(0) {
+  }
+
+  VectorElement(Stmt *stmt, int index) : stmt(stmt), index(index) {
+  }
+};
+
+template <typename T>
+inline void StmtFieldManager::operator()(const char *key, T &&value) {
+  using decay_T = typename std::decay<T>::type;
+  if constexpr (is_specialization<decay_T, std::vector>::value ||
+                is_specialization<decay_T, LaneAttribute>::value) {
+    stmt->field_manager.fields.emplace_back(
+        std::make_unique<StmtFieldNumeric<std::size_t>>(value.size()));
+    for (int i = 0; i < (int)value.size(); i++) {
+      (*this)("__element", value[i]);
+    }
+  } else if constexpr (std::is_same<decay_T, Stmt *>::value) {
+    stmt->register_operand(const_cast<Stmt *&>(value));
+  } else if constexpr (std::is_same<decay_T, LocalAddress>::value) {
+    stmt->register_operand(const_cast<Stmt *&>(value.var));
+    stmt->field_manager.fields.emplace_back(
+        std::make_unique<StmtFieldNumeric<int>>(value.offset));
+  } else if constexpr (std::is_same<decay_T, VectorElement>::value) {
+    stmt->register_operand(const_cast<Stmt *&>(value.stmt));
+    stmt->field_manager.fields.emplace_back(
+        std::make_unique<StmtFieldNumeric<int>>(value.index));
+  } else if constexpr (std::is_same<decay_T, SNode *>::value) {
+    stmt->field_manager.fields.emplace_back(
+        std::make_unique<StmtFieldSNode>(value));
+  } else {
+    stmt->field_manager.fields.emplace_back(
+        std::make_unique<StmtFieldNumeric<T>>(value));
+  }
+}
 
 TLANG_NAMESPACE_END
 

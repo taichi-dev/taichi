@@ -10,6 +10,7 @@ extern const bool advanced_optimization;
 struct CompileConfig {
   Arch arch;
   bool debug;
+  bool check_out_of_bound;
   int simd_width;
   bool lazy_compilation;
   int external_optimization_level;
@@ -30,6 +31,7 @@ struct CompileConfig {
   bool verbose;
   bool fast_math;
   bool use_unified_memory;
+  bool async;
   DataType default_fp;
   DataType default_ip;
   std::string extra_flags;

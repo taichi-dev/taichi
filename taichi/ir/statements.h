@@ -9,21 +9,11 @@ class PragmaSLPStmt : public Stmt {
   int slp_width;
 
   PragmaSLPStmt(int slp_width) : slp_width(slp_width) {
+    TI_STMT_REG_FIELDS;
   }
 
+  TI_STMT_DEF_FIELDS(slp_width);
   DEFINE_ACCEPT
-};
-
-class VectorElement {
- public:
-  Stmt *stmt;
-  int index;
-
-  VectorElement() : stmt(nullptr), index(0) {
-  }
-
-  VectorElement(Stmt *stmt, int index) : stmt(stmt), index(index) {
-  }
 };
 
 class ElementShuffleStmt : public Stmt {
@@ -36,14 +26,14 @@ class ElementShuffleStmt : public Stmt {
       : elements(elements), pointer(pointer) {
     width() = elements.size();
     element_type() = elements[0].stmt->element_type();
-    for (int i = 0; i < width(); i++) {
-      add_operand(this->elements[i].stmt);
-    }
+    TI_STMT_REG_FIELDS;
   }
 
   virtual bool has_global_side_effect() const override {
     return false;
   }
+
+  TI_STMT_DEF_FIELDS(ret_type, elements, pointer);
   DEFINE_ACCEPT
 };
 
@@ -53,12 +43,14 @@ class IntegerOffsetStmt : public Stmt {
   int64 offset;
 
   IntegerOffsetStmt(Stmt *input, int64 offset) : input(input), offset(offset) {
-    add_operand(this->input);
+    TI_STMT_REG_FIELDS;
   }
 
   virtual bool has_global_side_effect() const override {
     return false;
   }
+
+  TI_STMT_DEF_FIELDS(ret_type, input, offset);
   DEFINE_ACCEPT
 };
 
@@ -71,14 +63,14 @@ class LinearizeStmt : public Stmt {
                 const std::vector<int> &strides)
       : inputs(inputs), strides(strides) {
     TI_ASSERT(inputs.size() == strides.size());
-    for (auto &op : this->inputs) {
-      add_operand(op);
-    }
+    TI_STMT_REG_FIELDS;
   }
 
   virtual bool has_global_side_effect() const override {
     return false;
   }
+
+  TI_STMT_DEF_FIELDS(ret_type, inputs, strides);
   DEFINE_ACCEPT
 };
 
@@ -90,24 +82,29 @@ class OffsetAndExtractBitsStmt : public Stmt {
   bool simplified;
   OffsetAndExtractBitsStmt(Stmt *input, int bit_begin, int bit_end, int offset)
       : input(input), bit_begin(bit_begin), bit_end(bit_end), offset(offset) {
-    add_operand(this->input);
     simplified = false;
+    TI_STMT_REG_FIELDS;
   }
 
   virtual bool has_global_side_effect() const override {
     return false;
   }
+
+  TI_STMT_DEF_FIELDS(ret_type, input, bit_begin, bit_end, offset, simplified);
   DEFINE_ACCEPT;
 };
 
 class GetRootStmt : public Stmt {
  public:
   GetRootStmt() {
+    TI_STMT_REG_FIELDS;
   }
 
   virtual bool has_global_side_effect() const override {
     return false;
   }
+
+  TI_STMT_DEF_FIELDS(ret_type);
   DEFINE_ACCEPT
 };
 
@@ -129,17 +126,19 @@ class SNodeLookupStmt : public Stmt {
         input_index(input_index),
         global_indices(global_indices),
         activate(activate) {
-    add_operand(this->input_snode);
-    add_operand(this->input_index);
-    for (int i = 0; i < (int)global_indices.size(); i++) {
-      add_operand(this->global_indices[i]);
-    }
+    TI_STMT_REG_FIELDS;
   }
 
   virtual bool has_global_side_effect() const override {
     return activate;
   }
 
+  TI_STMT_DEF_FIELDS(ret_type,
+                     snode,
+                     input_snode,
+                     input_index,
+                     global_indices,
+                     activate);
   DEFINE_ACCEPT
 };
 
@@ -155,6 +154,7 @@ class GetChStmt : public Stmt {
     return false;
   }
 
+  TI_STMT_DEF_FIELDS(ret_type, input_ptr, input_snode, output_snode, chid);
   DEFINE_ACCEPT
 };
 
@@ -197,6 +197,23 @@ class OffloadedStmt : public Stmt {
     return task_type != clear_list && task_type != listgen && task_type != gc;
   }
 
+  TI_STMT_DEF_FIELDS(ret_type,
+                     task_type,
+                     snode,
+                     begin_stmt,
+                     end_stmt,
+                     begin_offset,
+                     end_offset,
+                     const_begin,
+                     const_end,
+                     begin_value,
+                     end_value,
+                     step /*unused?*/,
+                     block_dim,
+                     reversed,
+                     num_cpu_threads,
+                     device,
+                     loop_vars /*unused?*/);
   DEFINE_ACCEPT
 };
 
@@ -207,8 +224,10 @@ class LoopIndexStmt : public Stmt {
 
   LoopIndexStmt(int index, bool is_struct_for)
       : index(index), is_struct_for(is_struct_for) {
+    TI_STMT_REG_FIELDS;
   }
 
+  TI_STMT_DEF_FIELDS(ret_type, index, is_struct_for);
   DEFINE_ACCEPT
 };
 
@@ -219,8 +238,10 @@ class GlobalTemporaryStmt : public Stmt {
   GlobalTemporaryStmt(std::size_t offset, VectorType ret_type)
       : offset(offset) {
     this->ret_type = ret_type;
+    TI_STMT_REG_FIELDS;
   }
 
+  TI_STMT_DEF_FIELDS(ret_type, offset);
   DEFINE_ACCEPT
 };
 
@@ -230,8 +251,10 @@ class InternalFuncStmt : public Stmt {
 
   InternalFuncStmt(const std::string &func_name) : func_name(func_name) {
     this->ret_type = VectorType(1, DataType::i32);
+    TI_STMT_REG_FIELDS;
   }
 
+  TI_STMT_DEF_FIELDS(ret_type, func_name);
   DEFINE_ACCEPT
 };
 
@@ -242,6 +265,7 @@ class StackAllocaStmt : public Stmt {
 
   StackAllocaStmt(DataType dt, std::size_t max_size)
       : dt(dt), max_size(max_size) {
+    TI_STMT_REG_FIELDS;
   }
 
   std::size_t element_size_in_bytes() const {
@@ -256,6 +280,7 @@ class StackAllocaStmt : public Stmt {
     return sizeof(int32) + entry_size_in_bytes() * max_size;
   }
 
+  TI_STMT_DEF_FIELDS(ret_type, dt, max_size);
   DEFINE_ACCEPT
 };
 
@@ -266,9 +291,10 @@ class StackLoadTopStmt : public Stmt {
   StackLoadTopStmt(Stmt *stack) {
     TI_ASSERT(stack->is<StackAllocaStmt>());
     this->stack = stack;
-    add_operand(this->stack);
+    TI_STMT_REG_FIELDS;
   }
 
+  TI_STMT_DEF_FIELDS(ret_type, stack);
   DEFINE_ACCEPT
 };
 
@@ -279,9 +305,10 @@ class StackLoadTopAdjStmt : public Stmt {
   StackLoadTopAdjStmt(Stmt *stack) {
     TI_ASSERT(stack->is<StackAllocaStmt>());
     this->stack = stack;
-    add_operand(this->stack);
+    TI_STMT_REG_FIELDS;
   }
 
+  TI_STMT_DEF_FIELDS(ret_type, stack);
   DEFINE_ACCEPT
 };
 
@@ -292,9 +319,10 @@ class StackPopStmt : public Stmt {
   StackPopStmt(Stmt *stack) {
     TI_ASSERT(stack->is<StackAllocaStmt>());
     this->stack = stack;
-    add_operand(this->stack);
+    TI_STMT_REG_FIELDS;
   }
 
+  TI_STMT_DEF_FIELDS(ret_type, stack);
   DEFINE_ACCEPT
 };
 
@@ -307,10 +335,10 @@ class StackPushStmt : public Stmt {
     TI_ASSERT(stack->is<StackAllocaStmt>());
     this->stack = stack;
     this->v = v;
-    add_operand(this->stack);
-    add_operand(this->v);
+    TI_STMT_REG_FIELDS;
   }
 
+  TI_STMT_DEF_FIELDS(ret_type, stack, v);
   DEFINE_ACCEPT
 };
 
@@ -323,10 +351,10 @@ class StackAccAdjointStmt : public Stmt {
     TI_ASSERT(stack->is<StackAllocaStmt>());
     this->stack = stack;
     this->v = v;
-    add_operand(this->stack);
-    add_operand(this->v);
+    TI_STMT_REG_FIELDS;
   }
 
+  TI_STMT_DEF_FIELDS(ret_type, stack, v);
   DEFINE_ACCEPT
 };
 

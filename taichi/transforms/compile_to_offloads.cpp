@@ -87,6 +87,9 @@ void compile_to_offloads(IRNode *ir,
 
   irpass::demote_atomics(ir);
   print("Atomics demoted");
+
+  // Final field registration correctness & type checking
+  irpass::typecheck(ir);
 }
 
 }  // namespace irpass

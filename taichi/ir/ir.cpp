@@ -46,10 +46,10 @@ void IRBuilder::stop_gradient(SNode *snode) {
 
 GetChStmt::GetChStmt(taichi::lang::Stmt *input_ptr, int chid)
     : input_ptr(input_ptr), chid(chid) {
-  add_operand(this->input_ptr);
   TI_ASSERT(input_ptr->is<SNodeLookupStmt>());
   input_snode = input_ptr->as<SNodeLookupStmt>()->snode;
   output_snode = input_snode->ch[chid].get();
+  TI_STMT_REG_FIELDS;
 }
 
 Expr select(const Expr &cond, const Expr &true_val, const Expr &false_val) {
@@ -495,8 +495,6 @@ OffloadedStmt::OffloadedStmt(OffloadedStmt::TaskType task_type)
 
 OffloadedStmt::OffloadedStmt(OffloadedStmt::TaskType task_type, SNode *snode)
     : task_type(task_type), snode(snode) {
-  add_operand(begin_stmt);
-  add_operand(end_stmt);
   num_cpu_threads = 1;
   const_begin = false;
   const_end = false;
@@ -511,6 +509,7 @@ OffloadedStmt::OffloadedStmt(OffloadedStmt::TaskType task_type, SNode *snode)
   if (task_type != TaskType::listgen) {
     body = std::make_unique<Block>();
   }
+  TI_STMT_REG_FIELDS;
 }
 
 std::string OffloadedStmt::task_name() const {

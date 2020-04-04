@@ -128,7 +128,6 @@ struct CompiledProgram {
       size_t accum_size = 0;
       for (auto it = ext_arr_map.begin(); it != ext_arr_map.end(); it++, cpit++) {
         std::memcpy(*cpit, (char *)baseptr + accum_size, it->second);
-        ctx.args[it->first] = accum_size;
         accum_size += it->second;
       } // extract back to all extptr from my baseptr
     }
@@ -400,7 +399,7 @@ class KernelGen : public IRVisitor {
     }
     emit("}}");
 
-    emit("int {} = ({} + {}) << {};", stmt->short_name(),
+    emit("int {} = {} + ({} << {});", stmt->short_name(),
          stmt->base_ptrs[0]->short_name(), linear_index_name,
          opengl_data_address_shifter(stmt->base_ptrs[0]->element_type()));
     used.external_ptr = true;

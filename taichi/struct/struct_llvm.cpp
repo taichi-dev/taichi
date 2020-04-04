@@ -167,7 +167,7 @@ void StructCompilerLLVM::generate_child_accessors(SNode &snode) {
         builder.CreateBitCast(ret, llvm::Type::getInt8PtrTy(*llvm_ctx)));
   }
 
-  for (auto ch : snode.ch) {
+  for (auto &ch : snode.ch) {
     generate_child_accessors(*ch);
   }
 

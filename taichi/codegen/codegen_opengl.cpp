@@ -77,10 +77,6 @@ struct CompiledProgram {
       if (kernel->args[i].is_nparray) {
         ext_arr_map[i] = kernel->args[i].size;
       }
-      if (ext_arr_map.size() > 1)
-        TI_ERROR(
-            "[glsl] external array argument is supported to at most one in "
-            "OpenGL for now");
     }
   }
 
@@ -114,7 +110,7 @@ struct CompiledProgram {
         for (auto it = ext_arr_map.begin(); it != ext_arr_map.end(); it++) {
           auto ptr = (void *)ctx.args[it->first];
           saved_ctx_ptrs->push_back(ptr);
-          memcpy((char *)baseptr + accum_size, ptr, it->second);
+          std::memcpy((char *)baseptr + accum_size, ptr, it->second);
           ctx.args[it->first] = accum_size;
           accum_size += it->second;
         } // concat all extptr into my baseptr
@@ -131,7 +127,7 @@ struct CompiledProgram {
       auto cpit = saved_ctx_ptrs->begin();
       size_t accum_size = 0;
       for (auto it = ext_arr_map.begin(); it != ext_arr_map.end(); it++, cpit++) {
-        memcpy(*cpit, (char *)baseptr + accum_size, it->second);
+        std::memcpy(*cpit, (char *)baseptr + accum_size, it->second);
         ctx.args[it->first] = accum_size;
         accum_size += it->second;
       } // extract back to all extptr from my baseptr

@@ -1,6 +1,10 @@
-#include "taichi/common/task.h"
 #include "kernel.h"
-#include "program.h"
+
+#include "taichi/common/task.h"
+#include "taichi/program/program.h"
+#include "taichi/program/async_engine.h"
+#include "taichi/codegen/codegen.h"
+
 #if defined(TI_WITH_CUDA)
 #include <cuda_runtime.h>
 #include "taichi/backends/cuda/cuda_utils.h"
@@ -10,9 +14,9 @@ TLANG_NAMESPACE_BEGIN
 
 Kernel::Kernel(Program &program,
                std::function<void()> func,
-               std::string name,
+               std::string primal_name,
                bool grad)
-    : program(program), name(name), grad(grad) {
+    : program(program), lowered(false), grad(grad) {
   program.initialize_device_llvm_context();
   is_accessor = false;
   compiled = nullptr;
@@ -28,6 +32,12 @@ Kernel::Kernel(Program &program,
 
   arch = program.config.arch;
 
+  if (!grad) {
+    name = primal_name;
+  } else {
+    name = primal_name + "_grad";
+  }
+
   if (!program.config.lazy_compilation)
     compile();
 }
@@ -38,21 +48,43 @@ void Kernel::compile() {
   program.current_kernel = nullptr;
 }
 
-void Kernel::operator()() {
-  if (!compiled) {
-    compile();
+void Kernel::lower() {  // TODO: is a "Lowerer" class necessary for each
+                        // backend?
+  TI_ASSERT(!lowered);
+  if (arch_is_cpu(arch) || arch == Arch::cuda) {
+    auto codegen = KernelCodeGen::create(arch, this);
+    auto config = program.config;
+    bool verbose = config.print_ir;
+    if (is_accessor && !config.print_accessor_ir)
+      verbose = false;
+    irpass::compile_to_offloads(ir, config, /*vectorize*/ arch_is_cpu(arch),
+                                grad,
+                                /*ad_use_stack*/ true, verbose);
+  } else {
+    TI_NOT_IMPLEMENTED
   }
-  compiled(program.get_context());
-  program.sync = (program.sync && arch_is_cpu(arch));
-  if (program.config.debug && arch_is_cpu(arch)) {
-    program.check_runtime_error();
+  lowered = true;
+}
+
+void Kernel::operator()() {
+  if (!program.config.async) {
+    if (!compiled) {
+      compile();
+    }
+    compiled(program.get_context());
+    program.sync = (program.sync && arch_is_cpu(arch));
+    if (program.config.debug && arch_is_cpu(arch)) {
+      program.check_runtime_error();
+    }
+  } else {
+    program.engine->launch(this);
   }
 }
 
 void Kernel::set_arg_float(int i, float64 d) {
   TI_ASSERT_INFO(
-      args[i].is_nparray == false,
-      "Assigning scalar value to numpy array argument is not allowed");
+      !args[i].is_nparray,
+      "Assigning a scalar value to a numpy array argument is not allowed");
   auto dt = args[i].dt;
   if (dt == DataType::f32) {
     program.context.set_arg(i, (float32)d);

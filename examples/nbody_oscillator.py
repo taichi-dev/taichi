@@ -21,7 +21,8 @@ def initialize():
 def advance(dt: ti.f32):
     for i in range(N):
         for k in ti.static(range(2)):
-            if pos[i][k] < 0 and vel[i][k] < 0 or pos[i][k] > 1 and vel[i][k] > 0:
+            if pos[i][k] < 0 and vel[i][k] < 0 or pos[i][k] > 1 and vel[i][
+                    k] > 0:
                 vel[i][k] = -bounce * vel[i][k]
 
         p = pos[i] - ti.Vector([0.5, 0.5])

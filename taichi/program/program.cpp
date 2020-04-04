@@ -1,4 +1,4 @@
-// Program, which is a context for a taichi program execution
+// Program, context for Taichi program execution
 
 #include "program.h"
 
@@ -14,6 +14,7 @@
 #include "taichi/struct/struct_opengl.h"
 #include "taichi/system/unified_allocator.h"
 #include "taichi/ir/snode.h"
+#include "taichi/program/async_engine.h"
 
 #include "taichi/backends/cuda/cuda_utils.h"
 
@@ -90,6 +91,23 @@ Program::Program(Arch desired_arch) {
   finalized = false;
   snode_root = std::make_unique<SNode>(0, SNodeType::root);
 
+  if (config.async) {
+    TI_WARN("Running in async mode. This is experimental.");
+    engine = std::make_unique<AsyncEngine>();
+  }
+
+  if (!arch_is_cpu(config.arch)) {
+    if (config.check_out_of_bound) {
+      TI_WARN(
+          "Out-of-bound access checking is only implemented on CPUs backends "
+          "for now.");
+      config.check_out_of_bound = false;
+    }
+  }
+
+  // TODO: allow users to run in debug mode without out-of-bound checks
+  config.check_out_of_bound = config.debug;
+
   TI_TRACE("Program arch={}", arch_name(arch));
 }
 
@@ -98,6 +116,7 @@ FunctionType Program::compile(Kernel &kernel) {
   TI_AUTO_PROF;
   FunctionType ret = nullptr;
   if (arch_is_cpu(kernel.arch) || kernel.arch == Arch::cuda) {
+    kernel.lower();
     auto codegen = KernelCodeGen::create(kernel.arch, &kernel);
     ret = codegen->compile();
   } else if (kernel.arch == Arch::metal) {
@@ -446,6 +465,10 @@ void Program::finalize() {
 #endif
   finalized = true;
   num_instances -= 1;
+}
+
+void Program::launch_async(Kernel *kernel) {
+  engine->launch(kernel);
 }
 
 Program::~Program() {

@@ -70,6 +70,7 @@ void export_lang(py::module &m) {
       .def_readwrite("arch", &CompileConfig::arch)
       .def_readwrite("print_ir", &CompileConfig::print_ir)
       .def_readwrite("debug", &CompileConfig::debug)
+      .def_readwrite("check_out_of_bound", &CompileConfig::check_out_of_bound)
       .def_readwrite("print_accessor_ir", &CompileConfig::print_accessor_ir)
       .def_readwrite("use_llvm", &CompileConfig::use_llvm)
       .def_readwrite("print_struct_llvm_ir",
@@ -99,7 +100,8 @@ void export_lang(py::module &m) {
       .def_readwrite("device_memory_GB", &CompileConfig::device_memory_GB)
       .def_readwrite("device_memory_fraction",
                      &CompileConfig::device_memory_fraction)
-      .def_readwrite("fast_math", &CompileConfig::fast_math);
+      .def_readwrite("fast_math", &CompileConfig::fast_math)
+      .def_readwrite("async", &CompileConfig::async);
 
   m.def("reset_default_compile_config",
         [&]() { default_compile_config = CompileConfig(); });

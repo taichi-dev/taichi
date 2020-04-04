@@ -88,10 +88,12 @@ def test_random_2d_dist():
     for c in range(4):
         assert counters[c] / n == approx(1 / 4, rel=0.2)
 
+
 @archs_support_random
 def test_random_seed_per_launch():
     n = 10
     x = ti.var(ti.f32, shape=n)
+
     @ti.kernel
     def gen(i: ti.i32):
         x[i] = ti.random()

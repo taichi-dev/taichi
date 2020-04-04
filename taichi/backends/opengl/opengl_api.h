@@ -20,9 +20,9 @@ int opengl_get_threads_per_group();
 extern bool opengl_has_GL_NV_shader_atomic_float;
 
 struct GLProgram;
-struct GLProgramIFace {
+struct CompiledGLSL {
   std::shared_ptr<GLProgram> glsl;
-  GLProgramIFace(std::string source);
+  CompiledGLSL(std::string source);
   void launch_glsl(int num_groups) const;
 };
 

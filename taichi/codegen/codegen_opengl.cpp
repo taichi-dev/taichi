@@ -38,7 +38,7 @@ struct UsedFeature {
   bool global_temp{false};
 };
 
-struct CompiledKernel : public GLProgramIFace {
+struct CompiledKernel : public CompiledGLSL {
   int num_groups;
   UsedFeature used;
   std::string kernel_name;
@@ -47,7 +47,7 @@ struct CompiledKernel : public GLProgramIFace {
                           const std::string &kernel_source_code,
                           int num_groups_,
                           UsedFeature used_)
-      : GLProgramIFace(kernel_source_code)
+      : CompiledGLSL(kernel_source_code)
       , num_groups(num_groups_), used(used_), kernel_name(kernel_name_)
   {
 #ifdef _GLSL_DEBUG

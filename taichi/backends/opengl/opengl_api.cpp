@@ -12,7 +12,7 @@ namespace opengl {
 bool opengl_has_GL_NV_shader_atomic_float;
 
 #ifdef TI_WITH_OPENGL
-void glapi_set_uniform(unsigned loc, float value) {
+void glapi_set_uniform(GLuint loc, float value) {
   glUniform1f(loc, value);
 }
 
@@ -32,13 +32,13 @@ static std::string add_line_markers(std::string x) {
 }
 
 struct GLShader {
-  unsigned id_;
+  GLuint id_;
 
-  GLShader(unsigned type = GL_COMPUTE_SHADER) {
+  GLShader(GLuint type = GL_COMPUTE_SHADER) {
     id_ = glCreateShader(type);
   }
 
-  GLShader(std::string source, unsigned type = GL_COMPUTE_SHADER)
+  GLShader(std::string source, GLuint type = GL_COMPUTE_SHADER)
       : GLShader(type) {
     this->compile(source);
   }
@@ -67,13 +67,13 @@ struct GLShader {
 };
 
 struct GLProgram {
-  unsigned id_;
+  GLuint id_;
 
   GLProgram() {
     id_ = glCreateProgram();
   }
 
-  explicit GLProgram(unsigned id) : id_(id) {
+  explicit GLProgram(GLuint id) : id_(id) {
   }
 
   explicit GLProgram(const GLShader &shader) : GLProgram() {
@@ -108,7 +108,7 @@ struct GLProgram {
 
   template <typename T>
   void set_uniform(std::string name, T value) const {
-    unsigned loc = glGetUniformLocation(id_, name.c_str());
+    GLuint loc = glGetUniformLocation(id_, name.c_str());
     glapi_set_uniform(loc, value);
   }
 };
@@ -117,7 +117,7 @@ struct GLProgram {
 // https://www.khronos.org/opengl/wiki/Shader_Storage_Buffer_Object
 // This is Shader Storage Buffer, we use it to share data between CPU & GPU
 struct GLSSBO {
-  unsigned id_;
+  GLuint id_;
 
   GLSSBO() {
     glGenBuffers(1, &id_);
@@ -155,7 +155,7 @@ struct GLSSBO {
    used as the source for GL drawing and image specification commands.
    ***/
 
-  void bind_data(void *data, size_t size, unsigned usage = GL_STATIC_READ) const {
+  void bind_data(void *data, size_t size, GLuint usage = GL_STATIC_READ) const {
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, id_);
     glBufferData(GL_SHADER_STORAGE_BUFFER, size, data, usage);
   }
@@ -225,7 +225,7 @@ void initialize_opengl() {
   }
 }
 
-GLProgramIFace::GLProgramIFace(std::string source)
+CompiledGLSL::CompiledGLSL(std::string source)
   : glsl(std::make_shared<GLProgram>(GLShader(source)))
 {
   glsl->link();
@@ -258,7 +258,7 @@ void begin_glsl_kernels(const std::vector<IOV> &iov) {
   }
 }
 
-void GLProgramIFace::launch_glsl(int num_groups) const {
+void CompiledGLSL::launch_glsl(int num_groups) const {
   glsl->use();
 
   // https://www.khronos.org/opengl/wiki/Compute_Shader
@@ -308,7 +308,7 @@ void end_glsl_kernels(const std::vector<IOV> &iov) {
   TI_NOT_IMPLEMENTED
 }
 
-void GLProgramIFace::launch_glsl(int num_groups) const {
+void CompiledGLSL::launch_glsl(int num_groups) const {
   TI_NOT_IMPLEMENTED
 }
 
@@ -318,7 +318,7 @@ bool is_opengl_api_available() {
 
 void initialize_opengl(){TI_NOT_IMPLEMENTED}
 
-GLProgramIFace::GLProgramIFace(std::string source) {
+CompiledGLSL::CompiledGLSL(std::string source) {
   TI_NOT_IMPLEMENTED
 }
 

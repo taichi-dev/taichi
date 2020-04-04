@@ -1754,7 +1754,7 @@ class IfStmt : public Stmt {
   Stmt *true_mask, *false_mask;
   std::unique_ptr<Block> true_statements, false_statements;
 
-  IfStmt(Stmt *cond) : cond(cond) {
+  IfStmt(Stmt *cond) : cond(cond), true_mask(nullptr), false_mask(nullptr) {
     TI_STMT_REG_FIELDS;
   }
 
@@ -1762,7 +1762,7 @@ class IfStmt : public Stmt {
     return true;
   }
 
-  TI_STMT_DEF_FIELDS(cond);
+  TI_STMT_DEF_FIELDS(cond, true_mask, false_mask);
   DEFINE_ACCEPT
 };
 

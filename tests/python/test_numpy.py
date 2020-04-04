@@ -166,6 +166,28 @@ def test_numpy_3d():
     test_numpy(a)
 
 
+@ti.all_archs
+def test_numpy_multiple_external_arrays():
+
+    n = 4
+
+    @ti.kernel
+    def test_numpy(a: ti.ext_arr(), b: ti.ext_arr()):
+        for i in range(n):
+            a[i] = a[i] * b[i]
+            b[i] = a[i] + b[i]
+
+    a = np.array([4, 8, 1, 24], dtype=np.int32)
+    b = np.array([5, 6, 12, 3], dtype=np.int32)
+    c = a * b
+    d = c + b
+
+    test_numpy(a, b)
+    for i in range(n):
+        assert a[i] == c[i]
+        assert b[i] == d[i]
+
+
 @ti.must_throw(AssertionError)
 def test_index_mismatch():
     val = ti.var(ti.i32, shape=(1, 2, 3))

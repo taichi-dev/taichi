@@ -68,23 +68,14 @@ struct CompiledKernel {
 struct CompiledProgram {
   std::vector<CompiledKernel> kernels;
   int arg_count;
-  int ext_arr_idx;
-  size_t ext_arr_size;
-  bool has_ext_arr{false};
+  std::map<int, size_t> ext_arr_map;
   size_t gtmp_size;
 
   CompiledProgram(Kernel *kernel, size_t gtmp_size) : gtmp_size(gtmp_size) {
-    has_ext_arr = false;
     arg_count = kernel->args.size();
     for (int i = 0; i < arg_count; i++) {
       if (kernel->args[i].is_nparray) {
-        if (has_ext_arr)
-          TI_ERROR(
-              "[glsl] external array argument is supported to at most one in "
-              "OpenGL for now");
-        ext_arr_idx = i;
-        ext_arr_size = kernel->args[i].size;
-        has_ext_arr = true;
+        ext_arr_map[i] = kernel->args[i].size;
       }
     }
   }
@@ -95,17 +86,51 @@ struct CompiledProgram {
     auto gtmp_arr = std::vector<char>(gtmp_size);
     void *gtmp_base = gtmp_arr.data();  // std::calloc(gtmp_size, 1);
     iov.push_back(IOV{gtmp_base, gtmp_size});
-    if (has_ext_arr) {
+    std::optional<std::vector<char>> base_arr;
+    std::optional<std::vector<void *>> saved_ctx_ptrs;
+    // TODO: these dirty codes are introduced by #694
+    if (ext_arr_map.size()) {
       iov.push_back(
           IOV{ctx.extra_args, arg_count * taichi_max_num_args * sizeof(int)});
-      void *extptr = (void *)ctx.args[ext_arr_idx];
-      ctx.args[ext_arr_idx] = 0;
-      iov.push_back(IOV{extptr, ext_arr_size});
+      if (ext_arr_map.size() == 1) {  // zero-copy for only one ext_arr
+        auto it = ext_arr_map.begin();
+        auto extptr = (void *)ctx.args[it->first];
+        ctx.args[it->first] = 0;
+        iov.push_back(IOV{extptr, it->second});
+      } else {
+        size_t accum_size = 0;
+        std::vector<void *> ptrarr;
+        for (const auto &[i, size] : ext_arr_map) {
+          accum_size += size;
+        }
+        saved_ctx_ptrs = std::make_optional<std::vector<void *>>();
+        base_arr = std::make_optional<std::vector<char>>(accum_size);
+        void *baseptr = base_arr->data();
+        accum_size = 0;
+        for (const auto &[i, size] : ext_arr_map) {
+          auto ptr = (void *)ctx.args[i];
+          saved_ctx_ptrs->push_back(ptr);
+          std::memcpy((char *)baseptr + accum_size, ptr, size);
+          ctx.args[i] = accum_size;
+          accum_size += size;
+        }  // concat all extptr into my baseptr
+        iov.push_back(IOV{baseptr, accum_size});
+      }
     }
     for (const auto &ker : kernels) {
       begin_glsl_kernels(iov);
       ker.launch();
       end_glsl_kernels(iov);
+    }
+    if (ext_arr_map.size() > 1) {
+      void *baseptr = base_arr->data();
+      auto cpit = saved_ctx_ptrs->begin();
+      size_t accum_size = 0;
+      for (const auto &[i, size] : ext_arr_map) {
+        std::memcpy(*cpit, (char *)baseptr + accum_size, size);
+        accum_size += size;
+        cpit++;
+      }  // extract back to all extptr from my baseptr
     }
   }
 };
@@ -371,7 +396,7 @@ class KernelGen : public IRVisitor {
     }
     emit("}}");
 
-    emit("int {} = ({} + {}) << {};", stmt->short_name(),
+    emit("int {} = {} + ({} << {});", stmt->short_name(),
          stmt->base_ptrs[0]->short_name(), linear_index_name,
          opengl_data_address_shifter(stmt->base_ptrs[0]->element_type()));
     used.external_ptr = true;

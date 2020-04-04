@@ -100,19 +100,19 @@ struct CompiledProgram {
       } else {
         size_t accum_size = 0;
         std::vector<void *> ptrarr;
-        for (auto it = ext_arr_map.begin(); it != ext_arr_map.end(); it++) {
-          accum_size += it->second;
+        for (const auto &[i, size]: ext_arr_map) {
+          accum_size += size;
         }
         saved_ctx_ptrs = std::make_optional<std::vector<void *>>();
         base_arr = std::make_optional<std::vector<char>>(accum_size);
         void *baseptr = base_arr->data();
         accum_size = 0;
-        for (auto it = ext_arr_map.begin(); it != ext_arr_map.end(); it++) {
-          auto ptr = (void *)ctx.args[it->first];
+        for (const auto &[i, size]: ext_arr_map) {
+          auto ptr = (void *)ctx.args[i];
           saved_ctx_ptrs->push_back(ptr);
-          std::memcpy((char *)baseptr + accum_size, ptr, it->second);
-          ctx.args[it->first] = accum_size;
-          accum_size += it->second;
+          std::memcpy((char *)baseptr + accum_size, ptr, size);
+          ctx.args[i] = accum_size;
+          accum_size += size;
         } // concat all extptr into my baseptr
         iov.push_back(IOV{baseptr, accum_size});
       }
@@ -126,9 +126,10 @@ struct CompiledProgram {
       void *baseptr = base_arr->data();
       auto cpit = saved_ctx_ptrs->begin();
       size_t accum_size = 0;
-      for (auto it = ext_arr_map.begin(); it != ext_arr_map.end(); it++, cpit++) {
-        std::memcpy(*cpit, (char *)baseptr + accum_size, it->second);
-        accum_size += it->second;
+      for (const auto &[i, size]: ext_arr_map) {
+        std::memcpy(*cpit, (char *)baseptr + accum_size, size);
+        accum_size += size;
+        cpit++;
       } // extract back to all extptr from my baseptr
     }
   }

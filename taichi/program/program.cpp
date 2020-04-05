@@ -301,7 +301,7 @@ void Program::synchronize() {
   if (!sync) {
     if (config.arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
-      cudaDeviceSynchronize();
+      cuStreamSynchronize((CUstream)0);
 #else
       TI_ERROR("No CUDA support");
 #endif
@@ -463,7 +463,7 @@ void Program::finalize() {
   memory_pool->terminate();
 #if defined(TI_WITH_CUDA)
   if (preallocated_device_buffer != nullptr)
-    cudaFree(preallocated_device_buffer);
+    cuMemFree((CUdeviceptr)preallocated_device_buffer);
 #endif
   finalized = true;
   num_instances -= 1;

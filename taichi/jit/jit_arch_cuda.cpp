@@ -90,17 +90,17 @@ class JITSessionCUDA : public JITSession {
     // auto _ = CUDAContext::get_instance().get_guard();
     CUDAContext::get_instance().make_current();
     // Create module for object
-    CUmodule cudaModule;
+    CUmodule cuda_module;
     TI_TRACE("PTX size: {:.2f}KB", ptx.size() / 1024.0);
     auto t = Time::get_time();
     TI_TRACE("Loading module...");
     [[maybe_unused]] auto &&_ =
         std::move(CUDAContext::get_instance().get_lock_guard());
     check_cuda_error(
-        cuModuleLoadDataEx(&cudaModule, ptx.c_str(), 0, nullptr, nullptr));
+        cuModuleLoadDataEx(&cuda_module, ptx.c_str(), 0, nullptr, nullptr));
     TI_TRACE("CUDA module load time : {}ms", (Time::get_time() - t) * 1000);
     // cudaModules.push_back(cudaModule);
-    modules.push_back(std::make_unique<JITModuleCUDA>(cudaModule));
+    modules.push_back(std::make_unique<JITModuleCUDA>(cuda_module));
     return modules.back().get();
   }
 

@@ -1,7 +1,10 @@
 #include "snode.h"
 #include "ir.h"
 #include "frontend.h"
-// #include "math.h"
+
+#if defined(TI_WITH_CUDA)
+#include <cuda.h>
+#endif
 
 TLANG_NAMESPACE_BEGIN
 
@@ -121,8 +124,8 @@ uint64 SNode::fetch_reader_result() {
       !get_current_program().config.use_unified_memory) {
     // TODO: refactor
 #if defined(TI_WITH_CUDA)
-    cudaMemcpy(&ret, get_current_program().result_buffer, sizeof(uint64),
-               cudaMemcpyDeviceToHost);
+    cuMemcpyDtoH(&ret, (CUdeviceptr)get_current_program().result_buffer,
+                 sizeof(uint64));
 #else
     TI_NOT_IMPLEMENTED;
 #endif

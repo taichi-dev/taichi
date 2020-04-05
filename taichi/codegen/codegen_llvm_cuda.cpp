@@ -33,8 +33,9 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
 
   CodeGenLLVMCUDA(Kernel *kernel) : CodeGenLLVM(kernel) {
 #if defined(TI_WITH_CUDA)
-    cudaDeviceGetAttribute(&num_SMs, cudaDevAttrMultiProcessorCount, 0);
-    cudaDeviceGetAttribute(&max_block_dim, cudaDevAttrMaxBlockDimX, 0);
+    cuDeviceGetAttribute(&num_SMs, CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT, 0);
+    cuDeviceGetAttribute(&max_block_dim, CU_DEVICE_ATTRIBUTE_MAX_BLOCK_DIM_X,
+                         0);
 
     // each SM can have 16-32 resident blocks
     saturating_num_blocks = num_SMs * 32;
@@ -88,7 +89,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       }
       // copy data back to host
       if (has_buffer) {
-        check_cuda_error(cuStreamSynchronize((cudaStream_t)0));
+        check_cuda_error(cuStreamSynchronize((CUstream)0));
       }
       for (int i = 0; i < (int)args.size(); i++) {
         if (args[i].is_nparray) {

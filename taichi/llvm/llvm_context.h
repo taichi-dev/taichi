@@ -69,7 +69,7 @@ class TaichiLLVMContext {
 
   std::string type_name(llvm::Type *type);
 
-  void link_module_with_libdevice(std::unique_ptr<llvm::Module> &module);
+  void link_module_with_cuda_libdevice(std::unique_ptr<llvm::Module> &module);
 
   static void force_inline(llvm::Function *func);
 

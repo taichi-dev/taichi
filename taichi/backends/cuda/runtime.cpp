@@ -8,21 +8,18 @@ TLANG_NAMESPACE_BEGIN
 class RuntimeCUDA : public Runtime {
  public:
   RuntimeCUDA() {
-    if (!cuda_context) {
-      cuda_context = std::make_unique<CUDAContext>();
-    }
   }
 
   std::size_t get_total_memory() override {
-    return cuda_context->get_total_memory();
+    return CUDAContext::get_instance().get_total_memory();
   }
 
   std::size_t get_available_memory() override {
-    return cuda_context->get_free_memory();
+    return CUDAContext::get_instance().get_free_memory();
   }
 
   bool detected() override {
-    return cuda_context->detected();
+    return CUDAContext::get_instance().detected();
   }
 
   ~RuntimeCUDA() {

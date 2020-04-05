@@ -25,7 +25,7 @@ UnifiedAllocator::UnifiedAllocator(std::size_t size, Arch arch)
     TI_TRACE("Allocating unified (CPU+GPU) address space of size {} MB",
              size / 1024 / 1024);
 #if defined(TI_WITH_CUDA)
-    // std::lock_guard<std::mutex> _(cuda_context->lock);
+    // std::lock_guard<std::mutex> _(CUDAContext::get_instance().lock);
     check_cuda_error(cudaMallocManaged(&_cuda_data, size));
     if (_cuda_data == nullptr) {
       TI_ERROR("CUDA memory allocation failed.");

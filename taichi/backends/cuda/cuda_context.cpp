@@ -17,11 +17,8 @@ CUDAContext::CUDAContext() : profiler(nullptr) {
 
   char name[128];
   check_cuda_error(cuDeviceGetName(name, 128, device));
-  auto GB = std::pow(1024.0, 3.0);
-  TI_TRACE(
-      "Using CUDA Device [id=0]: {}; Total memory {:.2f} GB; free memory "
-      "{:.2f} GB",
-      name, get_total_memory() / GB, get_free_memory() / GB);
+
+  TI_TRACE("Using CUDA Device [id={}]: {}", dev_count, name);
 
   int cc_major, cc_minor;
   check_cuda_error(cuDeviceGetAttribute(
@@ -32,18 +29,22 @@ CUDAContext::CUDAContext() : profiler(nullptr) {
   TI_TRACE("CUDA Device Compute Capability: {}.{}", cc_major, cc_minor);
   check_cuda_error(cuCtxCreate(&context, 0, device));
 
+  const auto GB = std::pow(1024.0, 3.0);
+  TI_TRACE("Total memory {:.2f} GB; free memory {:.2f} GB",
+           get_total_memory() / GB, get_free_memory() / GB);
+
   mcpu = fmt::format("sm_{}{}", cc_major, cc_minor);
 }
 
 std::size_t CUDAContext::get_total_memory() {
   std::size_t ret, _;
-  cudaMemGetInfo(&_, &ret);
+  check_cuda_error(cuMemGetInfo(&_, &ret));
   return ret;
 }
 
 std::size_t CUDAContext::get_free_memory() {
   std::size_t ret, _;
-  cudaMemGetInfo(&ret, &_);
+  check_cuda_error(cuMemGetInfo(&ret, &_));
   return ret;
 }
 
@@ -68,11 +69,7 @@ void CUDAContext::launch(void *func,
     profiler->stop();
 
   if (get_current_program().config.debug) {
-    check_cuda_error(cudaDeviceSynchronize());
-    auto err = cudaGetLastError();
-    if (err) {
-      TI_ERROR("CUDA Kernel Launch Error: {}", cudaGetErrorString(err));
-    }
+    check_cuda_error(cuStreamSynchronize((CUstream)0));
   }
 }
 

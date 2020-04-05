@@ -9,11 +9,11 @@
 #include <dlfcn.h>
 #endif
 
-#include "taichi/common/interface.h"
+#include "taichi/common/util.h"
 
 TI_NAMESPACE_BEGIN
 
-class UnitDLL {
+class DynamicLoader {
  protected:
 #ifdef WIN32
   HINSTANCE dll = nullptr;
@@ -21,10 +21,8 @@ class UnitDLL {
   void *dll = nullptr;
 #endif
 
-  typedef int (*Func)(void);
-
- public:
-  void load_dll(const std::string dll_path) {
+ private:
+  void load_dll(const std::string &dll_path) {
 #ifdef WIN32
     TI_NOT_IMPLEMENTED
     // dll = LoadLibrary(dll_path.c_str());
@@ -36,11 +34,17 @@ class UnitDLL {
     }
   }
 
-  Func load_function(const std::string &func_name) {
+ public:
+  DynamicLoader(const std::string &dll_path) {
+    load_dll(dll_path);
+  }
+
+  template <typename T>
+  T load_function(const std::string &func_name) {
 #ifdef WIN32
     Func func = (Func)GetProcAddress(dll, func_name.c_str());
 #else
-    auto func = (Func)dlsym(dll, func_name.c_str());
+    auto func = (T)dlsym(dll, func_name.c_str());
     const char *dlsym_error = dlerror();
     if (dlsym_error) {
       TI_ERROR(std::string("Cannot load function: ") + dlsym_error);
@@ -50,26 +54,8 @@ class UnitDLL {
     return func;
   }
 
-  UnitDLL() {
-  }
-
-  UnitDLL(const std::string &dll_path) {
-    open_dll(dll_path);
-  }
-
-  void open_dll(const std::string &dll_path) {
-    assert(dll == nullptr);
-    load_dll(dll_path);
-    auto loader = load_function("on_load");
-    on_load = [loader]() { loader(); };
-    on_load();
-    auto unloader = load_function("on_unload");
-    on_unload = [unloader]() { unloader(); };
-  }
-
   void close_dll() {
     assert_info(loaded(), "Dll not opened.");
-    on_unload();
 #ifdef WIN32
     TI_P("Not implemented");
 #else
@@ -82,14 +68,10 @@ class UnitDLL {
     return dll != nullptr;
   }
 
-  ~UnitDLL() {
+  ~DynamicLoader() {
     if (loaded())
       close_dll();
   }
-
- protected:
-  std::function<void(void)> on_load;
-  std::function<void(void)> on_unload;
 };
 
 TI_NAMESPACE_END

@@ -21,8 +21,9 @@ extern bool opengl_has_GL_NV_shader_atomic_float;
 
 struct GLProgram;
 struct CompiledGLSL {
-  std::shared_ptr<GLProgram> glsl;
+  std::unique_ptr<GLProgram> glsl;
   CompiledGLSL(std::string source);
+  ~CompiledGLSL();
   void launch_glsl(int num_groups) const;
 };
 

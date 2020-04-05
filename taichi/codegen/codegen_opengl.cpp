@@ -66,7 +66,7 @@ struct CompiledKernel : public CompiledGLSL {
 };
 
 struct CompiledProgram {
-  std::vector<CompiledKernel> kernels;
+  std::vector<std::unique_ptr<CompiledKernel>> kernels;
   int arg_count;
   int ext_arr_idx;
   size_t ext_arr_size;
@@ -104,7 +104,7 @@ struct CompiledProgram {
     }
     for (const auto &ker : kernels) {
       begin_glsl_kernels(iov);
-      ker.launch();
+      ker->launch();
       end_glsl_kernels(iov);
     }
   }
@@ -119,7 +119,7 @@ class KernelGen : public IRVisitor {
             StructCompiledResult *struct_compiled,
             size_t gtmp_size)
       : kernel(kernel),
-        compiled_program_(kernel, gtmp_size),
+        compiled_program_(std::make_unique<CompiledProgram>(kernel, gtmp_size)),
         struct_compiled_(struct_compiled),
         kernel_name_(kernel_name),
         glsl_kernel_prefix_(kernel_name) {
@@ -129,7 +129,7 @@ class KernelGen : public IRVisitor {
 
  private:  // {{{
   LineAppender line_appender_, line_appender_header_;
-  CompiledProgram compiled_program_;
+  std::unique_ptr<CompiledProgram> compiled_program_;
   UsedFeature used;
 
   bool is_top_level_{true};
@@ -247,7 +247,7 @@ class KernelGen : public IRVisitor {
     auto kernel_src_code =
         "#version 430 core\n" + extensions + "precision highp float;\n" +
         line_appender_header_.lines() + line_appender_.lines();
-    compiled_program_.kernels.push_back(CompiledKernel(
+    compiled_program_->kernels.push_back(std::make_unique<CompiledKernel>(
         std::move(glsl_kernel_name_), kernel_src_code, num_groups_, used));
     line_appender_header_.clear_all();
     line_appender_.clear_all();
@@ -692,8 +692,8 @@ class KernelGen : public IRVisitor {
     return kernel;
   }
 
-  CompiledProgram get_compiled_program() const {
-    return compiled_program_;
+  std::unique_ptr<CompiledProgram> get_compiled_program() const {
+    return std::move(compiled_program_);
   }
 
   void run(const SNode &root_snode) {
@@ -831,7 +831,9 @@ FunctionType OpenglCodeGen::gen(void) {
   codegen.run(*prog_->snode_root);
   auto compiled = codegen.get_compiled_program();
 
-  return [compiled](Context &ctx) { compiled.launch(ctx); };
+  return [](Context &ctx) {};
+  //return compiled->launch;
+  //return [compiled](Context &ctx) { compiled->launch(ctx); }; // or just return compiled->launch?
 #else
   TI_NOT_IMPLEMENTED
 #endif

@@ -226,7 +226,7 @@ void initialize_opengl() {
 }
 
 CompiledGLSL::CompiledGLSL(std::string source)
-  : glsl(std::make_shared<GLProgram>(GLShader(source)))
+  : glsl(std::make_unique<GLProgram>(GLShader(source)))
 {
   glsl->link();
 }
@@ -326,6 +326,8 @@ int opengl_get_threads_per_group() {
   TI_NOT_IMPLEMENTED
 }
 #endif
+
+CompiledGLSL::~CompiledGLSL() = default;
 
 }  // namespace opengl
 TLANG_NAMESPACE_END

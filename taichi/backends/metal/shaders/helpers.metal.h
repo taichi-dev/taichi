@@ -114,12 +114,6 @@ STR(
     }
 
     float metal_rand_f32(device RandState *state) {
-      // The multiplication is suprisingly prohibitively slow.
-      // Benchmark
-      // * GPU:       AMD Radeon Pro 5500M 8 GB
-      // * Test case: sdf_renderer.py
-      // * With mult: 22 samples/s
-      // * Without:   70 samples/s (output is garbage)
       return metal_rand_u32(state) * (1.0f / 4294967296.0f);
     }
     // clang-format off

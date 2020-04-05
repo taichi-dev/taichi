@@ -577,6 +577,7 @@ class KernelManager::Impl {
     }
     addr += sizeof(ListManager) * max_snodes;
     // init rand_seeds
+    // TODO(k-ye): Provide a way to use a fixed seed in dev mode.
     std::mt19937 generator(
         std::chrono::duration_cast<std::chrono::microseconds>(
             std::chrono::system_clock::now().time_since_epoch())

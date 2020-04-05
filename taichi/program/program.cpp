@@ -124,7 +124,8 @@ FunctionType Program::compile(Kernel &kernel) {
     ret = codegen.compile(*this, kernel, metal_kernel_mgr_.get());
   } else if (kernel.arch == Arch::opengl) {
     opengl::OpenglCodeGen codegen(kernel.name,
-                                  &opengl_struct_compiled_.value());
+                                  &opengl_struct_compiled_.value(),
+                                  opengl_kernel_launcher_.get());
     ret = codegen.compile(*this, kernel);
   } else {
     TI_NOT_IMPLEMENTED;
@@ -268,12 +269,11 @@ void Program::materialize_layout() {
           std::make_unique<metal::KernelManager>(std::move(params));
     }
   } else if (config.arch == Arch::opengl) {
+    opengl::initialize_opengl();
     opengl::OpenglStructCompiler scomp;
     opengl_struct_compiled_ = scomp.run(*snode_root);
-    TI_INFO("OpenGL root buffer size: {} B",
-            opengl_struct_compiled_->root_size);
-    opengl::create_glsl_root_buffer(opengl_struct_compiled_->root_size);
-    opengl::initialize_opengl();
+    TI_INFO("OpenGL root buffer size: {} B", opengl_struct_compiled_->root_size);
+    opengl_kernel_launcher_ = std::make_unique<opengl::GLSLLauncher>(opengl_struct_compiled_->root_size);
   }
 }
 

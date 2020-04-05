@@ -231,31 +231,45 @@ CompiledGLSL::CompiledGLSL(std::string source)
   glsl->link();
 }
 
-namespace {
+struct GLSLLauncherImpl {
   std::unique_ptr<GLSSBO> root_ssbo;
   std::vector<GLSSBO> ssbo;
   std::vector<char> root_buffer;
-}
+};
 
-void create_glsl_root_buffer(size_t size) {
+GLSLLauncher::GLSLLauncher(size_t size) {
   // if (root_ssbo) return;
   initialize_opengl();
-  root_ssbo = std::make_unique<GLSSBO>();
+  impl->root_ssbo = std::make_unique<GLSSBO>();
   size += 2 * sizeof(int);
-  root_buffer = std::vector<char>(size);
-  root_ssbo->bind_data(root_buffer.data(), size, GL_DYNAMIC_READ);
-  root_ssbo->bind_index(0);
+  impl->root_buffer = std::vector<char>(size);
+  impl->root_ssbo->bind_data(root_buffer.data(), size, GL_DYNAMIC_READ);
+  impl->root_ssbo->bind_index(0);
 }
 
-void begin_glsl_kernels(const std::vector<IOV> &iov) {
-  ssbo = std::vector<GLSSBO>(iov.size());
+void GLSLLauncher::begin_glsl_kernels(const std::vector<IOV> &iov) {
+  impl->ssbo = std::vector<GLSSBO>(iov.size());
 
   for (int i = 0; i < ssbo.size(); i++) {
     if (!iov[i].size)
       continue;
-    ssbo[i].bind_index(i + 1);
-    ssbo[i].bind_data(iov[i].base, iov[i].size, GL_DYNAMIC_READ);  // input
+    impl->ssbo[i].bind_index(i + 1);
+    impl->ssbo[i].bind_data(iov[i].base, iov[i].size, GL_DYNAMIC_READ);  // input
   }
+}
+
+void GLSLLauncher::end_glsl_kernels(const std::vector<IOV> &iov) {
+  // glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT); // TODO(archibate): move to
+  // Program::synchroize()
+
+  for (int i = 0; i < ssbo.size(); i++) {
+    if (!iov[i].size)
+      continue;
+    void *p = ssbo[i].map(0, iov[i].size);  // output
+    std::memcpy(iov[i].base, p, iov[i].size);
+  }
+  glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+  impl->ssbo.clear();
 }
 
 void CompiledGLSL::launch_glsl(int num_groups) const {
@@ -271,20 +285,6 @@ void CompiledGLSL::launch_glsl(int num_groups) const {
   glDispatchCompute(num_groups, 1, 1);
 }
 
-void end_glsl_kernels(const std::vector<IOV> &iov) {
-  // glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT); // TODO(archibate): move to
-  // Program::synchroize()
-
-  for (int i = 0; i < ssbo.size(); i++) {
-    if (!iov[i].size)
-      continue;
-    void *p = ssbo[i].map(0, iov[i].size);  // output
-    std::memcpy(iov[i].base, p, iov[i].size);
-  }
-  glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
-  ssbo.clear();
-}
-
 bool is_opengl_api_available() {
   return true;
 }
@@ -296,15 +296,15 @@ int opengl_get_threads_per_group() {
 }
 
 #else
-void create_glsl_root_buffer(size_t size) {
+GLSLLauncher::GLSLLauncher(size_t size) {
   TI_NOT_IMPLEMENTED
 }
 
-void begin_glsl_kernels(const std::vector<IOV> &iov) {
+void GLSLLauncher::begin_glsl_kernels(const std::vector<IOV> &iov) {
   TI_NOT_IMPLEMENTED
 }
 
-void end_glsl_kernels(const std::vector<IOV> &iov) {
+void GLSLLauncher::end_glsl_kernels(const std::vector<IOV> &iov) {
   TI_NOT_IMPLEMENTED
 }
 
@@ -328,6 +328,7 @@ int opengl_get_threads_per_group() {
 #endif
 
 CompiledGLSL::~CompiledGLSL() = default;
+GLSLLauncher::~GLSLLauncher() = default;
 
 }  // namespace opengl
 TLANG_NAMESPACE_END

@@ -88,7 +88,7 @@ struct CompiledProgram {
     }
   }
 
-  void launch(Context &ctx) const {
+  void launch(Context &ctx, GLSLLauncher *launcher) const {
     std::vector<IOV> iov;
     iov.push_back(IOV{ctx.args, arg_count * sizeof(uint64_t)});
     auto gtmp_arr = std::vector<char>(gtmp_size);
@@ -126,9 +126,9 @@ struct CompiledProgram {
       }
     }
     for (const auto &ker : kernels) {
-      begin_glsl_kernels(iov);
+      launcher->begin_glsl_kernels(iov);
       ker->launch();
-      end_glsl_kernels(iov);
+      launcher->end_glsl_kernels(iov);
     }
     if (ext_arr_map.size() > 1) {
       void *baseptr = base_arr->data();
@@ -857,12 +857,12 @@ void OpenglCodeGen::lower() {  // {{{
 #endif
 }  // }}}
 
-FunctionType fuck_cpp(std::unique_ptr<CompiledProgram> p)
+FunctionType fuck_cpp(std::unique_ptr<CompiledProgram> p, GLSLLauncher *launcher)
 {
   static std::vector<std::unique_ptr<CompiledProgram>> no_gc;
   CompiledProgram *ptr = p.get();
   no_gc.push_back(std::move(p));
-  return [ptr](Context &ctx) { ptr->launch(ctx); };
+  return [ptr, launcher](Context &ctx) { ptr->launch(ctx, launcher); };
 }
 
 FunctionType OpenglCodeGen::gen(void) {
@@ -873,8 +873,11 @@ FunctionType OpenglCodeGen::gen(void) {
   auto compiled = codegen.get_compiled_program();
 
   //return [](Context &ctx) {};
-  return fuck_cpp(std::move(compiled));
-  //return [compiled_l = std::move(compiled)](Context &ctx) { compiled_l->launch(ctx); };
+  return fuck_cpp(std::move(compiled), kernel_launcher_);
+  /*return std::bind([] (std::unique_ptr<CompiledProgram> &compiled, Context &ctx) {
+      compiled->launch(ctx);
+    }, std::move(compiled), std::placeholders::_1);*/
+  //return [compiled = std::move(compiled)](Context &ctx) { compiled->launch(ctx); };
 #else
   TI_NOT_IMPLEMENTED
 #endif

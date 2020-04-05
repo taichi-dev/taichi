@@ -248,7 +248,8 @@ GLSLLauncher::GLSLLauncher(size_t size) {
   impl->root_ssbo->bind_index(0);
 }
 
-GLSLLaunchGuard::GLSLLaunchGuard(GLSLLauncherImpl *impl, const std::vector<IOV> &iov) : impl(impl), iov(iov) {
+GLSLLaunchGuard::GLSLLaunchGuard(GLSLLauncherImpl *impl, const std::vector<IOV> &iov)
+  : impl(impl), iov(iov) {
   impl->ssbo = std::vector<GLSSBO>(iov.size());
 
   for (int i = 0; i < impl->ssbo.size(); i++) {
@@ -314,7 +315,8 @@ bool is_opengl_api_available() {
 
 void initialize_opengl(){TI_NOT_IMPLEMENTED}
 
-CompiledGLSL::CompiledGLSL(std::string source) {
+CompiledGLSL::CompiledGLSL(std::string source)
+  : glsl(std::make_unique<GLProgram>(GLShader(source))) {
   TI_NOT_IMPLEMENTED
 }
 
@@ -323,12 +325,11 @@ int opengl_get_threads_per_group() {
 }
 
 GLSLLaunchGuard::GLSLLaunchGuard(GLSLLauncherImpl *impl, const std::vector<IOV> &iov)
-{
+  : impl(impl), iov(iov) {
   TI_NOT_IMPLEMENTED
 }
 
-GLSLLaunchGuard::~GLSLLaunchGuard()
-{
+GLSLLaunchGuard::~GLSLLaunchGuard() {
   TI_NOT_IMPLEMENTED
 }
 #endif

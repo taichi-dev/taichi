@@ -126,9 +126,8 @@ struct CompiledProgram {
       }
     }
     for (const auto &ker : kernels) {
-      launcher->begin_glsl_kernels(iov);
+      auto guard = launcher->create_launch_guard(iov);
       ker->launch();
-      launcher->end_glsl_kernels(iov);
     }
     if (ext_arr_map.size() > 1) {
       void *baseptr = base_arr->data();

@@ -20,8 +20,6 @@ struct GLSLLauncher {
   std::unique_ptr<GLSLLauncherImpl> impl;
   GLSLLauncher(size_t size);
   ~GLSLLauncher();
-  void begin_glsl_kernels(const std::vector<IOV> &iov);
-  void end_glsl_kernels(const std::vector<IOV> &iov);
   GLSLLaunchGuard create_launch_guard(const std::vector<IOV> &iov) {
     return GLSLLaunchGuard(impl.get(), iov);
   }

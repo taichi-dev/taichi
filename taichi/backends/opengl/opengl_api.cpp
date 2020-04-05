@@ -243,7 +243,7 @@ GLSLLauncher::GLSLLauncher(size_t size) {
   impl = std::make_unique<GLSLLauncherImpl>();
   impl->root_ssbo = std::make_unique<GLSSBO>();
   size += 2 * sizeof(int);
-  impl->root_buffer = std::vector<char>(size);
+  impl->root_buffer.resize(size, 0);
   impl->root_ssbo->bind_data(impl->root_buffer.data(), size, GL_DYNAMIC_READ);
   impl->root_ssbo->bind_index(0);
 }

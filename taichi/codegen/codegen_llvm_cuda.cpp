@@ -6,6 +6,7 @@
 #include "taichi/ir/ir.h"
 #include "taichi/program/program.h"
 #include "taichi/lang_util.h"
+#include "taichi/backends/cuda/cuda_driver.h"
 #include "taichi/codegen/codegen_cuda.h"
 #include "taichi/codegen/codegen_llvm.h"
 
@@ -72,8 +73,8 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
           // replace host buffer with device buffer
           host_buffers[i] = get_current_program().context.get_arg<void *>(i);
           kernel->set_arg_nparray(i, (uint64)device_buffers[i], args[i].size);
-          check_cuda_error(
-              cuMemcpyHtoD(device_buffers[i], host_buffers[i], args[i].size));
+          CUDADriver::get_instance().memcpy_host_to_device(
+              (void *)device_buffers[i], host_buffers[i], args[i].size);
         }
       }
       if (has_buffer) {

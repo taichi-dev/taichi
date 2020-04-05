@@ -3,6 +3,8 @@
     The use of this software is governed by the LICENSE file.
 *******************************************************************************/
 
+#pragma once
+
 #ifdef WIN32
 #include "taichi/platform/windows/windows.h"
 #else
@@ -52,6 +54,11 @@ class DynamicLoader {
 #endif
     assert_info(func != nullptr, "Function " + func_name + " not found");
     return func;
+  }
+
+  template <typename T>
+  void load_function(const std::string &func_name, T &f) {
+    f = load_function<T>(func_name);
   }
 
   void close_dll() {

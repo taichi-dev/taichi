@@ -1,22 +1,30 @@
 #pragma once
 
 #if defined(TI_WITH_CUDA)
+#include <mutex>
+
 #include "taichi/program/profiler.h"
 #include "taichi/backends/cuda/cuda_utils.h"
-#include <mutex>
 
 TLANG_NAMESPACE_BEGIN
 
+// Note:
+// It would be ideal to create a CUDA context per Taichi program, yet CUDA
+// context creation takes time. Therefore we use a shared context to accelerate
+// cases such as unit testing where many Taichi programs are created/destroyed.
+
 class CUDAContext {
+ private:
   CUdevice device;
   CUcontext context;
   int dev_count;
   std::string mcpu;
+  std::mutex lock;
   ProfilerBase *profiler;
 
- public:
-  std::mutex lock;
+  static std::unique_ptr<CUDAContext> instance;
 
+ public:
   CUDAContext();
 
   std::size_t get_total_memory();
@@ -68,10 +76,9 @@ class CUDAContext {
   std::lock_guard<std::mutex> &&get_lock_guard() {
     return std::move(std::lock_guard<std::mutex>(lock));
   }
-};
 
-// TODO: remove this global var
-extern std::unique_ptr<CUDAContext> cuda_context;
+  static CUDAContext &get_instance();
+};
 
 TLANG_NAMESPACE_END
 #endif

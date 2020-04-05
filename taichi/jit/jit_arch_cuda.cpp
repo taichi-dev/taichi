@@ -40,8 +40,8 @@ class JITModuleCUDA : public JITModule {
   }
 
   void *lookup_function(const std::string &name) override {
-    // auto _ = cuda_context->get_guard();
-    cuda_context->make_current();
+    // auto _ = CUDAContext::get_instance().get_guard();
+    CUDAContext::get_instance().make_current();
     CUfunction func;
     auto t = Time::get_time();
     check_cuda_error(cuModuleGetFunction(&func, module, name.c_str()));
@@ -60,7 +60,8 @@ class JITModuleCUDA : public JITModule {
                       std::size_t block_dim,
                       const std::vector<void *> &arg_pointers) override {
     auto func = lookup_function(name);
-    cuda_context->launch(func, name, arg_pointers, grid_dim, block_dim);
+    CUDAContext::get_instance().launch(func, name, arg_pointers, grid_dim,
+                                       block_dim);
   }
 
   uint64 fetch_result_u64() override {
@@ -84,14 +85,15 @@ class JITSessionCUDA : public JITSession {
 
   virtual JITModule *add_module(std::unique_ptr<llvm::Module> M) override {
     auto ptx = compile_module_to_ptx(M);
-    // auto _ = cuda_context->get_guard();
-    cuda_context->make_current();
+    // auto _ = CUDAContext::get_instance().get_guard();
+    CUDAContext::get_instance().make_current();
     // Create module for object
     CUmodule cudaModule;
     TI_TRACE("PTX size: {:.2f}KB", ptx.size() / 1024.0);
     auto t = Time::get_time();
     TI_TRACE("Loading module...");
-    auto _ = std::lock_guard<std::mutex>(cuda_context->lock);
+    [[maybe_unused]] auto &&_ =
+        std::move(CUDAContext::get_instance().get_lock_guard());
     check_cuda_error(
         cuModuleLoadDataEx(&cudaModule, ptx.c_str(), 0, nullptr, nullptr));
     TI_TRACE("CUDA module load time : {}ms", (Time::get_time() - t) * 1000);
@@ -176,8 +178,9 @@ std::string JITSessionCUDA::compile_module_to_ptx(
   options.StackAlignmentOverride = 0;
 
   std::unique_ptr<TargetMachine> target_machine(target->createTargetMachine(
-      triple.str(), cuda_context->get_mcpu(), cuda_mattrs(), options,
-      llvm::Reloc::PIC_, llvm::CodeModel::Small, CodeGenOpt::Aggressive));
+      triple.str(), CUDAContext::get_instance().get_mcpu(), cuda_mattrs(),
+      options, llvm::Reloc::PIC_, llvm::CodeModel::Small,
+      CodeGenOpt::Aggressive));
 
   TI_ERROR_UNLESS(target_machine.get(), "Could not allocate target machine!");
 

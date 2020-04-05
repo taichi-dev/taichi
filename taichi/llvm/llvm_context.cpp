@@ -195,7 +195,11 @@ std::unique_ptr<llvm::Module> module_from_bitcode_file(std::string bitcode_path,
   return std::move(runtime.get());
 }
 
-void remove_useless_libdevice_functions(llvm::Module *module) {
+// The goal of this function is to rip off huge libdevice functions that are not
+// going to be used later, at an early stage. Although the LLVM optimizer will
+// ultimately remove unused functions during a global DCE pass, we don't even
+// want these functions to waste clock cycles during module cloning and linking.
+void remove_useless_cuda_libdevice_functions(llvm::Module *module) {
   std::vector<std::string> function_name_list = {
       "rnorm3df",
       "norm4df",
@@ -318,7 +322,7 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
       // patch_intrinsic("warp_active_mask", Intrinsic::nvvm_membar_cta, false);
       patch_intrinsic("block_memfence", Intrinsic::nvvm_membar_cta, false);
 
-      link_module_with_libdevice(runtime_module);
+      link_module_with_cuda_libdevice(runtime_module);
 
       // runtime_module->print(llvm::errs(), nullptr);
     }
@@ -333,12 +337,14 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
   return cloned;
 }
 
-void TaichiLLVMContext::link_module_with_libdevice(
+void TaichiLLVMContext::link_module_with_cuda_libdevice(
     std::unique_ptr<llvm::Module> &module) {
   TI_AUTO_PROF
+  TI_ASSERT(arch == Arch::cuda);
+
   auto libdevice_module = module_from_bitcode_file(libdevice_path(), ctx.get());
 
-  remove_useless_libdevice_functions(libdevice_module.get());
+  remove_useless_cuda_libdevice_functions(libdevice_module.get());
 
   std::vector<std::string> libdevice_function_names;
   for (auto &f : *libdevice_module) {
@@ -355,10 +361,12 @@ void TaichiLLVMContext::link_module_with_libdevice(
     TI_ERROR("CUDA libdevice linking failure.");
   }
 
+  // Make sure all libdevice functions are linked, and set their linkage to
+  // internal
   for (auto func_name : libdevice_function_names) {
     auto func = module->getFunction(func_name);
     if (!func) {
-      TI_P(func_name);
+      TI_INFO("Function {} not found", func_name);
     } else
       func->setLinkage(Function::InternalLinkage);
   }

@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-#include "opengl_kernel_util.h"
+#include "opengl_kernel_launcher.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -22,15 +22,6 @@ struct CompiledGLSL {
   CompiledGLSL(std::string source);
   ~CompiledGLSL();
   void launch_glsl(int num_groups) const;
-};
-
-struct GLSLLauncherImpl;
-struct GLSLLauncher {
-  std::unique_ptr<GLSLLauncherImpl> impl;
-  GLSLLauncher(size_t size);
-  ~GLSLLauncher();
-  void begin_glsl_kernels(const std::vector<IOV> &iov);
-  void end_glsl_kernels(const std::vector<IOV> &iov);
 };
 
 }  // namespace opengl

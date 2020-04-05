@@ -11,7 +11,7 @@
 #include "taichi/lang_util.h"
 #include "taichi/llvm/llvm_context.h"
 #include "taichi/backends/metal/kernel_manager.h"
-#include "taichi/backends/opengl/opengl_api.h"
+#include "taichi/backends/opengl/opengl_kernel_launcher.h"
 #include "taichi/backends/opengl/opengl_kernel_util.h"
 #include "taichi/program/kernel.h"
 #include "taichi/program/profiler.h"

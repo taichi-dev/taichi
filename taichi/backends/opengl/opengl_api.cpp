@@ -248,7 +248,7 @@ GLSLLauncher::GLSLLauncher(size_t size) {
   impl->root_ssbo->bind_index(0);
 }
 
-void GLSLLauncher::begin_glsl_kernels(const std::vector<IOV> &iov) {
+GLSLLaunchGuard::GLSLLaunchGuard(GLSLLauncherImpl *impl, const std::vector<IOV> &iov) : impl(impl), iov(iov) {
   impl->ssbo = std::vector<GLSSBO>(iov.size());
 
   for (int i = 0; i < impl->ssbo.size(); i++) {
@@ -259,7 +259,7 @@ void GLSLLauncher::begin_glsl_kernels(const std::vector<IOV> &iov) {
   }
 }
 
-void GLSLLauncher::end_glsl_kernels(const std::vector<IOV> &iov) {
+GLSLLaunchGuard::~GLSLLaunchGuard() {
   // glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT); // TODO(archibate): move to
   // Program::synchroize()
 
@@ -301,14 +301,6 @@ GLSLLauncher::GLSLLauncher(size_t size) {
   TI_NOT_IMPLEMENTED
 }
 
-void GLSLLauncher::begin_glsl_kernels(const std::vector<IOV> &iov) {
-  TI_NOT_IMPLEMENTED
-}
-
-void GLSLLauncher::end_glsl_kernels(const std::vector<IOV> &iov) {
-  TI_NOT_IMPLEMENTED
-}
-
 void CompiledGLSL::launch_glsl(int num_groups) const {
   TI_NOT_IMPLEMENTED
 }
@@ -324,6 +316,16 @@ CompiledGLSL::CompiledGLSL(std::string source) {
 }
 
 int opengl_get_threads_per_group() {
+  TI_NOT_IMPLEMENTED
+}
+
+GLSLLaunchGuard::GLSLLaunchGuard(GLSLLauncherImpl *impl, const std::vector<IOV> &iov)
+{
+  TI_NOT_IMPLEMENTED
+}
+
+GLSLLaunchGuard::~GLSLLaunchGuard()
+{
   TI_NOT_IMPLEMENTED
 }
 #endif

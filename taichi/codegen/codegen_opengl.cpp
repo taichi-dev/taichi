@@ -43,6 +43,10 @@ struct CompiledKernel : public CompiledGLSL {
   UsedFeature used;
   std::string kernel_name;
 
+  // disscussion: https://github.com/taichi-dev/taichi/pull/696#issuecomment-609332527
+  CompiledKernel(CompiledKernel&&) = default;
+  CompiledKernel& operator=(CompiledKernel&&) = default;
+
   explicit CompiledKernel(const std::string &kernel_name_,
                           const std::string &kernel_source_code,
                           int num_groups_,
@@ -72,6 +76,10 @@ struct CompiledProgram {
   size_t ext_arr_size;
   bool has_ext_arr{false};
   size_t gtmp_size;
+
+  // disscussion: https://github.com/taichi-dev/taichi/pull/696#issuecomment-609332527
+  CompiledProgram(CompiledProgram&&) = default;
+  CompiledProgram& operator=(CompiledProgram&&) = default;
 
   CompiledProgram(Kernel *kernel, size_t gtmp_size) : gtmp_size(gtmp_size) {
     has_ext_arr = false;
@@ -692,7 +700,7 @@ class KernelGen : public IRVisitor {
     return kernel;
   }
 
-  std::unique_ptr<CompiledProgram> get_compiled_program() const {
+  std::unique_ptr<CompiledProgram> get_compiled_program() {
     return std::move(compiled_program_);
   }
 
@@ -831,9 +839,9 @@ FunctionType OpenglCodeGen::gen(void) {
   codegen.run(*prog_->snode_root);
   auto compiled = codegen.get_compiled_program();
 
-  return [](Context &ctx) {};
+  //return [](Context &ctx) {};
   //return compiled->launch;
-  //return [compiled](Context &ctx) { compiled->launch(ctx); }; // or just return compiled->launch?
+  return [compiled = std::move(compiled)](Context &ctx) { compiled->launch(ctx); };
 #else
   TI_NOT_IMPLEMENTED
 #endif

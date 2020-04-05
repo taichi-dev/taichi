@@ -25,8 +25,9 @@ UnifiedAllocator::UnifiedAllocator(std::size_t size, Arch arch)
     TI_TRACE("Allocating unified (CPU+GPU) address space of size {} MB",
              size / 1024 / 1024);
 #if defined(TI_WITH_CUDA)
-    // std::lock_guard<std::mutex> _(CUDAContext::get_instance().lock);
-    check_cuda_error(cudaMallocManaged(&_cuda_data, size));
+    // std::lock_guard<std::mutex> _(cuda_context->lock);
+    check_cuda_error(cuMemAllocManaged((CUdeviceptr *)&_cuda_data, size,
+                                       CU_MEM_ATTACH_GLOBAL));
     if (_cuda_data == nullptr) {
       TI_ERROR("CUDA memory allocation failed.");
     }
@@ -34,7 +35,8 @@ UnifiedAllocator::UnifiedAllocator(std::size_t size, Arch arch)
     // Assuming ARM devices have shared CPU/GPU memory and do no support
     // memAdvise; CUDA on Windows has limited support for unified memory
     check_cuda_error_as_warning(
-        cudaMemAdvise(_cuda_data, size, cudaMemAdviseSetPreferredLocation, 0));
+        cuMemAdvise((CUdeviceptr)_cuda_data, size,
+                    CU_MEM_ADVISE_SET_PREFERRED_LOCATION, 0));
 #endif
     // http://on-demand.gputechconf.com/gtc/2017/presentation/s7285-nikolay-sakharnykh-unified-memory-on-pascal-and-volta.pdf
     /*
@@ -67,7 +69,7 @@ taichi::lang::UnifiedAllocator::~UnifiedAllocator() {
   }
   if (arch_ == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
-    check_cuda_error(cudaFree(_cuda_data));
+    check_cuda_error(cuMemFree((CUdeviceptr)_cuda_data));
 #else
     TI_ERROR("No CUDA support");
 #endif

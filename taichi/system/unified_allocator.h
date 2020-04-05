@@ -1,8 +1,9 @@
 #pragma once
-#include "taichi/program/arch.h"
 #include <mutex>
 #include <vector>
 #include <memory>
+
+#include "taichi/program/arch.h"
 
 namespace taichi {
 class VirtualMemoryAllocator;

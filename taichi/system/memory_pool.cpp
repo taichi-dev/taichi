@@ -55,6 +55,7 @@ void *MemoryPool::allocate(std::size_t size, std::size_t alignment) {
 template <typename T>
 T MemoryPool::fetch(volatile void *ptr) {
   T ret;
+  /*
   if (false && prog->config.arch == Arch::cuda) {
 #if TI_WITH_CUDA
     check_cuda_error(cudaMemcpyAsync(&ret, (void *)ptr, sizeof(T),
@@ -64,13 +65,15 @@ T MemoryPool::fetch(volatile void *ptr) {
     TI_NOT_IMPLEMENTED
 #endif
   } else {
-    ret = *(T *)ptr;
-  }
+  */
+  ret = *(T *)ptr;
+  //}
   return ret;
 }
 
 template <typename T>
 void MemoryPool::push(volatile T *dest, const T &val) {
+  /*
   if (false && prog->config.arch == Arch::cuda) {
 #if TI_WITH_CUDA
     check_cuda_error(cudaMemcpyAsync((void *)dest, &val, sizeof(T),
@@ -80,8 +83,9 @@ void MemoryPool::push(volatile T *dest, const T &val) {
     TI_NOT_IMPLEMENTED
 #endif
   } else {
-    *(T *)dest = val;
-  }
+  */
+  *(T *)dest = val;
+  // }
 }
 
 void MemoryPool::daemon() {

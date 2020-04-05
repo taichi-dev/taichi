@@ -10,7 +10,7 @@
 #include <set>
 
 #ifdef TI_WITH_CUDA
-#include <cuda_runtime.h>
+#include <cuda.h>
 #include "taichi/backends/cuda/cuda_utils.h"
 #endif  // TI_WITH_CUDA
 
@@ -88,7 +88,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       }
       // copy data back to host
       if (has_buffer) {
-        check_cuda_error(cudaDeviceSynchronize());
+        check_cuda_error(cuStreamSynchronize((cudaStream_t)0));
       }
       for (int i = 0; i < (int)args.size(); i++) {
         if (args[i].is_nparray) {

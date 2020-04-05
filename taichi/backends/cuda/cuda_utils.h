@@ -3,7 +3,7 @@
 
 #include "taichi/lang_util.h"
 #include <cuda.h>
-#include <cuda_runtime_api.h>
+#include <cuda_runtime.h>
 #include <driver_types.h>
 
 #define check_cuda_error(err)                                   \
@@ -36,6 +36,7 @@ inline std::string get_cuda_error_string(CUresult err) {
   return std::string(ptr);
 }
 
+// CUDA Runtime APIs should not be used anymore
 inline std::string get_cuda_error_name(cudaError_t err) {
   const char *ptr = cudaGetErrorName(err);
   return std::string(ptr);

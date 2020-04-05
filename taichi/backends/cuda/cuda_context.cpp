@@ -52,7 +52,7 @@ void CUDAContext::launch(void *func,
                          std::vector<void *> arg_pointers,
                          unsigned gridDim,
                          unsigned blockDim) {
-  // auto _ = cuda_context->get_guard();
+  // auto _ = CUDAContext::get_instance().get_guard();
   make_current();
 
   // Kernel launch
@@ -85,7 +85,14 @@ CUDAContext::~CUDAContext() {
   */
 }
 
-std::unique_ptr<CUDAContext> cuda_context;
+CUDAContext &CUDAContext::get_instance() {
+  if (!instance) {
+    instance = std::make_unique<CUDAContext>();
+  }
+  return *instance;
+}
+
+std::unique_ptr<CUDAContext> CUDAContext::instance;
 
 TLANG_NAMESPACE_END
 #endif

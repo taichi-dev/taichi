@@ -316,7 +316,7 @@ bool is_opengl_api_available() {
 void initialize_opengl(){TI_NOT_IMPLEMENTED}
 
 CompiledGLSL::CompiledGLSL(std::string source)
-  : glsl(std::make_unique<GLProgram>(GLShader(source))) {
+  : glsl(std::make_unique<GLProgram>()) {
   TI_NOT_IMPLEMENTED
 }
 

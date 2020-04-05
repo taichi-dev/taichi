@@ -1,3 +1,6 @@
+#include <vector>
+#include <set>
+
 #include "taichi/common/util.h"
 #include "taichi/util/io.h"
 #include "taichi/ir/ir.h"
@@ -5,9 +8,6 @@
 #include "taichi/lang_util.h"
 #include "taichi/codegen/codegen_cuda.h"
 #include "taichi/codegen/codegen_llvm.h"
-
-#include <vector>
-#include <set>
 
 #ifdef TI_WITH_CUDA
 #include <cuda.h>

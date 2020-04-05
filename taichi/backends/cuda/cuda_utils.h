@@ -1,9 +1,10 @@
 #pragma once
+
 #if defined(TI_WITH_CUDA)
 
-#include "taichi/lang_util.h"
 #include <cuda.h>
-#include <driver_types.h>
+
+#include "taichi/lang_util.h"
 
 #define check_cuda_error(err)                                   \
   do {                                                          \
@@ -34,19 +35,6 @@ inline std::string get_cuda_error_string(CUresult err) {
   cuGetErrorString(err, &ptr);
   return std::string(ptr);
 }
-
-// CUDA Runtime APIs should not be used anymore
-/*
-inline std::string get_cuda_error_name(cudaError_t err) {
-  const char *ptr = cudaGetErrorName(err);
-  return std::string(ptr);
-}
-
-inline std::string get_cuda_error_string(cudaError_t err) {
-  const char *ptr = cudaGetErrorString(err);
-  return std::string(ptr);
-}
-*/
 
 TLANG_NAMESPACE_END
 

@@ -298,8 +298,8 @@ int opengl_get_threads_per_group() {
 }
 
 #else
-struct GLSLLauncherImpl {
-};
+struct GLProgram {};
+struct GLSLLauncherImpl {};
 
 GLSLLauncher::GLSLLauncher(size_t size) {
   TI_NOT_IMPLEMENTED

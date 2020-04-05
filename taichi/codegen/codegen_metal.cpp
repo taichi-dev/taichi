@@ -3,6 +3,7 @@
 #include <functional>
 #include <string>
 
+#include "taichi/backends/metal/constants.h"
 #include "taichi/ir/ir.h"
 #include "taichi/util/line_appender.h"
 
@@ -25,7 +26,7 @@ constexpr char kRuntimeBufferName[] = "runtime_addr";
 constexpr char kArgsContextName[] = "args_ctx_";
 constexpr char kRuntimeVarName[] = "runtime_";
 constexpr char kListgenElemVarName[] = "listgen_elem_";
-constexpr int kMaxNumThreadsGridStrideLoop = 64 * 1024;
+constexpr char kRandStateVarName[] = "rand_state_";
 
 class KernelCodegen : public IRVisitor {
  public:
@@ -472,7 +473,8 @@ class KernelCodegen : public IRVisitor {
   }
 
   void visit(RandStmt *stmt) override {
-    TI_ERROR("Metal arch doesn't support ti.random() yet");
+    emit("const auto {} = metal_rand_{}({});", stmt->raw_name(),
+         data_type_short_name(stmt->ret_type.data_type), kRandStateVarName);
   }
 
   void visit(PrintStmt *stmt) override {
@@ -538,7 +540,7 @@ class KernelCodegen : public IRVisitor {
     }
   }
 
-  std::vector<BuffersEnum> get_root_tmps_args_buffers() {
+  std::vector<BuffersEnum> get_common_buffers() {
     std::vector<BuffersEnum> result;
     if (needs_root_buffer_) {
       result.push_back(BuffersEnum::Root);
@@ -547,6 +549,7 @@ class KernelCodegen : public IRVisitor {
     if (args_attribs_.has_args()) {
       result.push_back(BuffersEnum::Args);
     }
+    result.push_back(BuffersEnum::Runtime);
     return result;
   }
 
@@ -556,7 +559,7 @@ class KernelCodegen : public IRVisitor {
     KernelAttributes ka;
     ka.name = mtl_kernel_name;
     ka.task_type = stmt->task_type;
-    ka.buffers = get_root_tmps_args_buffers();
+    ka.buffers = get_common_buffers();
     ka.num_threads = 1;
 
     emit_mtl_kernel_func_sig(mtl_kernel_name, ka.buffers);
@@ -578,7 +581,7 @@ class KernelCodegen : public IRVisitor {
     KernelAttributes ka;
     ka.name = mtl_kernel_name;
     ka.task_type = stmt->task_type;
-    ka.buffers = get_root_tmps_args_buffers();
+    ka.buffers = get_common_buffers();
 
     emit_mtl_kernel_func_sig(mtl_kernel_name, ka.buffers);
 
@@ -630,8 +633,7 @@ class KernelCodegen : public IRVisitor {
     KernelAttributes ka;
     ka.name = mtl_kernel_name;
     ka.task_type = stmt->task_type;
-    ka.buffers = get_root_tmps_args_buffers();
-    ka.buffers.push_back(BuffersEnum::Runtime);
+    ka.buffers = get_common_buffers();
 
     emit_mtl_kernel_func_sig(mtl_kernel_name, ka.buffers);
 
@@ -802,10 +804,20 @@ class KernelCodegen : public IRVisitor {
     emit("    const uint {} [[threads_per_grid]],", kKernelGridSizeName);
     emit("    const uint {} [[thread_position_in_grid]]) {{",
          kKernelThreadIdName);
+    ScopedIndent s(line_appender_);
+    emit("device Runtime *{} = reinterpret_cast<device Runtime *>({});",
+         kRuntimeVarName, kRuntimeBufferName);
     if (args_attribs_.has_args()) {
-      emit("  {} {}({});", kernel_args_classname(), kArgsContextName,
+      emit("{} {}({});", kernel_args_classname(), kArgsContextName,
            kArgsBufferName);
     }
+    // Init RandState
+    emit(
+        "device {rty}* {rand} = reinterpret_cast<device "
+        "{rty}*>({rtm}->rand_seeds + ({tid} % {nums}));",
+        fmt::arg("rty", "RandState"), fmt::arg("rand", kRandStateVarName),
+        fmt::arg("rtm", kRuntimeVarName), fmt::arg("tid", kKernelThreadIdName),
+        fmt::arg("nums", kNumRandSeeds));
   }
 
   template <typename... Args>

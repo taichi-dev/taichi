@@ -1,10 +1,14 @@
 #include "taichi/backends/metal/kernel_manager.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cstring>
 #include <iostream>
+#include <limits>
+#include <random>
 #include <string_view>
 
+#include "taichi/backends/metal/constants.h"
 #include "taichi/inc/constants.h"
 #include "taichi/math/arithmetic.h"
 
@@ -510,7 +514,7 @@ class KernelManager::Impl {
       rtm_meta->element_stride = sn_meta.element_stride;
       rtm_meta->num_slots = sn_meta.num_slots;
       rtm_meta->mem_offset_in_parent = sn_meta.mem_offset_in_parent;
-      TI_DEBUG("SnodeMeta\n  id={}\n  element_stride={}\n  num_slots={}\n\n", i,
+      TI_DEBUG("SnodeMeta\n  id={}\n  element_stride={}\n  num_slots={}\n", i,
                rtm_meta->element_stride, rtm_meta->num_slots);
       switch (sn_meta.snode->type) {
         case SNodeType::dense:
@@ -565,10 +569,22 @@ class KernelManager::Impl {
       rtm_list->next = 0;
       rtm_list->mem_begin = list_data_mem_begin;
       list_data_mem_begin += rtm_list->max_num_elems * rtm_list->element_stride;
-      TI_DEBUG("ListManager\n  id={}\n  num_slots={}\n  mem_begin={}\n\n", i,
+      TI_DEBUG("ListManager\n  id={}\n  num_slots={}\n  mem_begin={}\n", i,
                rtm_list->max_num_elems, rtm_list->mem_begin);
     }
     addr += sizeof(ListManager) * max_snodes;
+    // init rand_seeds
+    std::mt19937 generator(
+        std::chrono::duration_cast<std::chrono::microseconds>(
+            std::chrono::system_clock::now().time_since_epoch())
+            .count());
+    std::uniform_int_distribution<uint32_t> distr(
+        0, std::numeric_limits<uint32_t>::max());
+    for (int i = 0; i < kNumRandSeeds; ++i) {
+      uint32_t *s = reinterpret_cast<uint32_t *>(addr);
+      *s = distr(generator);
+      addr += sizeof(uint32_t);
+    }
     // root list data are static
     ListgenElement root_elem;
     root_elem.root_mem_offset = 0;

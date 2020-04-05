@@ -6,9 +6,10 @@
 #include <string>
 #include <vector>
 
-#include "taichi/math/arithmetic.h"
+#include "taichi/backends/metal/constants.h"
 #include "taichi/backends/metal/data_types.h"
 #include "taichi/backends/metal/kernel_util.h"
+#include "taichi/math/arithmetic.h"
 #include "taichi/util/line_appender.h"
 
 TLANG_NAMESPACE_BEGIN
@@ -211,6 +212,7 @@ class StructCompiler {
     emit("  SNodeMeta snode_metas[{}];", max_snodes_);
     emit("  SNodeExtractors snode_extractors[{}];", max_snodes_);
     emit("  ListManager snode_lists[{}];", max_snodes_);
+    emit("  uint32_t rand_seeds[{}];", kNumRandSeeds);
     emit("}};");
   }
 
@@ -223,6 +225,7 @@ class StructCompiler {
   size_t compute_runtime_size() {
     size_t result = (max_snodes_) *
                     (kSNodeMetaSize + kSNodeExtractorsSize + kListManagerSize);
+    result += sizeof(uint32_t) * kNumRandSeeds;
     TI_DEBUG("Metal runtime fields size: {} bytes", result);
     int total_items = 0;
     for (const auto &kv : snode_descriptors_) {

@@ -2,9 +2,10 @@
 
 #include <memory>
 #include <functional>
+
 #include "taichi/llvm/llvm_fwd.h"
 #include "taichi/lang_util.h"
-#include "jit_module.h"
+#include "taichi/jit/jit_module.h"
 
 TLANG_NAMESPACE_BEGIN
 

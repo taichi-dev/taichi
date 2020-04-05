@@ -1,32 +1,34 @@
-
-#if defined(TI_WITH_CUDA)
 #include <memory>
-#include <cuda_runtime_api.h>
+#if defined(TI_WITH_CUDA)
 #include <cuda.h>
-#include "taichi/backends/cuda/cuda_context.h"
+#include <cuda_runtime_api.h>
 #endif
+
 #include "llvm/ADT/StringRef.h"
-#include "llvm/IR/DataLayout.h"
-#include "llvm/IR/LLVMContext.h"
 #include "llvm/Support/DynamicLibrary.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Target/TargetMachine.h"
+#include "llvm/IR/DataLayout.h"
+#include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/LegacyPassManager.h"
+#include "llvm/IR/Verifier.h"
 #include "llvm/Transforms/InstCombine/InstCombine.h"
 #include "llvm/Transforms/Scalar.h"
 #include "llvm/Transforms/Scalar/GVN.h"
 #include "llvm/Transforms/IPO.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
-#include <llvm/Analysis/TargetTransformInfo.h>
-#include <llvm/Support/TargetRegistry.h>
-#include <llvm/Target/TargetMachine.h>
-#include <llvm/ExecutionEngine/Orc/JITTargetMachineBuilder.h>
+#include "llvm/Analysis/TargetTransformInfo.h"
+#include "llvm/Support/TargetRegistry.h"
+#include "llvm/Target/TargetMachine.h"
+#include "llvm/ExecutionEngine/Orc/JITTargetMachineBuilder.h"
+
 #include "taichi/backends/cuda/cuda_utils.h"
+#include "taichi/backends/cuda/cuda_context.h"
 #include "taichi/program/program.h"
 #include "taichi/runtime/llvm/context.h"
 #include "taichi/system/timer.h"
 #include "taichi/lang_util.h"
-#include "jit_session.h"
+#include "taichi/jit/jit_session.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -135,6 +137,14 @@ std::string convert(std::string new_name) {
 
 std::string JITSessionCUDA::compile_module_to_ptx(
     std::unique_ptr<llvm::Module> &module) {
+  /*
+  TODO: enabling this leads to LLVM error 'comdat global value has private linkage'
+  if (llvm::verifyModule(*module, &llvm::errs())) {
+    module->print(llvm::errs(), nullptr);
+    TI_ERROR("Module broken");
+  }
+  */
+
   // Part of this function is borrowed from Halide::CodeGen_PTX_Dev.cpp
   using namespace llvm;
 

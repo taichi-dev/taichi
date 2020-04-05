@@ -76,7 +76,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
         }
       }
       if (has_buffer) {
-        check_cuda_error(cudaDeviceSynchronize());
+        check_cuda_error(cuStreamSynchronize((CUstream)0));
       }
 
       for (auto task : offloaded_local) {

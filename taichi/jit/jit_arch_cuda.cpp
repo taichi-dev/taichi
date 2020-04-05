@@ -68,8 +68,8 @@ class JITModuleCUDA : public JITModule {
 
   uint64 fetch_result_u64() override {
     uint64 ret;
-    check_cuda_error(cudaMemcpy(&ret, get_current_program().result_buffer,
-                                sizeof(ret), cudaMemcpyDeviceToHost));
+    check_cuda_error(cuMemcpyDtoH(
+        &ret, (CUdeviceptr)get_current_program().result_buffer, sizeof(ret)));
     return ret;
   }
 

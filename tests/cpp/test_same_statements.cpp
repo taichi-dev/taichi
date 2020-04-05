@@ -83,7 +83,7 @@ TI_TEST("test_same_snode_lookup") {
   auto get_root = block->push_back<GetRootStmt>();
   auto zero = block->push_back<ConstStmt>(LaneAttribute<TypedConstant>(0));
   SNode root(0, SNodeType::root);
-  auto child = root.insert_children(SNodeType::dense);
+  auto &child = root.insert_children(SNodeType::dense);
   auto lookup1 = block->push_back<SNodeLookupStmt>(&root, get_root, zero, false,
                                                    std::vector<Stmt *>());
   auto lookup2 = block->push_back<SNodeLookupStmt>(&root, get_root, zero, false,

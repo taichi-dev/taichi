@@ -832,6 +832,14 @@ void OpenglCodeGen::lower() {  // {{{
 #endif
 }  // }}}
 
+FunctionType fuck_cpp(std::unique_ptr<CompiledProgram> p)
+{
+  static std::vector<std::unique_ptr<CompiledProgram>> no_gc;
+  CompiledProgram *ptr = p.get();
+  no_gc.push_back(std::move(p));
+  return [ptr](Context &ctx) { ptr->launch(ctx); };
+}
+
 FunctionType OpenglCodeGen::gen(void) {
 #if defined(TI_WITH_OPENGL)
   KernelGen codegen(kernel_, kernel_name_, struct_compiled_,
@@ -840,8 +848,8 @@ FunctionType OpenglCodeGen::gen(void) {
   auto compiled = codegen.get_compiled_program();
 
   //return [](Context &ctx) {};
-  //return compiled->launch;
-  return [compiled = std::move(compiled)](Context &ctx) { compiled->launch(ctx); };
+  return fuck_cpp(std::move(compiled));
+  //return [compiled_l = std::move(compiled)](Context &ctx) { compiled_l->launch(ctx); };
 #else
   TI_NOT_IMPLEMENTED
 #endif

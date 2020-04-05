@@ -240,17 +240,18 @@ struct GLSLLauncherImpl {
 GLSLLauncher::GLSLLauncher(size_t size) {
   // if (root_ssbo) return;
   initialize_opengl();
+  impl = std::make_unique<GLSLLauncherImpl>();
   impl->root_ssbo = std::make_unique<GLSSBO>();
   size += 2 * sizeof(int);
   impl->root_buffer = std::vector<char>(size);
-  impl->root_ssbo->bind_data(root_buffer.data(), size, GL_DYNAMIC_READ);
+  impl->root_ssbo->bind_data(impl->root_buffer.data(), size, GL_DYNAMIC_READ);
   impl->root_ssbo->bind_index(0);
 }
 
 void GLSLLauncher::begin_glsl_kernels(const std::vector<IOV> &iov) {
   impl->ssbo = std::vector<GLSSBO>(iov.size());
 
-  for (int i = 0; i < ssbo.size(); i++) {
+  for (int i = 0; i < impl->ssbo.size(); i++) {
     if (!iov[i].size)
       continue;
     impl->ssbo[i].bind_index(i + 1);
@@ -262,10 +263,10 @@ void GLSLLauncher::end_glsl_kernels(const std::vector<IOV> &iov) {
   // glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT); // TODO(archibate): move to
   // Program::synchroize()
 
-  for (int i = 0; i < ssbo.size(); i++) {
+  for (int i = 0; i < impl->ssbo.size(); i++) {
     if (!iov[i].size)
       continue;
-    void *p = ssbo[i].map(0, iov[i].size);  // output
+    void *p = impl->ssbo[i].map(0, iov[i].size);  // output
     std::memcpy(iov[i].base, p, iov[i].size);
   }
   glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);

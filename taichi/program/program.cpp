@@ -269,7 +269,6 @@ void Program::materialize_layout() {
           std::make_unique<metal::KernelManager>(std::move(params));
     }
   } else if (config.arch == Arch::opengl) {
-    opengl::initialize_opengl();
     opengl::OpenglStructCompiler scomp;
     opengl_struct_compiled_ = scomp.run(*snode_root);
     TI_INFO("OpenGL root buffer size: {} B", opengl_struct_compiled_->root_size);

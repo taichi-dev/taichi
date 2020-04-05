@@ -92,9 +92,7 @@ STR(
       return old_val;
     }
 
-    struct RandState {
-      uint32_t seed;
-    };
+    struct RandState { uint32_t seed; };
 
     uint32_t metal_rand_u32(device RandState * state) {
       device uint *sp = (device uint *)&(state->seed);

@@ -215,7 +215,10 @@ class CompiledTaichiKernel {
   CompiledTaichiKernel(Params params) : args_attribs(*params.args_attribs) {
     auto *const device = params.device;
     auto kernel_lib = new_library_with_source(device, params.mtl_source_code);
-    TI_ASSERT(kernel_lib != nullptr);
+    if (kernel_lib == nullptr) {
+      TI_ERROR("Failed to compile Metal kernel! Generated code:\n\n{}",
+               params.mtl_source_code);
+    }
     for (const auto &ka : *(params.mtl_kernels_attribs)) {
       auto mtl_func = new_function_with_name(kernel_lib.get(), ka.name);
       TI_ASSERT(mtl_func != nullptr);

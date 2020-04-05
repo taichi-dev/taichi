@@ -659,8 +659,6 @@ class KernelCodegen : public IRVisitor {
 
     line_appender_.push_indent();
     emit("// struct_for");
-    emit("device Runtime *{} = reinterpret_cast<device Runtime *>({});",
-         kRuntimeVarName, kRuntimeBufferName);
     emit(
         "device byte *list_data_addr = reinterpret_cast<device byte *>({} + "
         "1);",
@@ -822,7 +820,7 @@ class KernelCodegen : public IRVisitor {
 
   template <typename... Args>
   void emit(std::string f, Args &&... args) {
-    line_appender_.append(std::move(f), std::move(args)...);
+    line_appender_.append(std::move(f), std::forward<Args>(args)...);
   }
 
   const std::string mtl_kernel_prefix_;

@@ -3,7 +3,7 @@
 #include "taichi/system/timer.h"
 
 #if defined(TI_WITH_CUDA)
-#include <cuda_runtime.h>
+#include <cuda.h>
 #endif
 
 TLANG_NAMESPACE_BEGIN
@@ -84,18 +84,18 @@ class DefaultProfiler : public ProfilerBase {
 class CUDAProfiler : public ProfilerBase {
  public:
 #if defined(TI_WITH_CUDA)
-  cudaEvent_t current_stop;
+  CUevent current_stop;
 
-  std::map<std::string, std::vector<std::pair<cudaEvent_t, cudaEvent_t>>>
+  std::map<std::string, std::vector<std::pair<CUevent , CUevent >>>
       outstanding_events;
 #endif
 
   void start(const std::string &kernel_name) override {
 #if defined(TI_WITH_CUDA)
-    cudaEvent_t start, stop;
-    cudaEventCreate(&start);
-    cudaEventCreate(&stop);
-    cudaEventRecord(start);
+    CUevent start, stop;
+    cuEventCreate(&start, CU_EVENT_DEFAULT);
+    cuEventCreate(&stop, CU_EVENT_DEFAULT);
+    cuEventRecord(start, (CUstream)0);
     outstanding_events[kernel_name].push_back(std::make_pair(start, stop));
     current_stop = stop;
 #else
@@ -105,7 +105,7 @@ class CUDAProfiler : public ProfilerBase {
 
   virtual void stop() override {
 #if defined(TI_WITH_CUDA)
-    cudaEventRecord(current_stop);
+    cuEventRecord(current_stop, (CUstream)0);
 #else
     printf("CUDA Profiler not implemented;\n");
 #endif
@@ -117,13 +117,13 @@ class CUDAProfiler : public ProfilerBase {
 
   void sync() override {
 #if defined(TI_WITH_CUDA)
-    cudaDeviceSynchronize();
+    cuStreamSynchronize((CUstream)0);
     for (auto &map_elem : outstanding_events) {
       auto &list = map_elem.second;
       for (auto &item : list) {
         auto start = item.first, stop = item.second;
         float ms;
-        cudaEventElapsedTime(&ms, start, stop);
+        cuEventElapsedTime(&ms, start, stop);
         auto it = std::find_if(
             records.begin(), records.end(),
             [&](ProfileRecord &r) { return r.name == map_elem.first; });

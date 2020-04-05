@@ -137,8 +137,9 @@ std::string convert(std::string new_name) {
 
 std::string JITSessionCUDA::compile_module_to_ptx(
     std::unique_ptr<llvm::Module> &module) {
+  // TODO: enabling this leads to LLVM error 'comdat global value has private
+  // linkage'
   /*
-  TODO: enabling this leads to LLVM error 'comdat global value has private linkage'
   if (llvm::verifyModule(*module, &llvm::errs())) {
     module->print(llvm::errs(), nullptr);
     TI_ERROR("Module broken");

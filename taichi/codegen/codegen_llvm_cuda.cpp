@@ -62,17 +62,17 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       // copy data to GRAM
       auto args = kernel->args;
       std::vector<void *> host_buffers(args.size());
-      std::vector<void *> device_buffers(args.size());
+      std::vector<CUdeviceptr> device_buffers(args.size());
       bool has_buffer = false;
       for (int i = 0; i < (int)args.size(); i++) {
         if (args[i].is_nparray) {
           has_buffer = true;
-          check_cuda_error(cudaMalloc(&device_buffers[i], args[i].size));
+          check_cuda_error(cuMemAlloc(&device_buffers[i], args[i].size));
           // replace host buffer with device buffer
           host_buffers[i] = get_current_program().context.get_arg<void *>(i);
           kernel->set_arg_nparray(i, (uint64)device_buffers[i], args[i].size);
-          check_cuda_error(cudaMemcpy(device_buffers[i], host_buffers[i],
-                                      args[i].size, cudaMemcpyHostToDevice));
+          check_cuda_error(
+              cuMemcpyHtoD(device_buffers[i], host_buffers[i], args[i].size));
         }
       }
       if (has_buffer) {
@@ -92,9 +92,9 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       }
       for (int i = 0; i < (int)args.size(); i++) {
         if (args[i].is_nparray) {
-          check_cuda_error(cudaMemcpy(host_buffers[i], device_buffers[i],
-                                      args[i].size, cudaMemcpyDeviceToHost));
-          check_cuda_error(cudaFree(device_buffers[i]));
+          check_cuda_error(
+              cuMemcpyDtoH(host_buffers[i], device_buffers[i], args[i].size));
+          check_cuda_error(cuMemFree(device_buffers[i]));
         }
       }
     };

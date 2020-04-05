@@ -97,7 +97,7 @@ class SNode {
   std::string get_node_type_name_hinted() const;
 
   SNode &insert_children(SNodeType t) {
-    ch.emplace_back(create(depth + 1, t));
+    ch.push_back(create(depth + 1, t));
     // Note: parent will not be set until structural nodes are compiled!
     return *ch.back();
   }

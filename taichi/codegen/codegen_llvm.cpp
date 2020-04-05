@@ -1362,7 +1362,6 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
     builder->CreateBr(test_bb);
 
     builder->SetInsertPoint(after_loop);
-    builder->CreateRetVoid();
   }
 
   if (stmt->block_dim == 0) {

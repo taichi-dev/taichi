@@ -30,13 +30,6 @@ CUDADriver::CUDADriver() {
 #include "taichi/backends/cuda/cuda_driver_functions.inc.h"
 #undef PER_CUDA_FUNCTION
 
-  malloc.set(loader->load_function("cuMemAlloc_v2"));
-  malloc_managed.set(loader->load_function("cuMemAllocManaged"));
-  memset.set(loader->load_function("cuMemsetD8_v2"));
-  mem_advise.set(loader->load_function("cuMemAdvise"));
-  mem_free.set(loader->load_function("cuMemFree_v2"));
-  device_get_attribute.set(loader->load_function("cuDeviceGetAttribute"));
-
   TI_INFO("CUDA driver loaded");
 }
 

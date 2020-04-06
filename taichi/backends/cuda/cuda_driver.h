@@ -56,22 +56,6 @@ class CUDADriver {
 #include "taichi/backends/cuda/cuda_driver_functions.inc.h"
 #undef PER_CUDA_FUNCTION
 
-  CUDADriverFunction<void *, std::size_t> malloc;
-  CUDADriverFunction<void *, std::size_t, uint32> malloc_managed;
-  CUDADriverFunction<void *, uint8, std::size_t> memset;
-  CUDADriverFunction<void *> mem_free;
-  CUDADriverFunction<void *, std::size_t, uint32, uint32> mem_advise;
-
-  CUDADriverFunction<int *, uint32, uint32> device_get_attribute;
-  CUDADriverFunction<int> init;
-  CUDADriverFunction<int *> device_get_count;
-  CUDADriverFunction<int *, void *> device_get;
-  CUDADriverFunction<char *, int, void *> device_get_name;
-  CUDADriverFunction<char *, int, void *> context_create;
-  CUDADriverFunction<void *> context_set_current;
-  CUDADriverFunction<void **> context_get_current;
-  CUDADriverFunction<std::size_t *, std::size_t *> mem_get_info;
-
   void (*get_error_name)(uint32, const char **);
   void (*get_error_string)(uint32, const char **);
 

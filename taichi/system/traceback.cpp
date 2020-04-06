@@ -304,14 +304,11 @@ TI_EXPORT void print_traceback() {
   printf("\n");
 #elif defined(_WIN64)
 // Windows
-
-  buff << "Callstack: \n";
-
   fmt::print(fg(fmt::color::magenta), "***********************************\n");
   fmt::print(fg(fmt::color::magenta), "* Taichi Compiler Stack Traceback *\n");
   fmt::print(fg(fmt::color::magenta), "***********************************\n");
 
-  std::vector<StackFrame> stack = stack_trace();
+  std::vector<dbg::StackFrame> stack = dbg::stack_trace();
   std::stringstream buff;
   for (unsigned int i = 0; i < stack.size(); i++) {
     buff << "0x" << std::hex << stack[i].address << ": " << stack[i].name << "("

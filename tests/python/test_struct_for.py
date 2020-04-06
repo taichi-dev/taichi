@@ -229,7 +229,7 @@ def test_linear_k():
         assert x[i] == i
 
 
-@ti.all_archs
+@ti.archs_support_sparse
 def test_struct_for_branching():
     # Related issue: https://github.com/taichi-dev/taichi/issues/704
     x = ti.var(dt=ti.i32)

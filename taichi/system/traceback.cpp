@@ -51,7 +51,7 @@
 //
 
 namespace dbg {
-inline void trace(const char *msg, ...) {
+void trace(const char *msg, ...) {
   char buff[1024];
 
   va_list args;
@@ -63,7 +63,7 @@ inline void trace(const char *msg, ...) {
   va_end(args);
 }
 
-inline std::string basename(const std::string &file) {
+std::string basename(const std::string &file) {
   unsigned int i = file.find_last_of("\\/");
   if (i == std::string::npos) {
     return file;

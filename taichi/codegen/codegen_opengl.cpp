@@ -179,6 +179,12 @@ class KernelGen : public IRVisitor {
   void generate_header() {
   }
 
+  std::string opengl_data_type_name(DataType dt) { // catch & forward
+    if (dt == DataType::i64)
+      used.int64 = true;
+    return opengl::opengl_data_type_name(dt);
+  }
+
   void generate_bottom() {
     // TODO(archibate): <kernel_name>() really necessary? How about just main()?
     emit("void main()");
@@ -195,13 +201,15 @@ class KernelGen : public IRVisitor {
         "layout(packed, binding = 0) buffer data_f32 { int _unused1_[2]; float _data_f32_[]; };\n"
         "layout(packed, binding = 0) buffer data_f64 { int _unused2_[2]; double _data_f64_[]; };\n";
     if (used.int64)
-      kernel_header += "layout(packed, binding = 0) buffer data_i64 { int _unused3_[2]; int64 _data_i64_[]; };\n";
+      kernel_header += "layout(packed, binding = 0) buffer data_i64 { int _unused3_[2]; int64_t _data_i64_[]; };\n";
 
     if (used.argument) {
       kernel_header +=
           "layout(packed, binding = 1) buffer args_i32 { int _args_i32_[]; };\n"
           "layout(packed, binding = 1) buffer args_f32 { float _args_f32_[]; };\n"
           "layout(packed, binding = 1) buffer args_f64 { double _args_f64_[]; };\n";
+      if (used.int64)
+        kernel_header += "layout(packed, binding = 4) buffer args_i64 { int64_t _args_i64_[]; };\n";
     }
     if (used.global_temp) {
       kernel_header +=
@@ -209,7 +217,7 @@ class KernelGen : public IRVisitor {
           "layout(packed, binding = 2) buffer gtmp_f32 { float _gtmp_f32_[]; };\n"
           "layout(packed, binding = 2) buffer gtmp_f64 { double _gtmp_f64_[]; };\n";
       if (used.int64)
-        kernel_header += "layout(packed, binding = 2) buffer gtmp_i64 { int64 _gtmp_i64_[]; };\n";
+        kernel_header += "layout(packed, binding = 2) buffer gtmp_i64 { int64_t _gtmp_i64_[]; };\n";
     }
     if (used.extra_arg) {
       kernel_header +=
@@ -221,7 +229,7 @@ class KernelGen : public IRVisitor {
           "layout(packed, binding = 4) buffer extr_f32 { float _extr_f32_[]; };\n"
           "layout(packed, binding = 4) buffer extr_f64 { double _extr_f64_[]; };\n";
       if (used.int64)
-        kernel_header += "layout(packed, binding = 4) buffer extr_i64 { int64 _extr_i64_[]; };\n";
+        kernel_header += "layout(packed, binding = 4) buffer extr_i64 { int64_t _extr_i64_[]; };\n";
     }
     // clang-format on
     if (used.simulated_atomic_float) {
@@ -504,7 +512,12 @@ class KernelGen : public IRVisitor {
            stmt->dest->short_name(), opengl_data_address_shifter(dt),
            stmt->val->short_name());
     } else {
-      TI_ASSERT(dt == DataType::f32);
+      if (dt != DataType::f32) {
+        TI_ERROR("unsupported atomic operation for DataType::{}, "
+            "this may because your OpenGL is missing that extension, "
+            "see `glewinfo` for more details",
+            data_type_short_name(dt));
+      }
       used.simulated_atomic_float = true;
       emit("{} {} = {}_{}_{}({} >> {}, {});",
            opengl_data_type_name(stmt->val->element_type()), stmt->short_name(),

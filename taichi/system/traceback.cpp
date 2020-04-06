@@ -90,7 +90,7 @@ inline std::vector<StackFrame> stack_trace() {
   HANDLE thread = GetCurrentThread();
 
   if (SymInitialize(process, NULL, TRUE) == FALSE) {
-    DBG_TRACE(__FUNCTION__ ": Failed to call SymInitialize.");
+    trace(__FUNCTION__ ": Failed to call SymInitialize.");
     return std::vector<StackFrame>();
   }
 
@@ -155,8 +155,8 @@ inline std::vector<StackFrame> stack_trace() {
       f.name = symbol->Name;
     } else {
       DWORD error = GetLastError();
-      DBG_TRACE(__FUNCTION__ ": Failed to resolve address 0x%X: %u\n",
-                frame.AddrPC.Offset, error);
+      trace(__FUNCTION__ ": Failed to resolve address 0x%X: %u\n",
+            frame.AddrPC.Offset, error);
       f.name = "Unknown Function";
     }
 
@@ -169,8 +169,8 @@ inline std::vector<StackFrame> stack_trace() {
       f.line = line.LineNumber;
     } else {
       DWORD error = GetLastError();
-      DBG_TRACE(__FUNCTION__ ": Failed to resolve line for 0x%X: %u\n",
-                frame.AddrPC.Offset, error);
+      trace(__FUNCTION__ ": Failed to resolve line for 0x%X: %u\n",
+            frame.AddrPC.Offset, error);
       f.line = 0;
     }
 

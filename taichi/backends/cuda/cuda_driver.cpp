@@ -30,7 +30,11 @@ CUDADriver::CUDADriver() {
 #include "taichi/backends/cuda/cuda_driver_functions.inc.h"
 #undef PER_CUDA_FUNCTION
 
-  TI_INFO("CUDA driver loaded");
+  int version;
+  driver_get_version(&version);
+
+  TI_TRACE("CUDA driver API (v{}.{}) loaded.", version / 1000,
+           version % 1000 / 10);
 }
 
 // This is for initializing the CUDA context itself

@@ -89,7 +89,10 @@ class CodeGenStmtGuard {
     setter_(saved_stmt_);
   }
 
- protected:
+  CodeGenStmtGuard(CodeGenStmtGuard &&) = default;
+  CodeGenStmtGuard &operator=(CodeGenStmtGuard &&) = default;
+
+ private:
   llvm::BasicBlock *saved_stmt_;
   Setter setter_;
 };

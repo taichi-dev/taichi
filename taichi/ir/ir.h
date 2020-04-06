@@ -1771,7 +1771,7 @@ class FrontendIfStmt : public Stmt {
   Expr condition;
   std::unique_ptr<Block> true_statements, false_statements;
 
-  FrontendIfStmt(Expr condition) : condition(condition) {
+  FrontendIfStmt(Expr condition) : condition(load_if_ptr(condition)) {
   }
 
   bool is_container_statement() const override {
@@ -2081,8 +2081,6 @@ class FrontendWhileStmt : public Stmt {
 
   DEFINE_ACCEPT
 };
-
-#define Print(x) Print_(x, #x);
 
 void Print_(const Expr &a, std::string str);
 

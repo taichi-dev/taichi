@@ -291,7 +291,6 @@ TI_EXPORT void print_traceback() {
   fmt::print(fg(fmt::color::magenta), "***********************************\n");
 
   std::vector<dbg::StackFrame> stack = dbg::stack_trace();
-  std::stringstream buff;
   for (unsigned int i = 0; i < stack.size(); i++) {
     fmt::print(fg(fmt::color::magenta),
         fmt::format("0x{:x}: ", stack[i].address));

@@ -51,7 +51,9 @@ class CUDADriver {
  public:
   CUDADriverFunction<void *, void *, std::size_t> memcpy_host_to_device;
   CUDADriverFunction<void *, void *, std::size_t> memcpy_device_to_host;
+  CUDADriverFunction<void *, std::size_t> malloc;
   CUDADriverFunction<void *, std::size_t, uint32> malloc_managed;
+  CUDADriverFunction<void *, uint8, std::size_t> memset;
   CUDADriverFunction<void *> mem_free;
   CUDADriverFunction<void *, std::size_t, uint32, uint32> mem_advise;
 

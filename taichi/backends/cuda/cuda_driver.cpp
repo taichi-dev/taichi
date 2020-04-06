@@ -27,10 +27,12 @@ CUDADriver::CUDADriver() {
 
   memcpy_host_to_device.set(loader->load_function("cuMemcpyHtoD_v2"));
   memcpy_device_to_host.set(loader->load_function("cuMemcpyDtoH_v2"));
+  malloc.set(loader->load_function("cuMemAlloc_v2"));
   malloc_managed.set(loader->load_function("cuMemAllocManaged"));
+  memset.set(loader->load_function("cuMemsetD8_v2"));
   mem_advise.set(loader->load_function("cuMemAdvise"));
-
   mem_free.set(loader->load_function("cuMemFree_v2"));
+
   TI_INFO("CUDA driver loaded");
 }
 

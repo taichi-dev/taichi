@@ -15,8 +15,7 @@
 #include "taichi/system/unified_allocator.h"
 #include "taichi/ir/snode.h"
 #include "taichi/program/async_engine.h"
-
-#include "taichi/backends/cuda/cuda_utils.h"
+#include "taichi/backends/cuda/cuda_driver.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -143,7 +142,7 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
 
   if (config.arch == Arch::cuda && !config.use_unified_memory) {
 #if defined(TI_WITH_CUDA)
-    check_cuda_error(cuMemAlloc((CUdeviceptr *)&result_buffer, sizeof(uint64)));
+    CUDADriver::get_instance().malloc(&result_buffer, sizeof(uint64));
     auto total_mem = runtime->get_total_memory();
     if (config.device_memory_fraction == 0) {
       TI_ASSERT(config.device_memory_GB > 0);
@@ -154,10 +153,8 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
     TI_TRACE("Allocating device memory {:.2f} GB",
              1.0 * prealloc_size / (1UL << 30));
 
-    check_cuda_error(
-        cuMemAlloc((CUdeviceptr *)&preallocated_device_buffer, prealloc_size));
-    check_cuda_error(
-        cuMemsetD8((CUdeviceptr)preallocated_device_buffer, 0, prealloc_size));
+    CUDADriver::get_instance().malloc(&preallocated_device_buffer, prealloc_size);
+    CUDADriver::get_instance().memset(preallocated_device_buffer, 0, prealloc_size);
     tlctx = llvm_context_device.get();
 #else
     TI_NOT_IMPLEMENTED

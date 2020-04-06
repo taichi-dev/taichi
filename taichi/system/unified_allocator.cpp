@@ -69,7 +69,7 @@ taichi::lang::UnifiedAllocator::~UnifiedAllocator() {
   }
   if (arch_ == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
-    check_cuda_error(cuMemFree((CUdeviceptr)_cuda_data));
+    CUDADriver::get_instance().mem_free(_cuda_data);
 #else
     TI_ERROR("No CUDA support");
 #endif

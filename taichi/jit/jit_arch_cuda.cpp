@@ -1,7 +1,6 @@
 #include <memory>
 #if defined(TI_WITH_CUDA)
 #include <cuda.h>
-#include <cuda_runtime_api.h>
 #endif
 
 #include "llvm/ADT/StringRef.h"
@@ -22,7 +21,7 @@
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/ExecutionEngine/Orc/JITTargetMachineBuilder.h"
 
-#include "taichi/backends/cuda/cuda_utils.h"
+#include "taichi/backends/cuda/cuda_driver.h"
 #include "taichi/backends/cuda/cuda_context.h"
 #include "taichi/program/program.h"
 #include "taichi/runtime/llvm/context.h"
@@ -68,8 +67,8 @@ class JITModuleCUDA : public JITModule {
 
   uint64 fetch_result_u64() override {
     uint64 ret;
-    check_cuda_error(cuMemcpyDtoH(
-        &ret, (CUdeviceptr)get_current_program().result_buffer, sizeof(ret)));
+    CUDADriver::get_instance().memcpy_device_to_host(
+        &ret, get_current_program().result_buffer, sizeof(ret));
     return ret;
   }
 

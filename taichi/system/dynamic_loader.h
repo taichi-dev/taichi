@@ -28,8 +28,7 @@ class DynamicLoader {
  private:
   void load_dll(const std::string &dll_path) {
 #ifdef WIN32
-    TI_NOT_IMPLEMENTED
-    // dll = LoadLibrary(dll_path.c_str());
+    dll = LoadLibraryA(dll_path.c_str());
 #else
     dll = dlopen(dll_path.c_str(), RTLD_LAZY);
 #endif
@@ -63,7 +62,7 @@ class DynamicLoader {
   void close_dll() {
     TI_ERROR_IF(!loaded(), "DLL not opened.");
 #ifdef WIN32
-    TI_ERROR("Not implemented");
+	FreeLibrary(dll);
 #else
     dlclose(dll);
 #endif

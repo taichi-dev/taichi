@@ -14,8 +14,6 @@ std::string get_cuda_error_message(uint32 err) {
   return fmt::format("CUDA Error {}: {}", err_name_ptr, err_string_ptr);
 }
 
-std::unique_ptr<CUDADriver> CUDADriver::instance;
-
 CUDADriver::CUDADriver() {
 #if defined(TI_PLATFORM_LINUX)
   loader = std::make_unique<DynamicLoader>("libcuda.so");
@@ -37,12 +35,14 @@ CUDADriver::CUDADriver() {
 
 // This is for initializing the CUDA context itself
 CUDADriver &CUDADriver::get_instance_without_context() {
-  if (!instance)
-    instance = std::make_unique<CUDADriver>();
+  // Thread safety guaranteed by C++ compiler
+  // Note this is never deleted until the process finishes
+  static CUDADriver* instance = new CUDADriver();
   return *instance;
 }
 
 CUDADriver &CUDADriver::get_instance() {
+  // initialize the CUDA context so that the driver APIs can be called later
   CUDAContext::get_instance();
   return get_instance_without_context();
 }

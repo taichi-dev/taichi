@@ -15,10 +15,12 @@
 
 TI_NAMESPACE_BEGIN
 
+// TODO (yuanming-hu): Fix Windows
+
 class DynamicLoader {
  protected:
 #ifdef WIN32
-  HINSTANCE dll = nullptr;
+  HMODULE dll = nullptr;
 #else
   void *dll = nullptr;
 #endif
@@ -47,11 +49,9 @@ class DynamicLoader {
 #else
     auto func = dlsym(dll, func_name.c_str());
     const char *dlsym_error = dlerror();
-    if (dlsym_error) {
-      TI_ERROR(std::string("Cannot load function: ") + dlsym_error);
-    }
+    TI_ERROR_IF(dlsym_error, "Cannot load function: {}", dlsym_error);
 #endif
-    assert_info(func != nullptr, "Function " + func_name + " not found");
+    TI_ERROR_IF(!func, "Function {} not found", func_name);
     return func;
   }
 
@@ -61,9 +61,9 @@ class DynamicLoader {
   }
 
   void close_dll() {
-    assert_info(loaded(), "Dll not opened.");
+    TI_ERROR_IF(!loaded(), "DLL not opened.");
 #ifdef WIN32
-    TI_P("Not implemented");
+    TI_ERROR("Not implemented");
 #else
     dlclose(dll);
 #endif

@@ -4,6 +4,7 @@
 #include "cuda_context.h"
 
 #include <unordered_map>
+#include <mutex>
 
 #include "taichi/lang_util.h"
 #include "taichi/program/program.h"
@@ -88,15 +89,21 @@ CUDAContext::~CUDAContext() {
 }
 
 CUDAContext &CUDAContext::get_instance() {
-  auto tid = std::this_thread::get_id();
-  if (instances.find(tid) == instances.end()) {
-    instances[tid] = std::make_unique<CUDAContext>();
-  }
-  return *instances[tid];
-}
+  static std::unordered_map<std::thread::id, CUDAContext *> instances;
+  static std::mutex mut;
+  {
+    // critical section
+    auto _ = std::lock_guard<std::mutex>(mut);
 
-std::unordered_map<std::thread::id, std::unique_ptr<CUDAContext>>
-    CUDAContext::instances;
+    auto tid = std::this_thread::get_id();
+    if (instances.find(tid) == instances.end()) {
+      instances[tid] = new CUDAContext();
+      // We expect CUDAContext to live until the process ends, thus the raw
+      // pointers and `new`s.
+    }
+    return *instances[tid];
+  }
+}
 
 TLANG_NAMESPACE_END
 

@@ -31,11 +31,6 @@ std::string get_cuda_error_message(uint32 err);
 
 template <typename... Args>
 class CUDADriverFunction {
- private:
-  using func_type = uint32_t(Args...);
-  func_type *function;
-  std::string name, symbol_name;
-
  public:
   CUDADriverFunction() {
     function = nullptr;
@@ -70,14 +65,14 @@ class CUDADriverFunction {
     auto err = call(args...);
     TI_ERROR_IF(err, get_error_message(err));
   }
+
+ private:
+  using func_type = uint32_t(Args...);
+  func_type *function;
+  std::string name, symbol_name;
 };
 
 class CUDADriver {
- private:
-  std::unique_ptr<DynamicLoader> loader;
-
-  static std::unique_ptr<CUDADriver> instance;
-
  public:
 #define PER_CUDA_FUNCTION(name, symbol_name, ...) \
   CUDADriverFunction<__VA_ARGS__> name;
@@ -85,15 +80,19 @@ class CUDADriver {
 #undef PER_CUDA_FUNCTION
 
   void (*get_error_name)(uint32, const char **);
-  void (*get_error_string)(uint32, const char **);
 
-  CUDADriver();
+  void (*get_error_string)(uint32, const char **);
 
   ~CUDADriver() = default;
 
   static CUDADriver &get_instance();
 
   static CUDADriver &get_instance_without_context();
+
+ private:
+  CUDADriver();
+
+  std::unique_ptr<DynamicLoader> loader;
 };
 
 TLANG_NAMESPACE_END

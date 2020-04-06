@@ -55,9 +55,9 @@ T MemoryPool::fetch(volatile void *ptr) {
   /*
   if (false && prog->config.arch == Arch::cuda) {
 #if TI_WITH_CUDA
-    check_cuda_error(cudaMemcpyAsync(&ret, (void *)ptr, sizeof(T),
+    CUDADriver::get_instance().cudaMemcpyAsync(&ret, (void *)ptr, sizeof(T,
                                      cudaMemcpyDeviceToHost, cuda_stream));
-    check_cuda_error(cudaStreamSynchronize(cuda_stream));
+    CUDADriver::get_instance().cudaStreamSynchronize(cuda_stream);
 #else
     TI_NOT_IMPLEMENTED
 #endif
@@ -73,9 +73,9 @@ void MemoryPool::push(volatile T *dest, const T &val) {
   /*
   if (false && prog->config.arch == Arch::cuda) {
 #if TI_WITH_CUDA
-    check_cuda_error(cudaMemcpyAsync((void *)dest, &val, sizeof(T),
+    CUDADriver::get_instance().cudaMemcpyAsync((void *)dest, &val, sizeof(T,
                                      cudaMemcpyHostToDevice, cuda_stream));
-    check_cuda_error(cudaStreamSynchronize(cuda_stream));
+    CUDADriver::get_instance().cudaStreamSynchronize(cuda_stream);
 #else
     TI_NOT_IMPLEMENTED
 #endif
@@ -128,7 +128,7 @@ void MemoryPool::terminate() {
   TI_ASSERT(killed);
 #if 0 && defined(TI_WITH_CUDA)
   if (prog->config.arch == Arch::cuda)
-    check_cuda_error(cudaStreamDestroy(cuda_stream));
+    CUDADriver::get_instance().cudaStreamDestroy(cuda_stream);
 #endif
 }
 

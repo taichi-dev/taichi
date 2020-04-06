@@ -34,21 +34,21 @@ TLANG_NAMESPACE_BEGIN
 #if defined(TI_WITH_CUDA)
 class JITModuleCUDA : public JITModule {
  private:
-  CUmodule module;
+  void *module;
 
  public:
-  explicit JITModuleCUDA(CUmodule module) : module(module) {
+  explicit JITModuleCUDA(void *module) : module(module) {
   }
 
   void *lookup_function(const std::string &name) override {
     // auto _ = CUDAContext::get_instance().get_guard();
     CUDAContext::get_instance().make_current();
-    CUfunction func;
+    void *func;
     auto t = Time::get_time();
-    check_cuda_error(cuModuleGetFunction(&func, module, name.c_str()));
+    CUDADriver::get_instance().module_get_function(&func, module, name.c_str());
     t = Time::get_time() - t;
     TI_TRACE("Kernel {} compilation time: {}ms", name, t * 1000);
-    return (void *)func;
+    return func;
   }
 
   void call(const std::string &name,
@@ -89,14 +89,14 @@ class JITSessionCUDA : public JITSession {
     // auto _ = CUDAContext::get_instance().get_guard();
     CUDAContext::get_instance().make_current();
     // Create module for object
-    CUmodule cuda_module;
+    void *cuda_module;
     TI_TRACE("PTX size: {:.2f}KB", ptx.size() / 1024.0);
     auto t = Time::get_time();
     TI_TRACE("Loading module...");
     [[maybe_unused]] auto &&_ =
         std::move(CUDAContext::get_instance().get_lock_guard());
-    check_cuda_error(
-        cuModuleLoadDataEx(&cuda_module, ptx.c_str(), 0, nullptr, nullptr));
+    CUDADriver::get_instance().module_load_data_ex(&cuda_module, ptx.c_str(), 0,
+                                                   nullptr, nullptr);
     TI_TRACE("CUDA module load time : {}ms", (Time::get_time() - t) * 1000);
     // cudaModules.push_back(cudaModule);
     modules.push_back(std::make_unique<JITModuleCUDA>(cuda_module));

@@ -6,7 +6,7 @@
 #include <thread>
 
 #include "taichi/program/profiler.h"
-#include "taichi/backends/cuda/cuda_utils.h"
+#include "taichi/backends/cuda/cuda_driver.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -15,14 +15,17 @@ TLANG_NAMESPACE_BEGIN
 // context creation takes time. Therefore we use a shared context to accelerate
 // cases such as unit testing where many Taichi programs are created/destroyed.
 
+class CUDADriver;
+
 class CUDAContext {
  private:
-  CUdevice device;
-  CUcontext context;
+  void *device;
+  void *context;
   int dev_count;
   std::string mcpu;
   std::mutex lock;
   ProfilerBase *profiler;
+  CUDADriver &driver;
 
   static std::unordered_map<std::thread::id, std::unique_ptr<CUDAContext>>
       instances;
@@ -51,23 +54,23 @@ class CUDAContext {
   }
 
   void make_current() {
-    check_cuda_error(cuCtxSetCurrent(context));
+    driver.context_set_current(context);
   }
 
   ~CUDAContext();
 
   class ContextGuard {
    private:
-    CUcontext old_ctx;
+    void *old_ctx;
 
    public:
     ContextGuard(CUDAContext *ctx) {
-      check_cuda_error(cuCtxGetCurrent(&old_ctx));
+      CUDADriver::get_instance().context_get_current(&old_ctx);
       ctx->make_current();
     }
 
     ~ContextGuard() {
-      check_cuda_error(cuCtxSetCurrent(old_ctx));
+      CUDADriver::get_instance().context_set_current(old_ctx);
     }
   };
 

@@ -1,4 +1,5 @@
 #if defined(TI_WITH_CUDA)
+
 #define TI_RUNTIME_HOST
 
 #include <unordered_map>
@@ -6,31 +7,33 @@
 #include "taichi/lang_util.h"
 #include "taichi/program/program.h"
 #include "taichi/system/threading.h"
+#include "taichi/backends/cuda/cuda_driver.h"
 
 #include "cuda_context.h"
 
 TLANG_NAMESPACE_BEGIN
 
-CUDAContext::CUDAContext() : profiler(nullptr) {
+CUDAContext::CUDAContext()
+    : profiler(nullptr), driver(CUDADriver::get_instance_without_context()) {
   // CUDA initialization
   dev_count = 0;
-  check_cuda_error(cuInit(0));
-  check_cuda_error(cuDeviceGetCount(&dev_count));
-  check_cuda_error(cuDeviceGet(&device, 0));
+  driver.init(0);
+  driver.device_get_count(&dev_count);
+  driver.device_get(&device, 0);
 
   char name[128];
-  check_cuda_error(cuDeviceGetName(name, 128, device));
+  driver.device_get_name(name, 128, device);
 
   TI_TRACE("Using CUDA device [id=0]: {}", name);
 
   int cc_major, cc_minor;
-  check_cuda_error(cuDeviceGetAttribute(
-      &cc_major, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, device));
-  check_cuda_error(cuDeviceGetAttribute(
-      &cc_minor, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR, device));
+  driver.device_get_attribute(
+      &cc_major, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, device);
+  driver.device_get_attribute(
+      &cc_minor, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR, device);
 
   TI_TRACE("CUDA Device Compute Capability: {}.{}", cc_major, cc_minor);
-  check_cuda_error(cuCtxCreate(&context, 0, device));
+  driver.context_create(&context, 0, device);
 
   const auto GB = std::pow(1024.0, 3.0);
   TI_TRACE("Total memory {:.2f} GB; free memory {:.2f} GB",
@@ -41,13 +44,13 @@ CUDAContext::CUDAContext() : profiler(nullptr) {
 
 std::size_t CUDAContext::get_total_memory() {
   std::size_t ret, _;
-  check_cuda_error(cuMemGetInfo(&_, &ret));
+  driver.mem_get_info(&_, &ret);
   return ret;
 }
 
 std::size_t CUDAContext::get_free_memory() {
   std::size_t ret, _;
-  check_cuda_error(cuMemGetInfo(&ret, &_));
+  driver.mem_get_info(&ret, &_);
   return ret;
 }
 
@@ -64,24 +67,24 @@ void CUDAContext::launch(void *func,
     profiler->start(task_name);
   if (gridDim > 0) {
     std::lock_guard<std::mutex> _(lock);
-    check_cuda_error(cuLaunchKernel((CUfunction)func, gridDim, 1, 1, blockDim,
-                                    1, 1, 0, nullptr, arg_pointers.data(),
-                                    nullptr));
+    driver.launch_kernel(func, gridDim, 1, 1, blockDim, 1, 1, 0, nullptr,
+                         arg_pointers.data(), nullptr);
   }
   if (profiler)
     profiler->stop();
 
   if (get_current_program().config.debug) {
-    check_cuda_error(cuStreamSynchronize((CUstream)0));
+    driver.stream_synchronize(0);
   }
 }
 
 CUDAContext::~CUDAContext() {
+  // TODO: restore this?
   /*
-  check_cuda_error(cuMemFree(context_buffer));
+  CUDADriver::get_instance().cuMemFree(context_buffer);
   for (auto cudaModule: cudaModules)
-    check_cuda_error(cuModuleUnload(cudaModule));
-  check_cuda_error(cuCtxDestroy(context));
+      CUDADriver::get_instance().cuModuleUnload(cudaModule);
+  CUDADriver::get_instance().cuCtxDestroy(context);
   */
 }
 
@@ -97,4 +100,5 @@ std::unordered_map<std::thread::id, std::unique_ptr<CUDAContext>>
     CUDAContext::instances;
 
 TLANG_NAMESPACE_END
+
 #endif

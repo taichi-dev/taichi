@@ -34,9 +34,10 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
 
   CodeGenLLVMCUDA(Kernel *kernel) : CodeGenLLVM(kernel) {
 #if defined(TI_WITH_CUDA)
-    cuDeviceGetAttribute(&num_SMs, CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT, 0);
-    cuDeviceGetAttribute(&max_block_dim, CU_DEVICE_ATTRIBUTE_MAX_BLOCK_DIM_X,
-                         0);
+    CUDADriver::get_instance().device_get_attribute(
+        &num_SMs, CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT, 0);
+    CUDADriver::get_instance().device_get_attribute(
+        &max_block_dim, CU_DEVICE_ATTRIBUTE_MAX_BLOCK_DIM_X, 0);
 
     // each SM can have 16-32 resident blocks
     saturating_num_blocks = num_SMs * 32;
@@ -69,7 +70,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       for (int i = 0; i < (int)args.size(); i++) {
         if (args[i].is_nparray) {
           has_buffer = true;
-          check_cuda_error(cuMemAlloc(&device_buffers[i], args[i].size));
+          CUDADriver::get_instance().malloc(&device_buffers[i], args[i].size);
           // replace host buffer with device buffer
           host_buffers[i] = get_current_program().context.get_arg<void *>(i);
           kernel->set_arg_nparray(i, (uint64)device_buffers[i], args[i].size);
@@ -78,7 +79,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
         }
       }
       if (has_buffer) {
-        check_cuda_error(cuStreamSynchronize((CUstream)0));
+        CUDADriver::get_instance().stream_synchronize(0);
       }
 
       for (auto task : offloaded_local) {
@@ -90,7 +91,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       }
       // copy data back to host
       if (has_buffer) {
-        check_cuda_error(cuStreamSynchronize((CUstream)0));
+        CUDADriver::get_instance().stream_synchronize(0);
       }
       for (int i = 0; i < (int)args.size(); i++) {
         if (args[i].is_nparray) {

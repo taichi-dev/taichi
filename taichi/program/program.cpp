@@ -153,8 +153,10 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
     TI_TRACE("Allocating device memory {:.2f} GB",
              1.0 * prealloc_size / (1UL << 30));
 
-    CUDADriver::get_instance().malloc(&preallocated_device_buffer, prealloc_size);
-    CUDADriver::get_instance().memset(preallocated_device_buffer, 0, prealloc_size);
+    CUDADriver::get_instance().malloc(&preallocated_device_buffer,
+                                      prealloc_size);
+    CUDADriver::get_instance().memset(preallocated_device_buffer, 0,
+                                      prealloc_size);
     tlctx = llvm_context_device.get();
 #else
     TI_NOT_IMPLEMENTED

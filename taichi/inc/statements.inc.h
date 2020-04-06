@@ -4,6 +4,7 @@ PER_STATEMENT(FrontendForStmt)
 PER_STATEMENT(FrontendPrintStmt)
 PER_STATEMENT(FrontendWhileStmt)
 PER_STATEMENT(FrontendBreakStmt)
+PER_STATEMENT(FrontendContinueStmt)
 PER_STATEMENT(FrontendAllocaStmt)
 PER_STATEMENT(FrontendAssignStmt)
 PER_STATEMENT(FrontendAtomicStmt)
@@ -11,6 +12,7 @@ PER_STATEMENT(FrontendEvalStmt)
 PER_STATEMENT(FrontendSNodeOpStmt)  // activate, deactivate, append, clear
 PER_STATEMENT(FrontendAssertStmt)
 PER_STATEMENT(FrontendArgStoreStmt)
+PER_STATEMENT(FrontendFuncDefStmt)
 
 // Middle-end statement
 
@@ -20,8 +22,8 @@ PER_STATEMENT(StructForStmt)
 PER_STATEMENT(IfStmt)
 PER_STATEMENT(WhileStmt)
 PER_STATEMENT(WhileControlStmt)
+PER_STATEMENT(ContinueStmt)
 PER_STATEMENT(FuncBodyStmt)
-PER_STATEMENT(FrontendFuncDefStmt)
 PER_STATEMENT(FuncCallStmt)
 
 PER_STATEMENT(ArgLoadStmt)

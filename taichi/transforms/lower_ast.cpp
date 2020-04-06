@@ -113,6 +113,10 @@ class LowerAST : public IRVisitor {
     throw IRModified();
   }
 
+  void visit(FrontendContinueStmt *stmt) override {
+    stmt->parent->replace_with(stmt, Stmt::make<ContinueStmt>());
+  }
+
   void visit(FrontendWhileStmt *stmt) override {
     // transform into a structure as
     // while (1) { cond; if (no active) break; original body...}

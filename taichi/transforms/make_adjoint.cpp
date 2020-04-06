@@ -12,18 +12,15 @@ class ConvertLocalVar : public BasicStmtVisitor {
 
   void visit(AllocaStmt *alloc) override {
     TI_ASSERT(alloc->width() == 1);
-    bool load_only = irpass::gather_statements(
-                         alloc->parent,
-                         [&](Stmt *s) {
-                           if (auto store = s->cast<LocalStoreStmt>())
-                             return store->ptr == alloc;
-                           else if (auto atomic = s->cast<AtomicOpStmt>()) {
-                             return atomic->dest == alloc;
-                           } else {
-                             return false;
-                           }
-                         })
-                         .empty();
+    bool load_only = irpass::gather_statements(alloc->parent, [&](Stmt *s) {
+                       if (auto store = s->cast<LocalStoreStmt>())
+                         return store->ptr == alloc;
+                       else if (auto atomic = s->cast<AtomicOpStmt>()) {
+                         return atomic->dest == alloc;
+                       } else {
+                         return false;
+                       }
+                     }).empty();
     if (!load_only) {
       alloc->replace_with(
           Stmt::make<StackAllocaStmt>(alloc->ret_type.data_type, 16));
@@ -335,6 +332,10 @@ class MakeAdjoint : public IRVisitor {
 
   void visit(WhileControlStmt *stmt) override {
     TI_NOT_IMPLEMENTED
+  }
+
+  void visit(ContinueStmt *stmt) override {
+    TI_NOT_IMPLEMENTED;
   }
 
   void visit(WhileStmt *stmt) override {

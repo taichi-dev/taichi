@@ -117,6 +117,7 @@ std::vector<Stmt *> gather_statements(IRNode *root,
                                       const std::function<bool(Stmt *)> &test);
 bool same_statements(IRNode *root1, IRNode *root2);
 std::unordered_set<Stmt *> detect_fors_with_break(IRNode *root);
+std::unordered_set<Stmt *> detect_loops_with_continue(IRNode *root);
 void compile_to_offloads(IRNode *ir,
                          CompileConfig config,
                          bool vectorize,
@@ -937,6 +938,23 @@ class WhileControlStmt : public Stmt {
   }
 
   TI_STMT_DEF_FIELDS(mask, cond);
+  DEFINE_ACCEPT;
+};
+
+class ContinueStmt : public Stmt {
+ public:
+  // This is the loop on which this continue stmt has effects. It can be either
+  // an offloaded task, or a for/while loop inside the kernel.
+  Stmt *scope;
+
+  ContinueStmt() : scope(nullptr) {
+    TI_STMT_REG_FIELDS;
+  }
+
+  bool as_return() const {
+    return scope->is<OffloadedStmt>();
+  }
+  TI_STMT_DEF_FIELDS(scope);
   DEFINE_ACCEPT;
 };
 
@@ -2059,6 +2077,17 @@ class FrontendBreakStmt : public Stmt {
  public:
   FrontendBreakStmt() {
   }
+
+  bool is_container_statement() const override {
+    return false;
+  }
+
+  DEFINE_ACCEPT
+};
+
+class FrontendContinueStmt : public Stmt {
+ public:
+  FrontendContinueStmt() = default;
 
   bool is_container_statement() const override {
     return false;

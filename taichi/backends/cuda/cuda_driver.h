@@ -17,7 +17,6 @@ static_assert(sizeof(CUevent) == sizeof(void *));
 static_assert(sizeof(CUjit_option) == sizeof(uint32));
 #endif
 
-
 // Driver constants from cuda.h
 
 constexpr uint32 CU_EVENT_DEFAULT = 0x0;

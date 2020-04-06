@@ -285,7 +285,7 @@ TI_EXPORT void print_traceback() {
       "==================\n");
   printf("\n");
 #elif defined(_WIN64)
-// Windows
+  // Windows
   fmt::print(fg(fmt::color::magenta), "***********************************\n");
   fmt::print(fg(fmt::color::magenta), "* Taichi Compiler Stack Traceback *\n");
   fmt::print(fg(fmt::color::magenta), "***********************************\n");
@@ -293,13 +293,13 @@ TI_EXPORT void print_traceback() {
   std::vector<dbg::StackFrame> stack = dbg::stack_trace();
   for (unsigned int i = 0; i < stack.size(); i++) {
     fmt::print(fg(fmt::color::magenta),
-        fmt::format("0x{:x}: ", stack[i].address));
+               fmt::format("0x{:x}: ", stack[i].address));
     fmt::print(fg(fmt::color::red), stack[i].name);
     if (stack[i].file != std::string(""))
       fmt::print(fg(fmt::color::magenta),
-          fmt::format("(line {} in {})", stack[i].line, stack[i].file));
+                 fmt::format("(line {} in {})", stack[i].line, stack[i].file));
     fmt::print(fg(fmt::color::magenta),
-        fmt::format(" in {}\n", stack[i].module));
+               fmt::format(" in {}\n", stack[i].module));
   }
 #else
   // Based on http://man7.org/linux/man-pages/man3/backtrace.3.html

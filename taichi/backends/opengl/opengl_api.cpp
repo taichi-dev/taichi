@@ -10,6 +10,7 @@ TLANG_NAMESPACE_BEGIN
 namespace opengl {
 
 bool opengl_has_GL_NV_shader_atomic_float;
+bool opengl_has_GL_NV_shader_atomic_int64;
 
 #ifdef TI_WITH_OPENGL
 void glapi_set_uniform(GLuint loc, float value) {
@@ -229,6 +230,10 @@ void initialize_opengl() {
   if ((opengl_has_GL_NV_shader_atomic_float =
            glewGetExtension("GL_NV_shader_atomic_float"))) {
     TI_INFO("[glsl] Found GL_NV_shader_atomic_float");
+  }
+  if ((opengl_has_GL_NV_shader_atomic_int64 =
+           glewGetExtension("GL_NV_shader_atomic_int64"))) {
+    TI_INFO("[glsl] Found GL_NV_shader_atomic_int64");
   }
 }
 

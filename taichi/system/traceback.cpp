@@ -184,24 +184,6 @@ inline std::vector<StackFrame> stack_trace() {
 
   return frames;
 }
-
-inline void handle_assert(const char *func, const char *cond) {
-  std::stringstream buff;
-  buff << func << ": Assertion '" << cond << "' failed! \n";
-  buff << "\n";
-
-  std::vector<StackFrame> stack = stack_trace();
-  buff << "Callstack: \n";
-  for (unsigned int i = 0; i < stack.size(); i++) {
-    buff << "0x" << std::hex << stack[i].address << ": " << stack[i].name << "("
-         << std::dec << stack[i].line << ") in " << stack[i].module << "\n";
-  }
-
-  // please replace with std::printf
-  MessageBoxA(NULL, buff.str().c_str(), "Assert Failed", MB_OK | MB_ICONSTOP);
-  abort();
-}
-
 }  // namespace dbg
 #endif
 #ifdef __linux__
@@ -311,10 +293,15 @@ TI_EXPORT void print_traceback() {
   std::vector<dbg::StackFrame> stack = dbg::stack_trace();
   std::stringstream buff;
   for (unsigned int i = 0; i < stack.size(); i++) {
-    buff << "0x" << std::hex << stack[i].address << ": " << stack[i].name << "("
-         << std::dec << stack[i].line << ") in " << stack[i].module << "\n";
+    fmt::print(fg(fmt::color::magenta),
+        fmt::format("0x{:x}: ", stack[i].address));
+    fmt::print(fg(fmt::color::red), stack[i].name);
+    if (stack[i].file != std::string(""))
+      fmt::print(fg(fmt::color::magenta),
+          fmt::format("(line {} in {})", stack[i].line, stack[i].file));
+    fmt::print(fg(fmt::color::magenta),
+        fmt::format(" in {}\n", stack[i].module));
   }
-  fmt::print(fg(fmt::color::magenta), buff.str());
 #else
   // Based on http://man7.org/linux/man-pages/man3/backtrace.3.html
   constexpr int BT_BUF_SIZE = 1024;

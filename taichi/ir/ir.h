@@ -952,6 +952,7 @@ class ContinueStmt : public Stmt {
   }
 
   bool as_return() const {
+    TI_ASSERT(scope != nullptr);
     return scope->is<OffloadedStmt>();
   }
   TI_STMT_DEF_FIELDS(scope);

@@ -2,6 +2,8 @@
 
 #if defined(TI_WITH_CUDA)
 #include <mutex>
+#include <unordered_map>
+#include <thread>
 
 #include "taichi/program/profiler.h"
 #include "taichi/backends/cuda/cuda_utils.h"
@@ -22,7 +24,8 @@ class CUDAContext {
   std::mutex lock;
   ProfilerBase *profiler;
 
-  static std::unique_ptr<CUDAContext> instance;
+  static std::unordered_map<std::thread::id, std::unique_ptr<CUDAContext>>
+      instances;
 
  public:
   CUDAContext();
@@ -43,7 +46,6 @@ class CUDAContext {
   void set_profiler(ProfilerBase *profiler) {
     this->profiler = profiler;
   }
-
   std::string get_mcpu() const {
     return mcpu;
   }

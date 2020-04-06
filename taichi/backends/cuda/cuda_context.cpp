@@ -1,8 +1,11 @@
 #if defined(TI_WITH_CUDA)
 #define TI_RUNTIME_HOST
 
+#include <unordered_map>
+
 #include "taichi/lang_util.h"
 #include "taichi/program/program.h"
+#include "taichi/system/threading.h"
 
 #include "cuda_context.h"
 
@@ -18,7 +21,7 @@ CUDAContext::CUDAContext() : profiler(nullptr) {
   char name[128];
   check_cuda_error(cuDeviceGetName(name, 128, device));
 
-  TI_TRACE("Using CUDA Device [id={}]: {}", dev_count, name);
+  TI_TRACE("Using CUDA device [id=0]: {}", name);
 
   int cc_major, cc_minor;
   check_cuda_error(cuDeviceGetAttribute(
@@ -83,13 +86,15 @@ CUDAContext::~CUDAContext() {
 }
 
 CUDAContext &CUDAContext::get_instance() {
-  if (!instance) {
-    instance = std::make_unique<CUDAContext>();
+  auto tid = std::this_thread::get_id();
+  if (instances.find(tid) == instances.end()) {
+    instances[tid] = std::make_unique<CUDAContext>();
   }
-  return *instance;
+  return *instances[tid];
 }
 
-std::unique_ptr<CUDAContext> CUDAContext::instance;
+std::unordered_map<std::thread::id, std::unique_ptr<CUDAContext>>
+    CUDAContext::instances;
 
 TLANG_NAMESPACE_END
 #endif

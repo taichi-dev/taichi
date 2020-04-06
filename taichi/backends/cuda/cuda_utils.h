@@ -4,7 +4,7 @@
 
 #include <cuda.h>
 
-#include "taichi/lang_util.h"
+#include "taichi/common/util.h"
 
 #define check_cuda_error(err)                                   \
   do {                                                          \

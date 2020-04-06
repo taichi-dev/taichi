@@ -2,7 +2,7 @@
 
 #if defined(TI_WITH_CUDA)
 #include "taichi/backends/cuda/cuda_utils.h"
-#include "taichi/backends/cuda/cuda_context.h"
+#include "taichi/backends/cuda/cuda_driver.h"
 #endif
 #include "taichi/lang_util.h"
 #include "taichi/system/unified_allocator.h"
@@ -27,8 +27,8 @@ UnifiedAllocator::UnifiedAllocator(std::size_t size, Arch arch)
              size / 1024 / 1024);
 #if defined(TI_WITH_CUDA)
     // std::lock_guard<std::mutex> _(cuda_context->lock);
-    check_cuda_error(cuMemAllocManaged((CUdeviceptr *)&_cuda_data, size,
-                                       CU_MEM_ATTACH_GLOBAL));
+    CUDADriver::get_instance().malloc_managed(&_cuda_data, size,
+                                              CU_MEM_ATTACH_GLOBAL);
     if (_cuda_data == nullptr) {
       TI_ERROR("CUDA memory allocation failed.");
     }

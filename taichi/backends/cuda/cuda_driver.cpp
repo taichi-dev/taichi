@@ -1,6 +1,7 @@
 #include "cuda_driver.h"
 
 #include "taichi/system/dynamic_loader.h"
+#include "taichi/backends/cuda/cuda_context.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -14,11 +15,13 @@ CUDADriver::CUDADriver() {
 #endif
   memcpy_host_to_device.set(loader->load_function("cuMemcpyHtoD_v2"));
   memcpy_device_to_host.set(loader->load_function("cuMemcpyDtoH_v2"));
+  malloc_managed.set(loader->load_function("cuMemAllocManaged"));
   memfree.set(loader->load_function("cuMemFree_v2"));
   TI_INFO("CUDA driver loaded");
 }
 
 CUDADriver &CUDADriver::get_instance() {
+  CUDAContext::get_instance();
   if (!instance)
     instance = std::make_unique<CUDADriver>();
   return *instance;

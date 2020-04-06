@@ -86,7 +86,7 @@ class CUDAProfiler : public ProfilerBase {
 #if defined(TI_WITH_CUDA)
   CUevent current_stop;
 
-  std::map<std::string, std::vector<std::pair<CUevent , CUevent >>>
+  std::map<std::string, std::vector<std::pair<CUevent, CUevent>>>
       outstanding_events;
 #endif
 

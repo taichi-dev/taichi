@@ -39,8 +39,7 @@ class CUDADriverFunction {
     return (uint32)function(args...);
   }
 
-  void set_names(const std::string &name,
-                        const std::string &symbol_name) {
+  void set_names(const std::string &name, const std::string &symbol_name) {
     this->name = name;
     this->symbol_name = symbol_name;
   }

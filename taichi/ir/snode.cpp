@@ -122,7 +122,7 @@ uint64 SNode::fetch_reader_result() {
       !get_current_program().config.use_unified_memory) {
     // TODO: refactor
 #if defined(TI_WITH_CUDA)
-    CUDADriver::get_instance().memcpy_host_to_device(
+    CUDADriver::get_instance().memcpy_device_to_host(
         &ret, get_current_program().result_buffer, sizeof(uint64));
 #else
     TI_NOT_IMPLEMENTED;

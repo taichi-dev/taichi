@@ -29,6 +29,8 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(IfStmt *if_stmt) {
+    // TODO: use DataType::u1 when it's supported
+    TI_ASSERT(if_stmt->cond->ret_type.data_type == DataType::i32);
     if (if_stmt->true_statements)
       if_stmt->true_statements->accept(this);
     if (if_stmt->false_statements) {

@@ -38,7 +38,7 @@ struct GLShader {
     id_ = glCreateShader(type);
   }
 
-  GLShader(std::string source, GLuint type = GL_COMPUTE_SHADER)
+  GLShader(const std::string &source, GLuint type = GL_COMPUTE_SHADER)
       : GLShader(type) {
     this->compile(source);
   }
@@ -107,7 +107,7 @@ struct GLProgram {
   }
 
   template <typename T>
-  void set_uniform(std::string name, T value) const {
+  void set_uniform(const std::string &name, T value) const {
     GLuint loc = glGetUniformLocation(id_, name.c_str());
     glapi_set_uniform(loc, value);
   }
@@ -225,7 +225,7 @@ void initialize_opengl() {
   }
 }
 
-CompiledGLSL::CompiledGLSL(std::string source)
+CompiledGLSL::CompiledGLSL(const std::string &source)
   : glsl(std::make_unique<GLProgram>(GLShader(source)))
 {
   glsl->link();
@@ -238,7 +238,6 @@ struct GLSLLauncherImpl {
 };
 
 GLSLLauncher::GLSLLauncher(size_t size) {
-  // if (root_ssbo) return;
   initialize_opengl();
   impl = std::make_unique<GLSLLauncherImpl>();
   impl->root_ssbo = std::make_unique<GLSSBO>();
@@ -315,8 +314,8 @@ bool is_opengl_api_available() {
 
 void initialize_opengl(){TI_NOT_IMPLEMENTED}
 
-CompiledGLSL::CompiledGLSL(std::string source)
-  : glsl(std::make_unique<GLProgram>()) {
+CompiledGLSL::CompiledGLSL(const std::string &source)
+{//: glsl(std::make_unique<GLProgram>()) {
   TI_NOT_IMPLEMENTED
 }
 

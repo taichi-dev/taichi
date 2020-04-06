@@ -34,8 +34,8 @@ struct UsedFeature {
   bool argument{false};
   bool extra_arg{false};
   bool external_ptr{false};
-  bool atomic_float{false};
-  bool atomic_float64{false};
+  bool simulated_atomic_float{false};
+  bool int64{false};
   bool global_temp{false};
 };
 
@@ -194,7 +194,7 @@ class KernelGen : public IRVisitor {
         "layout(packed, binding = 0) buffer data_i32 { int _states_[2]; int _data_i32_[]; };\n"
         "layout(packed, binding = 0) buffer data_f32 { int _unused1_[2]; float _data_f32_[]; };\n"
         "layout(packed, binding = 0) buffer data_f64 { int _unused2_[2]; double _data_f64_[]; };\n";
-    if (used.atomic_float64)
+    if (used.int64)
       kernel_header += "layout(packed, binding = 0) buffer data_i64 { int _unused3_[2]; int64 _data_i64_[]; };\n";
 
     if (used.argument) {
@@ -208,7 +208,7 @@ class KernelGen : public IRVisitor {
           "layout(packed, binding = 2) buffer gtmp_i32 { int _gtmp_i32_[]; };\n"
           "layout(packed, binding = 2) buffer gtmp_f32 { float _gtmp_f32_[]; };\n"
           "layout(packed, binding = 2) buffer gtmp_f64 { double _gtmp_f64_[]; };\n";
-      if (used.atomic_float64)
+      if (used.int64)
         kernel_header += "layout(packed, binding = 2) buffer gtmp_i64 { int64 _gtmp_i64_[]; };\n";
     }
     if (used.extra_arg) {
@@ -220,11 +220,11 @@ class KernelGen : public IRVisitor {
           "layout(packed, binding = 4) buffer extr_i32 { int _extr_i32_[]; };\n"
           "layout(packed, binding = 4) buffer extr_f32 { float _extr_f32_[]; };\n"
           "layout(packed, binding = 4) buffer extr_f64 { double _extr_f64_[]; };\n";
-      if (used.atomic_float64)
+      if (used.int64)
         kernel_header += "layout(packed, binding = 4) buffer extr_i64 { int64 _extr_i64_[]; };\n";
     }
     // clang-format on
-    if (used.atomic_float && !opengl_has_GL_NV_shader_atomic_float) {
+    if (used.simulated_atomic_float) {
       kernel_header += (
 #include "taichi/backends/opengl/shaders/atomics_data_f32.glsl.h"
       );
@@ -236,22 +236,6 @@ class KernelGen : public IRVisitor {
       if (used.external_ptr) {
         kernel_header += (
 #include "taichi/backends/opengl/shaders/atomics_extr_f32.glsl.h"
-        );
-      }
-    }
-    if (used.atomic_float64) {
-      TI_ASSERT_INFO(opengl_has_GL_NV_shader_atomic_int64, "GL_NV_shader_atomic_int64 not supported");
-      kernel_header += (
-#include "taichi/backends/opengl/shaders/atomics_data_f64.glsl.h"
-      );
-      if (used.global_temp) {
-        kernel_header += (
-#include "taichi/backends/opengl/shaders/atomics_gtmp_f64.glsl.h"
-        );
-      }
-      if (used.external_ptr) {
-        kernel_header += (
-#include "taichi/backends/opengl/shaders/atomics_extr_f64.glsl.h"
         );
       }
     }
@@ -274,13 +258,9 @@ class KernelGen : public IRVisitor {
         "= 1) in;",
         threads_per_group, num_groups_, num_threads_);
     std::string extensions = "";
-    if (opengl_has_GL_NV_shader_atomic_float) {
-      extensions += "#extension GL_NV_shader_atomic_float: enable\n";
-    }
-    if (opengl_has_GL_NV_shader_atomic_int64) {
-      extensions += "#extension GL_NV_shader_atomic_int64: enable\n";
-      extensions += "#extension GL_ARB_gpu_shader_int64: enable\n";
-    }
+#define PER_OPENGL_EXTENSION(x) if (opengl_has_##x) extensions += "#extension " #x ": enable\n";
+#include "taichi/inc/opengl_extension.inc.h"
+#undef PER_OPENGL_EXTENSION
     auto kernel_src_code =
         "#version 430 core\n" + extensions + "precision highp float;\n" +
         line_appender_header_.lines() + line_appender_.lines();
@@ -513,7 +493,10 @@ class KernelGen : public IRVisitor {
   void visit(AtomicOpStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
     auto dt = stmt->dest->element_type();
-    if (dt == DataType::i32 || (opengl_has_GL_NV_shader_atomic_float && dt == DataType::f32)) {
+    if (dt == DataType::i32
+        || (opengl_has_GL_NV_shader_atomic_int64 && dt == DataType::i64)
+        || (opengl_has_GL_NV_shader_atomic_float && dt == DataType::f32)
+        || (opengl_has_GL_NV_shader_atomic_float64 && dt == DataType::f64)) {
       emit("{} {} = {}(_{}_{}_[{} >> {}], {});",
            opengl_data_type_name(stmt->val->element_type()), stmt->short_name(),
            opengl_atomic_op_type_cap_name(stmt->op_type),
@@ -521,11 +504,8 @@ class KernelGen : public IRVisitor {
            stmt->dest->short_name(), opengl_data_address_shifter(dt),
            stmt->val->short_name());
     } else {
-      TI_ASSERT(dt == DataType::f32 || dt == DataType::f64);
-      if (dt == DataType::f64)
-        used.atomic_float64 = true;
-      else
-        used.atomic_float = true;
+      TI_ASSERT(dt == DataType::f32);
+      used.simulated_atomic_float = true;
       emit("{} {} = {}_{}_{}({} >> {}, {});",
            opengl_data_type_name(stmt->val->element_type()), stmt->short_name(),
            opengl_atomic_op_type_cap_name(stmt->op_type),

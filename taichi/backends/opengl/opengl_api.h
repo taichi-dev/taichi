@@ -20,8 +20,9 @@ void launch_glsl_kernel(GLProgram *program, int num_groups);
 void end_glsl_kernels(const std::vector<IOV> &iov);
 GLProgram *compile_glsl_program(std::string source);
 int opengl_get_threads_per_group();
-extern bool opengl_has_GL_NV_shader_atomic_float;
-extern bool opengl_has_GL_NV_shader_atomic_int64;
+#define PER_OPENGL_EXTENSION(x) extern bool opengl_has_##x;
+#include "taichi/inc/opengl_extension.inc.h"
+#undef PER_OPENGL_EXTENSION
 
 }  // namespace opengl
 

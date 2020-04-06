@@ -41,12 +41,11 @@ class DynamicLoader {
     load_dll(dll_path);
   }
 
-  template <typename T>
-  T load_function(const std::string &func_name) {
+  void *load_function(const std::string &func_name) {
 #ifdef WIN32
-    Func func = (Func)GetProcAddress(dll, func_name.c_str());
+    auto func = (void *)GetProcAddress(dll, func_name.c_str());
 #else
-    auto func = (T)dlsym(dll, func_name.c_str());
+    auto func = dlsym(dll, func_name.c_str());
     const char *dlsym_error = dlerror();
     if (dlsym_error) {
       TI_ERROR(std::string("Cannot load function: ") + dlsym_error);

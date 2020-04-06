@@ -12,8 +12,9 @@ CUDADriver::CUDADriver() {
 #else
   loader = std::make_unique<DynamicLoader>("nvcuda.dll");
 #endif
-  loader->load_function("cuMemcpyHtoD_v2", memcpy_host_to_device);
-  loader->load_function("cuMemcpyDtoH_v2", memcpy_device_to_host);
+  memcpy_host_to_device.set(loader->load_function("cuMemcpyHtoD_v2"));
+  memcpy_device_to_host.set(loader->load_function("cuMemcpyDtoH_v2"));
+  memfree.set(loader->load_function("cuMemFree_v2"));
   TI_INFO("CUDA driver loaded");
 }
 

@@ -2,6 +2,7 @@
 
 #if defined(TI_WITH_CUDA)
 #include "taichi/backends/cuda/cuda_utils.h"
+#include "taichi/backends/cuda/cuda_context.h"
 #endif
 #include "taichi/lang_util.h"
 #include "taichi/system/unified_allocator.h"

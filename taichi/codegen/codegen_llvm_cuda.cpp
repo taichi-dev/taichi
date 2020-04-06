@@ -94,9 +94,9 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       }
       for (int i = 0; i < (int)args.size(); i++) {
         if (args[i].is_nparray) {
-          check_cuda_error(
-              cuMemcpyDtoH(host_buffers[i], device_buffers[i], args[i].size));
-          check_cuda_error(cuMemFree(device_buffers[i]));
+          CUDADriver::get_instance().memcpy_device_to_host(
+              host_buffers[i], (void *)device_buffers[i], args[i].size);
+          CUDADriver::get_instance().memfree((void *)device_buffers[i]);
         }
       }
     };

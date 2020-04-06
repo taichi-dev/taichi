@@ -32,6 +32,7 @@ CUDADriver::CUDADriver() {
   memset.set(loader->load_function("cuMemsetD8_v2"));
   mem_advise.set(loader->load_function("cuMemAdvise"));
   mem_free.set(loader->load_function("cuMemFree_v2"));
+  device_get_attribute.set(loader->load_function("cuDeviceGetAttribute"));
 
   TI_INFO("CUDA driver loaded");
 }

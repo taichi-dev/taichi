@@ -3,9 +3,6 @@
 #include "taichi/system/unified_allocator.h"
 #define TI_RUNTIME_HOST
 #include "taichi/runtime/llvm/context.h"
-#ifdef TI_WITH_CUDA
-#include <cuda_runtime.h>
-#endif
 
 #include <mutex>
 #include <vector>
@@ -30,10 +27,6 @@ class MemoryPool {
   int processed_tail;
   bool use_unified_memory;
   Program *prog;
-
-#ifdef TI_WITH_CUDA
-  cudaStream_t cuda_stream;
-#endif
 
   MemRequestQueue *queue;
 

@@ -1,6 +1,7 @@
 #if defined(TI_WITH_CUDA)
 
 #define TI_RUNTIME_HOST
+#include "cuda_context.h"
 
 #include <unordered_map>
 
@@ -8,8 +9,6 @@
 #include "taichi/program/program.h"
 #include "taichi/system/threading.h"
 #include "taichi/backends/cuda/cuda_driver.h"
-
-#include "cuda_context.h"
 
 TLANG_NAMESPACE_BEGIN
 

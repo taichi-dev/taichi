@@ -1,7 +1,4 @@
 #include <memory>
-#if defined(TI_WITH_CUDA)
-#include <cuda.h>
-#endif
 
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/DynamicLibrary.h"

@@ -1,11 +1,11 @@
 #pragma once
 
-#include "cuda.h"
-
 #include "taichi/system/dynamic_loader.h"
 
 TLANG_NAMESPACE_BEGIN
 
+#if (0)
+// Turn on to check for comptability
 static_assert(sizeof(CUresult) == sizeof(uint32));
 static_assert(sizeof(CUmem_advise) == sizeof(uint32));
 static_assert(sizeof(CUdevice) == sizeof(uint32));
@@ -15,6 +15,18 @@ static_assert(sizeof(CUmodule) == sizeof(void *));
 static_assert(sizeof(CUstream) == sizeof(void *));
 static_assert(sizeof(CUevent) == sizeof(void *));
 static_assert(sizeof(CUjit_option) == sizeof(uint32));
+#endif
+
+
+// Driver constants from cuda.h
+
+constexpr uint32 CU_EVENT_DEFAULT = 0x0;
+constexpr uint32 CU_MEM_ATTACH_GLOBAL = 0x1;
+constexpr uint32 CU_MEM_ADVISE_SET_PREFERRED_LOCATION = 3;
+constexpr uint32 CU_DEVICE_ATTRIBUTE_MAX_BLOCK_DIM_X = 2;
+constexpr uint32 CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT = 16;
+constexpr uint32 CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR = 75;
+constexpr uint32 CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR = 76;
 
 std::string get_cuda_error_message(uint32 err);
 

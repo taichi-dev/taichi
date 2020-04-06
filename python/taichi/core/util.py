@@ -465,14 +465,9 @@ def _print_taichi_header():
     if dev_mode:
         repo = get_repo()
         try:
-            commit_hash = str(repo.active_branch.commit)
+            commit_hash = str(repo.head.commit)
         except:
-            try:
-                # We could be in detached HEAD
-                commit_hash = str(repo.heads.master.commit)
-            except:
-                # Give up...
-                pass
+            pass
 
     commit_hash = commit_hash[:8]
     header += f'commit {commit_hash}, '

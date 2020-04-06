@@ -5,6 +5,8 @@ import sys
 import ctypes
 from pathlib import Path
 from colorama import Fore, Back, Style
+from taichi.misc.settings import get_output_directory, get_build_directory, get_bin_directory, get_repo_directory, get_runtime_directory
+from taichi.misc.util import get_os_name, get_unique_task_id
 
 if sys.version_info[0] < 3 or sys.version_info[1] <= 5:
     print("\nPlease restart with Python 3.6+\n")
@@ -77,8 +79,7 @@ def get_core_shared_object():
 
 def get_repo():
     from git import Repo
-    import taichi as tc
-    repo = Repo(tc.get_repo_directory())
+    repo = Repo(get_repo_directory())
     return repo
 
 
@@ -214,9 +215,6 @@ def format(all=False, diff=None):
 
     print('Formatting done!')
 
-
-from taichi.misc.settings import get_output_directory, get_build_directory, get_bin_directory, get_repo_directory, get_runtime_directory
-from taichi.misc.util import get_os_name, get_unique_task_id
 
 create_sand_box_on_windows = True
 
@@ -441,11 +439,34 @@ def require_version(major, minor=None, patch=None):
 
 at_startup()
 
-device_string = 'cpu only' if not tc_core.with_cuda() else 'cuda {}'.format(
-    tc_core.cuda_version())
-print(
-    f'[Taichi] version {tc_core.get_version_string()}, {device_string}, commit {tc_core.get_commit_hash()[:8]}, python {sys.version_info[0]}.{sys.version_info[1]}.{sys.version_info[2]}'
-)
+
+def _print_taichi_header():
+    dev_mode = not is_release()
+
+    header = '[Taichi] '
+    if dev_mode:
+        header += '<dev mode>, '
+    else:
+        header += f'version {tc_core.get_version_string()}, '
+
+    device_string = 'cpu only' if not tc_core.with_cuda(
+    ) else 'cuda {}'.format(tc_core.cuda_version())
+    header += f'{device_string}, '
+
+    commit_hash = tc_core.get_commit_hash()
+    if dev_mode:
+        repo = get_repo()
+        commit_hash = str(repo.active_branch.commit)
+    commit_hash = commit_hash[:8]
+    header += f'commit {commit_hash}, '
+
+    py_ver = '.'.join(str(x) for x in sys.version_info[:3])
+    header += f'python {py_ver}'
+
+    print(header)
+
+
+_print_taichi_header()
 
 if not is_release():
     tc_core.set_core_trigger_gdb_when_crash(True)

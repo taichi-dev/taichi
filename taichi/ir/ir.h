@@ -17,7 +17,6 @@
 TLANG_NAMESPACE_BEGIN
 
 class DiffRange {
- public:
  private:
   bool related;
 
@@ -274,7 +273,7 @@ class Identifier {
   int id;
 
   // Multiple identifiers can share the same name but must have different id's
-  Identifier(std::string name_ = "") : name_(name_) {
+  Identifier(const std::string &name_ = "") : name_(name_) {
     id = id_counter++;
   }
 
@@ -786,7 +785,7 @@ class Stmt : public IRNode {
     irpass::typecheck(this);
   }
 
-  void set_tb(std::string tb) {
+  void set_tb(const std::string &tb) {
     this->tb = tb;
   }
 
@@ -848,12 +847,12 @@ class ExprGroup {
     exprs.push_back(b);
   }
 
-  ExprGroup(ExprGroup a, const Expr &b) {
+  ExprGroup(const ExprGroup &a, const Expr &b) {
     exprs = a.exprs;
     exprs.push_back(b);
   }
 
-  ExprGroup(const Expr &a, ExprGroup b) {
+  ExprGroup(const Expr &a, const ExprGroup &b) {
     exprs = b.exprs;
     exprs.insert(exprs.begin(), a);
   }
@@ -900,7 +899,7 @@ class FrontendAllocaStmt : public Stmt {
  public:
   Ident ident;
 
-  FrontendAllocaStmt(Ident lhs, DataType type) : ident(lhs) {
+  FrontendAllocaStmt(const Ident &lhs, DataType type) : ident(lhs) {
     ret_type = VectorType(1, type);
   }
 
@@ -1015,7 +1014,8 @@ class FrontendArgStoreStmt : public Stmt {
   int arg_id;
   Expr expr;
 
-  FrontendArgStoreStmt(int arg_id, Expr expr) : arg_id(arg_id), expr(expr) {
+  FrontendArgStoreStmt(int arg_id, const Expr &expr)
+      : arg_id(arg_id), expr(expr) {
   }
 
   // Arguments are considered global (nonlocal)
@@ -1315,7 +1315,8 @@ class GlobalVariableExpression : public Expression {
   bool is_primal;
   Expr adjoint;
 
-  GlobalVariableExpression(DataType dt, Ident ident) : ident(ident), dt(dt) {
+  GlobalVariableExpression(DataType dt, const Ident &ident)
+      : ident(ident), dt(dt) {
     snode = nullptr;
     has_ambient = false;
     is_primal = true;
@@ -1391,9 +1392,9 @@ class GlobalPtrExpression : public Expression {
 
 Expr select(const Expr &cond, const Expr &true_val, const Expr &false_val);
 
-Expr operator-(Expr expr);
+Expr operator-(const Expr &expr);
 
-Expr operator~(Expr expr);
+Expr operator~(const Expr &expr);
 
 // Value cast
 Expr cast(const Expr &input, DataType dt);
@@ -1493,7 +1494,7 @@ class Block : public IRNode {
     }
   }
 
-  Stmt *lookup_var(Ident ident) const;
+  Stmt *lookup_var(const Ident &ident) const;
 
   Stmt *mask();
 
@@ -1525,7 +1526,7 @@ class FrontendAtomicStmt : public Stmt {
   AtomicOpType op_type;
   Expr dest, val;
 
-  FrontendAtomicStmt(AtomicOpType op_type, Expr dest, Expr val);
+  FrontendAtomicStmt(AtomicOpType op_type, const Expr &dest, const Expr &val);
 
   DEFINE_ACCEPT
 };
@@ -1539,8 +1540,8 @@ class FrontendSNodeOpStmt : public Stmt {
 
   FrontendSNodeOpStmt(SNodeOpType op_type,
                       SNode *snode,
-                      ExprGroup indices,
-                      Expr val = Expr(nullptr))
+                      const ExprGroup &indices,
+                      const Expr &val = Expr(nullptr))
       : op_type(op_type), snode(snode), indices(indices.loaded()), val(val) {
     if (val.expr != nullptr) {
       TI_ASSERT(op_type == SNodeOpType::append);
@@ -1568,7 +1569,9 @@ class SNodeOpStmt : public Stmt {
     TI_STMT_REG_FIELDS;
   }
 
-  SNodeOpStmt(SNodeOpType op_type, SNode *snode, std::vector<Stmt *> indices)
+  SNodeOpStmt(SNodeOpType op_type,
+              SNode *snode,
+              const std::vector<Stmt *> &indices)
       : op_type(op_type), snode(snode), indices(indices) {
     ptr = nullptr;
     val = nullptr;
@@ -1593,7 +1596,8 @@ class FrontendAssertStmt : public Stmt {
   std::string text;
   Expr val;
 
-  FrontendAssertStmt(const std::string &text, Expr val) : text(text), val(val) {
+  FrontendAssertStmt(const std::string &text, const Expr &val)
+      : text(text), val(val) {
   }
 
   DEFINE_ACCEPT
@@ -1692,7 +1696,7 @@ class LocalLoadStmt : public Stmt {
  public:
   LaneAttribute<LocalAddress> ptr;
 
-  LocalLoadStmt(LaneAttribute<LocalAddress> ptr) : ptr(ptr) {
+  LocalLoadStmt(const LaneAttribute<LocalAddress> &ptr) : ptr(ptr) {
     TI_STMT_REG_FIELDS;
   }
 
@@ -1771,7 +1775,7 @@ class FrontendIfStmt : public Stmt {
   Expr condition;
   std::unique_ptr<Block> true_statements, false_statements;
 
-  FrontendIfStmt(Expr condition) : condition(load_if_ptr(condition)) {
+  FrontendIfStmt(const Expr &condition) : condition(load_if_ptr(condition)) {
   }
 
   bool is_container_statement() const override {
@@ -1786,7 +1790,7 @@ class FrontendPrintStmt : public Stmt {
   Expr expr;
   std::string str;
 
-  FrontendPrintStmt(Expr expr, std::string str)
+  FrontendPrintStmt(const Expr &expr, const std::string &str)
       : expr(load_if_ptr(expr)), str(str) {
   }
 
@@ -1798,7 +1802,7 @@ class FrontendEvalStmt : public Stmt {
   Expr expr;
   Expr eval_expr;
 
-  FrontendEvalStmt(Expr expr) : expr(load_if_ptr(expr)) {
+  FrontendEvalStmt(const Expr &expr) : expr(load_if_ptr(expr)) {
   }
 
   DEFINE_ACCEPT
@@ -1809,7 +1813,7 @@ class PrintStmt : public Stmt {
   Stmt *stmt;
   std::string str;
 
-  PrintStmt(Stmt *stmt, std::string str) : stmt(stmt), str(str) {
+  PrintStmt(Stmt *stmt, const std::string &str) : stmt(stmt), str(str) {
     TI_STMT_REG_FIELDS;
   }
 
@@ -1821,13 +1825,13 @@ class If {
  public:
   FrontendIfStmt *stmt;
 
-  If(Expr cond) {
+  If(const Expr &cond) {
     auto stmt_tmp = std::make_unique<FrontendIfStmt>(cond);
     stmt = stmt_tmp.get();
     current_ast_builder().insert(std::move(stmt_tmp));
   }
 
-  If(Expr cond, const std::function<void()> &func) : If(cond) {
+  If(const Expr &cond, const std::function<void()> &func) : If(cond) {
     Then(func);
   }
 
@@ -2082,7 +2086,7 @@ class FrontendWhileStmt : public Stmt {
   DEFINE_ACCEPT
 };
 
-void Print_(const Expr &a, std::string str);
+void Print_(const Expr &a, const std::string &str);
 
 class EvalExpression : public Expression {
  public:
@@ -2384,7 +2388,7 @@ class For {
     func();
   }
 
-  For(Expr s, Expr e, const std::function<void(Expr)> &func);
+  For(const Expr &s, const Expr &e, const std::function<void(Expr)> &func);
 };
 
 class While {

@@ -57,11 +57,11 @@ Expr select(const Expr &cond, const Expr &true_val, const Expr &false_val) {
                                          false_val);
 }
 
-Expr operator-(Expr expr) {
+Expr operator-(const Expr &expr) {
   return Expr::make<UnaryOpExpression>(UnaryOpType::neg, expr);
 }
 
-Expr operator~(Expr expr) {
+Expr operator~(const Expr &expr) {
   return Expr::make<UnaryOpExpression>(UnaryOpType::bit_not, expr);
 }
 
@@ -79,7 +79,7 @@ Expr bit_cast(const Expr &input, DataType dt) {
   return Expr(ret);
 }
 
-Expr Expr::operator[](ExprGroup indices) const {
+Expr Expr::operator[](const ExprGroup &indices) const {
   TI_ASSERT(is<GlobalVariableExpression>() || is<ExternalTensorExpression>());
   return Expr::make<GlobalPtrExpression>(*this, indices.loaded());
 }
@@ -145,7 +145,7 @@ Expr::Expr(float64 x) : Expr() {
   expr = std::make_shared<ConstExpression>(x);
 }
 
-Expr::Expr(Identifier id) : Expr() {
+Expr::Expr(const Identifier &id) : Expr() {
   expr = std::make_shared<IdExpression>(id);
 }
 
@@ -257,8 +257,8 @@ FrontendAssignStmt::FrontendAssignStmt(const Expr &lhs, const Expr &rhs)
 }
 
 FrontendAtomicStmt::FrontendAtomicStmt(AtomicOpType op_type,
-                                       Expr dest,
-                                       Expr val)
+                                       const Expr &dest,
+                                       const Expr &val)
     : op_type(op_type), dest(dest), val(val) {
 }
 
@@ -360,7 +360,7 @@ Expr Var(Expr x) {
   return var;
 }
 
-void Print_(const Expr &a, std::string str) {
+void Print_(const Expr &a, const std::string &str) {
   current_ast_builder().insert(std::make_unique<FrontendPrintStmt>(a, str));
 }
 
@@ -453,7 +453,7 @@ void Block::replace_with(Stmt *old_statement,
   replace_with(old_statement, std::move(vec));
 }
 
-Stmt *Block::lookup_var(taichi::lang::Ident ident) const {
+Stmt *Block::lookup_var(const taichi::lang::Ident &ident) const {
   auto ptr = local_var_alloca.find(ident);
   if (ptr != local_var_alloca.end()) {
     return ptr->second;
@@ -476,7 +476,7 @@ Stmt *Block::mask() {
   }
 }
 
-For::For(Expr s, Expr e, const std::function<void(Expr)> &func) {
+For::For(const Expr &s, const Expr &e, const std::function<void(Expr)> &func) {
   auto i = Expr(std::make_shared<IdExpression>());
   auto stmt_unique = std::make_unique<FrontendForStmt>(i, s, e);
   auto stmt = stmt_unique.get();

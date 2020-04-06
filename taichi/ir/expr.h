@@ -42,7 +42,7 @@ class Expr {
     atomic = o.atomic;
   }
 
-  Expr(Identifier id);
+  Expr(const Identifier &id);
 
   void set(const Expr &o) {
     expr = o.expr;
@@ -69,7 +69,7 @@ class Expr {
 
   Expr &operator=(const Expr &o);
 
-  Expr operator[](ExprGroup) const;
+  Expr operator[](const ExprGroup &indices) const;
 
   std::string serialize() const;
 

@@ -133,7 +133,8 @@ std::string convert(std::string new_name) {
     TI_ASSERT(std::isalpha(new_name[i]) || std::isdigit(new_name[i]) ||
               new_name[i] == '_' || new_name[i] == '.');
   }
-  TI_ASSERT(isalpha(new_name[0]) || new_name[0] == '_' || new_name[0] == '.');
+  if (!new_name.empty())
+    TI_ASSERT(isalpha(new_name[0]) || new_name[0] == '_' || new_name[0] == '.');
   return new_name;
 }
 

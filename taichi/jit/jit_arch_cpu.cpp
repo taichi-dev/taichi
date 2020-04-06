@@ -1,9 +1,8 @@
 // A LLVM JIT compiler for CPU archs wrapper
 
-#include <llvm/Support/TargetRegistry.h>
-#include <llvm/Target/TargetMachine.h>
+#include <memory>
+
 #include <llvm/Analysis/TargetTransformInfo.h>
-#include "llvm/Transforms/IPO/PassManagerBuilder.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ExecutionEngine/ExecutionEngine.h"
 #include "llvm/ExecutionEngine/JITSymbol.h"
@@ -17,26 +16,30 @@
 #include "llvm/ExecutionEngine/RuntimeDyld.h"
 #include "llvm/ExecutionEngine/SectionMemoryManager.h"
 #include "llvm/IR/DataLayout.h"
+#include "llvm/IR/Verifier.h"
 #include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/LegacyPassManager.h"
+#include "llvm/Support/TargetRegistry.h"
 #include "llvm/Support/DynamicLibrary.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Target/TargetMachine.h"
-#include "llvm/IR/LegacyPassManager.h"
+#include "llvm/Transforms/IPO/PassManagerBuilder.h"
 #include "llvm/Transforms/InstCombine/InstCombine.h"
 #include "llvm/Transforms/Scalar.h"
 #include "llvm/Transforms/Scalar/GVN.h"
 #include "llvm/Transforms/IPO.h"
-#include <memory>
+
 #include "taichi/lang_util.h"
 #include "taichi/program/program.h"
-#include "jit_session.h"
+#include "taichi/jit/jit_session.h"
 
 // Based on
 // https://llvm.org/docs/tutorial/BuildingAJIT3.html
-// (Note that
+
+// Note that
 // https://llvm.org/docs/tutorial/BuildingAJIT2.html
 // leads to a JIT that crashes all C++ exception after JIT session
-// destruction.)
+// destruction.
 
 TLANG_NAMESPACE_BEGIN
 
@@ -200,6 +203,10 @@ class JITSessionCPU : public JITSession {
   static void global_optimize_module_cpu(
       std::unique_ptr<llvm::Module> &module) {
     TI_AUTO_PROF
+    if (llvm::verifyModule(*module, &llvm::errs())) {
+      module->print(llvm::errs(), nullptr);
+      TI_ERROR("Module broken");
+    }
     auto JTMB = JITTargetMachineBuilder::detectHost();
     if (!JTMB) {
       TI_ERROR("Target machine creation failed.");

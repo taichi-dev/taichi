@@ -205,10 +205,7 @@ void SNode::set_kernel_args(Kernel *kernel, const std::vector<int> &I) {
   }
 }
 
-SNode::SNode() {
-  id = counter++;
-  node_type_name = get_node_type_name();
-  type = SNodeType::undefined;
+SNode::SNode() : SNode(0, SNodeType::undefined) {
 }
 
 SNode::SNode(int depth, SNodeType t) : depth(depth), type(t) {
@@ -227,7 +224,9 @@ SNode::SNode(int depth, SNodeType t) : depth(depth), type(t) {
   writer_kernel = nullptr;
 }
 
-SNode::~SNode() {
+SNode::SNode(const SNode &) {
+  TI_NOT_IMPLEMENTED;  // Copying an SNode is forbidden. However we need the
+                       // definition here to make pybind11 happy.
 }
 
 std::string SNode::get_node_type_name() const {

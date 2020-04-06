@@ -52,7 +52,7 @@ class Index {
 class SNode {
  public:
   // Children
-  std::vector<std::shared_ptr<SNode>> ch;
+  std::vector<std::unique_ptr<SNode>> ch;
 
   IndexExtractor extractors[taichi_max_num_indices];
   int num_active_indices{};
@@ -80,9 +80,13 @@ class SNode {
   Kernel *writer_kernel{};
   Expr expr;
 
-  std::string data_type_name() {
-    return lang::data_type_name(dt);
-  }
+  SNode();
+
+  SNode(int depth, SNodeType t);
+
+  SNode(const SNode &);
+
+  ~SNode() = default;
 
   std::string node_type_name;
   SNodeType type;
@@ -91,12 +95,6 @@ class SNode {
   std::string get_node_type_name() const;
 
   std::string get_node_type_name_hinted() const;
-
-  SNode();
-
-  SNode(int depth, SNodeType t);
-
-  ~SNode();
 
   SNode &insert_children(SNodeType t) {
     ch.push_back(create(depth + 1, t));
@@ -167,8 +165,8 @@ class SNode {
   }
 
   template <typename... Args>
-  static std::shared_ptr<SNode> create(Args &&... args) {
-    return std::make_shared<SNode>(std::forward<Args>(args)...);
+  static std::unique_ptr<SNode> create(Args &&... args) {
+    return std::make_unique<SNode>(std::forward<Args>(args)...);
   }
 
   std::string type_name() {
@@ -277,15 +275,15 @@ class SNodeAttributes {
   std::map<SNode *, SNodeAttribute> snode_llvm_attr;
 
  public:
-  SNodeAttribute &operator[](SNode *snode) {
-    return snode_llvm_attr[snode];
-  }
-
   SNodeAttribute &operator[](SNode &snode) {
     return snode_llvm_attr[&snode];
   }
 
-  SNodeAttribute &operator[](const std::shared_ptr<SNode> &snode) {
+  SNodeAttribute &operator[](SNode *snode) {
+    return snode_llvm_attr[snode];
+  }
+
+  SNodeAttribute &operator[](const std::unique_ptr<SNode> &snode) {
     return snode_llvm_attr[snode.get()];
   }
 };

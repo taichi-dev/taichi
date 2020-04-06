@@ -81,7 +81,7 @@ Please always prepend exactly one tag such as ``[Metal]`` to PR titles. For exam
 
 Existing tags:
 
-- ``[Metal], [OpenGL], [CPU], [CUDA], [AMDGPU]``: backends;
+- ``[Metal], [OpenGL], [CPU], [CUDA], [AMDGPU], [LLVM]``: backends;
 - ``[Lang]``: frontend language features, including syntax sugars;
 - ``[Std]``: standard library, e.g. `ti.Matrix` and `ti.Vector`;
 - ``[IR]``: intermediate representation;
@@ -95,6 +95,7 @@ Existing tags:
 - ``[CLI]``: commandline interfaces, e.g. the ``ti`` command;
 - ``[Doc]``: documentation;
 - ``[Example]``: examples under ``taichi/examples/``;
+- ``[Test]``: adding or improving tests under ``tests/``;
 - ``[Misc]``: something that doesn't belong to any category, such as version bump, reformatting;
 - **When introducing a new tag, please update the list here in the first PR with that tag, so that people can follow.**
 

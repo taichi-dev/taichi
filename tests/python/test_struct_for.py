@@ -227,3 +227,33 @@ def test_linear_k():
 
     for i in range(n):
         assert x[i] == i
+
+
+@ti.archs_support_sparse
+def test_struct_for_branching():
+    # Related issue: https://github.com/taichi-dev/taichi/issues/704
+    x = ti.var(dt=ti.i32)
+    y = ti.var(dt=ti.i32)
+    ti.root.pointer(ti.ij, 128 // 4).dense(ti.ij, 4).place(x, y)
+
+    @ti.kernel
+    def func1():
+        for i, j in x:
+            if x[i, j] & 2 == 2:
+                y[i, j] = 1
+
+    @ti.kernel
+    def func2():
+        for i, j in x:
+            if x[i, j] == 2 or x[i, j] == 4:
+                y[i, j] = 1
+
+    @ti.kernel
+    def func3():
+        for i, j in x:
+            if x[i, j] & 2 == 2 or x[i, j] & 4 == 4:
+                y[i, j] = 1
+
+    func1()
+    func2()
+    func3()

@@ -44,6 +44,7 @@ struct CompiledStructs {
   //     SNodeMeta snode_metas[max_snodes];
   //     SNodeExtractors snode_extractors[max_snodes];
   //     ListManager snode_lists[max_snodes];
+  //     uint32_t rand_seeds[kNumRandSeeds];
   // }
   // However, |runtime_size| is usually greater than sizeof(Runtime). That is
   // because the memory is divided into two parts. The first part of

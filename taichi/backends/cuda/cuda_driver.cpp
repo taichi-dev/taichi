@@ -25,8 +25,11 @@ CUDADriver::CUDADriver() {
   loader->load_function("cuGetErrorName", get_error_name);
   loader->load_function("cuGetErrorString", get_error_string);
 
-  memcpy_host_to_device.set(loader->load_function("cuMemcpyHtoD_v2"));
-  memcpy_device_to_host.set(loader->load_function("cuMemcpyDtoH_v2"));
+#define PER_CUDA_FUNCTION(name, symbol_name, ...) \
+  name.set(loader->load_function(#symbol_name));
+#include "taichi/backends/cuda/cuda_driver_functions.inc.h"
+#undef PER_CUDA_FUNCTION
+
   malloc.set(loader->load_function("cuMemAlloc_v2"));
   malloc_managed.set(loader->load_function("cuMemAllocManaged"));
   memset.set(loader->load_function("cuMemsetD8_v2"));

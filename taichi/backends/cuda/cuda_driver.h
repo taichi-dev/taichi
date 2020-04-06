@@ -50,8 +50,12 @@ class CUDADriver {
   static std::unique_ptr<CUDADriver> instance;
 
  public:
-  CUDADriverFunction<void *, void *, std::size_t> memcpy_host_to_device;
-  CUDADriverFunction<void *, void *, std::size_t> memcpy_device_to_host;
+
+#define PER_CUDA_FUNCTION(name, symbol_name, ...) \
+  CUDADriverFunction<__VA_ARGS__> name;
+#include "taichi/backends/cuda/cuda_driver_functions.inc.h"
+#undef PER_CUDA_FUNCTION
+
   CUDADriverFunction<void *, std::size_t> malloc;
   CUDADriverFunction<void *, std::size_t, uint32> malloc_managed;
   CUDADriverFunction<void *, uint8, std::size_t> memset;

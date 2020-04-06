@@ -208,7 +208,7 @@ class IRPrinter : public IRVisitor {
 
   void visit(ContinueStmt *stmt) override {
     if (stmt->scope) {
-      print("{} continue (as_return={})", stmt->name(), stmt->as_return());
+      print("{} continue (scope={})", stmt->name(), stmt->name());
     } else {
       print("{} continue", stmt->name());
     }

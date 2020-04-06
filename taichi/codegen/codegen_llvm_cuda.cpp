@@ -10,11 +10,6 @@
 #include "taichi/codegen/codegen_cuda.h"
 #include "taichi/codegen/codegen_llvm.h"
 
-#ifdef TI_WITH_CUDA
-#include <cuda.h>
-#include "taichi/backends/cuda/cuda_utils.h"
-#endif  // TI_WITH_CUDA
-
 TLANG_NAMESPACE_BEGIN
 
 using namespace llvm;

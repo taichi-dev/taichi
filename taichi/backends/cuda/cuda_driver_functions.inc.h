@@ -22,5 +22,8 @@ PER_CUDA_FUNCTION(launch_kernel, cuLaunchKernel, void *, uint32, uint32, uint32,
                   uint32, uint32, uint32, uint32, void *, void **, void **);
 PER_CUDA_FUNCTION(module_load_data_ex, cuModuleLoadDataEx, void **, const char *,
                   uint32, uint32 *, void **)
+PER_CUDA_FUNCTION(event_create, cuEventCreate, void **, uint32)
+PER_CUDA_FUNCTION(event_record, cuEventRecord, void *, uint32)
+PER_CUDA_FUNCTION(event_elapsed_time, cuEventElapsedTime, float *, void *, void *);
 
 // clang-format on

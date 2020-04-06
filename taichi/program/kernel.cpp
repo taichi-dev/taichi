@@ -5,10 +5,6 @@
 #include "taichi/program/async_engine.h"
 #include "taichi/codegen/codegen.h"
 
-#if defined(TI_WITH_CUDA)
-#include "taichi/backends/cuda/cuda_utils.h"
-#endif
-
 TLANG_NAMESPACE_BEGIN
 
 Kernel::Kernel(Program &program,

@@ -1,10 +1,7 @@
 #include "profiler.h"
 
 #include "taichi/system/timer.h"
-
-#if defined(TI_WITH_CUDA)
-#include <cuda.h>
-#endif
+#include "taichi/backends/cuda/cuda_driver.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -84,18 +81,18 @@ class DefaultProfiler : public ProfilerBase {
 class CUDAProfiler : public ProfilerBase {
  public:
 #if defined(TI_WITH_CUDA)
-  CUevent current_stop;
+  void *current_stop;
 
-  std::map<std::string, std::vector<std::pair<CUevent, CUevent>>>
+  std::map<std::string, std::vector<std::pair<void *, void *>>>
       outstanding_events;
 #endif
 
   void start(const std::string &kernel_name) override {
 #if defined(TI_WITH_CUDA)
-    CUevent start, stop;
-    cuEventCreate(&start, CU_EVENT_DEFAULT);
-    cuEventCreate(&stop, CU_EVENT_DEFAULT);
-    cuEventRecord(start, (CUstream)0);
+    void *start, *stop;
+    CUDADriver::get_instance().event_create(&start, CU_EVENT_DEFAULT);
+    CUDADriver::get_instance().event_create(&stop, CU_EVENT_DEFAULT);
+    CUDADriver::get_instance().event_record(start, 0);
     outstanding_events[kernel_name].push_back(std::make_pair(start, stop));
     current_stop = stop;
 #else
@@ -105,7 +102,7 @@ class CUDAProfiler : public ProfilerBase {
 
   virtual void stop() override {
 #if defined(TI_WITH_CUDA)
-    cuEventRecord(current_stop, (CUstream)0);
+    CUDADriver::get_instance().event_record(current_stop, 0);
 #else
     printf("CUDA Profiler not implemented;\n");
 #endif
@@ -117,13 +114,13 @@ class CUDAProfiler : public ProfilerBase {
 
   void sync() override {
 #if defined(TI_WITH_CUDA)
-    cuStreamSynchronize((CUstream)0);
+    CUDADriver::get_instance().stream_synchronize(0);
     for (auto &map_elem : outstanding_events) {
       auto &list = map_elem.second;
       for (auto &item : list) {
         auto start = item.first, stop = item.second;
         float ms;
-        cuEventElapsedTime(&ms, start, stop);
+        CUDADriver::get_instance().event_elapsed_time(&ms, start, stop);
         auto it = std::find_if(
             records.begin(), records.end(),
             [&](ProfileRecord &r) { return r.name == map_elem.first; });

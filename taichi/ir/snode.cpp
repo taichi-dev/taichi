@@ -1,10 +1,8 @@
 #include "snode.h"
-#include "ir.h"
-#include "frontend.h"
 
-#if defined(TI_WITH_CUDA)
-#include <cuda.h>
-#endif
+#include "taichi/ir/ir.h"
+#include "taichi/ir/frontend.h"
+#include "taichi/backends/cuda/cuda_driver.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -124,8 +122,8 @@ uint64 SNode::fetch_reader_result() {
       !get_current_program().config.use_unified_memory) {
     // TODO: refactor
 #if defined(TI_WITH_CUDA)
-    cuMemcpyDtoH(&ret, (CUdeviceptr)get_current_program().result_buffer,
-                 sizeof(uint64));
+    CUDADriver::get_instance().memcpy_host_to_device(
+        &ret, get_current_program().result_buffer, sizeof(uint64));
 #else
     TI_NOT_IMPLEMENTED;
 #endif

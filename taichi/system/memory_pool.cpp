@@ -1,7 +1,5 @@
 #include "memory_pool.h"
 #include "taichi/system/timer.h"
-#include "taichi/backends/cuda/cuda_utils.h"
-
 #include "taichi/program/program.h"
 
 TLANG_NAMESPACE_BEGIN

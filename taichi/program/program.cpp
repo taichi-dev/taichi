@@ -5,6 +5,7 @@
 #include "taichi/common/task.h"
 #include "taichi/backends/metal/api.h"
 #include "taichi/backends/opengl/opengl_api.h"
+#include "taichi/backends/cuda/cuda_driver.h"
 #include "taichi/codegen/codegen_cuda.h"
 #include "taichi/codegen/codegen_metal.h"
 #include "taichi/codegen/codegen_opengl.h"
@@ -300,7 +301,7 @@ void Program::synchronize() {
   if (!sync) {
     if (config.arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
-      cuStreamSynchronize((CUstream)0);
+      CUDADriver::get_instance().stream_synchronize(0);
 #else
       TI_ERROR("No CUDA support");
 #endif
@@ -462,7 +463,7 @@ void Program::finalize() {
   memory_pool->terminate();
 #if defined(TI_WITH_CUDA)
   if (preallocated_device_buffer != nullptr)
-    cuMemFree((CUdeviceptr)preallocated_device_buffer);
+    CUDADriver::get_instance().mem_free(preallocated_device_buffer);
 #endif
   finalized = true;
   num_instances -= 1;

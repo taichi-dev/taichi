@@ -13,6 +13,7 @@ static_assert(sizeof(CUdevice_attribute) == sizeof(uint32));
 static_assert(sizeof(CUfunction) == sizeof(void *));
 static_assert(sizeof(CUmodule) == sizeof(void *));
 static_assert(sizeof(CUstream) == sizeof(void *));
+static_assert(sizeof(CUevent) == sizeof(void *));
 static_assert(sizeof(CUjit_option) == sizeof(uint32));
 
 std::string get_cuda_error_message(uint32 err);

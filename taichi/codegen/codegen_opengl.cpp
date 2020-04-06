@@ -43,17 +43,19 @@ struct CompiledKernel : public CompiledGLSL {
   UsedFeature used;
   std::string kernel_name;
 
-  // disscussion: https://github.com/taichi-dev/taichi/pull/696#issuecomment-609332527
-  CompiledKernel(CompiledKernel&&) = default;
-  CompiledKernel& operator=(CompiledKernel&&) = default;
+  // disscussion:
+  // https://github.com/taichi-dev/taichi/pull/696#issuecomment-609332527
+  CompiledKernel(CompiledKernel &&) = default;
+  CompiledKernel &operator=(CompiledKernel &&) = default;
 
   explicit CompiledKernel(const std::string &kernel_name_,
                           const std::string &kernel_source_code,
                           int num_groups_,
                           UsedFeature used_)
-      : CompiledGLSL(kernel_source_code)
-      , num_groups(num_groups_), used(used_), kernel_name(kernel_name_)
-  {
+      : CompiledGLSL(kernel_source_code),
+        num_groups(num_groups_),
+        used(used_),
+        kernel_name(kernel_name_) {
 #ifdef _GLSL_DEBUG
     TI_INFO("source of kernel [{}] * {}:\n{}", kernel_name, num_groups,
             kernel_source_code);
@@ -75,9 +77,10 @@ struct CompiledProgram {
   std::map<int, size_t> ext_arr_map;
   size_t gtmp_size;
 
-  // disscussion: https://github.com/taichi-dev/taichi/pull/696#issuecomment-609332527
-  CompiledProgram(CompiledProgram&&) = default;
-  CompiledProgram& operator=(CompiledProgram&&) = default;
+  // disscussion:
+  // https://github.com/taichi-dev/taichi/pull/696#issuecomment-609332527
+  CompiledProgram(CompiledProgram &&) = default;
+  CompiledProgram &operator=(CompiledProgram &&) = default;
 
   CompiledProgram(Kernel *kernel, size_t gtmp_size) : gtmp_size(gtmp_size) {
     arg_count = kernel->args.size();
@@ -856,8 +859,8 @@ void OpenglCodeGen::lower() {  // {{{
 #endif
 }  // }}}
 
-FunctionType make_launch_function(std::unique_ptr<CompiledProgram> p, GLSLLauncher *launcher)
-{
+FunctionType make_launch_function(std::unique_ptr<CompiledProgram> p,
+                                  GLSLLauncher *launcher) {
   static std::vector<std::unique_ptr<CompiledProgram>> no_gc;
   CompiledProgram *ptr = p.get();
   no_gc.push_back(std::move(p));

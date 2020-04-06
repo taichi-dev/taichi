@@ -170,7 +170,9 @@ struct GLSSBO {
     glBindBufferRange(GL_SHADER_STORAGE_BUFFER, index, id_, offset, size);
   }
 
-  void *map(size_t offset, size_t length, GLbitfield access = GL_MAP_READ_BIT) const {
+  void *map(size_t offset,
+            size_t length,
+            GLbitfield access = GL_MAP_READ_BIT) const {
     // map GPU memory to CPU address space, offset within SSBO data
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, id_);
     return glMapBufferRange(GL_SHADER_STORAGE_BUFFER, offset, length, access);
@@ -226,8 +228,7 @@ void initialize_opengl() {
 }
 
 CompiledGLSL::CompiledGLSL(std::string source)
-  : glsl(std::make_unique<GLProgram>(GLShader(source)))
-{
+    : glsl(std::make_unique<GLProgram>(GLShader(source))) {
   glsl->link();
 }
 
@@ -248,15 +249,17 @@ GLSLLauncher::GLSLLauncher(size_t size) {
   impl->root_ssbo->bind_index(0);
 }
 
-GLSLLaunchGuard::GLSLLaunchGuard(GLSLLauncherImpl *impl, const std::vector<IOV> &iov)
-  : impl(impl), iov(iov) {
+GLSLLaunchGuard::GLSLLaunchGuard(GLSLLauncherImpl *impl,
+                                 const std::vector<IOV> &iov)
+    : impl(impl), iov(iov) {
   impl->ssbo = std::vector<GLSSBO>(iov.size());
 
   for (int i = 0; i < impl->ssbo.size(); i++) {
     if (!iov[i].size)
       continue;
     impl->ssbo[i].bind_index(i + 1);
-    impl->ssbo[i].bind_data(iov[i].base, iov[i].size, GL_DYNAMIC_READ);  // input
+    impl->ssbo[i].bind_data(iov[i].base, iov[i].size,
+                            GL_DYNAMIC_READ);  // input
   }
 }
 
@@ -316,20 +319,18 @@ bool is_opengl_api_available() {
 void initialize_opengl(){TI_NOT_IMPLEMENTED}
 
 CompiledGLSL::CompiledGLSL(std::string source)
-  : glsl(std::make_unique<GLProgram>()) {
+    : glsl(std::make_unique<GLProgram>()) {
   TI_NOT_IMPLEMENTED
 }
 
-int opengl_get_threads_per_group() {
-  TI_NOT_IMPLEMENTED
-}
+int opengl_get_threads_per_group(){TI_NOT_IMPLEMENTED}
 
-GLSLLaunchGuard::GLSLLaunchGuard(GLSLLauncherImpl *impl, const std::vector<IOV> &iov)
-  : impl(impl), iov(iov) {
-  TI_NOT_IMPLEMENTED
-}
+GLSLLaunchGuard::GLSLLaunchGuard(GLSLLauncherImpl *impl,
+                                 const std::vector<IOV> &iov)
+    : impl(impl),
+      iov(iov){TI_NOT_IMPLEMENTED}
 
-GLSLLaunchGuard::~GLSLLaunchGuard() {
+      GLSLLaunchGuard::~GLSLLaunchGuard() {
   TI_NOT_IMPLEMENTED
 }
 #endif

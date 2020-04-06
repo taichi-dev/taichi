@@ -62,7 +62,7 @@ class DynamicLoader {
   void close_dll() {
     TI_ERROR_IF(!loaded(), "DLL not opened.");
 #ifdef WIN32
-	FreeLibrary(dll);
+    FreeLibrary(dll);
 #else
     dlclose(dll);
 #endif

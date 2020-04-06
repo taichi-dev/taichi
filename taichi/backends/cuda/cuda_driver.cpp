@@ -37,7 +37,7 @@ CUDADriver::CUDADriver() {
 CUDADriver &CUDADriver::get_instance_without_context() {
   // Thread safety guaranteed by C++ compiler
   // Note this is never deleted until the process finishes
-  static CUDADriver* instance = new CUDADriver();
+  static CUDADriver *instance = new CUDADriver();
   return *instance;
 }
 

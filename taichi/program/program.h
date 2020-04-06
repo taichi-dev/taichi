@@ -11,6 +11,7 @@
 #include "taichi/lang_util.h"
 #include "taichi/llvm/llvm_context.h"
 #include "taichi/backends/metal/kernel_manager.h"
+#include "taichi/backends/opengl/opengl_kernel_launcher.h"
 #include "taichi/backends/opengl/opengl_kernel_util.h"
 #include "taichi/program/kernel.h"
 #include "taichi/program/profiler.h"
@@ -190,6 +191,7 @@ class Program {
   std::unique_ptr<metal::KernelManager> metal_kernel_mgr_;
   // OpenGL related data structures
   std::optional<opengl::StructCompiledResult> opengl_struct_compiled_;
+  std::unique_ptr<opengl::GLSLLauncher> opengl_kernel_launcher_;
 };
 
 TLANG_NAMESPACE_END

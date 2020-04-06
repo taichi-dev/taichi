@@ -38,38 +38,49 @@ struct UsedFeature {
   bool global_temp{false};
 };
 
-struct CompiledKernel {
-  GLProgram *glsl;
+struct CompiledKernel : public CompiledGLSL {
   int num_groups;
   UsedFeature used;
   std::string kernel_name;
+
+  // disscussion:
+  // https://github.com/taichi-dev/taichi/pull/696#issuecomment-609332527
+  CompiledKernel(CompiledKernel &&) = default;
+  CompiledKernel &operator=(CompiledKernel &&) = default;
 
   explicit CompiledKernel(const std::string &kernel_name_,
                           const std::string &kernel_source_code,
                           int num_groups_,
                           UsedFeature used_)
-      : num_groups(num_groups_), used(used_), kernel_name(kernel_name_) {
+      : CompiledGLSL(kernel_source_code),
+        num_groups(num_groups_),
+        used(used_),
+        kernel_name(kernel_name_) {
 #ifdef _GLSL_DEBUG
     TI_INFO("source of kernel [{}] * {}:\n{}", kernel_name, num_groups,
             kernel_source_code);
     std::ofstream(fmt::format("/tmp/{}.comp", kernel_name))
         .write(kernel_source_code.c_str(), kernel_source_code.size());
 #endif
-    this->glsl = compile_glsl_program(kernel_source_code);
   }
 
   void launch() const {
     // TI_PERF();
-    launch_glsl_kernel(glsl, num_groups);
+    this->launch_glsl(num_groups);
     // TI_PERF(kernel_name.c_str(), kernel_name.size(), 107);
   }
 };
 
 struct CompiledProgram {
-  std::vector<CompiledKernel> kernels;
+  std::vector<std::unique_ptr<CompiledKernel>> kernels;
   int arg_count;
   std::map<int, size_t> ext_arr_map;
   size_t gtmp_size;
+
+  // disscussion:
+  // https://github.com/taichi-dev/taichi/pull/696#issuecomment-609332527
+  CompiledProgram(CompiledProgram &&) = default;
+  CompiledProgram &operator=(CompiledProgram &&) = default;
 
   CompiledProgram(Kernel *kernel, size_t gtmp_size) : gtmp_size(gtmp_size) {
     arg_count = kernel->args.size();
@@ -80,7 +91,7 @@ struct CompiledProgram {
     }
   }
 
-  void launch(Context &ctx) const {
+  void launch(Context &ctx, GLSLLauncher *launcher) const {
     std::vector<IOV> iov;
     iov.push_back(IOV{ctx.args, arg_count * sizeof(uint64_t)});
     auto gtmp_arr = std::vector<char>(gtmp_size);
@@ -118,9 +129,8 @@ struct CompiledProgram {
       }
     }
     for (const auto &ker : kernels) {
-      begin_glsl_kernels(iov);
-      ker.launch();
-      end_glsl_kernels(iov);
+      auto guard = launcher->create_launch_guard(iov);
+      ker->launch();
     }
     if (ext_arr_map.size() > 1) {
       void *baseptr = base_arr->data();
@@ -144,7 +154,7 @@ class KernelGen : public IRVisitor {
             StructCompiledResult *struct_compiled,
             size_t gtmp_size)
       : kernel(kernel),
-        compiled_program_(kernel, gtmp_size),
+        compiled_program_(std::make_unique<CompiledProgram>(kernel, gtmp_size)),
         struct_compiled_(struct_compiled),
         kernel_name_(kernel_name),
         glsl_kernel_prefix_(kernel_name) {
@@ -154,7 +164,7 @@ class KernelGen : public IRVisitor {
 
  private:  // {{{
   LineAppender line_appender_, line_appender_header_;
-  CompiledProgram compiled_program_;
+  std::unique_ptr<CompiledProgram> compiled_program_;
   UsedFeature used;
 
   bool is_top_level_{true};
@@ -272,7 +282,7 @@ class KernelGen : public IRVisitor {
     auto kernel_src_code =
         "#version 430 core\n" + extensions + "precision highp float;\n" +
         line_appender_header_.lines() + line_appender_.lines();
-    compiled_program_.kernels.push_back(CompiledKernel(
+    compiled_program_->kernels.push_back(std::make_unique<CompiledKernel>(
         std::move(glsl_kernel_name_), kernel_src_code, num_groups_, used));
     line_appender_header_.clear_all();
     line_appender_.clear_all();
@@ -717,8 +727,8 @@ class KernelGen : public IRVisitor {
     return kernel;
   }
 
-  CompiledProgram get_compiled_program() const {
-    return compiled_program_;
+  std::unique_ptr<CompiledProgram> get_compiled_program() {
+    return std::move(compiled_program_);
   }
 
   void run(const SNode &root_snode) {
@@ -849,6 +859,14 @@ void OpenglCodeGen::lower() {  // {{{
 #endif
 }  // }}}
 
+FunctionType make_launch_function(std::unique_ptr<CompiledProgram> p,
+                                  GLSLLauncher *launcher) {
+  static std::vector<std::unique_ptr<CompiledProgram>> no_gc;
+  CompiledProgram *ptr = p.get();
+  no_gc.push_back(std::move(p));
+  return [ptr, launcher](Context &ctx) { ptr->launch(ctx, launcher); };
+}
+
 FunctionType OpenglCodeGen::gen(void) {
 #if defined(TI_WITH_OPENGL)
   KernelGen codegen(kernel_, kernel_name_, struct_compiled_,
@@ -856,7 +874,7 @@ FunctionType OpenglCodeGen::gen(void) {
   codegen.run(*prog_->snode_root);
   auto compiled = codegen.get_compiled_program();
 
-  return [compiled](Context &ctx) { compiled.launch(ctx); };
+  return make_launch_function(std::move(compiled), kernel_launcher_);
 #else
   TI_NOT_IMPLEMENTED
 #endif

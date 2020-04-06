@@ -4,6 +4,12 @@
 
 TLANG_NAMESPACE_BEGIN
 
+static_assert(sizeof(CUresult) == sizeof(uint32));
+static_assert(sizeof(CUmem_advise) == sizeof(uint32));
+static_assert(sizeof(CUdevice) == sizeof(uint32));
+
+std::string get_cuda_error_message(uint32 err);
+
 template <typename... Args>
 class CUDADriverFunction {
  private:
@@ -19,17 +25,20 @@ class CUDADriverFunction {
     function = (func_type *)func_ptr;
   }
 
-  void operator()(Args... args) {
+  uint32 call(Args... args) {
     TI_ASSERT(function != nullptr);
-    // function(args...);
-    auto ret = (CUresult)function(args...);
-    if (ret) {
-      const char *err_name_ptr;
-      const char *err_string_ptr;
-      cuGetErrorName(ret, &err_name_ptr);
-      cuGetErrorString(ret, &err_string_ptr);
-      TI_ERROR("CUDA Error {}: {}", err_name_ptr, err_string_ptr);
-    }
+    return (uint32)function(args...);
+  }
+
+  void call_with_warning(Args... args) {
+    auto err = call(args...);
+    TI_WARN_IF(err, get_cuda_error_message(err));
+  }
+
+  // Note: CUDA driver API passes everything as value
+  void operator()(Args... args) {
+    auto err = call(args...);
+    TI_ERROR_IF(err, get_cuda_error_message(err));
   }
 };
 
@@ -42,8 +51,12 @@ class CUDADriver {
  public:
   CUDADriverFunction<void *, void *, std::size_t> memcpy_host_to_device;
   CUDADriverFunction<void *, void *, std::size_t> memcpy_device_to_host;
-  CUDADriverFunction<void *, std::size_t, std::uint32_t> malloc_managed;
-  CUDADriverFunction<void *> memfree;
+  CUDADriverFunction<void *, std::size_t, uint32> malloc_managed;
+  CUDADriverFunction<void *> mem_free;
+  CUDADriverFunction<void *, std::size_t, uint32, uint32> mem_advise;
+
+  void (*get_error_name)(uint32, const char **);
+  void (*get_error_string)(uint32, const char **);
 
   CUDADriver();
 

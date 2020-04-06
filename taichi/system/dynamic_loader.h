@@ -57,7 +57,7 @@ class DynamicLoader {
 
   template <typename T>
   void load_function(const std::string &func_name, T &f) {
-    f = load_function<T>(func_name);
+    f = (T)load_function(func_name);
   }
 
   void close_dll() {

@@ -96,7 +96,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
         if (args[i].is_nparray) {
           CUDADriver::get_instance().memcpy_device_to_host(
               host_buffers[i], (void *)device_buffers[i], args[i].size);
-          CUDADriver::get_instance().memfree((void *)device_buffers[i]);
+          CUDADriver::get_instance().mem_free((void *)device_buffers[i]);
         }
       }
     };

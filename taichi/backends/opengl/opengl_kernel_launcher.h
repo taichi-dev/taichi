@@ -25,6 +25,6 @@ struct GLSLLauncher {
   }
 };
 
-}
+}  // namespace opengl
 
 TLANG_NAMESPACE_END

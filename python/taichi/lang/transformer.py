@@ -534,9 +534,7 @@ if 1:
         return self.parse_stmt('ti.core.insert_break_stmt()')
 
     def visit_Continue(self, node):
-        raise TaichiSyntaxError(
-            '"continue" is not yet supported in Taichi kernels. Please walk around by changing loop conditions.'
-        )
+        return self.parse_stmt('ti.core.insert_continue_stmt()')
 
     def visit_Call(self, node):
         if not (isinstance(node.func, ast.Attribute)

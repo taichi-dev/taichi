@@ -681,6 +681,14 @@ class KernelGen : public IRVisitor {
     emit("if ({} == 0) break;", stmt->cond->short_name());
   }
 
+  void visit(ContinueStmt *stmt) override {
+    if (stmt->as_return()) {
+      emit("return;");
+    } else {
+      emit("continue;");
+    }
+  }
+
   void visit(WhileStmt *stmt) override {
     emit("while (true) {{");
     stmt->body->accept(this);

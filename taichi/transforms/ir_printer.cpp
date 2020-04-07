@@ -53,6 +53,10 @@ class IRPrinter : public IRVisitor {
     print("break");
   }
 
+  void visit(FrontendContinueStmt *stmt) override {
+    print("continue");
+  }
+
   void visit(FrontendAssignStmt *assign) override {
     print("{} = {}", assign->lhs->serialize(), assign->rhs->serialize());
   }
@@ -200,6 +204,14 @@ class IRPrinter : public IRVisitor {
 
   void visit(WhileControlStmt *stmt) override {
     print("while control {}, {}", stmt->mask->name(), stmt->cond->name());
+  }
+
+  void visit(ContinueStmt *stmt) override {
+    if (stmt->scope) {
+      print("{} continue (scope={})", stmt->name(), stmt->name());
+    } else {
+      print("{} continue", stmt->name());
+    }
   }
 
   void visit(FuncCallStmt *stmt) override {

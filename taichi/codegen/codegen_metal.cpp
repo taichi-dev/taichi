@@ -466,6 +466,14 @@ class KernelCodegen : public IRVisitor {
     emit("if (!{}) break;", stmt->cond->raw_name());
   }
 
+  void visit(ContinueStmt *stmt) override {
+    if (stmt->as_return()) {
+      emit("return;");
+    } else {
+      emit("continue;");
+    }
+  }
+
   void visit(WhileStmt *stmt) override {
     emit("while (true) {{");
     stmt->body->accept(this);

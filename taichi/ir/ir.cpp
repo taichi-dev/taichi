@@ -7,6 +7,7 @@
 #include <unordered_map>
 
 #include "taichi/ir/frontend.h"
+#include "taichi/ir/statements.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -544,6 +545,16 @@ std::string OffloadedStmt::task_type_name(TaskType tt) {
   };
 #undef REGISTER_NAME
   return m.find(tt)->second;
+}
+
+bool ContinueStmt::as_return() const {
+  TI_ASSERT(scope != nullptr);
+  if (auto *offl = scope->cast<OffloadedStmt>(); offl) {
+    TI_ASSERT(offl->task_type == OffloadedStmt::TaskType::range_for ||
+              offl->task_type == OffloadedStmt::TaskType::struct_for);
+    return true;
+  }
+  return false;
 }
 
 TLANG_NAMESPACE_END

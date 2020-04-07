@@ -31,8 +31,7 @@ void OffloadedTask::compile() {
   func = (task_fp_type)kernel_symbol;
 }
 
-// FunctionCreationGuard
-
+// TODO(k-ye): Hide FunctionCreationGuard inside cpp file
 FunctionCreationGuard::FunctionCreationGuard(
     CodeGenLLVM *mb,
     std::vector<llvm::Type *> arguments)
@@ -74,6 +73,45 @@ FunctionCreationGuard::~FunctionCreationGuard() {
     mb->entry_block = old_entry;
   }
 }
+
+namespace {
+
+class CodeGenStmtGuard {
+ public:
+  using Getter = std::function<llvm::BasicBlock *(void)>;
+  using Setter = std::function<void(llvm::BasicBlock *)>;
+
+  explicit CodeGenStmtGuard(Getter getter, Setter setter)
+      : saved_stmt_(getter()), setter_(std::move(setter)) {
+  }
+
+  ~CodeGenStmtGuard() {
+    setter_(saved_stmt_);
+  }
+
+  CodeGenStmtGuard(CodeGenStmtGuard &&) = default;
+  CodeGenStmtGuard &operator=(CodeGenStmtGuard &&) = default;
+
+ private:
+  llvm::BasicBlock *saved_stmt_;
+  Setter setter_;
+};
+
+CodeGenStmtGuard make_loop_reentry_guard(CodeGenLLVM *cg) {
+  return CodeGenStmtGuard([cg]() { return cg->current_loop_reentry; },
+                          [cg](llvm::BasicBlock *saved_stmt) {
+                            cg->current_loop_reentry = saved_stmt;
+                          });
+}
+
+CodeGenStmtGuard make_while_after_loop_guard(CodeGenLLVM *cg) {
+  return CodeGenStmtGuard([cg]() { return cg->current_while_after_loop; },
+                          [cg](llvm::BasicBlock *saved_stmt) {
+                            cg->current_while_after_loop = saved_stmt;
+                          });
+}
+
+}  // namespace
 
 // CodeGenLLVM
 
@@ -664,29 +702,44 @@ void CodeGenLLVM::visit(ConstStmt *stmt) {
 void CodeGenLLVM::visit(WhileControlStmt *stmt) {
   BasicBlock *after_break =
       BasicBlock::Create(*llvm_context, "after_break", func);
-  TI_ASSERT(while_after_loop);
+  TI_ASSERT(current_while_after_loop);
   auto cond =
       builder->CreateICmpEQ(llvm_val[stmt->cond], tlctx->get_constant(0));
-  builder->CreateCondBr(cond, while_after_loop, after_break);
+  builder->CreateCondBr(cond, current_while_after_loop, after_break);
   builder->SetInsertPoint(after_break);
+}
+
+void CodeGenLLVM::visit(ContinueStmt *stmt) {
+  if (stmt->as_return()) {
+    builder->CreateRetVoid();
+  } else {
+    TI_ASSERT(current_loop_reentry != nullptr);
+    builder->CreateBr(current_loop_reentry);
+  }
+  // Stmts after continue are useless, so we switch the insertion point to
+  // /dev/null. In LLVM IR, the "after_continue" label shows "No predecessors!".
+  BasicBlock *after_continue =
+      BasicBlock::Create(*llvm_context, "after_continue", func);
+  builder->SetInsertPoint(after_continue);
 }
 
 void CodeGenLLVM::visit(WhileStmt *stmt) {
   BasicBlock *body = BasicBlock::Create(*llvm_context, "while_loop_body", func);
   builder->CreateBr(body);
   builder->SetInsertPoint(body);
+  auto lrg = make_loop_reentry_guard(this);
+  current_loop_reentry = body;
 
   BasicBlock *after_loop =
       BasicBlock::Create(*llvm_context, "after_while", func);
-  auto old_while_after_loop = while_after_loop;
-  while_after_loop = after_loop;
+  auto walg = make_while_after_loop_guard(this);
+  current_while_after_loop = after_loop;
 
   stmt->body->accept(this);
 
   builder->CreateBr(body);  // jump to head
 
   builder->SetInsertPoint(after_loop);
-  while_after_loop = old_while_after_loop;
 }
 
 llvm::Value *CodeGenLLVM::cast_pointer(llvm::Value *val,
@@ -734,9 +787,12 @@ void CodeGenLLVM::create_increment(llvm::Value *ptr, llvm::Value *value) {
 }
 
 void CodeGenLLVM::create_naive_range_for(RangeForStmt *for_stmt) {
-  BasicBlock *body = BasicBlock::Create(*llvm_context, "loop_body", func);
-  BasicBlock *after_loop = BasicBlock::Create(*llvm_context, "block", func);
-  BasicBlock *test = BasicBlock::Create(*llvm_context, "test", func);
+  BasicBlock *body = BasicBlock::Create(*llvm_context, "for_loop_body", func);
+  BasicBlock *loop_inc =
+      BasicBlock::Create(*llvm_context, "for_loop_inc", func);
+  BasicBlock *after_loop = BasicBlock::Create(*llvm_context, "after_for", func);
+  BasicBlock *loop_test =
+      BasicBlock::Create(*llvm_context, "for_loop_test", func);
   if (!for_stmt->reversed) {
     builder->CreateStore(llvm_val[for_stmt->begin],
                          llvm_val[for_stmt->loop_var]);
@@ -745,11 +801,11 @@ void CodeGenLLVM::create_naive_range_for(RangeForStmt *for_stmt) {
         builder->CreateSub(llvm_val[for_stmt->end], tlctx->get_constant(1)),
         llvm_val[for_stmt->loop_var]);
   }
-  builder->CreateBr(test);
+  builder->CreateBr(loop_test);
 
   {
     // test block
-    builder->SetInsertPoint(test);
+    builder->SetInsertPoint(loop_test);
     llvm::Value *cond;
     if (!for_stmt->reversed) {
       cond =
@@ -766,17 +822,25 @@ void CodeGenLLVM::create_naive_range_for(RangeForStmt *for_stmt) {
   }
 
   {
-    // body cfg
-    builder->SetInsertPoint(body);
+    {
+      auto lrg = make_loop_reentry_guard(this);
+      // The continue stmt should jump to the loop-increment block!
+      current_loop_reentry = loop_inc;
+      // body cfg
+      builder->SetInsertPoint(body);
 
-    for_stmt->body->accept(this);
+      for_stmt->body->accept(this);
+    }
+
+    builder->CreateBr(loop_inc);
+    builder->SetInsertPoint(loop_inc);
 
     if (!for_stmt->reversed) {
       create_increment(llvm_val[for_stmt->loop_var], tlctx->get_constant(1));
     } else {
       create_increment(llvm_val[for_stmt->loop_var], tlctx->get_constant(-1));
     }
-    builder->CreateBr(test);
+    builder->CreateBr(loop_test);
   }
 
   // next cfg
@@ -1150,7 +1214,8 @@ void CodeGenLLVM::visit(ExternalPtrStmt *stmt) {
 
 std::string CodeGenLLVM::init_offloaded_task_function(OffloadedStmt *stmt,
                                                       std::string suffix) {
-  while_after_loop = nullptr;
+  current_loop_reentry = nullptr;
+  current_while_after_loop = nullptr;
   current_offloaded_stmt = stmt;
 
   task_function_type =

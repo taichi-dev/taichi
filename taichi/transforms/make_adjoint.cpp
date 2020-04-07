@@ -337,6 +337,10 @@ class MakeAdjoint : public IRVisitor {
     TI_NOT_IMPLEMENTED
   }
 
+  void visit(ContinueStmt *stmt) override {
+    TI_NOT_IMPLEMENTED;
+  }
+
   void visit(WhileStmt *stmt) override {
     TI_NOT_IMPLEMENTED
   }

@@ -116,6 +116,7 @@ std::vector<Stmt *> gather_statements(IRNode *root,
                                       const std::function<bool(Stmt *)> &test);
 bool same_statements(IRNode *root1, IRNode *root2);
 std::unordered_set<Stmt *> detect_fors_with_break(IRNode *root);
+std::unordered_set<Stmt *> detect_loops_with_continue(IRNode *root);
 void compile_to_offloads(IRNode *ir,
                          CompileConfig config,
                          bool vectorize,
@@ -938,6 +939,43 @@ class WhileControlStmt : public Stmt {
   }
 
   TI_STMT_DEF_FIELDS(mask, cond);
+  DEFINE_ACCEPT;
+};
+
+class ContinueStmt : public Stmt {
+ public:
+  // This is the loop on which this continue stmt has effects. It can be either
+  // an offloaded task, or a for/while loop inside the kernel.
+  Stmt *scope;
+
+  ContinueStmt() : scope(nullptr) {
+    TI_STMT_REG_FIELDS;
+  }
+
+  // For top-level loops, since they are parallelized to multiple threads (on
+  // either CPU or GPU), `continue` becomes semantically equivalent to `return`.
+  //
+  // Caveat:
+  // We should wrap each backend's kernel body into a function (as LLVM does).
+  // The reason is that, each thread may handle more than one element,
+  // depending on the backend's implementation.
+  //
+  // For example, CUDA uses gride-stride loops, the snippet below illustrates
+  // the idea:
+  //
+  // __global__ foo_kernel(...) {
+  //   for (int i = lower; i < upper; i += gridDim) {
+  //     auto coord = compute_coords(i);
+  //     // run_foo_kernel is produced by codegen
+  //     run_foo_kernel(coord);
+  //   }
+  // }
+  //
+  // If run_foo_kernel() is directly inlined within foo_kernel(), `return`
+  // could prematurely terminate the entire kernel.
+  bool as_return() const;
+
+  TI_STMT_DEF_FIELDS(scope);
   DEFINE_ACCEPT;
 };
 
@@ -2064,6 +2102,17 @@ class FrontendBreakStmt : public Stmt {
  public:
   FrontendBreakStmt() {
   }
+
+  bool is_container_statement() const override {
+    return false;
+  }
+
+  DEFINE_ACCEPT
+};
+
+class FrontendContinueStmt : public Stmt {
+ public:
+  FrontendContinueStmt() = default;
 
   bool is_container_statement() const override {
     return false;

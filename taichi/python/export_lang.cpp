@@ -300,6 +300,10 @@ void export_lang(py::module &m) {
     current_ast_builder().insert(Stmt::make<FrontendBreakStmt>());
   });
 
+  m.def("insert_continue_stmt", [&]() {
+    current_ast_builder().insert(Stmt::make<FrontendContinueStmt>());
+  });
+
   m.def("begin_func", [&](const std::string &funcid) {
     auto stmt_unique = std::make_unique<FrontendFuncDefStmt>(funcid);
     auto stmt = stmt_unique.get();

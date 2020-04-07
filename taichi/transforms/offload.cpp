@@ -5,8 +5,8 @@ TLANG_NAMESPACE_BEGIN
 
 namespace irpass {
 namespace {
+
 using StmtToOffsetMap = decltype(OffloadedResult::local_to_global_offset);
-}  // namespace
 
 // Break kernel into multiple parts and emit struct for listgens
 class Offloader {
@@ -404,6 +404,74 @@ void insert_gc(IRNode *root) {
   }
 }
 
+class AssociateContinueScope : public BasicStmtVisitor {
+ public:
+  using BasicStmtVisitor::visit;
+  using Parent = BasicStmtVisitor;
+
+  void visit(WhileStmt *stmt) override {
+    auto *old_loop = cur_internal_loop_;
+    cur_internal_loop_ = stmt;
+    Parent::visit(stmt);
+    cur_internal_loop_ = old_loop;
+  }
+
+  void visit(RangeForStmt *stmt) override {
+    auto *old_loop = cur_internal_loop_;
+    cur_internal_loop_ = stmt;
+    Parent::visit(stmt);
+    cur_internal_loop_ = old_loop;
+  }
+
+  void visit(StructForStmt *stmt) override {
+    TI_ERROR("struct_for cannot be nested inside a kernel, stmt={}",
+             stmt->name());
+  }
+
+  void visit(OffloadedStmt *stmt) override {
+    TI_ASSERT(cur_offloaded_stmt_ == nullptr);
+    TI_ASSERT(cur_internal_loop_ == nullptr);
+    cur_offloaded_stmt_ = stmt;
+    Parent::visit(stmt);
+    cur_offloaded_stmt_ = nullptr;
+  }
+
+  void visit(ContinueStmt *stmt) override {
+    if (stmt->scope == nullptr) {
+      if (cur_internal_loop_ != nullptr) {
+        stmt->scope = cur_internal_loop_;
+      } else {
+        stmt->scope = cur_offloaded_stmt_;
+      }
+      modified_ = true;
+    }
+    TI_ASSERT(stmt->scope != nullptr);
+  }
+
+  static void run(IRNode *root) {
+    while (true) {
+      AssociateContinueScope pass;
+      root->accept(&pass);
+      if (!pass.modified_) {
+        break;
+      }
+    }
+  }
+
+ private:
+  explicit AssociateContinueScope()
+      : modified_(false),
+        cur_offloaded_stmt_(nullptr),
+        cur_internal_loop_(nullptr) {
+  }
+
+  bool modified_;
+  OffloadedStmt *cur_offloaded_stmt_;
+  Stmt *cur_internal_loop_;
+};
+
+}  // namespace
+
 OffloadedResult offload(IRNode *root) {
   OffloadedResult result;
   Offloader _(root);
@@ -414,9 +482,12 @@ OffloadedResult offload(IRNode *root) {
     PromoteIntermediate::run(root, result.local_to_global_offset);
     PromoteLocals::run(root, result.local_to_global_offset);
   }
-  irpass::insert_gc(root);
-  irpass::typecheck(root);
-  irpass::re_id(root);
+  insert_gc(root);
+  // TODO(k-ye): Move this into its own pass. However, we need to wait for all
+  // backends to integrate with https://github.com/taichi-dev/taichi/pull/700
+  AssociateContinueScope::run(root);
+  typecheck(root);
+  re_id(root);
   return result;
 }
 

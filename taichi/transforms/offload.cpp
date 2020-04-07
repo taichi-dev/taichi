@@ -483,6 +483,8 @@ OffloadedResult offload(IRNode *root) {
     PromoteLocals::run(root, result.local_to_global_offset);
   }
   insert_gc(root);
+  // TODO(k-ye): Move this into its own pass. However, we need to wait for all
+  // backends to integrate with https://github.com/taichi-dev/taichi/pull/700
   AssociateContinueScope::run(root);
   typecheck(root);
   re_id(root);

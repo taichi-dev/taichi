@@ -951,6 +951,27 @@ class ContinueStmt : public Stmt {
     TI_STMT_REG_FIELDS;
   }
 
+  // For top-level loops, since they are parallelized to multiple threads (on
+  // either CPU or GPU), `continue` becomes semantically equivalent to `return`.
+  //
+  // Caveat:
+  // We should wrap each backend's kernel body into a function (as LLVM does).
+  // The reason is that, each thread may handle more than one element,
+  // depending on the backend's implementation.
+  //
+  // For example, CUDA uses gride-stride loops, the snippet below illustrates
+  // the idea:
+  //
+  // __global__ foo_kernel(...) {
+  //   for (int i = lower; i < upper; i += gridDim) {
+  //     auto coord = compute_coords(i);
+  //     // run_foo_kernel is produced by codegen
+  //     run_foo_kernel(coord);
+  //   }
+  // }
+  //
+  // If run_foo_kernel() is directly inlined within foo_kernel(), `return`
+  // could prematurely terminate the entire kernel.
   bool as_return() const;
 
   TI_STMT_DEF_FIELDS(scope);

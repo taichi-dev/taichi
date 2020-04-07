@@ -893,7 +893,7 @@ FunctionType OpenglCodeGen::compile(Program &program, Kernel &kernel) {
   this->kernel_ = &kernel;
 
   this->lower();
-    return this->gen();
+  return this->gen();
 }
 
 }  // namespace opengl

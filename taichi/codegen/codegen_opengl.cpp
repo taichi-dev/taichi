@@ -760,7 +760,7 @@ FunctionType OpenglCodeGen::gen(void) {
                     global_tmps_buffer_size_);
   codegen.run(*prog_->snode_root);
   auto compiled = codegen.get_compiled_program();
-  auto* ptr = compiled.get();
+  auto *ptr = compiled.get();
   kernel_launcher_->keep(std::move(compiled));
   return [ptr, launcher = kernel_launcher_](Context &ctx) {
     ptr->launch(ctx, launcher);

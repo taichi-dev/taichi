@@ -172,14 +172,14 @@ class BasicBlockVectorSplit : public IRVisitor {
     for (int i = 0; i < current_split_factor; i++) {
       LaneAttribute<LocalAddress> ptr;
       int new_width = need_split ? max_width : stmt->width();
-      ptr.resize(new_width);
+      ptr.reserve(new_width);
       for (int j = 0; j < new_width; j++) {
         LocalAddress addr(stmt->ptr[lane_start(i) + j]);
         if (origin2split.find(addr.var) == origin2split.end()) {
-          ptr[j] = addr;
+          ptr.push_back(addr);
         } else {
-          ptr[j].var = lookup(addr.var, addr.offset / max_width);
-          ptr[j].offset = addr.offset % max_width;
+          ptr.push_back(LocalAddress(lookup(addr.var, addr.offset / max_width),
+                                     addr.offset % max_width));
         }
       }
       current_split[i] = Stmt::make<LocalLoadStmt>(ptr);

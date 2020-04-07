@@ -78,6 +78,10 @@ def make_argument_parser():
     parser.add_argument('-t',
                         '--threads',
                         help='Number of threads for parallel testing')
+    parser.add_argument('-c',
+                        '--cpp',
+                        action='store_true',
+                        help='Run C++ tests')
     parser.add_argument(
         '-a',
         '--arch',
@@ -150,11 +154,18 @@ def main(debug=False):
             script = script.read()
         exec(script, {'__name__': '__main__'})
     elif mode == "test":
-        ret = test_python(args)
-        if ret:
-            return -1
-        ret = test_cpp(args)
-        return ret
+        if len(args.files):
+            if args.cpp:
+                return test_cpp(args)
+            else:
+                return test_python(args)
+        elif args.cpp:
+            return test_cpp(args)
+        else:
+            ret = test_python(args)
+            if ret != 0:
+                return ret
+            return test_cpp(args)
     elif mode == "build":
         ti.core.build()
     elif mode == "format":

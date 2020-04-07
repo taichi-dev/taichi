@@ -12,6 +12,15 @@ class SNode;
 
 namespace opengl {
 
+struct UsedFeature {
+  bool random{false};
+  bool argument{false};
+  bool extra_arg{false};
+  bool external_ptr{false};
+  bool atomic_float{false};
+  bool global_temp{false};
+};
+
 struct StructCompiledResult {
   // Source code of the SNode data structures compiled to GLSL
   std::string source_code;

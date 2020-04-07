@@ -352,7 +352,7 @@ void Stmt::replace_operand_with(Stmt *old_stmt, Stmt *new_stmt) {
 
 Block *current_block = nullptr;
 
-Expr Var(Expr x) {
+Expr Var(const Expr &x) {
   auto var = Expr(std::make_shared<IdExpression>());
   current_ast_builder().insert(std::make_unique<FrontendAllocaStmt>(
       std::static_pointer_cast<IdExpression>(var.expr)->id, DataType::unknown));

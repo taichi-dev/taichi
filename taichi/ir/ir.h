@@ -419,13 +419,15 @@ struct LaneAttribute {
   LaneAttribute(const std::vector<T> &data) : data(data) {
   }
 
-  LaneAttribute(const T &t) {
-    data.resize(1);
-    data[0] = t;
+  LaneAttribute(const T &t): data(1, t) {
   }
 
   void resize(int s) {
     data.resize(s);
+  }
+
+  void reserve(int s) {
+    data.reserve(s);
   }
 
   void push_back(const T &t) {
@@ -1682,10 +1684,8 @@ struct LocalAddress {
   Stmt *var;
   int offset;
 
-  LocalAddress() : LocalAddress(nullptr, 0) {
-  }
-
   LocalAddress(Stmt *var, int offset) : var(var), offset(offset) {
+    TI_ASSERT(var->is<AllocaStmt>());
   }
 };
 
@@ -1745,6 +1745,7 @@ class LocalStoreStmt : public Stmt {
   // LaneAttribute<Stmt *> data;
 
   LocalStoreStmt(Stmt *ptr, Stmt *data) : ptr(ptr), data(data) {
+    TI_ASSERT(ptr->is<AllocaStmt>());
     TI_STMT_REG_FIELDS;
   }
 
@@ -2076,7 +2077,7 @@ class FrontendWhileStmt : public Stmt {
   Expr cond;
   std::unique_ptr<Block> body;
 
-  FrontendWhileStmt(Expr cond) : cond(load_if_ptr(cond)) {
+  FrontendWhileStmt(const Expr &cond) : cond(load_if_ptr(cond)) {
   }
 
   bool is_container_statement() const override {
@@ -2139,9 +2140,9 @@ extern Block *current_block;
 class IdExpression : public Expression {
  public:
   Identifier id;
-  IdExpression(std::string name = "") : id(name) {
+  IdExpression(const std::string &name = "") : id(name) {
   }
-  IdExpression(Identifier id) : id(id) {
+  IdExpression(const Identifier &id) : id(id) {
   }
 
   std::string serialize() override {
@@ -2168,7 +2169,7 @@ class AtomicOpExpression : public Expression {
   AtomicOpType op_type;
   Expr dest, val;
 
-  AtomicOpExpression(AtomicOpType op_type, Expr dest, Expr val)
+  AtomicOpExpression(AtomicOpType op_type, const Expr &dest, const Expr &val)
       : op_type(op_type), dest(dest), val(val) {
   }
 
@@ -2276,7 +2277,7 @@ class SNodeOpExpression : public Expression {
 class GlobalLoadExpression : public Expression {
  public:
   Expr ptr;
-  GlobalLoadExpression(Expr ptr) : ptr(ptr) {
+  GlobalLoadExpression(const Expr &ptr) : ptr(ptr) {
   }
 
   std::string serialize() override {
@@ -2372,7 +2373,8 @@ inline void SLP(int v) {
 
 class For {
  public:
-  For(Expr i, Expr s, Expr e, const std::function<void()> &func) {
+  For(const Expr &i, const Expr &s, const Expr &e,
+      const std::function<void()> &func) {
     auto stmt_unique = std::make_unique<FrontendForStmt>(i, s, e);
     auto stmt = stmt_unique.get();
     current_ast_builder().insert(std::move(stmt_unique));
@@ -2380,7 +2382,8 @@ class For {
     func();
   }
 
-  For(ExprGroup i, Expr global, const std::function<void()> &func) {
+  For(const ExprGroup &i, const Expr &global,
+      const std::function<void()> &func) {
     auto stmt_unique = std::make_unique<FrontendForStmt>(i, global);
     auto stmt = stmt_unique.get();
     current_ast_builder().insert(std::move(stmt_unique));
@@ -2393,7 +2396,7 @@ class For {
 
 class While {
  public:
-  While(Expr cond, const std::function<void()> &func) {
+  While(const Expr &cond, const std::function<void()> &func) {
     auto while_stmt = std::make_unique<FrontendWhileStmt>(cond);
     FrontendWhileStmt *ptr = while_stmt.get();
     current_ast_builder().insert(std::move(while_stmt));
@@ -2402,7 +2405,7 @@ class While {
   }
 };
 
-Expr Var(Expr x);
+Expr Var(const Expr &x);
 
 class VectorElement {
  public:

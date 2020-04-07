@@ -1,18 +1,14 @@
+#include <vector>
+#include <set>
+
 #include "taichi/common/util.h"
 #include "taichi/util/io.h"
 #include "taichi/ir/ir.h"
 #include "taichi/program/program.h"
 #include "taichi/lang_util.h"
+#include "taichi/backends/cuda/cuda_driver.h"
 #include "taichi/codegen/codegen_cuda.h"
 #include "taichi/codegen/codegen_llvm.h"
-
-#include <vector>
-#include <set>
-
-#ifdef TI_WITH_CUDA
-#include <cuda_runtime.h>
-#include "taichi/backends/cuda/cuda_utils.h"
-#endif  // TI_WITH_CUDA
 
 TLANG_NAMESPACE_BEGIN
 
@@ -33,8 +29,10 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
 
   CodeGenLLVMCUDA(Kernel *kernel) : CodeGenLLVM(kernel) {
 #if defined(TI_WITH_CUDA)
-    cudaDeviceGetAttribute(&num_SMs, cudaDevAttrMultiProcessorCount, 0);
-    cudaDeviceGetAttribute(&max_block_dim, cudaDevAttrMaxBlockDimX, 0);
+    CUDADriver::get_instance().device_get_attribute(
+        &num_SMs, CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT, 0);
+    CUDADriver::get_instance().device_get_attribute(
+        &max_block_dim, CU_DEVICE_ATTRIBUTE_MAX_BLOCK_DIM_X, 0);
 
     // each SM can have 16-32 resident blocks
     saturating_num_blocks = num_SMs * 32;
@@ -67,16 +65,16 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       for (int i = 0; i < (int)args.size(); i++) {
         if (args[i].is_nparray) {
           has_buffer = true;
-          check_cuda_error(cudaMalloc(&device_buffers[i], args[i].size));
+          CUDADriver::get_instance().malloc(&device_buffers[i], args[i].size);
           // replace host buffer with device buffer
           host_buffers[i] = get_current_program().context.get_arg<void *>(i);
           kernel->set_arg_nparray(i, (uint64)device_buffers[i], args[i].size);
-          check_cuda_error(cudaMemcpy(device_buffers[i], host_buffers[i],
-                                      args[i].size, cudaMemcpyHostToDevice));
+          CUDADriver::get_instance().memcpy_host_to_device(
+              (void *)device_buffers[i], host_buffers[i], args[i].size);
         }
       }
       if (has_buffer) {
-        check_cuda_error(cudaDeviceSynchronize());
+        CUDADriver::get_instance().stream_synchronize(0);
       }
 
       for (auto task : offloaded_local) {
@@ -88,13 +86,13 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       }
       // copy data back to host
       if (has_buffer) {
-        check_cuda_error(cudaDeviceSynchronize());
+        CUDADriver::get_instance().stream_synchronize(0);
       }
       for (int i = 0; i < (int)args.size(); i++) {
         if (args[i].is_nparray) {
-          check_cuda_error(cudaMemcpy(host_buffers[i], device_buffers[i],
-                                      args[i].size, cudaMemcpyDeviceToHost));
-          check_cuda_error(cudaFree(device_buffers[i]));
+          CUDADriver::get_instance().memcpy_device_to_host(
+              host_buffers[i], (void *)device_buffers[i], args[i].size);
+          CUDADriver::get_instance().mem_free((void *)device_buffers[i]);
         }
       }
     };

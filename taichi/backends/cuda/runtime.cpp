@@ -1,8 +1,6 @@
 #include "taichi/runtime/runtime.h"
 #include "taichi/backends/cuda/cuda_context.h"
 
-#include <cuda_runtime.h>
-
 TLANG_NAMESPACE_BEGIN
 
 class RuntimeCUDA : public Runtime {

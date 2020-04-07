@@ -11,12 +11,9 @@
 #include "taichi/system/benchmark.h"
 #include "taichi/system/profiler.h"
 #include "taichi/system/memory_usage_monitor.h"
-#include "taichi/system/unit_dll.h"
+#include "taichi/system/dynamic_loader.h"
 #include "taichi/backends/metal/api.h"
 #include "taichi/backends/opengl/opengl_api.h"
-#if defined(TI_WITH_CUDA)
-#include <cuda_runtime_api.h>
-#endif
 
 TI_NAMESPACE_BEGIN
 
@@ -104,11 +101,6 @@ void export_misc(py::module &m) {
       .def("run", &Benchmark::run)
       .def("test", &Benchmark::test)
       .def("initialize", &Benchmark::initialize);
-
-  py::class_<UnitDLL, std::shared_ptr<UnitDLL>>(m, "UnitDLL")
-      .def("open_dll", &UnitDLL::open_dll)
-      .def("close_dll", &UnitDLL::close_dll)
-      .def("loaded", &UnitDLL::loaded);
 
 #define TI_EXPORT_LOGGING(X) \
   m.def(#X, [](const std::string &msg) { taichi::logger.X(msg); });

@@ -1,10 +1,5 @@
 #include "memory_pool.h"
 #include "taichi/system/timer.h"
-#include "taichi/backends/cuda/cuda_utils.h"
-#if TI_WITH_CUDA
-#include <cuda_runtime.h>
-#endif
-
 #include "taichi/program/program.h"
 
 TLANG_NAMESPACE_BEGIN
@@ -55,33 +50,37 @@ void *MemoryPool::allocate(std::size_t size, std::size_t alignment) {
 template <typename T>
 T MemoryPool::fetch(volatile void *ptr) {
   T ret;
+  /*
   if (false && prog->config.arch == Arch::cuda) {
 #if TI_WITH_CUDA
-    check_cuda_error(cudaMemcpyAsync(&ret, (void *)ptr, sizeof(T),
+    CUDADriver::get_instance().cudaMemcpyAsync(&ret, (void *)ptr, sizeof(T,
                                      cudaMemcpyDeviceToHost, cuda_stream));
-    check_cuda_error(cudaStreamSynchronize(cuda_stream));
+    CUDADriver::get_instance().cudaStreamSynchronize(cuda_stream);
 #else
     TI_NOT_IMPLEMENTED
 #endif
   } else {
-    ret = *(T *)ptr;
-  }
+  */
+  ret = *(T *)ptr;
+  //}
   return ret;
 }
 
 template <typename T>
 void MemoryPool::push(volatile T *dest, const T &val) {
+  /*
   if (false && prog->config.arch == Arch::cuda) {
 #if TI_WITH_CUDA
-    check_cuda_error(cudaMemcpyAsync((void *)dest, &val, sizeof(T),
+    CUDADriver::get_instance().cudaMemcpyAsync((void *)dest, &val, sizeof(T,
                                      cudaMemcpyHostToDevice, cuda_stream));
-    check_cuda_error(cudaStreamSynchronize(cuda_stream));
+    CUDADriver::get_instance().cudaStreamSynchronize(cuda_stream);
 #else
     TI_NOT_IMPLEMENTED
 #endif
   } else {
-    *(T *)dest = val;
-  }
+  */
+  *(T *)dest = val;
+  // }
 }
 
 void MemoryPool::daemon() {
@@ -127,7 +126,7 @@ void MemoryPool::terminate() {
   TI_ASSERT(killed);
 #if 0 && defined(TI_WITH_CUDA)
   if (prog->config.arch == Arch::cuda)
-    check_cuda_error(cudaStreamDestroy(cuda_stream));
+    CUDADriver::get_instance().cudaStreamDestroy(cuda_stream);
 #endif
 }
 

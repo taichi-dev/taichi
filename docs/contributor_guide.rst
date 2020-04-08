@@ -73,6 +73,27 @@ Reviewing & PR merging
 - Make sure the title follows :ref:`prtag`.
 
 
+Using continuous integration
+----------------------------
+
+- Continuous Integration (CI), will **build** and **test** your commits in a PR against in environments.
+- Currently, Taichi uses `"Travis CI" <https://travis-ci.org>`_(for OS X and Linux) and `"AppVeyor" <https://www.appveyor.com>`_(for Windows).
+- CI will be triggered everytime you push commits to an open PR.
+- You can prepend ``[skip ci]`` to your commit message to avoid triggering CI. e.g. ``[skip ci] This commit will not trigger CI``
+- A tick on the right of commit hash means CI passed, a cross means CI failed.
+
+Enforcing code style
+--------------------
+- Locally, you can run ``ti format`` in the command line to re-format code style. Note that you have to install ``clang-format-6.0`` and ``yapf v0.29.0`` locally before you use ``ti format``.
+- If you don't have to install these formatting tools locally, use the **format server**. It's an online version of ``ti format``.
+
+   - Go to http://kun.csail.mit.edu:31415/, and click at the desired PR id.
+   - Come back to the PR page, you'll see a user called @taichi-gardener (bot) pushed a commit named ``[skip ci] enforce code format``.
+   - You won't see the bot's commit if it didn't find anything not matching the format.
+   - Then please run ``git pull`` in your local branch to pull the formatted code.
+   - Note that commit messages marked with ``[format]`` will automatically trigger the format server. e.g. ``[format] your commit message``
+
+
 .. _prtag:
 
 PR title tags

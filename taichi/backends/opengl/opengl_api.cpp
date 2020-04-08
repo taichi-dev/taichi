@@ -1,4 +1,7 @@
 #include "opengl_api.h"
+
+#include "taichi/backends/opengl/opengl_kernel_util.h"
+#include "taichi/program/kernel.h"
 #include "taichi/program/program.h"
 
 #ifdef TI_WITH_OPENGL
@@ -12,6 +15,7 @@ namespace opengl {
 bool opengl_has_GL_NV_shader_atomic_float;
 
 #ifdef TI_WITH_OPENGL
+
 void glapi_set_uniform(GLuint loc, float value) {
   glUniform1f(loc, value);
 }
@@ -227,15 +231,132 @@ void initialize_opengl() {
   }
 }
 
-CompiledGLSL::CompiledGLSL(const std::string &source)
-    : glsl(std::make_unique<GLProgram>(GLShader(source))) {
-  glsl->link();
-}
+struct CompiledKernel {
+  std::string kernel_name;
+  std::unique_ptr<GLProgram> glsl;
+  int num_groups;
+  UsedFeature used;
+
+  // disscussion:
+  // https://github.com/taichi-dev/taichi/pull/696#issuecomment-609332527
+  CompiledKernel(CompiledKernel &&) = default;
+  CompiledKernel &operator=(CompiledKernel &&) = default;
+
+  explicit CompiledKernel(const std::string &kernel_name_,
+                          const std::string &kernel_source_code,
+                          int num_groups_,
+                          const UsedFeature &used_)
+      : kernel_name(kernel_name_),
+        glsl(std::make_unique<GLProgram>(GLShader(kernel_source_code))),
+        num_groups(num_groups_),
+        used(used_) {
+    glsl->link();
+    TI_DEBUG("source of kernel [{}] * {}:\n{}", kernel_name, num_groups,
+             kernel_source_code);
+#ifdef _GLSL_DEBUG
+    std::ofstream(fmt::format("/tmp/{}.comp", kernel_name))
+        .write(kernel_source_code.c_str(), kernel_source_code.size());
+#endif
+  }
+
+  void launch() const {
+    // TI_PERF();
+    glsl->use();
+
+    // https://www.khronos.org/opengl/wiki/Compute_Shader
+    // https://community.arm.com/developer/tools-software/graphics/b/blog/posts/get-started-with-compute-shaders
+    // https://www.khronos.org/assets/uploads/developers/library/2014-siggraph-bof/KITE-BOF_Aug14.pdf
+    //
+    // `glDispatchCompute(X, Y, Z)`   - the X*Y*Z  == `Blocks`   in CUDA
+    // `layout(local_size_x = X) in;` - the X      == `Threads`  in CUDA
+    //
+    glDispatchCompute(num_groups, 1, 1);
+    // TI_PERF(kernel_name.c_str(), kernel_name.size(), 107);
+  }
+};
+
+struct CompiledProgram::Impl {
+  std::vector<std::unique_ptr<CompiledKernel>> kernels;
+  int arg_count;
+  std::map<int, size_t> ext_arr_map;
+  size_t gtmp_size;
+
+  Impl(Kernel *kernel, size_t gtmp_size) : gtmp_size(gtmp_size) {
+    arg_count = kernel->args.size();
+    for (int i = 0; i < arg_count; i++) {
+      if (kernel->args[i].is_nparray) {
+        ext_arr_map[i] = kernel->args[i].size;
+      }
+    }
+  }
+
+  void add(const std::string &kernel_name,
+           const std::string &kernel_source_code,
+           int num_groups,
+           const UsedFeature &used) {
+    kernels.push_back(std::make_unique<CompiledKernel>(
+        kernel_name, kernel_source_code, num_groups, used));
+  }
+
+  void launch(Context &ctx, GLSLLauncher *launcher) const {
+    std::vector<IOV> iov;
+    iov.push_back(IOV{ctx.args, arg_count * sizeof(uint64_t)});
+    auto gtmp_arr = std::vector<char>(gtmp_size);
+    void *gtmp_base = gtmp_arr.data();  // std::calloc(gtmp_size, 1);
+    iov.push_back(IOV{gtmp_base, gtmp_size});
+    std::optional<std::vector<char>> base_arr;
+    std::optional<std::vector<void *>> saved_ctx_ptrs;
+    // TODO: these dirty codes are introduced by #694
+    if (ext_arr_map.size()) {
+      iov.push_back(
+          IOV{ctx.extra_args, arg_count * taichi_max_num_args * sizeof(int)});
+      if (ext_arr_map.size() == 1) {  // zero-copy for only one ext_arr
+        auto it = ext_arr_map.begin();
+        auto extptr = (void *)ctx.args[it->first];
+        ctx.args[it->first] = 0;
+        iov.push_back(IOV{extptr, it->second});
+      } else {
+        size_t accum_size = 0;
+        std::vector<void *> ptrarr;
+        for (const auto &[i, size] : ext_arr_map) {
+          accum_size += size;
+        }
+        saved_ctx_ptrs = std::make_optional<std::vector<void *>>();
+        base_arr = std::make_optional<std::vector<char>>(accum_size);
+        void *baseptr = base_arr->data();
+        accum_size = 0;
+        for (const auto &[i, size] : ext_arr_map) {
+          auto ptr = (void *)ctx.args[i];
+          saved_ctx_ptrs->push_back(ptr);
+          std::memcpy((char *)baseptr + accum_size, ptr, size);
+          ctx.args[i] = accum_size;
+          accum_size += size;
+        }  // concat all extptr into my baseptr
+        iov.push_back(IOV{baseptr, accum_size});
+      }
+    }
+    for (const auto &ker : kernels) {
+      auto guard = launcher->create_launch_guard(iov);
+      ker->launch();
+    }
+    if (ext_arr_map.size() > 1) {
+      void *baseptr = base_arr->data();
+      auto cpit = saved_ctx_ptrs->begin();
+      size_t accum_size = 0;
+      for (const auto &[i, size] : ext_arr_map) {
+        std::memcpy(*cpit, (char *)baseptr + accum_size, size);
+        accum_size += size;
+        cpit++;
+      }  // extract back to all extptr from my baseptr
+    }
+  }
+};
 
 struct GLSLLauncherImpl {
   std::unique_ptr<GLSSBO> root_ssbo;
   std::vector<GLSSBO> ssbo;
   std::vector<char> root_buffer;
+  std::vector<std::unique_ptr<CompiledProgram>> programs;
 };
 
 GLSLLauncher::GLSLLauncher(size_t size) {
@@ -246,6 +367,10 @@ GLSLLauncher::GLSLLauncher(size_t size) {
   impl->root_buffer.resize(size, 0);
   impl->root_ssbo->bind_data(impl->root_buffer.data(), size, GL_DYNAMIC_READ);
   impl->root_ssbo->bind_index(0);
+}
+
+void GLSLLauncher::keep(std::unique_ptr<CompiledProgram> program) {
+  impl->programs.push_back(std::move(program));
 }
 
 GLSLLaunchGuard::GLSLLaunchGuard(GLSLLauncherImpl *impl,
@@ -276,19 +401,6 @@ GLSLLaunchGuard::~GLSLLaunchGuard() {
   impl->ssbo.clear();
 }
 
-void CompiledGLSL::launch_glsl(int num_groups) const {
-  glsl->use();
-
-  // https://www.khronos.org/opengl/wiki/Compute_Shader
-  // https://community.arm.com/developer/tools-software/graphics/b/blog/posts/get-started-with-compute-shaders
-  // https://www.khronos.org/assets/uploads/developers/library/2014-siggraph-bof/KITE-BOF_Aug14.pdf
-  //
-  // `glDispatchCompute(X, Y, Z)`   - the X*Y*Z  == `Blocks`   in CUDA
-  // `layout(local_size_x = X) in;` - the X      == `Threads`  in CUDA
-  //
-  glDispatchCompute(num_groups, 1, 1);
-}
-
 bool is_opengl_api_available() {
   return true;
 }
@@ -303,38 +415,72 @@ int opengl_get_threads_per_group() {
 struct GLProgram {};
 struct GLSLLauncherImpl {};
 
+struct CompiledProgram::Impl {
+  Impl(Kernel *kernel, size_t gtmp_size) {
+    TI_NOT_IMPLEMENTED;
+  }
+
+  void add(const std::string &kernel_name,
+           const std::string &kernel_source_code,
+           int num_groups,
+           const UsedFeature &used) {
+    TI_NOT_IMPLEMENTED;
+  }
+
+  void launch(Context &ctx, GLSLLauncher *launcher) const {
+    TI_NOT_IMPLEMENTED;
+  }
+};
+
 GLSLLauncher::GLSLLauncher(size_t size) {
-  TI_NOT_IMPLEMENTED
+  TI_NOT_IMPLEMENTED;
 }
 
-void CompiledGLSL::launch_glsl(int num_groups) const {
-  TI_NOT_IMPLEMENTED
+void GLSLLauncher::keep(std::unique_ptr<CompiledProgram>) {
+  TI_NOT_IMPLEMENTED;
 }
 
 bool is_opengl_api_available() {
   return false;
 }
 
-void initialize_opengl(){TI_NOT_IMPLEMENTED}
-
-CompiledGLSL::CompiledGLSL(const std::string &source) {
-  //: glsl(std::make_unique<GLProgram>()) {
-  TI_NOT_IMPLEMENTED
+void initialize_opengl() {
+  TI_NOT_IMPLEMENTED;
 }
 
-int opengl_get_threads_per_group(){TI_NOT_IMPLEMENTED}
+int opengl_get_threads_per_group() {
+  TI_NOT_IMPLEMENTED;
+}
 
 GLSLLaunchGuard::GLSLLaunchGuard(GLSLLauncherImpl *impl,
                                  const std::vector<IOV> &iov)
-    : impl(impl),
-      iov(iov){TI_NOT_IMPLEMENTED}
-
-      GLSLLaunchGuard::~GLSLLaunchGuard() {
-  TI_NOT_IMPLEMENTED
+    : impl(impl), iov(iov) {
+  TI_NOT_IMPLEMENTED;
 }
-#endif
 
-CompiledGLSL::~CompiledGLSL() = default;
+GLSLLaunchGuard::~GLSLLaunchGuard() {
+  TI_NOT_IMPLEMENTED;
+}
+
+#endif  // TI_WITH_OPENGL
+
+CompiledProgram::CompiledProgram(Kernel *kernel, size_t gtmp_size)
+    : impl(std::make_unique<Impl>(kernel, gtmp_size)) {
+}
+
+CompiledProgram::~CompiledProgram() = default;
+
+void CompiledProgram::add(const std::string &kernel_name,
+                          const std::string &kernel_source_code,
+                          int num_groups,
+                          const UsedFeature &used) {
+  impl->add(kernel_name, kernel_source_code, num_groups, used);
+}
+
+void CompiledProgram::launch(Context &ctx, GLSLLauncher *launcher) const {
+  impl->launch(ctx, launcher);
+}
+
 GLSLLauncher::~GLSLLauncher() = default;
 
 }  // namespace opengl

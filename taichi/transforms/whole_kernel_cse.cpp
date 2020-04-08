@@ -26,11 +26,10 @@ class WholeKernelCSE : public BasicStmtVisitor {
 
         irpass::print(true_clause->statements[0].get());
         irpass::print(false_clause->statements[0].get());
-        auto common_stmt = std::move(true_clause->statements[0]);
+        auto common_stmt = true_clause->extract(0);
         irpass::replace_all_usages_with(false_clause.get(),
                                         false_clause->statements[0].get(),
                                         common_stmt.get());
-        true_clause->statements.erase(true_clause->statements.begin());
         if_stmt->insert_before_me(std::move(common_stmt));
         false_clause->erase(0);
         irpass::print(block->statements[current_stmt_id].get());

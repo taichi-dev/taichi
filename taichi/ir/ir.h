@@ -1486,6 +1486,10 @@ class Block : public IRNode {
 
   void erase(Stmt *stmt);
 
+  std::unique_ptr<Stmt> extract(int location);
+
+  std::unique_ptr<Stmt> extract(Stmt *stmt);
+
   void insert(std::unique_ptr<Stmt> &&stmt, int location = -1);
 
   void insert(VecStatement &&stmt, int location = -1);

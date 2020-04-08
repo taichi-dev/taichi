@@ -16,8 +16,7 @@ bool opengl_has_GL_NV_shader_atomic_float;
 
 #ifdef TI_WITH_OPENGL
 
-std::string get_opengl_error() {
-  auto err = glGetError();
+std::string get_opengl_error_string(GLenum err) {
   switch (err) {
 #define PER_GL_ERR(x) case x: return #x;
     PER_GL_ERR(GL_NO_ERROR)
@@ -29,6 +28,14 @@ std::string get_opengl_error() {
     PER_GL_ERR(GL_STACK_UNDERFLOW)
     PER_GL_ERR(GL_STACK_OVERFLOW)
     default: return fmt::format("GL_ERROR={}", err);
+  }
+}
+
+void check_opengl_error(const std::string &msg = "OpenGL") {
+  auto err = glGetError();
+  if (err != GL_NO_ERROR) {
+    auto estr = get_opengl_error_string(err);
+    TI_ERROR("{}: {}", msg, estr);
   }
 }
 
@@ -71,7 +78,9 @@ struct GLShader {
     const GLchar *source_cstr = source.c_str();
     glShaderSource(id_, 1, &source_cstr, nullptr);
 
+    TI_TRACE("glCompileShader IN");
     glCompileShader(id_);
+    TI_TRACE("glCompileShader OUT");
     int status = GL_TRUE;
     glGetShaderiv(id_, GL_COMPILE_STATUS, &status);
     if (status != GL_TRUE) {
@@ -177,17 +186,21 @@ struct GLSSBO {
 
   void bind_data(void *data, size_t size, GLuint usage = GL_DYNAMIC_READ) const {
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, id_);
+    check_opengl_error("glBindBuffer");
     glBufferData(GL_SHADER_STORAGE_BUFFER, size, data, usage);
+    check_opengl_error("glBufferData");
   }
 
   void bind_index(size_t index) const {
     // SSBO index, is `layout(std430, binding = <index>)` in shader.
     // We use only one SSBO though...
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, index, id_);
+    check_opengl_error("glBindBufferBase");
   }
 
   void bind_range(size_t index, size_t offset, size_t size) const {
     glBindBufferRange(GL_SHADER_STORAGE_BUFFER, index, id_, offset, size);
+    check_opengl_error("glBindBufferRange");
   }
 
   void *map(size_t offset,
@@ -195,12 +208,18 @@ struct GLSSBO {
             GLbitfield access = GL_READ_ONLY) const {
     // map GPU memory to CPU address space, offset within SSBO data
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, id_);
-    return glMapBufferRange(GL_SHADER_STORAGE_BUFFER, offset, length, access);
+    check_opengl_error("glBindBuffer");
+    void *p = glMapBufferRange(GL_SHADER_STORAGE_BUFFER, offset, length, access);
+    check_opengl_error("glMapBufferRange");
+    return p;
   }
 
   void *map(GLbitfield access = GL_READ_ONLY) const {
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, id_);
-    return glMapBuffer(GL_SHADER_STORAGE_BUFFER, access);
+    check_opengl_error("glBindBuffer");
+    void *p = glMapBuffer(GL_SHADER_STORAGE_BUFFER, access);
+    check_opengl_error("glMapBuffer");
+    return p;
   }
 };
 
@@ -412,7 +431,7 @@ GLSLLaunchGuard::~GLSLLaunchGuard() {
       continue;
     void *p = impl->ssbo[i].map();//0, iov[i].size);  // output
     TI_INFO("base = {}, p = {}, size = {}", iov[i].base, p, iov[i].size);
-    if (!p) {TI_WARN("glMapBuffer failed: {}", get_opengl_error()); continue;}
+    TI_ASSERT_INFO(p, "glMapBuffer returned NULL");
     std::memcpy(iov[i].base, p, iov[i].size);
   }
   //glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);

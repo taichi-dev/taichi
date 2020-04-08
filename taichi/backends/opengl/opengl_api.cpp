@@ -16,6 +16,22 @@ bool opengl_has_GL_NV_shader_atomic_float;
 
 #ifdef TI_WITH_OPENGL
 
+std::string get_opengl_error() {
+  auto err = glGetError();
+  switch (err) {
+#define PER_GL_ERR(x) case x: return #x;
+    PER_GL_ERR(GL_NO_ERROR)
+    PER_GL_ERR(GL_INVALID_ENUM)
+    PER_GL_ERR(GL_INVALID_VALUE)
+    PER_GL_ERR(GL_INVALID_OPERATION)
+    PER_GL_ERR(GL_INVALID_FRAMEBUFFER_OPERATION)
+    PER_GL_ERR(GL_OUT_OF_MEMORY)
+    PER_GL_ERR(GL_STACK_UNDERFLOW)
+    PER_GL_ERR(GL_STACK_OVERFLOW)
+    default: return fmt::format("GL_ERROR={}", err);
+  }
+}
+
 void glapi_set_uniform(GLuint loc, float value) {
   glUniform1f(loc, value);
 }
@@ -159,7 +175,7 @@ struct GLSSBO {
    used as the source for GL drawing and image specification commands.
    ***/
 
-  void bind_data(void *data, size_t size, GLuint usage = GL_STATIC_READ) const {
+  void bind_data(void *data, size_t size, GLuint usage = GL_DYNAMIC_READ) const {
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, id_);
     glBufferData(GL_SHADER_STORAGE_BUFFER, size, data, usage);
   }
@@ -176,13 +192,13 @@ struct GLSSBO {
 
   void *map(size_t offset,
             size_t length,
-            GLbitfield access = GL_MAP_READ_BIT) const {
+            GLbitfield access = GL_READ_ONLY) const {
     // map GPU memory to CPU address space, offset within SSBO data
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, id_);
     return glMapBufferRange(GL_SHADER_STORAGE_BUFFER, offset, length, access);
   }
 
-  void *map(GLbitfield access = GL_MAP_READ_BIT) const {
+  void *map(GLbitfield access = GL_READ_ONLY) const {
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, id_);
     return glMapBuffer(GL_SHADER_STORAGE_BUFFER, access);
   }
@@ -304,8 +320,8 @@ struct CompiledProgram::Impl {
     auto gtmp_arr = std::vector<char>(gtmp_size);
     void *gtmp_base = gtmp_arr.data();  // std::calloc(gtmp_size, 1);
     iov.push_back(IOV{gtmp_base, gtmp_size});
-    std::optional<std::vector<char>> base_arr;
-    std::optional<std::vector<void *>> saved_ctx_ptrs;
+    std::vector<char> base_arr;
+    std::vector<void *> saved_ctx_ptrs;
     // TODO: these dirty codes are introduced by #694
     if (ext_arr_map.size()) {
       iov.push_back(
@@ -321,17 +337,17 @@ struct CompiledProgram::Impl {
         for (const auto &[i, size] : ext_arr_map) {
           accum_size += size;
         }
-        saved_ctx_ptrs = std::make_optional<std::vector<void *>>();
-        base_arr = std::make_optional<std::vector<char>>(accum_size);
-        void *baseptr = base_arr->data();
+        base_arr.resize(accum_size);
+        void *baseptr = base_arr.data();
         accum_size = 0;
         for (const auto &[i, size] : ext_arr_map) {
           auto ptr = (void *)ctx.args[i];
-          saved_ctx_ptrs->push_back(ptr);
+          saved_ctx_ptrs.push_back(ptr);
           std::memcpy((char *)baseptr + accum_size, ptr, size);
           ctx.args[i] = accum_size;
           accum_size += size;
         }  // concat all extptr into my baseptr
+        TI_INFO("baseptr = {}", baseptr);
         iov.push_back(IOV{baseptr, accum_size});
       }
     }
@@ -340,8 +356,8 @@ struct CompiledProgram::Impl {
       ker->launch();
     }
     if (ext_arr_map.size() > 1) {
-      void *baseptr = base_arr->data();
-      auto cpit = saved_ctx_ptrs->begin();
+      void *baseptr = base_arr.data();
+      auto cpit = saved_ctx_ptrs.begin();
       size_t accum_size = 0;
       for (const auto &[i, size] : ext_arr_map) {
         std::memcpy(*cpit, (char *)baseptr + accum_size, size);
@@ -365,7 +381,7 @@ GLSLLauncher::GLSLLauncher(size_t size) {
   impl->root_ssbo = std::make_unique<GLSSBO>();
   size += 2 * sizeof(int);
   impl->root_buffer.resize(size, 0);
-  impl->root_ssbo->bind_data(impl->root_buffer.data(), size, GL_DYNAMIC_READ);
+  impl->root_ssbo->bind_data(impl->root_buffer.data(), size);
   impl->root_ssbo->bind_index(0);
 }
 
@@ -381,9 +397,9 @@ GLSLLaunchGuard::GLSLLaunchGuard(GLSLLauncherImpl *impl,
   for (int i = 0; i < impl->ssbo.size(); i++) {
     if (!iov[i].size)
       continue;
+    TI_INFO("base = {}, size = {}", iov[i].base, iov[i].size);
     impl->ssbo[i].bind_index(i + 1);
-    impl->ssbo[i].bind_data(iov[i].base, iov[i].size,
-                            GL_DYNAMIC_READ);  // input
+    impl->ssbo[i].bind_data(iov[i].base, iov[i].size);  // input
   }
 }
 
@@ -394,10 +410,12 @@ GLSLLaunchGuard::~GLSLLaunchGuard() {
   for (int i = 0; i < impl->ssbo.size(); i++) {
     if (!iov[i].size)
       continue;
-    void *p = impl->ssbo[i].map(0, iov[i].size);  // output
+    void *p = impl->ssbo[i].map();//0, iov[i].size);  // output
+    TI_INFO("base = {}, p = {}, size = {}", iov[i].base, p, iov[i].size);
+    if (!p) {TI_WARN("glMapBuffer failed: {}", get_opengl_error()); continue;}
     std::memcpy(iov[i].base, p, iov[i].size);
   }
-  glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+  //glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
   impl->ssbo.clear();
 }
 

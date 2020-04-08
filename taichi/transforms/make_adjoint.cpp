@@ -514,6 +514,8 @@ class BackupSSA : public BasicStmtVisitor {
       if (std::find(leaf_to_root.begin(), leaf_to_root.end(), op->parent) ==
           leaf_to_root.end()) {
         auto alloca = load(op);
+        std::cout << "alloca:\n";
+        irpass::print(alloca);
         TI_ASSERT(op->width() == 1);
         stmt->set_operand(i, stmt->insert_before_me(Stmt::make<LocalLoadStmt>(
                                  LocalAddress(alloca, 0))));
@@ -566,12 +568,31 @@ void make_adjoint(IRNode *root, bool use_stack) {
     ConvertLocalVar converter;
     root->accept(&converter);
     typecheck(root);
+
+    std::cout << "before MakeAdjoint::run(root)\n";
+    irpass::re_id(root);
+    irpass::print(root);
+
     MakeAdjoint::run(root);
+
+    std::cout << "after MakeAdjoint::run(root)\n";
+    irpass::re_id(root);
+    irpass::print(root);
+
     typecheck(root);
     fix_block_parents(root);
+
+    std::cout << "after fix_block_parents(root)\n";
+    irpass::re_id(root);
+    irpass::print(root);
+
     BackupSSA b;
     root->accept(&b);
     typecheck(root);
+
+    std::cout << "after make_adjoint\n";
+    irpass::re_id(root);
+    irpass::print(root);
   } else {
     MakeAdjoint::run(root);
     typecheck(root);

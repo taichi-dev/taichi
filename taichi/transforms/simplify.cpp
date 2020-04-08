@@ -186,6 +186,9 @@ class LocalStoreForwarder : public BasicStmtVisitor {
   }
 
   static std::pair<bool, Stmt *> run(IRNode *root, Stmt *var) {
+    std::cout << "LocalStoreForwarder:" << std::endl;
+    irpass::print(root);
+    irpass::print(var);
     LocalStoreForwarder searcher(var);
     root->accept(&searcher);
     return std::make_pair(searcher.is_valid, searcher.result);
@@ -1213,6 +1216,35 @@ class BasicBlockSimplify : public IRVisitor {
           throw IRModified();
         }
       }
+
+      /*
+      // Move common statements at the beginning or the end of both branches
+      // outside.
+      if (if_stmt->true_statements && if_stmt->false_statements) {
+        std::cout << "if";
+        irpass::print(block->statements[current_stmt_id - 1].get());
+        irpass::print(if_stmt);
+        auto &true_clause = if_stmt->true_statements;
+        auto &false_clause = if_stmt->false_statements;
+        if (irpass::same_statements(true_clause->statements[0].get(),
+                                    false_clause->statements[0].get())) {
+          std::cout << "same!";
+
+          irpass::print(true_clause->statements[0].get());
+          irpass::print(false_clause->statements[0].get());
+          auto common_stmt = std::move(true_clause->statements[0]);
+//          irpass::replace_all_usages_with(false_clause.get(),
+//                                          false_clause->statements[0].get(),
+//                                          common_stmt.get());
+          true_clause->statements.erase(true_clause->statements.begin());
+          if_stmt->insert_before_me(std::move(common_stmt));
+//          false_clause->erase(0);
+          irpass::print(block->statements[current_stmt_id].get());
+          irpass::print(if_stmt);
+          throw IRModified();
+        }
+      }
+      */
     }
   }
 
@@ -1301,6 +1333,8 @@ void full_simplify(IRNode *root, const CompileConfig &config) {
     alg_simp(root, config);
   die(root);
   simplify(root);
+  if (advanced_optimization)
+    whole_kernel_cse(root);
   die(root);
 }
 

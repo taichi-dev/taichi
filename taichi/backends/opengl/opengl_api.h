@@ -9,6 +9,8 @@
 
 TLANG_NAMESPACE_BEGIN
 
+class Kernel;
+
 namespace opengl {
 
 void initialize_opengl();
@@ -16,12 +18,23 @@ bool is_opengl_api_available();
 int opengl_get_threads_per_group();
 extern bool opengl_has_GL_NV_shader_atomic_float;
 
-struct GLProgram;
-struct CompiledGLSL {
-  std::unique_ptr<GLProgram> glsl;
-  CompiledGLSL(const std::string &source);
-  ~CompiledGLSL();
-  void launch_glsl(int num_groups) const;
+struct CompiledProgram {
+  struct Impl;
+  std::unique_ptr<Impl> impl;
+
+  // disscussion:
+  // https://github.com/taichi-dev/taichi/pull/696#issuecomment-609332527
+  CompiledProgram(CompiledProgram &&) = default;
+  CompiledProgram &operator=(CompiledProgram &&) = default;
+
+  CompiledProgram(Kernel *kernel, size_t gtmp_size);
+  ~CompiledProgram();
+
+  void add(const std::string &kernel_name,
+           const std::string &kernel_source_code,
+           int num_groups,
+           const UsedFeature &used);
+  void launch(Context &ctx, GLSLLauncher *launcher) const;
 };
 
 }  // namespace opengl

@@ -7,6 +7,7 @@ TLANG_NAMESPACE_BEGIN
 
 namespace opengl {
 
+struct CompiledProgram;
 struct GLSLLauncherImpl;
 
 struct GLSLLaunchGuard {
@@ -23,6 +24,8 @@ struct GLSLLauncher {
   GLSLLaunchGuard create_launch_guard(const std::vector<IOV> &iov) {
     return GLSLLaunchGuard(impl.get(), iov);
   }
+
+  void keep(std::unique_ptr<CompiledProgram> program);
 };
 
 }  // namespace opengl

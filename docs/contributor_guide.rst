@@ -73,6 +73,27 @@ Reviewing & PR merging
 - Make sure the title follows :ref:`prtag`.
 
 
+How to utilize CI resources
+---------------------------
+
+- CI, or Continuous Integration, will build and test your commits in PR against different environments to see if there is an error.
+- Currently Taichi uses `"Travis CI" <https://travis-ci.org>`_ and `"AppVeyor" <https://www.appveyor.com>`_.
+- CI will be triggered everytime you push a commit or commits to an opening PR.
+- You can add ``[skip ci]`` to your commit message to avoid triggering CI. e.g. ``[skip ci] your commit message``
+- The checker on the right of commit hash means CI passed, and cross means CI failed.
+
+How to use the format server
+----------------------------
+
+- You can run ``ti format`` in the command line to format the codes, i.e. enforce coding style.
+- The format server is aimed to enforce the coding style. For now it's the same as ``ti format``.
+- Go http://kun.csail.mit.edu:31415/, and click at the desired PR id.
+- Come back to the PR page, you'll see a user called @taichi-gardener (bot) pushed a commit named ``[skip ci] enforce code format``.
+- You won't see the bot's commit if it didn't find anything not matching the format.
+- Then please run ``git pull`` in your local branch to pull the formatted code.
+- Commit messages marked with ``[format]`` will automatically trigger the format server. e.g. ``[format] your commit message``
+
+
 .. _prtag:
 
 PR title tags

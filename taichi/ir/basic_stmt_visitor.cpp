@@ -43,4 +43,19 @@ void BasicStmtVisitor::visit(OffloadedStmt *stmt) {
     stmt->body->accept(this);
 }
 
+void BasicStmtVisitor::visit(FrontendWhileStmt *stmt) {
+  stmt->body->accept(this);
+}
+
+void BasicStmtVisitor::visit(FrontendForStmt *stmt) {
+  stmt->body->accept(this);
+}
+
+void BasicStmtVisitor::visit(FrontendIfStmt *stmt) {
+  if (stmt->true_statements)
+    stmt->true_statements->accept(this);
+  if (stmt->false_statements)
+    stmt->false_statements->accept(this);
+}
+
 TLANG_NAMESPACE_END

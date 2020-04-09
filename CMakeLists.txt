@@ -50,6 +50,7 @@ endif ()
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build")
 
+include(cmake/PythonNumpyPybind11.cmake)
 include(cmake/TaichiCXXFlags.cmake)
 include(cmake/TaichiCore.cmake)
 include(cmake/TaichiMain.cmake)
@@ -62,12 +63,19 @@ if (NOT TI_WITH_CUDA)
     set(CUDA_TOOLKIT_ROOT_DIR "")
 endif()
 
+message("python=${PYTHON_EXECUTABLE}")
+
+add_custom_target(
+    generate_config
+    COMMAND ${PYTHON_EXECUTABLE} "${CMAKE_CURRENT_LIST_DIR}/misc/fetch_commit_hash.py"
+)
+add_dependencies(${CORE_LIBRARY_NAME} generate_config)
+
 FILE(WRITE ${CMAKE_CURRENT_LIST_DIR}/taichi/common/version.h
         "#pragma once\n"
         "#define TI_VERSION_MAJOR \"${TI_VERSION_MAJOR}\"\n"
         "#define TI_VERSION_MINOR \"${TI_VERSION_MINOR}\"\n"
         "#define TI_VERSION_PATCH \"${TI_VERSION_PATCH}\"\n"
-        "#define TI_COMMIT_HASH \"${TI_COMMIT_HASH}\"\n"
         "#define TI_CUDAVERSION \"${CUDA_VERSION}\"\n"
         "#define TI_CUDAROOT_DIR \"${CUDA_TOOLKIT_ROOT_DIR}\"\n"
         )

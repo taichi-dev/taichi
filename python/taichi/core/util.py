@@ -462,13 +462,6 @@ def _print_taichi_header():
     header += f'supported archs: [{archs_str}], '
 
     commit_hash = tc_core.get_commit_hash()
-    if dev_mode:
-        repo = get_repo()
-        try:
-            commit_hash = str(repo.head.commit)
-        except:
-            pass
-
     commit_hash = commit_hash[:8]
     header += f'commit {commit_hash}, '
 

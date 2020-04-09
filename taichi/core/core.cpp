@@ -5,6 +5,7 @@
 
 #include "taichi/common/util.h"
 #include "taichi/common/version.h"
+#include "taichi/common/commit_hash.h"
 
 TI_NAMESPACE_BEGIN
 

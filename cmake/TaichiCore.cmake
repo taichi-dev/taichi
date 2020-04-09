@@ -1,7 +1,5 @@
 set(CORE_LIBRARY_NAME taichi_core)
 
-include(cmake/PythonNumpyPybind11.cmake)
-
 file(GLOB TAICHI_CORE_SOURCE
         "taichi/*/*/*/*.cpp" "taichi/*/*/*.cpp" "taichi/*/*.cpp" "taichi/*.cpp"
         "taichi/*/*/*/*.h" "taichi/*/*/*.h" "taichi/*/*.h" "taichi/*.h" "external/*.c" "tests/cpp/*.cpp")

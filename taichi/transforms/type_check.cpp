@@ -412,7 +412,8 @@ namespace irpass {
 
 void typecheck(IRNode *root) {
   check_fields_registered(root);
-  return TypeCheck::run(root);
+  TypeCheck::run(root);
+  verify(root);
 }
 
 }  // namespace irpass

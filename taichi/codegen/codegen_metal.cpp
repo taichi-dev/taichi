@@ -773,18 +773,14 @@ class KernelCodegen : public IRVisitor {
 
       current_kernel_attribs_ = &ka;
       const auto mtl_func_name = mtl_kernel_func_name(mtl_kernel_name);
-      emit_mtl_kernel_func_def(mtl_func_name, ka.buffers,
-                               /*extra_params=*/
-                               {
-                                   {.type = "thread const ListgenElement&",
-                                    .name = kListgenElemVarName},
-                               },
-                               stmt->body.get());
+      emit_mtl_kernel_func_def(
+          mtl_func_name, ka.buffers,
+          /*extra_params=*/
+          {{"thread const ListgenElement&", kListgenElemVarName}},
+          stmt->body.get());
       emit_call_mtl_kernel_func(mtl_func_name, ka.buffers,
                                 /*extra_args=*/
-                                {
-                                    kListgenElemVarName,
-                                });
+                                {kListgenElemVarName});
       current_kernel_attribs_ = nullptr;
     }
     emit("}}");  // closes for loop

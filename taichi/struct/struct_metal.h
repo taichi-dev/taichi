@@ -34,7 +34,6 @@ struct CompiledStructs {
   std::string snode_structs_source_code;
   // Runtime related source code
   std::string runtime_utils_source_code;
-  std::string runtime_kernels_source_code;
   // Root buffer size in bytes.
   size_t root_size;
   // Runtime struct size.

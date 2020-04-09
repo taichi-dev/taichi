@@ -49,9 +49,6 @@ def test_python(args):
             threads = arg_threads
         elif env_threads:
             threads = int(env_threads)
-            print(
-                f'Following TI_TEST_THREADS to use {threads} testing thread(s)...'
-            )
         print(f'Starting {threads} testing thread(s)...')
         if threads > 1:
             pytest_args += ['-n', str(threads)]
@@ -64,8 +61,10 @@ def test_cpp(args):
     # Cpp tests use the legacy non LLVM backend
     ti.reset()
     print("Running C++ tests...")
-    task = ti.Task('test')
+    task = ti.Task('test_gui')
     return int(task.run(*test_files))
+    #task = ti.Task('test')
+    #return int(task.run(*test_files))
 
 
 def make_argument_parser():

@@ -90,6 +90,7 @@ void compile_to_offloads(IRNode *ir,
 
   // Final field registration correctness & type checking
   irpass::typecheck(ir);
+  irpass::verify(ir);
 }
 
 }  // namespace irpass

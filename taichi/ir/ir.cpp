@@ -419,7 +419,7 @@ void Block::erase(Stmt *stmt) {
 std::unique_ptr<Stmt> Block::extract(int location) {
   auto stmt = std::move(statements[location]);
   statements.erase(statements.begin() + location);
-  return std::move(stmt);
+  return stmt;
 }
 
 std::unique_ptr<Stmt> Block::extract(Stmt *stmt) {
@@ -428,6 +428,7 @@ std::unique_ptr<Stmt> Block::extract(Stmt *stmt) {
       return extract(i);
     }
   }
+  TI_ERROR("stmt not found");
 }
 
 void Block::insert(std::unique_ptr<Stmt> &&stmt, int location) {

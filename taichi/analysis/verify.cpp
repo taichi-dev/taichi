@@ -60,6 +60,11 @@ class IRVerifier : public IRVisitor {
     }
   }
 
+  void visit(LocalStoreStmt *stmt) override {
+    basic_verify(stmt);
+    TI_ASSERT(stmt->ptr->is<AllocaStmt>());
+  }
+
   void visit(IfStmt *if_stmt) override {
     basic_verify(if_stmt);
     if (if_stmt->true_statements)

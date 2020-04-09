@@ -29,10 +29,6 @@ class IRVerifier : public IRVisitor {
           break;
         }
       }
-      if (!found) {
-        std::cout << "not found operand: " << op->id << std::endl;
-        irpass::print(stmt);
-      }
       TI_ASSERT(found);
     }
     visible_stmts.back().insert(stmt);
@@ -112,8 +108,6 @@ class IRVerifier : public IRVisitor {
 
 namespace irpass {
 void verify(IRNode *root) {
-  std::cout << "verify: " << std::endl;
-  print(root);
   IRVerifier::run(root);
 }
 }  // namespace irpass

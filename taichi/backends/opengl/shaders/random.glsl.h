@@ -5,12 +5,12 @@ STR(
 uvec4 _rand_;
 
 void _init_rand() {
-  uint i = (54321 + gl_GlobalInvocationID.x) * (12345 + _states_[0]);
+  uint i = (54321 + gl_GlobalInvocationID.x) * (12345 + _rt_.rand_state);
   _rand_.x = 123456789 * i * 1000000007;
   _rand_.y = 362436069;
   _rand_.z = 521288629;
   _rand_.w = 88675123;
-  _states_[0] += 1;
+  _rt_.rand_state += 1;
 }
 
 uint _rand_u32() {

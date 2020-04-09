@@ -70,7 +70,8 @@ void OpenglStructCompiler::generate_types(const SNode &snode) {
     emit("#define {}_stride {} // sizeof({})", node_name,
          data_type_size(snode.dt), dt_name);
     stride_map_[node_name] = data_type_size(snode.dt);
-  } else if (snode.type == SNodeType::dense || snode.type == SNodeType::root) {
+  } else if (snode.type == SNodeType::dense || snode.type == SNodeType::root
+      || snode.type == SNodeType::bitmasked) { // TODO: alloc `bool bitmask[]` array for bitmasked()
     emit("#define {} const int // {}", node_name, snode_type_name(snode.type));
     const int n = (snode.type == SNodeType::dense) ? snode.n : 1;
     emit("#define {}_n {}", node_name, n);

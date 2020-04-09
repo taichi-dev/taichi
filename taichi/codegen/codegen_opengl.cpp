@@ -87,9 +87,10 @@ class KernelGen : public IRVisitor {
 
     // clang-format off
     std::string kernel_header =
-        "layout(packed, binding = 0) buffer data_i32 { int _states_[2]; int _data_i32_[]; };\n"
-        "layout(packed, binding = 0) buffer data_f32 { int _unused1_[2]; float _data_f32_[]; };\n"
-        "layout(packed, binding = 0) buffer data_f64 { int _unused2_[2]; double _data_f64_[]; };\n";
+#include "taichi/backends/opengl/shaders/runtime_struct.glsl.h"
+        "layout(packed, binding = 0) buffer data_i32 { _RT_ _rt_; int _data_i32_[]; };\n"
+        "layout(packed, binding = 0) buffer data_f32 { _RT_ _unused1_; float _data_f32_[]; };\n"
+        "layout(packed, binding = 0) buffer data_f64 { _RT_ _unused2_; double _data_f64_[]; };\n";
 
     if (used.argument) {
       kernel_header +=
@@ -233,9 +234,25 @@ class KernelGen : public IRVisitor {
     }
 
     emit("int {} = {} + {} * {}; // {}", stmt->short_name(),
-         parent->short_name(),
-         struct_compiled_->class_children_map[parent_type],
+         parent->short_name(), struct_compiled_->class_children_map[parent_type],
          stmt->input_index->short_name(), stmt->snode->node_type_name);
+  }
+
+  void visit(SNodeOpStmt *stmt) override {
+    if (stmt->op_type == SNodeOpType::is_active) {
+      auto sn = stmt->snode;
+      if (sn->type == SNodeType::dense || sn->type == SNodeType::root) {
+        emit("int {} = 1;", stmt->short_name());
+      } else if (sn->type == SNodeType::bitmasked) {
+        auto ch_addr = fmt::format("{} + {} * {}",
+            stmt->ptr->short_name(), struct_compiled_->class_children_map[sn->node_type_name],
+         stmt->val->short_name());
+        emit("int {} = _rt_.bitmask[{}] ? 1 : 0; // {}", stmt->short_name(),
+         ch_addr, sn->node_type_name);
+      } else {
+        TI_NOT_IMPLEMENTED;
+      }
+    }
   }
 
   std::map<int, std::string> ptr_signats;
@@ -253,6 +270,7 @@ class KernelGen : public IRVisitor {
   void visit(GlobalStoreStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
     auto dt = stmt->data->element_type();
+    emit("_rt_.bitmask[{}] = true;", stmt->ptr->short_name());
     emit("_{}_{}_[{} >> {}] = {};",
          ptr_signats.at(stmt->ptr->id),  // throw out_of_range if not a pointer
          data_type_short_name(dt), stmt->ptr->short_name(),

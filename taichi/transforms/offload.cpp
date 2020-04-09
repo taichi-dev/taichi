@@ -132,9 +132,9 @@ class Offloader {
 };
 
 // Build a mapping from all statements to its containing OffloadedStmt
-class InstToOffload : public BasicStmtVisitor {
+class StmtToOffloaded : public BasicStmtVisitor {
  private:
-  InstToOffload() {
+  StmtToOffloaded() {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
     current_offloaded = nullptr;
@@ -151,22 +151,22 @@ class InstToOffload : public BasicStmtVisitor {
   void visit(Stmt *stmt) override {
     if (current_offloaded != nullptr) {
       // inside a offloaded stmt, record its belonging offloaded_stmt
-      inst_to_offloaded[stmt] = current_offloaded;
+      stmt_to_offloaded[stmt] = current_offloaded;
     }
   }
 
  public:
   static std::unordered_map<Stmt *, Stmt *> run(IRNode *ir) {
-    InstToOffload pass;
+    StmtToOffloaded pass;
     ir->accept(&pass);
-    return pass.inst_to_offloaded;
+    return pass.stmt_to_offloaded;
   }
 
  private:
   using BasicStmtVisitor::visit;
 
   // Local variables to its containing offloaded statement
-  std::unordered_map<Stmt *, Stmt *> inst_to_offloaded;
+  std::unordered_map<Stmt *, Stmt *> stmt_to_offloaded;
 
   Stmt *current_offloaded;
 };
@@ -184,16 +184,17 @@ Steps:
 // Traverse offloaded blocks to identify out-of-offload local LD/ST and
 // statement references
 class IdentifyValuesUsedInOtherOffloads : public BasicStmtVisitor {
- public:
   using BasicStmtVisitor::visit;
 
-  // Local variables to global temporary offsets (in bytes)
-  StmtToOffsetMap local_to_global;
-
-  std::unordered_map<Stmt *, Stmt *> inst_to_offloaded;
-
-  Stmt *current_offloaded;
-  std::size_t global_offset;
+ private:
+  IdentifyValuesUsedInOtherOffloads(
+      const std::unordered_map<Stmt *, Stmt *> &stmt_to_offloaded)
+      : stmt_to_offloaded(stmt_to_offloaded) {
+    allow_undefined_visitor = true;
+    invoke_default_visitor = true;
+    current_offloaded = nullptr;
+    global_offset = 0;
+  }
 
   std::size_t allocate_global(VectorType type) {
     TI_ASSERT(type.width == 1);
@@ -203,15 +204,7 @@ class IdentifyValuesUsedInOtherOffloads : public BasicStmtVisitor {
     return ret;
   }
 
-  IdentifyValuesUsedInOtherOffloads(
-      const std::unordered_map<Stmt *, Stmt *> &inst_to_offload)
-      : inst_to_offloaded(inst_to_offload) {
-    allow_undefined_visitor = true;
-    invoke_default_visitor = true;
-    current_offloaded = nullptr;
-    global_offset = 0;
-  }
-
+ public:
   void visit(OffloadedStmt *stmt) override {
     current_offloaded = stmt;
     if (stmt->begin_stmt) {
@@ -232,7 +225,7 @@ class IdentifyValuesUsedInOtherOffloads : public BasicStmtVisitor {
   void test_and_allocate(Stmt *stmt) {
     if (stmt == nullptr)
       return;
-    if (inst_to_offloaded[stmt] == current_offloaded)
+    if (stmt_to_offloaded[stmt] == current_offloaded)
       return;
     if (local_to_global.find(stmt) == local_to_global.end()) {
       // Not yet allocated
@@ -273,25 +266,31 @@ class IdentifyValuesUsedInOtherOffloads : public BasicStmtVisitor {
 
   static OffloadedResult run(
       IRNode *root,
-      const std::unordered_map<Stmt *, Stmt *> &inst_to_offload) {
-    IdentifyValuesUsedInOtherOffloads pass(inst_to_offload);
+      const std::unordered_map<Stmt *, Stmt *> &stmt_to_offloaded) {
+    IdentifyValuesUsedInOtherOffloads pass(stmt_to_offloaded);
     root->accept(&pass);
     OffloadedResult result;
     result.total_size = pass.global_offset;
     result.local_to_global_offset = std::move(pass.local_to_global);
     return result;
   }
+
+ private:
+  // Local variables to global temporary offsets (in bytes)
+  StmtToOffsetMap local_to_global;
+
+  std::unordered_map<Stmt *, Stmt *> stmt_to_offloaded;
+
+  Stmt *current_offloaded;
+  std::size_t global_offset;
 };
 
 // Store intermediate values to globals so that statements in later offloaded
 // statement can load
 class PromoteIntermediateToGlobalTmp : public BasicStmtVisitor {
- public:
   using BasicStmtVisitor::visit;
 
-  StmtToOffsetMap local_to_global_offset;
-  std::set<Stmt *> stored_to_global;
-
+ private:
   explicit PromoteIntermediateToGlobalTmp(
       const StmtToOffsetMap &local_to_global_offset)
       : local_to_global_offset(local_to_global_offset) {
@@ -299,6 +298,7 @@ class PromoteIntermediateToGlobalTmp : public BasicStmtVisitor {
     invoke_default_visitor = true;
   }
 
+ public:
   void visit(Stmt *stmt) override {
     if (!stmt->is<AllocaStmt>() &&
         local_to_global_offset.find(stmt) != local_to_global_offset.end() &&
@@ -323,20 +323,21 @@ class PromoteIntermediateToGlobalTmp : public BasicStmtVisitor {
       break;
     }
   }
+
+ private:
+  StmtToOffsetMap local_to_global_offset;
+  std::set<Stmt *> stored_to_global;
 };
 
 class FixCrossOffloadReferences : public BasicStmtVisitor {
- public:
   using BasicStmtVisitor::visit;
 
-  StmtToOffsetMap local_to_global_offset;
-  std::unordered_map<Stmt *, VectorType> local_to_global_vector_type;
-  std::unordered_map<Stmt *, Stmt *> inst_to_offload;
-
-  FixCrossOffloadReferences(const StmtToOffsetMap &local_to_global_offset,
-                            std::unordered_map<Stmt *, Stmt *> inst_to_offload)
+ private:
+  FixCrossOffloadReferences(
+      const StmtToOffsetMap &local_to_global_offset,
+      std::unordered_map<Stmt *, Stmt *> stmt_to_offloaded)
       : local_to_global_offset(local_to_global_offset),
-        inst_to_offload(inst_to_offload) {
+        stmt_to_offloaded(stmt_to_offloaded) {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
   }
@@ -433,7 +434,8 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
         continue;
       if (local_to_global_offset.find(op) == local_to_global_offset.end())
         continue;
-      if (inst_to_offload[stmt] == inst_to_offload[op])  // same OffloadedStmt
+      if (stmt_to_offloaded[stmt] ==
+          stmt_to_offloaded[op])  // same OffloadedStmt
         continue;
 
       auto global = Stmt::make<GlobalTemporaryStmt>(local_to_global_offset[op],
@@ -448,10 +450,11 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
       throw IRModified();
   }
 
+ public:
   static void run(IRNode *root,
-                  std::unordered_map<Stmt *, Stmt *> inst_to_offload,
+                  std::unordered_map<Stmt *, Stmt *> stmt_to_offloaded,
                   const StmtToOffsetMap &local_to_global_offset) {
-    FixCrossOffloadReferences pass(local_to_global_offset, inst_to_offload);
+    FixCrossOffloadReferences pass(local_to_global_offset, stmt_to_offloaded);
     while (true) {
       try {
         root->accept(&pass);
@@ -461,6 +464,11 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
       break;
     }
   }
+
+ private:
+  StmtToOffsetMap local_to_global_offset;
+  std::unordered_map<Stmt *, VectorType> local_to_global_vector_type;
+  std::unordered_map<Stmt *, Stmt *> stmt_to_offloaded;
 };
 
 void insert_gc(IRNode *root) {
@@ -557,11 +565,11 @@ OffloadedResult offload(IRNode *root) {
   typecheck(root);
   fix_block_parents(root);
   {
-    auto inst_to_offload = InstToOffload::run(root);
-    result = IdentifyValuesUsedInOtherOffloads::run(root, inst_to_offload);
+    auto stmt_to_offloaded = StmtToOffloaded::run(root);
+    result = IdentifyValuesUsedInOtherOffloads::run(root, stmt_to_offloaded);
     PromoteIntermediateToGlobalTmp::run(root, result.local_to_global_offset);
-    inst_to_offload = InstToOffload::run(root);
-    FixCrossOffloadReferences::run(root, inst_to_offload,
+    stmt_to_offloaded = StmtToOffloaded::run(root);
+    FixCrossOffloadReferences::run(root, stmt_to_offloaded,
                                    result.local_to_global_offset);
     fix_block_parents(root);
   }

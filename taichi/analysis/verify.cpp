@@ -11,20 +11,10 @@ class IRVerifier : public IRVisitor {
   std::vector<std::unordered_set<Stmt *>> visible_stmts;
 
  public:
-  explicit IRVerifier(IRNode *root) {
+  explicit IRVerifier(IRNode *root): current_block(nullptr) {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
-
-    visible_stmts.emplace_back();
-    if (root->is<Block>()) {
-      TI_ASSERT(root->as<Block>()->parent == nullptr);
-      // for checking the Block's parent
-      current_block = root->as<Block>()->parent;
-    }
-    else {
-      TI_ASSERT(root->is<Stmt>());
-      current_block = root->as<Stmt>()->parent;
-    }
+    TI_ASSERT(root->is<Block>() && root->as<Block>()->parent == nullptr);
   }
 
   void basic_verify(Stmt *stmt) {
@@ -39,7 +29,7 @@ class IRVerifier : public IRVisitor {
           break;
         }
       }
-//      TI_ASSERT(found);
+      TI_ASSERT(found);
     }
     visible_stmts.back().insert(stmt);
   }

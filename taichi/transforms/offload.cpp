@@ -187,6 +187,8 @@ class IdentifyLocalVars : public BasicStmtVisitor {
   }
 
   void test_and_allocate(Stmt *stmt) {
+    if (stmt == nullptr)
+      return;
     if (inst_to_offloaded[stmt] == current_offloaded)
       return;
     if (local_to_global.find(stmt) == local_to_global.end()) {
@@ -220,7 +222,6 @@ class IdentifyLocalVars : public BasicStmtVisitor {
   }
 
   void visit(Stmt *stmt) override {
-    // irpass::print(stmt);
     if (current_offloaded != nullptr) {
       // inside a offloaded stmt, record its belong offloaded_stmt
       inst_to_offloaded[stmt] = current_offloaded;
@@ -420,9 +421,11 @@ class PromoteLocals : public BasicStmtVisitor {
     bool modified = false;
     for (int i = 0; i < n_op; i++) {
       auto op = stmt->operand(i);
+      if (op == nullptr)
+        continue;
       if (local_to_global_offset.find(op) == local_to_global_offset.end())
         continue;
-      if (inst_to_offload[stmt] == inst_to_offload[op]) // same OffloadedStmt
+      if (inst_to_offload[stmt] == inst_to_offload[op])  // same OffloadedStmt
         continue;
 
       auto global = Stmt::make<GlobalTemporaryStmt>(local_to_global_offset[op],

@@ -21,7 +21,7 @@ def test_for_continue():
     for i in range(n):
         expect = 0 if i % 2 == 0 else i
         assert xs[i] == expect
-'''
+
 
 @ti.all_archs
 def test_while_continue():
@@ -82,4 +82,3 @@ def test_unconditional_continue():
     xs = x.to_numpy()
     for i in range(n):
         assert xs[i] == 0
-'''

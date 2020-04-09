@@ -163,6 +163,7 @@ class IdentifyLocalVars : public BasicStmtVisitor {
 
   IdentifyLocalVars() {
     allow_undefined_visitor = true;
+    invoke_default_visitor = true;
     current_offloaded = nullptr;
     global_offset = 0;
   }
@@ -214,7 +215,12 @@ class IdentifyLocalVars : public BasicStmtVisitor {
     }
   }
 
-  void generic_visit(Stmt *stmt) {
+  void visit(ContinueStmt *stmt) override {
+    // do nothing
+  }
+
+  void visit(Stmt *stmt) override {
+    // irpass::print(stmt);
     if (current_offloaded != nullptr) {
       // inside a offloaded stmt, record its belong offloaded_stmt
       inst_to_offloaded[stmt] = current_offloaded;
@@ -224,10 +230,6 @@ class IdentifyLocalVars : public BasicStmtVisitor {
       auto op = stmt->operand(i);
       test_and_allocate(op);
     }
-  }
-
-  void visit(Stmt *stmt) override {
-    generic_visit(stmt);
   }
 
   static OffloadedResult run(IRNode *root) {
@@ -279,17 +281,56 @@ class PromoteIntermediate : public BasicStmtVisitor {
   }
 };
 
+class InstToOffload : public BasicStmtVisitor {
+ public:
+  using BasicStmtVisitor::visit;
+
+  // Local variables alloc to its containing offloaded statement
+  std::map<Stmt *, Stmt *> inst_to_offloaded;
+
+  Stmt *current_offloaded;
+
+  InstToOffload() {
+    allow_undefined_visitor = true;
+    invoke_default_visitor = true;
+    current_offloaded = nullptr;
+  }
+
+  void visit(OffloadedStmt *stmt) override {
+    current_offloaded = stmt;
+    if (stmt->body)
+      stmt->body->accept(this);
+    current_offloaded = nullptr;
+  }
+
+  void visit(Stmt *stmt) override {
+    if (current_offloaded != nullptr) {
+      // inside a offloaded stmt, record its belonging offloaded_stmt
+      inst_to_offloaded[stmt] = current_offloaded;
+    }
+  }
+
+  static std::map<Stmt *, Stmt *> run(IRNode *ir) {
+    InstToOffload pass;
+    ir->accept(&pass);
+    return pass.inst_to_offloaded;
+  }
+};
+
 class PromoteLocals : public BasicStmtVisitor {
  public:
   using BasicStmtVisitor::visit;
 
   StmtToOffsetMap local_to_global_offset;
   std::map<Stmt *, VectorType> local_to_global_vector_type;
-  std::set<Stmt *> stored_to_global;
+  std::map<Stmt *, Stmt *> inst_to_offload;
 
-  explicit PromoteLocals(const StmtToOffsetMap &local_to_global_offset)
-      : local_to_global_offset(local_to_global_offset) {
+  explicit PromoteLocals(const StmtToOffsetMap &local_to_global_offset,
+                         std::map<Stmt *, Stmt *> inst_to_offload)
+      : local_to_global_offset(local_to_global_offset),
+        inst_to_offload(inst_to_offload) {
     allow_undefined_visitor = true;
+    invoke_default_visitor = true;
   }
 
   void visit(OffloadedStmt *stmt) override {
@@ -371,8 +412,35 @@ class PromoteLocals : public BasicStmtVisitor {
     throw IRModified();
   }
 
-  static void run(IRNode *root, const StmtToOffsetMap &local_to_global_offset) {
-    PromoteLocals pass(local_to_global_offset);
+  // Generic visitor
+  // TODO: maybe other visitors do the same thing as this?
+  void visit(Stmt *stmt) override {
+    TI_ASSERT(stmt->width() == 1);
+    int n_op = stmt->num_operands();
+    bool modified = false;
+    for (int i = 0; i < n_op; i++) {
+      auto op = stmt->operand(i);
+      if (local_to_global_offset.find(op) == local_to_global_offset.end())
+        continue;
+      if (inst_to_offload[stmt] == inst_to_offload[op]) // same OffloadedStmt
+        continue;
+
+      auto global = Stmt::make<GlobalTemporaryStmt>(local_to_global_offset[op],
+                                                    op->ret_type);
+      auto load = Stmt::make<GlobalLoadStmt>(global.get());
+      stmt->set_operand(i, load.get());
+      stmt->insert_before_me(std::move(global));
+      stmt->insert_before_me(std::move(load));
+      modified = true;
+    }
+    if (modified)
+      throw IRModified();
+  }
+
+  static void run(IRNode *root,
+                  std::map<Stmt *, Stmt *> inst_to_offload,
+                  const StmtToOffsetMap &local_to_global_offset) {
+    PromoteLocals pass(local_to_global_offset, inst_to_offload);
     while (true) {
       try {
         root->accept(&pass);
@@ -479,8 +547,12 @@ OffloadedResult offload(IRNode *root) {
   irpass::fix_block_parents(root);
   {
     result = IdentifyLocalVars::run(root);
+    fix_block_parents(root);
     PromoteIntermediate::run(root, result.local_to_global_offset);
-    PromoteLocals::run(root, result.local_to_global_offset);
+    fix_block_parents(root);
+    auto inst_to_offload = InstToOffload::run(root);
+    PromoteLocals::run(root, inst_to_offload, result.local_to_global_offset);
+    fix_block_parents(root);
   }
   insert_gc(root);
   // TODO(k-ye): Move this into its own pass. However, we need to wait for all

@@ -95,7 +95,7 @@ class IRVerifier : public IRVisitor {
   }
 
   void visit(OffloadedStmt *stmt) override {
-    basic_verify(stmt);
+    TI_ASSERT(stmt->parent == current_block);
     if (stmt->body)
       stmt->body->accept(this);
   }

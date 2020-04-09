@@ -34,11 +34,14 @@ class IRVerifier : public IRVisitor {
     visible_stmts.back().insert(stmt);
   }
 
-  void visit(Stmt *stmt) {
+  void visit(Stmt *stmt) override {
     basic_verify(stmt);
+    if (stmt->is_container_statement()) {
+      TI_ERROR("Visitor for container stmt undefined.");
+    }
   }
 
-  void visit(Block *stmt_list) {
+  void visit(Block *stmt_list) override {
     TI_ASSERT(stmt_list->parent == current_block);
     auto backup_block = current_block;
     current_block = stmt_list;
@@ -48,6 +51,48 @@ class IRVerifier : public IRVisitor {
     }
     current_block = backup_block;
     visible_stmts.pop_back();
+  }
+
+  void visit(LocalLoadStmt *stmt) override {
+    basic_verify(stmt);
+    for (int i = 0; i < stmt->width(); i++) {
+      TI_ASSERT(stmt->ptr[i].var->is<AllocaStmt>());
+    }
+  }
+
+  void visit(IfStmt *if_stmt) override {
+    basic_verify(if_stmt);
+    if (if_stmt->true_statements)
+      if_stmt->true_statements->accept(this);
+    if (if_stmt->false_statements) {
+      if_stmt->false_statements->accept(this);
+    }
+  }
+
+  void visit(FuncBodyStmt *stmt) override {
+    basic_verify(stmt);
+    stmt->body->accept(this);
+  }
+
+  void visit(WhileStmt *stmt) override {
+    basic_verify(stmt);
+    stmt->body->accept(this);
+  }
+
+  void visit(RangeForStmt *stmt) override {
+    basic_verify(stmt);
+    stmt->body->accept(this);
+  }
+
+  void visit(StructForStmt *stmt) override {
+    basic_verify(stmt);
+    stmt->body->accept(this);
+  }
+
+  void visit(OffloadedStmt *stmt) override {
+    basic_verify(stmt);
+    if (stmt->body)
+      stmt->body->accept(this);
   }
 
   static void run(IRNode *root) {

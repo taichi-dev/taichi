@@ -22,6 +22,18 @@ class DetectForWithBreak : public BasicStmtVisitor {
       fors_with_break.insert(loop);
   }
 
+  void visit(FrontendWhileStmt *stmt) override {
+    loop_stack.push_back(stmt);
+    stmt->body->accept(this);
+    loop_stack.pop_back();
+  }
+
+  void visit(FrontendForStmt *stmt) override {
+    loop_stack.push_back(stmt);
+    stmt->body->accept(this);
+    loop_stack.pop_back();
+  }
+
   std::unordered_set<Stmt *> run() {
     root->accept(this);
     return fors_with_break;

@@ -44,15 +44,11 @@ void BasicStmtVisitor::visit(OffloadedStmt *stmt) {
 }
 
 void BasicStmtVisitor::visit(FrontendWhileStmt *stmt) {
-  loop_stack.push_back(stmt);
   stmt->body->accept(this);
-  loop_stack.pop_back();
 }
 
 void BasicStmtVisitor::visit(FrontendForStmt *stmt) {
-  loop_stack.push_back(stmt);
   stmt->body->accept(this);
-  loop_stack.pop_back();
 }
 
 void BasicStmtVisitor::visit(FrontendIfStmt *stmt) {

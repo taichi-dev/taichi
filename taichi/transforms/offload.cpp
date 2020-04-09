@@ -1,4 +1,5 @@
 #include <set>
+
 #include "taichi/ir/ir.h"
 
 TLANG_NAMESPACE_BEGIN
@@ -135,13 +136,13 @@ After offloading, some local variables/instructions are accessed across
 offloaded blocks. This pass promote these local values into global variables.
 
 Steps:
-  1. (IdentifyLocalVars) Traverse offloaded blocks to identify out-of-block local LD/ST, instruction
-references
-  2. Replace alloca with global var initialization (set to 0)
-     Replace local LD/ST with global LD/ST
+  1. IdentifyValuesUsedInOtherOffloads
+  2. PromoteIntermediateToGlobalTmp
+  3. FixCrossOffloadReferences
 */
 
-class IdentifyLocalVars : public BasicStmtVisitor {
+// Traverse offloaded blocks to identify out-of-offload local LD/ST and statement references
+class IdentifyValuesUsedInOtherOffloads : public BasicStmtVisitor {
  public:
   using BasicStmtVisitor::visit;
 
@@ -161,7 +162,7 @@ class IdentifyLocalVars : public BasicStmtVisitor {
     return ret;
   }
 
-  IdentifyLocalVars() {
+  IdentifyValuesUsedInOtherOffloads() {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
     current_offloaded = nullptr;
@@ -230,7 +231,7 @@ class IdentifyLocalVars : public BasicStmtVisitor {
   }
 
   static OffloadedResult run(IRNode *root) {
-    IdentifyLocalVars pass;
+    IdentifyValuesUsedInOtherOffloads pass;
     root->accept(&pass);
     OffloadedResult result;
     result.total_size = pass.global_offset;
@@ -239,15 +240,17 @@ class IdentifyLocalVars : public BasicStmtVisitor {
   }
 };
 
-// Store intermediate values to globals so that statements in later offloaded statement can load
-class PromoteIntermediate : public BasicStmtVisitor {
+// Store intermediate values to globals so that statements in later offloaded
+// statement can load
+class PromoteIntermediateToGlobalTmp : public BasicStmtVisitor {
  public:
   using BasicStmtVisitor::visit;
 
   StmtToOffsetMap local_to_global_offset;
   std::set<Stmt *> stored_to_global;
 
-  explicit PromoteIntermediate(const StmtToOffsetMap &local_to_global_offset)
+  explicit PromoteIntermediateToGlobalTmp(
+      const StmtToOffsetMap &local_to_global_offset)
       : local_to_global_offset(local_to_global_offset) {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
@@ -267,7 +270,7 @@ class PromoteIntermediate : public BasicStmtVisitor {
   }
 
   static void run(IRNode *root, const StmtToOffsetMap &local_to_global_offset) {
-    PromoteIntermediate pass(local_to_global_offset);
+    PromoteIntermediateToGlobalTmp pass(local_to_global_offset);
     while (true) {
       try {
         root->accept(&pass);
@@ -315,7 +318,7 @@ class InstToOffload : public BasicStmtVisitor {
   }
 };
 
-class PromoteLocals : public BasicStmtVisitor {
+class FixCrossOffloadReferences : public BasicStmtVisitor {
  public:
   using BasicStmtVisitor::visit;
 
@@ -323,8 +326,8 @@ class PromoteLocals : public BasicStmtVisitor {
   std::map<Stmt *, VectorType> local_to_global_vector_type;
   std::map<Stmt *, Stmt *> inst_to_offload;
 
-  explicit PromoteLocals(const StmtToOffsetMap &local_to_global_offset,
-                         std::map<Stmt *, Stmt *> inst_to_offload)
+  FixCrossOffloadReferences(const StmtToOffsetMap &local_to_global_offset,
+                            std::map<Stmt *, Stmt *> inst_to_offload)
       : local_to_global_offset(local_to_global_offset),
         inst_to_offload(inst_to_offload) {
     allow_undefined_visitor = true;
@@ -342,6 +345,7 @@ class PromoteLocals : public BasicStmtVisitor {
     }
   }
 
+  // Replace alloca with global var initialization (set to 0)
   void visit(AllocaStmt *stmt) override {
     if (local_to_global_offset.find(stmt) == local_to_global_offset.end())
       return;
@@ -359,6 +363,7 @@ class PromoteLocals : public BasicStmtVisitor {
     throw IRModified();
   }
 
+  // Replace local LD/ST with global LD/ST
   void visit(LocalLoadStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
     auto alloca = stmt->ptr[0].var;
@@ -411,7 +416,6 @@ class PromoteLocals : public BasicStmtVisitor {
   }
 
   // Generic visitor
-  // TODO: maybe other visitors do the same thing as this?
   void visit(Stmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
     int n_op = stmt->num_operands();
@@ -440,7 +444,7 @@ class PromoteLocals : public BasicStmtVisitor {
   static void run(IRNode *root,
                   std::map<Stmt *, Stmt *> inst_to_offload,
                   const StmtToOffsetMap &local_to_global_offset) {
-    PromoteLocals pass(local_to_global_offset, inst_to_offload);
+    FixCrossOffloadReferences pass(local_to_global_offset, inst_to_offload);
     while (true) {
       try {
         root->accept(&pass);
@@ -543,15 +547,16 @@ class AssociateContinueScope : public BasicStmtVisitor {
 OffloadedResult offload(IRNode *root) {
   OffloadedResult result;
   Offloader _(root);
-  irpass::typecheck(root);
-  irpass::fix_block_parents(root);
+  typecheck(root);
+  fix_block_parents(root);
   {
-    result = IdentifyLocalVars::run(root);
+    result = IdentifyValuesUsedInOtherOffloads::run(root);
     fix_block_parents(root);
-    PromoteIntermediate::run(root, result.local_to_global_offset);
+    PromoteIntermediateToGlobalTmp::run(root, result.local_to_global_offset);
     fix_block_parents(root);
     auto inst_to_offload = InstToOffload::run(root);
-    PromoteLocals::run(root, inst_to_offload, result.local_to_global_offset);
+    FixCrossOffloadReferences::run(root, inst_to_offload,
+                                   result.local_to_global_offset);
     fix_block_parents(root);
   }
   insert_gc(root);

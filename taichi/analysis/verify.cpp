@@ -99,8 +99,7 @@ class IRVerifier : public IRVisitor {
   }
 
   void visit(OffloadedStmt *stmt) override {
-    TI_ASSERT(stmt->parent == current_block);
-    visible_stmts.back().insert(stmt);
+    basic_verify(stmt);
     if (stmt->body)
       stmt->body->accept(this);
   }

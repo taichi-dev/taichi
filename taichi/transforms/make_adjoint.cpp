@@ -119,9 +119,9 @@ class MakeAdjoint : public IRVisitor {
     alloca_block = nullptr;
     // Note:
     // MakeAdjoint acts on the block with if's and without struct/range/while
-    // loops This is basically a straight-line code with forking and merging due
-    // to if's Therefore we the adjoint allocas must belong to this block for it
-    // to be visible. We call this block `alloca_block`.
+    // loops. This is basically a straight-line code with forking and merging
+    // due to if's. Therefore we the adjoint allocas must belong to this block
+    // for it to be visible. We call this block `alloca_block`.
 
     for_depth = 0;
   }

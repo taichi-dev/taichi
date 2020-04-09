@@ -135,7 +135,7 @@ After offloading, some local variables/instructions are accessed across
 offloaded blocks. This pass promote these local values into global variables.
 
 Steps:
-  1. Traverse offloaded blocks to identify out-of-block local LD/ST, instruction
+  1. (IdentifyLocalVars) Traverse offloaded blocks to identify out-of-block local LD/ST, instruction
 references
   2. Replace alloca with global var initialization (set to 0)
      Replace local LD/ST with global LD/ST
@@ -217,10 +217,6 @@ class IdentifyLocalVars : public BasicStmtVisitor {
     }
   }
 
-  void visit(ContinueStmt *stmt) override {
-    // do nothing
-  }
-
   void visit(Stmt *stmt) override {
     if (current_offloaded != nullptr) {
       // inside a offloaded stmt, record its belong offloaded_stmt
@@ -243,6 +239,7 @@ class IdentifyLocalVars : public BasicStmtVisitor {
   }
 };
 
+// Store intermediate values to globals so that statements in later offloaded statement can load
 class PromoteIntermediate : public BasicStmtVisitor {
  public:
   using BasicStmtVisitor::visit;
@@ -286,7 +283,7 @@ class InstToOffload : public BasicStmtVisitor {
  public:
   using BasicStmtVisitor::visit;
 
-  // Local variables alloc to its containing offloaded statement
+  // Local variables to its containing offloaded statement
   std::map<Stmt *, Stmt *> inst_to_offloaded;
 
   Stmt *current_offloaded;

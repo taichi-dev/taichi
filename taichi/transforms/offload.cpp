@@ -131,6 +131,46 @@ class Offloader {
   }
 };
 
+// Build a mapping from all statements to its containing OffloadedStmt
+class InstToOffload : public BasicStmtVisitor {
+ private:
+  InstToOffload() {
+    allow_undefined_visitor = true;
+    invoke_default_visitor = true;
+    current_offloaded = nullptr;
+  }
+
+ public:
+  void visit(OffloadedStmt *stmt) override {
+    current_offloaded = stmt;
+    if (stmt->body)
+      stmt->body->accept(this);
+    current_offloaded = nullptr;
+  }
+
+  void visit(Stmt *stmt) override {
+    if (current_offloaded != nullptr) {
+      // inside a offloaded stmt, record its belonging offloaded_stmt
+      inst_to_offloaded[stmt] = current_offloaded;
+    }
+  }
+
+ public:
+  static std::unordered_map<Stmt *, Stmt *> run(IRNode *ir) {
+    InstToOffload pass;
+    ir->accept(&pass);
+    return pass.inst_to_offloaded;
+  }
+
+ private:
+  using BasicStmtVisitor::visit;
+
+  // Local variables to its containing offloaded statement
+  std::unordered_map<Stmt *, Stmt *> inst_to_offloaded;
+
+  Stmt *current_offloaded;
+};
+
 /*
 After offloading, some local variables/instructions are accessed across
 offloaded blocks. This pass promote these local values into global variables.
@@ -141,15 +181,16 @@ Steps:
   3. FixCrossOffloadReferences
 */
 
-// Traverse offloaded blocks to identify out-of-offload local LD/ST and statement references
+// Traverse offloaded blocks to identify out-of-offload local LD/ST and
+// statement references
 class IdentifyValuesUsedInOtherOffloads : public BasicStmtVisitor {
  public:
   using BasicStmtVisitor::visit;
 
   // Local variables to global temporary offsets (in bytes)
   StmtToOffsetMap local_to_global;
-  // Local variables alloc to its containing offloaded statement
-  std::map<Stmt *, Stmt *> inst_to_offloaded;
+
+  std::unordered_map<Stmt *, Stmt *> inst_to_offloaded;
 
   Stmt *current_offloaded;
   std::size_t global_offset;
@@ -162,7 +203,9 @@ class IdentifyValuesUsedInOtherOffloads : public BasicStmtVisitor {
     return ret;
   }
 
-  IdentifyValuesUsedInOtherOffloads() {
+  IdentifyValuesUsedInOtherOffloads(
+      const std::unordered_map<Stmt *, Stmt *> &inst_to_offload)
+      : inst_to_offloaded(inst_to_offload) {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
     current_offloaded = nullptr;
@@ -184,7 +227,6 @@ class IdentifyValuesUsedInOtherOffloads : public BasicStmtVisitor {
 
   void visit(AllocaStmt *stmt) override {
     TI_ASSERT(current_offloaded);
-    inst_to_offloaded[stmt] = current_offloaded;
   }
 
   void test_and_allocate(Stmt *stmt) {
@@ -221,7 +263,6 @@ class IdentifyValuesUsedInOtherOffloads : public BasicStmtVisitor {
   void visit(Stmt *stmt) override {
     if (current_offloaded != nullptr) {
       // inside a offloaded stmt, record its belong offloaded_stmt
-      inst_to_offloaded[stmt] = current_offloaded;
     }
     int n_op = stmt->num_operands();
     for (int i = 0; i < n_op; i++) {
@@ -230,8 +271,10 @@ class IdentifyValuesUsedInOtherOffloads : public BasicStmtVisitor {
     }
   }
 
-  static OffloadedResult run(IRNode *root) {
-    IdentifyValuesUsedInOtherOffloads pass;
+  static OffloadedResult run(
+      IRNode *root,
+      const std::unordered_map<Stmt *, Stmt *> &inst_to_offload) {
+    IdentifyValuesUsedInOtherOffloads pass(inst_to_offload);
     root->accept(&pass);
     OffloadedResult result;
     result.total_size = pass.global_offset;
@@ -282,52 +325,16 @@ class PromoteIntermediateToGlobalTmp : public BasicStmtVisitor {
   }
 };
 
-class InstToOffload : public BasicStmtVisitor {
- public:
-  using BasicStmtVisitor::visit;
-
-  // Local variables to its containing offloaded statement
-  std::map<Stmt *, Stmt *> inst_to_offloaded;
-
-  Stmt *current_offloaded;
-
-  InstToOffload() {
-    allow_undefined_visitor = true;
-    invoke_default_visitor = true;
-    current_offloaded = nullptr;
-  }
-
-  void visit(OffloadedStmt *stmt) override {
-    current_offloaded = stmt;
-    if (stmt->body)
-      stmt->body->accept(this);
-    current_offloaded = nullptr;
-  }
-
-  void visit(Stmt *stmt) override {
-    if (current_offloaded != nullptr) {
-      // inside a offloaded stmt, record its belonging offloaded_stmt
-      inst_to_offloaded[stmt] = current_offloaded;
-    }
-  }
-
-  static std::map<Stmt *, Stmt *> run(IRNode *ir) {
-    InstToOffload pass;
-    ir->accept(&pass);
-    return pass.inst_to_offloaded;
-  }
-};
-
 class FixCrossOffloadReferences : public BasicStmtVisitor {
  public:
   using BasicStmtVisitor::visit;
 
   StmtToOffsetMap local_to_global_offset;
-  std::map<Stmt *, VectorType> local_to_global_vector_type;
-  std::map<Stmt *, Stmt *> inst_to_offload;
+  std::unordered_map<Stmt *, VectorType> local_to_global_vector_type;
+  std::unordered_map<Stmt *, Stmt *> inst_to_offload;
 
   FixCrossOffloadReferences(const StmtToOffsetMap &local_to_global_offset,
-                            std::map<Stmt *, Stmt *> inst_to_offload)
+                            std::unordered_map<Stmt *, Stmt *> inst_to_offload)
       : local_to_global_offset(local_to_global_offset),
         inst_to_offload(inst_to_offload) {
     allow_undefined_visitor = true;
@@ -442,7 +449,7 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
   }
 
   static void run(IRNode *root,
-                  std::map<Stmt *, Stmt *> inst_to_offload,
+                  std::unordered_map<Stmt *, Stmt *> inst_to_offload,
                   const StmtToOffsetMap &local_to_global_offset) {
     FixCrossOffloadReferences pass(local_to_global_offset, inst_to_offload);
     while (true) {
@@ -550,11 +557,10 @@ OffloadedResult offload(IRNode *root) {
   typecheck(root);
   fix_block_parents(root);
   {
-    result = IdentifyValuesUsedInOtherOffloads::run(root);
-    fix_block_parents(root);
-    PromoteIntermediateToGlobalTmp::run(root, result.local_to_global_offset);
-    fix_block_parents(root);
     auto inst_to_offload = InstToOffload::run(root);
+    result = IdentifyValuesUsedInOtherOffloads::run(root, inst_to_offload);
+    PromoteIntermediateToGlobalTmp::run(root, result.local_to_global_offset);
+    inst_to_offload = InstToOffload::run(root);
     FixCrossOffloadReferences::run(root, inst_to_offload,
                                    result.local_to_global_offset);
     fix_block_parents(root);

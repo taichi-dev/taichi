@@ -66,10 +66,10 @@ endif()
 message("python=${PYTHON_EXECUTABLE}")
 
 add_custom_target(
-    generate_config
-    COMMAND ${PYTHON_EXECUTABLE} "${CMAKE_CURRENT_LIST_DIR}/misc/fetch_commit_hash.py"
+    generate_commit_hash
+    COMMAND ${PYTHON_EXECUTABLE} "${CMAKE_CURRENT_LIST_DIR}/misc/generate_commit_hash.py"
 )
-add_dependencies(${CORE_LIBRARY_NAME} generate_config)
+add_dependencies(${CORE_LIBRARY_NAME} generate_commit_hash)
 
 FILE(WRITE ${CMAKE_CURRENT_LIST_DIR}/taichi/common/version.h
         "#pragma once\n"

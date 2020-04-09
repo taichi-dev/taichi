@@ -254,9 +254,6 @@ class IdentifyValuesUsedInOtherOffloads : public BasicStmtVisitor {
   }
 
   void visit(Stmt *stmt) override {
-    if (current_offloaded != nullptr) {
-      // inside a offloaded stmt, record its belong offloaded_stmt
-    }
     int n_op = stmt->num_operands();
     for (int i = 0; i < n_op; i++) {
       auto op = stmt->operand(i);
@@ -278,9 +275,7 @@ class IdentifyValuesUsedInOtherOffloads : public BasicStmtVisitor {
  private:
   // Local variables to global temporary offsets (in bytes)
   StmtToOffsetMap local_to_global;
-
   std::unordered_map<Stmt *, Stmt *> stmt_to_offloaded;
-
   Stmt *current_offloaded;
   std::size_t global_offset;
 };

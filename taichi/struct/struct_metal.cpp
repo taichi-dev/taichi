@@ -17,7 +17,6 @@ namespace metal {
 namespace {
 namespace shaders {
 #define TI_INSIDE_METAL_CODEGEN
-#include "taichi/backends/metal/shaders/runtime_kernels.metal.h"
 #include "taichi/backends/metal/shaders/runtime_structs.metal.h"
 #include "taichi/backends/metal/shaders/runtime_utils.metal.h"
 #undef TI_INSIDE_METAL_CODEGEN
@@ -72,7 +71,6 @@ class StructCompiler {
     line_appender_.dump(&result.snode_structs_source_code);
     emit_runtime_structs(&root);
     line_appender_.dump(&result.runtime_utils_source_code);
-    result.runtime_kernels_source_code = get_runtime_kernels_source_code();
     result.runtime_size = compute_runtime_size();
     result.max_snodes = max_snodes_;
     result.snode_descriptors = std::move(snode_descriptors_);
@@ -214,12 +212,6 @@ class StructCompiler {
     emit("  ListManager snode_lists[{}];", max_snodes_);
     emit("  uint32_t rand_seeds[{}];", kNumRandSeeds);
     emit("}};");
-  }
-
-  std::string get_runtime_kernels_source_code() const {
-    std::stringstream ss;
-    ss << shaders::kMetalRuntimeKernelsSourceCode << "\n";
-    return ss.str();
   }
 
   size_t compute_runtime_size() {

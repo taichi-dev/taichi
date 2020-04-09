@@ -22,6 +22,12 @@ class BasicStmtVisitor : public IRVisitor {
   void visit(StructForStmt *for_stmt) override;
 
   void visit(OffloadedStmt *stmt) override;
+
+  void visit(FrontendWhileStmt *stmt) override;
+
+  void visit(FrontendForStmt *stmt) override;
+
+  void visit(FrontendIfStmt *stmt) override;
 };
 
 TLANG_NAMESPACE_END

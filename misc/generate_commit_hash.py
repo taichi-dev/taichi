@@ -1,6 +1,6 @@
 from git import Repo
 import os
-repo_dir = os.environ['TAICHI_REPO_DIR']
+repo_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../')
 repo = Repo(repo_dir)
 commit_hash = str(repo.head.commit)
 print(f"Building commit {commit_hash}")

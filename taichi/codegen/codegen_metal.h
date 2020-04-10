@@ -18,22 +18,21 @@ namespace metal {
 
 class CodeGen {
  public:
-  CodeGen(const std::string &kernel_name,
+  CodeGen(Kernel *kernel,
+          KernelManager *kernel_mgr,
           const CompiledStructs *compiled_structs);
 
-  FunctionType compile(Program &, Kernel &kernel, KernelManager *kernel_mgr);
+  FunctionType compile();
 
  private:
   void lower();
   FunctionType gen(const SNode &root_snode, KernelManager *runtime);
 
+  Kernel *const kernel_;
+  KernelManager *const kernel_mgr_;
+  const CompiledStructs *const compiled_structs_;
   const int id_;
   const std::string taichi_kernel_name_;
-  const CompiledStructs *const compiled_structs_;
-
-  Program *prog_;
-  Kernel *kernel_;
-  size_t global_tmps_buffer_size_{0};
 };
 
 }  // namespace metal

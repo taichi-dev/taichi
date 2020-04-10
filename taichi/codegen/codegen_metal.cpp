@@ -995,148 +995,33 @@ class KernelCodegen : public IRVisitor {
 
 }  // namespace
 
-CodeGen::CodeGen(const std::string &kernel_name,
+CodeGen::CodeGen(Kernel *kernel,
+                 KernelManager *kernel_mgr,
                  const CompiledStructs *compiled_structs)
-    : id_(Program::get_kernel_id()),
-      taichi_kernel_name_(fmt::format("mtl_k{:04d}_{}", id_, kernel_name)),
-      compiled_structs_(compiled_structs) {
+    : kernel_(kernel),
+      kernel_mgr_(kernel_mgr),
+      compiled_structs_(compiled_structs),
+      id_(Program::get_kernel_id()),
+      taichi_kernel_name_(fmt::format("mtl_k{:04d}_{}", id_, kernel_->name)) {
 }
 
-FunctionType CodeGen::compile(Program &,
-                              Kernel &kernel,
-                              KernelManager *kernel_mgr) {
-  this->prog_ = &kernel.program;
-  this->kernel_ = &kernel;
-  lower();
-  return gen(*prog_->snode_root, kernel_mgr);
-}
+FunctionType CodeGen::compile() {
+  auto &config = kernel_->program.config;
+  config.demote_dense_struct_fors = true;
+  irpass::compile_to_offloads(kernel_->ir, config,
+                              /*vectorize=*/false, kernel_->grad,
+                              /*ad_use_stack=*/false, config.print_ir);
 
-void CodeGen::lower() {
-  auto ir = kernel_->ir;
-  const bool print_ir = prog_->config.print_ir;
-  if (print_ir) {
-    TI_TRACE("Initial IR:");
-    irpass::print(ir);
-  }
-
-  if (kernel_->grad) {
-    irpass::reverse_segments(ir);
-    irpass::re_id(ir);
-    if (print_ir) {
-      TI_TRACE("Segment reversed (for autodiff):");
-      irpass::print(ir);
-    }
-  }
-
-  irpass::lower(ir);
-  irpass::re_id(ir);
-  if (print_ir) {
-    TI_TRACE("Lowered:");
-    irpass::print(ir);
-  }
-
-  irpass::typecheck(ir);
-  irpass::re_id(ir);
-  if (print_ir) {
-    TI_TRACE("Typechecked:");
-    irpass::print(ir);
-  }
-
-  irpass::demote_dense_struct_fors(ir);
-  irpass::typecheck(ir);
-  if (print_ir) {
-    TI_TRACE("Dense Struct-for demoted:");
-    irpass::print(ir);
-  }
-
-  irpass::constant_fold(ir);
-  if (prog_->config.simplify_before_lower_access) {
-    irpass::simplify(ir);
-    irpass::re_id(ir);
-    if (print_ir) {
-      TI_TRACE("Simplified I:");
-      irpass::print(ir);
-    }
-  }
-
-  if (kernel_->grad) {
-    irpass::demote_atomics(ir);
-    irpass::full_simplify(ir, prog_->config);
-    irpass::typecheck(ir);
-    if (print_ir) {
-      TI_TRACE("Before make_adjoint:");
-      irpass::print(ir);
-    }
-    irpass::make_adjoint(ir);
-    if (print_ir) {
-      TI_TRACE("After make_adjoint:");
-      irpass::print(ir);
-    }
-    irpass::typecheck(ir);
-  }
-
-  irpass::lower_access(ir, prog_->config.use_llvm);
-  irpass::re_id(ir);
-  if (print_ir) {
-    TI_TRACE("Access Lowered:");
-    irpass::print(ir);
-  }
-
-  irpass::die(ir);
-  irpass::re_id(ir);
-  if (print_ir) {
-    TI_TRACE("DIEd:");
-    irpass::print(ir);
-  }
-
-  irpass::flag_access(ir);
-  irpass::re_id(ir);
-  if (print_ir) {
-    TI_TRACE("Access Flagged:");
-    irpass::print(ir);
-  }
-
-  irpass::constant_fold(ir);
-  if (print_ir) {
-    TI_TRACE("Constant folded:");
-    irpass::re_id(ir);
-    irpass::print(ir);
-  }
-
-  global_tmps_buffer_size_ =
-      std::max(irpass::offload(ir).total_size, (size_t)(1));
-  if (print_ir) {
-    TI_TRACE("Offloaded:");
-    irpass::re_id(ir);
-    irpass::print(ir);
-  }
-
-  irpass::full_simplify(ir, prog_->config);
-  if (print_ir) {
-    TI_TRACE("Simplified II:");
-    irpass::re_id(ir);
-    irpass::print(ir);
-  }
-
-  irpass::demote_atomics(ir);
-  if (print_ir) {
-    TI_TRACE("Atomics demoted:");
-    irpass::re_id(ir);
-    irpass::print(ir);
-  }
-}
-
-FunctionType CodeGen::gen(const SNode &root_snode, KernelManager *kernel_mgr) {
-  // Make a copy of the name!
-  const std::string taichi_kernel_name = taichi_kernel_name_;
-  KernelCodegen codegen(taichi_kernel_name, root_snode.node_type_name, kernel_,
+  KernelCodegen codegen(taichi_kernel_name_,
+                        kernel_->program.snode_root->node_type_name, kernel_,
                         compiled_structs_);
   const auto source_code = codegen.run();
-  kernel_mgr->register_taichi_kernel(
-      taichi_kernel_name, source_code, codegen.kernels_attribs(),
-      global_tmps_buffer_size_, codegen.kernel_args_attribs());
-  return [kernel_mgr, taichi_kernel_name](Context &ctx) {
-    kernel_mgr->launch_taichi_kernel(taichi_kernel_name, &ctx);
+  kernel_mgr_->register_taichi_kernel(taichi_kernel_name_, source_code,
+                                      codegen.kernels_attribs(),
+                                      codegen.kernel_args_attribs());
+  return [kernel_mgr = kernel_mgr_,
+          kernel_name = taichi_kernel_name_](Context &ctx) {
+    kernel_mgr->launch_taichi_kernel(kernel_name, &ctx);
   };
 }
 

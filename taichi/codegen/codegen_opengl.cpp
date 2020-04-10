@@ -247,8 +247,8 @@ class KernelGen : public IRVisitor {
         auto ch_addr = fmt::format("{} + {} * {}",
             stmt->ptr->short_name(), struct_compiled_->class_children_map[sn->node_type_name],
          stmt->val->short_name());
-        emit("int {} = _rt_.bitmask[{}] ? 1 : 0; // {}", stmt->short_name(),
-         ch_addr, sn->node_type_name);
+        emit("int {} = 1 & (_rt_.bitmask[{} >> 8] >> ({} & 31)); // {}",
+            stmt->short_name(), ch_addr, ch_addr, sn->node_type_name);
       } else {
         TI_NOT_IMPLEMENTED;
       }
@@ -270,11 +270,11 @@ class KernelGen : public IRVisitor {
   void visit(GlobalStoreStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
     auto dt = stmt->data->element_type();
-    emit("_rt_.bitmask[{}] = true;", stmt->ptr->short_name());
-    emit("_{}_{}_[{} >> {}] = {};",
-         ptr_signats.at(stmt->ptr->id),  // throw out_of_range if not a pointer
-         data_type_short_name(dt), stmt->ptr->short_name(),
-         opengl_data_address_shifter(dt), stmt->data->short_name());
+    auto ch_addr = stmt->ptr->short_name();
+    emit("atomicOr(_rt_.bitmask[{} >> 8], 1 << ({} & 31));", ch_addr, ch_addr);
+    emit("_{}_{}_[{} >> {}] = {};", ptr_signats.at(stmt->ptr->id),
+         data_type_short_name(dt), ch_addr, opengl_data_address_shifter(dt),
+         stmt->data->short_name());
   }
 
   void visit(GlobalLoadStmt *stmt) override {

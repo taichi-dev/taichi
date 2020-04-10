@@ -171,7 +171,6 @@ class OffloadedStmt : public Stmt {
 
   TaskType task_type;
   SNode *snode;
-  Stmt *begin_stmt, *end_stmt;
   std::size_t begin_offset;
   std::size_t end_offset;
   bool const_begin, const_end;
@@ -200,8 +199,6 @@ class OffloadedStmt : public Stmt {
   TI_STMT_DEF_FIELDS(ret_type,
                      task_type,
                      snode,
-                     begin_stmt,
-                     end_stmt,
                      begin_offset,
                      end_offset,
                      const_begin,

@@ -49,9 +49,7 @@ void compile_to_offloads(IRNode *ir,
   if (grad) {
     irpass::demote_atomics(ir);
     irpass::full_simplify(ir, config);
-    print("Adjoint 1");
     irpass::make_adjoint(ir, ad_use_stack);
-    print("Adjoint 2");
     irpass::full_simplify(ir, config);
     print("Adjoint");
   }

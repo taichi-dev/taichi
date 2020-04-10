@@ -40,4 +40,6 @@ SECTION("simplify_linearized_with_trivial_inputs") {
   TI_CHECK(block->size() == 5);  // get root, const 0, lookup, get child, lookup
 }
 
+}
+
 TLANG_NAMESPACE_END

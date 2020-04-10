@@ -17,6 +17,21 @@ class TestStmt : public Stmt {
   TI_STMT_DEF_FIELDS(input, a, b);
 };
 
+class TestStmtVector : public Stmt {
+ private:
+  std::vector<Stmt *> vec1;
+  std::vector<Stmt *> vec2;
+
+ public:
+  TestStmtVector(const std::vector<Stmt *> &vec1,
+                 const std::vector<Stmt *> &vec2)
+      : vec1(vec1), vec2(vec2) {
+    TI_STMT_REG_FIELDS;
+  }
+
+  TI_STMT_DEF_FIELDS(vec1, vec2);
+};
+
 TI_TEST("stmt_field_manager") {
 
 SECTION("test_stmt_field_manager") {
@@ -35,21 +50,6 @@ SECTION("test_stmt_field_manager") {
   // To test two statements are equal: 1) same Stmt type 2) same operands 3)
   // same field_manager
 }
-
-class TestStmtVector : public Stmt {
- private:
-  std::vector<Stmt *> vec1;
-  std::vector<Stmt *> vec2;
-
- public:
-  TestStmtVector(const std::vector<Stmt *> &vec1,
-                 const std::vector<Stmt *> &vec2)
-      : vec1(vec1), vec2(vec2) {
-    TI_STMT_REG_FIELDS;
-  }
-
-  TI_STMT_DEF_FIELDS(vec1, vec2);
-};
 
 SECTION("test_stmt_field_manager_with_vector") {
   auto one = Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(1));

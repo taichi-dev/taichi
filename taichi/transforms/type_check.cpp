@@ -309,6 +309,7 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(ArgLoadStmt *stmt) {
+    // TODO (#): remove dependency on get_current_program().get_current_kernel()
     auto &args = get_current_program().get_current_kernel().args;
     TI_ASSERT(0 <= stmt->arg_id && stmt->arg_id < args.size());
     TI_ASSERT(!args[stmt->arg_id].is_return_value);

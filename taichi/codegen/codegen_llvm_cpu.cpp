@@ -1,23 +1,25 @@
+#include "codegen_cpu.h"
+
+#include "taichi/codegen/codegen_llvm.h"
 #include "taichi/common/util.h"
 #include "taichi/util/io.h"
 #include "taichi/lang_util.h"
 #include "taichi/program/program.h"
 #include "taichi/ir/ir.h"
-#include "codegen_cpu.h"
-#include "codegen_llvm.h"
+#include "taichi/util/statistics.h"
 
 TLANG_NAMESPACE_BEGIN
 
-using namespace llvm;
 class CodeGenLLVMCPU : public CodeGenLLVM {
  public:
   using IRVisitor::visit;
 
-  CodeGenLLVMCPU(Kernel *kernel) : CodeGenLLVM(kernel) {
+  CodeGenLLVMCPU(Kernel *kernel, IRNode *ir) : CodeGenLLVM(kernel, ir) {
     TI_AUTO_PROF
   }
 
   void visit(OffloadedStmt *stmt) override {
+    stat.add("codegen_offloaded_tasks");
     using Type = OffloadedStmt::TaskType;
     auto offloaded_task_name = init_offloaded_task_function(stmt);
     if (prog->config.enable_profiler) {
@@ -53,7 +55,7 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
 
 FunctionType CodeGenCPU::codegen() {
   TI_AUTO_PROF
-  return CodeGenLLVMCPU(kernel).gen();
+  return CodeGenLLVMCPU(kernel, ir).gen();
 }
 
 TLANG_NAMESPACE_END

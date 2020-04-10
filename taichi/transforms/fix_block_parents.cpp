@@ -46,6 +46,7 @@ class FixBlockParents : public IRVisitor {
   }
 
   void visit(OffloadedStmt *stmt) override {
+    stmt->parent = current_block; // hot fix
     if (stmt->body)
       stmt->body->accept(this);
   }

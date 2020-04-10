@@ -120,8 +120,9 @@ FunctionType Program::compile(Kernel &kernel) {
     auto codegen = KernelCodeGen::create(kernel.arch, &kernel);
     ret = codegen->compile();
   } else if (kernel.arch == Arch::metal) {
-    metal::CodeGen codegen(kernel.name, &metal_compiled_structs_.value());
-    ret = codegen.compile(*this, kernel, metal_kernel_mgr_.get());
+    metal::CodeGen codegen(&kernel, metal_kernel_mgr_.get(),
+                           &metal_compiled_structs_.value());
+    ret = codegen.compile();
   } else if (kernel.arch == Arch::opengl) {
     opengl::OpenglCodeGen codegen(kernel.name, &opengl_struct_compiled_.value(),
                                   opengl_kernel_launcher_.get());

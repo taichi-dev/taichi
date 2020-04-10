@@ -53,6 +53,7 @@ __pycache__
 *.egg-info
 .tlang_cache
 /taichi/common/version.h
+/taichi/common/commit_hash.h
 libpython_path.txt
 .vscode
 _build

@@ -1,4 +1,5 @@
 #include <set>
+#include <unordered_map>
 
 #include "taichi/ir/ir.h"
 
@@ -9,10 +10,16 @@ namespace {
 
 using StmtToOffsetMap = decltype(OffloadedResult::local_to_global_offset);
 
+std::unique_ptr<std::unordered_map<OffloadedStmt *, Stmt *>> begin_stmt,
+    end_stmt;
+
 // Break kernel into multiple parts and emit struct for listgens
 class Offloader {
  public:
   Offloader(IRNode *root) {
+    begin_stmt =
+        std::make_unique<std::unordered_map<OffloadedStmt *, Stmt *>>();
+    end_stmt = std::make_unique<std::unordered_map<OffloadedStmt *, Stmt *>>();
     run(root);
   }
 
@@ -60,13 +67,13 @@ class Offloader {
           offloaded->const_begin = true;
           offloaded->begin_value = val->val[0].val_int32();
         } else {
-          offloaded->begin_stmt = s->begin;
+          begin_stmt->insert(std::make_pair(offloaded.get(), s->begin));
         }
         if (auto val = s->end->cast<ConstStmt>()) {
           offloaded->const_end = true;
           offloaded->end_value = val->val[0].val_int32();
         } else {
-          offloaded->end_stmt = s->end;
+          end_stmt->insert(std::make_pair(offloaded.get(), s->end));
         }
         offloaded->block_dim = s->block_dim;
         offloaded->num_cpu_threads = s->parallelize;
@@ -207,11 +214,11 @@ class IdentifyValuesUsedInOtherOffloads : public BasicStmtVisitor {
  public:
   void visit(OffloadedStmt *stmt) override {
     current_offloaded = stmt;
-    if (stmt->begin_stmt) {
-      test_and_allocate(stmt->begin_stmt);
+    if (auto begin = begin_stmt->find(stmt); begin != begin_stmt->end()) {
+      test_and_allocate(begin->second);
     }
-    if (stmt->end_stmt) {
-      test_and_allocate(stmt->end_stmt);
+    if (auto end = end_stmt->find(stmt); end != end_stmt->end()) {
+      test_and_allocate(end->second);
     }
     if (stmt->body)
       stmt->body->accept(this);
@@ -342,9 +349,10 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
       stmt->body->accept(this);
     if (stmt->task_type == OffloadedStmt::TaskType::range_for) {
       if (!stmt->const_begin)
-        stmt->begin_offset = local_to_global_offset[stmt->begin_stmt];
+        stmt->begin_offset =
+            local_to_global_offset[begin_stmt->find(stmt)->second];
       if (!stmt->const_end)
-        stmt->end_offset = local_to_global_offset[stmt->end_stmt];
+        stmt->end_offset = local_to_global_offset[end_stmt->find(stmt)->second];
     }
   }
 

@@ -517,8 +517,6 @@ OffloadedStmt::OffloadedStmt(OffloadedStmt::TaskType task_type, SNode *snode)
   begin_value = 0;
   end_value = 0;
   step = 0;
-  begin_stmt = nullptr;
-  end_stmt = nullptr;
   block_dim = 0;
   reversed = false;
   device = get_current_program().config.arch;

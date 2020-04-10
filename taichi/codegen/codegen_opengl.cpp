@@ -105,7 +105,7 @@ class KernelGen : public IRVisitor {
           "layout(packed, binding = 1) buffer args_f32 { float _args_f32_[]; };\n"
           "layout(packed, binding = 1) buffer args_f64 { double _args_f64_[]; };\n";
       if (used.int64)
-        kernel_header += "layout(packed, binding = 4) buffer args_i64 { int64_t _args_i64_[]; };\n";
+        kernel_header += "layout(packed, binding = 1) buffer args_i64 { int64_t _args_i64_[]; };\n";
     }
     if (used.global_temp) {
       kernel_header +=

@@ -89,6 +89,7 @@ void flag_access(IRNode *root);
 void die(IRNode *root);
 void simplify(IRNode *root);
 void alg_simp(IRNode *root, const CompileConfig &config);
+void whole_kernel_cse(IRNode *root);
 void full_simplify(IRNode *root, const CompileConfig &config);
 void print(IRNode *root, std::string *output = nullptr);
 void lower(IRNode *root);
@@ -421,7 +422,7 @@ struct LaneAttribute {
   LaneAttribute(const std::vector<T> &data) : data(data) {
   }
 
-  LaneAttribute(const T &t): data(1, t) {
+  LaneAttribute(const T &t) : data(1, t) {
   }
 
   void resize(int s) {
@@ -1486,6 +1487,10 @@ class Block : public IRNode {
 
   void erase(Stmt *stmt);
 
+  std::unique_ptr<Stmt> extract(int location);
+
+  std::unique_ptr<Stmt> extract(Stmt *stmt);
+
   void insert(std::unique_ptr<Stmt> &&stmt, int location = -1);
 
   void insert(VecStatement &&stmt, int location = -1);
@@ -2423,7 +2428,9 @@ inline void SLP(int v) {
 
 class For {
  public:
-  For(const Expr &i, const Expr &s, const Expr &e,
+  For(const Expr &i,
+      const Expr &s,
+      const Expr &e,
       const std::function<void()> &func) {
     auto stmt_unique = std::make_unique<FrontendForStmt>(i, s, e);
     auto stmt = stmt_unique.get();
@@ -2432,7 +2439,8 @@ class For {
     func();
   }
 
-  For(const ExprGroup &i, const Expr &global,
+  For(const ExprGroup &i,
+      const Expr &global,
       const std::function<void()> &func) {
     auto stmt_unique = std::make_unique<FrontendForStmt>(i, global);
     auto stmt = stmt_unique.get();

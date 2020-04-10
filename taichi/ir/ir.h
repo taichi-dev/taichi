@@ -89,6 +89,7 @@ void flag_access(IRNode *root);
 void die(IRNode *root);
 void simplify(IRNode *root);
 void alg_simp(IRNode *root, const CompileConfig &config);
+void whole_kernel_cse(IRNode *root);
 void full_simplify(IRNode *root, const CompileConfig &config);
 void print(IRNode *root, std::string *output = nullptr);
 void lower(IRNode *root);
@@ -116,6 +117,7 @@ std::vector<Stmt *> gather_statements(IRNode *root,
                                       const std::function<bool(Stmt *)> &test);
 bool same_statements(IRNode *root1, IRNode *root2);
 void verify(IRNode *root);
+int count_statements(IRNode *root);
 std::unordered_set<Stmt *> detect_fors_with_break(IRNode *root);
 std::unordered_set<Stmt *> detect_loops_with_continue(IRNode *root);
 void compile_to_offloads(IRNode *ir,
@@ -1485,6 +1487,10 @@ class Block : public IRNode {
   void erase(int location);
 
   void erase(Stmt *stmt);
+
+  std::unique_ptr<Stmt> extract(int location);
+
+  std::unique_ptr<Stmt> extract(Stmt *stmt);
 
   void insert(std::unique_ptr<Stmt> &&stmt, int location = -1);
 

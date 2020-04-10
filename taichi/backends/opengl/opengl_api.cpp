@@ -18,7 +18,9 @@ bool opengl_has_GL_NV_shader_atomic_float;
 
 std::string get_opengl_error_string(GLenum err) {
   switch (err) {
-#define PER_GL_ERR(x) case x: return #x;
+#define PER_GL_ERR(x) \
+  case x:             \
+    return #x;
     PER_GL_ERR(GL_NO_ERROR)
     PER_GL_ERR(GL_INVALID_ENUM)
     PER_GL_ERR(GL_INVALID_VALUE)
@@ -27,7 +29,8 @@ std::string get_opengl_error_string(GLenum err) {
     PER_GL_ERR(GL_OUT_OF_MEMORY)
     PER_GL_ERR(GL_STACK_UNDERFLOW)
     PER_GL_ERR(GL_STACK_OVERFLOW)
-    default: return fmt::format("GL_ERROR={}", err);
+    default:
+      return fmt::format("GL_ERROR={}", err);
   }
 }
 
@@ -184,7 +187,9 @@ struct GLSSBO {
    used as the source for GL drawing and image specification commands.
    ***/
 
-  void bind_data(void *data, size_t size, GLuint usage = GL_DYNAMIC_READ) const {
+  void bind_data(void *data,
+                 size_t size,
+                 GLuint usage = GL_DYNAMIC_READ) const {
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, id_);
     check_opengl_error("glBindBuffer");
     glBufferData(GL_SHADER_STORAGE_BUFFER, size, data, usage);
@@ -209,7 +214,8 @@ struct GLSSBO {
     // map GPU memory to CPU address space, offset within SSBO data
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, id_);
     check_opengl_error("glBindBuffer");
-    void *p = glMapBufferRange(GL_SHADER_STORAGE_BUFFER, offset, length, access);
+    void *p =
+        glMapBufferRange(GL_SHADER_STORAGE_BUFFER, offset, length, access);
     check_opengl_error("glMapBufferRange");
     return p;
   }
@@ -428,7 +434,7 @@ GLSLLaunchGuard::~GLSLLaunchGuard() {
   for (int i = 0; i < impl->ssbo.size(); i++) {
     if (!iov[i].size)
       continue;
-    void *p = impl->ssbo[i].map();//0, iov[i].size);  // output
+    void *p = impl->ssbo[i].map();  // 0, iov[i].size);  // output
     TI_ASSERT_INFO(p, "glMapBuffer returned NULL");
     std::memcpy(iov[i].base, p, iov[i].size);
   }

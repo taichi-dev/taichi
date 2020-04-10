@@ -17,7 +17,9 @@ class TestStmt : public Stmt {
   TI_STMT_DEF_FIELDS(input, a, b);
 };
 
-TI_TEST("test_stmt_field_manager") {
+TI_TEST("stmt_field_manager") {
+
+SECTION("test_stmt_field_manager") {
   auto a = Stmt::make<TestStmt>(nullptr, 1, 2.0f);
 
   TI_CHECK(a->num_operands() == 1);
@@ -49,7 +51,7 @@ class TestStmtVector : public Stmt {
   TI_STMT_DEF_FIELDS(vec1, vec2);
 };
 
-TI_TEST("test_stmt_field_manager_with_vector") {
+SECTION("test_stmt_field_manager_with_vector") {
   auto one = Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(1));
   auto a = Stmt::make<TestStmtVector>(std::vector<Stmt *>(),
                                       std::vector<Stmt *>(1, one.get()));
@@ -66,6 +68,8 @@ TI_TEST("test_stmt_field_manager_with_vector") {
                                       std::vector<Stmt *>());
 
   TI_CHECK(a->field_manager.equal(c->field_manager) == false);
+}
+
 }
 
 TLANG_NAMESPACE_END

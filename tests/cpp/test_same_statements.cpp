@@ -3,7 +3,9 @@
 
 TLANG_NAMESPACE_BEGIN
 
-TI_TEST("test_same_block") {
+TI_TEST("same_statements") {
+
+SECTION("test_same_block") {
   auto block = std::make_unique<Block>();
 
   auto global_load_addr =
@@ -45,7 +47,7 @@ TI_TEST("test_same_block") {
   TI_CHECK(!irpass::same_statements(true_store, false_store));
 }
 
-TI_TEST("test_same_assert") {
+SECTION("test_same_assert") {
   auto block = std::make_unique<Block>();
   auto zero = block->push_back<ConstStmt>(TypedConstant(0));
   auto one = block->push_back<ConstStmt>(TypedConstant(1));
@@ -77,7 +79,7 @@ TI_TEST("test_same_assert") {
   TI_CHECK(!irpass::same_statements(assert_zero_a_one, assert_one_a_zero));
 }
 
-TI_TEST("test_same_snode_lookup") {
+SECTION("test_same_snode_lookup") {
   auto block = std::make_unique<Block>();
 
   auto get_root = block->push_back<GetRootStmt>();
@@ -99,6 +101,8 @@ TI_TEST("test_same_snode_lookup") {
   TI_CHECK(irpass::same_statements(lookup1, lookup2));
   TI_CHECK(!irpass::same_statements(lookup1, lookup_activate));
   TI_CHECK(!irpass::same_statements(lookup1, lookup_child));
+}
+
 }
 
 TLANG_NAMESPACE_END

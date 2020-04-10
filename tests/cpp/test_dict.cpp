@@ -8,7 +8,9 @@
 
 TI_NAMESPACE_BEGIN
 
-TI_TEST("config") {
+TI_TEST("dict") {
+
+SECTION("config") {
   Dict dict;
 
   dict.set("int_a", 123);
@@ -29,5 +31,7 @@ TI_TEST("config") {
   dict.set("str", "Hello");
   TI_CHECK(dict.get<std::string>("str") == "Hello");
 };
+
+}
 
 TI_NAMESPACE_END

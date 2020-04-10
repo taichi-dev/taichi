@@ -5,7 +5,9 @@ TLANG_NAMESPACE_BEGIN
 
 // Basic tests within a basic block
 
-TI_TEST("simplify_linearized_with_trivial_inputs") {
+TI_TEST("simplify") {
+
+SECTION("simplify_linearized_with_trivial_inputs") {
   auto block = std::make_unique<Block>();
 
   auto get_root = block->push_back<GetRootStmt>();

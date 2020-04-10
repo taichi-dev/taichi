@@ -4,8 +4,9 @@
 TLANG_NAMESPACE_BEGIN
 
 // Basic tests within a basic block
+TI_TEST("alg_simp") {
 
-TI_TEST("simplify_add_zero") {
+SECTION("simplify_add_zero") {
   auto block = std::make_unique<Block>();
 
   auto global_load_addr =
@@ -32,7 +33,7 @@ TI_TEST("simplify_add_zero") {
   // .. more tests, assuming instruction order not shuffled
 }
 
-TI_TEST("simplify_multiply_one") {
+SECTION("simplify_multiply_one") {
   auto block = std::make_unique<Block>();
 
   auto global_load_addr =
@@ -64,7 +65,7 @@ TI_TEST("simplify_multiply_one") {
   TI_CHECK((*block)[0]->is<GlobalTemporaryStmt>());
 }
 
-TI_TEST("simplify_multiply_zero_fast_math") {
+SECTION("simplify_multiply_zero_fast_math") {
   auto block = std::make_unique<Block>();
 
   auto global_load_addr =
@@ -121,6 +122,8 @@ TI_TEST("simplify_multiply_zero_fast_math") {
 
   TI_CHECK(block->size() == 4);  // two addresses, one one, one store
   TI_CHECK((*block)[0]->is<GlobalTemporaryStmt>());
+}
+
 }
 
 TLANG_NAMESPACE_END

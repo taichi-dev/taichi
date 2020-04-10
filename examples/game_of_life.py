@@ -10,23 +10,25 @@ x = ti.var(ti.i32, shape=(n, n))
 c = ti.var(ti.i32, shape=(n, n))
 img = ti.var(ti.i32, shape=(res, res))
 
+
 @ti.func
 def count(i, j):
-    return (x[i - 1, j] + x[i + 1, j] +
-            x[i, j - 1] + x[i, j + 1] +
-            x[i - 1, j - 1] + x[i + 1, j - 1] +
-            x[i - 1, j + 1] + x[i + 1, j + 1])
+    return (x[i - 1, j] + x[i + 1, j] + x[i, j - 1] + x[i, j + 1] +
+            x[i - 1, j - 1] + x[i + 1, j - 1] + x[i - 1, j + 1] +
+            x[i + 1, j + 1])
+
 
 @ti.kernel
 def run():
     for i, j in ti.ndrange((1, n - 1), (1, n - 1)):
-            c[i, j] = count(i, j)
+        c[i, j] = count(i, j)
     for i, j in ti.ndrange((1, n - 1), (1, n - 1)):
-            if x[i, j] == 0:
-                if c[i, j] == 3:
-                    x[i, j] = 1
-            elif c[i, j] != 2 and c[i, j] != 3:
-                    x[i, j] = 0
+        if x[i, j] == 0:
+            if c[i, j] == 3:
+                x[i, j] = 1
+        elif c[i, j] != 2 and c[i, j] != 3:
+            x[i, j] = 0
+
 
 @ti.kernel
 def init():
@@ -36,6 +38,7 @@ def init():
         else:
             x[i, j] = 0
 
+
 @ti.kernel
 def render():
     for i, j in x:
@@ -43,6 +46,7 @@ def render():
         if x[i, j] != 0: c = 255
         for u, v in ti.ndrange(celsiz, celsiz):
             img[i * celsiz + u, j * celsiz + v] = c
+
 
 init()
 gui = ti.GUI('Game of Life', (res, res))

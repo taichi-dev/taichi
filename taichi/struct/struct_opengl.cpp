@@ -19,6 +19,7 @@ OpenglStructCompiler::CompiledResult OpenglStructCompiler::run(SNode &node) {
   result.source_code = std::move(src_code_);
   result.class_get_map = std::move(class_get_map_);
   result.class_children_map = std::move(class_children_map_);
+  result.length_map = std::move(length_map_);
   result.root_size = compute_snode_size(node);
   return result;
 }
@@ -73,7 +74,7 @@ void OpenglStructCompiler::generate_types(const SNode &snode) {
   } else if (snode.type == SNodeType::dense || snode.type == SNodeType::root
       || snode.type == SNodeType::bitmasked) { // TODO: alloc `bool bitmask[]` array for bitmasked()
     emit("#define {} const int // {}", node_name, snode_type_name(snode.type));
-    const int n = (snode.type == SNodeType::dense) ? snode.n : 1;
+    const int n = (snode.type == SNodeType::root) ? 1 : snode.n;
     emit("#define {}_n {}", node_name, n);
     length_map_[node_name] = n;
     emit("#define {}_stride ({}_ch_stride * {}_n)", node_name, node_name,

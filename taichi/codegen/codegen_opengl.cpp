@@ -534,6 +534,33 @@ class KernelGen : public IRVisitor {
         );
   }
 
+  void generate_struct_for_kernel(OffloadedStmt *stmt) {
+    TI_ASSERT(stmt->task_type == OffloadedStmt::TaskType::struct_for);
+    const std::string glsl_kernel_name = make_kernel_name();
+    emit("void {}()", glsl_kernel_name);
+    this->glsl_kernel_name_ = glsl_kernel_name;
+    emit("{{ // struct for");
+
+    {
+      ScopedIndent _s(line_appender_);
+      auto sn = stmt->snode;
+      num_threads_ = struct_compiled_->length_map[sn->node_type_name];
+      emit("int _itv = int(gl_GlobalInvocationID.x);");
+      emit("if (_itv >= {}) return;", num_threads_);
+      if (sn->type == SNodeType::bitmasked) {
+        auto ch_addr = fmt::format("_a_{}", stmt->short_name());
+        emit("int {} = {} + {} * _itv; // {}", ch_addr, 0,
+            struct_compiled_->class_children_map[sn->node_type_name],
+            sn->node_type_name);
+        emit("if (0 == (1 & (_rt_.bitmask[{} >> 8] >> ({} & 31)))) return;",
+            ch_addr, ch_addr);
+      }
+    }
+
+    stmt->body->accept(this);
+    emit("}}\n");
+  }
+
   void generate_range_for_kernel(OffloadedStmt *stmt) {
     TI_ASSERT(stmt->task_type == OffloadedStmt::TaskType::range_for);
     const std::string glsl_kernel_name = make_kernel_name();
@@ -568,7 +595,7 @@ class KernelGen : public IRVisitor {
   }
 
   void visit(LoopIndexStmt *stmt) override {
-    TI_ASSERT(!stmt->is_struct_for);
+    //TI_ASSERT(!stmt->is_struct_for);
     TI_ASSERT(stmt->index == 0);  // TODO: multiple indices
     emit("int {} = _itv;", stmt->short_name());
   }
@@ -632,6 +659,8 @@ class KernelGen : public IRVisitor {
       generate_serial_kernel(stmt);
     } else if (stmt->task_type == Type::range_for) {
       generate_range_for_kernel(stmt);
+    } else if (stmt->task_type == Type::struct_for) {
+      generate_struct_for_kernel(stmt);
     } else if (stmt->task_type == Type::clear_list) {
       generate_clear_list_kernel(stmt);
     } else if (stmt->task_type == Type::listgen) {

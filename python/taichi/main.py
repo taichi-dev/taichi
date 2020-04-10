@@ -67,7 +67,6 @@ def test_cpp(args):
 
 def make_argument_parser():
     parser = argparse.ArgumentParser()
-    parser.add_argument('action', help='See `ti help` for more details')
     parser.add_argument('-v',
                         '--verbose',
                         action='store_true',
@@ -88,6 +87,8 @@ def make_argument_parser():
 
 
 def main(debug=False):
+    argc = len(sys.argv)
+    mode = 'help' if argc == 1 else sys.argv.pop(1)
     parser = make_argument_parser()
     args = parser.parse_args()
 
@@ -110,8 +111,7 @@ def main(debug=False):
     if args.arch is not None:
         ti.set_wanted_archs(args.arch.split(','))
 
-    argc = len(sys.argv)
-    if argc == 1 or args.action == 'help':
+    if mode == 'help':
         print(
             "    Usage: ti run [task name]        |-> Run a specific task\n"
             "           ti benchmark              |-> Run performance benchmark\n"
@@ -128,12 +128,11 @@ def main(debug=False):
             "           ti release                |-> Make source code release\n"
             "           ti debug [script.py]      |-> Debug script\n")
         return 0
-    mode = args.action
 
     t = time.time()
     if mode.endswith('.py'):
         import subprocess
-        subprocess.call([sys.executable] + sys.argv[1:])
+        subprocess.call([sys.executable, mode] + sys.argv[1:])
     elif mode == "run":
         if argc <= 2:
             print("Please specify [task name], e.g. test_math")

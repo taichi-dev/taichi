@@ -292,9 +292,11 @@ struct CompiledKernel {
         num_groups(num_groups_),
         used(used_) {
     glsl->link();
+    if (1 && // !ti.cfg.opengl.print_accessor_glsl
+        kernel_name.rfind("snode_", 0) && kernel_name.rfind("tensor_to_", 0))
     TI_DEBUG("source of kernel [{}] * {}:\n{}", kernel_name, num_groups,
              kernel_source_code);
-#ifdef _GLSL_DEBUG
+#ifdef _GLSL_DEBUG // ti.cfg.opengl.save_glsl_to_file
     std::ofstream(fmt::format("/tmp/{}.comp", kernel_name))
         .write(kernel_source_code.c_str(), kernel_source_code.size());
 #endif
@@ -400,11 +402,17 @@ struct GLSLLauncherImpl {
   std::vector<std::unique_ptr<CompiledProgram>> programs;
 };
 
+struct GLSLRuntimeStruct {
+  int rand_state;
+  int unused1;
+  int bitmask[16 / 4];
+};
+
 GLSLLauncher::GLSLLauncher(size_t size) {
   initialize_opengl();
   impl = std::make_unique<GLSLLauncherImpl>();
   impl->root_ssbo = std::make_unique<GLSSBO>();
-  size += 2 * sizeof(int);
+  size += sizeof(GLSLRuntimeStruct);
   impl->root_buffer.resize(size, 0);
   impl->root_ssbo->bind_data(impl->root_buffer.data(), size);
   impl->root_ssbo->bind_index(0);

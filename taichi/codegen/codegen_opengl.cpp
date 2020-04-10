@@ -517,6 +517,23 @@ class KernelGen : public IRVisitor {
     emit("}}\n");
   }
 
+  void generate_listgen_kernel(OffloadedStmt *stmt) {
+    TI_ASSERT(stmt->task_type == OffloadedStmt::TaskType::listgen);
+    this->glsl_kernel_name_ = make_kernel_name();
+    this->glsl_kernel_name_ = "_listgen";
+    emit("{}",
+#include "taichi/backends/opengl/shaders/listgen.glsl.h"
+        );
+  }
+
+  void generate_clear_list_kernel(OffloadedStmt *stmt) {
+    TI_ASSERT(stmt->task_type == OffloadedStmt::TaskType::clear_list);
+    this->glsl_kernel_name_ = "_clear_list";
+    emit("{}",
+#include "taichi/backends/opengl/shaders/clear_list.glsl.h"
+        );
+  }
+
   void generate_range_for_kernel(OffloadedStmt *stmt) {
     TI_ASSERT(stmt->task_type == OffloadedStmt::TaskType::range_for);
     const std::string glsl_kernel_name = make_kernel_name();
@@ -615,6 +632,10 @@ class KernelGen : public IRVisitor {
       generate_serial_kernel(stmt);
     } else if (stmt->task_type == Type::range_for) {
       generate_range_for_kernel(stmt);
+    } else if (stmt->task_type == Type::clear_list) {
+      generate_clear_list_kernel(stmt);
+    } else if (stmt->task_type == Type::listgen) {
+      generate_listgen_kernel(stmt);
     } else {
       // struct_for is automatically lowered to ranged_for for dense snodes
       // (#378). So we only need to support serial and range_for tasks.

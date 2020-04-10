@@ -2,8 +2,7 @@
 // clang-format off
 #include "taichi/util/macros.h"
 STR(
-/* listgen */
-void main() {
+void _listgen() {
   // TODO: TBD
 }
 )

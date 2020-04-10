@@ -2,8 +2,7 @@
 // clang-format off
 #include "taichi/util/macros.h"
 STR(
-/* clear_list */
-void main() {
+void _clear_list() {
   // TODO: TBD
 }
 )

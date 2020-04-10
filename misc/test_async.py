@@ -11,10 +11,9 @@ x = ti.var(dt=ti.i32, shape=n)
 def fill():
     for i in x:
         print(x[i])
-        
+
     for i in x:
         x[i] = i * 2
-        
 
 
 fill()

@@ -5,10 +5,6 @@ TLANG_NAMESPACE_BEGIN
 // Count all statements (including containers)
 class StmtCounter : public BasicStmtVisitor {
  private:
-  int counter;
-
- public:
-
   StmtCounter() {
     counter = 0;
     allow_undefined_visitor = true;
@@ -17,6 +13,7 @@ class StmtCounter : public BasicStmtVisitor {
 
   using BasicStmtVisitor::visit;
 
+ public:
   void visit(Stmt *stmt) override {
     counter++;
   }
@@ -51,6 +48,9 @@ class StmtCounter : public BasicStmtVisitor {
     root->accept(&stmt_counter);
     return stmt_counter.counter;
   }
+
+ private:
+  int counter;
 };
 
 namespace irpass {

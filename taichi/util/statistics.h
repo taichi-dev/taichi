@@ -13,7 +13,7 @@ class Statistics {
  public:
   Statistics() = default;
 
-  void add(std::string key, value_type value=value_type(1));
+  void add(std::string key, value_type value = value_type(1));
 
   void print(std::string *output = nullptr);
 };

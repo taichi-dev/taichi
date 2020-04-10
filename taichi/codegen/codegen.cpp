@@ -18,7 +18,6 @@ KernelCodeGen::KernelCodeGen(Kernel *kernel, IRNode *ir)
   stat.add("codegen_statements", irpass::count_statements(this->ir));
 }
 
-
 FunctionType KernelCodeGen::compile() {
   TI_AUTO_PROF;
   return codegen();

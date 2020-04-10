@@ -8,7 +8,6 @@
 #include "taichi/ir/ir.h"
 #include "taichi/util/statistics.h"
 
-
 TLANG_NAMESPACE_BEGIN
 
 class CodeGenLLVMCPU : public CodeGenLLVM {

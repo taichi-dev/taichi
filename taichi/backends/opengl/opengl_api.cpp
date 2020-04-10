@@ -416,7 +416,6 @@ GLSLLaunchGuard::GLSLLaunchGuard(GLSLLauncherImpl *impl,
   for (int i = 0; i < impl->ssbo.size(); i++) {
     if (!iov[i].size)
       continue;
-    TI_INFO("base = {}, size = {}", iov[i].base, iov[i].size);
     impl->ssbo[i].bind_index(i + 1);
     impl->ssbo[i].bind_data(iov[i].base, iov[i].size);  // input
   }
@@ -430,11 +429,10 @@ GLSLLaunchGuard::~GLSLLaunchGuard() {
     if (!iov[i].size)
       continue;
     void *p = impl->ssbo[i].map();//0, iov[i].size);  // output
-    TI_INFO("base = {}, p = {}, size = {}", iov[i].base, p, iov[i].size);
     TI_ASSERT_INFO(p, "glMapBuffer returned NULL");
     std::memcpy(iov[i].base, p, iov[i].size);
   }
-  //glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+  glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
   impl->ssbo.clear();
 }
 

@@ -63,6 +63,7 @@ class KernelGen : public IRVisitor {
   std::string glsl_kernel_name_;
   std::string root_snode_type_name_;
   std::string glsl_kernel_prefix_;
+  std::map<int, std::string> ptr_signats;
   int glsl_kernel_count_{0};
   int num_threads_{1};
   int num_groups_{1};
@@ -239,32 +240,27 @@ class KernelGen : public IRVisitor {
   }
 
   void visit(SNodeOpStmt *stmt) override {
-    if (stmt->op_type == SNodeOpType::is_active) {
-      auto sn = stmt->snode;
-      if (sn->type == SNodeType::dense || sn->type == SNodeType::root) {
-        emit("int {} = 1;", stmt->short_name());
-      } else if (sn->type == SNodeType::bitmasked) {
-        auto ch_addr = fmt::format("{} + {} * {}",
-            stmt->ptr->short_name(), struct_compiled_->class_children_map[sn->node_type_name],
-         stmt->val->short_name());
-        emit("int {} = 1 & (_rt_.bitmask[{} >> 8] >> ({} & 31)); // {}",
-            stmt->short_name(), ch_addr, ch_addr, sn->node_type_name);
-      } else {
-        TI_NOT_IMPLEMENTED;
+    auto sn = stmt->snode;
+    if (sn->type == SNodeType::bitmasked) {
+      auto ch_addr = fmt::format("_a_{}", stmt->short_name());
+      emit("int {} = {} + {} * {}; // {}", ch_addr, stmt->ptr->short_name(),
+          struct_compiled_->class_children_map[sn->node_type_name], stmt->val->short_name(),
+          sn->node_type_name);
+      if (stmt->op_type == SNodeOpType::is_active) {
+        emit("int {} = 1 & (_rt_.bitmask[{} >> 8] >> ({} & 31));",
+            stmt->short_name(), ch_addr, ch_addr);
+      } else if (stmt->op_type == SNodeOpType::activate) {
+        emit("atomicOr(_rt_.bitmask[{} >> 8], 1 << ({} & 31));", ch_addr, ch_addr);
+      } else if (stmt->op_type == SNodeOpType::deactivate) {
+        emit("atomicAnd(_rt_.bitmask[{} >> 8], ~(1 << ({} & 31)));", ch_addr, ch_addr);
       }
+    } else if (sn->type == SNodeType::dense || sn->type == SNodeType::root) {
+      if (stmt->op_type == SNodeOpType::is_active) {
+        emit("int {} = 1;", stmt->short_name());
+      }
+    } else {
+        TI_NOT_IMPLEMENTED;
     }
-  }
-
-  std::map<int, std::string> ptr_signats;
-
-  void visit(GetChStmt *stmt) override {
-    emit("int {} = {} + {}; // {}", stmt->short_name(),
-         stmt->input_ptr->short_name(),
-         struct_compiled_
-             ->class_get_map[stmt->input_snode->node_type_name][stmt->chid],
-         stmt->output_snode->node_type_name);
-    if (stmt->output_snode->is_place())
-      ptr_signats[stmt->id] = "data";
   }
 
   void visit(GlobalStoreStmt *stmt) override {
@@ -275,6 +271,16 @@ class KernelGen : public IRVisitor {
     emit("_{}_{}_[{} >> {}] = {};", ptr_signats.at(stmt->ptr->id),
          data_type_short_name(dt), ch_addr, opengl_data_address_shifter(dt),
          stmt->data->short_name());
+  }
+
+  void visit(GetChStmt *stmt) override {
+    emit("int {} = {} + {}; // {}", stmt->short_name(),
+         stmt->input_ptr->short_name(),
+         struct_compiled_
+             ->class_get_map[stmt->input_snode->node_type_name][stmt->chid],
+         stmt->output_snode->node_type_name);
+    if (stmt->output_snode->is_place())
+      ptr_signats[stmt->id] = "data";
   }
 
   void visit(GlobalLoadStmt *stmt) override {

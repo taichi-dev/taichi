@@ -75,7 +75,7 @@ class KernelGen : public IRVisitor {
   void generate_header() {
   }
 
-  std::string opengl_data_type_name(DataType dt) { // catch & forward
+  std::string opengl_data_type_name(DataType dt) {  // catch & forward
     if (dt == DataType::i64)
       used.int64 = true;
     return opengl::opengl_data_type_name(dt);
@@ -162,7 +162,9 @@ class KernelGen : public IRVisitor {
         "= 1) in;",
         threads_per_group, num_groups_, num_threads_);
     std::string extensions = "";
-#define PER_OPENGL_EXTENSION(x) if (opengl_has_##x) extensions += "#extension " #x ": enable\n";
+#define PER_OPENGL_EXTENSION(x) \
+  if (opengl_has_##x)           \
+    extensions += "#extension " #x ": enable\n";
 #include "taichi/inc/opengl_extension.inc.h"
 #undef PER_OPENGL_EXTENSION
     auto kernel_src_code =
@@ -397,10 +399,10 @@ class KernelGen : public IRVisitor {
   void visit(AtomicOpStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
     auto dt = stmt->dest->element_type();
-    if (dt == DataType::i32
-        || (opengl_has_GL_NV_shader_atomic_int64 && dt == DataType::i64)
-        || (opengl_has_GL_NV_shader_atomic_float && dt == DataType::f32)
-        || (opengl_has_GL_NV_shader_atomic_float64 && dt == DataType::f64)) {
+    if (dt == DataType::i32 ||
+        (opengl_has_GL_NV_shader_atomic_int64 && dt == DataType::i64) ||
+        (opengl_has_GL_NV_shader_atomic_float && dt == DataType::f32) ||
+        (opengl_has_GL_NV_shader_atomic_float64 && dt == DataType::f64)) {
       emit("{} {} = {}(_{}_{}_[{} >> {}], {});",
            opengl_data_type_name(stmt->val->element_type()), stmt->short_name(),
            opengl_atomic_op_type_cap_name(stmt->op_type),
@@ -409,7 +411,8 @@ class KernelGen : public IRVisitor {
            stmt->val->short_name());
     } else {
       if (dt != DataType::f32) {
-        TI_ERROR("unsupported atomic operation for DataType::{}, "
+        TI_ERROR(
+            "unsupported atomic operation for DataType::{}, "
             "this may because your OpenGL is missing that extension, "
             "see `glewinfo` for more details",
             data_type_short_name(dt));

@@ -14,7 +14,8 @@ bool is_supported(Arch arch, Extension ext) {
       {Arch::metal, {}},
       {Arch::opengl, {}},
   };
-  //if (with_opengl_extension_data64()) arch2ext[Arch::opengl].insert(Extension::data64); // TODO: singleton
+  // if (with_opengl_extension_data64())
+  // arch2ext[Arch::opengl].insert(Extension::data64); // TODO: singleton
   const auto &exts = arch2ext[arch];
   return exts.find(ext) != exts.end();
 }

@@ -264,8 +264,9 @@ void initialize_opengl() {
   TI_INFO("[glsl] OpenGL {}", (const char *)glGetString(GL_VERSION));
   TI_INFO("[glsl] GLSL {}",
           (const char *)glGetString(GL_SHADING_LANGUAGE_VERSION));
-#define PER_OPENGL_EXTENSION(x) \
-  if ((opengl_has_##x = glewGetExtension(#x))) TI_INFO("[glsl] Found " #x);
+#define PER_OPENGL_EXTENSION(x)                \
+  if ((opengl_has_##x = glewGetExtension(#x))) \
+    TI_INFO("[glsl] Found " #x);
 #include "taichi/inc/opengl_extension.inc.h"
 #undef PER_OPENGL_EXTENSION
   if (!opengl_has_GL_ARB_compute_shader)

@@ -36,6 +36,7 @@ class GUI:
         self.canvas = self.core.get_canvas()
         self.background_color = background_color
         self.key_pressed = set()
+        self.event = None
         self.clear()
         if ti.core.get_current_program():
             self.core.set_profiler(
@@ -128,6 +129,15 @@ class GUI:
     def has_key_event(self):
         return self.core.has_key_event()
 
+    def get_event(self, *filter):
+        while True:
+            if not self.has_key_event():
+                return False
+            self.event = self.get_key_event()
+            if not len(filter) or self.event.type in filter:
+                break
+        return True
+
     def get_key_event(self):
         self.core.wait_key_event()
         e = GUI.Event()
@@ -157,12 +167,6 @@ class GUI:
 
     def get_cursor_pos(self):
         return self.core.get_cursor_pos()
-
-    def wait_key():
-        while True:
-            key, type = self.get_key_event()
-            if type == GUI.PRESS:
-                return key
 
     def has_key_pressed(self):
         if self.has_key_event():

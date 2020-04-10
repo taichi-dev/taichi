@@ -69,8 +69,8 @@
    - ... or use `TI_DEBUG=1` to turn on debug mode non-intrusively
    - Fixed `ti.profiler_clear`
    - Added `GUI.line(begin, end, color, radius)` and `ti.rgb_to_hex`
-   - 
-   - Renamed `ti.trace` (Matrix trace) to `ti.tr`. `ti.trace` is now for logging with `ti.TRACE` level 
+   -
+   - Renamed `ti.trace` (Matrix trace) to `ti.tr`. `ti.trace` is now for logging with `ti.TRACE` level
    - Fixed return value of `ti test_cpp` (thanks to **Ye Kuang [k-ye]**)
    - Raise default loggineg level to `ti.INFO` instead of trace to make the world quiter
    - General performance/compatibility improvements

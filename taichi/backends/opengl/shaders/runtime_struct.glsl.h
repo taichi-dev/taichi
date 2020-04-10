@@ -5,6 +5,6 @@ STR(
 struct _RT_ {
   int rand_state;
   int unused1;
-  int bitmask[16]; /* TODO: use a actual size */
+  int bitmask[64]; /* TODO: use a actual size */
 };
 ) "\n"

@@ -405,7 +405,7 @@ struct GLSLLauncherImpl {
 struct GLSLRuntimeStruct {
   int rand_state;
   int unused1;
-  int bitmask[16];
+  int bitmask[64];
 };
 
 GLSLLauncher::GLSLLauncher(size_t size) {

@@ -61,10 +61,8 @@ def test_cpp(args):
     # Cpp tests use the legacy non LLVM backend
     ti.reset()
     print("Running C++ tests...")
-    task = ti.Task('test_gui')
+    task = ti.Task('test')
     return int(task.run(*test_files))
-    #task = ti.Task('test')
-    #return int(task.run(*test_files))
 
 
 def make_argument_parser():

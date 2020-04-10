@@ -15,28 +15,28 @@ class WholeKernelCSE : public BasicStmtVisitor {
     if (if_stmt->true_statements && if_stmt->false_statements) {
       auto block = if_stmt->parent;
       int current_stmt_id = block->locate(if_stmt);
-      std::cout << "wholekernel cse if" << std::endl;
-      irpass::print(block->statements[current_stmt_id - 1].get());
-      irpass::print(if_stmt);
       auto &true_clause = if_stmt->true_statements;
       auto &false_clause = if_stmt->false_statements;
       if (irpass::same_statements(true_clause->statements[0].get(),
                                   false_clause->statements[0].get())) {
-        std::cout << "same!";
-
-        irpass::print(true_clause->statements[0].get());
-        irpass::print(false_clause->statements[0].get());
         auto common_stmt = true_clause->extract(0);
         irpass::replace_all_usages_with(false_clause.get(),
                                         false_clause->statements[0].get(),
                                         common_stmt.get());
         if_stmt->insert_before_me(std::move(common_stmt));
         false_clause->erase(0);
-        irpass::print(block->statements[current_stmt_id].get());
-        irpass::print(if_stmt);
         throw IRModified();
       }
-      std::cout << "wholekernel cse if done" << std::endl;
+      if (irpass::same_statements(true_clause->statements.back().get(),
+                                  false_clause->statements.back().get())) {
+        auto common_stmt = true_clause->extract((int)true_clause->size() - 1);
+        irpass::replace_all_usages_with(false_clause.get(),
+                                        false_clause->statements.back().get(),
+                                        common_stmt.get());
+        if_stmt->insert_before_me(std::move(common_stmt));
+        false_clause->erase((int)false_clause->size() - 1);
+        throw IRModified();
+      }
     }
   }
 
@@ -48,8 +48,6 @@ class WholeKernelCSE : public BasicStmtVisitor {
         node->accept(&eliminator);
       } catch (IRModified) {
         modified = true;
-        std::cout << "modified!\n";
-        irpass::print(node);
       }
       if (!modified)
         break;

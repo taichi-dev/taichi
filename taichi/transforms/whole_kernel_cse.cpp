@@ -11,6 +11,20 @@ class WholeKernelCSE : public BasicStmtVisitor {
   }
 
   void visit(IfStmt *if_stmt) override {
+    if (if_stmt->true_statements) {
+      if (if_stmt->true_statements->statements.empty()) {
+        if_stmt->true_statements = nullptr;
+        throw IRModified();
+      }
+    }
+
+    if (if_stmt->false_statements) {
+      if (if_stmt->false_statements->statements.empty()) {
+        if_stmt->false_statements = nullptr;
+        throw IRModified();
+      }
+    }
+
     // Move common statements at the beginning or the end of both branches
     // outside.
     if (if_stmt->true_statements && if_stmt->false_statements) {

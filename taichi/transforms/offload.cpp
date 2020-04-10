@@ -11,13 +11,14 @@ namespace {
 using StmtToOffsetMap = decltype(OffloadedResult::local_to_global_offset);
 
 std::unique_ptr<std::unordered_map<OffloadedStmt *, Stmt *>> begin_stmt,
-  end_stmt;
+    end_stmt;
 
 // Break kernel into multiple parts and emit struct for listgens
 class Offloader {
  public:
   Offloader(IRNode *root) {
-    begin_stmt = std::make_unique<std::unordered_map<OffloadedStmt *, Stmt *>>();
+    begin_stmt =
+        std::make_unique<std::unordered_map<OffloadedStmt *, Stmt *>>();
     end_stmt = std::make_unique<std::unordered_map<OffloadedStmt *, Stmt *>>();
     run(root);
   }
@@ -348,7 +349,8 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
       stmt->body->accept(this);
     if (stmt->task_type == OffloadedStmt::TaskType::range_for) {
       if (!stmt->const_begin)
-        stmt->begin_offset = local_to_global_offset[begin_stmt->find(stmt)->second];
+        stmt->begin_offset =
+            local_to_global_offset[begin_stmt->find(stmt)->second];
       if (!stmt->const_end)
         stmt->end_offset = local_to_global_offset[end_stmt->find(stmt)->second];
     }

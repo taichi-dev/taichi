@@ -11,7 +11,7 @@ class IRVerifier : public IRVisitor {
   std::vector<std::unordered_set<Stmt *>> visible_stmts;
 
  public:
-  explicit IRVerifier(IRNode *root): current_block(nullptr) {
+  explicit IRVerifier(IRNode *root) : current_block(nullptr) {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
     TI_ASSERT(root->is<Block>() && root->as<Block>()->parent == nullptr);

@@ -90,7 +90,7 @@ void compile_to_offloads(IRNode *ir,
 
   // Final field registration correctness & type checking
   irpass::typecheck(ir);
-  irpass::fix_block_parents(ir); // hot fix
+  irpass::fix_block_parents(ir);  // hot fix
   irpass::verify(ir);
 }
 

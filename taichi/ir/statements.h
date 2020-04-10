@@ -196,6 +196,10 @@ class OffloadedStmt : public Stmt {
     return task_type != clear_list && task_type != listgen && task_type != gc;
   }
 
+  bool is_container_statement() const override {
+    return has_body();
+  }
+
   TI_STMT_DEF_FIELDS(ret_type,
                      task_type,
                      snode,

@@ -14,33 +14,12 @@ class StmtCounter : public BasicStmtVisitor {
   using BasicStmtVisitor::visit;
 
  public:
+  void preprocess_container_stmt(Stmt *stmt) override {
+    counter++;
+  }
+
   void visit(Stmt *stmt) override {
     counter++;
-  }
-
-  void visit(IfStmt *stmt) override {
-    counter++;
-    BasicStmtVisitor::visit(stmt);
-  }
-
-  void visit(WhileStmt *stmt) override {
-    counter++;
-    BasicStmtVisitor::visit(stmt);
-  }
-
-  void visit(OffloadedStmt *stmt) override {
-    counter++;
-    BasicStmtVisitor::visit(stmt);
-  }
-
-  void visit(RangeForStmt *stmt) override {
-    counter++;
-    BasicStmtVisitor::visit(stmt);
-  }
-
-  void visit(StructForStmt *stmt) override {
-    counter++;
-    BasicStmtVisitor::visit(stmt);
   }
 
   static int run(IRNode *root) {

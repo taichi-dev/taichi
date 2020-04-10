@@ -235,7 +235,8 @@ class KernelGen : public IRVisitor {
     }
 
     emit("int {} = {} + {} * {}; // {}", stmt->short_name(),
-         parent->short_name(), struct_compiled_->class_children_map[parent_type],
+         parent->short_name(),
+         struct_compiled_->class_children_map[parent_type],
          stmt->input_index->short_name(), stmt->snode->node_type_name);
   }
 
@@ -244,22 +245,24 @@ class KernelGen : public IRVisitor {
     if (sn->type == SNodeType::bitmasked) {
       auto ch_addr = fmt::format("_a_{}", stmt->short_name());
       emit("int {} = {} + {} * {}; // {}", ch_addr, stmt->ptr->short_name(),
-          struct_compiled_->class_children_map[sn->node_type_name], stmt->val->short_name(),
-          sn->node_type_name);
+           struct_compiled_->class_children_map[sn->node_type_name],
+           stmt->val->short_name(), sn->node_type_name);
       if (stmt->op_type == SNodeOpType::is_active) {
         emit("int {} = 1 & (_rt_.bitmask[{} >> 8] >> ({} & 31));",
-            stmt->short_name(), ch_addr, ch_addr);
+             stmt->short_name(), ch_addr, ch_addr);
       } else if (stmt->op_type == SNodeOpType::activate) {
-        emit("atomicOr(_rt_.bitmask[{} >> 8], 1 << ({} & 31));", ch_addr, ch_addr);
+        emit("atomicOr(_rt_.bitmask[{} >> 8], 1 << ({} & 31));", ch_addr,
+             ch_addr);
       } else if (stmt->op_type == SNodeOpType::deactivate) {
-        emit("atomicAnd(_rt_.bitmask[{} >> 8], ~(1 << ({} & 31)));", ch_addr, ch_addr);
+        emit("atomicAnd(_rt_.bitmask[{} >> 8], ~(1 << ({} & 31)));", ch_addr,
+             ch_addr);
       }
     } else if (sn->type == SNodeType::dense || sn->type == SNodeType::root) {
       if (stmt->op_type == SNodeOpType::is_active) {
         emit("int {} = 1;", stmt->short_name());
       }
     } else {
-        TI_NOT_IMPLEMENTED;
+      TI_NOT_IMPLEMENTED;
     }
   }
 
@@ -523,7 +526,7 @@ class KernelGen : public IRVisitor {
     this->glsl_kernel_name_ = "_listgen";
     emit("{}",
 #include "taichi/backends/opengl/shaders/listgen.glsl.h"
-        );
+    );
   }
 
   void generate_clear_list_kernel(OffloadedStmt *stmt) {
@@ -531,7 +534,7 @@ class KernelGen : public IRVisitor {
     this->glsl_kernel_name_ = "_clear_list";
     emit("{}",
 #include "taichi/backends/opengl/shaders/clear_list.glsl.h"
-        );
+    );
   }
 
   void generate_struct_for_kernel(OffloadedStmt *stmt) {
@@ -550,10 +553,10 @@ class KernelGen : public IRVisitor {
       if (sn->type == SNodeType::bitmasked) {
         auto ch_addr = fmt::format("_a_{}", stmt->short_name());
         emit("int {} = {} + {} * _itv; // {}", ch_addr, 0,
-            struct_compiled_->class_children_map[sn->node_type_name],
-            sn->node_type_name);
+             struct_compiled_->class_children_map[sn->node_type_name],
+             sn->node_type_name);
         emit("if (0 == (1 & (_rt_.bitmask[{} >> 8] >> ({} & 31)))) return;",
-            ch_addr, ch_addr);
+             ch_addr, ch_addr);
       }
     }
 
@@ -595,7 +598,7 @@ class KernelGen : public IRVisitor {
   }
 
   void visit(LoopIndexStmt *stmt) override {
-    //TI_ASSERT(!stmt->is_struct_for);
+    // TI_ASSERT(!stmt->is_struct_for);
     TI_ASSERT(stmt->index == 0);  // TODO: multiple indices
     emit("int {} = _itv;", stmt->short_name());
   }

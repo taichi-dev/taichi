@@ -7,7 +7,8 @@ class WholeKernelCSE : public BasicStmtVisitor {
  public:
   using BasicStmtVisitor::visit;
 
-  WholeKernelCSE() {}
+  WholeKernelCSE() {
+  }
 
   void visit(IfStmt *if_stmt) override {
     // Move common statements at the beginning or the end of both branches

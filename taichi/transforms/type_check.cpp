@@ -412,7 +412,11 @@ namespace irpass {
 
 void typecheck(IRNode *root) {
   check_fields_registered(root);
-  return TypeCheck::run(root);
+  TypeCheck::run(root);
+  //  if (root->is<Block>() && root->as<Block>()->parent == nullptr) {
+  //    fix_block_parents(root); // hot fix
+  //    verify(root);
+  //  }
 }
 
 }  // namespace irpass

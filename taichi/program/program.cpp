@@ -5,6 +5,7 @@
 #include "taichi/common/task.h"
 #include "taichi/backends/metal/api.h"
 #include "taichi/backends/opengl/opengl_api.h"
+#include "taichi/backends/cuda/cuda_driver.h"
 #include "taichi/codegen/codegen_cuda.h"
 #include "taichi/codegen/codegen_metal.h"
 #include "taichi/codegen/codegen_opengl.h"
@@ -15,8 +16,7 @@
 #include "taichi/system/unified_allocator.h"
 #include "taichi/ir/snode.h"
 #include "taichi/program/async_engine.h"
-
-#include "taichi/backends/cuda/cuda_utils.h"
+#include "taichi/backends/cuda/cuda_driver.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -120,11 +120,12 @@ FunctionType Program::compile(Kernel &kernel) {
     auto codegen = KernelCodeGen::create(kernel.arch, &kernel);
     ret = codegen->compile();
   } else if (kernel.arch == Arch::metal) {
-    metal::CodeGen codegen(kernel.name, &metal_compiled_structs_.value());
-    ret = codegen.compile(*this, kernel, metal_kernel_mgr_.get());
+    metal::CodeGen codegen(&kernel, metal_kernel_mgr_.get(),
+                           &metal_compiled_structs_.value());
+    ret = codegen.compile();
   } else if (kernel.arch == Arch::opengl) {
-    opengl::OpenglCodeGen codegen(kernel.name,
-                                  &opengl_struct_compiled_.value());
+    opengl::OpenglCodeGen codegen(kernel.name, &opengl_struct_compiled_.value(),
+                                  opengl_kernel_launcher_.get());
     ret = codegen.compile(*this, kernel);
   } else {
     TI_NOT_IMPLEMENTED;
@@ -143,7 +144,7 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
 
   if (config.arch == Arch::cuda && !config.use_unified_memory) {
 #if defined(TI_WITH_CUDA)
-    check_cuda_error(cudaMalloc(&result_buffer, sizeof(uint64)));
+    CUDADriver::get_instance().malloc(&result_buffer, sizeof(uint64));
     auto total_mem = runtime->get_total_memory();
     if (config.device_memory_fraction == 0) {
       TI_ASSERT(config.device_memory_GB > 0);
@@ -154,8 +155,10 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
     TI_TRACE("Allocating device memory {:.2f} GB",
              1.0 * prealloc_size / (1UL << 30));
 
-    check_cuda_error(cudaMalloc(&preallocated_device_buffer, prealloc_size));
-    check_cuda_error(cudaMemset(preallocated_device_buffer, 0, prealloc_size));
+    CUDADriver::get_instance().malloc(&preallocated_device_buffer,
+                                      prealloc_size);
+    CUDADriver::get_instance().memset(preallocated_device_buffer, 0,
+                                      prealloc_size);
     tlctx = llvm_context_device.get();
 #else
     TI_NOT_IMPLEMENTED
@@ -272,8 +275,8 @@ void Program::materialize_layout() {
     opengl_struct_compiled_ = scomp.run(*snode_root);
     TI_INFO("OpenGL root buffer size: {} B",
             opengl_struct_compiled_->root_size);
-    opengl::create_glsl_root_buffer(opengl_struct_compiled_->root_size);
-    opengl::initialize_opengl();
+    opengl_kernel_launcher_ = std::make_unique<opengl::GLSLLauncher>(
+        opengl_struct_compiled_->root_size);
   }
 }
 
@@ -299,7 +302,7 @@ void Program::synchronize() {
   if (!sync) {
     if (config.arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
-      cudaDeviceSynchronize();
+      CUDADriver::get_instance().stream_synchronize(0);
 #else
       TI_ERROR("No CUDA support");
 #endif
@@ -461,7 +464,7 @@ void Program::finalize() {
   memory_pool->terminate();
 #if defined(TI_WITH_CUDA)
   if (preallocated_device_buffer != nullptr)
-    cudaFree(preallocated_device_buffer);
+    CUDADriver::get_instance().mem_free(preallocated_device_buffer);
 #endif
   finalized = true;
   num_instances -= 1;

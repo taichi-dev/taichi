@@ -57,7 +57,10 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   llvm::Type *context_ty;
   llvm::Type *physical_coordinate_ty;
   llvm::Value *current_coordinates;
-  llvm::BasicBlock *while_after_loop;
+  // Mainly for supporting continue stmt
+  llvm::BasicBlock *current_loop_reentry;
+  // Mainly for supporting break stmt
+  llvm::BasicBlock *current_while_after_loop;
   llvm::FunctionType *task_function_type;
   OffloadedStmt *current_offloaded_stmt;
   SNodeAttributes &snode_attr;
@@ -153,6 +156,8 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   void visit(ConstStmt *stmt) override;
 
   void visit(WhileControlStmt *stmt) override;
+
+  void visit(ContinueStmt *stmt) override;
 
   void visit(WhileStmt *stmt) override;
 

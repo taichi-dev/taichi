@@ -7,6 +7,7 @@
 #include <unordered_map>
 
 #include "taichi/ir/frontend.h"
+#include "taichi/ir/statements.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -57,11 +58,11 @@ Expr select(const Expr &cond, const Expr &true_val, const Expr &false_val) {
                                          false_val);
 }
 
-Expr operator-(Expr expr) {
+Expr operator-(const Expr &expr) {
   return Expr::make<UnaryOpExpression>(UnaryOpType::neg, expr);
 }
 
-Expr operator~(Expr expr) {
+Expr operator~(const Expr &expr) {
   return Expr::make<UnaryOpExpression>(UnaryOpType::bit_not, expr);
 }
 
@@ -79,7 +80,7 @@ Expr bit_cast(const Expr &input, DataType dt) {
   return Expr(ret);
 }
 
-Expr Expr::operator[](ExprGroup indices) const {
+Expr Expr::operator[](const ExprGroup &indices) const {
   TI_ASSERT(is<GlobalVariableExpression>() || is<ExternalTensorExpression>());
   return Expr::make<GlobalPtrExpression>(*this, indices.loaded());
 }
@@ -145,7 +146,7 @@ Expr::Expr(float64 x) : Expr() {
   expr = std::make_shared<ConstExpression>(x);
 }
 
-Expr::Expr(Identifier id) : Expr() {
+Expr::Expr(const Identifier &id) : Expr() {
   expr = std::make_shared<IdExpression>(id);
 }
 
@@ -257,8 +258,8 @@ FrontendAssignStmt::FrontendAssignStmt(const Expr &lhs, const Expr &rhs)
 }
 
 FrontendAtomicStmt::FrontendAtomicStmt(AtomicOpType op_type,
-                                       Expr dest,
-                                       Expr val)
+                                       const Expr &dest,
+                                       const Expr &val)
     : op_type(op_type), dest(dest), val(val) {
 }
 
@@ -352,7 +353,7 @@ void Stmt::replace_operand_with(Stmt *old_stmt, Stmt *new_stmt) {
 
 Block *current_block = nullptr;
 
-Expr Var(Expr x) {
+Expr Var(const Expr &x) {
   auto var = Expr(std::make_shared<IdExpression>());
   current_ast_builder().insert(std::make_unique<FrontendAllocaStmt>(
       std::static_pointer_cast<IdExpression>(var.expr)->id, DataType::unknown));
@@ -360,7 +361,7 @@ Expr Var(Expr x) {
   return var;
 }
 
-void Print_(const Expr &a, std::string str) {
+void Print_(const Expr &a, const std::string &str) {
   current_ast_builder().insert(std::make_unique<FrontendPrintStmt>(a, str));
 }
 
@@ -453,7 +454,7 @@ void Block::replace_with(Stmt *old_statement,
   replace_with(old_statement, std::move(vec));
 }
 
-Stmt *Block::lookup_var(taichi::lang::Ident ident) const {
+Stmt *Block::lookup_var(const taichi::lang::Ident &ident) const {
   auto ptr = local_var_alloca.find(ident);
   if (ptr != local_var_alloca.end()) {
     return ptr->second;
@@ -476,7 +477,7 @@ Stmt *Block::mask() {
   }
 }
 
-For::For(Expr s, Expr e, const std::function<void(Expr)> &func) {
+For::For(const Expr &s, const Expr &e, const std::function<void(Expr)> &func) {
   auto i = Expr(std::make_shared<IdExpression>());
   auto stmt_unique = std::make_unique<FrontendForStmt>(i, s, e);
   auto stmt = stmt_unique.get();
@@ -501,8 +502,6 @@ OffloadedStmt::OffloadedStmt(OffloadedStmt::TaskType task_type, SNode *snode)
   begin_value = 0;
   end_value = 0;
   step = 0;
-  begin_stmt = nullptr;
-  end_stmt = nullptr;
   block_dim = 0;
   reversed = false;
   device = get_current_program().config.arch;
@@ -544,6 +543,16 @@ std::string OffloadedStmt::task_type_name(TaskType tt) {
   };
 #undef REGISTER_NAME
   return m.find(tt)->second;
+}
+
+bool ContinueStmt::as_return() const {
+  TI_ASSERT(scope != nullptr);
+  if (auto *offl = scope->cast<OffloadedStmt>(); offl) {
+    TI_ASSERT(offl->task_type == OffloadedStmt::TaskType::range_for ||
+              offl->task_type == OffloadedStmt::TaskType::struct_for);
+    return true;
+  }
+  return false;
 }
 
 TLANG_NAMESPACE_END

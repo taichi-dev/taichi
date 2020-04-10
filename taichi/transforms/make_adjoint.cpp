@@ -110,11 +110,19 @@ class MakeAdjoint : public IRVisitor {
 
  public:
   Block *current_block;
+  Block *alloca_block;
   std::map<Stmt *, Stmt *> adjoint_stmt;
   int for_depth;
 
   MakeAdjoint() {
     current_block = nullptr;
+    alloca_block = nullptr;
+    // Note:
+    // MakeAdjoint acts on the block with if's and without struct/range/while
+    // loops. This is basically a straight-line code with forking and merging
+    // due to if's. Therefore we the adjoint allocas must belong to this block
+    // for it to be visible. We call this block `alloca_block`.
+
     for_depth = 0;
   }
 
@@ -124,6 +132,10 @@ class MakeAdjoint : public IRVisitor {
   }
 
   void visit(Block *block) override {
+    if (current_block == nullptr) {
+      // serial
+      alloca_block = block;
+    }
     std::vector<Stmt *> statements;
     // always make a copy since the list can be modified.
     for (auto &stmt : block->statements) {
@@ -179,7 +191,7 @@ class MakeAdjoint : public IRVisitor {
       // maybe it's better to use the statement data type than the default type
       auto alloca = Stmt::make<AllocaStmt>(1, stmt->ret_type.data_type);
       adjoint_stmt[stmt] = alloca.get();
-      current_block->insert(std::move(alloca), 0);
+      alloca_block->insert(std::move(alloca), 0);
     }
     return adjoint_stmt[stmt];
   }
@@ -337,6 +349,10 @@ class MakeAdjoint : public IRVisitor {
     TI_NOT_IMPLEMENTED
   }
 
+  void visit(ContinueStmt *stmt) override {
+    TI_NOT_IMPLEMENTED;
+  }
+
   void visit(WhileStmt *stmt) override {
     TI_NOT_IMPLEMENTED
   }
@@ -345,12 +361,14 @@ class MakeAdjoint : public IRVisitor {
     if (for_depth > 0)  // reverse non-parallelized for-loops
       for_stmt->reverse();
     for_depth += 1;
+    alloca_block = for_stmt->body.get();
     for_stmt->body->accept(this);
     for_depth -= 1;
   }
 
   void visit(StructForStmt *for_stmt) override {
     for_depth += 1;
+    alloca_block = for_stmt->body.get();
     for_stmt->body->accept(this);
     for_depth -= 1;
   }
@@ -508,7 +526,8 @@ class BackupSSA : public BasicStmtVisitor {
     for (int i = 0; i < num_operands; i++) {
       auto op = stmt->operand(i);
       if (std::find(leaf_to_root.begin(), leaf_to_root.end(), op->parent) ==
-          leaf_to_root.end()) {
+              leaf_to_root.end() &&
+          !op->is<AllocaStmt>()) {
         auto alloca = load(op);
         TI_ASSERT(op->width() == 1);
         stmt->set_operand(i, stmt->insert_before_me(Stmt::make<LocalLoadStmt>(

@@ -418,13 +418,9 @@ class KernelManager::Impl {
       const std::string &taichi_kernel_name,
       const std::string &mtl_kernel_source_code,
       const std::vector<KernelAttributes> &kernels_attribs,
-      size_t global_tmps_size,
       const KernelArgsAttributes &args_attribs) {
     TI_ASSERT(compiled_taichi_kernels_.find(taichi_kernel_name) ==
               compiled_taichi_kernels_.end());
-    // Make sure |taichi_global_tmp_buffer_size| is large enough
-    TI_ASSERT(iroundup(global_tmps_size, taichi_page_size) <=
-              global_tmps_mem_->size());
 
     if (config_->print_kernel_llvm_ir) {
       // If users have enabled |print_kernel_llvm_ir|, it probably means that
@@ -638,7 +634,6 @@ class KernelManager::Impl {
       const std::string &taichi_kernel_name,
       const std::string &mtl_kernel_source_code,
       const std::vector<KernelAttributes> &kernels_attribs,
-      size_t global_tmps_size,
       const KernelArgsAttributes &args_attribs) {
     TI_ERROR("Metal not supported on the current OS");
   }
@@ -666,11 +661,9 @@ void KernelManager::register_taichi_kernel(
     const std::string &taichi_kernel_name,
     const std::string &mtl_kernel_source_code,
     const std::vector<KernelAttributes> &kernels_attribs,
-    size_t global_tmps_size,
     const KernelArgsAttributes &args_attribs) {
   impl_->register_taichi_kernel(taichi_kernel_name, mtl_kernel_source_code,
-                                kernels_attribs, global_tmps_size,
-                                args_attribs);
+                                kernels_attribs, args_attribs);
 }
 
 void KernelManager::launch_taichi_kernel(const std::string &taichi_kernel_name,

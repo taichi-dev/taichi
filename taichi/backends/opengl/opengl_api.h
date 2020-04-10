@@ -5,24 +5,39 @@
 #include <string>
 #include <vector>
 
-#include "opengl_kernel_util.h"
+#include "opengl_kernel_launcher.h"
 
 TLANG_NAMESPACE_BEGIN
 
+class Kernel;
+
 namespace opengl {
 
-struct GLProgram;
 void initialize_opengl();
 bool is_opengl_api_available();
-void create_glsl_root_buffer(size_t size);
-void begin_glsl_kernels(const std::vector<IOV> &iov);
-void launch_glsl_kernel(GLProgram *program, int num_groups);
-void end_glsl_kernels(const std::vector<IOV> &iov);
-GLProgram *compile_glsl_program(std::string source);
 int opengl_get_threads_per_group();
 #define PER_OPENGL_EXTENSION(x) extern bool opengl_has_##x;
 #include "taichi/inc/opengl_extension.inc.h"
 #undef PER_OPENGL_EXTENSION
+
+struct CompiledProgram {
+  struct Impl;
+  std::unique_ptr<Impl> impl;
+
+  // disscussion:
+  // https://github.com/taichi-dev/taichi/pull/696#issuecomment-609332527
+  CompiledProgram(CompiledProgram &&) = default;
+  CompiledProgram &operator=(CompiledProgram &&) = default;
+
+  CompiledProgram(Kernel *kernel, size_t gtmp_size);
+  ~CompiledProgram();
+
+  void add(const std::string &kernel_name,
+           const std::string &kernel_source_code,
+           int num_groups,
+           const UsedFeature &used);
+  void launch(Context &ctx, GLSLLauncher *launcher) const;
+};
 
 }  // namespace opengl
 

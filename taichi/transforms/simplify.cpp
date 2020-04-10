@@ -1066,6 +1066,10 @@ class BasicBlockSimplify : public IRVisitor {
     return;
   }
 
+  void visit(ContinueStmt *stmt) override {
+    return;
+  }
+
   static bool is_global_write(Stmt *stmt) {
     return stmt->is<GlobalStoreStmt>() || stmt->is<AtomicOpStmt>();
   }

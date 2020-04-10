@@ -1,5 +1,8 @@
 // Bindings for the python frontend
 
+#include "pybind11/functional.h"
+#include "pybind11/pybind11.h"
+
 #include "taichi/ir/frontend.h"
 #include "taichi/program/extension.h"
 #include "taichi/common/interface.h"
@@ -7,8 +10,6 @@
 #include "taichi/gui/gui.h"
 #include "taichi/math/svd.h"
 #include "taichi/util/statistics.h"
-#include <pybind11/functional.h>
-#include <pybind11/pybind11.h>
 
 TI_NAMESPACE_BEGIN
 

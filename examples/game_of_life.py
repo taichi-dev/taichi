@@ -50,6 +50,8 @@ def render():
 
 init()
 gui = ti.GUI('Game of Life', (res, res))
+print('Press/hold spacebar to run')
+
 render()
 while True:
     while gui.get_event(ti.GUI.PRESS):

@@ -73,7 +73,7 @@ class Offloader {
           offloaded->const_end = true;
           offloaded->end_value = val->val[0].val_int32();
         } else {
-          begin_stmt->insert(std::make_pair(offloaded.get(), s->end));
+          end_stmt->insert(std::make_pair(offloaded.get(), s->end));
         }
         offloaded->block_dim = s->block_dim;
         offloaded->num_cpu_threads = s->parallelize;

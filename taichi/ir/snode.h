@@ -177,15 +177,7 @@ class SNode {
 
   SNode &place(Expr &expr);
 
-  SNode &dynamic_chunked(const Index &expr, int n, int chunk_size) {
-    TI_ASSERT(bit::is_power_of_two(n));
-    TI_ASSERT(bit::is_power_of_two(chunk_size));
-    auto &child = insert_children(SNodeType::dynamic);
-    child.extractors[expr.value].activate(bit::log2int(n));
-    child.n = n;
-    child.chunk_size = chunk_size;
-    return child;
-  }
+  SNode &dynamic_chunked(const Index &expr, int n, int chunk_size);
 
   SNode &morton(bool val = true) {
     _morton = val;

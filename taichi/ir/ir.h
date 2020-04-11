@@ -130,7 +130,7 @@ std::vector<Stmt *> gather_statements(IRNode *root,
 bool same_statements(IRNode *root1, IRNode *root2);
 DiffRange value_diff(Stmt *stmt, int lane, Stmt *alloca);
 void verify(IRNode *root);
-}
+}  // namespace analysis
 
 }  // namespace irpass
 

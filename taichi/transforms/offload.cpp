@@ -479,7 +479,8 @@ void insert_gc(IRNode *root) {
   TI_ASSERT(b);
   std::vector<std::pair<int, std::vector<SNode *>>> gc_statements;
   for (int i = 0; i < (int)b->statements.size(); i++) {
-    auto snodes = irpass::analysis::gather_deactivations(b->statements[i].get());
+    auto snodes =
+        irpass::analysis::gather_deactivations(b->statements[i].get());
     gc_statements.emplace_back(
         std::make_pair(i, std::vector<SNode *>(snodes.begin(), snodes.end())));
   }

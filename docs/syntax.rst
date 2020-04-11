@@ -116,19 +116,23 @@ Supported scalar functions:
 
 * ``ti.sin(x)``
 * ``ti.cos(x)``
+* ``ti.asin(x)``
+* ``ti.acos(x)``
 * ``ti.cast(x, type)``
 * ``ti.sqr(x)``
+* ``ti.sqrt(x)``
 * ``ti.floor(x)``
 * ``ti.inv(x)``
 * ``ti.tan(x)``
 * ``ti.tanh(x)``
 * ``ti.exp(x)``
 * ``ti.log(x)``
-* ``abs(x)``
 * ``ti.random(type)``
+* ``abs(x)``
 * ``max(a, b)``
 * ``min(a, b)``
 * ``ti.length(dynamic_snode)``
+* ``x ** y``
 * Inplace adds are atomic on global data. I.e., ``a += b`` is equivalent to ``ti.atomic_add(a, b)``
 
 .. note::

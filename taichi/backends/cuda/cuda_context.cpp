@@ -77,7 +77,7 @@ void CUDAContext::launch(void *func,
 }
 
 CUDAContext::~CUDAContext() {
-  // TODO: restore this?
+  // TODO: restore these?
   /*
   CUDADriver::get_instance().cuMemFree(context_buffer);
   for (auto cudaModule: cudaModules)

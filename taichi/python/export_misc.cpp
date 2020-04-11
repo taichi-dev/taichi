@@ -75,7 +75,7 @@ void stop_duplicating_stdout_to_file(const std::string &fn) {
 
 bool with_cuda() {
 #if defined(TI_WITH_CUDA)
-  return lang::CUDADriver::get_instance().detected();
+  return lang::CUDADriver::get_instance_without_context().detected();
 #else
   return false;
 #endif

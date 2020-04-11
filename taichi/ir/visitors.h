@@ -11,7 +11,8 @@ class BasicStmtVisitor : public IRVisitor {
  public:
   BasicStmtVisitor();
 
-  virtual void preprocess_container_stmt(Stmt *stmt) {}
+  virtual void preprocess_container_stmt(Stmt *stmt) {
+  }
 
   void visit(Block *stmt_list) override;
 

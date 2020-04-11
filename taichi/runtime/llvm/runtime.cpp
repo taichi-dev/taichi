@@ -3,8 +3,8 @@
 
 #if !defined(TI_INCLUDED) || !defined(_WIN32)
 
-#if defined(_WIN32)
-#define vprintf vprintf_windows
+#if defined(_WIN32) || defined(ARCH_cuda)
+#define vprintf vprintf_dummy
 #include <cstdio>
 #undef vprintf
 #endif

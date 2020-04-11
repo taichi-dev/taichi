@@ -16,6 +16,36 @@ Currently, supported basic types in Taichi are
 - float32 ``ti.f32``
 - float64 ``ti.f64``
 
+.. note::
+    Supported types on each backends:
+
+    +------+-----------+-----------+---------+
+    | type | LLVM      | OpenGL    | Metal   |
+    +======+===========+===========+=========+
+    | i8   |    OK     |   MISS    |   OK    |
+    +------+-----------+-----------+---------+
+    | i16  |    OK     |   MISS    |   OK    |
+    +------+-----------+-----------+---------+
+    | i32  |    OK     |    OK     |   OK    |
+    +------+-----------+-----------+---------+
+    | i64  |    OK     |   EXT     |  MISS   |
+    +------+-----------+-----------+---------+
+    | u8   |    OK     |   MISS    |   OK    |
+    +------+-----------+-----------+---------+
+    | u16  |    OK     |   MISS    |   OK    |
+    +------+-----------+-----------+---------+
+    | u32  |    OK     |   MISS    |   OK    |
+    +------+-----------+-----------+---------+
+    | u64  |    OK     |   MISS    |  MISS   |
+    +------+-----------+-----------+---------+
+    | f32  |    OK     |    OK     |   OK    |
+    +------+-----------+-----------+---------+
+    | f64  |    OK     |   EXT     |  MISS   |
+    +------+-----------+-----------+---------+
+
+    (OK=supported, EXT=require extension, MISS=not supported)
+
+
 Boolean types are represented using ``ti.i32``.
 
 Binary operations on different types will give you a promoted type, following the C programming language, e.g.

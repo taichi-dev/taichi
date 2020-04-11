@@ -44,6 +44,24 @@ Or use the function ``ti.atomic_add``, both of them are equivalent:
             ti.atomic_add(result[None], x[i])
 
 
+.. note::
+    Support of atomic operation on each backends:
+
+    +------+-----------+-----------+---------+
+    | type | LLVM      | OpenGL    | Metal   |
+    +======+===========+===========+=========+
+    | i32  |    OK     |    OK     |   OK    |
+    +------+-----------+-----------+---------+
+    | f32  |    OK     |    OK     |   OK    |
+    +------+-----------+-----------+---------+
+    | i64  |    OK     |   EXT     |  MISS   |
+    +------+-----------+-----------+---------+
+    | f64  |    OK     |   EXT     |  MISS   |
+    +------+-----------+-----------+---------+
+
+    (OK=supported, EXT=require extension, MISS=not supported)
+
+
 Functions
 ---------
 

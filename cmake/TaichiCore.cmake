@@ -28,8 +28,8 @@ list(APPEND TAICHI_CORE_SOURCE ${TAICHI_OPENGL_SOURCE})
 add_library(${CORE_LIBRARY_NAME} SHARED ${TAICHI_CORE_SOURCE} ${PROJECT_SOURCES})
 
 if (APPLE)
-# Ask OS X to minic Linux dynamic linking behavior
-target_link_libraries(${CORE_LIBRARY_NAME} "-undefined dynamic_lookup")
+    # Ask OS X to minic Linux dynamic linking behavior
+    target_link_libraries(${CORE_LIBRARY_NAME} "-undefined dynamic_lookup")
 endif()
 
 include_directories(${CMAKE_SOURCE_DIR})
@@ -38,23 +38,14 @@ include_directories(external/spdlog/include)
 
 set(LIBRARY_NAME ${CORE_LIBRARY_NAME})
 
-if (TI_WITH_CUDA)
-    if(NOT CUDA_VERSION)
-        set(CUDA_VERSION 10.0)
-    endif()
-    find_package(CUDA ${CUDA_VERSION})
-    if (CUDA_FOUND)
-        message("Building with CUDA ${CUDA_VERSION}")
-        set(CUDA_ARCH 61)
-        message("Found CUDA. Arch = ${CUDA_ARCH}")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_CUDA")
-        if (MSVC)
-            include_directories(${CUDA_TOOLKIT_ROOT_DIR}/include)
-        else()
-            include_directories(/usr/local/cuda-${CUDA_VERSION}/include)
-        endif()
-    else()
-        message(FATAL_ERROR "CUDA not found.")
+if(NOT CUDA_VERSION)
+    set(CUDA_VERSION 10.0)
+endif()
+
+if (APPLE)
+    if (TI_WITH_CUDA)
+        set(TI_WITH_CUDA OFF)
+        message(WARNING "CUDA not supported on OS X. Setting TI_WITH_CUDA to OFF.")
     endif()
 endif()
 

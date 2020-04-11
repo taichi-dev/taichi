@@ -230,7 +230,7 @@ class Installer:
     elif get_os_name() != 'win':
       # compile ..
       os.makedirs('build', exist_ok=True)
-      execute_command('cd build && cmake ..')
+      execute_command('cd build && cmake .. -DTI_WITH_CUDA:BOOL=OFF')
       execute_command('cd build && make -j 10')
     return
     if test_installation():

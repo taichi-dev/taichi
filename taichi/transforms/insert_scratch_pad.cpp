@@ -70,8 +70,8 @@ class AccessAnalysis : public IRVisitor {
       offsets.resize(ptr->indices.size());
       int num_indices = (int)ptr->indices.size();
       for (int i = 0; i < num_indices; i++) {
-        auto diff = irpass::analysis::value_diff(
-            ptr->indices[i], l, for_stmt->loop_vars[i]);
+        auto diff = irpass::analysis::value_diff(ptr->indices[i], l,
+                                                 for_stmt->loop_vars[i]);
         if (diff.linear_related()) {
           offsets[i].first = diff.low;
           offsets[i].second = diff.high;

@@ -8,16 +8,10 @@ Depending on your hardware and OS, please execute one of the following commands:
 
 .. code-block:: bash
 
-  # Python 3.6+ needed
+  # python 3.6+ required
 
-  # CPU only. No GPU/CUDA needed. (Linux, OS X and Windows)
   python3 -m pip install taichi-nightly
 
-  # With GPU (CUDA 10.0) support (Linux only)
-  python3 -m pip install taichi-nightly-cuda-10-0
-
-  # With GPU (CUDA 10.1) support (Linux only)
-  python3 -m pip install taichi-nightly-cuda-10-1
 
 Now you are ready to run the Taichi code below (``python3 fractal.py``) to compute a
 `Julia set <https://en.wikipedia.org/wiki/Julia_set>`_:
@@ -72,14 +66,31 @@ You can also reuse the package management system, Python IDEs, and existing Pyth
 Portability
 -----------------
 
-Taichi supports both CPUs and NVIDIA GPUs.
+Taichi supports CPUs, NVIDIA GPUs, Mac GPUs with Metal, or any GPUs with OpenGL API.
 
 .. code-block:: python
 
-  # Run on GPU
+  # Run on NVIDIA GPU, require CUDA installed
   ti.init(arch=ti.cuda)
+  # Run on GPU, with OpenGL backend
+  ti.init(arch=ti.opengl)
+  # Run on GPU, with Metal backend, if you're on OS X
+  ti.init(arch=ti.metal)
   # Run on CPU (default)
   ti.init(arch=ti.x64)
+
+.. note::
+    Supported archs on different platforms:
+
+    +----------+------+------+--------+-------+
+    | platform | CPU  | CUDA | OpenGL | Metal |
+    +==========+======+======+========+=======+
+    | Windows  | OK   | WIP  | WIP    | MISS  |
+    +----------+------+------+--------+-------+
+    | Linux    | OK   | OK   | OK     | MISS  |
+    +----------+------+------+--------+-------+
+    | Mac OS X | OK   | MISS | MISS   | OK    |
+    +----------+------+------+--------+-------+
 
 If the machine does not have CUDA support, Taichi will fall back to CPUs instead.
 

@@ -19,7 +19,7 @@ Or use the function ``ti.atomic_add``, which is equivalent:
         for i in x:
             ti.atomic_add(result[None], x[i])
 
-See https://en.wikipedia.org/wiki/Fetch-and-add for more details about *atomic operations*.
+See https://en.wikipedia.org/wiki/Fetch-and-add for more details.
 
 
 .. note::

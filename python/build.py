@@ -47,7 +47,7 @@ if platform.system() == 'Linux':
     if os.environ['CXX'] not in ['clang++-8', 'clang++-7', 'clang++']:
         print('Only the wheel with clang will be released to PyPI.')
         sys.exit(-1)
-        
+
     if not gpu:
         print('Linux release must ship with the CUDA backend.')
         sys.exit(-1)
@@ -115,9 +115,8 @@ if mode == 'upload':
             '%PYPI_PWD%' if get_os_name() == 'win' else '$PYPI_PWD'))
 elif mode == 'test':
     print('Uninstalling old taichi packages...')
-    os.system(
-        '{} -m pip uninstall taichi-nightly'
-        .format(get_python_executable()))
+    os.system('{} -m pip uninstall taichi-nightly'.format(
+        get_python_executable()))
     dists = os.listdir('dist')
     assert len(dists) == 1
     dist = dists[0]

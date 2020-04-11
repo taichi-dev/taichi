@@ -113,6 +113,8 @@ std::string lookup_keysym(ushort keycode) {
       return "Alt_R";
     case kVK_CapsLock:
       return "Caps_Lock";
+    case kVK_Space:
+      return " ";
     default:
       break;
   }

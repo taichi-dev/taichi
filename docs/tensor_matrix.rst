@@ -1,3 +1,5 @@
+.. _tensor:
+
 Tensors and matrices
 ==========================
 

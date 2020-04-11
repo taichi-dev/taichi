@@ -4,7 +4,8 @@ Vector
 ======
 
 
-``ti.Vector`` is a kind of ``ti.var``, but have multiple compoment variables within it.
+``ti.Vector`` is actually a kind of ``ti.var``, but have multiple compoment variables within it.
+A ``n``-D vector is composed of ``n`` variables. It's just a syntax sugar to abstract a linear algebra framework, no real difference in lower execution for now.
 
 
 Creation
@@ -135,6 +136,6 @@ Methods
 
     e.g.:
     ::
-        a = ti.Vector([1.6, 2.3])
         # (taichi-scope)
+        a = ti.Vector([1.6, 2.3])
         a.cast(ti.i32) # [2, 3]

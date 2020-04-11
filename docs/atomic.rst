@@ -3,45 +3,22 @@
 Atomic operations
 =================
 
-Sometimes we want to access a common variable in different GPU threads. For example, we want to sum up the values in tensor ``x``:
-::
-    @ti.kernel
-    def sum():
-        for i in x:
-            result[None] = result[None] + x[i]
-
-This will be translated into (GPU pseudo-code):
-::
-    read from ``result`` to register 1
-    read from ``x[i]`` to register 2
-    add the value of reg1 and reg2, save result to reg3
-    write back the value in register 3 to ``result``
-
-This code is executed by many parallel GPU threads for different ``i``.
-What if thread 1 is doing add, while thread 2 has already write back the ``result``?
-Then the value ``x[1]`` won't be added to ``result``, it losts.
-
-Then we want to ensure that the ``result`` is unchanged until we have done ``write back`` in one thread. We may think about ``lock``, but it's too expensive for GPU.
-The good news is, the GPU hardware provides a instruction called ``atomic_add`` to combine the three instructions above:
-::
-    read from ``result`` to register 1
-    atomically add the value of reg1 to ``result``
-
-If we can make use of this hardware mechanism, the order of execution will preserved, great!
-
-To perform an atomic add in Taichi, we can use the Argumented Assignment syntax:
+In taichi ``x[i] += 1`` is atomic but ``x[i] = x[i] + 1`` is not.
+For example, to perform a reduction:
 ::
     @ti.kernel
     def sum():
         for i in x:
             result[None] += x[i]
 
-Or use the function ``ti.atomic_add``, both of them are equivalent:
+Or use the function ``ti.atomic_add``, which is equivalent:
 ::
     @ti.kernel
     def sum():
         for i in x:
             ti.atomic_add(result[None], x[i])
+
+See https://en.wikipedia.org/wiki/Fetch-and-add for more details about *atomic operations*.
 
 
 .. note::

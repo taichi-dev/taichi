@@ -324,6 +324,15 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
 
       link_module_with_cuda_libdevice(runtime_module);
 
+      // To prevent potential symbol name conflicts, we use "cuda_vprintf"
+      // instead of "vprintf" in llvm/runtime.cpp. Now we change it back for
+      // linking
+      for (auto &f : *runtime_module) {
+        if (f.getName() == "cuda_vprintf") {
+          f.setName("vprintf");
+        }
+      }
+
       // runtime_module->print(llvm::errs(), nullptr);
     }
   }

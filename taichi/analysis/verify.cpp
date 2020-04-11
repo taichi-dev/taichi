@@ -74,10 +74,10 @@ class IRVerifier : public BasicStmtVisitor {
   }
 };
 
-namespace irpass {
+namespace irpass::analysis {
 void verify(IRNode *root) {
   IRVerifier::run(root);
 }
-}  // namespace irpass
+}  // namespace irpass::analysis
 
 TLANG_NAMESPACE_END

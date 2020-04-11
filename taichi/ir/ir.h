@@ -111,7 +111,6 @@ void demote_dense_struct_fors(IRNode *root);
 void demote_atomics(IRNode *root);
 void reverse_segments(IRNode *root);  // for autograd
 std::unique_ptr<ScratchPads> initialize_scratch_pad(StructForStmt *root);
-void verify(IRNode *root);
 void compile_to_offloads(IRNode *ir,
                          CompileConfig config,
                          bool vectorize,
@@ -130,6 +129,7 @@ std::vector<Stmt *> gather_statements(IRNode *root,
                                       const std::function<bool(Stmt *)> &test);
 bool same_statements(IRNode *root1, IRNode *root2);
 DiffRange value_diff(Stmt *stmt, int lane, Stmt *alloca);
+void verify(IRNode *root);
 }
 
 }  // namespace irpass

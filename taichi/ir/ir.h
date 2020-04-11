@@ -126,12 +126,13 @@ void compile_to_offloads(IRNode *ir,
                          bool grad,
                          bool ad_use_stack,
                          bool verbose);
-}  // namespace irpass
 
 // Analysis
 namespace analysis {
 DiffRange value_diff(Stmt *stmt, int lane, Stmt *alloca);
 }
+
+}  // namespace irpass
 
 IRBuilder &current_ast_builder();
 

@@ -98,13 +98,13 @@ class ValueDiff : public IRVisitor {
   }
 };
 
-namespace analysis {
+namespace irpass::analysis {
 
 DiffRange value_diff(Stmt *stmt, int lane, Stmt *alloca) {
   ValueDiff _(stmt, lane, alloca);
   return _.run();
 }
 
-}  // namespace analysis
+}  // namespace irpass::analysis
 
 TLANG_NAMESPACE_END

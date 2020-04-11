@@ -93,8 +93,8 @@ class LowerAccess : public IRVisitor {
       if (on_loop_tree &&
           indices.size() == current_struct_for->loop_vars.size()) {
         for (int j = 0; j < (int)indices.size(); j++) {
-          auto diff = analysis::value_diff(indices[j], 0,
-                                           current_struct_for->loop_vars[j]);
+          auto diff = irpass::analysis::value_diff(indices[j], 0,
+                                                 current_struct_for->loop_vars[j]);
           if (!diff.linear_related())
             on_loop_tree = false;
           else if (j == (int)indices.size() - 1) {

@@ -354,9 +354,9 @@ class BasicBlockSimplify : public IRVisitor {
     if (current_struct_for && stmt->width() == 1) {
       auto &loop_vars = current_struct_for->loop_vars;
       for (int k = 0; k < (int)loop_vars.size(); k++) {
-        auto diff = analysis::value_diff(stmt->elements[0].stmt,
-                                         stmt->elements[0].index,
-                                         current_struct_for->loop_vars[k]);
+        auto diff = irpass::analysis::value_diff(stmt->elements[0].stmt,
+                                                 stmt->elements[0].index,
+                                                 current_struct_for->loop_vars[k]);
         if (diff.linear_related() && diff.certain()) {
           auto load = stmt->insert_before_me(
               Stmt::make<LocalLoadStmt>(LocalAddress(loop_vars[k], 0)));
@@ -820,8 +820,8 @@ class BasicBlockSimplify : public IRVisitor {
     if (current_struct_for && !stmt->simplified) {
       auto &loop_vars = current_struct_for->loop_vars;
       for (int k = 0; k < (int)loop_vars.size(); k++) {
-        auto diff = analysis::value_diff(stmt->input, 0,
-                                         current_struct_for->loop_vars[k]);
+        auto diff = irpass::analysis::value_diff(stmt->input, 0,
+                                                 current_struct_for->loop_vars[k]);
         if (diff.linear_related() && diff.certain()) {
           // case 1: last loop var, vectorized, has assumption on vec size
           if (k == (int)current_struct_for->loop_vars.size() - 1) {

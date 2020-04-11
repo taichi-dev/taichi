@@ -14,7 +14,7 @@ DynamicLoader::DynamicLoader(const std::string &dll_path) {
 
 void DynamicLoader::load_dll(const std::string &dll_path) {
 #ifdef WIN32
-  dll = LoadLibraryA(dll_path.c_str());
+  dll = (HMODULE)LoadLibraryA(dll_path.c_str());
 #else
   dll = dlopen(dll_path.c_str(), RTLD_LAZY);
 #endif
@@ -23,7 +23,7 @@ void DynamicLoader::load_dll(const std::string &dll_path) {
 void *DynamicLoader::load_function(const std::string &func_name) {
   TI_ASSERT(loaded());
 #ifdef WIN32
-  auto func = (void *)GetProcAddress(dll, func_name.c_str());
+  auto func = (void *)GetProcAddress((HMODULE)dll, func_name.c_str());
 #else
   auto func = dlsym(dll, func_name.c_str());
   const char *dlsym_error = dlerror();
@@ -36,7 +36,7 @@ void *DynamicLoader::load_function(const std::string &func_name) {
 void DynamicLoader::close_dll() {
   TI_ERROR_IF(!loaded(), "DLL not opened.");
 #ifdef WIN32
-  FreeLibrary(dll);
+  FreeLibrary((HMODULE)dll);
 #else
   dlclose(dll);
 #endif

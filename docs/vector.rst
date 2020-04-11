@@ -4,8 +4,7 @@ Vector
 ======
 
 
-``ti.Vector`` is actually a kind of ``ti.var`` (:ref:`scalar_tensor`), but have multiple compoment variables within it.
-A ``n``-D vector is composed of ``n`` variables. It's just a syntax sugar to abstract the linear algebra framework, no real difference in lower execution for now.
+A ``n``-D vector is composed of ``n`` variables. It's just a syntax sugar to abstract the linear algebra framework. There is no real difference in lower execution for now.
 
 
 Creation
@@ -27,7 +26,7 @@ As Tensor
 
 .. note::
 
-    In python-scope, ``ti.var`` is a tensor, while ``ti.Vector`` is a tensor of vector.
+    In python-scope, ``ti.var`` is a :ref:`scalar_tensor`, while ``ti.Vector`` is a tensor of vectors.
  
 
 As Temporary Variable
@@ -125,7 +124,7 @@ Methods
         c = ti.outer_product(a, b) # [1*4, 2*5, 3*6]
 
 .. note::
-    This have not common with `ti.cross`. It simply multiplies each compoments. And thus ``a`` and ``b`` does not have to be 3D vectors.
+    This is not the same as `ti.cross`. It simply multiplies each compoments. And thus ``a`` and ``b`` does not have to be 3D vectors.
 
 
 .. function:: a.cast(dt)

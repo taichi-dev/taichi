@@ -37,6 +37,7 @@ The Taichi Programming Language
    :caption: Structures
    :maxdepth: 3
 
+   scalar_tensor
    vector
 
 

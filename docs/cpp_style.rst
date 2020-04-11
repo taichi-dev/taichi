@@ -29,6 +29,6 @@ Don'ts
 - ``using namespace std;`` in global scope.
 - ``typedef``. Use ``using`` instead.
 
-Automatically format
+Automatic code formatting
 --------------------------------------------------------------------------------
 - Please run ``ti format``

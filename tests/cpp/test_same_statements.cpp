@@ -34,16 +34,17 @@ TI_TEST("same_statements") {
     irpass::typecheck(block.get());
     TI_CHECK(block->size() == 5);
 
-    TI_CHECK(irpass::same_statements(true_one, false_one));
+    TI_CHECK(irpass::analysis::same_statements(true_one, false_one));
 
-    TI_CHECK(irpass::same_statements(true_one, one));
+    TI_CHECK(irpass::analysis::same_statements(true_one, one));
 
-    TI_CHECK(!irpass::same_statements(global_load_addr, global_store_addr));
+    TI_CHECK(!irpass::analysis::same_statements(global_load_addr,
+                                                global_store_addr));
 
-    TI_CHECK(irpass::same_statements(if_stmt->true_statements.get(),
-                                     if_stmt->false_statements.get()));
+    TI_CHECK(irpass::analysis::same_statements(
+        if_stmt->true_statements.get(), if_stmt->false_statements.get()));
 
-    TI_CHECK(!irpass::same_statements(true_store, false_store));
+    TI_CHECK(!irpass::analysis::same_statements(true_store, false_store));
   }
 
   SECTION("test_same_assert") {
@@ -69,13 +70,17 @@ TI_TEST("same_statements") {
 
     irpass::typecheck(block.get());
     TI_CHECK(block->size() == 10);
-    TI_CHECK(irpass::same_statements(assert_zero_a, assert_zero_a2));
-    TI_CHECK(!irpass::same_statements(assert_zero_a, assert_zero_b));
-    TI_CHECK(!irpass::same_statements(assert_zero_a, assert_one_a));
-    TI_CHECK(!irpass::same_statements(assert_zero_a, assert_zero_a_one));
-    TI_CHECK(irpass::same_statements(assert_zero_a_one, assert_zero_a_one2));
-    TI_CHECK(!irpass::same_statements(assert_zero_a_one, assert_zero_a_zero));
-    TI_CHECK(!irpass::same_statements(assert_zero_a_one, assert_one_a_zero));
+    TI_CHECK(irpass::analysis::same_statements(assert_zero_a, assert_zero_a2));
+    TI_CHECK(!irpass::analysis::same_statements(assert_zero_a, assert_zero_b));
+    TI_CHECK(!irpass::analysis::same_statements(assert_zero_a, assert_one_a));
+    TI_CHECK(
+        !irpass::analysis::same_statements(assert_zero_a, assert_zero_a_one));
+    TI_CHECK(irpass::analysis::same_statements(assert_zero_a_one,
+                                               assert_zero_a_one2));
+    TI_CHECK(!irpass::analysis::same_statements(assert_zero_a_one,
+                                                assert_zero_a_zero));
+    TI_CHECK(!irpass::analysis::same_statements(assert_zero_a_one,
+                                                assert_one_a_zero));
   }
 
   SECTION("test_same_snode_lookup") {
@@ -97,9 +102,9 @@ TI_TEST("same_statements") {
 
     irpass::typecheck(block.get());
     TI_CHECK(block->size() == 7);
-    TI_CHECK(irpass::same_statements(lookup1, lookup2));
-    TI_CHECK(!irpass::same_statements(lookup1, lookup_activate));
-    TI_CHECK(!irpass::same_statements(lookup1, lookup_child));
+    TI_CHECK(irpass::analysis::same_statements(lookup1, lookup2));
+    TI_CHECK(!irpass::analysis::same_statements(lookup1, lookup_activate));
+    TI_CHECK(!irpass::analysis::same_statements(lookup1, lookup_child));
   }
 }
 

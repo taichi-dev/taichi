@@ -12,7 +12,7 @@ class ConvertLocalVar : public BasicStmtVisitor {
 
   void visit(AllocaStmt *alloc) override {
     TI_ASSERT(alloc->width() == 1);
-    bool load_only = irpass::gather_statements(
+    bool load_only = irpass::analysis::gather_statements(
                          alloc->parent,
                          [&](Stmt *s) {
                            if (auto store = s->cast<LocalStoreStmt>())

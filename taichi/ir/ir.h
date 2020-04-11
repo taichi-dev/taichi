@@ -93,7 +93,6 @@ void whole_kernel_cse(IRNode *root);
 void full_simplify(IRNode *root, const CompileConfig &config);
 void print(IRNode *root, std::string *output = nullptr);
 void lower(IRNode *root);
-void check_fields_registered(IRNode *root);
 void typecheck(IRNode *root);
 void loop_vectorize(IRNode *root);
 void slp_vectorize(IRNode *root);
@@ -112,26 +111,28 @@ void demote_dense_struct_fors(IRNode *root);
 void demote_atomics(IRNode *root);
 void reverse_segments(IRNode *root);  // for autograd
 std::unique_ptr<ScratchPads> initialize_scratch_pad(StructForStmt *root);
-std::unordered_set<SNode *> gather_deactivations(IRNode *root);
-std::vector<Stmt *> gather_statements(IRNode *root,
-                                      const std::function<bool(Stmt *)> &test);
-bool same_statements(IRNode *root1, IRNode *root2);
-void verify(IRNode *root);
-int count_statements(IRNode *root);
-std::unordered_set<Stmt *> detect_fors_with_break(IRNode *root);
-std::unordered_set<Stmt *> detect_loops_with_continue(IRNode *root);
 void compile_to_offloads(IRNode *ir,
                          CompileConfig config,
                          bool vectorize,
                          bool grad,
                          bool ad_use_stack,
                          bool verbose);
-}  // namespace irpass
 
 // Analysis
 namespace analysis {
+void check_fields_registered(IRNode *root);
+int count_statements(IRNode *root);
+std::unordered_set<Stmt *> detect_fors_with_break(IRNode *root);
+std::unordered_set<Stmt *> detect_loops_with_continue(IRNode *root);
+std::unordered_set<SNode *> gather_deactivations(IRNode *root);
+std::vector<Stmt *> gather_statements(IRNode *root,
+                                      const std::function<bool(Stmt *)> &test);
+bool same_statements(IRNode *root1, IRNode *root2);
 DiffRange value_diff(Stmt *stmt, int lane, Stmt *alloca);
-}
+void verify(IRNode *root);
+}  // namespace analysis
+
+}  // namespace irpass
 
 IRBuilder &current_ast_builder();
 

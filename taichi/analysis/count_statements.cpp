@@ -32,11 +32,11 @@ class StmtCounter : public BasicStmtVisitor {
   int counter;
 };
 
-namespace irpass {
+namespace irpass::analysis {
 int count_statements(IRNode *root) {
   TI_ASSERT(root);
   return StmtCounter::run(root);
 }
-}  // namespace irpass
+}  // namespace irpass::analysis
 
 TLANG_NAMESPACE_END

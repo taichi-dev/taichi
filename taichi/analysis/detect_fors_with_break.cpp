@@ -4,7 +4,7 @@
 
 TLANG_NAMESPACE_BEGIN
 
-class DetectForWithBreak : public BasicStmtVisitor {
+class DetectForsWithBreak : public BasicStmtVisitor {
  public:
   using BasicStmtVisitor::visit;
 
@@ -12,7 +12,7 @@ class DetectForWithBreak : public BasicStmtVisitor {
   std::unordered_set<Stmt *> fors_with_break;
   IRNode *root;
 
-  DetectForWithBreak(IRNode *root) : root(root) {
+  DetectForsWithBreak(IRNode *root) : root(root) {
   }
 
   void visit(FrontendBreakStmt *stmt) override {
@@ -40,11 +40,11 @@ class DetectForWithBreak : public BasicStmtVisitor {
   }
 };
 
-namespace irpass {
+namespace irpass::analysis {
 std::unordered_set<Stmt *> detect_fors_with_break(IRNode *root) {
-  DetectForWithBreak detective(root);
+  DetectForsWithBreak detective(root);
   return detective.run();
 }
-}  // namespace irpass
+}  // namespace irpass::analysis
 
 TLANG_NAMESPACE_END

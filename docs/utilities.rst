@@ -3,6 +3,30 @@ Utilities
 
 TODO: update
 
+GUI system
+----------
+
+.. code-block:: python
+
+    gui = ti.GUI('Title', (640, 480))
+    while not gui.is_pressed(ti.GUI.ESCAPE):
+        gui.set_image(img)
+        gui.show()
+
+
+Also checkout https://github.com/taichi-dev/taichi/blob/master/examples/keyboard.py for more advanced event processing.
+
+
+Image I/O
+---------
+
+.. code-block:: python
+
+    img = ti.imread('hello.png')
+    ti.imshow(img, 'Window Title')
+    ti.imwrite(img, 'hello2.png')
+
+
 Logging
 -------
 

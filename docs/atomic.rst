@@ -3,7 +3,8 @@
 Atomic operations
 =================
 
-In taichi ``x[i] += 1`` is atomic but ``x[i] = x[i] + 1`` is not.
+In taichi, ``x[i] += 1`` is atomic but ``x[i] = x[i] + 1`` is not.
+
 For example, to perform a reduction:
 ::
     @ti.kernel

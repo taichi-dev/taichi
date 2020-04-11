@@ -25,10 +25,10 @@ class FieldsRegisteredChecker : public BasicStmtVisitor {
   }
 };
 
-namespace irpass {
+namespace irpass::analysis {
 void check_fields_registered(IRNode *root) {
   return FieldsRegisteredChecker::run(root);
 }
-}  // namespace irpass
+}  // namespace irpass::analysis
 
 TLANG_NAMESPACE_END

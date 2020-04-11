@@ -93,7 +93,6 @@ void whole_kernel_cse(IRNode *root);
 void full_simplify(IRNode *root, const CompileConfig &config);
 void print(IRNode *root, std::string *output = nullptr);
 void lower(IRNode *root);
-void check_fields_registered(IRNode *root);
 void typecheck(IRNode *root);
 void loop_vectorize(IRNode *root);
 void slp_vectorize(IRNode *root);
@@ -129,6 +128,7 @@ void compile_to_offloads(IRNode *ir,
 
 // Analysis
 namespace analysis {
+void check_fields_registered(IRNode *root);
 DiffRange value_diff(Stmt *stmt, int lane, Stmt *alloca);
 }
 

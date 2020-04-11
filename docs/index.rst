@@ -25,6 +25,14 @@ The Taichi Programming Language
 
    external
 
+
+.. toctree::
+   :caption: Structures
+   :maxdepth: 3
+
+   vector
+
+
 .. toctree::
    :caption: Advanced Programming
    :maxdepth: 3
@@ -52,6 +60,7 @@ The Taichi Programming Language
    dev_install
    contributor_guide
    cpp_style
+   performance
    internal
    faq
    acknowledgments

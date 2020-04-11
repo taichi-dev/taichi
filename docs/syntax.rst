@@ -116,8 +116,11 @@ Supported scalar functions:
 
 * ``ti.sin(x)``
 * ``ti.cos(x)``
+* ``ti.asin(x)``
+* ``ti.acos(x)``
 * ``ti.cast(x, type)``
 * ``ti.sqr(x)``
+* ``ti.sqrt(x)``
 * ``ti.floor(x)``
 * ``ti.inv(x)``
 * ``ti.tan(x)``

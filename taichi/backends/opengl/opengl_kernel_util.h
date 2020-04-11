@@ -17,7 +17,8 @@ struct UsedFeature {
   bool argument{false};
   bool extra_arg{false};
   bool external_ptr{false};
-  bool atomic_float{false};
+  bool simulated_atomic_float{false};
+  bool int64{false};
   bool global_temp{false};
 };
 

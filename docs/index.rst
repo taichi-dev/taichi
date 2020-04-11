@@ -27,6 +27,13 @@ The Taichi Programming Language
 
 
 .. toctree::
+   :caption: Language
+   :maxdepth: 3
+
+   atomic
+
+
+.. toctree::
    :caption: Structures
    :maxdepth: 3
 

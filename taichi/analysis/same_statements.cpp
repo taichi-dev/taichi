@@ -189,10 +189,10 @@ class IRNodeComparator : public IRVisitor {
   }
 };
 
-namespace irpass {
+namespace irpass::analysis {
 bool same_statements(IRNode *root1, IRNode *root2) {
   return IRNodeComparator::run(root1, root2);
 }
-}  // namespace irpass
+}  // namespace irpass::analysis
 
 TLANG_NAMESPACE_END

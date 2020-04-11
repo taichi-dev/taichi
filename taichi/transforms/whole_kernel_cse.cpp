@@ -32,7 +32,7 @@ class WholeKernelCSE : public BasicStmtVisitor {
       int current_stmt_id = block->locate(if_stmt);
       auto &true_clause = if_stmt->true_statements;
       auto &false_clause = if_stmt->false_statements;
-      if (irpass::same_statements(true_clause->statements[0].get(),
+      if (irpass::analysis::same_statements(true_clause->statements[0].get(),
                                   false_clause->statements[0].get())) {
         auto common_stmt = true_clause->extract(0);
         irpass::replace_all_usages_with(false_clause.get(),
@@ -42,7 +42,7 @@ class WholeKernelCSE : public BasicStmtVisitor {
         false_clause->erase(0);
         throw IRModified();
       }
-      if (irpass::same_statements(true_clause->statements.back().get(),
+      if (irpass::analysis::same_statements(true_clause->statements.back().get(),
                                   false_clause->statements.back().get())) {
         auto common_stmt = true_clause->extract((int)true_clause->size() - 1);
         irpass::replace_all_usages_with(false_clause.get(),

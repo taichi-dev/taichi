@@ -41,61 +41,16 @@ pipeline {
                         build_taichi()
                     }
                 }
-                stage('cuda10.1-python3.6') {
+                stage('cuda10.0-python3.8') {
                     agent {
                         node {
-                            label "cuda10_1 && python3_6"
-                            customWorkspace "taichi_cu101_py36"
+                            label "cuda10_0 && python3_8"
+                            customWorkspace "taichi_cu100_py38"
                         }
                     }
                     environment {
-                        PYTHON_EXECUTABLE = "python3.6"
-                        CUDA_VERSION = "10.1"
-                    }
-                    steps{
-                        build_taichi()
-                    }
-                }
-                stage('cuda10.1-python3.7') {
-                    agent {
-                        node {
-                            label "cuda10_1 && python3_7"
-                            customWorkspace "taichi_cu101_py37"
-                        }
-                    }
-                    environment {
-                        PYTHON_EXECUTABLE = "python3.7"
-                        CUDA_VERSION = "10.1"
-                    }
-                    steps{
-                        build_taichi()
-                    }
-                }
-                stage('cpu-python3.6') {
-                    agent {
-                        node {
-                            label "python3_6"
-                            customWorkspace "taichi_cpu_py36"
-                        }
-                    }
-                    environment {
-                        PYTHON_EXECUTABLE = "python3.6"
-                        TI_WITH_CUDA = "False"
-                    }
-                    steps{
-                        build_taichi()
-                    }
-                }
-                stage('cpu-python3.7') {
-                    agent {
-                        node {
-                            label "python3_7"
-                            customWorkspace "taichi_cpu_py37"
-                        }
-                    }
-                    environment {
-                        PYTHON_EXECUTABLE = "python3.7"
-                        TI_WITH_CUDA = "False"
+                        PYTHON_EXECUTABLE = "python3.8"
+                        CUDA_VERSION = "10.0"
                     }
                     steps{
                         build_taichi()
@@ -127,7 +82,7 @@ void build_taichi() {
     $CC --version
     $CXX --version
     echo $WORKSPACE
-    $PYTHON_EXECUTABLE -m pip install twine numpy Pillow scipy pybind11 colorama setuptools astor matplotlib pytest autograd --user
+    $PYTHON_EXECUTABLE -m pip install twine numpy Pillow scipy pybind11 colorama setuptools astor matplotlib pytest autograd GitPython --user
     export TAICHI_REPO_DIR=$WORKSPACE/
     echo $TAICHI_REPO_DIR
     export PYTHONPATH=$TAICHI_REPO_DIR/python

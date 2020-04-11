@@ -5,8 +5,14 @@ Supported types
 ---------------------------------------
 Currently, supported basic types in Taichi are
 
+- int8 ``ti.i8``
+- int16 ``ti.i16``
 - int32 ``ti.i32``
 - int64 ``ti.i64``
+- uint8 ``ti.u8``
+- uint16 ``ti.u16``
+- uint32 ``ti.u32``
+- uint64 ``ti.u64``
 - float32 ``ti.f32``
 - float64 ``ti.f64``
 

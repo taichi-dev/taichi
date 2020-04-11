@@ -111,8 +111,6 @@ void demote_dense_struct_fors(IRNode *root);
 void demote_atomics(IRNode *root);
 void reverse_segments(IRNode *root);  // for autograd
 std::unique_ptr<ScratchPads> initialize_scratch_pad(StructForStmt *root);
-std::vector<Stmt *> gather_statements(IRNode *root,
-                                      const std::function<bool(Stmt *)> &test);
 bool same_statements(IRNode *root1, IRNode *root2);
 void verify(IRNode *root);
 void compile_to_offloads(IRNode *ir,
@@ -129,6 +127,8 @@ int count_statements(IRNode *root);
 std::unordered_set<Stmt *> detect_fors_with_break(IRNode *root);
 std::unordered_set<Stmt *> detect_loops_with_continue(IRNode *root);
 std::unordered_set<SNode *> gather_deactivations(IRNode *root);
+std::vector<Stmt *> gather_statements(IRNode *root,
+                                      const std::function<bool(Stmt *)> &test);
 DiffRange value_diff(Stmt *stmt, int lane, Stmt *alloca);
 }
 

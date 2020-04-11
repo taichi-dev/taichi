@@ -226,6 +226,7 @@ class Kernel:
         kernel_name = "{}_c{}_{}{}".format(self.func.__name__,
                                            self.kernel_counter, key[1],
                                            grad_suffix)
+        self.name = kernel_name
         import taichi as ti
         ti.trace("Compiling kernel {}...".format(kernel_name))
 
@@ -286,8 +287,7 @@ class Kernel:
                     mode='exec'), global_vars, local_vars)
         compiled = local_vars[self.func.__name__]
 
-        taichi_kernel = taichi_lang_core.create_kernel(kernel_name,
-                                                       self.is_grad)
+        taichi_kernel = taichi_lang_core.create_kernel(kernel_name, self.is_grad)
 
         # Do not change the name of 'taichi_ast_generator'
         # The warning system needs this identifier to remove unnecessary messages

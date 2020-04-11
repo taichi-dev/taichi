@@ -45,6 +45,8 @@ class Program {
   std::unique_ptr<TaichiLLVMContext> llvm_context_host, llvm_context_device;
   bool sync;  // device/host synchronized?
   bool finalized;
+  bool export_flag;
+  std::string last_exported_source;
   float64 total_compilation_time;
   static std::atomic<int> num_instances;
   ThreadPool thread_pool;

@@ -478,6 +478,13 @@ void export_lang(py::module &m) {
           return get_current_program().kernel(name, grad);
         });
 
+  m.def("set_export_flag", [&](bool flag) {
+      get_current_program().export_flag = flag;
+    });
+  m.def("get_last_exported_source", [&]() {
+      return get_current_program().last_exported_source;
+    });
+
   m.def("print_", Print_);
 
   m.def("decl_arg", [&](DataType dt, bool is_nparray) {

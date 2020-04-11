@@ -2,6 +2,7 @@ from .impl import *
 from .matrix import Matrix
 from .transformer import TaichiSyntaxError
 from .ndrange import ndrange, GroupedNDRange
+from .export import export
 from copy import deepcopy as _deepcopy
 import functools
 import os

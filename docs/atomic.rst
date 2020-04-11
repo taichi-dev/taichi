@@ -1,6 +1,6 @@
 .. _atomic:
 
-Atomic Operations
+Atomic operations
 =================
 
 Sometimes we want to access a common variable in different GPU threads. For example, we want to sum up the values in tensor ``x``:
@@ -10,7 +10,7 @@ Sometimes we want to access a common variable in different GPU threads. For exam
         for i in x:
             result[None] = result[None] + x[i]
 
-This will be translated to (in GPU pseudo-code):
+This will be translated into (GPU pseudo-code):
 ::
     read from ``result`` to register 1
     read from ``x[i]`` to register 2

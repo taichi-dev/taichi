@@ -4,8 +4,8 @@ Vector
 ======
 
 
-``ti.Vector`` is actually a kind of ``ti.var``, but have multiple compoment variables within it.
-A ``n``-D vector is composed of ``n`` variables. It's just a syntax sugar to abstract a linear algebra framework, no real difference in lower execution for now.
+``ti.Vector`` is actually a kind of ``ti.var`` (:ref:`scalar_tensor`), but have multiple compoment variables within it.
+A ``n``-D vector is composed of ``n`` variables. It's just a syntax sugar to abstract the linear algebra framework, no real difference in lower execution for now.
 
 
 Creation
@@ -18,7 +18,7 @@ As Tensor
 
     :parameter n: (scalar) how many compoments / dimensions of the vector
     :parameter type: (DataType) data type of the compoments
-    :parameter shape: (scalar or tuple) shape of the tensor, see :ref:`tensor`
+    :parameter shape: (scalar or tuple) shape of the tensor, see :ref:`tensor_matrix`
 
     This creates a 3x3 tensor of 3D vectors:
     ::

@@ -10,14 +10,7 @@ if len(sys.argv) != 2:
     exit(-1)
 
 version = ti.core.get_version_string()
-cuda_version = ti.core.cuda_version()
-cuda_version_major, cuda_version_minor = list(map(int,
-                                                  cuda_version.split('.')))
-print('Taichi version=', version, 'CUDA version =', cuda_version)
-gpu = cuda_version_major > 0
-if gpu:
-    assert cuda_version_major >= 10
-assert gpu in [0, 1]
+gpu = ti.core.with_cuda()
 mode = sys.argv[1]
 
 env_pypi_pwd = os.environ.get('PYPI_PWD', '')
@@ -53,15 +46,15 @@ def get_python_executable():
 if platform.system() == 'Linux':
     if os.environ['CXX'] not in ['clang++-8', 'clang++-7', 'clang++']:
         print('Only the wheel with clang will be released to PyPI.')
-        sys.exit(0)
+        sys.exit(-1)
+        
+    if not gpu:
+        print('Linux release must ship with the CUDA backend.')
+        sys.exit(-1)
 
 with open('setup.temp.py') as fin:
     with open('setup.py', 'w') as fout:
-        if gpu:
-            project_name = 'taichi-nightly-cuda-{}-{}'.format(
-                cuda_version_major, cuda_version_minor)
-        else:
-            project_name = 'taichi-nightly'
+        project_name = 'taichi-nightly'
         print("project_name = '{}'".format(project_name), file=fout)
         print("version = '{}'".format(version), file=fout)
         for l in fin:
@@ -123,7 +116,7 @@ if mode == 'upload':
 elif mode == 'test':
     print('Uninstalling old taichi packages...')
     os.system(
-        '{} -m pip uninstall taichi-nightly taichi-gpu-nightly taichi-nightly-cuda-10-0 taichi-nightly-cuda-10-1'
+        '{} -m pip uninstall taichi-nightly'
         .format(get_python_executable()))
     dists = os.listdir('dist')
     assert len(dists) == 1

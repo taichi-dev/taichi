@@ -14,6 +14,7 @@
 #include "taichi/system/dynamic_loader.h"
 #include "taichi/backends/metal/api.h"
 #include "taichi/backends/opengl/opengl_api.h"
+#include "taichi/backends/cuda/cuda_driver.h"
 
 TI_NAMESPACE_BEGIN
 
@@ -74,7 +75,7 @@ void stop_duplicating_stdout_to_file(const std::string &fn) {
 
 bool with_cuda() {
 #if defined(TI_WITH_CUDA)
-  return true;
+  return lang::CUDADriver::get_instance().detected();
 #else
   return false;
 #endif

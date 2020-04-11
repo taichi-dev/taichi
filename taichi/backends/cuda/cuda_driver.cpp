@@ -14,6 +14,10 @@ std::string get_cuda_error_message(uint32 err) {
   return fmt::format("CUDA Error {}: {}", err_name_ptr, err_string_ptr);
 }
 
+bool CUDADriver::detected() {
+  return loader->loaded();
+}
+
 CUDADriver::CUDADriver() {
 #if defined(TI_PLATFORM_LINUX)
   loader = std::make_unique<DynamicLoader>("libcuda.so");
@@ -21,8 +25,9 @@ CUDADriver::CUDADriver() {
   loader = std::make_unique<DynamicLoader>("nvcuda.dll");
 #endif
 
-  loader->load_function("cuGetErrorName", get_error_name);
-  loader->load_function("cuGetErrorString", get_error_string);
+  if (detected()) {
+    loader->load_function("cuGetErrorName", get_error_name);
+    loader->load_function("cuGetErrorString", get_error_string);
 
 #define PER_CUDA_FUNCTION(name, symbol_name, ...) \
   name.set(loader->load_function(#symbol_name));  \
@@ -30,11 +35,14 @@ CUDADriver::CUDADriver() {
 #include "taichi/backends/cuda/cuda_driver_functions.inc.h"
 #undef PER_CUDA_FUNCTION
 
-  int version;
-  driver_get_version(&version);
+    int version;
+    driver_get_version(&version);
 
-  TI_TRACE("CUDA driver API (v{}.{}) loaded.", version / 1000,
-           version % 1000 / 10);
+    TI_TRACE("CUDA driver API (v{}.{}) loaded.", version / 1000,
+             version % 1000 / 10);
+  } else {
+    TI_DEBUG("CUDA driver not found.");
+  }
 }
 
 // This is for initializing the CUDA context itself

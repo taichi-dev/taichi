@@ -1,5 +1,10 @@
 set(CORE_LIBRARY_NAME taichi_core)
 
+option(USE_STDCPP "Use -stdlib=libc++" OFF)
+option(TI_WITH_CUDA "Build with the CUDA backend" ON)
+option(TI_WITH_OPENGL "Build with the OpenGL backend" ON)
+option(GLEW_USE_STATIC_LIBS OFF)
+
 file(GLOB TAICHI_CORE_SOURCE
         "taichi/*/*/*/*.cpp" "taichi/*/*/*.cpp" "taichi/*/*.cpp" "taichi/*.cpp"
         "taichi/*/*/*/*.h" "taichi/*/*/*.h" "taichi/*/*.h" "taichi/*.h" "external/*.c" "tests/cpp/*.cpp")
@@ -20,26 +25,12 @@ endif()
 list(APPEND TAICHI_CORE_SOURCE ${TAICHI_METAL_SOURCE})
 list(APPEND TAICHI_CORE_SOURCE ${TAICHI_OPENGL_SOURCE})
 
-option(BUILD_CPP_EXAMPLES "Build legacy C++ examples" OFF)
-
-if (BUILD_CPP_EXAMPLES)
-    file(GLOB_RECURSE CPP_EXAMPLES "examples/cpp/*.cpp")
-else()
-    set(CPP_EXAMPLES "")
-endif()
-
-add_library(${CORE_LIBRARY_NAME} SHARED ${TAICHI_CORE_SOURCE} ${PROJECT_SOURCES} ${CPP_EXAMPLES})
+add_library(${CORE_LIBRARY_NAME} SHARED ${TAICHI_CORE_SOURCE} ${PROJECT_SOURCES})
 
 if (APPLE)
 # Ask OS X to minic Linux dynamic linking behavior
 target_link_libraries(${CORE_LIBRARY_NAME} "-undefined dynamic_lookup")
 endif()
-
-
-option(USE_STDCPP "Use -stdlib=libc++" OFF)
-option(TI_WITH_CUDA "Build with the CUDA backend" OFF)
-option(TI_WITH_OPENGL "Build with the OpenGL backend" ON)
-option(GLEW_USE_STATIC_LIBS OFF)
 
 include_directories(${CMAKE_SOURCE_DIR})
 include_directories(external/include)
@@ -124,8 +115,6 @@ if (TI_WITH_CUDA)
     llvm_map_components_to_libnames(llvm_ptx_libs NVPTX)
     target_link_libraries(${LIBRARY_NAME} ${llvm_ptx_libs})
 endif()
-
-# add_executable(runtime runtime/runtime.cpp)
 
 # Optional dependencies
 

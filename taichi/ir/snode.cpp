@@ -66,14 +66,6 @@ SNode &SNode::dynamic_chunked(const Index &expr, int n, int chunk_size) {
   auto &snode = create_node({expr}, {n}, SNodeType::dynamic);
   snode.chunk_size = chunk_size;
   return snode;
-  TI_ASSERT(bit::is_power_of_two(n));
-  TI_ASSERT(bit::is_power_of_two(chunk_size));
-  auto &child = insert_children(SNodeType::dynamic);
-  child.extractors[expr.value].activate(bit::log2int(n));
-  child.extractors[expr.value].num_elements = n;
-  child.n = n;
-  child.chunk_size = chunk_size;
-  return child;
 }
 
 void SNode::lazy_grad() {

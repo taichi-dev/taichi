@@ -3,12 +3,6 @@
 
 #if !defined(TI_INCLUDED) || !defined(_WIN32)
 
-#if defined(_WIN32)
-#define vprintf vprintf_windows
-#include <cstdio>
-#undef vprintf
-#endif
-
 #include <atomic>
 #include <cstdint>
 #include <cmath>
@@ -105,7 +99,7 @@ void taichi_printf(LLVMRuntime *runtime, const char *format, Args &&... args);
 extern "C" {
 
 #if ARCH_cuda
-void vprintf(Ptr format, Ptr arg);
+void cuda_vprintf(Ptr format, Ptr arg);
 #endif
 
 #define DEFINE_UNARY_REAL_FUNC(F) \
@@ -329,7 +323,7 @@ void taichi_assert_runtime(LLVMRuntime *runtime, i32 test, const char *msg);
 
 void ___stubs___() {
 #if ARCH_cuda
-  vprintf(nullptr, nullptr);
+  cuda_vprintf(nullptr, nullptr);
 #endif
 }
 }
@@ -1279,7 +1273,7 @@ void taichi_printf(LLVMRuntime *runtime, const char *format, Args &&... args) {
 #if ARCH_cuda
   printf_helper helper;
   helper.push_back(std::forward<Args>(args)...);
-  vprintf((Ptr)format, helper.ptr());
+  cuda_vprintf((Ptr)format, helper.ptr());
 #else
   runtime->host_printf(format, args...);
 #endif

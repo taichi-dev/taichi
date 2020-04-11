@@ -1,4 +1,4 @@
-#include "cuda_driver.h"
+#include "taichi/backends/cuda/cuda_driver.h"
 
 #include "taichi/system/dynamic_loader.h"
 #include "taichi/backends/cuda/cuda_context.h"

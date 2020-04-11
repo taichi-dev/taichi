@@ -1,5 +1,3 @@
-#if defined(TI_WITH_CUDA)
-
 #define TI_RUNTIME_HOST
 #include "cuda_context.h"
 
@@ -106,5 +104,3 @@ CUDAContext &CUDAContext::get_instance() {
 }
 
 TLANG_NAMESPACE_END
-
-#endif

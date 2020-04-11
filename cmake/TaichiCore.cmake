@@ -5,6 +5,13 @@ option(TI_WITH_CUDA "Build with the CUDA backend" ON)
 option(TI_WITH_OPENGL "Build with the OpenGL backend" ON)
 option(GLEW_USE_STATIC_LIBS OFF)
 
+if (APPLE)
+    if (TI_WITH_CUDA)
+        set(TI_WITH_CUDA OFF)
+        message(WARNING "CUDA not supported on OS X. Setting TI_WITH_CUDA to OFF.")
+    endif()
+endif()
+
 file(GLOB TAICHI_CORE_SOURCE
         "taichi/*/*/*/*.cpp" "taichi/*/*/*.cpp" "taichi/*/*.cpp" "taichi/*.cpp"
         "taichi/*/*/*/*.h" "taichi/*/*/*.h" "taichi/*/*.h" "taichi/*.h" "external/*.c" "tests/cpp/*.cpp")
@@ -18,7 +25,12 @@ file(GLOB TAICHI_OPENGL_SOURCE "taichi/backends/opengl/*.h" "taichi/backends/ope
 list(REMOVE_ITEM TAICHI_CORE_SOURCE ${TAICHI_BACKEND_SOURCE})
 
 if (TI_WITH_CUDA)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_CUDA")
     list(APPEND TAICHI_CORE_SOURCE ${TAICHI_CUDA_SOURCE})
+endif()
+
+if(NOT CUDA_VERSION)
+    set(CUDA_VERSION 10.0)
 endif()
 
 # TODO(#529) include Metal source only on Apple MacOS, and OpenGL only when TI_WITH_OPENGL is ON
@@ -37,17 +49,6 @@ include_directories(external/include)
 include_directories(external/spdlog/include)
 
 set(LIBRARY_NAME ${CORE_LIBRARY_NAME})
-
-if(NOT CUDA_VERSION)
-    set(CUDA_VERSION 10.0)
-endif()
-
-if (APPLE)
-    if (TI_WITH_CUDA)
-        set(TI_WITH_CUDA OFF)
-        message(WARNING "CUDA not supported on OS X. Setting TI_WITH_CUDA to OFF.")
-    endif()
-endif()
 
 if (TI_WITH_OPENGL)
   if(NOT GLEW_VERSION)

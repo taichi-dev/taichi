@@ -9,9 +9,9 @@ dx = 1.0
 rdx = 1.0 / dx
 half_rdx = 0.5 * rdx
 dt = 0.025
-v_decay = 0.95
+v_decay = 1.0
 p_jacobi_iters = 30
-f_strength = 10000.0
+f_strength = 1000.0
 
 enable_diffusion = False
 viscority = 10.0
@@ -29,7 +29,7 @@ color_buffer = ti.Vector(3, dt=ti.f32, shape=(res, res))
 
 @ti.func
 def in_boundary(i, j):
-    return 0 <= i and i < res and 0 <= j and j < res
+    return 0 <= i < res and 0 <= j < res
 
 
 @ti.func
@@ -45,8 +45,8 @@ def sample_v(vf, x, y):
 @ti.func
 def sample_p(pf, i, j):
     # implicitly enforces the boundary condition: p(boundary+) = p(boundary)
-    i = ti.max(0, ti.min(i, res - 1))
-    j = ti.max(0, ti.min(j, res - 1))
+    i = max(0, min(i, res - 1))
+    j = max(0, min(j, res - 1))
     return pf[i, j]
 
 
@@ -154,7 +154,7 @@ def subtract_gradient(new_vf: ti.template(), pf: ti.template()):
 def fill_color(new_vf: ti.template()):
     for i, j in new_vf:
         v = new_vf[i, j]
-        color_buffer[i, j] = ti.Vector([ti.abs(v[0]), ti.abs(v[1]), 0.25])
+        color_buffer[i, j] = ti.Vector([abs(v[0]), abs(v[1]), 0.25])
 
 
 def reset():
@@ -172,7 +172,6 @@ def step(mouse_data):
             velocities, new_velocities = new_velocities, velocities
     apply_mouse_impulse(new_velocities, mouse_data)
     divergence(new_velocities)
-    pressures.fill(0.0)
     for _ in range(p_jacobi_iters):
         pressure_jacobi(pressures, new_pressures)
         pressures, new_pressures = new_pressures, pressures
@@ -209,6 +208,7 @@ class MouseDataGen(object):
 
 
 def main():
+    dbg = True
     gui = ti.GUI('Fluid', (res, res))
     md_gen = MouseDataGen()
     while True:
@@ -223,6 +223,10 @@ def main():
 
         mouse_data = md_gen(gui)
         step(mouse_data)
+        if dbg:
+            divergence(velocities)
+            div_s = np.sum(div_vels.to_numpy())
+            print(f'divergence={div_s}')
 
         img = color_buffer.to_numpy(as_vector=True)
         gui.set_image(img)

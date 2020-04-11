@@ -27,11 +27,11 @@ class GatherDeactivations : public BasicStmtVisitor {
   }
 };
 
-namespace irpass {
+namespace irpass::analysis {
 std::unordered_set<SNode *> gather_deactivations(IRNode *root) {
   GatherDeactivations gather(root);
   return gather.run();
 }
-}  // namespace irpass
+}  // namespace irpass::analysis
 
 TLANG_NAMESPACE_END

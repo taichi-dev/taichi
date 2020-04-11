@@ -85,7 +85,10 @@ class GUI:
 
         assert pos.shape == (n, 2)
         pos = np.ascontiguousarray(pos.astype(np.float32))
-        pos = int(pos.ctypes.data)
+        # Note: do not use "pos = int(pos.ctypes.data)" here
+        # Otherwise pos will get garbage collected by Python
+        # and the pointer to its data becomes invalid
+        pos_ptr = int(pos.ctypes.data)
 
         if isinstance(color, np.ndarray):
             assert color.shape == (n, )
@@ -110,7 +113,7 @@ class GUI:
         else:
             raise ValueError('Radius must be an ndarray or float (e.g., 0.4)')
 
-        self.canvas.circles_batched(n, pos, color_single, color_array,
+        self.canvas.circles_batched(n, pos_ptr, color_single, color_array,
                                     radius_single, radius_array)
 
     def triangle(self, a, b, c, color=0xFFFFFF):

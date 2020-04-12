@@ -191,8 +191,8 @@ In the fractal code above, ``for i, j in pixels`` loops over all the pixel coord
           for i in x:
             ...
 
-.. warning::
-    ``break`` is not supported in **outermost (parallelized)** loops.
+.. note::
+    ``break`` is not supported in **outermost (parallelized)** loops:
 
     .. code-block:: python
 

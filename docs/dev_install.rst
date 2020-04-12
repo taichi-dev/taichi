@@ -11,6 +11,9 @@ For precise build instructions on Windows, please check out `appveyor.yml <https
 
 Note that on Linux/OS X, ``clang`` is the only supported compiler for compiling the Taichi compiler. On Windows only MSVC supported.
 
+Installing Depedencies
+---------------------------------------------
+
 - Make sure you are using Python 3.6/3.7/3.8
 - Execute
 
@@ -19,7 +22,21 @@ Note that on Linux/OS X, ``clang`` is the only supported compiler for compiling 
     python3 -m pip install --user setuptools astpretty astor pytest opencv-python pybind11
     python3 -m pip install --user Pillow numpy scipy GitPython yapf colorama psutil autograd
 
-- (If on Ubuntu) Execute ``sudo apt install libtinfo-dev clang-8``. ``clang-7`` should work as well.
+- Then install ``clang-8`` (or ``clang-7``, should work as well):
+
+* (If on Ubuntu) Execute ``sudo apt install libtinfo-dev clang-8``.
+
+* (If on Arch Linux) Execute
+
+  .. code-block:: bash
+
+    wget https://archive.archlinux.org/packages/c/clang/clang-8.0.1-1-x86_64.pkg.tar.xz
+    sudo pacman -Qp clang-8.0.1-1-x86_64.pkg.tar.xz
+
+  .. warning::
+    If you have installed ``clang`` (9.0.1) before, this command will overrides the existing ``clang``.
+    If you don't want to break up depedencies, please build from scratch and install it in ``/opt``. Then add ``/opt/clang/bin`` to your ``$PATH``.
+
 - Make sure you have LLVM 8.0.1 built from scratch (`Download <https://github.com/llvm/llvm-project/releases/download/llvmorg-8.0.1/llvm-8.0.1.src.tar.xz>`_). To do so, download and unzip the llvm source, move to the llvm folder, and execute
 
   .. code-block:: bash
@@ -31,27 +48,33 @@ Note that on Linux/OS X, ``clang`` is the only supported compiler for compiling 
     make -j 8
     sudo make install
 
-- Clone the taichi repo, and then
+Set up Taichi for develop
+---------------------------------------------
+
+- Clone the taichi repo, and build:
 
   .. code-block:: bash
 
+    git clone https://github.com/taichi-dev/taichi --depth=1 --branch=master
     cd taichi
     mkdir build
     cd build
     cmake ..
-    # if you are building with CUDA, say, 10.0, then please use "cmake .. -DCUDA_VERSION=10.0 -DTI_WITH_CUDA:BOOL=True"
+    # if you are building with CUDA 10.0, use this:
+    # cmake .. -DCUDA_VERSION=10.0 -DTI_WITH_CUDA:BOOL=True
     make -j 8
 
-- Add the following to your ``~/.bashrc`` (or ``~/.zshrc`` if you use ``zsh``)
+- Add the following codes to your ``~/.bashrc``:
 
   .. code-block:: bash
 
     export TAICHI_REPO_DIR=/home/XXX/taichi  # Path to your taichi repository
     export PYTHONPATH=$TAICHI_REPO_DIR/python/:$PYTHONPATH
     export PATH=$TAICHI_REPO_DIR/bin/:$PATH
+    # export PATH=/opt/llvm/bin:$PATH # Uncomment if your llvm-8 or clang-8 is in /opt
 
 - Execute ``source ~/.bashrc`` to reload shell config
-- Execute ``ti test`` to run all the tests. It may take up to 5 minutes to run all tests. (On Windows the ``ti`` command should be replaced by ``python -m taichi``)
+- Execute ``ti test`` to run all the tests. It may take up to 5 minutes to run all tests. (On Windows, please execute ``python3 -m taichi test`` instead)
 - Check out ``examples`` for runnable examples. Run them with ``python3``.
 
 

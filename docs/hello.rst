@@ -92,6 +92,8 @@ Taichi supports CPUs, NVIDIA GPUs, Mac GPUs with Metal, or any GPUs with OpenGL 
     | Mac OS X | OK   | MISS | MISS   | OK    |
     +----------+------+------+--------+-------+
 
+    (OK=supported, WIP=work in progress, MISS=not supported)
+
 If the machine does not have CUDA support, Taichi will fall back to CPUs instead.
 
 .. note::

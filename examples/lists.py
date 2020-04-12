@@ -1,10 +1,10 @@
 import taichi as ti
 
-x = ti.global_var(ti.i32)
-l = ti.global_var(ti.i32)
+x = ti.var(ti.i32)
+l = ti.var(ti.i32)
 n = 16
 
-# ti.runtime.print_preprocessed = True
+# ti.cfg.print_preprocessed = True
 
 
 @ti.layout

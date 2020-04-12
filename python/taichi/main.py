@@ -134,12 +134,13 @@ def main(debug=False):
         import subprocess
         subprocess.call([sys.executable, mode] + sys.argv[1:])
     elif mode == "run":
-        if argc <= 2:
+        if argc <= 1:
             print("Please specify [task name], e.g. test_math")
             return -1
-        name = sys.argv[2]
+        print(sys.argv)
+        name = sys.argv[1]
         task = ti.Task(name)
-        task.run(*sys.argv[3:])
+        task.run(*sys.argv[2:])
     elif mode == "debug":
         ti.core.set_core_trigger_gdb_when_crash(True)
         if argc <= 2:

@@ -1,6 +1,8 @@
-// A helper for llvm backends
+// A llvm backend helper
 
-#include <llvm/Transforms/Utils/Cloning.h>
+#include "taichi/llvm/llvm_context.h"
+
+#include "llvm/Transforms/Utils/Cloning.h"
 #include "llvm/ADT/APFloat.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/IR/BasicBlock.h"
@@ -23,12 +25,13 @@
 #include "llvm/Transforms/Utils.h"
 #include "llvm/Transforms/IPO.h"
 #include "llvm/Bitcode/BitcodeReader.h"
-#include <llvm/Linker/Linker.h>
-#include <llvm/Demangle/Demangle.h>
+#include "llvm/Linker/Linker.h"
+#include "llvm/Demangle/Demangle.h"
+#include "llvm/Bitcode/BitcodeWriter.h"
 
 #include "taichi/lang_util.h"
-#include "llvm_context.h"
 #include "taichi/jit/jit_session.h"
+#include "taichi/common/task.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -154,8 +157,7 @@ void compile_runtimes() {
 
 std::string libdevice_path() {
 #if defined(TI_WITH_CUDA)
-  auto folder = fmt::format("{}/nvvm/libdevice/", get_cuda_root_dir(),
-                            get_cuda_version_string());
+  auto folder = fmt::format(".");
   if (is_release()) {
     folder = compiled_lib_dir;
   }
@@ -176,6 +178,7 @@ std::unique_ptr<llvm::Module> module_from_bitcode_file(std::string bitcode_path,
                                                        llvm::LLVMContext *ctx) {
   TI_AUTO_PROF
   std::ifstream ifs(bitcode_path, std::ios::binary);
+  TI_ERROR_IF(!ifs, "Bitcode file ({}) not found.", bitcode_path);
   std::string bitcode(std::istreambuf_iterator<char>(ifs),
                       (std::istreambuf_iterator<char>()));
   auto runtime =
@@ -199,7 +202,7 @@ std::unique_ptr<llvm::Module> module_from_bitcode_file(std::string bitcode_path,
 // going to be used later, at an early stage. Although the LLVM optimizer will
 // ultimately remove unused functions during a global DCE pass, we don't even
 // want these functions to waste clock cycles during module cloning and linking.
-void remove_useless_cuda_libdevice_functions(llvm::Module *module) {
+static void remove_useless_cuda_libdevice_functions(llvm::Module *module) {
   std::vector<std::string> function_name_list = {
       "rnorm3df",
       "norm4df",
@@ -354,6 +357,11 @@ void TaichiLLVMContext::link_module_with_cuda_libdevice(
   auto libdevice_module = module_from_bitcode_file(libdevice_path(), ctx.get());
 
   remove_useless_cuda_libdevice_functions(libdevice_module.get());
+
+  std::error_code EC;
+  llvm::raw_fd_ostream OS("libdevice_slim.bc", EC, llvm::sys::fs::F_None);
+  llvm::WriteBitcodeToFile(*libdevice_module, OS);
+  OS.flush();
 
   std::vector<std::string> libdevice_function_names;
   for (auto &f : *libdevice_module) {
@@ -575,5 +583,24 @@ template llvm::Value *TaichiLLVMContext::get_constant(uint64 t);
 #ifdef TI_PLATFORM_OSX
 template llvm::Value *TaichiLLVMContext::get_constant(unsigned long t);
 #endif
+
+
+auto make_slim_libdevice = [](const std::vector<std::string> &args) {
+  TI_ASSERT_INFO(args.size() == 1, "Usage ti run make_slim_libdevice [libdevice.X.bc file]");
+
+  auto ctx = std::make_unique<llvm::LLVMContext>();
+  auto libdevice_module = module_from_bitcode_file(args[0], ctx.get());
+
+  remove_useless_cuda_libdevice_functions(libdevice_module.get());
+
+  std::error_code EC;
+  auto output_fn = "slim_" + args[0];
+  llvm::raw_fd_ostream os(output_fn, EC, llvm::sys::fs::F_None);
+  llvm::WriteBitcodeToFile(*libdevice_module, os);
+  os.flush();
+  TI_INFO("Slimmed libdevice written to {}", output_fn);
+};
+
+TI_REGISTER_TASK(make_slim_libdevice);
 
 TLANG_NAMESPACE_END

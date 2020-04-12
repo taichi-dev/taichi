@@ -18,6 +18,12 @@
 #include "taichi/program/async_engine.h"
 #include "taichi/backends/cuda/cuda_driver.h"
 
+TI_NAMESPACE_BEGIN
+
+bool is_cuda_api_available();
+
+TI_NAMESPACE_END
+
 TLANG_NAMESPACE_BEGIN
 
 void assert_failed_host(const char *msg) {
@@ -40,11 +46,17 @@ Program::Program(Arch desired_arch) {
     if (!runtime) {
       TI_WARN("Taichi is not compiled with CUDA.");
       arch = host_arch();
+    } else if (!is_cuda_api_available()) {
+      TI_WARN("No CUDA driver API detected.");
+      arch = host_arch();
     } else if (!runtime->detected()) {
       TI_WARN("No CUDA device detected.");
       arch = host_arch();
     } else {
       // CUDA runtime created successfully
+    }
+    if (arch != Arch::cuda) {
+      TI_WARN("Falling back to {}.", arch_name(host_arch()));
     }
   }
   if (arch == Arch::metal) {

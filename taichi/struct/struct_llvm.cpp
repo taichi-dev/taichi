@@ -5,7 +5,7 @@
 #include "taichi/program/program.h"
 #include "struct.h"
 #include "llvm/IR/Verifier.h"
-#include <llvm/IR/IRBuilder.h>
+#include "llvm/IR/IRBuilder.h"
 
 TLANG_NAMESPACE_BEGIN
 

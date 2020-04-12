@@ -5,8 +5,8 @@
 #include "taichi/program/program.h"
 
 #ifdef TI_WITH_OPENGL
-#include <GL/glew.h>
-#include <GLFW/glfw3.h>
+#include "GL/glew.h"
+#include "GLFW/glfw3.h"
 #endif
 
 TLANG_NAMESPACE_BEGIN

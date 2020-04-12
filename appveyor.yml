@@ -61,5 +61,4 @@ build_script:
   - '%PYTHON% -c "import taichi"'
   - "%PYTHON% examples/laplace.py"
   - "%PYTHON% bin/taichi test -t 2"
-# - "cd python && %PYTHON% build.py try_upload"
-# Note: we no longer use AppVeyor to upload taichi pip packages since its not capable of building with CUDA (for now, it misses libdevice)
+  - "cd python && %PYTHON% build.py try_upload"

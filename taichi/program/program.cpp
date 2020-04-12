@@ -109,6 +109,10 @@ Program::Program(Arch desired_arch) {
     async_engine = std::make_unique<AsyncEngine>();
   }
 
+  // TODO: allow users to run in debug mode without out-of-bound checks
+  if (config.debug)
+    config.check_out_of_bound = true;
+
   if (!arch_is_cpu(config.arch)) {
     if (config.check_out_of_bound) {
       TI_WARN(
@@ -117,9 +121,6 @@ Program::Program(Arch desired_arch) {
       config.check_out_of_bound = false;
     }
   }
-
-  // TODO: allow users to run in debug mode without out-of-bound checks
-  config.check_out_of_bound = config.debug;
 
   TI_TRACE("Program arch={}", arch_name(arch));
 }

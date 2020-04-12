@@ -4,11 +4,14 @@
 
 #include "taichi/program/kernel.h"
 #include "taichi/program/program.h"
+#include "taichi/codegen/codegen_cpu.h"
 
 TLANG_NAMESPACE_BEGIN
 
-KernelLaunchRecord::KernelLaunchRecord(Context context, OffloadedStmt *stmt)
-    : context(context), stmt(stmt) {
+KernelLaunchRecord::KernelLaunchRecord(Context context,
+                                       Kernel *kernel,
+                                       OffloadedStmt *stmt)
+    : context(context), kernel(kernel), stmt(stmt) {
 }
 
 uint64 ExecutionQueue::hash(OffloadedStmt *stmt) {
@@ -26,6 +29,21 @@ void ExecutionQueue::enqueue(KernelLaunchRecord ker) {
   task_queue.push_back(ker);
 }
 
+void ExecutionQueue::synchronize() {
+  while (!task_queue.empty()) {
+    auto ker = task_queue.front();
+    std::string serialized;
+    irpass::re_id(ker.stmt);
+    irpass::print(ker.stmt);
+    auto h = hash(ker.stmt);
+    if (compiled_func.find(h) == compiled_func.end()) {
+      compiled_func[h] = CodeGenCPU(ker.kernel, ker.stmt).codegen();
+    }
+    compiled_func[h](ker.context);
+    task_queue.pop_front();
+  }
+}
+
 void AsyncEngine::launch(Kernel *kernel) {
   if (!kernel->lowered)
     kernel->lower();
@@ -34,9 +52,10 @@ void AsyncEngine::launch(Kernel *kernel) {
   auto &offloads = block->statements;
   for (std::size_t i = 0; i < offloads.size(); i++) {
     auto offload = offloads[i]->as<OffloadedStmt>();
-    task_queue.emplace_back(kernel->program.context, offload);
+    task_queue.emplace_back(kernel->program.get_context(), kernel, offload);
   }
   optimize();
+  synchronize();
 }
 
 void AsyncEngine::synchronize() {

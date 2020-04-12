@@ -309,6 +309,7 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(ArgLoadStmt *stmt) {
+    // TODO (#): remove dependency on get_current_program().get_current_kernel()
     auto &args = get_current_program().get_current_kernel().args;
     TI_ASSERT(0 <= stmt->arg_id && stmt->arg_id < args.size());
     TI_ASSERT(!args[stmt->arg_id].is_return_value);
@@ -411,7 +412,7 @@ class TypeCheck : public IRVisitor {
 namespace irpass {
 
 void typecheck(IRNode *root) {
-  check_fields_registered(root);
+  analysis::check_fields_registered(root);
   TypeCheck::run(root);
   //  if (root->is<Block>() && root->as<Block>()->parent == nullptr) {
   //    fix_block_parents(root); // hot fix

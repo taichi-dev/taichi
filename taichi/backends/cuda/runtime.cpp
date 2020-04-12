@@ -3,6 +3,12 @@
 
 TLANG_NAMESPACE_BEGIN
 
+#if !defined(TI_WITH_CUDA)
+static_assert(
+    false,
+    "This file should not be compiled when TI_WITH_CUDA is undefined");
+#endif
+
 class RuntimeCUDA : public Runtime {
  public:
   RuntimeCUDA() {

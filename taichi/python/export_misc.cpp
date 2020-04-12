@@ -14,6 +14,7 @@
 #include "taichi/system/dynamic_loader.h"
 #include "taichi/backends/metal/api.h"
 #include "taichi/backends/opengl/opengl_api.h"
+#include "taichi/backends/cuda/cuda_driver.h"
 
 TI_NAMESPACE_BEGIN
 
@@ -72,9 +73,9 @@ void stop_duplicating_stdout_to_file(const std::string &fn) {
   TI_NOT_IMPLEMENTED;
 }
 
-bool with_cuda() {
+bool is_cuda_api_available() {
 #if defined(TI_WITH_CUDA)
-  return true;
+  return lang::CUDADriver::get_instance_without_context().detected();
 #else
   return false;
 #endif
@@ -150,7 +151,7 @@ void export_misc(py::module &m) {
     }
     printf("test was successful.\n");
   });
-  m.def("with_cuda", with_cuda);
+  m.def("with_cuda", is_cuda_api_available);
   m.def("with_metal", taichi::lang::metal::is_metal_api_available);
   m.def("with_opengl", taichi::lang::opengl::is_opengl_api_available);
 }

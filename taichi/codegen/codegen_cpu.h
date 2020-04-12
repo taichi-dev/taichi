@@ -8,7 +8,7 @@ TLANG_NAMESPACE_BEGIN
 
 class CodeGenCPU : public KernelCodeGen {
  public:
-  CodeGenCPU(Kernel *kernel) : KernelCodeGen(kernel) {
+  CodeGenCPU(Kernel *kernel, IRNode *ir = nullptr) : KernelCodeGen(kernel, ir) {
   }
 
   virtual FunctionType codegen() override;

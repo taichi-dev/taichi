@@ -16,7 +16,9 @@ namespace opengl {
 void initialize_opengl();
 bool is_opengl_api_available();
 int opengl_get_threads_per_group();
-extern bool opengl_has_GL_NV_shader_atomic_float;
+#define PER_OPENGL_EXTENSION(x) extern bool opengl_has_##x;
+#include "taichi/inc/opengl_extension.inc.h"
+#undef PER_OPENGL_EXTENSION
 
 struct CompiledProgram {
   struct Impl;

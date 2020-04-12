@@ -62,6 +62,12 @@ SNode &SNode::create_node(std::vector<Index> indices,
   return new_node;
 }
 
+SNode &SNode::dynamic_chunked(const Index &expr, int n, int chunk_size) {
+  auto &snode = create_node({expr}, {n}, SNodeType::dynamic);
+  snode.chunk_size = chunk_size;
+  return snode;
+}
+
 void SNode::lazy_grad() {
   if (this->type == SNodeType::place)
     return;

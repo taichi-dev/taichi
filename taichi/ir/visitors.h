@@ -11,6 +11,9 @@ class BasicStmtVisitor : public IRVisitor {
  public:
   BasicStmtVisitor();
 
+  virtual void preprocess_container_stmt(Stmt *stmt) {
+  }
+
   void visit(Block *stmt_list) override;
 
   void visit(IfStmt *if_stmt) override;
@@ -22,6 +25,8 @@ class BasicStmtVisitor : public IRVisitor {
   void visit(StructForStmt *for_stmt) override;
 
   void visit(OffloadedStmt *stmt) override;
+
+  void visit(FuncBodyStmt *stmt) override;
 
   void visit(FrontendWhileStmt *stmt) override;
 

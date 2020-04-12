@@ -1,6 +1,8 @@
 [submodule "assets"]
 	path = assets
 	url = https://github.com/yuanming-hu/taichi_assets
+	shallow = true
 [submodule "external/spdlog"]
 	path = external/spdlog
 	url = https://github.com/gabime/spdlog
+	shallow = true

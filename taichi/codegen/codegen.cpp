@@ -1,11 +1,22 @@
 // Driver class for kernel codegen
 
 #include "codegen.h"
-#include "codegen_cpu.h"
-#include "codegen_cuda.h"
+
+#include "taichi/util/statistics.h"
+#include "taichi/codegen/codegen_cpu.h"
+#include "taichi/codegen/codegen_cuda.h"
+#include "taichi/system/timer.h"
 #include "taichi/system/timer.h"
 
 TLANG_NAMESPACE_BEGIN
+
+KernelCodeGen::KernelCodeGen(Kernel *kernel, IRNode *ir)
+    : prog(&kernel->program), kernel(kernel), ir(ir) {
+  if (ir == nullptr)
+    this->ir = kernel->ir;
+
+  stat.add("codegen_statements", irpass::analysis::count_statements(this->ir));
+}
 
 FunctionType KernelCodeGen::compile() {
   TI_AUTO_PROF;

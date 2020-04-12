@@ -115,6 +115,8 @@ CodeGenStmtGuard make_while_after_loop_guard(CodeGenLLVM *cg) {
 
 // CodeGenLLVM
 
+uint64 CodeGenLLVM::task_counter = 0;
+
 void CodeGenLLVM::visit(Block *stmt_list) {
   for (auto &stmt : stmt_list->statements) {
     stmt->accept(this);
@@ -263,21 +265,22 @@ void CodeGenLLVM::emit_struct_meta_base(const std::string &name,
                get_runtime_function(snode->refine_coordinates_func_name()));
 }
 
-CodeGenLLVM::CodeGenLLVM(Kernel *kernel)
+CodeGenLLVM::CodeGenLLVM(Kernel *kernel, IRNode *ir)
     // TODO: simplify ModuleBuilder ctor input
     : ModuleBuilder(kernel->program.get_llvm_context(kernel->arch)
                         ->clone_struct_module()),
       kernel(kernel),
+      ir(ir),
       prog(&kernel->program),
-      snode_attr(prog->get_llvm_context(kernel->arch)->snode_attr),
-      task_counter(0) {
+      snode_attr(prog->get_llvm_context(kernel->arch)->snode_attr) {
+  if (ir == nullptr)
+    this->ir = kernel->ir;
   initialize_context();
 
   context_ty = get_runtime_type("Context");
   physical_coordinate_ty = get_runtime_type("PhysicalCoordinates");
 
-  std::string grad_suffix;
-  kernel_name = kernel->name + grad_suffix + "_kernel";
+  kernel_name = kernel->name + "_kernel";
 }
 
 void CodeGenLLVM::visit(UnaryOpStmt *stmt) {
@@ -1594,7 +1597,7 @@ llvm::Value *CodeGenLLVM::emit_struct_meta(SNode *snode) {
 
 void CodeGenLLVM::emit_to_module() {
   TI_AUTO_PROF
-  kernel->ir->accept(this);
+  ir->accept(this);
 }
 
 FunctionType CodeGenLLVM::gen() {

@@ -11,38 +11,12 @@ class FieldsRegisteredChecker : public BasicStmtVisitor {
     invoke_default_visitor = true;
   }
 
+  void preprocess_container_stmt(Stmt *stmt) override {
+    TI_ASSERT(stmt->fields_registered);
+  }
+
   void visit(Stmt *stmt) override {
     TI_ASSERT(stmt->fields_registered);
-  }
-
-  void visit(IfStmt *if_stmt) override {
-    TI_ASSERT(if_stmt->fields_registered);
-    if (if_stmt->true_statements)
-      if_stmt->true_statements->accept(this);
-    if (if_stmt->false_statements) {
-      if_stmt->false_statements->accept(this);
-    }
-  }
-
-  void visit(WhileStmt *stmt) override {
-    TI_ASSERT(stmt->fields_registered);
-    stmt->body->accept(this);
-  }
-
-  void visit(RangeForStmt *for_stmt) override {
-    TI_ASSERT(for_stmt->fields_registered);
-    for_stmt->body->accept(this);
-  }
-
-  void visit(StructForStmt *for_stmt) override {
-    TI_ASSERT(for_stmt->fields_registered);
-    for_stmt->body->accept(this);
-  }
-
-  void visit(OffloadedStmt *stmt) override {
-    TI_ASSERT(stmt->fields_registered);
-    if (stmt->body)
-      stmt->body->accept(this);
   }
 
   static void run(IRNode *root) {
@@ -51,10 +25,10 @@ class FieldsRegisteredChecker : public BasicStmtVisitor {
   }
 };
 
-namespace irpass {
+namespace irpass::analysis {
 void check_fields_registered(IRNode *root) {
   return FieldsRegisteredChecker::run(root);
 }
-}  // namespace irpass
+}  // namespace irpass::analysis
 
 TLANG_NAMESPACE_END

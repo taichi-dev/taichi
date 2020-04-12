@@ -25,7 +25,7 @@ setuptools.setup(
     description='The Taichi Programming Language',
     author='Yuanming Hu',
     author_email='yuanmhu@gmail.com',
-    url='https://github.com/yuanming-hu/taichi',
+    url='https://github.com/taichi-dev/taichi',
     install_requires=[
         'numpy',
         'pybind11',

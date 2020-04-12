@@ -3,12 +3,6 @@
 
 #if !defined(TI_INCLUDED) || !defined(_WIN32)
 
-#if defined(_WIN32)
-#define vprintf vprintf_windows
-#include <cstdio>
-#undef vprintf
-#endif
-
 #include <atomic>
 #include <cstdint>
 #include <cmath>
@@ -105,7 +99,7 @@ void taichi_printf(LLVMRuntime *runtime, const char *format, Args &&... args);
 extern "C" {
 
 #if ARCH_cuda
-void vprintf(Ptr format, Ptr arg);
+void cuda_vprintf(Ptr format, Ptr arg);
 #endif
 
 #define DEFINE_UNARY_REAL_FUNC(F) \
@@ -329,7 +323,7 @@ void taichi_assert_runtime(LLVMRuntime *runtime, i32 test, const char *msg);
 
 void ___stubs___() {
 #if ARCH_cuda
-  vprintf(nullptr, nullptr);
+  cuda_vprintf(nullptr, nullptr);
 #endif
 }
 }
@@ -553,12 +547,17 @@ struct NodeManager {
   NodeManager(LLVMRuntime *runtime,
               i32 element_size,
               i32 chunk_num_elements = -1)
-      : runtime(runtime),
-        element_size(element_size),
-        chunk_num_elements(chunk_num_elements) {
+      : runtime(runtime), element_size(element_size) {
     // 16K elements per chunk, by default
-    if (chunk_num_elements == -1)
+    if (chunk_num_elements == -1) {
       chunk_num_elements = 16 * 1024;
+    }
+    // Maximum chunk size = 128 MB
+    while (chunk_num_elements > 1 &&
+           (uint64)chunk_num_elements * element_size > 128UL * 1024 * 1024) {
+      chunk_num_elements /= 2;
+    }
+    this->chunk_num_elements = chunk_num_elements;
     free_list_used = 0;
     free_list = runtime->create<ListManager>(runtime, sizeof(list_data_type),
                                              chunk_num_elements);
@@ -1279,7 +1278,7 @@ void taichi_printf(LLVMRuntime *runtime, const char *format, Args &&... args) {
 #if ARCH_cuda
   printf_helper helper;
   helper.push_back(std::forward<Args>(args)...);
-  vprintf((Ptr)format, helper.ptr());
+  cuda_vprintf((Ptr)format, helper.ptr());
 #else
   runtime->host_printf(format, args...);
 #endif

@@ -89,10 +89,10 @@ void flag_access(IRNode *root);
 void die(IRNode *root);
 void simplify(IRNode *root);
 void alg_simp(IRNode *root, const CompileConfig &config);
+void whole_kernel_cse(IRNode *root);
 void full_simplify(IRNode *root, const CompileConfig &config);
 void print(IRNode *root, std::string *output = nullptr);
 void lower(IRNode *root);
-void check_fields_registered(IRNode *root);
 void typecheck(IRNode *root);
 void loop_vectorize(IRNode *root);
 void slp_vectorize(IRNode *root);
@@ -111,25 +111,28 @@ void demote_dense_struct_fors(IRNode *root);
 void demote_atomics(IRNode *root);
 void reverse_segments(IRNode *root);  // for autograd
 std::unique_ptr<ScratchPads> initialize_scratch_pad(StructForStmt *root);
-std::unordered_set<SNode *> gather_deactivations(IRNode *root);
-std::vector<Stmt *> gather_statements(IRNode *root,
-                                      const std::function<bool(Stmt *)> &test);
-bool same_statements(IRNode *root1, IRNode *root2);
-void verify(IRNode *root);
-std::unordered_set<Stmt *> detect_fors_with_break(IRNode *root);
-std::unordered_set<Stmt *> detect_loops_with_continue(IRNode *root);
 void compile_to_offloads(IRNode *ir,
                          CompileConfig config,
                          bool vectorize,
                          bool grad,
                          bool ad_use_stack,
                          bool verbose);
-}  // namespace irpass
 
 // Analysis
 namespace analysis {
+void check_fields_registered(IRNode *root);
+int count_statements(IRNode *root);
+std::unordered_set<Stmt *> detect_fors_with_break(IRNode *root);
+std::unordered_set<Stmt *> detect_loops_with_continue(IRNode *root);
+std::unordered_set<SNode *> gather_deactivations(IRNode *root);
+std::vector<Stmt *> gather_statements(IRNode *root,
+                                      const std::function<bool(Stmt *)> &test);
+bool same_statements(IRNode *root1, IRNode *root2);
 DiffRange value_diff(Stmt *stmt, int lane, Stmt *alloca);
-}
+void verify(IRNode *root);
+}  // namespace analysis
+
+}  // namespace irpass
 
 IRBuilder &current_ast_builder();
 
@@ -421,7 +424,7 @@ struct LaneAttribute {
   LaneAttribute(const std::vector<T> &data) : data(data) {
   }
 
-  LaneAttribute(const T &t): data(1, t) {
+  LaneAttribute(const T &t) : data(1, t) {
   }
 
   void resize(int s) {
@@ -1486,6 +1489,10 @@ class Block : public IRNode {
 
   void erase(Stmt *stmt);
 
+  std::unique_ptr<Stmt> extract(int location);
+
+  std::unique_ptr<Stmt> extract(Stmt *stmt);
+
   void insert(std::unique_ptr<Stmt> &&stmt, int location = -1);
 
   void insert(VecStatement &&stmt, int location = -1);
@@ -2423,7 +2430,9 @@ inline void SLP(int v) {
 
 class For {
  public:
-  For(const Expr &i, const Expr &s, const Expr &e,
+  For(const Expr &i,
+      const Expr &s,
+      const Expr &e,
       const std::function<void()> &func) {
     auto stmt_unique = std::make_unique<FrontendForStmt>(i, s, e);
     auto stmt = stmt_unique.get();
@@ -2432,7 +2441,8 @@ class For {
     func();
   }
 
-  For(const ExprGroup &i, const Expr &global,
+  For(const ExprGroup &i,
+      const Expr &global,
       const std::function<void()> &func) {
     auto stmt_unique = std::make_unique<FrontendForStmt>(i, global);
     auto stmt = stmt_unique.get();

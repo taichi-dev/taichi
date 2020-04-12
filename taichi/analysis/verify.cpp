@@ -4,13 +4,15 @@
 
 TLANG_NAMESPACE_BEGIN
 
-class IRVerifier : public IRVisitor {
+class IRVerifier : public BasicStmtVisitor {
  private:
   Block *current_block;
   // each scope corresponds to an unordered_set
   std::vector<std::unordered_set<Stmt *>> visible_stmts;
 
  public:
+  using BasicStmtVisitor::visit;
+
   explicit IRVerifier(IRNode *root) : current_block(nullptr) {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
@@ -34,11 +36,12 @@ class IRVerifier : public IRVisitor {
     visible_stmts.back().insert(stmt);
   }
 
+  void preprocess_container_stmt(Stmt *stmt) override {
+    basic_verify(stmt);
+  }
+
   void visit(Stmt *stmt) override {
     basic_verify(stmt);
-    if (stmt->is_container_statement()) {
-      TI_ERROR("Visitor for container stmt undefined.");
-    }
   }
 
   void visit(Block *stmt_list) override {
@@ -65,51 +68,16 @@ class IRVerifier : public IRVisitor {
     TI_ASSERT(stmt->ptr->is<AllocaStmt>());
   }
 
-  void visit(IfStmt *if_stmt) override {
-    basic_verify(if_stmt);
-    if (if_stmt->true_statements)
-      if_stmt->true_statements->accept(this);
-    if (if_stmt->false_statements) {
-      if_stmt->false_statements->accept(this);
-    }
-  }
-
-  void visit(FuncBodyStmt *stmt) override {
-    basic_verify(stmt);
-    stmt->body->accept(this);
-  }
-
-  void visit(WhileStmt *stmt) override {
-    basic_verify(stmt);
-    stmt->body->accept(this);
-  }
-
-  void visit(RangeForStmt *stmt) override {
-    basic_verify(stmt);
-    stmt->body->accept(this);
-  }
-
-  void visit(StructForStmt *stmt) override {
-    basic_verify(stmt);
-    stmt->body->accept(this);
-  }
-
-  void visit(OffloadedStmt *stmt) override {
-    basic_verify(stmt);
-    if (stmt->body)
-      stmt->body->accept(this);
-  }
-
   static void run(IRNode *root) {
     IRVerifier verifier(root);
     root->accept(&verifier);
   }
 };
 
-namespace irpass {
+namespace irpass::analysis {
 void verify(IRNode *root) {
   IRVerifier::run(root);
 }
-}  // namespace irpass
+}  // namespace irpass::analysis
 
 TLANG_NAMESPACE_END

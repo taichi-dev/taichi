@@ -26,7 +26,6 @@ def test_assert_basic():
     func()
 
 
-@ti.all_archs
 def test_assert_ok():
     ti.init(debug=True)
     ti.set_gdb_trigger(False)
@@ -52,7 +51,6 @@ def test_out_of_bound():
     func()
 
 
-@ti.all_archs
 def test_not_out_of_bound():
     ti.init(debug=True)
     ti.set_gdb_trigger(False)
@@ -61,5 +59,34 @@ def test_not_out_of_bound():
     @ti.kernel
     def func():
         x[7, 15] = 1
+
+    func()
+
+
+@ti.must_throw(RuntimeError)
+def test_out_of_bound_dynamic():
+    ti.init(debug=True)
+    ti.set_gdb_trigger(False)
+    x = ti.var(ti.i32)
+
+    ti.root.dynamic(ti.i, 16, 4).place(x)
+
+    @ti.kernel
+    def func():
+        x[17] = 1
+
+    func()
+
+
+def test_not_out_of_bound_dynamic():
+    ti.init(debug=True)
+    ti.set_gdb_trigger(False)
+    x = ti.var(ti.i32)
+
+    ti.root.dynamic(ti.i, 16, 4).place(x)
+
+    @ti.kernel
+    def func():
+        x[3] = 1
 
     func()

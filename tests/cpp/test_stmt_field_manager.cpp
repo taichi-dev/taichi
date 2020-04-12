@@ -17,23 +17,6 @@ class TestStmt : public Stmt {
   TI_STMT_DEF_FIELDS(input, a, b);
 };
 
-TI_TEST("test_stmt_field_manager") {
-  auto a = Stmt::make<TestStmt>(nullptr, 1, 2.0f);
-
-  TI_CHECK(a->num_operands() == 1);
-  TI_CHECK(a->field_manager.fields.size() == 2);
-
-  auto b = Stmt::make<TestStmt>(nullptr, 1, 2.0f);
-
-  TI_CHECK(a->field_manager.equal(b->field_manager) == true);
-
-  auto c = Stmt::make<TestStmt>(nullptr, 2, 2.1f);
-
-  TI_CHECK(a->field_manager.equal(c->field_manager) == false);
-  // To test two statements are equal: 1) same Stmt type 2) same operands 3)
-  // same field_manager
-}
-
 class TestStmtVector : public Stmt {
  private:
   std::vector<Stmt *> vec1;
@@ -49,23 +32,42 @@ class TestStmtVector : public Stmt {
   TI_STMT_DEF_FIELDS(vec1, vec2);
 };
 
-TI_TEST("test_stmt_field_manager_with_vector") {
-  auto one = Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(1));
-  auto a = Stmt::make<TestStmtVector>(std::vector<Stmt *>(),
-                                      std::vector<Stmt *>(1, one.get()));
+TI_TEST("stmt_field_manager") {
+  SECTION("test_stmt_field_manager") {
+    auto a = Stmt::make<TestStmt>(nullptr, 1, 2.0f);
 
-  TI_CHECK(a->num_operands() == 1);
-  TI_CHECK(a->field_manager.fields.size() == 2);
+    TI_CHECK(a->num_operands() == 1);
+    TI_CHECK(a->field_manager.fields.size() == 2);
 
-  auto b = Stmt::make<TestStmtVector>(std::vector<Stmt *>(),
-                                      std::vector<Stmt *>(1, one.get()));
+    auto b = Stmt::make<TestStmt>(nullptr, 1, 2.0f);
 
-  TI_CHECK(a->field_manager.equal(b->field_manager) == true);
+    TI_CHECK(a->field_manager.equal(b->field_manager) == true);
 
-  auto c = Stmt::make<TestStmtVector>(std::vector<Stmt *>(1, one.get()),
-                                      std::vector<Stmt *>());
+    auto c = Stmt::make<TestStmt>(nullptr, 2, 2.1f);
 
-  TI_CHECK(a->field_manager.equal(c->field_manager) == false);
+    TI_CHECK(a->field_manager.equal(c->field_manager) == false);
+    // To test two statements are equal: 1) same Stmt type 2) same operands 3)
+    // same field_manager
+  }
+
+  SECTION("test_stmt_field_manager_with_vector") {
+    auto one = Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(1));
+    auto a = Stmt::make<TestStmtVector>(std::vector<Stmt *>(),
+                                        std::vector<Stmt *>(1, one.get()));
+
+    TI_CHECK(a->num_operands() == 1);
+    TI_CHECK(a->field_manager.fields.size() == 2);
+
+    auto b = Stmt::make<TestStmtVector>(std::vector<Stmt *>(),
+                                        std::vector<Stmt *>(1, one.get()));
+
+    TI_CHECK(a->field_manager.equal(b->field_manager) == true);
+
+    auto c = Stmt::make<TestStmtVector>(std::vector<Stmt *>(1, one.get()),
+                                        std::vector<Stmt *>());
+
+    TI_CHECK(a->field_manager.equal(c->field_manager) == false);
+  }
 }
 
 TLANG_NAMESPACE_END

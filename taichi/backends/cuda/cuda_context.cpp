@@ -1,5 +1,3 @@
-#if defined(TI_WITH_CUDA)
-
 #define TI_RUNTIME_HOST
 #include "cuda_context.h"
 
@@ -79,7 +77,7 @@ void CUDAContext::launch(void *func,
 }
 
 CUDAContext::~CUDAContext() {
-  // TODO: restore this?
+  // TODO: restore these?
   /*
   CUDADriver::get_instance().cuMemFree(context_buffer);
   for (auto cudaModule: cudaModules)
@@ -106,5 +104,3 @@ CUDAContext &CUDAContext::get_instance() {
 }
 
 TLANG_NAMESPACE_END
-
-#endif

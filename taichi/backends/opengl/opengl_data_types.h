@@ -15,6 +15,8 @@ inline std::string opengl_data_type_name(DataType dt) {
       return "double";
     case DataType::i32:
       return "int";
+    case DataType::i64:
+      return "int64_t";
     default:
       TI_NOT_IMPLEMENTED;
       break;

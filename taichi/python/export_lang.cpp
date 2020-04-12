@@ -1,13 +1,15 @@
 // Bindings for the python frontend
 
+#include "pybind11/functional.h"
+#include "pybind11/pybind11.h"
+
 #include "taichi/ir/frontend.h"
-#include <pybind11/functional.h>
-#include <pybind11/pybind11.h>
 #include "taichi/program/extension.h"
 #include "taichi/common/interface.h"
 #include "taichi/python/export.h"
 #include "taichi/gui/gui.h"
 #include "taichi/math/svd.h"
+#include "taichi/util/statistics.h"
 
 TI_NAMESPACE_BEGIN
 
@@ -527,6 +529,8 @@ void export_lang(py::module &m) {
     return Expr::make<GlobalVariableExpression>(snode);
   });
   m.def("is_supported", is_supported);
+
+  m.def("print_stat", [] { stat.print(); });
 }
 
 TI_NAMESPACE_END

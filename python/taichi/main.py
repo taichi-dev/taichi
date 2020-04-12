@@ -49,9 +49,6 @@ def test_python(args):
             threads = arg_threads
         elif env_threads:
             threads = int(env_threads)
-            print(
-                f'Following TI_TEST_THREADS to use {threads} testing thread(s)...'
-            )
         print(f'Starting {threads} testing thread(s)...')
         if threads > 1:
             pytest_args += ['-n', str(threads)]
@@ -70,7 +67,6 @@ def test_cpp(args):
 
 def make_argument_parser():
     parser = argparse.ArgumentParser()
-    parser.add_argument('action', help='See `ti help` for more details')
     parser.add_argument('-v',
                         '--verbose',
                         action='store_true',
@@ -78,6 +74,10 @@ def make_argument_parser():
     parser.add_argument('-t',
                         '--threads',
                         help='Number of threads for parallel testing')
+    parser.add_argument('-c',
+                        '--cpp',
+                        action='store_true',
+                        help='Run C++ tests')
     parser.add_argument(
         '-a',
         '--arch',
@@ -87,6 +87,8 @@ def make_argument_parser():
 
 
 def main(debug=False):
+    argc = len(sys.argv)
+    mode = 'help' if argc == 1 else sys.argv.pop(1)
     parser = make_argument_parser()
     args = parser.parse_args()
 
@@ -109,8 +111,7 @@ def main(debug=False):
     if args.arch is not None:
         ti.set_wanted_archs(args.arch.split(','))
 
-    argc = len(sys.argv)
-    if argc == 1 or args.action == 'help':
+    if mode == 'help':
         print(
             "    Usage: ti run [task name]        |-> Run a specific task\n"
             "           ti benchmark              |-> Run performance benchmark\n"
@@ -127,19 +128,19 @@ def main(debug=False):
             "           ti release                |-> Make source code release\n"
             "           ti debug [script.py]      |-> Debug script\n")
         return 0
-    mode = args.action
 
     t = time.time()
     if mode.endswith('.py'):
         import subprocess
-        subprocess.call([sys.executable] + sys.argv[1:])
+        subprocess.call([sys.executable, mode] + sys.argv[1:])
     elif mode == "run":
-        if argc <= 2:
+        if argc <= 1:
             print("Please specify [task name], e.g. test_math")
             return -1
-        name = sys.argv[2]
+        print(sys.argv)
+        name = sys.argv[1]
         task = ti.Task(name)
-        task.run(*sys.argv[3:])
+        task.run(*sys.argv[2:])
     elif mode == "debug":
         ti.core.set_core_trigger_gdb_when_crash(True)
         if argc <= 2:
@@ -150,11 +151,18 @@ def main(debug=False):
             script = script.read()
         exec(script, {'__name__': '__main__'})
     elif mode == "test":
-        ret = test_python(args)
-        if ret:
-            return -1
-        ret = test_cpp(args)
-        return ret
+        if len(args.files):
+            if args.cpp:
+                return test_cpp(args)
+            else:
+                return test_python(args)
+        elif args.cpp:
+            return test_cpp(args)
+        else:
+            ret = test_python(args)
+            if ret != 0:
+                return ret
+            return test_cpp(args)
     elif mode == "build":
         ti.core.build()
     elif mode == "format":

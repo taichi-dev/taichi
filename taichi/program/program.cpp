@@ -18,6 +18,12 @@
 #include "taichi/program/async_engine.h"
 #include "taichi/backends/cuda/cuda_driver.h"
 
+TI_NAMESPACE_BEGIN
+
+bool is_cuda_api_available();
+
+TI_NAMESPACE_END
+
 TLANG_NAMESPACE_BEGIN
 
 void assert_failed_host(const char *msg) {
@@ -40,11 +46,17 @@ Program::Program(Arch desired_arch) {
     if (!runtime) {
       TI_WARN("Taichi is not compiled with CUDA.");
       arch = host_arch();
+    } else if (!is_cuda_api_available()) {
+      TI_WARN("No CUDA driver API detected.");
+      arch = host_arch();
     } else if (!runtime->detected()) {
       TI_WARN("No CUDA device detected.");
       arch = host_arch();
     } else {
       // CUDA runtime created successfully
+    }
+    if (arch != Arch::cuda) {
+      TI_WARN("Falling back to {}.", arch_name(host_arch()));
     }
   }
   if (arch == Arch::metal) {
@@ -93,8 +105,13 @@ Program::Program(Arch desired_arch) {
 
   if (config.async) {
     TI_WARN("Running in async mode. This is experimental.");
-    engine = std::make_unique<AsyncEngine>();
+    TI_ASSERT(arch_is_cpu(config.arch));
+    async_engine = std::make_unique<AsyncEngine>();
   }
+
+  // TODO: allow users to run in debug mode without out-of-bound checks
+  if (config.debug)
+    config.check_out_of_bound = true;
 
   if (!arch_is_cpu(config.arch)) {
     if (config.check_out_of_bound) {
@@ -104,9 +121,6 @@ Program::Program(Arch desired_arch) {
       config.check_out_of_bound = false;
     }
   }
-
-  // TODO: allow users to run in debug mode without out-of-bound checks
-  config.check_out_of_bound = config.debug;
 
   TI_TRACE("Program arch={}", arch_name(arch));
 }
@@ -471,7 +485,7 @@ void Program::finalize() {
 }
 
 void Program::launch_async(Kernel *kernel) {
-  engine->launch(kernel);
+  async_engine->launch(kernel);
 }
 
 Program::~Program() {

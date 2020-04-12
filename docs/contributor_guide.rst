@@ -157,7 +157,9 @@ Testing
 Tests should be added to ``taichi/tests``.
 Use ``ti test`` to run all the tests.
 Use ``ti test -v`` for verbose outputs.
-Use ``ti test <filename(s)>`` to run specific tests. Feel free to omit the ``test_`` prefix and ``.py`` suffix in the filenames.
+Use ``ti test <filename(s)>`` to run specific tests. e.g. ``ti test numpy_io`` and ``ti test test_numpy_io.py`` are equivalent.
+Use ``ti test -a <arch(s)>`` for test against specified architectures. e.g. ``ti test -a opengl`` or ``ti test numpy_io -a cuda,metal``.
+Use ``ti test -c`` to run only the C++ tests. e.g. ``ti test -c alg_simp``
 
 For more options, see ``ti test -h``.
 
@@ -216,3 +218,12 @@ Key folders are
 - ``benchmarks``: Performance benchmarks
 - ``misc``: Random (yet useful) files
 - ...
+
+Upgrading CUDA
+--------------
+
+Right now we are targeting CUDA 10. When upgrading CUDA version,
+the file ``external/cuda_libdevice/slim_libdevice.10.bc`` should also be replaced with a newer version.
+
+To generate the slimmed version of libdevice based on a full ``libdevice.X.bc`` file from a CUDA installation,
+use ``ti run make_slim_libdevice [libdevice.X.bc file]``

@@ -14,6 +14,50 @@ TLANG_NAMESPACE_BEGIN
 #define TI_EXPRESSION_IMPLEMENTATION
 #include "expression.h"
 
+void DecoratorRecorder::reset() {
+  vectorize = -1;
+  parallelize = 0;
+  uniform = false;
+  scratch_opt.clear();
+  block_dim = 0;
+  strictly_serialized = false;
+}
+
+Block *IRBuilder::current_block() {
+  if (stack.empty())
+    return nullptr;
+  else
+    return stack.back();
+}
+
+Stmt *IRBuilder::get_last_stmt() {
+  return stack.back()->back();
+}
+
+void IRBuilder::insert(std::unique_ptr<Stmt> &&stmt, int location) {
+  TI_ASSERT(!stack.empty());
+  stack.back()->insert(std::move(stmt), location);
+}
+
+void IRBuilder::stop_gradient(SNode *snode) {
+  TI_ASSERT(!stack.empty());
+  stack.back()->stop_gradients.push_back(snode);
+}
+
+int Identifier::id_counter = 0;
+std::string Identifier::raw_name() const {
+  if (name_.empty())
+    return fmt::format("tmp{}", id);
+  else
+    return name_;
+}
+
+Stmt *VecStatement::push_back(pStmt &&stmt) {
+  auto ret = stmt.get();
+  stmts.push_back(std::move(stmt));
+  return ret;
+}
+
 class StatementTypeNameVisitor : public IRVisitor {
  public:
   std::string type_name;
@@ -29,21 +73,23 @@ class StatementTypeNameVisitor : public IRVisitor {
 #undef PER_STATEMENT
 };
 
+inline Expr load_if_ptr(const Expr &ptr) {
+  if (ptr.is<GlobalPtrExpression>()) {
+    return load(ptr);
+  } else if (ptr.is<GlobalVariableExpression>()) {
+    TI_ASSERT(ptr.cast<GlobalVariableExpression>()->snode->num_active_indices ==
+        0);
+    return load(ptr[ExprGroup()]);
+  } else
+    return ptr;
+}
+
 std::string Stmt::type() {
   StatementTypeNameVisitor v;
   this->accept(&v);
   return v.type_name;
 }
 
-void IRBuilder::insert(std::unique_ptr<Stmt> &&stmt, int location) {
-  TI_ASSERT(!stack.empty());
-  stack.back()->insert(std::move(stmt), location);
-}
-
-void IRBuilder::stop_gradient(SNode *snode) {
-  TI_ASSERT(!stack.empty());
-  stack.back()->stop_gradients.push_back(snode);
-}
 
 GetChStmt::GetChStmt(taichi::lang::Stmt *input_ptr, int chid)
     : input_ptr(input_ptr), chid(chid) {
@@ -267,7 +313,6 @@ IRNode *FrontendContext::root() {
   return static_cast<IRNode *>(root_node.get());
 }
 
-int Identifier::id_counter = 0;
 std::atomic<int> Stmt::instance_id_counter(0);
 
 std::unique_ptr<FrontendContext> context;
@@ -499,10 +544,6 @@ For::For(const Expr &s, const Expr &e, const std::function<void(Expr)> &func) {
   current_ast_builder().insert(std::move(stmt_unique));
   auto _ = current_ast_builder().create_scope(stmt->body);
   func(i);
-}
-
-Stmt *IRBuilder::get_last_stmt() {
-  return stack.back()->back();
 }
 
 OffloadedStmt::OffloadedStmt(OffloadedStmt::TaskType task_type)

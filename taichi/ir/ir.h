@@ -199,14 +199,7 @@ class DecoratorRecorder {
     reset();
   }
 
-  void reset() {
-    vectorize = -1;
-    parallelize = 0;
-    uniform = false;
-    scratch_opt.clear();
-    block_dim = 0;
-    strictly_serialized = false;
-  }
+  void reset();
 };
 
 class FrontendContext {
@@ -255,12 +248,7 @@ class IRBuilder {
 
   std::unique_ptr<ScopeGuard> create_scope(std::unique_ptr<Block> &list);
 
-  Block *current_block() {
-    if (stack.empty())
-      return nullptr;
-    else
-      return stack.back();
-  }
+  Block *current_block();
 
   Stmt *get_last_stmt();
 
@@ -282,12 +270,7 @@ class Identifier {
     id = id_counter++;
   }
 
-  std::string raw_name() const {
-    if (name_.empty())
-      return fmt::format("tmp{}", id);
-    else
-      return name_;
-  }
+  std::string raw_name() const;
 
   std::string name() const {
     return "@" + raw_name();
@@ -323,11 +306,7 @@ class VecStatement {
     stmts = std::move(other_stmts);
   }
 
-  Stmt *push_back(pStmt &&stmt) {
-    auto ret = stmt.get();
-    stmts.push_back(std::move(stmt));
-    return ret;
-  }
+  Stmt *push_back(pStmt &&stmt);
 
   template <typename T, typename... Args>
   T *push_back(Args &&... args) {
@@ -2371,16 +2350,6 @@ inline Expr load(Expr ptr) {
   return Expr::make<GlobalLoadExpression>(ptr);
 }
 
-inline Expr load_if_ptr(const Expr &ptr) {
-  if (ptr.is<GlobalPtrExpression>()) {
-    return load(ptr);
-  } else if (ptr.is<GlobalVariableExpression>()) {
-    TI_ASSERT(ptr.cast<GlobalVariableExpression>()->snode->num_active_indices ==
-              0);
-    return load(ptr[ExprGroup()]);
-  } else
-    return ptr;
-}
 
 inline Expr ptr_if_global(const Expr &var) {
   if (var.is<GlobalVariableExpression>()) {

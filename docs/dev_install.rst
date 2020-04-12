@@ -22,9 +22,7 @@ Installing Depedencies
     python3 -m pip install --user setuptools astpretty astor pytest opencv-python pybind11
     python3 -m pip install --user Pillow numpy scipy GitPython yapf colorama psutil autograd
 
-- Then install ``clang-8`` (or ``clang-7``, should work as well):
-
-* (If on Ubuntu) Execute ``sudo apt install libtinfo-dev clang-8``.
+* (If on Ubuntu) Execute ``sudo apt install libtinfo-dev clang-8`` (or ``clang-7`` should work as well).
 
 * (If on Arch Linux) Execute
 
@@ -36,6 +34,7 @@ Installing Depedencies
   .. warning::
     If you have installed ``clang`` (9.0.1) before, this command will overrides the existing ``clang``.
     If you don't want to break up depedencies, please build from scratch and install it in ``/opt``. Then add ``/opt/clang/bin`` to your ``$PATH``.
+
 
 - Make sure you have LLVM 8.0.1 built from scratch. To do so:
 
@@ -51,7 +50,7 @@ Installing Depedencies
     make -j 8
     sudo make install
 
-Set up Taichi for develop
+Setting up Taichi for develop
 ---------------------------------------------
 
 - Clone the taichi repo, and build:

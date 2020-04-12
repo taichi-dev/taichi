@@ -21,7 +21,7 @@ The Taichi Programming Language
 
 
 .. toctree::
-   :caption: Structures
+   :caption: References
    :maxdepth: 3
 
    scalar_tensor

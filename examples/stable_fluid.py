@@ -1,4 +1,6 @@
+# References:
 # http://developer.download.nvidia.com/books/HTML/gpugems/gpugems_ch38.html
+# https://github.com/PavelDoGreat/WebGL-Fluid-Simulation
 
 import taichi as ti
 import numpy as np

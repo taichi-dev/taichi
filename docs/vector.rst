@@ -104,7 +104,7 @@ Methods
     :parameter b: (Vector, 3D)
     :return: (Vector, 3D) the cross product of ``a`` and ``b``
 
-    e.g.:
+    We use right-handed coordinate system, e.g.:
     ::
         a = ti.Vector([1, 2, 3])
         b = ti.Vector([4, 5, 6])
@@ -121,7 +121,7 @@ Methods
     ::
         a = ti.Vector([1, 2, 3])
         b = ti.Vector([4, 5, 6])
-        c = ti.outer_product(a, b) # c[i, j] = a[i] * b[j]
+        c = ti.outer_product(a, b) # NOTE: c[i, j] = a[i] * b[j]
         # c = [[1*4, 1*5, 1*6], [2*4, 2*5, 2*6], [3*4, 3*5, 3*6]]
 
 .. note::

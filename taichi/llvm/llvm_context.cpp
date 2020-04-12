@@ -586,7 +586,7 @@ template llvm::Value *TaichiLLVMContext::get_constant(unsigned long t);
 
 
 auto make_slim_libdevice = [](const std::vector<std::string> &args) {
-  TI_ASSERT_INFO(args.size() == 1, "Usage ti run make_slim_libdevice [libdevice.X.bc file]");
+  TI_ASSERT_INFO(args.size() == 1, "Usage: ti run make_slim_libdevice [libdevice.X.bc file]");
 
   auto ctx = std::make_unique<llvm::LLVMContext>();
   auto libdevice_module = module_from_bitcode_file(args[0], ctx.get());

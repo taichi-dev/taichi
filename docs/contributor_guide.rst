@@ -218,3 +218,12 @@ Key folders are
 - ``benchmarks``: Performance benchmarks
 - ``misc``: Random (yet useful) files
 - ...
+
+Upgrading CUDA
+--------------
+
+Right now we are targeting CUDA 10. When upgrading CUDA version,
+the file ``external/cuda_libdevice/slim_libdevice.10.bc`` should also be replaced with a newer version.
+
+To generate the slimmed version of libdevice based on a full ``libdevice.X.bc`` file from a CUDA installation,
+use ``ti run make_slim_libdevice [libdevice.X.bc file]``

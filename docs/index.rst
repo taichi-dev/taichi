@@ -3,25 +3,19 @@ The Taichi Programming Language
 
 .. toctree::
    :caption: Overview
-   :maxdepth: 3
+   :maxdepth: 2
 
    overview
    hello
 
 
 .. toctree::
-   :caption: Basic Concepts
-   :maxdepth: 3
+   :caption: Language
+   :maxdepth: 2
 
    syntax
    type
    tensor_matrix
-
-
-.. toctree::
-   :caption: Language Structures
-   :maxdepth: 3
-
    scalar_tensor
    linalg
    external
@@ -30,7 +24,7 @@ The Taichi Programming Language
 
 .. toctree::
    :caption: Advanced Programming
-   :maxdepth: 3
+   :maxdepth: 2
 
    meta
    data_layout
@@ -43,7 +37,7 @@ The Taichi Programming Language
 
 .. toctree::
    :caption: Miscellaneous
-   :maxdepth: 3
+   :maxdepth: 2
 
    utilities
    dev_install
@@ -57,6 +51,6 @@ The Taichi Programming Language
 
 .. toctree::
    :caption: Legacy
-   :maxdepth: 3
+   :maxdepth: 2
 
    legacy_installation

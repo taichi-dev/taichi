@@ -547,12 +547,17 @@ struct NodeManager {
   NodeManager(LLVMRuntime *runtime,
               i32 element_size,
               i32 chunk_num_elements = -1)
-      : runtime(runtime),
-        element_size(element_size),
-        chunk_num_elements(chunk_num_elements) {
+      : runtime(runtime), element_size(element_size) {
     // 16K elements per chunk, by default
-    if (chunk_num_elements == -1)
+    if (chunk_num_elements == -1) {
       chunk_num_elements = 16 * 1024;
+    }
+    // Maximum chunk size = 128 MB
+    while (chunk_num_elements > 1 &&
+           (uint64)chunk_num_elements * element_size > 128UL * 1024 * 1024) {
+      chunk_num_elements /= 2;
+    }
+    this->chunk_num_elements = chunk_num_elements;
     free_list_used = 0;
     free_list = runtime->create<ListManager>(runtime, sizeof(list_data_type),
                                              chunk_num_elements);

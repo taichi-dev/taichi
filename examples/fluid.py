@@ -40,23 +40,12 @@ pressures_pair = TexPair(_pressures, _new_pressures)
 
 
 @ti.func
-def sample_s(vf, u, v):
-    r = 0.0
+def sample(qf, u, v):
     i, j = int(u), int(v)
     # Nearest
     i = max(0, min(res - 1, i))
     j = max(0, min(res - 1, j))
-    return vf[i, j]
-
-
-@ti.func
-def sample_v2(vf, u, v):
-    r = ti.Vector([0.0, 0.0])
-    i, j = int(u), int(v)
-    # Nearest
-    i = max(0, min(res - 1, i))
-    j = max(0, min(res - 1, j))
-    return vf[i, j]
+    return qf[i, j]
 
 
 @ti.func
@@ -66,16 +55,16 @@ def lerp(vl, vr, frac):
 
 
 @ti.func
-def bilerp_v2(vf, u, v):
+def bilerp(vf, u, v):
     s, t = u - 0.5, v - 0.5
     # floor
     iu, iv = int(s), int(t)
     # fract
     fu, fv = s - iu, t - iv
-    a = sample_v2(vf, iu + 0.5, iv + 0.5)
-    b = sample_v2(vf, iu + 1.5, iv + 0.5)
-    c = sample_v2(vf, iu + 0.5, iv + 1.5)
-    d = sample_v2(vf, iu + 1.5, iv + 1.5)
+    a = sample(vf, iu + 0.5, iv + 0.5)
+    b = sample(vf, iu + 1.5, iv + 0.5)
+    c = sample(vf, iu + 0.5, iv + 1.5)
+    d = sample(vf, iu + 1.5, iv + 1.5)
     return lerp(lerp(a, b, fu), lerp(c, d, fu), fv)
 
 
@@ -83,7 +72,7 @@ def bilerp_v2(vf, u, v):
 def advect(vf: ti.template(), new_vf: ti.template()):
     for i, j in vf:
         coord = ti.Vector([i, j]) + 0.5 - dt * vf[i, j]
-        new_vf[i, j] = bilerp_v2(vf, coord[0], coord[1]) * vel_decay
+        new_vf[i, j] = bilerp(vf, coord[0], coord[1]) * vel_decay
 
 
 inv_force_radius = (3.0 / res)
@@ -105,11 +94,11 @@ def apply_mouse_impulse(vf: ti.template(), mouse_arr: ti.ext_arr()):
 @ti.kernel
 def divergence(vf: ti.template()):
     for i, j in vf:
-        vl = sample_v2(vf, i - 1, j)[0]
-        vr = sample_v2(vf, i + 1, j)[0]
-        vb = sample_v2(vf, i, j - 1)[1]
-        vt = sample_v2(vf, i, j + 1)[1]
-        vc = sample_v2(vf, i, j)
+        vl = sample(vf, i - 1, j)[0]
+        vr = sample(vf, i + 1, j)[0]
+        vb = sample(vf, i, j - 1)[1]
+        vt = sample(vf, i, j + 1)[1]
+        vc = sample(vf, i, j)
         if i == 0:
             vl = -vc[0]
         if i == res - 1:
@@ -127,10 +116,10 @@ p_alpha = -dx * dx
 @ti.kernel
 def pressure_jacobi(pf: ti.template(), new_pf: ti.template()):
     for i, j in pf:
-        pl = sample_s(pf, i - 1, j)
-        pr = sample_s(pf, i + 1, j)
-        pb = sample_s(pf, i, j - 1)
-        pt = sample_s(pf, i, j + 1)
+        pl = sample(pf, i - 1, j)
+        pr = sample(pf, i + 1, j)
+        pb = sample(pf, i, j - 1)
+        pt = sample(pf, i, j + 1)
         div = velocity_divs[i, j]
         new_pf[i, j] = (pl + pr + pb + pt + p_alpha * div) * 0.25
 
@@ -138,11 +127,11 @@ def pressure_jacobi(pf: ti.template(), new_pf: ti.template()):
 @ti.kernel
 def subtract_gradient(vf: ti.template(), pf: ti.template()):
     for i, j in vf:
-        pl = sample_s(pf, i - 1, j)
-        pr = sample_s(pf, i + 1, j)
-        pb = sample_s(pf, i, j - 1)
-        pt = sample_s(pf, i, j + 1)
-        v = sample_v2(vf, i, j)
+        pl = sample(pf, i - 1, j)
+        pr = sample(pf, i + 1, j)
+        pb = sample(pf, i, j - 1)
+        pt = sample(pf, i, j + 1)
+        v = sample(vf, i, j)
         v = v - half_inv_dx * ti.Vector([pr - pl, pt - pb])
         vf[i, j] = v
 

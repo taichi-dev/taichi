@@ -16,6 +16,7 @@ Tensors of scalars
 * Even when accessing 0-D tensor ``x``, use ``x[None] = 0`` instead of ``x = 0``. Please always use indexing to access entries in tensors.
 * Tensor values are initially zero.
 * Sparse tensors are initially inactive.
+* See :ref:`scalar_tensor` for more details.
 
 
 Tensors of matrices

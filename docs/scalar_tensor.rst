@@ -1,7 +1,7 @@
 .. _scalar_tensor:
 
-Tensor of scalars
-=================
+Scalar tensors
+==============
 
 
 Creation
@@ -65,3 +65,9 @@ Creation
         x[None] = 233
         y = ti.var(ti.f32, shape=())
         # ERROR: cannot create tensor after accessed from python-scope!
+
+
+Attribute
+---------
+
+TODO: WIP

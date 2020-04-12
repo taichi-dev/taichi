@@ -8,7 +8,7 @@ pixels = ti.var(dt=ti.f32, shape=(n * 2, n))
 
 @ti.func
 def complex_sqr(z):
-    return ti.Vector([z[0] * z[0] - z[1] * z[1], z[1] * z[0] * 2])  # z^2
+    return ti.Vector([z[0] ** 2 - z[1] ** 2, z[1] * z[0] * 2])
 
 
 @ti.kernel

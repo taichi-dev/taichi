@@ -3,13 +3,11 @@ Hello, world!
 
 We introduce the Taichi programming language through a very basic `fractal` example.
 
-If you haven't done so, please install Taichi via ``pip``.
-Depending on your hardware and OS, please execute one of the following commands:
+If you haven't done so, please install Taichi via ``pip``:
 
 .. code-block:: bash
 
   # python 3.6+ required
-
   python3 -m pip install taichi-nightly
 
 
@@ -31,7 +29,7 @@ Now you are ready to run the Taichi code below (``python3 fractal.py``) to compu
 
   @ti.func
   def complex_sqr(z):
-    return ti.Vector([z[0] * z[0] - z[1] * z[1], z[1] * z[0] * 2])
+    return ti.Vector([z[0] ** 2 - z[1] ** 2, z[1] * z[0] * 2])
 
   @ti.kernel
   def paint(t: ti.f32):
@@ -66,7 +64,7 @@ You can also reuse the package management system, Python IDEs, and existing Pyth
 Portability
 -----------------
 
-Taichi supports CPUs, NVIDIA GPUs, Mac GPUs with Metal, or any GPUs with OpenGL API.
+Taichi code can run on CPUs or GPUs. Depends on your platform:
 
 .. code-block:: python
 
@@ -94,7 +92,7 @@ Taichi supports CPUs, NVIDIA GPUs, Mac GPUs with Metal, or any GPUs with OpenGL 
 
     (OK=supported, WIP=work in progress, MISS=not supported)
 
-If the machine does not have CUDA support, Taichi will fall back to CPUs instead.
+    If the machine does not have CUDA support, Taichi will fall back to CPUs instead.
 
 .. note::
 
@@ -130,7 +128,7 @@ You can also define Taichi **functions** with ``ti.func``, which can be called a
 
 .. warning::
 
-  Taichi kernels must be called in the Python-scope. I.e., **nested Taichi kernels are not supported**.
+  Taichi kernels must be called in the Python-scope. I.e., **nested kernels are not supported**.
   Nested functions are allowed. **Recursive functions are not supported for now**.
 
   Taichi functions can only be called in Taichi-scope.

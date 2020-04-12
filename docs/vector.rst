@@ -17,7 +17,7 @@ As Tensor
 
     :parameter n: (scalar) how many compoments / dimensions of the vector
     :parameter type: (DataType) data type of the compoments
-    :parameter shape: (scalar or tuple) shape of the tensor, see :ref:`tensor_matrix`
+    :parameter shape: (scalar or tuple) shape of the tensor, see :ref:`tensor`
 
     This creates a 3x3 tensor of 3D vectors:
     ::

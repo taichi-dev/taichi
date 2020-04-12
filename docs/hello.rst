@@ -106,7 +106,7 @@ If the machine does not have CUDA support, Taichi will fall back to CPUs instead
   On other platforms Taichi will make use of its on-demand memory allocator to adaptively allocate memory.
 
 (Sparse) Tensors
--------
+----------------
 
 Taichi is a data-oriented programming language, where dense or spatially-sparse tensors are first-class citizens.
 See :ref:`sparse` for more details on sparse tensors.
@@ -191,8 +191,8 @@ In the fractal code above, ``for i, j in pixels`` loops over all the pixel coord
           for i in x:
             ...
 
-.. note::
-    ``break`` is not supported in parallelized loops.
+.. warning::
+    ``break`` is not supported in outermost / parallelized loops.
 
     .. code-block:: python
 
@@ -200,7 +200,7 @@ In the fractal code above, ``for i, j in pixels`` loops over all the pixel coord
       def foo():
         for i in x:
             ...
-            break # ERROR!
+            break # ERROR! You cannot break a parallelized loop!
 
       @ti.kernel
       def foo():

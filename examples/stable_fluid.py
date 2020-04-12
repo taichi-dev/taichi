@@ -214,7 +214,8 @@ class MouseDataGen(object):
             mxy = vec2_npf32(gui.get_cursor_pos()) * res
             if self.prev_mouse is None:
                 self.prev_mouse = mxy
-                self.prev_color = np.random.rand(3)
+                # Set lower bound to 0.3 to prevent too dark colors
+                self.prev_color = (np.random.rand(3) * 0.7) + 0.3
             else:
                 mdir = mxy - self.prev_mouse
                 mdir = mdir / (np.linalg.norm(mdir) + 1e-5)
@@ -241,11 +242,9 @@ def main():
     md_gen = MouseDataGen()
     paused = False
     while True:
-        while gui.has_key_event():
-            e = gui.get_key_event()
-            if e.type == ti.GUI.RELEASE:
-                continue
-            elif e.key == ti.GUI.ESCAPE:
+        while gui.get_event(ti.GUI.PRESS):
+            e = gui.event
+            if e.key == ti.GUI.ESCAPE:
                 exit(0)
             elif e.key == 'r':
                 paused = False

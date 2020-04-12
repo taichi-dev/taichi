@@ -156,18 +156,15 @@ void compile_runtimes() {
 }
 
 std::string libdevice_path() {
-#if defined(TI_WITH_CUDA)
-  auto folder = fmt::format(".");
+  std::string folder;
   if (is_release()) {
     folder = compiled_lib_dir;
+  } else {
+    folder = fmt::format("{}/external/cuda_libdevice", get_repo_dir());
   }
   auto cuda_version_string = get_cuda_version_string();
   auto cuda_version_major = int(std::atof(cuda_version_string.c_str()));
-  return fmt::format("{}/libdevice.{}.bc", folder, cuda_version_major);
-#else
-  TI_NOT_IMPLEMENTED;
-  return "";
-#endif
+  return fmt::format("{}/slim_libdevice.{}.bc", folder, cuda_version_major);
 }
 
 std::unique_ptr<llvm::Module> TaichiLLVMContext::get_init_module() {
@@ -355,8 +352,6 @@ void TaichiLLVMContext::link_module_with_cuda_libdevice(
   TI_ASSERT(arch == Arch::cuda);
 
   auto libdevice_module = module_from_bitcode_file(libdevice_path(), ctx.get());
-
-  remove_useless_cuda_libdevice_functions(libdevice_module.get());
 
   std::error_code EC;
   llvm::raw_fd_ostream OS("libdevice_slim.bc", EC, llvm::sys::fs::F_None);
@@ -584,9 +579,9 @@ template llvm::Value *TaichiLLVMContext::get_constant(uint64 t);
 template llvm::Value *TaichiLLVMContext::get_constant(unsigned long t);
 #endif
 
-
 auto make_slim_libdevice = [](const std::vector<std::string> &args) {
-  TI_ASSERT_INFO(args.size() == 1, "Usage: ti run make_slim_libdevice [libdevice.X.bc file]");
+  TI_ASSERT_INFO(args.size() == 1,
+                 "Usage: ti run make_slim_libdevice [libdevice.X.bc file]");
 
   auto ctx = std::make_unique<llvm::LLVMContext>();
   auto libdevice_module = module_from_bitcode_file(args[0], ctx.get());

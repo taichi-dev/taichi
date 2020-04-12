@@ -85,7 +85,7 @@ if gpu:
     libdevice_path = ti.core.libdevice_path()
     print("copying libdevice:", libdevice_path)
     assert os.path.exists(libdevice_path)
-    shutil.copy(libdevice_path, 'taichi/lib/libdevice.10.bc')
+    shutil.copy(libdevice_path, 'taichi/lib/slim_libdevice.10.bc')
 
 ti.core.compile_runtimes()
 runtime_dir = ti.core.get_runtime_dir()

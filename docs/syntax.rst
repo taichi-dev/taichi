@@ -101,7 +101,7 @@ Use ``@ti.func`` to decorate your Taichi functions. These functions are callable
 
 .. warning::
 
-    All functions are force-inlined. Function arguments are passed by value.
+    All functions are force-inlined. Function arguments are passed by value. And thus no recursion allowed.
 
 
 Data layout

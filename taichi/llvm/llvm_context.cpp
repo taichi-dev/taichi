@@ -353,11 +353,6 @@ void TaichiLLVMContext::link_module_with_cuda_libdevice(
 
   auto libdevice_module = module_from_bitcode_file(libdevice_path(), ctx.get());
 
-  std::error_code EC;
-  llvm::raw_fd_ostream OS("libdevice_slim.bc", EC, llvm::sys::fs::F_None);
-  llvm::WriteBitcodeToFile(*libdevice_module, OS);
-  OS.flush();
-
   std::vector<std::string> libdevice_function_names;
   for (auto &f : *libdevice_module) {
     if (!f.isDeclaration()) {
@@ -588,9 +583,9 @@ auto make_slim_libdevice = [](const std::vector<std::string> &args) {
 
   remove_useless_cuda_libdevice_functions(libdevice_module.get());
 
-  std::error_code EC;
+  std::error_code ec;
   auto output_fn = "slim_" + args[0];
-  llvm::raw_fd_ostream os(output_fn, EC, llvm::sys::fs::F_None);
+  llvm::raw_fd_ostream os(output_fn, ec, llvm::sys::fs::F_None);
   llvm::WriteBitcodeToFile(*libdevice_module, os);
   os.flush();
   TI_INFO("Slimmed libdevice written to {}", output_fn);

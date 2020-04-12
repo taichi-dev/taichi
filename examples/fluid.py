@@ -2,124 +2,123 @@
 
 import taichi as ti
 import numpy as np
+import time
 
 res = 600
-half_res = res * 0.5
 dx = 1.0
-rdx = 1.0 / dx
-half_rdx = 0.5 * rdx
-dt = 0.025
-v_decay = 1.0
+inv_dx = 1.0 / dx
+half_inv_dx = 0.5 * inv_dx
+dt = 0.03
 p_jacobi_iters = 30
-f_strength = 1000.0
+f_strength = 10000.0
+vel_decay = 1.0
+debug = True
 
-enable_diffusion = False
-viscority = 10.0
-v_jacobi_iters = 20
+assert res > 2
 
 ti.init(arch=ti.cuda)
 
-velocities = ti.Vector(2, dt=ti.f32, shape=(res, res))
-new_velocities = ti.Vector(2, dt=ti.f32, shape=(res, res))
-div_vels = ti.var(dt=ti.f32, shape=(res, res))
-pressures = ti.var(dt=ti.f32, shape=(res, res))
-new_pressures = ti.var(dt=ti.f32, shape=(res, res))
+_velocities = ti.Vector(2, dt=ti.f32, shape=(res, res))
+_new_velocities = ti.Vector(2, dt=ti.f32, shape=(res, res))
+velocity_divs = ti.var(dt=ti.f32, shape=(res, res))
+_pressures = ti.var(dt=ti.f32, shape=(res, res))
+_new_pressures = ti.var(dt=ti.f32, shape=(res, res))
 color_buffer = ti.Vector(3, dt=ti.f32, shape=(res, res))
 
 
-@ti.func
-def in_boundary(i, j):
-    return 0 <= i < res and 0 <= j < res
+class TexPair:
+    def __init__(self, cur, nxt):
+        self.cur = cur
+        self.nxt = nxt
+
+    def swap(self):
+        self.cur, self.nxt = self.nxt, self.cur
+
+
+velocities_pair = TexPair(_velocities, _new_velocities)
+pressures_pair = TexPair(_pressures, _new_pressures)
 
 
 @ti.func
-def sample_v(vf, x, y):
-    i, j = int(x), int(y)
-    # implicitly enforces the boundary condition: v(boundary+) = 0
-    v = ti.Vector([0.0, 0.0])
-    if in_boundary(i, j):
-        v = vf[i, j]
-    return v
+def sample_s(vf, u, v):
+    r = 0.0
+    i, j = int(u), int(v)
+    # Nearest
+    i = max(0, min(res - 1, i))
+    j = max(0, min(res - 1, j))
+    return vf[i, j]
 
 
 @ti.func
-def sample_p(pf, i, j):
-    # implicitly enforces the boundary condition: p(boundary+) = p(boundary)
-    i = max(0, min(i, res - 1))
-    j = max(0, min(j, res - 1))
-    return pf[i, j]
+def sample_v2(vf, u, v):
+    r = ti.Vector([0.0, 0.0])
+    i, j = int(u), int(v)
+    # Nearest
+    i = max(0, min(res - 1, i))
+    j = max(0, min(res - 1, j))
+    return vf[i, j]
 
 
 @ti.func
-def lerp(l, r, vl, vr, x):
-    return vl + (vr - vl) * (x - l) / (r - l)
+def lerp(vl, vr, frac):
+    # frac: [0.0, 1.0]
+    return vl + frac * (vr - vl)
+
+
+@ti.func
+def bilerp_v2(vf, u, v):
+    s, t = u - 0.5, v - 0.5
+    # floor
+    iu, iv = int(s), int(t)
+    # fract
+    fu, fv = s - iu, t - iv
+    a = sample_v2(vf, iu + 0.5, iv + 0.5)
+    b = sample_v2(vf, iu + 1.5, iv + 0.5)
+    c = sample_v2(vf, iu + 0.5, iv + 1.5)
+    d = sample_v2(vf, iu + 1.5, iv + 1.5)
+    return lerp(lerp(a, b, fu), lerp(c, d, fu), fv)
 
 
 @ti.kernel
 def advect(vf: ti.template(), new_vf: ti.template()):
     for i, j in vf:
-        # q(x, t + dt) = q(x - u(x, t) * dt, t)
-        pos = ti.Vector([i, j]) + 0.5 - dt * vf[i, j]
-        from_i, from_j = int(pos[0]), int(pos[1])
-        if not in_boundary(from_i, from_j):
-            new_vf[i, j] = ti.Vector([0.0, 0.0])
-            continue
-        # bilinear interpolation
-        cx1, cy1 = from_i + 0.5, from_j + 0.5
-        cx2, cy2 = cx1 + 1.0, cy1 + 1.0
-        if pos[0] < cx1:
-            cx2 = cx1 - 1.0
-        if pos[1] < cy1:
-            cy2 = cy1 - 1.0
-        v_y1 = lerp(cx1, cx2, sample_v(vf, cx1, cy1), sample_v(vf, cx2, cy1),
-                    pos[0])
-        v_y2 = lerp(cx1, cx2, sample_v(vf, cx1, cy2), sample_v(vf, cx2, cy2),
-                    pos[0])
-        new_v = lerp(cy1, cy2, v_y1, v_y2, pos[1])
-        new_vf[i, j] = new_v
+        coord = ti.Vector([i, j]) + 0.5 - dt * vf[i, j]
+        new_vf[i, j] = bilerp_v2(vf, coord[0], coord[1]) * vel_decay
 
 
-v_alpha = dx * dx / (viscority * dt)
-v_rbeta = 1.0 / (4.0 + v_alpha)
-
-
-@ti.kernel
-def diffusion_jacobi(vf: ti.template(), new_vf: ti.template()):
-    for i, j in vf:
-        vl = sample_v(vf, i - 1, j)
-        vr = sample_v(vf, i + 1, j)
-        vt = sample_v(vf, i, j + 1)
-        vb = sample_v(vf, i, j - 1)
-
-        b = vf[i, j]
-        new_vf[i, j] = (vl + vr + vt + vb + b * v_alpha) * v_rbeta
-
-
-rforce_radius = (3.0 / res)
+inv_force_radius = (3.0 / res)
 f_strength_dt = f_strength * dt
 
 
 @ti.kernel
-def apply_mouse_impulse(new_vf: ti.template(), mouse_arr: ti.ext_arr()):
-    for i, j in new_vf:
+def apply_mouse_impulse(vf: ti.template(), mouse_arr: ti.ext_arr()):
+    for i, j in vf:
         omx, omy = mouse_arr[2], mouse_arr[3]
         mdir = ti.Vector([mouse_arr[0], mouse_arr[1]])
         dx, dy = (i + 0.5 - omx), (j + 0.5 - omy)
         d2 = dx * dx + dy * dy
-        momentum = mdir * f_strength_dt * ti.exp(-d2 * rforce_radius)
-        v = new_vf[i, j]
-        v += momentum
-        new_vf[i, j] = v
+        momentum = mdir * f_strength_dt * ti.exp(-d2 * inv_force_radius)
+        v = vf[i, j]
+        vf[i, j] = v + momentum
 
 
 @ti.kernel
 def divergence(vf: ti.template()):
     for i, j in vf:
-        vl = sample_v(vf, i - 1, j)[0]
-        vr = sample_v(vf, i + 1, j)[0]
-        vt = sample_v(vf, i, j + 1)[1]
-        vb = sample_v(vf, i, j - 1)[1]
-        div_vels[i, j] = ((vr - vl) + (vt - vb)) * half_rdx
+        vl = sample_v2(vf, i - 1, j)[0]
+        vr = sample_v2(vf, i + 1, j)[0]
+        vb = sample_v2(vf, i, j - 1)[1]
+        vt = sample_v2(vf, i, j + 1)[1]
+        vc = sample_v2(vf, i, j)
+        if i == 0:
+            vl = -vc[0]
+        if i == res - 1:
+            vr = -vc[0]
+        if j == 0:
+            vb = -vc[1]
+        if j == res - 1:
+            vt = -vc[1]
+        velocity_divs[i, j] = (vr - vl + vt - vb) * half_inv_dx
 
 
 p_alpha = -dx * dx
@@ -128,56 +127,59 @@ p_alpha = -dx * dx
 @ti.kernel
 def pressure_jacobi(pf: ti.template(), new_pf: ti.template()):
     for i, j in pf:
-        pl = sample_p(pf, i - 1, j)
-        pr = sample_p(pf, i + 1, j)
-        pt = sample_p(pf, i, j + 1)
-        pb = sample_p(pf, i, j - 1)
-        div = div_vels[i, j]
-        new_pf[i, j] = (pl + pr + pt + pb + p_alpha * div) * 0.25
+        pl = sample_s(pf, i - 1, j)
+        pr = sample_s(pf, i + 1, j)
+        pb = sample_s(pf, i, j - 1)
+        pt = sample_s(pf, i, j + 1)
+        div = velocity_divs[i, j]
+        new_pf[i, j] = (pl + pr + pb + pt + p_alpha * div) * 0.25
 
 
 @ti.kernel
-def subtract_gradient(new_vf: ti.template(), pf: ti.template()):
-    # Make |new_vf| divergence free
-    for i, j in new_vf:
-        pl = sample_p(pf, i - 1, j)
-        pr = sample_p(pf, i + 1, j)
-        pt = sample_p(pf, i, j + 1)
-        pb = sample_p(pf, i, j - 1)
-        v = new_vf[i, j]
-        v -= half_rdx * ti.Vector([pr - pl, pt - pb])
-        v *= v_decay
-        new_vf[i, j] = v
+def subtract_gradient(vf: ti.template(), pf: ti.template()):
+    for i, j in vf:
+        pl = sample_s(pf, i - 1, j)
+        pr = sample_s(pf, i + 1, j)
+        pb = sample_s(pf, i, j - 1)
+        pt = sample_s(pf, i, j + 1)
+        v = sample_v2(vf, i, j)
+        v = v - half_inv_dx * ti.Vector([pr - pl, pt - pb])
+        vf[i, j] = v
 
 
 @ti.kernel
-def fill_color(new_vf: ti.template()):
-    for i, j in new_vf:
-        v = new_vf[i, j]
+def fill_color_v2(vf: ti.template()):
+    for i, j in vf:
+        v = vf[i, j]
         color_buffer[i, j] = ti.Vector([abs(v[0]), abs(v[1]), 0.25])
 
 
-def reset():
-    velocities.fill(ti.Vector([0.0, 0.0]))
-    pressures.fill(0.0)
-    color_buffer.fill(ti.Vector([0.0, 0.0, 0.0]))
+@ti.kernel
+def fill_color_s(sf: ti.template()):
+    for i, j in sf:
+        s = abs(sf[i, j])
+        color_buffer[i, j] = ti.Vector([s, s * 0.25, 0.2])
 
 
 def step(mouse_data):
-    global velocities, new_velocities, pressures, new_pressures
-    advect(velocities, new_velocities)
-    if enable_diffusion:
-        for _ in range(v_jacobi_iters):
-            diffusion_jacobi(velocities, new_velocities)
-            velocities, new_velocities = new_velocities, velocities
-    apply_mouse_impulse(new_velocities, mouse_data)
-    divergence(new_velocities)
+    advect(velocities_pair.cur, velocities_pair.nxt)
+    velocities_pair.swap()
+
+    apply_mouse_impulse(velocities_pair.cur, mouse_data)
+
+    divergence(velocities_pair.cur)
     for _ in range(p_jacobi_iters):
-        pressure_jacobi(pressures, new_pressures)
-        pressures, new_pressures = new_pressures, pressures
-    subtract_gradient(new_velocities, pressures)
-    fill_color(new_velocities)
-    velocities, new_velocities = new_velocities, velocities
+        pressure_jacobi(pressures_pair.cur, pressures_pair.nxt)
+        pressures_pair.swap()
+
+    subtract_gradient(velocities_pair.cur, pressures_pair.cur)
+    fill_color_s(velocity_divs)
+    # fill_color_v2(velocities_pair.cur)
+
+    if debug:
+        divergence(velocities_pair.cur)
+        div_s = np.sum(velocity_divs.to_numpy())
+        print(f'divergence={div_s}')
 
 
 def vec2_npf32(m):
@@ -207,10 +209,17 @@ class MouseDataGen(object):
         return mouse_data
 
 
+def reset():
+    velocities_pair.cur.fill(ti.Vector([0, 0]))
+    pressures_pair.cur.fill(0.0)
+    color_buffer.fill(ti.Vector([0, 0, 0]))
+
+
 def main():
-    dbg = True
+    global debug
     gui = ti.GUI('Fluid', (res, res))
     md_gen = MouseDataGen()
+    paused = False
     while True:
         while gui.has_key_event():
             e = gui.get_key_event()
@@ -219,14 +228,16 @@ def main():
             elif e.key == ti.GUI.ESCAPE:
                 exit(0)
             elif e.key == 'r':
+                paused = False
                 reset()
+            elif e.key == 'p':
+                paused = not paused
+            elif e.key == 'd':
+                debug = not debug
 
-        mouse_data = md_gen(gui)
-        step(mouse_data)
-        if dbg:
-            divergence(velocities)
-            div_s = np.sum(div_vels.to_numpy())
-            print(f'divergence={div_s}')
+        if not paused:
+            mouse_data = md_gen(gui)
+            step(mouse_data)
 
         img = color_buffer.to_numpy(as_vector=True)
         gui.set_image(img)

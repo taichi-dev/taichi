@@ -6,3 +6,7 @@
 	path = external/spdlog
 	url = https://github.com/gabime/spdlog
 	shallow = true
+[submodule "external/glfw"]
+	path = external/glfw
+	url = https://github.com/glfw/glfw
+	shallow = true

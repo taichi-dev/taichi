@@ -1,6 +1,5 @@
 #pragma once
 
-#if defined(TI_WITH_CUDA)
 #include <mutex>
 #include <unordered_map>
 #include <thread>
@@ -86,4 +85,3 @@ class CUDAContext {
 };
 
 TLANG_NAMESPACE_END
-#endif

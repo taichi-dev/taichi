@@ -76,8 +76,4 @@ std::string get_cuda_version_string() {
   return TI_CUDAVERSION;
 }
 
-std::string get_cuda_root_dir() {
-  return TI_CUDAROOT_DIR;
-}
-
 TI_NAMESPACE_END

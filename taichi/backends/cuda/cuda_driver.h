@@ -83,6 +83,8 @@ class CUDADriver {
 
   void (*get_error_string)(uint32, const char **);
 
+  bool detected();
+
   ~CUDADriver() = default;
 
   static CUDADriver &get_instance();

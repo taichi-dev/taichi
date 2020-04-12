@@ -10,14 +10,7 @@ if len(sys.argv) != 2:
     exit(-1)
 
 version = ti.core.get_version_string()
-cuda_version = ti.core.cuda_version()
-cuda_version_major, cuda_version_minor = list(map(int,
-                                                  cuda_version.split('.')))
-print('Taichi version=', version, 'CUDA version =', cuda_version)
-gpu = cuda_version_major > 0
-if gpu:
-    assert cuda_version_major >= 10
-assert gpu in [0, 1]
+gpu = ti.core.with_cuda()
 mode = sys.argv[1]
 
 env_pypi_pwd = os.environ.get('PYPI_PWD', '')
@@ -53,15 +46,15 @@ def get_python_executable():
 if platform.system() == 'Linux':
     if os.environ['CXX'] not in ['clang++-8', 'clang++-7', 'clang++']:
         print('Only the wheel with clang will be released to PyPI.')
-        sys.exit(0)
+        sys.exit(-1)
+
+    if not gpu:
+        print('Linux release must ship with the CUDA backend.')
+        sys.exit(-1)
 
 with open('setup.temp.py') as fin:
     with open('setup.py', 'w') as fout:
-        if gpu:
-            project_name = 'taichi-nightly-cuda-{}-{}'.format(
-                cuda_version_major, cuda_version_minor)
-        else:
-            project_name = 'taichi-nightly'
+        project_name = 'taichi-nightly'
         print("project_name = '{}'".format(project_name), file=fout)
         print("version = '{}'".format(version), file=fout)
         for l in fin:
@@ -92,7 +85,7 @@ if gpu:
     libdevice_path = ti.core.libdevice_path()
     print("copying libdevice:", libdevice_path)
     assert os.path.exists(libdevice_path)
-    shutil.copy(libdevice_path, 'taichi/lib/libdevice.10.bc')
+    shutil.copy(libdevice_path, 'taichi/lib/slim_libdevice.10.bc')
 
 ti.core.compile_runtimes()
 runtime_dir = ti.core.get_runtime_dir()
@@ -122,9 +115,8 @@ if mode == 'upload':
             '%PYPI_PWD%' if get_os_name() == 'win' else '$PYPI_PWD'))
 elif mode == 'test':
     print('Uninstalling old taichi packages...')
-    os.system(
-        '{} -m pip uninstall taichi-nightly taichi-gpu-nightly taichi-nightly-cuda-10-0 taichi-nightly-cuda-10-1'
-        .format(get_python_executable()))
+    os.system('{} -m pip uninstall taichi-nightly'.format(
+        get_python_executable()))
     dists = os.listdir('dist')
     assert len(dists) == 1
     dist = dists[0]

@@ -77,5 +77,4 @@ FILE(WRITE ${CMAKE_CURRENT_LIST_DIR}/taichi/common/version.h
         "#define TI_VERSION_MINOR \"${TI_VERSION_MINOR}\"\n"
         "#define TI_VERSION_PATCH \"${TI_VERSION_PATCH}\"\n"
         "#define TI_CUDAVERSION \"${CUDA_VERSION}\"\n"
-        "#define TI_CUDAROOT_DIR \"${CUDA_TOOLKIT_ROOT_DIR}\"\n"
         )

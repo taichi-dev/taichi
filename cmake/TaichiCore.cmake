@@ -1,5 +1,17 @@
 set(CORE_LIBRARY_NAME taichi_core)
 
+option(USE_STDCPP "Use -stdlib=libc++" OFF)
+option(TI_WITH_CUDA "Build with the CUDA backend" ON)
+option(TI_WITH_OPENGL "Build with the OpenGL backend" ON)
+option(GLEW_USE_STATIC_LIBS OFF)
+
+if (APPLE)
+    if (TI_WITH_CUDA)
+        set(TI_WITH_CUDA OFF)
+        message(WARNING "CUDA not supported on OS X. Setting TI_WITH_CUDA to OFF.")
+    endif()
+endif()
+
 file(GLOB TAICHI_CORE_SOURCE
         "taichi/*/*/*/*.cpp" "taichi/*/*/*.cpp" "taichi/*/*.cpp" "taichi/*.cpp"
         "taichi/*/*/*/*.h" "taichi/*/*/*.h" "taichi/*/*.h" "taichi/*.h" "external/*.c" "tests/cpp/*.cpp")
@@ -13,59 +25,30 @@ file(GLOB TAICHI_OPENGL_SOURCE "taichi/backends/opengl/*.h" "taichi/backends/ope
 list(REMOVE_ITEM TAICHI_CORE_SOURCE ${TAICHI_BACKEND_SOURCE})
 
 if (TI_WITH_CUDA)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_CUDA")
     list(APPEND TAICHI_CORE_SOURCE ${TAICHI_CUDA_SOURCE})
+endif()
+
+if(NOT CUDA_VERSION)
+    set(CUDA_VERSION 10.0)
 endif()
 
 # TODO(#529) include Metal source only on Apple MacOS, and OpenGL only when TI_WITH_OPENGL is ON
 list(APPEND TAICHI_CORE_SOURCE ${TAICHI_METAL_SOURCE})
 list(APPEND TAICHI_CORE_SOURCE ${TAICHI_OPENGL_SOURCE})
 
-option(BUILD_CPP_EXAMPLES "Build legacy C++ examples" OFF)
-
-if (BUILD_CPP_EXAMPLES)
-    file(GLOB_RECURSE CPP_EXAMPLES "examples/cpp/*.cpp")
-else()
-    set(CPP_EXAMPLES "")
-endif()
-
-add_library(${CORE_LIBRARY_NAME} SHARED ${TAICHI_CORE_SOURCE} ${PROJECT_SOURCES} ${CPP_EXAMPLES})
+add_library(${CORE_LIBRARY_NAME} SHARED ${TAICHI_CORE_SOURCE} ${PROJECT_SOURCES})
 
 if (APPLE)
-# Ask OS X to minic Linux dynamic linking behavior
-target_link_libraries(${CORE_LIBRARY_NAME} "-undefined dynamic_lookup")
+    # Ask OS X to minic Linux dynamic linking behavior
+    target_link_libraries(${CORE_LIBRARY_NAME} "-undefined dynamic_lookup")
 endif()
-
-
-option(USE_STDCPP "Use -stdlib=libc++" OFF)
-option(TI_WITH_CUDA "Build with the CUDA backend" OFF)
-option(TI_WITH_OPENGL "Build with the OpenGL backend" ON)
-option(GLEW_USE_STATIC_LIBS OFF)
 
 include_directories(${CMAKE_SOURCE_DIR})
 include_directories(external/include)
 include_directories(external/spdlog/include)
 
 set(LIBRARY_NAME ${CORE_LIBRARY_NAME})
-
-if (TI_WITH_CUDA)
-    if(NOT CUDA_VERSION)
-        set(CUDA_VERSION 10.0)
-    endif()
-    find_package(CUDA ${CUDA_VERSION})
-    if (CUDA_FOUND)
-        message("Building with CUDA ${CUDA_VERSION}")
-        set(CUDA_ARCH 61)
-        message("Found CUDA. Arch = ${CUDA_ARCH}")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_CUDA")
-        if (MSVC)
-            include_directories(${CUDA_TOOLKIT_ROOT_DIR}/include)
-        else()
-            include_directories(/usr/local/cuda-${CUDA_VERSION}/include)
-        endif()
-    else()
-        message(FATAL_ERROR "CUDA not found.")
-    endif()
-endif()
 
 if (TI_WITH_OPENGL)
   if(NOT GLEW_VERSION)
@@ -124,8 +107,6 @@ if (TI_WITH_CUDA)
     llvm_map_components_to_libnames(llvm_ptx_libs NVPTX)
     target_link_libraries(${LIBRARY_NAME} ${llvm_ptx_libs})
 endif()
-
-# add_executable(runtime runtime/runtime.cpp)
 
 # Optional dependencies
 

@@ -6,39 +6,26 @@ The Taichi Programming Language
    :maxdepth: 3
 
    overview
+   hello
+
 
 .. toctree::
    :caption: Basic Concepts
    :maxdepth: 3
 
-   hello
-
    syntax
-
    type
-
-   linalg
-
    tensor_matrix
 
-   global_settings
-
-   external
-
 
 .. toctree::
-   :caption: Language
-   :maxdepth: 3
-
-   atomic
-
-
-.. toctree::
-   :caption: Structures
+   :caption: Language Structures
    :maxdepth: 3
 
    scalar_tensor
-   vector
+   linalg
+   external
+   atomic
 
 
 .. toctree::
@@ -46,17 +33,11 @@ The Taichi Programming Language
    :maxdepth: 3
 
    meta
-
    data_layout
-
    sparse
-
    differentiable_programming
-
    odop
-
    compilation
-
    syntax_sugars
 
 
@@ -66,6 +47,7 @@ The Taichi Programming Language
 
    utilities
    dev_install
+   global_settings
    contributor_guide
    cpp_style
    performance
@@ -77,4 +59,4 @@ The Taichi Programming Language
    :caption: Legacy
    :maxdepth: 3
 
-   installation
+   legacy_installation

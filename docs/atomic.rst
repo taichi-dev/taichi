@@ -40,9 +40,6 @@ See https://en.wikipedia.org/wiki/Fetch-and-add for more details.
     (OK=supported, EXT=require extension, MISS=not supported)
 
 
-Functions
----------
-
 .. function:: ti.atomic_add(x, y)
 
     This is equivalent to ``x += y``.

@@ -117,6 +117,7 @@ Existing tags:
 - ``[Doc]``: documentation;
 - ``[Example]``: examples under ``taichi/examples/``;
 - ``[Test]``: adding or improving tests under ``tests/``;
+- ``[PyPI]``: PyPI package release;
 - ``[Misc]``: something that doesn't belong to any category, such as version bump, reformatting;
 - **When introducing a new tag, please update the list here in the first PR with that tag, so that people can follow.**
 

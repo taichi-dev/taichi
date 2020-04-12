@@ -10,14 +10,7 @@ Depending on your hardware and OS, please execute one of the following commands:
 
   # Python 3.6+ needed
 
-  # CPU only. No GPU/CUDA needed. (Linux, OS X and Windows)
-  python3 -m pip install taichi-nightly
-
-  # With GPU (CUDA 10.0) support (Linux only)
-  python3 -m pip install taichi-nightly-cuda-10-0
-
-  # With GPU (CUDA 10.1) support (Linux only)
-  python3 -m pip install taichi-nightly-cuda-10-1
+  python3 -m pip install taichi
 
 Now you are ready to run the Taichi code below (``python3 fractal.py``) to compute a
 `Julia set <https://en.wikipedia.org/wiki/Julia_set>`_:

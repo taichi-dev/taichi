@@ -12,7 +12,7 @@ dt = 0.03
 p_jacobi_iters = 30
 f_strength = 10000.0
 dye_decay = 0.99
-debug = True
+debug = False
 
 assert res > 2
 
@@ -237,7 +237,7 @@ def reset():
 
 def main():
     global debug
-    gui = ti.GUI('Fluid', (res, res))
+    gui = ti.GUI('Stable-Fluid', (res, res))
     md_gen = MouseDataGen()
     paused = False
     while True:

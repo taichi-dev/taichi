@@ -26,7 +26,7 @@ See https://en.wikipedia.org/wiki/Fetch-and-add for more details.
     Support of atomic operation on each backends:
 
     +------+-----------+-----------+---------+
-    | type | LLVM      | OpenGL    | Metal   |
+    | type | CPU/CUDA  | OpenGL    | Metal   |
     +======+===========+===========+=========+
     | i32  |    OK     |    OK     |   OK    |
     +------+-----------+-----------+---------+

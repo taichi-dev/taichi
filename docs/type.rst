@@ -20,7 +20,7 @@ Currently, supported basic types in Taichi are
     Supported types on each backends:
 
     +------+-----------+-----------+---------+
-    | type | LLVM      | OpenGL    | Metal   |
+    | type | CPU/CUDA  | OpenGL    | Metal   |
     +======+===========+===========+=========+
     | i8   |    OK     |   MISS    |   OK    |
     +------+-----------+-----------+---------+
@@ -40,7 +40,7 @@ Currently, supported basic types in Taichi are
     +------+-----------+-----------+---------+
     | f32  |    OK     |    OK     |   OK    |
     +------+-----------+-----------+---------+
-    | f64  |    OK     |   EXT     |  MISS   |
+    | f64  |    OK     |    OK     |  MISS   |
     +------+-----------+-----------+---------+
 
     (OK=supported, EXT=require extension, MISS=not supported)

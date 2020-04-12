@@ -54,7 +54,7 @@ if platform.system() == 'Linux':
 
 with open('setup.temp.py') as fin:
     with open('setup.py', 'w') as fout:
-        project_name = 'taichi-nightly'
+        project_name = 'taichi'
         print("project_name = '{}'".format(project_name), file=fout)
         print("version = '{}'".format(version), file=fout)
         for l in fin:
@@ -116,6 +116,8 @@ if mode == 'upload':
 elif mode == 'test':
     print('Uninstalling old taichi packages...')
     os.system('{} -m pip uninstall taichi-nightly'.format(
+        get_python_executable()))
+    os.system('{} -m pip uninstall taichi'.format(
         get_python_executable()))
     dists = os.listdir('dist')
     assert len(dists) == 1

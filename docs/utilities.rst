@@ -14,7 +14,7 @@ GUI system
         gui.show()
 
 
-Also checkout https://github.com/taichi-dev/taichi/blob/master/examples/keyboard.py for more advanced event processing.
+Also checkout ``examples/keyboard.py`` for more advanced event processing.
 
 
 Image I/O

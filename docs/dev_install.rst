@@ -37,10 +37,13 @@ Installing Depedencies
     If you have installed ``clang`` (9.0.1) before, this command will overrides the existing ``clang``.
     If you don't want to break up depedencies, please build from scratch and install it in ``/opt``. Then add ``/opt/clang/bin`` to your ``$PATH``.
 
-- Make sure you have LLVM 8.0.1 built from scratch (`Download <https://github.com/llvm/llvm-project/releases/download/llvmorg-8.0.1/llvm-8.0.1.src.tar.xz>`_). To do so, download and unzip the llvm source, move to the llvm folder, and execute
+- Make sure you have LLVM 8.0.1 built from scratch (`Download <>`_). To do so, download and unzip the llvm source, move to the llvm folder, and execute
 
   .. code-block:: bash
 
+    wget https://github.com/llvm/llvm-project/releases/download/llvmorg-8.0.1/llvm-8.0.1.src.tar.xz
+    tar xvJf llvm-8.0.1.src.tar.xz
+    cd llvm-8.0.1.src
     mkdir build
     cd build
     cmake .. -DLLVM_ENABLE_RTTI:BOOL=ON -DBUILD_SHARED_LIBS:BOOL=OFF -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD="X86;NVPTX" -DLLVM_ENABLE_ASSERTIONS=ON

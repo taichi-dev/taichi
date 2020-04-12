@@ -191,9 +191,23 @@ In the fractal code above, ``for i, j in pixels`` loops over all the pixel coord
           for i in x:
             ...
 
-.. warning::
+.. note::
+    ``break`` is not supported in parallelized loops.
 
-    Struct-for's must be at the outer-most scope of kernels.
+    .. code-block:: python
+
+      @ti.kernel
+      def foo():
+        for i in x:
+            ...
+            break # ERROR!
+
+      @ti.kernel
+      def foo():
+        for i in x:
+            for j in y:
+                ...
+                break # OK
 
 
 Interacting with Python

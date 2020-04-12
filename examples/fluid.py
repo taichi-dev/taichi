@@ -11,7 +11,7 @@ half_inv_dx = 0.5 * inv_dx
 dt = 0.03
 p_jacobi_iters = 30
 f_strength = 10000.0
-vel_decay = 1.0
+dye_decay = 0.99
 debug = True
 
 assert res > 2
@@ -24,6 +24,8 @@ velocity_divs = ti.var(dt=ti.f32, shape=(res, res))
 _pressures = ti.var(dt=ti.f32, shape=(res, res))
 _new_pressures = ti.var(dt=ti.f32, shape=(res, res))
 color_buffer = ti.Vector(3, dt=ti.f32, shape=(res, res))
+_dye_buffer = ti.Vector(3, dt=ti.f32, shape=(res, res))
+_new_dye_buffer = ti.Vector(3, dt=ti.f32, shape=(res, res))
 
 
 class TexPair:
@@ -37,6 +39,7 @@ class TexPair:
 
 velocities_pair = TexPair(_velocities, _new_velocities)
 pressures_pair = TexPair(_pressures, _new_pressures)
+dyes_pair = TexPair(_dye_buffer, _new_dye_buffer)
 
 
 @ti.func
@@ -69,26 +72,38 @@ def bilerp(vf, u, v):
 
 
 @ti.kernel
-def advect(vf: ti.template(), new_vf: ti.template()):
+def advect(vf: ti.template(), qf: ti.template(), new_qf: ti.template()):
     for i, j in vf:
         coord = ti.Vector([i, j]) + 0.5 - dt * vf[i, j]
-        new_vf[i, j] = bilerp(vf, coord[0], coord[1]) * vel_decay
+        new_qf[i, j] = bilerp(qf, coord[0], coord[1])
 
 
-inv_force_radius = (3.0 / res)
+force_radius = res / 3.0
+inv_force_radius = 1.0 / force_radius
+inv_dye_denom = 4.0 / (res / 15.0)**2
 f_strength_dt = f_strength * dt
 
 
 @ti.kernel
-def apply_mouse_impulse(vf: ti.template(), mouse_arr: ti.ext_arr()):
+def apply_impulse(vf: ti.template(), dyef: ti.template(),
+                  imp_data: ti.ext_arr()):
     for i, j in vf:
-        omx, omy = mouse_arr[2], mouse_arr[3]
-        mdir = ti.Vector([mouse_arr[0], mouse_arr[1]])
+        omx, omy = imp_data[2], imp_data[3]
+        mdir = ti.Vector([imp_data[0], imp_data[1]])
         dx, dy = (i + 0.5 - omx), (j + 0.5 - omy)
         d2 = dx * dx + dy * dy
-        momentum = mdir * f_strength_dt * ti.exp(-d2 * inv_force_radius)
+        # dv = F * dt
+        factor = ti.exp(-d2 * inv_force_radius)
+        momentum = mdir * f_strength_dt * factor
         v = vf[i, j]
         vf[i, j] = v + momentum
+        # add dye
+        dc = dyef[i, j]
+        if mdir.norm() > 0.5:
+            dc += ti.exp(-d2 * inv_dye_denom) * ti.Vector(
+                [imp_data[4], imp_data[5], imp_data[6]])
+        dc *= dye_decay
+        dyef[i, j] = dc
 
 
 @ti.kernel
@@ -144,6 +159,13 @@ def fill_color_v2(vf: ti.template()):
 
 
 @ti.kernel
+def fill_color_v3(vf: ti.template()):
+    for i, j in vf:
+        v = vf[i, j]
+        color_buffer[i, j] = ti.Vector([abs(v[0]), abs(v[1]), abs(v[2])])
+
+
+@ti.kernel
 def fill_color_s(sf: ti.template()):
     for i, j in sf:
         s = abs(sf[i, j])
@@ -151,10 +173,12 @@ def fill_color_s(sf: ti.template()):
 
 
 def step(mouse_data):
-    advect(velocities_pair.cur, velocities_pair.nxt)
+    advect(velocities_pair.cur, velocities_pair.cur, velocities_pair.nxt)
+    advect(velocities_pair.cur, dyes_pair.cur, dyes_pair.nxt)
     velocities_pair.swap()
+    dyes_pair.swap()
 
-    apply_mouse_impulse(velocities_pair.cur, mouse_data)
+    apply_impulse(velocities_pair.cur, dyes_pair.cur, mouse_data)
 
     divergence(velocities_pair.cur)
     for _ in range(p_jacobi_iters):
@@ -162,7 +186,8 @@ def step(mouse_data):
         pressures_pair.swap()
 
     subtract_gradient(velocities_pair.cur, pressures_pair.cur)
-    fill_color_s(velocity_divs)
+    fill_color_v3(dyes_pair.cur)
+    # fill_color_s(velocity_divs)
     # fill_color_v2(velocities_pair.cur)
 
     if debug:
@@ -178,29 +203,35 @@ def vec2_npf32(m):
 class MouseDataGen(object):
     def __init__(self):
         self.prev_mouse = None
+        self.prev_color = None
 
     def __call__(self, gui):
         # [0:2]: normalized delta direction
         # [2:4]: current mouse xy
-        mouse_data = np.array([0] * 4, dtype=np.float32)
+        # [4:7]: color
+        mouse_data = np.array([0] * 8, dtype=np.float32)
         if gui.is_pressed(ti.GUI.LMB):
             mxy = vec2_npf32(gui.get_cursor_pos()) * res
             if self.prev_mouse is None:
                 self.prev_mouse = mxy
+                self.prev_color = np.random.rand(3)
             else:
                 mdir = mxy - self.prev_mouse
                 mdir = mdir / (np.linalg.norm(mdir) + 1e-5)
                 mouse_data[0], mouse_data[1] = mdir[0], mdir[1]
                 mouse_data[2], mouse_data[3] = mxy[0], mxy[1]
+                mouse_data[4:7] = self.prev_color
                 self.prev_mouse = mxy
         else:
             self.prev_mouse = None
+            self.prev_color = None
         return mouse_data
 
 
 def reset():
     velocities_pair.cur.fill(ti.Vector([0, 0]))
     pressures_pair.cur.fill(0.0)
+    dyes_pair.cur.fill(ti.Vector([0, 0, 0]))
     color_buffer.fill(ti.Vector([0, 0, 0]))
 
 

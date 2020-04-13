@@ -103,6 +103,7 @@ Please always prepend exactly one tag such as ``[Metal]`` to PR titles. For exam
 Existing tags:
 
 - ``[Metal], [OpenGL], [CPU], [CUDA], [AMDGPU], [LLVM]``: backends;
+- ``[LLVM]``: the LLVM backend shared by CPUs and CUDA;
 - ``[Lang]``: frontend language features, including syntax sugars;
 - ``[Std]``: standard library, e.g. `ti.Matrix` and `ti.Vector`;
 - ``[IR]``: intermediate representation;

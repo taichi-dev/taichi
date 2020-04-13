@@ -66,8 +66,9 @@ if (TI_WITH_OPENGL)
   set(GLFW_INSTALL OFF CACHE BOOL "Generate installation target")
   message("Building with GLFW")
   add_subdirectory(external/glfw)
-  target_link_libraries(${LIBRARY_NAME} glfw3)
   target_include_directories(${LIBRARY_NAME} PUBLIC external/glfw/include)
+  target_link_directories(${LIBRARY_NAME} PUBLIC external/glfw/src)
+  target_link_libraries(${LIBRARY_NAME} glfw3)
 endif()
 
 # http://llvm.org/docs/CMake.html#embedding-llvm-in-your-project

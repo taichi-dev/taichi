@@ -14,6 +14,28 @@ TLANG_NAMESPACE_BEGIN
 #define TI_EXPRESSION_IMPLEMENTATION
 #include "expression.h"
 
+IRBuilder &current_ast_builder() {
+  return context->builder();
+}
+
+std::string VectorType::pointer_suffix() const {
+  if (is_pointer()) {
+    return "*";
+  } else {
+    return "";
+  }
+}
+
+std::string VectorType::element_type_name() const {
+  return fmt::format("{}{}", data_type_short_name(data_type),
+                     pointer_suffix());
+}
+
+std::string VectorType::str() const {
+  auto ename = element_type_name();
+  return fmt::format("{:4}x{}", ename, width);
+}
+
 void DecoratorRecorder::reset() {
   vectorize = -1;
   parallelize = 0;
@@ -42,6 +64,16 @@ void IRBuilder::insert(std::unique_ptr<Stmt> &&stmt, int location) {
 void IRBuilder::stop_gradient(SNode *snode) {
   TI_ASSERT(!stack.empty());
   stack.back()->stop_gradients.push_back(snode);
+}
+
+std::unique_ptr<IRBuilder::ScopeGuard> IRBuilder::create_scope(
+    std::unique_ptr<Block> &list) {
+  TI_ASSERT(list == nullptr);
+  list = std::make_unique<Block>();
+  if (!stack.empty()) {
+    list->parent = stack.back();
+  }
+  return std::make_unique<ScopeGuard>(this, list.get());
 }
 
 int Identifier::id_counter = 0;
@@ -84,51 +116,155 @@ inline Expr load_if_ptr(const Expr &ptr) {
     return ptr;
 }
 
+inline Expr smart_load(const Expr &var) {
+  return load_if_ptr(ptr_if_global(var));
+}
+
+int StmtFieldSNode::get_snode_id(taichi::lang::SNode *snode) {
+  if (snode == nullptr)
+    return -1;
+  return snode->id;
+}
+
+bool StmtFieldSNode::equal(const StmtField *other_generic) const {
+  if (auto other = dynamic_cast<const StmtFieldSNode *>(other_generic)) {
+    return get_snode_id(snode) == get_snode_id(other->snode);
+  } else {
+    // Different types
+    return false;
+  }
+}
+
+bool StmtFieldManager::equal(StmtFieldManager &other) const {
+  if (fields.size() != other.fields.size()) {
+    return false;
+  }
+  auto num_fields = fields.size();
+  for (std::size_t i = 0; i < num_fields; i++) {
+    if (!fields[i]->equal(other.fields[i].get())) {
+      return false;
+    }
+  }
+  return true;
+}
+
+std::atomic<int> Stmt::instance_id_counter(0);
+
+Stmt::Stmt() : field_manager(this), fields_registered(false) {
+  parent = nullptr;
+  instance_id = instance_id_counter++;
+  id = instance_id;
+  operand_bitmap = 0;
+  erased = false;
+  is_ptr = false;
+}
+
+Stmt *Stmt::insert_before_me(std::unique_ptr<Stmt> &&new_stmt) {
+  auto ret = new_stmt.get();
+  TI_ASSERT(parent);
+  auto &stmts = parent->statements;
+  int loc = -1;
+  for (int i = 0; i < (int)stmts.size(); i++) {
+    if (stmts[i].get() == this) {
+      loc = i;
+      break;
+    }
+  }
+  TI_ASSERT(loc != -1);
+  new_stmt->parent = parent;
+  stmts.insert(stmts.begin() + loc, std::move(new_stmt));
+  return ret;
+}
+
+Stmt *Stmt::insert_after_me(std::unique_ptr<Stmt> &&new_stmt) {
+  auto ret = new_stmt.get();
+  TI_ASSERT(parent);
+  auto &stmts = parent->statements;
+  int loc = -1;
+  for (int i = 0; i < (int)stmts.size(); i++) {
+    if (stmts[i].get() == this) {
+      loc = i;
+      break;
+    }
+  }
+  TI_ASSERT(loc != -1);
+  new_stmt->parent = parent;
+  stmts.insert(stmts.begin() + loc + 1, std::move(new_stmt));
+  return ret;
+}
+
+void Stmt::replace_with(Stmt *new_stmt) {
+  auto root = get_ir_root();
+  irpass::replace_all_usages_with(root, this, new_stmt);
+  // Note: the current structure should have been destroyed now..
+}
+
+void Stmt::replace_with(VecStatement &&new_statements, bool replace_usages) {
+  parent->replace_with(this, std::move(new_statements), replace_usages);
+}
+
+void Stmt::replace_operand_with(Stmt *old_stmt, Stmt *new_stmt) {
+  operand_bitmap = 0;
+  int n_op = num_operands();
+  for (int i = 0; i < n_op; i++) {
+    if (operand(i) == old_stmt) {
+      *operands[i] = new_stmt;
+    }
+    operand_bitmap |= operand_hash(operand(i));
+  }
+  rebuild_operand_bitmap();
+}
+
+std::string Stmt::type_hint() const {
+  if (ret_type.data_type == DataType::unknown)
+    return "";
+  else
+    return fmt::format("<{}>{}", ret_type.str(), is_ptr ? "ptr " : " ");
+}
+
 std::string Stmt::type() {
   StatementTypeNameVisitor v;
   this->accept(&v);
   return v.type_name;
 }
 
-
-GetChStmt::GetChStmt(taichi::lang::Stmt *input_ptr, int chid)
-    : input_ptr(input_ptr), chid(chid) {
-  TI_ASSERT(input_ptr->is<SNodeLookupStmt>());
-  input_snode = input_ptr->as<SNodeLookupStmt>()->snode;
-  output_snode = input_snode->ch[chid].get();
-  TI_STMT_REG_FIELDS;
+IRNode *Stmt::get_ir_root() {
+  auto block = parent;
+  while (block->parent)
+    block = block->parent;
+  return dynamic_cast<IRNode *>(block);
 }
 
-Expr select(const Expr &cond, const Expr &true_val, const Expr &false_val) {
-  return Expr::make<TrinaryOpExpression>(TernaryOpType::select, cond, true_val,
-                                         false_val);
+std::vector<Stmt *> Stmt::get_operands() const {
+  std::vector<Stmt *> ret;
+  for (int i = 0; i < num_operands(); i++) {
+    ret.push_back(*operands[i]);
+  }
+  return ret;
 }
 
-Expr operator-(const Expr &expr) {
-  return Expr::make<UnaryOpExpression>(UnaryOpType::neg, expr);
+void Stmt::set_operand(int i, Stmt *stmt) {
+  *operands[i] = stmt;
+  rebuild_operand_bitmap();
 }
 
-Expr operator~(const Expr &expr) {
-  return Expr::make<UnaryOpExpression>(UnaryOpType::bit_not, expr);
+void Stmt::register_operand(Stmt *&stmt) {
+  operands.push_back(&stmt);
+  rebuild_operand_bitmap();
 }
 
-Expr cast(const Expr &input, DataType dt) {
-  auto ret = std::make_shared<UnaryOpExpression>(UnaryOpType::cast, input);
-  ret->cast_type = dt;
-  ret->cast_by_value = true;
-  return Expr(ret);
+void Stmt::mark_fields_registered() {
+  TI_ASSERT(!fields_registered);
+  fields_registered = true;
 }
 
-Expr bit_cast(const Expr &input, DataType dt) {
-  auto ret = std::make_shared<UnaryOpExpression>(UnaryOpType::cast, input);
-  ret->cast_type = dt;
-  ret->cast_by_value = false;
-  return Expr(ret);
-}
-
-Expr Expr::operator[](const ExprGroup &indices) const {
-  TI_ASSERT(is<GlobalVariableExpression>() || is<ExternalTensorExpression>());
-  return Expr::make<GlobalPtrExpression>(*this, indices.loaded());
+std::string Expression::get_attribute(
+    const std::string &key) const {
+  if (auto it = attributes.find(key); it == attributes.end()) {
+    TI_ERROR("Attribute {} not found.", key);
+  } else {
+    return it->second;
+  }
 }
 
 ExprGroup ExprGroup::loaded() const {
@@ -138,38 +274,126 @@ ExprGroup ExprGroup::loaded() const {
   return indices_loaded;
 }
 
-DecoratorRecorder dec;
-
-IRBuilder &current_ast_builder() {
-  return context->builder();
-}
-
-std::unique_ptr<IRBuilder::ScopeGuard> IRBuilder::create_scope(
-    std::unique_ptr<Block> &list) {
-  TI_ASSERT(list == nullptr);
-  list = std::make_unique<Block>();
-  if (!stack.empty()) {
-    list->parent = stack.back();
-  }
-  return std::make_unique<ScopeGuard>(this, list.get());
-}
-
-Expr &Expr::operator=(const Expr &o) {
-  if (get_current_program().current_kernel) {
-    if (expr == nullptr) {
-      set(o.eval());
-    } else if (expr->is_lvalue()) {
-      current_ast_builder().insert(std::make_unique<FrontendAssignStmt>(
-          ptr_if_global(*this), load_if_ptr(o)));
-    } else {
-      // set(o.eval());
-      TI_ERROR("Cannot assign to non-lvalue: {}", serialize());
+std::string ExprGroup::serialize() const {
+  std::string ret;
+  for (int i = 0; i < (int)exprs.size(); i++) {
+    ret += exprs[i].serialize();
+    if (i + 1 < (int)exprs.size()) {
+      ret += ", ";
     }
-  } else {
-    set(o);
   }
-  return *this;
+  return ret;
 }
+
+UnaryOpStmt::UnaryOpStmt(taichi::lang::UnaryOpType op_type,
+                         taichi::lang::Stmt *operand)
+    : op_type(op_type), operand(operand) {
+  TI_ASSERT(!operand->is<AllocaStmt>());
+  cast_type = DataType::unknown;
+  cast_by_value = true;
+  TI_STMT_REG_FIELDS;
+}
+
+bool UnaryOpStmt::same_operation(UnaryOpStmt *o) const {
+  if (op_type == o->op_type) {
+    if (op_type == UnaryOpType::cast) {
+      return cast_type == o->cast_type;
+    } else {
+      return true;
+    }
+  }
+  return false;
+}
+
+std::string UnaryOpExpression::serialize() {
+  if (type == UnaryOpType::cast) {
+    std::string reint = cast_by_value ? "" : "reinterpret_";
+    return fmt::format("({}{}<{}> {})", reint, unary_op_type_name(type),
+                       data_type_name(cast_type), operand->serialize());
+  } else {
+    return fmt::format("({} {})", unary_op_type_name(type),
+                       operand->serialize());
+  }
+}
+
+void UnaryOpExpression::flatten(VecStatement &ret) {
+  operand->flatten(ret);
+  auto unary = std::make_unique<UnaryOpStmt>(type, operand->stmt);
+  if (type == UnaryOpType::cast) {
+    unary->cast_type = cast_type;
+    unary->cast_by_value = cast_by_value;
+  }
+  stmt = unary.get();
+  stmt->tb = tb;
+  ret.push_back(std::move(unary));
+}
+
+ExternalPtrStmt::ExternalPtrStmt(
+    const taichi::lang::LaneAttribute<taichi::lang::Stmt *> &base_ptrs,
+    const std::vector<Stmt *> &indices)
+    : base_ptrs(base_ptrs), indices(indices) {
+  DataType dt = DataType::f32;
+  for (int i = 0; i < (int)base_ptrs.size(); i++) {
+    TI_ASSERT(base_ptrs[i] != nullptr);
+    TI_ASSERT(base_ptrs[i]->is<ArgLoadStmt>());
+  }
+  width() = base_ptrs.size();
+  element_type() = dt;
+  TI_STMT_REG_FIELDS;
+}
+
+GlobalPtrStmt::GlobalPtrStmt(
+    const taichi::lang::LaneAttribute<taichi::lang::SNode *> &snodes,
+    const std::vector<Stmt *> &indices,
+    bool activate)
+    : snodes(snodes), indices(indices), activate(activate) {
+  for (int i = 0; i < (int)snodes.size(); i++) {
+    TI_ASSERT(snodes[i] != nullptr);
+    TI_ASSERT(snodes[0]->dt == snodes[i]->dt);
+  }
+  width() = snodes.size();
+  element_type() = snodes[0]->dt;
+  TI_STMT_REG_FIELDS;
+}
+
+std::string GlobalPtrExpression::serialize() {
+  std::string s = fmt::format("{}[", var.serialize());
+  for (int i = 0; i < (int)indices.size(); i++) {
+    s += indices.exprs[i]->serialize();
+    if (i + 1 < (int)indices.size())
+      s += ", ";
+  }
+  s += "]";
+  return s;
+}
+
+void GlobalPtrExpression::flatten(VecStatement &ret) {
+  std::vector<Stmt *> index_stmts;
+  for (int i = 0; i < (int)indices.size(); i++) {
+    indices.exprs[i]->flatten(ret);
+    index_stmts.push_back(indices.exprs[i]->stmt);
+  }
+  if (var.is<GlobalVariableExpression>()) {
+    ret.push_back(std::make_unique<GlobalPtrStmt>(
+        var.cast<GlobalVariableExpression>()->snode, index_stmts));
+  } else {
+    TI_ASSERT(var.is<ExternalTensorExpression>());
+    var->flatten(ret);
+    ret.push_back(std::make_unique<ExternalPtrStmt>(
+        var.cast<ExternalTensorExpression>()->stmt, index_stmts));
+  }
+  stmt = ret.back().get();
+}
+
+GetChStmt::GetChStmt(taichi::lang::Stmt *input_ptr, int chid)
+    : input_ptr(input_ptr), chid(chid) {
+  TI_ASSERT(input_ptr->is<SNodeLookupStmt>());
+  input_snode = input_ptr->as<SNodeLookupStmt>()->snode;
+  output_snode = input_snode->ch[chid].get();
+  TI_STMT_REG_FIELDS;
+}
+
+DecoratorRecorder dec;
 
 FrontendContext::FrontendContext() {
   root_node = std::make_unique<Block>();
@@ -291,12 +515,6 @@ FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
   }
 }
 
-IRNode *Stmt::get_ir_root() {
-  auto block = parent;
-  while (block->parent)
-    block = block->parent;
-  return dynamic_cast<IRNode *>(block);
-}
 
 FrontendAssignStmt::FrontendAssignStmt(const Expr &lhs, const Expr &rhs)
     : lhs(lhs), rhs(rhs) {
@@ -313,88 +531,7 @@ IRNode *FrontendContext::root() {
   return static_cast<IRNode *>(root_node.get());
 }
 
-std::atomic<int> Stmt::instance_id_counter(0);
-
 std::unique_ptr<FrontendContext> context;
-
-Expr Expr::parent() const {
-  TI_ASSERT(is<GlobalVariableExpression>());
-  return Expr::make<GlobalVariableExpression>(
-      cast<GlobalVariableExpression>()->snode->parent);
-}
-
-SNode *Expr::snode() const {
-  TI_ASSERT(is<GlobalVariableExpression>());
-  return cast<GlobalVariableExpression>()->snode;
-}
-
-Expr Expr::operator!() {
-  return Expr::make<UnaryOpExpression>(UnaryOpType::logic_not, expr);
-}
-
-void Expr::declare(DataType dt) {
-  set(Expr::make<GlobalVariableExpression>(dt, Identifier()));
-}
-
-void Expr::set_grad(const Expr &o) {
-  this->cast<GlobalVariableExpression>()->adjoint.set(o);
-}
-
-Stmt *Stmt::insert_before_me(std::unique_ptr<Stmt> &&new_stmt) {
-  auto ret = new_stmt.get();
-  TI_ASSERT(parent);
-  auto &stmts = parent->statements;
-  int loc = -1;
-  for (int i = 0; i < (int)stmts.size(); i++) {
-    if (stmts[i].get() == this) {
-      loc = i;
-      break;
-    }
-  }
-  TI_ASSERT(loc != -1);
-  new_stmt->parent = parent;
-  stmts.insert(stmts.begin() + loc, std::move(new_stmt));
-  return ret;
-}
-
-Stmt *Stmt::insert_after_me(std::unique_ptr<Stmt> &&new_stmt) {
-  auto ret = new_stmt.get();
-  TI_ASSERT(parent);
-  auto &stmts = parent->statements;
-  int loc = -1;
-  for (int i = 0; i < (int)stmts.size(); i++) {
-    if (stmts[i].get() == this) {
-      loc = i;
-      break;
-    }
-  }
-  TI_ASSERT(loc != -1);
-  new_stmt->parent = parent;
-  stmts.insert(stmts.begin() + loc + 1, std::move(new_stmt));
-  return ret;
-}
-
-void Stmt::replace_with(Stmt *new_stmt) {
-  auto root = get_ir_root();
-  irpass::replace_all_usages_with(root, this, new_stmt);
-  // Note: the current structure should have been destroyed now..
-}
-
-void Stmt::replace_with(VecStatement &&new_statements, bool replace_usages) {
-  parent->replace_with(this, std::move(new_statements), replace_usages);
-}
-
-void Stmt::replace_operand_with(Stmt *old_stmt, Stmt *new_stmt) {
-  operand_bitmap = 0;
-  int n_op = num_operands();
-  for (int i = 0; i < n_op; i++) {
-    if (operand(i) == old_stmt) {
-      *operands[i] = new_stmt;
-    }
-    operand_bitmap |= operand_hash(operand(i));
-  }
-  rebuild_operand_bitmap();
-}
 
 Block *current_block = nullptr;
 

@@ -23,6 +23,7 @@ CUDADriver::CUDADriver() {
   loader = std::make_unique<DynamicLoader>("libcuda.so");
 #else
   loader = std::make_unique<DynamicLoader>("nvcuda.dll");
+  // TODO(yuanming-hu): so what about OSX?
 #endif
 
   if (detected()) {

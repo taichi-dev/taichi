@@ -130,6 +130,9 @@ def init(default_fp=None,
     boolean_config("verbose")
     boolean_config("fast_math")
     boolean_config("async")
+    gdb_trigger = os.environ.get("TI_GDB_TRIGGER")
+    if gdb_trigger is not None:
+        ti.set_gdb_trigger(len(gdb_trigger) and bool(int(gdb_trigger)))
     arch = os.environ.get("TI_ARCH")
     if arch is not None:
         print(f'Following TI_ARCH setting up for arch={arch}')

@@ -238,8 +238,8 @@ class IRBuilder {
   void stop_gradient(SNode *);
 };
 
-inline Expr load_if_ptr(const Expr &ptr);
-inline Expr smart_load(const Expr &var);
+Expr load_if_ptr(const Expr &ptr);
+Expr smart_load(const Expr &var);
 
 class Identifier {
  public:
@@ -1993,9 +1993,9 @@ class ConstExpression : public Expression {
   }
 };
 
-inline Expr load(const Expr &ptr);
+Expr load(const Expr &ptr);
 
-inline Expr ptr_if_global(const Expr &var);
+Expr ptr_if_global(const Expr &var);
 
 extern DecoratorRecorder dec;
 

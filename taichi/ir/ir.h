@@ -239,7 +239,12 @@ class IRBuilder {
 };
 
 Expr load_if_ptr(const Expr &ptr);
-Expr smart_load(const Expr &var);
+Expr load(const Expr &ptr);
+Expr ptr_if_global(const Expr &var);
+
+inline Expr smart_load(const Expr &var) {
+  return load_if_ptr(ptr_if_global(var));
+}
 
 class Identifier {
  public:
@@ -1992,10 +1997,6 @@ class ConstExpression : public Expression {
     stmt = ret.back().get();
   }
 };
-
-Expr load(const Expr &ptr);
-
-Expr ptr_if_global(const Expr &var);
 
 extern DecoratorRecorder dec;
 

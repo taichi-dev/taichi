@@ -104,7 +104,7 @@ class StatementTypeNameVisitor : public IRVisitor {
 #undef PER_STATEMENT
 };
 
-inline Expr load_if_ptr(const Expr &ptr) {
+Expr load_if_ptr(const Expr &ptr) {
   if (ptr.is<GlobalPtrExpression>()) {
     return load(ptr);
   } else if (ptr.is<GlobalVariableExpression>()) {
@@ -115,8 +115,20 @@ inline Expr load_if_ptr(const Expr &ptr) {
     return ptr;
 }
 
-inline Expr smart_load(const Expr &var) {
-  return load_if_ptr(ptr_if_global(var));
+Expr load(const Expr &ptr) {
+  TI_ASSERT(ptr.is<GlobalPtrExpression>());
+  return Expr::make<GlobalLoadExpression>(ptr);
+}
+
+Expr ptr_if_global(const Expr &var) {
+  if (var.is<GlobalVariableExpression>()) {
+    // singleton global variable
+    TI_ASSERT(var.snode()->num_active_indices == 0);
+    return var[ExprGroup()];
+  } else {
+    // may be any local or global expr
+    return var;
+  }
 }
 
 int StmtFieldSNode::get_snode_id(SNode *snode) {
@@ -480,22 +492,6 @@ Expr Var(const Expr &x) {
 
 void Print_(const Expr &a, const std::string &str) {
   current_ast_builder().insert(std::make_unique<FrontendPrintStmt>(a, str));
-}
-
-Expr load(const Expr &ptr) {
-  TI_ASSERT(ptr.is<GlobalPtrExpression>());
-  return Expr::make<GlobalLoadExpression>(ptr);
-}
-
-Expr ptr_if_global(const Expr &var) {
-  if (var.is<GlobalVariableExpression>()) {
-    // singleton global variable
-    TI_ASSERT(var.snode()->num_active_indices == 0);
-    return var[ExprGroup()];
-  } else {
-    // may be any local or global expr
-    return var;
-  }
 }
 
 template <>

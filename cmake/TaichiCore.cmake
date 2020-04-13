@@ -51,6 +51,8 @@ include_directories(external/spdlog/include)
 set(LIBRARY_NAME ${CORE_LIBRARY_NAME})
 
 if (TI_WITH_OPENGL)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_OPENGL -DGLEW_STATIC")
+  message("Building with GLEW (glew-ready)")
   add_subdirectory(external/glew-ready/build/cmake)
 
   set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "Build the GLFW example programs")

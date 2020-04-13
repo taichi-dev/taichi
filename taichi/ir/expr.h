@@ -123,6 +123,4 @@ Expr bit_cast(const Expr &input) {
   return taichi::lang::bit_cast(input, get_data_type<T>());
 }
 
-
-
 TLANG_NAMESPACE_END

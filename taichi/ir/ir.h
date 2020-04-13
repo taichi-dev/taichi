@@ -1334,7 +1334,10 @@ class SNodeOpStmt : public Stmt {
   Stmt *val;
   std::vector<Stmt *> indices;
 
-  SNodeOpStmt(SNodeOpType op_type, SNode *snode, Stmt *ptr, Stmt *val = nullptr);
+  SNodeOpStmt(SNodeOpType op_type,
+              SNode *snode,
+              Stmt *ptr,
+              Stmt *val = nullptr);
 
   SNodeOpStmt(SNodeOpType op_type,
               SNode *snode,

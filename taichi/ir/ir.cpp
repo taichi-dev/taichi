@@ -27,8 +27,7 @@ std::string VectorType::pointer_suffix() const {
 }
 
 std::string VectorType::element_type_name() const {
-  return fmt::format("{}{}", data_type_short_name(data_type),
-                     pointer_suffix());
+  return fmt::format("{}{}", data_type_short_name(data_type), pointer_suffix());
 }
 
 std::string VectorType::str() const {
@@ -110,7 +109,7 @@ inline Expr load_if_ptr(const Expr &ptr) {
     return load(ptr);
   } else if (ptr.is<GlobalVariableExpression>()) {
     TI_ASSERT(ptr.cast<GlobalVariableExpression>()->snode->num_active_indices ==
-        0);
+              0);
     return load(ptr[ExprGroup()]);
   } else
     return ptr;
@@ -258,8 +257,7 @@ void Stmt::mark_fields_registered() {
   fields_registered = true;
 }
 
-std::string Expression::get_attribute(
-    const std::string &key) const {
+std::string Expression::get_attribute(const std::string &key) const {
   if (auto it = attributes.find(key); it == attributes.end()) {
     TI_ERROR("Attribute {} not found.", key);
   } else {
@@ -285,8 +283,7 @@ std::string ExprGroup::serialize() const {
   return ret;
 }
 
-UnaryOpStmt::UnaryOpStmt(UnaryOpType op_type,
-                         Stmt *operand)
+UnaryOpStmt::UnaryOpStmt(UnaryOpType op_type, Stmt *operand)
     : op_type(op_type), operand(operand) {
   TI_ASSERT(!operand->is<AllocaStmt>());
   cast_type = DataType::unknown;
@@ -328,9 +325,8 @@ void UnaryOpExpression::flatten(VecStatement &ret) {
   ret.push_back(std::move(unary));
 }
 
-ExternalPtrStmt::ExternalPtrStmt(
-    const LaneAttribute<Stmt *> &base_ptrs,
-    const std::vector<Stmt *> &indices)
+ExternalPtrStmt::ExternalPtrStmt(const LaneAttribute<Stmt *> &base_ptrs,
+                                 const std::vector<Stmt *> &indices)
     : base_ptrs(base_ptrs), indices(indices) {
   DataType dt = DataType::f32;
   for (int i = 0; i < (int)base_ptrs.size(); i++) {
@@ -342,10 +338,9 @@ ExternalPtrStmt::ExternalPtrStmt(
   TI_STMT_REG_FIELDS;
 }
 
-GlobalPtrStmt::GlobalPtrStmt(
-    const LaneAttribute<SNode *> &snodes,
-    const std::vector<Stmt *> &indices,
-    bool activate)
+GlobalPtrStmt::GlobalPtrStmt(const LaneAttribute<SNode *> &snodes,
+                             const std::vector<Stmt *> &indices,
+                             bool activate)
     : snodes(snodes), indices(indices), activate(activate) {
   for (int i = 0; i < (int)snodes.size(); i++) {
     TI_ASSERT(snodes[i] != nullptr);
@@ -711,11 +706,10 @@ int Block::locate(Stmt *stmt) {
   return -1;
 }
 
-FrontendSNodeOpStmt::FrontendSNodeOpStmt(
-    SNodeOpType op_type,
-    SNode *snode,
-    const ExprGroup &indices,
-    const Expr &val)
+FrontendSNodeOpStmt::FrontendSNodeOpStmt(SNodeOpType op_type,
+                                         SNode *snode,
+                                         const ExprGroup &indices,
+                                         const Expr &val)
     : op_type(op_type), snode(snode), indices(indices.loaded()), val(val) {
   if (val.expr != nullptr) {
     TI_ASSERT(op_type == SNodeOpType::append);
@@ -742,7 +736,7 @@ SNodeOpStmt::SNodeOpStmt(SNodeOpType op_type,
   ptr = nullptr;
   val = nullptr;
   TI_ASSERT(op_type == SNodeOpType::is_active ||
-      op_type == SNodeOpType::deactivate);
+            op_type == SNodeOpType::deactivate);
   width() = 1;
   element_type() = DataType::i32;
   TI_STMT_REG_FIELDS;
@@ -750,17 +744,13 @@ SNodeOpStmt::SNodeOpStmt(SNodeOpType op_type,
 
 std::string AtomicOpExpression::serialize() {
   if (op_type == AtomicOpType::add) {
-    return fmt::format("atomic_add({}, {})", dest.serialize(),
-                       val.serialize());
+    return fmt::format("atomic_add({}, {})", dest.serialize(), val.serialize());
   } else if (op_type == AtomicOpType::sub) {
-    return fmt::format("atomic_sub({}, {})", dest.serialize(),
-                       val.serialize());
+    return fmt::format("atomic_sub({}, {})", dest.serialize(), val.serialize());
   } else if (op_type == AtomicOpType::min) {
-    return fmt::format("atomic_min({}, {})", dest.serialize(),
-                       val.serialize());
+    return fmt::format("atomic_min({}, {})", dest.serialize(), val.serialize());
   } else if (op_type == AtomicOpType::max) {
-    return fmt::format("atomic_max({}, {})", dest.serialize(),
-                       val.serialize());
+    return fmt::format("atomic_max({}, {})", dest.serialize(), val.serialize());
   } else if (op_type == AtomicOpType::bit_and) {
     return fmt::format("atomic_bit_and({}, {})", dest.serialize(),
                        val.serialize());
@@ -779,12 +769,11 @@ std::string AtomicOpExpression::serialize() {
 std::string SNodeOpExpression::serialize() {
   if (value.expr) {
     return fmt::format("{}({}, [{}], {})", snode_op_type_name(op_type),
-                       snode->get_node_type_name_hinted(),
-                       indices.serialize(), value.serialize());
+                       snode->get_node_type_name_hinted(), indices.serialize(),
+                       value.serialize());
   } else {
     return fmt::format("{}({}, [{}])", snode_op_type_name(op_type),
-                       snode->get_node_type_name_hinted(),
-                       indices.serialize());
+                       snode->get_node_type_name_hinted(), indices.serialize());
   }
 }
 
@@ -797,10 +786,10 @@ void SNodeOpExpression::flatten(VecStatement &ret) {
   if (op_type == SNodeOpType::is_active) {
     // is_active cannot be lowered all the way to a global pointer.
     // It should be lowered into a pointer to parent and an index.
-    TI_ERROR_IF(
-        snode->type != SNodeType::pointer && snode->type != SNodeType::hash &&
-            snode->type != SNodeType::bitmasked,
-        "ti.is_active only works on pointer, hash or bitmasked nodes.");
+    TI_ERROR_IF(snode->type != SNodeType::pointer &&
+                    snode->type != SNodeType::hash &&
+                    snode->type != SNodeType::bitmasked,
+                "ti.is_active only works on pointer, hash or bitmasked nodes.");
     ret.push_back<SNodeOpStmt>(SNodeOpType::is_active, snode, indices_stmt);
   } else {
     auto ptr = ret.push_back<GlobalPtrStmt>(snode, indices_stmt);

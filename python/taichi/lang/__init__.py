@@ -237,12 +237,8 @@ def benchmark(func, repeat=100, args=()):
     return elapsed / repeat
 
 
-wanted_archs = None
-
-
 def set_wanted_archs(archs):
-    global wanted_archs
-    wanted_archs = archs
+    os.environ['TI_WANTED_ARCHS'] = ','.join(archs)
 
 
 def supported_archs():
@@ -254,7 +250,8 @@ def supported_archs():
         archs.append(metal)
     if ti.core.with_opengl():
         archs.append(opengl)
-    if wanted_archs is not None:
+    wanted_archs = os.environ.get('TI_WANTED_ARCHS', '').split(',')
+    if len(wanted_archs):
         archs, old_archs = [], archs
         for arch in old_archs:
             if ti.core.arch_name(arch) in wanted_archs:

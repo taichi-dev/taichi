@@ -109,6 +109,7 @@ def main(debug=False):
     print()
     import taichi as ti
     if args.arch is not None:
+        print(f'Running on Arch={args.arch}')
         ti.set_wanted_archs(args.arch.split(','))
 
     if mode == 'help':

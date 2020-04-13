@@ -93,4 +93,66 @@ void Expr::set_grad(const Expr &o) {
   this->cast<GlobalVariableExpression>()->adjoint.set(o);
 }
 
+Expr::Expr(int32 x) : Expr() {
+  expr = std::make_shared<ConstExpression>(x);
+}
+
+Expr::Expr(int64 x) : Expr() {
+  expr = std::make_shared<ConstExpression>(x);
+}
+
+Expr::Expr(float32 x) : Expr() {
+  expr = std::make_shared<ConstExpression>(x);
+}
+
+Expr::Expr(float64 x) : Expr() {
+  expr = std::make_shared<ConstExpression>(x);
+}
+
+Expr::Expr(const Identifier &id) : Expr() {
+  expr = std::make_shared<IdExpression>(id);
+}
+
+Expr Expr::eval() const {
+  TI_ASSERT(expr != nullptr);
+  if (is<EvalExpression>()) {
+    return *this;
+  }
+  auto eval_stmt = Stmt::make<FrontendEvalStmt>(*this);
+  auto eval_expr = Expr::make<EvalExpression>(eval_stmt.get());
+  eval_stmt->as<FrontendEvalStmt>()->eval_expr.set(eval_expr);
+  // needed in lower_ast to replace the statement itself with the
+  // lowered statement
+  current_ast_builder().insert(std::move(eval_stmt));
+  return eval_expr;
+}
+
+void Expr::operator+=(const Expr &o) {
+  if (this->atomic) {
+    current_ast_builder().insert(Stmt::make<FrontendAtomicStmt>(
+        AtomicOpType::add, ptr_if_global(*this), load_if_ptr(o)));
+  } else {
+    (*this) = (*this) + o;
+  }
+}
+
+void Expr::operator-=(const Expr &o) {
+  if (this->atomic) {
+    current_ast_builder().insert(Stmt::make<FrontendAtomicStmt>(
+        AtomicOpType::add, *this, -load_if_ptr(o)));
+  } else {
+    (*this) = (*this) - o;
+  }
+}
+
+void Expr::operator*=(const Expr &o) {
+  TI_ASSERT(!this->atomic);
+  (*this) = (*this) * load_if_ptr(o);
+}
+
+void Expr::operator/=(const Expr &o) {
+  TI_ASSERT(!this->atomic);
+  (*this) = (*this) / load_if_ptr(o);
+}
+
 TLANG_NAMESPACE_END

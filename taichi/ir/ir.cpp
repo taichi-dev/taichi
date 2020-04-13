@@ -120,7 +120,7 @@ inline Expr smart_load(const Expr &var) {
   return load_if_ptr(ptr_if_global(var));
 }
 
-int StmtFieldSNode::get_snode_id(taichi::lang::SNode *snode) {
+int StmtFieldSNode::get_snode_id(SNode *snode) {
   if (snode == nullptr)
     return -1;
   return snode->id;
@@ -285,8 +285,8 @@ std::string ExprGroup::serialize() const {
   return ret;
 }
 
-UnaryOpStmt::UnaryOpStmt(taichi::lang::UnaryOpType op_type,
-                         taichi::lang::Stmt *operand)
+UnaryOpStmt::UnaryOpStmt(UnaryOpType op_type,
+                         Stmt *operand)
     : op_type(op_type), operand(operand) {
   TI_ASSERT(!operand->is<AllocaStmt>());
   cast_type = DataType::unknown;
@@ -329,7 +329,7 @@ void UnaryOpExpression::flatten(VecStatement &ret) {
 }
 
 ExternalPtrStmt::ExternalPtrStmt(
-    const taichi::lang::LaneAttribute<taichi::lang::Stmt *> &base_ptrs,
+    const LaneAttribute<Stmt *> &base_ptrs,
     const std::vector<Stmt *> &indices)
     : base_ptrs(base_ptrs), indices(indices) {
   DataType dt = DataType::f32;
@@ -343,7 +343,7 @@ ExternalPtrStmt::ExternalPtrStmt(
 }
 
 GlobalPtrStmt::GlobalPtrStmt(
-    const taichi::lang::LaneAttribute<taichi::lang::SNode *> &snodes,
+    const LaneAttribute<SNode *> &snodes,
     const std::vector<Stmt *> &indices,
     bool activate)
     : snodes(snodes), indices(indices), activate(activate) {
@@ -385,7 +385,7 @@ void GlobalPtrExpression::flatten(VecStatement &ret) {
   stmt = ret.back().get();
 }
 
-GetChStmt::GetChStmt(taichi::lang::Stmt *input_ptr, int chid)
+GetChStmt::GetChStmt(Stmt *input_ptr, int chid)
     : input_ptr(input_ptr), chid(chid) {
   TI_ASSERT(input_ptr->is<SNodeLookupStmt>());
   input_snode = input_ptr->as<SNodeLookupStmt>()->snode;
@@ -398,65 +398,6 @@ DecoratorRecorder dec;
 FrontendContext::FrontendContext() {
   root_node = std::make_unique<Block>();
   current_builder = std::make_unique<IRBuilder>(root_node.get());
-}
-
-Expr::Expr(int32 x) : Expr() {
-  expr = std::make_shared<ConstExpression>(x);
-}
-
-Expr::Expr(int64 x) : Expr() {
-  expr = std::make_shared<ConstExpression>(x);
-}
-
-Expr::Expr(float32 x) : Expr() {
-  expr = std::make_shared<ConstExpression>(x);
-}
-
-Expr::Expr(float64 x) : Expr() {
-  expr = std::make_shared<ConstExpression>(x);
-}
-
-Expr::Expr(const Identifier &id) : Expr() {
-  expr = std::make_shared<IdExpression>(id);
-}
-
-Expr Expr::eval() const {
-  TI_ASSERT(expr != nullptr);
-  if (is<EvalExpression>()) {
-    return *this;
-  }
-  auto eval_stmt = Stmt::make<FrontendEvalStmt>(*this);
-  auto eval_expr = Expr::make<EvalExpression>(eval_stmt.get());
-  eval_stmt->as<FrontendEvalStmt>()->eval_expr.set(eval_expr);
-  // needed in lower_ast to replace the statement itself with the
-  // lowered statement
-  current_ast_builder().insert(std::move(eval_stmt));
-  return eval_expr;
-}
-
-void Expr::operator+=(const Expr &o) {
-  if (this->atomic) {
-    current_ast_builder().insert(Stmt::make<FrontendAtomicStmt>(
-        AtomicOpType::add, ptr_if_global(*this), load_if_ptr(o)));
-  } else {
-    (*this) = (*this) + o;
-  }
-}
-void Expr::operator-=(const Expr &o) {
-  if (this->atomic) {
-    current_ast_builder().insert(Stmt::make<FrontendAtomicStmt>(
-        AtomicOpType::add, *this, -load_if_ptr(o)));
-  } else {
-    (*this) = (*this) - o;
-  }
-}
-void Expr::operator*=(const Expr &o) {
-  TI_ASSERT(!this->atomic);
-  (*this) = (*this) * load_if_ptr(o);
-}
-void Expr::operator/=(const Expr &o) {
-  TI_ASSERT(!this->atomic);
-  (*this) = (*this) / load_if_ptr(o);
 }
 
 FrontendForStmt::FrontendForStmt(const Expr &loop_var,
@@ -515,7 +456,6 @@ FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
   }
 }
 
-
 FrontendAssignStmt::FrontendAssignStmt(const Expr &lhs, const Expr &rhs)
     : lhs(lhs), rhs(rhs) {
   TI_ASSERT(lhs->is_lvalue());
@@ -545,6 +485,22 @@ Expr Var(const Expr &x) {
 
 void Print_(const Expr &a, const std::string &str) {
   current_ast_builder().insert(std::make_unique<FrontendPrintStmt>(a, str));
+}
+
+Expr load(const Expr &ptr) {
+  TI_ASSERT(ptr.is<GlobalPtrExpression>());
+  return Expr::make<GlobalLoadExpression>(ptr);
+}
+
+Expr ptr_if_global(const Expr &var) {
+  if (var.is<GlobalVariableExpression>()) {
+    // singleton global variable
+    TI_ASSERT(var.snode()->num_active_indices == 0);
+    return var[ExprGroup()];
+  } else {
+    // may be any local or global expr
+    return var;
+  }
 }
 
 template <>
@@ -580,6 +536,29 @@ Stmt *LocalLoadStmt::previous_store_or_alloca_in_block() {
     }
   }
   return nullptr;
+}
+
+void LocalLoadStmt::rebuild_operands() {
+  operands.clear();
+  for (int i = 0; i < (int)ptr.size(); i++) {
+    register_operand(this->ptr[i].var);
+  }
+}
+
+bool LocalLoadStmt::same_source() const {
+  for (int i = 1; i < (int)ptr.size(); i++) {
+    if (ptr[i].var != ptr[0].var)
+      return false;
+  }
+  return true;
+}
+
+bool LocalLoadStmt::has_source(Stmt *_alloca) const {
+  for (int i = 0; i < width(); i++) {
+    if (ptr[i].var == alloca)
+      return true;
+  }
+  return false;
 }
 
 void Block::erase(int location) {
@@ -651,7 +630,7 @@ void Block::replace_with(Stmt *old_statement,
   replace_with(old_statement, std::move(vec));
 }
 
-Stmt *Block::lookup_var(const taichi::lang::Ident &ident) const {
+Stmt *Block::lookup_var(const Ident &ident) const {
   auto ptr = local_var_alloca.find(ident);
   if (ptr != local_var_alloca.end()) {
     return ptr->second;
@@ -674,6 +653,174 @@ Stmt *Block::mask() {
   }
 }
 
+void Block::set_statements(VecStatement &&stmts) {
+  statements.clear();
+  for (int i = 0; i < (int)stmts.size(); i++) {
+    insert(std::move(stmts[i]), i);
+  }
+}
+
+void Block::insert_before(Stmt *old_statement, VecStatement &&new_statements) {
+  int location = -1;
+  for (int i = 0; i < (int)statements.size(); i++) {
+    if (old_statement == statements[i].get()) {
+      location = i;
+      break;
+    }
+  }
+  TI_ASSERT(location != -1);
+  for (int i = (int)new_statements.size() - 1; i >= 0; i--) {
+    insert(std::move(new_statements[i]), location);
+  }
+}
+
+void Block::replace_with(Stmt *old_statement,
+                         VecStatement &&new_statements,
+                         bool replace_usages) {
+  int location = -1;
+  for (int i = 0; i < (int)statements.size(); i++) {
+    if (old_statement == statements[i].get()) {
+      location = i;
+      break;
+    }
+  }
+  TI_ASSERT(location != -1);
+  if (replace_usages)
+    old_statement->replace_with(new_statements.back().get());
+  trash_bin.push_back(std::move(statements[location]));
+  statements.erase(statements.begin() + location);
+  for (int i = (int)new_statements.size() - 1; i >= 0; i--) {
+    insert(std::move(new_statements[i]), location);
+  }
+}
+
+bool Block::has_container_statements() {
+  for (auto &s : statements) {
+    if (s->is_container_statement())
+      return true;
+  }
+  return false;
+}
+
+int Block::locate(Stmt *stmt) {
+  for (int i = 0; i < (int)statements.size(); i++) {
+    if (statements[i].get() == stmt) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+FrontendSNodeOpStmt::FrontendSNodeOpStmt(
+    SNodeOpType op_type,
+    SNode *snode,
+    const ExprGroup &indices,
+    const Expr &val)
+    : op_type(op_type), snode(snode), indices(indices.loaded()), val(val) {
+  if (val.expr != nullptr) {
+    TI_ASSERT(op_type == SNodeOpType::append);
+    this->val.set(load_if_ptr(val));
+  } else {
+    TI_ASSERT(op_type != SNodeOpType::append);
+  }
+}
+
+SNodeOpStmt::SNodeOpStmt(SNodeOpType op_type,
+                         SNode *snode,
+                         Stmt *ptr,
+                         Stmt *val)
+    : op_type(op_type), snode(snode), ptr(ptr), val(val) {
+  width() = 1;
+  element_type() = DataType::i32;
+  TI_STMT_REG_FIELDS;
+}
+
+SNodeOpStmt::SNodeOpStmt(SNodeOpType op_type,
+                         SNode *snode,
+                         const std::vector<Stmt *> &indices)
+    : op_type(op_type), snode(snode), indices(indices) {
+  ptr = nullptr;
+  val = nullptr;
+  TI_ASSERT(op_type == SNodeOpType::is_active ||
+      op_type == SNodeOpType::deactivate);
+  width() = 1;
+  element_type() = DataType::i32;
+  TI_STMT_REG_FIELDS;
+}
+
+std::string AtomicOpExpression::serialize() {
+  if (op_type == AtomicOpType::add) {
+    return fmt::format("atomic_add({}, {})", dest.serialize(),
+                       val.serialize());
+  } else if (op_type == AtomicOpType::sub) {
+    return fmt::format("atomic_sub({}, {})", dest.serialize(),
+                       val.serialize());
+  } else if (op_type == AtomicOpType::min) {
+    return fmt::format("atomic_min({}, {})", dest.serialize(),
+                       val.serialize());
+  } else if (op_type == AtomicOpType::max) {
+    return fmt::format("atomic_max({}, {})", dest.serialize(),
+                       val.serialize());
+  } else if (op_type == AtomicOpType::bit_and) {
+    return fmt::format("atomic_bit_and({}, {})", dest.serialize(),
+                       val.serialize());
+  } else if (op_type == AtomicOpType::bit_or) {
+    return fmt::format("atomic_bit_or({}, {})", dest.serialize(),
+                       val.serialize());
+  } else if (op_type == AtomicOpType::bit_xor) {
+    return fmt::format("atomic_bit_xor({}, {})", dest.serialize(),
+                       val.serialize());
+  } else {
+    // min/max not supported in the LLVM backend yet.
+    TI_NOT_IMPLEMENTED;
+  }
+}
+
+std::string SNodeOpExpression::serialize() {
+  if (value.expr) {
+    return fmt::format("{}({}, [{}], {})", snode_op_type_name(op_type),
+                       snode->get_node_type_name_hinted(),
+                       indices.serialize(), value.serialize());
+  } else {
+    return fmt::format("{}({}, [{}])", snode_op_type_name(op_type),
+                       snode->get_node_type_name_hinted(),
+                       indices.serialize());
+  }
+}
+
+void SNodeOpExpression::flatten(VecStatement &ret) {
+  std::vector<Stmt *> indices_stmt;
+  for (int i = 0; i < (int)indices.size(); i++) {
+    indices[i]->flatten(ret);
+    indices_stmt.push_back(indices[i]->stmt);
+  }
+  if (op_type == SNodeOpType::is_active) {
+    // is_active cannot be lowered all the way to a global pointer.
+    // It should be lowered into a pointer to parent and an index.
+    TI_ERROR_IF(
+        snode->type != SNodeType::pointer && snode->type != SNodeType::hash &&
+            snode->type != SNodeType::bitmasked,
+        "ti.is_active only works on pointer, hash or bitmasked nodes.");
+    ret.push_back<SNodeOpStmt>(SNodeOpType::is_active, snode, indices_stmt);
+  } else {
+    auto ptr = ret.push_back<GlobalPtrStmt>(snode, indices_stmt);
+    if (op_type == SNodeOpType::append) {
+      value->flatten(ret);
+      ret.push_back<SNodeOpStmt>(SNodeOpType::append, snode, ptr,
+                                 ret.back().get());
+      TI_ERROR_IF(snode->type != SNodeType::dynamic,
+                  "ti.append only works on dynamic nodes.");
+      TI_ERROR_IF(snode->ch.size() != 1,
+                  "ti.append only works on single-child dynamic nodes.");
+      TI_ERROR_IF(data_type_size(snode->ch[0]->dt) != 4,
+                  "ti.append only works on i32/f32 nodes.");
+    } else if (op_type == SNodeOpType::length) {
+      ret.push_back<SNodeOpStmt>(SNodeOpType::length, snode, ptr, nullptr);
+    }
+  }
+  stmt = ret.back().get();
+}
+
 For::For(const Expr &s, const Expr &e, const std::function<void(Expr)> &func) {
   auto i = Expr(std::make_shared<IdExpression>());
   auto stmt_unique = std::make_unique<FrontendForStmt>(i, s, e);
@@ -681,6 +828,27 @@ For::For(const Expr &s, const Expr &e, const std::function<void(Expr)> &func) {
   current_ast_builder().insert(std::move(stmt_unique));
   auto _ = current_ast_builder().create_scope(stmt->body);
   func(i);
+}
+
+For::For(const Expr &i,
+         const Expr &s,
+         const Expr &e,
+         const std::function<void()> &func) {
+  auto stmt_unique = std::make_unique<FrontendForStmt>(i, s, e);
+  auto stmt = stmt_unique.get();
+  current_ast_builder().insert(std::move(stmt_unique));
+  auto _ = current_ast_builder().create_scope(stmt->body);
+  func();
+}
+
+For::For(const ExprGroup &i,
+         const Expr &global,
+         const std::function<void()> &func) {
+  auto stmt_unique = std::make_unique<FrontendForStmt>(i, global);
+  auto stmt = stmt_unique.get();
+  current_ast_builder().insert(std::move(stmt_unique));
+  auto _ = current_ast_builder().create_scope(stmt->body);
+  func();
 }
 
 OffloadedStmt::OffloadedStmt(OffloadedStmt::TaskType task_type)

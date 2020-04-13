@@ -125,7 +125,7 @@ def _test_mat_inverse_size(n):
 
 
 def test_mat_inverse():
-    for n in range(1, 4):
+    for n in range(1, 5):
         _test_mat_inverse_size(n)
 
 

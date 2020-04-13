@@ -57,6 +57,7 @@ if (TI_WITH_OPENGL)
   message("Building with GLEW (glew-ready)")
   add_subdirectory(external/glew-ready/build/cmake)
   target_link_libraries(${LIBRARY_NAME} GLEW)
+  target_include_directories(${LIBRARY_NAME} external/glew-ready/include)
 
   set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "Build the GLFW example programs")
   set(GLFW_BUILD_TESTS OFF CACHE BOOL "Build the GLFW test programs")
@@ -65,6 +66,7 @@ if (TI_WITH_OPENGL)
   message("Building with GLFW")
   add_subdirectory(external/glfw)
   target_link_libraries(${LIBRARY_NAME} glfw3)
+  target_include_directories(${LIBRARY_NAME} external/glfw/include)
 endif()
 
 # http://llvm.org/docs/CMake.html#embedding-llvm-in-your-project

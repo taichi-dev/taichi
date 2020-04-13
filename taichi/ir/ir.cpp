@@ -548,7 +548,7 @@ bool LocalLoadStmt::same_source() const {
   return true;
 }
 
-bool LocalLoadStmt::has_source(Stmt *_alloca) const {
+bool LocalLoadStmt::has_source(Stmt *alloca) const {
   for (int i = 0; i < width(); i++) {
     if (ptr[i].var == alloca)
       return true;

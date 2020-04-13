@@ -272,7 +272,8 @@ class BasicBlockSimplify : public IRVisitor {
                 }
                 continue;
               }
-              if (irpass::analysis::has_store_or_atomic(block->statements[j].get(), vars)) {
+              if (irpass::analysis::has_store_or_atomic(
+                      block->statements[j].get(), vars)) {
                 has_related_store = true;
                 break;
               }
@@ -395,7 +396,7 @@ class BasicBlockSimplify : public IRVisitor {
                 continue;
               }
               if (irpass::analysis::has_load_or_atomic(
-                  block->statements[j].get(), stmt->ptr)) {
+                      block->statements[j].get(), stmt->ptr)) {
                 has_load = true;
                 break;
               }
@@ -440,8 +441,8 @@ class BasicBlockSimplify : public IRVisitor {
           }
           continue;
         }
-        if (irpass::analysis::has_load_or_atomic(
-            block->statements[i].get(), stmt->ptr)) {
+        if (irpass::analysis::has_load_or_atomic(block->statements[i].get(),
+                                                 stmt->ptr)) {
           has_related = true;
           break;
         }

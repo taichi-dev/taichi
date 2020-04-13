@@ -5,16 +5,17 @@
 
 #pragma once
 
+#include <vector>
+
 #if defined(_MSC_VER)
 #pragma warning(push)
 #pragma warning(disable : 4244)
 #pragma warning(disable : 4267)
 #endif
 
-#include <pybind11/pybind11.h>
-#include <pybind11/operators.h>
-#include <pybind11/stl.h>
-#include <vector>
+#include "pybind11/pybind11.h"
+#include "pybind11/operators.h"
+#include "pybind11/stl.h"
 
 #if defined(_MSC_VER)
 #pragma warning(pop)
@@ -23,8 +24,9 @@
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-function"
-#include <numpy/ndarrayobject.h>
+#include "numpy/ndarrayobject.h"
 #pragma GCC diagnostic pop
+
 #include "taichi/util/io.h"
 #include "taichi/common/util.h"
 

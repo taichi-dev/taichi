@@ -5,8 +5,8 @@
 #include "taichi/system/threading.h"
 #include "taichi/system/timer.h"
 #include "taichi/math/scalar.h"
-#include <pybind11/pybind11.h>
-#include <pybind11/embed.h>
+#include "pybind11/pybind11.h"
+#include "pybind11/embed.h"
 
 TI_NAMESPACE_BEGIN
 

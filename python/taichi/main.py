@@ -41,6 +41,7 @@ def test_python(args):
             threads = min(8, cpu_count())  # To prevent running out of memory
         except:
             threads = 2
+        os.environ['TI_DEVICE_MEMORY_FRACTION'] = str(1.0 / (threads + 1))
         arg_threads = None
         if args.threads is not None:
             arg_threads = int(args.threads)

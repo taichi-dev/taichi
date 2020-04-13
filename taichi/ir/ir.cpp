@@ -14,6 +14,81 @@ TLANG_NAMESPACE_BEGIN
 #define TI_EXPRESSION_IMPLEMENTATION
 #include "expression.h"
 
+IRBuilder &current_ast_builder() {
+  return context->builder();
+}
+
+std::string VectorType::pointer_suffix() const {
+  if (is_pointer()) {
+    return "*";
+  } else {
+    return "";
+  }
+}
+
+std::string VectorType::element_type_name() const {
+  return fmt::format("{}{}", data_type_short_name(data_type), pointer_suffix());
+}
+
+std::string VectorType::str() const {
+  auto ename = element_type_name();
+  return fmt::format("{:4}x{}", ename, width);
+}
+
+void DecoratorRecorder::reset() {
+  vectorize = -1;
+  parallelize = 0;
+  uniform = false;
+  scratch_opt.clear();
+  block_dim = 0;
+  strictly_serialized = false;
+}
+
+Block *IRBuilder::current_block() {
+  if (stack.empty())
+    return nullptr;
+  else
+    return stack.back();
+}
+
+Stmt *IRBuilder::get_last_stmt() {
+  return stack.back()->back();
+}
+
+void IRBuilder::insert(std::unique_ptr<Stmt> &&stmt, int location) {
+  TI_ASSERT(!stack.empty());
+  stack.back()->insert(std::move(stmt), location);
+}
+
+void IRBuilder::stop_gradient(SNode *snode) {
+  TI_ASSERT(!stack.empty());
+  stack.back()->stop_gradients.push_back(snode);
+}
+
+std::unique_ptr<IRBuilder::ScopeGuard> IRBuilder::create_scope(
+    std::unique_ptr<Block> &list) {
+  TI_ASSERT(list == nullptr);
+  list = std::make_unique<Block>();
+  if (!stack.empty()) {
+    list->parent = stack.back();
+  }
+  return std::make_unique<ScopeGuard>(this, list.get());
+}
+
+int Identifier::id_counter = 0;
+std::string Identifier::raw_name() const {
+  if (name_.empty())
+    return fmt::format("tmp{}", id);
+  else
+    return name_;
+}
+
+Stmt *VecStatement::push_back(pStmt &&stmt) {
+  auto ret = stmt.get();
+  stmts.push_back(std::move(stmt));
+  return ret;
+}
+
 class StatementTypeNameVisitor : public IRVisitor {
  public:
   std::string type_name;
@@ -29,270 +104,70 @@ class StatementTypeNameVisitor : public IRVisitor {
 #undef PER_STATEMENT
 };
 
-std::string Stmt::type() {
-  StatementTypeNameVisitor v;
-  this->accept(&v);
-  return v.type_name;
+Expr load_if_ptr(const Expr &ptr) {
+  if (ptr.is<GlobalPtrExpression>()) {
+    return load(ptr);
+  } else if (ptr.is<GlobalVariableExpression>()) {
+    TI_ASSERT(ptr.cast<GlobalVariableExpression>()->snode->num_active_indices ==
+              0);
+    return load(ptr[ExprGroup()]);
+  } else
+    return ptr;
 }
 
-void IRBuilder::insert(std::unique_ptr<Stmt> &&stmt, int location) {
-  TI_ASSERT(!stack.empty());
-  stack.back()->insert(std::move(stmt), location);
+Expr load(const Expr &ptr) {
+  TI_ASSERT(ptr.is<GlobalPtrExpression>());
+  return Expr::make<GlobalLoadExpression>(ptr);
 }
 
-void IRBuilder::stop_gradient(SNode *snode) {
-  TI_ASSERT(!stack.empty());
-  stack.back()->stop_gradients.push_back(snode);
-}
-
-GetChStmt::GetChStmt(taichi::lang::Stmt *input_ptr, int chid)
-    : input_ptr(input_ptr), chid(chid) {
-  TI_ASSERT(input_ptr->is<SNodeLookupStmt>());
-  input_snode = input_ptr->as<SNodeLookupStmt>()->snode;
-  output_snode = input_snode->ch[chid].get();
-  TI_STMT_REG_FIELDS;
-}
-
-Expr select(const Expr &cond, const Expr &true_val, const Expr &false_val) {
-  return Expr::make<TrinaryOpExpression>(TernaryOpType::select, cond, true_val,
-                                         false_val);
-}
-
-Expr operator-(const Expr &expr) {
-  return Expr::make<UnaryOpExpression>(UnaryOpType::neg, expr);
-}
-
-Expr operator~(const Expr &expr) {
-  return Expr::make<UnaryOpExpression>(UnaryOpType::bit_not, expr);
-}
-
-Expr cast(const Expr &input, DataType dt) {
-  auto ret = std::make_shared<UnaryOpExpression>(UnaryOpType::cast, input);
-  ret->cast_type = dt;
-  ret->cast_by_value = true;
-  return Expr(ret);
-}
-
-Expr bit_cast(const Expr &input, DataType dt) {
-  auto ret = std::make_shared<UnaryOpExpression>(UnaryOpType::cast, input);
-  ret->cast_type = dt;
-  ret->cast_by_value = false;
-  return Expr(ret);
-}
-
-Expr Expr::operator[](const ExprGroup &indices) const {
-  TI_ASSERT(is<GlobalVariableExpression>() || is<ExternalTensorExpression>());
-  return Expr::make<GlobalPtrExpression>(*this, indices.loaded());
-}
-
-ExprGroup ExprGroup::loaded() const {
-  auto indices_loaded = *this;
-  for (int i = 0; i < (int)this->size(); i++)
-    indices_loaded[i].set(load_if_ptr(indices_loaded[i]));
-  return indices_loaded;
-}
-
-DecoratorRecorder dec;
-
-IRBuilder &current_ast_builder() {
-  return context->builder();
-}
-
-std::unique_ptr<IRBuilder::ScopeGuard> IRBuilder::create_scope(
-    std::unique_ptr<Block> &list) {
-  TI_ASSERT(list == nullptr);
-  list = std::make_unique<Block>();
-  if (!stack.empty()) {
-    list->parent = stack.back();
+Expr ptr_if_global(const Expr &var) {
+  if (var.is<GlobalVariableExpression>()) {
+    // singleton global variable
+    TI_ASSERT(var.snode()->num_active_indices == 0);
+    return var[ExprGroup()];
+  } else {
+    // may be any local or global expr
+    return var;
   }
-  return std::make_unique<ScopeGuard>(this, list.get());
 }
 
-Expr &Expr::operator=(const Expr &o) {
-  if (get_current_program().current_kernel) {
-    if (expr == nullptr) {
-      set(o.eval());
-    } else if (expr->is_lvalue()) {
-      current_ast_builder().insert(std::make_unique<FrontendAssignStmt>(
-          ptr_if_global(*this), load_if_ptr(o)));
-    } else {
-      // set(o.eval());
-      TI_ERROR("Cannot assign to non-lvalue: {}", serialize());
+int StmtFieldSNode::get_snode_id(SNode *snode) {
+  if (snode == nullptr)
+    return -1;
+  return snode->id;
+}
+
+bool StmtFieldSNode::equal(const StmtField *other_generic) const {
+  if (auto other = dynamic_cast<const StmtFieldSNode *>(other_generic)) {
+    return get_snode_id(snode) == get_snode_id(other->snode);
+  } else {
+    // Different types
+    return false;
+  }
+}
+
+bool StmtFieldManager::equal(StmtFieldManager &other) const {
+  if (fields.size() != other.fields.size()) {
+    return false;
+  }
+  auto num_fields = fields.size();
+  for (std::size_t i = 0; i < num_fields; i++) {
+    if (!fields[i]->equal(other.fields[i].get())) {
+      return false;
     }
-  } else {
-    set(o);
   }
-  return *this;
+  return true;
 }
 
-FrontendContext::FrontendContext() {
-  root_node = std::make_unique<Block>();
-  current_builder = std::make_unique<IRBuilder>(root_node.get());
-}
-
-Expr::Expr(int32 x) : Expr() {
-  expr = std::make_shared<ConstExpression>(x);
-}
-
-Expr::Expr(int64 x) : Expr() {
-  expr = std::make_shared<ConstExpression>(x);
-}
-
-Expr::Expr(float32 x) : Expr() {
-  expr = std::make_shared<ConstExpression>(x);
-}
-
-Expr::Expr(float64 x) : Expr() {
-  expr = std::make_shared<ConstExpression>(x);
-}
-
-Expr::Expr(const Identifier &id) : Expr() {
-  expr = std::make_shared<IdExpression>(id);
-}
-
-Expr Expr::eval() const {
-  TI_ASSERT(expr != nullptr);
-  if (is<EvalExpression>()) {
-    return *this;
-  }
-  auto eval_stmt = Stmt::make<FrontendEvalStmt>(*this);
-  auto eval_expr = Expr::make<EvalExpression>(eval_stmt.get());
-  eval_stmt->as<FrontendEvalStmt>()->eval_expr.set(eval_expr);
-  // needed in lower_ast to replace the statement itself with the
-  // lowered statement
-  current_ast_builder().insert(std::move(eval_stmt));
-  return eval_expr;
-}
-
-void Expr::operator+=(const Expr &o) {
-  if (this->atomic) {
-    current_ast_builder().insert(Stmt::make<FrontendAtomicStmt>(
-        AtomicOpType::add, ptr_if_global(*this), load_if_ptr(o)));
-  } else {
-    (*this) = (*this) + o;
-  }
-}
-void Expr::operator-=(const Expr &o) {
-  if (this->atomic) {
-    current_ast_builder().insert(Stmt::make<FrontendAtomicStmt>(
-        AtomicOpType::add, *this, -load_if_ptr(o)));
-  } else {
-    (*this) = (*this) - o;
-  }
-}
-void Expr::operator*=(const Expr &o) {
-  TI_ASSERT(!this->atomic);
-  (*this) = (*this) * load_if_ptr(o);
-}
-void Expr::operator/=(const Expr &o) {
-  TI_ASSERT(!this->atomic);
-  (*this) = (*this) / load_if_ptr(o);
-}
-
-FrontendForStmt::FrontendForStmt(const Expr &loop_var,
-                                 const Expr &begin,
-                                 const Expr &end)
-    : begin(begin), end(end) {
-  vectorize = dec.vectorize;
-  parallelize = dec.parallelize;
-  strictly_serialized = dec.strictly_serialized;
-  block_dim = dec.block_dim;
-  auto cfg = get_current_program().config;
-  if (cfg.arch == Arch::cuda) {
-    vectorize = 1;
-    parallelize = 1;
-  } else {
-    if (block_dim == 0)
-      block_dim = cfg.default_cpu_block_dim;
-    if (parallelize == 0)
-      parallelize = std::thread::hardware_concurrency();
-  }
-  scratch_opt = dec.scratch_opt;
-  dec.reset();
-  if (vectorize == -1)
-    vectorize = 1;
-  loop_var_id.resize(1);
-  loop_var_id[0] = loop_var.cast<IdExpression>()->id;
-}
-
-FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
-                                 const Expr &global_var)
-    : global_var(global_var) {
-  vectorize = dec.vectorize;
-  parallelize = dec.parallelize;
-  strictly_serialized = dec.strictly_serialized;
-  block_dim = dec.block_dim;
-  auto cfg = get_current_program().config;
-  if (cfg.arch == Arch::cuda) {
-    vectorize = 1;
-    parallelize = 1;
-    TI_ASSERT(block_dim <= taichi_max_gpu_block_dim);
-  } else {
-    // cpu
-    if (block_dim == 0)
-      block_dim = cfg.default_cpu_block_dim;
-    if (parallelize == 0)
-      parallelize = std::thread::hardware_concurrency();
-  }
-  scratch_opt = dec.scratch_opt;
-  dec.reset();
-  if (vectorize == -1)
-    vectorize = 1;
-
-  loop_var_id.resize(loop_var.size());
-  for (int i = 0; i < (int)loop_var.size(); i++) {
-    loop_var_id[i] = loop_var[i].cast<IdExpression>()->id;
-  }
-}
-
-IRNode *Stmt::get_ir_root() {
-  auto block = parent;
-  while (block->parent)
-    block = block->parent;
-  return dynamic_cast<IRNode *>(block);
-}
-
-FrontendAssignStmt::FrontendAssignStmt(const Expr &lhs, const Expr &rhs)
-    : lhs(lhs), rhs(rhs) {
-  TI_ASSERT(lhs->is_lvalue());
-}
-
-FrontendAtomicStmt::FrontendAtomicStmt(AtomicOpType op_type,
-                                       const Expr &dest,
-                                       const Expr &val)
-    : op_type(op_type), dest(dest), val(val) {
-}
-
-IRNode *FrontendContext::root() {
-  return static_cast<IRNode *>(root_node.get());
-}
-
-int Identifier::id_counter = 0;
 std::atomic<int> Stmt::instance_id_counter(0);
 
-std::unique_ptr<FrontendContext> context;
-
-Expr Expr::parent() const {
-  TI_ASSERT(is<GlobalVariableExpression>());
-  return Expr::make<GlobalVariableExpression>(
-      cast<GlobalVariableExpression>()->snode->parent);
-}
-
-SNode *Expr::snode() const {
-  TI_ASSERT(is<GlobalVariableExpression>());
-  return cast<GlobalVariableExpression>()->snode;
-}
-
-Expr Expr::operator!() {
-  return Expr::make<UnaryOpExpression>(UnaryOpType::logic_not, expr);
-}
-
-void Expr::declare(DataType dt) {
-  set(Expr::make<GlobalVariableExpression>(dt, Identifier()));
-}
-
-void Expr::set_grad(const Expr &o) {
-  this->cast<GlobalVariableExpression>()->adjoint.set(o);
+Stmt::Stmt() : field_manager(this), fields_registered(false) {
+  parent = nullptr;
+  instance_id = instance_id_counter++;
+  id = instance_id;
+  operand_bitmap = 0;
+  erased = false;
+  is_ptr = false;
 }
 
 Stmt *Stmt::insert_before_me(std::unique_ptr<Stmt> &&new_stmt) {
@@ -351,6 +226,260 @@ void Stmt::replace_operand_with(Stmt *old_stmt, Stmt *new_stmt) {
   rebuild_operand_bitmap();
 }
 
+std::string Stmt::type_hint() const {
+  if (ret_type.data_type == DataType::unknown)
+    return "";
+  else
+    return fmt::format("<{}>{}", ret_type.str(), is_ptr ? "ptr " : " ");
+}
+
+std::string Stmt::type() {
+  StatementTypeNameVisitor v;
+  this->accept(&v);
+  return v.type_name;
+}
+
+IRNode *Stmt::get_ir_root() {
+  auto block = parent;
+  while (block->parent)
+    block = block->parent;
+  return dynamic_cast<IRNode *>(block);
+}
+
+std::vector<Stmt *> Stmt::get_operands() const {
+  std::vector<Stmt *> ret;
+  for (int i = 0; i < num_operands(); i++) {
+    ret.push_back(*operands[i]);
+  }
+  return ret;
+}
+
+void Stmt::set_operand(int i, Stmt *stmt) {
+  *operands[i] = stmt;
+  rebuild_operand_bitmap();
+}
+
+void Stmt::register_operand(Stmt *&stmt) {
+  operands.push_back(&stmt);
+  rebuild_operand_bitmap();
+}
+
+void Stmt::mark_fields_registered() {
+  TI_ASSERT(!fields_registered);
+  fields_registered = true;
+}
+
+std::string Expression::get_attribute(const std::string &key) const {
+  if (auto it = attributes.find(key); it == attributes.end()) {
+    TI_ERROR("Attribute {} not found.", key);
+  } else {
+    return it->second;
+  }
+}
+
+ExprGroup ExprGroup::loaded() const {
+  auto indices_loaded = *this;
+  for (int i = 0; i < (int)this->size(); i++)
+    indices_loaded[i].set(load_if_ptr(indices_loaded[i]));
+  return indices_loaded;
+}
+
+std::string ExprGroup::serialize() const {
+  std::string ret;
+  for (int i = 0; i < (int)exprs.size(); i++) {
+    ret += exprs[i].serialize();
+    if (i + 1 < (int)exprs.size()) {
+      ret += ", ";
+    }
+  }
+  return ret;
+}
+
+UnaryOpStmt::UnaryOpStmt(UnaryOpType op_type, Stmt *operand)
+    : op_type(op_type), operand(operand) {
+  TI_ASSERT(!operand->is<AllocaStmt>());
+  cast_type = DataType::unknown;
+  cast_by_value = true;
+  TI_STMT_REG_FIELDS;
+}
+
+bool UnaryOpStmt::same_operation(UnaryOpStmt *o) const {
+  if (op_type == o->op_type) {
+    if (op_type == UnaryOpType::cast) {
+      return cast_type == o->cast_type;
+    } else {
+      return true;
+    }
+  }
+  return false;
+}
+
+std::string UnaryOpExpression::serialize() {
+  if (type == UnaryOpType::cast) {
+    std::string reint = cast_by_value ? "" : "reinterpret_";
+    return fmt::format("({}{}<{}> {})", reint, unary_op_type_name(type),
+                       data_type_name(cast_type), operand->serialize());
+  } else {
+    return fmt::format("({} {})", unary_op_type_name(type),
+                       operand->serialize());
+  }
+}
+
+void UnaryOpExpression::flatten(VecStatement &ret) {
+  operand->flatten(ret);
+  auto unary = std::make_unique<UnaryOpStmt>(type, operand->stmt);
+  if (type == UnaryOpType::cast) {
+    unary->cast_type = cast_type;
+    unary->cast_by_value = cast_by_value;
+  }
+  stmt = unary.get();
+  stmt->tb = tb;
+  ret.push_back(std::move(unary));
+}
+
+ExternalPtrStmt::ExternalPtrStmt(const LaneAttribute<Stmt *> &base_ptrs,
+                                 const std::vector<Stmt *> &indices)
+    : base_ptrs(base_ptrs), indices(indices) {
+  DataType dt = DataType::f32;
+  for (int i = 0; i < (int)base_ptrs.size(); i++) {
+    TI_ASSERT(base_ptrs[i] != nullptr);
+    TI_ASSERT(base_ptrs[i]->is<ArgLoadStmt>());
+  }
+  width() = base_ptrs.size();
+  element_type() = dt;
+  TI_STMT_REG_FIELDS;
+}
+
+GlobalPtrStmt::GlobalPtrStmt(const LaneAttribute<SNode *> &snodes,
+                             const std::vector<Stmt *> &indices,
+                             bool activate)
+    : snodes(snodes), indices(indices), activate(activate) {
+  for (int i = 0; i < (int)snodes.size(); i++) {
+    TI_ASSERT(snodes[i] != nullptr);
+    TI_ASSERT(snodes[0]->dt == snodes[i]->dt);
+  }
+  width() = snodes.size();
+  element_type() = snodes[0]->dt;
+  TI_STMT_REG_FIELDS;
+}
+
+std::string GlobalPtrExpression::serialize() {
+  std::string s = fmt::format("{}[", var.serialize());
+  for (int i = 0; i < (int)indices.size(); i++) {
+    s += indices.exprs[i]->serialize();
+    if (i + 1 < (int)indices.size())
+      s += ", ";
+  }
+  s += "]";
+  return s;
+}
+
+void GlobalPtrExpression::flatten(VecStatement &ret) {
+  std::vector<Stmt *> index_stmts;
+  for (int i = 0; i < (int)indices.size(); i++) {
+    indices.exprs[i]->flatten(ret);
+    index_stmts.push_back(indices.exprs[i]->stmt);
+  }
+  if (var.is<GlobalVariableExpression>()) {
+    ret.push_back(std::make_unique<GlobalPtrStmt>(
+        var.cast<GlobalVariableExpression>()->snode, index_stmts));
+  } else {
+    TI_ASSERT(var.is<ExternalTensorExpression>());
+    var->flatten(ret);
+    ret.push_back(std::make_unique<ExternalPtrStmt>(
+        var.cast<ExternalTensorExpression>()->stmt, index_stmts));
+  }
+  stmt = ret.back().get();
+}
+
+GetChStmt::GetChStmt(Stmt *input_ptr, int chid)
+    : input_ptr(input_ptr), chid(chid) {
+  TI_ASSERT(input_ptr->is<SNodeLookupStmt>());
+  input_snode = input_ptr->as<SNodeLookupStmt>()->snode;
+  output_snode = input_snode->ch[chid].get();
+  TI_STMT_REG_FIELDS;
+}
+
+DecoratorRecorder dec;
+
+FrontendContext::FrontendContext() {
+  root_node = std::make_unique<Block>();
+  current_builder = std::make_unique<IRBuilder>(root_node.get());
+}
+
+FrontendForStmt::FrontendForStmt(const Expr &loop_var,
+                                 const Expr &begin,
+                                 const Expr &end)
+    : begin(begin), end(end) {
+  vectorize = dec.vectorize;
+  parallelize = dec.parallelize;
+  strictly_serialized = dec.strictly_serialized;
+  block_dim = dec.block_dim;
+  auto cfg = get_current_program().config;
+  if (cfg.arch == Arch::cuda) {
+    vectorize = 1;
+    parallelize = 1;
+  } else {
+    if (block_dim == 0)
+      block_dim = cfg.default_cpu_block_dim;
+    if (parallelize == 0)
+      parallelize = std::thread::hardware_concurrency();
+  }
+  scratch_opt = dec.scratch_opt;
+  dec.reset();
+  if (vectorize == -1)
+    vectorize = 1;
+  loop_var_id.resize(1);
+  loop_var_id[0] = loop_var.cast<IdExpression>()->id;
+}
+
+FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
+                                 const Expr &global_var)
+    : global_var(global_var) {
+  vectorize = dec.vectorize;
+  parallelize = dec.parallelize;
+  strictly_serialized = dec.strictly_serialized;
+  block_dim = dec.block_dim;
+  auto cfg = get_current_program().config;
+  if (cfg.arch == Arch::cuda) {
+    vectorize = 1;
+    parallelize = 1;
+    TI_ASSERT(block_dim <= taichi_max_gpu_block_dim);
+  } else {
+    // cpu
+    if (block_dim == 0)
+      block_dim = cfg.default_cpu_block_dim;
+    if (parallelize == 0)
+      parallelize = std::thread::hardware_concurrency();
+  }
+  scratch_opt = dec.scratch_opt;
+  dec.reset();
+  if (vectorize == -1)
+    vectorize = 1;
+
+  loop_var_id.resize(loop_var.size());
+  for (int i = 0; i < (int)loop_var.size(); i++) {
+    loop_var_id[i] = loop_var[i].cast<IdExpression>()->id;
+  }
+}
+
+FrontendAssignStmt::FrontendAssignStmt(const Expr &lhs, const Expr &rhs)
+    : lhs(lhs), rhs(rhs) {
+  TI_ASSERT(lhs->is_lvalue());
+}
+
+FrontendAtomicStmt::FrontendAtomicStmt(AtomicOpType op_type,
+                                       const Expr &dest,
+                                       const Expr &val)
+    : op_type(op_type), dest(dest), val(val) {
+}
+
+IRNode *FrontendContext::root() {
+  return static_cast<IRNode *>(root_node.get());
+}
+
+std::unique_ptr<FrontendContext> context;
+
 Block *current_block = nullptr;
 
 Expr Var(const Expr &x) {
@@ -398,6 +527,29 @@ Stmt *LocalLoadStmt::previous_store_or_alloca_in_block() {
     }
   }
   return nullptr;
+}
+
+void LocalLoadStmt::rebuild_operands() {
+  operands.clear();
+  for (int i = 0; i < (int)ptr.size(); i++) {
+    register_operand(this->ptr[i].var);
+  }
+}
+
+bool LocalLoadStmt::same_source() const {
+  for (int i = 1; i < (int)ptr.size(); i++) {
+    if (ptr[i].var != ptr[0].var)
+      return false;
+  }
+  return true;
+}
+
+bool LocalLoadStmt::has_source(Stmt *alloca) const {
+  for (int i = 0; i < width(); i++) {
+    if (ptr[i].var == alloca)
+      return true;
+  }
+  return false;
 }
 
 void Block::erase(int location) {
@@ -469,7 +621,7 @@ void Block::replace_with(Stmt *old_statement,
   replace_with(old_statement, std::move(vec));
 }
 
-Stmt *Block::lookup_var(const taichi::lang::Ident &ident) const {
+Stmt *Block::lookup_var(const Ident &ident) const {
   auto ptr = local_var_alloca.find(ident);
   if (ptr != local_var_alloca.end()) {
     return ptr->second;
@@ -492,6 +644,168 @@ Stmt *Block::mask() {
   }
 }
 
+void Block::set_statements(VecStatement &&stmts) {
+  statements.clear();
+  for (int i = 0; i < (int)stmts.size(); i++) {
+    insert(std::move(stmts[i]), i);
+  }
+}
+
+void Block::insert_before(Stmt *old_statement, VecStatement &&new_statements) {
+  int location = -1;
+  for (int i = 0; i < (int)statements.size(); i++) {
+    if (old_statement == statements[i].get()) {
+      location = i;
+      break;
+    }
+  }
+  TI_ASSERT(location != -1);
+  for (int i = (int)new_statements.size() - 1; i >= 0; i--) {
+    insert(std::move(new_statements[i]), location);
+  }
+}
+
+void Block::replace_with(Stmt *old_statement,
+                         VecStatement &&new_statements,
+                         bool replace_usages) {
+  int location = -1;
+  for (int i = 0; i < (int)statements.size(); i++) {
+    if (old_statement == statements[i].get()) {
+      location = i;
+      break;
+    }
+  }
+  TI_ASSERT(location != -1);
+  if (replace_usages)
+    old_statement->replace_with(new_statements.back().get());
+  trash_bin.push_back(std::move(statements[location]));
+  statements.erase(statements.begin() + location);
+  for (int i = (int)new_statements.size() - 1; i >= 0; i--) {
+    insert(std::move(new_statements[i]), location);
+  }
+}
+
+bool Block::has_container_statements() {
+  for (auto &s : statements) {
+    if (s->is_container_statement())
+      return true;
+  }
+  return false;
+}
+
+int Block::locate(Stmt *stmt) {
+  for (int i = 0; i < (int)statements.size(); i++) {
+    if (statements[i].get() == stmt) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+FrontendSNodeOpStmt::FrontendSNodeOpStmt(SNodeOpType op_type,
+                                         SNode *snode,
+                                         const ExprGroup &indices,
+                                         const Expr &val)
+    : op_type(op_type), snode(snode), indices(indices.loaded()), val(val) {
+  if (val.expr != nullptr) {
+    TI_ASSERT(op_type == SNodeOpType::append);
+    this->val.set(load_if_ptr(val));
+  } else {
+    TI_ASSERT(op_type != SNodeOpType::append);
+  }
+}
+
+SNodeOpStmt::SNodeOpStmt(SNodeOpType op_type,
+                         SNode *snode,
+                         Stmt *ptr,
+                         Stmt *val)
+    : op_type(op_type), snode(snode), ptr(ptr), val(val) {
+  width() = 1;
+  element_type() = DataType::i32;
+  TI_STMT_REG_FIELDS;
+}
+
+SNodeOpStmt::SNodeOpStmt(SNodeOpType op_type,
+                         SNode *snode,
+                         const std::vector<Stmt *> &indices)
+    : op_type(op_type), snode(snode), indices(indices) {
+  ptr = nullptr;
+  val = nullptr;
+  TI_ASSERT(op_type == SNodeOpType::is_active ||
+            op_type == SNodeOpType::deactivate);
+  width() = 1;
+  element_type() = DataType::i32;
+  TI_STMT_REG_FIELDS;
+}
+
+std::string AtomicOpExpression::serialize() {
+  if (op_type == AtomicOpType::add) {
+    return fmt::format("atomic_add({}, {})", dest.serialize(), val.serialize());
+  } else if (op_type == AtomicOpType::sub) {
+    return fmt::format("atomic_sub({}, {})", dest.serialize(), val.serialize());
+  } else if (op_type == AtomicOpType::min) {
+    return fmt::format("atomic_min({}, {})", dest.serialize(), val.serialize());
+  } else if (op_type == AtomicOpType::max) {
+    return fmt::format("atomic_max({}, {})", dest.serialize(), val.serialize());
+  } else if (op_type == AtomicOpType::bit_and) {
+    return fmt::format("atomic_bit_and({}, {})", dest.serialize(),
+                       val.serialize());
+  } else if (op_type == AtomicOpType::bit_or) {
+    return fmt::format("atomic_bit_or({}, {})", dest.serialize(),
+                       val.serialize());
+  } else if (op_type == AtomicOpType::bit_xor) {
+    return fmt::format("atomic_bit_xor({}, {})", dest.serialize(),
+                       val.serialize());
+  } else {
+    // min/max not supported in the LLVM backend yet.
+    TI_NOT_IMPLEMENTED;
+  }
+}
+
+std::string SNodeOpExpression::serialize() {
+  if (value.expr) {
+    return fmt::format("{}({}, [{}], {})", snode_op_type_name(op_type),
+                       snode->get_node_type_name_hinted(), indices.serialize(),
+                       value.serialize());
+  } else {
+    return fmt::format("{}({}, [{}])", snode_op_type_name(op_type),
+                       snode->get_node_type_name_hinted(), indices.serialize());
+  }
+}
+
+void SNodeOpExpression::flatten(VecStatement &ret) {
+  std::vector<Stmt *> indices_stmt;
+  for (int i = 0; i < (int)indices.size(); i++) {
+    indices[i]->flatten(ret);
+    indices_stmt.push_back(indices[i]->stmt);
+  }
+  if (op_type == SNodeOpType::is_active) {
+    // is_active cannot be lowered all the way to a global pointer.
+    // It should be lowered into a pointer to parent and an index.
+    TI_ERROR_IF(snode->type != SNodeType::pointer &&
+                    snode->type != SNodeType::hash &&
+                    snode->type != SNodeType::bitmasked,
+                "ti.is_active only works on pointer, hash or bitmasked nodes.");
+    ret.push_back<SNodeOpStmt>(SNodeOpType::is_active, snode, indices_stmt);
+  } else {
+    auto ptr = ret.push_back<GlobalPtrStmt>(snode, indices_stmt);
+    if (op_type == SNodeOpType::append) {
+      value->flatten(ret);
+      ret.push_back<SNodeOpStmt>(SNodeOpType::append, snode, ptr,
+                                 ret.back().get());
+      TI_ERROR_IF(snode->type != SNodeType::dynamic,
+                  "ti.append only works on dynamic nodes.");
+      TI_ERROR_IF(snode->ch.size() != 1,
+                  "ti.append only works on single-child dynamic nodes.");
+      TI_ERROR_IF(data_type_size(snode->ch[0]->dt) != 4,
+                  "ti.append only works on i32/f32 nodes.");
+    } else if (op_type == SNodeOpType::length) {
+      ret.push_back<SNodeOpStmt>(SNodeOpType::length, snode, ptr, nullptr);
+    }
+  }
+  stmt = ret.back().get();
+}
+
 For::For(const Expr &s, const Expr &e, const std::function<void(Expr)> &func) {
   auto i = Expr(std::make_shared<IdExpression>());
   auto stmt_unique = std::make_unique<FrontendForStmt>(i, s, e);
@@ -501,8 +815,25 @@ For::For(const Expr &s, const Expr &e, const std::function<void(Expr)> &func) {
   func(i);
 }
 
-Stmt *IRBuilder::get_last_stmt() {
-  return stack.back()->back();
+For::For(const Expr &i,
+         const Expr &s,
+         const Expr &e,
+         const std::function<void()> &func) {
+  auto stmt_unique = std::make_unique<FrontendForStmt>(i, s, e);
+  auto stmt = stmt_unique.get();
+  current_ast_builder().insert(std::move(stmt_unique));
+  auto _ = current_ast_builder().create_scope(stmt->body);
+  func();
+}
+
+For::For(const ExprGroup &i,
+         const Expr &global,
+         const std::function<void()> &func) {
+  auto stmt_unique = std::make_unique<FrontendForStmt>(i, global);
+  auto stmt = stmt_unique.get();
+  current_ast_builder().insert(std::move(stmt_unique));
+  auto _ = current_ast_builder().create_scope(stmt->body);
+  func();
 }
 
 OffloadedStmt::OffloadedStmt(OffloadedStmt::TaskType task_type)

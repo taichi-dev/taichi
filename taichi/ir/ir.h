@@ -159,23 +159,9 @@ struct VectorType {
     return !(*this == o);
   }
 
-  std::string pointer_suffix() const {
-    if (is_pointer()) {
-      return "*";
-    } else {
-      return "";
-    }
-  }
-
-  std::string element_type_name() const {
-    return fmt::format("{}{}", data_type_short_name(data_type),
-                       pointer_suffix());
-  }
-
-  std::string str() const {
-    auto ename = element_type_name();
-    return fmt::format("{:4}x{}", ename, width);
-  }
+  std::string pointer_suffix() const;
+  std::string element_type_name() const;
+  std::string str() const;
 
   bool is_pointer() const {
     return _is_pointer;
@@ -199,14 +185,7 @@ class DecoratorRecorder {
     reset();
   }
 
-  void reset() {
-    vectorize = -1;
-    parallelize = 0;
-    uniform = false;
-    scratch_opt.clear();
-    block_dim = 0;
-    strictly_serialized = false;
-  }
+  void reset();
 };
 
 class FrontendContext {
@@ -254,21 +233,18 @@ class IRBuilder {
   };
 
   std::unique_ptr<ScopeGuard> create_scope(std::unique_ptr<Block> &list);
-
-  Block *current_block() {
-    if (stack.empty())
-      return nullptr;
-    else
-      return stack.back();
-  }
-
+  Block *current_block();
   Stmt *get_last_stmt();
-
   void stop_gradient(SNode *);
 };
 
-inline Expr load_if_ptr(const Expr &ptr);
-inline Expr smart_load(const Expr &var);
+Expr load_if_ptr(const Expr &ptr);
+Expr load(const Expr &ptr);
+Expr ptr_if_global(const Expr &var);
+
+inline Expr smart_load(const Expr &var) {
+  return load_if_ptr(ptr_if_global(var));
+}
 
 class Identifier {
  public:
@@ -282,12 +258,7 @@ class Identifier {
     id = id_counter++;
   }
 
-  std::string raw_name() const {
-    if (name_.empty())
-      return fmt::format("tmp{}", id);
-    else
-      return name_;
-  }
+  std::string raw_name() const;
 
   std::string name() const {
     return "@" + raw_name();
@@ -323,11 +294,7 @@ class VecStatement {
     stmts = std::move(other_stmts);
   }
 
-  Stmt *push_back(pStmt &&stmt) {
-    auto ret = stmt.get();
-    stmts.push_back(std::move(stmt));
-    return ret;
-  }
+  Stmt *push_back(pStmt &&stmt);
 
   template <typename T, typename... Args>
   T *push_back(Args &&... args) {
@@ -569,20 +536,9 @@ class StmtFieldSNode final : public StmtField {
   explicit StmtFieldSNode(SNode *const &snode) : snode(snode) {
   }
 
-  static int get_snode_id(SNode *snode) {
-    if (snode == nullptr)
-      return -1;
-    return snode->id;
-  }
+  static int get_snode_id(SNode *snode);
 
-  bool equal(const StmtField *other_generic) const override {
-    if (auto other = dynamic_cast<const StmtFieldSNode *>(other_generic)) {
-      return get_snode_id(snode) == get_snode_id(other->snode);
-    } else {
-      // Different types
-      return false;
-    }
-  }
+  bool equal(const StmtField *other_generic) const override;
 };
 
 class StmtFieldManager {
@@ -609,18 +565,7 @@ class StmtFieldManager {
     this->operator()(rest_names.c_str(), std::forward<Args>(rest)...);
   }
 
-  bool equal(StmtFieldManager &other) const {
-    if (fields.size() != other.fields.size()) {
-      return false;
-    }
-    auto num_fields = fields.size();
-    for (std::size_t i = 0; i < num_fields; i++) {
-      if (!fields[i]->equal(other.fields[i].get())) {
-        return false;
-      }
-    }
-    return true;
-  }
+  bool equal(StmtFieldManager &other) const;
 };
 
 #define TI_STMT_DEF_FIELDS(...) TI_IO_DEF(__VA_ARGS__)
@@ -644,17 +589,10 @@ class Stmt : public IRNode {
   bool fields_registered;
   std::string tb;
   bool is_ptr;
+  VectorType ret_type;
 
   Stmt(const Stmt &stmt) = delete;
-
-  Stmt() : field_manager(this), fields_registered(false) {
-    parent = nullptr;
-    instance_id = instance_id_counter++;
-    id = instance_id;
-    operand_bitmap = 0;
-    erased = false;
-    is_ptr = false;
-  }
+  Stmt();
 
   static uint64 operand_hash(Stmt *stmt) {
     return uint64(1) << ((uint64(stmt) >> 4) % 64);
@@ -676,18 +614,11 @@ class Stmt : public IRNode {
     return ret_type.data_type;
   }
 
-  VectorType ret_type;
-
   std::string ret_data_type_name() const {
     return ret_type.str();
   }
 
-  std::string type_hint() const {
-    if (ret_type.data_type == DataType::unknown)
-      return "";
-    else
-      return fmt::format("<{}>{}", ret_type.str(), is_ptr ? "ptr " : " ");
-  }
+  std::string type_hint() const;
 
   std::string name() const {
     return fmt::format("${}", id);
@@ -710,13 +641,7 @@ class Stmt : public IRNode {
     return *operands[i];
   }
 
-  std::vector<Stmt *> get_operands() const {
-    std::vector<Stmt *> ret;
-    for (int i = 0; i < num_operands(); i++) {
-      ret.push_back(*operands[i]);
-    }
-    return ret;
-  }
+  std::vector<Stmt *> get_operands() const;
 
   void rebuild_operand_bitmap() {
     return;  // disable bitmap maintenance since the fact that the user can
@@ -729,20 +654,9 @@ class Stmt : public IRNode {
     }
   }
 
-  void set_operand(int i, Stmt *stmt) {
-    *operands[i] = stmt;
-    rebuild_operand_bitmap();
-  }
-
-  void register_operand(Stmt *&stmt) {
-    operands.push_back(&stmt);
-    rebuild_operand_bitmap();
-  }
-
-  void mark_fields_registered() {
-    TI_ASSERT(!fields_registered);
-    fields_registered = true;
-  }
+  void set_operand(int i, Stmt *stmt);
+  void register_operand(Stmt *&stmt);
+  void mark_fields_registered();
 
   virtual void rebuild_operands() {
     TI_NOT_IMPLEMENTED;
@@ -753,9 +667,7 @@ class Stmt : public IRNode {
   }
 
   void replace_with(Stmt *new_stmt);
-
   void replace_with(VecStatement &&new_statements, bool replace_usages = true);
-
   virtual void replace_operand_with(Stmt *old_stmt, Stmt *new_stmt);
 
   IRNode *get_ir_root();
@@ -829,13 +741,7 @@ class Expression {
     attributes[key] = value;
   }
 
-  std::string get_attribute(const std::string &key) const {
-    if (auto it = attributes.find(key); it == attributes.end()) {
-      TI_ERROR("Attribute {} not found.", key);
-    } else {
-      return it->second;
-    }
-  }
+  std::string get_attribute(const std::string &key) const;
 };
 
 class ExprGroup {
@@ -880,17 +786,7 @@ class ExprGroup {
     return exprs[i];
   }
 
-  std::string serialize() {
-    std::string ret;
-    for (int i = 0; i < (int)exprs.size(); i++) {
-      ret += exprs[i].serialize();
-      if (i + 1 < (int)exprs.size()) {
-        ret += ", ";
-      }
-    }
-    return ret;
-  }
-
+  std::string serialize() const;
   ExprGroup loaded() const;
 };
 
@@ -990,24 +886,9 @@ class UnaryOpStmt : public Stmt {
   DataType cast_type;
   bool cast_by_value = true;
 
-  UnaryOpStmt(UnaryOpType op_type, Stmt *operand)
-      : op_type(op_type), operand(operand) {
-    TI_ASSERT(!operand->is<AllocaStmt>());
-    cast_type = DataType::unknown;
-    cast_by_value = true;
-    TI_STMT_REG_FIELDS;
-  }
+  UnaryOpStmt(UnaryOpType op_type, Stmt *operand);
 
-  bool same_operation(UnaryOpStmt *o) const {
-    if (op_type == o->op_type) {
-      if (op_type == UnaryOpType::cast) {
-        return cast_type == o->cast_type;
-      } else {
-        return true;
-      }
-    }
-    return false;
-  }
+  bool same_operation(UnaryOpStmt *o) const;
 
   virtual bool has_global_side_effect() const override {
     return false;
@@ -1135,28 +1016,9 @@ class UnaryOpExpression : public Expression {
     cast_by_value = true;
   }
 
-  std::string serialize() override {
-    if (type == UnaryOpType::cast) {
-      std::string reint = cast_by_value ? "" : "reinterpret_";
-      return fmt::format("({}{}<{}> {})", reint, unary_op_type_name(type),
-                         data_type_name(cast_type), operand->serialize());
-    } else {
-      return fmt::format("({} {})", unary_op_type_name(type),
-                         operand->serialize());
-    }
-  }
+  std::string serialize() override;
 
-  void flatten(VecStatement &ret) override {
-    operand->flatten(ret);
-    auto unary = std::make_unique<UnaryOpStmt>(type, operand->stmt);
-    if (type == UnaryOpType::cast) {
-      unary->cast_type = cast_type;
-      unary->cast_by_value = cast_by_value;
-    }
-    stmt = unary.get();
-    stmt->tb = tb;
-    ret.push_back(std::move(unary));
-  }
+  void flatten(VecStatement &ret) override;
 };
 
 class BinaryOpStmt : public Stmt {
@@ -1241,12 +1103,12 @@ class BinaryOpExpression : public Expression {
   }
 };
 
-class TrinaryOpExpression : public Expression {
+class TernaryOpExpression : public Expression {
  public:
   TernaryOpType type;
   Expr op1, op2, op3;
 
-  TrinaryOpExpression(TernaryOpType type,
+  TernaryOpExpression(TernaryOpType type,
                       const Expr &op1,
                       const Expr &op2,
                       const Expr &op3)
@@ -1280,17 +1142,7 @@ class ExternalPtrStmt : public Stmt {
   bool activate;
 
   ExternalPtrStmt(const LaneAttribute<Stmt *> &base_ptrs,
-                  const std::vector<Stmt *> &indices)
-      : base_ptrs(base_ptrs), indices(indices) {
-    DataType dt = DataType::f32;
-    for (int i = 0; i < (int)base_ptrs.size(); i++) {
-      TI_ASSERT(base_ptrs[i] != nullptr);
-      TI_ASSERT(base_ptrs[i]->is<ArgLoadStmt>());
-    }
-    width() = base_ptrs.size();
-    element_type() = dt;
-    TI_STMT_REG_FIELDS;
-  }
+                  const std::vector<Stmt *> &indices);
 
   virtual bool has_global_side_effect() const override {
     return false;
@@ -1308,16 +1160,7 @@ class GlobalPtrStmt : public Stmt {
 
   GlobalPtrStmt(const LaneAttribute<SNode *> &snodes,
                 const std::vector<Stmt *> &indices,
-                bool activate = true)
-      : snodes(snodes), indices(indices), activate(activate) {
-    for (int i = 0; i < (int)snodes.size(); i++) {
-      TI_ASSERT(snodes[i] != nullptr);
-      TI_ASSERT(snodes[0]->dt == snodes[i]->dt);
-    }
-    width() = snodes.size();
-    element_type() = snodes[0]->dt;
-    TI_STMT_REG_FIELDS;
-  }
+                bool activate = true);
 
   virtual bool has_global_side_effect() const override {
     return activate;
@@ -1398,34 +1241,9 @@ class GlobalPtrExpression : public Expression {
       : var(var), indices(indices) {
   }
 
-  std::string serialize() override {
-    std::string s = fmt::format("{}[", var.serialize());
-    for (int i = 0; i < (int)indices.size(); i++) {
-      s += indices.exprs[i]->serialize();
-      if (i + 1 < (int)indices.size())
-        s += ", ";
-    }
-    s += "]";
-    return s;
-  }
+  std::string serialize() override;
 
-  void flatten(VecStatement &ret) override {
-    std::vector<Stmt *> index_stmts;
-    for (int i = 0; i < (int)indices.size(); i++) {
-      indices.exprs[i]->flatten(ret);
-      index_stmts.push_back(indices.exprs[i]->stmt);
-    }
-    if (var.is<GlobalVariableExpression>()) {
-      ret.push_back(std::make_unique<GlobalPtrStmt>(
-          var.cast<GlobalVariableExpression>()->snode, index_stmts));
-    } else {
-      TI_ASSERT(var.is<ExternalTensorExpression>());
-      var->flatten(ret);
-      ret.push_back(std::make_unique<ExternalPtrStmt>(
-          var.cast<ExternalTensorExpression>()->stmt, index_stmts));
-    }
-    stmt = ret.back().get();
-  }
+  void flatten(VecStatement &ret) override;
 
   bool is_lvalue() const override {
     return true;
@@ -1433,27 +1251,6 @@ class GlobalPtrExpression : public Expression {
 };
 
 #include "expression.h"
-
-Expr select(const Expr &cond, const Expr &true_val, const Expr &false_val);
-
-Expr operator-(const Expr &expr);
-
-Expr operator~(const Expr &expr);
-
-// Value cast
-Expr cast(const Expr &input, DataType dt);
-
-template <typename T>
-Expr cast(const Expr &input) {
-  return taichi::lang::cast(input, get_data_type<T>());
-}
-
-Expr bit_cast(const Expr &input, DataType dt);
-
-template <typename T>
-Expr bit_cast(const Expr &input) {
-  return taichi::lang::bit_cast(input, get_data_type<T>());
-}
 
 class Block : public IRNode {
  public:
@@ -1468,82 +1265,22 @@ class Block : public IRNode {
     parent = nullptr;
   }
 
-  bool has_container_statements() {
-    for (auto &s : statements) {
-      if (s->is_container_statement())
-        return true;
-    }
-    return false;
-  }
-
-  int locate(Stmt *stmt) {
-    for (int i = 0; i < (int)statements.size(); i++) {
-      if (statements[i].get() == stmt) {
-        return i;
-      }
-    }
-    return -1;
-  }
-
+  bool has_container_statements();
+  int locate(Stmt *stmt);
   void erase(int location);
-
   void erase(Stmt *stmt);
-
   std::unique_ptr<Stmt> extract(int location);
-
   std::unique_ptr<Stmt> extract(Stmt *stmt);
-
   void insert(std::unique_ptr<Stmt> &&stmt, int location = -1);
-
   void insert(VecStatement &&stmt, int location = -1);
-
   void replace_statements_in_range(int start, int end, VecStatement &&stmts);
-
-  void set_statements(VecStatement &&stmts) {
-    statements.clear();
-    for (int i = 0; i < (int)stmts.size(); i++) {
-      insert(std::move(stmts[i]), i);
-    }
-  }
-
+  void set_statements(VecStatement &&stmts);
   void replace_with(Stmt *old_statement, std::unique_ptr<Stmt> &&new_statement);
-
-  void insert_before(Stmt *old_statement, VecStatement &&new_statements) {
-    int location = -1;
-    for (int i = 0; i < (int)statements.size(); i++) {
-      if (old_statement == statements[i].get()) {
-        location = i;
-        break;
-      }
-    }
-    TI_ASSERT(location != -1);
-    for (int i = (int)new_statements.size() - 1; i >= 0; i--) {
-      insert(std::move(new_statements[i]), location);
-    }
-  }
-
+  void insert_before(Stmt *old_statement, VecStatement &&new_statements);
   void replace_with(Stmt *old_statement,
                     VecStatement &&new_statements,
-                    bool replace_usages = true) {
-    int location = -1;
-    for (int i = 0; i < (int)statements.size(); i++) {
-      if (old_statement == statements[i].get()) {
-        location = i;
-        break;
-      }
-    }
-    TI_ASSERT(location != -1);
-    if (replace_usages)
-      old_statement->replace_with(new_statements.back().get());
-    trash_bin.push_back(std::move(statements[location]));
-    statements.erase(statements.begin() + location);
-    for (int i = (int)new_statements.size() - 1; i >= 0; i--) {
-      insert(std::move(new_statements[i]), location);
-    }
-  }
-
+                    bool replace_usages = true);
   Stmt *lookup_var(const Ident &ident) const;
-
   Stmt *mask();
 
   Stmt *back() const {
@@ -1589,15 +1326,7 @@ class FrontendSNodeOpStmt : public Stmt {
   FrontendSNodeOpStmt(SNodeOpType op_type,
                       SNode *snode,
                       const ExprGroup &indices,
-                      const Expr &val = Expr(nullptr))
-      : op_type(op_type), snode(snode), indices(indices.loaded()), val(val) {
-    if (val.expr != nullptr) {
-      TI_ASSERT(op_type == SNodeOpType::append);
-      this->val.set(load_if_ptr(val));
-    } else {
-      TI_ASSERT(op_type != SNodeOpType::append);
-    }
-  }
+                      const Expr &val = Expr(nullptr));
 
   DEFINE_ACCEPT
 };
@@ -1610,25 +1339,14 @@ class SNodeOpStmt : public Stmt {
   Stmt *val;
   std::vector<Stmt *> indices;
 
-  SNodeOpStmt(SNodeOpType op_type, SNode *snode, Stmt *ptr, Stmt *val = nullptr)
-      : op_type(op_type), snode(snode), ptr(ptr), val(val) {
-    width() = 1;
-    element_type() = DataType::i32;
-    TI_STMT_REG_FIELDS;
-  }
+  SNodeOpStmt(SNodeOpType op_type,
+              SNode *snode,
+              Stmt *ptr,
+              Stmt *val = nullptr);
 
   SNodeOpStmt(SNodeOpType op_type,
               SNode *snode,
-              const std::vector<Stmt *> &indices)
-      : op_type(op_type), snode(snode), indices(indices) {
-    ptr = nullptr;
-    val = nullptr;
-    TI_ASSERT(op_type == SNodeOpType::is_active ||
-              op_type == SNodeOpType::deactivate);
-    width() = 1;
-    element_type() = DataType::i32;
-    TI_STMT_REG_FIELDS;
-  }
+              const std::vector<Stmt *> &indices);
 
   static bool activation_related(SNodeOpType op) {
     return op == SNodeOpType::activate || op == SNodeOpType::deactivate ||
@@ -1746,28 +1464,9 @@ class LocalLoadStmt : public Stmt {
     TI_STMT_REG_FIELDS;
   }
 
-  void rebuild_operands() override {
-    operands.clear();
-    for (int i = 0; i < (int)ptr.size(); i++) {
-      register_operand(this->ptr[i].var);
-    }
-  }
-
-  bool same_source() const {
-    for (int i = 1; i < (int)ptr.size(); i++) {
-      if (ptr[i].var != ptr[0].var)
-        return false;
-    }
-    return true;
-  }
-
-  bool has_source(Stmt *alloca) const {
-    for (int i = 0; i < width(); i++) {
-      if (ptr[i].var == alloca)
-        return true;
-    }
-    return false;
-  }
+  void rebuild_operands() override;
+  bool same_source() const;
+  bool has_source(Stmt *alloca) const;
 
   bool integral_operands() const override {
     return false;
@@ -2230,33 +1929,7 @@ class AtomicOpExpression : public Expression {
       : op_type(op_type), dest(dest), val(val) {
   }
 
-  std::string serialize() override {
-    if (op_type == AtomicOpType::add) {
-      return fmt::format("atomic_add({}, {})", dest.serialize(),
-                         val.serialize());
-    } else if (op_type == AtomicOpType::sub) {
-      return fmt::format("atomic_sub({}, {})", dest.serialize(),
-                         val.serialize());
-    } else if (op_type == AtomicOpType::min) {
-      return fmt::format("atomic_min({}, {})", dest.serialize(),
-                         val.serialize());
-    } else if (op_type == AtomicOpType::max) {
-      return fmt::format("atomic_max({}, {})", dest.serialize(),
-                         val.serialize());
-    } else if (op_type == AtomicOpType::bit_and) {
-      return fmt::format("atomic_bit_and({}, {})", dest.serialize(),
-                         val.serialize());
-    } else if (op_type == AtomicOpType::bit_or) {
-      return fmt::format("atomic_bit_or({}, {})", dest.serialize(),
-                         val.serialize());
-    } else if (op_type == AtomicOpType::bit_xor) {
-      return fmt::format("atomic_bit_xor({}, {})", dest.serialize(),
-                         val.serialize());
-    } else {
-      // min/max not supported in the LLVM backend yet.
-      TI_NOT_IMPLEMENTED;
-    }
-  }
+  std::string serialize() override;
 
   void flatten(VecStatement &ret) override {
     // FrontendAtomicStmt is the correct place to flatten sub-exprs like |dest|
@@ -2285,50 +1958,9 @@ class SNodeOpExpression : public Expression {
       : snode(snode), op_type(op_type), indices(indices), value(value) {
   }
 
-  std::string serialize() override {
-    if (value.expr) {
-      return fmt::format("{}({}, [{}], {})", snode_op_type_name(op_type),
-                         snode->get_node_type_name_hinted(),
-                         indices.serialize(), value.serialize());
-    } else {
-      return fmt::format("{}({}, [{}])", snode_op_type_name(op_type),
-                         snode->get_node_type_name_hinted(),
-                         indices.serialize());
-    }
-  }
+  std::string serialize() override;
 
-  void flatten(VecStatement &ret) override {
-    std::vector<Stmt *> indices_stmt;
-    for (int i = 0; i < (int)indices.size(); i++) {
-      indices[i]->flatten(ret);
-      indices_stmt.push_back(indices[i]->stmt);
-    }
-    if (op_type == SNodeOpType::is_active) {
-      // is_active cannot be lowered all the way to a global pointer.
-      // It should be lowered into a pointer to parent and an index.
-      TI_ERROR_IF(
-          snode->type != SNodeType::pointer && snode->type != SNodeType::hash &&
-              snode->type != SNodeType::bitmasked,
-          "ti.is_active only works on pointer, hash or bitmasked nodes.");
-      ret.push_back<SNodeOpStmt>(SNodeOpType::is_active, snode, indices_stmt);
-    } else {
-      auto ptr = ret.push_back<GlobalPtrStmt>(snode, indices_stmt);
-      if (op_type == SNodeOpType::append) {
-        value->flatten(ret);
-        ret.push_back<SNodeOpStmt>(SNodeOpType::append, snode, ptr,
-                                   ret.back().get());
-        TI_ERROR_IF(snode->type != SNodeType::dynamic,
-                    "ti.append only works on dynamic nodes.");
-        TI_ERROR_IF(snode->ch.size() != 1,
-                    "ti.append only works on single-child dynamic nodes.");
-        TI_ERROR_IF(data_type_size(snode->ch[0]->dt) != 4,
-                    "ti.append only works on i32/f32 nodes.");
-      } else if (op_type == SNodeOpType::length) {
-        ret.push_back<SNodeOpStmt>(SNodeOpType::length, snode, ptr, nullptr);
-      }
-    }
-    stmt = ret.back().get();
-  }
+  void flatten(VecStatement &ret) override;
 };
 
 class GlobalLoadExpression : public Expression {
@@ -2366,37 +1998,6 @@ class ConstExpression : public Expression {
   }
 };
 
-inline Expr load(Expr ptr) {
-  TI_ASSERT(ptr.is<GlobalPtrExpression>());
-  return Expr::make<GlobalLoadExpression>(ptr);
-}
-
-inline Expr load_if_ptr(const Expr &ptr) {
-  if (ptr.is<GlobalPtrExpression>()) {
-    return load(ptr);
-  } else if (ptr.is<GlobalVariableExpression>()) {
-    TI_ASSERT(ptr.cast<GlobalVariableExpression>()->snode->num_active_indices ==
-              0);
-    return load(ptr[ExprGroup()]);
-  } else
-    return ptr;
-}
-
-inline Expr ptr_if_global(const Expr &var) {
-  if (var.is<GlobalVariableExpression>()) {
-    // singleton global variable
-    TI_ASSERT(var.snode()->num_active_indices == 0);
-    return var[ExprGroup()];
-  } else {
-    // may be any local or global expr
-    return var;
-  }
-}
-
-inline Expr smart_load(const Expr &var) {
-  return load_if_ptr(ptr_if_global(var));
-}
-
 extern DecoratorRecorder dec;
 
 inline void Vectorize(int v) {
@@ -2433,23 +2034,11 @@ class For {
   For(const Expr &i,
       const Expr &s,
       const Expr &e,
-      const std::function<void()> &func) {
-    auto stmt_unique = std::make_unique<FrontendForStmt>(i, s, e);
-    auto stmt = stmt_unique.get();
-    current_ast_builder().insert(std::move(stmt_unique));
-    auto _ = current_ast_builder().create_scope(stmt->body);
-    func();
-  }
+      const std::function<void()> &func);
 
   For(const ExprGroup &i,
       const Expr &global,
-      const std::function<void()> &func) {
-    auto stmt_unique = std::make_unique<FrontendForStmt>(i, global);
-    auto stmt = stmt_unique.get();
-    current_ast_builder().insert(std::move(stmt_unique));
-    auto _ = current_ast_builder().create_scope(stmt->body);
-    func();
-  }
+      const std::function<void()> &func);
 
   For(const Expr &s, const Expr &e, const std::function<void(Expr)> &func);
 };

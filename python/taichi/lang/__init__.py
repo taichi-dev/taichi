@@ -121,19 +121,29 @@ def init(arch=None,
     for k, v in kwargs.items():
         setattr(ti.cfg, k, v)
 
-    def boolean_config(key, name=None):
-        if name is None:
-            name = 'TI_' + key.upper()
+    def boolean_config(key):
+        name = 'TI_' + key.upper()
         value = os.environ.get(name)
         if value is not None:
             setattr(ti.cfg, key, len(value) and bool(int(value)))
 
+    def bool_int(x):
+        return bool(int(x))
+
+    def environ_config(key, cast=bool_int):
+        name = 'TI_' + key.upper()
+        value = os.environ.get(name)
+        if value is not None:
+            setattr(ti.cfg, key, len(value) and cast(value))
+
     # does override
-    boolean_config("print_ir")
-    boolean_config("verbose")
-    boolean_config("fast_math")
-    boolean_config("async")
-    boolean_config("print_benchmark_stat")
+    environ_config("print_ir")
+    environ_config("verbose")
+    environ_config("fast_math")
+    environ_config("async")
+    environ_config("print_benchmark_stat")
+    environ_config("device_memory_fraction", float)
+    environ_config("device_memory_GB", float)
     gdb_trigger = os.environ.get("TI_GDB_TRIGGER")
     if gdb_trigger is not None:
         ti.set_gdb_trigger(len(gdb_trigger) and bool(int(gdb_trigger)))

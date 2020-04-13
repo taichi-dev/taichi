@@ -58,8 +58,7 @@ Setting up Taichi for develop
   .. code-block:: bash
 
     git clone https://github.com/taichi-dev/taichi --depth=1 --branch=master
-    git submodules init
-    git submodules update --depth=1
+    gsm update --init --recursive --depth=1
     cd taichi
     mkdir build
     cd build

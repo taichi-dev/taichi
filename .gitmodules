@@ -10,3 +10,7 @@
 	path = external/glfw
 	url = https://github.com/glfw/glfw
 	shallow = true
+[submodule "external/glew-ready"]
+	path = external/glew-ready
+	url = https://github.com/archibate/glew-ready
+	shallow = true

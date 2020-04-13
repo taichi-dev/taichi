@@ -251,6 +251,8 @@ def supported_archs():
     if ti.core.with_opengl():
         archs.append(opengl)
     wanted_archs = os.environ.get('TI_WANTED_ARCHS', '').split(',')
+    # Note, ''.split(',') gives you [''], which is not an empty array.
+    wanted_archs = list(filter(lambda x: x != '', wanted_archs))
     if len(wanted_archs):
         archs, old_archs = [], archs
         for arch in old_archs:

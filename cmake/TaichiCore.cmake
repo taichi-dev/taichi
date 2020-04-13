@@ -3,7 +3,6 @@ set(CORE_LIBRARY_NAME taichi_core)
 option(USE_STDCPP "Use -stdlib=libc++" OFF)
 option(TI_WITH_CUDA "Build with the CUDA backend" ON)
 option(TI_WITH_OPENGL "Build with the OpenGL backend" ON)
-option(GLEW_USE_STATIC_LIBS OFF)
 
 if (APPLE)
     if (TI_WITH_CUDA)
@@ -51,7 +50,10 @@ include_directories(external/spdlog/include)
 set(LIBRARY_NAME ${CORE_LIBRARY_NAME})
 
 if (TI_WITH_OPENGL)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_OPENGL -DGLEW_STATIC")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_OPENGL")
+
+  set(GLEW_USE_STATIC_LIBS ON CACHE BOOL "Link statically against GLEW")
+  set(OpenGL_GL_PREFERENCE GLVND)
   message("Building with GLEW (glew-ready)")
   add_subdirectory(external/glew-ready/build/cmake)
 

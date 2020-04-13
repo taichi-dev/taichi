@@ -127,6 +127,9 @@ std::unordered_set<Stmt *> detect_loops_with_continue(IRNode *root);
 std::unordered_set<SNode *> gather_deactivations(IRNode *root);
 std::vector<Stmt *> gather_statements(IRNode *root,
                                       const std::function<bool(Stmt *)> &test);
+bool has_load_or_atomic(IRNode *root, Stmt *var);
+bool has_store_or_atomic(IRNode *root, const std::vector<Stmt *> &vars);
+std::pair<bool, Stmt *> last_store_or_atomic(IRNode *root, Stmt *var);
 bool same_statements(IRNode *root1, IRNode *root2);
 DiffRange value_diff(Stmt *stmt, int lane, Stmt *alloca);
 void verify(IRNode *root);

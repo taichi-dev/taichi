@@ -29,7 +29,7 @@ def regress():
         v = x[i]
         est = 0.0
         for j in ti.static(range(number_coeffs)):
-            est += coeffs[j] * (v ** j)
+            est += coeffs[j] * (v**j)
         loss.atomic_add(0.5 * ti.sqr(y[i] - est))
 
 

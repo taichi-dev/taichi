@@ -7,9 +7,8 @@ If you haven't done so, please install Taichi via ``pip``:
 
 .. code-block:: bash
 
-  # python 3.6+ required
-  python3 -m pip install taichi-nightly
-
+  # Python 3.6+ needed
+  python3 -m pip install taichi
 
 Now you are ready to run the Taichi code below (``python3 fractal.py``) to compute a
 `Julia set <https://en.wikipedia.org/wiki/Julia_set>`_:

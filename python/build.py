@@ -117,8 +117,7 @@ elif mode == 'test':
     print('Uninstalling old taichi packages...')
     os.system('{} -m pip uninstall taichi-nightly'.format(
         get_python_executable()))
-    os.system('{} -m pip uninstall taichi'.format(
-        get_python_executable()))
+    os.system('{} -m pip uninstall taichi'.format(get_python_executable()))
     dists = os.listdir('dist')
     assert len(dists) == 1
     dist = dists[0]

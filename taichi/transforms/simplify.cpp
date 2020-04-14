@@ -1116,6 +1116,8 @@ void full_simplify(IRNode *root, const CompileConfig &config) {
     alg_simp(root, config);
   if (advanced_optimization)
     whole_kernel_cse(root);
+  if (advanced_optimization)
+    optimize_local_variable(root);
   die(root);
   simplify(root);
   die(root);

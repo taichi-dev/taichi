@@ -25,6 +25,7 @@ details = {
     'cuda': 'CUDA backend',
     'doc': 'Documentation',
     'infra': 'Infrastructure',
+    'cli': 'Command line interface',
     'ir': 'Intermediate representation',
     'lang': 'Language and syntax',
     'metal': 'Metal backend',

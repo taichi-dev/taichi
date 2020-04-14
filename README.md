@@ -8,7 +8,7 @@
 ```bash
 python3 -m pip install taichi
 ```
-**Supported OS**: Windows, Linux, and OS X; **Python**: 3.6/3.7/3.8; **Backends**: x64 CPUs/CUDA/Apple Metal.
+**Supported OS**: Windows, Linux, Mac OS X; **Python**: 3.6, 3.7, 3.8; **Backends**: x64 CPUs, CUDA, Apple Metal.
  
 Please build from source for other configurations (e.g., you need the experimental OpenGL backend or your CPU is ARM).
 
@@ -16,7 +16,7 @@ Please build from source for other configurations (e.g., you need the experiment
  - Starting April 13 2020 (v0.5.12), we release the Python package [`taichi`](https://pypi.org/project/taichi/) instead of [`taichi-nightly`](https://pypi.org/project/taichi-nightly/). This PyPI package has CPU, CUDA 10 and Metal support.
  - On Ubuntu 19.04+, please `sudo apt install libtinfo5`.
  - On Windows, please install [Microsoft Visual C++ Redistributable](https://aka.ms/vs/16/release/vc_redist.x64.exe) if you haven't.
- - [[Change log]](changelog.md)
+ - [[All releases]](https://github.com/taichi-dev/taichi/releases) [[Change log]](changelog.md)
 
 || **Linux (CUDA)** | **OS X (10.14+)** | **Windows** | **Documentation**|
 |:------|:-----|:-----|:-----|:-----|

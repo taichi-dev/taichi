@@ -527,9 +527,9 @@ class KernelGen : public IRVisitor {
       emit("// range known at runtime");
       num_threads_ = 1; // TODO: grid-stride-loop
       auto begin_expr = stmt->const_begin ? std::to_string(stmt->begin_value)
-        : fmt::format("_gtmp_i32_[{}]", stmt->begin_offset);
+        : fmt::format("_gtmp_i32_[{} >> 2]", stmt->begin_offset);
       auto end_expr = stmt->const_end ? std::to_string(stmt->end_value)
-        : fmt::format("_gtmp_i32_[{}]", stmt->end_offset);
+        : fmt::format("_gtmp_i32_[{} >> 2]", stmt->end_offset);
       emit("int _tid = int(gl_GlobalInvocationID.x);");
       emit("int _beg = {}, _end = {};", begin_expr, end_expr);
       emit("for (int _itv = _beg; _itv < _end; _itv++) {{");

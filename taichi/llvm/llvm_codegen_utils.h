@@ -8,6 +8,10 @@
 #include "llvm/IR/Function.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Instructions.h"
+#if LLVM_VERSION_MAJOR >= 10
+#include "llvm/IR/Intrinsics.h"
+#include "llvm/IR/IntrinsicsNVPTX.h"
+#endif
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/IR/Module.h"
@@ -63,8 +67,13 @@ class ModuleBuilder {
     llvm::IRBuilderBase::InsertPointGuard guard(*builder);
     builder->SetInsertPoint(entry_block);
     auto alloca = builder->CreateAlloca(type, (unsigned)0);
-    if (alignment != 0)
+    if (alignment != 0) {
+#if LLVM_VERSION_MAJOR >= 10
+      alloca->setAlignment(llvm::MaybeAlign(alignment));
+#else
       alloca->setAlignment(alignment);
+#endif
+    }
     return alloca;
   }
 

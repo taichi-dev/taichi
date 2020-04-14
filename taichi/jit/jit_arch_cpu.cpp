@@ -183,7 +183,7 @@ class JITSessionCPU : public JITSession {
   std::unique_ptr<llvm::Module> optimize_module(
       std::unique_ptr<llvm::Module> M) {
     // Create a function pass manager.
-    auto FPM = llvm::make_unique<legacy::FunctionPassManager>(M.get());
+    auto FPM = std::make_unique<legacy::FunctionPassManager>(M.get());
 
     // Add some optimizations.
     FPM->add(createInstructionCombiningPass());
@@ -311,7 +311,7 @@ std::unique_ptr<JITSession> create_llvm_jit_session_cpu(Arch arch) {
     TI_ERROR("LLVM TargetMachineBuilder has failed when getting data layout.");
   }
 
-  return llvm::make_unique<JITSessionCPU>(std::move(*jtmb), std::move(*DL));
+  return std::make_unique<JITSessionCPU>(std::move(*jtmb), std::move(*DL));
 }
 
 TLANG_NAMESPACE_END

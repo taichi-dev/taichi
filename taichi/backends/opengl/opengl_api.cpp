@@ -273,6 +273,14 @@ void initialize_opengl() {
     TI_ERROR("Your OpenGL does not support GL_ARB_compute_shader extension");
 }
 
+namespace {
+  bool my_starts_with(std::string const &str, std::string const &pre)
+  {
+    return str.length() > pre.length() &&
+      !memcmp(str.c_str(), pre.c_str(), pre.length());
+  }
+}
+
 struct CompiledKernel {
   std::string kernel_name;
   std::unique_ptr<GLProgram> glsl;
@@ -294,7 +302,8 @@ struct CompiledKernel {
         used(used_) {
     glsl->link();
     if (1 &&  // !ti.cfg.opengl.print_accessor_glsl
-        kernel_name.rfind("snode_", 0) && kernel_name.rfind("tensor_to_", 0))
+        !my_starts_with(kernel_name, "snode_") &&
+        !my_starts_with(kernel_name, "tensor_"))
       TI_DEBUG("source of kernel [{}] * {}:\n{}", kernel_name, num_groups,
           kernel_source_code);
 #ifdef _GLSL_DEBUG  // ti.cfg.opengl.save_glsl_to_file

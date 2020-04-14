@@ -5,9 +5,14 @@
 
 ## Overview
 
-Taichi is a high-performance programming language and compiler designed for computer graphics applications. It has native support for spatially sparse computation and differentiable programming.
+Taichi (太极) is a high-performance programming language and compiler, designed for computer graphics applications. It has native support for spatially sparse computation and differentiable programming.
 
 <img src="https://github.com/yuanming-hu/public_files/raw/master/graphics/taichi/fractal_code.png" height="270px"> <img src="https://raw.githubusercontent.com/yuanming-hu/public_files/master/graphics/taichi/fractal.gif" height="270px">
+
+## Gallery
+
+<img src="https://raw.githubusercontent.com/yuanming-hu/public_files/master/graphics/taichi/sparse_grids.gif" height="192px"> <img src="https://raw.githubusercontent.com/yuanming-hu/public_files/master/graphics/taichi/stable_fluids.gif" height="192px">
+
 
 ## Installation [![Downloads](https://pepy.tech/badge/taichi-nightly)](https://pepy.tech/project/taichi-nightly)
 

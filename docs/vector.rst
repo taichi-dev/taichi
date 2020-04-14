@@ -20,6 +20,7 @@ As Tensor
 
     This creates a 3x3 tensor of 3D vectors:
     ::
+
         # (python-scope)
         a = ti.Vector(3, dt=ti.f32, shape=(3, 3))
 
@@ -38,6 +39,7 @@ As Temporary Variable
 
     This creates a 3D vector with compoments initialized with (2, 3, 4):
     ::
+
         # (taichi-scope)
         a = ti.Vector([2, 3, 4])
 
@@ -52,10 +54,12 @@ Attributes
 
     This extracts the first compoment of vector ``a``:
     ::
+
         x = a[0]
 
     This sets the second compoment of ``a`` to 4:
     ::
+
         a[1] = 4
 
     TODO: add descriptions about ``a(i, j)``
@@ -72,11 +76,13 @@ Methods
 
     e.g.:
     ::
+
         a = ti.Vector([3, 4])
         a.norm() # sqrt(3*3 + 4*4 + 0) = 5
 
     These two are equivalent:
     ::
+
         ti.sqrt(a.dot(a) + eps)
         a.norm(eps)
 
@@ -92,6 +98,7 @@ Methods
 
     e.g.:
     ::
+
         a = ti.Vector([1, 3])
         b = ti.Vector([2, 4])
         a.dot(b) # 1*2 + 3*4 = 14
@@ -105,6 +112,7 @@ Methods
 
     We use right-handed coordinate system, e.g.:
     ::
+
         a = ti.Vector([1, 2, 3])
         b = ti.Vector([4, 5, 6])
         c = ti.cross(a, b) # [2*6 - 5*3, 4*3 - 1*6, 1*5 - 4*2]
@@ -118,6 +126,7 @@ Methods
 
     e.g.:
     ::
+
         a = ti.Vector([1, 2, 3])
         b = ti.Vector([4, 5, 6])
         c = ti.outer_product(a, b) # NOTE: c[i, j] = a[i] * b[j]
@@ -135,6 +144,7 @@ Methods
 
     e.g.:
     ::
+
         # (taichi-scope)
         a = ti.Vector([1.6, 2.3])
         a.cast(ti.i32) # [2, 3]

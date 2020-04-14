@@ -14,22 +14,27 @@ Creation
 
     This creates a *dense* tensor with four ``int32`` as elements:
     ::
+
         x = ti.var(ti.i32, shape=4)
 
     This creates a 4x3 *dense* tensor called ``x`` with ``float32`` elements:
     ::
+
         x = ti.var(ti.f32, shape=(4, 3))
 
     If shape is ``()`` (empty tuple), then a scalar is created:
     ::
+
         x = ti.var(ti.f32, shape=())
 
     Then access it by passing ``None`` as index:
     ::
+
         x[None] = 2
 
     If shape is **not provided** or ``None``, then you must manually *place* it afterwards:
     ::
+
         x = ti.var(ti.f32)
         ti.root.dense(ti.ij, (4, 3)).place(x)
         # equivalent to: x = ti.var(ti.f32, shape=(4, 3))

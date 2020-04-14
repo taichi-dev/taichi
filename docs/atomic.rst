@@ -7,6 +7,7 @@ In taichi, ``x[i] += 1`` is atomic but ``x[i] = x[i] + 1`` is not.
 
 For example, to perform a reduction:
 ::
+
     @ti.kernel
     def sum():
         for i in x:
@@ -14,6 +15,7 @@ For example, to perform a reduction:
 
 Or use the function ``ti.atomic_add``, which is equivalent:
 ::
+
     @ti.kernel
     def sum():
         for i in x:
@@ -50,6 +52,7 @@ See https://en.wikipedia.org/wiki/Fetch-and-add for more details.
 
     e.g.:
     ::
+
         x = 3
         y = 4
         z = ti.atomic_add(x, y)
@@ -65,6 +68,7 @@ See https://en.wikipedia.org/wiki/Fetch-and-add for more details.
 
     e.g.:
     ::
+
         x = 3
         y = 4
         z = ti.atomic_max(x, y)

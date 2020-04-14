@@ -107,6 +107,7 @@ Existing tags:
 - ``[Lang]``: frontend language features, including syntax sugars;
 - ``[Std]``: standard library, e.g. `ti.Matrix` and `ti.Vector`;
 - ``[IR]``: intermediate representation;
+- ``[Bug]``: Bug fixes;
 - ``[Opt]``: IR optimization passes;
 - ``[Async]``: asynchronous execution engine;
 - ``[Type]``: type system;

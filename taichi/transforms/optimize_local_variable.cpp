@@ -4,7 +4,7 @@
 TLANG_NAMESPACE_BEGIN
 
 // Optimize one alloca
-class AllocaOptimize : public BasicStmtVisitor {
+class AllocaOptimize : public IRVisitor {
  private:
   AllocaStmt *alloca;
   bool stored; // Is this alloca ever stored?
@@ -16,8 +16,6 @@ class AllocaOptimize : public BasicStmtVisitor {
   bool last_atomic_eliminable;
 
  public:
-  using BasicStmtVisitor::visit;
-
   explicit AllocaOptimize(AllocaStmt *alloca)
       : alloca(alloca),
         stored(false),
@@ -31,11 +29,13 @@ class AllocaOptimize : public BasicStmtVisitor {
     invoke_default_visitor = true;
   }
 
-  void preprocess_container_stmt(Stmt *stmt) override {
-    // temporarily being overcautious here
-    stored = true;
-    last_store_valid = false;
-    last_atomic_valid = false;
+  void visit(Stmt *stmt) override {
+    if (stmt->is_container_statement()) {
+      // temporarily being overcautious here
+      stored = true;
+      last_store_valid = false;
+      last_atomic_valid = false;
+    }
   }
 
   void visit(AtomicOpStmt *stmt) override {

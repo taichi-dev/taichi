@@ -13,7 +13,7 @@ Matrices
 - ``ti.Matrix.abs(A)``
 - ``ti.tr(A)``
 - ``ti.determinant(A, type)``
-- ``ti.cross(a, b)``, where ``a`` amd ``b`` are 3D vectors (i.e. ``3x1`` matrices)
+- ``ti.cross(a, b)``, where ``a`` and ``b`` are 3D vectors (i.e. ``3x1`` matrices)
 - ``A.cast(type)``
 - ``R, S = ti.polar_decompose(A, ti.f32)``
 - ``U, sigma, V = ti.svd(A, ti.f32)`` (Note that ``sigma`` is a ``3x3`` diagonal matrix)

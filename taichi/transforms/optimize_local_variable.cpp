@@ -81,7 +81,12 @@ class AllocaOptimize : public IRVisitor {
       stmt->parent->erase(current_stmt_id);
       throw IRModified();
     }
-    //TODO
+    if (last_store_valid) {
+      // store-forwarding
+      stmt->replace_with(last_store->data);
+      stmt->parent->erase(stmt);
+      throw IRModified();
+    }
   }
 
   void run() {

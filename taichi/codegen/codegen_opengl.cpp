@@ -153,10 +153,13 @@ class KernelGen : public IRVisitor {
     line_appender_header_.append_raw(kernel_header);
 
     int threads_per_group = opengl_get_threads_per_group();
-    if (num_threads_ < threads_per_group)
-      threads_per_group = std::max(1, num_threads_);
-    else
+    if (num_threads_ <= 0) num_threads_ = 1;
+    if (num_threads_ < threads_per_group) {
+      threads_per_group = num_threads_;
+      num_groups_ = 1;
+    } else {
       num_groups_ = (num_threads_ + threads_per_group - 1) / threads_per_group;
+    }
     emit(
         "layout(local_size_x = {} /* {}, {} */, local_size_y = 1, local_size_z "
         "= 1) in;",
@@ -531,6 +534,7 @@ class KernelGen : public IRVisitor {
       auto end_expr = stmt->const_end ? std::to_string(stmt->end_value)
         : fmt::format("_gtmp_i32_[{} >> 2]", stmt->end_offset);
       emit("int _tid = int(gl_GlobalInvocationID.x);");
+      emit("if (_tid >= {}) return;", num_threads_);
       emit("int _beg = {}, _end = {};", begin_expr, end_expr);
       emit("for (int _itv = _beg; _itv < _end; _itv++) {{");
       stmt->body->accept(this);

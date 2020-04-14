@@ -339,9 +339,32 @@ class Matrix:
                         inv_determinant * (E(i + 1, j + 1) * E(i + 2, j + 2) -
                                            E(i + 2, j + 1) * E(i + 1, j + 2)))
             return Matrix(entries)
+        elif self.n == 4:
+            n = 4
+            import taichi as ti
+            inv_determinant = ti.expr_init(1.0 / ti.determinant(self))
+            entries = [[0] * n for _ in range(n)]
+
+            def E(x, y):
+                return self(x % n, y % n)
+
+            for i in range(n):
+                for j in range(n):
+                    entries[j][i] = ti.expr_init(
+                        inv_determinant * (-1)**(i + j) *
+                        ((E(i + 1, j + 1) *
+                          (E(i + 2, j + 2) * E(i + 3, j + 3) -
+                           E(i + 3, j + 2) * E(i + 2, j + 3)) -
+                          E(i + 2, j + 1) *
+                          (E(i + 1, j + 2) * E(i + 3, j + 3) -
+                           E(i + 3, j + 2) * E(i + 1, j + 3)) +
+                          E(i + 3, j + 1) *
+                          (E(i + 1, j + 2) * E(i + 2, j + 3) -
+                           E(i + 2, j + 2) * E(i + 1, j + 3)))))
+            return Matrix(entries)
         else:
             raise Exception(
-                "Inversions of matrices with sizes >= 4 are not supported")
+                "Inversions of matrices with sizes >= 5 are not supported")
 
     def inversed(self):
         return self.inverse()
@@ -388,6 +411,27 @@ class Matrix:
             return a(0, 0) * (a(1, 1) * a(2, 2) - a(2, 1) * a(1, 2)) - a(
                 1, 0) * (a(0, 1) * a(2, 2) - a(2, 1) * a(0, 2)) + a(
                     2, 0) * (a(0, 1) * a(1, 2) - a(1, 1) * a(0, 2))
+        elif a.n == 4 and a.m == 4:
+            import taichi as ti
+            n = 4
+
+            def E(x, y):
+                return a(x % n, y % n)
+
+            det = ti.expr_init(0.0)
+            for i in range(4):
+                det = det + (-1.0)**i * (
+                    a(i, 0) *
+                    (E(i + 1, 1) *
+                     (E(i + 2, 2) * E(i + 3, 3) - E(i + 3, 2) * E(i + 2, 3)) -
+                     E(i + 2, 1) *
+                     (E(i + 1, 2) * E(i + 3, 3) - E(i + 3, 2) * E(i + 1, 3)) +
+                     E(i + 3, 1) *
+                     (E(i + 1, 2) * E(i + 2, 3) - E(i + 2, 2) * E(i + 1, 3))))
+            return det
+        else:
+            raise Exception(
+                "Determinants of matrices with sizes >= 5 are not supported")
 
     @staticmethod
     def cross(a, b):

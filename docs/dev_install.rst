@@ -76,8 +76,8 @@ Setting up Taichi for development
     export PATH=$TAICHI_REPO_DIR/bin/:$PATH
     # export PATH=/opt/llvm/bin:$PATH # Uncomment if your llvm-8 or clang-8 is in /opt
 
-- Execute ``source ~/.bashrc`` to reload shell config
-- Execute ``ti test`` to run all the tests. It may take up to 5 minutes to run all tests. (On Windows, please execute ``python3 -m taichi test`` instead)
+- Execute ``source ~/.bashrc`` to reload shell config.
+- Execute ``python3 -m taichi test`` to run all the tests. It may take up to 5 minutes to run all tests.
 - Check out ``examples`` for runnable examples. Run them with ``python3``.
 
 

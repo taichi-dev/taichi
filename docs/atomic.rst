@@ -3,91 +3,72 @@
 Atomic operations
 =================
 
-In taichi, ``x[i] += 1`` is atomic but ``x[i] = x[i] + 1`` is not.
+In Taichi, augmented assignments (e.g., ``x[i] += 1``) are automatically `atomic <https://en.wikipedia.org/wiki/Fetch-and-add>`_.
 
-For example, to perform a reduction:
-::
 
-    @ti.kernel
-    def sum():
-        for i in x:
-            result[None] += x[i]
+.. warning::
 
-Or use the function ``ti.atomic_add``, which is equivalent:
-::
+    When accumulating to global variables in parallel, make sure you use atomic operations. For example, to compute the sum of all elements in ``x``,
+    ::
 
-    @ti.kernel
-    def sum():
-        for i in x:
-            ti.atomic_add(result[None], x[i])
+        @ti.kernel
+        def sum():
+            for i in x:
+                # Approach 1: OK
+                total[None] += x[i]
 
-See https://en.wikipedia.org/wiki/Fetch-and-add for more details.
+                # Approach 2: OK
+                ti.atomic_add(total[None], x[i])
+
+                # Approach 3: Wrong result since the operation is not atomic.
+                total[None] = total[None] + x[i]
 
 
 .. note::
-    Support of atomic operation on each backends:
+    When atomic operations are applied to local values, the Taichi compiler will try to demote these operations into their non-atomic correspondence.
 
-    +------+-----------+-----------+---------+
-    | type | CPU/CUDA  | OpenGL    | Metal   |
-    +======+===========+===========+=========+
-    | i32  |    OK     |    OK     |   OK    |
-    +------+-----------+-----------+---------+
-    | f32  |    OK     |    OK     |   OK    |
-    +------+-----------+-----------+---------+
-    | i64  |    OK     |   EXT     |  MISS   |
-    +------+-----------+-----------+---------+
-    | f64  |    OK     |   EXT     |  MISS   |
-    +------+-----------+-----------+---------+
-
-    (OK=supported, EXT=require extension, MISS=not supported)
-
+Apart from augmented assignments, explicit atomic operations such as ``ti.atomic_add`` also do read-modify-write atomically.
+These operations additionally return the **old value** of the first argument. Below is the full list of explicit atomic operations:
 
 .. function:: ti.atomic_add(x, y)
+.. function:: ti.atomic_sub(x, y)
 
-    This is equivalent to ``x += y``.
+    Atomically compute ``x + y``/``x - y`` and store the result to ``x``.
 
-    :parameter x: (Expr, lvalue) the LHS of addition, also where the result is saved
-    :parameter y: (Expr) the RHS of addition
-    :return: (Expr) the original value stored in ``x``
+    :return: The old value of ``x``.
 
-    e.g.:
+    For example,
     ::
 
         x = 3
         y = 4
         z = ti.atomic_add(x, y)
-        # now x = 7, y = 4, z = 3
-
-
-.. function:: ti.atomic_sub(x, y)
-
-    This is equivalent to ``x -= y``.
-
-
-.. function:: ti.atomic_max(x, y)
-
-    e.g.:
-    ::
-
-        x = 3
-        y = 4
-        z = ti.atomic_max(x, y)
-        # now x = 4, y = 4, z = 3
-
-
-.. function:: ti.atomic_min(x, y)
-
-
-.. function:: ti.atomic_or(x, y)
-
-    This is equivalent to ``x |= y``.
+        # now z = 7, y = 4, z = 3
 
 
 .. function:: ti.atomic_and(x, y)
-
-    This is equivalent to ``x &= y``.
-
-
+.. function:: ti.atomic_or(x, y)
 .. function:: ti.atomic_xor(x, y)
 
-    This is equivalent to ``x ^= y``.
+    Atomically compute ``x & y`` (bitwise and), ``x | y`` (bitwise or), ``x ^ y`` (bitwise xor) and store the result to ``x``.
+
+    :return: The old value of ``x``.
+
+
+.. note::
+
+    Supported atomic operations on each backend:
+
+    +----------+-----------+-----------+---------+
+    | type     | CPU/CUDA  | OpenGL    | Metal   |
+    +==========+===========+===========+=========+
+    | ``i32``  |    OK     |    OK     |   OK    |
+    +----------+-----------+-----------+---------+
+    | ``f32``  |    OK     |    OK     |   OK    |
+    +----------+-----------+-----------+---------+
+    | ``i64``  |    OK     |   EXT     |  MISS   |
+    +----------+-----------+-----------+---------+
+    | ``f64``  |    OK     |   EXT     |  MISS   |
+    +----------+-----------+-----------+---------+
+
+    (OK: supported; EXT:r equire extension; MISS: not supported)

@@ -1,28 +1,28 @@
 .. _scalar_tensor:
 
-Scalar tensors
-==============
+Tensors of scalars
+==================
 
 
-Creation
---------
+Declaration
+-----------
 
 .. function:: ti.var(dt, shape = None)
 
     :parameter dt: (DataType) type of the tensor element
     :parameter shape: (optional, scalar or tuple) the shape of tensor
 
-    This creates a *dense* tensor with four ``int32`` as elements:
+    For example, this creates a *dense* tensor with four ``int32`` as elements:
     ::
 
         x = ti.var(ti.i32, shape=4)
 
-    This creates a 4x3 *dense* tensor called ``x`` with ``float32`` elements:
+    This creates a 4x3 *dense* tensor with ``float32`` elements:
     ::
 
         x = ti.var(ti.f32, shape=(4, 3))
 
-    If shape is ``()`` (empty tuple), then a scalar is created:
+    If shape is ``()`` (empty tuple), then a 0-D tensor (scalar) is created:
     ::
 
         x = ti.var(ti.f32, shape=())
@@ -32,7 +32,7 @@ Creation
 
         x[None] = 2
 
-    If shape is **not provided** or ``None``, then you must manually *place* it afterwards:
+    If shape is **not provided** or ``None``, the user must manually ``place`` it afterwards:
     ::
 
         x = ti.var(ti.f32)
@@ -51,25 +51,25 @@ Creation
     .. code-block:: python
 
         x = ti.var(ti.f32)
-        x[None] = 233 # ERROR: x not placed!
+        x[None] = 1 # ERROR: x not placed!
 
     .. code-block:: python
 
         x = ti.var(ti.f32, shape=())
         @ti.kernel
         def func():
-            x[None] = 233
+            x[None] = 1
 
         func()
         y = ti.var(ti.f32, shape=())
-        # ERROR: cannot create tensor after kernel invocated!
+        # ERROR: cannot create tensor after kernel invocation!
 
     .. code-block:: python
 
         x = ti.var(ti.f32, shape=())
-        x[None] = 233
+        x[None] = 1
         y = ti.var(ti.f32, shape=())
-        # ERROR: cannot create tensor after accessed from python-scope!
+        # ERROR: cannot create tensor after any tensor accesses from the Python-scope!
 
 
 Attribute

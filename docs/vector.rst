@@ -3,67 +3,101 @@
 Vectors
 =======
 
-A ``n``-D vector is composed of ``n`` variables. It's just a syntax sugar to abstract the linear algebra framework. There is no real difference in lower execution for now.
+A vector in Taichi can have two forms:
 
+  - as a temporary local variable, an ``n``-D vector consists of ``n`` scalar values.
+  - as a global tensor, where each tensor element is a vector. In this case, an ``n``-D vector consists of ``n`` global tensors of scalars.
+    The tensors of scalars, when treated together, can be considered to be **a global tensor of vectors**.
 
-Creation
---------
+Declaration
+-----------
 
-As Tensor
-+++++++++
+As global tensors of vectors
+++++++++++++++++++++++++++++
 
 .. function:: ti.Vector(n, dt=type, shape=shape)
 
-    :parameter n: (scalar) how many compoments / dimensions of the vector
-    :parameter type: (DataType) data type of the compoments
-    :parameter shape: (scalar or tuple) shape of the tensor, see :ref:`tensor`
+    :parameter n: (scalar) the number of components in the vector
+    :parameter type: (DataType) data type of the components
+    :parameter shape: (scalar or tuple) shape the tensor of vectors, see :ref:`tensor`
 
-    This creates a 3x3 tensor of 3D vectors:
+    For example, this creates a 5x4 tensor of 3D vectors:
     ::
 
-        # (python-scope)
-        a = ti.Vector(3, dt=ti.f32, shape=(3, 3))
+        # Python-scope
+        a = ti.Vector(3, dt=ti.f32, shape=(5, 4))
 
 .. note::
 
-    In python-scope, ``ti.var`` is a :ref:`scalar_tensor`, while ``ti.Vector`` is a tensor of vectors.
+    In Python-scope, ``ti.var`` declares :ref:`scalar_tensor`, while ``ti.Vector`` declares tensors of vectors.
 
 
-As Temporary Variable
-+++++++++++++++++++++
+As a temporary local variable
++++++++++++++++++++++++++++++
 
 .. function:: ti.Vector([x, y, ...])
 
-    :parameter x: (scalar) the first compoment of vector
-    :parameter y: (scalar) the second compoment of vector
+    :parameter x: (scalar) the first component of the vector
+    :parameter y: (scalar) the second component of the vector
 
-    This creates a 3D vector with compoments initialized with (2, 3, 4):
+    For example, this creates a 3D vector with components (2, 3, 4):
     ::
 
-        # (taichi-scope)
+        # Taichi-scope
         a = ti.Vector([2, 3, 4])
 
 
-Attributes
-----------
+Accessing components
+--------------------
+
+As global tensors of vectors
+++++++++++++++++++++++++++++
+.. attribute:: a[p, q, ...][i]
+
+    :parameter a: (Vector) the vector
+    :parameter p: (scalar) index of the first tensor dimension
+    :parameter q: (scalar) index of the second tensor dimension
+    :parameter i: (scalar) index of the vector dimension
+
+    This extracts the first component of vector ``a[6, 3]``:
+    ::
+
+        x = a[6, 3][0]
+
+        # or
+        vec = a[6, 3]
+        x = vec[0]
+
+.. note::
+
+    **Always** use two pair of square brackets to access scalar elements from tensors of vectors.
+
+     - The indices in the first pair of brackets locate the vector index inside the tensor of vectors;
+     - The indices in the second pair of brackets locate the scalar element index inside the vector.
+
+    For 0-D tensors of vectors, indices in the first pair of brackets should be ``[None]``.
+
+
+
+As a temporary local variable
++++++++++++++++++++++++++++++
 
 .. attribute:: a[i]
 
     :parameter a: (Vector) the vector
-    :parameter i: (scalar) index of the compoment
+    :parameter i: (scalar) index of the component
 
-    This extracts the first compoment of vector ``a``:
+    For example, this extracts the first component of vector ``a``:
     ::
 
         x = a[0]
 
-    This sets the second compoment of ``a`` to 4:
+    This sets the second component of ``a`` to 4:
     ::
 
         a[1] = 4
 
     TODO: add descriptions about ``a(i, j)``
-
 
 Methods
 -------
@@ -71,32 +105,28 @@ Methods
 .. function:: a.norm(eps = 0)
 
     :parameter a: (Vector)
-    :parameter eps: (optional, scalar) usually be 0, see note below
+    :parameter eps: (optional, scalar) a safe-guard value for ``sqrt``, usually 0. See the note below.
     :return: (scalar) the magnitude / length / norm of vector
 
-    e.g.:
+    For example,
     ::
 
         a = ti.Vector([3, 4])
         a.norm() # sqrt(3*3 + 4*4 + 0) = 5
 
-    These two are equivalent:
-    ::
-
-        ti.sqrt(a.dot(a) + eps)
-        a.norm(eps)
+    ``a.norm(eps)`` is equivalent to ``ti.sqrt(a.dot(a) + eps)``
 
 .. note::
-    Set ``eps = 1e-5`` for example, to safe guards the operator's gradient on zero vectors during differentiable programming.
+    Set ``eps = 1e-5`` for example, to safe guard the operator's gradient on zero vectors during differentiable programming.
 
 
 .. function:: a.dot(b)
 
     :parameter a: (Vector)
     :parameter b: (Vector)
-    :return: (scalar) the dot product / inner product of ``a`` and ``b``
+    :return: (scalar) the dot (inner) product of ``a`` and ``b``
 
-    e.g.:
+    E.g.,
     ::
 
         a = ti.Vector([1, 3])
@@ -110,7 +140,7 @@ Methods
     :parameter b: (Vector, 3D)
     :return: (Vector, 3D) the cross product of ``a`` and ``b``
 
-    We use right-handed coordinate system, e.g.:
+    We use right-handed coordinate system, E.g.,
     ::
 
         a = ti.Vector([1, 2, 3])
@@ -124,7 +154,7 @@ Methods
     :parameter b: (Vector)
     :return: (Matrix) the outer product of ``a`` and ``b``
 
-    e.g.:
+    E.g.,
     ::
 
         a = ti.Vector([1, 2, 3])
@@ -133,19 +163,19 @@ Methods
         # c = [[1*4, 1*5, 1*6], [2*4, 2*5, 2*6], [3*4, 3*5, 3*6]]
 
 .. note::
-    This is not the same as `ti.cross`. And thus ``a`` and ``b`` does not have to be 3D vectors.
+    This is not the same as `ti.cross`. ``a`` and ``b`` do not have to be 3D vectors.
 
 
 .. function:: a.cast(dt)
 
     :parameter a: (Vector)
     :parameter dt: (DataType)
-    :return: (Vector) vector with all compoments of ``a`` casted into type ``dt``
+    :return: (Vector) vector with all components of ``a`` casted into type ``dt``
 
-    e.g.:
+    E.g.,
     ::
 
-        # (taichi-scope)
+        # Taichi-scope
         a = ti.Vector([1.6, 2.3])
         a.cast(ti.i32) # [2, 3]
 

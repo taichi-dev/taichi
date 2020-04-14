@@ -31,7 +31,7 @@ class IRVerifier : public BasicStmtVisitor {
           break;
         }
       }
-      TI_ASSERT(found);
+      TI_ASSERT_INFO(found, fmt::format("stmt {} cannot have operand {}.", stmt->id, op->id));
     }
     visible_stmts.back().insert(stmt);
   }

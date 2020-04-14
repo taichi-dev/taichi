@@ -4,7 +4,7 @@ x = ti.var(ti.i32)
 l = ti.var(ti.i32)
 n = 16
 
-# ti.cfg.print_preprocessed = True
+ti.init()#print_preprocessed=True)
 
 
 @ti.layout

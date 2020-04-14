@@ -77,11 +77,11 @@ Use ``@ti.func`` to decorate your Taichi functions. These functions are callable
 
 .. warning::
 
-    Functions with multiple return values are not supported for now. Use a **local** variable to store the results instead:
+    Functions with multiple ``return``'s are not supported for now. Use a **local** variable to store the results, so that you end up with only one ``return``:
 
     .. code-block:: python
 
-      # Bad function
+      # Bad function - two return's
       @ti.func
       def safe_sqrt(x):
         if x >= 0:
@@ -89,7 +89,7 @@ Use ``@ti.func`` to decorate your Taichi functions. These functions are callable
         else:
           return 0.0
 
-      # Good function
+      # Good function - single return
       @ti.func
       def safe_sqrt(x):
         rst = 0.0
@@ -101,7 +101,11 @@ Use ``@ti.func`` to decorate your Taichi functions. These functions are callable
 
 .. warning::
 
-    All functions are force-inlined. Function arguments are passed by value.
+    Currently, all functions are force-inlined. Therefore, no recursion is allowed.
+
+.. note::
+
+    Function arguments are passed by value.
 
 
 Data layout
@@ -118,6 +122,7 @@ Supported scalar functions:
 * ``ti.cos(x)``
 * ``ti.asin(x)``
 * ``ti.acos(x)``
+* ``ti.atan2(x, y)``
 * ``ti.cast(x, type)``
 * ``ti.sqr(x)``
 * ``ti.sqrt(x)``

@@ -101,7 +101,7 @@ which allows a series of further IR passes to happen, such as
  - Atomic operation demotion
 
 The just-in-time (JIT) compilation engine
----------------------------------------
+-----------------------------------------
 
 Finally, the optimized SSA IR is fed into the LLVM IR codegen, and LLVM JIT generates high-performance executable CPU/GPU programs.
 

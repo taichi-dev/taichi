@@ -3,13 +3,11 @@ Hello, world!
 
 We introduce the Taichi programming language through a very basic `fractal` example.
 
-If you haven't done so, please install Taichi via ``pip``.
-Depending on your hardware and OS, please execute one of the following commands:
+If you haven't done so, please install Taichi via ``pip``:
 
 .. code-block:: bash
 
   # Python 3.6+ needed
-
   python3 -m pip install taichi
 
 Now you are ready to run the Taichi code below (``python3 fractal.py``) to compute a
@@ -30,7 +28,7 @@ Now you are ready to run the Taichi code below (``python3 fractal.py``) to compu
 
   @ti.func
   def complex_sqr(z):
-    return ti.Vector([z[0] * z[0] - z[1] * z[1], z[1] * z[0] * 2])
+    return ti.Vector([z[0] ** 2 - z[1] ** 2, z[1] * z[0] * 2])
 
   @ti.kernel
   def paint(t: ti.f32):
@@ -65,16 +63,35 @@ You can also reuse the package management system, Python IDEs, and existing Pyth
 Portability
 -----------------
 
-Taichi supports both CPUs and NVIDIA GPUs.
+Taichi code can run on CPUs or GPUs. Initialize Taichi according to your hardware platform:
 
 .. code-block:: python
 
-  # Run on GPU
+  # Run on NVIDIA GPU, CUDA required
   ti.init(arch=ti.cuda)
+  # Run on GPU, with the OpenGL backend
+  ti.init(arch=ti.opengl)
+  # Run on GPU, with the Apple Metal backend, if you are on OS X
+  ti.init(arch=ti.metal)
   # Run on CPU (default)
   ti.init(arch=ti.x64)
 
-If the machine does not have CUDA support, Taichi will fall back to CPUs instead.
+.. note::
+    Supported backends on different platforms:
+
+    +----------+------+------+--------+-------+
+    | platform | CPU  | CUDA | OpenGL | Metal |
+    +==========+======+======+========+=======+
+    | Windows  | OK   | OK   | WIP    | N/A   |
+    +----------+------+------+--------+-------+
+    | Linux    | OK   | OK   | OK     | N/A   |
+    +----------+------+------+--------+-------+
+    | Mac OS X | OK   | N/A  | N/A    | OK    |
+    +----------+------+------+--------+-------+
+
+    (OK: supported, WIP: work in progress, N/A: not available)
+
+    If the machine does not have CUDA support, Taichi will fall back to CPUs instead.
 
 .. note::
 
@@ -86,7 +103,7 @@ If the machine does not have CUDA support, Taichi will fall back to CPUs instead
   On other platforms Taichi will make use of its on-demand memory allocator to adaptively allocate memory.
 
 (Sparse) Tensors
--------
+----------------
 
 Taichi is a data-oriented programming language, where dense or spatially-sparse tensors are first-class citizens.
 See :ref:`sparse` for more details on sparse tensors.
@@ -110,7 +127,7 @@ You can also define Taichi **functions** with ``ti.func``, which can be called a
 
 .. warning::
 
-  Taichi kernels must be called in the Python-scope. I.e., **nested Taichi kernels are not supported**.
+  Taichi kernels must be called in the Python-scope. I.e., **nested kernels are not supported**.
   Nested functions are allowed. **Recursive functions are not supported for now**.
 
   Taichi functions can only be called in Taichi-scope.
@@ -153,6 +170,9 @@ In the fractal code above, ``for i, j in pixels`` loops over all the pixel coord
     Struct-for is the key to :ref:`sparse` in Taichi, as it will only loop over active elements in a sparse tensor. In dense tensors, all elements are active.
 
 .. note::
+    Struct-for's must be at the outer-most scope of kernels.
+
+.. note::
     It is the loop **at the outermost scope** that gets parallelized, not the outermost loop.
 
     .. code-block:: python
@@ -171,9 +191,23 @@ In the fractal code above, ``for i, j in pixels`` loops over all the pixel coord
           for i in x:
             ...
 
-.. warning::
+.. note::
+    ``break`` is not supported in **outermost (parallelized)** loops:
 
-    Struct-for's must be at the outer-most scope of kernels.
+    .. code-block:: python
+
+      @ti.kernel
+      def foo():
+        for i in x:
+            ...
+            break # ERROR! You cannot break a parallelized loop!
+
+      @ti.kernel
+      def foo():
+        for i in x:
+            for j in y:
+                ...
+                break # OK
 
 
 Interacting with Python

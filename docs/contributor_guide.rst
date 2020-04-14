@@ -77,7 +77,7 @@ Using continuous integration
 ----------------------------
 
 - Continuous Integration (CI), will **build** and **test** your commits in a PR against in environments.
-- Currently, Taichi uses `"Travis CI" <https://travis-ci.org>`_(for OS X and Linux) and `"AppVeyor" <https://www.appveyor.com>`_(for Windows).
+- Currently, Taichi uses `Travis CI <https://travis-ci.org>`_ (for OS X and Linux) and `AppVeyor <https://www.appveyor.com>`_ (for Windows).
 - CI will be triggered everytime you push commits to an open PR.
 - You can prepend ``[skip ci]`` to your commit message to avoid triggering CI. e.g. ``[skip ci] This commit will not trigger CI``
 - A tick on the right of commit hash means CI passed, a cross means CI failed.

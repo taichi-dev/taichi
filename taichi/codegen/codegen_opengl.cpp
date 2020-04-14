@@ -527,6 +527,7 @@ class KernelGen : public IRVisitor {
       stmt->body->accept(this);
     } else {
 
+      ScopedIndent _s(line_appender_);
       emit("// range known at runtime");
       num_threads_ = 1; // TODO: grid-stride-loop
       auto begin_expr = stmt->const_begin ? std::to_string(stmt->begin_value)

@@ -88,9 +88,14 @@ def make_argument_parser():
 
 def main(debug=False):
     argc = len(sys.argv)
-    mode = 'help' if argc == 1 else sys.argv.pop(1)
+    if argc == 1:
+        mode = 'help'
+        parser_args = sys.argv
+    else:
+        mode = sys.argv[1]
+        parser_args = sys.argv[2:]
     parser = make_argument_parser()
-    args = parser.parse_args()
+    args = parser.parse_args(args=parser_args)
 
     lines = []
     print()

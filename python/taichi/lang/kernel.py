@@ -287,7 +287,8 @@ class Kernel:
                     mode='exec'), global_vars, local_vars)
         compiled = local_vars[self.func.__name__]
 
-        taichi_kernel = taichi_lang_core.create_kernel(kernel_name, self.is_grad)
+        taichi_kernel = taichi_lang_core.create_kernel(kernel_name,
+                                                       self.is_grad)
 
         # Do not change the name of 'taichi_ast_generator'
         # The warning system needs this identifier to remove unnecessary messages

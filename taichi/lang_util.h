@@ -66,6 +66,8 @@ enum class SNodeType {
 
 std::string snode_type_name(SNodeType t);
 
+bool is_gc_able(SNodeType t);
+
 enum class UnaryOpType : int {
 #define PER_UNARY_OP(x) x,
 #include "taichi/inc/unary_op.inc.h"

@@ -21,8 +21,10 @@ bool CUDADriver::detected() {
 CUDADriver::CUDADriver() {
 #if defined(TI_PLATFORM_LINUX)
   loader = std::make_unique<DynamicLoader>("libcuda.so");
-#else
+#elif defined(TI_PLATFORM_WINDOWS)
   loader = std::make_unique<DynamicLoader>("nvcuda.dll");
+#else
+  static_assert(false, "Taichi CUDA driver supports only Windows and Linux.");
 #endif
 
   if (detected()) {

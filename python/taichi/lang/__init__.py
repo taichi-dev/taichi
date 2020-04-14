@@ -130,6 +130,9 @@ def init(default_fp=None,
     boolean_config("verbose")
     boolean_config("fast_math")
     boolean_config("async")
+    gdb_trigger = os.environ.get("TI_GDB_TRIGGER")
+    if gdb_trigger is not None:
+        ti.set_gdb_trigger(len(gdb_trigger) and bool(int(gdb_trigger)))
     arch = os.environ.get("TI_ARCH")
     if arch is not None:
         print(f'Following TI_ARCH setting up for arch={arch}')
@@ -237,12 +240,8 @@ def benchmark(func, repeat=100, args=()):
     return elapsed / repeat
 
 
-wanted_archs = None
-
-
 def set_wanted_archs(archs):
-    global wanted_archs
-    wanted_archs = archs
+    os.environ['TI_WANTED_ARCHS'] = ','.join(archs)
 
 
 def supported_archs():
@@ -254,7 +253,10 @@ def supported_archs():
         archs.append(metal)
     if ti.core.with_opengl():
         archs.append(opengl)
-    if wanted_archs is not None:
+    wanted_archs = os.environ.get('TI_WANTED_ARCHS', '').split(',')
+    # Note, ''.split(',') gives you [''], which is not an empty array.
+    wanted_archs = list(filter(lambda x: x != '', wanted_archs))
+    if len(wanted_archs):
         archs, old_archs = [], archs
         for arch in old_archs:
             if ti.core.arch_name(arch) in wanted_archs:

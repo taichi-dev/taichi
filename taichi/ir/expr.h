@@ -102,4 +102,25 @@ class Expr {
   std::string get_attribute(const std::string &key) const;
 };
 
+Expr select(const Expr &cond, const Expr &true_val, const Expr &false_val);
+
+Expr operator-(const Expr &expr);
+
+Expr operator~(const Expr &expr);
+
+// Value cast
+Expr cast(const Expr &input, DataType dt);
+
+template <typename T>
+Expr cast(const Expr &input) {
+  return taichi::lang::cast(input, get_data_type<T>());
+}
+
+Expr bit_cast(const Expr &input, DataType dt);
+
+template <typename T>
+Expr bit_cast(const Expr &input) {
+  return taichi::lang::bit_cast(input, get_data_type<T>());
+}
+
 TLANG_NAMESPACE_END

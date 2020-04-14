@@ -1,4 +1,85 @@
 # Changelog
+- (April 11, 2020) v0.5.11 released
+   - **Automatic differentiation**
+      - Fix floating-point type-cast gradients (#687) (by **Yuanming Hu**)
+   - **CUDA backend**
+      - PyPI package `taichi-nightly` now covers CUDA 10.X on Windows and Linux (#756) (by **Yuanming Hu**)
+   - **Examples**
+      - Add `game_of_life.py` (#741) (by **彭于斌**)
+      - Fix `examples/regression.py` (#757) (by **Quan Wang**)
+   - **GUI**
+      - Support SPACE key (#749) (by **Ye Kuang**)
+      - Fix blinking particles and random segmentation faults in `ti.GUI.circles` (#755) (by **Yuanming Hu**)
+   - **Language and syntax**
+      - Support `continue` on all backends (#716) (by **Ye Kuang**)
+   - **LLVM backend (CPU and CUDA)**
+      - Fix LLVM struct-for codegen crashing due to extra return #704 (#707) (by **Yuanming Hu**)
+   - **Metal backend**
+      - Support `ti.random()` on Metal (#710) (by **Ye Kuang**)
+   - **OpenGL backend**
+      - Support NVIDIA GLSL compiler (#666) (by **彭于斌**)
+      - 64-bit data type support (#717) (by **彭于斌**)
+      - Support more than one external array arguments (#694) (by **彭于斌**)
+   - **IR and Optimization**
+      - More Taichi IR standardization and optimization (#656) (by **xumingkuan**)
+   - [Full log](https://github.com/taichi-dev/taichi/releases/tag/0.5.11)
+
+- (Mar 29, 2020) v0.5.10 released
+   - **Language and syntax**
+      - Fix `ti.static(ti.grouped(ti.ndrange(...)))` syntax checker false positive (#680) (by **Yuanming Hu**)
+   - **Command line interface**
+      - `ti test` now supports `-t/--threads` for specifying number of testing threads (#674) (by **Yuanming Hu**)
+   - [Full log](https://github.com/taichi-dev/taichi/releases/tag/0.5.10)
+
+- (Mar 28, 2020) v0.5.9 released
+   - **CPU backends**
+      - Support `bitmasked` as the leaf block structure for `1x1x1` masks (#676) (by **Yuanming Hu**)
+   - **CUDA backend**
+      - Support `bitmasked` as the leaf block structure for `1x1x1` masks (#676) (by **Yuanming Hu**)
+   - **Documentation**
+      - Updated contributor guideline (#658) (by **Yuanming Hu**)
+   - **Infrastructure**
+      - 6x faster compilation on CPU/CUDA backends (#673) (by **Yuanming Hu**)
+   - **Language and syntax**
+      - Simplify dense.bitmasked to bitmasked (#670) (by **Ye Kuang**)
+      - Support break in non-parallel for statements (#583) (by **彭于斌**)
+   - **Metal backend**
+      - Enable `bitmasked` on Metal (#661) (by **Ye Kuang**)
+      - Silence compile warnings (#650) (by **Ye Kuang**)
+   - **Optimization**
+      - Improved Taichi IR optimizers (#662) (#668) (by **xumingkuan**)
+   - [Full log](https://github.com/taichi-dev/taichi/releases/tag/0.5.9)
+- (Mar  24, 2020) v0.5.8 released. Visible/notable changes:
+   - **Language features**
+      - Access out-of-bound checking on CPU backends (#572) (by **xumingkuan**)
+      - Testable device-side assertion failures on CPUs (#605) (by **xumingkuan**)
+      - Added `Expr.copy_from` (by **Yuanming Hu**)
+      - Added `ti.Vector.unit` to generate unit vectors (by **Yuanming Hu**)
+      - Use `a = ti.static(a_very_long_variable)` for easy aliasing [[doc]](https://taichi.readthedocs.io/en/latest/syntax_sugars.html#aliases) (#587) (by **彭于斌** and **KLozes**)
+      - Added  `ti.atomic_min`,  `ti.atomic_max`, `ti.atomic_bit_or`, `ti.atomic_bit_and`, `ti.atomic_bit_xor` (CPU and CUDA by **KLozes**, OpenGL by **彭于斌**, Metal by **Ye Kuang**)
+   - **Differentiable programming**
+      - Experimental support for automatically differentiating through conditional global load/stores (by **Yuanming Hu**)
+   - **Bug fixes**
+      - Fixed stack traceback printing on OS X (#610) (by **Yuanming Hu**)
+   - **CLI**
+      - `ti format` now cover all files from upstream/master to the working tree (#629) (by **Ye Kuang**)
+      - `ti test` now uses `argparse` for better customizability (#601) (by **彭于斌**)
+   - **OpenGL backend**
+      - OpenGL Compute Shader backend will officially release very soon with v0.6! (by **彭于斌**)
+   - **Metal backend**
+      - Metal backend sparsity support work in progress (by **Ye Kuang**)
+   - **Examples**
+      - Added `examples/mgpcg.py` (#573) (by **KLozes**)
+      - Added `examples/sdf_renderer.py` (by **Yuanming Hu**)
+      - Added `examples/mgpcg_advanced.py` (#573) (by **Yuanming Hu**)
+   - [Full log](https://github.com/taichi-dev/taichi/releases/tag/0.5.8)
+- (Mar   4, 2020) v0.5.7 released
+   - **Deprecated `ti.classfunc`. Please simply use `ti.func`, even if you are decorating a class member function**
+   - Upgrade spdlog from 0.14.0 to 1.5.0 with git submodule (#565) (by **Mingkuan Xu [xumingkuan]**)
+   - Metal backend refactored (by **Ye Kuang [k-ye]**)
+   - Fixed infinitely looping signal handlers
+   - Fixed `ti test` on release mode
+   - Doc updated
 - (Mar   3, 2020) v0.5.6 released
    - Fixed runtime LLVM bitcode loading failure on Linux
    - Fixed a GUI bug in `ti.GUI.line` (by **Mingkuan Xu [xumingkuan]**)

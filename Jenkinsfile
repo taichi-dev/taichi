@@ -81,21 +81,18 @@ void build_taichi() {
     $CC --version
     $CXX --version
     echo $WORKSPACE
-    $PYTHON_EXECUTABLE -m pip install twine numpy Pillow scipy pybind11 colorama setuptools astor matplotlib pytest autograd GitPython distutils --user
+    $PYTHON_EXECUTABLE -m pip install twine numpy Pillow scipy pybind11 colorama setuptools astor matplotlib pytest autograd GitPython --user
     export TAICHI_REPO_DIR=$WORKSPACE/
     echo $TAICHI_REPO_DIR
     export PYTHONPATH=$TAICHI_REPO_DIR/python
     export PATH=$WORKSPACE/bin/:$PATH
-    if [ "$TI_WITH_CUDA" != 'False' ]
-    then
-      nvidia-smi
-    fi
+    nvidia-smi
     cd $TAICHI_REPO_DIR
     git submodule update --init --recursive
     [ -e build ] && rm -rf build
     mkdir build && cd build
     export CUDA_BIN_PATH=/usr/local/cuda-${CUDA_VERSION}
-    cmake .. -DPYTHON_EXECUTABLE=$PYTHON_EXECUTABLE -DCUDA_VERSION=$CUDA_VERSION -DTI_WITH_CUDA:BOOL=$TI_WITH_CUDA
+    cmake .. -DPYTHON_EXECUTABLE=$PYTHON_EXECUTABLE -DCUDA_VERSION=$CUDA_VERSION
     make -j 8
     ldd libtaichi_core.so
     cd ../python

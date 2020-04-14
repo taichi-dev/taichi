@@ -107,7 +107,7 @@ Existing tags:
 - ``[Lang]``: frontend language features, including syntax sugars;
 - ``[Std]``: standard library, e.g. `ti.Matrix` and `ti.Vector`;
 - ``[IR]``: intermediate representation;
-- ``[Bug]``: Bug fixes;
+- ``[Sparse]``: sparse computation, dynamic memory allocator, and garbage collection;
 - ``[Opt]``: IR optimization passes;
 - ``[Async]``: asynchronous execution engine;
 - ``[Type]``: type system;
@@ -121,6 +121,7 @@ Existing tags:
 - ``[Test]``: adding or improving tests under ``tests/``;
 - ``[PyPI]``: PyPI package release;
 - ``[Misc]``: something that doesn't belong to any category, such as version bump, reformatting;
+- ``[Bug]``: bug fixes;
 - **When introducing a new tag, please update the list here in the first PR with that tag, so that people can follow.**
 
 .. note::

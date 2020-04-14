@@ -521,11 +521,22 @@ class KernelGen : public IRVisitor {
       emit("int _tid = int(gl_GlobalInvocationID.x);");
       emit("if (_tid >= {}) return;", num_threads_);
       emit("int _itv = {} + _tid * {};", begin_value, 1 /* stmt->step? */);
+      stmt->body->accept(this);
     } else {
-      TI_ERROR("[glsl] non-const range_for currently unsupported under OpenGL");
+
+      emit("// range known at runtime");
+      num_threads_ = 1; // TODO: grid-stride-loop
+      auto begin_expr = stmt->const_begin ? std::to_string(stmt->begin_value)
+        : fmt::format("_gtmp_i32_[{}]", stmt->begin_offset);
+      auto end_expr = stmt->const_end ? std::to_string(stmt->end_value)
+        : fmt::format("_gtmp_i32_[{}]", stmt->end_offset);
+      emit("int _tid = int(gl_GlobalInvocationID.x);");
+      emit("int _beg = {}, _end = {};", begin_expr, end_expr);
+      emit("for (int _itv = _beg; _itv < _end; _itv++) {{");
+      stmt->body->accept(this);
+      emit("}}\n");
     }
 
-    stmt->body->accept(this);
     emit("}}\n");
   }
 

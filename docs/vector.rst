@@ -26,7 +26,7 @@ As Tensor
 .. note::
 
     In python-scope, ``ti.var`` is a :ref:`scalar_tensor`, while ``ti.Vector`` is a tensor of vectors.
- 
+
 
 As Temporary Variable
 +++++++++++++++++++++
@@ -40,7 +40,7 @@ As Temporary Variable
     ::
         # (taichi-scope)
         a = ti.Vector([2, 3, 4])
- 
+
 
 Attributes
 ----------
@@ -74,7 +74,7 @@ Methods
     ::
         a = ti.Vector([3, 4])
         a.norm() # sqrt(3*3 + 4*4 + 0) = 5
-    
+
     These two are equivalent:
     ::
         ti.sqrt(a.dot(a) + eps)

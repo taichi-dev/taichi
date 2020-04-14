@@ -76,8 +76,11 @@ if (TI_WITH_OPENGL)
 endif()
 
 # http://llvm.org/docs/CMake.html#embedding-llvm-in-your-project
-find_package(LLVM REQUIRED CONFIG 8.0)
+find_package(LLVM REQUIRED CONFIG)
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
+if(${LLVM_PACKAGE_VERSION} VERSION_LESS "8.0")
+    message(FATAL_ERROR "LLVM less than 8.0 is not supported")
+endif()
 message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
 include_directories(${LLVM_INCLUDE_DIRS})
     message("llvm include dirs ${LLVM_INCLUDE_DIRS}")

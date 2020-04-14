@@ -670,6 +670,8 @@ class Stmt : public IRNode {
     return (operand_bitmap & operand_hash(stmt)) != 0;
   }
 
+  bool have_operand(Stmt *stmt) const;
+
   void replace_with(Stmt *new_stmt);
   void replace_with(VecStatement &&new_statements, bool replace_usages = true);
   virtual void replace_operand_with(Stmt *old_stmt, Stmt *new_stmt);

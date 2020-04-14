@@ -12,14 +12,17 @@ class AllocaOptimize : public BasicStmtVisitor {
   using BasicStmtVisitor::visit;
 
   explicit AllocaOptimize(AllocaStmt *alloca) : alloca(alloca) {
+    allow_undefined_visitor = true;
+    invoke_default_visitor = true;
   }
 
   void run() {
     Block *block = alloca->parent;
+    TI_ASSERT(block);
     int location = block->locate(alloca);
     TI_ASSERT(location != -1);
     for (int i = location + 1; i < (int)block->size(); i++) {
-      block[i].accept(this);
+      block->statements[i]->accept(this);
     }
   }
 
@@ -32,6 +35,11 @@ class AllocaFindAndOptimize : public BasicStmtVisitor {
 
  public:
   using BasicStmtVisitor::visit;
+
+  AllocaFindAndOptimize() : visited() {
+    allow_undefined_visitor = true;
+    invoke_default_visitor = true;
+  }
 
   bool is_done(Stmt *stmt) {
     return visited.find(stmt->instance_id) != visited.end();
@@ -66,7 +74,7 @@ class AllocaFindAndOptimize : public BasicStmtVisitor {
 
 namespace irpass {
 void optimize_local_variable(IRNode *root) {
-  return AllocaFindAndOptimize::run(root);
+  AllocaFindAndOptimize::run(root);
 }
 }  // namespace irpass
 

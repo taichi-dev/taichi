@@ -293,9 +293,11 @@ struct CompiledKernel {
         num_groups(num_groups_),
         used(used_) {
     glsl->link();
-    TI_DEBUG("source of kernel [{}] * {}:\n{}", kernel_name, num_groups,
-             kernel_source_code);
-#ifdef _GLSL_DEBUG
+    if (1 &&  // !ti.cfg.opengl.print_accessor_glsl
+        kernel_name.rfind("snode_", 0) && kernel_name.rfind("tensor_to_", 0))
+      TI_DEBUG("source of kernel [{}] * {}:\n{}", kernel_name, num_groups,
+          kernel_source_code);
+#ifdef _GLSL_DEBUG  // ti.cfg.opengl.save_glsl_to_file
     std::ofstream(fmt::format("/tmp/{}.comp", kernel_name))
         .write(kernel_source_code.c_str(), kernel_source_code.size());
 #endif

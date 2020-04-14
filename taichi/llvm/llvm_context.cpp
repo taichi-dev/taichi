@@ -314,7 +314,6 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
 
       patch_atomic_add("atomic_add_i64", llvm::AtomicRMWInst::Add);
 
-
 #if LLVM_VERSION_MAJOR >= 10
       patch_atomic_add("atomic_add_f32", llvm::AtomicRMWInst::FAdd);
 

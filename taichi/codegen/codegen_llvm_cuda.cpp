@@ -228,8 +228,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
 #if LLVM_VERSION_MAJOR >= 10
           old_value = builder->CreateAtomicRMW(
               llvm::AtomicRMWInst::FAdd, llvm_val[stmt->dest],
-              llvm_val[stmt->val],
-              AtomicOrdering::SequentiallyConsistent);
+              llvm_val[stmt->val], AtomicOrdering::SequentiallyConsistent);
 #else
           auto dt = tlctx->get_data_type(DataType::f32);
           old_value = builder->CreateIntrinsic(
@@ -241,8 +240,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
 #if LLVM_VERSION_MAJOR >= 10
           old_value = builder->CreateAtomicRMW(
               llvm::AtomicRMWInst::FAdd, llvm_val[stmt->dest],
-              llvm_val[stmt->val],
-              AtomicOrdering::SequentiallyConsistent);
+              llvm_val[stmt->val], AtomicOrdering::SequentiallyConsistent);
 #else
           auto dt = tlctx->get_data_type(DataType::f64);
           old_value = builder->CreateIntrinsic(

@@ -21,6 +21,15 @@ The Taichi Programming Language
 
 
 .. toctree::
+   :caption: API References
+   :maxdepth: 3
+
+   scalar_tensor
+   vector
+   linalg
+
+
+.. toctree::
    :caption: Advanced Programming
    :maxdepth: 3
 
@@ -31,15 +40,6 @@ The Taichi Programming Language
    odop
    compilation
    syntax_sugars
-
-
-.. toctree::
-   :caption: References
-   :maxdepth: 3
-
-   scalar_tensor
-   vector
-   linalg
 
 
 .. toctree::

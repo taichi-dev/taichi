@@ -89,7 +89,7 @@ Taichi code can run on CPUs or GPUs. Initialize Taichi according to your hardwar
     | Mac OS X | OK   | N/A  | N/A    | OK    |
     +----------+------+------+--------+-------+
 
-    (OK=supported, WIP=work in progress, N/A=not available)
+    (OK: supported, WIP: work in progress, N/A: not available)
 
     If the machine does not have CUDA support, Taichi will fall back to CPUs instead.
 

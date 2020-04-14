@@ -43,7 +43,7 @@ Currently, supported basic types in Taichi are
     | f64  |    OK     |    OK     |  MISS   |
     +------+-----------+-----------+---------+
 
-    (OK=supported, EXT=require extension, MISS=not supported)
+    (OK: supported, EXT: require extension, MISS: not supported)
 
 
 Boolean types are represented using ``ti.i32``.

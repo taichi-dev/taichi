@@ -71,4 +71,4 @@ These operations additionally return the **old value** of the first argument. Be
     | ``f64``  |    OK     |   EXT     |  MISS   |
     +----------+-----------+-----------+---------+
 
-    (OK: supported; EXT:r equire extension; MISS: not supported)
+    (OK: supported; EXT: require extension; MISS: not supported)

@@ -63,33 +63,33 @@ You can also reuse the package management system, Python IDEs, and existing Pyth
 Portability
 -----------------
 
-Taichi code can run on CPUs or GPUs. Depends on your platform:
+Taichi code can run on CPUs or GPUs. Initialize Taichi according to your hardware platform:
 
 .. code-block:: python
 
-  # Run on NVIDIA GPU, require CUDA installed
+  # Run on NVIDIA GPU, CUDA required
   ti.init(arch=ti.cuda)
-  # Run on GPU, with OpenGL backend
+  # Run on GPU, with the OpenGL backend
   ti.init(arch=ti.opengl)
-  # Run on GPU, with Metal backend, if you're on OS X
+  # Run on GPU, with the Apple Metal backend, if you are on OS X
   ti.init(arch=ti.metal)
   # Run on CPU (default)
   ti.init(arch=ti.x64)
 
 .. note::
-    Supported archs on different platforms:
+    Supported backends on different platforms:
 
     +----------+------+------+--------+-------+
     | platform | CPU  | CUDA | OpenGL | Metal |
     +==========+======+======+========+=======+
-    | Windows  | OK   | WIP  | WIP    | MISS  |
+    | Windows  | OK   | OK   | WIP    | N/A   |
     +----------+------+------+--------+-------+
-    | Linux    | OK   | OK   | OK     | MISS  |
+    | Linux    | OK   | OK   | OK     | N/A   |
     +----------+------+------+--------+-------+
-    | Mac OS X | OK   | MISS | MISS   | OK    |
+    | Mac OS X | OK   | N/A  | N/A    | OK    |
     +----------+------+------+--------+-------+
 
-    (OK=supported, WIP=work in progress, MISS=not supported)
+    (OK=supported, WIP=work in progress, N/A=not available)
 
     If the machine does not have CUDA support, Taichi will fall back to CPUs instead.
 
@@ -168,6 +168,9 @@ In the fractal code above, ``for i, j in pixels`` loops over all the pixel coord
 .. note::
 
     Struct-for is the key to :ref:`sparse` in Taichi, as it will only loop over active elements in a sparse tensor. In dense tensors, all elements are active.
+
+.. note::
+    Struct-for's must be at the outer-most scope of kernels.
 
 .. note::
     It is the loop **at the outermost scope** that gets parallelized, not the outermost loop.

@@ -50,7 +50,7 @@ Installing Depedencies
     make -j 8
     sudo make install
 
-Setting up Taichi for develop
+Setting up Taichi for development
 ---------------------------------------------
 
 - Clone the taichi repo, and build:
@@ -58,16 +58,16 @@ Setting up Taichi for develop
   .. code-block:: bash
 
     git clone https://github.com/taichi-dev/taichi --depth=1 --branch=master
-    gsm update --init --recursive --depth=1
+    git submodule update --init --recursive --depth=1
     cd taichi
     mkdir build
     cd build
     cmake ..
-    # if you are building with CUDA 10.0, use this:
+    # if you are building with CUDA 10.0, use the line below:
     # cmake .. -DCUDA_VERSION=10.0 -DTI_WITH_CUDA:BOOL=True
     make -j 8
 
-- Add the following codes to your ``~/.bashrc``:
+- Add the following script to your ``~/.bashrc``:
 
   .. code-block:: bash
 

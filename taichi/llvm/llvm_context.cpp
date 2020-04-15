@@ -11,6 +11,10 @@
 #include "llvm/IR/Function.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Instructions.h"
+#if LLVM_VERSION_MAJOR >= 10
+#include "llvm/IR/Intrinsics.h"
+#include "llvm/IR/IntrinsicsNVPTX.h"
+#endif
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/IR/Module.h"
@@ -281,7 +285,8 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
         TaichiLLVMContext::force_inline(func);
       };
 
-      auto patch_atomic_add_int = [&](std::string name) {
+      auto patch_atomic_add = [&](std::string name,
+                                  llvm::AtomicRMWInst::BinOp op) {
         auto func = runtime_module->getFunction(name);
         func->deleteBody();
         auto bb = llvm::BasicBlock::Create(*ctx, "entry", func);
@@ -291,7 +296,7 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
         for (auto &arg : func->args())
           args.push_back(&arg);
         builder.CreateRet(builder.CreateAtomicRMW(
-            llvm::AtomicRMWInst::Add, args[0], args[1],
+            op, args[0], args[1],
             llvm::AtomicOrdering::SequentiallyConsistent));
         TaichiLLVMContext::force_inline(func);
       };
@@ -305,10 +310,15 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
       patch_intrinsic("grid_memfence", Intrinsic::nvvm_membar_gl, false);
       patch_intrinsic("system_memfence", Intrinsic::nvvm_membar_sys, false);
 
-      patch_atomic_add_int("atomic_add_i32");
+      patch_atomic_add("atomic_add_i32", llvm::AtomicRMWInst::Add);
 
-      patch_atomic_add_int("atomic_add_i64");
+      patch_atomic_add("atomic_add_i64", llvm::AtomicRMWInst::Add);
 
+#if LLVM_VERSION_MAJOR >= 10
+      patch_atomic_add("atomic_add_f32", llvm::AtomicRMWInst::FAdd);
+
+      patch_atomic_add("atomic_add_f64", llvm::AtomicRMWInst::FAdd);
+#else
       patch_intrinsic(
           "atomic_add_f32", Intrinsic::nvvm_atomic_load_add_f32, true,
           {llvm::PointerType::get(get_data_type(DataType::f32), 0)});
@@ -316,6 +326,7 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
       patch_intrinsic(
           "atomic_add_f64", Intrinsic::nvvm_atomic_load_add_f64, true,
           {llvm::PointerType::get(get_data_type(DataType::f64), 0)});
+#endif
 
       // patch_intrinsic("sync_warp", Intrinsic::nvvm_bar_warp_sync, false);
       // patch_intrinsic("warp_ballot", Intrinsic::nvvm_vote_ballot, false);

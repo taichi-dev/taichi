@@ -9,7 +9,7 @@
 python3 -m pip install taichi
 ```
 **Supported OS**: Windows, Linux, Mac OS X; **Python**: 3.6, 3.7, 3.8; **Backends**: x64 CPUs, CUDA, Apple Metal.
- 
+
 Please build from source for other configurations (e.g., you need the experimental OpenGL backend or your CPU is ARM).
 
 **Note:**

@@ -28,3 +28,7 @@ Don'ts
 - ``NULL``, use ``nullptr`` instead.
 - ``using namespace std;`` in global scope.
 - ``typedef``. Use ``using`` instead.
+
+Automatic code formatting
+--------------------------------------------------------------------------------
+- Please run ``ti format``

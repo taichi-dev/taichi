@@ -92,6 +92,7 @@ void compile_to_offloads(IRNode *ir,
   irpass::typecheck(ir);
   irpass::fix_block_parents(ir);  // hot fix
   irpass::analysis::verify(ir);
+//  std::cout << "result: " << irpass::analysis::count_statements(ir) << std::endl;
 }
 
 }  // namespace irpass

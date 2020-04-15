@@ -487,10 +487,12 @@ void insert_gc(IRNode *root) {
 
   for (int i = (int)b->statements.size() - 1; i >= 0; i--) {
     auto snodes = gc_statements[i].second;
-    for (auto j = 0; j < snodes.size(); j++) {
-      b->statements.insert(
-          b->statements.begin() + i + 1,
-          Stmt::make<OffloadedStmt>(OffloadedStmt::TaskType::gc, snodes[j]));
+    for (auto *snode : snodes) {
+      if (is_gc_able(snode->type)) {
+        b->statements.insert(
+            b->statements.begin() + i + 1,
+            Stmt::make<OffloadedStmt>(OffloadedStmt::TaskType::gc, snode));
+      }
     }
   }
 }

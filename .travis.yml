@@ -20,6 +20,7 @@ matrix:
 skip_commits:
   files:
     - '*.md'
+    - '*.rst'
     - docs
     - benchmarks
     - examples

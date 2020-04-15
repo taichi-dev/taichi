@@ -211,8 +211,7 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
                                   (int)snodes.size());
 
   for (int i = 0; i < (int)snodes.size(); i++) {
-    if (snodes[i]->type == SNodeType::pointer ||
-        snodes[i]->type == SNodeType::dynamic) {
+    if (is_gc_able(snodes[i]->type)) {
       std::size_t node_size;
       if (snodes[i]->type == SNodeType::pointer)
         node_size = tlctx->get_type_size(

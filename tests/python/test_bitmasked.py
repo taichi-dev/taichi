@@ -140,3 +140,34 @@ def test_bitmasked_listgen_bounded():
     func()
     count()
     assert c[None] == n
+
+
+@archs_support_bitmasked
+def test_deactivate():
+    # https://github.com/taichi-dev/taichi/issues/778
+    a = ti.var(ti.i32)
+    a_a = ti.root.bitmasked(ti.i, 4)
+    a_b = a_a.dense(ti.i, 4)
+    a_b.place(a)
+    c = ti.var(ti.i32)
+    ti.root.place(c)
+
+    @ti.kernel
+    def run():
+        a[0] = 123
+
+    @ti.kernel
+    def is_active():
+        c[None] = ti.is_active(a_a, [0])
+
+    @ti.kernel
+    def deactivate():
+        ti.deactivate(a_a, [0])
+
+    run()
+    is_active()
+    assert c[None] == 1
+
+    deactivate()
+    is_active()
+    assert c[None] == 0

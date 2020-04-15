@@ -30,6 +30,7 @@ constexpr char kArgsBufferName[] = "args_addr";
 constexpr char kRuntimeBufferName[] = "runtime_addr";
 constexpr char kArgsContextName[] = "args_ctx_";
 constexpr char kRuntimeVarName[] = "runtime_";
+constexpr char kLinearLoopIndexName[] = "linear_loop_idx_";
 constexpr char kListgenElemVarName[] = "listgen_elem_";
 constexpr char kRandStateVarName[] = "rand_state_";
 
@@ -314,16 +315,7 @@ class KernelCodegen : public IRVisitor {
     const auto stmt_name = stmt->raw_name();
     if (type == TaskType::range_for) {
       TI_ASSERT(stmt->index == 0);
-      if (current_kernel_attribs_->range_for_attribs.const_begin) {
-        emit("const int {} = (static_cast<int>({}) + {});", stmt_name,
-             kKernelThreadIdName,
-             current_kernel_attribs_->range_for_attribs.begin);
-      } else {
-        auto begin_stmt = inject_load_global_tmp(
-            current_kernel_attribs_->range_for_attribs.begin);
-        emit("const int {} = (static_cast<int>({}) + {});", stmt_name,
-             kKernelThreadIdName, begin_stmt);
-      }
+      emit("const int {} = {};", stmt_name, kLinearLoopIndexName);
     } else if (type == TaskType::struct_for) {
       emit("const int {} = {}.coords[{}];", stmt_name, kListgenElemVarName,
            stmt->index);
@@ -635,7 +627,8 @@ class KernelCodegen : public IRVisitor {
       current_kernel_attribs_ = &ka;
       const auto mtl_func_name = mtl_kernel_func_name(mtl_kernel_name);
       emit_mtl_kernel_func_def(mtl_func_name, ka.buffers, stmt->body.get());
-      emit_call_mtl_kernel_func(mtl_func_name, ka.buffers);
+      emit_call_mtl_kernel_func(mtl_func_name, ka.buffers,
+                                /*loop_index_expr=*/"0");
     }
     // Close kernel
     emit("}}\n");
@@ -663,28 +656,52 @@ class KernelCodegen : public IRVisitor {
         (stmt->const_end ? stmt->end_value : stmt->end_offset);
 
     current_appender().push_indent();
+    const std::string total_elems_name("total_elems");
+    // Begin expression of the for range, this can be either a constant
+    // (const_begin == true), or a variable loaded from the global temporaries.
+    std::string begin_expr;
     if (range_for_attribs.const_range()) {
-      ka.num_threads = range_for_attribs.end - range_for_attribs.begin;
+      const int num_elems = range_for_attribs.end - range_for_attribs.begin;
+      begin_expr = std::to_string(stmt->begin_value);
       emit("// range_for, range known at compile time");
-      emit("if ({} >= {}) return;", kKernelThreadIdName, ka.num_threads);
+      emit("const int {} = {};", total_elems_name, num_elems);
+      // We don't clamp this to kMaxNumThreadsGridStrideLoop, because we know
+      // for sure that we need |num_elems| of threads.
+      // sdf_renderer.py benchmark for setting |num_threads|
+      // - num_elemnts: ~20 samples/s
+      // - kMaxNumThreadsGridStrideLoop: ~12 samples/s
+      ka.num_threads = num_elems;
     } else {
-      ka.num_threads = -1;
       emit("// range_for, range known at runtime");
-      const auto begin_stmt = stmt->const_begin
-                                  ? std::to_string(stmt->begin_value)
-                                  : inject_load_global_tmp(stmt->begin_offset);
-      const auto end_stmt = stmt->const_end
+      begin_expr = stmt->const_begin
+                       ? std::to_string(stmt->begin_value)
+                       : inject_load_global_tmp(stmt->begin_offset);
+      const auto end_expr = stmt->const_end
                                 ? std::to_string(stmt->end_value)
                                 : inject_load_global_tmp(stmt->end_offset);
-      emit("if ({} >= ({} - {})) return;", kKernelThreadIdName, end_stmt,
-           begin_stmt);
+      emit("const int {} = {} - {};", total_elems_name, end_expr, begin_expr);
+      ka.num_threads = kMaxNumThreadsGridStrideLoop;
     }
+    // (total_elems + thread_grid_size - 1) / thread_grid_size
+    emit("const int range_ = max((int)(({0} + {1} - 1) / {1}), 1);",
+         total_elems_name, kKernelGridSizeName);
+    // range_ * thread_id + begin_expr
+    emit("const int begin_ = (range_ * (int){}) + {};", kKernelThreadIdName,
+         begin_expr);
+    // min(range_ * (thread_id + 1), total_elems) + begin_expr
+    emit("const int end_ = min(range_ * (int)({} + 1), {}) + {};",
+         kKernelThreadIdName, total_elems_name, begin_expr);
+    emit("for (int ii = begin_; ii < end_; ++ii) {{");
+    {
+      ScopedIndent s2(current_appender());
 
-    current_kernel_attribs_ = &ka;
-    const auto mtl_func_name = mtl_kernel_func_name(mtl_kernel_name);
-    emit_mtl_kernel_func_def(mtl_func_name, ka.buffers, stmt->body.get());
-    emit_call_mtl_kernel_func(mtl_func_name, ka.buffers);
-
+      current_kernel_attribs_ = &ka;
+      const auto mtl_func_name = mtl_kernel_func_name(mtl_kernel_name);
+      emit_mtl_kernel_func_def(mtl_func_name, ka.buffers, stmt->body.get());
+      emit_call_mtl_kernel_func(mtl_func_name, ka.buffers,
+                                /*loop_index_expr=*/"ii");
+    }
+    emit("}}");  // closes for loop
     current_appender().pop_indent();
     // Close kernel
     emit("}}\n");
@@ -780,7 +797,8 @@ class KernelCodegen : public IRVisitor {
           stmt->body.get());
       emit_call_mtl_kernel_func(mtl_func_name, ka.buffers,
                                 /*extra_args=*/
-                                {kListgenElemVarName});
+                                {kListgenElemVarName},
+                                /*loop_index_expr=*/"ii");
       current_kernel_attribs_ = nullptr;
     }
     emit("}}");  // closes for loop
@@ -847,8 +865,7 @@ class KernelCodegen : public IRVisitor {
     for (const auto &p : extra_params) {
       emit("    {} {},", p.type, p.name);
     }
-    emit("    const uint {},", kKernelGridSizeName);
-    emit("    const uint {}) {{", kKernelThreadIdName);
+    emit("    const int {}) {{", kLinearLoopIndexName);
 
     {
       ScopedIndent s(current_appender());
@@ -861,10 +878,10 @@ class KernelCodegen : public IRVisitor {
       // Init RandState
       emit(
           "device {rty}* {rand} = reinterpret_cast<device "
-          "{rty}*>({rtm}->rand_seeds + ({tid} % {nums}));",
+          "{rty}*>({rtm}->rand_seeds + ({lidx} % {nums}));",
           fmt::arg("rty", "RandState"), fmt::arg("rand", kRandStateVarName),
           fmt::arg("rtm", kRuntimeVarName),
-          fmt::arg("tid", kKernelThreadIdName),
+          fmt::arg("lidx", kLinearLoopIndexName),
           fmt::arg("nums", kNumRandSeeds));
     }
     // We do not need additional indentation, because |func_ir| itself is a
@@ -885,7 +902,8 @@ class KernelCodegen : public IRVisitor {
   void emit_call_mtl_kernel_func(
       const std::string &kernel_func_name,
       const std::vector<KernelAttributes::Buffers> &buffers,
-      const std::vector<std::string> &extra_args) {
+      const std::vector<std::string> &extra_args,
+      const std::string &loop_index_expr) {
     TI_ASSERT(code_section_ == Section::Kernels);
     std::string call = kernel_func_name + "(";
     for (auto b : buffers) {
@@ -894,14 +912,16 @@ class KernelCodegen : public IRVisitor {
     for (const auto &a : extra_args) {
       call += a + ", ";
     }
-    call += fmt::format("{}, {});", kKernelGridSizeName, kKernelThreadIdName);
+    call += fmt::format("{});", loop_index_expr);
     emit(std::move(call));
   }
 
   inline void emit_call_mtl_kernel_func(
       const std::string &kernel_func_name,
-      const std::vector<KernelAttributes::Buffers> &buffers) {
-    emit_call_mtl_kernel_func(kernel_func_name, buffers, /*extra_args=*/{});
+      const std::vector<KernelAttributes::Buffers> &buffers,
+      const std::string &loop_index_expr) {
+    emit_call_mtl_kernel_func(kernel_func_name, buffers, /*extra_args=*/{},
+                              loop_index_expr);
   }
 
   void emit_mtl_kernel_sig(

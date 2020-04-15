@@ -130,6 +130,10 @@ std::string snode_type_name(SNodeType t) {
   return type_names[t];
 }
 
+bool is_gc_able(SNodeType t) {
+  return (t == SNodeType::pointer || t == SNodeType::dynamic);
+}
+
 std::string unary_op_type_name(UnaryOpType type) {
   static std::map<UnaryOpType, std::string> type_names;
   if (type_names.empty()) {

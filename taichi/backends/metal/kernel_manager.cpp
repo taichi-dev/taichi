@@ -139,12 +139,6 @@ class UserMtlKernel : public CompiledMtlKernelBase {
       buffers.push_back({input_buffers.find(b)->second, b});
     }
     launch_if_not_empty(std::move(buffers), command_buffer);
-    if ((kernel_attribs_.task_type == KernelTaskType::range_for) &&
-        !kernel_attribs_.range_for_attribs.const_range()) {
-      // Set |num_thread| to an invalid number to make sure the next launch
-      // re-computes it correctly.
-      kernel_attribs_.num_threads = -1;
-    }
   }
 };
 
@@ -460,23 +454,6 @@ class KernelManager::Impl {
       input_buffers[BufferEnum::Args] = ctk.args_buffer.get();
     }
     for (const auto &mk : ctk.compiled_mtl_kernels) {
-      auto *ka = mk->kernel_attribs();
-      if ((ka->task_type == KernelTaskType::range_for) &&
-          !ka->range_for_attribs.const_range()) {
-        // If the for loop range is determined at runtime, it will be computed
-        // in the previous serial kernel. We need to read it back to the host
-        // side to decide how many kernel threads to launch.
-        synchronize();
-        const int begin =
-            ka->range_for_attribs.const_begin
-                ? ka->range_for_attribs.begin
-                : load_global_tmp<int>(ka->range_for_attribs.begin);
-        const int end = ka->range_for_attribs.const_end
-                            ? ka->range_for_attribs.end
-                            : load_global_tmp<int>(ka->range_for_attribs.end);
-        TI_ASSERT(ka->num_threads == -1);
-        ka->num_threads = end - begin;
-      }
       mk->launch(input_buffers, cur_command_buffer_.get());
     }
     if (args_blitter) {

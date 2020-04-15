@@ -6,7 +6,7 @@ TLANG_NAMESPACE_BEGIN
 // Optimize one alloca
 class AllocaOptimize : public IRVisitor {
  private:
-  AllocaStmt *alloca;
+  AllocaStmt *alloca_stmt;
 
  public:
   bool stored; // Is this alloca ever stored?
@@ -27,8 +27,8 @@ class AllocaOptimize : public IRVisitor {
   // include it as an operand?
   bool last_atomic_eliminable;
 
-  explicit AllocaOptimize(AllocaStmt *alloca)
-      : alloca(alloca),
+  explicit AllocaOptimize(AllocaStmt *alloca_stmt)
+      : alloca_stmt(alloca_stmt),
         stored(false),
         last_store(nullptr),
         last_store_valid(false),
@@ -51,7 +51,7 @@ class AllocaOptimize : public IRVisitor {
   }
 
   void visit(AtomicOpStmt *stmt) override {
-    if (stmt->dest != alloca)
+    if (stmt->dest != alloca_stmt)
       return;
     stored = true;
     last_store = nullptr;
@@ -62,7 +62,7 @@ class AllocaOptimize : public IRVisitor {
   }
 
   void visit(LocalStoreStmt *stmt) override {
-    if (stmt->ptr != alloca)
+    if (stmt->ptr != alloca_stmt)
       return;
     stored = true;
     last_store = stmt;
@@ -75,10 +75,10 @@ class AllocaOptimize : public IRVisitor {
   void visit(LocalLoadStmt *stmt) override {
     bool regular = true;
     for (int l = 0; l < stmt->width(); l++) {
-      if (stmt->ptr[l].offset != l || stmt->ptr[l].var != alloca) {
+      if (stmt->ptr[l].offset != l || stmt->ptr[l].var != alloca_stmt) {
         regular = false;
       }
-      if (stmt->ptr[l].var == alloca) {
+      if (stmt->ptr[l].var == alloca_stmt) {
         last_store_loaded = true;
         if (last_atomic)
           last_atomic_eliminable = false;
@@ -88,7 +88,7 @@ class AllocaOptimize : public IRVisitor {
       return;
     if (!stored) {
       auto zero = stmt->insert_after_me(Stmt::make<ConstStmt>(
-          LaneAttribute<TypedConstant>(alloca->ret_type.data_type)));
+          LaneAttribute<TypedConstant>(alloca_stmt->ret_type.data_type)));
       zero->repeat(stmt->width());
       int current_stmt_id = stmt->parent->locate(stmt);
       stmt->replace_with(zero);
@@ -197,17 +197,17 @@ class AllocaOptimize : public IRVisitor {
 
   void run(Block *block = nullptr) {
     if (block == nullptr)
-      block = alloca->parent;
+      block = alloca_stmt->parent;
     TI_ASSERT(block);
     int location = -1;
-    if (block == alloca->parent) {
-      location = block->locate(alloca);
+    if (block == alloca_stmt->parent) {
+      location = block->locate(alloca_stmt);
       TI_ASSERT(location != -1);
     }
     for (int i = location + 1; i < (int)block->size(); i++) {
       block->statements[i]->accept(this);
     }
-    if (block != alloca->parent) {
+    if (block != alloca_stmt->parent) {
       return;
     }
     if (last_store && !last_store_loaded) {
@@ -234,10 +234,10 @@ class AllocaOptimize : public IRVisitor {
       // Never stored and never loaded.
       if (irpass::analysis::gather_statements(
           block, [&](Stmt *stmt) {
-            return stmt->have_operand(alloca);
+            return stmt->have_operand(alloca_stmt);
           }).empty()) {
         // Eliminate this alloca.
-        block->erase(alloca);
+        block->erase(alloca_stmt);
         throw IRModified();
       }
     }

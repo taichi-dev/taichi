@@ -1,3 +1,4 @@
+//#define _GLSL_DEBUG 1
 #include "opengl_api.h"
 
 #include "taichi/backends/opengl/opengl_kernel_util.h"
@@ -301,12 +302,11 @@ struct CompiledKernel {
         num_groups(num_groups_),
         used(used_) {
     glsl->link();
-    if (1 &&  // !ti.cfg.opengl.print_accessor_glsl
-        !my_starts_with(kernel_name, "snode_") &&
+    if (!my_starts_with(kernel_name, "snode_") &&
         !my_starts_with(kernel_name, "tensor_"))
       TI_DEBUG("source of kernel [{}] * {}:\n{}", kernel_name, num_groups,
           kernel_source_code);
-#ifdef _GLSL_DEBUG  // ti.cfg.opengl.save_glsl_to_file
+#ifdef _GLSL_DEBUG
     std::ofstream(fmt::format("/tmp/{}.comp", kernel_name))
         .write(kernel_source_code.c_str(), kernel_source_code.size());
 #endif

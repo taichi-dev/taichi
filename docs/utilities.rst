@@ -9,7 +9,7 @@ GUI system
 .. code-block:: python
 
     gui = ti.GUI('Title', (640, 480))
-    while not gui.is_pressed(ti.GUI.ESCAPE):
+    while not gui.has_key_pressed():
         gui.set_image(img)
         gui.show()
 

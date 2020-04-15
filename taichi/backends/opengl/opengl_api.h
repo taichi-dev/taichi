@@ -20,6 +20,9 @@ int opengl_get_threads_per_group();
 #include "taichi/inc/opengl_extension.inc.h"
 #undef PER_OPENGL_EXTENSION
 
+using _RangeSizeEvaluator = std::function<size_t(const char *)>;
+using RangeSizeEvaluator = std::optional<_RangeSizeEvaluator>;
+
 struct CompiledProgram {
   struct Impl;
   std::unique_ptr<Impl> impl;
@@ -34,7 +37,7 @@ struct CompiledProgram {
 
   void add(const std::string &kernel_name,
            const std::string &kernel_source_code,
-           int num_groups,
+           int num_groups, RangeSizeEvaluator rse,
            const UsedFeature &used);
   void launch(Context &ctx, GLSLLauncher *launcher) const;
 };

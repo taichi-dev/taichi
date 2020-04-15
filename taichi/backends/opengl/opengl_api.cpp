@@ -1,4 +1,4 @@
-//#define _GLSL_DEBUG 1
+#define _GLSL_DEBUG 1
 #include "opengl_api.h"
 
 #include "taichi/backends/opengl/opengl_kernel_util.h"
@@ -286,6 +286,7 @@ struct CompiledKernel {
   std::string kernel_name;
   std::unique_ptr<GLProgram> glsl;
   int num_groups;
+  RangeSizeEvaluator rse;
   UsedFeature used;
 
   // disscussion:
@@ -295,11 +296,11 @@ struct CompiledKernel {
 
   explicit CompiledKernel(const std::string &kernel_name_,
                           const std::string &kernel_source_code,
-                          int num_groups_,
+                          int num_groups_, RangeSizeEvaluator rse_,
                           const UsedFeature &used_)
       : kernel_name(kernel_name_),
         glsl(std::make_unique<GLProgram>(GLShader(kernel_source_code))),
-        num_groups(num_groups_),
+        num_groups(num_groups_), rse(rse_),
         used(used_) {
     glsl->link();
     if (!my_starts_with(kernel_name, "snode_") &&
@@ -345,10 +346,10 @@ struct CompiledProgram::Impl {
 
   void add(const std::string &kernel_name,
            const std::string &kernel_source_code,
-           int num_groups,
+           int num_groups, RangeSizeEvaluator rse,
            const UsedFeature &used) {
     kernels.push_back(std::make_unique<CompiledKernel>(
-        kernel_name, kernel_source_code, num_groups, used));
+        kernel_name, kernel_source_code, num_groups, rse, used));
   }
 
   void launch(Context &ctx, GLSLLauncher *launcher) const {
@@ -390,6 +391,8 @@ struct CompiledProgram::Impl {
     }
     for (const auto &ker : kernels) {
       auto guard = launcher->create_launch_guard(iov);
+      if (ker->rse.has_value()) ker->num_groups = (*ker->rse)((const char *)gtmp_base);
+      TI_DEBUG("kernel [{}] num_groups = {}", ker->kernel_name, ker->num_groups);
       ker->launch();
     }
     if (ext_arr_map.size() > 1) {
@@ -476,7 +479,7 @@ struct CompiledProgram::Impl {
 
   void add(const std::string &kernel_name,
            const std::string &kernel_source_code,
-           int num_groups,
+           int num_groups, RangeSizeEvaluator rse,
            const UsedFeature &used) {
     TI_NOT_IMPLEMENTED;
   }
@@ -526,9 +529,9 @@ CompiledProgram::~CompiledProgram() = default;
 
 void CompiledProgram::add(const std::string &kernel_name,
                           const std::string &kernel_source_code,
-                          int num_groups,
+                          int num_groups, RangeSizeEvaluator rse,
                           const UsedFeature &used) {
-  impl->add(kernel_name, kernel_source_code, num_groups, used);
+  impl->add(kernel_name, kernel_source_code, num_groups, rse, used);
 }
 
 void CompiledProgram::launch(Context &ctx, GLSLLauncher *launcher) const {

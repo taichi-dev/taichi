@@ -154,7 +154,7 @@ class KernelGen : public IRVisitor {
 
     int threads_per_group = opengl_get_threads_per_group();
     if (num_threads_ <= 0) num_threads_ = 1;
-    if (num_threads_ < threads_per_group) {
+    if (num_threads_ <= threads_per_group) {
       threads_per_group = num_threads_;
       num_groups_ = 1;
     } else {
@@ -528,6 +528,7 @@ class KernelGen : public IRVisitor {
     } else {
 
       ScopedIndent _s(line_appender_);
+#if 0
       emit("// range known at runtime");
       num_threads_ = 1; // TODO: grid-stride-loop
       auto begin_expr = stmt->const_begin ? std::to_string(stmt->begin_value)
@@ -538,8 +539,13 @@ class KernelGen : public IRVisitor {
       emit("if (_tid >= {}) return;", num_threads_);
       emit("int _beg = {}, _end = {};", begin_expr, end_expr);
       emit("for (int _itv = _beg; _itv < _end; _itv++) {{");
-      stmt->body->accept(this);
+      {
+        ScopedIndent _s(line_appender_);
+        stmt->body->accept(this);
+      }
       emit("}}\n");
+#else
+#endif
     }
 
     emit("}}\n");

@@ -371,18 +371,7 @@ class AllocaFindAndOptimize : public BasicStmtVisitor {
 
 namespace irpass {
 void optimize_local_variable(IRNode *root) {
-  int before = analysis::count_statements(root);
-//  std::cout << "before optimize_local_variable:\n";
-//  print(root);
-  fix_block_parents(root);
-  analysis::verify(root);
   AllocaFindAndOptimize::run(root);
-  int after = analysis::count_statements(root);
-//  std::cout << "after optimize_local_variable:\n";
-//  print(root);
-  fix_block_parents(root);
-  analysis::verify(root);
-//  std::cout << "optimize_local_variable: " << before << " -> " << after << std::endl;
 }
 }  // namespace irpass
 

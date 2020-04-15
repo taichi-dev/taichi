@@ -5,14 +5,14 @@ TLANG_NAMESPACE_BEGIN
 namespace irpass {
 
 void compile_to_offloads(IRNode *ir,
-                         CompileConfig config,
+                         const CompileConfig &config,
                          bool vectorize,
                          bool grad,
                          bool ad_use_stack,
                          bool verbose) {
   TI_AUTO_PROF;
 
-  auto print = [&](std::string name) {
+  auto print = [&](const std::string &name) {
     if (verbose) {
       TI_INFO(name + ":");
       irpass::re_id(ir);
@@ -82,17 +82,16 @@ void compile_to_offloads(IRNode *ir,
   irpass::offload(ir);
   print("Offloaded");
 
-  irpass::full_simplify(ir, config);
-  print("Simplified III");
-
   irpass::demote_atomics(ir);
   print("Atomics demoted");
+
+  irpass::full_simplify(ir, config);
+  print("Simplified III");
 
   // Final field registration correctness & type checking
   irpass::typecheck(ir);
   irpass::fix_block_parents(ir);  // hot fix
   irpass::analysis::verify(ir);
-//  std::cout << "result: " << irpass::analysis::count_statements(ir) << std::endl;
 }
 
 }  // namespace irpass

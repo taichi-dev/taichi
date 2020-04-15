@@ -113,7 +113,7 @@ void demote_atomics(IRNode *root);
 void reverse_segments(IRNode *root);  // for autograd
 std::unique_ptr<ScratchPads> initialize_scratch_pad(StructForStmt *root);
 void compile_to_offloads(IRNode *ir,
-                         CompileConfig config,
+                         const CompileConfig &config,
                          bool vectorize,
                          bool grad,
                          bool ad_use_stack,

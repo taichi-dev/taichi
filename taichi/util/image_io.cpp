@@ -40,6 +40,7 @@ std::vector<size_t> imread(const std::string &filename, int comp) {
     // TODO(archibate): throw python exceptions instead of abort...
     TI_ERROR("Cannot read image file [{}]", filename);
   }
+  TI_INFO("loaded image {}: {}x{}x{}", filename, resx, resy, comp);
 
   std::vector<size_t> ret = {(size_t)data, (size_t)resx, (size_t)resy,
                              (size_t)comp};

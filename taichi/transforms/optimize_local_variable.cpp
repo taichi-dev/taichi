@@ -232,9 +232,14 @@ class AllocaOptimize : public IRVisitor {
     }
     if (!stored && !last_store_loaded) {
       // Never stored and never loaded.
-      // Eliminate this alloca.
-      block->erase(location);
-      throw IRModified();
+      if (irpass::analysis::gather_statements(
+          block, [&](Stmt *stmt) {
+            return stmt->have_operand(alloca);
+          }).empty()) {
+        // Eliminate this alloca.
+        block->erase(alloca);
+        throw IRModified();
+      }
     }
   }
 };
@@ -286,9 +291,11 @@ namespace irpass {
 void optimize_local_variable(IRNode *root) {
   std::cout << "before optimize_local_variable:\n";
   print(root);
+  analysis::verify(root);
   AllocaFindAndOptimize::run(root);
   std::cout << "after optimize_local_variable:\n";
   print(root);
+  analysis::verify(root);
 }
 }  // namespace irpass
 

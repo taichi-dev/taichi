@@ -907,6 +907,11 @@ class BasicBlockSimplify : public IRVisitor {
   }
 
   void visit(IfStmt *if_stmt) override {
+    if (if_stmt->width() == 1 && (if_stmt->true_mask || if_stmt->false_mask)) {
+      if_stmt->true_mask = nullptr;
+      if_stmt->false_mask = nullptr;
+      throw IRModified();
+    }
     auto flatten = [&](std::vector<pStmt> &clause, bool true_branch) {
       bool plain_clause = true;  // no global store, no container
 
@@ -1038,6 +1043,13 @@ class BasicBlockSimplify : public IRVisitor {
   void visit(OffloadedStmt *stmt) override {
     if (stmt->has_body() && stmt->body->statements.empty()) {
       stmt->parent->erase(stmt);
+      throw IRModified();
+    }
+  }
+
+  void visit(WhileStmt *stmt) override {
+    if (stmt->width() == 1 && stmt->mask) {
+      stmt->mask = nullptr;
       throw IRModified();
     }
   }

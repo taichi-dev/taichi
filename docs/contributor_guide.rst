@@ -62,10 +62,16 @@ Making good pull requests
 - All PRs should pass **continuous integration tests** before they get merged;
 - PR authors **should not squash commits on their own**;
 - PR titles should follow :ref:`prtag`;
+- A great article from Google on `how to have your PR merged quickly <https://testing.googleblog.com/2017/06/code-health-too-many-comments-on-your.html>`_.
 
 
 Reviewing & PR merging
 ----------------------
+
+- Please try to follow these tips from Google
+
+  - `Code Health: Understanding Code In Review <https://testing.googleblog.com/2018/05/code-health-understanding-code-in-review.html>`_;
+  - `Code Health: Respectful Reviews == Useful Reviews <https://testing.googleblog.com/2019/11/code-health-respectful-reviews-useful.html>`_.
 
 - The merger should always **squash and merge** PRs into the master branch;
 - The master branch is required to have a **linear history**;
@@ -77,7 +83,7 @@ Using continuous integration
 ----------------------------
 
 - Continuous Integration (CI), will **build** and **test** your commits in a PR against in environments.
-- Currently, Taichi uses `"Travis CI" <https://travis-ci.org>`_(for OS X and Linux) and `"AppVeyor" <https://www.appveyor.com>`_(for Windows).
+- Currently, Taichi uses `Travis CI <https://travis-ci.org>`_ (for OS X and Linux) and `AppVeyor <https://www.appveyor.com>`_ (for Windows).
 - CI will be triggered everytime you push commits to an open PR.
 - You can prepend ``[skip ci]`` to your commit message to avoid triggering CI. e.g. ``[skip ci] This commit will not trigger CI``
 - A tick on the right of commit hash means CI passed, a cross means CI failed.

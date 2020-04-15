@@ -3,6 +3,30 @@ Utilities
 
 TODO: update
 
+GUI system
+----------
+
+.. code-block:: python
+
+    gui = ti.GUI('Title', (640, 480))
+    while not gui.is_pressed(ti.GUI.ESCAPE):
+        gui.set_image(img)
+        gui.show()
+
+
+Also checkout ``examples/keyboard.py`` for more advanced event processing.
+
+
+Image I/O
+---------
+
+.. code-block:: python
+
+    img = ti.imread('hello.png')
+    ti.imshow(img, 'Window Title')
+    ti.imwrite(img, 'hello2.png')
+
+
 Logging
 -------
 
@@ -23,7 +47,7 @@ The default logging level is ``ti.INFO``.
 You can also override default logging level by setting the environment variable
 ``TI_LOG_LEVEL`` to values such as ``trace`` and ``warn``.
 
-Trigger GDB when the program crashes:
+Trigger GDB when the program crashes
 --------------------------------------
 
 .. code-block::

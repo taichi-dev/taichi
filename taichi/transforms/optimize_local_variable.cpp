@@ -291,10 +291,12 @@ namespace irpass {
 void optimize_local_variable(IRNode *root) {
   std::cout << "before optimize_local_variable:\n";
   print(root);
+  fix_block_parents(root);
   analysis::verify(root);
   AllocaFindAndOptimize::run(root);
   std::cout << "after optimize_local_variable:\n";
   print(root);
+  fix_block_parents(root);
   analysis::verify(root);
 }
 }  // namespace irpass

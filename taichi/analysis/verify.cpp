@@ -20,7 +20,11 @@ class IRVerifier : public BasicStmtVisitor {
   }
 
   void basic_verify(Stmt *stmt) {
-    TI_ASSERT(stmt->parent == current_block);
+    TI_ASSERT_INFO(stmt->parent == current_block,
+        fmt::format("stmt({})->parent({}{}) != current_block(size={})",
+            stmt->id, stmt->parent == nullptr ? "" : "size=",
+            stmt->parent == nullptr ? 0 : stmt->parent->size(),
+            current_block->size()));
     for (auto &op : stmt->get_operands()) {
       if (op == nullptr)
         continue;

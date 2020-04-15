@@ -1,4 +1,4 @@
-#define _GLSL_DEBUG 1
+//#define _GLSL_DEBUG 1
 #include "opengl_api.h"
 
 #include "taichi/backends/opengl/opengl_kernel_util.h"
@@ -392,7 +392,6 @@ struct CompiledProgram::Impl {
     for (const auto &ker : kernels) {
       auto guard = launcher->create_launch_guard(iov);
       if (ker->rse.has_value()) ker->num_groups = (*ker->rse)((const char *)gtmp_base);
-      TI_DEBUG("kernel [{}] num_groups = {}", ker->kernel_name, ker->num_groups);
       ker->launch();
     }
     if (ext_arr_map.size() > 1) {

@@ -62,10 +62,16 @@ Making good pull requests
 - All PRs should pass **continuous integration tests** before they get merged;
 - PR authors **should not squash commits on their own**;
 - PR titles should follow :ref:`prtag`;
+- A great article from Google on `how to have your PR merged quickly <https://testing.googleblog.com/2017/06/code-health-too-many-comments-on-your.html>`_.
 
 
 Reviewing & PR merging
 ----------------------
+
+- Please try to follow these tips from Google
+
+  - `Code Health: Understanding Code In Review <https://testing.googleblog.com/2018/05/code-health-understanding-code-in-review.html>`_;
+  - `Code Health: Respectful Reviews == Useful Reviews <https://testing.googleblog.com/2019/11/code-health-respectful-reviews-useful.html>`_.
 
 - The merger should always **squash and merge** PRs into the master branch;
 - The master branch is required to have a **linear history**;

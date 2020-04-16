@@ -250,7 +250,7 @@ class AllocaOptimize : public IRVisitor {
       // we can do store-forwarding.
       if (loop.loaded && is_inside_loop != inside_loop_no_stores &&
           ((!stored && is_inside_loop != inside_loop_may_have_stores) ||
-          last_store_valid)) {
+           last_store_valid)) {
         loop = *this;
         loop.is_inside_loop = inside_loop_no_stores;
         body->accept(&loop);

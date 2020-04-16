@@ -9,8 +9,8 @@ class AllocaOptimize : public IRVisitor {
   AllocaStmt *alloca_stmt;
 
  public:
-  bool stored; // Is this alloca ever stored?
-  bool loaded; // Is this alloca ever loaded?
+  bool stored;  // Is this alloca ever stored?
+  bool loaded;  // Is this alloca ever loaded?
 
   LocalStoreStmt *last_store;
 
@@ -131,36 +131,36 @@ class AllocaOptimize : public IRVisitor {
 
     if (!stored) {
       // do nothing to last_store
-    } else if (true_branch.last_store_valid && false_branch.last_store_valid
-        && true_branch.last_store == false_branch.last_store) {
+    } else if (true_branch.last_store_valid && false_branch.last_store_valid &&
+               true_branch.last_store == false_branch.last_store) {
       TI_ASSERT(true_branch.last_store != nullptr);
       last_store_valid = true;
       if (last_store == true_branch.last_store) {
-        last_store_loaded = last_store_loaded
-            || true_branch.last_store_loaded
-            || false_branch.last_store_loaded;
+        last_store_loaded = last_store_loaded ||
+                            true_branch.last_store_loaded ||
+                            false_branch.last_store_loaded;
       } else {
         last_store = true_branch.last_store;
-        last_store_loaded = true_branch.last_store_loaded
-            || false_branch.last_store_loaded;
+        last_store_loaded =
+            true_branch.last_store_loaded || false_branch.last_store_loaded;
       }
     } else {
       last_store_valid = false;
       // Since it's invalid, we only care if we can eliminate the last store.
-      if (true_branch.last_store == last_store
-          && false_branch.last_store == last_store) {
+      if (true_branch.last_store == last_store &&
+          false_branch.last_store == last_store) {
         // The last store didn't change.
-        last_store_loaded = last_store_loaded
-            || true_branch.last_store_loaded
-            || false_branch.last_store_loaded;
+        last_store_loaded = last_store_loaded ||
+                            true_branch.last_store_loaded ||
+                            false_branch.last_store_loaded;
       } else {
         // The last store changed, so we can't eliminate last_store.
-        bool true_eliminable = true_branch.last_store != last_store
-            && true_branch.last_store != nullptr
-            && !true_branch.last_store_loaded;
-        bool false_eliminable = false_branch.last_store != last_store
-            && false_branch.last_store != nullptr
-            && !false_branch.last_store_loaded;
+        bool true_eliminable = true_branch.last_store != last_store &&
+                               true_branch.last_store != nullptr &&
+                               !true_branch.last_store_loaded;
+        bool false_eliminable = false_branch.last_store != last_store &&
+                                false_branch.last_store != nullptr &&
+                                !false_branch.last_store_loaded;
         if (true_eliminable) {
           last_store = true_branch.last_store;
           last_store_loaded = false;
@@ -175,20 +175,20 @@ class AllocaOptimize : public IRVisitor {
       }
     }
 
-    if (true_branch.last_atomic == last_atomic
-        && false_branch.last_atomic == last_atomic) {
+    if (true_branch.last_atomic == last_atomic &&
+        false_branch.last_atomic == last_atomic) {
       // The last AtomicOpStmt didn't change.
-      last_atomic_eliminable = last_atomic_eliminable
-          && true_branch.last_atomic_eliminable
-          && false_branch.last_atomic_eliminable;
+      last_atomic_eliminable = last_atomic_eliminable &&
+                               true_branch.last_atomic_eliminable &&
+                               false_branch.last_atomic_eliminable;
     } else {
       // The last AtomicOpStmt changed, so we can't eliminate last_atomic.
-      bool true_eliminable = true_branch.last_atomic != last_atomic
-          && true_branch.last_atomic != nullptr
-          && true_branch.last_atomic_eliminable;
-      bool false_eliminable = false_branch.last_atomic != last_atomic
-          && false_branch.last_atomic != nullptr
-          && false_branch.last_atomic_eliminable;
+      bool true_eliminable = true_branch.last_atomic != last_atomic &&
+                             true_branch.last_atomic != nullptr &&
+                             true_branch.last_atomic_eliminable;
+      bool false_eliminable = false_branch.last_atomic != last_atomic &&
+                              false_branch.last_atomic != nullptr &&
+                              false_branch.last_atomic_eliminable;
       if (true_eliminable) {
         last_atomic = true_branch.last_atomic;
         last_atomic_eliminable = true;
@@ -213,7 +213,7 @@ class AllocaOptimize : public IRVisitor {
   void visit_loop(Block *body, bool is_loop_var) {
     TI_ASSERT(body);
     if (is_loop_var) {
-      TI_ASSERT(inside_loop == 0); // no nested loops with the same alloca
+      TI_ASSERT(inside_loop == 0);  // no nested loops with the same alloca
     }
     AllocaOptimize loop(alloca_stmt);
     loop.inside_loop = 1;
@@ -303,9 +303,9 @@ class AllocaOptimize : public IRVisitor {
       // The last AtomicOpStmt is never loaded.
       // last_atomic_valid == false means that it's in an IfStmt.
       if (irpass::analysis::gather_statements(
-          block, [&](Stmt *stmt) {
-            return stmt->have_operand(last_atomic);
-          }).empty()) {
+              block,
+              [&](Stmt *stmt) { return stmt->have_operand(last_atomic); })
+              .empty()) {
         // The last AtomicOpStmt is never used.
         // Eliminate the last AtomicOpStmt.
         last_atomic->parent->erase(last_atomic);
@@ -315,9 +315,9 @@ class AllocaOptimize : public IRVisitor {
     if (!stored && !loaded) {
       // Never stored and never loaded.
       if (irpass::analysis::gather_statements(
-          block, [&](Stmt *stmt) {
-            return stmt->have_operand(alloca_stmt);
-          }).empty()) {
+              block,
+              [&](Stmt *stmt) { return stmt->have_operand(alloca_stmt); })
+              .empty()) {
         // Eliminate this alloca.
         block->erase(alloca_stmt);
         throw IRModified();

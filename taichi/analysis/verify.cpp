@@ -20,7 +20,10 @@ class IRVerifier : public BasicStmtVisitor {
   }
 
   void basic_verify(Stmt *stmt) {
-    TI_ASSERT(stmt->parent == current_block);
+    TI_ASSERT_INFO(
+        stmt->parent == current_block,
+        fmt::format("stmt({})->parent({}) != current_block({})", stmt->id,
+                    fmt::ptr(stmt->parent), fmt::ptr(current_block)));
     for (auto &op : stmt->get_operands()) {
       if (op == nullptr)
         continue;
@@ -31,7 +34,8 @@ class IRVerifier : public BasicStmtVisitor {
           break;
         }
       }
-      TI_ASSERT(found);
+      TI_ASSERT_INFO(found, fmt::format("stmt {} cannot have operand {}.",
+                                        stmt->id, op->id));
     }
     visible_stmts.back().insert(stmt);
   }

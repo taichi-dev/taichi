@@ -90,6 +90,7 @@ void die(IRNode *root);
 void simplify(IRNode *root);
 void alg_simp(IRNode *root, const CompileConfig &config);
 void whole_kernel_cse(IRNode *root);
+void optimize_local_variable(IRNode *root);
 void full_simplify(IRNode *root, const CompileConfig &config);
 void print(IRNode *root, std::string *output = nullptr);
 void lower(IRNode *root);
@@ -112,7 +113,7 @@ void demote_atomics(IRNode *root);
 void reverse_segments(IRNode *root);  // for autograd
 std::unique_ptr<ScratchPads> initialize_scratch_pad(StructForStmt *root);
 void compile_to_offloads(IRNode *ir,
-                         CompileConfig config,
+                         const CompileConfig &config,
                          bool vectorize,
                          bool grad,
                          bool ad_use_stack,
@@ -668,6 +669,8 @@ class Stmt : public IRNode {
   TI_FORCE_INLINE bool may_have_operand(Stmt *stmt) const {
     return (operand_bitmap & operand_hash(stmt)) != 0;
   }
+
+  bool have_operand(Stmt *stmt) const;
 
   void replace_with(Stmt *new_stmt);
   void replace_with(VecStatement &&new_statements, bool replace_usages = true);

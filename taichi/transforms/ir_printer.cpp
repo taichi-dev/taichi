@@ -162,7 +162,7 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(IfStmt *if_stmt) override {
-    print("if {} {{", if_stmt->cond->name());
+    print("{} : if {} {{", if_stmt->name(), if_stmt->cond->name());
     if (if_stmt->true_statements)
       if_stmt->true_statements->accept(this);
     if (if_stmt->false_statements) {
@@ -173,7 +173,7 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(FrontendIfStmt *if_stmt) override {
-    print("if {} {{", if_stmt->condition->serialize());
+    print("{} : if {} {{", if_stmt->name(), if_stmt->condition->serialize());
     if (if_stmt->true_statements)
       if_stmt->true_statements->accept(this);
     if (if_stmt->false_statements) {

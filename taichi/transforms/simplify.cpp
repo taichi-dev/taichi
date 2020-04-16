@@ -878,7 +878,10 @@ class BasicBlockSimplify : public IRVisitor {
   }
 
   void visit(WhileControlStmt *stmt) override {
-    return;
+    if (stmt->width() == 1 && stmt->mask) {
+      stmt->mask = nullptr;
+      throw IRModified();
+    }
   }
 
   void visit(ContinueStmt *stmt) override {
@@ -907,6 +910,11 @@ class BasicBlockSimplify : public IRVisitor {
   }
 
   void visit(IfStmt *if_stmt) override {
+    if (if_stmt->width() == 1 && (if_stmt->true_mask || if_stmt->false_mask)) {
+      if_stmt->true_mask = nullptr;
+      if_stmt->false_mask = nullptr;
+      throw IRModified();
+    }
     auto flatten = [&](std::vector<pStmt> &clause, bool true_branch) {
       bool plain_clause = true;  // no global store, no container
 
@@ -1041,6 +1049,13 @@ class BasicBlockSimplify : public IRVisitor {
       throw IRModified();
     }
   }
+
+  void visit(WhileStmt *stmt) override {
+    if (stmt->width() == 1 && stmt->mask) {
+      stmt->mask = nullptr;
+      throw IRModified();
+    }
+  }
 };
 
 class Simplify : public IRVisitor {
@@ -1116,6 +1131,8 @@ void full_simplify(IRNode *root, const CompileConfig &config) {
     alg_simp(root, config);
   if (advanced_optimization)
     whole_kernel_cse(root);
+  if (advanced_optimization)
+    optimize_local_variable(root);
   die(root);
   simplify(root);
   die(root);

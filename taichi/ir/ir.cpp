@@ -269,6 +269,15 @@ void Stmt::mark_fields_registered() {
   fields_registered = true;
 }
 
+bool Stmt::have_operand(Stmt *stmt) const {
+  for (int i = 0; i < num_operands(); i++) {
+    if (*operands[i] == stmt) {
+      return true;
+    }
+  }
+  return false;
+}
+
 std::string Expression::get_attribute(const std::string &key) const {
   if (auto it = attributes.find(key); it == attributes.end()) {
     TI_ERROR("Attribute {} not found.", key);

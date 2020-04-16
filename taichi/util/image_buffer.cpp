@@ -21,14 +21,14 @@ template <typename T>
 void Array2D<T>::load_image(const std::string &filename, bool linearize) {
   int channels;
   FILE *f = fopen(filename.c_str(), "rb");
-  assert_info(f != nullptr, "Image file not found: " + filename);
+  TI_ASSERT_INFO(f != nullptr, "Image file not found: " + filename);
   stbi_ldr_to_hdr_gamma(1.0_f);
   float32 *data =
       stbi_loadf(filename.c_str(), &this->res[0], &this->res[1], &channels, 0);
-  assert_info(data != nullptr,
+  TI_ASSERT_INFO(data != nullptr,
               "Image file load failed: " + filename +
                   " # Msg: " + std::string(stbi_failure_reason()));
-  assert_info(channels == 1 || channels == 3 || channels == 4,
+  TI_ASSERT_INFO(channels == 1 || channels == 3 || channels == 4,
               "Image must have channel 1, 3 or 4: " + filename);
   this->initialize(Vector2i(this->res[0], this->res[1]));
 

@@ -176,7 +176,7 @@ class InterfaceHolder {
              implementation_factories.end();                                  \
     }                                                                         \
     void remove(const std::string &alias) override {                          \
-      assert_info(has(alias),                                                 \
+      TI_ASSERT_INFO(has(alias),                                                 \
                   std::string("Implemetation ") + alias + " not found!");     \
       implementation_factories.erase(alias);                                  \
     }                                                                         \
@@ -195,32 +195,32 @@ class InterfaceHolder {
     }                                                                         \
     std::shared_ptr<T> create(const std::string &alias) {                     \
       auto factory = implementation_factories.find(alias);                    \
-      assert_info(factory != implementation_factories.end(),                  \
+      TI_ASSERT_INFO(factory != implementation_factories.end(),                  \
                   "Implementation [" + name + "::" + alias + "] not found!"); \
       return (factory->second)();                                             \
     }                                                                         \
     std::unique_ptr<T> create_unique(const std::string &alias) {              \
       auto factory = implementation_unique_factories.find(alias);             \
-      assert_info(factory != implementation_unique_factories.end(),           \
+      TI_ASSERT_INFO(factory != implementation_unique_factories.end(),           \
                   "Implementation [" + name + "::" + alias + "] not found!"); \
       return (factory->second)();                                             \
     }                                                                         \
     std::unique_ptr<T> create_unique_ctor(const std::string &alias,           \
                                           const Dict &config) {               \
       auto factory = implementation_unique_ctor_factories.find(alias);        \
-      assert_info(factory != implementation_unique_ctor_factories.end(),      \
+      TI_ASSERT_INFO(factory != implementation_unique_ctor_factories.end(),      \
                   "Implementation [" + name + "::" + alias + "] not found!"); \
       return (factory->second)(config);                                       \
     }                                                                         \
     T *create_raw(const std::string &alias) {                                 \
       auto factory = implementation_raw_factories.find(alias);                \
-      assert_info(factory != implementation_raw_factories.end(),              \
+      TI_ASSERT_INFO(factory != implementation_raw_factories.end(),              \
                   "Implementation [" + name + "::" + alias + "] not found!"); \
       return (factory->second)();                                             \
     }                                                                         \
     T *create_placement(const std::string &alias, void *place) {              \
       auto factory = implementation_placement_factories.find(alias);          \
-      assert_info(factory != implementation_placement_factories.end(),        \
+      TI_ASSERT_INFO(factory != implementation_placement_factories.end(),        \
                   "Implementation [" + name + "::" + alias + "] not found!"); \
       return (factory->second)(place);                                        \
     }                                                                         \

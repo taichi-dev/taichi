@@ -138,7 +138,7 @@ class Profiler {
   }
 
   void stop() {
-    assert_info(!stopped, "Profiler already stopped.");
+    TI_ASSERT_INFO(!stopped, "Profiler already stopped.");
     float64 elapsed = Time::get_time() - start_time;
     if ((int64)elements != -1) {
       ProfilerRecords::get_instance().insert_sample(elapsed, elements);

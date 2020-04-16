@@ -76,8 +76,8 @@ void array2d_to_ndarray(Array2D<Vector3> *arr,
                         uint64 output)  // 'output' is actually a pointer...
 {
   int width = arr->get_width(), height = arr->get_height();
-  assert_info(width > 0, "");
-  assert_info(height > 0, "");
+  TI_ASSERT(width > 0);
+  TI_ASSERT(height > 0);
   for (auto &ind : arr->get_region()) {
     for (int k = 0; k < channels; k++) {
       const Vector3 entry = (*arr)[ind];

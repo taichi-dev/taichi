@@ -176,7 +176,7 @@ class Dict {
     int64 ptr_ll;
     std::getline(ss, t, '\t');
     ss >> ptr_ll;
-    assert_info(t == typeid(T).name(),
+    TI_ASSERT_INFO(t == typeid(T).name(),
                 "Pointer type mismatch: " + t + " and " + typeid(T).name());
     return reinterpret_cast<T *>(ptr_ll);
   }
@@ -347,7 +347,7 @@ inline bool Dict::get<bool>(std::string key) const {
       {"true", true},   {"True", true},   {"t", true},  {"1", true},
       {"false", false}, {"False", false}, {"f", false}, {"0", false},
   };
-  assert_info(dict.find(s) != dict.end(), "Unkown identifer for bool: " + s);
+  TI_ASSERT_INFO(dict.find(s) != dict.end(), "Unkown identifer for bool: " + s);
   return dict[s];
 }
 

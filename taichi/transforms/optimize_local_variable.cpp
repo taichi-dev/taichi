@@ -9,17 +9,21 @@ class AllocaOptimize : public IRVisitor {
   AllocaStmt *alloca_stmt;
 
  public:
-  bool stored;  // Is this alloca ever stored?
-  bool loaded;  // Is this alloca ever loaded?
+  // If neither stored nor loaded (nor used as operands in masks/loop_vars),
+  // we can safely delete the alloca.
+  bool stored;  // Is this alloca ever stored (or atomic-operated)?
+  bool loaded;  // Is this alloca ever loaded (or atomic-operated)?
 
   LocalStoreStmt *last_store;
 
   // last_store_valid: Can we do store-forwarding?
-  // When the last store is conditional, last_store_invalid is false.
+  // When the last store is conditional, last_store_invalid is false,
+  // and last_store is set to the last store of one of the branches.
   bool last_store_valid;
 
   // last_store_loaded: Is the last store ever loaded? If not, eliminate it.
-  // If stored is false, last_store_loaded means if the alloca is ever loaded.
+  // If stored is false, last_store_loaded means if the alloca is ever loaded,
+  // but it should not be used.
   bool last_store_loaded;
 
   AtomicOpStmt *last_atomic;

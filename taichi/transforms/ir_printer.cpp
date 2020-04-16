@@ -203,7 +203,7 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(WhileControlStmt *stmt) override {
-    print("while control {}, {}", stmt->mask->name(), stmt->cond->name());
+    print("while control {}, {}", stmt->mask ? stmt->mask->name() : "nullptr", stmt->cond->name());
   }
 
   void visit(ContinueStmt *stmt) override {

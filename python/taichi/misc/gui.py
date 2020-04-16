@@ -123,30 +123,53 @@ class GUI:
         self.canvas.path_single(begin[0], begin[1], end[0], end[1], color,
                                 radius)
 
-    def show(self, file=None):
+    def show(self, file_or_image=None):
         self.core.update()
-        if file:
-            self.core.screenshot(file)
+        if isinstance(file_or_image, str):
+            self.core.screenshot(file_or_image)
+        elif file_or_image is not None:
+            self.set_image(file_or_image)
         self.clear(self.background_color)
 
-    def has_key_event(self):
-        return self.core.has_key_event()
 
     def get_event(self, *filter):
+        types = []
+        keys = []
+        combs = []
+        for ent in filter:
+            if ent in [GUI.PRESS, GUI.RELEASE]:
+                types.append(ent)
+            elif isinstance(ent, tuple) or isinstance(ent, list):
+                type, key = ent
+                combs.append((type, key))
+            else:
+                keys.append(ent)
         while True:
             if not self.has_key_event():
                 return False
             self.event = self.get_key_event()
-            if not len(filter) or self.event.type in filter:
+            if not len(combs):
+                if not len(types) or self.event.type in types:
+                    if not len(keys) or self.event.key in keys:
+                        break
+            elif (self.event.type, self.event.key) in combs:
                 break
         return True
 
-    def get_key_event(self):
+    def get_cursor_pos(self):  # ABi
+        pos = self.core.get_cursor_pos()
+        return pos[0], pos[1]
+
+    def has_key_event(self):  # ABi
+        return self.core.has_key_event()
+
+    def get_key_event(self):  # ABi
         self.core.wait_key_event()
         e = GUI.Event()
         e.key = self.core.get_key_event_head_key()
         e.type = self.core.get_key_event_head_type()
         e.pos = self.core.get_key_event_head_pos()
+        e.pos = (e.pos[0], e.pos[1])
         e.modifier = []
         for mod in ['Shift', 'Alt', 'Control']:
             if self.is_pressed(mod):
@@ -156,6 +179,12 @@ class GUI:
         else:
             self.key_pressed.discard(e.key)
         self.core.pop_key_event_head()
+        return e
+
+    def peek_key_event(self):
+        e = None
+        if self.has_key_event():
+            e = self.get_key_event()
         return e
 
     def is_pressed(self, *keys):
@@ -168,13 +197,16 @@ class GUI:
         else:
             return False
 
-    def get_cursor_pos(self):
-        return self.core.get_cursor_pos()
+    def peek_is_pressed(self, *keys):
+        self.peek_key_event()
+        return self.is_pressed(*keys)
 
-    def has_key_pressed(self):
-        if self.has_key_event():
-            self.get_key_event()  # pop to update self.key_pressed
-        return len(self.key_pressed) != 0
+    def peek_key_pressed(self):
+        self.peek_key_event()
+        return self.key_pressed
+
+    def has_key_pressed(self):  # Deprecated
+        return len(self.peek_key_pressed())
 
 
 def rgb_to_hex(c):

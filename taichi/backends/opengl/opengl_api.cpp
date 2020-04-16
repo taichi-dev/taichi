@@ -325,6 +325,7 @@ struct CompiledKernel {
     // `layout(local_size_x = X) in;` - the X      == `Threads`  in CUDA
     //
     glDispatchCompute(num_groups, 1, 1);
+    check_opengl_error("glDispatchCompute");
     // TI_PERF(kernel_name.c_str(), kernel_name.size(), 107);
   }
 };
@@ -385,14 +386,19 @@ struct CompiledProgram::Impl {
           ctx.args[i] = accum_size;
           accum_size += size;
         }  // concat all extptr into my baseptr
-        TI_INFO("baseptr = {}", baseptr);
         iov.push_back(IOV{baseptr, accum_size});
       }
     }
-    for (const auto &ker : kernels) {
+    {
       auto guard = launcher->create_launch_guard(iov);
-      if (ker->rse.has_value()) ker->num_groups = (*ker->rse)((const char *)gtmp_base);
-      ker->launch();
+      for (const auto &ker : kernels) {
+        if (ker->rse.has_value()) {
+          ker->num_groups = (*ker->rse)((const char *)gtmp_base);
+        }
+        ker->launch();
+        glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+        check_opengl_error("glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT)");
+      }
     }
     if (ext_arr_map.size() > 1) {
       void *baseptr = base_arr.data();
@@ -442,9 +448,6 @@ GLSLLaunchGuard::GLSLLaunchGuard(GLSLLauncherImpl *impl,
 }
 
 GLSLLaunchGuard::~GLSLLaunchGuard() {
-  // glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT); // TODO(archibate): move to
-  // Program::synchroize()
-
   for (int i = 0; i < impl->ssbo.size(); i++) {
     if (!iov[i].size)
       continue;
@@ -452,7 +455,6 @@ GLSLLaunchGuard::~GLSLLaunchGuard() {
     TI_ASSERT_INFO(p, "glMapBuffer returned NULL");
     std::memcpy(iov[i].base, p, iov[i].size);
   }
-  glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
   impl->ssbo.clear();
 }
 

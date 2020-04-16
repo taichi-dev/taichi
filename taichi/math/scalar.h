@@ -159,7 +159,8 @@ TI_FORCE_INLINE bool abnormal(T m) noexcept {
 }
 
 inline int64 get_largest_pot(int64 a) noexcept {
-  assert_info(a > 0, "a should be positive, instead of " + std::to_string(a));
+  TI_ASSERT_INFO(a > 0,
+                 "a should be positive, instead of " + std::to_string(a));
   // TODO: optimize
   int64 i = 1;
   while (i <= a / 2) {

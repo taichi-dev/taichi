@@ -220,6 +220,7 @@ struct GLSSBO {
     void *p =
         glMapBufferRange(GL_SHADER_STORAGE_BUFFER, offset, length, access);
     check_opengl_error("glMapBufferRange");
+    TI_ASSERT_INFO(p, "glMapBufferRange returned NULL");
     return p;
   }
 
@@ -228,7 +229,15 @@ struct GLSSBO {
     check_opengl_error("glBindBuffer");
     void *p = glMapBuffer(GL_SHADER_STORAGE_BUFFER, access);
     check_opengl_error("glMapBuffer");
+    TI_ASSERT_INFO(p, "glMapBuffer returned NULL");
     return p;
+  }
+
+  void unmap() const {
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, id_);
+    check_opengl_error("glBindBuffer");
+    glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+    check_opengl_error("glUnmapBuffer");
   }
 };
 
@@ -393,7 +402,9 @@ struct CompiledProgram::Impl {
       auto guard = launcher->create_launch_guard(iov);
       for (const auto &ker : kernels) {
         if (ker->rse.has_value()) {
-          ker->num_groups = (*ker->rse)((const char *)gtmp_base);
+          auto gtm_now = guard.map_buffer(1); // TODO: RAII
+          ker->num_groups = (*ker->rse)((const char *)gtm_now);
+          guard.unmap_buffer(1);
         }
         ker->launch();
         glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
@@ -447,12 +458,21 @@ GLSLLaunchGuard::GLSLLaunchGuard(GLSLLauncherImpl *impl,
   }
 }
 
+void *GLSLLaunchGuard::map_buffer(size_t idx) {
+  TI_ASSERT(iov[idx].size);
+  void *p = impl->ssbo[idx].map();  // 0, iov[i].size);  // sync
+  return p;
+}
+
+void GLSLLaunchGuard::unmap_buffer(size_t idx) {
+  impl->ssbo[idx].unmap();
+}
+
 GLSLLaunchGuard::~GLSLLaunchGuard() {
   for (int i = 0; i < impl->ssbo.size(); i++) {
     if (!iov[i].size)
       continue;
     void *p = impl->ssbo[i].map();  // 0, iov[i].size);  // output
-    TI_ASSERT_INFO(p, "glMapBuffer returned NULL");
     std::memcpy(iov[i].base, p, iov[i].size);
   }
   impl->ssbo.clear();
@@ -517,6 +537,14 @@ GLSLLaunchGuard::GLSLLaunchGuard(GLSLLauncherImpl *impl,
 }
 
 GLSLLaunchGuard::~GLSLLaunchGuard() {
+  TI_NOT_IMPLEMENTED;
+}
+
+GLSLLaunchGuard::map_buffer() {
+  TI_NOT_IMPLEMENTED;
+}
+
+GLSLLaunchGuard::unmap_buffer() {
   TI_NOT_IMPLEMENTED;
 }
 

@@ -26,10 +26,10 @@ void Array2D<T>::load_image(const std::string &filename, bool linearize) {
   float32 *data =
       stbi_loadf(filename.c_str(), &this->res[0], &this->res[1], &channels, 0);
   TI_ASSERT_INFO(data != nullptr,
-              "Image file load failed: " + filename +
-                  " # Msg: " + std::string(stbi_failure_reason()));
+                 "Image file load failed: " + filename +
+                     " # Msg: " + std::string(stbi_failure_reason()));
   TI_ASSERT_INFO(channels == 1 || channels == 3 || channels == 4,
-              "Image must have channel 1, 3 or 4: " + filename);
+                 "Image must have channel 1, 3 or 4: " + filename);
   this->initialize(Vector2i(this->res[0], this->res[1]));
 
   for (int i = 0; i < this->res[0]; i++) {

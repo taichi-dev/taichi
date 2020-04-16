@@ -177,7 +177,7 @@ class Dict {
     std::getline(ss, t, '\t');
     ss >> ptr_ll;
     TI_ASSERT_INFO(t == typeid(T).name(),
-                "Pointer type mismatch: " + t + " and " + typeid(T).name());
+                   "Pointer type mismatch: " + t + " and " + typeid(T).name());
     return reinterpret_cast<T *>(ptr_ll);
   }
 

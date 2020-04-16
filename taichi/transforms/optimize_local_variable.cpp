@@ -325,14 +325,11 @@ class AllocaOptimize : public IRVisitor {
     }
     if (!stored && !loaded) {
       // Never stored and never loaded.
-      if (irpass::analysis::gather_statements(
-              block,
-              [&](Stmt *stmt) { return stmt->have_operand(alloca_stmt); })
-              .empty()) {
-        // Eliminate this alloca.
-        block->erase(alloca_stmt);
-        throw IRModified();
-      }
+      // For future vectorization, we need to check that this alloca
+      // is not used as masks (this can be done by checking operands)
+      // before eliminating it.
+      block->erase(alloca_stmt);
+      throw IRModified();
     }
   }
 };

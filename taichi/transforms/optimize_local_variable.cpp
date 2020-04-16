@@ -328,6 +328,10 @@ class AllocaOptimize : public IRVisitor {
       // For future vectorization, we need to check that this alloca
       // is not used as masks (this can be done by checking operands)
       // before eliminating it.
+      TI_ASSERT(irpass::analysis::gather_statements(
+          block,
+          [&](Stmt *stmt) { return stmt->have_operand(alloca_stmt); })
+                    .empty());
       block->erase(alloca_stmt);
       throw IRModified();
     }

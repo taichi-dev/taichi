@@ -564,17 +564,17 @@ class KernelGen : public IRVisitor {
       emit("if (_itv >= _end) return;");
       num_threads_ = -1;
 
-      std::vector<size_t> dats = {stmt->const_begin, stmt->const_end,
+      std::vector<size_t> rinfo = {stmt->const_begin, stmt->const_end,
         stmt->const_begin ? stmt->begin_value : stmt->begin_offset,
         stmt->const_end ? stmt->end_value : stmt->end_offset,
         (size_t)opengl_get_threads_per_group(),
       };
       range_size_evaluator_ = std::make_optional<_RangeSizeEvaluator>(
-          [dats](const char *gtmp) -> size_t {
+          [rinfo](const char *gtmp) -> size_t {
             size_t beg, end;
-            beg = dats[0] ? dats[2] : *(const int *)(gtmp + dats[2]);
-            end = dats[1] ? dats[3] : *(const int *)(gtmp + dats[3]);
-            return std::max((end - beg + dats[4] - 1) / dats[4], (size_t)1);
+            beg = rinfo[0] ? rinfo[2] : *(const int *)(gtmp + rinfo[2]);
+            end = rinfo[1] ? rinfo[3] : *(const int *)(gtmp + rinfo[3]);
+            return std::max((end - beg + rinfo[4] - 1) / rinfo[4], (size_t)1);
           });
 
       }stmt->body->accept(this);

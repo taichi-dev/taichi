@@ -231,13 +231,13 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(WhileStmt *stmt) override {
-    print("while true {{");
+    print("{} : while true {{", stmt->name());
     stmt->body->accept(this);
     print("}}");
   }
 
   void visit(FrontendWhileStmt *stmt) override {
-    print("while {} {{", stmt->cond->serialize());
+    print("{} : while {} {{", stmt->name(), stmt->cond->serialize());
     stmt->body->accept(this);
     print("}}");
   }
@@ -247,10 +247,10 @@ class IRPrinter : public IRVisitor {
         for_stmt->loop_var_id,
         [](const Ident &id) -> std::string { return id.name(); });
     if (for_stmt->is_ranged()) {
-      print("for {} in range({}, {}) {{", vars, for_stmt->begin->serialize(),
+      print("{} : for {} in range({}, {}) {{", for_stmt->name(), vars, for_stmt->begin->serialize(),
             for_stmt->end->serialize());
     } else {
-      print("for {} where {} active {{", vars,
+      print("{} : for {} where {} active {{", for_stmt->name(), vars,
             for_stmt->global_var.cast<GlobalVariableExpression>()
                 ->snode->get_node_type_name_hinted());
     }
@@ -259,8 +259,8 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(RangeForStmt *for_stmt) override {
-    print("{}for {} in range({}, {}, step {}) {{",
-          for_stmt->reversed ? "reversed " : "", for_stmt->loop_var->name(),
+    print("{} : {}for {} in range({}, {}, step {}) {{",
+          for_stmt->name(), for_stmt->reversed ? "reversed " : "", for_stmt->loop_var->name(),
           for_stmt->begin->name(), for_stmt->end->name(), for_stmt->vectorize);
     for_stmt->body->accept(this);
     print("}}");
@@ -270,7 +270,7 @@ class IRPrinter : public IRVisitor {
     auto loop_vars = make_list<Stmt *>(
         for_stmt->loop_vars,
         [](Stmt *const &stmt) -> std::string { return stmt->name(); });
-    print("for {} where {} active, step {} {{", loop_vars,
+    print("{} : for {} where {} active, step {} {{", for_stmt->name(), loop_vars,
           for_stmt->snode->get_node_type_name_hinted(), for_stmt->vectorize);
     for_stmt->body->accept(this);
     print("}}");

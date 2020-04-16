@@ -96,8 +96,10 @@ def grid_op():
             grid_v(1)[i, j] -= dt * 9.8
 
             # center sticky circle
-            if (i * dx - 0.5)**2 + (j * dx - 0.5)**2 < 0.005:
-                grid_v[i, j] = [0, 0]
+            dist = ti.Vector([i * dx - 0.5, j * dx - 0.5])
+            if dist.norm_sqr() < 0.005:
+                dist = ti.Vector.normalized(dist)
+                grid_v[i, j] -= dist * ti.dot(grid_v[i, j], dist)
 
             # box
             if i < bound and grid_v(0)[i, j] < 0:
@@ -190,6 +192,7 @@ def main():
                          radius=1,
                          color=0x4FB99F)
         gui.circles(particle_pos, radius=1.5, color=0xF2B134)
+        gui.line((0.00, 0.03), (1.0, 0.03), color=0xFFFFFF, radius=3)
         gui.show()
 
 

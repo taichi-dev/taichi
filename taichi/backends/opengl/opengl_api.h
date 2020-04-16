@@ -4,6 +4,7 @@
 
 #include <string>
 #include <vector>
+#include <optional>
 
 #include "opengl_kernel_launcher.h"
 

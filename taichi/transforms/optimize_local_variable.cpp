@@ -33,12 +33,17 @@ class AllocaOptimize : public IRVisitor {
   bool last_atomic_eliminable;
 
   // Are we inside a loop which is inside the alloca's scope?
-  // inside_loop == 0: No
-  // inside_loop == 1: Yes
-  // inside_loop == 2: Yes, but we've already checked that there are no
-  //                   local stores in the loop and before the loop
-  //                   (so that we can optimize local loads to const [0]).
-  int inside_loop;
+  // outside_loop: No
+  // inside_loop_may_have_stores: Yes
+  // inside_loop_no_stores: Yes, but we've already checked that there are no
+  //                        local stores in the loop and before the loop
+  //                        (so that we can optimize local loads to const [0]).
+  enum IsInsideLoop {
+    outside_loop,
+    inside_loop_may_have_stores,
+    inside_loop_no_stores
+  };
+  IsInsideLoop is_inside_loop;
 
   explicit AllocaOptimize(AllocaStmt *alloca_stmt)
       : alloca_stmt(alloca_stmt),
@@ -49,7 +54,7 @@ class AllocaOptimize : public IRVisitor {
         last_store_loaded(false),
         last_atomic(nullptr),
         last_atomic_eliminable(false),
-        inside_loop(0) {
+        is_inside_loop(outside_loop) {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
   }
@@ -99,7 +104,7 @@ class AllocaOptimize : public IRVisitor {
     }
     if (!regular)
       return;
-    if (!stored && inside_loop != 1) {
+    if (!stored && is_inside_loop != inside_loop_may_have_stores) {
       auto zero = stmt->insert_after_me(Stmt::make<ConstStmt>(
           LaneAttribute<TypedConstant>(alloca_stmt->ret_type.data_type)));
       zero->repeat(stmt->width());
@@ -217,13 +222,14 @@ class AllocaOptimize : public IRVisitor {
   void visit_loop(Block *body, bool is_loop_var) {
     TI_ASSERT(body);
     if (is_loop_var) {
-      TI_ASSERT(inside_loop == 0);  // no nested loops with the same alloca
+      // no nested loops with the same alloca
+      TI_ASSERT(is_inside_loop == outside_loop);
     }
     AllocaOptimize loop(alloca_stmt);
-    loop.inside_loop = 1;
-    if (inside_loop == 2) {
+    loop.is_inside_loop = inside_loop_may_have_stores;
+    if (is_inside_loop == inside_loop_no_stores) {
       // Already checked that there are no stores inside.
-      loop.inside_loop = 2;
+      loop.is_inside_loop = inside_loop_no_stores;
     }
     body->accept(&loop);
 
@@ -242,10 +248,11 @@ class AllocaOptimize : public IRVisitor {
     } else if (!loop.stored) {
       // Since the loop does not store the alloca,
       // we can do store-forwarding.
-      if (loop.loaded && inside_loop != 2 &&
-          ((!stored && inside_loop != 1) || last_store_valid)) {
+      if (loop.loaded && is_inside_loop != inside_loop_no_stores &&
+          ((!stored && is_inside_loop != inside_loop_may_have_stores) ||
+          last_store_valid)) {
         loop = *this;
-        loop.inside_loop = 2;
+        loop.is_inside_loop = inside_loop_no_stores;
         body->accept(&loop);
       }
       // And the status about the last store should not be changed.

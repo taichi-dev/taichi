@@ -878,7 +878,10 @@ class BasicBlockSimplify : public IRVisitor {
   }
 
   void visit(WhileControlStmt *stmt) override {
-    return;
+    if (stmt->width() == 1 && stmt->mask) {
+      stmt->mask = nullptr;
+      throw IRModified();
+    }
   }
 
   void visit(ContinueStmt *stmt) override {

@@ -25,13 +25,7 @@ class OpenglStructCompiler {
   void generate_types(const SNode &snode);
   size_t compute_snode_size(const SNode &sn);
 
-  template <typename... Args>
-  void emit(std::string f, Args &&... args) {
-    src_code_ += fmt::format(f, std::forward<Args>(args)...) + '\n';
-  }
-
   std::vector<SNode *> snodes_;
-  std::string src_code_;
   std::unordered_map<std::string, size_t> stride_map_;
   std::unordered_map<std::string, size_t> length_map_;
   std::unordered_map<std::string, std::vector<size_t>> class_get_map_;

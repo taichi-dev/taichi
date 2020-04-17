@@ -234,9 +234,11 @@ class IdentifyValuesUsedInOtherOffloads : public BasicStmtVisitor {
       return;
     if (stmt_to_offloaded[stmt] == current_offloaded)
       return;
-    if (stmt->is<ConstStmt>()) {
-      // Directly insert copies of ConstStmts later
-      return;
+    if (advanced_optimization) {
+      if (stmt->is<ConstStmt>()) {
+        // Directly insert copies of ConstStmts later
+        return;
+      }
     }
     if (local_to_global.find(stmt) == local_to_global.end()) {
       // Not yet allocated
@@ -442,13 +444,15 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
       if (stmt_to_offloaded[stmt] ==
           stmt_to_offloaded[op])  // same OffloadedStmt
         continue;
-      if (op->is<ConstStmt>()) {
-        auto copy = op->as<ConstStmt>()->copy();
-        stmt_to_offloaded[copy.get()] = stmt_to_offloaded[stmt];
-        stmt->set_operand(i, copy.get());
-        stmt->insert_before_me(std::move(copy));
-        modified = true;
-        continue;
+      if (advanced_optimization) {
+        if (op->is<ConstStmt>()) {
+          auto copy = op->as<ConstStmt>()->copy();
+          stmt_to_offloaded[copy.get()] = stmt_to_offloaded[stmt];
+          stmt->set_operand(i, copy.get());
+          stmt->insert_before_me(std::move(copy));
+          modified = true;
+          continue;
+        }
       }
       if (local_to_global_offset.find(op) == local_to_global_offset.end())
         continue;

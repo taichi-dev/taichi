@@ -1601,8 +1601,12 @@ void CodeGenLLVM::emit_to_module() {
   ir->accept(this);
 }
 
+std::mutex mut;
+
 FunctionType CodeGenLLVM::gen() {
+  mut.lock();
   emit_to_module();
+  mut.unlock();
   return compile_module_to_executable();
 }
 

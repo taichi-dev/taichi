@@ -1,19 +1,22 @@
 <div align="center">
   <img width="500px" src="https://github.com/yuanming-hu/taichi/raw/master/misc/logo.png">
-  <h3> <a href="https://taichi.readthedocs.io/en/latest/"> Documentation </a> | <a href="https://taichi.readthedocs.io/en/latest/hello.html"> Tutorial </a> | <a href="https://github.com/yuanming-hu/difftaichi"> DiffTaichi </a> | <a href="https://github.com/yuanming-hu/taichi/tree/master/examples"> Examples </a> | <a href="https://taichi.readthedocs.io/en/latest/contributor_guide.html"> Contributor Guidelines </a> | <a href="https://forum.taichi.graphics/"> Forum </a> </h3>
+  <h3> <a href="https://taichi.readthedocs.io/en/latest/"> Documentation </a> | <a href="https://taichi.readthedocs.io/en/latest/hello.html"> Tutorial </a> | <a href="https://github.com/yuanming-hu/taichi/tree/master/examples"> Examples </a> | <a href="https://taichi.readthedocs.io/en/latest/contributor_guide.html"> Contributor Guidelines </a> | <a href="https://forum.taichi.graphics/"> Forum </a> </h3>
 </div>
 
 ## Overview
 
-Taichi (太极) is a high-performance programming language and compiler, designed for computer graphics applications. It has native support for spatially sparse computation and differentiable programming.
+**Taichi** (太极) is a programming language designed for *high-performance computer graphics*. It is deeply embedded in **Python**, and its **just-in-time compiler** offloads compute-intensive tasks to multi-core CPUs and massively parallel GPUs.
 
 <a href="https://github.com/taichi-dev/taichi/blob/master/examples/fractal.py#L1-L31"> <img src="https://github.com/yuanming-hu/public_files/raw/master/graphics/taichi/fractal_code.png" height="280px"></a>  <img src="https://raw.githubusercontent.com/yuanming-hu/public_files/master/graphics/taichi/fractal_small.gif" height="280px">
+
+
+Advanced features of Taichi include [spatially sparse computing](https://taichi.readthedocs.io/en/latest/sparse.html) and [differentiable programming](https://taichi.readthedocs.io/en/latest/differentiable_programming.html) [[examples]](https://github.com/yuanming-hu/difftaichi).
 
 ## Gallery
 
 <img src="https://raw.githubusercontent.com/yuanming-hu/public_files/master/graphics/taichi/mpm128.gif" height="192px"> <img src="https://raw.githubusercontent.com/yuanming-hu/public_files/master/graphics/taichi/stable_fluids.gif" height="192px"> <img src="https://raw.githubusercontent.com/yuanming-hu/public_files/master/graphics/taichi/sdf_renderer.jpg" height="192px"> <img src="https://raw.githubusercontent.com/yuanming-hu/public_files/master/graphics/taichi/sparse_grids.gif" height="192px"> 
 
-<img src="https://raw.githubusercontent.com/yuanming-hu/public_files/master/graphics/taichi/lagrangian.gif" height="192px"> <img src="https://raw.githubusercontent.com/yuanming-hu/public_files/master/graphics/taichi/pbf.gif" height="192px"> <img src="https://raw.githubusercontent.com/yuanming-hu/public_files/master/graphics/taichi/game_of_life.gif" height="192px">
+<img src="https://raw.githubusercontent.com/yuanming-hu/public_files/master/graphics/taichi/lagrangian.gif" height="192px"> <img src="https://raw.githubusercontent.com/yuanming-hu/public_files/master/graphics/taichi/pbf.gif" height="192px"> <img src="https://raw.githubusercontent.com/yuanming-hu/public_files/master/graphics/taichi/game_of_life.gif" height="192px"> <img src="https://raw.githubusercontent.com/yuanming-hu/public_files/master/graphics/taichi/euler.gif" height="192px">
 
 
 ## Installation [![Downloads](https://pepy.tech/badge/taichi-nightly)](https://pepy.tech/project/taichi-nightly)

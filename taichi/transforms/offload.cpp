@@ -489,9 +489,8 @@ void insert_gc(IRNode *root) {
     auto snodes = gc_statements[i].second;
     for (auto *snode : snodes) {
       if (is_gc_able(snode->type)) {
-        b->statements.insert(
-            b->statements.begin() + i + 1,
-            Stmt::make<OffloadedStmt>(OffloadedStmt::TaskType::gc, snode));
+        b->insert(Stmt::make<OffloadedStmt>(OffloadedStmt::TaskType::gc, snode),
+                  i + 1);
       }
     }
   }
@@ -585,6 +584,7 @@ OffloadedResult offload(IRNode *root) {
   AssociateContinueScope::run(root);
   typecheck(root);
   re_id(root);
+  fix_block_parents(root);
   return result;
 }
 

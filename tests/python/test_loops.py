@@ -114,8 +114,7 @@ def test_zero_inner_loop():
     assert x[None] == 0
 
 
-# OpenGL backend doesn't support dynamic loop ranges yet
-@ti.archs_excluding(ti.opengl)
+@ti.all_archs
 def test_dynamic_loop_range():
     x = ti.var(ti.i32)
     c = ti.var(ti.i32)
@@ -138,8 +137,7 @@ def test_dynamic_loop_range():
     assert sum(x.to_numpy()) == (n * (n - 1) // 2) + n * n
 
 
-# OpenGL backend doesn't support dynamic loop ranges yet
-@ti.archs_excluding(ti.opengl)
+@ti.all_archs
 def test_loop_arg_as_range():
     # Dynamic range loops are intended to make sure global tmps work
     x = ti.var(ti.i32)

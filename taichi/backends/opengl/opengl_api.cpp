@@ -1,3 +1,4 @@
+//#define _GLSL_DEBUG 1
 #include "opengl_api.h"
 
 #include "taichi/backends/opengl/opengl_kernel_util.h"
@@ -219,6 +220,7 @@ struct GLSSBO {
     void *p =
         glMapBufferRange(GL_SHADER_STORAGE_BUFFER, offset, length, access);
     check_opengl_error("glMapBufferRange");
+    TI_ASSERT_INFO(p, "glMapBufferRange returned NULL");
     return p;
   }
 
@@ -227,7 +229,15 @@ struct GLSSBO {
     check_opengl_error("glBindBuffer");
     void *p = glMapBuffer(GL_SHADER_STORAGE_BUFFER, access);
     check_opengl_error("glMapBuffer");
+    TI_ASSERT_INFO(p, "glMapBuffer returned NULL");
     return p;
+  }
+
+  void unmap() const {
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, id_);
+    check_opengl_error("glBindBuffer");
+    glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+    check_opengl_error("glUnmapBuffer");
   }
 };
 
@@ -273,10 +283,18 @@ void initialize_opengl() {
     TI_ERROR("Your OpenGL does not support GL_ARB_compute_shader extension");
 }
 
+namespace {
+bool my_starts_with(std::string const &str, std::string const &pre) {
+  return str.length() > pre.length() &&
+         !memcmp(str.c_str(), pre.c_str(), pre.length());
+}
+}  // namespace
+
 struct CompiledKernel {
   std::string kernel_name;
   std::unique_ptr<GLProgram> glsl;
   int num_groups;
+  RangeSizeEvaluator rse;
   UsedFeature used;
 
   // disscussion:
@@ -287,14 +305,18 @@ struct CompiledKernel {
   explicit CompiledKernel(const std::string &kernel_name_,
                           const std::string &kernel_source_code,
                           int num_groups_,
+                          RangeSizeEvaluator rse_,
                           const UsedFeature &used_)
       : kernel_name(kernel_name_),
         glsl(std::make_unique<GLProgram>(GLShader(kernel_source_code))),
         num_groups(num_groups_),
+        rse(std::move(rse_)),
         used(used_) {
     glsl->link();
-    TI_DEBUG("source of kernel [{}] * {}:\n{}", kernel_name, num_groups,
-             kernel_source_code);
+    if (!my_starts_with(kernel_name, "snode_") &&
+        !my_starts_with(kernel_name, "tensor_"))
+      TI_DEBUG("source of kernel [{}] * {}:\n{}", kernel_name, num_groups,
+               kernel_source_code);
 #ifdef _GLSL_DEBUG
     std::ofstream(fmt::format("/tmp/{}.comp", kernel_name))
         .write(kernel_source_code.c_str(), kernel_source_code.size());
@@ -313,6 +335,7 @@ struct CompiledKernel {
     // `layout(local_size_x = X) in;` - the X      == `Threads`  in CUDA
     //
     glDispatchCompute(num_groups, 1, 1);
+    check_opengl_error("glDispatchCompute");
     // TI_PERF(kernel_name.c_str(), kernel_name.size(), 107);
   }
 };
@@ -335,9 +358,10 @@ struct CompiledProgram::Impl {
   void add(const std::string &kernel_name,
            const std::string &kernel_source_code,
            int num_groups,
+           RangeSizeEvaluator rse,
            const UsedFeature &used) {
     kernels.push_back(std::make_unique<CompiledKernel>(
-        kernel_name, kernel_source_code, num_groups, used));
+        kernel_name, kernel_source_code, num_groups, std::move(rse), used));
   }
 
   void launch(Context &ctx, GLSLLauncher *launcher) const {
@@ -373,13 +397,21 @@ struct CompiledProgram::Impl {
           ctx.args[i] = accum_size;
           accum_size += size;
         }  // concat all extptr into my baseptr
-        TI_INFO("baseptr = {}", baseptr);
         iov.push_back(IOV{baseptr, accum_size});
       }
     }
-    for (const auto &ker : kernels) {
+    {
       auto guard = launcher->create_launch_guard(iov);
-      ker->launch();
+      for (const auto &ker : kernels) {
+        if (ker->rse.has_value()) {
+          auto *gtmp_now = guard.map_buffer(1);  // TODO: RAII
+          ker->num_groups = ker->rse->eval((const void *)gtmp_now);
+          guard.unmap_buffer(1);
+        }
+        ker->launch();
+        glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+        check_opengl_error("glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT)");
+      }
     }
     if (ext_arr_map.size() > 1) {
       void *baseptr = base_arr.data();
@@ -428,18 +460,23 @@ GLSLLaunchGuard::GLSLLaunchGuard(GLSLLauncherImpl *impl,
   }
 }
 
-GLSLLaunchGuard::~GLSLLaunchGuard() {
-  // glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT); // TODO(archibate): move to
-  // Program::synchroize()
+void *GLSLLaunchGuard::map_buffer(size_t idx) {
+  TI_ASSERT(iov[idx].size);
+  void *p = impl->ssbo[idx].map();  // 0, iov[i].size);  // sync
+  return p;
+}
 
+void GLSLLaunchGuard::unmap_buffer(size_t idx) {
+  impl->ssbo[idx].unmap();
+}
+
+GLSLLaunchGuard::~GLSLLaunchGuard() {
   for (int i = 0; i < impl->ssbo.size(); i++) {
     if (!iov[i].size)
       continue;
     void *p = impl->ssbo[i].map();  // 0, iov[i].size);  // output
-    TI_ASSERT_INFO(p, "glMapBuffer returned NULL");
     std::memcpy(iov[i].base, p, iov[i].size);
   }
-  glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
   impl->ssbo.clear();
 }
 
@@ -448,8 +485,9 @@ bool is_opengl_api_available() {
 }
 
 int opengl_get_threads_per_group() {
-  int ret = 1;
+  int ret = 1000;
   glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS, &ret);
+  check_opengl_error("glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS)");
   return ret;
 }
 
@@ -465,6 +503,7 @@ struct CompiledProgram::Impl {
   void add(const std::string &kernel_name,
            const std::string &kernel_source_code,
            int num_groups,
+           RangeSizeEvaluator rse,
            const UsedFeature &used) {
     TI_NOT_IMPLEMENTED;
   }
@@ -504,6 +543,14 @@ GLSLLaunchGuard::~GLSLLaunchGuard() {
   TI_NOT_IMPLEMENTED;
 }
 
+void *GLSLLaunchGuard::map_buffer(size_t idx) {
+  TI_NOT_IMPLEMENTED;
+}
+
+void GLSLLaunchGuard::unmap_buffer(size_t idx) {
+  TI_NOT_IMPLEMENTED;
+}
+
 #endif  // TI_WITH_OPENGL
 
 CompiledProgram::CompiledProgram(Kernel *kernel, size_t gtmp_size)
@@ -515,8 +562,9 @@ CompiledProgram::~CompiledProgram() = default;
 void CompiledProgram::add(const std::string &kernel_name,
                           const std::string &kernel_source_code,
                           int num_groups,
+                          RangeSizeEvaluator rse,
                           const UsedFeature &used) {
-  impl->add(kernel_name, kernel_source_code, num_groups, used);
+  impl->add(kernel_name, kernel_source_code, num_groups, std::move(rse), used);
 }
 
 void CompiledProgram::launch(Context &ctx, GLSLLauncher *launcher) const {

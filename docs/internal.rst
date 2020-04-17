@@ -39,4 +39,4 @@ To print out all statistics in Python:
 
 .. code-block:: Python
 
-    ti.core.print_statistics()
+    ti.core.print_stat()

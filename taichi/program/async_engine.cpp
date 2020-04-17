@@ -34,8 +34,6 @@ void ExecutionQueue::synchronize() {
   while (!task_queue.empty()) {
     auto ker = task_queue.front();
     std::string serialized;
-    irpass::re_id(ker.stmt);
-    irpass::print(ker.stmt);
     auto h = hash(ker.stmt);
     if (compiled_func.find(h) == compiled_func.end()) {
       compiled_func[h] = CodeGenCPU(ker.kernel, ker.stmt).codegen();
@@ -65,25 +63,6 @@ void AsyncEngine::synchronize() {
     task_queue.pop_front();
   }
   queue.synchronize();
-}
-
-TI_TEST("parallel_executor") {
-  SECTION("create_and_destruct") {
-    ParallelExecutor exec(10);
-  }
-  SECTION("parallel_print") {
-    int N = 100;
-    std::vector<int> buffer(N, 0);
-    {
-      ParallelExecutor exec(10);
-      for (int i = 0; i < N; i++) {
-        exec.enqueue([i = i, &buffer]() { buffer[i] = i + 1; });
-      }
-    }
-    for (int i = 0; i < 100; i++) {
-      CHECK(buffer[i] == i + 1);
-    }
-  }
 }
 
 TLANG_NAMESPACE_END

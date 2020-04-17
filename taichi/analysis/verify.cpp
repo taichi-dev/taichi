@@ -20,10 +20,9 @@ class IRVerifier : public BasicStmtVisitor {
   }
 
   void basic_verify(Stmt *stmt) {
-    TI_ASSERT_INFO(
-        stmt->parent == current_block,
-        fmt::format("stmt({})->parent({}) != current_block({})", stmt->id,
-                    fmt::ptr(stmt->parent), fmt::ptr(current_block)));
+    TI_ASSERT_INFO(stmt->parent == current_block,
+                   "stmt({})->parent({}) != current_block({})", stmt->id,
+                   fmt::ptr(stmt->parent), fmt::ptr(current_block));
     for (auto &op : stmt->get_operands()) {
       if (op == nullptr)
         continue;
@@ -34,8 +33,8 @@ class IRVerifier : public BasicStmtVisitor {
           break;
         }
       }
-      TI_ASSERT_INFO(found, fmt::format("stmt {} cannot have operand {}.",
-                                        stmt->id, op->id));
+      TI_ASSERT_INFO(found, "stmt {} cannot have operand {}.", stmt->id,
+                     op->id);
     }
     visible_stmts.back().insert(stmt);
   }
@@ -70,6 +69,46 @@ class IRVerifier : public BasicStmtVisitor {
   void visit(LocalStoreStmt *stmt) override {
     basic_verify(stmt);
     TI_ASSERT(stmt->ptr->is<AllocaStmt>());
+  }
+
+  void visit(RangeForStmt *for_stmt) override {
+    basic_verify(for_stmt);
+    TI_ASSERT(for_stmt->loop_var->is<AllocaStmt>());
+    TI_ASSERT_INFO(irpass::analysis::gather_statements(
+                       for_stmt->loop_var->parent,
+                       [&](Stmt *s) {
+                         if (auto store = s->cast<LocalStoreStmt>())
+                           return store->ptr == for_stmt->loop_var;
+                         else if (auto atomic = s->cast<AtomicOpStmt>()) {
+                           return atomic->dest == for_stmt->loop_var;
+                         } else {
+                           return false;
+                         }
+                       })
+                       .empty(),
+                   "loop_var of {} modified", for_stmt->id);
+    for_stmt->body->accept(this);
+  }
+
+  void visit(StructForStmt *for_stmt) override {
+    basic_verify(for_stmt);
+    for (auto &loop_var : for_stmt->loop_vars) {
+      TI_ASSERT(loop_var->is<AllocaStmt>());
+      TI_ASSERT_INFO(irpass::analysis::gather_statements(
+                         loop_var->parent,
+                         [&](Stmt *s) {
+                           if (auto store = s->cast<LocalStoreStmt>())
+                             return store->ptr == loop_var;
+                           else if (auto atomic = s->cast<AtomicOpStmt>()) {
+                             return atomic->dest == loop_var;
+                           } else {
+                             return false;
+                           }
+                         })
+                         .empty(),
+                     "loop_var of {} modified", for_stmt->id);
+    }
+    for_stmt->body->accept(this);
   }
 
   static void run(IRNode *root) {

@@ -108,7 +108,7 @@ class KernelGen : public IRVisitor {
       emit("  {}();", glsl_kernel_name_);
     emit("}}");
 
-    auto root_size = struct_compiled_->root_size;
+    auto root_size = "";//struct_compiled_->root_size;
     // clang-format off
     std::string kernel_header = fmt::format(
         "layout(packed, binding = 0) buffer data_i32 {{ int _states_[2]; int _data_i32_[{}]; }};\n"

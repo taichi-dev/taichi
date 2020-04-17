@@ -40,6 +40,7 @@ Program *current_program = nullptr;
 std::atomic<int> Program::num_instances;
 
 Program::Program(Arch desired_arch) {
+  TI_TRACE("Program initializing...");
   auto arch = desired_arch;
   if (arch == Arch::cuda) {
     runtime = Runtime::create(arch);
@@ -122,7 +123,7 @@ Program::Program(Arch desired_arch) {
     }
   }
 
-  TI_TRACE("Program arch={}", arch_name(arch));
+  TI_TRACE("Program ({}) arch={} initialized.", fmt::ptr(this), arch_name(arch));
 }
 
 FunctionType Program::compile(Kernel &kernel) {
@@ -470,6 +471,7 @@ Kernel &Program::get_snode_writer(SNode *snode) {
 }
 
 void Program::finalize() {
+  TI_TRACE("Program finalizing...");
   if (runtime)
     runtime->set_profiler(nullptr);
   synchronize();
@@ -481,6 +483,7 @@ void Program::finalize() {
 #endif
   finalized = true;
   num_instances -= 1;
+  TI_ERROR("Program ({}) finalized.", fmt::ptr(this));
 }
 
 void Program::launch_async(Kernel *kernel) {

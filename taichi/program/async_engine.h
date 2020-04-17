@@ -1,6 +1,7 @@
 #include <deque>
 #include <thread>
 #include <mutex>
+#include <atomic>
 
 #define TI_RUNTIME_HOST
 #include "taichi/ir/ir.h"
@@ -17,7 +18,9 @@ class ParallelExecutor {
   using TaskType = std::function<void()>;
 
   explicit ParallelExecutor(int num_threads)
-      : num_threads(num_threads), status(ExecutorStatus::uninitialized) {
+      : num_threads(num_threads),
+        status(ExecutorStatus::uninitialized),
+        running_threads(0) {
     auto _ = std::lock_guard<std::mutex>(mut);
 
     for (int i = 0; i < num_threads; i++) {
@@ -35,7 +38,7 @@ class ParallelExecutor {
   void flush() {
     while (true) {
       std::unique_lock<std::mutex> lock(mut);
-      if (task_queue.empty()) {
+      if (task_queue.empty() && running_threads == 0) {
         break;
       } else {
         lock.unlock();
@@ -75,16 +78,18 @@ class ParallelExecutor {
         Time::sleep(1e-6);
         continue;  // wait until initialized
       }
-      if (status == ExecutorStatus::finalized) {
+      if (status == ExecutorStatus::finalized && task_queue.empty()) {
         break;  // finalized, exit
       }
       // initialized and not finalized. Do work.
       if (!task_queue.empty()) {
         auto task = task_queue.front();
         task_queue.pop_front();
+        running_threads++;
         lock.unlock();
         // Run the task
         task();
+        running_threads--;
       }
     }
     TI_DEBUG("Exiting worker thread.");
@@ -96,6 +101,7 @@ class ParallelExecutor {
 
   std::vector<std::thread> threads;
   std::deque<TaskType> task_queue;
+  std::atomic<int> running_threads;
 };
 
 class KernelLaunchRecord {
@@ -117,7 +123,7 @@ class ExecutionQueue {
 
   std::unordered_map<uint64, FunctionType> compiled_func;
 
-  ExecutionQueue() : compilation_workers(4) { // TODO: remove 4
+  ExecutionQueue() : compilation_workers(1) {  // TODO: remove 4
   }
 
   void enqueue(KernelLaunchRecord ker);

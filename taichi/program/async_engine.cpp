@@ -42,11 +42,17 @@ void ExecutionQueue::synchronize() {
     if (compiled_func.find(h) == compiled_func.end() &&
         to_be_compiled.find(h) == to_be_compiled.end()) {
       to_be_compiled.insert(h);
-      compilation_workers.enqueue([ker, h, this]() {
-        compiled_func[h] = CodeGenCPU(ker.kernel, ker.stmt).codegen();
+      compilation_workers.enqueue([&, ker, h, this]() {
+        {
+          std::lock_guard<std::mutex> _(mut);
+          auto func = CodeGenCPU(ker.kernel, ker.stmt).codegen();
+          compiled_func[h] = func;
+        }
       });
     }
   }
+
+  compilation_workers.flush();
 
   while (!task_queue.empty()) {
     auto ker = task_queue.front();

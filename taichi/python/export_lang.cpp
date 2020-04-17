@@ -136,6 +136,10 @@ void export_lang(py::module &m) {
       .def("print_snode_tree", &Program::print_snode_tree)
       .def("synchronize", &Program::synchronize);
 
+  m.def("create_program", []() {
+    return std::make_unique<Program>();
+  });
+
   m.def("get_current_program", get_current_program,
         py::return_value_policy::reference);
 

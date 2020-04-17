@@ -30,17 +30,27 @@ void OpenglStructCompiler::collect_snodes(SNode &snode) {
   }
 }
 
+
 void OpenglStructCompiler::generate_types(const SNode &snode) {
   const bool is_place = snode.is_place();
   if (!is_place) {
     const std::string class_name = snode.node_type_name + "_ch";
     size_t stride_num = 0;
     auto &gimme = class_get_map_[snode.node_type_name];
-    gimme.clear();
+    gimme.resize(snode.ch.size());
+    std::vector<std::pair<int, SNode *>> smp;
     for (int i = 0; i < (int)snode.ch.size(); i++) {
-      const auto &ch_node_name = snode.ch[i]->node_type_name;
-      gimme.push_back(stride_num);
-      stride_num += stride_map_.at(ch_node_name);
+      smp.push_back(std::pair<int, SNode *>(i, snode.ch[i].get()));
+    }
+    std::sort(smp.begin(), smp.end(), [this](const std::pair<int, SNode *> &a,
+          const std::pair<int, SNode *> &b) {
+      return stride_map_.at(a.second->node_type_name)
+           < stride_map_.at(b.second->node_type_name);
+    });
+    for (auto &&[i, ch]: smp) {
+    //for (int i = 0; i < (int)snode.ch.size(); i++) {
+      gimme[i] = stride_num;
+      stride_num += stride_map_.at(ch->node_type_name);
     }
     stride_map_[class_name] = stride_num;
   }

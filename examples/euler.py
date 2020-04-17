@@ -1,29 +1,40 @@
 import taichi as ti
 import matplotlib.cm as cm
-# A simple compressible euler equation solver using a 2nd order muscl method
+# A compressible euler equation solver using two methods
+# 1: 2nd order muscl
+# 2: thinc BVD, ref: "Limiter-free discontinuity-capturing scheme
+#                      for compressible gas dynamics with reactive fronts"
 
 real = ti.f32
 ti.init(arch=ti.cuda, default_fp=real)
 
-N = 512 # grid resolution
-CFL = .8
+N = 1024 # grid resolution
+CFL = .9 # keep below 1
+method = 1 # 0:muscl, 1:thinc
 IC_type = 0  # 0:sod
 BC_type = 0 # 0:walls
-img_field = 1 # 0:density, 1: schlieren, 2:vorticity, 3: velocity mag
+
+img_field = 0 # 0:density, 1: schlieren, 2:vorticity, 3: velocity mag
 res = 1024  # gui resolution
-cmap_name = 'jet' # python colormap
+cmap_name = 'magma_r' # python colormap
 use_fixed_caxis = 0 # 1: use fixed caxis limits, 0: automatic caxis limits
 fixed_caxis = [0.0, 5.0] # fixed caxis limits
 
 
 Q = ti.Vector(4, dt=real, shape=(N,N)) # [rho, rho*u, rho*v, rho*e] consv vars
 Q_old = ti.Vector(4, dt=real, shape=(N,N))
-W = ti.Vector(4, dt=real, shape=(N,N)) # [rho, u, v, p] primtive vars
-F_x = ti.Vector(4, dt=real, shape=(N,N)) # x-face flux vector
-F_y = ti.Vector(4, dt=real, shape=(N,N)) # y-face flux vector
+W = ti.Vector(4, dt=real, shape=(N,N)) # [rho, u, v, p] cell avg
+W_xl = ti.Vector(4, dt=real, shape=(N,N,3)) # left side of x-face
+W_xr = ti.Vector(4, dt=real, shape=(N,N,3)) # right side of x-face
+W_yl = ti.Vector(4, dt=real, shape=(N,N,3)) # left side of y-face
+W_yr = ti.Vector(4, dt=real, shape=(N,N,3)) # right side of y-face
+F_x = ti.Vector(4, dt=real, shape=(N,N)) # x-face flux
+F_y = ti.Vector(4, dt=real, shape=(N,N)) # y-face flux
 dt = ti.var(dt=real, shape=())
 img = ti.var(dt=ti.f32, shape=(res,res))
 
+beta_smooth= 1.2
+beta_sharp = 2.0
 gamma = 1.4 # ratio of specific heats
 h = 1.0/(N-2) # cell size
 vol = h*h  # cell volume
@@ -196,7 +207,7 @@ def HLLC_flux(qL, qR, n):
     return HLLC
 
 @ti.kernel
-def compute_F():
+def compute_F_muscl():
     for i,j in Q:
         if is_interior_x_face(i,j):
             # muscl reconstrucion of left and right states with HLLC flux
@@ -225,6 +236,114 @@ def compute_F():
 
         elif is_boundary_y_face(i,j):
             F_y[i,j] = HLLC_flux(Q[i,j-1], Q[i,j], ti.Vector([0.0,1.0]))
+
+@ti.func
+def sign(a):
+    sgn = 0.0
+    if a > 0.0:
+        sgn = 1.0
+    elif a < 0.0:
+        sgn = -1.0
+    return sgn
+
+ti.func
+def cosh(a):
+    return (ti.exp(a)+ti.exp(-a))/2.0
+
+@ti.func
+def thinc(wl,wc,wr,beta):
+    w0 = wc
+    w1 = wc
+    if (wr-wc)*(wc-wl) > 0.0:
+        # use thinc reconstruction
+        eps = 1.0e-15
+        wmin = min(wr,wl)
+        wmax = max(wr,wl)
+        wdelta = wmax-wmin
+        theta = sign(wr-wl)
+        C = (wc-wmin+eps)/(wdelta+eps)
+        B = ti.exp(theta*beta*(2*C - 1))
+        A = (B/cosh(beta) - 1)/ti.tanh(beta)
+
+        # reconstructed value on right side of left face
+        w0 = wmin + wdelta/2.0*(1.0+theta*A)
+
+        # reconstructed value on left side of right face
+        w1 = wmin + wdelta/2.0*(1.0+theta*(ti.tanh(beta)+A)/(1.0+A*ti.tanh(beta)))
+
+    return w0, w1
+
+
+@ti.kernel
+def compute_F_thinc():
+    # reconstruct primitve variables on interior faces of each cell using
+    #    multiple candidate thinc reconstructions
+    for i,j in Q:
+        if is_interior_cell(i,j):
+            for f in ti.static(range(4)):
+                # smooth x-dir reconstruction
+                w0,w1 = thinc(W[i-1,j][f],W[i,j][f],W[i+1,j][f], beta_smooth)
+                W_xr[i,j,0][f] = w0
+                W_xl[i+1,j,0][f] = w1
+
+                # sharp x-dir reconstruction
+                w0,w1 = thinc(W[i-1,j][f],W[i,j][f],W[i+1,j][f], beta_sharp)
+                W_xr[i,j,1][f] = w0
+                W_xl[i+1,j,1][f] = w1
+
+                # smooth y-dir reconstruction
+                w0,w1 = thinc(W[i,j-1][f],W[i,j][f],W[i,j+1][f], beta_smooth)
+                W_yr[i,j,0][f] = w0
+                W_yl[i,j+1,0][f] = w1
+
+                # sharp y-dir reconstruction
+                w0,w1 = thinc(W[i,j-1][f],W[i,j][f],W[i,j+1][f], beta_sharp)
+                W_yr[i,j,1][f] = w0
+                W_yl[i,j+1,1][f] = w1
+
+    for i,j in Q:
+        # choose the final reconstruction for each cell using the BVD algorithm
+        if is_interior_cell(i,j):
+            for f in ti.static(range(4)):
+                # x-dir
+                TBV_smooth = abs(W_xl[i,j,0][f] - W_xr[i,j,0][f]) \
+                           + abs(W_xl[i+1,j,0][f] - W_xr[i+1,j,0][f])
+                TBV_sharp = abs(W_xl[i,j,1][f] - W_xr[i,j,1][f]) \
+                           + abs(W_xl[i+1,j,1][f] - W_xr[i+1,j,1][f])
+
+                if TBV_smooth < TBV_sharp:
+                    W_xr[i,j,2][f] = W_xr[i,j,0][f]
+                    W_xl[i+1,j,2][f] = W_xl[i+1,j,0][f]
+                else:
+                    W_xr[i,j,2][f] = W_xr[i,j,1][f]
+                    W_xl[i+1,j,2][f] = W_xl[i+1,j,1][f]
+
+                # y-dir
+                TBV_smooth = abs(W_yl[i,j,0][f] - W_yr[i,j,0][f]) \
+                           + abs(W_yl[i,j+1,0][f] - W_yr[i,j+1,0][f])
+                TBV_sharp = abs(W_yl[i,j,1][f] - W_yr[i,j,1][f]) \
+                           + abs(W_yl[i,j+1,1][f] - W_yr[i,j+1,1][f])
+
+                if TBV_smooth < TBV_sharp:
+                    W_yr[i,j,2][f] = W_yr[i,j,0][f]
+                    W_yl[i,j+1,2][f] = W_yl[i,j+1,0][f]
+                else:
+                    W_yr[i,j,2][f] = W_yr[i,j,1][f]
+                    W_yl[i,j+1,2][f] = W_yl[i,j+1,1][f]
+
+    for i,j in Q:
+        # compute numerical fluxes of with Riemann solver
+        if is_interior_x_face(i,j):
+            # muscl reconstrucion of left and right states with HLLC flux
+            F_x[i,j] = HLLC_flux(w_to_q(W_xl[i,j,2]), w_to_q(W_xr[i,j,2]), ti.Vector([1.0,0.0]))
+        elif is_boundary_x_face(i,j):
+            F_x[i,j] = HLLC_flux(Q[i-1,j], Q[i,j], ti.Vector([1.0,0.0]))
+
+        if is_interior_y_face(i,j):
+            F_y[i,j] = HLLC_flux(w_to_q(W_yl[i,j,2]), w_to_q(W_yr[i,j,2]), ti.Vector([0.0,1.0]))
+        elif is_boundary_y_face(i,j):
+            F_y[i,j] = HLLC_flux(Q[i,j-1], Q[i,j], ti.Vector([0.0,1.0]))
+
 
 @ti.kernel
 def calc_dt():
@@ -283,7 +402,10 @@ while(1):
     copy_to_old()
     for rk_step in range(2):
         compute_W()
-        compute_F()
+        if method == 0:
+            compute_F_muscl()
+        else:
+            compute_F_thinc()
         update_Q(rk_step)
         set_bc()
 

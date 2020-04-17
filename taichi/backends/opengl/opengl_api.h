@@ -11,6 +11,7 @@
 TLANG_NAMESPACE_BEGIN
 
 class Kernel;
+class OffloadedStmt;
 
 namespace opengl {
 
@@ -21,7 +22,16 @@ int opengl_get_threads_per_group();
 #include "taichi/inc/opengl_extension.inc.h"
 #undef PER_OPENGL_EXTENSION
 
-using RangeSizeEvaluator = std::function<size_t(const void *)>;
+struct RangeSizeEvaluator_ {
+  bool const_begin, const_end;
+  size_t begin, end;
+  size_t gl_threads_per_group;
+
+  RangeSizeEvaluator_(OffloadedStmt *stmt);
+  size_t eval(const void *gtmp);
+};
+
+using RangeSizeEvaluator = std::optional<RangeSizeEvaluator_>;
 
 struct CompiledProgram {
   struct Impl;

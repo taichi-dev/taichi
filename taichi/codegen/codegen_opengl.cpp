@@ -12,6 +12,22 @@
 
 TLANG_NAMESPACE_BEGIN
 namespace opengl {
+
+size_t RangeSizeEvaluator_::eval(const void *gtmp) {
+  size_t b, e, tpg = gl_threads_per_group;
+  b = const_begin ? begin : *(const int *)((const char *)gtmp + begin);
+  e = const_end ? end : *(const int *)((const char *)gtmp + end);
+  return std::max((e - b + tpg - 1) / tpg, (size_t)1);
+}
+
+RangeSizeEvaluator_::RangeSizeEvaluator_(OffloadedStmt *stmt)
+  : const_begin(stmt->const_begin), const_end(stmt->const_end)
+  , begin(stmt->const_begin ? stmt->begin_value : stmt->begin_offset)
+  , end(stmt->const_end ? stmt->end_value : stmt->end_offset)
+  , gl_threads_per_group((size_t)opengl_get_threads_per_group())
+{
+}
+
 namespace {
 
 std::string opengl_atomic_op_type_cap_name(AtomicOpType type) {
@@ -184,7 +200,7 @@ class KernelGen : public IRVisitor {
     line_appender_.clear_all();
     num_threads_ = 1;
     num_groups_ = 1;
-    range_size_evaluator_ = nullptr;
+    range_size_evaluator_ = std::nullopt;
   }
 
   void visit(Block *stmt) override {
@@ -546,17 +562,7 @@ class KernelGen : public IRVisitor {
       emit("if (_itv >= _end) return;");
       num_threads_ = -1;
 
-      std::vector<size_t> rinfo = {stmt->const_begin, stmt->const_end,
-        stmt->const_begin ? stmt->begin_value : stmt->begin_offset,
-        stmt->const_end ? stmt->end_value : stmt->end_offset,
-        (size_t)opengl_get_threads_per_group(),
-      };
-      range_size_evaluator_ = [rinfo](const void *gtmp) -> size_t {
-            size_t beg, end;
-            beg = rinfo[0] ? rinfo[2] : *(const int *)((const char *)gtmp + rinfo[2]);
-            end = rinfo[1] ? rinfo[3] : *(const int *)((const char *)gtmp + rinfo[3]);
-            return std::max((end - beg + rinfo[4] - 1) / rinfo[4], (size_t)1);
-          };
+      range_size_evaluator_ = std::make_optional<RangeSizeEvaluator_>(stmt);
 
       }stmt->body->accept(this);
     }

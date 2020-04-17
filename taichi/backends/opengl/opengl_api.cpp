@@ -401,9 +401,9 @@ struct CompiledProgram::Impl {
     {
       auto guard = launcher->create_launch_guard(iov);
       for (const auto &ker : kernels) {
-        if (ker->rse != nullptr) {
+        if (ker->rse.has_value()) {
           auto *gtmp_now = guard.map_buffer(1); // TODO: RAII
-          ker->num_groups = ker->rse((const void *)gtmp_now);
+          ker->num_groups = ker->rse->eval((const void *)gtmp_now);
           guard.unmap_buffer(1);
         }
         ker->launch();

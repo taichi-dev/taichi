@@ -1,5 +1,6 @@
 #include <deque>
 #include <thread>
+#include <mutex>
 
 #define TI_RUNTIME_HOST
 #include "taichi/ir/ir.h"
@@ -9,6 +10,93 @@
 TLANG_NAMESPACE_BEGIN
 
 // TODO(yuanming-hu): split into multiple files
+
+// TODO: use semaphores instead of Time::sleep
+class ParallelExecutor {
+ public:
+  using TaskType = std::function<void()>;
+
+  enum class ExecutorStatus {
+    uninitialized,
+    initialized,
+    finalized,
+  };
+
+  explicit ParallelExecutor(int num_threads)
+      : num_threads(num_threads), status(ExecutorStatus::uninitialized) {
+    auto _ = std::lock_guard<std::mutex>(mut);
+
+    for (int i = 0; i < num_threads; i++) {
+      threads.emplace_back([this]() { this->task(); });
+    }
+
+    status = ExecutorStatus::initialized;
+  }
+
+  void enqueue(const TaskType &func) {
+    std::lock_guard<std::mutex> _(mut);
+    queue.push_back(func);
+  }
+
+  void flush() {
+    while (true) {
+      std::unique_lock<std::mutex> lock(mut);
+      if (queue.empty()) {
+        break;
+      } else {
+        lock.unlock();
+        Time::sleep(1e-6);
+      }
+    }
+  }
+
+  ~ParallelExecutor() {
+    flush();
+    {
+      auto _ = std::lock_guard<std::mutex>(mut);
+      status = ExecutorStatus::finalized;
+    }
+    for (auto &th : threads) {
+      th.join();
+    }
+  }
+
+  int get_num_threads() {
+    return num_threads;
+  }
+
+ private:
+  void task() {
+    TI_DEBUG("Starting worker thread.");
+    while (true) {
+      std::unique_lock<std::mutex> lock(mut);
+      if (status == ExecutorStatus::uninitialized) {
+        lock.unlock();
+        Time::sleep(1e-6);
+        continue;  // wait until initialized
+      }
+      if (status == ExecutorStatus::finalized) {
+        break;  // finalized, exit
+      }
+      // initialized and not finalized. Do work.
+      if (!queue.empty()) {
+        auto task = queue.front();
+        queue.pop_front();
+        lock.unlock();
+        // Run the task
+        task();
+      }
+    }
+    TI_DEBUG("Exiting worker thread.");
+  }
+
+  int num_threads;
+  std::mutex mut;
+  ExecutorStatus status;
+
+  std::vector<std::thread> threads;
+  std::deque<TaskType> queue;
+};
 
 class KernelLaunchRecord {
  public:

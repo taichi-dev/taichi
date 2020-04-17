@@ -5,6 +5,7 @@
 #include "taichi/program/kernel.h"
 #include "taichi/program/program.h"
 #include "taichi/codegen/codegen_cpu.h"
+#include "taichi/common/testing.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -64,6 +65,25 @@ void AsyncEngine::synchronize() {
     task_queue.pop_front();
   }
   queue.synchronize();
+}
+
+TI_TEST("parallel_executor") {
+  SECTION("create_and_destruct") {
+    ParallelExecutor exec(10);
+  }
+  SECTION("parallel_print") {
+    int N = 100;
+    std::vector<int> buffer(N, 0);
+    {
+      ParallelExecutor exec(10);
+      for (int i = 0; i < N; i++) {
+        exec.enqueue([i = i, &buffer]() { buffer[i] = i + 1; });
+      }
+    }
+    for (int i = 0; i < 100; i++) {
+      CHECK(buffer[i] == i + 1);
+    }
+  }
 }
 
 TLANG_NAMESPACE_END

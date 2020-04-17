@@ -35,13 +35,13 @@ class ParallelExecutor {
 
   void enqueue(const TaskType &func) {
     std::lock_guard<std::mutex> _(mut);
-    queue.push_back(func);
+    task_queue.push_back(func);
   }
 
   void flush() {
     while (true) {
       std::unique_lock<std::mutex> lock(mut);
-      if (queue.empty()) {
+      if (task_queue.empty()) {
         break;
       } else {
         lock.unlock();
@@ -79,9 +79,9 @@ class ParallelExecutor {
         break;  // finalized, exit
       }
       // initialized and not finalized. Do work.
-      if (!queue.empty()) {
-        auto task = queue.front();
-        queue.pop_front();
+      if (!task_queue.empty()) {
+        auto task = task_queue.front();
+        task_queue.pop_front();
         lock.unlock();
         // Run the task
         task();
@@ -95,7 +95,7 @@ class ParallelExecutor {
   ExecutorStatus status;
 
   std::vector<std::thread> threads;
-  std::deque<TaskType> queue;
+  std::deque<TaskType> task_queue;
 };
 
 class KernelLaunchRecord {

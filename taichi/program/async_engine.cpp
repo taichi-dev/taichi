@@ -51,9 +51,6 @@ void ExecutionQueue::synchronize() {
   while (!task_queue.empty()) {
     auto ker = task_queue.front();
     auto h = hash(ker.stmt);
-    if (compiled_func.find(h) == compiled_func.end()) {
-      compiled_func[h] = CodeGenCPU(ker.kernel, ker.stmt).codegen();
-    }
     compiled_func[h](ker.context);
     task_queue.pop_front();
   }

@@ -47,7 +47,8 @@ struct CompiledProgram {
 
   void add(const std::string &kernel_name,
            const std::string &kernel_source_code,
-           int num_groups, RangeSizeEvaluator rse,
+           int num_groups,
+           RangeSizeEvaluator rse,
            const UsedFeature &used);
   void launch(Context &ctx, GLSLLauncher *launcher) const;
 };

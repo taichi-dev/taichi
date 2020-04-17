@@ -284,12 +284,11 @@ void initialize_opengl() {
 }
 
 namespace {
-  bool my_starts_with(std::string const &str, std::string const &pre)
-  {
-    return str.length() > pre.length() &&
-      !memcmp(str.c_str(), pre.c_str(), pre.length());
-  }
+bool my_starts_with(std::string const &str, std::string const &pre) {
+  return str.length() > pre.length() &&
+         !memcmp(str.c_str(), pre.c_str(), pre.length());
 }
+}  // namespace
 
 struct CompiledKernel {
   std::string kernel_name;
@@ -305,17 +304,19 @@ struct CompiledKernel {
 
   explicit CompiledKernel(const std::string &kernel_name_,
                           const std::string &kernel_source_code,
-                          int num_groups_, RangeSizeEvaluator rse_,
+                          int num_groups_,
+                          RangeSizeEvaluator rse_,
                           const UsedFeature &used_)
       : kernel_name(kernel_name_),
         glsl(std::make_unique<GLProgram>(GLShader(kernel_source_code))),
-        num_groups(num_groups_), rse(std::move(rse_)),
+        num_groups(num_groups_),
+        rse(std::move(rse_)),
         used(used_) {
     glsl->link();
     if (!my_starts_with(kernel_name, "snode_") &&
         !my_starts_with(kernel_name, "tensor_"))
       TI_DEBUG("source of kernel [{}] * {}:\n{}", kernel_name, num_groups,
-          kernel_source_code);
+               kernel_source_code);
 #ifdef _GLSL_DEBUG
     std::ofstream(fmt::format("/tmp/{}.comp", kernel_name))
         .write(kernel_source_code.c_str(), kernel_source_code.size());
@@ -356,7 +357,8 @@ struct CompiledProgram::Impl {
 
   void add(const std::string &kernel_name,
            const std::string &kernel_source_code,
-           int num_groups, RangeSizeEvaluator rse,
+           int num_groups,
+           RangeSizeEvaluator rse,
            const UsedFeature &used) {
     kernels.push_back(std::make_unique<CompiledKernel>(
         kernel_name, kernel_source_code, num_groups, std::move(rse), used));
@@ -402,7 +404,7 @@ struct CompiledProgram::Impl {
       auto guard = launcher->create_launch_guard(iov);
       for (const auto &ker : kernels) {
         if (ker->rse.has_value()) {
-          auto *gtmp_now = guard.map_buffer(1); // TODO: RAII
+          auto *gtmp_now = guard.map_buffer(1);  // TODO: RAII
           ker->num_groups = ker->rse->eval((const void *)gtmp_now);
           guard.unmap_buffer(1);
         }
@@ -500,7 +502,8 @@ struct CompiledProgram::Impl {
 
   void add(const std::string &kernel_name,
            const std::string &kernel_source_code,
-           int num_groups, RangeSizeEvaluator rse,
+           int num_groups,
+           RangeSizeEvaluator rse,
            const UsedFeature &used) {
     TI_NOT_IMPLEMENTED;
   }
@@ -558,7 +561,8 @@ CompiledProgram::~CompiledProgram() = default;
 
 void CompiledProgram::add(const std::string &kernel_name,
                           const std::string &kernel_source_code,
-                          int num_groups, RangeSizeEvaluator rse,
+                          int num_groups,
+                          RangeSizeEvaluator rse,
                           const UsedFeature &used) {
   impl->add(kernel_name, kernel_source_code, num_groups, std::move(rse), used);
 }

@@ -5,6 +5,7 @@
 #include "taichi/program/kernel.h"
 #include "taichi/program/program.h"
 #include "taichi/codegen/codegen_cpu.h"
+#include "taichi/common/testing.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -33,8 +34,6 @@ void ExecutionQueue::synchronize() {
   while (!task_queue.empty()) {
     auto ker = task_queue.front();
     std::string serialized;
-    irpass::re_id(ker.stmt);
-    irpass::print(ker.stmt);
     auto h = hash(ker.stmt);
     if (compiled_func.find(h) == compiled_func.end()) {
       compiled_func[h] = CodeGenCPU(ker.kernel, ker.stmt).codegen();

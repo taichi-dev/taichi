@@ -359,7 +359,7 @@ struct CompiledProgram::Impl {
            int num_groups, RangeSizeEvaluator rse,
            const UsedFeature &used) {
     kernels.push_back(std::make_unique<CompiledKernel>(
-        kernel_name, kernel_source_code, num_groups, rse, used));
+        kernel_name, kernel_source_code, num_groups, std::move(rse), used));
   }
 
   void launch(Context &ctx, GLSLLauncher *launcher) const {
@@ -401,9 +401,9 @@ struct CompiledProgram::Impl {
     {
       auto guard = launcher->create_launch_guard(iov);
       for (const auto &ker : kernels) {
-        if (ker->rse.has_value()) {
-          auto gtm_now = guard.map_buffer(1); // TODO: RAII
-          ker->num_groups = (*ker->rse)((const char *)gtm_now);
+        if (ker->rse != nullptr) {
+          auto *gtmp_now = guard.map_buffer(1); // TODO: RAII
+          ker->num_groups = ker->rse((const void *)gtmp_now);
           guard.unmap_buffer(1);
         }
         ker->launch();
@@ -560,7 +560,7 @@ void CompiledProgram::add(const std::string &kernel_name,
                           const std::string &kernel_source_code,
                           int num_groups, RangeSizeEvaluator rse,
                           const UsedFeature &used) {
-  impl->add(kernel_name, kernel_source_code, num_groups, rse, used);
+  impl->add(kernel_name, kernel_source_code, num_groups, std::move(rse), used);
 }
 
 void CompiledProgram::launch(Context &ctx, GLSLLauncher *launcher) const {

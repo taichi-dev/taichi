@@ -184,7 +184,7 @@ class KernelGen : public IRVisitor {
     line_appender_.clear_all();
     num_threads_ = 1;
     num_groups_ = 1;
-    range_size_evaluator_ = std::nullopt;
+    range_size_evaluator_ = nullptr;
   }
 
   void visit(Block *stmt) override {
@@ -534,25 +534,7 @@ class KernelGen : public IRVisitor {
       emit("int _itv = {} + _tid * {};", begin_value, 1 /* stmt->step? */);
       stmt->body->accept(this);
     } else {{
-
       ScopedIndent _s(line_appender_);
-#if 0
-      emit("// range known at runtime");
-      num_threads_ = 1; // TODO: grid-stride-loop
-      auto begin_expr = stmt->const_begin ? std::to_string(stmt->begin_value)
-        : fmt::format("_gtmp_i32_[{} >> 2]", stmt->begin_offset);
-      auto end_expr = stmt->const_end ? std::to_string(stmt->end_value)
-        : fmt::format("_gtmp_i32_[{} >> 2]", stmt->end_offset);
-      emit("int _tid = int(gl_GlobalInvocationID.x);");
-      emit("if (_tid >= {}) return;", num_threads_);
-      emit("int _beg = {}, _end = {};", begin_expr, end_expr);
-      emit("for (int _itv = _beg; _itv < _end; _itv++) {{");
-      {
-        ScopedIndent _s(line_appender_);
-        stmt->body->accept(this);
-      }
-      emit("}}\n");
-#else
       emit("// range known at runtime");
       auto begin_expr = stmt->const_begin ? std::to_string(stmt->begin_value)
         : fmt::format("_gtmp_i32_[{} >> 2]", stmt->begin_offset);
@@ -569,16 +551,14 @@ class KernelGen : public IRVisitor {
         stmt->const_end ? stmt->end_value : stmt->end_offset,
         (size_t)opengl_get_threads_per_group(),
       };
-      range_size_evaluator_ = std::make_optional<_RangeSizeEvaluator>(
-          [rinfo](const char *gtmp) -> size_t {
+      range_size_evaluator_ = [rinfo](const void *gtmp) -> size_t {
             size_t beg, end;
-            beg = rinfo[0] ? rinfo[2] : *(const int *)(gtmp + rinfo[2]);
-            end = rinfo[1] ? rinfo[3] : *(const int *)(gtmp + rinfo[3]);
+            beg = rinfo[0] ? rinfo[2] : *(const int *)((const char *)gtmp + rinfo[2]);
+            end = rinfo[1] ? rinfo[3] : *(const int *)((const char *)gtmp + rinfo[3]);
             return std::max((end - beg + rinfo[4] - 1) / rinfo[4], (size_t)1);
-          });
+          };
 
       }stmt->body->accept(this);
-#endif
     }
 
     emit("}}\n");

@@ -21,8 +21,7 @@ int opengl_get_threads_per_group();
 #include "taichi/inc/opengl_extension.inc.h"
 #undef PER_OPENGL_EXTENSION
 
-using _RangeSizeEvaluator = std::function<size_t(const char *)>;
-using RangeSizeEvaluator = std::optional<_RangeSizeEvaluator>;
+using RangeSizeEvaluator = std::function<size_t(const void *)>;
 
 struct CompiledProgram {
   struct Impl;

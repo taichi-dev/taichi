@@ -483,7 +483,7 @@ void Program::finalize() {
 #endif
   finalized = true;
   num_instances -= 1;
-  TI_ERROR("Program ({}) finalized.", fmt::ptr(this));
+  TI_TRACE("Program ({}) finalized.", fmt::ptr(this));
 }
 
 void Program::launch_async(Kernel *kernel) {

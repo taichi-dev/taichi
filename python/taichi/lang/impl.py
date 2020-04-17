@@ -162,8 +162,7 @@ class PyTaichi:
 
     def create_program(self):
         if self.prog is None:
-            print("Creating program")
-            self.prog = taichi_lang_core.create_program()
+            self.prog = taichi_lang_core.Program()
 
     def materialize(self):
         if self.materialized:
@@ -184,7 +183,6 @@ class PyTaichi:
 
     def clear(self):
         if self.prog:
-            assert False
             self.prog.finalize()
             self.prog = None
         Expr.materialize_layout_callback = None

@@ -280,9 +280,6 @@ class JITSessionCPU : public JITSession {
       module_pass_manager.run(*module);
     }
 
-    TI_P(&current_program);
-    TI_P(&get_current_program());
-
     if (get_current_program().config.print_kernel_llvm_ir_optimized) {
       TI_INFO("Functions with > 100 instructions in optimized LLVM IR:");
       static int counter = 0;

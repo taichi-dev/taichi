@@ -16,12 +16,6 @@ class ParallelExecutor {
  public:
   using TaskType = std::function<void()>;
 
-  enum class ExecutorStatus {
-    uninitialized,
-    initialized,
-    finalized,
-  };
-
   explicit ParallelExecutor(int num_threads)
       : num_threads(num_threads), status(ExecutorStatus::uninitialized) {
     auto _ = std::lock_guard<std::mutex>(mut);
@@ -66,6 +60,12 @@ class ParallelExecutor {
   }
 
  private:
+  enum class ExecutorStatus {
+    uninitialized,
+    initialized,
+    finalized,
+  };
+
   void task() {
     TI_DEBUG("Starting worker thread.");
     while (true) {
@@ -112,12 +112,12 @@ class ExecutionQueue {
  public:
   std::deque<KernelLaunchRecord> task_queue;
 
-  std::vector<std::thread> compilation_workers;  // parallel
-  std::thread launch_worker;                     // serial
+  ParallelExecutor compilation_workers;  // parallel compilation
+  std::thread launch_worker;             // serial launching
 
   std::unordered_map<uint64, FunctionType> compiled_func;
 
-  ExecutionQueue() {
+  ExecutionQueue() : compilation_workers(4) { // TODO: remove 4
   }
 
   void enqueue(KernelLaunchRecord ker);

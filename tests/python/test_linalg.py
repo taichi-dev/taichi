@@ -143,3 +143,23 @@ def test_unit_vectors():
     for i in range(3):
         for j in range(3):
             assert a[i][j] == int(i == j)
+
+
+@ti.all_archs
+def test_init_matrix_from_vectors():
+    a = ti.Matrix(3, 3, dt=ti.f32, shape=(3))
+
+    @ti.kernel
+    def fill():
+        for i in range(3):
+            b = ti.Vector([1.0,4.0,7.0])
+            c = ti.Vector([2.0,5.0,8.0])
+            d = ti.Vector([3.0,6.0,9.0])
+            a[i] = ti.Matrix([b,c,d])
+
+    fill()
+
+    for j in range(3):
+        for i in range(3):
+            print( a[0][i,j])
+            assert a[0][i,j] == int(i + 3*j + 1)

@@ -38,7 +38,7 @@ void OpenglStructCompiler::generate_types(const SNode &snode) {
     emit("#define {} const int", class_name);
     std::string stride_str;
     size_t stride_num = 0;
-    auto &gimme = class_get_map_[snode.node_type_name];
+    auto &gimme = class_get_map_.at(snode.node_type_name);
     gimme.clear();
     for (int i = 0; i < (int)snode.ch.size(); i++) {
       const auto &ch_node_name = snode.ch[i]->node_type_name;
@@ -47,13 +47,13 @@ void OpenglStructCompiler::generate_types(const SNode &snode) {
              ch_node_name);
         gimme.push_back(0);
         stride_str = ch_node_name + "_stride";
-        stride_num = stride_map_[ch_node_name];
+        stride_num = stride_map_.at(ch_node_name);
       } else {
         emit("#define {}_get{}(a_) ((a_) + {}) // {}", snode.node_type_name, i,
              stride_num, ch_node_name);
         gimme.push_back(stride_num);
         stride_str += " + " + ch_node_name + "_stride";
-        stride_num += stride_map_[ch_node_name];
+        stride_num += stride_map_.at(ch_node_name);
       }
     }
     if (stride_str.empty()) {
@@ -81,12 +81,13 @@ void OpenglStructCompiler::generate_types(const SNode &snode) {
         stride_map_[node_name + "_ch"] * length_map_[node_name];
     emit("#define {}_children(a_, i) ((a_) + {}_ch_stride * (i))", node_name,
          node_name);
-    class_children_map_[node_name] = stride_map_[node_name + "_ch"];
+    class_children_map_[node_name] = stride_map_.at(node_name + "_ch");
   } else {
     TI_ERROR("SNodeType={} not supported on OpenGL",
              snode_type_name(snode.type));
     TI_NOT_IMPLEMENTED;
   }
+  TI_INFO("SSRC:\n{}", src_code_);
 }
 
 size_t OpenglStructCompiler::compute_snode_size(const SNode &sn) {

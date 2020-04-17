@@ -7,16 +7,16 @@
 
 **Taichi** (太极) is a programming language designed for *high-performance computer graphics*. It is deeply embedded in **Python**, and its **just-in-time compiler** offloads compute-intensive tasks to multi-core CPUs and massively parallel GPUs.
 
-<a href="https://github.com/taichi-dev/taichi/blob/master/examples/fractal.py#L1-L31"> <img src="https://github.com/yuanming-hu/public_files/raw/master/graphics/taichi/fractal_code.png" height="280px"></a>  <img src="https://raw.githubusercontent.com/yuanming-hu/public_files/master/graphics/taichi/fractal_small.gif" height="280px">
+<a href="https://github.com/taichi-dev/taichi/blob/master/examples/fractal.py#L1-L31"> <img src="https://github.com/yuanming-hu/public_files/raw/master/graphics/taichi/fractal_code.png" height="293px"></a>  <img src="https://raw.githubusercontent.com/yuanming-hu/public_files/master/graphics/taichi/fractal_small.gif" height="293px">
 
 
 Advanced features of Taichi include [spatially sparse computing](https://taichi.readthedocs.io/en/latest/sparse.html) and [differentiable programming](https://taichi.readthedocs.io/en/latest/differentiable_programming.html) [[examples]](https://github.com/yuanming-hu/difftaichi).
 
 ## Gallery
 
-<img src="https://raw.githubusercontent.com/yuanming-hu/public_files/master/graphics/taichi/mpm128.gif" height="192px"> <img src="https://raw.githubusercontent.com/yuanming-hu/public_files/master/graphics/taichi/stable_fluids.gif" height="192px"> <img src="https://raw.githubusercontent.com/yuanming-hu/public_files/master/graphics/taichi/sdf_renderer.jpg" height="192px"> <img src="https://raw.githubusercontent.com/yuanming-hu/public_files/master/graphics/taichi/sparse_grids.gif" height="192px"> 
+<a href="https://github.com/taichi-dev/taichi/blob/master/examples/mpm128.py"><img src="https://raw.githubusercontent.com/yuanming-hu/public_files/master/graphics/taichi/mpm128.gif" height="192px"></a> <a href="https://github.com/taichi-dev/taichi/blob/master/examples/stable_fluid.py"> <img src="https://raw.githubusercontent.com/yuanming-hu/public_files/master/graphics/taichi/stable_fluids.gif" height="192px"></a> <a href="https://github.com/taichi-dev/taichi/blob/master/examples/sdf_renderer.py"><img src="https://raw.githubusercontent.com/yuanming-hu/public_files/master/graphics/taichi/sdf_renderer.jpg" height="192px"></a> <a href="https://github.com/taichi-dev/taichi/blob/master/examples/taichi_sparse.py"><img src="https://raw.githubusercontent.com/yuanming-hu/public_files/master/graphics/taichi/sparse_grids.gif" height="192px"></a>
 
-<img src="https://raw.githubusercontent.com/yuanming-hu/public_files/master/graphics/taichi/lagrangian.gif" height="192px"> <img src="https://raw.githubusercontent.com/yuanming-hu/public_files/master/graphics/taichi/pbf.gif" height="192px"> <img src="https://raw.githubusercontent.com/yuanming-hu/public_files/master/graphics/taichi/game_of_life.gif" height="192px"> <img src="https://raw.githubusercontent.com/yuanming-hu/public_files/master/graphics/taichi/euler.gif" height="192px">
+<a href="https://github.com/taichi-dev/taichi/blob/master/examples/mpm_lagrangian_forces.py"><img src="https://raw.githubusercontent.com/yuanming-hu/public_files/master/graphics/taichi/lagrangian.gif" height="192px"></a> <a href="https://github.com/taichi-dev/taichi/blob/master/examples/pbf2d.py"><img src="https://raw.githubusercontent.com/yuanming-hu/public_files/master/graphics/taichi/pbf.gif" height="192px"></a> <a href="https://github.com/taichi-dev/taichi/blob/master/examples/game_of_life.py"><img src="https://raw.githubusercontent.com/yuanming-hu/public_files/master/graphics/taichi/game_of_life.gif" height="192px"></a> <a href="https://github.com/taichi-dev/taichi/blob/master/examples/euler.py"><img src="https://raw.githubusercontent.com/yuanming-hu/public_files/master/graphics/taichi/euler.gif" height="192px"></a>
 
 
 ## Installation [![Downloads](https://pepy.tech/badge/taichi-nightly)](https://pepy.tech/project/taichi-nightly)
@@ -48,9 +48,9 @@ The Taichi project was created by [Yuanming Hu (yuanming-hu)](https://github.com
  
 [KLozes](https://github.com/KLozes) and [Yu Fang (squarefk)](https://github.com/squarefk) have also made notable contributions. [[List of all contributors]](https://github.com/taichi-dev/taichi/graphs/contributors)
 
-We welcome any feedback and comments. If you would like to contribute to Taichi, please check out our [Contributor Guidelines](https://taichi.readthedocs.io/en/latest/contributor_guide.html).
+We welcome feedback and comments. If you would like to contribute to Taichi, please check out our [Contributor Guidelines](https://taichi.readthedocs.io/en/latest/contributor_guide.html).
 
-If you use `taichi` in your research, please cite our papers:
+If you use Taichi in your research, please cite our papers:
 
 - [**(SIGGRAPH Asia 2019) Taichi: High-Performance Computation on Sparse Data Structures**](http://taichi.graphics/wp-content/uploads/2019/09/taichi_lang.pdf) [[Video]](https://youtu.be/wKw8LMF3Djo) [[BibTex]](https://raw.githubusercontent.com/yuanming-hu/taichi/master/misc/taichi_bibtex.txt) [[Code]](https://github.com/taichi-dev/taichi)
 - [**(ICLR 2020) DiffTaichi: Differentiable Programming for Physical Simulation**](https://arxiv.org/abs/1910.00935) [[Video]](https://www.youtube.com/watch?v=Z1xvAZve9aE) [[BibTex]](https://raw.githubusercontent.com/yuanming-hu/taichi/master/misc/difftaichi_bibtex.txt) [[Code]](https://github.com/yuanming-hu/difftaichi)

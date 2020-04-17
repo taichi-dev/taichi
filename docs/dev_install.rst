@@ -28,7 +28,8 @@ Installing Depedencies
 
   .. code-block:: bash
 
-    sudo pacman -S ncurses5-compat-libs  # /usr/lib/libtinfo.so.5
+    sudo pacman -S yaourt
+    yaourt -S ncurses5-compat-libs  # /usr/lib/libtinfo.so.5
     wget https://archive.archlinux.org/packages/c/clang/clang-8.0.1-1-x86_64.pkg.tar.xz
     sudo pacman -Qp clang-8.0.1-1-x86_64.pkg.tar.xz
 

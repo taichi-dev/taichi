@@ -9,9 +9,11 @@ N = 512 # grid resolution
 CFL = .8
 IC_type = 0  # 0:sod
 BC_type = 0 # 0:walls
-img_field = 0 # 0:density, 1: schlieren, 2:vorticity, 3: velocity mag, 4: temperature
+img_field = 1 # 0:density, 1: schlieren, 2:vorticity, 3: velocity mag
 res = 1024  # gui resolution
-cmap_name = 'magma_r' # python colormap
+cmap_name = 'jet' # python colormap
+use_fixed_caxis = 0 # 1: use fixed caxis limits, 0: automatic caxis limits
+fixed_caxis = [0.0, 5.0] # fixed caxis limits
 
 
 Q = ti.Vector(4, dt=real, shape=(N,N)) # [rho, rho*u, rho*v, rho*e] consv vars
@@ -249,16 +251,25 @@ def paint():
         ii = min(max(1,i*N//res),N-2)
         jj = min(max(1,j*N//res),N-2)
         if img_field == 0: # density
-            img[i,j] = Q[ii,jj][0]/5
+            img[i,j] = Q[ii,jj][0]
         elif img_field == 1: # numerical schlieren
-            img[i,j] = ti.log(ti.sqrt(((Q[ii+1,jj][0]-Q[ii-1,jj][0])/h)**2 + ((Q[ii,jj+1][0]-Q[ii,jj-1][0])/h)**2))
+            img[i,j] = ti.sqrt(((Q[ii+1,jj][0]-Q[ii-1,jj][0])/h)**2 + ((Q[ii,jj+1][0]-Q[ii,jj-1][0])/h)**2)
         elif img_field == 2: # vorticity
             img[i,j] = (Q[ii+1,jj][2]-Q[ii-1,jj][2])/h - (Q[ii,jj+1][1]-Q[ii,jj-1][1])/h
         elif img_field == 3: # velocity magnitude
             img[i,j] = ti.sqrt(Q[ii,jj][1]**2 + Q[ii,jj][2]**2)
-        elif img_field == 3: # temperature
-            w = q_to_w(Q[ii,jj])
-            img[i,j] = w[0]/(Q[ii,jj][0]*287.0)
+
+    max = -1.0e10
+    min = 1.0e10
+    for i,j in img:
+        max = ti.atomic_max(max,img[i,j])
+        min = ti.atomic_min(min,img[i,j])
+
+    for i,j in img:
+        if use_fixed_caxis:
+            min = fixed_caxis[0]
+            max = fixed_caxis[1]
+        img[i,j] = (img[i,j]-min)/(max-min)
 
 
 gui = ti.GUI('Euler Equations', (res, res))

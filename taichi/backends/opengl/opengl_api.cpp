@@ -540,11 +540,11 @@ GLSLLaunchGuard::~GLSLLaunchGuard() {
   TI_NOT_IMPLEMENTED;
 }
 
-void *GLSLLaunchGuard::map_buffer() {
+void *GLSLLaunchGuard::map_buffer(size_t idx) {
   TI_NOT_IMPLEMENTED;
 }
 
-void GLSLLaunchGuard::unmap_buffer() {
+void GLSLLaunchGuard::unmap_buffer(size_t idx) {
   TI_NOT_IMPLEMENTED;
 }
 

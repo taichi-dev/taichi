@@ -815,6 +815,10 @@ void SNodeOpExpression::flatten(VecStatement &ret) {
   stmt = ret.back().get();
 }
 
+std::unique_ptr<ConstStmt> ConstStmt::copy() {
+  return std::make_unique<ConstStmt>(val);
+}
+
 For::For(const Expr &s, const Expr &e, const std::function<void(Expr)> &func) {
   auto i = Expr(std::make_shared<IdExpression>());
   auto stmt_unique = std::make_unique<FrontendForStmt>(i, s, e);

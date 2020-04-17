@@ -1622,6 +1622,8 @@ class ConstStmt : public Stmt {
     return false;
   }
 
+  std::unique_ptr<ConstStmt> copy();
+
   TI_STMT_DEF_FIELDS(ret_type, val);
   DEFINE_ACCEPT
 };

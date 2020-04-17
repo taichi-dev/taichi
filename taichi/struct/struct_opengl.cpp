@@ -30,7 +30,6 @@ void OpenglStructCompiler::collect_snodes(SNode &snode) {
   }
 }
 
-
 void OpenglStructCompiler::generate_types(const SNode &snode) {
   const bool is_place = snode.is_place();
   if (!is_place) {
@@ -42,13 +41,14 @@ void OpenglStructCompiler::generate_types(const SNode &snode) {
     for (int i = 0; i < (int)snode.ch.size(); i++) {
       smp.push_back(std::pair<int, SNode *>(i, snode.ch[i].get()));
     }
-    std::sort(smp.begin(), smp.end(), [this](const std::pair<int, SNode *> &a,
-          const std::pair<int, SNode *> &b) {
-      return stride_map_.at(a.second->node_type_name)
-           < stride_map_.at(b.second->node_type_name);
-    });
-    for (auto &&[i, ch]: smp) {
-    //for (int i = 0; i < (int)snode.ch.size(); i++) {
+    std::sort(smp.begin(), smp.end(),
+              [this](const std::pair<int, SNode *> &a,
+                     const std::pair<int, SNode *> &b) {
+                return stride_map_.at(a.second->node_type_name) <
+                       stride_map_.at(b.second->node_type_name);
+              });
+    for (auto &&[i, ch] : smp) {
+      // for (int i = 0; i < (int)snode.ch.size(); i++) {
       gimme[i] = stride_num;
       stride_num += stride_map_.at(ch->node_type_name);
     }

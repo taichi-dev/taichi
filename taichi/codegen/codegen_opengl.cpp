@@ -108,7 +108,7 @@ class KernelGen : public IRVisitor {
       emit("  {}();", glsl_kernel_name_);
     emit("}}");
 
-    auto root_size = "";//struct_compiled_->root_size;
+    auto root_size = "";  // struct_compiled_->root_size;
     // clang-format off
     std::string kernel_header = fmt::format(
         "layout(packed, binding = 0) buffer data_i32 {{ int _states_[2]; int _data_i32_[{}]; }};\n"
@@ -432,9 +432,10 @@ class KernelGen : public IRVisitor {
     auto dt = stmt->dest->element_type();
     if (dt == DataType::i32 ||
         (opengl_has_GL_NV_shader_atomic_int64 && dt == DataType::i64) ||
-        ((stmt->op_type == AtomicOpType::add || stmt->op_type == AtomicOpType::sub) &&
-        ((opengl_has_GL_NV_shader_atomic_float && dt == DataType::f32) ||
-        (opengl_has_GL_NV_shader_atomic_float64 && dt == DataType::f64)))) {
+        ((stmt->op_type == AtomicOpType::add ||
+          stmt->op_type == AtomicOpType::sub) &&
+         ((opengl_has_GL_NV_shader_atomic_float && dt == DataType::f32) ||
+          (opengl_has_GL_NV_shader_atomic_float64 && dt == DataType::f64)))) {
       emit("{} {} = {}(_{}_{}_[{} >> {}], {});",
            opengl_data_type_name(stmt->val->element_type()), stmt->short_name(),
            opengl_atomic_op_type_cap_name(stmt->op_type),

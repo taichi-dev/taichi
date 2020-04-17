@@ -293,15 +293,15 @@ bool my_starts_with(std::string const &str, std::string const &pre) {
 }  // namespace
 
 std::string display_kernel_info(std::string const &kernel_name,
-    std::string const &kernel_source_code, int num_groups)
-{
+                                std::string const &kernel_source_code,
+                                int num_groups) {
   if (!my_starts_with(kernel_name, "snode_") &&
       !my_starts_with(kernel_name, "tensor_"))
     TI_DEBUG("source of kernel [{}] * {}:\n{}", kernel_name, num_groups,
-        kernel_source_code);
+             kernel_source_code);
 #ifdef _GLSL_DEBUG
   std::ofstream(fmt::format("/tmp/{}.comp", kernel_name))
-    .write(kernel_source_code.c_str(), kernel_source_code.size());
+      .write(kernel_source_code.c_str(), kernel_source_code.size());
 #endif
   return kernel_name;
 }
@@ -323,8 +323,8 @@ struct CompiledKernel {
                           int num_groups_,
                           RangeSizeEvaluator rse_,
                           const UsedFeature &used_)
-      : kernel_name(display_kernel_info(kernel_name_,
-            kernel_source_code, num_groups_)),
+      : kernel_name(
+            display_kernel_info(kernel_name_, kernel_source_code, num_groups_)),
         glsl(std::make_unique<GLProgram>(GLShader(kernel_source_code))),
         num_groups(num_groups_),
         rse(std::move(rse_)),

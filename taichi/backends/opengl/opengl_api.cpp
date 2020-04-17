@@ -309,7 +309,7 @@ struct CompiledKernel {
                           const UsedFeature &used_)
       : kernel_name(kernel_name_),
         glsl(std::make_unique<GLProgram>(GLShader(kernel_source_code))),
-        num_groups(num_groups_), rse(rse_),
+        num_groups(num_groups_), rse(std::move(rse_)),
         used(used_) {
     glsl->link();
     if (!my_starts_with(kernel_name, "snode_") &&

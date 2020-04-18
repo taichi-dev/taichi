@@ -4,7 +4,7 @@ from taichi import approx
 
 
 @ti.all_archs
-def _test_transpose():
+def test_transpose():
     dim = 3
     m = ti.Matrix(dim, dim, ti.f32)
 
@@ -66,7 +66,7 @@ def _test_polar_decomp(dim, dt):
             assert D(i, j)[None] == approx(0, abs=tol)
 
 
-def _test_polar_decomp():
+def test_polar_decomp():
     for dim in [2, 3]:
         for dt in [ti.f32, ti.f64]:
 
@@ -78,7 +78,7 @@ def _test_polar_decomp():
 
 
 @ti.all_archs
-def _test_matrix():
+def test_matrix():
     x = ti.Matrix(2, 2, dt=ti.i32)
 
     @ti.layout
@@ -124,13 +124,13 @@ def _test_mat_inverse_size(n):
     np.testing.assert_almost_equal(m_np, np.linalg.inv(M))
 
 
-def _test_mat_inverse():
+def test_mat_inverse():
     for n in range(1, 5):
         _test_mat_inverse_size(n)
 
 
 @ti.all_archs
-def _test_unit_vectors():
+def test_unit_vectors():
     a = ti.Vector(3, dt=ti.i32, shape=3)
 
     @ti.kernel

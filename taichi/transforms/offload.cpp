@@ -443,8 +443,7 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
     auto op = stmt->operand(index);
     if (op == nullptr)
       return false;
-    if (stmt_to_offloaded[stmt] ==
-        stmt_to_offloaded[op])  // same OffloadedStmt
+    if (stmt_to_offloaded[stmt] == stmt_to_offloaded[op])  // same OffloadedStmt
       return false;
     if (advanced_optimization) {
       if (op->is<ConstStmt>()) {

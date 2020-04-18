@@ -134,16 +134,16 @@ class GUI:
     class EventFilter:
 
         def __init__(self, *filter):
-            self.types = []
-            self.keys = []
-            self.combs = []
+            self.types = set()
+            self.keys = set()
+            self.combs = set()
             for ent in filter:
                 if isinstance(ent, (tuple, list)):
-                    self.combs.append(tuple(ent))
+                    self.combs.add(tuple(ent))
                 elif ent in [GUI.PRESS, GUI.RELEASE]:
-                    self.types.append(ent)
+                    self.types.add(ent)
                 else:
-                    self.keys.append(ent)
+                    self.keys.add(ent)
 
         def match(self, e):
             if (e.type, e.key) in self.combs:

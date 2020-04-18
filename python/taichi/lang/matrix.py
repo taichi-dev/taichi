@@ -50,7 +50,7 @@ class Matrix:
         elif isinstance(n, list):
             if n == []:
                 mat = []
-            elif not isinstance(n[0], list) and not isinstance(n[0], Matrix):
+            elif not isinstance(n[0], list):
                 if impl.get_runtime().inside_kernel:
                     # wrap potential constants with Expr
                     if keep_raw:
@@ -65,15 +65,10 @@ class Matrix:
                 mat = n
             self.n = len(mat)
             if len(mat) > 0:
-                if isinstance(n[0], Matrix):
-                    self.m = mat[0].n
-                    self.entries = [row(i) for row in mat for i in range(row.n)]
-                else:
-                    self.m = len(mat[0])
-                    self.entries = [x for row in mat for x in row]
+                self.m = len(mat[0])
             else:
                 self.m = 1
-                self.entries = [x for row in mat for x in row]
+            self.entries = [x for row in mat for x in row]
         else:
             self.entries = []
             self.n = n

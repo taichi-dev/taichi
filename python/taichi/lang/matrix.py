@@ -41,7 +41,8 @@ class Matrix:
                 self.m = len(rows[0])
                 self.entries = [x for row in rows for x in row]
             else:
-                raise Exception('rows/cols must be list of lists or list of vectors')
+                raise Exception(
+                    'rows/cols must be list of lists or list of vectors')
             if cols is not None:
                 t = self.transposed(self)
                 self.n = t.n
@@ -60,7 +61,8 @@ class Matrix:
                 else:
                     mat = [[x] for x in n]
             elif isinstance(n[0], Matrix):
-                raise Exception('cols/rows required when using list of vectors')
+                raise Exception(
+                    'cols/rows required when using list of vectors')
             else:
                 mat = n
             self.n = len(mat)

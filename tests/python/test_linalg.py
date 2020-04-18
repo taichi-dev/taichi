@@ -155,19 +155,21 @@ def test_init_matrix_from_vectors():
     @ti.kernel
     def fill():
         for i in range(3):
-            a = ti.Vector([1.0,4.0,7.0])
-            b = ti.Vector([2.0,5.0,8.0])
-            c = ti.Vector([3.0,6.0,9.0])
-            m1[i] = ti.Matrix(rows=[a,b,c])
-            m2[i] = ti.Matrix(cols=[a,b,c])
-            m3[i] = ti.Matrix(rows=[[1.0,4.0,7.0],[2.0,5.0,8.0],[3.0,6.0,9.0]])
-            m4[i] = ti.Matrix(cols=[[1.0,4.0,7.0],[2.0,5.0,8.0],[3.0,6.0,9.0]])
+            a = ti.Vector([1.0, 4.0, 7.0])
+            b = ti.Vector([2.0, 5.0, 8.0])
+            c = ti.Vector([3.0, 6.0, 9.0])
+            m1[i] = ti.Matrix(rows=[a, b, c])
+            m2[i] = ti.Matrix(cols=[a, b, c])
+            m3[i] = ti.Matrix(
+                rows=[[1.0, 4.0, 7.0], [2.0, 5.0, 8.0], [3.0, 6.0, 9.0]])
+            m4[i] = ti.Matrix(
+                cols=[[1.0, 4.0, 7.0], [2.0, 5.0, 8.0], [3.0, 6.0, 9.0]])
 
     fill()
 
     for j in range(3):
         for i in range(3):
-            assert m1[0][i,j] == int(i + 3*j + 1)
-            assert m2[0][j,i] == int(i + 3*j + 1)
-            assert m3[0][i,j] == int(i + 3*j + 1)
-            assert m4[0][j,i] == int(i + 3*j + 1)
+            assert m1[0][i, j] == int(i + 3 * j + 1)
+            assert m2[0][j, i] == int(i + 3 * j + 1)
+            assert m3[0][i, j] == int(i + 3 * j + 1)
+            assert m4[0][j, i] == int(i + 3 * j + 1)

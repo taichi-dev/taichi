@@ -81,14 +81,13 @@ As a temporary local variable
         a = ti.Matrix([[2, 3], [4, 5])
 
 
-.. function:: ti.Matrix(rows=[v0, v1, v2])
+.. function:: ti.Matrix(rows=[v0, v1, v2, ...])
 
-    :parameter x: (scalar) the first component of the first row
-    :parameter y: (scalar) the second component of the first row
-    :parameter z: (scalar) the first component of the second row
-    :parameter w: (scalar) the second component of the second row
+    :parameter v0: (vector) vector of elements forming first row (or column)
+    :parameter v1: (vector) vector of elements forming second row (or column)
+    :parameter v2: (vector) vector of elements forming third row (or column)
 
-    For example, this creates a 3x3 matrix by concactinating vectors into rows:
+    For example, this creates a 3x3 matrix by concactinating vectors into rows (or columns):
     ::
 
         # Taichi-scope
@@ -102,7 +101,8 @@ As a temporary local variable
         # to specify data in columns instead
         a = ti.Matrix(cols=[v0, v1, v2])
 
-
+        # lists can be used instead of vectors
+        a = ti.Matrix(rows=[[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]])
 
 
 Accessing components
@@ -129,12 +129,12 @@ As global tensors of vectors
 
 .. note::
 
-    **Always** use two pair of square brackets to access scalar elements from tensors of vectors.
+    **Always** use two pair of square brackets to access scalar elements from tensors of matrices.
 
-     - The indices in the first pair of brackets locate the vector index inside the tensor of vectors;
-     - The indices in the second pair of brackets locate the scalar element index inside the vector.
+     - The indices in the first pair of brackets locate the matrix inside the tensor of matrices;
+     - The indices in the second pair of brackets locate the scalar element inside the matrix.
 
-    For 0-D tensors of vectors, indices in the first pair of brackets should be ``[None]``.
+    For 0-D tensors of matrices, indices in the first pair of brackets should be ``[None]``.
 
 
 

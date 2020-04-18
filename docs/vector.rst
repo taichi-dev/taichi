@@ -71,8 +71,8 @@ As global tensors of vectors
 
     **Always** use two pair of square brackets to access scalar elements from tensors of vectors.
 
-     - The indices in the first pair of brackets locate the vector index inside the tensor of vectors;
-     - The indices in the second pair of brackets locate the scalar element index inside the vector.
+     - The indices in the first pair of brackets locate the vector inside the tensor of vectors;
+     - The indices in the second pair of brackets locate the scalar element inside the vector.
 
     For 0-D tensors of vectors, indices in the first pair of brackets should be ``[None]``.
 

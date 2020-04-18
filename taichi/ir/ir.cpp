@@ -278,6 +278,15 @@ bool Stmt::have_operand(Stmt *stmt) const {
   return false;
 }
 
+int Stmt::locate_operand(Stmt **stmt) {
+  for (int i = 0; i < num_operands(); i++) {
+    if (operands[i] == stmt) {
+      return i;
+    }
+  }
+  return -1;
+}
+
 std::string Expression::get_attribute(const std::string &key) const {
   if (auto it = attributes.find(key); it == attributes.end()) {
     TI_ERROR("Attribute {} not found.", key);

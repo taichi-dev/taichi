@@ -19,16 +19,45 @@ class Matrix:
     is_taichi_class = True
 
     def __init__(self,
-                 n,
+                 n=1,
                  m=1,
                  dt=None,
                  empty=False,
                  shape=None,
                  layout=None,
                  needs_grad=False,
-                 keep_raw=False):
+                 keep_raw=False,
+                 rows=None,
+                 cols=None):
         self.grad = None
-        if isinstance(n, list):
+        if rows is not None or cols is not None:
+            if rows is not None and cols is not None:
+                raise Exception("cannot specify both rows and columns")
+            if cols is not None:
+                rows = cols
+            self.n = len(rows)
+            if isinstance(rows[0], Matrix):
+                for row in rows:
+                    assert row.m == 1, "inputs must be vectors, ie. size n by 1"
+                    assert row.n == rows[
+                        0].n, "input vectors must be the same shape"
+                self.m = rows[0].n
+                self.entries = [row(i) for row in rows for i in range(row.n)]
+            elif isinstance(rows[0], list):
+                for row in rows:
+                    assert len(row) == len(
+                        rows[0]), "input lists must be the same shape"
+                self.m = len(rows[0])
+                self.entries = [x for row in rows for x in row]
+            else:
+                raise Exception(
+                    "rows/cols must be list of lists or lists of vectors")
+            if cols is not None:
+                t = self.transposed(self)
+                self.n = t.n
+                self.m = t.m
+                self.entries = t.entries
+        elif isinstance(n, list):
             if n == []:
                 mat = []
             elif not isinstance(n[0], list):
@@ -40,6 +69,9 @@ class Matrix:
                         mat = [list([expr.Expr(x)]) for x in n]
                 else:
                     mat = [[x] for x in n]
+            elif isinstance(n[0], Matrix):
+                raise Exception(
+                    'cols/rows required when using list of vectors')
             else:
                 mat = n
             self.n = len(mat)

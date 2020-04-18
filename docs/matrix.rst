@@ -22,7 +22,7 @@ TODO: doc here better like Vector. WIP
 A matrix in Taichi can have two forms:
 
   - as a temporary local variable. An ``n by m`` matrix consists of ``n * m`` scalar values.
-  - as a an element of a global tensor. In this case, the tensor is an ND array of ``n by m`` matrices.
+  - as a an element of a global tensor. In this case, the tensor is an N-dimensional array of ``n by m`` matrices.
 
 Declaration
 -----------
@@ -69,12 +69,12 @@ As a temporary local variable
 
 .. function:: ti.Matrix([[x, y, ...], [z, w, ...], ...])
 
-    :parameter x: (scalar) the first component of the first column
-    :parameter y: (scalar) the second component of the first column
-    :parameter z: (scalar) the first component of the second column
-    :parameter w: (scalar) the second component of the second column
+    :parameter x: (scalar) the first component of the first row
+    :parameter y: (scalar) the second component of the first row
+    :parameter z: (scalar) the first component of the second row
+    :parameter w: (scalar) the second component of the second row
 
-    For example, this creates a 2x2 matrix with components (2, 3) in the first column and (4, 5) in the second column:
+    For example, this creates a 2x2 matrix with components (2, 3) in the first row and (4, 5) in the second row:
     ::
 
         # Taichi-scope
@@ -118,14 +118,14 @@ As global tensors of vectors
     :parameter i: (scalar) row index of the matrix
     :parameter j: (scalar) column index of the matrix
 
-    This extracts the first component of vector ``a[6, 3]``:
+    This extracts the first element in matrix ``a[6, 3]``:
     ::
 
-        x = a[6, 3][0]
+        x = a[6, 3][0, 0]
 
         # or
-        vec = a[6, 3]
-        x = vec[0]
+        mat = a[6, 3]
+        x = mat[0, 0]
 
 .. note::
 

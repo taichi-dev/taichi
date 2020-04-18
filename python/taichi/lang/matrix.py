@@ -39,12 +39,14 @@ class Matrix:
             if isinstance(rows[0], Matrix):
                 for row in rows:
                     assert row.m == 1, "inputs must be vectors, ie. size n by 1"
-                    assert row.n == rows[0].n, "input vectors must be the same shape"
+                    assert row.n == rows[
+                        0].n, "input vectors must be the same shape"
                 self.m = rows[0].n
                 self.entries = [row(i) for row in rows for i in range(row.n)]
             elif isinstance(rows[0], list):
                 for row in rows:
-                    assert len(row) == len(rows[0]), "input lists must be the same shape"
+                    assert len(row) == len(
+                        rows[0]), "input lists must be the same shape"
                 self.m = len(rows[0])
                 self.entries = [x for row in rows for x in row]
             else:

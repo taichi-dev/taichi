@@ -139,7 +139,8 @@ class GUI:
             self.combs = set()
             for ent in filter:
                 if isinstance(ent, (tuple, list)):
-                    self.combs.add(tuple(ent))
+                    type, key = ent
+                    self.combs.add((type, key))
                 elif ent in [GUI.PRESS, GUI.RELEASE]:
                     self.types.add(ent)
                 else:

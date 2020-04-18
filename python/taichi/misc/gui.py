@@ -162,7 +162,7 @@ class GUI:
         while True:
             if not self.has_key_event():
                 return False
-            self.event = self.get_key_event()
+            self.event = self.pop_key_event()
             if filter is None or filter.match(self.event):
                 break
         return True
@@ -174,7 +174,7 @@ class GUI:
     def has_key_event(self):  # ABi
         return self.core.has_key_event()
 
-    def get_key_event(self):  # ABi
+    def pop_key_event(self):  # ABi
         self.core.wait_key_event()
         e = GUI.Event()
         e.key = self.core.get_key_event_head_key()
@@ -192,10 +192,10 @@ class GUI:
         self.core.pop_key_event_head()
         return e
 
-    def peek_key_event(self):
+    def get_key_event(self):
         e = None
         if self.has_key_event():
-            e = self.get_key_event()
+            e = self.pop_key_event()
         return e
 
     def is_pressed(self, *keys):
@@ -208,16 +208,16 @@ class GUI:
         else:
             return False
 
-    def peek_is_pressed(self, *keys):
-        self.peek_key_event()
+    def get_is_pressed(self, *keys):
+        self.get_key_event()
         return self.is_pressed(*keys)
 
-    def peek_key_pressed(self):
-        self.peek_key_event()
+    def get_key_pressed(self):
+        self.get_key_event()
         return self.key_pressed
 
     def has_key_pressed(self):  # Deprecated
-        return len(self.peek_key_pressed())
+        return len(self.get_key_pressed())
 
 
 def rgb_to_hex(c):

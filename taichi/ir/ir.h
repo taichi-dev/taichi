@@ -660,6 +660,7 @@ class Stmt : public IRNode {
 
   void set_operand(int i, Stmt *stmt);
   void register_operand(Stmt *&stmt);
+  int locate_operand(Stmt **stmt);
   void mark_fields_registered();
 
   virtual void rebuild_operands() {

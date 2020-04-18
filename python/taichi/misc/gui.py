@@ -149,24 +149,31 @@ class GUI:
         def match(self, e):
             if (e.type, e.key) in self.combs:
                 return True
-            if e.key in self.keys and e.key in self.combs:
-                return True
+            if not self.keys or e.key in self.keys:
+                if not self.combs or e.key in self.combs:
+                    return True
             return False
 
 
-    def get_event(self, *filter):
-        if not len(filter):
+    def get_events(self, *filter):
+        if not filter:
             filter = None
         elif not isinstance(filter[0], GUI.EventFilter):
             filter = GUI.EventFilter(*filter)
 
         while True:
             if not self.has_key_event():
-                return False
-            self.event = self.pop_key_event()
-            if filter is None or filter.match(self.event):
                 break
-        return True
+            e = self.pop_key_event()
+            print(e.key)
+            if filter is None or filter.match(e):
+                yield e
+
+    def get_event(self, *filter):
+        for e in self.get_events(*filter):
+            self.event = e
+            return True
+        return False
 
     def get_cursor_pos(self):  # ABi
         pos = self.core.get_cursor_pos()

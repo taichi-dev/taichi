@@ -15,7 +15,7 @@ def format(c):
     return f'{c.summary} (by **{c.author}**)'
 
 
-print('Notable changes:')
+print('Highlights:')
 
 notable_changes = {}
 all_changes = []
@@ -31,15 +31,15 @@ details = {
     'metal': 'Metal backend',
     'opengl': 'OpenGL backend',
     'misc': 'Miscellaneous',
-    'opt': 'Optimization',
+    'opt': 'IR optimization passes',
     'example': 'Examples',
     'pypi': 'PyPI package',
     'autodiff': 'Automatic differentiation',
     'gui': 'GUI',
     'llvm': 'LLVM backend (CPU and CUDA)',
+    'bug': 'Bug fixes',
 }
 
-print(f'- (, 2020) v{ver} released')
 for i, c in enumerate(commits):
     s = format(c)
     if s.startswith('[release]'):
@@ -69,9 +69,6 @@ for tag in sorted(notable_changes.keys()):
     print(f'   - **{details[tag]}**')
     for item in notable_changes[tag]:
         print(f'      - {item}')
-print(
-    f'   - [Full log](https://github.com/taichi-dev/taichi/releases/tag/{ver})'
-)
 print()
 
 print('Full changelog:')

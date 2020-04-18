@@ -22,7 +22,7 @@ Advanced features of Taichi include [spatially sparse computing](https://taichi.
 ## Installation [![Downloads](https://pepy.tech/badge/taichi-nightly)](https://pepy.tech/project/taichi-nightly)
 
 ```bash
-python3 -m pip install taichi
+python3 -m pip install taichi       # Latest version: 0.5.13
 ```
 **Supported OS**: Windows, Linux, Mac OS X; **Python**: 3.6, 3.7, 3.8; **Backends**: x64 CPUs, CUDA, Apple Metal.
 
@@ -45,8 +45,8 @@ The Taichi project was created by [Yuanming Hu (yuanming-hu)](https://github.com
  - [Ye Kuang (k-ye)](https://github.com/k-ye) (Apple Metal backend)
  - [彭于斌 (archibate)](https://github.com/archibate) (OpenGL Compute Shader backend)
  - [Mingkuan Xu (xumingkuan)](https://github.com/xumingkuan) (IR optimization & standardization)
- 
-[KLozes](https://github.com/KLozes) and [Yu Fang (squarefk)](https://github.com/squarefk) have also made notable contributions. [[List of all contributors]](https://github.com/taichi-dev/taichi/graphs/contributors)
+
+[Kenneth Lozes (KLozes)](https://github.com/KLozes) and [Yu Fang (squarefk)](https://github.com/squarefk) have also made notable contributions. [[List of all contributors]](https://github.com/taichi-dev/taichi/graphs/contributors)
 
 We welcome feedback and comments. If you would like to contribute to Taichi, please check out our [Contributor Guidelines](https://taichi.readthedocs.io/en/latest/contributor_guide.html).
 

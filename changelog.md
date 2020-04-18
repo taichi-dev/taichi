@@ -1,4 +1,5 @@
 # Changelog
+- After v0.5.12: [[Releases]](https://github.com/taichi-dev/taichi/releases)
 - (April 11, 2020) v0.5.11 released
    - **Automatic differentiation**
       - Fix floating-point type-cast gradients (#687) (by **Yuanming Hu**)

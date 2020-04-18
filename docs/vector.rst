@@ -5,9 +5,8 @@ Vectors
 
 A vector in Taichi can have two forms:
 
-  - as a temporary local variable, an ``n``-D vector consists of ``n`` scalar values.
-  - as a global tensor, where each tensor element is a vector. In this case, an ``n``-D vector consists of ``n`` global tensors of scalars.
-    The tensors of scalars, when treated together, can be considered to be **a global tensor of vectors**.
+  - as a temporary local variable. An ``n`` component vector consists of ``n`` scalar values.
+  - as an element of a global tensor. In this case, the tensor is an ND array of ``n`` component vectors
 
 Declaration
 -----------
@@ -21,7 +20,7 @@ As global tensors of vectors
     :parameter type: (DataType) data type of the components
     :parameter shape: (scalar or tuple) shape the tensor of vectors, see :ref:`tensor`
 
-    For example, this creates a 5x4 tensor of 3D vectors:
+    For example, this creates a 5x4 tensor of 3 component vectors:
     ::
 
         # Python-scope
@@ -57,7 +56,7 @@ As global tensors of vectors
     :parameter a: (Vector) the vector
     :parameter p: (scalar) index of the first tensor dimension
     :parameter q: (scalar) index of the second tensor dimension
-    :parameter i: (scalar) index of the vector dimension
+    :parameter i: (scalar) index of the vector component
 
     This extracts the first component of vector ``a[6, 3]``:
     ::
@@ -136,8 +135,8 @@ Methods
 
 .. function:: ti.cross(a, b)
 
-    :parameter a: (Vector, 3D)
-    :parameter b: (Vector, 3D)
+    :parameter a: (Vector, 3 component)
+    :parameter b: (Vector, 3 component)
     :return: (Vector, 3D) the cross product of ``a`` and ``b``
 
     We use right-handed coordinate system, E.g.,
@@ -163,7 +162,7 @@ Methods
         # c = [[1*4, 1*5, 1*6], [2*4, 2*5, 2*6], [3*4, 3*5, 3*6]]
 
 .. note::
-    This is not the same as `ti.cross`. ``a`` and ``b`` do not have to be 3D vectors.
+    This is not the same as `ti.cross`. ``a`` and ``b`` do not have to be 3 component vectors.
 
 
 .. function:: a.cast(dt)

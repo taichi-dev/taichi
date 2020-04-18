@@ -100,15 +100,13 @@ def reset():
 print("[Hint] Use WSAD/arrow keys to control gravity. Use left/right mouse bottons to attract/repel. Press R to reset.")
 gui = ti.GUI("Taichi MLS-MPM-128", res=512, background_color=0x112F41)
 reset()
-
 gravity[None] = [0, -1]
 
 for frame in range(20000):
-  while gui.has_key_event():
-    e = gui.get_key_event()
-    if e.type == ti.GUI.RELEASE: gravity[None] = [0, 0]
-    elif e.key == 'r': reset()
-    elif e.key == ti.GUI.ESCAPE: exit(0)
+  while gui.get_event(ti.GUI.PRESS):
+    if gui.event.key == 'r': reset()
+    elif gui.event.key == ti.GUI.ESCAPE: exit(0)
+  if gui.event is not None: gravity[None] = [0, 0] # if had any event
   if gui.is_pressed(ti.GUI.LEFT,  'a'): gravity[None][0] = -1
   if gui.is_pressed(ti.GUI.RIGHT, 'd'): gravity[None][0] = 1
   if gui.is_pressed(ti.GUI.UP,    'w'): gravity[None][1] = 1

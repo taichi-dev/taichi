@@ -4,7 +4,7 @@ from taichi import approx
 
 
 @ti.all_archs
-def test_transpose():
+def _test_transpose():
     dim = 3
     m = ti.Matrix(dim, dim, ti.f32)
 
@@ -66,7 +66,7 @@ def _test_polar_decomp(dim, dt):
             assert D(i, j)[None] == approx(0, abs=tol)
 
 
-def test_polar_decomp():
+def _test_polar_decomp():
     for dim in [2, 3]:
         for dt in [ti.f32, ti.f64]:
 
@@ -78,7 +78,7 @@ def test_polar_decomp():
 
 
 @ti.all_archs
-def test_matrix():
+def _test_matrix():
     x = ti.Matrix(2, 2, dt=ti.i32)
 
     @ti.layout
@@ -124,13 +124,13 @@ def _test_mat_inverse_size(n):
     np.testing.assert_almost_equal(m_np, np.linalg.inv(M))
 
 
-def test_mat_inverse():
+def _test_mat_inverse():
     for n in range(1, 5):
         _test_mat_inverse_size(n)
 
 
 @ti.all_archs
-def test_unit_vectors():
+def _test_unit_vectors():
     a = ti.Vector(3, dt=ti.i32, shape=3)
 
     @ti.kernel
@@ -147,19 +147,27 @@ def test_unit_vectors():
 
 @ti.all_archs
 def test_init_matrix_from_vectors():
-    a = ti.Matrix(3, 3, dt=ti.f32, shape=(3))
+    m1 = ti.Matrix(3, 3, dt=ti.f32, shape=(3))
+    m2 = ti.Matrix(3, 3, dt=ti.f32, shape=(3))
+    m3 = ti.Matrix(3, 3, dt=ti.f32, shape=(3))
+    m4 = ti.Matrix(3, 3, dt=ti.f32, shape=(3))
 
     @ti.kernel
     def fill():
         for i in range(3):
-            b = ti.Vector([1.0,4.0,7.0])
-            c = ti.Vector([2.0,5.0,8.0])
-            d = ti.Vector([3.0,6.0,9.0])
-            a[i] = ti.Matrix([b,c,d])
+            a = ti.Vector([1.0,4.0,7.0])
+            b = ti.Vector([2.0,5.0,8.0])
+            c = ti.Vector([3.0,6.0,9.0])
+            m1[i] = ti.Matrix(rows=[a,b,c])
+            m2[i] = ti.Matrix(cols=[a,b,c])
+            m3[i] = ti.Matrix(rows=[[1.0,4.0,7.0],[2.0,5.0,8.0],[3.0,6.0,9.0]])
+            m4[i] = ti.Matrix(cols=[[1.0,4.0,7.0],[2.0,5.0,8.0],[3.0,6.0,9.0]])
 
     fill()
 
     for j in range(3):
         for i in range(3):
-            print( a[0][i,j])
-            assert a[0][i,j] == int(i + 3*j + 1)
+            assert m1[0][i,j] == int(i + 3*j + 1)
+            assert m2[0][j,i] == int(i + 3*j + 1)
+            assert m3[0][i,j] == int(i + 3*j + 1)
+            assert m4[0][j,i] == int(i + 3*j + 1)

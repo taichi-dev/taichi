@@ -19,19 +19,38 @@ class Matrix:
     is_taichi_class = True
 
     def __init__(self,
-                 n,
+                 n=1,
                  m=1,
                  dt=None,
                  empty=False,
                  shape=None,
                  layout=None,
                  needs_grad=False,
-                 keep_raw=False):
+                 keep_raw=False,
+                 rows=None,
+                 cols=None):
         self.grad = None
-        if isinstance(n, list):
+        if rows is not None or cols is not None:
+            if cols is not None:
+                rows = cols
+            self.n = len(rows)
+            if isinstance(rows[0], Matrix):
+                self.m = rows[0].n
+                self.entries = [row(i) for row in rows for i in range(row.n)]
+            elif isinstance(rows[0], list):
+                self.m = len(rows[0])
+                self.entries = [x for row in rows for x in row]
+            else:
+                raise Exception('rows/cols must be list of lists or list of vectors')
+            if cols is not None:
+                t = self.transposed(self)
+                self.n = t.n
+                self.m = t.m
+                self.entries = t.entries
+        elif isinstance(n, list):
             if n == []:
                 mat = []
-            elif not isinstance(n[0], list) and not isinstance(n[0], Matrix):
+            elif not isinstance(n[0], list):
                 if impl.get_runtime().inside_kernel:
                     # wrap potential constants with Expr
                     if keep_raw:
@@ -40,19 +59,16 @@ class Matrix:
                         mat = [list([expr.Expr(x)]) for x in n]
                 else:
                     mat = [[x] for x in n]
+            elif isinstance(n[0], Matrix):
+                raise Exception('cols/rows required when using list of vectors')
             else:
                 mat = n
             self.n = len(mat)
             if len(mat) > 0:
-                if isinstance(n[0], Matrix):
-                    self.m = mat[0].n
-                    self.entries = [row(i) for row in mat for i in range(row.n)]
-                else:
-                    self.m = len(mat[0])
-                    self.entries = [x for row in mat for x in row]
+                self.m = len(mat[0])
             else:
                 self.m = 1
-                self.entries = [x for row in mat for x in row]
+            self.entries = [x for row in mat for x in row]
         else:
             self.entries = []
             self.n = n

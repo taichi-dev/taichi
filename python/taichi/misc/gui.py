@@ -131,28 +131,39 @@ class GUI:
             self.set_image(file_or_image)
         self.clear(self.background_color)
 
+    class EventFilter:
+
+        def __init__(self, *filter):
+            self.types = []
+            self.keys = []
+            self.combs = []
+            for ent in filter:
+                if isinstance(ent, (tuple, list)):
+                    self.combs.append(tuple(ent))
+                elif ent in [GUI.PRESS, GUI.RELEASE]:
+                    self.types.append(ent)
+                else:
+                    self.keys.append(ent)
+
+        def match(self, e):
+            if (e.type, e.key) in self.combs:
+                return True
+            if e.key in self.keys and e.key in self.combs:
+                return True
+            return False
+
 
     def get_event(self, *filter):
-        types = []
-        keys = []
-        combs = []
-        for ent in filter:
-            if ent in [GUI.PRESS, GUI.RELEASE]:
-                types.append(ent)
-            elif isinstance(ent, tuple) or isinstance(ent, list):
-                type, key = ent
-                combs.append((type, key))
-            else:
-                keys.append(ent)
+        if not len(filter):
+            filter = None
+        elif not isinstance(filter[0], GUI.EventFilter):
+            filter = GUI.EventFilter(*filter)
+
         while True:
             if not self.has_key_event():
                 return False
             self.event = self.get_key_event()
-            if not len(combs):
-                if not len(types) or self.event.type in types:
-                    if not len(keys) or self.event.key in keys:
-                        break
-            elif (self.event.type, self.event.key) in combs:
+            if filter is None or filter.match(self.event):
                 break
         return True
 

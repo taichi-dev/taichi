@@ -476,14 +476,6 @@ class DeferedExecution {
 
 #define TI_DEFER(x) taichi::DeferedExecution _defered([&]() { x; });
 
-inline bool running_on_windows() {
-#if defined(TI_PLATFORM_WINDOWS)
-  return true;
-#else
-  return false;
-#endif
-}
-
 bool is_release();
 
 std::string get_repo_dir();

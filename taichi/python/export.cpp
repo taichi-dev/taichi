@@ -9,8 +9,6 @@
 
 TI_NAMESPACE_BEGIN
 
-void export_lang(py::module &m);
-
 PYBIND11_MODULE(taichi_core, m) {
   m.doc() = "taichi_core";
 
@@ -18,10 +16,10 @@ PYBIND11_MODULE(taichi_core, m) {
     kv.second(&m);
   }
 
-  export_visual(m);
+  export_lang(m);
   export_math(m);
   export_misc(m);
-  export_lang(m);
+  export_visual(m);
 }
 
 TI_NAMESPACE_END

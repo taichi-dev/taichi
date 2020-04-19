@@ -286,8 +286,8 @@ void initialize_opengl() {
 }
 
 void display_kernel_info(std::string const &kernel_name,
-                                std::string const &kernel_source_code,
-                                int num_groups) {
+                         std::string const &kernel_source_code,
+                         int num_groups) {
   if (!taichi::starts_with(kernel_name, "snode_") &&
       !taichi::starts_with(kernel_name, "tensor_"))
     TI_DEBUG("source of kernel [{}] * {}:\n{}", kernel_name, num_groups,

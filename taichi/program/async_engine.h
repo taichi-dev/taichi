@@ -92,7 +92,6 @@ class ParallelExecutor {
         running_threads--;
       }
     }
-    TI_DEBUG("Exiting worker thread.");
   }
 
   int num_threads;

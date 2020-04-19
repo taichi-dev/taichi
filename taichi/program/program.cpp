@@ -123,7 +123,8 @@ Program::Program(Arch desired_arch) {
     }
   }
 
-  TI_TRACE("Program ({}) arch={} initialized.", fmt::ptr(this), arch_name(arch));
+  TI_TRACE("Program ({}) arch={} initialized.", fmt::ptr(this),
+           arch_name(arch));
 }
 
 FunctionType Program::compile(Kernel &kernel) {

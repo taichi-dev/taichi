@@ -43,9 +43,6 @@ using namespace llvm;
 
 TaichiLLVMContext::TaichiLLVMContext(Arch arch) : arch(arch) {
   TI_TRACE("Creating Taichi llvm context for arch: {}", arch_name(arch));
-
-  TI_ASSERT(llvm::llvm_is_multithreaded());
-
   llvm::remove_fatal_error_handler();
   llvm::install_fatal_error_handler(
       [](void *user_data, const std::string &reason, bool gen_crash_diag) {
@@ -253,7 +250,6 @@ static void remove_useless_cuda_libdevice_functions(llvm::Module *module) {
 // Note: runtime_module = init_module < struct_module
 
 std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
-  std::lock_guard<std::mutex> _(mut);
   TI_AUTO_PROF
   if (!runtime_module) {
     if (is_release()) {
@@ -396,7 +392,6 @@ void TaichiLLVMContext::link_module_with_cuda_libdevice(
 
 std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_struct_module() {
   TI_AUTO_PROF
-  auto _ = std::lock_guard<std::mutex>(mut);
   TI_ASSERT(struct_module);
   return llvm::CloneModule(*struct_module);
 }
@@ -530,7 +525,6 @@ llvm::DataLayout TaichiLLVMContext::get_data_layout() {
 }
 
 JITModule *TaichiLLVMContext::add_module(std::unique_ptr<llvm::Module> module) {
-  std::lock_guard<std::mutex> _(mut);
   return jit->add_module(std::move(module));
 }
 

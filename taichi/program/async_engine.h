@@ -1,6 +1,7 @@
 #include <deque>
 #include <thread>
 #include <mutex>
+#include <atomic>
 
 #define TI_RUNTIME_HOST
 #include "taichi/ir/ir.h"
@@ -16,14 +17,10 @@ class ParallelExecutor {
  public:
   using TaskType = std::function<void()>;
 
-  enum class ExecutorStatus {
-    uninitialized,
-    initialized,
-    finalized,
-  };
-
   explicit ParallelExecutor(int num_threads)
-      : num_threads(num_threads), status(ExecutorStatus::uninitialized) {
+      : num_threads(num_threads),
+        status(ExecutorStatus::uninitialized),
+        running_threads(0) {
     auto _ = std::lock_guard<std::mutex>(mut);
 
     for (int i = 0; i < num_threads; i++) {
@@ -41,7 +38,7 @@ class ParallelExecutor {
   void flush() {
     while (true) {
       std::unique_lock<std::mutex> lock(mut);
-      if (task_queue.empty()) {
+      if (task_queue.empty() && running_threads == 0) {
         break;
       } else {
         lock.unlock();
@@ -66,6 +63,12 @@ class ParallelExecutor {
   }
 
  private:
+  enum class ExecutorStatus {
+    uninitialized,
+    initialized,
+    finalized,
+  };
+
   void task() {
     TI_DEBUG("Starting worker thread.");
     while (true) {
@@ -75,19 +78,20 @@ class ParallelExecutor {
         Time::sleep(1e-6);
         continue;  // wait until initialized
       }
-      if (status == ExecutorStatus::finalized) {
+      if (status == ExecutorStatus::finalized && task_queue.empty()) {
         break;  // finalized, exit
       }
       // initialized and not finalized. Do work.
       if (!task_queue.empty()) {
         auto task = task_queue.front();
         task_queue.pop_front();
+        running_threads++;
         lock.unlock();
         // Run the task
         task();
+        running_threads--;
       }
     }
-    TI_DEBUG("Exiting worker thread.");
   }
 
   int num_threads;
@@ -96,6 +100,7 @@ class ParallelExecutor {
 
   std::vector<std::thread> threads;
   std::deque<TaskType> task_queue;
+  std::atomic<int> running_threads;
 };
 
 class KernelLaunchRecord {
@@ -112,12 +117,12 @@ class ExecutionQueue {
  public:
   std::deque<KernelLaunchRecord> task_queue;
 
-  std::vector<std::thread> compilation_workers;  // parallel
-  std::thread launch_worker;                     // serial
+  ParallelExecutor compilation_workers;  // parallel compilation
+  std::thread launch_worker;             // serial launching
 
   std::unordered_map<uint64, FunctionType> compiled_func;
 
-  ExecutionQueue() {
+  ExecutionQueue() : compilation_workers(4) {  // TODO: remove 4
   }
 
   void enqueue(KernelLaunchRecord ker);

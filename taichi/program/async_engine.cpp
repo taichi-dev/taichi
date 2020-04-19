@@ -31,13 +31,34 @@ void ExecutionQueue::enqueue(KernelLaunchRecord ker) {
 }
 
 void ExecutionQueue::synchronize() {
+  TI_INFO("Flushing execution queue with {} tasks", task_queue.size());
+  std::mutex mut;
+
+  std::unordered_set<uint64> to_be_compiled;
+
+  for (int i = 0; i < (int)task_queue.size(); i++) {
+    auto ker = task_queue[i];
+    auto h = hash(ker.stmt);
+    if (compiled_func.find(h) == compiled_func.end() &&
+        to_be_compiled.find(h) == to_be_compiled.end()) {
+      to_be_compiled.insert(h);
+      compilation_workers.enqueue([&, ker, h, this]() {
+        {
+          auto func = CodeGenCPU(ker.kernel, ker.stmt).codegen();
+          std::lock_guard<std::mutex> _(mut);
+          compiled_func[h] = func;
+        }
+      });
+    }
+  }
+
+  auto t = Time::get_time();
+  compilation_workers.flush();
+  TI_WARN("Flushing time {:.3f} ms", (Time::get_time() - t) * 1000);
+
   while (!task_queue.empty()) {
     auto ker = task_queue.front();
-    std::string serialized;
     auto h = hash(ker.stmt);
-    if (compiled_func.find(h) == compiled_func.end()) {
-      compiled_func[h] = CodeGenCPU(ker.kernel, ker.stmt).codegen();
-    }
     compiled_func[h](ker.context);
     task_queue.pop_front();
   }

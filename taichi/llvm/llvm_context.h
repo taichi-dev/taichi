@@ -4,10 +4,11 @@
 // in charge of creating & JITing arch-specific LLVM modules,
 // and invoking compiled functions (kernels).
 
+#include <mutex>
 #include <functional>
 
 #include "taichi/lang_util.h"
-#include "llvm_fwd.h"
+#include "taichi/llvm/llvm_fwd.h"
 #include "taichi/ir/snode.h"
 #include "taichi/jit/jit_session.h"
 
@@ -20,6 +21,7 @@ class TaichiLLVMContext {
   std::unique_ptr<JITSession> jit;
   std::unique_ptr<llvm::Module> runtime_module, struct_module;
   JITModule *runtime_jit_module;
+  std::mutex mut;
   Arch arch;
 
   SNodeAttributes snode_attr;

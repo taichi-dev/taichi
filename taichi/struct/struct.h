@@ -14,8 +14,6 @@ class StructCompiler {
   std::size_t root_size;
   Program *prog;
 
-  SNodeAttributes snode_attr;
-
   explicit StructCompiler(Program *prog);
 
   virtual ~StructCompiler() = default;

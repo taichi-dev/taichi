@@ -24,8 +24,6 @@ class TaichiLLVMContext {
   std::mutex mut;
   Arch arch;
 
-  SNodeAttributes snode_attr;
-
   TaichiLLVMContext(Arch arch);
 
   std::unique_ptr<llvm::Module> get_init_module();

@@ -13,7 +13,7 @@ using namespace llvm;
 
 StructCompilerLLVM::StructCompilerLLVM(Program *prog, Arch arch)
     : StructCompiler(prog),
-      ModuleBuilder(prog->get_llvm_context(arch)->get_init_module()),
+      LLVMModuleBuilder(prog->get_llvm_context(arch)->get_init_module()),
       arch(arch) {
   tlctx = prog->get_llvm_context(arch);
   llvm_ctx = tlctx->ctx.get();
@@ -22,7 +22,7 @@ StructCompilerLLVM::StructCompilerLLVM(Program *prog, Arch arch)
 void StructCompilerLLVM::generate_types(SNode &snode) {
   TI_AUTO_PROF;
   auto type = snode.type;
-  llvm::Type *llvm_type = nullptr;
+  llvm::Type *node_type = nullptr;
 
   auto ctx = llvm_ctx;
 
@@ -30,15 +30,12 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
 
   std::vector<llvm::Type *> ch_types;
   for (int i = 0; i < snode.ch.size(); i++) {
-    auto ch = snode_attr[snode.ch[i]].llvm_type;
+    auto ch = get_llvm_node_type(module.get(), snode.ch[i].get());
     ch_types.push_back(ch);
   }
 
   auto ch_type =
       llvm::StructType::create(*ctx, ch_types, snode.node_type_name + "_ch");
-  ch_type->setName(snode.node_type_name + "_ch");
-
-  snode_attr[snode].llvm_element_type = ch_type;
 
   llvm::Type *body_type = nullptr, *aux_type = nullptr;
   if (type == SNodeType::dense || type == SNodeType::bitmasked) {
@@ -69,15 +66,21 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
     TI_NOT_IMPLEMENTED;
   }
   if (aux_type != nullptr) {
-    llvm_type = llvm::StructType::create(*ctx, {aux_type, body_type}, "");
+    node_type = llvm::StructType::create(*ctx, {aux_type, body_type}, "");
   } else {
-    llvm_type = body_type;
+    node_type = body_type;
   }
 
-  TI_ASSERT(llvm_type != nullptr);
-  snode_attr[snode].llvm_type = llvm_type;
-  snode_attr[snode].llvm_aux_type = aux_type;
-  snode_attr[snode].llvm_body_type = body_type;
+  TI_ASSERT(node_type != nullptr);
+  TI_ASSERT(body_type != nullptr);
+
+  // Here we create a stub holding 4 LLVM types as struct members.
+  // The aim is to give a **unique** name to the stub, so that we can look up
+  // these types using this name. This decouples them from the LLVM context.
+  // Note that body_type might not have a unique name, since literal structs
+  // (such as {i32, i32}) are uniqued in LLVM.
+  llvm::StructType::create(*ctx, {node_type, body_type, aux_type, ch_type},
+                           type_stub_name(&snode));
 }
 
 void StructCompilerLLVM::generate_refine_coordinates(SNode *snode) {
@@ -140,7 +143,7 @@ void StructCompilerLLVM::generate_child_accessors(SNode &snode) {
     auto parent = snode.parent;
 
     auto inp_type =
-        llvm::PointerType::get(snode_attr[parent].llvm_element_type, 0);
+        llvm::PointerType::get(get_llvm_element_type(module.get(), parent), 0);
 
     auto ft =
         llvm::FunctionType::get(llvm::Type::getInt8PtrTy(*llvm_ctx),
@@ -174,6 +177,10 @@ void StructCompilerLLVM::generate_child_accessors(SNode &snode) {
   stack.pop_back();
 }
 
+std::string StructCompilerLLVM::type_stub_name(SNode *snode) {
+  return snode->node_type_name + "_type_stubs";
+}
+
 void StructCompilerLLVM::run(SNode &root, bool host) {
   TI_AUTO_PROF;
   // bottom to top
@@ -197,11 +204,44 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
 
   TI_ASSERT((int)snodes.size() <= taichi_max_num_snodes);
 
-  root_size =
-      tlctx->get_data_layout().getTypeAllocSize(snode_attr[root].llvm_type);
+  auto node_type = get_llvm_node_type(module.get(), &root);
+  root_size = tlctx->get_data_layout().getTypeAllocSize(node_type);
 
   tlctx->set_struct_module(module);
-  tlctx->snode_attr = snode_attr;
+}
+
+llvm::Type *StructCompilerLLVM::get_stub(llvm::Module *module,
+                                         SNode *snode,
+                                         uint32 index) {
+  TI_ASSERT(module);
+  TI_ASSERT(snode);
+  auto stub = module->getTypeByName(type_stub_name(snode));
+  TI_ASSERT(stub);
+  TI_ASSERT(stub->getStructNumElements() == 4);
+  TI_ASSERT(0 <= index && index < 4);
+  auto type = stub->getContainedType(index);
+  TI_ASSERT(type);
+  return type;
+}
+
+llvm::Type *StructCompilerLLVM::get_llvm_node_type(llvm::Module *module,
+                                                   SNode *snode) {
+  return get_stub(module, snode, 0);
+}
+
+llvm::Type *StructCompilerLLVM::get_llvm_body_type(llvm::Module *module,
+                                                   SNode *snode) {
+  return get_stub(module, snode, 1);
+}
+
+llvm::Type *StructCompilerLLVM::get_llvm_aux_type(llvm::Module *module,
+                                                  SNode *snode) {
+  return get_stub(module, snode, 2);
+}
+
+llvm::Type *StructCompilerLLVM::get_llvm_element_type(llvm::Module *module,
+                                                      SNode *snode) {
+  return get_stub(module, snode, 3);
 }
 
 std::unique_ptr<StructCompiler> StructCompiler::make(Program *prog, Arch arch) {

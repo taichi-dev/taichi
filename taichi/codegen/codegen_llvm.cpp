@@ -1,5 +1,7 @@
 #include "codegen_llvm.h"
 
+#include "taichi/struct/struct_llvm.h"
+
 TLANG_NAMESPACE_BEGIN
 
 // TODO: sort function definitions to match declaration order in header
@@ -206,14 +208,6 @@ std::unique_ptr<RuntimeObject> CodeGenLLVM::emit_struct_meta_object(
     TI_P(snode_type_name(snode->type));
     TI_NOT_IMPLEMENTED;
   }
-  if (false) {
-    // auto ptr_type = llvm::Type::getInt8PtrTy(*llvm_context, 0);
-    auto ptr_type = llvm::PointerType::get(meta->type, 0);
-    auto ptr = meta->ptr;  // builder->CreatePointerCast(meta->ptr, ptr_type);
-    auto struct_meta_size = tlctx->get_type_size(meta->type);
-    builder->CreateIntrinsic(llvm::Intrinsic::invariant_start, {ptr_type},
-                             {tlctx->get_constant(struct_meta_size), ptr});
-  }
   return meta;
 }
 
@@ -223,13 +217,17 @@ void CodeGenLLVM::emit_struct_meta_base(const std::string &name,
   RuntimeObject common("StructMeta", this, builder.get(), node_meta);
   std::size_t element_size;
   if (snode->type == SNodeType::dense) {
-    auto element_ty = snode_attr[snode].llvm_body_type->getArrayElementType();
+    auto body_type =
+        StructCompilerLLVM::get_llvm_body_type(module.get(), snode);
+    auto element_ty = body_type->getArrayElementType();
     element_size = tlctx->get_type_size(element_ty);
   } else if (snode->type == SNodeType::pointer) {
-    auto element_ty = tlctx->snode_attr[snode->ch[0]].llvm_type;
+    auto element_ty = StructCompilerLLVM::get_llvm_node_type(
+        module.get(), snode->ch[0].get());
     element_size = tlctx->get_type_size(element_ty);
   } else {
-    auto element_ty = tlctx->snode_attr[snode].llvm_element_type;
+    auto element_ty =
+        StructCompilerLLVM::get_llvm_element_type(module.get(), snode);
     element_size = tlctx->get_type_size(element_ty);
   }
   common.set("snode_id", tlctx->get_constant(snode->id));
@@ -266,13 +264,12 @@ void CodeGenLLVM::emit_struct_meta_base(const std::string &name,
 }
 
 CodeGenLLVM::CodeGenLLVM(Kernel *kernel, IRNode *ir)
-    // TODO: simplify ModuleBuilder ctor input
-    : ModuleBuilder(kernel->program.get_llvm_context(kernel->arch)
-                        ->clone_struct_module()),
+    // TODO: simplify LLVMModuleBuilder ctor input
+    : LLVMModuleBuilder(kernel->program.get_llvm_context(kernel->arch)
+                            ->clone_struct_module()),
       kernel(kernel),
       ir(ir),
-      prog(&kernel->program),
-      snode_attr(prog->get_llvm_context(kernel->arch)->snode_attr) {
+      prog(&kernel->program) {
   if (ir == nullptr)
     this->ir = kernel->ir;
   initialize_context();
@@ -1117,8 +1114,9 @@ llvm::Value *CodeGenLLVM::call(SNode *snode,
 
 void CodeGenLLVM::visit(GetRootStmt *stmt) {
   llvm_val[stmt] = builder->CreateBitCast(
-      get_root(),
-      PointerType::get(snode_attr[prog->snode_root.get()].llvm_type, 0));
+      get_root(), PointerType::get(StructCompilerLLVM::get_llvm_node_type(
+                                       module.get(), prog->snode_root.get()),
+                                   0));
 }
 
 void CodeGenLLVM::visit(OffsetAndExtractBitsStmt *stmt) {
@@ -1184,7 +1182,9 @@ void CodeGenLLVM::visit(GetChStmt *stmt) {
       {builder->CreateBitCast(llvm_val[stmt->input_ptr],
                               PointerType::getInt8PtrTy(*llvm_context))});
   llvm_val[stmt] = builder->CreateBitCast(
-      ch, PointerType::get(snode_attr[stmt->output_snode].llvm_type, 0));
+      ch, PointerType::get(StructCompilerLLVM::get_llvm_node_type(
+                               module.get(), stmt->output_snode),
+                           0));
 }
 
 void CodeGenLLVM::visit(ExternalPtrStmt *stmt) {

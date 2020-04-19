@@ -245,6 +245,11 @@ class GUI:
         return len(self.get_key_pressed()) != 0
 
 
-def rgb_to_hex(c):
-    to255 = lambda x: min(255, max(0, int(x * 255)))
+def rgb_to_hex(c, g=None, b=None):
+    if g is not None:
+        c = (c, g, b)
+    if isinstance(x, int):
+        to255 = lambda x: min(255, max(0, x))
+    else:
+        to255 = lambda x: min(255, max(0, int(x * 255)))
     return 65536 * to255(c[0]) + 256 * to255(c[1]) + to255(c[2])

@@ -285,25 +285,17 @@ void initialize_opengl() {
     TI_ERROR("Your OpenGL does not support GL_ARB_compute_shader extension");
 }
 
-namespace {
-bool my_starts_with(std::string const &str, std::string const &pre) {
-  return str.length() > pre.length() &&
-         !memcmp(str.c_str(), pre.c_str(), pre.length());
-}
-}  // namespace
-
-std::string display_kernel_info(std::string const &kernel_name,
+void display_kernel_info(std::string const &kernel_name,
                                 std::string const &kernel_source_code,
                                 int num_groups) {
-  if (!my_starts_with(kernel_name, "snode_") &&
-      !my_starts_with(kernel_name, "tensor_"))
+  if (!taichi::starts_with(kernel_name, "snode_") &&
+      !taichi::starts_with(kernel_name, "tensor_"))
     TI_DEBUG("source of kernel [{}] * {}:\n{}", kernel_name, num_groups,
              kernel_source_code);
 #ifdef _GLSL_DEBUG
   std::ofstream(fmt::format("/tmp/{}.comp", kernel_name))
       .write(kernel_source_code.c_str(), kernel_source_code.size());
 #endif
-  return kernel_name;
 }
 
 struct CompiledKernel {
@@ -323,12 +315,12 @@ struct CompiledKernel {
                           int num_groups_,
                           RangeSizeEvaluator rse_,
                           const UsedFeature &used_)
-      : kernel_name(
-            display_kernel_info(kernel_name_, kernel_source_code, num_groups_)),
-        glsl(std::make_unique<GLProgram>(GLShader(kernel_source_code))),
+      : kernel_name(kernel_name_),
         num_groups(num_groups_),
         rse(std::move(rse_)),
         used(used_) {
+    display_kernel_info(kernel_name_, kernel_source_code, num_groups_);
+    glsl = std::make_unique<GLProgram>(GLShader(kernel_source_code));
     glsl->link();
   }
 

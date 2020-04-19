@@ -22,7 +22,7 @@ Advanced features of Taichi include [spatially sparse computing](https://taichi.
 ## Installation [![Downloads](https://pepy.tech/badge/taichi-nightly)](https://pepy.tech/project/taichi-nightly)
 
 ```bash
-python3 -m pip install taichi       # Latest version: 0.5.13
+python3 -m pip install taichi       # Latest version: 0.5.14
 ```
 **Supported OS**: Windows, Linux, Mac OS X; **Python**: 3.6, 3.7, 3.8; **Backends**: x64 CPUs, CUDA, Apple Metal.
 

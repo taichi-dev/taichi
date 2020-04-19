@@ -23,35 +23,15 @@ class StructCompilerLLVM : public StructCompiler, public LLVMModuleBuilder {
 
   static std::string type_stub_name(SNode *snode);
 
-  static llvm::Type *get_stub(llvm::Module *module,
-                              SNode *snode,
-                              uint32 index) {
-    TI_ASSERT(module);
-    TI_ASSERT(snode);
-    auto stub = module->getTypeByName(type_stub_name(snode));
-    TI_ASSERT(stub);
-    TI_ASSERT(stub->getStructNumElements() == 4);
-    TI_ASSERT(0 <= index && index < 4);
-    auto type = stub->getContainedType(index);
-    TI_ASSERT(type);
-    return type;
-  }
+  static llvm::Type *get_stub(llvm::Module *module, SNode *snode, uint32 index);
 
-  static llvm::Type *get_llvm_node_type(llvm::Module *module, SNode *snode) {
-    return get_stub(module, snode, 0);
-  }
+  static llvm::Type *get_llvm_node_type(llvm::Module *module, SNode *snode);
 
-  static llvm::Type *get_llvm_body_type(llvm::Module *module, SNode *snode) {
-    return get_stub(module, snode, 1);
-  }
+  static llvm::Type *get_llvm_body_type(llvm::Module *module, SNode *snode);
 
-  static llvm::Type *get_llvm_aux_type(llvm::Module *module, SNode *snode) {
-    return get_stub(module, snode, 2);
-  }
+  static llvm::Type *get_llvm_aux_type(llvm::Module *module, SNode *snode);
 
-  static llvm::Type *get_llvm_element_type(llvm::Module *module, SNode *snode) {
-    return get_stub(module, snode, 3);
-  }
+  static llvm::Type *get_llvm_element_type(llvm::Module *module, SNode *snode);
 };
 
 TLANG_NAMESPACE_END

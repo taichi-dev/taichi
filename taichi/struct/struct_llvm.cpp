@@ -210,6 +210,40 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
   tlctx->set_struct_module(module);
 }
 
+llvm::Type *StructCompilerLLVM::get_stub(llvm::Module *module,
+                                         SNode *snode,
+                                         uint32 index) {
+  TI_ASSERT(module);
+  TI_ASSERT(snode);
+  auto stub = module->getTypeByName(type_stub_name(snode));
+  TI_ASSERT(stub);
+  TI_ASSERT(stub->getStructNumElements() == 4);
+  TI_ASSERT(0 <= index && index < 4);
+  auto type = stub->getContainedType(index);
+  TI_ASSERT(type);
+  return type;
+}
+
+llvm::Type *StructCompilerLLVM::get_llvm_node_type(llvm::Module *module,
+                                                   SNode *snode) {
+  return get_stub(module, snode, 0);
+}
+
+llvm::Type *StructCompilerLLVM::get_llvm_body_type(llvm::Module *module,
+                                                   SNode *snode) {
+  return get_stub(module, snode, 1);
+}
+
+llvm::Type *StructCompilerLLVM::get_llvm_aux_type(llvm::Module *module,
+                                                  SNode *snode) {
+  return get_stub(module, snode, 2);
+}
+
+llvm::Type *StructCompilerLLVM::get_llvm_element_type(llvm::Module *module,
+                                                      SNode *snode) {
+  return get_stub(module, snode, 3);
+}
+
 std::unique_ptr<StructCompiler> StructCompiler::make(Program *prog, Arch arch) {
   return std::make_unique<StructCompilerLLVM>(prog, arch);
 }

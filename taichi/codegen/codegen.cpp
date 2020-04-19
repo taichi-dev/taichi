@@ -3,8 +3,8 @@
 #include "codegen.h"
 
 #include "taichi/util/statistics.h"
-#include "taichi/codegen/codegen_cpu.h"
-#include "taichi/codegen/codegen_cuda.h"
+#include "taichi/backends/cpu/codegen_cpu.h"
+#include "taichi/backends/cuda/codegen_cuda.h"
 #include "taichi/system/timer.h"
 #include "taichi/system/timer.h"
 

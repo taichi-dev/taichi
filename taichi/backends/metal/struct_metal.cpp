@@ -1,4 +1,4 @@
-#include "taichi/struct/struct_metal.h"
+#include "struct_metal.h"
 
 #include <algorithm>
 #include <functional>

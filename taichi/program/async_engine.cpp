@@ -4,7 +4,7 @@
 
 #include "taichi/program/kernel.h"
 #include "taichi/program/program.h"
-#include "taichi/codegen/codegen_cpu.h"
+#include "taichi/backends/cpu/codegen_cpu.h"
 #include "taichi/common/testing.h"
 
 TLANG_NAMESPACE_BEGIN

@@ -7,11 +7,11 @@
 
 #include "taichi/inc/constants.h"
 #include "taichi/lang_util.h"
+#include "taichi/program/program.h"
 #include "taichi/backends/metal/data_types.h"
 #include "taichi/backends/metal/kernel_util.h"
 #include "taichi/backends/metal/kernel_manager.h"
-#include "taichi/program/program.h"
-#include "taichi/struct/struct_metal.h"
+#include "taichi/backends/metal/struct_metal.h"
 
 TLANG_NAMESPACE_BEGIN
 namespace metal {

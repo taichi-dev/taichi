@@ -1,3 +1,4 @@
+#define _USE_GLAD 1
 //#define _GLSL_DEBUG 1
 #include "opengl_api.h"
 
@@ -6,7 +7,11 @@
 #include "taichi/program/program.h"
 
 #ifdef TI_WITH_OPENGL
+#ifdef _USE_GLAD
+#include <glad/glad.h>
+#else
 #include "GL/glew.h"
+#endif
 #include "GLFW/glfw3.h"
 #endif
 
@@ -267,6 +272,16 @@ void initialize_opengl() {
   }
   glfwHideWindow(window);
   glfwMakeContextCurrent(window);
+#ifdef _USE_GLAD
+  if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+    TI_ERROR("[glsl] cannot initialize GLAD");
+  }
+#define PER_OPENGL_EXTENSION(x)                \
+  if ((opengl_has_##x = GLAD_##x)) \
+    TI_INFO("[glsl] Found " #x);
+#include "taichi/inc/opengl_extension.inc.h"
+#undef PER_OPENGL_EXTENSION
+#else
   int status = glewInit();
   if (status != GLEW_OK) {
     TI_ERROR("[glsl] cannot initialize GLEW: {}", glewGetErrorString(status));
@@ -279,6 +294,7 @@ void initialize_opengl() {
     TI_INFO("[glsl] Found " #x);
 #include "taichi/inc/opengl_extension.inc.h"
 #undef PER_OPENGL_EXTENSION
+#endif
   if (!opengl_has_GL_ARB_compute_shader)
     TI_ERROR("Your OpenGL does not support GL_ARB_compute_shader extension");
 }

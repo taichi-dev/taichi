@@ -14,7 +14,7 @@ endif()
 
 file(GLOB TAICHI_CORE_SOURCE
         "taichi/*/*/*/*.cpp" "taichi/*/*/*.cpp" "taichi/*/*.cpp" "taichi/*.cpp"
-        "taichi/*/*/*/*.h" "taichi/*/*/*.h" "taichi/*/*.h" "taichi/*.h" "external/*.c" "tests/cpp/*.cpp")
+        "taichi/*/*/*/*.h" "taichi/*/*/*.h" "taichi/*/*.h" "taichi/*.h" "external/glad/src/*.c" "tests/cpp/*.cpp")
 
 file(GLOB TAICHI_BACKEND_SOURCE "taichi/backends/**/*.cpp" "taichi/backends/**/*.h")
 
@@ -46,6 +46,7 @@ endif()
 
 include_directories(${CMAKE_SOURCE_DIR})
 include_directories(external/include)
+include_directories(external/glad/include)
 include_directories(external/spdlog/include)
 
 set(LIBRARY_NAME ${CORE_LIBRARY_NAME})

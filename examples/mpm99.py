@@ -1,6 +1,6 @@
 import taichi as ti
 import numpy as np
-ti.init(arch=ti.x64, enable_profiler=True) # Try to run on GPU. Use arch=ti.opengl on old GPUs
+ti.init(arch=ti.cuda) # Try to run on GPU. Use arch=ti.opengl on old GPUs
 quality = 1 # Use a larger value for higher-res simulations
 n_particles, n_grid = 9000 * quality ** 2, 128 * quality
 dx, inv_dx = 1 / n_grid, float(n_grid)
@@ -97,6 +97,3 @@ for frame in range(20000):
   colors = np.array([0x068587, 0xED553B, 0xEEEEF0], dtype=np.uint32)
   gui.circles(x.to_numpy(), radius=1.5, color=colors[material.to_numpy()])
   gui.show() # Change to gui.show(f'{frame:06d}.png') to write images to disk
-
-ti.profiler_print()
-ti.core.print_profile_info()

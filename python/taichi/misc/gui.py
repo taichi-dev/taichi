@@ -155,7 +155,7 @@ class GUI:
             return False
 
 
-    def get_events(self, *filter):
+    def get_events(self, *filter):  # APi
         if not filter:
             filter = None
         elif not isinstance(filter[0], GUI.EventFilter):
@@ -164,12 +164,11 @@ class GUI:
         while True:
             if not self.has_key_event():
                 break
-            e = self.pop_key_event()
-            print(e.key)
+            e = self.get_key_event()
             if filter is None or filter.match(e):
                 yield e
 
-    def get_event(self, *filter):
+    def get_event(self, *filter):  # Deprecated APi
         for e in self.get_events(*filter):
             self.event = e
             return True
@@ -182,8 +181,7 @@ class GUI:
     def has_key_event(self):  # ABi
         return self.core.has_key_event()
 
-    def pop_key_event(self):  # ABi
-        self.core.wait_key_event()
+    def _peek_key_event(self):  # ABi (assume has_key_event)
         e = GUI.Event()
         e.key = self.core.get_key_event_head_key()
         e.type = self.core.get_key_event_head_type()
@@ -197,16 +195,33 @@ class GUI:
             self.key_pressed.add(e.key)
         else:
             self.key_pressed.discard(e.key)
+        return e
+
+    def _get_key_event(self):  # ABi (assume has_key_event)
+        e = self._peek_key_event()
         self.core.pop_key_event_head()
         return e
 
-    def get_key_event(self):
+    def wait_key_event(self):  # ABi
+        self.core.wait_key_event()
+
+    def peek_key_event(self):  # Unique APi
         e = None
         if self.has_key_event():
-            e = self.pop_key_event()
+            e = self._peek_key_event()
         return e
 
-    def is_pressed(self, *keys):
+    def get_key_event(self):  # Unique APi
+        e = None
+        if self.has_key_event():
+            e = self._get_key_event()
+        return e
+
+    def wait_get_key_event(self):  # Shortcut APi = wait + get
+        self.wait_key_event()
+        return self._get_key_event()
+
+    def is_pressed(self, *keys):  # Shortcut APi = in key_pressed
         for key in keys:
             if key in ['Shift', 'Alt', 'Control']:
                 if key + '_L' in self.key_pressed or key + '_R' in self.key_pressed:
@@ -216,16 +231,18 @@ class GUI:
         else:
             return False
 
-    def get_is_pressed(self, *keys):
-        self.get_key_event()
+    def get_is_pressed(self, *keys):  # Shortcut APi = pop all + is_pressed
+        while self.get_key_event() is not None:
+            pass
         return self.is_pressed(*keys)
 
-    def get_key_pressed(self):
-        self.get_key_event()
+    def get_key_pressed(self):  # Shortcut APi = pop all + key_pressed
+        while self.get_key_event() is not None:
+            pass
         return self.key_pressed
 
-    def has_key_pressed(self):  # Deprecated
-        return len(self.get_key_pressed())
+    def has_key_pressed(self):  # Deprecated APi, use get_key_pressed instead
+        return len(self.get_key_pressed()) != 0
 
 
 def rgb_to_hex(c):

@@ -13,7 +13,7 @@ if sys.version_info[0] < 3 or sys.version_info[1] <= 5:
     print("Current Python version:", sys.version_info)
     exit(-1)
 
-tc_core = None
+ti_core = None
 
 
 def in_docker():
@@ -23,8 +23,8 @@ def in_docker():
         return True
 
 
-def import_tc_core(tmp_dir=None):
-    global tc_core
+def import_ti_core(tmp_dir=None):
+    global ti_core
     if get_os_name() != 'win':
         old_flags = sys.getdlopenflags()
         sys.setdlopenflags(258)  # 258 = RTLD_NOW | RTLD_GLOBAL
@@ -39,7 +39,7 @@ def import_tc_core(tmp_dir=None):
                 "Share object taichi_core import failed. If you are on Windows, please consider installing \"Microsoft Visual C++ Redistributable\" (https://aka.ms/vs/16/release/vc_redist.x64.exe)"
             )
         raise e
-    tc_core = core
+    ti_core = core
     if get_os_name() != 'win':
         sys.setdlopenflags(old_flags)
     lib_dir = os.path.join(package_root(), 'lib')
@@ -269,12 +269,12 @@ if is_release():
         # For llvm jit to find the runtime symbols
         if not os.path.exists(link_dst):
             os.symlink(link_src, link_dst)
-    import_tc_core()
+    import_ti_core()
     if get_os_name() != 'win':
         dll = ctypes.CDLL(get_core_shared_object(), mode=ctypes.RTLD_GLOBAL)
 
-    tc_core.set_python_package_dir(package_root())
-    os.makedirs(tc_core.get_repo_dir(), exist_ok=True)
+    ti_core.set_python_package_dir(package_root())
+    os.makedirs(ti_core.get_repo_dir(), exist_ok=True)
 else:
     print("[Taichi] mode=development")
     if get_os_name() == 'osx':
@@ -285,7 +285,7 @@ else:
         tmp_dir = prepare_sandbox(lib_path)
         os.chdir(tmp_dir)
         sys.path.append(tmp_dir)
-        import taichi_core as tc_core
+        import taichi_core as ti_core
         os.chdir(tmp_cwd)
 
     elif get_os_name() == 'linux':
@@ -301,7 +301,7 @@ else:
         os.chdir(tmp_dir)
         sys.path.append(tmp_dir)
         try:
-            import_tc_core(tmp_dir)
+            import_ti_core(tmp_dir)
         except Exception as e:
             from colorama import Fore, Back, Style
             print_red_bold("Taichi core import failed: ", end='')
@@ -338,7 +338,7 @@ else:
             shutil.copy(dll_path, os.path.join(bin_dir, 'taichi_core.pyd'))
             sys.path.append(bin_dir)
         try:
-            import taichi_core as tc_core
+            import taichi_core as ti_core
         except Exception as e:
             print(e)
             print()
@@ -352,7 +352,7 @@ else:
 
 log_level = os.environ.get('TI_LOG_LEVEL', '')
 if log_level:
-    tc_core.set_logging_level(log_level)
+    ti_core.set_logging_level(log_level)
 
 
 def get_dll_name(name):
@@ -393,7 +393,7 @@ def at_startup():
             print('Making output directory')
             os.mkdir(output_dir)
 
-    tc_core.set_core_state_python_imported(True)
+    ti_core.set_core_state_python_imported(True)
 
 
 def start_memory_monitoring(output_fn, pid=-1, interval=1):
@@ -422,9 +422,9 @@ def start_memory_monitoring(output_fn, pid=-1, interval=1):
 
 def require_version(major, minor=None, patch=None):
     versions = [
-        int(tc_core.get_version_major()),
-        int(tc_core.get_version_minor()),
-        int(tc_core.get_version_patch()),
+        int(ti_core.get_version_major()),
+        int(ti_core.get_version_minor()),
+        int(ti_core.get_version_patch()),
     ]
     match = major == versions[0] and (
         minor < versions[1] or minor == versions[1] and patch <= versions[2])
@@ -433,7 +433,7 @@ def require_version(major, minor=None, patch=None):
     else:
         print("Taichi version mismatch. required >= {}.{}.{}".format(
             major, minor, patch))
-        print("Installed =", tc_core.get_version_string())
+        print("Installed =", ti_core.get_version_string())
         raise Exception("Taichi version mismatch")
 
 
@@ -447,21 +447,21 @@ def _print_taichi_header():
     if dev_mode:
         header += '<dev mode>, '
     else:
-        header += f'version {tc_core.get_version_string()}, '
+        header += f'version {ti_core.get_version_string()}, '
 
     supported_archs = ['cpu']
-    if tc_core.with_cuda():
+    if ti_core.with_cuda():
         supported_archs.append('cuda')
-    if tc_core.with_opengl():
+    if ti_core.with_opengl():
         supported_archs.append('opengl')
-    if tc_core.with_metal():
+    if ti_core.with_metal():
         supported_archs.append('metal')
     if len(supported_archs) == 1:
         supported_archs[0] = 'cpu only'
     archs_str = ', '.join(sorted(supported_archs))
     header += f'supported archs: [{archs_str}], '
 
-    commit_hash = tc_core.get_commit_hash()
+    commit_hash = ti_core.get_commit_hash()
     commit_hash = commit_hash[:8]
     header += f'commit {commit_hash}, '
 
@@ -474,4 +474,4 @@ def _print_taichi_header():
 _print_taichi_header()
 
 if not is_release():
-    tc_core.set_core_trigger_gdb_when_crash(True)
+    ti_core.set_core_trigger_gdb_when_crash(True)

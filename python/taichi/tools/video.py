@@ -1,9 +1,9 @@
-from taichi.misc.util import ndarray_to_array2d, array2d_to_ndarray
-from taichi.misc.settings import get_os_name, get_directory
-import taichi.core as core
+from taichi.misc.settings import get_os_name
+from taichi.misc.image import imwrite
+
 import os
 
-FRAME_FN_TEMPLATE = '%05d.png'
+FRAME_FN_TEMPLATE = '%06d.png'
 FRAME_DIR = 'frames'
 
 # Write the frames to the disk and then make videos (mp4 or gif) if necessary
@@ -27,7 +27,6 @@ def accelerate_video(input, output, speed):
 
 
 def get_ffmpeg_path():
-    # return get_directory('external/lib/ffmpeg')
     return 'ffmpeg'
 
 
@@ -82,8 +81,6 @@ class VideoManager:
         return os.path.join(self.directory, 'video' + suffix)
 
     def write_frame(self, img):
-        if isinstance(img, core.Array2DVector3):
-            img = array2d_to_ndarray(img)
         if img.shape[0] % 2 != 0:
             print('Warning: height is not divisible by 2! Dropping last row')
             img = img[:-1]
@@ -98,7 +95,7 @@ class VideoManager:
         assert os.path.exists(self.directory)
         fn = FRAME_FN_TEMPLATE % self.frame_counter
         self.frame_fns.append(fn)
-        ndarray_to_array2d(img).write(os.path.join(self.frame_directory, fn))
+        imwrite(img, os.path.join(self.frame_directory, fn))
         self.frame_counter += 1
         if self.frame_counter % self.next_video_checkpoint == 0:
             if self.automatic_build:

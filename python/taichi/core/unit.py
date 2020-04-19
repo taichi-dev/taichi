@@ -13,7 +13,7 @@ def unit(unit_name):
             original_init = dummy_init
 
         def new_init(self, name, *args, **kwargs):
-            self.c = getattr(taichi.tc_core, 'create_' + unit_name)(name)
+            self.c = getattr(taichi.ti_core, 'create_' + unit_name)(name)
             self.c.initialize(taichi.misc.util.config_from_dict(kwargs))
             original_init(self, *args, **kwargs)
 

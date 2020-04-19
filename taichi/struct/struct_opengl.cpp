@@ -43,8 +43,8 @@ void OpenglStructCompiler::generate_types(const SNode &snode) {
     }
     // Discussion: https://github.com/taichi-dev/taichi/issues/804
     // The NVIDIA OpenGL seems to stuck at compile (a very long time to compile)
-    // when a small SNode is placed at a very high address... And I've no idea why.
-    // So let's sort by SNode size, smaller first:
+    // when a small SNode is placed at a very high address... And I've no idea
+    // why. So let's sort by SNode size, smaller first:
     std::sort(smp.begin(), smp.end(),
               [this](const std::pair<int, SNode *> &a,
                      const std::pair<int, SNode *> &b) {

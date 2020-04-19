@@ -8,7 +8,7 @@
 TI_NAMESPACE_BEGIN
 
 void raise_assertion_failure_in_python(const std::string &msg) {
-  // throw ExceptionForPython(msg);
+  throw ExceptionForPython(msg);
 }
 
 TI_NAMESPACE_END

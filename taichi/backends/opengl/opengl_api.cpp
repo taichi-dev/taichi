@@ -124,7 +124,9 @@ struct GLProgram {
   }
 
   void link() const {
+    TI_TRACE("glLinkProgram IN");
     glLinkProgram(id_);
+    TI_TRACE("glLinkProgram OUT");
     int status = GL_TRUE;
     glGetProgramiv(id_, GL_LINK_STATUS, &status);
     if (status != GL_TRUE) {
@@ -283,12 +285,18 @@ void initialize_opengl() {
     TI_ERROR("Your OpenGL does not support GL_ARB_compute_shader extension");
 }
 
-namespace {
-bool my_starts_with(std::string const &str, std::string const &pre) {
-  return str.length() > pre.length() &&
-         !memcmp(str.c_str(), pre.c_str(), pre.length());
+void display_kernel_info(std::string const &kernel_name,
+                                std::string const &kernel_source_code,
+                                int num_groups) {
+  if (!taichi::starts_with(kernel_name, "snode_") &&
+      !taichi::starts_with(kernel_name, "tensor_"))
+    TI_DEBUG("source of kernel [{}] * {}:\n{}", kernel_name, num_groups,
+             kernel_source_code);
+#ifdef _GLSL_DEBUG
+  std::ofstream(fmt::format("/tmp/{}.comp", kernel_name))
+      .write(kernel_source_code.c_str(), kernel_source_code.size());
+#endif
 }
-}  // namespace
 
 struct CompiledKernel {
   std::string kernel_name;
@@ -308,19 +316,12 @@ struct CompiledKernel {
                           RangeSizeEvaluator rse_,
                           const UsedFeature &used_)
       : kernel_name(kernel_name_),
-        glsl(std::make_unique<GLProgram>(GLShader(kernel_source_code))),
         num_groups(num_groups_),
         rse(std::move(rse_)),
         used(used_) {
+    display_kernel_info(kernel_name_, kernel_source_code, num_groups_);
+    glsl = std::make_unique<GLProgram>(GLShader(kernel_source_code));
     glsl->link();
-    if (!my_starts_with(kernel_name, "snode_") &&
-        !my_starts_with(kernel_name, "tensor_"))
-      TI_DEBUG("source of kernel [{}] * {}:\n{}", kernel_name, num_groups,
-               kernel_source_code);
-#ifdef _GLSL_DEBUG
-    std::ofstream(fmt::format("/tmp/{}.comp", kernel_name))
-        .write(kernel_source_code.c_str(), kernel_source_code.size());
-#endif
   }
 
   void launch() const {

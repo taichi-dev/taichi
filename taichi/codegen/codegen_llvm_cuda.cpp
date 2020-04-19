@@ -135,7 +135,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
 
     auto format_str = "[debug] " + stmt->str + " = " + format + "\n";
 
-    llvm_val[stmt] = ModuleBuilder::call(
+    llvm_val[stmt] = LLVMModuleBuilder::call(
         builder.get(), "vprintf",
         builder->CreateGlobalStringPtr(format_str, "format_string"),
         builder->CreateBitCast(values,

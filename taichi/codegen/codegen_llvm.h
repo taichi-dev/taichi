@@ -48,7 +48,7 @@ class FunctionCreationGuard {
   ~FunctionCreationGuard();
 };
 
-class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
+class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
  public:
   static uint64 task_counter;
 
@@ -74,7 +74,7 @@ class CodeGenLLVM : public IRVisitor, public ModuleBuilder {
   BasicBlock *func_body_bb;
 
   using IRVisitor::visit;
-  using ModuleBuilder::call;
+  using LLVMModuleBuilder::call;
 
   CodeGenLLVM(Kernel *kernel, IRNode *ir = nullptr);
 

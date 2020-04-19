@@ -13,7 +13,7 @@ using namespace llvm;
 
 StructCompilerLLVM::StructCompilerLLVM(Program *prog, Arch arch)
     : StructCompiler(prog),
-      ModuleBuilder(prog->get_llvm_context(arch)->get_init_module()),
+      LLVMModuleBuilder(prog->get_llvm_context(arch)->get_init_module()),
       arch(arch) {
   tlctx = prog->get_llvm_context(arch);
   llvm_ctx = tlctx->ctx.get();
@@ -75,6 +75,15 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
   }
 
   TI_ASSERT(llvm_type != nullptr);
+
+  // Here we create a stub holding three LLVM types as struct members.
+  // The aim is to give a **unique** name to the stub, so that we can look up
+  // these types using this name. This decouples them from the LLVM context.
+  // Note that body_type might not have a unique name, since literal structs
+  // (such as {i32, i32}) are uniqued in LLVM.
+  llvm::StructType::create(*ctx, {llvm_type, aux_type, body_type},
+                           type_stub_name(&snode));
+
   snode_attr[snode].llvm_type = llvm_type;
   snode_attr[snode].llvm_aux_type = aux_type;
   snode_attr[snode].llvm_body_type = body_type;
@@ -172,6 +181,10 @@ void StructCompilerLLVM::generate_child_accessors(SNode &snode) {
   }
 
   stack.pop_back();
+}
+
+std::string StructCompilerLLVM::type_stub_name(SNode *snode) {
+  return snode->node_type_name + "_type_stubs";
 }
 
 void StructCompilerLLVM::run(SNode &root, bool host) {

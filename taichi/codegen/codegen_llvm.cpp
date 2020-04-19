@@ -1,5 +1,7 @@
 #include "codegen_llvm.h"
 
+#include "taichi/struct/struct_llvm.h"
+
 TLANG_NAMESPACE_BEGIN
 
 // TODO: sort function definitions to match declaration order in header
@@ -223,7 +225,9 @@ void CodeGenLLVM::emit_struct_meta_base(const std::string &name,
   RuntimeObject common("StructMeta", this, builder.get(), node_meta);
   std::size_t element_size;
   if (snode->type == SNodeType::dense) {
-    auto element_ty = snode_attr[snode].llvm_body_type->getArrayElementType();
+    auto body_type =
+        StructCompilerLLVM::get_llvm_body_type(module.get(), snode);
+    auto element_ty = body_type->getArrayElementType();
     element_size = tlctx->get_type_size(element_ty);
   } else if (snode->type == SNodeType::pointer) {
     auto element_ty = tlctx->snode_attr[snode->ch[0]].llvm_type;
@@ -266,9 +270,9 @@ void CodeGenLLVM::emit_struct_meta_base(const std::string &name,
 }
 
 CodeGenLLVM::CodeGenLLVM(Kernel *kernel, IRNode *ir)
-    // TODO: simplify ModuleBuilder ctor input
-    : ModuleBuilder(kernel->program.get_llvm_context(kernel->arch)
-                        ->clone_struct_module()),
+    // TODO: simplify LLVMModuleBuilder ctor input
+    : LLVMModuleBuilder(kernel->program.get_llvm_context(kernel->arch)
+                            ->clone_struct_module()),
       kernel(kernel),
       ir(ir),
       prog(&kernel->program),

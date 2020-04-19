@@ -11,6 +11,7 @@
 #include "taichi/codegen/codegen_opengl.h"
 #include "taichi/codegen/codegen_cpu.h"
 #include "taichi/struct/struct.h"
+#include "taichi/struct/struct_llvm.h"
 #include "taichi/struct/struct_metal.h"
 #include "taichi/struct/struct_opengl.h"
 #include "taichi/system/unified_allocator.h"
@@ -213,15 +214,15 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
   for (int i = 0; i < (int)snodes.size(); i++) {
     if (is_gc_able(snodes[i]->type)) {
       std::size_t node_size;
-      if (snodes[i]->type == SNodeType::pointer)
-        node_size = tlctx->get_type_size(
-            scomp->snode_attr[snodes[i]].llvm_element_type);
-      else {
+      auto element_size =
+          tlctx->get_type_size(StructCompilerLLVM::get_llvm_element_type(
+              tlctx->struct_module.get(), snodes[i]));
+      if (snodes[i]->type == SNodeType::pointer) {
+        // pointer. Allocators are for single elements
+        node_size = element_size;
+      } else {
         // dynamic. Allocators are for the chunks
-        node_size = sizeof(void *) +
-                    tlctx->get_type_size(
-                        scomp->snode_attr[snodes[i]].llvm_element_type) *
-                        snodes[i]->chunk_size;
+        node_size = sizeof(void *) + element_size * snodes[i]->chunk_size;
       }
       TI_TRACE("Initializing allocator for snode {} (node size {})",
                snodes[i]->id, node_size);

@@ -22,8 +22,6 @@ class TaichiLLVMContext {
   JITModule *runtime_jit_module;
   Arch arch;
 
-  SNodeAttributes snode_attr;
-
   TaichiLLVMContext(Arch arch);
 
   std::unique_ptr<llvm::Module> get_init_module();

@@ -256,28 +256,4 @@ class SNode {
   uint64 fetch_reader_result();  // TODO: refactor
 };
 
-class SNodeAttribute {
- public:
-  llvm::Type *llvm_type, *llvm_body_type, *llvm_aux_type;
-  llvm::Type *llvm_element_type;
-};
-
-class SNodeAttributes {
- private:
-  std::map<SNode *, SNodeAttribute> snode_llvm_attr;
-
- public:
-  SNodeAttribute &operator[](SNode &snode) {
-    return snode_llvm_attr[&snode];
-  }
-
-  SNodeAttribute &operator[](SNode *snode) {
-    return snode_llvm_attr[snode];
-  }
-
-  SNodeAttribute &operator[](const std::unique_ptr<SNode> &snode) {
-    return snode_llvm_attr[snode.get()];
-  }
-};
-
 TLANG_NAMESPACE_END

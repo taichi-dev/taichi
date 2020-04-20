@@ -27,7 +27,7 @@ def action(p: ti.ext_arr()):
     qt[a, b] = 1
 
 @ti.func
-def actune(b, i, j, s, k, dx, dy):
+def draw_rect(b, i, j, s, k, dx, dy):
     x = i // s
     y = j // s
     a = 0
@@ -44,24 +44,24 @@ def paint():
     for i, j in img:
         s = RES // N
         k = RES // K ** 1
-        ia = actune(b1, i, j, s, k, 1, 0)
-        ja = actune(b1, i, j, s, k, 0, 1)
+        ia = draw_rect(b1, i, j, s, k, 1, 0)
+        ja = draw_rect(b1, i, j, s, k, 0, 1)
         img[i, j][0] += (ia + ja) * 0.02
         k = RES // K ** 2
-        ia = actune(b2, i, j, s, k, 1, 0)
-        ja = actune(b2, i, j, s, k, 0, 1)
+        ia = draw_rect(b2, i, j, s, k, 1, 0)
+        ja = draw_rect(b2, i, j, s, k, 0, 1)
         img[i, j][0] += (ia + ja) * 0.04
         k = RES // K ** 3
-        ia = actune(b3, i, j, s, k, 1, 0)
-        ja = actune(b3, i, j, s, k, 0, 1)
+        ia = draw_rect(b3, i, j, s, k, 1, 0)
+        ja = draw_rect(b3, i, j, s, k, 0, 1)
         img[i, j][0] += (ia + ja) * 0.11
         k = RES // K ** 4
-        ia = actune(b4, i, j, s, k, 1, 0)
-        ja = actune(b4, i, j, s, k, 0, 1)
+        ia = draw_rect(b4, i, j, s, k, 1, 0)
+        ja = draw_rect(b4, i, j, s, k, 0, 1)
         img[i, j][0] += (ia + ja) * 0.15
         k = RES // K ** 5
-        ia = actune(b5, i, j, s, k, 1, 0)
-        ja = actune(b5, i, j, s, k, 0, 1)
+        ia = draw_rect(b5, i, j, s, k, 1, 0)
+        ja = draw_rect(b5, i, j, s, k, 0, 1)
         img[i, j][0] += (ia + ja) * 0.80
 
 def vec2_npf32(m):

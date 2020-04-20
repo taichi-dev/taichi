@@ -2,6 +2,7 @@ set(CORE_LIBRARY_NAME taichi_core)
 
 option(USE_STDCPP "Use -stdlib=libc++" OFF)
 option(TI_WITH_CUDA "Build with the CUDA backend" ON)
+# TODO(archibate): default to ON unless external/glad doesn't exist:
 option(TI_WITH_OPENGL "Build with the OpenGL backend" OFF)
 
 if (APPLE)
@@ -13,7 +14,7 @@ endif()
 
 file(GLOB TAICHI_CORE_SOURCE
         "taichi/*/*/*/*.cpp" "taichi/*/*/*.cpp" "taichi/*/*.cpp" "taichi/*.cpp"
-        "taichi/*/*/*/*.h" "taichi/*/*/*.h" "taichi/*/*.h" "taichi/*.h" "external/glad/src/*.c" "tests/cpp/*.cpp")
+        "taichi/*/*/*/*.h" "taichi/*/*/*.h" "taichi/*/*.h" "taichi/*.h" "tests/cpp/*.cpp")
 
 file(GLOB TAICHI_BACKEND_SOURCE "taichi/backends/**/*.cpp" "taichi/backends/**/*.h")
 
@@ -24,8 +25,8 @@ file(GLOB TAICHI_OPENGL_SOURCE "taichi/backends/opengl/*.h" "taichi/backends/ope
 list(REMOVE_ITEM TAICHI_CORE_SOURCE ${TAICHI_BACKEND_SOURCE})
 
 if (TI_WITH_CUDA)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_CUDA")
-    list(APPEND TAICHI_CORE_SOURCE ${TAICHI_CUDA_SOURCE})
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_CUDA")
+  list(APPEND TAICHI_CORE_SOURCE ${TAICHI_CUDA_SOURCE})
 endif()
 
 if(NOT CUDA_VERSION)
@@ -36,6 +37,14 @@ endif()
 list(APPEND TAICHI_CORE_SOURCE ${TAICHI_METAL_SOURCE})
 list(APPEND TAICHI_CORE_SOURCE ${TAICHI_OPENGL_SOURCE})
 
+if (TI_WITH_OPENGL)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_OPENGL")
+  # Q: Why not external/glad/src/*.c?
+  # A: To ensure glad submodule exists when TI_WITH_OPENGL is ON.
+  file(GLOB TAICHI_GLAD_SOURCE "external/glad/src/glad.c")
+  list(APPEND TAICHI_CORE_SOURCE ${TAICHI_GLAD_SOURCE})
+endif()
+
 add_library(${CORE_LIBRARY_NAME} SHARED ${TAICHI_CORE_SOURCE} ${PROJECT_SOURCES})
 
 if (APPLE)
@@ -45,14 +54,14 @@ endif()
 
 include_directories(${CMAKE_SOURCE_DIR})
 include_directories(external/include)
-include_directories(external/glad/include)
 include_directories(external/spdlog/include)
+if (TI_WITH_OPENGL)
+  include_directories(external/glad/include)
+endif()
 
 set(LIBRARY_NAME ${CORE_LIBRARY_NAME})
 
 if (TI_WITH_OPENGL)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_OPENGL")
-
   set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
   set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
   set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)

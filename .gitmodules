@@ -10,3 +10,7 @@
 	path = external/glfw
 	url = https://github.com/glfw/glfw
 	shallow = true
+[submodule "external/glad"]
+	path = external/glad
+	url = https://github.com/taichi-dev/glad-ready
+	shallow = true

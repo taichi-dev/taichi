@@ -17,6 +17,7 @@ camera_pos = ti.Vector([0.0, 0.32, 3.7])
 light_pos = [-1.5, 0.6, 0.3]
 light_normal = [1.0, 0.0, 0.0]
 light_radius = 2.0
+special_index = 2
 
 
 @ti.func
@@ -34,15 +35,29 @@ def intersect_light(pos, d):
 
 
 @ti.func
-def out_dir(n):
+def out_dir(indir, n, is_special):
     u = ti.Vector([1.0, 0.0, 0.0])
-    if abs(n[1]) < 1 - eps:
-        u = ti.normalized(ti.cross(n, ti.Vector([0.0, 1.0, 0.0])))
-    v = ti.cross(n, u)
-    phi = 2 * math.pi * ti.random()
-    ay = ti.sqrt(ti.random())
-    ax = ti.sqrt(1 - ay**2)
-    return ax * (ti.cos(phi) * u + ti.sin(phi) * v) + ay * n
+    if is_special:
+        # metallic
+        u = indir - 2.0 * ti.dot(indir, n) * n
+        phi = ti.random() * math.pi * 2.0
+        theta = ti.random() * math.pi
+        rand_pt = ti.Vector([
+            ti.cos(phi) * ti.cos(theta),
+            ti.sin(phi) * ti.cos(theta),
+            ti.sin(theta)
+        ]) * 0.01
+        u += rand_pt
+    else:
+        # lambertian
+        if abs(n[1]) < 1 - eps:
+            u = ti.normalized(ti.cross(n, ti.Vector([0.0, 1.0, 0.0])))
+        v = ti.cross(n, u)
+        phi = 2 * math.pi * ti.random()
+        ay = ti.sqrt(ti.random())
+        ax = ti.sqrt(1 - ay**2)
+        u = ax * (ti.cos(phi) * u + ti.sin(phi) * v) + ay * n
+    return ti.normalized(u)
 
 
 @ti.func
@@ -105,6 +120,7 @@ def next_hit(pos, d):
     closest, normal, c = inf, ti.Vector.zero(ti.f32,
                                              3), ti.Vector.zero(ti.f32, 3)
     ray_march_dist = ray_march(pos, d)
+    is_special = 0
     if ray_march_dist < dist_limit and ray_march_dist < closest:
         closest = ray_march_dist
         normal = sdf_normal(pos + d * closest)
@@ -112,7 +128,9 @@ def next_hit(pos, d):
         t = int((hit_pos[0] + 10) * 1.1 + 0.5) % 3
         c = ti.Vector(
             [0.4 + 0.3 * (t == 0), 0.4 + 0.2 * (t == 1), 0.4 + 0.3 * (t == 2)])
-    return closest, normal, c
+        if t == special_index:
+            is_special = 1
+    return closest, normal, c, is_special
 
 
 @ti.kernel
@@ -132,7 +150,7 @@ def render():
         hit_light = 0.00
 
         while depth < max_ray_depth:
-            closest, normal, c = next_hit(pos, d)
+            closest, normal, c, is_special = next_hit(pos, d)
             depth += 1
             dist_to_light = intersect_light(pos, d)
             if dist_to_light < closest:
@@ -141,7 +159,7 @@ def render():
             else:
                 hit_pos = pos + closest * d
                 if normal.norm_sqr() != 0:
-                    d = out_dir(normal)
+                    d = out_dir(d, normal, is_special)
                     pos = hit_pos + 1e-4 * d
                     throughput *= c
                 else:

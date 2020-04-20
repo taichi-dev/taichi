@@ -6,7 +6,7 @@
 #include "taichi/program/program.h"
 
 #ifdef TI_WITH_OPENGL
-#include <glad/glad.h>
+#include "glad/glad.h"
 #include "GLFW/glfw3.h"
 #endif
 

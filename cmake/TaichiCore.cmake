@@ -15,7 +15,7 @@ if (APPLE)
     endif()
 endif()
 
-if (NOT EXISTS "external/glad/src/glad.c")
+if (NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/external/glad/src/glad.c")
     set(TI_WITH_OPENGL OFF)
     message(WARNING "external/glad submodule not detected. Settings TI_WITH_OPENGL to OFF.")
 endif()

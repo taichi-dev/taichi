@@ -74,7 +74,7 @@ class GUI:
                          2] == self.res, "Image resolution does not match GUI resolution"
         self.core.set_img(np.ascontiguousarray(img).ctypes.data)
 
-    def circle(self, pos, color, radius=1):
+    def circle(self, pos, color=0xFFFFFF, radius=1):
         self.canvas.circle_single(pos[0], pos[1], color, radius)
 
     def circles(self, pos, color=0xFFFFFF, radius=1):

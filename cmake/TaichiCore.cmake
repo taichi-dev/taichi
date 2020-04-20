@@ -2,14 +2,22 @@ set(CORE_LIBRARY_NAME taichi_core)
 
 option(USE_STDCPP "Use -stdlib=libc++" OFF)
 option(TI_WITH_CUDA "Build with the CUDA backend" ON)
-# TODO(archibate): default to ON unless external/glad doesn't exist:
-option(TI_WITH_OPENGL "Build with the OpenGL backend" OFF)
+option(TI_WITH_OPENGL "Build with the OpenGL backend" ON)
 
 if (APPLE)
     if (TI_WITH_CUDA)
         set(TI_WITH_CUDA OFF)
         message(WARNING "CUDA not supported on OS X. Setting TI_WITH_CUDA to OFF.")
     endif()
+    if (TI_WITH_OPENGL)
+        set(TI_WITH_OPENGL OFF)
+        message(WARNING "OpenGL not supported on OS X. Setting TI_WITH_OPENGL to OFF.")
+    endif()
+endif()
+
+if (NOT EXISTS "external/glad/src/glad.c")
+    set(TI_WITH_OPENGL OFF)
+    message(WARNING "external/glad submodule not detected. Settings TI_WITH_OPENGL to OFF.")
 endif()
 
 file(GLOB TAICHI_CORE_SOURCE

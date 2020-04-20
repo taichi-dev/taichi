@@ -5,19 +5,21 @@
 #include "taichi/common/task.h"
 #include "taichi/backends/metal/api.h"
 #include "taichi/backends/opengl/opengl_api.h"
+#if defined(TI_WITH_CUDA)
 #include "taichi/backends/cuda/cuda_driver.h"
-#include "taichi/codegen/codegen_cuda.h"
-#include "taichi/codegen/codegen_metal.h"
-#include "taichi/codegen/codegen_opengl.h"
-#include "taichi/codegen/codegen_cpu.h"
+#include "taichi/backends/cuda/codegen_cuda.h"
+#include "taichi/backends/cuda/cuda_driver.h"
+#endif
+#include "taichi/backends/metal/codegen_metal.h"
+#include "taichi/backends/opengl/codegen_opengl.h"
+#include "taichi/backends/cpu/codegen_cpu.h"
 #include "taichi/struct/struct.h"
 #include "taichi/struct/struct_llvm.h"
-#include "taichi/struct/struct_metal.h"
-#include "taichi/struct/struct_opengl.h"
+#include "taichi/backends/metal/struct_metal.h"
+#include "taichi/backends/opengl/struct_opengl.h"
 #include "taichi/system/unified_allocator.h"
 #include "taichi/ir/snode.h"
 #include "taichi/program/async_engine.h"
-#include "taichi/backends/cuda/cuda_driver.h"
 
 TI_NAMESPACE_BEGIN
 

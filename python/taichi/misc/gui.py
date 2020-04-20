@@ -119,9 +119,19 @@ class GUI:
     def triangle(self, a, b, c, color=0xFFFFFF):
         self.canvas.triangle_single(a[0], a[1], b[0], b[1], c[0], c[1], color)
 
-    def line(self, begin, end, radius, color):
+    def line(self, begin, end, radius=1, color=0xFFFFFF):
         self.canvas.path_single(begin[0], begin[1], end[0], end[1], color,
                                 radius)
+
+    def rect(self, topleft, bottomright, radius=1, color=0xFFFFFF):
+        a = topleft[0], topleft[1]
+        b = bottomright[0], topleft[1]
+        c = bottomright[0], bottomright[1]
+        d = topleft[0], bottomright[1]
+        self.line(a, b, radius, color)
+        self.line(b, c, radius, color)
+        self.line(c, d, radius, color)
+        self.line(d, a, radius, color)
 
     def show(self, file=None):
         self.core.update()

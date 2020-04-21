@@ -245,7 +245,6 @@ void initialize_opengl() {
   static bool gl_inited = false;
   if (gl_inited)
     return;
-  TI_WARN("OpenGL backend currently WIP, MAY NOT WORK");
   gl_inited = true;
 
   glfwInit();
@@ -273,7 +272,7 @@ void initialize_opengl() {
   }
 #define PER_OPENGL_EXTENSION(x)                \
   if ((opengl_has_##x = GLAD_##x)) \
-    TI_INFO("[glsl] Found " #x);
+    TI_TRACE("[glsl] Found " #x);
 #include "taichi/inc/opengl_extension.inc.h"
 #undef PER_OPENGL_EXTENSION
   if (!opengl_has_GL_ARB_compute_shader)

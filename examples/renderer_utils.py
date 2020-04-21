@@ -20,6 +20,23 @@ def out_dir(n):
 
 
 @ti.func
+def reflect(d, n):
+    # assuming |d| and |n| are normalized
+    return d - 2.0 * ti.dot(d, n) * n
+
+
+@ti.func
+def refract(d, n, ni_over_nt):
+    has_r, rd = 0, ti.Vector.zero(ti.f32, 3)
+    dt = ti.dot(d, n)
+    discr = 1.0 - ni_over_nt * ni_over_nt * (1.0 - dt * dt)
+    if discr > 0:
+        has_r = 1
+        rd = ti.normalized(ni_over_nt * (d - n * dt) - n * ti.sqrt(discr))
+    return has_r, rd
+
+
+@ti.func
 def ray_aabb_intersection(box_min, box_max, o, d):
     intersect = 1
 
@@ -94,6 +111,17 @@ def intersect_sphere(pos, d, center, radius):
                 else:
                     dist = inf
 
+    return dist, hit_pos
+
+
+@ti.func
+def ray_plane_intersect(pos, d, pt_on_plane, norm):
+    dist = inf
+    hit_pos = ti.Vector([0.0, 0.0, 0.0])
+    denom = ti.dot(d, norm)
+    if abs(denom) > eps:
+        dist = ti.dot((pt_on_plane - pos), norm) / denom
+        hit_pos = pos + d * dist
     return dist, hit_pos
 
 

@@ -152,12 +152,12 @@ def test_dynamic():
                 ti.append(lst, i, j)
 
     @ti.kernel
-    def fetch_length():
+    def fetch_sizeof():
         for i in range(n):
-            s[i] = ti.length(lst, i)
+            s[i] = ti.sizeof(lst, i)
 
     func(1)
-    fetch_length()
+    fetch_sizeof()
     for i in range(n):
         assert s[i] == i * i
 
@@ -167,16 +167,16 @@ def test_dynamic():
             ti.deactivate(lst, [i])
 
     func(2)
-    fetch_length()
+    fetch_sizeof()
     for i in range(n):
         assert s[i] == i * i * 3
 
     clear()
-    fetch_length()
+    fetch_sizeof()
     for i in range(n):
         assert s[i] == 0
 
     func(4)
-    fetch_length()
+    fetch_sizeof()
     for i in range(n):
         assert s[i] == i * i * 4

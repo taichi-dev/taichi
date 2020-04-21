@@ -3,7 +3,6 @@ from .matrix import Matrix
 from .transformer import TaichiSyntaxError
 from .ndrange import ndrange, GroupedNDRange
 from copy import deepcopy as _deepcopy
-from .glm import *
 import functools
 import os
 

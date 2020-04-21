@@ -91,7 +91,7 @@ def test_append():
 
 
 @ti.archs_support_sparse
-def test_length():
+def test_sizeof():
     x = ti.var(ti.i32)
     y = ti.var(ti.f32, shape=())
     n = 128
@@ -109,7 +109,7 @@ def test_length():
 
     @ti.kernel
     def get_len():
-        y[None] = ti.length(x.parent(), [])
+        y[None] = ti.sizeof(x.parent(), [])
 
     get_len()
 
@@ -161,7 +161,7 @@ def test_dense_dynamic():
                 ti.append(x.parent(), j, i)
 
         for i in range(n):
-            l[i] = ti.length(x.parent(), i)
+            l[i] = ti.sizeof(x.parent(), i)
 
     func()
 
@@ -182,7 +182,7 @@ def test_dense_dynamic_len():
     @ti.kernel
     def func():
         for i in range(n):
-            l[i] = ti.length(x.parent(), i)
+            l[i] = ti.sizeof(x.parent(), i)
 
     func()
 

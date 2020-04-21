@@ -61,5 +61,5 @@ build_script:
   - cd ..
   - '%PYTHON% -c "import taichi"'
   - "%PYTHON% examples/laplace.py"
-  - "%PYTHON% bin/taichi test -t 2"
+  - "%PYTHON% bin/taichi test -t 2 -a x64"
   - "cd python && %PYTHON% build.py try_upload"

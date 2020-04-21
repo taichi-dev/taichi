@@ -3,18 +3,26 @@ set(CORE_LIBRARY_NAME taichi_core)
 option(USE_STDCPP "Use -stdlib=libc++" OFF)
 option(TI_WITH_CUDA "Build with the CUDA backend" ON)
 option(TI_WITH_OPENGL "Build with the OpenGL backend" ON)
-option(GLEW_USE_STATIC_LIBS OFF)
 
 if (APPLE)
     if (TI_WITH_CUDA)
         set(TI_WITH_CUDA OFF)
         message(WARNING "CUDA not supported on OS X. Setting TI_WITH_CUDA to OFF.")
     endif()
+    if (TI_WITH_OPENGL)
+        set(TI_WITH_OPENGL OFF)
+        message(WARNING "OpenGL not supported on OS X. Setting TI_WITH_OPENGL to OFF.")
+    endif()
+endif()
+
+if (NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/external/glad/src/glad.c")
+    set(TI_WITH_OPENGL OFF)
+    message(WARNING "external/glad submodule not detected. Settings TI_WITH_OPENGL to OFF.")
 endif()
 
 file(GLOB TAICHI_CORE_SOURCE
         "taichi/*/*/*/*.cpp" "taichi/*/*/*.cpp" "taichi/*/*.cpp" "taichi/*.cpp"
-        "taichi/*/*/*/*.h" "taichi/*/*/*.h" "taichi/*/*.h" "taichi/*.h" "external/*.c" "tests/cpp/*.cpp")
+        "taichi/*/*/*/*.h" "taichi/*/*/*.h" "taichi/*/*.h" "taichi/*.h" "tests/cpp/*.cpp")
 
 file(GLOB TAICHI_BACKEND_SOURCE "taichi/backends/**/*.cpp" "taichi/backends/**/*.h")
 
@@ -28,8 +36,8 @@ list(REMOVE_ITEM TAICHI_CORE_SOURCE ${TAICHI_BACKEND_SOURCE})
 list(APPEND TAICHI_CORE_SOURCE ${TAICHI_CPU_SOURCE})
 
 if (TI_WITH_CUDA)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_CUDA")
-    list(APPEND TAICHI_CORE_SOURCE ${TAICHI_CUDA_SOURCE})
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_CUDA")
+  list(APPEND TAICHI_CORE_SOURCE ${TAICHI_CUDA_SOURCE})
 endif()
 
 if(NOT CUDA_VERSION)
@@ -39,6 +47,14 @@ endif()
 # TODO(#529) include Metal source only on Apple MacOS, and OpenGL only when TI_WITH_OPENGL is ON
 list(APPEND TAICHI_CORE_SOURCE ${TAICHI_METAL_SOURCE})
 list(APPEND TAICHI_CORE_SOURCE ${TAICHI_OPENGL_SOURCE})
+
+if (TI_WITH_OPENGL)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_OPENGL")
+  # Q: Why not external/glad/src/*.c?
+  # A: To ensure glad submodule exists when TI_WITH_OPENGL is ON.
+  file(GLOB TAICHI_GLAD_SOURCE "external/glad/src/glad.c")
+  list(APPEND TAICHI_CORE_SOURCE ${TAICHI_GLAD_SOURCE})
+endif()
 
 add_library(${CORE_LIBRARY_NAME} SHARED ${TAICHI_CORE_SOURCE} ${PROJECT_SOURCES})
 
@@ -50,32 +66,20 @@ endif()
 include_directories(${CMAKE_SOURCE_DIR})
 include_directories(external/include)
 include_directories(external/spdlog/include)
+if (TI_WITH_OPENGL)
+  include_directories(external/glad/include)
+endif()
 
 set(LIBRARY_NAME ${CORE_LIBRARY_NAME})
 
 if (TI_WITH_OPENGL)
-  if(NOT GLEW_VERSION)
-    set(GLEW_VERSION 2.0.0)
-  endif()
-  find_package(GLEW ${GLEW_VERSION})
-  if (GLEW_FOUND)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_OPENGL")
-    message("Building with GLEW ${GLEW_VERSION}")
-    message("Using GLEW: ${GLEW_LIBRARIES}")
-    target_include_directories(${LIBRARY_NAME} PUBLIC ${GLEW_INCLUDE_DIRS})
-    target_link_libraries(${LIBRARY_NAME} ${GLEW_LIBRARIES} GLEW)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGLEW_STATIC")
+  set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
+  set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+  set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 
-    set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
-    set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-    set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-
-    message("Building with GLFW")
-    add_subdirectory(external/glfw)
-    target_link_libraries(${LIBRARY_NAME} glfw)
-  else()
-    message(WARNING "GLEW not found, ignoring TI_WITH_OPENGL.")
-  endif()
+  message("Building with GLFW")
+  add_subdirectory(external/glfw)
+  target_link_libraries(${LIBRARY_NAME} glfw)
 endif()
 
 # http://llvm.org/docs/CMake.html#embedding-llvm-in-your-project

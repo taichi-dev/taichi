@@ -123,12 +123,9 @@ class GUI:
         self.canvas.path_single(begin[0], begin[1], end[0], end[1], color,
                                 radius)
 
-    def show(self, file_or_image=None):
+    def show(self, file=None):
         self.core.update()
-        if isinstance(file_or_image, str):
-            self.core.screenshot(file_or_image)
-        elif file_or_image is not None:
-            self.set_image(file_or_image)
+        self.core.screenshot(file_or_image)
         self.clear(self.background_color)
 
     class EventFilter:
@@ -245,11 +242,6 @@ class GUI:
         return len(self.get_key_pressed()) != 0
 
 
-def rgb_to_hex(c, g=None, b=None):
-    if g is not None:
-        c = (c, g, b)
-    if isinstance(x, int):
-        to255 = lambda x: min(255, max(0, x))
-    else:
-        to255 = lambda x: min(255, max(0, int(x * 255)))
+def rgb_to_hex(c):
+    to255 = lambda x: min(255, max(0, int(x * 255)))
     return 65536 * to255(c[0]) + 256 * to255(c[1]) + to255(c[2])

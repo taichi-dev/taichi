@@ -21,12 +21,13 @@ def out_dir(n):
 
 @ti.func
 def reflect(d, n):
-    # assuming |d| and |n| are normalized
+    # Assuming |d| and |n| are normalized
     return d - 2.0 * ti.dot(d, n) * n
 
 
 @ti.func
 def refract(d, n, ni_over_nt):
+    # Assuming |d| and |n| are normalized
     has_r, rd = 0, ti.Vector.zero(ti.f32, 3)
     dt = ti.dot(d, n)
     discr = 1.0 - ni_over_nt * ni_over_nt * (1.0 - dt * dt)

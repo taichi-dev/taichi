@@ -20,6 +20,7 @@
 #include "taichi/system/unified_allocator.h"
 #include "taichi/ir/snode.h"
 #include "taichi/program/async_engine.h"
+#include "taichi/util/statistics.h"
 
 TI_NAMESPACE_BEGIN
 
@@ -476,6 +477,9 @@ Kernel &Program::get_snode_writer(SNode *snode) {
 
 void Program::finalize() {
   TI_TRACE("Program finalizing...");
+  if (config.print_benchmark_stat) {
+    stat.print();
+  }
   if (runtime)
     runtime->set_profiler(nullptr);
   synchronize();

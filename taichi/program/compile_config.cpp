@@ -10,6 +10,7 @@ CompileConfig::CompileConfig() {
   external_optimization_level = 3;
   print_ir = false;
   print_accessor_ir = false;
+  print_benchmark_stat = false;
   use_llvm = true;
   print_struct_llvm_ir = false;
   print_kernel_llvm_ir = false;

@@ -26,7 +26,7 @@ The Taichi Programming Language
 
    scalar_tensor
    vector
-   linalg
+   matrix
 
 
 .. toctree::

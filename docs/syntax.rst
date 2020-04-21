@@ -132,12 +132,20 @@ Supported scalar functions:
 * ``ti.tanh(x)``
 * ``ti.exp(x)``
 * ``ti.log(x)``
+* ``ti.exp2(x)``
+* ``ti.log2(x)``
+* ``ti.step(x)``
+* ``ti.smoothstep(x)``
 * ``ti.random(type)``
-* ``abs(x)``
 * ``max(a, b)``
 * ``min(a, b)``
-* ``ti.length(dynamic_snode)``
+* ``abs(x)``
+* ``ti.sign(x)``
+* ``ti.clamp(x, a, b)``
+* ``ti.mix(x, y, a)``
+* ``ti.fract(x)``
 * ``x ** y``
+* ``ti.sizeof(dynamic_snode)``
 * Inplace adds are atomic on global data. I.e., ``a += b`` is equivalent to ``ti.atomic_add(a, b)``
 
 .. note::

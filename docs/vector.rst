@@ -45,6 +45,12 @@ As a temporary local variable
         # Taichi-scope
         a = ti.Vector([2, 3, 4])
 
+.. function:: ti.vec2(x, y)
+.. function:: ti.vec3(x, y, z)
+.. function:: ti.vec4(x, y, z, w)
+
+    Equivalent to ti.Vector([x, y, ...])
+
 
 Accessing components
 --------------------
@@ -101,6 +107,7 @@ As a temporary local variable
 Methods
 -------
 
+.. function:: ti.length(a)
 .. function:: a.norm(eps = 0)
 
     :parameter a: (Vector)
@@ -119,6 +126,12 @@ Methods
     Set ``eps = 1e-5`` for example, to safe guard the operator's gradient on zero vectors during differentiable programming.
 
 
+.. function:: a.norm_sqr(eps = 0)
+
+    Squared magnitude of vector ``a``, equivalent to ``a.norm() ** 2``.
+
+
+.. function:: ti.dot(a, b)
 .. function:: a.dot(b)
 
     :parameter a: (Vector)

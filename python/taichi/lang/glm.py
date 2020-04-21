@@ -70,10 +70,6 @@ def dot(x, y):
     return x.dot(y)
 
 @ti.func
-def cross(x, y):
-    return x.cross(y)
-
-@ti.func
 def normalize(x):
     return ti.Vector.normalized(x)
 

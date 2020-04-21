@@ -290,7 +290,7 @@ void Program::materialize_layout() {
     opengl::OpenglStructCompiler scomp;
     opengl_struct_compiled_ = scomp.run(*snode_root);
     TI_TRACE("OpenGL root buffer size: {} B",
-            opengl_struct_compiled_->root_size);
+             opengl_struct_compiled_->root_size);
     opengl_kernel_launcher_ = std::make_unique<opengl::GLSLLauncher>(
         opengl_struct_compiled_->root_size);
   }

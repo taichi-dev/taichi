@@ -241,7 +241,7 @@ def benchmark(func, repeat=100, args=()):
 
 
 def set_wanted_archs(archs):
-        os.environ['TI_WANTED_ARCHS'] = ','.join(archs)
+    os.environ['TI_WANTED_ARCHS'] = ','.join(archs)
 
 
 def supported_archs():
@@ -260,7 +260,7 @@ def supported_archs():
         archs, old_archs = [], archs
         for arch in old_archs:
             if ti.core.arch_name(arch) in wanted_archs:
-                    archs.append(arch)
+                archs.append(arch)
     return archs
 
 

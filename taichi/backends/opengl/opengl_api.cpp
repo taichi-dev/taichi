@@ -270,7 +270,7 @@ void initialize_opengl() {
   if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
     TI_ERROR("[glsl] cannot initialize GLAD");
   }
-#define PER_OPENGL_EXTENSION(x)                \
+#define PER_OPENGL_EXTENSION(x)    \
   if ((opengl_has_##x = GLAD_##x)) \
     TI_TRACE("[glsl] Found " #x);
 #include "taichi/inc/opengl_extension.inc.h"

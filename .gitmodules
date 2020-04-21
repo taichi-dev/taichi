@@ -12,5 +12,5 @@
 	shallow = true
 [submodule "external/glad"]
 	path = external/glad
-	url = https://github.com/taichi-dev/glad-ready
+	url = https://github.com/taichi-dev/taichi_glad_ready
 	shallow = true

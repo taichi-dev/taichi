@@ -352,10 +352,12 @@ class Expr:
         import taichi as ti
         return ti.cast(self, ti.get_runtime().default_fp)
 
-    def parent(self):
+    def parent(self, n=1):
         import taichi as ti
-        return Expr(ti.core.global_var_expr_from_snode(
-            self.ptr.snode().parent))
+        p = self.ptr.snode()
+        for i in range(n):
+            p = p.parent
+        return Expr(ti.core.global_var_expr_from_snode(p))
 
     def snode(self):
         from .snode import SNode

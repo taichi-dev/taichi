@@ -3,20 +3,18 @@ import numpy as np
 
 ti.init(arch=ti.x64)
 
-RES = 512
+RES = 1024
 K = 2
-R = 5
+R = 7
 N = K ** R
 
-b0 = ti.root
-b1 = b0.bitmasked(ti.ij, (K, K))
-b2 = b1.bitmasked(ti.ij, (K, K))
-b3 = b2.bitmasked(ti.ij, (K, K))
-b4 = b3.bitmasked(ti.ij, (K, K))
-b5 = b4.bitmasked(ti.ij, (K, K))
+Broot = ti.root
+B = ti.root
+for r in range(R):
+    B = B.bitmasked(ti.ij, (K, K))
 
 qt = ti.var(ti.f32)
-b5.place(qt)
+B.place(qt)
 
 img = ti.Vector(3, dt=ti.f32, shape=(RES, RES))
 
@@ -43,36 +41,19 @@ def paint():
             img[i, j][k] *= 0.85
     for i, j in img:
         s = RES // N
-        k = RES // K ** 1
-        ia = draw_rect(b1, i, j, s, k, 1, 0)
-        ja = draw_rect(b1, i, j, s, k, 0, 1)
-        img[i, j][0] += (ia + ja) * 0.02
-        k = RES // K ** 2
-        ia = draw_rect(b2, i, j, s, k, 1, 0)
-        ja = draw_rect(b2, i, j, s, k, 0, 1)
-        img[i, j][0] += (ia + ja) * 0.04
-        k = RES // K ** 3
-        ia = draw_rect(b3, i, j, s, k, 1, 0)
-        ja = draw_rect(b3, i, j, s, k, 0, 1)
-        img[i, j][0] += (ia + ja) * 0.11
-        k = RES // K ** 4
-        ia = draw_rect(b4, i, j, s, k, 1, 0)
-        ja = draw_rect(b4, i, j, s, k, 0, 1)
-        img[i, j][0] += (ia + ja) * 0.15
-        k = RES // K ** 5
-        ia = draw_rect(b5, i, j, s, k, 1, 0)
-        ja = draw_rect(b5, i, j, s, k, 0, 1)
-        img[i, j][0] += (ia + ja) * 0.80
+        for r in ti.static(range(R)):
+            k = RES // K ** (R-r)
+            ia = draw_rect(qt.parent(r+1), i, j, s, k, 1, 0)
+            ja = draw_rect(qt.parent(r+1), i, j, s, k, 0, 1)
+            img[i, j][0] += (ia + ja) * ((R-r) / R) ** 2
+
 
 def vec2_npf32(m):
     return np.array([m[0], m[1]], dtype=np.float32)
 
 gui = ti.GUI('Quadtree', (RES, RES))
 while not gui.get_event(ti.GUI.PRESS):
-    b1.deactivate_all()
-    b2.deactivate_all()
-    b3.deactivate_all()
-    b4.deactivate_all()
+    Broot.deactivate_all()
     pos = gui.get_cursor_pos()
     action(vec2_npf32(pos))
     paint()

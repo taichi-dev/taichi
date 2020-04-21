@@ -125,7 +125,8 @@ class GUI:
 
     def show(self, file=None):
         self.core.update()
-        self.core.screenshot(file_or_image)
+        if file is not None:
+            self.core.screenshot(file)
         self.clear(self.background_color)
 
     class EventFilter:

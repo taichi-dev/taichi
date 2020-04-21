@@ -752,8 +752,8 @@ class KernelCodegen : public IRVisitor {
          sn_id);
     emit("const int child_stride = child_meta.element_stride;");
     emit("const int child_num_slots = child_meta.num_slots;");
-    // grid-stride loops
-    // Each thread begins at thread_index, and increases by grid_size
+    // Grid-stride loops:
+    // Each thread begins at thread_index, and incremets by grid_size
     emit("for (int ii = {}; ii < child_list->max_num_elems; ii += {}) {{",
          kKernelThreadIdName, kKernelGridSizeName);
     {

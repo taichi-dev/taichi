@@ -240,6 +240,10 @@ def benchmark(func, repeat=100, args=()):
     return elapsed / repeat
 
 
+def set_wanted_archs(archs):
+        os.environ['TI_WANTED_ARCHS'] = ','.join(archs)
+
+
 def supported_archs():
     import taichi as ti
     archs = [ti.core.host_arch()]
@@ -252,13 +256,10 @@ def supported_archs():
     wanted_archs = os.environ.get('TI_WANTED_ARCHS', '').split(',')
     # Note, ''.split(',') gives you [''], which is not an empty array.
     wanted_archs = list(filter(lambda x: x != '', wanted_archs))
-    excluded_archs = list(filter(lambda x: x.startswith('^'), wanted_archs))
-    included_archs = list(filter(lambda x: not x.startswith('^'), wanted_archs))
-    if included_archs or excluded_archs:
+    if len(wanted_archs):
         archs, old_archs = [], archs
         for arch in old_archs:
-            if ti.core.arch_name(arch) in included_archs:
-                if ti.core.arch_name(arch) not in excluded_archs:
+            if ti.core.arch_name(arch) in wanted_archs:
                     archs.append(arch)
     return archs
 

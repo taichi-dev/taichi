@@ -8,7 +8,7 @@
 #include <unordered_set>
 #include <vector>
 
-#include "codegen.h"
+#include "taichi/codegen/codegen.h"
 
 TLANG_NAMESPACE_BEGIN
 namespace opengl {

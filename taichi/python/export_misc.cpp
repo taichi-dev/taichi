@@ -14,7 +14,9 @@
 #include "taichi/system/dynamic_loader.h"
 #include "taichi/backends/metal/api.h"
 #include "taichi/backends/opengl/opengl_api.h"
+#if defined(TI_WITH_CUDA)
 #include "taichi/backends/cuda/cuda_driver.h"
+#endif
 
 TI_NAMESPACE_BEGIN
 

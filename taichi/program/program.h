@@ -17,7 +17,7 @@
 #include "taichi/program/profiler.h"
 #include "taichi/runtime/llvm/context.h"
 #include "taichi/runtime/runtime.h"
-#include "taichi/struct/struct_metal.h"
+#include "taichi/backends/metal/struct_metal.h"
 #include "taichi/system/memory_pool.h"
 #include "taichi/system/threading.h"
 #include "taichi/system/unified_allocator.h"

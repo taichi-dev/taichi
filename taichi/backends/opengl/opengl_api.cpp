@@ -6,7 +6,7 @@
 #include "taichi/program/program.h"
 
 #ifdef TI_WITH_OPENGL
-#include "GL/glew.h"
+#include "glad/glad.h"
 #include "GLFW/glfw3.h"
 #endif
 
@@ -247,7 +247,6 @@ void initialize_opengl() {
   static bool gl_inited = false;
   if (gl_inited)
     return;
-  TI_WARN("OpenGL backend currently WIP, MAY NOT WORK");
   gl_inited = true;
 
   glfwInit();
@@ -259,7 +258,7 @@ void initialize_opengl() {
   // And the best way to make context is by creating a window
   // Then hide it immediately, LOL
   GLFWwindow *window =
-      glfwCreateWindow(1, 1, "Make GLEW Happy", nullptr, nullptr);
+      glfwCreateWindow(1, 1, "Make OpenGL Context", nullptr, nullptr);
   if (!window) {
     const char *desc = nullptr;
     int status = glfwGetError(&desc);
@@ -269,16 +268,13 @@ void initialize_opengl() {
   }
   glfwHideWindow(window);
   glfwMakeContextCurrent(window);
-  int status = glewInit();
-  if (status != GLEW_OK) {
-    TI_ERROR("[glsl] cannot initialize GLEW: {}", glewGetErrorString(status));
+
+  if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+    TI_ERROR("[glsl] cannot initialize GLAD");
   }
-  TI_INFO("[glsl] OpenGL {}", (const char *)glGetString(GL_VERSION));
-  TI_INFO("[glsl] GLSL {}",
-          (const char *)glGetString(GL_SHADING_LANGUAGE_VERSION));
-#define PER_OPENGL_EXTENSION(x)                \
-  if ((opengl_has_##x = glewGetExtension(#x))) \
-    TI_INFO("[glsl] Found " #x);
+#define PER_OPENGL_EXTENSION(x)    \
+  if ((opengl_has_##x = GLAD_##x)) \
+    TI_TRACE("[glsl] Found " #x);
 #include "taichi/inc/opengl_extension.inc.h"
 #undef PER_OPENGL_EXTENSION
   if (!opengl_has_GL_ARB_compute_shader)

@@ -1,3 +1,5 @@
+#include "codegen_cuda.h"
+
 #include <vector>
 #include <set>
 
@@ -7,7 +9,6 @@
 #include "taichi/program/program.h"
 #include "taichi/lang_util.h"
 #include "taichi/backends/cuda/cuda_driver.h"
-#include "taichi/codegen/codegen_cuda.h"
 #include "taichi/codegen/codegen_llvm.h"
 
 TLANG_NAMESPACE_BEGIN

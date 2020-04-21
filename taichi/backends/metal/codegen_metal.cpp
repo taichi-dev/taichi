@@ -1,4 +1,4 @@
-#include "taichi/codegen/codegen_metal.h"
+#include "codegen_metal.h"
 
 #include <functional>
 #include <string>

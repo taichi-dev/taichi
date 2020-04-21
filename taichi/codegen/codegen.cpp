@@ -3,8 +3,10 @@
 #include "codegen.h"
 
 #include "taichi/util/statistics.h"
-#include "taichi/codegen/codegen_cpu.h"
-#include "taichi/codegen/codegen_cuda.h"
+#include "taichi/backends/cpu/codegen_cpu.h"
+#if defined(TI_WITH_CUDA)
+#include "taichi/backends/cuda/codegen_cuda.h"
+#endif
 #include "taichi/system/timer.h"
 #include "taichi/system/timer.h"
 
@@ -28,7 +30,11 @@ std::unique_ptr<KernelCodeGen> KernelCodeGen::create(Arch arch,
   if (arch_is_cpu(arch)) {
     return std::make_unique<CodeGenCPU>(kernel);
   } else if (arch == Arch::cuda) {
+#if defined(TI_WITH_CUDA)
     return std::make_unique<CodeGenCUDA>(kernel);
+#else
+    TI_NOT_IMPLEMENTED
+#endif
   } else {
     TI_NOT_IMPLEMENTED
   }

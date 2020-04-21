@@ -478,7 +478,22 @@ Kernel &Program::get_snode_writer(SNode *snode) {
 void Program::finalize() {
   TI_TRACE("Program finalizing...");
   if (config.print_benchmark_stat) {
-    stat.print();
+    char *current_test = std::getenv("PYTEST_CURRENT_TEST");
+    if (current_test != nullptr) {
+      std::string file_name = current_test;
+      auto last_colon_pos = file_name.find_last_of(':');
+      TI_ASSERT(last_colon_pos != file_name.npos);
+      file_name = file_name.substr(last_colon_pos + 1);
+      auto first_space_pos = file_name.find_first_of(' ');
+      TI_ASSERT(first_space_pos != file_name.npos);
+      file_name = file_name.substr(0, first_space_pos);
+      file_name += ".log";
+      std::ofstream ofs(file_name);
+      TI_ASSERT(ofs);
+      std::string stat_string;
+      stat.print(&stat_string);
+      ofs << stat_string;
+    }
   }
   if (runtime)
     runtime->set_profiler(nullptr);

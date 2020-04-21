@@ -209,6 +209,6 @@ def deactivate(l, indices):
     taichi_lang_core.insert_deactivate(l.snode().ptr, make_expr_group(indices))
 
 
-def length(l, indices):
+def sizeof(l, indices):
     return Expr(
         taichi_lang_core.insert_len(l.snode().ptr, make_expr_group(indices)))

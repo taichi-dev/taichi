@@ -58,12 +58,12 @@ def vec4(x, y, z, w):
     return ti.Vector([x, y, z, w])
 
 @ti.func
-def length(x):
-    return x.norm()
+def length(x, eps=0):
+    return x.norm(eps)
 
 @ti.func
-def distance(x, y):
-    return (x - y).norm()
+def distance(x, y, eps=0):
+    return (x - y).norm(eps)
 
 @ti.func
 def normalize(x):

@@ -107,7 +107,7 @@ As a temporary local variable
 Methods
 -------
 
-.. function:: ti.length(a)
+.. function:: ti.length(a, eps = 0)
 .. function:: a.norm(eps = 0)
 
     :parameter a: (Vector)
@@ -129,6 +129,11 @@ Methods
 .. function:: a.norm_sqr(eps = 0)
 
     Squared magnitude of vector ``a``, equivalent to ``a.norm() ** 2``.
+
+
+.. function:: ti.distance(a, b, eps = 0)
+
+    Distance between two point, equivalent to ``ti.length(a - b)``.
 
 
 .. function:: ti.dot(a, b)

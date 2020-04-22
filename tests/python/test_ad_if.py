@@ -84,7 +84,7 @@ def test_ad_if_mutable():
 
 @ti.require(ti.extension.adstack)
 @ti.all_archs
-def test_ad_if_prallel():
+def test_ad_if_parallel():
     x = ti.var(ti.f32, shape=2)
     y = ti.var(ti.f32, shape=2)
 
@@ -113,7 +113,7 @@ def test_ad_if_prallel():
 
 @ti.require(ti.extension.adstack)
 @ti.all_archs
-def test_ad_if_prallel_complex():
+def test_ad_if_parallel_complex():
     x = ti.var(ti.f32, shape=2)
     y = ti.var(ti.f32, shape=2)
 
@@ -144,7 +144,7 @@ def test_ad_if_prallel_complex():
 
 
 @ti.host_arch_only
-def test():
+def test_stack():
     @ti.kernel
     def func():
         ti.call_internal("test_stack")

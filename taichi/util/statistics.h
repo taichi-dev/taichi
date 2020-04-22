@@ -16,6 +16,8 @@ class Statistics {
   void add(std::string key, value_type value = value_type(1));
 
   void print(std::string *output = nullptr);
+
+  void clear();
 };
 
 extern Statistics stat;

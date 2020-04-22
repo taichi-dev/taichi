@@ -84,7 +84,7 @@ endif()
 
 # http://llvm.org/docs/CMake.html#embedding-llvm-in-your-project
 find_package(LLVM REQUIRED CONFIG)
-message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION} in ${LLVM_DIR}")
+message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
 if(${LLVM_PACKAGE_VERSION} VERSION_LESS "8.0")
     message(FATAL_ERROR "LLVM less than 8.0 is not supported")
 endif()

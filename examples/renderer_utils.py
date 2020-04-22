@@ -28,12 +28,14 @@ def reflect(d, n):
 @ti.func
 def refract(d, n, ni_over_nt):
     # Assuming |d| and |n| are normalized
-    has_r, rd = 0, ti.Vector.zero(ti.f32, 3)
+    has_r, rd = 0, d
     dt = ti.dot(d, n)
     discr = 1.0 - ni_over_nt * ni_over_nt * (1.0 - dt * dt)
-    if discr > 0:
+    if discr > 0.0:
         has_r = 1
         rd = ti.normalized(ni_over_nt * (d - n * dt) - n * ti.sqrt(discr))
+    else:
+        rd *= 0.0
     return has_r, rd
 
 

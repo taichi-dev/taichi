@@ -55,11 +55,11 @@ def sdf_moon(p):
 def sdf_lens(p):
     #       EMI, RFL, RFR
     d1 = vres((p - vec2(0.5, 0.4)).norm() - 0.15,
-            0.0, 0.0, 1.0)
+            0.0, 0.3, 1.0)
     d2 = vres((p - vec2(0.5, 0.6)).norm() - 0.15,
-            0.0, 0.0, 1.0)
-    d3 = vres((p - light_pos).norm() - 0.02,
-            4.0, 0.0, 0.0)
+            0.0, 0.3, 1.0)
+    d3 = vres((p - light_pos).norm() - 0.01,
+            10.0, 0.0, 0.0)
     return union(intersect(d1, d2), d3)
 
 sdf = sdf_lens
@@ -81,33 +81,37 @@ def random_in(n):
 
 @ti.func
 def sample(p):
-    a = ti.random() * tau
+    a = ti.random(ti.f32) * tau
     d = vec2(ti.cos(a), ti.sin(a))
     ret = 0.0
     depth = 0
     steps = 0
     sign = 1.0
     f = sdf(p)
-    if f[0] < 0:
-        sign = -1.0
     while depth < 5 and steps < 1e3:
+        if f[0] < 0.0:
+            sign = -1.0
         steps += 1
         f = sdf(p)
-        p += d * f[0]
+        p += d * sign * f[0]
         if sign * f[0] < 1e-6:
             ret += f[1]  # EMI
             if random_in(f[2]):  # RFL
                 depth += 1
-                n = gradient(p)
+                n = sign * gradient(p)
                 d = reflect(d, n)
                 p += n * 1e-3
             elif random_in(f[3]):  # RFR
                 depth += 1
-                n = gradient(p) * sign
-                has, d = refract(d, n, 1 / 1.33)
+                n = sign * gradient(p)
+                eta = 1.33
+                if sign > 0.0:
+                    eta = 1 / eta
+                has, d = refract(d, n, eta)
                 if not has:
-                    break
-                p += n * 1e-3
+                    d = reflect(d, n)
+                else:
+                    p += -n * 1e-3
             else:
                 break
         elif abs(f[0]) > 1e1:

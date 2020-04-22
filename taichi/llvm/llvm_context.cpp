@@ -41,11 +41,10 @@ TLANG_NAMESPACE_BEGIN
 
 using namespace llvm;
 
-TaichiLLVMContext::TaichiLLVMContext(Arch arch)
-    : arch(arch),
-      main_thread_id(std::this_thread::get_id()),
-      main_thread_data(get_this_thread_data()) {
+TaichiLLVMContext::TaichiLLVMContext(Arch arch) : arch(arch) {
   TI_TRACE("Creating Taichi llvm context for arch: {}", arch_name(arch));
+  main_thread_id = std::this_thread::get_id();
+  main_thread_data = get_this_thread_data();
   llvm::remove_fatal_error_handler();
   llvm::install_fatal_error_handler(
       [](void *user_data, const std::string &reason, bool gen_crash_diag) {

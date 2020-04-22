@@ -64,7 +64,7 @@ TaichiLLVMContext::TaichiLLVMContext(Arch arch) : arch(arch) {
     TI_NOT_IMPLEMENTED
 #endif
   }
-  ctx = std::make_unique<llvm::LLVMContext>();
+  ctx = get_this_thread_context();
   jit = JITSession::create(arch);
   TI_TRACE("Taichi llvm context created.");
 }
@@ -254,13 +254,11 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
   if (!runtime_module) {
     if (is_release()) {
       runtime_module = module_from_bitcode_file(
-          fmt::format("{}/{}", compiled_lib_dir, get_runtime_fn(arch)),
-          ctx.get());
+          fmt::format("{}/{}", compiled_lib_dir, get_runtime_fn(arch)), ctx);
     } else {
       compile_runtime_bitcode(arch);
       runtime_module = module_from_bitcode_file(
-          fmt::format("{}/{}", get_runtime_dir(), get_runtime_fn(arch)),
-          ctx.get());
+          fmt::format("{}/{}", get_runtime_dir(), get_runtime_fn(arch)), ctx);
     }
     if (arch == Arch::cuda) {
       runtime_module->setTargetTriple("nvptx64-nvidia-cuda");
@@ -362,7 +360,7 @@ void TaichiLLVMContext::link_module_with_cuda_libdevice(
   TI_AUTO_PROF
   TI_ASSERT(arch == Arch::cuda);
 
-  auto libdevice_module = module_from_bitcode_file(libdevice_path(), ctx.get());
+  auto libdevice_module = module_from_bitcode_file(libdevice_path(), ctx);
 
   std::vector<std::string> libdevice_function_names;
   for (auto &f : *libdevice_module) {
@@ -568,6 +566,18 @@ void TaichiLLVMContext::eliminate_unused_functions(
   }));
   manager.add(createGlobalDCEPass());
   manager.run(*module);
+}
+
+llvm::LLVMContext *TaichiLLVMContext::get_this_thread_context() {
+  std::lock_guard<std::mutex> _(mut);
+  auto tid = std::this_thread::get_id();
+  if (per_thread_context.find(tid) == per_thread_context.end()) {
+    std::stringstream ss;
+    ss << tid;
+    TI_TRACE("Creating LLVM context for thread {}", ss.str());
+    per_thread_context[tid] = std::make_unique<llvm::LLVMContext>();
+  }
+  return per_thread_context[tid].get();
 }
 
 template llvm::Value *TaichiLLVMContext::get_constant(float32 t);

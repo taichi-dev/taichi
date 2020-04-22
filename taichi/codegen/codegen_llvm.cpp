@@ -1564,7 +1564,7 @@ void CodeGenLLVM::initialize_context() {
   } else {
     tlctx = prog->llvm_context_host.get();
   }
-  llvm_context = tlctx->ctx.get();
+  llvm_context = tlctx->ctx;
   builder = std::make_unique<llvm::IRBuilder<>>(*llvm_context);
 }
 

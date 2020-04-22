@@ -10,6 +10,7 @@
 #include "taichi/lang_util.h"
 #include "taichi/llvm/llvm_fwd.h"
 #include "taichi/ir/snode.h"
+#include "taichi/system/threading.h"
 #include "taichi/jit/jit_session.h"
 
 TLANG_NAMESPACE_BEGIN
@@ -17,12 +18,17 @@ class JITSessionCPU;
 
 class TaichiLLVMContext {
  public:
-  std::unique_ptr<llvm::LLVMContext> ctx;
-  std::unique_ptr<JITSession> jit;
+  std::unordered_map<std::thread::id, std::unique_ptr<llvm::LLVMContext>>
+      per_thread_context;
+
   std::unique_ptr<llvm::Module> runtime_module, struct_module;
+  llvm::LLVMContext *ctx; // TODO: rename to main_llvm_context
+  std::unique_ptr<JITSession> jit;
   JITModule *runtime_jit_module;
   std::mutex mut;
   Arch arch;
+
+  llvm::LLVMContext *get_this_thread_context();
 
   TaichiLLVMContext(Arch arch);
 

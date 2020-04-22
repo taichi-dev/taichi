@@ -16,7 +16,7 @@ StructCompilerLLVM::StructCompilerLLVM(Program *prog, Arch arch)
       LLVMModuleBuilder(prog->get_llvm_context(arch)->get_init_module()),
       arch(arch) {
   tlctx = prog->get_llvm_context(arch);
-  llvm_ctx = tlctx->ctx.get();
+  llvm_ctx = tlctx->ctx;
 }
 
 void StructCompilerLLVM::generate_types(SNode &snode) {

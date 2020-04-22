@@ -104,7 +104,7 @@ def sample(p):
             elif random_in(f[3]):  # RFR
                 depth += 1
                 n = sign * gradient(p)
-                eta = 1.33
+                eta = 1.50
                 if sign > 0.0:
                     eta = 1 / eta
                 has, d = refract(d, n, eta)

@@ -1,7 +1,7 @@
 import taichi as ti
 import random
 
-ti.init(arch=ti.cuda)
+ti.init(arch=ti.gpu)
 
 dim = 2
 n_particles = 8192

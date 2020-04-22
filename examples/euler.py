@@ -6,7 +6,7 @@ import matplotlib.cm as cm
 #                      for compressible gas dynamics with reactive fronts"
 
 real = ti.f32
-ti.init(arch=ti.cuda, default_fp=real)
+ti.init(arch=ti.gpu, default_fp=real)
 
 N = 1024  # grid resolution
 CFL = .9  # keep below 1

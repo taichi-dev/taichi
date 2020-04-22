@@ -682,16 +682,11 @@ class KernelCodegen : public IRVisitor {
       emit("const int {} = {} - {};", total_elems_name, end_expr, begin_expr);
       ka.num_threads = kMaxNumThreadsGridStrideLoop;
     }
-    // (total_elems + thread_grid_size - 1) / thread_grid_size
-    emit("const int range_ = max((int)(({0} + {1} - 1) / {1}), 1);",
-         total_elems_name, kKernelGridSizeName);
-    // range_ * thread_id + begin_expr
-    emit("const int begin_ = (range_ * (int){}) + {};", kKernelThreadIdName,
-         begin_expr);
-    // min(range_ * (thread_id + 1), total_elems) + begin_expr
-    emit("const int end_ = min(range_ * (int)({} + 1), {}) + {};",
-         kKernelThreadIdName, total_elems_name, begin_expr);
-    emit("for (int ii = begin_; ii < end_; ++ii) {{");
+    // begin_ = thread_id   + begin_expr
+    emit("const int begin_ = {} + {};", kKernelThreadIdName, begin_expr);
+    // end_   = total_elems + begin_expr
+    emit("const int end_ = {} + {};", total_elems_name, begin_expr);
+    emit("for (int ii = begin_; ii < end_; ii += {}) {{", kKernelGridSizeName);
     {
       ScopedIndent s2(current_appender());
 
@@ -757,14 +752,10 @@ class KernelCodegen : public IRVisitor {
          sn_id);
     emit("const int child_stride = child_meta.element_stride;");
     emit("const int child_num_slots = child_meta.num_slots;");
-    emit(
-        "const int range_ = max((int)((child_list->max_num_elems + {0} - "
-        "1) / {0}), 1);",
-        kKernelGridSizeName);
-    emit("const int begin_ = range_ * (int){};", kKernelThreadIdName);
-    emit("const int end_ = min(begin_ + range_, child_list->max_num_elems);");
-
-    emit("for (int ii = begin_; ii < end_; ++ii) {{");
+    // Grid-stride loops:
+    // Each thread begins at thread_index, and incremets by grid_size
+    emit("for (int ii = {}; ii < child_list->max_num_elems; ii += {}) {{",
+         kKernelThreadIdName, kKernelGridSizeName);
     {
       ScopedIndent s2(current_appender());
       emit("const int parent_idx_ = (ii / child_num_slots);");

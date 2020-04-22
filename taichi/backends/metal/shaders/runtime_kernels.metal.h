@@ -73,12 +73,8 @@ STR(
       const SNodeMeta child_meta = runtime->snode_metas[child_snode_id];
       const int child_stride = child_meta.element_stride;
       const int num_slots = child_meta.num_slots;
-      const int range = max(
-          (int)((child_list->max_num_elems + grid_size - 1) / grid_size), 1);
-      const int begin = range * (int)utid_;
-      const int end = min(begin + range, child_list->max_num_elems);
 
-      for (int ii = begin; ii < end; ++ii) {
+      for (int ii = utid_; ii < child_list->max_num_elems; ii += grid_size) {
         const int parent_idx = (ii / num_slots);
         if (parent_idx >= num_active(parent_list)) {
           // Since |parent_idx| increases monotonically, we can return directly

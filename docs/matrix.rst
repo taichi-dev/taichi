@@ -82,6 +82,7 @@ As a temporary local variable
 
 
 .. function:: ti.Matrix(rows=[v0, v1, v2, ...])
+.. function:: ti.Matrix(cols=[v0, v1, v2, ...])
 
     :parameter v0: (vector) vector of elements forming first row (or column)
     :parameter v1: (vector) vector of elements forming second row (or column)

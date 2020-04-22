@@ -45,8 +45,8 @@ bool TypedConstant::from_binary_op(BinaryOpType op,
   PER_OP(sub, -)
   PER_OP(mul, *)
   PER_OP(div, /)
-  // PER_OP(truediv, /) // XXX: is this same as div?
-  // PER_OP(floordiv, /) // XXX: do we have std::floordiv?
+  PER_OP(truediv, /) // XXX: is this same as div?
+  PER_OP(floordiv, /) // XXX: do we have std::floordiv?
   // PER_OP(mod, %) // XXX: raw_mod or python-mod?
   PER_OP(bit_or, |)
   PER_OP(bit_and, &)

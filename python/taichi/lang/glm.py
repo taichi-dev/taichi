@@ -66,10 +66,6 @@ def distance(x, y):
     return (x - y).norm()
 
 @ti.func
-def dot(x, y):
-    return x.dot(y)
-
-@ti.func
 def normalize(x):
     return ti.Vector.normalized(x)
 
@@ -88,9 +84,9 @@ def reflect(i, n):
 def refract(i, n, eta):
     noi = n.dot(i)
     k = 1 - eta ** 2 * (1 - noi ** 2)
+    ret = i
     if k < 0:
-        for I in ti.static(ti.grouped(ti.ndrange(ret.m, ret.n))):
-            ret[I] = 0
+        ret *= 0
     else:
         ret = eta * i - (eta * noi + ti.sqrt(k)) * n
     return ret

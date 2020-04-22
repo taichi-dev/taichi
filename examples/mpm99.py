@@ -1,6 +1,6 @@
 import taichi as ti
 import numpy as np
-ti.init(arch=ti.x64) # Try to run on GPU. Use arch=ti.opengl on old GPUs
+ti.init(arch=ti.cuda) # Try to run on GPU. Use arch=ti.opengl on old GPUs
 quality = 1 # Use a larger value for higher-res simulations
 n_particles, n_grid = 9000 * quality ** 2, 128 * quality
 dx, inv_dx = 1 / n_grid, float(n_grid)

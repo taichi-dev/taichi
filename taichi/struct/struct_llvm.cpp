@@ -13,10 +13,10 @@ using namespace llvm;
 
 StructCompilerLLVM::StructCompilerLLVM(Program *prog, Arch arch)
     : StructCompiler(prog),
-      LLVMModuleBuilder(prog->get_llvm_context(arch)->get_init_module()),
+      LLVMModuleBuilder(prog->get_llvm_context(arch)->clone_runtime_module()),
       arch(arch) {
   tlctx = prog->get_llvm_context(arch);
-  llvm_ctx = tlctx->ctx;
+  llvm_ctx = tlctx->get_this_thread_context();
 }
 
 void StructCompilerLLVM::generate_types(SNode &snode) {
@@ -25,6 +25,7 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
   llvm::Type *node_type = nullptr;
 
   auto ctx = llvm_ctx;
+  TI_ASSERT(ctx == tlctx->get_this_thread_context());
 
   // create children type that supports forking...
 
@@ -78,9 +79,17 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
   // The aim is to give a **unique** name to the stub, so that we can look up
   // these types using this name. This decouples them from the LLVM context.
   // Note that body_type might not have a unique name, since literal structs
-  // (such as {i32, i32}) are uniqued in LLVM.
-  llvm::StructType::create(*ctx, {node_type, body_type, aux_type, ch_type},
-                           type_stub_name(&snode));
+  // (such as {i32, i32}) cannot be aliased in LLVM.
+  auto stub = llvm::StructType::create(
+      *ctx,
+      {node_type, body_type, aux_type ? aux_type : llvm::Type::getInt8Ty(*ctx),
+       // aux_type might be null
+       ch_type},
+      type_stub_name(&snode));
+
+  auto ft = llvm::FunctionType::get(llvm::PointerType::get(stub, 0), false);
+  llvm::Function::Create(ft, llvm::Function::ExternalLinkage,
+                         type_stub_name(&snode) + "_func", module.get());
 }
 
 void StructCompilerLLVM::generate_refine_coordinates(SNode *snode) {

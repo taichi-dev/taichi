@@ -3,6 +3,7 @@
 // llvm backend compiler (x64, arm64, cuda, amdgpu etc)
 // in charge of creating & JITing arch-specific LLVM modules,
 // and invoking compiled functions (kernels).
+// Designed to be multithreaded for parallel compilation.
 
 #include <mutex>
 #include <functional>
@@ -17,22 +18,34 @@ TLANG_NAMESPACE_BEGIN
 class JITSessionCPU;
 
 class TaichiLLVMContext {
- public:
-  std::unordered_map<std::thread::id, std::unique_ptr<llvm::LLVMContext>>
-      per_thread_context;
+ private:
+  struct ThreadLocalData {
+    std::unique_ptr<llvm::LLVMContext> llvm_context;
+    std::unique_ptr<llvm::Module> runtime_module, struct_module;
+  };
 
-  std::unique_ptr<llvm::Module> runtime_module, struct_module;
-  llvm::LLVMContext *ctx; // TODO: rename to main_llvm_context
-  std::unique_ptr<JITSession> jit;
-  JITModule *runtime_jit_module;
+  std::unordered_map<std::thread::id, std::unique_ptr<ThreadLocalData>>
+      per_thread_data;
+
+  std::thread::id main_thread_id;
+  ThreadLocalData *main_thread_data;
   std::mutex mut;
+
+ public:
+  std::unique_ptr<JITSession> jit;
+  // main_thread is defined to be the thread that runs the initializer
+  JITModule *runtime_jit_module;
   Arch arch;
+
+  ThreadLocalData *get_main_thread_data() {
+    return main_thread_data;
+  }
+
+  ThreadLocalData *get_this_thread_data();
 
   llvm::LLVMContext *get_this_thread_context();
 
   TaichiLLVMContext(Arch arch);
-
-  std::unique_ptr<llvm::Module> get_init_module();
 
   std::unique_ptr<llvm::Module> clone_struct_module();
 
@@ -57,6 +70,8 @@ class TaichiLLVMContext {
   std::unique_ptr<llvm::Module> clone_runtime_module();
 
   llvm::Type *get_data_type(DataType dt);
+
+  llvm::Module *get_this_thread_struct_module();
 
   template <typename T>
   llvm::Type *get_data_type() {
@@ -90,6 +105,9 @@ class TaichiLLVMContext {
       std::function<bool(const std::string &)> export_indicator);
 
   void mark_function_as_cuda_kernel(llvm::Function *func);
+
+  std::unique_ptr<llvm::Module> clone_module_to_this_thread_context(
+      llvm::Module *module);
 
   virtual ~TaichiLLVMContext();
 };

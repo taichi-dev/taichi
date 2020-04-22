@@ -27,6 +27,8 @@ class TaichiLLVMContext {
   std::unordered_map<std::thread::id, std::unique_ptr<ThreadLocalData>>
       per_thread_data;
 
+  Arch arch;
+
   std::thread::id main_thread_id;
   ThreadLocalData *main_thread_data;
   std::mutex mut;
@@ -35,13 +37,6 @@ class TaichiLLVMContext {
   std::unique_ptr<JITSession> jit;
   // main_thread is defined to be the thread that runs the initializer
   JITModule *runtime_jit_module;
-  Arch arch;
-
-  ThreadLocalData *get_main_thread_data() {
-    return main_thread_data;
-  }
-
-  ThreadLocalData *get_this_thread_data();
 
   llvm::LLVMContext *get_this_thread_context();
 
@@ -108,6 +103,8 @@ class TaichiLLVMContext {
 
   std::unique_ptr<llvm::Module> clone_module_to_this_thread_context(
       llvm::Module *module);
+
+  ThreadLocalData *get_this_thread_data();
 
   virtual ~TaichiLLVMContext();
 };

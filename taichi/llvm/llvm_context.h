@@ -38,6 +38,10 @@ class TaichiLLVMContext {
   // main_thread is defined to be the thread that runs the initializer
   JITModule *runtime_jit_module;
 
+  std::unique_ptr<llvm::Module> clone_module_to_context(
+      llvm::Module *module,
+      llvm::LLVMContext *target_context);
+
   llvm::LLVMContext *get_this_thread_context();
 
   TaichiLLVMContext(Arch arch);

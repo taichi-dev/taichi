@@ -174,14 +174,17 @@ std::string libdevice_path() {
   return fmt::format("{}/slim_libdevice.{}.bc", folder, cuda_version_major);
 }
 
-std::unique_ptr<llvm::Module> clone_module_to_context(
+std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_module_to_context(
     llvm::Module *module,
     llvm::LLVMContext *target_context) {
+  // Dump a module from one context to bitcode and then parse the bitcode in a
+  // different context
   std::string bitcode;
 
   {
-    // Use a scope to make sure sos flushes on destruction
+    std::lock_guard<std::mutex> _(mut);
     llvm::raw_string_ostream sos(bitcode);
+    // Use a scope to make sure sos flushes on destruction
     llvm::WriteBitcodeToFile(*module, sos);
   }
 

@@ -1,7 +1,7 @@
 import taichi as ti
 import os
 
-ti.init(arch=ti.cuda)
+ti.init(arch=ti.gpu)
 
 real = ti.f32
 dim = 2

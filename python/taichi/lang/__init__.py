@@ -255,17 +255,18 @@ def supported_archs():
         archs.append(metal)
     if ti.core.with_opengl():
         archs.append(opengl)
-    wanted_archs = os.environ.get('TI_WANTED_ARCHS', '').split(',')
+    wanted_archs = os.environ.get('TI_WANTED_ARCHS', '')
+    want_exclude = wanted_archs.startswith('^')
+    if want_exclude:
+        wanted_archs = wanted_archs[1:]
+    wanted_archs = wanted_archs.split(',')
     # Note, ''.split(',') gives you [''], which is not an empty array.
     wanted_archs = list(filter(lambda x: x != '', wanted_archs))
-    excluded_archs = list(filter(lambda x: x.startswith('^'), wanted_archs))
-    included_archs = list(filter(lambda x: not x.startswith('^'), wanted_archs))
-    if included_archs or excluded_archs:
+    if len(wanted_archs):
         archs, old_archs = [], archs
         for arch in old_archs:
-            if ti.core.arch_name(arch) in included_archs:
-                if ti.core.arch_name(arch) not in excluded_archs:
-                    archs.append(arch)
+            if want_exclude != (ti.core.arch_name(arch) not in wanted_archs):
+                archs.append(arch)
     return archs
 
 

@@ -123,6 +123,7 @@ void compile_to_offloads(IRNode *ir,
 namespace analysis {
 void check_fields_registered(IRNode *root);
 int count_statements(IRNode *root);
+bool detect_constexpr(IRNode *root);
 std::unordered_set<Stmt *> detect_fors_with_break(IRNode *root);
 std::unordered_set<Stmt *> detect_loops_with_continue(IRNode *root);
 std::unordered_set<SNode *> gather_deactivations(IRNode *root);

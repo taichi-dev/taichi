@@ -141,10 +141,49 @@ class ConstantFold : public BasicStmtVisitor {
   }
 };
 
+class ConstantFoldJIT : public BasicStmtVisitor {
+ public:
+  using BasicStmtVisitor::visit;
+  std::vector<BinaryOpStmt *> bops;
+  std::vector<UnaryOpStmt *> uops;
+
+  ConstantFoldJIT() : BasicStmtVisitor() {
+  }
+
+  void visit(UnaryOpStmt *stmt) override {
+    uops->push_back(stmt);
+  }
+
+  void visit(BinaryOpStmt *stmt) override {
+    bops->push_back(stmt);
+  }
+
+  static Kernel *get_jit_constexpr_kernel() {
+    auto kernel_name = fmt::format("jit_constexpr_{}", 0);
+    auto &ker = kernel([&] {});
+    ker.set_arch(get_current_program().config.arch);
+    ker.name = kernel_name;
+    ker.is_accessor = true;
+    return ker;
+  }
+
+  static void launch_jit(Stmt *stmt) {
+    Kernel *jit_kernel = xxx;
+    get_current_program().synchronize();
+    (*jit_kernel)();
+  }
+
+  static void run(IRNode *node) {
+    ConstantFoldJIT folder;
+    node->accept(&folder);
+    launch_jit(bop->back());
+  }
+};
+
 namespace irpass {
 
 void constant_fold(IRNode *root) {
-  return ConstantFold::run(root);
+  return ConstantFoldJIT::run(root);
 }
 
 }  // namespace irpass

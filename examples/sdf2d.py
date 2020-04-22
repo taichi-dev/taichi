@@ -1,5 +1,6 @@
 import taichi as ti
 from math import tau
+from renderer_utils import reflect, refract
 ti.init()
 
 N = 512
@@ -7,8 +8,8 @@ img = ti.var(dt=ti.f32, shape=(N, N))
 light_pos = ti.Vector(2, dt=ti.f32, shape=())
 
 @ti.func
-def vres(distance, emission, refl_rate, refl_color):
-    return ti.Vector([distance, emission, refl_rate, refl_color])
+def vres(distance, emission, reflection):
+    return ti.Vector([distance, emission, reflection])
 
 @ti.func
 def vec2(x, y):
@@ -29,10 +30,6 @@ def intersect(a, b):
     if a[0] < b[0]:
         a = b
     return a
-
-@ti.func
-def reflect(r, n):
-    return r - 2 * r.dot(n) * n
 
 @ti.func
 def subtract(a, b):
@@ -65,9 +62,8 @@ def gradient(p):  # ASK(yuanming-hu): do we have sdf.grad?
 @ti.func
 def sample(p):
     a = ti.random() * tau
-    d = ti.Vector([ti.cos(a), ti.sin(a)])
+    d = vec2(ti.cos(a), ti.sin(a))
     ret = 0.0
-    fac = 1.0
     depth = 0
     steps = 0
     while depth < 5 and steps < 1e4:
@@ -76,11 +72,10 @@ def sample(p):
         f[0] = ti.max(f[0], 0.0)
         p += d * f[0]
         if f[0] < 1e-4:
-            ret += fac * f[1]
+            ret += f[1]
             if f[2] != 0.0:  # REL: #832
                 if ti.random() < f[2]:
                     depth += 1
-                    fac *= f[3]
                     n = gradient(p)
                     d = reflect(d, n)
                     p += n * 1e-3

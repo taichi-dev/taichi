@@ -54,12 +54,12 @@ def sdf_moon(p):
 @ti.func
 def sdf_lens(p):
     #       EMI, RFL, RFR
-    d1 = vres((p - vec2(0.5, 0.4)).norm() - 0.15,
+    d1 = vres((p - vec2(0.5, 0.28)).norm() - 0.2,
             0.0, 0.3, 1.0)
-    d2 = vres((p - vec2(0.5, 0.6)).norm() - 0.15,
+    d2 = vres((p - vec2(0.5, 0.6)).norm() - 0.2,
             0.0, 0.3, 1.0)
-    d3 = vres((p - light_pos).norm() - 0.01,
-            10.0, 0.0, 0.0)
+    d3 = vres((p - light_pos).norm() - 0.05,
+            5.0, 0.0, 0.0)
     return union(intersect(d1, d2), d3)
 
 sdf = sdf_lens

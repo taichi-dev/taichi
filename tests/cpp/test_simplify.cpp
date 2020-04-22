@@ -36,8 +36,10 @@ TI_TEST("simplify") {
     irpass::alg_simp(block.get(), CompileConfig());
     irpass::die(block.get());  // should eliminate consts
     // irpass::print(block.get());
-    TI_CHECK(block->size() ==
-             5);  // get root, const 0, lookup, get child, lookup
+    if (advanced_optimization) {
+      // get root, const 0, lookup, get child, lookup
+      TI_CHECK(block->size() == 5);
+    }
   }
 }
 

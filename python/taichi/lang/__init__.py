@@ -142,7 +142,7 @@ def init(arch=None,
         print(f'Following TI_ARCH setting up for arch={env_arch}')
         arch = ti.core.arch_from_name(env_arch)
 
-    ti.cfg.arch = arch_fallback(arch)
+    ti.cfg.arch = adaptive_arch_select(arch)
 
     log_level = os.environ.get("TI_LOG_LEVEL")
     if log_level is not None:
@@ -270,9 +270,9 @@ def supported_archs():
     return archs
 
 
-def arch_fallback(arch):
+def adaptive_arch_select(arch):
     if arch is None:
-        return ti.cpu
+        return cpu
     supported = supported_archs()
     if isinstance(arch, list):
         for a in arch:
@@ -281,7 +281,7 @@ def arch_fallback(arch):
     elif arch in supported:
         return arch
     print(f'Arch={arch} not supported, falling back to CPU')
-    return ti.cpu
+    return cpu
 
 
 class _ArchCheckers(object):

@@ -3,7 +3,7 @@ Hello, world!
 
 We introduce the Taichi programming language through a very basic `fractal` example.
 
-If you haven't done so, please install Taichi via ``pip``:
+First of all, let's install Taichi via ``pip``:
 
 .. code-block:: bash
 
@@ -21,7 +21,7 @@ Now you are ready to run the Taichi code below (``python3 fractal.py``) to compu
 
   import taichi as ti
 
-  ti.init(arch=ti.cuda) # Run on GPU by default
+  ti.init(arch=ti.gpu) # Run on GPU by default
 
   n = 320
   pixels = ti.var(dt=ti.f32, shape=(n * 2, n))
@@ -67,6 +67,8 @@ Taichi code can run on CPUs or GPUs. Initialize Taichi according to your hardwar
 
 .. code-block:: python
 
+  # Run on GPU, automatically detect backend
+  ti.init(arch=ti.gpu)
   # Run on NVIDIA GPU, CUDA required
   ti.init(arch=ti.cuda)
   # Run on GPU, with the OpenGL backend
@@ -74,7 +76,7 @@ Taichi code can run on CPUs or GPUs. Initialize Taichi according to your hardwar
   # Run on GPU, with the Apple Metal backend, if you are on OS X
   ti.init(arch=ti.metal)
   # Run on CPU (default)
-  ti.init(arch=ti.x64)
+  ti.init(arch=ti.cpu)
 
 .. note::
     Supported backends on different platforms:
@@ -82,7 +84,7 @@ Taichi code can run on CPUs or GPUs. Initialize Taichi according to your hardwar
     +----------+------+------+--------+-------+
     | platform | CPU  | CUDA | OpenGL | Metal |
     +==========+======+======+========+=======+
-    | Windows  | OK   | OK   | WIP    | N/A   |
+    | Windows  | OK   | OK   | OK     | N/A   |
     +----------+------+------+--------+-------+
     | Linux    | OK   | OK   | OK     | N/A   |
     +----------+------+------+--------+-------+
@@ -91,7 +93,9 @@ Taichi code can run on CPUs or GPUs. Initialize Taichi according to your hardwar
 
     (OK: supported, WIP: work in progress, N/A: not available)
 
-    If the machine does not have CUDA support, Taichi will fall back to CPUs instead.
+    When specified ``arch=ti.gpu``, Taichi will try to run on CUDA.
+    If CUDA is not supported or not installed on your machine, it will fallback to Metal or OpenGL.
+    If Metal or OpenGL is also not supported, it will fallback to CPUs.
 
 .. note::
 

@@ -2,7 +2,7 @@ import taichi as ti
 
 
 @ti.all_archs
-def test_POT():
+def test_POT1():
     val = ti.var(ti.i32)
 
     n = 4
@@ -18,7 +18,7 @@ def test_POT():
 
 
 @ti.all_archs
-def test_POT():
+def test_POT2():
     val = ti.var(ti.i32)
 
     n = 3

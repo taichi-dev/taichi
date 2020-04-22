@@ -265,7 +265,7 @@ def supported_archs():
     if len(wanted_archs):
         archs, old_archs = [], archs
         for arch in old_archs:
-            if want_exclude != (ti.core.arch_name(arch) not in wanted_archs):
+            if want_exclude == (ti.core.arch_name(arch) not in wanted_archs):
                 archs.append(arch)
     return archs
 

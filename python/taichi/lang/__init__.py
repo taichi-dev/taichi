@@ -31,6 +31,8 @@ arm64 = core.arm64
 cuda = core.cuda
 metal = core.metal
 opengl = core.opengl
+gpu = [cuda, metal, opengl]
+cpu = core.host_arch()
 profiler_print = lambda: core.get_current_program().profiler_print()
 profiler_clear = lambda: core.get_current_program().profiler_clear()
 profiler_start = lambda n: core.get_current_program().profiler_start(n)
@@ -55,7 +57,8 @@ def reset():
     runtime = get_runtime()
 
 
-def init(default_fp=None,
+def init(arch=None,
+         default_fp=None,
          default_ip=None,
          print_preprocessed=None,
          debug=None,
@@ -130,13 +133,16 @@ def init(default_fp=None,
     boolean_config("verbose")
     boolean_config("fast_math")
     boolean_config("async")
+    boolean_config("print_benchmark_stat")
     gdb_trigger = os.environ.get("TI_GDB_TRIGGER")
     if gdb_trigger is not None:
         ti.set_gdb_trigger(len(gdb_trigger) and bool(int(gdb_trigger)))
-    arch = os.environ.get("TI_ARCH")
-    if arch is not None:
-        print(f'Following TI_ARCH setting up for arch={arch}')
-        ti.cfg.arch = ti.core.arch_from_name(arch)
+    env_arch = os.environ.get("TI_ARCH")
+    if env_arch is not None:
+        print(f'Following TI_ARCH setting up for arch={env_arch}')
+        arch = ti.core.arch_from_name(env_arch)
+
+    ti.cfg.arch = adaptive_arch_select(arch)
 
     log_level = os.environ.get("TI_LOG_LEVEL")
     if log_level is not None:
@@ -262,6 +268,20 @@ def supported_archs():
             if ti.core.arch_name(arch) in wanted_archs:
                 archs.append(arch)
     return archs
+
+
+def adaptive_arch_select(arch):
+    if arch is None:
+        return cpu
+    supported = supported_archs()
+    if isinstance(arch, list):
+        for a in arch:
+            if a in supported:
+                return a
+    elif arch in supported:
+        return arch
+    print(f'Arch={arch} not supported, falling back to CPU')
+    return cpu
 
 
 class _ArchCheckers(object):

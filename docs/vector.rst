@@ -107,6 +107,8 @@ As a temporary local variable
 Methods
 -------
 
+Vector related methods in Taichi are quite like those in GLSL (OpenGL shader language). Thus saving learning efforts.
+
 .. function:: ti.length(a, eps = 0)
 .. function:: a.norm(eps = 0)
 
@@ -128,12 +130,30 @@ Methods
 
 .. function:: a.norm_sqr(eps = 0)
 
-    Squared magnitude of vector ``a``, equivalent to ``a.norm() ** 2``.
+    :parameter a: (Vector)
+    :return: (scalar) square of the magnitude of vector
+
+    Equivalent to ``a.norm() ** 2`` and ``a.dot(a)``.
 
 
 .. function:: ti.distance(a, b, eps = 0)
 
-    Distance between two point, equivalent to ``ti.length(a - b)``.
+    :parameter a: (Vector)
+    :parameter b: (Vector)
+    :return: (scalar) distance between two point
+
+    Equivalent to ``ti.length(a - b)``.
+
+
+.. function:: ti.normalize(a, b, eps = 0)
+
+    :parameter a: (Vector)
+    :return: (Vector) the normalized vector, whose length is ``1`` and pointing at the same direction with ``a``
+
+    Equivalent to ``a / ti.length(a)``.
+
+.. note::
+    ``ti.normalize`` doesn't write back result to ``a``, it just return the normalized result, just like what ``normalize`` does in GLSL.
 
 
 .. function:: ti.dot(a, b)

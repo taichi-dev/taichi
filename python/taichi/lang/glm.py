@@ -66,8 +66,8 @@ def distance(x, y, eps=0):
     return (x - y).norm(eps)
 
 @ti.func
-def normalize(x):
-    return ti.Vector.normalized(x)
+def normalize(x, eps=0):
+    return ti.Vector.normalized(x, eps)
 
 @ti.func
 def faceforward(n, i, r):

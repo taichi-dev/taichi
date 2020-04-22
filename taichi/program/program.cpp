@@ -223,7 +223,7 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
       std::size_t node_size;
       auto element_size =
           tlctx->get_type_size(StructCompilerLLVM::get_llvm_element_type(
-              tlctx->struct_module.get(), snodes[i]));
+              tlctx->get_this_thread_struct_module(), snodes[i]));
       if (snodes[i]->type == SNodeType::pointer) {
         // pointer. Allocators are for single elements
         node_size = element_size;

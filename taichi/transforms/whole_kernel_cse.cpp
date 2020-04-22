@@ -28,8 +28,6 @@ class WholeKernelCSE : public BasicStmtVisitor {
     // Move common statements at the beginning or the end of both branches
     // outside.
     if (if_stmt->true_statements && if_stmt->false_statements) {
-      auto block = if_stmt->parent;
-      int current_stmt_id = block->locate(if_stmt);
       auto &true_clause = if_stmt->true_statements;
       auto &false_clause = if_stmt->false_statements;
       if (irpass::analysis::same_statements(

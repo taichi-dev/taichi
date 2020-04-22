@@ -7,11 +7,11 @@
 
 #include <mutex>
 #include <functional>
+#include <thread>
 
 #include "taichi/lang_util.h"
 #include "taichi/llvm/llvm_fwd.h"
 #include "taichi/ir/snode.h"
-#include "taichi/system/threading.h"
 #include "taichi/jit/jit_session.h"
 
 TLANG_NAMESPACE_BEGIN

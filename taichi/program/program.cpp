@@ -127,6 +127,8 @@ Program::Program(Arch desired_arch) {
     }
   }
 
+  stat.clear();
+
   TI_TRACE("Program ({}) arch={} initialized.", fmt::ptr(this),
            arch_name(arch));
 }

@@ -26,4 +26,8 @@ void Statistics::print(std::string *output) {
   }
 }
 
+void Statistics::clear() {
+  counters.clear();
+}
+
 TI_NAMESPACE_END

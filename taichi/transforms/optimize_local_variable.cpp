@@ -225,12 +225,13 @@ class AllocaOptimize : public IRVisitor {
       // no nested loops with the same alloca
       TI_ASSERT(is_inside_loop == outside_loop);
     }
-    AllocaOptimize loop(alloca_stmt);
-    loop.is_inside_loop = inside_loop_may_have_stores;
     if (is_inside_loop == inside_loop_no_stores) {
       // Already checked that there are no stores inside.
-      loop.is_inside_loop = inside_loop_no_stores;
+      body->accept(this);
+      return;
     }
+    AllocaOptimize loop(alloca_stmt);
+    loop.is_inside_loop = inside_loop_may_have_stores;
     body->accept(&loop);
 
     stored = stored || loop.stored;

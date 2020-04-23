@@ -17,7 +17,8 @@ KernelCodeGen::KernelCodeGen(Kernel *kernel, IRNode *ir)
   if (ir == nullptr)
     this->ir = kernel->ir;
 
-  stat.add("codegen_statements", irpass::analysis::count_statements(this->ir));
+  if (!kernel->is_accessor)
+    stat.add("codegen_statements", irpass::analysis::count_statements(this->ir));
 }
 
 FunctionType KernelCodeGen::compile() {

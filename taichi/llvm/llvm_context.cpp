@@ -198,9 +198,12 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_module_to_context(
 
 std::unique_ptr<llvm::Module>
 TaichiLLVMContext::clone_module_to_this_thread_context(llvm::Module *module) {
+  TI_TRACE("Cloning struct module");
   TI_ASSERT(module);
   auto this_context = get_this_thread_context();
-  return clone_module_to_context(module, this_context);
+  auto result = clone_module_to_context(module, this_context);
+  TI_TRACE("Cloned struct module");
+  return result;
 }
 
 std::unique_ptr<llvm::Module> module_from_bitcode_file(std::string bitcode_path,
@@ -383,6 +386,8 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
     TI_PROFILER("clone module");
     cloned = llvm::CloneModule(*data->runtime_module);
   }
+
+  TI_ASSERT(cloned != nullptr);
 
   return cloned;
 }
@@ -607,7 +612,7 @@ void TaichiLLVMContext::eliminate_unused_functions(
 }
 
 TaichiLLVMContext::ThreadLocalData *TaichiLLVMContext::get_this_thread_data() {
-  std::lock_guard<std::mutex> _(mut);
+  std::lock_guard<std::mutex> _(thread_map_mut);
   auto tid = std::this_thread::get_id();
   if (per_thread_data.find(tid) == per_thread_data.end()) {
     std::stringstream ss;

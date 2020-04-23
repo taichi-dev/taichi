@@ -32,6 +32,7 @@ class TaichiLLVMContext {
   std::thread::id main_thread_id;
   ThreadLocalData *main_thread_data;
   std::mutex mut;
+  std::mutex thread_map_mut;
 
  public:
   std::unique_ptr<JITSession> jit;

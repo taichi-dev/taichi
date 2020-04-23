@@ -87,6 +87,7 @@ class JITSessionCPU : public JITSession {
 
   std::unique_ptr<JITCompileCallbackManager> CompileCallbackManager;
   LegacyCompileOnDemandLayer<decltype(OptimizeLayer)> CODLayer;
+  std::mutex mut;
 
  public:
   JITSessionCPU(JITTargetMachineBuilder JTMB, DataLayout DL)
@@ -125,6 +126,7 @@ class JITSessionCPU : public JITSession {
   }
 
   JITModule *add_module(std::unique_ptr<llvm::Module> M) override {
+    std::lock_guard<std::mutex> _(mut);
     TI_ASSERT(M);
     global_optimize_module_cpu(M);
     // Create a new VModuleKey.
@@ -154,6 +156,7 @@ class JITSessionCPU : public JITSession {
   }
 
   void *lookup(const std::string Name) override {
+    std::lock_guard<std::mutex> _(mut);
     std::string MangledName;
     raw_string_ostream MangledNameStream(MangledName);
     Mangler::getNameWithPrefix(MangledNameStream, Name, DL);
@@ -164,6 +167,7 @@ class JITSessionCPU : public JITSession {
   }
 
   void *lookup_in_module(VModuleKey key, const std::string Name) {
+    std::lock_guard<std::mutex> _(mut);
     std::string MangledName;
     raw_string_ostream MangledNameStream(MangledName);
     Mangler::getNameWithPrefix(MangledNameStream, Name, DL);

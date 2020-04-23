@@ -24,7 +24,7 @@ grid_m = ti.var(dt=ti.f32, shape=(n_grid, n_grid))  # grid node mass
 
 @ti.kernel
 def substep():
-    for K in ti.static(range(16)):
+    for K in ti.static(range(4)):
         for p in x:
             base = (x[p] * inv_dx - 0.5).cast(int)
             fx = x[p] * inv_dx - base.cast(float)
@@ -65,7 +65,8 @@ def substep():
                 grid_m[base + offset] += weight * p_mass
 
 
-substep()
+for i in range(1):
+    substep()
 
 ti.profiler_print()
 ti.core.print_profile_info()

@@ -75,9 +75,10 @@ class ParallelExecutor {
       std::unique_lock<std::mutex> lock(mut);
       if (status == ExecutorStatus::uninitialized) {
         lock.unlock();
-        Time::sleep(1e-6);
+        Time::sleep(1e-3);
         continue;  // wait until initialized
       }
+      // TI_TAG;
       if (status == ExecutorStatus::finalized && task_queue.empty()) {
         break;  // finalized, exit
       }
@@ -135,6 +136,10 @@ class ExecutionQueue {
   void launch_task() {
   }
 
+  void clear_cache() {
+    compiled_func.clear();
+  }
+
   void synchronize();
 };
 
@@ -152,6 +157,10 @@ class AsyncEngine {
   }
 
   void optimize() {
+  }
+
+  void clear_cache() {
+    queue.clear_cache();
   }
 
   void launch(Kernel *kernel);

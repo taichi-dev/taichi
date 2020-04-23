@@ -1,4 +1,5 @@
 #include "taichi/system/profiler.h"
+#include "taichi/common/util.h"
 
 TI_NAMESPACE_BEGIN
 
@@ -210,6 +211,7 @@ void ProfilerRecords::print(ProfilerRecordNode *node, int depth) {
 }
 
 ScopedProfiler::ScopedProfiler(std::string name, uint64 elements) {
+  TI_TRACE("Entering scope {}", name);
   start_time = Time::get_time();
   this->name = name;
   this->elements = elements;
@@ -241,6 +243,7 @@ ScopedProfiler::~ScopedProfiler() {
   if (!stopped) {
     stop();
   }
+  TI_TRACE("Exiting scope {}", name);
 }
 
 Profiling &Profiling::get_instance() {

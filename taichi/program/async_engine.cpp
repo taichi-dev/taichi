@@ -44,7 +44,9 @@ void ExecutionQueue::synchronize() {
       to_be_compiled.insert(h);
       compilation_workers.enqueue([&, ker, h, this]() {
         {
+          TI_TRACE("Codegen...");
           auto func = CodeGenCPU(ker.kernel, ker.stmt).codegen();
+          TI_TRACE("Codegen done");
           std::lock_guard<std::mutex> _(mut);
           compiled_func[h] = func;
         }
@@ -59,9 +61,12 @@ void ExecutionQueue::synchronize() {
   while (!task_queue.empty()) {
     auto ker = task_queue.front();
     auto h = hash(ker.stmt);
+    TI_ASSERT(compiled_func[h] != nullptr);
     compiled_func[h](ker.context);
     task_queue.pop_front();
   }
+
+  // clear_cache();
 }
 
 void AsyncEngine::launch(Kernel *kernel) {

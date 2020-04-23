@@ -682,14 +682,16 @@ class BasicBlockSimplify : public IRVisitor {
     }
 
     // step 2: eliminate useless extraction of another OffsetAndExtractBitsStmt
-    if (stmt->offset == 0 &&
-        stmt->bit_begin == 0 &&
-        stmt->input->is<OffsetAndExtractBitsStmt>()) {
-      auto bstmt = stmt->input->as<OffsetAndExtractBitsStmt>();
-      if (stmt->bit_end == bstmt->bit_end - bstmt->bit_begin) {
-        stmt->replace_with(bstmt);
-        stmt->parent->erase(current_stmt_id);
-        throw IRModified();
+    if (advanced_optimization) {
+      if (stmt->offset == 0 &&
+          stmt->bit_begin == 0 &&
+          stmt->input->is<OffsetAndExtractBitsStmt>()) {
+        auto bstmt = stmt->input->as<OffsetAndExtractBitsStmt>();
+        if (stmt->bit_end == bstmt->bit_end - bstmt->bit_begin) {
+          stmt->replace_with(bstmt);
+          stmt->parent->erase(current_stmt_id);
+          throw IRModified();
+        }
       }
     }
 

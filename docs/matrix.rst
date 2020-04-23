@@ -28,7 +28,7 @@ Declaration
 -----------
 
 As global tensors of matrices
-++++++++++++++++++++++++++++
++++++++++++++++++++++++++++++
 
 .. function:: ti.Matrix(n, m, dt=type, shape=shape)
 

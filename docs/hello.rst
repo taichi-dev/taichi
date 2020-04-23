@@ -94,8 +94,8 @@ Taichi code can run on CPUs or GPUs. Initialize Taichi according to your hardwar
     (OK: supported, WIP: work in progress, N/A: not available)
 
     When specified ``arch=ti.gpu``, Taichi will try to run on CUDA.
-    If CUDA is not supported or not installed on your machine, it will fallback to Metal or OpenGL.
-    If Metal or OpenGL is also not supported, it will fallback to CPUs.
+    If CUDA is not supported on your machine, Taichi will fall back to Metal or OpenGL.
+    If no GPU backend (CUDA, Metal, or OpenGL) is supported, Taichi will fall back to CPUs.
 
 .. note::
 

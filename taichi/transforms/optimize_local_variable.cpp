@@ -80,6 +80,11 @@ class AllocaOptimize : public IRVisitor {
   void visit(LocalStoreStmt *stmt) override {
     if (stmt->ptr != alloca_stmt)
       return;
+    if (last_store && !last_store_loaded) {
+      // The last store is never loaded.
+      last_store->parent->erase(last_store);
+      throw IRModified();
+    }
     stored = true;
     last_store = stmt;
     last_store_valid = true;

@@ -6,7 +6,7 @@ ti.init(arch=ti.x64)
 RES = 1024
 K = 2
 R = 7
-N = K ** R
+N = K**R
 
 Broot = ti.root
 B = ti.root
@@ -18,11 +18,13 @@ B.place(qt)
 
 img = ti.Vector(3, dt=ti.f32, shape=(RES, RES))
 
+
 @ti.kernel
 def action(p: ti.ext_arr()):
     a = ti.cast(p[0] * N, ti.i32)
     b = ti.cast(p[1] * N, ti.i32)
     qt[a, b] = 1
+
 
 @ti.func
 def draw_rect(b, i, j, s, k, dx, dy):
@@ -34,6 +36,7 @@ def draw_rect(b, i, j, s, k, dx, dy):
         a += ti.is_active(b, [x - dx, y - dy])
     return a
 
+
 @ti.kernel
 def paint():
     for i, j in img:
@@ -42,14 +45,15 @@ def paint():
     for i, j in img:
         s = RES // N
         for r in ti.static(range(R)):
-            k = RES // K ** (R-r)
-            ia = draw_rect(qt.parent(r+1), i, j, s, k, 1, 0)
-            ja = draw_rect(qt.parent(r+1), i, j, s, k, 0, 1)
-            img[i, j][0] += (ia + ja) * ((R-r) / R) ** 2
+            k = RES // K**(R - r)
+            ia = draw_rect(qt.parent(r + 1), i, j, s, k, 1, 0)
+            ja = draw_rect(qt.parent(r + 1), i, j, s, k, 0, 1)
+            img[i, j][0] += (ia + ja) * ((R - r) / R)**2
 
 
 def vec2_npf32(m):
     return np.array([m[0], m[1]], dtype=np.float32)
+
 
 gui = ti.GUI('Quadtree', (RES, RES))
 while not gui.get_event(ti.GUI.PRESS):

@@ -1,4 +1,5 @@
 #include "taichi/ir/ir.h"
+#include "taichi/program/program.h"
 #include <deque>
 #include <set>
 #include <cmath>
@@ -151,32 +152,48 @@ class ConstantFoldJIT : public BasicStmtVisitor {
   }
 
   void visit(UnaryOpStmt *stmt) override {
-    uops->push_back(stmt);
+    uops.push_back(stmt);
   }
 
   void visit(BinaryOpStmt *stmt) override {
-    bops->push_back(stmt);
+    bops.push_back(stmt);
   }
 
-  static Kernel *get_jit_constexpr_kernel() {
+  static Kernel *get_jit_constexpr_kernel(Stmt *stmt) {
+    // BEGIN: generic visitor to extract all oprand
+    auto bop = stmt->cast<BinaryOpStmt>();
+    auto lhs = bop->lhs;
+    auto rhs = bop->rhs;
+    // END: generic visitor to extract all oprand
     auto kernel_name = fmt::format("jit_constexpr_{}", 0);
-    auto &ker = kernel([&] {});
-    ker.set_arch(get_current_program().config.arch);
-    ker.name = kernel_name;
-    ker.is_accessor = true;
+    auto func = [] () {
+    };
+    auto ker = new Kernel(get_current_program(), func, kernel_name); // ???
+    // ker->ir = insert(bop, lhs, rhs)!!!!
+    ker->set_arch(Arch::x64); // X: host_arch
+    // ker->is_accessor = true; // X: is_tiny_kernel?
     return ker;
   }
 
   static void launch_jit(Stmt *stmt) {
-    Kernel *jit_kernel = xxx;
+    Kernel *jit_kernel = get_jit_constexpr_kernel(stmt);
     get_current_program().synchronize();
+    get_current_program().config.no_cp2o = true;
+    TI_INFO("Launching JIT evaluator IN");
     (*jit_kernel)();
+    TI_INFO("Launching JIT evaluator OUT");
+    get_current_program().config.no_cp2o = false;
   }
 
   static void run(IRNode *node) {
+    TI_INFO("!!! FANLE");
     ConstantFoldJIT folder;
     node->accept(&folder);
-    launch_jit(bop->back());
+    if (folder.bops.size()) {
+      auto back = folder.bops.back();
+      folder.bops.pop_back();
+      launch_jit(back);
+    }
   }
 };
 

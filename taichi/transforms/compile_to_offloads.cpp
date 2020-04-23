@@ -1,4 +1,5 @@
 #include "taichi/ir/ir.h"
+#include "taichi/program/program.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -10,6 +11,9 @@ void compile_to_offloads(IRNode *ir,
                          bool grad,
                          bool ad_use_stack,
                          bool verbose) {
+  if (get_current_program().config.no_cp2o)
+    return;
+
   TI_AUTO_PROF;
 
   auto print = [&](const std::string &name) {

@@ -91,6 +91,7 @@ void simplify(IRNode *root);
 void alg_simp(IRNode *root, const CompileConfig &config);
 void whole_kernel_cse(IRNode *root);
 void optimize_local_variable(IRNode *root);
+void optimize_global_variable(IRNode *root);
 void full_simplify(IRNode *root, const CompileConfig &config);
 void print(IRNode *root, std::string *output = nullptr);
 void lower(IRNode *root);

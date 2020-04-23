@@ -681,7 +681,19 @@ class BasicBlockSimplify : public IRVisitor {
       }
     }
 
-    // step 2: eliminate dup
+    // step 2: eliminate useless extraction of another OffsetAndExtractBitsStmt
+    if (stmt->offset == 0 &&
+        stmt->bit_begin == 0 &&
+        stmt->input->is<OffsetAndExtractBitsStmt>()) {
+      auto bstmt = stmt->input->as<OffsetAndExtractBitsStmt>();
+      if (stmt->bit_end == bstmt->bit_end - bstmt->bit_begin) {
+        stmt->replace_with(bstmt);
+        stmt->parent->erase(current_stmt_id);
+        throw IRModified();
+      }
+    }
+
+    // step 3: eliminate dup
     for (int i = 0; i < current_stmt_id; i++) {
       auto &bstmt = block->statements[i];
       if (stmt->ret_type == bstmt->ret_type) {

@@ -28,8 +28,6 @@ void Statistics::print(std::string *output) {
 
 void Statistics::clear() {
   counters.clear();
-  counters["codegen_statements"] = 0;
-  counters["codegen_offloaded_tasks"] = 0;
 }
 
 TI_NAMESPACE_END

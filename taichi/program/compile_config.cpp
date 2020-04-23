@@ -2,7 +2,7 @@
 
 TLANG_NAMESPACE_BEGIN
 
-const bool advanced_optimization = true;
+const bool advanced_optimization = false;
 
 CompileConfig::CompileConfig() {
   arch = host_arch();

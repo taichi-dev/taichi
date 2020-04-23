@@ -20,6 +20,8 @@ def expr_init(rhs):
             return rhs
         elif isinstance(rhs, ti.ndrange):
             return rhs
+        elif isinstance(rhs, ti.SNode):
+            return rhs
         elif hasattr(rhs, '_data_oriented'):
             return rhs
         else:

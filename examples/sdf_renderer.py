@@ -3,7 +3,7 @@ import time
 import math
 import numpy as np
 
-ti.init(arch=ti.cuda)
+ti.init(arch=ti.gpu)
 res = 1280, 720
 color_buffer = ti.Vector(3, dt=ti.f32, shape=res)
 max_ray_depth = 6

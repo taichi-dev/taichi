@@ -1,6 +1,6 @@
 import taichi as ti
 
-ti.init(arch=ti.opengl)
+ti.init(arch=ti.gpu)
 
 N = 8000
 pos = ti.Vector(2, dt=ti.f32, shape=N)

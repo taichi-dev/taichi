@@ -4,7 +4,7 @@ import math
 import numpy as np
 from renderer_utils import ray_aabb_intersection, intersect_sphere, ray_plane_intersect, reflect, refract
 
-ti.init(arch=ti.cuda)
+ti.init(arch=ti.gpu)
 res = (800, 800)
 color_buffer = ti.Vector(3, dt=ti.f32, shape=res)
 max_ray_depth = 10

@@ -681,7 +681,21 @@ class BasicBlockSimplify : public IRVisitor {
       }
     }
 
-    // step 2: eliminate dup
+    // step 2: eliminate useless extraction of another OffsetAndExtractBitsStmt
+    if (advanced_optimization) {
+      if (stmt->offset == 0 &&
+          stmt->bit_begin == 0 &&
+          stmt->input->is<OffsetAndExtractBitsStmt>()) {
+        auto bstmt = stmt->input->as<OffsetAndExtractBitsStmt>();
+        if (stmt->bit_end == bstmt->bit_end - bstmt->bit_begin) {
+          stmt->replace_with(bstmt);
+          stmt->parent->erase(current_stmt_id);
+          throw IRModified();
+        }
+      }
+    }
+
+    // step 3: eliminate dup
     for (int i = 0; i < current_stmt_id; i++) {
       auto &bstmt = block->statements[i];
       if (stmt->ret_type == bstmt->ret_type) {
@@ -717,12 +731,7 @@ class BasicBlockSimplify : public IRVisitor {
   }
 
   void visit(LinearizeStmt *stmt) override {
-    if (!advanced_optimization) {
-      if (is_done(stmt))
-        return;
-    }
-
-    if (stmt->inputs.size() && stmt->inputs.back()->is<IntegerOffsetStmt>()) {
+    if (!stmt->inputs.empty() && stmt->inputs.back()->is<IntegerOffsetStmt>()) {
       auto previous_offset = stmt->inputs.back()->as<IntegerOffsetStmt>();
       // push forward offset
       auto offset_stmt = stmt->insert_after_me(
@@ -732,25 +741,6 @@ class BasicBlockSimplify : public IRVisitor {
       stmt->replace_with(offset_stmt);
       offset_stmt->as<IntegerOffsetStmt>()->input = stmt;
       throw IRModified();
-    }
-    if (!advanced_optimization) {
-      for (int i = 0; i < current_stmt_id; i++) {
-        auto &bstmt = block->statements[i];
-        if (stmt->ret_type == bstmt->ret_type) {
-          auto &bstmt_data = *bstmt;
-          if (typeid(bstmt_data) == typeid(*stmt)) {
-            auto bstmt_ = bstmt->as<LinearizeStmt>();
-            if (identical_vectors(bstmt_->inputs, stmt->inputs) &&
-                identical_vectors(bstmt_->strides, stmt->strides)) {
-              stmt->replace_with(bstmt.get());
-              stmt->parent->erase(current_stmt_id);
-              throw IRModified();
-            }
-          }
-        }
-      }
-      set_done(stmt);
-      return;
     }
 
     // Lower into a series of adds and muls.

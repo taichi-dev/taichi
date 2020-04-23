@@ -157,7 +157,7 @@ class GUI:
             if (e.type, e.key) in self.combs:
                 return True
             if not self.keys or e.key in self.keys:
-                if not self.combs or e.key in self.combs:
+                if not self.types or e.type in self.types:
                     return True
             return False
 
@@ -171,10 +171,7 @@ class GUI:
         return False
 
     def get_events(self, *filter):
-        if not filter:
-            filter = None
-        elif not isinstance(filter[0], GUI.EventFilter):
-            filter = GUI.EventFilter(*filter)
+        filter = filter and GUI.EventFilter(*filter) or None
 
         while True:
             if not self.has_key_event():

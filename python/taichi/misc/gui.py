@@ -135,7 +135,7 @@ class GUI:
 
     def show(self, file=None):
         self.core.update()
-        if file is not None:
+        if file:
             self.core.screenshot(file)
         self.clear(self.background_color)
 
@@ -161,6 +161,15 @@ class GUI:
                     return True
             return False
 
+    def has_key_event(self):
+        return self.core.has_key_event()
+
+    def get_event(self, *filter):
+        for e in self.get_events(*filter):
+            self.event = e
+            return True
+        return False
+
     def get_events(self, *filter):
         if not filter:
             filter = None
@@ -173,19 +182,6 @@ class GUI:
             e = self.get_key_event()
             if filter is None or filter.match(e):
                 yield e
-
-    def get_event(self, *filter):
-        for e in self.get_events(*filter):
-            self.event = e
-            return True
-        return False
-
-    def get_cursor_pos(self):
-        pos = self.core.get_cursor_pos()
-        return pos[0], pos[1]
-
-    def has_key_event(self):
-        return self.core.has_key_event()
 
     def get_key_event(self):
         self.core.wait_key_event()
@@ -215,9 +211,13 @@ class GUI:
         else:
             return False
 
+    def get_cursor_pos(self):
+        pos = self.core.get_cursor_pos()
+        return pos[0], pos[1]
+
     def has_key_pressed(self):
-        while self.get_key_event() is not None:
-            pass
+        if self.has_key_event():
+            self.get_key_event()  # pop to update self.key_pressed
         return len(self.key_pressed) != 0
 
 

@@ -130,7 +130,6 @@ class GUI:
         self.clear(self.background_color)
 
     class EventFilter:
-
         def __init__(self, *filter):
             self.types = set()
             self.keys = set()
@@ -151,7 +150,6 @@ class GUI:
                 if not self.combs or e.key in self.combs:
                     return True
             return False
-
 
     def get_events(self, *filter):  # APi
         if not filter:

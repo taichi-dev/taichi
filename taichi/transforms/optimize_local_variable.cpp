@@ -75,11 +75,7 @@ class AllocaOptimize : public IRVisitor {
   void visit(AtomicOpStmt *stmt) override {
     if (stmt->dest != alloca_stmt)
       return;
-    if (last_store && !last_store_loaded) {
-      // The last store is never loaded.
-      last_store->parent->erase(last_store);
-      throw IRModified();
-    }
+    // This statement is loading the last store, so we can't eliminate it.
     stored = true;
     loaded = true;
     last_store = nullptr;

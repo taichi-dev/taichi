@@ -82,6 +82,11 @@ def make_argument_parser():
         '-a',
         '--arch',
         help='Specify arch(s) to run test on, e.g. -a opengl,metal')
+    parser.add_argument(
+        '-n',
+        '--exclusive',
+        action='store_true',
+        help='Exclude arch(s) instead of include, e.g. -na opengl,metal')
     parser.add_argument('files', nargs='*', help='Files to be tested')
     return parser
 
@@ -114,8 +119,11 @@ def main(debug=False):
     print()
     import taichi as ti
     if args.arch is not None:
-        print(f'Running on Arch={args.arch}')
-        os.environ['TI_WANTED_ARCHS'] = args.arch
+        arch = args.arch
+        if args.exclusive:
+            arch = '^' + arch
+        print(f'Running on Arch={arch}')
+        os.environ['TI_WANTED_ARCHS'] = arch
 
     if mode == 'help':
         print(

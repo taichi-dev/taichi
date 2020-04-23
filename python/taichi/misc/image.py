@@ -19,8 +19,9 @@ def imwrite(img, filename):
         comp = img.shape[2]
     else:
         comp = 1
-    img = np.ascontiguousarray(img).ctypes.data
-    ti.core.imwrite(filename, img, resx, resy, comp)
+    img = np.ascontiguousarray(img.swapaxes(0, 1)[::-1, :, :])
+    ptr = img.ctypes.data
+    ti.core.imwrite(filename, ptr, resx, resy, comp)
 
 
 def imread(filename, channels=0):

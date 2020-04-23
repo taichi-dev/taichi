@@ -87,7 +87,6 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
        ch_type},
       type_stub_name(&snode));
 
-
   // Create a dummy function in the module with the type stub as return type
   // so that the type is referenced in the module
   auto ft = llvm::FunctionType::get(llvm::PointerType::get(stub, 0), false);

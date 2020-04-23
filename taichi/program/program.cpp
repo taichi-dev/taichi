@@ -485,8 +485,8 @@ void Program::finalize() {
       std::string file_name = current_test;
       auto py_pos = file_name.find(".py::");
       TI_ASSERT(py_pos != file_name.npos);
-      file_name = file_name.substr(0, py_pos) + "__" +
-                  file_name.substr(py_pos + 5);
+      file_name =
+          file_name.substr(0, py_pos) + "__" + file_name.substr(py_pos + 5);
       auto first_space_pos = file_name.find_first_of(' ');
       TI_ASSERT(first_space_pos != file_name.npos);
       file_name = file_name.substr(0, first_space_pos);

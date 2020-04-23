@@ -17,7 +17,6 @@ def test_advanced_store_forwarding_nested_loops():
             for j in range(1):
                 val[None] = a
 
-
     val[None] = 10
     func()
     assert val[None] == 10

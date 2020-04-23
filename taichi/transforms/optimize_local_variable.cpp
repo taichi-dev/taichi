@@ -22,8 +22,6 @@ class AllocaOptimize : public IRVisitor {
   bool last_store_valid;
 
   // last_store_loaded: Is the last store ever loaded? If not, eliminate it.
-  // If stored is false, last_store_loaded means if the alloca is ever loaded,
-  // but it should not be used.
   bool last_store_loaded;
 
   AtomicOpStmt *last_atomic;
@@ -45,6 +43,13 @@ class AllocaOptimize : public IRVisitor {
   };
   IsInsideLoop is_inside_loop;
 
+  // Is this alloca ever stored in the current block?
+  bool stored_in_current_block;
+  // Is this alloca ever loaded before the first store in the current block?
+  // If this block is a branch of IfStmt, we will use this variable to
+  // determine whether we can eliminate the last store before the IfStmt.
+  bool loaded_before_first_store_in_current_block;
+
   explicit AllocaOptimize(AllocaStmt *alloca_stmt)
       : alloca_stmt(alloca_stmt),
         stored(false),
@@ -54,7 +59,9 @@ class AllocaOptimize : public IRVisitor {
         last_store_loaded(false),
         last_atomic(nullptr),
         last_atomic_eliminable(false),
-        is_inside_loop(outside_loop) {
+        is_inside_loop(outside_loop),
+        stored_in_current_block(false),
+        loaded_before_first_store_in_current_block(false) {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
   }
@@ -68,6 +75,11 @@ class AllocaOptimize : public IRVisitor {
   void visit(AtomicOpStmt *stmt) override {
     if (stmt->dest != alloca_stmt)
       return;
+    if (last_store && !last_store_loaded) {
+      // The last store is never loaded.
+      last_store->parent->erase(last_store);
+      throw IRModified();
+    }
     stored = true;
     loaded = true;
     last_store = nullptr;
@@ -75,6 +87,9 @@ class AllocaOptimize : public IRVisitor {
     last_store_loaded = false;
     last_atomic = stmt;
     last_atomic_eliminable = true;
+    if (!stored_in_current_block)
+      loaded_before_first_store_in_current_block = true;
+    stored_in_current_block = true;
   }
 
   void visit(LocalStoreStmt *stmt) override {
@@ -91,6 +106,7 @@ class AllocaOptimize : public IRVisitor {
     last_store_loaded = false;
     last_atomic = nullptr;
     last_atomic_eliminable = false;
+    stored_in_current_block = true;
   }
 
   void visit(LocalLoadStmt *stmt) override {
@@ -105,6 +121,8 @@ class AllocaOptimize : public IRVisitor {
           last_store_loaded = true;
         if (last_atomic)
           last_atomic_eliminable = false;
+        if (!stored_in_current_block)
+          loaded_before_first_store_in_current_block = true;
       }
     }
     if (!regular)
@@ -126,18 +144,36 @@ class AllocaOptimize : public IRVisitor {
     }
   }
 
+  AllocaOptimize new_instance_for_if_stmt() const {
+    AllocaOptimize new_instance = *this;
+    new_instance.last_store_loaded = true; // avoid eliminating the last store
+    new_instance.stored_in_current_block = false;
+    new_instance.loaded_before_first_store_in_current_block = false;
+    return new_instance;
+  }
+
   void visit(IfStmt *if_stmt) override {
     TI_ASSERT(if_stmt->true_mask == nullptr);
     TI_ASSERT(if_stmt->false_mask == nullptr);
 
     // Create two new instances for IfStmt
-    AllocaOptimize true_branch = *this;
-    AllocaOptimize false_branch = *this;
+    AllocaOptimize true_branch = new_instance_for_if_stmt();
+    AllocaOptimize false_branch = new_instance_for_if_stmt();
     if (if_stmt->true_statements) {
       if_stmt->true_statements->accept(&true_branch);
     }
     if (if_stmt->false_statements) {
       if_stmt->false_statements->accept(&false_branch);
+    }
+
+    if (last_store && !last_store_loaded &&
+        true_branch.stored_in_current_block &&
+        !true_branch.loaded_before_first_store_in_current_block &&
+        false_branch.stored_in_current_block &&
+        !false_branch.loaded_before_first_store_in_current_block) {
+      // The last store before the IfStmt is never loaded.
+      last_store->parent->erase(last_store);
+      throw IRModified();
     }
 
     stored = true_branch.stored || false_branch.stored;
@@ -150,9 +186,11 @@ class AllocaOptimize : public IRVisitor {
       TI_ASSERT(true_branch.last_store != nullptr);
       last_store_valid = true;
       if (last_store == true_branch.last_store) {
+        TI_ASSERT(!true_branch.stored_in_current_block);
+        TI_ASSERT(!false_branch.stored_in_current_block);
         last_store_loaded = last_store_loaded ||
-                            true_branch.last_store_loaded ||
-                            false_branch.last_store_loaded;
+            true_branch.loaded_before_first_store_in_current_block ||
+            false_branch.loaded_before_first_store_in_current_block;
       } else {
         last_store = true_branch.last_store;
         last_store_loaded =
@@ -164,11 +202,16 @@ class AllocaOptimize : public IRVisitor {
       if (true_branch.last_store == last_store &&
           false_branch.last_store == last_store) {
         // The last store didn't change.
+        TI_ASSERT(!true_branch.stored_in_current_block);
+        TI_ASSERT(!false_branch.stored_in_current_block);
         last_store_loaded = last_store_loaded ||
-                            true_branch.last_store_loaded ||
-                            false_branch.last_store_loaded;
+            true_branch.loaded_before_first_store_in_current_block ||
+            false_branch.loaded_before_first_store_in_current_block;
       } else {
-        // The last store changed, so we can't eliminate last_store.
+        // The last store changed.
+        bool current_eliminable = last_store && !last_store_loaded &&
+            !true_branch.loaded_before_first_store_in_current_block &&
+            !false_branch.loaded_before_first_store_in_current_block;
         bool true_eliminable = true_branch.last_store != last_store &&
                                true_branch.last_store != nullptr &&
                                !true_branch.last_store_loaded;
@@ -180,6 +223,10 @@ class AllocaOptimize : public IRVisitor {
           last_store_loaded = false;
         } else if (false_eliminable) {
           last_store = false_branch.last_store;
+          last_store_loaded = false;
+        } else if (current_eliminable) {
+          TI_ASSERT(!true_branch.stored_in_current_block ||
+                    !false_branch.stored_in_current_block);
           last_store_loaded = false;
         } else {
           // Neither branch provides a eliminable local store.

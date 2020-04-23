@@ -25,11 +25,12 @@ def imwrite(img, filename):
 
 def imread(filename, channels=0):
     ptr, resx, resy, comp = ti.core.imread(filename, channels)
-    img = np.ndarray(shape=(resx, resy, comp), dtype=np.uint8)
+    img = np.ndarray(shape=(resy, resx, comp), dtype=np.uint8)
     img = np.ascontiguousarray(img)
     # TODO(archibate): Figure out how np.ndarray constructor works and replace:
     ti.core.C_memcpy(img.ctypes.data, ptr, resx * resy * comp)
-    return img
+    # Discussion: https://github.com/taichi-dev/taichi/issues/802
+    return img.swapaxes(0, 1)[:, ::-1, :]
 
 
 def imshow(img, winname='Taichi'):

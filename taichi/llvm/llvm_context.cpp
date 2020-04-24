@@ -495,6 +495,7 @@ template llvm::Value *TaichiLLVMContext::get_constant(DataType dt, float64 t);
 template <typename T>
 llvm::Value *TaichiLLVMContext::get_constant(T t) {
   auto ctx = get_this_thread_context();
+  TI_ASSERT(ctx != nullptr);
   using TargetType = T;
   if constexpr (std::is_same_v<TargetType, float32> ||
                 std::is_same_v<TargetType, float64>) {

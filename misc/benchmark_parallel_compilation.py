@@ -65,7 +65,7 @@ def substep():
                 grid_m[base + offset] += weight * p_mass
 
 
-for i in range(1):
+for i in range(32):
     substep()
 
 ti.profiler_print()

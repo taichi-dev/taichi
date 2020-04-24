@@ -123,8 +123,7 @@ class ExecutionQueue {
 
   std::unordered_map<uint64, FunctionType> compiled_func;
 
-  ExecutionQueue() : compilation_workers(4) {  // TODO: remove 4
-  }
+  ExecutionQueue();
 
   void enqueue(KernelLaunchRecord ker);
 

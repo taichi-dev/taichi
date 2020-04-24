@@ -245,7 +245,8 @@ class TypedConstant {
   }
 
   bool from_binary_op(BinaryOpType op,
-      const TypedConstant &lhs, const TypedConstant &rhs);
+                      const TypedConstant &lhs,
+                      const TypedConstant &rhs);
   bool from_unary_op(UnaryOpType op, const TypedConstant &rhs);
 };
 

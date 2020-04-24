@@ -7,63 +7,70 @@
 
 TLANG_NAMESPACE_BEGIN
 
-bool TypedConstant::from_unary_op(UnaryOpType op, const TypedConstant &rhs)
-{
-#define PER_OP(op, o) \
-    case UnaryOpType::op: this->val_i32 = o(rhs.val_i32); break;
+bool TypedConstant::from_unary_op(UnaryOpType op, const TypedConstant &rhs) {
+#define PER_OP(op, o)               \
+  case UnaryOpType::op:             \
+    this->val_i32 = o(rhs.val_i32); \
+    break;
   switch (op) {
-  PER_OP(neg, -)
-  PER_OP(sqrt, std::sqrt)
-  PER_OP(log, std::log)
-  PER_OP(exp, std::exp)
-  PER_OP(abs, std::abs)
-  PER_OP(sin, std::sin)
-  PER_OP(cos, std::cos)
-  PER_OP(tan, std::tan)
-  PER_OP(asin, std::asin)
-  PER_OP(acos, std::acos)
-  PER_OP(tanh, std::tanh)
-  PER_OP(rsqrt, 1 / std::sqrt)
-  PER_OP(floor, std::floor)
-  PER_OP(ceil, std::ceil)
-  PER_OP(bit_not, ~)
-  PER_OP(logic_not, !)
-  PER_OP(inv, 1 /)
-  default: return false;
+    PER_OP(neg, -)
+    PER_OP(sqrt, std::sqrt)
+    PER_OP(log, std::log)
+    PER_OP(exp, std::exp)
+    PER_OP(abs, std::abs)
+    PER_OP(sin, std::sin)
+    PER_OP(cos, std::cos)
+    PER_OP(tan, std::tan)
+    PER_OP(asin, std::asin)
+    PER_OP(acos, std::acos)
+    PER_OP(tanh, std::tanh)
+    PER_OP(rsqrt, 1 / std::sqrt)
+    PER_OP(floor, std::floor)
+    PER_OP(ceil, std::ceil)
+    PER_OP(bit_not, ~)
+    PER_OP(logic_not, !)
+    PER_OP(inv, 1 /)
+    default:
+      return false;
   }
 #undef PER_OP
   return true;
 }
 
 bool TypedConstant::from_binary_op(BinaryOpType op,
-    const TypedConstant &lhs, const TypedConstant &rhs)
-{
-#define PER_OP(op, o) \
-    case BinaryOpType::op: this->val_i32 = lhs.val_i32 o rhs.val_i32; break;
-#define PER_OF(op, f) \
-    case BinaryOpType::op: this->val_i32 = f(lhs.val_i32, rhs.val_i32); break;
+                                   const TypedConstant &lhs,
+                                   const TypedConstant &rhs) {
+#define PER_OP(op, o)                          \
+  case BinaryOpType::op:                       \
+    this->val_i32 = lhs.val_i32 o rhs.val_i32; \
+    break;
+#define PER_OF(op, f)                            \
+  case BinaryOpType::op:                         \
+    this->val_i32 = f(lhs.val_i32, rhs.val_i32); \
+    break;
   switch (op) {
-  PER_OP(add, +)
-  PER_OP(sub, -)
-  PER_OP(mul, *)
-  PER_OP(div, /)
-  PER_OP(truediv, /) // XXX: is this same as div?
-  PER_OP(floordiv, /) // XXX: do we have std::floordiv?
-  // PER_OP(mod, %) // XXX: raw_mod or python-mod?
-  PER_OP(bit_or, |)
-  PER_OP(bit_and, &)
-  PER_OP(bit_xor, ^)
-  PER_OP(cmp_lt, <)
-  PER_OP(cmp_le, <=)
-  PER_OP(cmp_gt, >)
-  PER_OP(cmp_ge, >=)
-  PER_OP(cmp_eq, ==)
-  PER_OP(cmp_ne, !=)
-  PER_OF(max, std::max)
-  PER_OF(min, std::min)
-  PER_OF(pow, std::pow)
-  PER_OF(atan2, std::atan2)
-  default: return false;
+    PER_OP(add, +)
+    PER_OP(sub, -)
+    PER_OP(mul, *)
+    PER_OP(div, /)
+    PER_OP(truediv, /)   // XXX: is this same as div?
+    PER_OP(floordiv, /)  // XXX: do we have std::floordiv?
+    // PER_OP(mod, %) // XXX: raw_mod or python-mod?
+    PER_OP(bit_or, |)
+    PER_OP(bit_and, &)
+    PER_OP(bit_xor, ^)
+    PER_OP(cmp_lt, <)
+    PER_OP(cmp_le, <=)
+    PER_OP(cmp_gt, >)
+    PER_OP(cmp_ge, >=)
+    PER_OP(cmp_eq, ==)
+    PER_OP(cmp_ne, !=)
+    PER_OF(max, std::max)
+    PER_OF(min, std::min)
+    PER_OF(pow, std::pow)
+    PER_OF(atan2, std::atan2)
+    default:
+      return false;
   }
 #undef PER_OP
   return true;
@@ -200,11 +207,10 @@ class ConstantFoldJIT : public BasicStmtVisitor {
     //auto rhs = bop->rhs;
     // END: generic visitor to extract all oprand
     auto kernel_name = fmt::format("jit_constexpr_{}", 0);
-    auto func = [] () {
-    };
-    auto ker = new Kernel(get_current_program(), func, kernel_name); // ???
+    auto func = []() {};
+    auto ker = new Kernel(get_current_program(), func, kernel_name);  // ???
     // ker->ir = insert(bop, lhs, rhs)!!!!
-    ker->set_arch(Arch::x64); // X: host_arch
+    ker->set_arch(Arch::x64);  // X: host_arch
     // ker->is_accessor = true; // X: is_tiny_kernel?
     return ker;
   }

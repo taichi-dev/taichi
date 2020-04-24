@@ -7,6 +7,7 @@ TLANG_NAMESPACE_BEGIN
 class AllocaOptimize : public IRVisitor {
  private:
   AllocaStmt *alloca_stmt;
+  std::unordered_set<AtomicOpStmt *> *used_atomics;
 
  public:
   // If neither stored nor loaded (nor used as operands in masks/loop_vars),
@@ -50,8 +51,10 @@ class AllocaOptimize : public IRVisitor {
   // determine whether we can eliminate the last store before the IfStmt.
   bool loaded_before_first_store_in_current_block;
 
-  explicit AllocaOptimize(AllocaStmt *alloca_stmt)
+  explicit AllocaOptimize(AllocaStmt *alloca_stmt,
+      std::unordered_set<AtomicOpStmt *> *used_atomics)
       : alloca_stmt(alloca_stmt),
+        used_atomics(used_atomics),
         stored(false),
         loaded(false),
         last_store(nullptr),
@@ -82,7 +85,7 @@ class AllocaOptimize : public IRVisitor {
     last_store_valid = false;
     last_store_loaded = false;
     last_atomic = stmt;
-    last_atomic_eliminable = true;
+    last_atomic_eliminable = used_atomics->find(stmt) == used_atomics->end();
     if (!stored_in_current_block)
       loaded_before_first_store_in_current_block = true;
     stored_in_current_block = true;
@@ -97,7 +100,9 @@ class AllocaOptimize : public IRVisitor {
       throw IRModified();
     }
     if (last_atomic && last_atomic_eliminable) {
-      erase_last_atomic();
+      // The last AtomicOpStmt is never used.
+      last_atomic->parent->erase(last_atomic);
+      throw IRModified();
     }
     stored = true;
     last_store = stmt;
@@ -184,7 +189,9 @@ class AllocaOptimize : public IRVisitor {
         !true_branch.loaded_before_first_store_in_current_block &&
         false_branch.stored_in_current_block &&
         !false_branch.loaded_before_first_store_in_current_block) {
-      erase_last_atomic();
+      // The last AtomicOpStmt is never used.
+      last_atomic->parent->erase(last_atomic);
+      throw IRModified();
     }
 
     stored = true_branch.stored || false_branch.stored;
@@ -300,7 +307,7 @@ class AllocaOptimize : public IRVisitor {
       body->accept(this);
       return;
     }
-    AllocaOptimize loop(alloca_stmt);
+    AllocaOptimize loop(alloca_stmt, used_atomics);
     loop.is_inside_loop = inside_loop_may_have_stores;
     body->accept(&loop);
 
@@ -366,18 +373,6 @@ class AllocaOptimize : public IRVisitor {
     visit_loop(stmt->body.get(), is_loop_var);
   }
 
-  void erase_last_atomic() {
-    if (irpass::analysis::gather_statements(
-        alloca_stmt->parent,
-        [&](Stmt *stmt) { return stmt->have_operand(last_atomic); })
-        .empty()) {
-      // The last AtomicOpStmt is never used.
-      // Eliminate the last AtomicOpStmt.
-      last_atomic->parent->erase(last_atomic);
-      throw IRModified();
-    }
-  }
-
   void run() {
     Block *block = alloca_stmt->parent;
     TI_ASSERT(block);
@@ -394,9 +389,11 @@ class AllocaOptimize : public IRVisitor {
       throw IRModified();
     }
     if (last_atomic && last_atomic_eliminable) {
-      // The last AtomicOpStmt is never loaded.
+      // The last AtomicOpStmt is never used.
       // last_atomic_valid == false means that it's in an IfStmt.
-      erase_last_atomic();
+      // Eliminate the last AtomicOpStmt.
+      last_atomic->parent->erase(last_atomic);
+      throw IRModified();
     }
     if (!stored && !loaded) {
       // Never stored and never loaded.
@@ -412,11 +409,13 @@ class AllocaOptimize : public IRVisitor {
 class AllocaFindAndOptimize : public BasicStmtVisitor {
  private:
   std::unordered_set<int> visited;
+  std::unordered_set<AtomicOpStmt *> *used_atomics;
 
  public:
   using BasicStmtVisitor::visit;
 
-  AllocaFindAndOptimize() : visited() {
+  AllocaFindAndOptimize(std::unordered_set<AtomicOpStmt *> *used_atomics)
+      : visited(), used_atomics(used_atomics) {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
   }
@@ -432,13 +431,14 @@ class AllocaFindAndOptimize : public BasicStmtVisitor {
   void visit(AllocaStmt *alloca_stmt) override {
     if (is_done(alloca_stmt))
       return;
-    AllocaOptimize optimizer(alloca_stmt);
+    AllocaOptimize optimizer(alloca_stmt, used_atomics);
     optimizer.run();
     set_done(alloca_stmt);
   }
 
   static void run(IRNode *node) {
-    AllocaFindAndOptimize find_and_optimizer;
+    auto used_atomics = irpass::analysis::gather_used_atomics(node);
+    AllocaFindAndOptimize find_and_optimizer(&used_atomics);
     while (true) {
       bool modified = false;
       try {

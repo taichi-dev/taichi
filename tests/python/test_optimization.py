@@ -17,7 +17,6 @@ def test_advanced_store_forwarding_nested_loops():
             for j in range(1):
                 val[None] = a
 
-
     val[None] = 10
     func()
     assert val[None] == 10
@@ -41,7 +40,6 @@ def test_advanced_unused_store_elimination_if():
         else:
             val[None] = a
 
-
     val[None] = 0
     func()
     assert val[None] == 1
@@ -52,25 +50,25 @@ def test_advanced_unused_store_elimination_if():
 @ti.all_archs
 def test_local_store_in_nested_for_and_if():
     # See https://github.com/taichi-dev/taichi/pull/862.
-    val = ti.var(ti.i32, shape=(3,3,3))
+    val = ti.var(ti.i32, shape=(3, 3, 3))
 
     @ti.kernel
     def func():
         ti.serialize()
-        for i,j,k in val:
+        for i, j, k in val:
             if i < 2 and j < 2 and k < 2:
                 a = 0
-                for di,dj,dk in ti.ndrange((0,2),(0,2),(0,2)):
-                    if val[i+di,j+dj,k+dk] == 1:
-                        a = val[i+di,j+dj,k+dk]
+                for di, dj, dk in ti.ndrange((0, 2), (0, 2), (0, 2)):
+                    if val[i + di, j + dj, k + dk] == 1:
+                        a = val[i + di, j + dj, k + dk]
 
-                for di,dj,dk in ti.ndrange((0,2),(0,2),(0,2)):
-                    val[i+di,j+dj,k+dk] = a
+                for di, dj, dk in ti.ndrange((0, 2), (0, 2), (0, 2)):
+                    val[i + di, j + dj, k + dk] = a
 
-    val[1,1,1] = 1
+    val[1, 1, 1] = 1
     func()
 
     for i in range(3):
         for j in range(3):
             for k in range(3):
-                assert(val[i,j,k] == 1)
+                assert (val[i, j, k] == 1)

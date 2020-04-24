@@ -3,7 +3,6 @@
 
 TLANG_NAMESPACE_BEGIN
 
-
 class UsedAtomicsSearcher : public BasicStmtVisitor {
  private:
   std::unordered_set<AtomicOpStmt *> used_atomics;
@@ -36,7 +35,6 @@ class UsedAtomicsSearcher : public BasicStmtVisitor {
     return searcher.used_atomics;
   }
 };
-
 
 namespace irpass::analysis {
 std::unordered_set<AtomicOpStmt *> gather_used_atomics(IRNode *root) {

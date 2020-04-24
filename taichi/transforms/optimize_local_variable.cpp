@@ -52,7 +52,7 @@ class AllocaOptimize : public IRVisitor {
   bool loaded_before_first_store_in_current_block;
 
   explicit AllocaOptimize(AllocaStmt *alloca_stmt,
-      std::unordered_set<AtomicOpStmt *> *used_atomics)
+                          std::unordered_set<AtomicOpStmt *> *used_atomics)
       : alloca_stmt(alloca_stmt),
         used_atomics(used_atomics),
         stored(false),
@@ -206,7 +206,8 @@ class AllocaOptimize : public IRVisitor {
       if (last_store == true_branch.last_store) {
         TI_ASSERT(!true_branch.stored_in_current_block);
         TI_ASSERT(!false_branch.stored_in_current_block);
-        last_store_loaded = last_store_loaded ||
+        last_store_loaded =
+            last_store_loaded ||
             true_branch.loaded_before_first_store_in_current_block ||
             false_branch.loaded_before_first_store_in_current_block;
       } else {
@@ -222,12 +223,14 @@ class AllocaOptimize : public IRVisitor {
         // The last store didn't change.
         TI_ASSERT(!true_branch.stored_in_current_block);
         TI_ASSERT(!false_branch.stored_in_current_block);
-        last_store_loaded = last_store_loaded ||
+        last_store_loaded =
+            last_store_loaded ||
             true_branch.loaded_before_first_store_in_current_block ||
             false_branch.loaded_before_first_store_in_current_block;
       } else {
         // The last store changed.
-        bool current_eliminable = last_store && !last_store_loaded &&
+        bool current_eliminable =
+            last_store && !last_store_loaded &&
             !true_branch.loaded_before_first_store_in_current_block &&
             !false_branch.loaded_before_first_store_in_current_block;
         bool true_eliminable = true_branch.last_store != last_store &&
@@ -257,12 +260,14 @@ class AllocaOptimize : public IRVisitor {
     if (true_branch.last_atomic == last_atomic &&
         false_branch.last_atomic == last_atomic) {
       // The last AtomicOpStmt didn't change.
-      last_atomic_eliminable = last_atomic_eliminable &&
+      last_atomic_eliminable =
+          last_atomic_eliminable &&
           !true_branch.loaded_before_first_store_in_current_block &&
           !false_branch.loaded_before_first_store_in_current_block;
     } else {
       // The last AtomicOpStmt changed.
-      bool current_eliminable = last_atomic && last_atomic_eliminable &&
+      bool current_eliminable =
+          last_atomic && last_atomic_eliminable &&
           !true_branch.loaded_before_first_store_in_current_block &&
           !false_branch.loaded_before_first_store_in_current_block;
       bool true_eliminable = true_branch.last_atomic != last_atomic &&
@@ -279,7 +284,7 @@ class AllocaOptimize : public IRVisitor {
         last_atomic_eliminable = true;
       } else if (current_eliminable) {
         TI_ASSERT(!true_branch.stored_in_current_block ||
-            !false_branch.stored_in_current_block);
+                  !false_branch.stored_in_current_block);
         last_atomic_eliminable = true;
       } else {
         // Neither branch provides a eliminable AtomicOpStmt.

@@ -126,9 +126,12 @@ int count_statements(IRNode *root);
 std::unordered_set<Stmt *> detect_fors_with_break(IRNode *root);
 std::unordered_set<Stmt *> detect_loops_with_continue(IRNode *root);
 std::unordered_set<SNode *> gather_deactivations(IRNode *root);
+const std::unordered_map<Block *, std::vector<Stmt *>> &
+gather_loads_and_stores_in_blocks(IRNode *root);
 std::vector<Stmt *> gather_statements(IRNode *root,
                                       const std::function<bool(Stmt *)> &test);
-std::unordered_set<AtomicOpStmt *> gather_used_atomics(IRNode *root);
+std::unique_ptr<std::unordered_set<AtomicOpStmt *>> gather_used_atomics(
+    IRNode *root);
 bool has_load_or_atomic(IRNode *root, Stmt *var);
 bool has_store_or_atomic(IRNode *root, const std::vector<Stmt *> &vars);
 std::pair<bool, Stmt *> last_store_or_atomic(IRNode *root, Stmt *var);
@@ -1747,6 +1750,8 @@ class StructForStmt : public Stmt {
   TI_STMT_DEF_FIELDS(loop_vars, snode, vectorize, parallelize, block_dim);
   DEFINE_ACCEPT
 };
+
+bool is_loop_var(Stmt *loop, Stmt *var);
 
 class FuncBodyStmt : public Stmt {
  public:

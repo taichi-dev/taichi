@@ -126,9 +126,9 @@ class JITSessionCPU : public JITSession {
   }
 
   JITModule *add_module(std::unique_ptr<llvm::Module> M) override {
-    std::lock_guard<std::mutex> _(mut);
     TI_ASSERT(M);
     global_optimize_module_cpu(M);
+    std::lock_guard<std::mutex> _(mut);
     // Create a new VModuleKey.
     VModuleKey K = ES.allocateVModule();
 

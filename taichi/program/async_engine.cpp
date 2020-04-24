@@ -69,7 +69,7 @@ void ExecutionQueue::synchronize() {
   // clear_cache();
 }
 
-ExecutionQueue::ExecutionQueue() : compilation_workers(1) {  // TODO: remove 4
+ExecutionQueue::ExecutionQueue() : compilation_workers(4) {  // TODO: remove 4
 }
 
 void AsyncEngine::launch(Kernel *kernel) {

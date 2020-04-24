@@ -201,9 +201,7 @@ TaichiLLVMContext::clone_module_to_this_thread_context(llvm::Module *module) {
   TI_TRACE("Cloning struct module");
   TI_ASSERT(module);
   auto this_context = get_this_thread_context();
-  auto result = clone_module_to_context(module, this_context);
-  TI_TRACE("Cloned struct module");
-  return result;
+  return clone_module_to_context(module, this_context);
 }
 
 std::unique_ptr<llvm::Module> module_from_bitcode_file(std::string bitcode_path,

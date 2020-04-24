@@ -75,7 +75,7 @@ class ParallelExecutor {
       std::unique_lock<std::mutex> lock(mut);
       if (status == ExecutorStatus::uninitialized) {
         lock.unlock();
-        Time::sleep(1e-3);
+        Time::sleep(1e-6);
         continue;  // wait until initialized
       }
       // TI_TAG;
@@ -116,10 +116,11 @@ class KernelLaunchRecord {
 // In charge of (parallel) compilation to binary and (serial) kernel launching
 class ExecutionQueue {
  public:
+  std::mutex mut;
   std::deque<KernelLaunchRecord> task_queue;
 
   ParallelExecutor compilation_workers;  // parallel compilation
-  std::thread launch_worker;             // serial launching
+  ParallelExecutor launch_worker;             // serial launching
 
   std::unordered_map<uint64, FunctionType> compiled_func;
 

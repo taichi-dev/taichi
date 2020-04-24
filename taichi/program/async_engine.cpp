@@ -32,7 +32,6 @@ void ExecutionQueue::enqueue(KernelLaunchRecord ker) {
 
 void ExecutionQueue::synchronize() {
   TI_INFO("Flushing execution queue with {} tasks", task_queue.size());
-  std::mutex mut;
 
   std::unordered_set<uint64> to_be_compiled;
 
@@ -60,16 +59,33 @@ void ExecutionQueue::synchronize() {
 
   while (!task_queue.empty()) {
     auto ker = task_queue.front();
-    auto h = hash(ker.stmt);
-    TI_ASSERT(compiled_func[h] != nullptr);
-    compiled_func[h](ker.context);
+    launch_worker.enqueue([&, ker=ker] {
+      auto h = hash(ker.stmt);
+      FunctionType func;
+      while (true) {
+        std::unique_lock<std::mutex> lock(mut);
+        if (compiled_func[h] == nullptr) {
+          lock.unlock();
+          Time::sleep(1e-6);
+          continue;
+        }
+        func = compiled_func[h];
+        break;
+      }
+      auto context = ker.context;
+      func(context);
+    });
     task_queue.pop_front();
   }
 
-  clear_cache();
+  launch_worker.flush();
+
+  // uncomment for benchmarking
+  // clear_cache();
 }
 
-ExecutionQueue::ExecutionQueue() : compilation_workers(1) {  // TODO: remove 4
+ExecutionQueue::ExecutionQueue()
+    : compilation_workers(4), launch_worker(1) {  // TODO: remove 4
 }
 
 void AsyncEngine::launch(Kernel *kernel) {

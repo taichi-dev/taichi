@@ -17,7 +17,7 @@ def test_glm_scalar():
 
     func()
     assert a[None] == approx(3.5)
-    assert b[None] == approx(2 ** 2.3)
+    assert b[None] == approx(2**2.3)
     assert c[None] == approx(2.3)
 
 

@@ -21,3 +21,29 @@ def test_advanced_store_forwarding_nested_loops():
     val[None] = 10
     func()
     assert val[None] == 10
+
+
+@ti.all_archs
+def test_advanced_unused_store_elimination_if():
+    val = ti.var(ti.i32)
+    ti.root.place(val)
+
+    @ti.kernel
+    def func():
+        a = 1
+        if val[None]:
+            a = 2
+            if val[None]:
+                a = 3
+            else:
+                a = 4
+            val[None] = a
+        else:
+            val[None] = a
+
+
+    val[None] = 0
+    func()
+    assert val[None] == 1
+    func()
+    assert val[None] == 3

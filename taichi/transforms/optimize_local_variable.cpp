@@ -96,6 +96,9 @@ class AllocaOptimize : public IRVisitor {
       last_store->parent->erase(last_store);
       throw IRModified();
     }
+    if (last_atomic && last_atomic_eliminable) {
+      erase_last_atomic();
+    }
     stored = true;
     last_store = stmt;
     last_store_valid = true;
@@ -142,7 +145,12 @@ class AllocaOptimize : public IRVisitor {
 
   AllocaOptimize new_instance_for_if_stmt() const {
     AllocaOptimize new_instance = *this;
-    new_instance.last_store_loaded = true; // avoid eliminating the last store
+    // Avoid eliminating the last store and the last AtomicOpStmt.
+    if (last_store)
+      new_instance.last_store_loaded = true;
+    if (last_atomic)
+      new_instance.last_atomic_eliminable = false;
+
     new_instance.stored_in_current_block = false;
     new_instance.loaded_before_first_store_in_current_block = false;
     return new_instance;
@@ -170,6 +178,13 @@ class AllocaOptimize : public IRVisitor {
       // The last store before the IfStmt is never loaded.
       last_store->parent->erase(last_store);
       throw IRModified();
+    }
+    if (last_atomic && last_atomic_eliminable &&
+        true_branch.stored_in_current_block &&
+        !true_branch.loaded_before_first_store_in_current_block &&
+        false_branch.stored_in_current_block &&
+        !false_branch.loaded_before_first_store_in_current_block) {
+      erase_last_atomic();
     }
 
     stored = true_branch.stored || false_branch.stored;
@@ -236,10 +251,13 @@ class AllocaOptimize : public IRVisitor {
         false_branch.last_atomic == last_atomic) {
       // The last AtomicOpStmt didn't change.
       last_atomic_eliminable = last_atomic_eliminable &&
-                               true_branch.last_atomic_eliminable &&
-                               false_branch.last_atomic_eliminable;
+          !true_branch.loaded_before_first_store_in_current_block &&
+          !false_branch.loaded_before_first_store_in_current_block;
     } else {
-      // The last AtomicOpStmt changed, so we can't eliminate last_atomic.
+      // The last AtomicOpStmt changed.
+      bool current_eliminable = last_atomic && last_atomic_eliminable &&
+          !true_branch.loaded_before_first_store_in_current_block &&
+          !false_branch.loaded_before_first_store_in_current_block;
       bool true_eliminable = true_branch.last_atomic != last_atomic &&
                              true_branch.last_atomic != nullptr &&
                              true_branch.last_atomic_eliminable;
@@ -251,6 +269,10 @@ class AllocaOptimize : public IRVisitor {
         last_atomic_eliminable = true;
       } else if (false_eliminable) {
         last_atomic = false_branch.last_atomic;
+        last_atomic_eliminable = true;
+      } else if (current_eliminable) {
+        TI_ASSERT(!true_branch.stored_in_current_block ||
+            !false_branch.stored_in_current_block);
         last_atomic_eliminable = true;
       } else {
         // Neither branch provides a eliminable AtomicOpStmt.
@@ -344,6 +366,18 @@ class AllocaOptimize : public IRVisitor {
     visit_loop(stmt->body.get(), is_loop_var);
   }
 
+  void erase_last_atomic() {
+    if (irpass::analysis::gather_statements(
+        alloca_stmt->parent,
+        [&](Stmt *stmt) { return stmt->have_operand(last_atomic); })
+        .empty()) {
+      // The last AtomicOpStmt is never used.
+      // Eliminate the last AtomicOpStmt.
+      last_atomic->parent->erase(last_atomic);
+      throw IRModified();
+    }
+  }
+
   void run() {
     Block *block = alloca_stmt->parent;
     TI_ASSERT(block);
@@ -362,15 +396,7 @@ class AllocaOptimize : public IRVisitor {
     if (last_atomic && last_atomic_eliminable) {
       // The last AtomicOpStmt is never loaded.
       // last_atomic_valid == false means that it's in an IfStmt.
-      if (irpass::analysis::gather_statements(
-              block,
-              [&](Stmt *stmt) { return stmt->have_operand(last_atomic); })
-              .empty()) {
-        // The last AtomicOpStmt is never used.
-        // Eliminate the last AtomicOpStmt.
-        last_atomic->parent->erase(last_atomic);
-        throw IRModified();
-      }
+      erase_last_atomic();
     }
     if (!stored && !loaded) {
       // Never stored and never loaded.

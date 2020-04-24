@@ -148,7 +148,7 @@ class AllocaOptimize : public IRVisitor {
     }
   }
 
-  AllocaOptimize new_instance_for_if_stmt() const {
+  AllocaOptimize new_instance_if_stmt() const {
     AllocaOptimize new_instance = *this;
     // Avoid eliminating the last store and the last AtomicOpStmt.
     if (last_store)
@@ -166,8 +166,8 @@ class AllocaOptimize : public IRVisitor {
     TI_ASSERT(if_stmt->false_mask == nullptr);
 
     // Create two new instances for IfStmt
-    AllocaOptimize true_branch = new_instance_for_if_stmt();
-    AllocaOptimize false_branch = new_instance_for_if_stmt();
+    AllocaOptimize true_branch = new_instance_if_stmt();
+    AllocaOptimize false_branch = new_instance_if_stmt();
     if (if_stmt->true_statements) {
       if_stmt->true_statements->accept(&true_branch);
     }

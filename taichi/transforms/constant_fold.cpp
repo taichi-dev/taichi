@@ -1,5 +1,6 @@
 #include "taichi/ir/ir.h"
 #include "taichi/program/program.h"
+#include "taichi/ir/snode.h"
 #include <deque>
 #include <set>
 #include <cmath>
@@ -108,16 +109,49 @@ class ConstantFold : public BasicStmtVisitor {
     }
   }
 
+  static bool jit_from_binary_op(TypedConstant &tc, BinaryOpType op,
+      const TypedConstant &lhs, const TypedConstant &rhs)
+  {
+    if (lhs.dt != DataType::i32 || rhs.dt != DataType::i32 || tc.dt != DataType::i32)
+      return false;
+    auto kernel_name = fmt::format("jit_constexpr_{}", 0);
+    auto func = [&] () {
+      auto lhstmt =
+        Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(lhs));
+      auto rhstmt =
+        Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(rhs));
+      auto oper = Stmt::make<BinaryOpStmt>(op, lhstmt.get(), rhstmt.get());
+      auto ret = Stmt::make<ArgStoreStmt>(0, oper.get());
+      current_ast_builder().insert(std::move(lhstmt));
+      current_ast_builder().insert(std::move(rhstmt));
+      current_ast_builder().insert(std::move(oper));
+      current_ast_builder().insert(std::move(ret));
+    };
+    auto ker = new Kernel(get_current_program(), func, kernel_name); // ???
+    //I.push_back(lhs.val_i32);
+    //I.push_back(rhs.val_i32); // X: f32????
+    ker->insert_arg(DataType::i32, false);
+    ker->mark_arg_return_value(0, true);
+    TI_INFO("IN");
+    get_current_program().config.no_cp2o = true;
+    (*ker)();
+    get_current_program().config.no_cp2o = false;
+    TI_INFO("OUT");
+    auto ret = get_current_program().context.get_arg<int>(0);
+    TI_INFO("!!! {}", ret);
+    return true;
+  }
+
   void visit(BinaryOpStmt *stmt) override {
     auto lhs = stmt->lhs->cast<ConstStmt>();
     auto rhs = stmt->rhs->cast<ConstStmt>();
     if (!lhs || !rhs)
       return;
-    if (stmt->width() != 1 || stmt->ret_type.data_type != DataType::i32)
+    if (stmt->width() != 1)
       return;
-    auto dst_type = DataType::i32;
+    auto dst_type = stmt->ret_type.data_type;
     TypedConstant new_constant(dst_type);
-    if (new_constant.from_binary_op(stmt->op_type, lhs->val[0], rhs->val[0])) {
+    if (jit_from_binary_op(new_constant, stmt->op_type, lhs->val[0], rhs->val[0])) {
       auto evaluated =
           Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(new_constant));
       stmt->replace_with(evaluated.get());
@@ -161,9 +195,9 @@ class ConstantFoldJIT : public BasicStmtVisitor {
 
   static Kernel *get_jit_constexpr_kernel(Stmt *stmt) {
     // BEGIN: generic visitor to extract all oprand
-    auto bop = stmt->cast<BinaryOpStmt>();
-    auto lhs = bop->lhs;
-    auto rhs = bop->rhs;
+    //auto bop = stmt->cast<BinaryOpStmt>();
+    //auto lhs = bop->lhs;
+    //auto rhs = bop->rhs;
     // END: generic visitor to extract all oprand
     auto kernel_name = fmt::format("jit_constexpr_{}", 0);
     auto func = [] () {
@@ -200,7 +234,7 @@ class ConstantFoldJIT : public BasicStmtVisitor {
 namespace irpass {
 
 void constant_fold(IRNode *root) {
-  return ConstantFoldJIT::run(root);
+  return ConstantFold::run(root);
 }
 
 }  // namespace irpass

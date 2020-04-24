@@ -11,8 +11,6 @@ void compile_to_offloads(IRNode *ir,
                          bool grad,
                          bool ad_use_stack,
                          bool verbose) {
-  if (get_current_program().config.no_cp2o)
-    return;
 
   TI_AUTO_PROF;
 
@@ -50,6 +48,7 @@ void compile_to_offloads(IRNode *ir,
     print("Loop Split");
     irpass::analysis::verify(ir);
   }
+  if (!config.no_cp2o)
   irpass::simplify(ir);
   print("Simplified I");
   irpass::analysis::verify(ir);
@@ -82,6 +81,7 @@ void compile_to_offloads(IRNode *ir,
   print("DIE");
   irpass::analysis::verify(ir);
 
+  if (!config.no_cp2o)
   irpass::full_simplify(ir, config);
   print("Simplified II");
   irpass::analysis::verify(ir);
@@ -89,6 +89,7 @@ void compile_to_offloads(IRNode *ir,
   irpass::flag_access(ir);
   print("Access flagged");
 
+  if (!config.no_cp2o)
   irpass::constant_fold(ir);
   print("Constant folded");
 
@@ -99,6 +100,7 @@ void compile_to_offloads(IRNode *ir,
   irpass::demote_atomics(ir);
   print("Atomics demoted");
 
+  if (!config.no_cp2o)
   irpass::full_simplify(ir, config);
   print("Simplified III");
 

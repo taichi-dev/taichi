@@ -15,7 +15,8 @@ class LoadsAndStoresSearcher : public BasicStmtVisitor {
   }
 
   void found(Stmt *store_stmt) {
-    for (Block *block = store_stmt->parent; block != nullptr; block = block->parent) {
+    for (Block *block = store_stmt->parent; block != nullptr;
+         block = block->parent) {
       stores[block].push_back(store_stmt);
     }
   }
@@ -45,8 +46,8 @@ class LoadsAndStoresSearcher : public BasicStmtVisitor {
 };
 
 namespace irpass::analysis {
-const std::unordered_map<Block *, std::vector<Stmt *>> &
-gather_loads_and_stores_in_blocks(IRNode *root) {
+const std::unordered_map<Block *, std::vector<Stmt *>>
+    &gather_loads_and_stores_in_blocks(IRNode *root) {
   return LoadsAndStoresSearcher::run(root);
 }
 }  // namespace irpass::analysis

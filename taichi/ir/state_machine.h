@@ -53,7 +53,6 @@ class StateMachine {
 
 TLANG_NAMESPACE_END
 
-
 /*
  * a = 1
  * for(...)

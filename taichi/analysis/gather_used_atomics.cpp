@@ -38,8 +38,8 @@ class UsedAtomicsSearcher : public BasicStmtVisitor {
 };
 
 namespace irpass::analysis {
-std::unique_ptr<std::unordered_set<AtomicOpStmt *>>
-    gather_used_atomics(IRNode *root) {
+std::unique_ptr<std::unordered_set<AtomicOpStmt *>> gather_used_atomics(
+    IRNode *root) {
   return UsedAtomicsSearcher::run(root);
 }
 }  // namespace irpass::analysis

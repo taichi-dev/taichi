@@ -126,8 +126,8 @@ int count_statements(IRNode *root);
 std::unordered_set<Stmt *> detect_fors_with_break(IRNode *root);
 std::unordered_set<Stmt *> detect_loops_with_continue(IRNode *root);
 std::unordered_set<SNode *> gather_deactivations(IRNode *root);
-const std::unordered_map<Block *, std::vector<Stmt *>> &
-gather_loads_and_stores_in_blocks(IRNode *root);
+const std::unordered_map<Block *, std::vector<Stmt *>>
+    &gather_loads_and_stores_in_blocks(IRNode *root);
 std::vector<Stmt *> gather_statements(IRNode *root,
                                       const std::function<bool(Stmt *)> &test);
 std::unique_ptr<std::unordered_set<AtomicOpStmt *>> gather_used_atomics(

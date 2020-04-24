@@ -1,6 +1,5 @@
 #include "state_machine.h"
 
-
 TLANG_NAMESPACE_BEGIN
 
 StateMachine::StateMachine(Stmt *var)
@@ -15,7 +14,7 @@ StateMachine::StateMachine(Stmt *var)
       in_if_or_loop_but_not_definitely_stored(false),
       maybe_loaded_before_first_definite_store_in_current_if_or_loop(false) {
   TI_ASSERT(var->is<AllocaStmt>() || var->is<GlobalTemporaryStmt>() ||
-      var->is<GlobalPtrStmt>());
+            var->is<GlobalPtrStmt>());
 }
 
 void StateMachine::rebuild_atomics_usage(IRNode *root) {
@@ -42,13 +41,15 @@ void StateMachine::atomic_op(AtomicOpStmt *stmt) {
 
 void StateMachine::store(Stmt *store_stmt) {
   TI_ASSERT(store_stmt->is<LocalStoreStmt>() ||
-      store_stmt->is<GlobalStoreStmt>());
-  if (last_store && last_store_eliminable && !in_if_or_loop_but_not_definitely_stored) {
+            store_stmt->is<GlobalStoreStmt>());
+  if (last_store && last_store_eliminable &&
+      !in_if_or_loop_but_not_definitely_stored) {
     // The last store is never loaded.
     last_store->parent->erase(last_store);
     throw IRModified();
   }
-  if (last_atomic && last_atomic_eliminable && !in_if_or_loop_but_not_definitely_stored) {
+  if (last_atomic && last_atomic_eliminable &&
+      !in_if_or_loop_but_not_definitely_stored) {
     // The last AtomicOpStmt is never used.
     last_atomic->parent->erase(last_atomic);
     throw IRModified();
@@ -110,7 +111,7 @@ void StateMachine::maybe_atomic_op(AtomicOpStmt *) {
 
 void StateMachine::maybe_store(Stmt *store_stmt) {
   TI_ASSERT(store_stmt->is<LocalStoreStmt>() ||
-      store_stmt->is<GlobalStoreStmt>());
+            store_stmt->is<GlobalStoreStmt>());
   maybe_stored = true;
 
   if (last_store_forwardable) {

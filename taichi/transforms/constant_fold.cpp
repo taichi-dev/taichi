@@ -117,20 +117,13 @@ class ConstantFold : public BasicStmtVisitor {
     }
   }
 
-  static bool jit_from_binary_op(TypedConstant &tc, BinaryOpType op,
-      const TypedConstant &lhs, const TypedConstant &rhs)
+  static Kernel *get_binary_op_jit_eval_kernel(BinaryOpType op)
   {
-    if (get_current_program().config.no_cp2o)
-      return false;
-    if (lhs.dt != DataType::i32 || rhs.dt != DataType::i32 || tc.dt != DataType::i32)
-      return false;
-    static int jic = 0; // atat
+    static int jic = 0; // X: race?
     auto kernel_name = fmt::format("jit_constexpr_{}", jic++);
     auto func = [&] () {
-      auto lhstmt =
-        Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(lhs));
-      auto rhstmt =
-        Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(rhs));
+      auto lhstmt = Stmt::make<ArgLoadStmt>(1, false);
+      auto rhstmt = Stmt::make<ArgLoadStmt>(2, false);
       auto oper = Stmt::make<BinaryOpStmt>(op, lhstmt.get(), rhstmt.get());
       auto ret = Stmt::make<ArgStoreStmt>(0, oper.get());
       current_ast_builder().insert(std::move(lhstmt));
@@ -138,11 +131,24 @@ class ConstantFold : public BasicStmtVisitor {
       current_ast_builder().insert(std::move(oper));
       current_ast_builder().insert(std::move(ret));
     };
-    auto ker = new Kernel(get_current_program(), func, kernel_name); // ???
-    //I.push_back(lhs.val_i32);
-    //I.push_back(rhs.val_i32); // X: f32????
-    ker->insert_arg(DataType::i32, false);
+    auto ker = new Kernel(get_current_program(), func, kernel_name);
+    ker->insert_arg(DataType::i32, false); // ret
+    ker->insert_arg(DataType::i32, false); // lhstmt
+    ker->insert_arg(DataType::i32, false); // rhstmt
     ker->mark_arg_return_value(0, true);
+    return ker;
+  }
+
+  static bool jit_from_binary_op(TypedConstant &tc, BinaryOpType op,
+      const TypedConstant &lhs, const TypedConstant &rhs)
+  {
+    if (get_current_program().config.no_cp2o)
+      return false;
+    if (lhs.dt != DataType::i32 || rhs.dt != DataType::i32 || tc.dt != DataType::i32)
+      return false;
+    auto ker = get_binary_op_jit_eval_kernel(op);
+    get_current_program().context.set_arg<int>(1, lhs.val_i32);
+    get_current_program().context.set_arg<int>(2, rhs.val_i32);
     get_current_program().config.no_cp2o = true;
     (*ker)();
     get_current_program().config.no_cp2o = false;

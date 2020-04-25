@@ -118,7 +118,7 @@ Program::Program(Arch desired_arch) {
   if (config.debug)
     config.check_out_of_bound = true;
 
-  if (!arch_is_cpu(config.arch) || 233) {
+  if (!arch_is_cpu(config.arch)) {
     if (config.check_out_of_bound) {
       TI_WARN(
           "Out-of-bound access checking is only implemented on CPUs backends "

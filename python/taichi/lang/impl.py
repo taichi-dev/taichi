@@ -132,7 +132,7 @@ def chain_compare(comparators, ops):
 
 
 class PyTaichi:
-    def __init__(self, kernels=[]):
+    def __init__(self, kernels=None):
         self.materialized = False
         self.prog = None
         self.layout_functions = []
@@ -146,7 +146,7 @@ class PyTaichi:
         self.default_ip = i32
         self.target_tape = None
         self.inside_complex_kernel = False
-        self.kernels = kernels
+        self.kernels = kernels or []
         Expr.materialize_layout_callback = self.materialize
 
     def get_num_compiled_functions(self):

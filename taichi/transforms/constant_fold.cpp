@@ -7,75 +7,6 @@
 
 TLANG_NAMESPACE_BEGIN
 
-bool TypedConstant::from_unary_op(UnaryOpType op, const TypedConstant &rhs) {
-#define PER_OP(op, o)               \
-  case UnaryOpType::op:             \
-    this->val_i32 = o(rhs.val_i32); \
-    break;
-  switch (op) {
-    PER_OP(neg, -)
-    PER_OP(sqrt, std::sqrt)
-    PER_OP(log, std::log)
-    PER_OP(exp, std::exp)
-    PER_OP(abs, std::abs)
-    PER_OP(sin, std::sin)
-    PER_OP(cos, std::cos)
-    PER_OP(tan, std::tan)
-    PER_OP(asin, std::asin)
-    PER_OP(acos, std::acos)
-    PER_OP(tanh, std::tanh)
-    PER_OP(rsqrt, 1 / std::sqrt)
-    PER_OP(floor, std::floor)
-    PER_OP(ceil, std::ceil)
-    PER_OP(bit_not, ~)
-    PER_OP(logic_not, !)
-    PER_OP(inv, 1 /)
-    default:
-      return false;
-  }
-#undef PER_OP
-  return true;
-}
-
-bool TypedConstant::from_binary_op(BinaryOpType op,
-                                   const TypedConstant &lhs,
-                                   const TypedConstant &rhs) {
-#define PER_OP(op, o)                          \
-  case BinaryOpType::op:                       \
-    this->val_i32 = lhs.val_i32 o rhs.val_i32; \
-    break;
-#define PER_OF(op, f)                            \
-  case BinaryOpType::op:                         \
-    this->val_i32 = f(lhs.val_i32, rhs.val_i32); \
-    break;
-  switch (op) {
-    PER_OP(add, +)
-    PER_OP(sub, -)
-    PER_OP(mul, *)
-    PER_OP(div, /)
-    PER_OP(truediv, /)   // XXX: is this same as div?
-    PER_OP(floordiv, /)  // XXX: do we have std::floordiv?
-    // PER_OP(mod, %) // XXX: raw_mod or python-mod?
-    PER_OP(bit_or, |)
-    PER_OP(bit_and, &)
-    PER_OP(bit_xor, ^)
-    PER_OP(cmp_lt, <)
-    PER_OP(cmp_le, <=)
-    PER_OP(cmp_gt, >)
-    PER_OP(cmp_ge, >=)
-    PER_OP(cmp_eq, ==)
-    PER_OP(cmp_ne, !=)
-    PER_OF(max, std::max)
-    PER_OF(min, std::min)
-    PER_OF(pow, std::pow)
-    PER_OF(atan2, std::atan2)
-    default:
-      return false;
-  }
-#undef PER_OP
-  return true;
-}
-
 class ConstantFold : public BasicStmtVisitor {
  public:
   using BasicStmtVisitor::visit;
@@ -84,7 +15,8 @@ class ConstantFold : public BasicStmtVisitor {
   }
 
   void visit(UnaryOpStmt *stmt) override {
-    return;
+    return; // TODO TODO
+#if 0       // TODO TODO
     if (stmt->width() == 1 && stmt->op_type == UnaryOpType::cast &&
         stmt->cast_by_value && stmt->operand->is<ConstStmt>()) {
       auto input = stmt->operand->as<ConstStmt>()->val[0];
@@ -115,6 +47,7 @@ class ConstantFold : public BasicStmtVisitor {
         throw IRModified();
       }
     }
+#endif
   }
 
   static Kernel *get_binary_op_jit_eval_kernel(BinaryOpType op)
@@ -148,16 +81,12 @@ class ConstantFold : public BasicStmtVisitor {
   static bool jit_from_binary_op(TypedConstant &tc, BinaryOpType op,
       const TypedConstant &lhs, const TypedConstant &rhs)
   {
-    if (get_current_program().config.no_cp2o)
-      return false;
     if (lhs.dt != DataType::i32 || rhs.dt != DataType::i32 || tc.dt != DataType::i32)
       return false;
     auto ker = get_binary_op_jit_eval_kernel(op);
     get_current_program().context.set_arg<int>(1, lhs.val_i32);
     get_current_program().context.set_arg<int>(2, rhs.val_i32);
-    get_current_program().config.no_cp2o = true;
     (*ker)();
-    get_current_program().config.no_cp2o = false;
     auto ret = get_current_program().context.get_arg<int>(0);
     tc.val_i32 = ret;
     return true;
@@ -193,60 +122,6 @@ class ConstantFold : public BasicStmtVisitor {
       }
       if (!modified)
         break;
-    }
-  }
-};
-
-class ConstantFoldJIT : public BasicStmtVisitor {
- public:
-  using BasicStmtVisitor::visit;
-  std::vector<BinaryOpStmt *> bops;
-  std::vector<UnaryOpStmt *> uops;
-
-  ConstantFoldJIT() : BasicStmtVisitor() {
-  }
-
-  void visit(UnaryOpStmt *stmt) override {
-    uops.push_back(stmt);
-  }
-
-  void visit(BinaryOpStmt *stmt) override {
-    bops.push_back(stmt);
-  }
-
-  static Kernel *get_jit_constexpr_kernel(Stmt *stmt) {
-    // BEGIN: generic visitor to extract all oprand
-    //auto bop = stmt->cast<BinaryOpStmt>();
-    //auto lhs = bop->lhs;
-    //auto rhs = bop->rhs;
-    // END: generic visitor to extract all oprand
-    auto kernel_name = fmt::format("jit_constexpr_{}", 0);
-    auto func = []() {};
-    auto ker = new Kernel(get_current_program(), func, kernel_name);  // ???
-    // ker->ir = insert(bop, lhs, rhs)!!!!
-    ker->set_arch(Arch::x64);  // X: host_arch
-    // ker->is_accessor = true; // X: is_tiny_kernel?
-    return ker;
-  }
-
-  static void launch_jit(Stmt *stmt) {
-    Kernel *jit_kernel = get_jit_constexpr_kernel(stmt);
-    get_current_program().synchronize();
-    get_current_program().config.no_cp2o = true;
-    TI_INFO("Launching JIT evaluator IN");
-    (*jit_kernel)();
-    TI_INFO("Launching JIT evaluator OUT");
-    get_current_program().config.no_cp2o = false;
-  }
-
-  static void run(IRNode *node) {
-    TI_INFO("!!! FANLE");
-    ConstantFoldJIT folder;
-    node->accept(&folder);
-    if (folder.bops.size()) {
-      auto back = folder.bops.back();
-      folder.bops.pop_back();
-      launch_jit(back);
     }
   }
 };

@@ -243,11 +243,6 @@ class TypedConstant {
     TI_ASSERT(get_data_type<float64>() == dt);
     return val_f64;
   }
-
-  bool from_binary_op(BinaryOpType op,
-                      const TypedConstant &lhs,
-                      const TypedConstant &rhs);
-  bool from_unary_op(UnaryOpType op, const TypedConstant &rhs);
 };
 
 inline std::string make_list(const std::vector<std::string> &data,

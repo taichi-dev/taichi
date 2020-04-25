@@ -33,7 +33,6 @@ CompileConfig::CompileConfig() {
   verbose = true;
   fast_math = true;
   async = false;
-  no_cp2o = false;
 
 #if defined(TI_PLATFORM_WINDOWS) or defined(TI_ARCH_ARM)
   use_unified_memory = false;

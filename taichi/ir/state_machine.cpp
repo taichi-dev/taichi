@@ -295,4 +295,22 @@ void StateMachine::merge_from_if(const StateMachine &true_branch,
   }
 }
 
+void StateMachine::merge_from_loop(const StateMachine &loop) {
+  if (stored_in_this_if_or_loop != definitely) {
+    maybe_loaded_before_first_definite_store_in_this_if_or_loop =
+        maybe_loaded_before_first_definite_store_in_this_if_or_loop ||
+            loop.maybe_loaded_before_first_definite_store_in_this_if_or_loop;
+  }
+
+  stored = loop.stored;
+  stored_in_this_if_or_loop = merge(stored_in_this_if_or_loop, loop.stored_in_this_if_or_loop);
+  loaded = loop.loaded;
+  loaded_in_this_if_or_loop = merge(loaded_in_this_if_or_loop, loop.loaded_in_this_if_or_loop));
+  last_store = loop.last_store;
+  last_store_forwardable = loop.last_store_forwardable;
+  last_store_eliminable = loop.last_store_eliminable;
+  last_atomic = loop.last_atomic;
+  last_atomic_eliminable = loop.last_atomic_eliminable;
+}
+
 TLANG_NAMESPACE_END

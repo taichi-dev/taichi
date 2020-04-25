@@ -68,6 +68,9 @@ class StateMachine {
   StateMachine new_instance_for_if_or_loop() const;
   void merge_from_if(const StateMachine &true_branch,
       const StateMachine &false_branch);
+
+  // This should be called after the "maybe" pass of the loop.
+  void merge_from_loop(const StateMachine &loop);
 };
 
 TLANG_NAMESPACE_END

@@ -338,7 +338,7 @@ class AllocaOptimize : public IRVisitor {
         loop.is_inside_loop = inside_loop_no_stores;
         body->accept(&loop);
       }
-      // And the status about the last store should not be changed.
+      last_store_loaded = last_store_loaded || loop.loaded;
     } else {
       // The loop stores the alloca, and it must be invalid now
       // as we don't know if the loop is fully executed.

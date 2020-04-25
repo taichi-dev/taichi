@@ -198,6 +198,7 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_module_to_context(
 
 std::unique_ptr<llvm::Module>
 TaichiLLVMContext::clone_module_to_this_thread_context(llvm::Module *module) {
+  TI_TRACE("Cloning struct module");
   TI_ASSERT(module);
   auto this_context = get_this_thread_context();
   return clone_module_to_context(module, this_context);
@@ -384,6 +385,8 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
     cloned = llvm::CloneModule(*data->runtime_module);
   }
 
+  TI_ASSERT(cloned != nullptr);
+
   return cloned;
 }
 
@@ -492,6 +495,7 @@ template llvm::Value *TaichiLLVMContext::get_constant(DataType dt, float64 t);
 template <typename T>
 llvm::Value *TaichiLLVMContext::get_constant(T t) {
   auto ctx = get_this_thread_context();
+  TI_ASSERT(ctx != nullptr);
   using TargetType = T;
   if constexpr (std::is_same_v<TargetType, float32> ||
                 std::is_same_v<TargetType, float64>) {
@@ -607,7 +611,7 @@ void TaichiLLVMContext::eliminate_unused_functions(
 }
 
 TaichiLLVMContext::ThreadLocalData *TaichiLLVMContext::get_this_thread_data() {
-  std::lock_guard<std::mutex> _(mut);
+  std::lock_guard<std::mutex> _(thread_map_mut);
   auto tid = std::this_thread::get_id();
   if (per_thread_data.find(tid) == per_thread_data.end()) {
     std::stringstream ss;

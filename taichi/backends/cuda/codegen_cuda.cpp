@@ -346,7 +346,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
            tlctx->get_data_type<int>()});
 
       auto loop_var = create_entry_block_alloca(DataType::i32);
-      stmt->loop_vars_llvm.push_back(loop_var);
+      offloaded_loop_vars_llvm[stmt].push_back(loop_var);
       builder->CreateStore(get_arg(1), loop_var);
       stmt->body->accept(this);
 

@@ -243,17 +243,16 @@ struct GLSSBO {
   }
 };
 
-bool initialize_opengl(bool noerr) {
-  static bool gl_inited = false;
-  static bool gl_supp = false;
+bool initialize_opengl(bool error_tolerance) {
+  static std::optional<bool> supported;  // std::nullopt
 
-
-  if (gl_inited) {
-    if (!gl_supp) {
-      TI_ASSERT_INFO(noerr, "OpenGL not supported");
-      return false;
-    } else {
+  if (supported.has_value()) {  // this function has been called before
+    if (supported.value()) {  // detected to be true in last call
       return true;
+    } else {
+      if (!error_tolerance)  // not called from with_opengl
+        TI_ERROR("OpenGL not supported");
+      return false;
     }
   }
 
@@ -270,8 +269,11 @@ bool initialize_opengl(bool noerr) {
   if (!window) {
     const char *desc = nullptr;
     int status = glfwGetError(&desc);
-    if (noerr && status == GLFW_API_UNAVAILABLE) {
+    if (error_tolerance && status == GLFW_API_UNAVAILABLE) {
+      // error tolerated, returning false
+      // note that we only tolerate GLFW_API_UNAVAILABLE
       TI_TRACE("GLFW: OpenGL API unavailable");
+      supported = std::make_optional<bool>(false);
       return false;
     }
     if (!desc)
@@ -290,14 +292,15 @@ bool initialize_opengl(bool noerr) {
 #include "taichi/inc/opengl_extension.inc.h"
 #undef PER_OPENGL_EXTENSION
   if (!opengl_has_GL_ARB_compute_shader) {
-    if (noerr) {
+    if (error_tolerance) {
       TI_INFO("Your OpenGL does not support GL_ARB_compute_shader extension");
+      supported = std::make_optional<bool>(false);
       return false;
     }
     TI_ERROR("Your OpenGL does not support GL_ARB_compute_shader extension");
   }
 
-  gl_supp = true;
+  supported = std::make_optional<bool>(true);
   return true;
 }
 
@@ -542,7 +545,7 @@ bool is_opengl_api_available() {
   return false;
 }
 
-void initialize_opengl() {
+bool initialize_opengl(bool error_tolerance) {
   TI_NOT_IMPLEMENTED;
 }
 

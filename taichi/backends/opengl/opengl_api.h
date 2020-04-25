@@ -15,7 +15,7 @@ class OffloadedStmt;
 
 namespace opengl {
 
-bool initialize_opengl(bool noerr = false);
+bool initialize_opengl(bool error_tolerance = false);
 bool is_opengl_api_available();
 int opengl_get_threads_per_group();
 #define PER_OPENGL_EXTENSION(x) extern bool opengl_has_##x;

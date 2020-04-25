@@ -143,13 +143,10 @@ class ConstantFold : public BasicStmtVisitor {
     //I.push_back(rhs.val_i32); // X: f32????
     ker->insert_arg(DataType::i32, false);
     ker->mark_arg_return_value(0, true);
-    TI_INFO("IN");
     get_current_program().config.no_cp2o = true;
     (*ker)();
     get_current_program().config.no_cp2o = false;
-    TI_INFO("OUT");
     auto ret = get_current_program().context.get_arg<int>(0);
-    TI_INFO("!!! {}", ret);
     tc.val_i32 = ret;
     return true;
   }

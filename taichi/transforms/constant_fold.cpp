@@ -150,6 +150,7 @@ class ConstantFold : public BasicStmtVisitor {
     TI_INFO("OUT");
     auto ret = get_current_program().context.get_arg<int>(0);
     TI_INFO("!!! {}", ret);
+    tc.val_i32 = ret;
     return true;
   }
 

@@ -243,11 +243,19 @@ struct GLSSBO {
   }
 };
 
-void initialize_opengl() {
+bool initialize_opengl(bool noerr) {
   static bool gl_inited = false;
-  if (gl_inited)
-    return;
-  gl_inited = true;
+  static bool gl_supp = false;
+
+
+  if (gl_inited) {
+    if (!gl_supp) {
+      TI_ASSERT_INFO(noerr, "OpenGL not supported");
+      return false;
+    } else {
+      return true;
+    }
+  }
 
   glfwInit();
   // Compute Shader requires OpenGL 4.3+ (or OpenGL ES 3.1+)
@@ -262,6 +270,10 @@ void initialize_opengl() {
   if (!window) {
     const char *desc = nullptr;
     int status = glfwGetError(&desc);
+    if (noerr && status == GLFW_API_UNAVAILABLE) {
+      TI_TRACE("GLFW: OpenGL API unavailable");
+      return false;
+    }
     if (!desc)
       desc = "Unknown Error";
     TI_ERROR("[glsl] cannot create GLFW window: error {}: {}", status, desc);
@@ -277,8 +289,16 @@ void initialize_opengl() {
     TI_TRACE("[glsl] Found " #x);
 #include "taichi/inc/opengl_extension.inc.h"
 #undef PER_OPENGL_EXTENSION
-  if (!opengl_has_GL_ARB_compute_shader)
+  if (!opengl_has_GL_ARB_compute_shader) {
+    if (noerr) {
+      TI_INFO("Your OpenGL does not support GL_ARB_compute_shader extension");
+      return false;
+    }
     TI_ERROR("Your OpenGL does not support GL_ARB_compute_shader extension");
+  }
+
+  gl_supp = true;
+  return true;
 }
 
 void display_kernel_info(std::string const &kernel_name,
@@ -478,7 +498,7 @@ GLSLLaunchGuard::~GLSLLaunchGuard() {
 }
 
 bool is_opengl_api_available() {
-  return true;
+  return initialize_opengl(true);
 }
 
 int opengl_get_threads_per_group() {

@@ -128,6 +128,7 @@ std::unordered_set<Stmt *> detect_loops_with_continue(IRNode *root);
 std::unordered_set<SNode *> gather_deactivations(IRNode *root);
 std::vector<Stmt *> gather_statements(IRNode *root,
                                       const std::function<bool(Stmt *)> &test);
+std::unordered_set<AtomicOpStmt *> gather_used_atomics(IRNode *root);
 bool has_load_or_atomic(IRNode *root, Stmt *var);
 bool has_store_or_atomic(IRNode *root, const std::vector<Stmt *> &vars);
 std::pair<bool, Stmt *> last_store_or_atomic(IRNode *root, Stmt *var);

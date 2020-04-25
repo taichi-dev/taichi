@@ -181,7 +181,6 @@ class OffloadedStmt : public Stmt {
   int num_cpu_threads;
   Arch device;
   std::vector<Stmt *> loop_vars;
-  std::vector<llvm::Value *> loop_vars_llvm;
   std::unique_ptr<Block> body;
 
   OffloadedStmt(TaskType task_type);

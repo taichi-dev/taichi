@@ -13,7 +13,8 @@ using namespace llvm;
 
 StructCompilerLLVM::StructCompilerLLVM(Program *prog, Arch arch)
     : StructCompiler(prog),
-      LLVMModuleBuilder(prog->get_llvm_context(arch)->clone_runtime_module()),
+      LLVMModuleBuilder(prog->get_llvm_context(arch)->clone_runtime_module(),
+                        prog->get_llvm_context(arch)),
       arch(arch) {
   tlctx = prog->get_llvm_context(arch);
   llvm_ctx = tlctx->get_this_thread_context();

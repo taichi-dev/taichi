@@ -2,6 +2,8 @@
 
 TLANG_NAMESPACE_BEGIN
 
+std::unique_ptr<std::unordered_set<AtomicOpStmt *>> StateMachine::used_atomics;
+
 StateMachine::StateMachine(Stmt *var)
     : var(var),
       stored(never),
@@ -113,7 +115,7 @@ void StateMachine::load(Stmt *load_stmt) {
   }
 }
 
-void StateMachine::maybe_atomic_op(AtomicOpStmt *) {
+void StateMachine::maybe_atomic_op() {
   if (stored_in_this_if_or_loop != definitely)
     maybe_loaded_before_first_definite_store_in_this_if_or_loop = true;
   if (stored == never)
@@ -146,7 +148,7 @@ void StateMachine::maybe_store(Stmt *store_stmt) {
   }
 }
 
-void StateMachine::maybe_load(Stmt *) {
+void StateMachine::maybe_load() {
   if (stored_in_this_if_or_loop != definitely)
     maybe_loaded_before_first_definite_store_in_this_if_or_loop = true;
   if (loaded == never)
@@ -157,12 +159,21 @@ void StateMachine::maybe_load(Stmt *) {
   last_atomic_eliminable = false;
 }
 
-StateMachine StateMachine::new_instance_for_if_or_loop() const {
-  StateMachine new_instance = *this;
-  new_instance.stored_in_this_if_or_loop = never;
-  new_instance.loaded_in_this_if_or_loop = never;
-  new_instance.maybe_loaded_before_first_definite_store_in_this_if_or_loop = false;
-  return new_instance;
+void StateMachine::mark_as_loop_var() {
+  stored = stored_in_this_if_or_loop = definitely;
+  loaded = loaded_in_this_if_or_loop = definitely;
+  last_store = nullptr;
+  last_store_forwardable = false;
+  last_store_eliminable = false;
+  last_atomic = nullptr;
+  last_atomic_eliminable = false;
+  maybe_loaded_before_first_definite_store_in_this_if_or_loop = false;
+}
+
+void StateMachine::begin_if_or_loop() {
+  stored_in_this_if_or_loop = never;
+  loaded_in_this_if_or_loop = never;
+  maybe_loaded_before_first_definite_store_in_this_if_or_loop = false;
 }
 
 void StateMachine::merge_from_if(const StateMachine &true_branch,
@@ -305,7 +316,7 @@ void StateMachine::merge_from_loop(const StateMachine &loop) {
   stored = loop.stored;
   stored_in_this_if_or_loop = merge(stored_in_this_if_or_loop, loop.stored_in_this_if_or_loop);
   loaded = loop.loaded;
-  loaded_in_this_if_or_loop = merge(loaded_in_this_if_or_loop, loop.loaded_in_this_if_or_loop));
+  loaded_in_this_if_or_loop = merge(loaded_in_this_if_or_loop, loop.loaded_in_this_if_or_loop);
   last_store = loop.last_store;
   last_store_forwardable = loop.last_store_forwardable;
   last_store_eliminable = loop.last_store_eliminable;

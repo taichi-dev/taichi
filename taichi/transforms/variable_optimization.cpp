@@ -1,5 +1,6 @@
 #include "taichi/ir/ir.h"
-#include <unordered_set>
+#include "taichi/ir/state_machine.h"
+#include <unordered_map>
 
 TLANG_NAMESPACE_BEGIN
 
@@ -411,43 +412,162 @@ class AllocaOptimize : public IRVisitor {
   }
 };
 
-class AllocaFindAndOptimize : public BasicStmtVisitor {
+class VariableOptimize : public IRVisitor {
  private:
-  std::unordered_set<int> visited;
-  std::unordered_set<AtomicOpStmt *> *used_atomics;
+  std::unique_ptr<std::unordered_map<Stmt *, StateMachine>> state_machines;
+//  std::unique_ptr<std::unordered_map<Block *, std::vector<Stmt *>>> loads_and_stores;
+  bool maybe_run;
 
  public:
-  using BasicStmtVisitor::visit;
-
-  AllocaFindAndOptimize(std::unordered_set<AtomicOpStmt *> *used_atomics)
-      : visited(), used_atomics(used_atomics) {
+  VariableOptimize() {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
+    state_machines = std::make_unique<std::unordered_map<Stmt *, StateMachine>>();
+    maybe_run = false;
   }
 
-  bool is_done(Stmt *stmt) {
-    return visited.find(stmt->instance_id) != visited.end();
+//  void rebuild_loads_and_stores(IRNode *root) {
+//    loads_and_stores = irpass::analysis::gather_loads_and_stores_in_blocks(root);
+//  }
+
+  StateMachine &get_state_machine(Stmt *stmt) {
+    if (state_machines->find(stmt) == state_machines->end())
+      state_machines->insert(std::make_pair(stmt, StateMachine(stmt)));
+    return (*state_machines)[stmt];
   }
 
-  void set_done(Stmt *stmt) {
-    visited.insert(stmt->instance_id);
+  static bool maybe_same_address(Stmt *var1, Stmt *var2) {
+    return true;
   }
 
-  void visit(AllocaStmt *alloca_stmt) override {
-    if (is_done(alloca_stmt))
+  void visit(AllocaStmt *stmt) override {
+    (*state_machines)[stmt] = StateMachine(stmt);
+  }
+
+  void visit(Stmt *stmt) override {
+    if (stmt->is_container_statement()) {
+      TI_ERROR("Visitor for container stmt undefined.");
+    }
+  }
+
+  void visit(AtomicOpStmt *stmt) override {
+    if (!stmt->dest->is<AllocaStmt>())
       return;
-    AllocaOptimize optimizer(alloca_stmt, used_atomics);
-    optimizer.run();
-    set_done(alloca_stmt);
+    if (maybe_run)
+      get_state_machine(stmt->dest).maybe_atomic_op();
+    else
+      get_state_machine(stmt->dest).atomic_op(stmt);
+    if (!stmt->dest->is<AllocaStmt>()) {
+      for (auto &var : *state_machines) {
+        if (var.first != stmt->dest && maybe_same_address(stmt->dest, var.first)) {
+          var.second.maybe_atomic_op();
+        }
+      }
+    }
+  }
+
+  void visit(LocalStoreStmt *stmt) override {
+    if (maybe_run)
+      get_state_machine(stmt->ptr).maybe_store(stmt);
+    else
+      get_state_machine(stmt->ptr).store(stmt);
+  }
+
+  void visit(LocalLoadStmt *stmt) override {
+    TI_ASSERT(stmt->width() == 1);
+    TI_ASSERT(stmt->ptr[0].offset == 0);
+    if (maybe_run)
+      get_state_machine(stmt->ptr[0].var).maybe_load();
+    else
+      get_state_machine(stmt->ptr[0].var).load(stmt);
+  }
+
+  void visit(IfStmt *if_stmt) override {
+    auto origin = std::move(state_machines);
+
+    state_machines = std::make_unique<std::unordered_map<Stmt *, StateMachine>>();
+    *state_machines = *origin;
+    for (auto &it : *state_machines) {
+      it.second.begin_if_or_loop();
+    }
+    if (if_stmt->true_statements) {
+      if_stmt->true_statements->accept(this);
+    }
+    auto true_branch = std::move(state_machines);
+
+    state_machines = std::make_unique<std::unordered_map<Stmt *, StateMachine>>();
+    *state_machines = *origin;
+    for (auto &it : *state_machines) {
+      it.second.begin_if_or_loop();
+    }
+    if (if_stmt->false_statements) {
+      if_stmt->false_statements->accept(this);
+    }
+    auto false_branch = std::move(state_machines);
+
+    state_machines = std::move(origin);
+    for (auto &it : *state_machines) {
+      it.second.merge_from_if((*true_branch)[it.first], (*false_branch)[it.first]);
+    }
+
+    for (auto &it : *true_branch) {
+      if (!it.first->is<AllocaStmt>() && state_machines->find(it.first) == state_machines->end())
+        state_machines->insert(it);
+    }
+    for (auto &it : *false_branch) {
+      if (!it.first->is<AllocaStmt>() && state_machines->find(it.first) == state_machines->end())
+        state_machines->insert(it);
+    }
+  }
+
+  void visit_loop(Block *body, const std::vector<Stmt *> &loop_vars) {
+    if (maybe_run) {
+      body->accept(this);
+      return;
+    }
+
+    auto origin = std::move(state_machines);
+
+    state_machines = std::make_unique<std::unordered_map<Stmt *, StateMachine>>();
+    *state_machines = *origin;
+    for (auto &it : *state_machines) {
+      it.second.begin_if_or_loop();
+    }
+    maybe_run = true;
+    body->accept(this);
+    maybe_run = false;
+    for (auto &it : *origin) {
+      it.second.merge_from_loop((*state_machines)[it.first]);
+    }
+    for (auto &it : *state_machines) {
+      if (!it.first->is<AllocaStmt>() && state_machines->find(it.first) == state_machines->end())
+        origin->insert(it);
+    }
+    body->accept(this);
+    state_machines = std::move(origin);
+  }
+
+  void visit(WhileStmt *stmt) override {
+    TI_ASSERT(stmt->mask == nullptr);
+    visit_loop(stmt->body.get(), {});
+  }
+
+  void visit(RangeForStmt *stmt) override {
+    visit_loop(stmt->body.get(), {stmt->loop_var});
+  }
+
+  void visit(StructForStmt *stmt) override {
+    visit_loop(stmt->body.get(), stmt->loop_vars);
   }
 
   static void run(IRNode *node) {
-    auto used_atomics = irpass::analysis::gather_used_atomics(node);
-    AllocaFindAndOptimize find_and_optimizer(&used_atomics);
+    StateMachine::rebuild_atomics_usage(node);
+    VariableOptimize optimizer;
     while (true) {
       bool modified = false;
       try {
-        node->accept(&find_and_optimizer);
+//        optimizer.rebuild_loads_and_stores(node);
+        node->accept(&optimizer);
       } catch (IRModified) {
         modified = true;
       }
@@ -458,8 +578,8 @@ class AllocaFindAndOptimize : public BasicStmtVisitor {
 };
 
 namespace irpass {
-void optimize_local_variable(IRNode *root) {
-  AllocaFindAndOptimize::run(root);
+void variable_optimization(IRNode *root) {
+  VariableOptimize::run(root);
 }
 }  // namespace irpass
 

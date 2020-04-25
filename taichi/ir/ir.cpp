@@ -828,19 +828,6 @@ std::unique_ptr<ConstStmt> ConstStmt::copy() {
   return std::make_unique<ConstStmt>(val);
 }
 
-bool is_loop_var(Stmt *loop, Stmt *var) {
-  if (loop->is<RangeForStmt>())
-    return loop->as<RangeForStmt>()->loop_var == var;
-  if (loop->is<StructForStmt>()) {
-    for (auto &loop_var : loop->as<StructForStmt>()->loop_vars) {
-      if (loop_var == var)
-        return true;
-    }
-    return false;
-  }
-  return false;
-}
-
 For::For(const Expr &s, const Expr &e, const std::function<void(Expr)> &func) {
   auto i = Expr(std::make_shared<IdExpression>());
   auto stmt_unique = std::make_unique<FrontendForStmt>(i, s, e);

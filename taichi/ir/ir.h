@@ -90,7 +90,7 @@ void die(IRNode *root);
 void simplify(IRNode *root);
 void alg_simp(IRNode *root, const CompileConfig &config);
 void whole_kernel_cse(IRNode *root);
-void optimize_local_variable(IRNode *root);
+void variable_optimization(IRNode *root);
 void full_simplify(IRNode *root, const CompileConfig &config);
 void print(IRNode *root, std::string *output = nullptr);
 void lower(IRNode *root);
@@ -126,8 +126,8 @@ int count_statements(IRNode *root);
 std::unordered_set<Stmt *> detect_fors_with_break(IRNode *root);
 std::unordered_set<Stmt *> detect_loops_with_continue(IRNode *root);
 std::unordered_set<SNode *> gather_deactivations(IRNode *root);
-const std::unordered_map<Block *, std::vector<Stmt *>>
-    &gather_loads_and_stores_in_blocks(IRNode *root);
+std::unique_ptr<std::unordered_map<Block *, std::vector<Stmt *>>>
+    gather_loads_and_stores_in_blocks(IRNode *root);
 std::vector<Stmt *> gather_statements(IRNode *root,
                                       const std::function<bool(Stmt *)> &test);
 std::unique_ptr<std::unordered_set<AtomicOpStmt *>> gather_used_atomics(
@@ -1750,8 +1750,6 @@ class StructForStmt : public Stmt {
   TI_STMT_DEF_FIELDS(loop_vars, snode, vectorize, parallelize, block_dim);
   DEFINE_ACCEPT
 };
-
-bool is_loop_var(Stmt *loop, Stmt *var);
 
 class FuncBodyStmt : public Stmt {
  public:

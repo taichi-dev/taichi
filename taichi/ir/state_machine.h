@@ -52,6 +52,9 @@ class StateMachine {
   // the last store before the IfStmt.
   bool maybe_loaded_before_first_definite_store_in_this_if_or_loop;
 
+  StateMachine() {
+    TI_ERROR("StateMachine constructor invoked with no parameters.")
+  }
   explicit StateMachine(Stmt *var);
 
   // This must be called before using StateMachine to eliminate AtomicOpStmts.
@@ -61,11 +64,13 @@ class StateMachine {
   void store(Stmt *store_stmt);
   void load(Stmt *load_stmt);
 
-  void maybe_atomic_op(AtomicOpStmt *);
+  void maybe_atomic_op();
   void maybe_store(Stmt *store_stmt);
-  void maybe_load(Stmt *);
+  void maybe_load();
 
-  StateMachine new_instance_for_if_or_loop() const;
+  void mark_as_loop_var();
+
+  void begin_if_or_loop();
   void merge_from_if(const StateMachine &true_branch,
       const StateMachine &false_branch);
 

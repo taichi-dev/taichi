@@ -40,7 +40,6 @@ def test_advanced_unused_store_elimination_if():
         else:
             val[None] = a
 
-
     val[None] = 0
     func()
     assert val[None] == 1

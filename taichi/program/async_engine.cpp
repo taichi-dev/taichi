@@ -59,7 +59,7 @@ void ExecutionQueue::synchronize() {
 
   while (!task_queue.empty()) {
     auto ker = task_queue.front();
-    launch_worker.enqueue([&, ker=ker] {
+    launch_worker.enqueue([&, ker = ker] {
       auto h = hash(ker.stmt);
       FunctionType func;
       while (true) {

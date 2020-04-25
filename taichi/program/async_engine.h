@@ -78,7 +78,6 @@ class ParallelExecutor {
         Time::sleep(1e-6);
         continue;  // wait until initialized
       }
-      // TI_TAG;
       if (status == ExecutorStatus::finalized && task_queue.empty()) {
         break;  // finalized, exit
       }
@@ -120,7 +119,7 @@ class ExecutionQueue {
   std::deque<KernelLaunchRecord> task_queue;
 
   ParallelExecutor compilation_workers;  // parallel compilation
-  ParallelExecutor launch_worker;             // serial launching
+  ParallelExecutor launch_worker;        // serial launching
 
   std::unordered_map<uint64, FunctionType> compiled_func;
 

@@ -84,6 +84,7 @@ class ConstantFold : public BasicStmtVisitor {
   }
 
   void visit(UnaryOpStmt *stmt) override {
+    return;
     if (stmt->width() == 1 && stmt->op_type == UnaryOpType::cast &&
         stmt->cast_by_value && stmt->operand->is<ConstStmt>()) {
       auto input = stmt->operand->as<ConstStmt>()->val[0];
@@ -119,9 +120,12 @@ class ConstantFold : public BasicStmtVisitor {
   static bool jit_from_binary_op(TypedConstant &tc, BinaryOpType op,
       const TypedConstant &lhs, const TypedConstant &rhs)
   {
+    if (get_current_program().config.no_cp2o)
+      return false;
     if (lhs.dt != DataType::i32 || rhs.dt != DataType::i32 || tc.dt != DataType::i32)
       return false;
-    auto kernel_name = fmt::format("jit_constexpr_{}", 0);
+    static int jic = 0; // atat
+    auto kernel_name = fmt::format("jit_constexpr_{}", jic++);
     auto func = [&] () {
       auto lhstmt =
         Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(lhs));

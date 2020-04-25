@@ -69,7 +69,7 @@ void compile_to_offloads(IRNode *ir,
     irpass::analysis::verify(ir);
   }
 
-  if (config.check_out_of_bound) {
+  if (0&&config.check_out_of_bound) {
     irpass::check_out_of_bound(ir);
     print("Bound checked");
     irpass::analysis::verify(ir);

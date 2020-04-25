@@ -41,7 +41,7 @@ def test_python(args):
             threads = min(8, cpu_count())  # To prevent running out of memory
         except:
             threads = 2
-        os.environ['TI_DEVICE_MEMORY_GB'] = str(0.5)  # Discussion: #769
+        os.environ['TI_DEVICE_MEMORY_GB'] = '0.5'  # Discussion: #769
         arg_threads = None
         if args.threads is not None:
             arg_threads = int(args.threads)

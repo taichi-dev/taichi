@@ -69,6 +69,7 @@ class StateMachine {
   void maybe_load();
 
   void mark_as_loop_var();
+  void mark_new_offload();
 
   void begin_if_or_loop();
   void merge_from_if(const StateMachine &true_branch,

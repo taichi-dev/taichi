@@ -441,7 +441,10 @@ class VariableOptimize : public IRVisitor {
   }
 
   void visit(AllocaStmt *stmt) override {
-    (*state_machines)[stmt] = StateMachine(stmt);
+    if (state_machines->find(stmt) == state_machines->end())
+      state_machines->insert(std::make_pair(stmt, StateMachine(stmt)));
+    else
+      (*state_machines)[stmt] = StateMachine(stmt);
   }
 
   void visit(Stmt *stmt) override {
@@ -533,6 +536,9 @@ class VariableOptimize : public IRVisitor {
     for (auto &it : *state_machines) {
       it.second.begin_if_or_loop();
     }
+    for (auto &loop_var : loop_vars) {
+      get_state_machine(loop_var).mark_as_loop_var();
+    }
     maybe_run = true;
     body->accept(this);
     maybe_run = false;
@@ -545,6 +551,12 @@ class VariableOptimize : public IRVisitor {
     }
     body->accept(this);
     state_machines = std::move(origin);
+  }
+
+  void visit(Block *block) override {
+    for (auto &stmt : block->statements) {
+      stmt->accept(this);
+    }
   }
 
   void visit(WhileStmt *stmt) override {
@@ -560,6 +572,19 @@ class VariableOptimize : public IRVisitor {
     visit_loop(stmt->body.get(), stmt->loop_vars);
   }
 
+  void visit(OffloadedStmt *stmt) override {
+    if (stmt->body) {
+      for (auto &it : *state_machines) {
+        it.second.mark_new_offload();
+      }
+      stmt->body->accept(this);
+    }
+  }
+
+  void clear() {
+    state_machines->clear();
+  }
+
   static void run(IRNode *node) {
     StateMachine::rebuild_atomics_usage(node);
     VariableOptimize optimizer;
@@ -568,6 +593,7 @@ class VariableOptimize : public IRVisitor {
       try {
 //        optimizer.rebuild_loads_and_stores(node);
         node->accept(&optimizer);
+        optimizer.clear();
       } catch (IRModified) {
         modified = true;
       }
@@ -579,7 +605,13 @@ class VariableOptimize : public IRVisitor {
 
 namespace irpass {
 void variable_optimization(IRNode *root) {
+//  std::cout << "before" << std::endl;
+//  print(root);
+//  analysis::verify(root);
   VariableOptimize::run(root);
+//  std::cout << "after" << std::endl;
+//  print(root);
+//  analysis::verify(root);
 }
 }  // namespace irpass
 

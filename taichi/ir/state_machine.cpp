@@ -170,6 +170,10 @@ void StateMachine::mark_as_loop_var() {
   maybe_loaded_before_first_definite_store_in_this_if_or_loop = false;
 }
 
+void StateMachine::mark_new_offload() {
+  last_store_forwardable = false;
+}
+
 void StateMachine::begin_if_or_loop() {
   stored_in_this_if_or_loop = never;
   loaded_in_this_if_or_loop = never;

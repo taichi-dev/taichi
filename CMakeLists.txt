@@ -10,6 +10,8 @@ SET(TI_VERSION_MAJOR 0)
 SET(TI_VERSION_MINOR 5)
 SET(TI_VERSION_PATCH 14)
 
+option(TI_GENERATE_COMMIT_HASH "Generate commit hash for each build" ON)
+
 execute_process(
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
   COMMAND git rev-parse --short HEAD
@@ -65,11 +67,16 @@ endif()
 
 message("python=${PYTHON_EXECUTABLE}")
 
-add_custom_target(
+if (TI_GENERATE_COMMIT_HASH)
+  add_custom_target(
     generate_commit_hash
     COMMAND ${PYTHON_EXECUTABLE} "${CMAKE_CURRENT_LIST_DIR}/misc/generate_commit_hash.py"
-)
-add_dependencies(${CORE_LIBRARY_NAME} generate_commit_hash)
+    )
+  add_dependencies(${CORE_LIBRARY_NAME} generate_commit_hash)
+else()
+  FILE(WRITE ${CMAKE_CURRENT_LIST_DIR}/taichi/common/commit_hash.h
+    "#define TI_COMMIT_HASH \"${TI_COMMIT_HASH}\"\n")
+endif()
 
 FILE(WRITE ${CMAKE_CURRENT_LIST_DIR}/taichi/common/version.h
         "#pragma once\n"

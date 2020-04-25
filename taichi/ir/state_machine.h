@@ -5,16 +5,34 @@
 
 TLANG_NAMESPACE_BEGIN
 
+// State machine for AllocaStmt/GlobalTemporaryStmt/GlobalPtrStmt.
 class StateMachine {
  private:
   Stmt *var;
   static std::unique_ptr<std::unordered_set<AtomicOpStmt *>> used_atomics;
 
+  bool same_data(Stmt *store_stmt1, Stmt *store_stmt2);
+
  public:
   // If neither stored nor loaded (nor used as operands in masks/loop_vars),
   // we can safely delete this variable if it's an alloca or a global temp.
-  bool maybe_stored;  // Is this variable ever stored (or atomic-operated)?
-  bool maybe_loaded;  // Is this variable ever loaded (or atomic-operated)?
+  enum State {
+    never,
+    maybe,
+    definitely
+  };
+  State stored;  // Is this variable ever stored (or atomic-operated)?
+  State stored_in_this_if_or_loop;
+  State loaded;  // Is this variable ever loaded (or atomic-operated)?
+  State loaded_in_this_if_or_loop;
+
+  static State merge(const State &a, const State &b) {
+    if (a == definitely || b == definitely)
+      return definitely;
+    if (a == maybe || b == maybe)
+      return maybe;
+    return never;
+  }
 
   Stmt *last_store;
 
@@ -29,13 +47,10 @@ class StateMachine {
   // last_atomic_eliminable: Can we eliminate last_atomic?
   bool last_atomic_eliminable;
 
-  // Are we in an if branch or a loop but haven't *definitely* stored this
-  // variable? If yes, we can't eliminate the last store or AtomicOpStmt.
-  bool in_if_or_loop_but_not_definitely_stored;
   // Is this variable ever loaded before the first *definite* store in the
   // current if branch? This is ONLY for determining whether we can eliminate
   // the last store before the IfStmt.
-  bool maybe_loaded_before_first_definite_store_in_current_if_or_loop;
+  bool maybe_loaded_before_first_definite_store_in_this_if_or_loop;
 
   explicit StateMachine(Stmt *var);
 
@@ -49,6 +64,10 @@ class StateMachine {
   void maybe_atomic_op(AtomicOpStmt *);
   void maybe_store(Stmt *store_stmt);
   void maybe_load(Stmt *);
+
+  StateMachine new_instance_for_if_or_loop() const;
+  void merge_from_if(const StateMachine &true_branch,
+      const StateMachine &false_branch);
 };
 
 TLANG_NAMESPACE_END

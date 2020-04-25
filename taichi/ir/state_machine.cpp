@@ -4,17 +4,34 @@ TLANG_NAMESPACE_BEGIN
 
 StateMachine::StateMachine(Stmt *var)
     : var(var),
-      maybe_stored(false),
-      maybe_loaded(false),
+      stored(never),
+      stored_in_this_if_or_loop(never),
+      loaded(never),
+      loaded_in_this_if_or_loop(never),
       last_store(nullptr),
       last_store_forwardable(false),
       last_store_eliminable(false),
       last_atomic(nullptr),
       last_atomic_eliminable(false),
-      in_if_or_loop_but_not_definitely_stored(false),
-      maybe_loaded_before_first_definite_store_in_current_if_or_loop(false) {
+      maybe_loaded_before_first_definite_store_in_this_if_or_loop(false) {
   TI_ASSERT(var->is<AllocaStmt>() || var->is<GlobalTemporaryStmt>() ||
             var->is<GlobalPtrStmt>());
+}
+
+bool StateMachine::same_data(Stmt *store_stmt1, Stmt *store_stmt2) {
+  if (store_stmt1->is<LocalStoreStmt>()) {
+    if(!store_stmt2->is<LocalStoreStmt>())
+      return false;
+    return irpass::analysis::same_statements(
+        store_stmt1->as<LocalStoreStmt>()->data,
+        store_stmt2->as<LocalStoreStmt>()->data);
+  } else {
+    if(!store_stmt2->is<GlobalStoreStmt>())
+      return false;
+    return irpass::analysis::same_statements(
+        store_stmt1->as<GlobalStoreStmt>()->data,
+        store_stmt2->as<GlobalStoreStmt>()->data);
+  }
 }
 
 void StateMachine::rebuild_atomics_usage(IRNode *root) {
@@ -23,8 +40,11 @@ void StateMachine::rebuild_atomics_usage(IRNode *root) {
 
 void StateMachine::atomic_op(AtomicOpStmt *stmt) {
   // This statement is loading the last store, so we can't eliminate it.
-  maybe_stored = true;
-  maybe_loaded = true;
+  if (stored_in_this_if_or_loop != definitely)
+    maybe_loaded_before_first_definite_store_in_this_if_or_loop = true;
+
+  stored = stored_in_this_if_or_loop = definitely;
+  loaded = loaded_in_this_if_or_loop = definitely;
 
   last_store = nullptr;
   last_store_forwardable = false;
@@ -33,28 +53,29 @@ void StateMachine::atomic_op(AtomicOpStmt *stmt) {
   TI_ASSERT(used_atomics);
   last_atomic = stmt;
   last_atomic_eliminable = used_atomics->find(stmt) == used_atomics->end();
-
-  if (in_if_or_loop_but_not_definitely_stored)
-    maybe_loaded_before_first_definite_store_in_current_if_or_loop = true;
-  in_if_or_loop_but_not_definitely_stored = false;
 }
 
 void StateMachine::store(Stmt *store_stmt) {
   TI_ASSERT(store_stmt->is<LocalStoreStmt>() ||
             store_stmt->is<GlobalStoreStmt>());
   if (last_store && last_store_eliminable &&
-      !in_if_or_loop_but_not_definitely_stored) {
+      stored_in_this_if_or_loop == definitely) {
     // The last store is never loaded.
     last_store->parent->erase(last_store);
     throw IRModified();
   }
   if (last_atomic && last_atomic_eliminable &&
-      !in_if_or_loop_but_not_definitely_stored) {
+      stored_in_this_if_or_loop == definitely) {
     // The last AtomicOpStmt is never used.
     last_atomic->parent->erase(last_atomic);
     throw IRModified();
   }
-  maybe_stored = true;
+  if (last_store_forwardable && same_data(last_store, store_stmt)) {
+    // This store is useless.
+    store_stmt->parent->erase(store_stmt);
+    throw IRModified();
+  }
+  stored = stored_in_this_if_or_loop = definitely;
 
   last_store = store_stmt;
   last_store_forwardable = true;
@@ -62,19 +83,17 @@ void StateMachine::store(Stmt *store_stmt) {
 
   last_atomic = nullptr;
   last_atomic_eliminable = false;
-
-  in_if_or_loop_but_not_definitely_stored = false;
 }
 
 void StateMachine::load(Stmt *load_stmt) {
   TI_ASSERT(load_stmt->is<LocalLoadStmt>() || load_stmt->is<GlobalLoadStmt>());
-  maybe_loaded = true;
+  if (stored_in_this_if_or_loop != definitely)
+    maybe_loaded_before_first_definite_store_in_this_if_or_loop = true;
+  loaded = loaded_in_this_if_or_loop = definitely;
   last_store_eliminable = false;
   last_atomic_eliminable = false;
-  if (in_if_or_loop_but_not_definitely_stored)
-    maybe_loaded_before_first_definite_store_in_current_if_or_loop = true;
 
-  if (!maybe_stored) {
+  if (stored == never) {
     auto zero = load_stmt->insert_after_me(Stmt::make<ConstStmt>(
         LaneAttribute<TypedConstant>(load_stmt->ret_type.data_type)));
     zero->repeat(load_stmt->width());
@@ -95,8 +114,16 @@ void StateMachine::load(Stmt *load_stmt) {
 }
 
 void StateMachine::maybe_atomic_op(AtomicOpStmt *) {
-  maybe_stored = true;
-  maybe_loaded = true;
+  if (stored_in_this_if_or_loop != definitely)
+    maybe_loaded_before_first_definite_store_in_this_if_or_loop = true;
+  if (stored == never)
+    stored = maybe;
+  if (stored_in_this_if_or_loop == never)
+    stored_in_this_if_or_loop = maybe;
+  if (loaded == never)
+    loaded = maybe;
+  if (loaded_in_this_if_or_loop == never)
+    loaded_in_this_if_or_loop = maybe;
 
   last_store = nullptr;
   last_store_forwardable = false;
@@ -104,37 +131,168 @@ void StateMachine::maybe_atomic_op(AtomicOpStmt *) {
 
   last_atomic = nullptr;
   last_atomic_eliminable = false;
-
-  if (in_if_or_loop_but_not_definitely_stored)
-    maybe_loaded_before_first_definite_store_in_current_if_or_loop = true;
 }
 
 void StateMachine::maybe_store(Stmt *store_stmt) {
   TI_ASSERT(store_stmt->is<LocalStoreStmt>() ||
             store_stmt->is<GlobalStoreStmt>());
-  maybe_stored = true;
+  if (stored == never)
+    stored = maybe;
+  if (stored_in_this_if_or_loop == never)
+    stored_in_this_if_or_loop = maybe;
 
   if (last_store_forwardable) {
-    if (last_store->is<LocalStoreStmt>()) {
-      TI_ASSERT(store_stmt->is<LocalStoreStmt>());
-      last_store_forwardable = irpass::analysis::same_statements(
-          last_store->as<LocalStoreStmt>()->data,
-          store_stmt->as<LocalStoreStmt>()->data);
-    } else {
-      TI_ASSERT(store_stmt->is<GlobalStoreStmt>());
-      last_store_forwardable = irpass::analysis::same_statements(
-          last_store->as<GlobalStoreStmt>()->data,
-          store_stmt->as<GlobalStoreStmt>()->data);
-    }
+    last_store_forwardable = same_data(last_store, store_stmt);
   }
 }
 
 void StateMachine::maybe_load(Stmt *) {
-  maybe_loaded = true;
+  if (stored_in_this_if_or_loop != definitely)
+    maybe_loaded_before_first_definite_store_in_this_if_or_loop = true;
+  if (loaded == never)
+    loaded = maybe;
+  if (loaded_in_this_if_or_loop == never)
+    loaded_in_this_if_or_loop = maybe;
   last_store_eliminable = false;
   last_atomic_eliminable = false;
-  if (in_if_or_loop_but_not_definitely_stored)
-    maybe_loaded_before_first_definite_store_in_current_if_or_loop = true;
+}
+
+StateMachine StateMachine::new_instance_for_if_or_loop() const {
+  StateMachine new_instance = *this;
+  new_instance.stored_in_this_if_or_loop = never;
+  new_instance.loaded_in_this_if_or_loop = never;
+  new_instance.maybe_loaded_before_first_definite_store_in_this_if_or_loop = false;
+  return new_instance;
+}
+
+void StateMachine::merge_from_if(const StateMachine &true_branch,
+                                 const StateMachine &false_branch) {
+  if (last_store && last_store_eliminable &&
+      true_branch.stored_in_this_if_or_loop == definitely &&
+      !true_branch.maybe_loaded_before_first_definite_store_in_this_if_or_loop &&
+      false_branch.stored_in_this_if_or_loop == definitely &&
+      !false_branch.maybe_loaded_before_first_definite_store_in_this_if_or_loop) {
+    // The last store is never loaded.
+    last_store->parent->erase(last_store);
+    throw IRModified();
+  }
+  if (last_atomic && last_atomic_eliminable &&
+      true_branch.stored_in_this_if_or_loop == definitely &&
+      !true_branch.maybe_loaded_before_first_definite_store_in_this_if_or_loop &&
+      false_branch.stored_in_this_if_or_loop == definitely &&
+      !false_branch.maybe_loaded_before_first_definite_store_in_this_if_or_loop) {
+    // The last AtomicOpStmt is never used.
+    last_atomic->parent->erase(last_atomic);
+    throw IRModified();
+  }
+
+  if (stored_in_this_if_or_loop != definitely) {
+    maybe_loaded_before_first_definite_store_in_this_if_or_loop =
+        maybe_loaded_before_first_definite_store_in_this_if_or_loop ||
+            true_branch.maybe_loaded_before_first_definite_store_in_this_if_or_loop ||
+            false_branch.maybe_loaded_before_first_definite_store_in_this_if_or_loop;
+  }
+
+  stored = merge(true_branch.stored, false_branch.stored);
+  stored_in_this_if_or_loop = merge(stored_in_this_if_or_loop,
+                                    merge(true_branch.stored_in_this_if_or_loop, false_branch.stored_in_this_if_or_loop));
+  loaded = merge(true_branch.loaded, false_branch.loaded);
+  loaded_in_this_if_or_loop = merge(loaded_in_this_if_or_loop,
+      merge(true_branch.loaded_in_this_if_or_loop, false_branch.loaded_in_this_if_or_loop));
+
+  if (true_branch.last_store_forwardable &&
+      false_branch.last_store_forwardable &&
+      same_data(true_branch.last_store, false_branch.last_store)) {
+    last_store_forwardable = true;
+    if (last_store == true_branch.last_store ||
+        last_store == false_branch.last_store) {
+      // The last store didn't change.
+      last_store_eliminable = last_store_eliminable &&
+          true_branch.loaded_in_this_if_or_loop == never &&
+          false_branch.loaded_in_this_if_or_loop == never;
+    } else {
+      TI_ASSERT(true_branch.last_store != false_branch.last_store);
+      // if $b
+      //   $c : store $a <- v1
+      // else
+      //   $d : store $a <- v1
+      // Maybe move them outside in the future?
+      if (true_branch.last_store_eliminable) {
+        last_store = true_branch.last_store;
+        last_store_eliminable = true;
+      } else {
+        last_store = false_branch.last_store;
+        last_store_eliminable = false_branch.last_store_eliminable;
+      }
+    }
+  } else {
+    last_store_forwardable = false;
+    // We only care if we can eliminate the last store here.
+    if (true_branch.last_store == last_store &&
+        false_branch.last_store == last_store) {
+      // The last store didn't change.
+      last_store_eliminable = last_store_eliminable &&
+          true_branch.last_store_eliminable &&
+          false_branch.last_store_eliminable;
+    } else {
+      // The last store changed.
+      bool current_eliminable = last_store && last_store_eliminable &&
+      !true_branch.maybe_loaded_before_first_definite_store_in_this_if_or_loop &&
+          !false_branch.maybe_loaded_before_first_definite_store_in_this_if_or_loop;
+      bool true_eliminable = true_branch.last_store != last_store &&
+                             true_branch.last_store != nullptr &&
+                             true_branch.last_store_eliminable;
+      bool false_eliminable = false_branch.last_store != last_store &&
+                              false_branch.last_store != nullptr &&
+                              false_branch.last_store_eliminable;
+      if (true_eliminable) {
+        last_store = true_branch.last_store;
+        last_store_eliminable = true;
+      } else if (false_eliminable) {
+        last_store = false_branch.last_store;
+        last_store_eliminable = true;
+      } else if (current_eliminable) {
+        last_store_eliminable = true;
+      } else {
+        // Neither branch provides a eliminable local store.
+        last_store = nullptr;
+        last_store_eliminable = false;
+      }
+    }
+  }
+
+  // We only care if we can eliminate the last AtomicOpStmt here.
+  if (true_branch.last_atomic == last_atomic &&
+      false_branch.last_atomic == last_atomic) {
+    // The last AtomicOpStmt didn't change.
+    last_atomic_eliminable = last_atomic_eliminable &&
+        true_branch.last_atomic_eliminable &&
+        false_branch.last_atomic_eliminable;
+  } else {
+    // The last store changed.
+    bool current_eliminable = last_atomic && last_atomic_eliminable &&
+        !true_branch.maybe_loaded_before_first_definite_store_in_this_if_or_loop &&
+        !false_branch.maybe_loaded_before_first_definite_store_in_this_if_or_loop;
+    bool true_eliminable = true_branch.last_atomic != last_atomic &&
+        true_branch.last_atomic != nullptr &&
+        true_branch.last_atomic_eliminable;
+    bool false_eliminable = false_branch.last_atomic != last_atomic &&
+        false_branch.last_atomic != nullptr &&
+        false_branch.last_atomic_eliminable;
+    if (true_eliminable) {
+      last_atomic = true_branch.last_atomic;
+      last_atomic_eliminable = true;
+    } else if (false_eliminable) {
+      last_atomic = false_branch.last_atomic;
+      last_atomic_eliminable = true;
+    } else if (current_eliminable) {
+      last_atomic_eliminable = true;
+    } else {
+      // Neither branch provides a eliminable local store.
+      last_atomic = nullptr;
+      last_atomic_eliminable = false;
+    }
+  }
 }
 
 TLANG_NAMESPACE_END

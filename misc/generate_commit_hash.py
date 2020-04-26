@@ -12,7 +12,7 @@ content = f"#define TI_COMMIT_HASH \"{commit_hash}\"\n"
 # This reduces unnecessary file changes/linkings
 if os.path.exists(output_fn):
     with open(output_fn, 'r') as f:
-        old_content = "\n".join(f.readlines())
+        old_content = f.read()
         if old_content == content:
             # No update needed
             exit(0)

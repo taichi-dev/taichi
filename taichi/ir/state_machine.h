@@ -80,26 +80,3 @@ class StateMachine {
 };
 
 TLANG_NAMESPACE_END
-
-/*
- * a = 1
- * for(...)
- *   b = a (x)
- *
- * a = 1 (x)
- * for(...)
- *   a = 2
- *
- * a = 1
- * for(...)
- *   b = a
- *   a = 2
- *
- * if(...)
- *  ...
- *  a = 1
- *  ...
- * else
- *  a = 1
- * b = a
- */

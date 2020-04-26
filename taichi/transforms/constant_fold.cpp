@@ -83,11 +83,14 @@ class ConstantFold : public BasicStmtVisitor {
   {
     if (lhs.dt != DataType::i32 || rhs.dt != DataType::i32 || tc.dt != DataType::i32)
       return false;
-    auto ker = get_binary_op_jit_eval_kernel(op);
+    auto ker = get_binary_op_jit_eval_kernel(BinaryOpType::cmp_ge);
     get_current_program().context.set_arg<int>(1, lhs.val_i32);
     get_current_program().context.set_arg<int>(2, rhs.val_i32);
+    TI_INFO("!!!IN");
+    irpass::print(ker->ir);
     (*ker)();
     auto ret = get_current_program().context.get_arg<int>(0);
+    TI_INFO("!!!OUT {}", ret);
     tc.val_i32 = ret;
     return true;
   }

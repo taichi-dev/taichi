@@ -351,11 +351,31 @@ void StateMachine::merge_from_loop(const StateMachine &loop) {
   stored_in_this_if_or_loop = merge_a_and_maybe_b(stored_in_this_if_or_loop, loop.stored_in_this_if_or_loop);
   loaded = loop.loaded;
   loaded_in_this_if_or_loop = merge_a_and_maybe_b(loaded_in_this_if_or_loop, loop.loaded_in_this_if_or_loop);
-  last_store = loop.last_store;
-  last_store_forwardable = loop.last_store_forwardable;
-  last_store_eliminable = loop.last_store_eliminable;
-  last_atomic = loop.last_atomic;
-  last_atomic_eliminable = loop.last_atomic_eliminable;
+
+  // We must be cautious here because of possible Continues and WhileControls.
+  if (loop.stored_in_this_if_or_loop) {
+    // Not forwardable if stored in the loop.
+    if (loop.loaded_in_this_if_or_loop) {
+      // Not eliminable if loaded in the loop.
+      last_store = nullptr;
+      last_store_forwardable = false;
+      last_store_eliminable = false;
+      last_atomic = nullptr;
+      last_atomic_eliminable = false;
+    } else {
+      last_store = loop.last_store;
+      last_store_forwardable = false;
+      last_store_eliminable = loop.last_atomic_eliminable;
+      last_atomic = loop.last_atomic;
+      last_atomic_eliminable = loop.last_atomic_eliminable;
+    }
+  } else {
+    if (loop.loaded_in_this_if_or_loop) {
+      // Not eliminable if loaded in the loop.
+      last_store_eliminable = false;
+      last_atomic_eliminable = false;
+    }
+  }
 }
 
 TLANG_NAMESPACE_END

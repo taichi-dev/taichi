@@ -44,9 +44,6 @@ class StateMachine {
   // the last store before the IfStmt.
   bool maybe_loaded_before_first_definite_store_in_this_if_or_loop;
 
-  StateMachine() {
-    TI_ERROR("StateMachine constructor invoked with no parameters.")
-  }
   explicit StateMachine(Stmt *var);
 
   // This must be called before using StateMachine to eliminate AtomicOpStmts.

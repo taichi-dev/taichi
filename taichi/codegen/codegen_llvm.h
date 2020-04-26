@@ -218,7 +218,7 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   std::tuple<llvm::Value *, llvm::Value *> get_range_for_bounds(
       OffloadedStmt *stmt);
 
-  void create_offload_range_for(OffloadedStmt *stmt);
+  virtual void create_offload_range_for(OffloadedStmt *stmt) = 0;
 
   void create_offload_struct_for(OffloadedStmt *stmt, bool spmd = false);
 

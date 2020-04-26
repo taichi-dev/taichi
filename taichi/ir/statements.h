@@ -180,7 +180,6 @@ class OffloadedStmt : public Stmt {
   bool reversed;
   int num_cpu_threads;
   Arch device;
-  std::vector<Stmt *> loop_vars;
   std::unique_ptr<Block> body;
 
   OffloadedStmt(TaskType task_type);
@@ -212,8 +211,7 @@ class OffloadedStmt : public Stmt {
                      block_dim,
                      reversed,
                      num_cpu_threads,
-                     device,
-                     loop_vars /*unused?*/);
+                     device);
   DEFINE_ACCEPT
 };
 

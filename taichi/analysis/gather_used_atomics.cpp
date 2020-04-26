@@ -8,6 +8,8 @@ class UsedAtomicsSearcher : public BasicStmtVisitor {
   std::unordered_set<AtomicOpStmt *> used_atomics;
 
  public:
+  using BasicStmtVisitor::visit;
+
   UsedAtomicsSearcher() {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;

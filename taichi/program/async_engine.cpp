@@ -49,7 +49,6 @@ void ExecutionQueue::synchronize() {
     }
   }
 
-  // no need to flush here
   compilation_workers.flush();
 
   while (!task_queue.empty()) {

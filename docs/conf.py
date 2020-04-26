@@ -19,8 +19,8 @@ import sys
 # -- Project information -----------------------------------------------------
 
 project = 'taichi'
-copyright = '2018, Yuanming Hu'
-author = 'Yuanming Hu'
+copyright = '2016, Taichi Developers'
+author = 'Taichi Developers'
 
 version_fn = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                           'version')
@@ -148,7 +148,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'taichi.tex', 'taichi Documentation', 'Yuanming Hu',
+    (master_doc, 'taichi.tex', 'taichi Documentation', 'Taichi Developers',
      'manual'),
 ]
 

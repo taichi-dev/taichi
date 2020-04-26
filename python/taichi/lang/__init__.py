@@ -142,7 +142,13 @@ def init(arch=None,
     environ_config("print_benchmark_stat")
     environ_config("device_memory_fraction", float)
     environ_config("device_memory_GB", float)
-    environ_config("gdb_trigger")
+
+    # Q: Why not environ_config("gdb_trigger")?
+    # A: We don't have ti.cfg.gdb_trigger yet.
+    # Discussion: https://github.com/taichi-dev/taichi/pull/879
+    gdb_trigger = os.environ.get('TI_GDB_TRIGGER', '')
+    if len(gdb_trigger):
+        ti.set_gdb_trigger(bool(int(gdb_trigger)))
     
     # Q: Why not environ_config("arch", ti.core.arch_from_name)?
     # A: We need adaptive_arch_select for all.

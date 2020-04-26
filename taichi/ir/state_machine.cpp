@@ -378,4 +378,25 @@ void StateMachine::merge_from_loop(const StateMachine &loop) {
   }
 }
 
+void StateMachine::finalize() {
+  if (last_store && last_store_eliminable) {
+    // The last store is never loaded.
+    last_store->parent->erase(last_store);
+    throw IRModified();
+  }
+  if (last_atomic && last_atomic_eliminable) {
+    // The last AtomicOpStmt is never used.
+    last_atomic->parent->erase(last_atomic);
+    throw IRModified();
+  }
+  if (stored == never && loaded == never) {
+    // Never stored and never loaded.
+    // For future vectorization, if it's an alloca, we need to check that
+    // this alloca is not used as masks (this can be done by checking operands)
+    // before eliminating it.
+    var->parent->erase(var);
+    throw IRModified();
+  }
+}
+
 TLANG_NAMESPACE_END

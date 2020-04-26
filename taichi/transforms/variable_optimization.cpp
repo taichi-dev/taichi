@@ -7,7 +7,6 @@ TLANG_NAMESPACE_BEGIN
 class VariableOptimize : public IRVisitor {
  private:
   std::unique_ptr<std::unordered_map<Stmt *, StateMachine>> state_machines;
-//  std::unique_ptr<std::unordered_map<Block *, std::vector<Stmt *>>> loads_and_stores;
   bool maybe_run;
 
  public:
@@ -17,10 +16,6 @@ class VariableOptimize : public IRVisitor {
     state_machines = std::make_unique<std::unordered_map<Stmt *, StateMachine>>();
     maybe_run = false;
   }
-
-//  void rebuild_loads_and_stores(IRNode *root) {
-//    loads_and_stores = irpass::analysis::gather_loads_and_stores_in_blocks(root);
-//  }
 
   StateMachine &get_state_machine(Stmt *stmt) {
     if (state_machines->find(stmt) == state_machines->end())
@@ -174,6 +169,8 @@ class VariableOptimize : public IRVisitor {
   }
 
   void clear() {
+    for (auto &it : *state_machines)
+      it.second.finalize();
     state_machines->clear();
   }
 
@@ -183,7 +180,6 @@ class VariableOptimize : public IRVisitor {
     while (true) {
       bool modified = false;
       try {
-//        optimizer.rebuild_loads_and_stores(node);
         node->accept(&optimizer);
         optimizer.clear();
       } catch (IRModified) {

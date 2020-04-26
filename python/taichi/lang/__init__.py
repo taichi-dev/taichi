@@ -124,7 +124,7 @@ def init(arch=None,
     def bool_int(x):
         return bool(int(x))
 
-    def environ_config(key, cast=bool_int, default=False):
+    def environ_config(key, cast=bool_int):
         name = 'TI_' + key.upper()
         value = os.environ.get(name, '')
         if len(value):

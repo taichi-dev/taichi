@@ -7,6 +7,10 @@
 
 TLANG_NAMESPACE_BEGIN
 
+namespace {
+  std::mutex jit_lock;
+};
+
 class ConstantFold : public BasicStmtVisitor {
  public:
   using BasicStmtVisitor::visit;
@@ -52,11 +56,12 @@ class ConstantFold : public BasicStmtVisitor {
 
   static Kernel *get_binary_op_jit_eval_kernel(BinaryOpType op)
   {
-    static std::map<BinaryOpType, std::unique_ptr<Kernel>> cache; // X: race?
+    std::lock_guard<std::mutex> _(jit_lock);
+    static std::map<BinaryOpType, std::unique_ptr<Kernel>> cache;
     auto it = cache.find(op);
     if (it != cache.end()) // cached?
       return it->second.get();
-    static int jic = 0; // X: race?
+    static int jic = 0;
     auto kernel_name = fmt::format("jit_constexpr_{}", jic++);
     auto func = [&] () {
       auto lhstmt = Stmt::make<ArgLoadStmt>(1, false);
@@ -83,14 +88,15 @@ class ConstantFold : public BasicStmtVisitor {
   {
     if (lhs.dt != DataType::i32 || rhs.dt != DataType::i32 || tc.dt != DataType::i32)
       return false;
-    auto ker = get_binary_op_jit_eval_kernel(BinaryOpType::cmp_ge);
+    auto ker = get_binary_op_jit_eval_kernel(op);
     get_current_program().context.set_arg<int>(1, lhs.val_i32);
     get_current_program().context.set_arg<int>(2, rhs.val_i32);
     TI_INFO("!!!IN");
     irpass::print(ker->ir);
     (*ker)();
     auto ret = get_current_program().context.get_arg<int>(0);
-    TI_INFO("!!!OUT {}", ret);
+    TI_INFO("!!!OUT {} {} {} = {}", lhs.val_i32,
+        binary_op_type_symbol(op), rhs.val_i32, ret);
     tc.val_i32 = ret;
     return true;
   }

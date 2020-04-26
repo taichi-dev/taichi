@@ -7,10 +7,6 @@
 
 TLANG_NAMESPACE_BEGIN
 
-namespace {
-  std::mutex jit_lock;
-};
-
 class ConstantFold : public BasicStmtVisitor {
  public:
   using BasicStmtVisitor::visit;
@@ -67,8 +63,6 @@ class ConstantFold : public BasicStmtVisitor {
 
   static Kernel *get_binary_op_jit_eval_kernel(BinaryEvaluatorId const &id)
   {
-    std::lock_guard<std::mutex> _(jit_lock);
-    TI_INFO("HEL");
     auto &cache = get_current_program().jit_evaluator_cache;
 #if 1
     int iid = int(id);
@@ -76,9 +70,8 @@ class ConstantFold : public BasicStmtVisitor {
     if (it != cache.end()) // cached?
       return it->second.get();
 #endif
-    TI_INFO("GIN");
-    static int jic = 0;
-    auto kernel_name = fmt::format("jit_constexpr_{}", jic++);
+    static int jic = 0; // X: race?
+    auto kernel_name = fmt::format("jit_evaluator_{}", jic++);
     auto func = [&] () {
       auto lhstmt = Stmt::make<ArgLoadStmt>(1, false);
       auto rhstmt = Stmt::make<ArgLoadStmt>(2, false);
@@ -101,10 +94,10 @@ class ConstantFold : public BasicStmtVisitor {
     return ker_ptr;
   }
 
-  static bool jit_from_binary_op(TypedConstant &tc, BinaryOpType op,
+  static bool jit_from_binary_op(TypedConstant &ret, BinaryOpType op,
       const TypedConstant &lhs, const TypedConstant &rhs)
   {
-    BinaryEvaluatorId id{op, tc.dt, lhs.dt, rhs.dt};
+    BinaryEvaluatorId id{op, ret.dt, lhs.dt, rhs.dt};
     auto *ker = get_binary_op_jit_eval_kernel(id);
     auto &ctx = get_current_program().context;
 #define PER_TYPE(x) ctx.set_arg(1, lhs.val_##x);
@@ -117,7 +110,7 @@ class ConstantFold : public BasicStmtVisitor {
 #undef PER_TYPE
     irpass::print(ker->ir);
     (*ker)();
-#define PER_TYPE(x, T) tc.val_##x = ctx.get_arg<T>(0);
+#define PER_TYPE(x, T) ret.val_##x = ctx.get_arg<T>(0);
     PER_TYPE(i32, int) PER_TYPE(i64, int64_t)
     PER_TYPE(f32, float) PER_TYPE(f64, double)
 #undef PER_TYPE

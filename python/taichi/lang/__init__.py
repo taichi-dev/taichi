@@ -121,22 +121,31 @@ def init(arch=None,
     for k, v in kwargs.items():
         setattr(ti.cfg, k, v)
 
-    def boolean_config(key, name=None):
-        if name is None:
-            name = 'TI_' + key.upper()
-        value = os.environ.get(name)
-        if value is not None:
-            setattr(ti.cfg, key, len(value) and bool(int(value)))
+    def bool_int(x):
+        return bool(int(x))
+
+    def environ_config(key, cast=bool_int):
+        name = 'TI_' + key.upper()
+        value = os.environ.get(name, '')
+        if len(value):
+            setattr(ti.cfg, key, cast(value))
+
+        # TI_ASYNC=   : not work
+        # TI_ASYNC=0  : False
+        # TI_ASYNC=1  : True
 
     # does override
-    boolean_config("print_ir")
-    boolean_config("verbose")
-    boolean_config("fast_math")
-    boolean_config("async")
-    boolean_config("print_benchmark_stat")
-    gdb_trigger = os.environ.get("TI_GDB_TRIGGER")
-    if gdb_trigger is not None:
-        ti.set_gdb_trigger(len(gdb_trigger) and bool(int(gdb_trigger)))
+    environ_config("print_ir")
+    environ_config("verbose")
+    environ_config("fast_math")
+    environ_config("async")
+    environ_config("print_benchmark_stat")
+    environ_config("device_memory_fraction", float)
+    environ_config("device_memory_GB", float)
+    environ_config("gdb_trigger")
+    
+    # Q: Why not environ_config("arch", ti.core.arch_from_name)?
+    # A: We need adaptive_arch_select for all.
     env_arch = os.environ.get("TI_ARCH")
     if env_arch is not None:
         print(f'Following TI_ARCH setting up for arch={env_arch}')

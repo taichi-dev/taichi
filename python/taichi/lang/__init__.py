@@ -142,9 +142,10 @@ def init(arch=None,
     environ_config("print_benchmark_stat")
     environ_config("device_memory_fraction", float)
     environ_config("device_memory_GB", float)
-    gdb_trigger = os.environ.get("TI_GDB_TRIGGER")
-    if gdb_trigger is not None:
-        ti.set_gdb_trigger(len(gdb_trigger) and bool(int(gdb_trigger)))
+    environ_config("gdb_trigger")
+    
+    # Q: Why not environ_config("arch", ti.core.arch_from_name)?
+    # A: We need adaptive_arch_select for all.
     env_arch = os.environ.get("TI_ARCH")
     if env_arch is not None:
         print(f'Following TI_ARCH setting up for arch={env_arch}')

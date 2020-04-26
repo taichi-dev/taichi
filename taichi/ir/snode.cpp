@@ -124,8 +124,8 @@ void SNode::write_float(const std::vector<int> &I, float64 val) {
 
 uint64 SNode::fetch_reader_result() {
   uint64 ret;
-  if (get_current_program().config.arch == Arch::cuda &&
-      !get_current_program().config.use_unified_memory) {
+  auto arch = get_current_program().config.arch;
+  if (arch == Arch::cuda) {
     // TODO: refactor
 #if defined(TI_WITH_CUDA)
     CUDADriver::get_instance().memcpy_device_to_host(
@@ -133,6 +133,8 @@ uint64 SNode::fetch_reader_result() {
 #else
     TI_NOT_IMPLEMENTED;
 #endif
+  } else if (arch_is_cpu(arch)) {
+    ret = *(uint64 *)get_current_program().result_buffer;
   } else {
     ret = get_current_program().context.get_arg_as_uint64(num_active_indices);
   }

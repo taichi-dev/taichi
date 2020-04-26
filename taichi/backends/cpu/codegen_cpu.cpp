@@ -18,6 +18,34 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
     TI_AUTO_PROF
   }
 
+  void create_offload_range_for(OffloadedStmt *stmt) override {
+    int step = 1;
+    if (stmt->reversed) {
+      step = -1;
+    }
+
+    llvm::Function *body;
+
+    {
+      auto guard = get_function_creation_guard(
+          {llvm::PointerType::get(get_runtime_type("Context"), 0),
+           tlctx->get_data_type<int>()});
+
+      auto loop_var = create_entry_block_alloca(DataType::i32);
+      offloaded_loop_vars_llvm[stmt].push_back(loop_var);
+      builder->CreateStore(get_arg(1), loop_var);
+      stmt->body->accept(this);
+
+      body = guard.body;
+    }
+
+    auto [begin, end] = get_range_for_bounds(stmt);
+    create_call("cpu_parallel_range_for",
+                {get_arg(0), tlctx->get_constant(stmt->num_cpu_threads), begin,
+                 end, tlctx->get_constant(step),
+                 tlctx->get_constant(stmt->block_dim), body});
+  }
+
   void visit(OffloadedStmt *stmt) override {
     stat.add("codegen_offloaded_tasks");
     using Type = OffloadedStmt::TaskType;

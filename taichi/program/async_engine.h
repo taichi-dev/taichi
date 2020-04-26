@@ -84,8 +84,8 @@ class ParallelExecutor {
       // initialized and not finalized. Do work.
       if (!task_queue.empty()) {
         auto task = task_queue.front();
-        task_queue.pop_front();
         running_threads++;
+        task_queue.pop_front();
         lock.unlock();
         // Run the task
         task();
@@ -108,6 +108,7 @@ class KernelLaunchRecord {
   Context context;
   Kernel *kernel;  // TODO: remove this
   OffloadedStmt *stmt;
+  uint64 h;
 
   KernelLaunchRecord(Context contxet, Kernel *kernel, OffloadedStmt *stmt);
 };
@@ -126,8 +127,6 @@ class ExecutionQueue {
   ExecutionQueue();
 
   void enqueue(KernelLaunchRecord ker);
-
-  uint64 hash(OffloadedStmt *stmt);
 
   void compile_task() {
   }

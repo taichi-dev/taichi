@@ -9,13 +9,7 @@
 
 TLANG_NAMESPACE_BEGIN
 
-KernelLaunchRecord::KernelLaunchRecord(Context context,
-                                       Kernel *kernel,
-                                       OffloadedStmt *stmt)
-    : context(context), kernel(kernel), stmt(stmt) {
-}
-
-uint64 ExecutionQueue::hash(OffloadedStmt *stmt) {
+uint64 hash(OffloadedStmt *stmt) {
   // TODO: upgrade this using IR comparisons
   std::string serialized;
   irpass::print(stmt, &serialized);
@@ -24,6 +18,12 @@ uint64 ExecutionQueue::hash(OffloadedStmt *stmt) {
     ret = ret * 100000007UL + (uint64)serialized[i];
   }
   return ret;
+}
+
+KernelLaunchRecord::KernelLaunchRecord(Context context,
+                                       Kernel *kernel,
+                                       OffloadedStmt *stmt)
+    : context(context), kernel(kernel), stmt(stmt), h(hash(stmt)) {
 }
 
 void ExecutionQueue::enqueue(KernelLaunchRecord ker) {
@@ -37,34 +37,29 @@ void ExecutionQueue::synchronize() {
 
   for (int i = 0; i < (int)task_queue.size(); i++) {
     auto ker = task_queue[i];
-    auto h = hash(ker.stmt);
+    auto h = ker.h;
     if (compiled_func.find(h) == compiled_func.end() &&
         to_be_compiled.find(h) == to_be_compiled.end()) {
       to_be_compiled.insert(h);
       compilation_workers.enqueue([&, ker, h, this]() {
-        {
-          TI_TRACE("Codegen...");
-          auto func = CodeGenCPU(ker.kernel, ker.stmt).codegen();
-          TI_TRACE("Codegen done");
-          std::lock_guard<std::mutex> _(mut);
-          compiled_func[h] = func;
-        }
+        auto func = CodeGenCPU(ker.kernel, ker.stmt).codegen();
+        std::lock_guard<std::mutex> _(mut);
+        compiled_func[h] = func;
       });
     }
   }
 
-  auto t = Time::get_time();
+  // no need to flush here
   compilation_workers.flush();
-  TI_WARN("Flushing time {:.3f} ms", (Time::get_time() - t) * 1000);
 
   while (!task_queue.empty()) {
     auto ker = task_queue.front();
-    launch_worker.enqueue([&, ker = ker] {
-      auto h = hash(ker.stmt);
+    launch_worker.enqueue([&, ker] {
+      auto h = ker.h;
       FunctionType func;
       while (true) {
         std::unique_lock<std::mutex> lock(mut);
-        if (compiled_func[h] == nullptr) {
+        if (compiled_func.find(h) == compiled_func.end()) {
           lock.unlock();
           Time::sleep(1e-6);
           continue;
@@ -78,7 +73,10 @@ void ExecutionQueue::synchronize() {
     task_queue.pop_front();
   }
 
+  auto t = Time::get_time();
+  TI_TRACE("Flushing compilation & worker queue...");
   launch_worker.flush();
+  TI_WARN("Flushing time {:.3f} ms", (Time::get_time() - t) * 1000);
 
   // uncomment for benchmarking
   // clear_cache();

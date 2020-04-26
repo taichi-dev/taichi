@@ -330,7 +330,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     create_naive_range_for(for_stmt);
   }
 
-  void create_offload_range_for(OffloadedStmt *stmt) {
+  void create_offload_range_for(OffloadedStmt *stmt) override {
     auto loop_block_dim = stmt->block_dim;
     if (loop_block_dim == 0) {
       loop_block_dim = prog->config.default_gpu_block_dim;

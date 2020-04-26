@@ -33,6 +33,12 @@ class LowerAccess : public IRVisitor {
     }
   }
 
+  void visit(OffloadedStmt *stmt) override {
+    if (stmt->body) {
+      stmt->body->accept(this);
+    }
+  }
+
   void visit(WhileStmt *stmt) override {
     stmt->body->accept(this);
   }

@@ -10,11 +10,12 @@ content = f"#define TI_COMMIT_HASH \"{commit_hash}\"\n"
 
 # First read the file to see if an update is needed
 # This reduces unnecessary file changes/linkings
-with open(output_fn, 'r') as f:
-    old_content = "\n".join(f.readlines())
-    if old_content == content:
-        # No update needed
-        exit(0)
+if os.path.exists(output_fn):
+    with open(output_fn, 'r') as f:
+        old_content = "\n".join(f.readlines())
+        if old_content == content:
+            # No update needed
+            exit(0)
 
 with open(output_fn, 'w') as f:
     f.write(content)

@@ -353,9 +353,9 @@ void StateMachine::merge_from_loop(const StateMachine &loop) {
   loaded_in_this_if_or_loop = merge_a_and_maybe_b(loaded_in_this_if_or_loop, loop.loaded_in_this_if_or_loop);
 
   // We must be cautious here because of possible Continues and WhileControls.
-  if (loop.stored_in_this_if_or_loop) {
+  if (loop.stored_in_this_if_or_loop != never) {
     // Not forwardable if stored in the loop.
-    if (loop.loaded_in_this_if_or_loop) {
+    if (loop.loaded_in_this_if_or_loop != never) {
       // Not eliminable if loaded in the loop.
       last_store = nullptr;
       last_store_forwardable = false;
@@ -370,7 +370,7 @@ void StateMachine::merge_from_loop(const StateMachine &loop) {
       last_atomic_eliminable = loop.last_atomic_eliminable;
     }
   } else {
-    if (loop.loaded_in_this_if_or_loop) {
+    if (loop.loaded_in_this_if_or_loop != never) {
       // Not eliminable if loaded in the loop.
       last_store_eliminable = false;
       last_atomic_eliminable = false;

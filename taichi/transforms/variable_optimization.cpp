@@ -129,6 +129,7 @@ class VariableOptimize : public IRVisitor {
     maybe_run = true;
     body->accept(this);
     maybe_run = false;
+    body->accept(this);
     for (auto &it : *origin) {
       it.second.merge_from_loop((*state_machines)[it.first]);
     }
@@ -136,7 +137,6 @@ class VariableOptimize : public IRVisitor {
       if (!it.first->is<AllocaStmt>() && state_machines->find(it.first) == state_machines->end())
         origin->insert(it);
     }
-    body->accept(this);
     state_machines = std::move(origin);
   }
 
@@ -169,9 +169,12 @@ class VariableOptimize : public IRVisitor {
   }
 
   void clear() {
+    state_machines->clear();
+  }
+
+  void finalize() {
     for (auto &it : *state_machines)
       it.second.finalize();
-    state_machines->clear();
   }
 
   static void run(IRNode *node) {
@@ -180,8 +183,9 @@ class VariableOptimize : public IRVisitor {
     while (true) {
       bool modified = false;
       try {
-        node->accept(&optimizer);
         optimizer.clear();
+        node->accept(&optimizer);
+        optimizer.finalize();
       } catch (IRModified) {
         modified = true;
       }

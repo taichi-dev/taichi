@@ -57,10 +57,14 @@ class ConstantFold : public BasicStmtVisitor {
   static Kernel *get_binary_op_jit_eval_kernel(BinaryOpType op)
   {
     std::lock_guard<std::mutex> _(jit_lock);
-    static std::map<BinaryOpType, std::unique_ptr<Kernel>> cache;
+    TI_INFO("HEL");
+    auto &cache = get_current_program().jit_bop_cache;
+#if 1
     auto it = cache.find(op);
     if (it != cache.end()) // cached?
       return it->second.get();
+#endif
+    TI_INFO("GIN");
     static int jic = 0;
     auto kernel_name = fmt::format("jit_constexpr_{}", jic++);
     auto func = [&] () {
@@ -78,9 +82,11 @@ class ConstantFold : public BasicStmtVisitor {
     ker->insert_arg(DataType::i32, false); // lhstmt
     ker->insert_arg(DataType::i32, false); // rhstmt
     ker->mark_arg_return_value(0, true);
-    auto *ker_p = ker.get();
+    auto *ker_ptr = ker.get();
+#if 1
     cache[op] = std::move(ker);
-    return ker_p;
+#endif
+    return ker_ptr;
   }
 
   static bool jit_from_binary_op(TypedConstant &tc, BinaryOpType op,

@@ -54,13 +54,25 @@ class ConstantFold : public BasicStmtVisitor {
 #endif
   }
 
-  static Kernel *get_binary_op_jit_eval_kernel(BinaryOpType op)
+  struct BinaryEvaluatorId
+  {
+    BinaryOpType op;
+    DataType ret, lhs, rhs;
+
+    explicit operator int() const // make STL map happy
+    {
+      return (int)op | (int) ret << 8 | (int) lhs << 16 | (int) rhs << 24;
+    }
+  };
+
+  static Kernel *get_binary_op_jit_eval_kernel(BinaryEvaluatorId const &id)
   {
     std::lock_guard<std::mutex> _(jit_lock);
     TI_INFO("HEL");
-    auto &cache = get_current_program().jit_bop_cache;
+    auto &cache = get_current_program().jit_evaluator_cache;
 #if 1
-    auto it = cache.find(op);
+    int iid = int(id);
+    auto it = cache.find(iid);
     if (it != cache.end()) // cached?
       return it->second.get();
 #endif
@@ -70,7 +82,7 @@ class ConstantFold : public BasicStmtVisitor {
     auto func = [&] () {
       auto lhstmt = Stmt::make<ArgLoadStmt>(1, false);
       auto rhstmt = Stmt::make<ArgLoadStmt>(2, false);
-      auto oper = Stmt::make<BinaryOpStmt>(op, lhstmt.get(), rhstmt.get());
+      auto oper = Stmt::make<BinaryOpStmt>(id.op, lhstmt.get(), rhstmt.get());
       auto ret = Stmt::make<ArgStoreStmt>(0, oper.get());
       current_ast_builder().insert(std::move(lhstmt));
       current_ast_builder().insert(std::move(rhstmt));
@@ -78,13 +90,13 @@ class ConstantFold : public BasicStmtVisitor {
       current_ast_builder().insert(std::move(ret));
     };
     auto ker = std::make_unique<Kernel>(get_current_program(), func, kernel_name);
-    ker->insert_arg(DataType::i32, false); // ret
-    ker->insert_arg(DataType::i32, false); // lhstmt
-    ker->insert_arg(DataType::i32, false); // rhstmt
+    ker->insert_arg(id.ret, false);
+    ker->insert_arg(id.lhs, false);
+    ker->insert_arg(id.rhs, false);
     ker->mark_arg_return_value(0, true);
     auto *ker_ptr = ker.get();
 #if 1
-    cache[op] = std::move(ker);
+    cache[iid] = std::move(ker);
 #endif
     return ker_ptr;
   }
@@ -92,18 +104,23 @@ class ConstantFold : public BasicStmtVisitor {
   static bool jit_from_binary_op(TypedConstant &tc, BinaryOpType op,
       const TypedConstant &lhs, const TypedConstant &rhs)
   {
-    if (lhs.dt != DataType::i32 || rhs.dt != DataType::i32 || tc.dt != DataType::i32)
-      return false;
-    auto ker = get_binary_op_jit_eval_kernel(op);
-    get_current_program().context.set_arg<int>(1, lhs.val_i32);
-    get_current_program().context.set_arg<int>(2, rhs.val_i32);
-    TI_INFO("!!!IN");
+    BinaryEvaluatorId id{op, tc.dt, lhs.dt, rhs.dt};
+    auto *ker = get_binary_op_jit_eval_kernel(id);
+    auto &ctx = get_current_program().context;
+#define PER_TYPE(x) ctx.set_arg(1, lhs.val_##x);
+    PER_TYPE(i32) PER_TYPE(i64)
+    PER_TYPE(f32) PER_TYPE(f64)
+#undef PER_TYPE
+#define PER_TYPE(x) ctx.set_arg(2, rhs.val_##x);
+    PER_TYPE(i32) PER_TYPE(i64)
+    PER_TYPE(f32) PER_TYPE(f64)
+#undef PER_TYPE
     irpass::print(ker->ir);
     (*ker)();
-    auto ret = get_current_program().context.get_arg<int>(0);
-    TI_INFO("!!!OUT {} {} {} = {}", lhs.val_i32,
-        binary_op_type_symbol(op), rhs.val_i32, ret);
-    tc.val_i32 = ret;
+#define PER_TYPE(x, T) tc.val_##x = ctx.get_arg<T>(0);
+    PER_TYPE(i32, int) PER_TYPE(i64, int64_t)
+    PER_TYPE(f32, float) PER_TYPE(f64, double)
+#undef PER_TYPE
     return true;
   }
 

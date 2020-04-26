@@ -59,7 +59,7 @@ class Program {
 
   std::unique_ptr<ProfilerBase> profiler;
 
-  std::unordered_map<BinaryOpType, std::unique_ptr<Kernel>> jit_bop_cache;
+  std::unordered_map<int, std::unique_ptr<Kernel>> jit_evaluator_cache;
 
   Program() : Program(default_compile_config.arch) {
   }

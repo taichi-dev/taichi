@@ -124,11 +124,15 @@ def init(arch=None,
     def bool_int(x):
         return bool(int(x))
 
-    def environ_config(key, cast=bool_int):
+    def environ_config(key, cast=bool_int, default=False):
         name = 'TI_' + key.upper()
-        value = os.environ.get(name)
-        if value is not None:
-            setattr(ti.cfg, key, len(value) and cast(value))
+        value = os.environ.get(name, '')
+        if len(value):
+            setattr(ti.cfg, key, cast(value))
+
+        # TI_ASYNC=   : not work
+        # TI_ASYNC=0  : False
+        # TI_ASYNC=1  : True
 
     # does override
     environ_config("print_ir")

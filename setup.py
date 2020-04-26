@@ -2,7 +2,7 @@ import setuptools
 import glob
 
 classifiers = [
-    'Development Status :: 5 - Production/Stable',
+    'Development Status :: 2 - Pre-Alpha',
     'Topic :: Software Development :: Compilers',
     'Topic :: Multimedia :: Graphics',
     'Topic :: Games/Entertainment :: Simulation',

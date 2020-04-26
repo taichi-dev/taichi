@@ -121,12 +121,6 @@ def init(arch=None,
     for k, v in kwargs.items():
         setattr(ti.cfg, k, v)
 
-    def boolean_config(key):
-        name = 'TI_' + key.upper()
-        value = os.environ.get(name)
-        if value is not None:
-            setattr(ti.cfg, key, len(value) and bool(int(value)))
-
     def bool_int(x):
         return bool(int(x))
 

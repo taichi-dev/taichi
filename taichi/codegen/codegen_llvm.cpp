@@ -265,14 +265,16 @@ void CodeGenLLVM::emit_struct_meta_base(const std::string &name,
 
 CodeGenLLVM::CodeGenLLVM(Kernel *kernel, IRNode *ir)
     // TODO: simplify LLVMModuleBuilder ctor input
-    : LLVMModuleBuilder(kernel->program.get_llvm_context(kernel->arch)
-                            ->clone_struct_module()),
+    : LLVMModuleBuilder(
+          kernel->program.get_llvm_context(kernel->arch)->clone_struct_module(),
+          kernel->program.get_llvm_context(kernel->arch)),
       kernel(kernel),
       ir(ir),
       prog(&kernel->program) {
   if (ir == nullptr)
     this->ir = kernel->ir;
   initialize_context();
+  current_offloaded_stmt = nullptr;
 
   context_ty = get_runtime_type("Context");
   physical_coordinate_ty = get_runtime_type("PhysicalCoordinates");
@@ -1289,34 +1291,6 @@ std::tuple<llvm::Value *, llvm::Value *> CodeGenLLVM::get_range_for_bounds(
   return std::tuple(begin, end);
 }
 
-void CodeGenLLVM::create_offload_range_for(OffloadedStmt *stmt) {
-  int step = 1;
-  if (stmt->reversed) {
-    step = -1;
-  }
-
-  llvm::Function *body;
-
-  {
-    auto guard = get_function_creation_guard(
-        {llvm::PointerType::get(get_runtime_type("Context"), 0),
-         tlctx->get_data_type<int>()});
-
-    auto loop_var = create_entry_block_alloca(DataType::i32);
-    stmt->loop_vars_llvm.push_back(loop_var);
-    builder->CreateStore(get_arg(1), loop_var);
-    stmt->body->accept(this);
-
-    body = guard.body;
-  }
-
-  auto [begin, end] = get_range_for_bounds(stmt);
-  create_call(
-      "cpu_parallel_range_for",
-      {get_arg(0), tlctx->get_constant(stmt->num_cpu_threads), begin, end,
-       tlctx->get_constant(step), tlctx->get_constant(stmt->block_dim), body});
-}
-
 void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
   llvm::Function *body;
   auto leaf_block = stmt->snode;
@@ -1443,16 +1417,18 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
                tlctx->get_constant(leaf_block->max_num_elements()),
                tlctx->get_constant(num_splits), body,
                tlctx->get_constant(stmt->num_cpu_threads)});
+  // TODO: why do we need num_cpu_threads on GPUs?
 }
 
 void CodeGenLLVM::visit(LoopIndexStmt *stmt) {
+  TI_ASSERT(&module->getContext() == tlctx->get_this_thread_context());
   if (stmt->is_struct_for) {
     llvm_val[stmt] = builder->CreateLoad(builder->CreateGEP(
         current_coordinates, {tlctx->get_constant(0), tlctx->get_constant(0),
                               tlctx->get_constant(stmt->index)}));
   } else {
     llvm_val[stmt] = builder->CreateLoad(
-        current_offloaded_stmt->loop_vars_llvm[stmt->index]);
+        offloaded_loop_vars_llvm[current_offloaded_stmt][stmt->index]);
   }
 }
 

@@ -74,6 +74,17 @@ class AlgSimp : public BasicStmtVisitor {
     }
   }
 
+  void visit(AssertStmt *stmt) override {
+    auto cond = stmt->cond->cast<ConstStmt>();
+    if (!cond)
+      return;
+    if (!alg_is_zero(cond)) {
+      // this statement has no effect
+      stmt->parent->erase(stmt);
+      throw IRModified();
+    }
+  }
+
   void visit(WhileControlStmt *stmt) override {
     auto cond = stmt->cond->cast<ConstStmt>();
     if (!cond)

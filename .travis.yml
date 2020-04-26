@@ -53,7 +53,7 @@ install:
 script:
 - cd $TRAVIS_BUILD_DIR
 - export PATH="$HOME/.pyenv/shims:$HOME/.pyenv/bin:$PATH"
-- $PYTHON ci_setup.py ci
+- $PYTHON misc/ci_setup.py ci
 - export TAICHI_REPO_DIR=$TRAVIS_BUILD_DIR
 - export PYTHONPATH=$TAICHI_REPO_DIR/python
 - export PATH=$TAICHI_REPO_DIR/bin:$PATH

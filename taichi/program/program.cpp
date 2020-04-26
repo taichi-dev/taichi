@@ -171,8 +171,10 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
     if (config.device_memory_fraction == 0) {
       TI_ASSERT(config.device_memory_GB > 0);
       prealloc_size = std::size_t(config.device_memory_GB * (1UL << 30));
-    } else
+    } else {
       prealloc_size = std::size_t(config.device_memory_fraction * total_mem);
+    }
+    TI_ASSERT(prealloc_size <= total_mem);
 
     TI_TRACE("Allocating device memory {:.2f} GB",
              1.0 * prealloc_size / (1UL << 30));
@@ -485,8 +487,8 @@ void Program::finalize() {
       std::string file_name = current_test;
       auto py_pos = file_name.find(".py::");
       TI_ASSERT(py_pos != file_name.npos);
-      file_name = file_name.substr(0, py_pos) + "__" +
-                  file_name.substr(py_pos + 5);
+      file_name =
+          file_name.substr(0, py_pos) + "__" + file_name.substr(py_pos + 5);
       auto first_space_pos = file_name.find_first_of(' ');
       TI_ASSERT(first_space_pos != file_name.npos);
       file_name = file_name.substr(0, first_space_pos);

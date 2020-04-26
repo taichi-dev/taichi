@@ -36,6 +36,36 @@ bool StateMachine::same_data(Stmt *store_stmt1, Stmt *store_stmt2) {
   }
 }
 
+StateMachine::State StateMachine::merge_either_a_or_b(
+    const StateMachine::State &a,
+    const StateMachine::State &b) {
+  if (a == definitely && b == definitely)
+    return definitely;
+  if (a != never || b != never)
+    return maybe;
+  return never;
+}
+
+StateMachine::State StateMachine::merge_a_and_b(
+    const StateMachine::State &a,
+    const StateMachine::State &b) {
+  if (a == definitely || b == definitely)
+    return definitely;
+  if (a == maybe || b == maybe)
+    return maybe;
+  return never;
+}
+
+StateMachine::State StateMachine::merge_a_and_maybe_b(
+    const StateMachine::State &a,
+    const StateMachine::State &b) {
+  if (a == definitely)
+    return definitely;
+  if (a == maybe || b != never)
+    return maybe;
+  return never;
+}
+
 void StateMachine::rebuild_atomics_usage(IRNode *root) {
   used_atomics = irpass::analysis::gather_used_atomics(root);
 }
@@ -208,12 +238,12 @@ void StateMachine::merge_from_if(const StateMachine &true_branch,
             false_branch.maybe_loaded_before_first_definite_store_in_this_if_or_loop;
   }
 
-  stored = merge(true_branch.stored, false_branch.stored);
-  stored_in_this_if_or_loop = merge(stored_in_this_if_or_loop,
-                                    merge(true_branch.stored_in_this_if_or_loop, false_branch.stored_in_this_if_or_loop));
-  loaded = merge(true_branch.loaded, false_branch.loaded);
-  loaded_in_this_if_or_loop = merge(loaded_in_this_if_or_loop,
-      merge(true_branch.loaded_in_this_if_or_loop, false_branch.loaded_in_this_if_or_loop));
+  stored = merge_either_a_or_b(true_branch.stored, false_branch.stored);
+  stored_in_this_if_or_loop = merge_a_and_b(stored_in_this_if_or_loop,
+                                            merge_either_a_or_b(true_branch.stored_in_this_if_or_loop, false_branch.stored_in_this_if_or_loop));
+  loaded = merge_either_a_or_b(true_branch.loaded, false_branch.loaded);
+  loaded_in_this_if_or_loop = merge_a_and_b(loaded_in_this_if_or_loop,
+                                            merge_either_a_or_b(true_branch.loaded_in_this_if_or_loop, false_branch.loaded_in_this_if_or_loop));
 
   if (true_branch.last_store_forwardable &&
       false_branch.last_store_forwardable &&
@@ -318,9 +348,9 @@ void StateMachine::merge_from_loop(const StateMachine &loop) {
   }
 
   stored = loop.stored;
-  stored_in_this_if_or_loop = merge(stored_in_this_if_or_loop, loop.stored_in_this_if_or_loop);
+  stored_in_this_if_or_loop = merge_a_and_maybe_b(stored_in_this_if_or_loop, loop.stored_in_this_if_or_loop);
   loaded = loop.loaded;
-  loaded_in_this_if_or_loop = merge(loaded_in_this_if_or_loop, loop.loaded_in_this_if_or_loop);
+  loaded_in_this_if_or_loop = merge_a_and_maybe_b(loaded_in_this_if_or_loop, loop.loaded_in_this_if_or_loop);
   last_store = loop.last_store;
   last_store_forwardable = loop.last_store_forwardable;
   last_store_eliminable = loop.last_store_eliminable;

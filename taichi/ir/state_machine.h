@@ -26,14 +26,6 @@ class StateMachine {
   State loaded;  // Is this variable ever loaded (or atomic-operated)?
   State loaded_in_this_if_or_loop;
 
-  static State merge(const State &a, const State &b) {
-    if (a == definitely || b == definitely)
-      return definitely;
-    if (a == maybe || b == maybe)
-      return maybe;
-    return never;
-  }
-
   Stmt *last_store;
 
   // last_store_forwardable: Can we do store-forwarding?
@@ -59,6 +51,10 @@ class StateMachine {
 
   // This must be called before using StateMachine to eliminate AtomicOpStmts.
   static void rebuild_atomics_usage(IRNode *root);
+
+  static State merge_either_a_or_b(const State &a, const State &b);
+  static State merge_a_and_b(const State &a, const State &b);
+  static State merge_a_and_maybe_b(const State &a, const State &b);
 
   void atomic_op(AtomicOpStmt *stmt);
   void store(Stmt *store_stmt);

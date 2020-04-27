@@ -140,6 +140,18 @@ class Matrix:
         for i in range(self.n * self.m):
             self.entries[i].assign(other.entries[i])
 
+    def element_wise_binary(self, foo, other):
+        ret = Matrix(self.n, self.m)
+        if isinstance(other, Matrix):
+            self.m
+            for i in range(self.n * self.m):
+                ret.entries[i] = foo(self.entries[i], other.entries[i])
+        else:  # assumed to be scalar
+            other = expr.Expr(other)
+            for i in range(self.n * self.m):
+                ret.entries[i] = foo(self.entries[i], other)
+        return ret
+
     def element_wise_unary(self, foo):
         ret = Matrix(self.n, self.m)
         for i in range(self.n * self.m):

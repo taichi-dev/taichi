@@ -40,7 +40,8 @@ def binary(foo):
         if ti.is_taichi_class(a):
             return a.element_wise_binary(foo, b)
         elif ti.is_taichi_class(b):
-            return b.element_wise_binary(lambda x, y: foo(y, x), a)
+            rev_foo = lambda x, y: foo(y, x)
+            return b.element_wise_binary(rev_foo, a)
         else:
             return foo(Expr(a))
         return foo(Expr(a), Expr(b))

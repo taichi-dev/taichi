@@ -1,6 +1,5 @@
 import taichi as ti
 import time
-import sys
 import math
 import numpy as np
 from renderer_utils import ray_aabb_intersection, intersect_sphere, ray_plane_intersect, reflect, refract
@@ -323,7 +322,7 @@ def render():
         depth = 0
         while depth < max_ray_depth:
             closest, hit_normal, hit_color, mat = intersect_scene(pos, ray_dir)
-            if abs(closest - inf) < eps:
+            if mat == mat_none:
                 break
 
             hit_pos = pos + closest * ray_dir
@@ -349,7 +348,7 @@ def render():
 
 gui = ti.GUI('Cornell Box', res)
 last_t = 0
-for i in range(1000001):
+for i in range(50000):
     render()
     interval = 10
     if i % interval == 0 and i > 0:

@@ -101,8 +101,10 @@ class JITSessionCPU : public JITSession {
                      }),
         compile_layer(object_layer, SimpleCompiler(*TM)),
         OptimizeLayer(compile_layer,
-                      [this](std::unique_ptr<llvm::Module> M) {
-                        return optimize_module(std::move(M));
+                      [](std::unique_ptr<llvm::Module> M) {
+                        return M;
+                        // Do nothing here since optimization is already done in
+                        // global_optmize_module_cpu
                       }),
         CompileCallbackManager(cantFail(
             orc::createLocalCompileCallbackManager(TM->getTargetTriple(),
@@ -184,26 +186,6 @@ class JITSessionCPU : public JITSession {
   */
 
  private:
-  std::unique_ptr<llvm::Module> optimize_module(
-      std::unique_ptr<llvm::Module> M) {
-    // Create a function pass manager.
-    auto FPM = std::make_unique<legacy::FunctionPassManager>(M.get());
-
-    // Add some optimizations.
-    FPM->add(createInstructionCombiningPass());
-    FPM->add(createReassociatePass());
-    FPM->add(createGVNPass());
-    FPM->add(createCFGSimplificationPass());
-    FPM->doInitialization();
-
-    // Run the optimizations over all functions in the module being added to
-    // the JIT.
-    for (auto &F : *M)
-      FPM->run(F);
-
-    return M;
-  }
-
   static void global_optimize_module_cpu(
       std::unique_ptr<llvm::Module> &module) {
     TI_AUTO_PROF

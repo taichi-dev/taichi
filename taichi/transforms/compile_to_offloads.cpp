@@ -9,7 +9,8 @@ void compile_to_offloads(IRNode *ir,
                          bool vectorize,
                          bool grad,
                          bool ad_use_stack,
-                         bool verbose) {
+                         bool verbose,
+                         bool lower_global_access) {
   TI_AUTO_PROF;
 
   auto print = [&](const std::string &name) {
@@ -72,11 +73,15 @@ void compile_to_offloads(IRNode *ir,
     irpass::analysis::verify(ir);
   }
 
-  irpass::lower_access(ir, true);
-  print("Access lowered");
-  irpass::die(ir);
-  print("DIE");
-  irpass::analysis::verify(ir);
+  if (lower_global_access) {
+    irpass::lower_access(ir, true);
+    print("Access lowered");
+    irpass::analysis::verify(ir);
+
+    irpass::die(ir);
+    print("DIE");
+    irpass::analysis::verify(ir);
+  }
 
   irpass::full_simplify(ir, config);
   print("Simplified II");
@@ -84,6 +89,7 @@ void compile_to_offloads(IRNode *ir,
 
   irpass::flag_access(ir);
   print("Access flagged");
+  irpass::analysis::verify(ir);
 
   irpass::constant_fold(ir);
   print("Constant folded");

@@ -96,7 +96,7 @@ void build_taichi() {
     make -j 8
     ldd libtaichi_core.so
     cd ../python
-    ti test -t 1
+    ti test -t 1 -na opengl
     $PYTHON_EXECUTABLE build.py upload
     '''
 }

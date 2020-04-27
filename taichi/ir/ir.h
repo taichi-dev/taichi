@@ -117,7 +117,8 @@ void compile_to_offloads(IRNode *ir,
                          bool vectorize,
                          bool grad,
                          bool ad_use_stack,
-                         bool verbose);
+                         bool verbose,
+                         bool lower_global_access = true);
 
 // Analysis
 namespace analysis {

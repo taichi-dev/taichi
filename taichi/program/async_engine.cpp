@@ -96,7 +96,6 @@ void AsyncEngine::launch(Kernel *kernel) {
     task_queue.emplace_back(kernel->program.get_context(), kernel, offload);
   }
   optimize();
-  synchronize();
 }
 
 void AsyncEngine::synchronize() {

@@ -73,7 +73,11 @@ void Kernel::operator()() {
       program.check_runtime_error();
     }
   } else {
+    program.sync = false;
     program.async_engine->launch(this);
+    if (program.config.debug && arch_is_cpu(arch)) {
+      program.check_runtime_error();
+    }
   }
 }
 

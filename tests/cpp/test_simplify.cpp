@@ -7,7 +7,7 @@ TLANG_NAMESPACE_BEGIN
 
 TI_TEST("simplify") {
   SECTION("simplify_linearized_with_trivial_inputs") {
-    auto *dummy_prog = new Program(Arch::x64);
+    auto _prog = std::make_unique<Program>();
 
     auto block = std::make_unique<Block>();
 

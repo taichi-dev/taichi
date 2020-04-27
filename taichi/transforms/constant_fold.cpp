@@ -33,6 +33,11 @@ class ConstantFold : public BasicStmtVisitor {
     }
 
 #if 0
+    bool operator==(const BinaryEvaluatorId &b)
+    {
+      return op == b.op && ret == b.ret && lhs == b.lhs && rhs == b.rhs;
+    }
+
     struct hash {
       size_t operator()(const BinaryEvaluatorId &id)
       {

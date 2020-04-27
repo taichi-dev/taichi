@@ -49,6 +49,7 @@ def _test_matrix_element_wise_binary(dtype, ti_func, math_func):
 
     a = ti.Matrix(n, m, dt=dtype, shape=())
     b = ti.Matrix(n, m, dt=dtype, shape=())
+    c = ti.Matrix(n, m, dt=dtype, shape=())
     u1 = ti.Matrix(n, m, dt=dtype, shape=())
     u2 = ti.Matrix(n, m, dt=dtype, shape=())
     u3 = ti.var(dt=dtype, shape=())
@@ -72,6 +73,7 @@ def _test_matrix_element_wise_binary(dtype, ti_func, math_func):
     def func():
         a[None] = ti_func(u1[None], u2[None])
         b[None] = ti_func(u1[None], u3[None])
+        c[None] = ti_func(u3[None], u1[None])
 
     func()
 
@@ -80,6 +82,8 @@ def _test_matrix_element_wise_binary(dtype, ti_func, math_func):
             expected = math_func(w1[i * m + j], w2[i * m + j])
             assert a[None][i, j] == approx(expected)
             expected = math_func(w1[i * m + j], w3)
+            assert b[None][i, j] == approx(expected)
+            expected = math_func(w3, w1[i * m + j])
             assert b[None][i, j] == approx(expected)
 
 

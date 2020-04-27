@@ -16,7 +16,8 @@ class TypeCheck : public IRVisitor {
  public:
   TypeCheck(Kernel *kernel) : kernel(kernel) {
     // TODO: remove dependency on get_current_program here
-    config = get_current_program().config;
+    if (current_program != nullptr)
+      config = get_current_program().config;
     allow_undefined_visitor = true;
   }
 

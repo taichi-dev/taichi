@@ -6,58 +6,28 @@ TLANG_NAMESPACE_BEGIN
 
 class VariableOptimize : public IRVisitor {
  protected:
-  std::unique_ptr<std::unordered_map<Stmt *, StateMachine>> state_machines;
   bool maybe_run;
 
  public:
   VariableOptimize() {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
-    state_machines =
-        std::make_unique<std::unordered_map<Stmt *, StateMachine>>();
     maybe_run = false;
   }
 
-  virtual StateMachine &get_state_machine(Stmt *stmt) {
-    if (state_machines->find(stmt) == state_machines->end())
-      state_machines->insert(std::make_pair(stmt, StateMachine(stmt)));
-    return (*state_machines)[stmt];
-  }
+  virtual StateMachine &get_state_machine(Stmt *stmt) = 0;
 
-  virtual void modify_all_state_machines(void (StateMachine::*func)()) {
-    for (auto &it : *state_machines) {
-      (it.second.*func)();
-    }
-  }
+  virtual void modify_all_state_machines(void (StateMachine::*func)()) = 0;
 
-  virtual void clear() {
-    state_machines->clear();
-  }
+  virtual void clear() = 0;
 
-  static bool maybe_same_address(Stmt *var1, Stmt *var2) {
-    return true;
+  virtual void finalize() {
+    modify_all_state_machines(&StateMachine::finalize);
   }
 
   void visit(Stmt *stmt) override {
     if (stmt->is_container_statement()) {
       TI_ERROR("Visitor for container stmt undefined.");
-    }
-  }
-
-  void visit(AtomicOpStmt *stmt) override {
-    if (!stmt->dest->is<AllocaStmt>())
-      return;
-    if (maybe_run)
-      get_state_machine(stmt->dest).maybe_atomic_op();
-    else
-      get_state_machine(stmt->dest).atomic_op(stmt);
-    if (!stmt->dest->is<AllocaStmt>()) {
-      for (auto &var : *state_machines) {
-        if (var.first != stmt->dest &&
-            maybe_same_address(stmt->dest, var.first)) {
-          var.second.maybe_atomic_op();
-        }
-      }
     }
   }
 
@@ -73,80 +43,7 @@ class VariableOptimize : public IRVisitor {
     }
   }
 
-  void visit(IfStmt *if_stmt) override {
-    auto origin = std::move(state_machines);
-
-    state_machines =
-        std::make_unique<std::unordered_map<Stmt *, StateMachine>>();
-    *state_machines = *origin;
-    for (auto &it : *state_machines) {
-      it.second.begin_if_or_loop();
-    }
-    if (if_stmt->true_statements) {
-      if_stmt->true_statements->accept(this);
-    }
-    auto true_branch = std::move(state_machines);
-
-    state_machines =
-        std::make_unique<std::unordered_map<Stmt *, StateMachine>>();
-    *state_machines = *origin;
-    for (auto &it : *state_machines) {
-      it.second.begin_if_or_loop();
-    }
-    if (if_stmt->false_statements) {
-      if_stmt->false_statements->accept(this);
-    }
-    auto false_branch = std::move(state_machines);
-
-    state_machines = std::move(origin);
-    for (auto &it : *state_machines) {
-      it.second.merge_from_if((*true_branch)[it.first],
-                              (*false_branch)[it.first]);
-    }
-
-    for (auto &it : *true_branch) {
-      if (!it.first->is<AllocaStmt>() &&
-          state_machines->find(it.first) == state_machines->end())
-        state_machines->insert(it);
-    }
-    for (auto &it : *false_branch) {
-      if (!it.first->is<AllocaStmt>() &&
-          state_machines->find(it.first) == state_machines->end())
-        state_machines->insert(it);
-    }
-  }
-
-  virtual void visit_loop(Block *body, const std::vector<Stmt *> &loop_vars) {
-    if (maybe_run) {
-      body->accept(this);
-      return;
-    }
-
-    auto origin = std::move(state_machines);
-
-    state_machines =
-        std::make_unique<std::unordered_map<Stmt *, StateMachine>>();
-    *state_machines = *origin;
-    for (auto &it : *state_machines) {
-      it.second.begin_if_or_loop();
-    }
-    for (auto &loop_var : loop_vars) {
-      get_state_machine(loop_var).mark_as_loop_var();
-    }
-    maybe_run = true;
-    body->accept(this);
-    maybe_run = false;
-    body->accept(this);
-    for (auto &it : *origin) {
-      it.second.merge_from_loop((*state_machines)[it.first]);
-    }
-    for (auto &it : *state_machines) {
-      if (!it.first->is<AllocaStmt>() &&
-          state_machines->find(it.first) == state_machines->end())
-        origin->insert(it);
-    }
-    state_machines = std::move(origin);
-  }
+  virtual void visit_loop(Block *body, const std::vector<Stmt *> &loop_vars) = 0;
 
   void visit(Block *block) override {
     for (auto &stmt : block->statements) {
@@ -172,10 +69,6 @@ class VariableOptimize : public IRVisitor {
       modify_all_state_machines(&StateMachine::begin_offload);
       stmt->body->accept(this);
     }
-  }
-
-  virtual void finalize() {
-    modify_all_state_machines(&StateMachine::finalize);
   }
 
   void run(IRNode *node) {
@@ -605,14 +498,8 @@ void variable_optimization(IRNode *root) {
   alloca_optimizer.run(root);
   GlobalTempOptimize global_temp_optimizer;
   global_temp_optimizer.run(root);
-//  std::cout << "before\n";
-//  print(root);
-//  analysis::verify(root);
   GlobalPtrOptimize global_ptr_optimizer;
   global_ptr_optimizer.run(root);
-//  std::cout << "after\n";
-//  print(root);
-//  analysis::verify(root);
 }
 }  // namespace irpass
 

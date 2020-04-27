@@ -141,7 +141,12 @@ class GUI:
 
     class EventFilter:
         def __init__(self, *filter):
-            self.filter = set(filter)
+            self.filter = set()
+            for ent in filter:
+                if isinstance(ent, (list, tuple)):
+                    type, key = ent
+                    ent = (type, key)
+                self.filter.add(ent)
 
         def match(self, e):
             if (e.type, e.key) in self.filter:

@@ -140,6 +140,12 @@ class Matrix:
         for i in range(self.n * self.m):
             self.entries[i].assign(other.entries[i])
 
+    def element_wise_unary(self, foo):
+        ret = Matrix(self.n, self.m)
+        for i in range(self.n * self.m):
+            ret.entries[i] = foo(self.entries[i])
+        return ret
+
     def __matmul__(self, other):
         assert self.m == other.n
         ret = Matrix(self.n, other.m)

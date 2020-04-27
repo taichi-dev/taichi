@@ -27,66 +27,47 @@ KernelLaunchRecord::KernelLaunchRecord(Context context,
 }
 
 void ExecutionQueue::enqueue(KernelLaunchRecord ker) {
-  task_queue.push_back(ker);
+  auto h = ker.h;
+  if (compiled_func.find(h) == compiled_func.end() &&
+      to_be_compiled.find(h) == to_be_compiled.end()) {
+    to_be_compiled.insert(h);
+    compilation_workers.enqueue([&, ker, h, this]() {
+      {
+        // Final lowering
+        using namespace irpass;
+
+        flag_access(ker.stmt);
+        lower_access(ker.stmt, true, ker.kernel);
+        flag_access(ker.stmt);
+        full_simplify(ker.stmt, ker.kernel->program.config, ker.kernel);
+        // analysis::verify(ker.stmt);
+      }
+      auto func = CodeGenCPU(ker.kernel, ker.stmt).codegen();
+      std::lock_guard<std::mutex> _(mut);
+      compiled_func[h] = func;
+    });
+  }
+
+  launch_worker.enqueue([&, ker, h] {
+    FunctionType func;
+    while (true) {
+      std::unique_lock<std::mutex> lock(mut);
+      if (compiled_func.find(h) == compiled_func.end()) {
+        lock.unlock();
+        Time::sleep(1e-6);
+        continue;
+      }
+      func = compiled_func[h];
+      break;
+    }
+    auto context = ker.context;
+    func(context);
+  });
 }
 
 void ExecutionQueue::synchronize() {
-  TI_INFO("Flushing execution queue with {} tasks", task_queue.size());
-
-  std::unordered_set<uint64> to_be_compiled;
-
-  for (int i = 0; i < (int)task_queue.size(); i++) {
-    auto ker = task_queue[i];
-    auto h = ker.h;
-    if (compiled_func.find(h) == compiled_func.end() &&
-        to_be_compiled.find(h) == to_be_compiled.end()) {
-      to_be_compiled.insert(h);
-      compilation_workers.enqueue([&, ker, h, this]() {
-        {
-          // Final lowering
-          using namespace irpass;
-
-          flag_access(ker.stmt);
-          lower_access(ker.stmt, true, ker.kernel);
-          flag_access(ker.stmt);
-          full_simplify(ker.stmt, ker.kernel->program.config, ker.kernel);
-          // analysis::verify(ker.stmt);
-        }
-        auto func = CodeGenCPU(ker.kernel, ker.stmt).codegen();
-        std::lock_guard<std::mutex> _(mut);
-        compiled_func[h] = func;
-      });
-    }
-  }
-
-  while (!task_queue.empty()) {
-    auto ker = task_queue.front();
-    launch_worker.enqueue([&, ker] {
-      auto h = ker.h;
-      FunctionType func;
-      while (true) {
-        std::unique_lock<std::mutex> lock(mut);
-        if (compiled_func.find(h) == compiled_func.end()) {
-          lock.unlock();
-          Time::sleep(1e-6);
-          continue;
-        }
-        func = compiled_func[h];
-        break;
-      }
-      auto context = ker.context;
-      func(context);
-    });
-    task_queue.pop_front();
-  }
-
-  auto t = Time::get_time();
-  TI_TRACE("Flushing compilation & worker queue...");
+  TI_AUTO_PROF
   launch_worker.flush();
-  TI_WARN("Flushing time {:.3f} ms", (Time::get_time() - t) * 1000);
-
-  // uncomment for benchmarking
-  // clear_cache();
 }
 
 ExecutionQueue::ExecutionQueue()

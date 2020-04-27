@@ -29,7 +29,7 @@ python3 -m pip install taichi       # Latest version: 0.5.15
 Please build from source for other configurations (e.g., your CPU is ARM).
 
 **Note:**
- - Starting April 13 2020 (v0.5.12), we release the Python package [`taichi`](https://pypi.org/project/taichi/) instead of [`taichi-nightly`](https://pypi.org/project/taichi-nightly/). Now this PyPI package has CPU, CUDA 10, Metal and OpenGL support.
+ - Starting April 13 2020 (v0.5.12), we release the Python package [`taichi`](https://pypi.org/project/taichi/) instead of [`taichi-nightly`](https://pypi.org/project/taichi-nightly/). Now this PyPI package includes CPU, CUDA 10, Metal and OpenGL support.
  - On Ubuntu 19.04+, please `sudo apt install libtinfo5`.
  - On Windows, please install [Microsoft Visual C++ Redistributable](https://aka.ms/vs/16/release/vc_redist.x64.exe) if you haven't.
  - [[All releases]](https://github.com/taichi-dev/taichi/releases) [[Change log]](misc/changelog.md)

@@ -4,7 +4,7 @@ TLANG_NAMESPACE_BEGIN
 
 std::unique_ptr<std::unordered_set<AtomicOpStmt *>> StateMachine::used_atomics;
 
-StateMachine::StateMachine(Stmt *var)
+StateMachine::StateMachine(Stmt *var, bool zero_initialized)
     : var(var),
       stored(never),
       stored_in_this_if_or_loop(never),
@@ -18,6 +18,8 @@ StateMachine::StateMachine(Stmt *var)
       maybe_loaded_before_first_definite_store_in_this_if_or_loop(false) {
   TI_ASSERT(var->is<AllocaStmt>() || var->is<GlobalTemporaryStmt>() ||
             var->is<GlobalPtrStmt>());
+  if (!zero_initialized)
+    stored = stored_in_this_if_or_loop = maybe;
 }
 
 bool StateMachine::same_data(Stmt *store_stmt1, Stmt *store_stmt2) {
@@ -117,12 +119,15 @@ void StateMachine::store(Stmt *store_stmt) {
 }
 
 void StateMachine::load(Stmt *load_stmt) {
-  TI_ASSERT(load_stmt->is<LocalLoadStmt>() || load_stmt->is<GlobalLoadStmt>());
+  if (load_stmt)
+    TI_ASSERT(load_stmt->is<LocalLoadStmt>() || load_stmt->is<GlobalLoadStmt>());
   if (stored_in_this_if_or_loop != definitely)
     maybe_loaded_before_first_definite_store_in_this_if_or_loop = true;
   loaded = loaded_in_this_if_or_loop = definitely;
   last_store_eliminable = false;
   last_atomic_eliminable = false;
+  if (!load_stmt)
+    return;
 
   if (stored == never) {
     auto zero = load_stmt->insert_after_me(Stmt::make<ConstStmt>(
@@ -421,6 +426,10 @@ void StateMachine::finalize() {
     var->parent->erase(var);
     throw IRModified();
   }
+}
+
+Stmt *StateMachine::get_var() const {
+  return var;
 }
 
 TLANG_NAMESPACE_END

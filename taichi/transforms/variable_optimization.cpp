@@ -38,13 +38,6 @@ class VariableOptimize : public IRVisitor {
     return true;
   }
 
-  void visit(AllocaStmt *stmt) override {
-    if (state_machines->find(stmt) == state_machines->end())
-      state_machines->insert(std::make_pair(stmt, StateMachine(stmt)));
-    else
-      (*state_machines)[stmt] = StateMachine(stmt);
-  }
-
   void visit(Stmt *stmt) override {
     if (stmt->is_container_statement()) {
       TI_ERROR("Visitor for container stmt undefined.");
@@ -322,13 +315,144 @@ class AllocaOptimize : public VariableOptimize {
   }
 };
 
+class GlobalTempOptimize : public VariableOptimize {
+ private:
+  std::unordered_map<std::size_t, StateMachine> state_machines;
+ public:
+  using VariableOptimize::visit;
+
+  StateMachine &get_state_machine(Stmt *stmt) override {
+    return state_machines[stmt->as<GlobalTemporaryStmt>()->offset];
+  }
+
+  void modify_all_state_machines(void (StateMachine::*func)()) override {
+    for (auto &i : state_machines) {
+      (i.second.*func)();
+    }
+  }
+
+  void clear() override {
+    state_machines.clear();
+  }
+
+  void visit(GlobalTemporaryStmt *stmt) override {
+    if (state_machines.find(stmt->offset) == state_machines.end())
+      state_machines.insert(std::make_pair(stmt->offset, StateMachine(stmt, false)));
+  }
+
+  void visit(AtomicOpStmt *stmt) override {
+    if (!stmt->dest->is<GlobalTemporaryStmt>())
+      return;
+    if (maybe_run)
+      get_state_machine(stmt->dest).maybe_atomic_op();
+    else
+      get_state_machine(stmt->dest).atomic_op(stmt);
+  }
+
+  void visit(GlobalStoreStmt *stmt) override {
+    if (!stmt->ptr->is<GlobalTemporaryStmt>())
+      return;
+    if (maybe_run)
+      get_state_machine(stmt->ptr).maybe_store(stmt);
+    else
+      get_state_machine(stmt->ptr).store(stmt);
+  }
+
+  void visit(GlobalLoadStmt *stmt) override {
+    if (!stmt->ptr->is<GlobalTemporaryStmt>())
+      return;
+    if (maybe_run)
+      get_state_machine(stmt->ptr).maybe_load();
+    else
+      get_state_machine(stmt->ptr).load(stmt);
+  }
+
+  void visit(IfStmt *if_stmt) override {
+    auto origin = state_machines;
+    modify_all_state_machines(&StateMachine::begin_if_or_loop);
+    if (if_stmt->true_statements) {
+      if_stmt->true_statements->accept(this);
+    }
+    auto true_branch = std::move(state_machines);
+
+    state_machines = origin;
+    modify_all_state_machines(&StateMachine::begin_if_or_loop);
+    if (if_stmt->false_statements) {
+      if_stmt->false_statements->accept(this);
+    }
+    auto false_branch = std::move(state_machines);
+
+    state_machines = std::move(origin);
+    for (auto &it : state_machines) {
+      it.second.merge_from_if(true_branch[it.first],
+                              false_branch[it.first]);
+    }
+    for (auto &it : true_branch) {
+      if (state_machines.find(it.first) == state_machines.end())
+        state_machines.insert(it);
+    }
+    for (auto &it : false_branch) {
+      if (state_machines.find(it.first) == state_machines.end())
+        state_machines.insert(it);
+    }
+  }
+
+  void visit_loop(Block *body, const std::vector<Stmt *> &loop_vars) override {
+    if (maybe_run) {
+      body->accept(this);
+      return;
+    }
+
+    auto origin = state_machines;
+    modify_all_state_machines(&StateMachine::begin_if_or_loop);
+    maybe_run = true;
+    body->accept(this);
+    maybe_run = false;
+    body->accept(this);
+    for (auto &it : origin) {
+      it.second.merge_from_loop(state_machines[it.first]);
+    }
+    for (auto &it : state_machines) {
+      if (origin.find(it.first) == origin.end()) {
+        StateMachine state_machine(it.second.get_var(), false);
+        state_machine.merge_from_loop(it.second);
+        origin.insert(std::make_pair(it.first, state_machine));
+      }
+    }
+    state_machines = std::move(origin);
+  }
+
+  void visit(OffloadedStmt *stmt) override {
+    if (stmt->task_type == stmt->range_for) {
+      TI_ASSERT(!maybe_run);
+      if (!stmt->const_begin) {
+        TI_ASSERT(state_machines.find(stmt->begin_offset) !=
+                  state_machines.end());
+        state_machines[stmt->begin_offset].load();
+      }
+      if (!stmt->const_end) {
+        TI_ASSERT(state_machines.find(stmt->end_offset) !=
+                  state_machines.end());
+        state_machines[stmt->end_offset].load();
+      }
+    }
+    if (stmt->body) {
+      modify_all_state_machines(&StateMachine::begin_offload);
+      stmt->body->accept(this);
+    }
+  }
+};
+
+
 namespace irpass {
 void variable_optimization(IRNode *root) {
+  AllocaOptimize alloca_optimizer;
+  alloca_optimizer.run(root);
 //  std::cout << "before\n";
 //  print(root);
 //  analysis::verify(root);
-  AllocaOptimize alloca_optimizer;
-  alloca_optimizer.run(root);
+  GlobalTempOptimize global_temp_optimizer;
+  global_temp_optimizer.run(root);
 //  std::cout << "after\n";
 //  print(root);
 //  analysis::verify(root);

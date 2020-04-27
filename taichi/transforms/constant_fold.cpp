@@ -14,101 +14,96 @@ class ConstantFold : public BasicStmtVisitor {
   ConstantFold() : BasicStmtVisitor() {
   }
 
-  void visit(UnaryOpStmt *stmt) override {
-    return; // TODO TODO
-#if 0       // TODO TODO
-    if (stmt->width() == 1 && stmt->op_type == UnaryOpType::cast &&
-        stmt->cast_by_value && stmt->operand->is<ConstStmt>()) {
-      auto input = stmt->operand->as<ConstStmt>()->val[0];
-      auto src_type = stmt->operand->ret_type.data_type;
-      auto dst_type = stmt->ret_type.data_type;
-      TypedConstant new_constant(dst_type);
-      bool success = false;
-      if (src_type == DataType::f32) {
-        auto v = input.val_float32();
-        if (dst_type == DataType::i32) {
-          new_constant.val_i32 = int32(v);
-          success = true;
-        }
-      } else if (src_type == DataType::i32) {
-        auto v = input.val_int32();
-        if (dst_type == DataType::f32) {
-          new_constant.val_f32 = float32(v);
-          success = true;
-        }
-      }
-
-      if (success) {
-        auto evaluated =
-            Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(new_constant));
-        stmt->replace_with(evaluated.get());
-        stmt->parent->insert_before(stmt, VecStatement(std::move(evaluated)));
-        stmt->parent->erase(stmt);
-        throw IRModified();
-      }
-    }
-#endif
-  }
+#define INVALID_TYPE ((DataType)0xff)
 
   struct BinaryEvaluatorId
   {
-    BinaryOpType op;
+    int op;
     DataType ret, lhs, rhs;
+
+    bool is_binary() const
+    {
+      return rhs != INVALID_TYPE;
+    }
 
     explicit operator int() const // make STL map happy
     {
-      return (int)op | (int) ret << 8 | (int) lhs << 16 | (int) rhs << 24;
+      return (int)op | (int)is_binary() << 7
+        | (int) ret << 8 | (int) lhs << 16 | (int) rhs << 24;
     }
+
+#if 0
+    struct hash {
+      size_t operator()(const BinaryEvaluatorId &id)
+      {
+        hash<int> hop;
+        hash<DataType> hdt;
+        return hop(op | is_binary() << 7)
+          ^ hdt(ret) ^ hdt(lhs) ^ hdt(rhs);
+      }
+    };
+#endif
   };
 
-  static Kernel *get_binary_op_jit_eval_kernel(BinaryEvaluatorId const &id)
+  static Kernel *get_jit_evaluator_kernel(BinaryEvaluatorId const &id)
   {
     auto &cache = get_current_program().jit_evaluator_cache;
-#if 1
     int iid = int(id);
     TI_INFO("IN {}", iid);
     auto it = cache.find(iid);
     TI_INFO("OUT");
     if (it != cache.end()) // cached?
       return it->second.get();
-#endif
     static int jic = 0; // X: race?
     auto kernel_name = fmt::format("jit_evaluator_{}", jic++);
     auto func = [&] () {
       auto lhstmt = Stmt::make<ArgLoadStmt>(1, false);
       auto rhstmt = Stmt::make<ArgLoadStmt>(2, false);
-      auto oper = Stmt::make<BinaryOpStmt>(id.op, lhstmt.get(), rhstmt.get());
+      pStmt oper;
+      if (id.is_binary())
+        oper = Stmt::make<BinaryOpStmt>((BinaryOpType)id.op, lhstmt.get(), rhstmt.get());
+      else
+        oper = Stmt::make<UnaryOpStmt>((UnaryOpType)id.op, lhstmt.get());
       auto ret = Stmt::make<ArgStoreStmt>(0, oper.get());
       current_ast_builder().insert(std::move(lhstmt));
-      current_ast_builder().insert(std::move(rhstmt));
+      if (id.is_binary())
+        current_ast_builder().insert(std::move(rhstmt));
       current_ast_builder().insert(std::move(oper));
       current_ast_builder().insert(std::move(ret));
     };
     auto ker = std::make_unique<Kernel>(get_current_program(), func, kernel_name);
     ker->insert_arg(id.ret, false);
     ker->insert_arg(id.lhs, false);
-    ker->insert_arg(id.rhs, false);
+    if (id.is_binary())
+      ker->insert_arg(id.rhs, false);
     ker->mark_arg_return_value(0, true);
     auto *ker_ptr = ker.get();
-#if 1
     TI_INFO("SAV {}", iid);
     cache[iid] = std::move(ker);
-#endif
     return ker_ptr;
   }
 
   static bool jit_from_binary_op(TypedConstant &ret, BinaryOpType op,
       const TypedConstant &lhs, const TypedConstant &rhs)
   {
-#if 0
-    if (ret.dt != DataType::i32 || lhs.dt != DataType::i32 || rhs.dt != DataType::i32)
-      return false;
-#endif
-    BinaryEvaluatorId id{op, ret.dt, lhs.dt, rhs.dt};
-    auto *ker = get_binary_op_jit_eval_kernel(id);
+    BinaryEvaluatorId id{(int)op, ret.dt, lhs.dt, rhs.dt};
+    auto *ker = get_jit_evaluator_kernel(id);
     auto &ctx = get_current_program().context;
     ctx.set_arg<int64_t>(1, lhs.val_i64);
     ctx.set_arg<int64_t>(2, rhs.val_i64);
+    irpass::print(ker->ir);
+    (*ker)();
+    ret.val_i64 = ctx.get_arg<int64_t>(0);
+    return true;
+  }
+
+  static bool jit_from_unary_op(TypedConstant &ret, UnaryOpType op,
+      const TypedConstant &lhs)
+  {
+    BinaryEvaluatorId id{(int)op, ret.dt, lhs.dt, INVALID_TYPE};
+    auto *ker = get_jit_evaluator_kernel(id);
+    auto &ctx = get_current_program().context;
+    ctx.set_arg<int64_t>(1, lhs.val_i64);
     irpass::print(ker->ir);
     (*ker)();
     ret.val_i64 = ctx.get_arg<int64_t>(0);
@@ -125,6 +120,24 @@ class ConstantFold : public BasicStmtVisitor {
     auto dst_type = stmt->ret_type.data_type;
     TypedConstant new_constant(dst_type);
     if (jit_from_binary_op(new_constant, stmt->op_type, lhs->val[0], rhs->val[0])) {
+      auto evaluated =
+          Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(new_constant));
+      stmt->replace_with(evaluated.get());
+      stmt->parent->insert_before(stmt, VecStatement(std::move(evaluated)));
+      stmt->parent->erase(stmt);
+      throw IRModified();
+    }
+  }
+
+  void visit(UnaryOpStmt *stmt) override {
+    auto lhs = stmt->operand->cast<ConstStmt>();
+    if (!lhs)
+      return;
+    if (stmt->width() != 1)
+      return;
+    auto dst_type = stmt->ret_type.data_type;
+    TypedConstant new_constant(dst_type);
+    if (jit_from_unary_op(new_constant, stmt->op_type, lhs->val[0])) {
       auto evaluated =
           Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(new_constant));
       stmt->replace_with(evaluated.get());

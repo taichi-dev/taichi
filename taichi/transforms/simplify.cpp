@@ -14,11 +14,16 @@ class BasicBlockSimplify : public IRVisitor {
   int current_stmt_id;
   std::set<int> &visited;
   StructForStmt *current_struct_for;
+  Kernel *kernel;
 
   BasicBlockSimplify(Block *block,
                      std::set<int> &visited,
-                     StructForStmt *current_struct_for)
-      : block(block), visited(visited), current_struct_for(current_struct_for) {
+                     StructForStmt *current_struct_for,
+                     Kernel *kernel)
+      : block(block),
+        visited(visited),
+        current_struct_for(current_struct_for),
+        kernel(kernel) {
     allow_undefined_visitor = true;
     invoke_default_visitor = false;
     current_struct_for = nullptr;
@@ -781,7 +786,7 @@ class BasicBlockSimplify : public IRVisitor {
     stmt->insert_before_me(std::move(sum));
     stmt->parent->erase(stmt);
     // get types of adds and muls
-    irpass::typecheck(stmt->parent);
+    irpass::typecheck(stmt->parent, kernel);
     throw IRModified();
   }
 
@@ -1070,8 +1075,9 @@ class Simplify : public IRVisitor {
  public:
   StructForStmt *current_struct_for;
   bool modified;
+  Kernel *kernel;
 
-  Simplify(IRNode *node) {
+  Simplify(IRNode *node, Kernel *kernel) : kernel(kernel) {
     modified = false;
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
@@ -1083,7 +1089,7 @@ class Simplify : public IRVisitor {
     std::set<int> visited;
     while (true) {
       try {
-        BasicBlockSimplify _(block, visited, current_struct_for);
+        BasicBlockSimplify _(block, visited, current_struct_for, kernel);
       } catch (IRModified) {
         modified = true;
         continue;
@@ -1125,15 +1131,15 @@ class Simplify : public IRVisitor {
 
 namespace irpass {
 
-void simplify(IRNode *root) {
+void simplify(IRNode *root, Kernel *kernel) {
   while (1) {
-    Simplify pass(root);
+    Simplify pass(root, kernel);
     if (!pass.modified)
       break;
   }
 }
 
-void full_simplify(IRNode *root, const CompileConfig &config) {
+void full_simplify(IRNode *root, const CompileConfig &config, Kernel *kernel) {
   constant_fold(root);
   if (advanced_optimization)
     alg_simp(root, config);
@@ -1142,7 +1148,7 @@ void full_simplify(IRNode *root, const CompileConfig &config) {
   if (advanced_optimization)
     variable_optimization(root);
   die(root);
-  simplify(root);
+  simplify(root, kernel);
   die(root);
 }
 

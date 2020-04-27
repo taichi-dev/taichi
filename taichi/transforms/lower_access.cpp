@@ -33,6 +33,12 @@ class LowerAccess : public IRVisitor {
     }
   }
 
+  void visit(OffloadedStmt *stmt) override {
+    if (stmt->body) {
+      stmt->body->accept(this);
+    }
+  }
+
   void visit(WhileStmt *stmt) override {
     stmt->body->accept(this);
   }
@@ -227,9 +233,9 @@ class LowerAccess : public IRVisitor {
 
 namespace irpass {
 
-void lower_access(IRNode *root, bool lower_atomic) {
+void lower_access(IRNode *root, bool lower_atomic, Kernel *kernel) {
   LowerAccess::run(root, lower_atomic);
-  typecheck(root);
+  typecheck(root, kernel);
 }
 
 }  // namespace irpass

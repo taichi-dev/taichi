@@ -1,4 +1,4 @@
-#include "async_engine.h"
+#include "taichi/program/async_engine.h"
 
 #include <memory>
 
@@ -42,6 +42,16 @@ void ExecutionQueue::synchronize() {
         to_be_compiled.find(h) == to_be_compiled.end()) {
       to_be_compiled.insert(h);
       compilation_workers.enqueue([&, ker, h, this]() {
+        {
+          // Final lowering
+          using namespace irpass;
+
+          flag_access(ker.stmt);
+          lower_access(ker.stmt, true, ker.kernel);
+          flag_access(ker.stmt);
+          full_simplify(ker.stmt, ker.kernel->program.config, ker.kernel);
+          // analysis::verify(ker.stmt);
+        }
         auto func = CodeGenCPU(ker.kernel, ker.stmt).codegen();
         std::lock_guard<std::mutex> _(mut);
         compiled_func[h] = func;
@@ -49,7 +59,6 @@ void ExecutionQueue::synchronize() {
     }
   }
 
-  // no need to flush here
   compilation_workers.flush();
 
   while (!task_queue.empty()) {
@@ -88,7 +97,7 @@ ExecutionQueue::ExecutionQueue()
 
 void AsyncEngine::launch(Kernel *kernel) {
   if (!kernel->lowered)
-    kernel->lower();
+    kernel->lower(false);
   auto block = dynamic_cast<Block *>(kernel->ir);
   TI_ASSERT(block);
   auto &offloads = block->statements;
@@ -97,7 +106,6 @@ void AsyncEngine::launch(Kernel *kernel) {
     task_queue.emplace_back(kernel->program.get_context(), kernel, offload);
   }
   optimize();
-  synchronize();
 }
 
 void AsyncEngine::synchronize() {

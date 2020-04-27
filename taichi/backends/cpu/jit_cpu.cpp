@@ -6,8 +6,10 @@
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ExecutionEngine/ExecutionEngine.h"
 #include "llvm/ExecutionEngine/JITSymbol.h"
+#include "llvm/ExecutionEngine/Orc/Core.h"
 #include "llvm/ExecutionEngine/Orc/CompileOnDemandLayer.h"
 #include "llvm/ExecutionEngine/Orc/CompileUtils.h"
+#include "llvm/ExecutionEngine/Orc/ExecutionUtils.h"
 #include "llvm/ExecutionEngine/Orc/IRCompileLayer.h"
 #include "llvm/ExecutionEngine/Orc/IRTransformLayer.h"
 #include "llvm/ExecutionEngine/Orc/LambdaResolver.h"
@@ -15,6 +17,7 @@
 #include "llvm/ExecutionEngine/RTDyldMemoryManager.h"
 #include "llvm/ExecutionEngine/RuntimeDyld.h"
 #include "llvm/ExecutionEngine/SectionMemoryManager.h"
+#include "llvm/ExecutionEngine/Orc/ThreadSafeModule.h"
 #include "llvm/IR/DataLayout.h"
 #include "llvm/IR/Verifier.h"
 #include "llvm/IR/LLVMContext.h"
@@ -22,6 +25,7 @@
 #include "llvm/Support/TargetRegistry.h"
 #include "llvm/Support/DynamicLibrary.h"
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/Support/Error.h"
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
 #include "llvm/Transforms/InstCombine/InstCombine.h"
@@ -33,14 +37,6 @@
 #include "taichi/program/program.h"
 #include "taichi/jit/jit_session.h"
 
-// Based on
-// https://llvm.org/docs/tutorial/BuildingAJIT3.html
-
-// Note that
-// https://llvm.org/docs/tutorial/BuildingAJIT2.html
-// leads to a JIT that crashes all C++ exception after JIT session
-// destruction.
-
 TLANG_NAMESPACE_BEGIN
 
 using namespace llvm;
@@ -51,11 +47,11 @@ class JITSessionCPU;
 class JITModuleCPU : public JITModule {
  private:
   JITSessionCPU *session;
-  VModuleKey key;
+  JITDylib *dylib;
 
  public:
-  JITModuleCPU(JITSessionCPU *session, VModuleKey key)
-      : session(session), key(key) {
+  JITModuleCPU(JITSessionCPU *session, JITDylib *dylib)
+      : session(session), dylib(dylib) {
   }
 
   void *lookup_function(const std::string &name) override;
@@ -73,25 +69,25 @@ class JITModuleCPU : public JITModule {
 class JITSessionCPU : public JITSession {
  private:
   ExecutionSession ES;
-  std::map<VModuleKey, std::shared_ptr<SymbolResolver>> resolvers;
-  std::unique_ptr<TargetMachine> TM;
-  const DataLayout DL;
-  LegacyRTDyldObjectLinkingLayer object_layer;
-  LegacyIRCompileLayer<decltype(object_layer), SimpleCompiler> compile_layer;
+  RTDyldObjectLinkingLayer object_layer;
+  IRCompileLayer compile_layer;
+  DataLayout DL;
+  MangleAndInterner Mangle;
   std::mutex mut;
+  std::unordered_map<std::thread::id,
+                     std::unique_ptr<llvm::orc::ThreadSafeContext>>
+      thread_safe_contexts;
+  std::vector<llvm::orc::JITDylib *> all_libs;
+  int module_counter;
 
  public:
   JITSessionCPU(JITTargetMachineBuilder JTMB, DataLayout DL)
-      : TM(EngineBuilder().selectTarget()),
-        DL(TM->createDataLayout()),
-        object_layer(ES,
-                     [this](VModuleKey K) {
-                       return LegacyRTDyldObjectLinkingLayer::Resources{
-                           std::make_shared<SectionMemoryManager>(),
-                           resolvers[K]};
-                     }),
-        compile_layer(object_layer, SimpleCompiler(*TM)) {
-    llvm::sys::DynamicLibrary::LoadLibraryPermanently(nullptr);
+      : object_layer(ES,
+                     []() { return std::make_unique<SectionMemoryManager>(); }),
+        compile_layer(ES, object_layer, ConcurrentIRCompiler(std::move(JTMB))),
+        DL(DL),
+        Mangle(ES, this->DL),
+        module_counter(0) {
   }
 
   DataLayout get_data_layout() override {
@@ -102,60 +98,38 @@ class JITSessionCPU : public JITSession {
     TI_ASSERT(M);
     global_optimize_module_cpu(M);
     std::lock_guard<std::mutex> _(mut);
-    // Create a new VModuleKey.
-    VModuleKey K = ES.allocateVModule();
 
-    // Build a resolver and associate it with the new key.
-    resolvers[K] = createLegacyLookupResolver(
-        ES,
-        [this](const std::string &Name) -> JITSymbol {
-          if (auto Sym = compile_layer.findSymbol(Name, false))
-            return Sym;
-          else if (auto Err = Sym.takeError())
-            return std::move(Err);
-          if (auto SymAddr =
-                  RTDyldMemoryManager::getSymbolAddressInProcess(Name))
-            return JITSymbol(SymAddr, JITSymbolFlags::Exported);
-          return nullptr;
-        },
-        [](Error Err) { cantFail(std::move(Err), "lookupFlags failed"); });
-
-    // Add the module to the JIT with the new key.
-    cantFail(compile_layer.addModule(K, std::move(M)));
-    auto new_module = std::make_unique<JITModuleCPU>(this, K);
+    auto &dylib = ES.createJITDylib(fmt::format("{}", module_counter));
+    dylib.setGenerator(cantFail(
+        llvm::orc::DynamicLibrarySearchGenerator::GetForCurrentProcess(DL)));
+    auto *thread_safe_context = get_current_program()
+                                    .get_llvm_context(host_arch())
+                                    ->get_this_thread_thread_safe_context();
+    cantFail(compile_layer.add(dylib, llvm::orc::ThreadSafeModule(
+                                          std::move(M), *thread_safe_context)));
+    all_libs.push_back(&dylib);
+    auto new_module = std::make_unique<JITModuleCPU>(this, &dylib);
     auto new_module_raw_ptr = new_module.get();
     modules.push_back(std::move(new_module));
+    module_counter++;
     return new_module_raw_ptr;
   }
 
   void *lookup(const std::string Name) override {
     std::lock_guard<std::mutex> _(mut);
-    std::string MangledName;
-    raw_string_ostream MangledNameStream(MangledName);
-    Mangler::getNameWithPrefix(MangledNameStream, Name, DL);
-    auto symbol = compile_layer.findSymbol(MangledNameStream.str(), true);
+    auto symbol = ES.lookup(all_libs, Mangle(Name));
     if (!symbol)
       TI_ERROR("Function \"{}\" not found", Name);
-    return (void *)(llvm::cantFail(symbol.getAddress()));
+    return (void *)(symbol->getAddress());
   }
 
-  void *lookup_in_module(VModuleKey key, const std::string Name) {
+  void *lookup_in_module(JITDylib *lib, const std::string Name) {
     std::lock_guard<std::mutex> _(mut);
-    std::string MangledName;
-    raw_string_ostream MangledNameStream(MangledName);
-    Mangler::getNameWithPrefix(MangledNameStream, Name, DL);
-    auto symbol =
-        compile_layer.findSymbolIn(key, MangledNameStream.str(), true);
+    auto symbol = ES.lookup({lib}, Mangle(Name));
     if (!symbol)
       TI_ERROR("Function \"{}\" not found", Name);
-    return (void *)(llvm::cantFail(symbol.getAddress()));
+    return (void *)(symbol->getAddress());
   }
-
-  /*
-  void remove_module(VModuleKey K) override {
-    cantFail(CODLayer.removeModule(K));
-  }
-  */
 
  private:
   static void global_optimize_module_cpu(
@@ -253,7 +227,7 @@ class JITSessionCPU : public JITSession {
 };
 
 void *JITModuleCPU::lookup_function(const std::string &name) {
-  return session->lookup_in_module(key, name);
+  return session->lookup_in_module(dylib, name);
 }
 
 std::unique_ptr<JITSession> create_llvm_jit_session_cpu(Arch arch) {

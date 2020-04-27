@@ -1,8 +1,8 @@
 import taichi as ti
 
 
-@ti.all_archs
 def test_abs():
+    ti.init(arch=ti.x64)
     x = ti.var(ti.f32)
     y = ti.var(ti.f32)
 
@@ -36,3 +36,5 @@ def test_abs():
     for i in range(N):
         assert x[i] == abs(y[i])
         assert y.grad[i] == sgn(y[i])
+
+

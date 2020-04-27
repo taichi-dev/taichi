@@ -174,7 +174,7 @@ class VariableOptimize : public IRVisitor {
     }
   }
 
-  void finalize() {
+  virtual void finalize() {
     modify_all_state_machines(&StateMachine::finalize);
   }
 
@@ -443,16 +443,173 @@ class GlobalTempOptimize : public VariableOptimize {
   }
 };
 
+class GlobalPtrOptimize : public VariableOptimize {
+ private:
+  std::unordered_map<int, std::unordered_map<Stmt *, StateMachine>> state_machines;
+ public:
+  using VariableOptimize::visit;
+
+  StateMachine &get_state_machine(Stmt *stmt) override {
+    return state_machines[stmt->as<GlobalPtrStmt>()->snodes[0]->id][stmt];
+  }
+
+  void modify_all_state_machines(void (StateMachine::*func)()) override {
+    for (auto &i : state_machines) {
+      for (auto &j : i.second) {
+        (j.second.*func)();
+      }
+    }
+  }
+
+  void clear() override {
+    state_machines.clear();
+  }
+
+  void finalize() override {
+    // do nothing
+  }
+
+  void visit(GlobalPtrStmt *stmt) override {
+    TI_ASSERT(stmt->width() == 1);
+    auto &state_machines_map = state_machines[stmt->snodes[0]->id];
+    if (state_machines_map.find(stmt) == state_machines_map.end())
+      state_machines_map.insert(std::make_pair(stmt, StateMachine(stmt, false)));
+  }
+
+  static bool maybe_same_address(GlobalPtrStmt *stmt1, GlobalPtrStmt *stmt2) {
+    return true;
+  }
+
+  void visit(AtomicOpStmt *stmt) override {
+    if (!stmt->dest->is<GlobalPtrStmt>())
+      return;
+    if (maybe_run)
+      get_state_machine(stmt->dest).maybe_atomic_op();
+    else
+      get_state_machine(stmt->dest).atomic_op(stmt);
+    auto dest = stmt->dest->as<GlobalPtrStmt>();
+    for (auto &var : state_machines[dest->snodes[0]->id]) {
+      if (var.first != dest &&
+          maybe_same_address(dest, var.first->as<GlobalPtrStmt>())) {
+        var.second.maybe_atomic_op();
+      }
+    }
+  }
+
+  void visit(GlobalStoreStmt *stmt) override {
+    if (!stmt->ptr->is<GlobalPtrStmt>())
+      return;
+    if (maybe_run)
+      get_state_machine(stmt->ptr).maybe_store(stmt);
+    else
+      get_state_machine(stmt->ptr).store(stmt);
+    auto dest = stmt->ptr->as<GlobalPtrStmt>();
+    for (auto &var : state_machines[dest->snodes[0]->id]) {
+      if (var.first != dest &&
+          maybe_same_address(dest, var.first->as<GlobalPtrStmt>())) {
+        var.second.maybe_store(stmt);
+      }
+    }
+  }
+
+  void visit(GlobalLoadStmt *stmt) override {
+    if (!stmt->ptr->is<GlobalPtrStmt>())
+      return;
+    if (maybe_run)
+      get_state_machine(stmt->ptr).maybe_load();
+    else
+      get_state_machine(stmt->ptr).load(stmt);
+    auto dest = stmt->ptr->as<GlobalPtrStmt>();
+    for (auto &var : state_machines[dest->snodes[0]->id]) {
+      if (var.first != dest &&
+          maybe_same_address(dest, var.first->as<GlobalPtrStmt>())) {
+        var.second.maybe_load();
+      }
+    }
+  }
+
+  void visit(IfStmt *if_stmt) override {
+    auto origin = state_machines;
+    modify_all_state_machines(&StateMachine::begin_if_or_loop);
+    if (if_stmt->true_statements) {
+      if_stmt->true_statements->accept(this);
+    }
+    auto true_branch = std::move(state_machines);
+
+    state_machines = origin;
+    modify_all_state_machines(&StateMachine::begin_if_or_loop);
+    if (if_stmt->false_statements) {
+      if_stmt->false_statements->accept(this);
+    }
+    auto false_branch = std::move(state_machines);
+
+    state_machines = std::move(origin);
+    for (auto &i : state_machines) {
+      auto &true_branch_block = true_branch[i.first];
+      auto &false_branch_block = false_branch[i.first];
+      for (auto &j : i.second) {
+        j.second.merge_from_if(true_branch_block[j.first],
+                               false_branch_block[j.first]);
+      }
+    }
+    for (auto &i : true_branch) {
+      for (auto &j : i.second) {
+        if (state_machines[i.first].find(j.first) == state_machines[i.first].end())
+          state_machines[i.first].insert(j);
+      }
+    }
+    for (auto &i : false_branch) {
+      for (auto &j : i.second) {
+        if (state_machines[i.first].find(j.first) == state_machines[i.first].end())
+          state_machines[i.first].insert(j);
+      }
+    }
+  }
+
+  void visit_loop(Block *body, const std::vector<Stmt *> &loop_vars) override {
+    if (maybe_run) {
+      body->accept(this);
+      return;
+    }
+
+    auto origin = state_machines;
+    modify_all_state_machines(&StateMachine::begin_if_or_loop);
+    maybe_run = true;
+    body->accept(this);
+    maybe_run = false;
+    body->accept(this);
+    for (auto &i : origin) {
+      auto &loop_snode = state_machines[i.first];
+      for (auto &j : i.second) {
+        j.second.merge_from_loop(loop_snode[j.first]);
+      }
+    }
+    for (auto &i : state_machines) {
+      auto &origin_snode = origin[i.first];
+      for (auto &j : i.second) {
+        if (origin_snode.find(j.first) == origin_snode.end()) {
+          StateMachine state_machine(j.second.get_var(), false);
+          state_machine.merge_from_loop(j.second);
+          origin_snode.insert(std::make_pair(j.first, state_machine));
+        }
+      }
+    }
+    state_machines = std::move(origin);
+  }
+};
+
 
 namespace irpass {
 void variable_optimization(IRNode *root) {
   AllocaOptimize alloca_optimizer;
   alloca_optimizer.run(root);
+  GlobalTempOptimize global_temp_optimizer;
+  global_temp_optimizer.run(root);
 //  std::cout << "before\n";
 //  print(root);
 //  analysis::verify(root);
-  GlobalTempOptimize global_temp_optimizer;
-  global_temp_optimizer.run(root);
+  GlobalPtrOptimize global_ptr_optimizer;
+  global_ptr_optimizer.run(root);
 //  std::cout << "after\n";
 //  print(root);
 //  analysis::verify(root);

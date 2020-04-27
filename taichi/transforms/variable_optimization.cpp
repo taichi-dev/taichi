@@ -162,7 +162,7 @@ class VariableOptimize : public IRVisitor {
   void visit(OffloadedStmt *stmt) override {
     if (stmt->body) {
       for (auto &it : *state_machines) {
-        it.second.mark_new_offload();
+        it.second.begin_offload();
       }
       stmt->body->accept(this);
     }

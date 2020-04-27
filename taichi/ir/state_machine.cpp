@@ -200,7 +200,7 @@ void StateMachine::mark_as_loop_var() {
   maybe_loaded_before_first_definite_store_in_this_if_or_loop = false;
 }
 
-void StateMachine::mark_new_offload() {
+void StateMachine::begin_offload() {
   last_store_forwardable = false;
 }
 
@@ -347,9 +347,9 @@ void StateMachine::merge_from_loop(const StateMachine &loop) {
             loop.maybe_loaded_before_first_definite_store_in_this_if_or_loop;
   }
 
-  stored = loop.stored;
+  stored = merge_a_and_maybe_b(stored, loop.stored);
   stored_in_this_if_or_loop = merge_a_and_maybe_b(stored_in_this_if_or_loop, loop.stored_in_this_if_or_loop);
-  loaded = loop.loaded;
+  loaded = merge_a_and_maybe_b(loaded, loop.loaded);
   loaded_in_this_if_or_loop = merge_a_and_maybe_b(loaded_in_this_if_or_loop, loop.loaded_in_this_if_or_loop);
 
   // We must be cautious here because of possible Continues and WhileControls.

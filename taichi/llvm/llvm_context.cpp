@@ -632,6 +632,10 @@ llvm::LLVMContext *TaichiLLVMContext::get_this_thread_context() {
 
 llvm::Module *TaichiLLVMContext::get_this_thread_struct_module() {
   ThreadLocalData *data = get_this_thread_data();
+  TI_INFO("MTDATA {}", (void *)main_thread_data);
+  TI_INFO("MTDATAS {}", (void *)main_thread_data->struct_module.get());
+  TI_INFO("MTDATAR {}", (void *)main_thread_data->runtime_module.get());
+  TI_INFO("MTDATAL {}", (void *)main_thread_data->llvm_context.get());
   if (!data->struct_module) {
     data->struct_module = clone_module_to_this_thread_context(
         main_thread_data->struct_module.get());

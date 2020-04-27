@@ -63,9 +63,7 @@ class ConstantFold : public BasicStmtVisitor {
 
   static Kernel *get_binary_op_jit_eval_kernel(BinaryEvaluatorId const &id)
   {
-    auto *prog = &get_current_program();
-    TI_ASSERT(prog != nullptr);
-    auto &cache = prog != prog->jit_evaluator_cache;
+    auto &cache = get_current_program().jit_evaluator_cache;
 #if 1
     int iid = int(id);
     TI_INFO("IN {}", iid);
@@ -86,7 +84,7 @@ class ConstantFold : public BasicStmtVisitor {
       current_ast_builder().insert(std::move(oper));
       current_ast_builder().insert(std::move(ret));
     };
-    auto ker = std::make_unique<Kernel>(prog, func, kernel_name);
+    auto ker = std::make_unique<Kernel>(get_current_program(), func, kernel_name);
     ker->insert_arg(id.ret, false);
     ker->insert_arg(id.lhs, false);
     ker->insert_arg(id.rhs, false);
@@ -102,8 +100,10 @@ class ConstantFold : public BasicStmtVisitor {
   static bool jit_from_binary_op(TypedConstant &ret, BinaryOpType op,
       const TypedConstant &lhs, const TypedConstant &rhs)
   {
+#if 0
     if (ret.dt != DataType::i32 || lhs.dt != DataType::i32 || rhs.dt != DataType::i32)
       return false;
+#endif
     BinaryEvaluatorId id{op, ret.dt, lhs.dt, rhs.dt};
     auto *ker = get_binary_op_jit_eval_kernel(id);
     auto &ctx = get_current_program().context;

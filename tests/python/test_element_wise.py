@@ -4,6 +4,10 @@ from random import random, randint
 import math
 
 
+def _c_mod(a, b):
+    return a - b * int(float(a) / b)
+
+
 @ti.host_arch_only
 def _test_matrix_element_wise_unary(ti_func, math_func):
     n, m = randint(1, 8), randint(1, 8)
@@ -76,8 +80,8 @@ def test_matrix_element_wise_binary():
     _test_matrix_element_wise_binary(ti.atan2, math.atan2)
     _test_matrix_element_wise_binary(ti.min, min)
     _test_matrix_element_wise_binary(ti.max, max)
-    # TODO(archibate): revert ti.pow
-    #_test_matrix_element_wise_binary(ti.pow, pow)
+    _test_matrix_element_wise_binary(pow, pow)
+    _test_matrix_element_wise_binary(ti.raw_mod, _c_mod)
 
 
 
@@ -95,3 +99,4 @@ def test_matrix_element_wise_unary():
     #_test_matrix_element_wise_unary(ti.ceil, math.ceil)
     _test_matrix_element_wise_unary(ti.floor, math.floor)
     _test_matrix_element_wise_unary(ti.abs, abs)
+    # TODO(archibate): why ti.inv, ti.sqr doesn't work?

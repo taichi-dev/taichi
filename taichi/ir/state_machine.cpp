@@ -22,13 +22,13 @@ StateMachine::StateMachine(Stmt *var)
 
 bool StateMachine::same_data(Stmt *store_stmt1, Stmt *store_stmt2) {
   if (store_stmt1->is<LocalStoreStmt>()) {
-    if(!store_stmt2->is<LocalStoreStmt>())
+    if (!store_stmt2->is<LocalStoreStmt>())
       return false;
     return irpass::analysis::same_statements(
         store_stmt1->as<LocalStoreStmt>()->data,
         store_stmt2->as<LocalStoreStmt>()->data);
   } else {
-    if(!store_stmt2->is<GlobalStoreStmt>())
+    if (!store_stmt2->is<GlobalStoreStmt>())
       return false;
     return irpass::analysis::same_statements(
         store_stmt1->as<GlobalStoreStmt>()->data,
@@ -46,9 +46,8 @@ StateMachine::State StateMachine::merge_either_a_or_b(
   return never;
 }
 
-StateMachine::State StateMachine::merge_a_and_b(
-    const StateMachine::State &a,
-    const StateMachine::State &b) {
+StateMachine::State StateMachine::merge_a_and_b(const StateMachine::State &a,
+                                                const StateMachine::State &b) {
   if (a == definitely || b == definitely)
     return definitely;
   if (a == maybe || b == maybe)
@@ -219,18 +218,22 @@ void StateMachine::merge_from_if(const StateMachine &true_branch,
                                  const StateMachine &false_branch) {
   if (last_store && last_store_eliminable &&
       true_branch.stored_in_this_if_or_loop == definitely &&
-      !true_branch.maybe_loaded_before_first_definite_store_in_this_if_or_loop &&
+      !true_branch
+           .maybe_loaded_before_first_definite_store_in_this_if_or_loop &&
       false_branch.stored_in_this_if_or_loop == definitely &&
-      !false_branch.maybe_loaded_before_first_definite_store_in_this_if_or_loop) {
+      !false_branch
+           .maybe_loaded_before_first_definite_store_in_this_if_or_loop) {
     // The last store is never loaded.
     last_store->parent->erase(last_store);
     throw IRModified();
   }
   if (last_atomic && last_atomic_eliminable &&
       true_branch.stored_in_this_if_or_loop == definitely &&
-      !true_branch.maybe_loaded_before_first_definite_store_in_this_if_or_loop &&
+      !true_branch
+           .maybe_loaded_before_first_definite_store_in_this_if_or_loop &&
       false_branch.stored_in_this_if_or_loop == definitely &&
-      !false_branch.maybe_loaded_before_first_definite_store_in_this_if_or_loop) {
+      !false_branch
+           .maybe_loaded_before_first_definite_store_in_this_if_or_loop) {
     // The last AtomicOpStmt is never used.
     last_atomic->parent->erase(last_atomic);
     throw IRModified();
@@ -239,16 +242,22 @@ void StateMachine::merge_from_if(const StateMachine &true_branch,
   if (stored_in_this_if_or_loop != definitely) {
     maybe_loaded_before_first_definite_store_in_this_if_or_loop =
         maybe_loaded_before_first_definite_store_in_this_if_or_loop ||
-            true_branch.maybe_loaded_before_first_definite_store_in_this_if_or_loop ||
-            false_branch.maybe_loaded_before_first_definite_store_in_this_if_or_loop;
+        true_branch
+            .maybe_loaded_before_first_definite_store_in_this_if_or_loop ||
+        false_branch
+            .maybe_loaded_before_first_definite_store_in_this_if_or_loop;
   }
 
   stored = merge_either_a_or_b(true_branch.stored, false_branch.stored);
-  stored_in_this_if_or_loop = merge_a_and_b(stored_in_this_if_or_loop,
-                                            merge_either_a_or_b(true_branch.stored_in_this_if_or_loop, false_branch.stored_in_this_if_or_loop));
+  stored_in_this_if_or_loop = merge_a_and_b(
+      stored_in_this_if_or_loop,
+      merge_either_a_or_b(true_branch.stored_in_this_if_or_loop,
+                          false_branch.stored_in_this_if_or_loop));
   loaded = merge_either_a_or_b(true_branch.loaded, false_branch.loaded);
-  loaded_in_this_if_or_loop = merge_a_and_b(loaded_in_this_if_or_loop,
-                                            merge_either_a_or_b(true_branch.loaded_in_this_if_or_loop, false_branch.loaded_in_this_if_or_loop));
+  loaded_in_this_if_or_loop = merge_a_and_b(
+      loaded_in_this_if_or_loop,
+      merge_either_a_or_b(true_branch.loaded_in_this_if_or_loop,
+                          false_branch.loaded_in_this_if_or_loop));
 
   if (true_branch.last_store_forwardable &&
       false_branch.last_store_forwardable &&
@@ -257,7 +266,8 @@ void StateMachine::merge_from_if(const StateMachine &true_branch,
     if (last_store == true_branch.last_store ||
         last_store == false_branch.last_store) {
       // The last store didn't change.
-      last_store_eliminable = last_store_eliminable &&
+      last_store_eliminable =
+          last_store_eliminable &&
           true_branch.last_store == false_branch.last_store &&
           true_branch.last_store_eliminable &&
           false_branch.last_store_eliminable;
@@ -283,13 +293,16 @@ void StateMachine::merge_from_if(const StateMachine &true_branch,
         false_branch.last_store == last_store) {
       // The last store didn't change.
       last_store_eliminable = last_store_eliminable &&
-          true_branch.last_store_eliminable &&
-          false_branch.last_store_eliminable;
+                              true_branch.last_store_eliminable &&
+                              false_branch.last_store_eliminable;
     } else {
       // The last store changed.
-      bool current_eliminable = last_store && last_store_eliminable &&
-      !true_branch.maybe_loaded_before_first_definite_store_in_this_if_or_loop &&
-          !false_branch.maybe_loaded_before_first_definite_store_in_this_if_or_loop;
+      bool current_eliminable =
+          last_store && last_store_eliminable &&
+          !true_branch
+               .maybe_loaded_before_first_definite_store_in_this_if_or_loop &&
+          !false_branch
+               .maybe_loaded_before_first_definite_store_in_this_if_or_loop;
       bool true_eliminable = true_branch.last_store != last_store &&
                              true_branch.last_store != nullptr &&
                              true_branch.last_store_eliminable;
@@ -317,19 +330,22 @@ void StateMachine::merge_from_if(const StateMachine &true_branch,
       false_branch.last_atomic == last_atomic) {
     // The last AtomicOpStmt didn't change.
     last_atomic_eliminable = last_atomic_eliminable &&
-        true_branch.last_atomic_eliminable &&
-        false_branch.last_atomic_eliminable;
+                             true_branch.last_atomic_eliminable &&
+                             false_branch.last_atomic_eliminable;
   } else {
     // The last store changed.
-    bool current_eliminable = last_atomic && last_atomic_eliminable &&
-        !true_branch.maybe_loaded_before_first_definite_store_in_this_if_or_loop &&
-        !false_branch.maybe_loaded_before_first_definite_store_in_this_if_or_loop;
+    bool current_eliminable =
+        last_atomic && last_atomic_eliminable &&
+        !true_branch
+             .maybe_loaded_before_first_definite_store_in_this_if_or_loop &&
+        !false_branch
+             .maybe_loaded_before_first_definite_store_in_this_if_or_loop;
     bool true_eliminable = true_branch.last_atomic != last_atomic &&
-        true_branch.last_atomic != nullptr &&
-        true_branch.last_atomic_eliminable;
+                           true_branch.last_atomic != nullptr &&
+                           true_branch.last_atomic_eliminable;
     bool false_eliminable = false_branch.last_atomic != last_atomic &&
-        false_branch.last_atomic != nullptr &&
-        false_branch.last_atomic_eliminable;
+                            false_branch.last_atomic != nullptr &&
+                            false_branch.last_atomic_eliminable;
     if (true_eliminable) {
       last_atomic = true_branch.last_atomic;
       last_atomic_eliminable = true;
@@ -350,13 +366,15 @@ void StateMachine::merge_from_loop(const StateMachine &loop) {
   if (stored_in_this_if_or_loop != definitely) {
     maybe_loaded_before_first_definite_store_in_this_if_or_loop =
         maybe_loaded_before_first_definite_store_in_this_if_or_loop ||
-            loop.maybe_loaded_before_first_definite_store_in_this_if_or_loop;
+        loop.maybe_loaded_before_first_definite_store_in_this_if_or_loop;
   }
 
   stored = merge_a_and_maybe_b(stored, loop.stored);
-  stored_in_this_if_or_loop = merge_a_and_maybe_b(stored_in_this_if_or_loop, loop.stored_in_this_if_or_loop);
+  stored_in_this_if_or_loop = merge_a_and_maybe_b(
+      stored_in_this_if_or_loop, loop.stored_in_this_if_or_loop);
   loaded = merge_a_and_maybe_b(loaded, loop.loaded);
-  loaded_in_this_if_or_loop = merge_a_and_maybe_b(loaded_in_this_if_or_loop, loop.loaded_in_this_if_or_loop);
+  loaded_in_this_if_or_loop = merge_a_and_maybe_b(
+      loaded_in_this_if_or_loop, loop.loaded_in_this_if_or_loop);
 
   // We must be cautious here because of possible Continues and WhileControls.
   if (loop.stored_in_this_if_or_loop != never) {

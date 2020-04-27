@@ -13,7 +13,8 @@ class VariableOptimize : public IRVisitor {
   VariableOptimize() {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
-    state_machines = std::make_unique<std::unordered_map<Stmt *, StateMachine>>();
+    state_machines =
+        std::make_unique<std::unordered_map<Stmt *, StateMachine>>();
     maybe_run = false;
   }
 
@@ -49,7 +50,8 @@ class VariableOptimize : public IRVisitor {
       get_state_machine(stmt->dest).atomic_op(stmt);
     if (!stmt->dest->is<AllocaStmt>()) {
       for (auto &var : *state_machines) {
-        if (var.first != stmt->dest && maybe_same_address(stmt->dest, var.first)) {
+        if (var.first != stmt->dest &&
+            maybe_same_address(stmt->dest, var.first)) {
           var.second.maybe_atomic_op();
         }
       }
@@ -91,7 +93,8 @@ class VariableOptimize : public IRVisitor {
   void visit(IfStmt *if_stmt) override {
     auto origin = std::move(state_machines);
 
-    state_machines = std::make_unique<std::unordered_map<Stmt *, StateMachine>>();
+    state_machines =
+        std::make_unique<std::unordered_map<Stmt *, StateMachine>>();
     *state_machines = *origin;
     for (auto &it : *state_machines) {
       it.second.begin_if_or_loop();
@@ -101,7 +104,8 @@ class VariableOptimize : public IRVisitor {
     }
     auto true_branch = std::move(state_machines);
 
-    state_machines = std::make_unique<std::unordered_map<Stmt *, StateMachine>>();
+    state_machines =
+        std::make_unique<std::unordered_map<Stmt *, StateMachine>>();
     *state_machines = *origin;
     for (auto &it : *state_machines) {
       it.second.begin_if_or_loop();
@@ -113,15 +117,18 @@ class VariableOptimize : public IRVisitor {
 
     state_machines = std::move(origin);
     for (auto &it : *state_machines) {
-      it.second.merge_from_if((*true_branch)[it.first], (*false_branch)[it.first]);
+      it.second.merge_from_if((*true_branch)[it.first],
+                              (*false_branch)[it.first]);
     }
 
     for (auto &it : *true_branch) {
-      if (!it.first->is<AllocaStmt>() && state_machines->find(it.first) == state_machines->end())
+      if (!it.first->is<AllocaStmt>() &&
+          state_machines->find(it.first) == state_machines->end())
         state_machines->insert(it);
     }
     for (auto &it : *false_branch) {
-      if (!it.first->is<AllocaStmt>() && state_machines->find(it.first) == state_machines->end())
+      if (!it.first->is<AllocaStmt>() &&
+          state_machines->find(it.first) == state_machines->end())
         state_machines->insert(it);
     }
   }
@@ -134,7 +141,8 @@ class VariableOptimize : public IRVisitor {
 
     auto origin = std::move(state_machines);
 
-    state_machines = std::make_unique<std::unordered_map<Stmt *, StateMachine>>();
+    state_machines =
+        std::make_unique<std::unordered_map<Stmt *, StateMachine>>();
     *state_machines = *origin;
     for (auto &it : *state_machines) {
       it.second.begin_if_or_loop();
@@ -150,7 +158,8 @@ class VariableOptimize : public IRVisitor {
       it.second.merge_from_loop((*state_machines)[it.first]);
     }
     for (auto &it : *state_machines) {
-      if (!it.first->is<AllocaStmt>() && state_machines->find(it.first) == state_machines->end())
+      if (!it.first->is<AllocaStmt>() &&
+          state_machines->find(it.first) == state_machines->end())
         origin->insert(it);
     }
     state_machines = std::move(origin);

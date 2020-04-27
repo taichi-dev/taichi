@@ -16,11 +16,7 @@ class StateMachine {
  public:
   // If neither stored nor loaded (nor used as operands in masks/loop_vars),
   // we can safely delete this variable if it's an alloca or a global temp.
-  enum State {
-    never,
-    maybe,
-    definitely
-  };
+  enum State { never, maybe, definitely };
   State stored;  // Is this variable ever stored (or atomic-operated)?
   State stored_in_this_if_or_loop;
   State loaded;  // Is this variable ever loaded (or atomic-operated)?
@@ -71,7 +67,7 @@ class StateMachine {
   void begin_offload();
   void begin_if_or_loop();
   void merge_from_if(const StateMachine &true_branch,
-      const StateMachine &false_branch);
+                     const StateMachine &false_branch);
   void merge_from_loop(const StateMachine &loop);
 
   void finalize();

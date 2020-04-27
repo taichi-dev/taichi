@@ -149,7 +149,7 @@ def init(arch=None,
     gdb_trigger = os.environ.get('TI_GDB_TRIGGER', '')
     if len(gdb_trigger):
         ti.set_gdb_trigger(bool(int(gdb_trigger)))
-    
+
     # Q: Why not environ_config("arch", ti.core.arch_from_name)?
     # A: We need adaptive_arch_select for all.
     env_arch = os.environ.get("TI_ARCH")

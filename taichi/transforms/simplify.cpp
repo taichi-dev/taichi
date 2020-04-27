@@ -400,8 +400,18 @@ class BasicBlockSimplify : public IRVisitor {
                 }
                 continue;
               }
-              if (irpass::analysis::has_load_or_atomic(
-                      block->statements[j].get(), stmt->ptr)) {
+              if (!irpass::analysis::gather_statements(
+                       block->statements[j].get(),
+                       [&](Stmt *s) {
+                         if (auto load = s->cast<LocalLoadStmt>())
+                           return load->has_source(stmt->ptr);
+                         else if (auto atomic = s->cast<AtomicOpStmt>())
+                           return atomic->dest == stmt->ptr;
+                         else
+                           return s->is<ContinueStmt>() ||
+                                  s->is<WhileControlStmt>();
+                       })
+                       .empty()) {
                 has_load = true;
                 break;
               }
@@ -446,8 +456,17 @@ class BasicBlockSimplify : public IRVisitor {
           }
           continue;
         }
-        if (irpass::analysis::has_load_or_atomic(block->statements[i].get(),
-                                                 stmt->ptr)) {
+        if (!irpass::analysis::gather_statements(
+                 block->statements[i].get(),
+                 [&](Stmt *s) {
+                   if (auto load = s->cast<LocalLoadStmt>())
+                     return load->has_source(stmt->ptr);
+                   else if (auto atomic = s->cast<AtomicOpStmt>())
+                     return atomic->dest == stmt->ptr;
+                   else
+                     return false;
+                 })
+                 .empty()) {
           has_related = true;
           break;
         }
@@ -1127,7 +1146,7 @@ void full_simplify(IRNode *root, const CompileConfig &config, Kernel *kernel) {
   if (advanced_optimization)
     whole_kernel_cse(root);
   if (advanced_optimization)
-    optimize_local_variable(root);
+    variable_optimization(root);
   die(root);
   simplify(root, kernel);
   die(root);

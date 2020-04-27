@@ -72,3 +72,56 @@ def test_local_store_in_nested_for_and_if():
         for j in range(3):
             for k in range(3):
                 assert (val[i, j, k] == 1)
+
+
+@ti.all_archs
+def test_advanced_store_forwarding_continue_in_if():
+    val = ti.var(ti.i32)
+    ti.root.place(val)
+
+    @ti.kernel
+    def func(n: ti.i32):
+        # Launch just one thread
+        for _ in range(1):
+            a = 10
+            b = 0
+            for i in range(n):
+                b += a
+                a = i
+                if i == 5:
+                    continue
+                a = 100
+            a = 1000
+            val[None] = a + b
+
+    func(1)
+    assert val[None] == 1010
+    func(5)
+    assert val[None] == 1410
+    func(6)
+    assert val[None] == 1510
+    func(7)
+    assert val[None] == 1515
+
+
+@ti.all_archs
+def test_advanced_store_elimination_in_loop():
+    val = ti.var(ti.i32)
+    ti.root.place(val)
+
+    @ti.kernel
+    def func():
+        # Launch just one thread
+        for _ in range(1):
+            a = 1
+            for i in range(5):
+                b = 1
+                val[None] = a + b
+                b = 0
+                a = 2
+                a = 3
+            a = 4
+            val[None] += a
+
+    func()
+    assert val[None] == 8

@@ -4,37 +4,39 @@ import sys
 
 
 def execute_cmd(cmd):
-  print('Executing', resolve_env(cmd))
-  return os.system(cmd)
+    print('Executing', resolve_env(cmd))
+    return os.system(cmd)
 
 
 def resolve_env(v):
-  # replace `%`
-  modified = True
-  while modified:
-    modified = False
-    for i in range(len(v)):
-      if v[i] == '%':
-        for j in range(i + 1, len(v)):
-          if v[j] == '%':
-            var = v[i + 1:j]
-            v = v[:i] + os.environ[var] + v[j + 1:]
-            modified = True
-            print(v)
-            break
-        break
-  return v
+    # replace `%`
+    modified = True
+    while modified:
+        modified = False
+        for i in range(len(v)):
+            if v[i] == '%':
+                for j in range(i + 1, len(v)):
+                    if v[j] == '%':
+                        var = v[i + 1:j]
+                        v = v[:i] + os.environ[var] + v[j + 1:]
+                        modified = True
+                        print(v)
+                        break
+                break
+    return v
 
 
 def set_env(**kwargs):
-  for k, v in kwargs.items():
-    v = resolve_env(v)
-    print(f"Setting {k} to '{v}'")
-    os.environ[k] = v
+    for k, v in kwargs.items():
+        v = resolve_env(v)
+        print(f"Setting {k} to '{v}'")
+        os.environ[k] = v
 
 
 repo_dir = "E:\\repos\\taichi"
-assert len(sys.argv) == 3, 'Usage: windows_build.py [python_executable] [cuda_version=10.X]'
+assert len(
+    sys.argv
+) == 3, 'Usage: windows_build.py [python_executable] [cuda_version=10.X]'
 python_executable = sys.argv[1]
 cuda_version = sys.argv[2]
 assert cuda_version in ["10.0", "10.1", "10.2"]
@@ -49,7 +51,7 @@ execute_cmd("clang --version")
 os.chdir(repo_dir)
 build_dir = os.path.join(repo_dir, 'build')
 if os.path.exists(build_dir):
-  shutil.rmtree(build_dir)
+    shutil.rmtree(build_dir)
 os.mkdir(build_dir)
 os.chdir(build_dir)
 llvm_dir = "E:\\repos\\llvm-8.0.1\\build\\installed\\lib\\cmake\\llvm"

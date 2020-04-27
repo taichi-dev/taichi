@@ -90,7 +90,7 @@ void die(IRNode *root);
 void simplify(IRNode *root, Kernel *kernel = nullptr);
 void alg_simp(IRNode *root, const CompileConfig &config);
 void whole_kernel_cse(IRNode *root);
-void optimize_local_variable(IRNode *root);
+void variable_optimization(IRNode *root);
 void full_simplify(IRNode *root,
                    const CompileConfig &config,
                    Kernel *kernel = nullptr);
@@ -131,8 +131,8 @@ std::unordered_set<Stmt *> detect_loops_with_continue(IRNode *root);
 std::unordered_set<SNode *> gather_deactivations(IRNode *root);
 std::vector<Stmt *> gather_statements(IRNode *root,
                                       const std::function<bool(Stmt *)> &test);
-std::unordered_set<AtomicOpStmt *> gather_used_atomics(IRNode *root);
-bool has_load_or_atomic(IRNode *root, Stmt *var);
+std::unique_ptr<std::unordered_set<AtomicOpStmt *>> gather_used_atomics(
+    IRNode *root);
 bool has_store_or_atomic(IRNode *root, const std::vector<Stmt *> &vars);
 std::pair<bool, Stmt *> last_store_or_atomic(IRNode *root, Stmt *var);
 bool same_statements(IRNode *root1, IRNode *root2);

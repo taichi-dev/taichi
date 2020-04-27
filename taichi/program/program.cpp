@@ -489,6 +489,9 @@ void Program::finalize() {
     char *current_test = std::getenv("PYTEST_CURRENT_TEST");
     if (current_test != nullptr) {
       std::string file_name = current_test;
+      auto slash_pos = file_name.find_last_of('/');
+      if (slash_pos != file_name.npos)
+        file_name = file_name.substr(slash_pos + 1);
       auto py_pos = file_name.find(".py::");
       TI_ASSERT(py_pos != file_name.npos);
       file_name =

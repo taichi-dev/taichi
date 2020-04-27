@@ -5,7 +5,7 @@ TLANG_NAMESPACE_BEGIN
 
 class UsedAtomicsSearcher : public BasicStmtVisitor {
  private:
-  std::unordered_set<AtomicOpStmt *> used_atomics;
+  std::unique_ptr<std::unordered_set<AtomicOpStmt *>> used_atomics;
 
  public:
   using BasicStmtVisitor::visit;
@@ -13,12 +13,13 @@ class UsedAtomicsSearcher : public BasicStmtVisitor {
   UsedAtomicsSearcher() {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
+    used_atomics = std::make_unique<std::unordered_set<AtomicOpStmt *>>();
   }
 
   void search_operands(Stmt *stmt) {
     for (auto &op : stmt->get_operands()) {
       if (op != nullptr && op->is<AtomicOpStmt>()) {
-        used_atomics.insert(op->as<AtomicOpStmt>());
+        used_atomics->insert(op->as<AtomicOpStmt>());
       }
     }
   }
@@ -31,15 +32,16 @@ class UsedAtomicsSearcher : public BasicStmtVisitor {
     search_operands(stmt);
   }
 
-  static std::unordered_set<AtomicOpStmt *> run(IRNode *root) {
+  static std::unique_ptr<std::unordered_set<AtomicOpStmt *>> run(IRNode *root) {
     UsedAtomicsSearcher searcher;
     root->accept(&searcher);
-    return searcher.used_atomics;
+    return std::move(searcher.used_atomics);
   }
 };
 
 namespace irpass::analysis {
-std::unordered_set<AtomicOpStmt *> gather_used_atomics(IRNode *root) {
+std::unique_ptr<std::unordered_set<AtomicOpStmt *>> gather_used_atomics(
+    IRNode *root) {
   return UsedAtomicsSearcher::run(root);
 }
 }  // namespace irpass::analysis

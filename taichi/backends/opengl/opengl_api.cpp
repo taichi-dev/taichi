@@ -269,21 +269,25 @@ bool initialize_opengl(bool error_tolerance) {
   if (!window) {
     const char *desc = nullptr;
     int status = glfwGetError(&desc);
-    if (error_tolerance && status == GLFW_API_UNAVAILABLE) {
+    if (!desc)
+      desc = "Unknown Error";
+    if (error_tolerance) {
       // error tolerated, returning false
-      // note that we only tolerate GLFW_API_UNAVAILABLE
-      TI_TRACE("GLFW: OpenGL API unavailable");
+      TI_TRACE("[glsl] cannot create GLFW window: error {}: {}", status, desc);
       supported = std::make_optional<bool>(false);
       return false;
     }
-    if (!desc)
-      desc = "Unknown Error";
     TI_ERROR("[glsl] cannot create GLFW window: error {}: {}", status, desc);
   }
   glfwHideWindow(window);
   glfwMakeContextCurrent(window);
 
   if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+    if (error_tolerance) {
+      TI_WARN("[glsl] cannot initialize GLAD");
+      supported = std::make_optional<bool>(false);
+      return false;
+    }
     TI_ERROR("[glsl] cannot initialize GLAD");
   }
 #define PER_OPENGL_EXTENSION(x)    \

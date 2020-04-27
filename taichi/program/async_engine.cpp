@@ -59,8 +59,6 @@ void ExecutionQueue::synchronize() {
     }
   }
 
-  compilation_workers.flush();
-
   while (!task_queue.empty()) {
     auto ker = task_queue.front();
     launch_worker.enqueue([&, ker] {

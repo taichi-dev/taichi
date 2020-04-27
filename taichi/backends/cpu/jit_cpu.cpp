@@ -78,8 +78,6 @@ class JITSessionCPU : public JITSession {
   const DataLayout DL;
   LegacyRTDyldObjectLinkingLayer object_layer;
   LegacyIRCompileLayer<decltype(object_layer), SimpleCompiler> compile_layer;
-  std::unique_ptr<JITCompileCallbackManager> CompileCallbackManager;
-  LegacyCompileOnDemandLayer<decltype(compile_layer)> CODLayer;
   std::mutex mut;
 
  public:
@@ -92,21 +90,7 @@ class JITSessionCPU : public JITSession {
                            std::make_shared<SectionMemoryManager>(),
                            resolvers[K]};
                      }),
-        compile_layer(object_layer, SimpleCompiler(*TM)),
-        CompileCallbackManager(cantFail(
-            orc::createLocalCompileCallbackManager(TM->getTargetTriple(),
-                                                   ES,
-                                                   0))),
-        CODLayer(ES,
-                 compile_layer,
-                 [&](orc::VModuleKey K) { return resolvers[K]; },
-                 [&](orc::VModuleKey K, std::shared_ptr<SymbolResolver> R) {
-                   resolvers[K] = std::move(R);
-                 },
-                 [](Function &F) { return std::set<Function *>({&F}); },
-                 *CompileCallbackManager,
-                 orc::createLocalIndirectStubsManagerBuilder(
-                     TM->getTargetTriple())) {
+        compile_layer(object_layer, SimpleCompiler(*TM)) {
     llvm::sys::DynamicLibrary::LoadLibraryPermanently(nullptr);
   }
 
@@ -137,7 +121,7 @@ class JITSessionCPU : public JITSession {
         [](Error Err) { cantFail(std::move(Err), "lookupFlags failed"); });
 
     // Add the module to the JIT with the new key.
-    cantFail(CODLayer.addModule(K, std::move(M)));
+    cantFail(compile_layer.addModule(K, std::move(M)));
     auto new_module = std::make_unique<JITModuleCPU>(this, K);
     auto new_module_raw_ptr = new_module.get();
     modules.push_back(std::move(new_module));
@@ -149,7 +133,7 @@ class JITSessionCPU : public JITSession {
     std::string MangledName;
     raw_string_ostream MangledNameStream(MangledName);
     Mangler::getNameWithPrefix(MangledNameStream, Name, DL);
-    auto symbol = CODLayer.findSymbol(MangledNameStream.str(), true);
+    auto symbol = compile_layer.findSymbol(MangledNameStream.str(), true);
     if (!symbol)
       TI_ERROR("Function \"{}\" not found", Name);
     return (void *)(llvm::cantFail(symbol.getAddress()));
@@ -160,7 +144,8 @@ class JITSessionCPU : public JITSession {
     std::string MangledName;
     raw_string_ostream MangledNameStream(MangledName);
     Mangler::getNameWithPrefix(MangledNameStream, Name, DL);
-    auto symbol = CODLayer.findSymbolIn(key, MangledNameStream.str(), true);
+    auto symbol =
+        compile_layer.findSymbolIn(key, MangledNameStream.str(), true);
     if (!symbol)
       TI_ERROR("Function \"{}\" not found", Name);
     return (void *)(llvm::cantFail(symbol.getAddress()));

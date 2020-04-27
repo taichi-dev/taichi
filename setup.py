@@ -39,7 +39,6 @@ setuptools.setup(
     data_files=[('lib', data_files)],
     keywords=['graphics', 'simulation'],
     license='MIT',
-    platforms=['Linux'],
     include_package_data=True,
     entry_points={
         'console_scripts': [

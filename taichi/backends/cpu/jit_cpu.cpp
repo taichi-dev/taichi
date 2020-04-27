@@ -78,15 +78,8 @@ class JITSessionCPU : public JITSession {
   const DataLayout DL;
   LegacyRTDyldObjectLinkingLayer object_layer;
   LegacyIRCompileLayer<decltype(object_layer), SimpleCompiler> compile_layer;
-
-  using OptimizeFunction = std::function<std::unique_ptr<llvm::Module>(
-      std::unique_ptr<llvm::Module>)>;
-
-  LegacyIRTransformLayer<decltype(compile_layer), OptimizeFunction>
-      OptimizeLayer;
-
   std::unique_ptr<JITCompileCallbackManager> CompileCallbackManager;
-  LegacyCompileOnDemandLayer<decltype(OptimizeLayer)> CODLayer;
+  LegacyCompileOnDemandLayer<decltype(compile_layer)> CODLayer;
   std::mutex mut;
 
  public:
@@ -100,18 +93,12 @@ class JITSessionCPU : public JITSession {
                            resolvers[K]};
                      }),
         compile_layer(object_layer, SimpleCompiler(*TM)),
-        OptimizeLayer(compile_layer,
-                      [](std::unique_ptr<llvm::Module> M) {
-                        return M;
-                        // Do nothing here since optimization is already done in
-                        // global_optmize_module_cpu
-                      }),
         CompileCallbackManager(cantFail(
             orc::createLocalCompileCallbackManager(TM->getTargetTriple(),
                                                    ES,
                                                    0))),
         CODLayer(ES,
-                 OptimizeLayer,
+                 compile_layer,
                  [&](orc::VModuleKey K) { return resolvers[K]; },
                  [&](orc::VModuleKey K, std::shared_ptr<SymbolResolver> R) {
                    resolvers[K] = std::move(R);

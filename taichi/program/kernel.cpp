@@ -43,8 +43,8 @@ void Kernel::compile() {
   program.current_kernel = nullptr;
 }
 
-void Kernel::lower() {  // TODO: is a "Lowerer" class necessary for each
-                        // backend?
+void Kernel::lower(bool lower_access) {  // TODO: is a "Lowerer" class necessary
+                                         // for each backend?
   TI_ASSERT(!lowered);
   if (arch_is_cpu(arch) || arch == Arch::cuda) {
     program.current_kernel = this;
@@ -53,9 +53,9 @@ void Kernel::lower() {  // TODO: is a "Lowerer" class necessary for each
     bool verbose = config.print_ir;
     if (is_accessor && !config.print_accessor_ir)
       verbose = false;
-    irpass::compile_to_offloads(ir, config, /*vectorize*/ arch_is_cpu(arch),
-                                grad,
-                                /*ad_use_stack*/ true, verbose);
+    irpass::compile_to_offloads(
+        ir, config, /*vectorize*/ arch_is_cpu(arch), grad,
+        /*ad_use_stack*/ true, verbose, /*lower_global_access*/ lower_access);
   } else {
     TI_NOT_IMPLEMENTED
   }

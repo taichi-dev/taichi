@@ -1,6 +1,7 @@
 // Type checking
 
 #include "taichi/ir/ir.h"
+#include "taichi/program/kernel.h"
 #include "taichi/ir/frontend.h"
 
 TLANG_NAMESPACE_BEGIN
@@ -8,8 +9,14 @@ TLANG_NAMESPACE_BEGIN
 // "Type" here does not include vector width
 // Var lookup and Type inference
 class TypeCheck : public IRVisitor {
+ private:
+  Kernel *kernel;
+  CompileConfig config;
+
  public:
-  TypeCheck() {
+  TypeCheck(Kernel *kernel) : kernel(kernel) {
+    // TODO: remove dependency on get_current_program here
+    config = get_current_program().config;
     allow_undefined_visitor = true;
   }
 
@@ -226,7 +233,7 @@ class TypeCheck : public IRVisitor {
     // lower truediv into div
 
     if (stmt->op_type == BinaryOpType::truediv) {
-      auto default_fp = get_current_program().config.default_fp;
+      auto default_fp = config.default_fp;
       if (!is_real(stmt->lhs->ret_type.data_type)) {
         cast(stmt->lhs, default_fp);
       }
@@ -303,15 +310,22 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(ArgLoadStmt *stmt) {
-    // TODO (#): remove dependency on get_current_program().get_current_kernel()
-    auto &args = get_current_program().get_current_kernel().args;
+    Kernel *current_kernel = kernel;
+    if (current_kernel == nullptr) {
+      current_kernel = &get_current_program().get_current_kernel();
+    }
+    auto &args = current_kernel->args;
     TI_ASSERT(0 <= stmt->arg_id && stmt->arg_id < args.size());
     TI_ASSERT(!args[stmt->arg_id].is_return_value);
     stmt->ret_type = VectorType(1, args[stmt->arg_id].dt);
   }
 
   void visit(ArgStoreStmt *stmt) {
-    auto &args = get_current_program().get_current_kernel().args;
+    Kernel *current_kernel = kernel;
+    if (current_kernel == nullptr) {
+      current_kernel = &get_current_program().get_current_kernel();
+    }
+    auto &args = current_kernel->args;
     TI_ASSERT(0 <= stmt->arg_id && stmt->arg_id < args.size());
     auto arg = args[stmt->arg_id];
     auto arg_type = arg.dt;
@@ -396,18 +410,14 @@ class TypeCheck : public IRVisitor {
   void visit(GlobalTemporaryStmt *stmt) {
     stmt->ret_type.set_is_pointer(true);
   }
-
-  static void run(IRNode *node) {
-    TypeCheck inst;
-    node->accept(&inst);
-  }
 };
 
 namespace irpass {
 
-void typecheck(IRNode *root) {
+void typecheck(IRNode *root, Kernel *kernel) {
   analysis::check_fields_registered(root);
-  TypeCheck::run(root);
+  TypeCheck inst(kernel);
+  root->accept(&inst);
 }
 
 }  // namespace irpass

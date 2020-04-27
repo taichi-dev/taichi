@@ -84,8 +84,8 @@ class ParallelExecutor {
       // initialized and not finalized. Do work.
       if (!task_queue.empty()) {
         auto task = task_queue.front();
-        task_queue.pop_front();
         running_threads++;
+        task_queue.pop_front();
         lock.unlock();
         // Run the task
         task();
@@ -108,6 +108,7 @@ class KernelLaunchRecord {
   Context context;
   Kernel *kernel;  // TODO: remove this
   OffloadedStmt *stmt;
+  uint64 h;
 
   KernelLaunchRecord(Context contxet, Kernel *kernel, OffloadedStmt *stmt);
 };
@@ -115,24 +116,26 @@ class KernelLaunchRecord {
 // In charge of (parallel) compilation to binary and (serial) kernel launching
 class ExecutionQueue {
  public:
+  std::mutex mut;
   std::deque<KernelLaunchRecord> task_queue;
 
   ParallelExecutor compilation_workers;  // parallel compilation
-  std::thread launch_worker;             // serial launching
+  ParallelExecutor launch_worker;        // serial launching
 
   std::unordered_map<uint64, FunctionType> compiled_func;
 
-  ExecutionQueue() : compilation_workers(4) {  // TODO: remove 4
-  }
+  ExecutionQueue();
 
   void enqueue(KernelLaunchRecord ker);
-
-  uint64 hash(OffloadedStmt *stmt);
 
   void compile_task() {
   }
 
   void launch_task() {
+  }
+
+  void clear_cache() {
+    compiled_func.clear();
   }
 
   void synchronize();
@@ -152,6 +155,10 @@ class AsyncEngine {
   }
 
   void optimize() {
+  }
+
+  void clear_cache() {
+    queue.clear_cache();
   }
 
   void launch(Kernel *kernel);

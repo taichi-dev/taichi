@@ -58,8 +58,11 @@ class LLVMModuleBuilder {
   TaichiLLVMContext *tlctx;
   llvm::LLVMContext *llvm_context;
 
-  LLVMModuleBuilder(std::unique_ptr<llvm::Module> &&module)
-      : module(std::move(module)) {
+  LLVMModuleBuilder(std::unique_ptr<llvm::Module> &&module,
+                    TaichiLLVMContext *tlctx)
+      : module(std::move(module)), tlctx(tlctx) {
+    TI_ASSERT(this->module != nullptr);
+    TI_ASSERT(&this->module->getContext() == tlctx->get_this_thread_context());
   }
 
   llvm::Value *create_entry_block_alloca(llvm::Type *type,

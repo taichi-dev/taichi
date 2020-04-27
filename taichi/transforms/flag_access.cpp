@@ -37,6 +37,11 @@ class FlagAccess : public IRVisitor {
     for_stmt->body->accept(this);
   }
 
+  void visit(OffloadedStmt *stmt) {
+    if (stmt->body)
+      stmt->body->accept(this);
+  }
+
   // Assuming pointers will be visited before global load/st
   void visit(GlobalPtrStmt *stmt) {
     stmt->activate = false;

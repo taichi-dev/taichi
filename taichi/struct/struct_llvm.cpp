@@ -13,7 +13,8 @@ using namespace llvm;
 
 StructCompilerLLVM::StructCompilerLLVM(Program *prog, Arch arch)
     : StructCompiler(prog),
-      LLVMModuleBuilder(prog->get_llvm_context(arch)->clone_runtime_module()),
+      LLVMModuleBuilder(prog->get_llvm_context(arch)->clone_runtime_module(),
+                        prog->get_llvm_context(arch)),
       arch(arch) {
   tlctx = prog->get_llvm_context(arch);
   llvm_ctx = tlctx->get_this_thread_context();
@@ -86,7 +87,6 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
        // aux_type might be null
        ch_type},
       type_stub_name(&snode));
-
 
   // Create a dummy function in the module with the type stub as return type
   // so that the type is referenced in the module

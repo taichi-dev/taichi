@@ -121,22 +121,37 @@ def init(arch=None,
     for k, v in kwargs.items():
         setattr(ti.cfg, k, v)
 
-    def boolean_config(key, name=None):
-        if name is None:
-            name = 'TI_' + key.upper()
-        value = os.environ.get(name)
-        if value is not None:
-            setattr(ti.cfg, key, len(value) and bool(int(value)))
+    def bool_int(x):
+        return bool(int(x))
+
+    def environ_config(key, cast=bool_int):
+        name = 'TI_' + key.upper()
+        value = os.environ.get(name, '')
+        if len(value):
+            setattr(ti.cfg, key, cast(value))
+
+        # TI_ASYNC=   : not work
+        # TI_ASYNC=0  : False
+        # TI_ASYNC=1  : True
 
     # does override
-    boolean_config("print_ir")
-    boolean_config("verbose")
-    boolean_config("fast_math")
-    boolean_config("async")
-    boolean_config("print_benchmark_stat")
-    gdb_trigger = os.environ.get("TI_GDB_TRIGGER")
-    if gdb_trigger is not None:
-        ti.set_gdb_trigger(len(gdb_trigger) and bool(int(gdb_trigger)))
+    environ_config("print_ir")
+    environ_config("verbose")
+    environ_config("fast_math")
+    environ_config("async")
+    environ_config("print_benchmark_stat")
+    environ_config("device_memory_fraction", float)
+    environ_config("device_memory_GB", float)
+
+    # Q: Why not environ_config("gdb_trigger")?
+    # A: We don't have ti.cfg.gdb_trigger yet.
+    # Discussion: https://github.com/taichi-dev/taichi/pull/879
+    gdb_trigger = os.environ.get('TI_GDB_TRIGGER', '')
+    if len(gdb_trigger):
+        ti.set_gdb_trigger(bool(int(gdb_trigger)))
+
+    # Q: Why not environ_config("arch", ti.core.arch_from_name)?
+    # A: We need adaptive_arch_select for all.
     env_arch = os.environ.get("TI_ARCH")
     if env_arch is not None:
         print(f'Following TI_ARCH setting up for arch={env_arch}')
@@ -246,10 +261,6 @@ def benchmark(func, repeat=100, args=()):
     return elapsed / repeat
 
 
-def set_wanted_archs(archs):
-    os.environ['TI_WANTED_ARCHS'] = ','.join(archs)
-
-
 def supported_archs():
     import taichi as ti
     archs = [ti.core.host_arch()]
@@ -259,13 +270,17 @@ def supported_archs():
         archs.append(metal)
     if ti.core.with_opengl():
         archs.append(opengl)
-    wanted_archs = os.environ.get('TI_WANTED_ARCHS', '').split(',')
+    wanted_archs = os.environ.get('TI_WANTED_ARCHS', '')
+    want_exclude = wanted_archs.startswith('^')
+    if want_exclude:
+        wanted_archs = wanted_archs[1:]
+    wanted_archs = wanted_archs.split(',')
     # Note, ''.split(',') gives you [''], which is not an empty array.
     wanted_archs = list(filter(lambda x: x != '', wanted_archs))
     if len(wanted_archs):
         archs, old_archs = [], archs
         for arch in old_archs:
-            if ti.core.arch_name(arch) in wanted_archs:
+            if want_exclude == (ti.core.arch_name(arch) not in wanted_archs):
                 archs.append(arch)
     return archs
 

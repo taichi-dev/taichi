@@ -41,6 +41,7 @@ def test_python(args):
             threads = min(8, cpu_count())  # To prevent running out of memory
         except:
             threads = 2
+        os.environ['TI_DEVICE_MEMORY_GB'] = '0.5'  # Discussion: #769
         arg_threads = None
         if args.threads is not None:
             arg_threads = int(args.threads)
@@ -82,6 +83,11 @@ def make_argument_parser():
         '-a',
         '--arch',
         help='Specify arch(s) to run test on, e.g. -a opengl,metal')
+    parser.add_argument(
+        '-n',
+        '--exclusive',
+        action='store_true',
+        help='Exclude arch(s) instead of include, e.g. -na opengl,metal')
     parser.add_argument('files', nargs='*', help='Files to be tested')
     return parser
 
@@ -114,8 +120,11 @@ def main(debug=False):
     print()
     import taichi as ti
     if args.arch is not None:
-        print(f'Running on Arch={args.arch}')
-        ti.set_wanted_archs(args.arch.split(','))
+        arch = args.arch
+        if args.exclusive:
+            arch = '^' + arch
+        print(f'Running on Arch={arch}')
+        os.environ['TI_WANTED_ARCHS'] = arch
 
     if mode == 'help':
         print(

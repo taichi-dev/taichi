@@ -169,6 +169,7 @@ Use ``ti test`` to run all the tests.
 Use ``ti test -v`` for verbose outputs.
 Use ``ti test <filename(s)>`` to run specific tests. e.g. ``ti test numpy_io`` and ``ti test test_numpy_io.py`` are equivalent.
 Use ``ti test -a <arch(s)>`` for test against specified architectures. e.g. ``ti test -a opengl`` or ``ti test numpy_io -a cuda,metal``.
+Use ``ti test -na <arch(s)>`` for test all architectures exclude some of them. e.g. ``ti test -na opengl,cuda``.
 Use ``ti test -c`` to run only the C++ tests. e.g. ``ti test -c alg_simp``
 
 For more options, see ``ti test -h``.

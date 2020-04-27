@@ -107,11 +107,7 @@ class ProfilerRecords {
     // Use a raw pointer so that it lives together with the process
     static thread_local ProfilerRecords *profiler_records = nullptr;
     if (profiler_records == nullptr) {
-      std::stringstream ss;
-      ss << std::this_thread::get_id();
-      profiler_records =
-          new ProfilerRecords(fmt::format("thread {}", ss.str()));
-      Profiling::get_instance().register_thread_profiler(profiler_records);
+      profiler_records = Profiling::get_instance().get_this_thread_profiler();
     }
     return *profiler_records;
   }
@@ -248,11 +244,16 @@ Profiling &Profiling::get_instance() {
   return *prof;
 }
 
-void Profiling::register_thread_profiler(ProfilerRecords *profiler) {
+ProfilerRecords *Profiling::get_this_thread_profiler() {
   std::lock_guard<std::mutex> _(mut);
   auto id = std::this_thread::get_id();
-  TI_ASSERT(profilers.find(id) == profilers.end());
-  profilers[id] = profiler;
+  std::stringstream ss;
+  ss << id;
+  if (profilers.find(id) == profilers.end()) {
+    // Note: thread id may be reused
+    profilers[id] = new ProfilerRecords(fmt::format("thread {}", ss.str()));
+  }
+  return profilers[id];
 }
 
 void Profiling::print_profile_info() {

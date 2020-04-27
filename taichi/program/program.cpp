@@ -171,8 +171,10 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
     if (config.device_memory_fraction == 0) {
       TI_ASSERT(config.device_memory_GB > 0);
       prealloc_size = std::size_t(config.device_memory_GB * (1UL << 30));
-    } else
+    } else {
       prealloc_size = std::size_t(config.device_memory_fraction * total_mem);
+    }
+    TI_ASSERT(prealloc_size <= total_mem);
 
     TI_TRACE("Allocating device memory {:.2f} GB",
              1.0 * prealloc_size / (1UL << 30));
@@ -303,6 +305,7 @@ void Program::materialize_layout() {
 
 void Program::check_runtime_error() {
   TI_ASSERT(arch_is_cpu(config.arch));
+  synchronize();
   auto tlctx = llvm_context_host.get();
   auto runtime_jit_module = tlctx->runtime_jit_module;
   runtime_jit_module->call<void *>("runtime_retrieve_error_code", llvm_runtime);
@@ -329,6 +332,8 @@ void Program::synchronize() {
 #endif
     } else if (config.arch == Arch::metal) {
       metal_kernel_mgr_->synchronize();
+    } else if (config.async == true) {
+      async_engine->synchronize();
     }
     sync = true;
   }
@@ -478,15 +483,19 @@ Kernel &Program::get_snode_writer(SNode *snode) {
 }
 
 void Program::finalize() {
+  synchronize();
   TI_TRACE("Program finalizing...");
   if (config.print_benchmark_stat) {
     char *current_test = std::getenv("PYTEST_CURRENT_TEST");
     if (current_test != nullptr) {
       std::string file_name = current_test;
+      auto slash_pos = file_name.find_last_of('/');
+      if (slash_pos != file_name.npos)
+        file_name = file_name.substr(slash_pos + 1);
       auto py_pos = file_name.find(".py::");
       TI_ASSERT(py_pos != file_name.npos);
-      file_name = file_name.substr(0, py_pos) + "__" +
-                  file_name.substr(py_pos + 5);
+      file_name =
+          file_name.substr(0, py_pos) + "__" + file_name.substr(py_pos + 5);
       auto first_space_pos = file_name.find_first_of(' ');
       TI_ASSERT(first_space_pos != file_name.npos);
       file_name = file_name.substr(0, first_space_pos);

@@ -72,6 +72,9 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   std::vector<OffloadedTask> offloaded_tasks;
   BasicBlock *func_body_bb;
 
+  std::unordered_map<OffloadedStmt *, std::vector<llvm::Value *>>
+      offloaded_loop_vars_llvm;
+
   using IRVisitor::visit;
   using LLVMModuleBuilder::call;
 
@@ -215,7 +218,7 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   std::tuple<llvm::Value *, llvm::Value *> get_range_for_bounds(
       OffloadedStmt *stmt);
 
-  void create_offload_range_for(OffloadedStmt *stmt);
+  virtual void create_offload_range_for(OffloadedStmt *stmt) = 0;
 
   void create_offload_struct_for(OffloadedStmt *stmt, bool spmd = false);
 

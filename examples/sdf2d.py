@@ -7,17 +7,21 @@ N = 512
 img = ti.var(dt=ti.f32, shape=(N, N))
 light_pos = ti.Vector(2, dt=ti.f32, shape=())
 
+
 @ti.func
 def vres(distance, emission, reflection, refraction):
     return ti.Vector([distance, emission, reflection, refraction])
+
 
 @ti.func
 def vec2(x, y):
     return ti.Vector([x, y])
 
+
 @ti.func
 def vec3(x, y, z):
     return ti.Vector([x, y, z])
+
 
 @ti.func
 def union(a, b):
@@ -25,11 +29,13 @@ def union(a, b):
         a = b
     return a
 
+
 @ti.func
 def intersect(a, b):
     if a[0] < b[0]:
         a = b
     return a
+
 
 @ti.func
 def subtract(a, b):
@@ -38,31 +44,28 @@ def subtract(a, b):
         a[0] = -a[0]
     return a
 
+
 @ti.func
 def sdf_moon(p):
     #       EMI, RFL, RFR
-    d1 = vres((p - light_pos + vec2(0.05, 0.0)).norm() - 0.1,
-            1.0, 0.0, 0.0)
-    d2 = vres((p - light_pos - vec2(0.05, 0.0)).norm() - 0.1,
-            1.0, 0.0, 0.0)
-    d3 = vres(p[1] - 0.6,
-            0.0, 1.0, 0.0)
-    d4 = vres((p - vec2(0.5, 0.6)).norm() - 0.3,
-            0.0, 1.0, 0.0)
+    d1 = vres((p - light_pos + vec2(0.05, 0.0)).norm() - 0.1, 1.0, 0.0, 0.0)
+    d2 = vres((p - light_pos - vec2(0.05, 0.0)).norm() - 0.1, 1.0, 0.0, 0.0)
+    d3 = vres(p[1] - 0.6, 0.0, 1.0, 0.0)
+    d4 = vres((p - vec2(0.5, 0.6)).norm() - 0.3, 0.0, 1.0, 0.0)
     return union(subtract(d1, d2), subtract(d3, d4))
+
 
 @ti.func
 def sdf_lens(p):
     #       EMI, RFL, RFR
-    d1 = vres((p - vec2(0.5, 0.28)).norm() - 0.2,
-            0.0, 0.3, 1.0)
-    d2 = vres((p - vec2(0.5, 0.6)).norm() - 0.2,
-            0.0, 0.3, 1.0)
-    d3 = vres((p - light_pos).norm() - 0.05,
-            5.0, 0.0, 0.0)
+    d1 = vres((p - vec2(0.5, 0.28)).norm() - 0.2, 0.0, 0.3, 1.0)
+    d2 = vres((p - vec2(0.5, 0.6)).norm() - 0.2, 0.0, 0.3, 1.0)
+    d3 = vres((p - light_pos).norm() - 0.05, 5.0, 0.0, 0.0)
     return union(intersect(d1, d2), d3)
 
+
 sdf = sdf_lens
+
 
 @ti.func
 def gradient(p):  # ASK(yuanming-hu): do we have sdf.grad?
@@ -72,12 +75,14 @@ def gradient(p):  # ASK(yuanming-hu): do we have sdf.grad?
     by = sdf(p + vec2(0, -1e-4))[0]
     return ti.Vector.normalized(vec2(ax - bx, ay - by))
 
+
 @ti.func
 def random_in(n):
     ret = 0
     if n > 0:
         ret = ti.random() < n
     return ret
+
 
 @ti.func
 def sample(p):
@@ -122,11 +127,13 @@ def sample(p):
             sign = 1.0
     return ret
 
+
 @ti.kernel
 def render():
     for i, j in img:
         o = ti.Vector([i / N, j / N])
         img[i, j] += sample(o)
+
 
 gui = ti.GUI('SDF 2D')
 frame = 1

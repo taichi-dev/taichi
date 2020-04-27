@@ -78,15 +78,9 @@ class JITSessionCPU : public JITSession {
   const DataLayout DL;
   LegacyRTDyldObjectLinkingLayer object_layer;
   LegacyIRCompileLayer<decltype(object_layer), SimpleCompiler> compile_layer;
-
-  using OptimizeFunction = std::function<std::unique_ptr<llvm::Module>(
-      std::unique_ptr<llvm::Module>)>;
-
-  LegacyIRTransformLayer<decltype(compile_layer), OptimizeFunction>
-      OptimizeLayer;
-
   std::unique_ptr<JITCompileCallbackManager> CompileCallbackManager;
-  LegacyCompileOnDemandLayer<decltype(OptimizeLayer)> CODLayer;
+  LegacyCompileOnDemandLayer<decltype(compile_layer)> CODLayer;
+  std::mutex mut;
 
  public:
   JITSessionCPU(JITTargetMachineBuilder JTMB, DataLayout DL)
@@ -99,16 +93,12 @@ class JITSessionCPU : public JITSession {
                            resolvers[K]};
                      }),
         compile_layer(object_layer, SimpleCompiler(*TM)),
-        OptimizeLayer(compile_layer,
-                      [this](std::unique_ptr<llvm::Module> M) {
-                        return optimize_module(std::move(M));
-                      }),
         CompileCallbackManager(cantFail(
             orc::createLocalCompileCallbackManager(TM->getTargetTriple(),
                                                    ES,
                                                    0))),
         CODLayer(ES,
-                 OptimizeLayer,
+                 compile_layer,
                  [&](orc::VModuleKey K) { return resolvers[K]; },
                  [&](orc::VModuleKey K, std::shared_ptr<SymbolResolver> R) {
                    resolvers[K] = std::move(R);
@@ -127,6 +117,7 @@ class JITSessionCPU : public JITSession {
   JITModule *add_module(std::unique_ptr<llvm::Module> M) override {
     TI_ASSERT(M);
     global_optimize_module_cpu(M);
+    std::lock_guard<std::mutex> _(mut);
     // Create a new VModuleKey.
     VModuleKey K = ES.allocateVModule();
 
@@ -154,6 +145,7 @@ class JITSessionCPU : public JITSession {
   }
 
   void *lookup(const std::string Name) override {
+    std::lock_guard<std::mutex> _(mut);
     std::string MangledName;
     raw_string_ostream MangledNameStream(MangledName);
     Mangler::getNameWithPrefix(MangledNameStream, Name, DL);
@@ -164,6 +156,7 @@ class JITSessionCPU : public JITSession {
   }
 
   void *lookup_in_module(VModuleKey key, const std::string Name) {
+    std::lock_guard<std::mutex> _(mut);
     std::string MangledName;
     raw_string_ostream MangledNameStream(MangledName);
     Mangler::getNameWithPrefix(MangledNameStream, Name, DL);
@@ -180,26 +173,6 @@ class JITSessionCPU : public JITSession {
   */
 
  private:
-  std::unique_ptr<llvm::Module> optimize_module(
-      std::unique_ptr<llvm::Module> M) {
-    // Create a function pass manager.
-    auto FPM = std::make_unique<legacy::FunctionPassManager>(M.get());
-
-    // Add some optimizations.
-    FPM->add(createInstructionCombiningPass());
-    FPM->add(createReassociatePass());
-    FPM->add(createGVNPass());
-    FPM->add(createCFGSimplificationPass());
-    FPM->doInitialization();
-
-    // Run the optimizations over all functions in the module being added to
-    // the JIT.
-    for (auto &F : *M)
-      FPM->run(F);
-
-    return M;
-  }
-
   static void global_optimize_module_cpu(
       std::unique_ptr<llvm::Module> &module) {
     TI_AUTO_PROF

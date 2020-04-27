@@ -330,7 +330,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     create_naive_range_for(for_stmt);
   }
 
-  void create_offload_range_for(OffloadedStmt *stmt) {
+  void create_offload_range_for(OffloadedStmt *stmt) override {
     auto loop_block_dim = stmt->block_dim;
     if (loop_block_dim == 0) {
       loop_block_dim = prog->config.default_gpu_block_dim;
@@ -346,7 +346,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
            tlctx->get_data_type<int>()});
 
       auto loop_var = create_entry_block_alloca(DataType::i32);
-      stmt->loop_vars_llvm.push_back(loop_var);
+      offloaded_loop_vars_llvm[stmt].push_back(loop_var);
       builder->CreateStore(get_arg(1), loop_var);
       stmt->body->accept(this);
 

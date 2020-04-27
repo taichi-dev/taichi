@@ -243,11 +243,18 @@ struct GLSSBO {
   }
 };
 
-void initialize_opengl() {
-  static bool gl_inited = false;
-  if (gl_inited)
-    return;
-  gl_inited = true;
+bool initialize_opengl(bool error_tolerance) {
+  static std::optional<bool> supported;  // std::nullopt
+
+  if (supported.has_value()) {  // this function has been called before
+    if (supported.value()) {    // detected to be true in last call
+      return true;
+    } else {
+      if (!error_tolerance)  // not called from with_opengl
+        TI_ERROR("OpenGL not supported");
+      return false;
+    }
+  }
 
   glfwInit();
   // Compute Shader requires OpenGL 4.3+ (or OpenGL ES 3.1+)
@@ -264,12 +271,23 @@ void initialize_opengl() {
     int status = glfwGetError(&desc);
     if (!desc)
       desc = "Unknown Error";
+    if (error_tolerance) {
+      // error tolerated, returning false
+      TI_TRACE("[glsl] cannot create GLFW window: error {}: {}", status, desc);
+      supported = std::make_optional<bool>(false);
+      return false;
+    }
     TI_ERROR("[glsl] cannot create GLFW window: error {}: {}", status, desc);
   }
   glfwHideWindow(window);
   glfwMakeContextCurrent(window);
 
   if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+    if (error_tolerance) {
+      TI_WARN("[glsl] cannot initialize GLAD");
+      supported = std::make_optional<bool>(false);
+      return false;
+    }
     TI_ERROR("[glsl] cannot initialize GLAD");
   }
 #define PER_OPENGL_EXTENSION(x)    \
@@ -277,8 +295,17 @@ void initialize_opengl() {
     TI_TRACE("[glsl] Found " #x);
 #include "taichi/inc/opengl_extension.inc.h"
 #undef PER_OPENGL_EXTENSION
-  if (!opengl_has_GL_ARB_compute_shader)
+  if (!opengl_has_GL_ARB_compute_shader) {
+    if (error_tolerance) {
+      TI_INFO("Your OpenGL does not support GL_ARB_compute_shader extension");
+      supported = std::make_optional<bool>(false);
+      return false;
+    }
     TI_ERROR("Your OpenGL does not support GL_ARB_compute_shader extension");
+  }
+
+  supported = std::make_optional<bool>(true);
+  return true;
 }
 
 void display_kernel_info(std::string const &kernel_name,
@@ -478,7 +505,7 @@ GLSLLaunchGuard::~GLSLLaunchGuard() {
 }
 
 bool is_opengl_api_available() {
-  return true;
+  return initialize_opengl(true);
 }
 
 int opengl_get_threads_per_group() {
@@ -522,7 +549,7 @@ bool is_opengl_api_available() {
   return false;
 }
 
-void initialize_opengl() {
+bool initialize_opengl(bool error_tolerance) {
   TI_NOT_IMPLEMENTED;
 }
 

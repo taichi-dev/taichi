@@ -73,6 +73,8 @@ Logger::Logger() {
         std::rethrow_exception(p);
     } catch (const std::string &e) {
       PyErr_SetString(PyExc_RuntimeError, e.c_str());
+    } catch (const std::exception &e) {
+      PyErr_SetString(PyExc_RuntimeError, e.what());
     }
   });
 

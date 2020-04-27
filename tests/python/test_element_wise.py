@@ -1,6 +1,6 @@
 import taichi as ti
 from taichi import approx
-from random import random, randint
+from random import random, randint, seed
 import math
 
 
@@ -8,8 +8,15 @@ def _c_mod(a, b):
     return a - b * int(float(a) / b)
 
 
+def rand(dtype):
+    if ti.core.is_integral(dtype):
+        return randint(1, 5)
+    else:
+        return float(randint(1, 5)) / 5
+
+
 @ti.host_arch_only
-def _test_matrix_element_wise_unary(ti_func, math_func):
+def _test_matrix_element_wise_unary(dtype, ti_func, math_func):
     n, m = randint(1, 8), randint(1, 8)
 
     a = ti.Matrix(n, m, dt=ti.f32, shape=())
@@ -17,7 +24,7 @@ def _test_matrix_element_wise_unary(ti_func, math_func):
 
     w = []
     for i in range(n * m):
-        w.append(random())
+        w.append(rand(dtype))
 
     for i in range(n):
         for j in range(m):
@@ -37,22 +44,22 @@ def _test_matrix_element_wise_unary(ti_func, math_func):
 
 
 @ti.host_arch_only
-def _test_matrix_element_wise_binary(ti_func, math_func):
+def _test_matrix_element_wise_binary(dtype, ti_func, math_func):
     n, m = randint(1, 8), randint(1, 8)
 
-    a = ti.Matrix(n, m, dt=ti.f32, shape=())
-    b = ti.Matrix(n, m, dt=ti.f32, shape=())
-    u1 = ti.Matrix(n, m, dt=ti.f32, shape=())
-    u2 = ti.Matrix(n, m, dt=ti.f32, shape=())
-    u3 = ti.var(dt=ti.f32, shape=())
+    a = ti.Matrix(n, m, dt=dtype, shape=())
+    b = ti.Matrix(n, m, dt=dtype, shape=())
+    u1 = ti.Matrix(n, m, dt=dtype, shape=())
+    u2 = ti.Matrix(n, m, dt=dtype, shape=())
+    u3 = ti.var(dt=dtype, shape=())
 
     w1 = []
     w2 = []
     for i in range(n * m):
-        w1.append(random())
-        w2.append(random())
+        w1.append(rand(dtype))
+        w2.append(rand(dtype))
 
-    w3 = random()
+    w3 = rand(dtype)
 
     for i in range(n):
         for j in range(m):
@@ -77,26 +84,32 @@ def _test_matrix_element_wise_binary(ti_func, math_func):
 
 
 def test_matrix_element_wise_binary():
-    _test_matrix_element_wise_binary(ti.atan2, math.atan2)
-    _test_matrix_element_wise_binary(ti.min, min)
-    _test_matrix_element_wise_binary(ti.max, max)
-    _test_matrix_element_wise_binary(pow, pow)
-    _test_matrix_element_wise_binary(ti.raw_mod, _c_mod)
+    seed(666)
+    _test_matrix_element_wise_binary(ti.f32, ti.atan2, math.atan2)
+    _test_matrix_element_wise_binary(ti.f32, ti.min, min)
+    _test_matrix_element_wise_binary(ti.i32, ti.min, min)
+    _test_matrix_element_wise_binary(ti.f32, ti.max, max)
+    _test_matrix_element_wise_binary(ti.i32, ti.max, max)
+    _test_matrix_element_wise_binary(ti.f32, pow, pow)
+    _test_matrix_element_wise_binary(ti.i32, pow, pow)
+    _test_matrix_element_wise_binary(ti.i32, ti.raw_mod, _c_mod)
 
 
 
 def test_matrix_element_wise_unary():
-    _test_matrix_element_wise_unary(ti.sin, math.sin)
-    _test_matrix_element_wise_unary(ti.cos, math.cos)
-    _test_matrix_element_wise_unary(ti.tan, math.tan)
-    _test_matrix_element_wise_unary(ti.asin, math.asin)
-    _test_matrix_element_wise_unary(ti.acos, math.acos)
-    _test_matrix_element_wise_unary(ti.tanh, math.tanh)
-    _test_matrix_element_wise_unary(ti.sqrt, math.sqrt)
-    _test_matrix_element_wise_unary(ti.exp, math.exp)
-    _test_matrix_element_wise_unary(ti.log, math.log)
+    seed(233)
+    _test_matrix_element_wise_unary(ti.f32, ti.sin, math.sin)
+    _test_matrix_element_wise_unary(ti.f32, ti.cos, math.cos)
+    _test_matrix_element_wise_unary(ti.f32, ti.tan, math.tan)
+    _test_matrix_element_wise_unary(ti.f32, ti.asin, math.asin)
+    _test_matrix_element_wise_unary(ti.f32, ti.acos, math.acos)
+    _test_matrix_element_wise_unary(ti.f32, ti.tanh, math.tanh)
+    _test_matrix_element_wise_unary(ti.f32, ti.sqrt, math.sqrt)
+    _test_matrix_element_wise_unary(ti.f32, ti.exp, math.exp)
+    _test_matrix_element_wise_unary(ti.f32, ti.log, math.log)
     # ASK(yuanming-hu): why we don't have taichi_core.expr_ceil?
-    #_test_matrix_element_wise_unary(ti.ceil, math.ceil)
-    _test_matrix_element_wise_unary(ti.floor, math.floor)
-    _test_matrix_element_wise_unary(ti.abs, abs)
+    #_test_matrix_element_wise_unary(ti.f32, ti.ceil, math.ceil)
+    _test_matrix_element_wise_unary(ti.f32, ti.floor, math.floor)
+    _test_matrix_element_wise_unary(ti.f32, ti.abs, abs)
+    _test_matrix_element_wise_unary(ti.i32, ti.abs, abs)
     # TODO(archibate): why ti.inv, ti.sqr doesn't work?

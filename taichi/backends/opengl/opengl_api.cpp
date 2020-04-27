@@ -284,7 +284,7 @@ bool initialize_opengl(bool error_tolerance) {
 
   if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
     if (error_tolerance) {
-      TI_TRACE("[glsl] cannot initialize GLAD");
+      TI_WARN("[glsl] cannot initialize GLAD");
       supported = std::make_optional<bool>(false);
       return false;
     }

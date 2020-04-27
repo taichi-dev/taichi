@@ -143,7 +143,7 @@ class Matrix:
     def element_wise_binary(self, foo, other):
         ret = Matrix(self.n, self.m)
         if isinstance(other, Matrix):
-            self.m
+            assert self.m == other.m and self.n == other.n
             for i in range(self.n * self.m):
                 ret.entries[i] = foo(self.entries[i], other.entries[i])
         else:  # assumed to be scalar

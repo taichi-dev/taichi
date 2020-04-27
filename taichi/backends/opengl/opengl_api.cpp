@@ -269,14 +269,14 @@ bool initialize_opengl(bool error_tolerance) {
   if (!window) {
     const char *desc = nullptr;
     int status = glfwGetError(&desc);
+    if (!desc)
+      desc = "Unknown Error";
     if (error_tolerance) {
       // error tolerated, returning false
-      TI_TRACE("GLFW: OpenGL API unavailable");
+      TI_TRACE("[glsl] cannot create GLFW window: error {}: {}", status, desc);
       supported = std::make_optional<bool>(false);
       return false;
     }
-    if (!desc)
-      desc = "Unknown Error";
     TI_ERROR("[glsl] cannot create GLFW window: error {}: {}", status, desc);
   }
   glfwHideWindow(window);

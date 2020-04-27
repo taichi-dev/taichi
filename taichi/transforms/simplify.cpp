@@ -395,8 +395,15 @@ class BasicBlockSimplify : public IRVisitor {
                 }
                 continue;
               }
-              if (irpass::analysis::has_load_or_atomic(
-                      block->statements[j].get(), stmt->ptr)) {
+              if (!irpass::analysis::gather_statements(
+                  block->statements[j].get(), [&] (Stmt *s) {
+                    if (auto load = s->cast<LocalLoadStmt>())
+                      return load->has_source(stmt->ptr);
+                    else if (auto atomic = s->cast<AtomicOpStmt>())
+                      return atomic->dest == stmt->ptr;
+                    else
+                      return s->is<ContinueStmt>() || s->is<WhileControlStmt>();
+                  }).empty()) {
                 has_load = true;
                 break;
               }

@@ -72,6 +72,22 @@ class VariableOptimize : public IRVisitor {
       get_state_machine(stmt->ptr[0].var).load(stmt);
   }
 
+  void visit(WhileControlStmt *stmt) override {
+    if (!maybe_run) {
+      for (auto &it : *state_machines) {
+        it.second.continue_or_break();
+      }
+    }
+  }
+
+  void visit(ContinueStmt *stmt) override {
+    if (!maybe_run) {
+      for (auto &it : *state_machines) {
+        it.second.continue_or_break();
+      }
+    }
+  }
+
   void visit(IfStmt *if_stmt) override {
     auto origin = std::move(state_machines);
 

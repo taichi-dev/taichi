@@ -145,6 +145,11 @@ void StateMachine::load(Stmt *load_stmt) {
   }
 }
 
+void StateMachine::continue_or_break() {
+  last_store_eliminable = false;
+  last_atomic_eliminable = false;
+}
+
 void StateMachine::maybe_atomic_op() {
   if (stored_in_this_if_or_loop != definitely)
     maybe_loaded_before_first_definite_store_in_this_if_or_loop = true;
@@ -253,8 +258,9 @@ void StateMachine::merge_from_if(const StateMachine &true_branch,
         last_store == false_branch.last_store) {
       // The last store didn't change.
       last_store_eliminable = last_store_eliminable &&
-          true_branch.loaded_in_this_if_or_loop == never &&
-          false_branch.loaded_in_this_if_or_loop == never;
+          true_branch.last_store == false_branch.last_store &&
+          true_branch.last_store_eliminable &&
+          false_branch.last_store_eliminable;
     } else {
       TI_ASSERT(true_branch.last_store != false_branch.last_store);
       // if $b

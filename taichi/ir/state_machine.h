@@ -60,6 +60,8 @@ class StateMachine {
   void store(Stmt *store_stmt);
   void load(Stmt *load_stmt);
 
+  void continue_or_break();
+
   void maybe_atomic_op();
   void maybe_store(Stmt *store_stmt);
   void maybe_load();

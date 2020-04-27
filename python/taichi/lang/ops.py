@@ -43,8 +43,7 @@ def binary(foo):
             rev_foo = lambda x, y: foo(y, x)
             return b.element_wise_binary(rev_foo, a)
         else:
-            return foo(Expr(a))
-        return foo(Expr(a), Expr(b))
+            return foo(Expr(a), Expr(b))
 
     binary_ops.append(wrapped)
     return wrapped

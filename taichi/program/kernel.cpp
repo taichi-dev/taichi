@@ -69,7 +69,7 @@ void Kernel::operator()() {
     }
     compiled(program.get_context());
     program.sync = (program.sync && arch_is_cpu(arch));
-    if (program.config.debug && arch_is_cpu(arch)) {
+    if (program.config.debug && arch_is_cpu(arch) && !is_accessor) {
       program.check_runtime_error();
     }
   } else {

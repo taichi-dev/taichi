@@ -63,10 +63,14 @@ class ConstantFold : public BasicStmtVisitor {
 
   static Kernel *get_binary_op_jit_eval_kernel(BinaryEvaluatorId const &id)
   {
-    auto &cache = get_current_program().jit_evaluator_cache;
+    auto *prog = &get_current_program();
+    TI_ASSERT(prog != nullptr);
+    auto &cache = prog != prog->jit_evaluator_cache;
 #if 1
     int iid = int(id);
+    TI_INFO("IN {}", iid);
     auto it = cache.find(iid);
+    TI_INFO("OUT");
     if (it != cache.end()) // cached?
       return it->second.get();
 #endif
@@ -82,13 +86,14 @@ class ConstantFold : public BasicStmtVisitor {
       current_ast_builder().insert(std::move(oper));
       current_ast_builder().insert(std::move(ret));
     };
-    auto ker = std::make_unique<Kernel>(get_current_program(), func, kernel_name);
+    auto ker = std::make_unique<Kernel>(prog, func, kernel_name);
     ker->insert_arg(id.ret, false);
     ker->insert_arg(id.lhs, false);
     ker->insert_arg(id.rhs, false);
     ker->mark_arg_return_value(0, true);
     auto *ker_ptr = ker.get();
 #if 1
+    TI_INFO("SAV {}", iid);
     cache[iid] = std::move(ker);
 #endif
     return ker_ptr;
@@ -97,23 +102,16 @@ class ConstantFold : public BasicStmtVisitor {
   static bool jit_from_binary_op(TypedConstant &ret, BinaryOpType op,
       const TypedConstant &lhs, const TypedConstant &rhs)
   {
+    if (ret.dt != DataType::i32 || lhs.dt != DataType::i32 || rhs.dt != DataType::i32)
+      return false;
     BinaryEvaluatorId id{op, ret.dt, lhs.dt, rhs.dt};
     auto *ker = get_binary_op_jit_eval_kernel(id);
     auto &ctx = get_current_program().context;
-#define PER_TYPE(x) ctx.set_arg(1, lhs.val_##x);
-    PER_TYPE(i32) PER_TYPE(i64)
-    PER_TYPE(f32) PER_TYPE(f64)
-#undef PER_TYPE
-#define PER_TYPE(x) ctx.set_arg(2, rhs.val_##x);
-    PER_TYPE(i32) PER_TYPE(i64)
-    PER_TYPE(f32) PER_TYPE(f64)
-#undef PER_TYPE
+    ctx.set_arg<int64_t>(1, lhs.val_i64);
+    ctx.set_arg<int64_t>(2, rhs.val_i64);
     irpass::print(ker->ir);
     (*ker)();
-#define PER_TYPE(x, T) ret.val_##x = ctx.get_arg<T>(0);
-    PER_TYPE(i32, int) PER_TYPE(i64, int64_t)
-    PER_TYPE(f32, float) PER_TYPE(f64, double)
-#undef PER_TYPE
+    ret.val_i64 = ctx.get_arg<int64_t>(0);
     return true;
   }
 

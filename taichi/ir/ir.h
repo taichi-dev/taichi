@@ -130,7 +130,6 @@ std::vector<Stmt *> gather_statements(IRNode *root,
                                       const std::function<bool(Stmt *)> &test);
 std::unique_ptr<std::unordered_set<AtomicOpStmt *>> gather_used_atomics(
     IRNode *root);
-bool has_load_or_atomic(IRNode *root, Stmt *var);
 bool has_store_or_atomic(IRNode *root, const std::vector<Stmt *> &vars);
 std::pair<bool, Stmt *> last_store_or_atomic(IRNode *root, Stmt *var);
 bool same_statements(IRNode *root1, IRNode *root2);

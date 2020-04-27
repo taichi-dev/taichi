@@ -102,3 +102,26 @@ def test_advanced_store_forwarding_continue_in_if():
     assert val[None] == 1510
     func(7)
     assert val[None] == 1515
+
+
+@ti.all_archs
+def test_advanced_store_elimination_in_loop():
+    val = ti.var(ti.i32)
+    ti.root.place(val)
+
+    @ti.kernel
+    def func():
+        # Launch just one thread
+        for _ in range(1):
+            a = 1
+            for i in range(5):
+                b = 1
+                val[None] = a + b
+                b = 0
+                a = 2
+                a = 3
+            a = 4
+            val[None] += a
+
+    func()
+    assert val[None] == 8

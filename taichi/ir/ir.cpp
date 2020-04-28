@@ -36,14 +36,14 @@ bool maybe_same_address(Stmt *var1, Stmt *var2) {
     if (!var1->is<GlobalTemporaryStmt>() || !var2->is<GlobalTemporaryStmt>())
       return false;
     return var1->as<GlobalTemporaryStmt>()->offset ==
-               var2->as<GlobalTemporaryStmt>()->offset;
+           var2->as<GlobalTemporaryStmt>()->offset;
   }
 
   // If both statements are GlobalPtrStmts or GetChStmts, we can check by
   // SNode::id.
   TI_ASSERT(var1->width() == 1);
   TI_ASSERT(var2->width() == 1);
-  auto get_snode_id = [] (Stmt *s) {
+  auto get_snode_id = [](Stmt *s) {
     if (auto ptr = s->cast<GlobalPtrStmt>())
       return ptr->snodes[0]->id;
     else if (auto get_child = s->cast<GetChStmt>())

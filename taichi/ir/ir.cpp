@@ -700,7 +700,7 @@ void Block::replace_with(Stmt *old_statement,
   replace_with(old_statement, std::move(vec));
 }
 
-Stmt *Block::lookup_var(const Ident &ident) const {
+Stmt *Block::lookup_var(const Identifier &ident) const {
   auto ptr = local_var_alloca.find(ident);
   if (ptr != local_var_alloca.end()) {
     return ptr->second;

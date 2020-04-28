@@ -283,8 +283,6 @@ class Identifier {
   }
 };
 
-using Ident = Identifier;
-
 class VecStatement {
  public:
   std::vector<pStmt> stmts;
@@ -813,9 +811,9 @@ inline ExprGroup operator,(const ExprGroup &a, const Expr &b) {
 
 class FrontendAllocaStmt : public Stmt {
  public:
-  Ident ident;
+  Identifier ident;
 
-  FrontendAllocaStmt(const Ident &lhs, DataType type) : ident(lhs) {
+  FrontendAllocaStmt(const Identifier &lhs, DataType type) : ident(lhs) {
     ret_type = VectorType(1, type);
   }
 
@@ -1215,7 +1213,7 @@ class GlobalVariableExpression : public Expression {
   bool is_primal;
   Expr adjoint;
 
-  GlobalVariableExpression(DataType dt, const Ident &ident)
+  GlobalVariableExpression(DataType dt, const Identifier &ident)
       : ident(ident), dt(dt) {
     snode = nullptr;
     has_ambient = false;
@@ -1269,7 +1267,7 @@ class Block : public IRNode {
  public:
   Block *parent;
   std::vector<std::unique_ptr<Stmt>> statements, trash_bin;
-  std::map<Ident, Stmt *> local_var_alloca;
+  std::map<Identifier, Stmt *> local_var_alloca;
   Stmt *mask_var;
   std::vector<SNode *> stop_gradients;
 
@@ -1293,7 +1291,7 @@ class Block : public IRNode {
   void replace_with(Stmt *old_statement,
                     VecStatement &&new_statements,
                     bool replace_usages = true);
-  Stmt *lookup_var(const Ident &ident) const;
+  Stmt *lookup_var(const Identifier &ident) const;
   Stmt *mask();
 
   Stmt *back() const {
@@ -1640,7 +1638,7 @@ class FrontendForStmt : public Stmt {
   Expr begin, end;
   Expr global_var;
   std::unique_ptr<Block> body;
-  std::vector<Ident> loop_var_id;
+  std::vector<Identifier> loop_var_id;
   int vectorize;
   int parallelize;
   bool strictly_serialized;

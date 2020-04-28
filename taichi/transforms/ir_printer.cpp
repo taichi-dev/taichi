@@ -244,9 +244,9 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(FrontendForStmt *for_stmt) override {
-    auto vars = make_list<Ident>(
+    auto vars = make_list<Identifier>(
         for_stmt->loop_var_id,
-        [](const Ident &id) -> std::string { return id.name(); });
+        [](const Identifier &id) -> std::string { return id.name(); });
     if (for_stmt->is_ranged()) {
       print("{} : for {} in range({}, {}) {{", for_stmt->name(), vars,
             for_stmt->begin->serialize(), for_stmt->end->serialize());

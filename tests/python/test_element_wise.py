@@ -100,7 +100,7 @@ def test_matrix_element_wise_binary():
 
 
 
-def _test_matrix_element_wise_unary():
+def test_matrix_element_wise_unary():
     seed(233)
     _test_matrix_element_wise_unary(ti.f32, ti.sin, math.sin)
     _test_matrix_element_wise_unary(ti.f32, ti.cos, math.cos)

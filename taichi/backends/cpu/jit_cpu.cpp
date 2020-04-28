@@ -74,20 +74,28 @@ class JITSessionCPU : public JITSession {
   DataLayout DL;
   MangleAndInterner Mangle;
   std::mutex mut;
-  std::unordered_map<std::thread::id,
-                     std::unique_ptr<llvm::orc::ThreadSafeContext>>
-      thread_safe_contexts;
   std::vector<llvm::orc::JITDylib *> all_libs;
   int module_counter;
+  SectionMemoryManager *mgr;
 
  public:
   JITSessionCPU(JITTargetMachineBuilder JTMB, DataLayout DL)
       : object_layer(ES,
-                     []() { return std::make_unique<SectionMemoryManager>(); }),
+                     [&]() {
+                       auto smgr = std::make_unique<SectionMemoryManager>();
+                       mgr = smgr.get();
+                       return smgr;
+                     }),
         compile_layer(ES, object_layer, ConcurrentIRCompiler(std::move(JTMB))),
         DL(DL),
         Mangle(ES, this->DL),
-        module_counter(0) {
+        module_counter(0),
+        mgr(nullptr) {
+  }
+
+  ~JITSessionCPU() {
+    if (mgr)
+      mgr->deregisterEHFrames();
   }
 
   DataLayout get_data_layout() override {
@@ -114,7 +122,6 @@ class JITSessionCPU : public JITSession {
     module_counter++;
     return new_module_raw_ptr;
   }
-
   void *lookup(const std::string Name) override {
     std::lock_guard<std::mutex> _(mut);
     auto symbol = ES.lookup(all_libs, Mangle(Name));

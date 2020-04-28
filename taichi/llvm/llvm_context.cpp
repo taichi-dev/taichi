@@ -140,7 +140,7 @@ void compile_runtime_bitcode(Arch arch) {
     auto runtime_folder = get_runtime_dir();
     std::string macro = fmt::format(" -D ARCH_{} ", arch_name(arch));
     auto cmd = fmt::format(
-        "{} -S {}runtime.cpp -o {}runtime.ll "
+        "{} -S {}runtime.cpp -o {}runtime.ll -fno-exceptions "
         "-emit-llvm -std=c++17 {} -I {}",
         clang, runtime_src_folder, runtime_folder, macro, get_repo_dir());
     int ret = std::system(cmd.c_str());

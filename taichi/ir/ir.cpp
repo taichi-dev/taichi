@@ -317,13 +317,22 @@ UnaryOpStmt::UnaryOpStmt(UnaryOpType op_type, Stmt *operand)
     : op_type(op_type), operand(operand) {
   TI_ASSERT(!operand->is<AllocaStmt>());
   cast_type = DataType::unknown;
-  cast_by_value = true;
   TI_STMT_REG_FIELDS;
+}
+
+bool UnaryOpStmt::is_cast() const {
+  switch (op_type) {
+  case UnaryOpType::cast_value:
+  case UnaryOpType::cast_bits:
+    return true;
+  default:
+    return false;
+  }
 }
 
 bool UnaryOpStmt::same_operation(UnaryOpStmt *o) const {
   if (op_type == o->op_type) {
-    if (op_type == UnaryOpType::cast) {
+    if (is_cast()) {
       return cast_type == o->cast_type;
     } else {
       return true;
@@ -333,8 +342,8 @@ bool UnaryOpStmt::same_operation(UnaryOpStmt *o) const {
 }
 
 std::string UnaryOpExpression::serialize() {
-  if (type == UnaryOpType::cast) {
-    std::string reint = cast_by_value ? "" : "reinterpret_";
+  if (is_cast()) {
+    std::string reint = type == UnaryOpType::cast_value ? "" : "reinterpret_";
     return fmt::format("({}{}<{}> {})", reint, unary_op_type_name(type),
                        data_type_name(cast_type), operand->serialize());
   } else {
@@ -343,12 +352,21 @@ std::string UnaryOpExpression::serialize() {
   }
 }
 
+bool UnaryOpExpression::is_cast() const {
+  switch (type) {
+  case UnaryOpType::cast_value:
+  case UnaryOpType::cast_bits:
+    return true;
+  default:
+    return false;
+  }
+}
+
 void UnaryOpExpression::flatten(VecStatement &ret) {
   operand->flatten(ret);
   auto unary = std::make_unique<UnaryOpStmt>(type, operand->stmt);
-  if (type == UnaryOpType::cast) {
+  if (is_cast()) {
     unary->cast_type = cast_type;
-    unary->cast_by_value = cast_by_value;
   }
   stmt = unary.get();
   stmt->tb = tb;

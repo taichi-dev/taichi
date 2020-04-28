@@ -167,7 +167,7 @@ class TypeCheck : public IRVisitor {
 
   void visit(UnaryOpStmt *stmt) {
     stmt->ret_type = stmt->operand->ret_type;
-    if (stmt->op_type == UnaryOpType::cast) {
+    if (stmt->is_cast) {
       stmt->ret_type.data_type = stmt->cast_type;
     }
     if (is_trigonometric(stmt->op_type) &&
@@ -186,9 +186,8 @@ class TypeCheck : public IRVisitor {
   Stmt *insert_type_cast_before(Stmt *anchor,
                                 Stmt *input,
                                 DataType output_type) {
-    auto &&cast_stmt = Stmt::make_typed<UnaryOpStmt>(UnaryOpType::cast, input);
+    auto &&cast_stmt = Stmt::make_typed<UnaryOpStmt>(UnaryOpType::cast_value, input);
     cast_stmt->cast_type = output_type;
-    cast_stmt->cast_by_value = true;
     cast_stmt->accept(this);
     auto stmt = cast_stmt.get();
     anchor->insert_before_me(std::move(cast_stmt));
@@ -198,9 +197,8 @@ class TypeCheck : public IRVisitor {
   Stmt *insert_type_cast_after(Stmt *anchor,
                                Stmt *input,
                                DataType output_type) {
-    auto &&cast_stmt = Stmt::make_typed<UnaryOpStmt>(UnaryOpType::cast, input);
+    auto &&cast_stmt = Stmt::make_typed<UnaryOpStmt>(UnaryOpType::cast_value, input);
     cast_stmt->cast_type = output_type;
-    cast_stmt->cast_by_value = true;
     cast_stmt->accept(this);
     auto stmt = cast_stmt.get();
     anchor->insert_after_me(std::move(cast_stmt));

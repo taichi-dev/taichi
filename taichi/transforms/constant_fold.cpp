@@ -12,8 +12,8 @@ class ConstantFold : public BasicStmtVisitor {
   }
 
   void visit(UnaryOpStmt *stmt) override {
-    if (stmt->width() == 1 && stmt->op_type == UnaryOpType::cast &&
-        stmt->cast_by_value && stmt->operand->is<ConstStmt>()) {
+    if (stmt->width() == 1 && stmt->op_type == UnaryOpType::cast_value &&
+        stmt->operand->is<ConstStmt>()) {
       auto input = stmt->operand->as<ConstStmt>()->val[0];
       auto src_type = stmt->operand->ret_type.data_type;
       auto dst_type = stmt->ret_type.data_type;

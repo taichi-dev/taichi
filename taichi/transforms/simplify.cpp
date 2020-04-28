@@ -14,11 +14,16 @@ class BasicBlockSimplify : public IRVisitor {
   int current_stmt_id;
   std::set<int> &visited;
   StructForStmt *current_struct_for;
+  Kernel *kernel;
 
   BasicBlockSimplify(Block *block,
                      std::set<int> &visited,
-                     StructForStmt *current_struct_for)
-      : block(block), visited(visited), current_struct_for(current_struct_for) {
+                     StructForStmt *current_struct_for,
+                     Kernel *kernel)
+      : block(block),
+        visited(visited),
+        current_struct_for(current_struct_for),
+        kernel(kernel) {
     allow_undefined_visitor = true;
     invoke_default_visitor = false;
     current_struct_for = nullptr;
@@ -395,8 +400,18 @@ class BasicBlockSimplify : public IRVisitor {
                 }
                 continue;
               }
-              if (irpass::analysis::has_load_or_atomic(
-                      block->statements[j].get(), stmt->ptr)) {
+              if (!irpass::analysis::gather_statements(
+                       block->statements[j].get(),
+                       [&](Stmt *s) {
+                         if (auto load = s->cast<LocalLoadStmt>())
+                           return load->has_source(stmt->ptr);
+                         else if (auto atomic = s->cast<AtomicOpStmt>())
+                           return atomic->dest == stmt->ptr;
+                         else
+                           return s->is<ContinueStmt>() ||
+                                  s->is<WhileControlStmt>();
+                       })
+                       .empty()) {
                 has_load = true;
                 break;
               }
@@ -441,8 +456,17 @@ class BasicBlockSimplify : public IRVisitor {
           }
           continue;
         }
-        if (irpass::analysis::has_load_or_atomic(block->statements[i].get(),
-                                                 stmt->ptr)) {
+        if (!irpass::analysis::gather_statements(
+                 block->statements[i].get(),
+                 [&](Stmt *s) {
+                   if (auto load = s->cast<LocalLoadStmt>())
+                     return load->has_source(stmt->ptr);
+                   else if (auto atomic = s->cast<AtomicOpStmt>())
+                     return atomic->dest == stmt->ptr;
+                   else
+                     return false;
+                 })
+                 .empty()) {
           has_related = true;
           break;
         }
@@ -762,7 +786,7 @@ class BasicBlockSimplify : public IRVisitor {
     stmt->insert_before_me(std::move(sum));
     stmt->parent->erase(stmt);
     // get types of adds and muls
-    irpass::typecheck(stmt->parent);
+    irpass::typecheck(stmt->parent, kernel);
     throw IRModified();
   }
 
@@ -1051,8 +1075,9 @@ class Simplify : public IRVisitor {
  public:
   StructForStmt *current_struct_for;
   bool modified;
+  Kernel *kernel;
 
-  Simplify(IRNode *node) {
+  Simplify(IRNode *node, Kernel *kernel) : kernel(kernel) {
     modified = false;
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
@@ -1064,7 +1089,7 @@ class Simplify : public IRVisitor {
     std::set<int> visited;
     while (true) {
       try {
-        BasicBlockSimplify _(block, visited, current_struct_for);
+        BasicBlockSimplify _(block, visited, current_struct_for, kernel);
       } catch (IRModified) {
         modified = true;
         continue;
@@ -1106,24 +1131,24 @@ class Simplify : public IRVisitor {
 
 namespace irpass {
 
-void simplify(IRNode *root) {
+void simplify(IRNode *root, Kernel *kernel) {
   while (1) {
-    Simplify pass(root);
+    Simplify pass(root, kernel);
     if (!pass.modified)
       break;
   }
 }
 
-void full_simplify(IRNode *root, const CompileConfig &config) {
+void full_simplify(IRNode *root, const CompileConfig &config, Kernel *kernel) {
   constant_fold(root);
   if (advanced_optimization)
     alg_simp(root, config);
   if (advanced_optimization)
     whole_kernel_cse(root);
   if (advanced_optimization)
-    optimize_local_variable(root);
+    variable_optimization(root);
   die(root);
-  simplify(root);
+  simplify(root, kernel);
   die(root);
 }
 

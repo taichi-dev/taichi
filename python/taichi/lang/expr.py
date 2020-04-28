@@ -315,10 +315,13 @@ class Expr:
         fill_tensor(self, val)
 
     def __rpow__(self, power, modulo=None):
+        # Python will try Matrix.__pow__ first so no worry
         return Expr(power).__pow__(self, modulo)
 
     def __pow__(self, power, modulo=None):
         import taichi as ti
+        if ti.is_taichi_class(power):
+            return power.element_wise_binary(lambda x, y: pow(y, x), self)
         if not isinstance(power, int) or abs(power) > 100:
             return Expr(taichi_lang_core.expr_pow(self.ptr, Expr(power).ptr))
         if power == 0:

@@ -117,6 +117,8 @@ void StateMachine::store(Stmt *store_stmt) {
 }
 
 void StateMachine::load(Stmt *load_stmt) {
+  // The load_stmt == nullptr case is only for an offloaded range_for loading
+  // global temps via begin_offset and end_offset.
   if (load_stmt)
     TI_ASSERT(load_stmt->is<LocalLoadStmt>() ||
               load_stmt->is<GlobalLoadStmt>());

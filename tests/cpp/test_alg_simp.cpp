@@ -36,6 +36,8 @@ TI_TEST("alg_simp") {
   }
 
   SECTION("simplify_multiply_one") {
+    auto _prog = std::make_unique<Program>(Arch::opengl);
+
     auto block = std::make_unique<Block>();
 
     auto global_load_addr =

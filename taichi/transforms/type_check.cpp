@@ -167,7 +167,7 @@ class TypeCheck : public IRVisitor {
 
   void visit(UnaryOpStmt *stmt) {
     stmt->ret_type = stmt->operand->ret_type;
-    if (stmt->is_cast) {
+    if (stmt->is_cast()) {
       stmt->ret_type.data_type = stmt->cast_type;
     }
     if (is_trigonometric(stmt->op_type) &&

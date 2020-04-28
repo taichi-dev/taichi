@@ -338,7 +338,6 @@ class KernelCodegen : public IRVisitor {
                   metal_data_type_bytes(to_type));
         emit("const {} {} = union_cast<{}>({});", to_type_name,
              stmt->raw_name(), to_type_name, stmt->operand->raw_name());
-      }
     } else {
       emit("const {} {} = {}({});", metal_data_type_name(stmt->element_type()),
            stmt->raw_name(), metal_unary_op_type_symbol(stmt->op_type),

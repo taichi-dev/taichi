@@ -25,10 +25,6 @@ class VariableOptimize : public IRVisitor {
     modify_all_state_machines(&StateMachine::finalize);
   }
 
-  static bool maybe_same_address(Stmt *stmt1, Stmt *stmt2) {
-    return true;
-  }
-
   void visit(Stmt *stmt) override {
     if (stmt->is_container_statement()) {
       TI_ERROR("Visitor for container stmt undefined.");

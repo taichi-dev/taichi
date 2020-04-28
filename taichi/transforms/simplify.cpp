@@ -494,13 +494,28 @@ class BasicBlockSimplify : public IRVisitor {
             // no store to the var?
             bool has_store = false;
             for (int j = i + 1; j < current_stmt_id; j++) {
-              if (block->statements[j]
-                      ->is_container_statement()) {  // no if, while, etc..
+              if (!advanced_optimization) {
+                if (block->statements[j]
+                    ->is_container_statement()) {  // no if, while, etc..
+                  has_store = true;
+                  break;
+                }
+                if (block->statements[j]->is<GlobalStoreStmt>()) {
+                  has_store = true;
+                }
+                continue;
+              }
+              if (!irpass::analysis::gather_statements(
+                  block->statements[j].get(), [&] (Stmt *s) {
+                    if (auto store = s->cast<GlobalStoreStmt>())
+                      return maybe_same_address(store->ptr, stmt->ptr);
+                    else if (auto atomic = s->cast<AtomicOpStmt>())
+                      return maybe_same_address(atomic->dest, stmt->ptr);
+                    else
+                      return false;
+                  }).empty()) {
                 has_store = true;
                 break;
-              }
-              if (block->statements[j]->is<GlobalStoreStmt>()) {
-                has_store = true;
               }
             }
             if (!has_store) {

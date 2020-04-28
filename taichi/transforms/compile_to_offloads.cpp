@@ -73,6 +73,10 @@ void compile_to_offloads(IRNode *ir,
     irpass::analysis::verify(ir);
   }
 
+  irpass::full_simplify(ir, config);
+  print("Simplified II");
+  irpass::analysis::verify(ir);
+
   if (lower_global_access) {
     irpass::lower_access(ir, true);
     print("Access lowered");
@@ -84,7 +88,7 @@ void compile_to_offloads(IRNode *ir,
   }
 
   irpass::full_simplify(ir, config);
-  print("Simplified II");
+  print("Simplified III");
   irpass::analysis::verify(ir);
 
   irpass::flag_access(ir);
@@ -102,7 +106,7 @@ void compile_to_offloads(IRNode *ir,
   print("Atomics demoted");
 
   irpass::full_simplify(ir, config);
-  print("Simplified III");
+  print("Simplified IV");
 
   // Final field registration correctness & type checking
   irpass::typecheck(ir);

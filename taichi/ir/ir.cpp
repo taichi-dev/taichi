@@ -18,6 +18,41 @@ IRBuilder &current_ast_builder() {
   return context->builder();
 }
 
+bool maybe_same_address(Stmt *var1, Stmt *var2) {
+  // Check if it's possible that two statements are pointing to the same address
+  if (var1 == var2)
+    return true;
+  if (var1->is<AllocaStmt>() || var2->is<AllocaStmt>())
+    return false;
+  if (var1->is<GlobalTemporaryStmt>() || var2->is<GlobalTemporaryStmt>()) {
+    if (!var1->is<GlobalTemporaryStmt>() || !var2->is<GlobalTemporaryStmt>())
+      return false;
+    return var1->as<GlobalTemporaryStmt>()->offset ==
+        var2->as<GlobalTemporaryStmt>()->offset &&
+        var1->ret_type == var2->ret_type;
+  }
+  if (var1->is<GlobalPtrStmt>() && var2->is<GlobalPtrStmt>()) {
+    TI_ASSERT(var1->width() == 1);
+    TI_ASSERT(var2->width() == 1);
+    auto ptr1 = var1->as<GlobalPtrStmt>();
+    auto ptr2 = var2->as<GlobalPtrStmt>();
+    if (ptr1->snodes[0]->id != ptr2->snodes[0]->id)
+      return false;
+    for (int i = 0; i < (int)ptr1->indices.size(); i++) {
+      if (!irpass::analysis::same_statements(ptr1->indices[i],
+                                             ptr2->indices[i])) {
+        if (ptr1->indices[i]->is<ConstStmt>() &&
+            ptr2->indices[i]->is<ConstStmt>()) {
+          // different constants
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+  return true;
+}
+
 std::string VectorType::pointer_suffix() const {
   if (is_pointer()) {
     return "*";

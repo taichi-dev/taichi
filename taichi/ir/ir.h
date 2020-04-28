@@ -144,6 +144,8 @@ void verify(IRNode *root);
 
 IRBuilder &current_ast_builder();
 
+bool maybe_same_address(Stmt *var1, Stmt *var2);
+
 struct VectorType {
  private:
   bool _is_pointer;

@@ -78,26 +78,27 @@ class JITSessionCPU : public JITSession {
   std::mutex mut;
   std::vector<llvm::orc::JITDylib *> all_libs;
   int module_counter;
-  SectionMemoryManager *mgr;
+  SectionMemoryManager *memory_manager;
 
  public:
   JITSessionCPU(JITTargetMachineBuilder JTMB, DataLayout DL)
       : object_layer(ES,
                      [&]() {
                        auto smgr = std::make_unique<SectionMemoryManager>();
-                       mgr = smgr.get();
+                       memory_manager = smgr.get();
                        return smgr;
                      }),
         compile_layer(ES, object_layer, ConcurrentIRCompiler(std::move(JTMB))),
         DL(DL),
         Mangle(ES, this->DL),
         module_counter(0),
-        mgr(nullptr) {
+        memory_manager(nullptr) {
   }
 
   ~JITSessionCPU() {
-    if (mgr)
-      mgr->deregisterEHFrames();
+    std::lock_guard<std::mutex> _(mut);
+    if (memory_manager)
+      memory_manager->deregisterEHFrames();
   }
 
   DataLayout get_data_layout() override {
@@ -108,7 +109,6 @@ class JITSessionCPU : public JITSession {
     TI_ASSERT(M);
     global_optimize_module_cpu(M);
     std::lock_guard<std::mutex> _(mut);
-
     auto &dylib = ES.createJITDylib(fmt::format("{}", module_counter));
     dylib.setGenerator(cantFail(
         llvm::orc::DynamicLibrarySearchGenerator::GetForCurrentProcess(DL)));
@@ -175,7 +175,7 @@ class JITSessionCPU : public JITSession {
   ExecutionSession ES;
   std::map<VModuleKey, std::shared_ptr<SymbolResolver> > resolvers;
   std::unique_ptr<TargetMachine> TM;
-  const DataLayout DL;
+  DataLayout DL;
   LegacyRTDyldObjectLinkingLayer object_layer;
   LegacyIRCompileLayer<decltype(object_layer), SimpleCompiler> compile_layer;
   std::mutex mut;
@@ -209,7 +209,7 @@ class JITSessionCPU : public JITSession {
     resolvers[K] = createLegacyLookupResolver(
         ES,
         [this](const std::string &Name) -> JITSymbol {
-          if (auto Sym = compile_layer.findSymbol(Name, false))
+          if (auto Sym = object_layer.findSymbol(Name, false))
             return Sym;
           else if (auto Err = Sym.takeError())
             return std::move(Err);
@@ -233,7 +233,7 @@ class JITSessionCPU : public JITSession {
     std::string MangledName;
     raw_string_ostream MangledNameStream(MangledName);
     Mangler::getNameWithPrefix(MangledNameStream, Name, DL);
-    auto symbol = compile_layer.findSymbol(MangledNameStream.str(), true);
+    auto symbol = object_layer.findSymbol(MangledNameStream.str(), true);
     if (!symbol)
       TI_ERROR("Function \"{}\" not found", Name);
     return (void *)(llvm::cantFail(symbol.getAddress()));
@@ -244,8 +244,7 @@ class JITSessionCPU : public JITSession {
     std::string MangledName;
     raw_string_ostream MangledNameStream(MangledName);
     Mangler::getNameWithPrefix(MangledNameStream, Name, DL);
-    auto symbol =
-        compile_layer.findSymbolIn(key, MangledNameStream.str(), true);
+    auto symbol = object_layer.findSymbolIn(key, MangledNameStream.str(), true);
     if (!symbol)
       TI_ERROR("Function \"{}\" not found", Name);
     return (void *)(llvm::cantFail(symbol.getAddress()));

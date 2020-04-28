@@ -31,13 +31,23 @@ bool maybe_same_address(Stmt *var1, Stmt *var2) {
                var2->as<GlobalTemporaryStmt>()->offset &&
            var1->ret_type == var2->ret_type;
   }
+  TI_ASSERT(var1->width() == 1);
+  TI_ASSERT(var2->width() == 1);
+  auto get_snode_id = [] (Stmt *s) {
+    if (auto ptr = s->cast<GlobalPtrStmt>())
+      return ptr->snodes[0]->id;
+    else if (auto get_child = s->cast<GetChStmt>())
+      return get_child->output_snode->id;
+    else
+      return -1;
+  };
+  int snode1 = get_snode_id(var1);
+  int snode2 = get_snode_id(var2);
+  if (snode1 != -1 && snode2 != -1 && snode1 != snode2)
+    return false;
   if (var1->is<GlobalPtrStmt>() && var2->is<GlobalPtrStmt>()) {
-    TI_ASSERT(var1->width() == 1);
-    TI_ASSERT(var2->width() == 1);
     auto ptr1 = var1->as<GlobalPtrStmt>();
     auto ptr2 = var2->as<GlobalPtrStmt>();
-    if (ptr1->snodes[0]->id != ptr2->snodes[0]->id)
-      return false;
     for (int i = 0; i < (int)ptr1->indices.size(); i++) {
       if (!irpass::analysis::same_statements(ptr1->indices[i],
                                              ptr2->indices[i])) {

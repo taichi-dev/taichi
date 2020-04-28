@@ -618,15 +618,17 @@ class OtherVariableOptimize : public VariableOptimize {
 };
 
 namespace irpass {
-void variable_optimization(IRNode *root) {
+void variable_optimization(IRNode *root, bool after_lower_access) {
   AllocaOptimize alloca_optimizer;
   alloca_optimizer.run(root);
   GlobalTempOptimize global_temp_optimizer;
   global_temp_optimizer.run(root);
   GlobalPtrOptimize global_ptr_optimizer;
   global_ptr_optimizer.run(root);
-  OtherVariableOptimize other_variable_optimizer;
-  other_variable_optimizer.run(root);
+  if (after_lower_access) {
+    OtherVariableOptimize other_variable_optimizer;
+    other_variable_optimizer.run(root);
+  }
 }
 }  // namespace irpass
 

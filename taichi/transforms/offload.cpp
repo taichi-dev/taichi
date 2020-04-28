@@ -480,6 +480,17 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
       throw IRModified();
   }
 
+  void preprocess_container_stmt(Stmt *stmt) override {
+    int n_op = stmt->num_operands();
+    bool modified = false;
+    for (int i = 0; i < n_op; i++) {
+      if (visit_operand(stmt, i))
+        modified = true;
+    }
+    if (modified)
+      throw IRModified();
+  }
+
  public:
   static void run(IRNode *root,
                   std::unordered_map<Stmt *, Stmt *> stmt_to_offloaded,

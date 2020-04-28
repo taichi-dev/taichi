@@ -535,7 +535,7 @@ class OtherVariableOptimize : public VariableOptimize {
   }
 
   void visit(GlobalStoreStmt *stmt) override {
-    if (stmt->ptr->is<GlobalTemporaryStmt>() || stmt->ptr->is<GlobalPtrStmt>())
+    if (stmt->ptr->is<GlobalTemporaryStmt>())
       return;
     if (maybe_run)
       get_state_machine(stmt->ptr).maybe_store(stmt);
@@ -549,7 +549,7 @@ class OtherVariableOptimize : public VariableOptimize {
   }
 
   void visit(GlobalLoadStmt *stmt) override {
-    if (stmt->ptr->is<GlobalTemporaryStmt>() || stmt->ptr->is<GlobalPtrStmt>())
+    if (stmt->ptr->is<GlobalTemporaryStmt>())
       return;
     if (maybe_run)
       get_state_machine(stmt->ptr).maybe_load();
@@ -625,11 +625,12 @@ void variable_optimization(IRNode *root, bool after_lower_access) {
   alloca_optimizer.run(root);
   GlobalTempOptimize global_temp_optimizer;
   global_temp_optimizer.run(root);
-  GlobalPtrOptimize global_ptr_optimizer;
-  global_ptr_optimizer.run(root);
   if (after_lower_access) {
     OtherVariableOptimize other_variable_optimizer;
     other_variable_optimizer.run(root);
+  } else {
+    GlobalPtrOptimize global_ptr_optimizer;
+    global_ptr_optimizer.run(root);
   }
 }
 }  // namespace irpass

@@ -91,6 +91,7 @@ void simplify(IRNode *root, Kernel *kernel = nullptr);
 void alg_simp(IRNode *root, const CompileConfig &config);
 void whole_kernel_cse(IRNode *root);
 void variable_optimization(IRNode *root, bool after_lower_access);
+void extract_constant(IRNode *root);
 void full_simplify(IRNode *root,
                    const CompileConfig &config,
                    Kernel *kernel = nullptr);

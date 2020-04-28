@@ -139,102 +139,104 @@ class JITSessionCPU : public JITSession {
   }
 
  private:
-  static void global_optimize_module_cpu(
-      std::unique_ptr<llvm::Module> &module) {
-    TI_AUTO_PROF
-    if (llvm::verifyModule(*module, &llvm::errs())) {
-      module->print(llvm::errs(), nullptr);
-      TI_ERROR("Module broken");
-    }
-    auto JTMB = JITTargetMachineBuilder::detectHost();
-    if (!JTMB) {
-      TI_ERROR("Target machine creation failed.");
-    }
-    module->setTargetTriple(JTMB->getTargetTriple().str());
-    llvm::Triple triple(module->getTargetTriple());
-
-    std::string err_str;
-    const llvm::Target *target =
-        TargetRegistry::lookupTarget(triple.str(), err_str);
-    TI_ERROR_UNLESS(target, err_str);
-
-    TargetOptions options;
-    options.PrintMachineCode = false;
-    bool fast_math = get_current_program().config.fast_math;
-    if (fast_math) {
-      options.AllowFPOpFusion = FPOpFusion::Fast;
-      options.UnsafeFPMath = 1;
-      options.NoInfsFPMath = 1;
-      options.NoNaNsFPMath = 1;
-    } else {
-      options.AllowFPOpFusion = FPOpFusion::Strict;
-      options.UnsafeFPMath = 0;
-      options.NoInfsFPMath = 0;
-      options.NoNaNsFPMath = 0;
-    }
-    options.HonorSignDependentRoundingFPMathOption = false;
-    options.NoZerosInBSS = false;
-    options.GuaranteedTailCallOpt = false;
-    options.StackAlignmentOverride = 0;
-
-    legacy::FunctionPassManager function_pass_manager(module.get());
-    legacy::PassManager module_pass_manager;
-
-    llvm::StringRef mcpu = llvm::sys::getHostCPUName();
-    std::unique_ptr<TargetMachine> target_machine(target->createTargetMachine(
-        triple.str(), mcpu.str(), "", options, llvm::Reloc::PIC_,
-        llvm::CodeModel::Small, CodeGenOpt::Aggressive));
-
-    TI_ERROR_UNLESS(target_machine.get(), "Could not allocate target machine!");
-
-    module->setDataLayout(target_machine->createDataLayout());
-
-    module_pass_manager.add(createTargetTransformInfoWrapperPass(
-        target_machine->getTargetIRAnalysis()));
-    function_pass_manager.add(createTargetTransformInfoWrapperPass(
-        target_machine->getTargetIRAnalysis()));
-
-    PassManagerBuilder b;
-    b.OptLevel = 3;
-    b.Inliner = createFunctionInliningPass(b.OptLevel, 0, false);
-    b.LoopVectorize = true;
-    b.SLPVectorize = true;
-
-    target_machine->adjustPassManager(b);
-
-    b.populateFunctionPassManager(function_pass_manager);
-    b.populateModulePassManager(module_pass_manager);
-
-    {
-      TI_PROFILER("llvm_function_pass");
-      function_pass_manager.doInitialization();
-      for (llvm::Module::iterator i = module->begin(); i != module->end(); i++)
-        function_pass_manager.run(*i);
-
-      function_pass_manager.doFinalization();
-    }
-
-    {
-      TI_PROFILER("llvm_module_pass");
-      module_pass_manager.run(*module);
-    }
-
-    if (get_current_program().config.print_kernel_llvm_ir_optimized) {
-      TI_INFO("Functions with > 100 instructions in optimized LLVM IR:");
-      static int counter = 0;
-      std::error_code ec;
-      auto fn = fmt::format("taichi_optimized_{:04d}.ll", counter);
-      llvm::raw_fd_ostream fdos(fn, ec);
-      module->print(fdos, nullptr);
-      TaichiLLVMContext::print_huge_functions(module.get());
-      TI_INFO("Optimized LLVM IR emitted to file {}", fn);
-      counter++;
-    }
-  }
+  static void global_optimize_module_cpu(std::unique_ptr<llvm::Module> &module);
 };
 
 void *JITModuleCPU::lookup_function(const std::string &name) {
   return session->lookup_in_module(dylib, name);
+}
+
+void JITSessionCPU::global_optimize_module_cpu(
+    std::unique_ptr<llvm::Module> &module) {
+  TI_AUTO_PROF
+  if (llvm::verifyModule(*module, &llvm::errs())) {
+    module->print(llvm::errs(), nullptr);
+    TI_ERROR("Module broken");
+  }
+  auto JTMB = JITTargetMachineBuilder::detectHost();
+  if (!JTMB) {
+    TI_ERROR("Target machine creation failed.");
+  }
+  module->setTargetTriple(JTMB->getTargetTriple().str());
+  llvm::Triple triple(module->getTargetTriple());
+
+  std::string err_str;
+  const llvm::Target *target =
+      TargetRegistry::lookupTarget(triple.str(), err_str);
+  TI_ERROR_UNLESS(target, err_str);
+
+  TargetOptions options;
+  options.PrintMachineCode = false;
+  bool fast_math = get_current_program().config.fast_math;
+  if (fast_math) {
+    options.AllowFPOpFusion = FPOpFusion::Fast;
+    options.UnsafeFPMath = 1;
+    options.NoInfsFPMath = 1;
+    options.NoNaNsFPMath = 1;
+  } else {
+    options.AllowFPOpFusion = FPOpFusion::Strict;
+    options.UnsafeFPMath = 0;
+    options.NoInfsFPMath = 0;
+    options.NoNaNsFPMath = 0;
+  }
+  options.HonorSignDependentRoundingFPMathOption = false;
+  options.NoZerosInBSS = false;
+  options.GuaranteedTailCallOpt = false;
+  options.StackAlignmentOverride = 0;
+
+  legacy::FunctionPassManager function_pass_manager(module.get());
+  legacy::PassManager module_pass_manager;
+
+  llvm::StringRef mcpu = llvm::sys::getHostCPUName();
+  std::unique_ptr<TargetMachine> target_machine(target->createTargetMachine(
+      triple.str(), mcpu.str(), "", options, llvm::Reloc::PIC_,
+      llvm::CodeModel::Small, CodeGenOpt::Aggressive));
+
+  TI_ERROR_UNLESS(target_machine.get(), "Could not allocate target machine!");
+
+  module->setDataLayout(target_machine->createDataLayout());
+
+  module_pass_manager.add(createTargetTransformInfoWrapperPass(
+      target_machine->getTargetIRAnalysis()));
+  function_pass_manager.add(createTargetTransformInfoWrapperPass(
+      target_machine->getTargetIRAnalysis()));
+
+  PassManagerBuilder b;
+  b.OptLevel = 3;
+  b.Inliner = createFunctionInliningPass(b.OptLevel, 0, false);
+  b.LoopVectorize = true;
+  b.SLPVectorize = true;
+
+  target_machine->adjustPassManager(b);
+
+  b.populateFunctionPassManager(function_pass_manager);
+  b.populateModulePassManager(module_pass_manager);
+
+  {
+    TI_PROFILER("llvm_function_pass");
+    function_pass_manager.doInitialization();
+    for (llvm::Module::iterator i = module->begin(); i != module->end(); i++)
+      function_pass_manager.run(*i);
+
+    function_pass_manager.doFinalization();
+  }
+
+  {
+    TI_PROFILER("llvm_module_pass");
+    module_pass_manager.run(*module);
+  }
+
+  if (get_current_program().config.print_kernel_llvm_ir_optimized) {
+    TI_INFO("Functions with > 100 instructions in optimized LLVM IR:");
+    static int counter = 0;
+    std::error_code ec;
+    auto fn = fmt::format("taichi_optimized_{:04d}.ll", counter);
+    llvm::raw_fd_ostream fdos(fn, ec);
+    module->print(fdos, nullptr);
+    TaichiLLVMContext::print_huge_functions(module.get());
+    TI_INFO("Optimized LLVM IR emitted to file {}", fn);
+    counter++;
+  }
 }
 
 std::unique_ptr<JITSession> create_llvm_jit_session_cpu(Arch arch) {

@@ -636,7 +636,7 @@ llvm::LLVMContext *TaichiLLVMContext::get_this_thread_context() {
 
 llvm::orc::ThreadSafeContext *
 TaichiLLVMContext::get_this_thread_thread_safe_context() {
-  get_this_thread_context(); // make sure the context is created
+  get_this_thread_context();  // make sure the context is created
   ThreadLocalData *data = get_this_thread_data();
   return data->thread_safe_llvm_context.get();
 }

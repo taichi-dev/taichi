@@ -178,6 +178,7 @@ class JITSessionCPU : public JITSession {
   DataLayout DL;
   LegacyRTDyldObjectLinkingLayer object_layer;
   LegacyIRCompileLayer<decltype(object_layer), SimpleCompiler> compile_layer;
+  MangleAndInterner Mangle;
   std::mutex mut;
 
  public:
@@ -190,7 +191,8 @@ class JITSessionCPU : public JITSession {
                            std::make_shared<SectionMemoryManager>(),
                            resolvers[K]};
                      }),
-        compile_layer(object_layer, SimpleCompiler(*TM)) {
+        compile_layer(object_layer, SimpleCompiler(*TM)),
+        Mangle(ES, this->DL) {
     llvm::sys::DynamicLibrary::LoadLibraryPermanently(nullptr);
   }
 
@@ -230,23 +232,21 @@ class JITSessionCPU : public JITSession {
 
   void *lookup(const std::string Name) override {
     std::lock_guard<std::mutex> _(mut);
-    std::string MangledName;
-    raw_string_ostream MangledNameStream(MangledName);
-    Mangler::getNameWithPrefix(MangledNameStream, Name, DL);
-    auto symbol = object_layer.findSymbol(MangledNameStream.str(), true);
+    auto mangled = *Mangle(Name);
+    auto symbol = object_layer.findSymbol(mangled, false);// On Windows the last argument must be False
     if (!symbol)
-      TI_ERROR("Function \"{}\" not found", Name);
+      TI_ERROR("Function \"{}\" (mangled=\"{}\") not found", Name,
+               std ::string(mangled));
     return (void *)(llvm::cantFail(symbol.getAddress()));
   }
 
   void *lookup_in_module(VModuleKey key, const std::string Name) {
     std::lock_guard<std::mutex> _(mut);
-    std::string MangledName;
-    raw_string_ostream MangledNameStream(MangledName);
-    Mangler::getNameWithPrefix(MangledNameStream, Name, DL);
-    auto symbol = object_layer.findSymbolIn(key, MangledNameStream.str(), true);
+    auto mangled = *Mangle(Name);
+    auto symbol = compile_layer.findSymbolIn(key, mangled, false); // On Windows the last argument must be False
     if (!symbol)
-      TI_ERROR("Function \"{}\" not found", Name);
+      TI_ERROR("Function \"{}\" (mangled=\"{}\") not found", Name,
+               std ::string(mangled));
     return (void *)(llvm::cantFail(symbol.getAddress()));
   }
 

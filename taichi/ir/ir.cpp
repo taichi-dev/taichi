@@ -18,6 +18,67 @@ IRBuilder &current_ast_builder() {
   return context->builder();
 }
 
+bool maybe_same_address(Stmt *var1, Stmt *var2) {
+  // Return true when two statements might be the same address;
+  // false when two statements cannot be the same address.
+
+  // If both stmts are allocas, they have the same address iff var1 == var2.
+  // If only one of them is an alloca, they can never share the same address.
+  if (var1 == var2)
+    return true;
+  if (var1->is<AllocaStmt>() || var2->is<AllocaStmt>())
+    return false;
+
+  // If both statements are global temps, they have the same address iff they
+  // have the same offset. If only one of them is a global temp, they can never
+  // share the same address.
+  if (var1->is<GlobalTemporaryStmt>() || var2->is<GlobalTemporaryStmt>()) {
+    if (!var1->is<GlobalTemporaryStmt>() || !var2->is<GlobalTemporaryStmt>())
+      return false;
+    return var1->as<GlobalTemporaryStmt>()->offset ==
+           var2->as<GlobalTemporaryStmt>()->offset;
+  }
+
+  // If both statements are GlobalPtrStmts or GetChStmts, we can check by
+  // SNode::id.
+  TI_ASSERT(var1->width() == 1);
+  TI_ASSERT(var2->width() == 1);
+  auto get_snode_id = [](Stmt *s) {
+    if (auto ptr = s->cast<GlobalPtrStmt>())
+      return ptr->snodes[0]->id;
+    else if (auto get_child = s->cast<GetChStmt>())
+      return get_child->output_snode->id;
+    else
+      return -1;
+  };
+  int snode1 = get_snode_id(var1);
+  int snode2 = get_snode_id(var2);
+  if (snode1 != -1 && snode2 != -1 && snode1 != snode2)
+    return false;
+
+  // GlobalPtrStmts with guaranteed different indices cannot share the same
+  // address.
+  if (var1->is<GlobalPtrStmt>() && var2->is<GlobalPtrStmt>()) {
+    auto ptr1 = var1->as<GlobalPtrStmt>();
+    auto ptr2 = var2->as<GlobalPtrStmt>();
+    for (int i = 0; i < (int)ptr1->indices.size(); i++) {
+      if (!irpass::analysis::same_statements(ptr1->indices[i],
+                                             ptr2->indices[i])) {
+        if (ptr1->indices[i]->is<ConstStmt>() &&
+            ptr2->indices[i]->is<ConstStmt>()) {
+          // different constants
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
+  // In other cases (probably after lower_access), we don't know if the two
+  // statements share the same address.
+  return true;
+}
+
 std::string VectorType::pointer_suffix() const {
   if (is_pointer()) {
     return "*";

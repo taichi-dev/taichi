@@ -73,6 +73,10 @@ void compile_to_offloads(IRNode *ir,
     irpass::analysis::verify(ir);
   }
 
+  irpass::variable_optimization(ir, false);
+  print("Store forwarded");
+  irpass::analysis::verify(ir);
+
   if (lower_global_access) {
     irpass::lower_access(ir, true);
     print("Access lowered");
@@ -101,6 +105,7 @@ void compile_to_offloads(IRNode *ir,
   irpass::demote_atomics(ir);
   print("Atomics demoted");
 
+  irpass::variable_optimization(ir, true);
   irpass::full_simplify(ir, config);
   print("Simplified III");
 

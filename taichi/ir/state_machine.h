@@ -43,7 +43,7 @@ class StateMachine {
   StateMachine() {
     TI_ERROR("StateMachine constructor invoked with no parameters.")
   }
-  explicit StateMachine(Stmt *var);
+  explicit StateMachine(Stmt *var, bool zero_initialized);
 
   // This must be called before using StateMachine to eliminate AtomicOpStmts.
   static void rebuild_atomics_usage(IRNode *root);
@@ -54,7 +54,7 @@ class StateMachine {
 
   void atomic_op(AtomicOpStmt *stmt);
   void store(Stmt *store_stmt);
-  void load(Stmt *load_stmt);
+  void load(Stmt *load_stmt = nullptr);
 
   void continue_or_break();
 
@@ -71,6 +71,8 @@ class StateMachine {
   void merge_from_loop(const StateMachine &loop);
 
   void finalize();
+
+  Stmt *get_var() const;
 };
 
 TLANG_NAMESPACE_END

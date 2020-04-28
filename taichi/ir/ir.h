@@ -90,7 +90,7 @@ void die(IRNode *root);
 void simplify(IRNode *root, Kernel *kernel = nullptr);
 void alg_simp(IRNode *root, const CompileConfig &config);
 void whole_kernel_cse(IRNode *root);
-void variable_optimization(IRNode *root);
+void variable_optimization(IRNode *root, bool after_lower_access);
 void full_simplify(IRNode *root,
                    const CompileConfig &config,
                    Kernel *kernel = nullptr);
@@ -143,6 +143,8 @@ void verify(IRNode *root);
 }  // namespace irpass
 
 IRBuilder &current_ast_builder();
+
+bool maybe_same_address(Stmt *var1, Stmt *var2);
 
 struct VectorType {
  private:

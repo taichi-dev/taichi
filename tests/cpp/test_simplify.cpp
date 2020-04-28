@@ -7,7 +7,7 @@ TLANG_NAMESPACE_BEGIN
 
 TI_TEST("simplify") {
   SECTION("simplify_linearized_with_trivial_inputs") {
-    auto _prog = std::make_unique<Program>(Arch::opengl);
+    TI_TEST_PROGRAM;
 
     auto block = std::make_unique<Block>();
 

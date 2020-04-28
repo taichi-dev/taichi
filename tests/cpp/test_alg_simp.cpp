@@ -6,7 +6,7 @@ TLANG_NAMESPACE_BEGIN
 // Basic tests within a basic block
 TI_TEST("alg_simp") {
   SECTION("simplify_add_zero") {
-    auto _prog = std::make_unique<Program>(Arch::opengl);
+    TI_TEST_PROGRAM;
 
     auto block = std::make_unique<Block>();
 
@@ -36,7 +36,7 @@ TI_TEST("alg_simp") {
   }
 
   SECTION("simplify_multiply_one") {
-    auto _prog = std::make_unique<Program>(Arch::opengl);
+    TI_TEST_PROGRAM;
 
     auto block = std::make_unique<Block>();
 
@@ -71,7 +71,7 @@ TI_TEST("alg_simp") {
   }
 
   SECTION("simplify_multiply_zero_fast_math") {
-    auto _prog = std::make_unique<Program>(Arch::opengl);
+    TI_TEST_PROGRAM;
 
     auto block = std::make_unique<Block>();
 
@@ -133,7 +133,7 @@ TI_TEST("alg_simp") {
   }
 
   SECTION("simplify_and_minus_one") {
-    auto _prog = std::make_unique<Program>(Arch::opengl);
+    TI_TEST_PROGRAM;
 
     auto block = std::make_unique<Block>();
 

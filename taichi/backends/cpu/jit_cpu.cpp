@@ -233,7 +233,8 @@ class JITSessionCPU : public JITSession {
   void *lookup(const std::string Name) override {
     std::lock_guard<std::mutex> _(mut);
     auto mangled = *Mangle(Name);
-    auto symbol = object_layer.findSymbol(mangled, false);// On Windows the last argument must be False
+    auto symbol = object_layer.findSymbol(
+        mangled, false);  // On Windows the last argument must be False
     if (!symbol)
       TI_ERROR("Function \"{}\" (mangled=\"{}\") not found", Name,
                std ::string(mangled));
@@ -243,7 +244,8 @@ class JITSessionCPU : public JITSession {
   void *lookup_in_module(VModuleKey key, const std::string Name) {
     std::lock_guard<std::mutex> _(mut);
     auto mangled = *Mangle(Name);
-    auto symbol = compile_layer.findSymbolIn(key, mangled, false); // On Windows the last argument must be False
+    auto symbol = compile_layer.findSymbolIn(
+        key, mangled, false);  // On Windows the last argument must be False
     if (!symbol)
       TI_ERROR("Function \"{}\" (mangled=\"{}\") not found", Name,
                std ::string(mangled));

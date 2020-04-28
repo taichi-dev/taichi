@@ -19,7 +19,8 @@ IRBuilder &current_ast_builder() {
 }
 
 bool maybe_same_address(Stmt *var1, Stmt *var2) {
-  // Check if it's possible that two statements are pointing to the same address
+  // Return true when two statements might be the same address;
+  // false when two statements cannot be the same address.
   if (var1 == var2)
     return true;
   if (var1->is<AllocaStmt>() || var2->is<AllocaStmt>())

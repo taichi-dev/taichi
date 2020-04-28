@@ -16,8 +16,6 @@ StateMachine::StateMachine(Stmt *var, bool zero_initialized)
       last_atomic(nullptr),
       last_atomic_eliminable(false),
       maybe_loaded_before_first_definite_store_in_this_if_or_loop(false) {
-  TI_ASSERT(var->is<AllocaStmt>() || var->is<GlobalTemporaryStmt>() ||
-            var->is<GlobalPtrStmt>());
   if (!zero_initialized)
     stored = stored_in_this_if_or_loop = maybe;
 }

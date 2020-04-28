@@ -128,7 +128,6 @@ std::string get_runtime_dir() {
 void compile_runtime_bitcode(Arch arch) {
   if (is_release())
     return;
-  TI_INFO("CRB!");
   TI_AUTO_PROF;
   static std::set<int> runtime_compiled;
   if (runtime_compiled.find((int)arch) == runtime_compiled.end()) {
@@ -281,7 +280,6 @@ static void remove_useless_cuda_libdevice_functions(llvm::Module *module) {
 
 std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
   TI_AUTO_PROF
-    TI_INFO("!!!!!!!!!CRTTTTTTTTTTTTTT");///////////////////
   TI_ASSERT(std::this_thread::get_id() == main_thread_id);
   auto data = get_this_thread_data();
   auto ctx = get_this_thread_context();
@@ -435,7 +433,6 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_struct_module() {
 
 void TaichiLLVMContext::set_struct_module(
     const std::unique_ptr<llvm::Module> &module) {
-  TI_INFO("SETTTTTTTTTTT");
   auto data = get_this_thread_data();
   TI_ASSERT(module);
   if (llvm::verifyModule(*module, &llvm::errs())) {
@@ -621,9 +618,7 @@ TaichiLLVMContext::ThreadLocalData *TaichiLLVMContext::get_this_thread_data() {
     ss << tid;
     TI_TRACE("Creating thread local data for thread {}", ss.str());
     per_thread_data[tid] = std::make_unique<ThreadLocalData>();
-    TI_INFO("create!!!!!!!!!");
   }
-  TI_INFO("!!!!!!!!!");
   return per_thread_data[tid].get();
 }
 
@@ -637,10 +632,6 @@ llvm::LLVMContext *TaichiLLVMContext::get_this_thread_context() {
 
 llvm::Module *TaichiLLVMContext::get_this_thread_struct_module() {
   ThreadLocalData *data = get_this_thread_data();
-  TI_INFO("MTDATA {}", (void *)main_thread_data);
-  TI_INFO("MTDATAS {}", (void *)main_thread_data->struct_module.get());
-  TI_INFO("MTDATAR {}", (void *)main_thread_data->runtime_module.get());
-  TI_INFO("MTDATAL {}", (void *)main_thread_data->llvm_context.get());
   if (!data->struct_module) {
     data->struct_module = clone_module_to_this_thread_context(
         main_thread_data->struct_module.get());

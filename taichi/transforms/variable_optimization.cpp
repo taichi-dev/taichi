@@ -619,6 +619,8 @@ class OtherVariableOptimize : public VariableOptimize {
 
 namespace irpass {
 void variable_optimization(IRNode *root, bool after_lower_access) {
+  if (!advanced_optimization)
+    return;
   AllocaOptimize alloca_optimizer;
   alloca_optimizer.run(root);
   GlobalTempOptimize global_temp_optimizer;

@@ -28,8 +28,8 @@ bool maybe_same_address(Stmt *var1, Stmt *var2) {
     if (!var1->is<GlobalTemporaryStmt>() || !var2->is<GlobalTemporaryStmt>())
       return false;
     return var1->as<GlobalTemporaryStmt>()->offset ==
-        var2->as<GlobalTemporaryStmt>()->offset &&
-        var1->ret_type == var2->ret_type;
+               var2->as<GlobalTemporaryStmt>()->offset &&
+           var1->ret_type == var2->ret_type;
   }
   if (var1->is<GlobalPtrStmt>() && var2->is<GlobalPtrStmt>()) {
     TI_ASSERT(var1->width() == 1);

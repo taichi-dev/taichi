@@ -118,7 +118,8 @@ void StateMachine::store(Stmt *store_stmt) {
 
 void StateMachine::load(Stmt *load_stmt) {
   if (load_stmt)
-    TI_ASSERT(load_stmt->is<LocalLoadStmt>() || load_stmt->is<GlobalLoadStmt>());
+    TI_ASSERT(load_stmt->is<LocalLoadStmt>() ||
+              load_stmt->is<GlobalLoadStmt>());
   if (stored_in_this_if_or_loop != definitely)
     maybe_loaded_before_first_definite_store_in_this_if_or_loop = true;
   loaded = loaded_in_this_if_or_loop = definitely;

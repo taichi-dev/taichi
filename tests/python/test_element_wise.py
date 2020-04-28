@@ -84,7 +84,7 @@ def _test_matrix_element_wise_binary(dtype, ti_func, math_func):
             expected = math_func(w1[i * m + j], w3)
             assert b[None][i, j] == approx(expected)
             expected = math_func(w3, w1[i * m + j])
-            assert b[None][i, j] == approx(expected)
+            assert c[None][i, j] == approx(expected)
 
 
 def test_matrix_element_wise_binary():

@@ -1,6 +1,7 @@
 <div align="center">
   <img width="500px" src="https://github.com/yuanming-hu/taichi/raw/master/misc/logo.png">
-  <h3> <a href="https://taichi.readthedocs.io/en/latest/"> Documentation </a> | <a href="https://taichi.readthedocs.io/en/latest/hello.html"> Tutorial </a> | <a href="https://github.com/yuanming-hu/taichi/tree/master/examples"> Examples </a> | <a href="https://taichi.readthedocs.io/en/latest/contributor_guide.html"> Contributor Guidelines </a> | <a href="https://forum.taichi.graphics/"> Forum </a> </h3>
+  <h3> <a href="https://taichi.readthedocs.io/en/latest/hello.html"> Tutorial </a> | <a href="https://github.com/yuanming-hu/taichi/tree/master/examples"> Examples </a> | <a href="https://taichi.readthedocs.io/en/latest/contributor_guide.html"> Contributor Guidelines </a> | <a href="https://forum.taichi.graphics/"> Forum </a> </h3>
+  <h3> <a href="https://taichi.readthedocs.io/en/stable/"> Documentation </a> |<a href="https://taichi.readthedocs.io/zh_CN/latest/"> 简体中文文档 </a> </h3>
 </div>
 
 ## Overview
@@ -22,8 +23,11 @@ Advanced features of Taichi include [spatially sparse computing](https://taichi.
 ## Installation [![Downloads](https://pepy.tech/badge/taichi-nightly)](https://pepy.tech/project/taichi-nightly)
 
 ```bash
-python3 -m pip install taichi       # Latest version: 0.5.15
+python3 -m pip install taichi       # Latest version: 0.6.0
 ```
+
+**News: (Apr 29, 2020) The OpenGL Compute Shader backend by [彭于斌 (archibate)](https://github.com/archibate)** is officially released in [**v0.6.0**](https://github.com/taichi-dev/taichi/releases/tag/v0.6.0)! Please try it out with `ti.init(arch=ti.opengl)`.
+
 **Supported OS**: Windows, Linux, Mac OS X; **Python**: 3.6, 3.7, 3.8; **Backends**: x64 CPUs, CUDA, Apple Metal, OpenGL Compute Shaders.
 
 Please build from source for other configurations (e.g., your CPU is ARM).

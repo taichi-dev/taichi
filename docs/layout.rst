@@ -4,8 +4,8 @@ Tensor layout
 =============
 
 Tensors (:ref:`scalar_tensor`) can be *placed* in a specific shape and *layout*.
-Having a good layout can be the key to performance.
-In Taichi, layout is defined in a recursive manner. See :ref:`snode` for more details.
+Defining a proper layout can be critical to the performance, although in most cases, you probably don't have to worry about it.
+In Taichi, layout is defined in a recursive manner. See :ref:`snode` for more details about how this works.
 
 For example, this declares a 0-D tensor:
 
@@ -25,7 +25,7 @@ This declares a 1D tensor of size ``3``:
     # or
     x = ti.var(ti.f32, shape=3)
 
-This declares a 1D tensor of shape ``(3, 4)``:
+This declares a 2D tensor of shape ``(3, 4)``:
 
 .. code-block:: python
 

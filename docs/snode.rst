@@ -1,54 +1,52 @@
 .. _snode:
 
-Struct node
-===========
+Structural nodes
+================
 
-Struct nodes, or SNode, each represents the layer of structure of *layout*.
-TODO: describe the idea better here.
+After writing the computation code, the user needs to specify the internal data structure hierarchy. Specifying a data structure includes choices at both the macro level, dictating how the data structure components nest with each other and the way they represent sparsity, and the micro level, dictating how data are grouped together (e.g. structure of arrays vs. array of structures).
+Our language provides *structural nodes* to compose the hierarchy and particular properties. These constructs and their semantics are listed below:
+
+* dense: A fixed-length contiguous array.
+
+* dynamic: Variable-length array, with a predefined maximum length. It serves the role of ``std::vector``, and can be used to maintain objects (e.g. particles) contained in a block.
+
+* bitmasked: Use a mask to maintain sparsity infomation, one bit per child.
+
+* pointer: Store pointers instead of the whole structure to save memory and maintain sparsity.
+
+* hash: Use a hash table to maintain the mapping from active coordinates to data addresses in memory. Suitable for high sparsity.
+
+See :ref:`layout` for more details about data layout.
 
 
 .. function:: snode.place(x, ...)
 
     :parameter snode: (SNode) where to place
     :parameter x: (tensor) tensor(s) to be placed
-    :return: (SNode) the ``snode`` itself unchaged
+    :return: (SNode) the ``snode`` itself
 
 
 .. function:: ti.root
 
-    ``ti.root`` is a kind of SNode, The root SNode, stands for 0-D tensor.
+    ``ti.root`` is a kind of structural node, The root node, stands for 0-D tensor.
 
-    This places a 0-D tensor:
+    This places two 0-D tensors named ``x`` and ``y``:
 
     ::
 
-        ti.root.place(x)
+        ti.root.place(x, y)
 
 
-Indices
--------
-
-.. function:: ti.i
-.. function:: ti.j
-.. function:: ti.k
-.. function:: ti.ij
-.. function:: ti.ijk
-.. function:: ti.ijkl
-.. function:: ti.indices(a, b, ...)
-
-TODO: complete equivalent descs here
-
-
-Data layouts
-------------
+Node types
+----------
 
 
 .. function:: snode.dense(indices, shape)
 
-    :parameter snode: (SNode) parent SNode where the child derived from
+    :parameter snode: (SNode) parent node where the child is derived from
     :parameter indices: (Index or Indices) indices used for this node
     :parameter shape: (scalar or tuple) shape the tensor of vectors
-    :return: (SNode) the derived child SNode
+    :return: (SNode) the derived child node
 
     This places a 1-D tensor of size ``3``:
 
@@ -79,30 +77,25 @@ Data layouts
 
 .. function:: snode.dynamic(index, size, chunk_size = None)
 
-    :parameter snode: (SNode) parent SNode where the child derived from
+    :parameter snode: (SNode) parent node where the child is derived from
     :parameter index: (Index) index used for this node
-    :parameter shape: (scalar) the initial value of dynamic size
-    :return: (SNode) the derived child SNode
+    :parameter size: (scalar) the maximum size of the dynamic node
+    :parameter chunk_size: (optional, scalar) (TODO: describe this)
+    :return: (SNode) the derived child node
 
-    The size of dynamic SNodes can be extended in runtime, see functions below.
+    The size of dynamic nodes can be extended in runtime, see functions below.
 
-    This places a 1-D dynamic tensor of initial size ``3``:
-
-    ::
-
-        ti.root.dynamic(ti.i, 3).place(x)
-
-    This places a 2D tensor of shape ``(3, 4)``:
+    This places a 1-D dynamic tensor of maximal size ``12``:
 
     ::
 
-        ti.root.dense(ti.ij, (3, 4)).place(x)
+        ti.root.dynamic(ti.i, 12).place(x)
 
 
 .. function:: ti.length(snode)
 
     :parameter snode: (SNode, dynamic)
-    :return: (scalar) current size of the dynamic SNode
+    :return: (scalar) current size of the dynamic node
 
 
 .. function:: ti.append(snode, indices, val)
@@ -112,3 +105,24 @@ Data layouts
     :parameter val: (depends on SNode data type) value to store
 
     ASK(yuanming-hu): how is this used exactly??
+
+
+.. function:: snode.hash
+.. function:: snode.bitmasked
+.. function:: snode.pointer
+
+    TODO: add descriptions here
+
+
+Indices
+-------
+
+.. function:: ti.i
+.. function:: ti.j
+.. function:: ti.k
+.. function:: ti.ij
+.. function:: ti.ijk
+.. function:: ti.ijkl
+.. function:: ti.indices(a, b, ...)
+
+TODO: complete equivalent descs here

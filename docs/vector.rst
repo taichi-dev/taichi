@@ -122,6 +122,7 @@ Methods
 
 
 .. function:: a.dot(b)
+.. function:: ti.dot(a, b)
 
     :parameter a: (Vector)
     :parameter b: (Vector)

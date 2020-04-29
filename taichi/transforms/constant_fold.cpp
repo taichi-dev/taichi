@@ -19,11 +19,10 @@ class ConstantFold : public BasicStmtVisitor {
     int op;
     DataType ret, lhs, rhs;
     bool is_binary;
-    bool cast_by_value;
 
     explicit operator int() const // make STL map happy
     {
-      return (int)op | (int)!!is_binary << 7 | (int)!!cast_by_value << 6
+      return (int)op | (int)!!is_binary << 7
         | (int) ret << 8 | (int) lhs << 16 | (int) rhs << 24;
     }
 
@@ -40,7 +39,8 @@ class ConstantFold : public BasicStmtVisitor {
 #if 0
     bool operator==(const JITEvaluatorId &b)
     {
-      return op == b.op && ret == b.ret && lhs == b.lhs && rhs == b.rhs;
+      return op == b.op && ret == b.ret && lhs == b.lhs && rhs == b.rhs
+          && is_binary == b.is_binary;
     }
 
     struct hash {
@@ -48,7 +48,7 @@ class ConstantFold : public BasicStmtVisitor {
       {
         hash<int> hop;
         hash<DataType> hdt;
-        return hop(op | is_binary() << 7)
+        return hop(op | is_binary << 7)
           ^ hdt(ret) ^ hdt(lhs) ^ hdt(rhs);
       }
     };
@@ -72,10 +72,8 @@ class ConstantFold : public BasicStmtVisitor {
         oper = Stmt::make<BinaryOpStmt>(id.binary_op(), lhstmt.get(), rhstmt.get());
       } else {
         oper = Stmt::make<UnaryOpStmt>(id.unary_op(), lhstmt.get());
-        if (id.unary_op() == UnaryOpType::cast) {
-          auto ustmt = oper->cast<UnaryOpStmt>();
-          ustmt->cast_type = id.rhs;
-          ustmt->cast_by_value = id.cast_by_value;
+        if (unary_op_is_cast(id.unary_op())) {
+          oper->cast<UnaryOpStmt>()->cast_type = id.rhs;
         }
       }
       auto ret = Stmt::make<ArgStoreStmt>(0, oper.get());
@@ -101,7 +99,7 @@ class ConstantFold : public BasicStmtVisitor {
       const TypedConstant &lhs, const TypedConstant &rhs)
   {
     JITEvaluatorId id{(int)stmt->op_type, ret.dt, lhs.dt, rhs.dt,
-      true, false};
+      true};
     auto *ker = get_jit_evaluator_kernel(id);
     auto &ctx = get_current_program().get_context();
     TI_INFO("JITARGSf = {} {}", lhs.val_f32, rhs.val_f32);
@@ -120,7 +118,7 @@ class ConstantFold : public BasicStmtVisitor {
       const TypedConstant &lhs)
   {
     JITEvaluatorId id{(int)stmt->op_type, ret.dt, lhs.dt, stmt->cast_type,
-      false, stmt->cast_by_value};
+      false};
     auto *ker = get_jit_evaluator_kernel(id);
     auto &ctx = get_current_program().get_context();
     ctx.set_arg<int64_t>(1, lhs.val_i64);

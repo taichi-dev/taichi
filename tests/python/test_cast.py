@@ -39,3 +39,23 @@ def test_cast_within_while():
         ret[None] = t
 
     func()
+
+
+@ti.all_archs
+def test_bit_cast():
+    x = ti.var(ti.i32, shape=())
+    y = ti.var(ti.f32, shape=())
+    z = ti.var(ti.i32, shape=())
+
+    @ti.kernel
+    def func1():
+        y[None] = ti.bit_cast(x[None], ti.f32)
+
+    @ti.kernel
+    def func2():
+        z[None] = ti.bit_cast(y[None], ti.i32)
+
+    x[None] = 2333
+    func1()
+    func2()
+    assert z[None] == 2333

@@ -292,71 +292,65 @@ void CodeGenLLVM::visit(UnaryOpStmt *stmt) {
     llvm_val[stmt] =                                                         \
         builder->CreateIntrinsic(llvm::Intrinsic::x, {input_type}, {input}); \
   }
-
-  if (stmt->op_type != UnaryOpType::cast) {
-    if (op == UnaryOpType::rsqrt) {
-      llvm::Function *sqrt_fn = Intrinsic::getDeclaration(
-          module.get(), Intrinsic::sqrt, input->getType());
-      auto intermediate = builder->CreateCall(sqrt_fn, input, "sqrt");
-      llvm_val[stmt] = builder->CreateFDiv(
-          tlctx->get_constant(stmt->ret_type.data_type, 1.0), intermediate);
-    } else if (op == UnaryOpType::bit_not) {
-      llvm_val[stmt] = builder->CreateNot(input);
-    } else if (op == UnaryOpType::neg) {
-      if (is_real(stmt->operand->ret_type.data_type)) {
-        llvm_val[stmt] = builder->CreateFNeg(input, "neg");
+  if (stmt->op_type == UnaryOpType::cast_value) {
+    llvm::CastInst::CastOps cast_op;
+    auto from = stmt->operand->ret_type.data_type;
+    auto to = stmt->cast_type;
+    TI_ASSERT(from != to);
+    if (is_real(from) != is_real(to)) {
+      if (is_real(from) && is_integral(to)) {
+        cast_op = llvm::Instruction::CastOps::FPToSI;
+      } else if (is_integral(from) && is_real(to)) {
+        cast_op = llvm::Instruction::CastOps::SIToFP;
       } else {
-        llvm_val[stmt] = builder->CreateNeg(input, "neg");
+        TI_P(data_type_name(from));
+        TI_P(data_type_name(to));
+        TI_NOT_IMPLEMENTED;
+      }
+      llvm_val[stmt] =
+          builder->CreateCast(cast_op, llvm_val[stmt->operand],
+                              tlctx->get_data_type(stmt->cast_type));
+    } else if (is_real(from) && is_real(to)) {
+      if (data_type_size(from) < data_type_size(to)) {
+        llvm_val[stmt] = builder->CreateFPExt(
+            llvm_val[stmt->operand], tlctx->get_data_type(stmt->cast_type));
+      } else {
+        llvm_val[stmt] = builder->CreateFPTrunc(
+            llvm_val[stmt->operand], tlctx->get_data_type(stmt->cast_type));
+      }
+    } else if (!is_real(from) && !is_real(to)) {
+      if (data_type_size(from) < data_type_size(to)) {
+        llvm_val[stmt] = builder->CreateSExt(
+            llvm_val[stmt->operand], tlctx->get_data_type(stmt->cast_type));
+      } else {
+        llvm_val[stmt] = builder->CreateTrunc(
+            llvm_val[stmt->operand], tlctx->get_data_type(stmt->cast_type));
       }
     }
-    UNARY_INTRINSIC(floor)
-    UNARY_INTRINSIC(ceil)
-    else emit_extra_unary(stmt);
-#undef UNARY_INTRINSIC
-  } else {
-    // op = cast
-    if (stmt->cast_by_value) {
-      llvm::CastInst::CastOps cast_op;
-      auto from = stmt->operand->ret_type.data_type;
-      auto to = stmt->cast_type;
-      TI_ASSERT(from != to);
-      if (is_real(from) != is_real(to)) {
-        if (is_real(from) && is_integral(to)) {
-          cast_op = llvm::Instruction::CastOps::FPToSI;
-        } else if (is_integral(from) && is_real(to)) {
-          cast_op = llvm::Instruction::CastOps::SIToFP;
-        } else {
-          TI_P(data_type_name(from));
-          TI_P(data_type_name(to));
-          TI_NOT_IMPLEMENTED;
-        }
-        llvm_val[stmt] =
-            builder->CreateCast(cast_op, llvm_val[stmt->operand],
-                                tlctx->get_data_type(stmt->cast_type));
-      } else if (is_real(from) && is_real(to)) {
-        if (data_type_size(from) < data_type_size(to)) {
-          llvm_val[stmt] = builder->CreateFPExt(
-              llvm_val[stmt->operand], tlctx->get_data_type(stmt->cast_type));
-        } else {
-          llvm_val[stmt] = builder->CreateFPTrunc(
-              llvm_val[stmt->operand], tlctx->get_data_type(stmt->cast_type));
-        }
-      } else if (!is_real(from) && !is_real(to)) {
-        if (data_type_size(from) < data_type_size(to)) {
-          llvm_val[stmt] = builder->CreateSExt(
-              llvm_val[stmt->operand], tlctx->get_data_type(stmt->cast_type));
-        } else {
-          llvm_val[stmt] = builder->CreateTrunc(
-              llvm_val[stmt->operand], tlctx->get_data_type(stmt->cast_type));
-        }
-      }
+  } else if (stmt->op_type == UnaryOpType::cast_bits) {
+    TI_ASSERT(data_type_size(stmt->ret_type.data_type) ==
+              data_type_size(stmt->cast_type));
+    llvm_val[stmt] = builder->CreateBitCast(
+        llvm_val[stmt->operand], tlctx->get_data_type(stmt->cast_type));
+  } else if (op == UnaryOpType::rsqrt) {
+    llvm::Function *sqrt_fn = Intrinsic::getDeclaration(
+        module.get(), Intrinsic::sqrt, input->getType());
+    auto intermediate = builder->CreateCall(sqrt_fn, input, "sqrt");
+    llvm_val[stmt] = builder->CreateFDiv(
+        tlctx->get_constant(stmt->ret_type.data_type, 1.0), intermediate);
+  } else if (op == UnaryOpType::bit_not) {
+    llvm_val[stmt] = builder->CreateNot(input);
+  } else if (op == UnaryOpType::neg) {
+    if (is_real(stmt->operand->ret_type.data_type)) {
+      llvm_val[stmt] = builder->CreateFNeg(input, "neg");
     } else {
-      TI_ASSERT(data_type_size(stmt->ret_type.data_type) ==
-                data_type_size(stmt->cast_type));
-      llvm_val[stmt] = builder->CreateBitCast(
-          llvm_val[stmt->operand], tlctx->get_data_type(stmt->cast_type));
+      llvm_val[stmt] = builder->CreateNeg(input, "neg");
     }
   }
+  UNARY_INTRINSIC(floor)
+  UNARY_INTRINSIC(ceil)
+  else emit_extra_unary(stmt);
+#undef UNARY_INTRINSIC
 }
 
 void CodeGenLLVM::visit(BinaryOpStmt *stmt) {

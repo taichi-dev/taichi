@@ -896,17 +896,17 @@ class UnaryOpStmt : public Stmt {
   UnaryOpType op_type;
   Stmt *operand;
   DataType cast_type;
-  bool cast_by_value = true;
 
   UnaryOpStmt(UnaryOpType op_type, Stmt *operand);
 
   bool same_operation(UnaryOpStmt *o) const;
+  bool is_cast() const;
 
   virtual bool has_global_side_effect() const override {
     return false;
   }
 
-  TI_STMT_DEF_FIELDS(ret_type, op_type, operand, cast_type, cast_by_value);
+  TI_STMT_DEF_FIELDS(ret_type, op_type, operand, cast_type);
   DEFINE_ACCEPT
 };
 
@@ -1020,13 +1020,13 @@ class UnaryOpExpression : public Expression {
   UnaryOpType type;
   Expr operand;
   DataType cast_type;
-  bool cast_by_value;
 
   UnaryOpExpression(UnaryOpType type, const Expr &operand)
       : type(type), operand(smart_load(operand)) {
     cast_type = DataType::unknown;
-    cast_by_value = true;
   }
+
+  bool is_cast() const;
 
   std::string serialize() override;
 

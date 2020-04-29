@@ -53,6 +53,12 @@ def cast(obj, type):
     else:
         return Expr(taichi_lang_core.value_cast(Expr(obj).ptr, type))
 
+def bit_cast(obj, type):
+    if is_taichi_class(obj):
+        raise ValueError('Cannot apply bit_cast on Taichi classes')
+    else:
+        return Expr(taichi_lang_core.bits_cast(Expr(obj).ptr, type))
+
 
 def sqr(obj):
     return obj * obj

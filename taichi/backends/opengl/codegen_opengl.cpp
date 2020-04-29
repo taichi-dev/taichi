@@ -349,16 +349,12 @@ class KernelGen : public IRVisitor {
     } else if (stmt->op_type == UnaryOpType::bit_not) {
       emit("{} {} = {}(~{});", dt_name, stmt->short_name(), dt_name,
            stmt->operand->short_name());
-    } else if (stmt->op_type != UnaryOpType::cast) {
-      emit("{} {} = {}({}({}));", dt_name, stmt->short_name(), dt_name,
-           unary_op_type_name(stmt->op_type), stmt->operand->short_name());
-    } else {
-      // cast
-      if (stmt->cast_by_value) {
+    } else if (stmt->op_type == UnaryOpType::cast_value) {
         emit("{} {} = {}({});", dt_name, stmt->short_name(),
              opengl_data_type_name(stmt->cast_type),
              stmt->operand->short_name());
-      } else if (stmt->cast_type == DataType::f32 &&
+    } else if (stmt->op_type == UnaryOpType::cast_bits) {
+      if (stmt->cast_type == DataType::f32 &&
                  stmt->operand->element_type() == DataType::i32) {
         emit("{} {} = intBitsToFloat({});", dt_name, stmt->short_name(),
              stmt->operand->short_name());
@@ -369,6 +365,9 @@ class KernelGen : public IRVisitor {
       } else {
         TI_ERROR("unsupported reinterpret cast");
       }
+    } else {
+      emit("{} {} = {}({}({}));", dt_name, stmt->short_name(), dt_name,
+           unary_op_type_name(stmt->op_type), stmt->operand->short_name());
     }
   }
 

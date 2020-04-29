@@ -59,7 +59,7 @@ To specify which layout to use in Taichi:
     ti.root.dense(ti.ji, (2, 3)).place(y)    # 2
 
 They can be accessed in the same manner: ``x[i, j]`` and ``y[i, j]``.
-However, they have a ver<F5>y different memory layout:
+However, they have a very different memory layout:
 
 .. code-block::
     #     address low ..................... address high
@@ -115,7 +115,10 @@ Now, their memory layout:
 Impact on performance
 ---------------------
 
-The difference in layout is usually ignored by ordinal users. However, locality sometimes have significant impact on performance especially when your tensor is huge.
+The difference in layout is usually ignored by ordinal users.
+However, locality sometimes have significant impact on performance especially when your tensor is huge.
+It's better to place two often-used-together elements as close as possible.
+
 Let's take a simple 1-D wave equation solver as example:
 
 .. code-block:: python

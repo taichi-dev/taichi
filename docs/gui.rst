@@ -10,7 +10,7 @@ Create a window
 ---------------
 
 
-.. function:: ti.GUI(title, res, bgcolor = 0x000000):
+.. function:: ti.GUI(title, res, bgcolor = 0x000000)
 
     :parameter title: (string) the window title
     :parameter res: (scalar or tuple) resolution / size of the window

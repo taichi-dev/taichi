@@ -118,6 +118,7 @@ class ExecutionQueue {
  public:
   std::mutex mut;
   std::deque<KernelLaunchRecord> task_queue;
+  std::unordered_set<uint64> to_be_compiled;
 
   ParallelExecutor compilation_workers;  // parallel compilation
   ParallelExecutor launch_worker;        // serial launching

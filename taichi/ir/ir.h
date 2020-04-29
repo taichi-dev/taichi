@@ -90,7 +90,8 @@ void die(IRNode *root);
 void simplify(IRNode *root, Kernel *kernel = nullptr);
 void alg_simp(IRNode *root, const CompileConfig &config);
 void whole_kernel_cse(IRNode *root);
-void variable_optimization(IRNode *root);
+void variable_optimization(IRNode *root, bool after_lower_access);
+void extract_constant(IRNode *root);
 void full_simplify(IRNode *root,
                    const CompileConfig &config,
                    Kernel *kernel = nullptr);
@@ -143,6 +144,8 @@ void verify(IRNode *root);
 }  // namespace irpass
 
 IRBuilder &current_ast_builder();
+
+bool maybe_same_address(Stmt *var1, Stmt *var2);
 
 struct VectorType {
  private:
@@ -280,8 +283,6 @@ class Identifier {
     return id == o.id;
   }
 };
-
-using Ident = Identifier;
 
 class VecStatement {
  public:
@@ -811,9 +812,9 @@ inline ExprGroup operator,(const ExprGroup &a, const Expr &b) {
 
 class FrontendAllocaStmt : public Stmt {
  public:
-  Ident ident;
+  Identifier ident;
 
-  FrontendAllocaStmt(const Ident &lhs, DataType type) : ident(lhs) {
+  FrontendAllocaStmt(const Identifier &lhs, DataType type) : ident(lhs) {
     ret_type = VectorType(1, type);
   }
 
@@ -1213,7 +1214,7 @@ class GlobalVariableExpression : public Expression {
   bool is_primal;
   Expr adjoint;
 
-  GlobalVariableExpression(DataType dt, const Ident &ident)
+  GlobalVariableExpression(DataType dt, const Identifier &ident)
       : ident(ident), dt(dt) {
     snode = nullptr;
     has_ambient = false;
@@ -1267,7 +1268,7 @@ class Block : public IRNode {
  public:
   Block *parent;
   std::vector<std::unique_ptr<Stmt>> statements, trash_bin;
-  std::map<Ident, Stmt *> local_var_alloca;
+  std::map<Identifier, Stmt *> local_var_alloca;
   Stmt *mask_var;
   std::vector<SNode *> stop_gradients;
 
@@ -1291,7 +1292,7 @@ class Block : public IRNode {
   void replace_with(Stmt *old_statement,
                     VecStatement &&new_statements,
                     bool replace_usages = true);
-  Stmt *lookup_var(const Ident &ident) const;
+  Stmt *lookup_var(const Identifier &ident) const;
   Stmt *mask();
 
   Stmt *back() const {
@@ -1638,7 +1639,7 @@ class FrontendForStmt : public Stmt {
   Expr begin, end;
   Expr global_var;
   std::unique_ptr<Block> body;
-  std::vector<Ident> loop_var_id;
+  std::vector<Identifier> loop_var_id;
   int vectorize;
   int parallelize;
   bool strictly_serialized;

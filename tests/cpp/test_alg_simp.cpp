@@ -97,8 +97,7 @@ TI_TEST("alg_simp") {
                      config_without_fast_math);  // should eliminate mul, add
     irpass::die(block.get());                    // should eliminate zero, load
 
-    TI_CHECK(block->size() == 4);  // two addresses, one one, one store
-    TI_CHECK((*block)[0]->is<GlobalTemporaryStmt>());
+    TI_CHECK(block->size() == 3);  // one address, one one, one store
 
     block = std::make_unique<Block>();
 
@@ -128,8 +127,7 @@ TI_TEST("alg_simp") {
                      config_with_fast_math);  // should eliminate mul, add
     irpass::die(block.get());                 // should eliminate zero, load
 
-    TI_CHECK(block->size() == 4);  // two addresses, one one, one store
-    TI_CHECK((*block)[0]->is<GlobalTemporaryStmt>());
+    TI_CHECK(block->size() == 3);  // one address, one one, one store
   }
 
   SECTION("simplify_and_minus_one") {

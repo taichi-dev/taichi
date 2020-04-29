@@ -20,7 +20,8 @@ class JITSessionCPU;
 class TaichiLLVMContext {
  private:
   struct ThreadLocalData {
-    std::unique_ptr<llvm::LLVMContext> llvm_context;
+    llvm::LLVMContext *llvm_context;
+    std::unique_ptr<llvm::orc::ThreadSafeContext> thread_safe_llvm_context;
     std::unique_ptr<llvm::Module> runtime_module, struct_module;
   };
 
@@ -44,6 +45,8 @@ class TaichiLLVMContext {
       llvm::LLVMContext *target_context);
 
   llvm::LLVMContext *get_this_thread_context();
+
+  llvm::orc::ThreadSafeContext *get_this_thread_thread_safe_context();
 
   TaichiLLVMContext(Arch arch);
 

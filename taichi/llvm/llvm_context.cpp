@@ -11,6 +11,7 @@
 #include "llvm/IR/Function.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Instructions.h"
+#include "llvm/ExecutionEngine/Orc/ThreadSafeModule.h"
 #if LLVM_VERSION_MAJOR >= 10
 #include "llvm/IR/Intrinsics.h"
 #include "llvm/IR/IntrinsicsNVPTX.h"
@@ -139,7 +140,7 @@ void compile_runtime_bitcode(Arch arch) {
     auto runtime_folder = get_runtime_dir();
     std::string macro = fmt::format(" -D ARCH_{} ", arch_name(arch));
     auto cmd = fmt::format(
-        "{} -S {}runtime.cpp -o {}runtime.ll "
+        "{} -S {}runtime.cpp -o {}runtime.ll -fno-exceptions "
         "-emit-llvm -std=c++17 {} -I {}",
         clang, runtime_src_folder, runtime_folder, macro, get_repo_dir());
     int ret = std::system(cmd.c_str());
@@ -625,9 +626,19 @@ TaichiLLVMContext::ThreadLocalData *TaichiLLVMContext::get_this_thread_data() {
 llvm::LLVMContext *TaichiLLVMContext::get_this_thread_context() {
   ThreadLocalData *data = get_this_thread_data();
   if (!data->llvm_context) {
-    data->llvm_context = std::make_unique<llvm::LLVMContext>();
+    auto ctx = std::make_unique<llvm::LLVMContext>();
+    data->llvm_context = ctx.get();
+    data->thread_safe_llvm_context =
+        std::make_unique<llvm::orc::ThreadSafeContext>(std::move(ctx));
   }
-  return data->llvm_context.get();
+  return data->llvm_context;
+}
+
+llvm::orc::ThreadSafeContext *
+TaichiLLVMContext::get_this_thread_thread_safe_context() {
+  get_this_thread_context();  // make sure the context is created
+  ThreadLocalData *data = get_this_thread_data();
+  return data->thread_safe_llvm_context.get();
 }
 
 llvm::Module *TaichiLLVMContext::get_this_thread_struct_module() {

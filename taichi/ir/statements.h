@@ -29,7 +29,7 @@ class ElementShuffleStmt : public Stmt {
     TI_STMT_REG_FIELDS;
   }
 
-  virtual bool has_global_side_effect() const override {
+  bool has_global_side_effect() const override {
     return false;
   }
 
@@ -46,7 +46,7 @@ class IntegerOffsetStmt : public Stmt {
     TI_STMT_REG_FIELDS;
   }
 
-  virtual bool has_global_side_effect() const override {
+  bool has_global_side_effect() const override {
     return false;
   }
 
@@ -66,7 +66,7 @@ class LinearizeStmt : public Stmt {
     TI_STMT_REG_FIELDS;
   }
 
-  virtual bool has_global_side_effect() const override {
+  bool has_global_side_effect() const override {
     return false;
   }
 
@@ -86,7 +86,7 @@ class OffsetAndExtractBitsStmt : public Stmt {
     TI_STMT_REG_FIELDS;
   }
 
-  virtual bool has_global_side_effect() const override {
+  bool has_global_side_effect() const override {
     return false;
   }
 
@@ -100,7 +100,7 @@ class GetRootStmt : public Stmt {
     TI_STMT_REG_FIELDS;
   }
 
-  virtual bool has_global_side_effect() const override {
+  bool has_global_side_effect() const override {
     return false;
   }
 
@@ -129,7 +129,7 @@ class SNodeLookupStmt : public Stmt {
     TI_STMT_REG_FIELDS;
   }
 
-  virtual bool has_global_side_effect() const override {
+  bool has_global_side_effect() const override {
     return activate;
   }
 
@@ -150,7 +150,7 @@ class GetChStmt : public Stmt {
 
   GetChStmt(Stmt *input_ptr, int chid);
 
-  virtual bool has_global_side_effect() const override {
+  bool has_global_side_effect() const override {
     return false;
   }
 
@@ -225,7 +225,7 @@ class LoopIndexStmt : public Stmt {
     TI_STMT_REG_FIELDS;
   }
 
-  virtual bool has_global_side_effect() const override {
+  bool has_global_side_effect() const override {
     return false;
   }
 
@@ -243,7 +243,7 @@ class GlobalTemporaryStmt : public Stmt {
     TI_STMT_REG_FIELDS;
   }
 
-  virtual bool has_global_side_effect() const override {
+  bool has_global_side_effect() const override {
     return false;
   }
 
@@ -286,7 +286,7 @@ class StackAllocaStmt : public Stmt {
     return sizeof(int32) + entry_size_in_bytes() * max_size;
   }
 
-  virtual bool has_global_side_effect() const override {
+  bool has_global_side_effect() const override {
     return false;
   }
 
@@ -304,7 +304,7 @@ class StackLoadTopStmt : public Stmt {
     TI_STMT_REG_FIELDS;
   }
 
-  virtual bool has_global_side_effect() const override {
+  bool has_global_side_effect() const override {
     return false;
   }
 
@@ -322,7 +322,7 @@ class StackLoadTopAdjStmt : public Stmt {
     TI_STMT_REG_FIELDS;
   }
 
-  virtual bool has_global_side_effect() const override {
+  bool has_global_side_effect() const override {
     return false;
   }
 
@@ -338,10 +338,6 @@ class StackPopStmt : public Stmt {
     TI_ASSERT(stack->is<StackAllocaStmt>());
     this->stack = stack;
     TI_STMT_REG_FIELDS;
-  }
-
-  virtual bool has_global_side_effect() const override {
-    return false;
   }
 
   TI_STMT_DEF_FIELDS(ret_type, stack);
@@ -360,10 +356,6 @@ class StackPushStmt : public Stmt {
     TI_STMT_REG_FIELDS;
   }
 
-  virtual bool has_global_side_effect() const override {
-    return false;
-  }
-
   TI_STMT_DEF_FIELDS(ret_type, stack, v);
   DEFINE_ACCEPT
 };
@@ -380,12 +372,9 @@ class StackAccAdjointStmt : public Stmt {
     TI_STMT_REG_FIELDS;
   }
 
-  virtual bool has_global_side_effect() const override {
-    return false;
-  }
-
   TI_STMT_DEF_FIELDS(ret_type, stack, v);
   DEFINE_ACCEPT
 };
 
 TLANG_NAMESPACE_END
+        

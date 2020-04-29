@@ -31,7 +31,7 @@ TI_NAMESPACE_BEGIN
 #define TI_TEST(x) TEST_CASE(x, ("[" x "]"))
 #define TI_CHECK(x) CHECK(x)
 #define TI_TEST_PROGRAM \
-  auto prog_ = std::make_unique<Program>(); \
+  auto prog_ = std::make_unique<Program>(Arch::opengl); \
   prog_->materialize_layout();
 
 int run_tests(std::vector<std::string> argv);

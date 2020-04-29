@@ -104,13 +104,15 @@ class ConstantFold : public BasicStmtVisitor {
       true, false};
     auto *ker = get_jit_evaluator_kernel(id);
     auto &ctx = get_current_program().get_context();
-    TI_INFO("JITARGS = {} {}", lhs.val_i32, rhs.val_i32);
+    TI_INFO("JITARGSf = {} {}", lhs.val_f32, rhs.val_f32);
+    TI_INFO("JITARGSi = {} {}", lhs.val_i32, rhs.val_i32);
     ctx.set_arg<int64_t>(1, lhs.val_i64);
     ctx.set_arg<int64_t>(2, rhs.val_i64);
     irpass::print(ker->ir);
     (*ker)();
     ret.val_i64 = ctx.get_arg<int64_t>(0);
-    TI_INFO("JITEVAL = {}", ret.val_i32);
+    TI_INFO("JITEVALf = {}", ret.val_f32);
+    TI_INFO("JITEVALi = {}", ret.val_i32);
     return true;
   }
 

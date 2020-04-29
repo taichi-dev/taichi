@@ -82,12 +82,61 @@ void AsyncEngine::launch(Kernel *kernel) {
   auto &offloads = block->statements;
   for (std::size_t i = 0; i < offloads.size(); i++) {
     auto offload = offloads[i]->as<OffloadedStmt>();
-    task_queue.emplace_back(kernel->program.get_context(), kernel, offload);
+    KernelLaunchRecord rec(kernel->program.get_context(), kernel, offload);
+    enqueue(rec);
   }
   optimize();
 }
 
+void AsyncEngine::enqueue(KernelLaunchRecord t) {
+  using namespace irpass::analysis;
+
+  task_queue.push_back(t);
+
+  auto &meta = metas[t.h];
+  // TODO: this is an abuse...
+  gather_statements(t.stmt, [&](Stmt *stmt) {
+    if (auto global_ptr = stmt->cast<GlobalPtrStmt>()) {
+      for (auto &snode : global_ptr->snodes.data) {
+        meta.input_snodes.insert(snode);
+      }
+    }
+    if (auto global_load = stmt->cast<GlobalLoadStmt>()) {
+      if (auto ptr = global_load->ptr->cast<GlobalPtrStmt>()) {
+        for (auto &snode : ptr->snodes.data) {
+          meta.input_snodes.insert(snode);
+        }
+      }
+    }
+    if (auto global_store = stmt->cast<GlobalStoreStmt>()) {
+      if (auto ptr = global_store->ptr->cast<GlobalPtrStmt>()) {
+        for (auto &snode : ptr->snodes.data) {
+          meta.output_snodes.insert(snode);
+        }
+      }
+    }
+    if (auto global_atomic = stmt->cast<AtomicOpStmt>()) {
+      if (auto ptr = global_atomic->dest->cast<GlobalPtrStmt>()) {
+        for (auto &snode : ptr->snodes.data) {
+          meta.input_snodes.insert(snode);
+          meta.output_snodes.insert(snode);
+        }
+      }
+    }
+
+    if (auto ptr = stmt->cast<GlobalPtrStmt>()) {
+      if (ptr->activate) {
+        for (auto &snode : ptr->snodes.data) {
+          meta.activation_snodes.insert(snode);
+        }
+      }
+    }
+    return false;
+  });
+}
+
 void AsyncEngine::synchronize() {
+  optimize();
   while (!task_queue.empty()) {
     queue.enqueue(task_queue.front());
     task_queue.pop_front();
@@ -95,57 +144,41 @@ void AsyncEngine::synchronize() {
   queue.synchronize();
 }
 
-struct TaskMeta {
-  std::unordered_set<SNode *> input_snodes, output_snodes;
-  std::unordered_set<SNode *> activation_snodes;
-};
-
-void AsyncEngine::optimize() {
-  using namespace irpass::analysis;
-  std::unordered_map<std::uint64_t, TaskMeta> metas;
-
-  for (auto &t : task_queue) {
-    auto &meta = metas[t.h];
-    // TODO: this is an abuse...
-    gather_statements(t.stmt, [&](Stmt *stmt) {
-      if (auto global_ptr = stmt->cast<GlobalPtrStmt>()) {
-        for (auto &snode : global_ptr->snodes.data) {
-          meta.input_snodes.insert(snode);
+bool AsyncEngine::optimize() {
+  bool modified = false;
+  std::unordered_map<SNode *, bool> list_dirty;
+  auto new_task_queue = std::deque<KernelLaunchRecord>();
+  for (int i = 0; i < task_queue.size(); i++) {
+    // Try to eliminate unused listgens
+    auto t = task_queue[i];
+    auto meta = metas[t.h];
+    auto offload = t.stmt;
+    bool keep = true;
+    if (offload->task_type == OffloadedStmt::TaskType::listgen) {
+      auto snode = offload->snode;
+      if (!list_dirty[snode]) {
+        // keep = false;  // safe to remove
+      }
+      list_dirty[snode] = false;
+    } else if (offload->task_type == OffloadedStmt::TaskType::clear_list) {
+      // do nothing
+    } else {
+      for (auto snode : meta.activation_snodes) {
+        while (snode) {
+          list_dirty[snode] = true;
+          snode = snode->parent;
         }
       }
-      if (auto global_load = stmt->as<GlobalLoadStmt>()) {
-        if (auto ptr = global_load->ptr->cast<GlobalPtrStmt>()) {
-          for (auto &snode : ptr->snodes.data) {
-            meta.input_snodes.insert(snode);
-          }
-        }
-      }
-      if (auto global_store = stmt->as<GlobalStoreStmt>()) {
-        if (auto ptr = global_store->ptr->cast<GlobalPtrStmt>()) {
-          for (auto &snode : ptr->snodes.data) {
-            meta.output_snodes.insert(snode);
-          }
-        }
-      }
-      if (auto global_atomic = stmt->as<AtomicOpStmt>()) {
-        if (auto ptr = global_atomic->dest->cast<GlobalPtrStmt>()) {
-          for (auto &snode : ptr->snodes.data) {
-            meta.input_snodes.insert(snode);
-            meta.output_snodes.insert(snode);
-          }
-        }
-      }
-
-      if (auto ptr = stmt->as<GlobalPtrStmt>()) {
-        if (ptr->activate) {
-          for (auto &snode : ptr->snodes.data) {
-            meta.activation_snodes.insert(snode);
-          }
-        }
-      }
-      return false;
-    });
+    }
+    if (keep) {
+      new_task_queue.push_back(t);
+    } else {
+      TI_TAG;
+      modified = true;
+    }
   }
+  // task_queue = std::move(new_task_queue);
+  return modified;
 }
 
 TLANG_NAMESPACE_END

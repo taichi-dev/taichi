@@ -148,6 +148,13 @@ class AsyncEngine {
  public:
   // TODO: state machine
 
+  struct TaskMeta {
+    std::unordered_set<SNode *> input_snodes, output_snodes;
+    std::unordered_set<SNode *> activation_snodes;
+  };
+
+  std::unordered_map<std::uint64_t, TaskMeta> metas;
+
   ExecutionQueue queue;
 
   std::deque<KernelLaunchRecord> task_queue;
@@ -155,13 +162,15 @@ class AsyncEngine {
   AsyncEngine() {
   }
 
-  void optimize();
+  bool optimize(); // return true when modified
 
   void clear_cache() {
     queue.clear_cache();
   }
 
   void launch(Kernel *kernel);
+
+  void enqueue(KernelLaunchRecord t);
 
   void synchronize();
 };

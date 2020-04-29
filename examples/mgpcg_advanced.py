@@ -212,3 +212,4 @@ class MGPCG:
 solver = MGPCG()
 solver.run()
 ti.core.print_profile_info()
+ti.core.print_stat()

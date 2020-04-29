@@ -104,7 +104,7 @@ class ConstantFold : public BasicStmtVisitor {
     auto &ctx = get_current_program().get_context();
     //TI_INFO("JITARGSf = {} {}", lhs.val_f32, rhs.val_f32);
     TI_INFO("JITARGSi = {} {}", lhs.val_i32, rhs.val_i32);
-    ctx.set_arg<int64_t>(0, 233);
+    ctx.set_arg<int64_t>(0, 0);
     ctx.set_arg<int64_t>(1, lhs.val_i64);
     ctx.set_arg<int64_t>(2, rhs.val_i64);
     irpass::print(ker->ir);

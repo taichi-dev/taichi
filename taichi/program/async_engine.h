@@ -155,8 +155,7 @@ class AsyncEngine {
   AsyncEngine() {
   }
 
-  void optimize() {
-  }
+  void optimize();
 
   void clear_cache() {
     queue.clear_cache();

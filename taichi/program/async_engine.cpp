@@ -95,4 +95,57 @@ void AsyncEngine::synchronize() {
   queue.synchronize();
 }
 
+struct TaskMeta {
+  std::unordered_set<SNode *> input_snodes, output_snodes;
+  std::unordered_set<SNode *> activation_snodes;
+};
+
+void AsyncEngine::optimize() {
+  using namespace irpass::analysis;
+  std::unordered_map<std::uint64_t, TaskMeta> metas;
+
+  for (auto &t : task_queue) {
+    auto &meta = metas[t.h];
+    // TODO: this is an abuse...
+    gather_statements(t.stmt, [&](Stmt *stmt) {
+      if (auto global_ptr = stmt->cast<GlobalPtrStmt>()) {
+        for (auto &snode : global_ptr->snodes.data) {
+          meta.input_snodes.insert(snode);
+        }
+      }
+      if (auto global_load = stmt->as<GlobalLoadStmt>()) {
+        if (auto ptr = global_load->ptr->cast<GlobalPtrStmt>()) {
+          for (auto &snode : ptr->snodes.data) {
+            meta.input_snodes.insert(snode);
+          }
+        }
+      }
+      if (auto global_store = stmt->as<GlobalStoreStmt>()) {
+        if (auto ptr = global_store->ptr->cast<GlobalPtrStmt>()) {
+          for (auto &snode : ptr->snodes.data) {
+            meta.output_snodes.insert(snode);
+          }
+        }
+      }
+      if (auto global_atomic = stmt->as<AtomicOpStmt>()) {
+        if (auto ptr = global_atomic->dest->cast<GlobalPtrStmt>()) {
+          for (auto &snode : ptr->snodes.data) {
+            meta.input_snodes.insert(snode);
+            meta.output_snodes.insert(snode);
+          }
+        }
+      }
+
+      if (auto ptr = stmt->as<GlobalPtrStmt>()) {
+        if (ptr->activate) {
+          for (auto &snode : ptr->snodes.data) {
+            meta.activation_snodes.insert(snode);
+          }
+        }
+      }
+      return false;
+    });
+  }
+}
+
 TLANG_NAMESPACE_END

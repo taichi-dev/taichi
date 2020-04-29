@@ -6,7 +6,7 @@ Vectors
 A vector in Taichi can have two forms:
 
   - as a temporary local variable. An ``n`` component vector consists of ``n`` scalar values.
-  - as an element of a global tensor. In this case, the tensor is an N-dimensional array of ``n`` component vectors
+  - as an element of a global tensor. In this case, the tensor is an N-dimensional array of ``n`` component vectors.
 
 See :ref:`tensor_matrix` for more details.
 

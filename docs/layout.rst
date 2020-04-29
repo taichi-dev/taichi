@@ -43,7 +43,7 @@ Row-major versus column-major
 
 Let's start with the simplest layout.
 
-Since address space are linear in most modern architectures, for 1D Taichi tensors, the address of i-ith element is simply i.
+Since address space are linear in most modern architectures, for 1D Taichi tensors, the address of ``i``-th element is simply ``i``.
 
 To store a multi-dimentional tensor, however, it has to be flattened, in order to fit into the 1D address space.
 For example, to store a 2D tensor of size ``(3, 2)``, there are two way to do this:
@@ -74,7 +74,7 @@ This is row-major versus column-major storage.
 
 .. note::
 
-    For those people from C/C++:
+    For those people from C/C++, here's what they looks like:
 
     .. code-block:: c
 
@@ -148,7 +148,7 @@ A better placement is to place them together:
 
     ti.root.dense(ti.i, N).place(pos, vel)
 
-Then ``vel[i]`` is placed right next to ``pos[i]``, this increases cache-hit rate and therefore increases the performance.
+Then ``vel[i]`` is placed right next to ``pos[i]``, this can increases the cache-hit rate and therefore increases performance.
 
 
 Multi-shaping (WIP)

@@ -101,7 +101,7 @@ void AsyncEngine::launch(Kernel *kernel) {
   for (std::size_t i = 0; i < offloads.size(); i++) {
     auto offload = offloads[i]->as<OffloadedStmt>();
     KernelLaunchRecord rec(kernel->program.get_context(), kernel, offload);
-    irpass::print(rec.stmt);
+    // irpass::print(rec.stmt);
     enqueue(rec);
   }
 }
@@ -146,7 +146,7 @@ void AsyncEngine::enqueue(KernelLaunchRecord t) {
       if (ptr->activate) {
         for (auto &snode : ptr->snodes.data) {
           meta.activation_snodes.insert(snode);
-          // fmt::print("act {}\n", snode->get_node_type_name_hinted());
+          // fmt::print(" **** act {}\n", snode->get_node_type_name_hinted());
         }
       }
     }

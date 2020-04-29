@@ -1,4 +1,5 @@
 import numpy as np
+import time
 import taichi as ti
 
 real = ti.f32
@@ -210,6 +211,8 @@ class MGPCG:
 
 
 solver = MGPCG()
+t = time.time()
 solver.run()
+print(f'Solver time: {time.time() - t:.3f} s')
 ti.core.print_profile_info()
 ti.core.print_stat()

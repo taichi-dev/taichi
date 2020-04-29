@@ -111,8 +111,7 @@ def test_matrix_element_wise_unary():
     _test_matrix_element_wise_unary(ti.f32, ti.sqrt, math.sqrt)
     _test_matrix_element_wise_unary(ti.f32, ti.exp, math.exp)
     _test_matrix_element_wise_unary(ti.f32, ti.log, math.log)
-    # ASK(yuanming-hu): why we don't have taichi_core.expr_ceil?
-    #_test_matrix_element_wise_unary(ti.f32, ti.ceil, math.ceil)
+    _test_matrix_element_wise_unary(ti.f32, ti.ceil, math.ceil)
     _test_matrix_element_wise_unary(ti.f32, ti.floor, math.floor)
     _test_matrix_element_wise_unary(ti.f32, ti.abs, abs)
     _test_matrix_element_wise_unary(ti.i32, ti.abs, abs)

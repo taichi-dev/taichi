@@ -42,7 +42,7 @@ def test_cast_within_while():
 
 
 @ti.all_archs
-def _test_bit_cast():
+def test_bit_cast():
     x = ti.var(ti.i32, shape=())
     y = ti.var(ti.f32, shape=())
     z = ti.var(ti.i32, shape=())

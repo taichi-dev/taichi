@@ -321,7 +321,7 @@ UnaryOpStmt::UnaryOpStmt(UnaryOpType op_type, Stmt *operand)
 }
 
 bool UnaryOpStmt::is_cast() const {
-  return is_cast(op_type);
+  return unary_op_is_cast(op_type);
 }
 
 bool UnaryOpStmt::same_operation(UnaryOpStmt *o) const {
@@ -347,7 +347,7 @@ std::string UnaryOpExpression::serialize() {
 }
 
 bool UnaryOpExpression::is_cast() const {
-  return is_cast(type);
+  return unary_op_is_cast(type);
 }
 
 void UnaryOpExpression::flatten(VecStatement &ret) {

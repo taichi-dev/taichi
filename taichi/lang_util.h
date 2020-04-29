@@ -76,7 +76,7 @@ enum class UnaryOpType : int {
 
 std::string unary_op_type_name(UnaryOpType type);
 
-inline bool is_cast(UnaryOpType op) {
+inline bool unary_op_is_cast(UnaryOpType op) {
   return op == UnaryOpType::cast_value || op == UnaryOpType::cast_bits;
 }
 

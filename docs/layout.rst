@@ -5,8 +5,7 @@ Tensor layout
 
 Tensors (:ref:`scalar_tensor`) can be *placed* in a specific shape and *layout*.
 Having a good layout can be the key to performance.
-
-In Taichi, placing a layout is treated in a recursive manner.
+In Taichi, placing a layout is treated in a recursive manner. See :ref:`snode` for more details.
 
 For example, this declares a 0-D tensor:
 
@@ -55,8 +54,8 @@ To specify which layout to use in Taichi:
 
 .. code-block:: python
 
-    ti.root.dense(ti.ij, (3, 2)).place(x)    # 1 (default)
-    ti.root.dense(ti.ji, (2, 3)).place(y)    # 2
+    ti.root.dense(ti.i, 3).dense(ti.j, 2).place(x)    # 1 (default)
+    ti.root.dense(ti.j, 2).dense(ti.i, 3).place(y)    # 2
 
 They can be accessed in the same manner: ``x[i, j]`` and ``y[i, j]``.
 However, they have a very different memory layout:
@@ -154,7 +153,7 @@ Multi-shaping (WIP)
 
 .. code-block:: python
 
-    ti.root.dense(ti.i, 2).dense(ti.i, 3)
+    ti.root.dense(ti.ij, (32, 32)).dense(ti.ij, (4, 4))
 
 
 Advanced layout (WIP)

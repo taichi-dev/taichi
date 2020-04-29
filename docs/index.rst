@@ -28,6 +28,7 @@ The Taichi Programming Language
    vector
    matrix
    layout
+   snode
 
 
 .. toctree::

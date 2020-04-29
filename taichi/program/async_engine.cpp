@@ -6,6 +6,7 @@
 #include "taichi/program/program.h"
 #include "taichi/backends/cpu/codegen_cpu.h"
 #include "taichi/common/testing.h"
+#include "taichi/util/statistics.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -60,6 +61,23 @@ void ExecutionQueue::enqueue(KernelLaunchRecord ker) {
       func = compiled_func[h];
       break;
     }
+    stat.add("launched_kernels", 1.0);
+    auto task_type = ker.stmt->task_type;
+    if (task_type == OffloadedStmt::TaskType::listgen) {
+      stat.add("launched_kernels_list_op", 1.0);
+      stat.add("launched_kernels_list_gen", 1.0);
+    } else if (task_type == OffloadedStmt::TaskType::clear_list) {
+      stat.add("launched_kernels_list_op", 1.0);
+      stat.add("launched_kernels_list_clear", 1.0);
+    } else if (task_type == OffloadedStmt::TaskType::range_for) {
+      stat.add("launched_kernels_compute", 1.0);
+      stat.add("launched_kernels_range_for", 1.0);
+    } else if (task_type == OffloadedStmt::TaskType::struct_for) {
+      stat.add("launched_kernels_compute", 1.0);
+      stat.add("launched_kernels_struct_for", 1.0);
+    } else if (task_type == OffloadedStmt::TaskType::gc) {
+      stat.add("launched_kernels_garbage_collect", 1.0);
+    }
     auto context = ker.context;
     func(context);
   });
@@ -85,7 +103,6 @@ void AsyncEngine::launch(Kernel *kernel) {
     KernelLaunchRecord rec(kernel->program.get_context(), kernel, offload);
     enqueue(rec);
   }
-  optimize();
 }
 
 void AsyncEngine::enqueue(KernelLaunchRecord t) {
@@ -155,16 +172,27 @@ bool AsyncEngine::optimize() {
     auto offload = t.stmt;
     bool keep = true;
     if (offload->task_type == OffloadedStmt::TaskType::listgen) {
+      // keep
+    } else if (offload->task_type == OffloadedStmt::TaskType::clear_list) {
+      fmt::print("clearlist {}\n", offload->snode->get_node_type_name_hinted());
+      // do nothing
+      TI_ASSERT(task_queue[i + 1].stmt->task_type ==
+                OffloadedStmt::TaskType::listgen);
+      fmt::print("listgen {}\n", offload->snode->get_node_type_name_hinted());
       auto snode = offload->snode;
-      if (!list_dirty[snode]) {
-        // keep = false;  // safe to remove
+      if (list_dirty.find(snode) != list_dirty.end() && !list_dirty[snode]) {
+        keep = false;  // safe to remove
+        modified = true;
+        TI_TAG;
+        i++;  // skip the following list gen as well
+        continue;
       }
       list_dirty[snode] = false;
-    } else if (offload->task_type == OffloadedStmt::TaskType::clear_list) {
-      // do nothing
     } else {
+      fmt::print("job\n");
       for (auto snode : meta.activation_snodes) {
-        while (snode) {
+        fmt::print(" activates {}\n", snode->get_node_type_name_hinted());
+        while (snode && snode->type != SNodeType::root) {
           list_dirty[snode] = true;
           snode = snode->parent;
         }
@@ -173,11 +201,10 @@ bool AsyncEngine::optimize() {
     if (keep) {
       new_task_queue.push_back(t);
     } else {
-      TI_TAG;
       modified = true;
     }
   }
-  // task_queue = std::move(new_task_queue);
+  task_queue = std::move(new_task_queue);
   return modified;
 }
 

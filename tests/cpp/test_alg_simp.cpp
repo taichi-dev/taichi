@@ -119,6 +119,7 @@ TI_TEST("alg_simp") {
     irpass::alg_simp(block.get(),
                      config_without_fast_math);  // should not eliminate
     irpass::die(block.get());                    // should eliminate 2 const
+    irpass::print(block.get());
     TI_CHECK(block->size() == 8);
 
     CompileConfig config_with_fast_math;

@@ -321,13 +321,7 @@ UnaryOpStmt::UnaryOpStmt(UnaryOpType op_type, Stmt *operand)
 }
 
 bool UnaryOpStmt::is_cast() const {
-  switch (op_type) {
-  case UnaryOpType::cast_value:
-  case UnaryOpType::cast_bits:
-    return true;
-  default:
-    return false;
-  }
+  return (op_type == UnaryOpType::cast_value || op_type == UnaryOpType::cast_bits);
 }
 
 bool UnaryOpStmt::same_operation(UnaryOpStmt *o) const {
@@ -353,13 +347,7 @@ std::string UnaryOpExpression::serialize() {
 }
 
 bool UnaryOpExpression::is_cast() const {
-  switch (type) {
-  case UnaryOpType::cast_value:
-  case UnaryOpType::cast_bits:
-    return true;
-  default:
-    return false;
-  }
+  return (type == UnaryOpType::cast_value || type == UnaryOpType::cast_bits);
 }
 
 void UnaryOpExpression::flatten(VecStatement &ret) {

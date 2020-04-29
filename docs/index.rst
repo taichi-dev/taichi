@@ -27,6 +27,7 @@ The Taichi Programming Language
    scalar_tensor
    vector
    matrix
+   layout
 
 
 .. toctree::

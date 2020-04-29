@@ -5,7 +5,7 @@ Tensor layout
 
 Tensors (:ref:`scalar_tensor`) can be *placed* in a specific shape and *layout*.
 Having a good layout can be the key to performance.
-In Taichi, placing a layout is treated in a recursive manner. See :ref:`snode` for more details.
+In Taichi, layout is defined in a recursive manner. See :ref:`snode` for more details.
 
 For example, this declares a 0-D tensor:
 
@@ -16,7 +16,7 @@ For example, this declares a 0-D tensor:
     # or
     x = ti.var(ti.f32, shape=())
 
-This declares a 1-D tensor of size ``3``:
+This declares a 1D tensor of size ``3``:
 
 .. code-block:: python
 
@@ -25,7 +25,7 @@ This declares a 1-D tensor of size ``3``:
     # or
     x = ti.var(ti.f32, shape=3)
 
-This declares a 1-D tensor of shape ``(3, 4)``:
+This declares a 1D tensor of shape ``(3, 4)``:
 
 .. code-block:: python
 
@@ -34,39 +34,43 @@ This declares a 1-D tensor of shape ``(3, 4)``:
     # or
     x = ti.var(ti.f32, shape=(3, 4))
 
-Now, you may say, why not just simply specify ``shape=`` argument to specify tensor shape? Why we need these fancy stuffs like ``ti.root`` and ``place``? Wasn't them the same?
+You may wondering, why not just simply specify the tensor ``shape``? Why we need these fancy stuffs like ``ti.root`` and ``place``? Aren't they doing the same?
 Good question, let go forward and figure out why.
 
 
-Multi-dimentional layout
-------------------------
+Row-major versus column-major
+-----------------------------
 
-As we all know, most mordern computers have a 1-D memory model.
-So it's not a big deal to store 1-D tensors, the address of ``i``-th can simply be ``base + i``.
+Let's start with the simplest layout.
 
-To store a multi-D tensor, however, it has to be reshaped into 1-D, to fit into the 1-D address space.
-For example, to store a 2-D tensor of size ``(3, 2)``, there are two way to do this:
+Since address space are linear in most modern architectures, for 1D Taichi tensors, the address of i-ith element is simply i.
 
-    1. The address of ``(i, j)``-th is ``base + i * 2 + j``.
-    1. The address of ``(i, j)``-th is ``base + j * 3 + i``.
+To store a multi-dimentional tensor, however, it has to be flattened, in order to fit into the 1D address space.
+For example, to store a 2D tensor of size ``(3, 2)``, there are two way to do this:
+
+    1. The address of ``(i, j)``-th is ``base + i * 2 + j`` (row-major).
+
+    2. The address of ``(i, j)``-th is ``base + j * 3 + i`` (column-major).
 
 To specify which layout to use in Taichi:
 
 .. code-block:: python
 
-    ti.root.dense(ti.i, 3).dense(ti.j, 2).place(x)    # 1 (default)
-    ti.root.dense(ti.j, 2).dense(ti.i, 3).place(y)    # 2
+    ti.root.dense(ti.i, 3).dense(ti.j, 2).place(x)    # row-major (default)
+    ti.root.dense(ti.j, 2).dense(ti.i, 3).place(y)    # column-major
 
+Logically speaking, both ``x`` and ``y`` have the same shape of ``(3, 2)``, and they can be accessed in the same manner, where ``0 <= i < 3 && 0 <= j < 2``.
 They can be accessed in the same manner: ``x[i, j]`` and ``y[i, j]``.
 However, they have a very different memory layout:
 
 .. code-block::
 
-    #     address low ..................... address high
-    # x:  x[0,0]  x[0,1]  x[0,2]  x[1,0]  x[1,1]  x[1,2]
-    # y:  y[0,0]  y[1,0]  y[0,1]  y[1,1]  y[0,2]  y[1,2]
+    #     address low ........................... address high
+    # x:  x[0,0]   x[0,1]   x[0,2] | x[1,0]   x[1,1]   x[1,2]
+    # y:  y[0,0]   y[1,0] | y[0,1]   y[1,1] | y[0,2]   y[1,2]
 
 See? ``x`` first increases the first index, while ``y`` first increases the second index. When overflow, reset to zero and begin to increase the second index.
+This is row-major versus column-major storage.
 
 .. note::
 
@@ -74,8 +78,8 @@ See? ``x`` first increases the first index, while ``y`` first increases the seco
 
     .. code-block:: c
 
-        int x[3][2];  // 1
-        int y[2][3];  // 2
+        int x[3][2];  // row-major
+        int y[2][3];  // column-major
 
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 2; j++) {
@@ -84,12 +88,12 @@ See? ``x`` first increases the first index, while ``y`` first increases the seco
             }
         }
 
-Place together
+AoS versus SoA
 --------------
 
 Tensors of same size can be placed together.
 
-For example, this places two 1-D tensor of size ``3``:
+For example, this places two 1D tensor of size ``3`` (array of structure, AoS):
 
 .. code-block:: python
 
@@ -99,10 +103,10 @@ Their memory layout:
 
 .. code-block::
 
-    #  address low ......... address high
-    #  x[0]  y[0]  x[1]  y[1]  x[2]  y[2]
+    #  address low ............. address high
+    #  x[0]   y[0] | x[1]  y[1] | x[2]   y[2]
 
-In contrast, this places two tensor placed seperately:
+In contrast, this places two tensor placed seperately (structure of array, SoA):
 
 .. code-block:: python
 
@@ -113,18 +117,15 @@ Now, their memory layout:
 
 .. code-block::
 
-    #  address low ......... address high
-    #  x[0]  x[1]  x[2]  y[0]  y[1]  y[2]
+    #  address low ............. address high
+    #  x[0]  x[1]   x[2] | y[0]   y[1]   y[2]
 
 
-Impact on performance
----------------------
+Normally, you don't have to worry about the performance nuances between different layouts, and should just define the simplest layout as a start.
+However, locality sometimes have a significant impact on the performance, especially when the tensor is huge.
 
-The difference in layout is usually ignored by ordinal users.
-However, locality sometimes have significant impact on performance especially when your tensor is huge.
-It's better to place two often-used-together elements as close as possible.
-
-Let's take a simple 1-D wave equation solver as example:
+**It's better to place two frequently-related elements as close as possible.**
+Take a simple 1D wave equation solver for example:
 
 .. code-block:: python
 
@@ -140,12 +141,14 @@ Let's take a simple 1-D wave equation solver as example:
         vel[i] += -k * pos[i] * dt
 
 
-Here, we placed ``pos`` and ``vel`` seperately. So the distance in address space between ``pos[i]`` and ``vel[i]`` is ``200000``. This will break locality and cause a huge overhead of cache-miss, which damages performance.
+Here, we placed ``pos`` and ``vel`` seperately. So the distance in address space between ``pos[i]`` and ``vel[i]`` is ``200000``. This will result in a poor spatial locality and lots of cache-misses, which damages the performance.
 A better placement is to place them together:
 
 .. code-block:: python
 
     ti.root.dense(ti.i, N).place(pos, vel)
+
+Then ``vel[i]`` is placed right next to ``pos[i]``, this increases cache-hit rate and therefore increases the performance.
 
 
 Multi-shaping (WIP)

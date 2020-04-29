@@ -7,6 +7,13 @@ Struct nodes, or SNode, each represents the layer of structure of *layout*.
 TODO: describe the idea better here.
 
 
+.. function:: snode.place(x, ...)
+
+    :parameter snode: (SNode) where to place
+    :parameter x: (tensor) tensor(s) to be placed
+    :return: (SNode) the ``snode`` itself unchaged
+
+
 .. function:: ti.root
 
     ``ti.root`` is a kind of SNode, The root SNode, stands for 0-D tensor.
@@ -85,7 +92,7 @@ Data layouts
 
         ti.root.dynamic(ti.i, 3).place(x)
 
-    This places a 2-D tensor of shape ``(3, 4)``:
+    This places a 2D tensor of shape ``(3, 4)``:
 
     ::
 

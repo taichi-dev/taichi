@@ -175,9 +175,9 @@ Debug your program with ``print(x)``. For example, if ``x`` is ``23``, then it s
 
 in the console.
 
-.. note::
+.. warning::
 
-    For now ``print`` only takes scalar numbers as input. Strings, vectors and matrices are not supported. Please use ``print(v[0]); print(v[1])`` if you want to print a vector.
+    This is not the same as the ``print`` in Python-scope. For now ``print`` in Taichi only takes **scalar numbers** as input. Strings, vectors and matrices are not supported. Please use ``print(v[0]); print(v[1])`` if you want to print a vector.
 
 
 Why Python frontend

@@ -149,6 +149,14 @@ A better placement is to place them together:
     ti.root.dense(ti.i, N).place(pos, vel)
 
 
+Multi-shaping (WIP)
+-------------------
+
+.. code-block:: python
+
+    ti.root.dense(ti.i, 2).dense(ti.i, 3)
+
+
 Advanced layout (WIP)
 ---------------------
 

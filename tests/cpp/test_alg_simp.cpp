@@ -91,7 +91,6 @@ TI_TEST("alg_simp") {
                      config_without_fast_math);  // should eliminate mul, add
     irpass::die(block.get());                    // should eliminate zero, load
 
-    irpass::print(block.get());
     TI_CHECK(block->size() == 3);  // one address, one one, one store
 
     block = std::make_unique<Block>();

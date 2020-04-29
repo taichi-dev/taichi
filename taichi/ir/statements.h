@@ -377,4 +377,3 @@ class StackAccAdjointStmt : public Stmt {
 };
 
 TLANG_NAMESPACE_END
-        

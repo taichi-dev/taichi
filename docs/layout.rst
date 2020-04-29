@@ -74,13 +74,13 @@ See? ``x`` first increases the first index, while ``y`` first increases the seco
 
     .. code-block:: c
 
-        int x[2][3];  // 1
-        int y[3][2];  // 2
+        int x[3][2];  // 1
+        int y[2][3];  // 2
 
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 2; j++) {
-                do_something ( x[j][i] );
-                do_something ( y[i][j] );
+                do_something ( x[i][j] );
+                do_something ( y[j][i] );
             }
         }
 
@@ -96,18 +96,23 @@ For example, this places two 1-D tensor of size ``3``:
     ti.root.dense(ti.i, 3).place(x, y)
 
 Their memory layout:
+
 .. code-block::
+
     #  address low ......... address high
     #  x[0]  y[0]  x[1]  y[1]  x[2]  y[2]
 
 In contrast, this places two tensor placed seperately:
+
 .. code-block:: python
 
     ti.root.dense(ti.i, 3).place(x)
     ti.root.dense(ti.i, 3).place(y)
 
 Now, their memory layout:
+
 .. code-block::
+
     #  address low ......... address high
     #  x[0]  x[1]  x[2]  y[0]  y[1]  y[2]
 

@@ -60,10 +60,77 @@ class FlagAccess : public IRVisitor {
   }
 };
 
+// For struct fors, weaken accesses on variables currently being looped over
+// E.g.
+// for i in x:
+//   x[i] = 0
+// Note the indices of x accesses must be loop indices
+
+class WeakenAccess : public BasicStmtVisitor {
+ public:
+  using BasicStmtVisitor::visit;
+
+  WeakenAccess(IRNode *node) {
+    allow_undefined_visitor = true;
+    invoke_default_visitor = false;
+    node->accept(this);
+  }
+
+  void visit(Block *stmt_list) {  // block itself has no id
+    for (auto &stmt : stmt_list->statements) {
+      stmt->accept(this);
+    }
+  }
+
+  void visit(OffloadedStmt *stmt) {
+    current_offload = stmt;
+    if (stmt->body)
+      stmt->body->accept(this);
+    current_offload = nullptr;
+  }
+
+  void visit(GlobalPtrStmt *stmt) {
+    if (stmt->activate) {
+      if (current_offload &&
+          current_offload->task_type == OffloadedStmt::TaskType::struct_for) {
+        bool same_as_loop_snode = true;
+        for (auto snode : stmt->snodes.data) {
+          if (snode->type == SNodeType::place) {
+            snode = snode->parent;
+          }
+          if (snode != current_offload->snode) {
+            same_as_loop_snode = false;
+          }
+          if (stmt->indices.size() ==
+              current_offload->snode->num_active_indices)
+            for (int i = 0; i < current_offload->snode->num_active_indices;
+                 i++) {
+              auto ind = stmt->indices[i];
+              // TODO: vectorized case?
+              if (auto loop_var = ind->cast<LoopIndexStmt>()) {
+                if (loop_var->index != i) {
+                  same_as_loop_snode = false;
+                }
+              } else {
+                same_as_loop_snode = false;
+              }
+            }
+        }
+        if (same_as_loop_snode)
+          stmt->activate = false;
+      }
+    }
+  }
+
+ private:
+  OffloadedStmt *current_offload;
+};
+
 namespace irpass {
 
 void flag_access(IRNode *root) {
-  FlagAccess instance(root);
+  FlagAccess flag_access(root);
+  WeakenAccess weaken_access(root);
 }
 
 }  // namespace irpass

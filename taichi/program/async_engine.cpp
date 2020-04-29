@@ -101,6 +101,7 @@ void AsyncEngine::launch(Kernel *kernel) {
   for (std::size_t i = 0; i < offloads.size(); i++) {
     auto offload = offloads[i]->as<OffloadedStmt>();
     KernelLaunchRecord rec(kernel->program.get_context(), kernel, offload);
+    irpass::print(rec.stmt);
     enqueue(rec);
   }
 }
@@ -145,6 +146,7 @@ void AsyncEngine::enqueue(KernelLaunchRecord t) {
       if (ptr->activate) {
         for (auto &snode : ptr->snodes.data) {
           meta.activation_snodes.insert(snode);
+          // fmt::print("act {}\n", snode->get_node_type_name_hinted());
         }
       }
     }
@@ -174,24 +176,24 @@ bool AsyncEngine::optimize() {
     if (offload->task_type == OffloadedStmt::TaskType::listgen) {
       // keep
     } else if (offload->task_type == OffloadedStmt::TaskType::clear_list) {
-      fmt::print("clearlist {}\n", offload->snode->get_node_type_name_hinted());
-      // do nothing
+      // fmt::print("clearlist {}\n",
+      // offload->snode->get_node_type_name_hinted()); do nothing
       TI_ASSERT(task_queue[i + 1].stmt->task_type ==
                 OffloadedStmt::TaskType::listgen);
-      fmt::print("listgen {}\n", offload->snode->get_node_type_name_hinted());
+      // fmt::print("listgen {}\n",
+      // offload->snode->get_node_type_name_hinted());
       auto snode = offload->snode;
       if (list_dirty.find(snode) != list_dirty.end() && !list_dirty[snode]) {
         keep = false;  // safe to remove
         modified = true;
-        TI_TAG;
         i++;  // skip the following list gen as well
         continue;
       }
       list_dirty[snode] = false;
     } else {
-      fmt::print("job\n");
+      // fmt::print("job\n");
       for (auto snode : meta.activation_snodes) {
-        fmt::print(" activates {}\n", snode->get_node_type_name_hinted());
+        // fmt::print(" activates {}\n", snode->get_node_type_name_hinted());
         while (snode && snode->type != SNodeType::root) {
           list_dirty[snode] = true;
           snode = snode->parent;

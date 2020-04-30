@@ -55,6 +55,21 @@ class ConstantFold : public BasicStmtVisitor {
 #endif
   };
 
+  static void insert_die(const std::string &text)
+  {
+    auto cond = Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>((int)0));
+    auto assertion = Stmt::make<AssertStmt>(text, cond.get());
+    current_ast_builder().insert(std::move(cond));
+    current_ast_builder().insert(std::move(assertion));
+  }
+
+  static void insert_die_loop()
+  {
+    auto body = std::make_unique<Block>();
+    auto loop = Stmt::make<WhileStmt>(std::move(body));
+    current_ast_builder().insert(std::move(loop));
+  }
+
   static Kernel *get_jit_evaluator_kernel(JITEvaluatorId const &id)
   {
     auto &cache = get_current_program().jit_evaluator_cache;
@@ -65,6 +80,7 @@ class ConstantFold : public BasicStmtVisitor {
     static int jic = 0; // X: race?
     auto kernel_name = fmt::format("jit_evaluator_{}", jic++);
     auto func = [&] () {
+      //insert_die_loop();
       auto lhstmt = Stmt::make<ArgLoadStmt>(1, false);
       auto rhstmt = Stmt::make<ArgLoadStmt>(2, false);
       pStmt oper;
@@ -82,6 +98,7 @@ class ConstantFold : public BasicStmtVisitor {
         current_ast_builder().insert(std::move(rhstmt));
       current_ast_builder().insert(std::move(oper));
       current_ast_builder().insert(std::move(ret));
+      //insert_die("DEAD");
     };
     auto ker = std::make_unique<Kernel>(get_current_program(), func, kernel_name);
     ker->insert_arg(id.ret, false);

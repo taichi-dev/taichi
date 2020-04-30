@@ -139,17 +139,42 @@ class GUI:
             self.core.screenshot(file)
         self.clear(self.background_color)
 
+    class EventFilter:
+        def __init__(self, *filter):
+            self.filter = set()
+            for ent in filter:
+                if isinstance(ent, (list, tuple)):
+                    type, key = ent
+                    ent = (type, key)
+                self.filter.add(ent)
+
+        def match(self, e):
+            if (e.type, e.key) in self.filter:
+                return True
+            if e.type in self.filter:
+                return True
+            if e.key in self.filter:
+                return True
+            return False
+
     def has_key_event(self):
         return self.core.has_key_event()
 
     def get_event(self, *filter):
+        for e in self.get_events(*filter):
+            self.event = e
+            return True
+        return False
+
+    def get_events(self, *filter):
+        filter = filter and GUI.EventFilter(*filter) or None
+
         while True:
             if not self.has_key_event():
-                return False
-            self.event = self.get_key_event()
-            if not len(filter) or self.event.type in filter:
                 break
-        return True
+            e = self.get_key_event()
+            if filter is None or filter.match(e):
+                yield e
 
     def get_key_event(self):
         self.core.wait_key_event()
@@ -157,6 +182,7 @@ class GUI:
         e.key = self.core.get_key_event_head_key()
         e.type = self.core.get_key_event_head_type()
         e.pos = self.core.get_key_event_head_pos()
+        e.pos = (e.pos[0], e.pos[1])
         e.modifier = []
         for mod in ['Shift', 'Alt', 'Control']:
             if self.is_pressed(mod):
@@ -179,7 +205,8 @@ class GUI:
             return False
 
     def get_cursor_pos(self):
-        return self.core.get_cursor_pos()
+        pos = self.core.get_cursor_pos()
+        return pos[0], pos[1]
 
     def has_key_pressed(self):
         if self.has_key_event():

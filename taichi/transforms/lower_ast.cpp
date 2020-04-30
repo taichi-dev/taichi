@@ -26,18 +26,18 @@ class LowerAST : public IRVisitor {
  private:
   Stmt *capturing_loop;
   std::unordered_set<Stmt *> detected_fors_with_break;
-  Block *current_block_;
+  Block *current_block;
 
   FlattenContext make_flatten_ctx() {
     FlattenContext fctx;
-    fctx.current_block = current_block_;
+    fctx.current_block = this->current_block;
     return fctx;
   }
 
  public:
   explicit LowerAST(const std::unordered_set<Stmt *> &_detected_fors_with_break)
       : detected_fors_with_break(_detected_fors_with_break),
-        current_block_(nullptr) {
+        current_block(nullptr) {
     // TODO: change this to false
     allow_undefined_visitor = true;
     capturing_loop = nullptr;
@@ -51,13 +51,13 @@ class LowerAST : public IRVisitor {
   }
 
   void visit(Block *stmt_list) override {
-    auto backup_block = current_block_;
-    current_block_ = stmt_list;
+    auto backup_block = this->current_block;
+    this->current_block = stmt_list;
     auto stmts = make_raw_pointer_list(stmt_list->statements);
     for (auto &stmt : stmts) {
       stmt->accept(this);
     }
-    current_block_ = backup_block;
+    this->current_block = backup_block;
   }
 
   void visit(FrontendAllocaStmt *stmt) override {
@@ -142,9 +142,7 @@ class LowerAST : public IRVisitor {
     auto mask = std::make_unique<AllocaStmt>(DataType::i32);
     new_while->mask = mask.get();
     auto &stmts = new_while->body;
-    for (int i = 0; i < (int)fctx.stmts.size(); i++) {
-      stmts->insert(std::move(fctx.stmts[i]), i);
-    }
+    stmts->insert(std::move(fctx.stmts), /*location=*/0);
     // insert break
     stmts->insert(
         std::make_unique<WhileControlStmt>(new_while->mask, cond_stmt),

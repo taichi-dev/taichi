@@ -34,7 +34,7 @@ def test_python(args):
     if args.verbose:
         pytest_args += ['-s', '-v']
     if args.rerun:
-        pytest_args += ['--reruns', '2']
+        pytest_args += ['--reruns', args.rerun]
     if int(pytest.main([os.path.join(root_dir, 'misc/empty_pytest.py'),
                         '-n1', '-q'])) == 0:  # test if pytest has xdist or not
         try:
@@ -73,9 +73,8 @@ def make_argument_parser():
                         '--verbose',
                         action='store_true',
                         help='Run with verbose outputs')
-    parser.add_argument('-R',
+    parser.add_argument('-r',
                         '--rerun',
-                        action='store_true',
                         help='Rerun failed tests once again')
     parser.add_argument('-t',
                         '--threads',

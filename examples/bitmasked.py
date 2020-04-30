@@ -17,8 +17,8 @@ def activate():
     # Let's activate elements in the rectangle now!
     for i, j in ti.ndrange((100, 125), (100, 125)):  # loop over a rectangle area
         # In taichi, in order to activate an element,
-            # simply **assign any value** to that element.
-            x[i, j] = 0  # assign to activate!
+        # simply **assign any value** to that element.
+        x[i, j] = 0  # assign to activate!
 
 @ti.kernel
 def paint(t: ti.f32):

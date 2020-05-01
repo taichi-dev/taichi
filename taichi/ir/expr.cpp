@@ -137,7 +137,7 @@ void Expr::operator+=(const Expr &o) {
 void Expr::operator-=(const Expr &o) {
   if (this->atomic) {
     (*this) = Expr::make<AtomicOpExpression>(
-        AtomicOpType::add, ptr_if_global(*this), -load_if_ptr(o));
+        AtomicOpType::sub, ptr_if_global(*this), load_if_ptr(o));
   } else {
     (*this) = (*this) - o;
   }

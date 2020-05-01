@@ -150,12 +150,6 @@ class IRPrinter : public IRVisitor {
           stmt->op2->name(), stmt->op3->name());
   }
 
-  void visit(FrontendAtomicStmt *stmt) override {
-    print("{}{} = atomic {}({}, {})", stmt->type_hint(), stmt->name(),
-          atomic_op_type_name(stmt->op_type), stmt->dest->serialize(),
-          stmt->val->serialize());
-  }
-
   void visit(AtomicOpStmt *stmt) override {
     print("{}{} = atomic {}({}, {})", stmt->type_hint(), stmt->name(),
           atomic_op_type_name(stmt->op_type), stmt->dest->name(),

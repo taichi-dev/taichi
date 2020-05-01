@@ -127,8 +127,8 @@ Expr Expr::eval() const {
 
 void Expr::operator+=(const Expr &o) {
   if (this->atomic) {
-    current_ast_builder().insert(Stmt::make<FrontendAtomicStmt>(
-        AtomicOpType::add, ptr_if_global(*this), load_if_ptr(o)));
+    (*this) = Expr::make<AtomicOpExpression>(
+        AtomicOpType::add, ptr_if_global(*this), load_if_ptr(o));
   } else {
     (*this) = (*this) + o;
   }
@@ -136,8 +136,8 @@ void Expr::operator+=(const Expr &o) {
 
 void Expr::operator-=(const Expr &o) {
   if (this->atomic) {
-    current_ast_builder().insert(Stmt::make<FrontendAtomicStmt>(
-        AtomicOpType::add, *this, -load_if_ptr(o)));
+    (*this) = Expr::make<AtomicOpExpression>(
+        AtomicOpType::add, ptr_if_global(*this), -load_if_ptr(o));
   } else {
     (*this) = (*this) - o;
   }

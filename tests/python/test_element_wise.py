@@ -16,9 +16,7 @@ def rand(dtype):
 
 
 @ti.host_arch_only
-def _test_matrix_element_wise_unary(dtype, ti_func, math_func):
-    n, m = randint(1, 8), randint(1, 8)
-
+def _test_matrix_element_wise_unary(dtype, n, m, ti_func, math_func):
     a = ti.Matrix(n, m, dt=ti.f32, shape=())
     u = ti.Matrix(n, m, dt=ti.f32, shape=())
 
@@ -44,9 +42,7 @@ def _test_matrix_element_wise_unary(dtype, ti_func, math_func):
 
 
 @ti.host_arch_only
-def _test_matrix_element_wise_binary(dtype, ti_func, math_func):
-    n, m = randint(1, 8), randint(1, 8)
-
+def _test_matrix_element_wise_binary(dtype, n, m, ti_func, math_func):
     a = ti.Matrix(n, m, dt=dtype, shape=())
     b = ti.Matrix(n, m, dt=dtype, shape=())
     c = ti.Matrix(n, m, dt=dtype, shape=())
@@ -89,30 +85,32 @@ def _test_matrix_element_wise_binary(dtype, ti_func, math_func):
 
 def test_matrix_element_wise_binary():
     seed(666)
-    _test_matrix_element_wise_binary(ti.f32, ti.atan2, math.atan2)
-    _test_matrix_element_wise_binary(ti.f32, ti.min, min)
-    _test_matrix_element_wise_binary(ti.i32, ti.min, min)
-    _test_matrix_element_wise_binary(ti.f32, ti.max, max)
-    _test_matrix_element_wise_binary(ti.i32, ti.max, max)
-    _test_matrix_element_wise_binary(ti.f32, pow, pow)
-    _test_matrix_element_wise_binary(ti.i32, pow, pow)
-    _test_matrix_element_wise_binary(ti.i32, ti.raw_mod, _c_mod)
+    for n, m in [(5, 4), (1, 3)]:
+        _test_matrix_element_wise_binary(ti.f32, n, m, ti.atan2, math.atan2)
+        _test_matrix_element_wise_binary(ti.f32, n, m, ti.min, min)
+        _test_matrix_element_wise_binary(ti.i32, n, m, ti.min, min)
+        _test_matrix_element_wise_binary(ti.f32, n, m, ti.max, max)
+        _test_matrix_element_wise_binary(ti.i32, n, m, ti.max, max)
+        _test_matrix_element_wise_binary(ti.f32, n, m, pow, pow)
+        _test_matrix_element_wise_binary(ti.i32, n, m, pow, pow)
+        _test_matrix_element_wise_binary(ti.i32, n, m, ti.raw_mod, _c_mod)
 
 
 
 def test_matrix_element_wise_unary():
     seed(233)
-    _test_matrix_element_wise_unary(ti.f32, ti.sin, math.sin)
-    _test_matrix_element_wise_unary(ti.f32, ti.cos, math.cos)
-    _test_matrix_element_wise_unary(ti.f32, ti.tan, math.tan)
-    _test_matrix_element_wise_unary(ti.f32, ti.asin, math.asin)
-    _test_matrix_element_wise_unary(ti.f32, ti.acos, math.acos)
-    _test_matrix_element_wise_unary(ti.f32, ti.tanh, math.tanh)
-    _test_matrix_element_wise_unary(ti.f32, ti.sqrt, math.sqrt)
-    _test_matrix_element_wise_unary(ti.f32, ti.exp, math.exp)
-    _test_matrix_element_wise_unary(ti.f32, ti.log, math.log)
-    _test_matrix_element_wise_unary(ti.f32, ti.ceil, math.ceil)
-    _test_matrix_element_wise_unary(ti.f32, ti.floor, math.floor)
-    _test_matrix_element_wise_unary(ti.f32, ti.abs, abs)
-    _test_matrix_element_wise_unary(ti.i32, ti.abs, abs)
-    # TODO(archibate): why ti.inv, ti.sqr doesn't work?
+    for n, m in [(5, 4), (3, 1)]:
+        _test_matrix_element_wise_unary(ti.f32, n, m, ti.sin, math.sin)
+        _test_matrix_element_wise_unary(ti.f32, n, m, ti.cos, math.cos)
+        _test_matrix_element_wise_unary(ti.f32, n, m, ti.tan, math.tan)
+        _test_matrix_element_wise_unary(ti.f32, n, m, ti.asin, math.asin)
+        _test_matrix_element_wise_unary(ti.f32, n, m, ti.acos, math.acos)
+        _test_matrix_element_wise_unary(ti.f32, n, m, ti.tanh, math.tanh)
+        _test_matrix_element_wise_unary(ti.f32, n, m, ti.sqrt, math.sqrt)
+        _test_matrix_element_wise_unary(ti.f32, n, m, ti.exp, math.exp)
+        _test_matrix_element_wise_unary(ti.f32, n, m, ti.log, math.log)
+        _test_matrix_element_wise_unary(ti.f32, n, m, ti.ceil, math.ceil)
+        _test_matrix_element_wise_unary(ti.f32, n, m, ti.floor, math.floor)
+        _test_matrix_element_wise_unary(ti.f32, n, m, ti.abs, abs)
+        _test_matrix_element_wise_unary(ti.i32, n, m, ti.abs, abs)
+        # TODO(archibate): why ti.inv, ti.sqr doesn't work?

@@ -18,6 +18,67 @@ IRBuilder &current_ast_builder() {
   return context->builder();
 }
 
+bool maybe_same_address(Stmt *var1, Stmt *var2) {
+  // Return true when two statements might be the same address;
+  // false when two statements cannot be the same address.
+
+  // If both stmts are allocas, they have the same address iff var1 == var2.
+  // If only one of them is an alloca, they can never share the same address.
+  if (var1 == var2)
+    return true;
+  if (var1->is<AllocaStmt>() || var2->is<AllocaStmt>())
+    return false;
+
+  // If both statements are global temps, they have the same address iff they
+  // have the same offset. If only one of them is a global temp, they can never
+  // share the same address.
+  if (var1->is<GlobalTemporaryStmt>() || var2->is<GlobalTemporaryStmt>()) {
+    if (!var1->is<GlobalTemporaryStmt>() || !var2->is<GlobalTemporaryStmt>())
+      return false;
+    return var1->as<GlobalTemporaryStmt>()->offset ==
+           var2->as<GlobalTemporaryStmt>()->offset;
+  }
+
+  // If both statements are GlobalPtrStmts or GetChStmts, we can check by
+  // SNode::id.
+  TI_ASSERT(var1->width() == 1);
+  TI_ASSERT(var2->width() == 1);
+  auto get_snode_id = [](Stmt *s) {
+    if (auto ptr = s->cast<GlobalPtrStmt>())
+      return ptr->snodes[0]->id;
+    else if (auto get_child = s->cast<GetChStmt>())
+      return get_child->output_snode->id;
+    else
+      return -1;
+  };
+  int snode1 = get_snode_id(var1);
+  int snode2 = get_snode_id(var2);
+  if (snode1 != -1 && snode2 != -1 && snode1 != snode2)
+    return false;
+
+  // GlobalPtrStmts with guaranteed different indices cannot share the same
+  // address.
+  if (var1->is<GlobalPtrStmt>() && var2->is<GlobalPtrStmt>()) {
+    auto ptr1 = var1->as<GlobalPtrStmt>();
+    auto ptr2 = var2->as<GlobalPtrStmt>();
+    for (int i = 0; i < (int)ptr1->indices.size(); i++) {
+      if (!irpass::analysis::same_statements(ptr1->indices[i],
+                                             ptr2->indices[i])) {
+        if (ptr1->indices[i]->is<ConstStmt>() &&
+            ptr2->indices[i]->is<ConstStmt>()) {
+          // different constants
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
+  // In other cases (probably after lower_access), we don't know if the two
+  // statements share the same address.
+  return true;
+}
+
 std::string VectorType::pointer_suffix() const {
   if (is_pointer()) {
     return "*";
@@ -317,13 +378,16 @@ UnaryOpStmt::UnaryOpStmt(UnaryOpType op_type, Stmt *operand)
     : op_type(op_type), operand(operand) {
   TI_ASSERT(!operand->is<AllocaStmt>());
   cast_type = DataType::unknown;
-  cast_by_value = true;
   TI_STMT_REG_FIELDS;
+}
+
+bool UnaryOpStmt::is_cast() const {
+  return unary_op_is_cast(op_type);
 }
 
 bool UnaryOpStmt::same_operation(UnaryOpStmt *o) const {
   if (op_type == o->op_type) {
-    if (op_type == UnaryOpType::cast) {
+    if (is_cast()) {
       return cast_type == o->cast_type;
     } else {
       return true;
@@ -333,8 +397,8 @@ bool UnaryOpStmt::same_operation(UnaryOpStmt *o) const {
 }
 
 std::string UnaryOpExpression::serialize() {
-  if (type == UnaryOpType::cast) {
-    std::string reint = cast_by_value ? "" : "reinterpret_";
+  if (is_cast()) {
+    std::string reint = type == UnaryOpType::cast_value ? "" : "reinterpret_";
     return fmt::format("({}{}<{}> {})", reint, unary_op_type_name(type),
                        data_type_name(cast_type), operand->serialize());
   } else {
@@ -343,16 +407,19 @@ std::string UnaryOpExpression::serialize() {
   }
 }
 
-void UnaryOpExpression::flatten(VecStatement &ret) {
-  operand->flatten(ret);
+bool UnaryOpExpression::is_cast() const {
+  return unary_op_is_cast(type);
+}
+
+void UnaryOpExpression::flatten(FlattenContext *ctx) {
+  operand->flatten(ctx);
   auto unary = std::make_unique<UnaryOpStmt>(type, operand->stmt);
-  if (type == UnaryOpType::cast) {
+  if (is_cast()) {
     unary->cast_type = cast_type;
-    unary->cast_by_value = cast_by_value;
   }
   stmt = unary.get();
   stmt->tb = tb;
-  ret.push_back(std::move(unary));
+  ctx->push_back(std::move(unary));
 }
 
 ExternalPtrStmt::ExternalPtrStmt(const LaneAttribute<Stmt *> &base_ptrs,
@@ -392,22 +459,22 @@ std::string GlobalPtrExpression::serialize() {
   return s;
 }
 
-void GlobalPtrExpression::flatten(VecStatement &ret) {
+void GlobalPtrExpression::flatten(FlattenContext *ctx) {
   std::vector<Stmt *> index_stmts;
   for (int i = 0; i < (int)indices.size(); i++) {
-    indices.exprs[i]->flatten(ret);
+    indices.exprs[i]->flatten(ctx);
     index_stmts.push_back(indices.exprs[i]->stmt);
   }
   if (var.is<GlobalVariableExpression>()) {
-    ret.push_back(std::make_unique<GlobalPtrStmt>(
+    ctx->push_back(std::make_unique<GlobalPtrStmt>(
         var.cast<GlobalVariableExpression>()->snode, index_stmts));
   } else {
     TI_ASSERT(var.is<ExternalTensorExpression>());
-    var->flatten(ret);
-    ret.push_back(std::make_unique<ExternalPtrStmt>(
+    var->flatten(ctx);
+    ctx->push_back(std::make_unique<ExternalPtrStmt>(
         var.cast<ExternalTensorExpression>()->stmt, index_stmts));
   }
-  stmt = ret.back().get();
+  stmt = ctx->back_stmt();
 }
 
 GetChStmt::GetChStmt(Stmt *input_ptr, int chid)
@@ -639,7 +706,7 @@ void Block::replace_with(Stmt *old_statement,
   replace_with(old_statement, std::move(vec));
 }
 
-Stmt *Block::lookup_var(const Ident &ident) const {
+Stmt *Block::lookup_var(const Identifier &ident) const {
   auto ptr = local_var_alloca.find(ident);
   if (ptr != local_var_alloca.end()) {
     return ptr->second;
@@ -791,10 +858,10 @@ std::string SNodeOpExpression::serialize() {
   }
 }
 
-void SNodeOpExpression::flatten(VecStatement &ret) {
+void SNodeOpExpression::flatten(FlattenContext *ctx) {
   std::vector<Stmt *> indices_stmt;
   for (int i = 0; i < (int)indices.size(); i++) {
-    indices[i]->flatten(ret);
+    indices[i]->flatten(ctx);
     indices_stmt.push_back(indices[i]->stmt);
   }
   if (op_type == SNodeOpType::is_active) {
@@ -804,13 +871,13 @@ void SNodeOpExpression::flatten(VecStatement &ret) {
                     snode->type != SNodeType::hash &&
                     snode->type != SNodeType::bitmasked,
                 "ti.is_active only works on pointer, hash or bitmasked nodes.");
-    ret.push_back<SNodeOpStmt>(SNodeOpType::is_active, snode, indices_stmt);
+    ctx->push_back<SNodeOpStmt>(SNodeOpType::is_active, snode, indices_stmt);
   } else {
-    auto ptr = ret.push_back<GlobalPtrStmt>(snode, indices_stmt);
+    auto ptr = ctx->push_back<GlobalPtrStmt>(snode, indices_stmt);
     if (op_type == SNodeOpType::append) {
-      value->flatten(ret);
-      ret.push_back<SNodeOpStmt>(SNodeOpType::append, snode, ptr,
-                                 ret.back().get());
+      value->flatten(ctx);
+      ctx->push_back<SNodeOpStmt>(SNodeOpType::append, snode, ptr,
+                                  ctx->back_stmt());
       TI_ERROR_IF(snode->type != SNodeType::dynamic,
                   "ti.append only works on dynamic nodes.");
       TI_ERROR_IF(snode->ch.size() != 1,
@@ -818,10 +885,10 @@ void SNodeOpExpression::flatten(VecStatement &ret) {
       TI_ERROR_IF(data_type_size(snode->ch[0]->dt) != 4,
                   "ti.append only works on i32/f32 nodes.");
     } else if (op_type == SNodeOpType::length) {
-      ret.push_back<SNodeOpStmt>(SNodeOpType::length, snode, ptr, nullptr);
+      ctx->push_back<SNodeOpStmt>(SNodeOpType::length, snode, ptr, nullptr);
     }
   }
-  stmt = ret.back().get();
+  stmt = ctx->back_stmt();
 }
 
 std::unique_ptr<ConstStmt> ConstStmt::copy() {

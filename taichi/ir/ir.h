@@ -90,7 +90,8 @@ void die(IRNode *root);
 void simplify(IRNode *root, Kernel *kernel = nullptr);
 void alg_simp(IRNode *root, const CompileConfig &config);
 void whole_kernel_cse(IRNode *root);
-void variable_optimization(IRNode *root);
+void variable_optimization(IRNode *root, bool after_lower_access);
+void extract_constant(IRNode *root);
 void full_simplify(IRNode *root,
                    const CompileConfig &config,
                    Kernel *kernel = nullptr);
@@ -143,6 +144,8 @@ void verify(IRNode *root);
 }  // namespace irpass
 
 IRBuilder &current_ast_builder();
+
+bool maybe_same_address(Stmt *var1, Stmt *var2);
 
 struct VectorType {
  private:
@@ -280,8 +283,6 @@ class Identifier {
     return id == o.id;
   }
 };
-
-using Ident = Identifier;
 
 class VecStatement {
  public:
@@ -731,13 +732,31 @@ class Expression {
   std::string tb;
   std::map<std::string, std::string> attributes;
 
+  struct FlattenContext {
+    VecStatement stmts;
+    Block *current_block = nullptr;
+
+    inline Stmt *push_back(pStmt &&stmt) {
+      return stmts.push_back(std::move(stmt));
+    }
+
+    template <typename T, typename... Args>
+    T *push_back(Args &&... args) {
+      return stmts.push_back<T>(std::forward<Args>(args)...);
+    }
+
+    Stmt *back_stmt() {
+      return stmts.back().get();
+    }
+  };
+
   Expression() {
     stmt = nullptr;
   }
 
   virtual std::string serialize() = 0;
 
-  virtual void flatten(VecStatement &ret) {
+  virtual void flatten(FlattenContext *ctx) {
     TI_NOT_IMPLEMENTED;
   };
 
@@ -811,9 +830,9 @@ inline ExprGroup operator,(const ExprGroup &a, const Expr &b) {
 
 class FrontendAllocaStmt : public Stmt {
  public:
-  Ident ident;
+  Identifier ident;
 
-  FrontendAllocaStmt(const Ident &lhs, DataType type) : ident(lhs) {
+  FrontendAllocaStmt(const Identifier &lhs, DataType type) : ident(lhs) {
     ret_type = VectorType(1, type);
   }
 
@@ -895,17 +914,17 @@ class UnaryOpStmt : public Stmt {
   UnaryOpType op_type;
   Stmt *operand;
   DataType cast_type;
-  bool cast_by_value = true;
 
   UnaryOpStmt(UnaryOpType op_type, Stmt *operand);
 
   bool same_operation(UnaryOpStmt *o) const;
+  bool is_cast() const;
 
   virtual bool has_global_side_effect() const override {
     return false;
   }
 
-  TI_STMT_DEF_FIELDS(ret_type, op_type, operand, cast_type, cast_by_value);
+  TI_STMT_DEF_FIELDS(ret_type, op_type, operand, cast_type);
   DEFINE_ACCEPT
 };
 
@@ -937,10 +956,10 @@ class ArgLoadExpression : public Expression {
     return fmt::format("arg[{}]", arg_id);
   }
 
-  void flatten(VecStatement &ret) override {
+  void flatten(FlattenContext *ctx) override {
     auto ran = std::make_unique<ArgLoadStmt>(arg_id);
-    ret.push_back(std::move(ran));
-    stmt = ret.back().get();
+    ctx->push_back(std::move(ran));
+    stmt = ctx->back_stmt();
   }
 };
 
@@ -1007,10 +1026,10 @@ class RandExpression : public Expression {
     return fmt::format("rand<{}>()", data_type_name(dt));
   }
 
-  void flatten(VecStatement &ret) override {
+  void flatten(FlattenContext *ctx) override {
     auto ran = std::make_unique<RandStmt>(dt);
-    ret.push_back(std::move(ran));
-    stmt = ret.back().get();
+    ctx->push_back(std::move(ran));
+    stmt = ctx->back_stmt();
   }
 };
 
@@ -1019,17 +1038,17 @@ class UnaryOpExpression : public Expression {
   UnaryOpType type;
   Expr operand;
   DataType cast_type;
-  bool cast_by_value;
 
   UnaryOpExpression(UnaryOpType type, const Expr &operand)
       : type(type), operand(smart_load(operand)) {
     cast_type = DataType::unknown;
-    cast_by_value = true;
   }
+
+  bool is_cast() const;
 
   std::string serialize() override;
 
-  void flatten(VecStatement &ret) override;
+  void flatten(FlattenContext *ctx) override;
 };
 
 class BinaryOpStmt : public Stmt {
@@ -1103,14 +1122,14 @@ class BinaryOpExpression : public Expression {
                        binary_op_type_symbol(type), rhs->serialize());
   }
 
-  void flatten(VecStatement &ret) override {
+  void flatten(FlattenContext *ctx) override {
     // if (stmt)
     //  return;
-    lhs->flatten(ret);
-    rhs->flatten(ret);
-    ret.push_back(std::make_unique<BinaryOpStmt>(type, lhs->stmt, rhs->stmt));
-    ret.back()->tb = tb;
-    stmt = ret.back().get();
+    lhs->flatten(ctx);
+    rhs->flatten(ctx);
+    ctx->push_back(std::make_unique<BinaryOpStmt>(type, lhs->stmt, rhs->stmt));
+    ctx->stmts.back()->tb = tb;
+    stmt = ctx->back_stmt();
   }
 };
 
@@ -1134,15 +1153,15 @@ class TernaryOpExpression : public Expression {
                        op1->serialize(), op2->serialize(), op3->serialize());
   }
 
-  void flatten(VecStatement &ret) override {
+  void flatten(FlattenContext *ctx) override {
     // if (stmt)
     //  return;
-    op1->flatten(ret);
-    op2->flatten(ret);
-    op3->flatten(ret);
-    ret.push_back(
+    op1->flatten(ctx);
+    op2->flatten(ctx);
+    op3->flatten(ctx);
+    ctx->push_back(
         std::make_unique<TernaryOpStmt>(type, op1->stmt, op2->stmt, op3->stmt));
-    stmt = ret.back().get();
+    stmt = ctx->back_stmt();
   }
 };
 
@@ -1196,10 +1215,10 @@ class ExternalTensorExpression : public Expression {
     return fmt::format("{}d_ext_arr", dim);
   }
 
-  void flatten(VecStatement &ret) override {
+  void flatten(FlattenContext *ctx) override {
     auto ptr = Stmt::make<ArgLoadStmt>(arg_id, true);
-    ret.push_back(std::move(ptr));
-    stmt = ret.back().get();
+    ctx->push_back(std::move(ptr));
+    stmt = ctx->back_stmt();
   }
 };
 
@@ -1213,7 +1232,7 @@ class GlobalVariableExpression : public Expression {
   bool is_primal;
   Expr adjoint;
 
-  GlobalVariableExpression(DataType dt, const Ident &ident)
+  GlobalVariableExpression(DataType dt, const Identifier &ident)
       : ident(ident), dt(dt) {
     snode = nullptr;
     has_ambient = false;
@@ -1235,11 +1254,11 @@ class GlobalVariableExpression : public Expression {
     return "#" + ident.name();
   }
 
-  void flatten(VecStatement &ret) override {
+  void flatten(FlattenContext *ctx) override {
     TI_ASSERT(snode->num_active_indices == 0);
     auto ptr = Stmt::make<GlobalPtrStmt>(LaneAttribute<SNode *>(snode),
                                          std::vector<Stmt *>());
-    ret.push_back(std::move(ptr));
+    ctx->push_back(std::move(ptr));
   }
 };
 
@@ -1254,7 +1273,7 @@ class GlobalPtrExpression : public Expression {
 
   std::string serialize() override;
 
-  void flatten(VecStatement &ret) override;
+  void flatten(FlattenContext *ctx) override;
 
   bool is_lvalue() const override {
     return true;
@@ -1267,7 +1286,7 @@ class Block : public IRNode {
  public:
   Block *parent;
   std::vector<std::unique_ptr<Stmt>> statements, trash_bin;
-  std::map<Ident, Stmt *> local_var_alloca;
+  std::map<Identifier, Stmt *> local_var_alloca;
   Stmt *mask_var;
   std::vector<SNode *> stop_gradients;
 
@@ -1291,7 +1310,7 @@ class Block : public IRNode {
   void replace_with(Stmt *old_statement,
                     VecStatement &&new_statements,
                     bool replace_usages = true);
-  Stmt *lookup_var(const Ident &ident) const;
+  Stmt *lookup_var(const Identifier &ident) const;
   Stmt *mask();
 
   Stmt *back() const {
@@ -1638,7 +1657,7 @@ class FrontendForStmt : public Stmt {
   Expr begin, end;
   Expr global_var;
   std::unique_ptr<Block> body;
-  std::vector<Ident> loop_var_id;
+  std::vector<Identifier> loop_var_id;
   int vectorize;
   int parallelize;
   bool strictly_serialized;
@@ -1870,7 +1889,7 @@ class EvalExpression : public Expression {
     return fmt::format("%{}", stmt_id);
   }
 
-  void flatten(VecStatement &ret) override {
+  void flatten(FlattenContext *ctx) override {
     stmt = stmt_ptr;
   }
 };
@@ -1893,12 +1912,12 @@ class RangeAssumptionExpression : public Expression {
                        base.serialize(), high);
   }
 
-  void flatten(VecStatement &ret) override {
-    input->flatten(ret);
-    base->flatten(ret);
-    ret.push_back(
+  void flatten(FlattenContext *ctx) override {
+    input->flatten(ctx);
+    base->flatten(ctx);
+    ctx->push_back(
         Stmt::make<RangeAssumptionStmt>(input->stmt, base->stmt, low, high));
-    stmt = ret.back().get();
+    stmt = ctx->back_stmt();
   }
 };
 
@@ -1918,10 +1937,10 @@ class IdExpression : public Expression {
     return id.name();
   }
 
-  void flatten(VecStatement &ret) override {
-    ret.push_back(std::make_unique<LocalLoadStmt>(
-        LocalAddress(current_block->lookup_var(id), 0)));
-    stmt = ret.back().get();
+  void flatten(FlattenContext *ctx) override {
+    ctx->push_back(std::make_unique<LocalLoadStmt>(
+        LocalAddress(ctx->current_block->lookup_var(id), 0)));
+    stmt = ctx->back_stmt();
   }
 
   bool is_lvalue() const override {
@@ -1944,12 +1963,12 @@ class AtomicOpExpression : public Expression {
 
   std::string serialize() override;
 
-  void flatten(VecStatement &ret) override {
+  void flatten(FlattenContext *ctx) override {
     // FrontendAtomicStmt is the correct place to flatten sub-exprs like |dest|
     // and |val| (See LowerAST). This class only wraps the frontend atomic_op()
     // stmt as an expression.
-    ret.push_back<FrontendAtomicStmt>(op_type, dest, val);
-    stmt = ret.back().get();
+    ctx->push_back<FrontendAtomicStmt>(op_type, dest, val);
+    stmt = ctx->back_stmt();
   }
 };
 
@@ -1973,7 +1992,7 @@ class SNodeOpExpression : public Expression {
 
   std::string serialize() override;
 
-  void flatten(VecStatement &ret) override;
+  void flatten(FlattenContext *ctx) override;
 };
 
 class GlobalLoadExpression : public Expression {
@@ -1986,10 +2005,10 @@ class GlobalLoadExpression : public Expression {
     return "gbl load " + ptr.serialize();
   }
 
-  void flatten(VecStatement &ret) override {
-    ptr->flatten(ret);
-    ret.push_back(std::make_unique<GlobalLoadStmt>(ptr->stmt));
-    stmt = ret.back().get();
+  void flatten(FlattenContext *ctx) override {
+    ptr->flatten(ctx);
+    ctx->push_back(std::make_unique<GlobalLoadStmt>(ptr->stmt));
+    stmt = ctx->back_stmt();
   }
 };
 
@@ -2005,9 +2024,9 @@ class ConstExpression : public Expression {
     return val.stringify();
   }
 
-  void flatten(VecStatement &ret) override {
-    ret.push_back(Stmt::make<ConstStmt>(val));
-    stmt = ret.back().get();
+  void flatten(FlattenContext *ctx) override {
+    ctx->push_back(Stmt::make<ConstStmt>(val));
+    stmt = ctx->back_stmt();
   }
 };
 

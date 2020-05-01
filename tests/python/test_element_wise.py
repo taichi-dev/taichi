@@ -85,7 +85,7 @@ def _test_matrix_element_wise_binary(dtype, n, m, ti_func, math_func):
 
 def test_matrix_element_wise_binary():
     seed(666)
-    for n, m in [(5, 4), (1, 3)]:
+    for n, m in [(5, 4), (3, 1)]:
         _test_matrix_element_wise_binary(ti.f32, n, m, ti.atan2, math.atan2)
         _test_matrix_element_wise_binary(ti.f32, n, m, ti.min, min)
         _test_matrix_element_wise_binary(ti.i32, n, m, ti.min, min)

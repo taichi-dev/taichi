@@ -15,16 +15,19 @@ ti.root.bitmasked(ti.ij, (n, n)).place(x)
 def activate():
     # All elements in bitmasked is deactivated at initial.
     # Let's activate elements in the rectangle now!
-    for i, j in ti.ndrange((100, 125), (100, 125)):  # loop over a rectangle area
+    for i, j in ti.ndrange((100, 125),
+                           (100, 125)):  # loop over a rectangle area
         # In taichi, in order to activate an element,
         # simply **assign any value** to that element.
         x[i, j] = 0  # assign to activate!
+
 
 @ti.kernel
 def paint(t: ti.f32):
     # struct-for syntax: loop over active pixels, inactive pixels are excluded
     for i, j in x:
         x[i, j] = ti.sin(t)
+
 
 @ti.kernel
 def paint2(t: ti.f32):

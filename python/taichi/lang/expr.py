@@ -315,7 +315,7 @@ class Expr:
         fill_tensor(self, val)
 
     def __rpow__(self, power, modulo=None):
-        # Python will try Matrix.__pow__ first so no worry
+        # Python will try Matrix.__pow__ first so we don't have to worry whether `power` is `Matrix`
         return Expr(power).__pow__(self, modulo)
 
     def __pow__(self, power, modulo=None):

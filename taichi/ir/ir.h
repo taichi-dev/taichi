@@ -732,13 +732,31 @@ class Expression {
   std::string tb;
   std::map<std::string, std::string> attributes;
 
+  struct FlattenContext {
+    VecStatement stmts;
+    Block *current_block = nullptr;
+
+    inline Stmt *push_back(pStmt &&stmt) {
+      return stmts.push_back(std::move(stmt));
+    }
+
+    template <typename T, typename... Args>
+    T *push_back(Args &&... args) {
+      return stmts.push_back<T>(std::forward<Args>(args)...);
+    }
+
+    Stmt *back_stmt() {
+      return stmts.back().get();
+    }
+  };
+
   Expression() {
     stmt = nullptr;
   }
 
   virtual std::string serialize() = 0;
 
-  virtual void flatten(VecStatement &ret) {
+  virtual void flatten(FlattenContext *ctx) {
     TI_NOT_IMPLEMENTED;
   };
 
@@ -938,10 +956,10 @@ class ArgLoadExpression : public Expression {
     return fmt::format("arg[{}]", arg_id);
   }
 
-  void flatten(VecStatement &ret) override {
+  void flatten(FlattenContext *ctx) override {
     auto ran = std::make_unique<ArgLoadStmt>(arg_id);
-    ret.push_back(std::move(ran));
-    stmt = ret.back().get();
+    ctx->push_back(std::move(ran));
+    stmt = ctx->back_stmt();
   }
 };
 
@@ -1008,10 +1026,10 @@ class RandExpression : public Expression {
     return fmt::format("rand<{}>()", data_type_name(dt));
   }
 
-  void flatten(VecStatement &ret) override {
+  void flatten(FlattenContext *ctx) override {
     auto ran = std::make_unique<RandStmt>(dt);
-    ret.push_back(std::move(ran));
-    stmt = ret.back().get();
+    ctx->push_back(std::move(ran));
+    stmt = ctx->back_stmt();
   }
 };
 
@@ -1030,7 +1048,7 @@ class UnaryOpExpression : public Expression {
 
   std::string serialize() override;
 
-  void flatten(VecStatement &ret) override;
+  void flatten(FlattenContext *ctx) override;
 };
 
 class BinaryOpStmt : public Stmt {
@@ -1104,14 +1122,14 @@ class BinaryOpExpression : public Expression {
                        binary_op_type_symbol(type), rhs->serialize());
   }
 
-  void flatten(VecStatement &ret) override {
+  void flatten(FlattenContext *ctx) override {
     // if (stmt)
     //  return;
-    lhs->flatten(ret);
-    rhs->flatten(ret);
-    ret.push_back(std::make_unique<BinaryOpStmt>(type, lhs->stmt, rhs->stmt));
-    ret.back()->tb = tb;
-    stmt = ret.back().get();
+    lhs->flatten(ctx);
+    rhs->flatten(ctx);
+    ctx->push_back(std::make_unique<BinaryOpStmt>(type, lhs->stmt, rhs->stmt));
+    ctx->stmts.back()->tb = tb;
+    stmt = ctx->back_stmt();
   }
 };
 
@@ -1135,15 +1153,15 @@ class TernaryOpExpression : public Expression {
                        op1->serialize(), op2->serialize(), op3->serialize());
   }
 
-  void flatten(VecStatement &ret) override {
+  void flatten(FlattenContext *ctx) override {
     // if (stmt)
     //  return;
-    op1->flatten(ret);
-    op2->flatten(ret);
-    op3->flatten(ret);
-    ret.push_back(
+    op1->flatten(ctx);
+    op2->flatten(ctx);
+    op3->flatten(ctx);
+    ctx->push_back(
         std::make_unique<TernaryOpStmt>(type, op1->stmt, op2->stmt, op3->stmt));
-    stmt = ret.back().get();
+    stmt = ctx->back_stmt();
   }
 };
 
@@ -1197,10 +1215,10 @@ class ExternalTensorExpression : public Expression {
     return fmt::format("{}d_ext_arr", dim);
   }
 
-  void flatten(VecStatement &ret) override {
+  void flatten(FlattenContext *ctx) override {
     auto ptr = Stmt::make<ArgLoadStmt>(arg_id, true);
-    ret.push_back(std::move(ptr));
-    stmt = ret.back().get();
+    ctx->push_back(std::move(ptr));
+    stmt = ctx->back_stmt();
   }
 };
 
@@ -1236,11 +1254,11 @@ class GlobalVariableExpression : public Expression {
     return "#" + ident.name();
   }
 
-  void flatten(VecStatement &ret) override {
+  void flatten(FlattenContext *ctx) override {
     TI_ASSERT(snode->num_active_indices == 0);
     auto ptr = Stmt::make<GlobalPtrStmt>(LaneAttribute<SNode *>(snode),
                                          std::vector<Stmt *>());
-    ret.push_back(std::move(ptr));
+    ctx->push_back(std::move(ptr));
   }
 };
 
@@ -1255,7 +1273,7 @@ class GlobalPtrExpression : public Expression {
 
   std::string serialize() override;
 
-  void flatten(VecStatement &ret) override;
+  void flatten(FlattenContext *ctx) override;
 
   bool is_lvalue() const override {
     return true;
@@ -1871,7 +1889,7 @@ class EvalExpression : public Expression {
     return fmt::format("%{}", stmt_id);
   }
 
-  void flatten(VecStatement &ret) override {
+  void flatten(FlattenContext *ctx) override {
     stmt = stmt_ptr;
   }
 };
@@ -1894,12 +1912,12 @@ class RangeAssumptionExpression : public Expression {
                        base.serialize(), high);
   }
 
-  void flatten(VecStatement &ret) override {
-    input->flatten(ret);
-    base->flatten(ret);
-    ret.push_back(
+  void flatten(FlattenContext *ctx) override {
+    input->flatten(ctx);
+    base->flatten(ctx);
+    ctx->push_back(
         Stmt::make<RangeAssumptionStmt>(input->stmt, base->stmt, low, high));
-    stmt = ret.back().get();
+    stmt = ctx->back_stmt();
   }
 };
 
@@ -1919,10 +1937,10 @@ class IdExpression : public Expression {
     return id.name();
   }
 
-  void flatten(VecStatement &ret) override {
-    ret.push_back(std::make_unique<LocalLoadStmt>(
-        LocalAddress(current_block->lookup_var(id), 0)));
-    stmt = ret.back().get();
+  void flatten(FlattenContext *ctx) override {
+    ctx->push_back(std::make_unique<LocalLoadStmt>(
+        LocalAddress(ctx->current_block->lookup_var(id), 0)));
+    stmt = ctx->back_stmt();
   }
 
   bool is_lvalue() const override {
@@ -1945,12 +1963,12 @@ class AtomicOpExpression : public Expression {
 
   std::string serialize() override;
 
-  void flatten(VecStatement &ret) override {
+  void flatten(FlattenContext *ctx) override {
     // FrontendAtomicStmt is the correct place to flatten sub-exprs like |dest|
     // and |val| (See LowerAST). This class only wraps the frontend atomic_op()
     // stmt as an expression.
-    ret.push_back<FrontendAtomicStmt>(op_type, dest, val);
-    stmt = ret.back().get();
+    ctx->push_back<FrontendAtomicStmt>(op_type, dest, val);
+    stmt = ctx->back_stmt();
   }
 };
 
@@ -1974,7 +1992,7 @@ class SNodeOpExpression : public Expression {
 
   std::string serialize() override;
 
-  void flatten(VecStatement &ret) override;
+  void flatten(FlattenContext *ctx) override;
 };
 
 class GlobalLoadExpression : public Expression {
@@ -1987,10 +2005,10 @@ class GlobalLoadExpression : public Expression {
     return "gbl load " + ptr.serialize();
   }
 
-  void flatten(VecStatement &ret) override {
-    ptr->flatten(ret);
-    ret.push_back(std::make_unique<GlobalLoadStmt>(ptr->stmt));
-    stmt = ret.back().get();
+  void flatten(FlattenContext *ctx) override {
+    ptr->flatten(ctx);
+    ctx->push_back(std::make_unique<GlobalLoadStmt>(ptr->stmt));
+    stmt = ctx->back_stmt();
   }
 };
 
@@ -2006,9 +2024,9 @@ class ConstExpression : public Expression {
     return val.stringify();
   }
 
-  void flatten(VecStatement &ret) override {
-    ret.push_back(Stmt::make<ConstStmt>(val));
-    stmt = ret.back().get();
+  void flatten(FlattenContext *ctx) override {
+    ctx->push_back(Stmt::make<ConstStmt>(val));
+    stmt = ctx->back_stmt();
   }
 };
 

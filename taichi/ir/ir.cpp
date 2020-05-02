@@ -559,8 +559,6 @@ IRNode *FrontendContext::root() {
 
 std::unique_ptr<FrontendContext> context;
 
-Block *current_block = nullptr;
-
 Expr Var(const Expr &x) {
   auto var = Expr(std::make_shared<IdExpression>());
   current_ast_builder().insert(std::make_unique<FrontendAllocaStmt>(

@@ -1911,10 +1911,6 @@ class RangeAssumptionExpression : public Expression {
   }
 };
 
-// TODO: fix this hack...
-// for current ast
-extern Block *current_block;
-
 class IdExpression : public Expression {
  public:
   Identifier id;

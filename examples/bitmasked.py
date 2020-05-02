@@ -1,5 +1,7 @@
 import taichi as ti
-ti.init()
+import math
+
+ti.init(arch=ti.gpu)
 
 n = 256
 x = ti.var(ti.f32)
@@ -22,21 +24,22 @@ def activate():
 def paint_active_pixels(t: ti.f32):
     # struct-for syntax: loop over active pixels, inactive pixels are excluded
     for i, j in x:
-        x[i, j] = ti.sin(t)
+        x[i, j] = t
 
 
 @ti.kernel
 def paint_all_pixels(t: ti.f32):
     # range-for syntax: loop over all pixels, no matter active or not
     for i, j in ti.ndrange(n, n):
-        x[i, j] = ti.sin(t)
+        x[i, j] = t
 
-
-activate()
 
 gui = ti.GUI('bitmasked', (n, n))
 for frame in range(10000):
-    paint_active_pixels(frame * 0.05)
-    #paint_all_pixels(frame * 0.05)  # try this and compare the difference!
+    ti.root.deactivate_all()
+    activate()
+    t = math.sin(frame * 0.05) * 0.5 + 0.5
+    paint_active_pixels(t)
+    #paint_all_pixels(t)  # try this and compare the difference!
     gui.set_image(x)
     gui.show()

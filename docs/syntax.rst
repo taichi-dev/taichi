@@ -142,11 +142,12 @@ Supported scalar functions:
 Note: when these scalar functions are applied on :ref:`matrix` and :ref:`vector`, it's applied element-wise, for example:
 
 .. code-block:: python
-
-    a = ti.sin(b)
-    # is equalivant to:
-    for i, j in a:
-        a[i, j] = ti.sin(b[i, j])
+   
+    A = ti.sin(B)
+    # is equalivant to (assuming B is a 3x2 matrix):
+    for i in ti.static(range(3)):
+        for j in ti.static(range(2)):
+            A[i, j] = ti.sin(B[i, j])
 
 .. note::
 

@@ -395,6 +395,7 @@ void export_lang(py::module &m) {
   m.def("expr_neg", [&](const Expr &e) { return -e; });
   DEFINE_EXPRESSION_OP_UNARY(sqrt)
   DEFINE_EXPRESSION_OP_UNARY(floor)
+  DEFINE_EXPRESSION_OP_UNARY(ceil)
   DEFINE_EXPRESSION_OP_UNARY(abs)
   DEFINE_EXPRESSION_OP_UNARY(sin)
   DEFINE_EXPRESSION_OP_UNARY(asin)

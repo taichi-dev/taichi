@@ -411,15 +411,15 @@ bool UnaryOpExpression::is_cast() const {
   return unary_op_is_cast(type);
 }
 
-void UnaryOpExpression::flatten(VecStatement &ret) {
-  operand->flatten(ret);
+void UnaryOpExpression::flatten(FlattenContext *ctx) {
+  operand->flatten(ctx);
   auto unary = std::make_unique<UnaryOpStmt>(type, operand->stmt);
   if (is_cast()) {
     unary->cast_type = cast_type;
   }
   stmt = unary.get();
   stmt->tb = tb;
-  ret.push_back(std::move(unary));
+  ctx->push_back(std::move(unary));
 }
 
 ExternalPtrStmt::ExternalPtrStmt(const LaneAttribute<Stmt *> &base_ptrs,
@@ -459,22 +459,22 @@ std::string GlobalPtrExpression::serialize() {
   return s;
 }
 
-void GlobalPtrExpression::flatten(VecStatement &ret) {
+void GlobalPtrExpression::flatten(FlattenContext *ctx) {
   std::vector<Stmt *> index_stmts;
   for (int i = 0; i < (int)indices.size(); i++) {
-    indices.exprs[i]->flatten(ret);
+    indices.exprs[i]->flatten(ctx);
     index_stmts.push_back(indices.exprs[i]->stmt);
   }
   if (var.is<GlobalVariableExpression>()) {
-    ret.push_back(std::make_unique<GlobalPtrStmt>(
+    ctx->push_back(std::make_unique<GlobalPtrStmt>(
         var.cast<GlobalVariableExpression>()->snode, index_stmts));
   } else {
     TI_ASSERT(var.is<ExternalTensorExpression>());
-    var->flatten(ret);
-    ret.push_back(std::make_unique<ExternalPtrStmt>(
+    var->flatten(ctx);
+    ctx->push_back(std::make_unique<ExternalPtrStmt>(
         var.cast<ExternalTensorExpression>()->stmt, index_stmts));
   }
-  stmt = ret.back().get();
+  stmt = ctx->back_stmt();
 }
 
 GetChStmt::GetChStmt(Stmt *input_ptr, int chid)
@@ -858,10 +858,10 @@ std::string SNodeOpExpression::serialize() {
   }
 }
 
-void SNodeOpExpression::flatten(VecStatement &ret) {
+void SNodeOpExpression::flatten(FlattenContext *ctx) {
   std::vector<Stmt *> indices_stmt;
   for (int i = 0; i < (int)indices.size(); i++) {
-    indices[i]->flatten(ret);
+    indices[i]->flatten(ctx);
     indices_stmt.push_back(indices[i]->stmt);
   }
   if (op_type == SNodeOpType::is_active) {
@@ -871,13 +871,13 @@ void SNodeOpExpression::flatten(VecStatement &ret) {
                     snode->type != SNodeType::hash &&
                     snode->type != SNodeType::bitmasked,
                 "ti.is_active only works on pointer, hash or bitmasked nodes.");
-    ret.push_back<SNodeOpStmt>(SNodeOpType::is_active, snode, indices_stmt);
+    ctx->push_back<SNodeOpStmt>(SNodeOpType::is_active, snode, indices_stmt);
   } else {
-    auto ptr = ret.push_back<GlobalPtrStmt>(snode, indices_stmt);
+    auto ptr = ctx->push_back<GlobalPtrStmt>(snode, indices_stmt);
     if (op_type == SNodeOpType::append) {
-      value->flatten(ret);
-      ret.push_back<SNodeOpStmt>(SNodeOpType::append, snode, ptr,
-                                 ret.back().get());
+      value->flatten(ctx);
+      ctx->push_back<SNodeOpStmt>(SNodeOpType::append, snode, ptr,
+                                  ctx->back_stmt());
       TI_ERROR_IF(snode->type != SNodeType::dynamic,
                   "ti.append only works on dynamic nodes.");
       TI_ERROR_IF(snode->ch.size() != 1,
@@ -885,10 +885,10 @@ void SNodeOpExpression::flatten(VecStatement &ret) {
       TI_ERROR_IF(data_type_size(snode->ch[0]->dt) != 4,
                   "ti.append only works on i32/f32 nodes.");
     } else if (op_type == SNodeOpType::length) {
-      ret.push_back<SNodeOpStmt>(SNodeOpType::length, snode, ptr, nullptr);
+      ctx->push_back<SNodeOpStmt>(SNodeOpType::length, snode, ptr, nullptr);
     }
   }
-  stmt = ret.back().get();
+  stmt = ctx->back_stmt();
 }
 
 std::unique_ptr<ConstStmt> ConstStmt::copy() {

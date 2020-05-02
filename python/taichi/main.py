@@ -10,7 +10,6 @@ from taichi.tools.video import make_video, interpolate_frames, mp4_to_gif, scale
 def test_python(args):
     print("\nRunning python tests...\n")
     test_files = args.files
-    verbose = args.verbose
     import taichi as ti
     import pytest
     if ti.is_release():
@@ -32,10 +31,12 @@ def test_python(args):
     else:
         # run all the tests
         pytest_args = [test_dir]
-    if verbose:
+    if args.verbose:
         pytest_args += ['-s', '-v']
+    if args.rerun:
+        pytest_args += ['--reruns', args.rerun]
     if int(pytest.main([os.path.join(root_dir, 'misc/empty_pytest.py'),
-                        '-n1'])) == 0:  # test if pytest has xdist or not
+                        '-n1', '-q'])) == 0:  # test if pytest has xdist or not
         try:
             from multiprocessing import cpu_count
             threads = min(8, cpu_count())  # To prevent running out of memory
@@ -72,6 +73,9 @@ def make_argument_parser():
                         '--verbose',
                         action='store_true',
                         help='Run with verbose outputs')
+    parser.add_argument('-r',
+                        '--rerun',
+                        help='Rerun failed tests once again')
     parser.add_argument('-t',
                         '--threads',
                         help='Number of threads for parallel testing')

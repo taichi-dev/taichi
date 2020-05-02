@@ -108,15 +108,15 @@ class KernelGen : public IRVisitor {
       emit("  {}();", glsl_kernel_name_);
     emit("}}");
 
-    auto root_size = "";  // struct_compiled_->root_size;
     // clang-format off
-    std::string kernel_header = fmt::format(
-        "layout(packed, binding = 0) buffer data_i32 {{ int _states_[2]; int _data_i32_[{}]; }};\n"
-        "layout(packed, binding = 0) buffer data_f32 {{ int _unused1_[2]; float _data_f32_[{}]; }};\n"
-        "layout(packed, binding = 0) buffer data_f64 {{ int _unused2_[2]; double _data_f64_[{}]; }};\n"
-        , root_size, root_size, root_size);
+    std::string kernel_header =
+      "layout(packed, binding = 6) buffer runtime { int _rand_state_; };\n";
+    kernel_header +=
+      "layout(packed, binding = 0) buffer data_i32 { int _data_i32_[]; };\n"
+      "layout(packed, binding = 0) buffer data_f32 { float _data_f32_[]; };\n"
+      "layout(packed, binding = 0) buffer data_f64 { double _data_f64_[]; };\n";
     if (used.int64)
-      kernel_header += fmt::format("layout(packed, binding = 0) buffer data_i64 {{ int _unused3_[2]; int64_t _data_i64_[{}]; }};\n", root_size);
+      kernel_header += "layout(packed, binding = 0) buffer data_i64 { int64_t _data_i64_[]; };\n";
 
     if (used.argument) {
       kernel_header +=

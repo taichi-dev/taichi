@@ -450,10 +450,16 @@ struct CompiledProgram::Impl {
   }
 };
 
+struct GLSLRuntime {
+  int rand_state;
+};
+
 struct GLSLLauncherImpl {
   std::unique_ptr<GLSSBO> root_ssbo;
+  std::unique_ptr<GLSSBO> runtime_ssbo;
   std::vector<GLSSBO> ssbo;
   std::vector<char> root_buffer;
+  std::unique_ptr<GLSLRuntime> runtime;
   std::vector<std::unique_ptr<CompiledProgram>> programs;
 };
 
@@ -461,10 +467,13 @@ GLSLLauncher::GLSLLauncher(size_t size) {
   initialize_opengl();
   impl = std::make_unique<GLSLLauncherImpl>();
   impl->root_ssbo = std::make_unique<GLSSBO>();
-  size += 2 * sizeof(int);
+  impl->runtime_ssbo = std::make_unique<GLSSBO>();
+  impl->runtime = std::make_unique<GLSLRuntime>();
   impl->root_buffer.resize(size, 0);
   impl->root_ssbo->bind_data(impl->root_buffer.data(), size);
   impl->root_ssbo->bind_index(0);
+  impl->runtime_ssbo->bind_data(impl->runtime.get(), sizeof(GLSLRuntime));
+  impl->runtime_ssbo->bind_index(6);
 }
 
 void GLSLLauncher::keep(std::unique_ptr<CompiledProgram> program) {

@@ -15,7 +15,7 @@ TLANG_NAMESPACE_BEGIN
 #include "expression.h"
 
 IRBuilder &current_ast_builder() {
-  return context->builder();
+  return *get_current_program().get_current_kernel().ir_builder;
 }
 
 bool maybe_same_address(Stmt *var1, Stmt *var2) {
@@ -487,11 +487,6 @@ GetChStmt::GetChStmt(Stmt *input_ptr, int chid)
 
 DecoratorRecorder dec;
 
-FrontendContext::FrontendContext() {
-  root_node = std::make_unique<Block>();
-  current_builder = std::make_unique<IRBuilder>(root_node.get());
-}
-
 FrontendForStmt::FrontendForStmt(const Expr &loop_var,
                                  const Expr &begin,
                                  const Expr &end)
@@ -552,12 +547,6 @@ FrontendAssignStmt::FrontendAssignStmt(const Expr &lhs, const Expr &rhs)
     : lhs(lhs), rhs(rhs) {
   TI_ASSERT(lhs->is_lvalue());
 }
-
-IRNode *FrontendContext::root() {
-  return static_cast<IRNode *>(root_node.get());
-}
-
-std::unique_ptr<FrontendContext> context;
 
 Expr Var(const Expr &x) {
   auto var = Expr(std::make_shared<IdExpression>());

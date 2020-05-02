@@ -199,27 +199,6 @@ class DecoratorRecorder {
   void reset();
 };
 
-class FrontendContext {
- private:
-  std::unique_ptr<IRBuilder> current_builder;
-  std::unique_ptr<Block> root_node;
-
- public:
-  FrontendContext();
-
-  IRBuilder &builder() {
-    return *current_builder;
-  }
-
-  IRNode *root();
-
-  std::unique_ptr<Block> get_root() {
-    return std::move(root_node);
-  }
-};
-
-extern std::unique_ptr<FrontendContext> context;
-
 class IRBuilder {
  private:
   std::vector<Block *> stack;

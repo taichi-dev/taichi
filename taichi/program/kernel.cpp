@@ -15,9 +15,10 @@ Kernel::Kernel(Program &program,
   program.initialize_device_llvm_context();
   is_accessor = false;
   compiled = nullptr;
-  taichi::lang::context = std::make_unique<FrontendContext>();
-  ir_holder = taichi::lang::context->get_root();
-  ir = ir_holder.get();
+  auto root_block = std::make_unique<Block>();
+  ir = root_block.get();
+  ir_builder = std::make_unique<IRBuilder>(root_block.get());
+  ir_holder = std::move(root_block);
 
   program.current_kernel = this;
   program.start_function_definition(this);

@@ -1,33 +1,30 @@
 import taichi as ti
-
 ti.init()
 
 n = 256
 x = ti.var(ti.f32)
+# `bitmasked` is a tensor that supports sparsity, in that each element can be
+# activated individually. (It can be viewed as `dense`, with an extra bit for each
+# element to mark its activation). Assigning to an element will activate it
+# automatically. Use struct-for syntax to loop over the active elements only.
 ti.root.bitmasked(ti.ij, (n, n)).place(x)
-# `bitmasked` is a kind of tensor, adds an extra bit to every element in it.
-# So every elements in a bitmasked tensor can be either **active or inactive**.
-# Assigning to an element will cause that element to become active.
-# Use struct-for syntax to loop over active elements only.
 
 
 @ti.kernel
 def activate():
-    # All elements in bitmasked is deactivated at initial.
+    # All elements in bitmasked is initially deactivated
     # Let's activate elements in the rectangle now!
     for i, j in ti.ndrange((100, 125), (100, 125)):  # loop over a rectangle area
-        # In taichi, in order to activate an element,
-        # simply **assign any value** to that element.
-        x[i, j] = 0  # assign to activate!
+        x[i, j] = 0  # assign any value to activate the element at (i, j)
 
 @ti.kernel
-def paint(t: ti.f32):
+def paint_active_pixels(t: ti.f32):
     # struct-for syntax: loop over active pixels, inactive pixels are excluded
     for i, j in x:
         x[i, j] = ti.sin(t)
 
 @ti.kernel
-def paint2(t: ti.f32):
+def paint_all_pixels(t: ti.f32):
     # range-for syntax: loop over all pixels, no matter active or not
     for i, j in ti.ndrange(n, n):
         x[i, j] = ti.sin(t)
@@ -35,9 +32,9 @@ def paint2(t: ti.f32):
 
 activate()
 
-gui = ti.GUI('bitmasked', n)
+gui = ti.GUI('bitmasked', (n, n))
 for frame in range(10000):
-    paint(frame * 0.05)
-    #paint2(frame * 0.05)  # try this!!
+    paint_active_pixels(frame * 0.05)
+    #paint_all_pixels(frame * 0.05)  # try this and compare the difference!
     gui.set_image(x)
     gui.show()

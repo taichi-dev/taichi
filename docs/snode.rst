@@ -76,37 +76,6 @@ Node types
 
 
 .. function:: snode.dynamic(index, size, chunk_size = None)
-
-    :parameter snode: (SNode) parent node where the child is derived from
-    :parameter index: (Index) index used for this node
-    :parameter size: (scalar) the maximum size of the dynamic node
-    :parameter chunk_size: (optional, scalar) (TODO: describe this)
-    :return: (SNode) the derived child node
-
-    The size of dynamic nodes can be extended in runtime, see functions below.
-
-    This places a 1-D dynamic tensor of maximal size ``12``:
-
-    ::
-
-        ti.root.dynamic(ti.i, 12).place(x)
-
-
-.. function:: ti.length(snode)
-
-    :parameter snode: (SNode, dynamic)
-    :return: (scalar) current size of the dynamic node
-
-
-.. function:: ti.append(snode, indices, val)
-
-    :parameter snode: (SNode, dynamic)
-    :parameter indices: (scalar or tuple) indices within SNode
-    :parameter val: (depends on SNode data type) value to store
-
-    ASK(yuanming-hu): how is this used exactly??
-
-
 .. function:: snode.hash
 .. function:: snode.bitmasked
 .. function:: snode.pointer

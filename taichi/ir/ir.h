@@ -828,17 +828,6 @@ inline ExprGroup operator,(const ExprGroup &a, const Expr &b) {
   return ExprGroup(a, b);
 }
 
-class FrontendAllocaStmt : public Stmt {
- public:
-  Identifier ident;
-
-  FrontendAllocaStmt(const Identifier &lhs, DataType type) : ident(lhs) {
-    ret_type = VectorType(1, type);
-  }
-
-  DEFINE_ACCEPT
-};
-
 class AllocaStmt : public Stmt {
  public:
   AllocaStmt(DataType type) {

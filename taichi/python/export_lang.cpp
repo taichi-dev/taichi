@@ -4,6 +4,7 @@
 #include "pybind11/pybind11.h"
 
 #include "taichi/ir/frontend.h"
+#include "taichi/ir/frontend_ir.h"
 #include "taichi/program/extension.h"
 #include "taichi/common/interface.h"
 #include "taichi/python/export.h"

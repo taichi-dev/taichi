@@ -7,6 +7,7 @@
 #include <unordered_map>
 
 #include "taichi/ir/frontend.h"
+#include "taichi/ir/frontend_ir.h"
 #include "taichi/ir/statements.h"
 
 TLANG_NAMESPACE_BEGIN

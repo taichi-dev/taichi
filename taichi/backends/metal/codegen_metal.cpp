@@ -326,18 +326,18 @@ class KernelCodegen : public IRVisitor {
 
   void visit(UnaryOpStmt *stmt) override {
     if (stmt->op_type == UnaryOpType::cast_value) {
-        emit("const {} {} = static_cast<{}>({});",
-             metal_data_type_name(stmt->element_type()), stmt->raw_name(),
-             metal_data_type_name(stmt->cast_type), stmt->operand->raw_name());
+      emit("const {} {} = static_cast<{}>({});",
+           metal_data_type_name(stmt->element_type()), stmt->raw_name(),
+           metal_data_type_name(stmt->cast_type), stmt->operand->raw_name());
     } else if (stmt->op_type == UnaryOpType::cast_bits) {
-        // reinterpret the bit pattern
-        const auto to_type = to_metal_type(stmt->cast_type);
-        const auto to_type_name = metal_data_type_name(to_type);
-        TI_ASSERT(metal_data_type_bytes(
-                      to_metal_type(stmt->operand->element_type())) ==
-                  metal_data_type_bytes(to_type));
-        emit("const {} {} = union_cast<{}>({});", to_type_name,
-             stmt->raw_name(), to_type_name, stmt->operand->raw_name());
+      // reinterpret the bit pattern
+      const auto to_type = to_metal_type(stmt->cast_type);
+      const auto to_type_name = metal_data_type_name(to_type);
+      TI_ASSERT(
+          metal_data_type_bytes(to_metal_type(stmt->operand->element_type())) ==
+          metal_data_type_bytes(to_type));
+      emit("const {} {} = union_cast<{}>({});", to_type_name, stmt->raw_name(),
+           to_type_name, stmt->operand->raw_name());
     } else {
       emit("const {} {} = {}({});", metal_data_type_name(stmt->element_type()),
            stmt->raw_name(), metal_unary_op_type_symbol(stmt->op_type),

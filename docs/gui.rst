@@ -230,7 +230,7 @@ A *event filter* is a list combined of *key*, *type* and *(type, key)* tuple, e.
     :parameter gui: (GUI)
     :parameter key: (EventKey) keys you want to detect
     :return: (bool) ``True`` if one of the keys pressed, vice versa
-    
+
     .. warning::
 
         Must be used together with ``gui.get_event``, or it won't be updated!

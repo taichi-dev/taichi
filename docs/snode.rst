@@ -30,11 +30,11 @@ See :ref:`layout` for more details about data layout.
     :parameter snode: (SNode)
     :parameter index: alone which axis? (0 for ``i`` and 1 for ``j``)
     :return: (scalar) the size of tensor alone that axis
-    
+
     Equivalent to snode.shape[i]
-    
+
     ::
-        
+
         ti.root.dense(ti.ijk, (3, 5, 4)).place(x)
         x.get_shape(0)  # 3
         x.get_shape(1)  # 5
@@ -44,11 +44,11 @@ See :ref:`layout` for more details about data layout.
 
     :parameter snode: (SNode or tensor)
     :return: (scalar) the dimension of node / tensor
-    
+
     Equivalent to `len(snode.shape)`.
-    
+
     ::
-        
+
         ti.root.dense(ti.ijk, (8, 9, 10)).place(x)
         x.dim()  # 3
 

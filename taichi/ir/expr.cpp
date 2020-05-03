@@ -35,7 +35,8 @@ Expr operator~(const Expr &expr) {
 }
 
 Expr cast(const Expr &input, DataType dt) {
-  auto ret = std::make_shared<UnaryOpExpression>(UnaryOpType::cast_value, input);
+  auto ret =
+      std::make_shared<UnaryOpExpression>(UnaryOpType::cast_value, input);
   ret->cast_type = dt;
   return Expr(ret);
 }

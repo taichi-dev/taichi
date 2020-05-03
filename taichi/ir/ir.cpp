@@ -7,6 +7,7 @@
 #include <unordered_map>
 
 #include "taichi/ir/frontend.h"
+#include "taichi/ir/frontend_ir.h"
 #include "taichi/ir/statements.h"
 
 TLANG_NAMESPACE_BEGIN
@@ -553,19 +554,11 @@ FrontendAssignStmt::FrontendAssignStmt(const Expr &lhs, const Expr &rhs)
   TI_ASSERT(lhs->is_lvalue());
 }
 
-FrontendAtomicStmt::FrontendAtomicStmt(AtomicOpType op_type,
-                                       const Expr &dest,
-                                       const Expr &val)
-    : op_type(op_type), dest(dest), val(val) {
-}
-
 IRNode *FrontendContext::root() {
   return static_cast<IRNode *>(root_node.get());
 }
 
 std::unique_ptr<FrontendContext> context;
-
-Block *current_block = nullptr;
 
 Expr Var(const Expr &x) {
   auto var = Expr(std::make_shared<IdExpression>());
@@ -845,6 +838,28 @@ std::string AtomicOpExpression::serialize() {
     // min/max not supported in the LLVM backend yet.
     TI_NOT_IMPLEMENTED;
   }
+}
+
+void AtomicOpExpression::flatten(FlattenContext *ctx) {
+  // replace atomic sub with negative atomic add
+  if (op_type == AtomicOpType::sub) {
+    val.set(Expr::make<UnaryOpExpression>(UnaryOpType::neg, val));
+    op_type = AtomicOpType::add;
+  }
+  // expand rhs
+  auto expr = val;
+  expr->flatten(ctx);
+  if (dest.is<IdExpression>()) {  // local variable
+    // emit local store stmt
+    auto alloca = ctx->current_block->lookup_var(dest.cast<IdExpression>()->id);
+    ctx->push_back<AtomicOpStmt>(op_type, alloca, expr->stmt);
+  } else {  // global variable
+    TI_ASSERT(dest.is<GlobalPtrExpression>());
+    auto global_ptr = dest.cast<GlobalPtrExpression>();
+    global_ptr->flatten(ctx);
+    ctx->push_back<AtomicOpStmt>(op_type, ctx->back_stmt(), expr->stmt);
+  }
+  stmt = ctx->back_stmt();
 }
 
 std::string SNodeOpExpression::serialize() {

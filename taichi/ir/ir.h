@@ -828,17 +828,6 @@ inline ExprGroup operator,(const ExprGroup &a, const Expr &b) {
   return ExprGroup(a, b);
 }
 
-class FrontendAllocaStmt : public Stmt {
- public:
-  Identifier ident;
-
-  FrontendAllocaStmt(const Identifier &lhs, DataType type) : ident(lhs) {
-    ret_type = VectorType(1, type);
-  }
-
-  DEFINE_ACCEPT
-};
-
 class AllocaStmt : public Stmt {
  public:
   AllocaStmt(DataType type) {
@@ -1332,16 +1321,6 @@ class Block : public IRNode {
   pStmt &operator[](int i) {
     return statements[i];
   }
-
-  DEFINE_ACCEPT
-};
-
-class FrontendAtomicStmt : public Stmt {
- public:
-  AtomicOpType op_type;
-  Expr dest, val;
-
-  FrontendAtomicStmt(AtomicOpType op_type, const Expr &dest, const Expr &val);
 
   DEFINE_ACCEPT
 };
@@ -1921,10 +1900,6 @@ class RangeAssumptionExpression : public Expression {
   }
 };
 
-// TODO: fix this hack...
-// for current ast
-extern Block *current_block;
-
 class IdExpression : public Expression {
  public:
   Identifier id;
@@ -1948,11 +1923,8 @@ class IdExpression : public Expression {
   }
 };
 
-// This is just a wrapper class of FrontendAtomicStmt, so that we can turn
-// ti.atomic_op() into an expression (with side effect).
+// ti.atomic_*() is an expression with side effect.
 class AtomicOpExpression : public Expression {
-  // TODO(issue#332): Flatten this into AtomicOpStmt directly, then we can
-  // deprecate FrontendAtomicStmt.
  public:
   AtomicOpType op_type;
   Expr dest, val;
@@ -1963,13 +1935,7 @@ class AtomicOpExpression : public Expression {
 
   std::string serialize() override;
 
-  void flatten(FlattenContext *ctx) override {
-    // FrontendAtomicStmt is the correct place to flatten sub-exprs like |dest|
-    // and |val| (See LowerAST). This class only wraps the frontend atomic_op()
-    // stmt as an expression.
-    ctx->push_back<FrontendAtomicStmt>(op_type, dest, val);
-    stmt = ctx->back_stmt();
-  }
+  void flatten(FlattenContext *ctx) override;
 };
 
 class SNodeOpExpression : public Expression {

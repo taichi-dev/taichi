@@ -162,7 +162,7 @@ class AsyncEngine {
   AsyncEngine() {
   }
 
-  bool optimize(); // return true when modified
+  bool optimize();  // return true when modified
 
   void clear_cache() {
     queue.clear_cache();

@@ -1798,6 +1798,36 @@ class FuncCallStmt : public Stmt {
   DEFINE_ACCEPT
 };
 
+class FrontendKernelReturnStmt : public Stmt {
+ public:
+  Expr value;
+
+  FrontendKernelReturnStmt(const Expr &value) : value(value) {
+  }
+
+  bool is_container_statement() const override {
+    return false;
+  }
+
+  DEFINE_ACCEPT
+};
+
+class KernelReturnStmt : public Stmt {
+ public:
+  Stmt *value;
+
+  KernelReturnStmt(Stmt *value) : value(value) {
+    TI_STMT_REG_FIELDS;
+  }
+
+  bool is_container_statement() const override {
+    return false;
+  }
+
+  TI_STMT_DEF_FIELDS(value);
+  DEFINE_ACCEPT
+};
+
 class WhileStmt : public Stmt {
  public:
   Stmt *mask;
@@ -1818,8 +1848,7 @@ class WhileStmt : public Stmt {
 
 class FrontendBreakStmt : public Stmt {
  public:
-  FrontendBreakStmt() {
-  }
+  FrontendBreakStmt() = default;
 
   bool is_container_statement() const override {
     return false;

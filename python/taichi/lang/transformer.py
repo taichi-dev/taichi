@@ -736,7 +736,10 @@ if 1:
     def visit_Return(self, node):
         self.generic_visit(node)
         if self.is_kernel:
-            raise TaichiSyntaxError(
-                '"return" not allowed in \'ti.kernel\'. Please walk around by storing the return result to a global variable.'
-            )
+            # todo: we only support return at the end of kernel, check this
+            if node.value is not None:
+                new_node = self.parse_stmt(
+                        'ti.core.create_kernel_return(ti.Expr(0).ptr)')
+                new_node.value.args[0].value.args[0] = node.value
+                return new_node
         return node

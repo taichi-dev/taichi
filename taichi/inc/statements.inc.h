@@ -12,6 +12,7 @@ PER_STATEMENT(FrontendSNodeOpStmt)  // activate, deactivate, append, clear
 PER_STATEMENT(FrontendAssertStmt)
 PER_STATEMENT(FrontendArgStoreStmt)
 PER_STATEMENT(FrontendFuncDefStmt)
+PER_STATEMENT(FrontendKernelReturnStmt)
 
 // Middle-end statement
 
@@ -24,6 +25,7 @@ PER_STATEMENT(WhileControlStmt)
 PER_STATEMENT(ContinueStmt)
 PER_STATEMENT(FuncBodyStmt)
 PER_STATEMENT(FuncCallStmt)
+PER_STATEMENT(KernelReturnStmt)
 
 PER_STATEMENT(ArgLoadStmt)
 PER_STATEMENT(ExternalPtrStmt)

@@ -499,6 +499,13 @@ class KernelGen : public IRVisitor {
          const_stmt->short_name(), const_stmt->val[0].stringify());
   }
 
+  void visit(KernelReturnStmt *stmt) override {
+    used.argument = true;
+    emit("_args_{}_[0] = {};",
+         "i32",//data_type_short_name(stmt->element_type()),
+         stmt->value->short_name());
+  }
+
   void visit(ArgLoadStmt *stmt) override {
     const auto dt = opengl_data_type_name(stmt->element_type());
     used.argument = true;

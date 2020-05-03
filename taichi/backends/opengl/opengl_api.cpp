@@ -499,6 +499,7 @@ GLSLLaunchGuard::~GLSLLaunchGuard() {
     if (!iov[i].size)
       continue;
     void *p = impl->ssbo[i].map();  // 0, iov[i].size);  // output
+    if (i == 0) TI_INFO("{}", ((int *)p)[0]);
     std::memcpy(iov[i].base, p, iov[i].size);
   }
   impl->ssbo.clear();

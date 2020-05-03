@@ -11,8 +11,10 @@ void _init_rand() {
   _rand_.z = 521288629;
   _rand_.w = 88675123;
 
-  // Yes, this's not atomic, but fine since no matter how _rand_state_ changes,
-  // gl_GlobalInvocationID can still distinguish different threads.
+  // Yes, this is not an atomic operation, but just fine since no matter
+  // how `_rand_state_` changes, `gl_GlobalInvocationID.x` can still help
+  // us to set different seeds for different threads.
+  // Discussion: https://github.com/taichi-dev/taichi/pull/912#discussion_r419021918
   _rand_state_ += 1;
 }
 

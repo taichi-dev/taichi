@@ -64,6 +64,8 @@ class FlagAccess : public IRVisitor {
 // E.g.
 // for i in x:
 //   x[i] = 0
+// Here although we are writing to x[i], but i will only loop over active elements of x.
+// So we don't need one more activationqq.
 // Note the indices of x accesses must be loop indices
 
 class WeakenAccess : public BasicStmtVisitor {

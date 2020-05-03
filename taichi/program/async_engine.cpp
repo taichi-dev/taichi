@@ -101,7 +101,6 @@ void AsyncEngine::launch(Kernel *kernel) {
   for (std::size_t i = 0; i < offloads.size(); i++) {
     auto offload = offloads[i]->as<OffloadedStmt>();
     KernelLaunchRecord rec(kernel->program.get_context(), kernel, offload);
-    // irpass::print(rec.stmt);
     enqueue(rec);
   }
 }
@@ -112,7 +111,7 @@ void AsyncEngine::enqueue(KernelLaunchRecord t) {
   task_queue.push_back(t);
 
   auto &meta = metas[t.h];
-  // TODO: this is an abuse...
+  // TODO: this is an abuse since it gathers nothing...
   gather_statements(t.stmt, [&](Stmt *stmt) {
     if (auto global_ptr = stmt->cast<GlobalPtrStmt>()) {
       for (auto &snode : global_ptr->snodes.data) {

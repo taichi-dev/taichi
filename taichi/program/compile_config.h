@@ -1,3 +1,5 @@
+#pragma once
+
 #include "taichi/lang_util.h"
 #include "arch.h"
 

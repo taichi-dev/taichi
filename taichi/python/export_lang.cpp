@@ -4,6 +4,7 @@
 #include "pybind11/pybind11.h"
 
 #include "taichi/ir/frontend.h"
+#include "taichi/ir/frontend_ir.h"
 #include "taichi/program/extension.h"
 #include "taichi/common/interface.h"
 #include "taichi/python/export.h"
@@ -326,7 +327,8 @@ void export_lang(py::module &m) {
   m.def("layout", layout);
 
   m.def("value_cast", static_cast<Expr (*)(const Expr &expr, DataType)>(cast));
-  m.def("bits_cast", static_cast<Expr (*)(const Expr &expr, DataType)>(bit_cast));
+  m.def("bits_cast",
+        static_cast<Expr (*)(const Expr &expr, DataType)>(bit_cast));
 
   m.def("expr_atomic_add", [&](const Expr &a, const Expr &b) {
     return Expr::make<AtomicOpExpression>(AtomicOpType::add, ptr_if_global(a),
@@ -395,6 +397,7 @@ void export_lang(py::module &m) {
   m.def("expr_neg", [&](const Expr &e) { return -e; });
   DEFINE_EXPRESSION_OP_UNARY(sqrt)
   DEFINE_EXPRESSION_OP_UNARY(floor)
+  DEFINE_EXPRESSION_OP_UNARY(ceil)
   DEFINE_EXPRESSION_OP_UNARY(abs)
   DEFINE_EXPRESSION_OP_UNARY(sin)
   DEFINE_EXPRESSION_OP_UNARY(asin)

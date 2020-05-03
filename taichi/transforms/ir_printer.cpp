@@ -1,7 +1,9 @@
 // The IRPrinter prints the IR in a human-readable format
 
 #include <typeinfo>
+
 #include "taichi/ir/ir.h"
+#include "taichi/ir/frontend_ir.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -127,8 +129,8 @@ class IRPrinter : public IRVisitor {
 
   void visit(UnaryOpStmt *stmt) override {
     if (stmt->is_cast()) {
-      std::string reint = stmt->op_type == UnaryOpType::cast_value ?
-        "" : "reinterpret_";
+      std::string reint =
+          stmt->op_type == UnaryOpType::cast_value ? "" : "reinterpret_";
       print("{}{} = {}{}<{}> {}", stmt->type_hint(), stmt->name(), reint,
             unary_op_type_name(stmt->op_type),
             data_type_short_name(stmt->cast_type), stmt->operand->name());
@@ -148,12 +150,6 @@ class IRPrinter : public IRVisitor {
     print("{}{} = {}({}, {}, {})", stmt->type_hint(), stmt->name(),
           ternary_type_name(stmt->op_type), stmt->op1->name(),
           stmt->op2->name(), stmt->op3->name());
-  }
-
-  void visit(FrontendAtomicStmt *stmt) override {
-    print("{}{} = atomic {}({}, {})", stmt->type_hint(), stmt->name(),
-          atomic_op_type_name(stmt->op_type), stmt->dest->serialize(),
-          stmt->val->serialize());
   }
 
   void visit(AtomicOpStmt *stmt) override {

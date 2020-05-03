@@ -1,6 +1,7 @@
 from .expr import *
 from .util import *
 import numbers
+import functools
 
 unary_ops = []
 
@@ -16,23 +17,36 @@ def stack_info():
     return '\n'.join(raw.split('\n')[:-5]) + '\n'
 
 
-def unary(x):
-    def func(expr):
-        return x(Expr(expr))
+def unary(foo):
+    import taichi as ti
+    @functools.wraps(foo)
+    def wrapped(a):
+        if ti.is_taichi_class(a):
+            return a.element_wise_unary(foo)
+        else:
+            return foo(Expr(a))
 
-    unary_ops.append(func)
-    return func
+    unary_ops.append(wrapped)
+    return wrapped
 
 
 binary_ops = []
 
 
 def binary(foo):
-    def x_(a, b):
-        return foo(Expr(a), Expr(b))
+    import taichi as ti
+    @functools.wraps(foo)
+    def wrapped(a, b):
+        if ti.is_taichi_class(a):
+            return a.element_wise_binary(foo, b)
+        elif ti.is_taichi_class(b):
+            rev_foo = lambda x, y: foo(y, x)
+            return b.element_wise_binary(rev_foo, a)
+        else:
+            return foo(Expr(a), Expr(b))
 
-    binary_ops.append(x_)
-    return x_
+    binary_ops.append(wrapped)
+    return wrapped
 
 
 def logical_and(a, b):

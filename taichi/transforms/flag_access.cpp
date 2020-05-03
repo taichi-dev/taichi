@@ -64,9 +64,9 @@ class FlagAccess : public IRVisitor {
 // E.g.
 // for i in x:
 //   x[i] = 0
-// Here although we are writing to x[i], but i will only loop over active elements of x.
-// So we don't need one more activationqq.
-// Note the indices of x accesses must be loop indices
+// Here although we are writing to x[i], but i will only loop over active
+// elements of x. So we don't need one more activation. Note the indices of x
+// accesses must be loop indices for this optimization to be correct.
 
 class WeakenAccess : public BasicStmtVisitor {
  public:
@@ -108,7 +108,7 @@ class WeakenAccess : public BasicStmtVisitor {
             for (int i = 0; i < current_offload->snode->num_active_indices;
                  i++) {
               auto ind = stmt->indices[i];
-              // TODO: vectorized case?
+              // TODO: vectorized cases?
               if (auto loop_var = ind->cast<LoopIndexStmt>()) {
                 if (loop_var->index != i) {
                   same_as_loop_snode = false;

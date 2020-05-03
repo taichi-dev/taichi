@@ -163,6 +163,7 @@ void AsyncEngine::synchronize() {
 }
 
 bool AsyncEngine::optimize() {
+  // TODO: improve...
   bool modified = false;
   std::unordered_map<SNode *, bool> list_dirty;
   auto new_task_queue = std::deque<KernelLaunchRecord>();
@@ -175,12 +176,8 @@ bool AsyncEngine::optimize() {
     if (offload->task_type == OffloadedStmt::TaskType::listgen) {
       // keep
     } else if (offload->task_type == OffloadedStmt::TaskType::clear_list) {
-      // fmt::print("clearlist {}\n",
-      // offload->snode->get_node_type_name_hinted()); do nothing
       TI_ASSERT(task_queue[i + 1].stmt->task_type ==
                 OffloadedStmt::TaskType::listgen);
-      // fmt::print("listgen {}\n",
-      // offload->snode->get_node_type_name_hinted());
       auto snode = offload->snode;
       if (list_dirty.find(snode) != list_dirty.end() && !list_dirty[snode]) {
         keep = false;  // safe to remove
@@ -190,9 +187,7 @@ bool AsyncEngine::optimize() {
       }
       list_dirty[snode] = false;
     } else {
-      // fmt::print("job\n");
       for (auto snode : meta.activation_snodes) {
-        // fmt::print(" activates {}\n", snode->get_node_type_name_hinted());
         while (snode && snode->type != SNodeType::root) {
           list_dirty[snode] = true;
           snode = snode->parent;

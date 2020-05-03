@@ -309,6 +309,10 @@ void export_lang(py::module &m) {
     current_ast_builder().insert(Stmt::make<FrontendKernelReturnStmt>(value));
   });
 
+  m.def("fetch_return_result", []() {
+    return get_current_program().context.get_arg_as_uint64(0);
+  });
+
   m.def("insert_continue_stmt", [&]() {
     current_ast_builder().insert(Stmt::make<FrontendContinueStmt>());
   });

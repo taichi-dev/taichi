@@ -387,12 +387,16 @@ class Kernel:
                 self.runtime.target_tape.insert(self, args)
 
             t_kernel()
+            # todo union_cast<int> from uint64
+            ret = taichi_lang_core.fetch_return_result()
 
             if callbacks:
                 import taichi as ti
                 ti.sync()
                 for c in callbacks:
                     c()
+
+            return ret
 
         return func__
 
@@ -481,7 +485,7 @@ def _kernel_impl(func, level_of_class_stackframe, verbose=False):
 
         @wraps(func)
         def wrapped(*args, **kwargs):
-            primal(*args, **kwargs)
+            return primal(*args, **kwargs)
 
         wrapped.grad = adjoint
 

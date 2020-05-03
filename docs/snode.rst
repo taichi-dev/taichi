@@ -42,8 +42,8 @@ See :ref:`layout` for more details about data layout.
 
 .. function:: snode.dim()
 
-    :parameter snode: (SNode or tensor)
-    :return: (scalar) the dimension of node / tensor
+    :parameter snode: (SNode)
+    :return: (scalar) the dimension of node
 
     Equivalent to `len(snode.shape)`.
 
@@ -51,6 +51,24 @@ See :ref:`layout` for more details about data layout.
 
         ti.root.dense(ti.ijk, (8, 9, 10)).place(x)
         x.dim()  # 3
+
+    TODO: add tensor.dim(), and add see also ref here
+
+.. function:: snode.parent()
+
+    :parameter snode: (SNode)
+    :return: (SNode) the parent node of `snode`
+
+    ::
+
+        blk1 = ti.root.dense(ti.i, 8)
+        blk2 = blk1.dense(ti.j, 4)
+        blk3 = blk2.bitmasked(ti.k, 6)
+        blk1.parent()  # ti.root
+        blk2.parent()  # blk1
+        blk3.parent()  # blk2
+
+    TODO: add tensor.parent(), and add see also ref here
 
 .. function:: ti.root
 

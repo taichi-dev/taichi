@@ -71,7 +71,6 @@ class FrontendAssignStmt : public Stmt {
   DEFINE_ACCEPT
 };
 
-
 class FrontendIfStmt : public Stmt {
  public:
   Expr condition;
@@ -156,7 +155,6 @@ class FrontendFuncDefStmt : public Stmt {
   DEFINE_ACCEPT
 };
 
-
 class FrontendBreakStmt : public Stmt {
  public:
   FrontendBreakStmt() {
@@ -194,7 +192,5 @@ class FrontendWhileStmt : public Stmt {
 
   DEFINE_ACCEPT
 };
-
-
 
 TLANG_NAMESPACE_END

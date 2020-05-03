@@ -327,7 +327,8 @@ void export_lang(py::module &m) {
   m.def("layout", layout);
 
   m.def("value_cast", static_cast<Expr (*)(const Expr &expr, DataType)>(cast));
-  m.def("bits_cast", static_cast<Expr (*)(const Expr &expr, DataType)>(bit_cast));
+  m.def("bits_cast",
+        static_cast<Expr (*)(const Expr &expr, DataType)>(bit_cast));
 
   m.def("expr_atomic_add", [&](const Expr &a, const Expr &b) {
     return Expr::make<AtomicOpExpression>(AtomicOpType::add, ptr_if_global(a),

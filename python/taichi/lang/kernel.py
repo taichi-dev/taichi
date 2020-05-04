@@ -424,6 +424,7 @@ class Kernel:
     # Thus this part needs to be fast. (i.e. < 3us on a 4 GHz x64 CPU)
     def __call__(self, *args, **kwargs):
         assert len(kwargs) == 0, 'kwargs not supported for Taichi kernels'
+        args = (0,) + args # TODO: detect if have return, initialize by dt
         instance_id, arg_features = self.mapper.lookup(args)
         key = (self.func, instance_id)
         self.materialize(key=key, args=args, arg_features=arg_features)

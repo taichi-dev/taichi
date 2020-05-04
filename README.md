@@ -23,7 +23,7 @@ Advanced features of Taichi include [spatially sparse computing](https://taichi.
 ## Installation [![Downloads](https://pepy.tech/badge/taichi-nightly)](https://pepy.tech/project/taichi-nightly)
 
 ```bash
-python3 -m pip install taichi       # Latest version: 0.6.0
+python3 -m pip install taichi       # Latest version: 0.6.1
 ```
 
 **News: (Apr 29, 2020) The OpenGL Compute Shader backend by [彭于斌 (archibate)](https://github.com/archibate)** is officially released in [**v0.6.0**](https://github.com/taichi-dev/taichi/releases/tag/v0.6.0)! Please try it out with `ti.init(arch=ti.opengl)`.

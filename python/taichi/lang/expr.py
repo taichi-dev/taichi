@@ -384,7 +384,7 @@ class Expr:
     def to_numpy(self):
         from .meta import tensor_to_ext_arr
         import numpy as np
-        arr = np.empty(shape=self.shape(),
+        arr = np.zeros(shape=self.shape(),
                        dtype=to_numpy_type(self.snode().data_type()))
         tensor_to_ext_arr(self, arr)
         import taichi as ti
@@ -394,7 +394,7 @@ class Expr:
     def to_torch(self, device=None):
         from .meta import tensor_to_ext_arr
         import torch
-        arr = torch.empty(size=self.shape(),
+        arr = torch.zeros(size=self.shape(),
                           dtype=to_pytorch_type(self.snode().data_type()),
                           device=device)
         tensor_to_ext_arr(self, arr)

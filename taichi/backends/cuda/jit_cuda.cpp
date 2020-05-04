@@ -76,9 +76,10 @@ class JITModuleCUDA : public JITModule {
 
 class JITSessionCUDA : public JITSession {
  public:
-  llvm::DataLayout DL;
+  llvm::DataLayout data_layout;
 
-  explicit JITSessionCUDA(llvm::DataLayout data_layout) : DL(data_layout) {
+  explicit JITSessionCUDA(llvm::DataLayout data_layout)
+      : data_layout(data_layout) {
   }
 
   virtual JITModule *add_module(std::unique_ptr<llvm::Module> M) override {
@@ -101,7 +102,7 @@ class JITSessionCUDA : public JITSession {
   }
 
   virtual llvm::DataLayout get_data_layout() override {
-    return DL;
+    return data_layout;
   }
 
   static std::string compile_module_to_ptx(
@@ -136,8 +137,9 @@ std::string convert(std::string new_name) {
 
 std::string JITSessionCUDA::compile_module_to_ptx(
     std::unique_ptr<llvm::Module> &module) {
-  // TODO: enabling this leads to LLVM error 'comdat global value has private
-  // linkage'
+  // Part of this function is borrowed from Halide::CodeGen_PTX_Dev.cpp
+  // TODO: enabling this leads to LLVM error "comdat global value has private
+  // linkage"
   /*
   if (llvm::verifyModule(*module, &llvm::errs())) {
     module->print(llvm::errs(), nullptr);
@@ -145,7 +147,6 @@ std::string JITSessionCUDA::compile_module_to_ptx(
   }
   */
 
-  // Part of this function is borrowed from Halide::CodeGen_PTX_Dev.cpp
   using namespace llvm;
 
   for (auto &f : module->globals())
@@ -273,18 +274,12 @@ std::string JITSessionCUDA::compile_module_to_ptx(
 
 std::unique_ptr<JITSession> create_llvm_jit_session_cuda(Arch arch) {
   TI_ASSERT(arch == Arch::cuda);
-  // TODO: assuming CUDA has the same data layout as the host arch
-  std::unique_ptr<llvm::orc::JITTargetMachineBuilder> jtmb;
-  auto JTMB = llvm::orc::JITTargetMachineBuilder::detectHost();
-  if (!JTMB)
-    TI_ERROR("LLVM TargetMachineBuilder has failed.");
-  jtmb = std::make_unique<llvm::orc::JITTargetMachineBuilder>(std::move(*JTMB));
-
-  auto DL = jtmb->getDefaultDataLayoutForTarget();
-  if (!DL) {
-    TI_ERROR("LLVM TargetMachineBuilder has failed when getting data layout.");
-  }
-  return std::make_unique<JITSessionCUDA>(DL.get());
+  // https://docs.nvidia.com/cuda/nvvm-ir-spec/index.html#data-layout
+  auto data_layout = llvm::DataLayout(
+      "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f32:32:32-"
+      "f64:64:64-v16:16:16-v32:32:32-v64:64:64-v128:128:128-n16:32:64");
+  TI_P(data_layout.getStringRepresentation());
+  return std::make_unique<JITSessionCUDA>(data_layout);
 }
 #else
 std::unique_ptr<JITSession> create_llvm_jit_session_cuda(Arch arch) {

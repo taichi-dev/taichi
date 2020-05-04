@@ -5,18 +5,23 @@
 #include "taichi/common/task.h"
 #include "taichi/backends/metal/api.h"
 #include "taichi/backends/opengl/opengl_api.h"
+#if defined(TI_WITH_CUDA)
 #include "taichi/backends/cuda/cuda_driver.h"
-#include "taichi/codegen/codegen_cuda.h"
-#include "taichi/codegen/codegen_metal.h"
-#include "taichi/codegen/codegen_opengl.h"
-#include "taichi/codegen/codegen_cpu.h"
+#include "taichi/backends/cuda/codegen_cuda.h"
+#include "taichi/backends/cuda/cuda_driver.h"
+#endif
+#include "taichi/backends/metal/codegen_metal.h"
+#include "taichi/backends/opengl/codegen_opengl.h"
+#include "taichi/backends/cpu/codegen_cpu.h"
 #include "taichi/struct/struct.h"
-#include "taichi/struct/struct_metal.h"
-#include "taichi/struct/struct_opengl.h"
+#include "taichi/struct/struct_llvm.h"
+#include "taichi/backends/metal/struct_metal.h"
+#include "taichi/backends/opengl/struct_opengl.h"
 #include "taichi/system/unified_allocator.h"
 #include "taichi/ir/snode.h"
+#include "taichi/ir/frontend_ir.h"
 #include "taichi/program/async_engine.h"
-#include "taichi/backends/cuda/cuda_driver.h"
+#include "taichi/util/statistics.h"
 
 TI_NAMESPACE_BEGIN
 
@@ -40,6 +45,7 @@ Program *current_program = nullptr;
 std::atomic<int> Program::num_instances;
 
 Program::Program(Arch desired_arch) {
+  TI_TRACE("Program initializing...");
   auto arch = desired_arch;
   if (arch == Arch::cuda) {
     runtime = Runtime::create(arch);
@@ -122,7 +128,10 @@ Program::Program(Arch desired_arch) {
     }
   }
 
-  TI_TRACE("Program arch={}", arch_name(arch));
+  stat.clear();
+
+  TI_TRACE("Program ({}) arch={} initialized.", fmt::ptr(this),
+           arch_name(arch));
 }
 
 FunctionType Program::compile(Kernel &kernel) {
@@ -163,8 +172,10 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
     if (config.device_memory_fraction == 0) {
       TI_ASSERT(config.device_memory_GB > 0);
       prealloc_size = std::size_t(config.device_memory_GB * (1UL << 30));
-    } else
+    } else {
       prealloc_size = std::size_t(config.device_memory_fraction * total_mem);
+    }
+    TI_ASSERT(prealloc_size <= total_mem);
 
     TI_TRACE("Allocating device memory {:.2f} GB",
              1.0 * prealloc_size / (1UL << 30));
@@ -213,15 +224,15 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
   for (int i = 0; i < (int)snodes.size(); i++) {
     if (is_gc_able(snodes[i]->type)) {
       std::size_t node_size;
-      if (snodes[i]->type == SNodeType::pointer)
-        node_size = tlctx->get_type_size(
-            scomp->snode_attr[snodes[i]].llvm_element_type);
-      else {
+      auto element_size =
+          tlctx->get_type_size(StructCompilerLLVM::get_llvm_element_type(
+              tlctx->get_this_thread_struct_module(), snodes[i]));
+      if (snodes[i]->type == SNodeType::pointer) {
+        // pointer. Allocators are for single elements
+        node_size = element_size;
+      } else {
         // dynamic. Allocators are for the chunks
-        node_size = sizeof(void *) +
-                    tlctx->get_type_size(
-                        scomp->snode_attr[snodes[i]].llvm_element_type) *
-                        snodes[i]->chunk_size;
+        node_size = sizeof(void *) + element_size * snodes[i]->chunk_size;
       }
       TI_TRACE("Initializing allocator for snode {} (node size {})",
                snodes[i]->id, node_size);
@@ -286,8 +297,8 @@ void Program::materialize_layout() {
   } else if (config.arch == Arch::opengl) {
     opengl::OpenglStructCompiler scomp;
     opengl_struct_compiled_ = scomp.run(*snode_root);
-    TI_INFO("OpenGL root buffer size: {} B",
-            opengl_struct_compiled_->root_size);
+    TI_TRACE("OpenGL root buffer size: {} B",
+             opengl_struct_compiled_->root_size);
     opengl_kernel_launcher_ = std::make_unique<opengl::GLSLLauncher>(
         opengl_struct_compiled_->root_size);
   }
@@ -295,6 +306,7 @@ void Program::materialize_layout() {
 
 void Program::check_runtime_error() {
   TI_ASSERT(arch_is_cpu(config.arch));
+  synchronize();
   auto tlctx = llvm_context_host.get();
   auto runtime_jit_module = tlctx->runtime_jit_module;
   runtime_jit_module->call<void *>("runtime_retrieve_error_code", llvm_runtime);
@@ -321,6 +333,8 @@ void Program::synchronize() {
 #endif
     } else if (config.arch == Arch::metal) {
       metal_kernel_mgr_->synchronize();
+    } else if (config.async == true) {
+      async_engine->synchronize();
     }
     sync = true;
   }
@@ -470,6 +484,30 @@ Kernel &Program::get_snode_writer(SNode *snode) {
 }
 
 void Program::finalize() {
+  synchronize();
+  TI_TRACE("Program finalizing...");
+  if (config.print_benchmark_stat) {
+    char *current_test = std::getenv("PYTEST_CURRENT_TEST");
+    if (current_test != nullptr) {
+      std::string file_name = current_test;
+      auto slash_pos = file_name.find_last_of('/');
+      if (slash_pos != file_name.npos)
+        file_name = file_name.substr(slash_pos + 1);
+      auto py_pos = file_name.find(".py::");
+      TI_ASSERT(py_pos != file_name.npos);
+      file_name =
+          file_name.substr(0, py_pos) + "__" + file_name.substr(py_pos + 5);
+      auto first_space_pos = file_name.find_first_of(' ');
+      TI_ASSERT(first_space_pos != file_name.npos);
+      file_name = file_name.substr(0, first_space_pos);
+      file_name += ".log";
+      std::ofstream ofs(file_name);
+      TI_ASSERT(ofs);
+      std::string stat_string;
+      stat.print(&stat_string);
+      ofs << stat_string;
+    }
+  }
   if (runtime)
     runtime->set_profiler(nullptr);
   synchronize();
@@ -481,6 +519,7 @@ void Program::finalize() {
 #endif
   finalized = true;
   num_instances -= 1;
+  TI_TRACE("Program ({}) finalized.", fmt::ptr(this));
 }
 
 void Program::launch_async(Kernel *kernel) {

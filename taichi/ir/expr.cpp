@@ -1,5 +1,7 @@
-#include "expr.h"
-#include "ir.h"
+#include "taichi/ir/expr.h"
+
+#include "taichi/ir/frontend_ir.h"
+#include "taichi/ir/ir.h"
 #include "taichi/program/program.h"
 
 TLANG_NAMESPACE_BEGIN
@@ -35,16 +37,15 @@ Expr operator~(const Expr &expr) {
 }
 
 Expr cast(const Expr &input, DataType dt) {
-  auto ret = std::make_shared<UnaryOpExpression>(UnaryOpType::cast, input);
+  auto ret =
+      std::make_shared<UnaryOpExpression>(UnaryOpType::cast_value, input);
   ret->cast_type = dt;
-  ret->cast_by_value = true;
   return Expr(ret);
 }
 
 Expr bit_cast(const Expr &input, DataType dt) {
-  auto ret = std::make_shared<UnaryOpExpression>(UnaryOpType::cast, input);
+  auto ret = std::make_shared<UnaryOpExpression>(UnaryOpType::cast_bits, input);
   ret->cast_type = dt;
-  ret->cast_by_value = false;
   return Expr(ret);
 }
 
@@ -129,8 +130,8 @@ Expr Expr::eval() const {
 
 void Expr::operator+=(const Expr &o) {
   if (this->atomic) {
-    current_ast_builder().insert(Stmt::make<FrontendAtomicStmt>(
-        AtomicOpType::add, ptr_if_global(*this), load_if_ptr(o)));
+    (*this) = Expr::make<AtomicOpExpression>(
+        AtomicOpType::add, ptr_if_global(*this), load_if_ptr(o));
   } else {
     (*this) = (*this) + o;
   }
@@ -138,8 +139,8 @@ void Expr::operator+=(const Expr &o) {
 
 void Expr::operator-=(const Expr &o) {
   if (this->atomic) {
-    current_ast_builder().insert(Stmt::make<FrontendAtomicStmt>(
-        AtomicOpType::add, *this, -load_if_ptr(o)));
+    (*this) = Expr::make<AtomicOpExpression>(
+        AtomicOpType::sub, ptr_if_global(*this), load_if_ptr(o));
   } else {
     (*this) = (*this) - o;
   }

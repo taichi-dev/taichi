@@ -8,85 +8,6 @@
 
 TI_NAMESPACE_BEGIN
 
-template <typename T, int ret>
-int return_constant(T *) {
-  return ret;
-}
-
-template <typename T, int channels>
-void ndarray_to_image_buffer(T *arr,
-                             uint64 input,
-                             int width,
-                             int height)  // 'input' is actually a pointer...
-{
-  arr->initialize(Vector2i(width, height));
-  for (auto &ind : arr->get_region()) {
-    for (int i = 0; i < channels; i++) {
-      (*arr)[ind][i] = reinterpret_cast<real *>(
-          input)[ind.i * channels * height + ind.j * channels + i];
-    }
-  }
-}
-
-template <typename T, int channels>
-void ndarray_to_array2d(T *arr,
-                        long long input,
-                        int width,
-                        int height)  // 'input' is actually a pointer...
-{
-  arr->initialize(Vector2i(width, height));
-  for (auto &ind : arr->get_region()) {
-    for (int i = 0; i < channels; i++) {
-      (*arr)[ind][i] = reinterpret_cast<float *>(
-          input)[ind.i * height * channels + ind.j * channels + i];
-    }
-  }
-}
-
-void ndarray_to_array2d_real(Array2D<real> *arr,
-                             long long input,
-                             int width,
-                             int height)  // 'input' is actually a pointer...
-{
-  arr->initialize(Vector2i(width, height));
-  for (auto &ind : arr->get_region()) {
-    (*arr)[ind] = reinterpret_cast<float *>(input)[ind.i * height + ind.j];
-  }
-}
-
-template <typename T, int channels>
-void array2d_to_ndarray(T *arr,
-                        uint64 output)  // 'output' is actually a pointer...
-{
-  int width = arr->get_width(), height = arr->get_height();
-  TI_ASSERT(width > 0);
-  TI_ASSERT(height > 0);
-  for (auto &ind : arr->get_region()) {
-    for (int k = 0; k < channels; k++) {
-      reinterpret_cast<real *>(
-          output)[ind.i * height * channels + ind.j * channels + k] =
-          *(((float *)(&(*arr)[ind])) + k);
-    }
-  }
-}
-
-// Specialize for Vector3 for the padding float32
-template <int channels>
-void array2d_to_ndarray(Array2D<Vector3> *arr,
-                        uint64 output)  // 'output' is actually a pointer...
-{
-  int width = arr->get_width(), height = arr->get_height();
-  assert_info(width > 0, "");
-  assert_info(height > 0, "");
-  for (auto &ind : arr->get_region()) {
-    for (int k = 0; k < channels; k++) {
-      const Vector3 entry = (*arr)[ind];
-      reinterpret_cast<real *>(
-          output)[ind.i * height * channels + ind.j * channels + k] = entry[k];
-    }
-  }
-}
-
 template <typename T>
 constexpr std::string get_type_short_name();
 
@@ -207,98 +128,26 @@ struct VectorRegistration {};
 template <int dim, typename T, InstSetExt ISE>
 struct VectorRegistration<VectorND<dim, T, ISE>> {
   static void run(py::module &m) {
-    using VectorBase = VectorNDBase<dim, T, ISE>;
     using Vector = VectorND<dim, T, ISE>;
 
     // e.g. Vector4f
     std::string vector_name =
         std::string("Vector") + std::to_string(dim) + get_type_short_name<T>();
-    // e.g. Vector4fBase
-    std::string base_name = vector_name + "Base";
 
-    py::class_<VectorBase>(m, base_name.c_str());
-
-    auto cls = py::class_<Vector, VectorBase>(m, vector_name.c_str());
+    auto cls = py::class_<Vector>(m, vector_name.c_str());
     cls.def(VectorInitializer<dim, T>::get())
         .def(py::init<T>())
-        .def(T() * py::self)
-        .def(py::self * T())
-        .def(py::self + py::self)
-        .def(py::self - py::self)
-        .def(py::self * py::self)
-        .def(py::self / py::self)
-        .def(py::self += py::self)
-        .def(py::self -= py::self)
-        .def(py::self *= py::self)
-        .def(py::self /= py::self)
-        .def(py::self /= py::self)
-        .def(py::self == py::self)
-        .def(py::self != py::self)
-        .def(-py::self)
-        .def("cast_real", &Vector::template cast<real>)
-        .def("cast_float32", &Vector::template cast<float32>)
-        .def("cast_float64", &Vector::template cast<float64>)
-        .def("cast_int", &Vector::template cast<int>)
-        .def("D", [](Vector *) { return Vector::dim; })
         .def("__len__", [](Vector *) { return Vector::dim; })
-        .def("__getitem__", [](Vector *vec, int i) { return (*vec)[i]; })
-        .def("simd", [](Vector *) { return Vector::simd; })
-        .def("abs", &Vector::abs)
-        .def("floor", &Vector::floor)
-        .def("sin", &Vector::sin)
-        .def("cos", &Vector::cos)
-        .def("min", &Vector::min)
-        .def("max", &Vector::max);
+        .def("__getitem__", [](Vector *vec, int i) { return (*vec)[i]; });
 
     register_vec_field<0, Vector>(cls);
     register_vec_field<1, Vector>(cls);
     register_vec_field<2, Vector>(cls);
     register_vec_field<3, Vector>(cls);
-
-    DEFINE_VECTOR_OF_NAMED(Vector, (vector_name + "List").c_str());
   }
 };
 
 void export_math(py::module &m) {
-#define EXPORT_ARRAY_2D_OF(T, C)                             \
-  py::class_<Array2D<real>> PyArray2D##T(m, "Array2D" #T);   \
-  PyArray2D##T.def(py::init<Vector2i>())                     \
-      .def("to_ndarray", &array2d_to_ndarray<Array2D<T>, C>) \
-      .def("get_width", &Array2D<T>::get_width)              \
-      .def("get_height", &Array2D<T>::get_height)            \
-      .def("rasterize", &Array2D<T>::rasterize)              \
-      .def("rasterize_scale", &Array2D<T>::rasterize_scale)  \
-      .def("from_ndarray", &ndarray_to_array2d_real);
-
-  EXPORT_ARRAY_2D_OF(real, 1);
-
-  py::class_<Array2D<Vector3>>(m, "Array2DVector3")
-      .def(py::init<Vector2i, Vector3>())
-      .def("get_width", &Array2D<Vector3>::get_width)
-      .def("get_height", &Array2D<Vector3>::get_height)
-      .def("get_channels", &return_constant<Array2D<Vector3>, 3>)
-      .def("from_ndarray", &ndarray_to_image_buffer<Array2D<Vector3>, 3>)
-      .def("read", &Array2D<Vector3>::load_image)
-      .def("write", &Array2D<Vector3>::write_as_image)
-      .def("write_to_disk", &Array2D<Vector3>::write_to_disk)
-      .def("read_from_disk", &Array2D<Vector3>::read_from_disk)
-      .def("rasterize", &Array2D<Vector3>::rasterize)
-      .def("rasterize_scale", &Array2D<Vector3>::rasterize_scale)
-      .def("to_ndarray", &array2d_to_ndarray<Array2D<Vector3>, 3>);
-
-  py::class_<Array2D<Vector4>>(m, "Array2DVector4")
-      .def(py::init<Vector2i, Vector4>())
-      .def("get_width", &Array2D<Vector4>::get_width)
-      .def("get_height", &Array2D<Vector4>::get_height)
-      .def("get_channels", &return_constant<Array2D<Vector4>, 4>)
-      .def("write", &Array2D<Vector4>::write_as_image)
-      .def("from_ndarray", &ndarray_to_image_buffer<Array2D<Vector4>, 4>)
-      .def("write_to_disk", &Array2D<Vector4>::write_to_disk)
-      .def("read_from_disk", &Array2D<Vector4>::read_from_disk)
-      .def("rasterize", &Array2D<Vector4>::rasterize)
-      .def("rasterize_scale", &Array2D<Vector4>::rasterize_scale)
-      .def("to_ndarray", &array2d_to_ndarray<Array2D<Vector4>, 4>);
-
   VectorRegistration<Vector2f>::run(m);
   VectorRegistration<Vector3f>::run(m);
   VectorRegistration<Vector4f>::run(m);

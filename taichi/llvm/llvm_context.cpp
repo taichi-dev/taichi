@@ -11,6 +11,7 @@
 #include "llvm/IR/Function.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Instructions.h"
+#include "llvm/ExecutionEngine/Orc/ThreadSafeModule.h"
 #if LLVM_VERSION_MAJOR >= 10
 #include "llvm/IR/Intrinsics.h"
 #include "llvm/IR/IntrinsicsNVPTX.h"
@@ -43,6 +44,8 @@ using namespace llvm;
 
 TaichiLLVMContext::TaichiLLVMContext(Arch arch) : arch(arch) {
   TI_TRACE("Creating Taichi llvm context for arch: {}", arch_name(arch));
+  main_thread_id = std::this_thread::get_id();
+  main_thread_data = get_this_thread_data();
   llvm::remove_fatal_error_handler();
   llvm::install_fatal_error_handler(
       [](void *user_data, const std::string &reason, bool gen_crash_diag) {
@@ -64,12 +67,12 @@ TaichiLLVMContext::TaichiLLVMContext(Arch arch) : arch(arch) {
     TI_NOT_IMPLEMENTED
 #endif
   }
-  ctx = std::make_unique<llvm::LLVMContext>();
   jit = JITSession::create(arch);
   TI_TRACE("Taichi llvm context created.");
 }
 
 llvm::Type *TaichiLLVMContext::get_data_type(DataType dt) {
+  auto ctx = get_this_thread_context();
   if (dt == DataType::i32) {
     return llvm::Type::getInt32Ty(*ctx);
   } else if (dt == DataType::i8) {
@@ -137,7 +140,7 @@ void compile_runtime_bitcode(Arch arch) {
     auto runtime_folder = get_runtime_dir();
     std::string macro = fmt::format(" -D ARCH_{} ", arch_name(arch));
     auto cmd = fmt::format(
-        "{} -S {}runtime.cpp -o {}runtime.ll "
+        "{} -S {}runtime.cpp -o {}runtime.ll -fno-exceptions "
         "-emit-llvm -std=c++17 {} -I {}",
         clang, runtime_src_folder, runtime_folder, macro, get_repo_dir());
     int ret = std::system(cmd.c_str());
@@ -171,8 +174,35 @@ std::string libdevice_path() {
   return fmt::format("{}/slim_libdevice.{}.bc", folder, cuda_version_major);
 }
 
-std::unique_ptr<llvm::Module> TaichiLLVMContext::get_init_module() {
-  return clone_runtime_module();
+std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_module_to_context(
+    llvm::Module *module,
+    llvm::LLVMContext *target_context) {
+  // Dump a module from one context to bitcode and then parse the bitcode in a
+  // different context
+  std::string bitcode;
+
+  {
+    std::lock_guard<std::mutex> _(mut);
+    llvm::raw_string_ostream sos(bitcode);
+    // Use a scope to make sure sos flushes on destruction
+    llvm::WriteBitcodeToFile(*module, sos);
+  }
+
+  auto cloned = parseBitcodeFile(
+      llvm::MemoryBufferRef(bitcode, "runtime_bitcode"), *target_context);
+  if (!cloned) {
+    auto error = cloned.takeError();
+    TI_ERROR("Bitcode cloned failed.");
+  }
+  return std::move(cloned.get());
+}
+
+std::unique_ptr<llvm::Module>
+TaichiLLVMContext::clone_module_to_this_thread_context(llvm::Module *module) {
+  TI_TRACE("Cloning struct module");
+  TI_ASSERT(module);
+  auto this_context = get_this_thread_context();
+  return clone_module_to_context(module, this_context);
 }
 
 std::unique_ptr<llvm::Module> module_from_bitcode_file(std::string bitcode_path,
@@ -251,18 +281,20 @@ static void remove_useless_cuda_libdevice_functions(llvm::Module *module) {
 
 std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
   TI_AUTO_PROF
-  if (!runtime_module) {
+  TI_ASSERT(std::this_thread::get_id() == main_thread_id);
+  auto data = get_this_thread_data();
+  auto ctx = get_this_thread_context();
+  if (!data->runtime_module) {
     if (is_release()) {
-      runtime_module = module_from_bitcode_file(
-          fmt::format("{}/{}", compiled_lib_dir, get_runtime_fn(arch)),
-          ctx.get());
+      data->runtime_module = module_from_bitcode_file(
+          fmt::format("{}/{}", compiled_lib_dir, get_runtime_fn(arch)), ctx);
     } else {
       compile_runtime_bitcode(arch);
-      runtime_module = module_from_bitcode_file(
-          fmt::format("{}/{}", get_runtime_dir(), get_runtime_fn(arch)),
-          ctx.get());
+      data->runtime_module = module_from_bitcode_file(
+          fmt::format("{}/{}", get_runtime_dir(), get_runtime_fn(arch)), ctx);
     }
     if (arch == Arch::cuda) {
+      auto &runtime_module = data->runtime_module;
       runtime_module->setTargetTriple("nvptx64-nvidia-cuda");
 
       auto patch_intrinsic = [&](std::string name, Intrinsic::ID intrin,
@@ -333,7 +365,7 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
       // patch_intrinsic("warp_active_mask", Intrinsic::nvvm_membar_cta, false);
       patch_intrinsic("block_memfence", Intrinsic::nvvm_membar_cta, false);
 
-      link_module_with_cuda_libdevice(runtime_module);
+      link_module_with_cuda_libdevice(data->runtime_module);
 
       // To prevent potential symbol name conflicts, we use "cuda_vprintf"
       // instead of "vprintf" in llvm/runtime.cpp. Now we change it back for
@@ -351,8 +383,10 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
   std::unique_ptr<llvm::Module> cloned;
   {
     TI_PROFILER("clone module");
-    cloned = llvm::CloneModule(*runtime_module);
+    cloned = llvm::CloneModule(*data->runtime_module);
   }
+
+  TI_ASSERT(cloned != nullptr);
 
   return cloned;
 }
@@ -362,7 +396,8 @@ void TaichiLLVMContext::link_module_with_cuda_libdevice(
   TI_AUTO_PROF
   TI_ASSERT(arch == Arch::cuda);
 
-  auto libdevice_module = module_from_bitcode_file(libdevice_path(), ctx.get());
+  auto libdevice_module =
+      module_from_bitcode_file(libdevice_path(), get_this_thread_context());
 
   std::vector<std::string> libdevice_function_names;
   for (auto &f : *libdevice_module) {
@@ -392,20 +427,22 @@ void TaichiLLVMContext::link_module_with_cuda_libdevice(
 
 std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_struct_module() {
   TI_AUTO_PROF
+  auto struct_module = get_this_thread_struct_module();
   TI_ASSERT(struct_module);
   return llvm::CloneModule(*struct_module);
 }
 
 void TaichiLLVMContext::set_struct_module(
     const std::unique_ptr<llvm::Module> &module) {
+  auto data = get_this_thread_data();
   TI_ASSERT(module);
   if (llvm::verifyModule(*module, &llvm::errs())) {
     module->print(llvm::errs(), nullptr);
     TI_ERROR("module broken");
   }
-  struct_module = llvm::CloneModule(*module);
+  data->struct_module = llvm::CloneModule(*module);
   if (!arch_is_cpu(arch)) {
-    for (auto &f : *struct_module) {
+    for (auto &f : *data->struct_module) {
       bool is_kernel = false;
       if (arch == Arch::cuda) {
         std::string func_name = f.getName();
@@ -433,6 +470,7 @@ void TaichiLLVMContext::set_struct_module(
 
 template <typename T>
 llvm::Value *TaichiLLVMContext::get_constant(DataType dt, T t) {
+  auto ctx = get_this_thread_context();
   if (dt == DataType::f32) {
     return llvm::ConstantFP::get(*ctx, llvm::APFloat((float32)t));
   } else if (dt == DataType::f64) {
@@ -457,6 +495,8 @@ template llvm::Value *TaichiLLVMContext::get_constant(DataType dt, float64 t);
 
 template <typename T>
 llvm::Value *TaichiLLVMContext::get_constant(T t) {
+  auto ctx = get_this_thread_context();
+  TI_ASSERT(ctx != nullptr);
   using TargetType = T;
   if constexpr (std::is_same_v<TargetType, float32> ||
                 std::is_same_v<TargetType, float64>) {
@@ -529,6 +569,7 @@ JITModule *TaichiLLVMContext::add_module(std::unique_ptr<llvm::Module> module) {
 }
 
 void TaichiLLVMContext::mark_function_as_cuda_kernel(llvm::Function *func) {
+  auto ctx = get_this_thread_context();
   /*******************************************************************
   Example annotation from llvm PTX doc:
 
@@ -568,6 +609,45 @@ void TaichiLLVMContext::eliminate_unused_functions(
   }));
   manager.add(createGlobalDCEPass());
   manager.run(*module);
+}
+
+TaichiLLVMContext::ThreadLocalData *TaichiLLVMContext::get_this_thread_data() {
+  std::lock_guard<std::mutex> _(thread_map_mut);
+  auto tid = std::this_thread::get_id();
+  if (per_thread_data.find(tid) == per_thread_data.end()) {
+    std::stringstream ss;
+    ss << tid;
+    TI_TRACE("Creating thread local data for thread {}", ss.str());
+    per_thread_data[tid] = std::make_unique<ThreadLocalData>();
+  }
+  return per_thread_data[tid].get();
+}
+
+llvm::LLVMContext *TaichiLLVMContext::get_this_thread_context() {
+  ThreadLocalData *data = get_this_thread_data();
+  if (!data->llvm_context) {
+    auto ctx = std::make_unique<llvm::LLVMContext>();
+    data->llvm_context = ctx.get();
+    data->thread_safe_llvm_context =
+        std::make_unique<llvm::orc::ThreadSafeContext>(std::move(ctx));
+  }
+  return data->llvm_context;
+}
+
+llvm::orc::ThreadSafeContext *
+TaichiLLVMContext::get_this_thread_thread_safe_context() {
+  get_this_thread_context();  // make sure the context is created
+  ThreadLocalData *data = get_this_thread_data();
+  return data->thread_safe_llvm_context.get();
+}
+
+llvm::Module *TaichiLLVMContext::get_this_thread_struct_module() {
+  ThreadLocalData *data = get_this_thread_data();
+  if (!data->struct_module) {
+    data->struct_module = clone_module_to_this_thread_context(
+        main_thread_data->struct_module.get());
+  }
+  return data->struct_module.get();
 }
 
 template llvm::Value *TaichiLLVMContext::get_constant(float32 t);

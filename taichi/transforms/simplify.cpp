@@ -14,11 +14,16 @@ class BasicBlockSimplify : public IRVisitor {
   int current_stmt_id;
   std::set<int> &visited;
   StructForStmt *current_struct_for;
+  Kernel *kernel;
 
   BasicBlockSimplify(Block *block,
                      std::set<int> &visited,
-                     StructForStmt *current_struct_for)
-      : block(block), visited(visited), current_struct_for(current_struct_for) {
+                     StructForStmt *current_struct_for,
+                     Kernel *kernel)
+      : block(block),
+        visited(visited),
+        current_struct_for(current_struct_for),
+        kernel(kernel) {
     allow_undefined_visitor = true;
     invoke_default_visitor = false;
     current_struct_for = nullptr;
@@ -395,8 +400,18 @@ class BasicBlockSimplify : public IRVisitor {
                 }
                 continue;
               }
-              if (irpass::analysis::has_load_or_atomic(
-                      block->statements[j].get(), stmt->ptr)) {
+              if (!irpass::analysis::gather_statements(
+                       block->statements[j].get(),
+                       [&](Stmt *s) {
+                         if (auto load = s->cast<LocalLoadStmt>())
+                           return load->has_source(stmt->ptr);
+                         else if (auto atomic = s->cast<AtomicOpStmt>())
+                           return atomic->dest == stmt->ptr;
+                         else
+                           return s->is<ContinueStmt>() ||
+                                  s->is<WhileControlStmt>();
+                       })
+                       .empty()) {
                 has_load = true;
                 break;
               }
@@ -441,8 +456,17 @@ class BasicBlockSimplify : public IRVisitor {
           }
           continue;
         }
-        if (irpass::analysis::has_load_or_atomic(block->statements[i].get(),
-                                                 stmt->ptr)) {
+        if (!irpass::analysis::gather_statements(
+                 block->statements[i].get(),
+                 [&](Stmt *s) {
+                   if (auto load = s->cast<LocalLoadStmt>())
+                     return load->has_source(stmt->ptr);
+                   else if (auto atomic = s->cast<AtomicOpStmt>())
+                     return atomic->dest == stmt->ptr;
+                   else
+                     return false;
+                 })
+                 .empty()) {
           has_related = true;
           break;
         }
@@ -470,13 +494,30 @@ class BasicBlockSimplify : public IRVisitor {
             // no store to the var?
             bool has_store = false;
             for (int j = i + 1; j < current_stmt_id; j++) {
-              if (block->statements[j]
-                      ->is_container_statement()) {  // no if, while, etc..
+              if (!advanced_optimization) {
+                if (block->statements[j]
+                        ->is_container_statement()) {  // no if, while, etc..
+                  has_store = true;
+                  break;
+                }
+                if (block->statements[j]->is<GlobalStoreStmt>()) {
+                  has_store = true;
+                }
+                continue;
+              }
+              if (!irpass::analysis::gather_statements(
+                       block->statements[j].get(),
+                       [&](Stmt *s) {
+                         if (auto store = s->cast<GlobalStoreStmt>())
+                           return maybe_same_address(store->ptr, stmt->ptr);
+                         else if (auto atomic = s->cast<AtomicOpStmt>())
+                           return maybe_same_address(atomic->dest, stmt->ptr);
+                         else
+                           return false;
+                       })
+                       .empty()) {
                 has_store = true;
                 break;
-              }
-              if (block->statements[j]->is<GlobalStoreStmt>()) {
-                has_store = true;
               }
             }
             if (!has_store) {
@@ -542,7 +583,7 @@ class BasicBlockSimplify : public IRVisitor {
   void visit(UnaryOpStmt *stmt) override {
     if (is_done(stmt))
       return;
-    if (stmt->op_type == UnaryOpType::cast) {
+    if (stmt->is_cast()) {
       if (stmt->cast_type == stmt->operand->ret_type.data_type) {
         stmt->replace_with(stmt->operand);
         stmt->parent->erase(current_stmt_id);
@@ -681,7 +722,20 @@ class BasicBlockSimplify : public IRVisitor {
       }
     }
 
-    // step 2: eliminate dup
+    // step 2: eliminate useless extraction of another OffsetAndExtractBitsStmt
+    if (advanced_optimization) {
+      if (stmt->offset == 0 && stmt->bit_begin == 0 &&
+          stmt->input->is<OffsetAndExtractBitsStmt>()) {
+        auto bstmt = stmt->input->as<OffsetAndExtractBitsStmt>();
+        if (stmt->bit_end == bstmt->bit_end - bstmt->bit_begin) {
+          stmt->replace_with(bstmt);
+          stmt->parent->erase(current_stmt_id);
+          throw IRModified();
+        }
+      }
+    }
+
+    // step 3: eliminate dup
     for (int i = 0; i < current_stmt_id; i++) {
       auto &bstmt = block->statements[i];
       if (stmt->ret_type == bstmt->ret_type) {
@@ -717,12 +771,7 @@ class BasicBlockSimplify : public IRVisitor {
   }
 
   void visit(LinearizeStmt *stmt) override {
-    if (!advanced_optimization) {
-      if (is_done(stmt))
-        return;
-    }
-
-    if (stmt->inputs.size() && stmt->inputs.back()->is<IntegerOffsetStmt>()) {
+    if (!stmt->inputs.empty() && stmt->inputs.back()->is<IntegerOffsetStmt>()) {
       auto previous_offset = stmt->inputs.back()->as<IntegerOffsetStmt>();
       // push forward offset
       auto offset_stmt = stmt->insert_after_me(
@@ -732,25 +781,6 @@ class BasicBlockSimplify : public IRVisitor {
       stmt->replace_with(offset_stmt);
       offset_stmt->as<IntegerOffsetStmt>()->input = stmt;
       throw IRModified();
-    }
-    if (!advanced_optimization) {
-      for (int i = 0; i < current_stmt_id; i++) {
-        auto &bstmt = block->statements[i];
-        if (stmt->ret_type == bstmt->ret_type) {
-          auto &bstmt_data = *bstmt;
-          if (typeid(bstmt_data) == typeid(*stmt)) {
-            auto bstmt_ = bstmt->as<LinearizeStmt>();
-            if (identical_vectors(bstmt_->inputs, stmt->inputs) &&
-                identical_vectors(bstmt_->strides, stmt->strides)) {
-              stmt->replace_with(bstmt.get());
-              stmt->parent->erase(current_stmt_id);
-              throw IRModified();
-            }
-          }
-        }
-      }
-      set_done(stmt);
-      return;
     }
 
     // Lower into a series of adds and muls.
@@ -773,7 +803,7 @@ class BasicBlockSimplify : public IRVisitor {
     stmt->insert_before_me(std::move(sum));
     stmt->parent->erase(stmt);
     // get types of adds and muls
-    irpass::typecheck(stmt->parent);
+    irpass::typecheck(stmt->parent, kernel);
     throw IRModified();
   }
 
@@ -878,7 +908,10 @@ class BasicBlockSimplify : public IRVisitor {
   }
 
   void visit(WhileControlStmt *stmt) override {
-    return;
+    if (stmt->width() == 1 && stmt->mask) {
+      stmt->mask = nullptr;
+      throw IRModified();
+    }
   }
 
   void visit(ContinueStmt *stmt) override {
@@ -907,6 +940,11 @@ class BasicBlockSimplify : public IRVisitor {
   }
 
   void visit(IfStmt *if_stmt) override {
+    if (if_stmt->width() == 1 && (if_stmt->true_mask || if_stmt->false_mask)) {
+      if_stmt->true_mask = nullptr;
+      if_stmt->false_mask = nullptr;
+      throw IRModified();
+    }
     auto flatten = [&](std::vector<pStmt> &clause, bool true_branch) {
       bool plain_clause = true;  // no global store, no container
 
@@ -1041,14 +1079,22 @@ class BasicBlockSimplify : public IRVisitor {
       throw IRModified();
     }
   }
+
+  void visit(WhileStmt *stmt) override {
+    if (stmt->width() == 1 && stmt->mask) {
+      stmt->mask = nullptr;
+      throw IRModified();
+    }
+  }
 };
 
 class Simplify : public IRVisitor {
  public:
   StructForStmt *current_struct_for;
   bool modified;
+  Kernel *kernel;
 
-  Simplify(IRNode *node) {
+  Simplify(IRNode *node, Kernel *kernel) : kernel(kernel) {
     modified = false;
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
@@ -1060,7 +1106,7 @@ class Simplify : public IRVisitor {
     std::set<int> visited;
     while (true) {
       try {
-        BasicBlockSimplify _(block, visited, current_struct_for);
+        BasicBlockSimplify _(block, visited, current_struct_for, kernel);
       } catch (IRModified) {
         modified = true;
         continue;
@@ -1102,22 +1148,23 @@ class Simplify : public IRVisitor {
 
 namespace irpass {
 
-void simplify(IRNode *root) {
+void simplify(IRNode *root, Kernel *kernel) {
   while (1) {
-    Simplify pass(root);
+    Simplify pass(root, kernel);
     if (!pass.modified)
       break;
   }
 }
 
-void full_simplify(IRNode *root, const CompileConfig &config) {
+void full_simplify(IRNode *root, const CompileConfig &config, Kernel *kernel) {
   constant_fold(root);
-  if (advanced_optimization)
+  if (advanced_optimization) {
     alg_simp(root, config);
-  if (advanced_optimization)
+    die(root);
     whole_kernel_cse(root);
+  }
   die(root);
-  simplify(root);
+  simplify(root, kernel);
   die(root);
 }
 

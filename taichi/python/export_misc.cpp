@@ -14,7 +14,9 @@
 #include "taichi/system/dynamic_loader.h"
 #include "taichi/backends/metal/api.h"
 #include "taichi/backends/opengl/opengl_api.h"
+#if defined(TI_WITH_CUDA)
 #include "taichi/backends/cuda/cuda_driver.h"
+#endif
 
 TI_NAMESPACE_BEGIN
 
@@ -135,8 +137,8 @@ void export_misc(py::module &m) {
     a -= 2;
     return 1 / a;
   });
-  // m.def("dict_from_config", py_dict_from_py_config);
-  m.def("print_profile_info", [&]() { print_profile_info(); });
+  m.def("print_profile_info",
+        [&]() { Profiling::get_instance().print_profile_info(); });
   m.def("start_memory_monitoring", start_memory_monitoring);
   m.def("absolute_path", absolute_path);
   m.def("get_repo_dir", get_repo_dir);

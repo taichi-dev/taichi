@@ -50,7 +50,7 @@ inline bool check_func_call_signature(llvm::Value *func, Args &&... args) {
   return check_func_call_signature(func, {args...});
 }
 
-class ModuleBuilder {
+class LLVMModuleBuilder {
  public:
   std::unique_ptr<llvm::Module> module;
   llvm::BasicBlock *entry_block;
@@ -58,8 +58,11 @@ class ModuleBuilder {
   TaichiLLVMContext *tlctx;
   llvm::LLVMContext *llvm_context;
 
-  ModuleBuilder(std::unique_ptr<llvm::Module> &&module)
-      : module(std::move(module)) {
+  LLVMModuleBuilder(std::unique_ptr<llvm::Module> &&module,
+                    TaichiLLVMContext *tlctx)
+      : module(std::move(module)), tlctx(tlctx) {
+    TI_ASSERT(this->module != nullptr);
+    TI_ASSERT(&this->module->getContext() == tlctx->get_this_thread_context());
   }
 
   llvm::Value *create_entry_block_alloca(llvm::Type *type,
@@ -131,12 +134,12 @@ class RuntimeObject {
  public:
   std::string cls_name;
   llvm::Value *ptr;
-  ModuleBuilder *mb;
+  LLVMModuleBuilder *mb;
   llvm::Type *type;
   llvm::IRBuilder<> *builder;
 
   RuntimeObject(const std::string &cls_name,
-                ModuleBuilder *mb,
+                LLVMModuleBuilder *mb,
                 llvm::IRBuilder<> *builder,
                 llvm::Value *init = nullptr)
       : cls_name(cls_name), mb(mb), builder(builder) {

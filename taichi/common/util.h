@@ -140,17 +140,15 @@ static_assert(__cplusplus >= 201402L, "C++14 required.");
 #define DEBUG_TRIGGER
 #endif
 
-#define assert_info(x, info)               \
+#define TI_STATIC_ASSERT(x) static_assert((x), #x);
+#define TI_ASSERT(x) TI_ASSERT_INFO((x), #x)
+#define TI_ASSERT_INFO(x, ...)             \
   {                                        \
     bool ___ret___ = static_cast<bool>(x); \
     if (!___ret___) {                      \
-      TI_ERROR(info);                      \
+      TI_ERROR(__VA_ARGS__);               \
     }                                      \
   }
-
-#define TI_STATIC_ASSERT(x) static_assert((x), #x);
-#define TI_ASSERT(x) TI_ASSERT_INFO((x), #x)
-#define TI_ASSERT_INFO assert_info
 #define TI_NOT_IMPLEMENTED TI_ERROR("Not supported.");
 
 #define TI_NAMESPACE_BEGIN namespace taichi {
@@ -477,14 +475,6 @@ class DeferedExecution {
 };
 
 #define TI_DEFER(x) taichi::DeferedExecution _defered([&]() { x; });
-
-inline bool running_on_windows() {
-#if defined(TI_PLATFORM_WINDOWS)
-  return true;
-#else
-  return false;
-#endif
-}
 
 bool is_release();
 

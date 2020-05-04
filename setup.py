@@ -2,7 +2,8 @@ import setuptools
 import glob
 
 classifiers = [
-    'Development Status :: 1 - Planning',
+    'Development Status :: 2 - Pre-Alpha',
+    'Topic :: Software Development :: Compilers',
     'Topic :: Multimedia :: Graphics',
     'Topic :: Games/Entertainment :: Simulation',
     'Intended Audience :: Science/Research',
@@ -10,7 +11,7 @@ classifiers = [
     'License :: OSI Approved :: MIT License',
     'Programming Language :: Python :: 3.6',
     'Programming Language :: Python :: 3.7',
-    'Programming Language :: C++',
+    'Programming Language :: Python :: 3.8',
 ]
 
 data_files = glob.glob('python/lib/*')
@@ -38,7 +39,6 @@ setuptools.setup(
     data_files=[('lib', data_files)],
     keywords=['graphics', 'simulation'],
     license='MIT',
-    platforms=['Linux'],
     include_package_data=True,
     entry_points={
         'console_scripts': [
@@ -48,3 +48,5 @@ setuptools.setup(
     },
     classifiers=classifiers,
     has_ext_modules=lambda: True)
+
+# Note: this is a template setup.py used by python/build.py

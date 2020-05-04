@@ -1,4 +1,5 @@
-#include "visitors.h"
+#include "taichi/ir/visitors.h"
+#include "taichi/ir/frontend_ir.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -8,12 +9,9 @@ BasicStmtVisitor::BasicStmtVisitor() {
 }
 
 void BasicStmtVisitor::visit(Block *stmt_list) {
-  auto backup_block = current_block;
-  current_block = stmt_list;
   for (auto &stmt : stmt_list->statements) {
     stmt->accept(this);
   }
-  current_block = backup_block;
 }
 
 void BasicStmtVisitor::visit(IfStmt *if_stmt) {

@@ -15,6 +15,8 @@ struct GLSLLaunchGuard {
   const std::vector<IOV> &iov;
   GLSLLaunchGuard(GLSLLauncherImpl *impl, const std::vector<IOV> &iov);
   ~GLSLLaunchGuard();
+  void *map_buffer(size_t idx);
+  void unmap_buffer(size_t idx);
 };
 
 struct GLSLLauncher {

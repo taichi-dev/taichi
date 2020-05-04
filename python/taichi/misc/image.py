@@ -19,22 +19,24 @@ def imwrite(img, filename):
         comp = img.shape[2]
     else:
         comp = 1
-    img = np.ascontiguousarray(img).ctypes.data
-    ti.core.imwrite(filename, img, resx, resy, comp)
+    img = np.ascontiguousarray(img.swapaxes(0, 1)[::-1, :, :])
+    ptr = img.ctypes.data
+    ti.core.imwrite(filename, ptr, resx, resy, comp)
 
 
 def imread(filename, channels=0):
     ptr, resx, resy, comp = ti.core.imread(filename, channels)
-    img = np.ndarray(shape=(resx, resy, comp), dtype=np.uint8)
+    img = np.ndarray(shape=(resy, resx, comp), dtype=np.uint8)
     img = np.ascontiguousarray(img)
     # TODO(archibate): Figure out how np.ndarray constructor works and replace:
     ti.core.C_memcpy(img.ctypes.data, ptr, resx * resy * comp)
-    return img
+    # Discussion: https://github.com/taichi-dev/taichi/issues/802
+    return img.swapaxes(0, 1)[:, ::-1, :]
 
 
 def imshow(img, winname='Taichi'):
     img = cook_image(img)
     gui = ti.GUI(winname, res=img.shape[:2])
-    while not gui.is_pressed(ti.GUI.ESCAPE):
+    while not gui.get_event(ti.GUI.ESCAPE):
         gui.set_image(img)
         gui.show()

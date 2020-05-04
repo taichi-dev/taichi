@@ -1,3 +1,4 @@
+//#define _GLSL_DEBUG 1
 #include "opengl_api.h"
 
 #include "taichi/backends/opengl/opengl_kernel_util.h"
@@ -5,7 +6,7 @@
 #include "taichi/program/program.h"
 
 #ifdef TI_WITH_OPENGL
-#include "GL/glew.h"
+#include "glad/glad.h"
 #include "GLFW/glfw3.h"
 #endif
 
@@ -123,7 +124,9 @@ struct GLProgram {
   }
 
   void link() const {
+    TI_TRACE("glLinkProgram IN");
     glLinkProgram(id_);
+    TI_TRACE("glLinkProgram OUT");
     int status = GL_TRUE;
     glGetProgramiv(id_, GL_LINK_STATUS, &status);
     if (status != GL_TRUE) {
@@ -219,6 +222,7 @@ struct GLSSBO {
     void *p =
         glMapBufferRange(GL_SHADER_STORAGE_BUFFER, offset, length, access);
     check_opengl_error("glMapBufferRange");
+    TI_ASSERT_INFO(p, "glMapBufferRange returned NULL");
     return p;
   }
 
@@ -227,16 +231,30 @@ struct GLSSBO {
     check_opengl_error("glBindBuffer");
     void *p = glMapBuffer(GL_SHADER_STORAGE_BUFFER, access);
     check_opengl_error("glMapBuffer");
+    TI_ASSERT_INFO(p, "glMapBuffer returned NULL");
     return p;
+  }
+
+  void unmap() const {
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, id_);
+    check_opengl_error("glBindBuffer");
+    glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+    check_opengl_error("glUnmapBuffer");
   }
 };
 
-void initialize_opengl() {
-  static bool gl_inited = false;
-  if (gl_inited)
-    return;
-  TI_WARN("OpenGL backend currently WIP, MAY NOT WORK");
-  gl_inited = true;
+bool initialize_opengl(bool error_tolerance) {
+  static std::optional<bool> supported;  // std::nullopt
+
+  if (supported.has_value()) {  // this function has been called before
+    if (supported.value()) {    // detected to be true in last call
+      return true;
+    } else {
+      if (!error_tolerance)  // not called from with_opengl
+        TI_ERROR("OpenGL not supported");
+      return false;
+    }
+  }
 
   glfwInit();
   // Compute Shader requires OpenGL 4.3+ (or OpenGL ES 3.1+)
@@ -247,36 +265,67 @@ void initialize_opengl() {
   // And the best way to make context is by creating a window
   // Then hide it immediately, LOL
   GLFWwindow *window =
-      glfwCreateWindow(1, 1, "Make GLEW Happy", nullptr, nullptr);
+      glfwCreateWindow(1, 1, "Make OpenGL Context", nullptr, nullptr);
   if (!window) {
     const char *desc = nullptr;
     int status = glfwGetError(&desc);
     if (!desc)
       desc = "Unknown Error";
+    if (error_tolerance) {
+      // error tolerated, returning false
+      TI_TRACE("[glsl] cannot create GLFW window: error {}: {}", status, desc);
+      supported = std::make_optional<bool>(false);
+      return false;
+    }
     TI_ERROR("[glsl] cannot create GLFW window: error {}: {}", status, desc);
   }
   glfwHideWindow(window);
   glfwMakeContextCurrent(window);
-  int status = glewInit();
-  if (status != GLEW_OK) {
-    TI_ERROR("[glsl] cannot initialize GLEW: {}", glewGetErrorString(status));
+
+  if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+    if (error_tolerance) {
+      TI_WARN("[glsl] cannot initialize GLAD");
+      supported = std::make_optional<bool>(false);
+      return false;
+    }
+    TI_ERROR("[glsl] cannot initialize GLAD");
   }
-  TI_INFO("[glsl] OpenGL {}", (const char *)glGetString(GL_VERSION));
-  TI_INFO("[glsl] GLSL {}",
-          (const char *)glGetString(GL_SHADING_LANGUAGE_VERSION));
-#define PER_OPENGL_EXTENSION(x)                \
-  if ((opengl_has_##x = glewGetExtension(#x))) \
-    TI_INFO("[glsl] Found " #x);
+#define PER_OPENGL_EXTENSION(x)    \
+  if ((opengl_has_##x = GLAD_##x)) \
+    TI_TRACE("[glsl] Found " #x);
 #include "taichi/inc/opengl_extension.inc.h"
 #undef PER_OPENGL_EXTENSION
-  if (!opengl_has_GL_ARB_compute_shader)
+  if (!opengl_has_GL_ARB_compute_shader) {
+    if (error_tolerance) {
+      TI_INFO("Your OpenGL does not support GL_ARB_compute_shader extension");
+      supported = std::make_optional<bool>(false);
+      return false;
+    }
     TI_ERROR("Your OpenGL does not support GL_ARB_compute_shader extension");
+  }
+
+  supported = std::make_optional<bool>(true);
+  return true;
+}
+
+void display_kernel_info(std::string const &kernel_name,
+                         std::string const &kernel_source_code,
+                         int num_groups) {
+  if (!taichi::starts_with(kernel_name, "snode_") &&
+      !taichi::starts_with(kernel_name, "tensor_"))
+    TI_DEBUG("source of kernel [{}] * {}:\n{}", kernel_name, num_groups,
+             kernel_source_code);
+#ifdef _GLSL_DEBUG
+  std::ofstream(fmt::format("/tmp/{}.comp", kernel_name))
+      .write(kernel_source_code.c_str(), kernel_source_code.size());
+#endif
 }
 
 struct CompiledKernel {
   std::string kernel_name;
   std::unique_ptr<GLProgram> glsl;
   int num_groups;
+  RangeSizeEvaluator rse;
   UsedFeature used;
 
   // disscussion:
@@ -287,18 +336,15 @@ struct CompiledKernel {
   explicit CompiledKernel(const std::string &kernel_name_,
                           const std::string &kernel_source_code,
                           int num_groups_,
+                          RangeSizeEvaluator rse_,
                           const UsedFeature &used_)
       : kernel_name(kernel_name_),
-        glsl(std::make_unique<GLProgram>(GLShader(kernel_source_code))),
         num_groups(num_groups_),
+        rse(std::move(rse_)),
         used(used_) {
+    display_kernel_info(kernel_name_, kernel_source_code, num_groups_);
+    glsl = std::make_unique<GLProgram>(GLShader(kernel_source_code));
     glsl->link();
-    TI_DEBUG("source of kernel [{}] * {}:\n{}", kernel_name, num_groups,
-             kernel_source_code);
-#ifdef _GLSL_DEBUG
-    std::ofstream(fmt::format("/tmp/{}.comp", kernel_name))
-        .write(kernel_source_code.c_str(), kernel_source_code.size());
-#endif
   }
 
   void launch() const {
@@ -313,6 +359,7 @@ struct CompiledKernel {
     // `layout(local_size_x = X) in;` - the X      == `Threads`  in CUDA
     //
     glDispatchCompute(num_groups, 1, 1);
+    check_opengl_error("glDispatchCompute");
     // TI_PERF(kernel_name.c_str(), kernel_name.size(), 107);
   }
 };
@@ -335,9 +382,10 @@ struct CompiledProgram::Impl {
   void add(const std::string &kernel_name,
            const std::string &kernel_source_code,
            int num_groups,
+           RangeSizeEvaluator rse,
            const UsedFeature &used) {
     kernels.push_back(std::make_unique<CompiledKernel>(
-        kernel_name, kernel_source_code, num_groups, used));
+        kernel_name, kernel_source_code, num_groups, std::move(rse), used));
   }
 
   void launch(Context &ctx, GLSLLauncher *launcher) const {
@@ -373,13 +421,21 @@ struct CompiledProgram::Impl {
           ctx.args[i] = accum_size;
           accum_size += size;
         }  // concat all extptr into my baseptr
-        TI_INFO("baseptr = {}", baseptr);
         iov.push_back(IOV{baseptr, accum_size});
       }
     }
-    for (const auto &ker : kernels) {
+    {
       auto guard = launcher->create_launch_guard(iov);
-      ker->launch();
+      for (const auto &ker : kernels) {
+        if (ker->rse.has_value()) {
+          auto *gtmp_now = guard.map_buffer(1);  // TODO: RAII
+          ker->num_groups = ker->rse->eval((const void *)gtmp_now);
+          guard.unmap_buffer(1);
+        }
+        ker->launch();
+        glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+        check_opengl_error("glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT)");
+      }
     }
     if (ext_arr_map.size() > 1) {
       void *baseptr = base_arr.data();
@@ -394,10 +450,16 @@ struct CompiledProgram::Impl {
   }
 };
 
+struct GLSLRuntime {
+  int rand_state;
+};
+
 struct GLSLLauncherImpl {
   std::unique_ptr<GLSSBO> root_ssbo;
+  std::unique_ptr<GLSSBO> runtime_ssbo;
   std::vector<GLSSBO> ssbo;
   std::vector<char> root_buffer;
+  std::unique_ptr<GLSLRuntime> runtime;
   std::vector<std::unique_ptr<CompiledProgram>> programs;
 };
 
@@ -405,10 +467,13 @@ GLSLLauncher::GLSLLauncher(size_t size) {
   initialize_opengl();
   impl = std::make_unique<GLSLLauncherImpl>();
   impl->root_ssbo = std::make_unique<GLSSBO>();
-  size += 2 * sizeof(int);
+  impl->runtime_ssbo = std::make_unique<GLSSBO>();
+  impl->runtime = std::make_unique<GLSLRuntime>();
   impl->root_buffer.resize(size, 0);
   impl->root_ssbo->bind_data(impl->root_buffer.data(), size);
   impl->root_ssbo->bind_index(0);
+  impl->runtime_ssbo->bind_data(impl->runtime.get(), sizeof(GLSLRuntime));
+  impl->runtime_ssbo->bind_index(6);
 }
 
 void GLSLLauncher::keep(std::unique_ptr<CompiledProgram> program) {
@@ -428,28 +493,34 @@ GLSLLaunchGuard::GLSLLaunchGuard(GLSLLauncherImpl *impl,
   }
 }
 
-GLSLLaunchGuard::~GLSLLaunchGuard() {
-  // glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT); // TODO(archibate): move to
-  // Program::synchroize()
+void *GLSLLaunchGuard::map_buffer(size_t idx) {
+  TI_ASSERT(iov[idx].size);
+  void *p = impl->ssbo[idx].map();  // 0, iov[i].size);  // sync
+  return p;
+}
 
+void GLSLLaunchGuard::unmap_buffer(size_t idx) {
+  impl->ssbo[idx].unmap();
+}
+
+GLSLLaunchGuard::~GLSLLaunchGuard() {
   for (int i = 0; i < impl->ssbo.size(); i++) {
     if (!iov[i].size)
       continue;
     void *p = impl->ssbo[i].map();  // 0, iov[i].size);  // output
-    TI_ASSERT_INFO(p, "glMapBuffer returned NULL");
     std::memcpy(iov[i].base, p, iov[i].size);
   }
-  glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
   impl->ssbo.clear();
 }
 
 bool is_opengl_api_available() {
-  return true;
+  return initialize_opengl(true);
 }
 
 int opengl_get_threads_per_group() {
-  int ret = 1;
+  int ret = 1000;
   glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS, &ret);
+  check_opengl_error("glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS)");
   return ret;
 }
 
@@ -465,6 +536,7 @@ struct CompiledProgram::Impl {
   void add(const std::string &kernel_name,
            const std::string &kernel_source_code,
            int num_groups,
+           RangeSizeEvaluator rse,
            const UsedFeature &used) {
     TI_NOT_IMPLEMENTED;
   }
@@ -486,7 +558,7 @@ bool is_opengl_api_available() {
   return false;
 }
 
-void initialize_opengl() {
+bool initialize_opengl(bool error_tolerance) {
   TI_NOT_IMPLEMENTED;
 }
 
@@ -504,6 +576,14 @@ GLSLLaunchGuard::~GLSLLaunchGuard() {
   TI_NOT_IMPLEMENTED;
 }
 
+void *GLSLLaunchGuard::map_buffer(size_t idx) {
+  TI_NOT_IMPLEMENTED;
+}
+
+void GLSLLaunchGuard::unmap_buffer(size_t idx) {
+  TI_NOT_IMPLEMENTED;
+}
+
 #endif  // TI_WITH_OPENGL
 
 CompiledProgram::CompiledProgram(Kernel *kernel, size_t gtmp_size)
@@ -515,8 +595,9 @@ CompiledProgram::~CompiledProgram() = default;
 void CompiledProgram::add(const std::string &kernel_name,
                           const std::string &kernel_source_code,
                           int num_groups,
+                          RangeSizeEvaluator rse,
                           const UsedFeature &used) {
-  impl->add(kernel_name, kernel_source_code, num_groups, used);
+  impl->add(kernel_name, kernel_source_code, num_groups, std::move(rse), used);
 }
 
 void CompiledProgram::launch(Context &ctx, GLSLLauncher *launcher) const {

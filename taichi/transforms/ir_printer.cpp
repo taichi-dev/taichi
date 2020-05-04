@@ -1,7 +1,9 @@
 // The IRPrinter prints the IR in a human-readable format
 
 #include <typeinfo>
+
 #include "taichi/ir/ir.h"
+#include "taichi/ir/frontend_ir.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -126,8 +128,9 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(UnaryOpStmt *stmt) override {
-    if (stmt->op_type == UnaryOpType::cast) {
-      std::string reint = stmt->cast_by_value ? "" : "reinterpret_";
+    if (stmt->is_cast()) {
+      std::string reint =
+          stmt->op_type == UnaryOpType::cast_value ? "" : "reinterpret_";
       print("{}{} = {}{}<{}> {}", stmt->type_hint(), stmt->name(), reint,
             unary_op_type_name(stmt->op_type),
             data_type_short_name(stmt->cast_type), stmt->operand->name());
@@ -149,12 +152,6 @@ class IRPrinter : public IRVisitor {
           stmt->op2->name(), stmt->op3->name());
   }
 
-  void visit(FrontendAtomicStmt *stmt) override {
-    print("{}{} = atomic {}({}, {})", stmt->type_hint(), stmt->name(),
-          atomic_op_type_name(stmt->op_type), stmt->dest->serialize(),
-          stmt->val->serialize());
-  }
-
   void visit(AtomicOpStmt *stmt) override {
     print("{}{} = atomic {}({}, {})", stmt->type_hint(), stmt->name(),
           atomic_op_type_name(stmt->op_type), stmt->dest->name(),
@@ -162,7 +159,7 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(IfStmt *if_stmt) override {
-    print("if {} {{", if_stmt->cond->name());
+    print("{} : if {} {{", if_stmt->name(), if_stmt->cond->name());
     if (if_stmt->true_statements)
       if_stmt->true_statements->accept(this);
     if (if_stmt->false_statements) {
@@ -173,7 +170,7 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(FrontendIfStmt *if_stmt) override {
-    print("if {} {{", if_stmt->condition->serialize());
+    print("{} : if {} {{", if_stmt->name(), if_stmt->condition->serialize());
     if (if_stmt->true_statements)
       if_stmt->true_statements->accept(this);
     if (if_stmt->false_statements) {
@@ -203,7 +200,8 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(WhileControlStmt *stmt) override {
-    print("while control {}, {}", stmt->mask->name(), stmt->cond->name());
+    print("{} : while control {}, {}", stmt->name(),
+          stmt->mask ? stmt->mask->name() : "nullptr", stmt->cond->name());
   }
 
   void visit(ContinueStmt *stmt) override {
@@ -231,26 +229,26 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(WhileStmt *stmt) override {
-    print("while true {{");
+    print("{} : while true {{", stmt->name());
     stmt->body->accept(this);
     print("}}");
   }
 
   void visit(FrontendWhileStmt *stmt) override {
-    print("while {} {{", stmt->cond->serialize());
+    print("{} : while {} {{", stmt->name(), stmt->cond->serialize());
     stmt->body->accept(this);
     print("}}");
   }
 
   void visit(FrontendForStmt *for_stmt) override {
-    auto vars = make_list<Ident>(
+    auto vars = make_list<Identifier>(
         for_stmt->loop_var_id,
-        [](const Ident &id) -> std::string { return id.name(); });
+        [](const Identifier &id) -> std::string { return id.name(); });
     if (for_stmt->is_ranged()) {
-      print("for {} in range({}, {}) {{", vars, for_stmt->begin->serialize(),
-            for_stmt->end->serialize());
+      print("{} : for {} in range({}, {}) {{", for_stmt->name(), vars,
+            for_stmt->begin->serialize(), for_stmt->end->serialize());
     } else {
-      print("for {} where {} active {{", vars,
+      print("{} : for {} where {} active {{", for_stmt->name(), vars,
             for_stmt->global_var.cast<GlobalVariableExpression>()
                 ->snode->get_node_type_name_hinted());
     }
@@ -259,7 +257,7 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(RangeForStmt *for_stmt) override {
-    print("{}for {} in range({}, {}, step {}) {{",
+    print("{} : {}for {} in range({}, {}, step {}) {{", for_stmt->name(),
           for_stmt->reversed ? "reversed " : "", for_stmt->loop_var->name(),
           for_stmt->begin->name(), for_stmt->end->name(), for_stmt->vectorize);
     for_stmt->body->accept(this);
@@ -270,8 +268,9 @@ class IRPrinter : public IRVisitor {
     auto loop_vars = make_list<Stmt *>(
         for_stmt->loop_vars,
         [](Stmt *const &stmt) -> std::string { return stmt->name(); });
-    print("for {} where {} active, step {} {{", loop_vars,
-          for_stmt->snode->get_node_type_name_hinted(), for_stmt->vectorize);
+    print("{} : for {} where {} active, step {} {{", for_stmt->name(),
+          loop_vars, for_stmt->snode->get_node_type_name_hinted(),
+          for_stmt->vectorize);
     for_stmt->body->accept(this);
     print("}}");
   }

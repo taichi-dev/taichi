@@ -22,14 +22,16 @@ class AlgSimp : public BasicStmtVisitor {
       return;
     }
     if (stmt->op_type == BinaryOpType::add ||
-        stmt->op_type == BinaryOpType::sub) {
+        stmt->op_type == BinaryOpType::sub ||
+        stmt->op_type == BinaryOpType::bit_or ||
+        stmt->op_type == BinaryOpType::bit_xor) {
       if (alg_is_zero(rhs)) {
-        // a +- 0 -> a
+        // a +-|^ 0 -> a
         stmt->replace_with(stmt->lhs);
         stmt->parent->erase(stmt);
         throw IRModified();
-      } else if (stmt->op_type == BinaryOpType::add && alg_is_zero(lhs)) {
-        // 0 + a -> a
+      } else if (stmt->op_type != BinaryOpType::sub && alg_is_zero(lhs)) {
+        // 0 +|^ a -> a
         stmt->replace_with(stmt->rhs);
         stmt->parent->erase(stmt);
         throw IRModified();
@@ -57,6 +59,40 @@ class AlgSimp : public BasicStmtVisitor {
         stmt->parent->erase(stmt);
         throw IRModified();
       }
+    } else if (stmt->op_type == BinaryOpType::bit_and) {
+      if (alg_is_minus_one(rhs)) {
+        // a & -1 -> a
+        stmt->replace_with(stmt->lhs);
+        stmt->parent->erase(stmt);
+        throw IRModified();
+      } else if (alg_is_minus_one(lhs)) {
+        // -1 & a -> a
+        stmt->replace_with(stmt->rhs);
+        stmt->parent->erase(stmt);
+        throw IRModified();
+      }
+    }
+  }
+
+  void visit(AssertStmt *stmt) override {
+    auto cond = stmt->cond->cast<ConstStmt>();
+    if (!cond)
+      return;
+    if (!alg_is_zero(cond)) {
+      // this statement has no effect
+      stmt->parent->erase(stmt);
+      throw IRModified();
+    }
+  }
+
+  void visit(WhileControlStmt *stmt) override {
+    auto cond = stmt->cond->cast<ConstStmt>();
+    if (!cond)
+      return;
+    if (!alg_is_zero(cond)) {
+      // this statement has no effect
+      stmt->parent->erase(stmt);
+      throw IRModified();
     }
   }
 
@@ -96,6 +132,27 @@ class AlgSimp : public BasicStmtVisitor {
       return val.val_int64() == 1;
     else if (data_type == DataType::f64)
       return val.val_float64() == 1;
+    else {
+      TI_NOT_IMPLEMENTED
+      return false;
+    }
+  }
+
+  static bool alg_is_minus_one(ConstStmt *stmt) {
+    if (!stmt)
+      return false;
+    if (stmt->width() != 1)
+      return false;
+    auto val = stmt->val[0];
+    auto data_type = stmt->ret_type.data_type;
+    if (data_type == DataType::i32)
+      return val.val_int32() == -1;
+    else if (data_type == DataType::f32)
+      return val.val_float32() == -1;
+    else if (data_type == DataType::i64)
+      return val.val_int64() == -1;
+    else if (data_type == DataType::f64)
+      return val.val_float64() == -1;
     else {
       TI_NOT_IMPLEMENTED
       return false;

@@ -31,6 +31,8 @@ arm64 = core.arm64
 cuda = core.cuda
 metal = core.metal
 opengl = core.opengl
+gpu = [cuda, metal, opengl]
+cpu = core.host_arch()
 profiler_print = lambda: core.get_current_program().profiler_print()
 profiler_clear = lambda: core.get_current_program().profiler_clear()
 profiler_start = lambda n: core.get_current_program().profiler_start(n)
@@ -55,7 +57,8 @@ def reset():
     runtime = get_runtime()
 
 
-def init(default_fp=None,
+def init(arch=None,
+         default_fp=None,
          default_ip=None,
          print_preprocessed=None,
          debug=None,
@@ -118,25 +121,43 @@ def init(default_fp=None,
     for k, v in kwargs.items():
         setattr(ti.cfg, k, v)
 
-    def boolean_config(key, name=None):
-        if name is None:
-            name = 'TI_' + key.upper()
-        value = os.environ.get(name)
-        if value is not None:
-            setattr(ti.cfg, key, len(value) and bool(int(value)))
+    def bool_int(x):
+        return bool(int(x))
+
+    def environ_config(key, cast=bool_int):
+        name = 'TI_' + key.upper()
+        value = os.environ.get(name, '')
+        if len(value):
+            setattr(ti.cfg, key, cast(value))
+
+        # TI_ASYNC=   : not work
+        # TI_ASYNC=0  : False
+        # TI_ASYNC=1  : True
 
     # does override
-    boolean_config("print_ir")
-    boolean_config("verbose")
-    boolean_config("fast_math")
-    boolean_config("async")
-    gdb_trigger = os.environ.get("TI_GDB_TRIGGER")
-    if gdb_trigger is not None:
-        ti.set_gdb_trigger(len(gdb_trigger) and bool(int(gdb_trigger)))
-    arch = os.environ.get("TI_ARCH")
-    if arch is not None:
-        print(f'Following TI_ARCH setting up for arch={arch}')
-        ti.cfg.arch = ti.core.arch_from_name(arch)
+    environ_config("print_ir")
+    environ_config("verbose")
+    environ_config("fast_math")
+    environ_config("async")
+    environ_config("print_benchmark_stat")
+    environ_config("device_memory_fraction", float)
+    environ_config("device_memory_GB", float)
+
+    # Q: Why not environ_config("gdb_trigger")?
+    # A: We don't have ti.cfg.gdb_trigger yet.
+    # Discussion: https://github.com/taichi-dev/taichi/pull/879
+    gdb_trigger = os.environ.get('TI_GDB_TRIGGER', '')
+    if len(gdb_trigger):
+        ti.set_gdb_trigger(bool(int(gdb_trigger)))
+
+    # Q: Why not environ_config("arch", ti.core.arch_from_name)?
+    # A: We need adaptive_arch_select for all.
+    env_arch = os.environ.get("TI_ARCH")
+    if env_arch is not None:
+        print(f'Following TI_ARCH setting up for arch={env_arch}')
+        arch = ti.core.arch_from_name(env_arch)
+
+    ti.cfg.arch = adaptive_arch_select(arch)
 
     log_level = os.environ.get("TI_LOG_LEVEL")
     if log_level is not None:
@@ -240,10 +261,6 @@ def benchmark(func, repeat=100, args=()):
     return elapsed / repeat
 
 
-def set_wanted_archs(archs):
-    os.environ['TI_WANTED_ARCHS'] = ','.join(archs)
-
-
 def supported_archs():
     import taichi as ti
     archs = [ti.core.host_arch()]
@@ -253,15 +270,33 @@ def supported_archs():
         archs.append(metal)
     if ti.core.with_opengl():
         archs.append(opengl)
-    wanted_archs = os.environ.get('TI_WANTED_ARCHS', '').split(',')
+    wanted_archs = os.environ.get('TI_WANTED_ARCHS', '')
+    want_exclude = wanted_archs.startswith('^')
+    if want_exclude:
+        wanted_archs = wanted_archs[1:]
+    wanted_archs = wanted_archs.split(',')
     # Note, ''.split(',') gives you [''], which is not an empty array.
     wanted_archs = list(filter(lambda x: x != '', wanted_archs))
     if len(wanted_archs):
         archs, old_archs = [], archs
         for arch in old_archs:
-            if ti.core.arch_name(arch) in wanted_archs:
+            if want_exclude == (ti.core.arch_name(arch) not in wanted_archs):
                 archs.append(arch)
     return archs
+
+
+def adaptive_arch_select(arch):
+    if arch is None:
+        return cpu
+    supported = supported_archs()
+    if isinstance(arch, list):
+        for a in arch:
+            if a in supported:
+                return a
+    elif arch in supported:
+        return arch
+    print(f'Arch={arch} not supported, falling back to CPU')
+    return cpu
 
 
 class _ArchCheckers(object):

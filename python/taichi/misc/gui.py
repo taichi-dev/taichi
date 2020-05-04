@@ -74,7 +74,7 @@ class GUI:
                          2] == self.res, "Image resolution does not match GUI resolution"
         self.core.set_img(np.ascontiguousarray(img).ctypes.data)
 
-    def circle(self, pos, color, radius=1):
+    def circle(self, pos, color=0xFFFFFF, radius=1):
         self.canvas.circle_single(pos[0], pos[1], color, radius)
 
     def circles(self, pos, color=0xFFFFFF, radius=1):
@@ -119,9 +119,19 @@ class GUI:
     def triangle(self, a, b, c, color=0xFFFFFF):
         self.canvas.triangle_single(a[0], a[1], b[0], b[1], c[0], c[1], color)
 
-    def line(self, begin, end, radius, color):
+    def line(self, begin, end, radius=1, color=0xFFFFFF):
         self.canvas.path_single(begin[0], begin[1], end[0], end[1], color,
                                 radius)
+
+    def rect(self, topleft, bottomright, radius=1, color=0xFFFFFF):
+        a = topleft[0], topleft[1]
+        b = bottomright[0], topleft[1]
+        c = bottomright[0], bottomright[1]
+        d = topleft[0], bottomright[1]
+        self.line(a, b, radius, color)
+        self.line(b, c, radius, color)
+        self.line(c, d, radius, color)
+        self.line(d, a, radius, color)
 
     def show(self, file=None):
         self.core.update()
@@ -129,17 +139,42 @@ class GUI:
             self.core.screenshot(file)
         self.clear(self.background_color)
 
+    class EventFilter:
+        def __init__(self, *filter):
+            self.filter = set()
+            for ent in filter:
+                if isinstance(ent, (list, tuple)):
+                    type, key = ent
+                    ent = (type, key)
+                self.filter.add(ent)
+
+        def match(self, e):
+            if (e.type, e.key) in self.filter:
+                return True
+            if e.type in self.filter:
+                return True
+            if e.key in self.filter:
+                return True
+            return False
+
     def has_key_event(self):
         return self.core.has_key_event()
 
     def get_event(self, *filter):
+        for e in self.get_events(*filter):
+            self.event = e
+            return True
+        return False
+
+    def get_events(self, *filter):
+        filter = filter and GUI.EventFilter(*filter) or None
+
         while True:
             if not self.has_key_event():
-                return False
-            self.event = self.get_key_event()
-            if not len(filter) or self.event.type in filter:
                 break
-        return True
+            e = self.get_key_event()
+            if filter is None or filter.match(e):
+                yield e
 
     def get_key_event(self):
         self.core.wait_key_event()
@@ -147,6 +182,7 @@ class GUI:
         e.key = self.core.get_key_event_head_key()
         e.type = self.core.get_key_event_head_type()
         e.pos = self.core.get_key_event_head_pos()
+        e.pos = (e.pos[0], e.pos[1])
         e.modifier = []
         for mod in ['Shift', 'Alt', 'Control']:
             if self.is_pressed(mod):
@@ -169,7 +205,8 @@ class GUI:
             return False
 
     def get_cursor_pos(self):
-        return self.core.get_cursor_pos()
+        pos = self.core.get_cursor_pos()
+        return pos[0], pos[1]
 
     def has_key_pressed(self):
         if self.has_key_event():

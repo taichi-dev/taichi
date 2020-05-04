@@ -12,6 +12,22 @@
 
 TLANG_NAMESPACE_BEGIN
 namespace opengl {
+
+size_t RangeSizeEvaluator_::eval(const void *gtmp) {
+  size_t b, e, tpg = gl_threads_per_group;
+  b = const_begin ? begin : *(const int *)((const char *)gtmp + begin);
+  e = const_end ? end : *(const int *)((const char *)gtmp + end);
+  return std::max((e - b + tpg - 1) / tpg, (size_t)1);
+}
+
+RangeSizeEvaluator_::RangeSizeEvaluator_(OffloadedStmt *stmt)
+    : const_begin(stmt->const_begin),
+      const_end(stmt->const_end),
+      begin(stmt->const_begin ? stmt->begin_value : stmt->begin_offset),
+      end(stmt->const_end ? stmt->end_value : stmt->end_offset),
+      gl_threads_per_group((size_t)opengl_get_threads_per_group()) {
+}
+
 namespace {
 
 std::string opengl_atomic_op_type_cap_name(AtomicOpType type) {
@@ -66,6 +82,7 @@ class KernelGen : public IRVisitor {
   int glsl_kernel_count_{0};
   int num_threads_{1};
   int num_groups_{1};
+  RangeSizeEvaluator range_size_evaluator_;
 
   template <typename... Args>
   void emit(std::string f, Args &&... args) {
@@ -93,11 +110,13 @@ class KernelGen : public IRVisitor {
 
     // clang-format off
     std::string kernel_header =
-        "layout(packed, binding = 0) buffer data_i32 { int _states_[2]; int _data_i32_[]; };\n"
-        "layout(packed, binding = 0) buffer data_f32 { int _unused1_[2]; float _data_f32_[]; };\n"
-        "layout(packed, binding = 0) buffer data_f64 { int _unused2_[2]; double _data_f64_[]; };\n";
+      "layout(packed, binding = 6) buffer runtime { int _rand_state_; };\n";
+    kernel_header +=
+      "layout(packed, binding = 0) buffer data_i32 { int _data_i32_[]; };\n"
+      "layout(packed, binding = 0) buffer data_f32 { float _data_f32_[]; };\n"
+      "layout(packed, binding = 0) buffer data_f64 { double _data_f64_[]; };\n";
     if (used.int64)
-      kernel_header += "layout(packed, binding = 0) buffer data_i64 { int _unused3_[2]; int64_t _data_i64_[]; };\n";
+      kernel_header += "layout(packed, binding = 0) buffer data_i64 { int64_t _data_i64_[]; };\n";
 
     if (used.argument) {
       kernel_header +=
@@ -153,10 +172,19 @@ class KernelGen : public IRVisitor {
     line_appender_header_.append_raw(kernel_header);
 
     int threads_per_group = opengl_get_threads_per_group();
-    if (num_threads_ < threads_per_group)
-      threads_per_group = std::max(1, num_threads_);
-    else
-      num_groups_ = (num_threads_ + threads_per_group - 1) / threads_per_group;
+    if (num_threads_ == -1) {  // is dyn loop
+      num_groups_ = -1;
+    } else {
+      if (num_threads_ <= 0)
+        num_threads_ = 1;
+      if (num_threads_ <= threads_per_group) {
+        threads_per_group = num_threads_;
+        num_groups_ = 1;
+      } else {
+        num_groups_ =
+            (num_threads_ + threads_per_group - 1) / threads_per_group;
+      }
+    }
     emit(
         "layout(local_size_x = {} /* {}, {} */, local_size_y = 1, local_size_z "
         "= 1) in;",
@@ -171,9 +199,12 @@ class KernelGen : public IRVisitor {
         "#version 430 core\n" + extensions + "precision highp float;\n" +
         line_appender_header_.lines() + line_appender_.lines();
     compiled_program_->add(std::move(glsl_kernel_name_), kernel_src_code,
-                           num_groups_, used);
+                           num_groups_, range_size_evaluator_, used);
     line_appender_header_.clear_all();
     line_appender_.clear_all();
+    num_threads_ = 1;
+    num_groups_ = 1;
+    range_size_evaluator_ = std::nullopt;
   }
 
   void visit(Block *stmt) override {
@@ -318,16 +349,12 @@ class KernelGen : public IRVisitor {
     } else if (stmt->op_type == UnaryOpType::bit_not) {
       emit("{} {} = {}(~{});", dt_name, stmt->short_name(), dt_name,
            stmt->operand->short_name());
-    } else if (stmt->op_type != UnaryOpType::cast) {
-      emit("{} {} = {}({}({}));", dt_name, stmt->short_name(), dt_name,
-           unary_op_type_name(stmt->op_type), stmt->operand->short_name());
-    } else {
-      // cast
-      if (stmt->cast_by_value) {
+    } else if (stmt->op_type == UnaryOpType::cast_value) {
         emit("{} {} = {}({});", dt_name, stmt->short_name(),
              opengl_data_type_name(stmt->cast_type),
              stmt->operand->short_name());
-      } else if (stmt->cast_type == DataType::f32 &&
+    } else if (stmt->op_type == UnaryOpType::cast_bits) {
+      if (stmt->cast_type == DataType::f32 &&
                  stmt->operand->element_type() == DataType::i32) {
         emit("{} {} = intBitsToFloat({});", dt_name, stmt->short_name(),
              stmt->operand->short_name());
@@ -338,6 +365,9 @@ class KernelGen : public IRVisitor {
       } else {
         TI_ERROR("unsupported reinterpret cast");
       }
+    } else {
+      emit("{} {} = {}({}({}));", dt_name, stmt->short_name(), dt_name,
+           unary_op_type_name(stmt->op_type), stmt->operand->short_name());
     }
   }
 
@@ -401,8 +431,10 @@ class KernelGen : public IRVisitor {
     auto dt = stmt->dest->element_type();
     if (dt == DataType::i32 ||
         (opengl_has_GL_NV_shader_atomic_int64 && dt == DataType::i64) ||
-        (opengl_has_GL_NV_shader_atomic_float && dt == DataType::f32) ||
-        (opengl_has_GL_NV_shader_atomic_float64 && dt == DataType::f64)) {
+        ((stmt->op_type == AtomicOpType::add ||
+          stmt->op_type == AtomicOpType::sub) &&
+         ((opengl_has_GL_NV_shader_atomic_float && dt == DataType::f32) ||
+          (opengl_has_GL_NV_shader_atomic_float64 && dt == DataType::f64)))) {
       emit("{} {} = {}(_{}_{}_[{} >> {}], {});",
            opengl_data_type_name(stmt->val->element_type()), stmt->short_name(),
            opengl_atomic_op_type_cap_name(stmt->op_type),
@@ -521,11 +553,28 @@ class KernelGen : public IRVisitor {
       emit("int _tid = int(gl_GlobalInvocationID.x);");
       emit("if (_tid >= {}) return;", num_threads_);
       emit("int _itv = {} + _tid * {};", begin_value, 1 /* stmt->step? */);
+      stmt->body->accept(this);
     } else {
-      TI_ERROR("[glsl] non-const range_for currently unsupported under OpenGL");
+      {
+        ScopedIndent _s(line_appender_);
+        emit("// range known at runtime");
+        auto begin_expr = stmt->const_begin ? std::to_string(stmt->begin_value)
+                                            : fmt::format("_gtmp_i32_[{} >> 2]",
+                                                          stmt->begin_offset);
+        auto end_expr = stmt->const_end ? std::to_string(stmt->end_value)
+                                        : fmt::format("_gtmp_i32_[{} >> 2]",
+                                                      stmt->end_offset);
+        emit("int _tid = int(gl_GlobalInvocationID.x);");
+        emit("int _beg = {}, _end = {};", begin_expr, end_expr);
+        emit("int _itv = _beg + _tid;");
+        emit("if (_itv >= _end) return;");
+        num_threads_ = -1;
+
+        range_size_evaluator_ = std::make_optional<RangeSizeEvaluator_>(stmt);
+      }
+      stmt->body->accept(this);
     }
 
-    stmt->body->accept(this);
     emit("}}\n");
   }
 

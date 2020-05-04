@@ -1,5 +1,6 @@
+#include "taichi/jit/jit_session.h"
+
 #include "llvm/IR/DataLayout.h"
-#include "jit_session.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -7,11 +8,15 @@ std::unique_ptr<JITSession> create_llvm_jit_session_cpu(Arch arch);
 std::unique_ptr<JITSession> create_llvm_jit_session_cuda(Arch arch);
 
 std::unique_ptr<JITSession> JITSession::create(Arch arch) {
-  if (arch_is_cpu(arch))
+  if (arch_is_cpu(arch)) {
     return create_llvm_jit_session_cpu(arch);
-  else if (arch == Arch::cuda)
+  } else if (arch == Arch::cuda) {
+#if defined(TI_WITH_CUDA)
     return create_llvm_jit_session_cuda(arch);
-  else
+#else
+    TI_NOT_IMPLEMENTED
+#endif
+  } else
     TI_NOT_IMPLEMENTED
 }
 

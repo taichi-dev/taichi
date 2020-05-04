@@ -17,12 +17,9 @@ class LowerAccess : public IRVisitor {
   }
 
   void visit(Block *stmt_list) override {
-    auto backup_block = current_block;
-    current_block = stmt_list;
     for (auto &stmt : stmt_list->statements) {
       stmt->accept(this);
     }
-    current_block = backup_block;
   }
 
   void visit(IfStmt *if_stmt) override {
@@ -30,6 +27,12 @@ class LowerAccess : public IRVisitor {
       if_stmt->true_statements->accept(this);
     if (if_stmt->false_statements) {
       if_stmt->false_statements->accept(this);
+    }
+  }
+
+  void visit(OffloadedStmt *stmt) override {
+    if (stmt->body) {
+      stmt->body->accept(this);
     }
   }
 
@@ -227,9 +230,9 @@ class LowerAccess : public IRVisitor {
 
 namespace irpass {
 
-void lower_access(IRNode *root, bool lower_atomic) {
+void lower_access(IRNode *root, bool lower_atomic, Kernel *kernel) {
   LowerAccess::run(root, lower_atomic);
-  typecheck(root);
+  typecheck(root, kernel);
 }
 
 }  // namespace irpass

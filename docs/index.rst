@@ -26,7 +26,7 @@ The Taichi Programming Language
 
    scalar_tensor
    vector
-   linalg
+   matrix
 
 
 .. toctree::
@@ -57,6 +57,7 @@ The Taichi Programming Language
    :maxdepth: 3
 
    utilities
+   gui
    global_settings
    performance
    acknowledgments

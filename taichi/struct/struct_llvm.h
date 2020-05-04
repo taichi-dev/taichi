@@ -1,11 +1,11 @@
 // Codegen for the hierarchical data structure (LLVM)
 
-#include "struct.h"
+#include "taichi/struct/struct.h"
 #include "taichi/llvm/llvm_codegen_utils.h"
 
 TLANG_NAMESPACE_BEGIN
 
-class StructCompilerLLVM : public StructCompiler, public ModuleBuilder {
+class StructCompilerLLVM : public StructCompiler, public LLVMModuleBuilder {
  public:
   StructCompilerLLVM(Program *prog, Arch arch);
 
@@ -20,6 +20,18 @@ class StructCompilerLLVM : public StructCompiler, public ModuleBuilder {
   void run(SNode &node, bool host) override;
 
   void generate_refine_coordinates(SNode *snode);
+
+  static std::string type_stub_name(SNode *snode);
+
+  static llvm::Type *get_stub(llvm::Module *module, SNode *snode, uint32 index);
+
+  static llvm::Type *get_llvm_node_type(llvm::Module *module, SNode *snode);
+
+  static llvm::Type *get_llvm_body_type(llvm::Module *module, SNode *snode);
+
+  static llvm::Type *get_llvm_aux_type(llvm::Module *module, SNode *snode);
+
+  static llvm::Type *get_llvm_element_type(llvm::Module *module, SNode *snode);
 };
 
 TLANG_NAMESPACE_END

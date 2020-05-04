@@ -87,19 +87,23 @@ struct OffloadedResult {
 void re_id(IRNode *root);
 void flag_access(IRNode *root);
 void die(IRNode *root);
-void simplify(IRNode *root);
+void simplify(IRNode *root, Kernel *kernel = nullptr);
 void alg_simp(IRNode *root, const CompileConfig &config);
 void whole_kernel_cse(IRNode *root);
-void full_simplify(IRNode *root, const CompileConfig &config);
+void variable_optimization(IRNode *root, bool after_lower_access);
+void extract_constant(IRNode *root);
+void full_simplify(IRNode *root,
+                   const CompileConfig &config,
+                   Kernel *kernel = nullptr);
 void print(IRNode *root, std::string *output = nullptr);
 void lower(IRNode *root);
-void typecheck(IRNode *root);
+void typecheck(IRNode *root, Kernel *kernel = nullptr);
 void loop_vectorize(IRNode *root);
 void slp_vectorize(IRNode *root);
 void vector_split(IRNode *root, int max_width, bool serial_schedule);
 void replace_all_usages_with(IRNode *root, Stmt *old_stmt, Stmt *new_stmt);
 void check_out_of_bound(IRNode *root);
-void lower_access(IRNode *root, bool lower_atomic);
+void lower_access(IRNode *root, bool lower_atomic, Kernel *kernel = nullptr);
 void make_adjoint(IRNode *root, bool use_stack = false);
 void constant_fold(IRNode *root);
 OffloadedResult offload(IRNode *root);
@@ -112,11 +116,12 @@ void demote_atomics(IRNode *root);
 void reverse_segments(IRNode *root);  // for autograd
 std::unique_ptr<ScratchPads> initialize_scratch_pad(StructForStmt *root);
 void compile_to_offloads(IRNode *ir,
-                         CompileConfig config,
+                         const CompileConfig &config,
                          bool vectorize,
                          bool grad,
                          bool ad_use_stack,
-                         bool verbose);
+                         bool verbose,
+                         bool lower_global_access = true);
 
 // Analysis
 namespace analysis {
@@ -127,7 +132,8 @@ std::unordered_set<Stmt *> detect_loops_with_continue(IRNode *root);
 std::unordered_set<SNode *> gather_deactivations(IRNode *root);
 std::vector<Stmt *> gather_statements(IRNode *root,
                                       const std::function<bool(Stmt *)> &test);
-bool has_load_or_atomic(IRNode *root, Stmt *var);
+std::unique_ptr<std::unordered_set<AtomicOpStmt *>> gather_used_atomics(
+    IRNode *root);
 bool has_store_or_atomic(IRNode *root, const std::vector<Stmt *> &vars);
 std::pair<bool, Stmt *> last_store_or_atomic(IRNode *root, Stmt *var);
 bool same_statements(IRNode *root1, IRNode *root2);
@@ -138,6 +144,8 @@ void verify(IRNode *root);
 }  // namespace irpass
 
 IRBuilder &current_ast_builder();
+
+bool maybe_same_address(Stmt *var1, Stmt *var2);
 
 struct VectorType {
  private:
@@ -275,8 +283,6 @@ class Identifier {
     return id == o.id;
   }
 };
-
-using Ident = Identifier;
 
 class VecStatement {
  public:
@@ -659,6 +665,7 @@ class Stmt : public IRNode {
 
   void set_operand(int i, Stmt *stmt);
   void register_operand(Stmt *&stmt);
+  int locate_operand(Stmt **stmt);
   void mark_fields_registered();
 
   virtual void rebuild_operands() {
@@ -668,6 +675,8 @@ class Stmt : public IRNode {
   TI_FORCE_INLINE bool may_have_operand(Stmt *stmt) const {
     return (operand_bitmap & operand_hash(stmt)) != 0;
   }
+
+  bool have_operand(Stmt *stmt) const;
 
   void replace_with(Stmt *new_stmt);
   void replace_with(VecStatement &&new_statements, bool replace_usages = true);
@@ -723,13 +732,31 @@ class Expression {
   std::string tb;
   std::map<std::string, std::string> attributes;
 
+  struct FlattenContext {
+    VecStatement stmts;
+    Block *current_block = nullptr;
+
+    inline Stmt *push_back(pStmt &&stmt) {
+      return stmts.push_back(std::move(stmt));
+    }
+
+    template <typename T, typename... Args>
+    T *push_back(Args &&... args) {
+      return stmts.push_back<T>(std::forward<Args>(args)...);
+    }
+
+    Stmt *back_stmt() {
+      return stmts.back().get();
+    }
+  };
+
   Expression() {
     stmt = nullptr;
   }
 
   virtual std::string serialize() = 0;
 
-  virtual void flatten(VecStatement &ret) {
+  virtual void flatten(FlattenContext *ctx) {
     TI_NOT_IMPLEMENTED;
   };
 
@@ -800,17 +827,6 @@ inline ExprGroup operator,(const Expr &a, const Expr &b) {
 inline ExprGroup operator,(const ExprGroup &a, const Expr &b) {
   return ExprGroup(a, b);
 }
-
-class FrontendAllocaStmt : public Stmt {
- public:
-  Ident ident;
-
-  FrontendAllocaStmt(const Ident &lhs, DataType type) : ident(lhs) {
-    ret_type = VectorType(1, type);
-  }
-
-  DEFINE_ACCEPT
-};
 
 class AllocaStmt : public Stmt {
  public:
@@ -887,17 +903,17 @@ class UnaryOpStmt : public Stmt {
   UnaryOpType op_type;
   Stmt *operand;
   DataType cast_type;
-  bool cast_by_value = true;
 
   UnaryOpStmt(UnaryOpType op_type, Stmt *operand);
 
   bool same_operation(UnaryOpStmt *o) const;
+  bool is_cast() const;
 
   virtual bool has_global_side_effect() const override {
     return false;
   }
 
-  TI_STMT_DEF_FIELDS(ret_type, op_type, operand, cast_type, cast_by_value);
+  TI_STMT_DEF_FIELDS(ret_type, op_type, operand, cast_type);
   DEFINE_ACCEPT
 };
 
@@ -929,29 +945,11 @@ class ArgLoadExpression : public Expression {
     return fmt::format("arg[{}]", arg_id);
   }
 
-  void flatten(VecStatement &ret) override {
+  void flatten(FlattenContext *ctx) override {
     auto ran = std::make_unique<ArgLoadStmt>(arg_id);
-    ret.push_back(std::move(ran));
-    stmt = ret.back().get();
+    ctx->push_back(std::move(ran));
+    stmt = ctx->back_stmt();
   }
-};
-
-// For return values
-class FrontendArgStoreStmt : public Stmt {
- public:
-  int arg_id;
-  Expr expr;
-
-  FrontendArgStoreStmt(int arg_id, const Expr &expr)
-      : arg_id(arg_id), expr(expr) {
-  }
-
-  // Arguments are considered global (nonlocal)
-  virtual bool has_global_side_effect() const override {
-    return true;
-  }
-
-  DEFINE_ACCEPT
 };
 
 // For return values
@@ -999,10 +997,10 @@ class RandExpression : public Expression {
     return fmt::format("rand<{}>()", data_type_name(dt));
   }
 
-  void flatten(VecStatement &ret) override {
+  void flatten(FlattenContext *ctx) override {
     auto ran = std::make_unique<RandStmt>(dt);
-    ret.push_back(std::move(ran));
-    stmt = ret.back().get();
+    ctx->push_back(std::move(ran));
+    stmt = ctx->back_stmt();
   }
 };
 
@@ -1011,17 +1009,17 @@ class UnaryOpExpression : public Expression {
   UnaryOpType type;
   Expr operand;
   DataType cast_type;
-  bool cast_by_value;
 
   UnaryOpExpression(UnaryOpType type, const Expr &operand)
       : type(type), operand(smart_load(operand)) {
     cast_type = DataType::unknown;
-    cast_by_value = true;
   }
+
+  bool is_cast() const;
 
   std::string serialize() override;
 
-  void flatten(VecStatement &ret) override;
+  void flatten(FlattenContext *ctx) override;
 };
 
 class BinaryOpStmt : public Stmt {
@@ -1095,14 +1093,14 @@ class BinaryOpExpression : public Expression {
                        binary_op_type_symbol(type), rhs->serialize());
   }
 
-  void flatten(VecStatement &ret) override {
+  void flatten(FlattenContext *ctx) override {
     // if (stmt)
     //  return;
-    lhs->flatten(ret);
-    rhs->flatten(ret);
-    ret.push_back(std::make_unique<BinaryOpStmt>(type, lhs->stmt, rhs->stmt));
-    ret.back()->tb = tb;
-    stmt = ret.back().get();
+    lhs->flatten(ctx);
+    rhs->flatten(ctx);
+    ctx->push_back(std::make_unique<BinaryOpStmt>(type, lhs->stmt, rhs->stmt));
+    ctx->stmts.back()->tb = tb;
+    stmt = ctx->back_stmt();
   }
 };
 
@@ -1126,15 +1124,15 @@ class TernaryOpExpression : public Expression {
                        op1->serialize(), op2->serialize(), op3->serialize());
   }
 
-  void flatten(VecStatement &ret) override {
+  void flatten(FlattenContext *ctx) override {
     // if (stmt)
     //  return;
-    op1->flatten(ret);
-    op2->flatten(ret);
-    op3->flatten(ret);
-    ret.push_back(
+    op1->flatten(ctx);
+    op2->flatten(ctx);
+    op3->flatten(ctx);
+    ctx->push_back(
         std::make_unique<TernaryOpStmt>(type, op1->stmt, op2->stmt, op3->stmt));
-    stmt = ret.back().get();
+    stmt = ctx->back_stmt();
   }
 };
 
@@ -1188,10 +1186,10 @@ class ExternalTensorExpression : public Expression {
     return fmt::format("{}d_ext_arr", dim);
   }
 
-  void flatten(VecStatement &ret) override {
+  void flatten(FlattenContext *ctx) override {
     auto ptr = Stmt::make<ArgLoadStmt>(arg_id, true);
-    ret.push_back(std::move(ptr));
-    stmt = ret.back().get();
+    ctx->push_back(std::move(ptr));
+    stmt = ctx->back_stmt();
   }
 };
 
@@ -1205,7 +1203,7 @@ class GlobalVariableExpression : public Expression {
   bool is_primal;
   Expr adjoint;
 
-  GlobalVariableExpression(DataType dt, const Ident &ident)
+  GlobalVariableExpression(DataType dt, const Identifier &ident)
       : ident(ident), dt(dt) {
     snode = nullptr;
     has_ambient = false;
@@ -1227,11 +1225,11 @@ class GlobalVariableExpression : public Expression {
     return "#" + ident.name();
   }
 
-  void flatten(VecStatement &ret) override {
+  void flatten(FlattenContext *ctx) override {
     TI_ASSERT(snode->num_active_indices == 0);
     auto ptr = Stmt::make<GlobalPtrStmt>(LaneAttribute<SNode *>(snode),
                                          std::vector<Stmt *>());
-    ret.push_back(std::move(ptr));
+    ctx->push_back(std::move(ptr));
   }
 };
 
@@ -1246,7 +1244,7 @@ class GlobalPtrExpression : public Expression {
 
   std::string serialize() override;
 
-  void flatten(VecStatement &ret) override;
+  void flatten(FlattenContext *ctx) override;
 
   bool is_lvalue() const override {
     return true;
@@ -1259,7 +1257,7 @@ class Block : public IRNode {
  public:
   Block *parent;
   std::vector<std::unique_ptr<Stmt>> statements, trash_bin;
-  std::map<Ident, Stmt *> local_var_alloca;
+  std::map<Identifier, Stmt *> local_var_alloca;
   Stmt *mask_var;
   std::vector<SNode *> stop_gradients;
 
@@ -1283,7 +1281,7 @@ class Block : public IRNode {
   void replace_with(Stmt *old_statement,
                     VecStatement &&new_statements,
                     bool replace_usages = true);
-  Stmt *lookup_var(const Ident &ident) const;
+  Stmt *lookup_var(const Identifier &ident) const;
   Stmt *mask();
 
   Stmt *back() const {
@@ -1305,31 +1303,6 @@ class Block : public IRNode {
   pStmt &operator[](int i) {
     return statements[i];
   }
-
-  DEFINE_ACCEPT
-};
-
-class FrontendAtomicStmt : public Stmt {
- public:
-  AtomicOpType op_type;
-  Expr dest, val;
-
-  FrontendAtomicStmt(AtomicOpType op_type, const Expr &dest, const Expr &val);
-
-  DEFINE_ACCEPT
-};
-
-class FrontendSNodeOpStmt : public Stmt {
- public:
-  SNodeOpType op_type;
-  SNode *snode;
-  ExprGroup indices;
-  Expr val;
-
-  FrontendSNodeOpStmt(SNodeOpType op_type,
-                      SNode *snode,
-                      const ExprGroup &indices,
-                      const Expr &val = Expr(nullptr));
 
   DEFINE_ACCEPT
 };
@@ -1357,18 +1330,6 @@ class SNodeOpStmt : public Stmt {
   }
 
   TI_STMT_DEF_FIELDS(ret_type, op_type, snode, ptr, val, indices);
-  DEFINE_ACCEPT
-};
-
-class FrontendAssertStmt : public Stmt {
- public:
-  std::string text;
-  Expr val;
-
-  FrontendAssertStmt(const std::string &text, const Expr &val)
-      : text(text), val(val) {
-  }
-
   DEFINE_ACCEPT
 };
 
@@ -1407,15 +1368,6 @@ class RangeAssumptionStmt : public Stmt {
   }
 
   TI_STMT_DEF_FIELDS(ret_type, input, base, low, high);
-  DEFINE_ACCEPT
-};
-
-class FrontendAssignStmt : public Stmt {
- public:
-  Expr lhs, rhs;
-
-  FrontendAssignStmt(const Expr &lhs, const Expr &rhs);
-
   DEFINE_ACCEPT
 };
 
@@ -1519,44 +1471,6 @@ class IfStmt : public Stmt {
   DEFINE_ACCEPT
 };
 
-class FrontendIfStmt : public Stmt {
- public:
-  Expr condition;
-  std::unique_ptr<Block> true_statements, false_statements;
-
-  FrontendIfStmt(const Expr &condition) : condition(load_if_ptr(condition)) {
-  }
-
-  bool is_container_statement() const override {
-    return true;
-  }
-
-  DEFINE_ACCEPT
-};
-
-class FrontendPrintStmt : public Stmt {
- public:
-  Expr expr;
-  std::string str;
-
-  FrontendPrintStmt(const Expr &expr, const std::string &str)
-      : expr(load_if_ptr(expr)), str(str) {
-  }
-
-  DEFINE_ACCEPT
-};
-
-class FrontendEvalStmt : public Stmt {
- public:
-  Expr expr;
-  Expr eval_expr;
-
-  FrontendEvalStmt(const Expr &expr) : expr(load_if_ptr(expr)) {
-  }
-
-  DEFINE_ACCEPT
-};
-
 class PrintStmt : public Stmt {
  public:
   Stmt *stmt;
@@ -1574,27 +1488,13 @@ class If {
  public:
   FrontendIfStmt *stmt;
 
-  If(const Expr &cond) {
-    auto stmt_tmp = std::make_unique<FrontendIfStmt>(cond);
-    stmt = stmt_tmp.get();
-    current_ast_builder().insert(std::move(stmt_tmp));
-  }
+  explicit If(const Expr &cond);
 
-  If(const Expr &cond, const std::function<void()> &func) : If(cond) {
-    Then(func);
-  }
+  If(const Expr &cond, const std::function<void()> &func);
 
-  If &Then(const std::function<void()> &func) {
-    auto _ = current_ast_builder().create_scope(stmt->true_statements);
-    func();
-    return *this;
-  }
+  If &Then(const std::function<void()> &func);
 
-  If &Else(const std::function<void()> &func) {
-    auto _ = current_ast_builder().create_scope(stmt->false_statements);
-    func();
-    return *this;
-  }
+  If &Else(const std::function<void()> &func);
 };
 
 class ConstStmt : public Stmt {
@@ -1619,38 +1519,9 @@ class ConstStmt : public Stmt {
     return false;
   }
 
+  std::unique_ptr<ConstStmt> copy();
+
   TI_STMT_DEF_FIELDS(ret_type, val);
-  DEFINE_ACCEPT
-};
-
-class FrontendForStmt : public Stmt {
- public:
-  Expr begin, end;
-  Expr global_var;
-  std::unique_ptr<Block> body;
-  std::vector<Ident> loop_var_id;
-  int vectorize;
-  int parallelize;
-  bool strictly_serialized;
-  ScratchPadOptions scratch_opt;
-  int block_dim;
-
-  bool is_ranged() const {
-    if (global_var.expr == nullptr) {
-      return true;
-    } else {
-      return false;
-    }
-  }
-
-  FrontendForStmt(const ExprGroup &loop_var, const Expr &global_var);
-
-  FrontendForStmt(const Expr &loop_var, const Expr &begin, const Expr &end);
-
-  bool is_container_statement() const override {
-    return true;
-  }
-
   DEFINE_ACCEPT
 };
 
@@ -1759,21 +1630,6 @@ class FuncBodyStmt : public Stmt {
   DEFINE_ACCEPT
 };
 
-class FrontendFuncDefStmt : public Stmt {
- public:
-  std::string funcid;
-  std::unique_ptr<Block> body;
-
-  FrontendFuncDefStmt(const std::string &funcid) : funcid(funcid) {
-  }
-
-  bool is_container_statement() const override {
-    return true;
-  }
-
-  DEFINE_ACCEPT
-};
-
 class FuncCallStmt : public Stmt {
  public:
   std::string funcid;
@@ -1808,44 +1664,6 @@ class WhileStmt : public Stmt {
   DEFINE_ACCEPT
 };
 
-class FrontendBreakStmt : public Stmt {
- public:
-  FrontendBreakStmt() {
-  }
-
-  bool is_container_statement() const override {
-    return false;
-  }
-
-  DEFINE_ACCEPT
-};
-
-class FrontendContinueStmt : public Stmt {
- public:
-  FrontendContinueStmt() = default;
-
-  bool is_container_statement() const override {
-    return false;
-  }
-
-  DEFINE_ACCEPT
-};
-
-class FrontendWhileStmt : public Stmt {
- public:
-  Expr cond;
-  std::unique_ptr<Block> body;
-
-  FrontendWhileStmt(const Expr &cond) : cond(load_if_ptr(cond)) {
-  }
-
-  bool is_container_statement() const override {
-    return true;
-  }
-
-  DEFINE_ACCEPT
-};
-
 void Print_(const Expr &a, const std::string &str);
 
 class EvalExpression : public Expression {
@@ -1860,7 +1678,7 @@ class EvalExpression : public Expression {
     return fmt::format("%{}", stmt_id);
   }
 
-  void flatten(VecStatement &ret) override {
+  void flatten(FlattenContext *ctx) override {
     stmt = stmt_ptr;
   }
 };
@@ -1883,18 +1701,14 @@ class RangeAssumptionExpression : public Expression {
                        base.serialize(), high);
   }
 
-  void flatten(VecStatement &ret) override {
-    input->flatten(ret);
-    base->flatten(ret);
-    ret.push_back(
+  void flatten(FlattenContext *ctx) override {
+    input->flatten(ctx);
+    base->flatten(ctx);
+    ctx->push_back(
         Stmt::make<RangeAssumptionStmt>(input->stmt, base->stmt, low, high));
-    stmt = ret.back().get();
+    stmt = ctx->back_stmt();
   }
 };
-
-// TODO: fix this hack...
-// for current ast
-extern Block *current_block;
 
 class IdExpression : public Expression {
  public:
@@ -1908,10 +1722,10 @@ class IdExpression : public Expression {
     return id.name();
   }
 
-  void flatten(VecStatement &ret) override {
-    ret.push_back(std::make_unique<LocalLoadStmt>(
-        LocalAddress(current_block->lookup_var(id), 0)));
-    stmt = ret.back().get();
+  void flatten(FlattenContext *ctx) override {
+    ctx->push_back(std::make_unique<LocalLoadStmt>(
+        LocalAddress(ctx->current_block->lookup_var(id), 0)));
+    stmt = ctx->back_stmt();
   }
 
   bool is_lvalue() const override {
@@ -1919,11 +1733,8 @@ class IdExpression : public Expression {
   }
 };
 
-// This is just a wrapper class of FrontendAtomicStmt, so that we can turn
-// ti.atomic_op() into an expression (with side effect).
+// ti.atomic_*() is an expression with side effect.
 class AtomicOpExpression : public Expression {
-  // TODO(issue#332): Flatten this into AtomicOpStmt directly, then we can
-  // deprecate FrontendAtomicStmt.
  public:
   AtomicOpType op_type;
   Expr dest, val;
@@ -1934,13 +1745,7 @@ class AtomicOpExpression : public Expression {
 
   std::string serialize() override;
 
-  void flatten(VecStatement &ret) override {
-    // FrontendAtomicStmt is the correct place to flatten sub-exprs like |dest|
-    // and |val| (See LowerAST). This class only wraps the frontend atomic_op()
-    // stmt as an expression.
-    ret.push_back<FrontendAtomicStmt>(op_type, dest, val);
-    stmt = ret.back().get();
-  }
+  void flatten(FlattenContext *ctx) override;
 };
 
 class SNodeOpExpression : public Expression {
@@ -1963,7 +1768,7 @@ class SNodeOpExpression : public Expression {
 
   std::string serialize() override;
 
-  void flatten(VecStatement &ret) override;
+  void flatten(FlattenContext *ctx) override;
 };
 
 class GlobalLoadExpression : public Expression {
@@ -1976,10 +1781,10 @@ class GlobalLoadExpression : public Expression {
     return "gbl load " + ptr.serialize();
   }
 
-  void flatten(VecStatement &ret) override {
-    ptr->flatten(ret);
-    ret.push_back(std::make_unique<GlobalLoadStmt>(ptr->stmt));
-    stmt = ret.back().get();
+  void flatten(FlattenContext *ctx) override {
+    ptr->flatten(ctx);
+    ctx->push_back(std::make_unique<GlobalLoadStmt>(ptr->stmt));
+    stmt = ctx->back_stmt();
   }
 };
 
@@ -1995,9 +1800,9 @@ class ConstExpression : public Expression {
     return val.stringify();
   }
 
-  void flatten(VecStatement &ret) override {
-    ret.push_back(Stmt::make<ConstStmt>(val));
-    stmt = ret.back().get();
+  void flatten(FlattenContext *ctx) override {
+    ctx->push_back(Stmt::make<ConstStmt>(val));
+    stmt = ctx->back_stmt();
   }
 };
 
@@ -2048,13 +1853,7 @@ class For {
 
 class While {
  public:
-  While(const Expr &cond, const std::function<void()> &func) {
-    auto while_stmt = std::make_unique<FrontendWhileStmt>(cond);
-    FrontendWhileStmt *ptr = while_stmt.get();
-    current_ast_builder().insert(std::move(while_stmt));
-    auto _ = current_ast_builder().create_scope(ptr->body);
-    func();
-  }
+  While(const Expr &cond, const std::function<void()> &func);
 };
 
 Expr Var(const Expr &x);

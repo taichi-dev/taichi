@@ -19,10 +19,8 @@ void imwrite(const std::string &filename,
     result =
         stbi_write_png(filename.c_str(), resx, resy, comp, data, comp * resx);
   } else if (suffix == ".bmp") {
-    // TODO: test
     result = stbi_write_bmp(filename.c_str(), resx, resy, comp, data);
   } else if (suffix == ".jpg") {
-    // TODO: test
     result = stbi_write_jpg(filename.c_str(), resx, resy, comp, data, 95);
   } else {
     TI_ERROR("Unknown image file suffix {}", suffix);
@@ -37,7 +35,6 @@ std::vector<size_t> imread(const std::string &filename, int comp) {
   int resx = 0, resy = 0;
   void *data = stbi_load(filename.c_str(), &resx, &resy, &comp, comp);
   if (!data) {
-    // TODO(archibate): throw python exceptions instead of abort...
     TI_ERROR("Cannot read image file [{}]", filename);
   }
   TI_INFO("loaded image {}: {}x{}x{}", filename, resx, resy, comp);

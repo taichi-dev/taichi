@@ -52,7 +52,7 @@ if platform.system() == 'Linux':
         print('Linux release must ship with the CUDA backend.')
         sys.exit(-1)
 
-with open('setup.temp.py') as fin:
+with open('../setup.py') as fin:
     with open('setup.py', 'w') as fout:
         project_name = 'taichi'
         print("project_name = '{}'".format(project_name), file=fout)
@@ -81,7 +81,7 @@ else:
 
 shutil.copytree('../tests/python', './taichi/tests')
 
-if gpu:
+if get_os_name() != 'osx':
     libdevice_path = ti.core.libdevice_path()
     print("copying libdevice:", libdevice_path)
     assert os.path.exists(libdevice_path)

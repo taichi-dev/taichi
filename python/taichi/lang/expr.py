@@ -315,10 +315,13 @@ class Expr:
         fill_tensor(self, val)
 
     def __rpow__(self, power, modulo=None):
+        # Python will try Matrix.__pow__ first so we don't have to worry whether `power` is `Matrix`
         return Expr(power).__pow__(self, modulo)
 
     def __pow__(self, power, modulo=None):
         import taichi as ti
+        if ti.is_taichi_class(power):
+            return power.element_wise_binary(lambda x, y: pow(y, x), self)
         if not isinstance(power, int) or abs(power) > 100:
             return Expr(taichi_lang_core.expr_pow(self.ptr, Expr(power).ptr))
         if power == 0:
@@ -352,10 +355,12 @@ class Expr:
         import taichi as ti
         return ti.cast(self, ti.get_runtime().default_fp)
 
-    def parent(self):
+    def parent(self, n=1):
         import taichi as ti
-        return Expr(ti.core.global_var_expr_from_snode(
-            self.ptr.snode().parent))
+        p = self.ptr.snode()
+        for i in range(n):
+            p = p.parent
+        return Expr(ti.core.global_var_expr_from_snode(p))
 
     def snode(self):
         from .snode import SNode
@@ -379,7 +384,7 @@ class Expr:
     def to_numpy(self):
         from .meta import tensor_to_ext_arr
         import numpy as np
-        arr = np.empty(shape=self.shape(),
+        arr = np.zeros(shape=self.shape(),
                        dtype=to_numpy_type(self.snode().data_type()))
         tensor_to_ext_arr(self, arr)
         import taichi as ti
@@ -389,7 +394,7 @@ class Expr:
     def to_torch(self, device=None):
         from .meta import tensor_to_ext_arr
         import torch
-        arr = torch.empty(size=self.shape(),
+        arr = torch.zeros(size=self.shape(),
                           dtype=to_pytorch_type(self.snode().data_type()),
                           device=device)
         tensor_to_ext_arr(self, arr)

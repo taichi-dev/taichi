@@ -1,5 +1,7 @@
 #include "codegen_llvm.h"
 
+#include "taichi/struct/struct_llvm.h"
+
 TLANG_NAMESPACE_BEGIN
 
 // TODO: sort function definitions to match declaration order in header
@@ -206,14 +208,6 @@ std::unique_ptr<RuntimeObject> CodeGenLLVM::emit_struct_meta_object(
     TI_P(snode_type_name(snode->type));
     TI_NOT_IMPLEMENTED;
   }
-  if (false) {
-    // auto ptr_type = llvm::Type::getInt8PtrTy(*llvm_context, 0);
-    auto ptr_type = llvm::PointerType::get(meta->type, 0);
-    auto ptr = meta->ptr;  // builder->CreatePointerCast(meta->ptr, ptr_type);
-    auto struct_meta_size = tlctx->get_type_size(meta->type);
-    builder->CreateIntrinsic(llvm::Intrinsic::invariant_start, {ptr_type},
-                             {tlctx->get_constant(struct_meta_size), ptr});
-  }
   return meta;
 }
 
@@ -223,13 +217,17 @@ void CodeGenLLVM::emit_struct_meta_base(const std::string &name,
   RuntimeObject common("StructMeta", this, builder.get(), node_meta);
   std::size_t element_size;
   if (snode->type == SNodeType::dense) {
-    auto element_ty = snode_attr[snode].llvm_body_type->getArrayElementType();
+    auto body_type =
+        StructCompilerLLVM::get_llvm_body_type(module.get(), snode);
+    auto element_ty = body_type->getArrayElementType();
     element_size = tlctx->get_type_size(element_ty);
   } else if (snode->type == SNodeType::pointer) {
-    auto element_ty = tlctx->snode_attr[snode->ch[0]].llvm_type;
+    auto element_ty = StructCompilerLLVM::get_llvm_node_type(
+        module.get(), snode->ch[0].get());
     element_size = tlctx->get_type_size(element_ty);
   } else {
-    auto element_ty = tlctx->snode_attr[snode].llvm_element_type;
+    auto element_ty =
+        StructCompilerLLVM::get_llvm_element_type(module.get(), snode);
     element_size = tlctx->get_type_size(element_ty);
   }
   common.set("snode_id", tlctx->get_constant(snode->id));
@@ -266,16 +264,17 @@ void CodeGenLLVM::emit_struct_meta_base(const std::string &name,
 }
 
 CodeGenLLVM::CodeGenLLVM(Kernel *kernel, IRNode *ir)
-    // TODO: simplify ModuleBuilder ctor input
-    : ModuleBuilder(kernel->program.get_llvm_context(kernel->arch)
-                        ->clone_struct_module()),
+    // TODO: simplify LLVMModuleBuilder ctor input
+    : LLVMModuleBuilder(
+          kernel->program.get_llvm_context(kernel->arch)->clone_struct_module(),
+          kernel->program.get_llvm_context(kernel->arch)),
       kernel(kernel),
       ir(ir),
-      prog(&kernel->program),
-      snode_attr(prog->get_llvm_context(kernel->arch)->snode_attr) {
+      prog(&kernel->program) {
   if (ir == nullptr)
     this->ir = kernel->ir;
   initialize_context();
+  current_offloaded_stmt = nullptr;
 
   context_ty = get_runtime_type("Context");
   physical_coordinate_ty = get_runtime_type("PhysicalCoordinates");
@@ -293,71 +292,65 @@ void CodeGenLLVM::visit(UnaryOpStmt *stmt) {
     llvm_val[stmt] =                                                         \
         builder->CreateIntrinsic(llvm::Intrinsic::x, {input_type}, {input}); \
   }
-
-  if (stmt->op_type != UnaryOpType::cast) {
-    if (op == UnaryOpType::rsqrt) {
-      llvm::Function *sqrt_fn = Intrinsic::getDeclaration(
-          module.get(), Intrinsic::sqrt, input->getType());
-      auto intermediate = builder->CreateCall(sqrt_fn, input, "sqrt");
-      llvm_val[stmt] = builder->CreateFDiv(
-          tlctx->get_constant(stmt->ret_type.data_type, 1.0), intermediate);
-    } else if (op == UnaryOpType::bit_not) {
-      llvm_val[stmt] = builder->CreateNot(input);
-    } else if (op == UnaryOpType::neg) {
-      if (is_real(stmt->operand->ret_type.data_type)) {
-        llvm_val[stmt] = builder->CreateFNeg(input, "neg");
+  if (stmt->op_type == UnaryOpType::cast_value) {
+    llvm::CastInst::CastOps cast_op;
+    auto from = stmt->operand->ret_type.data_type;
+    auto to = stmt->cast_type;
+    TI_ASSERT(from != to);
+    if (is_real(from) != is_real(to)) {
+      if (is_real(from) && is_integral(to)) {
+        cast_op = llvm::Instruction::CastOps::FPToSI;
+      } else if (is_integral(from) && is_real(to)) {
+        cast_op = llvm::Instruction::CastOps::SIToFP;
       } else {
-        llvm_val[stmt] = builder->CreateNeg(input, "neg");
+        TI_P(data_type_name(from));
+        TI_P(data_type_name(to));
+        TI_NOT_IMPLEMENTED;
+      }
+      llvm_val[stmt] =
+          builder->CreateCast(cast_op, llvm_val[stmt->operand],
+                              tlctx->get_data_type(stmt->cast_type));
+    } else if (is_real(from) && is_real(to)) {
+      if (data_type_size(from) < data_type_size(to)) {
+        llvm_val[stmt] = builder->CreateFPExt(
+            llvm_val[stmt->operand], tlctx->get_data_type(stmt->cast_type));
+      } else {
+        llvm_val[stmt] = builder->CreateFPTrunc(
+            llvm_val[stmt->operand], tlctx->get_data_type(stmt->cast_type));
+      }
+    } else if (!is_real(from) && !is_real(to)) {
+      if (data_type_size(from) < data_type_size(to)) {
+        llvm_val[stmt] = builder->CreateSExt(
+            llvm_val[stmt->operand], tlctx->get_data_type(stmt->cast_type));
+      } else {
+        llvm_val[stmt] = builder->CreateTrunc(
+            llvm_val[stmt->operand], tlctx->get_data_type(stmt->cast_type));
       }
     }
-    UNARY_INTRINSIC(floor)
-    UNARY_INTRINSIC(ceil)
-    else emit_extra_unary(stmt);
-#undef UNARY_INTRINSIC
-  } else {
-    // op = cast
-    if (stmt->cast_by_value) {
-      llvm::CastInst::CastOps cast_op;
-      auto from = stmt->operand->ret_type.data_type;
-      auto to = stmt->cast_type;
-      TI_ASSERT(from != to);
-      if (is_real(from) != is_real(to)) {
-        if (is_real(from) && is_integral(to)) {
-          cast_op = llvm::Instruction::CastOps::FPToSI;
-        } else if (is_integral(from) && is_real(to)) {
-          cast_op = llvm::Instruction::CastOps::SIToFP;
-        } else {
-          TI_P(data_type_name(from));
-          TI_P(data_type_name(to));
-          TI_NOT_IMPLEMENTED;
-        }
-        llvm_val[stmt] =
-            builder->CreateCast(cast_op, llvm_val[stmt->operand],
-                                tlctx->get_data_type(stmt->cast_type));
-      } else if (is_real(from) && is_real(to)) {
-        if (data_type_size(from) < data_type_size(to)) {
-          llvm_val[stmt] = builder->CreateFPExt(
-              llvm_val[stmt->operand], tlctx->get_data_type(stmt->cast_type));
-        } else {
-          llvm_val[stmt] = builder->CreateFPTrunc(
-              llvm_val[stmt->operand], tlctx->get_data_type(stmt->cast_type));
-        }
-      } else if (!is_real(from) && !is_real(to)) {
-        if (data_type_size(from) < data_type_size(to)) {
-          llvm_val[stmt] = builder->CreateSExt(
-              llvm_val[stmt->operand], tlctx->get_data_type(stmt->cast_type));
-        } else {
-          llvm_val[stmt] = builder->CreateTrunc(
-              llvm_val[stmt->operand], tlctx->get_data_type(stmt->cast_type));
-        }
-      }
+  } else if (stmt->op_type == UnaryOpType::cast_bits) {
+    TI_ASSERT(data_type_size(stmt->ret_type.data_type) ==
+              data_type_size(stmt->cast_type));
+    llvm_val[stmt] = builder->CreateBitCast(
+        llvm_val[stmt->operand], tlctx->get_data_type(stmt->cast_type));
+  } else if (op == UnaryOpType::rsqrt) {
+    llvm::Function *sqrt_fn = Intrinsic::getDeclaration(
+        module.get(), Intrinsic::sqrt, input->getType());
+    auto intermediate = builder->CreateCall(sqrt_fn, input, "sqrt");
+    llvm_val[stmt] = builder->CreateFDiv(
+        tlctx->get_constant(stmt->ret_type.data_type, 1.0), intermediate);
+  } else if (op == UnaryOpType::bit_not) {
+    llvm_val[stmt] = builder->CreateNot(input);
+  } else if (op == UnaryOpType::neg) {
+    if (is_real(stmt->operand->ret_type.data_type)) {
+      llvm_val[stmt] = builder->CreateFNeg(input, "neg");
     } else {
-      TI_ASSERT(data_type_size(stmt->ret_type.data_type) ==
-                data_type_size(stmt->cast_type));
-      llvm_val[stmt] = builder->CreateBitCast(
-          llvm_val[stmt->operand], tlctx->get_data_type(stmt->cast_type));
+      llvm_val[stmt] = builder->CreateNeg(input, "neg");
     }
   }
+  UNARY_INTRINSIC(floor)
+  UNARY_INTRINSIC(ceil)
+  else emit_extra_unary(stmt);
+#undef UNARY_INTRINSIC
 }
 
 void CodeGenLLVM::visit(BinaryOpStmt *stmt) {
@@ -883,18 +876,8 @@ void CodeGenLLVM::visit(ArgStoreStmt *stmt) {
     auto extended = builder->CreateZExt(
         builder->CreateBitCast(llvm_val[stmt->val], intermediate_type),
         dest_ty);
-    // TODO: refactor this part
-    if (get_current_program().config.arch == Arch::cuda &&
-        !get_current_program().config.use_unified_memory) {
-      // For SNode reader without unified memory. This is a temporary
-      // solution.
-      builder->CreateCall(get_runtime_function("LLVMRuntime_store_result"),
-                          {get_runtime(), extended});
-    } else {
-      builder->CreateCall(
-          get_runtime_function("Context_set_args"),
-          {get_context(), tlctx->get_constant(stmt->arg_id), extended});
-    }
+    builder->CreateCall(get_runtime_function("LLVMRuntime_store_result"),
+                        {get_runtime(), extended});
   }
 }
 
@@ -1117,8 +1100,9 @@ llvm::Value *CodeGenLLVM::call(SNode *snode,
 
 void CodeGenLLVM::visit(GetRootStmt *stmt) {
   llvm_val[stmt] = builder->CreateBitCast(
-      get_root(),
-      PointerType::get(snode_attr[prog->snode_root.get()].llvm_type, 0));
+      get_root(), PointerType::get(StructCompilerLLVM::get_llvm_node_type(
+                                       module.get(), prog->snode_root.get()),
+                                   0));
 }
 
 void CodeGenLLVM::visit(OffsetAndExtractBitsStmt *stmt) {
@@ -1184,7 +1168,9 @@ void CodeGenLLVM::visit(GetChStmt *stmt) {
       {builder->CreateBitCast(llvm_val[stmt->input_ptr],
                               PointerType::getInt8PtrTy(*llvm_context))});
   llvm_val[stmt] = builder->CreateBitCast(
-      ch, PointerType::get(snode_attr[stmt->output_snode].llvm_type, 0));
+      ch, PointerType::get(StructCompilerLLVM::get_llvm_node_type(
+                               module.get(), stmt->output_snode),
+                           0));
 }
 
 void CodeGenLLVM::visit(ExternalPtrStmt *stmt) {
@@ -1287,34 +1273,6 @@ std::tuple<llvm::Value *, llvm::Value *> CodeGenLLVM::get_range_for_bounds(
     end = builder->CreateLoad(llvm_val[end_stmt.get()]);
   }
   return std::tuple(begin, end);
-}
-
-void CodeGenLLVM::create_offload_range_for(OffloadedStmt *stmt) {
-  int step = 1;
-  if (stmt->reversed) {
-    step = -1;
-  }
-
-  llvm::Function *body;
-
-  {
-    auto guard = get_function_creation_guard(
-        {llvm::PointerType::get(get_runtime_type("Context"), 0),
-         tlctx->get_data_type<int>()});
-
-    auto loop_var = create_entry_block_alloca(DataType::i32);
-    stmt->loop_vars_llvm.push_back(loop_var);
-    builder->CreateStore(get_arg(1), loop_var);
-    stmt->body->accept(this);
-
-    body = guard.body;
-  }
-
-  auto [begin, end] = get_range_for_bounds(stmt);
-  create_call(
-      "cpu_parallel_range_for",
-      {get_arg(0), tlctx->get_constant(stmt->num_cpu_threads), begin, end,
-       tlctx->get_constant(step), tlctx->get_constant(stmt->block_dim), body});
 }
 
 void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
@@ -1443,16 +1401,18 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
                tlctx->get_constant(leaf_block->max_num_elements()),
                tlctx->get_constant(num_splits), body,
                tlctx->get_constant(stmt->num_cpu_threads)});
+  // TODO: why do we need num_cpu_threads on GPUs?
 }
 
 void CodeGenLLVM::visit(LoopIndexStmt *stmt) {
+  TI_ASSERT(&module->getContext() == tlctx->get_this_thread_context());
   if (stmt->is_struct_for) {
     llvm_val[stmt] = builder->CreateLoad(builder->CreateGEP(
         current_coordinates, {tlctx->get_constant(0), tlctx->get_constant(0),
                               tlctx->get_constant(stmt->index)}));
   } else {
     llvm_val[stmt] = builder->CreateLoad(
-        current_offloaded_stmt->loop_vars_llvm[stmt->index]);
+        offloaded_loop_vars_llvm[current_offloaded_stmt][stmt->index]);
   }
 }
 
@@ -1564,7 +1524,7 @@ void CodeGenLLVM::initialize_context() {
   } else {
     tlctx = prog->llvm_context_host.get();
   }
-  llvm_context = tlctx->ctx.get();
+  llvm_context = tlctx->get_this_thread_context();
   builder = std::make_unique<llvm::IRBuilder<>>(*llvm_context);
 }
 

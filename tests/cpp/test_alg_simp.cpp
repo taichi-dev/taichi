@@ -91,8 +91,7 @@ TI_TEST("alg_simp") {
                      config_without_fast_math);  // should eliminate mul, add
     irpass::die(block.get());                    // should eliminate zero, load
 
-    TI_CHECK(block->size() == 4);  // two addresses, one one, one store
-    TI_CHECK((*block)[0]->is<GlobalTemporaryStmt>());
+    TI_CHECK(block->size() == 3);  // one address, one one, one store
 
     block = std::make_unique<Block>();
 
@@ -122,7 +121,30 @@ TI_TEST("alg_simp") {
                      config_with_fast_math);  // should eliminate mul, add
     irpass::die(block.get());                 // should eliminate zero, load
 
-    TI_CHECK(block->size() == 4);  // two addresses, one one, one store
+    TI_CHECK(block->size() == 3);  // one address, one one, one store
+  }
+
+  SECTION("simplify_and_minus_one") {
+    auto block = std::make_unique<Block>();
+
+    auto global_load_addr =
+        block->push_back<GlobalTemporaryStmt>(0, VectorType(1, DataType::i32));
+    auto global_load = block->push_back<GlobalLoadStmt>(global_load_addr);
+    auto minus_one = block->push_back<ConstStmt>(TypedConstant(-1));
+    auto and_result = block->push_back<BinaryOpStmt>(BinaryOpType::bit_and,
+                                                     minus_one, global_load);
+    auto global_store_addr =
+        block->push_back<GlobalTemporaryStmt>(4, VectorType(1, DataType::i32));
+    auto global_store =
+        block->push_back<GlobalStoreStmt>(global_store_addr, and_result);
+
+    irpass::typecheck(block.get());
+    TI_CHECK(block->size() == 6);
+
+    irpass::alg_simp(block.get(), CompileConfig());  // should eliminate and
+    irpass::die(block.get());                        // should eliminate zero
+
+    TI_CHECK(block->size() == 4);  // two addresses, one load, one store
     TI_CHECK((*block)[0]->is<GlobalTemporaryStmt>());
   }
 }

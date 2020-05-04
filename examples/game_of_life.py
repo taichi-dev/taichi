@@ -1,7 +1,7 @@
 import taichi as ti
 import numpy as np
 
-ti.init(arch=ti.opengl)
+ti.init(arch=ti.gpu)
 
 n = 100
 celsiz = 4

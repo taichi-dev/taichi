@@ -1,6 +1,7 @@
 // Type checking
 
 #include "taichi/ir/ir.h"
+#include "taichi/program/kernel.h"
 #include "taichi/ir/frontend.h"
 
 TLANG_NAMESPACE_BEGIN
@@ -8,8 +9,15 @@ TLANG_NAMESPACE_BEGIN
 // "Type" here does not include vector width
 // Var lookup and Type inference
 class TypeCheck : public IRVisitor {
+ private:
+  Kernel *kernel;
+  CompileConfig config;
+
  public:
-  TypeCheck() {
+  TypeCheck(Kernel *kernel) : kernel(kernel) {
+    // TODO: remove dependency on get_current_program here
+    if (current_program != nullptr)
+      config = get_current_program().config;
     allow_undefined_visitor = true;
   }
 
@@ -20,9 +28,8 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(AllocaStmt *stmt) {
-    // Do nothing.
-    // Alloca type is determined by the first LocalStore in IR visiting order,
-    // at compile time
+    // Do nothing. Alloca type is determined by the first LocalStore in IR
+    // visiting order, at compile time.
 
     // ret_type stands for its element type.
     stmt->ret_type.set_is_pointer(false);
@@ -40,10 +47,9 @@ class TypeCheck : public IRVisitor {
 
   void visit(Block *stmt_list) {
     std::vector<Stmt *> stmts;
-    // Make a copy since type casts may be inserted for type promotion
+    // Make a copy since type casts may be inserted for type promotion.
     for (auto &stmt : stmt_list->statements) {
       stmts.push_back(stmt.get());
-      // stmt->accept(this);
     }
     for (auto stmt : stmts)
       stmt->accept(this);
@@ -52,7 +58,7 @@ class TypeCheck : public IRVisitor {
   void visit(AtomicOpStmt *stmt) {
     TI_ASSERT(stmt->width() == 1);
     if (stmt->val->ret_type.data_type != stmt->dest->ret_type.data_type) {
-      TI_WARN("Atomic add ({} to {}) may lose precision.",
+      TI_WARN("[{}] Atomic add ({} to {}) may lose precision.", stmt->name(),
               data_type_name(stmt->val->ret_type.data_type),
               data_type_name(stmt->dest->ret_type.data_type));
       stmt->val = insert_type_cast_before(stmt, stmt->val,
@@ -84,10 +90,9 @@ class TypeCheck : public IRVisitor {
     }
     if (stmt->ptr->ret_type.data_type != common_container_type) {
       TI_WARN(
-          "Local store may lose precision (target = {}, value = {}, "
-          "stmt_id = {}) at",
-          stmt->ptr->ret_data_type_name(), stmt->data->ret_data_type_name(),
-          stmt->id);
+          "[{}] Local store may lose precision (target = {}, value = {}, at",
+          stmt->name(), stmt->ptr->ret_data_type_name(),
+          stmt->data->ret_data_type_name(), stmt->id);
       fmt::print(stmt->tb);
     }
     stmt->ret_type = stmt->ptr->ret_type;
@@ -108,11 +113,11 @@ class TypeCheck : public IRVisitor {
     if (stmt->snodes)
       stmt->ret_type.data_type = stmt->snodes[0]->dt;
     else
-      TI_WARN("Type inference failed: snode is nullptr.");
+      TI_WARN("[{}] Type inference failed: snode is nullptr.", stmt->name());
     for (int l = 0; l < stmt->snodes.size(); l++) {
       if (stmt->snodes[l]->parent->num_active_indices != 0 &&
           stmt->snodes[l]->parent->num_active_indices != stmt->indices.size()) {
-        TI_ERROR("{} has {} indices. Indexed with {}.",
+        TI_ERROR("[{}] {} has {} indices. Indexed with {}.", stmt->name(),
                  stmt->snodes[l]->parent->node_type_name,
                  stmt->snodes[l]->parent->num_active_indices,
                  stmt->indices.size());
@@ -121,10 +126,11 @@ class TypeCheck : public IRVisitor {
     for (int i = 0; i < stmt->indices.size(); i++) {
       TI_ASSERT_INFO(
           is_integral(stmt->indices[i]->ret_type.data_type),
-          "Taichi tensors must be accessed with integral indices (e.g., "
+          "[{}] Taichi tensors must be accessed with integral indices (e.g., "
           "i32/i64). It seems that you have used a float point number as "
           "an index. You can cast that to an integer using int(). Also note "
-          "that ti.floor(ti.f32) returns f32.");
+          "that ti.floor(ti.f32) returns f32.",
+          stmt->name());
       TI_ASSERT(stmt->indices[i]->ret_type.width == stmt->snodes.size());
     }
   }
@@ -138,23 +144,16 @@ class TypeCheck : public IRVisitor {
                                            stmt->ptr->ret_type.data_type);
     }
     if (stmt->ptr->ret_type.data_type != promoted) {
-      TI_WARN("Global store may lose precision: {} <- {}, at",
-              stmt->ptr->ret_data_type_name(), input_type, stmt->tb);
+      TI_WARN("[{}] Global store may lose precision: {} <- {}, at",
+              stmt->name(), stmt->ptr->ret_data_type_name(), input_type,
+              stmt->tb);
     }
     stmt->ret_type = stmt->ptr->ret_type;
   }
 
   void visit(RangeForStmt *stmt) {
-    /*
-    TI_ASSERT(block->local_variables.find(stmt->loop_var) ==
-              block->local_variables.end());
-              */
     mark_as_if_const(stmt->begin, VectorType(1, DataType::i32));
     mark_as_if_const(stmt->end, VectorType(1, DataType::i32));
-    /*
-    block->local_variables.insert(
-        std::make_pair(stmt->loop_var, VectorType(1, DataType::i32)));
-    */
     stmt->body->accept(this);
   }
 
@@ -168,27 +167,27 @@ class TypeCheck : public IRVisitor {
 
   void visit(UnaryOpStmt *stmt) {
     stmt->ret_type = stmt->operand->ret_type;
-    if (stmt->op_type == UnaryOpType::cast) {
+    if (stmt->is_cast()) {
       stmt->ret_type.data_type = stmt->cast_type;
     }
     if (is_trigonometric(stmt->op_type) &&
         !is_real(stmt->operand->ret_type.data_type)) {
-      TI_ERROR("Trigonometric operator takes real inputs only. At {}",
-               stmt->tb);
+      TI_ERROR("[{}] Trigonometric operator takes real inputs only. At {}",
+               stmt->name(), stmt->tb);
     }
     if ((stmt->op_type == UnaryOpType::floor ||
          stmt->op_type == UnaryOpType::ceil) &&
         !is_real(stmt->operand->ret_type.data_type)) {
-      TI_ERROR("floor/ceil takes real inputs only. At {}", stmt->tb);
+      TI_ERROR("[{}] floor/ceil takes real inputs only. At {}", stmt->name(),
+               stmt->tb);
     }
   }
 
   Stmt *insert_type_cast_before(Stmt *anchor,
                                 Stmt *input,
                                 DataType output_type) {
-    auto &&cast_stmt = Stmt::make_typed<UnaryOpStmt>(UnaryOpType::cast, input);
+    auto &&cast_stmt = Stmt::make_typed<UnaryOpStmt>(UnaryOpType::cast_value, input);
     cast_stmt->cast_type = output_type;
-    cast_stmt->cast_by_value = true;
     cast_stmt->accept(this);
     auto stmt = cast_stmt.get();
     anchor->insert_before_me(std::move(cast_stmt));
@@ -198,9 +197,8 @@ class TypeCheck : public IRVisitor {
   Stmt *insert_type_cast_after(Stmt *anchor,
                                Stmt *input,
                                DataType output_type) {
-    auto &&cast_stmt = Stmt::make_typed<UnaryOpStmt>(UnaryOpType::cast, input);
+    auto &&cast_stmt = Stmt::make_typed<UnaryOpStmt>(UnaryOpType::cast_value, input);
     cast_stmt->cast_type = output_type;
-    cast_stmt->cast_by_value = true;
     cast_stmt->accept(this);
     auto stmt = cast_stmt.get();
     anchor->insert_after_me(std::move(cast_stmt));
@@ -215,15 +213,17 @@ class TypeCheck : public IRVisitor {
   void visit(BinaryOpStmt *stmt) {
     auto error = [&](std::string comment = "") {
       if (comment == "") {
-        TI_WARN("Error: type mismatch (left = {}, right = {}, stmt_id = {}) at",
-                stmt->lhs->ret_data_type_name(),
-                stmt->rhs->ret_data_type_name(), stmt->id);
+        TI_WARN(
+            "[{}] Error: type mismatch (left = {}, right = {}, stmt_id = {}) "
+            "at",
+            stmt->name(), stmt->lhs->ret_data_type_name(),
+            stmt->rhs->ret_data_type_name(), stmt->id);
       } else {
-        TI_WARN(comment + " at");
+        TI_WARN("[{}] {} at", stmt->name(), comment);
       }
       fmt::print(stmt->tb);
       TI_WARN("Compilation stopped due to type mismatch.");
-      exit(-1);
+      throw std::runtime_error("Binary operator type mismatch");
     };
     if (stmt->lhs->ret_type.data_type == DataType::unknown &&
         stmt->rhs->ret_type.data_type == DataType::unknown)
@@ -232,7 +232,7 @@ class TypeCheck : public IRVisitor {
     // lower truediv into div
 
     if (stmt->op_type == BinaryOpType::truediv) {
-      auto default_fp = get_current_program().config.default_fp;
+      auto default_fp = config.default_fp;
       if (!is_real(stmt->lhs->ret_type.data_type)) {
         cast(stmt->lhs, default_fp);
       }
@@ -309,15 +309,22 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(ArgLoadStmt *stmt) {
-    // TODO (#): remove dependency on get_current_program().get_current_kernel()
-    auto &args = get_current_program().get_current_kernel().args;
+    Kernel *current_kernel = kernel;
+    if (current_kernel == nullptr) {
+      current_kernel = &get_current_program().get_current_kernel();
+    }
+    auto &args = current_kernel->args;
     TI_ASSERT(0 <= stmt->arg_id && stmt->arg_id < args.size());
     TI_ASSERT(!args[stmt->arg_id].is_return_value);
     stmt->ret_type = VectorType(1, args[stmt->arg_id].dt);
   }
 
   void visit(ArgStoreStmt *stmt) {
-    auto &args = get_current_program().get_current_kernel().args;
+    Kernel *current_kernel = kernel;
+    if (current_kernel == nullptr) {
+      current_kernel = &get_current_program().get_current_kernel();
+    }
+    auto &args = current_kernel->args;
     TI_ASSERT(0 <= stmt->arg_id && stmt->arg_id < args.size());
     auto arg = args[stmt->arg_id];
     auto arg_type = arg.dt;
@@ -402,22 +409,14 @@ class TypeCheck : public IRVisitor {
   void visit(GlobalTemporaryStmt *stmt) {
     stmt->ret_type.set_is_pointer(true);
   }
-
-  static void run(IRNode *node) {
-    TypeCheck inst;
-    node->accept(&inst);
-  }
 };
 
 namespace irpass {
 
-void typecheck(IRNode *root) {
+void typecheck(IRNode *root, Kernel *kernel) {
   analysis::check_fields_registered(root);
-  TypeCheck::run(root);
-  //  if (root->is<Block>() && root->as<Block>()->parent == nullptr) {
-  //    fix_block_parents(root); // hot fix
-  //    verify(root);
-  //  }
+  TypeCheck inst(kernel);
+  root->accept(&inst);
 }
 
 }  // namespace irpass

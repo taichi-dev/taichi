@@ -84,7 +84,7 @@ def test_ad_if_mutable():
 
 @ti.require(ti.extension.adstack)
 @ti.all_archs
-def test_ad_if_prallel():
+def test_ad_if_parallel():
     x = ti.var(ti.f32, shape=2)
     y = ti.var(ti.f32, shape=2)
 
@@ -112,8 +112,37 @@ def test_ad_if_prallel():
 
 
 @ti.require(ti.extension.adstack)
+@ti.all_archs_with(default_fp=ti.f64)
+def test_ad_if_parallel_f64():
+    x = ti.var(ti.f64, shape=2)
+    y = ti.var(ti.f64, shape=2)
+
+    ti.root.lazy_grad()
+
+    @ti.kernel
+    def func():
+        for i in range(2):
+            t = x[i]
+            if t > 0:
+                y[i] = t
+            else:
+                y[i] = 2 * t
+
+    x[0] = 0
+    x[1] = 1
+    y.grad[0] = 1
+    y.grad[1] = 1
+
+    func()
+    func.grad()
+
+    assert x.grad[0] == 2
+    assert x.grad[1] == 1
+
+
+@ti.require(ti.extension.adstack)
 @ti.all_archs
-def test_ad_if_prallel_complex():
+def test_ad_if_parallel_complex():
     x = ti.var(ti.f32, shape=2)
     y = ti.var(ti.f32, shape=2)
 
@@ -140,11 +169,37 @@ def test_ad_if_prallel_complex():
     assert x.grad[1] == -0.25
 
 
-# TODO: test f64 stack
+@ti.require(ti.extension.adstack)
+@ti.all_archs_with(default_fp=ti.f64)
+def test_ad_if_parallel_complex_f64():
+    x = ti.var(ti.f64, shape=2)
+    y = ti.var(ti.f64, shape=2)
+
+    ti.root.lazy_grad()
+
+    @ti.kernel
+    def func():
+        ti.parallelize(1)
+        for i in range(2):
+            t = 0.0
+            if x[i] > 0:
+                t = 1 / x[i]
+            y[i] = t
+
+    x[0] = 0
+    x[1] = 2
+    y.grad[0] = 1
+    y.grad[1] = 1
+
+    func()
+    func.grad()
+
+    assert x.grad[0] == 0
+    assert x.grad[1] == -0.25
 
 
 @ti.host_arch_only
-def test():
+def test_stack():
     @ti.kernel
     def func():
         ti.call_internal("test_stack")

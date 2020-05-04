@@ -14,7 +14,7 @@ TI_NAMESPACE_BEGIN
 class Task : public Unit {
  public:
   virtual std::string run(const std::vector<std::string> &parameters) {
-    assert_info(parameters.size() == 0, "No parameters supported.");
+    TI_ASSERT_INFO(parameters.size() == 0, "No parameters supported.");
     return this->run();
   }
 

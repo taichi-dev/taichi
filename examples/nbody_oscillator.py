@@ -1,7 +1,6 @@
 import taichi as ti
 
-ti.init(
-    arch=ti.opengl)  # Try to run on GPU, use ti.opengl if you don't have CUDA
+ti.init(arch=ti.gpu)
 
 N = 8000
 pos = ti.Vector(2, dt=ti.f32, shape=N)
@@ -43,7 +42,7 @@ def advance(dt: ti.f32):
 gui = ti.GUI("n-body", res=(400, 400))
 
 initialize()
-while not gui.has_key_event() or gui.get_key_event().key == ti.GUI.MOTION:
+while not gui.get_event(ti.GUI.ESCAPE):
     _pos = pos.to_numpy()
     gui.circles(_pos, radius=1, color=0x66ccff)
     gui.show()

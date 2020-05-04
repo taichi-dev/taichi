@@ -6,14 +6,11 @@ delta = 0.01
 gui = ti.GUI("Keyboard", res=(400, 400))
 
 while True:
-    while gui.has_key_event():
-        e = gui.get_key_event()
-        if e.type == ti.GUI.RELEASE:
-            continue
-        if e.key == ti.GUI.ESCAPE:
+    while gui.get_event(ti.GUI.PRESS):
+        if gui.event.key == ti.GUI.ESCAPE:
             exit()
-        elif e.key == ti.GUI.RMB:
-            x, y = e.pos[0], e.pos[1]
+        elif gui.event.key == ti.GUI.RMB:
+            x, y = gui.event.pos
 
     if gui.is_pressed(ti.GUI.LEFT, 'a'):
         x -= delta
@@ -24,8 +21,7 @@ while True:
     if gui.is_pressed(ti.GUI.DOWN, 's'):
         y -= delta
     if gui.is_pressed(ti.GUI.LMB):
-        pos = gui.get_cursor_pos()
-        x, y = pos[0], pos[1]
+        x, y = gui.get_cursor_pos()
 
     gui.circle((x, y), 0xffffff, 8)
     gui.show()

@@ -1,3 +1,5 @@
+#pragma once
+
 #include "taichi/lang_util.h"
 #include "arch.h"
 
@@ -17,6 +19,7 @@ struct CompileConfig {
   int max_vector_width;
   bool print_ir;
   bool print_accessor_ir;
+  bool print_benchmark_stat;
   bool serial_schedule;
   bool simplify_before_lower_access;
   bool lower_access;

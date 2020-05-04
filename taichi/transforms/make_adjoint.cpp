@@ -241,8 +241,8 @@ class MakeAdjoint : public IRVisitor {
     } else if (stmt->op_type == UnaryOpType::sqrt) {
       accumulate(stmt->operand,
                  mul(adjoint(stmt), div(constant(0.5f), sqrt(stmt->operand))));
-    } else if (stmt->op_type == UnaryOpType::cast) {
-      if (stmt->cast_by_value && is_real(stmt->cast_type) &&
+    } else if (stmt->op_type == UnaryOpType::cast_value) {
+      if (is_real(stmt->cast_type) &&
           is_real(stmt->operand->ret_type.data_type)) {
         accumulate(stmt->operand, adjoint(stmt));
       }

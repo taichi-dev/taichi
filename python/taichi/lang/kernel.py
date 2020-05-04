@@ -179,6 +179,9 @@ class Kernel:
             self.compiled_functions = self.runtime.compiled_grad_functions
 
     def extract_arguments(self):
+        self.arguments.append(i64) # TODO: rettype
+        self.argument_names.append('__retarg')
+
         sig = inspect.signature(self.func)
         params = sig.parameters
         arg_names = params.keys()
@@ -387,8 +390,16 @@ class Kernel:
                 self.runtime.target_tape.insert(self, args)
 
             t_kernel()
-            # todo union_cast<int> from uint64
-            ret = taichi_lang_core.fetch_return_result()
+
+            ret_dt = self.arguments[0] # TODO
+
+            ret = None
+            if ret_dt is not None:
+                if taichi_lang_core.is_integral(ret_dt):
+                    # TD: correct idx, get_ret_int, is_signed
+                    ret = t_kernel.get_arg_int(0)
+                else:
+                    ret = t_kernel.get_arg_float(0)
 
             if callbacks:
                 import taichi as ti

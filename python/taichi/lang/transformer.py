@@ -594,6 +594,13 @@ if 1:
                         "Function definition not allowed in 'ti.kernel'.")
             # Transform as kernel
             arg_decls = []
+
+            # Treat return type
+            if node.returns is not None:
+                ret_init = self.parse_stmt('__retarg = ti.decl_scalar_arg(__rettype)')
+                ret_init.value.args[0] = node.returns
+                arg_decls.append(ret_init)
+
             for i, arg in enumerate(args.args):
                 if isinstance(self.func.arguments[i], ti.template):
                     continue
@@ -620,6 +627,7 @@ if 1:
                     arg_decls.append(arg_init)
             # remove original args
             node.args.args = []
+
         else:  # ti.func
             for decorator in node.decorator_list:
                 if (isinstance(decorator, ast.Attribute)
@@ -640,8 +648,10 @@ if 1:
                                                          '_by_value__')
                 args.args[i].arg += '_by_value__'
                 arg_decls.append(arg_init)
+
         with self.variable_scope():
             self.generic_visit(node)
+
         node.body = arg_decls + node.body
         return node
 

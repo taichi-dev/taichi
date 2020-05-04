@@ -501,8 +501,9 @@ class KernelGen : public IRVisitor {
 
   void visit(KernelReturnStmt *stmt) override {
     used.argument = true;
-    emit("_args_{}_[0] = {};",
-         "i32",//data_type_short_name(stmt->element_type()),
+    used.int64 = true;
+    emit("_args_{}_[0] = {};", // TD: correct idx, another buf
+         "i64",//data_type_short_name(stmt->element_type()),
          stmt->value->short_name());
   }
 

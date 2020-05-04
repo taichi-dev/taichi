@@ -60,6 +60,10 @@ class Kernel {
 
   void set_arg_int(int i, int64 d);
 
+  float64 get_arg_float(int i);
+
+  int64 get_arg_int(int i);
+
   void set_extra_arg_int(int i, int j, int32 d);
 
   void mark_arg_return_value(int i, bool is_return = true);

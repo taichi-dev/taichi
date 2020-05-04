@@ -193,8 +193,10 @@ void export_lang(py::module &m) {
 
   py::class_<Kernel>(m, "Kernel")
       .def("set_arg_int", &Kernel::set_arg_int)
-      .def("set_extra_arg_int", &Kernel::set_extra_arg_int)
+      .def("get_arg_int", &Kernel::get_arg_int)
       .def("set_arg_float", &Kernel::set_arg_float)
+      .def("get_arg_float", &Kernel::get_arg_float)
+      .def("set_extra_arg_int", &Kernel::set_extra_arg_int)
       .def("set_arg_nparray", &Kernel::set_arg_nparray)
       .def("__call__", [](Kernel *kernel) {
         py::gil_scoped_release release;
@@ -307,10 +309,6 @@ void export_lang(py::module &m) {
 
   m.def("create_kernel_return", [&](const Expr &value) {
     current_ast_builder().insert(Stmt::make<FrontendKernelReturnStmt>(value));
-  });
-
-  m.def("fetch_return_result", []() {
-    return get_current_program().context.get_arg_as_uint64(0);
   });
 
   m.def("insert_continue_stmt", [&]() {

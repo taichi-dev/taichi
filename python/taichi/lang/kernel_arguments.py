@@ -32,6 +32,7 @@ class Template:
 template = Template
 
 
+# TODO: add decl_scalar_ret
 def decl_scalar_arg(dt):
     id = taichi_lang_core.decl_arg(dt, False)
     return Expr(taichi_lang_core.make_arg_load_expr(id))

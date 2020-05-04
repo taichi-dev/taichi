@@ -109,16 +109,16 @@ def test_ad_if_parallel():
 
     assert x.grad[0] == 2
     assert x.grad[1] == 1
-    
-    
+
+
 @ti.require(ti.extension.adstack)
 @ti.all_archs_with(default_fp=ti.f64)
 def test_ad_if_parallel_f64():
     x = ti.var(ti.f64, shape=2)
     y = ti.var(ti.f64, shape=2)
-    
+
     ti.root.lazy_grad()
-    
+
     @ti.kernel
     def func():
         for i in range(2):
@@ -127,15 +127,15 @@ def test_ad_if_parallel_f64():
                 y[i] = t
             else:
                 y[i] = 2 * t
-    
+
     x[0] = 0
     x[1] = 1
     y.grad[0] = 1
     y.grad[1] = 1
-    
+
     func()
     func.grad()
-    
+
     assert x.grad[0] == 2
     assert x.grad[1] == 1
 
@@ -167,15 +167,16 @@ def test_ad_if_parallel_complex():
 
     assert x.grad[0] == 0
     assert x.grad[1] == -0.25
-    
+
+
 @ti.require(ti.extension.adstack)
 @ti.all_archs_with(default_fp=ti.f64)
 def test_ad_if_parallel_complex_f64():
     x = ti.var(ti.f64, shape=2)
     y = ti.var(ti.f64, shape=2)
-    
+
     ti.root.lazy_grad()
-    
+
     @ti.kernel
     def func():
         ti.parallelize(1)
@@ -184,15 +185,15 @@ def test_ad_if_parallel_complex_f64():
             if x[i] > 0:
                 t = 1 / x[i]
             y[i] = t
-    
+
     x[0] = 0
     x[1] = 2
     y.grad[0] = 1
     y.grad[1] = 1
-    
+
     func()
     func.grad()
-    
+
     assert x.grad[0] == 0
     assert x.grad[1] == -0.25
 

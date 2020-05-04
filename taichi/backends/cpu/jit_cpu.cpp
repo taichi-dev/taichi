@@ -367,7 +367,8 @@ std::unique_ptr<JITSession> create_llvm_jit_session_cpu(Arch arch) {
     TI_ERROR("LLVM TargetMachineBuilder has failed when getting data layout.");
   }
 
-  return std::make_unique<JITSessionCPU>(std::move(*jtmb), std::move(*data_layout));
+  return std::make_unique<JITSessionCPU>(std::move(*jtmb),
+                                         std::move(*data_layout));
 }
 
 TLANG_NAMESPACE_END

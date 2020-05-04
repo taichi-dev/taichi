@@ -40,7 +40,6 @@ def _test_matrix_element_wise_unary(dtype, n, m, ti_func, math_func):
             assert a[None][i, j] == approx(expected)
 
 
-
 @ti.host_arch_only
 def _test_matrix_element_wise_binary(dtype, n, m, ti_func, math_func):
     a = ti.Matrix(n, m, dt=dtype, shape=())
@@ -94,7 +93,6 @@ def test_matrix_element_wise_binary():
         _test_matrix_element_wise_binary(ti.f32, n, m, pow, pow)
         _test_matrix_element_wise_binary(ti.i32, n, m, pow, pow)
         _test_matrix_element_wise_binary(ti.i32, n, m, ti.raw_mod, _c_mod)
-
 
 
 def test_matrix_element_wise_unary():

@@ -1,5 +1,7 @@
-#include "expr.h"
-#include "ir.h"
+#include "taichi/ir/expr.h"
+
+#include "taichi/ir/frontend_ir.h"
+#include "taichi/ir/ir.h"
 #include "taichi/program/program.h"
 
 TLANG_NAMESPACE_BEGIN
@@ -35,7 +37,8 @@ Expr operator~(const Expr &expr) {
 }
 
 Expr cast(const Expr &input, DataType dt) {
-  auto ret = std::make_shared<UnaryOpExpression>(UnaryOpType::cast_value, input);
+  auto ret =
+      std::make_shared<UnaryOpExpression>(UnaryOpType::cast_value, input);
   ret->cast_type = dt;
   return Expr(ret);
 }

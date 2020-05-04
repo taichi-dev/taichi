@@ -19,6 +19,7 @@
 #include "taichi/backends/opengl/struct_opengl.h"
 #include "taichi/system/unified_allocator.h"
 #include "taichi/ir/snode.h"
+#include "taichi/ir/frontend_ir.h"
 #include "taichi/program/async_engine.h"
 #include "taichi/util/statistics.h"
 

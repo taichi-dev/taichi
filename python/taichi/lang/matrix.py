@@ -174,7 +174,7 @@ class Matrix:
         ret = Matrix(self.n, self.m)
         for i in range(self.n):
             for j in range(self.m):
-                ret(i, j).assign(self(i, j) ** other(i, j))
+                ret(i, j).assign(self(i, j)**other(i, j))
         return ret
 
     @broadcast_if_scalar
@@ -183,7 +183,7 @@ class Matrix:
         ret = Matrix(self.n, self.m)
         for i in range(self.n):
             for j in range(self.m):
-                ret(i, j).assign(other(i, j) ** self(i, j))
+                ret(i, j).assign(other(i, j)**self(i, j))
         return ret
 
     @broadcast_if_scalar

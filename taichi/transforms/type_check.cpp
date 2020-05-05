@@ -186,7 +186,8 @@ class TypeCheck : public IRVisitor {
   Stmt *insert_type_cast_before(Stmt *anchor,
                                 Stmt *input,
                                 DataType output_type) {
-    auto &&cast_stmt = Stmt::make_typed<UnaryOpStmt>(UnaryOpType::cast_value, input);
+    auto &&cast_stmt =
+        Stmt::make_typed<UnaryOpStmt>(UnaryOpType::cast_value, input);
     cast_stmt->cast_type = output_type;
     cast_stmt->accept(this);
     auto stmt = cast_stmt.get();
@@ -197,7 +198,8 @@ class TypeCheck : public IRVisitor {
   Stmt *insert_type_cast_after(Stmt *anchor,
                                Stmt *input,
                                DataType output_type) {
-    auto &&cast_stmt = Stmt::make_typed<UnaryOpStmt>(UnaryOpType::cast_value, input);
+    auto &&cast_stmt =
+        Stmt::make_typed<UnaryOpStmt>(UnaryOpType::cast_value, input);
     cast_stmt->cast_type = output_type;
     cast_stmt->accept(this);
     auto stmt = cast_stmt.get();

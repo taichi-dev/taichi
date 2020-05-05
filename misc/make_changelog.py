@@ -37,7 +37,10 @@ details = {
     'autodiff': 'Automatic differentiation',
     'gui': 'GUI',
     'llvm': 'LLVM backend (CPU and CUDA)',
+    'refactor': 'Refactor',
     'bug': 'Bug fixes',
+    'test': 'Tests',
+    'async': 'AsyncEngine',
 }
 
 for i, c in enumerate(commits):
@@ -56,6 +59,7 @@ for i, c in enumerate(commits):
         s = s[r + 1:]
         s = s.strip()
     for tag in tags:
+        assert tag.lower() in details, f'Tag {tag} undefined in details'
         if tag[0].isupper():
             tag = tag.lower()
             if tag not in notable_changes:

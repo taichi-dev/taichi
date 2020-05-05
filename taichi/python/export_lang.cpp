@@ -193,11 +193,11 @@ void export_lang(py::module &m) {
 
   py::class_<Kernel>(m, "Kernel")
       .def("set_arg_int", &Kernel::set_arg_int)
-      .def("get_arg_int", &Kernel::get_arg_int)
       .def("set_arg_float", &Kernel::set_arg_float)
-      .def("get_arg_float", &Kernel::get_arg_float)
-      .def("set_extra_arg_int", &Kernel::set_extra_arg_int)
       .def("set_arg_nparray", &Kernel::set_arg_nparray)
+      .def("set_extra_arg_int", &Kernel::set_extra_arg_int)
+      .def("get_ret_int", &Kernel::get_ret_int)
+      .def("get_ret_float", &Kernel::get_ret_float)
       .def("__call__", [](Kernel *kernel) {
         py::gil_scoped_release release;
         kernel->operator()();

@@ -597,7 +597,7 @@ if 1:
 
             # Treat return type
             if node.returns is not None:
-                ret_init = self.parse_stmt('__retarg = ti.decl_scalar_arg(__rettype)')
+                ret_init = self.parse_stmt('ti.decl_scalar_ret(0)')
                 ret_init.value.args[0] = node.returns
                 arg_decls.append(ret_init)
 

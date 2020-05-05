@@ -111,34 +111,6 @@ void Kernel::set_arg_float(int i, float64 d) {
   }
 }
 
-float64 Kernel::get_arg_float(int i) {
-  TI_ASSERT(!args[i].is_nparray);
-  auto dt = args[i].dt;
-  if (dt == DataType::f32) {
-    return (float64)program.context.get_arg<float32>(i);
-  } else if (dt == DataType::f64) {
-    return (float64)program.context.get_arg<float64>(i);
-  } else if (dt == DataType::i32) {
-    return (float64)program.context.get_arg<int32>(i);
-  } else if (dt == DataType::i64) {
-    return (float64)program.context.get_arg<int64>(i);
-  } else if (dt == DataType::i8) {
-    return (float64)program.context.get_arg<int8>(i);
-  } else if (dt == DataType::i16) {
-    return (float64)program.context.get_arg<int16>(i);
-  } else if (dt == DataType::u8) {
-    return (float64)program.context.get_arg<uint8>(i);
-  } else if (dt == DataType::u16) {
-    return (float64)program.context.get_arg<uint16>(i);
-  } else if (dt == DataType::u32) {
-    return (float64)program.context.get_arg<uint32>(i);
-  } else if (dt == DataType::u64) {
-    return (float64)program.context.get_arg<uint64>(i);
-  } else {
-    TI_NOT_IMPLEMENTED
-  }
-}
-
 void Kernel::set_arg_int(int i, int64 d) {
   TI_ASSERT_INFO(
       !args[i].is_nparray,
@@ -169,8 +141,34 @@ void Kernel::set_arg_int(int i, int64 d) {
   }
 }
 
-int64 Kernel::get_arg_int(int i) { // TODO: will consider uint?
-  TI_ASSERT(!args[i].is_nparray);
+float64 Kernel::get_ret_float(int i) {
+  auto dt = args[i].dt;
+  if (dt == DataType::f32) {
+    return (float64)program.context.get_arg<float32>(i);
+  } else if (dt == DataType::f64) {
+    return (float64)program.context.get_arg<float64>(i);
+  } else if (dt == DataType::i32) {
+    return (float64)program.context.get_arg<int32>(i);
+  } else if (dt == DataType::i64) {
+    return (float64)program.context.get_arg<int64>(i);
+  } else if (dt == DataType::i8) {
+    return (float64)program.context.get_arg<int8>(i);
+  } else if (dt == DataType::i16) {
+    return (float64)program.context.get_arg<int16>(i);
+  } else if (dt == DataType::u8) {
+    return (float64)program.context.get_arg<uint8>(i);
+  } else if (dt == DataType::u16) {
+    return (float64)program.context.get_arg<uint16>(i);
+  } else if (dt == DataType::u32) {
+    return (float64)program.context.get_arg<uint32>(i);
+  } else if (dt == DataType::u64) {
+    return (float64)program.context.get_arg<uint64>(i);
+  } else {
+    TI_NOT_IMPLEMENTED
+  }
+}
+
+int64 Kernel::get_ret_int(int i) {
   auto dt = args[i].dt;
   if (dt == DataType::i32) {
     return (int64)program.context.get_arg<int32>(i);

@@ -127,6 +127,7 @@ uint64 SNode::fetch_reader_result() {
   auto arch = get_current_program().config.arch;
   if (arch == Arch::cuda) {
     // TODO: refactor
+    // XXX: what about unified memory?
 #if defined(TI_WITH_CUDA)
     CUDADriver::get_instance().memcpy_device_to_host(
         &ret, get_current_program().result_buffer, sizeof(uint64));

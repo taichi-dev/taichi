@@ -158,6 +158,7 @@ class Kernel:
         self.is_grad = is_grad
         self.arguments = []
         self.argument_names = []
+        self.return_type = i64 # TODO: rettype, can be None
         self.classkernel = classkernel
         self.extract_arguments()
         self.template_slot_locations = []
@@ -179,9 +180,6 @@ class Kernel:
             self.compiled_functions = self.runtime.compiled_grad_functions
 
     def extract_arguments(self):
-        self.arguments.append(i64) # TODO: rettype
-        self.argument_names.append('__retarg')
-
         sig = inspect.signature(self.func)
         params = sig.parameters
         arg_names = params.keys()
@@ -391,15 +389,15 @@ class Kernel:
 
             t_kernel()
 
-            ret_dt = self.arguments[0] # TODO
+            ret_dt = self.return_type
 
             ret = None
             if ret_dt is not None:
                 if taichi_lang_core.is_integral(ret_dt):
                     # TD: correct idx, get_ret_int, is_signed
-                    ret = t_kernel.get_arg_int(0)
+                    ret = t_kernel.get_ret_int(0)
                 else:
-                    ret = t_kernel.get_arg_float(0)
+                    ret = t_kernel.get_ret_float(0)
 
             if callbacks:
                 import taichi as ti
@@ -424,7 +422,6 @@ class Kernel:
     # Thus this part needs to be fast. (i.e. < 3us on a 4 GHz x64 CPU)
     def __call__(self, *args, **kwargs):
         assert len(kwargs) == 0, 'kwargs not supported for Taichi kernels'
-        args = (0,) + args # TODO: detect if have return, initialize by dt
         instance_id, arg_features = self.mapper.lookup(args)
         key = (self.func, instance_id)
         self.materialize(key=key, args=args, arg_features=arg_features)

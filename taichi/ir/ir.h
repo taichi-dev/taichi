@@ -1291,19 +1291,6 @@ class PrintStmt : public Stmt {
   DEFINE_ACCEPT
 };
 
-class If {
- public:
-  FrontendIfStmt *stmt;
-
-  explicit If(const Expr &cond);
-
-  If(const Expr &cond, const std::function<void()> &func);
-
-  If &Then(const std::function<void()> &func);
-
-  If &Else(const std::function<void()> &func);
-};
-
 class ConstStmt : public Stmt {
  public:
   LaneAttribute<TypedConstant> val;
@@ -1503,25 +1490,6 @@ inline void BlockDim(int v) {
 inline void SLP(int v) {
   current_ast_builder().insert(Stmt::make<PragmaSLPStmt>(v));
 }
-
-class For {
- public:
-  For(const Expr &i,
-      const Expr &s,
-      const Expr &e,
-      const std::function<void()> &func);
-
-  For(const ExprGroup &i,
-      const Expr &global,
-      const std::function<void()> &func);
-
-  For(const Expr &s, const Expr &e, const std::function<void(Expr)> &func);
-};
-
-class While {
- public:
-  While(const Expr &cond, const std::function<void()> &func);
-};
 
 Expr Var(const Expr &x);
 

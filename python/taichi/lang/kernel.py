@@ -158,7 +158,7 @@ class Kernel:
         self.is_grad = is_grad
         self.arguments = []
         self.argument_names = []
-        self.return_type = i64 # TODO: rettype, can be None
+        self.return_type = None
         self.classkernel = classkernel
         self.extract_arguments()
         self.template_slot_locations = []
@@ -181,6 +181,7 @@ class Kernel:
 
     def extract_arguments(self):
         sig = inspect.signature(self.func)
+        self.return_type = sig.return_annotation
         params = sig.parameters
         arg_names = params.keys()
         for i, arg_name in enumerate(arg_names):
@@ -389,9 +390,8 @@ class Kernel:
 
             t_kernel()
 
-            ret_dt = self.return_type
-
             ret = None
+            ret_dt = self.return_type
             if ret_dt is not None:
                 if taichi_lang_core.is_integral(ret_dt):
                     # TD: correct idx, get_ret_int, is_signed

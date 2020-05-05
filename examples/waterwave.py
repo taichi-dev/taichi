@@ -1,48 +1,40 @@
-# waterwave.py
+# vim: st=4 sts=4 sw=4 et
 
-from random import randrange, random
 import taichi as ti
 import numpy as np
 
 ti.init(arch=ti.opengl)
 
-bg = 'misc/test_image.png'
-bg = 'misc/test_small.png'
-bg = ti.imread(bg, 3)
-bg = np.sum(bg, axis=2)
-bg = bg.astype(np.float32) / (256 * 3)
-bg = np.flip(bg, axis=0)
-bg = bg.transpose()
-
 light_color = 1
 kappa = 2
 gamma = 0.6
 eta = 1.333
-inv_eta = 1 / eta
-inv_eta2 = inv_eta**2
-height = 2.5
+depth = 4
 dx = 0.02
 dt = 0.01
-inv_dx = 1 / dx
-inv_dx2 = inv_dx**2
-shape = bg.shape
-aspect = shape[0] / shape[1]
-n = shape[0]
-inv_aspect = 1 / aspect
-inv_n = 1 / n
+shape = 512, 512
 pixels = ti.var(dt=ti.f32, shape=shape)
 background = ti.var(dt=ti.f32, shape=shape)
 position = ti.var(dt=ti.f32, shape=shape)
 velocity = ti.var(dt=ti.f32, shape=shape)
 acceleration = ti.var(dt=ti.f32, shape=shape)
-background.from_numpy(bg)
+
+
+@ti.kernel
+def reset():
+    for i, j in position:
+        t = i // 16 + j // 16
+        background[i, j] = (t * 0.5) % 1.0
+        position[i, j] = 0
+        velocity[i, j] = 0
+        acceleration[i, j] = 0
 
 
 @ti.func
 def laplacian(i, j):
-    return inv_dx2 * (-4 * position[i, j] + position[i, j - 1] +
-                      position[i, j + 1] + position[i + 1, j] +
-                      position[i - 1, j]) / 4
+    return (-4 * position[i, j] + position[i, j - 1] +
+            position[i, j + 1] + position[i + 1, j] +
+            position[i - 1, j]) / (4 * dx ** 2)
 
 
 @ti.func
@@ -50,17 +42,20 @@ def gradient(i, j):
     return ti.Vector([
         position[i + 1, j] - position[i - 1, j],
         position[i, j + 1] - position[i, j - 1]
-    ]) * inv_dx
+    ]) * (0.5 / dx)
 
 
 @ti.func
 def take_linear(i, j):
     m, n = int(i), int(j)
     i, j = i - m, j - n
-    return (i * j * background[m + 1, n + 1] +
-            (1 - i) * j * background[m, n + 1] + i *
-            (1 - j) * background[m + 1, n] + (1 - i) *
-            (1 - j) * background[m, n])
+    ret = 0.0
+    if 0 <= i < shape[0] and 0 <= i < shape[1]:
+        ret = (i * j * background[m + 1, n + 1] +
+              (1 - i) * j * background[m, n + 1] + i *
+              (1 - j) * background[m + 1, n] + (1 - i) *
+              (1 - j) * background[m, n])
+    return ret
 
 
 @ti.kernel
@@ -86,22 +81,37 @@ def paint():
         g = gradient(i, j)
         # https://www.jianshu.com/p/66a40b06b436
         cos_i = 1 / ti.sqrt(1 + g.norm_sqr())
-        cos_o = ti.sqrt(1 - (1 - ti.sqr(cos_i)) * inv_eta2)
+        cos_o = ti.sqrt(1 - (1 - ti.sqr(cos_i)) * (1 / eta ** 2))
         fr = pow(1 - cos_i, 5)
-        coh = cos_o * height
-        k, l = g[0] * coh, g[1] * coh
+        coh = cos_o * depth
+        g = g * coh
+        k, l = g[0], g[1]
         color = take_linear(i + k, j + l)
         pixels[i, j] = (1 - fr) * color + fr * light_color
 
 
-i = 0
+print("[Hint] click on the window to create wavelet")
+
+reset()
 gui = ti.GUI("Water Wave", shape)
-while not gui.has_key_pressed():
-    i += 1
-    if i % 8 == 0 and randrange(8) == 0:
-        hurt = random() * 2
-        x, y = randrange(8, shape[0] - 8), randrange(8, shape[1] - 8)
-        touch_at(hurt, x, y)
+for frame in range(100000):
+    #for e in gui.get_events(ti.GUI.PRESS):
+    while gui.get_event(ti.GUI.PRESS):#
+        e = gui.event
+        if e.key == ti.GUI.ESCAPE:
+            exit()
+        elif e.key == 'r':
+            reset()
+        elif e.key == ti.GUI.LMB:
+            #x, y = e.pos
+            x, y = e.pos[0], e.pos[1]#
+            touch_at(1, x * shape[0], y * shape[1])
+    if 0:
+        from random import randrange, random
+        if frame % 8 == 0 and randrange(8) == 0:
+            hurt = random() * 2
+            x, y = randrange(8, shape[0] - 8), randrange(8, shape[1] - 8)
+            touch_at(hurt, x, y)
     update()
     paint()
     gui.set_image(pixels)

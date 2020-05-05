@@ -95,16 +95,13 @@ print("[Hint] click on the window to create wavelet")
 reset()
 gui = ti.GUI("Water Wave", shape)
 for frame in range(100000):
-    #for e in gui.get_events(ti.GUI.PRESS):
-    while gui.get_event(ti.GUI.PRESS):#
-        e = gui.event
+    for e in gui.get_events(ti.GUI.PRESS):
         if e.key == ti.GUI.ESCAPE:
             exit()
         elif e.key == 'r':
             reset()
         elif e.key == ti.GUI.LMB:
-            #x, y = e.pos
-            x, y = e.pos[0], e.pos[1]#
+            x, y = e.pos
             touch_at(1, x * shape[0], y * shape[1])
     if 0:
         from random import randrange, random

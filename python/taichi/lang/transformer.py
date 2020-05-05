@@ -37,6 +37,7 @@ class ASTTransformer(ast.NodeTransformer):
         self.is_classfunc = is_classfunc
         self.func = func
         self.arg_features = arg_features
+        self.returns = None
 
     def variable_scope(self, *args):
         return ScopeGuard(self, *args)
@@ -599,6 +600,7 @@ if 1:
             if node.returns is not None:
                 ret_init = self.parse_stmt('ti.decl_scalar_ret(0)')
                 ret_init.value.args[0] = node.returns
+                self.returns = node.returns
                 arg_decls.append(ret_init)
 
             for i, arg in enumerate(args.args):
@@ -748,8 +750,13 @@ if 1:
         if self.is_kernel:
             # todo: we only support return at the end of kernel, check this
             if node.value is not None:
-                new_node = self.parse_stmt(
-                        'ti.core.create_kernel_return(ti.Expr(0).ptr)')
-                new_node.value.args[0].value.args[0] = node.value
-                return new_node
+                assert self.returns is not None, 'kernel with return value must be ' \
+                    'annotated with return type, e.g. def func() -> ti.f32'
+                ret_expr = self.parse_expr('ti.cast(ti.Expr(0), 0)')
+                ret_expr.args[0].args[0] = node.value
+                ret_expr.args[1] = self.returns
+                ret_stmt = self.parse_stmt(
+                        'ti.core.create_kernel_return(ret.ptr)')
+                ret_stmt.value.args[0].value = ret_expr
+                return ret_stmt
         return node

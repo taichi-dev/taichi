@@ -5,12 +5,17 @@ STR(
 uvec4 _rand_;
 
 void _init_rand() {
-  uint i = (54321 + gl_GlobalInvocationID.x) * (12345 + _states_[0]);
+  uint i = (54321 + gl_GlobalInvocationID.x) * (12345 + _rand_state_);
   _rand_.x = 123456789 * i * 1000000007;
   _rand_.y = 362436069;
   _rand_.z = 521288629;
   _rand_.w = 88675123;
-  _states_[0] += 1;
+
+  // Yes, this is not an atomic operation, but just fine since no matter
+  // how `_rand_state_` changes, `gl_GlobalInvocationID.x` can still help
+  // us to set different seeds for different threads.
+  // Discussion: https://github.com/taichi-dev/taichi/pull/912#discussion_r419021918
+  _rand_state_ += 1;
 }
 
 uint _rand_u32() {

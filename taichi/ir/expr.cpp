@@ -1,5 +1,7 @@
-#include "expr.h"
-#include "ir.h"
+#include "taichi/ir/expr.h"
+
+#include "taichi/ir/frontend_ir.h"
+#include "taichi/ir/ir.h"
 #include "taichi/program/program.h"
 
 TLANG_NAMESPACE_BEGIN

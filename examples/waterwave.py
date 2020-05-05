@@ -1,5 +1,3 @@
-# vim: st=4 sts=4 sw=4 et
-
 import taichi as ti
 import numpy as np
 

@@ -24,39 +24,57 @@ See :ref:`layout` for more details about data layout. ``ti.root`` is the root no
     :parameter x: (tensor) tensor(s) to be placed
     :return: (SNode) the ``snode`` itself
 
-.. function:: snode.get_shape(index)
+    The following code places two 0-D tensors named ``x`` and ``y``:
 
-    :parameter snode: (SNode)
-    :parameter index: alone which axis? (0 for ``i`` and 1 for ``j``)
-    :return: (scalar) the size of tensor alone that axis
+    ::
 
-    Equivalent to snode.shape[i]
+        x = ti.var(dt=ti.i32)
+        y = ti.var(dt=ti.f32)
+        ti.root.place(x, y)
+
+.. function:: tensor.shape()
+
+    :parameter tensor: the tensor
+    :return: (tuple of integers) the shape of tensor
+
+    For example,
 
     ::
 
         ti.root.dense(ti.ijk, (3, 5, 4)).place(x)
-        x.get_shape(0)  # 3
-        x.get_shape(1)  # 5
-        x.get_shape(2)  # 4
+        x.shape() # returns (3, 5, 4)
 
-.. function:: snode.dim()
+.. function:: snode.get_shape(index)
 
     :parameter snode: (SNode)
-    :return: (scalar) the dimension of node
+    :parameter index: axis (0 for ``i`` and 1 for ``j``)
+    :return: (scalar) the size of tensor alone that axis
 
-    Equivalent to `len(snode.shape)`.
+    Equivalent to ``tensor.shape()[i]``.
+
+    ::
+
+        ti.root.dense(ti.ijk, (3, 5, 4)).place(x)
+        x.snode().get_shape(0)  # 3
+        x.snode().get_shape(1)  # 5
+        x.snode().get_shape(2)  # 4
+
+.. function:: tensor.dim()
+
+    :parameter tensor: the tensor
+    :return: (scalar) the dimensionality of the tensor
+
+    Equivalent to ``len(tensor.shape())``.
 
     ::
 
         ti.root.dense(ti.ijk, (8, 9, 10)).place(x)
         x.dim()  # 3
 
-    TODO: add tensor.dim(), and add see also ref here
-
 .. function:: snode.parent()
 
     :parameter snode: (SNode)
-    :return: (SNode) the parent node of `snode`
+    :return: (SNode) the parent node of ``snode``
 
     ::
 
@@ -68,14 +86,6 @@ See :ref:`layout` for more details about data layout. ``ti.root`` is the root no
         blk3.parent()  # blk2
 
     TODO: add tensor.parent(), and add see also ref here
-
-    The following code places two 0-D tensors named ``x`` and ``y``:
-
-    ::
-
-        x = ti.var(dt=ti.i32)
-        y = ti.var(dt=ti.f32)
-        ti.root.place(x, y)
 
 
 Node types
@@ -137,6 +147,16 @@ Node types
         ti.root.dynamic(ti.i, 16).place(x)
 
 
+
+.. function:: snode.bitmasked
+.. function:: snode.pointer
+.. function:: snode.hash
+
+    TODO: add descriptions here
+
+Working with ``dynamic`` SNodes
+-------------------------------
+
 .. function:: ti.length(snode, indices)
 
     :parameter snode: (SNode, dynamic)
@@ -153,12 +173,6 @@ Node types
 
     Inserts ``val`` into the ``dynamic`` node with indices ``indices``.
 
-
-.. function:: snode.bitmasked
-.. function:: snode.pointer
-.. function:: snode.hash
-
-    TODO: add descriptions here
 
 
 Indices

@@ -4,11 +4,9 @@ Advanced dense layouts
 ======================
 
 Tensors (:ref:`scalar_tensor`) can be *placed* in a specific shape and *layout*.
-Defining a proper layout can be critical to performance, especially for memory-bound applications, although in most cases, you probably don't have to worry about it.
-A carefully designed data layout can significantly improve cache/TLB-hit rates and cacheline utilization.
+Defining a proper layout can be critical to performance, especially for memory-bound applications. A carefully designed data layout can significantly improve cache/TLB-hit rates and cacheline utilization. Although in most cases, you probably don't have to worry about it.
 
-In Taichi, layout is defined in a recursive manner. See :ref:`snode` for more details about how this works.
-We suggested starting with the default layout specification (simply by specifying ``shape`` when creating tensors using ``ti.var/Vector/Matrix``),
+In Taichi, layout is defined in a recursive manner. See :ref:`snode` for more details about how this works. We suggested starting with the default layout specification (simply by specifying ``shape`` when creating tensors using ``ti.var/Vector/Matrix``),
 and then migrate to more advanced layouts using the ``ti.root.X`` syntax.
 
 Taichi decouples algorithms from data layouts, and the Taichi compiler automatically optimizes data accesses on a specific data layout. These Taichi features allow programmers to quickly experiment with different data layouts and figure out the most efficient one on a specific task and computer architecture.
@@ -23,7 +21,7 @@ For example, this declares a 0-D tensor:
 
     x = ti.var(ti.f32)
     ti.root.place(x)
-    # or
+    # is equivalent to:
     x = ti.var(ti.f32, shape=())
 
 This declares a 1D tensor of size ``3``:
@@ -32,7 +30,7 @@ This declares a 1D tensor of size ``3``:
 
     x = ti.var(ti.f32)
     ti.root.dense(ti.i, 3).place(x)
-    # or
+    # is equivalent to:
     x = ti.var(ti.f32, shape=3)
 
 This declares a 2D tensor of shape ``(3, 4)``:
@@ -41,7 +39,7 @@ This declares a 2D tensor of shape ``(3, 4)``:
 
     x = ti.var(ti.f32)
     ti.root.dense(ti.ij, (3, 4)).place(x)
-    # or
+    # is equivalent to:
     x = ti.var(ti.f32, shape=(3, 4))
 
 You may wonder, why not just simply specify the tensor ``shape``? Why we need these fancy stuffs like ``ti.root`` and ``place``? Aren't they doing the same thing?
@@ -161,8 +159,8 @@ A better placement is to place them together:
 Then ``vel[i]`` is placed right next to ``pos[i]``, this can increases the cache-hit rate and therefore increases performance.
 
 
-Multi-dimensional local block
------------------------------
+Linear versus local block
+-------------------------
 
 By default, when allocating a ``ti.var`` , it follows the most naive data layout
 

@@ -35,8 +35,10 @@ def test_python(args):
         pytest_args += ['-s', '-v']
     if args.rerun:
         pytest_args += ['--reruns', args.rerun]
-    if int(pytest.main([os.path.join(root_dir, 'misc/empty_pytest.py'),
-                        '-n1', '-q'])) == 0:  # test if pytest has xdist or not
+    if int(
+            pytest.main(
+                [os.path.join(root_dir, 'misc/empty_pytest.py'), '-n1',
+                 '-q'])) == 0:  # test if pytest has xdist or not
         try:
             from multiprocessing import cpu_count
             threads = min(8, cpu_count())  # To prevent running out of memory
@@ -73,9 +75,7 @@ def make_argument_parser():
                         '--verbose',
                         action='store_true',
                         help='Run with verbose outputs')
-    parser.add_argument('-r',
-                        '--rerun',
-                        help='Rerun failed tests once again')
+    parser.add_argument('-r', '--rerun', help='Rerun failed tests once again')
     parser.add_argument('-t',
                         '--threads',
                         help='Number of threads for parallel testing')

@@ -142,7 +142,7 @@ Supported scalar functions:
 Note: when these scalar functions are applied on :ref:`matrix` and :ref:`vector`, it's applied element-wise, for example:
 
 .. code-block:: python
-   
+
     A = ti.sin(B)
     # is equalivant to (assuming B is a 3x2 matrix):
     for i in ti.static(range(3)):

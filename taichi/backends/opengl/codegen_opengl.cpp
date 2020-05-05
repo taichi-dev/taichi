@@ -350,12 +350,11 @@ class KernelGen : public IRVisitor {
       emit("{} {} = {}(~{});", dt_name, stmt->short_name(), dt_name,
            stmt->operand->short_name());
     } else if (stmt->op_type == UnaryOpType::cast_value) {
-        emit("{} {} = {}({});", dt_name, stmt->short_name(),
-             opengl_data_type_name(stmt->cast_type),
-             stmt->operand->short_name());
+      emit("{} {} = {}({});", dt_name, stmt->short_name(),
+           opengl_data_type_name(stmt->cast_type), stmt->operand->short_name());
     } else if (stmt->op_type == UnaryOpType::cast_bits) {
       if (stmt->cast_type == DataType::f32 &&
-                 stmt->operand->element_type() == DataType::i32) {
+          stmt->operand->element_type() == DataType::i32) {
         emit("{} {} = intBitsToFloat({});", dt_name, stmt->short_name(),
              stmt->operand->short_name());
       } else if (stmt->cast_type == DataType::i32 &&

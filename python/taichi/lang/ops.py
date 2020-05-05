@@ -19,6 +19,7 @@ def stack_info():
 
 def unary(foo):
     import taichi as ti
+
     @functools.wraps(foo)
     def wrapped(a):
         if ti.is_taichi_class(a):
@@ -35,6 +36,7 @@ binary_ops = []
 
 def binary(foo):
     import taichi as ti
+
     @functools.wraps(foo)
     def wrapped(a, b):
         if ti.is_taichi_class(a):
@@ -66,6 +68,7 @@ def cast(obj, type):
         return obj.cast(type)
     else:
         return Expr(taichi_lang_core.value_cast(Expr(obj).ptr, type))
+
 
 def bit_cast(obj, type):
     if is_taichi_class(obj):

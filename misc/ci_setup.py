@@ -172,9 +172,23 @@ class Installer:
             execute_command('rm get-pip.py')
 
         subprocess.run([
-            get_python_executable(), "-m", "pip", "install", "--user",
-            "colorama", "numpy", "Pillow", "scipy", "pybind11", "GitPython",
-            "yapf", "distro", "pytest", "autograd", "astor", "pytest-xdist",
+            get_python_executable(),
+            "-m",
+            "pip",
+            "install",
+            "--user",
+            "colorama",
+            "numpy",
+            "Pillow",
+            "scipy",
+            "pybind11",
+            "GitPython",
+            "yapf",
+            "distro",
+            "pytest",
+            "autograd",
+            "astor",
+            "pytest-xdist",
             "pytest-rerunfailures",
         ])
         print("importing numpy test:")

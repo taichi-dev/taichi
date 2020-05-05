@@ -1,23 +1,22 @@
 .. _snode:
 
-Structural nodes
-================
+Structural nodes (SNodes)
+=========================
 
 After writing the computation code, the user needs to specify the internal data structure hierarchy. Specifying a data structure includes choices at both the macro level, dictating how the data structure components nest with each other and the way they represent sparsity, and the micro level, dictating how data are grouped together (e.g. structure of arrays vs. array of structures).
-Our language provides *structural nodes* to compose the hierarchy and particular properties. These constructs and their semantics are listed below:
+Our language provides *structural nodes (SNodes)* to compose the hierarchy and particular properties. These constructs and their semantics are listed below:
 
 * dense: A fixed-length contiguous array.
 
-* dynamic: Variable-length array, with a predefined maximum length. It serves the role of ``std::vector``, and can be used to maintain objects (e.g. particles) contained in a block.
-
-* bitmasked: Use a mask to maintain sparsity infomation, one bit per child.
+* bitmasked: Use a mask to maintain sparsity information, one bit per child.
 
 * pointer: Store pointers instead of the whole structure to save memory and maintain sparsity.
 
 * hash: Use a hash table to maintain the mapping from active coordinates to data addresses in memory. Suitable for high sparsity.
 
-See :ref:`layout` for more details about data layout.
+* dynamic: Variable-length array, with a predefined maximum length. It serves the role of ``std::vector`` in C++ or ``list`` in Python, and can be used to maintain objects (e.g. particles) contained in a block.
 
+See :ref:`layout` for more details about data layout. ``ti.root`` is the root node of the data structure.
 
 .. function:: snode.place(x, ...)
 
@@ -70,14 +69,12 @@ See :ref:`layout` for more details about data layout.
 
     TODO: add tensor.parent(), and add see also ref here
 
-.. function:: ti.root
-
-    ``ti.root`` is a kind of structural node, The root node, stands for 0-D tensor.
-
-    This places two 0-D tensors named ``x`` and ``y``:
+    The following code places two 0-D tensors named ``x`` and ``y``:
 
     ::
 
+        x = ti.var(dt=ti.i32)
+        y = ti.var(dt=ti.f32)
         ti.root.place(x, y)
 
 
@@ -92,27 +89,30 @@ Node types
     :parameter shape: (scalar or tuple) shape the tensor of vectors
     :return: (SNode) the derived child node
 
-    This places a 1-D tensor of size ``3``:
+    The following code places a 1-D tensor of size ``3``:
 
     ::
 
+        x = ti.var(dt=ti.i32)
         ti.root.dense(ti.i, 3).place(x)
 
-    This places a 1-D tensor of shape ``(3, 4)``:
+    The following code places a 2-D tensor of shape ``(3, 4)``:
 
     ::
 
+        x = ti.var(dt=ti.i32)
         ti.root.dense(ti.ij, (3, 4)).place(x)
 
     .. note::
 
-        If ``shape`` is scalar instead of tuple, and there is more than one indices, then the ``shape`` will be automatically expanded to fit the indices, e.g.:
+        If ``shape`` is a scalar and there are multiple indices, then ``shape`` will
+        be automatically expanded to fit the number of indices. For example,
 
         ::
 
             snode.dense(ti.ijk, 3)
 
-        will be translated into:
+        is equivalent to
 
         ::
 
@@ -120,9 +120,43 @@ Node types
 
 
 .. function:: snode.dynamic(index, size, chunk_size = None)
-.. function:: snode.hash
+
+    :parameter snode: (SNode) parent node where the child is derived from
+    :parameter index: (Index) the ``dynamic`` node indices
+    :parameter size: (scalar) the maximum size of the dynamic node
+    :parameter chunk_size: (optional, scalar) the number of elements in each dynamic memory allocation chunk
+    :return: (SNode) the derived child node
+
+    ``dynamic`` nodes acts like ``std::vector`` in C++ or ``list`` in Python.
+    Taichi's dynamic memory allocation system allocates its memory on the fly.
+
+    The following places a 1-D dynamic tensor of maximum size ``16``:
+
+    ::
+
+        ti.root.dynamic(ti.i, 16).place(x)
+
+
+.. function:: ti.length(snode, indices)
+
+    :parameter snode: (SNode, dynamic)
+    :parameter indices: (scalar or tuple of scalars) the ``dynamic`` node indices
+    :return: (scalar) the current size of the dynamic node
+
+
+.. function:: ti.append(snode, indices, val)
+
+    :parameter snode: (SNode, dynamic)
+    :parameter indices: (scalar or tuple of scalars) the ``dynamic`` node indices
+    :parameter val: (depends on SNode data type) value to store
+    :return: (``int32``) the size of the dynamic node, before appending
+
+    Inserts ``val`` into the ``dynamic`` node with indices ``indices``.
+
+
 .. function:: snode.bitmasked
 .. function:: snode.pointer
+.. function:: snode.hash
 
     TODO: add descriptions here
 
@@ -138,4 +172,4 @@ Indices
 .. function:: ti.ijkl
 .. function:: ti.indices(a, b, ...)
 
-TODO: complete equivalent descs here
+(TODO)

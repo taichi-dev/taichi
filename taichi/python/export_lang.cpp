@@ -537,6 +537,10 @@ void export_lang(py::module &m) {
   m.def("is_supported", is_supported);
 
   m.def("print_stat", [] { stat.print(); });
+
+  // A temporary option which will be removed soon in the future
+  m.def("toggle_advanced_optimization",
+        [](bool option) { advanced_optimization = option; });
 }
 
 TI_NAMESPACE_END

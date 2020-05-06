@@ -101,12 +101,6 @@ for frame in range(100000):
         elif e.key == ti.GUI.LMB:
             x, y = e.pos
             touch_at(1, x * shape[0], y * shape[1])
-    if 0:
-        from random import randrange, random
-        if frame % 8 == 0 and randrange(8) == 0:
-            hurt = random() * 2
-            x, y = randrange(8, shape[0] - 8), randrange(8, shape[1] - 8)
-            touch_at(hurt, x, y)
     update()
     paint()
     gui.set_image(pixels)

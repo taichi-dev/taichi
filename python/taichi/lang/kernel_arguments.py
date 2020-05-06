@@ -43,4 +43,5 @@ def decl_ext_arr_arg(dt, dim):
 
 
 def decl_scalar_ret(dt):
-    pass
+    id = taichi_lang_core.decl_ret(dt)
+    return id

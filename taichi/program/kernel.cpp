@@ -142,7 +142,7 @@ void Kernel::set_arg_int(int i, int64 d) {
 }
 
 float64 Kernel::get_ret_float(int i) {
-  auto dt = args[i].dt;
+  auto dt = rets[i].dt;
   if (dt == DataType::f32) {
     return (float64)program.context.get_arg<float32>(i);
   } else if (dt == DataType::f64) {
@@ -169,7 +169,8 @@ float64 Kernel::get_ret_float(int i) {
 }
 
 int64 Kernel::get_ret_int(int i) {
-  auto dt = args[i].dt;
+  auto dt = rets[i].dt;
+  TI_INFO("dt = {}", dt);
   if (dt == DataType::i32) {
     return (int64)program.context.get_arg<int32>(i);
   } else if (dt == DataType::i64) {
@@ -218,6 +219,11 @@ void Kernel::set_arch(Arch arch) {
 int Kernel::insert_arg(DataType dt, bool is_nparray) {
   args.push_back(Arg{dt, is_nparray, 0, false});
   return args.size() - 1;
+}
+
+int Kernel::insert_ret(DataType dt) {
+  rets.push_back(Ret{dt});
+  return rets.size() - 1;
 }
 
 TLANG_NAMESPACE_END

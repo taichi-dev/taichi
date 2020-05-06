@@ -394,7 +394,6 @@ class Kernel:
             ret_dt = self.return_type
             if ret_dt is not None:
                 if taichi_lang_core.is_integral(ret_dt):
-                    # TD: correct idx, get_ret_int, is_signed
                     ret = t_kernel.get_ret_int(0)
                 else:
                     ret = t_kernel.get_ret_float(0)

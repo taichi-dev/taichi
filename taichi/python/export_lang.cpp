@@ -497,6 +497,10 @@ void export_lang(py::module &m) {
                                                                  is_nparray);
   });
 
+  m.def("decl_ret", [&](DataType dt) {
+    return get_current_program().get_current_kernel().insert_ret(dt);
+  });
+
   m.def("test_throw", [] {
     try {
       throw IRModified();

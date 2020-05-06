@@ -126,7 +126,7 @@ class ConstantFold : public BasicStmtVisitor {
     ctx.set_arg<int64_t>(2, rhs.val_i64);
     irpass::print(ker->ir);
     (*ker)();
-    ret.val_i64 = ctx.get_arg<int64_t>(0);
+    ret.val_i64 = ctx.get_arg<int64_t>(0); // TODO: replace by fetch_reader_result, gen
     //TI_INFO("JITEVALf = {}", ret.val_f32);
     TI_INFO("JITEVALi = {}", ret.val_i32);
     return true;

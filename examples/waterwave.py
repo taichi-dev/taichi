@@ -1,9 +1,10 @@
 import taichi as ti
 import numpy as np
 
-ti.init(arch=ti.gpu)
+#ti.init(arch=ti.gpu)
+ti.init(arch=ti.x64)#
 
-light_color = 1
+light_color = 4
 kappa = 2
 gamma = 0.6
 eta = 1.333
@@ -93,14 +94,17 @@ print("[Hint] click on the window to create wavelet")
 reset()
 gui = ti.GUI("Water Wave", shape)
 for frame in range(100000):
-    for e in gui.get_events(ti.GUI.PRESS):
+    #for e in gui.get_events(ti.GUI.PRESS):
+    while gui.get_event(ti.GUI.PRESS):#
+        e = gui.event#
         if e.key == ti.GUI.ESCAPE:
             exit()
         elif e.key == 'r':
             reset()
         elif e.key == ti.GUI.LMB:
-            x, y = e.pos
-            touch_at(1, x * shape[0], y * shape[1])
+            #x, y = e.pos
+            x, y = e.pos[0], e.pos[1]#
+            touch_at(2, x * shape[0], y * shape[1])
     update()
     paint()
     gui.set_image(pixels)

@@ -65,16 +65,15 @@ for i, c in enumerate(commits):
             if details[tag.lower()] == '':
                 # E.g. 'release' does not need to appear in the change log
                 continue
-        else:
-            print(
-                f'Warning: tag {tag} undefined in the "details" dict. Please include the tag into "details", unless the tag is a typo.'
-            )
-        if tag[0].isupper():
-            tag = tag.lower()
-            if tag.lower() in details and details[tag.lower()] != '':
+            if tag[0].isupper():
+                tag = tag.lower()
                 if tag not in notable_changes:
                     notable_changes[tag] = []
                 notable_changes[tag].append(s)
+        else:
+            print(
+                f'** Warning: tag {tag.lower()} undefined in the "details" dict. Please include the tag into "details", unless the tag is a typo.'
+            )
 
     if s.startswith('[release]'):
         break

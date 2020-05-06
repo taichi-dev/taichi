@@ -181,7 +181,8 @@ class Kernel:
 
     def extract_arguments(self):
         sig = inspect.signature(self.func)
-        self.return_type = sig.return_annotation
+        if sig.return_annotation not in (inspect._empty, None):
+            self.return_type = sig.return_annotation
         params = sig.parameters
         arg_names = params.keys()
         for i, arg_name in enumerate(arg_names):

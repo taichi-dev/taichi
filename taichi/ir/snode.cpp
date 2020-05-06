@@ -122,6 +122,7 @@ void SNode::write_float(const std::vector<int> &I, float64 val) {
   (*writer_kernel)();
 }
 
+// TODO: use kernel.get_ret_float instead
 uint64 SNode::fetch_reader_result() {
   uint64 ret;
   auto arch = get_current_program().config.arch;
@@ -142,6 +143,7 @@ uint64 SNode::fetch_reader_result() {
   return ret;
 }
 
+// TODO
 float64 SNode::read_float(const std::vector<int> &I) {
   if (reader_kernel == nullptr) {
     reader_kernel = &get_current_program().get_snode_reader(this);
@@ -160,6 +162,7 @@ float64 SNode::read_float(const std::vector<int> &I) {
   }
 }
 
+// TODO
 // for int32 and int64
 void SNode::write_int(const std::vector<int> &I, int64 val) {
   if (writer_kernel == nullptr) {

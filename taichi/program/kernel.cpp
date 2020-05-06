@@ -4,6 +4,7 @@
 #include "taichi/program/program.h"
 #include "taichi/program/async_engine.h"
 #include "taichi/codegen/codegen.h"
+#include "taichi/backends/cuda/cuda_driver.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -141,6 +142,35 @@ void Kernel::set_arg_int(int i, int64 d) {
   }
 }
 
+// XXX: sync with snode.cpp: fetch_reader_result
+static uint64 fetch_result_uint64(int i)
+{
+  uint64 ret;
+  auto arch = get_current_program().config.arch;
+  if (arch == Arch::cuda) {
+    // TODO: refactor
+    // XXX: what about unified memory?
+#if defined(TI_WITH_CUDA)
+    CUDADriver::get_instance().memcpy_device_to_host(&ret,
+        (uint64 *)get_current_program().result_buffer + i,
+        sizeof(uint64));
+#else
+    TI_NOT_IMPLEMENTED;
+#endif
+  } else if (arch_is_cpu(arch)) {
+    ret = ((uint64 *)get_current_program().result_buffer)[i];
+  } else {
+    ret = get_current_program().context.get_arg_as_uint64(i);
+  }
+  return ret;
+}
+
+template <typename T>
+static T fetch_result(int i)
+{
+  return taichi_union_cast_with_different_sizes<T>(fetch_result_uint64(i));
+}
+
 float64 Kernel::get_ret_float(int i) {
   auto dt = rets[i].dt;
   if (dt == DataType::f32) {
@@ -170,7 +200,6 @@ float64 Kernel::get_ret_float(int i) {
 
 int64 Kernel::get_ret_int(int i) {
   auto dt = rets[i].dt;
-  TI_INFO("dt = {}", dt);
   if (dt == DataType::i32) {
     return (int64)program.context.get_arg<int32>(i);
   } else if (dt == DataType::i64) {

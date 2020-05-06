@@ -22,18 +22,20 @@ Installing Depedencies
     python3 -m pip install --user setuptools astpretty astor pytest opencv-python pybind11
     python3 -m pip install --user Pillow numpy scipy GitPython yapf colorama psutil autograd
 
-* (If on Ubuntu) Execute ``sudo apt install libtinfo-dev clang-8`` (or ``clang-7`` should work as well).
+* (If on Ubuntu) Execute ``sudo apt install libtinfo-dev clang-8``. (``clang-7`` should work as well).
 
-* (If on Arch Linux) Execute
+* (If on other Linux distributions) Please build clang 8.0.1 from scratch:
 
   .. code-block:: bash
 
-    wget https://archive.archlinux.org/packages/c/clang/clang-8.0.1-1-x86_64.pkg.tar.xz
-    sudo pacman -Qp clang-8.0.1-1-x86_64.pkg.tar.xz
-
-  .. warning::
-    If you have installed ``clang`` (9.0.1) before, this command will overrides the existing ``clang``.
-    If you don't want to break up depedencies, please build from scratch and install it in ``/opt``. Then add ``/opt/clang/bin`` to your ``$PATH``.
+    wget https://github.com/llvm/llvm-project/releases/download/llvmorg-8.0.1/cfe-8.0.1.src.tar.xz
+    tar xvJf cfe-8.0.1.src.tar.xz
+    cd cfe-8.0.1.src
+    mkdir build
+    cd build
+    cmake ..
+    make -j 8
+    sudo make install
 
 
 - Make sure you have LLVM 8.0.1 built from scratch. To do so:

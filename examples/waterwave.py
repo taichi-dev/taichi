@@ -4,9 +4,9 @@ import numpy as np
 #ti.init(arch=ti.gpu)
 ti.init(arch=ti.x64)#
 
-light_color = 4
+light_color = 1
 kappa = 2
-gamma = 0.6
+gamma = 0.2
 eta = 1.333
 depth = 4
 dx = 0.02
@@ -14,33 +14,33 @@ dt = 0.01
 shape = 512, 512
 pixels = ti.var(dt=ti.f32, shape=shape)
 background = ti.var(dt=ti.f32, shape=shape)
-position = ti.var(dt=ti.f32, shape=shape)
+height = ti.var(dt=ti.f32, shape=shape)
 velocity = ti.var(dt=ti.f32, shape=shape)
 acceleration = ti.var(dt=ti.f32, shape=shape)
 
 
 @ti.kernel
 def reset():
-    for i, j in position:
+    for i, j in height:
         t = i // 16 + j // 16
         background[i, j] = (t * 0.5) % 1.0
-        position[i, j] = 0
+        height[i, j] = 0
         velocity[i, j] = 0
         acceleration[i, j] = 0
 
 
 @ti.func
 def laplacian(i, j):
-    return (-4 * position[i, j] + position[i, j - 1] +
-            position[i, j + 1] + position[i + 1, j] +
-            position[i - 1, j]) / (4 * dx ** 2)
+    return (-4 * height[i, j] + height[i, j - 1] +
+            height[i, j + 1] + height[i + 1, j] +
+            height[i - 1, j]) / (4 * dx ** 2)
 
 
 @ti.func
 def gradient(i, j):
     return ti.Vector([
-        position[i + 1, j] - position[i - 1, j],
-        position[i, j + 1] - position[i, j - 1]
+        height[i + 1, j] - height[i - 1, j],
+        height[i, j + 1] - height[i, j - 1]
     ]) * (0.5 / dx)
 
 
@@ -61,7 +61,7 @@ def take_linear(i, j):
 def touch_at(hurt: ti.f32, x: ti.f32, y: ti.f32):
     for i, j in ti.ndrange((1, shape[0] - 1), (1, shape[1] - 1)):
         r2 = ti.sqr(i - x) + ti.sqr(j - y)
-        position[i, j] = position[i, j] + hurt * ti.exp(-0.02 * r2)
+        height[i, j] = height[i, j] + hurt * ti.exp(-0.02 * r2)
 
 
 @ti.kernel
@@ -71,7 +71,7 @@ def update():
 
     for i, j in ti.ndrange((1, shape[0] - 1), (1, shape[1] - 1)):
         velocity[i, j] = velocity[i, j] + acceleration[i, j] * dt
-        position[i, j] = position[i, j] + velocity[i, j] * dt
+        height[i, j] = height[i, j] + velocity[i, j] * dt
 
 
 @ti.kernel
@@ -81,7 +81,7 @@ def paint():
         # https://www.jianshu.com/p/66a40b06b436
         cos_i = 1 / ti.sqrt(1 + g.norm_sqr())
         cos_o = ti.sqrt(1 - (1 - ti.sqr(cos_i)) * (1 / eta ** 2))
-        fr = pow(1 - cos_i, 5)
+        fr = pow(1 - cos_i, 2)
         coh = cos_o * depth
         g = g * coh
         k, l = g[0], g[1]
@@ -104,7 +104,7 @@ for frame in range(100000):
         elif e.key == ti.GUI.LMB:
             #x, y = e.pos
             x, y = e.pos[0], e.pos[1]#
-            touch_at(2, x * shape[0], y * shape[1])
+            touch_at(3, x * shape[0], y * shape[1])
     update()
     paint()
     gui.set_image(pixels)

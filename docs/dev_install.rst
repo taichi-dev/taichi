@@ -22,9 +22,9 @@ Installing Depedencies
     python3 -m pip install --user setuptools astpretty astor pytest opencv-python pybind11
     python3 -m pip install --user Pillow numpy scipy GitPython yapf colorama psutil autograd
 
-* (If on Ubuntu) Execute ``sudo apt install libtinfo-dev clang-8``.
+* (If on Ubuntu) Execute ``sudo apt install libtinfo-dev clang-8``. (or ``clang-8`` should work as well).
 
-* (If on Arch Linux) Please build clang 8.0.1 from scratch:
+* (If on other Linux distributions) Please build clang 8.0.1 from scratch:
 
   .. code-block:: bash
 

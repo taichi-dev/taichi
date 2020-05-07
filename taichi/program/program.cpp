@@ -458,8 +458,7 @@ Kernel &Program::get_snode_reader(SNode *snode) {
   ker.is_accessor = true;
   for (int i = 0; i < snode->num_active_indices; i++)
     ker.insert_arg(DataType::i32, false);
-  auto ret_val = ker.insert_arg(snode->dt, false);
-  ker.mark_arg_return_value(ret_val);
+  ker.insert_ret(snode->dt);
   return ker;
 }
 

@@ -152,14 +152,8 @@ float64 SNode::read_float(const std::vector<int> &I) {
   get_current_program().synchronize();
   (*reader_kernel)();
   get_current_program().synchronize();
-  auto ret = fetch_reader_result();
-  if (dt == DataType::f32) {
-    return taichi_union_cast_with_different_sizes<float32>(ret);
-  } else if (dt == DataType::f64) {
-    return taichi_union_cast_with_different_sizes<float64>(ret);
-  } else {
-    TI_NOT_IMPLEMENTED
-  }
+  auto ret = reader_kernel->get_ret_float(0);
+  return ret;
 }
 
 // TODO
@@ -182,26 +176,8 @@ int64 SNode::read_int(const std::vector<int> &I) {
   get_current_program().synchronize();
   (*reader_kernel)();
   get_current_program().synchronize();
-  auto ret = fetch_reader_result();
-  if (dt == DataType::i32) {
-    return taichi_union_cast_with_different_sizes<int32>(ret);
-  } else if (dt == DataType::i64) {
-    return taichi_union_cast_with_different_sizes<int64>(ret);
-  } else if (dt == DataType::i8) {
-    return taichi_union_cast_with_different_sizes<int8>(ret);
-  } else if (dt == DataType::i16) {
-    return taichi_union_cast_with_different_sizes<int16>(ret);
-  } else if (dt == DataType::u8) {
-    return taichi_union_cast_with_different_sizes<uint8>(ret);
-  } else if (dt == DataType::u16) {
-    return taichi_union_cast_with_different_sizes<uint16>(ret);
-  } else if (dt == DataType::u32) {
-    return taichi_union_cast_with_different_sizes<uint32>(ret);
-  } else if (dt == DataType::u64) {
-    return taichi_union_cast_with_different_sizes<uint64>(ret);
-  } else {
-    TI_NOT_IMPLEMENTED
-  }
+  auto ret = reader_kernel->get_ret_int(0);
+  return ret;
 }
 
 uint64 SNode::read_uint(const std::vector<int> &I) {

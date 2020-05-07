@@ -889,7 +889,7 @@ void CodeGenLLVM::visit(KernelReturnStmt *stmt) {
                                  ->getPrimitiveSizeInBits();
     llvm::Type *intermediate_type =
         llvm::Type::getIntNTy(*llvm_context, intermediate_bits);
-    llvm::Type *dest_ty = tlctx->get_data_type<uint64>();
+    llvm::Type *dest_ty = tlctx->get_data_type<int64>();
     auto extended = builder->CreateZExt(
         builder->CreateBitCast(llvm_val[stmt->value], intermediate_type),
         dest_ty);

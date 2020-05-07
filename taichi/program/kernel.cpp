@@ -166,7 +166,7 @@ static uint64 fetch_result_uint64(int i)
 }
 
 template <typename T>
-static T fetch_result(int i)
+static T fetch_result(int i) // TODO: move to Program::fetch_result
 {
   return taichi_union_cast_with_different_sizes<T>(fetch_result_uint64(i));
 }
@@ -174,25 +174,25 @@ static T fetch_result(int i)
 float64 Kernel::get_ret_float(int i) {
   auto dt = rets[i].dt;
   if (dt == DataType::f32) {
-    return (float64)program.context.get_arg<float32>(i);
+    return (float64)fetch_result<float32>(i);
   } else if (dt == DataType::f64) {
-    return (float64)program.context.get_arg<float64>(i);
+    return (float64)fetch_result<float64>(i);
   } else if (dt == DataType::i32) {
-    return (float64)program.context.get_arg<int32>(i);
+    return (float64)fetch_result<int32>(i);
   } else if (dt == DataType::i64) {
-    return (float64)program.context.get_arg<int64>(i);
+    return (float64)fetch_result<int64>(i);
   } else if (dt == DataType::i8) {
-    return (float64)program.context.get_arg<int8>(i);
+    return (float64)fetch_result<int8>(i);
   } else if (dt == DataType::i16) {
-    return (float64)program.context.get_arg<int16>(i);
+    return (float64)fetch_result<int16>(i);
   } else if (dt == DataType::u8) {
-    return (float64)program.context.get_arg<uint8>(i);
+    return (float64)fetch_result<uint8>(i);
   } else if (dt == DataType::u16) {
-    return (float64)program.context.get_arg<uint16>(i);
+    return (float64)fetch_result<uint16>(i);
   } else if (dt == DataType::u32) {
-    return (float64)program.context.get_arg<uint32>(i);
+    return (float64)fetch_result<uint32>(i);
   } else if (dt == DataType::u64) {
-    return (float64)program.context.get_arg<uint64>(i);
+    return (float64)fetch_result<uint64>(i);
   } else {
     TI_NOT_IMPLEMENTED
   }
@@ -201,25 +201,25 @@ float64 Kernel::get_ret_float(int i) {
 int64 Kernel::get_ret_int(int i) {
   auto dt = rets[i].dt;
   if (dt == DataType::i32) {
-    return (int64)program.context.get_arg<int32>(i);
+    return (int64)fetch_result<int32>(i);
   } else if (dt == DataType::i64) {
-    return (int64)program.context.get_arg<int64>(i);
+    return (int64)fetch_result<int64>(i);
   } else if (dt == DataType::i8) {
-    return (int64)program.context.get_arg<int8>(i);
+    return (int64)fetch_result<int8>(i);
   } else if (dt == DataType::i16) {
-    return (int64)program.context.get_arg<int16>(i);
+    return (int64)fetch_result<int16>(i);
   } else if (dt == DataType::u8) {
-    return (int64)program.context.get_arg<uint8>(i);
+    return (int64)fetch_result<uint8>(i);
   } else if (dt == DataType::u16) {
-    return (int64)program.context.get_arg<uint16>(i);
+    return (int64)fetch_result<uint16>(i);
   } else if (dt == DataType::u32) {
-    return (int64)program.context.get_arg<uint32>(i);
+    return (int64)fetch_result<uint32>(i);
   } else if (dt == DataType::u64) {
-    return (int64)program.context.get_arg<uint64>(i);
+    return (int64)fetch_result<uint64>(i);
   } else if (dt == DataType::f32) {
-    return (int64)program.context.get_arg<float32>(i);
+    return (int64)fetch_result<float32>(i);
   } else if (dt == DataType::f64) {
-    return (int64)program.context.get_arg<float64>(i);
+    return (int64)fetch_result<float64>(i);
   } else {
     TI_NOT_IMPLEMENTED
   }

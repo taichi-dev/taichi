@@ -885,8 +885,9 @@ void CodeGenLLVM::visit(KernelReturnStmt *stmt) {
   if (stmt->is_ptr) {
     TI_NOT_IMPLEMENTED
   } else {
-    auto intermediate_bits = tlctx->get_data_type(stmt->value->ret_type.data_type)
-                                 ->getPrimitiveSizeInBits();
+    auto intermediate_bits =
+        tlctx->get_data_type(stmt->value->ret_type.data_type)
+            ->getPrimitiveSizeInBits();
     llvm::Type *intermediate_type =
         llvm::Type::getIntNTy(*llvm_context, intermediate_bits);
     llvm::Type *dest_ty = tlctx->get_data_type<int64>();

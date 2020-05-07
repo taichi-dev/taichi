@@ -143,16 +143,15 @@ void Kernel::set_arg_int(int i, int64 d) {
 }
 
 // NOTE: sync with snode.cpp: fetch_reader_result
-static uint64 fetch_result_uint64(int i)
-{
+static uint64 fetch_result_uint64(int i) {
   uint64 ret;
   auto arch = get_current_program().config.arch;
   if (arch == Arch::cuda) {
     // TODO: refactor
     // XXX: what about unified memory?
 #if defined(TI_WITH_CUDA)
-    CUDADriver::get_instance().memcpy_device_to_host(&ret,
-        (uint64 *)get_current_program().result_buffer + i,
+    CUDADriver::get_instance().memcpy_device_to_host(
+        &ret, (uint64 *)get_current_program().result_buffer + i,
         sizeof(uint64));
 #else
     TI_NOT_IMPLEMENTED;
@@ -166,7 +165,7 @@ static uint64 fetch_result_uint64(int i)
 }
 
 template <typename T>
-static T fetch_result(int i) // TODO: move to Program::fetch_result
+static T fetch_result(int i)  // TODO: move to Program::fetch_result
 {
   return taichi_union_cast_with_different_sizes<T>(fetch_result_uint64(i));
 }

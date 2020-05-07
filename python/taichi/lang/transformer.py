@@ -758,7 +758,7 @@ if 1:
                 ret_expr.args[0].args[0] = node.value
                 ret_expr.args[1] = self.returns
                 ret_stmt = self.parse_stmt(
-                        'ti.core.create_kernel_return(ret.ptr)')
+                    'ti.core.create_kernel_return(ret.ptr)')
                 ret_stmt.value.args[0].value = ret_expr
                 return ret_stmt
         return node

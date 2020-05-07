@@ -342,7 +342,7 @@ class TypeCheck : public IRVisitor {
     }
     auto &rets = current_kernel->rets;
     TI_ASSERT(rets.size() >= 1);
-    auto ret = rets[0]; // td: stmt->ret_id?
+    auto ret = rets[0]; // TODO: stmt->ret_id?
     auto ret_type = ret.dt;
     TI_ASSERT(stmt->value->ret_type.data_type == ret_type);
     stmt->ret_type = VectorType(1, ret_type);

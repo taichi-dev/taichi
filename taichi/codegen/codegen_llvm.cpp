@@ -893,7 +893,6 @@ void CodeGenLLVM::visit(KernelReturnStmt *stmt) {
     auto extended = builder->CreateZExt(
         builder->CreateBitCast(llvm_val[stmt->value], intermediate_type),
         dest_ty);
-    //extended = llvm::ConstantFP::get(*llvm_context, llvm::APFloat(666.6));//
     builder->CreateCall(get_runtime_function("LLVMRuntime_store_result"),
                         {get_runtime(), extended});
   }

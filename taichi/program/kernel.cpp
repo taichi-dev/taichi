@@ -142,7 +142,7 @@ void Kernel::set_arg_int(int i, int64 d) {
   }
 }
 
-// XXX: sync with snode.cpp: fetch_reader_result
+// NOTE: sync with snode.cpp: fetch_reader_result
 static uint64 fetch_result_uint64(int i)
 {
   uint64 ret;

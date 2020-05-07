@@ -749,10 +749,11 @@ if 1:
     def visit_Return(self, node):
         self.generic_visit(node)
         if self.is_kernel:
-            # TODO: check if return is at the end of a kernel
+            # TODO: check if it's at the end of a kernel, throw TaichiSyntaxError if not
             if node.value is not None:
-                assert self.returns is not None, 'kernel with return value must be ' \
-                    'annotated with a return type, e.g. def func() -> ti.f32'
+                if self.returns is None:
+                    raise TaichiSyntaxError('kernel with return value must be '
+                        'annotated with a return type, e.g. def func() -> ti.f32')
                 ret_expr = self.parse_expr('ti.cast(ti.Expr(0), 0)')
                 ret_expr.args[0].args[0] = node.value
                 ret_expr.args[1] = self.returns

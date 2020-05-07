@@ -39,8 +39,7 @@ class Kernel {
   struct Ret {
     DataType dt;
 
-    explicit Ret(DataType dt = DataType::unknown)
-        : dt(dt) {
+    explicit Ret(DataType dt = DataType::unknown) : dt(dt) {
     }
   };
 

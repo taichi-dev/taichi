@@ -503,8 +503,7 @@ class KernelGen : public IRVisitor {
     used.int64 = true;
     // TODO: consider use _rets_{}_ instead of _args_{}_
     // TODO: use stmt->ret_id instead of 0 as index
-    emit("_args_{}_[0] = {};",
-         data_type_short_name(stmt->element_type()),
+    emit("_args_{}_[0] = {};", data_type_short_name(stmt->element_type()),
          stmt->value->short_name());
   }
 

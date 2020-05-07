@@ -122,28 +122,6 @@ void SNode::write_float(const std::vector<int> &I, float64 val) {
   (*writer_kernel)();
 }
 
-// TODO: use kernel.get_ret_float instead
-uint64 SNode::fetch_reader_result() {
-  uint64 ret;
-  auto arch = get_current_program().config.arch;
-  if (arch == Arch::cuda) {
-    // TODO: refactor
-    // XXX: what about unified memory?
-#if defined(TI_WITH_CUDA)
-    CUDADriver::get_instance().memcpy_device_to_host(
-        &ret, get_current_program().result_buffer, sizeof(uint64));
-#else
-    TI_NOT_IMPLEMENTED;
-#endif
-  } else if (arch_is_cpu(arch)) {
-    ret = *(uint64 *)get_current_program().result_buffer;
-  } else {
-    ret = get_current_program().context.get_arg_as_uint64(num_active_indices);
-  }
-  return ret;
-}
-
-// TODO
 float64 SNode::read_float(const std::vector<int> &I) {
   if (reader_kernel == nullptr) {
     reader_kernel = &get_current_program().get_snode_reader(this);
@@ -156,7 +134,6 @@ float64 SNode::read_float(const std::vector<int> &I) {
   return ret;
 }
 
-// TODO
 // for int32 and int64
 void SNode::write_int(const std::vector<int> &I, int64 val) {
   if (writer_kernel == nullptr) {

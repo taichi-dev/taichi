@@ -602,6 +602,7 @@ if 1:
                 ret_init.value.args[0] = node.returns
                 self.returns = node.returns
                 arg_decls.append(ret_init)
+                node.returns = None
 
             for i, arg in enumerate(args.args):
                 if isinstance(self.func.arguments[i], ti.template):

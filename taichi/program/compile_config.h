@@ -1,3 +1,5 @@
+#pragma once
+
 #include "taichi/lang_util.h"
 #include "arch.h"
 
@@ -5,7 +7,7 @@ TLANG_NAMESPACE_BEGIN
 
 // TODO(xumingkuan): Temporary variable for benchmarking.
 // TODO(xumingkuan): Will be removed in the future.
-extern const bool advanced_optimization;
+extern bool advanced_optimization;
 
 struct CompileConfig {
   Arch arch;

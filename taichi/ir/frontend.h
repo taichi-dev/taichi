@@ -4,6 +4,7 @@
 #include "taichi/common/util.h"
 #include "taichi/common/dict.h"
 #include "taichi/util/io.h"
+#include "taichi/ir/frontend_ir.h"
 
 namespace taichi {
 static_assert(
@@ -185,6 +186,42 @@ inline Expr AssumeInRange(const Expr &expr,
                           int high) {
   return Expr::make<RangeAssumptionExpression>(expr, base, low, high);
 }
+
+// Begin: legacy frontend constructs
+
+class If {
+ public:
+  FrontendIfStmt *stmt;
+
+  explicit If(const Expr &cond);
+
+  If(const Expr &cond, const std::function<void()> &func);
+
+  If &Then(const std::function<void()> &func);
+
+  If &Else(const std::function<void()> &func);
+};
+
+class For {
+ public:
+  For(const Expr &i,
+      const Expr &s,
+      const Expr &e,
+      const std::function<void()> &func);
+
+  For(const ExprGroup &i,
+      const Expr &global,
+      const std::function<void()> &func);
+
+  For(const Expr &s, const Expr &e, const std::function<void(Expr)> &func);
+};
+
+class While {
+ public:
+  While(const Expr &cond, const std::function<void()> &func);
+};
+
+// End: legacy frontend constructs
 
 #define Kernel(x) auto &x = get_current_program().kernel(#x)
 #define Assert(x) InsertAssert(#x, (x))

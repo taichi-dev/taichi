@@ -140,6 +140,24 @@ class Matrix:
         for i in range(self.n * self.m):
             self.entries[i].assign(other.entries[i])
 
+    def element_wise_binary(self, foo, other):
+        ret = Matrix(self.n, self.m)
+        if isinstance(other, Matrix):
+            assert self.m == other.m and self.n == other.n
+            for i in range(self.n * self.m):
+                ret.entries[i] = foo(self.entries[i], other.entries[i])
+        else:  # assumed to be scalar
+            other = expr.Expr(other)
+            for i in range(self.n * self.m):
+                ret.entries[i] = foo(self.entries[i], other)
+        return ret
+
+    def element_wise_unary(self, foo):
+        ret = Matrix(self.n, self.m)
+        for i in range(self.n * self.m):
+            ret.entries[i] = foo(self.entries[i])
+        return ret
+
     def __matmul__(self, other):
         assert self.m == other.n
         ret = Matrix(self.n, other.m)
@@ -148,6 +166,24 @@ class Matrix:
                 ret(i, j).assign(self(i, 0) * other(0, j))
                 for k in range(1, other.n):
                     ret(i, j).assign(ret(i, j) + self(i, k) * other(k, j))
+        return ret
+
+    @broadcast_if_scalar
+    def __pow__(self, other):
+        assert self.n == other.n and self.m == other.m
+        ret = Matrix(self.n, self.m)
+        for i in range(self.n):
+            for j in range(self.m):
+                ret(i, j).assign(self(i, j)**other(i, j))
+        return ret
+
+    @broadcast_if_scalar
+    def __rpow__(self, other):
+        assert self.n == other.n and self.m == other.m
+        ret = Matrix(self.n, self.m)
+        for i in range(self.n):
+            for j in range(self.m):
+                ret(i, j).assign(other(i, j)**self(i, j))
         return ret
 
     @broadcast_if_scalar

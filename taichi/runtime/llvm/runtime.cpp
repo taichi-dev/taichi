@@ -1289,8 +1289,8 @@ void taichi_printf(LLVMRuntime *runtime, const char *format, Args &&... args) {
 extern "C" {  // local stack operations
 
 Ptr stack_top_primal(Ptr stack, std::size_t element_size) {
-  auto n = *(i32 *)stack;
-  return stack + sizeof(i32) + (n - 1) * 2 * element_size;
+  auto n = *(u64 *)stack;
+  return stack + sizeof(u64) + (n - 1) * 2 * element_size;
 }
 
 Ptr stack_top_adjoint(Ptr stack, std::size_t element_size) {
@@ -1298,16 +1298,16 @@ Ptr stack_top_adjoint(Ptr stack, std::size_t element_size) {
 }
 
 void stack_init(Ptr stack) {
-  *(i32 *)stack = 0;
+  *(u64 *)stack = 0;
 }
 
 void stack_pop(Ptr stack) {
-  auto &n = *(i32 *)stack;
+  auto &n = *(u64 *)stack;
   n--;
 }
 
 void stack_push(Ptr stack, size_t max_num_elements, std::size_t element_size) {
-  i32 &n = *(i32 *)stack;
+  u64 &n = *(u64 *)stack;
   n += 1;
   // TODO: assert n <= max_elements
   std::memset(stack_top_primal(stack, element_size), 0, element_size * 2);

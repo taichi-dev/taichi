@@ -106,6 +106,12 @@ void compile_to_offloads(IRNode *ir,
   print("Offloaded");
   irpass::analysis::verify(ir);
 
+  if (!lower_global_access) {
+    irpass::flag_access(ir);
+    print("Access flagged after offloading");
+    irpass::analysis::verify(ir);
+  }
+
   irpass::extract_constant(ir);
   print("Constant extracted II");
 

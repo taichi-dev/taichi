@@ -28,12 +28,9 @@ class StatementReplace : public IRVisitor {
   }
 
   void visit(Block *stmt_list) override {
-    auto backup_block = current_block;
-    current_block = stmt_list;
     for (auto &stmt : stmt_list->statements) {
       stmt->accept(this);
     }
-    current_block = backup_block;
   }
 
   void visit(IfStmt *if_stmt) override {

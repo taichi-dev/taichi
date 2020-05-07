@@ -1,6 +1,7 @@
-#include "taichi/ir/ir.h"
-
 #include <unordered_set>
+
+#include "taichi/ir/ir.h"
+#include "taichi/ir/frontend_ir.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -311,31 +312,6 @@ class LowerAST : public IRVisitor {
     }
     fctx.stmts.back()->set_tb(assign->tb);
     assign->parent->replace_with(assign, std::move(fctx.stmts));
-    throw IRModified();
-  }
-
-  void visit(FrontendAtomicStmt *stmt) override {
-    // replace atomic sub with negative atomic add
-    if (stmt->op_type == AtomicOpType::sub) {
-      stmt->val.set(Expr::make<UnaryOpExpression>(UnaryOpType::neg, stmt->val));
-      stmt->op_type = AtomicOpType::add;
-    }
-    // expand rhs
-    auto expr = stmt->val;
-    auto fctx = make_flatten_ctx();
-    expr->flatten(&fctx);
-    if (stmt->dest.is<IdExpression>()) {  // local variable
-      // emit local store stmt
-      auto alloca =
-          stmt->parent->lookup_var(stmt->dest.cast<IdExpression>()->id);
-      fctx.push_back<AtomicOpStmt>(stmt->op_type, alloca, expr->stmt);
-    } else {  // global variable
-      TI_ASSERT(stmt->dest.is<GlobalPtrExpression>());
-      auto global_ptr = stmt->dest.cast<GlobalPtrExpression>();
-      global_ptr->flatten(&fctx);
-      fctx.push_back<AtomicOpStmt>(stmt->op_type, fctx.back_stmt(), expr->stmt);
-    }
-    stmt->parent->replace_with(stmt, std::move(fctx.stmts));
     throw IRModified();
   }
 

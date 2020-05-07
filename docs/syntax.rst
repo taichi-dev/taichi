@@ -136,9 +136,18 @@ Supported scalar functions:
 * ``abs(x)``
 * ``max(a, b)``
 * ``min(a, b)``
-* ``ti.length(dynamic_snode)``
 * ``x ** y``
 * Inplace adds are atomic on global data. I.e., ``a += b`` is equivalent to ``ti.atomic_add(a, b)``
+
+Note: when these scalar functions are applied on :ref:`matrix` and :ref:`vector`, it's applied element-wise, for example:
+
+.. code-block:: python
+
+    A = ti.sin(B)
+    # is equalivant to (assuming B is a 3x2 matrix):
+    for i in ti.static(range(3)):
+        for j in ti.static(range(2)):
+            A[i, j] = ti.sin(B[i, j])
 
 .. note::
 

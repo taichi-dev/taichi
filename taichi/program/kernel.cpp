@@ -4,6 +4,7 @@
 #include "taichi/program/program.h"
 #include "taichi/program/async_engine.h"
 #include "taichi/codegen/codegen.h"
+#include "taichi/backends/cuda/cuda_driver.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -111,13 +112,9 @@ void Kernel::set_arg_float(int i, float64 d) {
   }
 }
 
-void Kernel::set_extra_arg_int(int i, int j, int32 d) {
-  program.context.extra_args[i][j] = d;
-}
-
 void Kernel::set_arg_int(int i, int64 d) {
   TI_ASSERT_INFO(
-      args[i].is_nparray == false,
+      !args[i].is_nparray,
       "Assigning scalar value to numpy array argument is not allowed");
   auto dt = args[i].dt;
   if (dt == DataType::i32) {
@@ -145,8 +142,66 @@ void Kernel::set_arg_int(int i, int64 d) {
   }
 }
 
+float64 Kernel::get_ret_float(int i) {
+  auto dt = rets[i].dt;
+  if (dt == DataType::f32) {
+    return (float64)get_current_program().fetch_result<float32>(i);
+  } else if (dt == DataType::f64) {
+    return (float64)get_current_program().fetch_result<float64>(i);
+  } else if (dt == DataType::i32) {
+    return (float64)get_current_program().fetch_result<int32>(i);
+  } else if (dt == DataType::i64) {
+    return (float64)get_current_program().fetch_result<int64>(i);
+  } else if (dt == DataType::i8) {
+    return (float64)get_current_program().fetch_result<int8>(i);
+  } else if (dt == DataType::i16) {
+    return (float64)get_current_program().fetch_result<int16>(i);
+  } else if (dt == DataType::u8) {
+    return (float64)get_current_program().fetch_result<uint8>(i);
+  } else if (dt == DataType::u16) {
+    return (float64)get_current_program().fetch_result<uint16>(i);
+  } else if (dt == DataType::u32) {
+    return (float64)get_current_program().fetch_result<uint32>(i);
+  } else if (dt == DataType::u64) {
+    return (float64)get_current_program().fetch_result<uint64>(i);
+  } else {
+    TI_NOT_IMPLEMENTED
+  }
+}
+
+int64 Kernel::get_ret_int(int i) {
+  auto dt = rets[i].dt;
+  if (dt == DataType::i32) {
+    return (int64)get_current_program().fetch_result<int32>(i);
+  } else if (dt == DataType::i64) {
+    return (int64)get_current_program().fetch_result<int64>(i);
+  } else if (dt == DataType::i8) {
+    return (int64)get_current_program().fetch_result<int8>(i);
+  } else if (dt == DataType::i16) {
+    return (int64)get_current_program().fetch_result<int16>(i);
+  } else if (dt == DataType::u8) {
+    return (int64)get_current_program().fetch_result<uint8>(i);
+  } else if (dt == DataType::u16) {
+    return (int64)get_current_program().fetch_result<uint16>(i);
+  } else if (dt == DataType::u32) {
+    return (int64)get_current_program().fetch_result<uint32>(i);
+  } else if (dt == DataType::u64) {
+    return (int64)get_current_program().fetch_result<uint64>(i);
+  } else if (dt == DataType::f32) {
+    return (int64)get_current_program().fetch_result<float32>(i);
+  } else if (dt == DataType::f64) {
+    return (int64)get_current_program().fetch_result<float64>(i);
+  } else {
+    TI_NOT_IMPLEMENTED
+  }
+}
+
 void Kernel::mark_arg_return_value(int i, bool is_return) {
   args[i].is_return_value = is_return;
+}
+
+void Kernel::set_extra_arg_int(int i, int j, int32 d) {
+  program.context.extra_args[i][j] = d;
 }
 
 void Kernel::set_arg_nparray(int i, uint64 ptr, uint64 size) {
@@ -164,6 +219,11 @@ void Kernel::set_arch(Arch arch) {
 int Kernel::insert_arg(DataType dt, bool is_nparray) {
   args.push_back(Arg{dt, is_nparray, 0, false});
   return args.size() - 1;
+}
+
+int Kernel::insert_ret(DataType dt) {
+  rets.push_back(Ret{dt});
+  return rets.size() - 1;
 }
 
 TLANG_NAMESPACE_END

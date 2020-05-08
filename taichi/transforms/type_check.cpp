@@ -335,6 +335,19 @@ class TypeCheck : public IRVisitor {
     stmt->ret_type = VectorType(1, arg_type);
   }
 
+  void visit(KernelReturnStmt *stmt) {
+    Kernel *current_kernel = kernel;
+    if (current_kernel == nullptr) {
+      current_kernel = &get_current_program().get_current_kernel();
+    }
+    auto &rets = current_kernel->rets;
+    TI_ASSERT(rets.size() >= 1);
+    auto ret = rets[0];  // TODO: stmt->ret_id?
+    auto ret_type = ret.dt;
+    TI_ASSERT(stmt->value->ret_type.data_type == ret_type);
+    stmt->ret_type = VectorType(1, ret_type);
+  }
+
   void visit(ExternalPtrStmt *stmt) {
     stmt->ret_type.set_is_pointer(true);
     stmt->ret_type = VectorType(stmt->base_ptrs.size(),

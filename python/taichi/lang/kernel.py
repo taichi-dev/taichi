@@ -158,6 +158,7 @@ class Kernel:
         self.is_grad = is_grad
         self.arguments = []
         self.argument_names = []
+        self.return_type = None
         self.classkernel = classkernel
         self.extract_arguments()
         self.template_slot_locations = []
@@ -180,6 +181,8 @@ class Kernel:
 
     def extract_arguments(self):
         sig = inspect.signature(self.func)
+        if sig.return_annotation not in (inspect._empty, None):
+            self.return_type = sig.return_annotation
         params = sig.parameters
         arg_names = params.keys()
         for i, arg_name in enumerate(arg_names):
@@ -248,6 +251,9 @@ class Kernel:
             anno = arg.annotation
             if isinstance(anno, ast.Name):
                 global_vars[anno.id] = self.arguments[i]
+
+        if isinstance(func_body.returns, ast.Name):
+            global_vars[func_body.returns.id] = self.return_type
 
         if self.is_grad:
             from .ast_checker import KernelSimplicityASTChecker
@@ -388,11 +394,21 @@ class Kernel:
 
             t_kernel()
 
+            ret = None
+            ret_dt = self.return_type
+            if ret_dt is not None:
+                if taichi_lang_core.is_integral(ret_dt):
+                    ret = t_kernel.get_ret_int(0)
+                else:
+                    ret = t_kernel.get_ret_float(0)
+
             if callbacks:
                 import taichi as ti
                 ti.sync()
                 for c in callbacks:
                     c()
+
+            return ret
 
         return func__
 
@@ -481,7 +497,7 @@ def _kernel_impl(func, level_of_class_stackframe, verbose=False):
 
         @wraps(func)
         def wrapped(*args, **kwargs):
-            primal(*args, **kwargs)
+            return primal(*args, **kwargs)
 
         wrapped.grad = adjoint
 

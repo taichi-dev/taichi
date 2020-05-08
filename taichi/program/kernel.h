@@ -35,7 +35,16 @@ class Kernel {
           is_return_value(is_return_value) {
     }
   };
+
+  struct Ret {
+    DataType dt;
+
+    explicit Ret(DataType dt = DataType::unknown) : dt(dt) {
+    }
+  };
+
   std::vector<Arg> args;
+  std::vector<Ret> rets;
   bool is_accessor;
   bool grad;
 
@@ -56,9 +65,15 @@ class Kernel {
 
   int insert_arg(DataType dt, bool is_nparray);
 
+  int insert_ret(DataType dt);
+
   void set_arg_float(int i, float64 d);
 
   void set_arg_int(int i, int64 d);
+
+  float64 get_ret_float(int i);
+
+  int64 get_ret_int(int i);
 
   void set_extra_arg_int(int i, int j, int32 d);
 

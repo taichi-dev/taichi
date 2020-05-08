@@ -366,12 +366,13 @@ struct CompiledKernel {
 
 struct CompiledProgram::Impl {
   std::vector<std::unique_ptr<CompiledKernel>> kernels;
-  int arg_count;
+  int arg_count, ret_count;
   std::map<int, size_t> ext_arr_map;
   size_t gtmp_size;
 
   Impl(Kernel *kernel, size_t gtmp_size) : gtmp_size(gtmp_size) {
     arg_count = kernel->args.size();
+    ret_count = kernel->rets.size();
     for (int i = 0; i < arg_count; i++) {
       if (kernel->args[i].is_nparray) {
         ext_arr_map[i] = kernel->args[i].size;
@@ -390,7 +391,7 @@ struct CompiledProgram::Impl {
 
   void launch(Context &ctx, GLSLLauncher *launcher) const {
     std::vector<IOV> iov;
-    iov.push_back(IOV{ctx.args, arg_count * sizeof(uint64_t)});
+    iov.push_back(IOV{ctx.args, std::max(arg_count, ret_count) * sizeof(uint64_t)});
     auto gtmp_arr = std::vector<char>(gtmp_size);
     void *gtmp_base = gtmp_arr.data();  // std::calloc(gtmp_size, 1);
     iov.push_back(IOV{gtmp_base, gtmp_size});

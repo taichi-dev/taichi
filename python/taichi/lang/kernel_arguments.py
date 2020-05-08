@@ -40,3 +40,8 @@ def decl_scalar_arg(dt):
 def decl_ext_arr_arg(dt, dim):
     id = taichi_lang_core.decl_arg(dt, True)
     return Expr(taichi_lang_core.make_external_tensor_expr(dt, dim, id))
+
+
+def decl_scalar_ret(dt):
+    id = taichi_lang_core.decl_ret(dt)
+    return id

@@ -252,6 +252,9 @@ class Kernel:
             if isinstance(anno, ast.Name):
                 global_vars[anno.id] = self.arguments[i]
 
+        if isinstance(func_body.returns, ast.Name):
+            global_vars[func_body.returns.id] = self.return_type
+
         if self.is_grad:
             from .ast_checker import KernelSimplicityASTChecker
             KernelSimplicityASTChecker(self.func).visit(tree)

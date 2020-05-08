@@ -43,9 +43,6 @@ def _test_binary_func_ret(dt1, dt2, dt3, castor):
 
     @ti.kernel
     def func(a: dt1, b: dt2) -> dt3:
-        # Dis: https://github.com/taichi-dev/taichi/pull/917#issuecomment-625343768
-        # In order to make Python include dt3 into func.__globals__, we have to:
-        __dummy_var = dt3
         return a * b
 
     if ti.core.is_integral(dt1):

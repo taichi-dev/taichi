@@ -5,7 +5,6 @@
 
 #include "taichi/ir/statements.h"
 #include "taichi/backends/metal/data_types.h"
-#include "taichi/program/kernel.h"
 
 // Data structures defined in this file may overlap with some of the Taichi data
 // structures. However, they serve as a boundary between Taichi and Metal and
@@ -17,6 +16,7 @@
 
 TLANG_NAMESPACE_BEGIN
 
+class Kernel;
 class SNode;
 
 namespace metal {
@@ -63,48 +63,82 @@ struct KernelAttributes {
   std::string debug_string() const;
 };
 
+// This class contains the attributes descriptors for both the input args and
+// the return values of a Taichi kernel.
+//
 // Note that all Metal kernels belonging to the same Taichi kernel will share
-// the same kernel args (attributes + Metal buffer). This is because kernel
-// arguments is a Taichi-level concept.
+// the same kernel args (i.e. they use the same Metal buffer for input args and
+// return values). This is because kernel arguments is a Taichi-level concept.
+//
+// TODO(#909): Rename to KernelArgsRetsAttributes
 class KernelArgsAttributes {
- public:
-  // Attribute for a single argument.
-  // This is mostly the same as Kernel::Arg. It's extended to contain a few
-  // Metal kernel specific atrributes, like |stride| and |offset_in_mem|.
-  struct ArgAttributes {
+ private:
+  // Attributes that are shared by the input arg and the return value.
+  struct AttribsBase {
     // For array arg, this is #elements * stride(dt). Unit: byte
     size_t stride = 0;
     // Offset in the argument buffer
     size_t offset_in_mem = 0;
-    // Argument index
+    // Index of the input arg or the return value in the host `Context`
     int index = -1;
     MetalDataType dt;
     bool is_array = false;
-    bool is_return_val = false;
   };
 
-  explicit KernelArgsAttributes(const std::vector<Kernel::Arg> &args);
+ public:
+  // This is mostly the same as Kernel::Arg, with Metal specific attributes.
+  struct ArgAttributes : public AttribsBase {};
+
+  // This is mostly the same as Kernel::Ret, with Metal specific attributes.
+  struct RetAttributes : public AttribsBase {};
+
+  explicit KernelArgsAttributes(const Kernel &kernel);
 
   inline bool has_args() const {
     return !arg_attribs_vec_.empty();
   }
+
   inline const std::vector<ArgAttributes> &args() const {
     return arg_attribs_vec_;
   }
 
-  inline size_t args_bytes() const {
-    return args_bytes_;
+  inline bool has_rets() const {
+    return !ret_attribs_vec_.empty();
+  }
+
+  inline const std::vector<RetAttributes> &rets() const {
+    return ret_attribs_vec_;
+  }
+
+  // Returns true if the kernel has neither input args nor return values.
+  inline bool empty() const {
+    return !(has_args() || has_rets());
+  }
+
+  // Total size in bytes of the input args and return values
+  inline size_t args_rets_bytes() const {
+    return args_rets_bytes_;
   }
   inline size_t extra_args_bytes() const {
     return extra_args_bytes_;
   }
+  // Total bytes needed for allocating the Metal buffer
   inline size_t total_bytes() const {
-    return args_bytes_ + extra_args_bytes_;
+    return args_rets_bytes_ + extra_args_bytes_;
   }
 
  private:
+  // Memory layout
+  //
+  // /---- input args ----\/---- ret vals -----\/-- extra args --\
+  // +----------+---------+----------+---------+-----------------+
+  // |  scalar  |  array  |  scalar  |  array  |      scalar     |
+  // +----------+---------+----------+---------+-----------------+
+  //
   std::vector<ArgAttributes> arg_attribs_vec_;
-  size_t args_bytes_;
+  std::vector<RetAttributes> ret_attribs_vec_;
+  // Total size in bytes of the input args and return values
+  size_t args_rets_bytes_;
   size_t extra_args_bytes_;
 };
 

@@ -80,7 +80,7 @@ class KernelCodegen : public IRVisitor {
         kernel_(kernel),
         compiled_structs_(compiled_structs),
         needs_root_buffer_(compiled_structs_->root_size > 0),
-        args_attribs_(kernel_->args) {
+        args_attribs_(*kernel_) {
     // allow_undefined_visitor = true;
     for (const auto s : kAllSections) {
       section_appenders_[s] = LineAppender();
@@ -268,6 +268,11 @@ class KernelCodegen : public IRVisitor {
     TI_ASSERT(!stmt->is_ptr);
     emit("*{}.arg{}() = {};", kArgsContextName, stmt->arg_id,
          stmt->val->raw_name());
+  }
+
+  void visit(KernelReturnStmt *stmt) override {
+    // TODO: use stmt->ret_id instead of 0 as index
+    emit("*{}.ret0() = {};", kArgsContextName, stmt->value->raw_name());
   }
 
   void visit(ExternalPtrStmt *stmt) override {
@@ -551,7 +556,7 @@ class KernelCodegen : public IRVisitor {
   }
 
   void emit_kernel_args_struct() {
-    if (!args_attribs_.has_args()) {
+    if (args_attribs_.empty()) {
       return;
     }
     const auto class_name = kernel_args_classname();
@@ -571,10 +576,21 @@ class KernelCodegen : public IRVisitor {
         emit("  return (device {}*)(addr_ + {});", dt_name, arg.offset_in_mem);
         emit("}}");
       }
+      for (const auto &ret : args_attribs_.rets()) {
+        const auto dt_name = metal_data_type_name(ret.dt);
+        emit("device {}* ret{}() {{", dt_name, ret.index);
+        if (ret.is_array) {
+          emit("  // array, size={} B", ret.stride);
+        } else {
+          emit("  // scalar, size={} B", ret.stride);
+        }
+        emit("  return (device {}*)(addr_ + {});", dt_name, ret.offset_in_mem);
+        emit("}}");
+      }
       emit("");
       emit("int32_t extra_arg(int i, int j) {{");
       emit("  device int32_t* base = (device int32_t*)(addr_ + {});",
-           args_attribs_.args_bytes());
+           args_attribs_.args_rets_bytes());
       emit("  return *(base + (i * {}) + j);", taichi_max_num_indices);
       emit("}}");
     }
@@ -599,7 +615,7 @@ class KernelCodegen : public IRVisitor {
       result.push_back(BuffersEnum::Root);
     }
     result.push_back(BuffersEnum::GlobalTmps);
-    if (args_attribs_.has_args()) {
+    if (!args_attribs_.empty()) {
       result.push_back(BuffersEnum::Args);
     }
     result.push_back(BuffersEnum::Runtime);
@@ -859,7 +875,7 @@ class KernelCodegen : public IRVisitor {
       ScopedIndent s(current_appender());
       emit("device Runtime *{} = reinterpret_cast<device Runtime *>({});",
            kRuntimeVarName, kRuntimeBufferName);
-      if (args_attribs_.has_args()) {
+      if (!args_attribs_.empty()) {
         emit("{} {}({});", kernel_args_classname(), kArgsContextName,
              kArgsBufferName);
       }

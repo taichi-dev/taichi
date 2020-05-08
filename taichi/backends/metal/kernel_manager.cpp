@@ -241,7 +241,7 @@ class CompiledTaichiKernel {
       TI_DEBUG("Added {} for Taichi kernel {}", ka.debug_string(),
                params.taichi_kernel_name);
     }
-    if (args_attribs.has_args()) {
+    if (!args_attribs.empty()) {
       args_mem = std::make_unique<BufferMemoryView>(args_attribs.total_bytes(),
                                                     params.mem_pool);
       args_buffer =
@@ -272,7 +272,7 @@ class HostMetalArgsBlitter {
   auto d = ctx_->get_arg<type>(i); \
   std::memcpy(device_ptr, &d, sizeof(d))
 
-    if (!args_attribs_->has_args()) {
+    if (args_attribs_->empty()) {
       return;
     }
     char *const base = (char *)args_mem_->ptr();
@@ -302,7 +302,7 @@ class HostMetalArgsBlitter {
                  metal_data_type_name(arg.dt));
       }
     }
-    char *device_ptr = base + args_attribs_->args_bytes();
+    char *device_ptr = base + args_attribs_->args_rets_bytes();
     std::memcpy(device_ptr, ctx_->extra_args,
                 args_attribs_->extra_args_bytes());
 #undef TO_METAL
@@ -313,7 +313,7 @@ class HostMetalArgsBlitter {
   const type d = *reinterpret_cast<type *>(device_ptr); \
   ctx_->set_arg<type>(i, d)
 
-    if (!args_attribs_->has_args()) {
+    if (args_attribs_->empty()) {
       return;
     }
     char *const base = (char *)args_mem_->ptr();
@@ -323,8 +323,18 @@ class HostMetalArgsBlitter {
       if (arg.is_array) {
         void *host_ptr = ctx_->get_arg<void *>(i);
         std::memcpy(host_ptr, device_ptr, arg.stride);
-      } else if (arg.is_return_val) {
-        const auto dt = arg.dt;
+      }
+    }
+    for (int i = 0; i < args_attribs_->rets().size(); ++i) {
+      // Note that we are copying the i-th return value on Metal to the i-th
+      // *arg* on the host context.
+      const auto &ret = args_attribs_->rets()[i];
+      char *device_ptr = base + ret.offset_in_mem;
+      if (ret.is_array) {
+        void *host_ptr = ctx_->get_arg<void *>(i);
+        std::memcpy(host_ptr, device_ptr, ret.stride);
+      } else {
+        const auto dt = ret.dt;
         if (dt == MetalDataType::i32) {
           TO_HOST(int32);
         } else if (dt == MetalDataType::u32) {
@@ -340,18 +350,18 @@ class HostMetalArgsBlitter {
         } else if (dt == MetalDataType::u16) {
           TO_HOST(uint16);
         } else {
-          TI_ERROR("Metal does not support arg type={}",
-                   metal_data_type_name(arg.dt));
+          TI_ERROR("Metal does not support return value type={}",
+                   metal_data_type_name(ret.dt));
         }
       }
     }
 #undef TO_HOST
   }
 
-  static std::unique_ptr<HostMetalArgsBlitter> make_if_has_args(
+  static std::unique_ptr<HostMetalArgsBlitter> maybe_make(
       const CompiledTaichiKernel &kernel,
       Context *ctx) {
-    if (!kernel.args_attribs.has_args()) {
+    if (kernel.args_attribs.empty()) {
       return nullptr;
     }
     return std::make_unique<HostMetalArgsBlitter>(&kernel.args_attribs, ctx,
@@ -439,7 +449,7 @@ class KernelManager::Impl {
   void launch_taichi_kernel(const std::string &taichi_kernel_name,
                             Context *ctx) {
     auto &ctk = *compiled_taichi_kernels_.find(taichi_kernel_name)->second;
-    auto args_blitter = HostMetalArgsBlitter::make_if_has_args(ctk, ctx);
+    auto args_blitter = HostMetalArgsBlitter::maybe_make(ctk, ctx);
     if (config_->verbose_kernel_launches) {
       TI_INFO("Lauching Taichi kernel <{}>", taichi_kernel_name);
     }

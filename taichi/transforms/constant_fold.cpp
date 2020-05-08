@@ -118,6 +118,17 @@ class ConstantFold : public BasicStmtVisitor {
   static bool jit_from_unary_op(TypedConstant &ret, UnaryOpStmt *stmt,
       const TypedConstant &lhs)
   {
+    if (unary_op_is_cast(stmt->op_type)) {
+      switch (stmt->cast_type) {
+      case DataType::i32:
+      case DataType::f32:
+      case DataType::i64:
+      case DataType::f64:
+        //break;
+      default:
+        return false;
+      }
+    }
     JITEvaluatorId id{(int)stmt->op_type, ret.dt, lhs.dt, stmt->cast_type,
       false};
     auto *ker = get_jit_evaluator_kernel(id);

@@ -122,10 +122,14 @@ class ConstantFold : public BasicStmtVisitor {
       false};
     auto *ker = get_jit_evaluator_kernel(id);
     auto &ctx = get_current_program().get_context();
+    //TI_INFO("JITARGSf = {} {}", lhs.val_f32);
+    TI_INFO("JITARGSi = {}", lhs.val_i32);
     ctx.set_arg<int64_t>(0, lhs.val_i64);
     irpass::print(ker->ir);
     (*ker)();
     ret.val_i64 = get_current_program().fetch_result<int64_t>(0);
+    //TI_INFO("JITEVALf = {}", ret.val_f32);
+    TI_INFO("JITEVALi = {}", ret.val_i32);
     return true;
   }
 
@@ -138,6 +142,7 @@ class ConstantFold : public BasicStmtVisitor {
       return;
     auto dst_type = stmt->ret_type.data_type;
     TypedConstant new_constant(dst_type);
+    TI_INFO("JIT_ret_dt = {}", dst_type);
     if (jit_from_binary_op(new_constant, stmt, lhs->val[0], rhs->val[0])) {
       auto evaluated =
           Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(new_constant));
@@ -156,6 +161,7 @@ class ConstantFold : public BasicStmtVisitor {
       return;
     auto dst_type = stmt->ret_type.data_type;
     TypedConstant new_constant(dst_type);
+    TI_INFO("JIT_ret_dt = {}", dst_type);
     if (jit_from_unary_op(new_constant, stmt, lhs->val[0])) {
       auto evaluated =
           Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(new_constant));

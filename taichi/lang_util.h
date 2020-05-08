@@ -169,6 +169,12 @@ class TypedConstant {
     float32 val_f32;
     int64 val_i64;
     float64 val_f64;
+    int8 val_i8;
+    int16 val_i16;
+    uint8 val_u8;
+    uint16 val_u16;
+    uint32 val_u32;
+    uint64 val_u64;
   };
 
  public:
@@ -200,6 +206,18 @@ class TypedConstant {
       return fmt::format("{}", val_i64);
     } else if (dt == DataType::f64) {
       return fmt::format("{}", val_f64);
+    } else if (dt == DataType::i8) {
+      return fmt::format("{}", val_i8);
+    } else if (dt == DataType::i16) {
+      return fmt::format("{}", val_i16);
+    } else if (dt == DataType::u8) {
+      return fmt::format("{}", val_u8);
+    } else if (dt == DataType::u16) {
+      return fmt::format("{}", val_u16);
+    } else if (dt == DataType::u32) {
+      return fmt::format("{}", val_u32);
+    } else if (dt == DataType::u64) {
+      return fmt::format("{}", val_u64);
     } else {
       TI_P(data_type_name(dt));
       TI_NOT_IMPLEMENTED
@@ -218,6 +236,18 @@ class TypedConstant {
       return val_i64 == o.val_i64;
     } else if (dt == DataType::f64) {
       return val_f64 == o.val_f64;
+    } else if (dt == DataType::i8) {
+      return val_i8 == o.val_i8;
+    } else if (dt == DataType::i16) {
+      return val_i16 == o.val_i16;
+    } else if (dt == DataType::u8) {
+      return val_u8 == o.val_u8;
+    } else if (dt == DataType::u16) {
+      return val_u16 == o.val_u16;
+    } else if (dt == DataType::u32) {
+      return val_u32 == o.val_u32;
+    } else if (dt == DataType::u64) {
+      return val_u64 == o.val_u64;
     } else {
       TI_NOT_IMPLEMENTED
       return false;

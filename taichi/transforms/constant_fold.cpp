@@ -55,21 +55,6 @@ class ConstantFold : public BasicStmtVisitor {
 #endif
   };
 
-  static void insert_die(const std::string &text)
-  {
-    auto cond = Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>((int)0));
-    auto assertion = Stmt::make<AssertStmt>(text, cond.get());
-    current_ast_builder().insert(std::move(cond));
-    current_ast_builder().insert(std::move(assertion));
-  }
-
-  static void insert_die_loop()
-  {
-    auto body = std::make_unique<Block>();
-    auto loop = Stmt::make<WhileStmt>(std::move(body));
-    current_ast_builder().insert(std::move(loop));
-  }
-
   static Kernel *get_jit_evaluator_kernel(JITEvaluatorId const &id)
   {
     auto &cache = get_current_program().jit_evaluator_cache;
@@ -81,8 +66,8 @@ class ConstantFold : public BasicStmtVisitor {
     auto kernel_name = fmt::format("jit_evaluator_{}", jic++);
     auto func = [&] () {
       //insert_die_loop();
-      auto lhstmt = Stmt::make<ArgLoadStmt>(1, false);
-      auto rhstmt = Stmt::make<ArgLoadStmt>(2, false);
+      auto lhstmt = Stmt::make<ArgLoadStmt>(0, false);
+      auto rhstmt = Stmt::make<ArgLoadStmt>(1, false);
       pStmt oper;
       if (id.is_binary) {
         oper = Stmt::make<BinaryOpStmt>(id.binary_op(), lhstmt.get(), rhstmt.get());
@@ -92,7 +77,7 @@ class ConstantFold : public BasicStmtVisitor {
           oper->cast<UnaryOpStmt>()->cast_type = id.rhs;
         }
       }
-      auto ret = Stmt::make<ArgStoreStmt>(0, oper.get());
+      auto ret = Stmt::make<KernelReturnStmt>(oper.get());
       current_ast_builder().insert(std::move(lhstmt));
       if (id.is_binary)
         current_ast_builder().insert(std::move(rhstmt));
@@ -101,11 +86,10 @@ class ConstantFold : public BasicStmtVisitor {
       //insert_die("DEAD");
     };
     auto ker = std::make_unique<Kernel>(get_current_program(), func, kernel_name);
-    ker->insert_arg(id.ret, false);
+    ker->insert_ret(id.ret);
     ker->insert_arg(id.lhs, false);
     if (id.is_binary)
       ker->insert_arg(id.rhs, false);
-    ker->mark_arg_return_value(0, true);
     auto *ker_ptr = ker.get();
     TI_TRACE("Saving JIT evaluator cache entry id={}", iid);
     cache[iid] = std::move(ker);
@@ -121,12 +105,11 @@ class ConstantFold : public BasicStmtVisitor {
     auto &ctx = get_current_program().get_context();
     //TI_INFO("JITARGSf = {} {}", lhs.val_f32, rhs.val_f32);
     TI_INFO("JITARGSi = {} {}", lhs.val_i32, rhs.val_i32);
-    ctx.set_arg<int64_t>(0, 0);
-    ctx.set_arg<int64_t>(1, lhs.val_i64);
-    ctx.set_arg<int64_t>(2, rhs.val_i64);
+    ctx.set_arg<int64_t>(0, lhs.val_i64);
+    ctx.set_arg<int64_t>(1, rhs.val_i64);
     irpass::print(ker->ir);
     (*ker)();
-    ret.val_i64 = ctx.get_arg<int64_t>(0); // TODO: replace by fetch_reader_result, gen
+    ret.val_i64 = get_current_program().fetch_result<int64_t>(0);
     //TI_INFO("JITEVALf = {}", ret.val_f32);
     TI_INFO("JITEVALi = {}", ret.val_i32);
     return true;
@@ -139,10 +122,10 @@ class ConstantFold : public BasicStmtVisitor {
       false};
     auto *ker = get_jit_evaluator_kernel(id);
     auto &ctx = get_current_program().get_context();
-    ctx.set_arg<int64_t>(1, lhs.val_i64);
+    ctx.set_arg<int64_t>(0, lhs.val_i64);
     irpass::print(ker->ir);
     (*ker)();
-    ret.val_i64 = ctx.get_arg<int64_t>(0);
+    ret.val_i64 = get_current_program().fetch_result<int64_t>(0);
     return true;
   }
 

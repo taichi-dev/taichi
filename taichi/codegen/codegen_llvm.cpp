@@ -690,6 +690,24 @@ void CodeGenLLVM::visit(ConstStmt *stmt) {
   } else if (val.dt == DataType::i64) {
     llvm_val[stmt] = llvm::ConstantInt::get(
         *llvm_context, llvm::APInt(64, val.val_int64(), true));
+  } else if (val.dt == DataType::i8) {
+    llvm_val[stmt] = llvm::ConstantInt::get(
+        *llvm_context, llvm::APInt(8, val.val_i32 & 0xff, true));
+  } else if (val.dt == DataType::i16) {
+    llvm_val[stmt] = llvm::ConstantInt::get(
+        *llvm_context, llvm::APInt(16, val.val_i32 & 0xffff, true));
+  } else if (val.dt == DataType::u8) {
+    llvm_val[stmt] = llvm::ConstantInt::get(
+        *llvm_context, llvm::APInt(8, val.val_i32 & 0xff, true));
+  } else if (val.dt == DataType::u16) {
+    llvm_val[stmt] = llvm::ConstantInt::get(
+        *llvm_context, llvm::APInt(16, val.val_i32 & 0xffff, true));
+  } else if (val.dt == DataType::u32) {
+    llvm_val[stmt] = llvm::ConstantInt::get(
+        *llvm_context, llvm::APInt(32, val.val_i32, true));
+  } else if (val.dt == DataType::u64) {
+    llvm_val[stmt] = llvm::ConstantInt::get(
+        *llvm_context, llvm::APInt(64, val.val_i64, true));
   } else {
     TI_NOT_IMPLEMENTED;
   }

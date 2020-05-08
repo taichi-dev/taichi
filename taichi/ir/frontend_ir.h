@@ -198,6 +198,20 @@ class FrontendWhileStmt : public Stmt {
   DEFINE_ACCEPT
 };
 
+class FrontendKernelReturnStmt : public Stmt {
+ public:
+  Expr value;
+
+  FrontendKernelReturnStmt(const Expr &value) : value(value) {
+  }
+
+  bool is_container_statement() const override {
+    return false;
+  }
+
+  DEFINE_ACCEPT
+};
+
 // Expressions
 
 class ArgLoadExpression : public Expression {

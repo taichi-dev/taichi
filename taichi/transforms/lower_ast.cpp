@@ -284,6 +284,15 @@ class LowerAST : public IRVisitor {
     capturing_loop = old_capturing_loop;
   }
 
+  void visit(FrontendKernelReturnStmt *stmt) override {
+    auto expr = stmt->value;
+    auto fctx = make_flatten_ctx();
+    expr->flatten(&fctx);
+    fctx.push_back<KernelReturnStmt>(fctx.back_stmt());
+    stmt->parent->replace_with(stmt, std::move(fctx.stmts));
+    throw IRModified();
+  }
+
   void visit(FrontendEvalStmt *stmt) override {
     // expand rhs
     auto expr = stmt->expr;

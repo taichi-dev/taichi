@@ -319,6 +319,16 @@ class IRPrinter : public IRVisitor {
           stmt->arg_id, stmt->val->name());
   }
 
+  void visit(FrontendKernelReturnStmt *stmt) override {
+    print("{}{} : kernel return {}", stmt->type_hint(), stmt->name(),
+          stmt->value->serialize());
+  }
+
+  void visit(KernelReturnStmt *stmt) override {
+    print("{}{} : kernel return {}", stmt->type_hint(), stmt->name(),
+          stmt->value->name());
+  }
+
   void visit(LocalLoadStmt *stmt) override {
     print("{}{} = local load [{}]", stmt->type_hint(), stmt->name(),
           to_string(stmt->ptr));

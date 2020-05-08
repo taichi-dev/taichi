@@ -142,56 +142,28 @@ void Kernel::set_arg_int(int i, int64 d) {
   }
 }
 
-// NOTE: sync with snode.cpp: fetch_reader_result
-static uint64 fetch_result_uint64(int i) {
-  uint64 ret;
-  auto arch = get_current_program().config.arch;
-  if (arch == Arch::cuda) {
-    // TODO: refactor
-    // XXX: what about unified memory?
-#if defined(TI_WITH_CUDA)
-    CUDADriver::get_instance().memcpy_device_to_host(
-        &ret, (uint64 *)get_current_program().result_buffer + i,
-        sizeof(uint64));
-#else
-    TI_NOT_IMPLEMENTED;
-#endif
-  } else if (arch_is_cpu(arch)) {
-    ret = ((uint64 *)get_current_program().result_buffer)[i];
-  } else {
-    ret = get_current_program().context.get_arg_as_uint64(i);
-  }
-  return ret;
-}
-
-template <typename T>
-static T fetch_result(int i)  // TODO: move to Program::fetch_result
-{
-  return taichi_union_cast_with_different_sizes<T>(fetch_result_uint64(i));
-}
-
 float64 Kernel::get_ret_float(int i) {
   auto dt = rets[i].dt;
   if (dt == DataType::f32) {
-    return (float64)fetch_result<float32>(i);
+    return (float64)get_current_program().fetch_result<float32>(i);
   } else if (dt == DataType::f64) {
-    return (float64)fetch_result<float64>(i);
+    return (float64)get_current_program().fetch_result<float64>(i);
   } else if (dt == DataType::i32) {
-    return (float64)fetch_result<int32>(i);
+    return (float64)get_current_program().fetch_result<int32>(i);
   } else if (dt == DataType::i64) {
-    return (float64)fetch_result<int64>(i);
+    return (float64)get_current_program().fetch_result<int64>(i);
   } else if (dt == DataType::i8) {
-    return (float64)fetch_result<int8>(i);
+    return (float64)get_current_program().fetch_result<int8>(i);
   } else if (dt == DataType::i16) {
-    return (float64)fetch_result<int16>(i);
+    return (float64)get_current_program().fetch_result<int16>(i);
   } else if (dt == DataType::u8) {
-    return (float64)fetch_result<uint8>(i);
+    return (float64)get_current_program().fetch_result<uint8>(i);
   } else if (dt == DataType::u16) {
-    return (float64)fetch_result<uint16>(i);
+    return (float64)get_current_program().fetch_result<uint16>(i);
   } else if (dt == DataType::u32) {
-    return (float64)fetch_result<uint32>(i);
+    return (float64)get_current_program().fetch_result<uint32>(i);
   } else if (dt == DataType::u64) {
-    return (float64)fetch_result<uint64>(i);
+    return (float64)get_current_program().fetch_result<uint64>(i);
   } else {
     TI_NOT_IMPLEMENTED
   }
@@ -200,25 +172,25 @@ float64 Kernel::get_ret_float(int i) {
 int64 Kernel::get_ret_int(int i) {
   auto dt = rets[i].dt;
   if (dt == DataType::i32) {
-    return (int64)fetch_result<int32>(i);
+    return (int64)get_current_program().fetch_result<int32>(i);
   } else if (dt == DataType::i64) {
-    return (int64)fetch_result<int64>(i);
+    return (int64)get_current_program().fetch_result<int64>(i);
   } else if (dt == DataType::i8) {
-    return (int64)fetch_result<int8>(i);
+    return (int64)get_current_program().fetch_result<int8>(i);
   } else if (dt == DataType::i16) {
-    return (int64)fetch_result<int16>(i);
+    return (int64)get_current_program().fetch_result<int16>(i);
   } else if (dt == DataType::u8) {
-    return (int64)fetch_result<uint8>(i);
+    return (int64)get_current_program().fetch_result<uint8>(i);
   } else if (dt == DataType::u16) {
-    return (int64)fetch_result<uint16>(i);
+    return (int64)get_current_program().fetch_result<uint16>(i);
   } else if (dt == DataType::u32) {
-    return (int64)fetch_result<uint32>(i);
+    return (int64)get_current_program().fetch_result<uint32>(i);
   } else if (dt == DataType::u64) {
-    return (int64)fetch_result<uint64>(i);
+    return (int64)get_current_program().fetch_result<uint64>(i);
   } else if (dt == DataType::f32) {
-    return (int64)fetch_result<float32>(i);
+    return (int64)get_current_program().fetch_result<float32>(i);
   } else if (dt == DataType::f64) {
-    return (int64)fetch_result<float64>(i);
+    return (int64)get_current_program().fetch_result<float64>(i);
   } else {
     TI_NOT_IMPLEMENTED
   }

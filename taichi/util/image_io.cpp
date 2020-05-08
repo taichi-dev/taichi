@@ -29,6 +29,7 @@ void imwrite(const std::string &filename,
   if (!result) {
     TI_ERROR("Cannot write image file [{}]", filename);
   }
+  TI_TRACE("saved image {}: {}x{}x{}", filename, resx, resy, comp);
 }
 
 std::vector<size_t> imread(const std::string &filename, int comp) {
@@ -37,6 +38,7 @@ std::vector<size_t> imread(const std::string &filename, int comp) {
   if (!data) {
     TI_ERROR("Cannot read image file [{}]", filename);
   }
+  TI_TRACE("loaded image {}: {}x{}x{}", filename, resx, resy, comp);
 
   std::vector<size_t> ret = {(size_t)data, (size_t)resx, (size_t)resy,
                              (size_t)comp};

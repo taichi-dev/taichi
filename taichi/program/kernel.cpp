@@ -8,6 +8,24 @@
 
 TLANG_NAMESPACE_BEGIN
 
+namespace {
+  class CurrentKernelGuard {
+    Kernel *old_kernel;
+    Program &program;
+
+   public:
+    CurrentKernelGuard(Program &program_, Kernel *kernel)
+      : program(program_) {
+      old_kernel = program.current_kernel;
+      program.current_kernel = kernel;
+    }
+
+    ~CurrentKernelGuard() {
+      program.current_kernel = old_kernel;
+    }
+  };
+}
+
 Kernel::Kernel(Program &program,
                std::function<void()> func,
                std::string primal_name,
@@ -20,11 +38,12 @@ Kernel::Kernel(Program &program,
   ir_holder = taichi::lang::context->get_root();
   ir = ir_holder.get();
 
-  program.current_kernel = this;
-  program.start_function_definition(this);
-  func();
-  program.end_function_definition();
-  program.current_kernel = nullptr;
+  {
+    CurrentKernelGuard _(program, this);
+    program.start_function_definition(this);
+    func();
+    program.end_function_definition();
+  }
 
   arch = program.config.arch;
 
@@ -39,16 +58,15 @@ Kernel::Kernel(Program &program,
 }
 
 void Kernel::compile() {
-  program.current_kernel = this;
+  CurrentKernelGuard _(program, this);
   compiled = program.compile(*this);
-  program.current_kernel = nullptr;
 }
 
 void Kernel::lower(bool lower_access) {  // TODO: is a "Lowerer" class necessary
                                          // for each backend?
   TI_ASSERT(!lowered);
   if (arch_is_cpu(arch) || arch == Arch::cuda) {
-    program.current_kernel = this;
+    CurrentKernelGuard _(program, this);
     auto codegen = KernelCodeGen::create(arch, this);
     auto config = program.config;
     bool verbose = config.print_ir;

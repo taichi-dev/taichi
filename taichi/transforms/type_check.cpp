@@ -312,10 +312,14 @@ class TypeCheck : public IRVisitor {
 
   void visit(ArgLoadStmt *stmt) {
     Kernel *current_kernel = kernel;
+    TI_INFO("!!!!!!!{}", (void *)&get_current_program());
+    TI_INFO("!!!!!!?{}", (void *)get_current_program().current_kernel);
     if (current_kernel == nullptr) {
       current_kernel = &get_current_program().get_current_kernel();
     }
     auto &args = current_kernel->args;
+    TI_INFO("aid = {}", stmt->arg_id);
+    TI_INFO("asz = {}", args.size());
     TI_ASSERT(0 <= stmt->arg_id && stmt->arg_id < args.size());
     TI_ASSERT(!args[stmt->arg_id].is_return_value);
     stmt->ret_type = VectorType(1, args[stmt->arg_id].dt);

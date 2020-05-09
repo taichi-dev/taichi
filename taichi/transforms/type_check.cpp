@@ -317,7 +317,6 @@ class TypeCheck : public IRVisitor {
     }
     auto &args = current_kernel->args;
     TI_ASSERT(0 <= stmt->arg_id && stmt->arg_id < args.size());
-    TI_ASSERT(!args[stmt->arg_id].is_return_value);
     stmt->ret_type = VectorType(1, args[stmt->arg_id].dt);
   }
 
@@ -330,7 +329,6 @@ class TypeCheck : public IRVisitor {
     TI_ASSERT(0 <= stmt->arg_id && stmt->arg_id < args.size());
     auto arg = args[stmt->arg_id];
     auto arg_type = arg.dt;
-    TI_ASSERT(arg.is_return_value);
     TI_ASSERT(stmt->val->ret_type.data_type == arg_type);
     stmt->ret_type = VectorType(1, arg_type);
   }

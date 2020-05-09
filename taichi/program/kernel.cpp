@@ -213,7 +213,7 @@ void Kernel::set_arch(Arch arch) {
 }
 
 int Kernel::insert_arg(DataType dt, bool is_nparray) {
-  args.push_back(Arg{dt, is_nparray, 0, false});
+  args.push_back(Arg{dt, is_nparray, /*size=*/0});
   return args.size() - 1;
 }
 

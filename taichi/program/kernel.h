@@ -23,16 +23,11 @@ class Kernel {
     DataType dt;
     bool is_nparray;
     std::size_t size;
-    bool is_return_value;
 
     Arg(DataType dt = DataType::unknown,
         bool is_nparray = false,
-        std::size_t size = 0,
-        bool is_return_value = 0)
-        : dt(dt),
-          is_nparray(is_nparray),
-          size(size),
-          is_return_value(is_return_value) {
+        std::size_t size = 0)
+        : dt(dt), is_nparray(is_nparray), size(size) {
     }
   };
 

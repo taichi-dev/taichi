@@ -90,6 +90,7 @@ class ConstantFold : public BasicStmtVisitor {
     ker->insert_arg(id.lhs, false);
     if (id.is_binary)
       ker->insert_arg(id.rhs, false);
+    ker->is_accessor = true;
     auto *ker_ptr = ker.get();
     TI_TRACE("Saving JIT evaluator cache entry id={}", iid);
     cache[iid] = std::move(ker);
@@ -109,6 +110,20 @@ class ConstantFold : public BasicStmtVisitor {
       }
   }
 
+  class ContextArgSaveGuard {
+    Context &ctx;
+    uint64 old_args[taichi_max_num_args];
+
+  public:
+    explicit ContextArgSaveGuard(Context &ctx_) : ctx(ctx_) {
+      std::memcpy(old_args, ctx.args, sizeof(old_args));
+    }
+
+    ~ContextArgSaveGuard() {
+      std::memcpy(ctx.args, old_args, sizeof(old_args));
+    }
+  };
+
   static bool jit_from_binary_op(TypedConstant &ret, BinaryOpStmt *stmt,
       const TypedConstant &lhs, const TypedConstant &rhs)
   {
@@ -122,6 +137,7 @@ class ConstantFold : public BasicStmtVisitor {
     auto &ctx = get_current_program().get_context();
     //TI_INFO("JITARGSf = {} {}", lhs.val_f32, rhs.val_f32);
     TI_INFO("JITARGSi = {} {}", lhs.val_i32, rhs.val_i32);
+    ContextArgSaveGuard _(ctx); // save input args, prevent override current kernel
     ctx.set_arg<int64_t>(0, lhs.val_i64);
     ctx.set_arg<int64_t>(1, rhs.val_i64);
     irpass::print(ker->ir);
@@ -136,7 +152,7 @@ class ConstantFold : public BasicStmtVisitor {
       const TypedConstant &lhs)
   {
     // TODO: remove this:
-    if (unary_op_is_cast(stmt->op_type))
+    if (unary_op_is_cast(stmt->op_type) && !is_good_type(stmt->cast_type))
       return false;
     if (!is_good_type(ret.dt))
       return false;
@@ -146,6 +162,7 @@ class ConstantFold : public BasicStmtVisitor {
     auto &ctx = get_current_program().get_context();
     //TI_INFO("JITARGSf = {} {}", lhs.val_f32);
     TI_INFO("JITARGSi = {}", lhs.val_i32);
+    ContextArgSaveGuard _(ctx); // save input args, prevent override current kernel
     ctx.set_arg<int64_t>(0, lhs.val_i64);
     irpass::print(ker->ir);
     (*ker)();

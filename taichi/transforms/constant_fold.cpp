@@ -96,9 +96,26 @@ class ConstantFold : public BasicStmtVisitor {
     return ker_ptr;
   }
 
+  static bool is_good_type(DataType dt)
+  {
+      switch (dt) {
+      case DataType::i32:
+      case DataType::f32:
+      case DataType::i64:
+      case DataType::f64:
+        return true;
+      default:
+        return false;
+      }
+  }
+
   static bool jit_from_binary_op(TypedConstant &ret, BinaryOpStmt *stmt,
       const TypedConstant &lhs, const TypedConstant &rhs)
   {
+    // ConstStmt of `bad` types like `i8` is not supported by LLVM.
+    // dis: https://github.com/taichi-dev/taichi/pull/839#issuecomment-625902727 
+    if (!is_good_type(ret.dt))
+      return false;
     JITEvaluatorId id{(int)stmt->op_type, ret.dt, lhs.dt, rhs.dt,
       true};
     auto *ker = get_jit_evaluator_kernel(id);
@@ -118,17 +135,11 @@ class ConstantFold : public BasicStmtVisitor {
   static bool jit_from_unary_op(TypedConstant &ret, UnaryOpStmt *stmt,
       const TypedConstant &lhs)
   {
-    if (unary_op_is_cast(stmt->op_type)) {
-      switch (stmt->cast_type) {
-      case DataType::i32:
-      case DataType::f32:
-      case DataType::i64:
-      case DataType::f64:
-        //break;
-      default:
-        return false;
-      }
-    }
+    // TODO: remove this:
+    if (unary_op_is_cast(stmt->op_type))
+      return false;
+    if (!is_good_type(ret.dt))
+      return false;
     JITEvaluatorId id{(int)stmt->op_type, ret.dt, lhs.dt, stmt->cast_type,
       false};
     auto *ker = get_jit_evaluator_kernel(id);

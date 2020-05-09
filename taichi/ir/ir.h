@@ -1533,5 +1533,4 @@ inline void StmtFieldManager::operator()(const char *key, T &&value) {
 
 TLANG_NAMESPACE_END
 
-#include "taichi/ir/statements.h"
 #include "taichi/ir/visitors.h"

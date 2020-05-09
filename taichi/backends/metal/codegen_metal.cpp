@@ -87,7 +87,7 @@ class KernelCodegen : public IRVisitor {
     }
   }
 
-  const KernelContextAttributes &kernel_args_attribs() const {
+  const KernelContextAttributes &kernel_ctx_attribs() const {
     return ctx_attribs_;
   }
 
@@ -1042,7 +1042,7 @@ FunctionType CodeGen::compile() {
   const auto source_code = codegen.run();
   kernel_mgr_->register_taichi_kernel(taichi_kernel_name_, source_code,
                                       codegen.kernels_attribs(),
-                                      codegen.kernel_args_attribs());
+                                      codegen.kernel_ctx_attribs());
   return [kernel_mgr = kernel_mgr_,
           kernel_name = taichi_kernel_name_](Context &ctx) {
     kernel_mgr->launch_taichi_kernel(kernel_name, &ctx);

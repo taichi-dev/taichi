@@ -75,8 +75,7 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
     ret_attribs_vec_.push_back(mr);
   }
 
-  auto arrange_scalar_before_array = [&bytes =
-                                          this->ctx_bytes_](auto *vec) {
+  auto arrange_scalar_before_array = [&bytes = this->ctx_bytes_](auto *vec) {
     std::vector<int> scalar_indices;
     std::vector<int> array_indices;
     for (int i = 0; i < vec->size(); ++i) {

@@ -262,8 +262,8 @@ class CompiledTaichiKernel {
 class HostMetalCtxBlitter {
  public:
   HostMetalCtxBlitter(const KernelContextAttributes *args_attribs,
-                       Context *ctx,
-                       BufferMemoryView *args_mem)
+                      Context *ctx,
+                      BufferMemoryView *args_mem)
       : ctx_attribs_(args_attribs), ctx_(ctx), args_mem_(args_mem) {
   }
 
@@ -303,8 +303,7 @@ class HostMetalCtxBlitter {
       }
     }
     char *device_ptr = base + ctx_attribs_->ctx_bytes();
-    std::memcpy(device_ptr, ctx_->extra_args,
-                ctx_attribs_->extra_args_bytes());
+    std::memcpy(device_ptr, ctx_->extra_args, ctx_attribs_->extra_args_bytes());
 #undef TO_METAL
   }
 
@@ -365,7 +364,7 @@ class HostMetalCtxBlitter {
       return nullptr;
     }
     return std::make_unique<HostMetalCtxBlitter>(&kernel.args_attribs, ctx,
-                                                  kernel.args_mem.get());
+                                                 kernel.args_mem.get());
   }
 
  private:
@@ -422,7 +421,7 @@ class KernelManager::Impl {
       const std::string &taichi_kernel_name,
       const std::string &mtl_kernel_source_code,
       const std::vector<KernelAttributes> &kernels_attribs,
-      const KernelContextAttributes &args_attribs) {
+      const KernelContextAttributes &ctx_attribs) {
     TI_ASSERT(compiled_taichi_kernels_.find(taichi_kernel_name) ==
               compiled_taichi_kernels_.end());
 
@@ -437,7 +436,7 @@ class KernelManager::Impl {
     params.taichi_kernel_name = taichi_kernel_name;
     params.mtl_source_code = mtl_kernel_source_code;
     params.mtl_kernels_attribs = &kernels_attribs;
-    params.args_attribs = &args_attribs;
+    params.args_attribs = &ctx_attribs;
     params.device = device_.get();
     params.mem_pool = mem_pool_;
     params.profiler = profiler_;
@@ -621,7 +620,7 @@ class KernelManager::Impl {
       const std::string &taichi_kernel_name,
       const std::string &mtl_kernel_source_code,
       const std::vector<KernelAttributes> &kernels_attribs,
-      const KernelArgsAttributes &args_attribs) {
+      const KernelContextAttributes &ctx_attribs) {
     TI_ERROR("Metal not supported on the current OS");
   }
 
@@ -648,9 +647,9 @@ void KernelManager::register_taichi_kernel(
     const std::string &taichi_kernel_name,
     const std::string &mtl_kernel_source_code,
     const std::vector<KernelAttributes> &kernels_attribs,
-    const KernelContextAttributes &args_attribs) {
+    const KernelContextAttributes &ctx_attribs) {
   impl_->register_taichi_kernel(taichi_kernel_name, mtl_kernel_source_code,
-                                kernels_attribs, args_attribs);
+                                kernels_attribs, ctx_attribs);
 }
 
 void KernelManager::launch_taichi_kernel(const std::string &taichi_kernel_name,

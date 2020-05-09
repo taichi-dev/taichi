@@ -69,10 +69,7 @@ def p2g():
     for p in x:
         base = ti.cast(x[p] * inv_dx - 0.5, ti.i32)
         fx = x[p] * inv_dx - ti.cast(base, ti.f32)
-        w = [
-            0.5 * ti.sqr(1.5 - fx), 0.75 - ti.sqr(fx - 1),
-            0.5 * ti.sqr(fx - 0.5)
-        ]
+        w = [0.5 * (1.5 - fx)**2, 0.75 - (fx - 1)**2, 0.5 * (fx - 0.5)**2]
         affine = p_mass * C[p]
         for i in ti.static(range(3)):
             for j in ti.static(range(3)):
@@ -117,10 +114,7 @@ def g2p():
     for p in x:
         base = ti.cast(x[p] * inv_dx - 0.5, ti.i32)
         fx = x[p] * inv_dx - ti.cast(base, ti.f32)
-        w = [
-            0.5 * ti.sqr(1.5 - fx), 0.75 - ti.sqr(fx - 1.0),
-            0.5 * ti.sqr(fx - 0.5)
-        ]
+        w = [0.5 * (1.5 - fx)**2, 0.75 - (fx - 1.0)**2, 0.5 * (fx - 0.5)**2]
         new_v = ti.Vector([0.0, 0.0])
         new_C = ti.Matrix([[0.0, 0.0], [0.0, 0.0]])
 

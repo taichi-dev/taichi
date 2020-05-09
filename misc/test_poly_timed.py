@@ -43,7 +43,7 @@ def test_poly():
     grad_test(lambda x: x)
     grad_test(lambda x: -x)
     grad_test(lambda x: x * x)
-    grad_test(lambda x: ti.sqr(x))
+    grad_test(lambda x: x**2)
     grad_test(lambda x: x * x * x)
     grad_test(lambda x: x * x * x * x)
     grad_test(lambda x: 0.4 * x * x - 3)

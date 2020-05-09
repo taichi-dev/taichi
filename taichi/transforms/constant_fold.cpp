@@ -216,8 +216,10 @@ void constant_fold(IRNode *root) {
   // failed to evaluate correctly (always return 0), so we simply
   // disable constant_fold when config.debug is turned on.
   // Dis: https://github.com/taichi-dev/taichi/pull/839#issuecomment-626107010
-  if (get_current_program().config.debug)
+  if (get_current_program().config.debug) {
+    TI_TRACE("config.debug enabled, ignoring constant fold");
     return;
+  }
   return ConstantFold::run(root);
 }
 

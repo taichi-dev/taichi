@@ -69,9 +69,7 @@ struct KernelAttributes {
 // Note that all Metal kernels belonging to the same Taichi kernel will share
 // the same kernel args (i.e. they use the same Metal buffer for input args and
 // return values). This is because kernel arguments is a Taichi-level concept.
-//
-// TODO(#909): Rename to KernelArgsRetsAttributes
-class KernelArgsAttributes {
+class KernelContextAttributes {
  private:
   // Attributes that are shared by the input arg and the return value.
   struct AttribsBase {
@@ -92,7 +90,7 @@ class KernelArgsAttributes {
   // This is mostly the same as Kernel::Ret, with Metal specific attributes.
   struct RetAttributes : public AttribsBase {};
 
-  explicit KernelArgsAttributes(const Kernel &kernel);
+  explicit KernelContextAttributes(const Kernel &kernel);
 
   inline bool has_args() const {
     return !arg_attribs_vec_.empty();
@@ -116,15 +114,15 @@ class KernelArgsAttributes {
   }
 
   // Total size in bytes of the input args and return values
-  inline size_t args_rets_bytes() const {
-    return args_rets_bytes_;
+  inline size_t ctx_bytes() const {
+    return ctx_bytes_;
   }
   inline size_t extra_args_bytes() const {
     return extra_args_bytes_;
   }
   // Total bytes needed for allocating the Metal buffer
   inline size_t total_bytes() const {
-    return args_rets_bytes_ + extra_args_bytes_;
+    return ctx_bytes_ + extra_args_bytes_;
   }
 
  private:
@@ -138,7 +136,7 @@ class KernelArgsAttributes {
   std::vector<ArgAttributes> arg_attribs_vec_;
   std::vector<RetAttributes> ret_attribs_vec_;
   // Total size in bytes of the input args and return values
-  size_t args_rets_bytes_;
+  size_t ctx_bytes_;
   size_t extra_args_bytes_;
 };
 

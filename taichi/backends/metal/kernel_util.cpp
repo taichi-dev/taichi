@@ -43,8 +43,8 @@ std::string KernelAttributes::debug_string() const {
   return result;
 }
 
-KernelArgsAttributes::KernelArgsAttributes(const Kernel &kernel)
-    : args_rets_bytes_(0), extra_args_bytes_(Context::extra_args_size) {
+KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
+    : ctx_bytes_(0), extra_args_bytes_(Context::extra_args_size) {
   arg_attribs_vec_.reserve(kernel.args.size());
   for (const auto &ka : kernel.args) {
     ArgAttributes ma;
@@ -76,7 +76,7 @@ KernelArgsAttributes::KernelArgsAttributes(const Kernel &kernel)
   }
 
   auto arrange_scalar_before_array = [&bytes =
-                                          this->args_rets_bytes_](auto *vec) {
+                                          this->ctx_bytes_](auto *vec) {
     std::vector<int> scalar_indices;
     std::vector<int> array_indices;
     for (int i = 0; i < vec->size(); ++i) {

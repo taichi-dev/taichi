@@ -200,7 +200,7 @@ class CompiledTaichiKernel {
     std::string_view taichi_kernel_name;
     std::string mtl_source_code;
     const std::vector<KernelAttributes> *mtl_kernels_attribs;
-    const KernelArgsAttributes *args_attribs;
+    const KernelContextAttributes *args_attribs;
     MTLDevice *device;
     MemoryPool *mem_pool;
     ProfilerBase *profiler;
@@ -252,19 +252,19 @@ class CompiledTaichiKernel {
   // Have to be exposed as public for Impl to use. We cannot friend the Impl
   // class because it is private.
   std::vector<std::unique_ptr<CompiledMtlKernelBase>> compiled_mtl_kernels;
-  KernelArgsAttributes args_attribs;
+  KernelContextAttributes args_attribs;
   std::unique_ptr<BufferMemoryView> args_mem;
   nsobj_unique_ptr<MTLBuffer> args_buffer;
 
  private:
 };
 
-class HostMetalArgsBlitter {
+class HostMetalCtxBlitter {
  public:
-  HostMetalArgsBlitter(const KernelArgsAttributes *args_attribs,
+  HostMetalCtxBlitter(const KernelContextAttributes *args_attribs,
                        Context *ctx,
                        BufferMemoryView *args_mem)
-      : args_attribs_(args_attribs), ctx_(ctx), args_mem_(args_mem) {
+      : ctx_attribs_(args_attribs), ctx_(ctx), args_mem_(args_mem) {
   }
 
   void host_to_metal() {
@@ -272,12 +272,12 @@ class HostMetalArgsBlitter {
   auto d = ctx_->get_arg<type>(i); \
   std::memcpy(device_ptr, &d, sizeof(d))
 
-    if (args_attribs_->empty()) {
+    if (ctx_attribs_->empty()) {
       return;
     }
     char *const base = (char *)args_mem_->ptr();
-    for (int i = 0; i < args_attribs_->args().size(); ++i) {
-      const auto &arg = args_attribs_->args()[i];
+    for (int i = 0; i < ctx_attribs_->args().size(); ++i) {
+      const auto &arg = ctx_attribs_->args()[i];
       const auto dt = arg.dt;
       char *device_ptr = base + arg.offset_in_mem;
       if (arg.is_array) {
@@ -302,9 +302,9 @@ class HostMetalArgsBlitter {
                  metal_data_type_name(arg.dt));
       }
     }
-    char *device_ptr = base + args_attribs_->args_rets_bytes();
+    char *device_ptr = base + ctx_attribs_->ctx_bytes();
     std::memcpy(device_ptr, ctx_->extra_args,
-                args_attribs_->extra_args_bytes());
+                ctx_attribs_->extra_args_bytes());
 #undef TO_METAL
   }
 
@@ -313,22 +313,22 @@ class HostMetalArgsBlitter {
   const type d = *reinterpret_cast<type *>(device_ptr); \
   ctx_->set_arg<type>(i, d)
 
-    if (args_attribs_->empty()) {
+    if (ctx_attribs_->empty()) {
       return;
     }
     char *const base = (char *)args_mem_->ptr();
-    for (int i = 0; i < args_attribs_->args().size(); ++i) {
-      const auto &arg = args_attribs_->args()[i];
+    for (int i = 0; i < ctx_attribs_->args().size(); ++i) {
+      const auto &arg = ctx_attribs_->args()[i];
       char *device_ptr = base + arg.offset_in_mem;
       if (arg.is_array) {
         void *host_ptr = ctx_->get_arg<void *>(i);
         std::memcpy(host_ptr, device_ptr, arg.stride);
       }
     }
-    for (int i = 0; i < args_attribs_->rets().size(); ++i) {
+    for (int i = 0; i < ctx_attribs_->rets().size(); ++i) {
       // Note that we are copying the i-th return value on Metal to the i-th
       // *arg* on the host context.
-      const auto &ret = args_attribs_->rets()[i];
+      const auto &ret = ctx_attribs_->rets()[i];
       char *device_ptr = base + ret.offset_in_mem;
       if (ret.is_array) {
         void *host_ptr = ctx_->get_arg<void *>(i);
@@ -358,18 +358,18 @@ class HostMetalArgsBlitter {
 #undef TO_HOST
   }
 
-  static std::unique_ptr<HostMetalArgsBlitter> maybe_make(
+  static std::unique_ptr<HostMetalCtxBlitter> maybe_make(
       const CompiledTaichiKernel &kernel,
       Context *ctx) {
     if (kernel.args_attribs.empty()) {
       return nullptr;
     }
-    return std::make_unique<HostMetalArgsBlitter>(&kernel.args_attribs, ctx,
+    return std::make_unique<HostMetalCtxBlitter>(&kernel.args_attribs, ctx,
                                                   kernel.args_mem.get());
   }
 
  private:
-  const KernelArgsAttributes *const args_attribs_;
+  const KernelContextAttributes *const ctx_attribs_;
   Context *const ctx_;
   BufferMemoryView *const args_mem_;
 };
@@ -422,7 +422,7 @@ class KernelManager::Impl {
       const std::string &taichi_kernel_name,
       const std::string &mtl_kernel_source_code,
       const std::vector<KernelAttributes> &kernels_attribs,
-      const KernelArgsAttributes &args_attribs) {
+      const KernelContextAttributes &args_attribs) {
     TI_ASSERT(compiled_taichi_kernels_.find(taichi_kernel_name) ==
               compiled_taichi_kernels_.end());
 
@@ -449,7 +449,7 @@ class KernelManager::Impl {
   void launch_taichi_kernel(const std::string &taichi_kernel_name,
                             Context *ctx) {
     auto &ctk = *compiled_taichi_kernels_.find(taichi_kernel_name)->second;
-    auto args_blitter = HostMetalArgsBlitter::maybe_make(ctk, ctx);
+    auto ctx_blitter = HostMetalCtxBlitter::maybe_make(ctk, ctx);
     if (config_->verbose_kernel_launches) {
       TI_INFO("Lauching Taichi kernel <{}>", taichi_kernel_name);
     }
@@ -459,19 +459,19 @@ class KernelManager::Impl {
         {BufferEnum::GlobalTmps, global_tmps_buffer_.get()},
         {BufferEnum::Runtime, runtime_buffer_.get()},
     };
-    if (args_blitter) {
-      args_blitter->host_to_metal();
+    if (ctx_blitter) {
+      ctx_blitter->host_to_metal();
       input_buffers[BufferEnum::Args] = ctk.args_buffer.get();
     }
     for (const auto &mk : ctk.compiled_mtl_kernels) {
       mk->launch(input_buffers, cur_command_buffer_.get());
     }
-    if (args_blitter) {
+    if (ctx_blitter) {
       // TODO(k-ye): One optimization is to synchronize only when we absolutely
       // need to transfer the data back to host. This includes the cases where
       // an arg is 1) an array, or 2) used as return value.
       synchronize();
-      args_blitter->metal_to_host();
+      ctx_blitter->metal_to_host();
     }
   }
 
@@ -648,7 +648,7 @@ void KernelManager::register_taichi_kernel(
     const std::string &taichi_kernel_name,
     const std::string &mtl_kernel_source_code,
     const std::vector<KernelAttributes> &kernels_attribs,
-    const KernelArgsAttributes &args_attribs) {
+    const KernelContextAttributes &args_attribs) {
   impl_->register_taichi_kernel(taichi_kernel_name, mtl_kernel_source_code,
                                 kernels_attribs, args_attribs);
 }

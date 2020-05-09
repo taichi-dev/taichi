@@ -8,7 +8,7 @@
 	shallow = true
 [submodule "external/glfw"]
 	path = external/glfw
-	url = https://github.com/glfw/glfw
+	url = https://github.com/taichi-dev/glfw
 	shallow = true
 [submodule "external/glad"]
 	path = external/glad

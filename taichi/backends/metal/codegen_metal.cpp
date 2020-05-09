@@ -263,13 +263,6 @@ class KernelCodegen : public IRVisitor {
     }
   }
 
-  void visit(ArgStoreStmt *stmt) override {
-    const auto dt = metal_data_type_name(stmt->element_type());
-    TI_ASSERT(!stmt->is_ptr);
-    emit("*{}.arg{}() = {};", kArgsContextName, stmt->arg_id,
-         stmt->val->raw_name());
-  }
-
   void visit(KernelReturnStmt *stmt) override {
     // TODO: use stmt->ret_id instead of 0 as index
     emit("*{}.ret0() = {};", kArgsContextName, stmt->value->raw_name());

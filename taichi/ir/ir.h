@@ -934,25 +934,6 @@ class ArgLoadStmt : public Stmt {
   DEFINE_ACCEPT
 };
 
-// For return values
-class ArgStoreStmt : public Stmt {
- public:
-  int arg_id;
-  Stmt *val;
-
-  ArgStoreStmt(int arg_id, Stmt *val) : arg_id(arg_id), val(val) {
-    TI_STMT_REG_FIELDS;
-  }
-
-  // Arguments are considered global (nonlocal)
-  virtual bool has_global_side_effect() const override {
-    return true;
-  }
-
-  TI_STMT_DEF_FIELDS(ret_type, arg_id, val);
-  DEFINE_ACCEPT
-};
-
 class RandStmt : public Stmt {
  public:
   RandStmt(DataType dt) {

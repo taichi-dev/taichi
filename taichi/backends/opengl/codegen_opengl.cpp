@@ -520,15 +520,6 @@ class KernelGen : public IRVisitor {
     }
   }
 
-  void visit(ArgStoreStmt *stmt) override {
-    TI_ASSERT(!stmt->is_ptr);
-    used.argument = true;
-    emit("_args_{}_[{} << {}] = {};",
-         data_type_short_name(stmt->element_type()), stmt->arg_id,
-         opengl_argument_address_shifter(stmt->element_type()),
-         stmt->val->short_name());
-  }
-
   std::string make_kernel_name() {
     return fmt::format("{}{}", glsl_kernel_prefix_, glsl_kernel_count_++);
   }

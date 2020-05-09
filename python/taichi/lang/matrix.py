@@ -553,8 +553,9 @@ class Matrix:
         assert l == 2
         return impl.sqrt(self.norm_sqr() + eps)
 
+    # TODO: avoid using sqr here since people might consider "sqr" as "square root". New name TBD.
     def norm_sqr(self):
-        return impl.sqr(self).sum()
+        return (self**2).sum()
 
     def max(self):
         ret = self.entries[0]

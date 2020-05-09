@@ -35,24 +35,6 @@ class ConstantFold : public BasicStmtVisitor {
     {
       return (BinaryOpType) op;
     }
-
-#if 0
-    bool operator==(const JITEvaluatorId &b)
-    {
-      return op == b.op && ret == b.ret && lhs == b.lhs && rhs == b.rhs
-          && is_binary == b.is_binary;
-    }
-
-    struct hash {
-      size_t operator()(const JITEvaluatorId &id)
-      {
-        hash<int> hop;
-        hash<DataType> hdt;
-        return hop(op | is_binary << 7)
-          ^ hdt(ret) ^ hdt(lhs) ^ hdt(rhs);
-      }
-    };
-#endif
   };
 
   static Kernel *get_jit_evaluator_kernel(JITEvaluatorId const &id)
@@ -65,7 +47,6 @@ class ConstantFold : public BasicStmtVisitor {
     static int jic = 0; // X: race?
     auto kernel_name = fmt::format("jit_evaluator_{}", jic++);
     auto func = [&] () {
-      //insert_die_loop();
       auto lhstmt = Stmt::make<ArgLoadStmt>(0, false);
       auto rhstmt = Stmt::make<ArgLoadStmt>(1, false);
       pStmt oper;
@@ -83,7 +64,6 @@ class ConstantFold : public BasicStmtVisitor {
         current_ast_builder().insert(std::move(rhstmt));
       current_ast_builder().insert(std::move(oper));
       current_ast_builder().insert(std::move(ret));
-      //insert_die("DEAD");
     };
     auto ker = std::make_unique<Kernel>(get_current_program(), func, kernel_name);
     ker->insert_ret(id.ret);
@@ -135,40 +115,29 @@ class ConstantFold : public BasicStmtVisitor {
       true};
     auto *ker = get_jit_evaluator_kernel(id);
     auto &ctx = get_current_program().get_context();
-    //TI_INFO("JITARGSf = {} {}", lhs.val_f32, rhs.val_f32);
-    TI_INFO("JITARGSi = {} {}", lhs.val_i32, rhs.val_i32);
     ContextArgSaveGuard _(ctx); // save input args, prevent override current kernel
     ctx.set_arg<int64_t>(0, lhs.val_i64);
     ctx.set_arg<int64_t>(1, rhs.val_i64);
     irpass::print(ker->ir);
     (*ker)();
     ret.val_i64 = get_current_program().fetch_result<int64_t>(0);
-    //TI_INFO("JITEVALf = {}", ret.val_f32);
-    TI_INFO("JITEVALi = {}", ret.val_i32);
     return true;
   }
 
   static bool jit_from_unary_op(TypedConstant &ret, UnaryOpStmt *stmt,
       const TypedConstant &lhs)
   {
-    // TODO: remove this:
-    if (unary_op_is_cast(stmt->op_type) && !is_good_type(stmt->cast_type))
-      return false;
     if (!is_good_type(ret.dt))
       return false;
     JITEvaluatorId id{(int)stmt->op_type, ret.dt, lhs.dt, stmt->cast_type,
       false};
     auto *ker = get_jit_evaluator_kernel(id);
     auto &ctx = get_current_program().get_context();
-    //TI_INFO("JITARGSf = {} {}", lhs.val_f32);
-    TI_INFO("JITARGSi = {}", lhs.val_i32);
     ContextArgSaveGuard _(ctx); // save input args, prevent override current kernel
     ctx.set_arg<int64_t>(0, lhs.val_i64);
     irpass::print(ker->ir);
     (*ker)();
     ret.val_i64 = get_current_program().fetch_result<int64_t>(0);
-    //TI_INFO("JITEVALf = {}", ret.val_f32);
-    TI_INFO("JITEVALi = {}", ret.val_i32);
     return true;
   }
 
@@ -181,7 +150,6 @@ class ConstantFold : public BasicStmtVisitor {
       return;
     auto dst_type = stmt->ret_type.data_type;
     TypedConstant new_constant(dst_type);
-    TI_INFO("JIT_ret_dt = {}", dst_type);
     if (jit_from_binary_op(new_constant, stmt, lhs->val[0], rhs->val[0])) {
       auto evaluated =
           Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(new_constant));
@@ -200,7 +168,6 @@ class ConstantFold : public BasicStmtVisitor {
       return;
     auto dst_type = stmt->ret_type.data_type;
     TypedConstant new_constant(dst_type);
-    TI_INFO("JIT_ret_dt = {}", dst_type);
     if (jit_from_unary_op(new_constant, stmt, lhs->val[0])) {
       auto evaluated =
           Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(new_constant));

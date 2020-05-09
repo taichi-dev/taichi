@@ -114,15 +114,13 @@ TI_TEST("alg_simp") {
 
     irpass::typecheck(block.get());  // insert 2 casts
     TI_CHECK(block->size() == 10);
-    TI_INFO("S0:");
-    irpass::print(block.get());
+    // irpass::print(block.get());
 
     irpass::constant_fold(block.get());  // should change 2 casts into const
     irpass::alg_simp(block.get(),
                      config_without_fast_math);  // should not eliminate
     irpass::die(block.get());                    // should eliminate 2 const
-    TI_INFO("S1:");
-    irpass::print(block.get());
+    // irpass::print(block.get());
     TI_CHECK(block->size() == 8);
 
     CompileConfig config_with_fast_math;
@@ -131,8 +129,7 @@ TI_TEST("alg_simp") {
                      config_with_fast_math);  // should eliminate mul, add
     irpass::die(block.get());                 // should eliminate zero, load
 
-    TI_INFO("S2:");
-    irpass::print(block.get());
+    // irpass::print(block.get());
     TI_CHECK(block->size() == 3);  // one address, one one, one store
   }
 

@@ -34,10 +34,7 @@ def benchmark_range():
             base = (x[p] * inv_dx - 0.5).cast(int)
             fx = x[p] * inv_dx - base.cast(float)
             # Quadratic kernels  [http://mpm.graphics   Eqn. 123, with x=fx, fx-1,fx-2]
-            w = [
-                0.5 * ti.sqr(1.5 - fx), 0.75 - ti.sqr(fx - 1),
-                0.5 * ti.sqr(fx - 0.5)
-            ]
+            w = [0.5 * (1.5 - fx)**2, 0.75 - (fx - 1)**2, 0.5 * (fx - 0.5)**2]
             F[p] = (ti.Matrix.identity(ti.f32, 2) +
                     dt * C[p]) @ F[p]  # deformation gradient update
             h = ti.exp(
@@ -90,8 +87,7 @@ def benchmark_range():
             base = (x[p] * inv_dx - 0.5).cast(int)
             fx = x[p] * inv_dx - base.cast(float)
             w = [
-                0.5 * ti.sqr(1.5 - fx), 0.75 - ti.sqr(fx - 1.0),
-                0.5 * ti.sqr(fx - 0.5)
+                0.5 * (1.5 - fx)**2, 0.75 - (fx - 1.0)**2, 0.5 * (fx - 0.5)**2
             ]
             new_v = ti.Vector.zero(ti.f32, 2)
             new_C = ti.Matrix.zero(ti.f32, 2, 2)
@@ -163,10 +159,7 @@ def benchmark_struct():
             base = (x[p] * inv_dx - 0.5).cast(int)
             fx = x[p] * inv_dx - base.cast(float)
             # Quadratic kernels  [http://mpm.graphics   Eqn. 123, with x=fx, fx-1,fx-2]
-            w = [
-                0.5 * ti.sqr(1.5 - fx), 0.75 - ti.sqr(fx - 1),
-                0.5 * ti.sqr(fx - 0.5)
-            ]
+            w = [0.5 * (1.5 - fx)**2, 0.75 - (fx - 1)**2, 0.5 * (fx - 0.5)**2]
             F[p] = (ti.Matrix.identity(ti.f32, 2) +
                     dt * C[p]) @ F[p]  # deformation gradient update
             h = ti.exp(
@@ -221,8 +214,7 @@ def benchmark_struct():
             base = (x[p] * inv_dx - 0.5).cast(int)
             fx = x[p] * inv_dx - base.cast(float)
             w = [
-                0.5 * ti.sqr(1.5 - fx), 0.75 - ti.sqr(fx - 1.0),
-                0.5 * ti.sqr(fx - 0.5)
+                0.5 * (1.5 - fx)**2, 0.75 - (fx - 1.0)**2, 0.5 * (fx - 0.5)**2
             ]
             new_v = ti.Vector.zero(ti.f32, 2)
             new_C = ti.Matrix.zero(ti.f32, 2, 2)

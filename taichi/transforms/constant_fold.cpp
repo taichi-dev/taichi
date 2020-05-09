@@ -28,11 +28,13 @@ class ConstantFold : public BasicStmtVisitor {
 
     UnaryOpType unary_op() const
     {
+      TI_ASSERT(!is_binary);
       return (UnaryOpType) op;
     }
 
     BinaryOpType binary_op() const
     {
+      TI_ASSERT(is_binary);
       return (BinaryOpType) op;
     }
   };
@@ -104,7 +106,7 @@ class ConstantFold : public BasicStmtVisitor {
     }
   };
 
-  static bool jit_from_binary_op(TypedConstant &ret, BinaryOpStmt *stmt,
+  static bool jit_evaluate_binary_op(TypedConstant &ret, BinaryOpStmt *stmt,
       const TypedConstant &lhs, const TypedConstant &rhs)
   {
     // ConstStmt of `bad` types like `i8` is not supported by LLVM.
@@ -118,24 +120,22 @@ class ConstantFold : public BasicStmtVisitor {
     ContextArgSaveGuard _(ctx); // save input args, prevent override current kernel
     ctx.set_arg<int64_t>(0, lhs.val_i64);
     ctx.set_arg<int64_t>(1, rhs.val_i64);
-    irpass::print(ker->ir);
     (*ker)();
     ret.val_i64 = get_current_program().fetch_result<int64_t>(0);
     return true;
   }
 
-  static bool jit_from_unary_op(TypedConstant &ret, UnaryOpStmt *stmt,
-      const TypedConstant &lhs)
+  static bool jit_evaluate_unary_op(TypedConstant &ret, UnaryOpStmt *stmt,
+      const TypedConstant &operand)
   {
     if (!is_good_type(ret.dt))
       return false;
-    JITEvaluatorId id{(int)stmt->op_type, ret.dt, lhs.dt, stmt->cast_type,
+    JITEvaluatorId id{(int)stmt->op_type, ret.dt, operand.dt, stmt->cast_type,
       false};
     auto *ker = get_jit_evaluator_kernel(id);
     auto &ctx = get_current_program().get_context();
     ContextArgSaveGuard _(ctx); // save input args, prevent override current kernel
-    ctx.set_arg<int64_t>(0, lhs.val_i64);
-    irpass::print(ker->ir);
+    ctx.set_arg<int64_t>(0, operand.val_i64);
     (*ker)();
     ret.val_i64 = get_current_program().fetch_result<int64_t>(0);
     return true;
@@ -150,7 +150,7 @@ class ConstantFold : public BasicStmtVisitor {
       return;
     auto dst_type = stmt->ret_type.data_type;
     TypedConstant new_constant(dst_type);
-    if (jit_from_binary_op(new_constant, stmt, lhs->val[0], rhs->val[0])) {
+    if (jit_evaluate_binary_op(new_constant, stmt, lhs->val[0], rhs->val[0])) {
       auto evaluated =
           Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(new_constant));
       stmt->replace_with(evaluated.get());
@@ -161,14 +161,14 @@ class ConstantFold : public BasicStmtVisitor {
   }
 
   void visit(UnaryOpStmt *stmt) override {
-    auto lhs = stmt->operand->cast<ConstStmt>();
-    if (!lhs)
+    auto operand = stmt->operand->cast<ConstStmt>();
+    if (!operand)
       return;
     if (stmt->width() != 1)
       return;
     auto dst_type = stmt->ret_type.data_type;
     TypedConstant new_constant(dst_type);
-    if (jit_from_unary_op(new_constant, stmt, lhs->val[0])) {
+    if (jit_evaluate_unary_op(new_constant, stmt, operand->val[0])) {
       auto evaluated =
           Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(new_constant));
       stmt->replace_with(evaluated.get());

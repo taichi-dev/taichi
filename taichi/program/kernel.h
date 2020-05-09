@@ -77,8 +77,6 @@ class Kernel {
 
   void set_extra_arg_int(int i, int j, int32 d);
 
-  void mark_arg_return_value(int i, bool is_return = true);
-
   void set_arg_nparray(int i, uint64 ptr, uint64 size);
 
   void set_arch(Arch arch);

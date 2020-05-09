@@ -196,10 +196,6 @@ int64 Kernel::get_ret_int(int i) {
   }
 }
 
-void Kernel::mark_arg_return_value(int i, bool is_return) {
-  args[i].is_return_value = is_return;
-}
-
 void Kernel::set_extra_arg_int(int i, int j, int32 d) {
   program.context.extra_args[i][j] = d;
 }

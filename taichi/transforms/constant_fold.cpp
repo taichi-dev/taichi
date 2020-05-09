@@ -113,7 +113,7 @@ class ConstantFold : public BasicStmtVisitor {
       const TypedConstant &lhs, const TypedConstant &rhs)
   {
     // ConstStmt of `bad` types like `i8` is not supported by LLVM.
-    // dis: https://github.com/taichi-dev/taichi/pull/839#issuecomment-625902727 
+    // Dis: https://github.com/taichi-dev/taichi/pull/839#issuecomment-625902727
     if (!is_good_type(ret.dt))
       return false;
     JITEvaluatorId id{(int)stmt->op_type, ret.dt, lhs.dt, rhs.dt,
@@ -212,6 +212,12 @@ class ConstantFold : public BasicStmtVisitor {
 namespace irpass {
 
 void constant_fold(IRNode *root) {
+  // @archibate found that `debug=True` will cause JIT kernels
+  // failed to evaluate correctly (always return 0), so we simply
+  // disable constant_fold when config.debug is turned on.
+  // Dis: https://github.com/taichi-dev/taichi/pull/839#issuecomment-626107010
+  if (get_current_program().config.debug)
+    return;
   return ConstantFold::run(root);
 }
 

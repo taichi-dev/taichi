@@ -28,10 +28,7 @@ def substep():
         for p in x:
             base = (x[p] * inv_dx - 0.5).cast(int)
             fx = x[p] * inv_dx - base.cast(float)
-            w = [
-                0.5 * ti.sqr(1.5 - fx), 0.75 - ti.sqr(fx - 1),
-                0.5 * ti.sqr(fx - 0.5)
-            ]
+            w = [0.5 * (1.5 - fx)**2, 0.75 - (fx - 1)**2, 0.5 * (fx - 0.5)**2]
             F[p] = (ti.Matrix.identity(ti.f32, 2) + dt * C[p]) @ F[p]
             h = ti.exp(10 * (1.0 - Jp[p]))
             if material[p] == 1:

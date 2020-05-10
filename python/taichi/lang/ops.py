@@ -78,6 +78,9 @@ def bit_cast(obj, type):
 
 
 def sqr(obj):
+    import warnings
+    warnings.warn('ti.sqr(x) is deprecated. Please use x ** 2 directly.',
+                  DeprecationWarning)
     return obj * obj
 
 

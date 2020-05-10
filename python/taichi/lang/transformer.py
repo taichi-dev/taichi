@@ -37,6 +37,7 @@ class ASTTransformer(ast.NodeTransformer):
         self.is_classfunc = is_classfunc
         self.func = func
         self.arg_features = arg_features
+        self.returns = None
 
     def variable_scope(self, *args):
         return ScopeGuard(self, *args)
@@ -594,6 +595,15 @@ if 1:
                         "Function definition not allowed in 'ti.kernel'.")
             # Transform as kernel
             arg_decls = []
+
+            # Treat return type
+            if node.returns is not None:
+                ret_init = self.parse_stmt('ti.decl_scalar_ret(0)')
+                ret_init.value.args[0] = node.returns
+                self.returns = node.returns
+                arg_decls.append(ret_init)
+                node.returns = None
+
             for i, arg in enumerate(args.args):
                 if isinstance(self.func.arguments[i], ti.template):
                     continue
@@ -620,6 +630,7 @@ if 1:
                     arg_decls.append(arg_init)
             # remove original args
             node.args.args = []
+
         else:  # ti.func
             for decorator in node.decorator_list:
                 if (isinstance(decorator, ast.Attribute)
@@ -640,8 +651,10 @@ if 1:
                                                          '_by_value__')
                 args.args[i].arg += '_by_value__'
                 arg_decls.append(arg_init)
+
         with self.variable_scope():
             self.generic_visit(node)
+
         node.body = arg_decls + node.body
         return node
 
@@ -736,7 +749,16 @@ if 1:
     def visit_Return(self, node):
         self.generic_visit(node)
         if self.is_kernel:
-            raise TaichiSyntaxError(
-                '"return" not allowed in \'ti.kernel\'. Please walk around by storing the return result to a global variable.'
-            )
+            # TODO: check if it's at the end of a kernel, throw TaichiSyntaxError if not
+            if node.value is not None:
+                if self.returns is None:
+                    raise TaichiSyntaxError('kernel with return value must be '
+                        'annotated with a return type, e.g. def func() -> ti.f32')
+                ret_expr = self.parse_expr('ti.cast(ti.Expr(0), 0)')
+                ret_expr.args[0].args[0] = node.value
+                ret_expr.args[1] = self.returns
+                ret_stmt = self.parse_stmt(
+                    'ti.core.create_kernel_return(ret.ptr)')
+                ret_stmt.value.args[0].value = ret_expr
+                return ret_stmt
         return node

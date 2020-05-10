@@ -864,17 +864,18 @@ void CodeGenLLVM::visit(ArgLoadStmt *stmt) {
   }
 }
 
-void CodeGenLLVM::visit(ArgStoreStmt *stmt) {
+void CodeGenLLVM::visit(KernelReturnStmt *stmt) {
   if (stmt->is_ptr) {
     TI_NOT_IMPLEMENTED
   } else {
-    auto intermediate_bits = tlctx->get_data_type(stmt->val->ret_type.data_type)
-                                 ->getPrimitiveSizeInBits();
+    auto intermediate_bits =
+        tlctx->get_data_type(stmt->value->ret_type.data_type)
+            ->getPrimitiveSizeInBits();
     llvm::Type *intermediate_type =
         llvm::Type::getIntNTy(*llvm_context, intermediate_bits);
     llvm::Type *dest_ty = tlctx->get_data_type<int64>();
     auto extended = builder->CreateZExt(
-        builder->CreateBitCast(llvm_val[stmt->val], intermediate_type),
+        builder->CreateBitCast(llvm_val[stmt->value], intermediate_type),
         dest_ty);
     builder->CreateCall(get_runtime_function("LLVMRuntime_store_result"),
                         {get_runtime(), extended});

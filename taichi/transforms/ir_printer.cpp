@@ -309,14 +309,14 @@ class IRPrinter : public IRVisitor {
     print("{}{} = arg[{}]", stmt->type_hint(), stmt->name(), stmt->arg_id);
   }
 
-  void visit(FrontendArgStoreStmt *stmt) override {
-    print("{}{} : store arg {} <- {}", stmt->type_hint(), stmt->name(),
-          stmt->arg_id, stmt->expr->serialize());
+  void visit(FrontendKernelReturnStmt *stmt) override {
+    print("{}{} : kernel return {}", stmt->type_hint(), stmt->name(),
+          stmt->value->serialize());
   }
 
-  void visit(ArgStoreStmt *stmt) override {
-    print("{}{} : store arg {} <- {}", stmt->type_hint(), stmt->name(),
-          stmt->arg_id, stmt->val->name());
+  void visit(KernelReturnStmt *stmt) override {
+    print("{}{} : kernel return {}", stmt->type_hint(), stmt->name(),
+          stmt->value->name());
   }
 
   void visit(LocalLoadStmt *stmt) override {

@@ -449,8 +449,8 @@ Kernel &Program::get_snode_reader(SNode *snode) {
     for (int i = 0; i < snode->num_active_indices; i++) {
       indices.push_back(Expr::make<ArgLoadExpression>(i));
     }
-    auto ret = Stmt::make<FrontendArgStoreStmt>(
-        snode->num_active_indices, load_if_ptr((snode->expr)[indices]));
+    auto ret = Stmt::make<FrontendKernelReturnStmt>(
+        load_if_ptr((snode->expr)[indices]));
     current_ast_builder().insert(std::move(ret));
   });
   ker.set_arch(get_snode_accessor_arch());
@@ -458,8 +458,7 @@ Kernel &Program::get_snode_reader(SNode *snode) {
   ker.is_accessor = true;
   for (int i = 0; i < snode->num_active_indices; i++)
     ker.insert_arg(DataType::i32, false);
-  auto ret_val = ker.insert_arg(snode->dt, false);
-  ker.mark_arg_return_value(ret_val);
+  ker.insert_ret(snode->dt);
   return ker;
 }
 
@@ -481,6 +480,26 @@ Kernel &Program::get_snode_writer(SNode *snode) {
     ker.insert_arg(DataType::i32, false);
   ker.insert_arg(snode->dt, false);
   return ker;
+}
+
+uint64 Program::fetch_result_uint64(int i) {
+  uint64 ret;
+  auto arch = config.arch;
+  if (arch == Arch::cuda) {
+    // TODO: refactor
+    // We use a `memcpy_device_to_host` call here even if we have unified memory. This simplifies code. Also note that a unified memory (4KB) page fault is rather expensive for reading 4-8 bytes.
+#if defined(TI_WITH_CUDA)
+    CUDADriver::get_instance().memcpy_device_to_host(
+        &ret, (uint64 *)result_buffer + i, sizeof(uint64));
+#else
+    TI_NOT_IMPLEMENTED;
+#endif
+  } else if (arch_is_cpu(arch)) {
+    ret = ((uint64 *)result_buffer)[i];
+  } else {
+    ret = context.get_arg_as_uint64(i);
+  }
+  return ret;
 }
 
 void Program::finalize() {

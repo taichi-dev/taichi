@@ -120,13 +120,13 @@ Scalar arithmetics
 -----------------------------------------
 Supported scalar functions:
 
+<<<<<<< HEAD
 .. function:: ti.sin(x)
 .. function:: ti.cos(x)
 .. function:: ti.asin(x)
 .. function:: ti.acos(x)
 .. function:: ti.atan2(x, y)
 .. function:: ti.cast(x, type)
-.. function:: ti.sqr(x)
 .. function:: ti.sqrt(x)
 .. function:: ti.floor(x)
 .. function:: ti.ceil(x)

@@ -169,7 +169,7 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void visit(ArgLoadStmt *stmt) override;
 
-  void visit(ArgStoreStmt *stmt) override;
+  void visit(KernelReturnStmt *stmt) override;
 
   void visit(LocalLoadStmt *stmt) override;
 

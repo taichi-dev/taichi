@@ -41,6 +41,7 @@ details = {
     'bug': 'Bug fixes',
     'test': 'Tests',
     'async': 'AsyncEngine',
+    'release': '',
 }
 
 for i, c in enumerate(commits):
@@ -58,15 +59,25 @@ for i, c in enumerate(commits):
         tags.append(tag)
         s = s[r + 1:]
         s = s.strip()
+
     for tag in tags:
-        assert tag.lower() in details, f'Tag {tag} undefined in details'
-        if tag[0].isupper():
-            tag = tag.lower()
-            if tag not in notable_changes:
-                notable_changes[tag] = []
-            notable_changes[tag].append(s)
+        if tag.lower() in details:
+            if details[tag.lower()] == '':
+                # E.g. 'release' does not need to appear in the change log
+                continue
+            if tag[0].isupper():
+                tag = tag.lower()
+                if tag not in notable_changes:
+                    notable_changes[tag] = []
+                notable_changes[tag].append(s)
+        else:
+            print(
+                f'** Warning: tag {tag.lower()} undefined in the "details" dict. Please include the tag into "details", unless the tag is a typo.'
+            )
+
     if s.startswith('[release]'):
         break
+
     all_changes.append(format(c))
 
 for tag in sorted(notable_changes.keys()):

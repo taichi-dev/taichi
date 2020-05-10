@@ -193,9 +193,11 @@ void export_lang(py::module &m) {
 
   py::class_<Kernel>(m, "Kernel")
       .def("set_arg_int", &Kernel::set_arg_int)
-      .def("set_extra_arg_int", &Kernel::set_extra_arg_int)
       .def("set_arg_float", &Kernel::set_arg_float)
       .def("set_arg_nparray", &Kernel::set_arg_nparray)
+      .def("set_extra_arg_int", &Kernel::set_extra_arg_int)
+      .def("get_ret_int", &Kernel::get_ret_int)
+      .def("get_ret_float", &Kernel::get_ret_float)
       .def("__call__", [](Kernel *kernel) {
         py::gil_scoped_release release;
         kernel->operator()();
@@ -303,6 +305,10 @@ void export_lang(py::module &m) {
 
   m.def("insert_break_stmt", [&]() {
     current_ast_builder().insert(Stmt::make<FrontendBreakStmt>());
+  });
+
+  m.def("create_kernel_return", [&](const Expr &value) {
+    current_ast_builder().insert(Stmt::make<FrontendKernelReturnStmt>(value));
   });
 
   m.def("insert_continue_stmt", [&]() {
@@ -491,6 +497,10 @@ void export_lang(py::module &m) {
                                                                  is_nparray);
   });
 
+  m.def("decl_ret", [&](DataType dt) {
+    return get_current_program().get_current_kernel().insert_ret(dt);
+  });
+
   m.def("test_throw", [] {
     try {
       throw IRModified();
@@ -537,6 +547,10 @@ void export_lang(py::module &m) {
   m.def("is_supported", is_supported);
 
   m.def("print_stat", [] { stat.print(); });
+
+  // A temporary option which will be removed soon in the future
+  m.def("toggle_advanced_optimization",
+        [](bool option) { advanced_optimization = option; });
 }
 
 TI_NAMESPACE_END

@@ -30,15 +30,12 @@ def regress():
         est = 0.0
         for j in ti.static(range(number_coeffs)):
             est += coeffs[j] * (v**j)
-        loss.atomic_add(0.5 * ti.sqr(y[i] - est))
+        loss[None] += 0.5 * (y[i] - est)**2
 
 
 @ti.kernel
 def update():
     for i in ti.static(range(number_coeffs)):
-        # ti.print(i)
-        # ti.print(coeffs[i][None])
-        # ti.print(coeffs[i].grad[None])
         coeffs[i][None] -= learning_rate * coeffs[i].grad[None]
         coeffs[i].grad[None] = 0
 

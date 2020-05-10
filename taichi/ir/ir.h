@@ -934,25 +934,6 @@ class ArgLoadStmt : public Stmt {
   DEFINE_ACCEPT
 };
 
-// For return values
-class ArgStoreStmt : public Stmt {
- public:
-  int arg_id;
-  Stmt *val;
-
-  ArgStoreStmt(int arg_id, Stmt *val) : arg_id(arg_id), val(val) {
-    TI_STMT_REG_FIELDS;
-  }
-
-  // Arguments are considered global (nonlocal)
-  virtual bool has_global_side_effect() const override {
-    return true;
-  }
-
-  TI_STMT_DEF_FIELDS(ret_type, arg_id, val);
-  DEFINE_ACCEPT
-};
-
 class RandStmt : public Stmt {
  public:
   RandStmt(DataType dt) {
@@ -1291,19 +1272,6 @@ class PrintStmt : public Stmt {
   DEFINE_ACCEPT
 };
 
-class If {
- public:
-  FrontendIfStmt *stmt;
-
-  explicit If(const Expr &cond);
-
-  If(const Expr &cond, const std::function<void()> &func);
-
-  If &Then(const std::function<void()> &func);
-
-  If &Else(const std::function<void()> &func);
-};
-
 class ConstStmt : public Stmt {
  public:
   LaneAttribute<TypedConstant> val;
@@ -1453,6 +1421,22 @@ class FuncCallStmt : public Stmt {
   DEFINE_ACCEPT
 };
 
+class KernelReturnStmt : public Stmt {
+ public:
+  Stmt *value;
+
+  KernelReturnStmt(Stmt *value) : value(value) {
+    TI_STMT_REG_FIELDS;
+  }
+
+  bool is_container_statement() const override {
+    return false;
+  }
+
+  TI_STMT_DEF_FIELDS(value);
+  DEFINE_ACCEPT
+};
+
 class WhileStmt : public Stmt {
  public:
   Stmt *mask;
@@ -1503,25 +1487,6 @@ inline void BlockDim(int v) {
 inline void SLP(int v) {
   current_ast_builder().insert(Stmt::make<PragmaSLPStmt>(v));
 }
-
-class For {
- public:
-  For(const Expr &i,
-      const Expr &s,
-      const Expr &e,
-      const std::function<void()> &func);
-
-  For(const ExprGroup &i,
-      const Expr &global,
-      const std::function<void()> &func);
-
-  For(const Expr &s, const Expr &e, const std::function<void(Expr)> &func);
-};
-
-class While {
- public:
-  While(const Expr &cond, const std::function<void()> &func);
-};
 
 Expr Var(const Expr &x);
 

@@ -1,6 +1,7 @@
 import taichi as ti
 from taichi import approx
 from random import random, randint, seed
+import operator as ops
 import math
 
 
@@ -12,7 +13,7 @@ def rand(dtype):
     if ti.core.is_integral(dtype):
         return randint(1, 5)
     else:
-        return float(randint(1, 5)) / 5
+        return float(randint(1, 5)) / 5 + 0.01  # prevent floordiv step
 
 
 @ti.host_arch_only
@@ -82,7 +83,28 @@ def _test_matrix_element_wise_binary(dtype, n, m, ti_func, math_func):
             assert c[None][i, j] == approx(expected)
 
 
-def test_matrix_element_wise_binary():
+def stest_matrix_element_wise_unary_infix():
+    seed(5156)
+    for n, m in [(5, 4), (3, 1)]:
+        _test_matrix_element_wise_unary(ti.f32, n, m, ops.neg, ops.neg)
+
+
+def test_matrix_element_wise_binary_infix():
+    seed(4399)
+    for n, m in [(5, 4), (3, 1)]:
+        _test_matrix_element_wise_binary(ti.f32, n, m, ops.add, ops.add)
+        _test_matrix_element_wise_binary(ti.f32, n, m, ops.sub, ops.sub)
+        _test_matrix_element_wise_binary(ti.f32, n, m, ops.mul, ops.mul)
+        _test_matrix_element_wise_binary(ti.i32, n, m, ops.mod, ops.mod)
+        _test_matrix_element_wise_binary(ti.f32, n, m, ops.truediv, ops.truediv)
+        _test_matrix_element_wise_binary(ti.f32, n, m, ops.floordiv, ops.floordiv)
+        _test_matrix_element_wise_binary(ti.i32, n, m, ops.add, ops.add)
+        _test_matrix_element_wise_binary(ti.i32, n, m, ops.sub, ops.sub)
+        _test_matrix_element_wise_binary(ti.i32, n, m, ops.mul, ops.mul)
+        _test_matrix_element_wise_binary(ti.i32, n, m, ops.mod, ops.mod)
+
+
+def stest_matrix_element_wise_binary():
     seed(666)
     for n, m in [(5, 4), (3, 1)]:
         _test_matrix_element_wise_binary(ti.f32, n, m, ti.atan2, math.atan2)
@@ -93,9 +115,10 @@ def test_matrix_element_wise_binary():
         _test_matrix_element_wise_binary(ti.f32, n, m, pow, pow)
         _test_matrix_element_wise_binary(ti.i32, n, m, pow, pow)
         _test_matrix_element_wise_binary(ti.i32, n, m, ti.raw_mod, _c_mod)
+        # TODO: add ti.raw_div
 
 
-def test_matrix_element_wise_unary():
+def stest_matrix_element_wise_unary():
     seed(233)
     for n, m in [(5, 4), (3, 1)]:
         _test_matrix_element_wise_unary(ti.f32, n, m, ti.sin, math.sin)

@@ -186,94 +186,55 @@ class Matrix:
                 ret(i, j).assign(other(i, j)**self(i, j))
         return ret
 
-    @broadcast_if_scalar
-    def __div__(self, other):
-        assert self.n == other.n and self.m == other.m
-        ret = Matrix(self.n, self.m)
-        for i in range(self.n):
-            for j in range(self.m):
-                ret(i, j).assign(self(i, j) / other(i, j))
-        return ret
-
-    @broadcast_if_scalar
-    def __rtruediv__(self, other):
-        assert self.n == other.n and self.m == other.m
-        ret = Matrix(self.n, self.m)
-        for i in range(self.n):
-            for j in range(self.m):
-                ret(i, j).assign(other(i, j) / self(i, j))
-        return ret
-
     def broadcast(self, scalar):
         ret = Matrix(self.n, self.m, empty=True)
         for i in range(self.n * self.m):
             ret.entries[i] = scalar
         return ret
 
-    @broadcast_if_scalar
-    def __truediv__(self, other):
-        assert self.n == other.n and self.m == other.m
-        ret = Matrix(self.n, self.m)
-        for i in range(self.n):
-            for j in range(self.m):
-                ret(i, j).assign(self(i, j) / other(i, j))
-        return ret
+    def __neg__(self):
+        import taichi as ti
+        return ti.neg(self)
 
-    @broadcast_if_scalar
-    def __floordiv__(self, other):
-        assert self.n == other.n and self.m == other.m
-        ret = Matrix(self.n, self.m)
-        for i in range(self.n):
-            for j in range(self.m):
-                ret(i, j).assign(self(i, j) // other(i, j))
-        return ret
-
-    @broadcast_if_scalar
-    def __mul__(self, other):
-        assert self.n == other.n and self.m == other.m
-        ret = Matrix(self.n, self.m)
-        for i in range(self.n):
-            for j in range(self.m):
-                ret(i, j).assign(self(i, j) * other(i, j))
-        return ret
-
-    __rmul__ = __mul__
-
-    @broadcast_if_scalar
     def __add__(self, other):
-        assert self.n == other.n and self.m == other.m
-        ret = Matrix(self.n, self.m)
-        for i in range(self.n):
-            for j in range(self.m):
-                ret(i, j).assign(self(i, j) + other(i, j))
-        return ret
+        import taichi as ti
+        return ti.add(self, other)
 
     __radd__ = __add__
 
-    @broadcast_if_scalar
     def __sub__(self, other):
-        assert self.n == other.n and self.m == other.m
-        ret = Matrix(self.n, self.m)
-        for i in range(self.n):
-            for j in range(self.m):
-                ret(i, j).assign(self(i, j) - other(i, j))
-        return ret
+        import taichi as ti
+        return ti.sub(self, other)
 
-    def __neg__(self):
-        ret = Matrix(self.n, self.m)
-        for i in range(self.n):
-            for j in range(self.m):
-                ret(i, j).assign(-self(i, j))
-        return ret
-
-    @broadcast_if_scalar
     def __rsub__(self, other):
-        assert self.n == other.n and self.m == other.m
-        ret = Matrix(self.n, self.m)
-        for i in range(self.n):
-            for j in range(self.m):
-                ret(i, j).assign(other(i, j) - self(i, j))
-        return ret
+        import taichi as ti
+        return ti.sub(other, self)
+
+    def __mul__(self, other):
+        import taichi as ti
+        return ti.mul(self, other)
+
+    __rmul__ = __mul__
+
+    def __truediv__(self, other):
+        import taichi as ti
+        return ti.truediv(self, other)
+
+    def __rtruediv__(self, other):
+        import taichi as ti
+        return ti.truediv(other, self)
+
+    def __floordiv__(self, other):
+        import taichi as ti
+        return ti.floordiv(self, other)
+
+    def __rfloordiv__(self, other):
+        import taichi as ti
+        return ti.floordiv(other, self)
+
+    def __mod__(self, other):
+        import taichi as ti
+        return ti.mod(self, other)
 
     def linearize_entry_id(self, *args):
         assert 1 <= len(args) <= 2
@@ -524,6 +485,7 @@ class Matrix:
     def loop_range(self):
         return self.entries[0]
 
+    # TODO
     @broadcast_if_scalar
     def augassign(self, other, op):
         if not isinstance(other, Matrix):

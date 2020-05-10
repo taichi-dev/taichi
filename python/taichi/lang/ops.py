@@ -20,10 +20,12 @@ def stack_info():
 def unary(foo):
     import taichi as ti
 
+    imp_foo = lambda x: foo(Expr(x))
+
     @functools.wraps(foo)
     def wrapped(a):
         if ti.is_taichi_class(a):
-            return a.element_wise_unary(foo)
+            return a.element_wise_unary(imp_foo)
         else:
             return foo(Expr(a))
 
@@ -37,15 +39,17 @@ binary_ops = []
 def binary(foo):
     import taichi as ti
 
+    imp_foo = lambda x, y: foo(Expr(x), Expr(y))
+    rev_foo = lambda x, y: foo(Expr(y), Expr(x))
+
     @functools.wraps(foo)
     def wrapped(a, b):
         if ti.is_taichi_class(a):
-            return a.element_wise_binary(foo, b)
+            return a.element_wise_binary(imp_foo, b)
         elif ti.is_taichi_class(b):
-            rev_foo = lambda x, y: foo(y, x)
             return b.element_wise_binary(rev_foo, a)
         else:
-            return foo(Expr(a), Expr(b))
+            return imp_foo(a, b)
 
     binary_ops.append(wrapped)
     return wrapped
@@ -85,6 +89,11 @@ def sqr(obj):
 
 
 @unary
+def neg(expr):
+    return Expr(taichi_lang_core.expr_neg(expr.ptr), tb=stack_info())
+
+
+@unary
 def sin(expr):
     return Expr(taichi_lang_core.expr_sin(expr.ptr), tb=stack_info())
 
@@ -121,32 +130,32 @@ def ceil(expr):
 
 @unary
 def inv(expr):
-    return Expr(taichi_lang_core.expr_inv(expr.ptr))
+    return Expr(taichi_lang_core.expr_inv(expr.ptr), tb=stack_info())
 
 
 @unary
 def tan(expr):
-    return Expr(taichi_lang_core.expr_tan(expr.ptr))
+    return Expr(taichi_lang_core.expr_tan(expr.ptr), tb=stack_info())
 
 
 @unary
 def tanh(expr):
-    return Expr(taichi_lang_core.expr_tanh(expr.ptr))
+    return Expr(taichi_lang_core.expr_tanh(expr.ptr), tb=stack_info())
 
 
 @unary
 def exp(expr):
-    return Expr(taichi_lang_core.expr_exp(expr.ptr))
+    return Expr(taichi_lang_core.expr_exp(expr.ptr), tb=stack_info())
 
 
 @unary
 def log(expr):
-    return Expr(taichi_lang_core.expr_log(expr.ptr))
+    return Expr(taichi_lang_core.expr_log(expr.ptr), tb=stack_info())
 
 
 @unary
 def abs(expr):
-    return Expr(taichi_lang_core.expr_abs(expr.ptr))
+    return Expr(taichi_lang_core.expr_abs(expr.ptr), tb=stack_info())
 
 
 def random(dt=None):
@@ -157,28 +166,60 @@ def random(dt=None):
 
 
 @binary
+def add(a, b):
+    return Expr(taichi_lang_core.expr_add(a.ptr, b.ptr), tb=stack_info())
+
+
+@binary
+def sub(a, b):
+    return Expr(taichi_lang_core.expr_sub(a.ptr, b.ptr), tb=stack_info())
+
+
+@binary
+def mul(a, b):
+    return Expr(taichi_lang_core.expr_mul(a.ptr, b.ptr), tb=stack_info())
+
+
+@binary
+def mod(a, b):
+    quotient = Expr(taichi_lang_core.expr_floordiv(a.ptr, b.ptr))
+    multiply = Expr(taichi_lang_core.expr_mul(b.ptr, quotient.ptr))
+    return Expr(taichi_lang_core.expr_sub(a.ptr, multiply.ptr))
+
+
+@binary
+def floordiv(a, b):
+    return Expr(taichi_lang_core.expr_floordiv(a.ptr, b.ptr), tb=stack_info())
+
+
+@binary
+def truediv(a, b):
+    return Expr(taichi_lang_core.expr_truediv(a.ptr, b.ptr), tb=stack_info())
+
+
+@binary
 def max(a, b):
-    return Expr(taichi_lang_core.expr_max(a.ptr, b.ptr))
+    return Expr(taichi_lang_core.expr_max(a.ptr, b.ptr), tb=stack_info())
 
 
 @binary
 def min(a, b):
-    return Expr(taichi_lang_core.expr_min(a.ptr, b.ptr))
+    return Expr(taichi_lang_core.expr_min(a.ptr, b.ptr), tb=stack_info())
 
 
 @binary
 def atan2(a, b):
-    return Expr(taichi_lang_core.expr_atan2(a.ptr, b.ptr))
+    return Expr(taichi_lang_core.expr_atan2(a.ptr, b.ptr), tb=stack_info())
 
 
 @binary
 def raw_div(a, b):
-    return Expr(taichi_lang_core.expr_div(a.ptr, b.ptr))
+    return Expr(taichi_lang_core.expr_div(a.ptr, b.ptr), tb=stack_info())
 
 
 @binary
 def raw_mod(a, b):
-    return Expr(taichi_lang_core.expr_mod(a.ptr, b.ptr))
+    return Expr(taichi_lang_core.expr_mod(a.ptr, b.ptr), tb=stack_info())
 
 
 def ti_max(*args):

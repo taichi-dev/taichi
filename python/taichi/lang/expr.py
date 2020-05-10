@@ -46,51 +46,49 @@ class Expr:
         # remove the confusing last line
         return '\n'.join(raw.split('\n')[:-3]) + '\n'
 
+    def __neg__(self):
+        import taichi as ti
+        return ti.neg(self)
+
     def __add__(self, other):
-        other = Expr(other)
-        return Expr(taichi_lang_core.expr_add(self.ptr, other.ptr),
-                    tb=self.stack_info())
+        import taichi as ti
+        return ti.add(self, other)
 
     __radd__ = __add__
 
-    def __neg__(self):
-        return Expr(taichi_lang_core.expr_neg(self.ptr), tb=self.stack_info())
-
     def __sub__(self, other):
-        other = Expr(other)
-        return Expr(taichi_lang_core.expr_sub(self.ptr, other.ptr),
-                    tb=self.stack_info())
+        import taichi as ti
+        return ti.sub(self, other)
 
     def __rsub__(self, other):
-        other = Expr(other)
-        return Expr(taichi_lang_core.expr_sub(other.ptr, self.ptr))
+        import taichi as ti
+        return ti.sub(other, self)
 
     def __mul__(self, other):
-        if is_taichi_class(other) and hasattr(other, '__rmul__'):
-            return other.__rmul__(self)
-        else:
-            other = Expr(other)
-            return Expr(taichi_lang_core.expr_mul(self.ptr, other.ptr))
+        import taichi as ti
+        return ti.mul(self, other)
 
     __rmul__ = __mul__
 
     def __truediv__(self, other):
-        return Expr(taichi_lang_core.expr_truediv(self.ptr, Expr(other).ptr))
+        import taichi as ti
+        return ti.truediv(self, other)
 
     def __rtruediv__(self, other):
-        return Expr(taichi_lang_core.expr_truediv(Expr(other).ptr, self.ptr))
+        import taichi as ti
+        return ti.truediv(other, self)
 
     def __floordiv__(self, other):
-        return Expr(taichi_lang_core.expr_floordiv(self.ptr, Expr(other).ptr))
+        import taichi as ti
+        return ti.floordiv(self, other)
 
     def __rfloordiv__(self, other):
-        return Expr(taichi_lang_core.expr_floordiv(Expr(other).ptr, self.ptr))
+        import taichi as ti
+        return ti.floordiv(other, self)
 
     def __mod__(self, other):
-        other = Expr(other)
-        quotient = Expr(taichi_lang_core.expr_floordiv(self.ptr, other.ptr))
-        multiply = Expr(taichi_lang_core.expr_mul(other.ptr, quotient.ptr))
-        return Expr(taichi_lang_core.expr_sub(self.ptr, multiply.ptr))
+        import taichi as ti
+        return ti.mod(self, other)
 
     def __iadd__(self, other):
         self.atomic_add(other)
@@ -99,17 +97,16 @@ class Expr:
         self.atomic_sub(other)
 
     def __imul__(self, other):
-        self.assign(Expr(taichi_lang_core.expr_mul(self.ptr, other.ptr)))
+        import taichi as ti
+        self.assign(ti.mul(self, other))
 
     def __itruediv__(self, other):
-        self.assign(
-            Expr(taichi_lang_core.expr_truediv(self.ptr,
-                                               Expr(other).ptr)))
+        import taichi as ti
+        self.assign(ti.truediv(self, other))
 
     def __ifloordiv__(self, other):
-        self.assign(
-            Expr(taichi_lang_core.expr_floordiv(self.ptr,
-                                                Expr(other).ptr)))
+        import taichi as ti
+        self.assign(ti.floordiv(self, other))
 
     def __iand__(self, other):
         self.atomic_and(other)
@@ -120,6 +117,7 @@ class Expr:
     def __ixor__(self, other):
         self.atomic_xor(other)
 
+    # TODO: ti.cmp_le
     def __le__(self, other):
         other = Expr(other)
         return Expr(taichi_lang_core.expr_cmp_le(self.ptr, other.ptr))

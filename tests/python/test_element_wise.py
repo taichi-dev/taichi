@@ -87,9 +87,10 @@ def test_matrix_element_wise_unary_infix():
     seed(5156)
     for n, m in [(5, 4), (3, 1)]:
         _test_matrix_element_wise_unary(ti.f32, n, m, ops.neg, ops.neg)
+        _test_matrix_element_wise_unary(ti.i32, n, m, ops.neg, ops.neg)
 
 
-def test_matrix_element_wise_binary_infix():
+def test_matrix_element_wise_binary_infix_f32():
     seed(4399)
     for n, m in [(5, 4), (3, 1)]:
         _test_matrix_element_wise_binary(ti.f32, n, m, ops.add, ops.add)
@@ -99,6 +100,11 @@ def test_matrix_element_wise_binary_infix():
         _test_matrix_element_wise_binary(ti.f32, n, m, ops.pow, ops.pow)
         _test_matrix_element_wise_binary(ti.f32, n, m, ops.truediv, ops.truediv)
         _test_matrix_element_wise_binary(ti.f32, n, m, ops.floordiv, ops.floordiv)
+
+
+def test_matrix_element_wise_binary_infix_i32():
+    seed(6174)
+    for n, m in [(5, 4), (3, 1)]:
         _test_matrix_element_wise_binary(ti.i32, n, m, ops.add, ops.add)
         _test_matrix_element_wise_binary(ti.i32, n, m, ops.sub, ops.sub)
         _test_matrix_element_wise_binary(ti.i32, n, m, ops.mul, ops.mul)
@@ -107,21 +113,26 @@ def test_matrix_element_wise_binary_infix():
         # TODO: add pow(f32, i32)
 
 
-def test_matrix_element_wise_binary():
+def test_matrix_element_wise_binary_f32():
     seed(666)
     for n, m in [(5, 4), (3, 1)]:
         _test_matrix_element_wise_binary(ti.f32, n, m, ti.atan2, math.atan2)
         _test_matrix_element_wise_binary(ti.f32, n, m, ti.min, min)
-        _test_matrix_element_wise_binary(ti.i32, n, m, ti.min, min)
         _test_matrix_element_wise_binary(ti.f32, n, m, ti.max, max)
-        _test_matrix_element_wise_binary(ti.i32, n, m, ti.max, max)
         _test_matrix_element_wise_binary(ti.f32, n, m, pow, pow)
+
+
+def test_matrix_element_wise_binary_i32():
+    seed(985)
+    for n, m in [(5, 4), (3, 1)]:
+        _test_matrix_element_wise_binary(ti.i32, n, m, ti.min, min)
+        _test_matrix_element_wise_binary(ti.i32, n, m, ti.max, max)
         _test_matrix_element_wise_binary(ti.i32, n, m, pow, pow)
         _test_matrix_element_wise_binary(ti.i32, n, m, ti.raw_mod, _c_mod)
         # TODO: add ti.raw_div
 
 
-def test_matrix_element_wise_unary():
+def test_matrix_element_wise_unary_1():
     seed(233)
     for n, m in [(5, 4), (3, 1)]:
         _test_matrix_element_wise_unary(ti.f32, n, m, ti.sin, math.sin)
@@ -131,6 +142,11 @@ def test_matrix_element_wise_unary():
         _test_matrix_element_wise_unary(ti.f32, n, m, ti.acos, math.acos)
         _test_matrix_element_wise_unary(ti.f32, n, m, ti.tanh, math.tanh)
         _test_matrix_element_wise_unary(ti.f32, n, m, ti.sqrt, math.sqrt)
+
+
+def test_matrix_element_wise_unary_2():
+    seed(211)
+    for n, m in [(5, 4), (3, 1)]:
         _test_matrix_element_wise_unary(ti.f32, n, m, ti.exp, math.exp)
         _test_matrix_element_wise_unary(ti.f32, n, m, ti.log, math.log)
         _test_matrix_element_wise_unary(ti.f32, n, m, ti.ceil, math.ceil)

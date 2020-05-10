@@ -188,6 +188,38 @@ def mod(a, b):
 
 
 @binary
+def raw_pow(a, b):
+    return Expr(taichi_lang_core.expr_pow(a.ptr, b.ptr), tb=stack_info())
+
+
+def pow(self, power):
+    import taichi as ti
+    if not isinstance(power, int) or abs(power) > 100:
+        return raw_pow(self, power)
+    if power == 0:
+        return self * 0 + Expr(1) # TODO: rid hack, use {Expr,Matrix}.dup().fill(1)
+    negative = power < 0
+    power = abs(power)
+    tmp = self
+    ret = None
+    while power:
+        if power & 1:
+            if ret is None:
+                ret = tmp
+            else:
+                ret = ti.expr_init(ret * tmp)
+        tmp = ti.expr_init(tmp * tmp)
+        power >>= 1
+    if negative:
+        return 1 / ret
+    else:
+        return ret
+
+
+# NEXT: add matpow(self, power)
+
+
+@binary
 def floordiv(a, b):
     return Expr(taichi_lang_core.expr_floordiv(a.ptr, b.ptr), tb=stack_info())
 

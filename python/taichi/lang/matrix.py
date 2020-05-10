@@ -168,24 +168,6 @@ class Matrix:
                     ret(i, j).assign(ret(i, j) + self(i, k) * other(k, j))
         return ret
 
-    @broadcast_if_scalar
-    def __pow__(self, other):
-        assert self.n == other.n and self.m == other.m
-        ret = Matrix(self.n, self.m)
-        for i in range(self.n):
-            for j in range(self.m):
-                ret(i, j).assign(self(i, j)**other(i, j))
-        return ret
-
-    @broadcast_if_scalar
-    def __rpow__(self, other):
-        assert self.n == other.n and self.m == other.m
-        ret = Matrix(self.n, self.m)
-        for i in range(self.n):
-            for j in range(self.m):
-                ret(i, j).assign(other(i, j)**self(i, j))
-        return ret
-
     def broadcast(self, scalar):
         ret = Matrix(self.n, self.m, empty=True)
         for i in range(self.n * self.m):
@@ -239,6 +221,14 @@ class Matrix:
     def __mod__(self, other):
         import taichi as ti
         return ti.mod(self, other)
+
+    def __pow__(self, other, modulo=None):
+        import taichi as ti
+        return ti.pow(self, other)
+
+    def __rpow__(self, other, modulo=None):
+        import taichi as ti
+        return ti.pow(other, self)
 
     def linearize_entry_id(self, *args):
         assert 1 <= len(args) <= 2

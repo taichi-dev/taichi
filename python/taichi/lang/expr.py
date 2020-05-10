@@ -94,6 +94,14 @@ class Expr:
         import taichi as ti
         return ti.mod(self, other)
 
+    def __pow__(self, other, modulo=None):
+        import taichi as ti
+        return ti.pow(self, other)
+
+    def __rpow__(self, other, modulo=None):
+        import taichi as ti
+        return ti.pow(other, self)
+
     def __iadd__(self, other):
         self.atomic_add(other)
 
@@ -315,35 +323,6 @@ class Expr:
         # TODO: avoid too many template instantiations
         from .meta import fill_tensor
         fill_tensor(self, val)
-
-    def __rpow__(self, power, modulo=None):
-        # Python will try Matrix.__pow__ first so we don't have to worry whether `power` is `Matrix`
-        return Expr(power).__pow__(self, modulo)
-
-    def __pow__(self, power, modulo=None):
-        import taichi as ti
-        if ti.is_taichi_class(power):
-            return power.element_wise_binary(lambda x, y: pow(y, x), self)
-        if not isinstance(power, int) or abs(power) > 100:
-            return Expr(taichi_lang_core.expr_pow(self.ptr, Expr(power).ptr))
-        if power == 0:
-            return Expr(1)
-        negative = power < 0
-        power = abs(power)
-        tmp = self
-        ret = None
-        while power:
-            if power & 1:
-                if ret is None:
-                    ret = tmp
-                else:
-                    ret = ti.expr_init(ret * tmp)
-            tmp = ti.expr_init(tmp * tmp)
-            power >>= 1
-        if negative:
-            return 1 / ret
-        else:
-            return ret
 
     def __ti_int__(self):
         import taichi as ti

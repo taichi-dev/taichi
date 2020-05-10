@@ -194,7 +194,7 @@ def raw_pow(a, b):
 
 def pow(self, power):
     import taichi as ti
-    if not isinstance(power, int) or abs(power) > 100:
+    if not isinstance(power, int) or abs(power) > 50:
         return raw_pow(self, power)
     if power == 0:
         return self * 0 + Expr(1) # TODO: rid hack, use {Expr,Matrix}.dup().fill(1)

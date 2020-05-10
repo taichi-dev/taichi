@@ -24,7 +24,7 @@ namespace {
       program.current_kernel = old_kernel;
     }
   };
-}
+}  // namespace
 
 Kernel::Kernel(Program &program,
                std::function<void()> func,

@@ -43,12 +43,14 @@ class Matrix(TaichiOperations):
                     assert row.n == rows[
                         0].n, "input vectors must be the same shape"
                 self.m = rows[0].n
+                # l-value copy:
                 self.entries = [row(i) for row in rows for i in range(row.n)]
             elif isinstance(rows[0], list):
                 for row in rows:
                     assert len(row) == len(
                         rows[0]), "input lists must be the same shape"
                 self.m = len(rows[0])
+                # l-value copy:
                 self.entries = [x for row in rows for x in row]
             else:
                 raise Exception(

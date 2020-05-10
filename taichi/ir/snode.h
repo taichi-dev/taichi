@@ -162,11 +162,6 @@ class SNode {
   }
 
   template <typename... Args>
-  SNode &place(Expr &expr, Args &&... args) {
-    return place(expr).place(std::forward<Args>(args)...);
-  }
-
-  template <typename... Args>
   static std::unique_ptr<SNode> create(Args &&... args) {
     return std::make_unique<SNode>(std::forward<Args>(args)...);
   }
@@ -179,9 +174,9 @@ class SNode {
 
   void set_index_offsets(std::vector<int> index_offsets);
 
-  SNode &place(Expr &expr);
+  SNode &place(Expr &expr, const std::vector<int> &offset);
 
-  SNode &dynamic_chunked(const Index &expr, int n, int chunk_size);
+  SNode &dynamic(const Index &expr, int n, int chunk_size);
 
   SNode &morton(bool val = true) {
     _morton = val;

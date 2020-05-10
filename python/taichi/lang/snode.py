@@ -31,9 +31,11 @@ class SNode:
     def place(self, *args, offset=None):
         from .expr import Expr
         from .util import is_taichi_class
+        if offset is None:
+            offset = []
         for arg in args:
             if isinstance(arg, Expr):
-                self.ptr.place(Expr(arg).ptr)
+                self.ptr.place(Expr(arg).ptr, offset)
             elif isinstance(arg, list):
                 for x in arg:
                     self.place(x, offset=offset)

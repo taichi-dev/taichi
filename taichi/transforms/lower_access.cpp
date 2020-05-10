@@ -77,7 +77,7 @@ class LowerAccess : public IRVisitor {
     const auto &offsets = snodes.back()->index_offsets;
     if (!offsets.empty()) {
       for (int i = 0; i < (int)indices.size(); i++) {
-        // Subtract offsets from the indices so that new indices are
+        // Subtract offsets from indices so that new indices are
         // within [0, +inf)
         auto offset = lowered.push_back<ConstStmt>(TypedConstant(offsets[i]));
         indices[i] = lowered.push_back<BinaryOpStmt>(BinaryOpType::sub,
@@ -136,10 +136,8 @@ class LowerAccess : public IRVisitor {
       } else {
         auto lookup = lowered.push_back<SNodeLookupStmt>(
             snode, last, linearized,
-            snode->need_activation() && activate && !on_loop_tree,
-            indices);  // if snode has no possibility of null child, set
-                       // activate
-        // = false
+            snode->need_activation() && activate && !on_loop_tree, indices);
+        // if snode has no possibility of null child, set activate = false
         int chid = snode->child_id(snodes[i + 1]);
         last = lowered.push_back<GetChStmt>(lookup, chid);
       }

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <atomic>
+
 #include "taichi/lang_util.h"
 #include "taichi/common/bit.h"
 #include "taichi/llvm/llvm_fwd.h"
@@ -48,13 +50,13 @@ class Index {
   }
 };
 
-// "Structural" nodes
+// Structural nodes
 class SNode {
  public:
-  // Children
   std::vector<std::unique_ptr<SNode>> ch;
 
   IndexExtractor extractors[taichi_max_num_indices];
+  std::vector<int> index_offsets;
   int num_active_indices{};
   int physical_index_position[taichi_max_num_indices]{};
   // physical indices are (ti.i, ti.j, ti.k, ti.l, ...)
@@ -63,7 +65,7 @@ class SNode {
   // programmers) refer to? i.e. in a[i, j, k], "i", "j", and "k" are virtual
   // indices.
 
-  static int counter;
+  static std::atomic<int> counter;
   int id;
   int depth{};
 
@@ -174,6 +176,8 @@ class SNode {
   }
 
   void print();
+
+  void set_index_offsets(std::vector<int> index_offsets);
 
   SNode &place(Expr &expr);
 

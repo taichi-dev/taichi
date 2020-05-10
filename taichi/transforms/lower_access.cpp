@@ -51,7 +51,7 @@ class LowerAccess : public IRVisitor {
   }
 
   void lower_scalar_ptr(VecStatement &lowered,
-                        SNode *snode,
+                        SNode *leaf_snode,
                         std::vector<Stmt *> indices,
                         bool activate,
                         SNodeOpType snode_op = SNodeOpType::undefined) {
@@ -59,6 +59,7 @@ class LowerAccess : public IRVisitor {
       // For ti.is_active
       TI_ASSERT(!activate);
     }
+
     // emit a sequence of micro access ops
     std::set<SNode *> nodes_on_loop;
     if (current_struct_for) {
@@ -68,10 +69,22 @@ class LowerAccess : public IRVisitor {
     }
 
     std::deque<SNode *> snodes;
-    for (; snode != nullptr; snode = snode->parent)
-      snodes.push_front(snode);
+    for (auto s = leaf_snode; s != nullptr; s = s->parent)
+      snodes.push_front(s);
 
     Stmt *last = lowered.push_back<GetRootStmt>();
+
+    const auto &offsets = snodes.back()->index_offsets;
+    if (!offsets.empty()) {
+      for (int i = 0; i < (int)indices.size(); i++) {
+        // Subtract offsets from the indices so that new indices are
+        // within [0, +inf)
+        auto offset = lowered.push_back<ConstStmt>(TypedConstant(offsets[i]));
+        indices[i] = lowered.push_back<BinaryOpStmt>(BinaryOpType::sub,
+                                                     indices[i], offset);
+      }
+    }
+
     int path_inc = int(snode_op != SNodeOpType::undefined);
     for (int i = 0; i < (int)snodes.size() - 1 + path_inc; i++) {
       auto snode = snodes[i];

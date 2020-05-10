@@ -288,6 +288,9 @@ class Matrix:
     def __call__(self, *args, **kwargs):
         assert kwargs == {}
         return self.entries[self.linearize_entry_id(*args)]
+    
+    def get_tensor_members(self):
+        return self.entries
 
     def get_entry(self, *args, **kwargs):
         assert kwargs == {}

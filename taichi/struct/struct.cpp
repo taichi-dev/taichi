@@ -105,6 +105,10 @@ void StructCompiler::infer_snode_properties(SNode &snode) {
                snode_type_name(snode.type));
     }
   }
+
+  if (!snode.index_offsets.empty()) {
+    TI_ASSERT(snode.index_offsets.size() == snode.num_active_indices);
+  }
 }
 
 TLANG_NAMESPACE_END

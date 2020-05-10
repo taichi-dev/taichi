@@ -1,4 +1,4 @@
-#include "snode.h"
+#include "taichi/ir/snode.h"
 
 #include "taichi/ir/ir.h"
 #include "taichi/ir/frontend.h"
@@ -6,7 +6,7 @@
 
 TLANG_NAMESPACE_BEGIN
 
-int SNode::counter = 0;
+std::atomic<int> SNode::counter = 0;
 
 SNode &SNode::place(Expr &expr_) {
   if (type == SNodeType::root) {  // never directly place to root
@@ -214,6 +214,13 @@ void SNode::print() {
   for (auto &c : ch) {
     c->print();
   }
+}
+
+void SNode::set_index_offsets(std::vector<int> index_offsets_) {
+  TI_ASSERT(this->index_offsets.empty());
+  TI_ASSERT(!index_offsets_.empty());
+  TI_ASSERT(type == SNodeType::place);
+  this->index_offsets = index_offsets_;
 }
 
 TLANG_NAMESPACE_END

@@ -43,11 +43,10 @@ class ConstantFold : public BasicStmtVisitor {
   {
     auto &cache = get_current_program().jit_evaluator_cache;
     int iid = int(id);
-    auto it = cache.find(iid);
+    auto it = cache.find(iid); // X: cache race?
     if (it != cache.end()) // cached?
       return it->second.get();
-    static int jic = 0; // X: race?
-    auto kernel_name = fmt::format("jit_evaluator_{}", jic++);
+    auto kernel_name = fmt::format("jit_evaluator_{}", cache.size());
     auto func = [&] () {
       auto lhstmt = Stmt::make<ArgLoadStmt>(0, false);
       auto rhstmt = Stmt::make<ArgLoadStmt>(1, false);
@@ -81,22 +80,24 @@ class ConstantFold : public BasicStmtVisitor {
 
   static bool is_good_type(DataType dt)
   {
-      switch (dt) {
-      case DataType::i32:
-      case DataType::f32:
-      case DataType::i64:
-      case DataType::f64:
-        return true;
-      default:
-        return false;
-      }
+    // ConstStmt of `bad` types like `i8` is not supported by LLVM.
+    // Dis: https://github.com/taichi-dev/taichi/pull/839#issuecomment-625902727
+    switch (dt) {
+    case DataType::i32:
+    case DataType::f32:
+    case DataType::i64:
+    case DataType::f64:
+      return true;
+    default:
+      return false;
+    }
   }
 
   class ContextArgSaveGuard {
     Context &ctx;
     uint64 old_args[taichi_max_num_args];
 
-  public:
+   public:
     explicit ContextArgSaveGuard(Context &ctx_) : ctx(ctx_) {
       std::memcpy(old_args, ctx.args, sizeof(old_args));
     }
@@ -109,8 +110,6 @@ class ConstantFold : public BasicStmtVisitor {
   static bool jit_evaluate_binary_op(TypedConstant &ret, BinaryOpStmt *stmt,
       const TypedConstant &lhs, const TypedConstant &rhs)
   {
-    // ConstStmt of `bad` types like `i8` is not supported by LLVM.
-    // Dis: https://github.com/taichi-dev/taichi/pull/839#issuecomment-625902727
     if (!is_good_type(ret.dt))
       return false;
     JITEvaluatorId id{(int)stmt->op_type, ret.dt, lhs.dt, rhs.dt,

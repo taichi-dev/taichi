@@ -137,8 +137,11 @@ class Matrix:
         if not isinstance(other, Matrix):
             other = Matrix(other)
         assert other.n == self.n and other.m == self.m
+        temp = Matrix(self.n, self.m)
         for i in range(self.n * self.m):
-            self.entries[i].assign(other.entries[i])
+            temp.entries[i].assign(other.entries[i])
+        for i in range(self.n * self.m):
+            self.entries[i].assign(temp.entries[i])
 
     def element_wise_binary(self, foo, other):
         ret = Matrix(self.n, self.m)

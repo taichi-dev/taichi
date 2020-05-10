@@ -41,6 +41,8 @@ class SNode:
                     self.place(x, offset=offset)
             elif is_taichi_class(arg):
                 self.place(arg.get_tensor_members(), offset=offset)
+            else:
+                raise ValueError(f'{arg} cannot be placed')
         return self
 
     def lazy_grad(self):

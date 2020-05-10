@@ -174,7 +174,7 @@ class SNode {
 
   void set_index_offsets(std::vector<int> index_offsets);
 
-  SNode &place(Expr &expr, const std::vector<int> &offset);
+  void place(Expr &expr, const std::vector<int> &offset);
 
   SNode &dynamic(const Index &expr, int n, int chunk_size);
 

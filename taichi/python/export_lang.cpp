@@ -168,10 +168,9 @@ void export_lang(py::module &m) {
            (SNode & (SNode::*)(const std::vector<Index> &,
                                const std::vector<int> &))(&SNode::bitmasked),
            py::return_value_policy::reference)
-      .def(
-          "place",
-          (SNode & (SNode::*)(Expr &, const std::vector<int> &))(&SNode::place),
-          py::return_value_policy::reference)
+      .def("place",
+           (void (SNode::*)(Expr &, const std::vector<int> &))(&SNode::place),
+           py::return_value_policy::reference)
       .def("data_type", [](SNode *snode) { return snode->dt; })
       .def("get_num_ch",
            [](SNode *snode) -> int { return (int)snode->ch.size(); })

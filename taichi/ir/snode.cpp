@@ -8,7 +8,7 @@ TLANG_NAMESPACE_BEGIN
 
 std::atomic<int> SNode::counter = 0;
 
-SNode &SNode::place(Expr &expr_, const std::vector<int> &offset) {
+void SNode::place(Expr &expr_, const std::vector<int> &offset) {
   if (type == SNodeType::root) {  // never directly place to root
     this->dense(std::vector<Index>(), {}).place(expr_, offset);
   } else {
@@ -27,7 +27,6 @@ SNode &SNode::place(Expr &expr_, const std::vector<int> &offset) {
     if (!offset.empty())
       child.set_index_offsets(offset);
   }
-  return *this;
 }
 
 SNode &SNode::create_node(std::vector<Index> indices,

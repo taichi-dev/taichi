@@ -120,7 +120,6 @@ Scalar arithmetics
 -----------------------------------------
 Supported scalar functions:
 
-<<<<<<< HEAD
 .. function:: ti.sin(x)
 .. function:: ti.cos(x)
 .. function:: ti.asin(x)

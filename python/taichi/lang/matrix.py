@@ -137,11 +137,8 @@ class Matrix:
         if not isinstance(other, Matrix):
             other = Matrix(other)
         assert other.n == self.n and other.m == self.m
-        temp = Matrix(self.n, self.m)
         for i in range(self.n * self.m):
-            temp.entries[i].assign(other.entries[i])
-        for i in range(self.n * self.m):
-            self.entries[i].assign(temp.entries[i])
+            self.entries[i].assign(other.entries[i])
 
     def element_wise_binary(self, foo, other):
         ret = Matrix(self.n, self.m)
@@ -198,6 +195,10 @@ class Matrix:
     def __neg__(self):
         import taichi as ti
         return ti.neg(self)
+
+    def __abs__(self):
+        import taichi as ti
+        return ti.abs(self)
 
     def __add__(self, other):
         import taichi as ti
@@ -343,7 +344,7 @@ class Matrix:
 
     def trace(self):
         assert self.n == self.m
-        sum = self(0, 0)
+        sum = expr.Expr(self(0, 0))
         for i in range(1, self.n):
             sum = sum + self(i, i)
         return sum
@@ -354,8 +355,9 @@ class Matrix:
             return Matrix([1 / self(0, 0)])
         elif self.n == 2:
             inv_det = impl.expr_init(1.0 / self.determinant(self))
+            # Dis: https://github.com/taichi-dev/taichi/pull/943#issuecomment-626344323
             return inv_det * Matrix([[self(1, 1), -self(0, 1)],
-                                     [-self(1, 0), self(0, 0)]])
+                                     [-self(1, 0), self(0, 0)]]).variable()
         elif self.n == 3:
             n = 3
             import taichi as ti

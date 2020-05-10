@@ -50,6 +50,10 @@ class Expr:
         import taichi as ti
         return ti.neg(self)
 
+    def __abs__(self):
+        import taichi as ti
+        return ti.abs(self)
+
     def __add__(self, other):
         import taichi as ti
         return ti.add(self, other)
@@ -340,10 +344,6 @@ class Expr:
             return 1 / ret
         else:
             return ret
-
-    def __abs__(self):
-        import taichi as ti
-        return ti.abs(self)
 
     def __ti_int__(self):
         import taichi as ti

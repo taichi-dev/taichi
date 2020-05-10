@@ -6,8 +6,8 @@ Advanced dense layouts
 Tensors (:ref:`scalar_tensor`) can be *placed* in a specific shape and *layout*.
 Defining a proper layout can be critical to performance, especially for memory-bound applications. A carefully designed data layout can significantly improve cache/TLB-hit rates and cacheline utilization. Although in most cases, you probably don't have to worry about it.
 
-In Taichi, the layout is defined in a recursive manner. See :ref:`snode` for more details about how this works. We suggested starting with the default layout specification (simply by specifying ``shape`` when creating tensors using ``ti.var/Vector/Matrix``),
-and then migrate to more advanced layouts using the ``ti.root.X`` syntax.
+In Taichi, the layout is defined in a recursive manner. See :ref:`snode` for more details about how this works. We suggest starting with the default layout specification (simply by specifying ``shape`` when creating tensors using ``ti.var/Vector/Matrix``),
+and then migrate to more advanced layouts using the ``ti.root.X`` syntax if necessary.
 
 Taichi decouples algorithms from data layouts, and the Taichi compiler automatically optimizes data accesses on a specific data layout. These Taichi features allow programmers to quickly experiment with different data layouts and figure out the most efficient one on a specific task and computer architecture.
 
@@ -95,7 +95,7 @@ See? ``x`` first increases the first index (i.e. row-major), while ``y`` first i
         }
 
 
-AoS versus SoA
+Array of Structures (AoS), Structure of Arrays (SoA)
 --------------
 
 Tensors of same size can be placed together.
@@ -131,7 +131,7 @@ Now, their memory layout:
 Normally, you don't have to worry about the performance nuances between different layouts, and should just define the simplest layout as a start.
 However, locality sometimes have a significant impact on the performance, especially when the tensor is huge.
 
-**To improve spatial locality of memory accesses (i.e. cache hit rate / cacheline utilization), it's sometimes helpful to minimize the address differences of elements that are accessed together.**
+**To improve spatial locality of memory accesses (i.e. cache hit rate / cacheline utilization), it's sometimes helpful to place the data elements within relatively close storage locations if they are often accessed together.**
 Take a simple 1D wave equation solver for example:
 
 .. code-block:: python
@@ -195,7 +195,7 @@ will iterate over elements of ``A`` following row-major order. If ``A`` is colum
 
 If ``A`` is blocked, the iteration will happen within each block first. This maximizes memory bandwidth utilization in most cases.
 
-Struct-fors on sparse tensors follows the same philosophy, and will be discussed further in :ref:`sparse`.
+Struct-for loops on sparse tensors follow the same philosophy, and will be discussed further in :ref:`sparse`.
 
 
 Examples
@@ -223,7 +223,7 @@ Examples
   ti.root.dense(ti.ij, (128, 128)).dense(ti.ij, (8, 8)).place(density)
 
 
-3D Particle positions and velocities, arrays-of-structures
+3D Particle positions and velocities, AoS
 
 .. code-block:: python
 
@@ -233,7 +233,7 @@ Examples
   # equivalent to
   ti.root.dense(ti.i, 1024).place(pos(0), pos(1), pos(2), vel(0), vel(1), vel(2))
 
-3D Particle positions and velocities, structures-of-arrays
+3D Particle positions and velocities, SoA
 
 .. code-block:: python
 

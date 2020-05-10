@@ -8,7 +8,7 @@ Our language provides *structural nodes (SNodes)* to compose the hierarchy and p
 
 * dense: A fixed-length contiguous array.
 
-* bitmasked: Use a mask to maintain sparsity information, one bit per child.
+* bitmasked: This is similar to dense, but it also uses a mask to maintain sparsity information, one bit per child.
 
 * pointer: Store pointers instead of the whole structure to save memory and maintain sparsity.
 

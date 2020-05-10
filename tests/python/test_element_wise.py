@@ -13,7 +13,7 @@ def rand(dtype):
     if ti.core.is_integral(dtype):
         return randint(1, 5)
     else:
-        return float(randint(1, 5)) / 5 + 0.01  # prevent floordiv step
+        return float(randint(1, 5)) / 5 - 0.01  # prevent floordiv step
 
 
 @ti.host_arch_only

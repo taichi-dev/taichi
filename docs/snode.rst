@@ -12,8 +12,6 @@ Our language provides *structural nodes (SNodes)* to compose the hierarchy and p
 
 * pointer: Store pointers instead of the whole structure to save memory and maintain sparsity.
 
-* hash: Use a hash table to maintain the mapping from active coordinates to data addresses in memory. Suitable for high sparsity.
-
 * dynamic: Variable-length array, with a predefined maximum length. It serves the role of ``std::vector`` in C++ or ``list`` in Python, and can be used to maintain objects (e.g. particles) contained in a block.
 
 See :ref:`layout` for more details about data layout. ``ti.root`` is the root node of the data structure.

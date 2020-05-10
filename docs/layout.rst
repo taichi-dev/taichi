@@ -76,8 +76,7 @@ However, they have a very different memory layouts:
     # x:  x[0,0]   x[0,1]   x[0,2] | x[1,0]   x[1,1]   x[1,2]
     # y:  y[0,0]   y[1,0] | y[0,1]   y[1,1] | y[0,2]   y[1,2]
 
-See? ``x`` first increases the first index, while ``y`` first increases the second index. When overflow, reset to zero and begin to increase the second index.
-This is row-major versus column-major storage.
+See? ``x`` first increases the first index (i.e. row-major), while ``y`` first increases the second index (i.e. column-major).
 
 .. note::
 

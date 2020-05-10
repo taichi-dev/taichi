@@ -16,7 +16,7 @@ def test_ad_reduce():
     @ti.kernel
     def func():
         for i in x:
-            loss.atomic_add(ti.sqr(x[i]))
+            loss.atomic_add(x[i]**2)
 
     total_loss = 0
     for i in range(N):

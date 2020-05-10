@@ -124,7 +124,6 @@ Supported scalar functions:
 * ``ti.acos(x)``
 * ``ti.atan2(x, y)``
 * ``ti.cast(x, type)``
-* ``ti.sqr(x)``
 * ``ti.sqrt(x)``
 * ``ti.floor(x)``
 * ``ti.inv(x)``

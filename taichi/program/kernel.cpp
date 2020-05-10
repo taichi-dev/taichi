@@ -214,10 +214,6 @@ int64 Kernel::get_ret_int(int i) {
   }
 }
 
-void Kernel::mark_arg_return_value(int i, bool is_return) {
-  args[i].is_return_value = is_return;
-}
-
 void Kernel::set_extra_arg_int(int i, int j, int32 d) {
   program.context.extra_args[i][j] = d;
 }
@@ -235,7 +231,7 @@ void Kernel::set_arch(Arch arch) {
 }
 
 int Kernel::insert_arg(DataType dt, bool is_nparray) {
-  args.push_back(Arg{dt, is_nparray, 0, false});
+  args.push_back(Arg{dt, is_nparray, /*size=*/0});
   return args.size() - 1;
 }
 

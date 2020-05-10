@@ -22,24 +22,6 @@ class FrontendAllocaStmt : public Stmt {
   DEFINE_ACCEPT
 };
 
-// For return values
-class FrontendArgStoreStmt : public Stmt {
- public:
-  int arg_id;
-  Expr expr;
-
-  FrontendArgStoreStmt(int arg_id, const Expr &expr)
-      : arg_id(arg_id), expr(expr) {
-  }
-
-  // Arguments are considered global (nonlocal)
-  virtual bool has_global_side_effect() const override {
-    return true;
-  }
-
-  DEFINE_ACCEPT
-};
-
 class FrontendSNodeOpStmt : public Stmt {
  public:
   SNodeOpType op_type;

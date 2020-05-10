@@ -30,9 +30,8 @@ def reset():
 
 @ti.func
 def laplacian(i, j):
-    return (-4 * height[i, j] + height[i, j - 1] +
-            height[i, j + 1] + height[i + 1, j] +
-            height[i - 1, j]) / (4 * dx ** 2)
+    return (-4 * height[i, j] + height[i, j - 1] + height[i, j + 1] +
+            height[i + 1, j] + height[i - 1, j]) / (4 * dx**2)
 
 
 @ti.func
@@ -50,16 +49,16 @@ def take_linear(i, j):
     ret = 0.0
     if 0 <= i < shape[0] and 0 <= i < shape[1]:
         ret = (i * j * background[m + 1, n + 1] +
-              (1 - i) * j * background[m, n + 1] + i *
-              (1 - j) * background[m + 1, n] + (1 - i) *
-              (1 - j) * background[m, n])
+               (1 - i) * j * background[m, n + 1] + i *
+               (1 - j) * background[m + 1, n] + (1 - i) *
+               (1 - j) * background[m, n])
     return ret
 
 
 @ti.kernel
 def touch_at(hurt: ti.f32, x: ti.f32, y: ti.f32):
     for i, j in ti.ndrange((1, shape[0] - 1), (1, shape[1] - 1)):
-        r2 = ti.sqr(i - x) + ti.sqr(j - y)
+        r2 = (i - x)**2 + (j - y)**2
         height[i, j] = height[i, j] + hurt * ti.exp(-0.02 * r2)
 
 
@@ -79,7 +78,7 @@ def paint():
         g = gradient(i, j)
         # https://www.jianshu.com/p/66a40b06b436
         cos_i = 1 / ti.sqrt(1 + g.norm_sqr())
-        cos_o = ti.sqrt(1 - (1 - ti.sqr(cos_i)) * (1 / eta ** 2))
+        cos_o = ti.sqrt(1 - (1 - (cos_i)**2) * (1 / eta**2))
         fr = pow(1 - cos_i, 2)
         coh = cos_o * depth
         g = g * coh

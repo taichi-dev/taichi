@@ -17,6 +17,18 @@ Kernel arguments must be type-hinted. Kernels can have at most 8 parameters, e.g
       for i in x:
         y[i] = x[i]
 
+Kernel can have scalar return values. If a kernel have return value, it must be type-hinted.
+Return value will be automatically cased into the hinted type. e.g.,
+
+.. code-block:: python
+
+    @ti.kernel
+    def add_xy(x: ti.f32, y: ti.f32) -> ti.i32:
+        return x + y  # same as: ti.cast(x + y, ti.i32)
+
+    res = add_xy(2.3, 1.1)
+    print(res)  # 3, since return type is ti.i32
+
 * For differentiable programming kernels should better have either serial statements or a single parallel for-loop. If you don't use differentiable programming, feel free to ignore this tip.
 
 .. code-block:: python

@@ -20,10 +20,14 @@ class ConstantFold : public BasicStmtVisitor {
     DataType ret, lhs, rhs;
     bool is_binary;
 
-    explicit operator int() const // make STL map happy
+    explicit operator JITEvaluatorIdType() const
     {
-      return (int)op | (int)!!is_binary << 7
-        | (int) ret << 8 | (int) lhs << 16 | (int) rhs << 24;
+      // For a unique hash value, the number of UnaryOpTypes and BinaryOpTypes
+      // should be no more than 128, and the number of DataTypes should be no
+      // more than 256.
+      return (JITEvaluatorIdType)op | (JITEvaluatorIdType)is_binary << 7
+          | (JITEvaluatorIdType)ret << 8 | (JITEvaluatorIdType)lhs << 16
+          | (JITEvaluatorIdType)rhs << 24;
     }
 
     UnaryOpType unary_op() const
@@ -42,8 +46,8 @@ class ConstantFold : public BasicStmtVisitor {
   static Kernel *get_jit_evaluator_kernel(JITEvaluatorId const &id)
   {
     auto &cache = get_current_program().jit_evaluator_cache;
-    int iid = int(id);
-    auto it = cache.find(iid); // X: cache race?
+    auto hash_id = JITEvaluatorIdType(id);
+    auto it = cache.find(hash_id); // We need the hash value to be unique here.
     if (it != cache.end()) // cached?
       return it->second.get();
     auto kernel_name = fmt::format("jit_evaluator_{}", cache.size());
@@ -73,8 +77,8 @@ class ConstantFold : public BasicStmtVisitor {
       ker->insert_arg(id.rhs, false);
     ker->is_accessor = true;
     auto *ker_ptr = ker.get();
-    TI_TRACE("Saving JIT evaluator cache entry id={}", iid);
-    cache[iid] = std::move(ker);
+    TI_TRACE("Saving JIT evaluator cache entry id={}", hash_id);
+    cache[hash_id] = std::move(ker);
     return ker_ptr;
   }
 

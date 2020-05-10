@@ -4,6 +4,7 @@ import copy
 import numbers
 import numpy as np
 from .util import to_numpy_type, to_pytorch_type
+from .common_ops import TaichiOperations
 
 
 def broadcast_if_scalar(func):
@@ -15,7 +16,7 @@ def broadcast_if_scalar(func):
     return broadcasted
 
 
-class Matrix:
+class Matrix(TaichiOperations):
     is_taichi_class = True
 
     def __init__(self,
@@ -173,62 +174,6 @@ class Matrix:
         for i in range(self.n * self.m):
             ret.entries[i] = scalar
         return ret
-
-    def __neg__(self):
-        import taichi as ti
-        return ti.neg(self)
-
-    def __abs__(self):
-        import taichi as ti
-        return ti.abs(self)
-
-    def __add__(self, other):
-        import taichi as ti
-        return ti.add(self, other)
-
-    __radd__ = __add__
-
-    def __sub__(self, other):
-        import taichi as ti
-        return ti.sub(self, other)
-
-    def __rsub__(self, other):
-        import taichi as ti
-        return ti.sub(other, self)
-
-    def __mul__(self, other):
-        import taichi as ti
-        return ti.mul(self, other)
-
-    __rmul__ = __mul__
-
-    def __truediv__(self, other):
-        import taichi as ti
-        return ti.truediv(self, other)
-
-    def __rtruediv__(self, other):
-        import taichi as ti
-        return ti.truediv(other, self)
-
-    def __floordiv__(self, other):
-        import taichi as ti
-        return ti.floordiv(self, other)
-
-    def __rfloordiv__(self, other):
-        import taichi as ti
-        return ti.floordiv(other, self)
-
-    def __mod__(self, other):
-        import taichi as ti
-        return ti.mod(self, other)
-
-    def __pow__(self, other, modulo=None):
-        import taichi as ti
-        return ti.pow(self, other)
-
-    def __rpow__(self, other, modulo=None):
-        import taichi as ti
-        return ti.pow(other, self)
 
     def linearize_entry_id(self, *args):
         assert 1 <= len(args) <= 2

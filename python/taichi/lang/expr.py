@@ -1,10 +1,11 @@
 from .core import taichi_lang_core
 from .util import *
+from .common_ops import TaichiOperations
 import traceback
 
 
 # Scalar, basic data type
-class Expr:
+class Expr(TaichiOperations):
     materialize_layout_callback = None
     layout_materialized = False
 

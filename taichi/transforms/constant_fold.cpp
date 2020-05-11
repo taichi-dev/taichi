@@ -1,5 +1,6 @@
 #include "taichi/ir/ir.h"
 #include "taichi/ir/visitors.h"
+#include "taichi/program/program.h"
 #include <deque>
 #include <set>
 #include <cmath>

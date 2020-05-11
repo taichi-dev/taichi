@@ -38,8 +38,9 @@ class JITModuleCUDA : public JITModule {
   }
 
   void *lookup_function(const std::string &name) override {
-    auto _ = CUDAContext::get_instance().get_guard();
-    // CUDAContext::get_instance().make_current();
+    // TODO: figure out why using the guard leads to wrong tests results
+    // auto context_guard = CUDAContext::get_instance().get_guard();
+    CUDAContext::get_instance().make_current();
     void *func;
     auto t = Time::get_time();
     CUDADriver::get_instance().module_get_function(&func, module, name.c_str());
@@ -84,7 +85,9 @@ class JITSessionCUDA : public JITSession {
 
   virtual JITModule *add_module(std::unique_ptr<llvm::Module> M) override {
     auto ptx = compile_module_to_ptx(M);
-    auto __ = CUDAContext::get_instance().get_guard();
+    // TODO: figure out why using the guard leads to wrong tests results
+    // auto context_guard = CUDAContext::get_instance().get_guard();
+    CUDAContext::get_instance().make_current();
     // Create module for object
     void *cuda_module;
     TI_TRACE("PTX size: {:.2f}KB", ptx.size() / 1024.0);

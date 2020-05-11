@@ -158,7 +158,7 @@ A better placement is to place them together:
 Then ``vel[i]`` is placed right next to ``pos[i]``, this can increase the cache-hit rate and therefore increase the performance.
 
 
-Flat layouts versus blocked layouts 
+Flat layouts versus hierarchical layouts 
 -------------------------
 
 By default, when allocating a ``ti.var``, it follows the simplest data layout.
@@ -193,7 +193,7 @@ Struct-fors on nested dense data structures will automatically follow their data
 
 will iterate over elements of ``A`` following row-major order. If ``A`` is column-major, then the iteration follows the column-major order.
 
-If ``A`` is blocked, the iteration will happen within each block first. This maximizes memory bandwidth utilization in most cases.
+If ``A`` is hierarchical, it will be iterated level by level. This maximizes the memory bandwidth utilization in most cases.
 
 Struct-for loops on sparse tensors follow the same philosophy, and will be discussed further in :ref:`sparse`.
 

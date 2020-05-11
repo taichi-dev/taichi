@@ -6,6 +6,8 @@ TLANG_NAMESPACE_BEGIN
 // Basic tests within a basic block
 TI_TEST("alg_simp") {
   SECTION("simplify_add_zero") {
+    TI_TEST_PROGRAM;
+
     auto block = std::make_unique<Block>();
 
     auto global_load_addr =
@@ -34,6 +36,8 @@ TI_TEST("alg_simp") {
   }
 
   SECTION("simplify_multiply_one") {
+    TI_TEST_PROGRAM;
+
     auto block = std::make_unique<Block>();
 
     auto global_load_addr =
@@ -67,6 +71,8 @@ TI_TEST("alg_simp") {
   }
 
   SECTION("simplify_multiply_zero_fast_math") {
+    TI_TEST_PROGRAM;
+
     auto block = std::make_unique<Block>();
 
     auto global_load_addr =
@@ -125,6 +131,8 @@ TI_TEST("alg_simp") {
   }
 
   SECTION("simplify_and_minus_one") {
+    TI_TEST_PROGRAM;
+
     auto block = std::make_unique<Block>();
 
     auto global_load_addr =

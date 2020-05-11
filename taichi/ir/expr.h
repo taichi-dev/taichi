@@ -131,9 +131,11 @@ inline Expr smart_load(const Expr &var) {
   return load_if_ptr(ptr_if_global(var));
 }
 
+// Begin: legacy frontend functions
 void Print_(const Expr &a, const std::string &str);
 void Cache(int v, const Expr &var);
 void CacheL1(const Expr &var);
 Expr Var(const Expr &x);
+// End: legacy frontend functions
 
 TLANG_NAMESPACE_END

@@ -1,6 +1,7 @@
 // This pass analyzes compile-time known offsets for two values.
 
 #include "taichi/ir/ir.h"
+#include "taichi/ir/visitors.h"
 
 TLANG_NAMESPACE_BEGIN
 

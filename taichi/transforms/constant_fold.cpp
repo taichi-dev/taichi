@@ -1,6 +1,5 @@
 #include "taichi/ir/ir.h"
-#include "taichi/program/program.h"
-#include "taichi/ir/snode.h"
+#include "taichi/ir/visitors.h"
 #include <deque>
 #include <set>
 #include <cmath>

@@ -1,9 +1,10 @@
 // The IRPrinter prints the IR in a human-readable format
 
+#include "taichi/ir/ir.h"
+#include "taichi/ir/visitors.h"
+#include "taichi/ir/frontend_ir.h"
 #include <typeinfo>
 
-#include "taichi/ir/ir.h"
-#include "taichi/ir/frontend_ir.h"
 
 TLANG_NAMESPACE_BEGIN
 

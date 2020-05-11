@@ -1,8 +1,9 @@
 // Superword level vectorization
 
+#include "taichi/ir/ir.h"
+#include "taichi/ir/visitors.h"
 #include <typeinfo>
 #include <set>
-#include "taichi/ir/ir.h"
 
 TLANG_NAMESPACE_BEGIN
 

@@ -1,5 +1,6 @@
 #include "taichi/ir/ir.h"
 #include "taichi/ir/frontend_ir.h"
+#include "taichi/ir/visitors.h"
 
 #include <unordered_set>
 

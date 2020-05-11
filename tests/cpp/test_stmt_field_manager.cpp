@@ -1,4 +1,5 @@
 #include "taichi/ir/ir.h"
+#include "taichi/ir/statements.h"
 #include "taichi/common/testing.h"
 
 TLANG_NAMESPACE_BEGIN

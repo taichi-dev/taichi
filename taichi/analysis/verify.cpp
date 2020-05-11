@@ -1,4 +1,5 @@
 #include "taichi/ir/ir.h"
+#include "taichi/ir/visitors.h"
 #include <vector>
 #include <unordered_set>
 

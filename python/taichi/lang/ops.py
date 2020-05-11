@@ -198,7 +198,9 @@ def pow(self, power):
     if not isinstance(power, int) or abs(power) > 50:
         return raw_pow(self, power)
     if power == 0:
-        return self * 0 + Expr(1) # TODO: rid hack, use {Expr,Matrix}.dup().fill(1)
+        # TODO: remove the hack, use {Expr,Matrix}.dup().fill(1)
+        # also note that this can be solved by #940
+        return self * 0 + Expr(1)
     negative = power < 0
     power = abs(power)
     tmp = self

@@ -70,6 +70,8 @@ inline void set_mtl_buffer(MTLComputeCommandEncoder *encoder,
   mac::call(encoder, "setBuffer:offset:atIndex:", buffer, offset, index);
 }
 
+// void set_label(MTLComputeCommandEncoder *encoder, const std::string &label);
+
 void dispatch_threadgroups(MTLComputeCommandEncoder *encoder,
                            int32_t blocks_x,
                            int32_t blocks_y,
@@ -83,6 +85,21 @@ inline void dispatch_threadgroups(MTLComputeCommandEncoder *encoder,
                                   int32_t blocks_x,
                                   int32_t threads_x) {
   dispatch_threadgroups(encoder, blocks_x, 1, 1, threads_x, 1, 1);
+}
+
+template <
+    typename T,
+    typename = std::enable_if_t<std::is_same_v<T, MTLComputeCommandEncoder> ||
+                                std::is_same_v<T, MTLCommandBuffer>>>
+void set_label(T *mtl_obj, const std::string &label) {
+  // Set labels on Metal command buffer and encoders, so that they can be
+  // tracked in Instrument - Metal System Trace
+  auto label_str = mac::wrap_string_as_ns_string(label);
+  mac::call(mtl_obj, "setLabel:", label_str.get());
+}
+
+inline void enqueue_command_buffer(MTLCommandBuffer *cmd_buffer) {
+  mac::call(cmd_buffer, "enqueue");
 }
 
 inline void commit_command_buffer(MTLCommandBuffer *cmd_buffer) {

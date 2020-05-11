@@ -167,33 +167,6 @@ class StatementTypeNameVisitor : public IRVisitor {
 #undef PER_STATEMENT
 };
 
-Expr load_if_ptr(const Expr &ptr) {
-  if (ptr.is<GlobalPtrExpression>()) {
-    return load(ptr);
-  } else if (ptr.is<GlobalVariableExpression>()) {
-    TI_ASSERT(ptr.cast<GlobalVariableExpression>()->snode->num_active_indices ==
-              0);
-    return load(ptr[ExprGroup()]);
-  } else
-    return ptr;
-}
-
-Expr load(const Expr &ptr) {
-  TI_ASSERT(ptr.is<GlobalPtrExpression>());
-  return Expr::make<GlobalLoadExpression>(ptr);
-}
-
-Expr ptr_if_global(const Expr &var) {
-  if (var.is<GlobalVariableExpression>()) {
-    // singleton global variable
-    TI_ASSERT(var.snode()->num_active_indices == 0);
-    return var[ExprGroup()];
-  } else {
-    // may be any local or global expr
-    return var;
-  }
-}
-
 int StmtFieldSNode::get_snode_id(SNode *snode) {
   if (snode == nullptr)
     return -1;
@@ -560,18 +533,6 @@ IRNode *FrontendContext::root() {
 }
 
 std::unique_ptr<FrontendContext> context;
-
-Expr Var(const Expr &x) {
-  auto var = Expr(std::make_shared<IdExpression>());
-  current_ast_builder().insert(std::make_unique<FrontendAllocaStmt>(
-      std::static_pointer_cast<IdExpression>(var.expr)->id, DataType::unknown));
-  var = x;
-  return var;
-}
-
-void Print_(const Expr &a, const std::string &str) {
-  current_ast_builder().insert(std::make_unique<FrontendPrintStmt>(a, str));
-}
 
 template <>
 std::string to_string(const LaneAttribute<LocalAddress> &ptr) {
@@ -978,14 +939,6 @@ bool ContinueStmt::as_return() const {
 
 void Stmt::infer_type() {
     irpass::typecheck(this);
-}
-
-void Cache(int v, const Expr &var) {
-  dec.scratch_opt.push_back(std::make_pair(v, var.snode()));
-}
-
-void CacheL1(const Expr &var) {
-  dec.scratch_opt.push_back(std::make_pair(1, var.snode()));
 }
 
 TLANG_NAMESPACE_END

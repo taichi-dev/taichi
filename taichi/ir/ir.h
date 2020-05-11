@@ -1090,18 +1090,7 @@ class RangeForStmt : public Stmt {
                int vectorize,
                int parallelize,
                int block_dim,
-               bool strictly_serialized)
-      : loop_var(loop_var),
-        begin(begin),
-        end(end),
-        body(std::move(body)),
-        vectorize(vectorize),
-        parallelize(parallelize),
-        block_dim(block_dim),
-        strictly_serialized(strictly_serialized) {
-    reversed = false;
-    TI_STMT_REG_FIELDS;
-  }
+               bool strictly_serialized);
 
   bool is_container_statement() const override {
     return true;
@@ -1140,15 +1129,7 @@ class StructForStmt : public Stmt {
                 std::unique_ptr<Block> &&body,
                 int vectorize,
                 int parallelize,
-                int block_dim)
-      : loop_vars(loop_vars),
-        snode(snode),
-        body(std::move(body)),
-        vectorize(vectorize),
-        parallelize(parallelize),
-        block_dim(block_dim) {
-    TI_STMT_REG_FIELDS;
-  }
+                int block_dim);
 
   bool is_container_statement() const override {
     return true;

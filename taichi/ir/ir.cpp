@@ -872,6 +872,43 @@ std::unique_ptr<ConstStmt> ConstStmt::copy() {
   return std::make_unique<ConstStmt>(val);
 }
 
+StructForStmt::StructForStmt(
+              std::vector<Stmt *> loop_vars,
+              SNode *snode,
+              std::unique_ptr<Block> &&body,
+              int vectorize,
+              int parallelize,
+              int block_dim)
+    : loop_vars(loop_vars),
+      snode(snode),
+      body(std::move(body)),
+      vectorize(vectorize),
+      parallelize(parallelize),
+      block_dim(block_dim) {
+  TI_STMT_REG_FIELDS;
+}
+
+RangeForStmt::RangeForStmt(
+             Stmt *loop_var,
+             Stmt *begin,
+             Stmt *end,
+             std::unique_ptr<Block> &&body,
+             int vectorize,
+             int parallelize,
+             int block_dim,
+             bool strictly_serialized)
+    : loop_var(loop_var),
+      begin(begin),
+      end(end),
+      body(std::move(body)),
+      vectorize(vectorize),
+      parallelize(parallelize),
+      block_dim(block_dim),
+      strictly_serialized(strictly_serialized) {
+  reversed = false;
+  TI_STMT_REG_FIELDS;
+}
+
 OffloadedStmt::OffloadedStmt(OffloadedStmt::TaskType task_type)
     : OffloadedStmt(task_type, nullptr) {
 }

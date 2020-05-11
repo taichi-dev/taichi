@@ -30,6 +30,9 @@ The return value will be automatically casted into the hinted type. e.g.,
     print(res)  # 3, since return type is ti.i32
 
 .. note::
+    For differentiable programming kernels should better have either serial statements or a single parallel for-loop. If you don't use differentiable programming, feel free to ignore this tip.
+
+.. note::
 
     For now, we only support one scalar as return value. Returning ``ti.Matrix`` or `ti.Vector`` is not supported. Python-style tuple return is not supported. e.g.:
 
@@ -44,7 +47,6 @@ The return value will be automatically casted into the hinted type. e.g.,
             y = 0.5
             return x, y  #  ERROR!
 
-
 .. note::
   For correct gradient behaviors in differentiable programming, please refrain from using kernel return values. Instead, store the result into a global variable (e.g. ``loss[None]``).
 
@@ -54,33 +56,33 @@ The return value will be automatically casted into the hinted type. e.g.,
 
 .. code-block:: python
 
-    @ti.kernel
-    def a_hard_kernel_to_auto_differentiate():
-      sum = 0
-      for i in x:
-        sum += x[i]
-      for i in y:
-        y[i] = sum
+        @ti.kernel
+        def a_hard_kernel_to_auto_differentiate():
+          sum = 0
+          for i in x:
+            sum += x[i]
+          for i in y:
+            y[i] = sum
 
-    # instead, split it into multiple kernels to be nice to the Taichi autodiff compiler:
+        # instead, split it into multiple kernels to be nice to the Taichi autodiff compiler:
 
-    @ti.kernel
-    def reduce():
-      for i in x:
-        sum[None] += x[i]
+        @ti.kernel
+        def reduce():
+          for i in x:
+            sum[None] += x[i]
 
-    @ti.kernel
-    def assign()
-      for i in y:
-        y[i] = sum[None]
+        @ti.kernel
+        def assign()
+          for i in y:
+            y[i] = sum[None]
 
-    def main():
-      with ti.Tape(loss):
-        ...
-        sum[None] = 0
-        reduce()
-        assign()
-        ...
+        def main():
+          with ti.Tape(loss):
+            ...
+            sum[None] = 0
+            reduce()
+            assign()
+            ...
 
 
 Functions
@@ -150,25 +152,27 @@ Scalar arithmetics
 -----------------------------------------
 Supported scalar functions:
 
-* ``ti.sin(x)``
-* ``ti.cos(x)``
-* ``ti.asin(x)``
-* ``ti.acos(x)``
-* ``ti.atan2(x, y)``
-* ``ti.cast(x, type)``
-* ``ti.sqrt(x)``
-* ``ti.floor(x)``
-* ``ti.inv(x)``
-* ``ti.tan(x)``
-* ``ti.tanh(x)``
-* ``ti.exp(x)``
-* ``ti.log(x)``
-* ``ti.random(type)``
-* ``abs(x)``
-* ``max(a, b)``
-* ``min(a, b)``
-* ``x ** y``
-* Inplace adds are atomic on global data. I.e., ``a += b`` is equivalent to ``ti.atomic_add(a, b)``
+.. function:: ti.sin(x)
+.. function:: ti.cos(x)
+.. function:: ti.asin(x)
+.. function:: ti.acos(x)
+.. function:: ti.atan2(x, y)
+.. function:: ti.cast(x, type)
+.. function:: ti.sqrt(x)
+.. function:: ti.floor(x)
+.. function:: ti.ceil(x)
+.. function:: ti.inv(x)
+.. function:: ti.tan(x)
+.. function:: ti.tanh(x)
+.. function:: ti.exp(x)
+.. function:: ti.log(x)
+.. function:: ti.random(type)
+.. function:: abs(x)
+.. function:: int(x)
+.. function:: float(x)
+.. function:: max(x, y)
+.. function:: min(x, y)
+.. function:: pow(x, y)
 
 Note: when these scalar functions are applied on :ref:`matrix` and :ref:`vector`, it's applied element-wise, for example:
 
@@ -194,7 +198,17 @@ Note: when these scalar functions are applied on :ref:`matrix` and :ref:`vector`
 Debugging
 -------------------------------------------
 
-Debug your program with ``print(x)``.
+Debug your program with ``print(x)``. For example, if ``x`` is ``23``, then it shows:
+
+.. code-block::
+
+    [debug] x = 23
+
+in the console.
+
+.. warning::
+
+    This is not the same as the ``print`` in Python-scope. For now ``print`` in Taichi only takes **scalar numbers** as input. Strings, vectors and matrices are not supported. Please use ``print(v[0]); print(v[1])`` if you want to print a vector.
 
 
 Why Python frontend

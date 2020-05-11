@@ -1,4 +1,4 @@
-.. _linalg:
+.. _matrix:
 
 Matrices
 ========

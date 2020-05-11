@@ -1,6 +1,8 @@
 // Type checking
 
 #include "taichi/ir/ir.h"
+#include "taichi/ir/passes.h"
+#include "taichi/ir/analysis.h"
 #include "taichi/ir/visitors.h"
 #include "taichi/program/kernel.h"
 #include "taichi/ir/frontend.h"

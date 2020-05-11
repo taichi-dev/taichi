@@ -1,5 +1,6 @@
 #include "state_machine.h"
 #include "taichi/ir/statements.h"
+#include "taichi/ir/analysis.h"
 
 TLANG_NAMESPACE_BEGIN
 

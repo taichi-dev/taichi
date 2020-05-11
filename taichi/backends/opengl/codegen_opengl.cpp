@@ -7,6 +7,7 @@
 #include "taichi/backends/opengl/opengl_data_types.h"
 #include "taichi/backends/opengl/opengl_kernel_util.h"
 #include "taichi/ir/ir.h"
+#include "taichi/ir/passes.h"
 #include "taichi/util/line_appender.h"
 #include "taichi/util/macros.h"
 

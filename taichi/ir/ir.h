@@ -16,132 +16,22 @@
 
 TLANG_NAMESPACE_BEGIN
 
-class DiffRange {
- private:
-  bool related;
-
- public:
-  int coeff;
-  int low, high;
-
-  DiffRange() : DiffRange(false, 0) {
-  }
-
-  DiffRange(bool related, int coeff) : DiffRange(related, 0, 0) {
-    TI_ASSERT(related == false);
-  }
-
-  DiffRange(bool related, int coeff, int low)
-      : DiffRange(related, coeff, low, low + 1) {
-  }
-
-  DiffRange(bool related, int coeff, int low, int high)
-      : related(related), coeff(coeff), low(low), high(high) {
-    if (!related) {
-      this->low = this->high = 0;
-    }
-  }
-
-  bool related_() const {
-    return related;
-  }
-
-  bool linear_related() const {
-    return related && coeff == 1;
-  }
-
-  bool certain() {
-    TI_ASSERT(related);
-    return high == low + 1;
-  }
-};
-
 class IRBuilder;
 class IRNode;
 class Block;
 class Stmt;
 using pStmt = std::unique_ptr<Stmt>;
-class DiffRange;
 
 class SNode;
-using ScratchPadOptions = std::vector<std::pair<int, SNode *>>;
 class Expression;
 class Expr;
 class ExprGroup;
 class ScratchPads;
+using ScratchPadOptions = std::vector<std::pair<int, SNode *>>;
 
 #define PER_STATEMENT(x) class x;
 #include "taichi/inc/statements.inc.h"
 #undef PER_STATEMENT
-
-// IR passes
-namespace irpass {
-
-struct OffloadedResult {
-  // Total size in bytes of the global temporary variables
-  std::size_t total_size;
-  // Offloaded local variables to its offset in the global tmps memory.
-  std::unordered_map<const Stmt *, std::size_t> local_to_global_offset;
-};
-
-void re_id(IRNode *root);
-void flag_access(IRNode *root);
-void die(IRNode *root);
-void simplify(IRNode *root, Kernel *kernel = nullptr);
-void alg_simp(IRNode *root, const CompileConfig &config);
-void whole_kernel_cse(IRNode *root);
-void variable_optimization(IRNode *root, bool after_lower_access);
-void extract_constant(IRNode *root);
-void full_simplify(IRNode *root,
-                   const CompileConfig &config,
-                   Kernel *kernel = nullptr);
-void print(IRNode *root, std::string *output = nullptr);
-void lower(IRNode *root);
-void typecheck(IRNode *root, Kernel *kernel = nullptr);
-void loop_vectorize(IRNode *root);
-void slp_vectorize(IRNode *root);
-void vector_split(IRNode *root, int max_width, bool serial_schedule);
-void replace_all_usages_with(IRNode *root, Stmt *old_stmt, Stmt *new_stmt);
-void check_out_of_bound(IRNode *root);
-void lower_access(IRNode *root, bool lower_atomic, Kernel *kernel = nullptr);
-void make_adjoint(IRNode *root, bool use_stack = false);
-void constant_fold(IRNode *root);
-OffloadedResult offload(IRNode *root);
-void fix_block_parents(IRNode *root);
-void replace_statements_with(IRNode *root,
-                             std::function<bool(Stmt *)> filter,
-                             std::function<std::unique_ptr<Stmt>()> generator);
-void demote_dense_struct_fors(IRNode *root);
-void demote_atomics(IRNode *root);
-void reverse_segments(IRNode *root);  // for autograd
-std::unique_ptr<ScratchPads> initialize_scratch_pad(StructForStmt *root);
-void compile_to_offloads(IRNode *ir,
-                         const CompileConfig &config,
-                         bool vectorize,
-                         bool grad,
-                         bool ad_use_stack,
-                         bool verbose,
-                         bool lower_global_access = true);
-
-// Analysis
-namespace analysis {
-void check_fields_registered(IRNode *root);
-int count_statements(IRNode *root);
-std::unordered_set<Stmt *> detect_fors_with_break(IRNode *root);
-std::unordered_set<Stmt *> detect_loops_with_continue(IRNode *root);
-std::unordered_set<SNode *> gather_deactivations(IRNode *root);
-std::vector<Stmt *> gather_statements(IRNode *root,
-                                      const std::function<bool(Stmt *)> &test);
-std::unique_ptr<std::unordered_set<AtomicOpStmt *>> gather_used_atomics(
-    IRNode *root);
-bool has_store_or_atomic(IRNode *root, const std::vector<Stmt *> &vars);
-std::pair<bool, Stmt *> last_store_or_atomic(IRNode *root, Stmt *var);
-bool same_statements(IRNode *root1, IRNode *root2);
-DiffRange value_diff(Stmt *stmt, int lane, Stmt *alloca);
-void verify(IRNode *root);
-}  // namespace analysis
-
-}  // namespace irpass
 
 IRBuilder &current_ast_builder();
 
@@ -712,9 +602,7 @@ class Stmt : public IRNode {
     return std::make_unique<T>(std::forward<Args>(args)...);
   }
 
-  void infer_type() {
-    irpass::typecheck(this);
-  }
+  void infer_type();
 
   void set_tb(const std::string &tb) {
     this->tb = tb;

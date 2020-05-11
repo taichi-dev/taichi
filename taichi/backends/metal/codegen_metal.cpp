@@ -5,6 +5,7 @@
 
 #include "taichi/backends/metal/constants.h"
 #include "taichi/ir/ir.h"
+#include "taichi/ir/passes.h"
 #include "taichi/util/line_appender.h"
 
 TLANG_NAMESPACE_BEGIN

@@ -1,6 +1,8 @@
 // Intermediate representations
 
 #include "taichi/ir/ir.h"
+#include "taichi/ir/passes.h"
+#include "taichi/ir/analysis.h"
 
 #include <numeric>
 #include <thread>
@@ -972,6 +974,10 @@ bool ContinueStmt::as_return() const {
     return true;
   }
   return false;
+}
+
+void Stmt::infer_type() {
+    irpass::typecheck(this);
 }
 
 TLANG_NAMESPACE_END

@@ -18,9 +18,13 @@ class ConstantFold : public BasicStmtVisitor {
 
   static Kernel *get_jit_evaluator_kernel(JITEvaluatorId const &id) {
     auto &cache = get_current_program().jit_evaluator_cache;
-    auto it = cache.find(id);  // We need the hash value to be unique here.
-    if (it != cache.end())     // cached?
-      return it->second.get();
+    {
+      std::lock_guard<std::mutex> _(
+          get_current_program().jit_evaluator_cache_mut);
+      auto it = cache.find(id);
+      if (it != cache.end())  // cached?
+        return it->second.get();
+    }
     auto kernel_name = fmt::format("jit_evaluator_{}", cache.size());
     auto func = [&]() {
       auto lhstmt = Stmt::make<ArgLoadStmt>(0, false);
@@ -52,7 +56,11 @@ class ConstantFold : public BasicStmtVisitor {
     auto *ker_ptr = ker.get();
     TI_TRACE("Saving JIT evaluator cache entry id={}",
              std::hash<JITEvaluatorId>{}(id));
-    cache[id] = std::move(ker);
+    {
+      std::lock_guard<std::mutex> _(
+          get_current_program().jit_evaluator_cache_mut);
+      cache[id] = std::move(ker);
+    }
     return ker_ptr;
   }
 

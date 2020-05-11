@@ -27,9 +27,9 @@ TLANG_NAMESPACE_BEGIN
 
 struct JITEvaluatorId {
   std::thread::id thread_id;
-  int op;
   // Note that on certain backends (e.g. CUDA), functions created in one
-  // thread cannot be used in another.
+  // thread cannot be used in another. Hence the thread_id member.
+  int op;
   DataType ret, lhs, rhs;
   bool is_binary;
 
@@ -103,6 +103,7 @@ class Program {
 
   std::unordered_map<JITEvaluatorId, std::unique_ptr<Kernel>>
       jit_evaluator_cache;
+  std::mutex jit_evaluator_cache_mut;
 
   Program() : Program(default_compile_config.arch) {
   }

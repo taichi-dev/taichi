@@ -14,49 +14,45 @@ class ConstantFold : public BasicStmtVisitor {
   ConstantFold() : BasicStmtVisitor() {
   }
 
-  struct JITEvaluatorId
-  {
+  struct JITEvaluatorId {
     int op;
     DataType ret, lhs, rhs;
     bool is_binary;
 
-    explicit operator JITEvaluatorIdType() const
-    {
+    explicit operator JITEvaluatorIdType() const {
       // For a unique hash value, the number of UnaryOpTypes and BinaryOpTypes
       // should be no more than 256, and the number of DataTypes should be no
       // more than 128.
-      return (JITEvaluatorIdType)op | (JITEvaluatorIdType)ret << 8
-        | (JITEvaluatorIdType)lhs << 16 | (JITEvaluatorIdType)rhs << 24
-        | (JITEvaluatorIdType)is_binary << 31;
+      return (JITEvaluatorIdType)op | (JITEvaluatorIdType)ret << 8 |
+             (JITEvaluatorIdType)lhs << 16 | (JITEvaluatorIdType)rhs << 24 |
+             (JITEvaluatorIdType)is_binary << 31;
     }
 
-    UnaryOpType unary_op() const
-    {
+    UnaryOpType unary_op() const {
       TI_ASSERT(!is_binary);
-      return (UnaryOpType) op;
+      return (UnaryOpType)op;
     }
 
-    BinaryOpType binary_op() const
-    {
+    BinaryOpType binary_op() const {
       TI_ASSERT(is_binary);
-      return (BinaryOpType) op;
+      return (BinaryOpType)op;
     }
   };
 
-  static Kernel *get_jit_evaluator_kernel(JITEvaluatorId const &id)
-  {
+  static Kernel *get_jit_evaluator_kernel(JITEvaluatorId const &id) {
     auto &cache = get_current_program().jit_evaluator_cache;
     auto hash_id = JITEvaluatorIdType(id);
-    auto it = cache.find(hash_id); // We need the hash value to be unique here.
-    if (it != cache.end()) // cached?
+    auto it = cache.find(hash_id);  // We need the hash value to be unique here.
+    if (it != cache.end())          // cached?
       return it->second.get();
     auto kernel_name = fmt::format("jit_evaluator_{}", cache.size());
-    auto func = [&] () {
+    auto func = [&]() {
       auto lhstmt = Stmt::make<ArgLoadStmt>(0, false);
       auto rhstmt = Stmt::make<ArgLoadStmt>(1, false);
       pStmt oper;
       if (id.is_binary) {
-        oper = Stmt::make<BinaryOpStmt>(id.binary_op(), lhstmt.get(), rhstmt.get());
+        oper = Stmt::make<BinaryOpStmt>(id.binary_op(), lhstmt.get(),
+                                        rhstmt.get());
       } else {
         oper = Stmt::make<UnaryOpStmt>(id.unary_op(), lhstmt.get());
         if (unary_op_is_cast(id.unary_op())) {
@@ -70,7 +66,8 @@ class ConstantFold : public BasicStmtVisitor {
       current_ast_builder().insert(std::move(oper));
       current_ast_builder().insert(std::move(ret));
     };
-    auto ker = std::make_unique<Kernel>(get_current_program(), func, kernel_name);
+    auto ker =
+        std::make_unique<Kernel>(get_current_program(), func, kernel_name);
     ker->insert_ret(id.ret);
     ker->insert_arg(id.lhs, false);
     if (id.is_binary)
@@ -82,18 +79,17 @@ class ConstantFold : public BasicStmtVisitor {
     return ker_ptr;
   }
 
-  static bool is_good_type(DataType dt)
-  {
+  static bool is_good_type(DataType dt) {
     // ConstStmt of `bad` types like `i8` is not supported by LLVM.
     // Dis: https://github.com/taichi-dev/taichi/pull/839#issuecomment-625902727
     switch (dt) {
-    case DataType::i32:
-    case DataType::f32:
-    case DataType::i64:
-    case DataType::f64:
-      return true;
-    default:
-      return false;
+      case DataType::i32:
+      case DataType::f32:
+      case DataType::i64:
+      case DataType::f64:
+        return true;
+      default:
+        return false;
     }
   }
 
@@ -111,16 +107,17 @@ class ConstantFold : public BasicStmtVisitor {
     }
   };
 
-  static bool jit_evaluate_binary_op(TypedConstant &ret, BinaryOpStmt *stmt,
-      const TypedConstant &lhs, const TypedConstant &rhs)
-  {
+  static bool jit_evaluate_binary_op(TypedConstant &ret,
+                                     BinaryOpStmt *stmt,
+                                     const TypedConstant &lhs,
+                                     const TypedConstant &rhs) {
     if (!is_good_type(ret.dt))
       return false;
-    JITEvaluatorId id{(int)stmt->op_type, ret.dt, lhs.dt, rhs.dt,
-      true};
+    JITEvaluatorId id{(int)stmt->op_type, ret.dt, lhs.dt, rhs.dt, true};
     auto *ker = get_jit_evaluator_kernel(id);
     auto &ctx = get_current_program().get_context();
-    ContextArgSaveGuard _(ctx); // save input args, prevent override current kernel
+    ContextArgSaveGuard _(
+        ctx);  // save input args, prevent override current kernel
     ctx.set_arg<int64_t>(0, lhs.val_i64);
     ctx.set_arg<int64_t>(1, rhs.val_i64);
     (*ker)();
@@ -128,16 +125,17 @@ class ConstantFold : public BasicStmtVisitor {
     return true;
   }
 
-  static bool jit_evaluate_unary_op(TypedConstant &ret, UnaryOpStmt *stmt,
-      const TypedConstant &operand)
-  {
+  static bool jit_evaluate_unary_op(TypedConstant &ret,
+                                    UnaryOpStmt *stmt,
+                                    const TypedConstant &operand) {
     if (!is_good_type(ret.dt))
       return false;
     JITEvaluatorId id{(int)stmt->op_type, ret.dt, operand.dt, stmt->cast_type,
-      false};
+                      false};
     auto *ker = get_jit_evaluator_kernel(id);
     auto &ctx = get_current_program().get_context();
-    ContextArgSaveGuard _(ctx); // save input args, prevent override current kernel
+    ContextArgSaveGuard _(
+        ctx);  // save input args, prevent override current kernel
     ctx.set_arg<int64_t>(0, operand.val_i64);
     (*ker)();
     ret.val_i64 = get_current_program().fetch_result<int64_t>(0);

@@ -96,7 +96,7 @@ See? ``x`` first increases the first index (i.e. row-major), while ``y`` first i
 
 
 Array of Structures (AoS), Structure of Arrays (SoA)
---------------
+----------------------------------------------------
 
 Tensors of same size can be placed together.
 
@@ -158,8 +158,8 @@ A better placement is to place them together:
 Then ``vel[i]`` is placed right next to ``pos[i]``, this can increase the cache-hit rate and therefore increase the performance.
 
 
-Flat layouts versus hierarchical layouts 
--------------------------
+Flat layouts versus hierarchical layouts
+----------------------------------------
 
 By default, when allocating a ``ti.var``, it follows the simplest data layout.
 

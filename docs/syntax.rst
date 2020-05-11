@@ -1,8 +1,8 @@
 Syntax
-==========================
+======
 
 Kernels
----------------------
+-------
 
 Kernel arguments must be type-hinted. Kernels can have at most 8 parameters, e.g.,
 
@@ -37,6 +37,7 @@ The return value will be automatically casted into the hinted type. e.g.,
     For now, we only support one scalar as return value. Returning ``ti.Matrix`` or `ti.Vector`` is not supported. Python-style tuple return is not supported. e.g.:
 
     .. code-block:: python
+
         @ti.kernel
         def bad_kernel() -> ti.Matrix:
             return ti.Matrix([[1, 0], [0, 1]])  # ERROR!

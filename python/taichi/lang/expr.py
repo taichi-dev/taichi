@@ -74,7 +74,7 @@ class Expr(TaichiOperations):
     def __ixor__(self, other):
         self.atomic_xor(other)
 
-    # TODO: ti.cmp_le
+    # TODO: move to ops.py: ti.cmp_le
     def __le__(self, other):
         other = Expr(other)
         return Expr(taichi_lang_core.expr_cmp_le(self.ptr, other.ptr))

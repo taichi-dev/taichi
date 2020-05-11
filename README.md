@@ -6,7 +6,7 @@
 
 [![Build Status](https://img.shields.io/appveyor/build/yuanming-hu/taichi?logo=AppVeyor)](https://ci.appveyor.com/project/yuanming-hu/taichi/branch/master)
 [![Build Status](https://img.shields.io/travis/taichi-dev/taichi?logo=Travis)](https://travis-ci.com/taichi-dev/taichi)
-[![Latest Release](https://img.shields.io/github/v/release/taichi-dev/taichi)](https://github.com/taichi-dev/taichi/releases/latest)
+[![Latest Release](https://img.shields.io/github/v/release/taichi-dev/taichi?color=yellow)](https://github.com/taichi-dev/taichi/releases/latest)
 [![Downloads](https://img.shields.io/pypi/dw/taichi?color=blue)](https://pepy.tech/project/taichi)
 
 ## Overview

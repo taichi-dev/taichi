@@ -17,7 +17,7 @@ Kernel arguments must be type-hinted. Kernels can have at most 8 parameters, e.g
       for i in x:
         y[i] = x[i]
 
-Kernel can have scalar as return value. If a kernel have return value, it must be type-hinted.
+Kernel can have scalar as return value. If a kernel has a return value, it must be type-hinted.
 Return value will be automatically cased into the hinted type. e.g.,
 
 .. code-block:: python
@@ -29,12 +29,27 @@ Return value will be automatically cased into the hinted type. e.g.,
     res = add_xy(2.3, 1.1)
     print(res)  # 3, since return type is ti.i32
 
+.. note::
+
+    For now, we only support one scalar as return value. Returning ``ti.Matrix`` or `ti.Vector`` is not supported. Python-style tuple return is not supported. e.g.:
+
+    .. code-block:: python
+        @ti.kernel
+        def bad_kernel() -> ti.Matrix:
+            return ti.Matrix([[1, 0], [0, 1]])  # ERROR!
+
+        @ti.kernel
+        def bad_kernel() -> (ti.i32, ti.f32):
+            x = 1
+            y = 0.5
+            return x, y  #  ERROR!
+
+
 (TODO: move the following to advanced topics)
 
 * For differentiable programming kernels should better have either serial statements or a single parallel for-loop. If you don't use differentiable programming, feel free to ignore this tip.
 
 .. code-block:: python
-
 
     @ti.kernel
     def a_hard_kernel_to_auto_differentiate():

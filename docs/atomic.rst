@@ -43,7 +43,7 @@ These operations additionally return the **old value** of the first argument. Be
         x = 3
         y = 4
         z = ti.atomic_add(x, y)
-        # now z = 7, y = 4, z = 3
+        # now x = 7, y = 4, z = 3
 
 
 .. function:: ti.atomic_and(x, y)

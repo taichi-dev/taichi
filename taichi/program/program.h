@@ -34,6 +34,8 @@ class StructCompiler;
 
 class AsyncEngine;
 
+using JITEvaluatorIdType = uint32_t;
+
 class Program {
  public:
   using Kernel = taichi::lang::Kernel;
@@ -58,6 +60,8 @@ class Program {
   std::vector<std::unique_ptr<Kernel>> kernels;
 
   std::unique_ptr<ProfilerBase> profiler;
+
+  std::unordered_map<JITEvaluatorIdType, std::unique_ptr<Kernel>> jit_evaluator_cache;
 
   Program() : Program(default_compile_config.arch) {
   }

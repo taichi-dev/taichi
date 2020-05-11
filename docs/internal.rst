@@ -1,9 +1,6 @@
 Internal designs (WIP)
 ======================
 
-Vector type system
-------------------
-
 
 Intermediate representation
 ---------------------------

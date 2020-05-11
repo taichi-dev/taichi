@@ -402,7 +402,8 @@ class FixStructForOffsets : public BasicStmtVisitor {
   StructForOffsets offsets;
 
   void visit(StructForStmt *stmt) {
-    if (const auto &it = offsets.find(stmt); it != offsets.end()) {
+    if (const auto &it = offsets.find(stmt);
+        it != offsets.end() && !it->second.empty()) {
       auto offset = it->second;
       std::vector<Stmt *> loop_vars_with_offset(stmt->loop_vars.size());
       VecStatement new_statements;

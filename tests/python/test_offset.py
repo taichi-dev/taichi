@@ -27,4 +27,4 @@ def test_struct_for():
         for j in range(offset[1], offset[1] + 4):
             for k in range(offset[2], offset[2] + 4):
                 for l in range(offset[3], offset[3] + 4):
-                    a[i, j, k, l] == i + j * 10 + k * 100 + l * 1000
+                    assert a[i, j, k, l] == i + j * 10 + k * 100 + l * 1000

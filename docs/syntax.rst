@@ -18,7 +18,7 @@ Kernel arguments must be type-hinted. Kernels can have at most 8 parameters, e.g
         y[i] = x[i]
 
 A kernel can have **scalar** return value. If a kernel has a return value, it must be type-hinted.
-Return value will be automatically cased into the hinted type. e.g.,
+The return value will be automatically casted into the hinted type. e.g.,
 
 .. code-block:: python
 
@@ -44,6 +44,9 @@ Return value will be automatically cased into the hinted type. e.g.,
             y = 0.5
             return x, y  #  ERROR!
 
+
+.. note::
+  For correct gradient behaviors in differentiable programming, please refrain from using kernel return values. Instead, store the result into a global variable (e.g. ``loss[None]``).
 
 (TODO: move the following to advanced topics)
 

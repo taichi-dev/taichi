@@ -4,6 +4,8 @@
   <h3> <a href="https://taichi.readthedocs.io/en/stable/"> Documentation </a> |<a href="https://taichi.readthedocs.io/zh_CN/latest/"> 简体中文文档 </a> </h3>
 </div>
 
+![License](https://img.shields.io/github/license/taichi-dev/taichi) ![Latest Release](https://img.shields.io/github/v/release/taichi-dev/taichi) ![PyPI Downloads](https://img.shields.io/pypi/dw/taichi) ![Build Status](https://img.shields.io/appveyor/build/yuanming-hu/taichi?logo=AppVeyor) ![Build Status](https://img.shields.io/travis/taichi-dev/taichi?logo=Travis)
+
 ## Overview
 
 **Taichi** (太极) is a programming language designed for *high-performance computer graphics*. It is deeply embedded in **Python**, and its **just-in-time compiler** offloads compute-intensive tasks to multi-core CPUs and massively parallel GPUs.
@@ -23,7 +25,7 @@ Advanced features of Taichi include [spatially sparse computing](https://taichi.
 ## Installation [![Downloads](https://pepy.tech/badge/taichi-nightly)](https://pepy.tech/project/taichi-nightly)
 
 ```bash
-python3 -m pip install taichi       # Latest version: 0.6.3
+python3 -m pip install taichi
 ```
 
 **News: (Apr 29, 2020) The OpenGL Compute Shader backend by [彭于斌 (archibate)](https://github.com/archibate)** is officially released in [**v0.6.0**](https://github.com/taichi-dev/taichi/releases/tag/v0.6.0)! Please try it out with `ti.init(arch=ti.opengl)`.

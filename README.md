@@ -4,7 +4,10 @@
   <h3> <a href="https://taichi.readthedocs.io/en/stable/"> Documentation </a> |<a href="https://taichi.readthedocs.io/zh_CN/latest/"> 简体中文文档 </a> </h3>
 </div>
 
-![License](https://img.shields.io/github/license/taichi-dev/taichi) ![Latest Release](https://img.shields.io/github/v/release/taichi-dev/taichi) ![PyPI Downloads](https://img.shields.io/pypi/dw/taichi) ![Build Status](https://img.shields.io/appveyor/build/yuanming-hu/taichi?logo=AppVeyor) ![Build Status](https://img.shields.io/travis/taichi-dev/taichi?logo=Travis)
+[![Build Status](https://img.shields.io/appveyor/build/yuanming-hu/taichi?logo=AppVeyor)](https://ci.appveyor.com/project/yuanming-hu/taichi/branch/master)
+[![Build Status](https://img.shields.io/travis/taichi-dev/taichi?logo=Travis)](https://travis-ci.com/taichi-dev/taichi)
+[![Latest Release](https://img.shields.io/github/v/release/taichi-dev/taichi)](https://github.com/taichi-dev/taichi/releases/latest)
+[![Downloads](https://img.shields.io/pypi/dw/taichi)](https://pepy.tech/project/taichi)
 
 ## Overview
 

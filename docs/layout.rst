@@ -155,20 +155,20 @@ A better placement is to place them together:
 
     ti.root.dense(ti.i, N).place(pos, vel)
 
-Then ``vel[i]`` is placed right next to ``pos[i]``, this can increases the cache-hit rate and therefore increases performance.
+Then ``vel[i]`` is placed right next to ``pos[i]``, this can increase the cache-hit rate and therefore increase the performance.
 
 
 Flat layouts versus blocked layouts 
 -------------------------
 
-By default, when allocating a ``ti.var`` , it follows the most naive data layout
+By default, when allocating a ``ti.var``, it follows the simplest data layout.
 
 .. code-block:: python
 
   val = ti.var(ti.f32, shape=(32, 64, 128))
   # C++ equivalent: float val[32][64][128]
 
-However, oftentimes this data layout is suboptimal for computer graphics tasks.
+However, at times this data layout can be suboptimal for certain types of computer graphics tasks.
 For example, ``val[i, j, k]`` and ``val[i + 1, j, k]`` are very far away (``32 KB``) from each other, and leads to poor access locality under certain computation tasks. Specifically, in tasks such as texture trilinear interpolation, the two elements are not even within the same ``4KB`` pages, creating a huge cache/TLB pressure.
 
 A better layout might be

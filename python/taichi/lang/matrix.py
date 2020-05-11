@@ -292,7 +292,7 @@ class Matrix(TaichiOperations):
             return Matrix([1 / self(0, 0)])
         elif self.n == 2:
             inv_det = impl.expr_init(1.0 / self.determinant(self))
-            # Dis: https://github.com/taichi-dev/taichi/pull/943#issuecomment-626344323
+            # Discussion: https://github.com/taichi-dev/taichi/pull/943#issuecomment-626344323
             return inv_det * Matrix([[self(1, 1), -self(0, 1)],
                                      [-self(1, 0), self(0, 0)]]).variable()
         elif self.n == 3:

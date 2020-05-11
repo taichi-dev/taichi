@@ -11,7 +11,9 @@ class TaichiOperations:
         import taichi as ti
         return ti.add(self, other)
 
-    __radd__ = __add__
+    def __radd__(self, other):
+        import taichi as ti
+        return ti.add(other, self)
 
     def __sub__(self, other):
         import taichi as ti
@@ -25,7 +27,9 @@ class TaichiOperations:
         import taichi as ti
         return ti.mul(self, other)
 
-    __rmul__ = __mul__
+    def __rmul__(self, other):
+        import taichi as ti
+        return ti.mul(other, self)
 
     def __truediv__(self, other):
         import taichi as ti

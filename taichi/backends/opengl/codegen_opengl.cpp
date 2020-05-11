@@ -417,7 +417,7 @@ class KernelGen : public IRVisitor {
         && is_integral(bin->rhs->element_type())) {
       // The GLSL `pow` is not so percise for `int`... e.g.: `pow(5, 3)` obtains 124
       // So that we have to use some hack to make it percise.
-      // Dis: https://github.com/taichi-dev/taichi/pull/943#issuecomment-626354902
+      // Discussion: https://github.com/taichi-dev/taichi/pull/943#issuecomment-626354902
       emit("{} {} = {}(fast_pow_{}({}, {}));", dt_name, bin_name, dt_name,
           data_type_short_name(bin->lhs->element_type()),
            lhs_name, rhs_name);

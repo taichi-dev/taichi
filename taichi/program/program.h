@@ -34,7 +34,7 @@ class StructCompiler;
 
 class AsyncEngine;
 
-using JITEvaluatorIdType = int;
+using JITEvaluatorIdType = uint32_t;
 
 class Program {
  public:

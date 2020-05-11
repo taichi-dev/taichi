@@ -25,9 +25,9 @@ class ConstantFold : public BasicStmtVisitor {
       // For a unique hash value, the number of UnaryOpTypes and BinaryOpTypes
       // should be no more than 128, and the number of DataTypes should be no
       // more than 256.
-      return (JITEvaluatorIdType)op | (JITEvaluatorIdType)!!is_binary << 7
-          | (JITEvaluatorIdType)ret << 8 | (JITEvaluatorIdType)lhs << 16
-          | (JITEvaluatorIdType)rhs << 24;
+      return (JITEvaluatorIdType)op | (JITEvaluatorIdType)ret << 8
+        | (JITEvaluatorIdType)lhs << 16 | (JITEvaluatorIdType)rhs << 24
+        | (JITEvaluatorIdType)is_binary << 7;
     }
 
     UnaryOpType unary_op() const

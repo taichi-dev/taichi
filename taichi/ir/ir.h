@@ -9,7 +9,6 @@
 #include "taichi/common/bit.h"
 #include "taichi/lang_util.h"
 #include "taichi/ir/snode.h"
-#include "taichi/ir/expr.h"
 #include "taichi/program/compile_config.h"
 #include "taichi/llvm/llvm_fwd.h"
 #include "taichi/util/short_name.h"
@@ -23,9 +22,6 @@ class Stmt;
 using pStmt = std::unique_ptr<Stmt>;
 
 class SNode;
-class Expression;
-class Expr;
-class ExprGroup;
 class ScratchPads;
 using ScratchPadOptions = std::vector<std::pair<int, SNode *>>;
 
@@ -138,14 +134,6 @@ class IRBuilder {
   Stmt *get_last_stmt();
   void stop_gradient(SNode *);
 };
-
-Expr load_if_ptr(const Expr &ptr);
-Expr load(const Expr &ptr);
-Expr ptr_if_global(const Expr &var);
-
-inline Expr smart_load(const Expr &var) {
-  return load_if_ptr(ptr_if_global(var));
-}
 
 class Identifier {
  public:
@@ -613,109 +601,6 @@ class Stmt : public IRNode {
   virtual ~Stmt() override = default;
 };
 
-// always a tree - used as rvalues
-class Expression {
- public:
-  Stmt *stmt;
-  std::string tb;
-  std::map<std::string, std::string> attributes;
-
-  struct FlattenContext {
-    VecStatement stmts;
-    Block *current_block = nullptr;
-
-    inline Stmt *push_back(pStmt &&stmt) {
-      return stmts.push_back(std::move(stmt));
-    }
-
-    template <typename T, typename... Args>
-    T *push_back(Args &&... args) {
-      return stmts.push_back<T>(std::forward<Args>(args)...);
-    }
-
-    Stmt *back_stmt() {
-      return stmts.back().get();
-    }
-  };
-
-  Expression() {
-    stmt = nullptr;
-  }
-
-  virtual std::string serialize() = 0;
-
-  virtual void flatten(FlattenContext *ctx) {
-    TI_NOT_IMPLEMENTED;
-  };
-
-  virtual bool is_lvalue() const {
-    return false;
-  }
-
-  virtual ~Expression() {
-  }
-
-  void set_attribute(const std::string &key, const std::string &value) {
-    attributes[key] = value;
-  }
-
-  std::string get_attribute(const std::string &key) const;
-};
-
-class ExprGroup {
- public:
-  std::vector<Expr> exprs;
-
-  ExprGroup() {
-  }
-
-  ExprGroup(const Expr &a) {
-    exprs.push_back(a);
-  }
-
-  ExprGroup(const Expr &a, const Expr &b) {
-    exprs.push_back(a);
-    exprs.push_back(b);
-  }
-
-  ExprGroup(const ExprGroup &a, const Expr &b) {
-    exprs = a.exprs;
-    exprs.push_back(b);
-  }
-
-  ExprGroup(const Expr &a, const ExprGroup &b) {
-    exprs = b.exprs;
-    exprs.insert(exprs.begin(), a);
-  }
-
-  void push_back(const Expr &expr) {
-    exprs.emplace_back(expr);
-  }
-
-  std::size_t size() const {
-    return exprs.size();
-  }
-
-  const Expr &operator[](int i) const {
-    return exprs[i];
-  }
-
-  Expr &operator[](int i) {
-    return exprs[i];
-  }
-
-  std::string serialize() const;
-  ExprGroup loaded() const;
-};
-
-inline ExprGroup operator,(const Expr &a, const Expr &b) {
-  return ExprGroup(a, b);
-}
-
-inline ExprGroup operator,(const ExprGroup &a, const Expr &b) {
-  return ExprGroup(a, b);
-}
-
 class AllocaStmt : public Stmt {
  public:
   AllocaStmt(DataType type) {
@@ -926,8 +811,6 @@ class GlobalPtrStmt : public Stmt {
   TI_STMT_DEF_FIELDS(ret_type, snodes, indices, activate);
   DEFINE_ACCEPT
 };
-
-#include "expression.h"
 
 class Block : public IRNode {
  public:
@@ -1343,8 +1226,6 @@ class WhileStmt : public Stmt {
   DEFINE_ACCEPT
 };
 
-void Print_(const Expr &a, const std::string &str);
-
 extern DecoratorRecorder dec;
 
 inline void Vectorize(int v) {
@@ -1359,14 +1240,6 @@ inline void StrictlySerialize() {
   dec.strictly_serialized = true;
 }
 
-inline void Cache(int v, const Expr &var) {
-  dec.scratch_opt.push_back(std::make_pair(v, var.snode()));
-}
-
-inline void CacheL1(const Expr &var) {
-  dec.scratch_opt.push_back(std::make_pair(1, var.snode()));
-}
-
 inline void BlockDim(int v) {
   TI_ASSERT(bit::is_power_of_two(v));
   dec.block_dim = v;
@@ -1375,8 +1248,6 @@ inline void BlockDim(int v) {
 inline void SLP(int v) {
   current_ast_builder().insert(Stmt::make<PragmaSLPStmt>(v));
 }
-
-Expr Var(const Expr &x);
 
 class VectorElement {
  public:

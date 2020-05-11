@@ -181,7 +181,8 @@ class PyTaichi:
         taichi_lang_core.layout(layout)
         self.materialized = True
         for var in self.global_vars:
-            assert var.ptr.snode() is not None, 'Some variable(s) are not placed'
+            assert var.ptr.snode(
+            ) is not None, 'Some variable(s) are not placed'
 
     def clear(self):
         if self.prog:

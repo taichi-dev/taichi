@@ -5,7 +5,6 @@
 #include "taichi/ir/frontend_ir.h"
 #include <unordered_set>
 
-
 TLANG_NAMESPACE_BEGIN
 
 namespace {

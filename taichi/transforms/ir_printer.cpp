@@ -6,7 +6,6 @@
 #include "taichi/ir/frontend_ir.h"
 #include <typeinfo>
 
-
 TLANG_NAMESPACE_BEGIN
 
 class IRPrinter : public IRVisitor {

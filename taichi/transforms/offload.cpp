@@ -6,7 +6,6 @@
 #include <unordered_map>
 #include <utility>
 
-
 TLANG_NAMESPACE_BEGIN
 
 namespace irpass {

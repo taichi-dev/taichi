@@ -872,13 +872,12 @@ std::unique_ptr<ConstStmt> ConstStmt::copy() {
   return std::make_unique<ConstStmt>(val);
 }
 
-StructForStmt::StructForStmt(
-              std::vector<Stmt *> loop_vars,
-              SNode *snode,
-              std::unique_ptr<Block> &&body,
-              int vectorize,
-              int parallelize,
-              int block_dim)
+StructForStmt::StructForStmt(std::vector<Stmt *> loop_vars,
+                             SNode *snode,
+                             std::unique_ptr<Block> &&body,
+                             int vectorize,
+                             int parallelize,
+                             int block_dim)
     : loop_vars(loop_vars),
       snode(snode),
       body(std::move(body)),
@@ -888,15 +887,14 @@ StructForStmt::StructForStmt(
   TI_STMT_REG_FIELDS;
 }
 
-RangeForStmt::RangeForStmt(
-             Stmt *loop_var,
-             Stmt *begin,
-             Stmt *end,
-             std::unique_ptr<Block> &&body,
-             int vectorize,
-             int parallelize,
-             int block_dim,
-             bool strictly_serialized)
+RangeForStmt::RangeForStmt(Stmt *loop_var,
+                           Stmt *begin,
+                           Stmt *end,
+                           std::unique_ptr<Block> &&body,
+                           int vectorize,
+                           int parallelize,
+                           int block_dim,
+                           bool strictly_serialized)
     : loop_var(loop_var),
       begin(begin),
       end(end),
@@ -975,7 +973,7 @@ bool ContinueStmt::as_return() const {
 }
 
 void Stmt::infer_type() {
-    irpass::typecheck(this);
+  irpass::typecheck(this);
 }
 
 TLANG_NAMESPACE_END

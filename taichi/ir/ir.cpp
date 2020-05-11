@@ -14,7 +14,7 @@
 TLANG_NAMESPACE_BEGIN
 
 #define TI_EXPRESSION_IMPLEMENTATION
-#include "expression.h"
+#include "expression_ops.h"
 
 IRBuilder &current_ast_builder() {
   return context->builder();

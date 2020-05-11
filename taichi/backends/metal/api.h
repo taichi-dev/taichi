@@ -70,8 +70,6 @@ inline void set_mtl_buffer(MTLComputeCommandEncoder *encoder,
   mac::call(encoder, "setBuffer:offset:atIndex:", buffer, offset, index);
 }
 
-// void set_label(MTLComputeCommandEncoder *encoder, const std::string &label);
-
 void dispatch_threadgroups(MTLComputeCommandEncoder *encoder,
                            int32_t blocks_x,
                            int32_t blocks_y,

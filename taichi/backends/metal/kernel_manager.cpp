@@ -106,6 +106,7 @@ class CompiledMtlKernelBase {
     auto encoder = new_compute_command_encoder(command_buffer);
     TI_ASSERT(encoder != nullptr);
 
+    set_label(encoder.get(), kernel_attribs_.name);
     set_compute_pipeline_state(encoder.get(), pipeline_state_.get());
 
     for (int bi = 0; bi < buffers.size(); ++bi) {
@@ -381,7 +382,8 @@ class KernelManager::Impl {
       : config_(params.config),
         compiled_structs_(params.compiled_structs),
         mem_pool_(params.mem_pool),
-        profiler_(params.profiler) {
+        profiler_(params.profiler),
+        command_buffer_id_(0) {
     if (config_->debug) {
       TI_ASSERT(is_metal_api_available());
     }
@@ -583,6 +585,8 @@ class KernelManager::Impl {
   void create_new_command_buffer() {
     cur_command_buffer_ = new_command_buffer(command_queue_.get());
     TI_ASSERT(cur_command_buffer_ != nullptr);
+    set_label(cur_command_buffer_.get(),
+              fmt::format("command_buffer_{}", command_buffer_id_++));
   }
 
   template <typename T>
@@ -598,6 +602,7 @@ class KernelManager::Impl {
   nsobj_unique_ptr<MTLDevice> device_;
   nsobj_unique_ptr<MTLCommandQueue> command_queue_;
   nsobj_unique_ptr<MTLCommandBuffer> cur_command_buffer_;
+  std::size_t command_buffer_id_;
   std::unique_ptr<BufferMemoryView> root_mem_;
   nsobj_unique_ptr<MTLBuffer> root_buffer_;
   std::unique_ptr<BufferMemoryView> global_tmps_mem_;

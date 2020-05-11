@@ -192,6 +192,7 @@ def raw_pow(a, b):
     return Expr(taichi_lang_core.expr_pow(a.ptr, b.ptr), tb=stack_info())
 
 
+# TODO: move this to a C++ pass (#944)
 def pow(self, power):
     import taichi as ti
     if not isinstance(power, int) or abs(power) > 50:

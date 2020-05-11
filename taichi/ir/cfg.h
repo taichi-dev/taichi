@@ -15,7 +15,9 @@ class CFGNode {
 
   std::vector<CFGNode *> prev, next;
 
-  CFGNode(Block *block, int begin_location, int end_location,
+  CFGNode(Block *block,
+          int begin_location,
+          int end_location,
           CFGNode *prev_node_in_same_block = nullptr);
 
   void erase(int location);

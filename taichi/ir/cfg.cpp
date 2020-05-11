@@ -2,7 +2,9 @@
 
 TLANG_NAMESPACE_BEGIN
 
-CFGNode::CFGNode(Block *block, int begin_location, int end_location,
+CFGNode::CFGNode(Block *block,
+                 int begin_location,
+                 int end_location,
                  CFGNode *prev_node_in_same_block)
     : block(block),
       begin_location(begin_location),

@@ -9,21 +9,20 @@
 TLANG_NAMESPACE_BEGIN
 
 namespace {
-  class CurrentKernelGuard {
-    Kernel *old_kernel;
-    Program &program;
+class CurrentKernelGuard {
+  Kernel *old_kernel;
+  Program &program;
 
-   public:
-    CurrentKernelGuard(Program &program_, Kernel *kernel)
-      : program(program_) {
-      old_kernel = program.current_kernel;
-      program.current_kernel = kernel;
-    }
+ public:
+  CurrentKernelGuard(Program &program_, Kernel *kernel) : program(program_) {
+    old_kernel = program.current_kernel;
+    program.current_kernel = kernel;
+  }
 
-    ~CurrentKernelGuard() {
-      program.current_kernel = old_kernel;
-    }
-  };
+  ~CurrentKernelGuard() {
+    program.current_kernel = old_kernel;
+  }
+};
 }  // namespace
 
 Kernel::Kernel(Program &program,

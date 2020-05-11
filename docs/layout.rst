@@ -158,7 +158,7 @@ A better placement is to place them together:
 Then ``vel[i]`` is placed right next to ``pos[i]``, this can increase the cache-hit rate and therefore increase the performance.
 
 
-Flat layouts versus hierarchical layouts 
+Flat layouts versus hierarchical layouts
 -------------------------
 
 By default, when allocating a ``ti.var``, it follows the simplest data layout.

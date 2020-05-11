@@ -14,11 +14,10 @@ static_assert(sizeof(CUmodule) == sizeof(void *));
 static_assert(sizeof(CUstream) == sizeof(void *));
 static_assert(sizeof(CUevent) == sizeof(void *));
 static_assert(sizeof(CUjit_option) == sizeof(uint32));
-}
+}  // namespace taichi
 #endif
 
 TLANG_NAMESPACE_BEGIN
-
 
 // Driver constants from cuda.h
 

@@ -57,7 +57,6 @@ void CUDAContext::launch(void *func,
                          std::vector<void *> arg_pointers,
                          unsigned gridDim,
                          unsigned blockDim) {
-
   // Kernel launch
   if (profiler)
     profiler->start(task_name);
@@ -94,7 +93,6 @@ CUDAContext &CUDAContext::get_instance() {
 
     auto tid = std::this_thread::get_id();
     if (instances.find(tid) == instances.end()) {
-      TI_WARN("NEW THREAD ASKING for CONTEXT!!");
       instances[tid] = new CUDAContext();
       // We expect CUDAContext to live until the process ends, thus the raw
       // pointers and `new`s.

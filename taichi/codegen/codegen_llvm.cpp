@@ -691,6 +691,7 @@ void CodeGenLLVM::visit(ConstStmt *stmt) {
     llvm_val[stmt] = llvm::ConstantInt::get(
         *llvm_context, llvm::APInt(64, val.val_int64(), true));
   } else {
+    TI_P(data_type_name(val.dt));
     TI_NOT_IMPLEMENTED;
   }
 }

@@ -17,7 +17,7 @@ Kernel arguments must be type-hinted. Kernels can have at most 8 parameters, e.g
       for i in x:
         y[i] = x[i]
 
-Kernel can have scalar as return value. If a kernel has a return value, it must be type-hinted.
+A kernel can have **scalar** return value. If a kernel has a return value, it must be type-hinted.
 Return value will be automatically cased into the hinted type. e.g.,
 
 .. code-block:: python

@@ -1,4 +1,6 @@
 #include "taichi/ir/ir.h"
+#include "taichi/ir/transforms.h"
+#include "taichi/ir/visitors.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -30,8 +32,10 @@ class ConvertIntoLoopIndexStmt : public BasicStmtVisitor {
       convert(range_for, range_for->loop_var, 0, false);
       range_for->loop_var = nullptr;
     } else if (auto struct_for = stmt->cast<StructForStmt>()) {
+      auto leaf = struct_for->snode;
       for (int i = 0; i < (int)struct_for->loop_vars.size(); i++) {
-        convert(struct_for, struct_for->loop_vars[i], i, true);
+        convert(struct_for, struct_for->loop_vars[i],
+            leaf->physical_index_position[i], true);
         struct_for->loop_vars[i] = nullptr;
       }
     }

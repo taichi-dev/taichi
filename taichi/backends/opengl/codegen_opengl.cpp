@@ -169,6 +169,12 @@ class KernelGen : public IRVisitor {
       );
     }  // }}}
 
+    if (used.fast_pow) {
+      kernel_header += (
+#include "taichi/backends/opengl/shaders/fast_pow.glsl.h"
+      );
+    }
+
     line_appender_header_.append_raw(kernel_header);
 
     int threads_per_group = opengl_get_threads_per_group();
@@ -406,6 +412,16 @@ class KernelGen : public IRVisitor {
       } else {
         emit("{} {} = atan({}, {});", dt_name, bin_name, lhs_name, rhs_name);
       }
+      return;
+    } else if (bin->op_type == BinaryOpType::pow
+        && is_integral(bin->rhs->element_type())) {
+      // The GLSL `pow` is not so percise for `int`... e.g.: `pow(5, 3)` obtains 124
+      // So that we have to use some hack to make it percise.
+      // Discussion: https://github.com/taichi-dev/taichi/pull/943#issuecomment-626354902
+      emit("{} {} = {}(fast_pow_{}({}, {}));", dt_name, bin_name, dt_name,
+          data_type_short_name(bin->lhs->element_type()),
+           lhs_name, rhs_name);
+      used.fast_pow = true;
       return;
     }
     const auto binop = binary_op_type_symbol(bin->op_type);

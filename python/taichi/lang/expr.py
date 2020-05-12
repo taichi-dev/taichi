@@ -1,10 +1,11 @@
 from .core import taichi_lang_core
 from .util import *
+from .common_ops import TaichiOperations
 import traceback
 
 
 # Scalar, basic data type
-class Expr:
+class Expr(TaichiOperations):
     materialize_layout_callback = None
     layout_materialized = False
 
@@ -46,52 +47,6 @@ class Expr:
         # remove the confusing last line
         return '\n'.join(raw.split('\n')[:-3]) + '\n'
 
-    def __add__(self, other):
-        other = Expr(other)
-        return Expr(taichi_lang_core.expr_add(self.ptr, other.ptr),
-                    tb=self.stack_info())
-
-    __radd__ = __add__
-
-    def __neg__(self):
-        return Expr(taichi_lang_core.expr_neg(self.ptr), tb=self.stack_info())
-
-    def __sub__(self, other):
-        other = Expr(other)
-        return Expr(taichi_lang_core.expr_sub(self.ptr, other.ptr),
-                    tb=self.stack_info())
-
-    def __rsub__(self, other):
-        other = Expr(other)
-        return Expr(taichi_lang_core.expr_sub(other.ptr, self.ptr))
-
-    def __mul__(self, other):
-        if is_taichi_class(other) and hasattr(other, '__rmul__'):
-            return other.__rmul__(self)
-        else:
-            other = Expr(other)
-            return Expr(taichi_lang_core.expr_mul(self.ptr, other.ptr))
-
-    __rmul__ = __mul__
-
-    def __truediv__(self, other):
-        return Expr(taichi_lang_core.expr_truediv(self.ptr, Expr(other).ptr))
-
-    def __rtruediv__(self, other):
-        return Expr(taichi_lang_core.expr_truediv(Expr(other).ptr, self.ptr))
-
-    def __floordiv__(self, other):
-        return Expr(taichi_lang_core.expr_floordiv(self.ptr, Expr(other).ptr))
-
-    def __rfloordiv__(self, other):
-        return Expr(taichi_lang_core.expr_floordiv(Expr(other).ptr, self.ptr))
-
-    def __mod__(self, other):
-        other = Expr(other)
-        quotient = Expr(taichi_lang_core.expr_floordiv(self.ptr, other.ptr))
-        multiply = Expr(taichi_lang_core.expr_mul(other.ptr, quotient.ptr))
-        return Expr(taichi_lang_core.expr_sub(self.ptr, multiply.ptr))
-
     def __iadd__(self, other):
         self.atomic_add(other)
 
@@ -99,17 +54,16 @@ class Expr:
         self.atomic_sub(other)
 
     def __imul__(self, other):
-        self.assign(Expr(taichi_lang_core.expr_mul(self.ptr, other.ptr)))
+        import taichi as ti
+        self.assign(ti.mul(self, other))
 
     def __itruediv__(self, other):
-        self.assign(
-            Expr(taichi_lang_core.expr_truediv(self.ptr,
-                                               Expr(other).ptr)))
+        import taichi as ti
+        self.assign(ti.truediv(self, other))
 
     def __ifloordiv__(self, other):
-        self.assign(
-            Expr(taichi_lang_core.expr_floordiv(self.ptr,
-                                                Expr(other).ptr)))
+        import taichi as ti
+        self.assign(ti.floordiv(self, other))
 
     def __iand__(self, other):
         self.atomic_and(other)
@@ -120,6 +74,7 @@ class Expr:
     def __ixor__(self, other):
         self.atomic_xor(other)
 
+    # TODO: move to ops.py: ti.cmp_le
     def __le__(self, other):
         other = Expr(other)
         return Expr(taichi_lang_core.expr_cmp_le(self.ptr, other.ptr))
@@ -313,39 +268,6 @@ class Expr:
         # TODO: avoid too many template instantiations
         from .meta import fill_tensor
         fill_tensor(self, val)
-
-    def __rpow__(self, power, modulo=None):
-        # Python will try Matrix.__pow__ first so we don't have to worry whether `power` is `Matrix`
-        return Expr(power).__pow__(self, modulo)
-
-    def __pow__(self, power, modulo=None):
-        import taichi as ti
-        if ti.is_taichi_class(power):
-            return power.element_wise_binary(lambda x, y: pow(y, x), self)
-        if not isinstance(power, int) or abs(power) > 100:
-            return Expr(taichi_lang_core.expr_pow(self.ptr, Expr(power).ptr))
-        if power == 0:
-            return Expr(1)
-        negative = power < 0
-        power = abs(power)
-        tmp = self
-        ret = None
-        while power:
-            if power & 1:
-                if ret is None:
-                    ret = tmp
-                else:
-                    ret = ti.expr_init(ret * tmp)
-            tmp = ti.expr_init(tmp * tmp)
-            power >>= 1
-        if negative:
-            return 1 / ret
-        else:
-            return ret
-
-    def __abs__(self):
-        import taichi as ti
-        return ti.abs(self)
 
     def __ti_int__(self):
         import taichi as ti

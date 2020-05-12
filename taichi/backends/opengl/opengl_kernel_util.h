@@ -20,6 +20,7 @@ struct UsedFeature {
   bool simulated_atomic_float{false};
   bool int64{false};
   bool global_temp{false};
+  bool fast_pow{false};
 };
 
 struct StructCompiledResult {

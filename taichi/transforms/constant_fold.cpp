@@ -1,7 +1,11 @@
-#include <thread>
+#include "taichi/ir/ir.h"
+#include "taichi/ir/transforms.h"
+#include "taichi/ir/visitors.h"
+#include "taichi/program/program.h"
 #include <deque>
 #include <set>
 #include <cmath>
+#include <thread>
 
 #include "taichi/ir/ir.h"
 #include "taichi/program/program.h"
@@ -25,6 +29,7 @@ class ConstantFold : public BasicStmtVisitor {
       if (it != cache.end())  // cached?
         return it->second.get();
     }
+
     auto kernel_name = fmt::format("jit_evaluator_{}", cache.size());
     auto func = [&]() {
       auto lhstmt = Stmt::make<ArgLoadStmt>(0, false);

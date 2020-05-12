@@ -1,6 +1,8 @@
 // Intermediate representations
 
 #include "taichi/ir/ir.h"
+#include "taichi/ir/transforms.h"
+#include "taichi/ir/analysis.h"
 
 #include <numeric>
 #include <thread>
@@ -12,7 +14,7 @@
 TLANG_NAMESPACE_BEGIN
 
 #define TI_EXPRESSION_IMPLEMENTATION
-#include "expression.h"
+#include "expression_ops.h"
 
 IRBuilder &current_ast_builder() {
   return context->builder();
@@ -164,33 +166,6 @@ class StatementTypeNameVisitor : public IRVisitor {
 
 #undef PER_STATEMENT
 };
-
-Expr load_if_ptr(const Expr &ptr) {
-  if (ptr.is<GlobalPtrExpression>()) {
-    return load(ptr);
-  } else if (ptr.is<GlobalVariableExpression>()) {
-    TI_ASSERT(ptr.cast<GlobalVariableExpression>()->snode->num_active_indices ==
-              0);
-    return load(ptr[ExprGroup()]);
-  } else
-    return ptr;
-}
-
-Expr load(const Expr &ptr) {
-  TI_ASSERT(ptr.is<GlobalPtrExpression>());
-  return Expr::make<GlobalLoadExpression>(ptr);
-}
-
-Expr ptr_if_global(const Expr &var) {
-  if (var.is<GlobalVariableExpression>()) {
-    // singleton global variable
-    TI_ASSERT(var.snode()->num_active_indices == 0);
-    return var[ExprGroup()];
-  } else {
-    // may be any local or global expr
-    return var;
-  }
-}
 
 int StmtFieldSNode::get_snode_id(SNode *snode) {
   if (snode == nullptr)
@@ -559,18 +534,6 @@ IRNode *FrontendContext::root() {
 
 std::unique_ptr<FrontendContext> context;
 
-Expr Var(const Expr &x) {
-  auto var = Expr(std::make_shared<IdExpression>());
-  current_ast_builder().insert(std::make_unique<FrontendAllocaStmt>(
-      std::static_pointer_cast<IdExpression>(var.expr)->id, DataType::unknown));
-  var = x;
-  return var;
-}
-
-void Print_(const Expr &a, const std::string &str) {
-  current_ast_builder().insert(std::make_unique<FrontendPrintStmt>(a, str));
-}
-
 template <>
 std::string to_string(const LaneAttribute<LocalAddress> &ptr) {
   std::string ret = " [";
@@ -909,6 +872,41 @@ std::unique_ptr<ConstStmt> ConstStmt::copy() {
   return std::make_unique<ConstStmt>(val);
 }
 
+StructForStmt::StructForStmt(std::vector<Stmt *> loop_vars,
+                             SNode *snode,
+                             std::unique_ptr<Block> &&body,
+                             int vectorize,
+                             int parallelize,
+                             int block_dim)
+    : loop_vars(loop_vars),
+      snode(snode),
+      body(std::move(body)),
+      vectorize(vectorize),
+      parallelize(parallelize),
+      block_dim(block_dim) {
+  TI_STMT_REG_FIELDS;
+}
+
+RangeForStmt::RangeForStmt(Stmt *loop_var,
+                           Stmt *begin,
+                           Stmt *end,
+                           std::unique_ptr<Block> &&body,
+                           int vectorize,
+                           int parallelize,
+                           int block_dim,
+                           bool strictly_serialized)
+    : loop_var(loop_var),
+      begin(begin),
+      end(end),
+      body(std::move(body)),
+      vectorize(vectorize),
+      parallelize(parallelize),
+      block_dim(block_dim),
+      strictly_serialized(strictly_serialized) {
+  reversed = false;
+  TI_STMT_REG_FIELDS;
+}
+
 OffloadedStmt::OffloadedStmt(OffloadedStmt::TaskType task_type)
     : OffloadedStmt(task_type, nullptr) {
 }
@@ -972,6 +970,10 @@ bool ContinueStmt::as_return() const {
     return true;
   }
   return false;
+}
+
+void Stmt::infer_type() {
+  irpass::typecheck(this);
 }
 
 TLANG_NAMESPACE_END

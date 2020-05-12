@@ -1,5 +1,6 @@
 #pragma once
-#include "statements.h"
+#include "taichi/ir/ir.h"
+#include "taichi/ir/statements.h"
 
 TLANG_NAMESPACE_BEGIN
 

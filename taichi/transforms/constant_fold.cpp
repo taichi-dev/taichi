@@ -23,6 +23,8 @@ class ConstantFold : public BasicStmtVisitor {
   static Kernel *get_jit_evaluator_kernel(JITEvaluatorId const &id) {
     auto &cache = get_current_program().jit_evaluator_cache;
     {
+      // Discussion:
+      // https://github.com/taichi-dev/taichi/pull/954#discussion_r423442606
       std::lock_guard<std::mutex> _(
           get_current_program().jit_evaluator_cache_mut);
       auto it = cache.find(id);
@@ -71,7 +73,8 @@ class ConstantFold : public BasicStmtVisitor {
 
   static bool is_good_type(DataType dt) {
     // ConstStmt of `bad` types like `i8` is not supported by LLVM.
-    // Dis: https://github.com/taichi-dev/taichi/pull/839#issuecomment-625902727
+    // Discussion:
+    // https://github.com/taichi-dev/taichi/pull/839#issuecomment-625902727
     switch (dt) {
       case DataType::i32:
       case DataType::f32:
@@ -199,7 +202,8 @@ void constant_fold(IRNode *root) {
   // @archibate found that `debug=True` will cause JIT kernels
   // failed to evaluate correctly (always return 0), so we simply
   // disable constant_fold when config.debug is turned on.
-  // Dis: https://github.com/taichi-dev/taichi/pull/839#issuecomment-626107010
+  // Disussion:
+  // https://github.com/taichi-dev/taichi/pull/839#issuecomment-626107010
   if (get_current_program().config.debug) {
     TI_TRACE("config.debug enabled, ignoring constant fold");
     return;

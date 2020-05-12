@@ -48,8 +48,7 @@ class DiffRange {
 };
 
 // IR Analysis
-namespace irpass {
-namespace analysis {
+namespace irpass::analysis {
 
 void check_fields_registered(IRNode *root);
 int count_statements(IRNode *root);
@@ -66,7 +65,6 @@ bool same_statements(IRNode *root1, IRNode *root2);
 DiffRange value_diff(Stmt *stmt, int lane, Stmt *alloca);
 void verify(IRNode *root);
 
-}  // namespace analysis
-}  // namespace irpass
+}  // namespace irpass::analysis
 
 TLANG_NAMESPACE_END

@@ -133,8 +133,8 @@ def main(debug=False):
     if mode == 'help':
         print(
             "    Usage: ti run [task name]        |-> Run a specific task\n"
-            "           ti benchmark              |-> Run performance benchmark\n"
             "           ti test                   |-> Run all the tests\n"
+            "           ti benchmark              |-> Run python tests in benchmark mode\n"
             "           ti format                 |-> Reformat modified source files\n"
             "           ti format_all             |-> Reformat all source files\n"
             "           ti build                  |-> Build C++ files\n"
@@ -185,10 +185,12 @@ def main(debug=False):
     elif mode == "benchmark":
         import shutil
         os.environ['TI_PRINT_BENCHMARK_STAT'] = '1'
-        commit = ti.core.get_commit_hash()
-        output_dir = os.path.join('baselines', commit)
+        output_dir = 'baselines'
         shutil.rmtree(output_dir, True)
         os.mkdir(output_dir)
+        commit = ti.core.get_commit_hash()
+        with open(os.path.join(output_dir, 'commit_hash.txt'), 'w') as f:
+            f.write(commit)
         os.environ['TI_BENCHMARK_OUTPUT_DIR'] = output_dir
         test_python(args)
     elif mode == "build":

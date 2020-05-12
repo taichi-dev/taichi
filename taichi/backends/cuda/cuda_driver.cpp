@@ -2,6 +2,7 @@
 
 #include "taichi/system/dynamic_loader.h"
 #include "taichi/backends/cuda/cuda_context.h"
+#include "taichi/util/environ_config.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -15,6 +16,8 @@ std::string get_cuda_error_message(uint32 err) {
 }
 
 bool CUDADriver::detected() {
+  if (!get_environ_config("TI_WITH_CUDA", true))
+    return false;
   return loader->loaded();
 }
 

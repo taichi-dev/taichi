@@ -4,6 +4,7 @@
 #include "taichi/backends/opengl/opengl_kernel_util.h"
 #include "taichi/program/kernel.h"
 #include "taichi/program/program.h"
+#include "taichi/util/environ_config.h"
 
 #ifdef TI_WITH_OPENGL
 #include "glad/glad.h"
@@ -515,6 +516,8 @@ GLSLLaunchGuard::~GLSLLaunchGuard() {
 }
 
 bool is_opengl_api_available() {
+  if (!get_environ_config("TI_WITH_OPENGL", true))
+    return false;
   return initialize_opengl(true);
 }
 

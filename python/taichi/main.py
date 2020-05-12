@@ -182,6 +182,15 @@ def main(debug=False):
             if ret != 0:
                 return ret
             return test_cpp(args)
+    elif mode == "benchmark":
+        import shutil
+        os.environ['TI_PRINT_BENCHMARK_STAT'] = '1'
+        commit = ti.core.get_commit_hash()
+        output_dir = os.path.join('baselines', commit)
+        shutil.rmtree(output_dir, True)
+        os.mkdir(output_dir)
+        os.environ['TI_BENCHMARK_OUTPUT_DIR'] = output_dir
+        test_python(args)
     elif mode == "build":
         ti.core.build()
     elif mode == "format":

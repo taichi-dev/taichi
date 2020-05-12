@@ -239,15 +239,17 @@ def main(debug=False):
     elif mode == "benchmark":
         import shutil
         os.environ['TI_PRINT_BENCHMARK_STAT'] = '1'
+        baseline_dir = get_benchmark_baseline_dir()
         output_dir = get_benchmark_output_dir()
         shutil.rmtree(output_dir, True)
         os.mkdir(output_dir)
         os.environ['TI_BENCHMARK_OUTPUT_DIR'] = output_dir
         test_python(args)
+        display_benchmark_regression(baseline_dir, output_dir)
     elif mode == "baseline":
         import shutil
-        output_dir = get_benchmark_output_dir()
         baseline_dir = get_benchmark_baseline_dir()
+        output_dir = get_benchmark_output_dir()
         shutil.rmtree(baseline_dir, True)
         shutil.copytree(output_dir, baseline_dir)
         print('[benchmark] baseline data saved')

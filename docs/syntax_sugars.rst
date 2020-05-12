@@ -4,7 +4,7 @@ Syntax sugars
 Aliases
 -------------------------------------------------------
 
-Creating aliases for global variables and functions with cumbersome names can sometimes improve readability. In Taichi, this can be done by assigning kernel and function local variables with ``ti.static()``, which forces Taichi to use standard python pointer assignement.
+Creating aliases for global variables and functions with cumbersome names can sometimes improve readability. In Taichi, this can be done by assigning kernel and function local variables with ``ti.static()``, which forces Taichi to use standard python pointer assignment.
 
 For example, consider the simple kernel:
 

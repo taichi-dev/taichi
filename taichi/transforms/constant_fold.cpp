@@ -202,7 +202,7 @@ void constant_fold(IRNode *root) {
   // @archibate found that `debug=True` will cause JIT kernels
   // failed to evaluate correctly (always return 0), so we simply
   // disable constant_fold when config.debug is turned on.
-  // Disussion:
+  // Discussion:
   // https://github.com/taichi-dev/taichi/pull/839#issuecomment-626107010
   if (get_current_program().config.debug) {
     TI_TRACE("config.debug enabled, ignoring constant fold");

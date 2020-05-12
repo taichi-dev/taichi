@@ -13,7 +13,9 @@ def rand(dtype):
     if ti.core.is_integral(dtype):
         return randint(1, 5)
     else:
-        return float(randint(1, 5)) / 5 - 0.01  # prevent floordiv step
+        # Prevent integer operands in pow and floordiv in GLSL
+        # Discussion: https://github.com/taichi-dev/taichi/pull/943#discussion_r423177941
+        return float(randint(1, 5)) / 5 - 0.01
 
 
 @ti.host_arch_only
@@ -119,7 +121,7 @@ def test_matrix_element_wise_binary_f32():
         _test_matrix_element_wise_binary(ti.f32, n, m, ti.atan2, math.atan2)
         _test_matrix_element_wise_binary(ti.f32, n, m, ti.min, min)
         _test_matrix_element_wise_binary(ti.f32, n, m, ti.max, max)
-        _test_matrix_element_wise_binary(ti.f32, n, m, pow, pow)
+        _test_matrix_element_wise_binary(ti.f32, n, m, ti.pow, pow)
 
 
 def test_matrix_element_wise_binary_i32():
@@ -127,7 +129,7 @@ def test_matrix_element_wise_binary_i32():
     for n, m in [(5, 4), (3, 1)]:
         _test_matrix_element_wise_binary(ti.i32, n, m, ti.min, min)
         _test_matrix_element_wise_binary(ti.i32, n, m, ti.max, max)
-        _test_matrix_element_wise_binary(ti.i32, n, m, pow, pow)
+        _test_matrix_element_wise_binary(ti.i32, n, m, ti.pow, pow)
         _test_matrix_element_wise_binary(ti.i32, n, m, ti.raw_mod, _c_mod)
         # TODO: add ti.raw_div
 

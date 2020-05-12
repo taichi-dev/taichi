@@ -713,10 +713,11 @@ void OpenglCodeGen::lower() {
   auto ir = kernel_->ir;
   auto &config = kernel_->program.config;
   config.demote_dense_struct_fors = true;
-  irpass::compile_to_offloads(ir, config,
+  auto res = irpass::compile_to_offloads(ir, config,
                               /*vectorize=*/false, kernel_->grad,
                               /*ad_use_stack=*/false, config.print_ir,
                               /*lower_global_access*/true);
+  global_tmps_buffer_size_ = res.total_size;
 #ifdef _GLSL_DEBUG
   irpass::print(ir);
 #endif

@@ -198,6 +198,8 @@ class ConstantFold : public BasicStmtVisitor {
 namespace irpass {
 
 void constant_fold(IRNode *root) {
+  return; // XXX: A H A!
+
   // @archibate found that `debug=True` will cause JIT kernels
   // failed to evaluate correctly (always return 0), so we simply
   // disable constant_fold when config.debug is turned on.

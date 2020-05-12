@@ -19,6 +19,8 @@ Now you are ready to run the Taichi code below (``python3 fractal.py``) to compu
 
     # fractal.py
 
+    import taichi as ti
+
     ti.init(arch=ti.gpu)
 
     n = 320

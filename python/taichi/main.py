@@ -4,6 +4,7 @@ import shutil
 import time
 import random
 import argparse
+from colorama import Fore, Back, Style
 from taichi.tools.video import make_video, interpolate_frames, mp4_to_gif, scale_video, crop_video, accelerate_video
 
 
@@ -67,6 +68,55 @@ def test_cpp(args):
     print("Running C++ tests...")
     task = ti.Task('test')
     return int(task.run(*test_files))
+
+
+def get_benchmark_baseline_dir():
+    import taichi as ti
+    return os.path.join(ti.core.get_repo_dir(), 'baselines')
+
+
+def get_benchmark_output_dir():
+    import taichi as ti
+    commit = ti.core.get_commit_hash()
+    return os.path.join(ti.core.get_repo_dir(), 'baselines', commit)
+
+
+def display_benchmark_regression(xd, yd):
+    def parse_dat(file):
+        dict = {}
+        for line in open(file).readlines():
+            try: a, b = line.strip().split(':')
+            except: continue
+            dict[a.strip()] = float(b)
+        return dict
+
+    def parse_name(file):
+        return file[5:-4].replace('__test_', '::', 1)
+
+    def get_dats(dir):
+        list = []
+        for x in os.listdir(dir):
+            if x.endswith('.dat'):
+                list.append(x)
+        dict = {}
+        for x in list:
+            name = parse_name(x)
+            path = os.path.join(dir, x)
+            dict[name] = parse_dat(path)
+        return dict
+
+    xs, ys = get_dats(xd), get_dats(yd)
+    for name in set(xs.keys()).union(ys.keys()):
+        file, func = name.split('::')
+        print(f'{file:_<24}{func:_<42}')
+        u, v = xs.get(name, {}), ys.get(name, {})
+        for key in set(u.keys()).union(v.keys()):
+            a, b = u.get(key, 0.0), v.get(key, 0.0)
+            res = '_'
+            if b > a: res = Fore.RED + '+' + Fore.RESET
+            elif b < a: res = Fore.GREEN + '-' + Fore.RESET
+            print(f'{key:_<50}{a:_>6}{b:_>6}___{res}')
+        print('')
 
 
 def make_argument_parser():
@@ -135,6 +185,8 @@ def main(debug=False):
             "    Usage: ti run [task name]        |-> Run a specific task\n"
             "           ti test                   |-> Run all the tests\n"
             "           ti benchmark              |-> Run python tests in benchmark mode\n"
+            "           ti baseline               |-> Archive current benchmark result as baseline\n"
+            "           ti regression             |-> Display benchmark regression test result\n"
             "           ti format                 |-> Reformat modified source files\n"
             "           ti format_all             |-> Reformat all source files\n"
             "           ti build                  |-> Build C++ files\n"
@@ -185,14 +237,25 @@ def main(debug=False):
     elif mode == "benchmark":
         import shutil
         os.environ['TI_PRINT_BENCHMARK_STAT'] = '1'
-        output_dir = 'baselines'
+        output_dir = get_benchmark_output_dir()
         shutil.rmtree(output_dir, True)
         os.mkdir(output_dir)
-        commit = ti.core.get_commit_hash()
-        with open(os.path.join(output_dir, 'commit_hash.txt'), 'w') as f:
-            f.write(commit)
         os.environ['TI_BENCHMARK_OUTPUT_DIR'] = output_dir
         test_python(args)
+    elif mode == "baseline":
+        # mv baselines/<current_commit_id>/* baselines/
+        import shutil
+        output_dir = get_benchmark_output_dir()
+        baseline_dir = get_benchmark_baseline_dir()
+        for x in os.listdir(output_dir):
+            src = os.path.join(output_dir, x)
+            dst = os.path.join(baseline_dir, x)
+            shutil.move(src, dst)
+        print('[benchmark] baseline data saved')
+    elif mode == "regression":
+        display_benchmark_regression(
+                get_benchmark_baseline_dir(),
+                get_benchmark_output_dir())
     elif mode == "build":
         ti.core.build()
     elif mode == "format":

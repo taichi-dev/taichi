@@ -216,7 +216,7 @@ In the code above, ``for i, j in pixels`` loops over all the pixel coordinates, 
 
 .. warning::
 
-    ``break`` **is not supported in parallel loops:**
+    ``break`` **is not supported in parallel loops**:
 
     .. code-block:: python
 
@@ -236,7 +236,6 @@ In the code above, ``for i, j in pixels`` loops over all the pixel coordinates, 
             for j in range(10):
                 ...
                 break # OK!
-            break # Error!
 
 
 Interacting with Python

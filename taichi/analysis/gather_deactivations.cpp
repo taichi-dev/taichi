@@ -1,5 +1,6 @@
 #include "taichi/ir/ir.h"
-#include <set>
+#include "taichi/ir/analysis.h"
+#include "taichi/ir/visitors.h"
 
 TLANG_NAMESPACE_BEGIN
 

@@ -7,6 +7,8 @@
 #include "taichi/backends/cpu/codegen_cpu.h"
 #include "taichi/common/testing.h"
 #include "taichi/util/statistics.h"
+#include "taichi/ir/transforms.h"
+#include "taichi/ir/analysis.h"
 
 TLANG_NAMESPACE_BEGIN
 

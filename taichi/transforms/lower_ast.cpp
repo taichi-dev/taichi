@@ -1,7 +1,9 @@
-#include <unordered_set>
-
 #include "taichi/ir/ir.h"
+#include "taichi/ir/transforms.h"
+#include "taichi/ir/analysis.h"
+#include "taichi/ir/visitors.h"
 #include "taichi/ir/frontend_ir.h"
+#include <unordered_set>
 
 TLANG_NAMESPACE_BEGIN
 

@@ -5,6 +5,7 @@
 
 #define TI_RUNTIME_HOST
 #include "taichi/ir/ir.h"
+#include "taichi/ir/statements.h"
 #include "taichi/runtime/llvm/context.h"
 #include "taichi/lang_util.h"
 

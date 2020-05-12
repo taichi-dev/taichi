@@ -1,6 +1,7 @@
 // Codegen for the hierarchical data structure
 
 #include "taichi/ir/ir.h"
+#include "taichi/ir/expression.h"
 #include "taichi/program/program.h"
 #include "struct.h"
 

@@ -8,7 +8,7 @@
 #include "taichi/backends/cuda/codegen_cuda.h"
 #endif
 #include "taichi/system/timer.h"
-#include "taichi/system/timer.h"
+#include "taichi/ir/analysis.h"
 
 TLANG_NAMESPACE_BEGIN
 

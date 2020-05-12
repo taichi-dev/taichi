@@ -195,14 +195,19 @@ def raw_pow(a, b):
 # TODO: move this to a C++ pass (#944)
 def pow(self, power):
     import taichi as ti
-    if not isinstance(power, int) or abs(power) > 50:
+    if not isinstance(power, int):
         return raw_pow(self, power)
     if power == 0:
         # TODO: remove the hack, use {Expr,Matrix}.dup().fill(1)
         # also note that this can be solved by #940
         return self * 0 + Expr(1)
+
     negative = power < 0
-    power = abs(power)
+    # Why not simply use `power = abs(power)`?
+    # Because `abs` is overrided by the `ti.abs` above.
+    if negative:
+        power = -power
+
     tmp = self
     ret = None
     while power:
@@ -213,6 +218,7 @@ def pow(self, power):
                 ret = ti.expr_init(ret * tmp)
         tmp = ti.expr_init(tmp * tmp)
         power >>= 1
+
     if negative:
         return 1 / ret
     else:

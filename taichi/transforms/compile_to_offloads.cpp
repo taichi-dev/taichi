@@ -129,6 +129,8 @@ OffloadedResult compile_to_offloads(
   // Final field registration correctness & type checking
   irpass::typecheck(ir);
   irpass::analysis::verify(ir);
+
+  return res;
 }
 
 }  // namespace irpass

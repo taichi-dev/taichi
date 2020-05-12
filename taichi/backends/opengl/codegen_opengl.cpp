@@ -718,6 +718,7 @@ void OpenglCodeGen::lower() {
                               /*ad_use_stack=*/false, config.print_ir,
                               /*lower_global_access*/true);
   global_tmps_buffer_size_ = res.total_size;
+  TI_TRACE("[glsl] Global temporary buffer size {} B", global_tmp_buffer_size_);
 #ifdef _GLSL_DEBUG
   irpass::print(ir);
 #endif

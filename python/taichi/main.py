@@ -77,8 +77,7 @@ def get_benchmark_baseline_dir():
 
 def get_benchmark_output_dir():
     import taichi as ti
-    commit = ti.core.get_commit_hash()
-    return os.path.join(ti.core.get_repo_dir(), 'baselines', commit)
+    return os.path.join(ti.core.get_repo_dir(), 'outputs')
 
 
 def display_benchmark_regression(xd, yd):
@@ -108,16 +107,18 @@ def display_benchmark_regression(xd, yd):
     xs, ys = get_dats(xd), get_dats(yd)
     for name in set(xs.keys()).union(ys.keys()):
         file, func = name.split('::')
-        print(f'{file:_<24}{func:_<42}')
         u, v = xs.get(name, {}), ys.get(name, {})
+        ret = ''
         for key in set(u.keys()).union(v.keys()):
             a, b = u.get(key, 0.0), v.get(key, 0.0)
             res = '_'
             if b > a: res = Fore.RED + '+' + Fore.RESET
             elif b < a: res = Fore.GREEN + '-' + Fore.RESET
             elif b == a: continue
-            print(f'{key:_<50}{a:_>7}{b:_>7}_{res}')
-        print('')
+            ret += f'{key:_<50}{a:_>7}{b:_>7}_{res}\n'
+        if ret != '':
+            print(f'{file:_<24}{func:_<42}')
+            print(ret)
 
 
 def make_argument_parser():
@@ -244,14 +245,11 @@ def main(debug=False):
         os.environ['TI_BENCHMARK_OUTPUT_DIR'] = output_dir
         test_python(args)
     elif mode == "baseline":
-        # mv baselines/<current_commit_id>/* baselines/
         import shutil
         output_dir = get_benchmark_output_dir()
         baseline_dir = get_benchmark_baseline_dir()
-        for x in os.listdir(output_dir):
-            src = os.path.join(output_dir, x)
-            dst = os.path.join(baseline_dir, x)
-            shutil.copy(src, dst)
+        shutil.rmtree(baseline_dir, True)
+        shutil.copy(output_dir, baseline_dir)
         print('[benchmark] baseline data saved')
     elif mode == "regression":
         display_benchmark_regression(

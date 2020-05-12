@@ -250,7 +250,7 @@ def main(debug=False):
         for x in os.listdir(output_dir):
             src = os.path.join(output_dir, x)
             dst = os.path.join(baseline_dir, x)
-            shutil.move(src, dst)
+            shutil.copy(src, dst)
         print('[benchmark] baseline data saved')
     elif mode == "regression":
         display_benchmark_regression(

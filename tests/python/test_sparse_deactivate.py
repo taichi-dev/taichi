@@ -128,10 +128,10 @@ def test_pointer3():
         copy_from_temp()
         clear_temp()
 
+    for i in range(n * n):
         for j in range(n * n):
-            for i in range(n * n):
-                if i + j < 100:
-                    assert x[i, j] == i + j
+            if i + j < 100:
+                assert x[i, j] == i + j
 
 
 @ti.archs_support_sparse

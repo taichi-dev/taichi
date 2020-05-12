@@ -1,4 +1,4 @@
-#include "snode.h"
+#include "taichi/ir/snode.h"
 
 #include "taichi/ir/ir.h"
 #include "taichi/ir/frontend.h"
@@ -6,11 +6,11 @@
 
 TLANG_NAMESPACE_BEGIN
 
-int SNode::counter = 0;
+std::atomic<int> SNode::counter = 0;
 
-SNode &SNode::place(Expr &expr_) {
+void SNode::place(Expr &expr_, const std::vector<int> &offset) {
   if (type == SNodeType::root) {  // never directly place to root
-    this->dense(std::vector<Index>(), {}).place(expr_);
+    this->dense(std::vector<Index>(), {}).place(expr_, offset);
   } else {
     TI_ASSERT(expr_.is<GlobalVariableExpression>());
     auto expr = expr_.cast<GlobalVariableExpression>();
@@ -24,8 +24,9 @@ SNode &SNode::place(Expr &expr_) {
     }
     expr->snode->expr.set(Expr(expr));
     child.dt = expr->dt;
+    if (!offset.empty())
+      child.set_index_offsets(offset);
   }
-  return *this;
 }
 
 SNode &SNode::create_node(std::vector<Index> indices,
@@ -62,7 +63,7 @@ SNode &SNode::create_node(std::vector<Index> indices,
   return new_node;
 }
 
-SNode &SNode::dynamic_chunked(const Index &expr, int n, int chunk_size) {
+SNode &SNode::dynamic(const Index &expr, int n, int chunk_size) {
   auto &snode = create_node({expr}, {n}, SNodeType::dynamic);
   snode.chunk_size = chunk_size;
   return snode;
@@ -82,7 +83,7 @@ void SNode::lazy_grad() {
     }
   }
   for (auto p : new_grads) {
-    this->place(p);
+    this->place(p, {});
   }
 }
 
@@ -214,6 +215,13 @@ void SNode::print() {
   for (auto &c : ch) {
     c->print();
   }
+}
+
+void SNode::set_index_offsets(std::vector<int> index_offsets_) {
+  TI_ASSERT(this->index_offsets.empty());
+  TI_ASSERT(!index_offsets_.empty());
+  TI_ASSERT(type == SNodeType::place);
+  this->index_offsets = index_offsets_;
 }
 
 TLANG_NAMESPACE_END

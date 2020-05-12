@@ -79,7 +79,6 @@ def test_complex_kernels_oop():
             self.total = ti.var(ti.f32)
             self.n = 128
 
-        def place(self, root):
             ti.root.dense(ti.i, self.n).place(self.x)
             ti.root.place(self.total)
 
@@ -99,10 +98,7 @@ def test_complex_kernels_oop():
 
     a = A()
 
-    @ti.layout
-    def place():
-        ti.root.place(a)
-        ti.root.lazy_grad()
+    ti.root.lazy_grad()
 
     with ti.Tape(loss=a.total):
         a.forward(4)
@@ -119,7 +115,6 @@ def test_complex_kernels_oop2():
             self.total = ti.var(ti.f32)
             self.n = 128
 
-        def place(self, root):
             ti.root.dense(ti.i, self.n).place(self.x)
             ti.root.place(self.total)
 
@@ -142,10 +137,7 @@ def test_complex_kernels_oop2():
 
     a = A()
 
-    @ti.layout
-    def place():
-        ti.root.place(a)
-        ti.root.lazy_grad()
+    ti.root.lazy_grad()
 
     with ti.Tape(loss=a.total):
         a.forward(4)

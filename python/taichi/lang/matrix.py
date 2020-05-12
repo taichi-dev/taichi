@@ -4,6 +4,7 @@ import copy
 import numbers
 import numpy as np
 from .util import to_numpy_type, to_pytorch_type
+from .common_ops import TaichiOperations
 
 
 def broadcast_if_scalar(func):
@@ -15,7 +16,7 @@ def broadcast_if_scalar(func):
     return broadcasted
 
 
-class Matrix:
+class Matrix(TaichiOperations):
     is_taichi_class = True
 
     def __init__(self,
@@ -42,12 +43,14 @@ class Matrix:
                     assert row.n == rows[
                         0].n, "input vectors must be the same shape"
                 self.m = rows[0].n
+                # l-value copy:
                 self.entries = [row(i) for row in rows for i in range(row.n)]
             elif isinstance(rows[0], list):
                 for row in rows:
                     assert len(row) == len(
                         rows[0]), "input lists must be the same shape"
                 self.m = len(rows[0])
+                # l-value copy:
                 self.entries = [x for row in rows for x in row]
             else:
                 raise Exception(
@@ -168,111 +171,10 @@ class Matrix:
                     ret(i, j).assign(ret(i, j) + self(i, k) * other(k, j))
         return ret
 
-    @broadcast_if_scalar
-    def __pow__(self, other):
-        assert self.n == other.n and self.m == other.m
-        ret = Matrix(self.n, self.m)
-        for i in range(self.n):
-            for j in range(self.m):
-                ret(i, j).assign(self(i, j)**other(i, j))
-        return ret
-
-    @broadcast_if_scalar
-    def __rpow__(self, other):
-        assert self.n == other.n and self.m == other.m
-        ret = Matrix(self.n, self.m)
-        for i in range(self.n):
-            for j in range(self.m):
-                ret(i, j).assign(other(i, j)**self(i, j))
-        return ret
-
-    @broadcast_if_scalar
-    def __div__(self, other):
-        assert self.n == other.n and self.m == other.m
-        ret = Matrix(self.n, self.m)
-        for i in range(self.n):
-            for j in range(self.m):
-                ret(i, j).assign(self(i, j) / other(i, j))
-        return ret
-
-    @broadcast_if_scalar
-    def __rtruediv__(self, other):
-        assert self.n == other.n and self.m == other.m
-        ret = Matrix(self.n, self.m)
-        for i in range(self.n):
-            for j in range(self.m):
-                ret(i, j).assign(other(i, j) / self(i, j))
-        return ret
-
     def broadcast(self, scalar):
         ret = Matrix(self.n, self.m, empty=True)
         for i in range(self.n * self.m):
             ret.entries[i] = scalar
-        return ret
-
-    @broadcast_if_scalar
-    def __truediv__(self, other):
-        assert self.n == other.n and self.m == other.m
-        ret = Matrix(self.n, self.m)
-        for i in range(self.n):
-            for j in range(self.m):
-                ret(i, j).assign(self(i, j) / other(i, j))
-        return ret
-
-    @broadcast_if_scalar
-    def __floordiv__(self, other):
-        assert self.n == other.n and self.m == other.m
-        ret = Matrix(self.n, self.m)
-        for i in range(self.n):
-            for j in range(self.m):
-                ret(i, j).assign(self(i, j) // other(i, j))
-        return ret
-
-    @broadcast_if_scalar
-    def __mul__(self, other):
-        assert self.n == other.n and self.m == other.m
-        ret = Matrix(self.n, self.m)
-        for i in range(self.n):
-            for j in range(self.m):
-                ret(i, j).assign(self(i, j) * other(i, j))
-        return ret
-
-    __rmul__ = __mul__
-
-    @broadcast_if_scalar
-    def __add__(self, other):
-        assert self.n == other.n and self.m == other.m
-        ret = Matrix(self.n, self.m)
-        for i in range(self.n):
-            for j in range(self.m):
-                ret(i, j).assign(self(i, j) + other(i, j))
-        return ret
-
-    __radd__ = __add__
-
-    @broadcast_if_scalar
-    def __sub__(self, other):
-        assert self.n == other.n and self.m == other.m
-        ret = Matrix(self.n, self.m)
-        for i in range(self.n):
-            for j in range(self.m):
-                ret(i, j).assign(self(i, j) - other(i, j))
-        return ret
-
-    def __neg__(self):
-        ret = Matrix(self.n, self.m)
-        for i in range(self.n):
-            for j in range(self.m):
-                ret(i, j).assign(-self(i, j))
-        return ret
-
-    @broadcast_if_scalar
-    def __rsub__(self, other):
-        assert self.n == other.n and self.m == other.m
-        ret = Matrix(self.n, self.m)
-        for i in range(self.n):
-            for j in range(self.m):
-                ret(i, j).assign(other(i, j) - self(i, j))
         return ret
 
     def linearize_entry_id(self, *args):
@@ -288,6 +190,9 @@ class Matrix:
     def __call__(self, *args, **kwargs):
         assert kwargs == {}
         return self.entries[self.linearize_entry_id(*args)]
+
+    def get_tensor_members(self):
+        return self.entries
 
     def get_entry(self, *args, **kwargs):
         assert kwargs == {}
@@ -379,7 +284,7 @@ class Matrix:
 
     def trace(self):
         assert self.n == self.m
-        sum = self(0, 0)
+        sum = expr.Expr(self(0, 0))
         for i in range(1, self.n):
             sum = sum + self(i, i)
         return sum
@@ -390,8 +295,9 @@ class Matrix:
             return Matrix([1 / self(0, 0)])
         elif self.n == 2:
             inv_det = impl.expr_init(1.0 / self.determinant(self))
+            # Discussion: https://github.com/taichi-dev/taichi/pull/943#issuecomment-626344323
             return inv_det * Matrix([[self(1, 1), -self(0, 1)],
-                                     [-self(1, 0), self(0, 0)]])
+                                     [-self(1, 0), self(0, 0)]]).variable()
         elif self.n == 3:
             n = 3
             import taichi as ti
@@ -524,6 +430,7 @@ class Matrix:
     def loop_range(self):
         return self.entries[0]
 
+    # TODO
     @broadcast_if_scalar
     def augassign(self, other, op):
         if not isinstance(other, Matrix):

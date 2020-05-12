@@ -1,91 +1,112 @@
-// Arithmatic operations
+#pragma once
 
-#if defined(TI_EXPRESSION_IMPLEMENTATION)
+#include "taichi/ir/expr.h"
 
-#undef DEFINE_EXPRESSION_OP_BINARY
-#undef DEFINE_EXPRESSION_OP_UNARY
-#undef DEFINE_EXPRESSION_FUNC
+TLANG_NAMESPACE_BEGIN
 
-#define DEFINE_EXPRESSION_OP_UNARY(opname)                           \
-  Expr opname(const Expr &expr) {                                    \
-    return Expr::make<UnaryOpExpression>(UnaryOpType::opname, expr); \
-  }                                                                  \
-  Expr expr_##opname(const Expr &expr) {                             \
-    return opname(expr);                                             \
+#include "taichi/ir/expression_ops.h"
+
+// always a tree - used as rvalues
+class Expression {
+ public:
+  Stmt *stmt;
+  std::string tb;
+  std::map<std::string, std::string> attributes;
+
+  struct FlattenContext {
+    VecStatement stmts;
+    Block *current_block = nullptr;
+
+    inline Stmt *push_back(pStmt &&stmt) {
+      return stmts.push_back(std::move(stmt));
+    }
+
+    template <typename T, typename... Args>
+    T *push_back(Args &&... args) {
+      return stmts.push_back<T>(std::forward<Args>(args)...);
+    }
+
+    Stmt *back_stmt() {
+      return stmts.back().get();
+    }
+  };
+
+  Expression() {
+    stmt = nullptr;
   }
 
-#define DEFINE_EXPRESSION_OP_BINARY(op, opname)                            \
-  Expr operator op(const Expr &lhs, const Expr &rhs) {                     \
-    return Expr::make<BinaryOpExpression>(BinaryOpType::opname, lhs, rhs); \
-  }                                                                        \
-  Expr expr_##opname(const Expr &lhs, const Expr &rhs) {                   \
-    return lhs op rhs;                                                     \
+  virtual std::string serialize() = 0;
+
+  virtual void flatten(FlattenContext *ctx) {
+    TI_NOT_IMPLEMENTED;
+  };
+
+  virtual bool is_lvalue() const {
+    return false;
   }
 
-#define DEFINE_EXPRESSION_FUNC(opname)                                     \
-  Expr opname(const Expr &lhs, const Expr &rhs) {                          \
-    return Expr::make<BinaryOpExpression>(BinaryOpType::opname, lhs, rhs); \
-  }                                                                        \
-  Expr expr_##opname(const Expr &lhs, const Expr &rhs) {                   \
-    return opname(lhs, rhs);                                               \
+  virtual ~Expression() {
   }
 
-#else
+  void set_attribute(const std::string &key, const std::string &value) {
+    attributes[key] = value;
+  }
 
-#define DEFINE_EXPRESSION_OP_BINARY(op, opname)       \
-  Expr operator op(const Expr &lhs, const Expr &rhs); \
-  Expr expr_##opname(const Expr &lhs, const Expr &rhs);
+  std::string get_attribute(const std::string &key) const;
+};
 
-#define DEFINE_EXPRESSION_OP_UNARY(opname) \
-  Expr opname(const Expr &expr);           \
-  Expr expr_##opname(const Expr &expr);
+class ExprGroup {
+ public:
+  std::vector<Expr> exprs;
 
-#define DEFINE_EXPRESSION_FUNC(opname)           \
-  Expr opname(const Expr &lhs, const Expr &rhs); \
-  Expr expr_##opname(const Expr &lhs, const Expr &rhs);
+  ExprGroup() {
+  }
 
-#endif
+  ExprGroup(const Expr &a) {
+    exprs.push_back(a);
+  }
 
-DEFINE_EXPRESSION_OP_UNARY(sqrt)
-DEFINE_EXPRESSION_OP_UNARY(floor)
-DEFINE_EXPRESSION_OP_UNARY(ceil)
-DEFINE_EXPRESSION_OP_UNARY(abs)
-DEFINE_EXPRESSION_OP_UNARY(sin)
-DEFINE_EXPRESSION_OP_UNARY(asin)
-DEFINE_EXPRESSION_OP_UNARY(cos)
-DEFINE_EXPRESSION_OP_UNARY(acos)
-DEFINE_EXPRESSION_OP_UNARY(tan)
-DEFINE_EXPRESSION_OP_UNARY(tanh)
-DEFINE_EXPRESSION_OP_UNARY(inv)
-DEFINE_EXPRESSION_OP_UNARY(rcp)
-DEFINE_EXPRESSION_OP_UNARY(rsqrt)
-DEFINE_EXPRESSION_OP_UNARY(exp)
-DEFINE_EXPRESSION_OP_UNARY(log)
+  ExprGroup(const Expr &a, const Expr &b) {
+    exprs.push_back(a);
+    exprs.push_back(b);
+  }
 
-DEFINE_EXPRESSION_OP_BINARY(+, add)
-DEFINE_EXPRESSION_OP_BINARY(-, sub)
-DEFINE_EXPRESSION_OP_BINARY(*, mul)
-DEFINE_EXPRESSION_OP_BINARY(/, div)
-DEFINE_EXPRESSION_OP_BINARY(%, mod)
-DEFINE_EXPRESSION_OP_BINARY(&&, bit_and)
-DEFINE_EXPRESSION_OP_BINARY(||, bit_or)
-// DEFINE_EXPRESSION_OP_BINARY(&, bit_and)
-// DEFINE_EXPRESSION_OP_BINARY(|, bit_or)
-DEFINE_EXPRESSION_OP_BINARY (^, bit_xor)
-DEFINE_EXPRESSION_OP_BINARY(<, cmp_lt)
-DEFINE_EXPRESSION_OP_BINARY(<=, cmp_le)
-DEFINE_EXPRESSION_OP_BINARY(>, cmp_gt)
-DEFINE_EXPRESSION_OP_BINARY(>=, cmp_ge)
-DEFINE_EXPRESSION_OP_BINARY(==, cmp_eq)
-DEFINE_EXPRESSION_OP_BINARY(!=, cmp_ne)
+  ExprGroup(const ExprGroup &a, const Expr &b) {
+    exprs = a.exprs;
+    exprs.push_back(b);
+  }
 
-DEFINE_EXPRESSION_FUNC(min);
-DEFINE_EXPRESSION_FUNC(max);
-DEFINE_EXPRESSION_FUNC(atan2);
-DEFINE_EXPRESSION_FUNC(pow);
-DEFINE_EXPRESSION_FUNC(truediv);
-DEFINE_EXPRESSION_FUNC(floordiv);
+  ExprGroup(const Expr &a, const ExprGroup &b) {
+    exprs = b.exprs;
+    exprs.insert(exprs.begin(), a);
+  }
 
-#undef DEFINE_EXPRESSION_OP_UNARY
-#undef DEFINE_EXPRESSION_OP_BINARY
-#undef DEFINE_EXPRESSION_FUNC
+  void push_back(const Expr &expr) {
+    exprs.emplace_back(expr);
+  }
+
+  std::size_t size() const {
+    return exprs.size();
+  }
+
+  const Expr &operator[](int i) const {
+    return exprs[i];
+  }
+
+  Expr &operator[](int i) {
+    return exprs[i];
+  }
+
+  std::string serialize() const;
+  ExprGroup loaded() const;
+};
+
+inline ExprGroup operator,(const Expr &a, const Expr &b) {
+  return ExprGroup(a, b);
+}
+
+inline ExprGroup operator,(const ExprGroup &a, const Expr &b) {
+  return ExprGroup(a, b);
+}
+
+TLANG_NAMESPACE_END

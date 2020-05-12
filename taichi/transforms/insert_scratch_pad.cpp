@@ -1,4 +1,7 @@
 #include "taichi/ir/ir.h"
+#include "taichi/ir/transforms.h"
+#include "taichi/ir/analysis.h"
+#include "taichi/ir/visitors.h"
 #include "taichi/ir/scratch_pad.h"
 
 TLANG_NAMESPACE_BEGIN

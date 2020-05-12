@@ -5,7 +5,7 @@
 
 #include "taichi/lang_util.h"
 #include "taichi/ir/ir.h"
-#include "taichi/ir/expr.h"
+#include "taichi/ir/expression.h"
 
 TLANG_NAMESPACE_BEGIN
 

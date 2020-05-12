@@ -115,7 +115,8 @@ def display_benchmark_regression(xd, yd):
             res = '_'
             if b > a: res = Fore.RED + '+' + Fore.RESET
             elif b < a: res = Fore.GREEN + '-' + Fore.RESET
-            print(f'{key:_<50}{a:_>6}{b:_>6}___{res}')
+            elif b == a: continue
+            print(f'{key:_<50}{a:_>7}{b:_>7}_{res}')
         print('')
 
 

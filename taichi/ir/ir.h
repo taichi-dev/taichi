@@ -9,140 +9,25 @@
 #include "taichi/common/bit.h"
 #include "taichi/lang_util.h"
 #include "taichi/ir/snode.h"
-#include "taichi/ir/expr.h"
 #include "taichi/program/compile_config.h"
 #include "taichi/llvm/llvm_fwd.h"
 #include "taichi/util/short_name.h"
 
 TLANG_NAMESPACE_BEGIN
 
-class DiffRange {
- private:
-  bool related;
-
- public:
-  int coeff;
-  int low, high;
-
-  DiffRange() : DiffRange(false, 0) {
-  }
-
-  DiffRange(bool related, int coeff) : DiffRange(related, 0, 0) {
-    TI_ASSERT(related == false);
-  }
-
-  DiffRange(bool related, int coeff, int low)
-      : DiffRange(related, coeff, low, low + 1) {
-  }
-
-  DiffRange(bool related, int coeff, int low, int high)
-      : related(related), coeff(coeff), low(low), high(high) {
-    if (!related) {
-      this->low = this->high = 0;
-    }
-  }
-
-  bool related_() const {
-    return related;
-  }
-
-  bool linear_related() const {
-    return related && coeff == 1;
-  }
-
-  bool certain() {
-    TI_ASSERT(related);
-    return high == low + 1;
-  }
-};
-
 class IRBuilder;
 class IRNode;
 class Block;
 class Stmt;
 using pStmt = std::unique_ptr<Stmt>;
-class DiffRange;
 
 class SNode;
-using ScratchPadOptions = std::vector<std::pair<int, SNode *>>;
-class Expression;
-class Expr;
-class ExprGroup;
 class ScratchPads;
+using ScratchPadOptions = std::vector<std::pair<int, SNode *>>;
 
 #define PER_STATEMENT(x) class x;
 #include "taichi/inc/statements.inc.h"
 #undef PER_STATEMENT
-
-// IR passes
-namespace irpass {
-
-struct OffloadedResult {
-  // Total size in bytes of the global temporary variables
-  std::size_t total_size;
-  // Offloaded local variables to its offset in the global tmps memory.
-  std::unordered_map<const Stmt *, std::size_t> local_to_global_offset;
-};
-
-void re_id(IRNode *root);
-void flag_access(IRNode *root);
-void die(IRNode *root);
-void simplify(IRNode *root, Kernel *kernel = nullptr);
-void alg_simp(IRNode *root, const CompileConfig &config);
-void whole_kernel_cse(IRNode *root);
-void variable_optimization(IRNode *root, bool after_lower_access);
-void extract_constant(IRNode *root);
-void full_simplify(IRNode *root,
-                   const CompileConfig &config,
-                   Kernel *kernel = nullptr);
-void print(IRNode *root, std::string *output = nullptr);
-void lower(IRNode *root);
-void convert_into_loop_index(IRNode *root);
-void typecheck(IRNode *root, Kernel *kernel = nullptr);
-void loop_vectorize(IRNode *root);
-void slp_vectorize(IRNode *root);
-void vector_split(IRNode *root, int max_width, bool serial_schedule);
-void replace_all_usages_with(IRNode *root, Stmt *old_stmt, Stmt *new_stmt);
-void check_out_of_bound(IRNode *root);
-void lower_access(IRNode *root, bool lower_atomic, Kernel *kernel = nullptr);
-void make_adjoint(IRNode *root, bool use_stack = false);
-void constant_fold(IRNode *root);
-OffloadedResult offload(IRNode *root);
-void fix_block_parents(IRNode *root);
-void replace_statements_with(IRNode *root,
-                             std::function<bool(Stmt *)> filter,
-                             std::function<std::unique_ptr<Stmt>()> generator);
-void demote_dense_struct_fors(IRNode *root);
-void demote_atomics(IRNode *root);
-void reverse_segments(IRNode *root);  // for autograd
-std::unique_ptr<ScratchPads> initialize_scratch_pad(StructForStmt *root);
-void compile_to_offloads(IRNode *ir,
-                         const CompileConfig &config,
-                         bool vectorize,
-                         bool grad,
-                         bool ad_use_stack,
-                         bool verbose,
-                         bool lower_global_access = true);
-
-// Analysis
-namespace analysis {
-void check_fields_registered(IRNode *root);
-int count_statements(IRNode *root);
-std::unordered_set<Stmt *> detect_fors_with_break(IRNode *root);
-std::unordered_set<Stmt *> detect_loops_with_continue(IRNode *root);
-std::unordered_set<SNode *> gather_deactivations(IRNode *root);
-std::vector<Stmt *> gather_statements(IRNode *root,
-                                      const std::function<bool(Stmt *)> &test);
-std::unique_ptr<std::unordered_set<AtomicOpStmt *>> gather_used_atomics(
-    IRNode *root);
-bool has_store_or_atomic(IRNode *root, const std::vector<Stmt *> &vars);
-std::pair<bool, Stmt *> last_store_or_atomic(IRNode *root, Stmt *var);
-bool same_statements(IRNode *root1, IRNode *root2);
-DiffRange value_diff(Stmt *stmt, int lane, Stmt *alloca);
-void verify(IRNode *root);
-}  // namespace analysis
-
-}  // namespace irpass
 
 IRBuilder &current_ast_builder();
 
@@ -249,14 +134,6 @@ class IRBuilder {
   Stmt *get_last_stmt();
   void stop_gradient(SNode *);
 };
-
-Expr load_if_ptr(const Expr &ptr);
-Expr load(const Expr &ptr);
-Expr ptr_if_global(const Expr &var);
-
-inline Expr smart_load(const Expr &var) {
-  return load_if_ptr(ptr_if_global(var));
-}
 
 class Identifier {
  public:
@@ -713,9 +590,7 @@ class Stmt : public IRNode {
     return std::make_unique<T>(std::forward<Args>(args)...);
   }
 
-  void infer_type() {
-    irpass::typecheck(this);
-  }
+  void infer_type();
 
   void set_tb(const std::string &tb) {
     this->tb = tb;
@@ -725,109 +600,6 @@ class Stmt : public IRNode {
 
   virtual ~Stmt() override = default;
 };
-
-// always a tree - used as rvalues
-class Expression {
- public:
-  Stmt *stmt;
-  std::string tb;
-  std::map<std::string, std::string> attributes;
-
-  struct FlattenContext {
-    VecStatement stmts;
-    Block *current_block = nullptr;
-
-    inline Stmt *push_back(pStmt &&stmt) {
-      return stmts.push_back(std::move(stmt));
-    }
-
-    template <typename T, typename... Args>
-    T *push_back(Args &&... args) {
-      return stmts.push_back<T>(std::forward<Args>(args)...);
-    }
-
-    Stmt *back_stmt() {
-      return stmts.back().get();
-    }
-  };
-
-  Expression() {
-    stmt = nullptr;
-  }
-
-  virtual std::string serialize() = 0;
-
-  virtual void flatten(FlattenContext *ctx) {
-    TI_NOT_IMPLEMENTED;
-  };
-
-  virtual bool is_lvalue() const {
-    return false;
-  }
-
-  virtual ~Expression() {
-  }
-
-  void set_attribute(const std::string &key, const std::string &value) {
-    attributes[key] = value;
-  }
-
-  std::string get_attribute(const std::string &key) const;
-};
-
-class ExprGroup {
- public:
-  std::vector<Expr> exprs;
-
-  ExprGroup() {
-  }
-
-  ExprGroup(const Expr &a) {
-    exprs.push_back(a);
-  }
-
-  ExprGroup(const Expr &a, const Expr &b) {
-    exprs.push_back(a);
-    exprs.push_back(b);
-  }
-
-  ExprGroup(const ExprGroup &a, const Expr &b) {
-    exprs = a.exprs;
-    exprs.push_back(b);
-  }
-
-  ExprGroup(const Expr &a, const ExprGroup &b) {
-    exprs = b.exprs;
-    exprs.insert(exprs.begin(), a);
-  }
-
-  void push_back(const Expr &expr) {
-    exprs.emplace_back(expr);
-  }
-
-  std::size_t size() const {
-    return exprs.size();
-  }
-
-  const Expr &operator[](int i) const {
-    return exprs[i];
-  }
-
-  Expr &operator[](int i) {
-    return exprs[i];
-  }
-
-  std::string serialize() const;
-  ExprGroup loaded() const;
-};
-
-inline ExprGroup operator,(const Expr &a, const Expr &b) {
-  return ExprGroup(a, b);
-}
-
-inline ExprGroup operator,(const ExprGroup &a, const Expr &b) {
-  return ExprGroup(a, b);
-}
 
 class AllocaStmt : public Stmt {
  public:
@@ -1039,8 +811,6 @@ class GlobalPtrStmt : public Stmt {
   TI_STMT_DEF_FIELDS(ret_type, snodes, indices, activate);
   DEFINE_ACCEPT
 };
-
-#include "expression.h"
 
 class Block : public IRNode {
  public:
@@ -1320,18 +1090,7 @@ class RangeForStmt : public Stmt {
                int vectorize,
                int parallelize,
                int block_dim,
-               bool strictly_serialized)
-      : loop_var(loop_var),
-        begin(begin),
-        end(end),
-        body(std::move(body)),
-        vectorize(vectorize),
-        parallelize(parallelize),
-        block_dim(block_dim),
-        strictly_serialized(strictly_serialized) {
-    reversed = false;
-    TI_STMT_REG_FIELDS;
-  }
+               bool strictly_serialized);
 
   bool is_container_statement() const override {
     return true;
@@ -1370,15 +1129,7 @@ class StructForStmt : public Stmt {
                 std::unique_ptr<Block> &&body,
                 int vectorize,
                 int parallelize,
-                int block_dim)
-      : loop_vars(loop_vars),
-        snode(snode),
-        body(std::move(body)),
-        vectorize(vectorize),
-        parallelize(parallelize),
-        block_dim(block_dim) {
-    TI_STMT_REG_FIELDS;
-  }
+                int block_dim);
 
   bool is_container_statement() const override {
     return true;
@@ -1456,8 +1207,6 @@ class WhileStmt : public Stmt {
   DEFINE_ACCEPT
 };
 
-void Print_(const Expr &a, const std::string &str);
-
 extern DecoratorRecorder dec;
 
 inline void Vectorize(int v) {
@@ -1472,14 +1221,6 @@ inline void StrictlySerialize() {
   dec.strictly_serialized = true;
 }
 
-inline void Cache(int v, const Expr &var) {
-  dec.scratch_opt.push_back(std::make_pair(v, var.snode()));
-}
-
-inline void CacheL1(const Expr &var) {
-  dec.scratch_opt.push_back(std::make_pair(1, var.snode()));
-}
-
 inline void BlockDim(int v) {
   TI_ASSERT(bit::is_power_of_two(v));
   dec.block_dim = v;
@@ -1488,8 +1229,6 @@ inline void BlockDim(int v) {
 inline void SLP(int v) {
   current_ast_builder().insert(Stmt::make<PragmaSLPStmt>(v));
 }
-
-Expr Var(const Expr &x);
 
 class VectorElement {
  public:
@@ -1533,6 +1272,3 @@ inline void StmtFieldManager::operator()(const char *key, T &&value) {
 }
 
 TLANG_NAMESPACE_END
-
-#include "taichi/ir/statements.h"
-#include "taichi/ir/visitors.h"

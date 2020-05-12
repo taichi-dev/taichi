@@ -1,4 +1,5 @@
 #include "taichi/ir/frontend.h"
+#include "taichi/ir/transforms.h"
 #include "taichi/common/testing.h"
 
 TLANG_NAMESPACE_BEGIN
@@ -7,6 +8,8 @@ TLANG_NAMESPACE_BEGIN
 
 TI_TEST("simplify") {
   SECTION("simplify_linearized_with_trivial_inputs") {
+    TI_TEST_PROGRAM;
+
     auto block = std::make_unique<Block>();
 
     auto get_root = block->push_back<GetRootStmt>();
@@ -25,17 +28,15 @@ TI_TEST("simplify") {
         std::vector<Stmt *>());
 
     irpass::typecheck(block.get());
-    // irpass::print(block.get());
     TI_CHECK(block->size() == 7);
 
     irpass::simplify(block.get());  // should lower linearized
-    // irpass::print(block.get());
     // TI_CHECK(block->size() == 11);  // not required to check size here
 
     irpass::constant_fold(block.get());
     irpass::alg_simp(block.get(), CompileConfig());
     irpass::die(block.get());  // should eliminate consts
-    // irpass::print(block.get());
+    irpass::simplify(block.get());
     if (advanced_optimization) {
       // get root, const 0, lookup, get child, lookup
       TI_CHECK(block->size() == 5);

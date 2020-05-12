@@ -28,7 +28,7 @@ Suppose you have a ``128 x 64`` global grid ``A``, each node containing a ``3 x 
 * As you may have noticed, there are two indexing operators ``[]``, the first is for tensor indexing, the second for matrix indexing.
 * For a tensor ``F`` of element ``ti.Matrix``, make sure you first index the tensor dimensions, and then the matrix dimensions: ``F[i, j, k][0, 2]``. (Assuming ``F`` is a 3D tensor with ``ti.Matrix`` of size ``3x3`` as elements)
 * ``ti.Vector`` is simply an alias of ``ti.Matrix``.
-* See :ref:`linalg` for more on matrices.
+* See :ref:`matrix` for more on matrices.
 
 
 Matrix size

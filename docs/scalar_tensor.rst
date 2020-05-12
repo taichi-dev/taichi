@@ -41,7 +41,7 @@ Declaration
 
 .. note::
 
-    Not providing ``shape`` allows you to *place* the tensor as *sparse* tensors, see :ref:`sparse` for more details.
+    Not providing ``shape`` allows you to *place* the tensor in a layout other than the default *dense*, see :ref:`layout` for more details.
 
 
 .. warning::

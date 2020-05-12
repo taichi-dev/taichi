@@ -1,4 +1,6 @@
 #include "taichi/ir/ir.h"
+#include "taichi/ir/transforms.h"
+#include "taichi/ir/visitors.h"
 #include "taichi/ir/state_machine.h"
 #include <unordered_map>
 

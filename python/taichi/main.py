@@ -86,7 +86,7 @@ def display_benchmark_regression(xd, yd):
         for line in open(file).readlines():
             try: a, b = line.strip().split(':')
             except: continue
-            dict[a.strip()] = float(b)
+            dict[a.strip()] = int(float(b))
         return dict
 
     def parse_name(file):
@@ -111,11 +111,12 @@ def display_benchmark_regression(xd, yd):
         ret = ''
         for key in set(u.keys()).union(v.keys()):
             a, b = u.get(key, 0.0), v.get(key, 0.0)
-            res = '_'
-            if b > a: res = Fore.RED + '+' + Fore.RESET
-            elif b < a: res = Fore.GREEN + '-' + Fore.RESET
+            res = a / b - 1
+            color = ''
+            if res > 0: color = Fore.RED
+            elif res < 0: color = Fore.GREEN
             elif b == a: continue
-            ret += f'{key:_<50}{a:_>7}{b:_>7}_{res}\n'
+            ret += f'{key:_<46}{a:_>6}{b:_>6}_{color}{res:_>+7.1%}{Fore.RESET}\n'
         if ret != '':
             print(f'{file:_<24}{func:_<42}')
             print(ret)

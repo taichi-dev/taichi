@@ -1,0 +1,37 @@
+name: Persubmit Checks
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '**.h'
+      - '**.cpp'
+      - '**.py'
+      - '**.rst'
+      - '**.md'
+      - '!examples/**.py'
+
+jobs:
+  code_format:
+    name: Code Format
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, '[skip fmt]')"
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v2
+      - name: Check code format
+        run: |
+          git fetch https://github.com/taichi-dev/taichi.git refs/heads/master
+          git reset FETCH_HEAD
+          git add .
+          git config user.email "taichigardener@gmail.com"
+          git config user.name "Taichi Gardener"
+          git commit -m "fake squash commit" || true
+          git checkout -b last_squash
+          git checkout -b enforced_format
+          git reset FETCH_HEAD
+          python3 -m pip install --user yapf gitpython
+          python3 misc/format.py
+          git add .
+          git commit -m "enforce code format" || true
+          # exit with 1 if there were differences:
+          git diff last_squash enforced_format --exit-code

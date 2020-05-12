@@ -58,7 +58,7 @@ import taichi as ti
 Taichi is a domain-specific language (DSL) embedded in Python.
 Heavy engineering has been done to make Taichi as easy to use as a Python package.
 
-After minimal learning efforts, every Python programmer will be capable of writing Taichi programs,
+After minimal learning efforts, every Python programmer will be capable of writing Taichi programs.
 You can also reuse the Python package management system, Python IDEs, and existing Python packages.
 
 Portability
@@ -96,7 +96,7 @@ Taichi code can run on CPUs or GPUs. Initialize Taichi according to your hardwar
 
     (OK: supported; N/A: not available)
 
-    With ``arch=ti.gpu``, Taichi will try to run on CUDA.
+    With ``arch=ti.gpu``, Taichi will first try to run on CUDA.
     If CUDA is not supported on your machine, Taichi will fall back to Metal or OpenGL.
     If no GPU backend (CUDA, Metal, or OpenGL) is supported, Taichi will fall back to CPUs.
 
@@ -129,8 +129,8 @@ You can also define Taichi **functions** with ``ti.func``, which can be called a
 
 .. note::
 
-  **Taichi-scope v.s. Python-scope**: everything decorated with ``ti.kernel`` and ``ti.func`` is in Taichi-scope, which will be compiled by the Taichi compiler.
-  Code outside the Taichi-scopes is simply normal Python code.
+  **Taichi-scopes v.s. Python-scopes**: everything decorated with ``ti.kernel`` and ``ti.func`` is in Taichi-scope, which will be compiled by the Taichi compiler.
+  Everything else is in Python-scopes. They are simply Python code.
 
 .. warning::
 

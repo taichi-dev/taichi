@@ -1,4 +1,5 @@
 #include "taichi/backends/metal/api.h"
+#include "taichi/util/environ_config.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -133,6 +134,8 @@ size_t get_max_total_threads_per_threadgroup(
 
 bool is_metal_api_available() {
 #ifdef TI_PLATFORM_OSX
+  if (!get_environ_config("TI_WITH_METAL", true))
+    return false;
   // If the macOS is provided by a VM (e.g. Travis CI), it's possible that there
   // is no GPU device, so we still have to do a runtime check.
   auto device = mtl_create_system_default_device();

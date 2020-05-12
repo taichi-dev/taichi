@@ -506,6 +506,7 @@ void GLSLLaunchGuard::unmap_buffer(size_t idx) {
 
 GLSLLaunchGuard::~GLSLLaunchGuard() {
   for (int i = 0; i < impl->ssbo.size(); i++) {
+    TI_INFO("UMBUF {}", i);
     if (!iov[i].size)
       continue;
     void *p = impl->ssbo[i].map();  // 0, iov[i].size);  // output

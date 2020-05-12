@@ -60,4 +60,3 @@ _build
 *.bin
 *.gif
 *.mp4
-/baselines/*/

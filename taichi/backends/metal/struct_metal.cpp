@@ -54,11 +54,14 @@ class StructCompiler {
     std::reverse(snodes_rev.begin(), snodes_rev.end());
     {
       max_snodes_ = 0;
+      has_sparse_snode_ = false;
       for (const auto &sn : snodes_) {
-        if (sn->type == SNodeType::root || sn->type == SNodeType::dense ||
-            sn->type == SNodeType::bitmasked) {
+        const auto ty = sn->type;
+        if (ty == SNodeType::root || ty == SNodeType::dense ||
+            ty == SNodeType::bitmasked) {
           max_snodes_ = std::max(max_snodes_, sn->id);
         }
+        has_sparse_snode_ = has_sparse_snode_ || (ty == SNodeType::bitmasked);
       }
       ++max_snodes_;
     }
@@ -219,13 +222,17 @@ class StructCompiler {
                     (kSNodeMetaSize + kSNodeExtractorsSize + kListManagerSize);
     result += sizeof(uint32_t) * kNumRandSeeds;
     TI_DEBUG("Metal runtime fields size: {} bytes", result);
-    int total_items = 0;
-    for (const auto &kv : snode_descriptors_) {
-      total_items += kv.second.total_num_elems_from_root;
+    if (has_sparse_snode_) {
+      // We only need additional memory to hold sparsity information. Don't
+      // allocate it if there is no sparse SNode at all.
+      int total_items = 0;
+      for (const auto &kv : snode_descriptors_) {
+        total_items += kv.second.total_num_elems_from_root;
+      }
+      const size_t list_data_size = total_items * kListgenElementSize;
+      TI_DEBUG("Metal runtime sparse list data size: {} bytes", list_data_size);
+      result += list_data_size;
     }
-    const size_t list_data_size = total_items * kListgenElementSize;
-    TI_DEBUG("Metal runtime list data size: {} bytes", list_data_size);
-    result += list_data_size;
     return result;
   }
 
@@ -238,6 +245,7 @@ class StructCompiler {
   int max_snodes_;
   LineAppender line_appender_;
   std::unordered_map<int, SNodeDescriptor> snode_descriptors_;
+  bool has_sparse_snode_;
 };
 
 }  // namespace

@@ -83,8 +83,6 @@ See :ref:`layout` for more details about data layout. ``ti.root`` is the root no
         blk2.parent()  # blk1
         blk3.parent()  # blk2
 
-    TODO: add tensor.parent(), and add see also ref here
-
 
 Node types
 ----------

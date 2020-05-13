@@ -327,7 +327,7 @@ void Program::synchronize() {
   if (!sync) {
     if (config.arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
-      CUDADriver::get_instance().stream_synchronize(0);
+      CUDADriver::get_instance().stream_synchronize(nullptr);
 #else
       TI_ERROR("No CUDA support");
 #endif

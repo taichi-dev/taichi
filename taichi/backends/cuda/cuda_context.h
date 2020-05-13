@@ -61,15 +61,19 @@ class CUDAContext {
   class ContextGuard {
    private:
     void *old_ctx;
+    void *new_ctx;
 
    public:
-    ContextGuard(CUDAContext *ctx) {
+    ContextGuard(CUDAContext *new_ctx) : old_ctx(nullptr), new_ctx(new_ctx) {
       CUDADriver::get_instance().context_get_current(&old_ctx);
-      ctx->make_current();
+      if (old_ctx != new_ctx)
+        new_ctx->make_current();
     }
 
     ~ContextGuard() {
-      CUDADriver::get_instance().context_set_current(old_ctx);
+      if (old_ctx != new_ctx) {
+        CUDADriver::get_instance().context_set_current(old_ctx);
+      }
     }
   };
 

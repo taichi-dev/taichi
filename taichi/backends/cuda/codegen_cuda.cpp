@@ -76,7 +76,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
         }
       }
       if (has_buffer) {
-        CUDADriver::get_instance().stream_synchronize(0);
+        CUDADriver::get_instance().stream_synchronize(nullptr);
       }
 
       for (auto task : offloaded_local) {
@@ -88,7 +88,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       }
       // copy data back to host
       if (has_buffer) {
-        CUDADriver::get_instance().stream_synchronize(0);
+        CUDADriver::get_instance().stream_synchronize(nullptr);
       }
       for (int i = 0; i < (int)args.size(); i++) {
         if (args[i].is_nparray) {

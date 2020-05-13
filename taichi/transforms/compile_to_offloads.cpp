@@ -7,7 +7,8 @@ TLANG_NAMESPACE_BEGIN
 
 namespace irpass {
 
-void compile_to_offloads(IRNode *ir,
+OffloadedResult compile_to_offloads(
+                         IRNode *ir,
                          const CompileConfig &config,
                          bool vectorize,
                          bool grad,
@@ -105,7 +106,7 @@ void compile_to_offloads(IRNode *ir,
   irpass::constant_fold(ir);
   print("Constant folded");
 
-  irpass::offload(ir);
+  auto res = irpass::offload(ir);
   print("Offloaded");
   irpass::analysis::verify(ir);
 
@@ -131,6 +132,8 @@ void compile_to_offloads(IRNode *ir,
   // Final field registration correctness & type checking
   irpass::typecheck(ir);
   irpass::analysis::verify(ir);
+
+  return res;
 }
 
 }  // namespace irpass

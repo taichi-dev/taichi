@@ -710,125 +710,6 @@ class KernelGen : public IRVisitor {
 
 }  // namespace
 
-void OpenglCodeGen::lower() {  // {{{
-  auto ir = kernel_->ir;
-  const bool print_ir = prog_->config.print_ir;
-  if (print_ir) {
-    TI_TRACE("Initial IR:");
-    irpass::print(ir);
-  }
-
-  if (kernel_->grad) {
-    irpass::reverse_segments(ir);
-    irpass::re_id(ir);
-    if (print_ir) {
-      TI_TRACE("Segment reversed (for autodiff):");
-      irpass::print(ir);
-    }
-  }
-
-  irpass::lower(ir);
-  irpass::re_id(ir);
-  if (print_ir) {
-    TI_TRACE("Lowered:");
-    irpass::print(ir);
-  }
-
-  irpass::typecheck(ir);
-  irpass::re_id(ir);
-  if (print_ir) {
-    TI_TRACE("Typechecked:");
-    irpass::print(ir);
-  }
-
-  irpass::demote_dense_struct_fors(ir);
-  irpass::typecheck(ir);
-  if (print_ir) {
-    TI_TRACE("Dense Struct-for demoted:");
-    irpass::print(ir);
-  }
-
-  irpass::constant_fold(ir);
-  if (prog_->config.simplify_before_lower_access) {
-    irpass::simplify(ir);
-    irpass::re_id(ir);
-    if (print_ir) {
-      TI_TRACE("Simplified I:");
-      irpass::print(ir);
-    }
-  }
-
-  if (kernel_->grad) {
-    irpass::demote_atomics(ir);
-    irpass::full_simplify(ir, prog_->config);
-    irpass::typecheck(ir);
-    if (print_ir) {
-      TI_TRACE("Before make_adjoint:");
-      irpass::print(ir);
-    }
-    irpass::make_adjoint(ir);
-    if (print_ir) {
-      TI_TRACE("After make_adjoint:");
-      irpass::print(ir);
-    }
-    irpass::typecheck(ir);
-  }
-
-  irpass::lower_access(ir, prog_->config.use_llvm);
-  irpass::re_id(ir);
-  if (print_ir) {
-    TI_TRACE("Access Lowered:");
-    irpass::print(ir);
-  }
-
-  irpass::die(ir);
-  irpass::re_id(ir);
-  if (print_ir) {
-    TI_TRACE("DIEd:");
-    irpass::print(ir);
-  }
-
-  irpass::flag_access(ir);
-  irpass::re_id(ir);
-  if (print_ir) {
-    TI_TRACE("Access Flagged:");
-    irpass::print(ir);
-  }
-
-  irpass::constant_fold(ir);
-  if (print_ir) {
-    TI_TRACE("Constant folded:");
-    irpass::re_id(ir);
-    irpass::print(ir);
-  }
-
-  global_tmps_buffer_size_ =
-      std::max(irpass::offload(ir).total_size, (size_t)(1));
-  if (print_ir) {
-    TI_TRACE("Offloaded:");
-    irpass::re_id(ir);
-    irpass::print(ir);
-  }
-
-  irpass::full_simplify(ir, prog_->config);
-  if (print_ir) {
-    TI_TRACE("Simplified II:");
-    irpass::re_id(ir);
-    irpass::print(ir);
-  }
-
-  irpass::demote_atomics(ir);
-  if (print_ir) {
-    TI_TRACE("Atomics demoted:");
-    irpass::re_id(ir);
-    irpass::print(ir);
-  }
-
-#ifdef _GLSL_DEBUG
-  irpass::print(ir);
-#endif
-}  // }}}
-
 FunctionType OpenglCodeGen::gen(void) {
 #if defined(TI_WITH_OPENGL)
   KernelGen codegen(kernel_, kernel_name_, struct_compiled_,
@@ -842,6 +723,21 @@ FunctionType OpenglCodeGen::gen(void) {
   };
 #else
   TI_NOT_IMPLEMENTED
+#endif
+}
+
+void OpenglCodeGen::lower() {
+  auto ir = kernel_->ir;
+  auto &config = kernel_->program.config;
+  config.demote_dense_struct_fors = true;
+  auto res = irpass::compile_to_offloads(ir, config,
+                              /*vectorize=*/false, kernel_->grad,
+                              /*ad_use_stack=*/false, config.print_ir,
+                              /*lower_global_access*/true);
+  global_tmps_buffer_size_ = res.total_size;
+  TI_TRACE("[glsl] Global temporary buffer size {} B", global_tmps_buffer_size_);
+#ifdef _GLSL_DEBUG
+  irpass::print(ir);
 #endif
 }
 

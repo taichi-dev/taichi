@@ -73,7 +73,7 @@ class ConstantFold : public BasicStmtVisitor {
     ker->insert_arg(id.lhs, false);
     if (id.is_binary)
       ker->insert_arg(id.rhs, false);
-    ker->is_accessor = true;
+    ker->is_evaluator = true;
     auto *ker_ptr = ker.get();
     TI_TRACE("Saving JIT evaluator cache entry id={}", hash_id);
     cache[hash_id] = std::move(ker);

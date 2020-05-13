@@ -516,7 +516,7 @@ GLSLLaunchGuard::~GLSLLaunchGuard() {
 }
 
 bool is_opengl_api_available() {
-  if (!get_environ_config("TI_WITH_OPENGL", true))
+  if (get_environ_config("TI_ENABLE_OPENGL", 1) == 0)
     return false;
   return initialize_opengl(true);
 }

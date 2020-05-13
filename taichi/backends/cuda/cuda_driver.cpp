@@ -16,7 +16,7 @@ std::string get_cuda_error_message(uint32 err) {
 }
 
 bool CUDADriver::detected() {
-  if (!get_environ_config("TI_WITH_CUDA", true))
+  if (get_environ_config("TI_ENABLE_CUDA", 1) == 0)
     return false;
   return loader->loaded();
 }

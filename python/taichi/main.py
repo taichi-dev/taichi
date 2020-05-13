@@ -73,12 +73,12 @@ def test_cpp(args):
 
 def get_benchmark_baseline_dir():
     import taichi as ti
-    return os.path.join(ti.core.get_repo_dir(), 'benchmarks', 'baselines')
+    return os.path.join(ti.core.get_repo_dir(), 'benchmarks', 'baseline')
 
 
 def get_benchmark_output_dir():
     import taichi as ti
-    return os.path.join(ti.core.get_repo_dir(), 'benchmarks', 'outputs')
+    return os.path.join(ti.core.get_repo_dir(), 'benchmarks', 'output')
 
 
 def display_benchmark_regression(xd, yd):

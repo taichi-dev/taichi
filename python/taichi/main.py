@@ -116,7 +116,8 @@ def display_benchmark_regression(xd, yd):
             if res > 0: color = Fore.RED
             elif res < 0: color = Fore.GREEN
             elif b == a: continue
-            ret += f'{key:_<46}{a:_>6}{b:_>6}_{color}{res:_>+7.1%}{Fore.RESET}\n'
+            ret += f'{key:<43}{Fore.MAGENTA}{a:>5}{Fore.RESET} -> '
+            ret += f'{Fore.CYAN}{b:>5} {color}{res:>+8.1%}{Fore.RESET}\n'
         if ret != '':
             print(f'{file:_<24}{func:_<42}')
             print(ret)

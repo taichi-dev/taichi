@@ -72,7 +72,82 @@ Declaration
         # ERROR: cannot create tensor after any tensor accesses from the Python-scope!
 
 
-Attribute
+Accessing components
+--------------------
+
+.. attribute:: a[p, q, ...]
+
+    :parameter a: (Tensor) the tensor of scalar
+    :parameter p: (scalar) index of the first tensor dimension
+    :parameter q: (scalar) index of the second tensor dimension
+    :return: (scalar) the element at ``[p, q, ...]``
+
+    This extracts the element value at ``[3, 4]`` of tensor ``a``:
+    ::
+
+        x = a[3, 4]
+
+    This sets the element value at ``[3, 4]`` of tensor ``a`` to ``2``:
+    ::
+
+        a[3, 4] = 2
+
+    .. note ::
+
+        The returned value can also be ``Vector`` / ``Matrix`` if ``a`` is a tensor of vector / matrix, see :ref:`vector` for more details.
+
+
+Meta data
 ---------
 
-TODO: WIP
+.. function:: a.dim()
+
+    :parameter a: (Tensor) the tensor
+    :return: (scalar) the length of ``a``
+
+    ::
+
+        x = ti.var(ti.i32, (6, 5))
+        x.dim()  # 2
+
+        y = ti.var(ti.i32, 6)
+        y.dim()  # 1
+
+        z = ti.var(ti.i32, ())
+        z.dim()  # 0
+
+
+.. function:: a.shape()
+
+    :parameter a: (Tensor) the tensor
+    :return: (tuple) the shape of tensor ``a``
+
+    ::
+
+        x = ti.var(ti.i32, (6, 5))
+        x.shape()  # (6, 5)
+
+        y = ti.var(ti.i32, 6)
+        y.shape()  # (6,)
+
+        z = ti.var(ti.i32, ())
+        z.shape()  # ()
+
+
+.. function:: a.parent()
+
+    :parameter a: (Tensor) the tensor
+    :return: (SNode) the SNode where ``a`` is placed
+
+    ::
+        x = ti.var(ti.i32)
+        y = ti.var(ti.i32)
+        blk1 = ti.root.dense(ti.ij, (6, 5))
+        blk2 = blk2.dense(ti.ij, (3, 2))
+        blk1.place(x)
+        blk2.place(y)
+
+        x.parent()  # blk1
+        y.parent()  # blk2
+
+    See :ref:`snode` for more details.

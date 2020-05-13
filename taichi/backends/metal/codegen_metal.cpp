@@ -309,17 +309,21 @@ class KernelCodegen : public IRVisitor {
   }
 
   void visit(LoopIndexStmt *stmt) override {
-    using TaskType = OffloadedStmt::TaskType;
-    const auto type = current_kernel_attribs_->task_type;
     const auto stmt_name = stmt->raw_name();
-    if (type == TaskType::range_for) {
-      TI_ASSERT(stmt->index == 0);
-      emit("const int {} = {};", stmt_name, kLinearLoopIndexName);
-    } else if (type == TaskType::struct_for) {
-      emit("const int {} = {}.coords[{}];", stmt_name, kListgenElemVarName,
-           stmt->index);
-    } else {
-      TI_NOT_IMPLEMENTED;
+    if (stmt->loop->is<OffloadedStmt>()) {
+      using TaskType = OffloadedStmt::TaskType;
+      const auto type = current_kernel_attribs_->task_type;
+      if (type == TaskType::range_for) {
+        TI_ASSERT(stmt->index == 0);
+        emit("const int {} = {};", stmt_name, kLinearLoopIndexName);
+      } else if (type == TaskType::struct_for) {
+        emit("const int {} = {}.coords[{}];", stmt_name, kListgenElemVarName,
+             stmt->index);
+      } else {
+        TI_NOT_IMPLEMENTED;
+      }
+    } else if (stmt->loop->is<RangeForStmt>()) {
+      emit("const int {} = {};", stmt_name, stmt->loop->raw_name());
     }
   }
 
@@ -445,29 +449,20 @@ class KernelCodegen : public IRVisitor {
 
   void visit(RangeForStmt *for_stmt) override {
     TI_ASSERT(for_stmt->width() == 1);
-    auto *loop_var = for_stmt->loop_var;
-    if (loop_var->ret_type.data_type == DataType::i32) {
-      if (!for_stmt->reversed) {
-        emit("for (int {}_ = {}; {}_ < {}; {}_ = {}_ + {}) {{",
-             loop_var->raw_name(), for_stmt->begin->raw_name(),
-             loop_var->raw_name(), for_stmt->end->raw_name(),
-             loop_var->raw_name(), loop_var->raw_name(), 1);
-        emit("  int {} = {}_;", loop_var->raw_name(), loop_var->raw_name());
-      } else {
-        // reversed for loop
-        emit("for (int {}_ = {} - 1; {}_ >= {}; {}_ = {}_ - {}) {{",
-             loop_var->raw_name(), for_stmt->end->raw_name(),
-             loop_var->raw_name(), for_stmt->begin->raw_name(),
-             loop_var->raw_name(), loop_var->raw_name(), 1);
-        emit("  int {} = {}_;", loop_var->raw_name(), loop_var->raw_name());
-      }
+    auto loop_var_name = for_stmt->raw_name();
+    if (!for_stmt->reversed) {
+      emit("for (int {}_ = {}; {}_ < {}; {}_ = {}_ + {}) {{",
+           loop_var_name, for_stmt->begin->raw_name(),
+           loop_var_name, for_stmt->end->raw_name(),
+           loop_var_name, loop_var_name, 1);
+      emit("  int {} = {}_;", loop_var_name, loop_var_name);
     } else {
-      TI_ASSERT(!for_stmt->reversed);
-      const auto type_name = metal_data_type_name(loop_var->element_type());
-      emit("for ({} {} = {}; {} < {}; {} = {} + ({})1) {{", type_name,
-           loop_var->raw_name(), for_stmt->begin->raw_name(),
-           loop_var->raw_name(), for_stmt->end->raw_name(),
-           loop_var->raw_name(), loop_var->raw_name(), type_name);
+      // reversed for loop
+      emit("for (int {}_ = {} - 1; {}_ >= {}; {}_ = {}_ - {}) {{",
+           loop_var_name, for_stmt->end->raw_name(),
+           loop_var_name, for_stmt->begin->raw_name(),
+           loop_var_name, loop_var_name, 1);
+      emit("  int {} = {}_;", loop_var_name, loop_var_name);
     }
     for_stmt->body->accept(this);
     emit("}}");

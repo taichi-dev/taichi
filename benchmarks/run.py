@@ -33,6 +33,7 @@ class Case:
 class Suite:
     def __init__(self, filename):
         self.cases = []
+        print(filename)
         self.name = filename[:-3]
         loc = {}
         exec(f'import {self.name} as suite', {}, loc)
@@ -55,7 +56,8 @@ class Suite:
 class TaichiBenchmark:
     def __init__(self):
         self.suites = []
-        for f in sorted(os.listdir('.')):
+        benchmark_dir = os.path.dirname(__file__)
+        for f in map(os.path.basename, sorted(os.listdir(benchmark_dir))):
             if f != 'run.py' and f.endswith('.py') and f[0] != '_':
                 self.suites.append(Suite(f))
 

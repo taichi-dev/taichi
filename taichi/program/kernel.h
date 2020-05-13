@@ -41,6 +41,7 @@ class Kernel {
   std::vector<Arg> args;
   std::vector<Ret> rets;
   bool is_accessor;
+  bool is_evaluator;
   bool grad;
 
   Kernel(Program &program,

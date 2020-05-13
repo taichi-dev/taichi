@@ -254,8 +254,11 @@ def main(debug=False):
         import shutil
         baseline_dir = get_benchmark_baseline_dir()
         output_dir = get_benchmark_output_dir()
-        shutil.rmtree(baseline_dir, True)
-        shutil.copytree(output_dir, baseline_dir)
+        for x in os.listdir(baseline_dir):
+            os.unlink(x)
+        for x in os.listdir(output_dir):
+            y = os.path.join(baseline_dir, os.path.basename(x))
+            shutil.copy(x, y)
         print('[benchmark] baseline data saved')
     elif mode == "regression":
         display_benchmark_regression(

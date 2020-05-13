@@ -33,6 +33,7 @@ Kernel::Kernel(Program &program,
     : program(program), lowered(false), grad(grad) {
   program.initialize_device_llvm_context();
   is_accessor = false;
+  is_evaluator = false;
   compiled = nullptr;
   taichi::lang::context = std::make_unique<FrontendContext>();
   ir_holder = taichi::lang::context->get_root();

@@ -485,6 +485,7 @@ Kernel &Program::get_snode_writer(SNode *snode) {
 uint64 Program::fetch_result_uint64(int i) {
   uint64 ret;
   auto arch = config.arch;
+  synchronize();
   if (arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
     if (config.use_unified_memory) {

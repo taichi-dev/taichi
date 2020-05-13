@@ -255,15 +255,33 @@ def main(debug=False):
         baseline_dir = get_benchmark_baseline_dir()
         output_dir = get_benchmark_output_dir()
         for x in os.listdir(baseline_dir):
-            os.unlink(x)
+            if x.endswith('.dat'):
+                dst = os.path.join(baseline_dir, x)
+                os.unlink(dst)
         for x in os.listdir(output_dir):
-            y = os.path.join(baseline_dir, os.path.basename(x))
-            shutil.copy(x, y)
-        print('[benchmark] baseline data saved')
+            if x.endswith('.dat'):
+                src = os.path.join(output_dir, x)
+                dst = os.path.join(baseline_dir, x)
+                shutil.copy(src, dst)
+        old_cwd = os.getcwd()
+        os.chdir(baseline_dir)
+        print('[benchmark] pushing baseline data...')
+        os.system('git add .')
+        os.system(f"git commit -m 'update baseline for taichi@{ti.core.get_commit_hash()}'")
+        os.system('git push')
+        os.chdir(old_cwd)
+        print('[benchmark] baseline data uploaded')
     elif mode == "regression":
+        baseline_dir = get_benchmark_baseline_dir()
+        output_dir = get_benchmark_output_dir()
+        old_cwd = os.getcwd()
+        os.chdir(baseline_dir)
+        print('[benchmark] fetching latest baseline...')
+        os.system('git pull')
+        os.chdir(old_cwd)
         display_benchmark_regression(
-                get_benchmark_baseline_dir(),
-                get_benchmark_output_dir())
+                baseline_dir,
+                output_dir)
     elif mode == "build":
         ti.core.build()
     elif mode == "format":

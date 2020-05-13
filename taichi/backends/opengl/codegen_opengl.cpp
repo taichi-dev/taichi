@@ -602,38 +602,30 @@ class KernelGen : public IRVisitor {
   }
 
   void visit(LoopIndexStmt *stmt) override {
-    TI_ASSERT(!stmt->is_struct_for);
+    TI_ASSERT(stmt->loop->is<RangeForStmt>() ||
+        (stmt->loop->is<OffloadedStmt>() &&
+            stmt->loop->as<OffloadedStmt>()->task_type ==
+            OffloadedStmt::TaskType::range_for));
     TI_ASSERT(stmt->index == 0);  // TODO: multiple indices
     emit("int {} = _itv;", stmt->short_name());
   }
 
   void visit(RangeForStmt *for_stmt) override {
     TI_ASSERT(for_stmt->width() == 1);
-    auto *loop_var = for_stmt->loop_var;
-    if (loop_var->ret_type.data_type == DataType::i32) {
-      if (!for_stmt->reversed) {
-        emit("for (int {}_ = {}; {}_ < {}; {}_ = {}_ + {}) {{",
-             loop_var->short_name(), for_stmt->begin->short_name(),
-             loop_var->short_name(), for_stmt->end->short_name(),
-             loop_var->short_name(), loop_var->short_name(), 1);
-        // variable named `loop_var->short_name()` is already allocated by
-        // alloca
-        emit("  {} = {}_;", loop_var->short_name(), loop_var->short_name());
-      } else {
-        // reversed for loop
-        emit("for (int {}_ = {} - 1; {}_ >= {}; {}_ = {}_ - {}) {{",
-             loop_var->short_name(), for_stmt->end->short_name(),
-             loop_var->short_name(), for_stmt->begin->short_name(),
-             loop_var->short_name(), loop_var->short_name(), 1);
-        emit("  {} = {}_;", loop_var->short_name(), loop_var->short_name());
-      }
+    auto loop_var_name = for_stmt->raw_name();
+    if (!for_stmt->reversed) {
+      emit("for (int {}_ = {}; {}_ < {}; {}_ = {}_ + {}) {{",
+           loop_var_name, for_stmt->begin->raw_name(),
+           loop_var_name, for_stmt->end->raw_name(),
+           loop_var_name, loop_var_name, 1);
+      emit("  int {} = {}_;", loop_var_name, loop_var_name);
     } else {
-      TI_ASSERT(!for_stmt->reversed);
-      const auto type_name = opengl_data_type_name(loop_var->element_type());
-      emit("for ({} {} = {}; {} < {}; {} = {} + 1) {{", type_name,
-           loop_var->short_name(), for_stmt->begin->short_name(),
-           loop_var->short_name(), for_stmt->end->short_name(),
-           loop_var->short_name(), loop_var->short_name());
+      // reversed for loop
+      emit("for (int {}_ = {} - 1; {}_ >= {}; {}_ = {}_ - {}) {{",
+           loop_var_name, for_stmt->end->raw_name(),
+           loop_var_name, for_stmt->begin->raw_name(),
+           loop_var_name, loop_var_name, 1);
+      emit("  int {} = {}_;", loop_var_name, loop_var_name);
     }
     for_stmt->body->accept(this);
     emit("}}");

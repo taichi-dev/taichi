@@ -2,10 +2,9 @@
 
 #include "taichi/system/dynamic_loader.h"
 
-TLANG_NAMESPACE_BEGIN
-
 #if (0)
 // Turn on to check for comptability
+namespace taichi {
 static_assert(sizeof(CUresult) == sizeof(uint32));
 static_assert(sizeof(CUmem_advise) == sizeof(uint32));
 static_assert(sizeof(CUdevice) == sizeof(uint32));
@@ -15,7 +14,10 @@ static_assert(sizeof(CUmodule) == sizeof(void *));
 static_assert(sizeof(CUstream) == sizeof(void *));
 static_assert(sizeof(CUevent) == sizeof(void *));
 static_assert(sizeof(CUjit_option) == sizeof(uint32));
+}  // namespace taichi
 #endif
+
+TLANG_NAMESPACE_BEGIN
 
 // Driver constants from cuda.h
 

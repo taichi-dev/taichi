@@ -114,7 +114,7 @@ class CUDAProfiler : public ProfilerBase {
 
   void sync() override {
 #if defined(TI_WITH_CUDA)
-    CUDADriver::get_instance().stream_synchronize(0);
+    CUDADriver::get_instance().stream_synchronize(nullptr);
     for (auto &map_elem : outstanding_events) {
       auto &list = map_elem.second;
       for (auto &item : list) {

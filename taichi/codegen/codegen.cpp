@@ -18,10 +18,12 @@ KernelCodeGen::KernelCodeGen(Kernel *kernel, IRNode *ir)
     this->ir = kernel->ir;
 
   auto num_stmts = irpass::analysis::count_statements(this->ir);
-  if (!kernel->is_accessor)
-    stat.add("codegen_kernel_statements", num_stmts);
-  else
+  if (kernel->is_evaluator)
+    stat.add("codegen_evaluator_statements", num_stmts);
+  else if (kernel->is_accessor)
     stat.add("codegen_accessor_statements", num_stmts);
+  else
+    stat.add("codegen_kernel_statements", num_stmts);
   stat.add("codegen_statements", num_stmts);
 }
 

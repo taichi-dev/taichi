@@ -57,12 +57,10 @@ void CUDAContext::launch(void *func,
                          std::vector<void *> arg_pointers,
                          unsigned gridDim,
                          unsigned blockDim) {
-  // auto _ = CUDAContext::get_instance().get_guard();
-  make_current();
-
   // Kernel launch
   if (profiler)
     profiler->start(task_name);
+  auto context_guard = CUDAContext::get_instance().get_guard();
   if (gridDim > 0) {
     std::lock_guard<std::mutex> _(lock);
     driver.launch_kernel(func, gridDim, 1, 1, blockDim, 1, 1, 0, nullptr,
@@ -72,7 +70,7 @@ void CUDAContext::launch(void *func,
     profiler->stop();
 
   if (get_current_program().config.debug) {
-    driver.stream_synchronize(0);
+    driver.stream_synchronize(nullptr);
   }
 }
 

@@ -93,8 +93,7 @@ VecStatement convert_to_range_for(StructForStmt *struct_for) {
           }
           return false;
         },
-        [&]() { return Stmt::make<LocalLoadStmt>(LocalAddress(alloca, 0)); },
-        false);
+        [&]() { return Stmt::make<LocalLoadStmt>(LocalAddress(alloca, 0)); });
 //    irpass::replace_all_usages_with(body.get(), old_loop_vars[i], alloca);
   }
 

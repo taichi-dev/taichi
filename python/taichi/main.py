@@ -2,6 +2,7 @@ import sys
 import os
 import shutil
 import time
+import math
 import random
 import argparse
 from colorama import Fore, Back, Style
@@ -110,12 +111,12 @@ def display_benchmark_regression(xd, yd):
         u, v = xs.get(name, {}), ys.get(name, {})
         ret = ''
         for key in set(u.keys()).union(v.keys()):
-            a, b = u.get(key, 0.0), v.get(key, 0.0)
-            res = b / a - 1
-            color = ''
+            a, b = u.get(key, 0), v.get(key, 0)
+            if a == b: continue
+            res = b / a - 1 if a != 0 else math.inf
+            color = Fore.RESET
             if res > 0: color = Fore.RED
             elif res < 0: color = Fore.GREEN
-            elif b == a: continue
             ret += f'{key:<43}{Fore.MAGENTA}{a:>5}{Fore.RESET} -> '
             ret += f'{Fore.CYAN}{b:>5} {color}{res:>+8.1%}{Fore.RESET}\n'
         if ret != '':

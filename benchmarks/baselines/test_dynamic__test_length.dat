@@ -1,0 +1,4 @@
+codegen_accessor_statements: 12.00
+codegen_kernel_statements: 10.00
+codegen_offloaded_tasks: 2.00
+codegen_statements  : 22.00

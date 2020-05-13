@@ -30,7 +30,7 @@ TI_NAMESPACE_BEGIN
 
 #define TI_TEST(x) TEST_CASE(x, ("[" x "]"))
 #define TI_CHECK(x) CHECK(x)
-#define TI_TEST_PROGRAM \
+#define TI_TEST_PROGRAM                     \
   auto prog_ = std::make_unique<Program>(); \
   prog_->materialize_layout();
 

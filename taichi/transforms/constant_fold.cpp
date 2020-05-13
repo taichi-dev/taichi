@@ -5,6 +5,11 @@
 #include <deque>
 #include <set>
 #include <cmath>
+#include <thread>
+
+#include "taichi/ir/ir.h"
+#include "taichi/program/program.h"
+#include "taichi/ir/snode.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -15,37 +20,18 @@ class ConstantFold : public BasicStmtVisitor {
   ConstantFold() : BasicStmtVisitor() {
   }
 
-  struct JITEvaluatorId {
-    int op;
-    DataType ret, lhs, rhs;
-    bool is_binary;
-
-    explicit operator JITEvaluatorIdType() const {
-      // For a unique hash value, the number of UnaryOpTypes and BinaryOpTypes
-      // should be no more than 256, and the number of DataTypes should be no
-      // more than 128.
-      return (JITEvaluatorIdType)op | (JITEvaluatorIdType)ret << 8 |
-             (JITEvaluatorIdType)lhs << 16 | (JITEvaluatorIdType)rhs << 24 |
-             (JITEvaluatorIdType)is_binary << 31;
-    }
-
-    UnaryOpType unary_op() const {
-      TI_ASSERT(!is_binary);
-      return (UnaryOpType)op;
-    }
-
-    BinaryOpType binary_op() const {
-      TI_ASSERT(is_binary);
-      return (BinaryOpType)op;
-    }
-  };
-
   static Kernel *get_jit_evaluator_kernel(JITEvaluatorId const &id) {
     auto &cache = get_current_program().jit_evaluator_cache;
-    auto hash_id = JITEvaluatorIdType(id);
-    auto it = cache.find(hash_id);  // We need the hash value to be unique here.
-    if (it != cache.end())          // cached?
-      return it->second.get();
+    {
+      // Discussion:
+      // https://github.com/taichi-dev/taichi/pull/954#discussion_r423442606
+      std::lock_guard<std::mutex> _(
+          get_current_program().jit_evaluator_cache_mut);
+      auto it = cache.find(id);
+      if (it != cache.end())  // cached?
+        return it->second.get();
+    }
+
     auto kernel_name = fmt::format("jit_evaluator_{}", cache.size());
     auto func = [&]() {
       auto lhstmt = Stmt::make<ArgLoadStmt>(0, false);
@@ -75,14 +61,20 @@ class ConstantFold : public BasicStmtVisitor {
       ker->insert_arg(id.rhs, false);
     ker->is_accessor = true;
     auto *ker_ptr = ker.get();
-    TI_TRACE("Saving JIT evaluator cache entry id={}", hash_id);
-    cache[hash_id] = std::move(ker);
+    TI_TRACE("Saving JIT evaluator cache entry id={}",
+             std::hash<JITEvaluatorId>{}(id));
+    {
+      std::lock_guard<std::mutex> _(
+          get_current_program().jit_evaluator_cache_mut);
+      cache[id] = std::move(ker);
+    }
     return ker_ptr;
   }
 
   static bool is_good_type(DataType dt) {
     // ConstStmt of `bad` types like `i8` is not supported by LLVM.
-    // Dis: https://github.com/taichi-dev/taichi/pull/839#issuecomment-625902727
+    // Discussion:
+    // https://github.com/taichi-dev/taichi/pull/839#issuecomment-625902727
     switch (dt) {
       case DataType::i32:
       case DataType::f32:
@@ -114,7 +106,12 @@ class ConstantFold : public BasicStmtVisitor {
                                      const TypedConstant &rhs) {
     if (!is_good_type(ret.dt))
       return false;
-    JITEvaluatorId id{(int)stmt->op_type, ret.dt, lhs.dt, rhs.dt, true};
+    JITEvaluatorId id{std::this_thread::get_id(),
+                      (int)stmt->op_type,
+                      ret.dt,
+                      lhs.dt,
+                      rhs.dt,
+                      true};
     auto *ker = get_jit_evaluator_kernel(id);
     auto &ctx = get_current_program().get_context();
     ContextArgSaveGuard _(
@@ -131,7 +128,11 @@ class ConstantFold : public BasicStmtVisitor {
                                     const TypedConstant &operand) {
     if (!is_good_type(ret.dt))
       return false;
-    JITEvaluatorId id{(int)stmt->op_type, ret.dt, operand.dt, stmt->cast_type,
+    JITEvaluatorId id{std::this_thread::get_id(),
+                      (int)stmt->op_type,
+                      ret.dt,
+                      operand.dt,
+                      stmt->cast_type,
                       false};
     auto *ker = get_jit_evaluator_kernel(id);
     auto &ctx = get_current_program().get_context();
@@ -201,7 +202,8 @@ void constant_fold(IRNode *root) {
   // @archibate found that `debug=True` will cause JIT kernels
   // failed to evaluate correctly (always return 0), so we simply
   // disable constant_fold when config.debug is turned on.
-  // Dis: https://github.com/taichi-dev/taichi/pull/839#issuecomment-626107010
+  // Discussion:
+  // https://github.com/taichi-dev/taichi/pull/839#issuecomment-626107010
   if (get_current_program().config.debug) {
     TI_TRACE("config.debug enabled, ignoring constant fold");
     return;

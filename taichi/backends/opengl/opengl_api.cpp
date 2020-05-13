@@ -46,8 +46,31 @@ void check_opengl_error(const std::string &msg = "OpenGL") {
   }
 }
 
-void glapi_set_uniform(GLuint loc, float value) {
-  glUniform1f(loc, value);
+KernelParallelAttrib::KernelParallelAttrib(int num_threads_)
+    : num_threads(num_threads_)
+{
+  threads_per_group = opengl_get_threads_per_group();
+  if (num_threads == -1) {  // is dyn loop
+    num_groups = -1;
+  } else {
+    if (num_threads <= 0)
+      num_threads = 1;
+    if (num_threads <= threads_per_group) {
+      threads_per_group = num_threads;
+      num_groups = 1;
+    } else {
+      num_groups = (num_threads + threads_per_group - 1) / threads_per_group;
+    }
+  }
+}
+
+size_t KernelParallelAttrib::eval(const void *gtmp) const {
+  size_t b = range_begin, e = range_end, tpg = opengl_get_threads_per_group();
+  if (!const_begin)
+    b = *(const int *)((const char *)gtmp + b);
+  if (!const_end)
+    e = *(const int *)((const char *)gtmp + e);
+  return std::max((e - b + tpg - 1) / tpg, (size_t)1);
 }
 
 static std::string add_line_markers(std::string x) {
@@ -311,10 +334,10 @@ bool initialize_opengl(bool error_tolerance) {
 
 void display_kernel_info(std::string const &kernel_name,
                          std::string const &kernel_source_code,
-                         int num_groups) {
+                         KernelParallelAttrib const &kpa) {
   if (!taichi::starts_with(kernel_name, "snode_") &&
       !taichi::starts_with(kernel_name, "tensor_"))
-    TI_DEBUG("source of kernel [{}] * {}:\n{}", kernel_name, num_groups,
+    TI_DEBUG("source of kernel [{}] * {}:\n{}", kernel_name, kpa.num_groups,
              kernel_source_code);
 #ifdef _GLSL_DEBUG
   std::ofstream(fmt::format("/tmp/{}.comp", kernel_name))
@@ -325,8 +348,7 @@ void display_kernel_info(std::string const &kernel_name,
 struct CompiledKernel {
   std::string kernel_name;
   std::unique_ptr<GLProgram> glsl;
-  int num_groups;
-  RangeSizeEvaluator rse;
+  KernelParallelAttrib kpa;
   UsedFeature used;
 
   // disscussion:
@@ -336,19 +358,26 @@ struct CompiledKernel {
 
   explicit CompiledKernel(const std::string &kernel_name_,
                           const std::string &kernel_source_code,
-                          int num_groups_,
-                          RangeSizeEvaluator rse_,
+                          const KernelParallelAttrib &kpa_,
                           const UsedFeature &used_)
       : kernel_name(kernel_name_),
-        num_groups(num_groups_),
-        rse(std::move(rse_)),
+        kpa(std::move(kpa_)),
         used(used_) {
-    display_kernel_info(kernel_name_, kernel_source_code, num_groups_);
+    display_kernel_info(kernel_name_, kernel_source_code, kpa);
     glsl = std::make_unique<GLProgram>(GLShader(kernel_source_code));
     glsl->link();
   }
 
-  void launch() const {
+  void dispatch_compute(GLSLLaunchGuard &guard) const {
+    int num_groups;
+    if (kpa.is_dynamic()) {
+      auto *gtmp_now = guard.map_buffer(1);  // TODO: RAII
+      num_groups = kpa.eval((const void *)gtmp_now);
+      guard.unmap_buffer(1);
+    } else {
+      num_groups = kpa.num_groups;
+    }
+
     // TI_PERF();
     glsl->use();
 
@@ -362,6 +391,9 @@ struct CompiledKernel {
     glDispatchCompute(num_groups, 1, 1);
     check_opengl_error("glDispatchCompute");
     // TI_PERF(kernel_name.c_str(), kernel_name.size(), 107);
+
+    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+    check_opengl_error("glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT)");
   }
 };
 
@@ -383,11 +415,10 @@ struct CompiledProgram::Impl {
 
   void add(const std::string &kernel_name,
            const std::string &kernel_source_code,
-           int num_groups,
-           RangeSizeEvaluator rse,
+           KernelParallelAttrib kpa,
            const UsedFeature &used) {
     kernels.push_back(std::make_unique<CompiledKernel>(
-        kernel_name, kernel_source_code, num_groups, std::move(rse), used));
+        kernel_name, kernel_source_code, std::move(kpa), used));
   }
 
   void launch(Context &ctx, GLSLLauncher *launcher) const {
@@ -429,14 +460,7 @@ struct CompiledProgram::Impl {
     {
       auto guard = launcher->create_launch_guard(iov);
       for (const auto &ker : kernels) {
-        if (ker->rse.has_value()) {
-          auto *gtmp_now = guard.map_buffer(1);  // TODO: RAII
-          ker->num_groups = ker->rse->eval((const void *)gtmp_now);
-          guard.unmap_buffer(1);
-        }
-        ker->launch();
-        glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
-        check_opengl_error("glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT)");
+        ker->dispatch_compute(guard);
       }
     }
     if (ext_arr_map.size() > 1) {
@@ -539,8 +563,7 @@ struct CompiledProgram::Impl {
 
   void add(const std::string &kernel_name,
            const std::string &kernel_source_code,
-           int num_groups,
-           RangeSizeEvaluator rse,
+           KernelParallelAttrib kpa,
            const UsedFeature &used) {
     TI_NOT_IMPLEMENTED;
   }
@@ -598,10 +621,9 @@ CompiledProgram::~CompiledProgram() = default;
 
 void CompiledProgram::add(const std::string &kernel_name,
                           const std::string &kernel_source_code,
-                          int num_groups,
-                          RangeSizeEvaluator rse,
+                          KernelParallelAttrib kpa,
                           const UsedFeature &used) {
-  impl->add(kernel_name, kernel_source_code, num_groups, std::move(rse), used);
+  impl->add(kernel_name, kernel_source_code, std::move(kpa), used);
 }
 
 void CompiledProgram::launch(Context &ctx, GLSLLauncher *launcher) const {

@@ -58,38 +58,42 @@ Binary operations on different types will give you a promoted type, following th
 .. _default_precisions:
 
 Default precisions
----------------------------------------
+------------------
 
 By default, numerical literals have 32-bit precisions.
 For example, ``42`` has type ``ti.i32`` and ``3.14`` has type ``ti.f32``.
-Default precisions can be specified when initializing Taichi:
+Default integer and float-point precisions (``default_ip`` and ``default_fp``) can be specified when initializing Taichi:
 
 .. code-block:: python
 
-  ti.init(..., default_fp=ti.f32)
-  ti.init(..., default_fp=ti.f64)
+    ti.init(..., default_fp=ti.f32)
+    ti.init(..., default_fp=ti.f64)
 
-  ti.init(..., default_ip=ti.i32)
-  ti.init(..., default_ip=ti.i64)
+    ti.init(..., default_ip=ti.i32)
+    ti.init(..., default_ip=ti.i64)
 
 
 Type casts
----------------------------------------
+----------
 
-Use ``ti.cast`` to type-cast scalar values.
+Use ``ti.cast`` to cast scalar values.
 
 .. code-block:: python
 
-  a = 1.4
-  b = ti.cast(a, ti.i32)
-  c = ti.cast(b, ti.f32)
+    a = 1.4
+    b = ti.cast(a, ti.i32)
+    c = ti.cast(b, ti.f32)
 
-  # Equivalently, use ``int()`` and ``float()``
-  #   to converting to default float-point/integer types
-  b = int(a)
-  c = float(b)
+    # Equivalently, use ``int()`` and ``float()``
+    #   to converting to default float-point/integer types
+    b = int(a)
+    c = float(b)
 
-  # Element-wise casts in matrices
-  mat = ti.Matrix([[3.0, 0.0], [0.3, 0.1]])
-  mat_int = mat.cast(int)
-  mat_int2 = mat.cast(ti.i32)
+    # Element-wise casts in matrices
+    mat = ti.Matrix([[3.0, 0.0], [0.3, 0.1]])
+    mat_int = mat.cast(int)
+    mat_int2 = mat.cast(ti.i32)
+
+Use ``ti.bit_cast`` to bit-cast a value into another data type. The underlying bits will be preserved in this cast.
+The new type must have the same width as the the old type.
+For example, bit-casting ``i32`` to ``f64`` is not allowed. Use this operation with caution.

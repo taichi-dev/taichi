@@ -55,7 +55,7 @@ For example, this is part of the output by ``ti regression`` after enabling cons
     Discussion at: https://github.com/taichi-dev/taichi/issue/948
 
 
-The suggested workflow to do regression test for a PR in **reviewer-major** manner is:
+The suggested workflow for **the PR author** to run the regression tests is:
 
 * When a performance related PR is ready, checkout that PR locally.
   
@@ -66,7 +66,7 @@ The suggested workflow to do regression test for a PR in **reviewer-major** mann
 * Right before merge, run ``ti baseline`` to save the benchmark result as new baseline.
 
 
-The suggested workflow to do regression test for a PR in **author-major** manner is:
+**Reviewers** can also ask the PR author to run and upload the test result, if they consider the PR performance sensitive. If the reviewers would like to run the regression tests themselves, the suggested workflow is:
 
 * When a stage of work is done, run ``ti benchmark && ti regression`` to obtain result.
 
@@ -87,6 +87,9 @@ Trigger GDB when the program crashes
 
   // C++
   CoreState::set_trigger_gdb_when_crash(true);
+
+  # Shell
+  export TI_GDB_TRIGGER=1
 
 Interface System
 ---------------------------------

@@ -95,7 +95,7 @@ Taichi programs run on either CPUs or GPUs. Initialize Taichi according to your 
 
     (OK: supported; N/A: not available)
 
-    With ``arch=ti.gpu``, Taichi will try to run with CUDA.
+    With ``arch=ti.gpu``, Taichi will first try to run with CUDA.
     If CUDA is not supported on your machine, Taichi will fall back on Metal or OpenGL.
     If no GPU backend (CUDA, Metal, or OpenGL) is supported, Taichi will fall back on CPUs.
 
@@ -114,7 +114,7 @@ Taichi programs run on either CPUs or GPUs. Initialize Taichi according to your 
 Taichi is a data-oriented programming language where dense or spatially-sparse tensors are the first-class citizens.
 See :ref:`sparse` for more details on sparse tensors.
 
-In the code above, ``pixels = ti.var(dt=ti.f32, shape=(n * 2, n))`` allocates a 2D dense tensor named ``pixel`` of
+In the code above, ``pixels = ti.var(dt=ti.f32, shape=(n * 2, n))`` allocates a 2D dense tensor named ``pixels`` of
 size ``(640, 320)`` and element data type ``ti.f32`` (i.e. ``float`` in C).
 
 Functions and kernels
@@ -128,8 +128,8 @@ Taichi **functions**, which can be called by Taichi kernels and other Taichi fun
 
 .. note::
 
-  **Taichi-scope v.s. Python-scope**: everything decorated with ``ti.kernel`` and ``ti.func`` is in Taichi-scope, which will be compiled by the Taichi compiler.
-  Code outside the Taichi-scopes is simply normal Python code.
+  **Taichi-scopes v.s. Python-scopes**: everything decorated with ``ti.kernel`` and ``ti.func`` is in Taichi-scope, which will be compiled by the Taichi compiler.
+  Everything else is in Python-scopes. They are simply Python code.
 
 .. warning::
 
@@ -242,18 +242,26 @@ In the code above, ``for i, j in pixels`` loops over all the pixel coordinates, 
 Interacting with Python
 ------------------------
 
-Everything outside Taichi-scopes (``ti.func`` and ``ti.kernel``) is simply Python. You can use your favorite Python packages (e.g. ``numpy``, ``pytorch``, ``matplotlib``) with Taichi.
-
-In Python-scope, you can access Taichi tensors using plain indexing syntax, and helper functions such as ``from_numpy`` and ``to_torch``:
+Everything outside Taichi-scopes (``ti.func`` and ``ti.kernel``) is simply Python code.
+In Python-scopes, you can access Taichi tensor elements using plain indexing syntax. For example,
+to access a single pixel of the rendered image in Python, simply use
 
 .. code-block:: python
 
-  image[42, 11] = 0.7
-  print(image[1, 63])
+  pixels[42, 11] = 0.7
+  print(pixels[42, 11]) # prints 0.7
 
-  import numpy as np
-  pixels.from_numpy(np.random.rand(n * 2, n))
 
-  import matplotlib.pyplot as plt
-  plt.imshow(pixels.to_numpy())
-  plt.show()
+You can also use your favorite Python packages (e.g. ``numpy``, ``pytorch``, ``matplotlib``) together with Taichi.
+Taichi provides helper functions such as ``from_numpy`` and ``to_torch`` for tensor format conversion:
+
+.. code-block:: python
+
+    import numpy as np
+    pixels.from_numpy(np.random.rand(n * 2, n))
+
+    import matplotlib.pyplot as plt
+    plt.imshow(pixels.to_numpy())
+    plt.show()
+
+See :ref:`external` for more details.

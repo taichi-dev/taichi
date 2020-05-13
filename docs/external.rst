@@ -1,7 +1,9 @@
+.. _external:
+
 Interacting with external arrays
 ====================================
 
-Here ``external arrays`` refer to ``numpy.ndarray`` or ``torch.Tensor``.
+**External arrays** refer to ``numpy.ndarray`` or ``torch.Tensor``.
 
 Conversion between Taichi tensors and external arrays
 --------------------------------------------------------
@@ -48,7 +50,7 @@ Use ``to_numpy``/``from_numpy``/``to_torch``/``from_torch``:
   assert arr.shape == (n, m, 3, 4)
 
 
-Use external arrays as Taichi kernel parameters
+Using external arrays as Taichi kernel parameters
 -------------------------------------------------
 
 The type hint for external array parameters is ``ti.ext_arr()``. Please see the example below.

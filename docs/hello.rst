@@ -115,7 +115,7 @@ Taichi code can run on CPUs or GPUs. Initialize Taichi according to your hardwar
 Taichi is a data-oriented programming language, where dense or spatially-sparse tensors are first-class citizens.
 See :ref:`sparse` for more details on sparse tensors.
 
-In the code above, ``pixels = ti.var(dt=ti.f32, shape=(n * 2, n))`` allocates a 2D dense tensor named ``pixel`` of
+In the code above, ``pixels = ti.var(dt=ti.f32, shape=(n * 2, n))`` allocates a 2D dense tensor named ``pixels`` of
 size ``(640, 320)`` and element data type ``ti.f32`` (i.e. ``float`` in C).
 
 Functions and kernels
@@ -243,18 +243,26 @@ In the code above, ``for i, j in pixels`` loops over all the pixel coordinates, 
 Interacting with Python
 ------------------------
 
-Everything outside Taichi-scopes (``ti.func`` and ``ti.kernel``) is simply Python. You can use your favorite Python packages (e.g. ``numpy``, ``pytorch``, ``matplotlib``) with Taichi.
-
-In Python-scope, you can access Taichi tensors using plain indexing syntax, and helper functions such as ``from_numpy`` and ``to_torch``:
+Everything outside Taichi-scopes (``ti.func`` and ``ti.kernel``) is simply Python code.
+In Python-scopes, you can access Taichi tensor elements using plain indexing syntax. For example,
+to access a single pixel of the rendered image in Python, simply use
 
 .. code-block:: python
 
-  image[42, 11] = 0.7
-  print(image[1, 63])
+  pixels[42, 11] = 0.7
+  print(pixels[42, 11]) # prints 0.7
 
-  import numpy as np
-  pixels.from_numpy(np.random.rand(n * 2, n))
 
-  import matplotlib.pyplot as plt
-  plt.imshow(pixels.to_numpy())
-  plt.show()
+You can also use your favorite Python packages (e.g. ``numpy``, ``pytorch``, ``matplotlib``) together with Taichi.
+Taichi provides helper functions such as ``from_numpy`` and ``to_torch`` for tensor format conversion:
+
+.. code-block:: python
+
+    import numpy as np
+    pixels.from_numpy(np.random.rand(n * 2, n))
+
+    import matplotlib.pyplot as plt
+    plt.imshow(pixels.to_numpy())
+    plt.show()
+
+See :ref:`external` for more details.

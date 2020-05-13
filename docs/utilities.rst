@@ -28,7 +28,6 @@ Benchmarks and Regression Tests
 Run ``ti benchmark`` to run tests in benchmark mode. This will record the performance of ``ti test``, and save it in ``benchmarks/output``.
 Run ``ti regression`` to show the difference between previous result in ``benchmarks/baseline``. And you can see if the performance is increasing or decreasing after your commits. This is really helpful when your work is related to IR optimizations.
 Run ``ti baseline`` to save the benchmark result to ``benchmarks/baseline`` for furture comparsion, this may be executed on performance related PRs, before they are merged into master.
-
 For example, this is part of the output by ``ti regression`` after enabling constant folding optimization pass:
 
 .. code-block::
@@ -48,7 +47,30 @@ For example, this is part of the output by ``ti regression`` after enabling cons
 .. note::
 
     Currently ``ti benchmark`` only support benchmarking for number-of-statements, no time benchmark included since it depends on hardware performance and therefore hard to compare if the baseline is from another machine.
+    We are to purchase a fixed-performance machine as a benchmark server at some point.
     Discussions: https://github.com/taichi-dev/taichi/issue/948
+
+
+The suggested workflow to do regression test for a PR in **reviewer-major** manner is:
+
+* When a performance related PR is ready, checkout that PR locally.
+  
+* Run ``ti benchmark && ti regression`` to obtain the result.
+
+* Decide wheater to approve or request change, depends on the result.
+
+* Right before merge, run ``ti baseline`` to save the benchmark result as new baseline.
+
+
+The suggested workflow to do regression test for a PR in **author-major** manner is:
+
+* When a stage of work is done, run ``ti benchmark && ti regression`` to obtain result.
+
+* When ready for review, post the latest result in PR comments, wait for the reviewer.
+
+* Get feedback from the reviewer, and improve the result.
+
+* Right before merge, run ``ti baseline`` to save the benchmark result as new baseline.
 
 
 Trigger GDB when the program crashes

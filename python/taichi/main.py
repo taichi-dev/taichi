@@ -242,7 +242,6 @@ def main(debug=False):
     elif mode == "benchmark":
         import shutil
         os.environ['TI_PRINT_BENCHMARK_STAT'] = '1'
-        baseline_dir = get_benchmark_baseline_dir()
         output_dir = get_benchmark_output_dir()
         shutil.rmtree(output_dir, True)
         os.mkdir(output_dir)
@@ -251,7 +250,6 @@ def main(debug=False):
             # since we only do number-of-statements benchmark
             os.environ['TI_WANTED_ARCHS'] = 'x64'
         test_python(args)
-        display_benchmark_regression(baseline_dir, output_dir)
     elif mode == "baseline":
         import shutil
         baseline_dir = get_benchmark_baseline_dir()

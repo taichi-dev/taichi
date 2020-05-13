@@ -7,14 +7,13 @@ TLANG_NAMESPACE_BEGIN
 
 namespace irpass {
 
-OffloadedResult compile_to_offloads(
-                         IRNode *ir,
-                         const CompileConfig &config,
-                         bool vectorize,
-                         bool grad,
-                         bool ad_use_stack,
-                         bool verbose,
-                         bool lower_global_access) {
+OffloadedResult compile_to_offloads(IRNode *ir,
+                                    const CompileConfig &config,
+                                    bool vectorize,
+                                    bool grad,
+                                    bool ad_use_stack,
+                                    bool verbose,
+                                    bool lower_global_access) {
   TI_AUTO_PROF;
 
   auto print = [&](const std::string &name) {

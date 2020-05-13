@@ -85,8 +85,10 @@ def display_benchmark_regression(xd, yd):
     def parse_dat(file):
         dict = {}
         for line in open(file).readlines():
-            try: a, b = line.strip().split(':')
-            except: continue
+            try:
+                a, b = line.strip().split(':')
+            except:
+                continue
             dict[a.strip()] = int(float(b))
         return dict
 
@@ -267,7 +269,9 @@ def main(debug=False):
         os.chdir(baseline_dir)
         print('[benchmark] pushing baseline data...')
         os.system('git add .')
-        os.system(f"git commit -m 'update baseline for taichi@{ti.core.get_commit_hash()}'")
+        os.system(
+            f"git commit -m 'update baseline for taichi@{ti.core.get_commit_hash()}'"
+        )
         os.system('git push')
         os.chdir(old_cwd)
         print('[benchmark] baseline data uploaded')
@@ -279,9 +283,7 @@ def main(debug=False):
         print('[benchmark] fetching latest baseline...')
         os.system('git pull')
         os.chdir(old_cwd)
-        display_benchmark_regression(
-                baseline_dir,
-                output_dir)
+        display_benchmark_regression(baseline_dir, output_dir)
     elif mode == "build":
         ti.core.build()
     elif mode == "format":

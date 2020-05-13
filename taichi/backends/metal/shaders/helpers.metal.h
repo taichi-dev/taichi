@@ -33,8 +33,9 @@ STR(
 
     inline int ifloordiv(int lhs, int rhs) {
       const int intm = (lhs / rhs);
-      return (((lhs < 0) != (rhs < 0) && lhs &&
-            (rhs * intm != lhs)) ? (intm - 1) : intm);
+      return (((lhs < 0) != (rhs < 0) && lhs && (rhs * intm != lhs))
+                  ? (intm - 1)
+                  : intm);
     }
 
     int32_t pow_i32(int32_t x, int32_t n) {

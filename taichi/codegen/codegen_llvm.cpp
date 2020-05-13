@@ -808,15 +808,13 @@ void CodeGenLLVM::create_naive_range_for(RangeForStmt *for_stmt) {
     builder->SetInsertPoint(loop_test);
     llvm::Value *cond;
     if (!for_stmt->reversed) {
-      cond =
-          builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_SLT,
-                              builder->CreateLoad(loop_var),
-                              llvm_val[for_stmt->end]);
+      cond = builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_SLT,
+                                 builder->CreateLoad(loop_var),
+                                 llvm_val[for_stmt->end]);
     } else {
-      cond =
-          builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_SGE,
-                              builder->CreateLoad(loop_var),
-                              llvm_val[for_stmt->begin]);
+      cond = builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_SGE,
+                                 builder->CreateLoad(loop_var),
+                                 llvm_val[for_stmt->begin]);
     }
     builder->CreateCondBr(cond, body, after_loop);
   }
@@ -1413,13 +1411,13 @@ void CodeGenLLVM::visit(LoopIndexStmt *stmt) {
   TI_ASSERT(&module->getContext() == tlctx->get_this_thread_context());
   if (stmt->loop->is<OffloadedStmt>() &&
       stmt->loop->as<OffloadedStmt>()->task_type ==
-      OffloadedStmt::TaskType::struct_for) {
+          OffloadedStmt::TaskType::struct_for) {
     llvm_val[stmt] = builder->CreateLoad(builder->CreateGEP(
         current_coordinates, {tlctx->get_constant(0), tlctx->get_constant(0),
                               tlctx->get_constant(stmt->index)}));
   } else {
-    llvm_val[stmt] = builder->CreateLoad(
-        loop_vars_llvm[stmt->loop][stmt->index]);
+    llvm_val[stmt] =
+        builder->CreateLoad(loop_vars_llvm[stmt->loop][stmt->index]);
   }
 }
 

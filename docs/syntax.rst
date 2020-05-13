@@ -28,7 +28,7 @@ The return value will be automatically cast into the hinted type. e.g.,
 
 .. note::
 
-    For now, we only support one scalar as return value. Returning ``ti.Matrix`` or ``ti.Vector`` is not supported. Python-style tuple return is not supported either. For example,
+    For now, we only support one scalar as return value. Returning ``ti.Matrix`` or ``ti.Vector`` is not supported. Python-style tuple return is not supported either. For example:
 
     .. code-block:: python
 

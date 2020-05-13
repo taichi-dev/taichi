@@ -4,8 +4,8 @@
   <h3> <a href="https://taichi.readthedocs.io/en/stable/"> Documentation </a> | <a href="https://taichi.readthedocs.io/zh_CN/latest/"> 简体中文文档 </a> </h3>
 </div>
 
-[![Build Status](https://img.shields.io/appveyor/build/yuanming-hu/taichi?logo=AppVeyor)](https://ci.appveyor.com/project/yuanming-hu/taichi/branch/master)
 [![Build Status](https://img.shields.io/travis/taichi-dev/taichi?logo=Travis)](https://travis-ci.com/taichi-dev/taichi)
+[![Build Status](https://img.shields.io/appveyor/build/yuanming-hu/taichi?logo=AppVeyor)](https://ci.appveyor.com/project/yuanming-hu/taichi/branch/master)
 [![Latest Release](https://img.shields.io/github/v/release/taichi-dev/taichi?color=blue)](https://github.com/taichi-dev/taichi/releases/latest)
 
 ## Overview
@@ -46,7 +46,7 @@ Please build from source for other configurations (e.g., your CPU is ARM).
 
 ## Applications
 
-A High-Performance Multi-Material Continuum Physics Engine based on Taichi: [Taichi Elements](https://github.com/taichi-dev/taichi_elements) (work in progress)
+- A High-Performance Multi-Material Continuum Physics Engine based on Taichi: [Taichi Elements](https://github.com/taichi-dev/taichi_elements) (work in progress)
 
 ## Developers
 

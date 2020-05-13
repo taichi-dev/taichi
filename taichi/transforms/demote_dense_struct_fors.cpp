@@ -5,9 +5,7 @@
 TLANG_NAMESPACE_BEGIN
 
 VecStatement convert_to_range_for(StructForStmt *struct_for) {
-//  std::cout << "start convert " << struct_for->id << std::endl;
   VecStatement ret;
-  auto loop_var = ret.push_back<AllocaStmt>(DataType::i32);
   auto lower = ret.push_back<ConstStmt>(TypedConstant(0));
   std::vector<SNode *> snodes;
   auto snode = struct_for->snode;
@@ -24,7 +22,6 @@ VecStatement convert_to_range_for(StructForStmt *struct_for) {
   auto upper = ret.push_back<ConstStmt>(TypedConstant(upper_bound));
   auto body = std::move(struct_for->body);
 
-//  auto old_loop_vars = struct_for->loop_vars;
   auto num_loop_vars = struct_for->loop_vars.size();
   std::vector<Stmt *> new_loop_vars;
 
@@ -39,7 +36,6 @@ VecStatement convert_to_range_for(StructForStmt *struct_for) {
   }
 
   auto main_loop_var = body_header.push_back<LoopIndexStmt>(nullptr, 0, false);
-//      body_header.push_back<LocalLoadStmt>(LocalAddress(loop_var, 0));
 
   int offset = total_bits;
   Stmt *test = body_header.push_back<ConstStmt>(TypedConstant(-1));
@@ -93,7 +89,6 @@ VecStatement convert_to_range_for(StructForStmt *struct_for) {
           return false;
         },
         [&]() { return Stmt::make<LocalLoadStmt>(LocalAddress(alloca, 0)); });
-//    irpass::replace_all_usages_with(body.get(), old_loop_vars[i], alloca);
   }
 
   if (has_test) {
@@ -111,7 +106,6 @@ VecStatement convert_to_range_for(StructForStmt *struct_for) {
   main_loop_var->loop = range_for.get();
   ret.push_back(std::move(range_for));
 
-//  std::cout << "end convert " << struct_for->id << std::endl;
   // TODO: safe guard range
   return ret;
 }

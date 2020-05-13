@@ -1,12 +1,12 @@
 .. _external:
 
 Interacting with external arrays
-====================================
+================================
 
 **External arrays** refer to ``numpy.ndarray`` or ``torch.Tensor``.
 
 Conversion between Taichi tensors and external arrays
---------------------------------------------------------
+-----------------------------------------------------
 
 Use ``to_numpy``/``from_numpy``/``to_torch``/``from_torch``:
 

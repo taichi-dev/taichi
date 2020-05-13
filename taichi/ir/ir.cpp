@@ -719,6 +719,12 @@ void Block::replace_with(Stmt *old_statement,
   if (replace_usages)
     old_statement->replace_with(new_statements.back().get());
   trash_bin.push_back(std::move(statements[location]));
+  if (new_statements.size() == 1) {
+    // Keep all std::vector::iterator valid in this case.
+    statements[location] = std::move(new_statements[0]);
+    statements[location]->parent = this;
+    return;
+  }
   statements.erase(statements.begin() + location);
   for (int i = (int)new_statements.size() - 1; i >= 0; i--) {
     insert(std::move(new_statements[i]), location);

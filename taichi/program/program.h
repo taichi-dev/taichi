@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <functional>
 #include <optional>
 #include <atomic>
 
@@ -24,6 +25,47 @@
 
 TLANG_NAMESPACE_BEGIN
 
+struct JITEvaluatorId {
+  std::thread::id thread_id;
+  // Note that on certain backends (e.g. CUDA), functions created in one
+  // thread cannot be used in another. Hence the thread_id member.
+  int op;
+  DataType ret, lhs, rhs;
+  bool is_binary;
+
+  UnaryOpType unary_op() const {
+    TI_ASSERT(!is_binary);
+    return (UnaryOpType)op;
+  }
+
+  BinaryOpType binary_op() const {
+    TI_ASSERT(is_binary);
+    return (BinaryOpType)op;
+  }
+
+  bool operator==(const JITEvaluatorId &o) const {
+    return thread_id == o.thread_id && op == o.op && ret == o.ret &&
+           lhs == o.lhs && rhs == o.rhs && is_binary == o.is_binary;
+  }
+};
+
+TLANG_NAMESPACE_END
+
+namespace std {
+template <>
+struct hash<taichi::lang::JITEvaluatorId> {
+  std::size_t operator()(taichi::lang::JITEvaluatorId const &id) const
+      noexcept {
+    return ((std::size_t)id.op | ((std::size_t)id.ret << 8) |
+            ((std::size_t)id.lhs << 16) | ((std::size_t)id.rhs << 24) |
+            ((std::size_t)id.is_binary << 31)) ^
+           (std::hash<std::thread::id>{}(id.thread_id) << 32);
+  }
+};
+}  // namespace std
+
+TLANG_NAMESPACE_BEGIN
+
 extern Program *current_program;
 
 TI_FORCE_INLINE Program &get_current_program() {
@@ -33,8 +75,6 @@ TI_FORCE_INLINE Program &get_current_program() {
 class StructCompiler;
 
 class AsyncEngine;
-
-using JITEvaluatorIdType = uint32_t;
 
 class Program {
  public:
@@ -61,7 +101,9 @@ class Program {
 
   std::unique_ptr<ProfilerBase> profiler;
 
-  std::unordered_map<JITEvaluatorIdType, std::unique_ptr<Kernel>> jit_evaluator_cache;
+  std::unordered_map<JITEvaluatorId, std::unique_ptr<Kernel>>
+      jit_evaluator_cache;
+  std::mutex jit_evaluator_cache_mut;
 
   Program() : Program(default_compile_config.arch) {
   }

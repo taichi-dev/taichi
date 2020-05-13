@@ -1,5 +1,5 @@
 Global Settings
-------------------
+---------------
 
 - Restart the Taichi runtime system (clear memory, destroy all variables and kernels): ``ti.reset()``
 - Eliminate verbose outputs: ``ti.get_runtime().set_verbose(False)``
@@ -10,4 +10,4 @@ Global Settings
 - To specify which GPU to use for CUDA: ``export CUDA_VISIBLE_DEVICES=0``
 - To specify which Arch to use: ``export TI_ARCH=cuda``
 - To print intermediate IR generated: ``export TI_PRINT_IR=1``
-- To print verbosed details: ``export TI_VERBOSE=1``
+- To print verbose details: ``export TI_VERBOSE=1``

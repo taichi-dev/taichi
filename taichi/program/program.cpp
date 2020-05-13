@@ -327,7 +327,7 @@ void Program::synchronize() {
   if (!sync) {
     if (config.arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
-      CUDADriver::get_instance().stream_synchronize(0);
+      CUDADriver::get_instance().stream_synchronize(nullptr);
 #else
       TI_ERROR("No CUDA support");
 #endif
@@ -485,12 +485,16 @@ Kernel &Program::get_snode_writer(SNode *snode) {
 uint64 Program::fetch_result_uint64(int i) {
   uint64 ret;
   auto arch = config.arch;
+  synchronize();
   if (arch == Arch::cuda) {
-    // TODO: refactor
-    // We use a `memcpy_device_to_host` call here even if we have unified memory. This simplifies code. Also note that a unified memory (4KB) page fault is rather expensive for reading 4-8 bytes.
 #if defined(TI_WITH_CUDA)
-    CUDADriver::get_instance().memcpy_device_to_host(
-        &ret, (uint64 *)result_buffer + i, sizeof(uint64));
+    if (config.use_unified_memory) {
+      // More efficient than a cudaMemcpy call in practice
+      ret = ((uint64 *)result_buffer)[i];
+    } else {
+      CUDADriver::get_instance().memcpy_device_to_host(
+          &ret, (uint64 *)result_buffer + i, sizeof(uint64));
+    }
 #else
     TI_NOT_IMPLEMENTED;
 #endif
@@ -506,8 +510,11 @@ void Program::finalize() {
   synchronize();
   TI_TRACE("Program finalizing...");
   if (config.print_benchmark_stat) {
-    char *current_test = std::getenv("PYTEST_CURRENT_TEST");
+    const char *current_test = std::getenv("PYTEST_CURRENT_TEST");
+    const char *output_dir = std::getenv("TI_BENCHMARK_OUTPUT_DIR");
     if (current_test != nullptr) {
+      if (output_dir == nullptr)
+        output_dir = ".";
       std::string file_name = current_test;
       auto slash_pos = file_name.find_last_of('/');
       if (slash_pos != file_name.npos)
@@ -519,7 +526,9 @@ void Program::finalize() {
       auto first_space_pos = file_name.find_first_of(' ');
       TI_ASSERT(first_space_pos != file_name.npos);
       file_name = file_name.substr(0, first_space_pos);
-      file_name += ".log";
+      file_name += ".dat";
+      file_name = std::string(output_dir) + "/" + file_name;
+      TI_INFO("Saving benchmark result to {}", file_name);
       std::ofstream ofs(file_name);
       TI_ASSERT(ofs);
       std::string stat_string;

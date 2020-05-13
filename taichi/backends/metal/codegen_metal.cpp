@@ -312,7 +312,7 @@ class KernelCodegen : public IRVisitor {
     const auto stmt_name = stmt->raw_name();
     if (stmt->loop->is<OffloadedStmt>()) {
       using TaskType = OffloadedStmt::TaskType;
-      const auto type = current_kernel_attribs_->task_type;
+      const auto type = stmt->loop->as<OffloadedStmt>()->task_type;
       if (type == TaskType::range_for) {
         TI_ASSERT(stmt->index == 0);
         emit("const int {} = {};", stmt_name, kLinearLoopIndexName);
@@ -323,7 +323,10 @@ class KernelCodegen : public IRVisitor {
         TI_NOT_IMPLEMENTED;
       }
     } else if (stmt->loop->is<RangeForStmt>()) {
+      TI_ASSERT(stmt->index == 0);
       emit("const int {} = {};", stmt_name, stmt->loop->raw_name());
+    } else {
+      TI_NOT_IMPLEMENTED;
     }
   }
 

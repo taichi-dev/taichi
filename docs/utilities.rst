@@ -18,8 +18,38 @@ Logging
     ti.set_logging_level(level)
 
 The default logging level is ``ti.INFO``.
-You can also override default logging level by setting the environment variable
-``TI_LOG_LEVEL`` to values such as ``trace`` and ``warn``.
+You can also override default logging level by setting the environment variable like
+``TI_LOG_LEVEL=warn``.
+
+
+Benchmarks and Regression Tests
+-------------------------------
+
+Run ``ti benchmark`` to run tests in benchmark mode. This will record the performance of ``ti test``, and save it in ``benchmarks/output``.
+Run ``ti regression`` to show the difference between previous result in ``benchmarks/baseline``. And you can see if the performance is increasing or decreasing after your commits. This is really helpful when your work is related to IR optimizations.
+Run ``ti baseline`` to save the benchmark result to ``benchmarks/baseline`` for furture comparsion, this may be executed on performance related PRs, before they are merged into master.
+
+For example, this is part of the output by ``ti regression`` after enabling constant folding optimization pass:
+
+.. code-block::
+
+    linalg__________________polar_decomp______________________________
+    codegen_offloaded_tasks                       37 ->    39    +5.4%
+    codegen_statements                          3179 ->  3162    -0.5%
+    codegen_kernel_statements                   2819 ->  2788    -1.1%
+    codegen_evaluator_statements                   0 ->    14    +inf%
+
+    linalg__________________init_matrix_from_vectors__________________
+    codegen_offloaded_tasks                       37 ->    39    +5.4%
+    codegen_statements                          3180 ->  3163    -0.5%
+    codegen_kernel_statements                   2820 ->  2789    -1.1%
+    codegen_evaluator_statements                   0 ->    14    +inf%
+
+.. note::
+
+    Currently ``ti benchmark`` only support benchmarking for number-of-statements, no time benchmark included since it depends on hardware performance and therefore hard to compare if the baseline is from another machine.
+    Discussions: https://github.com/taichi-dev/taichi/issue/948
+
 
 Trigger GDB when the program crashes
 --------------------------------------

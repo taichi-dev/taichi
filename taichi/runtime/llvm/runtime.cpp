@@ -96,12 +96,12 @@ T ifloordiv(T a, T b) {
   // new = (a < 0) != (b < 0) && a
   //
   //  a  b old new
-  //  -  -  f = f (f&f)
-  //  -  +  t = t (t&f)
+  //  -  -  f = f (f&t)
+  //  -  +  t = t (t&t)
   //  0  -  f = f (t&f)
   //  0  +  f = f (f&f)
-  //  +  -  t = t (t&f)
-  //  +  +  f = f (f&f)
+  //  +  -  t = t (t&t)
+  //  +  +  f = f (f&t)
   //
   // the situation of `b = 0` is ignored since we get FPE anyway.
   //

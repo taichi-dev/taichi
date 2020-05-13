@@ -88,7 +88,24 @@ void locked_task(void *lock, const T &func);
 template <typename T>
 T ifloordiv(T a, T b) {
   auto r = a / b;
-  r -= T(a * b < 0 && b * r != a);
+  // simply `a * b < 0` may leads to overflow (#969)
+  //
+  // Formal Anti-Regression Verification (FARV):
+  //
+  // old = a * b < 0
+  // new = (a < 0) != (b < 0) && a
+  //
+  //  a  b old new
+  //  -  -  f = f (f&f)
+  //  -  +  t = t (t&f)
+  //  0  -  f = f (t&f)
+  //  0  +  f = f (f&f)
+  //  +  -  t = t (t&f)
+  //  +  +  f = f (f&f)
+  //
+  // the situation of `b = 0` is ignored since we get FPE anyway.
+  //
+  r -= T((a < 0) != (b < 0) && a && b * r != a);
   return r;
 }
 

@@ -28,7 +28,7 @@ The return value will be automatically cast into the hinted type. e.g.,
 
 .. note::
 
-    For now, we only support one scalar as return value. Returning ``ti.Matrix`` or ``ti.Vector`` is not supported. Python-style tuple return is not supported. e.g.:
+    For now, we only support one scalar as return value. Returning ``ti.Matrix`` or ``ti.Vector`` is not supported. Python-style tuple return is not supported either. For example,
 
     .. code-block:: python
 
@@ -45,8 +45,6 @@ The return value will be automatically cast into the hinted type. e.g.,
 
 We also support **template arguments** (see :ref:`template_metaprogramming`) and **external array arguments** (see :ref:`external`) in Taichi kernels.
 
-.. note::
-
 .. warning::
 
    When using differentiable programming, there are a few more constraints on kernel structures. See the **Kernel Simplicity Rule** in :ref:`differentiable`.
@@ -54,7 +52,7 @@ We also support **template arguments** (see :ref:`template_metaprogramming`) and
    Also, please do not use kernel return values in differentiable programming, since the return value will not be tracked by automatic differentiation. Instead, store the result into a global variable (e.g. ``loss[None]``).
 
 Functions
------------------------------------------------
+---------
 
 Use ``@ti.func`` to decorate your Taichi functions. These functions are callable only in `Taichi`-scope. Do not call them in `Python`-scopes.
 
@@ -68,7 +66,7 @@ Use ``@ti.func`` to decorate your Taichi functions. These functions are callable
 
    @ti.kernel
    def fdtd(t: ti.i32):
-       for i in range(n_grid): # Parallelized over GPU threads
+       for i in range(n_grid): # Parallelized
            for j in range(n_grid): # Serial loops in each parallel threads
                laplacian_p = laplacian(t - 2, i, j)
                laplacian_q = laplacian(t - 1, i, j)

@@ -655,10 +655,11 @@ void Block::replace_statements_in_range(int start,
 }
 
 void Block::replace_with(Stmt *old_statement,
-                         std::unique_ptr<Stmt> &&new_statement) {
+                         std::unique_ptr<Stmt> &&new_statement,
+                         bool replace_usages) {
   VecStatement vec;
   vec.push_back(std::move(new_statement));
-  replace_with(old_statement, std::move(vec));
+  replace_with(old_statement, std::move(vec), replace_usages);
 }
 
 Stmt *Block::lookup_var(const Identifier &ident) const {
@@ -719,6 +720,12 @@ void Block::replace_with(Stmt *old_statement,
   if (replace_usages)
     old_statement->replace_with(new_statements.back().get());
   trash_bin.push_back(std::move(statements[location]));
+  if (new_statements.size() == 1) {
+    // Keep all std::vector::iterator valid in this case.
+    statements[location] = std::move(new_statements[0]);
+    statements[location]->parent = this;
+    return;
+  }
   statements.erase(statements.begin() + location);
   for (int i = (int)new_statements.size() - 1; i >= 0; i--) {
     insert(std::move(new_statements[i]), location);

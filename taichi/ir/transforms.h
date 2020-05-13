@@ -42,9 +42,10 @@ void make_adjoint(IRNode *root, bool use_stack = false);
 void constant_fold(IRNode *root);
 OffloadedResult offload(IRNode *root);
 void fix_block_parents(IRNode *root);
-void replace_statements_with(IRNode *root,
+bool replace_statements_with(IRNode *root,
                              std::function<bool(Stmt *)> filter,
-                             std::function<std::unique_ptr<Stmt>()> generator);
+                             std::function<std::unique_ptr<Stmt>()> generator,
+                             bool throw_ir_modified = true);
 void demote_dense_struct_fors(IRNode *root);
 void demote_atomics(IRNode *root);
 void reverse_segments(IRNode *root);  // for autograd

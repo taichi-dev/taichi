@@ -34,6 +34,10 @@ void compile_to_offloads(IRNode *ir,
   irpass::lower(ir);
   print("Lowered");
 
+  irpass::convert_into_loop_index(ir);
+  print("Converted into loop index");
+  irpass::analysis::verify(ir);
+
   irpass::typecheck(ir);
   print("Typechecked");
   irpass::analysis::verify(ir);
@@ -69,10 +73,6 @@ void compile_to_offloads(IRNode *ir,
     print("Dense struct-for demoted");
     irpass::analysis::verify(ir);
   }
-
-  irpass::convert_into_loop_index(ir);
-  print("Converted into loop index");
-  irpass::analysis::verify(ir);
 
   if (config.check_out_of_bound) {
     irpass::check_out_of_bound(ir);

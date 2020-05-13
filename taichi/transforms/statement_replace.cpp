@@ -10,22 +10,32 @@ class StatementReplace : public IRVisitor {
   IRNode *node;
   std::function<bool(Stmt *)> filter;
   std::function<std::unique_ptr<Stmt>()> generator;
+  bool throw_ir_modified;
+  bool modified;
 
   StatementReplace(IRNode *node,
                    std::function<bool(Stmt *)> filter,
-                   std::function<std::unique_ptr<Stmt>()> generator)
-      : node(node), filter(filter), generator(generator) {
+                   std::function<std::unique_ptr<Stmt>()> generator,
+                   bool throw_ir_modified)
+      : node(node), filter(filter), generator(generator),
+        throw_ir_modified(throw_ir_modified) {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
+    modified = false;
   }
 
   void replace_if_necessary(Stmt *stmt) {
     if (filter(stmt)) {
+//      std::cout << "begin replace\n";
       auto block = stmt->parent;
       auto new_stmt = generator();
       irpass::replace_all_usages_with(node, stmt, new_stmt.get());
-      block->replace_with(stmt, std::move(new_stmt));
-      throw IRModified();
+      block->replace_with(stmt, std::move(new_stmt), false);
+      if (throw_ir_modified)
+        throw IRModified();
+      else
+        modified = true;
+//      std::cout << "end replace\n";
     }
   }
 
@@ -63,7 +73,7 @@ class StatementReplace : public IRVisitor {
     replace_if_necessary(stmt);
   }
 
-  void run() {
+  bool run() {
     while (true) {
       try {
         node->accept(this);
@@ -72,16 +82,18 @@ class StatementReplace : public IRVisitor {
       }
       break;
     }
+    return modified;
   }
 };
 
 namespace irpass {
 
-void replace_statements_with(IRNode *root,
+bool replace_statements_with(IRNode *root,
                              std::function<bool(Stmt *)> filter,
-                             std::function<std::unique_ptr<Stmt>()> generator) {
-  StatementReplace transformer(root, filter, generator);
-  transformer.run();
+                             std::function<std::unique_ptr<Stmt>()> generator,
+                             bool throw_ir_modified) {
+  StatementReplace transformer(root, filter, generator, throw_ir_modified);
+  return transformer.run();
 }
 
 }  // namespace irpass

@@ -5,6 +5,7 @@
 TLANG_NAMESPACE_BEGIN
 
 VecStatement convert_to_range_for(StructForStmt *struct_for) {
+//  std::cout << "start convert " << struct_for->id << std::endl;
   VecStatement ret;
   auto loop_var = ret.push_back<AllocaStmt>(DataType::i32);
   auto lower = ret.push_back<ConstStmt>(TypedConstant(0));
@@ -17,27 +18,28 @@ VecStatement convert_to_range_for(StructForStmt *struct_for) {
     snode = snode->parent;
   }
   std::reverse(snodes.begin(), snodes.end());
-  TI_ASSERT(total_bits <= 31);
+  TI_ASSERT(total_bits <= 30);
 
   auto upper_bound = 1 << total_bits;
   auto upper = ret.push_back<ConstStmt>(TypedConstant(upper_bound));
   auto body = std::move(struct_for->body);
 
-  auto old_loop_vars = struct_for->loop_vars;
+//  auto old_loop_vars = struct_for->loop_vars;
+  auto num_loop_vars = struct_for->loop_vars.size();
   std::vector<Stmt *> new_loop_vars;
 
   VecStatement body_header;
 
   std::vector<int> physical_indices;
 
-  TI_ASSERT(snodes.back()->num_active_indices == (int)old_loop_vars.size());
-  for (int i = 0; i < (int)old_loop_vars.size(); i++) {
+  TI_ASSERT(snodes.back()->num_active_indices == (int)num_loop_vars);
+  for (int i = 0; i < (int)num_loop_vars; i++) {
     new_loop_vars.push_back(body_header.push_back<ConstStmt>(TypedConstant(0)));
     physical_indices.push_back(snodes.back()->physical_index_position[i]);
   }
 
-  auto main_loop_var =
-      body_header.push_back<LocalLoadStmt>(LocalAddress(loop_var, 0));
+  auto main_loop_var = body_header.push_back<LoopIndexStmt>(nullptr, 0, false);
+//      body_header.push_back<LocalLoadStmt>(LocalAddress(loop_var, 0));
 
   int offset = total_bits;
   Stmt *test = body_header.push_back<ConstStmt>(TypedConstant(-1));
@@ -78,14 +80,27 @@ VecStatement convert_to_range_for(StructForStmt *struct_for) {
     }
   }
 
-  for (int i = 0; i < (int)old_loop_vars.size(); i++) {
+//  std::cout << "a\n";
+  for (int i = 0; i < (int)num_loop_vars; i++) {
     auto alloca = body_header.push_back<AllocaStmt>(DataType::i32);
     body_header.push_back<LocalStoreStmt>(alloca, new_loop_vars[i]);
-    irpass::replace_all_usages_with(body.get(), old_loop_vars[i], alloca);
+    irpass::replace_statements_with(
+        body.get(),
+        [&](Stmt *s) {
+          if (auto loop_index = s->cast<LoopIndexStmt>()) {
+            return loop_index->loop == struct_for &&
+                loop_index->index == i;
+          }
+          return false;
+        },
+        [&]() { return Stmt::make<LocalLoadStmt>(LocalAddress(alloca, 0)); },
+        false);
+//    irpass::replace_all_usages_with(body.get(), old_loop_vars[i], alloca);
   }
 
+//  std::cout << "b\n";
   if (has_test) {
-    // Createa an If statement
+    // Create an If statement
     auto if_stmt = Stmt::make_typed<IfStmt>(test);
     if_stmt->true_statements = std::move(body);
     body = std::make_unique<Block>();
@@ -93,11 +108,14 @@ VecStatement convert_to_range_for(StructForStmt *struct_for) {
   }
   body->insert(std::move(body_header), 0);
 
+//  std::cout << "a\n";
   auto range_for = Stmt::make<RangeForStmt>(
-      loop_var, lower, upper, std::move(body), struct_for->vectorize,
+      nullptr, lower, upper, std::move(body), struct_for->vectorize,
       struct_for->parallelize, struct_for->block_dim, false);
+  main_loop_var->loop = range_for.get();
   ret.push_back(std::move(range_for));
 
+//  std::cout << "end convert " << struct_for->id << std::endl;
   // TODO: safe guard range
   return ret;
 }

@@ -22,6 +22,7 @@ You can also override default logging level by setting the environment variable 
 ``TI_LOG_LEVEL=warn``.
 
 
+.. _regression:
 Benchmarks and Regression Tests
 -------------------------------
 

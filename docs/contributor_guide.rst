@@ -145,6 +145,7 @@ Tips on the Taichi compiler development
 
 :ref:`compilation` may worth checking out. It explains the whole compilation process.
 
+:ref:`regression` may worth checking out when the work involves IR optimization.
 
 When creating a Taichi program using ``ti.init(arch=desired_arch, **kwargs)``, pass in the following parameters to make the Taichi compiler print out IR:
 

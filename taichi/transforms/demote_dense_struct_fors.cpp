@@ -80,7 +80,6 @@ VecStatement convert_to_range_for(StructForStmt *struct_for) {
     }
   }
 
-//  std::cout << "a\n";
   for (int i = 0; i < (int)num_loop_vars; i++) {
     auto alloca = body_header.push_back<AllocaStmt>(DataType::i32);
     body_header.push_back<LocalStoreStmt>(alloca, new_loop_vars[i]);
@@ -89,7 +88,7 @@ VecStatement convert_to_range_for(StructForStmt *struct_for) {
         [&](Stmt *s) {
           if (auto loop_index = s->cast<LoopIndexStmt>()) {
             return loop_index->loop == struct_for &&
-                loop_index->index == i;
+                loop_index->index == snodes.back()->physical_index_position[i];
           }
           return false;
         },
@@ -97,7 +96,6 @@ VecStatement convert_to_range_for(StructForStmt *struct_for) {
 //    irpass::replace_all_usages_with(body.get(), old_loop_vars[i], alloca);
   }
 
-//  std::cout << "b\n";
   if (has_test) {
     // Create an If statement
     auto if_stmt = Stmt::make_typed<IfStmt>(test);
@@ -107,7 +105,6 @@ VecStatement convert_to_range_for(StructForStmt *struct_for) {
   }
   body->insert(std::move(body_header), 0);
 
-//  std::cout << "a\n";
   auto range_for = Stmt::make<RangeForStmt>(
       nullptr, lower, upper, std::move(body), struct_for->vectorize,
       struct_for->parallelize, struct_for->block_dim, false);

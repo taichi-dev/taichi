@@ -73,6 +73,20 @@ class IRVerifier : public BasicStmtVisitor {
     TI_ASSERT(stmt->ptr->is<AllocaStmt>());
   }
 
+  void visit(LoopIndexStmt *stmt) override {
+    basic_verify(stmt);
+    TI_ASSERT(stmt->loop);
+    if (stmt->loop->is<OffloadedStmt>()) {
+      TI_ASSERT(stmt->loop->as<OffloadedStmt>()->task_type ==
+          OffloadedStmt::TaskType::struct_for ||
+          stmt->loop->as<OffloadedStmt>()->task_type ==
+          OffloadedStmt::TaskType::range_for);
+    } else {
+      TI_ASSERT(stmt->loop->is<StructForStmt>() ||
+          stmt->loop->is<RangeForStmt>());
+    }
+  }
+
   void visit(RangeForStmt *for_stmt) override {
     basic_verify(for_stmt);
     if (for_stmt->loop_var) {

@@ -111,7 +111,7 @@ def display_benchmark_regression(xd, yd):
         ret = ''
         for key in set(u.keys()).union(v.keys()):
             a, b = u.get(key, 0.0), v.get(key, 0.0)
-            res = a / b - 1
+            res = b / a - 1
             color = ''
             if res > 0: color = Fore.RED
             elif res < 0: color = Fore.GREEN

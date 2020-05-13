@@ -63,7 +63,7 @@ Python packages in conjunction with Taichi.
 Portability
 -----------
 
-Taichi codes run on either CPUs or GPUs. Initialize Taichi according to your hardware platform as follows:
+Taichi programs run on either CPUs or GPUs. Initialize Taichi according to your hardware platform as follows:
 
 .. code-block:: python
 

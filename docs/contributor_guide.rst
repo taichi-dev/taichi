@@ -11,10 +11,10 @@ all forms, including but not limited to
 - New test cases
 - New examples
 - Compiler performance patches
-- Blog posts and tutorials
+- Blog posts and tutorials on Taichi
 - Participation in the `Taichi forum <https://forum.taichi.graphics/>`_
 - Introduce Taichi to your friends or simply star `the project <https://github.com/taichi-dev/taichi>`_.
-- Typo fixes in the documentation, code, comments (please directly make a pull request for minor issues like these)
+- Typo fixes in the documentation, code or comments (please directly make a pull request for minor issues like these)
 
 How to contribute bug fixes and new features
 --------------------------------------------
@@ -117,13 +117,12 @@ Enforcing code style
 
 PR title format and tags
 ------------------------
-PR titles will be part of the commit history reflected in the ``master`` branch.
-It is important to keep PR titles readable.
+PR titles will be part of the commit history reflected in the ``master`` branch, therefore it is important to keep PR titles readable.
 
  - The first letter of the PR title body should be capitalized, unless the title starts with a identifier;
 
      - E.g., "[doc] improve documentation" should be formatted as "[doc] Improve documentation";
-     - "[Lang] `ti.sqr(x)` is now deprecated" is fine because ``ti`` is an identifier.
+     - "[Lang] ``ti.sqr(x)`` is now deprecated" is fine because ``ti`` is an identifier.
 
  - Please always prepend at least one tag such as ``[Metal]`` to PR titles;
 
@@ -243,21 +242,21 @@ Key folders are
 
   - ``analysis``: Static analysis passes
   - ``backends``: Device-dependent code generators/runtime environments
-  - ``codegen``: Code generators
+  - ``codegen``: Code generation base classes
   - ``gui``:  GUI
   - ``inc``:  Small definition files to be included repeatedly
   - ``ir``: Intermediate representation
-  - ``jit``: JIT-in-time compilation system
+  - ``jit``: JIT-in-time compilation base classes
   - ``llvm``: LLVM utils
   - ``math``: Math utils
   - ``platform``: Platform supports
   - ``program``: Top-level constructs
   - ``python``: C++/Python interfaces
   - ``runtime``: Runtime environments
-  - ``struct``: Struct compilers
+  - ``struct``: Struct compiler base classes
   - ``system``: OS-related infrastructure
   - ``transforms``: IR transform passes
-  - ``util``:  Misc. utilities
+  - ``util``:  Miscellaneous utilities
 
 - ``python``: Python frontend implementation
 - ``examples``: Examples

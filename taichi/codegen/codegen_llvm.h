@@ -72,7 +72,7 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   std::vector<OffloadedTask> offloaded_tasks;
   BasicBlock *func_body_bb;
 
-  std::unordered_map<Stmt *, std::vector<llvm::Value *>> loop_vars_llvm;
+  std::unordered_map<const Stmt *, std::vector<llvm::Value *>> loop_vars_llvm;
 
   using IRVisitor::visit;
   using LLVMModuleBuilder::call;

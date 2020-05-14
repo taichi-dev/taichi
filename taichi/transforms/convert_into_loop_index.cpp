@@ -19,14 +19,12 @@ class ConvertIntoLoopIndexStmt : public BasicStmtVisitor {
         [&](Stmt *load) {
           if (auto local_load = load->cast<LocalLoadStmt>()) {
             return local_load->width() == 1 &&
-                   local_load->ptr[0].var == loop_var &&
-                   local_load->ptr[0].offset == 0;
+                local_load->ptr[0].var == loop_var &&
+                local_load->ptr[0].offset == 0;
           }
           return false;
         },
-        [&]() {
-          return Stmt::make<LoopIndexStmt>(loop, index, is_struct_for);
-        });
+        [&]() { return Stmt::make<LoopIndexStmt>(loop, index, is_struct_for); });
   }
 
   void preprocess_container_stmt(Stmt *stmt) override {
@@ -37,7 +35,7 @@ class ConvertIntoLoopIndexStmt : public BasicStmtVisitor {
       auto leaf = struct_for->snode;
       for (int i = 0; i < (int)struct_for->loop_vars.size(); i++) {
         convert(struct_for, struct_for->loop_vars[i],
-                leaf->physical_index_position[i], true);
+            leaf->physical_index_position[i], true);
         struct_for->loop_vars[i] = nullptr;
       }
     }

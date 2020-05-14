@@ -55,9 +55,9 @@ Let's dive into this simple Taichi program.
 
 import taichi as ti
 -------------------
-Taichi is a domain-specific language (DSL) embedded in Python. To make Taichi as easy to use as a Python package,
-we have done heavy engineering with this goal in mind - letting every Python programmer write Taichi codes with
-minimal learning effort. You can even use your favorite Python package management system, Python IDEs and other
+Taichi is a domain-specific language (DSL) embedded in Python. To make Taichi as easy to use as a Python package, 
+we have done heavy engineering with this goal in mind - letting every Python programmer write Taichi codes with 
+minimal learning effort. You can even use your favorite Python package management system, Python IDEs and other 
 Python packages in conjunction with Taichi.
 
 Portability

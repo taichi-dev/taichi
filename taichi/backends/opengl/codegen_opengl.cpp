@@ -414,13 +414,14 @@ class KernelGen : public IRVisitor {
         emit("{} {} = atan({}, {});", dt_name, bin_name, lhs_name, rhs_name);
       }
       return;
-    } else if (bin->op_type == BinaryOpType::pow &&
-               is_integral(bin->rhs->element_type())) {
-      // The GLSL `pow` is not so percise for `int`... e.g.: `pow(5, 3)` obtains
-      // 124 So that we have to use some hack to make it percise. Discussion:
-      // https://github.com/taichi-dev/taichi/pull/943#issuecomment-626354902
+    } else if (bin->op_type == BinaryOpType::pow
+        && is_integral(bin->rhs->element_type())) {
+      // The GLSL `pow` is not so percise for `int`... e.g.: `pow(5, 3)` obtains 124
+      // So that we have to use some hack to make it percise.
+      // Discussion: https://github.com/taichi-dev/taichi/pull/943#issuecomment-626354902
       emit("{} {} = {}(fast_pow_{}({}, {}));", dt_name, bin_name, dt_name,
-           data_type_short_name(bin->lhs->element_type()), lhs_name, rhs_name);
+          data_type_short_name(bin->lhs->element_type()),
+           lhs_name, rhs_name);
       used.fast_pow = true;
       return;
     }
@@ -602,9 +603,9 @@ class KernelGen : public IRVisitor {
 
   void visit(LoopIndexStmt *stmt) override {
     TI_ASSERT(stmt->loop->is<RangeForStmt>() ||
-              (stmt->loop->is<OffloadedStmt>() &&
-               stmt->loop->as<OffloadedStmt>()->task_type ==
-                   OffloadedStmt::TaskType::range_for));
+        (stmt->loop->is<OffloadedStmt>() &&
+            stmt->loop->as<OffloadedStmt>()->task_type ==
+            OffloadedStmt::TaskType::range_for));
     TI_ASSERT(stmt->index == 0);  // TODO: multiple indices
     emit("int {} = _itv;", stmt->short_name());
   }
@@ -613,15 +614,17 @@ class KernelGen : public IRVisitor {
     TI_ASSERT(for_stmt->width() == 1);
     auto loop_var_name = for_stmt->raw_name();
     if (!for_stmt->reversed) {
-      emit("for (int {}_ = {}; {}_ < {}; {}_ = {}_ + {}) {{", loop_var_name,
-           for_stmt->begin->raw_name(), loop_var_name,
-           for_stmt->end->raw_name(), loop_var_name, loop_var_name, 1);
+      emit("for (int {}_ = {}; {}_ < {}; {}_ = {}_ + {}) {{",
+           loop_var_name, for_stmt->begin->raw_name(),
+           loop_var_name, for_stmt->end->raw_name(),
+           loop_var_name, loop_var_name, 1);
       emit("  int {} = {}_;", loop_var_name, loop_var_name);
     } else {
       // reversed for loop
       emit("for (int {}_ = {} - 1; {}_ >= {}; {}_ = {}_ - {}) {{",
-           loop_var_name, for_stmt->end->raw_name(), loop_var_name,
-           for_stmt->begin->raw_name(), loop_var_name, loop_var_name, 1);
+           loop_var_name, for_stmt->end->raw_name(),
+           loop_var_name, for_stmt->begin->raw_name(),
+           loop_var_name, loop_var_name, 1);
       emit("  int {} = {}_;", loop_var_name, loop_var_name);
     }
     for_stmt->body->accept(this);
@@ -719,14 +722,12 @@ void OpenglCodeGen::lower() {
   auto ir = kernel_->ir;
   auto &config = kernel_->program.config;
   config.demote_dense_struct_fors = true;
-  auto res =
-      irpass::compile_to_offloads(ir, config,
-                                  /*vectorize=*/false, kernel_->grad,
-                                  /*ad_use_stack=*/false, config.print_ir,
-                                  /*lower_global_access*/ true);
+  auto res = irpass::compile_to_offloads(ir, config,
+                              /*vectorize=*/false, kernel_->grad,
+                              /*ad_use_stack=*/false, config.print_ir,
+                              /*lower_global_access*/true);
   global_tmps_buffer_size_ = res.total_size;
-  TI_TRACE("[glsl] Global temporary buffer size {} B",
-           global_tmps_buffer_size_);
+  TI_TRACE("[glsl] Global temporary buffer size {} B", global_tmps_buffer_size_);
 #ifdef _GLSL_DEBUG
   irpass::print(ir);
 #endif

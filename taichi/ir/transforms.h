@@ -49,13 +49,14 @@ void demote_dense_struct_fors(IRNode *root);
 void demote_atomics(IRNode *root);
 void reverse_segments(IRNode *root);  // for autograd
 std::unique_ptr<ScratchPads> initialize_scratch_pad(StructForStmt *root);
-OffloadedResult compile_to_offloads(IRNode *ir,
-                                    const CompileConfig &config,
-                                    bool vectorize,
-                                    bool grad,
-                                    bool ad_use_stack,
-                                    bool verbose,
-                                    bool lower_global_access = true);
+OffloadedResult compile_to_offloads(
+                         IRNode *ir,
+                         const CompileConfig &config,
+                         bool vectorize,
+                         bool grad,
+                         bool ad_use_stack,
+                         bool verbose,
+                         bool lower_global_access = true);
 
 }  // namespace irpass
 

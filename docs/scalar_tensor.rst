@@ -134,6 +134,17 @@ Meta data
         z.shape()  # ()
 
 
+.. function:: a.data_type()
+
+    :parameter a: (Tensor) the tensor
+    :return: (DataType) the data type of ``a``
+
+    ::
+
+        x = ti.var(ti.i32, (2, 3))
+        x.data_type()  # ti.i32
+
+
 .. function:: a.parent(n = 1)
 
     :parameter a: (Tensor) the tensor

@@ -57,6 +57,13 @@ class SNode:
     def dim(self):
         return self.ptr.num_active_indices()
 
+    def shape(self):
+        dim = self.dim()
+        s = []
+        for i in range(dim):
+            s.append(self.get_shape(i))
+        return tuple(s)
+
     def get_shape(self, i):
         return self.ptr.get_num_elements_along_axis(i)
 

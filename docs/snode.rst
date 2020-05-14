@@ -32,7 +32,7 @@ See :ref:`layout` for more details about data layout. ``ti.root`` is the root no
 
 .. function:: tensor.shape()
 
-    :parameter tensor: the tensor
+    :parameter tensor: (Tensor)
     :return: (tuple of integers) the shape of tensor
 
     For example,
@@ -41,6 +41,7 @@ See :ref:`layout` for more details about data layout. ``ti.root`` is the root no
 
         ti.root.dense(ti.ijk, (3, 5, 4)).place(x)
         x.shape() # returns (3, 5, 4)
+
 
 .. function:: snode.get_shape(index)
 
@@ -57,9 +58,10 @@ See :ref:`layout` for more details about data layout. ``ti.root`` is the root no
         x.snode().get_shape(1)  # 5
         x.snode().get_shape(2)  # 4
 
+
 .. function:: tensor.dim()
 
-    :parameter tensor: the tensor
+    :parameter tensor: (Tensor)
     :return: (scalar) the dimensionality of the tensor
 
     Equivalent to ``len(tensor.shape())``.
@@ -68,6 +70,7 @@ See :ref:`layout` for more details about data layout. ``ti.root`` is the root no
 
         ti.root.dense(ti.ijk, (8, 9, 10)).place(x)
         x.dim()  # 3
+
 
 .. function:: snode.parent()
 

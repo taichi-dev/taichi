@@ -5,6 +5,7 @@
 #include <atomic>
 #include <unordered_set>
 #include <unordered_map>
+
 #include "taichi/common/util.h"
 #include "taichi/common/bit.h"
 #include "taichi/lang_util.h"
@@ -461,8 +462,7 @@ class StmtFieldManager {
   io(field_manager)
 
 class Stmt : public IRNode {
- protected:  // NOTE: operands should not be directly modified, for the
-             // correctness of operand_bitmap
+ protected:
   std::vector<Stmt **> operands;
 
  public:
@@ -471,7 +471,6 @@ class Stmt : public IRNode {
   int instance_id;
   int id;
   Block *parent;
-  uint64 operand_bitmap;
   bool erased;
   bool fields_registered;
   std::string tb;
@@ -480,10 +479,6 @@ class Stmt : public IRNode {
 
   Stmt(const Stmt &stmt) = delete;
   Stmt();
-
-  static uint64 operand_hash(Stmt *stmt) {
-    return uint64(1) << ((uint64(stmt) >> 4) % 64);
-  }
 
   int &width() {
     return ret_type.width;
@@ -530,31 +525,12 @@ class Stmt : public IRNode {
 
   std::vector<Stmt *> get_operands() const;
 
-  void rebuild_operand_bitmap() {
-    return;  // disable bitmap maintenance since the fact that the user can
-             // modify the operand from the statement field (e.g.
-             // IntegralOffsetStmt::input) makes it impossible to achieve our
-             // goal
-    operand_bitmap = 0;
-    for (int i = 0; i < (int)operands.size(); i++) {
-      operand_bitmap |= operand_hash(*operands[i]);
-    }
-  }
-
   void set_operand(int i, Stmt *stmt);
   void register_operand(Stmt *&stmt);
   int locate_operand(Stmt **stmt);
   void mark_fields_registered();
 
-  virtual void rebuild_operands() {
-    TI_NOT_IMPLEMENTED;
-  }
-
-  TI_FORCE_INLINE bool may_have_operand(Stmt *stmt) const {
-    return (operand_bitmap & operand_hash(stmt)) != 0;
-  }
-
-  bool have_operand(Stmt *stmt) const;
+  bool has_operand(Stmt *stmt) const;
 
   void replace_with(Stmt *new_stmt);
   void replace_with(VecStatement &&new_statements, bool replace_usages = true);
@@ -572,22 +548,18 @@ class Stmt : public IRNode {
   // returns the inserted stmt
   Stmt *insert_after_me(std::unique_ptr<Stmt> &&new_stmt);
 
-  virtual bool integral_operands() const {
-    return true;
-  }
-
   virtual bool has_global_side_effect() const {
     return true;
   }
 
   template <typename T, typename... Args>
-  static pStmt make(Args &&... args) {
+  static std::unique_ptr<T> make_typed(Args &&... args) {
     return std::make_unique<T>(std::forward<Args>(args)...);
   }
 
   template <typename T, typename... Args>
-  static std::unique_ptr<T> make_typed(Args &&... args) {
-    return std::make_unique<T>(std::forward<Args>(args)...);
+  static pStmt make(Args &&... args) {
+    return make_typed<T>(std::forward<Args>(args)...);
   }
 
   void infer_type();
@@ -980,13 +952,8 @@ class LocalLoadStmt : public Stmt {
     TI_STMT_REG_FIELDS;
   }
 
-  void rebuild_operands() override;
   bool same_source() const;
   bool has_source(Stmt *alloca) const;
-
-  bool integral_operands() const override {
-    return false;
-  }
 
   Stmt *previous_store_or_alloca_in_block();
 
@@ -1002,8 +969,6 @@ class LocalStoreStmt : public Stmt {
  public:
   Stmt *ptr;
   Stmt *data;
-
-  // LaneAttribute<Stmt *> data;
 
   LocalStoreStmt(Stmt *ptr, Stmt *data) : ptr(ptr), data(data) {
     TI_ASSERT(ptr->is<AllocaStmt>());

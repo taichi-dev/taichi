@@ -35,10 +35,6 @@ OffloadedResult compile_to_offloads(
   irpass::lower(ir);
   print("Lowered");
 
-  irpass::convert_into_loop_index(ir);
-  print("Converted into loop index");
-  irpass::analysis::verify(ir);
-
   irpass::typecheck(ir);
   print("Typechecked");
   irpass::analysis::verify(ir);

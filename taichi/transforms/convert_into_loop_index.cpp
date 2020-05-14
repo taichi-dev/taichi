@@ -58,7 +58,6 @@ class ConvertIntoLoopIndexStmt : public BasicStmtVisitor {
 namespace irpass {
 void convert_into_loop_index(IRNode *root) {
   ConvertIntoLoopIndexStmt::run(root);
-  typecheck(root);
 }
 }  // namespace irpass
 

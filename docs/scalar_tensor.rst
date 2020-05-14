@@ -77,7 +77,7 @@ Accessing components
 
 .. attribute:: a[p, q, ...]
 
-    :parameter a: (Tensor) the tensor of scalar
+    :parameter a: (Tensor) the tensor of scalars
     :parameter p: (scalar) index of the first tensor dimension
     :parameter q: (scalar) index of the second tensor dimension
     :return: (scalar) the element at ``[p, q, ...]``
@@ -134,20 +134,22 @@ Meta data
         z.shape()  # ()
 
 
-.. function:: a.parent()
+.. function:: a.parent(n = 1)
 
     :parameter a: (Tensor) the tensor
-    :return: (SNode) the SNode where ``a`` is placed
+    :parameter n: (optional, scalar) the number of parent steps, i.e. parent, grandparent, etc...
+    :return: (SNode) the parent SNode where ``a`` is placed
 
     ::
         x = ti.var(ti.i32)
         y = ti.var(ti.i32)
         blk1 = ti.root.dense(ti.ij, (6, 5))
-        blk2 = blk2.dense(ti.ij, (3, 2))
+        blk2 = blk1.dense(ti.ij, (3, 2))
         blk1.place(x)
         blk2.place(y)
 
-        x.parent()  # blk1
-        y.parent()  # blk2
+        x.parent()   # blk1
+        y.parent()   # blk2
+        y.parent(2)  # blk1
 
     See :ref:`snode` for more details.

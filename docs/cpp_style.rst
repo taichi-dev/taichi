@@ -1,6 +1,8 @@
 C++ Style
 =========
 
+We generally follow `Google C++ Style Guide <https://google.github.io/styleguide/cppguide.html>`_.
+
 Naming
 ------
 - Variable names should consist of lowercase words connected by underscores, e.g. ``llvm_context``.
@@ -21,13 +23,13 @@ Don'ts
 - C language legacies:
 
    -  ``printf`` (Use ``fmtlib::print`` instead).
-   -  ``new`` & ``free``. (Use smart pointers ``std::unique_ptr, std::shared_ptr`` instead for ownership management).
+   -  ``new`` and ``free``. (Use smart pointers ``std::unique_ptr, std::shared_ptr`` instead for ownership management).
    -  ``#include <math.h>`` (Use ``#include <cmath>`` instead).
 
-- Exceptions (we are on our way to remove all exceptions in Taichi).
+- Exceptions (We are on our way to **remove** all C++ exception usages in Taichi).
 - Prefix member functions with ``m_`` or ``_``.
 - Virtual function call in constructors/destructors.
-- ``NULL`` (use ``nullptr`` instead).
+- ``NULL`` (Use ``nullptr`` instead).
 - ``using namespace std;`` in global scope.
 - ``typedef`` (Use ``using`` instead).
 

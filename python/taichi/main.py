@@ -81,7 +81,7 @@ def get_benchmark_output_dir():
     return os.path.join(ti.core.get_repo_dir(), 'benchmarks', 'output')
 
 
-def display_benchmark_regression(xd, yd):
+def display_benchmark_regression(xd, yd, spec=None):
     def parse_dat(file):
         dict = {}
         for line in open(file).readlines():
@@ -105,23 +105,33 @@ def display_benchmark_regression(xd, yd):
             dict[name] = parse_dat(path)
         return dict
 
+    single_line = spec and len(spec) == 1
     xs, ys = get_dats(xd), get_dats(yd)
     for name in set(xs.keys()).union(ys.keys()):
         file, func = name.split('::')
         u, v = xs.get(name, {}), ys.get(name, {})
         ret = ''
         for key in set(u.keys()).union(v.keys()):
+            if spec and key not in spec:
+                continue
             a, b = u.get(key, 0), v.get(key, 0)
             if a == b: continue
+            if single_line:
+                ret += f'{file:_<24}{func:_<42}'
+            else:
+                ret += f'{key:<43}'
             res = b / a - 1 if a != 0 else math.inf
             color = Fore.RESET
             if res > 0: color = Fore.RED
             elif res < 0: color = Fore.GREEN
-            ret += f'{key:<43}{Fore.MAGENTA}{a:>5}{Fore.RESET} -> '
+            ret += f'{Fore.MAGENTA}{a:>5}{Fore.RESET} -> '
             ret += f'{Fore.CYAN}{b:>5} {color}{res:>+8.1%}{Fore.RESET}\n'
         if ret != '':
-            print(f'{file:_<24}{func:_<42}')
-            print(ret)
+            if not single_line:
+                print(f'{file:_<24}{func:_<42}')
+            print(ret, end='')
+            if not single_line:
+                print('')
 
 
 def make_argument_parser():
@@ -264,7 +274,7 @@ def main(debug=False):
     elif mode == "regression":
         baseline_dir = get_benchmark_baseline_dir()
         output_dir = get_benchmark_output_dir()
-        display_benchmark_regression(baseline_dir, output_dir)
+        display_benchmark_regression(baseline_dir, output_dir, args.files)
     elif mode == "build":
         ti.core.build()
     elif mode == "format":

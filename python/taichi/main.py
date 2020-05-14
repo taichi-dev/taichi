@@ -161,7 +161,7 @@ def make_argument_parser():
                         '--verbose',
                         action='store_true',
                         help='Run with verbose outputs')
-    parser.add_argument('-r', '--rerun', help='Rerun failed tests once again')
+    parser.add_argument('-r', '--rerun', help='Rerun failed tests for given times')
     parser.add_argument('-t',
                         '--threads',
                         help='Number of threads for parallel testing')

@@ -51,20 +51,19 @@ Now you are ready to run the Taichi code below (``python3 fractal.py``) to compu
         gui.set_image(pixels)
         gui.show()
 
-Let's dive into components of this simple Taichi program.
+Let's dive into this simple Taichi program.
 
 import taichi as ti
 -------------------
-Taichi is a domain-specific language (DSL) embedded in Python.
-Heavy engineering has been done to make Taichi as easy to use as a Python package.
-
-After minimal learning efforts, every Python programmer will be capable of writing Taichi programs,
-You can also reuse the Python package management system, Python IDEs, and existing Python packages.
+Taichi is a domain-specific language (DSL) embedded in Python. To make Taichi as easy to use as a Python package, 
+we have done heavy engineering with this goal in mind - letting every Python programmer write Taichi codes with 
+minimal learning effort. You can even use your favorite Python package management system, Python IDEs and other 
+Python packages in conjunction with Taichi.
 
 Portability
 -----------
 
-Taichi code can run on CPUs or GPUs. Initialize Taichi according to your hardware platform:
+Taichi programs run on either CPUs or GPUs. Initialize Taichi according to your hardware platform as follows:
 
 .. code-block:: python
 
@@ -96,41 +95,41 @@ Taichi code can run on CPUs or GPUs. Initialize Taichi according to your hardwar
 
     (OK: supported; N/A: not available)
 
-    With ``arch=ti.gpu``, Taichi will try to run on CUDA.
-    If CUDA is not supported on your machine, Taichi will fall back to Metal or OpenGL.
-    If no GPU backend (CUDA, Metal, or OpenGL) is supported, Taichi will fall back to CPUs.
+    With ``arch=ti.gpu``, Taichi will first try to run with CUDA.
+    If CUDA is not supported on your machine, Taichi will fall back on Metal or OpenGL.
+    If no GPU backend (CUDA, Metal, or OpenGL) is supported, Taichi will fall back on CPUs.
 
 .. note::
 
-  When using the CUDA backend on Windows systems or ARM devices (e.g. NVIDIA Jetson),
-  Taichi will by default allocate 1 GB memory for tensor storage. You can override this by initializing with
+  When used with the CUDA backend on Windows or ARM devices (e.g. NVIDIA Jetson),
+  Taichi by default allocates 1 GB GPU memory for tensor storage. You can override this behavior by initializing with
   ``ti.init(arch=ti.cuda, device_memory_GB=3.4)`` to allocate ``3.4`` GB GPU memory, or
-  ``ti.init(arch=ti.cuda, device_memory_fraction=0.3)`` to allocate ``30%`` of total available GPU memory.
+  ``ti.init(arch=ti.cuda, device_memory_fraction=0.3)`` to allocate ``30%`` of the total GPU memory.
 
-  On other platforms Taichi will make use of its on-demand memory allocator to adaptively allocate memory.
+  On other platforms, Taichi will make use of its on-demand memory allocator to adaptively allocate memory.
 
 (Sparse) tensors
 ----------------
 
-Taichi is a data-oriented programming language, where dense or spatially-sparse tensors are first-class citizens.
+Taichi is a data-oriented programming language where dense or spatially-sparse tensors are the first-class citizens.
 See :ref:`sparse` for more details on sparse tensors.
 
-In the code above, ``pixels = ti.var(dt=ti.f32, shape=(n * 2, n))`` allocates a 2D dense tensor named ``pixel`` of
+In the code above, ``pixels = ti.var(dt=ti.f32, shape=(n * 2, n))`` allocates a 2D dense tensor named ``pixels`` of
 size ``(640, 320)`` and element data type ``ti.f32`` (i.e. ``float`` in C).
 
 Functions and kernels
 ---------------------
 
-Computation happens within Taichi **kernels**. Kernel arguments must be type-hinted.
+Computation resides in Taichi **kernels**. Kernel arguments must be type-hinted.
 The language used in Taichi kernels and functions looks exactly like Python, yet the Taichi frontend compiler converts it
-into a language that is **compiled, statically-typed, lexically-scoped, parallel, and differentiable**.
+into a language that is **compiled, statically-typed, lexically-scoped, parallel and differentiable**.
 
-You can also define Taichi **functions** with ``ti.func``, which can be called and reused by kernels and other functions.
+Taichi **functions**, which can be called by Taichi kernels and other Taichi functions, should be defined with the keyword ``ti.func``.
 
 .. note::
 
-  **Taichi-scope v.s. Python-scope**: everything decorated with ``ti.kernel`` and ``ti.func`` is in Taichi-scope, which will be compiled by the Taichi compiler.
-  Code outside the Taichi-scopes is simply normal Python code.
+  **Taichi-scopes v.s. Python-scopes**: everything decorated with ``ti.kernel`` and ``ti.func`` is in Taichi-scope, which will be compiled by the Taichi compiler.
+  Everything else is in Python-scopes. They are simply Python code.
 
 .. warning::
 
@@ -139,7 +138,7 @@ You can also define Taichi **functions** with ``ti.func``, which can be called a
 
   Taichi functions can only be called in Taichi-scope.
 
-For those who came from the world of CUDA, ``ti.func`` corresponds to ``__device__``, and ``ti.kernel`` corresponds to ``__global__``.
+For those who come from the world of CUDA, ``ti.func`` corresponds to ``__device__`` while ``ti.kernel`` corresponds to ``__global__``.
 
 
 Parallel for-loops
@@ -186,7 +185,7 @@ when used at the outermost scope. Range-for loops can be nested.
                 for i in range(10): # Serial :-(
                     ...
 
-**Struct-for loops** have are particularly useful when iterating over (sparse) tensor elements.
+**Struct-for loops** are particularly useful when iterating over (sparse) tensor elements.
 In the code above, ``for i, j in pixels`` loops over all the pixel coordinates, i.e. ``(0, 0), (0, 1), (0, 2), ... , (0, 319), (1, 0), ..., (639, 319)``.
 
 .. note::
@@ -195,7 +194,7 @@ In the code above, ``for i, j in pixels`` loops over all the pixel coordinates, 
 
 .. warning::
 
-    Struct-for's must live at the outer-most scope of kernels.
+    Struct-for loops must live at the outer-most scope of kernels.
 
     It is the loop **at the outermost scope** that gets parallelized, not the outermost loop.
 
@@ -243,18 +242,26 @@ In the code above, ``for i, j in pixels`` loops over all the pixel coordinates, 
 Interacting with Python
 ------------------------
 
-Everything outside Taichi-scopes (``ti.func`` and ``ti.kernel``) is simply Python. You can use your favorite Python packages (e.g. ``numpy``, ``pytorch``, ``matplotlib``) with Taichi.
-
-In Python-scope, you can access Taichi tensors using plain indexing syntax, and helper functions such as ``from_numpy`` and ``to_torch``:
+Everything outside Taichi-scopes (``ti.func`` and ``ti.kernel``) is simply Python code.
+In Python-scopes, you can access Taichi tensor elements using plain indexing syntax. For example,
+to access a single pixel of the rendered image in Python, simply use
 
 .. code-block:: python
 
-  image[42, 11] = 0.7
-  print(image[1, 63])
+  pixels[42, 11] = 0.7
+  print(pixels[42, 11]) # prints 0.7
 
-  import numpy as np
-  pixels.from_numpy(np.random.rand(n * 2, n))
 
-  import matplotlib.pyplot as plt
-  plt.imshow(pixels.to_numpy())
-  plt.show()
+You can also use your favorite Python packages (e.g. ``numpy``, ``pytorch``, ``matplotlib``) together with Taichi.
+Taichi provides helper functions such as ``from_numpy`` and ``to_torch`` for tensor format conversion:
+
+.. code-block:: python
+
+    import numpy as np
+    pixels.from_numpy(np.random.rand(n * 2, n))
+
+    import matplotlib.pyplot as plt
+    plt.imshow(pixels.to_numpy())
+    plt.show()
+
+See :ref:`external` for more details.

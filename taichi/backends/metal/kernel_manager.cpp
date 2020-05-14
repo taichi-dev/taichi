@@ -413,8 +413,11 @@ class KernelManager::Impl {
           compiled_structs_.runtime_size, mem_pool_);
       runtime_buffer_ = new_mtl_buffer_no_copy(
           device_.get(), runtime_mem_->ptr(), runtime_mem_->size());
-      TI_ASSERT(runtime_buffer_ != nullptr);
       TI_DEBUG("Metal runtime buffer size: {} bytes", runtime_mem_->size());
+      TI_ASSERT_INFO(
+          runtime_buffer_ != nullptr,
+          "Failed to allocate Metal runtime buffer, requested {} bytes",
+          runtime_mem_->size());
       init_runtime(params.root_id);
     }
   }

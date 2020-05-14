@@ -361,7 +361,7 @@ class KernelGen : public IRVisitor {
       if (is_integral(bin->lhs->element_type()) &&
           is_integral(bin->rhs->element_type())) {
         emit(
-            "{} {} = {}({} * {} >= 0 ? abs({}) / abs({}) : sign({}) * "
+            "{} {} = {}(sign({}) * {} >= 0 ? abs({}) / abs({}) : sign({}) * "
             "(abs({}) + abs({}) - 1) / {});",
             dt_name, bin_name, dt_name, lhs_name, rhs_name, lhs_name, rhs_name,
             lhs_name, lhs_name, rhs_name, rhs_name);

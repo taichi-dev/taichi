@@ -11,24 +11,38 @@ Taichi provides metaprogramming infrastructures. Metaprogramming can
 
 Taichi kernels are *lazily instantiated* and a lot of computation can happen at *compile-time*. Every kernel in Taichi is a template kernel, even if it has no template arguments.
 
-Dimensionality-independent programming using grouped indices
---------------------------------------------------------------
+
+.. _template_metaprogramming:
+
+Template metaprogramming
+------------------------
 
 .. code-block:: python
 
-  @ti.kernel
-  def copy(x: ti.template(), y: ti.template()):
-    for I in ti.grouped(y):
-      x[I] = y[I]
+    @ti.kernel
+    def copy(x: ti.template(), y: ti.template()):
+        for i in x:
+            y[i] = x[i]
 
-  @ti.kernel
-  def array_op(x: ti.template(), y: ti.template()):
-    # If tensor x is 2D
-    for I in ti.grouped(x): # I is a vector of size x.dim() and data type i32
-      y[I + ti.Vector([0, 1])] = I[0] + I[1]
-    # is equivalent to
-    for i, j in x:
-      y[i, j + 1] = i + j
+
+Dimensionality-independent programming using grouped indices
+-------------------------------------------------------------
+
+.. code-block:: python
+
+    @ti.kernel
+    def copy(x: ti.template(), y: ti.template()):
+        for I in ti.grouped(y):
+            x[I] = y[I]
+
+    @ti.kernel
+    def array_op(x: ti.template(), y: ti.template()):
+        # If tensor x is 2D
+        for I in ti.grouped(x): # I is a vector of size x.dim() and data type i32
+            y[I + ti.Vector([0, 1])] = I[0] + I[1]
+        # is equivalent to
+        for i, j in x:
+            y[i, j + 1] = i + j
 
 Tensor size reflection
 ------------------------------------------

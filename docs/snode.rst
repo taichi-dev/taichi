@@ -14,7 +14,8 @@ Our language provides *structural nodes (SNodes)* to compose the hierarchy and p
 
 * dynamic: Variable-length array, with a predefined maximum length. It serves the role of ``std::vector`` in C++ or ``list`` in Python, and can be used to maintain objects (e.g. particles) contained in a block.
 
-See :ref:`layout` for more details about data layout. ``ti.root`` is the root node of the data structure.
+
+See :ref:`layout` for more details. ``ti.root`` is the root node of the data structure.
 
 .. function:: snode.place(x, ...)
 
@@ -171,6 +172,12 @@ Working with ``dynamic`` SNodes
 
     Inserts ``val`` into the ``dynamic`` node with indices ``indices``.
 
+
+Taichi tensors like powers of two
+---------------------------------
+
+Non-power-of-two tensor dimensions are promoted into powers of two and thus these tensors will occupy more virtual address space.
+For example, a (dense) tensor of size ``(18, 65)`` will be materialized as ``(32, 128)``.
 
 
 Indices

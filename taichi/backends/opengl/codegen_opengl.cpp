@@ -73,7 +73,8 @@ class KernelGen : public IRVisitor {
   int glsl_kernel_count_{0};
 
   bool is_top_level_{true};
-  LineAppender line_appender_, line_appender_header_;
+  LineAppender line_appender_;
+  LineAppender line_appender_header_;
   KernelParallelAttrib kpa;
   UsedFeature used;
 

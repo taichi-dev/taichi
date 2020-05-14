@@ -422,7 +422,7 @@ struct CompiledProgram::Impl {
 
   void add(const std::string &kernel_name,
            const std::string &kernel_source_code,
-           KernelParallelAttrib kpa,
+           KernelParallelAttrib &&kpa,
            const UsedFeature &used) {
     kernels.push_back(std::make_unique<CompiledKernel>(
         kernel_name, kernel_source_code, std::move(kpa), used));
@@ -563,7 +563,7 @@ struct CompiledProgram::Impl {
 
   void add(const std::string &kernel_name,
            const std::string &kernel_source_code,
-           KernelParallelAttrib kpa,
+           KernelParallelAttrib &&kpa,
            const UsedFeature &used) {
     TI_NOT_IMPLEMENTED;
   }
@@ -621,7 +621,7 @@ CompiledProgram::~CompiledProgram() = default;
 
 void CompiledProgram::add(const std::string &kernel_name,
                           const std::string &kernel_source_code,
-                          KernelParallelAttrib kpa,
+                          KernelParallelAttrib &&kpa,
                           const UsedFeature &used) {
   impl->add(kernel_name, kernel_source_code, std::move(kpa), used);
 }

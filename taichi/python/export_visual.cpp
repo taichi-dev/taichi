@@ -30,6 +30,7 @@ void export_visual(py::module &m) {
       .def("get_key_event_head_pos", &GUI::get_key_event_head_pos)
       .def("pop_key_event_head", &GUI::pop_key_event_head)
       .def("get_cursor_pos", &GUI::get_cursor_pos)
+      .def_readwrite("title", &GUI::window_name)
       .def("set_profiler",
            [](GUI *gui, void *profiler) -> void {
              gui->set_profiler((lang::ProfilerBase *)profiler);

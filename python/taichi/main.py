@@ -109,10 +109,11 @@ def display_benchmark_regression(xd, yd, args):
     def plot_in_gui(scatter):
         import numpy as np
         import taichi as ti
+        gui = ti.GUI('Regression Test', (512, 512), 0x001122)
         for key, data in scatter.items():
-            gui = ti.GUI(f'{key}', (512, 512), 0x001122)
             data = np.array([((i + 0.5)/len(data), x/2) for i, x in enumerate(data)])
             while not gui.get_event((ti.GUI.PRESS, ti.GUI.ESCAPE)):
+                gui.core.title = key
                 gui.line((0, 0.5), (1, 0.5), 1.8, 0x66ccff)
                 gui.circles(data, 0xffcc66, 1.5)
                 gui.show()

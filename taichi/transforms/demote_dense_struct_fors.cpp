@@ -36,6 +36,7 @@ VecStatement convert_to_range_for(StructForStmt *struct_for) {
   }
 
   auto main_loop_var = body_header.push_back<LoopIndexStmt>(nullptr, 0);
+  // We will set main_loop_var->loop later.
 
   int offset = total_bits;
   Stmt *test = body_header.push_back<ConstStmt>(TypedConstant(-1));

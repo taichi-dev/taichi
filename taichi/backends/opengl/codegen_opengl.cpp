@@ -542,7 +542,7 @@ class KernelGen : public IRVisitor {
       kpa = KernelParallelAttrib(end_value - begin_value);
       emit("// range known at compile time");
       emit("int _tid = int(gl_GlobalInvocationID.x);");
-      emit("if (_tid >= {}) return;", kpa.num_threads);
+      emit("if (_tid >= {}) return;", end_value - begin_value);
       emit("int _itv = {} + _tid * {};", begin_value, 1 /* stmt->step? */);
       stmt->body->accept(this);
     } else {

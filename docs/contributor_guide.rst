@@ -129,6 +129,8 @@ PR titles will be part of the commit history reflected in the ``master`` branch,
      - When using multiple tags, make sure there is exactly one space between tags;
      - E.g., "[Metal][refactor]" (no space) should be formatted as "[Metal] [refactor]";
 
+ - Please do not include back quotes ("`") in PR titles.
+
  - For example, "[Metal] Support bitmasked SNode", "[OpenGL] AtomicMin/Max support", or "[Opt] [IR] Enhanced constant folding".
 
 Existing tags:

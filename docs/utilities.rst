@@ -34,7 +34,7 @@ Benchmarking and Regression Tests
 
 For example, this is part of the output by ``ti regression`` after enabling constant folding optimization pass:
 
-.. code-block::
+.. code-block:: none
 
     linalg__________________polar_decomp______________________________
     codegen_offloaded_tasks                       37 ->    39    +5.4%
@@ -58,7 +58,7 @@ For example, this is part of the output by ``ti regression`` after enabling cons
 The suggested workflow for **the PR author** to run the regression tests is:
 
 * When a performance related PR is ready, checkout that PR locally.
-  
+
 * Run ``ti benchmark && ti regression`` to obtain the result.
 
 * Decide wheater to approve or request change, depends on the result.
@@ -80,7 +80,7 @@ The suggested workflow for **the PR author** to run the regression tests is:
 Trigger GDB when the program crashes
 --------------------------------------
 
-.. code-block::
+.. code-block:: none
 
   # Python
   ti.set_gdb_trigger(True)

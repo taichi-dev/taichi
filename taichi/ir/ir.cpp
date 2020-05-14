@@ -655,10 +655,11 @@ void Block::replace_statements_in_range(int start,
 }
 
 void Block::replace_with(Stmt *old_statement,
-                         std::unique_ptr<Stmt> &&new_statement) {
+                         std::unique_ptr<Stmt> &&new_statement,
+                         bool replace_usages) {
   VecStatement vec;
   vec.push_back(std::move(new_statement));
-  replace_with(old_statement, std::move(vec));
+  replace_with(old_statement, std::move(vec), replace_usages);
 }
 
 Stmt *Block::lookup_var(const Identifier &ident) const {

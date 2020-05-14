@@ -26,23 +26,6 @@ class Offloader {
     run(root);
   }
 
-  void fix_loop_index_load(Stmt *s,
-                           Stmt *loop_var,
-                           int index,
-                           bool is_struct_for) {
-    replace_statements_with(
-        s,
-        [&](Stmt *load) {
-          if (auto local_load = load->cast<LocalLoadStmt>()) {
-            return local_load->width() == 1 &&
-                   local_load->ptr[0].var == loop_var &&
-                   local_load->ptr[0].offset == 0;
-          }
-          return false;
-        },
-        [&]() { return Stmt::make<LoopIndexStmt>(index, is_struct_for); });
-  }
-
   void run(IRNode *root) {
     auto root_block = dynamic_cast<Block *>(root);
     auto root_statements = std::move(root_block->statements);
@@ -80,7 +63,7 @@ class Offloader {
         }
         offloaded->block_dim = s->block_dim;
         offloaded->num_cpu_threads = s->parallelize;
-        fix_loop_index_load(s, s->loop_var, 0, /*is_struct_for=*/false);
+        replace_all_usages_with(s, s, offloaded.get());
         for (int j = 0; j < (int)s->body->statements.size(); j++) {
           offloaded->body->insert(std::move(s->body->statements[j]));
         }
@@ -122,11 +105,7 @@ class Offloader {
     auto offloaded_struct_for =
         Stmt::make_typed<OffloadedStmt>(OffloadedStmt::TaskType::struct_for);
 
-    for (int i = 0; i < for_stmt->loop_vars.size(); i++) {
-      fix_loop_index_load(for_stmt, for_stmt->loop_vars[i],
-                          leaf->physical_index_position[i],
-                          /*is_struct_for=*/true);
-    }
+    replace_all_usages_with(for_stmt, for_stmt, offloaded_struct_for.get());
 
     for (int i = 0; i < (int)for_stmt->body->statements.size(); i++) {
       offloaded_struct_for->body->insert(
@@ -153,12 +132,20 @@ class StmtToOffloaded : public BasicStmtVisitor {
  public:
   void visit(OffloadedStmt *stmt) override {
     current_offloaded = stmt;
+    stmt_to_offloaded[stmt] = current_offloaded;
     if (stmt->body)
       stmt->body->accept(this);
     current_offloaded = nullptr;
   }
 
   void visit(Stmt *stmt) override {
+    if (current_offloaded != nullptr) {
+      // inside a offloaded stmt, record its belonging offloaded_stmt
+      stmt_to_offloaded[stmt] = current_offloaded;
+    }
+  }
+
+  void preprocess_container_stmt(Stmt *stmt) override {
     if (current_offloaded != nullptr) {
       // inside a offloaded stmt, record its belonging offloaded_stmt
       stmt_to_offloaded[stmt] = current_offloaded;

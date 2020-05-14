@@ -211,6 +211,10 @@ class MakeAdjoint : public IRVisitor {
     // do nothing.
   }
 
+  void visit(LoopIndexStmt *stmt) override {
+    // do nothing.
+  }
+
   void visit(UnaryOpStmt *stmt) override {
     if (stmt->op_type == UnaryOpType::floor) {
       // do nothing

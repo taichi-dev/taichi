@@ -790,13 +790,16 @@ void CodeGenLLVM::create_naive_range_for(RangeForStmt *for_stmt) {
   BasicBlock *after_loop = BasicBlock::Create(*llvm_context, "after_for", func);
   BasicBlock *loop_test =
       BasicBlock::Create(*llvm_context, "for_loop_test", func);
+
+  auto loop_var = create_entry_block_alloca(DataType::i32);
+  loop_vars_llvm[for_stmt].push_back(loop_var);
+
   if (!for_stmt->reversed) {
-    builder->CreateStore(llvm_val[for_stmt->begin],
-                         llvm_val[for_stmt->loop_var]);
+    builder->CreateStore(llvm_val[for_stmt->begin], loop_var);
   } else {
     builder->CreateStore(
         builder->CreateSub(llvm_val[for_stmt->end], tlctx->get_constant(1)),
-        llvm_val[for_stmt->loop_var]);
+        loop_var);
   }
   builder->CreateBr(loop_test);
 
@@ -805,15 +808,13 @@ void CodeGenLLVM::create_naive_range_for(RangeForStmt *for_stmt) {
     builder->SetInsertPoint(loop_test);
     llvm::Value *cond;
     if (!for_stmt->reversed) {
-      cond =
-          builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_SLT,
-                              builder->CreateLoad(llvm_val[for_stmt->loop_var]),
-                              llvm_val[for_stmt->end]);
+      cond = builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_SLT,
+                                 builder->CreateLoad(loop_var),
+                                 llvm_val[for_stmt->end]);
     } else {
-      cond =
-          builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_SGE,
-                              builder->CreateLoad(llvm_val[for_stmt->loop_var]),
-                              llvm_val[for_stmt->begin]);
+      cond = builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_SGE,
+                                 builder->CreateLoad(loop_var),
+                                 llvm_val[for_stmt->begin]);
     }
     builder->CreateCondBr(cond, body, after_loop);
   }
@@ -833,9 +834,9 @@ void CodeGenLLVM::create_naive_range_for(RangeForStmt *for_stmt) {
     builder->SetInsertPoint(loop_inc);
 
     if (!for_stmt->reversed) {
-      create_increment(llvm_val[for_stmt->loop_var], tlctx->get_constant(1));
+      create_increment(loop_var, tlctx->get_constant(1));
     } else {
-      create_increment(llvm_val[for_stmt->loop_var], tlctx->get_constant(-1));
+      create_increment(loop_var, tlctx->get_constant(-1));
     }
     builder->CreateBr(loop_test);
   }
@@ -1408,13 +1409,15 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
 
 void CodeGenLLVM::visit(LoopIndexStmt *stmt) {
   TI_ASSERT(&module->getContext() == tlctx->get_this_thread_context());
-  if (stmt->is_struct_for) {
+  if (stmt->loop->is<OffloadedStmt>() &&
+      stmt->loop->as<OffloadedStmt>()->task_type ==
+          OffloadedStmt::TaskType::struct_for) {
     llvm_val[stmt] = builder->CreateLoad(builder->CreateGEP(
         current_coordinates, {tlctx->get_constant(0), tlctx->get_constant(0),
                               tlctx->get_constant(stmt->index)}));
   } else {
-    llvm_val[stmt] = builder->CreateLoad(
-        offloaded_loop_vars_llvm[current_offloaded_stmt][stmt->index]);
+    llvm_val[stmt] =
+        builder->CreateLoad(loop_vars_llvm[stmt->loop][stmt->index]);
   }
 }
 

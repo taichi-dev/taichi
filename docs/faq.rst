@@ -1,5 +1,5 @@
 Frequently Asked Questions
-====================================================
+==========================
 
 **Can a user iterate over irregular topology instead of grids, such as tetrahedra meshes, line segment vertices?**
 These structures have to be represented using 1D arrays in Taichi. You can still iterate over it using `for i in x` or `for i in range(n)`.

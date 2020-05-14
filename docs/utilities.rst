@@ -57,24 +57,13 @@ For example, this is part of the output by ``ti regression`` after enabling cons
 
 The suggested workflow for **the PR author** to run the regression tests is:
 
-* When a performance related PR is ready, checkout that PR locally.
+* Before begin to work on a performance related issue, run ``ti benchmark && ti baseline`` to save the current performance as a baseline.
   
-* Run ``ti benchmark && ti regression`` to obtain the result.
+* When a stage of work is ready, run ``ti benchmark && ti regression`` to obtain the result.
 
-* Decide wheater to approve or request change, depends on the result.
+* Decide wheater go further to next stage or add more improvements, depending on the result.
 
-* Right before merge, run ``ti baseline`` to save the benchmark result as new baseline.
-
-
-**Reviewers** can also ask the PR author to run and upload the test result, if they consider the PR performance sensitive. If the reviewers would like to run the regression tests themselves, the suggested workflow is:
-
-* When a stage of work is done, run ``ti benchmark && ti regression`` to obtain result.
-
-* When ready for review, post the latest result in PR comments, wait for the reviewer.
-
-* Get feedback from the reviewer, and improve the result.
-
-* Right before merge, run ``ti baseline`` to save the benchmark result as new baseline.
+* Before going to next stage, run ``ti baseline`` to save current performance as a baseline.
 
 
 Trigger GDB when the program crashes

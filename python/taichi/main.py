@@ -5,6 +5,7 @@ import time
 import math
 import random
 import argparse
+from collections import defaultdict
 from colorama import Fore, Back, Style
 from taichi.tools.video import make_video, interpolate_frames, mp4_to_gif, scale_video, crop_video, accelerate_video
 
@@ -81,7 +82,7 @@ def get_benchmark_output_dir():
     return os.path.join(ti.core.get_repo_dir(), 'benchmarks', 'output')
 
 
-def display_benchmark_regression(xd, yd, spec=None):
+def display_benchmark_regression(xd, yd, args):
     def parse_dat(file):
         dict = {}
         for line in open(file).readlines():
@@ -105,8 +106,21 @@ def display_benchmark_regression(xd, yd, spec=None):
             dict[name] = parse_dat(path)
         return dict
 
+    def plot_in_gui(scatter):
+        import numpy as np
+        import taichi as ti
+        for key, data in scatter.items():
+            gui = ti.GUI(f'{key}', (512, 512), 0x001122)
+            data = np.array([((i + 0.5)/len(data), x/2) for i, x in enumerate(data)])
+            while not gui.get_event((ti.GUI.PRESS, ti.GUI.ESCAPE)):
+                gui.line((0, 0.5), (1, 0.5))
+                gui.circles(data, 0xffeedd, 2)
+                gui.show()
+
+    spec = args.files
     single_line = spec and len(spec) == 1
     xs, ys = get_dats(xd), get_dats(yd)
+    scatter = defaultdict(list)
     for name in set(xs.keys()).union(ys.keys()):
         file, func = name.split('::')
         u, v = xs.get(name, {}), ys.get(name, {})
@@ -120,7 +134,9 @@ def display_benchmark_regression(xd, yd, spec=None):
                 ret += f'{file:_<24}{func:_<42}'
             else:
                 ret += f'{key:<43}'
-            res = b / a - 1 if a != 0 else math.inf
+            res = b / a if a != 0 else math.inf
+            scatter[key].append(res)
+            res -= 1
             color = Fore.RESET
             if res > 0: color = Fore.RED
             elif res < 0: color = Fore.GREEN
@@ -132,6 +148,9 @@ def display_benchmark_regression(xd, yd, spec=None):
             print(ret, end='')
             if not single_line:
                 print('')
+
+    if args.gui:
+        plot_in_gui(scatter)
 
 
 def make_argument_parser():
@@ -148,6 +167,10 @@ def make_argument_parser():
                         '--cpp',
                         action='store_true',
                         help='Run C++ tests')
+    parser.add_argument('-g',
+                        '--gui',
+                        action='store_true',
+                        help='Display benchmark regression result in GUI')
     parser.add_argument(
         '-a',
         '--arch',
@@ -274,7 +297,7 @@ def main(debug=False):
     elif mode == "regression":
         baseline_dir = get_benchmark_baseline_dir()
         output_dir = get_benchmark_output_dir()
-        display_benchmark_regression(baseline_dir, output_dir, args.files)
+        display_benchmark_regression(baseline_dir, output_dir, args)
     elif mode == "build":
         ti.core.build()
     elif mode == "format":

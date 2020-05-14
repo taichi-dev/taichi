@@ -55,15 +55,21 @@ For example, this is part of the output by ``ti regression`` after enabling cons
     Discussion at: https://github.com/taichi-dev/taichi/issue/948
 
 
-The suggested workflow for **the PR author** to run the regression tests is:
+The suggested workflow for the performance related PR author to run the regression tests is:
 
-* Before begin to work on a performance related issue, run ``ti benchmark && ti baseline`` to save the current performance as a baseline.
+* Run ``ti benchmark && ti baseline`` in ``master`` to save the current performance as baseline.
+
+* Run ``git checkout -b your-branch-name``.
+
+* Do works on the issue, stage 1.
   
-* When a stage of work is ready, run ``ti benchmark && ti regression`` to obtain the result.
+* Run ``ti benchmark && ti regression`` to obtain the result.
 
-* Decide wheater go further to next stage or add more improvements, depending on the result.
+* (If result BAD) Do further improvements, until the result is statifying.
 
-* Before going to next stage, run ``ti baseline`` to save current performance as a baseline.
+* (If result OK) Run ``ti baseline`` to save stage 1 performance as baseline.
+
+* Go forward to stage 2, 3, ..., and the same workflow is applied.
 
 
 Trigger GDB when the program crashes

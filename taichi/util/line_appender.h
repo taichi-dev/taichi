@@ -3,7 +3,7 @@
 #include <string>
 
 #include "spdlog/spdlog.h"
-#include "taichi/common/util.h"
+#include "taichi/util/util.h"
 
 TI_NAMESPACE_BEGIN
 

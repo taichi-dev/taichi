@@ -1,6 +1,6 @@
 #include <unordered_map>
 
-#include "taichi/common/util.h"
+#include "taichi/util/util.h"
 
 TI_NAMESPACE_BEGIN
 

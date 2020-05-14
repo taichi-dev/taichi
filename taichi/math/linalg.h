@@ -10,7 +10,7 @@
 #include <functional>
 #include <vector>
 #include <array>
-#include "taichi/common/util.h"
+#include "taichi/util/util.h"
 #include "scalar.h"
 #include "array_fwd.h"
 TI_NAMESPACE_BEGIN

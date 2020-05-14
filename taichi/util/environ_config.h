@@ -1,6 +1,7 @@
 #pragma once
 
-#include "taichi/common/util.h"
+#include "taichi/util/util.h"
+
 #include <string>
 #include <cstdlib>
 

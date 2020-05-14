@@ -1,7 +1,7 @@
 #include "codegen_cpu.h"
 
 #include "taichi/codegen/codegen_llvm.h"
-#include "taichi/common/util.h"
+#include "taichi/util/util.h"
 #include "taichi/util/io.h"
 #include "taichi/lang_util.h"
 #include "taichi/program/program.h"

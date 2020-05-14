@@ -36,7 +36,7 @@
 
 #include "taichi/lang_util.h"
 #include "taichi/jit/jit_session.h"
-#include "taichi/common/task.h"
+#include "taichi/util/task.h"
 
 TLANG_NAMESPACE_BEGIN
 

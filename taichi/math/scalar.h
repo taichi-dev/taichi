@@ -6,7 +6,7 @@
 #pragma once
 
 #include <cmath>
-#include "taichi/common/util.h"
+#include "taichi/util/util.h"
 
 TI_NAMESPACE_BEGIN
 

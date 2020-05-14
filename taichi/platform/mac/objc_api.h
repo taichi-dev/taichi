@@ -1,6 +1,6 @@
 #include <string>
 
-#include "taichi/common/util.h"
+#include "taichi/util/util.h"
 
 #ifdef TI_PLATFORM_OSX
 

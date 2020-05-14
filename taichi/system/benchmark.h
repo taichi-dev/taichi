@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "taichi/common/interface.h"
+#include "taichi/util/interface.h"
 #include "taichi/system/timer.h"
 
 TI_NAMESPACE_BEGIN

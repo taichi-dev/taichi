@@ -7,7 +7,7 @@
 
 #include <vector>
 #include <string>
-#include "interface.h"
+#include "taichi/util/interface.h"
 
 TI_NAMESPACE_BEGIN
 

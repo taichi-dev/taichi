@@ -3,7 +3,8 @@
     The use of this software is governed by the LICENSE file.
 *******************************************************************************/
 #pragma once
-#include "util.h"
+
+#include "taichi/util/util.h"
 
 TI_NAMESPACE_BEGIN
 

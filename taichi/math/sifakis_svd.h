@@ -1,6 +1,6 @@
 #include <cmath>
 #include <algorithm>
-#include "taichi/common/util.h"
+#include "taichi/util/util.h"
 
 namespace SifakisSVD {
 

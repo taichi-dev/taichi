@@ -2,7 +2,7 @@
 
 #include "program.h"
 
-#include "taichi/common/task.h"
+#include "taichi/util/task.h"
 #include "taichi/backends/metal/api.h"
 #include "taichi/backends/opengl/opengl_api.h"
 #if defined(TI_WITH_CUDA)

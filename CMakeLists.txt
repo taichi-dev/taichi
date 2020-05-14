@@ -71,7 +71,7 @@ add_custom_target(
 )
 add_dependencies(${CORE_LIBRARY_NAME} generate_commit_hash)
 
-FILE(WRITE ${CMAKE_CURRENT_LIST_DIR}/taichi/common/version.h
+FILE(WRITE ${CMAKE_CURRENT_LIST_DIR}/taichi/util/version.h
         "#pragma once\n"
         "#define TI_VERSION_MAJOR \"${TI_VERSION_MAJOR}\"\n"
         "#define TI_VERSION_MINOR \"${TI_VERSION_MINOR}\"\n"

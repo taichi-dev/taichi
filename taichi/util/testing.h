@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "util.h"
+#include "taichi/util/util.h"
 #define BENCHMARK CATCH_BENCHMARK
 #include <catch.hpp>
 #undef BENCHMARK

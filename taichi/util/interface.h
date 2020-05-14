@@ -5,7 +5,8 @@
 
 #pragma once
 
-#include "taichi/common/dict.h"
+#include "taichi/util/dict.h"
+
 #include <cstring>
 #include <string>
 #include <map>

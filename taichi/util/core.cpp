@@ -3,9 +3,9 @@
     The use of this software is governed by the LICENSE file.
 *******************************************************************************/
 
-#include "taichi/common/util.h"
-#include "taichi/common/version.h"
-#include "taichi/common/commit_hash.h"
+#include "taichi/util/util.h"
+#include "taichi/util/version.h"
+#include "taichi/util/commit_hash.h"
 
 TI_NAMESPACE_BEGIN
 

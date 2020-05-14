@@ -11,7 +11,7 @@
 #include <mutex>
 #include <thread>
 
-#include "taichi/util/util.h"
+#include "taichi/common/core.h"
 #include "taichi/system/timer.h"
 #include "spdlog/fmt/bundled/color.h"
 

@@ -5,7 +5,7 @@ repo = Repo(repo_dir)
 commit_hash = str(repo.head.commit)
 print(f"Building commit {commit_hash}")
 
-output_fn = os.path.join(repo_dir, 'taichi/util/commit_hash.h')
+output_fn = os.path.join(repo_dir, 'taichi/common/commit_hash.h')
 content = f"#define TI_COMMIT_HASH \"{commit_hash}\"\n"
 
 # First read the file to see if an update is needed

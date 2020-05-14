@@ -3,7 +3,7 @@
     The use of this software is governed by the LICENSE file.
 *******************************************************************************/
 
-#include "taichi/util/dict.h"
+#include "taichi/common/dict.h"
 #include "taichi/util/testing.h"
 
 TI_NAMESPACE_BEGIN

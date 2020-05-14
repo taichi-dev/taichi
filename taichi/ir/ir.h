@@ -5,7 +5,7 @@
 #include <atomic>
 #include <unordered_set>
 #include <unordered_map>
-#include "taichi/util/util.h"
+#include "taichi/common/core.h"
 #include "taichi/util/bit.h"
 #include "taichi/lang_util.h"
 #include "taichi/ir/snode.h"

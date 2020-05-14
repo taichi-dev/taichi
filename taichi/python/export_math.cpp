@@ -4,7 +4,7 @@
 *******************************************************************************/
 
 #include "taichi/python/export.h"
-#include "taichi/util/dict.h"
+#include "taichi/common/dict.h"
 
 TI_NAMESPACE_BEGIN
 

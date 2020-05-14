@@ -3,7 +3,7 @@
 #include <vector>
 #include <set>
 
-#include "taichi/util/util.h"
+#include "taichi/common/core.h"
 #include "taichi/util/io.h"
 #include "taichi/ir/ir.h"
 #include "taichi/program/program.h"

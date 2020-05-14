@@ -1,6 +1,6 @@
 #pragma once
 
-#include "taichi/util/util.h"
+#include "taichi/common/core.h"
 #include "taichi/program/arch.h"
 #include "taichi/program/profiler.h"
 

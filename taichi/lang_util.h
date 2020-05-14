@@ -2,7 +2,7 @@
 #pragma once
 
 #include "taichi/util/io.h"
-#include "taichi/util/util.h"
+#include "taichi/common/core.h"
 #include "taichi/system/profiler.h"
 
 TLANG_NAMESPACE_BEGIN

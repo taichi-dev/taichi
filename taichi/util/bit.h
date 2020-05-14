@@ -4,7 +4,7 @@
 *******************************************************************************/
 #pragma once
 
-#include "taichi/util/util.h"
+#include "taichi/common/core.h"
 
 TI_NAMESPACE_BEGIN
 

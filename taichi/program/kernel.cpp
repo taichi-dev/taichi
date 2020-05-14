@@ -1,6 +1,6 @@
 #include "kernel.h"
 
-#include "taichi/util/task.h"
+#include "taichi/common/task.h"
 #include "taichi/program/program.h"
 #include "taichi/program/async_engine.h"
 #include "taichi/codegen/codegen.h"

@@ -1,4 +1,4 @@
-#include "taichi/util/util.h"
+#include "taichi/common/core.h"
 
 #if defined(TI_PLATFORM_WINDOWS)
 #include <windowsx.h>

@@ -3,10 +3,12 @@
     The use of this software is governed by the LICENSE file.
 *******************************************************************************/
 
+#include "taichi/common/interface.h"
+
 #include <functional>
-#include "taichi/util/interface.h"
 #include "pybind11/pybind11.h"
-#include "taichi/util/task.h"
+
+#include "taichi/common/task.h"
 #include "taichi/system/benchmark.h"
 
 TI_NAMESPACE_BEGIN

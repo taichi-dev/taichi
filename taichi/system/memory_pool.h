@@ -1,5 +1,5 @@
 #pragma once
-#include "taichi/util/util.h"
+#include "taichi/common/core.h"
 #include "taichi/system/unified_allocator.h"
 #define TI_RUNTIME_HOST
 #include "taichi/runtime/llvm/context.h"

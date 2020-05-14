@@ -1,4 +1,4 @@
-#include "taichi/util/util.h"
+#include "taichi/common/core.h"
 #include "taichi/util/image_io.h"
 
 #include "stb_image.h"

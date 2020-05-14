@@ -1,5 +1,5 @@
 #include "taichi/util/bit.h"
-#include "taichi/util/task.h"
+#include "taichi/common/task.h"
 #include "taichi/gui/gui.h"
 
 #if defined(TI_GUI_COCOA)

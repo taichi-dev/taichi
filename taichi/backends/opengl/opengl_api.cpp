@@ -46,6 +46,13 @@ void check_opengl_error(const std::string &msg = "OpenGL") {
   }
 }
 
+int opengl_get_threads_per_group() {
+  int ret = 1000;
+  glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS, &ret);
+  check_opengl_error("glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS)");
+  return ret;
+}
+
 KernelParallelAttrib::KernelParallelAttrib(int num_threads_)
     : num_threads(num_threads_)
 {
@@ -545,13 +552,6 @@ bool is_opengl_api_available() {
   return initialize_opengl(true);
 }
 
-int opengl_get_threads_per_group() {
-  int ret = 1000;
-  glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS, &ret);
-  check_opengl_error("glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS)");
-  return ret;
-}
-
 #else
 struct GLProgram {};
 struct GLSLLauncherImpl {};
@@ -589,10 +589,6 @@ bool initialize_opengl(bool error_tolerance) {
   TI_NOT_IMPLEMENTED;
 }
 
-int opengl_get_threads_per_group() {
-  TI_NOT_IMPLEMENTED;
-}
-
 GLSLLaunchGuard::GLSLLaunchGuard(GLSLLauncherImpl *impl,
                                  const std::vector<IOV> &iov)
     : impl(impl), iov(iov) {
@@ -608,6 +604,10 @@ void *GLSLLaunchGuard::map_buffer(size_t idx) {
 }
 
 void GLSLLaunchGuard::unmap_buffer(size_t idx) {
+  TI_NOT_IMPLEMENTED;
+}
+
+KernelParallelAttrib::KernelParallelAttrib(int num_threads_) {
   TI_NOT_IMPLEMENTED;
 }
 
@@ -631,14 +631,6 @@ void CompiledProgram::launch(Context &ctx, GLSLLauncher *launcher) const {
 }
 
 GLSLLauncher::~GLSLLauncher() = default;
-
-KernelParallelAttrib::KernelParallelAttrib(int num_threads_) {
-  TI_NOT_IMPLEMENTED;
-}
-
-size_t KernelParallelAttrib::eval(const void *gtmp) const {
-  TI_NOT_IMPLEMENTED;
-}
 
 }  // namespace opengl
 TLANG_NAMESPACE_END

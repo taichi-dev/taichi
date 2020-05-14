@@ -632,5 +632,13 @@ void CompiledProgram::launch(Context &ctx, GLSLLauncher *launcher) const {
 
 GLSLLauncher::~GLSLLauncher() = default;
 
+KernelParallelAttrib::KernelParallelAttrib(int num_threads_) {
+  TI_NOT_IMPLEMENTED;
+}
+
+size_t KernelParallelAttrib::eval(const void *gtmp) const {
+  TI_NOT_IMPLEMENTED;
+}
+
 }  // namespace opengl
 TLANG_NAMESPACE_END

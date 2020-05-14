@@ -8,9 +8,7 @@ class ConvertIntoLoopIndexStmt : public BasicStmtVisitor {
  public:
   using BasicStmtVisitor::visit;
 
-  static void convert(Stmt *loop,
-                      Stmt *loop_var,
-                      int index) {
+  static void convert(Stmt *loop, Stmt *loop_var, int index) {
     if (!loop_var)
       return;
     irpass::replace_statements_with(
@@ -18,8 +16,8 @@ class ConvertIntoLoopIndexStmt : public BasicStmtVisitor {
         [&](Stmt *load) {
           if (auto local_load = load->cast<LocalLoadStmt>()) {
             return local_load->width() == 1 &&
-                local_load->ptr[0].var == loop_var &&
-                local_load->ptr[0].offset == 0;
+                   local_load->ptr[0].var == loop_var &&
+                   local_load->ptr[0].offset == 0;
           }
           return false;
         },
@@ -34,7 +32,7 @@ class ConvertIntoLoopIndexStmt : public BasicStmtVisitor {
       auto leaf = struct_for->snode;
       for (int i = 0; i < (int)struct_for->loop_vars.size(); i++) {
         convert(struct_for, struct_for->loop_vars[i],
-            leaf->physical_index_position[i]);
+                leaf->physical_index_position[i]);
         struct_for->loop_vars[i] = nullptr;
       }
     }

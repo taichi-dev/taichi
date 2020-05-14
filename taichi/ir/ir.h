@@ -835,7 +835,8 @@ class Block : public IRNode {
   void insert(VecStatement &&stmt, int location = -1);
   void replace_statements_in_range(int start, int end, VecStatement &&stmts);
   void set_statements(VecStatement &&stmts);
-  void replace_with(Stmt *old_statement, std::unique_ptr<Stmt> &&new_statement,
+  void replace_with(Stmt *old_statement,
+                    std::unique_ptr<Stmt> &&new_statement,
                     bool replace_usages = true);
   void insert_before(Stmt *old_statement, VecStatement &&new_statements);
   void replace_with(Stmt *old_statement,

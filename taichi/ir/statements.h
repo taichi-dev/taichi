@@ -220,8 +220,7 @@ class LoopIndexStmt : public Stmt {
   Stmt *loop;
   int index;
 
-  LoopIndexStmt(Stmt *loop, int index)
-      : loop(loop), index(index) {
+  LoopIndexStmt(Stmt *loop, int index) : loop(loop), index(index) {
     TI_STMT_REG_FIELDS;
   }
 

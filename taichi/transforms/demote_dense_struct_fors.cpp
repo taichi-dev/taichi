@@ -85,7 +85,8 @@ VecStatement convert_to_range_for(StructForStmt *struct_for) {
         [&](Stmt *s) {
           if (auto loop_index = s->cast<LoopIndexStmt>()) {
             return loop_index->loop == struct_for &&
-                loop_index->index == snodes.back()->physical_index_position[i];
+                   loop_index->index ==
+                       snodes.back()->physical_index_position[i];
           }
           return false;
         },

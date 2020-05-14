@@ -30,7 +30,7 @@ Don'ts
 - Prefix member functions with ``m_`` or ``_``.
 - Virtual function call in constructors/destructors.
 - ``NULL`` (Use ``nullptr`` instead).
-- ``using namespace std;`` in global scope.
+- ``using namespace std;`` in the global scope.
 - ``typedef`` (Use ``using`` instead).
 
 Automatic code formatting

@@ -97,7 +97,7 @@ Using continuous integration
 
 - Continuous Integration (CI), will **build** and **test** your commits in a PR against in environments.
 - Currently, Taichi uses `Travis CI <https://travis-ci.org>`_ (for OS X and Linux) and `AppVeyor <https://www.appveyor.com>`_ (for Windows).
-- CI will be triggered everytime you push commits to an open PR.
+- CI will be triggered every time you push commits to an open PR.
 - You can prepend ``[skip ci]`` to your commit message to avoid triggering CI. e.g. ``[skip ci] This commit will not trigger CI``
 - A tick on the right of commit hash means CI passed, a cross means CI failed.
 
@@ -119,7 +119,7 @@ PR title format and tags
 ------------------------
 PR titles will be part of the commit history reflected in the ``master`` branch, therefore it is important to keep PR titles readable.
 
- - The first letter of the PR title body should be capitalized, unless the title starts with a identifier;
+ - The first letter of the PR title body should be capitalized, unless the title starts with an identifier;
 
      - E.g., "[doc] improve documentation" should be formatted as "[doc] Improve documentation";
      - "[Lang] ``ti.sqr(x)`` is now deprecated" is fine because ``ti`` is an identifier.

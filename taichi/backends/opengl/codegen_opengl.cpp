@@ -602,28 +602,32 @@ class KernelGen : public IRVisitor {
   }
 
   void visit(LoopIndexStmt *stmt) override {
-    TI_ASSERT(stmt->loop->is<RangeForStmt>() ||
-        (stmt->loop->is<OffloadedStmt>() &&
-            stmt->loop->as<OffloadedStmt>()->task_type ==
-            OffloadedStmt::TaskType::range_for));
     TI_ASSERT(stmt->index == 0);  // TODO: multiple indices
-    emit("int {} = _itv;", stmt->short_name());
+    if (stmt->loop->is<OffloadedStmt>()) {
+      TI_ASSERT(stmt->loop->as<OffloadedStmt>()->task_type ==
+          OffloadedStmt::TaskType::range_for);
+      emit("int {} = _itv;", stmt->short_name());
+    } else if (stmt->loop->is<RangeForStmt>()) {
+      emit("int {} = {};", stmt->short_name(), stmt->loop->short_name());
+    } else {
+      TI_NOT_IMPLEMENTED
+    }
   }
 
   void visit(RangeForStmt *for_stmt) override {
     TI_ASSERT(for_stmt->width() == 1);
-    auto loop_var_name = for_stmt->raw_name();
+    auto loop_var_name = for_stmt->short_name();
     if (!for_stmt->reversed) {
       emit("for (int {}_ = {}; {}_ < {}; {}_ = {}_ + {}) {{",
-           loop_var_name, for_stmt->begin->raw_name(),
-           loop_var_name, for_stmt->end->raw_name(),
+           loop_var_name, for_stmt->begin->short_name(),
+           loop_var_name, for_stmt->end->short_name(),
            loop_var_name, loop_var_name, 1);
       emit("  int {} = {}_;", loop_var_name, loop_var_name);
     } else {
       // reversed for loop
       emit("for (int {}_ = {} - 1; {}_ >= {}; {}_ = {}_ - {}) {{",
-           loop_var_name, for_stmt->end->raw_name(),
-           loop_var_name, for_stmt->begin->raw_name(),
+           loop_var_name, for_stmt->end->short_name(),
+           loop_var_name, for_stmt->begin->short_name(),
            loop_var_name, loop_var_name, 1);
       emit("  int {} = {}_;", loop_var_name, loop_var_name);
     }

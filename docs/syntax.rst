@@ -167,7 +167,7 @@ Debugging
 
 Debug your program with ``print(x)``. For example, if ``x`` is ``23``, then it prints
 
-.. code-block::
+.. code-block:: none
 
     [debug] x = 23
 

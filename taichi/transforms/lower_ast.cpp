@@ -448,6 +448,7 @@ namespace irpass {
 void lower(IRNode *root) {
   auto offsets = LowerAST::run(root);
   FixStructForOffsets::run(root, offsets);
+  convert_into_loop_index(root);
 }
 
 }  // namespace irpass

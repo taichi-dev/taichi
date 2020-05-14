@@ -1,5 +1,5 @@
 Utilities
-==================================
+=========
 
 Logging
 -------
@@ -21,8 +21,8 @@ The default logging level is ``ti.INFO``.
 You can also override default logging level by setting the environment variable like
 ``TI_LOG_LEVEL=warn``.
 
+.. _regress:
 
-.. _regression:
 Benchmarking and Regression Tests
 ---------------------------------
 

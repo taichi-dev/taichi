@@ -254,6 +254,10 @@ def main(debug=False):
         import shutil
         baseline_dir = get_benchmark_baseline_dir()
         output_dir = get_benchmark_output_dir()
+        old_cwd = os.getcwd()
+        os.chdir(baseline_dir)
+        os.system('git checkout master')
+        os.chdir(old_cwd)
         for x in os.listdir(baseline_dir):
             if x.endswith('.dat'):
                 dst = os.path.join(baseline_dir, x)
@@ -263,7 +267,6 @@ def main(debug=False):
                 src = os.path.join(output_dir, x)
                 dst = os.path.join(baseline_dir, x)
                 shutil.copy(src, dst)
-        old_cwd = os.getcwd()
         os.chdir(baseline_dir)
         print('[benchmark] pushing baseline data...')
         os.system('git add .')

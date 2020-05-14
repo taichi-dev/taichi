@@ -1,16 +1,9 @@
 Hello, world!
-===============================================
+=============
 
 We introduce the Taichi programming language through a very basic `fractal` example.
 
-First of all, let's install Taichi via ``pip``:
-
-.. code-block:: bash
-
-  # Python 3.6+ needed
-  python3 -m pip install taichi
-
-Now you are ready to run the Taichi code below (``python3 fractal.py``) to compute a
+Running the Taichi code below (``python3 fractal.py``) will give you a image of
 `Julia set <https://en.wikipedia.org/wiki/Julia_set>`_:
 
 .. image:: https://github.com/yuanming-hu/public_files/raw/master/graphics/taichi/fractal.gif

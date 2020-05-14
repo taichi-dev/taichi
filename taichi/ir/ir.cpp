@@ -201,7 +201,6 @@ Stmt::Stmt() : field_manager(this), fields_registered(false) {
   parent = nullptr;
   instance_id = instance_id_counter++;
   id = instance_id;
-  operand_bitmap = 0;
   erased = false;
   is_ptr = false;
 }
@@ -251,15 +250,12 @@ void Stmt::replace_with(VecStatement &&new_statements, bool replace_usages) {
 }
 
 void Stmt::replace_operand_with(Stmt *old_stmt, Stmt *new_stmt) {
-  operand_bitmap = 0;
   int n_op = num_operands();
   for (int i = 0; i < n_op; i++) {
     if (operand(i) == old_stmt) {
       *operands[i] = new_stmt;
     }
-    operand_bitmap |= operand_hash(operand(i));
   }
-  rebuild_operand_bitmap();
 }
 
 std::string Stmt::type_hint() const {
@@ -292,12 +288,10 @@ std::vector<Stmt *> Stmt::get_operands() const {
 
 void Stmt::set_operand(int i, Stmt *stmt) {
   *operands[i] = stmt;
-  rebuild_operand_bitmap();
 }
 
 void Stmt::register_operand(Stmt *&stmt) {
   operands.push_back(&stmt);
-  rebuild_operand_bitmap();
 }
 
 void Stmt::mark_fields_registered() {
@@ -305,7 +299,7 @@ void Stmt::mark_fields_registered() {
   fields_registered = true;
 }
 
-bool Stmt::have_operand(Stmt *stmt) const {
+bool Stmt::has_operand(Stmt *stmt) const {
   for (int i = 0; i < num_operands(); i++) {
     if (*operands[i] == stmt) {
       return true;
@@ -569,13 +563,6 @@ Stmt *LocalLoadStmt::previous_store_or_alloca_in_block() {
   return nullptr;
 }
 
-void LocalLoadStmt::rebuild_operands() {
-  operands.clear();
-  for (int i = 0; i < (int)ptr.size(); i++) {
-    register_operand(this->ptr[i].var);
-  }
-}
-
 bool LocalLoadStmt::same_source() const {
   for (int i = 1; i < (int)ptr.size(); i++) {
     if (ptr[i].var != ptr[0].var)
@@ -655,10 +642,11 @@ void Block::replace_statements_in_range(int start,
 }
 
 void Block::replace_with(Stmt *old_statement,
-                         std::unique_ptr<Stmt> &&new_statement) {
+                         std::unique_ptr<Stmt> &&new_statement,
+                         bool replace_usages) {
   VecStatement vec;
   vec.push_back(std::move(new_statement));
-  replace_with(old_statement, std::move(vec));
+  replace_with(old_statement, std::move(vec), replace_usages);
 }
 
 Stmt *Block::lookup_var(const Identifier &ident) const {

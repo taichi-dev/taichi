@@ -170,7 +170,7 @@ Every event have a key and type.
 
 A *event filter* is a list combined of *key*, *type* and *(type, key)* tuple, e.g.:
 
-.. code-block::
+.. code-block:: python
 
     # if ESC pressed or released:
     gui.get_event(ti.GUI.ESCAPE)

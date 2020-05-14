@@ -178,7 +178,8 @@ class AllocaOptimize : public VariableOptimize {
     }
 
     for (auto &loop_var : loop_vars) {
-      get_state_machine(loop_var).mark_as_loop_var();
+      if (loop_var)
+        get_state_machine(loop_var).mark_as_loop_var();
     }
     auto origin = state_machines;
     modify_all_state_machines(&StateMachine::begin_if_or_loop);

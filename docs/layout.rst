@@ -70,7 +70,7 @@ To specify which layout to use in Taichi:
 Both ``x`` and ``y`` have the same shape of ``(3, 2)``, and they can be accessed in the same manner, where ``0 <= i < 3 && 0 <= j < 2``. They can be accessed in the same manner: ``x[i, j]`` and ``y[i, j]``.
 However, they have a very different memory layouts:
 
-.. code-block::
+.. code-block:: none
 
     #     address low ........................... address high
     # x:  x[0,0]   x[0,1]   x[0,2] | x[1,0]   x[1,1]   x[1,2]
@@ -108,7 +108,7 @@ For example, this places two 1D tensors of size ``3`` (array of structure, AoS):
 
 Their memory layout:
 
-.. code-block::
+.. code-block:: none
 
     #  address low ............. address high
     #  x[0]   y[0] | x[1]  y[1] | x[2]   y[2]
@@ -122,7 +122,7 @@ In contrast, this places two tensor placed separately (structure of array, SoA):
 
 Now, their memory layout:
 
-.. code-block::
+.. code-block:: none
 
     #  address low ............. address high
     #  x[0]  x[1]   x[2] | y[0]   y[1]   y[2]

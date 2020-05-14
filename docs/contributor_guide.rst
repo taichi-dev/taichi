@@ -7,7 +7,7 @@ all forms, including but not limited to
 - Bug fixes
 - Proposing and implementing new features
 - Documentation improvement and translations (e.g. `Simplified Chinese <https://github.com/taichi-dev/taichi-docs-zh-cn>`_)
-- Improved syntax error messages that are more user-friendly
+- Improved error messages that are more user-friendly
 - New test cases
 - New examples
 - Compiler performance patches
@@ -119,17 +119,16 @@ PR title format and tags
 ------------------------
 PR titles will be part of the commit history reflected in the ``master`` branch, therefore it is important to keep PR titles readable.
 
- - The first letter of the PR title body should be capitalized, unless the title starts with an identifier;
+ - The first letter of the PR title body should be capitalized, unless the title starts with an identifier:
 
      - E.g., "[doc] improve documentation" should be formatted as "[doc] Improve documentation";
-     - "[Lang] ``ti.sqr(x)`` is now deprecated" is fine because ``ti`` is an identifier.
+     - "[Lang] ti.sqr(x) is now deprecated" is fine because ``ti`` is an identifier.
 
- - Please always prepend at least one tag such as ``[Metal]`` to PR titles;
+ - Please do not include back quotes ("`") in PR titles.
+ - Please always prepend at least one tag such as ``[Metal]`` to PR titles:
 
      - When using multiple tags, make sure there is exactly one space between tags;
      - E.g., "[Metal][refactor]" (no space) should be formatted as "[Metal] [refactor]";
-
- - Please do not include back quotes ("`") in PR titles.
 
  - For example, "[Metal] Support bitmasked SNode", "[OpenGL] AtomicMin/Max support", or "[Opt] [IR] Enhanced constant folding".
 

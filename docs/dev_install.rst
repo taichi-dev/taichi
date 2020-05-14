@@ -1,7 +1,7 @@
 .. _dev_install:
 
 Developer installation
-=====================================================
+======================
 
 Note this is for the compiler developers of the Taichi programming language.
 End users should use the pip packages instead of building from scratch.
@@ -12,7 +12,7 @@ For precise build instructions on Windows, please check out `appveyor.yml <https
 Note that on Linux/OS X, ``clang`` is the only supported compiler for compiling the Taichi compiler. On Windows only MSVC supported.
 
 Installing Depedencies
----------------------------------------------
+----------------------
 
 - Make sure you are using Python 3.6/3.7/3.8
 - Execute
@@ -57,8 +57,9 @@ Setting up CUDA (optional)
 
 If you don't have CUDA, go to `this website <https://developer.nvidia.com/cuda-downloads>`_ and download the installer.
 
-- To check if CUDA is installed, run ``nvcc --version`` or ``cat /usr/local/cuda/version.txt``
-- On Ubuntu we recommend choosing ``deb (local)`` as **Installer Type**.
+- To check if CUDA is installed, run ``nvcc --version`` or ``cat /usr/local/cuda/version.txt``.
+- On **Ubuntu** we recommend choosing ``deb (local)`` as **Installer Type**.
+- On **Arch Linux**, you can easily install CUDA via ``pacman -S cuda`` without downloading the installer manually.
 
 
 Setting up Taichi for development

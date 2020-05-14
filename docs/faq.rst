@@ -1,4 +1,4 @@
-Frequently Asked Questions
+Frequently asked questions
 ==========================
 
 **Can a user iterate over irregular topology instead of grids, such as tetrahedra meshes, line segment vertices?**

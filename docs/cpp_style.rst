@@ -1,4 +1,4 @@
-C++ Style
+C++ style
 =========
 
 We generally follow `Google C++ Style Guide <https://google.github.io/styleguide/cppguide.html>`_.

@@ -1,4 +1,4 @@
-Global Settings
+Global settings
 ---------------
 
 - Restart the Taichi runtime system (clear memory, destroy all variables and kernels): ``ti.reset()``

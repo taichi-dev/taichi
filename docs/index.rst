@@ -49,6 +49,7 @@ The Taichi Programming Language
 
    dev_install
    contributor_guide
+   utilities
    cpp_style
    internal
 
@@ -57,7 +58,6 @@ The Taichi Programming Language
    :caption: Miscellaneous
    :maxdepth: 3
 
-   utilities
    gui
    global_settings
    performance

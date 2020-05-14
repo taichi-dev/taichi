@@ -137,7 +137,7 @@ Existing tags:
 - ``[Metal], [OpenGL], [CPU], [CUDA], [AMDGPU], [LLVM]``: backends;
 - ``[LLVM]``: the LLVM backend shared by CPUs and CUDA;
 - ``[Lang]``: frontend language features, including syntax sugars;
-- ``[Std]``: standard library, e.g. `ti.Matrix` and `ti.Vector`;
+- ``[Std]``: standard library, e.g. ``ti.Matrix`` and ``ti.Vector``;
 - ``[IR]``: intermediate representation;
 - ``[Sparse]``: sparse computation, dynamic memory allocator, and garbage collection;
 - ``[Opt]``: IR optimization passes;
@@ -216,15 +216,6 @@ C++ and Python standards
 
 The C++ part of Taichi is written in C++17, and the Python part in 3.6+.
 You can assume that C++17 and Python 3.6 features are always available.
-
-
-(Linux only) pinpointing runtime errors using ``gdb``
------------------------------------------------------
-A quick way to pinpoint common runtime errors such as segmentation faults/assertion failures:
-When Taichi crashes, ``gdb`` will be triggered and attach to the current thread.
-You might be prompt to enter sudo password required for gdb thread attaching.
-After entering ``gdb``, check the stack backtrace with command ``bt`` (``backtrace``),
-then find the line of code triggering the error.
 
 
 Efficient code navigation across Python/C++

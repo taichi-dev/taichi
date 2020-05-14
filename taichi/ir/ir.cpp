@@ -299,6 +299,15 @@ void Stmt::mark_fields_registered() {
   fields_registered = true;
 }
 
+bool Stmt::has_operand(Stmt *stmt) const {
+  for (int i = 0; i < num_operands(); i++) {
+    if (*operands[i] == stmt) {
+      return true;
+    }
+  }
+  return false;
+}
+
 int Stmt::locate_operand(Stmt **stmt) {
   for (int i = 0; i < num_operands(); i++) {
     if (operands[i] == stmt) {

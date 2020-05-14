@@ -52,10 +52,19 @@ Installing Depedencies
     make -j 8
     sudo make install
 
-Setting up Taichi for development
----------------------------------------------
+Setting up CUDA (optional)
+--------------------------
 
-- Clone the taichi repo, and build:
+If you don't have CUDA, go to `this website <https://developer.nvidia.com/cuda-downloads>`_ and download the installer.
+
+- To check if CUDA is installed, run ``nvcc --version`` or ``cat /usr/local/cuda/version.txt``
+- On Ubuntu we recommend choosing ``deb (local)`` as **Installer Type**.
+
+
+Setting up Taichi for development
+---------------------------------
+
+- Clone the taichi repo **recursively**, and build:
 
   .. code-block:: bash
 
@@ -66,7 +75,7 @@ Setting up Taichi for development
     cd build
     cmake ..
     # if you are building with CUDA 10.0, use the line below:
-    # cmake .. -DCUDA_VERSION=10.0 -DTI_WITH_CUDA:BOOL=True
+    #   cmake .. -DCUDA_VERSION=10.0 -DTI_WITH_CUDA:BOOL=True
     make -j 8
 
 - Add the following script to your ``~/.bashrc``:
@@ -83,29 +92,9 @@ Setting up Taichi for development
 - Check out ``examples`` for runnable examples. Run them with ``python3``.
 
 
-Setting up CUDA 10.1 on Ubuntu 18.04
----------------------------------------------
-
-First, make sure you have CUDA 10.1 installed.
-Check this by running
-``nvcc --version`` or ``cat /usr/local/cuda/version.txt``
-
-If you don't have it - go ahead to `this website <https://developer.nvidia.com/cuda-downloads>`_ and download it.
-
-These instructions were copied from the webiste above for x86_64 architecture
-
-.. code-block:: bash
-
-  wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/cuda-ubuntu1804.pin
-  sudo mv cuda-ubuntu1804.pin /etc/apt/preferences.d/cuda-repository-pin-600
-  wget http://developer.download.nvidia.com/compute/cuda/10.1/Prod/local_installers/cuda-repo-ubuntu1804-10-1-local-10.1.243-418.87.00_1.0-1_amd64.deb
-  sudo dpkg -i cuda-repo-ubuntu1804-10-1-local-10.1.243-418.87.00_1.0-1_amd64.deb
-  sudo apt-key add /var/cuda-repo-10-1-local-10.1.243-418.87.00/7fa2af80.pub
-  sudo apt-get update
-  sudo apt-get -y install cuda
 
 Prebuilt LLVM for Windows CI
--------------------------------------------------
+----------------------------
 
 .. code-block:: bash
 
@@ -114,7 +103,7 @@ Prebuilt LLVM for Windows CI
 Then use Visual Studio to build. After building the ``INSTALL`` project (under folder "CMakePredefinedTargets"). After build completes, find your LLVM binaries/headers in `build/include`.
 
 Troubleshooting
-----------------------------------
+---------------
 
 - Run with debug mode to see if there's any illegal memory access
 - Disable compiler optimizations to quickly confirm that the issue is not cause by optimization

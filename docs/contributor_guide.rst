@@ -5,22 +5,28 @@ First of all, thank you for contributing! We welcome contributions of
 all forms, including but not limited to
 
 - Bug fixes
-- New features
-- Documentation
-- Improved error messages that are more user-friendly
-- New example programs
+- Proposing and implementing new features
+- Documentation improvement and translations (e.g. `Simplified Chinese <https://github.com/taichi-dev/taichi-docs-zh-cn>`_)
+- Improved syntax error messages that are more user-friendly
+- New test cases
+- New examples
 - Compiler performance patches
-- Minor typo fixes in the documentation, code, comments (please directly make a pull request for minor issues like these)
+- Blog posts and tutorials
+- Participation in the `Taichi forum <https://forum.taichi.graphics/>`_
+- Introduce Taichi to your friends or simply star `the project <https://github.com/taichi-dev/taichi>`_.
+- Typo fixes in the documentation, code, comments (please directly make a pull request for minor issues like these)
 
 How to contribute bug fixes and new features
 --------------------------------------------
 
-Issues marked with `"welcome contribution" <https://github.com/taichi-dev/taichi/issues?q=is%3Aopen+is%3Aissue+label%3A%22welcome+contribution%22>`_ are easy ones to start with.
+Issues marked with `"good first issue" <https://github.com/taichi-dev/taichi/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22>`_ are great chances for starters.
 
 - Please first leave a note (e.g. *I know how to fix this and would like to help!*) on the issue, so that people know someone is already working on it. This helps prevent redundant work;
 
 - If no core developer has commented and described a potential solution on the issue, please briefly describe your plan, and wait for a core developer to reply before you start.
   This helps keep implementations simple and effective.
+
+Issues marked with `"welcome contribution" <https://github.com/taichi-dev/taichi/issues?q=is%3Aopen+is%3Aissue+label%3A%22welcome+contribution%22>`_ are slightly more challenging but still friendly to beginners.
 
 High-level guidelines
 ---------------------
@@ -48,9 +54,18 @@ Making good pull requests
 -------------------------
 
 - PRs with **small** changesets are preferred. A PR should ideally address **only one issue**.
+
+  - It is fine to include off-topic **trivial** refactoring such as typo fixes;
+  - The reviewers reserve the right to ask PR authors to remove off-topic **non-trivial** changes.
+
 - All commits in a PR will always be **squashed and merged into master as a single commit**.
+- PR authors **should not squash commits on their own**;
 - When implementing a complex feature, consider breaking it down into small PRs, to keep a more detailed development history and to interact with core developers more frequently.
-- If you want early feedback from core developers, open a PR in **Draft** state on GitHub so that you can share your progress.
+- If you want early feedback from core developers
+
+  - Open a PR in `Draft <https://github.blog/2019-02-14-introducing-draft-pull-requests/>`_ state on GitHub so that you can share your progress;
+  - Make sure you @ the corresponding developer in the comments or request the review.
+
 - If you are making multiple PRs
 
   - Independent PRs should be based on **different** branches forking from ``master``;
@@ -58,9 +73,7 @@ Making good pull requests
 
 - All PRs should ideally come with corresponding **tests**;
 - All PRs should come with **documentation update**, except for internal compiler implementations;
-- All PRs should always be **rebased** onto the latest master branch before merging;
-- All PRs should pass **continuous integration tests** before they get merged;
-- PR authors **should not squash commits on their own**;
+- All PRs must pass **continuous integration tests** before they get merged;
 - PR titles should follow :ref:`prtag`;
 - A great article from Google on `how to have your PR merged quickly <https://testing.googleblog.com/2017/06/code-health-too-many-comments-on-your.html>`_. `[PDF] <https://github.com/yuanming-hu/public_files/blob/master/graphics/taichi/google_review_comments.pdf>`_
 
@@ -102,9 +115,22 @@ Enforcing code style
 
 .. _prtag:
 
-PR title tags
--------------
-Please always prepend exactly one tag such as ``[Metal]`` to PR titles. For example, "[Metal] Support bitmasked SNode", "[OpenGL] AtomicMin/Max support", or "[Opt] Enhanced constant folding".
+PR title format and tags
+------------------------
+PR titles will be part of the commit history reflected in the ``master`` branch.
+It is important to keep PR titles readable.
+
+ - The first letter of the PR title body should be capitalized, unless the title starts with a identifier;
+
+     - E.g., "[doc] improve documentation" should be formatted as "[doc] Improve documentation";
+     - "[Lang] `ti.sqr(x)` is now deprecated" is fine because ``ti`` is an identifier.
+
+ - Please always prepend at least one tag such as ``[Metal]`` to PR titles;
+
+     - When using multiple tags, make sure there is exactly one space between tags;
+     - E.g., "[Metal][refactor]" (no space) should be formatted as "[Metal] [refactor]";
+
+ - For example, "[Metal] Support bitmasked SNode", "[OpenGL] AtomicMin/Max support", or "[Opt] [IR] Enhanced constant folding".
 
 Existing tags:
 
@@ -145,7 +171,7 @@ Tips on the Taichi compiler development
 
 :ref:`compilation` may worth checking out. It explains the whole compilation process.
 
-:ref:`regression` may worth checking out when the work involves IR optimization.
+:ref:`regress` may worth checking out when the work involves IR optimization.
 
 When creating a Taichi program using ``ti.init(arch=desired_arch, **kwargs)``, pass in the following parameters to make the Taichi compiler print out IR:
 
@@ -166,21 +192,24 @@ Testing
 -------
 
 Tests should be added to ``taichi/tests``.
-Use ``ti test`` to run all the tests.
-Use ``ti test -v`` for verbose outputs.
-Use ``ti test <filename(s)>`` to run specific tests. e.g. ``ti test numpy_io`` and ``ti test test_numpy_io.py`` are equivalent.
-Use ``ti test -a <arch(s)>`` for test against specified architectures. e.g. ``ti test -a opengl`` or ``ti test numpy_io -a cuda,metal``.
-Use ``ti test -na <arch(s)>`` for test all architectures exclude some of them. e.g. ``ti test -na opengl,cuda``.
-Use ``ti test -c`` to run only the C++ tests. e.g. ``ti test -c alg_simp``
+
+- Use ``ti test`` to run all the tests.
+- Use ``ti test -v`` for verbose outputs.
+- Use ``ti test <filename(s)>`` to run specific tests. e.g. ``ti test numpy_io`` and ``ti test test_numpy_io.py`` are equivalent.
+- Use ``ti test -a <arch(s)>`` for test against specified architectures. e.g. ``ti test -a opengl`` or ``ti test numpy_io -a cuda,metal``.
+- Use ``ti test -na <arch(s)>`` for test all architectures exclude some of them. e.g. ``ti test -na opengl,cuda``.
+- Use ``ti test -c`` to run only the C++ tests. e.g. ``ti test -c alg_simp``
 
 For more options, see ``ti test -h``.
 
 Documentation
 -------------
 
-Use ``ti doc`` to build the documentation locally.
-Open the documentation at ``taichi/doc/build/index.html``.
-On Linux/OS X, use ``watch -n 1 ti doc`` to continuously build the documentation.
+- Use ``ti doc`` to build the documentation locally.
+- Open the documentation at ``taichi/doc/build/index.html``.
+- On Linux/OS X, use ``watch -n 1 ti doc`` to continuously build the documentation.
+
+  - If the OpenGL backend detector keeps creating new windows, execute ``export TI_WITH_OPENGL=0`` for ``ti doc``.
 
 C++ and Python standards
 ------------------------
@@ -191,7 +220,7 @@ You can assume that C++17 and Python 3.6 features are always available.
 
 (Linux only) pinpointing runtime errors using ``gdb``
 -----------------------------------------------------
-A quick way to pinpoint common runtime errors such as segmentation faults/assertion failures.
+A quick way to pinpoint common runtime errors such as segmentation faults/assertion failures:
 When Taichi crashes, ``gdb`` will be triggered and attach to the current thread.
 You might be prompt to enter sudo password required for gdb thread attaching.
 After entering ``gdb``, check the stack backtrace with command ``bt`` (``backtrace``),
@@ -212,16 +241,23 @@ Key folders are
 
 - ``taichi``: The core compiler implementation
 
-  - ``program``: Top-level constructs
-  - ``runtime``: Runtime environments
-  - ``codegen``: Code generators
-  - ``struct``: Struct compilers
-  - ``backends``: Device-dependent code generators/runtime environments
-  - ``llvm``: LLVM utils
-  - ``ir``: Intermediate representation
-  - ``transforms``: IR transform passes
   - ``analysis``: Static analysis passes
+  - ``backends``: Device-dependent code generators/runtime environments
+  - ``codegen``: Code generators
+  - ``gui``:  GUI
+  - ``inc``:  Small definition files to be included repeatedly
+  - ``ir``: Intermediate representation
+  - ``jit``: JIT-in-time compilation system
+  - ``llvm``: LLVM utils
+  - ``math``: Math utils
+  - ``platform``: Platform supports
+  - ``program``: Top-level constructs
   - ``python``: C++/Python interfaces
+  - ``runtime``: Runtime environments
+  - ``struct``: Struct compilers
+  - ``system``: OS-related infrastructure
+  - ``transforms``: IR transform passes
+  - ``util``:  Misc. utilities
 
 - ``python``: Python frontend implementation
 - ``examples``: Examples

@@ -113,8 +113,8 @@ def display_benchmark_regression(xd, yd, args):
             gui = ti.GUI(f'{key}', (512, 512), 0x001122)
             data = np.array([((i + 0.5)/len(data), x/2) for i, x in enumerate(data)])
             while not gui.get_event((ti.GUI.PRESS, ti.GUI.ESCAPE)):
-                gui.line((0, 0.5), (1, 0.5))
-                gui.circles(data, 0xffeedd, 2)
+                gui.line((0, 0.5), (1, 0.5), 1.8, 0x66ccff)
+                gui.circles(data, 0xffcc66, 1.5)
                 gui.show()
 
     spec = args.files
@@ -129,13 +129,13 @@ def display_benchmark_regression(xd, yd, args):
             if spec and key not in spec:
                 continue
             a, b = u.get(key, 0), v.get(key, 0)
-            if a == b: continue
+            res = b / a if a != 0 else math.inf
+            scatter[key].append(res)
+            if res == 1: continue
             if single_line:
                 ret += f'{file:_<24}{func:_<42}'
             else:
                 ret += f'{key:<43}'
-            res = b / a if a != 0 else math.inf
-            scatter[key].append(res)
             res -= 1
             color = Fore.RESET
             if res > 0: color = Fore.RED

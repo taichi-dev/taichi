@@ -34,7 +34,7 @@ Benchmarking and Regression Tests
 
 For example, this is part of the output by ``ti regression`` after enabling constant folding optimization pass:
 
-.. code-block::
+::
 
     linalg__________________polar_decomp______________________________
     codegen_offloaded_tasks                       37 ->    39    +5.4%

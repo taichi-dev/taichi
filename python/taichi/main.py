@@ -244,7 +244,7 @@ def main(debug=False):
         commit_hash = ti.core.get_commit_hash()
         with os.popen('git rev-parse HEAD') as f:
             current_commit_hash = f.read().strip()
-        assert commit_hash == current_commit_hash, f"Built commit {commit_hash:.6} different from current commit {current_commit_hash:.6}, refuse to benchmark"
+        assert commit_hash == current_commit_hash, f"Built commit {commit_hash:.6} differs from current commit {current_commit_hash:.6}, refuse to benchmark"
         os.environ['TI_PRINT_BENCHMARK_STAT'] = '1'
         output_dir = get_benchmark_output_dir()
         shutil.rmtree(output_dir, True)
@@ -276,7 +276,7 @@ def main(debug=False):
         print('[benchmark] pushing baseline data...')
         os.system('git add .')
         os.system(f"git commit -m 'update baseline for taichi@{commit_hash}'")
-        os.system('git push')
+        os.system('git push --force')
         os.chdir(old_cwd)
         print('[benchmark] baseline data uploaded')
     elif mode == "regression":

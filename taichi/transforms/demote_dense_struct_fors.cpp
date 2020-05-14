@@ -35,7 +35,7 @@ VecStatement convert_to_range_for(StructForStmt *struct_for) {
     physical_indices.push_back(snodes.back()->physical_index_position[i]);
   }
 
-  auto main_loop_var = body_header.push_back<LoopIndexStmt>(nullptr, 0, false);
+  auto main_loop_var = body_header.push_back<LoopIndexStmt>(nullptr, 0);
 
   int offset = total_bits;
   Stmt *test = body_header.push_back<ConstStmt>(TypedConstant(-1));

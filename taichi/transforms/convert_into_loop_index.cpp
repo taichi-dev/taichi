@@ -10,8 +10,7 @@ class ConvertIntoLoopIndexStmt : public BasicStmtVisitor {
 
   static void convert(Stmt *loop,
                       Stmt *loop_var,
-                      int index,
-                      bool is_struct_for) {
+                      int index) {
     if (!loop_var)
       return;
     irpass::replace_statements_with(
@@ -24,18 +23,18 @@ class ConvertIntoLoopIndexStmt : public BasicStmtVisitor {
           }
           return false;
         },
-        [&]() { return Stmt::make<LoopIndexStmt>(loop, index, is_struct_for); });
+        [&]() { return Stmt::make<LoopIndexStmt>(loop, index); });
   }
 
   void preprocess_container_stmt(Stmt *stmt) override {
     if (auto range_for = stmt->cast<RangeForStmt>()) {
-      convert(range_for, range_for->loop_var, 0, false);
+      convert(range_for, range_for->loop_var, 0);
       range_for->loop_var = nullptr;
     } else if (auto struct_for = stmt->cast<StructForStmt>()) {
       auto leaf = struct_for->snode;
       for (int i = 0; i < (int)struct_for->loop_vars.size(); i++) {
         convert(struct_for, struct_for->loop_vars[i],
-            leaf->physical_index_position[i], true);
+            leaf->physical_index_position[i]);
         struct_for->loop_vars[i] = nullptr;
       }
     }

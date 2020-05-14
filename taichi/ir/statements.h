@@ -219,10 +219,9 @@ class LoopIndexStmt : public Stmt {
  public:
   Stmt *loop;
   int index;
-  bool is_struct_for;
 
-  LoopIndexStmt(Stmt *loop, int index, bool is_struct_for)
-      : loop(loop), index(index), is_struct_for(is_struct_for) {
+  LoopIndexStmt(Stmt *loop, int index)
+      : loop(loop), index(index) {
     TI_STMT_REG_FIELDS;
   }
 
@@ -230,7 +229,7 @@ class LoopIndexStmt : public Stmt {
     return false;
   }
 
-  TI_STMT_DEF_FIELDS(ret_type, loop, index, is_struct_for);
+  TI_STMT_DEF_FIELDS(ret_type, loop, index);
   DEFINE_ACCEPT
 };
 

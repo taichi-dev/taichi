@@ -6,6 +6,7 @@ The Taichi Programming Language
    :maxdepth: 3
 
    overview
+   install
    hello
 
 

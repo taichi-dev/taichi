@@ -148,9 +148,10 @@ Existing tags:
 - ``[Refactor]``: code refactoring;
 - ``[AutoDiff]``: automatic differentiation;
 - ``[CLI]``: commandline interfaces, e.g. the ``ti`` command;
-- ``[Doc]``: documentation;
-- ``[Example]``: examples under ``taichi/examples/``;
+- ``[Doc]``: documentation under ``docs/``;
+- ``[Example]``: examples under ``examples/``;
 - ``[Test]``: adding or improving tests under ``tests/``;
+- ``[Benchmark]``: Benchmarking & regression tests;
 - ``[PyPI]``: PyPI package release;
 - ``[Misc]``: something that doesn't belong to any category, such as version bump, reformatting;
 - ``[Bug]``: bug fixes;

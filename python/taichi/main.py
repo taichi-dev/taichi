@@ -5,6 +5,7 @@ import time
 import math
 import random
 import argparse
+from collections import defaultdict
 from colorama import Fore, Back, Style
 from taichi.tools.video import make_video, interpolate_frames, mp4_to_gif, scale_video, crop_video, accelerate_video
 
@@ -81,7 +82,7 @@ def get_benchmark_output_dir():
     return os.path.join(ti.core.get_repo_dir(), 'benchmarks', 'output')
 
 
-def display_benchmark_regression(xd, yd):
+def display_benchmark_regression(xd, yd, args):
     def parse_dat(file):
         dict = {}
         for line in open(file).readlines():
@@ -105,23 +106,53 @@ def display_benchmark_regression(xd, yd):
             dict[name] = parse_dat(path)
         return dict
 
+    def plot_in_gui(scatter):
+        import numpy as np
+        import taichi as ti
+        gui = ti.GUI('Regression Test', (640, 480), 0x001122)
+        print('[Hint] press SPACE to go for next display')
+        for key, data in scatter.items():
+            data = np.array([((i + 0.5)/len(data), x/2) for i, x in enumerate(data)])
+            while not gui.get_event((ti.GUI.PRESS, ti.GUI.SPACE)):
+                gui.core.title = key
+                gui.line((0, 0.5), (1, 0.5), 1.8, 0x66ccff)
+                gui.circles(data, 0xffcc66, 1.5)
+                gui.show()
+
+    spec = args.files
+    single_line = spec and len(spec) == 1
     xs, ys = get_dats(xd), get_dats(yd)
+    scatter = defaultdict(list)
     for name in set(xs.keys()).union(ys.keys()):
         file, func = name.split('::')
         u, v = xs.get(name, {}), ys.get(name, {})
         ret = ''
         for key in set(u.keys()).union(v.keys()):
+            if spec and key not in spec:
+                continue
             a, b = u.get(key, 0), v.get(key, 0)
-            if a == b: continue
-            res = b / a - 1 if a != 0 else math.inf
+            res = b / a if a != 0 else math.inf
+            scatter[key].append(res)
+            if res == 1: continue
+            if single_line:
+                ret += f'{file:_<24}{func:_<42}'
+            else:
+                ret += f'{key:<43}'
+            res -= 1
             color = Fore.RESET
             if res > 0: color = Fore.RED
             elif res < 0: color = Fore.GREEN
-            ret += f'{key:<43}{Fore.MAGENTA}{a:>5}{Fore.RESET} -> '
+            ret += f'{Fore.MAGENTA}{a:>5}{Fore.RESET} -> '
             ret += f'{Fore.CYAN}{b:>5} {color}{res:>+8.1%}{Fore.RESET}\n'
         if ret != '':
-            print(f'{file:_<24}{func:_<42}')
-            print(ret)
+            if not single_line:
+                print(f'{file:_<24}{func:_<42}')
+            print(ret, end='')
+            if not single_line:
+                print('')
+
+    if args.gui:
+        plot_in_gui(scatter)
 
 
 def make_argument_parser():
@@ -130,7 +161,7 @@ def make_argument_parser():
                         '--verbose',
                         action='store_true',
                         help='Run with verbose outputs')
-    parser.add_argument('-r', '--rerun', help='Rerun failed tests once again')
+    parser.add_argument('-r', '--rerun', help='Rerun failed tests for given times')
     parser.add_argument('-t',
                         '--threads',
                         help='Number of threads for parallel testing')
@@ -138,6 +169,10 @@ def make_argument_parser():
                         '--cpp',
                         action='store_true',
                         help='Run C++ tests')
+    parser.add_argument('-g',
+                        '--gui',
+                        action='store_true',
+                        help='Display benchmark regression result in GUI')
     parser.add_argument(
         '-a',
         '--arch',
@@ -241,6 +276,10 @@ def main(debug=False):
             return test_cpp(args)
     elif mode == "benchmark":
         import shutil
+        commit_hash = ti.core.get_commit_hash()
+        with os.popen('git rev-parse HEAD') as f:
+            current_commit_hash = f.read().strip()
+        assert commit_hash == current_commit_hash, f"Built commit {commit_hash:.6} differs from current commit {current_commit_hash:.6}, refuse to benchmark"
         os.environ['TI_PRINT_BENCHMARK_STAT'] = '1'
         output_dir = get_benchmark_output_dir()
         shutil.rmtree(output_dir, True)
@@ -254,34 +293,13 @@ def main(debug=False):
         import shutil
         baseline_dir = get_benchmark_baseline_dir()
         output_dir = get_benchmark_output_dir()
-        for x in os.listdir(baseline_dir):
-            if x.endswith('.dat'):
-                dst = os.path.join(baseline_dir, x)
-                os.unlink(dst)
-        for x in os.listdir(output_dir):
-            if x.endswith('.dat'):
-                src = os.path.join(output_dir, x)
-                dst = os.path.join(baseline_dir, x)
-                shutil.copy(src, dst)
-        old_cwd = os.getcwd()
-        os.chdir(baseline_dir)
-        print('[benchmark] pushing baseline data...')
-        os.system('git add .')
-        os.system(f"git commit -m 'update baseline for taichi@{ti.core.get_commit_hash()}'")
-        os.system('git push')
-        os.chdir(old_cwd)
-        print('[benchmark] baseline data uploaded')
+        shutil.rmtree(baseline_dir, True)
+        shutil.copytree(output_dir, baseline_dir)
+        print('[benchmark] baseline data saved')
     elif mode == "regression":
         baseline_dir = get_benchmark_baseline_dir()
         output_dir = get_benchmark_output_dir()
-        old_cwd = os.getcwd()
-        os.chdir(baseline_dir)
-        print('[benchmark] fetching latest baseline...')
-        os.system('git pull')
-        os.chdir(old_cwd)
-        display_benchmark_regression(
-                baseline_dir,
-                output_dir)
+        display_benchmark_regression(baseline_dir, output_dir, args)
     elif mode == "build":
         ti.core.build()
     elif mode == "format":

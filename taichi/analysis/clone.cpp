@@ -1,5 +1,6 @@
 #include "taichi/ir/ir.h"
 #include "taichi/ir/analysis.h"
+#include "taichi/ir/transforms.h"
 #include "taichi/ir/visitors.h"
 #include <unordered_map>
 
@@ -117,6 +118,8 @@ class IRCloner : public IRVisitor {
     root->accept(&cloner);
     cloner.phase = IRCloner::replace_operand;
     root->accept(&cloner);
+    irpass::typecheck(new_root.get());
+    irpass::fix_block_parents(new_root.get());
     TI_ASSERT(irpass::analysis::same_statements(root, new_root.get()));
     return new_root;
   }

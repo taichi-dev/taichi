@@ -605,8 +605,12 @@ std::unique_ptr<Stmt> IfStmt::clone() const {
   new_stmt->false_mask = false_mask;
   if (true_statements)
     new_stmt->true_statements = true_statements->clone();
+  else
+    new_stmt->true_statements = nullptr;
   if (false_statements)
     new_stmt->false_statements = false_statements->clone();
+  else
+    new_stmt->false_statements = nullptr;
   return new_stmt;
 }
 

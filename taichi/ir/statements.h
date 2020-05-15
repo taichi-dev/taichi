@@ -198,6 +198,8 @@ class OffloadedStmt : public Stmt {
     return has_body();
   }
 
+  std::unique_ptr<Stmt> clone() const override;
+
   TI_STMT_DEF_FIELDS(ret_type,
                      task_type,
                      snode,

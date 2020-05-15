@@ -1087,6 +1087,8 @@ class RangeForStmt : public Stmt {
     reversed = !reversed;
   }
 
+  std::unique_ptr<Stmt> clone() const override;
+
   TI_STMT_DEF_FIELDS(loop_var,
                      begin,
                      end,
@@ -1122,7 +1124,10 @@ class StructForStmt : public Stmt {
     return true;
   }
 
-  TI_STMT_DEF_FIELDS(loop_vars, snode, vectorize, parallelize, block_dim);
+  std::unique_ptr<Stmt> clone() const override;
+
+  TI_STMT_DEF_FIELDS(loop_vars, snode, vectorize, parallelize, block_dim,
+      scratch_opt);
   TI_DEFINE_ACCEPT
 };
 
@@ -1139,6 +1144,8 @@ class FuncBodyStmt : public Stmt {
   bool is_container_statement() const override {
     return true;
   }
+
+  std::unique_ptr<Stmt> clone() const override;
 
   TI_STMT_DEF_FIELDS(funcid);
   TI_DEFINE_ACCEPT
@@ -1189,6 +1196,8 @@ class WhileStmt : public Stmt {
   bool is_container_statement() const override {
     return true;
   }
+
+  std::unique_ptr<Stmt> clone() const override;
 
   TI_STMT_DEF_FIELDS(mask);
   TI_DEFINE_ACCEPT

@@ -898,21 +898,6 @@ std::unique_ptr<ConstStmt> ConstStmt::copy() {
   return std::make_unique<ConstStmt>(val);
 }
 
-StructForStmt::StructForStmt(std::vector<Stmt *> loop_vars,
-                             SNode *snode,
-                             std::unique_ptr<Block> &&body,
-                             int vectorize,
-                             int parallelize,
-                             int block_dim)
-    : loop_vars(loop_vars),
-      snode(snode),
-      body(std::move(body)),
-      vectorize(vectorize),
-      parallelize(parallelize),
-      block_dim(block_dim) {
-  TI_STMT_REG_FIELDS;
-}
-
 RangeForStmt::RangeForStmt(Stmt *loop_var,
                            Stmt *begin,
                            Stmt *end,
@@ -933,59 +918,44 @@ RangeForStmt::RangeForStmt(Stmt *loop_var,
   TI_STMT_REG_FIELDS;
 }
 
-OffloadedStmt::OffloadedStmt(OffloadedStmt::TaskType task_type)
-    : OffloadedStmt(task_type, nullptr) {
+std::unique_ptr<Stmt> RangeForStmt::clone() const {
+  auto new_stmt = std::make_unique<RangeForStmt>(
+      loop_var, begin, end, body->clone(), vectorize, parallelize,
+      block_dim, strictly_serialized);
+  new_stmt->reversed = reversed;
+  return new_stmt;
 }
 
-OffloadedStmt::OffloadedStmt(OffloadedStmt::TaskType task_type, SNode *snode)
-    : task_type(task_type), snode(snode) {
-  num_cpu_threads = 1;
-  const_begin = false;
-  const_end = false;
-  begin_value = 0;
-  end_value = 0;
-  step = 0;
-  block_dim = 0;
-  reversed = false;
-  device = get_current_program().config.arch;
-  if (task_type != TaskType::listgen) {
-    body = std::make_unique<Block>();
-  }
+StructForStmt::StructForStmt(std::vector<Stmt *> loop_vars,
+                             SNode *snode,
+                             std::unique_ptr<Block> &&body,
+                             int vectorize,
+                             int parallelize,
+                             int block_dim)
+    : loop_vars(loop_vars),
+      snode(snode),
+      body(std::move(body)),
+      vectorize(vectorize),
+      parallelize(parallelize),
+      block_dim(block_dim) {
   TI_STMT_REG_FIELDS;
 }
 
-std::string OffloadedStmt::task_name() const {
-  if (task_type == TaskType::serial) {
-    return "serial";
-  } else if (task_type == TaskType::range_for) {
-    return "range_for";
-  } else if (task_type == TaskType::struct_for) {
-    return "struct_for";
-  } else if (task_type == TaskType::clear_list) {
-    TI_ASSERT(snode);
-    return fmt::format("clear_list_{}", snode->get_node_type_name_hinted());
-  } else if (task_type == TaskType::listgen) {
-    TI_ASSERT(snode);
-    return fmt::format("listgen_{}", snode->get_node_type_name_hinted());
-  } else if (task_type == TaskType::gc) {
-    TI_ASSERT(snode);
-    return fmt::format("gc_{}", snode->name);
-  } else {
-    TI_NOT_IMPLEMENTED
-  }
+std::unique_ptr<Stmt> StructForStmt::clone() const {
+  auto new_stmt = std::make_unique<StructForStmt>(
+      loop_vars, snode, body->clone(), vectorize, parallelize, block_dim);
+  new_stmt->scratch_opt = scratch_opt;
+  return new_stmt;
 }
 
-// static
-std::string OffloadedStmt::task_type_name(TaskType tt) {
-#define REGISTER_NAME(x) \
-  { TaskType::x, #x }
-  const static std::unordered_map<TaskType, std::string> m = {
-      REGISTER_NAME(serial),     REGISTER_NAME(range_for),
-      REGISTER_NAME(struct_for), REGISTER_NAME(clear_list),
-      REGISTER_NAME(listgen),    REGISTER_NAME(gc),
-  };
-#undef REGISTER_NAME
-  return m.find(tt)->second;
+std::unique_ptr<Stmt> FuncBodyStmt::clone() const {
+  return std::make_unique<FuncBodyStmt>(funcid, body->clone());
+}
+
+std::unique_ptr<Stmt> WhileStmt::clone() const {
+  auto new_stmt = std::make_unique<WhileStmt>(body->clone());
+  new_stmt->mask = mask;
+  return new_stmt;
 }
 
 bool ContinueStmt::as_return() const {

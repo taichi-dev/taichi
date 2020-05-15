@@ -77,7 +77,7 @@ The suggested workflow for **the PR author** to run the regression tests is:
   
 * Run ``ti benchmark && ti regression`` to obtain the result.
 
-* (If result BAD) Do further improvements, until the result is statifying.
+* (If result BAD) Do further improvements, until the result is satisfying.
 
 * (If result OK) Run ``ti baseline`` to save stage 1 performance as baseline.
 

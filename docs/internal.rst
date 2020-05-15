@@ -1,10 +1,82 @@
 Internal designs (WIP)
 ======================
 
-
 Intermediate representation
 ---------------------------
 Use ``ti.init(print_ir=True)`` to print IR on the console.
+
+
+List generation (WIP)
+---------------------
+
+Struct-fors in Taichi loop over all active elements of a (sparse) data structure **in parallel**.
+Evenly distributing work onto processor cores is challenging on sparse data structures:
+naively splitting an irregular tree into pieces can easily lead to
+partitions with drastically different numbers of leaf elements.
+
+Our strategy is to generate lists of active SNode elements layer by layer.
+The list generation computation happens on the same device as normal computation kernels,
+depending on the ``arch`` argument when the user calls ``ti.init``.
+
+List generations flatten the data structure leaf elements into a 1D dense array, circumventing the irregularity of
+incomplete trees. Then we can simply invoke a regular **parallel for** over the list.
+
+For example,
+
+.. code-block:: python
+
+    # misc/listgen_demo.py
+
+    import taichi as ti
+
+    ti.init(print_ir=True)
+
+    x = ti.var(ti.i32)
+    ti.root.dense(ti.i, 4).bitmasked(ti.i, 4).place(x)
+
+    @ti.kernel
+    def func():
+        for i in x:
+            print(i)
+
+    func()
+
+
+gives you the following IR:
+
+.. code-block:: none
+
+  $0 = offloaded clear_list S1dense
+  $1 = offloaded listgen S0root->S1dense
+  $2 = offloaded clear_list S2bitmasked
+  $3 = offloaded listgen S1dense->S2bitmasked
+  $4 = offloaded struct_for(S2bitmasked) block_dim=0 {
+    <i32 x1> $5 = loop index 0
+    print i, $5
+  }
+
+
+Note that ``func`` leads to two list generations:
+
+ - (Tasks ``$0`` and ``$1``) based on the list of ``root`` node (``S0``), generate the list of the ``dense`` nodes (``S1``);
+ - (Tasks ``$2`` and ``$3``) based on the list of ``dense`` nodes (``S1``), generate the list of ``bitmasked`` nodes (``S2``).
+
+The list of ``root`` node always has exactly one element (instance), so we never clear or re-generate this list.
+
+.. note::
+
+    The list of ``place`` (leaf) nodes (e.g., ``S3`` in this example) is never generated.
+    Instead, we simply loop over the list of their parent nodes, and for each parent node we
+    enumerate the ``place`` nodes on-the-fly (without actually generating a list).
+
+    The motivation for this design is to amortize list generation overhead.
+    Generating one list element per leaf node (``place`` SNode) element is too expensive, likely much
+    more expensive than the essential computation happening on the leaf element.
+    Therefore we only generate their parent element list, so that the list generation cost is
+    amortized over multiple child elements of a second-to-last-level SNode element.
+
+    In the example above, although we have ``16`` instances of ``x``,
+    we only generate a list of ``4`` ``bitmasked`` nodes (and ``1`` ``dense`` node).
 
 
 Code generation

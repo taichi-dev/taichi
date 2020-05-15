@@ -6,6 +6,7 @@
 #include "taichi/codegen/codegen.h"
 #include "taichi/backends/cuda/cuda_driver.h"
 #include "taichi/ir/transforms.h"
+#include "taichi/ir/analysis.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -76,6 +77,8 @@ void Kernel::lower(bool lower_access) {  // TODO: is a "Lowerer" class necessary
     irpass::compile_to_offloads(
         ir, config, /*vectorize*/ arch_is_cpu(arch), grad,
         /*ad_use_stack*/ true, verbose, /*lower_global_access*/ lower_access);
+    ir_holder = irpass::analysis::clone(ir);
+    ir = ir_holder.get();
   } else {
     TI_NOT_IMPLEMENTED
   }

@@ -117,6 +117,7 @@ class IRCloner : public IRVisitor {
     root->accept(&cloner);
     cloner.phase = IRCloner::replace_operand;
     root->accept(&cloner);
+    TI_ASSERT(irpass::analysis::same_statements(root, new_root.get()));
     return new_root;
   }
 };

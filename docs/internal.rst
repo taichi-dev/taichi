@@ -14,8 +14,11 @@ Evenly distributing work onto processor cores is challenging on sparse data stru
 naively splitting an irregular tree into pieces can easily lead to
 partitions with drastically different numbers of leaf elements.
 
-Our strategy is to generate lists of SNode elements layer by layer.
-This flattens the data structure leaf elements into a 1D dense array, circumventing the irregularity of
+Our strategy is to generate lists of active SNode elements layer by layer.
+The list generation computation happens on the same device as normal computation kernels,
+depending on the ``arch`` argument when the user calls ``ti.init``.
+
+List generations flatten the data structure leaf elements into a 1D dense array, circumventing the irregularity of
 incomplete trees. Then we can simply invoke a regular **parallel for** over the list.
 
 For example,
@@ -55,8 +58,8 @@ gives you the following IR:
 
 Note that ``func`` leads to two list generations:
 
- - (Tasks ``$0`` and ``$1``) from the list of ``root`` node (``S0``) to list of the ``dense`` nodes (``S1``);
- - (Tasks ``$2`` and ``$3``) from the list of ``dense`` nodes (``S1``) to the list of ``bitmasked`` nodes (``S2``).
+ - (Tasks ``$0`` and ``$1``) based on the list of ``root`` node (``S0``), generate the list of the ``dense`` nodes (``S1``);
+ - (Tasks ``$2`` and ``$3``) based on the list of ``dense`` nodes (``S1``), generate the list of ``bitmasked`` nodes (``S2``).
 
 The list of ``root`` node always has exactly one element (instance), so we never clear or re-generate this list.
 

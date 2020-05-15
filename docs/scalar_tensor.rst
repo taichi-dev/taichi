@@ -75,6 +75,8 @@ Declaration
 Accessing components
 --------------------
 
+You can access an element of the Taichi tensor by an index or indices.
+
 .. attribute:: a[p, q, ...]
 
     :parameter a: (Tensor) the tensor of scalars
@@ -82,15 +84,19 @@ Accessing components
     :parameter q: (scalar) index of the second tensor dimension
     :return: (scalar) the element at ``[p, q, ...]``
 
-    This extracts the element value at ``[3, 4]`` of tensor ``a``:
+    This extracts the element value at index ``[3, 4]`` of tensor ``a``:
     ::
 
         x = a[3, 4]
 
-    This sets the element value at ``[3, 4]`` of tensor ``a`` to ``2``:
+    This sets the element value at index ``2`` of 1D tensor ``b`` to ``5``:
     ::
 
-        a[3, 4] = 2
+        a[2] = 2
+
+    .. note ::
+
+        In Python, x[(exp1, exp2, ..., expN)] is equivalent to x[exp1, exp2, ..., expN]; the latter is just syntactic sugar for the former.
 
     .. note ::
 

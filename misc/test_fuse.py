@@ -18,8 +18,18 @@ def y_to_z():
     for i in x:
         z[i] = y[i] + 1
         
+
+n = 10000
+
+for i in range(n):
+   x[i] = i * 10
         
 x_to_y()
 y_to_z()
 
+
+for i in range(n):
+    x[i] = i * 10
+    assert y[i] == x[i] + 1
+    assert z[i] == x[i] + 2
 

@@ -170,7 +170,7 @@ void AsyncEngine::enqueue(KernelLaunchRecord &&t) {
 
 void AsyncEngine::synchronize() {
   optimize_listgen();
-  fuse();
+  while (fuse());
   while (!task_queue.empty()) {
     queue.enqueue(std::move(task_queue.front()));
     task_queue.pop_front();
@@ -224,9 +224,58 @@ bool AsyncEngine::fuse() {
   // TODO: improve...
   bool modified = false;
   std::unordered_map<SNode *, bool> list_dirty;
-  for (int i = 0; i < task_queue.size(); i++) {
+
+  /*
+  for (int i = 0; i < (int)task_queue.size(); i++) {
     fmt::print("{}: {}\n", i, task_queue[i].stmt->task_name());
+    irpass::print(task_queue[i].stmt);
   }
+   */
+
+  for (int i = 0; i < (int)task_queue.size() - 1; i++) {
+    auto task_a = task_queue[i].stmt;
+    auto task_b = task_queue[i + 1].stmt;
+    if (task_a->task_type == OffloadedStmt::struct_for &&
+        task_b->task_type == OffloadedStmt::struct_for &&
+        task_a->snode == task_b->snode &&
+        task_a->block_dim == task_b->block_dim) {
+      // TODO: in certain cases this optimization can be wrong!
+      // Fuse task b into task_a
+      for (int j = 0; j < (int)task_b->body->size(); j++) {
+        task_a->body->insert(std::move(task_b->body->statements[j]));
+      }
+      task_b->body->statements.clear();
+
+      // replace all reference to the offloaded statement B to A
+      irpass::replace_all_usages_with(task_a, task_b, task_a);
+      irpass::re_id(task_a);
+      irpass::fix_block_parents(task_a);
+
+      auto kernel = task_queue[i].kernel;
+      irpass::full_simplify(task_a, kernel->program.config, kernel);
+
+      modified = true;
+    }
+  }
+
+  auto new_task_queue = std::deque<KernelLaunchRecord>();
+
+  for (int i = 0; i < (int)task_queue.size(); i++) {
+    auto task = task_queue[i].stmt;
+    bool keep = true;
+    if (task->task_type == OffloadedStmt::struct_for ||
+        task->task_type == OffloadedStmt::range_for ||
+        task->task_type == OffloadedStmt::serial) {
+      if (task->body->statements.empty())
+        keep = false;
+    }
+    if (keep) {
+      new_task_queue.push_back(std::move(task_queue[i]));
+    }
+  }
+
+  task_queue = std::move(new_task_queue);
+
   return modified;
 }
 

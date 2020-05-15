@@ -1,5 +1,5 @@
-Utilities
-=========
+Developer utilities
+===================
 
 Logging
 -------
@@ -23,7 +23,7 @@ You can also override default logging level by setting the environment variable 
 
 .. _regress:
 
-Benchmarking and Regression Tests
+Benchmarking and regression tests
 ---------------------------------
 
 * Run ``ti benchmark`` to run tests in benchmark mode. This will record the performance of ``ti test``, and save it in ``benchmarks/output``.
@@ -84,8 +84,8 @@ The suggested workflow for **the PR author** to run the regression tests is:
 * Go forward to stage 2, 3, ..., and the same workflow is applied.
 
 
-Trigger GDB when the program crashes
---------------------------------------
+(Linux only) Trigger ``gdb`` when programs crash
+------------------------------------------------
 
 .. code-block:: none
 
@@ -98,16 +98,26 @@ Trigger GDB when the program crashes
   # Shell
   export TI_GDB_TRIGGER=1
 
-Interface System
----------------------------------
+
+.. note::
+
+  **Quickly pinpointing segmentation faults/assertion failures using** ``gdb``:
+  When Taichi crashes, ``gdb`` will be triggered and attach to the current thread.
+  You might be prompt to enter sudo password required for gdb thread attaching.
+  After entering ``gdb``, check the stack backtrace with command ``bt`` (``backtrace``),
+  then find the line of code triggering the error.
+
+
+Interface system (legacy)
+-------------------------
 Print all interfaces and units
 
 .. code-block:: python
 
     ti.core.print_all_units()
 
-Serialization
-----------------------------------
+Serialization (legacy)
+----------------------
 
 The serialization module of taichi allows you to serialize/deserialize objects into/from binary strings.
 
@@ -146,13 +156,13 @@ You can use ``TI_IO`` macros to explicit define fields necessary in Taichi.
     // TI_IO_DEF_VIRT();
 
 
-Progress Notification
-----------------------------------
+Progress notification (legacy)
+------------------------------
 
-The taichi messager can send an email to ``$TI_MONITOR_EMAIL`` when the task finished or crashed.
+The Taichi messenger can send an email to ``$TI_MONITOR_EMAIL`` when the task finishes or crashes.
 To enable:
 
 .. code-block:: python
 
-    from taichi.tools import messager
-    messager.enable(task_id='test')
+    from taichi.tools import messenger
+    messenger.enable(task_id='test')

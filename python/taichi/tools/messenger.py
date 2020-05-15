@@ -18,9 +18,9 @@ def send_crash_report(message, receiver=None):
     if receiver is None:
         receiver = os.environ.get('TI_MONITOR_EMAIL', None)
     if receiver is None:
-        tc.warning('No receiver in $TI_MONITOR_EMAIL')
+        tc.warn('No receiver in $TI_MONITOR_EMAIL')
         return
-    tc.warning('Emailing {}'.format(receiver))
+    tc.warn('Emailing {}'.format(receiver))
     TO = receiver
     SUBJECT = 'Report'
     TEXT = message
@@ -62,7 +62,7 @@ def register_call_back(task_name):
     def email_call_back(_):
         global crashed
         crashed = True
-        tc.warning('Task has crashed.')
+        tc.warn('Task has crashed.')
         message = 'Your task [{}] at machine [{}] has crashed.'.format(
             task_name, socket.gethostname())
         send_crash_report(message)

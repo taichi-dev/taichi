@@ -109,9 +109,12 @@ class KernelLaunchRecord {
   Context context;
   Kernel *kernel;  // TODO: remove this
   OffloadedStmt *stmt;
+  std::unique_ptr<IRNode> stmt_;
   uint64 h;
 
-  KernelLaunchRecord(Context contxet, Kernel *kernel, OffloadedStmt *stmt);
+  KernelLaunchRecord(Context contxet,
+                     Kernel *kernel,
+                     std::unique_ptr<IRNode> &&stmt);
 };
 
 // In charge of (parallel) compilation to binary and (serial) kernel launching
@@ -119,6 +122,7 @@ class ExecutionQueue {
  public:
   std::mutex mut;
   std::deque<KernelLaunchRecord> task_queue;
+  std::vector<KernelLaunchRecord> trashbin;  // prevent IR from being deleted
   std::unordered_set<uint64> to_be_compiled;
 
   ParallelExecutor compilation_workers;  // parallel compilation
@@ -128,7 +132,7 @@ class ExecutionQueue {
 
   ExecutionQueue();
 
-  void enqueue(KernelLaunchRecord ker);
+  void enqueue(KernelLaunchRecord &&ker);
 
   void compile_task() {
   }
@@ -163,7 +167,9 @@ class AsyncEngine {
   AsyncEngine() {
   }
 
-  bool optimize();  // return true when modified
+  bool optimize_listgen();  // return true when modified
+
+  bool fuse();  // return true when modified
 
   void clear_cache() {
     queue.clear_cache();
@@ -171,7 +177,7 @@ class AsyncEngine {
 
   void launch(Kernel *kernel);
 
-  void enqueue(KernelLaunchRecord t);
+  void enqueue(KernelLaunchRecord &&t);
 
   void synchronize();
 };

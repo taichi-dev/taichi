@@ -2,6 +2,8 @@
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/visitors.h"
+#include "taichi/program/program.h"
+
 #include <unordered_map>
 
 TLANG_NAMESPACE_BEGIN
@@ -12,10 +14,7 @@ class IRCloner : public IRVisitor {
   std::unordered_map<Stmt *, Stmt *> operand_map;
 
  public:
-  enum Phase {
-    register_operand_map,
-    replace_operand
-  } phase;
+  enum Phase { register_operand_map, replace_operand } phase;
 
   explicit IRCloner(IRNode *other_node)
       : other_node(other_node), phase(register_operand_map) {
@@ -111,22 +110,25 @@ class IRCloner : public IRVisitor {
     }
   }
 
-  static std::unique_ptr<IRNode> run(IRNode *root) {
+  static std::unique_ptr<IRNode> run(IRNode *root, Kernel *kernel) {
+    if (kernel == nullptr) {
+      kernel = &get_current_program().get_current_kernel();
+    }
     std::unique_ptr<IRNode> new_root = root->clone();
     IRCloner cloner(new_root.get());
     cloner.phase = IRCloner::register_operand_map;
     root->accept(&cloner);
     cloner.phase = IRCloner::replace_operand;
     root->accept(&cloner);
-    irpass::typecheck(new_root.get());
+    irpass::typecheck(new_root.get(), kernel);
     irpass::fix_block_parents(new_root.get());
     return new_root;
   }
 };
 
 namespace irpass::analysis {
-std::unique_ptr<IRNode> clone(IRNode *root) {
-  return IRCloner::run(root);
+std::unique_ptr<IRNode> clone(IRNode *root, Kernel *kernel) {
+  return IRCloner::run(root, kernel);
 }
 }  // namespace irpass::analysis
 

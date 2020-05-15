@@ -227,8 +227,8 @@ bool AsyncEngine::fuse() {
   std::unordered_map<SNode *, bool> list_dirty;
 
   for (int i = 0; i < (int)task_queue.size(); i++) {
-    fmt::print("{}: {}\n", i, task_queue[i].stmt->task_name());
-    irpass::print(task_queue[i].stmt);
+    // fmt::print("{}: {}\n", i, task_queue[i].stmt->task_name());
+//    irpass::print(task_queue[i].stmt);
   }
 
   for (int i = 0; i < (int)task_queue.size() - 1; i++) {
@@ -264,6 +264,7 @@ bool AsyncEngine::fuse() {
 
       auto kernel = task_queue[i].kernel;
       irpass::full_simplify(task_a, kernel->program.config, kernel);
+      task_queue[i].h = hash(task_a);
 
       modified = true;
     }

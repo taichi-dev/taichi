@@ -7,7 +7,9 @@ x = ti.var(ti.i32)
 y = ti.var(ti.i32)
 z = ti.var(ti.i32)
 
-ti.root.dense(ti.i, 1024 ** 3).place(x, y, z)
+ti.root.dense(ti.i, 1024 ** 3).place(x)
+ti.root.dense(ti.i, 1024 ** 3).place(y)
+ti.root.dense(ti.i, 1024 ** 3).place(z)
 
 @ti.kernel
 def x_to_y():
@@ -20,7 +22,7 @@ def y_to_z():
         z[i] = y[i] + 4
         
 
-n = 1024
+n = 0
 
 for i in range(n):
    x[i] = i * 10
@@ -28,19 +30,19 @@ for i in range(n):
 x_to_y()
 ti.sync()
 
-for i in range(10):
+for i in range(4):
     t = time.time()
     x_to_y()
     ti.sync()
     print(time.time() - t)
 
-for i in range(10):
+for i in range(4):
     t = time.time()
     y_to_z()
     ti.sync()
     print(time.time() - t)
     
-for i in range(10):
+for i in range(4):
     t = time.time()
     x_to_y()
     y_to_z()

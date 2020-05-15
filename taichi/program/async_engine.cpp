@@ -53,7 +53,6 @@ void ExecutionQueue::enqueue(KernelLaunchRecord &&ker) {
         flag_access(stmt);
         full_simplify(stmt, kernel->program.config, kernel);
         // analysis::verify(stmt);
-
       }
       auto func = CodeGenCPU(kernel, stmt).codegen();
       std::lock_guard<std::mutex> _(mut);
@@ -170,7 +169,8 @@ void AsyncEngine::enqueue(KernelLaunchRecord &&t) {
 }
 
 void AsyncEngine::synchronize() {
-  optimize();
+  optimize_listgen();
+  fuse();
   while (!task_queue.empty()) {
     queue.enqueue(std::move(task_queue.front()));
     task_queue.pop_front();
@@ -178,7 +178,7 @@ void AsyncEngine::synchronize() {
   queue.synchronize();
 }
 
-bool AsyncEngine::optimize() {
+bool AsyncEngine::optimize_listgen() {
   // TODO: improve...
   bool modified = false;
   std::unordered_map<SNode *, bool> list_dirty;
@@ -217,6 +217,16 @@ bool AsyncEngine::optimize() {
     }
   }
   task_queue = std::move(new_task_queue);
+  return modified;
+}
+
+bool AsyncEngine::fuse() {
+  // TODO: improve...
+  bool modified = false;
+  std::unordered_map<SNode *, bool> list_dirty;
+  for (int i = 0; i < task_queue.size(); i++) {
+    fmt::print("{}: {}\n", i, task_queue[i].stmt->task_name());
+  }
   return modified;
 }
 

@@ -165,7 +165,9 @@ class AsyncEngine {
   AsyncEngine() {
   }
 
-  bool optimize();  // return true when modified
+  bool optimize_listgen();  // return true when modified
+
+  bool fuse();  // return true when modified
 
   void clear_cache() {
     queue.clear_cache();

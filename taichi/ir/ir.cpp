@@ -205,6 +205,16 @@ Stmt::Stmt() : field_manager(this), fields_registered(false) {
   is_ptr = false;
 }
 
+Stmt::Stmt(const Stmt &stmt) : field_manager(this), fields_registered(false) {
+  parent = stmt.parent;
+  instance_id = instance_id_counter++;
+  id = instance_id;
+  erased = false;
+  is_ptr = false;
+  tb = stmt.tb;
+  ret_type = stmt.ret_type;
+}
+
 Stmt *Stmt::insert_before_me(std::unique_ptr<Stmt> &&new_stmt) {
   auto ret = new_stmt.get();
   TI_ASSERT(parent);
@@ -579,6 +589,17 @@ bool LocalLoadStmt::has_source(Stmt *alloca) const {
   return false;
 }
 
+std::unique_ptr<Stmt> IfStmt::clone() const {
+  auto new_stmt = std::make_unique<IfStmt>(cond);
+  new_stmt->true_mask = true_mask;
+  new_stmt->false_mask = false_mask;
+  if (true_statements)
+    new_stmt->true_statements = true_statements->clone();
+  if (false_statements)
+    new_stmt->false_statements = false_statements->clone();
+  return new_stmt;
+}
+
 void Block::erase(int location) {
   statements[location]->erased = true;
   trash_bin.push_back(std::move(statements[location]));  // do not delete the
@@ -734,6 +755,17 @@ int Block::locate(Stmt *stmt) {
     }
   }
   return -1;
+}
+
+std::unique_ptr<Block> Block::clone() const {
+  auto new_block = std::make_unique<Block>();
+  new_block->parent = parent;
+  new_block->mask_var = mask_var;
+  new_block->stop_gradients = stop_gradients;
+  new_block->statements.reserve(size());
+  for (auto &stmt : statements)
+    new_block->insert(stmt->clone());
+  return new_block;
 }
 
 FrontendSNodeOpStmt::FrontendSNodeOpStmt(SNodeOpType op_type,

@@ -264,10 +264,22 @@ class IRNode {
   }
 };
 
-#define DEFINE_ACCEPT                        \
+#define TI_DEFINE_ACCEPT                     \
   void accept(IRVisitor *visitor) override { \
     visitor->visit(this);                    \
   }
+
+#define TI_DEFINE_CLONE                                                        \
+  std::unique_ptr<Stmt> clone() const override {                               \
+    auto new_stmt = std::make_unique<std::decay<decltype(*this)>::type>(*this);\
+    new_stmt->mark_fields_registered();                                        \
+    new_stmt->io(new_stmt->field_manager);                                     \
+    return new_stmt;                                                           \
+  }
+
+#define TI_DEFINE_ACCEPT_AND_CLONE \
+  TI_DEFINE_ACCEPT                 \
+  TI_DEFINE_CLONE
 
 template <typename T>
 struct LaneAttribute {
@@ -477,8 +489,8 @@ class Stmt : public IRNode {
   bool is_ptr;
   VectorType ret_type;
 
-  Stmt(const Stmt &stmt) = delete;
   Stmt();
+  Stmt(const Stmt &stmt);
 
   int &width() {
     return ret_type.width;
@@ -569,6 +581,10 @@ class Stmt : public IRNode {
   }
 
   std::string type();
+  
+  virtual std::unique_ptr<Stmt> clone() const {
+    TI_NOT_IMPLEMENTED
+  }
 
   virtual ~Stmt() override = default;
 };
@@ -590,7 +606,7 @@ class AllocaStmt : public Stmt {
   }
 
   TI_STMT_DEF_FIELDS(ret_type);
-  DEFINE_ACCEPT
+  TI_DEFINE_ACCEPT_AND_CLONE
 };
 
 // updates mask, break if no active
@@ -603,7 +619,7 @@ class WhileControlStmt : public Stmt {
   }
 
   TI_STMT_DEF_FIELDS(mask, cond);
-  DEFINE_ACCEPT;
+  TI_DEFINE_ACCEPT_AND_CLONE;
 };
 
 class ContinueStmt : public Stmt {
@@ -640,7 +656,7 @@ class ContinueStmt : public Stmt {
   bool as_return() const;
 
   TI_STMT_DEF_FIELDS(scope);
-  DEFINE_ACCEPT;
+  TI_DEFINE_ACCEPT_AND_CLONE;
 };
 
 class UnaryOpStmt : public Stmt {
@@ -659,7 +675,7 @@ class UnaryOpStmt : public Stmt {
   }
 
   TI_STMT_DEF_FIELDS(ret_type, op_type, operand, cast_type);
-  DEFINE_ACCEPT
+  TI_DEFINE_ACCEPT_AND_CLONE
 };
 
 class ArgLoadStmt : public Stmt {
@@ -676,7 +692,7 @@ class ArgLoadStmt : public Stmt {
   }
 
   TI_STMT_DEF_FIELDS(ret_type, arg_id, is_ptr);
-  DEFINE_ACCEPT
+  TI_DEFINE_ACCEPT_AND_CLONE
 };
 
 class RandStmt : public Stmt {
@@ -691,7 +707,7 @@ class RandStmt : public Stmt {
   }
 
   TI_STMT_DEF_FIELDS(ret_type);
-  DEFINE_ACCEPT
+  TI_DEFINE_ACCEPT_AND_CLONE
 };
 
 class BinaryOpStmt : public Stmt {
@@ -711,7 +727,7 @@ class BinaryOpStmt : public Stmt {
   }
 
   TI_STMT_DEF_FIELDS(ret_type, op_type, lhs, rhs);
-  DEFINE_ACCEPT
+  TI_DEFINE_ACCEPT_AND_CLONE
 };
 
 class TernaryOpStmt : public Stmt {
@@ -732,7 +748,7 @@ class TernaryOpStmt : public Stmt {
   }
 
   TI_STMT_DEF_FIELDS(ret_type, op1, op2, op3);
-  DEFINE_ACCEPT
+  TI_DEFINE_ACCEPT_AND_CLONE
 };
 
 class AtomicOpStmt : public Stmt {
@@ -746,7 +762,7 @@ class AtomicOpStmt : public Stmt {
   }
 
   TI_STMT_DEF_FIELDS(ret_type, op_type, dest, val);
-  DEFINE_ACCEPT
+  TI_DEFINE_ACCEPT_AND_CLONE
 };
 
 class ExternalPtrStmt : public Stmt {
@@ -763,7 +779,7 @@ class ExternalPtrStmt : public Stmt {
   }
 
   TI_STMT_DEF_FIELDS(ret_type, base_ptrs, indices, activate);
-  DEFINE_ACCEPT
+  TI_DEFINE_ACCEPT_AND_CLONE
 };
 
 class GlobalPtrStmt : public Stmt {
@@ -781,14 +797,14 @@ class GlobalPtrStmt : public Stmt {
   }
 
   TI_STMT_DEF_FIELDS(ret_type, snodes, indices, activate);
-  DEFINE_ACCEPT
+  TI_DEFINE_ACCEPT_AND_CLONE
 };
 
 class Block : public IRNode {
  public:
   Block *parent;
   std::vector<std::unique_ptr<Stmt>> statements, trash_bin;
-  std::map<Identifier, Stmt *> local_var_alloca;
+  std::map<Identifier, Stmt *> local_var_alloca; // Only used in frontend
   Stmt *mask_var;
   std::vector<SNode *> stop_gradients;
 
@@ -829,7 +845,7 @@ class Block : public IRNode {
     return back();
   }
 
-  std::size_t size() {
+  std::size_t size() const {
     return statements.size();
   }
 
@@ -837,7 +853,9 @@ class Block : public IRNode {
     return statements[i];
   }
 
-  DEFINE_ACCEPT
+  std::unique_ptr<Block> clone() const;
+
+  TI_DEFINE_ACCEPT
 };
 
 class SNodeOpStmt : public Stmt {
@@ -863,7 +881,7 @@ class SNodeOpStmt : public Stmt {
   }
 
   TI_STMT_DEF_FIELDS(ret_type, op_type, snode, ptr, val, indices);
-  DEFINE_ACCEPT
+  TI_DEFINE_ACCEPT_AND_CLONE
 };
 
 class AssertStmt : public Stmt {
@@ -886,7 +904,7 @@ class AssertStmt : public Stmt {
   }
 
   TI_STMT_DEF_FIELDS(cond, text, args);
-  DEFINE_ACCEPT
+  TI_DEFINE_ACCEPT_AND_CLONE
 };
 
 class RangeAssumptionStmt : public Stmt {
@@ -901,7 +919,7 @@ class RangeAssumptionStmt : public Stmt {
   }
 
   TI_STMT_DEF_FIELDS(ret_type, input, base, low, high);
-  DEFINE_ACCEPT
+  TI_DEFINE_ACCEPT_AND_CLONE
 };
 
 class GlobalLoadStmt : public Stmt {
@@ -917,7 +935,7 @@ class GlobalLoadStmt : public Stmt {
   }
 
   TI_STMT_DEF_FIELDS(ret_type, ptr);
-  DEFINE_ACCEPT;
+  TI_DEFINE_ACCEPT_AND_CLONE;
 };
 
 class GlobalStoreStmt : public Stmt {
@@ -929,7 +947,7 @@ class GlobalStoreStmt : public Stmt {
   }
 
   TI_STMT_DEF_FIELDS(ret_type, ptr, data);
-  DEFINE_ACCEPT;
+  TI_DEFINE_ACCEPT_AND_CLONE;
 };
 
 struct LocalAddress {
@@ -962,7 +980,7 @@ class LocalLoadStmt : public Stmt {
   }
 
   TI_STMT_DEF_FIELDS(ret_type, ptr);
-  DEFINE_ACCEPT;
+  TI_DEFINE_ACCEPT_AND_CLONE;
 };
 
 class LocalStoreStmt : public Stmt {
@@ -976,7 +994,7 @@ class LocalStoreStmt : public Stmt {
   }
 
   TI_STMT_DEF_FIELDS(ret_type, ptr, data);
-  DEFINE_ACCEPT;
+  TI_DEFINE_ACCEPT_AND_CLONE;
 };
 
 class IfStmt : public Stmt {
@@ -993,8 +1011,10 @@ class IfStmt : public Stmt {
     return true;
   }
 
+  std::unique_ptr<Stmt> clone() const override;
+
   TI_STMT_DEF_FIELDS(cond, true_mask, false_mask);
-  DEFINE_ACCEPT
+  TI_DEFINE_ACCEPT
 };
 
 class PrintStmt : public Stmt {
@@ -1007,7 +1027,7 @@ class PrintStmt : public Stmt {
   }
 
   TI_STMT_DEF_FIELDS(ret_type, stmt, str);
-  DEFINE_ACCEPT
+  TI_DEFINE_ACCEPT_AND_CLONE
 };
 
 class ConstStmt : public Stmt {
@@ -1035,7 +1055,7 @@ class ConstStmt : public Stmt {
   std::unique_ptr<ConstStmt> copy();
 
   TI_STMT_DEF_FIELDS(ret_type, val);
-  DEFINE_ACCEPT
+  TI_DEFINE_ACCEPT_AND_CLONE
 };
 
 // General range for
@@ -1075,7 +1095,7 @@ class RangeForStmt : public Stmt {
                      parallelize,
                      block_dim,
                      strictly_serialized);
-  DEFINE_ACCEPT
+  TI_DEFINE_ACCEPT
 };
 
 // for stmt over a structural node
@@ -1103,7 +1123,7 @@ class StructForStmt : public Stmt {
   }
 
   TI_STMT_DEF_FIELDS(loop_vars, snode, vectorize, parallelize, block_dim);
-  DEFINE_ACCEPT
+  TI_DEFINE_ACCEPT
 };
 
 class FuncBodyStmt : public Stmt {
@@ -1121,7 +1141,7 @@ class FuncBodyStmt : public Stmt {
   }
 
   TI_STMT_DEF_FIELDS(funcid);
-  DEFINE_ACCEPT
+  TI_DEFINE_ACCEPT
 };
 
 class FuncCallStmt : public Stmt {
@@ -1137,7 +1157,7 @@ class FuncCallStmt : public Stmt {
   }
 
   TI_STMT_DEF_FIELDS(ret_type, funcid);
-  DEFINE_ACCEPT
+  TI_DEFINE_ACCEPT_AND_CLONE
 };
 
 class KernelReturnStmt : public Stmt {
@@ -1153,7 +1173,7 @@ class KernelReturnStmt : public Stmt {
   }
 
   TI_STMT_DEF_FIELDS(value);
-  DEFINE_ACCEPT
+  TI_DEFINE_ACCEPT_AND_CLONE
 };
 
 class WhileStmt : public Stmt {
@@ -1171,7 +1191,7 @@ class WhileStmt : public Stmt {
   }
 
   TI_STMT_DEF_FIELDS(mask);
-  DEFINE_ACCEPT
+  TI_DEFINE_ACCEPT
 };
 
 extern DecoratorRecorder dec;

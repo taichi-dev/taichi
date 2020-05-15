@@ -13,7 +13,7 @@ class PragmaSLPStmt : public Stmt {
   }
 
   TI_STMT_DEF_FIELDS(slp_width);
-  DEFINE_ACCEPT
+  TI_DEFINE_ACCEPT_AND_CLONE
 };
 
 class ElementShuffleStmt : public Stmt {
@@ -34,7 +34,7 @@ class ElementShuffleStmt : public Stmt {
   }
 
   TI_STMT_DEF_FIELDS(ret_type, elements, pointer);
-  DEFINE_ACCEPT
+  TI_DEFINE_ACCEPT_AND_CLONE
 };
 
 class IntegerOffsetStmt : public Stmt {
@@ -51,7 +51,7 @@ class IntegerOffsetStmt : public Stmt {
   }
 
   TI_STMT_DEF_FIELDS(ret_type, input, offset);
-  DEFINE_ACCEPT
+  TI_DEFINE_ACCEPT_AND_CLONE
 };
 
 class LinearizeStmt : public Stmt {
@@ -71,7 +71,7 @@ class LinearizeStmt : public Stmt {
   }
 
   TI_STMT_DEF_FIELDS(ret_type, inputs, strides);
-  DEFINE_ACCEPT
+  TI_DEFINE_ACCEPT_AND_CLONE
 };
 
 class OffsetAndExtractBitsStmt : public Stmt {
@@ -91,7 +91,7 @@ class OffsetAndExtractBitsStmt : public Stmt {
   }
 
   TI_STMT_DEF_FIELDS(ret_type, input, bit_begin, bit_end, offset, simplified);
-  DEFINE_ACCEPT;
+  TI_DEFINE_ACCEPT_AND_CLONE
 };
 
 class GetRootStmt : public Stmt {
@@ -105,7 +105,7 @@ class GetRootStmt : public Stmt {
   }
 
   TI_STMT_DEF_FIELDS(ret_type);
-  DEFINE_ACCEPT
+  TI_DEFINE_ACCEPT_AND_CLONE
 };
 
 class SNodeLookupStmt : public Stmt {
@@ -139,7 +139,7 @@ class SNodeLookupStmt : public Stmt {
                      input_index,
                      global_indices,
                      activate);
-  DEFINE_ACCEPT
+  TI_DEFINE_ACCEPT_AND_CLONE
 };
 
 class GetChStmt : public Stmt {
@@ -155,7 +155,7 @@ class GetChStmt : public Stmt {
   }
 
   TI_STMT_DEF_FIELDS(ret_type, input_ptr, input_snode, output_snode, chid);
-  DEFINE_ACCEPT
+  TI_DEFINE_ACCEPT_AND_CLONE
 };
 
 class OffloadedStmt : public Stmt {
@@ -212,7 +212,7 @@ class OffloadedStmt : public Stmt {
                      reversed,
                      num_cpu_threads,
                      device);
-  DEFINE_ACCEPT
+  TI_DEFINE_ACCEPT
 };
 
 class LoopIndexStmt : public Stmt {
@@ -229,7 +229,7 @@ class LoopIndexStmt : public Stmt {
   }
 
   TI_STMT_DEF_FIELDS(ret_type, loop, index);
-  DEFINE_ACCEPT
+  TI_DEFINE_ACCEPT_AND_CLONE
 };
 
 class GlobalTemporaryStmt : public Stmt {
@@ -247,7 +247,7 @@ class GlobalTemporaryStmt : public Stmt {
   }
 
   TI_STMT_DEF_FIELDS(ret_type, offset);
-  DEFINE_ACCEPT
+  TI_DEFINE_ACCEPT_AND_CLONE
 };
 
 class InternalFuncStmt : public Stmt {
@@ -260,7 +260,7 @@ class InternalFuncStmt : public Stmt {
   }
 
   TI_STMT_DEF_FIELDS(ret_type, func_name);
-  DEFINE_ACCEPT
+  TI_DEFINE_ACCEPT_AND_CLONE
 };
 
 class StackAllocaStmt : public Stmt {
@@ -290,7 +290,7 @@ class StackAllocaStmt : public Stmt {
   }
 
   TI_STMT_DEF_FIELDS(ret_type, dt, max_size);
-  DEFINE_ACCEPT
+  TI_DEFINE_ACCEPT_AND_CLONE
 };
 
 class StackLoadTopStmt : public Stmt {
@@ -308,7 +308,7 @@ class StackLoadTopStmt : public Stmt {
   }
 
   TI_STMT_DEF_FIELDS(ret_type, stack);
-  DEFINE_ACCEPT
+  TI_DEFINE_ACCEPT_AND_CLONE
 };
 
 class StackLoadTopAdjStmt : public Stmt {
@@ -326,7 +326,7 @@ class StackLoadTopAdjStmt : public Stmt {
   }
 
   TI_STMT_DEF_FIELDS(ret_type, stack);
-  DEFINE_ACCEPT
+  TI_DEFINE_ACCEPT_AND_CLONE
 };
 
 class StackPopStmt : public Stmt {
@@ -340,7 +340,7 @@ class StackPopStmt : public Stmt {
   }
 
   TI_STMT_DEF_FIELDS(ret_type, stack);
-  DEFINE_ACCEPT
+  TI_DEFINE_ACCEPT_AND_CLONE
 };
 
 class StackPushStmt : public Stmt {
@@ -356,7 +356,7 @@ class StackPushStmt : public Stmt {
   }
 
   TI_STMT_DEF_FIELDS(ret_type, stack, v);
-  DEFINE_ACCEPT
+  TI_DEFINE_ACCEPT_AND_CLONE
 };
 
 class StackAccAdjointStmt : public Stmt {
@@ -372,7 +372,7 @@ class StackAccAdjointStmt : public Stmt {
   }
 
   TI_STMT_DEF_FIELDS(ret_type, stack, v);
-  DEFINE_ACCEPT
+  TI_DEFINE_ACCEPT_AND_CLONE
 };
 
 TLANG_NAMESPACE_END

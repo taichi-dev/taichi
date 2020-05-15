@@ -19,7 +19,7 @@ class FrontendAllocaStmt : public Stmt {
     ret_type = VectorType(1, type);
   }
 
-  DEFINE_ACCEPT
+  TI_DEFINE_ACCEPT
 };
 
 class FrontendSNodeOpStmt : public Stmt {
@@ -34,7 +34,7 @@ class FrontendSNodeOpStmt : public Stmt {
                       const ExprGroup &indices,
                       const Expr &val = Expr(nullptr));
 
-  DEFINE_ACCEPT
+  TI_DEFINE_ACCEPT
 };
 
 class FrontendAssertStmt : public Stmt {
@@ -46,7 +46,7 @@ class FrontendAssertStmt : public Stmt {
       : text(text), val(val) {
   }
 
-  DEFINE_ACCEPT
+  TI_DEFINE_ACCEPT
 };
 
 class FrontendAssignStmt : public Stmt {
@@ -55,7 +55,7 @@ class FrontendAssignStmt : public Stmt {
 
   FrontendAssignStmt(const Expr &lhs, const Expr &rhs);
 
-  DEFINE_ACCEPT
+  TI_DEFINE_ACCEPT
 };
 
 class FrontendIfStmt : public Stmt {
@@ -70,7 +70,7 @@ class FrontendIfStmt : public Stmt {
     return true;
   }
 
-  DEFINE_ACCEPT
+  TI_DEFINE_ACCEPT
 };
 
 class FrontendPrintStmt : public Stmt {
@@ -82,7 +82,7 @@ class FrontendPrintStmt : public Stmt {
       : expr(load_if_ptr(expr)), str(str) {
   }
 
-  DEFINE_ACCEPT
+  TI_DEFINE_ACCEPT
 };
 
 class FrontendEvalStmt : public Stmt {
@@ -93,7 +93,7 @@ class FrontendEvalStmt : public Stmt {
   FrontendEvalStmt(const Expr &expr) : expr(load_if_ptr(expr)) {
   }
 
-  DEFINE_ACCEPT
+  TI_DEFINE_ACCEPT
 };
 
 class FrontendForStmt : public Stmt {
@@ -124,7 +124,7 @@ class FrontendForStmt : public Stmt {
     return true;
   }
 
-  DEFINE_ACCEPT
+  TI_DEFINE_ACCEPT
 };
 
 class FrontendFuncDefStmt : public Stmt {
@@ -139,7 +139,7 @@ class FrontendFuncDefStmt : public Stmt {
     return true;
   }
 
-  DEFINE_ACCEPT
+  TI_DEFINE_ACCEPT
 };
 
 class FrontendBreakStmt : public Stmt {
@@ -151,7 +151,7 @@ class FrontendBreakStmt : public Stmt {
     return false;
   }
 
-  DEFINE_ACCEPT
+  TI_DEFINE_ACCEPT
 };
 
 class FrontendContinueStmt : public Stmt {
@@ -162,7 +162,7 @@ class FrontendContinueStmt : public Stmt {
     return false;
   }
 
-  DEFINE_ACCEPT
+  TI_DEFINE_ACCEPT
 };
 
 class FrontendWhileStmt : public Stmt {
@@ -177,7 +177,7 @@ class FrontendWhileStmt : public Stmt {
     return true;
   }
 
-  DEFINE_ACCEPT
+  TI_DEFINE_ACCEPT
 };
 
 class FrontendKernelReturnStmt : public Stmt {
@@ -191,7 +191,7 @@ class FrontendKernelReturnStmt : public Stmt {
     return false;
   }
 
-  DEFINE_ACCEPT
+  TI_DEFINE_ACCEPT
 };
 
 // Expressions

@@ -226,9 +226,12 @@ bool AsyncEngine::fuse() {
   bool modified = false;
   std::unordered_map<SNode *, bool> list_dirty;
 
-  for (int i = 0; i < (int)task_queue.size(); i++) {
-    // fmt::print("{}: {}\n", i, task_queue[i].stmt->task_name());
-//    irpass::print(task_queue[i].stmt);
+  if (false) {
+    // (experimental) print tasks
+    for (int i = 0; i < (int)task_queue.size(); i++) {
+      fmt::print("{}: {}\n", i, task_queue[i].stmt->task_name());
+      irpass::print(task_queue[i].stmt);
+    }
   }
 
   for (int i = 0; i < (int)task_queue.size() - 1; i++) {
@@ -244,10 +247,10 @@ bool AsyncEngine::fuse() {
                              task_a->const_end && task_b->const_end &&
                              task_a->begin_value == task_b->begin_value &&
                              task_a->end_value == task_b->end_value;
-    /*
+
+    // We do not fuse serial kernels for now since they can be SNode accessors
     bool are_both_serial = task_a->task_type == OffloadedStmt::serial &&
                            task_b->task_type == OffloadedStmt::serial;
-                           */
     bool same_kernel = task_queue[i].kernel == task_queue[i + 1].kernel;
     if (is_same_range_for || is_same_struct_for) {
       // TODO: in certain cases this optimization can be wrong!
@@ -272,6 +275,7 @@ bool AsyncEngine::fuse() {
 
   auto new_task_queue = std::deque<KernelLaunchRecord>();
 
+  // Eliminate empty tasks
   for (int i = 0; i < (int)task_queue.size(); i++) {
     auto task = task_queue[i].stmt;
     bool keep = true;

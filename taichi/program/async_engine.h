@@ -120,7 +120,7 @@ class ExecutionQueue {
  public:
   std::mutex mut;
   std::deque<KernelLaunchRecord> task_queue;
-  std::vector<KernelLaunchRecord> trashbin;
+  std::vector<KernelLaunchRecord> trashbin; // prevent IR from being deleted
   std::unordered_set<uint64> to_be_compiled;
 
   ParallelExecutor compilation_workers;  // parallel compilation

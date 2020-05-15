@@ -120,7 +120,6 @@ class IRCloner : public IRVisitor {
     root->accept(&cloner);
     irpass::typecheck(new_root.get());
     irpass::fix_block_parents(new_root.get());
-    TI_ASSERT(irpass::analysis::same_statements(root, new_root.get()));
     return new_root;
   }
 };

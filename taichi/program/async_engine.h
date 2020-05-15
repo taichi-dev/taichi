@@ -112,7 +112,9 @@ class KernelLaunchRecord {
   std::unique_ptr<IRNode> stmt_;
   uint64 h;
 
-  KernelLaunchRecord(Context contxet, Kernel *kernel, std::unique_ptr<IRNode> &&stmt);
+  KernelLaunchRecord(Context contxet,
+                     Kernel *kernel,
+                     std::unique_ptr<IRNode> &&stmt);
 };
 
 // In charge of (parallel) compilation to binary and (serial) kernel launching
@@ -120,7 +122,7 @@ class ExecutionQueue {
  public:
   std::mutex mut;
   std::deque<KernelLaunchRecord> task_queue;
-  std::vector<KernelLaunchRecord> trashbin; // prevent IR from being deleted
+  std::vector<KernelLaunchRecord> trashbin;  // prevent IR from being deleted
   std::unordered_set<uint64> to_be_compiled;
 
   ParallelExecutor compilation_workers;  // parallel compilation

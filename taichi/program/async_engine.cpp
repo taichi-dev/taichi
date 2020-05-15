@@ -12,9 +12,11 @@
 
 TLANG_NAMESPACE_BEGIN
 
-uint64 hash(OffloadedStmt *stmt) {
+uint64 hash(IRNode *stmt) {
+  TI_ASSERT(stmt);
   // TODO: upgrade this using IR comparisons
   std::string serialized;
+  irpass::re_id(stmt);
   irpass::print(stmt, &serialized);
   uint64 ret = 0;
   for (uint64 i = 0; i < serialized.size(); i++) {
@@ -25,33 +27,42 @@ uint64 hash(OffloadedStmt *stmt) {
 
 KernelLaunchRecord::KernelLaunchRecord(Context context,
                                        Kernel *kernel,
-                                       OffloadedStmt *stmt)
-    : context(context), kernel(kernel), stmt(stmt), h(hash(stmt)) {
+                                       std::unique_ptr<IRNode> &&stmt_)
+    : context(context),
+      kernel(kernel),
+      stmt(dynamic_cast<OffloadedStmt *>(stmt_.get())),
+      stmt_(std::move(stmt_)),
+      h(hash(stmt)) {
+  TI_ASSERT(stmt != nullptr);
 }
 
-void ExecutionQueue::enqueue(KernelLaunchRecord ker) {
+void ExecutionQueue::enqueue(KernelLaunchRecord &&ker) {
   auto h = ker.h;
+  auto stmt = ker.stmt;
+  auto kernel = ker.kernel;
   if (compiled_func.find(h) == compiled_func.end() &&
       to_be_compiled.find(h) == to_be_compiled.end()) {
     to_be_compiled.insert(h);
-    compilation_workers.enqueue([&, ker, h, this]() {
+    compilation_workers.enqueue([&, stmt, kernel, h, this]() {
       {
         // Final lowering
         using namespace irpass;
 
-        flag_access(ker.stmt);
-        lower_access(ker.stmt, true, ker.kernel);
-        flag_access(ker.stmt);
-        full_simplify(ker.stmt, ker.kernel->program.config, ker.kernel);
-        // analysis::verify(ker.stmt);
+        flag_access(stmt);
+        lower_access(stmt, true, kernel);
+        flag_access(stmt);
+        full_simplify(stmt, kernel->program.config, kernel);
+        // analysis::verify(stmt);
+
       }
-      auto func = CodeGenCPU(ker.kernel, ker.stmt).codegen();
+      auto func = CodeGenCPU(kernel, stmt).codegen();
       std::lock_guard<std::mutex> _(mut);
       compiled_func[h] = func;
     });
   }
 
-  launch_worker.enqueue([&, ker, h] {
+  auto context = ker.context;
+  launch_worker.enqueue([&, h, stmt, context, this] {
     FunctionType func;
     while (true) {
       std::unique_lock<std::mutex> lock(mut);
@@ -64,7 +75,7 @@ void ExecutionQueue::enqueue(KernelLaunchRecord ker) {
       break;
     }
     stat.add("launched_kernels", 1.0);
-    auto task_type = ker.stmt->task_type;
+    auto task_type = stmt->task_type;
     if (task_type == OffloadedStmt::TaskType::listgen) {
       stat.add("launched_kernels_list_op", 1.0);
       stat.add("launched_kernels_list_gen", 1.0);
@@ -80,9 +91,10 @@ void ExecutionQueue::enqueue(KernelLaunchRecord ker) {
     } else if (task_type == OffloadedStmt::TaskType::gc) {
       stat.add("launched_kernels_garbage_collect", 1.0);
     }
-    auto context = ker.context;
-    func(context);
+    auto c = context;
+    func(c);
   });
+  trashbin.push_back(std::move(ker));
 }
 
 void ExecutionQueue::synchronize() {
@@ -102,19 +114,19 @@ void AsyncEngine::launch(Kernel *kernel) {
   auto &offloads = block->statements;
   for (std::size_t i = 0; i < offloads.size(); i++) {
     auto offload = offloads[i]->as<OffloadedStmt>();
-    KernelLaunchRecord rec(kernel->program.get_context(), kernel, offload);
-    enqueue(rec);
+    KernelLaunchRecord rec(kernel->program.get_context(), kernel,
+                           irpass::analysis::clone(offload, kernel));
+    enqueue(std::move(rec));
   }
 }
 
-void AsyncEngine::enqueue(KernelLaunchRecord t) {
+void AsyncEngine::enqueue(KernelLaunchRecord &&t) {
   using namespace irpass::analysis;
-
-  task_queue.push_back(t);
 
   auto &meta = metas[t.h];
   // TODO: this is an abuse since it gathers nothing...
-  gather_statements(t.stmt, [&](Stmt *stmt) {
+  auto root_stmt = t.stmt;
+  gather_statements(root_stmt, [&](Stmt *stmt) {
     if (auto global_ptr = stmt->cast<GlobalPtrStmt>()) {
       for (auto &snode : global_ptr->snodes.data) {
         meta.input_snodes.insert(snode);
@@ -153,12 +165,14 @@ void AsyncEngine::enqueue(KernelLaunchRecord t) {
     }
     return false;
   });
+
+  task_queue.push_back(std::move(t));
 }
 
 void AsyncEngine::synchronize() {
   optimize();
   while (!task_queue.empty()) {
-    queue.enqueue(task_queue.front());
+    queue.enqueue(std::move(task_queue.front()));
     task_queue.pop_front();
   }
   queue.synchronize();
@@ -171,7 +185,7 @@ bool AsyncEngine::optimize() {
   auto new_task_queue = std::deque<KernelLaunchRecord>();
   for (int i = 0; i < task_queue.size(); i++) {
     // Try to eliminate unused listgens
-    auto t = task_queue[i];
+    auto &t = task_queue[i];
     auto meta = metas[t.h];
     auto offload = t.stmt;
     bool keep = true;
@@ -197,7 +211,7 @@ bool AsyncEngine::optimize() {
       }
     }
     if (keep) {
-      new_task_queue.push_back(t);
+      new_task_queue.push_back(std::move(t));
     } else {
       modified = true;
     }

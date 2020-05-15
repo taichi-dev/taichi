@@ -51,7 +51,7 @@ class DiffRange {
 namespace irpass::analysis {
 
 void check_fields_registered(IRNode *root);
-std::unique_ptr<IRNode> clone(IRNode *root);
+std::unique_ptr<IRNode> clone(IRNode *root, Kernel *kernel = nullptr);
 int count_statements(IRNode *root);
 std::unordered_set<Stmt *> detect_fors_with_break(IRNode *root);
 std::unordered_set<Stmt *> detect_loops_with_continue(IRNode *root);

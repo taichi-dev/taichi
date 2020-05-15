@@ -14,19 +14,13 @@
 TLANG_NAMESPACE_BEGIN
 namespace opengl {
 
-size_t RangeSizeEvaluator_::eval(const void *gtmp) {
-  size_t b, e, tpg = gl_threads_per_group;
-  b = const_begin ? begin : *(const int *)((const char *)gtmp + begin);
-  e = const_end ? end : *(const int *)((const char *)gtmp + end);
-  return std::max((e - b + tpg - 1) / tpg, (size_t)1);
-}
-
-RangeSizeEvaluator_::RangeSizeEvaluator_(OffloadedStmt *stmt)
-    : const_begin(stmt->const_begin),
-      const_end(stmt->const_end),
-      begin(stmt->const_begin ? stmt->begin_value : stmt->begin_offset),
-      end(stmt->const_end ? stmt->end_value : stmt->end_offset),
-      gl_threads_per_group((size_t)opengl_get_threads_per_group()) {
+KernelParallelAttrib::KernelParallelAttrib(OffloadedStmt *stmt)
+    : KernelParallelAttrib(-1)
+{
+      const_begin = stmt->const_begin;
+      const_end = stmt->const_end;
+      range_begin = stmt->const_begin ? stmt->begin_value : stmt->begin_offset;
+      range_end = stmt->const_end ? stmt->end_value : stmt->end_offset;
 }
 
 namespace {
@@ -67,11 +61,7 @@ class KernelGen : public IRVisitor {
   }
 
  private:  // {{{
-  LineAppender line_appender_, line_appender_header_;
   std::unique_ptr<CompiledProgram> compiled_program_;
-  UsedFeature used;
-
-  bool is_top_level_{true};
 
   StructCompiledResult *struct_compiled_;
   const SNode *root_snode_;
@@ -81,9 +71,12 @@ class KernelGen : public IRVisitor {
   std::string root_snode_type_name_;
   std::string glsl_kernel_prefix_;
   int glsl_kernel_count_{0};
-  int num_threads_{1};
-  int num_groups_{1};
-  RangeSizeEvaluator range_size_evaluator_;
+
+  bool is_top_level_{true};
+  LineAppender line_appender_;
+  LineAppender line_appender_header_;
+  KernelParallelAttrib kpa;
+  UsedFeature used;
 
   template <typename... Args>
   void emit(std::string f, Args &&... args) {
@@ -178,24 +171,9 @@ class KernelGen : public IRVisitor {
 
     line_appender_header_.append_raw(kernel_header);
 
-    int threads_per_group = opengl_get_threads_per_group();
-    if (num_threads_ == -1) {  // is dyn loop
-      num_groups_ = -1;
-    } else {
-      if (num_threads_ <= 0)
-        num_threads_ = 1;
-      if (num_threads_ <= threads_per_group) {
-        threads_per_group = num_threads_;
-        num_groups_ = 1;
-      } else {
-        num_groups_ =
-            (num_threads_ + threads_per_group - 1) / threads_per_group;
-      }
-    }
-    emit(
-        "layout(local_size_x = {} /* {}, {} */, local_size_y = 1, local_size_z "
-        "= 1) in;",
-        threads_per_group, num_groups_, num_threads_);
+    emit("layout(local_size_x = {} /* {}, {} */, "
+         "local_size_y = 1, local_size_z = 1) in;",
+         kpa.threads_per_group, kpa.num_groups, kpa.num_threads);
     std::string extensions = "";
 #define PER_OPENGL_EXTENSION(x) \
   if (opengl_has_##x)           \
@@ -206,12 +184,10 @@ class KernelGen : public IRVisitor {
         "#version 430 core\n" + extensions + "precision highp float;\n" +
         line_appender_header_.lines() + line_appender_.lines();
     compiled_program_->add(std::move(glsl_kernel_name_), kernel_src_code,
-                           num_groups_, range_size_evaluator_, used);
+                           std::move(kpa), used);
     line_appender_header_.clear_all();
     line_appender_.clear_all();
-    num_threads_ = 1;
-    num_groups_ = 1;
-    range_size_evaluator_ = std::nullopt;
+    kpa = KernelParallelAttrib();
   }
 
   void visit(Block *stmt) override {
@@ -563,10 +539,10 @@ class KernelGen : public IRVisitor {
       auto end_value = stmt->end_value;
       if (end_value < begin_value)
         std::swap(end_value, begin_value);
-      num_threads_ = end_value - begin_value;
+      kpa = KernelParallelAttrib(end_value - begin_value);
       emit("// range known at compile time");
       emit("int _tid = int(gl_GlobalInvocationID.x);");
-      emit("if (_tid >= {}) return;", num_threads_);
+      emit("if (_tid >= {}) return;", end_value - begin_value);
       emit("int _itv = {} + _tid * {};", begin_value, 1 /* stmt->step? */);
       stmt->body->accept(this);
     } else {
@@ -583,9 +559,7 @@ class KernelGen : public IRVisitor {
         emit("int _beg = {}, _end = {};", begin_expr, end_expr);
         emit("int _itv = _beg + _tid;");
         emit("if (_itv >= _end) return;");
-        num_threads_ = -1;
-
-        range_size_evaluator_ = std::make_optional<RangeSizeEvaluator_>(stmt);
+        kpa = KernelParallelAttrib(stmt);
       }
       stmt->body->accept(this);
     }

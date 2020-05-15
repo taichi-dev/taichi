@@ -17,21 +17,25 @@ namespace opengl {
 
 bool initialize_opengl(bool error_tolerance = false);
 bool is_opengl_api_available();
-int opengl_get_threads_per_group();
 #define PER_OPENGL_EXTENSION(x) extern bool opengl_has_##x;
 #include "taichi/inc/opengl_extension.inc.h"
 #undef PER_OPENGL_EXTENSION
 
-struct RangeSizeEvaluator_ {
-  bool const_begin, const_end;
-  size_t begin, end;
-  size_t gl_threads_per_group;
+struct KernelParallelAttrib {
+  int num_groups{1};
+  int num_threads{1};
+  int threads_per_group{1};
+  bool const_begin{true}, const_end{true};
+  size_t range_begin{0}, range_end{1};
 
-  RangeSizeEvaluator_(OffloadedStmt *stmt);
-  size_t eval(const void *gtmp);
+  KernelParallelAttrib() = default;
+  KernelParallelAttrib(OffloadedStmt *stmt);
+  KernelParallelAttrib(int num_threads_);
+  size_t eval(const void *gtmp) const;
+  inline bool is_dynamic() const {
+    return num_groups == -1;
+  }
 };
-
-using RangeSizeEvaluator = std::optional<RangeSizeEvaluator_>;
 
 struct CompiledProgram {
   struct Impl;
@@ -47,8 +51,7 @@ struct CompiledProgram {
 
   void add(const std::string &kernel_name,
            const std::string &kernel_source_code,
-           int num_groups,
-           RangeSizeEvaluator rse,
+           KernelParallelAttrib &&kpa,
            const UsedFeature &used);
   void launch(Context &ctx, GLSLLauncher *launcher) const;
 };

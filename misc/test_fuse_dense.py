@@ -1,7 +1,7 @@
 import taichi as ti
 import time
 
-ti.init()
+ti.init(async=True)
 
 x = ti.var(ti.i32)
 y = ti.var(ti.i32)
@@ -21,37 +21,53 @@ def y_to_z():
     for i in x:
         z[i] = y[i] + 4
         
+@ti.kernel
+def inc():
+    for i in x:
+        x[i] = x[i] + 1
 
-n = 0
+n = 100
 
 for i in range(n):
    x[i] = i * 10
    
-x_to_y()
-ti.sync()
-
-for i in range(4):
+repeat = 10
+   
+for i in range(repeat):
     t = time.time()
     x_to_y()
     ti.sync()
-    print(time.time() - t)
+    print('x_to_y', time.time() - t)
 
-for i in range(4):
+for i in range(repeat):
     t = time.time()
     y_to_z()
     ti.sync()
-    print(time.time() - t)
+    print('y_to_z', time.time() - t)
     
-for i in range(4):
+for i in range(repeat):
     t = time.time()
     x_to_y()
     y_to_z()
     ti.sync()
-    print('fused', time.time() - t)
+    print('fused x->y->z', time.time() - t)
+    
+for i in range(repeat):
+    t = time.time()
+    inc()
+    ti.sync()
+    print('single inc', time.time() - t)
+    
+for i in range(repeat):
+    t = time.time()
+    for j in range(10):
+        inc()
+    ti.sync()
+    print('fused 10 inc', time.time() - t)
 
 
 for i in range(n):
-    x[i] = i * 10
+    assert x[i] == i * 10
     assert y[i] == x[i] + 1
     assert z[i] == x[i] + 5
 

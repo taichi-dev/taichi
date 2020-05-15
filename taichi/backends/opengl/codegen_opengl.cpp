@@ -15,12 +15,11 @@ TLANG_NAMESPACE_BEGIN
 namespace opengl {
 
 KernelParallelAttrib::KernelParallelAttrib(OffloadedStmt *stmt)
-    : KernelParallelAttrib(-1)
-{
-      const_begin = stmt->const_begin;
-      const_end = stmt->const_end;
-      range_begin = stmt->const_begin ? stmt->begin_value : stmt->begin_offset;
-      range_end = stmt->const_end ? stmt->end_value : stmt->end_offset;
+    : KernelParallelAttrib(-1) {
+  const_begin = stmt->const_begin;
+  const_end = stmt->const_end;
+  range_begin = stmt->const_begin ? stmt->begin_value : stmt->begin_offset;
+  range_end = stmt->const_end ? stmt->end_value : stmt->end_offset;
 }
 
 namespace {
@@ -171,9 +170,10 @@ class KernelGen : public IRVisitor {
 
     line_appender_header_.append_raw(kernel_header);
 
-    emit("layout(local_size_x = {} /* {}, {} */, "
-         "local_size_y = 1, local_size_z = 1) in;",
-         kpa.threads_per_group, kpa.num_groups, kpa.num_threads);
+    emit(
+        "layout(local_size_x = {} /* {}, {} */, "
+        "local_size_y = 1, local_size_z = 1) in;",
+        kpa.threads_per_group, kpa.num_groups, kpa.num_threads);
     std::string extensions = "";
 #define PER_OPENGL_EXTENSION(x) \
   if (opengl_has_##x)           \
@@ -259,7 +259,7 @@ class KernelGen : public IRVisitor {
     emit("int {} = {} + {}; // {}", stmt->short_name(),
          stmt->input_ptr->short_name(),
          struct_compiled_->snode_map[stmt->input_snode->node_type_name]
-         .children_offsets[stmt->chid],
+             .children_offsets[stmt->chid],
          stmt->output_snode->node_type_name);
     if (stmt->output_snode->is_place())
       ptr_signats[stmt->id] = "data";

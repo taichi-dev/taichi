@@ -152,6 +152,16 @@ Stmt *VecStatement::push_back(pStmt &&stmt) {
   return ret;
 }
 
+std::unique_ptr<IRNode> IRNode::clone() {
+  if (is<Block>())
+    return as<Block>()->clone();
+  else if (is<Stmt>())
+    return as<Stmt>()->clone();
+  else {
+    TI_NOT_IMPLEMENTED
+  }
+}
+
 class StatementTypeNameVisitor : public IRVisitor {
  public:
   std::string type_name;

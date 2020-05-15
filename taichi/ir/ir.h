@@ -262,6 +262,8 @@ class IRNode {
   T *cast() {
     return dynamic_cast<T *>(this);
   }
+
+  std::unique_ptr<IRNode> clone();
 };
 
 #define TI_DEFINE_ACCEPT                     \

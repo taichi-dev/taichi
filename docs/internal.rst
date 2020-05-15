@@ -6,6 +6,68 @@ Intermediate representation
 Use ``ti.init(print_ir=True)`` to print IR on the console.
 
 
+Data Structure Node Organization
+--------------------------------
+
+The internal organization of data structure nodes can be confusing.
+It is important to distinguish the concept of **containers**, **cells** and **components**.
+
+- A **container** can have multiple **cells**. The numbers of **cells** are recommended to be powers of two.
+- A **cell** can have multiple **components**.
+- Each **component** is a **container** of a lower-level SNode.
+
+Consider the following example:
+
+.. code-block:: python
+
+    # misc/listgen_demo.py
+
+    x = ti.var(ti.i32)
+    y = ti.var(ti.i32)
+    z = ti.var(ti.i32)
+
+    S0 = ti.root
+    S1 = S0.pointer(ti.i, 4)
+
+    S2 = S1.dense(ti.i, 8)
+    S2.place(x, y) # S3: y; S4: z
+
+    S5 = S1.dense(ti.i, 8)
+    S5.place(z) # S6: z
+
+
+- The whole data structure is a ``S0root`` **container**, containing
+
+  - ``1x`` ``S0root`` **cell**, each has only one **component**, which is
+
+    - A ``S1pointer`` **container**, containing
+
+      - 4x ``S1pointer`` **cells**, each with two **components**, which are
+
+        - A ``S2dense`` **container**, containing
+
+          - 8x ``S2dense`` **cells**, each with two **components**, which are
+
+            - ``x: ti.i32``
+            - ``y: ti.i32``
+
+        - A ``S5dense`` **container**, containing
+
+          - 8x ``S5dense`` **cells**, each with one **component**, which is
+
+            - ``z: ti.i32``
+
+
+Each SNode has two types (as implemented in struct compilers): ``container`` type and ``cell`` type.
+Note that **cells** are never exposed to end-users.
+**Components** of a higher level SNode **cells** are **containers** of a lower level SNode.
+
+We are on our way to remove usages of **children**, **instances** and **elements** in Taichi.
+These are very ambiguous terms.
+
+**List generation** generates lists of SNode **containers** (instead of SNode **cells**).
+
+
 List generation (WIP)
 ---------------------
 
@@ -32,7 +94,11 @@ For example,
     ti.init(print_ir=True)
 
     x = ti.field(ti.i32)
-    ti.root.dense(ti.i, 4).bitmasked(ti.i, 4).place(x)
+
+    S0 = ti.root
+    S1 = S0.dense(ti.i, 4)
+    S2 = S1.bitmasked(ti.i, 4)
+    S2.place(x)
 
     @ti.kernel
     def func():

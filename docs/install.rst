@@ -1,7 +1,7 @@
 Installation
 ============
 
-First of all, let's install Taichi via ``pip``:
+Taichi can be easily installed via ``pip``:
 
 .. code-block:: bash
 
@@ -9,7 +9,7 @@ First of all, let's install Taichi via ``pip``:
 
 .. note::
 
-    Currently, Taichi only support Python 3.6/3.7/3.8, versions below are **not supported**.
+    Currently, Taichi only supports Python 3.6/3.7/3.8.
 
 
 - On Ubuntu 19.04+, please execute ``sudo apt install libtinfo5``.
@@ -20,7 +20,7 @@ First of all, let's install Taichi via ``pip``:
 Troubleshooting
 ---------------
 
-If you found Taichi crashed with following message:
+Taichi crashes with the following messages:
 
 .. code-block::
 
@@ -32,15 +32,15 @@ If you found Taichi crashed with following message:
 
 This may because your NVIDIA card is pre-Pascal and therefore does not support `Unified Memory <https://www.nextplatform.com/2019/01/24/unified-memory-the-final-piece-of-the-gpu-programming-puzzle/>`_.
 
-* Try adding ``export TI_USE_UNIFIED_MEMORY=0`` to your ``~/.bashrc``, this disables CUDA backend to use unified memory support.
+* Try adding ``export TI_USE_UNIFIED_MEMORY=0`` to your ``~/.bashrc``. This disables unified memory usage in CUDA backend.
 
 
-If you found other problems related to CUDA:
+If you find other CUDA problems:
 
-* Try adding ``export TI_ENABLE_CUDA=0`` to your  ``~/.bashrc``, this disables CUDA backend completely and Taichi will fall back on other GPU backends like OpenGL.
+* Try adding ``export TI_ENABLE_CUDA=0`` to your  ``~/.bashrc``. This disables the CUDA backend completely and Taichi will fall back on other GPU backends such as OpenGL.
 
 
-If you found Taichi crashed with Stack Traceback containing a line of ``glfwCreateWindow`` (see `#958 <https://github.com/taichi-dev/taichi/issues/958>`_):
+If Taichi crashes with a stack backtrace containing a line of ``glfwCreateWindow`` (see `#958 <https://github.com/taichi-dev/taichi/issues/958>`_):
 
 .. code-block::
 
@@ -58,11 +58,11 @@ If you found Taichi crashed with Stack Traceback containing a line of ``glfwCrea
 
     ... (many lines, omitted)
 
-This may because you are running Taichi on VM which has a very low OpenGL version (while we requires OpenGL 4.3+ to work):
+This is likely because you are running Taichi on a virtual machine with an old OpenGL. Taichi requires OpenGL 4.3+ to work).
 
-* Try adding ``export TI_ENABLE_OPENGL=0`` to your  ``~/.bashrc``, this disables OpenGL backend and Taichi will fall back on CPU backend.
+* Try adding ``export TI_ENABLE_OPENGL=0`` to your  ``~/.bashrc``, even if you don't initialize Taichi with OpenGL (``ti.init(arch=ti.opengl)``). This disables the OpenGL backend detection to avoid incompatibilities.
 
 
-If you found Taichi crashed with messages reporting ``libtinfo.so.5`` missing:
+If Taichi crashes and reports ``libtinfo.so.5 not found``:
 
-* Please install ``libtinfo5`` for Ubuntu or ``ncurses5-compat-libs`` (AUR) for Arch Linux.
+* Please install ``libtinfo5`` on Ubuntu or ``ncurses5-compat-libs`` (AUR) on Arch Linux.

@@ -1,4 +1,4 @@
-#include "taichi/common/bit.h"
+#include "taichi/util/bit.h"
 #include "taichi/common/task.h"
 #include "taichi/gui/gui.h"
 

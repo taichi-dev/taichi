@@ -3,7 +3,7 @@
     The use of this software is governed by the LICENSE file.
 *******************************************************************************/
 
-#include "taichi/common/util.h"
+#include "taichi/common/core.h"
 #include <vector>
 #include <iostream>
 #include <string>

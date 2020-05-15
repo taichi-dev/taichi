@@ -1,6 +1,6 @@
 #include "taichi/system/memory_usage_monitor.h"
 #include "taichi/system/timer.h"
-#include "taichi/common/util.h"
+#include "taichi/common/core.h"
 #include "taichi/common/task.h"
 #include "taichi/system/threading.h"
 #include "taichi/system/timer.h"

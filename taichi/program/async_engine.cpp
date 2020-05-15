@@ -170,7 +170,8 @@ void AsyncEngine::enqueue(KernelLaunchRecord &&t) {
 
 void AsyncEngine::synchronize() {
   optimize_listgen();
-  while (fuse());
+  while (fuse())
+    ;
   while (!task_queue.empty()) {
     queue.enqueue(std::move(task_queue.front()));
     task_queue.pop_front();
@@ -225,20 +226,30 @@ bool AsyncEngine::fuse() {
   bool modified = false;
   std::unordered_map<SNode *, bool> list_dirty;
 
-  /*
   for (int i = 0; i < (int)task_queue.size(); i++) {
     fmt::print("{}: {}\n", i, task_queue[i].stmt->task_name());
     irpass::print(task_queue[i].stmt);
   }
-   */
 
   for (int i = 0; i < (int)task_queue.size() - 1; i++) {
     auto task_a = task_queue[i].stmt;
     auto task_b = task_queue[i + 1].stmt;
-    if (task_a->task_type == OffloadedStmt::struct_for &&
-        task_b->task_type == OffloadedStmt::struct_for &&
-        task_a->snode == task_b->snode &&
-        task_a->block_dim == task_b->block_dim) {
+    bool is_same_struct_for = task_a->task_type == OffloadedStmt::struct_for &&
+                              task_b->task_type == OffloadedStmt::struct_for &&
+                              task_a->snode == task_b->snode &&
+                              task_a->block_dim == task_b->block_dim;
+    bool is_same_range_for = task_a->task_type == OffloadedStmt::range_for &&
+                             task_b->task_type == OffloadedStmt::range_for &&
+                             task_a->const_begin && task_b->const_begin &&
+                             task_a->const_end && task_b->const_end &&
+                             task_a->begin_value == task_b->begin_value &&
+                             task_a->end_value == task_b->end_value;
+    /*
+    bool are_both_serial = task_a->task_type == OffloadedStmt::serial &&
+                           task_b->task_type == OffloadedStmt::serial;
+                           */
+    bool same_kernel = task_queue[i].kernel == task_queue[i + 1].kernel;
+    if (is_same_range_for || is_same_struct_for) {
       // TODO: in certain cases this optimization can be wrong!
       // Fuse task b into task_a
       for (int j = 0; j < (int)task_b->body->size(); j++) {

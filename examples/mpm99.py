@@ -23,12 +23,13 @@ def substep():
   for i, j in grid_m:
     grid_v[i, j] = [0, 0]
     grid_m[i, j] = 0
+  for p in x:
+    F[p] = (ti.Matrix.identity(ti.f32, 2) + dt * C[p]) @ F[p] # deformation gradient update
   for p in x: # Particle state update and scatter to grid (P2G)
     base = (x[p] * inv_dx - 0.5).cast(int)
     fx = x[p] * inv_dx - base.cast(float)
     # Quadratic kernels  [http://mpm.graphics   Eqn. 123, with x=fx, fx-1,fx-2]
     w = [0.5 * (1.5 - fx) ** 2, 0.75 - (fx - 1) ** 2, 0.5 * (fx - 0.5) ** 2]
-    F[p] = (ti.Matrix.identity(ti.f32, 2) + dt * C[p]) @ F[p] # deformation gradient update
     h = ti.exp(10 * (1.0 - Jp[p])) # Hardening coefficient: snow gets harder when compressed
     if material[p] == 1: # jelly, make it softer
       h = 0.3
@@ -57,14 +58,20 @@ def substep():
       weight = w[i][0] * w[j][1]
       grid_v[base + offset] += weight * (p_mass * v[p] + affine @ dpos)
       grid_m[base + offset] += weight * p_mass
+      
   for i, j in grid_m:
     if grid_m[i, j] > 0: # No need for epsilon here
       grid_v[i, j] = (1 / grid_m[i, j]) * grid_v[i, j] # Momentum to velocity
+      
+  for i, j in grid_m:
       grid_v[i, j][1] -= dt * 50 # gravity
+      
+  for i, j in grid_m:
       if i < 3 and grid_v[i, j][0] < 0:          grid_v[i, j][0] = 0 # Boundary conditions
       if i > n_grid - 3 and grid_v[i, j][0] > 0: grid_v[i, j][0] = 0
       if j < 3 and grid_v[i, j][1] < 0:          grid_v[i, j][1] = 0
       if j > n_grid - 3 and grid_v[i, j][1] > 0: grid_v[i, j][1] = 0
+      
   for p in x: # grid to particle (G2P)
     base = (x[p] * inv_dx - 0.5).cast(int)
     fx = x[p] * inv_dx - base.cast(float)
@@ -78,6 +85,8 @@ def substep():
       new_v += weight * g_v
       new_C += 4 * inv_dx * weight * ti.outer_product(g_v, dpos)
     v[p], C[p] = new_v, new_C
+    
+  for p in x:
     x[p] += dt * v[p] # advection
 
 group_size = n_particles // 3

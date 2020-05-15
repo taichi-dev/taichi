@@ -249,7 +249,7 @@ class KernelGen : public IRVisitor {
 
     emit("int {} = {} + {} * {}; // {}", stmt->short_name(),
          parent->short_name(),
-         struct_compiled_->class_children_map[parent_type],
+         struct_compiled_->snode_map[parent_type].elem_stride,
          stmt->input_index->short_name(), stmt->snode->node_type_name);
   }
 
@@ -258,8 +258,8 @@ class KernelGen : public IRVisitor {
   void visit(GetChStmt *stmt) override {
     emit("int {} = {} + {}; // {}", stmt->short_name(),
          stmt->input_ptr->short_name(),
-         struct_compiled_
-             ->class_get_map[stmt->input_snode->node_type_name][stmt->chid],
+         struct_compiled_->snode_map[stmt->input_snode->node_type_name]
+         .children_offsets[stmt->chid],
          stmt->output_snode->node_type_name);
     if (stmt->output_snode->is_place())
       ptr_signats[stmt->id] = "data";

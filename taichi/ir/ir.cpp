@@ -219,8 +219,8 @@ Stmt::Stmt(const Stmt &stmt) : field_manager(this), fields_registered(false) {
   parent = stmt.parent;
   instance_id = instance_id_counter++;
   id = instance_id;
-  erased = false;
-  is_ptr = false;
+  erased = stmt.erased;
+  is_ptr = stmt.is_ptr;
   tb = stmt.tb;
   ret_type = stmt.ret_type;
 }

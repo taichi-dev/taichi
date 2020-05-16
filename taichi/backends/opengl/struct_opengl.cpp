@@ -32,10 +32,11 @@ void OpenglStructCompiler::collect_snodes(SNode &snode) {
 void OpenglStructCompiler::generate_types(const SNode &snode) {
   const bool is_place = snode.is_place();
   const auto &node_name = snode.node_type_name;
+  const auto child_name = node_name + "_ch";
+  auto &snode_info = snode_map_[node_name];
+    auto &snode_child_info = snode_map_[child_name];
   if (!is_place) {
-    const std::string child_name = node_name + "_ch";
     size_t stride_num = 0;
-    auto &snode_info = snode_map_[node_name];
     snode_info.children_offsets.resize(snode.ch.size());
     std::vector<std::pair<int, SNode *>> table;
     for (int i = 0; i < (int)snode.ch.size(); i++) {
@@ -55,17 +56,17 @@ void OpenglStructCompiler::generate_types(const SNode &snode) {
       snode_info.children_offsets[i] = stride_num;
       stride_num += snode_map_[ch->node_type_name].stride;
     }
-    snode_map_[child_name].stride = stride_num;
+    snode_child_name.stride = stride_num;
   }
   if (is_place) {
     const auto dt_name = opengl_data_type_name(snode.dt);
-    snode_map_[node_name].stride = data_type_size(snode.dt);
+    snode_info.stride = data_type_size(snode.dt);
   } else if (snode.type == SNodeType::dense || snode.type == SNodeType::root) {
     const int n = (snode.type == SNodeType::root) ? 1 : snode.n;
-    snode_map_[node_name].length = n;
-    snode_map_[node_name].stride =
-        snode_map_[node_name + "_ch"].stride * snode_map_[node_name].length;
-    snode_map_[node_name].elem_stride = snode_map_[node_name + "_ch"].stride;
+    snode_info.length = n;
+    snode_info.stride =
+        snode_child_info.stride * snode_info.length;
+    snode_info.elem_stride = snode_child_info.stride;
   } else {
     TI_ERROR("SNodeType={} not supported on OpenGL",
              snode_type_name(snode.type));

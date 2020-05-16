@@ -56,7 +56,7 @@ void OpenglStructCompiler::generate_types(const SNode &snode) {
       snode_info.children_offsets[i] = stride_num;
       stride_num += snode_map_[ch->node_type_name].stride;
     }
-    snode_child_name.stride = stride_num;
+    snode_child_info.stride = stride_num;
   }
   if (is_place) {
     const auto dt_name = opengl_data_type_name(snode.dt);

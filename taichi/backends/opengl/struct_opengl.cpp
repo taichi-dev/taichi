@@ -34,7 +34,7 @@ void OpenglStructCompiler::generate_types(const SNode &snode) {
   const auto &node_name = snode.node_type_name;
   const auto child_name = node_name + "_ch";
   auto &snode_info = snode_map_[node_name];
-    auto &snode_child_info = snode_map_[child_name];
+  auto &snode_child_info = snode_map_[child_name];
   if (!is_place) {
     size_t stride_num = 0;
     snode_info.children_offsets.resize(snode.ch.size());
@@ -54,7 +54,7 @@ void OpenglStructCompiler::generate_types(const SNode &snode) {
               });
     for (auto &&[i, ch] : table) {
       snode_info.children_offsets[i] = stride_num;
-      stride_num += snode_map_[ch->node_type_name].stride;
+      stride_num += snode_map_.at(ch->node_type_name).stride;
     }
     snode_child_info.stride = stride_num;
   }

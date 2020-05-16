@@ -3,7 +3,7 @@ Type system
 
 Supported types
 ---------------
-Currently, supported basic types in Taichi are
+Currently, the supported basic types in Taichi are
 
 - int8 ``ti.i8``
 - int16 ``ti.i16``

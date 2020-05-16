@@ -1,8 +1,8 @@
 Type system
-===============================================
+===========
 
 Supported types
----------------------------------------
+---------------
 Currently, supported basic types in Taichi are
 
 - int8 ``ti.i8``
@@ -17,36 +17,36 @@ Currently, supported basic types in Taichi are
 - float64 ``ti.f64``
 
 .. note::
-    Supported types on each backends:
+    Supported types on each backend:
 
     +------+-----------+-----------+---------+
     | type | CPU/CUDA  | OpenGL    | Metal   |
     +======+===========+===========+=========+
-    | i8   |    OK     |   MISS    |   OK    |
+    | i8   |    OK     |   N/A     |   OK    |
     +------+-----------+-----------+---------+
-    | i16  |    OK     |   MISS    |   OK    |
+    | i16  |    OK     |   N/A     |   OK    |
     +------+-----------+-----------+---------+
     | i32  |    OK     |    OK     |   OK    |
     +------+-----------+-----------+---------+
-    | i64  |    OK     |   EXT     |  MISS   |
+    | i64  |    OK     |   EXT     |  N/A    |
     +------+-----------+-----------+---------+
-    | u8   |    OK     |   MISS    |   OK    |
+    | u8   |    OK     |   N/A     |   OK    |
     +------+-----------+-----------+---------+
-    | u16  |    OK     |   MISS    |   OK    |
+    | u16  |    OK     |   N/A     |   OK    |
     +------+-----------+-----------+---------+
-    | u32  |    OK     |   MISS    |   OK    |
+    | u32  |    OK     |   N/A     |   OK    |
     +------+-----------+-----------+---------+
-    | u64  |    OK     |   MISS    |  MISS   |
+    | u64  |    OK     |   N/A     |  N/A    |
     +------+-----------+-----------+---------+
     | f32  |    OK     |    OK     |   OK    |
     +------+-----------+-----------+---------+
-    | f64  |    OK     |    OK     |  MISS   |
+    | f64  |    OK     |    OK     |  N/A    |
     +------+-----------+-----------+---------+
 
-    (OK: supported, EXT: require extension, MISS: not supported)
+    (OK: supported, EXT: require extension, N/A: not available)
 
 
-Boolean types are represented using ``ti.i32``.
+Boolean types should be represented using ``ti.i32``.
 
 Binary operations on different types will give you a promoted type, following the C programming language, e.g.
 
@@ -85,7 +85,7 @@ Use ``ti.cast`` to cast scalar values.
     c = ti.cast(b, ti.f32)
 
     # Equivalently, use ``int()`` and ``float()``
-    #   to converting to default float-point/integer types
+    # to convert values to default float-point/integer types
     b = int(a)
     c = float(b)
 

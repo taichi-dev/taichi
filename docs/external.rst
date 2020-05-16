@@ -12,6 +12,11 @@ Use ``to_numpy``/``from_numpy``/``to_torch``/``from_torch``:
 
 .. code-block:: python
 
+  import taichi as ti
+  import numpy as np
+
+  ti.init()
+
   n = 4
   m = 7
 
@@ -57,6 +62,11 @@ The type hint for external array parameters is ``ti.ext_arr()``. Please see the 
 Note that struct-for's on external arrays are not supported.
 
 .. code-block:: python
+
+  import taichi as ti
+  import numpy as np
+
+  ti.init()
 
   n = 4
   m = 7

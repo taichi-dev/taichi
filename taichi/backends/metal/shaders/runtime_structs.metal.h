@@ -36,9 +36,11 @@ STR(
       int32_t root_mem_offset = 0;
     };
 
+    // ListManager manages the activeness of its associated SNode.
     struct ListManager {
       int32_t element_stride = 0;
-      // Same as |total_num_elems_from_root| of this SNode
+      // Total number of this SNode in the hierarchy.
+      // Same as |total_num_self_from_root| of this SNode.
       int32_t max_num_elems = 0;
       // Index to the next element in this list.
       // |next| can never go beyond |max_num_elems|.
@@ -47,6 +49,7 @@ STR(
       int32_t mem_begin = 0;
     };
 
+    // This class is very similar to metal::SNodeDescriptor
     struct SNodeMeta {
       enum Type { Root = 0, Dense = 1, Bitmasked = 2 };
       int32_t element_stride = 0;

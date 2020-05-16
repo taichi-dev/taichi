@@ -43,9 +43,9 @@ struct Runtime {
 METAL_BEGIN_RUNTIME_KERNELS_DEF
 STR(
     // clang-format on
-    kernel void clear_list(device byte *runtime_addr[[buffer(0)]],
-                           device int *args[[buffer(1)]],
-                           const uint utid_[[thread_position_in_grid]]) {
+    kernel void clear_list(device byte *runtime_addr [[buffer(0)]],
+                           device int *args [[buffer(1)]],
+                           const uint utid_ [[thread_position_in_grid]]) {
       if (utid_ > 0)
         return;
       int child_snode_id = args[1];
@@ -55,11 +55,11 @@ STR(
       clear(child_list);
     }
 
-    kernel void element_listgen(device byte *runtime_addr[[buffer(0)]],
-                                device byte *root_addr[[buffer(1)]],
-                                device int *args[[buffer(2)]],
-                                const uint utid_[[thread_position_in_grid]],
-                                const uint grid_size[[threads_per_grid]]) {
+    kernel void element_listgen(device byte *runtime_addr [[buffer(0)]],
+                                device byte *root_addr [[buffer(1)]],
+                                device int *args [[buffer(2)]],
+                                const uint utid_ [[thread_position_in_grid]],
+                                const uint grid_size [[threads_per_grid]]) {
       device Runtime *runtime =
           reinterpret_cast<device Runtime *>(runtime_addr);
       device byte *list_data_addr =
@@ -70,9 +70,10 @@ STR(
       device ListManager *parent_list =
           &(runtime->snode_lists[parent_snode_id]);
       device ListManager *child_list = &(runtime->snode_lists[child_snode_id]);
+      const SNodeMeta parent_meta = runtime->snode_metas[parent_snode_id];
+      const int child_stride = parent_meta.element_stride;
+      const int num_slots = parent_meta.num_slots;
       const SNodeMeta child_meta = runtime->snode_metas[child_snode_id];
-      const int child_stride = child_meta.element_stride;
-      const int num_slots = child_meta.num_slots;
 
       for (int ii = utid_; ii < child_list->max_num_elems; ii += grid_size) {
         const int parent_idx = (ii / num_slots);
@@ -88,10 +89,10 @@ STR(
         child_elem.root_mem_offset = parent_elem.root_mem_offset +
                                      child_idx * child_stride +
                                      child_meta.mem_offset_in_parent;
-        if (is_active(root_addr + child_elem.root_mem_offset, child_meta,
+        if (is_active(root_addr + child_elem.root_mem_offset, parent_meta,
                       child_idx)) {
           refine_coordinates(parent_elem,
-                             runtime->snode_extractors[child_snode_id],
+                             runtime->snode_extractors[parent_snode_id],
                              child_idx, &child_elem);
           append(child_list, child_elem, list_data_addr);
         }

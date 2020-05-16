@@ -227,7 +227,7 @@ class StructCompiler {
       // allocate it if there is no sparse SNode at all.
       int total_items = 0;
       for (const auto &kv : snode_descriptors_) {
-        total_items += kv.second.total_num_elems_from_root;
+        total_items += kv.second.total_num_self_from_root(snode_descriptors_);
       }
       const size_t list_data_size = total_items * kListgenElementSize;
       TI_DEBUG("Metal runtime sparse list data size: {} bytes", list_data_size);
@@ -249,6 +249,16 @@ class StructCompiler {
 };
 
 }  // namespace
+
+int SNodeDescriptor::total_num_self_from_root(
+    const std::unordered_map<int, SNodeDescriptor> &sn_descs) const {
+  if (snode->type == SNodeType::root) {
+    return 1;
+  }
+  const auto *psn = snode->parent;
+  TI_ASSERT(psn != nullptr);
+  return sn_descs.find(psn->id)->second.total_num_elems_from_root;
+}
 
 CompiledStructs compile_structs(SNode &root) {
   return StructCompiler().run(root);

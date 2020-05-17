@@ -377,6 +377,7 @@ def main(debug=False):
         framerate = 24
         mp4_to_gif(input_fn, output_fn, framerate)
     elif mode == "convert":
+        import shutil
         # http://www.commandlinefu.com/commands/view/3584/remove-color-codes-special-characters-with-sed
         # TODO: Windows support
         for fn in sys.argv[2:]:

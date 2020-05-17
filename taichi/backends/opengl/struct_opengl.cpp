@@ -64,8 +64,7 @@ void OpenglStructCompiler::generate_types(const SNode &snode) {
   } else if (snode.type == SNodeType::dense || snode.type == SNodeType::root) {
     const int n = (snode.type == SNodeType::root) ? 1 : snode.n;
     snode_info.length = n;
-    snode_info.stride =
-        snode_child_info.stride * snode_info.length;
+    snode_info.stride = snode_child_info.stride * snode_info.length;
     snode_info.elem_stride = snode_child_info.stride;
   } else {
     TI_ERROR("SNodeType={} not supported on OpenGL",

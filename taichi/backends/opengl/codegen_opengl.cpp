@@ -92,6 +92,12 @@ class KernelGen : public IRVisitor {
     return opengl::opengl_data_type_name(dt);
   }
 
+  std::string opengl_data_type_short_name(DataType dt) {  // catch & forward
+    if (dt == DataType::i64)
+      used.int64 = true;
+    return data_type_short_name(dt);
+  }
+
   void generate_bottom() {
     // TODO(archibate): <kernel_name>() really necessary? How about just main()?
     emit("void main()");
@@ -211,7 +217,7 @@ class KernelGen : public IRVisitor {
   void visit(RandStmt *stmt) override {
     used.random = true;
     emit("{} {} = _rand_{}();", opengl_data_type_name(stmt->ret_type.data_type),
-         stmt->short_name(), data_type_short_name(stmt->ret_type.data_type));
+         stmt->short_name(), opengl_data_type_short_name(stmt->ret_type.data_type));
   }
 
   void visit(LinearizeStmt *stmt) override {
@@ -270,7 +276,7 @@ class KernelGen : public IRVisitor {
     auto dt = stmt->data->element_type();
     emit("_{}_{}_[{} >> {}] = {};",
          ptr_signats.at(stmt->ptr->id),  // throw out_of_range if not a pointer
-         data_type_short_name(dt), stmt->ptr->short_name(),
+         opengl_data_type_short_name(dt), stmt->ptr->short_name(),
          opengl_data_address_shifter(dt), stmt->data->short_name());
   }
 
@@ -279,7 +285,7 @@ class KernelGen : public IRVisitor {
     auto dt = stmt->element_type();
     emit("{} {} = _{}_{}_[{} >> {}];",
          opengl_data_type_name(stmt->element_type()), stmt->short_name(),
-         ptr_signats.at(stmt->ptr->id), data_type_short_name(dt),
+         ptr_signats.at(stmt->ptr->id), opengl_data_type_short_name(dt),
          stmt->ptr->short_name(), opengl_data_address_shifter(dt));
   }
 
@@ -396,7 +402,7 @@ class KernelGen : public IRVisitor {
       // 124 So that we have to use some hack to make it percise. Discussion:
       // https://github.com/taichi-dev/taichi/pull/943#issuecomment-626354902
       emit("{} {} = {}(fast_pow_{}({}, {}));", dt_name, bin_name, dt_name,
-           data_type_short_name(bin->lhs->element_type()), lhs_name, rhs_name);
+           opengl_data_type_short_name(bin->lhs->element_type()), lhs_name, rhs_name);
       used.fast_pow = true;
       return;
     }
@@ -429,7 +435,7 @@ class KernelGen : public IRVisitor {
       emit("{} {} = {}(_{}_{}_[{} >> {}], {});",
            opengl_data_type_name(stmt->val->element_type()), stmt->short_name(),
            opengl_atomic_op_type_cap_name(stmt->op_type),
-           ptr_signats.at(stmt->dest->id), data_type_short_name(dt),
+           ptr_signats.at(stmt->dest->id), opengl_data_type_short_name(dt),
            stmt->dest->short_name(), opengl_data_address_shifter(dt),
            stmt->val->short_name());
     } else {
@@ -438,13 +444,13 @@ class KernelGen : public IRVisitor {
             "unsupported atomic operation for DataType::{}, "
             "this may because your OpenGL is missing that extension, "
             "see `glewinfo` for more details",
-            data_type_short_name(dt));
+            opengl_data_type_short_name(dt));
       }
       used.simulated_atomic_float = true;
       emit("{} {} = {}_{}_{}({} >> {}, {});",
            opengl_data_type_name(stmt->val->element_type()), stmt->short_name(),
            opengl_atomic_op_type_cap_name(stmt->op_type),
-           ptr_signats.at(stmt->dest->id), data_type_short_name(dt),
+           ptr_signats.at(stmt->dest->id), opengl_data_type_short_name(dt),
            stmt->dest->short_name(), opengl_data_address_shifter(dt),
            stmt->val->short_name());
     }
@@ -492,10 +498,9 @@ class KernelGen : public IRVisitor {
 
   void visit(KernelReturnStmt *stmt) override {
     used.argument = true;
-    used.int64 = true;
     // TODO: consider use _rets_{}_ instead of _args_{}_
     // TODO: use stmt->ret_id instead of 0 as index
-    emit("_args_{}_[0] = {};", data_type_short_name(stmt->element_type()),
+    emit("_args_{}_[0] = {};", opengl_data_type_short_name(stmt->element_type()),
          stmt->value->short_name());
   }
 
@@ -507,7 +512,7 @@ class KernelGen : public IRVisitor {
            stmt->short_name(), stmt->arg_id, dt);
     } else {
       emit("{} {} = _args_{}_[{} << {}];", dt, stmt->short_name(),
-           data_type_short_name(stmt->element_type()), stmt->arg_id,
+           opengl_data_type_short_name(stmt->element_type()), stmt->arg_id,
            opengl_argument_address_shifter(stmt->element_type()));
     }
   }

@@ -61,9 +61,8 @@ The Taichi Programming Language
 
    gui
    global_settings
-   performance
-   acknowledgments
    faq
+   acknowledgments
 
 
 .. toctree::

@@ -54,7 +54,7 @@ class GUI:
         if img.dtype in [np.uint8, np.uint16, np.uint32, np.uint64]:
             img = img.astype(np.float32) * (1 / np.iinfo(img.dtype).max)
         elif img.dtype in [np.float32, np.float64]:
-            img = img.astype(np.float32)
+            img = np.clip(img.astype(np.float32), 0, 1)
         else:
             raise ValueError(
                 f'Data type {img.dtype} not supported in GUI.set_image')

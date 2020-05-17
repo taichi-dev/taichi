@@ -33,7 +33,7 @@ See :ref:`layout` for more details. ``ti.root`` is the root node of the data str
 
 .. function:: tensor.shape()
 
-    :parameter tensor: the tensor
+    :parameter tensor: (Tensor)
     :return: (tuple of integers) the shape of tensor
 
     For example,
@@ -42,6 +42,7 @@ See :ref:`layout` for more details. ``ti.root`` is the root node of the data str
 
         ti.root.dense(ti.ijk, (3, 5, 4)).place(x)
         x.shape() # returns (3, 5, 4)
+
 
 .. function:: snode.get_shape(index)
 
@@ -58,9 +59,10 @@ See :ref:`layout` for more details. ``ti.root`` is the root node of the data str
         x.snode().get_shape(1)  # 5
         x.snode().get_shape(2)  # 4
 
+
 .. function:: tensor.dim()
 
-    :parameter tensor: the tensor
+    :parameter tensor: (Tensor)
     :return: (scalar) the dimensionality of the tensor
 
     Equivalent to ``len(tensor.shape())``.
@@ -69,6 +71,7 @@ See :ref:`layout` for more details. ``ti.root`` is the root node of the data str
 
         ti.root.dense(ti.ijk, (8, 9, 10)).place(x)
         x.dim()  # 3
+
 
 .. function:: snode.parent()
 
@@ -83,8 +86,6 @@ See :ref:`layout` for more details. ``ti.root`` is the root node of the data str
         blk1.parent()  # ti.root
         blk2.parent()  # blk1
         blk3.parent()  # blk2
-
-    TODO: add tensor.parent(), and add see also ref here
 
 
 Node types

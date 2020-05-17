@@ -297,11 +297,12 @@ class Expr(TaichiOperations):
         return self.snode().dim()
 
     def shape(self):
-        dim = self.dim()
-        s = []
-        for i in range(dim):
-            s.append(self.snode().get_shape(i))
-        return tuple(s)
+        if not Expr.layout_materialized:
+            self.materialize_layout_callback()
+        return self.snode().shape()
+
+    def data_type(self):
+        return self.snode().data_type()
 
     def to_numpy(self):
         from .meta import tensor_to_ext_arr

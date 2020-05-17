@@ -80,6 +80,20 @@ Setting up Taichi for development
     #   cmake .. -DCUDA_VERSION=10.0 -DTI_WITH_CUDA:BOOL=True
     make -j 8
 
+  * You may run into errors with cmake if you have gcc/g++ as your default compiler
+    instead of Clang/LLVM, you could let CMake respect your clang by setting environment
+    variables like the following:
+
+  .. code-block:: bash
+
+    # remember to use the correct path based on your clang installation
+    export CC=/usr/bin/clang-8
+    export CXX=/usr/bin/clang++-8
+  
+  * You may also have to install some extra packages on Linux, based on the specific errors
+    you get, you may need to run something like: ``sudo apt install libxcursor-dev libxinerama-dev libxrandr-dev``.
+
+
 - Add the following script to your ``~/.bashrc``:
 
   .. code-block:: bash

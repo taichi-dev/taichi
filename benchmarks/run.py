@@ -94,8 +94,10 @@ class TaichiBenchmark:
 
 b = TaichiBenchmark()
 b.pprint()
+# TODO: TI_WANTED_ARCHS, b.run() # ALL
 b.run(ti.x64)
-#b.run(ti.cuda)
+b.run(ti.cuda)
+# TODO: @ti.all_archs, b.run(ti.opengl, ti.metal)
 print()
 b.pprint()
 b.save_result()

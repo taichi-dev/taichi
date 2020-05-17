@@ -1,9 +1,10 @@
-import time
+import taichi as ti
 import numpy as np
+import time
 
 
+@ti.all_archs
 def benchmark_range():
-    import taichi as ti
     quality = 1  # Use a larger value for higher-res simulations
     n_particles, n_grid = 9000 * quality**2, 128 * quality
     dx, inv_dx = 1 / n_grid, float(n_grid)
@@ -124,11 +125,12 @@ def benchmark_range():
         # gui.circles(x.to_numpy(), radius=1.5, color=colors[material.to_numpy()])
         # gui.show() # Change to gui.show(f'{frame:06d}.png') to write images to disk
     ti.get_runtime().sync()
-    return (time.time() - t) / 4000
+    avg = (time.time() - t) / 4000
+    ti.stat_write(avg)
 
 
+@ti.all_archs
 def benchmark_struct():
-    import taichi as ti
     quality = 1  # Use a larger value for higher-res simulations
     n_particles, n_grid = 9000 * quality**2, 128 * quality
     dx, inv_dx = 1 / n_grid, float(n_grid)
@@ -251,4 +253,5 @@ def benchmark_struct():
         # gui.circles(x.to_numpy(), radius=1.5, color=colors[material.to_numpy()])
         # gui.show() # Change to gui.show(f'{frame:06d}.png') to write images to disk
     ti.get_runtime().sync()
-    return (time.time() - t) / 4000
+    avg = (time.time() - t) / 4
+    ti.stat_write(avg)

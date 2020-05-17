@@ -12,13 +12,6 @@ class Case:
         self.func = func
         self.records = {}
 
-    def stat_write(self, avg):
-        arch_name = ti.core.arch_name(ti.cfg.arch)
-        output_dir = os.environ.get('TI_BENCHMARK_OUTPUT_DIR', '.')
-        filename = f'{output_dir}/{self.name}__arch_{arch_name}.dat'
-        with open(filename, 'w') as f:
-            f.write(f'time_avg: {avg:.4f}')
-
     def __lt__(self, other):
         return self.name < other.name
 
@@ -26,8 +19,9 @@ class Case:
         return self.name == other.name
 
     def run(self):
-        avg = self.func()
-        self.stat_write(avg)
+        print(f'==> {self.name}:')
+        os.environ['TI_CURRENT_BENCHMARK'] = self.name
+        self.func()
 
 
 class Suite:

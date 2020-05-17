@@ -88,7 +88,10 @@ def display_benchmark_regression(xd, yd, args):
         for line in open(file).readlines():
             try: a, b = line.strip().split(':')
             except: continue
-            dict[a.strip()] = int(float(b))
+            b = float(b)
+            if abs(b % 1.0) < 1e-5:  # codegen_*
+                b = int(b)
+            dict[a.strip()] = b
         return dict
 
     def parse_name(file):
@@ -126,7 +129,7 @@ def display_benchmark_regression(xd, yd, args):
     single_line = spec and len(spec) == 1
     xs, ys = get_dats(xd), get_dats(yd)
     scatter = defaultdict(list)
-    for name in set(xs.keys()).union(ys.keys()):
+    for name in reversed(sorted(set(xs.keys()).union(ys.keys()))):
         file, func = name.split('::')
         u, v = xs.get(name, {}), ys.get(name, {})
         ret = ''
@@ -134,19 +137,33 @@ def display_benchmark_regression(xd, yd, args):
             if spec and key not in spec:
                 continue
             a, b = u.get(key, 0), v.get(key, 0)
-            res = b / a if a != 0 else math.inf if b != 0 else 1.0
+            if a == 0:
+                if b == 0:
+                    res = 1.0
+                else:
+                    res = math.inf
+            else:
+                res = b / a
             scatter[key].append(res)
             if res == 1: continue
             if single_line:
                 ret += f'{file:_<24}{func:_<42}'
             else:
-                ret += f'{key:<43}'
+                ret += f'{key:<38}'
             res -= 1
             color = Fore.RESET
             if res > 0: color = Fore.RED
             elif res < 0: color = Fore.GREEN
-            ret += f'{Fore.MAGENTA}{a:>5}{Fore.RESET} -> '
-            ret += f'{Fore.CYAN}{b:>5} {color}{res:>+8.1%}{Fore.RESET}\n'
+            if isinstance(a, float):
+                a = f'{a:>7.2}'
+            else:
+                a = f'{a:>7}'
+            if isinstance(b, float):
+                b = f'{b:>7.2}'
+            else:
+                b = f'{b:>7}'
+            ret += f'{Fore.MAGENTA}{a}{Fore.RESET} -> '
+            ret += f'{Fore.CYAN}{b} {color}{res:>+9.1%}{Fore.RESET}\n'
         if ret != '':
             if not single_line:
                 print(f'{file:_<24}{func:_<42}')

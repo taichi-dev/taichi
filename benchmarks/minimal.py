@@ -1,6 +1,7 @@
 import taichi as ti
 
 
+@ti.all_archs
 def benchmark_fill_scalar():
     a = ti.var(dt=ti.f32, shape=())
 
@@ -8,4 +9,4 @@ def benchmark_fill_scalar():
     def fill():
         a[None] = 1.0
 
-    return ti.benchmark(fill)
+    return ti.benchmark(fill, 1000)

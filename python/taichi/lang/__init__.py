@@ -247,9 +247,7 @@ def static_print(*args, __p=print, **kwargs):
     __p(*args, **kwargs)
 
 
-def benchmark(func, repeat=100, args=()):
-    repeat = 1
-
+def benchmark(func, repeat=300, args=()):
     import taichi as ti
     import time
     func(*args)  # compile the kernel first
@@ -260,7 +258,19 @@ def benchmark(func, repeat=100, args=()):
     ti.get_runtime().sync()
     elapsed = time.time() - t
     avg = elapsed / repeat * 1000  # miliseconds
-    return avg
+    ti.stat_write(avg)
+
+
+def stat_write(avg):
+    name = os.environ.get('TI_CURRENT_BENCHMARK')
+    if name is None:
+        return
+    import taichi as ti
+    arch_name = ti.core.arch_name(ti.cfg.arch)
+    output_dir = os.environ.get('TI_BENCHMARK_OUTPUT_DIR', '.')
+    filename = f'{output_dir}/{name}__arch_{arch_name}.dat'
+    with open(filename, 'w') as f:
+        f.write(f'time_avg: {avg:.4f}')
 
 
 def supported_archs():

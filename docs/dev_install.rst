@@ -15,6 +15,7 @@ Installing Depedencies
 ----------------------
 
 - Make sure you are using Python 3.6/3.7/3.8
+- Make sure you have `CMake <https://cmake.org/>`_ installed and configured.
 - Execute
 
   .. code-block:: bash

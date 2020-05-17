@@ -12,35 +12,22 @@ class Case:
         self.func = func
         self.records = {}
 
+    def stat_write(self, avg):
+        arch_name = ti.core.arch_name(ti.cfg.arch)
+        output_dir = os.environ.get('TI_BENCHMARK_OUTPUT_DIR', '.')
+        filename = f'{output_dir}/{self.name}__arch_{arch_name}.dat'
+        with open(filename, 'w') as f:
+            f.write(f'time_avg: {avg:.4f}')
+
     def __lt__(self, other):
         return self.name < other.name
 
     def __eq__(self, other):
         return self.name == other.name
 
-    def pprint(self):
-        print(f' * {self.name[10:]:33}', end='')
-        for i, arch in enumerate(sorted(self.records.keys())):
-            ms = self.records[arch] * 1000
-            arch_name = str(arch)[5:]
-            print(f' {arch_name:8} {ms:7.3f} ms', end='')
-            if i < len(self.records) - 1:
-                print('      ', end='')
-        print()
-
-    def save_result(self):
-        output_dir = os.environ.get('TI_BENCHMARK_OUTPUT_DIR', '.')
-        for i, arch in enumerate(sorted(self.records.keys())):
-            arch_name = str(arch)[5:]
-            filename = f'{output_dir}/{self.name}__arch_{arch_name}.dat'
-            with open(filename, 'w') as f:
-                ms = self.records[arch] * 1000
-                f.write(f'record_time: {ms:8.4f}\n')
-
-    def run(self, arch):
-        ti.init(arch=arch)
-        t = self.func()
-        self.records[arch] = t
+    def run(self):
+        avg = self.func()
+        self.stat_write(avg)
 
 
 class Suite:
@@ -55,19 +42,10 @@ class Suite:
             sorted(filter(lambda x: x.startswith('benchmark_'), dir(suite))))
         self.cases = [Case(k, getattr(suite, k)) for k in case_keys]
 
-    def print(self):
-        print(f'{self.name}:')
-        for b in self.cases:
-            b.pprint()
-
-    def save_result(self):
-        for b in self.cases:
-            b.save_result()
-
-    def run(self, arch):
+    def run(self):
         print(f'{self.name}:')
         for case in sorted(self.cases):
-            case.run(arch)
+            case.run()
 
 
 class TaichiBenchmark:
@@ -78,26 +56,11 @@ class TaichiBenchmark:
             if f != 'run.py' and f.endswith('.py') and f[0] != '_':
                 self.suites.append(Suite(f))
 
-    def pprint(self):
-        for s in self.suites:
-            s.print()
-
-    def save_result(self):
-        for s in self.suites:
-            s.save_result()
-
-    def run(self, arch):
+    def run(self):
         print("Running...")
         for s in self.suites:
-            s.run(arch)
+            s.run()
 
 
 b = TaichiBenchmark()
-b.pprint()
-# TODO: TI_WANTED_ARCHS, b.run() # ALL
-b.run(ti.x64)
-b.run(ti.cuda)
-# TODO: @ti.all_archs, b.run(ti.opengl, ti.metal)
-print()
-b.pprint()
-b.save_result()
+b.run()

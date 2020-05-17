@@ -248,17 +248,19 @@ def static_print(*args, __p=print, **kwargs):
 
 
 def benchmark(func, repeat=100, args=()):
+    repeat = 1
+
     import taichi as ti
     import time
-    for i in range(repeat // 3):
-        func(*args)  # compile the kernel first
+    func(*args)  # compile the kernel first
     ti.sync()
     t = time.time()
     for n in range(repeat):
         func(*args)
     ti.get_runtime().sync()
     elapsed = time.time() - t
-    return elapsed / repeat
+    avg = elapsed / repeat * 1000  # miliseconds
+    return avg
 
 
 def supported_archs():

@@ -134,7 +134,7 @@ def display_benchmark_regression(xd, yd, args):
             if spec and key not in spec:
                 continue
             a, b = u.get(key, 0), v.get(key, 0)
-            res = b / a if a != 0 else math.inf
+            res = b / a if a != 0 else math.inf if b != 0 else 1.0
             scatter[key].append(res)
             if res == 1: continue
             if single_line:

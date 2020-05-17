@@ -92,7 +92,10 @@ def display_benchmark_regression(xd, yd, args):
         return dict
 
     def parse_name(file):
-        return file[5:-4].replace('__test_', '::', 1)
+        if file[0:5] == 'test_':
+            return file[5:-4].replace('__test_', '::', 1)
+        elif file[0:10] == 'benchmark_':
+            return '::'.join(reversed(file[10:-4].split('__arch_')))
 
     def get_dats(dir):
         list = []
@@ -173,6 +176,10 @@ def make_argument_parser():
                         '--gui',
                         action='store_true',
                         help='Display benchmark regression result in GUI')
+    parser.add_argument('-T',
+                        '--tprt',
+                        action='store_true',
+                        help='Run TPRT benchmark instead of SPRT')
     parser.add_argument(
         '-a',
         '--arch',
@@ -279,16 +286,20 @@ def main(debug=False):
         commit_hash = ti.core.get_commit_hash()
         with os.popen('git rev-parse HEAD') as f:
             current_commit_hash = f.read().strip()
-        assert commit_hash == current_commit_hash, f"Built commit {commit_hash:.6} differs from current commit {current_commit_hash:.6}, refuse to benchmark"
+        #assert commit_hash == current_commit_hash, f"Built commit {commit_hash:.6} differs from current commit {current_commit_hash:.6}, refuse to benchmark"
         os.environ['TI_PRINT_BENCHMARK_STAT'] = '1'
         output_dir = get_benchmark_output_dir()
         shutil.rmtree(output_dir, True)
         os.mkdir(output_dir)
         os.environ['TI_BENCHMARK_OUTPUT_DIR'] = output_dir
-        if os.environ.get('TI_WANTED_ARCHS') is None:
-            # since we only do number-of-statements benchmark
+        if os.environ.get('TI_WANTED_ARCHS') is None and not args.tprt:
+            # since we only do number-of-statements benchmark for SPRT
             os.environ['TI_WANTED_ARCHS'] = 'x64'
-        test_python(args)
+        if args.tprt:
+            os.system('python benchmarks/run.py')
+            # TODO: benchmark_python(args)
+        else:
+            test_python(args)
     elif mode == "baseline":
         import shutil
         baseline_dir = get_benchmark_baseline_dir()

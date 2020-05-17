@@ -2,6 +2,10 @@ import os
 import taichi as ti
 
 
+def get_benchmark_dir():
+    return os.path.join(ti.core.get_repo_dir(), 'benchmarks')
+
+
 class Case:
     def __init__(self, name, func):
         self.name = name
@@ -23,6 +27,15 @@ class Case:
             if i < len(self.records) - 1:
                 print('      ', end='')
         print()
+
+    def save_result(self):
+        output_dir = os.environ.get('TI_BENCHMARK_OUTPUT_DIR', '.')
+        for i, arch in enumerate(sorted(self.records.keys())):
+            arch_name = str(arch)[5:]
+            filename = f'{output_dir}/{self.name}__arch_{arch_name}.dat'
+            with open(filename, 'w') as f:
+                ms = self.records[arch] * 1000
+                f.write(f'record_time: {ms:8.4f}\n')
 
     def run(self, arch):
         ti.init(arch=arch)
@@ -47,6 +60,10 @@ class Suite:
         for b in self.cases:
             b.pprint()
 
+    def save_result(self):
+        for b in self.cases:
+            b.save_result()
+
     def run(self, arch):
         print(f'{self.name}:')
         for case in sorted(self.cases):
@@ -56,7 +73,7 @@ class Suite:
 class TaichiBenchmark:
     def __init__(self):
         self.suites = []
-        benchmark_dir = os.path.dirname(__file__)
+        benchmark_dir = get_benchmark_dir()
         for f in map(os.path.basename, sorted(os.listdir(benchmark_dir))):
             if f != 'run.py' and f.endswith('.py') and f[0] != '_':
                 self.suites.append(Suite(f))
@@ -64,6 +81,10 @@ class TaichiBenchmark:
     def pprint(self):
         for s in self.suites:
             s.print()
+
+    def save_result(self):
+        for s in self.suites:
+            s.save_result()
 
     def run(self, arch):
         print("Running...")
@@ -74,6 +95,7 @@ class TaichiBenchmark:
 b = TaichiBenchmark()
 b.pprint()
 b.run(ti.x64)
-b.run(ti.cuda)
+#b.run(ti.cuda)
 print()
 b.pprint()
+b.save_result()

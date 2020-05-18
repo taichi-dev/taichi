@@ -1,4 +1,4 @@
-arom .impl import *
+from .impl import *
 from .matrix import Matrix
 from .transformer import TaichiSyntaxError
 from .ndrange import ndrange, GroupedNDRange

@@ -185,11 +185,11 @@ class Matrix(TaichiOperations):
             args = args + (0, )
         assert 0 <= args[0] < self.n
         assert 0 <= args[1] < self.m
-        # TODO(#1004): See if it's possible to support this at runtime
+        # TODO(#1004): See if it's possible to support indexing at runtime
         for i, a in enumerate(args):
             assert isinstance(
                 a, int
-            ), f'The {i}-th index of a Matrix/Vector must be a compile-time constant, got {a}'
+            ), f'The {i}-th index of a Matrix/Vector must be a compile-time constant integer, got {a}'
         return args[0] * self.m + args[1]
 
     def __call__(self, *args, **kwargs):

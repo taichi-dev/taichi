@@ -49,6 +49,30 @@ sp2_center = ti.Vector([-0.28, 0.55, 0.8])
 sp2_radius = 0.32
 
 
+def make_box_transform_matrices():
+    rad = math.pi / 8.0
+    c, s = math.cos(rad), math.sin(rad)
+    rot = np.array([[c, 0, s, 0], [0, 1, 0, 0], [-s, 0, c, 0], [0, 0, 0, 1]])
+    translate = np.array([
+        [1, 0, 0, -0.7],
+        [0, 1, 0, 0],
+        [0, 0, 1, 0.7],
+        [0, 0, 0, 1],
+    ])
+    m = translate @ rot
+    m_inv = np.linalg.inv(m)
+    m_inv_t = np.transpose(m_inv)
+    m_inv = [list(r) for r in m_inv]
+    m_inv_t = [list(r) for r in m_inv_t]
+    return ti.Matrix(m_inv), ti.Matrix(m_inv_t)
+
+
+# left box
+box_min = ti.Vector([0.0, 0.0, 0.0])
+box_max = ti.Vector([0.55, 1.1, 0.55])
+box_m_inv, box_m_inv_t = make_box_transform_matrices()
+
+
 @ti.func
 def intersect_light(pos, d, tmax):
     hit, t, _ = ray_aabb_intersection(light_min_pos, light_max_pos, pos, d)
@@ -58,6 +82,80 @@ def intersect_light(pos, d, tmax):
         hit = 0
         t = inf
     return hit, t
+
+
+@ti.func
+def ray_aabb_intersection2(box_min, box_max, o, d):
+    # Compared to ray_aabb_intersection2(), this also returns the normal of
+    # the nearest t.
+    intersect = 1
+
+    near_t = -inf
+    far_t = inf
+    near_face = 0
+    near_is_max = 0
+
+    for i in ti.static(range(3)):
+        if d[i] == 0:
+            if o[i] < box_min[i] or o[i] > box_max[i]:
+                intersect = 0
+        else:
+            i1 = (box_min[i] - o[i]) / d[i]
+            i2 = (box_max[i] - o[i]) / d[i]
+
+            new_far_t = max(i1, i2)
+            new_near_t = min(i1, i2)
+            new_near_is_max = i2 < i1
+
+            far_t = min(new_far_t, far_t)
+            if new_near_t > near_t:
+                near_t = new_near_t
+                near_face = int(i)
+                near_is_max = new_near_is_max
+
+    near_norm = ti.Vector([0.0, 0.0, 0.0])
+    if near_t > far_t:
+        intersect = 0
+    if intersect:
+        # TODO: Issue#1004...
+        if near_face == 0:
+            near_norm[0] = -1 + near_is_max * 2
+        elif near_face == 1:
+            near_norm[1] = -1 + near_is_max * 2
+        else:
+            near_norm[2] = -1 + near_is_max * 2
+
+    return intersect, near_t, far_t, near_norm
+
+
+@ti.func
+def mat_mul_point(m, p):
+    hp = ti.Vector([p[0], p[1], p[2], 1.0])
+    hp = m @ hp
+    hp /= hp[3]
+    return ti.Vector([hp[0], hp[1], hp[2]])
+
+
+@ti.func
+def mat_mul_vec(m, v):
+    hv = ti.Vector([v[0], v[1], v[2], 0.0])
+    hv = m @ hv
+    return ti.Vector([hv[0], hv[1], hv[2]])
+
+
+@ti.func
+def ray_aabb_intersection2_transformed(box_min, box_max, o, d):
+    # Transform the ray to the box's local space
+    obj_o = mat_mul_point(box_m_inv, o)
+    obj_d = mat_mul_vec(box_m_inv, d)
+    intersect, near_t, _, near_norm = ray_aabb_intersection2(
+        box_min, box_max, obj_o, obj_d)
+    if intersect and 0 < near_t:
+        # Transform the normal in the box's local space to world space
+        near_norm = mat_mul_vec(box_m_inv_t, near_norm)
+    else:
+        intersect = 0
+    return intersect, near_t, near_norm
 
 
 @ti.func
@@ -71,12 +169,14 @@ def intersect_scene(pos, ray_dir):
         closest = cur_dist
         normal = ti.normalized(hit_pos - sp1_center)
         c, mat = ti.Vector([1.0, 1.0, 1.0]), mat_glass
-    # left far sphere
-    cur_dist, hit_pos = intersect_sphere(pos, ray_dir, sp2_center, sp2_radius)
-    if 0 < cur_dist < closest:
+    # left box
+    hit, cur_dist, pnorm = ray_aabb_intersection2_transformed(
+        box_min, box_max, pos, ray_dir)
+    if hit and 0 < cur_dist < closest:
         closest = cur_dist
-        normal = ti.normalized(hit_pos - sp2_center)
+        normal = pnorm
         c, mat = ti.Vector([0.8, 0.5, 0.4]), mat_specular
+
     # left
     pnorm = ti.Vector([1.0, 0.0, 0.0])
     cur_dist, _ = ray_plane_intersect(pos, ray_dir, ti.Vector([-1.1, 0.0,

@@ -377,10 +377,10 @@ struct CompiledKernel {
 
   void dispatch_compute(GLSLLaunchGuard &guard) const {
     int num_groups;
-    if (kpa.is_dynamic()) {
-      auto *gtmp_now = guard.map_buffer(2);  // TODO: RAII
+    if (kpa.is_dynamic()) {  // TODO: grid-stride-loop
+      void *gtmp_now = guard.map_gtmp_buffer();  // TODO: wrap impl.static_ssbo
       num_groups = kpa.eval((const void *)gtmp_now);
-      guard.unmap_buffer(1);
+      guard.unmap_gtmp_buffer();  // TODO: RAII
     } else {
       num_groups = kpa.num_groups;
     }
@@ -543,6 +543,15 @@ void GLSLLaunchGuard::unmap_buffer(size_t idx) {
   impl->ssbo[idx].unmap();
 }
 
+void *GLSLLaunchGuard::map_gtmp_buffer() {
+  void *p = impl->gtmp_ssbo->map();
+  return p;
+}
+
+void GLSLLaunchGuard::unmap_gtmp_buffer() {
+  impl->gtmp_ssbo->unmap();
+}
+
 GLSLLaunchGuard::~GLSLLaunchGuard() {
   for (int i = 0; i < impl->ssbo.size(); i++) {
     if (!iov[i].size)
@@ -611,6 +620,14 @@ void *GLSLLaunchGuard::map_buffer(size_t idx) {
 }
 
 void GLSLLaunchGuard::unmap_buffer(size_t idx) {
+  TI_NOT_IMPLEMENTED;
+}
+
+void *GLSLLaunchGuard::map_gtmp_buffer() {
+  TI_NOT_IMPLEMENTED;
+}
+
+void GLSLLaunchGuard::unmap_gtmp_buffer() {
   TI_NOT_IMPLEMENTED;
 }
 

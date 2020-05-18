@@ -125,7 +125,7 @@ def benchmark_range():
         # gui.circles(x.to_numpy(), radius=1.5, color=colors[material.to_numpy()])
         # gui.show() # Change to gui.show(f'{frame:06d}.png') to write images to disk
     ti.get_runtime().sync()
-    avg = (time.time() - t) / 4000
+    avg = (time.time() - t) / 4000 * 1000  # miliseconds
     ti.stat_write(avg)
 
 
@@ -253,5 +253,5 @@ def benchmark_struct():
         # gui.circles(x.to_numpy(), radius=1.5, color=colors[material.to_numpy()])
         # gui.show() # Change to gui.show(f'{frame:06d}.png') to write images to disk
     ti.get_runtime().sync()
-    avg = (time.time() - t) / 4
+    avg = (time.time() - t) / 4000 * 1000  # miliseconds
     ti.stat_write(avg)

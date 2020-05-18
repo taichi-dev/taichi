@@ -13,7 +13,7 @@ def benchmark_flat_struct():
         for i, j in a:
             a[i, j] = 2.0
 
-    return ti.benchmark(fill, 500)
+    return ti.benchmark(fill, repeat=500)
 
 
 @ti.all_archs
@@ -26,7 +26,7 @@ def benchmark_flat_range():
         for i, j in ti.ndrange(N, N):
             a[i, j] = 2.0
 
-    return ti.benchmark(fill, 700)
+    return ti.benchmark(fill, repeat=700)
 
 
 @ti.all_archs
@@ -43,7 +43,7 @@ def benchmark_nested_struct():
         for i, j in a:
             a[i, j] = 2.0
 
-    return ti.benchmark(fill, 700)
+    return ti.benchmark(fill, repeat=700)
 
 
 @ti.all_archs
@@ -61,7 +61,7 @@ def benchmark_nested_struct_listgen_8x8():
         for i, j in a:
             a[i, j] = 2.0
 
-    return ti.benchmark(fill, 1000)
+    return ti.benchmark(fill, repeat=1000)
 
 
 @ti.all_archs
@@ -79,7 +79,7 @@ def benchmark_nested_struct_listgen_16x16():
         for i, j in a:
             a[i, j] = 2.0
 
-    return ti.benchmark(fill, 700)
+    return ti.benchmark(fill, repeat=700)
 
 
 @ti.all_archs
@@ -97,7 +97,7 @@ def benchmark_nested_range_blocked():
             for Y in range(64):
                 a[X // N * 8 + Y // 8, X % N * 8 + Y % 8] = 2.0
 
-    return ti.benchmark(fill, 800)
+    return ti.benchmark(fill, repeat=800)
 
 
 @ti.all_archs
@@ -115,7 +115,7 @@ def benchmark_nested_range():
             for i in range(N * 8):
                 a[i, j] = 2.0
 
-    return ti.benchmark(fill, 1000)
+    return ti.benchmark(fill, repeat=1000)
 
 
 @ti.all_archs
@@ -133,7 +133,7 @@ def benchmark_root_listgen():
         for i, j in a.parent():
             a[i, j] = 2.0
 
-    return ti.benchmark(fill, 800)
+    return ti.benchmark(fill, repeat=800)
 
 
 '''

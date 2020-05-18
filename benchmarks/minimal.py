@@ -9,4 +9,4 @@ def benchmark_fill_scalar():
     def fill():
         a[None] = 1.0
 
-    return ti.benchmark(fill, 1000)
+    return ti.benchmark(fill, repeat=1000)

@@ -3,7 +3,7 @@
 Atomic operations
 =================
 
-In Taichi, the augmented assignments (e.g., ``x[i] += 1``) are automatically `atomic <https://en.wikipedia.org/wiki/Fetch-and-add>`_.
+In Taichi, augmented assignments (e.g., ``x[i] += 1``) are automatically `atomic <https://en.wikipedia.org/wiki/Fetch-and-add>`_.
 
 
 .. warning::

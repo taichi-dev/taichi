@@ -72,6 +72,22 @@ def test_cpp(args):
     return int(task.run(*test_files))
 
 
+def run_example(name: str):
+    """Run an example based on example NAME."""
+    import taichi as ti
+    from pathlib import Path
+
+    root_dir = ti.package_root() if ti.is_release() else ti.get_repo_directory()
+    examples_dir = Path(root_dir) / 'examples'
+    all_examples = examples_dir.rglob('*.py')
+    all_example_names = {str(f.resolve()).split("/")[-1].split(".")[0] for f in all_examples}
+
+    if not name in all_example_names:
+        print(f"Sorry, {name} is not an available example name!")
+        print(f"Available examples names: {all_example_names}")
+    os.system(f"python3 {examples_dir / f'{name}.py'}")
+
+
 def get_benchmark_baseline_dir():
     import taichi as ti
     return os.path.join(ti.core.get_repo_dir(), 'benchmarks', 'baseline')
@@ -183,6 +199,10 @@ def make_argument_parser():
         action='store_true',
         help='Exclude arch(s) instead of include, e.g. -na opengl,metal')
     parser.add_argument('files', nargs='*', help='Files to be tested')
+
+    # commands = parser.add_subparsers(help='Available Taichi commands')
+    # examples = commands.add_parser('examples', help='Interact with Taichi examples')
+
     return parser
 
 
@@ -237,7 +257,8 @@ def main(debug=False):
             "           ti gif                    |-> Convert mp4 file to gif\n"
             "           ti doc                    |-> Build documentation\n"
             "           ti release                |-> Make source code release\n"
-            "           ti debug [script.py]      |-> Debug script\n")
+            "           ti debug [script.py]      |-> Debug script\n"
+            "           ti example [name]         |-> Run an example by name\n")
         return 0
 
     t = time.time()
@@ -409,6 +430,10 @@ def main(debug=False):
         fn = f'taichi-src-v{ver[0]}-{ver[1]}-{ver[2]}-{commit}-{md5}.zip'
         import shutil
         shutil.move('release.zip', fn)
+    elif mode == "example":
+        example = sys.argv[2]
+        print(f"Running example {example} ...")
+        run_example(name=example)
     else:
         name = sys.argv[1]
         print('Running task [{}]...'.format(name))

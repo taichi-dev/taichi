@@ -119,21 +119,21 @@ class KernelGen : public IRVisitor {
     if (used.int64)
       kernel_header += "layout(packed, binding = 0) buffer data_i64 { int64_t _data_i64_[]; };\n";
 
-    if (used.argument) {
-      kernel_header +=
-          "layout(packed, binding = 1) buffer args_i32 { int _args_i32_[]; };\n"
-          "layout(packed, binding = 1) buffer args_f32 { float _args_f32_[]; };\n"
-          "layout(packed, binding = 1) buffer args_f64 { double _args_f64_[]; };\n";
-      if (used.int64)
-        kernel_header += "layout(packed, binding = 1) buffer args_i64 { int64_t _args_i64_[]; };\n";
-    }
     if (used.global_temp) {
       kernel_header +=
-          "layout(packed, binding = 2) buffer gtmp_i32 { int _gtmp_i32_[]; };\n"
-          "layout(packed, binding = 2) buffer gtmp_f32 { float _gtmp_f32_[]; };\n"
-          "layout(packed, binding = 2) buffer gtmp_f64 { double _gtmp_f64_[]; };\n";
+          "layout(packed, binding = 1) buffer gtmp_i32 { int _gtmp_i32_[]; };\n"
+          "layout(packed, binding = 1) buffer gtmp_f32 { float _gtmp_f32_[]; };\n"
+          "layout(packed, binding = 1) buffer gtmp_f64 { double _gtmp_f64_[]; };\n";
       if (used.int64)
-        kernel_header += "layout(packed, binding = 2) buffer gtmp_i64 { int64_t _gtmp_i64_[]; };\n";
+        kernel_header += "layout(packed, binding = 1) buffer gtmp_i64 { int64_t _gtmp_i64_[]; };\n";
+    }
+    if (used.argument) {
+      kernel_header +=
+          "layout(packed, binding = 2) buffer args_i32 { int _args_i32_[]; };\n"
+          "layout(packed, binding = 2) buffer args_f32 { float _args_f32_[]; };\n"
+          "layout(packed, binding = 2) buffer args_f64 { double _args_f64_[]; };\n";
+      if (used.int64)
+        kernel_header += "layout(packed, binding = 2) buffer args_i64 { int64_t _args_i64_[]; };\n";
     }
     if (used.extra_arg) {
       kernel_header +=

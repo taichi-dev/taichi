@@ -431,9 +431,6 @@ struct CompiledProgram::Impl {
   void launch(Context &ctx, GLSLLauncher *launcher) const {
     std::vector<IOV> iov;
     iov.push_back(IOV{ctx.args, std::max(arg_count, ret_count) * sizeof(uint64_t)});
-    auto gtmp_arr = std::vector<char>(gtmp_size);
-    void *gtmp_base = gtmp_arr.data();  // std::calloc(gtmp_size, 1);
-    iov.push_back(IOV{gtmp_base, gtmp_size});
     std::vector<char> base_arr;
     std::vector<void *> saved_ctx_ptrs;
     // TODO: these dirty codes are introduced by #694
@@ -490,23 +487,33 @@ struct GLSLRuntime {
 struct GLSLLauncherImpl {
   std::unique_ptr<GLSSBO> root_ssbo;
   std::unique_ptr<GLSSBO> runtime_ssbo;
+  std::unique_ptr<GLSSBO> gtmp_ssbo;
   std::vector<GLSSBO> ssbo;
   std::vector<char> root_buffer;
+  std::vector<char> gtmp_buffer;
   std::unique_ptr<GLSLRuntime> runtime;
   std::vector<std::unique_ptr<CompiledProgram>> programs;
 };
 
-GLSLLauncher::GLSLLauncher(size_t size) {
+GLSLLauncher::GLSLLauncher(size_t root_size) {
   initialize_opengl();
   impl = std::make_unique<GLSLLauncherImpl>();
-  impl->root_ssbo = std::make_unique<GLSSBO>();
+
   impl->runtime_ssbo = std::make_unique<GLSSBO>();
   impl->runtime = std::make_unique<GLSLRuntime>();
-  impl->root_buffer.resize(size, 0);
-  impl->root_ssbo->bind_data(impl->root_buffer.data(), size);
-  impl->root_ssbo->bind_index(0);
   impl->runtime_ssbo->bind_data(impl->runtime.get(), sizeof(GLSLRuntime));
   impl->runtime_ssbo->bind_index(6);
+
+  impl->root_ssbo = std::make_unique<GLSSBO>();
+  impl->root_buffer.resize(root_size, 0);
+  impl->root_ssbo->bind_data(impl->root_buffer.data(), root_size);
+  impl->root_ssbo->bind_index(0);
+
+  size_t gtmp_size = 32 * 1024;  // 32 KiB, big enough
+  impl->gtmp_ssbo = std::make_unique<GLSSBO>();
+  impl->gtmp_buffer.resize(gtmp_size, 0);
+  impl->gtmp_ssbo->bind_data(impl->gtmp_buffer.data(), gtmp_size);
+  impl->gtmp_ssbo->bind_index(1);
 }
 
 void GLSLLauncher::keep(std::unique_ptr<CompiledProgram> program) {
@@ -521,7 +528,7 @@ GLSLLaunchGuard::GLSLLaunchGuard(GLSLLauncherImpl *impl,
   for (int i = 0; i < impl->ssbo.size(); i++) {
     if (!iov[i].size)
       continue;
-    impl->ssbo[i].bind_index(i + 1);
+    impl->ssbo[i].bind_index(i + 2);  // skip root and gtmp
     impl->ssbo[i].bind_data(iov[i].base, iov[i].size);  // input
   }
 }

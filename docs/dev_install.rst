@@ -15,7 +15,6 @@ Installing Depedencies
 ----------------------
 
 - Make sure you are using Python 3.6/3.7/3.8
-- Make sure you have `CMake <https://cmake.org/>`_ installed and configured.
 - Execute
 
   .. code-block:: bash
@@ -23,24 +22,7 @@ Installing Depedencies
     python3 -m pip install --user setuptools astpretty astor pytest opencv-python pybind11
     python3 -m pip install --user Pillow numpy scipy GitPython yapf colorama psutil autograd
 
-* (**If on Ubuntu**) Execute ``sudo apt install libtinfo-dev clang-8``. (``clang-7`` should work as well).
-
-* (**If on macOS**) You could rely on `Homebrew <https://brew.sh/>`_ to install LLVM with clang for you.
-  ``brew install llvm@8`` will only install llvm and clang 8 for you, but since macOS usually has pre-installed
-  clang, Homebrew won't link it automatically. You could run ``brew --prefix llvm@8`` to check the location of
-  installation and usually you will need to add lines similar to the following to your shell profile (~/.bashrc or 
-  ~/.zshrc):
-
-  .. code-block:: bash
-
-    export PATH="/usr/local/opt/llvm@8/bin:$PATH"
-    export LDFLAGS="-L/usr/local/opt/llvm@8/lib"
-    export CPPFLAGS="-I/usr/local/opt/llvm@8/include"
-    export CC=clang
-    export CXX=clang++
-
-  After restarting your shell, you could then use ``clang --version`` to verify you are using the 
-  right version of clang (8.0.1).
+* (If on Ubuntu) Execute ``sudo apt install libtinfo-dev clang-8``. (``clang-7`` should work as well).
 
 * (If on other Linux distributions) Please build clang 8.0.1 from scratch:
 
@@ -96,20 +78,6 @@ Setting up Taichi for development
     # if you are building with CUDA 10.0, use the line below:
     #   cmake .. -DCUDA_VERSION=10.0 -DTI_WITH_CUDA:BOOL=True
     make -j 8
-
-  * You may run into errors with cmake if you have gcc/g++ as your default compiler
-    instead of Clang/LLVM or you have multiple versions of clang. You could let CMake
-    respect your clang by setting environment variables like the following:
-
-  .. code-block:: bash
-
-    # remember to use the correct path based on your clang installation
-    export CC=/usr/bin/clang-8
-    export CXX=/usr/bin/clang++-8
-  
-  * You may also have to install some extra packages on Linux, based on the specific errors
-    you get, you may need to run something like: ``sudo apt install libxcursor-dev libxinerama-dev libxrandr-dev``.
-
 
 - Add the following script to your ``~/.bashrc``:
 

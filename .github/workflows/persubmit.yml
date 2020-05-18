@@ -14,7 +14,7 @@ jobs:
   code_format:
     name: Code Format
     runs-on: ubuntu-latest
-    if: "!contains(github.event.head_commit.message, '[skip fmt]')"
+    if: ${{ !contains(github.event.head_commit.message, '[skip fmt]') }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@v2

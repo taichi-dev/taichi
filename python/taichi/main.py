@@ -77,13 +77,19 @@ def run_example(name: str):
     import taichi as ti
     from pathlib import Path
 
-    root_dir = ti.package_root() if ti.is_release() else ti.get_repo_directory()
+    root_dir = ti.package_root() if ti.is_release() else ti.get_repo_directory(
+    )
     examples_dir = Path(root_dir) / 'examples'
     all_examples = examples_dir.rglob('*.py')
-    all_example_names = {str(f.resolve()).split("/")[-1].split(".")[0] for f in all_examples}
+    all_example_names = {
+        str(f.resolve()).split("/")[-1].split(".")[0]
+        for f in all_examples
+    }
 
     if not name in all_example_names:
-        sys.exit(f"Sorry, {name} is not an available example name!\nAvailable examples names: {all_example_names}")
+        sys.exit(
+            f"Sorry, {name} is not an available example name!\nAvailable examples names: {all_example_names}"
+        )
     os.system(f"python3 {examples_dir / f'{name}.py'}")
 
 
@@ -101,8 +107,10 @@ def display_benchmark_regression(xd, yd, args):
     def parse_dat(file):
         dict = {}
         for line in open(file).readlines():
-            try: a, b = line.strip().split(':')
-            except: continue
+            try:
+                a, b = line.strip().split(':')
+            except:
+                continue
             dict[a.strip()] = int(float(b))
         return dict
 
@@ -127,7 +135,8 @@ def display_benchmark_regression(xd, yd, args):
         gui = ti.GUI('Regression Test', (640, 480), 0x001122)
         print('[Hint] press SPACE to go for next display')
         for key, data in scatter.items():
-            data = np.array([((i + 0.5)/len(data), x/2) for i, x in enumerate(data)])
+            data = np.array([((i + 0.5) / len(data), x / 2)
+                             for i, x in enumerate(data)])
             while not gui.get_event((ti.GUI.PRESS, ti.GUI.SPACE)):
                 gui.core.title = key
                 gui.line((0, 0.5), (1, 0.5), 1.8, 0x66ccff)
@@ -176,7 +185,9 @@ def make_argument_parser():
                         '--verbose',
                         action='store_true',
                         help='Run with verbose outputs')
-    parser.add_argument('-r', '--rerun', help='Rerun failed tests for given times')
+    parser.add_argument('-r',
+                        '--rerun',
+                        help='Rerun failed tests for given times')
     parser.add_argument('-t',
                         '--threads',
                         help='Number of threads for parallel testing')
@@ -257,7 +268,8 @@ def main(debug=False):
             "           ti doc                    |-> Build documentation\n"
             "           ti release                |-> Make source code release\n"
             "           ti debug [script.py]      |-> Debug script\n"
-            "           ti example [name]         |-> Run an example by name\n")
+            "           ti example [name]         |-> Run an example by name\n"
+        )
         return 0
 
     t = time.time()

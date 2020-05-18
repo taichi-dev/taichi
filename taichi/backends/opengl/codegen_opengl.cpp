@@ -86,16 +86,18 @@ class KernelGen : public IRVisitor {
   void generate_header() {
   }
 
-  std::string opengl_data_type_name(DataType dt) {  // catch & forward
-    if (dt == DataType::i64)
-      used.int64 = true;
-    return opengl::opengl_data_type_name(dt);
-  }
-
-  std::string opengl_data_type_short_name(DataType dt) {  // catch & forward
+  // Note that the following two functions not only returns the corresponding
+  // data type, but also **records** the usage of `i64`.
+  std::string opengl_data_type_short_name(DataType dt) {
     if (dt == DataType::i64)
       used.int64 = true;
     return data_type_short_name(dt);
+  }
+
+  std::string opengl_data_type_name(DataType dt) {
+    if (dt == DataType::i64)
+      used.int64 = true;
+    return opengl::opengl_data_type_name(dt);
   }
 
   void generate_bottom() {

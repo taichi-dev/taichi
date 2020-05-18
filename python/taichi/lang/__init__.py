@@ -1,4 +1,4 @@
-from .impl import *
+arom .impl import *
 from .matrix import Matrix
 from .transformer import TaichiSyntaxError
 from .ndrange import ndrange, GroupedNDRange
@@ -250,7 +250,10 @@ def static_print(*args, __p=print, **kwargs):
 def benchmark(func, repeat=300, args=()):
     import taichi as ti
     import time
-    func(*args)  # compile the kernel first
+    # The reason why we run 4 times is to warm up instruction/data caches.
+    # Discussion: https://github.com/taichi-dev/taichi/pull/1002#discussion_r426312136
+    for i in range(4):
+        func(*args)  # compile the kernel first
     ti.sync()
     t = time.time()
     for n in range(repeat):

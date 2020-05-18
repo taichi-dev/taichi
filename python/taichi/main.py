@@ -8,6 +8,7 @@ import argparse
 from collections import defaultdict
 from colorama import Fore, Back, Style
 from taichi.tools.video import make_video, interpolate_frames, mp4_to_gif, scale_video, crop_video, accelerate_video
+import importlib
 
 
 def test_python(args):
@@ -90,7 +91,7 @@ def run_example(name: str):
         sys.exit(
             f"Sorry, {name} is not an available example name!\nAvailable examples names: {all_example_names}"
         )
-    os.system(f"python3 {examples_dir / f'{name}.py'}")
+    importlib.import_module(f"examples.{name}")
 
 
 def get_benchmark_baseline_dir():

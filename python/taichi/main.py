@@ -83,8 +83,7 @@ def run_example(name: str):
     all_example_names = {str(f.resolve()).split("/")[-1].split(".")[0] for f in all_examples}
 
     if not name in all_example_names:
-        print(f"Sorry, {name} is not an available example name!")
-        print(f"Available examples names: {all_example_names}")
+        sys.exit(f"Sorry, {name} is not an available example name!\nAvailable examples names: {all_example_names}")
     os.system(f"python3 {examples_dir / f'{name}.py'}")
 
 

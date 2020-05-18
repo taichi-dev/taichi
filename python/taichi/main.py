@@ -210,10 +210,6 @@ def make_argument_parser():
         action='store_true',
         help='Exclude arch(s) instead of include, e.g. -na opengl,metal')
     parser.add_argument('files', nargs='*', help='Files to be tested')
-
-    # commands = parser.add_subparsers(help='Available Taichi commands')
-    # examples = commands.add_parser('examples', help='Interact with Taichi examples')
-
     return parser
 
 

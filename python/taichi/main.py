@@ -99,6 +99,8 @@ def display_benchmark_regression(xd, yd, args):
             return file[5:-4].replace('__test_', '::', 1)
         elif file[0:10] == 'benchmark_':
             return '::'.join(reversed(file[10:-4].split('__arch_')))
+        else:
+            raise Exception(f'bad benchmark file name {file}')
 
     def get_dats(dir):
         list = []
@@ -196,7 +198,7 @@ def make_argument_parser():
     parser.add_argument('-T',
                         '--tprt',
                         action='store_true',
-                        help='Run TPRT benchmark instead of SPRT')
+                        help='Benchmark for time performance')
     parser.add_argument(
         '-a',
         '--arch',

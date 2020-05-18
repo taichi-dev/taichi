@@ -378,7 +378,7 @@ struct CompiledKernel {
   void dispatch_compute(GLSLLaunchGuard &guard) const {
     int num_groups;
     if (kpa.is_dynamic()) {
-      auto *gtmp_now = guard.map_buffer(1);  // TODO: RAII
+      auto *gtmp_now = guard.map_buffer(2);  // TODO: RAII
       num_groups = kpa.eval((const void *)gtmp_now);
       guard.unmap_buffer(1);
     } else {

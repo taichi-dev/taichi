@@ -28,7 +28,7 @@ Installing Depedencies
 * (**If on macOS**) You could rely on `Homebrew <https://brew.sh/>`_ to install LLVM with clang for you.
   ``brew install llvm@8`` will only install llvm and clang 8 for you, but since macOS usually has pre-installed
   clang, Homebrew won't link it automatically. You could run ``brew --prefix llvm@8`` to check the location of
-  installation and usually you will need to add lines similar to the following to your shell profile (~/.bashrc or 
+  installation and usually you will need to add lines similar to the following to your shell profile (~/.bashrc or
   ~/.zshrc):
 
   .. code-block:: bash
@@ -39,7 +39,7 @@ Installing Depedencies
     export CC=clang
     export CXX=clang++
 
-  After restarting your shell, you could then use ``clang --version`` to verify you are using the 
+  After restarting your shell, you could then use ``clang --version`` to verify you are using the
   right version of clang (8.0.1).
 
 * (If on other Linux distributions) Please build clang 8.0.1 from scratch:
@@ -106,7 +106,7 @@ Setting up Taichi for development
     # remember to use the correct path based on your clang installation
     export CC=/usr/bin/clang-8
     export CXX=/usr/bin/clang++-8
-  
+
   * You may also have to install some extra packages on Linux, based on the specific errors
     you get, you may need to run something like: ``sudo apt install libxcursor-dev libxinerama-dev libxrandr-dev``.
 

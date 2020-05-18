@@ -136,7 +136,7 @@ constexpr int NSEventTypeKeyUp = 11;
 
 // We need to give the View class a somewhat unique name, so that it won't
 // conflict with other modules (e.g. matplotlib). See issue#998.
-constexpr char kTaichiViewClassName[] = "TaichiGuiClass";
+constexpr char kTaichiViewClassName[] = "TaichiGuiView";
 
 }  // namespace
 

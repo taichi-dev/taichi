@@ -20,7 +20,7 @@ jobs:
     - uses: actions/stale@v3
       with:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
-        stale-issue-message: 'Warning: The Issue has been out-of-update for 60 days, marking `stale`.'
+        stale-issue-message: 'Warning: The issue has been out-of-update for 60 days, marking `stale`.'
         stale-issue-label: 'stale'
         days-before-stale: 60
         days-before-close: -1

@@ -508,7 +508,8 @@ GLSLLauncher::GLSLLauncher(size_t root_size) {
 
   impl->gtmp_ssbo = std::make_unique<GLSSBO>();
   impl->gtmp_buffer.resize(taichi_global_tmp_buffer_size, 0);
-  impl->gtmp_ssbo->bind_data(impl->gtmp_buffer.data(), taichi_global_tmp_buffer_size);
+  impl->gtmp_ssbo->bind_data(impl->gtmp_buffer.data(),
+                             taichi_global_tmp_buffer_size);
   impl->gtmp_ssbo->bind_index(1);
 }
 

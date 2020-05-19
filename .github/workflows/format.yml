@@ -11,7 +11,8 @@ on:
       - '**.md'
       - '**.txt'
       - '**.cmake'
-      - '!examples/**.py'
+    paths-ignore:
+      - 'examples/**'
 
 jobs:
   code_format:

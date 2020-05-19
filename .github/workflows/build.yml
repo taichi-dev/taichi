@@ -10,9 +10,10 @@ on:
       - '**.py'
       - '**.cmake'
       - 'CMakeLists.txt'
-      - '!examples/**'
-      - '!misc/**'
-      - '!benchmarks/**'
+    paths-ignore:
+      - 'examples/**'
+      - 'misc/**'
+      - 'benchmarks/**'
 
 jobs:
   build_linux:

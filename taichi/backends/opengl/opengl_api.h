@@ -46,7 +46,7 @@ struct CompiledProgram {
   CompiledProgram(CompiledProgram &&) = default;
   CompiledProgram &operator=(CompiledProgram &&) = default;
 
-  CompiledProgram(Kernel *kernel, size_t gtmp_size);
+  CompiledProgram(Kernel *kernel);
   ~CompiledProgram();
 
   void add(const std::string &kernel_name,

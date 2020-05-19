@@ -405,9 +405,8 @@ struct CompiledProgram::Impl {
   std::vector<std::unique_ptr<CompiledKernel>> kernels;
   int arg_count, ret_count;
   std::map<int, size_t> ext_arr_map;
-  size_t gtmp_size;
 
-  Impl(Kernel *kernel, size_t gtmp_size) : gtmp_size(gtmp_size) {
+  Impl(Kernel *kernel) {
     arg_count = kernel->args.size();
     ret_count = kernel->rets.size();
     for (int i = 0; i < arg_count; i++) {
@@ -507,10 +506,9 @@ GLSLLauncher::GLSLLauncher(size_t root_size) {
   impl->root_ssbo->bind_data(impl->root_buffer.data(), root_size);
   impl->root_ssbo->bind_index(0);
 
-  size_t gtmp_size = 32 * 1024;  // 32 KiB, big enough
   impl->gtmp_ssbo = std::make_unique<GLSSBO>();
-  impl->gtmp_buffer.resize(gtmp_size, 0);
-  impl->gtmp_ssbo->bind_data(impl->gtmp_buffer.data(), gtmp_size);
+  impl->gtmp_buffer.resize(taichi_global_tmp_buffer_size, 0);
+  impl->gtmp_ssbo->bind_data(impl->gtmp_buffer.data(), taichi_global_tmp_buffer_size);
   impl->gtmp_ssbo->bind_index(1);
 }
 
@@ -571,7 +569,7 @@ struct GLProgram {};
 struct GLSLLauncherImpl {};
 
 struct CompiledProgram::Impl {
-  Impl(Kernel *kernel, size_t gtmp_size) {
+  Impl(Kernel *kernel) {
     TI_NOT_IMPLEMENTED;
   }
 
@@ -635,8 +633,8 @@ KernelParallelAttrib::KernelParallelAttrib(int num_threads_) {
 
 #endif  // TI_WITH_OPENGL
 
-CompiledProgram::CompiledProgram(Kernel *kernel, size_t gtmp_size)
-    : impl(std::make_unique<Impl>(kernel, gtmp_size)) {
+CompiledProgram::CompiledProgram(Kernel *kernel)
+    : impl(std::make_unique<Impl>(kernel)) {
 }
 
 CompiledProgram::~CompiledProgram() = default;

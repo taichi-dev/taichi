@@ -48,10 +48,9 @@ class KernelGen : public IRVisitor {
  public:
   KernelGen(Kernel *kernel,
             std::string kernel_name,
-            StructCompiledResult *struct_compiled,
-            size_t gtmp_size)
+            StructCompiledResult *struct_compiled)
       : kernel(kernel),
-        compiled_program_(std::make_unique<CompiledProgram>(kernel, gtmp_size)),
+        compiled_program_(std::make_unique<CompiledProgram>(kernel)),
         struct_compiled_(struct_compiled),
         kernel_name_(kernel_name),
         glsl_kernel_prefix_(kernel_name) {
@@ -689,8 +688,7 @@ class KernelGen : public IRVisitor {
 
 FunctionType OpenglCodeGen::gen(void) {
 #if defined(TI_WITH_OPENGL)
-  KernelGen codegen(kernel_, kernel_name_, struct_compiled_,
-                    global_tmps_buffer_size_);
+  KernelGen codegen(kernel_, kernel_name_, struct_compiled_);
   codegen.run(*prog_->snode_root);
   auto compiled = codegen.get_compiled_program();
   auto *ptr = compiled.get();
@@ -707,14 +705,10 @@ void OpenglCodeGen::lower() {
   auto ir = kernel_->ir;
   auto &config = kernel_->program.config;
   config.demote_dense_struct_fors = true;
-  auto res =
-      irpass::compile_to_offloads(ir, config,
-                                  /*vectorize=*/false, kernel_->grad,
-                                  /*ad_use_stack=*/false, config.print_ir,
-                                  /*lower_global_access*/ true);
-  global_tmps_buffer_size_ = res.total_size;
-  TI_TRACE("[glsl] Global temporary buffer size {} B",
-           global_tmps_buffer_size_);
+  irpass::compile_to_offloads(ir, config,
+                              /*vectorize=*/false, kernel_->grad,
+                              /*ad_use_stack=*/false, config.print_ir,
+                              /*lower_global_access*/ true);
 #ifdef _GLSL_DEBUG
   irpass::print(ir);
 #endif

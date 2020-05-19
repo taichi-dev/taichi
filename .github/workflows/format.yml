@@ -1,7 +1,14 @@
 name: Code Format Check
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [reopened]
+    paths:
+      - '**.h'
+      - '**.cpp'
+      - '**.py'
+      - '**.rst'
+      - '**.md'
+      - '!examples/**.py'
 
 jobs:
   code_format:
@@ -9,10 +16,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
-        with:
-          python-version: 3.8
-
       - name: Check code format
         run: |
           git fetch https://github.com/taichi-dev/taichi.git refs/heads/master
@@ -24,8 +27,8 @@ jobs:
           git checkout -b last_squash
           git checkout -b enforced_format
           git reset FETCH_HEAD
-          pip install --user yapf gitpython
-          python misc/format.py
+          python3 -m pip install --user yapf gitpython
+          python3 misc/format.py
           git add .
           git commit -m "enforce code format" || true
           # exit with 1 if there were differences:

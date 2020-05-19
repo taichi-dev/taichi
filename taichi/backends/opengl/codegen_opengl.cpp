@@ -11,7 +11,6 @@
 #include "taichi/util/line_appender.h"
 #include "taichi/util/macros.h"
 
-
 TLANG_NAMESPACE_BEGIN
 namespace opengl {
 

@@ -1,7 +1,7 @@
 .. _meta:
 
 Metaprogramming
-=================================================
+===============
 
 Taichi provides metaprogramming infrastructures. Metaprogramming can
 
@@ -26,7 +26,7 @@ Template metaprogramming
 
 
 Dimensionality-independent programming using grouped indices
--------------------------------------------------------------
+------------------------------------------------------------
 
 .. code-block:: python
 
@@ -45,7 +45,7 @@ Dimensionality-independent programming using grouped indices
             y[i, j + 1] = i + j
 
 Tensor size reflection
-------------------------------------------
+----------------------
 
 Sometimes it will be useful to get the dimensionality (``tensor.dim()``) and shape (``tensor.shape()``) of tensors.
 These functions can be used in both Taichi kernels and python scripts.
@@ -61,9 +61,9 @@ These functions can be used in both Taichi kernels and python scripts.
 For sparse tensors, the full domain shape will be returned.
 
 Compile-time evaluations
-------------------------------------------
-Using compile-time evaluation will allow certain computation to happen when kernels are instantiated.
-Such computation has no overhead at runtime.
+------------------------
+Using compile-time evaluation will allow certain computations to happen when kernels are being instantiated.
+This saves the overhead of those computations at runtime.
 
 * Use ``ti.static`` for compile-time branching (for those who come from C++17, this is `if constexpr <https://en.cppreference.com/w/cpp/language/if>`_.)
 
@@ -106,7 +106,7 @@ Such computation has no overhead at runtime.
 
 
 When to use for loops with ``ti.static``
------------------------------------------
+----------------------------------------
 
 There are several reasons why ``ti.static`` for loops should be used.
 

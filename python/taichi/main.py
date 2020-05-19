@@ -86,8 +86,10 @@ def display_benchmark_regression(xd, yd, args):
     def parse_dat(file):
         dict = {}
         for line in open(file).readlines():
-            try: a, b = line.strip().split(':')
-            except: continue
+            try:
+                a, b = line.strip().split(':')
+            except:
+                continue
             b = float(b)
             if abs(b % 1.0) < 1e-5:  # codegen_*
                 b = int(b)
@@ -120,7 +122,8 @@ def display_benchmark_regression(xd, yd, args):
         gui = ti.GUI('Regression Test', (640, 480), 0x001122)
         print('[Hint] press SPACE to go for next display')
         for key, data in scatter.items():
-            data = np.array([((i + 0.5)/len(data), x/2) for i, x in enumerate(data)])
+            data = np.array([((i + 0.5) / len(data), x / 2)
+                             for i, x in enumerate(data)])
             while not gui.get_event((ti.GUI.PRESS, ti.GUI.SPACE)):
                 gui.core.title = key
                 gui.line((0, 0.5), (1, 0.5), 1.8, 0x66ccff)
@@ -183,7 +186,9 @@ def make_argument_parser():
                         '--verbose',
                         action='store_true',
                         help='Run with verbose outputs')
-    parser.add_argument('-r', '--rerun', help='Rerun failed tests for given times')
+    parser.add_argument('-r',
+                        '--rerun',
+                        help='Rerun failed tests for given times')
     parser.add_argument('-t',
                         '--threads',
                         help='Number of threads for parallel testing')

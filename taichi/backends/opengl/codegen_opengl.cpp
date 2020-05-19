@@ -219,7 +219,8 @@ class KernelGen : public IRVisitor {
   void visit(RandStmt *stmt) override {
     used.random = true;
     emit("{} {} = _rand_{}();", opengl_data_type_name(stmt->ret_type.data_type),
-         stmt->short_name(), opengl_data_type_short_name(stmt->ret_type.data_type));
+         stmt->short_name(),
+         opengl_data_type_short_name(stmt->ret_type.data_type));
   }
 
   void visit(LinearizeStmt *stmt) override {
@@ -404,7 +405,8 @@ class KernelGen : public IRVisitor {
       // 124 So that we have to use some hack to make it percise. Discussion:
       // https://github.com/taichi-dev/taichi/pull/943#issuecomment-626354902
       emit("{} {} = {}(fast_pow_{}({}, {}));", dt_name, bin_name, dt_name,
-           opengl_data_type_short_name(bin->lhs->element_type()), lhs_name, rhs_name);
+           opengl_data_type_short_name(bin->lhs->element_type()), lhs_name,
+           rhs_name);
       used.fast_pow = true;
       return;
     }
@@ -502,7 +504,8 @@ class KernelGen : public IRVisitor {
     used.argument = true;
     // TODO: consider use _rets_{}_ instead of _args_{}_
     // TODO: use stmt->ret_id instead of 0 as index
-    emit("_args_{}_[0] = {};", opengl_data_type_short_name(stmt->element_type()),
+    emit("_args_{}_[0] = {};",
+         opengl_data_type_short_name(stmt->element_type()),
          stmt->value->short_name());
   }
 

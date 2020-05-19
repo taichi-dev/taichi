@@ -28,6 +28,7 @@ struct GLSLLauncher {
   }
 
   void keep(std::unique_ptr<CompiledProgram> program);
+  void synchronize();
 };
 
 }  // namespace opengl

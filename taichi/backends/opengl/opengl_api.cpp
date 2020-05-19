@@ -186,6 +186,7 @@ struct GLProgram {
 // This is Shader Storage Buffer, we use it to share data between CPU & GPU
 struct GLSSBO {
   GLuint id_;
+  size_t size_{0};
 
   GLSSBO() {
     glGenBuffers(1, &id_);
@@ -225,7 +226,8 @@ struct GLSSBO {
 
   void bind_data(void *data,
                  size_t size,
-                 GLuint usage = GL_DYNAMIC_READ) const {
+                 GLuint usage = GL_DYNAMIC_READ) {
+    size_ = size;
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, id_);
     check_opengl_error("glBindBuffer");
     glBufferData(GL_SHADER_STORAGE_BUFFER, size, data, usage);
@@ -239,7 +241,8 @@ struct GLSSBO {
     check_opengl_error("glBindBufferBase");
   }
 
-  void bind_range(size_t index, size_t offset, size_t size) const {
+  void bind_range(size_t index, size_t offset, size_t size) {
+    size_ = size;
     glBindBufferRange(GL_SHADER_STORAGE_BUFFER, index, id_, offset, size);
     check_opengl_error("glBindBufferRange");
   }
@@ -271,6 +274,15 @@ struct GLSSBO {
     check_opengl_error("glBindBuffer");
     glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
     check_opengl_error("glUnmapBuffer");
+  }
+
+  void sync() const {
+    if (!size_) return;
+    std::vector<char> buf(size_);
+    void *p = this->map();
+    std::memcpy(buf.data(), p, size_);
+    trash(buf[0]);
+    this->unmap();
   }
 };
 
@@ -509,6 +521,16 @@ GLSLLauncher::GLSLLauncher(size_t size) {
   impl->runtime_ssbo->bind_index(6);
 }
 
+void GLSLLauncher::synchronize() {
+  impl->root_ssbo->sync();
+  impl->gtmp_ssbo->sync();
+  impl->runtime_ssbo->sync();
+  for (auto &s: impl->ssbo) {
+    s.sync();
+  }
+}
+
+
 void GLSLLauncher::keep(std::unique_ptr<CompiledProgram> program) {
   impl->programs.push_back(std::move(program));
 }
@@ -574,6 +596,10 @@ struct CompiledProgram::Impl {
 };
 
 GLSLLauncher::GLSLLauncher(size_t size) {
+  TI_NOT_IMPLEMENTED;
+}
+
+void GLSLLauncher::synchronize() {
   TI_NOT_IMPLEMENTED;
 }
 

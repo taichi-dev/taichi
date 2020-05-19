@@ -333,6 +333,8 @@ void Program::synchronize() {
 #endif
     } else if (config.arch == Arch::metal) {
       metal_kernel_mgr_->synchronize();
+    } else if (config.arch == Arch::opengl) {
+      opengl_kernel_launcher_->synchronize();
     } else if (config.async == true) {
       async_engine->synchronize();
     }

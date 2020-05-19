@@ -148,10 +148,8 @@ def display_benchmark_regression(xd, yd, args):
                 res = b / a
             scatter[key].append(res)
             if res == 1: continue
-            if single_line:
-                ret += f'{file:_<24}{func:_<42}'
-            else:
-                ret += f'{key:<38}'
+            if not single_line:
+                ret += f'{key:<30}'
             res -= 1
             color = Fore.RESET
             if res > 0: color = Fore.RED
@@ -167,8 +165,9 @@ def display_benchmark_regression(xd, yd, args):
             ret += f'{Fore.MAGENTA}{a}{Fore.RESET} -> '
             ret += f'{Fore.CYAN}{b} {color}{res:>+9.1%}{Fore.RESET}\n'
         if ret != '':
+            print(f'{file + "::" + func:_<58}', end='')
             if not single_line:
-                print(f'{file:_<24}{func:_<42}')
+                print('')
             print(ret, end='')
             if not single_line:
                 print('')

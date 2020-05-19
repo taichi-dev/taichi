@@ -2,13 +2,12 @@ name: Persubmit Checks
 on:
   pull_request:
     types: [opened, synchronize, reopened]
-    paths:
-      - '**.h'
-      - '**.cpp'
-      - '**.py'
-      - '**.rst'
+    paths-ignore:
       - '**.md'
-      - '!examples/**.py'
+      - '**.rst'
+      - '**.txt'
+      - 'benchmarks/**'
+      - 'examples/**'
 
 jobs:
   code_format:
@@ -16,9 +15,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
-        with:
-          python-version: 3.8
       - name: Check code format
         run: |
           git fetch https://github.com/taichi-dev/taichi.git refs/heads/master
@@ -36,3 +32,30 @@ jobs:
           git commit -m "enforce code format" || true
           # exit with 1 if there were differences:
           git diff last_squash enforced_format --exit-code
+
+  build:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.8
+
+    - name: Download pre-built LLVM 8.0.1
+      run: |
+        mkdir taichi-llvm
+        cd taichi-llvm
+        wget https://github.com/yuanming-hu/taichi_assets/releases/download/llvm8/taichi-llvm-8.0.1-linux-x64.zip --retry-on-http-error=403 --waitretry=3 --tries=5
+        unzip taichi-llvm-8.0.1.zip
+
+    - name: Build Taichi
+      env:
+        CC: clang++
+        CXX: clang++
+        PYTHON: python
+        PYTHON_VERSION: 3.8
+      run: |
+        export TAICHI_REPO_DIR=`pwd`
+        export PATH=$TAICHI_REPO_DIR/bin:$PATH
+        export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
+        export PYTHONPATH=$TAICHI_REPO_DIR/python
+        python misc/ci_setup.py ci
+        ti test -vr2 -t2

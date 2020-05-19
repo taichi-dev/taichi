@@ -2,17 +2,17 @@ name: Code Format Check
 on:
   pull_request:
     types: [opened] #, synchronize, reopened]
-    paths:
-      - '**.h'
-      - '**.c'
-      - '**.cpp'
-      - '**.py'
-      - '**.rst'
-      - '**.md'
-      - '**.txt'
-      - '**.cmake'
-    paths-ignore:
-      - 'examples/**'
+    #    paths:
+    #      - '**.h'
+    #      - '**.c'
+    #      - '**.cpp'
+    #      - '**.py'
+    #      - '**.rst'
+    #      - '**.md'
+    #      - '**.txt'
+    #      - '**.cmake'
+    #    paths-ignore:
+    #      - 'examples/**'
 
 jobs:
   code_format:

@@ -83,7 +83,7 @@ def run_example(name: str):
     examples_dir = Path(root_dir) / 'examples'
     all_examples = examples_dir.rglob('*.py')
     all_example_names = {
-        str(f.resolve()).split("/")[-1].split(".")[0]
+        str(f.resolve()).split('/')[-1].split('.')[0]
         for f in all_examples
     }
 

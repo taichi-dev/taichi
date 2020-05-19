@@ -1,0 +1,26 @@
+name: "Mark stale issues and PRs"
+on:
+  schedule:
+  - cron: "0 0 * * *"  # run on 00:00 of every day
+
+jobs:
+  stale_pr:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/stale@v3
+      with:
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
+        stale-pr-message: 'Warning: The PR has been out-of-update for 20 days, marking `stale`.'
+        stale-pr-label: 'stale'
+        days-before-stale: 20
+        days-before-close: -1
+  stale_issue:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/stale@v3
+      with:
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
+        stale-pr-message: 'Warning: The Issue has been out-of-update for 60 days, marking `stale`.'
+        stale-pr-label: 'stale'
+        days-before-stale: 60
+        days-before-close: -1

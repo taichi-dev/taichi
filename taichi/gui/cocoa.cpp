@@ -1,15 +1,15 @@
-#include "taichi/util/bit.h"
 #include "taichi/common/task.h"
 #include "taichi/gui/gui.h"
+#include "taichi/util/bit.h"
 
 #if defined(TI_GUI_COCOA)
-
-#include "taichi/platform/mac/objc_api.h"
 
 #include <algorithm>
 #include <optional>
 #include <string>
 #include <unordered_map>
+
+#include "taichi/platform/mac/objc_api.h"
 
 // https://stackoverflow.com/questions/4356441/mac-os-cocoa-draw-a-simple-pixel-on-a-canvas
 // http://cocoadevcentral.com/d/intro_to_quartz/
@@ -134,6 +134,10 @@ constexpr int NSApplicationActivationPolicyRegular = 0;
 constexpr int NSEventTypeKeyDown = 10;
 constexpr int NSEventTypeKeyUp = 11;
 
+// We need to give the View class a somewhat unique name, so that it won't
+// conflict with other modules (e.g. matplotlib). See issue#998.
+constexpr char kTaichiViewClassName[] = "TaichiGuiView";
+
 }  // namespace
 
 extern id NSApp;
@@ -204,7 +208,8 @@ Class ViewClass;
 Class AppDelClass;
 
 __attribute__((constructor)) static void initView() {
-  ViewClass = objc_allocateClassPair((Class)objc_getClass("NSView"), "View", 0);
+  ViewClass = objc_allocateClassPair((Class)objc_getClass("NSView"),
+                                     kTaichiViewClassName, 0);
   // There are two ways to update NSView's content, either via "drawRect:" or
   // "updateLayer". Updating via layer can be a lot faster, so we use this
   // method. See also:
@@ -258,7 +263,7 @@ void GUI::create_window() {
        (NSTitledWindowMask | NSClosableWindowMask | NSResizableWindowMask |
         NSMiniaturizableWindowMask),
        0, false);
-  view = call(clscall("View", "alloc"), "initWithFrame:", rect);
+  view = call(clscall(kTaichiViewClassName, "alloc"), "initWithFrame:", rect);
   gui_from_id[view] = this;
   // Use layer to speed up the draw
   // https://developer.apple.com/documentation/appkit/nsview/1483695-wantslayer?language=objc

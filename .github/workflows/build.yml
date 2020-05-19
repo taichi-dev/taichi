@@ -1,4 +1,4 @@
-name: Persubmit Checks
+name: Build Check
 on:
   pull_request:
     types: [opened, synchronize, reopened]
@@ -10,29 +10,6 @@ on:
       - 'examples/**'
 
 jobs:
-  code_format:
-    name: Code Format
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Check code format
-        run: |
-          git fetch https://github.com/taichi-dev/taichi.git refs/heads/master
-          git reset FETCH_HEAD
-          git add .
-          git config user.email "taichigardener@gmail.com"
-          git config user.name "Taichi Gardener"
-          git commit -m "fake squash commit" || true
-          git checkout -b last_squash
-          git checkout -b enforced_format
-          git reset FETCH_HEAD
-          pip install --user yapf gitpython
-          python misc/format.py
-          git add .
-          git commit -m "enforce code format" || true
-          # exit with 1 if there were differences:
-          git diff last_squash enforced_format --exit-code
-
   build:
     - uses: actions/checkout@v2
     - uses: actions/setup-python@v2
@@ -48,7 +25,7 @@ jobs:
 
     - name: Build Taichi
       env:
-        CC: clang++
+        CC: clang
         CXX: clang++
         PYTHON: python
         PYTHON_VERSION: 3.8

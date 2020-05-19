@@ -2,12 +2,6 @@ name: Build Check
 on:
   pull_request:
     types: [opened, synchronize, reopened]
-    paths:
-      - '!**.md'
-      - '!**.rst'
-      - '!**.txt'
-      - '!benchmarks/**'
-      - '!examples/**'
 
 jobs:
   build_linux:

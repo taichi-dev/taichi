@@ -42,7 +42,7 @@ jobs:
           python misc/ci_setup.py ci
 
       - name: Functional Test
-        env:
+        run: |
           export TAICHI_REPO_DIR=`pwd`
           export PATH=$TAICHI_REPO_DIR/bin:$PATH
           export PYTHONPATH=$TAICHI_REPO_DIR/python

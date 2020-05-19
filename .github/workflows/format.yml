@@ -33,3 +33,5 @@ jobs:
           git commit -m "enforce code format" || true
           # exit with 1 if there were differences:
           git diff last_squash enforced_format --exit-code
+
+asas

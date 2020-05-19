@@ -108,8 +108,10 @@ def display_benchmark_regression(xd, yd, args):
     def parse_dat(file):
         dict = {}
         for line in open(file).readlines():
-            try: a, b = line.strip().split(':')
-            except: continue
+            try:
+                a, b = line.strip().split(':')
+            except:
+                continue
             b = float(b)
             if abs(b % 1.0) < 1e-5:  # codegen_*
                 b = int(b)

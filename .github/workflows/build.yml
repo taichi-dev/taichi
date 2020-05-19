@@ -3,12 +3,13 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
     paths:
+      - 'a.txt'
       - '**.h'
       - '**.c'
       - '**.cpp'
       - '**.py'
       - '**.cmake'
-      - '**CMake**'
+      - 'CMakeLists.txt'
       - '!examples/**'
       - '!misc/**'
       - '!benchmarks/**'

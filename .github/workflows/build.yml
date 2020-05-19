@@ -31,5 +31,6 @@ jobs:
           export PATH=$TAICHI_REPO_DIR/bin:$PATH
           export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
           export PYTHONPATH=$TAICHI_REPO_DIR/python
+          sudo apt-get install libxrandr-dev
           python --version
           python misc/ci_setup.py ci

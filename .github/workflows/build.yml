@@ -2,15 +2,16 @@ name: Build Check
 on:
   pull_request:
     types: [opened, synchronize, reopened]
-    paths-ignore:
-      - '**.md'
-      - '**.rst'
-      - '**.txt'
-      - 'benchmarks/**'
-      - 'examples/**'
+    paths:
+      - '!**.md'
+      - '!**.rst'
+      - '!**.txt'
+      - '!benchmarks/**'
+      - '!examples/**'
 
 jobs:
-  build:
+  build_linux:
+    name: Build on Linux
     - uses: actions/checkout@v2
     - uses: actions/setup-python@v2
       with:
@@ -34,5 +35,5 @@ jobs:
         export PATH=$TAICHI_REPO_DIR/bin:$PATH
         export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
         export PYTHONPATH=$TAICHI_REPO_DIR/python
+        python --version
         python misc/ci_setup.py ci
-        ti test -vr2 -t2

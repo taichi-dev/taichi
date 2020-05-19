@@ -31,7 +31,7 @@ Tensors of matrices
 -------------------
 Tensor elements can also be matrices.
 
-Suppose you have a ``128 x 64`` tensor called ``A``, each element containing a ``3 x 2`` matrices. In this case you need to allocate a ``128 x 64`` tensor of ``3 x 2`` matrix, using the statement ``A = ti.Matrix(3, 2, dt=ti.f32, shape=(128, 64))``.
+Suppose you have a ``128 x 64`` tensor called ``A``, each element containing a ``3 x 2`` matrix. To allocate a ``128 x 64`` tensor of ``3 x 2`` matrix, use the statement ``A = ti.Matrix(3, 2, dt=ti.f32, shape=(128, 64))``.
 
 * If you want to get the matrix of grid node ``i, j``, please use ``mat = A[i, j]``. ``mat`` is simply a ``3 x 2`` matrix
 * To get the element on the first row and second column of that matrix, use ``mat[0, 1]`` or ``A[i, j][0, 1]``.

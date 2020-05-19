@@ -4,10 +4,13 @@ on:
     types: [opened, synchronize, reopened]
     paths:
       - '**.h'
+      - '**.c'
       - '**.cpp'
       - '**.py'
       - '**.rst'
       - '**.md'
+      - '**.txt'
+      - '**.cmake'
       - '!examples/**.py'
 
 jobs:

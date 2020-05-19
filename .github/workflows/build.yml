@@ -2,6 +2,16 @@ name: Build Check
 on:
   pull_request:
     types: [opened, synchronize, reopened]
+    paths:
+      - '**.h'
+      - '**.c'
+      - '**.cpp'
+      - '**.py'
+      - '**.cmake'
+      - '**CMake**'
+      - '!examples/**'
+      - '!misc/**'
+      - '!benchmarks/**'
 
 jobs:
   build_linux:

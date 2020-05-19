@@ -4,7 +4,7 @@ Structural nodes (SNodes)
 =========================
 
 After writing the computation code, the user needs to specify the internal data structure hierarchy. Specifying a data structure includes choices at both the macro level, dictating how the data structure components nest with each other and the way they represent sparsity, and the micro level, dictating how data are grouped together (e.g. structure of arrays vs. array of structures).
-Our language provides *structural nodes (SNodes)* to compose the hierarchy and particular properties. These constructs and their semantics are listed below:
+Taichi provides *Structural Nodes (SNodes)* to compose the hierarchy and particular properties. These constructs and their semantics are listed below:
 
 * dense: A fixed-length contiguous array.
 

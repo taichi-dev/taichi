@@ -523,7 +523,6 @@ GLSLLauncher::GLSLLauncher(size_t size) {
 
 void GLSLLauncher::synchronize() {
   impl->root_ssbo->sync();
-  impl->gtmp_ssbo->sync();
   impl->runtime_ssbo->sync();
   for (auto &s: impl->ssbo) {
     s.sync();

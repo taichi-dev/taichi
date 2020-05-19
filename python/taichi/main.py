@@ -74,7 +74,7 @@ def test_cpp(args):
 
 
 def run_example(name: str):
-    """Run an example based on example NAME."""
+    """Run an example based on the example NAME."""
     import taichi as ti
     from pathlib import Path
 

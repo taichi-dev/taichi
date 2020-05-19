@@ -215,7 +215,7 @@ class Installer:
                     execute_command('sudo apt-get update')
                     if self.build_type == 'ci':
                         execute_command(
-                            'sudo apt-get install -y python3-dev libx11-dev')
+                            'sudo apt-get install -y python3-dev libx11-dev libxrandr-dev')
                     else:
                         execute_command(
                             'sudo apt-get install -y python3-dev git build-essential cmake make g++ libx11-dev'

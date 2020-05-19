@@ -54,8 +54,7 @@ int opengl_get_threads_per_group() {
 }
 
 KernelParallelAttrib::KernelParallelAttrib(int num_threads_)
-    : num_threads(num_threads_)
-{
+    : num_threads(num_threads_) {
   threads_per_group = opengl_get_threads_per_group();
   if (num_threads == -1) {  // is dyn loop
     num_groups = -1;
@@ -367,9 +366,7 @@ struct CompiledKernel {
                           const std::string &kernel_source_code,
                           const KernelParallelAttrib &kpa_,
                           const UsedFeature &used_)
-      : kernel_name(kernel_name_),
-        kpa(std::move(kpa_)),
-        used(used_) {
+      : kernel_name(kernel_name_), kpa(std::move(kpa_)), used(used_) {
     display_kernel_info(kernel_name_, kernel_source_code, kpa);
     glsl = std::make_unique<GLProgram>(GLShader(kernel_source_code));
     glsl->link();
@@ -377,7 +374,7 @@ struct CompiledKernel {
 
   void dispatch_compute(GLSLLaunchGuard &guard) const {
     int num_groups;
-    if (kpa.is_dynamic()) {  // TODO: grid-stride-loop
+    if (kpa.is_dynamic()) {                      // TODO: grid-stride-loop
       void *gtmp_now = guard.map_gtmp_buffer();  // TODO: wrap impl.static_ssbo
       num_groups = kpa.eval((const void *)gtmp_now);
       guard.unmap_gtmp_buffer();  // TODO: RAII
@@ -430,7 +427,8 @@ struct CompiledProgram::Impl {
 
   void launch(Context &ctx, GLSLLauncher *launcher) const {
     std::vector<IOV> iov;
-    iov.push_back(IOV{ctx.args, std::max(arg_count, ret_count) * sizeof(uint64_t)});
+    iov.push_back(
+        IOV{ctx.args, std::max(arg_count, ret_count) * sizeof(uint64_t)});
     std::vector<char> base_arr;
     std::vector<void *> saved_ctx_ptrs;
     // TODO: these dirty codes are introduced by #694
@@ -528,7 +526,7 @@ GLSLLaunchGuard::GLSLLaunchGuard(GLSLLauncherImpl *impl,
   for (int i = 0; i < impl->ssbo.size(); i++) {
     if (!iov[i].size)
       continue;
-    impl->ssbo[i].bind_index(i + 2);  // skip root and gtmp
+    impl->ssbo[i].bind_index(i + 2);                    // skip root and gtmp
     impl->ssbo[i].bind_data(iov[i].base, iov[i].size);  // input
   }
 }

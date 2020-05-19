@@ -20,11 +20,11 @@ Create a window
     Create a window.
     If ``res`` is scalar, then width will be equal to height.
 
-    This creates a window whose width is 1024 and height is 768:
+    The following code creates a window of resolution ``640x360``:
 
     ::
 
-        gui = ti.GUI('Window Title', (1024, 768))
+        gui = ti.GUI('Window Title', (640, 360))
 
 
 .. function:: gui.show(filename = None)
@@ -57,7 +57,8 @@ Paint on a window
 
     Set an image to display on the window.
 
-    The window pixels, ``i`` from left to right, ``j`` from bottom to top, are set to the values of ``img[i, j]``.
+    The image pixels are set from the values of ``img[i, j]``, where ``i`` indicates the horizontal
+    coordinates (from left to right) and ``j`` the vertical coordinates (from bottom to top).
 
 
     If the window size is ``(x, y)``, then ``img`` must be one of:
@@ -75,15 +76,20 @@ Paint on a window
 
     The data type of ``img`` must be one of:
 
-    * ``float32``, range ``[0, 1]``
-
-    * ``float64``, range ``[0, 1]``
-
     * ``uint8``, range ``[0, 255]``
 
     * ``uint16``, range ``[0, 65535]``
 
     * ``uint32``, range ``[0, 4294967295]``
+
+    * ``float32``, range ``[0, 1]``
+
+    * ``float64``, range ``[0, 1]``
+
+    .. note ::
+
+        When using ``float32`` or ``float64`` as the data type,
+        ``img`` entries will be clipped into range ``[0, 1]``.
 
 
 .. function:: gui.circle(pos, color = 0xFFFFFF, radius = 1)
@@ -101,14 +107,14 @@ Paint on a window
     :parameter gui: (GUI) the window object
     :parameter pos: (np.array) the positions of the circles
     :parameter color: (optional, RGB hex or np.array of uint32) the color(s) to fill the circles
-    :parameter radius: (optional, scalar) the radius (radii) of the circles
+    :parameter radius: (optional, scalar or np.array of float32) the radius (radii) of the circles
 
     Draw solid circles.
 
 .. note::
 
-    If ``color`` is a numpy array, circle at ``pos[i]`` will be colored with ``color[i]``,
-    so in this case ``color`` must have the same number of elements as ``pos``.
+    If ``color`` is a numpy array, the circle at ``pos[i]`` will be colored with ``color[i]``.
+    In this case, ``color`` must have the same size as ``pos``.
 
 
 .. function:: gui.line(begin, end, color = 0xFFFFFF, radius = 1)

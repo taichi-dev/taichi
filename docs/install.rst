@@ -33,7 +33,7 @@ CUDA issues
         [E 05/14/20 10:46:49.911] Received signal 7 (Bus error)
 
 
-  This may be because your NVIDIA card is pre-Pascal and does not support `Unified Memory <https://www.nextplatform.com/2019/01/24/unified-memory-the-final-piece-of-the-gpu-programming-puzzle/>`_.
+  This might be due to the fact that your NVIDIA GPU is pre-Pascal and has limited support for `Unified Memory <https://www.nextplatform.com/2019/01/24/unified-memory-the-final-piece-of-the-gpu-programming-puzzle/>`_.
 
   * **Possible solution**: add ``export TI_USE_UNIFIED_MEMORY=0`` to your ``~/.bashrc``. This disables unified memory usage in CUDA backend.
 
@@ -65,7 +65,7 @@ OpenGL issues
 
   This is likely because you are running Taichi on a (virtual) machine with an old OpenGL API. Taichi requires OpenGL 4.3+ to work.
 
-  * **Possible solution**: add ``export TI_ENABLE_OPENGL=0`` to your  ``~/.bashrc``, even if you don't initialize Taichi with OpenGL (``ti.init(arch=ti.opengl)``). This disables the OpenGL backend detection to avoid incompatibilities.
+  * **Possible solution**: add ``export TI_ENABLE_OPENGL=0`` to your  ``~/.bashrc`` even if you initialize Taichi with other backends than OpenGL. This disables the OpenGL backend detection to avoid incompatibilities.
 
 
 Linux issues

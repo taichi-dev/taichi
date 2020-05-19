@@ -44,6 +44,7 @@ details = {
     'test': 'Tests',
     'benchmark': 'Benchmarking',
     'async': 'AsyncEngine',
+    'workflow': 'GitHub Actions/Workflows',
     'release': '',
 }
 

@@ -1,6 +1,7 @@
 name: Build Check
 on:
   pull_request:
+    types: [opened, synchronize, reopened]
     #    paths:
     #      - 'a.txt'
     #      - '**.h'

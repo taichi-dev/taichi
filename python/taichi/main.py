@@ -73,7 +73,7 @@ def test_cpp(args):
     return int(task.run(*test_files))
 
 
-def run_example(name: str):
+def run_example(name: list):
     """Run an example based on the example NAME."""
     import taichi as ti
     from pathlib import Path
@@ -86,12 +86,16 @@ def run_example(name: str):
         str(f.resolve()).split('/')[-1].split('.')[0]
         for f in all_examples
     }
-
-    if not name in all_example_names:
+    if not len(name) == 1:
         sys.exit(
-            f"Sorry, {name} is not an available example name!\nAvailable examples names: {all_example_names}"
+            f"Sorry, please specify a name of example!\nAvailable examples names are: {all_example_names}"
         )
-    importlib.import_module(f"examples.{name}")
+    elif name[0] not in all_example_names:
+        sys.exit(
+            f"Sorry, {name} is not an available example name!\nAvailable examples names are: {all_example_names}"
+        )
+    print(f"Running example {name[0]} ...")
+    importlib.import_module(f"examples.{name[0]}")
 
 
 def get_benchmark_baseline_dir():
@@ -469,8 +473,7 @@ def main(debug=False):
         import shutil
         shutil.move('release.zip', fn)
     elif mode == "example":
-        example = sys.argv[2]
-        print(f"Running example {example} ...")
+        example = sys.argv[2:]
         run_example(name=example)
     else:
         name = sys.argv[1]

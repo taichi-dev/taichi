@@ -1,19 +1,7 @@
 name: Code Format Check
-on: push #pull_request
-#on:
-#  pull_request:
-#    types: [opened, synchronize, reopened]
-#    paths:
-#      - '**.h'
-#      - '**.c'
-#      - '**.cpp'
-#      - '**.py'
-#      - '**.rst'
-#      - '**.md'
-#      - '**.txt'
-#      - '**.cmake'
-#    paths-ignore:
-#      - 'examples/**'
+on:
+  #pull_request:
+  #  types: [opened, synchronize, reopened]
 
 jobs:
   code_format:

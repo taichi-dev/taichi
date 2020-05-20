@@ -629,7 +629,7 @@ struct NodeManager {
 extern "C" {
 
 void LLVMRuntime_store_result(LLVMRuntime *runtime, u64 ret) {
-  *(u64 *)(runtime->result_buffer) = ret;
+  runtime->set_result(taichi_result_buffer_ret_value_id, ret);
 }
 
 void LLVMRuntime_profiler_start(LLVMRuntime *runtime, Ptr kernel_name) {

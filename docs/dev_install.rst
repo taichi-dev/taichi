@@ -34,7 +34,7 @@ Installing Depedencies
     mkdir build
     cd build
     cmake ..
-    make -j 8
+    make -j$(nproc)
     sudo make install
 
 
@@ -49,7 +49,7 @@ Installing Depedencies
     cd build
     cmake .. -DLLVM_ENABLE_RTTI:BOOL=ON -DBUILD_SHARED_LIBS:BOOL=OFF -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD="X86;NVPTX" -DLLVM_ENABLE_ASSERTIONS=ON
     # If you are building on NVIDIA Jetson TX2, use -DLLVM_TARGETS_TO_BUILD="ARM;NVPTX"
-    make -j 8
+    make -j$(nproc)
     sudo make install
 
 Setting up CUDA (optional)
@@ -75,9 +75,12 @@ Setting up Taichi for development
     mkdir build
     cd build
     cmake ..
+    # if you donot set clang as the default compiler in Linux
+    # use the line below:
+    #   cmake .. -DCMAKE_CXX_COMPILER=clang-8
     # if you are building with CUDA 10.0, use the line below:
     #   cmake .. -DCUDA_VERSION=10.0 -DTI_WITH_CUDA:BOOL=True
-    make -j 8
+    make -j$(nproc)
 
 - Add the following script to your ``~/.bashrc``:
 

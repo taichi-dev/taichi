@@ -1,7 +1,7 @@
 name: Comment Hooks
 on:
   issue_comment:
-    types: [created, edited]
+    types: [created]
 
 jobs:
   format:

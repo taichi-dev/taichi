@@ -1,19 +1,20 @@
 name: Build Check
-on:
-  pull_request:
-    types: [opened, synchronize, reopened]
-    paths:
-      - 'a.txt'
-      - '**.h'
-      - '**.c'
-      - '**.cpp'
-      - '**.py'
-      - '**.cmake'
-      - 'CMakeLists.txt'
-    paths-ignore:
-      - 'examples/**'
-      - 'misc/**'
-      - 'benchmarks/**'
+on: pull_request
+#on:
+#  pull_request:
+#    types: [opened, synchronize, reopened]
+#    paths:
+#      - 'a.txt'
+#      - '**.h'
+#      - '**.c'
+#      - '**.cpp'
+#      - '**.py'
+#      - '**.cmake'
+#      - 'CMakeLists.txt'
+#    paths-ignore:
+#      - 'examples/**'
+#      - 'misc/**'
+#      - 'benchmarks/**'
 
 jobs:
   build_linux:

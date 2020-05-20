@@ -300,9 +300,7 @@ def layout(func):
 
 
 def ti_print(var):
-    code = inspect.getframeinfo(inspect.currentframe().f_back).code_context[0]
-    arg_name = code[code.index('(') + 1:code.rindex(')')]
-    taichi_lang_core.print_(Expr(var).ptr, arg_name)
+    taichi_lang_core.create_print(Expr(var).ptr)
 
 
 def ti_int(var):

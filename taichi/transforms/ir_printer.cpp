@@ -182,7 +182,7 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(FrontendPrintStmt *print_stmt) override {
-    print("print \"{}\", {}", print_stmt->str, print_stmt->expr.serialize());
+    print("print {}", print_stmt->contents[0].serialize());
   }
 
   void visit(FrontendEvalStmt *stmt) override {
@@ -190,8 +190,7 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(PrintStmt *print_stmt) override {
-    print("{}print {}, {}", print_stmt->type_hint(), print_stmt->str,
-          print_stmt->stmt->name());
+    print("print {}", print_stmt->contents[0]->name());
   }
 
   void visit(ConstStmt *const_stmt) override {

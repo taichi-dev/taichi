@@ -648,8 +648,9 @@ void CodeGenLLVM::visit(PrintStmt *stmt) {
   TI_ASSERT(stmt->width() == 1);
   std::vector<Value *> args;
   std::string format;
-  auto value = llvm_val[stmt->stmt];
-  auto dt = stmt->stmt->ret_type.data_type;
+  auto content = stmt->contents[0];
+  auto value = llvm_val[content];
+  auto dt = content->ret_type.data_type;
   if (dt == DataType::i32) {
     format = "%d";
   } else if (dt == DataType::i64) {
@@ -668,8 +669,7 @@ void CodeGenLLVM::visit(PrintStmt *stmt) {
   }
   auto runtime_printf = call("LLVMRuntime_get_host_printf", get_runtime());
   args.push_back(builder->CreateGlobalStringPtr(
-      ("[debug] " + stmt->str + " = " + format + "\n").c_str(),
-      "format_string"));
+      ("[debug] " + format + "\n").c_str(), "format_string"));
   args.push_back(value);
 
   llvm_val[stmt] = builder->CreateCall(runtime_printf, args);

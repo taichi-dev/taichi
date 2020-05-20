@@ -107,21 +107,23 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
   void visit(PrintStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
 
-    auto value_type = tlctx->get_data_type(stmt->stmt->ret_type.data_type);
+    auto content = stmt->contents[0];
+
+    auto value_type = tlctx->get_data_type(content->ret_type.data_type);
 
     std::string format;
 
-    auto value = llvm_val[stmt->stmt];
+    auto value = llvm_val[content];
 
-    if (stmt->stmt->ret_type.data_type == DataType::i32) {
+    if (content->ret_type.data_type == DataType::i32) {
       format = "%d";
-    } else if (stmt->stmt->ret_type.data_type == DataType::i64) {
+    } else if (content->ret_type.data_type == DataType::i64) {
       format = "%lld";
-    } else if (stmt->stmt->ret_type.data_type == DataType::f32) {
+    } else if (content->ret_type.data_type == DataType::f32) {
       value_type = llvm::Type::getDoubleTy(*llvm_context);
       value = builder->CreateFPExt(value, value_type);
       format = "%f";
-    } else if (stmt->stmt->ret_type.data_type == DataType::f64) {
+    } else if (content->ret_type.data_type == DataType::f64) {
       format = "%.12f";
     } else {
       TI_NOT_IMPLEMENTED
@@ -134,7 +136,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
         values, {tlctx->get_constant(0), tlctx->get_constant(0)});
     builder->CreateStore(value, value_ptr);
 
-    auto format_str = "[debug] " + stmt->str + " = " + format + "\n";
+    auto format_str = "[debug] " + format + "\n";
 
     llvm_val[stmt] = LLVMModuleBuilder::call(
         builder.get(), "vprintf",

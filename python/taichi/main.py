@@ -86,7 +86,7 @@ def run_example(name: list):
         str(f.resolve()).split('/')[-1].split('.')[0]
         for f in all_examples
     }
-    if not len(name) == 1:
+    if len(name) != 1:
         sys.exit(
             f"Sorry, please specify a name of example!\nAvailable examples names are: {all_example_names}"
         )

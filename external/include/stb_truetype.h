@@ -1,3 +1,8 @@
+/*******************************************************************************
+     Copyright (c) 2016 The Taichi Authors
+     Use of this software is governed by the LICENSE file.
+*******************************************************************************/
+
 // stb_truetype.h - v1.13 - public domain
 // authored from 2009-2016 by Sean Barrett / RAD Game Tools
 //

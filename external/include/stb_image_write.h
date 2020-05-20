@@ -1,3 +1,8 @@
+/*******************************************************************************
+     Copyright (c) 2016 The Taichi Authors
+     Use of this software is governed by the LICENSE file.
+*******************************************************************************/
+
 /* stb_image_write - v1.07 - public domain - http://nothings.org/stb/stb_image_write.h
    writes out PNG/BMP/TGA/JPEG/HDR images to C stdio - Sean Barrett 2010-2015
                                      no warranty implied; use at your own risk

@@ -1,3 +1,8 @@
+/*******************************************************************************
+     Copyright (c) 2020 The Taichi Authors
+     Use of this software is governed by the LICENSE file.
+*******************************************************************************/
+
 // Driver class for source2source kernel codegen. This file is OBSOLETE
 
 #pragma once

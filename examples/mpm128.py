@@ -1,3 +1,6 @@
+# Copyright (c) 2020 The Taichi Authors
+# Use of this software is governed by the LICENSE file.
+
 import taichi as ti
 import numpy as np
 ti.init(arch=ti.gpu) # Try to run on GPU

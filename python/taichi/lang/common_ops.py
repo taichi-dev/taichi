@@ -1,3 +1,6 @@
+# Copyright (c) 2020 The Taichi Authors
+# Use of this software is governed by the LICENSE file.
+
 class TaichiOperations:
     def __neg__(self):
         import taichi as ti

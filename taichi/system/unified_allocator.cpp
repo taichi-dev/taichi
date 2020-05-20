@@ -1,3 +1,8 @@
+/*******************************************************************************
+     Copyright (c) 2020 The Taichi Authors
+     Use of this software is governed by the LICENSE file.
+*******************************************************************************/
+
 // Virtual memory allocator for CPU/GPU
 
 #if defined(TI_WITH_CUDA)

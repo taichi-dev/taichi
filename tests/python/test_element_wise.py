@@ -1,3 +1,6 @@
+# Copyright (c) 2020 The Taichi Authors
+# Use of this software is governed by the LICENSE file.
+
 import taichi as ti
 from taichi import approx
 from random import random, randint, seed

@@ -1,3 +1,8 @@
+/*******************************************************************************
+     Copyright (c) 2020 The Taichi Authors
+     Use of this software is governed by the LICENSE file.
+*******************************************************************************/
+
 PER_UNARY_OP(neg)
 PER_UNARY_OP(sqrt)
 PER_UNARY_OP(floor)

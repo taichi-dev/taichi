@@ -1,3 +1,8 @@
+/*******************************************************************************
+     Copyright (c) 2020 The Taichi Authors
+     Use of this software is governed by the LICENSE file.
+*******************************************************************************/
+
 // Intermediate representations
 
 #include "taichi/ir/ir.h"

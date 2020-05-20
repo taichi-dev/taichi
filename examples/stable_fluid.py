@@ -1,3 +1,6 @@
+# Copyright (c) 2020 The Taichi Authors
+# Use of this software is governed by the LICENSE file.
+
 # References:
 # http://developer.download.nvidia.com/books/HTML/gpugems/gpugems_ch38.html
 # https://github.com/PavelDoGreat/WebGL-Fluid-Simulation

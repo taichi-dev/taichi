@@ -1,3 +1,8 @@
+/*******************************************************************************
+     Copyright (c) 2020 The Taichi Authors
+     Use of this software is governed by the LICENSE file.
+*******************************************************************************/
+
 #include "objc_api.h"
 
 #ifdef TI_PLATFORM_OSX

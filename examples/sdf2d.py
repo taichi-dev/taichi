@@ -1,3 +1,6 @@
+# Copyright (c) 2020 The Taichi Authors
+# Use of this software is governed by the LICENSE file.
+
 import taichi as ti
 from math import tau
 from renderer_utils import reflect, refract

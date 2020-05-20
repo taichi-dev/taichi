@@ -1,3 +1,6 @@
+// Copyright (c) 2019 The Taichi Authors
+// Use of this software is governed by the LICENSE file.
+
 #include <curand.h>
 #include <curand_kernel.h>
 #include <cuda_runtime.h>

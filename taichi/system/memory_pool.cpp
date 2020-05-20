@@ -1,3 +1,8 @@
+/*******************************************************************************
+     Copyright (c) 2020 The Taichi Authors
+     Use of this software is governed by the LICENSE file.
+*******************************************************************************/
+
 #include "memory_pool.h"
 #include "taichi/system/timer.h"
 #include "taichi/program/program.h"

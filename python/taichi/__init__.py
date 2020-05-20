@@ -1,3 +1,6 @@
+# Copyright (c) 2016 The Taichi Authors
+# Use of this software is governed by the LICENSE file.
+
 from taichi.main import main
 from taichi.core import ti_core
 from taichi.core import start_memory_monitoring, is_release, package_root

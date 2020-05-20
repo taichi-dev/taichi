@@ -1,3 +1,8 @@
+/*******************************************************************************
+     Copyright (c) 2016 The Taichi Authors
+     Use of this software is governed by the LICENSE file.
+*******************************************************************************/
+
 /* stb_image - v2.16 - public domain image loader - http://nothings.org/stb_image.h
                                      no warranty implied; use at your own risk
 

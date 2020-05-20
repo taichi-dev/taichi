@@ -1,3 +1,6 @@
+# Copyright (c) 2020 The Taichi Authors
+# Use of this software is governed by the LICENSE file.
+
 from git import Repo
 import os
 repo_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../')

@@ -54,8 +54,7 @@ int opengl_get_threads_per_group() {
 }
 
 KernelParallelAttrib::KernelParallelAttrib(int num_threads_)
-    : num_threads(num_threads_)
-{
+    : num_threads(num_threads_) {
   threads_per_group = opengl_get_threads_per_group();
   if (num_threads == -1) {  // is dyn loop
     num_groups = -1;
@@ -367,9 +366,7 @@ struct CompiledKernel {
                           const std::string &kernel_source_code,
                           const KernelParallelAttrib &kpa_,
                           const UsedFeature &used_)
-      : kernel_name(kernel_name_),
-        kpa(std::move(kpa_)),
-        used(used_) {
+      : kernel_name(kernel_name_), kpa(std::move(kpa_)), used(used_) {
     display_kernel_info(kernel_name_, kernel_source_code, kpa);
     glsl = std::make_unique<GLProgram>(GLShader(kernel_source_code));
     glsl->link();
@@ -377,10 +374,10 @@ struct CompiledKernel {
 
   void dispatch_compute(GLSLLaunchGuard &guard) const {
     int num_groups;
-    if (kpa.is_dynamic()) {
-      auto *gtmp_now = guard.map_buffer(1);  // TODO: RAII
+    if (kpa.is_dynamic()) {                      // TODO: grid-stride-loop
+      void *gtmp_now = guard.map_gtmp_buffer();  // TODO: wrap impl.static_ssbo
       num_groups = kpa.eval((const void *)gtmp_now);
-      guard.unmap_buffer(1);
+      guard.unmap_gtmp_buffer();  // TODO: RAII
     } else {
       num_groups = kpa.num_groups;
     }
@@ -408,9 +405,8 @@ struct CompiledProgram::Impl {
   std::vector<std::unique_ptr<CompiledKernel>> kernels;
   int arg_count, ret_count;
   std::map<int, size_t> ext_arr_map;
-  size_t gtmp_size;
 
-  Impl(Kernel *kernel, size_t gtmp_size) : gtmp_size(gtmp_size) {
+  Impl(Kernel *kernel) {
     arg_count = kernel->args.size();
     ret_count = kernel->rets.size();
     for (int i = 0; i < arg_count; i++) {
@@ -430,10 +426,8 @@ struct CompiledProgram::Impl {
 
   void launch(Context &ctx, GLSLLauncher *launcher) const {
     std::vector<IOV> iov;
-    iov.push_back(IOV{ctx.args, std::max(arg_count, ret_count) * sizeof(uint64_t)});
-    auto gtmp_arr = std::vector<char>(gtmp_size);
-    void *gtmp_base = gtmp_arr.data();  // std::calloc(gtmp_size, 1);
-    iov.push_back(IOV{gtmp_base, gtmp_size});
+    iov.push_back(
+        IOV{ctx.args, std::max(arg_count, ret_count) * sizeof(uint64_t)});
     std::vector<char> base_arr;
     std::vector<void *> saved_ctx_ptrs;
     // TODO: these dirty codes are introduced by #694
@@ -490,23 +484,33 @@ struct GLSLRuntime {
 struct GLSLLauncherImpl {
   std::unique_ptr<GLSSBO> root_ssbo;
   std::unique_ptr<GLSSBO> runtime_ssbo;
+  std::unique_ptr<GLSSBO> gtmp_ssbo;
   std::vector<GLSSBO> ssbo;
   std::vector<char> root_buffer;
+  std::vector<char> gtmp_buffer;
   std::unique_ptr<GLSLRuntime> runtime;
   std::vector<std::unique_ptr<CompiledProgram>> programs;
 };
 
-GLSLLauncher::GLSLLauncher(size_t size) {
+GLSLLauncher::GLSLLauncher(size_t root_size) {
   initialize_opengl();
   impl = std::make_unique<GLSLLauncherImpl>();
-  impl->root_ssbo = std::make_unique<GLSSBO>();
+
   impl->runtime_ssbo = std::make_unique<GLSSBO>();
   impl->runtime = std::make_unique<GLSLRuntime>();
-  impl->root_buffer.resize(size, 0);
-  impl->root_ssbo->bind_data(impl->root_buffer.data(), size);
-  impl->root_ssbo->bind_index(0);
   impl->runtime_ssbo->bind_data(impl->runtime.get(), sizeof(GLSLRuntime));
   impl->runtime_ssbo->bind_index(6);
+
+  impl->root_ssbo = std::make_unique<GLSSBO>();
+  impl->root_buffer.resize(root_size, 0);
+  impl->root_ssbo->bind_data(impl->root_buffer.data(), root_size);
+  impl->root_ssbo->bind_index(0);
+
+  impl->gtmp_ssbo = std::make_unique<GLSSBO>();
+  impl->gtmp_buffer.resize(taichi_global_tmp_buffer_size, 0);
+  impl->gtmp_ssbo->bind_data(impl->gtmp_buffer.data(),
+                             taichi_global_tmp_buffer_size);
+  impl->gtmp_ssbo->bind_index(1);
 }
 
 void GLSLLauncher::keep(std::unique_ptr<CompiledProgram> program) {
@@ -521,7 +525,7 @@ GLSLLaunchGuard::GLSLLaunchGuard(GLSLLauncherImpl *impl,
   for (int i = 0; i < impl->ssbo.size(); i++) {
     if (!iov[i].size)
       continue;
-    impl->ssbo[i].bind_index(i + 1);
+    impl->ssbo[i].bind_index(i + 2);                    // skip root and gtmp
     impl->ssbo[i].bind_data(iov[i].base, iov[i].size);  // input
   }
 }
@@ -534,6 +538,15 @@ void *GLSLLaunchGuard::map_buffer(size_t idx) {
 
 void GLSLLaunchGuard::unmap_buffer(size_t idx) {
   impl->ssbo[idx].unmap();
+}
+
+void *GLSLLaunchGuard::map_gtmp_buffer() {
+  void *p = impl->gtmp_ssbo->map();
+  return p;
+}
+
+void GLSLLaunchGuard::unmap_gtmp_buffer() {
+  impl->gtmp_ssbo->unmap();
 }
 
 GLSLLaunchGuard::~GLSLLaunchGuard() {
@@ -557,7 +570,7 @@ struct GLProgram {};
 struct GLSLLauncherImpl {};
 
 struct CompiledProgram::Impl {
-  Impl(Kernel *kernel, size_t gtmp_size) {
+  Impl(Kernel *kernel) {
     TI_NOT_IMPLEMENTED;
   }
 
@@ -607,14 +620,22 @@ void GLSLLaunchGuard::unmap_buffer(size_t idx) {
   TI_NOT_IMPLEMENTED;
 }
 
+void *GLSLLaunchGuard::map_gtmp_buffer() {
+  TI_NOT_IMPLEMENTED;
+}
+
+void GLSLLaunchGuard::unmap_gtmp_buffer() {
+  TI_NOT_IMPLEMENTED;
+}
+
 KernelParallelAttrib::KernelParallelAttrib(int num_threads_) {
   TI_NOT_IMPLEMENTED;
 }
 
 #endif  // TI_WITH_OPENGL
 
-CompiledProgram::CompiledProgram(Kernel *kernel, size_t gtmp_size)
-    : impl(std::make_unique<Impl>(kernel, gtmp_size)) {
+CompiledProgram::CompiledProgram(Kernel *kernel)
+    : impl(std::make_unique<Impl>(kernel)) {
 }
 
 CompiledProgram::~CompiledProgram() = default;

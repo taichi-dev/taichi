@@ -62,7 +62,7 @@ The suggested workflow for the performance related PR author to run the regressi
 * Run ``git checkout -b your-branch-name``.
 
 * Do works on the issue, stage 1.
-  
+
 * Run ``ti benchmark && ti regression`` to obtain the result.
 
 * (If result BAD) Do further improvements, until the result is satisfying.

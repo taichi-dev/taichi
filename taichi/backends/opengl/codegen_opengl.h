@@ -35,7 +35,6 @@ class OpenglCodeGen {
   Kernel *kernel_;
   [[maybe_unused]] StructCompiledResult *struct_compiled_;
   [[maybe_unused]] GLSLLauncher *kernel_launcher_;
-  size_t global_tmps_buffer_size_{0};
 };
 
 }  // namespace opengl

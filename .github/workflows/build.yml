@@ -10,9 +10,9 @@ on:
       - '**.py'
       - '**.cmake'
       - 'CMakeLists.txt'
+      - '.github/workflows/build.yml'
     paths-ignore:
       - 'examples/**'
-      - 'misc/**'
       - 'benchmarks/**'
 
 jobs:

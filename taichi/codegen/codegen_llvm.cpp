@@ -644,33 +644,45 @@ llvm::Value *CodeGenLLVM::create_print(std::string tag,
   return builder->CreateCall(runtime_printf, args);
 }
 
-void CodeGenLLVM::visit(PrintStmt *stmt) {
-  TI_ASSERT(stmt->width() == 1);
-  std::vector<Value *> args;
-  std::string format;
-  auto content = stmt->contents[0];
-  auto value = llvm_val[content];
-  auto dt = content->ret_type.data_type;
+namespace {
+// TODO: move this to a common header:
+std::string choose_format(DataType dt) {
   if (dt == DataType::i32) {
-    format = "%d";
+    return "%d";
   } else if (dt == DataType::i64) {
 #if defined(TI_PLATFORM_UNIX)
-    format = "%lld";
+    return "%lld";
 #else
-    format = "%I64d";
+    return "%I64d";
 #endif
   } else if (dt == DataType::f32) {
-    format = "%f";
-    value = builder->CreateFPExt(value, tlctx->get_data_type(DataType::f64));
+    return "%f";
   } else if (dt == DataType::f64) {
-    format = "%.12f";
+    return "%.12f";
   } else {
     TI_NOT_IMPLEMENTED
   }
+}
+}  // namespace
+
+void CodeGenLLVM::visit(PrintStmt *stmt) {
+  TI_ASSERT(stmt->width() == 1);
+  std::vector<Value *> args;
+  std::string formats;
+  for (auto &content : stmt->contents) {
+    auto value = llvm_val[content];
+    if (content->ret_type.data_type == DataType::f32)
+      value = builder->CreateFPExt(value, tlctx->get_data_type(DataType::f64));
+    args.push_back(value);
+
+    if (formats.size() != 0)  // not the first expr?
+      formats += " ";         // add seperator
+    formats += choose_format(content->ret_type.data_type);
+  }
   auto runtime_printf = call("LLVMRuntime_get_host_printf", get_runtime());
-  args.push_back(builder->CreateGlobalStringPtr(
-      ("[debug] " + format + "\n").c_str(), "format_string"));
-  args.push_back(value);
+  args.insert(args.begin(),
+              builder->CreateGlobalStringPtr(
+                  ("[debug] " + formats + "\n").c_str(), "format_string"));
 
   llvm_val[stmt] = builder->CreateCall(runtime_printf, args);
 }

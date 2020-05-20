@@ -299,8 +299,8 @@ def layout(func):
     pytaichi.layout_functions.append(func)
 
 
-def ti_print(var):
-    taichi_lang_core.create_print(Expr(var).ptr)
+def ti_print(*vars):
+    taichi_lang_core.create_print([Expr(var).ptr for var in vars])
 
 
 def ti_int(var):

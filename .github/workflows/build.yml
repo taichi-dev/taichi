@@ -1,20 +1,19 @@
 name: Build Check
-on: pull_request
-#on:
-#  pull_request:
-#    types: [opened, synchronize, reopened]
-#    paths:
-#      - 'a.txt'
-#      - '**.h'
-#      - '**.c'
-#      - '**.cpp'
-#      - '**.py'
-#      - '**.cmake'
-#      - 'CMakeLists.txt'
-#    paths-ignore:
-#      - 'examples/**'
-#      - 'misc/**'
-#      - 'benchmarks/**'
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'a.txt'
+      - '**.h'
+      - '**.c'
+      - '**.cpp'
+      - '**.py'
+      - '**.cmake'
+      - 'CMakeLists.txt'
+    paths-ignore:
+      - 'examples/**'
+      - 'misc/**'
+      - 'benchmarks/**'
 
 jobs:
   build_linux:
@@ -37,9 +36,11 @@ jobs:
         run: |
           export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
           export CXX=clang++
+          export CI_SETUP_CMAKE_ARGS=-DTI_WITH_OPENGL:BOOL=OFF
           # GLFW dependencies:
-          sudo apt-get install libx11-dev libxcursor-dev libxi-dev
-          sudo apt-get install libxrandr-dev libxinerama-dev libglvnd-dev
+          #export CI_SETUP_CMAKE_ARGS=-DTI_WITH_OPENGL:BOOL=ON
+          #sudo apt-get install libx11-dev libxcursor-dev libxi-dev
+          #sudo apt-get install libxrandr-dev libxinerama-dev libglvnd-dev
           python misc/ci_setup.py ci
 
       - name: Functional Test

@@ -75,7 +75,7 @@ Setting up Taichi for development
     mkdir build
     cd build
     cmake ..
-    # if you donot set clang as the default compiler in Linux
+    # if you do not set clang as the default compiler
     # use the line below:
     #   cmake .. -DCMAKE_CXX_COMPILER=clang-8
     # if you are building with CUDA 10.0, use the line below:

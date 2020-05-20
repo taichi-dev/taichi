@@ -63,13 +63,6 @@ class JITModuleCUDA : public JITModule {
                                        block_dim);
   }
 
-  uint64 fetch_result_u64() override {
-    uint64 ret;
-    CUDADriver::get_instance().memcpy_device_to_host(
-        &ret, get_current_program().result_buffer, sizeof(ret));
-    return ret;
-  }
-
   bool direct_dispatch() const override {
     return false;
   }

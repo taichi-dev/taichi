@@ -167,7 +167,8 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
 
   if (config.arch == Arch::cuda && !config.use_unified_memory) {
 #if defined(TI_WITH_CUDA)
-    CUDADriver::get_instance().malloc(&result_buffer, sizeof(uint64));
+    CUDADriver::get_instance().malloc(
+        &result_buffer, sizeof(uint64) * taichi_result_buffer_entries);
     auto total_mem = runtime->get_total_memory();
     if (config.device_memory_fraction == 0) {
       TI_ASSERT(config.device_memory_GB > 0);
@@ -189,7 +190,8 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
     TI_NOT_IMPLEMENTED
 #endif
   } else {
-    result_buffer = taichi_allocate_aligned(this, 8, 8);
+    result_buffer = (uint64 *)taichi_allocate_aligned(
+        this, sizeof(uint64) * taichi_result_buffer_entries, 8);
     tlctx = llvm_context_host.get();
   }
   auto runtime = tlctx->runtime_jit_module;
@@ -209,12 +211,13 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
                                 (void *)std::printf, (void *)std::vsnprintf);
 
   TI_TRACE("LLVMRuntime initialized");
-  llvm_runtime = runtime->fetch_result<void *>();
+  llvm_runtime = fetch_result<void *>(taichi_result_buffer_ret_value_id);
   TI_TRACE("LLVMRuntime pointer fetched");
 
   if (arch_use_host_memory(config.arch) || config.use_unified_memory) {
     runtime->call<void *>("runtime_get_mem_req_queue", llvm_runtime);
-    auto mem_req_queue = runtime->fetch_result<void *>();
+    auto mem_req_queue =
+        fetch_result<void *>(taichi_result_buffer_ret_value_id);
     memory_pool->set_queue((MemRequestQueue *)mem_req_queue);
   }
 
@@ -310,11 +313,11 @@ void Program::check_runtime_error() {
   auto tlctx = llvm_context_host.get();
   auto runtime_jit_module = tlctx->runtime_jit_module;
   runtime_jit_module->call<void *>("runtime_retrieve_error_code", llvm_runtime);
-  auto error_code = runtime_jit_module->fetch_result<int64>();
+  auto error_code = fetch_result<int64>(taichi_result_buffer_error_id);
   if (error_code) {
     runtime_jit_module->call<void *>("runtime_retrieve_error_message",
                                      llvm_runtime);
-    auto error_message = runtime_jit_module->fetch_result<char *>();
+    auto error_message = fetch_result<char *>(taichi_result_buffer_error_id);
     if (error_code == 1) {
       TI_ERROR("Assertion failure: {}", error_message);
     } else {
@@ -490,16 +493,16 @@ uint64 Program::fetch_result_uint64(int i) {
 #if defined(TI_WITH_CUDA)
     if (config.use_unified_memory) {
       // More efficient than a cudaMemcpy call in practice
-      ret = ((uint64 *)result_buffer)[i];
+      ret = result_buffer[i];
     } else {
-      CUDADriver::get_instance().memcpy_device_to_host(
-          &ret, (uint64 *)result_buffer + i, sizeof(uint64));
+      CUDADriver::get_instance().memcpy_device_to_host(&ret, result_buffer + i,
+                                                       sizeof(uint64));
     }
 #else
     TI_NOT_IMPLEMENTED;
 #endif
   } else if (arch_is_cpu(arch)) {
-    ret = ((uint64 *)result_buffer)[i];
+    ret = result_buffer[i];
   } else {
     ret = context.get_arg_as_uint64(i);
   }
@@ -517,14 +520,14 @@ void Program::finalize() {
         output_dir = ".";
       std::string file_name = current_test;
       auto slash_pos = file_name.find_last_of('/');
-      if (slash_pos != file_name.npos)
+      if (slash_pos != std::string::npos)
         file_name = file_name.substr(slash_pos + 1);
       auto py_pos = file_name.find(".py::");
-      TI_ASSERT(py_pos != file_name.npos);
+      TI_ASSERT(py_pos != std::string::npos);
       file_name =
           file_name.substr(0, py_pos) + "__" + file_name.substr(py_pos + 5);
       auto first_space_pos = file_name.find_first_of(' ');
-      TI_ASSERT(first_space_pos != file_name.npos);
+      TI_ASSERT(first_space_pos != std::string::npos);
       file_name = file_name.substr(0, first_space_pos);
       file_name += ".dat";
       file_name = std::string(output_dir) + "/" + file_name;

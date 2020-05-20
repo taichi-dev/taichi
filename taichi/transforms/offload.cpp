@@ -11,7 +11,8 @@ TLANG_NAMESPACE_BEGIN
 namespace irpass {
 namespace {
 
-using StmtToOffsetMap = decltype(OffloadedResult::local_to_global_offset);
+// Offloaded local variables to its offset in the global tmps memory.
+using StmtToOffsetMap = std::unordered_map<const Stmt *, std::size_t>;
 
 std::unique_ptr<std::unordered_map<OffloadedStmt *, Stmt *>> begin_stmt,
     end_stmt;
@@ -264,15 +265,12 @@ class IdentifyValuesUsedInOtherOffloads : public BasicStmtVisitor {
     }
   }
 
-  static OffloadedResult run(
+  static StmtToOffsetMap run(
       IRNode *root,
       const std::unordered_map<Stmt *, Stmt *> &stmt_to_offloaded) {
     IdentifyValuesUsedInOtherOffloads pass(stmt_to_offloaded);
     root->accept(&pass);
-    OffloadedResult result;
-    result.total_size = pass.global_offset;
-    result.local_to_global_offset = std::move(pass.local_to_global);
-    return result;
+    return pass.local_to_global;
   }
 
  private:
@@ -591,18 +589,18 @@ class AssociateContinueScope : public BasicStmtVisitor {
 
 }  // namespace
 
-OffloadedResult offload(IRNode *root) {
-  OffloadedResult result;
+void offload(IRNode *root) {
   Offloader _(root);
   typecheck(root);
   fix_block_parents(root);
   {
     auto stmt_to_offloaded = StmtToOffloaded::run(root);
-    result = IdentifyValuesUsedInOtherOffloads::run(root, stmt_to_offloaded);
-    PromoteIntermediateToGlobalTmp::run(root, result.local_to_global_offset);
+    const auto local_to_global_offset =
+        IdentifyValuesUsedInOtherOffloads::run(root, stmt_to_offloaded);
+    PromoteIntermediateToGlobalTmp::run(root, local_to_global_offset);
     stmt_to_offloaded = StmtToOffloaded::run(root);
     FixCrossOffloadReferences::run(root, stmt_to_offloaded,
-                                   result.local_to_global_offset);
+                                   local_to_global_offset);
     fix_block_parents(root);
   }
   insert_gc(root);
@@ -612,7 +610,6 @@ OffloadedResult offload(IRNode *root) {
   typecheck(root);
   re_id(root);
   fix_block_parents(root);
-  return result;
 }
 
 }  // namespace irpass

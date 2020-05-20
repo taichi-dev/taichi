@@ -91,7 +91,7 @@ class Program {
   static std::atomic<int> num_instances;
   ThreadPool thread_pool;
   std::unique_ptr<MemoryPool> memory_pool;
-  uint64 *result_buffer;               // TODO: move this
+  uint64 *result_buffer;             // TODO: move this
   void *preallocated_device_buffer;  // TODO: move this to memory allocator
 
   std::unique_ptr<Runtime> runtime;

@@ -44,19 +44,28 @@ struct CompiledStructs {
   //     SNodeExtractors snode_extractors[max_snodes];
   //     ListManager snode_lists[max_snodes];
   //     uint32_t rand_seeds[kNumRandSeeds];
-  // }
-  // However, |runtime_size| is usually greater than sizeof(Runtime). That is
-  // because the memory is divided into two parts. The first part of
-  // sizeof(Runtime), as expected, is used to hold the Runtime struct. The
-  // second part is used to hold the data of |snode_lists|.
+  // };
   //
-  // |---- Runtime ----|--------------- snode_lists data ---------------|
-  // |<------------------------ runtime_size -------------------------->|
+  // If |need_snode_lists_data| is `true`, |runtime_size| will be greater than
+  // sizeof(Runtime). This is because the memory is divided into two parts. The
+  // first part, with size being sizeof(Runtime), is used to hold the Runtime
+  // struct as expected. The second part is used to hold the data of
+  // |snode_lists|.
   //
-  // The actual data address for the i-th ListManager is:
+  // |---- Runtime ----|--------------- |snode_lists| data ---------------|
+  // |<------------------------- runtime_size --------------------------->|
+  //
+  // The actual data address for the i-th ListManager is then:
   // runtime memory address + list[i].mem_begin
+  //
+  // Otherwise if |need_snode_lists_data| is `false`, |runtime_size| will be
+  // equal to sizeof(Runtime).
+  //
   // TODO(k-ye): See if Metal ArgumentBuffer can directly store the pointers.
   size_t runtime_size;
+  // In case there is no sparse SNode (e.g. bitmasked), we don't need to
+  // allocate the additional memory for |snode_lists|.
+  bool need_snode_lists_data;
   // max(ID of Root or Dense Snode) + 1
   int max_snodes;
   // Map from SNode ID to its descriptor.

@@ -491,6 +491,7 @@ class KernelManager::Impl {
   void init_runtime(int root_id) {
     using namespace shaders;
     char *addr = reinterpret_cast<char *>(runtime_mem_->ptr());
+    const char *const addr_begin = addr;
     const int max_snodes = compiled_structs_.max_snodes;
     const auto &snode_descriptors = compiled_structs_.snode_descriptors;
     // init snode_metas
@@ -522,7 +523,10 @@ class KernelManager::Impl {
           break;
       }
     }
-    addr += sizeof(SNodeMeta) * max_snodes;
+    size_t addr_offset = sizeof(SNodeMeta) * max_snodes;
+    addr += addr_offset;
+    TI_DEBUG("Initialized SNodeMeta, size={} accumuated={}", addr_offset,
+             (addr - addr_begin));
     // init snode_extractors
     for (int i = 0; i < max_snodes; ++i) {
       auto iter = snode_descriptors.find(i);
@@ -539,7 +543,10 @@ class KernelManager::Impl {
         rtm_ext->extractors[j].num_elements = ext.num_elements;
       }
     }
-    addr += sizeof(SNodeExtractors) * max_snodes;
+    addr_offset = sizeof(SNodeExtractors) * max_snodes;
+    addr += addr_offset;
+    TI_DEBUG("Initialized SNodeExtractors, size={} accumuated={}", addr_offset,
+             (addr - addr_begin));
     // init snode_lists
     ListManager *const rtm_list_head = reinterpret_cast<ListManager *>(addr);
     int list_data_mem_begin = 0;
@@ -562,7 +569,10 @@ class KernelManager::Impl {
       TI_DEBUG("ListManager\n  id={}\n  num_slots={}\n  mem_begin={}\n", i,
                rtm_list->max_num_elems, rtm_list->mem_begin);
     }
-    addr += sizeof(ListManager) * max_snodes;
+    addr_offset = sizeof(ListManager) * max_snodes;
+    addr += addr_offset;
+    TI_DEBUG("Initialized ListManager, size={} accumuated={}", addr_offset,
+             (addr - addr_begin));
     // init rand_seeds
     // TODO(k-ye): Provide a way to use a fixed seed in dev mode.
     std::mt19937 generator(
@@ -576,13 +586,18 @@ class KernelManager::Impl {
       *s = distr(generator);
       addr += sizeof(uint32_t);
     }
-    // root list data are static
-    ListgenElement root_elem;
-    root_elem.root_mem_offset = 0;
-    for (int i = 0; i < taichi_max_num_indices; ++i) {
-      root_elem.coords[i] = 0;
+    TI_DEBUG("Initialized random seeds, size={} accumuated={}",
+             kNumRandSeeds * sizeof(uint32_t), (addr - addr_begin));
+
+    if (compiled_structs_.need_snode_lists_data) {
+      // root list data are static
+      ListgenElement root_elem;
+      root_elem.root_mem_offset = 0;
+      for (int i = 0; i < taichi_max_num_indices; ++i) {
+        root_elem.coords[i] = 0;
+      }
+      append(rtm_list_head + root_id, root_elem, addr);
     }
-    append(rtm_list_head + root_id, root_elem, addr);
   }
 
   void create_new_command_buffer() {

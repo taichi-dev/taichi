@@ -75,6 +75,7 @@ class StructCompiler {
     emit_runtime_structs(&root);
     line_appender_.dump(&result.runtime_utils_source_code);
     result.runtime_size = compute_runtime_size();
+    result.need_snode_lists_data = has_sparse_snode_;
     result.max_snodes = max_snodes_;
     result.snode_descriptors = std::move(snode_descriptors_);
     TI_DEBUG("Metal: root_size={} runtime_size={}", result.root_size,
@@ -221,7 +222,7 @@ class StructCompiler {
     size_t result = (max_snodes_) *
                     (kSNodeMetaSize + kSNodeExtractorsSize + kListManagerSize);
     result += sizeof(uint32_t) * kNumRandSeeds;
-    TI_DEBUG("Metal runtime fields size: {} bytes", result);
+    TI_DEBUG("Metal sizeof(Runtime): {} bytes", result);
     if (has_sparse_snode_) {
       // We only need additional memory to hold sparsity information. Don't
       // allocate it if there is no sparse SNode at all.
@@ -232,6 +233,8 @@ class StructCompiler {
       const size_t list_data_size = total_items * kListgenElementSize;
       TI_DEBUG("Metal runtime sparse list data size: {} bytes", list_data_size);
       result += list_data_size;
+    } else {
+      TI_TRACE("Metal runtime doesn't need additional memory for snode_lists");
     }
     return result;
   }

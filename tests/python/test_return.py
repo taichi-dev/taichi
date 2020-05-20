@@ -19,7 +19,6 @@ def _test_return_not_last_stmt():  # TODO: make this work
 
 @ti.must_throw(ti.TaichiSyntaxError)
 def test_return_without_type_hint():
-
     @ti.kernel
     def kernel():
         return 1
@@ -28,7 +27,6 @@ def test_return_without_type_hint():
 
 
 def test_const_func_ret():
-
     @ti.kernel
     def func1() -> ti.f32:
         return 3
@@ -43,7 +41,6 @@ def test_const_func_ret():
 
 @ti.all_archs
 def _test_binary_func_ret(dt1, dt2, dt3, castor):
-
     @ti.kernel
     def func(a: dt1, b: dt2) -> dt3:
         return a * b
@@ -67,4 +64,3 @@ def test_binary_func_ret():
     _test_binary_func_ret(ti.f32, ti.i32, ti.f32, float)
     _test_binary_func_ret(ti.i32, ti.f32, ti.i32, int)
     _test_binary_func_ret(ti.f32, ti.i32, ti.i32, int)
-

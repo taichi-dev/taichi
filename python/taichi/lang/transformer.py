@@ -755,8 +755,10 @@ if 1:
             # TODO: check if it's at the end of a kernel, throw TaichiSyntaxError if not
             if node.value is not None:
                 if self.returns is None:
-                    raise TaichiSyntaxError('kernel with return value must be '
-                        'annotated with a return type, e.g. def func() -> ti.f32')
+                    raise TaichiSyntaxError(
+                        'kernel with return value must be '
+                        'annotated with a return type, e.g. def func() -> ti.f32'
+                    )
                 ret_expr = self.parse_expr('ti.cast(ti.Expr(0), 0)')
                 ret_expr.args[0].args[0] = node.value
                 ret_expr.args[1] = self.returns

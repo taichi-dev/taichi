@@ -1,7 +1,7 @@
 name: "Taichi Daily Check"
 on:
   schedule:
-  - cron: "0 0 * * *"  # run on 00:00 of every day
+  - cron: "0 0 * * *"  # runs on 00:00 of each day
 
 jobs:
   stale_pr:

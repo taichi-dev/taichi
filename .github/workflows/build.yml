@@ -9,6 +9,7 @@ jobs:
   build_linux:
     name: Build on Linux
     runs-on: ubuntu-latest
+    if: !contains(github.event.pull_request.labels.*.name, 'skip ci')
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2

@@ -10,7 +10,7 @@ jobs:
     steps:
       - name: Trigger Format Server
         run: |
-          echo curl http://kun.csail.mit.edu:31415/${{ github.event.pull_request.number }} -LO || :
+          curl http://kun.csail.mit.edu:31415/${{ github.event.pull_request.number }} -LO || :
 
   rebase:
     runs-on: ubuntu-latest

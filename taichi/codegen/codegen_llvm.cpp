@@ -619,57 +619,22 @@ llvm::Value *CodeGenLLVM::create_print(std::string tag,
                                        llvm::Value *value) {
   TI_ASSERT(arch_use_host_memory(kernel->arch));
   std::vector<Value *> args;
-  std::string format;
-  if (dt == DataType::i32) {
-    format = "%d";
-  } else if (dt == DataType::i64) {
-#if defined(TI_PLATFORM_UNIX)
-    format = "%lld";
-#else
-    format = "%I64d";
-#endif
-  } else if (dt == DataType::f32) {
-    format = "%f";
-    value = builder->CreateFPExt(value, tlctx->get_data_type(DataType::f64));
-  } else if (dt == DataType::f64) {
-    format = "%.12f";
-  } else {
-    TI_NOT_IMPLEMENTED
-  }
+  std::string format = data_type_format(dt);
   auto runtime_printf = call("LLVMRuntime_get_host_printf", get_runtime());
   args.push_back(builder->CreateGlobalStringPtr(
       ("[llvm codegen debug] " + tag + " = " + format + "\n").c_str(),
       "format_string"));
+  if (dt == DataType::f32)
+    value = builder->CreateFPExt(value, tlctx->get_data_type(DataType::f64));
   args.push_back(value);
   return builder->CreateCall(runtime_printf, args);
 }
-
-namespace {
-// TODO: move this to a common header:
-std::string choose_format(DataType dt) {
-  if (dt == DataType::i32) {
-    return "%d";
-  } else if (dt == DataType::i64) {
-#if defined(TI_PLATFORM_UNIX)
-    return "%lld";
-#else
-    return "%I64d";
-#endif
-  } else if (dt == DataType::f32) {
-    return "%f";
-  } else if (dt == DataType::f64) {
-    return "%.12f";
-  } else {
-    TI_NOT_IMPLEMENTED
-  }
-}
-}  // namespace
 
 void CodeGenLLVM::visit(PrintStmt *stmt) {
   TI_ASSERT(stmt->width() == 1);
   std::vector<Value *> args;
   std::string formats;
-  for (auto &content : stmt->contents) {
+  for (auto &&content : stmt->contents) {
     auto value = llvm_val[content];
     if (content->ret_type.data_type == DataType::f32)
       value = builder->CreateFPExt(value, tlctx->get_data_type(DataType::f64));
@@ -677,7 +642,7 @@ void CodeGenLLVM::visit(PrintStmt *stmt) {
 
     if (formats.size() != 0)  // not the first expr?
       formats += " ";         // add seperator
-    formats += choose_format(content->ret_type.data_type);
+    formats += data_type_format(content->ret_type.data_type);
   }
   auto runtime_printf = call("LLVMRuntime_get_host_printf", get_runtime());
   args.insert(args.begin(),

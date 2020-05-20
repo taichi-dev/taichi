@@ -78,6 +78,10 @@ Setting up Taichi for development
     # if you do not set clang as the default compiler
     # use the line below:
     #   cmake .. -DCMAKE_CXX_COMPILER=clang-8
+    #
+    # Alternatively, if you would like to set clang as the default compiler
+    # CMAKE honors variables ``CC`` and ``CXX`` upon detecting the C and C++ compiler to use
+    #
     # if you are building with CUDA 10.0, use the line below:
     #   cmake .. -DCUDA_VERSION=10.0 -DTI_WITH_CUDA:BOOL=True
     make -j$(nproc)

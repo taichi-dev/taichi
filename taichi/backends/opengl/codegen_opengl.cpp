@@ -15,12 +15,11 @@ TLANG_NAMESPACE_BEGIN
 namespace opengl {
 
 KernelParallelAttrib::KernelParallelAttrib(OffloadedStmt *stmt)
-    : KernelParallelAttrib(-1)
-{
-      const_begin = stmt->const_begin;
-      const_end = stmt->const_end;
-      range_begin = stmt->const_begin ? stmt->begin_value : stmt->begin_offset;
-      range_end = stmt->const_end ? stmt->end_value : stmt->end_offset;
+    : KernelParallelAttrib(-1) {
+  const_begin = stmt->const_begin;
+  const_end = stmt->const_end;
+  range_begin = stmt->const_begin ? stmt->begin_value : stmt->begin_offset;
+  range_end = stmt->const_end ? stmt->end_value : stmt->end_offset;
 }
 
 namespace {
@@ -49,10 +48,9 @@ class KernelGen : public IRVisitor {
  public:
   KernelGen(Kernel *kernel,
             std::string kernel_name,
-            StructCompiledResult *struct_compiled,
-            size_t gtmp_size)
+            StructCompiledResult *struct_compiled)
       : kernel(kernel),
-        compiled_program_(std::make_unique<CompiledProgram>(kernel, gtmp_size)),
+        compiled_program_(std::make_unique<CompiledProgram>(kernel)),
         struct_compiled_(struct_compiled),
         kernel_name_(kernel_name),
         glsl_kernel_prefix_(kernel_name) {
@@ -86,7 +84,15 @@ class KernelGen : public IRVisitor {
   void generate_header() {
   }
 
-  std::string opengl_data_type_name(DataType dt) {  // catch & forward
+  // Note that the following two functions not only returns the corresponding
+  // data type, but also **records** the usage of `i64`.
+  std::string opengl_data_type_short_name(DataType dt) {
+    if (dt == DataType::i64)
+      used.int64 = true;
+    return data_type_short_name(dt);
+  }
+
+  std::string opengl_data_type_name(DataType dt) {
     if (dt == DataType::i64)
       used.int64 = true;
     return opengl::opengl_data_type_name(dt);
@@ -112,21 +118,21 @@ class KernelGen : public IRVisitor {
     if (used.int64)
       kernel_header += "layout(packed, binding = 0) buffer data_i64 { int64_t _data_i64_[]; };\n";
 
-    if (used.argument) {
-      kernel_header +=
-          "layout(packed, binding = 1) buffer args_i32 { int _args_i32_[]; };\n"
-          "layout(packed, binding = 1) buffer args_f32 { float _args_f32_[]; };\n"
-          "layout(packed, binding = 1) buffer args_f64 { double _args_f64_[]; };\n";
-      if (used.int64)
-        kernel_header += "layout(packed, binding = 1) buffer args_i64 { int64_t _args_i64_[]; };\n";
-    }
     if (used.global_temp) {
       kernel_header +=
-          "layout(packed, binding = 2) buffer gtmp_i32 { int _gtmp_i32_[]; };\n"
-          "layout(packed, binding = 2) buffer gtmp_f32 { float _gtmp_f32_[]; };\n"
-          "layout(packed, binding = 2) buffer gtmp_f64 { double _gtmp_f64_[]; };\n";
+          "layout(packed, binding = 1) buffer gtmp_i32 { int _gtmp_i32_[]; };\n"
+          "layout(packed, binding = 1) buffer gtmp_f32 { float _gtmp_f32_[]; };\n"
+          "layout(packed, binding = 1) buffer gtmp_f64 { double _gtmp_f64_[]; };\n";
       if (used.int64)
-        kernel_header += "layout(packed, binding = 2) buffer gtmp_i64 { int64_t _gtmp_i64_[]; };\n";
+        kernel_header += "layout(packed, binding = 1) buffer gtmp_i64 { int64_t _gtmp_i64_[]; };\n";
+    }
+    if (used.argument) {
+      kernel_header +=
+          "layout(packed, binding = 2) buffer args_i32 { int _args_i32_[]; };\n"
+          "layout(packed, binding = 2) buffer args_f32 { float _args_f32_[]; };\n"
+          "layout(packed, binding = 2) buffer args_f64 { double _args_f64_[]; };\n";
+      if (used.int64)
+        kernel_header += "layout(packed, binding = 2) buffer args_i64 { int64_t _args_i64_[]; };\n";
     }
     if (used.extra_arg) {
       kernel_header +=
@@ -171,9 +177,10 @@ class KernelGen : public IRVisitor {
 
     line_appender_header_.append_raw(kernel_header);
 
-    emit("layout(local_size_x = {} /* {}, {} */, "
-         "local_size_y = 1, local_size_z = 1) in;",
-         kpa.threads_per_group, kpa.num_groups, kpa.num_threads);
+    emit(
+        "layout(local_size_x = {} /* {}, {} */, "
+        "local_size_y = 1, local_size_z = 1) in;",
+        kpa.threads_per_group, kpa.num_groups, kpa.num_threads);
     std::string extensions = "";
 #define PER_OPENGL_EXTENSION(x) \
   if (opengl_has_##x)           \
@@ -211,7 +218,8 @@ class KernelGen : public IRVisitor {
   void visit(RandStmt *stmt) override {
     used.random = true;
     emit("{} {} = _rand_{}();", opengl_data_type_name(stmt->ret_type.data_type),
-         stmt->short_name(), data_type_short_name(stmt->ret_type.data_type));
+         stmt->short_name(),
+         opengl_data_type_short_name(stmt->ret_type.data_type));
   }
 
   void visit(LinearizeStmt *stmt) override {
@@ -249,7 +257,7 @@ class KernelGen : public IRVisitor {
 
     emit("int {} = {} + {} * {}; // {}", stmt->short_name(),
          parent->short_name(),
-         struct_compiled_->class_children_map[parent_type],
+         struct_compiled_->snode_map.at(parent_type).elem_stride,
          stmt->input_index->short_name(), stmt->snode->node_type_name);
   }
 
@@ -258,8 +266,8 @@ class KernelGen : public IRVisitor {
   void visit(GetChStmt *stmt) override {
     emit("int {} = {} + {}; // {}", stmt->short_name(),
          stmt->input_ptr->short_name(),
-         struct_compiled_
-             ->class_get_map[stmt->input_snode->node_type_name][stmt->chid],
+         struct_compiled_->snode_map.at(stmt->input_snode->node_type_name)
+             .children_offsets[stmt->chid],
          stmt->output_snode->node_type_name);
     if (stmt->output_snode->is_place())
       ptr_signats[stmt->id] = "data";
@@ -270,7 +278,7 @@ class KernelGen : public IRVisitor {
     auto dt = stmt->data->element_type();
     emit("_{}_{}_[{} >> {}] = {};",
          ptr_signats.at(stmt->ptr->id),  // throw out_of_range if not a pointer
-         data_type_short_name(dt), stmt->ptr->short_name(),
+         opengl_data_type_short_name(dt), stmt->ptr->short_name(),
          opengl_data_address_shifter(dt), stmt->data->short_name());
   }
 
@@ -279,7 +287,7 @@ class KernelGen : public IRVisitor {
     auto dt = stmt->element_type();
     emit("{} {} = _{}_{}_[{} >> {}];",
          opengl_data_type_name(stmt->element_type()), stmt->short_name(),
-         ptr_signats.at(stmt->ptr->id), data_type_short_name(dt),
+         ptr_signats.at(stmt->ptr->id), opengl_data_type_short_name(dt),
          stmt->ptr->short_name(), opengl_data_address_shifter(dt));
   }
 
@@ -396,7 +404,8 @@ class KernelGen : public IRVisitor {
       // 124 So that we have to use some hack to make it percise. Discussion:
       // https://github.com/taichi-dev/taichi/pull/943#issuecomment-626354902
       emit("{} {} = {}(fast_pow_{}({}, {}));", dt_name, bin_name, dt_name,
-           data_type_short_name(bin->lhs->element_type()), lhs_name, rhs_name);
+           opengl_data_type_short_name(bin->lhs->element_type()), lhs_name,
+           rhs_name);
       used.fast_pow = true;
       return;
     }
@@ -429,7 +438,7 @@ class KernelGen : public IRVisitor {
       emit("{} {} = {}(_{}_{}_[{} >> {}], {});",
            opengl_data_type_name(stmt->val->element_type()), stmt->short_name(),
            opengl_atomic_op_type_cap_name(stmt->op_type),
-           ptr_signats.at(stmt->dest->id), data_type_short_name(dt),
+           ptr_signats.at(stmt->dest->id), opengl_data_type_short_name(dt),
            stmt->dest->short_name(), opengl_data_address_shifter(dt),
            stmt->val->short_name());
     } else {
@@ -438,13 +447,13 @@ class KernelGen : public IRVisitor {
             "unsupported atomic operation for DataType::{}, "
             "this may because your OpenGL is missing that extension, "
             "see `glewinfo` for more details",
-            data_type_short_name(dt));
+            opengl_data_type_short_name(dt));
       }
       used.simulated_atomic_float = true;
       emit("{} {} = {}_{}_{}({} >> {}, {});",
            opengl_data_type_name(stmt->val->element_type()), stmt->short_name(),
            opengl_atomic_op_type_cap_name(stmt->op_type),
-           ptr_signats.at(stmt->dest->id), data_type_short_name(dt),
+           ptr_signats.at(stmt->dest->id), opengl_data_type_short_name(dt),
            stmt->dest->short_name(), opengl_data_address_shifter(dt),
            stmt->val->short_name());
     }
@@ -492,10 +501,10 @@ class KernelGen : public IRVisitor {
 
   void visit(KernelReturnStmt *stmt) override {
     used.argument = true;
-    used.int64 = true;
     // TODO: consider use _rets_{}_ instead of _args_{}_
     // TODO: use stmt->ret_id instead of 0 as index
-    emit("_args_{}_[0] = {};", data_type_short_name(stmt->element_type()),
+    emit("_args_{}_[0] = {};",
+         opengl_data_type_short_name(stmt->element_type()),
          stmt->value->short_name());
   }
 
@@ -507,7 +516,7 @@ class KernelGen : public IRVisitor {
            stmt->short_name(), stmt->arg_id, dt);
     } else {
       emit("{} {} = _args_{}_[{} << {}];", dt, stmt->short_name(),
-           data_type_short_name(stmt->element_type()), stmt->arg_id,
+           opengl_data_type_short_name(stmt->element_type()), stmt->arg_id,
            opengl_argument_address_shifter(stmt->element_type()));
     }
   }
@@ -679,8 +688,7 @@ class KernelGen : public IRVisitor {
 
 FunctionType OpenglCodeGen::gen(void) {
 #if defined(TI_WITH_OPENGL)
-  KernelGen codegen(kernel_, kernel_name_, struct_compiled_,
-                    global_tmps_buffer_size_);
+  KernelGen codegen(kernel_, kernel_name_, struct_compiled_);
   codegen.run(*prog_->snode_root);
   auto compiled = codegen.get_compiled_program();
   auto *ptr = compiled.get();
@@ -697,14 +705,10 @@ void OpenglCodeGen::lower() {
   auto ir = kernel_->ir;
   auto &config = kernel_->program.config;
   config.demote_dense_struct_fors = true;
-  auto res =
-      irpass::compile_to_offloads(ir, config,
-                                  /*vectorize=*/false, kernel_->grad,
-                                  /*ad_use_stack=*/false, config.print_ir,
-                                  /*lower_global_access*/ true);
-  global_tmps_buffer_size_ = res.total_size;
-  TI_TRACE("[glsl] Global temporary buffer size {} B",
-           global_tmps_buffer_size_);
+  irpass::compile_to_offloads(ir, config,
+                              /*vectorize=*/false, kernel_->grad,
+                              /*ad_use_stack=*/false, config.print_ir,
+                              /*lower_global_access*/ true);
 #ifdef _GLSL_DEBUG
   irpass::print(ir);
 #endif

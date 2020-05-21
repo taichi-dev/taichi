@@ -55,26 +55,14 @@ For example, this is part of the output by ``ti regression`` after enabling cons
     Discussion at: https://github.com/taichi-dev/taichi/issue/948
 
 
-<<<<<<< HEAD
 The suggested workflow for the performance related PR author to run the regression tests is:
-=======
-The suggested workflow for **the PR author** to run the regression tests is:
-
-* When a performance related PR is ready, checkout that PR locally.
-
-* Run ``ti benchmark && ti regression`` to obtain the result.
-
-* Decide wheater to approve or request change, depends on the result.
-
-* Right before merge, run ``ti baseline`` to save the benchmark result as new baseline.
->>>>>>> master
 
 * Run ``ti benchmark && ti baseline`` in ``master`` to save the current performance as baseline.
 
 * Run ``git checkout -b your-branch-name``.
 
 * Do works on the issue, stage 1.
-  
+
 * Run ``ti benchmark && ti regression`` to obtain the result.
 
 * (If result BAD) Do further improvements, until the result is satisfying.

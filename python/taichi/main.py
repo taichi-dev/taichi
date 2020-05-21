@@ -86,13 +86,23 @@ def display_benchmark_regression(xd, yd, args):
     def parse_dat(file):
         dict = {}
         for line in open(file).readlines():
-            try: a, b = line.strip().split(':')
-            except: continue
-            dict[a.strip()] = int(float(b))
+            try:
+                a, b = line.strip().split(':')
+            except:
+                continue
+            b = float(b)
+            if abs(b % 1.0) < 1e-5:  # codegen_*
+                b = int(b)
+            dict[a.strip()] = b
         return dict
 
     def parse_name(file):
-        return file[5:-4].replace('__test_', '::', 1)
+        if file[0:5] == 'test_':
+            return file[5:-4].replace('__test_', '::', 1)
+        elif file[0:10] == 'benchmark_':
+            return '::'.join(reversed(file[10:-4].split('__arch_')))
+        else:
+            raise Exception(f'bad benchmark file name {file}')
 
     def get_dats(dir):
         list = []
@@ -112,7 +122,8 @@ def display_benchmark_regression(xd, yd, args):
         gui = ti.GUI('Regression Test', (640, 480), 0x001122)
         print('[Hint] press SPACE to go for next display')
         for key, data in scatter.items():
-            data = np.array([((i + 0.5)/len(data), x/2) for i, x in enumerate(data)])
+            data = np.array([((i + 0.5) / len(data), x / 2)
+                             for i, x in enumerate(data)])
             while not gui.get_event((ti.GUI.PRESS, ti.GUI.SPACE)):
                 gui.core.title = key
                 gui.line((0, 0.5), (1, 0.5), 1.8, 0x66ccff)
@@ -123,7 +134,7 @@ def display_benchmark_regression(xd, yd, args):
     single_line = spec and len(spec) == 1
     xs, ys = get_dats(xd), get_dats(yd)
     scatter = defaultdict(list)
-    for name in set(xs.keys()).union(ys.keys()):
+    for name in reversed(sorted(set(xs.keys()).union(ys.keys()))):
         file, func = name.split('::')
         u, v = xs.get(name, {}), ys.get(name, {})
         ret = ''
@@ -131,22 +142,35 @@ def display_benchmark_regression(xd, yd, args):
             if spec and key not in spec:
                 continue
             a, b = u.get(key, 0), v.get(key, 0)
-            res = b / a if a != 0 else math.inf
+            if a == 0:
+                if b == 0:
+                    res = 1.0
+                else:
+                    res = math.inf
+            else:
+                res = b / a
             scatter[key].append(res)
             if res == 1: continue
-            if single_line:
-                ret += f'{file:_<24}{func:_<42}'
-            else:
-                ret += f'{key:<43}'
+            if not single_line:
+                ret += f'{key:<30}'
             res -= 1
             color = Fore.RESET
             if res > 0: color = Fore.RED
             elif res < 0: color = Fore.GREEN
-            ret += f'{Fore.MAGENTA}{a:>5}{Fore.RESET} -> '
-            ret += f'{Fore.CYAN}{b:>5} {color}{res:>+8.1%}{Fore.RESET}\n'
+            if isinstance(a, float):
+                a = f'{a:>7.2}'
+            else:
+                a = f'{a:>7}'
+            if isinstance(b, float):
+                b = f'{b:>7.2}'
+            else:
+                b = f'{b:>7}'
+            ret += f'{Fore.MAGENTA}{a}{Fore.RESET} -> '
+            ret += f'{Fore.CYAN}{b} {color}{res:>+9.1%}{Fore.RESET}\n'
         if ret != '':
+            print(f'{file + "::" + func:_<58}', end='')
             if not single_line:
-                print(f'{file:_<24}{func:_<42}')
+                print('')
             print(ret, end='')
             if not single_line:
                 print('')
@@ -161,7 +185,9 @@ def make_argument_parser():
                         '--verbose',
                         action='store_true',
                         help='Run with verbose outputs')
-    parser.add_argument('-r', '--rerun', help='Rerun failed tests for given times')
+    parser.add_argument('-r',
+                        '--rerun',
+                        help='Rerun failed tests for given times')
     parser.add_argument('-t',
                         '--threads',
                         help='Number of threads for parallel testing')
@@ -173,6 +199,10 @@ def make_argument_parser():
                         '--gui',
                         action='store_true',
                         help='Display benchmark regression result in GUI')
+    parser.add_argument('-T',
+                        '--tprt',
+                        action='store_true',
+                        help='Benchmark for time performance')
     parser.add_argument(
         '-a',
         '--arch',
@@ -285,10 +315,14 @@ def main(debug=False):
         shutil.rmtree(output_dir, True)
         os.mkdir(output_dir)
         os.environ['TI_BENCHMARK_OUTPUT_DIR'] = output_dir
-        if os.environ.get('TI_WANTED_ARCHS') is None:
-            # since we only do number-of-statements benchmark
+        if os.environ.get('TI_WANTED_ARCHS') is None and not args.tprt:
+            # since we only do number-of-statements benchmark for SPRT
             os.environ['TI_WANTED_ARCHS'] = 'x64'
-        test_python(args)
+        if args.tprt:
+            os.system('python benchmarks/run.py')
+            # TODO: benchmark_python(args)
+        else:
+            test_python(args)
     elif mode == "baseline":
         import shutil
         baseline_dir = get_benchmark_baseline_dir()

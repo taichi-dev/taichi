@@ -71,7 +71,7 @@ As global tensors of vectors
 
 .. note::
 
-    **Always** use two pair of square brackets to access scalar elements from tensors of vectors.
+    **Always** use two pairs of square brackets to access scalar elements from tensors of vectors.
 
      - The indices in the first pair of brackets locate the vector inside the tensor of vectors;
      - The indices in the second pair of brackets locate the scalar element inside the vector.
@@ -142,7 +142,7 @@ Methods
     :parameter b: (Vector, 3 component)
     :return: (Vector, 3D) the cross product of ``a`` and ``b``
 
-    We use right-handed coordinate system, E.g.,
+    We use a right-handed coordinate system. E.g.,
     ::
 
         a = ti.Vector([1, 2, 3])
@@ -159,13 +159,13 @@ Methods
     E.g.,
     ::
 
-        a = ti.Vector([1, 2, 3])
+        a = ti.Vector([1, 2])
         b = ti.Vector([4, 5, 6])
         c = ti.outer_product(a, b) # NOTE: c[i, j] = a[i] * b[j]
-        # c = [[1*4, 1*5, 1*6], [2*4, 2*5, 2*6], [3*4, 3*5, 3*6]]
+        # c = [[1*4, 1*5, 1*6], [2*4, 2*5, 2*6]]
 
 .. note::
-    This is not the same as `ti.cross`. ``a`` and ``b`` do not have to be 3 component vectors.
+    This is not the same as ``ti.cross``. ``a`` and ``b`` do not have to be 3-component vectors.
 
 
 .. function:: a.cast(dt)

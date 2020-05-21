@@ -44,6 +44,9 @@ details = {
     'test': 'Tests',
     'benchmark': 'Benchmarking',
     'async': 'AsyncEngine',
+    'linux': 'Linux',
+    'mac': 'Mac OS X',
+    'windows': 'Windows',
     'release': '',
 }
 

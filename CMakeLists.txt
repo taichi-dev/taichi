@@ -8,7 +8,7 @@ project(taichi)
 
 SET(TI_VERSION_MAJOR 0)
 SET(TI_VERSION_MINOR 6)
-SET(TI_VERSION_PATCH 4)
+SET(TI_VERSION_PATCH 5)
 
 execute_process(
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
@@ -31,7 +31,7 @@ FILE(WRITE ${CMAKE_CURRENT_LIST_DIR}/docs/version
         )
 
 if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE "RelWithDebInfo" CACHE STRING
+    set(CMAKE_BUILD_TYPE "Release" CACHE STRING
             "Choose the type of build, options are: Debug Release
 RelWithDebInfo MinSizeRel."
             FORCE)

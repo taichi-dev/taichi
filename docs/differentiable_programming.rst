@@ -58,4 +58,9 @@ A few examples with neural network controllers optimized using differentiable si
 
 .. image:: https://github.com/yuanming-hu/public_files/raw/master/learning/difftaichi/diffmpm3d.gif
 
+.. note::
+
+    Apart from differentiating the simulation time steps, you can also automatically differentiate (negative) potential energies to get forces.
+    Here is an `example <https://github.com/taichi-dev/taichi/blob/master/examples/mpm_lagrangian_forces.py>`_.
+
 Documentation WIP.

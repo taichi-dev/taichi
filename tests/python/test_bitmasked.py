@@ -171,3 +171,37 @@ def test_deactivate():
     deactivate()
     is_active()
     assert c[None] == 0
+
+
+@archs_support_bitmasked
+def test_sparsity_changes():
+    x = ti.var(ti.i32)
+    c = ti.var(ti.i32)
+    s = ti.var(ti.i32)
+
+    bm = ti.root.bitmasked(ti.i, 5).bitmasked(ti.i, 3)
+    bm.place(x)
+    ti.root.place(c, s)
+
+    @ti.kernel
+    def run():
+        for i in x:
+            s[None] += x[i]
+            c[None] += 1
+
+    # Only two elements of |x| are activated
+    x[1] = 2
+    x[8] = 20
+    run()
+    assert c[None] == 2
+    assert s[None] == 22
+
+    c[None] = 0
+    s[None] = 0
+    # Four elements are activated now
+    x[7] = 15
+    x[14] = 5
+
+    run()
+    assert c[None] == 4
+    assert s[None] == 42

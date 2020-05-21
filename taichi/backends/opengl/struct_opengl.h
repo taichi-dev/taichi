@@ -26,10 +26,7 @@ class OpenglStructCompiler {
   size_t compute_snode_size(const SNode &sn);
 
   std::vector<SNode *> snodes_;
-  std::unordered_map<std::string, size_t> stride_map_;
-  std::unordered_map<std::string, size_t> length_map_;
-  std::unordered_map<std::string, std::vector<size_t>> class_get_map_;
-  std::unordered_map<std::string, size_t> class_children_map_;
+  std::unordered_map<SNodeId, SNodeInfo> snode_map_;
 };
 
 }  // namespace opengl

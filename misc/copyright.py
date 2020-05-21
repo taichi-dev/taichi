@@ -123,7 +123,7 @@ def make_notice(comment_style: CommentStyle, ctime_year: str) -> List[str]:
 
 # Sync with DOC_STRING
 COPYRIGHT_NOTICE_REGEX = re.compile(r"copyright.+taichi")
-COPYRIGHT_INCORRECT_REGEX = re.compile(r"copyright.+taichi.+(20\d\d)-")
+COPYRIGHT_INCORRECT_REGEX = re.compile(r"copyright.+taichi.+(20\d\d)- ")
 
 
 def check_and_modify(filepath: str, comment_style: CommentStyle,

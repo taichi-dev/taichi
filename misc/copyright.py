@@ -187,13 +187,14 @@ class WorkStats:
         self.modified_notice_file_num = 0
 
 
-PLAYFUL_BRAILLE = ["⠃", "⠆", "⠤", "⠰", "⠘", "⠉"]
-
 # Available on POSIX, Windows.
 try:
-    LINE_ELLIDING = os.get_terminal_size().columns >= 72
+    LINE_ELIDING = os.get_terminal_size().columns >= 72
 except AttributeError:  # Maybe we want to run on niche platforms..
-    LINE_ELLIDING = False
+    LINE_ELIDING = False
+
+
+PLAYFUL_BRAILLE = ["⠃", "⠆", "⠤", "⠰", "⠘", "⠉"]
 
 
 def print_progress(stats: WorkStats, dry_run: bool):
@@ -204,14 +205,12 @@ def print_progress(stats: WorkStats, dry_run: bool):
         modify=stats.modified_notice_file_num,
         dots=PLAYFUL_BRAILLE[stats.opened_file_num % len(PLAYFUL_BRAILLE)])
     # 1A, 2K: move cursor one line up and clear the entire line.
-    sys.stdout.write(("\x1b[1A\x1b[2K" if LINE_ELLIDING else "") + content +
-                     "\n")
+    sys.stdout.write(("\x1b[1A\x1b[2K" if LINE_ELIDING else "") + content + "\n")
 
 
 def work_on_file(filepath: str, ext: str, stats: WorkStats, dry_run: bool):
     stats.opened_file_num += 1
-    status = check_and_modify(filepath, FILE_EXT_TO_COMMENT_STYLES[ext],
-                              dry_run)
+    status = check_and_modify(filepath, FILE_EXT_TO_COMMENT_STYLES[ext], dry_run)
     if status == FileActionResult.INSERTED_NOTICE:
         stats.inserted_notice_file_num += 1
     elif status == FileActionResult.MODIFIED_NOTICE:

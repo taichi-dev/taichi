@@ -14,7 +14,7 @@ namespace {
 // Offloaded local variables to its offset in the global tmps memory.
 using StmtToOffsetMap = std::unordered_map<const Stmt *, std::size_t>;
 
-struct OffloadedToBeginEndStmts {
+struct OffloadedRanges {
   using Map = std::unordered_map<const OffloadedStmt *, Stmt *>;
   Map begin_stmts;
   Map end_stmts;
@@ -23,8 +23,8 @@ struct OffloadedToBeginEndStmts {
 // Break kernel into multiple parts and emit struct for listgens
 class Offloader {
  public:
-  static OffloadedToBeginEndStmts run(IRNode *root) {
-    OffloadedToBeginEndStmts offloaded_to_begin_end;
+  static OffloadedRanges run(IRNode *root) {
+    OffloadedRanges offloaded_ranges;
 
     auto root_block = dynamic_cast<Block *>(root);
     auto root_statements = std::move(root_block->statements);
@@ -52,14 +52,14 @@ class Offloader {
           offloaded->const_begin = true;
           offloaded->begin_value = val->val[0].val_int32();
         } else {
-          offloaded_to_begin_end.begin_stmts.insert(
+          offloaded_ranges.begin_stmts.insert(
               std::make_pair(offloaded.get(), s->begin));
         }
         if (auto val = s->end->cast<ConstStmt>()) {
           offloaded->const_end = true;
           offloaded->end_value = val->val[0].val_int32();
         } else {
-          offloaded_to_begin_end.end_stmts.insert(
+          offloaded_ranges.end_stmts.insert(
               std::make_pair(offloaded.get(), s->end));
         }
         offloaded->block_dim = s->block_dim;
@@ -77,7 +77,7 @@ class Offloader {
       }
     }
     assemble_serial_statements();
-    return offloaded_to_begin_end;
+    return offloaded_ranges;
   }
 
  private:
@@ -189,9 +189,9 @@ class IdentifyValuesUsedInOtherOffloads : public BasicStmtVisitor {
  private:
   IdentifyValuesUsedInOtherOffloads(
       const std::unordered_map<Stmt *, Stmt *> &stmt_to_offloaded,
-      OffloadedToBeginEndStmts *offloaded_to_begin_end)
+      OffloadedRanges *offloaded_ranges)
       : stmt_to_offloaded(stmt_to_offloaded),
-        offloaded_to_begin_end_(offloaded_to_begin_end) {
+        offloaded_ranges_(offloaded_ranges) {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
     current_offloaded = nullptr;
@@ -209,12 +209,12 @@ class IdentifyValuesUsedInOtherOffloads : public BasicStmtVisitor {
  public:
   void visit(OffloadedStmt *stmt) override {
     current_offloaded = stmt;
-    if (auto begin = offloaded_to_begin_end_->begin_stmts.find(stmt);
-        begin != offloaded_to_begin_end_->begin_stmts.end()) {
+    if (auto begin = offloaded_ranges_->begin_stmts.find(stmt);
+        begin != offloaded_ranges_->begin_stmts.end()) {
       test_and_allocate(begin->second);
     }
-    if (auto end = offloaded_to_begin_end_->end_stmts.find(stmt);
-        end != offloaded_to_begin_end_->end_stmts.end()) {
+    if (auto end = offloaded_ranges_->end_stmts.find(stmt);
+        end != offloaded_ranges_->end_stmts.end()) {
       test_and_allocate(end->second);
     }
     if (stmt->body)
@@ -274,16 +274,15 @@ class IdentifyValuesUsedInOtherOffloads : public BasicStmtVisitor {
   static StmtToOffsetMap run(
       IRNode *root,
       const std::unordered_map<Stmt *, Stmt *> &stmt_to_offloaded,
-      OffloadedToBeginEndStmts *offloaded_to_begin_end) {
-    IdentifyValuesUsedInOtherOffloads pass(stmt_to_offloaded,
-                                           offloaded_to_begin_end);
+      OffloadedRanges *offloaded_ranges) {
+    IdentifyValuesUsedInOtherOffloads pass(stmt_to_offloaded, offloaded_ranges);
     root->accept(&pass);
     return pass.local_to_global;
   }
 
  private:
   std::unordered_map<Stmt *, Stmt *> stmt_to_offloaded;
-  OffloadedToBeginEndStmts *const offloaded_to_begin_end_;
+  OffloadedRanges *const offloaded_ranges_;
   // Local variables to global temporary offsets (in bytes)
   StmtToOffsetMap local_to_global;
   Stmt *current_offloaded;
@@ -341,10 +340,10 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
   FixCrossOffloadReferences(
       const StmtToOffsetMap &local_to_global_offset,
       const std::unordered_map<Stmt *, Stmt *> &stmt_to_offloaded,
-      OffloadedToBeginEndStmts *offloaded_to_begin_end)
+      OffloadedRanges *offloaded_ranges)
       : local_to_global_offset(local_to_global_offset),
         stmt_to_offloaded(stmt_to_offloaded),
-        offloaded_to_begin_end_(offloaded_to_begin_end) {
+        offloaded_ranges_(offloaded_ranges) {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
   }
@@ -354,11 +353,13 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
       stmt->body->accept(this);
     if (stmt->task_type == OffloadedStmt::TaskType::range_for) {
       if (!stmt->const_begin)
-        stmt->begin_offset = local_to_global_offset
-            [offloaded_to_begin_end_->begin_stmts.find(stmt)->second];
+        stmt->begin_offset =
+            local_to_global_offset[offloaded_ranges_->begin_stmts.find(stmt)
+                                       ->second];
       if (!stmt->const_end)
-        stmt->end_offset = local_to_global_offset
-            [offloaded_to_begin_end_->end_stmts.find(stmt)->second];
+        stmt->end_offset =
+            local_to_global_offset[offloaded_ranges_->end_stmts.find(stmt)
+                                       ->second];
     }
   }
 
@@ -494,9 +495,9 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
   static void run(IRNode *root,
                   const StmtToOffsetMap &local_to_global_offset,
                   const std::unordered_map<Stmt *, Stmt *> &stmt_to_offloaded,
-                  OffloadedToBeginEndStmts *offloaded_to_begin_end) {
+                  OffloadedRanges *offloaded_ranges) {
     FixCrossOffloadReferences pass(local_to_global_offset, stmt_to_offloaded,
-                                   offloaded_to_begin_end);
+                                   offloaded_ranges);
     while (true) {
       try {
         root->accept(&pass);
@@ -510,7 +511,7 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
  private:
   StmtToOffsetMap local_to_global_offset;
   std::unordered_map<Stmt *, Stmt *> stmt_to_offloaded;
-  OffloadedToBeginEndStmts *const offloaded_to_begin_end_;
+  OffloadedRanges *const offloaded_ranges_;
   std::unordered_map<Stmt *, VectorType> local_to_global_vector_type;
 };
 
@@ -605,17 +606,17 @@ class AssociateContinueScope : public BasicStmtVisitor {
 }  // namespace
 
 void offload(IRNode *root) {
-  auto offloaded_to_begin_end = Offloader::run(root);
+  auto offloaded_ranges = Offloader::run(root);
   typecheck(root);
   fix_block_parents(root);
   {
     auto stmt_to_offloaded = StmtToOffloaded::run(root);
     const auto local_to_global_offset = IdentifyValuesUsedInOtherOffloads::run(
-        root, stmt_to_offloaded, &offloaded_to_begin_end);
+        root, stmt_to_offloaded, &offloaded_ranges);
     PromoteIntermediateToGlobalTmp::run(root, local_to_global_offset);
     stmt_to_offloaded = StmtToOffloaded::run(root);
     FixCrossOffloadReferences::run(root, local_to_global_offset,
-                                   stmt_to_offloaded, &offloaded_to_begin_end);
+                                   stmt_to_offloaded, &offloaded_ranges);
     fix_block_parents(root);
   }
   insert_gc(root);

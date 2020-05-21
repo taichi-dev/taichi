@@ -70,7 +70,7 @@ FILE_EXT_TO_COMMENT_STYLES = {
     ".c": CommentStyle.C_STYLE,
     ".cc": CommentStyle.C_STYLE,
     ".cpp": CommentStyle.C_STYLE,
-    # Though CUDA is on top of C but existing files seem
+    # Though CUDA is on top of C, existing files seem
     # to prefer "//" comments.
     ".cu": CommentStyle.CPP_STYLE,
     ".py": CommentStyle.PY_STYLE,

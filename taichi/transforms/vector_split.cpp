@@ -244,7 +244,7 @@ class BasicBlockVectorSplit : public IRVisitor {
     for (int i = 0; i < current_split_factor; i++) {
       std::vector<Stmt *> new_contents;
       std::transform(stmt->contents.begin(), stmt->contents.end(),
-                     new_contents.begin(),
+                     std::back_inserter(new_contents),
                      [=](auto x) { return lookup(x, i); });
       current_split[i] = Stmt::make<PrintStmt>(new_contents);
     }

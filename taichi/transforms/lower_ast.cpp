@@ -117,7 +117,7 @@ class LowerAST : public IRVisitor {
     // expand rhs
     std::vector<Stmt *> stmts;
     auto fctx = make_flatten_ctx();
-    for (auto &&x : stmt->contents) {
+    for (auto x : stmt->contents) {
       x->flatten(&fctx);
       stmts.push_back(x->stmt);
     }

@@ -105,8 +105,6 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
   }
 
   void visit(PrintStmt *stmt) override {
-    // TODO(@archibate): ask @yuanming-hu about how to deal with CUDA print
-
     TI_ASSERT(stmt->width() == 1);
 
     std::vector<llvm::Type *> types;

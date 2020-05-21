@@ -1,8 +1,3 @@
-/*******************************************************************************
-     Copyright (c) 2020 The Taichi Authors
-     Use of this software is governed by the LICENSE file.
-*******************************************************************************/
-
 i32 do_nothing(Context *context) {
   return 0;
 }

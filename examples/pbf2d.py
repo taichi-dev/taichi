@@ -1,6 +1,3 @@
-# Copyright (c) 2020 The Taichi Authors
-# Use of this software is governed by the LICENSE file.
-
 # Macklin, M. and Müller, M., 2013. Position based fluids. ACM Transactions on Graphics (TOG), 32(4), p.104.
 # Taichi implementation by Ye Kuang (k-ye)
 

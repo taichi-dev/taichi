@@ -1,6 +1,3 @@
-# Copyright (c) 2016 The Taichi Authors
-# Use of this software is governed by the LICENSE file.
-
 from taichi.misc.settings import get_os_name
 from taichi.misc.image import imwrite
 

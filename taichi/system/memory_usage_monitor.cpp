@@ -1,8 +1,3 @@
-/*******************************************************************************
-     Copyright (c) 2020 The Taichi Authors
-     Use of this software is governed by the LICENSE file.
-*******************************************************************************/
-
 #include "taichi/system/memory_usage_monitor.h"
 #include "taichi/system/timer.h"
 #include "taichi/common/core.h"

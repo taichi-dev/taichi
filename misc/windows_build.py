@@ -1,6 +1,3 @@
-# Copyright (c) 2020 The Taichi Authors
-# Use of this software is governed by the LICENSE file.
-
 import os
 import shutil
 import sys

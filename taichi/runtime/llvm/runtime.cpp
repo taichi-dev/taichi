@@ -1,8 +1,3 @@
-/*******************************************************************************
-     Copyright (c) 2020 The Taichi Authors
-     Use of this software is governed by the LICENSE file.
-*******************************************************************************/
-
 // This file will only be compiled into llvm bitcode by clang.
 // The generated bitcode will likely get inlined for performance.
 

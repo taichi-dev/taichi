@@ -1,8 +1,3 @@
-/*******************************************************************************
-     Copyright (c) 2020 The Taichi Authors
-     Use of this software is governed by the LICENSE file.
-*******************************************************************************/
-
 // Potentially supported OpenGL extensions
 
 PER_OPENGL_EXTENSION(GL_ARB_compute_shader)

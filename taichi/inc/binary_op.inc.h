@@ -1,8 +1,3 @@
-/*******************************************************************************
-     Copyright (c) 2020 The Taichi Authors
-     Use of this software is governed by the LICENSE file.
-*******************************************************************************/
-
 PER_BINARY_OP(mul)
 PER_BINARY_OP(add)
 PER_BINARY_OP(sub)

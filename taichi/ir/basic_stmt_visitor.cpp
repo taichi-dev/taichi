@@ -1,8 +1,3 @@
-/*******************************************************************************
-     Copyright (c) 2020 The Taichi Authors
-     Use of this software is governed by the LICENSE file.
-*******************************************************************************/
-
 #include "taichi/ir/visitors.h"
 #include "taichi/ir/frontend_ir.h"
 

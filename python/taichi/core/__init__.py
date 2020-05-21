@@ -1,6 +1,3 @@
-# Copyright (c) 2016 The Taichi Authors
-# Use of this software is governed by the LICENSE file.
-
 from .util import ti_core, build, format, load_module, start_memory_monitoring, \
   is_release, package_root
 from .unit import unit

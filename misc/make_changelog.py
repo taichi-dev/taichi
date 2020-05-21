@@ -1,6 +1,3 @@
-# Copyright (c) 2020 The Taichi Authors
-# Use of this software is governed by the LICENSE file.
-
 from git import Repo
 
 # Usage: python3 misc/make_changelog.py 0.5.9

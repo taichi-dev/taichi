@@ -1,8 +1,3 @@
-/*******************************************************************************
-     Copyright (c) 2019 The Taichi Authors
-     Use of this software is governed by the LICENSE file.
-*******************************************************************************/
-
 #include "taichi/ir/ir.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/analysis.h"

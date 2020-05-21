@@ -1,8 +1,3 @@
-/*******************************************************************************
-     Copyright (c) 2020 The Taichi Authors
-     Use of this software is governed by the LICENSE file.
-*******************************************************************************/
-
 PER_TYPE(f16)
 PER_TYPE(f32)
 PER_TYPE(f64)

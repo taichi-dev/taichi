@@ -1,8 +1,3 @@
-/*******************************************************************************
-     Copyright (c) 2020 The Taichi Authors
-     Use of this software is governed by the LICENSE file.
-*******************************************************************************/
-
 #ifndef TI_METAL_NESTED_INCLUDE
 
 #define TI_METAL_NESTED_INCLUDE

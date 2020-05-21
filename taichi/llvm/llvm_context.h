@@ -1,8 +1,3 @@
-/*******************************************************************************
-     Copyright (c) 2020 The Taichi Authors
-     Use of this software is governed by the LICENSE file.
-*******************************************************************************/
-
 #pragma once
 
 // llvm backend compiler (x64, arm64, cuda, amdgpu etc)

@@ -1,8 +1,3 @@
-/*******************************************************************************
-     Copyright (c) 2020 The Taichi Authors
-     Use of this software is governed by the LICENSE file.
-*******************************************************************************/
-
 #include "taichi/common/task.h"
 #include "taichi/ir/ir.h"
 #include "taichi/ir/statements.h"

@@ -1,6 +1,3 @@
-# Copyright (c) 2020 The Taichi Authors
-# Use of this software is governed by the LICENSE file.
-
 import taichi as ti
 
 N = 1024**3 // 4  # 1 GB per buffer

@@ -1,6 +1,3 @@
-# Copyright (c) 2019 The Taichi Authors
-# Use of this software is governed by the LICENSE file.
-
 import re
 import inspect
 from .transformer import ASTTransformer

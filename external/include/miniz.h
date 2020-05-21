@@ -1,13 +1,7 @@
-/*******************************************************************************
-     Copyright (c) 2018 The Taichi Authors
-     Use of this software is governed by the LICENSE file.
-*******************************************************************************/
-
-/* miniz.c 2.0.7 - public domain deflate/inflate, zlib-subset, ZIP
-   reading/writing/appending, PNG writing See "unlicense" statement at the end
-   of this file. Rich Geldreich <richgel99@gmail.com>, last updated Oct. 13,
-   2013 Implements RFC 1950: http://www.ietf.org/rfc/rfc1950.txt and RFC 1951:
-   http://www.ietf.org/rfc/rfc1951.txt
+/* miniz.c 2.0.7 - public domain deflate/inflate, zlib-subset, ZIP reading/writing/appending, PNG writing
+   See "unlicense" statement at the end of this file.
+   Rich Geldreich <richgel99@gmail.com>, last updated Oct. 13, 2013
+   Implements RFC 1950: http://www.ietf.org/rfc/rfc1950.txt and RFC 1951: http://www.ietf.org/rfc/rfc1951.txt
 
    Most API's defined in miniz.c are optional. For example, to disable the
    archive related functions just define MINIZ_NO_ARCHIVE_APIS, or to get rid of

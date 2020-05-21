@@ -1,8 +1,3 @@
-/*******************************************************************************
-     Copyright (c) 2019 The Taichi Authors
-     Use of this software is governed by the LICENSE file.
-*******************************************************************************/
-
 #include "taichi/runtime/runtime.h"
 
 TLANG_NAMESPACE_BEGIN

@@ -23,6 +23,7 @@ jobs:
 
       - name: Build Project
         run: |
+          export TAICHI_REPO_DIR=`pwd`
           export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
           export CI_SETUP_CMAKE_ARGS=-DTI_WITH_OPENGL:BOOL=OFF
           export CXX=clang++
@@ -54,12 +55,12 @@ jobs:
           git config user.email "taichigardener@gmail.com"
           git config user.name "Taichi Gardener"
           git commit -m "fake squash commit" || true
-          git checkout -b last_squash
-          git checkout -b enforced_format
+          git checkout -b _last_squash
+          git checkout -b _enforced_format
           git reset FETCH_HEAD
           python3 -m pip install --user yapf gitpython
           python3 misc/format.py
           git add .
           git commit -m "enforce code format" || true
           # exit with 1 if there were differences:
-          git diff last_squash enforced_format --exit-code
+          git diff last_squash _enforced_format --exit-code

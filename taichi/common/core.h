@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016 The Taichi Authors. All Rights Reserved.
+    copyright (c) the taichi authors (2016- ). all rights reserved.
     the use of this software is governed by the license file.
 *******************************************************************************/
 

@@ -6,7 +6,7 @@ line_end = '********************************************************************
 
 copyright_content = \
 '''
-    Copyright (c) 2016 The Taichi Authors. All Rights Reserved.
+    Copyright (c) The Taichi Authors (2016- ). All Rights Reserved.
     The use of this software is governed by the LICENSE file.
 '''
 

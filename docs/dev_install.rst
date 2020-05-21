@@ -70,8 +70,8 @@ Setting up Taichi for development
   .. code-block:: bash
 
     git clone https://github.com/taichi-dev/taichi --depth=1 --branch=master
-    git submodule update --init --recursive --depth=1
     cd taichi
+    git submodule update --init --recursive --depth=1
     mkdir build
     cd build
     cmake ..

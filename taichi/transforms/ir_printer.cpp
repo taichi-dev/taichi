@@ -258,9 +258,8 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(RangeForStmt *for_stmt) override {
-    print("{} : {}for {} in range({}, {}, step {}) {{", for_stmt->name(),
+    print("{} : {}for in range({}, {}, step {}) {{", for_stmt->name(),
           for_stmt->reversed ? "reversed " : "",
-          for_stmt->loop_var ? for_stmt->loop_var->name() : "nullptr",
           for_stmt->begin->name(), for_stmt->end->name(), for_stmt->vectorize);
     for_stmt->body->accept(this);
     print("}}");

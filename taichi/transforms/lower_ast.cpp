@@ -69,10 +69,10 @@ class LowerAST : public IRVisitor {
   void visit(FrontendAllocaStmt *stmt) override {
     auto block = stmt->parent;
     auto ident = stmt->ident;
-    TI_ASSERT(block->local_var_alloca.find(ident) ==
-              block->local_var_alloca.end());
+    TI_ASSERT(block->local_var_to_stmt.find(ident) ==
+              block->local_var_to_stmt.end());
     auto lowered = std::make_unique<AllocaStmt>(stmt->ret_type.data_type);
-    block->local_var_alloca.insert(std::make_pair(ident, lowered.get()));
+    block->local_var_to_stmt.insert(std::make_pair(ident, lowered.get()));
     stmt->parent->replace_with(stmt, std::move(lowered));
     throw IRModified();
   }
@@ -174,13 +174,13 @@ class LowerAST : public IRVisitor {
     capturing_loop = old_capturing_loop;
   }
 
+  void visit(LoopIndexStmt *stmt) override {
+    // do nothing
+  }
+
   void visit(FrontendForStmt *stmt) override {
     auto fctx = make_flatten_ctx();
     // insert an alloca here
-    for (int i = 0; i < (int)stmt->loop_var_id.size(); i++) {
-      fctx.push_back<AllocaStmt>(DataType::i32);
-      stmt->parent->local_var_alloca[stmt->loop_var_id[i]] = fctx.back_stmt();
-    }
 
     if (stmt->is_ranged()) {
       TI_ASSERT(stmt->loop_var_id.size() == 1);
@@ -195,11 +195,16 @@ class LowerAST : public IRVisitor {
       // statement
       if (is_good_range_for) {
         auto &&new_for = std::make_unique<RangeForStmt>(
-            stmt->parent->lookup_var(stmt->loop_var_id[0]), begin->stmt,
-            end->stmt, std::move(stmt->body), stmt->vectorize,
+            begin->stmt, end->stmt, std::move(stmt->body), stmt->vectorize,
             stmt->parallelize, stmt->block_dim, stmt->strictly_serialized);
+        new_for->body->insert(std::make_unique<LoopIndexStmt>(new_for.get(), 0), 0);
+        new_for->body->local_var_to_stmt[stmt->loop_var_id[0]] = new_for->body->statements[0].get();
         fctx.push_back(std::move(new_for));
       } else {
+        for (int i = 0; i < (int)stmt->loop_var_id.size(); i++) {
+          fctx.push_back<AllocaStmt>(DataType::i32);
+          stmt->parent->local_var_to_stmt[stmt->loop_var_id[i]] = fctx.back_stmt();
+        }
         // transform into a structure as
         // i = begin; while (1) { if (i >= end) break; original body; i += 1; }
         auto loop_var = stmt->parent->lookup_var(stmt->loop_var_id[0]);
@@ -249,6 +254,10 @@ class LowerAST : public IRVisitor {
         throw IRModified();
       }
     } else {
+      for (int i = 0; i < (int)stmt->loop_var_id.size(); i++) {
+        fctx.push_back<AllocaStmt>(DataType::i32);
+        stmt->parent->local_var_to_stmt[stmt->loop_var_id[i]] = fctx.back_stmt();
+      }
       std::vector<Stmt *> vars(stmt->loop_var_id.size());
       for (int i = 0; i < (int)stmt->loop_var_id.size(); i++) {
         vars[i] = stmt->parent->lookup_var(stmt->loop_var_id[i]);

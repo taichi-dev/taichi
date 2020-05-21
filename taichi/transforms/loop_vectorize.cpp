@@ -120,9 +120,10 @@ class LoopVectorize : public IRVisitor {
     auto old_vectorize = for_stmt->vectorize;
     if (for_stmt->vectorize != 1)
       vectorize = for_stmt->vectorize;
-    loop_var = for_stmt->loop_var;
+    // TODO: RangeForStmt::loop_var is deprecated
+//    loop_var = for_stmt->loop_var;
     for_stmt->body->accept(this);
-    loop_var = nullptr;
+//    loop_var = nullptr;
     vectorize = old_vectorize;
   }
 

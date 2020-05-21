@@ -103,7 +103,7 @@ VecStatement convert_to_range_for(StructForStmt *struct_for) {
   body->insert(std::move(body_header), 0);
 
   auto range_for = Stmt::make<RangeForStmt>(
-      nullptr, lower, upper, std::move(body), struct_for->vectorize,
+      lower, upper, std::move(body), struct_for->vectorize,
       struct_for->parallelize, struct_for->block_dim, false);
   main_loop_var->loop = range_for.get();
   ret.push_back(std::move(range_for));

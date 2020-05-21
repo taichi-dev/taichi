@@ -685,8 +685,8 @@ void Block::replace_with(Stmt *old_statement,
 }
 
 Stmt *Block::lookup_var(const Identifier &ident) const {
-  auto ptr = local_var_alloca.find(ident);
-  if (ptr != local_var_alloca.end()) {
+  auto ptr = local_var_to_stmt.find(ident);
+  if (ptr != local_var_to_stmt.end()) {
     return ptr->second;
   } else {
     if (parent) {
@@ -894,7 +894,7 @@ void SNodeOpExpression::flatten(FlattenContext *ctx) {
     if (op_type == SNodeOpType::append) {
       value->flatten(ctx);
       ctx->push_back<SNodeOpStmt>(SNodeOpType::append, snode, ptr,
-                                  ctx->back_stmt());
+                                  value->stmt);
       TI_ERROR_IF(snode->type != SNodeType::dynamic,
                   "ti.append only works on dynamic nodes.");
       TI_ERROR_IF(snode->ch.size() != 1,
@@ -912,16 +912,14 @@ std::unique_ptr<ConstStmt> ConstStmt::copy() {
   return std::make_unique<ConstStmt>(val);
 }
 
-RangeForStmt::RangeForStmt(Stmt *loop_var,
-                           Stmt *begin,
+RangeForStmt::RangeForStmt(Stmt *begin,
                            Stmt *end,
                            std::unique_ptr<Block> &&body,
                            int vectorize,
                            int parallelize,
                            int block_dim,
                            bool strictly_serialized)
-    : loop_var(loop_var),
-      begin(begin),
+    : begin(begin),
       end(end),
       body(std::move(body)),
       vectorize(vectorize),
@@ -934,7 +932,7 @@ RangeForStmt::RangeForStmt(Stmt *loop_var,
 
 std::unique_ptr<Stmt> RangeForStmt::clone() const {
   auto new_stmt = std::make_unique<RangeForStmt>(
-      loop_var, begin, end, body->clone(), vectorize, parallelize,
+      begin, end, body->clone(), vectorize, parallelize,
       block_dim, strictly_serialized);
   new_stmt->reversed = reversed;
   return new_stmt;

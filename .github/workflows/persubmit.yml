@@ -7,7 +7,12 @@ jobs:
   build_and_test:
     name: Build and Test
     runs-on: ubuntu-latest
-    if: ${{ !contains(github.event.pull_request.labels.*.name, 'skip ci') }}
+    if: ${{
+      (0
+      || contains(github.event.head_commit.modified, '.py')
+      || contains(github.event.head_commit.modified, '.c')
+      ) && !contains(github.event.pull_request.labels.*.name, 'skip ci')
+    }}
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2
@@ -44,6 +49,13 @@ jobs:
   code_format:
     name: Code Format
     runs-on: ubuntu-latest
+    if: ${{
+      0
+      || contains(github.event.head_commit.modified, '.py')
+      || contains(github.event.head_commit.modified, '.c')
+      || contains(github.event.head_commit.modified, '.rst')
+      || contains(github.event.head_commit.modified, '.md')
+    }}
     steps:
       - uses: actions/checkout@v2
       - name: Check code format

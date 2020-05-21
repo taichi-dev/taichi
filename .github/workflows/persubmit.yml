@@ -11,7 +11,6 @@ jobs:
       0
       || contains(github.event.head_commit.modified, '.py')
       || contains(github.event.head_commit.modified, '.c')
-      #&& !contains(github.event.pull_request.labels.*.name, 'skip ci')
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2

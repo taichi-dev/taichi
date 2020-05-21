@@ -270,13 +270,12 @@ class IRNode {
     visitor->visit(this);                    \
   }
 
-#define TI_DEFINE_CLONE                                             \
-  std::unique_ptr<Stmt> clone() const override {                    \
-    auto new_stmt =                                                 \
-        std::make_unique<std::decay<decltype(*this)>::type>(*this); \
-    new_stmt->mark_fields_registered();                             \
-    new_stmt->io(new_stmt->field_manager);                          \
-    return new_stmt;                                                \
+#define TI_DEFINE_CLONE                                                        \
+  std::unique_ptr<Stmt> clone() const override {                               \
+    auto new_stmt = std::make_unique<std::decay<decltype(*this)>::type>(*this);\
+    new_stmt->mark_fields_registered();                                        \
+    new_stmt->io(new_stmt->field_manager);                                     \
+    return new_stmt;                                                           \
   }
 
 #define TI_DEFINE_ACCEPT_AND_CLONE \
@@ -583,7 +582,7 @@ class Stmt : public IRNode {
   }
 
   std::string type();
-
+  
   virtual std::unique_ptr<Stmt> clone() const {
     TI_NOT_IMPLEMENTED
   }
@@ -806,7 +805,7 @@ class Block : public IRNode {
  public:
   Block *parent;
   std::vector<std::unique_ptr<Stmt>> statements, trash_bin;
-  std::map<Identifier, Stmt *> local_var_alloca;  // Only used in frontend
+  std::map<Identifier, Stmt *> local_var_alloca; // Only used in frontend
   Stmt *mask_var;
   std::vector<SNode *> stop_gradients;
 
@@ -1128,12 +1127,8 @@ class StructForStmt : public Stmt {
 
   std::unique_ptr<Stmt> clone() const override;
 
-  TI_STMT_DEF_FIELDS(loop_vars,
-                     snode,
-                     vectorize,
-                     parallelize,
-                     block_dim,
-                     scratch_opt);
+  TI_STMT_DEF_FIELDS(loop_vars, snode, vectorize, parallelize, block_dim,
+      scratch_opt);
   TI_DEFINE_ACCEPT
 };
 

@@ -100,10 +100,8 @@ def test_matrix_element_wise_binary_infix_f32():
         _test_matrix_element_wise_binary(ti.f32, n, m, ops.mul, ops.mul)
         _test_matrix_element_wise_binary(ti.f32, n, m, ops.mod, ops.mod)
         _test_matrix_element_wise_binary(ti.f32, n, m, ops.pow, ops.pow)
-        _test_matrix_element_wise_binary(ti.f32, n, m, ops.truediv,
-                                         ops.truediv)
-        _test_matrix_element_wise_binary(ti.f32, n, m, ops.floordiv,
-                                         ops.floordiv)
+        _test_matrix_element_wise_binary(ti.f32, n, m, ops.truediv, ops.truediv)
+        _test_matrix_element_wise_binary(ti.f32, n, m, ops.floordiv, ops.floordiv)
 
 
 def test_matrix_element_wise_binary_infix_i32():

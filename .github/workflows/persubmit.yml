@@ -44,7 +44,7 @@ jobs:
   code_format:
     name: Code Format
     runs-on: ubuntu-latest
-    if: ${{ contains(github.event.head_commit.modified, '.py') || contains(github.event.head_commit.modified, '.c') || contains(github.event.head_commit.modified, '.rst') || contains(github.event.head_commit.modified, '.md') }}
+    if: ${{ contains(github.event.head_commit.modified, '.rst') }}
     steps:
       - uses: actions/checkout@v2
       - name: Check code format

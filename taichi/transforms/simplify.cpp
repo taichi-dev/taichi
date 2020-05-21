@@ -677,17 +677,16 @@ class BasicBlockSimplify : public IRVisitor {
     if (is_done(stmt))
       return;
     // step 1: try weakening when a struct for is used
-    // TODO: StructForStmt::loop_vars is deprecated
-    /*if (current_struct_for && !stmt->simplified) {
-      auto &loop_vars = current_struct_for->loop_vars;
-      for (int k = 0; k < (int)loop_vars.size(); k++) {
-        auto diff = irpass::analysis::value_diff(
-            stmt->input, 0, current_struct_for->loop_vars[k]);
+    if (current_struct_for && !stmt->simplified) {
+      int num_loop_vars = current_struct_for->snode->num_active_indices;
+      for (int k = 0; k < num_loop_vars; k++) {
+        auto diff = irpass::analysis::value_diff_loop_index(
+            stmt->input, current_struct_for, k);
         if (diff.linear_related() && diff.certain()) {
           // case 1: last loop var, vectorized, has assumption on vec size
-          if (k == (int)current_struct_for->loop_vars.size() - 1) {
+          if (k == num_loop_vars - 1) {
             auto load = stmt->insert_before_me(
-                Stmt::make<LocalLoadStmt>(LocalAddress(loop_vars[k], 0)));
+                Stmt::make<LoopIndexStmt>(current_struct_for, k));
             load->ret_type.data_type = DataType::i32;
             stmt->input = load;
             int64 bound = 1LL << stmt->bit_end;
@@ -712,7 +711,7 @@ class BasicBlockSimplify : public IRVisitor {
           } else {
             // insert constant
             auto load = stmt->insert_before_me(
-                Stmt::make<LocalLoadStmt>(LocalAddress(loop_vars[k], 0)));
+                Stmt::make<LoopIndexStmt>(current_struct_for, k));
             load->ret_type.data_type = DataType::i32;
             auto constant = stmt->insert_before_me(
                 Stmt::make<ConstStmt>(TypedConstant(diff.low)));
@@ -725,7 +724,7 @@ class BasicBlockSimplify : public IRVisitor {
           throw IRModified();
         }
       }
-    }*/
+    }
 
     // step 2: eliminate useless extraction of another OffsetAndExtractBitsStmt
     if (advanced_optimization) {

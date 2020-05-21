@@ -9,8 +9,8 @@ jobs:
     runs-on: ubuntu-latest
     if: |
       0
-      || contains(github.event.head_commit.modified, '.py')
-      || contains(github.event.head_commit.modified, '.c')
+      || contains(github.event.commit.modified, '.py')
+      || contains(github.event.commit.modified, '.c')
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2
@@ -49,10 +49,10 @@ jobs:
     runs-on: ubuntu-latest
     if: |
       0
-      || contains(github.event.head_commit.modified, '.py')
-      || contains(github.event.head_commit.modified, '.c')
-      || contains(github.event.head_commit.modified, '.rst')
-      || contains(github.event.head_commit.modified, '.md')
+      || contains(github.event.commit.modified, '.py')
+      || contains(github.event.commit.modified, '.c')
+      || contains(github.event.commit.modified, '.rst')
+      || contains(github.event.commit.modified, '.md')
     steps:
       - uses: actions/checkout@v2
       - name: Check code format

@@ -634,7 +634,7 @@ void CodeGenLLVM::visit(PrintStmt *stmt) {
   TI_ASSERT(stmt->width() == 1);
   std::vector<Value *> args;
   std::string formats;
-  for (auto &&content : stmt->contents) {
+  for (auto content : stmt->contents) {
     auto value = llvm_val[content];
     if (content->ret_type.data_type == DataType::f32)
       value = builder->CreateFPExt(value, tlctx->get_data_type(DataType::f64));

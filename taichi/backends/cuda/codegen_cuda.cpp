@@ -113,7 +113,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     std::vector<llvm::Value *> values;
 
     std::string formats;
-    for (auto &&content : stmt->contents) {
+    for (auto content : stmt->contents) {
       if (formats.size() != 0)  // not the first expr?
         formats += " ";         // add seperator
       formats += data_type_format(content->ret_type.data_type);

@@ -84,14 +84,6 @@ class JITModule {
   // (e.g. cudaLaunch)?
   virtual bool direct_dispatch() const = 0;
 
-  virtual uint64 fetch_result_u64() = 0;
-
-  template <typename T>
-  T fetch_result() {
-    static_assert(sizeof(T) <= sizeof(uint64));
-    return taichi_union_cast<T>(fetch_result_u64());
-  }
-
   virtual ~JITModule() {
   }
 };

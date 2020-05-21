@@ -104,7 +104,7 @@ def run_example(name: str):
         )
     examples_dir = get_examples_dir()
     target = str((examples_dir / f"{name}.py").resolve())
-    # we need to modify path for examples that use 
+    # we need to modify path for examples that use
     # implicit relative imports
     sys.path.append(str(examples_dir.resolve()))
     print(f"Running example {name} ...")

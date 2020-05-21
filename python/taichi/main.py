@@ -8,7 +8,8 @@ import argparse
 from collections import defaultdict
 from colorama import Fore, Back, Style
 from taichi.tools.video import make_video, interpolate_frames, mp4_to_gif, scale_video, crop_video, accelerate_video
-import importlib
+from pathlib import Path
+import runpy
 
 
 def test_python(args):
@@ -73,29 +74,38 @@ def test_cpp(args):
     return int(task.run(*test_files))
 
 
-def run_example(name: list):
-    """Run an example based on the example NAME."""
+def get_examples_dir() -> Path:
+    """Get the path to the examples directory."""
     import taichi as ti
-    from pathlib import Path
 
     root_dir = ti.package_root() if ti.is_release() else ti.get_repo_directory(
     )
     examples_dir = Path(root_dir) / 'examples'
+    return examples_dir
+
+
+def get_available_examples() -> set:
+    """Get a set of all available example names."""
+    examples_dir = get_examples_dir()
     all_examples = examples_dir.rglob('*.py')
     all_example_names = {
         str(f.resolve()).split('/')[-1].split('.')[0]
         for f in all_examples
     }
-    if len(name) != 1:
+    return all_example_names
+
+
+def run_example(name: str):
+    """Run an example based on the example NAME."""
+    all_example_names = get_available_examples()
+    if name not in all_example_names:
         sys.exit(
-            f"Sorry, please specify a name of example!\nAvailable examples names are: {all_example_names}"
+            f"Sorry, {name} is not an available example name!\nAvailable example names are: {sorted(all_example_names)}"
         )
-    elif name[0] not in all_example_names:
-        sys.exit(
-            f"Sorry, {name} is not an available example name!\nAvailable examples names are: {all_example_names}"
-        )
-    print(f"Running example {name[0]} ...")
-    importlib.import_module(f"examples.{name[0]}")
+    examples_dir = get_examples_dir()
+    target = str((examples_dir / f"{name}.py").resolve())
+    print(f"Running example {name} ...")
+    runpy.run_path(target, run_name='__main__')
 
 
 def get_benchmark_baseline_dir():
@@ -473,7 +483,11 @@ def main(debug=False):
         import shutil
         shutil.move('release.zip', fn)
     elif mode == "example":
-        example = sys.argv[2:]
+        if len(sys.argv) != 3:
+            sys.exit(
+                f"Invalid arguments! Usage: ti example [name]\nAvailable example names are: {sorted(get_available_examples())}"
+            )
+        example = sys.argv[2]
         run_example(name=example)
     else:
         name = sys.argv[1]

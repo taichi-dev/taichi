@@ -74,7 +74,8 @@ STR(
       const int child_stride = parent_meta.element_stride;
       const int num_slots = parent_meta.num_slots;
       const SNodeMeta child_meta = runtime->snode_metas[child_snode_id];
-
+      // |max_num_elems| is NOT padded to power-of-two, while |num_slots| is.
+      // So we need to cap the loop precisely at child's |max_num_elems|.
       for (int ii = utid_; ii < child_list->max_num_elems; ii += grid_size) {
         const int parent_idx = (ii / num_slots);
         if (parent_idx >= num_active(parent_list)) {

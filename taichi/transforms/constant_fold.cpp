@@ -208,7 +208,6 @@ void constant_fold(IRNode *root) {
     TI_TRACE("config.debug enabled, ignoring constant fold");
     return;
   }
-  return;  // XXX: TRY
   if (!advanced_optimization)
     return;
   return ConstantFold::run(root);

@@ -270,12 +270,13 @@ class IRNode {
     visitor->visit(this);                    \
   }
 
-#define TI_DEFINE_CLONE                                                        \
-  std::unique_ptr<Stmt> clone() const override {                               \
-    auto new_stmt = std::make_unique<std::decay<decltype(*this)>::type>(*this);\
-    new_stmt->mark_fields_registered();                                        \
-    new_stmt->io(new_stmt->field_manager);                                     \
-    return new_stmt;                                                           \
+#define TI_DEFINE_CLONE                                             \
+  std::unique_ptr<Stmt> clone() const override {                    \
+    auto new_stmt =                                                 \
+        std::make_unique<std::decay<decltype(*this)>::type>(*this); \
+    new_stmt->mark_fields_registered();                             \
+    new_stmt->io(new_stmt->field_manager);                          \
+    return new_stmt;                                                \
   }
 
 #define TI_DEFINE_ACCEPT_AND_CLONE \
@@ -582,7 +583,7 @@ class Stmt : public IRNode {
   }
 
   std::string type();
-  
+
   virtual std::unique_ptr<Stmt> clone() const {
     TI_NOT_IMPLEMENTED
   }

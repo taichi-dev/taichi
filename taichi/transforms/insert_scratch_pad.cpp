@@ -75,7 +75,7 @@ class AccessAnalysis : public IRVisitor {
       for (int i = 0; i < num_indices; i++) {
         // TODO: StructForStmt::loop_vars is deprecated
         auto diff = irpass::analysis::value_diff(ptr->indices[i], l, nullptr);
-//                                                 for_stmt->loop_vars[i]);
+        //                                                 for_stmt->loop_vars[i]);
         if (diff.linear_related()) {
           offsets[i].first = diff.low;
           offsets[i].second = diff.high;

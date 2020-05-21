@@ -893,8 +893,7 @@ void SNodeOpExpression::flatten(FlattenContext *ctx) {
     auto ptr = ctx->push_back<GlobalPtrStmt>(snode, indices_stmt);
     if (op_type == SNodeOpType::append) {
       value->flatten(ctx);
-      ctx->push_back<SNodeOpStmt>(SNodeOpType::append, snode, ptr,
-                                  value->stmt);
+      ctx->push_back<SNodeOpStmt>(SNodeOpType::append, snode, ptr, value->stmt);
       TI_ERROR_IF(snode->type != SNodeType::dynamic,
                   "ti.append only works on dynamic nodes.");
       TI_ERROR_IF(snode->ch.size() != 1,
@@ -932,8 +931,8 @@ RangeForStmt::RangeForStmt(Stmt *begin,
 
 std::unique_ptr<Stmt> RangeForStmt::clone() const {
   auto new_stmt = std::make_unique<RangeForStmt>(
-      begin, end, body->clone(), vectorize, parallelize,
-      block_dim, strictly_serialized);
+      begin, end, body->clone(), vectorize, parallelize, block_dim,
+      strictly_serialized);
   new_stmt->reversed = reversed;
   return new_stmt;
 }

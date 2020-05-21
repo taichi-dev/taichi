@@ -195,15 +195,18 @@ class LowerAST : public IRVisitor {
         auto &&new_for = std::make_unique<RangeForStmt>(
             begin->stmt, end->stmt, std::move(stmt->body), stmt->vectorize,
             stmt->parallelize, stmt->block_dim, stmt->strictly_serialized);
-        new_for->body->insert(std::make_unique<LoopIndexStmt>(new_for.get(), 0), 0);
-        new_for->body->local_var_to_stmt[stmt->loop_var_id[0]] = new_for->body->statements[0].get();
+        new_for->body->insert(std::make_unique<LoopIndexStmt>(new_for.get(), 0),
+                              0);
+        new_for->body->local_var_to_stmt[stmt->loop_var_id[0]] =
+            new_for->body->statements[0].get();
         fctx.push_back(std::move(new_for));
       } else {
         // transform into a structure as
         // i = begin; while (1) { if (i >= end) break; original body; i += 1; }
         for (int i = 0; i < (int)stmt->loop_var_id.size(); i++) {
           fctx.push_back<AllocaStmt>(DataType::i32);
-          stmt->parent->local_var_to_stmt[stmt->loop_var_id[i]] = fctx.back_stmt();
+          stmt->parent->local_var_to_stmt[stmt->loop_var_id[i]] =
+              fctx.back_stmt();
         }
         auto loop_var = stmt->parent->lookup_var(stmt->loop_var_id[0]);
         fctx.push_back<LocalStoreStmt>(loop_var, begin->stmt);
@@ -269,11 +272,13 @@ class LowerAST : public IRVisitor {
         snode = snode->parent;
       }
       auto &&new_for = std::make_unique<StructForStmt>(
-          snode, std::move(stmt->body), stmt->vectorize,
-          stmt->parallelize, stmt->block_dim);
+          snode, std::move(stmt->body), stmt->vectorize, stmt->parallelize,
+          stmt->block_dim);
       for (int i = 0; i < (int)stmt->loop_var_id.size(); i++) {
-        new_for->body->insert(std::make_unique<LoopIndexStmt>(
-            new_for.get(), snode->physical_index_position[i]), i);
+        new_for->body->insert(
+            std::make_unique<LoopIndexStmt>(new_for.get(),
+                                            snode->physical_index_position[i]),
+            i);
         new_for->body->local_var_to_stmt[stmt->loop_var_id[i]] =
             new_for->body->statements[i].get();
       }

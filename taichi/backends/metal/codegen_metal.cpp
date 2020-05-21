@@ -721,23 +721,11 @@ class KernelCodegen : public IRVisitor {
 
     const int sn_id = stmt->snode->id;
     // struct_for kernels use grid-stride loops
-    ka.num_threads = std::min(compiled_structs_->snode_descriptors.find(sn_id)
-                                  ->second.total_num_elems_from_root,
-                              kMaxNumThreadsGridStrideLoop);
-    if (!mtl_kernels_attribs_.empty() &&
-        mtl_kernels_attribs_.back().task_type ==
-            OffloadedStmt::TaskType::listgen) {
-      // TODO(#689): this is somewhat hacky. Once the IR is more polished, we
-      // can easily iterate through all the offloaded tasks beforehand to remove
-      // the (clear, listgen) for leaf node, instead of doing it here.
-      TI_ASSERT(mtl_kernels_attribs_.size() >= 2);
-      for (int i = 0; i < 2; ++i) {
-        TI_ASSERT(
-            mtl_kernels_attribs_.back().runtime_list_op_attribs.snode->id ==
-            sn_id);
-        mtl_kernels_attribs_.pop_back();
-      }
-    }
+    const int total_num_elems_from_root =
+        compiled_structs_->snode_descriptors.find(sn_id)
+            ->second.total_num_elems_from_root;
+    ka.num_threads =
+        std::min(total_num_elems_from_root, kMaxNumThreadsGridStrideLoop);
 
     current_appender().push_indent();
     emit("// struct_for");
@@ -748,17 +736,15 @@ class KernelCodegen : public IRVisitor {
         "1);",
         kRuntimeVarName);
     emit("device ListManager *parent_list = &({}->snode_lists[{}]);",
-         kRuntimeVarName, stmt->snode->parent->id);
-    emit("device ListManager *child_list = &({}->snode_lists[{}]);",
          kRuntimeVarName, sn_id);
-    emit("const SNodeMeta child_meta = {}->snode_metas[{}];", kRuntimeVarName,
+    emit("const SNodeMeta parent_meta = {}->snode_metas[{}];", kRuntimeVarName,
          sn_id);
-    emit("const int child_stride = child_meta.element_stride;");
-    emit("const int child_num_slots = child_meta.num_slots;");
+    emit("const int child_stride = parent_meta.element_stride;");
+    emit("const int child_num_slots = parent_meta.num_slots;");
     // Grid-stride loops:
     // Each thread begins at thread_index, and incremets by grid_size
-    emit("for (int ii = {}; ii < child_list->max_num_elems; ii += {}) {{",
-         kKernelThreadIdName, kKernelGridSizeName);
+    emit("for (int ii = {}; ii < {}; ii += {}) {{", kKernelThreadIdName,
+         total_num_elems_from_root, kKernelGridSizeName);
     {
       ScopedIndent s2(current_appender());
       emit("const int parent_idx_ = (ii / child_num_slots);");
@@ -769,12 +755,13 @@ class KernelCodegen : public IRVisitor {
           "parent_idx_, list_data_addr);");
 
       emit("ListgenElement {};", kListgenElemVarName);
+      // No need to add mem_offset_in_parent, because place() always starts at 0
       emit(
           "{}.root_mem_offset = parent_elem_.root_mem_offset + child_idx_ * "
-          "child_stride + child_meta.mem_offset_in_parent;",
+          "child_stride;",
           kListgenElemVarName);
       emit(
-          "if (!is_active({} + {}.root_mem_offset, child_meta, child_idx_)) "
+          "if (!is_active({} + {}.root_mem_offset, parent_meta, child_idx_)) "
           "continue;",
           kRootBufferName, kListgenElemVarName);
       emit(
@@ -815,10 +802,10 @@ class KernelCodegen : public IRVisitor {
       ka.buffers = {BuffersEnum::Runtime, BuffersEnum::Args};
     } else if (type == Type::listgen) {
       // listgen kernels use grid-stride loops
-      ka.num_threads =
-          std::min(compiled_structs_->snode_descriptors.find(sn->id)
-                       ->second.total_num_elems_from_root,
-                   kMaxNumThreadsGridStrideLoop);
+      const auto &sn_descs = compiled_structs_->snode_descriptors;
+      ka.num_threads = std::min(
+          sn_descs.find(sn->id)->second.total_num_self_from_root(sn_descs),
+          kMaxNumThreadsGridStrideLoop);
       ka.buffers = {BuffersEnum::Runtime, BuffersEnum::Root, BuffersEnum::Args};
     } else {
       TI_ERROR("Unsupported offload task type {}", stmt->task_name());
@@ -934,15 +921,15 @@ class KernelCodegen : public IRVisitor {
   std::string make_snode_meta_bm(const SNode *sn,
                                  const std::string &var_name) const {
     TI_ASSERT(sn->type == SNodeType::bitmasked);
-    const auto &meta =
+    const auto &desc =
         compiled_structs_->snode_descriptors.find(sn->id)->second;
     LineAppender la = current_appender();
     // Keep the indentation settings only
     la.clear_lines();
 
     la.append("SNodeMeta {};", var_name);
-    la.append("{}.element_stride = {};", var_name, meta.element_stride);
-    la.append("{}.num_slots = {};", var_name, meta.num_slots);
+    la.append("{}.element_stride = {};", var_name, desc.element_stride);
+    la.append("{}.num_slots = {};", var_name, desc.num_slots);
     la.append("{}.type = {};", var_name, (int)shaders::SNodeMeta::Bitmasked);
     return la.lines();
   }

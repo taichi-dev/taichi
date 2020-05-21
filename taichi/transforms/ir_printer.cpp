@@ -266,12 +266,8 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(StructForStmt *for_stmt) override {
-    auto loop_vars = make_list<Stmt *>(for_stmt->loop_vars,
-                                       [](Stmt *const &stmt) -> std::string {
-                                         return stmt ? stmt->name() : "nullptr";
-                                       });
-    print("{} : for {} where {} active, step {} {{", for_stmt->name(),
-          loop_vars, for_stmt->snode->get_node_type_name_hinted(),
+    print("{} : for where {} active, step {} {{", for_stmt->name(),
+          for_stmt->snode->get_node_type_name_hinted(),
           for_stmt->vectorize);
     for_stmt->body->accept(this);
     print("}}");

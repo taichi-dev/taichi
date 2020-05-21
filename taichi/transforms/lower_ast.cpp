@@ -180,8 +180,6 @@ class LowerAST : public IRVisitor {
 
   void visit(FrontendForStmt *stmt) override {
     auto fctx = make_flatten_ctx();
-    // insert an alloca here
-
     if (stmt->is_ranged()) {
       TI_ASSERT(stmt->loop_var_id.size() == 1);
       auto begin = stmt->begin;
@@ -201,12 +199,12 @@ class LowerAST : public IRVisitor {
         new_for->body->local_var_to_stmt[stmt->loop_var_id[0]] = new_for->body->statements[0].get();
         fctx.push_back(std::move(new_for));
       } else {
+        // transform into a structure as
+        // i = begin; while (1) { if (i >= end) break; original body; i += 1; }
         for (int i = 0; i < (int)stmt->loop_var_id.size(); i++) {
           fctx.push_back<AllocaStmt>(DataType::i32);
           stmt->parent->local_var_to_stmt[stmt->loop_var_id[i]] = fctx.back_stmt();
         }
-        // transform into a structure as
-        // i = begin; while (1) { if (i >= end) break; original body; i += 1; }
         auto loop_var = stmt->parent->lookup_var(stmt->loop_var_id[0]);
         fctx.push_back<LocalStoreStmt>(loop_var, begin->stmt);
         auto loop_var_addr = LaneAttribute<LocalAddress>(
@@ -254,14 +252,6 @@ class LowerAST : public IRVisitor {
         throw IRModified();
       }
     } else {
-      for (int i = 0; i < (int)stmt->loop_var_id.size(); i++) {
-        fctx.push_back<AllocaStmt>(DataType::i32);
-        stmt->parent->local_var_to_stmt[stmt->loop_var_id[i]] = fctx.back_stmt();
-      }
-      std::vector<Stmt *> vars(stmt->loop_var_id.size());
-      for (int i = 0; i < (int)stmt->loop_var_id.size(); i++) {
-        vars[i] = stmt->parent->lookup_var(stmt->loop_var_id[i]);
-      }
       auto snode = stmt->global_var.cast<GlobalVariableExpression>()->snode;
       std::vector<int> offsets;
       if (snode->type == SNodeType::place) {
@@ -279,8 +269,14 @@ class LowerAST : public IRVisitor {
         snode = snode->parent;
       }
       auto &&new_for = std::make_unique<StructForStmt>(
-          vars, snode, std::move(stmt->body), stmt->vectorize,
+          snode, std::move(stmt->body), stmt->vectorize,
           stmt->parallelize, stmt->block_dim);
+      for (int i = 0; i < (int)stmt->loop_var_id.size(); i++) {
+        new_for->body->insert(std::make_unique<LoopIndexStmt>(
+            new_for.get(), snode->physical_index_position[i]), i);
+        new_for->body->local_var_to_stmt[stmt->loop_var_id[i]] =
+            new_for->body->statements[i].get();
+      }
       new_for->scratch_opt = stmt->scratch_opt;
       struct_for_offsets[new_for.get()] = offsets;
       fctx.push_back(std::move(new_for));
@@ -413,7 +409,8 @@ class FixStructForOffsets : public BasicStmtVisitor {
   StructForOffsets offsets;
 
   void visit(StructForStmt *stmt) {
-    if (const auto &it = offsets.find(stmt);
+    // TODO: StructForStmt::loop_vars is deprecated
+    /*if (const auto &it = offsets.find(stmt);
         it != offsets.end() && !it->second.empty()) {
       auto offset = it->second;
       std::vector<Stmt *> loop_vars_with_offset(stmt->loop_vars.size());
@@ -442,7 +439,7 @@ class FixStructForOffsets : public BasicStmtVisitor {
       }
 
       stmt->body->insert(std::move(new_statements), 0);
-    }
+    }*/
   }
 
   static void run(IRNode *root, const StructForOffsets &offsets) {

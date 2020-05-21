@@ -64,7 +64,7 @@ class VariableOptimize : public IRVisitor {
   }
 
   void visit(StructForStmt *stmt) override {
-    visit_loop(stmt->body.get(), stmt->loop_vars);
+    visit_loop(stmt->body.get(), {});
   }
 
   void visit(OffloadedStmt *stmt) override {

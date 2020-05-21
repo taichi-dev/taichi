@@ -938,14 +938,12 @@ std::unique_ptr<Stmt> RangeForStmt::clone() const {
   return new_stmt;
 }
 
-StructForStmt::StructForStmt(std::vector<Stmt *> loop_vars,
-                             SNode *snode,
+StructForStmt::StructForStmt(SNode *snode,
                              std::unique_ptr<Block> &&body,
                              int vectorize,
                              int parallelize,
                              int block_dim)
-    : loop_vars(loop_vars),
-      snode(snode),
+    : snode(snode),
       body(std::move(body)),
       vectorize(vectorize),
       parallelize(parallelize),
@@ -955,7 +953,7 @@ StructForStmt::StructForStmt(std::vector<Stmt *> loop_vars,
 
 std::unique_ptr<Stmt> StructForStmt::clone() const {
   auto new_stmt = std::make_unique<StructForStmt>(
-      loop_vars, snode, body->clone(), vectorize, parallelize, block_dim);
+      snode, body->clone(), vectorize, parallelize, block_dim);
   new_stmt->scratch_opt = scratch_opt;
   return new_stmt;
 }

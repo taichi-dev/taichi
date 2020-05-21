@@ -22,14 +22,13 @@ VecStatement convert_to_range_for(StructForStmt *struct_for) {
   auto upper = ret.push_back<ConstStmt>(TypedConstant(upper_bound));
   auto body = std::move(struct_for->body);
 
-  auto num_loop_vars = struct_for->loop_vars.size();
+  auto num_loop_vars = snodes.back()->num_active_indices;
   std::vector<Stmt *> new_loop_vars;
 
   VecStatement body_header;
 
   std::vector<int> physical_indices;
 
-  TI_ASSERT(snodes.back()->num_active_indices == (int)num_loop_vars);
   for (int i = 0; i < (int)num_loop_vars; i++) {
     new_loop_vars.push_back(body_header.push_back<ConstStmt>(TypedConstant(0)));
     physical_indices.push_back(snodes.back()->physical_index_position[i]);

@@ -121,14 +121,16 @@ class LoopVectorize : public IRVisitor {
     if (for_stmt->vectorize != 1)
       vectorize = for_stmt->vectorize;
     // TODO: RangeForStmt::loop_var is deprecated
-//    loop_var = for_stmt->loop_var;
+    // loop_var = for_stmt->loop_var;
     for_stmt->body->accept(this);
-//    loop_var = nullptr;
+    // loop_var = nullptr;
     vectorize = old_vectorize;
   }
 
   void visit(StructForStmt *for_stmt) override {
-    if (for_stmt->loop_vars.empty())
+    // TODO: RangeForStmt::loop_var is deprecated
+    return;
+    /*if (for_stmt->loop_vars.empty())
       return;
     auto old_vectorize = for_stmt->vectorize;
     if (for_stmt->vectorize != 1)
@@ -136,7 +138,7 @@ class LoopVectorize : public IRVisitor {
     loop_var = for_stmt->loop_vars.back();
     for_stmt->body->accept(this);
     loop_var = nullptr;
-    vectorize = old_vectorize;
+    vectorize = old_vectorize;*/
   }
 
   void visit(WhileStmt *stmt) override {

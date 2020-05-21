@@ -108,8 +108,9 @@ class LowerAccess : public IRVisitor {
         }
       }
 
+      // TODO: StructForStmt::loop_vars is deprecated
       bool on_loop_tree = nodes_on_loop.find(snode) != nodes_on_loop.end();
-      if (on_loop_tree &&
+      /*if (on_loop_tree &&
           indices.size() == current_struct_for->loop_vars.size()) {
         for (int j = 0; j < (int)indices.size(); j++) {
           auto diff = irpass::analysis::value_diff(
@@ -127,7 +128,7 @@ class LowerAccess : public IRVisitor {
             }
           }
         }
-      }
+      }*/
 
       // linearize
       auto linearized =

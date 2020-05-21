@@ -25,9 +25,9 @@ class ConvertIntoLoopIndexStmt : public BasicStmtVisitor {
   }
 
   void preprocess_container_stmt(Stmt *stmt) override {
-    if (auto range_for = stmt->cast<RangeForStmt>()) {
-//      convert(range_for, range_for->loop_var, 0);
-//      range_for->loop_var = nullptr;
+    /*if (auto range_for = stmt->cast<RangeForStmt>()) {
+      convert(range_for, range_for->loop_var, 0);
+      range_for->loop_var = nullptr;
     } else if (auto struct_for = stmt->cast<StructForStmt>()) {
       auto leaf = struct_for->snode;
       for (int i = 0; i < (int)struct_for->loop_vars.size(); i++) {
@@ -35,7 +35,7 @@ class ConvertIntoLoopIndexStmt : public BasicStmtVisitor {
                 leaf->physical_index_position[i]);
         struct_for->loop_vars[i] = nullptr;
       }
-    }
+    }*/
   }
 
   static void run(IRNode *node) {

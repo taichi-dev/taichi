@@ -172,7 +172,8 @@ class BasicBlockSimplify : public IRVisitor {
     }
 
     // weaken indexing
-    if (current_struct_for && stmt->width() == 1) {
+    // TODO: StructForStmt::loop_vars is deprecated
+    /*if (current_struct_for && stmt->width() == 1) {
       auto &loop_vars = current_struct_for->loop_vars;
       for (int k = 0; k < (int)loop_vars.size(); k++) {
         auto diff = irpass::analysis::value_diff(
@@ -193,7 +194,7 @@ class BasicBlockSimplify : public IRVisitor {
           throw IRModified();
         }
       }
-    }
+    }*/
 
     // find dup
     for (int i = 0; i < current_stmt_id; i++) {
@@ -676,7 +677,8 @@ class BasicBlockSimplify : public IRVisitor {
     if (is_done(stmt))
       return;
     // step 1: try weakening when a struct for is used
-    if (current_struct_for && !stmt->simplified) {
+    // TODO: StructForStmt::loop_vars is deprecated
+    /*if (current_struct_for && !stmt->simplified) {
       auto &loop_vars = current_struct_for->loop_vars;
       for (int k = 0; k < (int)loop_vars.size(); k++) {
         auto diff = irpass::analysis::value_diff(
@@ -723,7 +725,7 @@ class BasicBlockSimplify : public IRVisitor {
           throw IRModified();
         }
       }
-    }
+    }*/
 
     // step 2: eliminate useless extraction of another OffsetAndExtractBitsStmt
     if (advanced_optimization) {

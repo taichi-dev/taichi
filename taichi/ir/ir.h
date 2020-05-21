@@ -1104,7 +1104,6 @@ class RangeForStmt : public Stmt {
 // for stmt over a structural node
 class StructForStmt : public Stmt {
  public:
-  std::vector<Stmt *> loop_vars;
   SNode *snode;
   std::unique_ptr<Block> body;
   std::unique_ptr<Block> block_initialization;
@@ -1114,8 +1113,7 @@ class StructForStmt : public Stmt {
   int block_dim;
   ScratchPadOptions scratch_opt;
 
-  StructForStmt(std::vector<Stmt *> loop_vars,
-                SNode *snode,
+  StructForStmt(SNode *snode,
                 std::unique_ptr<Block> &&body,
                 int vectorize,
                 int parallelize,
@@ -1127,8 +1125,7 @@ class StructForStmt : public Stmt {
 
   std::unique_ptr<Stmt> clone() const override;
 
-  TI_STMT_DEF_FIELDS(loop_vars, snode, vectorize, parallelize, block_dim,
-      scratch_opt);
+  TI_STMT_DEF_FIELDS(snode, vectorize, parallelize, block_dim, scratch_opt);
   TI_DEFINE_ACCEPT
 };
 

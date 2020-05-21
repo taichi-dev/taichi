@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2020 The Taichi Authors. All rights reserved.
 # Use of this software is governed by the LICENSE file.
-
 """
 Open each source file and add a copyright notice if it is missing.
 Could be faster with multiprocessing or async/await but this is
@@ -52,15 +51,18 @@ Examples:
 {file} --exts "cpp,py" benchmarks cmake docs examples misc python taichi tests""".format(
     file=os.path.relpath(__file__))
 
+
 class CommentStyle(Enum):
     C_STYLE = 1  # /* .. */
     CPP_STYLE = 2  # // .. => seems to be used in *.cu only
     PY_STYLE = 3  # #..
 
+
 class FileActionResult(Enum):
     INTACT = 1
     INSERTED_NOTICE = 2
     MODIFIED_NOTICE = 3
+
 
 # Sync with DOC_STRING
 FILE_EXT_TO_COMMENT_STYLES = {
@@ -83,7 +85,8 @@ def get_ctime_year(filepath: str) -> str:
     using git-log.
     """
     # %as: author date as a YYYY-MM-DD string
-    command = "git --no-pager log --reverse --format=\"%as\" {}".format(filepath)
+    command = "git --no-pager log --reverse --format=\"%as\" {}".format(
+        filepath)
     try:
         out = subprocess.check_output(command.split())
     except subprocess.CalledProcessError as e:
@@ -106,22 +109,25 @@ def make_notice(comment_style: CommentStyle, ctime_year: str) -> List[str]:
         line_start = "//"
     elif comment_style == CommentStyle.PY_STYLE:
         line_start = "#"
-    lines.append("{0} Copyright (c) {1} The Taichi Authors. All rights reserved.\n".format(
-        line_start, ctime_year))
+    lines.append(
+        "{0} Copyright (c) {1} The Taichi Authors. All rights reserved.\n".
+        format(line_start, ctime_year))
     lines.append(
         "{0} Use of this software is governed by the LICENSE file.\n".format(
             line_start))
     if comment_style == CommentStyle.C_STYLE:
         lines.append("*" * 78 + "*/\n")
     lines.append("\n")
-    return lines    
+    return lines
 
 
 # Sync with DOC_STRING
 COPYRIGHT_NOTICE_REGEX = re.compile(r"copyright.+taichi")
 COPYRIGHT_INCORRECT_REGEX = re.compile(r"copyright.+taichi.+(20\d\d)-")
-def check_and_modify(
-    filepath: str, comment_style: CommentStyle, dry_run: bool) -> FileActionResult:
+
+
+def check_and_modify(filepath: str, comment_style: CommentStyle,
+                     dry_run: bool) -> FileActionResult:
     """
     Effects: see DOC_STRING
     """
@@ -138,27 +144,28 @@ def check_and_modify(
             sharp_bang_line = line
         line_lower = line.lower()
         existent_notice_match = COPYRIGHT_NOTICE_REGEX.search(line_lower)
-        if existent_notice_match: # Notice exists...
-            incorrect_notice_match = COPYRIGHT_INCORRECT_REGEX.search(line_lower)
-            if not incorrect_notice_match: # ...and is not caught by the format checker
+        if existent_notice_match:  # Notice exists...
+            incorrect_notice_match = COPYRIGHT_INCORRECT_REGEX.search(
+                line_lower)
+            if not incorrect_notice_match:  # ...and is not caught by the format checker
                 return FileActionResult.INTACT
-            else: # ...but is caught by the format checker
+            else:  # ...but is caught by the format checker
                 to_replace_line_index = i
                 break
     if not existent_notice_match:
-        assert(not incorrect_notice_match)
+        assert (not incorrect_notice_match)
         # Notice missing; now we need to insert a notice.
         new_header_lines = make_notice(comment_style, get_ctime_year(filepath))
         if sharp_bang_line:
-            new_header_lines = [ sharp_bang_line ] + new_header_lines
-            body_lines = body_lines[1:] # Remove the original #! line
+            new_header_lines = [sharp_bang_line] + new_header_lines
+            body_lines = body_lines[1:]  # Remove the original #! line
         return_state = FileActionResult.INSERTED_NOTICE
     else:
-        assert(incorrect_notice_match)
+        assert (incorrect_notice_match)
         # Notice exists but format is wrong; now we need to modify that notice.
         notice_match_start = existent_notice_match.start()
         year_1st = incorrect_notice_match.group(1)
-        assert(year_1st)
+        assert (year_1st)
         # This is how cs.chromium.org writes the notice, and I think the lawyers
         # should be confident :)
         correct_line = (" " * notice_match_start) \
@@ -172,19 +179,22 @@ def check_and_modify(
             f.writelines(body_lines)
     return return_state
 
+
 class WorkStats:
     def __init__(self):
         self.opened_file_num = 0
         self.inserted_notice_file_num = 0
         self.modified_notice_file_num = 0
 
+
 PLAYFUL_BRAILLE = ["⠃", "⠆", "⠤", "⠰", "⠘", "⠉"]
 
 # Available on POSIX, Windows.
 try:
     LINE_ELLIDING = os.get_terminal_size().columns >= 72
-except AttributeError: # Maybe we want to run on niche platforms..
+except AttributeError:  # Maybe we want to run on niche platforms..
     LINE_ELLIDING = False
+
 
 def print_progress(stats: WorkStats, dry_run: bool):
     content = "{dots} Opened {opened}, {tense} insert notice: {insert}, {tense} modify notice: {modify}".format(
@@ -194,12 +204,14 @@ def print_progress(stats: WorkStats, dry_run: bool):
         modify=stats.modified_notice_file_num,
         dots=PLAYFUL_BRAILLE[stats.opened_file_num % len(PLAYFUL_BRAILLE)])
     # 1A, 2K: move cursor one line up and clear the entire line.
-    sys.stdout.write(("\x1b[1A\x1b[2K" if LINE_ELLIDING else "") + content + "\n")
+    sys.stdout.write(("\x1b[1A\x1b[2K" if LINE_ELLIDING else "") + content +
+                     "\n")
+
 
 def work_on_file(filepath: str, ext: str, stats: WorkStats, dry_run: bool):
     stats.opened_file_num += 1
-    status = check_and_modify(
-        filepath, FILE_EXT_TO_COMMENT_STYLES[ext], dry_run)
+    status = check_and_modify(filepath, FILE_EXT_TO_COMMENT_STYLES[ext],
+                              dry_run)
     if status == FileActionResult.INSERTED_NOTICE:
         stats.inserted_notice_file_num += 1
     elif status == FileActionResult.MODIFIED_NOTICE:
@@ -230,7 +242,8 @@ def work(args):
                     ext = os.path.splitext(f)[-1]
                     if not is_interested_ext(ext, picked_exts):
                         continue
-                    work_on_file(os.path.join(dirpath, f), ext, stats, args.dry_run)
+                    work_on_file(os.path.join(dirpath, f), ext, stats,
+                                 args.dry_run)
         elif os.path.isfile(path):
             ext = os.path.splitext(path)[-1]
             if not is_interested_ext(ext, picked_exts):
@@ -241,27 +254,31 @@ def work(args):
 
 def main():
     argparser = argparse.ArgumentParser(
-        description="Copyright notice inserter: insert if missing; modify if wrong.")
+        description=
+        "Copyright notice inserter: insert if missing; modify if wrong.")
     argparser.add_argument("paths",
-                            type=str,
-                            nargs='*',
-                            help="non-overlapping directories or files")
-    argparser.add_argument("-e",
-                           "--exts",
-                           metavar="E,..",
                            type=str,
-                           default="",
-                           help="comma-separated file extensions; all if absent")
+                           nargs='*',
+                           help="non-overlapping directories or files")
+    argparser.add_argument(
+        "-e",
+        "--exts",
+        metavar="E,..",
+        type=str,
+        default="",
+        help="comma-separated file extensions; all if absent")
     argparser.add_argument("-d",
                            "--dry-run",
                            action="store_true",
                            help="(dev) do not modify files")
-    argparser.add_argument("--docs", action="store_true", help="print long documentation")
+    argparser.add_argument("--docs",
+                           action="store_true",
+                           help="print long documentation")
     args = argparser.parse_args()
     if args.docs:
         print(DOC_STRING)
         return 0
-    
+
     if len(args.paths) == 0:
         sys.exit("[Error] at least one path required")
 
@@ -270,9 +287,12 @@ def main():
         sys.exit("[Error] path not found: %s" % " ".join(missing_dirs))
 
     unhandled_exts = None if not args.exts else [
-        e for e in args.exts.split(",") if ("." + e) not in FILE_EXT_TO_COMMENT_STYLES]
+        e for e in args.exts.split(",")
+        if ("." + e) not in FILE_EXT_TO_COMMENT_STYLES
+    ]
     if unhandled_exts:
-        sys.exit("[Error] unhandled extension names: %s" % " ".join(unhandled_exts))
+        sys.exit("[Error] unhandled extension names: %s" %
+                 " ".join(unhandled_exts))
     return work(args)
 
 

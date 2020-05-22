@@ -128,12 +128,15 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
         values.push_back(value);
 
       } else {
-        TI_ERROR("string printing is not supported on CUDA yet");
-        /*auto arg_str = std::get<std::string>(content);
+        auto arg_str = std::get<std::string>(content);
+
         auto value = builder->CreateGlobalStringPtr(arg_str, "content_string");
-        types.push_back(value_type ??);
+        auto char_type = llvm::Type::getInt8Ty(*tlctx->get_this_thread_context());
+        auto value_type = llvm::PointerType::get(char_type, 0);
+
+        types.push_back(value_type);
         values.push_back(value);
-        formats += "%s";*/
+        formats += "%s";
       }
     }
 

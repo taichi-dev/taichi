@@ -299,10 +299,8 @@ def layout(func):
     pytaichi.layout_functions.append(func)
 
 
-def ti_print(var):
-    code = inspect.getframeinfo(inspect.currentframe().f_back).code_context[0]
-    arg_name = code[code.index('(') + 1:code.rindex(')')]
-    taichi_lang_core.print_(Expr(var).ptr, arg_name)
+def ti_print(*vars):
+    taichi_lang_core.create_print([Expr(var).ptr for var in vars])
 
 
 def ti_int(var):

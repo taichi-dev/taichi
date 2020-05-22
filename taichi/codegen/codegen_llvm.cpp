@@ -618,27 +618,13 @@ llvm::Value *CodeGenLLVM::create_print(std::string tag,
                                        llvm::Value *value) {
   TI_ASSERT(arch_use_host_memory(kernel->arch));
   std::vector<Value *> args;
-  std::string format;
-  if (dt == DataType::i32) {
-    format = "%d";
-  } else if (dt == DataType::i64) {
-#if defined(TI_PLATFORM_UNIX)
-    format = "%lld";
-#else
-    format = "%I64d";
-#endif
-  } else if (dt == DataType::f32) {
-    format = "%f";
-    value = builder->CreateFPExt(value, tlctx->get_data_type(DataType::f64));
-  } else if (dt == DataType::f64) {
-    format = "%.12f";
-  } else {
-    TI_NOT_IMPLEMENTED
-  }
+  std::string format = data_type_format(dt);
   auto runtime_printf = call("LLVMRuntime_get_host_printf", get_runtime());
   args.push_back(builder->CreateGlobalStringPtr(
       ("[llvm codegen debug] " + tag + " = " + format + "\n").c_str(),
       "format_string"));
+  if (dt == DataType::f32)
+    value = builder->CreateFPExt(value, tlctx->get_data_type(DataType::f64));
   args.push_back(value);
   return builder->CreateCall(runtime_printf, args);
 }
@@ -646,30 +632,21 @@ llvm::Value *CodeGenLLVM::create_print(std::string tag,
 void CodeGenLLVM::visit(PrintStmt *stmt) {
   TI_ASSERT(stmt->width() == 1);
   std::vector<Value *> args;
-  std::string format;
-  auto value = llvm_val[stmt->stmt];
-  auto dt = stmt->stmt->ret_type.data_type;
-  if (dt == DataType::i32) {
-    format = "%d";
-  } else if (dt == DataType::i64) {
-#if defined(TI_PLATFORM_UNIX)
-    format = "%lld";
-#else
-    format = "%I64d";
-#endif
-  } else if (dt == DataType::f32) {
-    format = "%f";
-    value = builder->CreateFPExt(value, tlctx->get_data_type(DataType::f64));
-  } else if (dt == DataType::f64) {
-    format = "%.12f";
-  } else {
-    TI_NOT_IMPLEMENTED
+  std::string formats;
+  for (auto content : stmt->contents) {
+    auto value = llvm_val[content];
+    if (content->ret_type.data_type == DataType::f32)
+      value = builder->CreateFPExt(value, tlctx->get_data_type(DataType::f64));
+    args.push_back(value);
+
+    if (formats.size() != 0)  // not the first expr?
+      formats += " ";         // add seperator
+    formats += data_type_format(content->ret_type.data_type);
   }
   auto runtime_printf = call("LLVMRuntime_get_host_printf", get_runtime());
-  args.push_back(builder->CreateGlobalStringPtr(
-      ("[debug] " + stmt->str + " = " + format + "\n").c_str(),
-      "format_string"));
-  args.push_back(value);
+  args.insert(args.begin(),
+              builder->CreateGlobalStringPtr(
+                  ("[debug] " + formats + "\n").c_str(), "format_string"));
 
   llvm_val[stmt] = builder->CreateCall(runtime_printf, args);
 }

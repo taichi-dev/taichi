@@ -8,6 +8,8 @@ import argparse
 from collections import defaultdict
 from colorama import Fore, Back, Style
 from taichi.tools.video import make_video, interpolate_frames, mp4_to_gif, scale_video, crop_video, accelerate_video
+from pathlib import Path
+import runpy
 
 
 def test_python(args):
@@ -70,6 +72,43 @@ def test_cpp(args):
     print("Running C++ tests...")
     task = ti.Task('test')
     return int(task.run(*test_files))
+
+
+def get_examples_dir() -> Path:
+    """Get the path to the examples directory."""
+    import taichi as ti
+
+    root_dir = ti.package_root() if ti.is_release() else ti.get_repo_directory(
+    )
+    examples_dir = Path(root_dir) / 'examples'
+    return examples_dir
+
+
+def get_available_examples() -> set:
+    """Get a set of all available example names."""
+    examples_dir = get_examples_dir()
+    all_examples = examples_dir.rglob('*.py')
+    all_example_names = {
+        str(f.resolve()).split('/')[-1].split('.')[0]
+        for f in all_examples
+    }
+    return all_example_names
+
+
+def run_example(name: str):
+    """Run an example based on the example NAME."""
+    all_example_names = get_available_examples()
+    if name not in all_example_names:
+        sys.exit(
+            f"Sorry, {name} is not an available example name!\nAvailable example names are: {sorted(all_example_names)}"
+        )
+    examples_dir = get_examples_dir()
+    target = str((examples_dir / f"{name}.py").resolve())
+    # we need to modify path for examples that use
+    # implicit relative imports
+    sys.path.append(str(examples_dir.resolve()))
+    print(f"Running example {name} ...")
+    runpy.run_path(target, run_name='__main__')
 
 
 def get_benchmark_baseline_dir():
@@ -267,7 +306,9 @@ def main(debug=False):
             "           ti gif                    |-> Convert mp4 file to gif\n"
             "           ti doc                    |-> Build documentation\n"
             "           ti release                |-> Make source code release\n"
-            "           ti debug [script.py]      |-> Debug script\n")
+            "           ti debug [script.py]      |-> Debug script\n"
+            "           ti example [name]         |-> Run an example by name\n"
+        )
         return 0
 
     t = time.time()
@@ -411,6 +452,7 @@ def main(debug=False):
         framerate = 24
         mp4_to_gif(input_fn, output_fn, framerate)
     elif mode == "convert":
+        import shutil
         # http://www.commandlinefu.com/commands/view/3584/remove-color-codes-special-characters-with-sed
         # TODO: Windows support
         for fn in sys.argv[2:]:
@@ -442,6 +484,13 @@ def main(debug=False):
         fn = f'taichi-src-v{ver[0]}-{ver[1]}-{ver[2]}-{commit}-{md5}.zip'
         import shutil
         shutil.move('release.zip', fn)
+    elif mode == "example":
+        if len(sys.argv) != 3:
+            sys.exit(
+                f"Invalid arguments! Usage: ti example [name]\nAvailable example names are: {sorted(get_available_examples())}"
+            )
+        example = sys.argv[2]
+        run_example(name=example)
     else:
         name = sys.argv[1]
         print('Running task [{}]...'.format(name))

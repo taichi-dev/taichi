@@ -75,11 +75,12 @@ class FrontendIfStmt : public Stmt {
 
 class FrontendPrintStmt : public Stmt {
  public:
-  Expr expr;
-  std::string str;
+  std::vector<Expr> contents;
 
-  FrontendPrintStmt(const Expr &expr, const std::string &str)
-      : expr(load_if_ptr(expr)), str(str) {
+  FrontendPrintStmt(const std::vector<Expr> &contents_) {
+    for (const auto &c : contents_) {
+      contents.push_back(load_if_ptr(c));
+    }
   }
 
   TI_DEFINE_ACCEPT

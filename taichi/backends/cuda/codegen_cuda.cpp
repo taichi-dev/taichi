@@ -107,39 +107,36 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
   void visit(PrintStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
 
-    auto value_type = tlctx->get_data_type(stmt->stmt->ret_type.data_type);
+    std::vector<llvm::Type *> types;
+    std::vector<llvm::Value *> values;
 
-    std::string format;
+    std::string formats;
+    for (auto content : stmt->contents) {
+      if (formats.size() != 0)  // not the first expr?
+        formats += " ";         // add seperator
+      formats += data_type_format(content->ret_type.data_type);
 
-    auto value = llvm_val[stmt->stmt];
+      auto value_type = tlctx->get_data_type(content->ret_type.data_type);
+      auto value = llvm_val[content];
+      if (content->ret_type.data_type == DataType::f32)
+        value = builder->CreateFPExt(value, value_type);
 
-    if (stmt->stmt->ret_type.data_type == DataType::i32) {
-      format = "%d";
-    } else if (stmt->stmt->ret_type.data_type == DataType::i64) {
-      format = "%lld";
-    } else if (stmt->stmt->ret_type.data_type == DataType::f32) {
-      value_type = llvm::Type::getDoubleTy(*llvm_context);
-      value = builder->CreateFPExt(value, value_type);
-      format = "%f";
-    } else if (stmt->stmt->ret_type.data_type == DataType::f64) {
-      format = "%.12f";
-    } else {
-      TI_NOT_IMPLEMENTED
+      types.push_back(value_type);
+      values.push_back(value);
     }
 
-    std::vector<llvm::Type *> types{value_type};
+    auto format_str = "[debug] " + formats + "\n";
     auto stype = llvm::StructType::get(*llvm_context, types, false);
-    auto values = builder->CreateAlloca(stype);
-    auto value_ptr = builder->CreateGEP(
-        values, {tlctx->get_constant(0), tlctx->get_constant(0)});
-    builder->CreateStore(value, value_ptr);
-
-    auto format_str = "[debug] " + stmt->str + " = " + format + "\n";
-
+    auto value_arr = builder->CreateAlloca(stype);
+    for (int i = 0; i < values.size(); i++) {
+      auto value_ptr = builder->CreateGEP(
+          value_arr, {tlctx->get_constant(0), tlctx->get_constant(i)});
+      builder->CreateStore(values[i], value_ptr);
+    }
     llvm_val[stmt] = LLVMModuleBuilder::call(
         builder.get(), "vprintf",
         builder->CreateGlobalStringPtr(format_str, "format_string"),
-        builder->CreateBitCast(values,
+        builder->CreateBitCast(value_arr,
                                llvm::Type::getInt8PtrTy(*llvm_context)));
   }
 

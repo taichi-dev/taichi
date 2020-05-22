@@ -2,22 +2,51 @@ name: Persubmit Checks
 on:
   pull_request:
     types: [opened, synchronize, reopened]
-    paths:
-      - '**.h'
-      - '**.cpp'
-      - '**.py'
-      - '**.rst'
-      - '**.md'
-      - '!examples/**.py'
 
 jobs:
+  build_and_test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'skip ci') }}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+
+      - name: Download Pre-Built LLVM 8.0.1
+        run: |
+          mkdir taichi-llvm
+          cd taichi-llvm
+          wget https://github.com/yuanming-hu/taichi_assets/releases/download/llvm8/taichi-llvm-8.0.1-linux-x64.zip --retry-on-http-error=403 --waitretry=3 --tries=5
+          unzip taichi-llvm-8.0.1-linux-x64.zip
+
+      - name: Build Project
+        run: |
+          export TAICHI_REPO_DIR=`pwd`
+          export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
+          export CI_SETUP_CMAKE_ARGS=-DTI_WITH_OPENGL:BOOL=OFF
+          export CXX=clang++
+          # GLFW dependencies:
+          #export CI_SETUP_CMAKE_ARGS=-DTI_WITH_OPENGL:BOOL=ON
+          #sudo apt-get install libx11-dev libxcursor-dev libxi-dev
+          #sudo apt-get install libxrandr-dev libxinerama-dev libglvnd-dev
+          python misc/ci_setup.py ci
+
+      - name: Functionallity Test
+        run: |
+          export TAICHI_REPO_DIR=`pwd`
+          export PATH=$TAICHI_REPO_DIR/bin:$PATH
+          export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
+          export PYTHONPATH=$TAICHI_REPO_DIR/python
+          python examples/laplace.py
+          ti test -vr2 -t1
+
   code_format:
     name: Code Format
     runs-on: ubuntu-latest
-    if: ${{ !contains(github.event.head_commit.message, '[skip fmt]') }}
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v2
+      - uses: actions/checkout@v2
       - name: Check code format
         run: |
           git fetch https://github.com/taichi-dev/taichi.git refs/heads/master
@@ -26,12 +55,12 @@ jobs:
           git config user.email "taichigardener@gmail.com"
           git config user.name "Taichi Gardener"
           git commit -m "fake squash commit" || true
-          git checkout -b last_squash
-          git checkout -b enforced_format
+          git checkout -b _last_squash
+          git checkout -b _enforced_format
           git reset FETCH_HEAD
           python3 -m pip install --user yapf gitpython
           python3 misc/format.py
           git add .
           git commit -m "enforce code format" || true
           # exit with 1 if there were differences:
-          git diff last_squash enforced_format --exit-code
+          git diff _last_squash _enforced_format --exit-code

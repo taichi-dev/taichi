@@ -56,6 +56,8 @@ inline DataType get_data_type() {
 
 std::string data_type_name(DataType t);
 
+std::string data_type_format(DataType dt);
+
 std::string data_type_short_name(DataType t);
 
 enum class SNodeType {

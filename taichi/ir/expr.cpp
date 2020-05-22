@@ -199,8 +199,4 @@ Expr Var(const Expr &x) {
   return var;
 }
 
-void Print_(const Expr &a, const std::string &str) {
-  current_ast_builder().insert(std::make_unique<FrontendPrintStmt>(a, str));
-}
-
 TLANG_NAMESPACE_END

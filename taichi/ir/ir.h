@@ -1024,14 +1024,13 @@ class IfStmt : public Stmt {
 
 class PrintStmt : public Stmt {
  public:
-  Stmt *stmt;
-  std::string str;
+  std::vector<Stmt *> contents;
 
-  PrintStmt(Stmt *stmt, const std::string &str) : stmt(stmt), str(str) {
+  PrintStmt(const std::vector<Stmt *> &content_) : contents(content_) {
     TI_STMT_REG_FIELDS;
   }
 
-  TI_STMT_DEF_FIELDS(ret_type, stmt, str);
+  TI_STMT_DEF_FIELDS(ret_type, contents);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 

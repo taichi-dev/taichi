@@ -3,6 +3,7 @@
 #include "taichi/ir/ir.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/visitors.h"
+#include <algorithm>
 
 TLANG_NAMESPACE_BEGIN
 
@@ -241,8 +242,11 @@ class BasicBlockVectorSplit : public IRVisitor {
 
   void visit(PrintStmt *stmt) override {
     for (int i = 0; i < current_split_factor; i++) {
-      current_split[i] =
-          Stmt::make<PrintStmt>(lookup(stmt->stmt, i), stmt->str);
+      std::vector<Stmt *> new_contents;
+      std::transform(stmt->contents.begin(), stmt->contents.end(),
+                     std::back_inserter(new_contents),
+                     [=](auto x) { return lookup(x, i); });
+      current_split[i] = Stmt::make<PrintStmt>(new_contents);
     }
   }
 

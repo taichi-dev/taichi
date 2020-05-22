@@ -806,7 +806,7 @@ class Block : public IRNode {
  public:
   Block *parent;
   std::vector<std::unique_ptr<Stmt>> statements, trash_bin;
-  std::map<Identifier, Stmt *> local_var_alloca;  // Only used in frontend
+  std::unordered_map<Identifier, Stmt *> local_var_alloca;  // Only used in frontend
   Stmt *mask_var;
   std::vector<SNode *> stop_gradients;
 

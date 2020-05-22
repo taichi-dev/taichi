@@ -181,17 +181,24 @@ class IRPrinter : public IRVisitor {
     print("}}");
   }
 
-  void visit(FrontendPrintStmt *print_stmt) override {
-    print("print \"{}\", {}", print_stmt->str, print_stmt->expr.serialize());
-  }
-
   void visit(FrontendEvalStmt *stmt) override {
     print("{} = eval {}", stmt->name(), stmt->expr.serialize());
   }
 
+  void visit(FrontendPrintStmt *print_stmt) override {
+    std::vector<std::string> contents;
+    for (auto c : print_stmt->contents) {
+      contents.push_back(c.serialize());
+    }
+    print("print {}", fmt::join(contents, ", "));
+  }
+
   void visit(PrintStmt *print_stmt) override {
-    print("{}print {}, {}", print_stmt->type_hint(), print_stmt->str,
-          print_stmt->stmt->name());
+    std::vector<std::string> names;
+    for (auto c : print_stmt->contents) {
+      names.push_back(c->name());
+    }
+    print("print {}", fmt::join(names, ", "));
   }
 
   void visit(ConstStmt *const_stmt) override {

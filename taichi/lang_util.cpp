@@ -87,6 +87,24 @@ std::string data_type_name(DataType t) {
   return type_names[t];
 }
 
+std::string data_type_format(DataType dt) {
+  if (dt == DataType::i32) {
+    return "%d";
+  } else if (dt == DataType::i64) {
+#if defined(TI_PLATFORM_UNIX)
+    return "%lld";
+#else
+    return "%I64d";
+#endif
+  } else if (dt == DataType::f32) {
+    return "%f";
+  } else if (dt == DataType::f64) {
+    return "%.12f";
+  } else {
+    TI_NOT_IMPLEMENTED
+  }
+}
+
 int data_type_size(DataType t) {
   static std::map<DataType, int> type_sizes;
   if (type_sizes.empty()) {

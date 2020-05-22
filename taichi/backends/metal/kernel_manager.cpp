@@ -71,13 +71,13 @@ using InputBuffersMap = std::unordered_map<BufferEnum, MTLBuffer *>;
 class CompiledMtlKernelBase {
  public:
   struct Params {
-    const KernelAttributes *kerenl_attribs;
+    const KernelAttributes *kernel_attribs;
     MTLDevice *device;
     MTLFunction *mtl_func;
   };
 
   explicit CompiledMtlKernelBase(Params &params)
-      : kernel_attribs_(*params.kerenl_attribs),
+      : kernel_attribs_(*params.kernel_attribs),
         pipeline_state_(
             new_compute_pipeline_state_with_function(params.device,
                                                      params.mtl_func)) {
@@ -148,13 +148,16 @@ class RuntimeListOpsMtlKernel : public CompiledMtlKernelBase {
  public:
   struct Params : public CompiledMtlKernelBase::Params {
     MemoryPool *mem_pool = nullptr;
-    const SNode *snode = nullptr;
+
+    const SNode *snode() const {
+      return kernel_attribs->runtime_list_op_attribs.snode;
+    }
   };
 
   explicit RuntimeListOpsMtlKernel(Params &params)
       : CompiledMtlKernelBase(params),
-        parent_snode_id_(params.snode->parent->id),
-        child_snode_id_(params.snode->id),
+        parent_snode_id_(params.snode()->parent->id),
+        child_snode_id_(params.snode()->id),
         args_mem_(std::make_unique<BufferMemoryView>(
             /*size=*/sizeof(int32_t) * 2,
             params.mem_pool)),
@@ -223,15 +226,14 @@ class CompiledTaichiKernel {
       if (ktype == KernelTaskType::clear_list ||
           ktype == KernelTaskType::listgen) {
         RuntimeListOpsMtlKernel::Params kparams;
-        kparams.kerenl_attribs = &ka;
+        kparams.kernel_attribs = &ka;
         kparams.device = device;
         kparams.mtl_func = mtl_func.get();
-        kparams.snode = ka.runtime_list_op_attribs.snode;
         kparams.mem_pool = params.mem_pool;
         kernel = std::make_unique<RuntimeListOpsMtlKernel>(kparams);
       } else {
-        CompiledMtlKernelBase::Params kparams;
-        kparams.kerenl_attribs = &ka;
+        UserMtlKernel::Params kparams;
+        kparams.kernel_attribs = &ka;
         kparams.device = device;
         kparams.mtl_func = mtl_func.get();
         kernel = std::make_unique<UserMtlKernel>(kparams);
@@ -531,13 +533,17 @@ class KernelManager::Impl {
       }
       const auto *sn = iter->second.snode;
       SNodeExtractors *rtm_ext = reinterpret_cast<SNodeExtractors *>(addr) + i;
+      TI_DEBUG("SNodeExtractors snode={}", i);
       for (int j = 0; j < taichi_max_num_indices; ++j) {
         const auto &ext = sn->extractors[j];
         rtm_ext->extractors[j].start = ext.start;
         rtm_ext->extractors[j].num_bits = ext.num_bits;
         rtm_ext->extractors[j].acc_offset = ext.acc_offset;
         rtm_ext->extractors[j].num_elements = ext.num_elements;
+        TI_DEBUG("  [{}] start={} num_bits={} acc_offset={} num_elements={}", j,
+                 ext.start, ext.num_bits, ext.acc_offset, ext.num_elements);
       }
+      TI_DEBUG("");
     }
     addr += sizeof(SNodeExtractors) * max_snodes;
     // init snode_lists
@@ -548,14 +554,16 @@ class KernelManager::Impl {
       if (iter == snode_descriptors.end()) {
         continue;
       }
-      const SNodeDescriptor &sn_meta = iter->second;
+      const SNodeDescriptor &sn_desc = iter->second;
       ListManager *rtm_list = reinterpret_cast<ListManager *>(addr) + i;
       rtm_list->element_stride = sizeof(ListgenElement);
       // This can be really large, especially for other sparse SNodes (e.g.
       // dynamic, hash). In the future, Metal might also be able to support
       // dynamic memory allocation from the kernel side. That should help reduce
       // the initial size.
-      rtm_list->max_num_elems = sn_meta.total_num_elems_from_root;
+      rtm_list->max_num_elems =
+          sn_desc.total_num_self_from_root(snode_descriptors);
+
       rtm_list->next = 0;
       rtm_list->mem_begin = list_data_mem_begin;
       list_data_mem_begin += rtm_list->max_num_elems * rtm_list->element_stride;

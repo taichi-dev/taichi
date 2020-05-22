@@ -10,13 +10,6 @@ TLANG_NAMESPACE_BEGIN
 // IR passes
 namespace irpass {
 
-struct OffloadedResult {
-  // Total size in bytes of the global temporary variables
-  std::size_t total_size;
-  // Offloaded local variables to its offset in the global tmps memory.
-  std::unordered_map<const Stmt *, std::size_t> local_to_global_offset;
-};
-
 void re_id(IRNode *root);
 void flag_access(IRNode *root);
 void die(IRNode *root);
@@ -40,7 +33,7 @@ void check_out_of_bound(IRNode *root);
 void lower_access(IRNode *root, bool lower_atomic, Kernel *kernel = nullptr);
 void make_adjoint(IRNode *root, bool use_stack = false);
 void constant_fold(IRNode *root);
-OffloadedResult offload(IRNode *root);
+void offload(IRNode *root);
 void fix_block_parents(IRNode *root);
 void replace_statements_with(IRNode *root,
                              std::function<bool(Stmt *)> filter,
@@ -49,13 +42,13 @@ void demote_dense_struct_fors(IRNode *root);
 void demote_atomics(IRNode *root);
 void reverse_segments(IRNode *root);  // for autograd
 std::unique_ptr<ScratchPads> initialize_scratch_pad(StructForStmt *root);
-OffloadedResult compile_to_offloads(IRNode *ir,
-                                    const CompileConfig &config,
-                                    bool vectorize,
-                                    bool grad,
-                                    bool ad_use_stack,
-                                    bool verbose,
-                                    bool lower_global_access = true);
+void compile_to_offloads(IRNode *ir,
+                         const CompileConfig &config,
+                         bool vectorize,
+                         bool grad,
+                         bool ad_use_stack,
+                         bool verbose,
+                         bool lower_global_access = true);
 
 }  // namespace irpass
 

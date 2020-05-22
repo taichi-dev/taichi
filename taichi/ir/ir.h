@@ -1257,11 +1257,11 @@ inline void StmtFieldManager::operator()(const char *key, T &&value) {
     }
 
   } else if constexpr (std::is_same<decay_T,
-      std::variant<Stmt *, std::string>>::value) {
+                                    std::variant<Stmt *, std::string>>::value) {
     if (std::holds_alternative<std::string>(value)) {
-    stmt->field_manager.fields.emplace_back(
-        std::make_unique<StmtFieldNumeric<std::string>>(
-          std::get<std::string>(value)));
+      stmt->field_manager.fields.emplace_back(
+          std::make_unique<StmtFieldNumeric<std::string>>(
+              std::get<std::string>(value)));
     } else {
       (*this)("__element", std::get<Stmt *>(value));
     }

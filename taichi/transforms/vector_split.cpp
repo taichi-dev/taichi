@@ -246,11 +246,11 @@ class BasicBlockVectorSplit : public IRVisitor {
       std::transform(stmt->contents.begin(), stmt->contents.end(),
                      std::back_inserter(new_contents),
                      [=](auto const &x) -> PrintStmt::EntryType {
-                      if (std::holds_alternative<Stmt *>(x)) {
-                        return lookup(std::get<Stmt *>(x), i);
-                      } else {
-                        return x;
-                      }
+                       if (std::holds_alternative<Stmt *>(x)) {
+                         return lookup(std::get<Stmt *>(x), i);
+                       } else {
+                         return x;
+                       }
                      });
       current_split[i] = Stmt::make<PrintStmt>(new_contents);
     }

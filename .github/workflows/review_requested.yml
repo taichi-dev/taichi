@@ -7,7 +7,8 @@ jobs:
   format:
     name: Trigger Format Server
     runs-on: ubuntu-latest
-    if: ${{ contains(github.event.pull_request.requested_reviewers, 'taichi-gardener') }}
+    #if: ${{ contains(github.event.pull_request.requested_reviewers, 'taichi-gardener') }}
     steps:
       - run: |
+          echo ${{ contains(github.event.pull_request.requested_reviewers, 'taichi-gardener') }}
           echo curl http://kun.csail.mit.edu:31415/${{ github.event.pull_request.number }} -LO

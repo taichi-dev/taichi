@@ -26,13 +26,13 @@ Arguments:
 paths       For each file, it will be visited; for each directory, files under
             that tree will be visited.
 
---exts      Comma-separated extension names to restrict the files that to be
+--exts      Comma-separated extension names to restrict the files that are to be
             picked up, e.g. "cpp", "cpp,py,sh". If not given, all files on the
             traversal paths with recognized extension names will be picked up.
 
 --dry-run   Do not modify the files (for development).
 
---docs      Print this long documentation and exits.
+--docs      Print this long documentation and exit.
 
 Effects:
 

@@ -46,7 +46,7 @@ See :ref:`layout` for more details about data layout. ``ti.root`` is the root no
 
     :parameter snode: (SNode)
     :parameter index: axis (0 for ``i`` and 1 for ``j``)
-    :return: (scalar) the size of tensor alone that axis
+    :return: (scalar) the size of tensor along that axis
 
     Equivalent to ``tensor.shape()[i]``.
 

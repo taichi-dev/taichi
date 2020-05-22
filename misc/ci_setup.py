@@ -258,7 +258,8 @@ class Installer:
             # compile ..
             os.makedirs('build', exist_ok=True)
             arg = environ.get('CI_SETUP_CMAKE_ARGS', '')
-            execute_command('cd build && cmake .. -DTI_WITH_CUDA:BOOL=OFF ' + arg)
+            execute_command('cd build && cmake .. -DTI_WITH_CUDA:BOOL=OFF ' +
+                            arg)
             execute_command('cd build && make -j 10')
         return
         if test_installation():

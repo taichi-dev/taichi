@@ -192,7 +192,7 @@ class IRPrinter : public IRVisitor {
       if (std::holds_alternative<Expr>(c))
         name = std::get<Expr>(c).serialize();
       else
-        name = std::get<std::string>(c);
+        name = "\"" + std::get<std::string>(c) + "\"";
       contents.push_back(name);
     }
     print("print {}", fmt::join(contents, ", "));
@@ -201,10 +201,12 @@ class IRPrinter : public IRVisitor {
   void visit(PrintStmt *print_stmt) override {
     std::vector<std::string> names;
     for (auto const &c : print_stmt->contents) {
+      std::string name;
       if (std::holds_alternative<Stmt *>(c))
-        names.push_back(std::get<Stmt *>(c)->name());
+        name = std::get<Stmt *>(c)->name();
       else
-        names.push_back(std::get<std::string>(c));
+        name = "\"" + std::get<std::string>(c) + "\"";
+      names.push_back(name);
     }
     print("print {}", fmt::join(names, ", "));
   }

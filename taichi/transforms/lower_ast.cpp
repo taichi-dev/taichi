@@ -10,7 +10,6 @@ TLANG_NAMESPACE_BEGIN
 namespace {
 
 using FlattenContext = Expression::FlattenContext;
-using StructForOffsets = std::unordered_map<StructForStmt *, std::vector<int>>;
 
 template <typename T>
 std::vector<T *> make_raw_pointer_list(
@@ -31,8 +30,6 @@ class LowerAST : public IRVisitor {
   Stmt *capturing_loop;
   std::unordered_set<Stmt *> detected_fors_with_break;
   Block *current_block;
-
-  StructForOffsets struct_for_offsets;
 
   FlattenContext make_flatten_ctx() {
     FlattenContext fctx;
@@ -292,7 +289,6 @@ class LowerAST : public IRVisitor {
       }
       new_for->body->insert(std::move(new_statements), 0);
       new_for->scratch_opt = stmt->scratch_opt;
-      struct_for_offsets[new_for.get()] = offsets;
       fctx.push_back(std::move(new_for));
     }
     stmt->parent->replace_with(stmt, std::move(fctx.stmts));
@@ -400,7 +396,7 @@ class LowerAST : public IRVisitor {
     throw IRModified();
   }
 
-  static StructForOffsets run(IRNode *node) {
+  static void run(IRNode *node) {
     LowerAST inst(irpass::analysis::detect_fors_with_break(node));
     while (true) {
       bool modified = false;
@@ -412,63 +408,13 @@ class LowerAST : public IRVisitor {
       if (!modified)
         break;
     }
-    return inst.struct_for_offsets;
-  }
-};
-
-class FixStructForOffsets : public BasicStmtVisitor {
- public:
-  using BasicStmtVisitor::visit;
-
-  StructForOffsets offsets;
-
-  void visit(StructForStmt *stmt) {
-    // TODO: StructForStmt::loop_vars is deprecated
-    /*if (const auto &it = offsets.find(stmt);
-        it != offsets.end() && !it->second.empty()) {
-      auto offset = it->second;
-      std::vector<Stmt *> loop_vars_with_offset(stmt->loop_vars.size());
-      VecStatement new_statements;
-      for (int i = 0; i < (int)stmt->loop_vars.size(); i++) {
-        auto old_alloca = stmt->loop_vars[i];
-
-        auto new_alloca =
-            new_statements.push_back<AllocaStmt>(1, DataType::i32);
-
-        auto load = new_statements.push_back<LocalLoadStmt>(
-            LocalAddress(old_alloca, 0));
-
-        auto offset_const =
-            new_statements.push_back<ConstStmt>(TypedConstant(offset[i]));
-
-        auto add = new_statements.push_back<BinaryOpStmt>(BinaryOpType::add,
-                                                          load, offset_const);
-
-        new_statements.push_back<LocalStoreStmt>(new_alloca, add);
-
-        loop_vars_with_offset[i] = new_alloca;
-
-        irpass::replace_all_usages_with(stmt->body.get(), old_alloca,
-                                        new_alloca);
-      }
-
-      stmt->body->insert(std::move(new_statements), 0);
-    }*/
-  }
-
-  static void run(IRNode *root, const StructForOffsets &offsets) {
-    FixStructForOffsets inst;
-    inst.offsets = offsets;
-    root->accept(&inst);
   }
 };
 
 namespace irpass {
 
 void lower(IRNode *root) {
-  auto offsets = LowerAST::run(root);
-  FixStructForOffsets::run(root, offsets);
-  convert_into_loop_index(root);
+  LowerAST::run(root);
 }
 
 }  // namespace irpass

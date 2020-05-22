@@ -128,7 +128,7 @@ class LoopVectorize : public IRVisitor {
   }
 
   void visit(StructForStmt *for_stmt) override {
-    // TODO: RangeForStmt::loop_var is deprecated
+    // TODO: StructForStmt::loop_var is deprecated
     return;
     /*if (for_stmt->loop_vars.empty())
       return;

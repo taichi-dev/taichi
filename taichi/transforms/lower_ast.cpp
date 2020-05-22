@@ -178,6 +178,10 @@ class LowerAST : public IRVisitor {
     // do nothing
   }
 
+  void visit(BinaryOpStmt *stmt) override {
+    // do nothing
+  }
+
   void visit(FrontendForStmt *stmt) override {
     auto fctx = make_flatten_ctx();
     if (stmt->is_ranged()) {

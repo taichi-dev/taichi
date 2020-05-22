@@ -809,8 +809,8 @@ class Block : public IRNode {
   Stmt *mask_var;
   std::vector<SNode *> stop_gradients;
 
-  // Only used in frontend. Stores LoopIndexStmt for loop variables, and
-  // AllocaStmt for other variables.
+  // Only used in frontend. Stores LoopIndexStmt or BinaryOpStmt for loop
+  // variables, and AllocaStmt for other variables.
   std::map<Identifier, Stmt *> local_var_to_stmt;
 
   Block() {

@@ -46,7 +46,7 @@ The scripts checks a file and modifies it if necessary.
 Examples:
 
 {file} .
-{file} taichi/common/core.cpp
+{file} --check taichi/common/core.cpp taichi/ir/transforms.h
 {file} benchmarks cmake docs examples misc python taichi tests
 {file} --exts "cpp,py" benchmarks cmake docs examples misc python taichi tests""".format(
     file=os.path.relpath(__file__))
@@ -290,7 +290,7 @@ def main():
     argparser.add_argument("-c",
                            "--check",
                            action="store_true",
-                           help="check only; returns 1 if some have incompliant notice")
+                           help="check only; returns 1 if some files will be rewritten")
     argparser.add_argument("--docs",
                            action="store_true",
                            help="print long documentation")

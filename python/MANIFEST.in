@@ -1,4 +1,3 @@
-include README
 include MANIFEST.in
 include *.txt
 include *.py

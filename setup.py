@@ -16,7 +16,7 @@ classifiers = [
 
 data_files = glob.glob('python/lib/*')
 print(data_files)
-packages = setuptools.find_packages()
+packages = setuptools.find_packages() + ['taichi.examples']
 print(packages)
 
 setuptools.setup(

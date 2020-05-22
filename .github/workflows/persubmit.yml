@@ -3,8 +3,8 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
   paths-ignore:
-    'examples/**.py'
-    '*.yml'
+    - 'examples/**.py'
+    - '*.yml'
 
 jobs:
   build_and_test:

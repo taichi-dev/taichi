@@ -75,11 +75,15 @@ class FrontendIfStmt : public Stmt {
 
 class FrontendPrintStmt : public Stmt {
  public:
-  std::vector<Expr> contents;
+  using EntryType = std::variant<Expr, std::string>;
+  std::vector<EntryType> contents;
 
-  FrontendPrintStmt(const std::vector<Expr> &contents_) {
+  FrontendPrintStmt(const std::vector<EntryType> &contents_) {
     for (const auto &c : contents_) {
-      contents.push_back(load_if_ptr(c));
+      if (std::holds_alternative<Expr>(c))
+        contents.push_back(c);
+      else
+        contents.push_back(load_if_ptr(std::get<Expr>(c)));
     }
   }
 

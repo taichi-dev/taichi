@@ -5,6 +5,7 @@
 #include <atomic>
 #include <unordered_set>
 #include <unordered_map>
+#include <variant>
 #include "taichi/common/core.h"
 #include "taichi/util/bit.h"
 #include "taichi/lang_util.h"
@@ -1021,13 +1022,20 @@ class IfStmt : public Stmt {
 
 class PrintStmt : public Stmt {
  public:
-  std::vector<Stmt *> contents;
+  using EntryType = std::variant<Stmt *, std::string>;
+  std::vector<EntryType> contents;
+  std::vector<Stmt *> stmts;
 
-  PrintStmt(const std::vector<Stmt *> &content_) : contents(content_) {
+  PrintStmt(const std::vector<EntryType> &contents_) : contents(contents_) {
+    for (auto const &c: contents) {
+      if (std::holds_alternative<Stmt *>(c)) {
+        stmts.push_back(std::get<Stmt *>(c));
+      }
+    };
     TI_STMT_REG_FIELDS;
   }
 
-  TI_STMT_DEF_FIELDS(ret_type, contents);
+  TI_STMT_DEF_FIELDS(ret_type, stmts, contents);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 

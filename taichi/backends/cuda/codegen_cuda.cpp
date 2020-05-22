@@ -111,18 +111,24 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     std::vector<llvm::Value *> values;
 
     std::string formats;
-    for (auto content : stmt->contents) {
-      if (formats.size() != 0)  // not the first expr?
-        formats += " ";         // add seperator
-      formats += data_type_format(content->ret_type.data_type);
+    for (auto const &content : stmt->contents) {
+      if (std::holds_alternative<Stmt *>(content)) {
+        auto arg_stmt = std::get<Stmt *>(content);
 
-      auto value_type = tlctx->get_data_type(content->ret_type.data_type);
-      auto value = llvm_val[content];
-      if (content->ret_type.data_type == DataType::f32)
-        value = builder->CreateFPExt(value, value_type);
+        if (formats.size() != 0)  // not the first expr?
+          formats += " ";         // add seperator
+        formats += data_type_format(arg_stmt->ret_type.data_type);
 
-      types.push_back(value_type);
-      values.push_back(value);
+        auto value_type = tlctx->get_data_type(arg_stmt->ret_type.data_type);
+        auto value = llvm_val[arg_stmt];
+        if (arg_stmt->ret_type.data_type == DataType::f32)
+          value = builder->CreateFPExt(value, value_type);
+
+        types.push_back(value_type);
+        values.push_back(value);
+      } else {
+        TI_NOT_IMPLEMENTED
+      }
     }
 
     auto format_str = "[debug] " + formats + "\n";

@@ -2,12 +2,14 @@ name: Persubmit Checks
 on:
   pull_request:
     types: [opened, synchronize, reopened]
+  paths-ignore:
+    'examples/**.py'
+    '*.yml'
 
 jobs:
   build_and_test:
     name: Build and Test
     runs-on: ubuntu-latest
-    #if: ${{ !contains(github.event.pull_request.labels.*.name, 'skip ci') && (contains(github.event.head_commit.modified, '.py') || contains(github.event.head_commit.modified, '.c')) }}
     if: ${{ !contains(github.event.pull_request.labels.*.name, 'skip ci') }}
     steps:
       - uses: actions/checkout@v2
@@ -15,7 +17,7 @@ jobs:
         with:
           python-version: 3.8
 
-      - name: Download pre-built LLVM 8.0.1
+      - name: Download Pre-Built LLVM 8.0.1
         run: |
           mkdir taichi-llvm
           cd taichi-llvm
@@ -34,7 +36,7 @@ jobs:
           #sudo apt-get install libxrandr-dev libxinerama-dev libglvnd-dev
           python misc/ci_setup.py ci
 
-      - name: Functional Test
+      - name: Functionallity Test
         run: |
           export TAICHI_REPO_DIR=`pwd`
           export PATH=$TAICHI_REPO_DIR/bin:$PATH
@@ -42,10 +44,10 @@ jobs:
           export PYTHONPATH=$TAICHI_REPO_DIR/python
           python examples/laplace.py
           ti test -vr2 -t1
+
   code_format:
     name: Code Format
     runs-on: ubuntu-latest
-    #if: ${{ contains(github.event.head_commit.modified, '.py') || contains(github.event.head_commit.modified, '.c') || contains(github.event.head_commit.modified, '.rst') || contains(github.event.head_commit.modified, '.md') }}
     steps:
       - uses: actions/checkout@v2
       - name: Check code format

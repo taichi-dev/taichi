@@ -215,13 +215,15 @@ def make_constant_expr(val):
             return Expr(taichi_lang_core.make_const_expr_i64(val))
         else:
             assert False
-    else:
+    elif isinstance(val, float):
         if pytaichi.default_fp == f32:
             return Expr(taichi_lang_core.make_const_expr_f32(val))
         elif pytaichi.default_fp == f64:
             return Expr(taichi_lang_core.make_const_expr_f64(val))
         else:
             assert False
+    else:
+        raise SyntaxError(f'Bad constant expression type: {type(val)}')
 
 
 def reset():
@@ -300,7 +302,16 @@ def layout(func):
 
 
 def ti_print(*vars):
-    taichi_lang_core.create_print([Expr(var).ptr for var in vars])
+    a, b, m = [], [], []
+    for var in vars:
+        if isinstance(var, str):
+            b.append(var)
+            m.append(True)
+        else:
+            a.append(Expr(var).ptr)
+            m.append(False)
+
+    taichi_lang_core.create_print(a, b, m)
 
 
 def ti_int(var):

@@ -81,9 +81,9 @@ class FrontendPrintStmt : public Stmt {
   FrontendPrintStmt(const std::vector<EntryType> &contents_) {
     for (const auto &c : contents_) {
       if (std::holds_alternative<Expr>(c))
-        contents.push_back(c);
-      else
         contents.push_back(load_if_ptr(std::get<Expr>(c)));
+      else
+        contents.push_back(c);
     }
   }
 

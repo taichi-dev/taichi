@@ -491,8 +491,20 @@ void export_lang(py::module &m) {
         });
 
   m.def("create_print",
-      [&](const std::vector<std::variant<Expr, std::string>> &contents) {
-        current_ast_builder().insert(std::make_unique<FrontendPrintStmt>(contents));
+      //[&](const std::vector<std::variant<Expr, std::string>> &contents) {
+      [&](const std::vector<Expr> &a, const std::vector<std::string> b,
+        const std::vector<bool> &m) {  // Thanking pybind11 devs :)
+        std::vector<std::variant<Expr, std::string>> c;
+        auto ia = a.begin();
+        auto ib = b.begin();
+        for (auto mi : m) {
+          if (!mi) {
+            c.push_back(*ia++);
+          } else {
+            c.push_back(*ib++);
+          }
+        }
+        current_ast_builder().insert(std::make_unique<FrontendPrintStmt>(c));
       });
 
   m.def("decl_arg", [&](DataType dt, bool is_nparray) {

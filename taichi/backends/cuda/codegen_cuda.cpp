@@ -112,11 +112,11 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
 
     std::string formats;
     for (auto const &content : stmt->contents) {
+      if (formats.size() != 0)  // not the first expr?
+        formats += " ";         // add seperator
       if (std::holds_alternative<Stmt *>(content)) {
         auto arg_stmt = std::get<Stmt *>(content);
 
-        if (formats.size() != 0)  // not the first expr?
-          formats += " ";         // add seperator
         formats += data_type_format(arg_stmt->ret_type.data_type);
 
         auto value_type = tlctx->get_data_type(arg_stmt->ret_type.data_type);
@@ -126,8 +126,14 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
 
         types.push_back(value_type);
         values.push_back(value);
+
       } else {
-        TI_NOT_IMPLEMENTED
+        TI_ERROR("string printing is not supported on CUDA yet");
+        /*auto arg_str = std::get<std::string>(content);
+        auto value = builder->CreateGlobalStringPtr(arg_str, "content_string");
+        types.push_back(value_type ??);
+        values.push_back(value);
+        formats += "%s";*/
       }
     }
 

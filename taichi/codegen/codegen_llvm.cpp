@@ -635,18 +635,22 @@ void CodeGenLLVM::visit(PrintStmt *stmt) {
   std::vector<Value *> args;
   std::string formats;
   for (auto const &content : stmt->contents) {
+    if (formats.size() != 0)  // not the first expr?
+      formats += " ";         // add seperator
+
     if (std::holds_alternative<Stmt *>(content)) {
       auto arg_stmt = std::get<Stmt *>(content);
       auto value = llvm_val[arg_stmt];
       if (arg_stmt->ret_type.data_type == DataType::f32)
         value = builder->CreateFPExt(value, tlctx->get_data_type(DataType::f64));
       args.push_back(value);
-
-      if (formats.size() != 0)  // not the first expr?
-        formats += " ";         // add seperator
       formats += data_type_format(arg_stmt->ret_type.data_type);
+
     } else {
-      TI_NOT_IMPLEMENTED;
+      auto arg_str = std::get<std::string>(content);
+      auto value = builder->CreateGlobalStringPtr(arg_str, "content_string");
+      args.push_back(value);
+      formats += "%s";
     }
   }
   auto runtime_printf = call("LLVMRuntime_get_host_printf", get_runtime());

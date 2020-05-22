@@ -1024,18 +1024,12 @@ class PrintStmt : public Stmt {
  public:
   using EntryType = std::variant<Stmt *, std::string>;
   std::vector<EntryType> contents;
-  std::vector<Stmt *> stmts;
 
   PrintStmt(const std::vector<EntryType> &contents_) : contents(contents_) {
-    for (auto const &c: contents) {
-      if (std::holds_alternative<Stmt *>(c)) {
-        stmts.push_back(std::get<Stmt *>(c));
-      }
-    };
     TI_STMT_REG_FIELDS;
   }
 
-  TI_STMT_DEF_FIELDS(ret_type, stmts, contents);
+  TI_STMT_DEF_FIELDS(ret_type, contents);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
@@ -1261,6 +1255,17 @@ inline void StmtFieldManager::operator()(const char *key, T &&value) {
     for (int i = 0; i < (int)value.size(); i++) {
       (*this)("__element", value[i]);
     }
+
+  } else if constexpr (std::is_same<decay_T,
+      std::variant<Stmt *, std::string>>::value) {
+    if (std::holds_alternative<std::string>(value)) {
+    stmt->field_manager.fields.emplace_back(
+        std::make_unique<StmtFieldNumeric<std::string>>(
+          std::get<std::string>(value)));
+    } else {
+      (*this)("__element", std::get<Stmt *>(value));
+    }
+
   } else if constexpr (std::is_same<decay_T, Stmt *>::value) {
     stmt->register_operand(const_cast<Stmt *&>(value));
   } else if constexpr (std::is_same<decay_T, LocalAddress>::value) {

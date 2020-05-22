@@ -277,14 +277,20 @@ class LowerAST : public IRVisitor {
       auto &&new_for = std::make_unique<StructForStmt>(
           snode, std::move(stmt->body), stmt->vectorize, stmt->parallelize,
           stmt->block_dim);
+      VecStatement new_statements;
       for (int i = 0; i < (int)stmt->loop_var_id.size(); i++) {
-        new_for->body->insert(
-            std::make_unique<LoopIndexStmt>(new_for.get(),
-                                            snode->physical_index_position[i]),
-            i);
-        new_for->body->local_var_to_stmt[stmt->loop_var_id[i]] =
-            new_for->body->statements[i].get();
+        Stmt *loop_index = new_statements.push_back<LoopIndexStmt>(
+            new_for.get(), snode->physical_index_position[i]);
+        if ((int)offsets.size() > i && offsets[i] != 0) {
+          auto offset_const =
+              new_statements.push_back<ConstStmt>(TypedConstant(offsets[i]));
+          auto result = new_statements.push_back<BinaryOpStmt>(
+              BinaryOpType::add, loop_index, offset_const);
+          loop_index = result;
+        }
+        new_for->body->local_var_to_stmt[stmt->loop_var_id[i]] = loop_index;
       }
+      new_for->body->insert(std::move(new_statements), 0);
       new_for->scratch_opt = stmt->scratch_opt;
       struct_for_offsets[new_for.get()] = offsets;
       fctx.push_back(std::move(new_for));

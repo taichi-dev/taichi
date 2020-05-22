@@ -453,7 +453,8 @@ class IdExpression : public Expression {
           std::make_unique<LocalLoadStmt>(LocalAddress(var_stmt, 0)));
       stmt = ctx->back_stmt();
     } else {
-      TI_ASSERT(var_stmt->is<LoopIndexStmt>());
+      // The loop index may have a coordinate offset.
+      TI_ASSERT(var_stmt->is<LoopIndexStmt>() || var_stmt->is<BinaryOpStmt>());
       stmt = var_stmt;
     }
   }

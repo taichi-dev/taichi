@@ -349,10 +349,6 @@ class IRPrinter : public IRVisitor {
           stmt->ptr->name(), stmt->data->name());
   }
 
-  void visit(PragmaSLPStmt *stmt) override {
-    print("#pragma SLP({})", stmt->slp_width);
-  }
-
   void visit(ElementShuffleStmt *stmt) override {
     print("{}{} = shuffle {}", stmt->type_hint(), stmt->name(),
           stmt->elements.serialize([](const VectorElement &ve) {

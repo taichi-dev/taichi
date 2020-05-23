@@ -125,7 +125,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
         if (arg_stmt->ret_type.data_type == DataType::f32) {
           // value = builder->CreateFPExt(value, value_type);
           value =
-            builder->CreateFPExt(value, tlctx->get_data_type(DataType::f64));
+              builder->CreateFPExt(value, tlctx->get_data_type(DataType::f64));
           value_type = tlctx->get_data_type(DataType::f64);
         }
 

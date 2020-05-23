@@ -80,7 +80,8 @@ def test_func_template():
 
     @ti.func
     def sample(x: ti.template(), l: ti.template(), I):
-        return x[l][I] # `x` is a list of ti.vars, so a compile time constant `l` is need to access it. 
+        return x[l][
+            I]  # `x` is a list of ti.vars, so a compile time constant `l` is need to access it.
 
     @ti.kernel
     def fill(l: ti.template()):

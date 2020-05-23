@@ -8,6 +8,7 @@
 
 #include "taichi/backends/metal/constants.h"
 #include "taichi/backends/metal/data_types.h"
+#include "taichi/backends/metal/features.h"
 #include "taichi/backends/metal/kernel_util.h"
 #include "taichi/math/arithmetic.h"
 #include "taichi/util/line_appender.h"
@@ -63,8 +64,7 @@ class StructCompiler {
             ty == SNodeType::bitmasked || ty == SNodeType::dynamic) {
           max_snodes_ = std::max(max_snodes_, sn->id);
         }
-        has_sparse_snode_ = has_sparse_snode_ || (ty == SNodeType::bitmasked) ||
-                            (ty == SNodeType::dynamic);
+        has_sparse_snode_ = has_sparse_snode_ || is_supported_sparse_type(ty);
       }
       ++max_snodes_;
     }

@@ -4,6 +4,7 @@
 #include <string>
 
 #include "taichi/backends/metal/constants.h"
+#include "taichi/backends/metal/features.h"
 #include "taichi/ir/ir.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/util/line_appender.h"
@@ -207,8 +208,7 @@ class KernelCodegen : public IRVisitor {
     emit(R"({}_ch {} = {}.children({});)", sn->node_type_name, stmt->raw_name(),
          parent, index_name);
     if (stmt->activate) {
-      TI_ASSERT(sn->type == SNodeType::bitmasked ||
-                sn->type == SNodeType::dynamic);
+      TI_ASSERT(is_supported_sparse_type(sn->type));
       emit("{{");
       {
         ScopedIndent s(current_appender());

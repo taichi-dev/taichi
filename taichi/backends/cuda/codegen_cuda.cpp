@@ -114,6 +114,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     for (auto const &content : stmt->contents) {
       if (formats.size() != 0)  // not the first expr?
         formats += " ";         // add seperator
+
       if (std::holds_alternative<Stmt *>(content)) {
         auto arg_stmt = std::get<Stmt *>(content);
 

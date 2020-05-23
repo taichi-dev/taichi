@@ -215,15 +215,13 @@ def make_constant_expr(val):
             return Expr(taichi_lang_core.make_const_expr_i64(val))
         else:
             assert False
-    elif isinstance(val, float):
+    else:
         if pytaichi.default_fp == f32:
             return Expr(taichi_lang_core.make_const_expr_f32(val))
         elif pytaichi.default_fp == f64:
             return Expr(taichi_lang_core.make_const_expr_f64(val))
         else:
             assert False
-    else:
-        raise SyntaxError(f'Bad constant expression type: {type(val)}')
 
 
 def reset():

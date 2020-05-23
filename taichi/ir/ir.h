@@ -1220,10 +1220,6 @@ inline void BlockDim(int v) {
   dec.block_dim = v;
 }
 
-inline void SLP(int v) {
-  current_ast_builder().insert(Stmt::make<PragmaSLPStmt>(v));
-}
-
 class VectorElement {
  public:
   Stmt *stmt;

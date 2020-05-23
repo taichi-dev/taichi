@@ -29,7 +29,7 @@ setuptools.setup(
     url='https://github.com/taichi-dev/taichi',
     install_requires=[
         'numpy',
-        'pybind11',
+        'pybind11>=2.5.0',
         'colorama',
         'setuptools',
         'astor',

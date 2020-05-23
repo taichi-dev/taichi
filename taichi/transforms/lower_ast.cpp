@@ -207,12 +207,9 @@ class LowerAST : public IRVisitor {
       } else {
         // transform into a structure as
         // i = begin; while (1) { if (i >= end) break; original body; i += 1; }
-        for (int i = 0; i < (int)stmt->loop_var_id.size(); i++) {
-          fctx.push_back<AllocaStmt>(DataType::i32);
-          stmt->parent->local_var_to_stmt[stmt->loop_var_id[i]] =
-              fctx.back_stmt();
-        }
-        auto loop_var = stmt->parent->lookup_var(stmt->loop_var_id[0]);
+        fctx.push_back<AllocaStmt>(DataType::i32);
+        auto loop_var = fctx.back_stmt();
+        stmt->parent->local_var_to_stmt[stmt->loop_var_id[0]] = loop_var;
         fctx.push_back<LocalStoreStmt>(loop_var, begin->stmt);
         auto loop_var_addr = LaneAttribute<LocalAddress>(
             LocalAddress(loop_var->as<AllocaStmt>(), 0));
@@ -255,8 +252,6 @@ class LowerAST : public IRVisitor {
             std::make_unique<LocalStoreStmt>(new_while->mask, const_stmt_ptr));
         new_while->body->mask_var = new_while->mask;
         fctx.push_back(std::move(new_while));
-        stmt->parent->replace_with(stmt, std::move(fctx.stmts));
-        throw IRModified();
       }
     } else {
       auto snode = stmt->global_var.cast<GlobalVariableExpression>()->snode;

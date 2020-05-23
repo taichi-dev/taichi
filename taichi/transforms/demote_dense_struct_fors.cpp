@@ -22,14 +22,14 @@ VecStatement convert_to_range_for(StructForStmt *struct_for) {
   auto upper = ret.push_back<ConstStmt>(TypedConstant(upper_bound));
   auto body = std::move(struct_for->body);
 
-  auto num_loop_vars = snodes.back()->num_active_indices;
+  const int num_loop_vars = snodes.back()->num_active_indices;
   std::vector<Stmt *> new_loop_vars;
 
   VecStatement body_header;
 
   std::vector<int> physical_indices;
 
-  for (int i = 0; i < (int)num_loop_vars; i++) {
+  for (int i = 0; i < num_loop_vars; i++) {
     new_loop_vars.push_back(body_header.push_back<ConstStmt>(TypedConstant(0)));
     physical_indices.push_back(snodes.back()->physical_index_position[i]);
   }
@@ -76,7 +76,7 @@ VecStatement convert_to_range_for(StructForStmt *struct_for) {
     }
   }
 
-  for (int i = 0; i < (int)num_loop_vars; i++) {
+  for (int i = 0; i < num_loop_vars; i++) {
     auto alloca = body_header.push_back<AllocaStmt>(DataType::i32);
     body_header.push_back<LocalStoreStmt>(alloca, new_loop_vars[i]);
     irpass::replace_statements_with(

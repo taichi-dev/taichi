@@ -678,7 +678,7 @@ class BasicBlockSimplify : public IRVisitor {
       return;
     // step 1: try weakening when a struct for is used
     if (current_struct_for && !stmt->simplified) {
-      int num_loop_vars = current_struct_for->snode->num_active_indices;
+      const int num_loop_vars = current_struct_for->snode->num_active_indices;
       for (int k = 0; k < num_loop_vars; k++) {
         auto diff = irpass::analysis::value_diff_loop_index(
             stmt->input, current_struct_for, k);

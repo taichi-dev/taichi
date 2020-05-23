@@ -39,9 +39,6 @@ void compile_to_offloads(IRNode *ir,
   irpass::analysis::verify(ir);
 
   if (vectorize) {
-    irpass::slp_vectorize(ir);
-    print("SLP");
-
     irpass::loop_vectorize(ir);
     print("Loop Vectorized");
     irpass::analysis::verify(ir);

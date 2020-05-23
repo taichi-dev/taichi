@@ -5,6 +5,7 @@ import numbers
 import numpy as np
 from .util import to_numpy_type, to_pytorch_type
 from .common_ops import TaichiOperations
+from collections import Iterable
 
 
 def broadcast_if_scalar(func):
@@ -60,10 +61,13 @@ class Matrix(TaichiOperations):
                 self.n = t.n
                 self.m = t.m
                 self.entries = t.entries
-        elif isinstance(n, list):
-            if n == []:
+        elif isinstance(n, list) or isinstance(n, np.ndarray):
+            if len(n) == 0:
                 mat = []
-            elif not isinstance(n[0], list):
+            elif isinstance(n[0], Matrix):
+                raise Exception(
+                    'cols/rows required when using list of vectors')
+            elif not isinstance(n[0], Iterable):
                 if impl.get_runtime().inside_kernel:
                     # wrap potential constants with Expr
                     if keep_raw:
@@ -72,11 +76,8 @@ class Matrix(TaichiOperations):
                         mat = [list([expr.Expr(x)]) for x in n]
                 else:
                     mat = [[x] for x in n]
-            elif isinstance(n[0], Matrix):
-                raise Exception(
-                    'cols/rows required when using list of vectors')
             else:
-                mat = n
+                mat = [list(r) for r in n]
             self.n = len(mat)
             if len(mat) > 0:
                 self.m = len(mat[0])

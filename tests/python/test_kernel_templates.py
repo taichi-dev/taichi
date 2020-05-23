@@ -71,7 +71,7 @@ def test_kernel_template_gradient():
 
 
 @ti.all_archs
-def _test_func_template():
+def test_func_template():
     a = [ti.var(dt=ti.f32) for _ in range(2)]
     b = [ti.var(dt=ti.f32) for _ in range(2)]
 
@@ -79,8 +79,8 @@ def _test_func_template():
         ti.root.dense(ti.ij, 16).place(a[l], b[l])
 
     @ti.func
-    def sample_a(l: ti.template(), I):
-        return a[l][I]
+    def sample(x: ti.template(), l: ti.template(), I):
+        return x[l][I] # `x` is a list of ti.vars, so a compile time constant `l` is need to access it. 
 
     @ti.kernel
     def fill(l: ti.template()):
@@ -90,7 +90,7 @@ def _test_func_template():
     @ti.kernel
     def aTob(l: ti.template()):  # doesnt compile
         for I in ti.grouped(b[l]):
-            b[l][I] = sample_a(l, I)
+            b[l][I] = sample(a, l, I)
 
     for l in range(2):
         fill(l)

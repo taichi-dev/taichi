@@ -30,11 +30,13 @@ constexpr size_t kListManagerSize = sizeof(shaders::ListManager);
 constexpr size_t kSNodeMetaSize = sizeof(shaders::SNodeMeta);
 constexpr size_t kSNodeExtractorsSize = sizeof(shaders::SNodeExtractors);
 
+constexpr int kAlignment = 8;
+
 inline size_t bitmasks_stride(int n) {
   constexpr int kBitsPerByte = 8;
   const int bytes_needed = iroundup(n, kBitsPerByte) / kBitsPerByte;
   // The roundup is to align the stride to 8-bytes.
-  return iroundup(bytes_needed, 8);
+  return iroundup(bytes_needed, kAlignment);
 }
 
 inline int get_n(const SNode &sn) {
@@ -58,10 +60,11 @@ class StructCompiler {
       for (const auto &sn : snodes_) {
         const auto ty = sn->type;
         if (ty == SNodeType::root || ty == SNodeType::dense ||
-            ty == SNodeType::bitmasked) {
+            ty == SNodeType::bitmasked || ty == SNodeType::dynamic) {
           max_snodes_ = std::max(max_snodes_, sn->id);
         }
-        has_sparse_snode_ = has_sparse_snode_ || (ty == SNodeType::bitmasked);
+        has_sparse_snode_ = has_sparse_snode_ || (ty == SNodeType::bitmasked) ||
+                            (ty == SNodeType::dynamic);
       }
       ++max_snodes_;
     }
@@ -127,6 +130,7 @@ class StructCompiler {
     }
     emit("");
     const auto &node_name = snode.node_type_name;
+    const auto snty = snode.type;
     if (is_place) {
       const auto dt_name = metal_data_type_name(snode.dt);
       emit("struct {} {{", node_name);
@@ -136,20 +140,23 @@ class StructCompiler {
            dt_name);
       emit("  device {}* val;", dt_name);
       emit("}};");
-    } else if (snode.type == SNodeType::dense ||
-               snode.type == SNodeType::root ||
-               snode.type == SNodeType::bitmasked) {
-      const bool bitmasked = snode.type == SNodeType::bitmasked;
+    } else if (snty == SNodeType::dense || snty == SNodeType::root ||
+               snty == SNodeType::bitmasked || snty == SNodeType::dynamic) {
       const std::string ch_name = fmt::format("{}_ch", node_name);
       emit("struct {} {{", node_name);
-      emit("  // {}", snode_type_name(snode.type));
+      emit("  // {}", snode_type_name(snty));
       const int n = get_n(snode);
       emit("  constant static constexpr int n = {};", n);
-      if (bitmasked) {
+      if (snty == SNodeType::bitmasked) {
         emit(
             "  constant static constexpr int stride = {}::stride * n + "
             "/*bitmasks=*/{};",
             ch_name, bitmasks_stride(n));
+      } else if (snty == SNodeType::dynamic) {
+        emit(
+            "  constant static constexpr int stride = {}::stride * n + "
+            "/*dynamic=*/{};",
+            ch_name, kAlignment);
       } else {
         emit("  constant static constexpr int stride = {}::stride * n;",
              ch_name);
@@ -164,8 +171,7 @@ class StructCompiler {
       emit("  device byte* addr_;");
       emit("}};");
     } else {
-      TI_ERROR("SNodeType={} not supported on Metal",
-               snode_type_name(snode.type));
+      TI_ERROR("SNodeType={} not supported on Metal", snode_type_name(snty));
       TI_NOT_IMPLEMENTED;
     }
     emit("");
@@ -194,6 +200,8 @@ class StructCompiler {
     sn_desc.stride = ch_size * n;
     if (sn->type == SNodeType::bitmasked) {
       sn_desc.stride += bitmasks_stride(n);
+    } else if (sn->type == SNodeType::dynamic) {
+      sn_desc.stride += kAlignment;
     }
     sn_desc.total_num_elems_from_root = 1;
     for (const auto &e : sn->extractors) {

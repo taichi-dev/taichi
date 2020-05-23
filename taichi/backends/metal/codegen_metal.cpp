@@ -34,6 +34,7 @@ constexpr char kRuntimeVarName[] = "runtime_";
 constexpr char kLinearLoopIndexName[] = "linear_loop_idx_";
 constexpr char kListgenElemVarName[] = "listgen_elem_";
 constexpr char kRandStateVarName[] = "rand_state_";
+constexpr char kSNodeMetaVarName[] = "sn_meta_";
 
 std::string buffer_to_name(BuffersEnum b) {
   switch (b) {
@@ -206,35 +207,54 @@ class KernelCodegen : public IRVisitor {
     emit(R"({}_ch {} = {}.children({});)", sn->node_type_name, stmt->raw_name(),
          parent, index_name);
     if (stmt->activate) {
-      TI_ASSERT(sn->type == SNodeType::bitmasked);
+      TI_ASSERT(sn->type == SNodeType::bitmasked ||
+                sn->type == SNodeType::dynamic);
       emit("{{");
       {
         ScopedIndent s(current_appender());
-        current_appender().append_raw(make_snode_meta_bm(sn, "sn_meta"));
-        emit("activate({}.addr(), sn_meta, {});", stmt->raw_name(), index_name);
+        current_appender().append_raw(
+            make_sparse_snode_meta(sn, kSNodeMetaVarName));
+        emit("activate({}.addr(), {}, {});", stmt->raw_name(),
+             kSNodeMetaVarName, index_name);
       }
       emit("}}");
     }
   }
 
   void visit(SNodeOpStmt *stmt) override {
-    if (stmt->op_type == SNodeOpType::is_active) {
-      emit("int {};", stmt->raw_name());
+    const std::string result_var = stmt->raw_name();
+    const auto opty = stmt->op_type;
+    if (opty == SNodeOpType::is_active || opty == SNodeOpType::append ||
+        opty == SNodeOpType::length) {
+      emit("int {};", result_var);
     }
     emit("{{");
     {
       ScopedIndent s(current_appender());
-      current_appender().append_raw(make_snode_meta_bm(stmt->snode, "sn_meta"));
-      const std::string ch_id = stmt->val->raw_name();
+      current_appender().append_raw(
+          make_sparse_snode_meta(stmt->snode, kSNodeMetaVarName));
+      const bool is_dynamic = (stmt->snode->type == SNodeType::dynamic);
+      // Dynamic is a special case because |stmt| doesn't contain an index to
+      // its cells.
+      const std::string ch_id = (is_dynamic ? "0" : stmt->val->raw_name());
       const std::string ch_addr =
           fmt::format("{}.children({}).addr()", stmt->ptr->raw_name(), ch_id);
-      if (stmt->op_type == SNodeOpType::is_active) {
+      if (opty == SNodeOpType::is_active) {
         // is_active(device byte *addr, SNodeMeta meta, int i);
-        emit("{} = is_active({}, sn_meta, {});", stmt->raw_name(), ch_addr,
-             ch_id);
-      } else if (stmt->op_type == SNodeOpType::deactivate) {
+        emit("{} = is_active({}, {}, {});", result_var, ch_addr,
+             kSNodeMetaVarName, ch_id);
+      } else if (opty == SNodeOpType::deactivate) {
         // deactivate(device byte *addr, SNodeMeta meta, int i);
-        emit("deactivate({}, sn_meta, {});", ch_addr, ch_id);
+        emit("deactivate({}, {}, {});", ch_addr, kSNodeMetaVarName, ch_id);
+      } else if (opty == SNodeOpType::append) {
+        TI_ASSERT(is_dynamic);
+        TI_ASSERT(stmt->ret_type.data_type == DataType::i32);
+        emit("{} = dynamic_append({}, {}, {});", result_var, ch_addr,
+             kSNodeMetaVarName, stmt->val->raw_name());
+      } else if (opty == SNodeOpType::length) {
+        TI_ASSERT(is_dynamic);
+        emit("{} = dynamic_length({}, {});", result_var, ch_addr,
+             kSNodeMetaVarName);
       } else {
         TI_NOT_IMPLEMENTED
       }
@@ -918,9 +938,8 @@ class KernelCodegen : public IRVisitor {
          kKernelThreadIdName);
   }
 
-  std::string make_snode_meta_bm(const SNode *sn,
-                                 const std::string &var_name) const {
-    TI_ASSERT(sn->type == SNodeType::bitmasked);
+  std::string make_sparse_snode_meta(const SNode *sn,
+                                     const std::string &var_name) const {
     const auto &desc =
         compiled_structs_->snode_descriptors.find(sn->id)->second;
     LineAppender la = current_appender();
@@ -930,7 +949,13 @@ class KernelCodegen : public IRVisitor {
     la.append("SNodeMeta {};", var_name);
     la.append("{}.element_stride = {};", var_name, desc.element_stride);
     la.append("{}.num_slots = {};", var_name, desc.num_slots);
-    la.append("{}.type = {};", var_name, (int)shaders::SNodeMeta::Bitmasked);
+    if (sn->type == SNodeType::bitmasked) {
+      la.append("{}.type = {};", var_name, (int)shaders::SNodeMeta::Bitmasked);
+    } else if (sn->type == SNodeType::dynamic) {
+      la.append("{}.type = {};", var_name, (int)shaders::SNodeMeta::Dynamic);
+    } else {
+      TI_NOT_IMPLEMENTED;
+    }
     return la.lines();
   }
 

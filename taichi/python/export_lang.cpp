@@ -492,7 +492,8 @@ void export_lang(py::module &m) {
 
   m.def("create_print",
         [&](std::vector<std::variant<Expr, std::string>> contents) {
-          current_ast_builder().insert(std::make_unique<FrontendPrintStmt>(contents));
+          current_ast_builder().insert(
+              std::make_unique<FrontendPrintStmt>(contents));
         });
 
   m.def("decl_arg", [&](DataType dt, bool is_nparray) {

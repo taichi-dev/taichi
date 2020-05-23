@@ -69,13 +69,14 @@ def test_kernel_template_gradient():
         assert z[i] == i * 4 + 3
         assert x.grad[i] == 4
 
+
 @ti.all_archs
 def _test_func_template():
     a = [ti.var(dt=ti.f32) for _ in range(2)]
     b = [ti.var(dt=ti.f32) for _ in range(2)]
 
     for l in range(2):
-        ti.root.dense(ti.ij, 16).place(a[l],b[l])
+        ti.root.dense(ti.ij, 16).place(a[l], b[l])
 
     @ti.func
     def sample_a(l: ti.template(), I):
@@ -87,7 +88,7 @@ def _test_func_template():
             a[l][I] = l
 
     @ti.kernel
-    def aTob(l: ti.template()): # doesnt compile
+    def aTob(l: ti.template()):  # doesnt compile
         for I in ti.grouped(b[l]):
             b[l][I] = sample_a(l, I)
 
@@ -98,4 +99,4 @@ def _test_func_template():
     for l in range(2):
         for i in range(16):
             for j in range(16):
-                assert b[l][i,j] == l
+                assert b[l][i, j] == l

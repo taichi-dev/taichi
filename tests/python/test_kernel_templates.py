@@ -80,8 +80,7 @@ def test_func_template():
 
     @ti.func
     def sample(x: ti.template(), l: ti.template(), I):
-        return x[l][
-            I]  # `x` is a list of ti.vars, so a compile time constant `l` is need to access it.
+        return x[l][I]
 
     @ti.kernel
     def fill(l: ti.template()):
@@ -89,7 +88,7 @@ def test_func_template():
             a[l][I] = l
 
     @ti.kernel
-    def aTob(l: ti.template()):  # doesnt compile
+    def aTob(l: ti.template()):
         for I in ti.grouped(b[l]):
             b[l][I] = sample(a, l, I)
 
@@ -101,3 +100,32 @@ def test_func_template():
         for i in range(16):
             for j in range(16):
                 assert b[l][i, j] == l
+
+@ti.all_archs
+def test_func_template2():
+    a = ti.var(dt=ti.f32)
+    b = ti.var(dt=ti.f32)
+
+    ti.root.dense(ti.ij, 16).place(a, b)
+
+    @ti.func
+    def sample(x: ti.template(), I):
+        return x[I]
+
+    @ti.kernel
+    def fill():
+        for I in ti.grouped(a):
+            a[I] = 1.0
+
+    @ti.kernel
+    def aTob():
+        for I in ti.grouped(b):
+            b[I] = sample(a, I)
+
+    for l in range(2):
+        fill()
+        aTob()
+
+    for i in range(16):
+        for j in range(16):
+            assert b[i, j] == 1.0

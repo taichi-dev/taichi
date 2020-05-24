@@ -71,7 +71,7 @@ The Simplified Chinese documentation (简体中文文档) was created by [Ark (S
 
 -------------------------------
 
-If you would like to contribute to Taichi, **please check out our [Contributor Guidelines](https://taichi.readthedocs.io/en/latest/contributor_guide.html).**
+We welcome feedback and comments. If you would like to contribute to Taichi, please check out our [Contributor Guidelines](https://taichi.readthedocs.io/en/latest/contributor_guide.html).
 
 If you use Taichi in your research, please cite our papers:
 

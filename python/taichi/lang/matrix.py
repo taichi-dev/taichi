@@ -294,7 +294,7 @@ class Matrix(TaichiOperations):
             sum = sum + self(i, i)
         return sum
 
-    def inverse(self):
+    def inversed(self):
         assert self.n == self.m, 'Only square matrices are invertible'
         if self.n == 1:
             return Matrix([1 / self(0, 0)])
@@ -344,9 +344,6 @@ class Matrix(TaichiOperations):
         else:
             raise Exception(
                 "Inversions of matrices with sizes >= 5 are not supported")
-
-    def inversed(self):
-        return self.inverse()
 
     @staticmethod
     def normalized(a, eps=0):

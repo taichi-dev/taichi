@@ -1,5 +1,5 @@
 from .impl import *
-from .matrix import Matrix
+from .matrix import Matrix, Vector
 from .transformer import TaichiSyntaxError
 from .ndrange import ndrange, GroupedNDRange
 from copy import deepcopy as _deepcopy
@@ -16,12 +16,11 @@ l = indices(3)
 ij = indices(0, 1)
 ijk = indices(0, 1, 2)
 ijkl = indices(0, 1, 2, 3)
-Vector = Matrix
 
-outer_product = Matrix.outer_product
-cross = Matrix.cross
-dot = Matrix.dot
-normalized = Matrix.normalized
+outer_product = Vector.outer_product
+cross = Vector.cross
+dot = Vector.dot
+normalized = Vector.normalized
 
 cfg = default_cfg()
 current_cfg = current_cfg()
@@ -181,10 +180,7 @@ block_dim = core.block_dim
 cache = core.cache
 
 
-def inversed(x):
-    return x.inversed()
-
-
+inversed = Matrix.inversed
 transposed = Matrix.transposed
 
 

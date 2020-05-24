@@ -285,12 +285,6 @@ class Matrix(TaichiOperations):
             ret.entries[i] = impl.cast(ret.entries[i], dt)
         return ret
 
-    def abs(self):
-        ret = self.copy()
-        for i in range(len(self.entries)):
-            ret.entries[i] = impl.abs(ret.entries[i])
-        return ret
-
     def trace(self):
         assert self.n == self.m
         sum = expr.Expr(self(0, 0))
@@ -356,23 +350,6 @@ class Matrix(TaichiOperations):
         return invlen * a
 
     @staticmethod
-    def floor(a):
-        b = Matrix(a.n, a.m)
-        for i in range(len(a.entries)):
-            b.entries[i] = impl.floor(a.entries[i])
-        return b
-
-    @staticmethod
-    def outer_product(a, b):
-        assert a.m == 1
-        assert b.m == 1
-        c = Matrix(a.n, b.n)
-        for i in range(a.n):
-            for j in range(b.n):
-                c(i, j).assign(a(i) * b(j))
-        return c
-
-    @staticmethod
     def transposed(a):
         ret = Matrix(a.m, a.n, empty=True)
         for i in range(a.n):
@@ -412,16 +389,6 @@ class Matrix(TaichiOperations):
         else:
             raise Exception(
                 "Determinants of matrices with sizes >= 5 are not supported")
-
-    @staticmethod
-    def cross(a, b):
-        assert a.n == 3 and a.m == 1
-        assert b.n == 3 and b.m == 1
-        return Matrix([
-            a(1) * b(2) - a(2) * b(1),
-            a(2) * b(0) - a(0) * b(2),
-            a(0) * b(1) - a(1) * b(0),
-        ])
 
     @staticmethod
     def diag(dim, val):
@@ -481,10 +448,6 @@ class Matrix(TaichiOperations):
         for i in range(1, len(self.entries)):
             ret = impl.min(ret, self.entries[i])
         return ret
-
-    def dot(self, other):
-        assert self.m == 1 and other.m == 1
-        return (self.transposed(self) @ other).subscript(0, 0)
 
     def fill(self, val):
         if isinstance(val, numbers.Number):
@@ -588,5 +551,35 @@ class Matrix(TaichiOperations):
 
 
 class Vector(Matrix):
-    def __init__(self, n, dt=None, shape=None, **kwargs):
+    def __init__(self, n=1, dt=None, shape=None, **kwargs):
         super(Vector, self).__init__(n, 1, dt, shape, **kwargs)
+
+    def dot(self, other):
+        assert self.m == 1 and other.m == 1
+        return (self.transposed(self) @ other).subscript(0, 0)
+
+    @staticmethod
+    def cross(a, b):
+        assert a.n == 3 and a.m == 1
+        assert b.n == 3 and b.m == 1
+        return Vector([
+            a(1) * b(2) - a(2) * b(1),
+            a(2) * b(0) - a(0) * b(2),
+            a(0) * b(1) - a(1) * b(0),
+        ])
+
+    @staticmethod
+    def outer_product(a, b):
+        assert a.m == 1
+        assert b.m == 1
+        c = Matrix(a.n, b.n)
+        for i in range(a.n):
+            for j in range(b.n):
+                c(i, j).assign(a(i) * b(j))
+        return c
+
+    def to_numpy(self):
+        super(Vector, self).to_numpy(as_vector=True)
+
+    def to_torch(self, device=None):
+        super(Vector, self).to_torch(as_vector=True, device=device)

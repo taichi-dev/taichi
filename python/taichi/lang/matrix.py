@@ -481,37 +481,34 @@ class Matrix(TaichiOperations):
         fill_matrix(self, val)
 
     def to_numpy(self):
-        as_vector = self.is_vector
-        dim_ext = (self.n, ) if as_vector else (self.n, self.m)
+        dim_ext = (self.n, ) if self.is_vector else (self.n, self.m)
         ret = np.empty(self.loop_range().shape() + dim_ext,
                        dtype=to_numpy_type(
                            self.loop_range().snode().data_type()))
         from .meta import matrix_to_ext_arr
-        matrix_to_ext_arr(self, ret, as_vector)
+        matrix_to_ext_arr(self, ret, self.is_vector)
         import taichi as ti
         ti.sync()
         return ret
 
     def to_torch(self, device=None):
         import torch
-        as_vector = self.is_vector
-        dim_ext = (self.n, ) if as_vector else (self.n, self.m)
+        dim_ext = (self.n, ) if self.is_vector else (self.n, self.m)
         ret = torch.empty(self.loop_range().shape() + dim_ext,
                           dtype=to_pytorch_type(
                               self.loop_range().snode().data_type()),
                           device=device)
         from .meta import matrix_to_ext_arr
-        matrix_to_ext_arr(self, ret, as_vector)
+        matrix_to_ext_arr(self, ret, self.is_vector)
         import taichi as ti
         ti.sync()
         return ret
 
     def from_numpy(self, ndarray):
-        as_vector = self.is_vector
-        dim_ext = 1 if as_vector else 2
+        dim_ext = 1 if self.is_vector else 2
         assert len(ndarray.shape) == self.loop_range().dim() + dim_ext
         from .meta import ext_arr_to_matrix
-        ext_arr_to_matrix(ndarray, self, as_vector)
+        ext_arr_to_matrix(ndarray, self, self.is_vector)
         import taichi as ti
         ti.sync()
 
@@ -551,14 +548,14 @@ class Matrix(TaichiOperations):
                           [ti.sin(alpha), ti.cos(alpha)]])
 
     def dot(self, other):
-        assert self.is_vector
-        assert other.is_vector
+        assert self.m == 1
+        assert other.m == 1
         return (self.transposed(self) @ other).subscript(0, 0)
 
     @staticmethod
     def cross(a, b):
-        assert a.is_vector
-        assert b.is_vector
+        assert a.is_vector and a.n == 3
+        assert b.is_vector and b.n == 3
         return Vector([
             a(1) * b(2) - a(2) * b(1),
             a(2) * b(0) - a(0) * b(2),
@@ -567,8 +564,8 @@ class Matrix(TaichiOperations):
 
     @staticmethod
     def outer_product(a, b):
-        assert a.is_vector
-        assert b.is_vector
+        assert a.m == 1
+        assert b.m == 1
         c = Matrix(a.n, b.n)
         for i in range(a.n):
             for j in range(b.n):

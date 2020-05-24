@@ -31,8 +31,8 @@ def test_multi_print():
 def test_print_string():
     @ti.kernel
     def func(x: ti.i32, y: ti.f32):
-        print('hello, world! %s %f',
-              233)  # make sure `%` doesn't break vprintf
+        # make sure `%` doesn't break vprintf:
+        print('hello, world! %s %f', 233, y)
         print('cool', x, 'well', y)
 
     func(666, 233.3)

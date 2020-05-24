@@ -447,9 +447,16 @@ class IdExpression : public Expression {
   }
 
   void flatten(FlattenContext *ctx) override {
-    ctx->push_back(std::make_unique<LocalLoadStmt>(
-        LocalAddress(ctx->current_block->lookup_var(id), 0)));
-    stmt = ctx->back_stmt();
+    auto var_stmt = ctx->current_block->lookup_var(id);
+    if (var_stmt->is<AllocaStmt>()) {
+      ctx->push_back(
+          std::make_unique<LocalLoadStmt>(LocalAddress(var_stmt, 0)));
+      stmt = ctx->back_stmt();
+    } else {
+      // The loop index may have a coordinate offset.
+      TI_ASSERT(var_stmt->is<LoopIndexStmt>() || var_stmt->is<BinaryOpStmt>());
+      stmt = var_stmt;
+    }
   }
 
   bool is_lvalue() const override {

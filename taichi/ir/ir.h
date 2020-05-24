@@ -806,9 +806,12 @@ class Block : public IRNode {
  public:
   Block *parent;
   std::vector<std::unique_ptr<Stmt>> statements, trash_bin;
-  std::map<Identifier, Stmt *> local_var_alloca;  // Only used in frontend
   Stmt *mask_var;
   std::vector<SNode *> stop_gradients;
+
+  // Only used in frontend. Stores LoopIndexStmt or BinaryOpStmt for loop
+  // variables, and AllocaStmt for other variables.
+  std::map<Identifier, Stmt *> local_var_to_stmt;
 
   Block() {
     mask_var = nullptr;
@@ -1062,7 +1065,6 @@ class ConstStmt : public Stmt {
 // General range for
 class RangeForStmt : public Stmt {
  public:
-  Stmt *loop_var;
   Stmt *begin, *end;
   std::unique_ptr<Block> body;
   bool reversed;
@@ -1071,8 +1073,7 @@ class RangeForStmt : public Stmt {
   int block_dim;
   bool strictly_serialized;
 
-  RangeForStmt(Stmt *loop_var,
-               Stmt *begin,
+  RangeForStmt(Stmt *begin,
                Stmt *end,
                std::unique_ptr<Block> &&body,
                int vectorize,
@@ -1090,8 +1091,7 @@ class RangeForStmt : public Stmt {
 
   std::unique_ptr<Stmt> clone() const override;
 
-  TI_STMT_DEF_FIELDS(loop_var,
-                     begin,
+  TI_STMT_DEF_FIELDS(begin,
                      end,
                      reversed,
                      vectorize,
@@ -1104,7 +1104,6 @@ class RangeForStmt : public Stmt {
 // for stmt over a structural node
 class StructForStmt : public Stmt {
  public:
-  std::vector<Stmt *> loop_vars;
   SNode *snode;
   std::unique_ptr<Block> body;
   std::unique_ptr<Block> block_initialization;
@@ -1114,8 +1113,7 @@ class StructForStmt : public Stmt {
   int block_dim;
   ScratchPadOptions scratch_opt;
 
-  StructForStmt(std::vector<Stmt *> loop_vars,
-                SNode *snode,
+  StructForStmt(SNode *snode,
                 std::unique_ptr<Block> &&body,
                 int vectorize,
                 int parallelize,
@@ -1127,12 +1125,7 @@ class StructForStmt : public Stmt {
 
   std::unique_ptr<Stmt> clone() const override;
 
-  TI_STMT_DEF_FIELDS(loop_vars,
-                     snode,
-                     vectorize,
-                     parallelize,
-                     block_dim,
-                     scratch_opt);
+  TI_STMT_DEF_FIELDS(snode, vectorize, parallelize, block_dim, scratch_opt);
   TI_DEFINE_ACCEPT
 };
 

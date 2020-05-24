@@ -45,8 +45,7 @@ class VariableOptimize : public IRVisitor {
     }
   }
 
-  virtual void visit_loop(Block *body,
-                          const std::vector<Stmt *> &loop_vars) = 0;
+  virtual void visit_loop(Block *body) = 0;
 
   void visit(Block *block) override {
     for (auto &stmt : block->statements) {
@@ -56,15 +55,15 @@ class VariableOptimize : public IRVisitor {
 
   void visit(WhileStmt *stmt) override {
     TI_ASSERT(stmt->mask == nullptr);
-    visit_loop(stmt->body.get(), {});
+    visit_loop(stmt->body.get());
   }
 
   void visit(RangeForStmt *stmt) override {
-    visit_loop(stmt->body.get(), {stmt->loop_var});
+    visit_loop(stmt->body.get());
   }
 
   void visit(StructForStmt *stmt) override {
-    visit_loop(stmt->body.get(), stmt->loop_vars);
+    visit_loop(stmt->body.get());
   }
 
   void visit(OffloadedStmt *stmt) override {
@@ -171,16 +170,12 @@ class AllocaOptimize : public VariableOptimize {
     }
   }
 
-  void visit_loop(Block *body, const std::vector<Stmt *> &loop_vars) override {
+  void visit_loop(Block *body) override {
     if (maybe_run) {
       body->accept(this);
       return;
     }
 
-    for (auto &loop_var : loop_vars) {
-      if (loop_var)
-        get_state_machine(loop_var).mark_as_loop_var();
-    }
     auto origin = state_machines;
     modify_all_state_machines(&StateMachine::begin_if_or_loop);
     maybe_run = true;
@@ -295,7 +290,7 @@ class GlobalTempOptimize : public VariableOptimize {
     }
   }
 
-  void visit_loop(Block *body, const std::vector<Stmt *> &loop_vars) override {
+  void visit_loop(Block *body) override {
     if (maybe_run) {
       body->accept(this);
       return;
@@ -462,7 +457,7 @@ class GlobalPtrOptimize : public VariableOptimize {
     }
   }
 
-  void visit_loop(Block *body, const std::vector<Stmt *> &loop_vars) override {
+  void visit_loop(Block *body) override {
     if (maybe_run) {
       body->accept(this);
       return;
@@ -594,7 +589,7 @@ class OtherVariableOptimize : public VariableOptimize {
     }
   }
 
-  void visit_loop(Block *body, const std::vector<Stmt *> &loop_vars) override {
+  void visit_loop(Block *body) override {
     if (maybe_run) {
       body->accept(this);
       return;

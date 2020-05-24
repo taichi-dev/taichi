@@ -604,6 +604,8 @@ if 1:
                 node.returns = None
 
             for i, arg in enumerate(args.args):
+                # Directly pass in template arguments,
+                # such as class instances ("self"), tensors, SNodes, etc.
                 if isinstance(self.func.arguments[i], ti.template):
                     continue
                 import taichi as ti
@@ -641,8 +643,12 @@ if 1:
             # Transform as func (all parameters passed by value)
             arg_decls = []
             for i, arg in enumerate(args.args):
+                # Directly pass in template arguments,
+                # such as class instances ("self"), tensors, SNodes, etc.
                 if isinstance(self.func.arguments[i], ti.template):
                     continue
+                # Create a copy for non-template arguments,
+                # so that they are passed by value.
                 arg_init = self.parse_stmt('x = ti.expr_init_func(0)')
                 arg_init.targets[0].id = arg.arg
                 self.create_variable(arg.arg)

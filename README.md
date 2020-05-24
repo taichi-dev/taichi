@@ -62,7 +62,7 @@ The Simplified Chinese documentation (简体中文文档) is created by [Ark (St
   - [Danni (isdanni)](https://github.com/isdanni)
   - [Rex (rexwangcc)](https://github.com/rexwangcc)
   - [jianzhouwan (ArkhamWJZ)](https://github.com/ArkhamWJZ)
-  
+
   [[List of all contributors]](https://github.com/taichi-dev/taichi-docs-zh-cn/graphs/contributors).
 We welcome feedback and comments. If you would like to contribute to Taichi, please check out our [Contributor Guidelines](https://taichi.readthedocs.io/en/latest/contributor_guide.html).
 

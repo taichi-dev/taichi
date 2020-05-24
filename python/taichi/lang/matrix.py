@@ -19,17 +19,13 @@ def broadcast_if_scalar(func):
 class Matrix(TaichiOperations):
     is_taichi_class = True
 
-    def __init__(self,
-                 n=1,
-                 m=1,
-                 dt=None,
-                 empty=False,
-                 shape=None,
-                 layout=None,
-                 needs_grad=False,
-                 keep_raw=False,
-                 rows=None,
-                 cols=None):
+    # TODO(archibate): move the last two line to **kwargs,
+    # since they're not commonly used as positional args.
+    def __init__(self, n=1, m=1, dt=None, shape=None,
+                 empty=False, layout=None, needs_grad=False,
+                 keep_raw=False, rows=None, cols=None):
+        # TODO: use multiple initializer like `ti.Matrix.cols([a, b, c])`
+        # and `ti.Matrix.empty(n, m)` instead of ad-hoc `ti.Matrix(cols=[a, b, c])`.
         self.grad = None
         if rows is not None or cols is not None:
             if rows is not None and cols is not None:
@@ -581,3 +577,8 @@ class Matrix(TaichiOperations):
         import taichi as ti
         return ti.Matrix([[ti.cos(alpha), -ti.sin(alpha)],
                           [ti.sin(alpha), ti.cos(alpha)]])
+
+
+class Vector(Matrix):
+    def __init__(self, n, dt=None, shape=None, **kwargs):
+        super(Vector, self).__init__(n, 1, dt, shape, **kwargs)

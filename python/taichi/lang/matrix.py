@@ -21,9 +21,17 @@ class Matrix(TaichiOperations):
 
     # TODO(archibate): move the last two line to **kwargs,
     # since they're not commonly used as positional args.
-    def __init__(self, n=1, m=1, dt=None, shape=None,
-                 empty=False, layout=None, needs_grad=False,
-                 keep_raw=False, rows=None, cols=None):
+    def __init__(self,
+                 n=1,
+                 m=1,
+                 dt=None,
+                 shape=None,
+                 empty=False,
+                 layout=None,
+                 needs_grad=False,
+                 keep_raw=False,
+                 rows=None,
+                 cols=None):
         # TODO: use multiple initializer like `ti.Matrix.cols([a, b, c])`
         # and `ti.Matrix.empty(n, m)` instead of ad-hoc `ti.Matrix(cols=[a, b, c])`.
         self.grad = None

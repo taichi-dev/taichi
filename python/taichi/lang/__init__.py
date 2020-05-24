@@ -179,7 +179,6 @@ vectorize = core.vectorize
 block_dim = core.block_dim
 cache = core.cache
 
-
 inversed = Matrix.inversed
 transposed = Matrix.transposed
 

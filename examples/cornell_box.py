@@ -62,8 +62,6 @@ def make_box_transform_matrices():
     m = translate @ rot
     m_inv = np.linalg.inv(m)
     m_inv_t = np.transpose(m_inv)
-    m_inv = [list(r) for r in m_inv]
-    m_inv_t = [list(r) for r in m_inv_t]
     return ti.Matrix(m_inv), ti.Matrix(m_inv_t)
 
 

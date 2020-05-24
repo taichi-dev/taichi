@@ -110,10 +110,10 @@ class LowerAccess : public IRVisitor {
 
       bool on_loop_tree = nodes_on_loop.find(snode) != nodes_on_loop.end();
       if (on_loop_tree &&
-          indices.size() == current_struct_for->loop_vars.size()) {
+          indices.size() == current_struct_for->snode->num_active_indices) {
         for (int j = 0; j < (int)indices.size(); j++) {
-          auto diff = irpass::analysis::value_diff(
-              indices[j], 0, current_struct_for->loop_vars[j]);
+          auto diff = irpass::analysis::value_diff_loop_index(
+              indices[j], current_struct_for, j);
           if (!diff.linear_related())
             on_loop_tree = false;
           else if (j == (int)indices.size() - 1) {

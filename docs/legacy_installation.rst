@@ -8,7 +8,7 @@ Installing the legacy Taichi Library
  `spgrid_topo_opt <https://github.com/yuanming-hu/spgrid_topo_opt>`_)
  you should always install Taichi using ``pip``.
 
- If you are working on the Taichi compiler and need to build from scratch, see :ref:`dev_install`.
+ If you are working on the Taichi compiler and need to build from source, see :ref:`dev_install`.
 
 Supported platforms:
 

@@ -4,7 +4,7 @@ Developer installation
 ======================
 
 Note this is for the compiler developers of the Taichi programming language.
-End users should use the pip packages instead of building from scratch.
+End users should use the pip packages instead of building from source.
 To build with NVIDIA GPU support, CUDA 10.0+ is needed.
 This installation guide works for Ubuntu 16.04+ and OS X 10.14+.
 For precise build instructions on Windows, please check out `appveyor.yml <https://github.com/taichi-dev/taichi/blob/master/appveyor.yml>`_, which does basically the same thing as the following instructions.
@@ -24,7 +24,7 @@ Installing Depedencies
 
 * (If on Ubuntu) Execute ``sudo apt install libtinfo-dev clang-8``. (``clang-7`` should work as well).
 
-* (If on other Linux distributions) Please build clang 8.0.1 from scratch:
+* (If on other Linux distributions) Please build clang 8.0.1 from source:
 
   .. code-block:: bash
 
@@ -38,7 +38,7 @@ Installing Depedencies
     sudo make install
 
 
-- Make sure you have LLVM 8.0.1 built from scratch. To do so:
+- Make sure you have LLVM 8.0.1 built from source. To do so:
 
   .. code-block:: bash
 

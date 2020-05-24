@@ -64,6 +64,7 @@ bool has_store_or_atomic(IRNode *root, const std::vector<Stmt *> &vars);
 std::pair<bool, Stmt *> last_store_or_atomic(IRNode *root, Stmt *var);
 bool same_statements(IRNode *root1, IRNode *root2);
 DiffRange value_diff(Stmt *stmt, int lane, Stmt *alloca);
+DiffRange value_diff_loop_index(Stmt *stmt, Stmt *loop, int index_id);
 void verify(IRNode *root);
 
 }  // namespace irpass::analysis

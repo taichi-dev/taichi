@@ -274,7 +274,6 @@ CodeGenLLVM::CodeGenLLVM(Kernel *kernel, IRNode *ir)
   if (ir == nullptr)
     this->ir = kernel->ir;
   initialize_context();
-  current_offloaded_stmt = nullptr;
 
   context_ty = get_runtime_type("Context");
   physical_coordinate_ty = get_runtime_type("PhysicalCoordinates");
@@ -1186,7 +1185,6 @@ std::string CodeGenLLVM::init_offloaded_task_function(OffloadedStmt *stmt,
                                                       std::string suffix) {
   current_loop_reentry = nullptr;
   current_while_after_loop = nullptr;
-  current_offloaded_stmt = stmt;
 
   task_function_type =
       llvm::FunctionType::get(llvm::Type::getVoidTy(*llvm_context),

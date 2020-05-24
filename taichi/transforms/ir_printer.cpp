@@ -265,22 +265,16 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(RangeForStmt *for_stmt) override {
-    print("{} : {}for {} in range({}, {}, step {}) {{", for_stmt->name(),
-          for_stmt->reversed ? "reversed " : "",
-          for_stmt->loop_var ? for_stmt->loop_var->name() : "nullptr",
-          for_stmt->begin->name(), for_stmt->end->name(), for_stmt->vectorize);
+    print("{} : {}for in range({}, {}, step {}) {{", for_stmt->name(),
+          for_stmt->reversed ? "reversed " : "", for_stmt->begin->name(),
+          for_stmt->end->name(), for_stmt->vectorize);
     for_stmt->body->accept(this);
     print("}}");
   }
 
   void visit(StructForStmt *for_stmt) override {
-    auto loop_vars = make_list<Stmt *>(for_stmt->loop_vars,
-                                       [](Stmt *const &stmt) -> std::string {
-                                         return stmt ? stmt->name() : "nullptr";
-                                       });
-    print("{} : for {} where {} active, step {} {{", for_stmt->name(),
-          loop_vars, for_stmt->snode->get_node_type_name_hinted(),
-          for_stmt->vectorize);
+    print("{} : for where {} active, step {} {{", for_stmt->name(),
+          for_stmt->snode->get_node_type_name_hinted(), for_stmt->vectorize);
     for_stmt->body->accept(this);
     print("}}");
   }
@@ -347,10 +341,6 @@ class IRPrinter : public IRVisitor {
   void visit(GlobalStoreStmt *stmt) override {
     print("{}{} : global store [{} <- {}]", stmt->type_hint(), stmt->name(),
           stmt->ptr->name(), stmt->data->name());
-  }
-
-  void visit(PragmaSLPStmt *stmt) override {
-    print("#pragma SLP({})", stmt->slp_width);
   }
 
   void visit(ElementShuffleStmt *stmt) override {

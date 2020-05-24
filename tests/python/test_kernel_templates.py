@@ -101,6 +101,7 @@ def test_func_template():
             for j in range(16):
                 assert b[l][i, j] == l
 
+
 @ti.all_archs
 def test_func_template2():
     a = ti.var(dt=ti.f32)

@@ -28,6 +28,7 @@ class Matrix(TaichiOperations):
                  dt=None,
                  shape=None,
                  empty=False,
+                 is_vector=False,
                  layout=None,
                  needs_grad=False,
                  keep_raw=False,
@@ -36,6 +37,7 @@ class Matrix(TaichiOperations):
         # TODO: refactor: use multiple initializer like `ti.Matrix.cols([a, b, c])`
         # and `ti.Matrix.empty(n, m)` instead of ad-hoc `ti.Matrix(cols=[a, b, c])`.
         self.grad = None
+        self.is_vector = is_vector
         if rows is not None or cols is not None:
             if rows is not None and cols is not None:
                 raise Exception("cannot specify both rows and columns")
@@ -264,10 +266,10 @@ class Matrix(TaichiOperations):
                 self(i, j)[index] = item[i][j]
 
     def empty_copy(self):
-        return Matrix(self.n, self.m, empty=True)
+        return Matrix(self.n, self.m, empty=True, is_vector=self.is_vector)
 
     def zeros_copy(self):
-        return Matrix(self.n, self.m)
+        return Matrix(self.n, self.m, is_vector=self.is_vector)
 
     def copy(self):
         ret = self.empty_copy()
@@ -479,7 +481,7 @@ class Matrix(TaichiOperations):
         fill_matrix(self, val)
 
     def to_numpy(self):
-        as_vector = isinstance(self, Vector)
+        as_vector = self.is_vector
         dim_ext = (self.n, ) if as_vector else (self.n, self.m)
         ret = np.empty(self.loop_range().shape() + dim_ext,
                        dtype=to_numpy_type(
@@ -492,7 +494,7 @@ class Matrix(TaichiOperations):
 
     def to_torch(self, device=None):
         import torch
-        as_vector = isinstance(self, Vector)
+        as_vector = self.is_vector
         dim_ext = (self.n, ) if as_vector else (self.n, self.m)
         ret = torch.empty(self.loop_range().shape() + dim_ext,
                           dtype=to_pytorch_type(
@@ -505,7 +507,7 @@ class Matrix(TaichiOperations):
         return ret
 
     def from_numpy(self, ndarray):
-        as_vector = isinstance(self, Vector)
+        as_vector = self.is_vector
         dim_ext = 1 if as_vector else 2
         assert len(ndarray.shape) == self.loop_range().dim() + dim_ext
         from .meta import ext_arr_to_matrix
@@ -548,21 +550,15 @@ class Matrix(TaichiOperations):
         return ti.Matrix([[ti.cos(alpha), -ti.sin(alpha)],
                           [ti.sin(alpha), ti.cos(alpha)]])
 
-
-class Vector(Matrix):
-    def __init__(self, n=1, dt=None, shape=None, **kwargs):
-        super(Vector, self).__init__(n, 1, dt, shape, **kwargs)
-
     def dot(self, other):
-        # TODO: refactor: use type-hints instead
-        assert isinstance(self, Vector)
-        assert isinstance(other, Vector)
+        assert self.is_vector
+        assert other.is_vector
         return (self.transposed(self) @ other).subscript(0, 0)
 
     @staticmethod
     def cross(a, b):
-        assert isinstance(a, Vector)
-        assert isinstance(b, Vector)
+        assert a.is_vector
+        assert b.is_vector
         return Vector([
             a(1) * b(2) - a(2) * b(1),
             a(2) * b(0) - a(0) * b(2),
@@ -571,16 +567,14 @@ class Vector(Matrix):
 
     @staticmethod
     def outer_product(a, b):
-        assert isinstance(a, Vector)
-        assert isinstance(b, Vector)
+        assert a.is_vector
+        assert b.is_vector
         c = Matrix(a.n, b.n)
         for i in range(a.n):
             for j in range(b.n):
                 c(i, j).assign(a(i) * b(j))
         return c
 
-    def empty_copy(self):
-        return Vector(self.n, empty=True)
 
-    def zeros_copy(self):
-        return Vector(self.n)
+def Vector(n=1, dt=None, shape=None, **kwargs):
+    return Matrix(n, 1, dt, shape, is_vector=True, **kwargs)

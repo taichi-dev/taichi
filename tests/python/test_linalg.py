@@ -136,7 +136,7 @@ def test_unit_vectors():
     @ti.kernel
     def fill():
         for i in ti.static(range(3)):
-            a[i] = ti.Vector.unit(3, i)
+            a[i] = ti.Matrix.unit(3, i)
 
     fill()
 

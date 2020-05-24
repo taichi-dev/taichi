@@ -17,10 +17,10 @@ ij = indices(0, 1)
 ijk = indices(0, 1, 2)
 ijkl = indices(0, 1, 2, 3)
 
-outer_product = Vector.outer_product
-cross = Vector.cross
-dot = Vector.dot
-normalized = Vector.normalized
+outer_product = Matrix.outer_product
+cross = Matrix.cross
+dot = Matrix.dot
+normalized = Matrix.normalized
 
 cfg = default_cfg()
 current_cfg = current_cfg()

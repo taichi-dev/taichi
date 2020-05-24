@@ -57,9 +57,13 @@ The Taichi project was created by [Yuanming Hu (yuanming-hu)](https://github.com
 
 [Kenneth Lozes (KLozes)](https://github.com/KLozes) and [Yu Fang (squarefk)](https://github.com/squarefk) have also made notable contributions. [[List of all contributors]](https://github.com/taichi-dev/taichi/graphs/contributors)
 
-The Simplified Chinese documentation (简体中文文档) is mainly contributed by [Ark (StephenArk30)](https://github.com/StephenArk30), [彭于斌 (archibate)](https://github.com/archibate), [Danni (isdanni)](https://github.com/isdanni),
-[Rex (rexwangcc)](https://github.com/rexwangcc), and [jianzhouwan (ArkhamWJZ)](https://github.com/ArkhamWJZ). [[List of all contributors]](https://github.com/taichi-dev/taichi-docs-zh-cn/graphs/contributors).
-
+The Simplified Chinese documentation (简体中文文档) is created by [Ark (StephenArk30)](https://github.com/StephenArk30). Significant contributions are made by:
+  - [彭于斌 (archibate)](https://github.com/archibate)
+  - [Danni (isdanni)](https://github.com/isdanni)
+  - [Rex (rexwangcc)](https://github.com/rexwangcc)
+  - [jianzhouwan (ArkhamWJZ)](https://github.com/ArkhamWJZ)
+  
+  [[List of all contributors]](https://github.com/taichi-dev/taichi-docs-zh-cn/graphs/contributors).
 We welcome feedback and comments. If you would like to contribute to Taichi, please check out our [Contributor Guidelines](https://taichi.readthedocs.io/en/latest/contributor_guide.html).
 
 If you use Taichi in your research, please cite our papers:

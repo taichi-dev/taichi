@@ -136,9 +136,6 @@ def test_numpy_io_example():
     vec.from_numpy(arr)
 
     arr = vec.to_numpy()
-    assert arr.shape == (n, m, 3, 1)
-
-    arr = vec.to_numpy(as_vector=True)
     assert arr.shape == (n, m, 3)
 
     # Matrix

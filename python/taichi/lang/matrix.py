@@ -32,7 +32,7 @@ class Matrix(TaichiOperations):
                  keep_raw=False,
                  rows=None,
                  cols=None):
-        # TODO: use multiple initializer like `ti.Matrix.cols([a, b, c])`
+        # TODO: refactor: use multiple initializer like `ti.Matrix.cols([a, b, c])`
         # and `ti.Matrix.empty(n, m)` instead of ad-hoc `ti.Matrix(cols=[a, b, c])`.
         self.grad = None
         if rows is not None or cols is not None:
@@ -502,15 +502,11 @@ class Matrix(TaichiOperations):
         ti.sync()
         return ret
 
-    def from_numpy(self, ndarray):
-        if len(ndarray.shape) == self.loop_range().dim() + 1:
-            as_vector = True
-            assert self.m == 1, "This matrix is not a vector"
-        else:
-            as_vector = False
-            assert len(ndarray.shape) == self.loop_range().dim() + 2
+    def from_numpy(self, ndarray, as_vector=False):
+        dim_ext = 1 if as_vector else 2
+        assert len(ndarray.shape) == self.loop_range().dim() + dim_ext
         from .meta import ext_arr_to_matrix
-        ext_arr_to_matrix(ndarray, self, as_vector)
+        ext_arr_to_matrix(ndarray, self, as_vector=False)
         import taichi as ti
         ti.sync()
 
@@ -553,15 +549,18 @@ class Matrix(TaichiOperations):
 class Vector(Matrix):
     def __init__(self, n=1, dt=None, shape=None, **kwargs):
         super(Vector, self).__init__(n, 1, dt, shape, **kwargs)
+        assert self.m == 1
 
     def dot(self, other):
-        assert self.m == 1 and other.m == 1
+        # TODO: refactor: use type-hints instead
+        assert isinstance(self, Vector)
+        assert isinstance(other, Vector)
         return (self.transposed(self) @ other).subscript(0, 0)
 
     @staticmethod
     def cross(a, b):
-        assert a.n == 3 and a.m == 1
-        assert b.n == 3 and b.m == 1
+        assert isinstance(a, Vector)
+        assert isinstance(b, Vector)
         return Vector([
             a(1) * b(2) - a(2) * b(1),
             a(2) * b(0) - a(0) * b(2),
@@ -570,16 +569,20 @@ class Vector(Matrix):
 
     @staticmethod
     def outer_product(a, b):
-        assert a.m == 1
-        assert b.m == 1
+        assert isinstance(a, Vector)
+        assert isinstance(b, Vector)
         c = Matrix(a.n, b.n)
         for i in range(a.n):
             for j in range(b.n):
                 c(i, j).assign(a(i) * b(j))
         return c
 
+    # TODO: refactor: deprecate as_vector
     def to_numpy(self):
-        super(Vector, self).to_numpy(as_vector=True)
+        return super(Vector, self).to_numpy(as_vector=True)
 
     def to_torch(self, device=None):
-        super(Vector, self).to_torch(as_vector=True, device=device)
+        return super(Vector, self).to_torch(as_vector=True, device=device)
+
+    def from_numpy(self, ndarray):
+        return super(Vector, self).from_numpy(ndarray, as_vector=True)

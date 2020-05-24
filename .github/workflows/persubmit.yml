@@ -7,16 +7,10 @@ jobs:
   build_and_test:
     name: Build and Test
     runs-on: ubuntu-latest
-    if: ${{ !contains(github.event.pull_request.labels.*.name, 'skip ci') || contains(github.event.head_commit.message, '[skip ci]' }}
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'skip ci') || contains(github.event.head_commit.message, '[skip ci]') || contains(github.event.head_commit.message, '[skip linux]') }}
     strategy:
       matrix:
         python: [3.6, 3.7, 3.8]
-        #with_opengl: [0, 1]
-        #exclude:
-        #  - python: 3.6
-        #    with_opengl: ubuntu-16.04
-        #  - python: 3.8
-        #    with_opengl: ubuntu-16.04
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2

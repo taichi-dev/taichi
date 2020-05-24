@@ -3,7 +3,7 @@ import numpy as np
 
 
 @ti.all_archs
-def test_from_numpy_2d():
+def test_to_numpy_2d():
     val = ti.var(ti.i32)
 
     n = 4
@@ -26,7 +26,7 @@ def test_from_numpy_2d():
 
 
 @ti.all_archs
-def test_to_numpy_2d():
+def test_from_numpy_2d():
     val = ti.var(ti.i32)
 
     n = 4

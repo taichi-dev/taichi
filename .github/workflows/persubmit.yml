@@ -11,9 +11,10 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         python: [3.6, 3.7, 3.8]
-      includes:
-        - os: ubuntu-16.04
-          python: 3.7
+        include:
+          - os: ubuntu-16.04
+            python: 3.7
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2

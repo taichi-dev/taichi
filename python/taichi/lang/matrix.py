@@ -470,12 +470,9 @@ class Matrix(TaichiOperations):
         from .meta import fill_matrix
         fill_matrix(self, val)
 
-    def to_numpy(self, as_vector=False):
-        if as_vector:
-            assert self.m == 1, "This matrix is not a vector"
-            dim_ext = (self.n, )
-        else:
-            dim_ext = (self.n, self.m)
+    def to_numpy(self):
+        as_vector = isinstance(self, Vector)
+        dim_ext = (self.n, ) if as_vector else (self.n, self.m)
         ret = np.empty(self.loop_range().shape() + dim_ext,
                        dtype=to_numpy_type(
                            self.loop_range().snode().data_type()))
@@ -485,13 +482,10 @@ class Matrix(TaichiOperations):
         ti.sync()
         return ret
 
-    def to_torch(self, as_vector=False, device=None):
+    def to_torch(self, device=None):
         import torch
-        if as_vector:
-            assert self.m == 1, "This matrix is not a vector"
-            dim_ext = (self.n, )
-        else:
-            dim_ext = (self.n, self.m)
+        as_vector = isinstance(self, Vector)
+        dim_ext = (self.n, ) if as_vector else (self.n, self.m)
         ret = torch.empty(self.loop_range().shape() + dim_ext,
                           dtype=to_pytorch_type(
                               self.loop_range().snode().data_type()),
@@ -502,11 +496,12 @@ class Matrix(TaichiOperations):
         ti.sync()
         return ret
 
-    def from_numpy(self, ndarray, as_vector=False):
+    def from_numpy(self, ndarray):
+        as_vector = isinstance(self, Vector)
         dim_ext = 1 if as_vector else 2
         assert len(ndarray.shape) == self.loop_range().dim() + dim_ext
         from .meta import ext_arr_to_matrix
-        ext_arr_to_matrix(ndarray, self, as_vector=False)
+        ext_arr_to_matrix(ndarray, self, as_vector)
         import taichi as ti
         ti.sync()
 
@@ -576,13 +571,3 @@ class Vector(Matrix):
             for j in range(b.n):
                 c(i, j).assign(a(i) * b(j))
         return c
-
-    # TODO: refactor: deprecate as_vector
-    def to_numpy(self):
-        return super(Vector, self).to_numpy(as_vector=True)
-
-    def to_torch(self, device=None):
-        return super(Vector, self).to_torch(as_vector=True, device=device)
-
-    def from_numpy(self, ndarray):
-        return super(Vector, self).from_numpy(ndarray, as_vector=True)

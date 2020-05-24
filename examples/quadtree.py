@@ -61,5 +61,5 @@ while not gui.get_event(ti.GUI.PRESS):
     pos = gui.get_cursor_pos()
     action(vec2_npf32(pos))
     paint()
-    gui.set_image(img.to_numpy(as_vector=True))
+    gui.set_image(img.to_numpy())
     gui.show()

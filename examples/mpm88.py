@@ -88,6 +88,6 @@ for frame in range(20000):
     substep()
 
   gui.clear(0x112F41)
-  pos = x.to_numpy(as_vector=True)
+  pos = x.to_numpy()
   gui.circles(pos, radius=1.5, color=0x068587)
   gui.show()

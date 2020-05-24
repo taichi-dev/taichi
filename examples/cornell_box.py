@@ -452,7 +452,7 @@ for i in range(50000):
     render()
     interval = 10
     if i % interval == 0 and i > 0:
-        img = color_buffer.to_numpy(as_vector=True) * (1 / (i + 1))
+        img = color_buffer.to_numpy() * (1 / (i + 1))
         img = np.sqrt(img / img.mean() * 0.24)
         print("{:.2f} samples/s ({} iters, var={})".format(
             interval / (time.time() - last_t), i, np.var(img)))

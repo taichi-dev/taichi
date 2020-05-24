@@ -542,6 +542,7 @@ class Matrix(TaichiOperations):
 
 
 class Vector(Matrix):
+
     def __init__(self, n=1, dt=None, shape=None, **kwargs):
         super(Vector, self).__init__(n, 1, dt, shape, **kwargs)
         assert self.m == 1

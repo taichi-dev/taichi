@@ -132,8 +132,6 @@ def test_numpy_io_example():
     # Vector
     arr = np.ones(shape=(n, m, 3), dtype=np.int32)
     vec.from_numpy(arr)
-    arr = np.ones(shape=(n, m, 3, 1), dtype=np.int32)
-    vec.from_numpy(arr)
 
     arr = vec.to_numpy()
     assert arr.shape == (n, m, 3)

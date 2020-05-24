@@ -45,6 +45,7 @@ jobs:
   code_format:
     name: Code Format
     runs-on: ubuntu-latest
+    if: ${{ !contains(github.event.pull_request.requested_reviewers.*.login, 'taichi-gardener') }}
     steps:
       - uses: actions/checkout@v2
       - name: Check code format

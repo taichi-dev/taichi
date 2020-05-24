@@ -29,6 +29,7 @@ jobs:
           export TAICHI_REPO_DIR=`pwd`
           export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
           export CXX=clang++
+          export CI_SETUP_CMAKE_ARGS=-DTI_WITH_OPENGL:BOOL=OFF
           # GLFW dependencies:
           #export CI_SETUP_CMAKE_ARGS=-DTI_WITH_OPENGL:BOOL=ON
           #sudo apt-get install libx11-dev libxcursor-dev libxi-dev

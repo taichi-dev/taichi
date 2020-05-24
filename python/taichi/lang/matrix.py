@@ -148,9 +148,9 @@ class Matrix(TaichiOperations):
             self.entries[i].assign(other.entries[i])
 
     def element_wise_binary(self, foo, other):
-        ret = Matrix(self.n, self.m)
+        ret = self.empty_copy()
         if isinstance(other, Matrix):
-            assert self.m == other.m and self.n == other.n
+            assert self.m == other.m and self.n == other.n, f'Matrix/Vector size mismatch: ({self.m}, {self.n}) != ({other.m}, {other.n})'
             for i in range(self.n * self.m):
                 ret.entries[i] = foo(self.entries[i], other.entries[i])
         else:  # assumed to be scalar
@@ -160,7 +160,7 @@ class Matrix(TaichiOperations):
         return ret
 
     def element_wise_unary(self, foo):
-        ret = Matrix(self.n, self.m)
+        ret = self.empty_copy()
         for i in range(self.n * self.m):
             ret.entries[i] = foo(self.entries[i])
         return ret
@@ -175,8 +175,9 @@ class Matrix(TaichiOperations):
                     ret(i, j).assign(ret(i, j) + self(i, k) * other(k, j))
         return ret
 
+    # TODO
     def broadcast(self, scalar):
-        ret = Matrix(self.n, self.m, empty=True)
+        ret = self.empty_copy()
         for i in range(self.n * self.m):
             ret.entries[i] = scalar
         return ret
@@ -216,7 +217,7 @@ class Matrix(TaichiOperations):
 
     def subscript(self, *indices):
         if self.is_global():
-            ret = Matrix(self.n, self.m, empty=True)
+            ret = self.empty_copy()
             for i, e in enumerate(self.entries):
                 ret.entries[i] = impl.subscript(e, *indices)
             return ret
@@ -261,8 +262,14 @@ class Matrix(TaichiOperations):
             for j in range(self.m):
                 self(i, j)[index] = item[i][j]
 
+    def empty_copy(self):
+        return Matrix(self.n, self.m, empty=True)
+
+    def zeros_copy(self):
+        return Matrix(self.n, self.m)
+
     def copy(self):
-        ret = Matrix(self.n, self.m)
+        ret = self.empty_copy()
         ret.entries = copy.copy(self.entries)
         return ret
 
@@ -418,7 +425,7 @@ class Matrix(TaichiOperations):
             self.entries[i].atomic_add(other.entries[i])
 
     def make_grad(self):
-        ret = Matrix(self.n, self.m, empty=True)
+        ret = self.empty_copy()
         for i in range(len(ret.entries)):
             ret.entries[i] = self.entries[i].grad
         return ret
@@ -545,7 +552,6 @@ class Vector(Matrix):
 
     def __init__(self, n=1, dt=None, shape=None, **kwargs):
         super(Vector, self).__init__(n, 1, dt, shape, **kwargs)
-        assert self.m == 1
 
     def dot(self, other):
         # TODO: refactor: use type-hints instead
@@ -572,3 +578,9 @@ class Vector(Matrix):
             for j in range(b.n):
                 c(i, j).assign(a(i) * b(j))
         return c
+
+    def empty_copy(self):
+        return Vector(self.n, empty=True)
+
+    def zeros_copy(self):
+        return Vector(self.n)

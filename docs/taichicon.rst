@@ -3,14 +3,19 @@ TaichiCon
 
 We are hosting a series of online **TaichiCon** events for developers to gather and share their Taichi experiences.
 
+Past Conferences
+----------------
+
+Everything on previous TaichiCons is available in the `TaichiCon <https://github.com/taichi-dev/taichicon>`_ repository.
+
 Format
 ------
 
 Each TaichiCon consists of two parts: **talks** and **free discussions**.
 
- - The first 1-hour consists of four 10-minute talks plus 5-minute Q&A after each talk.
+ - The first 1-hour consists of four 10-minute talks, each with 5-minute Q&A;
 
- - After the formal talks, attendees are free to chat about everything about Taichi.
+ - After the formal talks, attendees are free to chat about Taichi in any aspects.
 
 The conference format may evolve in the future.
 
@@ -20,15 +25,15 @@ Language
 The ``i``-th TaichiCon will be hosted in
 
   - English ``(if i % 2 == 1)``;
-  - Chinese (Mandarin) ``(if i % 2 == 1)``.
+  - Chinese (Mandarin) ``(if i % 2 == 0)``.
 
-Time and Frequency
+Time and frequency
 ------------------
 
 Taichi developers are scattered around the world,
 so it's important to pick a good time so that people in different time zones can attend.
 
-A good time for people in Asia or the U.S.:
+A good time for people in Asia and the U.S.:
 
  - (China, Beijing) Sunday 10:00 - 11:00
  - (Japan, Tokyo) Sunday 11:00 - 12:00
@@ -41,6 +46,20 @@ so it may make sense to pick different times for TaichiCons to provide equal opp
 
 TaichiCon will be hosted roughly once per month.
 
+Attending TaichiCon
+-------------------
+
+Everyone interested in Taichi or related topics
+(computer graphics, compilers, high-performance computing, computational fluid dynamics, etc.) is welcome to participate!
+
+The Zoom meeting room has a capacity of 300 participants. A few tips:
+
+ - It's recommended to change your Zoom display name to a uniform ``name (company)`` format. For example, ``Yuanming Hu (MIT CSAIL)``;
+ - Please keep muted during the talks to avoid background noises;
+ - If you have questions, feel free to raise them in the chat window;
+ - Video recordings and slides will be uploaded after the conference;
+ - Usually people do not open their cameras during TaichiCon to save network bandwidth for people in unsatisfactory network conditions.
+
 
 Preparing for a talk at TaichiCon
 ---------------------------------
@@ -50,7 +69,7 @@ We welcome any topics about Taichi, including but not limited to
  - API proposals (e.g., "I think the ``Matrix`` class needs to be refactored. Here are my thoughts ...")
  - Applications (e.g., "I wrote a new fluid solver using Taichi and would like to share ...")
  - Integrations (e.g., "Here's how I integrated Taichi into Blender ...")
- - Internal designs (e.g., "How a new backend is implemented.")
+ - Internal designs (e.g., "How a new backend is implemented")
  - ...
 
 The body of a TaichiCon talk should be 10 min.
@@ -63,16 +82,17 @@ Organizing TaichiCon
 
 Before the conference:
 
+  - Pick a nice time for the event;
+  - Invite speakers: ask for a talk **title**, **abstract**, and a brief **speaker introduction**;
   - Advertise the event on social networks (Facebook, Twitter, Zhihu etc.);
-
   - Make sure all speakers are already in the (virtual) conference room 10 minutes before the conference begins;
 
     - If a speaker does not show up, try to remind him to attend via email.
 
 Hosting the conference:
 
-  - Make sure the Zoom conference is recorded;
-  - Welcome everyone to attend;
+  - Make sure the Zoom session is being recorded;
+  - Remember to welcome everyone to attend :-)
   - Before each talk, introduce the speaker;
   - In the end, thank all the speakers and attendees.
 
@@ -85,9 +105,4 @@ After the conference:
 
 
   - Update the `TaichiCon <https://github.com/taichi-dev/taichicon>`_ repository following the format of TaichiCon 0.
-
-
-Past Conferences
-----------------
-
-Everything on previous TaichiCons is available in the `TaichiCon <https://github.com/taichi-dev/taichicon>`_ repository.
+  - Update this documentation page if you find any opportunities to improve the workflow of TaichiCon.

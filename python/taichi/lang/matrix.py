@@ -153,7 +153,7 @@ class Matrix(TaichiOperations):
     def element_wise_binary(self, foo, other):
         ret = self.empty_copy()
         if isinstance(other, Matrix):
-            assert self.m == other.m and self.n == other.n, f'Matrix/Vector size mismatch: ({self.m}, {self.n}) != ({other.m}, {other.n})'
+            assert self.m == other.m and self.n == other.n
             for i in range(self.n * self.m):
                 ret.entries[i] = foo(self.entries[i], other.entries[i])
         else:  # assumed to be scalar

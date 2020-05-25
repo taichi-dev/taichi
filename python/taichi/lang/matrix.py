@@ -554,6 +554,17 @@ class Matrix(TaichiOperations):
     def from_torch(self, torch_tensor):
         return self.from_numpy(torch_tensor.contiguous())
 
+    def __ti_repr__(self):
+        yield '['
+        for i in range(self.n):
+            if i: yield ', '
+            yield '['
+            for j in range(self.m):
+                if j: yield ', '
+                yield self(i, j)
+            yield ']'
+        yield ']'
+
     @staticmethod
     def zero(dt, n, m=1):
         import taichi as ti

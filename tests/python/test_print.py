@@ -36,3 +36,15 @@ def test_print_string():
         print('cool', x, 'well', y)
 
     func(666, 233.3)
+
+
+@ti.archs_excluding(ti.metal, ti.opengl)
+def test_print_matrix():
+    x = ti.Matrix(2, 3, dt=ti.f32, shape=())
+    y = ti.Vector(4, dt=ti.f32, shape=3)
+
+    @ti.kernel
+    def func(k: ti.f32):
+        print('hello', x[None], 'and', y[2] * k, x[None] / k)
+
+    func(233.3)

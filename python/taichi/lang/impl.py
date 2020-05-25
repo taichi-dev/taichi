@@ -315,9 +315,9 @@ def ti_print(*vars):
             else:
                 yield var
 
-    def add_separators(ents):
-        for ent in ents:
-            yield ent
+    def add_separators(vars):
+        for var in vars:
+            yield var
             yield ' '
 
     def fuse_str(ents):
@@ -333,8 +333,8 @@ def ti_print(*vars):
         if stack:
             yield stack
 
+    vars = add_separators(vars)
     ents = vars2ents(vars)
-    ents = add_separators(ents)
     ents = fuse_str(ents)
     contents = [ent2content(ent) for ent in ents]
     taichi_lang_core.create_print(contents)

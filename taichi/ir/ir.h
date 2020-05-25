@@ -1244,7 +1244,6 @@ inline void StmtFieldManager::operator()(const char *key, T &&value) {
     for (int i = 0; i < (int)value.size(); i++) {
       (*this)("__element", value[i]);
     }
-
   } else if constexpr (std::is_same<decay_T,
                                     std::variant<Stmt *, std::string>>::value) {
     if (std::holds_alternative<std::string>(value)) {
@@ -1254,7 +1253,6 @@ inline void StmtFieldManager::operator()(const char *key, T &&value) {
     } else {
       (*this)("__element", std::get<Stmt *>(value));
     }
-
   } else if constexpr (std::is_same<decay_T, Stmt *>::value) {
     stmt->register_operand(const_cast<Stmt *&>(value));
   } else if constexpr (std::is_same<decay_T, LocalAddress>::value) {

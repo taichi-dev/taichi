@@ -44,9 +44,10 @@ Please build from source for other configurations (e.g., your CPU is ARM).
 |**Build**|[![Build Status](http://f11.csail.mit.edu:8080/job/taichi/badge/icon)](http://f11.csail.mit.edu:8080/job/taichi/)| [![Build Status](https://travis-ci.com/taichi-dev/taichi.svg?branch=master)](https://travis-ci.com/taichi-dev/taichi) | [![Build status](https://ci.appveyor.com/api/projects/status/yxm0uniin8xty4j7/branch/master?svg=true)](https://ci.appveyor.com/project/yuanming-hu/taichi/branch/master)| [![Documentation Status](https://readthedocs.org/projects/taichi/badge/?version=latest)](http://taichi.readthedocs.io/en/latest/?badge=latest)|
 |**PyPI**|[![Build Status](https://travis-ci.com/yuanming-hu/taichi-wheels-test.svg?branch=master)](https://travis-ci.com/yuanming-hu/taichi-wheels-test)|[![Build Status](https://travis-ci.com/yuanming-hu/taichi-wheels-test.svg?branch=master)](https://travis-ci.com/yuanming-hu/taichi-wheels-test)|[![Build status](https://ci.appveyor.com/api/projects/status/39ar9wa8yd49je7o?svg=true)](https://ci.appveyor.com/project/yuanming-hu/taichi-wheels-test) |
 
-## Applications
+## Links
 
-- A High-Performance Multi-Material Continuum Physics Engine based on Taichi: [Taichi Elements](https://github.com/taichi-dev/taichi_elements) (work in progress)
+- [Taichi Elements](https://github.com/taichi-dev/taichi_elements), A High-Performance Multi-Material Continuum Physics Engine based on Taichi (work in progress)
+- [Taichi Simplified Chinese Documentation](https://github.com/taichi-dev/taichi-docs-zh-cn), welcome contribution!
 
 ## Developers
 

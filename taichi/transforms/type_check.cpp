@@ -17,10 +17,9 @@ class TypeCheck : public IRVisitor {
   CompileConfig config;
 
  public:
-  TypeCheck(Kernel *kernel) : kernel(kernel) {
-    // TODO: remove dependency on get_current_program here
-    if (current_program != nullptr)
-      config = kernel->program.config;
+  TypeCheck(IRNode *root) {
+    kernel = root->get_kernel();
+    config = kernel->program.config;
     allow_undefined_visitor = true;
   }
 
@@ -418,7 +417,7 @@ namespace irpass {
 
 void typecheck(IRNode *root, Kernel *kernel) {
   analysis::check_fields_registered(root);
-  TypeCheck inst(kernel);
+  TypeCheck inst(root);
   root->accept(&inst);
 }
 

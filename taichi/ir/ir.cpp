@@ -717,6 +717,9 @@ Stmt *Block::mask() {
 
 Kernel *Block::get_kernel() const {
   Block *parent = this->parent;
+  if (parent == nullptr) {
+    return kernel;
+  }
   while (parent->parent) {
     parent = parent->parent;
   }

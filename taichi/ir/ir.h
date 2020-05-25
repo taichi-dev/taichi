@@ -244,7 +244,7 @@ class IRNode {
   virtual void accept(IRVisitor *visitor) {
     TI_NOT_IMPLEMENTED
   }
-  virtual Kernel* get_kernel() const {
+  virtual Kernel *get_kernel() const {
     return nullptr;
   }
   virtual ~IRNode() = default;
@@ -555,7 +555,7 @@ class Stmt : public IRNode {
 
   IRNode *get_ir_root();
 
-  Kernel* get_kernel() const override;
+  Kernel *get_kernel() const override;
 
   virtual void repeat(int factor) {
     ret_type.width *= factor;
@@ -813,7 +813,7 @@ class Block : public IRNode {
   std::vector<std::unique_ptr<Stmt>> statements, trash_bin;
   Stmt *mask_var;
   std::vector<SNode *> stop_gradients;
-  Kernel* kernel;
+  Kernel *kernel;
 
   // Only used in frontend. Stores LoopIndexStmt or BinaryOpStmt for loop
   // variables, and AllocaStmt for other variables.
@@ -843,7 +843,7 @@ class Block : public IRNode {
                     bool replace_usages = true);
   Stmt *lookup_var(const Identifier &ident) const;
   Stmt *mask();
-  Kernel* get_kernel() const override;
+  Kernel *get_kernel() const override;
 
   Stmt *back() const {
     return statements.back().get();

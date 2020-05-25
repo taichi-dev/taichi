@@ -43,7 +43,7 @@ Kernel::Kernel(Program &program,
     program.start_function_definition(this);
     func();
     program.end_function_definition();
-    dynamic_cast<Block*>(ir.get())->kernel = this;
+    dynamic_cast<Block *>(ir.get())->kernel = this;
   }
 
   arch = program.config.arch;

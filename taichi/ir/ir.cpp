@@ -298,7 +298,7 @@ IRNode *Stmt::get_ir_root() {
   return dynamic_cast<IRNode *>(block);
 }
 
-Kernel* Stmt::get_kernel() const {
+Kernel *Stmt::get_kernel() const {
   if (parent) {
     return parent->get_kernel();
   } else {
@@ -715,7 +715,7 @@ Stmt *Block::mask() {
   }
 }
 
-Kernel* Block::get_kernel() const {
+Kernel *Block::get_kernel() const {
   Block *parent = this->parent;
   while (parent->parent) {
     parent = parent->parent;

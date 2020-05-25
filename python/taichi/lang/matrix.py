@@ -145,15 +145,19 @@ class Matrix(TaichiOperations):
             self.entries[i].assign(other.entries[i])
 
     def element_wise_binary(self, foo, other):
-        ret = Matrix(self.n, self.m)
-        if isinstance(other, Matrix):
-            assert self.m == other.m and self.n == other.n
-            for i in range(self.n * self.m):
-                ret.entries[i] = foo(self.entries[i], other.entries[i])
-        else:  # assumed to be scalar
-            other = expr.Expr(other)
-            for i in range(self.n * self.m):
-                ret.entries[i] = foo(self.entries[i], other)
+        import taichi as ti
+        if ti.get_runtime().inside_kernel:
+            ret = Matrix(self.n, self.m)
+            if isinstance(other, Matrix):
+                assert self.m == other.m and self.n == other.n, f"Dimension mismatch between shapes ({self.n}, {self.m}), ({other.n}, {other.m})"
+                for i in range(self.n * self.m):
+                    ret.entries[i] = foo(self.entries[i], other.entries[i])
+            else:  # assumed to be scalar
+                other = expr.Expr(other)
+                for i in range(self.n * self.m):
+                    ret.entries[i] = foo(self.entries[i], other)
+        else:
+            raise NotImplementedError("Element-wise binary operation for matrix is not implemented in Python scope yet.")
         return ret
 
     def element_wise_unary(self, foo):
@@ -163,13 +167,19 @@ class Matrix(TaichiOperations):
         return ret
 
     def __matmul__(self, other):
-        assert self.m == other.n
-        ret = Matrix(self.n, other.m)
-        for i in range(self.n):
-            for j in range(other.m):
-                ret(i, j).assign(self(i, 0) * other(0, j))
-                for k in range(1, other.n):
-                    ret(i, j).assign(ret(i, j) + self(i, k) * other(k, j))
+        import taichi as ti
+
+        assert self.m == other.n, f"Dimension mismatch between shapes ({self.n}, {self.m}), ({other.n}, {other.m})"
+        
+        if ti.get_runtime().inside_kernel:
+            ret = Matrix(self.n, other.m)
+            for i in range(self.n):
+                for j in range(other.m):
+                    ret(i, j).assign(self(i, 0) * other(0, j))
+                    for k in range(1, other.n):
+                        ret(i, j).assign(ret(i, j) + self(i, k) * other(k, j))
+        else:
+            raise NotImplementedError("Matrix multiplication operation is not implemented in Python scope yet.")
         return ret
 
     def broadcast(self, scalar):

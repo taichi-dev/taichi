@@ -5,6 +5,7 @@
 #include <atomic>
 #include <unordered_set>
 #include <unordered_map>
+#include <variant>
 #include "taichi/common/core.h"
 #include "taichi/util/bit.h"
 #include "taichi/lang_util.h"
@@ -1024,9 +1025,10 @@ class IfStmt : public Stmt {
 
 class PrintStmt : public Stmt {
  public:
-  std::vector<Stmt *> contents;
+  using EntryType = std::variant<Stmt *, std::string>;
+  std::vector<EntryType> contents;
 
-  PrintStmt(const std::vector<Stmt *> &content_) : contents(content_) {
+  PrintStmt(const std::vector<EntryType> &contents_) : contents(contents_) {
     TI_STMT_REG_FIELDS;
   }
 
@@ -1241,6 +1243,15 @@ inline void StmtFieldManager::operator()(const char *key, T &&value) {
         std::make_unique<StmtFieldNumeric<std::size_t>>(value.size()));
     for (int i = 0; i < (int)value.size(); i++) {
       (*this)("__element", value[i]);
+    }
+  } else if constexpr (std::is_same<decay_T,
+                                    std::variant<Stmt *, std::string>>::value) {
+    if (std::holds_alternative<std::string>(value)) {
+      stmt->field_manager.fields.emplace_back(
+          std::make_unique<StmtFieldNumeric<std::string>>(
+              std::get<std::string>(value)));
+    } else {
+      (*this)("__element", std::get<Stmt *>(value));
     }
   } else if constexpr (std::is_same<decay_T, Stmt *>::value) {
     stmt->register_operand(const_cast<Stmt *&>(value));

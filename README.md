@@ -46,7 +46,7 @@ Please build from source for other configurations (e.g., your CPU is ARM).
 
 ## Links
 
-- [Taichi Elements](https://github.com/taichi-dev/taichi_elements), A High-Performance Multi-Material Continuum Physics Engine based on Taichi (work in progress)
+- [Taichi Elements](https://github.com/taichi-dev/taichi_elements), a High-Performance Multi-Material Continuum Physics Engine based on Taichi (work in progress)
 - [Taichi Simplified Chinese Documentation](https://github.com/taichi-dev/taichi-docs-zh-cn), welcome contribution!
 
 ## Developers

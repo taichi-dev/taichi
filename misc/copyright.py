@@ -156,7 +156,8 @@ def check_and_modify(filepath: str, comment_style: CommentStyle,
         assert (not incorrect_notice_match)
         # Notice missing; now we need to insert a notice.
         if not check_only:
-            new_header_lines = make_notice(comment_style, get_ctime_year(filepath))
+            new_header_lines = make_notice(comment_style,
+                                           get_ctime_year(filepath))
             if sharp_bang_line:
                 new_header_lines = [sharp_bang_line] + new_header_lines
                 body_lines = body_lines[1:]  # Remove the original #! line
@@ -197,7 +198,6 @@ try:
 except AttributeError:  # Maybe we want to run on niche platforms..
     LINE_ELIDING = False
 
-
 PLAYFUL_BRAILLE = ["⠃", "⠆", "⠤", "⠰", "⠘", "⠉"]
 
 
@@ -209,12 +209,14 @@ def print_progress(stats: WorkStats, check_only: bool):
         modify=stats.modified_notice_file_num,
         dots=PLAYFUL_BRAILLE[stats.opened_file_num % len(PLAYFUL_BRAILLE)])
     # 1A, 2K: move cursor one line up and clear the entire line.
-    sys.stdout.write(("\x1b[1A\x1b[2K" if LINE_ELIDING else "") + content + "\n")
+    sys.stdout.write(("\x1b[1A\x1b[2K" if LINE_ELIDING else "") + content +
+                     "\n")
 
 
 def work_on_file(filepath: str, ext: str, stats: WorkStats, check_only: bool):
     stats.opened_file_num += 1
-    status = check_and_modify(filepath, FILE_EXT_TO_COMMENT_STYLES[ext], check_only)
+    status = check_and_modify(filepath, FILE_EXT_TO_COMMENT_STYLES[ext],
+                              check_only)
     if check_only and status != FileActionResult.INTACT:
         stats.problematic_files.append(filepath)
     if status == FileActionResult.INSERTED_NOTICE:
@@ -263,8 +265,9 @@ def work(args) -> bool:
     problematic_num = len(stats.problematic_files)
     if problematic_num > 0:
         print("\t{}".format("\n\t".join(sorted(stats.problematic_files))))
-        print("{} out of {} files do not have correctly-formatted copyright notices.".format(
-            problematic_num, stats.opened_file_num))
+        print(
+            "{} out of {} files do not have correctly-formatted copyright notices."
+            .format(problematic_num, stats.opened_file_num))
     else:
         print("Copyright notices in the given paths are ok.")
     return problematic_num == 0
@@ -287,10 +290,11 @@ def main():
         type=str,
         default="",
         help="comma-separated file extensions; all if absent")
-    argparser.add_argument("-c",
-                           "--check",
-                           action="store_true",
-                           help="check only; returns 1 if some files will be rewritten")
+    argparser.add_argument(
+        "-c",
+        "--check",
+        action="store_true",
+        help="check only; returns 1 if some files will be rewritten")
     argparser.add_argument("--docs",
                            action="store_true",
                            help="print long documentation")

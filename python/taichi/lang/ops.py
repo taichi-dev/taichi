@@ -55,18 +55,6 @@ def binary(foo):
     return wrapped
 
 
-def logical_and(a, b):
-    return a.logical_and(b)
-
-
-def logical_or(a, b):
-    return a.logical_or(b)
-
-
-def logical_not(a):
-    return a.logical_not()
-
-
 def cast(obj, type):
     if is_taichi_class(obj):
         return obj.cast(type)
@@ -156,6 +144,16 @@ def log(expr):
 @unary
 def abs(expr):
     return Expr(taichi_lang_core.expr_abs(expr.ptr), tb=stack_info())
+
+
+@unary
+def bit_not(expr):
+    return Expr(taichi_lang_core.expr_bit_not(expr.ptr), tb=stack_info())
+
+
+@unary
+def logical_not(expr):
+    return Expr(taichi_lang_core.expr_logic_not(expr.ptr), tb=stack_info())
 
 
 def random(dt=None):
@@ -261,6 +259,51 @@ def raw_div(a, b):
 @binary
 def raw_mod(a, b):
     return Expr(taichi_lang_core.expr_mod(a.ptr, b.ptr), tb=stack_info())
+
+
+@binary
+def cmp_lt(a, b):
+    return Expr(taichi_lang_core.expr_cmp_lt(a.ptr, b.ptr), tb=stack_info())
+
+
+@binary
+def cmp_le(a, b):
+    return Expr(taichi_lang_core.expr_cmp_le(a.ptr, b.ptr), tb=stack_info())
+
+
+@binary
+def cmp_gt(a, b):
+    return Expr(taichi_lang_core.expr_cmp_gt(a.ptr, b.ptr), tb=stack_info())
+
+
+@binary
+def cmp_ge(a, b):
+    return Expr(taichi_lang_core.expr_cmp_ge(a.ptr, b.ptr), tb=stack_info())
+
+
+@binary
+def cmp_eq(a, b):
+    return Expr(taichi_lang_core.expr_cmp_eq(a.ptr, b.ptr), tb=stack_info())
+
+
+@binary
+def cmp_ne(a, b):
+    return Expr(taichi_lang_core.expr_cmp_ne(a.ptr, b.ptr), tb=stack_info())
+
+
+@binary
+def bit_or(a, b):
+    return Expr(taichi_lang_core.expr_bit_or(a.ptr, b.ptr), tb=stack_info())
+
+
+@binary
+def bit_and(a, b):
+    return Expr(taichi_lang_core.expr_bit_and(a.ptr, b.ptr), tb=stack_info())
+
+
+# We don't have logic_and/or instructions yet:
+logical_or = bit_or
+logical_and = bit_and
 
 
 def ti_max(*args):

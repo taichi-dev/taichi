@@ -461,7 +461,7 @@ class KernelGen : public IRVisitor {
 
   void visit(TernaryOpStmt *tri) override {
     TI_ASSERT(tri->op_type == TernaryOpType::select);
-    emit("{} {} = ({}) != 0 ? ({}) : ({});",
+    emit("{} {} = ({} & 1) != 0 ? {} : ({};",
          opengl_data_type_name(tri->element_type()), tri->short_name(),
          tri->op1->short_name(), tri->op2->short_name(),
          tri->op3->short_name());
@@ -616,7 +616,7 @@ class KernelGen : public IRVisitor {
   }
 
   void visit(WhileControlStmt *stmt) override {
-    emit("if ({} == 0) break;", stmt->cond->short_name());
+    emit("if (({} & 1) == 0) break;", stmt->cond->short_name());
   }
 
   void visit(ContinueStmt *stmt) override {
@@ -657,7 +657,7 @@ class KernelGen : public IRVisitor {
   }
 
   void visit(IfStmt *if_stmt) override {
-    emit("if ({} != 0) {{", if_stmt->cond->short_name());
+    emit("if (({} & 1) != 0) {{", if_stmt->cond->short_name());
     if (if_stmt->true_statements) {
       if_stmt->true_statements->accept(this);
     }

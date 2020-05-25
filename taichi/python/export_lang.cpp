@@ -490,9 +490,11 @@ void export_lang(py::module &m) {
           return get_current_program().kernel(name, grad);
         });
 
-  m.def("create_print", [&](const std::vector<Expr> &contents) {
-    current_ast_builder().insert(std::make_unique<FrontendPrintStmt>(contents));
-  });
+  m.def("create_print",
+        [&](std::vector<std::variant<Expr, std::string>> contents) {
+          current_ast_builder().insert(
+              std::make_unique<FrontendPrintStmt>(contents));
+        });
 
   m.def("decl_arg", [&](DataType dt, bool is_nparray) {
     return get_current_program().get_current_kernel().insert_arg(dt,

@@ -1,7 +1,11 @@
 import taichi as ti
 
 
-@ti.archs_support_sparse
+def ti_support_dynamic(test):
+    return ti.archs_excluding(ti.opengl)(test)
+
+
+@ti_support_dynamic
 def test_dynamic():
     x = ti.var(ti.f32)
     n = 128
@@ -21,7 +25,7 @@ def test_dynamic():
         assert x[i] == i
 
 
-@ti.archs_support_sparse
+@ti_support_dynamic
 def test_dynamic2():
     x = ti.var(ti.f32)
     n = 128
@@ -41,7 +45,7 @@ def test_dynamic2():
         assert x[i] == i
 
 
-@ti.archs_support_sparse
+@ti_support_dynamic
 def test_dynamic_matrix():
     x = ti.Matrix(2, 1, dt=ti.i32)
     n = 8192
@@ -66,7 +70,7 @@ def test_dynamic_matrix():
             assert b == 0
 
 
-@ti.archs_support_sparse
+@ti_support_dynamic
 def test_append():
     x = ti.var(ti.i32)
     n = 128
@@ -90,7 +94,7 @@ def test_append():
         assert elements[i] == i
 
 
-@ti.archs_support_sparse
+@ti_support_dynamic
 def test_length():
     x = ti.var(ti.i32)
     y = ti.var(ti.f32, shape=())
@@ -116,7 +120,7 @@ def test_length():
     assert y[None] == n
 
 
-@ti.archs_support_sparse
+@ti_support_dynamic
 def test_append_ret_value():
     x = ti.var(ti.i32)
     y = ti.var(ti.i32)
@@ -143,7 +147,7 @@ def test_append_ret_value():
         assert x[i] + 3 == z[i]
 
 
-@ti.archs_support_sparse
+@ti_support_dynamic
 def test_dense_dynamic():
     n = 128
     x = ti.var(ti.i32)
@@ -169,7 +173,7 @@ def test_dense_dynamic():
         assert l[i] == n
 
 
-@ti.archs_support_sparse
+@ti_support_dynamic
 def test_dense_dynamic_len():
     n = 128
     x = ti.var(ti.i32)

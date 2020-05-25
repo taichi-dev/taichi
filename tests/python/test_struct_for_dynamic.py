@@ -1,7 +1,11 @@
 import taichi as ti
 
 
-@ti.archs_support_sparse
+def ti_support_dynamic(test):
+    return ti.archs_excluding(ti.opengl)(test)
+
+
+@ti_support_dynamic
 def test_dynamic():
     x = ti.var(ti.i32)
     y = ti.var(ti.i32, shape=())
@@ -24,7 +28,7 @@ def test_dynamic():
     assert y[None] == n // 3 + 1
 
 
-@ti.archs_support_sparse
+@ti_support_dynamic
 def test_dense_dynamic():
     n = 128
 

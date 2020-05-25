@@ -112,7 +112,7 @@ def _test_mat_inverse_size(n):
             M[i, j] = i * j + i * 3 + j + 1 + int(i == j) * 4
     assert np.linalg.det(M) != 0
 
-    m.from_numpy(M)
+    m.from_numpy(M, keep_dims=True)
 
     @ti.kernel
     def invert():

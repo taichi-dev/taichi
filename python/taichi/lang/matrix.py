@@ -590,4 +590,5 @@ class Matrix(TaichiOperations):
         return c
 
 
-Vector = Matrix
+def Vector(n=1, dt=None, shape=None, **kwargs):
+    return Matrix(n, 1, dt, shape, **kwargs)

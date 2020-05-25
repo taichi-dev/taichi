@@ -642,7 +642,6 @@ void CodeGenLLVM::visit(PrintStmt *stmt) {
             builder->CreateFPExt(value, tlctx->get_data_type(DataType::f64));
       args.push_back(value);
       formats += data_type_format(arg_stmt->ret_type.data_type);
-
     } else {
       auto arg_str = std::get<std::string>(content);
       auto value = builder->CreateGlobalStringPtr(arg_str, "content_string");

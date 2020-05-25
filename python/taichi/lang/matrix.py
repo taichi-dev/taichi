@@ -5,7 +5,7 @@ import numbers
 import numpy as np
 from .util import to_numpy_type, to_pytorch_type
 from .common_ops import TaichiOperations
-from collections import Iterable
+from collections.abc import Iterable
 
 
 def broadcast_if_scalar(func):

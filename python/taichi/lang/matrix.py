@@ -28,7 +28,6 @@ class Matrix(TaichiOperations):
                  dt=None,
                  shape=None,
                  empty=False,
-                 is_vector=False,
                  layout=None,
                  needs_grad=False,
                  keep_raw=False,
@@ -37,7 +36,6 @@ class Matrix(TaichiOperations):
         # TODO: refactor: use multiple initializer like `ti.Matrix.cols([a, b, c])`
         # and `ti.Matrix.empty(n, m)` instead of ad-hoc `ti.Matrix(cols=[a, b, c])`.
         self.grad = None
-        self.is_vector = is_vector
         if rows is not None or cols is not None:
             if rows is not None and cols is not None:
                 raise Exception("cannot specify both rows and columns")
@@ -266,10 +264,10 @@ class Matrix(TaichiOperations):
                 self(i, j)[index] = item[i][j]
 
     def empty_copy(self):
-        return Matrix(self.n, self.m, empty=True, is_vector=self.is_vector)
+        return Matrix(self.n, self.m, empty=True)
 
     def zeros_copy(self):
-        return Matrix(self.n, self.m, is_vector=self.is_vector)
+        return Matrix(self.n, self.m)
 
     def copy(self):
         ret = self.empty_copy()
@@ -480,8 +478,10 @@ class Matrix(TaichiOperations):
         from .meta import fill_matrix
         fill_matrix(self, val)
 
-    def to_numpy(self):
-        dim_ext = (self.n, ) if self.is_vector else (self.n, self.m)
+    def to_numpy(self, keep_dims=False):
+        # Discussion: https://github.com/taichi-dev/taichi/pull/1046#issuecomment-633548858
+        as_vector = self.m == 1 and not keep_dims
+        dim_ext = (self.n, ) if as_vector else (self.n, self.m)
         ret = np.empty(self.loop_range().shape() + dim_ext,
                        dtype=to_numpy_type(
                            self.loop_range().snode().data_type()))
@@ -491,32 +491,36 @@ class Matrix(TaichiOperations):
         ti.sync()
         return ret
 
-    def to_torch(self, device=None):
+    def to_torch(self, device=None, keep_dims=False):
         import torch
-        dim_ext = (self.n, ) if self.is_vector else (self.n, self.m)
+        as_vector = self.m == 1 and not keep_dims
+        dim_ext = (self.n, ) if as_vector else (self.n, self.m)
         ret = torch.empty(self.loop_range().shape() + dim_ext,
                           dtype=to_pytorch_type(
                               self.loop_range().snode().data_type()),
                           device=device)
         from .meta import matrix_to_ext_arr
-        matrix_to_ext_arr(self, ret, self.is_vector)
+        matrix_to_ext_arr(self, ret, as_vector)
         import taichi as ti
         ti.sync()
         return ret
 
-    def from_numpy(self, ndarray):
-        dim_ext = 1 if self.is_vector else 2
+    def from_numpy(self, ndarray, keep_dims=False):
+        as_vector = self.m == 1 and not keep_dims
+        dim_ext = 1 if as_vector else 2
         assert len(ndarray.shape) == self.loop_range().dim() + dim_ext
         from .meta import ext_arr_to_matrix
-        ext_arr_to_matrix(ndarray, self, self.is_vector)
+        ext_arr_to_matrix(ndarray, self, as_vector)
         import taichi as ti
         ti.sync()
 
-    def from_torch(self, torch_tensor):
-        return self.from_numpy(torch_tensor.contiguous())
+    def from_torch(self, torch_tensor, keep_dims=False):
+        return self.from_numpy(torch_tensor.contiguous(), keep_dims)
 
     def __ti_repr__(self):
-        yield '['
+        if self.m != 1:
+            yield '['
+
         for i in range(self.n):
             if i: yield ', '
             yield '['
@@ -524,7 +528,9 @@ class Matrix(TaichiOperations):
                 if j: yield ', '
                 yield self(i, j)
             yield ']'
-        yield ']'
+
+        if self.m != 1:
+            yield ']'
 
     @staticmethod
     def zero(dt, n, m=1):
@@ -565,8 +571,8 @@ class Matrix(TaichiOperations):
 
     @staticmethod
     def cross(a, b):
-        assert a.is_vector and a.n == 3
-        assert b.is_vector and b.n == 3
+        assert a.m == 1 and a.n == 3
+        assert b.m == 1 and b.n == 3
         return Vector([
             a(1) * b(2) - a(2) * b(1),
             a(2) * b(0) - a(0) * b(2),
@@ -584,5 +590,4 @@ class Matrix(TaichiOperations):
         return c
 
 
-def Vector(n=1, dt=None, shape=None, **kwargs):
-    return Matrix(n, 1, dt, shape, is_vector=True, **kwargs)
+Vector = Matrix

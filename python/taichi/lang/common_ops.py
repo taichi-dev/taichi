@@ -103,10 +103,10 @@ class TaichiOperations:
         import taichi as ti
         return ti.logical_or(self, other)
 
-    def __inv__(self):  # ~a => a.__inv__()
+    def __invert__(self):  # ~a => a.__invert__()
         import taichi as ti
-        return ti.bit_not(self, other)
+        return ti.bit_not(self)
 
     def __not__(self):  # not a => a.__not__()
         import taichi as ti
-        return ti.logical_not(self, other)
+        return ti.logical_not(self)

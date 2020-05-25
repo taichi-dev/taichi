@@ -157,7 +157,9 @@ class Matrix(TaichiOperations):
                 for i in range(self.n * self.m):
                     ret.entries[i] = foo(self.entries[i], other)
         else:
-            raise NotImplementedError("Element-wise binary operation for matrix is not implemented in Python scope yet.")
+            raise NotImplementedError(
+                "Element-wise binary operation for matrix is not implemented in Python scope yet."
+            )
         return ret
 
     def element_wise_unary(self, foo):
@@ -170,7 +172,7 @@ class Matrix(TaichiOperations):
         import taichi as ti
 
         assert self.m == other.n, f"Dimension mismatch between shapes ({self.n}, {self.m}), ({other.n}, {other.m})"
-        
+
         if ti.get_runtime().inside_kernel:
             ret = Matrix(self.n, other.m)
             for i in range(self.n):
@@ -179,7 +181,9 @@ class Matrix(TaichiOperations):
                     for k in range(1, other.n):
                         ret(i, j).assign(ret(i, j) + self(i, k) * other(k, j))
         else:
-            raise NotImplementedError("Matrix multiplication operation is not implemented in Python scope yet.")
+            raise NotImplementedError(
+                "Matrix multiplication operation is not implemented in Python scope yet."
+            )
         return ret
 
     def broadcast(self, scalar):

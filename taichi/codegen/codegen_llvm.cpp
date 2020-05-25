@@ -633,20 +633,25 @@ void CodeGenLLVM::visit(PrintStmt *stmt) {
   TI_ASSERT(stmt->width() == 1);
   std::vector<Value *> args;
   std::string formats;
-  for (auto content : stmt->contents) {
-    auto value = llvm_val[content];
-    if (content->ret_type.data_type == DataType::f32)
-      value = builder->CreateFPExt(value, tlctx->get_data_type(DataType::f64));
-    args.push_back(value);
-
-    if (formats.size() != 0)  // not the first expr?
-      formats += " ";         // add seperator
-    formats += data_type_format(content->ret_type.data_type);
+  for (auto const &content : stmt->contents) {
+    if (std::holds_alternative<Stmt *>(content)) {
+      auto arg_stmt = std::get<Stmt *>(content);
+      auto value = llvm_val[arg_stmt];
+      if (arg_stmt->ret_type.data_type == DataType::f32)
+        value =
+            builder->CreateFPExt(value, tlctx->get_data_type(DataType::f64));
+      args.push_back(value);
+      formats += data_type_format(arg_stmt->ret_type.data_type);
+    } else {
+      auto arg_str = std::get<std::string>(content);
+      auto value = builder->CreateGlobalStringPtr(arg_str, "content_string");
+      args.push_back(value);
+      formats += "%s";
+    }
   }
   auto runtime_printf = call("LLVMRuntime_get_host_printf", get_runtime());
-  args.insert(args.begin(),
-              builder->CreateGlobalStringPtr(
-                  ("[debug] " + formats + "\n").c_str(), "format_string"));
+  args.insert(args.begin(), builder->CreateGlobalStringPtr(
+                                (formats + "\n").c_str(), "format_string"));
 
   llvm_val[stmt] = builder->CreateCall(runtime_printf, args);
 }

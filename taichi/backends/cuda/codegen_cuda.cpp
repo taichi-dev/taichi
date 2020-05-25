@@ -111,21 +111,36 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     std::vector<llvm::Value *> values;
 
     std::string formats;
-    for (auto content : stmt->contents) {
-      if (formats.size() != 0)  // not the first expr?
-        formats += " ";         // add seperator
-      formats += data_type_format(content->ret_type.data_type);
+    for (auto const &content : stmt->contents) {
+      if (std::holds_alternative<Stmt *>(content)) {
+        auto arg_stmt = std::get<Stmt *>(content);
 
-      auto value_type = tlctx->get_data_type(content->ret_type.data_type);
-      auto value = llvm_val[content];
-      if (content->ret_type.data_type == DataType::f32)
-        value = builder->CreateFPExt(value, value_type);
+        formats += data_type_format(arg_stmt->ret_type.data_type);
 
-      types.push_back(value_type);
-      values.push_back(value);
+        auto value_type = tlctx->get_data_type(arg_stmt->ret_type.data_type);
+        auto value = llvm_val[arg_stmt];
+        if (arg_stmt->ret_type.data_type == DataType::f32) {
+          value_type = tlctx->get_data_type(DataType::f64);
+          value = builder->CreateFPExt(value, value_type);
+        }
+
+        types.push_back(value_type);
+        values.push_back(value);
+      } else {
+        auto arg_str = std::get<std::string>(content);
+
+        auto value = builder->CreateGlobalStringPtr(arg_str, "content_string");
+        auto char_type =
+            llvm::Type::getInt8Ty(*tlctx->get_this_thread_context());
+        auto value_type = llvm::PointerType::get(char_type, 0);
+
+        types.push_back(value_type);
+        values.push_back(value);
+        formats += "%s";
+      }
     }
 
-    auto format_str = "[debug] " + formats + "\n";
+    auto format_str = formats + "\n";
     auto stype = llvm::StructType::get(*llvm_context, types, false);
     auto value_arr = builder->CreateAlloca(stype);
     for (int i = 0; i < values.size(); i++) {

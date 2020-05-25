@@ -300,7 +300,44 @@ def layout(func):
 
 
 def ti_print(*vars):
-    taichi_lang_core.create_print([Expr(var).ptr for var in vars])
+    def entry2content(var):
+        if isinstance(var, str):
+            return var
+        else:
+            return Expr(var).ptr
+
+    def vars2entries(vars):
+        for var in vars:
+            if hasattr(var, '__ti_repr__'):
+                repr = var.__ti_repr__()
+                for v in vars2entries(repr):
+                    yield v
+            else:
+                yield var
+
+    def add_separators(vars):
+        for i, var in enumerate(vars):
+            if i: yield ' '
+            yield var
+
+    def fused_string(entries):
+        accumated = ''
+        for entry in entries:
+            if isinstance(entry, str):
+                accumated += entry
+            else:
+                if accumated:
+                    yield accumated
+                    accumated = ''
+                yield entry
+        if accumated:
+            yield accumated
+
+    vars = add_separators(vars)
+    entries = vars2entries(vars)
+    entries = fused_string(entries)
+    contentries = [entry2content(entry) for entry in entries]
+    taichi_lang_core.create_print(contentries)
 
 
 def ti_int(var):

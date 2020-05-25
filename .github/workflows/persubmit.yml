@@ -23,13 +23,10 @@ jobs:
 
       - name: Download Pre-Built LLVM 8.0.1
         run: |
-          echo $GITHUB_CONTEXT
           mkdir taichi-llvm
           cd taichi-llvm
           wget https://github.com/yuanming-hu/taichi_assets/releases/download/llvm8/taichi-llvm-8.0.1-linux-x64.zip --waitretry=3 --tries=5
           unzip taichi-llvm-8.0.1-linux-x64.zip
-        env:
-          GITHUB_CONTEXT: ${{ toJson(github) }}
 
       - name: Build Project
         run: |

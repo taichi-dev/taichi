@@ -43,7 +43,7 @@ Use ``to_numpy``/``from_numpy``/``to_torch``/``from_torch``:
   arr = vec.to_numpy()
   assert arr.shape == (n, m, 3, 1)
 
-  arr = vec.to_numpy(as_vector=True)
+  arr = vec.to_numpy()
   assert arr.shape == (n, m, 3)
 
   # Matrix

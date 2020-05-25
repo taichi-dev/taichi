@@ -108,7 +108,7 @@ ExecutionQueue::ExecutionQueue()
 void AsyncEngine::launch(Kernel *kernel) {
   if (!kernel->lowered)
     kernel->lower(false);
-  auto block = dynamic_cast<Block *>(kernel->ir);
+  auto block = dynamic_cast<Block *>(kernel->ir.get());
   TI_ASSERT(block);
   auto &offloads = block->statements;
   for (std::size_t i = 0; i < offloads.size(); i++) {

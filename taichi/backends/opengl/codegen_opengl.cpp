@@ -702,7 +702,7 @@ FunctionType OpenglCodeGen::gen(void) {
 }
 
 void OpenglCodeGen::lower() {
-  auto ir = kernel_->ir;
+  auto ir = kernel_->ir.get();
   auto &config = kernel_->program.config;
   config.demote_dense_struct_fors = true;
   irpass::compile_to_offloads(ir, config,

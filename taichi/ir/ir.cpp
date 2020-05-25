@@ -298,6 +298,14 @@ IRNode *Stmt::get_ir_root() {
   return dynamic_cast<IRNode *>(block);
 }
 
+Kernel* Stmt::get_kernel() const {
+  if (parent) {
+    return parent->get_kernel();
+  } else {
+    return nullptr;
+  }
+}
+
 std::vector<Stmt *> Stmt::get_operands() const {
   std::vector<Stmt *> ret;
   for (int i = 0; i < num_operands(); i++) {
@@ -705,6 +713,14 @@ Stmt *Block::mask() {
   } else {
     return parent->mask();
   }
+}
+
+Kernel* Block::get_kernel() const {
+  Block *parent = this->parent;
+  while (parent->parent) {
+    parent = parent->parent;
+  }
+  return parent->kernel;
 }
 
 void Block::set_statements(VecStatement &&stmts) {

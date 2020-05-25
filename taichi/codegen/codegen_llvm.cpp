@@ -272,7 +272,7 @@ CodeGenLLVM::CodeGenLLVM(Kernel *kernel, IRNode *ir)
       ir(ir),
       prog(&kernel->program) {
   if (ir == nullptr)
-    this->ir = kernel->ir;
+    this->ir = kernel->ir.get();
   initialize_context();
 
   context_ty = get_runtime_type("Context");

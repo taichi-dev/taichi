@@ -6,7 +6,7 @@ on:
 jobs:
   build_and_test:
     name: Build and Test
-    if: ${{ !contains(github.event.pull_request.labels.*.name, 'skip ci') || contains(github.event.head_commit.message, '[skip ci]') || contains(github.event.head_commit.message, '[skip linux]') }}
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'skip ci') && github.event.sender.login != 'taichi-gardener' }}
     strategy:
       matrix:
         os: [ubuntu-latest]
@@ -23,10 +23,13 @@ jobs:
 
       - name: Download Pre-Built LLVM 8.0.1
         run: |
+          echo $GITHUB_CONTEXT
           mkdir taichi-llvm
           cd taichi-llvm
           wget https://github.com/yuanming-hu/taichi_assets/releases/download/llvm8/taichi-llvm-8.0.1-linux-x64.zip --waitretry=3 --tries=5
           unzip taichi-llvm-8.0.1-linux-x64.zip
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
 
       - name: Build Project
         run: |

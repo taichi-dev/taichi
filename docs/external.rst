@@ -41,9 +41,6 @@ Use ``to_numpy``/``from_numpy``/``to_torch``/``from_torch``:
   vec.from_numpy(arr)
 
   arr = vec.to_numpy()
-  assert arr.shape == (n, m, 3, 1)
-
-  arr = vec.to_numpy(as_vector=True)
   assert arr.shape == (n, m, 3)
 
   # Matrix
@@ -53,6 +50,9 @@ Use ``to_numpy``/``from_numpy``/``to_torch``/``from_torch``:
 
   arr = mat.to_numpy()
   assert arr.shape == (n, m, 3, 4)
+
+
+TODO: add API reference
 
 
 Using external arrays as Taichi kernel parameters

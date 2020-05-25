@@ -57,17 +57,7 @@ The Taichi project was created by [Yuanming Hu (yuanming-hu)](https://github.com
 
 [Kenneth Lozes (KLozes)](https://github.com/KLozes) and [Yu Fang (squarefk)](https://github.com/squarefk) have also made notable contributions.
 
-[[List of all contributors to Taichi]](https://github.com/taichi-dev/taichi/graphs/contributors)
-
--------------------------------
-
-The Simplified Chinese documentation (简体中文文档) was created by [Ark (StephenArk30)](https://github.com/StephenArk30). Significant contributions are made by:
-  - [彭于斌 (archibate)](https://github.com/archibate)
-  - [Danni (isdanni)](https://github.com/isdanni)
-  - [Rex (rexwangcc)](https://github.com/rexwangcc)
-  - [jianzhouwan (ArkhamWJZ)](https://github.com/ArkhamWJZ)
-
-[[List of all contributors to the Simplified Chinese documentation of Taichi]](https://github.com/taichi-dev/taichi-docs-zh-cn/graphs/contributors)
+[[List of all contributors]](https://github.com/taichi-dev/taichi/graphs/contributors)
 
 -------------------------------
 

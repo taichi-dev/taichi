@@ -486,7 +486,7 @@ class Matrix(TaichiOperations):
                        dtype=to_numpy_type(
                            self.loop_range().snode().data_type()))
         from .meta import matrix_to_ext_arr
-        matrix_to_ext_arr(self, ret, self.is_vector)
+        matrix_to_ext_arr(self, ret, as_vector)
         import taichi as ti
         ti.sync()
         return ret

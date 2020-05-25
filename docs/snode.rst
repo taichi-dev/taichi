@@ -48,7 +48,7 @@ See :ref:`layout` for more details. ``ti.root`` is the root node of the data str
 
     :parameter snode: (SNode)
     :parameter index: axis (0 for ``i`` and 1 for ``j``)
-    :return: (scalar) the size of tensor alone that axis
+    :return: (scalar) the size of tensor along that axis
 
     Equivalent to ``tensor.shape()[i]``.
 

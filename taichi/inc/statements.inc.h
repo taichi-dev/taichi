@@ -64,9 +64,6 @@ PER_STATEMENT(LocalLoadStmt)
 PER_STATEMENT(GlobalPtrStmt)
 PER_STATEMENT(ElementShuffleStmt)
 
-// Pragma statements
-PER_STATEMENT(PragmaSLPStmt)
-
 // Offloaded
 PER_STATEMENT(OffloadedStmt)
 PER_STATEMENT(LoopIndexStmt)

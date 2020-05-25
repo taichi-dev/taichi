@@ -107,8 +107,10 @@ def test_matrix_element_wise_binary_infix_f32_1():
 def test_matrix_element_wise_binary_infix_f32_2():
     seed(4401)
     for n, m in [(5, 4), (3, 1)]:
-        _test_matrix_element_wise_binary(ti.f32, n, m, ops.truediv, ops.truediv)
-        _test_matrix_element_wise_binary(ti.f32, n, m, ops.floordiv, ops.floordiv)
+        _test_matrix_element_wise_binary(ti.f32, n, m, ops.truediv,
+                                         ops.truediv)
+        _test_matrix_element_wise_binary(ti.f32, n, m, ops.floordiv,
+                                         ops.floordiv)
         _test_matrix_element_wise_binary(ti.f32, n, m, ops.pow, ops.pow)
 
 

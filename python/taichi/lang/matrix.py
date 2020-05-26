@@ -436,20 +436,6 @@ class Matrix(TaichiOperations):
     def loop_range(self):
         return self.entries[0]
 
-    # TODO
-    @broadcast_if_scalar
-    def augassign(self, other, op):
-        if not isinstance(other, Matrix):
-            other = Matrix(other)
-        assert self.n == other.n and self.m == other.m
-        for i in range(len(self.entries)):
-            self.entries[i].augassign(other.entries[i], op)
-
-    def atomic_add(self, other):
-        assert self.n == other.n and self.m == other.m
-        for i in range(len(self.entries)):
-            self.entries[i].atomic_add(other.entries[i])
-
     def make_grad(self):
         ret = Matrix(self.n, self.m, empty=True)
         for i in range(len(ret.entries)):

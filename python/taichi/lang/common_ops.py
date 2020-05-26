@@ -110,3 +110,66 @@ class TaichiOperations:
     def __not__(self):  # not a => a.__not__()
         import taichi as ti
         return ti.logical_not(self)
+
+    def atomic_add(self, other):
+        import taichi as ti
+        return ti.atomic_add(self, other)
+
+    def atomic_sub(self, other):
+        import taichi as ti
+        return ti.atomic_sub(self, other)
+
+    def atomic_and(self, other):
+        import taichi as ti
+        return ti.atomic_and(self, other)
+
+    def atomic_xor(self, other):
+        import taichi as ti
+        return ti.atomic_xor(self, other)
+
+    def atomic_or(self, other):
+        import taichi as ti
+        return ti.atomic_or(self, other)
+
+    __iadd__ = atomic_add
+    __isub__ = atomic_sub
+    __iand__ = atomic_and
+    __ixor__ = atomic_xor
+    __ior__ = atomic_or
+
+    # we don't support atomic_mul/truediv/floordiv yet:
+    def __imul__(self, other):
+        import taichi as ti
+        self.assign(ti.mul(self, other))
+
+    def __itruediv__(self, other):
+        import taichi as ti
+        self.assign(ti.truediv(self, other))
+
+    def __ifloordiv__(self, other):
+        import taichi as ti
+        self.assign(ti.floordiv(self, other))
+
+    def assign(self, other):
+        import taichi as ti
+        ti.assign(self, other)
+
+    def augassign(self, x, op):
+        if op == 'Add':
+            self += x
+        elif op == 'Sub':
+            self -= x
+        elif op == 'Mult':
+            self *= x
+        elif op == 'Div':
+            self /= x
+        elif op == 'FloorDiv':
+            self //= x
+        elif op == 'BitAnd':
+            self &= x
+        elif op == 'BitOr':
+            self |= x
+        elif op == 'BitXor':
+            self ^= x
+        else:
+            assert False, op

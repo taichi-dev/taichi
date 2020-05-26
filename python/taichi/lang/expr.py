@@ -1,5 +1,6 @@
 from .core import taichi_lang_core
 from .util import *
+from . import impl
 from .common_ops import TaichiOperations
 import traceback
 
@@ -35,48 +36,6 @@ class Expr(TaichiOperations):
             self.ptr.set_tb(self.tb)
         self.grad = None
         self.val = self
-
-    @staticmethod
-    def stack_info():
-        s = traceback.extract_stack()[3:-1]
-        for i, l in enumerate(s):
-            if 'taichi_ast_generator' in l:
-                s = s[i + 1:]
-                break
-        raw = ''.join(traceback.format_list(s))
-        # remove the confusing last line
-        return '\n'.join(raw.split('\n')[:-3]) + '\n'
-
-    def __iadd__(self, other):
-        self.atomic_add(other)
-
-    def __isub__(self, other):
-        self.atomic_sub(other)
-
-    def __imul__(self, other):
-        import taichi as ti
-        self.assign(ti.mul(self, other))
-
-    def __itruediv__(self, other):
-        import taichi as ti
-        self.assign(ti.truediv(self, other))
-
-    def __ifloordiv__(self, other):
-        import taichi as ti
-        self.assign(ti.floordiv(self, other))
-
-    def __iand__(self, other):
-        self.atomic_and(other)
-
-    def __ior__(self, other):
-        self.atomic_or(other)
-
-    def __ixor__(self, other):
-        self.atomic_xor(other)
-
-    def assign(self, other):
-        taichi_lang_core.expr_assign(self.ptr,
-                                     Expr(other).ptr, self.stack_info())
 
     def __setitem__(self, key, value):
         if not Expr.layout_materialized:
@@ -128,49 +87,6 @@ class Expr(TaichiOperations):
             self ^= x
         else:
             assert False, op
-
-    # TODO: move to ops.py too:
-    def atomic_add(self, other):
-        import taichi as ti
-        other_ptr = ti.wrap_scalar(other).ptr
-        return ti.expr_init(
-            taichi_lang_core.expr_atomic_add(self.ptr, other_ptr))
-
-    def atomic_sub(self, other):
-        import taichi as ti
-        other_ptr = ti.wrap_scalar(other).ptr
-        return ti.expr_init(
-            taichi_lang_core.expr_atomic_sub(self.ptr, other_ptr))
-
-    def atomic_min(self, other):
-        import taichi as ti
-        other_ptr = ti.wrap_scalar(other).ptr
-        return ti.expr_init(
-            taichi_lang_core.expr_atomic_min(self.ptr, other_ptr))
-
-    def atomic_max(self, other):
-        import taichi as ti
-        other_ptr = ti.wrap_scalar(other).ptr
-        return ti.expr_init(
-            taichi_lang_core.expr_atomic_max(self.ptr, other_ptr))
-
-    def atomic_and(self, other):
-        import taichi as ti
-        other_ptr = ti.wrap_scalar(other).ptr
-        return ti.expr_init(
-            taichi_lang_core.expr_atomic_bit_and(self.ptr, other_ptr))
-
-    def atomic_or(self, other):
-        import taichi as ti
-        other_ptr = ti.wrap_scalar(other).ptr
-        return ti.expr_init(
-            taichi_lang_core.expr_atomic_bit_or(self.ptr, other_ptr))
-
-    def atomic_xor(self, other):
-        import taichi as ti
-        other_ptr = ti.wrap_scalar(other).ptr
-        return ti.expr_init(
-            taichi_lang_core.expr_atomic_bit_xor(self.ptr, other_ptr))
 
     def serialize(self):
         return self.ptr.serialize()

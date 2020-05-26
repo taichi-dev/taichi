@@ -179,6 +179,6 @@ Debug your program with ``print()`` in Taichi-scope. For example:
         print('m is', m)
         #=> m is [[2, 3, 4], [5, 6, 7]]
 
-        v ti.Vector([3, 4])
+        v = ti.Vector([3, 4])
         print('v is', v)
         #=> v is [3, 4]

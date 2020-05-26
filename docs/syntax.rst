@@ -165,14 +165,20 @@ Supported scalar functions:
 Debugging
 ---------
 
-Debug your program with ``print(x)``. For example, if ``x`` is ``23``, then it prints
+Debug your program with ``print()`` in Taichi-scope. For example:
 
-.. code-block:: none
+.. code-block:: python
 
-    [debug] x = 23
+    @ti.kernel
+    def inside_taichi_scope():
+        x = 233
+        print('hello', x)
+        #=> hello 233
 
-in the console.
+        m = ti.Matrix([[2, 3, 4], [5, 6, 7]])
+        print('m is', m)
+        #=> m is [[2, 3, 4], [5, 6, 7]]
 
-.. warning::
-
-    This is not the same as the ``print`` in Python-scope. For now ``print`` in Taichi only takes **scalar numbers** as input. Strings, vectors and matrices are not supported. Please use ``print(v[0]); print(v[1])`` if you want to print a vector.
+        v ti.Vector([3, 4])
+        print('v is', v)
+        #=> v is [3, 4]

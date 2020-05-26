@@ -115,7 +115,7 @@ class ConstantFold : public BasicStmtVisitor {
     auto *ker = get_jit_evaluator_kernel(id);
     // TODO: the kernel->program approach
     // auto &current_program = stmt->get_kernel()->program;
-    auto& current_program = get_current_program();
+    auto &current_program = get_current_program();
     auto &ctx = current_program.get_context();
     ContextArgSaveGuard _(
         ctx);  // save input args, prevent override current kernel
@@ -140,7 +140,7 @@ class ConstantFold : public BasicStmtVisitor {
     auto *ker = get_jit_evaluator_kernel(id);
     // TODO: the kernel->program approach
     // auto &current_program = stmt->get_kernel()->program;
-    auto& current_program = get_current_program();
+    auto &current_program = get_current_program();
     auto &ctx = current_program.get_context();
     ContextArgSaveGuard _(
         ctx);  // save input args, prevent override current kernel

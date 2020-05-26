@@ -182,11 +182,11 @@ def test_any_all():
 
     @ti.kernel
     def func_any():
-        b[None] = a[None].any()
+        b[None] = any(a[None])
 
     @ti.kernel
     def func_all():
-        b[None] = a[None].all()
+        b[None] = all(a[None])
 
     for i in range(2):
         for j in range(2):

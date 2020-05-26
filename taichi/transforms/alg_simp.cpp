@@ -11,6 +11,7 @@ class AlgSimp : public BasicStmtVisitor {
   using BasicStmtVisitor::visit;
   bool fast_math;
   std::vector<Stmt *> to_erase;
+  std::vector<std::pair<std::unique_ptr<Stmt>, Stmt *>> to_insert_before;
 
   explicit AlgSimp(bool fast_math_)
       : BasicStmtVisitor(), fast_math(fast_math_) {
@@ -51,11 +52,21 @@ class AlgSimp : public BasicStmtVisitor {
                  stmt->op_type == BinaryOpType::mul &&
                  (alg_is_zero(lhs) || alg_is_zero(rhs))) {
         // fast_math or integral operands: 0 * a -> 0, a * 0 -> 0
-        auto zero = Stmt::make<ConstStmt>(
-            LaneAttribute<TypedConstant>(stmt->ret_type.data_type));
-        stmt->replace_with(zero.get());
-        stmt->parent->insert_before(stmt, VecStatement(std::move(zero)));
-        to_erase.push_back(stmt);
+        if (alg_is_zero(lhs) && lhs->ret_type.data_type ==
+            stmt->ret_type.data_type) {
+          stmt->replace_with(stmt->lhs);
+          to_erase.push_back(stmt);
+        } else if (alg_is_zero(rhs) && rhs->ret_type.data_type ==
+            stmt->ret_type.data_type) {
+          stmt->replace_with(stmt->rhs);
+          to_erase.push_back(stmt);
+        } else {
+          auto zero = Stmt::make<ConstStmt>(
+              LaneAttribute<TypedConstant>(stmt->ret_type.data_type));
+          stmt->replace_with(zero.get());
+          to_insert_before.emplace_back(std::move(zero), stmt);
+          to_erase.push_back(stmt);
+        }
       }
     } else if (stmt->op_type == BinaryOpType::bit_and) {
       if (alg_is_minus_one(rhs)) {
@@ -151,12 +162,16 @@ class AlgSimp : public BasicStmtVisitor {
     bool modified = false;
     while (true) {
       node->accept(&simplifier);
-      if (simplifier.to_erase.empty())
+      if (simplifier.to_erase.empty() && simplifier.to_insert_before.empty())
         break;
       modified = true;
+      for (auto &i : simplifier.to_insert_before) {
+        i.second->insert_before_me(std::move(i.first));
+      }
       for (auto &stmt : simplifier.to_erase) {
         stmt->parent->erase(stmt);
       }
+      simplifier.to_insert_before.clear();
       simplifier.to_erase.clear();
     }
     return modified;

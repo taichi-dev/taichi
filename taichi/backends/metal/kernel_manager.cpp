@@ -519,6 +519,9 @@ class KernelManager::Impl {
         case SNodeType::bitmasked:
           rtm_meta->type = SNodeMeta::Bitmasked;
           break;
+        case SNodeType::dynamic:
+          rtm_meta->type = SNodeMeta::Dynamic;
+          break;
         default:
           TI_ERROR("Unsupported SNode type={}",
                    snode_type_name(sn_meta.snode->type));

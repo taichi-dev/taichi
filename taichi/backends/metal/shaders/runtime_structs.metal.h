@@ -51,7 +51,7 @@ STR(
 
     // This class is very similar to metal::SNodeDescriptor
     struct SNodeMeta {
-      enum Type { Root = 0, Dense = 1, Bitmasked = 2 };
+      enum Type { Root = 0, Dense = 1, Bitmasked = 2, Dynamic = 3 };
       int32_t element_stride = 0;
       int32_t num_slots = 0;
       int32_t mem_offset_in_parent = 0;

@@ -122,8 +122,8 @@ class AlgSimp : public BasicStmtVisitor {
         auto one_raw = one.get();
         to_insert_before.emplace_back(std::move(one), stmt);
         if (stmt->ret_type.data_type != one_raw->ret_type.data_type) {
-          auto cast = Stmt::make_typed<UnaryOpStmt>(UnaryOpType::cast_value,
-                                                    one_raw);
+          auto cast =
+              Stmt::make_typed<UnaryOpStmt>(UnaryOpType::cast_value, one_raw);
           cast->cast_type = stmt->ret_type.data_type;
           cast->ret_type.data_type = stmt->ret_type.data_type;
           one_raw = cast.get();

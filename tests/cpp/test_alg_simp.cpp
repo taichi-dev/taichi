@@ -32,8 +32,8 @@ TI_TEST("alg_simp") {
 
     // irpass::print(block.get());
 
-    irpass::alg_simp(block.get(), CompileConfig());  // should eliminate add
-    irpass::die(block.get());                        // should eliminate zero
+    irpass::alg_simp(block.get());  // should eliminate add
+    irpass::die(block.get());       // should eliminate zero
 
     // irpass::print(block.get());
     TI_CHECK(block->size() == 4);  // two addresses, one load, one store
@@ -71,9 +71,8 @@ TI_TEST("alg_simp") {
 
     // irpass::print(block.get());
 
-    irpass::alg_simp(block.get(),
-                     CompileConfig());  // should eliminate mul, div, sub
-    irpass::die(block.get());           // should eliminate zero, one
+    irpass::alg_simp(block.get());  // should eliminate mul, div, sub
+    irpass::die(block.get());       // should eliminate zero, one
 
     // irpass::print(block.get());
 
@@ -108,9 +107,10 @@ TI_TEST("alg_simp") {
 
     CompileConfig config_without_fast_math;
     config_without_fast_math.fast_math = false;
-    irpass::alg_simp(block.get(),
-                     config_without_fast_math);  // should eliminate mul, add
-    irpass::die(block.get());                    // should eliminate zero, load
+    kernel->program.config = config_without_fast_math;
+
+    irpass::alg_simp(block.get());  // should eliminate mul, add
+    irpass::die(block.get());       // should eliminate zero, load
 
     TI_CHECK(block->size() == 3);  // one address, one one, one store
 
@@ -132,16 +132,16 @@ TI_TEST("alg_simp") {
     TI_CHECK(block->size() == 10);
 
     irpass::constant_fold(block.get());  // should change 2 casts into const
-    irpass::alg_simp(block.get(),
-                     config_without_fast_math);  // should not eliminate
-    irpass::die(block.get());                    // should eliminate 2 const
+    irpass::alg_simp(block.get());       // should not eliminate
+    irpass::die(block.get());            // should eliminate 2 const
     TI_CHECK(block->size() == 8);
 
     CompileConfig config_with_fast_math;
     config_with_fast_math.fast_math = true;
-    irpass::alg_simp(block.get(),
-                     config_with_fast_math);  // should eliminate mul, add
-    irpass::die(block.get());                 // should eliminate zero, load
+    kernel->program.config = config_with_fast_math;
+
+    irpass::alg_simp(block.get());  // should eliminate mul, add
+    irpass::die(block.get());       // should eliminate zero, load
 
     TI_CHECK(block->size() == 3);  // one address, one one, one store
   }
@@ -169,8 +169,8 @@ TI_TEST("alg_simp") {
     irpass::typecheck(block.get());
     TI_CHECK(block->size() == 6);
 
-    irpass::alg_simp(block.get(), CompileConfig());  // should eliminate and
-    irpass::die(block.get());                        // should eliminate zero
+    irpass::alg_simp(block.get());  // should eliminate and
+    irpass::die(block.get());       // should eliminate zero
 
     TI_CHECK(block->size() == 4);  // two addresses, one load, one store
     TI_CHECK((*block)[0]->is<GlobalTemporaryStmt>());

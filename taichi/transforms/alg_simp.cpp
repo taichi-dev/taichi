@@ -178,7 +178,8 @@ class AlgSimp : public BasicStmtVisitor {
 
 namespace irpass {
 
-void alg_simp(IRNode *root, const CompileConfig &config) {
+void alg_simp(IRNode *root) {
+  auto config = root->get_kernel()->program.config;
   return AlgSimp::run(root, config.fast_math);
 }
 

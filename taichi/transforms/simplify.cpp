@@ -1160,10 +1160,10 @@ void simplify(IRNode *root, Kernel *kernel) {
   }
 }
 
-void full_simplify(IRNode *root, const CompileConfig &config, Kernel *kernel) {
+void full_simplify(IRNode *root, Kernel *kernel) {
   constant_fold(root);
   if (advanced_optimization) {
-    alg_simp(root, config);
+    alg_simp(root);
     die(root);
     whole_kernel_cse(root);
   }

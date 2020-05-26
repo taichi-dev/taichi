@@ -11,6 +11,10 @@ TI_TEST("alg_simp") {
 
     auto block = std::make_unique<Block>();
 
+    auto func = [](){};
+    auto kernel = std::make_unique<Kernel>(get_current_program(), func, "fake_kernel");
+    block->kernel = kernel.get();
+
     auto global_load_addr =
         block->push_back<GlobalTemporaryStmt>(0, VectorType(1, DataType::i32));
     auto global_load = block->push_back<GlobalLoadStmt>(global_load_addr);
@@ -40,6 +44,10 @@ TI_TEST("alg_simp") {
     TI_TEST_PROGRAM;
 
     auto block = std::make_unique<Block>();
+
+    auto func = [](){};
+    auto kernel = std::make_unique<Kernel>(get_current_program(), func, "fake_kernel");
+    block->kernel = kernel.get();
 
     auto global_load_addr =
         block->push_back<GlobalTemporaryStmt>(0, VectorType(1, DataType::f32));
@@ -75,6 +83,9 @@ TI_TEST("alg_simp") {
     TI_TEST_PROGRAM;
 
     auto block = std::make_unique<Block>();
+    auto func = [](){};
+    auto kernel = std::make_unique<Kernel>(get_current_program(), func, "fake_kernel");
+    block->kernel = kernel.get();
 
     auto global_load_addr =
         block->push_back<GlobalTemporaryStmt>(0, VectorType(1, DataType::i32));
@@ -101,6 +112,7 @@ TI_TEST("alg_simp") {
     TI_CHECK(block->size() == 3);  // one address, one one, one store
 
     block = std::make_unique<Block>();
+    block->kernel = kernel.get();
 
     global_load_addr =
         block->push_back<GlobalTemporaryStmt>(8, VectorType(1, DataType::f32));
@@ -147,6 +159,9 @@ TI_TEST("alg_simp") {
     auto global_store =
         block->push_back<GlobalStoreStmt>(global_store_addr, and_result);
 
+    auto func = [](){};
+    auto kernel = std::make_unique<Kernel>(get_current_program(), func, "fake_kernel");
+    block->kernel = kernel.get();
     irpass::typecheck(block.get());
     TI_CHECK(block->size() == 6);
 

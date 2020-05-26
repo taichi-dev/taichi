@@ -190,20 +190,19 @@ def test_any_all():
 
     for i in range(2):
         for j in range(2):
-            a[None][0,0] = i
-            a[None][1,0] = j
-            a[None][1,1] = i
-            a[None][0,1] = j
+            a[None][0, 0] = i
+            a[None][1, 0] = j
+            a[None][1, 1] = i
+            a[None][0, 1] = j
 
             func_any()
-            if i==1 or j==1:
+            if i == 1 or j == 1:
                 assert b[None] == 1
             else:
                 assert b[None] == 0
 
-
             func_all()
-            if i==1 and j==1:
+            if i == 1 and j == 1:
                 assert b[None] == 1
             else:
                 assert b[None] == 0

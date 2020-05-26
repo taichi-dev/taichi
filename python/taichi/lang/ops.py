@@ -343,12 +343,12 @@ def ti_min(*args):
 
 
 def ti_any(a):
-    assert  hasattr(a, 'any')
+    assert hasattr(a, 'any')
     return a.any()
 
 
 def ti_all(a):
-    assert  hasattr(a, 'all')
+    assert hasattr(a, 'all')
     return a.all()
 
 

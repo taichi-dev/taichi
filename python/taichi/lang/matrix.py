@@ -505,8 +505,13 @@ class Matrix(TaichiOperations):
         ti.sync()
         return ret
 
-    def from_numpy(self, ndarray, keep_dims=False):
-        as_vector = self.m == 1 and not keep_dims
+    def from_numpy(self, ndarray):
+        if len(ndarray.shape) == self.loop_range().dim() + 1:
+            as_vector = True
+            assert self.m == 1, "This matrix is not a vector"
+        else:
+            as_vector = False
+            assert len(ndarray.shape) == self.loop_range().dim() + 2
         dim_ext = 1 if as_vector else 2
         assert len(ndarray.shape) == self.loop_range().dim() + dim_ext
         from .meta import ext_arr_to_matrix
@@ -514,8 +519,8 @@ class Matrix(TaichiOperations):
         import taichi as ti
         ti.sync()
 
-    def from_torch(self, torch_tensor, keep_dims=False):
-        return self.from_numpy(torch_tensor.contiguous(), keep_dims)
+    def from_torch(self, torch_tensor):
+        return self.from_numpy(torch_tensor.contiguous())
 
     def __ti_repr__(self):
         if self.m != 1:

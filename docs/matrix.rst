@@ -162,3 +162,5 @@ Methods
 -------
 
 TODO: WIP
+
+TODO: add element wise operations docs

@@ -148,13 +148,12 @@ class Matrix(TaichiOperations):
             self.entries[i].assign(other.entries[i])
 
     def __add__(self, other):
-        assert self.m == other.m and self.n == other.n, f"Dimension mismatch between shapes ({self.n}, {self.m}), ({other.n}, {other.m})"
-
         import taichi as ti
         if impl.inside_kernel():
             return ti.add(self, other)
         else:
             # implement Matrix add in Python scope
+            assert self.m == other.m and self.n == other.n, f"Dimension mismatch between shapes ({self.n}, {self.m}), ({other.n}, {other.m})"
             ret = Matrix(self.n, self.m, empty=True)
             ret.entries = (np.array(self.entries).reshape(
                 (self.n, self.m)) + np.array(other.entries).reshape(
@@ -162,13 +161,12 @@ class Matrix(TaichiOperations):
             return ret
 
     def __sub__(self, other):
-        assert self.m == other.m and self.n == other.n, f"Dimension mismatch between shapes ({self.n}, {self.m}), ({other.n}, {other.m})"
-
         import taichi as ti
         if impl.inside_kernel():
             return ti.sub(self, other)
         else:
             # implement Matrix subtract in Python scope
+            assert self.m == other.m and self.n == other.n, f"Dimension mismatch between shapes ({self.n}, {self.m}), ({other.n}, {other.m})"
             ret = Matrix(self.n, self.m, empty=True)
             ret.entries = (np.array(self.entries).reshape(
                 (self.n, self.m)) - np.array(other.entries).reshape(

@@ -12,6 +12,11 @@ TI_TEST("simplify") {
 
     auto block = std::make_unique<Block>();
 
+    auto func = []() {};
+    auto kernel =
+        std::make_unique<Kernel>(get_current_program(), func, "fake_kernel");
+    block->kernel = kernel.get();
+
     auto get_root = block->push_back<GetRootStmt>();
     auto linearized_empty = block->push_back<LinearizeStmt>(
         std::vector<Stmt *>(), std::vector<int>());
@@ -34,7 +39,7 @@ TI_TEST("simplify") {
     // TI_CHECK(block->size() == 11);  // not required to check size here
 
     irpass::constant_fold(block.get());
-    irpass::alg_simp(block.get(), CompileConfig());
+    irpass::alg_simp(block.get());
     irpass::die(block.get());  // should eliminate consts
     irpass::simplify(block.get());
     if (advanced_optimization) {

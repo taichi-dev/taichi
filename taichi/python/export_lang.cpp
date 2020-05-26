@@ -385,9 +385,8 @@ void export_lang(py::module &m) {
   m.def("expr_bit_and", expr_bit_and);
   m.def("expr_bit_or", expr_bit_or);
   m.def("expr_bit_xor", expr_bit_xor);
-  m.def("expr_bit_not", [](const Expr &expr) {
-    return Expr::make<UnaryOpExpression>(UnaryOpType::logic_not, expr);
-  });
+  m.def("expr_bit_not", expr_bit_not);
+  m.def("expr_logic_not", expr_logic_not);
 
   m.def("expr_cmp_le", expr_cmp_le);
   m.def("expr_cmp_lt", expr_cmp_lt);

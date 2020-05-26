@@ -39,8 +39,13 @@ binary_ops = []
 def binary(foo):
     import taichi as ti
 
-    imp_foo = lambda x, y: foo(Expr(x), Expr(y))
-    rev_foo = lambda x, y: foo(Expr(y), Expr(x))
+    @functools.wraps(foo)
+    def imp_foo(x, y):
+        return foo(Expr(x), Expr(y))
+
+    @functools.wraps(foo)
+    def rev_foo(x, y):
+        return foo(Expr(y), Expr(x))
 
     @functools.wraps(foo)
     def wrapped(a, b):

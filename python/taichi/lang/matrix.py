@@ -32,6 +32,7 @@ class Matrix(TaichiOperations):
                  rows=None,
                  cols=None):
         self.grad = None
+        # construct from rows or cols
         if rows is not None or cols is not None:
             if rows is not None and cols is not None:
                 raise Exception("cannot specify both rows and columns")
@@ -61,6 +62,7 @@ class Matrix(TaichiOperations):
                 self.n = t.n
                 self.m = t.m
                 self.entries = t.entries
+        # construct from list or numpy array
         elif isinstance(n, list) or isinstance(n, np.ndarray):
             if len(n) == 0:
                 mat = []
@@ -84,6 +86,7 @@ class Matrix(TaichiOperations):
             else:
                 self.m = 1
             self.entries = [x for row in mat for x in row]
+        # construct global matrix
         else:
             self.entries = []
             self.n = n
@@ -96,6 +99,7 @@ class Matrix(TaichiOperations):
                     for i in range(n * m):
                         self.entries.append(impl.expr_init(None))
                 else:
+                    print("I am here!!!!")
                     assert not impl.inside_kernel()
                     for i in range(n * m):
                         self.entries.append(impl.var(dt))
@@ -144,9 +148,36 @@ class Matrix(TaichiOperations):
         for i in range(self.n * self.m):
             self.entries[i].assign(other.entries[i])
 
-    def element_wise_binary(self, foo, other):
+    def __add__(self, other):
+        assert self.m == other.m and self.n == other.n, f"Dimension mismatch between shapes ({self.n}, {self.m}), ({other.n}, {other.m})"
+
         import taichi as ti
-        if ti.get_runtime().inside_kernel:
+        if impl.inside_kernel():
+            return ti.add(self, other)
+        else:
+            # implement Matrix add in Python scope
+            ret = Matrix(self.n, self.m, empty=True)
+            ret.entries = (np.array(self.entries).reshape(
+                (self.n, self.m)) + np.array(other.entries).reshape(
+                    (other.n, other.m))).flatten().tolist()
+            return ret
+
+    def __sub__(self, other):
+        assert self.m == other.m and self.n == other.n, f"Dimension mismatch between shapes ({self.n}, {self.m}), ({other.n}, {other.m})"
+
+        import taichi as ti
+        if impl.inside_kernel():
+            return ti.sub(self, other)
+        else:
+            # implement Matrix subtract in Python scope
+            ret = Matrix(self.n, self.m, empty=True)
+            ret.entries = (np.array(self.entries).reshape(
+                (self.n, self.m)) - np.array(other.entries).reshape(
+                    (other.n, other.m))).flatten().tolist()
+            return ret
+
+    def element_wise_binary(self, foo, other):
+        if impl.inside_kernel():
             ret = Matrix(self.n, self.m)
             if isinstance(other, Matrix):
                 assert self.m == other.m and self.n == other.n, f"Dimension mismatch between shapes ({self.n}, {self.m}), ({other.n}, {other.m})"
@@ -158,7 +189,7 @@ class Matrix(TaichiOperations):
                     ret.entries[i] = foo(self.entries[i], other)
         else:
             raise NotImplementedError(
-                "Element-wise binary operation for matrix is not implemented in Python scope yet."
+                f"Element-wise binary operation {foo.__name__} for matrix is not implemented in Python scope yet."
             )
         return ret
 
@@ -181,9 +212,11 @@ class Matrix(TaichiOperations):
                     for k in range(1, other.n):
                         ret(i, j).assign(ret(i, j) + self(i, k) * other(k, j))
         else:
-            raise NotImplementedError(
-                "Matrix multiplication operation is not implemented in Python scope yet."
-            )
+            # implement Matrix matmul in Python scope
+            ret = Matrix(self.n, self.m, empty=True)
+            ret.entries = (np.array(self.entries).reshape(
+                (self.n, self.m)) @ np.array(other.entries).reshape(
+                    (other.n, other.m))).flatten().tolist()
         return ret
 
     def broadcast(self, scalar):

@@ -807,7 +807,7 @@ class BasicBlockSimplify : public IRVisitor {
     stmt->insert_before_me(std::move(sum));
     stmt->parent->erase(stmt);
     // get types of adds and muls
-    irpass::typecheck(stmt->parent, kernel);
+    irpass::typecheck(stmt->parent);
     throw IRModified();
   }
 

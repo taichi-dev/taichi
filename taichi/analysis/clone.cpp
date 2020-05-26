@@ -120,7 +120,7 @@ class IRCloner : public IRVisitor {
     root->accept(&cloner);
     cloner.phase = IRCloner::replace_operand;
     root->accept(&cloner);
-    irpass::typecheck(new_root.get(), kernel);
+    irpass::typecheck(new_root.get());
     irpass::fix_block_parents(new_root.get());
     return new_root;
   }

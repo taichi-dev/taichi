@@ -102,8 +102,8 @@ class AlgSimp : public BasicStmtVisitor {
           } else {
             TI_NOT_IMPLEMENTED
           }
-          auto product = Stmt::make<BinaryOpStmt>(
-              BinaryOpType::mul, stmt->lhs, reciprocal.get());
+          auto product = Stmt::make<BinaryOpStmt>(BinaryOpType::mul, stmt->lhs,
+                                                  reciprocal.get());
           product->ret_type.data_type = stmt->ret_type.data_type;
           stmt->replace_with(product.get());
           to_insert_before.emplace_back(std::move(reciprocal), stmt);

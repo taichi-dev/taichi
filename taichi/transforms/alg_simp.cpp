@@ -52,12 +52,12 @@ class AlgSimp : public BasicStmtVisitor {
                  stmt->op_type == BinaryOpType::mul &&
                  (alg_is_zero(lhs) || alg_is_zero(rhs))) {
         // fast_math or integral operands: 0 * a -> 0, a * 0 -> 0
-        if (alg_is_zero(lhs) && lhs->ret_type.data_type ==
-            stmt->ret_type.data_type) {
+        if (alg_is_zero(lhs) &&
+            lhs->ret_type.data_type == stmt->ret_type.data_type) {
           stmt->replace_with(stmt->lhs);
           to_erase.push_back(stmt);
-        } else if (alg_is_zero(rhs) && rhs->ret_type.data_type ==
-            stmt->ret_type.data_type) {
+        } else if (alg_is_zero(rhs) &&
+                   rhs->ret_type.data_type == stmt->ret_type.data_type) {
           stmt->replace_with(stmt->rhs);
           to_erase.push_back(stmt);
         } else {

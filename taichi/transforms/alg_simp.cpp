@@ -98,7 +98,7 @@ class AlgSimp : public BasicStmtVisitor {
                 (float64)1.0 / rhs->val[0].val_float64();
           } else if (rhs->ret_type.data_type == DataType::f32) {
             reciprocal->val[0].val_float32() =
-                (float64)1.0 / rhs->val[0].val_float32();
+                (float32)1.0 / rhs->val[0].val_float32();
           } else {
             TI_NOT_IMPLEMENTED
           }
@@ -115,6 +115,21 @@ class AlgSimp : public BasicStmtVisitor {
       if (alg_is_one(rhs)) {
         // a ** 1 -> a
         stmt->replace_with(stmt->lhs);
+        to_erase.push_back(stmt);
+      } else if (fast_math && alg_is_zero(rhs)) {
+        // a ** 0 -> 1
+        auto one = Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(1));
+        auto one_raw = one.get();
+        to_insert_before.emplace_back(std::move(one), stmt);
+        if (stmt->ret_type.data_type != one_raw->ret_type.data_type) {
+          auto cast = Stmt::make_typed<UnaryOpStmt>(UnaryOpType::cast_value,
+                                                    one_raw);
+          cast->cast_type = stmt->ret_type.data_type;
+          cast->ret_type.data_type = stmt->ret_type.data_type;
+          one_raw = cast.get();
+          to_insert_before.emplace_back(std::move(cast), stmt);
+        }
+        stmt->replace_with(one_raw);
         to_erase.push_back(stmt);
       } else if (alg_is_two(rhs)) {
         // a ** 2 -> a * a

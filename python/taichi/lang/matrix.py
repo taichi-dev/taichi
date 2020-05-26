@@ -568,6 +568,12 @@ class Matrix(TaichiOperations):
         import taichi as ti
         return ti.Matrix([[ti.cos(alpha), -ti.sin(alpha)],
                           [ti.sin(alpha), ti.cos(alpha)]])
+    
+    def __hash__(self):
+        # TODO: refactor KernelTemplateMapper
+        # If not, we get `unhashable type: Matrix` when
+        # using matrices as template arguments.
+        return id(self)
 
     def dot(self, other):
         assert self.m == 1

@@ -116,7 +116,6 @@ class AlgSimp : public BasicStmtVisitor {
       return val.val_uint() == 0;
     else {
       TI_NOT_IMPLEMENTED
-      return false;
     }
   }
 
@@ -135,7 +134,6 @@ class AlgSimp : public BasicStmtVisitor {
       return val.val_uint() == 1;
     else {
       TI_NOT_IMPLEMENTED
-      return false;
     }
   }
 

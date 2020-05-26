@@ -69,10 +69,14 @@ STR(
       if (meta.type == SNodeMeta::Root || meta.type == SNodeMeta::Dense) {
         return true;
       }
-      device auto *ptr =
-          reinterpret_cast<device atomic_uint *>(
-              addr + ((meta.num_slots - i) * meta.element_stride)) +
-          (i / (sizeof(uint32_t) * 8));
+      device auto *meta_ptr_begin = reinterpret_cast<device atomic_uint *>(
+              addr + ((meta.num_slots - i) * meta.element_stride));
+      if (meta.type == SNodeMeta::Dynamic) {
+        device auto *ptr = meta_ptr_begin;
+        uint32_t n = atomic_load_explicit(ptr, metal::memory_order_relaxed);
+        return i < n;
+      }
+      device auto *ptr = meta_ptr_begin + (i / (sizeof(uint32_t) * 8));
       uint32_t bits = atomic_load_explicit(ptr, metal::memory_order_relaxed);
       return ((bits >> (i % (sizeof(uint32_t) * 8))) & 1);
     }
@@ -81,10 +85,16 @@ STR(
       if (meta.type == SNodeMeta::Root || meta.type == SNodeMeta::Dense) {
         return;
       }
-      device auto *ptr =
-          reinterpret_cast<device atomic_uint *>(
-              addr + ((meta.num_slots - i) * meta.element_stride)) +
-          (i / (sizeof(uint32_t) * 8));
+      device auto *meta_ptr_begin = reinterpret_cast<device atomic_uint *>(
+          addr + ((meta.num_slots - i) * meta.element_stride));
+      if (meta.type == SNodeMeta::Dynamic) {
+        device auto *ptr = meta_ptr_begin;
+        // Unfortunately we cannot check if i + 1 is in bound
+        atomic_store_explicit(ptr, (uint32_t)(i + 1),
+                              metal::memory_order_relaxed);
+        return;
+      }
+      device auto *ptr = meta_ptr_begin + (i / (sizeof(uint32_t) * 8));
       const uint32_t mask = (1 << (i % (sizeof(uint32_t) * 8)));
       atomic_fetch_or_explicit(ptr, mask, metal::memory_order_relaxed);
     }
@@ -93,10 +103,15 @@ STR(
       if (meta.type == SNodeMeta::Root || meta.type == SNodeMeta::Dense) {
         return;
       }
-      device auto *ptr =
-          reinterpret_cast<device atomic_uint *>(
-              addr + ((meta.num_slots - i) * meta.element_stride)) +
-          (i / (sizeof(uint32_t) * 8));
+      device auto *meta_ptr_begin = reinterpret_cast<device atomic_uint *>(
+              addr + ((meta.num_slots - i) * meta.element_stride));
+      if (meta.type == SNodeMeta::Dynamic) {
+        device auto *ptr = meta_ptr_begin;
+        // For dynamic, deactivate() applies for all the slots
+        atomic_store_explicit(ptr, 0u, metal::memory_order_relaxed);
+        return;
+      }
+      device auto *ptr = meta_ptr_begin + (i / (sizeof(uint32_t) * 8));
       const uint32_t mask = ~(1 << (i % (sizeof(uint32_t) * 8)));
       atomic_fetch_and_explicit(ptr, mask, metal::memory_order_relaxed);
     }
@@ -112,6 +127,24 @@ STR(
         const int addition = (((l >> ex.acc_offset) & mask) << ex.start);
         child_elem->coords[i] = (parent_elem.coords[i] | addition);
       }
+    }
+
+    [[maybe_unused]] int dynamic_append(device byte *addr,
+                                         SNodeMeta meta,
+                                         int32_t data) {
+      // |addr| always starts at the beginning of the dynamic
+      device auto *n_ptr = reinterpret_cast<device atomic_int *>(
+          addr + (meta.num_slots * meta.element_stride));
+      int me = atomic_fetch_add_explicit(n_ptr, 1, metal::memory_order_relaxed);
+      *(reinterpret_cast<device int32_t *>(addr) + me) = data;
+      return me;
+    }
+
+    [[maybe_unused]] int dynamic_length(device byte *addr, SNodeMeta meta) {
+      // |addr| always starts at the beginning of the dynamic
+      device auto *n_ptr = reinterpret_cast<device atomic_int *>(
+          addr + (meta.num_slots * meta.element_stride));
+      return atomic_load_explicit(n_ptr, metal::memory_order_relaxed);
     }
 )
 METAL_END_RUNTIME_UTILS_DEF

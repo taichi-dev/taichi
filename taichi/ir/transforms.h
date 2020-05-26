@@ -14,7 +14,8 @@ void re_id(IRNode *root);
 void flag_access(IRNode *root);
 void die(IRNode *root);
 void simplify(IRNode *root, Kernel *kernel = nullptr);
-void alg_simp(IRNode *root);
+
+bool alg_simp(IRNode *root);
 void whole_kernel_cse(IRNode *root);
 void variable_optimization(IRNode *root, bool after_lower_access);
 void extract_constant(IRNode *root);

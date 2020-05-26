@@ -113,12 +113,20 @@ class LowerAST : public IRVisitor {
   void visit(FrontendPrintStmt *stmt) override {
     // expand rhs
     std::vector<Stmt *> stmts;
+    std::vector<std::variant<Stmt *, std::string>> new_contents;
     auto fctx = make_flatten_ctx();
-    for (auto x : stmt->contents) {
-      x->flatten(&fctx);
-      stmts.push_back(x->stmt);
+    for (auto c : stmt->contents) {
+      if (std::holds_alternative<Expr>(c)) {
+        auto x = std::get<Expr>(c);
+        x->flatten(&fctx);
+        stmts.push_back(x->stmt);
+        new_contents.push_back(x->stmt);
+      } else {
+        auto x = std::get<std::string>(c);
+        new_contents.push_back(x);
+      }
     }
-    fctx.push_back<PrintStmt>(stmts);
+    fctx.push_back<PrintStmt>(new_contents);
     stmt->parent->replace_with(stmt, std::move(fctx.stmts));
     throw IRModified();
   }

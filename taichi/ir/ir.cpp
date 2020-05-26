@@ -262,7 +262,6 @@ Stmt *Stmt::insert_after_me(std::unique_ptr<Stmt> &&new_stmt) {
 void Stmt::replace_with(Stmt *new_stmt) {
   auto root = get_ir_root();
   irpass::replace_all_usages_with(root, this, new_stmt);
-  // Note: the current structure should have been destroyed now..
 }
 
 void Stmt::replace_with(VecStatement &&new_statements, bool replace_usages) {

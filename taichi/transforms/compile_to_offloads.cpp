@@ -53,9 +53,9 @@ void compile_to_offloads(IRNode *ir,
 
   if (grad) {
     irpass::demote_atomics(ir);
-    irpass::full_simplify(ir, config);
+    irpass::full_simplify(ir);
     irpass::make_adjoint(ir, ad_use_stack);
-    irpass::full_simplify(ir, config);
+    irpass::full_simplify(ir);
     print("Adjoint");
     irpass::analysis::verify(ir);
   }
@@ -91,7 +91,7 @@ void compile_to_offloads(IRNode *ir,
     irpass::analysis::verify(ir);
   }
 
-  irpass::full_simplify(ir, config);
+  irpass::full_simplify(ir);
   print("Simplified II");
   irpass::analysis::verify(ir);
 
@@ -122,7 +122,7 @@ void compile_to_offloads(IRNode *ir,
   irpass::variable_optimization(ir, true);
   print("Store forwarded II");
 
-  irpass::full_simplify(ir, config);
+  irpass::full_simplify(ir);
   print("Simplified III");
 
   // Final field registration correctness & type checking

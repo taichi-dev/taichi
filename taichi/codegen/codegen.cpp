@@ -15,7 +15,7 @@ TLANG_NAMESPACE_BEGIN
 KernelCodeGen::KernelCodeGen(Kernel *kernel, IRNode *ir)
     : prog(&kernel->program), kernel(kernel), ir(ir) {
   if (ir == nullptr)
-    this->ir = kernel->ir;
+    this->ir = kernel->ir.get();
 
   auto num_stmts = irpass::analysis::count_statements(this->ir);
   if (kernel->is_evaluator)

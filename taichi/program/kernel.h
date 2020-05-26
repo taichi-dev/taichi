@@ -10,8 +10,7 @@ class Program;
 
 class Kernel {
  public:
-  std::unique_ptr<IRNode> ir_holder;
-  IRNode *ir;
+  std::unique_ptr<IRNode> ir;
   Program &program;
   FunctionType compiled;
   std::string name;

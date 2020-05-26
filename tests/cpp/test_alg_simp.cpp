@@ -11,8 +11,9 @@ TI_TEST("alg_simp") {
 
     auto block = std::make_unique<Block>();
 
-    auto func = [](){};
-    auto kernel = std::make_unique<Kernel>(get_current_program(), func, "fake_kernel");
+    auto func = []() {};
+    auto kernel =
+        std::make_unique<Kernel>(get_current_program(), func, "fake_kernel");
     block->kernel = kernel.get();
 
     auto global_load_addr =
@@ -45,8 +46,9 @@ TI_TEST("alg_simp") {
 
     auto block = std::make_unique<Block>();
 
-    auto func = [](){};
-    auto kernel = std::make_unique<Kernel>(get_current_program(), func, "fake_kernel");
+    auto func = []() {};
+    auto kernel =
+        std::make_unique<Kernel>(get_current_program(), func, "fake_kernel");
     block->kernel = kernel.get();
 
     auto global_load_addr =
@@ -83,8 +85,9 @@ TI_TEST("alg_simp") {
     TI_TEST_PROGRAM;
 
     auto block = std::make_unique<Block>();
-    auto func = [](){};
-    auto kernel = std::make_unique<Kernel>(get_current_program(), func, "fake_kernel");
+    auto func = []() {};
+    auto kernel =
+        std::make_unique<Kernel>(get_current_program(), func, "fake_kernel");
     block->kernel = kernel.get();
 
     auto global_load_addr =
@@ -159,8 +162,9 @@ TI_TEST("alg_simp") {
     auto global_store =
         block->push_back<GlobalStoreStmt>(global_store_addr, and_result);
 
-    auto func = [](){};
-    auto kernel = std::make_unique<Kernel>(get_current_program(), func, "fake_kernel");
+    auto func = []() {};
+    auto kernel =
+        std::make_unique<Kernel>(get_current_program(), func, "fake_kernel");
     block->kernel = kernel.get();
     irpass::typecheck(block.get());
     TI_CHECK(block->size() == 6);

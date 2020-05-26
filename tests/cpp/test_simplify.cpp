@@ -12,8 +12,9 @@ TI_TEST("simplify") {
 
     auto block = std::make_unique<Block>();
 
-    auto func = [](){};
-    auto kernel = std::make_unique<Kernel>(get_current_program(), func, "fake_kernel");
+    auto func = []() {};
+    auto kernel =
+        std::make_unique<Kernel>(get_current_program(), func, "fake_kernel");
     block->kernel = kernel.get();
 
     auto get_root = block->push_back<GetRootStmt>();

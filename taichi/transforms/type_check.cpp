@@ -19,7 +19,9 @@ class TypeCheck : public IRVisitor {
  public:
   TypeCheck(IRNode *root) {
     kernel = root->get_kernel();
-    config = kernel->program.config;
+    if (kernel != nullptr) {
+      config = kernel->program.config;
+    }
     allow_undefined_visitor = true;
   }
 
@@ -415,7 +417,7 @@ class TypeCheck : public IRVisitor {
 
 namespace irpass {
 
-void typecheck(IRNode *root, Kernel *kernel) {
+void typecheck(IRNode *root) {
   analysis::check_fields_registered(root);
   TypeCheck inst(root);
   root->accept(&inst);

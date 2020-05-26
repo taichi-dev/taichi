@@ -822,6 +822,7 @@ class Block : public IRNode {
   Block() {
     mask_var = nullptr;
     parent = nullptr;
+    kernel = nullptr;
   }
 
   bool has_container_statements();

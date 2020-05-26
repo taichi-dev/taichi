@@ -482,6 +482,20 @@ class Matrix(TaichiOperations):
             ret = impl.min(ret, self.entries[i])
         return ret
 
+    def any(self):
+        import taichi as ti
+        ret = (self.entries[0] != ti.expr_init(0))
+        for i in range(1, len(self.entries)):
+            ret = ret + (self.entries[i] != ti.expr_init(0))
+        return -(ret < ti.expr_init(0))
+
+    def all(self):
+        import taichi as ti
+        ret = self.entries[0] != ti.expr_init(0)
+        for i in range(1, len(self.entries)):
+            ret = ret + (self.entries[i] != ti.expr_init(0))
+        return -(ret == ti.expr_init(-len(self.entries)))
+
     def dot(self, other):
         assert self.m == 1 and other.m == 1
         return (self.transposed(self) @ other).subscript(0, 0)

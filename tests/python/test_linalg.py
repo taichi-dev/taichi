@@ -173,3 +173,36 @@ def test_init_matrix_from_vectors():
             assert m2[0][j, i] == int(i + 3 * j + 1)
             assert m3[0][i, j] == int(i + 3 * j + 1)
             assert m4[0][j, i] == int(i + 3 * j + 1)
+
+
+@ti.all_archs
+def test_any_all():
+    a = ti.Matrix(2, 2, dt=ti.i32, shape=())
+    b = ti.var(dt=ti.i32, shape=())
+
+    @ti.kernel
+    def func_any():
+        b[None] = any(a[None])
+
+    @ti.kernel
+    def func_all():
+        b[None] = all(a[None])
+
+    for i in range(2):
+        for j in range(2):
+            a[None][0, 0] = i
+            a[None][1, 0] = j
+            a[None][1, 1] = i
+            a[None][0, 1] = j
+
+            func_any()
+            if i == 1 or j == 1:
+                assert b[None] == 1
+            else:
+                assert b[None] == 0
+
+            func_all()
+            if i == 1 and j == 1:
+                assert b[None] == 1
+            else:
+                assert b[None] == 0

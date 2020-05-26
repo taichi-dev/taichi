@@ -6,10 +6,7 @@ class boolean_integer:
         self.value = value
 
     def __eq__(self, other):
-        if self.value:
-            return bool(other)
-        else:
-            return not bool(other)
+        return bool(self.value) == bool(other)
 
 
 def approx(expected, **kwargs):

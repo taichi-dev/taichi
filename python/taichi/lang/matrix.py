@@ -99,7 +99,6 @@ class Matrix(TaichiOperations):
                     for i in range(n * m):
                         self.entries.append(impl.expr_init(None))
                 else:
-                    print("I am here!!!!")
                     assert not impl.inside_kernel()
                     for i in range(n * m):
                         self.entries.append(impl.var(dt))

@@ -139,11 +139,12 @@ class AlgSimp : public BasicStmtVisitor {
         stmt->replace_with(product.get());
         to_insert_before.emplace_back(std::move(product), stmt);
         to_erase.push_back(stmt);
-      } else if (rhs && ((is_signed(rhs->ret_type.data_type) &&
-          rhs->val[0].val_int() >= 0 &&
-          rhs->val[0].val_int() <= max_weaken_exponent) ||
-          (is_unsigned(rhs->ret_type.data_type) &&
-              rhs->val[0].val_uint() <= max_weaken_exponent))) {
+      } else if (rhs && is_integral(rhs->ret_type.data_type) &&
+          ((is_signed(rhs->ret_type.data_type) &&
+              rhs->val[0].val_int() >= 0 &&
+              rhs->val[0].val_int() <= max_weaken_exponent) ||
+              (is_unsigned(rhs->ret_type.data_type) &&
+                  rhs->val[0].val_uint() <= max_weaken_exponent))) {
         // a ** n -> Exponentiation by squaring
         auto a = stmt->lhs;
         cast_to_result_type(a, stmt);
@@ -175,7 +176,8 @@ class AlgSimp : public BasicStmtVisitor {
         }
         stmt->replace_with(result);
         to_erase.push_back(stmt);
-      } else if (rhs && is_signed(rhs->ret_type.data_type) &&
+      } else if (rhs && is_integral(rhs->ret_type.data_type) &&
+                 is_signed(rhs->ret_type.data_type) &&
                  rhs->val[0].val_int() < 0 &&
                  rhs->val[0].val_int() >= -max_weaken_exponent) {
         // a ** -n -> 1 / a ** n

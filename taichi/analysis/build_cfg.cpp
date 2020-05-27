@@ -33,13 +33,15 @@ class CFGBuilder : public IRVisitor {
   }
 
   CFGNode *new_node() {
-    auto node =
-        graph->push_back(current_block, begin_location, current_stmt_id - 1);
+    auto node = graph->push_back(current_block, begin_location,
+                                 current_stmt_id - 1,
+                                 last_node_in_current_block);
     for (auto &prev_node : prev_nodes) {
       CFGNode::add_edge(prev_node, node);
     }
     prev_nodes.clear();
     begin_location = current_stmt_id + 1;
+    last_node_in_current_block = node;
     return node;
   }
 
@@ -80,6 +82,48 @@ class CFGBuilder : public IRVisitor {
     begin_location = current_stmt_id + 1;
   }
 
+  void visit_loop(Block *body, CFGNode *before_loop, bool is_while_true) {
+    int loop_stmt_id = current_stmt_id;
+    auto backup_continues = std::move(continues_in_current_loop);
+    auto backup_breaks = std::move(breaks_in_current_loop);
+    begin_location = -1;
+    continues_in_current_loop.clear();
+    breaks_in_current_loop.clear();
+
+    auto loop_begin_index = graph->size();
+    body->accept(this);
+    auto loop_begin = graph->nodes[loop_begin_index].get();
+    CFGNode::add_edge(before_loop, loop_begin);
+    auto loop_end = graph->nodes.back().get();
+    CFGNode::add_edge(loop_end, loop_begin);
+    if (!is_while_true) {
+      prev_nodes.push_back(loop_end);
+    }
+    for (auto &node : continues_in_current_loop) {
+      CFGNode::add_edge(node, loop_begin);
+      prev_nodes.push_back(node);
+    }
+    for (auto &node : breaks_in_current_loop) {
+      prev_nodes.push_back(node);
+    }
+
+    begin_location = loop_stmt_id + 1;
+    continues_in_current_loop = std::move(backup_continues);
+    breaks_in_current_loop = std::move(backup_breaks);
+  }
+
+  void visit(WhileStmt *stmt) override {
+    visit_loop(stmt->body.get(), new_node(), true);
+  }
+
+  void visit(RangeForStmt *stmt) override {
+    visit_loop(stmt->body.get(), new_node(), false);
+  }
+
+  void visit(StructForStmt *stmt) override {
+    visit_loop(stmt->body.get(), new_node(), false);
+  }
+
   void visit(Block *block) override {
     auto backup_block = current_block;
     auto backup_last_node = last_node_in_current_block;
@@ -94,7 +138,7 @@ class CFGBuilder : public IRVisitor {
       block->statements[i]->accept(this);
     }
     current_stmt_id = block->size();
-    new_node();
+    new_node();  // Each block has a deterministic last node.
 
     current_block = backup_block;
     last_node_in_current_block = backup_last_node;

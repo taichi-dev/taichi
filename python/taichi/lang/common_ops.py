@@ -131,24 +131,41 @@ class TaichiOperations:
         import taichi as ti
         return ti.atomic_or(self, other)
 
-    __iadd__ = atomic_add
-    __isub__ = atomic_sub
-    __iand__ = atomic_and
-    __ixor__ = atomic_xor
-    __ior__ = atomic_or
+    def __iadd__(self, other):
+        self.atomic_add(other)
+        return self
+
+    def __isub__(self, other):
+        self.atomic_sub(other)
+        return self
+
+    def __iand__(self, other):
+        self.atomic_and(other)
+        return self
+
+    def __ixor__(self, other):
+        self.atomic_xor(other)
+        return self
+
+    def __ior__(self, other):
+        self.atomic_or(other)
+        return self
 
     # we don't support atomic_mul/truediv/floordiv yet:
     def __imul__(self, other):
         import taichi as ti
         self.assign(ti.mul(self, other))
+        return self
 
     def __itruediv__(self, other):
         import taichi as ti
         self.assign(ti.truediv(self, other))
+        return self
 
     def __ifloordiv__(self, other):
         import taichi as ti
         self.assign(ti.floordiv(self, other))
+        return self
 
     def assign(self, other):
         import taichi as ti

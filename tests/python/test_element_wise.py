@@ -86,6 +86,48 @@ def _test_matrix_element_wise_binary(dtype, n, m, ti_func, math_func):
             assert c[None][i, j] == approx(expected)
 
 
+@ti.host_arch_only
+def _test_matrix_element_wise_inplace_binary(dtype, n, m, ti_func, math_func):
+    a = ti.Matrix(n, m, dt=dtype, shape=())
+    b = ti.Matrix(n, m, dt=dtype, shape=())
+    u1 = ti.Matrix(n, m, dt=dtype, shape=())
+    u2 = ti.Matrix(n, m, dt=dtype, shape=())
+    u3 = ti.var(dt=dtype, shape=())
+
+    w1 = []
+    w2 = []
+    for i in range(n * m):
+        w1.append(rand(dtype))
+        w2.append(rand(dtype))
+
+    w3 = rand(dtype)
+
+    for i in range(n):
+        for j in range(m):
+            u1[None][i, j] = w1[i * m + j]
+            u2[None][i, j] = w2[i * m + j]
+
+    u3[None] = w3
+
+    @ti.kernel
+    def func():
+        a[None] = ti_func(u1[None], u2[None])
+        b[None] = ti_func(u2[None], u3[None])
+
+    func()
+
+    for i in range(n):
+        for j in range(m):
+            expected = math_func(w1[i * m + j], w2[i * m + j])
+            assert u1[None][i, j] == approx(expected)
+            expected = math_func(w2[i * m + j], w3)
+            assert u2[None][i, j] == approx(expected)
+            expected = w1[i * m + j]
+            assert a[None][i, j] == approx(expected)
+            expected = w2[i * m + j]
+            assert b[None][i, j] == approx(expected)
+
+
 def test_matrix_element_wise_unary_infix():
     seed(5156)
     for n, m in [(5, 4), (3, 1)]:
@@ -190,3 +232,24 @@ def test_matrix_element_wise_unary_2():
         _test_matrix_element_wise_unary(ti.f32, n, m, ti.abs, abs)
         _test_matrix_element_wise_unary(ti.i32, n, m, ti.abs, abs)
         # TODO(archibate): why ti.inv, ti.sqr doesn't work?
+
+
+def test_matrix_element_wise_inplace_binary_i32():
+    seed(986)
+    for n, m in [(5, 4), (3, 1)]:
+        _test_matrix_element_wise_inplace_binary(ti.i32, n, m, ti.atomic_add, ops.add)
+        _test_matrix_element_wise_inplace_binary(ti.i32, n, m, ti.atomic_sub, ops.sub)
+        _test_matrix_element_wise_inplace_binary(ti.i32, n, m, ti.atomic_and, ops.and_)
+        _test_matrix_element_wise_inplace_binary(ti.i32, n, m, ti.atomic_xor, ops.xor)
+        _test_matrix_element_wise_inplace_binary(ti.i32, n, m, ti.atomic_or, ops.or_)
+        _test_matrix_element_wise_inplace_binary(ti.i32, n, m, ti.atomic_max, max)
+        _test_matrix_element_wise_inplace_binary(ti.i32, n, m, ti.atomic_min, min)
+
+
+def test_matrix_element_wise_inplace_binary_f32():
+    seed(987)
+    for n, m in [(5, 4), (3, 1)]:
+        _test_matrix_element_wise_inplace_binary(ti.f32, n, m, ti.atomic_add, ops.add)
+        _test_matrix_element_wise_inplace_binary(ti.f32, n, m, ti.atomic_sub, ops.sub)
+        _test_matrix_element_wise_inplace_binary(ti.i32, n, m, ti.atomic_max, max)
+        _test_matrix_element_wise_inplace_binary(ti.i32, n, m, ti.atomic_min, min)

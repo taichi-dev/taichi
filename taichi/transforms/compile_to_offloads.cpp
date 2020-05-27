@@ -122,6 +122,10 @@ void compile_to_offloads(IRNode *ir,
   irpass::variable_optimization(ir, true);
   print("Store forwarded II");
 
+  irpass::cfg_optimization(ir);
+  print("Optimized by CFG");
+  irpass::analysis::verify(ir);
+
   irpass::full_simplify(ir);
   print("Simplified III");
 

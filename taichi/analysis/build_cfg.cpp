@@ -1,5 +1,6 @@
 #include "taichi/ir/cfg.h"
 #include "taichi/ir/ir.h"
+#include "taichi/ir/statements.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -19,7 +20,7 @@ class CFGBuilder : public IRVisitor {
   CFGBuilder()
       : current_block(nullptr),
         last_node_in_current_block(nullptr),
-        current_stmt_id(0),
+        current_stmt_id(-1),
         begin_location(-1) {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
@@ -63,14 +64,14 @@ class CFGBuilder : public IRVisitor {
       auto true_branch_begin = graph->size();
       if_stmt->true_statements->accept(this);
       CFGNode::add_edge(before_if, graph->nodes[true_branch_begin].get());
-      true_branch_end = graph->nodes.back().get();
+      true_branch_end = graph->back();
     }
     CFGNode *false_branch_end = nullptr;
     if (if_stmt->false_statements) {
       auto false_branch_begin = graph->size();
       if_stmt->false_statements->accept(this);
       CFGNode::add_edge(before_if, graph->nodes[false_branch_begin].get());
-      false_branch_end = graph->nodes.back().get();
+      false_branch_end = graph->back();
     }
     TI_ASSERT(prev_nodes.empty());
     if (if_stmt->true_statements)
@@ -79,6 +80,7 @@ class CFGBuilder : public IRVisitor {
       prev_nodes.push_back(false_branch_end);
     if (!if_stmt->true_statements || !if_stmt->false_statements)
       prev_nodes.push_back(before_if);
+    // Container statements don't belong to any CFGNodes.
     begin_location = current_stmt_id + 1;
   }
 
@@ -94,9 +96,10 @@ class CFGBuilder : public IRVisitor {
     body->accept(this);
     auto loop_begin = graph->nodes[loop_begin_index].get();
     CFGNode::add_edge(before_loop, loop_begin);
-    auto loop_end = graph->nodes.back().get();
+    auto loop_end = graph->back();
     CFGNode::add_edge(loop_end, loop_begin);
     if (!is_while_true) {
+      prev_nodes.push_back(before_loop);
       prev_nodes.push_back(loop_end);
     }
     for (auto &node : continues_in_current_loop) {
@@ -107,6 +110,7 @@ class CFGBuilder : public IRVisitor {
       prev_nodes.push_back(node);
     }
 
+    // Container statements don't belong to any CFGNodes.
     begin_location = loop_stmt_id + 1;
     continues_in_current_loop = std::move(backup_continues);
     breaks_in_current_loop = std::move(backup_breaks);
@@ -122,6 +126,27 @@ class CFGBuilder : public IRVisitor {
 
   void visit(StructForStmt *stmt) override {
     visit_loop(stmt->body.get(), new_node(), false);
+  }
+
+  void visit(OffloadedStmt *stmt) override {
+    if (stmt->body) {
+      auto before_offload = new_node();
+      if (stmt->task_type == OffloadedStmt::TaskType::struct_for ||
+          stmt->task_type == OffloadedStmt::TaskType::range_for) {
+        visit_loop(stmt->body.get(), before_offload, false);
+      } else {
+        TI_ASSERT(stmt->task_type == OffloadedStmt::TaskType::serial);
+        int offload_stmt_id = current_stmt_id;
+        auto block_begin_index = graph->size();
+        begin_location = -1;
+        stmt->body->accept(this);
+        prev_nodes.push_back(graph->back());
+        // Container statements don't belong to any CFGNodes.
+        begin_location = offload_stmt_id + 1;
+        CFGNode::add_edge(before_offload,
+                          graph->nodes[block_begin_index].get());
+      }
+    }
   }
 
   void visit(Block *block) override {
@@ -145,10 +170,17 @@ class CFGBuilder : public IRVisitor {
     begin_location = -1;
   }
 
-  static ControlFlowGraph run(IRNode *root) {
+  static std::unique_ptr<ControlFlowGraph> run(IRNode *root) {
     CFGBuilder builder;
     root->accept(&builder);
+    return std::move(builder.graph);
   }
 };
+
+namespace irpass::analysis {
+std::unique_ptr<ControlFlowGraph> build_cfg(IRNode *root) {
+  return CFGBuilder::run(root);
+}
+}  // namespace irpass::analysis
 
 TLANG_NAMESPACE_END

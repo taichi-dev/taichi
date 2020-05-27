@@ -55,6 +55,27 @@ def binary(foo):
     return wrapped
 
 
+inplace_binary_ops = []
+
+
+def inplace_binary(foo):
+    import taichi as ti
+
+    imp_foo = lambda x, y: foo(x, Expr(y))
+
+    @functools.wraps(foo)
+    def wrapped(a, b):
+        if ti.is_taichi_class(a):
+            return a.element_wise_inplace_binary(imp_foo, b)
+        elif ti.is_taichi_class(b):
+            assert False, f'cannot augassign taichi class {type(b)} to scalar expr'
+        else:
+            return imp_foo(a, b)
+
+    inplace_binary_ops.append(wrapped)
+    return wrapped
+
+
 def cast(obj, type):
     if is_taichi_class(obj):
         return obj.cast(type)
@@ -306,42 +327,42 @@ logical_or = bit_or
 logical_and = bit_and
 
 
-@binary
+@inplace_binary
 def atomic_add(a, b):
     return Expr(taichi_lang_core.expr_atomic_add(a.ptr, b.ptr), tb=stack_info())
 
 
-@binary
+@inplace_binary
 def atomic_sub(a, b):
     return Expr(taichi_lang_core.expr_atomic_sub(a.ptr, b.ptr), tb=stack_info())
 
 
-@binary
+@inplace_binary
 def atomic_min(a, b):
     return Expr(taichi_lang_core.expr_atomic_min(a.ptr, b.ptr), tb=stack_info())
 
 
-@binary
+@inplace_binary
 def atomic_max(a, b):
     return Expr(taichi_lang_core.expr_atomic_max(a.ptr, b.ptr), tb=stack_info())
 
 
-@binary
+@inplace_binary
 def atomic_and(a, b):
     return Expr(taichi_lang_core.expr_atomic_and(a.ptr, b.ptr), tb=stack_info())
 
 
-@binary
+@inplace_binary
 def atomic_or(a, b):
     return Expr(taichi_lang_core.expr_atomic_or(a.ptr, b.ptr), tb=stack_info())
 
 
-@binary
+@inplace_binary
 def atomic_xor(a, b):
     return Expr(taichi_lang_core.expr_atomic_xor(a.ptr, b.ptr), tb=stack_info())
 
 
-@binary
+@inplace_binary
 def assign(a, b):
     taichi_lang_core.expr_assign(a.ptr, b.ptr, stack_info())
     return a

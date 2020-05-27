@@ -330,37 +330,47 @@ logical_and = bit_and
 
 @inplace_binary
 def atomic_add(a, b):
-    return expr_init(Expr(taichi_lang_core.expr_atomic_add(a.ptr, b.ptr), tb=stack_info()))
+    return expr_init(
+        Expr(taichi_lang_core.expr_atomic_add(a.ptr, b.ptr), tb=stack_info()))
 
 
 @inplace_binary
 def atomic_sub(a, b):
-    return expr_init(Expr(taichi_lang_core.expr_atomic_sub(a.ptr, b.ptr), tb=stack_info()))
+    return expr_init(
+        Expr(taichi_lang_core.expr_atomic_sub(a.ptr, b.ptr), tb=stack_info()))
 
 
 @inplace_binary
 def atomic_min(a, b):
-    return expr_init(Expr(taichi_lang_core.expr_atomic_min(a.ptr, b.ptr), tb=stack_info()))
+    return expr_init(
+        Expr(taichi_lang_core.expr_atomic_min(a.ptr, b.ptr), tb=stack_info()))
 
 
 @inplace_binary
 def atomic_max(a, b):
-    return expr_init(Expr(taichi_lang_core.expr_atomic_max(a.ptr, b.ptr), tb=stack_info()))
+    return expr_init(
+        Expr(taichi_lang_core.expr_atomic_max(a.ptr, b.ptr), tb=stack_info()))
 
 
 @inplace_binary
 def atomic_and(a, b):
-    return expr_init(Expr(taichi_lang_core.expr_atomic_bit_and(a.ptr, b.ptr), tb=stack_info()))
+    return expr_init(
+        Expr(taichi_lang_core.expr_atomic_bit_and(a.ptr, b.ptr),
+             tb=stack_info()))
 
 
 @inplace_binary
 def atomic_or(a, b):
-    return expr_init(Expr(taichi_lang_core.expr_atomic_bit_or(a.ptr, b.ptr), tb=stack_info()))
+    return expr_init(
+        Expr(taichi_lang_core.expr_atomic_bit_or(a.ptr, b.ptr),
+             tb=stack_info()))
 
 
 @inplace_binary
 def atomic_xor(a, b):
-    return expr_init(Expr(taichi_lang_core.expr_atomic_bit_xor(a.ptr, b.ptr), tb=stack_info()))
+    return expr_init(
+        Expr(taichi_lang_core.expr_atomic_bit_xor(a.ptr, b.ptr),
+             tb=stack_info()))
 
 
 @inplace_binary

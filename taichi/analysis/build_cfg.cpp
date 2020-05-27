@@ -16,10 +16,11 @@ class CFGBuilder : public IRVisitor {
   std::vector<CFGNode *> prev_nodes;
 
  public:
-  CFGBuilder() : current_block(nullptr),
-                 last_node_in_current_block(nullptr),
-                 current_stmt_id(0),
-                 begin_location(-1) {
+  CFGBuilder()
+      : current_block(nullptr),
+        last_node_in_current_block(nullptr),
+        current_stmt_id(0),
+        begin_location(-1) {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
     graph = std::make_unique<ControlFlowGraph>();
@@ -32,7 +33,8 @@ class CFGBuilder : public IRVisitor {
   }
 
   CFGNode *new_node() {
-    auto node = graph->push_back(current_block, begin_location, current_stmt_id - 1);
+    auto node =
+        graph->push_back(current_block, begin_location, current_stmt_id - 1);
     for (auto &prev_node : prev_nodes) {
       CFGNode::add_edge(prev_node, node);
     }

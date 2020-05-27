@@ -8,7 +8,7 @@ A vector in Taichi can have two forms:
   - as a temporary local variable. An ``n`` component vector consists of ``n`` scalar values.
   - as an element of a global tensor. In this case, the tensor is an N-dimensional array of ``n`` component vectors.
 
-See :ref:`tensor` for more details.
+In fact, ``Vector`` is simply an alias of ``Matrix``, just with ``m = 1``. See :ref:`matrix` and :ref:`tensor` for more details.
 
 Declaration
 -----------
@@ -183,3 +183,6 @@ Methods
 
 .. note::
     Vectors are special matrices with only 1 column. In fact, ``ti.Vector`` is just an alias of ``ti.Matrix``.
+
+
+TODO: add element wise operations docs

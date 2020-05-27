@@ -17,10 +17,11 @@ class TypeCheck : public IRVisitor {
   CompileConfig config;
 
  public:
-  TypeCheck(Kernel *kernel) : kernel(kernel) {
-    // TODO: remove dependency on get_current_program here
-    if (current_program != nullptr)
-      config = get_current_program().config;
+  TypeCheck(IRNode *root) {
+    kernel = root->get_kernel();
+    if (kernel != nullptr) {
+      config = kernel->program.config;
+    }
     allow_undefined_visitor = true;
   }
 
@@ -316,7 +317,7 @@ class TypeCheck : public IRVisitor {
   void visit(ArgLoadStmt *stmt) {
     Kernel *current_kernel = kernel;
     if (current_kernel == nullptr) {
-      current_kernel = &get_current_program().get_current_kernel();
+      current_kernel = stmt->get_kernel();
     }
     auto &args = current_kernel->args;
     TI_ASSERT(0 <= stmt->arg_id && stmt->arg_id < args.size());
@@ -326,7 +327,7 @@ class TypeCheck : public IRVisitor {
   void visit(KernelReturnStmt *stmt) {
     Kernel *current_kernel = kernel;
     if (current_kernel == nullptr) {
-      current_kernel = &get_current_program().get_current_kernel();
+      current_kernel = stmt->get_kernel();
     }
     auto &rets = current_kernel->rets;
     TI_ASSERT(rets.size() >= 1);
@@ -416,9 +417,9 @@ class TypeCheck : public IRVisitor {
 
 namespace irpass {
 
-void typecheck(IRNode *root, Kernel *kernel) {
+void typecheck(IRNode *root) {
   analysis::check_fields_registered(root);
-  TypeCheck inst(kernel);
+  TypeCheck inst(root);
   root->accept(&inst);
 }
 

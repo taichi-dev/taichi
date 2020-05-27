@@ -223,14 +223,6 @@ class Expr(TaichiOperations):
         from .meta import fill_tensor
         fill_tensor(self, val)
 
-    def __ti_int__(self):
-        import taichi as ti
-        return ti.cast(self, ti.get_runtime().default_ip)
-
-    def __ti_float__(self):
-        import taichi as ti
-        return ti.cast(self, ti.get_runtime().default_fp)
-
     def parent(self, n=1):
         import taichi as ti
         p = self.ptr.snode()

@@ -36,14 +36,14 @@ Kernel::Kernel(Program &program,
   is_evaluator = false;
   compiled = nullptr;
   taichi::lang::context = std::make_unique<FrontendContext>();
-  ir_holder = taichi::lang::context->get_root();
-  ir = ir_holder.get();
+  ir = taichi::lang::context->get_root();
 
   {
     CurrentKernelGuard _(program, this);
     program.start_function_definition(this);
     func();
     program.end_function_definition();
+    ir->as<Block>()->kernel = this;
   }
 
   arch = program.config.arch;
@@ -74,7 +74,7 @@ void Kernel::lower(bool lower_access) {  // TODO: is a "Lowerer" class necessary
     if (is_accessor && !config.print_accessor_ir)
       verbose = false;
     irpass::compile_to_offloads(
-        ir, config, /*vectorize*/ arch_is_cpu(arch), grad,
+        ir.get(), config, /*vectorize*/ arch_is_cpu(arch), grad,
         /*ad_use_stack*/ true, verbose, /*lower_global_access*/ lower_access);
   } else {
     TI_NOT_IMPLEMENTED

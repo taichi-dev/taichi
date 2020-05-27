@@ -246,7 +246,7 @@ namespace irpass {
 
 void lower_access(IRNode *root, bool lower_atomic, Kernel *kernel) {
   LowerAccess::run(root, lower_atomic);
-  typecheck(root, kernel);
+  typecheck(root);
 }
 
 }  // namespace irpass

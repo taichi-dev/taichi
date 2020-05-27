@@ -113,13 +113,14 @@ class ConstantFold : public BasicStmtVisitor {
                       rhs.dt,
                       true};
     auto *ker = get_jit_evaluator_kernel(id);
-    auto &ctx = get_current_program().get_context();
+    auto &current_program = stmt->get_kernel()->program;
+    auto &ctx = current_program.get_context();
     ContextArgSaveGuard _(
         ctx);  // save input args, prevent override current kernel
     ctx.set_arg<int64_t>(0, lhs.val_i64);
     ctx.set_arg<int64_t>(1, rhs.val_i64);
     (*ker)();
-    ret.val_i64 = get_current_program().fetch_result<int64_t>(0);
+    ret.val_i64 = current_program.fetch_result<int64_t>(0);
     return true;
   }
 
@@ -135,12 +136,13 @@ class ConstantFold : public BasicStmtVisitor {
                       stmt->cast_type,
                       false};
     auto *ker = get_jit_evaluator_kernel(id);
-    auto &ctx = get_current_program().get_context();
+    auto &current_program = stmt->get_kernel()->program;
+    auto &ctx = current_program.get_context();
     ContextArgSaveGuard _(
         ctx);  // save input args, prevent override current kernel
     ctx.set_arg<int64_t>(0, operand.val_i64);
     (*ker)();
-    ret.val_i64 = get_current_program().fetch_result<int64_t>(0);
+    ret.val_i64 = current_program.fetch_result<int64_t>(0);
     return true;
   }
 
@@ -204,7 +206,8 @@ void constant_fold(IRNode *root) {
   // disable constant_fold when config.debug is turned on.
   // Discussion:
   // https://github.com/taichi-dev/taichi/pull/839#issuecomment-626107010
-  if (get_current_program().config.debug) {
+  auto kernel = root->get_kernel();
+  if (kernel && kernel->program.config.debug) {
     TI_TRACE("config.debug enabled, ignoring constant fold");
     return;
   }

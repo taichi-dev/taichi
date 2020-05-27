@@ -554,6 +554,10 @@ if 1:
                 node.func = self.parse_expr('ti.ti_int')
             elif func_name == 'float':
                 node.func = self.parse_expr('ti.ti_float')
+            elif func_name == 'any':
+                node.func = self.parse_expr('ti.ti_any')
+            elif func_name == 'all':
+                node.func = self.parse_expr('ti.ti_all')
             else:
                 pass
         return node

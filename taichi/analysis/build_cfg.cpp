@@ -129,7 +129,7 @@ class CFGBuilder : public IRVisitor {
   }
 
   void visit(OffloadedStmt *stmt) override {
-    if (stmt->body) {
+    if (stmt->has_body()) {
       auto before_offload = new_node();
       if (stmt->task_type == OffloadedStmt::TaskType::struct_for ||
           stmt->task_type == OffloadedStmt::TaskType::range_for) {

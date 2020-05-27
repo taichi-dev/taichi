@@ -28,6 +28,7 @@ bool CFGNode::empty() const {
 }
 
 void CFGNode::erase(int location) {
+  TI_ASSERT(location >= begin_location && location <= end_location);
   block->erase(location);
   end_location--;
   for (auto node = next_node_in_same_block; node != nullptr;
@@ -37,9 +38,9 @@ void CFGNode::erase(int location) {
   }
 }
 
-void CFGNode::erase_entire_node() {
+bool CFGNode::erase_entire_node() {
   if (empty())
-    return;
+    return false;
   int node_size = end_location - begin_location + 1;
   for (int location = end_location; location >= begin_location; location--) {
     block->erase(location);
@@ -50,6 +51,7 @@ void CFGNode::erase_entire_node() {
     node->begin_location -= node_size;
     node->end_location -= node_size;
   }
+  return true;
 }
 
 std::size_t ControlFlowGraph::size() const {
@@ -80,8 +82,8 @@ bool ControlFlowGraph::unreachable_code_elimination() {
   for (auto &node : nodes) {
     if (visited.find(node.get()) == visited.end()) {
       // unreachable
-      modified = true;
-      node->erase_entire_node();
+      if (node->erase_entire_node())
+        modified = true;
     }
   }
   return modified;

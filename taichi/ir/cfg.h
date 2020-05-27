@@ -24,7 +24,7 @@ class CFGNode {
   static void add_edge(CFGNode *from, CFGNode *to);
   bool empty() const;
   void erase(int location);
-  void erase_entire_node();
+  bool erase_entire_node();
 };
 
 class ControlFlowGraph {

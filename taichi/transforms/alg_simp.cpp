@@ -7,7 +7,19 @@ TLANG_NAMESPACE_BEGIN
 
 // Algebraic Simplification and Strength Reduction
 class AlgSimp : public BasicStmtVisitor {
+ private:
+  void cast_to_result_type(Stmt *&a, Stmt *stmt) {
+    if (stmt->ret_type.data_type != a->ret_type.data_type) {
+      auto cast = Stmt::make_typed<UnaryOpStmt>(UnaryOpType::cast_value, a);
+      cast->cast_type = stmt->ret_type.data_type;
+      cast->ret_type.data_type = stmt->ret_type.data_type;
+      a = cast.get();
+      to_insert_before.emplace_back(std::move(cast), stmt);
+    }
+  }
+
  public:
+  static constexpr int max_weaken_exponent = 32;
   using BasicStmtVisitor::visit;
   bool fast_math;
   std::vector<Stmt *> to_erase;
@@ -73,13 +85,7 @@ class AlgSimp : public BasicStmtVisitor {
         auto a = stmt->lhs;
         if (alg_is_two(lhs))
           a = stmt->rhs;
-        if (stmt->ret_type.data_type != a->ret_type.data_type) {
-          auto cast = Stmt::make_typed<UnaryOpStmt>(UnaryOpType::cast_value, a);
-          cast->cast_type = stmt->ret_type.data_type;
-          cast->ret_type.data_type = stmt->ret_type.data_type;
-          a = cast.get();
-          to_insert_before.emplace_back(std::move(cast), stmt);
-        }
+        cast_to_result_type(a, stmt);
         auto sum = Stmt::make<BinaryOpStmt>(BinaryOpType::add, a, a);
         sum->ret_type.data_type = a->ret_type.data_type;
         stmt->replace_with(sum.get());
@@ -116,35 +122,78 @@ class AlgSimp : public BasicStmtVisitor {
         // a ** 1 -> a
         stmt->replace_with(stmt->lhs);
         to_erase.push_back(stmt);
-      } else if (fast_math && alg_is_zero(rhs)) {
+      } else if (alg_is_zero(rhs)) {
         // a ** 0 -> 1
         auto one = Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(1));
         auto one_raw = one.get();
         to_insert_before.emplace_back(std::move(one), stmt);
-        if (stmt->ret_type.data_type != one_raw->ret_type.data_type) {
-          auto cast =
-              Stmt::make_typed<UnaryOpStmt>(UnaryOpType::cast_value, one_raw);
-          cast->cast_type = stmt->ret_type.data_type;
-          cast->ret_type.data_type = stmt->ret_type.data_type;
-          one_raw = cast.get();
-          to_insert_before.emplace_back(std::move(cast), stmt);
-        }
+        cast_to_result_type(one_raw, stmt);
         stmt->replace_with(one_raw);
         to_erase.push_back(stmt);
       } else if (alg_is_two(rhs)) {
-        // a ** 2 -> a * a
+        // a ** 2.0 -> a * a
         auto a = stmt->lhs;
-        if (stmt->ret_type.data_type != a->ret_type.data_type) {
-          auto cast = Stmt::make_typed<UnaryOpStmt>(UnaryOpType::cast_value, a);
-          cast->cast_type = stmt->ret_type.data_type;
-          cast->ret_type.data_type = stmt->ret_type.data_type;
-          a = cast.get();
-          to_insert_before.emplace_back(std::move(cast), stmt);
-        }
+        cast_to_result_type(a, stmt);
         auto product = Stmt::make<BinaryOpStmt>(BinaryOpType::mul, a, a);
         product->ret_type.data_type = a->ret_type.data_type;
         stmt->replace_with(product.get());
         to_insert_before.emplace_back(std::move(product), stmt);
+        to_erase.push_back(stmt);
+      } else if (rhs && ((is_signed(rhs->ret_type.data_type) &&
+          rhs->val[0].val_int() >= 0 &&
+          rhs->val[0].val_int() <= max_weaken_exponent) ||
+          (is_unsigned(rhs->ret_type.data_type) &&
+              rhs->val[0].val_uint() <= max_weaken_exponent))) {
+        // a ** n -> Exponentiation by squaring
+        auto a = stmt->lhs;
+        cast_to_result_type(a, stmt);
+        int exponent = is_signed(rhs->ret_type.data_type) ?
+                       (int)rhs->val[0].val_int() : (int)rhs->val[0].val_uint();
+        Stmt *result = nullptr;
+        auto a_power_of_2 = a;
+        int current_exponent = 1;
+        while (true) {
+          if (exponent & current_exponent) {
+            if (!result)
+              result = a_power_of_2;
+            else {
+              auto new_result = Stmt::make<BinaryOpStmt>(
+                  BinaryOpType::mul, result, a_power_of_2);
+              new_result->ret_type.data_type = a->ret_type.data_type;
+              result = new_result.get();
+              to_insert_before.emplace_back(std::move(new_result), stmt);
+            }
+          }
+          current_exponent <<= 1;
+          if (current_exponent > exponent)
+            break;
+          auto new_a_power = Stmt::make<BinaryOpStmt>(
+              BinaryOpType::mul, a_power_of_2, a_power_of_2);
+          new_a_power->ret_type.data_type = a->ret_type.data_type;
+          a_power_of_2 = new_a_power.get();
+          to_insert_before.emplace_back(std::move(new_a_power), stmt);
+        }
+        stmt->replace_with(result);
+        to_erase.push_back(stmt);
+      } else if (rhs && is_signed(rhs->ret_type.data_type) &&
+                 rhs->val[0].val_int() < 0 &&
+                 rhs->val[0].val_int() >= -max_weaken_exponent) {
+        // a ** -n -> 1 / a ** n
+        auto one = Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(1));
+        auto one_raw = one.get();
+        to_insert_before.emplace_back(std::move(one), stmt);
+        cast_to_result_type(one_raw, stmt);
+        auto exponent = Stmt::make<ConstStmt>(
+            LaneAttribute<TypedConstant>(-rhs->val[0]));
+        auto a_to_n = Stmt::make<BinaryOpStmt>(
+            BinaryOpType::pow, stmt->lhs, exponent.get());
+        a_to_n->ret_type.data_type = stmt->ret_type.data_type;
+        auto result = Stmt::make<BinaryOpStmt>(
+            BinaryOpType::div, one_raw, a_to_n.get());
+        stmt->replace_with(result.get());
+        to_insert_before.emplace_back(std::move(exponent), stmt);
+        to_insert_before.emplace_back(std::move(a_to_n), stmt);
+        to_insert_before.emplace_back(std::move(result), stmt);
         to_erase.push_back(stmt);
       }
     } else if (stmt->op_type == BinaryOpType::bit_and) {

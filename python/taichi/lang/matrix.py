@@ -526,11 +526,11 @@ class Matrix(TaichiOperations):
         if self.m != 1:
             yield '['
 
-        for i in range(self.n):
-            if i: yield ', '
+        for j in range(self.m):
+            if j: yield ', '
             yield '['
-            for j in range(self.m):
-                if j: yield ', '
+            for i in range(self.n):
+                if i: yield ', '
                 yield self(i, j)
             yield ']'
 

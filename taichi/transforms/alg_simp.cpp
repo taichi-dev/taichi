@@ -159,8 +159,8 @@ class AlgSimp : public BasicStmtVisitor {
             if (!result)
               result = a_power_of_2;
             else {
-              auto new_result = Stmt::make<BinaryOpStmt>(
-                  BinaryOpType::mul, result, a_power_of_2);
+              auto new_result = Stmt::make<BinaryOpStmt>(BinaryOpType::mul,
+                                                         result, a_power_of_2);
               new_result->ret_type.data_type = a->ret_type.data_type;
               result = new_result.get();
               to_insert_before.emplace_back(std::move(new_result), stmt);
@@ -186,13 +186,13 @@ class AlgSimp : public BasicStmtVisitor {
         auto one_raw = one.get();
         to_insert_before.emplace_back(std::move(one), stmt);
         cast_to_result_type(one_raw, stmt);
-        auto exponent = Stmt::make<ConstStmt>(
-            LaneAttribute<TypedConstant>(-rhs->val[0]));
-        auto a_to_n = Stmt::make<BinaryOpStmt>(
-            BinaryOpType::pow, stmt->lhs, exponent.get());
+        auto exponent =
+            Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(-rhs->val[0]));
+        auto a_to_n = Stmt::make<BinaryOpStmt>(BinaryOpType::pow, stmt->lhs,
+                                               exponent.get());
         a_to_n->ret_type.data_type = stmt->ret_type.data_type;
-        auto result = Stmt::make<BinaryOpStmt>(
-            BinaryOpType::div, one_raw, a_to_n.get());
+        auto result =
+            Stmt::make<BinaryOpStmt>(BinaryOpType::div, one_raw, a_to_n.get());
         stmt->replace_with(result.get());
         to_insert_before.emplace_back(std::move(exponent), stmt);
         to_insert_before.emplace_back(std::move(a_to_n), stmt);

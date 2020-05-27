@@ -173,3 +173,11 @@ class TaichiOperations:
             self ^= x
         else:
             assert False, op
+
+    def __ti_int__(self):
+        import taichi as ti
+        return ti.cast(self, ti.get_runtime().default_ip)
+
+    def __ti_float__(self):
+        import taichi as ti
+        return ti.cast(self, ti.get_runtime().default_fp)

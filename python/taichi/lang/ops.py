@@ -404,6 +404,16 @@ def ti_min(*args):
         return ti_min(args[0], ti_min(*args[1:]))
 
 
+def ti_any(a):
+    assert hasattr(a, 'any')
+    return a.any()
+
+
+def ti_all(a):
+    assert hasattr(a, 'all')
+    return a.all()
+
+
 def append(l, indices, val):
     import taichi as ti
     a = ti.expr_init(

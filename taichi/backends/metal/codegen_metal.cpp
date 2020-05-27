@@ -1031,7 +1031,7 @@ CodeGen::CodeGen(Kernel *kernel,
 FunctionType CodeGen::compile() {
   auto &config = kernel_->program.config;
   config.demote_dense_struct_fors = true;
-  irpass::compile_to_offloads(kernel_->ir, config,
+  irpass::compile_to_offloads(kernel_->ir.get(), config,
                               /*vectorize=*/false, kernel_->grad,
                               /*ad_use_stack=*/false, config.print_ir);
 

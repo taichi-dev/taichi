@@ -207,6 +207,8 @@ class TypedConstant {
     return equal_type_and_value(o);
   }
 
+  TypedConstant operator-() const;
+
   int32 &val_int32();
   float32 &val_float32();
   int64 &val_int64();

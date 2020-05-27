@@ -60,7 +60,7 @@ def test_oop():
         @ti.kernel
         def reduce(self):
             for i, j in self.val:
-                ti.atomic_add(self.total, self.val[i, j] * 4)
+                self.total[None] += self.val[i, j] * 4
 
     arr = Array2D(128, 128, 3)
 
@@ -106,32 +106,25 @@ def test_oop_two_items():
             self.total = ti.var(ti.f32)
             self.increment = increment
             self.multiplier = multiplier
-
-        def place(self, root):
-            root.dense(ti.ij, (self.n, self.m)).place(self.val)
-            root.place(self.total)
+            ti.root.dense(ti.ij, (self.n, self.m)).place(self.val)
+            ti.root.place(self.total)
 
         @ti.kernel
         def inc(self):
             for i, j in self.val:
-                ti.atomic_add(self.val[i, j], self.increment)
+                self.val[i, j] += self.increment
 
         @ti.kernel
         def reduce(self):
             for i, j in self.val:
-                ti.atomic_add(self.total, self.val[i, j] * self.multiplier)
+                self.total[None] += self.val[i, j] * self.multiplier
 
     arr1_inc, arr1_mult = 3, 4
     arr2_inc, arr2_mult = 6, 8
     arr1 = Array2D(128, 128, arr1_inc, arr1_mult)
     arr2 = Array2D(16, 32, arr2_inc, arr2_mult)
 
-    @ti.layout
-    def place():
-        # Place an object. Make sure you defined place for that obj
-        ti.root.place(arr1)
-        ti.root.place(arr2)
-        ti.root.lazy_grad()
+    ti.root.lazy_grad()
 
     arr1.inc()
     arr1.inc.grad()
@@ -163,23 +156,17 @@ def test_oop_inherit_ok():
             self.val = ti.var(ti.f32)
             self.total = ti.var(ti.f32)
             self.mul = mul
-
-        def place(self, root):
-            root.dense(ti.ij, (self.n, )).place(self.val)
-            root.place(self.total)
+            ti.root.dense(ti.ij, (self.n, )).place(self.val)
+            ti.root.place(self.total)
 
         @ti.kernel
         def reduce(self):
             for i, j in self.val:
-                ti.atomic_add(self.total, self.val[i, j] * self.mul)
+                self.total[None] += self.val[i, j] * self.mul
 
     arr = Array1D(128, 42)
 
-    @ti.layout
-    def place():
-        # Place an object. Make sure you defined place for that obj
-        ti.root.place(arr)
-        ti.root.lazy_grad()
+    ti.root.lazy_grad()
 
     with ti.Tape(loss=arr.total):
         arr.reduce()
@@ -196,23 +183,17 @@ def test_oop_class_must_be_data_oriented():
             self.val = ti.var(ti.f32)
             self.total = ti.var(ti.f32)
             self.mul = mul
-
-        def place(self, root):
-            root.dense(ti.ij, (self.n, )).place(self.val)
-            root.place(self.total)
+            ti.root.dense(ti.ij, (self.n, )).place(self.val)
+            ti.root.place(self.total)
 
         @ti.kernel
         def reduce(self):
             for i, j in self.val:
-                ti.atomic_add(self.total, self.val[i, j] * self.mul)
+                self.total[None] += self.val[i, j] * self.mul
 
     arr = Array1D(128, 42)
 
-    @ti.layout
-    def place():
-        # Place an object. Make sure you defined place for that obj
-        ti.root.place(arr)
-        ti.root.lazy_grad()
+    ti.root.lazy_grad()
 
     # Array1D is not properly decorated, this will raise an Exception
     arr.reduce()

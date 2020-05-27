@@ -1,7 +1,9 @@
-#include <unordered_set>
-
 #include "taichi/ir/ir.h"
+#include "taichi/ir/transforms.h"
+#include "taichi/ir/analysis.h"
+#include "taichi/ir/visitors.h"
 #include "taichi/ir/frontend_ir.h"
+#include <unordered_set>
 
 TLANG_NAMESPACE_BEGIN
 
@@ -64,10 +66,10 @@ class LowerAST : public IRVisitor {
   void visit(FrontendAllocaStmt *stmt) override {
     auto block = stmt->parent;
     auto ident = stmt->ident;
-    TI_ASSERT(block->local_var_alloca.find(ident) ==
-              block->local_var_alloca.end());
+    TI_ASSERT(block->local_var_to_stmt.find(ident) ==
+              block->local_var_to_stmt.end());
     auto lowered = std::make_unique<AllocaStmt>(stmt->ret_type.data_type);
-    block->local_var_alloca.insert(std::make_pair(ident, lowered.get()));
+    block->local_var_to_stmt.insert(std::make_pair(ident, lowered.get()));
     stmt->parent->replace_with(stmt, std::move(lowered));
     throw IRModified();
   }
@@ -110,10 +112,21 @@ class LowerAST : public IRVisitor {
 
   void visit(FrontendPrintStmt *stmt) override {
     // expand rhs
-    auto expr = load_if_ptr(stmt->expr);
+    std::vector<Stmt *> stmts;
+    std::vector<std::variant<Stmt *, std::string>> new_contents;
     auto fctx = make_flatten_ctx();
-    expr->flatten(&fctx);
-    fctx.push_back<PrintStmt>(expr->stmt, stmt->str);
+    for (auto c : stmt->contents) {
+      if (std::holds_alternative<Expr>(c)) {
+        auto x = std::get<Expr>(c);
+        x->flatten(&fctx);
+        stmts.push_back(x->stmt);
+        new_contents.push_back(x->stmt);
+      } else {
+        auto x = std::get<std::string>(c);
+        new_contents.push_back(x);
+      }
+    }
+    fctx.push_back<PrintStmt>(new_contents);
     stmt->parent->replace_with(stmt, std::move(fctx.stmts));
     throw IRModified();
   }
@@ -169,14 +182,16 @@ class LowerAST : public IRVisitor {
     capturing_loop = old_capturing_loop;
   }
 
+  void visit(LoopIndexStmt *stmt) override {
+    // do nothing
+  }
+
+  void visit(BinaryOpStmt *stmt) override {
+    // do nothing
+  }
+
   void visit(FrontendForStmt *stmt) override {
     auto fctx = make_flatten_ctx();
-    // insert an alloca here
-    for (int i = 0; i < (int)stmt->loop_var_id.size(); i++) {
-      fctx.push_back<AllocaStmt>(DataType::i32);
-      stmt->parent->local_var_alloca[stmt->loop_var_id[i]] = fctx.back_stmt();
-    }
-
     if (stmt->is_ranged()) {
       TI_ASSERT(stmt->loop_var_id.size() == 1);
       auto begin = stmt->begin;
@@ -190,14 +205,19 @@ class LowerAST : public IRVisitor {
       // statement
       if (is_good_range_for) {
         auto &&new_for = std::make_unique<RangeForStmt>(
-            stmt->parent->lookup_var(stmt->loop_var_id[0]), begin->stmt,
-            end->stmt, std::move(stmt->body), stmt->vectorize,
+            begin->stmt, end->stmt, std::move(stmt->body), stmt->vectorize,
             stmt->parallelize, stmt->block_dim, stmt->strictly_serialized);
+        new_for->body->insert(std::make_unique<LoopIndexStmt>(new_for.get(), 0),
+                              0);
+        new_for->body->local_var_to_stmt[stmt->loop_var_id[0]] =
+            new_for->body->statements[0].get();
         fctx.push_back(std::move(new_for));
       } else {
         // transform into a structure as
         // i = begin; while (1) { if (i >= end) break; original body; i += 1; }
-        auto loop_var = stmt->parent->lookup_var(stmt->loop_var_id[0]);
+        fctx.push_back<AllocaStmt>(DataType::i32);
+        auto loop_var = fctx.back_stmt();
+        stmt->parent->local_var_to_stmt[stmt->loop_var_id[0]] = loop_var;
         fctx.push_back<LocalStoreStmt>(loop_var, begin->stmt);
         auto loop_var_addr = LaneAttribute<LocalAddress>(
             LocalAddress(loop_var->as<AllocaStmt>(), 0));
@@ -240,15 +260,10 @@ class LowerAST : public IRVisitor {
             std::make_unique<LocalStoreStmt>(new_while->mask, const_stmt_ptr));
         new_while->body->mask_var = new_while->mask;
         fctx.push_back(std::move(new_while));
-        stmt->parent->replace_with(stmt, std::move(fctx.stmts));
-        throw IRModified();
       }
     } else {
-      std::vector<Stmt *> vars(stmt->loop_var_id.size());
-      for (int i = 0; i < (int)stmt->loop_var_id.size(); i++) {
-        vars[i] = stmt->parent->lookup_var(stmt->loop_var_id[i]);
-      }
       auto snode = stmt->global_var.cast<GlobalVariableExpression>()->snode;
+      std::vector<int> offsets;
       if (snode->type == SNodeType::place) {
         /* Note:
          * for i in x:
@@ -257,12 +272,29 @@ class LowerAST : public IRVisitor {
          * has the same effect as
          *
          * for i in x.parent():
-         *   x[i] = 0 */
+         *   x[i] = 0
+         *
+         * (unless x has index offsets)*/
+        offsets = snode->index_offsets;
         snode = snode->parent;
       }
       auto &&new_for = std::make_unique<StructForStmt>(
-          vars, snode, std::move(stmt->body), stmt->vectorize,
-          stmt->parallelize, stmt->block_dim);
+          snode, std::move(stmt->body), stmt->vectorize, stmt->parallelize,
+          stmt->block_dim);
+      VecStatement new_statements;
+      for (int i = 0; i < (int)stmt->loop_var_id.size(); i++) {
+        Stmt *loop_index = new_statements.push_back<LoopIndexStmt>(
+            new_for.get(), snode->physical_index_position[i]);
+        if ((int)offsets.size() > i && offsets[i] != 0) {
+          auto offset_const =
+              new_statements.push_back<ConstStmt>(TypedConstant(offsets[i]));
+          auto result = new_statements.push_back<BinaryOpStmt>(
+              BinaryOpType::add, loop_index, offset_const);
+          loop_index = result;
+        }
+        new_for->body->local_var_to_stmt[stmt->loop_var_id[i]] = loop_index;
+      }
+      new_for->body->insert(std::move(new_statements), 0);
       new_for->scratch_opt = stmt->scratch_opt;
       fctx.push_back(std::move(new_for));
     }
@@ -371,15 +403,6 @@ class LowerAST : public IRVisitor {
     throw IRModified();
   }
 
-  void visit(FrontendArgStoreStmt *stmt) override {
-    // expand value
-    auto fctx = make_flatten_ctx();
-    stmt->expr->flatten(&fctx);
-    fctx.push_back<ArgStoreStmt>(stmt->arg_id, fctx.back_stmt());
-    stmt->parent->replace_with(stmt, std::move(fctx.stmts));
-    throw IRModified();
-  }
-
   static void run(IRNode *node) {
     LowerAST inst(irpass::analysis::detect_fors_with_break(node));
     while (true) {
@@ -398,7 +421,7 @@ class LowerAST : public IRVisitor {
 namespace irpass {
 
 void lower(IRNode *root) {
-  return LowerAST::run(root);
+  LowerAST::run(root);
 }
 
 }  // namespace irpass

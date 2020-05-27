@@ -3,7 +3,7 @@
     The use of this software is governed by the LICENSE file.
 *******************************************************************************/
 
-#include "taichi/common/util.h"
+#include "taichi/common/core.h"
 #include "taichi/system/threading.h"
 #include <csignal>
 #include "taichi/python/export.h"
@@ -155,8 +155,9 @@ std::string signal_name(int sig) {
 bool python_at_exit_called = false;
 
 void signal_handler(int signo) {
-  // It seems that there's no way to pass exception to Python in signal
-  // handlers?
+  // It seems that there's no way to pass exception to Python in signal handlers?
+  // @archibate found that in fact there are such solution:
+  // https://docs.python.org/3/library/faulthandler.html#module-faulthandler
   auto sig_name = signal_name(signo);
   logger.error(fmt::format("Received signal {} ({})", signo, sig_name), false);
   exit(-1);

@@ -6,6 +6,7 @@ The Taichi Programming Language
    :maxdepth: 3
 
    overview
+   install
    hello
 
 
@@ -27,6 +28,7 @@ The Taichi Programming Language
    scalar_tensor
    vector
    matrix
+   snode
 
 
 .. toctree::
@@ -34,7 +36,7 @@ The Taichi Programming Language
    :maxdepth: 3
 
    meta
-   data_layout
+   layout
    sparse
    differentiable_programming
    odop
@@ -48,6 +50,7 @@ The Taichi Programming Language
 
    dev_install
    contributor_guide
+   utilities
    cpp_style
    internal
 
@@ -56,12 +59,10 @@ The Taichi Programming Language
    :caption: Miscellaneous
    :maxdepth: 3
 
-   utilities
    gui
    global_settings
-   performance
-   acknowledgments
    faq
+   acknowledgments
 
 
 .. toctree::

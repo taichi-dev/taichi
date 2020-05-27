@@ -1,4 +1,7 @@
 #include "taichi/ir/ir.h"
+#include "taichi/ir/transforms.h"
+#include "taichi/ir/analysis.h"
+#include "taichi/ir/visitors.h"
 #include <deque>
 #include <set>
 
@@ -51,7 +54,7 @@ class LowerAccess : public IRVisitor {
   }
 
   void lower_scalar_ptr(VecStatement &lowered,
-                        SNode *snode,
+                        SNode *leaf_snode,
                         std::vector<Stmt *> indices,
                         bool activate,
                         SNodeOpType snode_op = SNodeOpType::undefined) {
@@ -59,6 +62,7 @@ class LowerAccess : public IRVisitor {
       // For ti.is_active
       TI_ASSERT(!activate);
     }
+
     // emit a sequence of micro access ops
     std::set<SNode *> nodes_on_loop;
     if (current_struct_for) {
@@ -68,10 +72,22 @@ class LowerAccess : public IRVisitor {
     }
 
     std::deque<SNode *> snodes;
-    for (; snode != nullptr; snode = snode->parent)
-      snodes.push_front(snode);
+    for (auto s = leaf_snode; s != nullptr; s = s->parent)
+      snodes.push_front(s);
 
     Stmt *last = lowered.push_back<GetRootStmt>();
+
+    const auto &offsets = snodes.back()->index_offsets;
+    if (!offsets.empty()) {
+      for (int i = 0; i < (int)indices.size(); i++) {
+        // Subtract offsets from indices so that new indices are
+        // within [0, +inf)
+        auto offset = lowered.push_back<ConstStmt>(TypedConstant(offsets[i]));
+        indices[i] = lowered.push_back<BinaryOpStmt>(BinaryOpType::sub,
+                                                     indices[i], offset);
+      }
+    }
+
     int path_inc = int(snode_op != SNodeOpType::undefined);
     for (int i = 0; i < (int)snodes.size() - 1 + path_inc; i++) {
       auto snode = snodes[i];
@@ -94,10 +110,10 @@ class LowerAccess : public IRVisitor {
 
       bool on_loop_tree = nodes_on_loop.find(snode) != nodes_on_loop.end();
       if (on_loop_tree &&
-          indices.size() == current_struct_for->loop_vars.size()) {
+          indices.size() == current_struct_for->snode->num_active_indices) {
         for (int j = 0; j < (int)indices.size(); j++) {
-          auto diff = irpass::analysis::value_diff(
-              indices[j], 0, current_struct_for->loop_vars[j]);
+          auto diff = irpass::analysis::value_diff_loop_index(
+              indices[j], current_struct_for, j);
           if (!diff.linear_related())
             on_loop_tree = false;
           else if (j == (int)indices.size() - 1) {
@@ -123,10 +139,8 @@ class LowerAccess : public IRVisitor {
       } else {
         auto lookup = lowered.push_back<SNodeLookupStmt>(
             snode, last, linearized,
-            snode->need_activation() && activate && !on_loop_tree,
-            indices);  // if snode has no possibility of null child, set
-                       // activate
-        // = false
+            snode->need_activation() && activate && !on_loop_tree, indices);
+        // if snode has no possibility of null child, set activate = false
         int chid = snode->child_id(snodes[i + 1]);
         last = lowered.push_back<GetChStmt>(lookup, chid);
       }
@@ -232,7 +246,7 @@ namespace irpass {
 
 void lower_access(IRNode *root, bool lower_atomic, Kernel *kernel) {
   LowerAccess::run(root, lower_atomic);
-  typecheck(root, kernel);
+  typecheck(root);
 }
 
 }  // namespace irpass

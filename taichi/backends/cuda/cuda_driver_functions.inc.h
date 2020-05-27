@@ -17,6 +17,9 @@ PER_CUDA_FUNCTION(context_create, cuCtxCreate_v2, void*, int, void *);
 PER_CUDA_FUNCTION(context_set_current, cuCtxSetCurrent, void *);
 PER_CUDA_FUNCTION(context_get_current, cuCtxGetCurrent, void **);
 
+// Stream management
+PER_CUDA_FUNCTION(stream_create, cuStreamCreate, void **, uint32);
+
 // Memory management
 PER_CUDA_FUNCTION(memcpy_host_to_device, cuMemcpyHtoD_v2, void *, void *, std::size_t);
 PER_CUDA_FUNCTION(memcpy_device_to_host, cuMemcpyDtoH_v2, void *, void *, std::size_t);
@@ -35,7 +38,7 @@ PER_CUDA_FUNCTION(launch_kernel, cuLaunchKernel, void *, uint32, uint32, uint32,
                   uint32, uint32, uint32, uint32, void *, void **, void **);
 
 // Stream management
-PER_CUDA_FUNCTION(stream_synchronize, cuStreamSynchronize, uint32);
+PER_CUDA_FUNCTION(stream_synchronize, cuStreamSynchronize, void *);
 
 // Event management
 PER_CUDA_FUNCTION(event_create, cuEventCreate, void **, uint32)

@@ -1,4 +1,6 @@
 #include "taichi/ir/ir.h"
+#include "taichi/ir/transforms.h"
+#include "taichi/ir/visitors.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -22,8 +24,7 @@ class StatementReplace : public IRVisitor {
       auto block = stmt->parent;
       auto new_stmt = generator();
       irpass::replace_all_usages_with(node, stmt, new_stmt.get());
-      block->replace_with(stmt, std::move(new_stmt));
-      throw IRModified();
+      block->replace_with(stmt, std::move(new_stmt), false);
     }
   }
 
@@ -62,14 +63,7 @@ class StatementReplace : public IRVisitor {
   }
 
   void run() {
-    while (true) {
-      try {
-        node->accept(this);
-      } catch (IRModified) {
-        continue;
-      }
-      break;
-    }
+    node->accept(this);
   }
 };
 

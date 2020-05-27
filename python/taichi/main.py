@@ -2,9 +2,14 @@ import sys
 import os
 import shutil
 import time
+import math
 import random
 import argparse
+from collections import defaultdict
+from colorama import Fore, Back, Style
 from taichi.tools.video import make_video, interpolate_frames, mp4_to_gif, scale_video, crop_video, accelerate_video
+from pathlib import Path
+import runpy
 
 
 def test_python(args):
@@ -69,13 +74,159 @@ def test_cpp(args):
     return int(task.run(*test_files))
 
 
+def get_examples_dir() -> Path:
+    """Get the path to the examples directory."""
+    import taichi as ti
+
+    root_dir = ti.package_root() if ti.is_release() else ti.get_repo_directory(
+    )
+    examples_dir = Path(root_dir) / 'examples'
+    return examples_dir
+
+
+def get_available_examples() -> set:
+    """Get a set of all available example names."""
+    examples_dir = get_examples_dir()
+    all_examples = examples_dir.rglob('*.py')
+    all_example_names = {
+        str(f.resolve()).split('/')[-1].split('.')[0]
+        for f in all_examples
+    }
+    return all_example_names
+
+
+def run_example(name: str):
+    """Run an example based on the example NAME."""
+    all_example_names = get_available_examples()
+    if name not in all_example_names:
+        sys.exit(
+            f"Sorry, {name} is not an available example name!\nAvailable example names are: {sorted(all_example_names)}"
+        )
+    examples_dir = get_examples_dir()
+    target = str((examples_dir / f"{name}.py").resolve())
+    # we need to modify path for examples that use
+    # implicit relative imports
+    sys.path.append(str(examples_dir.resolve()))
+    print(f"Running example {name} ...")
+    runpy.run_path(target, run_name='__main__')
+
+
+def get_benchmark_baseline_dir():
+    import taichi as ti
+    return os.path.join(ti.core.get_repo_dir(), 'benchmarks', 'baseline')
+
+
+def get_benchmark_output_dir():
+    import taichi as ti
+    return os.path.join(ti.core.get_repo_dir(), 'benchmarks', 'output')
+
+
+def display_benchmark_regression(xd, yd, args):
+    def parse_dat(file):
+        dict = {}
+        for line in open(file).readlines():
+            try:
+                a, b = line.strip().split(':')
+            except:
+                continue
+            b = float(b)
+            if abs(b % 1.0) < 1e-5:  # codegen_*
+                b = int(b)
+            dict[a.strip()] = b
+        return dict
+
+    def parse_name(file):
+        if file[0:5] == 'test_':
+            return file[5:-4].replace('__test_', '::', 1)
+        elif file[0:10] == 'benchmark_':
+            return '::'.join(reversed(file[10:-4].split('__arch_')))
+        else:
+            raise Exception(f'bad benchmark file name {file}')
+
+    def get_dats(dir):
+        list = []
+        for x in os.listdir(dir):
+            if x.endswith('.dat'):
+                list.append(x)
+        dict = {}
+        for x in list:
+            name = parse_name(x)
+            path = os.path.join(dir, x)
+            dict[name] = parse_dat(path)
+        return dict
+
+    def plot_in_gui(scatter):
+        import numpy as np
+        import taichi as ti
+        gui = ti.GUI('Regression Test', (640, 480), 0x001122)
+        print('[Hint] press SPACE to go for next display')
+        for key, data in scatter.items():
+            data = np.array([((i + 0.5) / len(data), x / 2)
+                             for i, x in enumerate(data)])
+            while not gui.get_event((ti.GUI.PRESS, ti.GUI.SPACE)):
+                gui.core.title = key
+                gui.line((0, 0.5), (1, 0.5), 1.8, 0x66ccff)
+                gui.circles(data, 0xffcc66, 1.5)
+                gui.show()
+
+    spec = args.files
+    single_line = spec and len(spec) == 1
+    xs, ys = get_dats(xd), get_dats(yd)
+    scatter = defaultdict(list)
+    for name in reversed(sorted(set(xs.keys()).union(ys.keys()))):
+        file, func = name.split('::')
+        u, v = xs.get(name, {}), ys.get(name, {})
+        ret = ''
+        for key in set(u.keys()).union(v.keys()):
+            if spec and key not in spec:
+                continue
+            a, b = u.get(key, 0), v.get(key, 0)
+            if a == 0:
+                if b == 0:
+                    res = 1.0
+                else:
+                    res = math.inf
+            else:
+                res = b / a
+            scatter[key].append(res)
+            if res == 1: continue
+            if not single_line:
+                ret += f'{key:<30}'
+            res -= 1
+            color = Fore.RESET
+            if res > 0: color = Fore.RED
+            elif res < 0: color = Fore.GREEN
+            if isinstance(a, float):
+                a = f'{a:>7.2}'
+            else:
+                a = f'{a:>7}'
+            if isinstance(b, float):
+                b = f'{b:>7.2}'
+            else:
+                b = f'{b:>7}'
+            ret += f'{Fore.MAGENTA}{a}{Fore.RESET} -> '
+            ret += f'{Fore.CYAN}{b} {color}{res:>+9.1%}{Fore.RESET}\n'
+        if ret != '':
+            print(f'{file + "::" + func:_<58}', end='')
+            if not single_line:
+                print('')
+            print(ret, end='')
+            if not single_line:
+                print('')
+
+    if args.gui:
+        plot_in_gui(scatter)
+
+
 def make_argument_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument('-v',
                         '--verbose',
                         action='store_true',
                         help='Run with verbose outputs')
-    parser.add_argument('-r', '--rerun', help='Rerun failed tests once again')
+    parser.add_argument('-r',
+                        '--rerun',
+                        help='Rerun failed tests for given times')
     parser.add_argument('-t',
                         '--threads',
                         help='Number of threads for parallel testing')
@@ -83,6 +234,14 @@ def make_argument_parser():
                         '--cpp',
                         action='store_true',
                         help='Run C++ tests')
+    parser.add_argument('-g',
+                        '--gui',
+                        action='store_true',
+                        help='Display benchmark regression result in GUI')
+    parser.add_argument('-T',
+                        '--tprt',
+                        action='store_true',
+                        help='Benchmark for time performance')
     parser.add_argument(
         '-a',
         '--arch',
@@ -133,8 +292,10 @@ def main(debug=False):
     if mode == 'help':
         print(
             "    Usage: ti run [task name]        |-> Run a specific task\n"
-            "           ti benchmark              |-> Run performance benchmark\n"
             "           ti test                   |-> Run all the tests\n"
+            "           ti benchmark              |-> Run python tests in benchmark mode\n"
+            "           ti baseline               |-> Archive current benchmark result as baseline\n"
+            "           ti regression             |-> Display benchmark regression test result\n"
             "           ti format                 |-> Reformat modified source files\n"
             "           ti format_all             |-> Reformat all source files\n"
             "           ti build                  |-> Build C++ files\n"
@@ -145,7 +306,9 @@ def main(debug=False):
             "           ti gif                    |-> Convert mp4 file to gif\n"
             "           ti doc                    |-> Build documentation\n"
             "           ti release                |-> Make source code release\n"
-            "           ti debug [script.py]      |-> Debug script\n")
+            "           ti debug [script.py]      |-> Debug script\n"
+            "           ti example [name]         |-> Run an example by name\n"
+        )
         return 0
 
     t = time.time()
@@ -182,6 +345,36 @@ def main(debug=False):
             if ret != 0:
                 return ret
             return test_cpp(args)
+    elif mode == "benchmark":
+        import shutil
+        commit_hash = ti.core.get_commit_hash()
+        with os.popen('git rev-parse HEAD') as f:
+            current_commit_hash = f.read().strip()
+        assert commit_hash == current_commit_hash, f"Built commit {commit_hash:.6} differs from current commit {current_commit_hash:.6}, refuse to benchmark"
+        os.environ['TI_PRINT_BENCHMARK_STAT'] = '1'
+        output_dir = get_benchmark_output_dir()
+        shutil.rmtree(output_dir, True)
+        os.mkdir(output_dir)
+        os.environ['TI_BENCHMARK_OUTPUT_DIR'] = output_dir
+        if os.environ.get('TI_WANTED_ARCHS') is None and not args.tprt:
+            # since we only do number-of-statements benchmark for SPRT
+            os.environ['TI_WANTED_ARCHS'] = 'x64'
+        if args.tprt:
+            os.system('python benchmarks/run.py')
+            # TODO: benchmark_python(args)
+        else:
+            test_python(args)
+    elif mode == "baseline":
+        import shutil
+        baseline_dir = get_benchmark_baseline_dir()
+        output_dir = get_benchmark_output_dir()
+        shutil.rmtree(baseline_dir, True)
+        shutil.copytree(output_dir, baseline_dir)
+        print('[benchmark] baseline data saved')
+    elif mode == "regression":
+        baseline_dir = get_benchmark_baseline_dir()
+        output_dir = get_benchmark_output_dir()
+        display_benchmark_regression(baseline_dir, output_dir, args)
     elif mode == "build":
         ti.core.build()
     elif mode == "format":
@@ -259,6 +452,7 @@ def main(debug=False):
         framerate = 24
         mp4_to_gif(input_fn, output_fn, framerate)
     elif mode == "convert":
+        import shutil
         # http://www.commandlinefu.com/commands/view/3584/remove-color-codes-special-characters-with-sed
         # TODO: Windows support
         for fn in sys.argv[2:]:
@@ -290,6 +484,13 @@ def main(debug=False):
         fn = f'taichi-src-v{ver[0]}-{ver[1]}-{ver[2]}-{commit}-{md5}.zip'
         import shutil
         shutil.move('release.zip', fn)
+    elif mode == "example":
+        if len(sys.argv) != 3:
+            sys.exit(
+                f"Invalid arguments! Usage: ti example [name]\nAvailable example names are: {sorted(get_available_examples())}"
+            )
+        example = sys.argv[2]
+        run_example(name=example)
     else:
         name = sys.argv[1]
         print('Running task [{}]...'.format(name))

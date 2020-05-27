@@ -1,7 +1,7 @@
 // Frontend constructs
 #pragma once
 
-#include "taichi/common/util.h"
+#include "taichi/common/core.h"
 #include "taichi/common/dict.h"
 #include "taichi/util/io.h"
 #include "taichi/ir/frontend_ir.h"

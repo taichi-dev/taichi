@@ -1,7 +1,7 @@
 #include "codegen_cpu.h"
 
 #include "taichi/codegen/codegen_llvm.h"
-#include "taichi/common/util.h"
+#include "taichi/common/core.h"
 #include "taichi/util/io.h"
 #include "taichi/lang_util.h"
 #include "taichi/program/program.h"
@@ -32,7 +32,7 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
            tlctx->get_data_type<int>()});
 
       auto loop_var = create_entry_block_alloca(DataType::i32);
-      offloaded_loop_vars_llvm[stmt].push_back(loop_var);
+      loop_vars_llvm[stmt].push_back(loop_var);
       builder->CreateStore(get_arg(1), loop_var);
       stmt->body->accept(this);
 

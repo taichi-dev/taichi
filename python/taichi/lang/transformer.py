@@ -34,7 +34,6 @@ class ASTTransformer(ast.NodeTransformer):
         self.local_scopes = []
         self.excluded_parameters = excluded_paremeters
         self.is_kernel = is_kernel
-        self.is_classfunc = is_classfunc
         self.func = func
         self.arg_features = arg_features
         self.returns = None
@@ -211,7 +210,7 @@ class ASTTransformer(ast.NodeTransformer):
             raise TaichiSyntaxError(
                 "'else' clause for 'while' not supported in Taichi kernels")
 
-        template = ''' 
+        template = '''
 if 1:
   ti.core.begin_frontend_while(ti.Expr(1).ptr)
   __while_cond = 0
@@ -249,7 +248,7 @@ if 1:
             # Do nothing
             return node
 
-        template = ''' 
+        template = '''
 if 1:
   __cond = 0
   ti.core.begin_frontend_if(ti.Expr(__cond).ptr)
@@ -297,7 +296,7 @@ if 1:
         self.generic_visit(node, ['body'])
         if is_grouped:
             assert len(node.iter.args[0].args) == 1
-            template = ''' 
+            template = '''
 if 1:
     __ndrange_arg = 0
     from taichi.lang.exception import TaichiSyntaxError
@@ -326,10 +325,10 @@ if 1:
         self.generic_visit(node, ['body'])
         loop_var = node.target.id
         self.check_loop_var(loop_var)
-        template = ''' 
+        template = '''
 if 1:
     {} = ti.Expr(ti.core.make_id_expr(''))
-    ___begin = ti.Expr(0) 
+    ___begin = ti.Expr(0)
     ___end = ti.Expr(0)
     ___begin = ti.cast(___begin, ti.i32)
     ___end = ti.cast(___end, ti.i32)
@@ -445,7 +444,7 @@ if 1:
             t.body[0].value = node.iter
             t.body = t.body[:cut] + node.body + t.body[cut:]
         else:
-            template = ''' 
+            template = '''
 if 1:
 {}
     ___loop_var = 0
@@ -555,6 +554,10 @@ if 1:
                 node.func = self.parse_expr('ti.ti_int')
             elif func_name == 'float':
                 node.func = self.parse_expr('ti.ti_float')
+            elif func_name == 'any':
+                node.func = self.parse_expr('ti.ti_any')
+            elif func_name == 'all':
+                node.func = self.parse_expr('ti.ti_all')
             else:
                 pass
         return node
@@ -605,6 +608,8 @@ if 1:
                 node.returns = None
 
             for i, arg in enumerate(args.args):
+                # Directly pass in template arguments,
+                # such as class instances ("self"), tensors, SNodes, etc.
                 if isinstance(self.func.arguments[i], ti.template):
                     continue
                 import taichi as ti
@@ -642,8 +647,12 @@ if 1:
             # Transform as func (all parameters passed by value)
             arg_decls = []
             for i, arg in enumerate(args.args):
-                if i == 0 and self.is_classfunc:
+                # Directly pass in template arguments,
+                # such as class instances ("self"), tensors, SNodes, etc.
+                if isinstance(self.func.arguments[i], ti.template):
                     continue
+                # Create a copy for non-template arguments,
+                # so that they are passed by value.
                 arg_init = self.parse_stmt('x = ti.expr_init_func(0)')
                 arg_init.targets[0].id = arg.arg
                 self.create_variable(arg.arg)
@@ -752,8 +761,10 @@ if 1:
             # TODO: check if it's at the end of a kernel, throw TaichiSyntaxError if not
             if node.value is not None:
                 if self.returns is None:
-                    raise TaichiSyntaxError('kernel with return value must be '
-                        'annotated with a return type, e.g. def func() -> ti.f32')
+                    raise TaichiSyntaxError(
+                        'kernel with return value must be '
+                        'annotated with a return type, e.g. def func() -> ti.f32'
+                    )
                 ret_expr = self.parse_expr('ti.cast(ti.Expr(0), 0)')
                 ret_expr.args[0].args[0] = node.value
                 ret_expr.args[1] = self.returns

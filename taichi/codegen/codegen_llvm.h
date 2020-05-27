@@ -65,15 +65,13 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   // Mainly for supporting break stmt
   llvm::BasicBlock *current_while_after_loop;
   llvm::FunctionType *task_function_type;
-  OffloadedStmt *current_offloaded_stmt;
   std::unordered_map<Stmt *, llvm::Value *> llvm_val;
   llvm::Function *func;
   std::unique_ptr<OffloadedTask> current_task;
   std::vector<OffloadedTask> offloaded_tasks;
   BasicBlock *func_body_bb;
 
-  std::unordered_map<OffloadedStmt *, std::vector<llvm::Value *>>
-      offloaded_loop_vars_llvm;
+  std::unordered_map<const Stmt *, std::vector<llvm::Value *>> loop_vars_llvm;
 
   using IRVisitor::visit;
   using LLVMModuleBuilder::call;
@@ -168,8 +166,6 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   void visit(RangeForStmt *for_stmt) override;
 
   void visit(ArgLoadStmt *stmt) override;
-
-  void visit(ArgStoreStmt *stmt) override;
 
   void visit(KernelReturnStmt *stmt) override;
 

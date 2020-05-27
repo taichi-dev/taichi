@@ -3,7 +3,7 @@
 GUI system
 ==========
 
-Taichi has a built-in GUI system to help users display graphic results easier.
+Taichi has a built-in GUI system to help users visualize results.
 
 
 Create a window
@@ -20,11 +20,11 @@ Create a window
     Create a window.
     If ``res`` is scalar, then width will be equal to height.
 
-    This creates a window whose width is 1024, height is 768:
+    The following code creates a window of resolution ``640x360``:
 
     ::
 
-        gui = ti.GUI('Window Title', (1024, 768))
+        gui = ti.GUI('Window Title', (640, 360))
 
 
 .. function:: gui.show(filename = None)
@@ -35,7 +35,8 @@ Create a window
     Show the window on the screen.
 
     .. note::
-        If `filename` is specified, screenshot will be saved to the file specified by the name. For example, this screenshots each frame of the window, and save it in ``.png``'s:
+        If ``filename`` is specified, a screenshot will be saved to the file specified by the name.
+        For example, the following saves frames of the window to ``.png``'s:
 
         ::
 
@@ -45,8 +46,8 @@ Create a window
                 gui.show(f'{frame:06d}.png')
 
 
-Paint a window
---------------
+Paint on a window
+-----------------
 
 
 .. function:: gui.set_image(img)
@@ -54,16 +55,17 @@ Paint a window
     :parameter gui: (GUI) the window object
     :parameter img: (np.array or Tensor) tensor containing the image, see notes below
 
-    Set a image to display on the window.
+    Set an image to display on the window.
 
-    The pixel, ``i`` from bottom to up, ``j`` from left to right, is set to the value of ``img[i, j]``.
+    The image pixels are set from the values of ``img[i, j]``, where ``i`` indicates the horizontal
+    coordinates (from left to right) and ``j`` the vertical coordinates (from bottom to top).
 
 
-    If the window size is ``(x, y)``, then the ``img`` must be one of:
+    If the window size is ``(x, y)``, then ``img`` must be one of:
 
     * ``ti.var(shape=(x, y))``, a grey-scale image
 
-    * ``ti.var(shape=(x, y, 3))``, where `3` is for `(r, g, b)` channels
+    * ``ti.var(shape=(x, y, 3))``, where `3` is for ``(r, g, b)`` channels
 
     * ``ti.Vector(3, shape=(x, y))`` (see :ref:`vector`)
 
@@ -74,23 +76,28 @@ Paint a window
 
     The data type of ``img`` must be one of:
 
-    * float32, clamped into [0, 1]
+    * ``uint8``, range ``[0, 255]``
 
-    * float64, clamped into [0, 1]
+    * ``uint16``, range ``[0, 65535]``
 
-    * uint8, range [0, 255]
+    * ``uint32``, range ``[0, 4294967295]``
 
-    * uint16, range [0, 65535]
+    * ``float32``, range ``[0, 1]``
 
-    * uint32, range [0, UINT_MAX]
+    * ``float64``, range ``[0, 1]``
+
+    .. note ::
+
+        When using ``float32`` or ``float64`` as the data type,
+        ``img`` entries will be clipped into range ``[0, 1]``.
 
 
 .. function:: gui.circle(pos, color = 0xFFFFFF, radius = 1)
 
     :parameter gui: (GUI) the window object
-    :parameter pos: (tuple of 2) the position of circle
-    :parameter color: (optional, RGB hex) color to fill the circle
-    :parameter radius: (optional, scalar) the radius of circle
+    :parameter pos: (tuple of 2) the position of the circle
+    :parameter color: (optional, RGB hex) the color to fill the circle
+    :parameter radius: (optional, scalar) the radius of the circle
 
     Draw a solid circle.
 
@@ -98,15 +105,16 @@ Paint a window
 .. function:: gui.circles(pos, color = 0xFFFFFF, radius = 1)
 
     :parameter gui: (GUI) the window object
-    :parameter pos: (np.array) the position of circles
-    :parameter color: (optional, RGB hex or np.array of uint32) color(s) to fill circles
-    :parameter radius: (optional, scalar) the radius of circle
+    :parameter pos: (np.array) the positions of the circles
+    :parameter color: (optional, RGB hex or np.array of uint32) the color(s) to fill the circles
+    :parameter radius: (optional, scalar or np.array of float32) the radius (radii) of the circles
 
     Draw solid circles.
 
 .. note::
 
-    If ``color`` is a numpy array, circle at ``pos[i]`` will be colored with ``color[i]``, therefore it must have the same size with ``pos``.
+    If ``color`` is a numpy array, the circle at ``pos[i]`` will be colored with ``color[i]``.
+    In this case, ``color`` must have the same size as ``pos``.
 
 
 .. function:: gui.line(begin, end, color = 0xFFFFFF, radius = 1)
@@ -170,7 +178,7 @@ Every event have a key and type.
 
 A *event filter* is a list combined of *key*, *type* and *(type, key)* tuple, e.g.:
 
-.. code-block::
+.. code-block:: python
 
     # if ESC pressed or released:
     gui.get_event(ti.GUI.ESCAPE)

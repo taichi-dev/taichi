@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "taichi/common/util.h"
+#include "taichi/common/core.h"
 #include <string>
 #include <vector>
 #include <cstdio>

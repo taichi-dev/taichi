@@ -1,6 +1,9 @@
-#include <typeinfo>
 #include "taichi/ir/ir.h"
+#include "taichi/ir/transforms.h"
+#include "taichi/ir/analysis.h"
+#include "taichi/ir/visitors.h"
 #include "taichi/ir/frontend.h"
+#include <typeinfo>
 
 TLANG_NAMESPACE_BEGIN
 
@@ -205,6 +208,10 @@ class MakeAdjoint : public IRVisitor {
   }
 
   void visit(ArgLoadStmt *stmt) override {
+    // do nothing.
+  }
+
+  void visit(LoopIndexStmt *stmt) override {
     // do nothing.
   }
 

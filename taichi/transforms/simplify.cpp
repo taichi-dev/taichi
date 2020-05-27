@@ -1,7 +1,10 @@
+#include "taichi/ir/ir.h"
+#include "taichi/ir/transforms.h"
+#include "taichi/ir/analysis.h"
+#include "taichi/ir/visitors.h"
 #include <set>
 #include <unordered_set>
 #include <utility>
-#include "taichi/ir/ir.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -169,7 +172,8 @@ class BasicBlockSimplify : public IRVisitor {
     }
 
     // weaken indexing
-    if (current_struct_for && stmt->width() == 1) {
+    // TODO: StructForStmt::loop_vars is deprecated
+    /*if (current_struct_for && stmt->width() == 1) {
       auto &loop_vars = current_struct_for->loop_vars;
       for (int k = 0; k < (int)loop_vars.size(); k++) {
         auto diff = irpass::analysis::value_diff(
@@ -190,7 +194,7 @@ class BasicBlockSimplify : public IRVisitor {
           throw IRModified();
         }
       }
-    }
+    }*/
 
     // find dup
     for (int i = 0; i < current_stmt_id; i++) {
@@ -674,15 +678,15 @@ class BasicBlockSimplify : public IRVisitor {
       return;
     // step 1: try weakening when a struct for is used
     if (current_struct_for && !stmt->simplified) {
-      auto &loop_vars = current_struct_for->loop_vars;
-      for (int k = 0; k < (int)loop_vars.size(); k++) {
-        auto diff = irpass::analysis::value_diff(
-            stmt->input, 0, current_struct_for->loop_vars[k]);
+      const int num_loop_vars = current_struct_for->snode->num_active_indices;
+      for (int k = 0; k < num_loop_vars; k++) {
+        auto diff = irpass::analysis::value_diff_loop_index(
+            stmt->input, current_struct_for, k);
         if (diff.linear_related() && diff.certain()) {
           // case 1: last loop var, vectorized, has assumption on vec size
-          if (k == (int)current_struct_for->loop_vars.size() - 1) {
+          if (k == num_loop_vars - 1) {
             auto load = stmt->insert_before_me(
-                Stmt::make<LocalLoadStmt>(LocalAddress(loop_vars[k], 0)));
+                Stmt::make<LoopIndexStmt>(current_struct_for, k));
             load->ret_type.data_type = DataType::i32;
             stmt->input = load;
             int64 bound = 1LL << stmt->bit_end;
@@ -707,7 +711,7 @@ class BasicBlockSimplify : public IRVisitor {
           } else {
             // insert constant
             auto load = stmt->insert_before_me(
-                Stmt::make<LocalLoadStmt>(LocalAddress(loop_vars[k], 0)));
+                Stmt::make<LoopIndexStmt>(current_struct_for, k));
             load->ret_type.data_type = DataType::i32;
             auto constant = stmt->insert_before_me(
                 Stmt::make<ConstStmt>(TypedConstant(diff.low)));
@@ -803,7 +807,7 @@ class BasicBlockSimplify : public IRVisitor {
     stmt->insert_before_me(std::move(sum));
     stmt->parent->erase(stmt);
     // get types of adds and muls
-    irpass::typecheck(stmt->parent, kernel);
+    irpass::typecheck(stmt->parent);
     throw IRModified();
   }
 
@@ -1156,10 +1160,10 @@ void simplify(IRNode *root, Kernel *kernel) {
   }
 }
 
-void full_simplify(IRNode *root, const CompileConfig &config, Kernel *kernel) {
+void full_simplify(IRNode *root, Kernel *kernel) {
   constant_fold(root);
   if (advanced_optimization) {
-    alg_simp(root, config);
+    alg_simp(root);
     die(root);
     whole_kernel_cse(root);
   }

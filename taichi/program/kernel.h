@@ -10,8 +10,7 @@ class Program;
 
 class Kernel {
  public:
-  std::unique_ptr<IRNode> ir_holder;
-  IRNode *ir;
+  std::unique_ptr<IRNode> ir;
   Program &program;
   FunctionType compiled;
   std::string name;
@@ -23,16 +22,11 @@ class Kernel {
     DataType dt;
     bool is_nparray;
     std::size_t size;
-    bool is_return_value;
 
     Arg(DataType dt = DataType::unknown,
         bool is_nparray = false,
-        std::size_t size = 0,
-        bool is_return_value = 0)
-        : dt(dt),
-          is_nparray(is_nparray),
-          size(size),
-          is_return_value(is_return_value) {
+        std::size_t size = 0)
+        : dt(dt), is_nparray(is_nparray), size(size) {
     }
   };
 
@@ -46,6 +40,7 @@ class Kernel {
   std::vector<Arg> args;
   std::vector<Ret> rets;
   bool is_accessor;
+  bool is_evaluator;
   bool grad;
 
   Kernel(Program &program,
@@ -76,8 +71,6 @@ class Kernel {
   int64 get_ret_int(int i);
 
   void set_extra_arg_int(int i, int j, int32 d);
-
-  void mark_arg_return_value(int i, bool is_return = true);
 
   void set_arg_nparray(int i, uint64 ptr, uint64 size);
 

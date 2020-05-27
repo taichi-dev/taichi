@@ -5,7 +5,7 @@
 
 #include "taichi/lang_util.h"
 #include "taichi/ir/ir.h"
-#include "taichi/ir/expr.h"
+#include "taichi/ir/expression.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -19,25 +19,7 @@ class FrontendAllocaStmt : public Stmt {
     ret_type = VectorType(1, type);
   }
 
-  DEFINE_ACCEPT
-};
-
-// For return values
-class FrontendArgStoreStmt : public Stmt {
- public:
-  int arg_id;
-  Expr expr;
-
-  FrontendArgStoreStmt(int arg_id, const Expr &expr)
-      : arg_id(arg_id), expr(expr) {
-  }
-
-  // Arguments are considered global (nonlocal)
-  virtual bool has_global_side_effect() const override {
-    return true;
-  }
-
-  DEFINE_ACCEPT
+  TI_DEFINE_ACCEPT
 };
 
 class FrontendSNodeOpStmt : public Stmt {
@@ -52,7 +34,7 @@ class FrontendSNodeOpStmt : public Stmt {
                       const ExprGroup &indices,
                       const Expr &val = Expr(nullptr));
 
-  DEFINE_ACCEPT
+  TI_DEFINE_ACCEPT
 };
 
 class FrontendAssertStmt : public Stmt {
@@ -64,7 +46,7 @@ class FrontendAssertStmt : public Stmt {
       : text(text), val(val) {
   }
 
-  DEFINE_ACCEPT
+  TI_DEFINE_ACCEPT
 };
 
 class FrontendAssignStmt : public Stmt {
@@ -73,7 +55,7 @@ class FrontendAssignStmt : public Stmt {
 
   FrontendAssignStmt(const Expr &lhs, const Expr &rhs);
 
-  DEFINE_ACCEPT
+  TI_DEFINE_ACCEPT
 };
 
 class FrontendIfStmt : public Stmt {
@@ -88,19 +70,24 @@ class FrontendIfStmt : public Stmt {
     return true;
   }
 
-  DEFINE_ACCEPT
+  TI_DEFINE_ACCEPT
 };
 
 class FrontendPrintStmt : public Stmt {
  public:
-  Expr expr;
-  std::string str;
+  using EntryType = std::variant<Expr, std::string>;
+  std::vector<EntryType> contents;
 
-  FrontendPrintStmt(const Expr &expr, const std::string &str)
-      : expr(load_if_ptr(expr)), str(str) {
+  FrontendPrintStmt(const std::vector<EntryType> &contents_) {
+    for (const auto &c : contents_) {
+      if (std::holds_alternative<Expr>(c))
+        contents.push_back(load_if_ptr(std::get<Expr>(c)));
+      else
+        contents.push_back(c);
+    }
   }
 
-  DEFINE_ACCEPT
+  TI_DEFINE_ACCEPT
 };
 
 class FrontendEvalStmt : public Stmt {
@@ -111,7 +98,7 @@ class FrontendEvalStmt : public Stmt {
   FrontendEvalStmt(const Expr &expr) : expr(load_if_ptr(expr)) {
   }
 
-  DEFINE_ACCEPT
+  TI_DEFINE_ACCEPT
 };
 
 class FrontendForStmt : public Stmt {
@@ -142,7 +129,7 @@ class FrontendForStmt : public Stmt {
     return true;
   }
 
-  DEFINE_ACCEPT
+  TI_DEFINE_ACCEPT
 };
 
 class FrontendFuncDefStmt : public Stmt {
@@ -157,7 +144,7 @@ class FrontendFuncDefStmt : public Stmt {
     return true;
   }
 
-  DEFINE_ACCEPT
+  TI_DEFINE_ACCEPT
 };
 
 class FrontendBreakStmt : public Stmt {
@@ -169,7 +156,7 @@ class FrontendBreakStmt : public Stmt {
     return false;
   }
 
-  DEFINE_ACCEPT
+  TI_DEFINE_ACCEPT
 };
 
 class FrontendContinueStmt : public Stmt {
@@ -180,7 +167,7 @@ class FrontendContinueStmt : public Stmt {
     return false;
   }
 
-  DEFINE_ACCEPT
+  TI_DEFINE_ACCEPT
 };
 
 class FrontendWhileStmt : public Stmt {
@@ -195,7 +182,7 @@ class FrontendWhileStmt : public Stmt {
     return true;
   }
 
-  DEFINE_ACCEPT
+  TI_DEFINE_ACCEPT
 };
 
 class FrontendKernelReturnStmt : public Stmt {
@@ -209,7 +196,7 @@ class FrontendKernelReturnStmt : public Stmt {
     return false;
   }
 
-  DEFINE_ACCEPT
+  TI_DEFINE_ACCEPT
 };
 
 // Expressions
@@ -464,9 +451,16 @@ class IdExpression : public Expression {
   }
 
   void flatten(FlattenContext *ctx) override {
-    ctx->push_back(std::make_unique<LocalLoadStmt>(
-        LocalAddress(ctx->current_block->lookup_var(id), 0)));
-    stmt = ctx->back_stmt();
+    auto var_stmt = ctx->current_block->lookup_var(id);
+    if (var_stmt->is<AllocaStmt>()) {
+      ctx->push_back(
+          std::make_unique<LocalLoadStmt>(LocalAddress(var_stmt, 0)));
+      stmt = ctx->back_stmt();
+    } else {
+      // The loop index may have a coordinate offset.
+      TI_ASSERT(var_stmt->is<LoopIndexStmt>() || var_stmt->is<BinaryOpStmt>());
+      stmt = var_stmt;
+    }
   }
 
   bool is_lvalue() const override {

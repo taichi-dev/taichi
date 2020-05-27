@@ -1,6 +1,7 @@
 // Codegen for the hierarchical data structure
 
 #include "taichi/ir/ir.h"
+#include "taichi/ir/expression.h"
 #include "taichi/program/program.h"
 #include "struct.h"
 
@@ -104,6 +105,10 @@ void StructCompiler::infer_snode_properties(SNode &snode) {
       TI_ERROR("{} node must have at least one child.",
                snode_type_name(snode.type));
     }
+  }
+
+  if (!snode.index_offsets.empty()) {
+    TI_ASSERT(snode.index_offsets.size() == snode.num_active_indices);
   }
 }
 

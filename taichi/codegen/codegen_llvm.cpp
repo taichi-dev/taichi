@@ -272,9 +272,8 @@ CodeGenLLVM::CodeGenLLVM(Kernel *kernel, IRNode *ir)
       ir(ir),
       prog(&kernel->program) {
   if (ir == nullptr)
-    this->ir = kernel->ir;
+    this->ir = kernel->ir.get();
   initialize_context();
-  current_offloaded_stmt = nullptr;
 
   context_ty = get_runtime_type("Context");
   physical_coordinate_ty = get_runtime_type("PhysicalCoordinates");
@@ -619,27 +618,13 @@ llvm::Value *CodeGenLLVM::create_print(std::string tag,
                                        llvm::Value *value) {
   TI_ASSERT(arch_use_host_memory(kernel->arch));
   std::vector<Value *> args;
-  std::string format;
-  if (dt == DataType::i32) {
-    format = "%d";
-  } else if (dt == DataType::i64) {
-#if defined(TI_PLATFORM_UNIX)
-    format = "%lld";
-#else
-    format = "%I64d";
-#endif
-  } else if (dt == DataType::f32) {
-    format = "%f";
-    value = builder->CreateFPExt(value, tlctx->get_data_type(DataType::f64));
-  } else if (dt == DataType::f64) {
-    format = "%.12f";
-  } else {
-    TI_NOT_IMPLEMENTED
-  }
+  std::string format = data_type_format(dt);
   auto runtime_printf = call("LLVMRuntime_get_host_printf", get_runtime());
   args.push_back(builder->CreateGlobalStringPtr(
       ("[llvm codegen debug] " + tag + " = " + format + "\n").c_str(),
       "format_string"));
+  if (dt == DataType::f32)
+    value = builder->CreateFPExt(value, tlctx->get_data_type(DataType::f64));
   args.push_back(value);
   return builder->CreateCall(runtime_printf, args);
 }
@@ -647,30 +632,26 @@ llvm::Value *CodeGenLLVM::create_print(std::string tag,
 void CodeGenLLVM::visit(PrintStmt *stmt) {
   TI_ASSERT(stmt->width() == 1);
   std::vector<Value *> args;
-  std::string format;
-  auto value = llvm_val[stmt->stmt];
-  auto dt = stmt->stmt->ret_type.data_type;
-  if (dt == DataType::i32) {
-    format = "%d";
-  } else if (dt == DataType::i64) {
-#if defined(TI_PLATFORM_UNIX)
-    format = "%lld";
-#else
-    format = "%I64d";
-#endif
-  } else if (dt == DataType::f32) {
-    format = "%f";
-    value = builder->CreateFPExt(value, tlctx->get_data_type(DataType::f64));
-  } else if (dt == DataType::f64) {
-    format = "%.12f";
-  } else {
-    TI_NOT_IMPLEMENTED
+  std::string formats;
+  for (auto const &content : stmt->contents) {
+    if (std::holds_alternative<Stmt *>(content)) {
+      auto arg_stmt = std::get<Stmt *>(content);
+      auto value = llvm_val[arg_stmt];
+      if (arg_stmt->ret_type.data_type == DataType::f32)
+        value =
+            builder->CreateFPExt(value, tlctx->get_data_type(DataType::f64));
+      args.push_back(value);
+      formats += data_type_format(arg_stmt->ret_type.data_type);
+    } else {
+      auto arg_str = std::get<std::string>(content);
+      auto value = builder->CreateGlobalStringPtr(arg_str, "content_string");
+      args.push_back(value);
+      formats += "%s";
+    }
   }
   auto runtime_printf = call("LLVMRuntime_get_host_printf", get_runtime());
-  args.push_back(builder->CreateGlobalStringPtr(
-      ("[debug] " + stmt->str + " = " + format + "\n").c_str(),
-      "format_string"));
-  args.push_back(value);
+  args.insert(args.begin(), builder->CreateGlobalStringPtr(
+                                (formats + "\n").c_str(), "format_string"));
 
   llvm_val[stmt] = builder->CreateCall(runtime_printf, args);
 }
@@ -691,6 +672,7 @@ void CodeGenLLVM::visit(ConstStmt *stmt) {
     llvm_val[stmt] = llvm::ConstantInt::get(
         *llvm_context, llvm::APInt(64, val.val_int64(), true));
   } else {
+    TI_P(data_type_name(val.dt));
     TI_NOT_IMPLEMENTED;
   }
 }
@@ -789,13 +771,16 @@ void CodeGenLLVM::create_naive_range_for(RangeForStmt *for_stmt) {
   BasicBlock *after_loop = BasicBlock::Create(*llvm_context, "after_for", func);
   BasicBlock *loop_test =
       BasicBlock::Create(*llvm_context, "for_loop_test", func);
+
+  auto loop_var = create_entry_block_alloca(DataType::i32);
+  loop_vars_llvm[for_stmt].push_back(loop_var);
+
   if (!for_stmt->reversed) {
-    builder->CreateStore(llvm_val[for_stmt->begin],
-                         llvm_val[for_stmt->loop_var]);
+    builder->CreateStore(llvm_val[for_stmt->begin], loop_var);
   } else {
     builder->CreateStore(
         builder->CreateSub(llvm_val[for_stmt->end], tlctx->get_constant(1)),
-        llvm_val[for_stmt->loop_var]);
+        loop_var);
   }
   builder->CreateBr(loop_test);
 
@@ -804,15 +789,13 @@ void CodeGenLLVM::create_naive_range_for(RangeForStmt *for_stmt) {
     builder->SetInsertPoint(loop_test);
     llvm::Value *cond;
     if (!for_stmt->reversed) {
-      cond =
-          builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_SLT,
-                              builder->CreateLoad(llvm_val[for_stmt->loop_var]),
-                              llvm_val[for_stmt->end]);
+      cond = builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_SLT,
+                                 builder->CreateLoad(loop_var),
+                                 llvm_val[for_stmt->end]);
     } else {
-      cond =
-          builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_SGE,
-                              builder->CreateLoad(llvm_val[for_stmt->loop_var]),
-                              llvm_val[for_stmt->begin]);
+      cond = builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_SGE,
+                                 builder->CreateLoad(loop_var),
+                                 llvm_val[for_stmt->begin]);
     }
     builder->CreateCondBr(cond, body, after_loop);
   }
@@ -832,9 +815,9 @@ void CodeGenLLVM::create_naive_range_for(RangeForStmt *for_stmt) {
     builder->SetInsertPoint(loop_inc);
 
     if (!for_stmt->reversed) {
-      create_increment(llvm_val[for_stmt->loop_var], tlctx->get_constant(1));
+      create_increment(loop_var, tlctx->get_constant(1));
     } else {
-      create_increment(llvm_val[for_stmt->loop_var], tlctx->get_constant(-1));
+      create_increment(loop_var, tlctx->get_constant(-1));
     }
     builder->CreateBr(loop_test);
   }
@@ -861,23 +844,6 @@ void CodeGenLLVM::visit(ArgLoadStmt *stmt) {
     auto truncated = builder->CreateTrunc(
         raw_arg, Type::getIntNTy(*llvm_context, dest_bits));
     llvm_val[stmt] = builder->CreateBitCast(truncated, dest_ty);
-  }
-}
-
-void CodeGenLLVM::visit(ArgStoreStmt *stmt) {
-  if (stmt->is_ptr) {
-    TI_NOT_IMPLEMENTED
-  } else {
-    auto intermediate_bits = tlctx->get_data_type(stmt->val->ret_type.data_type)
-                                 ->getPrimitiveSizeInBits();
-    llvm::Type *intermediate_type =
-        llvm::Type::getIntNTy(*llvm_context, intermediate_bits);
-    llvm::Type *dest_ty = tlctx->get_data_type<int64>();
-    auto extended = builder->CreateZExt(
-        builder->CreateBitCast(llvm_val[stmt->val], intermediate_type),
-        dest_ty);
-    builder->CreateCall(get_runtime_function("LLVMRuntime_store_result"),
-                        {get_runtime(), extended});
   }
 }
 
@@ -1224,7 +1190,6 @@ std::string CodeGenLLVM::init_offloaded_task_function(OffloadedStmt *stmt,
                                                       std::string suffix) {
   current_loop_reentry = nullptr;
   current_while_after_loop = nullptr;
-  current_offloaded_stmt = stmt;
 
   task_function_type =
       llvm::FunctionType::get(llvm::Type::getVoidTy(*llvm_context),
@@ -1424,13 +1389,15 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
 
 void CodeGenLLVM::visit(LoopIndexStmt *stmt) {
   TI_ASSERT(&module->getContext() == tlctx->get_this_thread_context());
-  if (stmt->is_struct_for) {
+  if (stmt->loop->is<OffloadedStmt>() &&
+      stmt->loop->as<OffloadedStmt>()->task_type ==
+          OffloadedStmt::TaskType::struct_for) {
     llvm_val[stmt] = builder->CreateLoad(builder->CreateGEP(
         current_coordinates, {tlctx->get_constant(0), tlctx->get_constant(0),
                               tlctx->get_constant(stmt->index)}));
   } else {
-    llvm_val[stmt] = builder->CreateLoad(
-        offloaded_loop_vars_llvm[current_offloaded_stmt][stmt->index]);
+    llvm_val[stmt] =
+        builder->CreateLoad(loop_vars_llvm[stmt->loop][stmt->index]);
   }
 }
 

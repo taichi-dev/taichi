@@ -1,4 +1,4 @@
-#include "taichi/common/util.h"
+#include "taichi/common/core.h"
 
 #if defined(__GNUC__)
 // Ensure we get the 64-bit variants of the CRT's file I/O calls

@@ -45,6 +45,9 @@ class Func:
         self.func = func
         self.compiled = None
         self.classfunc = classfunc
+        self.arguments = []
+        self.argument_names = []
+        self.extract_arguments()
 
     def __call__(self, *args):
         if self.compiled is None:
@@ -65,7 +68,7 @@ class Func:
             print('Before preprocessing:')
             print(astor.to_source(tree.body[0], indent_with='  '))
 
-        visitor = ASTTransformer(is_kernel=False, is_classfunc=self.classfunc)
+        visitor = ASTTransformer(is_kernel=False, func=self)
         visitor.visit(tree)
         ast.fix_missing_locations(tree)
 
@@ -86,6 +89,36 @@ class Func:
                     filename=inspect.getsourcefile(self.func),
                     mode='exec'), global_vars, local_vars)
         self.compiled = local_vars[self.func.__name__]
+
+    def extract_arguments(self):
+        sig = inspect.signature(self.func)
+        if sig.return_annotation not in (inspect._empty, None):
+            self.return_type = sig.return_annotation
+        params = sig.parameters
+        arg_names = params.keys()
+        for i, arg_name in enumerate(arg_names):
+            param = params[arg_name]
+            if param.kind == inspect.Parameter.VAR_KEYWORD:
+                raise KernelDefError(
+                    'Taichi funcs do not support variable keyword parameters (i.e., **kwargs)'
+                )
+            if param.kind == inspect.Parameter.VAR_POSITIONAL:
+                raise KernelDefError(
+                    'Taichi funcs do not support variable positional parameters (i.e., *args)'
+                )
+            if param.kind == inspect.Parameter.KEYWORD_ONLY:
+                raise KernelDefError(
+                    'Taichi funcs do not support keyword parameters')
+            if param.kind != inspect.Parameter.POSITIONAL_OR_KEYWORD:
+                raise KernelDefError(
+                    'Taichi funcs only support "positional or keyword" parameters'
+                )
+            annotation = param.annotation
+            if param.annotation is inspect.Parameter.empty:
+                if i == 0 and self.classfunc:
+                    annotation = template()
+            self.arguments.append(annotation)
+            self.argument_names.append(param.name)
 
 
 def classfunc(foo):

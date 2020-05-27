@@ -88,7 +88,24 @@ void locked_task(void *lock, const T &func);
 template <typename T>
 T ifloordiv(T a, T b) {
   auto r = a / b;
-  r -= T(a * b < 0 && b * r != a);
+  // simply `a * b < 0` may leads to overflow (#969)
+  //
+  // Formal Anti-Regression Verification (FARV):
+  //
+  // old = a * b < 0
+  // new = (a < 0) != (b < 0) && a
+  //
+  //  a  b old new
+  //  -  -  f = f (f&t)
+  //  -  +  t = t (t&t)
+  //  0  -  f = f (t&f)
+  //  0  +  f = f (f&f)
+  //  +  -  t = t (t&t)
+  //  +  +  f = f (f&t)
+  //
+  // the situation of `b = 0` is ignored since we get FPE anyway.
+  //
+  r -= T((a < 0) != (b < 0) && a && b * r != a);
   return r;
 }
 
@@ -508,8 +525,8 @@ struct LLVMRuntime {
   i32 allocator_lock;
 
   template <typename T>
-  void set_result(T t) {
-    *(u64 *)result_buffer = taichi_union_cast<uint64>(t);
+  void set_result(std::size_t i, T t) {
+    ((u64 *)result_buffer)[i] = taichi_union_cast<uint64>(t);
   }
 
   template <typename T, typename... Args>
@@ -612,7 +629,7 @@ struct NodeManager {
 extern "C" {
 
 void LLVMRuntime_store_result(LLVMRuntime *runtime, u64 ret) {
-  *(u64 *)(runtime->result_buffer) = ret;
+  runtime->set_result(taichi_result_buffer_ret_value_id, ret);
 }
 
 void LLVMRuntime_profiler_start(LLVMRuntime *runtime, Ptr kernel_name) {
@@ -628,11 +645,12 @@ Ptr get_temporary_pointer(LLVMRuntime *runtime, u64 offset) {
 }
 
 void runtime_retrieve_error_code(LLVMRuntime *runtime) {
-  runtime->set_result(runtime->error_code);
+  runtime->set_result(taichi_result_buffer_error_id, runtime->error_code);
 }
 
 void runtime_retrieve_error_message(LLVMRuntime *runtime) {
-  runtime->set_result(runtime->error_message_buffer);
+  runtime->set_result(taichi_result_buffer_error_id,
+                      runtime->error_message_buffer);
 }
 
 #if ARCH_cuda
@@ -732,7 +750,8 @@ Ptr LLVMRuntime::request_allocate_aligned(std::size_t size,
 }
 
 void runtime_get_mem_req_queue(LLVMRuntime *runtime) {
-  runtime->set_result(runtime->mem_req_queue);
+  runtime->set_result(taichi_result_buffer_ret_value_id,
+                      runtime->mem_req_queue);
 }
 
 void runtime_initialize(
@@ -767,7 +786,7 @@ void runtime_initialize(
   runtime->preallocated_tail = preallocated_tail;
 
   runtime->result_buffer = result_buffer;
-  runtime->set_result(runtime);
+  runtime->set_result(taichi_result_buffer_ret_value_id, runtime);
   runtime->vm_allocator = vm_allocator;
   runtime->host_printf = host_printf;
   runtime->host_vsnprintf = host_vsnprintf;

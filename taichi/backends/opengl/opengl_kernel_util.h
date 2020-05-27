@@ -20,12 +20,21 @@ struct UsedFeature {
   bool simulated_atomic_float{false};
   bool int64{false};
   bool global_temp{false};
+  bool fast_pow{false};
+};
+
+using SNodeId = std::string;
+
+struct SNodeInfo {
+  size_t stride;
+  size_t length;
+  std::vector<size_t> children_offsets;
+  size_t elem_stride;
 };
 
 struct StructCompiledResult {
   // Source code of the SNode data structures compiled to GLSL
-  std::unordered_map<std::string, std::vector<size_t>> class_get_map;
-  std::unordered_map<std::string, size_t> class_children_map;
+  std::unordered_map<SNodeId, SNodeInfo> snode_map;
   // Root buffer size in bytes.
   size_t root_size;
 };

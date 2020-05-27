@@ -181,7 +181,8 @@ class PyTaichi:
         taichi_lang_core.layout(layout)
         self.materialized = True
         for var in self.global_vars:
-            assert var.ptr.snode() is not None, 'Some variable(s) not placed'
+            assert var.ptr.snode(
+            ) is not None, 'Some variable(s) are not placed'
 
     def clear(self):
         if self.prog:
@@ -298,10 +299,45 @@ def layout(func):
     pytaichi.layout_functions.append(func)
 
 
-def ti_print(var):
-    code = inspect.getframeinfo(inspect.currentframe().f_back).code_context[0]
-    arg_name = code[code.index('(') + 1:code.rindex(')')]
-    taichi_lang_core.print_(Expr(var).ptr, arg_name)
+def ti_print(*vars):
+    def entry2content(var):
+        if isinstance(var, str):
+            return var
+        else:
+            return Expr(var).ptr
+
+    def vars2entries(vars):
+        for var in vars:
+            if hasattr(var, '__ti_repr__'):
+                repr = var.__ti_repr__()
+                for v in vars2entries(repr):
+                    yield v
+            else:
+                yield var
+
+    def add_separators(vars):
+        for i, var in enumerate(vars):
+            if i: yield ' '
+            yield var
+
+    def fused_string(entries):
+        accumated = ''
+        for entry in entries:
+            if isinstance(entry, str):
+                accumated += entry
+            else:
+                if accumated:
+                    yield accumated
+                    accumated = ''
+                yield entry
+        if accumated:
+            yield accumated
+
+    vars = add_separators(vars)
+    entries = vars2entries(vars)
+    entries = fused_string(entries)
+    contentries = [entry2content(entry) for entry in entries]
+    taichi_lang_core.create_print(contentries)
 
 
 def ti_int(var):

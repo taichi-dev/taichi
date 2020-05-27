@@ -46,6 +46,8 @@ modules.txt
 /external/lib
 __pycache__
 /outputs
+/benchmarks/output
+/benchmarks/baseline
 *.ppm
 *.png
 *.jpg

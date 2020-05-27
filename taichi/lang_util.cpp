@@ -87,6 +87,24 @@ std::string data_type_name(DataType t) {
   return type_names[t];
 }
 
+std::string data_type_format(DataType dt) {
+  if (dt == DataType::i32) {
+    return "%d";
+  } else if (dt == DataType::i64) {
+#if defined(TI_PLATFORM_UNIX)
+    return "%lld";
+#else
+    return "%I64d";
+#endif
+  } else if (dt == DataType::f32) {
+    return "%f";
+  } else if (dt == DataType::f64) {
+    return "%.12f";
+  } else {
+    TI_NOT_IMPLEMENTED
+  }
+}
+
 int data_type_size(DataType t) {
   static std::map<DataType, int> type_sizes;
   if (type_sizes.empty()) {
@@ -270,6 +288,172 @@ DataType promoted_type(DataType a, DataType b) {
   }
   return mapping[std::make_pair(a, b)];
 }
+
+std::string TypedConstant::stringify() const {
+  if (dt == DataType::f32) {
+    return fmt::format("{}", val_f32);
+  } else if (dt == DataType::i32) {
+    return fmt::format("{}", val_i32);
+  } else if (dt == DataType::i64) {
+    return fmt::format("{}", val_i64);
+  } else if (dt == DataType::f64) {
+    return fmt::format("{}", val_f64);
+  } else if (dt == DataType::i8) {
+    return fmt::format("{}", val_i8);
+  } else if (dt == DataType::i16) {
+    return fmt::format("{}", val_i16);
+  } else if (dt == DataType::u8) {
+    return fmt::format("{}", val_u8);
+  } else if (dt == DataType::u16) {
+    return fmt::format("{}", val_u16);
+  } else if (dt == DataType::u32) {
+    return fmt::format("{}", val_u32);
+  } else if (dt == DataType::u64) {
+    return fmt::format("{}", val_u64);
+  } else {
+    TI_P(data_type_name(dt));
+    TI_NOT_IMPLEMENTED
+    return "";
+  }
+}
+
+bool TypedConstant::equal_type_and_value(const TypedConstant &o) const {
+  if (dt != o.dt)
+    return false;
+  if (dt == DataType::f32) {
+    return val_f32 == o.val_f32;
+  } else if (dt == DataType::i32) {
+    return val_i32 == o.val_i32;
+  } else if (dt == DataType::i64) {
+    return val_i64 == o.val_i64;
+  } else if (dt == DataType::f64) {
+    return val_f64 == o.val_f64;
+  } else if (dt == DataType::i8) {
+    return val_i8 == o.val_i8;
+  } else if (dt == DataType::i16) {
+    return val_i16 == o.val_i16;
+  } else if (dt == DataType::u8) {
+    return val_u8 == o.val_u8;
+  } else if (dt == DataType::u16) {
+    return val_u16 == o.val_u16;
+  } else if (dt == DataType::u32) {
+    return val_u32 == o.val_u32;
+  } else if (dt == DataType::u64) {
+    return val_u64 == o.val_u64;
+  } else {
+    TI_NOT_IMPLEMENTED
+    return false;
+  }
+}
+
+int32 &TypedConstant::val_int32() {
+  TI_ASSERT(get_data_type<int32>() == dt);
+  return val_i32;
+}
+
+float32 &TypedConstant::val_float32() {
+  TI_ASSERT(get_data_type<float32>() == dt);
+  return val_f32;
+}
+
+int64 &TypedConstant::val_int64() {
+  TI_ASSERT(get_data_type<int64>() == dt);
+  return val_i64;
+}
+
+float64 &TypedConstant::val_float64() {
+  TI_ASSERT(get_data_type<float64>() == dt);
+  return val_f64;
+}
+
+int8 &TypedConstant::val_int8() {
+  TI_ASSERT(get_data_type<int8>() == dt);
+  return val_i8;
+}
+
+int16 &TypedConstant::val_int16() {
+  TI_ASSERT(get_data_type<int16>() == dt);
+  return val_i16;
+}
+
+uint8 &TypedConstant::val_uint8() {
+  TI_ASSERT(get_data_type<uint8>() == dt);
+  return val_u8;
+}
+
+uint16 &TypedConstant::val_uint16() {
+  TI_ASSERT(get_data_type<uint16>() == dt);
+  return val_u16;
+}
+
+uint32 &TypedConstant::val_uint32() {
+  TI_ASSERT(get_data_type<uint32>() == dt);
+  return val_u32;
+}
+
+uint64 &TypedConstant::val_uint64() {
+  TI_ASSERT(get_data_type<uint64>() == dt);
+  return val_u64;
+}
+
+int64 TypedConstant::val_int() const {
+  TI_ASSERT(is_signed(dt));
+  if (dt == DataType::i32) {
+    return val_i32;
+  } else if (dt == DataType::i64) {
+    return val_i64;
+  } else if (dt == DataType::i8) {
+    return val_i8;
+  } else if (dt == DataType::i16) {
+    return val_i16;
+  } else {
+    TI_NOT_IMPLEMENTED
+  }
+}
+
+uint64 TypedConstant::val_uint() const {
+  TI_ASSERT(is_unsigned(dt));
+  if (dt == DataType::u32) {
+    return val_u32;
+  } else if (dt == DataType::u64) {
+    return val_u64;
+  } else if (dt == DataType::u8) {
+    return val_u8;
+  } else if (dt == DataType::u16) {
+    return val_u16;
+  } else {
+    TI_NOT_IMPLEMENTED
+  }
+}
+
+float64 TypedConstant::val_float() const {
+  TI_ASSERT(is_real(dt));
+  if (dt == DataType::f32) {
+    return val_f32;
+  } else if (dt == DataType::f64) {
+    return val_f64;
+  } else {
+    TI_NOT_IMPLEMENTED
+  }
+}
+
+TypedConstant TypedConstant::operator-() const {
+  TI_ASSERT(is_signed(dt));
+  TypedConstant result(dt);
+  if (dt == DataType::i32) {
+    result.val_i32 = -val_i32;
+  } else if (dt == DataType::i64) {
+    result.val_i64 = -val_i64;
+  } else if (dt == DataType::i8) {
+    result.val_i8 = -val_i8;
+  } else if (dt == DataType::i16) {
+    result.val_i16 = -val_i16;
+  } else {
+    TI_NOT_IMPLEMENTED
+  }
+  return result;
+}
+
 }  // namespace lang
 
 void initialize_benchmark() {

@@ -19,7 +19,7 @@ import sys
 # -- Project information -----------------------------------------------------
 
 project = 'taichi'
-copyright = '2016, Taichi Developers'
+copyright = '2020, Taichi Developers'
 author = 'Taichi Developers'
 
 version_fn = os.path.join(os.path.dirname(os.path.abspath(__file__)),

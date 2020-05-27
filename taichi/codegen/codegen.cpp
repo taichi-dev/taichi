@@ -8,20 +8,22 @@
 #include "taichi/backends/cuda/codegen_cuda.h"
 #endif
 #include "taichi/system/timer.h"
-#include "taichi/system/timer.h"
+#include "taichi/ir/analysis.h"
 
 TLANG_NAMESPACE_BEGIN
 
 KernelCodeGen::KernelCodeGen(Kernel *kernel, IRNode *ir)
     : prog(&kernel->program), kernel(kernel), ir(ir) {
   if (ir == nullptr)
-    this->ir = kernel->ir;
+    this->ir = kernel->ir.get();
 
   auto num_stmts = irpass::analysis::count_statements(this->ir);
-  if (!kernel->is_accessor)
-    stat.add("codegen_kernel_statements", num_stmts);
-  else
+  if (kernel->is_evaluator)
+    stat.add("codegen_evaluator_statements", num_stmts);
+  else if (kernel->is_accessor)
     stat.add("codegen_accessor_statements", num_stmts);
+  else
+    stat.add("codegen_kernel_statements", num_stmts);
   stat.add("codegen_statements", num_stmts);
 }
 

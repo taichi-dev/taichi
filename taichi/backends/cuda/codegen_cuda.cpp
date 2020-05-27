@@ -3,7 +3,7 @@
 #include <vector>
 #include <set>
 
-#include "taichi/common/util.h"
+#include "taichi/common/core.h"
 #include "taichi/util/io.h"
 #include "taichi/ir/ir.h"
 #include "taichi/program/program.h"
@@ -76,7 +76,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
         }
       }
       if (has_buffer) {
-        CUDADriver::get_instance().stream_synchronize(0);
+        CUDADriver::get_instance().stream_synchronize(nullptr);
       }
 
       for (auto task : offloaded_local) {
@@ -88,7 +88,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       }
       // copy data back to host
       if (has_buffer) {
-        CUDADriver::get_instance().stream_synchronize(0);
+        CUDADriver::get_instance().stream_synchronize(nullptr);
       }
       for (int i = 0; i < (int)args.size(); i++) {
         if (args[i].is_nparray) {
@@ -107,39 +107,51 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
   void visit(PrintStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
 
-    auto value_type = tlctx->get_data_type(stmt->stmt->ret_type.data_type);
+    std::vector<llvm::Type *> types;
+    std::vector<llvm::Value *> values;
 
-    std::string format;
+    std::string formats;
+    for (auto const &content : stmt->contents) {
+      if (std::holds_alternative<Stmt *>(content)) {
+        auto arg_stmt = std::get<Stmt *>(content);
 
-    auto value = llvm_val[stmt->stmt];
+        formats += data_type_format(arg_stmt->ret_type.data_type);
 
-    if (stmt->stmt->ret_type.data_type == DataType::i32) {
-      format = "%d";
-    } else if (stmt->stmt->ret_type.data_type == DataType::i64) {
-      format = "%lld";
-    } else if (stmt->stmt->ret_type.data_type == DataType::f32) {
-      value_type = llvm::Type::getDoubleTy(*llvm_context);
-      value = builder->CreateFPExt(value, value_type);
-      format = "%f";
-    } else if (stmt->stmt->ret_type.data_type == DataType::f64) {
-      format = "%.12f";
-    } else {
-      TI_NOT_IMPLEMENTED
+        auto value_type = tlctx->get_data_type(arg_stmt->ret_type.data_type);
+        auto value = llvm_val[arg_stmt];
+        if (arg_stmt->ret_type.data_type == DataType::f32) {
+          value_type = tlctx->get_data_type(DataType::f64);
+          value = builder->CreateFPExt(value, value_type);
+        }
+
+        types.push_back(value_type);
+        values.push_back(value);
+      } else {
+        auto arg_str = std::get<std::string>(content);
+
+        auto value = builder->CreateGlobalStringPtr(arg_str, "content_string");
+        auto char_type =
+            llvm::Type::getInt8Ty(*tlctx->get_this_thread_context());
+        auto value_type = llvm::PointerType::get(char_type, 0);
+
+        types.push_back(value_type);
+        values.push_back(value);
+        formats += "%s";
+      }
     }
 
-    std::vector<llvm::Type *> types{value_type};
+    auto format_str = formats + "\n";
     auto stype = llvm::StructType::get(*llvm_context, types, false);
-    auto values = builder->CreateAlloca(stype);
-    auto value_ptr = builder->CreateGEP(
-        values, {tlctx->get_constant(0), tlctx->get_constant(0)});
-    builder->CreateStore(value, value_ptr);
-
-    auto format_str = "[debug] " + stmt->str + " = " + format + "\n";
-
+    auto value_arr = builder->CreateAlloca(stype);
+    for (int i = 0; i < values.size(); i++) {
+      auto value_ptr = builder->CreateGEP(
+          value_arr, {tlctx->get_constant(0), tlctx->get_constant(i)});
+      builder->CreateStore(values[i], value_ptr);
+    }
     llvm_val[stmt] = LLVMModuleBuilder::call(
         builder.get(), "vprintf",
         builder->CreateGlobalStringPtr(format_str, "format_string"),
-        builder->CreateBitCast(values,
+        builder->CreateBitCast(value_arr,
                                llvm::Type::getInt8PtrTy(*llvm_context)));
   }
 
@@ -346,7 +358,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
            tlctx->get_data_type<int>()});
 
       auto loop_var = create_entry_block_alloca(DataType::i32);
-      offloaded_loop_vars_llvm[stmt].push_back(loop_var);
+      loop_vars_llvm[stmt].push_back(loop_var);
       builder->CreateStore(get_arg(1), loop_var);
       stmt->body->accept(this);
 

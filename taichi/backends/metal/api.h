@@ -3,6 +3,7 @@
 // Reference implementation:
 // https://github.com/halide/Halide/blob/master/src/runtime/metal.cpp
 
+#include "taichi/common/trait.h"
 #include "taichi/lang_util.h"
 #include "taichi/platform/mac/objc_api.h"
 
@@ -83,6 +84,23 @@ inline void dispatch_threadgroups(MTLComputeCommandEncoder *encoder,
                                   int32_t blocks_x,
                                   int32_t threads_x) {
   dispatch_threadgroups(encoder, blocks_x, 1, 1, threads_x, 1, 1);
+}
+
+template <typename T>
+void set_label(T *mtl_obj, const std::string &label) {
+  // Set labels on Metal command buffer and encoders, so that they can be
+  // tracked in Instrument - Metal System Trace
+  if constexpr (std::is_same_v<T, MTLComputeCommandEncoder> ||
+                std::is_same_v<T, MTLCommandBuffer>) {
+    auto label_str = mac::wrap_string_as_ns_string(label);
+    mac::call(mtl_obj, "setLabel:", label_str.get());
+  } else {
+    static_assert(always_false_v<T>);
+  }
+}
+
+inline void enqueue_command_buffer(MTLCommandBuffer *cmd_buffer) {
+  mac::call(cmd_buffer, "enqueue");
 }
 
 inline void commit_command_buffer(MTLCommandBuffer *cmd_buffer) {

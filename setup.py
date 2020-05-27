@@ -16,7 +16,7 @@ classifiers = [
 
 data_files = glob.glob('python/lib/*')
 print(data_files)
-packages = setuptools.find_packages()
+packages = setuptools.find_packages() + ['taichi.examples']
 print(packages)
 
 setuptools.setup(
@@ -29,7 +29,7 @@ setuptools.setup(
     url='https://github.com/taichi-dev/taichi',
     install_requires=[
         'numpy',
-        'pybind11',
+        'pybind11>=2.5.0',
         'colorama',
         'setuptools',
         'astor',

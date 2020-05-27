@@ -4,7 +4,6 @@
 TLANG_NAMESPACE_BEGIN
 
 BasicStmtVisitor::BasicStmtVisitor() {
-  current_struct_for = nullptr;
   allow_undefined_visitor = true;
 }
 
@@ -35,9 +34,7 @@ void BasicStmtVisitor::visit(RangeForStmt *for_stmt) {
 
 void BasicStmtVisitor::visit(StructForStmt *for_stmt) {
   preprocess_container_stmt(for_stmt);
-  current_struct_for = for_stmt;
   for_stmt->body->accept(this);
-  current_struct_for = nullptr;
 }
 
 void BasicStmtVisitor::visit(OffloadedStmt *stmt) {

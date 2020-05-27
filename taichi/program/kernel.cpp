@@ -5,8 +5,26 @@
 #include "taichi/program/async_engine.h"
 #include "taichi/codegen/codegen.h"
 #include "taichi/backends/cuda/cuda_driver.h"
+#include "taichi/ir/transforms.h"
 
 TLANG_NAMESPACE_BEGIN
+
+namespace {
+class CurrentKernelGuard {
+  Kernel *old_kernel;
+  Program &program;
+
+ public:
+  CurrentKernelGuard(Program &program_, Kernel *kernel) : program(program_) {
+    old_kernel = program.current_kernel;
+    program.current_kernel = kernel;
+  }
+
+  ~CurrentKernelGuard() {
+    program.current_kernel = old_kernel;
+  }
+};
+}  // namespace
 
 Kernel::Kernel(Program &program,
                std::function<void()> func,
@@ -15,16 +33,18 @@ Kernel::Kernel(Program &program,
     : program(program), lowered(false), grad(grad) {
   program.initialize_device_llvm_context();
   is_accessor = false;
+  is_evaluator = false;
   compiled = nullptr;
   taichi::lang::context = std::make_unique<FrontendContext>();
-  ir_holder = taichi::lang::context->get_root();
-  ir = ir_holder.get();
+  ir = taichi::lang::context->get_root();
 
-  program.current_kernel = this;
-  program.start_function_definition(this);
-  func();
-  program.end_function_definition();
-  program.current_kernel = nullptr;
+  {
+    CurrentKernelGuard _(program, this);
+    program.start_function_definition(this);
+    func();
+    program.end_function_definition();
+    ir->as<Block>()->kernel = this;
+  }
 
   arch = program.config.arch;
 
@@ -39,23 +59,22 @@ Kernel::Kernel(Program &program,
 }
 
 void Kernel::compile() {
-  program.current_kernel = this;
+  CurrentKernelGuard _(program, this);
   compiled = program.compile(*this);
-  program.current_kernel = nullptr;
 }
 
 void Kernel::lower(bool lower_access) {  // TODO: is a "Lowerer" class necessary
                                          // for each backend?
   TI_ASSERT(!lowered);
   if (arch_is_cpu(arch) || arch == Arch::cuda) {
-    program.current_kernel = this;
+    CurrentKernelGuard _(program, this);
     auto codegen = KernelCodeGen::create(arch, this);
     auto config = program.config;
     bool verbose = config.print_ir;
     if (is_accessor && !config.print_accessor_ir)
       verbose = false;
     irpass::compile_to_offloads(
-        ir, config, /*vectorize*/ arch_is_cpu(arch), grad,
+        ir.get(), config, /*vectorize*/ arch_is_cpu(arch), grad,
         /*ad_use_stack*/ true, verbose, /*lower_global_access*/ lower_access);
   } else {
     TI_NOT_IMPLEMENTED
@@ -70,7 +89,7 @@ void Kernel::operator()() {
     }
     compiled(program.get_context());
     program.sync = (program.sync && arch_is_cpu(arch));
-    if (program.config.debug && arch_is_cpu(arch) && !is_accessor) {
+    if (program.config.debug && arch_is_cpu(arch)) {
       program.check_runtime_error();
     }
   } else {
@@ -196,10 +215,6 @@ int64 Kernel::get_ret_int(int i) {
   }
 }
 
-void Kernel::mark_arg_return_value(int i, bool is_return) {
-  args[i].is_return_value = is_return;
-}
-
 void Kernel::set_extra_arg_int(int i, int j, int32 d) {
   program.context.extra_args[i][j] = d;
 }
@@ -217,7 +232,7 @@ void Kernel::set_arch(Arch arch) {
 }
 
 int Kernel::insert_arg(DataType dt, bool is_nparray) {
-  args.push_back(Arg{dt, is_nparray, 0, false});
+  args.push_back(Arg{dt, is_nparray, /*size=*/0});
   return args.size() - 1;
 }
 

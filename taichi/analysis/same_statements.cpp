@@ -1,4 +1,6 @@
 #include "taichi/ir/ir.h"
+#include "taichi/ir/analysis.h"
+#include "taichi/ir/visitors.h"
 #include <unordered_map>
 #include <unordered_set>
 
@@ -84,6 +86,12 @@ class IRNodeComparator : public IRVisitor {
       return;
     }
     for (int i = 0; i < stmt->num_operands(); i++) {
+      if ((stmt->operand(i) == nullptr) != (other->operand(i) == nullptr)) {
+        same = false;
+        return;
+      }
+      if (stmt->operand(i) == nullptr)
+        continue;
       if (get_other_id(stmt->operand(i)->id) != other->operand(i)->id) {
         same = false;
         return;

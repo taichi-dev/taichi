@@ -1,4 +1,6 @@
 #include "taichi/ir/ir.h"
+#include "taichi/ir/analysis.h"
+#include "taichi/ir/visitors.h"
 #include <vector>
 #include <unordered_set>
 
@@ -71,43 +73,27 @@ class IRVerifier : public BasicStmtVisitor {
     TI_ASSERT(stmt->ptr->is<AllocaStmt>());
   }
 
+  void visit(LoopIndexStmt *stmt) override {
+    basic_verify(stmt);
+    TI_ASSERT(stmt->loop);
+    if (stmt->loop->is<OffloadedStmt>()) {
+      TI_ASSERT(stmt->loop->as<OffloadedStmt>()->task_type ==
+                    OffloadedStmt::TaskType::struct_for ||
+                stmt->loop->as<OffloadedStmt>()->task_type ==
+                    OffloadedStmt::TaskType::range_for);
+    } else {
+      TI_ASSERT(stmt->loop->is<StructForStmt>() ||
+                stmt->loop->is<RangeForStmt>());
+    }
+  }
+
   void visit(RangeForStmt *for_stmt) override {
     basic_verify(for_stmt);
-    TI_ASSERT(for_stmt->loop_var->is<AllocaStmt>());
-    TI_ASSERT_INFO(irpass::analysis::gather_statements(
-                       for_stmt->loop_var->parent,
-                       [&](Stmt *s) {
-                         if (auto store = s->cast<LocalStoreStmt>())
-                           return store->ptr == for_stmt->loop_var;
-                         else if (auto atomic = s->cast<AtomicOpStmt>()) {
-                           return atomic->dest == for_stmt->loop_var;
-                         } else {
-                           return false;
-                         }
-                       })
-                       .empty(),
-                   "loop_var of {} modified", for_stmt->id);
     for_stmt->body->accept(this);
   }
 
   void visit(StructForStmt *for_stmt) override {
     basic_verify(for_stmt);
-    for (auto &loop_var : for_stmt->loop_vars) {
-      TI_ASSERT(loop_var->is<AllocaStmt>());
-      TI_ASSERT_INFO(irpass::analysis::gather_statements(
-                         loop_var->parent,
-                         [&](Stmt *s) {
-                           if (auto store = s->cast<LocalStoreStmt>())
-                             return store->ptr == loop_var;
-                           else if (auto atomic = s->cast<AtomicOpStmt>()) {
-                             return atomic->dest == loop_var;
-                           } else {
-                             return false;
-                           }
-                         })
-                         .empty(),
-                     "loop_var of {} modified", for_stmt->id);
-    }
     for_stmt->body->accept(this);
   }
 

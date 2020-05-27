@@ -1,6 +1,9 @@
 // Type checking
 
 #include "taichi/ir/ir.h"
+#include "taichi/ir/transforms.h"
+#include "taichi/ir/analysis.h"
+#include "taichi/ir/visitors.h"
 #include "taichi/program/kernel.h"
 #include "taichi/ir/frontend.h"
 
@@ -14,10 +17,11 @@ class TypeCheck : public IRVisitor {
   CompileConfig config;
 
  public:
-  TypeCheck(Kernel *kernel) : kernel(kernel) {
-    // TODO: remove dependency on get_current_program here
-    if (current_program != nullptr)
-      config = get_current_program().config;
+  TypeCheck(IRNode *root) {
+    kernel = root->get_kernel();
+    if (kernel != nullptr) {
+      config = kernel->program.config;
+    }
     allow_undefined_visitor = true;
   }
 
@@ -313,32 +317,17 @@ class TypeCheck : public IRVisitor {
   void visit(ArgLoadStmt *stmt) {
     Kernel *current_kernel = kernel;
     if (current_kernel == nullptr) {
-      current_kernel = &get_current_program().get_current_kernel();
+      current_kernel = stmt->get_kernel();
     }
     auto &args = current_kernel->args;
     TI_ASSERT(0 <= stmt->arg_id && stmt->arg_id < args.size());
-    TI_ASSERT(!args[stmt->arg_id].is_return_value);
     stmt->ret_type = VectorType(1, args[stmt->arg_id].dt);
-  }
-
-  void visit(ArgStoreStmt *stmt) {
-    Kernel *current_kernel = kernel;
-    if (current_kernel == nullptr) {
-      current_kernel = &get_current_program().get_current_kernel();
-    }
-    auto &args = current_kernel->args;
-    TI_ASSERT(0 <= stmt->arg_id && stmt->arg_id < args.size());
-    auto arg = args[stmt->arg_id];
-    auto arg_type = arg.dt;
-    TI_ASSERT(arg.is_return_value);
-    TI_ASSERT(stmt->val->ret_type.data_type == arg_type);
-    stmt->ret_type = VectorType(1, arg_type);
   }
 
   void visit(KernelReturnStmt *stmt) {
     Kernel *current_kernel = kernel;
     if (current_kernel == nullptr) {
-      current_kernel = &get_current_program().get_current_kernel();
+      current_kernel = stmt->get_kernel();
     }
     auto &rets = current_kernel->rets;
     TI_ASSERT(rets.size() >= 1);
@@ -428,9 +417,9 @@ class TypeCheck : public IRVisitor {
 
 namespace irpass {
 
-void typecheck(IRNode *root, Kernel *kernel) {
+void typecheck(IRNode *root) {
   analysis::check_fields_registered(root);
-  TypeCheck inst(kernel);
+  TypeCheck inst(root);
   root->accept(&inst);
 }
 

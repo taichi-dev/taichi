@@ -1,6 +1,8 @@
 // This pass analyzes compile-time known offsets for two values.
 
 #include "taichi/ir/ir.h"
+#include "taichi/ir/analysis.h"
+#include "taichi/ir/visitors.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -103,6 +105,20 @@ namespace irpass::analysis {
 DiffRange value_diff(Stmt *stmt, int lane, Stmt *alloca) {
   ValueDiff _(stmt, lane, alloca);
   return _.run();
+}
+
+DiffRange value_diff_loop_index(Stmt *stmt, Stmt *loop, int index_id) {
+  TI_ASSERT(loop->is<StructForStmt>() || loop->is<OffloadedStmt>());
+  if (loop->is<OffloadedStmt>()) {
+    TI_ASSERT(loop->as<OffloadedStmt>()->task_type ==
+              OffloadedStmt::TaskType::struct_for);
+  }
+  if (auto loop_index = stmt->cast<LoopIndexStmt>(); loop_index) {
+    if (loop_index->loop == loop && loop_index->index == index_id) {
+      return DiffRange(true, 1, 0);
+    }
+  }
+  return DiffRange();
 }
 
 }  // namespace irpass::analysis

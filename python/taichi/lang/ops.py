@@ -20,10 +20,12 @@ def stack_info():
 def unary(foo):
     import taichi as ti
 
+    imp_foo = lambda x: foo(Expr(x))
+
     @functools.wraps(foo)
     def wrapped(a):
         if ti.is_taichi_class(a):
-            return a.element_wise_unary(foo)
+            return a.element_wise_unary(imp_foo)
         else:
             return foo(Expr(a))
 
@@ -37,30 +39,20 @@ binary_ops = []
 def binary(foo):
     import taichi as ti
 
+    imp_foo = lambda x, y: foo(Expr(x), Expr(y))
+    rev_foo = lambda x, y: foo(Expr(y), Expr(x))
+
     @functools.wraps(foo)
     def wrapped(a, b):
         if ti.is_taichi_class(a):
-            return a.element_wise_binary(foo, b)
+            return a.element_wise_binary(imp_foo, b)
         elif ti.is_taichi_class(b):
-            rev_foo = lambda x, y: foo(y, x)
             return b.element_wise_binary(rev_foo, a)
         else:
-            return foo(Expr(a), Expr(b))
+            return imp_foo(a, b)
 
     binary_ops.append(wrapped)
     return wrapped
-
-
-def logical_and(a, b):
-    return a.logical_and(b)
-
-
-def logical_or(a, b):
-    return a.logical_or(b)
-
-
-def logical_not(a):
-    return a.logical_not()
 
 
 def cast(obj, type):
@@ -78,7 +70,15 @@ def bit_cast(obj, type):
 
 
 def sqr(obj):
+    import warnings
+    warnings.warn('ti.sqr(x) is deprecated. Please use x ** 2 directly.',
+                  DeprecationWarning)
     return obj * obj
+
+
+@unary
+def neg(expr):
+    return Expr(taichi_lang_core.expr_neg(expr.ptr), tb=stack_info())
 
 
 @unary
@@ -118,32 +118,42 @@ def ceil(expr):
 
 @unary
 def inv(expr):
-    return Expr(taichi_lang_core.expr_inv(expr.ptr))
+    return Expr(taichi_lang_core.expr_inv(expr.ptr), tb=stack_info())
 
 
 @unary
 def tan(expr):
-    return Expr(taichi_lang_core.expr_tan(expr.ptr))
+    return Expr(taichi_lang_core.expr_tan(expr.ptr), tb=stack_info())
 
 
 @unary
 def tanh(expr):
-    return Expr(taichi_lang_core.expr_tanh(expr.ptr))
+    return Expr(taichi_lang_core.expr_tanh(expr.ptr), tb=stack_info())
 
 
 @unary
 def exp(expr):
-    return Expr(taichi_lang_core.expr_exp(expr.ptr))
+    return Expr(taichi_lang_core.expr_exp(expr.ptr), tb=stack_info())
 
 
 @unary
 def log(expr):
-    return Expr(taichi_lang_core.expr_log(expr.ptr))
+    return Expr(taichi_lang_core.expr_log(expr.ptr), tb=stack_info())
 
 
 @unary
 def abs(expr):
-    return Expr(taichi_lang_core.expr_abs(expr.ptr))
+    return Expr(taichi_lang_core.expr_abs(expr.ptr), tb=stack_info())
+
+
+@unary
+def bit_not(expr):
+    return Expr(taichi_lang_core.expr_bit_not(expr.ptr), tb=stack_info())
+
+
+@unary
+def logical_not(expr):
+    return Expr(taichi_lang_core.expr_logic_not(expr.ptr), tb=stack_info())
 
 
 def random(dt=None):
@@ -154,28 +164,146 @@ def random(dt=None):
 
 
 @binary
+def add(a, b):
+    return Expr(taichi_lang_core.expr_add(a.ptr, b.ptr), tb=stack_info())
+
+
+@binary
+def sub(a, b):
+    return Expr(taichi_lang_core.expr_sub(a.ptr, b.ptr), tb=stack_info())
+
+
+@binary
+def mul(a, b):
+    return Expr(taichi_lang_core.expr_mul(a.ptr, b.ptr), tb=stack_info())
+
+
+@binary
+def mod(a, b):
+    quotient = Expr(taichi_lang_core.expr_floordiv(a.ptr, b.ptr))
+    multiply = Expr(taichi_lang_core.expr_mul(b.ptr, quotient.ptr))
+    return Expr(taichi_lang_core.expr_sub(a.ptr, multiply.ptr))
+
+
+@binary
+def raw_pow(a, b):
+    return Expr(taichi_lang_core.expr_pow(a.ptr, b.ptr), tb=stack_info())
+
+
+# TODO: move this to a C++ pass (#944)
+def pow(self, power):
+    import taichi as ti
+    if not isinstance(power, int):
+        return raw_pow(self, power)
+    if power == 0:
+        # TODO: remove the hack, use {Expr,Matrix}.dup().fill(1)
+        # also note that this can be solved by #940
+        return self * 0 + Expr(1)
+
+    negative = power < 0
+    # Why not simply use `power = abs(power)`?
+    # Because `abs` is overrided by the `ti.abs` above.
+    if negative:
+        power = -power
+
+    tmp = self
+    ret = None
+    while power:
+        if power & 1:
+            if ret is None:
+                ret = tmp
+            else:
+                ret = ti.expr_init(ret * tmp)
+        tmp = ti.expr_init(tmp * tmp)
+        power >>= 1
+
+    if negative:
+        return 1 / ret
+    else:
+        return ret
+
+
+# NEXT: add matpow(self, power)
+
+
+@binary
+def floordiv(a, b):
+    return Expr(taichi_lang_core.expr_floordiv(a.ptr, b.ptr), tb=stack_info())
+
+
+@binary
+def truediv(a, b):
+    return Expr(taichi_lang_core.expr_truediv(a.ptr, b.ptr), tb=stack_info())
+
+
+@binary
 def max(a, b):
-    return Expr(taichi_lang_core.expr_max(a.ptr, b.ptr))
+    return Expr(taichi_lang_core.expr_max(a.ptr, b.ptr), tb=stack_info())
 
 
 @binary
 def min(a, b):
-    return Expr(taichi_lang_core.expr_min(a.ptr, b.ptr))
+    return Expr(taichi_lang_core.expr_min(a.ptr, b.ptr), tb=stack_info())
 
 
 @binary
 def atan2(a, b):
-    return Expr(taichi_lang_core.expr_atan2(a.ptr, b.ptr))
+    return Expr(taichi_lang_core.expr_atan2(a.ptr, b.ptr), tb=stack_info())
 
 
 @binary
 def raw_div(a, b):
-    return Expr(taichi_lang_core.expr_div(a.ptr, b.ptr))
+    return Expr(taichi_lang_core.expr_div(a.ptr, b.ptr), tb=stack_info())
 
 
 @binary
 def raw_mod(a, b):
-    return Expr(taichi_lang_core.expr_mod(a.ptr, b.ptr))
+    return Expr(taichi_lang_core.expr_mod(a.ptr, b.ptr), tb=stack_info())
+
+
+@binary
+def cmp_lt(a, b):
+    return Expr(taichi_lang_core.expr_cmp_lt(a.ptr, b.ptr), tb=stack_info())
+
+
+@binary
+def cmp_le(a, b):
+    return Expr(taichi_lang_core.expr_cmp_le(a.ptr, b.ptr), tb=stack_info())
+
+
+@binary
+def cmp_gt(a, b):
+    return Expr(taichi_lang_core.expr_cmp_gt(a.ptr, b.ptr), tb=stack_info())
+
+
+@binary
+def cmp_ge(a, b):
+    return Expr(taichi_lang_core.expr_cmp_ge(a.ptr, b.ptr), tb=stack_info())
+
+
+@binary
+def cmp_eq(a, b):
+    return Expr(taichi_lang_core.expr_cmp_eq(a.ptr, b.ptr), tb=stack_info())
+
+
+@binary
+def cmp_ne(a, b):
+    return Expr(taichi_lang_core.expr_cmp_ne(a.ptr, b.ptr), tb=stack_info())
+
+
+@binary
+def bit_or(a, b):
+    return Expr(taichi_lang_core.expr_bit_or(a.ptr, b.ptr), tb=stack_info())
+
+
+@binary
+def bit_and(a, b):
+    return Expr(taichi_lang_core.expr_bit_and(a.ptr, b.ptr), tb=stack_info())
+
+
+# We don't have logic_and/or instructions yet:
+logical_or = bit_or
+logical_and = bit_and
 
 
 def ti_max(*args):
@@ -212,6 +340,16 @@ def ti_min(*args):
                     Expr(args[1]).ptr))
     else:
         return ti_min(args[0], ti_min(*args[1:]))
+
+
+def ti_any(a):
+    assert hasattr(a, 'any')
+    return a.any()
+
+
+def ti_all(a):
+    assert hasattr(a, 'all')
+    return a.all()
 
 
 def append(l, indices, val):

@@ -28,16 +28,21 @@ class SNode:
             dimensions = [dimensions] * len(indices)
         return SNode(self.ptr.bitmasked(indices, dimensions))
 
-    def place(self, *args):
+    def place(self, *args, offset=None):
         from .expr import Expr
+        from .util import is_taichi_class
+        if offset is None:
+            offset = []
         for arg in args:
             if isinstance(arg, Expr):
-                self.ptr.place(Expr(arg).ptr)
+                self.ptr.place(Expr(arg).ptr, offset)
             elif isinstance(arg, list):
                 for x in arg:
-                    self.place(x)
+                    self.place(x, offset=offset)
+            elif is_taichi_class(arg):
+                self.place(arg.get_tensor_members(), offset=offset)
             else:
-                arg.place(self)
+                raise ValueError(f'{arg} cannot be placed')
         return self
 
     def lazy_grad(self):
@@ -51,6 +56,9 @@ class SNode:
 
     def dim(self):
         return self.ptr.num_active_indices()
+
+    def shape(self):
+        return tuple(self.get_shape(i) for i in range(self.dim()))
 
     def get_shape(self, i):
         return self.ptr.get_num_elements_along_axis(i)

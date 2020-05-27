@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <functional>
 #include <optional>
 #include <atomic>
 
@@ -21,6 +22,47 @@
 #include "taichi/system/memory_pool.h"
 #include "taichi/system/threading.h"
 #include "taichi/system/unified_allocator.h"
+
+TLANG_NAMESPACE_BEGIN
+
+struct JITEvaluatorId {
+  std::thread::id thread_id;
+  // Note that on certain backends (e.g. CUDA), functions created in one
+  // thread cannot be used in another. Hence the thread_id member.
+  int op;
+  DataType ret, lhs, rhs;
+  bool is_binary;
+
+  UnaryOpType unary_op() const {
+    TI_ASSERT(!is_binary);
+    return (UnaryOpType)op;
+  }
+
+  BinaryOpType binary_op() const {
+    TI_ASSERT(is_binary);
+    return (BinaryOpType)op;
+  }
+
+  bool operator==(const JITEvaluatorId &o) const {
+    return thread_id == o.thread_id && op == o.op && ret == o.ret &&
+           lhs == o.lhs && rhs == o.rhs && is_binary == o.is_binary;
+  }
+};
+
+TLANG_NAMESPACE_END
+
+namespace std {
+template <>
+struct hash<taichi::lang::JITEvaluatorId> {
+  std::size_t operator()(taichi::lang::JITEvaluatorId const &id) const
+      noexcept {
+    return ((std::size_t)id.op | ((std::size_t)id.ret << 8) |
+            ((std::size_t)id.lhs << 16) | ((std::size_t)id.rhs << 24) |
+            ((std::size_t)id.is_binary << 31)) ^
+           (std::hash<std::thread::id>{}(id.thread_id) << 32);
+  }
+};
+}  // namespace std
 
 TLANG_NAMESPACE_BEGIN
 
@@ -49,7 +91,7 @@ class Program {
   static std::atomic<int> num_instances;
   ThreadPool thread_pool;
   std::unique_ptr<MemoryPool> memory_pool;
-  void *result_buffer;               // TODO: move this
+  uint64 *result_buffer;             // TODO: move this
   void *preallocated_device_buffer;  // TODO: move this to memory allocator
 
   std::unique_ptr<Runtime> runtime;
@@ -58,6 +100,10 @@ class Program {
   std::vector<std::unique_ptr<Kernel>> kernels;
 
   std::unique_ptr<ProfilerBase> profiler;
+
+  std::unordered_map<JITEvaluatorId, std::unique_ptr<Kernel>>
+      jit_evaluator_cache;
+  std::mutex jit_evaluator_cache_mut;
 
   Program() : Program(default_compile_config.arch) {
   }

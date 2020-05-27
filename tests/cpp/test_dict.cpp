@@ -4,7 +4,7 @@
 *******************************************************************************/
 
 #include "taichi/common/dict.h"
-#include "taichi/common/testing.h"
+#include "taichi/util/testing.h"
 
 TI_NAMESPACE_BEGIN
 

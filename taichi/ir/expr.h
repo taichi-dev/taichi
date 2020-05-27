@@ -123,4 +123,18 @@ Expr bit_cast(const Expr &input) {
   return taichi::lang::bit_cast(input, get_data_type<T>());
 }
 
+Expr load_if_ptr(const Expr &ptr);
+Expr load(const Expr &ptr);
+Expr ptr_if_global(const Expr &var);
+
+inline Expr smart_load(const Expr &var) {
+  return load_if_ptr(ptr_if_global(var));
+}
+
+// Begin: legacy frontend functions
+void Cache(int v, const Expr &var);
+void CacheL1(const Expr &var);
+Expr Var(const Expr &x);
+// End: legacy frontend functions
+
 TLANG_NAMESPACE_END

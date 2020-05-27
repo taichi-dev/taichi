@@ -1,7 +1,9 @@
 #pragma once
 
+#include <atomic>
+
 #include "taichi/lang_util.h"
-#include "taichi/common/bit.h"
+#include "taichi/util/bit.h"
 #include "taichi/llvm/llvm_fwd.h"
 #include "taichi/ir/expr.h"
 #include "taichi/inc/constants.h"
@@ -48,13 +50,13 @@ class Index {
   }
 };
 
-// "Structural" nodes
+// Structural nodes
 class SNode {
  public:
-  // Children
   std::vector<std::unique_ptr<SNode>> ch;
 
   IndexExtractor extractors[taichi_max_num_indices];
+  std::vector<int> index_offsets;
   int num_active_indices{};
   int physical_index_position[taichi_max_num_indices]{};
   // physical indices are (ti.i, ti.j, ti.k, ti.l, ...)
@@ -63,7 +65,7 @@ class SNode {
   // programmers) refer to? i.e. in a[i, j, k], "i", "j", and "k" are virtual
   // indices.
 
-  static int counter;
+  static std::atomic<int> counter;
   int id;
   int depth{};
 
@@ -160,11 +162,6 @@ class SNode {
   }
 
   template <typename... Args>
-  SNode &place(Expr &expr, Args &&... args) {
-    return place(expr).place(std::forward<Args>(args)...);
-  }
-
-  template <typename... Args>
   static std::unique_ptr<SNode> create(Args &&... args) {
     return std::make_unique<SNode>(std::forward<Args>(args)...);
   }
@@ -175,9 +172,11 @@ class SNode {
 
   void print();
 
-  SNode &place(Expr &expr);
+  void set_index_offsets(std::vector<int> index_offsets);
 
-  SNode &dynamic_chunked(const Index &expr, int n, int chunk_size);
+  void place(Expr &expr, const std::vector<int> &offset);
+
+  SNode &dynamic(const Index &expr, int n, int chunk_size);
 
   SNode &morton(bool val = true) {
     _morton = val;

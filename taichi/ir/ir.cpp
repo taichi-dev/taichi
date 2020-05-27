@@ -1,6 +1,8 @@
 // Intermediate representations
 
 #include "taichi/ir/ir.h"
+#include "taichi/ir/transforms.h"
+#include "taichi/ir/analysis.h"
 
 #include <numeric>
 #include <thread>
@@ -12,7 +14,7 @@
 TLANG_NAMESPACE_BEGIN
 
 #define TI_EXPRESSION_IMPLEMENTATION
-#include "expression.h"
+#include "expression_ops.h"
 
 IRBuilder &current_ast_builder() {
   return context->builder();
@@ -150,6 +152,16 @@ Stmt *VecStatement::push_back(pStmt &&stmt) {
   return ret;
 }
 
+std::unique_ptr<IRNode> IRNode::clone() {
+  if (is<Block>())
+    return as<Block>()->clone();
+  else if (is<Stmt>())
+    return as<Stmt>()->clone();
+  else {
+    TI_NOT_IMPLEMENTED
+  }
+}
+
 class StatementTypeNameVisitor : public IRVisitor {
  public:
   std::string type_name;
@@ -164,33 +176,6 @@ class StatementTypeNameVisitor : public IRVisitor {
 
 #undef PER_STATEMENT
 };
-
-Expr load_if_ptr(const Expr &ptr) {
-  if (ptr.is<GlobalPtrExpression>()) {
-    return load(ptr);
-  } else if (ptr.is<GlobalVariableExpression>()) {
-    TI_ASSERT(ptr.cast<GlobalVariableExpression>()->snode->num_active_indices ==
-              0);
-    return load(ptr[ExprGroup()]);
-  } else
-    return ptr;
-}
-
-Expr load(const Expr &ptr) {
-  TI_ASSERT(ptr.is<GlobalPtrExpression>());
-  return Expr::make<GlobalLoadExpression>(ptr);
-}
-
-Expr ptr_if_global(const Expr &var) {
-  if (var.is<GlobalVariableExpression>()) {
-    // singleton global variable
-    TI_ASSERT(var.snode()->num_active_indices == 0);
-    return var[ExprGroup()];
-  } else {
-    // may be any local or global expr
-    return var;
-  }
-}
 
 int StmtFieldSNode::get_snode_id(SNode *snode) {
   if (snode == nullptr)
@@ -226,9 +211,18 @@ Stmt::Stmt() : field_manager(this), fields_registered(false) {
   parent = nullptr;
   instance_id = instance_id_counter++;
   id = instance_id;
-  operand_bitmap = 0;
   erased = false;
   is_ptr = false;
+}
+
+Stmt::Stmt(const Stmt &stmt) : field_manager(this), fields_registered(false) {
+  parent = stmt.parent;
+  instance_id = instance_id_counter++;
+  id = instance_id;
+  erased = stmt.erased;
+  is_ptr = stmt.is_ptr;
+  tb = stmt.tb;
+  ret_type = stmt.ret_type;
 }
 
 Stmt *Stmt::insert_before_me(std::unique_ptr<Stmt> &&new_stmt) {
@@ -268,7 +262,6 @@ Stmt *Stmt::insert_after_me(std::unique_ptr<Stmt> &&new_stmt) {
 void Stmt::replace_with(Stmt *new_stmt) {
   auto root = get_ir_root();
   irpass::replace_all_usages_with(root, this, new_stmt);
-  // Note: the current structure should have been destroyed now..
 }
 
 void Stmt::replace_with(VecStatement &&new_statements, bool replace_usages) {
@@ -276,15 +269,12 @@ void Stmt::replace_with(VecStatement &&new_statements, bool replace_usages) {
 }
 
 void Stmt::replace_operand_with(Stmt *old_stmt, Stmt *new_stmt) {
-  operand_bitmap = 0;
   int n_op = num_operands();
   for (int i = 0; i < n_op; i++) {
     if (operand(i) == old_stmt) {
       *operands[i] = new_stmt;
     }
-    operand_bitmap |= operand_hash(operand(i));
   }
-  rebuild_operand_bitmap();
 }
 
 std::string Stmt::type_hint() const {
@@ -307,6 +297,14 @@ IRNode *Stmt::get_ir_root() {
   return dynamic_cast<IRNode *>(block);
 }
 
+Kernel *Stmt::get_kernel() const {
+  if (parent) {
+    return parent->get_kernel();
+  } else {
+    return nullptr;
+  }
+}
+
 std::vector<Stmt *> Stmt::get_operands() const {
   std::vector<Stmt *> ret;
   for (int i = 0; i < num_operands(); i++) {
@@ -317,12 +315,10 @@ std::vector<Stmt *> Stmt::get_operands() const {
 
 void Stmt::set_operand(int i, Stmt *stmt) {
   *operands[i] = stmt;
-  rebuild_operand_bitmap();
 }
 
 void Stmt::register_operand(Stmt *&stmt) {
   operands.push_back(&stmt);
-  rebuild_operand_bitmap();
 }
 
 void Stmt::mark_fields_registered() {
@@ -330,7 +326,7 @@ void Stmt::mark_fields_registered() {
   fields_registered = true;
 }
 
-bool Stmt::have_operand(Stmt *stmt) const {
+bool Stmt::has_operand(Stmt *stmt) const {
   for (int i = 0; i < num_operands(); i++) {
     if (*operands[i] == stmt) {
       return true;
@@ -559,18 +555,6 @@ IRNode *FrontendContext::root() {
 
 std::unique_ptr<FrontendContext> context;
 
-Expr Var(const Expr &x) {
-  auto var = Expr(std::make_shared<IdExpression>());
-  current_ast_builder().insert(std::make_unique<FrontendAllocaStmt>(
-      std::static_pointer_cast<IdExpression>(var.expr)->id, DataType::unknown));
-  var = x;
-  return var;
-}
-
-void Print_(const Expr &a, const std::string &str) {
-  current_ast_builder().insert(std::make_unique<FrontendPrintStmt>(a, str));
-}
-
 template <>
 std::string to_string(const LaneAttribute<LocalAddress> &ptr) {
   std::string ret = " [";
@@ -606,13 +590,6 @@ Stmt *LocalLoadStmt::previous_store_or_alloca_in_block() {
   return nullptr;
 }
 
-void LocalLoadStmt::rebuild_operands() {
-  operands.clear();
-  for (int i = 0; i < (int)ptr.size(); i++) {
-    register_operand(this->ptr[i].var);
-  }
-}
-
 bool LocalLoadStmt::same_source() const {
   for (int i = 1; i < (int)ptr.size(); i++) {
     if (ptr[i].var != ptr[0].var)
@@ -627,6 +604,21 @@ bool LocalLoadStmt::has_source(Stmt *alloca) const {
       return true;
   }
   return false;
+}
+
+std::unique_ptr<Stmt> IfStmt::clone() const {
+  auto new_stmt = std::make_unique<IfStmt>(cond);
+  new_stmt->true_mask = true_mask;
+  new_stmt->false_mask = false_mask;
+  if (true_statements)
+    new_stmt->true_statements = true_statements->clone();
+  else
+    new_stmt->true_statements = nullptr;
+  if (false_statements)
+    new_stmt->false_statements = false_statements->clone();
+  else
+    new_stmt->false_statements = nullptr;
+  return new_stmt;
 }
 
 void Block::erase(int location) {
@@ -692,15 +684,16 @@ void Block::replace_statements_in_range(int start,
 }
 
 void Block::replace_with(Stmt *old_statement,
-                         std::unique_ptr<Stmt> &&new_statement) {
+                         std::unique_ptr<Stmt> &&new_statement,
+                         bool replace_usages) {
   VecStatement vec;
   vec.push_back(std::move(new_statement));
-  replace_with(old_statement, std::move(vec));
+  replace_with(old_statement, std::move(vec), replace_usages);
 }
 
 Stmt *Block::lookup_var(const Identifier &ident) const {
-  auto ptr = local_var_alloca.find(ident);
-  if (ptr != local_var_alloca.end()) {
+  auto ptr = local_var_to_stmt.find(ident);
+  if (ptr != local_var_to_stmt.end()) {
     return ptr->second;
   } else {
     if (parent) {
@@ -719,6 +712,17 @@ Stmt *Block::mask() {
   } else {
     return parent->mask();
   }
+}
+
+Kernel *Block::get_kernel() const {
+  Block *parent = this->parent;
+  if (parent == nullptr) {
+    return kernel;
+  }
+  while (parent->parent) {
+    parent = parent->parent;
+  }
+  return parent->kernel;
 }
 
 void Block::set_statements(VecStatement &&stmts) {
@@ -756,6 +760,12 @@ void Block::replace_with(Stmt *old_statement,
   if (replace_usages)
     old_statement->replace_with(new_statements.back().get());
   trash_bin.push_back(std::move(statements[location]));
+  if (new_statements.size() == 1) {
+    // Keep all std::vector::iterator valid in this case.
+    statements[location] = std::move(new_statements[0]);
+    statements[location]->parent = this;
+    return;
+  }
   statements.erase(statements.begin() + location);
   for (int i = (int)new_statements.size() - 1; i >= 0; i--) {
     insert(std::move(new_statements[i]), location);
@@ -777,6 +787,17 @@ int Block::locate(Stmt *stmt) {
     }
   }
   return -1;
+}
+
+std::unique_ptr<Block> Block::clone() const {
+  auto new_block = std::make_unique<Block>();
+  new_block->parent = parent;
+  new_block->mask_var = mask_var;
+  new_block->stop_gradients = stop_gradients;
+  new_block->statements.reserve(size());
+  for (auto &stmt : statements)
+    new_block->insert(stmt->clone());
+  return new_block;
 }
 
 FrontendSNodeOpStmt::FrontendSNodeOpStmt(SNodeOpType op_type,
@@ -890,8 +911,7 @@ void SNodeOpExpression::flatten(FlattenContext *ctx) {
     auto ptr = ctx->push_back<GlobalPtrStmt>(snode, indices_stmt);
     if (op_type == SNodeOpType::append) {
       value->flatten(ctx);
-      ctx->push_back<SNodeOpStmt>(SNodeOpType::append, snode, ptr,
-                                  ctx->back_stmt());
+      ctx->push_back<SNodeOpStmt>(SNodeOpType::append, snode, ptr, value->stmt);
       TI_ERROR_IF(snode->type != SNodeType::dynamic,
                   "ti.append only works on dynamic nodes.");
       TI_ERROR_IF(snode->ch.size() != 1,
@@ -909,59 +929,60 @@ std::unique_ptr<ConstStmt> ConstStmt::copy() {
   return std::make_unique<ConstStmt>(val);
 }
 
-OffloadedStmt::OffloadedStmt(OffloadedStmt::TaskType task_type)
-    : OffloadedStmt(task_type, nullptr) {
-}
-
-OffloadedStmt::OffloadedStmt(OffloadedStmt::TaskType task_type, SNode *snode)
-    : task_type(task_type), snode(snode) {
-  num_cpu_threads = 1;
-  const_begin = false;
-  const_end = false;
-  begin_value = 0;
-  end_value = 0;
-  step = 0;
-  block_dim = 0;
+RangeForStmt::RangeForStmt(Stmt *begin,
+                           Stmt *end,
+                           std::unique_ptr<Block> &&body,
+                           int vectorize,
+                           int parallelize,
+                           int block_dim,
+                           bool strictly_serialized)
+    : begin(begin),
+      end(end),
+      body(std::move(body)),
+      vectorize(vectorize),
+      parallelize(parallelize),
+      block_dim(block_dim),
+      strictly_serialized(strictly_serialized) {
   reversed = false;
-  device = get_current_program().config.arch;
-  if (task_type != TaskType::listgen) {
-    body = std::make_unique<Block>();
-  }
   TI_STMT_REG_FIELDS;
 }
 
-std::string OffloadedStmt::task_name() const {
-  if (task_type == TaskType::serial) {
-    return "serial";
-  } else if (task_type == TaskType::range_for) {
-    return "range_for";
-  } else if (task_type == TaskType::struct_for) {
-    return "struct_for";
-  } else if (task_type == TaskType::clear_list) {
-    TI_ASSERT(snode);
-    return fmt::format("clear_list_{}", snode->get_node_type_name_hinted());
-  } else if (task_type == TaskType::listgen) {
-    TI_ASSERT(snode);
-    return fmt::format("listgen_{}", snode->get_node_type_name_hinted());
-  } else if (task_type == TaskType::gc) {
-    TI_ASSERT(snode);
-    return fmt::format("gc_{}", snode->name);
-  } else {
-    TI_NOT_IMPLEMENTED
-  }
+std::unique_ptr<Stmt> RangeForStmt::clone() const {
+  auto new_stmt = std::make_unique<RangeForStmt>(
+      begin, end, body->clone(), vectorize, parallelize, block_dim,
+      strictly_serialized);
+  new_stmt->reversed = reversed;
+  return new_stmt;
 }
 
-// static
-std::string OffloadedStmt::task_type_name(TaskType tt) {
-#define REGISTER_NAME(x) \
-  { TaskType::x, #x }
-  const static std::unordered_map<TaskType, std::string> m = {
-      REGISTER_NAME(serial),     REGISTER_NAME(range_for),
-      REGISTER_NAME(struct_for), REGISTER_NAME(clear_list),
-      REGISTER_NAME(listgen),    REGISTER_NAME(gc),
-  };
-#undef REGISTER_NAME
-  return m.find(tt)->second;
+StructForStmt::StructForStmt(SNode *snode,
+                             std::unique_ptr<Block> &&body,
+                             int vectorize,
+                             int parallelize,
+                             int block_dim)
+    : snode(snode),
+      body(std::move(body)),
+      vectorize(vectorize),
+      parallelize(parallelize),
+      block_dim(block_dim) {
+  TI_STMT_REG_FIELDS;
+}
+
+std::unique_ptr<Stmt> StructForStmt::clone() const {
+  auto new_stmt = std::make_unique<StructForStmt>(
+      snode, body->clone(), vectorize, parallelize, block_dim);
+  new_stmt->scratch_opt = scratch_opt;
+  return new_stmt;
+}
+
+std::unique_ptr<Stmt> FuncBodyStmt::clone() const {
+  return std::make_unique<FuncBodyStmt>(funcid, body->clone());
+}
+
+std::unique_ptr<Stmt> WhileStmt::clone() const {
+  auto new_stmt = std::make_unique<WhileStmt>(body->clone());
+  new_stmt->mask = mask;
+  return new_stmt;
 }
 
 bool ContinueStmt::as_return() const {
@@ -972,6 +993,10 @@ bool ContinueStmt::as_return() const {
     return true;
   }
   return false;
+}
+
+void Stmt::infer_type() {
+  irpass::typecheck(this);
 }
 
 TLANG_NAMESPACE_END

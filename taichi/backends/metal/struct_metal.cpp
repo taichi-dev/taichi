@@ -8,6 +8,7 @@
 
 #include "taichi/backends/metal/constants.h"
 #include "taichi/backends/metal/data_types.h"
+#include "taichi/backends/metal/features.h"
 #include "taichi/backends/metal/kernel_util.h"
 #include "taichi/math/arithmetic.h"
 #include "taichi/util/line_appender.h"
@@ -30,11 +31,13 @@ constexpr size_t kListManagerSize = sizeof(shaders::ListManager);
 constexpr size_t kSNodeMetaSize = sizeof(shaders::SNodeMeta);
 constexpr size_t kSNodeExtractorsSize = sizeof(shaders::SNodeExtractors);
 
+constexpr int kAlignment = 8;
+
 inline size_t bitmasks_stride(int n) {
   constexpr int kBitsPerByte = 8;
   const int bytes_needed = iroundup(n, kBitsPerByte) / kBitsPerByte;
   // The roundup is to align the stride to 8-bytes.
-  return iroundup(bytes_needed, 8);
+  return iroundup(bytes_needed, kAlignment);
 }
 
 inline int get_n(const SNode &sn) {
@@ -54,11 +57,14 @@ class StructCompiler {
     std::reverse(snodes_rev.begin(), snodes_rev.end());
     {
       max_snodes_ = 0;
+      has_sparse_snode_ = false;
       for (const auto &sn : snodes_) {
-        if (sn->type == SNodeType::root || sn->type == SNodeType::dense ||
-            sn->type == SNodeType::bitmasked) {
+        const auto ty = sn->type;
+        if (ty == SNodeType::root || ty == SNodeType::dense ||
+            ty == SNodeType::bitmasked || ty == SNodeType::dynamic) {
           max_snodes_ = std::max(max_snodes_, sn->id);
         }
+        has_sparse_snode_ = has_sparse_snode_ || is_supported_sparse_type(ty);
       }
       ++max_snodes_;
     }
@@ -72,6 +78,7 @@ class StructCompiler {
     emit_runtime_structs(&root);
     line_appender_.dump(&result.runtime_utils_source_code);
     result.runtime_size = compute_runtime_size();
+    result.need_snode_lists_data = has_sparse_snode_;
     result.max_snodes = max_snodes_;
     result.snode_descriptors = std::move(snode_descriptors_);
     TI_DEBUG("Metal: root_size={} runtime_size={}", result.root_size,
@@ -123,6 +130,7 @@ class StructCompiler {
     }
     emit("");
     const auto &node_name = snode.node_type_name;
+    const auto snty = snode.type;
     if (is_place) {
       const auto dt_name = metal_data_type_name(snode.dt);
       emit("struct {} {{", node_name);
@@ -132,20 +140,23 @@ class StructCompiler {
            dt_name);
       emit("  device {}* val;", dt_name);
       emit("}};");
-    } else if (snode.type == SNodeType::dense ||
-               snode.type == SNodeType::root ||
-               snode.type == SNodeType::bitmasked) {
-      const bool bitmasked = snode.type == SNodeType::bitmasked;
+    } else if (snty == SNodeType::dense || snty == SNodeType::root ||
+               snty == SNodeType::bitmasked || snty == SNodeType::dynamic) {
       const std::string ch_name = fmt::format("{}_ch", node_name);
       emit("struct {} {{", node_name);
-      emit("  // {}", snode_type_name(snode.type));
+      emit("  // {}", snode_type_name(snty));
       const int n = get_n(snode);
       emit("  constant static constexpr int n = {};", n);
-      if (bitmasked) {
+      if (snty == SNodeType::bitmasked) {
         emit(
             "  constant static constexpr int stride = {}::stride * n + "
             "/*bitmasks=*/{};",
             ch_name, bitmasks_stride(n));
+      } else if (snty == SNodeType::dynamic) {
+        emit(
+            "  constant static constexpr int stride = {}::stride * n + "
+            "/*dynamic=*/{};",
+            ch_name, kAlignment);
       } else {
         emit("  constant static constexpr int stride = {}::stride * n;",
              ch_name);
@@ -160,8 +171,7 @@ class StructCompiler {
       emit("  device byte* addr_;");
       emit("}};");
     } else {
-      TI_ERROR("SNodeType={} not supported on Metal",
-               snode_type_name(snode.type));
+      TI_ERROR("SNodeType={} not supported on Metal", snode_type_name(snty));
       TI_NOT_IMPLEMENTED;
     }
     emit("");
@@ -190,6 +200,8 @@ class StructCompiler {
     sn_desc.stride = ch_size * n;
     if (sn->type == SNodeType::bitmasked) {
       sn_desc.stride += bitmasks_stride(n);
+    } else if (sn->type == SNodeType::dynamic) {
+      sn_desc.stride += kAlignment;
     }
     sn_desc.total_num_elems_from_root = 1;
     for (const auto &e : sn->extractors) {
@@ -218,14 +230,20 @@ class StructCompiler {
     size_t result = (max_snodes_) *
                     (kSNodeMetaSize + kSNodeExtractorsSize + kListManagerSize);
     result += sizeof(uint32_t) * kNumRandSeeds;
-    TI_DEBUG("Metal runtime fields size: {} bytes", result);
-    int total_items = 0;
-    for (const auto &kv : snode_descriptors_) {
-      total_items += kv.second.total_num_elems_from_root;
+    TI_DEBUG("Metal sizeof(Runtime): {} bytes", result);
+    if (has_sparse_snode_) {
+      // We only need additional memory to hold sparsity information. Don't
+      // allocate it if there is no sparse SNode at all.
+      int total_items = 0;
+      for (const auto &kv : snode_descriptors_) {
+        total_items += kv.second.total_num_self_from_root(snode_descriptors_);
+      }
+      const size_t list_data_size = total_items * kListgenElementSize;
+      TI_DEBUG("Metal runtime sparse list data size: {} bytes", list_data_size);
+      result += list_data_size;
+    } else {
+      TI_TRACE("Metal runtime doesn't need additional memory for snode_lists");
     }
-    const size_t list_data_size = total_items * kListgenElementSize;
-    TI_DEBUG("Metal runtime list data size: {} bytes", list_data_size);
-    result += list_data_size;
     return result;
   }
 
@@ -238,9 +256,20 @@ class StructCompiler {
   int max_snodes_;
   LineAppender line_appender_;
   std::unordered_map<int, SNodeDescriptor> snode_descriptors_;
+  bool has_sparse_snode_;
 };
 
 }  // namespace
+
+int SNodeDescriptor::total_num_self_from_root(
+    const std::unordered_map<int, SNodeDescriptor> &sn_descs) const {
+  if (snode->type == SNodeType::root) {
+    return 1;
+  }
+  const auto *psn = snode->parent;
+  TI_ASSERT(psn != nullptr);
+  return sn_descs.find(psn->id)->second.total_num_elems_from_root;
+}
 
 CompiledStructs compile_structs(SNode &root) {
   return StructCompiler().run(root);

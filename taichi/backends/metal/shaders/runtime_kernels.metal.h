@@ -70,10 +70,12 @@ STR(
       device ListManager *parent_list =
           &(runtime->snode_lists[parent_snode_id]);
       device ListManager *child_list = &(runtime->snode_lists[child_snode_id]);
+      const SNodeMeta parent_meta = runtime->snode_metas[parent_snode_id];
+      const int child_stride = parent_meta.element_stride;
+      const int num_slots = parent_meta.num_slots;
       const SNodeMeta child_meta = runtime->snode_metas[child_snode_id];
-      const int child_stride = child_meta.element_stride;
-      const int num_slots = child_meta.num_slots;
-
+      // |max_num_elems| is NOT padded to power-of-two, while |num_slots| is.
+      // So we need to cap the loop precisely at child's |max_num_elems|.
       for (int ii = utid_; ii < child_list->max_num_elems; ii += grid_size) {
         const int parent_idx = (ii / num_slots);
         if (parent_idx >= num_active(parent_list)) {
@@ -88,10 +90,10 @@ STR(
         child_elem.root_mem_offset = parent_elem.root_mem_offset +
                                      child_idx * child_stride +
                                      child_meta.mem_offset_in_parent;
-        if (is_active(root_addr + child_elem.root_mem_offset, child_meta,
+        if (is_active(root_addr + child_elem.root_mem_offset, parent_meta,
                       child_idx)) {
           refine_coordinates(parent_elem,
-                             runtime->snode_extractors[child_snode_id],
+                             runtime->snode_extractors[parent_snode_id],
                              child_idx, &child_elem);
           append(child_list, child_elem, list_data_addr);
         }

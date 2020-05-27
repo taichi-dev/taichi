@@ -5,14 +5,18 @@
 #include "taichi/program/kernel.h"
 #include "taichi/program/program.h"
 #include "taichi/backends/cpu/codegen_cpu.h"
-#include "taichi/common/testing.h"
+#include "taichi/util/testing.h"
 #include "taichi/util/statistics.h"
+#include "taichi/ir/transforms.h"
+#include "taichi/ir/analysis.h"
 
 TLANG_NAMESPACE_BEGIN
 
-uint64 hash(OffloadedStmt *stmt) {
+uint64 hash(IRNode *stmt) {
+  TI_ASSERT(stmt);
   // TODO: upgrade this using IR comparisons
   std::string serialized;
+  irpass::re_id(stmt);
   irpass::print(stmt, &serialized);
   uint64 ret = 0;
   for (uint64 i = 0; i < serialized.size(); i++) {
@@ -23,33 +27,41 @@ uint64 hash(OffloadedStmt *stmt) {
 
 KernelLaunchRecord::KernelLaunchRecord(Context context,
                                        Kernel *kernel,
-                                       OffloadedStmt *stmt)
-    : context(context), kernel(kernel), stmt(stmt), h(hash(stmt)) {
+                                       std::unique_ptr<IRNode> &&stmt_)
+    : context(context),
+      kernel(kernel),
+      stmt(dynamic_cast<OffloadedStmt *>(stmt_.get())),
+      stmt_(std::move(stmt_)),
+      h(hash(stmt)) {
+  TI_ASSERT(stmt != nullptr);
 }
 
-void ExecutionQueue::enqueue(KernelLaunchRecord ker) {
+void ExecutionQueue::enqueue(KernelLaunchRecord &&ker) {
   auto h = ker.h;
+  auto stmt = ker.stmt;
+  auto kernel = ker.kernel;
   if (compiled_func.find(h) == compiled_func.end() &&
       to_be_compiled.find(h) == to_be_compiled.end()) {
     to_be_compiled.insert(h);
-    compilation_workers.enqueue([&, ker, h, this]() {
+    compilation_workers.enqueue([&, stmt, kernel, h, this]() {
       {
         // Final lowering
         using namespace irpass;
 
-        flag_access(ker.stmt);
-        lower_access(ker.stmt, true, ker.kernel);
-        flag_access(ker.stmt);
-        full_simplify(ker.stmt, ker.kernel->program.config, ker.kernel);
-        // analysis::verify(ker.stmt);
+        flag_access(stmt);
+        lower_access(stmt, true, kernel);
+        flag_access(stmt);
+        full_simplify(stmt, kernel);
+        // analysis::verify(stmt);
       }
-      auto func = CodeGenCPU(ker.kernel, ker.stmt).codegen();
+      auto func = CodeGenCPU(kernel, stmt).codegen();
       std::lock_guard<std::mutex> _(mut);
       compiled_func[h] = func;
     });
   }
 
-  launch_worker.enqueue([&, ker, h] {
+  auto context = ker.context;
+  launch_worker.enqueue([&, h, stmt, context, this] {
     FunctionType func;
     while (true) {
       std::unique_lock<std::mutex> lock(mut);
@@ -62,7 +74,7 @@ void ExecutionQueue::enqueue(KernelLaunchRecord ker) {
       break;
     }
     stat.add("launched_kernels", 1.0);
-    auto task_type = ker.stmt->task_type;
+    auto task_type = stmt->task_type;
     if (task_type == OffloadedStmt::TaskType::listgen) {
       stat.add("launched_kernels_list_op", 1.0);
       stat.add("launched_kernels_list_gen", 1.0);
@@ -78,9 +90,10 @@ void ExecutionQueue::enqueue(KernelLaunchRecord ker) {
     } else if (task_type == OffloadedStmt::TaskType::gc) {
       stat.add("launched_kernels_garbage_collect", 1.0);
     }
-    auto context = ker.context;
-    func(context);
+    auto c = context;
+    func(c);
   });
+  trashbin.push_back(std::move(ker));
 }
 
 void ExecutionQueue::synchronize() {
@@ -95,24 +108,24 @@ ExecutionQueue::ExecutionQueue()
 void AsyncEngine::launch(Kernel *kernel) {
   if (!kernel->lowered)
     kernel->lower(false);
-  auto block = dynamic_cast<Block *>(kernel->ir);
+  auto block = dynamic_cast<Block *>(kernel->ir.get());
   TI_ASSERT(block);
   auto &offloads = block->statements;
   for (std::size_t i = 0; i < offloads.size(); i++) {
     auto offload = offloads[i]->as<OffloadedStmt>();
-    KernelLaunchRecord rec(kernel->program.get_context(), kernel, offload);
-    enqueue(rec);
+    KernelLaunchRecord rec(kernel->program.get_context(), kernel,
+                           irpass::analysis::clone(offload, kernel));
+    enqueue(std::move(rec));
   }
 }
 
-void AsyncEngine::enqueue(KernelLaunchRecord t) {
+void AsyncEngine::enqueue(KernelLaunchRecord &&t) {
   using namespace irpass::analysis;
-
-  task_queue.push_back(t);
 
   auto &meta = metas[t.h];
   // TODO: this is an abuse since it gathers nothing...
-  gather_statements(t.stmt, [&](Stmt *stmt) {
+  auto root_stmt = t.stmt;
+  gather_statements(root_stmt, [&](Stmt *stmt) {
     if (auto global_ptr = stmt->cast<GlobalPtrStmt>()) {
       for (auto &snode : global_ptr->snodes.data) {
         meta.input_snodes.insert(snode);
@@ -151,25 +164,29 @@ void AsyncEngine::enqueue(KernelLaunchRecord t) {
     }
     return false;
   });
+
+  task_queue.push_back(std::move(t));
 }
 
 void AsyncEngine::synchronize() {
-  optimize();
+  optimize_listgen();
+  while (fuse())
+    ;
   while (!task_queue.empty()) {
-    queue.enqueue(task_queue.front());
+    queue.enqueue(std::move(task_queue.front()));
     task_queue.pop_front();
   }
   queue.synchronize();
 }
 
-bool AsyncEngine::optimize() {
+bool AsyncEngine::optimize_listgen() {
   // TODO: improve...
   bool modified = false;
   std::unordered_map<SNode *, bool> list_dirty;
   auto new_task_queue = std::deque<KernelLaunchRecord>();
   for (int i = 0; i < task_queue.size(); i++) {
     // Try to eliminate unused listgens
-    auto t = task_queue[i];
+    auto &t = task_queue[i];
     auto meta = metas[t.h];
     auto offload = t.stmt;
     bool keep = true;
@@ -195,12 +212,86 @@ bool AsyncEngine::optimize() {
       }
     }
     if (keep) {
-      new_task_queue.push_back(t);
+      new_task_queue.push_back(std::move(t));
     } else {
       modified = true;
     }
   }
   task_queue = std::move(new_task_queue);
+  return modified;
+}
+
+bool AsyncEngine::fuse() {
+  // TODO: improve...
+  bool modified = false;
+  std::unordered_map<SNode *, bool> list_dirty;
+
+  if (false) {
+    // (experimental) print tasks
+    for (int i = 0; i < (int)task_queue.size(); i++) {
+      fmt::print("{}: {}\n", i, task_queue[i].stmt->task_name());
+      irpass::print(task_queue[i].stmt);
+    }
+  }
+
+  for (int i = 0; i < (int)task_queue.size() - 1; i++) {
+    auto task_a = task_queue[i].stmt;
+    auto task_b = task_queue[i + 1].stmt;
+    bool is_same_struct_for = task_a->task_type == OffloadedStmt::struct_for &&
+                              task_b->task_type == OffloadedStmt::struct_for &&
+                              task_a->snode == task_b->snode &&
+                              task_a->block_dim == task_b->block_dim;
+    bool is_same_range_for = task_a->task_type == OffloadedStmt::range_for &&
+                             task_b->task_type == OffloadedStmt::range_for &&
+                             task_a->const_begin && task_b->const_begin &&
+                             task_a->const_end && task_b->const_end &&
+                             task_a->begin_value == task_b->begin_value &&
+                             task_a->end_value == task_b->end_value;
+
+    // We do not fuse serial kernels for now since they can be SNode accessors
+    bool are_both_serial = task_a->task_type == OffloadedStmt::serial &&
+                           task_b->task_type == OffloadedStmt::serial;
+    bool same_kernel = task_queue[i].kernel == task_queue[i + 1].kernel;
+    if (is_same_range_for || is_same_struct_for) {
+      // TODO: in certain cases this optimization can be wrong!
+      // Fuse task b into task_a
+      for (int j = 0; j < (int)task_b->body->size(); j++) {
+        task_a->body->insert(std::move(task_b->body->statements[j]));
+      }
+      task_b->body->statements.clear();
+
+      // replace all reference to the offloaded statement B to A
+      irpass::replace_all_usages_with(task_a, task_b, task_a);
+      irpass::re_id(task_a);
+      irpass::fix_block_parents(task_a);
+
+      auto kernel = task_queue[i].kernel;
+      irpass::full_simplify(task_a, kernel);
+      task_queue[i].h = hash(task_a);
+
+      modified = true;
+    }
+  }
+
+  auto new_task_queue = std::deque<KernelLaunchRecord>();
+
+  // Eliminate empty tasks
+  for (int i = 0; i < (int)task_queue.size(); i++) {
+    auto task = task_queue[i].stmt;
+    bool keep = true;
+    if (task->task_type == OffloadedStmt::struct_for ||
+        task->task_type == OffloadedStmt::range_for ||
+        task->task_type == OffloadedStmt::serial) {
+      if (task->body->statements.empty())
+        keep = false;
+    }
+    if (keep) {
+      new_task_queue.push_back(std::move(task_queue[i]));
+    }
+  }
+
+  task_queue = std::move(new_task_queue);
+
   return modified;
 }
 

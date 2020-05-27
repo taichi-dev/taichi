@@ -1,9 +1,10 @@
 // The IRPrinter prints the IR in a human-readable format
 
-#include <typeinfo>
-
 #include "taichi/ir/ir.h"
+#include "taichi/ir/transforms.h"
+#include "taichi/ir/visitors.h"
 #include "taichi/ir/frontend_ir.h"
+#include <typeinfo>
 
 TLANG_NAMESPACE_BEGIN
 
@@ -180,17 +181,34 @@ class IRPrinter : public IRVisitor {
     print("}}");
   }
 
-  void visit(FrontendPrintStmt *print_stmt) override {
-    print("print \"{}\", {}", print_stmt->str, print_stmt->expr.serialize());
-  }
-
   void visit(FrontendEvalStmt *stmt) override {
     print("{} = eval {}", stmt->name(), stmt->expr.serialize());
   }
 
+  void visit(FrontendPrintStmt *print_stmt) override {
+    std::vector<std::string> contents;
+    for (auto const &c : print_stmt->contents) {
+      std::string name;
+      if (std::holds_alternative<Expr>(c))
+        name = std::get<Expr>(c).serialize();
+      else
+        name = "\"" + std::get<std::string>(c) + "\"";
+      contents.push_back(name);
+    }
+    print("print {}", fmt::join(contents, ", "));
+  }
+
   void visit(PrintStmt *print_stmt) override {
-    print("{}print {}, {}", print_stmt->type_hint(), print_stmt->str,
-          print_stmt->stmt->name());
+    std::vector<std::string> names;
+    for (auto const &c : print_stmt->contents) {
+      std::string name;
+      if (std::holds_alternative<Stmt *>(c))
+        name = std::get<Stmt *>(c)->name();
+      else
+        name = "\"" + std::get<std::string>(c) + "\"";
+      names.push_back(name);
+    }
+    print("print {}", fmt::join(names, ", "));
   }
 
   void visit(ConstStmt *const_stmt) override {
@@ -257,20 +275,16 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(RangeForStmt *for_stmt) override {
-    print("{} : {}for {} in range({}, {}, step {}) {{", for_stmt->name(),
-          for_stmt->reversed ? "reversed " : "", for_stmt->loop_var->name(),
-          for_stmt->begin->name(), for_stmt->end->name(), for_stmt->vectorize);
+    print("{} : {}for in range({}, {}, step {}) {{", for_stmt->name(),
+          for_stmt->reversed ? "reversed " : "", for_stmt->begin->name(),
+          for_stmt->end->name(), for_stmt->vectorize);
     for_stmt->body->accept(this);
     print("}}");
   }
 
   void visit(StructForStmt *for_stmt) override {
-    auto loop_vars = make_list<Stmt *>(
-        for_stmt->loop_vars,
-        [](Stmt *const &stmt) -> std::string { return stmt->name(); });
-    print("{} : for {} where {} active, step {} {{", for_stmt->name(),
-          loop_vars, for_stmt->snode->get_node_type_name_hinted(),
-          for_stmt->vectorize);
+    print("{} : for where {} active, step {} {{", for_stmt->name(),
+          for_stmt->snode->get_node_type_name_hinted(), for_stmt->vectorize);
     for_stmt->body->accept(this);
     print("}}");
   }
@@ -309,16 +323,6 @@ class IRPrinter : public IRVisitor {
     print("{}{} = arg[{}]", stmt->type_hint(), stmt->name(), stmt->arg_id);
   }
 
-  void visit(FrontendArgStoreStmt *stmt) override {
-    print("{}{} : store arg {} <- {}", stmt->type_hint(), stmt->name(),
-          stmt->arg_id, stmt->expr->serialize());
-  }
-
-  void visit(ArgStoreStmt *stmt) override {
-    print("{}{} : store arg {} <- {}", stmt->type_hint(), stmt->name(),
-          stmt->arg_id, stmt->val->name());
-  }
-
   void visit(FrontendKernelReturnStmt *stmt) override {
     print("{}{} : kernel return {}", stmt->type_hint(), stmt->name(),
           stmt->value->serialize());
@@ -347,10 +351,6 @@ class IRPrinter : public IRVisitor {
   void visit(GlobalStoreStmt *stmt) override {
     print("{}{} : global store [{} <- {}]", stmt->type_hint(), stmt->name(),
           stmt->ptr->name(), stmt->data->name());
-  }
-
-  void visit(PragmaSLPStmt *stmt) override {
-    print("#pragma SLP({})", stmt->slp_width);
   }
 
   void visit(ElementShuffleStmt *stmt) override {
@@ -467,7 +467,8 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(LoopIndexStmt *stmt) override {
-    print("{}{} = loop index {}", stmt->type_hint(), stmt->name(), stmt->index);
+    print("{}{} = loop {} index {}", stmt->type_hint(), stmt->name(),
+          stmt->loop->name(), stmt->index);
   }
 
   void visit(GlobalTemporaryStmt *stmt) override {

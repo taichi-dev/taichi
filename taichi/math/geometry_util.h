@@ -7,7 +7,7 @@
 
 #include <vector>
 
-#include "taichi/common/util.h"
+#include "taichi/common/core.h"
 #include "linalg.h"
 
 TI_NAMESPACE_BEGIN

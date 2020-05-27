@@ -3,7 +3,7 @@
     The use of this software is governed by the LICENSE file.
 *******************************************************************************/
 
-#include "taichi/common/util.h"
+#include "taichi/common/core.h"
 #include "taichi/common/task.h"
 #include "taichi/math/math.h"
 #include "taichi/python/exception.h"

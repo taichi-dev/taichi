@@ -1,4 +1,4 @@
-.. _linalg:
+.. _matrix:
 
 Matrices
 ========
@@ -13,9 +13,11 @@ Matrices
 - ``ti.tr(A)``
 - ``ti.determinant(A, type)``
 - ``ti.cross(a, b)``, where ``a`` and ``b`` are 3D vectors (i.e. ``3x1`` matrices)
-- ``A.cast(type)``
+- ``A.cast(type)`` or simply ``int(A)`` and ``float(A)``
 - ``R, S = ti.polar_decompose(A, ti.f32)``
 - ``U, sigma, V = ti.svd(A, ti.f32)`` (Note that ``sigma`` is a ``3x3`` diagonal matrix)
+- ``any(A)``
+- ``all(A)``
 
 TODO: doc here better like Vector. WIP
 
@@ -160,3 +162,7 @@ As a temporary local variable
 
 Methods
 -------
+
+TODO: WIP
+
+TODO: add element wise operations docs

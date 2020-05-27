@@ -1,4 +1,4 @@
-#include "taichi/common/testing.h"
+#include "taichi/util/testing.h"
 #include "taichi/ir/frontend.h"
 
 TLANG_NAMESPACE_BEGIN

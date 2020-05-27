@@ -38,7 +38,8 @@ class JITModuleCUDA : public JITModule {
   }
 
   void *lookup_function(const std::string &name) override {
-    // auto _ = CUDAContext::get_instance().get_guard();
+    // TODO: figure out why using the guard leads to wrong tests results
+    // auto context_guard = CUDAContext::get_instance().get_guard();
     CUDAContext::get_instance().make_current();
     void *func;
     auto t = Time::get_time();
@@ -62,13 +63,6 @@ class JITModuleCUDA : public JITModule {
                                        block_dim);
   }
 
-  uint64 fetch_result_u64() override {
-    uint64 ret;
-    CUDADriver::get_instance().memcpy_device_to_host(
-        &ret, get_current_program().result_buffer, sizeof(ret));
-    return ret;
-  }
-
   bool direct_dispatch() const override {
     return false;
   }
@@ -84,7 +78,8 @@ class JITSessionCUDA : public JITSession {
 
   virtual JITModule *add_module(std::unique_ptr<llvm::Module> M) override {
     auto ptx = compile_module_to_ptx(M);
-    // auto _ = CUDAContext::get_instance().get_guard();
+    // TODO: figure out why using the guard leads to wrong tests results
+    // auto context_guard = CUDAContext::get_instance().get_guard();
     CUDAContext::get_instance().make_current();
     // Create module for object
     void *cuda_module;

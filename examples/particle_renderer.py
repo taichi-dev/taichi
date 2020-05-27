@@ -439,9 +439,9 @@ def copy(img: ti.ext_arr(), samples: ti.i32):
         u = 1.0 * i / res[0]
         v = 1.0 * j / res[1]
 
-        darken = 1.0 - vignette_strength * max((ti.sqrt(
-            ti.sqr(u - vignette_center[0]) + ti.sqr(v - vignette_center[1])) -
-                                                vignette_radius), 0)
+        darken = 1.0 - vignette_strength * max(
+            (ti.sqrt((u - vignette_center[0])**2 +
+                     (v - vignette_center[1])**2) - vignette_radius), 0)
 
         for c in ti.static(range(3)):
             img[i, j, c] = ti.sqrt(color_buffer[i, j][c] * darken * exposure /

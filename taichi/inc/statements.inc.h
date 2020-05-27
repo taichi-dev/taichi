@@ -10,7 +10,6 @@ PER_STATEMENT(FrontendAssignStmt)
 PER_STATEMENT(FrontendEvalStmt)
 PER_STATEMENT(FrontendSNodeOpStmt)  // activate, deactivate, append, clear
 PER_STATEMENT(FrontendAssertStmt)
-PER_STATEMENT(FrontendArgStoreStmt)
 PER_STATEMENT(FrontendFuncDefStmt)
 PER_STATEMENT(FrontendKernelReturnStmt)
 
@@ -43,7 +42,6 @@ PER_STATEMENT(LocalStoreStmt)
 PER_STATEMENT(SNodeOpStmt)
 PER_STATEMENT(RangeAssumptionStmt)
 PER_STATEMENT(AssertStmt)
-PER_STATEMENT(ArgStoreStmt)
 
 // Locals with reverse-mode autodiff
 PER_STATEMENT(StackAllocaStmt)
@@ -65,9 +63,6 @@ PER_STATEMENT(GetChStmt)
 PER_STATEMENT(LocalLoadStmt)
 PER_STATEMENT(GlobalPtrStmt)
 PER_STATEMENT(ElementShuffleStmt)
-
-// Pragma statements
-PER_STATEMENT(PragmaSLPStmt)
 
 // Offloaded
 PER_STATEMENT(OffloadedStmt)

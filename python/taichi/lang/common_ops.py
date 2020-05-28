@@ -5,6 +5,7 @@ def numpy_or_constant(x):
     else:
         return x
 
+
 class TaichiOperations:
     def __neg__(self):
         if self.is_pyconstant():
@@ -22,98 +23,112 @@ class TaichiOperations:
 
     def __add__(self, other):
         if self.is_pyconstant():
-            return self.make_from_numpy(self.to_numpy() + numpy_or_constant(other))
+            return self.make_from_numpy(self.to_numpy() +
+                                        numpy_or_constant(other))
 
         import taichi as ti
         return ti.add(self, other)
 
     def __radd__(self, other):
         if self.is_pyconstant():
-            return self.make_from_numpy(numpy_or_constant(other) + self.to_numpy())
+            return self.make_from_numpy(
+                numpy_or_constant(other) + self.to_numpy())
 
         import taichi as ti
         return ti.add(other, self)
 
     def __sub__(self, other):
         if self.is_pyconstant():
-            return self.make_from_numpy(self.to_numpy() - numpy_or_constant(other))
+            return self.make_from_numpy(self.to_numpy() -
+                                        numpy_or_constant(other))
 
         import taichi as ti
         return ti.sub(self, other)
 
     def __rsub__(self, other):
         if self.is_pyconstant():
-            return self.make_from_numpy(numpy_or_constant(other) - self.to_numpy())
+            return self.make_from_numpy(
+                numpy_or_constant(other) - self.to_numpy())
 
         import taichi as ti
         return ti.sub(other, self)
 
     def __mul__(self, other):
         if self.is_pyconstant():
-            return self.make_from_numpy(self.to_numpy() * numpy_or_constant(other))
+            return self.make_from_numpy(self.to_numpy() *
+                                        numpy_or_constant(other))
 
         import taichi as ti
         return ti.mul(self, other)
 
     def __rmul__(self, other):
         if self.is_pyconstant():
-            return self.make_from_numpy(numpy_or_constant(other) * self.to_numpy())
+            return self.make_from_numpy(
+                numpy_or_constant(other) * self.to_numpy())
 
         import taichi as ti
         return ti.mul(other, self)
 
     def __truediv__(self, other):
         if self.is_pyconstant():
-            return self.make_from_numpy(self.to_numpy() / numpy_or_constant(other))
+            return self.make_from_numpy(self.to_numpy() /
+                                        numpy_or_constant(other))
 
         import taichi as ti
         return ti.truediv(self, other)
 
     def __rtruediv__(self, other):
         if self.is_pyconstant():
-            return self.make_from_numpy(numpy_or_constant(other) / self.to_numpy())
+            return self.make_from_numpy(
+                numpy_or_constant(other) / self.to_numpy())
 
         import taichi as ti
         return ti.truediv(other, self)
 
     def __floordiv__(self, other):
         if self.is_pyconstant():
-            return self.make_from_numpy(self.to_numpy() // numpy_or_constant(other))
+            return self.make_from_numpy(self.to_numpy() //
+                                        numpy_or_constant(other))
 
         import taichi as ti
         return ti.floordiv(self, other)
 
     def __rfloordiv__(self, other):
         if self.is_pyconstant():
-            return self.make_from_numpy(numpy_or_constant(other) // self.to_numpy())
+            return self.make_from_numpy(
+                numpy_or_constant(other) // self.to_numpy())
 
         import taichi as ti
         return ti.floordiv(other, self)
 
     def __mod__(self, other):
         if self.is_pyconstant():
-            return self.make_from_numpy(self.to_numpy() % numpy_or_constant(other))
+            return self.make_from_numpy(self.to_numpy() %
+                                        numpy_or_constant(other))
 
         import taichi as ti
         return ti.mod(self, other)
 
     def __rmod__(self, other):
         if self.is_pyconstant():
-            return self.make_from_numpy(numpy_or_constant(other) % self.to_numpy())
+            return self.make_from_numpy(
+                numpy_or_constant(other) % self.to_numpy())
 
         import taichi as ti
         return ti.mod(other, self)
 
     def __pow__(self, other, modulo=None):
         if self.is_pyconstant():
-            return self.make_from_numpy(self.to_numpy() ** numpy_or_constant(other))
+            return self.make_from_numpy(
+                self.to_numpy()**numpy_or_constant(other))
 
         import taichi as ti
         return ti.pow(self, other)
 
     def __rpow__(self, other, modulo=None):
         if self.is_pyconstant():
-            return self.make_from_numpy(numpy_or_constant(other) ** self.to_numpy())
+            return self.make_from_numpy(
+                numpy_or_constant(other)**self.to_numpy())
 
         import taichi as ti
         return ti.pow(other, self)
@@ -182,4 +197,5 @@ class TaichiOperations:
         return False
 
     def make_from_numpy(self):
-        raise NotImplementedError(f'Python-scope operation for {type(self)} not implemented yet')
+        raise NotImplementedError(
+            f'Python-scope operation for {type(self)} not implemented yet')

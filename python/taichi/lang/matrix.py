@@ -285,6 +285,15 @@ class Matrix(TaichiOperations):
                 key = [key]
             self.mat(*key)[self.index] = value
 
+        def __add__(self, other):
+            pass
+
+        def __sub__(self, other):
+            pass
+
+        def __repr__(self):
+            return self.mat.__repr__()
+
     # host access
     def __getitem__(self, index):
         return Matrix.Proxy(self, index)
@@ -617,6 +626,11 @@ class Matrix(TaichiOperations):
                 yield self(i, j)
             yield ']'
         yield ']'
+    
+    def __repr__(self):
+        """Python scope object print support."""
+        return str(np.array(self.entries).reshape(
+                (self.n, self.m)))
 
     @staticmethod
     def zero(dt, n, m=1):

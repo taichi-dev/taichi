@@ -210,16 +210,16 @@ def test_shape_matrix():
 @ti.torch_test
 def test_shape_vector():
     n = 12
-    x = ti.Matrix(3, 1, ti.f32, shape=(n, n))
-    X = x.to_torch(as_vector=True)
+    x = ti.Vector(3, ti.f32, shape=(n, n))
+    X = x.to_torch()
     for i in range(n):
         for j in range(n):
             for k in range(3):
                 X[i, j, k] = i * 10 + j + k * 100
 
     x.from_torch(X)
-    X1 = x.to_torch(as_vector=True)
+    X1 = x.to_torch()
     x.from_torch(X1)
-    X1 = x.to_torch(as_vector=True)
+    X1 = x.to_torch()
 
     assert (X == X1).all()

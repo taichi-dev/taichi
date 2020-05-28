@@ -120,7 +120,7 @@ def _test_mat_inverse_size(n):
 
     invert()
 
-    m_np = m.to_numpy()
+    m_np = m.to_numpy(keep_dims=True)
     np.testing.assert_almost_equal(m_np, np.linalg.inv(M))
 
 

@@ -415,13 +415,19 @@ class Matrix(TaichiOperations):
 
     @staticmethod
     def cross(a, b):
-        assert a.n == 3 and a.m == 1
-        assert b.n == 3 and b.m == 1
-        return Matrix([
-            a(1) * b(2) - a(2) * b(1),
-            a(2) * b(0) - a(0) * b(2),
-            a(0) * b(1) - a(1) * b(0),
-        ])
+        if a.n == 3 and a.m == 1 and b.n == 3 and b.m == 1:
+            return Matrix([
+                a(1) * b(2) - a(2) * b(1),
+                a(2) * b(0) - a(0) * b(2),
+                a(0) * b(1) - a(1) * b(0),
+            ])
+
+        elif a.n == 2 and a.m == 1 and b.n == 2 and b.m == 1:
+            return Matrix(a(0) * b(1) - a(1) * b(0))
+
+        else:
+            raise Exception(
+                "CrossProduct only supports 3D vector and 2D vector")
 
     @staticmethod
     def diag(dim, val):
@@ -571,10 +577,12 @@ class Matrix(TaichiOperations):
     def __ti_repr__(self):
         yield '['
         for i in range(self.n):
-            if i: yield ', '
+            if i:
+                yield ', '
             yield '['
             for j in range(self.m):
-                if j: yield ', '
+                if j:
+                    yield ', '
                 yield self(i, j)
             yield ']'
         yield ']'

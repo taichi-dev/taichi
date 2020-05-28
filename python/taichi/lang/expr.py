@@ -67,27 +67,6 @@ class Expr(TaichiOperations):
     def loop_range(self):
         return self
 
-    def augassign(self, x, op):
-        x = Expr(x)
-        if op == 'Add':
-            self += x
-        elif op == 'Sub':
-            self -= x
-        elif op == 'Mult':
-            self *= x
-        elif op == 'Div':
-            self /= x
-        elif op == 'FloorDiv':
-            self //= x
-        elif op == 'BitAnd':
-            self &= x
-        elif op == 'BitOr':
-            self |= x
-        elif op == 'BitXor':
-            self ^= x
-        else:
-            assert False, op
-
     def serialize(self):
         return self.ptr.serialize()
 

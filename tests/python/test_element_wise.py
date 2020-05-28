@@ -87,7 +87,7 @@ def _test_matrix_element_wise_binary(dtype, n, m, ti_func, math_func):
 
 
 @ti.host_arch_only
-def _test_matrix_element_wise_inplace_binary(dtype, n, m, ti_func, math_func):
+def _test_matrix_element_wise_inplace_binary(dtype, n, m, ti_func, math_func, is_atomic=True):
     a = ti.Matrix(n, m, dt=dtype, shape=())
     b = ti.Matrix(n, m, dt=dtype, shape=())
     u1 = ti.Matrix(n, m, dt=dtype, shape=())
@@ -120,11 +120,19 @@ def _test_matrix_element_wise_inplace_binary(dtype, n, m, ti_func, math_func):
         for j in range(m):
             expected = math_func(w1[i * m + j], w2[i * m + j])
             assert u1[None][i, j] == approx(expected)
+
+            # ti.atomic_* returns the orignal value of lhs,
+            # while ti.assign returns the value-after-assign of lhs.
+            # Discussion: https://github.com/taichi-dev/taichi/pull/1062#issuecomment-635090596
+            if is_atomic:
+                expected = w1[i * m + j]
+            assert a[None][i, j] == approx(expected)
+
             expected = math_func(w2[i * m + j], w3)
             assert u2[None][i, j] == approx(expected)
-            expected = w1[i * m + j]
-            assert a[None][i, j] == approx(expected)
-            expected = w2[i * m + j]
+
+            if is_atomic:
+                expected = w2[i * m + j]
             assert b[None][i, j] == approx(expected)
 
 
@@ -237,6 +245,8 @@ def test_matrix_element_wise_unary_2():
 def test_matrix_element_wise_inplace_binary_i32():
     seed(986)
     for n, m in [(5, 4), (3, 1)]:
+        # We support `matrix += scalar` syntax in Taichi-scope.
+        # Discussion: https://github.com/taichi-dev/taichi/pull/1062#pullrequestreview-419402587
         _test_matrix_element_wise_inplace_binary(ti.i32, n, m, ti.atomic_add,
                                                  ops.add)
         _test_matrix_element_wise_inplace_binary(ti.i32, n, m, ti.atomic_sub,
@@ -251,6 +261,10 @@ def test_matrix_element_wise_inplace_binary_i32():
                                                  max)
         _test_matrix_element_wise_inplace_binary(ti.i32, n, m, ti.atomic_min,
                                                  min)
+        # We also support `matrix = scalar` syntax in Taichi-scope.
+        # Discussion: https://github.com/taichi-dev/taichi/pull/1062#issuecomment-635089253
+        _test_matrix_element_wise_inplace_binary(ti.i32, n, m, ti.assign,
+                                                 lambda x, y: y, False)
 
 
 def test_matrix_element_wise_inplace_binary_f32():
@@ -260,7 +274,9 @@ def test_matrix_element_wise_inplace_binary_f32():
                                                  ops.add)
         _test_matrix_element_wise_inplace_binary(ti.f32, n, m, ti.atomic_sub,
                                                  ops.sub)
-        _test_matrix_element_wise_inplace_binary(ti.i32, n, m, ti.atomic_max,
+        _test_matrix_element_wise_inplace_binary(ti.f32, n, m, ti.atomic_max,
                                                  max)
-        _test_matrix_element_wise_inplace_binary(ti.i32, n, m, ti.atomic_min,
+        _test_matrix_element_wise_inplace_binary(ti.f32, n, m, ti.atomic_min,
                                                  min)
+        _test_matrix_element_wise_inplace_binary(ti.f32, n, m, ti.assign,
+                                                 lambda x, y: y, False)

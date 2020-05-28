@@ -8,15 +8,6 @@ from .common_ops import TaichiOperations
 from collections import Iterable
 
 
-def broadcast_if_scalar(func):
-    def broadcasted(self, other, *args, **kwargs):
-        if isinstance(other, expr.Expr) or isinstance(other, numbers.Number):
-            other = self.broadcast(expr.Expr(other))
-        return func(self, other, *args, **kwargs)
-
-    return broadcasted
-
-
 class Matrix(TaichiOperations):
     is_taichi_class = True
 
@@ -61,7 +52,7 @@ class Matrix(TaichiOperations):
                 self.n = t.n
                 self.m = t.m
                 self.entries = t.entries
-        elif isinstance(n, list) or isinstance(n, np.ndarray):
+        elif isinstance(n, (list, tuple)) or isinstance(n, np.ndarray):
             if len(n) == 0:
                 mat = []
             elif isinstance(n[0], Matrix):
@@ -135,17 +126,10 @@ class Matrix(TaichiOperations):
                 0], "Matrices with mixed global/local entries are not allowed"
         return results[0]
 
-    def assign(self, other):
-        if isinstance(other, expr.Expr):
-            raise Exception('Cannot assign scalar expr to Matrix/Vector.')
-        if not isinstance(other, Matrix):
-            other = Matrix(other)
-        assert other.n == self.n and other.m == self.m
-        for i in range(self.n * self.m):
-            self.entries[i].assign(other.entries[i])
-
     def element_wise_binary(self, foo, other):
         ret = Matrix(self.n, self.m)
+        if isinstance(other, (list, tuple)):
+            other = Matrix(other)
         if isinstance(other, Matrix):
             assert self.m == other.m and self.n == other.n
             for i in range(self.n * self.m):
@@ -234,12 +218,12 @@ class Matrix(TaichiOperations):
             self.index = index
 
         def __getitem__(self, item):
-            if not isinstance(item, list):
+            if not isinstance(item, (list, tuple)):
                 item = [item]
             return self.mat(*item)[self.index]
 
         def __setitem__(self, key, value):
-            if not isinstance(key, list):
+            if not isinstance(key, (list, tuple)):
                 key = [key]
             self.mat(*key)[self.index] = value
 

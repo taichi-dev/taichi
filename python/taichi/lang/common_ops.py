@@ -169,7 +169,7 @@ class TaichiOperations:
 
     def assign(self, other):
         import taichi as ti
-        ti.assign(self, other)
+        return ti.assign(self, other)
 
     def augassign(self, x, op):
         if op == 'Add':

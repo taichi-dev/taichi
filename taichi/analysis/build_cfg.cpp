@@ -33,7 +33,7 @@ class CFGBuilder : public IRVisitor {
     }
   }
 
-  CFGNode *new_node() {
+  CFGNode *new_node(int next_begin_location) {
     auto node = graph->push_back(current_block, begin_location,
                                  current_stmt_id - 1,
                                  last_node_in_current_block);
@@ -41,24 +41,25 @@ class CFGBuilder : public IRVisitor {
       CFGNode::add_edge(prev_node, node);
     }
     prev_nodes.clear();
-    begin_location = current_stmt_id + 1;
+    begin_location = next_begin_location;
     last_node_in_current_block = node;
     return node;
   }
 
   void visit(ContinueStmt *stmt) override {
-    continues_in_current_loop.push_back(new_node());
+    // Put ContinueStmt in the next node.
+    continues_in_current_loop.push_back(new_node(current_stmt_id));
   }
 
   void visit(WhileControlStmt *stmt) override {
-    auto node = new_node();
+    // Don't put WhileControlStmt in any nodes.
+    auto node = new_node(current_stmt_id + 1);
     breaks_in_current_loop.push_back(node);
     prev_nodes.push_back(node);
   }
 
   void visit(IfStmt *if_stmt) override {
-    auto before_if = new_node();
-    begin_location = -1;
+    auto before_if = new_node(-1);
     CFGNode *true_branch_end = nullptr;
     if (if_stmt->true_statements) {
       auto true_branch_begin = graph->size();
@@ -88,7 +89,6 @@ class CFGBuilder : public IRVisitor {
     int loop_stmt_id = current_stmt_id;
     auto backup_continues = std::move(continues_in_current_loop);
     auto backup_breaks = std::move(breaks_in_current_loop);
-    begin_location = -1;
     continues_in_current_loop.clear();
     breaks_in_current_loop.clear();
 
@@ -117,20 +117,20 @@ class CFGBuilder : public IRVisitor {
   }
 
   void visit(WhileStmt *stmt) override {
-    visit_loop(stmt->body.get(), new_node(), true);
+    visit_loop(stmt->body.get(), new_node(-1), true);
   }
 
   void visit(RangeForStmt *stmt) override {
-    visit_loop(stmt->body.get(), new_node(), false);
+    visit_loop(stmt->body.get(), new_node(-1), false);
   }
 
   void visit(StructForStmt *stmt) override {
-    visit_loop(stmt->body.get(), new_node(), false);
+    visit_loop(stmt->body.get(), new_node(-1), false);
   }
 
   void visit(OffloadedStmt *stmt) override {
     if (stmt->has_body()) {
-      auto before_offload = new_node();
+      auto before_offload = new_node(-1);
       if (stmt->task_type == OffloadedStmt::TaskType::struct_for ||
           stmt->task_type == OffloadedStmt::TaskType::range_for) {
         visit_loop(stmt->body.get(), before_offload, false);
@@ -138,7 +138,6 @@ class CFGBuilder : public IRVisitor {
         TI_ASSERT(stmt->task_type == OffloadedStmt::TaskType::serial);
         int offload_stmt_id = current_stmt_id;
         auto block_begin_index = graph->size();
-        begin_location = -1;
         stmt->body->accept(this);
         prev_nodes.push_back(graph->back());
         // Container statements don't belong to any CFGNodes.
@@ -163,11 +162,10 @@ class CFGBuilder : public IRVisitor {
       block->statements[i]->accept(this);
     }
     current_stmt_id = block->size();
-    new_node();  // Each block has a deterministic last node.
+    new_node(-1);  // Each block has a deterministic last node.
 
     current_block = backup_block;
     last_node_in_current_block = backup_last_node;
-    begin_location = -1;
   }
 
   static std::unique_ptr<ControlFlowGraph> run(IRNode *root) {

@@ -423,7 +423,7 @@ class Matrix(TaichiOperations):
             ])
 
         elif a.n == 2 and a.m == 1 and b.n == 2 and b.m == 1:
-            return Matrix(a(0) * b(1) - a(1) * b(0))
+            return a(0) * b(1) - a(1) * b(0)
 
         else:
             raise Exception(

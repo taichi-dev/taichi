@@ -54,10 +54,10 @@ Effective communication
 Please base your discussion and feedback on facts, and not personal feelings. It is very important for all of us to maintain a friendly and blame-free community. Some examples:
 
 .. tip::
-  (Positive) This design could be confusing to new Taichi users.
+  (Acceptable) This design could be confusing to new Taichi users.
 
 .. warning::
-  (Negative) This design is terrible.
+  (Not Acceptable) This design is terrible.
 
 
 Making good pull requests

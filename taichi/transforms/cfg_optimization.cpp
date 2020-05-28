@@ -8,7 +8,14 @@ TLANG_NAMESPACE_BEGIN
 namespace irpass {
 void cfg_optimization(IRNode *root) {
   auto cfg = analysis::build_cfg(root);
-  while (cfg->unreachable_code_elimination());
+  while (true) {
+    bool modified = false;
+    cfg->simplify_graph();
+    if (cfg->unreachable_code_elimination())
+      modified = true;
+    if (!modified)
+      break;
+  }
 }
 } // namespace irpass
 

@@ -10,12 +10,13 @@ CFGNode::CFGNode(Block *block,
     : block(block),
       begin_location(begin_location),
       end_location(end_location),
+      prev_node_in_same_block(prev_node_in_same_block),
       next_node_in_same_block(nullptr) {
-  if (empty())
-    return;
-  TI_ASSERT(begin_location >= 0);
   if (prev_node_in_same_block != nullptr)
     prev_node_in_same_block->next_node_in_same_block = this;
+  if (!empty()) {
+    TI_ASSERT(begin_location >= 0);
+  }
 }
 
 void CFGNode::add_edge(CFGNode *from, CFGNode *to) {
@@ -60,6 +61,57 @@ std::size_t ControlFlowGraph::size() const {
 
 CFGNode *ControlFlowGraph::back() {
   return nodes.back().get();
+}
+
+void ControlFlowGraph::erase(int position) {
+  // Erase an empty node.
+  TI_ASSERT(position >= 0 && position < (int)size());
+  TI_ASSERT(nodes[position] && nodes[position]->empty());
+  if (nodes[position]->prev_node_in_same_block) {
+    nodes[position]->prev_node_in_same_block->next_node_in_same_block =
+        nodes[position]->next_node_in_same_block;
+  }
+  if (nodes[position]->next_node_in_same_block) {
+    nodes[position]->next_node_in_same_block->prev_node_in_same_block =
+        nodes[position]->prev_node_in_same_block;
+  }
+  for (auto &prev_node : nodes[position]->prev) {
+    prev_node->next.erase(std::find(prev_node->next.begin(),
+                                    prev_node->next.end(),
+                                    nodes[position].get()));
+  }
+  for (auto &next_node : nodes[position]->next) {
+    next_node->prev.erase(std::find(next_node->prev.begin(),
+                                    next_node->prev.end(),
+                                    nodes[position].get()));
+  }
+  for (auto &prev_node : nodes[position]->prev) {
+    for (auto &next_node : nodes[position]->next) {
+      CFGNode::add_edge(prev_node, next_node);
+    }
+  }
+  nodes[position].reset();
+}
+
+void ControlFlowGraph::simplify_graph() {
+  // Simplify the graph structure, do not modify the IR.
+  const int num_nodes = size();
+  for (int i = 0; i < num_nodes; i++) {
+    if (nodes[i] && nodes[i]->empty() && i != start_node &&
+        (nodes[i]->prev.size() <= 1 || nodes[i]->next.size() <= 1)) {
+      erase(i);
+    }
+  }
+  int new_num_nodes = 0;
+  for (int i = 0; i < num_nodes; i++) {
+    if (nodes[i]) {
+      if (i != new_num_nodes) {
+        nodes[new_num_nodes] = std::move(nodes[i]);
+      }
+      new_num_nodes++;
+    }
+  }
+  nodes.resize(new_num_nodes);
 }
 
 bool ControlFlowGraph::unreachable_code_elimination() {

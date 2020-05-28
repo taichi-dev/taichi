@@ -12,6 +12,7 @@ class CFGNode {
   Block *block;
   int begin_location, end_location;
   // For updating begin/end locations when modifying the block.
+  CFGNode *prev_node_in_same_block;
   CFGNode *next_node_in_same_block;
 
   std::vector<CFGNode *> prev, next;
@@ -41,6 +42,9 @@ class ControlFlowGraph {
   std::size_t size() const;
   CFGNode *back();
 
+  void erase(int position);
+
+  void simplify_graph();
   bool unreachable_code_elimination();
 };
 

@@ -87,7 +87,12 @@ def _test_matrix_element_wise_binary(dtype, n, m, ti_func, math_func):
 
 
 @ti.host_arch_only
-def _test_matrix_element_wise_inplace_binary(dtype, n, m, ti_func, math_func, is_atomic=True):
+def _test_matrix_element_wise_inplace_binary(dtype,
+                                             n,
+                                             m,
+                                             ti_func,
+                                             math_func,
+                                             is_atomic=True):
     a = ti.Matrix(n, m, dt=dtype, shape=())
     b = ti.Matrix(n, m, dt=dtype, shape=())
     u1 = ti.Matrix(n, m, dt=dtype, shape=())

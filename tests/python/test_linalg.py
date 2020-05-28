@@ -147,6 +147,7 @@ def test_unit_vectors():
 
 # TODO: move codes below to test_matrix.py:
 
+
 @ti.all_archs
 def test_init_matrix_from_vectors():
     m1 = ti.Matrix(3, 3, dt=ti.f32, shape=(3))
@@ -218,7 +219,8 @@ def test_matrix_list_assign():
     v[1, 0, 0] = [8, 4]
 
     assert np.allclose(m.to_numpy()[1, 0, 0, :, :], np.array([[4, 3], [6, 7]]))
-    assert np.allclose(v.to_numpy(as_vector=True)[1, 0, 0, :], np.array([8, 4]))
+    assert np.allclose(
+        v.to_numpy(as_vector=True)[1, 0, 0, :], np.array([8, 4]))
 
     @ti.kernel
     def func():
@@ -229,4 +231,5 @@ def test_matrix_list_assign():
 
     func()
     assert np.allclose(m.to_numpy()[1, 0, 0, :, :], np.array([[2, 4], [6, 8]]))
-    assert np.allclose(v.to_numpy(as_vector=True)[1, 0, 0, :], np.array([10, 12]))
+    assert np.allclose(
+        v.to_numpy(as_vector=True)[1, 0, 0, :], np.array([10, 12]))

@@ -11,17 +11,21 @@ from collections import Iterable
 class Matrix(TaichiOperations):
     is_taichi_class = True
 
+    # TODO(archibate): move the last two line to **kwargs,
+    # since they're not commonly used as positional args.
     def __init__(self,
                  n=1,
                  m=1,
                  dt=None,
-                 empty=False,
                  shape=None,
+                 empty=False,
                  layout=None,
                  needs_grad=False,
                  keep_raw=False,
                  rows=None,
                  cols=None):
+        # TODO: refactor: use multiple initializer like `ti.Matrix.cols([a, b, c])`
+        # and `ti.Matrix.empty(n, m)` instead of ad-hoc `ti.Matrix(cols=[a, b, c])`.
         self.grad = None
         if rows is not None or cols is not None:
             if rows is not None and cols is not None:
@@ -127,7 +131,7 @@ class Matrix(TaichiOperations):
         return results[0]
 
     def element_wise_binary(self, foo, other):
-        ret = Matrix(self.n, self.m)
+        ret = self.empty_copy()
         if isinstance(other, (list, tuple)):
             other = Matrix(other)
         if isinstance(other, Matrix):
@@ -143,7 +147,7 @@ class Matrix(TaichiOperations):
     element_wise_inplace_binary = element_wise_binary
 
     def element_wise_unary(self, foo):
-        ret = Matrix(self.n, self.m)
+        ret = self.empty_copy()
         for i in range(self.n * self.m):
             ret.entries[i] = foo(self.entries[i])
         return ret
@@ -193,7 +197,7 @@ class Matrix(TaichiOperations):
 
     def subscript(self, *indices):
         if self.is_global():
-            ret = Matrix(self.n, self.m, empty=True)
+            ret = self.empty_copy()
             for i, e in enumerate(self.entries):
                 ret.entries[i] = impl.subscript(e, *indices)
             return ret
@@ -238,8 +242,14 @@ class Matrix(TaichiOperations):
             for j in range(self.m):
                 self(i, j)[index] = item[i][j]
 
+    def empty_copy(self):
+        return Matrix(self.n, self.m, empty=True)
+
+    def zeros_copy(self):
+        return Matrix(self.n, self.m)
+
     def copy(self):
-        ret = Matrix(self.n, self.m)
+        ret = self.empty_copy()
         ret.entries = copy.copy(self.entries)
         return ret
 
@@ -262,12 +272,6 @@ class Matrix(TaichiOperations):
             ret.entries[i] = impl.cast(ret.entries[i], dt)
         return ret
 
-    def abs(self):
-        ret = self.copy()
-        for i in range(len(self.entries)):
-            ret.entries[i] = impl.abs(ret.entries[i])
-        return ret
-
     def trace(self):
         assert self.n == self.m
         sum = expr.Expr(self(0, 0))
@@ -275,7 +279,7 @@ class Matrix(TaichiOperations):
             sum = sum + self(i, i)
         return sum
 
-    def inverse(self):
+    def inversed(self):
         assert self.n == self.m, 'Only square matrices are invertible'
         if self.n == 1:
             return Matrix([1 / self(0, 0)])
@@ -326,31 +330,11 @@ class Matrix(TaichiOperations):
             raise Exception(
                 "Inversions of matrices with sizes >= 5 are not supported")
 
-    def inversed(self):
-        return self.inverse()
-
     @staticmethod
     def normalized(a, eps=0):
         assert a.m == 1
         invlen = 1.0 / (Matrix.norm(a) + eps)
         return invlen * a
-
-    @staticmethod
-    def floor(a):
-        b = Matrix(a.n, a.m)
-        for i in range(len(a.entries)):
-            b.entries[i] = impl.floor(a.entries[i])
-        return b
-
-    @staticmethod
-    def outer_product(a, b):
-        assert a.m == 1
-        assert b.m == 1
-        c = Matrix(a.n, b.n)
-        for i in range(a.n):
-            for j in range(b.n):
-                c(i, j).assign(a(i) * b(j))
-        return c
 
     @staticmethod
     def transposed(a):
@@ -394,16 +378,6 @@ class Matrix(TaichiOperations):
                 "Determinants of matrices with sizes >= 5 are not supported")
 
     @staticmethod
-    def cross(a, b):
-        assert a.n == 3 and a.m == 1
-        assert b.n == 3 and b.m == 1
-        return Matrix([
-            a(1) * b(2) - a(2) * b(1),
-            a(2) * b(0) - a(0) * b(2),
-            a(0) * b(1) - a(1) * b(0),
-        ])
-
-    @staticmethod
     def diag(dim, val):
         ret = Matrix(dim, dim)
         for i in range(dim):
@@ -417,7 +391,7 @@ class Matrix(TaichiOperations):
         return self.entries[0]
 
     def make_grad(self):
-        ret = Matrix(self.n, self.m, empty=True)
+        ret = self.empty_copy()
         for i in range(len(ret.entries)):
             ret.entries[i] = self.entries[i].grad
         return ret
@@ -462,10 +436,6 @@ class Matrix(TaichiOperations):
             ret = ret + (self.entries[i] != ti.expr_init(0))
         return -(ret == ti.expr_init(-len(self.entries)))
 
-    def dot(self, other):
-        assert self.m == 1 and other.m == 1
-        return (self.transposed(self) @ other).subscript(0, 0)
-
     def fill(self, val):
         if isinstance(val, numbers.Number):
             val = tuple(
@@ -487,12 +457,10 @@ class Matrix(TaichiOperations):
         from .meta import fill_matrix
         fill_matrix(self, val)
 
-    def to_numpy(self, as_vector=False):
-        if as_vector:
-            assert self.m == 1, "This matrix is not a vector"
-            dim_ext = (self.n, )
-        else:
-            dim_ext = (self.n, self.m)
+    def to_numpy(self, keep_dims=False):
+        # Discussion: https://github.com/taichi-dev/taichi/pull/1046#issuecomment-633548858
+        as_vector = self.m == 1 and not keep_dims
+        dim_ext = (self.n, ) if as_vector else (self.n, self.m)
         ret = np.empty(self.loop_range().shape() + dim_ext,
                        dtype=to_numpy_type(
                            self.loop_range().snode().data_type()))
@@ -502,13 +470,10 @@ class Matrix(TaichiOperations):
         ti.sync()
         return ret
 
-    def to_torch(self, as_vector=False, device=None):
+    def to_torch(self, device=None, keep_dims=False):
         import torch
-        if as_vector:
-            assert self.m == 1, "This matrix is not a vector"
-            dim_ext = (self.n, )
-        else:
-            dim_ext = (self.n, self.m)
+        as_vector = self.m == 1 and not keep_dims
+        dim_ext = (self.n, ) if as_vector else (self.n, self.m)
         ret = torch.empty(self.loop_range().shape() + dim_ext,
                           dtype=to_pytorch_type(
                               self.loop_range().snode().data_type()),
@@ -526,6 +491,8 @@ class Matrix(TaichiOperations):
         else:
             as_vector = False
             assert len(ndarray.shape) == self.loop_range().dim() + 2
+        dim_ext = 1 if as_vector else 2
+        assert len(ndarray.shape) == self.loop_range().dim() + dim_ext
         from .meta import ext_arr_to_matrix
         ext_arr_to_matrix(ndarray, self, as_vector)
         import taichi as ti
@@ -535,15 +502,19 @@ class Matrix(TaichiOperations):
         return self.from_numpy(torch_tensor.contiguous())
 
     def __ti_repr__(self):
-        yield '['
-        for i in range(self.n):
-            if i: yield ', '
+        if self.m != 1:
             yield '['
-            for j in range(self.m):
-                if j: yield ', '
+
+        for j in range(self.m):
+            if j: yield ', '
+            yield '['
+            for i in range(self.n):
+                if i: yield ', '
                 yield self(i, j)
             yield ']'
-        yield ']'
+
+        if self.m != 1:
+            yield ']'
 
     @staticmethod
     def zero(dt, n, m=1):
@@ -582,3 +553,40 @@ class Matrix(TaichiOperations):
         # If not, we get `unhashable type: Matrix` when
         # using matrices as template arguments.
         return id(self)
+
+    def dot(self, other):
+        assert self.m == 1
+        assert other.m == 1
+        return (self.transposed(self) @ other).subscript(0, 0)
+
+    @staticmethod
+    def cross(a, b):
+        assert a.m == 1 and a.n == 3
+        assert b.m == 1 and b.n == 3
+        return Vector([
+            a(1) * b(2) - a(2) * b(1),
+            a(2) * b(0) - a(0) * b(2),
+            a(0) * b(1) - a(1) * b(0),
+        ])
+
+    @staticmethod
+    def outer_product(a, b):
+        assert a.m == 1
+        assert b.m == 1
+        c = Matrix(a.n, b.n)
+        for i in range(a.n):
+            for j in range(b.n):
+                c(i, j).assign(a(i) * b(j))
+        return c
+
+
+def Vector(n=1, dt=None, shape=None, **kwargs):
+    return Matrix(n, 1, dt, shape, **kwargs)
+
+
+Vector.zero = Matrix.zero
+Vector.one = Matrix.one
+Vector.dot = Matrix.dot
+Vector.cross = Matrix.cross
+Vector.outer_product = Matrix.outer_product
+Vector.unit = Matrix.unit

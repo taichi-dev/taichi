@@ -120,7 +120,7 @@ def _test_mat_inverse_size(n):
 
     invert()
 
-    m_np = m.to_numpy()
+    m_np = m.to_numpy(keep_dims=True)
     np.testing.assert_almost_equal(m_np, np.linalg.inv(M))
 
 
@@ -220,7 +220,7 @@ def test_matrix_list_assign():
 
     assert np.allclose(m.to_numpy()[1, 0, 0, :, :], np.array([[4, 3], [6, 7]]))
     assert np.allclose(
-        v.to_numpy(as_vector=True)[1, 0, 0, :], np.array([8, 4]))
+        v.to_numpy()[1, 0, 0, :], np.array([8, 4]))
 
     @ti.kernel
     def func():
@@ -232,4 +232,4 @@ def test_matrix_list_assign():
     func()
     assert np.allclose(m.to_numpy()[1, 0, 0, :, :], np.array([[2, 4], [6, 8]]))
     assert np.allclose(
-        v.to_numpy(as_vector=True)[1, 0, 0, :], np.array([10, 12]))
+        v.to_numpy()[1, 0, 0, :], np.array([10, 12]))

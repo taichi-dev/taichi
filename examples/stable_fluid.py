@@ -260,7 +260,7 @@ def main():
             mouse_data = md_gen(gui)
             step(mouse_data)
 
-        img = color_buffer.to_numpy(as_vector=True)
+        img = color_buffer.to_numpy()
         gui.set_image(img)
         gui.show()
 

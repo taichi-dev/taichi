@@ -40,6 +40,8 @@ High-level guidelines
 .. note::
   “There are two ways of constructing a software design: One way is to make it so simple that there are obviously no deficiencies, and the other way is to make it so complicated that there are no obvious deficiencies. `The first method is far more difficult`.”     --- `C.A.R. Hoare <https://en.wikipedia.org/wiki/Tony_Hoare>`_
 
+One thing to keep in mind is that, Taichi was originally born as an academic research project. This usually means that some parts did not have the luxury to go through a solid design. While we are always trying to improve the code quality, it doesn't mean that the project is free from technical debts. Some places may be confusing or overly complicated. Whenever you spot one, you are more than welcome to shoot us a PR! :-)
+
 Effective communication
 -----------------------
 
@@ -48,6 +50,14 @@ Effective communication
 - Bulleted lists are our friends.
 - Proofread before you post: if you are the reader, can you understand what you typed?
 - If you are not a native speaker, consider using a spell checker such as `Grammarly <https://app.grammarly.com/>`_.
+
+Please base your discussion and feedback on facts, and not personal feelings. It is very important for all of us to maintain a friendly and blame-free community. Some examples:
+
+.. tip::
+  (Acceptable) This design could be confusing to new Taichi users.
+
+.. warning::
+  (Not Acceptable) This design is terrible.
 
 
 Making good pull requests

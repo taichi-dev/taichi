@@ -437,6 +437,23 @@ float64 TypedConstant::val_float() const {
   }
 }
 
+TypedConstant TypedConstant::operator-() const {
+  TI_ASSERT(is_signed(dt));
+  TypedConstant result(dt);
+  if (dt == DataType::i32) {
+    result.val_i32 = -val_i32;
+  } else if (dt == DataType::i64) {
+    result.val_i64 = -val_i64;
+  } else if (dt == DataType::i8) {
+    result.val_i8 = -val_i8;
+  } else if (dt == DataType::i16) {
+    result.val_i16 = -val_i16;
+  } else {
+    TI_NOT_IMPLEMENTED
+  }
+  return result;
+}
+
 }  // namespace lang
 
 void initialize_benchmark() {

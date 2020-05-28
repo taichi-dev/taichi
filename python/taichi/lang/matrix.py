@@ -148,29 +148,39 @@ class Matrix(TaichiOperations):
             self.entries[i].assign(other.entries[i])
 
     def element_wise_binary(self, foo, other):
-        if impl.inside_kernel():
-            ret = Matrix(self.n, self.m)
-            if isinstance(other, Matrix):
-                assert self.m == other.m and self.n == other.n, f"Dimension mismatch between shapes ({self.n}, {self.m}), ({other.n}, {other.m})"
-                for i in range(self.n * self.m):
-                    ret.entries[i] = foo(self.entries[i], other.entries[i])
-            else:  # assumed to be scalar
-                other = expr.Expr(other)
-                for i in range(self.n * self.m):
-                    ret.entries[i] = foo(self.entries[i], other)
-        else:
+        if not impl.inside_kernel():
             raise NotImplementedError(
                 f"Element-wise binary operation {foo.__name__} for matrix is not implemented in Python scope yet."
             )
+
+        ret = Matrix(self.n, self.m)
+        if isinstance(other, Matrix):
+            assert self.m == other.m and self.n == other.n, f"Dimension mismatch between shapes ({self.n}, {self.m}), ({other.n}, {other.m})"
+            for i in range(self.n * self.m):
+                ret.entries[i] = foo(self.entries[i], other.entries[i])
+        else:  # assumed to be scalar
+            other = expr.Expr(other)
+            for i in range(self.n * self.m):
+                ret.entries[i] = foo(self.entries[i], other)
         return ret
 
     def element_wise_unary(self, foo):
+        if not impl.inside_kernel():
+            raise NotImplementedError(
+                f"Element-wise unary operation {foo.__name__} for matrix is not implemented in Python scope yet."
+            )
+
         ret = Matrix(self.n, self.m)
         for i in range(self.n * self.m):
             ret.entries[i] = foo(self.entries[i])
         return ret
 
     def __matmul__(self, other):
+        if not impl.inside_kernel():
+            raise NotImplementedError(
+                f"Matrix multiply operation `@` is not implemented in Python scope yet."
+            )
+
         assert self.m == other.n, f"Dimension mismatch between shapes ({self.n}, {self.m}), ({other.n}, {other.m})"
         ret = Matrix(self.n, other.m)
         for i in range(self.n):

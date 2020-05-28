@@ -47,8 +47,8 @@ class CFGBuilder : public IRVisitor {
   }
 
   void visit(ContinueStmt *stmt) override {
-    // Put ContinueStmt in the next node.
-    continues_in_current_loop.push_back(new_node(current_stmt_id));
+    // Don't put ContinueStmt in any nodes.
+    continues_in_current_loop.push_back(new_node(current_stmt_id + 1));
   }
 
   void visit(WhileControlStmt *stmt) override {

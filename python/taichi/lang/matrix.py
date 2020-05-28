@@ -513,7 +513,6 @@ class Matrix(TaichiOperations):
         from .meta import fill_matrix
         fill_matrix(self, val)
 
-    def to_numpy(self, as_vector=False):
     def to_numpy(self, keep_dims=False):
         # Discussion: https://github.com/taichi-dev/taichi/pull/1046#issuecomment-633548858
         as_vector = self.m == 1 and not keep_dims

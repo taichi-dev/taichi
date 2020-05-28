@@ -482,6 +482,20 @@ class Matrix(TaichiOperations):
             ret = impl.min(ret, self.entries[i])
         return ret
 
+    def any(self):
+        import taichi as ti
+        ret = (self.entries[0] != ti.expr_init(0))
+        for i in range(1, len(self.entries)):
+            ret = ret + (self.entries[i] != ti.expr_init(0))
+        return -(ret < ti.expr_init(0))
+
+    def all(self):
+        import taichi as ti
+        ret = self.entries[0] != ti.expr_init(0)
+        for i in range(1, len(self.entries)):
+            ret = ret + (self.entries[i] != ti.expr_init(0))
+        return -(ret == ti.expr_init(-len(self.entries)))
+
     def dot(self, other):
         assert self.m == 1 and other.m == 1
         return (self.transposed(self) @ other).subscript(0, 0)
@@ -554,6 +568,17 @@ class Matrix(TaichiOperations):
     def from_torch(self, torch_tensor):
         return self.from_numpy(torch_tensor.contiguous())
 
+    def __ti_repr__(self):
+        yield '['
+        for i in range(self.n):
+            if i: yield ', '
+            yield '['
+            for j in range(self.m):
+                if j: yield ', '
+                yield self(i, j)
+            yield ']'
+        yield ']'
+
     @staticmethod
     def zero(dt, n, m=1):
         import taichi as ti
@@ -585,3 +610,9 @@ class Matrix(TaichiOperations):
         import taichi as ti
         return ti.Matrix([[ti.cos(alpha), -ti.sin(alpha)],
                           [ti.sin(alpha), ti.cos(alpha)]])
+
+    def __hash__(self):
+        # TODO: refactor KernelTemplateMapper
+        # If not, we get `unhashable type: Matrix` when
+        # using matrices as template arguments.
+        return id(self)

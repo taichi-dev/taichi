@@ -14,16 +14,15 @@ void re_id(IRNode *root);
 void flag_access(IRNode *root);
 void die(IRNode *root);
 void simplify(IRNode *root, Kernel *kernel = nullptr);
-void alg_simp(IRNode *root, const CompileConfig &config);
+
+bool alg_simp(IRNode *root);
 void whole_kernel_cse(IRNode *root);
 void variable_optimization(IRNode *root, bool after_lower_access);
 void extract_constant(IRNode *root);
-void full_simplify(IRNode *root,
-                   const CompileConfig &config,
-                   Kernel *kernel = nullptr);
+void full_simplify(IRNode *root, Kernel *kernel = nullptr);
 void print(IRNode *root, std::string *output = nullptr);
 void lower(IRNode *root);
-void typecheck(IRNode *root, Kernel *kernel = nullptr);
+void typecheck(IRNode *root);
 void loop_vectorize(IRNode *root);
 void slp_vectorize(IRNode *root);
 void vector_split(IRNode *root, int max_width, bool serial_schedule);

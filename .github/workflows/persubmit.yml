@@ -6,7 +6,7 @@ on:
 jobs:
   build_and_test:
     name: Build and Test
-    if: ${{ !contains(github.event.pull_request.labels.*.name, 'skip ci') || contains(github.event.head_commit.message, '[skip ci]') || contains(github.event.head_commit.message, '[skip linux]') }}
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'skip ci') && github.event.sender.login != 'taichi-gardener' }}
     strategy:
       matrix:
         os: [ubuntu-latest]

@@ -199,86 +199,29 @@ class TypedConstant {
   TypedConstant(float64 x) : dt(DataType::f64), val_f64(x) {
   }
 
-  std::string stringify() const {
-    if (dt == DataType::f32) {
-      return fmt::format("{}", val_f32);
-    } else if (dt == DataType::i32) {
-      return fmt::format("{}", val_i32);
-    } else if (dt == DataType::i64) {
-      return fmt::format("{}", val_i64);
-    } else if (dt == DataType::f64) {
-      return fmt::format("{}", val_f64);
-    } else if (dt == DataType::i8) {
-      return fmt::format("{}", val_i8);
-    } else if (dt == DataType::i16) {
-      return fmt::format("{}", val_i16);
-    } else if (dt == DataType::u8) {
-      return fmt::format("{}", val_u8);
-    } else if (dt == DataType::u16) {
-      return fmt::format("{}", val_u16);
-    } else if (dt == DataType::u32) {
-      return fmt::format("{}", val_u32);
-    } else if (dt == DataType::u64) {
-      return fmt::format("{}", val_u64);
-    } else {
-      TI_P(data_type_name(dt));
-      TI_NOT_IMPLEMENTED
-      return "";
-    }
-  }
+  std::string stringify() const;
 
-  bool equal_type_and_value(const TypedConstant &o) const {
-    if (dt != o.dt)
-      return false;
-    if (dt == DataType::f32) {
-      return val_f32 == o.val_f32;
-    } else if (dt == DataType::i32) {
-      return val_i32 == o.val_i32;
-    } else if (dt == DataType::i64) {
-      return val_i64 == o.val_i64;
-    } else if (dt == DataType::f64) {
-      return val_f64 == o.val_f64;
-    } else if (dt == DataType::i8) {
-      return val_i8 == o.val_i8;
-    } else if (dt == DataType::i16) {
-      return val_i16 == o.val_i16;
-    } else if (dt == DataType::u8) {
-      return val_u8 == o.val_u8;
-    } else if (dt == DataType::u16) {
-      return val_u16 == o.val_u16;
-    } else if (dt == DataType::u32) {
-      return val_u32 == o.val_u32;
-    } else if (dt == DataType::u64) {
-      return val_u64 == o.val_u64;
-    } else {
-      TI_NOT_IMPLEMENTED
-      return false;
-    }
-  }
+  bool equal_type_and_value(const TypedConstant &o) const;
 
   bool operator==(const TypedConstant &o) const {
     return equal_type_and_value(o);
   }
 
-  int32 &val_int32() {
-    TI_ASSERT(get_data_type<int32>() == dt);
-    return val_i32;
-  }
+  TypedConstant operator-() const;
 
-  float32 &val_float32() {
-    TI_ASSERT(get_data_type<float32>() == dt);
-    return val_f32;
-  }
-
-  int64 &val_int64() {
-    TI_ASSERT(get_data_type<int64>() == dt);
-    return val_i64;
-  }
-
-  float64 &val_float64() {
-    TI_ASSERT(get_data_type<float64>() == dt);
-    return val_f64;
-  }
+  int32 &val_int32();
+  float32 &val_float32();
+  int64 &val_int64();
+  float64 &val_float64();
+  int8 &val_int8();
+  int16 &val_int16();
+  uint8 &val_uint8();
+  uint16 &val_uint16();
+  uint32 &val_uint32();
+  uint64 &val_uint64();
+  int64 val_int() const;
+  uint64 val_uint() const;
+  float64 val_float() const;
 };
 
 inline std::string make_list(const std::vector<std::string> &data,

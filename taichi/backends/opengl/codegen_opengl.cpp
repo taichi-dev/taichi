@@ -461,7 +461,7 @@ class KernelGen : public IRVisitor {
 
   void visit(TernaryOpStmt *tri) override {
     TI_ASSERT(tri->op_type == TernaryOpType::select);
-    emit("{} {} = ({}) != 0 ? ({}) : ({});",
+    emit("{} {} = {} != 0 ? {} : {};",
          opengl_data_type_name(tri->element_type()), tri->short_name(),
          tri->op1->short_name(), tri->op2->short_name(),
          tri->op3->short_name());
@@ -702,7 +702,7 @@ FunctionType OpenglCodeGen::gen(void) {
 }
 
 void OpenglCodeGen::lower() {
-  auto ir = kernel_->ir;
+  auto ir = kernel_->ir.get();
   auto &config = kernel_->program.config;
   config.demote_dense_struct_fors = true;
   irpass::compile_to_offloads(ir, config,

@@ -74,53 +74,6 @@ class Expr(TaichiOperations):
     def __ixor__(self, other):
         self.atomic_xor(other)
 
-    # TODO: move to ops.py: ti.cmp_le
-    def __le__(self, other):
-        other = Expr(other)
-        return Expr(taichi_lang_core.expr_cmp_le(self.ptr, other.ptr))
-
-    def __lt__(self, other):
-        other = Expr(other)
-        return Expr(taichi_lang_core.expr_cmp_lt(self.ptr, other.ptr))
-
-    def __ge__(self, other):
-        other = Expr(other)
-        return Expr(taichi_lang_core.expr_cmp_ge(self.ptr, other.ptr))
-
-    def __gt__(self, other):
-        other = Expr(other)
-        return Expr(taichi_lang_core.expr_cmp_gt(self.ptr, other.ptr))
-
-    def __eq__(self, other):
-        other = Expr(other)
-        return Expr(taichi_lang_core.expr_cmp_eq(self.ptr, other.ptr))
-
-    def __ne__(self, other):
-        other = Expr(other)
-        return Expr(taichi_lang_core.expr_cmp_ne(self.ptr, other.ptr))
-
-    def __and__(self, item):
-        item = Expr(item)
-        return Expr(taichi_lang_core.expr_bit_and(self.ptr, item.ptr))
-
-    def __or__(self, item):
-        item = Expr(item)
-        return Expr(taichi_lang_core.expr_bit_or(self.ptr, item.ptr))
-
-    def __xor__(self, item):
-        item = Expr(item)
-        return Expr(taichi_lang_core.expr_bit_xor(self.ptr, item.ptr))
-
-    def logical_and(self, item):
-        return self & item
-
-    def logical_or(self, item):
-        return self | item
-
-    def logical_not(self):
-        return Expr(taichi_lang_core.expr_bit_not(self.ptr),
-                    tb=self.stack_info())
-
     def assign(self, other):
         taichi_lang_core.expr_assign(self.ptr,
                                      Expr(other).ptr, self.stack_info())
@@ -176,6 +129,7 @@ class Expr(TaichiOperations):
         else:
             assert False, op
 
+    # TODO: move to ops.py too:
     def atomic_add(self, other):
         import taichi as ti
         other_ptr = ti.wrap_scalar(other).ptr
@@ -268,14 +222,6 @@ class Expr(TaichiOperations):
         # TODO: avoid too many template instantiations
         from .meta import fill_tensor
         fill_tensor(self, val)
-
-    def __ti_int__(self):
-        import taichi as ti
-        return ti.cast(self, ti.get_runtime().default_ip)
-
-    def __ti_float__(self):
-        import taichi as ti
-        return ti.cast(self, ti.get_runtime().default_fp)
 
     def parent(self, n=1):
         import taichi as ti

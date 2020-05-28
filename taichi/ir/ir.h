@@ -5,6 +5,7 @@
 #include <atomic>
 #include <unordered_set>
 #include <unordered_map>
+#include <variant>
 #include "taichi/common/core.h"
 #include "taichi/util/bit.h"
 #include "taichi/lang_util.h"
@@ -243,6 +244,9 @@ class IRNode {
  public:
   virtual void accept(IRVisitor *visitor) {
     TI_NOT_IMPLEMENTED
+  }
+  virtual Kernel *get_kernel() const {
+    return nullptr;
   }
   virtual ~IRNode() = default;
 
@@ -552,6 +556,8 @@ class Stmt : public IRNode {
 
   IRNode *get_ir_root();
 
+  Kernel *get_kernel() const override;
+
   virtual void repeat(int factor) {
     ret_type.width *= factor;
   }
@@ -808,6 +814,7 @@ class Block : public IRNode {
   std::vector<std::unique_ptr<Stmt>> statements, trash_bin;
   Stmt *mask_var;
   std::vector<SNode *> stop_gradients;
+  Kernel *kernel;
 
   // Only used in frontend. Stores LoopIndexStmt or BinaryOpStmt for loop
   // variables, and AllocaStmt for other variables.
@@ -816,6 +823,7 @@ class Block : public IRNode {
   Block() {
     mask_var = nullptr;
     parent = nullptr;
+    kernel = nullptr;
   }
 
   bool has_container_statements();
@@ -837,6 +845,7 @@ class Block : public IRNode {
                     bool replace_usages = true);
   Stmt *lookup_var(const Identifier &ident) const;
   Stmt *mask();
+  Kernel *get_kernel() const override;
 
   Stmt *back() const {
     return statements.back().get();
@@ -1024,9 +1033,10 @@ class IfStmt : public Stmt {
 
 class PrintStmt : public Stmt {
  public:
-  std::vector<Stmt *> contents;
+  using EntryType = std::variant<Stmt *, std::string>;
+  std::vector<EntryType> contents;
 
-  PrintStmt(const std::vector<Stmt *> &content_) : contents(content_) {
+  PrintStmt(const std::vector<EntryType> &contents_) : contents(contents_) {
     TI_STMT_REG_FIELDS;
   }
 
@@ -1241,6 +1251,15 @@ inline void StmtFieldManager::operator()(const char *key, T &&value) {
         std::make_unique<StmtFieldNumeric<std::size_t>>(value.size()));
     for (int i = 0; i < (int)value.size(); i++) {
       (*this)("__element", value[i]);
+    }
+  } else if constexpr (std::is_same<decay_T,
+                                    std::variant<Stmt *, std::string>>::value) {
+    if (std::holds_alternative<std::string>(value)) {
+      stmt->field_manager.fields.emplace_back(
+          std::make_unique<StmtFieldNumeric<std::string>>(
+              std::get<std::string>(value)));
+    } else {
+      (*this)("__element", std::get<Stmt *>(value));
     }
   } else if constexpr (std::is_same<decay_T, Stmt *>::value) {
     stmt->register_operand(const_cast<Stmt *&>(value));

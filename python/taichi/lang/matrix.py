@@ -176,6 +176,10 @@ class Matrix(TaichiOperations):
         return ret
 
     def __matmul__(self, other):
+        # TODO: move to common_ops.py, redirect to `ti.matmul` too?
+        if self.is_pyconstant():
+            return self.make_from_numpy(self.to_numpy() @ other.to_numpy())
+
         assert self.m == other.n, f"Dimension mismatch between shapes ({self.n}, {self.m}), ({other.n}, {other.m})"
         ret = Matrix(self.n, other.m)
         for i in range(self.n):

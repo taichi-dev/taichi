@@ -89,7 +89,7 @@ def test_mpm88():
             grid_m.fill(0)
             substep()
 
-    pos = x.to_numpy(as_vector=True)
+    pos = x.to_numpy()
     pos[:, 1] *= 2
     regression = [
         0.31722742,

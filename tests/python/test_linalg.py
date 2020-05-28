@@ -145,6 +145,8 @@ def test_unit_vectors():
             assert a[i][j] == int(i == j)
 
 
+# TODO: move codes below to test_matrix.py:
+
 @ti.all_archs
 def test_init_matrix_from_vectors():
     m1 = ti.Matrix(3, 3, dt=ti.f32, shape=(3))
@@ -179,14 +181,12 @@ def test_init_matrix_from_vectors():
 def test_any_all():
     a = ti.Matrix(2, 2, dt=ti.i32, shape=())
     b = ti.var(dt=ti.i32, shape=())
+    c = ti.var(dt=ti.i32, shape=())
 
     @ti.kernel
-    def func_any():
+    def func():
         b[None] = any(a[None])
-
-    @ti.kernel
-    def func_all():
-        b[None] = all(a[None])
+        c[None] = all(a[None])
 
     for i in range(2):
         for j in range(2):
@@ -195,14 +195,38 @@ def test_any_all():
             a[None][1, 1] = i
             a[None][0, 1] = j
 
-            func_any()
+            func()
             if i == 1 or j == 1:
                 assert b[None] == 1
             else:
                 assert b[None] == 0
 
-            func_all()
             if i == 1 and j == 1:
-                assert b[None] == 1
+                assert c[None] == 1
             else:
-                assert b[None] == 0
+                assert c[None] == 0
+
+
+# must not throw any error:
+@ti.all_archs
+def test_matrix_list_assign():
+
+    m = ti.Matrix(2, 2, dt=ti.i32, shape=(2, 2, 1))
+    v = ti.Vector(2, dt=ti.i32, shape=(2, 2, 1))
+
+    m[1, 0, 0] = [[4, 3], [6, 7]]
+    v[1, 0, 0] = [8, 4]
+
+    assert np.allclose(m.to_numpy()[1, 0, 0, :, :], np.array([[4, 3], [6, 7]]))
+    assert np.allclose(v.to_numpy(as_vector=True)[1, 0, 0, :], np.array([8, 4]))
+
+    @ti.kernel
+    def func():
+        m[1, 0, 0] = [[1, 2], [3, 4]]
+        v[1, 0, 0] = [5, 6]
+        m[1, 0, 0] += [[1, 2], [3, 4]]
+        v[1, 0, 0] += [5, 6]
+
+    func()
+    assert np.allclose(m.to_numpy()[1, 0, 0, :, :], np.array([[2, 4], [6, 8]]))
+    assert np.allclose(v.to_numpy(as_vector=True)[1, 0, 0, :], np.array([10, 12]))

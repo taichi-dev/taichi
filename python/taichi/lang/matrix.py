@@ -142,10 +142,7 @@ class Matrix(TaichiOperations):
         results = [False for _ in self.entries]
         for i, e in enumerate(self.entries):
             results[i] = not isinstance(e, expr.Expr)
-            assert results[i] == results[0], \
-                "Matrices with mixed Taichi-expression/Python-constant " \
-                "entries are not allowed"
-        return results[0]
+        return all(results)
 
     @staticmethod
     def make_from_numpy(nparray):

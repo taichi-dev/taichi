@@ -158,12 +158,6 @@ class Matrix(TaichiOperations):
                     ret(i, j).assign(ret(i, j) + self(i, k) * other(k, j))
         return ret
 
-    def broadcast(self, scalar):
-        ret = Matrix(self.n, self.m, empty=True)
-        for i in range(self.n * self.m):
-            ret.entries[i] = scalar
-        return ret
-
     def linearize_entry_id(self, *args):
         assert 1 <= len(args) <= 2
         if len(args) == 1 and isinstance(args[0], (list, tuple)):

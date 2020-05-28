@@ -158,7 +158,7 @@ Meta data
     :return: (SNode) the parent of ``a``'s containing SNode
 
     ::
-    
+
         x = ti.var(ti.i32)
         y = ti.var(ti.i32)
         blk1 = ti.root.dense(ti.ij, (6, 5))

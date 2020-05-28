@@ -133,13 +133,26 @@ def test_numpy_io_example():
     arr = np.ones(shape=(n, m, 3), dtype=np.int32)
     vec.from_numpy(arr)
 
+    arr = np.ones(shape=(n, m, 3, 1), dtype=np.int32)
+    vec.from_numpy(arr)
+
+    arr = np.ones(shape=(n, m, 1, 3), dtype=np.int32)
+    vec.from_numpy(arr)
+
+    arr = vec.to_numpy(keep_dims=True)
+    assert arr.shape == (n, m, 3, 1)
+
     arr = vec.to_numpy()
     assert arr.shape == (n, m, 3)
 
     # Matrix
     arr = np.ones(shape=(n, m, 3, 4), dtype=np.int32)
     mat.from_numpy(arr)
+
     arr = mat.to_numpy()
+    assert arr.shape == (n, m, 3, 4)
+
+    arr = mat.to_numpy(keep_dims=True)
     assert arr.shape == (n, m, 3, 4)
 
     # For PyTorch tensors, use to_torch/from_torch instead

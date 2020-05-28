@@ -70,7 +70,7 @@ class Matrix(TaichiOperations):
                 raise Exception(
                     'cols/rows required when using list of vectors')
             elif not isinstance(n[0], Iterable):
-                if impl.get_runtime().inside_kernel:
+                if impl.inside_kernel():
                     # wrap potential constants with Expr
                     if keep_raw:
                         mat = [list([x]) for x in n]
@@ -134,8 +134,17 @@ class Matrix(TaichiOperations):
             if isinstance(e, expr.Expr):
                 if e.ptr.is_global_var():
                     results[i] = True
-            assert results[i] == results[
-                0], "Matrices with mixed global/local entries are not allowed"
+            assert results[i] == results[0], \
+                "Matrices with mixed global/local entries are not allowed"
+        return results[0]
+
+    def is_pyconstant(self):
+        results = [False for _ in self.entries]
+        for i, e in enumerate(self.entries):
+            result[i] = isinstance(e, expr.Expr)
+            assert results[i] == results[0], \
+                "Matrices with mixed Taichi-expression/Python-constant " \
+                "entries are not allowed"
         return results[0]
 
     def assign(self, other):
@@ -148,11 +157,6 @@ class Matrix(TaichiOperations):
             self.entries[i].assign(other.entries[i])
 
     def element_wise_binary(self, foo, other):
-        if not impl.inside_kernel():
-            raise NotImplementedError(
-                f"Element-wise binary operation {foo.__name__} for matrix is not implemented in Python scope yet."
-            )
-
         ret = Matrix(self.n, self.m)
         if isinstance(other, Matrix):
             assert self.m == other.m and self.n == other.n, f"Dimension mismatch between shapes ({self.n}, {self.m}), ({other.n}, {other.m})"
@@ -165,22 +169,12 @@ class Matrix(TaichiOperations):
         return ret
 
     def element_wise_unary(self, foo):
-        if not impl.inside_kernel():
-            raise NotImplementedError(
-                f"Element-wise unary operation {foo.__name__} for matrix is not implemented in Python scope yet."
-            )
-
         ret = Matrix(self.n, self.m)
         for i in range(self.n * self.m):
             ret.entries[i] = foo(self.entries[i])
         return ret
 
     def __matmul__(self, other):
-        if not impl.inside_kernel():
-            raise NotImplementedError(
-                f"Matrix multiply operation `@` is not implemented in Python scope yet."
-            )
-
         assert self.m == other.n, f"Dimension mismatch between shapes ({self.n}, {self.m}), ({other.n}, {other.m})"
         ret = Matrix(self.n, other.m)
         for i in range(self.n):
@@ -535,6 +529,10 @@ class Matrix(TaichiOperations):
         fill_matrix(self, val)
 
     def to_numpy(self, as_vector=False):
+        if self.is_pyconstant():
+            # TO @rexwangcc: all operations can be based on this:
+            return np.array(self.entries).reshape((self.n, self.m))
+
         if as_vector:
             assert self.m == 1, "This matrix is not a vector"
             dim_ext = (self.n, )

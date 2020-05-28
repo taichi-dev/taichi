@@ -141,11 +141,15 @@ class Matrix(TaichiOperations):
     def is_pyconstant(self):
         results = [False for _ in self.entries]
         for i, e in enumerate(self.entries):
-            result[i] = isinstance(e, expr.Expr)
+            results[i] = not isinstance(e, expr.Expr)
             assert results[i] == results[0], \
                 "Matrices with mixed Taichi-expression/Python-constant " \
                 "entries are not allowed"
         return results[0]
+
+    @staticmethod
+    def make_from_numpy(nparray):
+        return Matrix(nparray)
 
     def assign(self, other):
         if isinstance(other, expr.Expr):
@@ -182,6 +186,7 @@ class Matrix(TaichiOperations):
                 ret(i, j).assign(self(i, 0) * other(0, j))
                 for k in range(1, other.n):
                     ret(i, j).assign(ret(i, j) + self(i, k) * other(k, j))
+        return ret
 
     def broadcast(self, scalar):
         ret = Matrix(self.n, self.m, empty=True)
@@ -529,15 +534,16 @@ class Matrix(TaichiOperations):
         fill_matrix(self, val)
 
     def to_numpy(self, as_vector=False):
-        if self.is_pyconstant():
-            # TO @rexwangcc: all operations can be based on this:
-            return np.array(self.entries).reshape((self.n, self.m))
-
         if as_vector:
             assert self.m == 1, "This matrix is not a vector"
             dim_ext = (self.n, )
         else:
             dim_ext = (self.n, self.m)
+
+        if self.is_pyconstant():
+            # TO @rexwangcc: all operations can be based on this:
+            return np.array(self.entries).reshape(dim_ext)
+
         ret = np.empty(self.loop_range().shape() + dim_ext,
                        dtype=to_numpy_type(
                            self.loop_range().snode().data_type()))

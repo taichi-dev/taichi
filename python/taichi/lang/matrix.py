@@ -52,7 +52,7 @@ class Matrix(TaichiOperations):
                 self.n = t.n
                 self.m = t.m
                 self.entries = t.entries
-        elif isinstance(n, (list, tuple)) or isinstance(n, np.ndarray):
+        elif isinstance(n, (list, tuple, np.ndarray)):
             if len(n) == 0:
                 mat = []
             elif isinstance(n[0], Matrix):

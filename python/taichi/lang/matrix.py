@@ -267,6 +267,14 @@ class Matrix(TaichiOperations):
             for j in range(self.m):
                 self(i, j)[index] = item[i][j]
 
+    # host access, return a complete Matrix instead of Proxy
+    def at(self, index):
+        ret = Matrix(self.n, self.m, empty=True)
+        for i in range(self.n):
+            for j in range(self.m):
+                ret.entries[i * self.m + j] = self[index][i, j]
+        return ret
+
     def copy(self):
         ret = Matrix(self.n, self.m)
         ret.entries = copy.copy(self.entries)

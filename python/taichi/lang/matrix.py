@@ -288,11 +288,6 @@ class Matrix(TaichiOperations):
     # host access
     def __getitem__(self, index):
         return Matrix.Proxy(self, index)
-        ret = [[] for _ in range(self.n)]
-        for i in range(self.n):
-            for j in range(self.m):
-                ret[i].append(self(i, j)[index])
-        return ret
 
     # host access
     def __setitem__(self, index, item):

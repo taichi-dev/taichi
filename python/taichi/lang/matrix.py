@@ -144,8 +144,6 @@ class Matrix(TaichiOperations):
                 ret.entries[i] = foo(self.entries[i], other)
         return ret
 
-    element_wise_inplace_binary = element_wise_binary
-
     def element_wise_unary(self, foo):
         ret = self.empty_copy()
         for i in range(self.n * self.m):

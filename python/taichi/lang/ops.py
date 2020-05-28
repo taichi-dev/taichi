@@ -67,7 +67,7 @@ def inplace_binary(foo):
     @functools.wraps(foo)
     def wrapped(a, b):
         if ti.is_taichi_class(a):
-            return a.element_wise_inplace_binary(imp_foo, b)
+            return a.element_wise_binary(imp_foo, b)
         elif ti.is_taichi_class(b):
             assert False, f'cannot augassign taichi class {type(b)} to scalar expr'
         else:

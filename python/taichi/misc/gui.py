@@ -133,6 +133,14 @@ class GUI:
         self.line(c, d, radius, color)
         self.line(d, a, radius, color)
 
+    def text(self, context, pos, font_size=15, color=0xFFFFFF):
+        import taichi as ti
+        # TODO: refactor Canvas::text
+        font_size = float(font_size)
+        pos = ti.vec(*pos)
+        color = ti.vec(0, 255, 0, 0)
+        self.canvas.text(context, pos, font_size, color)
+
     def show(self, file=None):
         self.core.update()
         if file:

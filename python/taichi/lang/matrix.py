@@ -617,3 +617,10 @@ class Matrix(TaichiOperations):
 
 def Vector(n=1, dt=None, shape=None, **kwargs):
     return Matrix(n, 1, dt, shape, **kwargs)
+
+Vector.zero = Matrix.zero
+Vector.one = Matrix.one
+Vector.dot = Matrix.dot
+Vector.cross = Matrix.cross
+Vector.outer_product = Matrix.outer_product
+Vector.unit = Matrix.unit

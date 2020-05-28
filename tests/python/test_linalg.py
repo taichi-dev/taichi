@@ -219,8 +219,7 @@ def test_matrix_list_assign():
     v[1, 0, 0] = [8, 4]
 
     assert np.allclose(m.to_numpy()[1, 0, 0, :, :], np.array([[4, 3], [6, 7]]))
-    assert np.allclose(
-        v.to_numpy()[1, 0, 0, :], np.array([8, 4]))
+    assert np.allclose(v.to_numpy()[1, 0, 0, :], np.array([8, 4]))
 
     @ti.kernel
     def func():
@@ -231,5 +230,4 @@ def test_matrix_list_assign():
 
     func()
     assert np.allclose(m.to_numpy()[1, 0, 0, :, :], np.array([[2, 4], [6, 8]]))
-    assert np.allclose(
-        v.to_numpy()[1, 0, 0, :], np.array([10, 12]))
+    assert np.allclose(v.to_numpy()[1, 0, 0, :], np.array([10, 12]))

@@ -272,6 +272,7 @@ class Matrix(TaichiOperations):
 
     class Proxy:
         def __init__(self, mat, index):
+            """Proxy when a tensor of Matrices get created."""
             self.mat = mat
             self.index = index
 
@@ -286,10 +287,16 @@ class Matrix(TaichiOperations):
             self.mat(*key)[self.index] = value
 
         def __add__(self, other):
-            pass
+            return self.mat.__add__(other.mat)
 
         def __sub__(self, other):
-            pass
+            return self.mat.__sub__(other.mat)
+        
+        def __matmul__(self, other):
+            return self.mat.__matmul__(other.mat)
+
+        def to_numpy(self, as_vector=False):
+            return self.mat.to_numpy(as_vector=as_vector)
 
         def __repr__(self):
             return self.mat.__repr__()

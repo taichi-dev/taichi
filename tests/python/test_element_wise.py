@@ -237,19 +237,30 @@ def test_matrix_element_wise_unary_2():
 def test_matrix_element_wise_inplace_binary_i32():
     seed(986)
     for n, m in [(5, 4), (3, 1)]:
-        _test_matrix_element_wise_inplace_binary(ti.i32, n, m, ti.atomic_add, ops.add)
-        _test_matrix_element_wise_inplace_binary(ti.i32, n, m, ti.atomic_sub, ops.sub)
-        _test_matrix_element_wise_inplace_binary(ti.i32, n, m, ti.atomic_and, ops.and_)
-        _test_matrix_element_wise_inplace_binary(ti.i32, n, m, ti.atomic_xor, ops.xor)
-        _test_matrix_element_wise_inplace_binary(ti.i32, n, m, ti.atomic_or, ops.or_)
-        _test_matrix_element_wise_inplace_binary(ti.i32, n, m, ti.atomic_max, max)
-        _test_matrix_element_wise_inplace_binary(ti.i32, n, m, ti.atomic_min, min)
+        _test_matrix_element_wise_inplace_binary(ti.i32, n, m, ti.atomic_add,
+                                                 ops.add)
+        _test_matrix_element_wise_inplace_binary(ti.i32, n, m, ti.atomic_sub,
+                                                 ops.sub)
+        _test_matrix_element_wise_inplace_binary(ti.i32, n, m, ti.atomic_and,
+                                                 ops.and_)
+        _test_matrix_element_wise_inplace_binary(ti.i32, n, m, ti.atomic_xor,
+                                                 ops.xor)
+        _test_matrix_element_wise_inplace_binary(ti.i32, n, m, ti.atomic_or,
+                                                 ops.or_)
+        _test_matrix_element_wise_inplace_binary(ti.i32, n, m, ti.atomic_max,
+                                                 max)
+        _test_matrix_element_wise_inplace_binary(ti.i32, n, m, ti.atomic_min,
+                                                 min)
 
 
 def test_matrix_element_wise_inplace_binary_f32():
     seed(987)
     for n, m in [(5, 4), (3, 1)]:
-        _test_matrix_element_wise_inplace_binary(ti.f32, n, m, ti.atomic_add, ops.add)
-        _test_matrix_element_wise_inplace_binary(ti.f32, n, m, ti.atomic_sub, ops.sub)
-        _test_matrix_element_wise_inplace_binary(ti.i32, n, m, ti.atomic_max, max)
-        _test_matrix_element_wise_inplace_binary(ti.i32, n, m, ti.atomic_min, min)
+        _test_matrix_element_wise_inplace_binary(ti.f32, n, m, ti.atomic_add,
+                                                 ops.add)
+        _test_matrix_element_wise_inplace_binary(ti.f32, n, m, ti.atomic_sub,
+                                                 ops.sub)
+        _test_matrix_element_wise_inplace_binary(ti.i32, n, m, ti.atomic_max,
+                                                 max)
+        _test_matrix_element_wise_inplace_binary(ti.i32, n, m, ti.atomic_min,
+                                                 min)

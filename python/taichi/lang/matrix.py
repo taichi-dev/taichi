@@ -291,7 +291,7 @@ class Matrix(TaichiOperations):
 
         def __sub__(self, other):
             return self.mat.__sub__(other.mat)
-        
+
         def __matmul__(self, other):
             return self.mat.__matmul__(other.mat)
 
@@ -633,11 +633,10 @@ class Matrix(TaichiOperations):
                 yield self(i, j)
             yield ']'
         yield ']'
-    
+
     def __repr__(self):
         """Python scope object print support."""
-        return str(np.array(self.entries).reshape(
-                (self.n, self.m)))
+        return str(np.array(self.entries).reshape((self.n, self.m)))
 
     @staticmethod
     def zero(dt, n, m=1):

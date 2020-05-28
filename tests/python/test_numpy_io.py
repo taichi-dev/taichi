@@ -139,11 +139,11 @@ def test_numpy_io_example():
     arr = np.ones(shape=(n, m, 1, 3), dtype=np.int32)
     vec.from_numpy(arr)
 
-    arr = vec.to_numpy(keep_dims=True)
-    assert arr.shape == (n, m, 3, 1)
-
     arr = vec.to_numpy()
     assert arr.shape == (n, m, 3)
+
+    arr = vec.to_numpy(keep_dims=True)
+    assert arr.shape == (n, m, 3, 1)
 
     # Matrix
     arr = np.ones(shape=(n, m, 3, 4), dtype=np.int32)

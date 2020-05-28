@@ -147,32 +147,6 @@ class Matrix(TaichiOperations):
         for i in range(self.n * self.m):
             self.entries[i].assign(other.entries[i])
 
-    def __add__(self, other):
-        import taichi as ti
-        if impl.inside_kernel():
-            return ti.add(self, other)
-        else:
-            # implement Matrix add in Python scope
-            assert self.m == other.m and self.n == other.n, f"Dimension mismatch between shapes ({self.n}, {self.m}), ({other.n}, {other.m})"
-            ret = Matrix(self.n, self.m, empty=True)
-            ret.entries = (np.array(self.entries).reshape(
-                (self.n, self.m)) + np.array(other.entries).reshape(
-                    (other.n, other.m))).flatten().tolist()
-            return ret
-
-    def __sub__(self, other):
-        import taichi as ti
-        if impl.inside_kernel():
-            return ti.sub(self, other)
-        else:
-            # implement Matrix subtract in Python scope
-            assert self.m == other.m and self.n == other.n, f"Dimension mismatch between shapes ({self.n}, {self.m}), ({other.n}, {other.m})"
-            ret = Matrix(self.n, self.m, empty=True)
-            ret.entries = (np.array(self.entries).reshape(
-                (self.n, self.m)) - np.array(other.entries).reshape(
-                    (other.n, other.m))).flatten().tolist()
-            return ret
-
     def element_wise_binary(self, foo, other):
         if impl.inside_kernel():
             ret = Matrix(self.n, self.m)
@@ -197,24 +171,13 @@ class Matrix(TaichiOperations):
         return ret
 
     def __matmul__(self, other):
-        import taichi as ti
-
         assert self.m == other.n, f"Dimension mismatch between shapes ({self.n}, {self.m}), ({other.n}, {other.m})"
-
-        if ti.get_runtime().inside_kernel:
-            ret = Matrix(self.n, other.m)
-            for i in range(self.n):
-                for j in range(other.m):
-                    ret(i, j).assign(self(i, 0) * other(0, j))
-                    for k in range(1, other.n):
-                        ret(i, j).assign(ret(i, j) + self(i, k) * other(k, j))
-        else:
-            # implement Matrix matmul in Python scope
-            ret = Matrix(self.n, self.m, empty=True)
-            ret.entries = (np.array(self.entries).reshape(
-                (self.n, self.m)) @ np.array(other.entries).reshape(
-                    (other.n, other.m))).flatten().tolist()
-        return ret
+        ret = Matrix(self.n, other.m)
+        for i in range(self.n):
+            for j in range(other.m):
+                ret(i, j).assign(self(i, 0) * other(0, j))
+                for k in range(1, other.n):
+                    ret(i, j).assign(ret(i, j) + self(i, k) * other(k, j))
 
     def broadcast(self, scalar):
         ret = Matrix(self.n, self.m, empty=True)
@@ -272,7 +235,7 @@ class Matrix(TaichiOperations):
 
     class Proxy:
         def __init__(self, mat, index):
-            """Proxy when a tensor of Matrices get created."""
+            """Proxy when a tensor of Matrices is accessed by host."""
             self.mat = mat
             self.index = index
 
@@ -285,21 +248,6 @@ class Matrix(TaichiOperations):
             if not isinstance(key, list):
                 key = [key]
             self.mat(*key)[self.index] = value
-
-        def __add__(self, other):
-            return self.mat.__add__(other.mat)
-
-        def __sub__(self, other):
-            return self.mat.__sub__(other.mat)
-
-        def __matmul__(self, other):
-            return self.mat.__matmul__(other.mat)
-
-        def to_numpy(self, as_vector=False):
-            return self.mat.to_numpy(as_vector=as_vector)
-
-        def __repr__(self):
-            return self.mat.__repr__()
 
     # host access
     def __getitem__(self, index):

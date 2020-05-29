@@ -140,7 +140,7 @@ Methods
 
     :parameter a: (Vector, 2 or 3 components)
     :parameter b: (Vector of the same size as a)
-    :return: (scalar (for 2D inputs), or 3D Vector (for 3D inputs)) the cross product of ``a`` and ``b`` 
+    :return: (scalar (for 2D inputs), or 3D Vector (for 3D inputs)) the cross product of ``a`` and ``b``
 
     We use a right-handed coordinate system. E.g.,
     ::

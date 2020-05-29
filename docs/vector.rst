@@ -154,8 +154,7 @@ Methods
         a2 = ti.Vector([1, 2])
         b2 = ti.Vector([4, 5])
         c2 = ti.cross(a, b)
-        # [2*0 - 5*0, 4*0 - 1*0, 1*5 - 4*2] = [0, 0, -3]
-        # here it only calculates and returns the last component -3
+        # c2 = 1*5 - 4*2 = -3
 
 
 .. function:: ti.outer_product(a, b)

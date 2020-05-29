@@ -32,15 +32,15 @@ def test_BasicUlts():
 
     for i in range(3):
         for j in range(3):
-            assert abT[None][i, j] == a[None][i]*b[None][j]
+            assert abT[None][i, j] == a[None][i] * b[None][j]
 
     sqrt14 = np.sqrt(14.0)
-    invSqrt14 = 1.0/sqrt14
+    invSqrt14 = 1.0 / sqrt14
     assert normSqrA[None] == 14.0
     assert normA[None] == approx(sqrt14)
-    assert aNormalized[None][0] == approx(1.0*invSqrt14)
-    assert aNormalized[None][1] == approx(2.0*invSqrt14)
-    assert aNormalized[None][2] == approx(3.0*invSqrt14)
+    assert aNormalized[None][0] == approx(1.0 * invSqrt14)
+    assert aNormalized[None][1] == approx(2.0 * invSqrt14)
+    assert aNormalized[None][2] == approx(3.0 * invSqrt14)
 
 
 @ti.all_archs

@@ -610,7 +610,8 @@ class Matrix(TaichiOperations):
 
         else:
             raise Exception(
-                "cross product is only supported between pairs of 3D or those of 2D vectors")
+                "cross product is only supported between pairs of 3D or those of 2D vectors"
+            )
 
     @staticmethod
     def outer_product(a, b):

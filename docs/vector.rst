@@ -138,7 +138,7 @@ Methods
 
 .. function:: ti.cross(a, b)
 
-    :parameter a: (Vector, 2, or 3 component)
+    :parameter a: (Vector, 2 or 3 components)
     :parameter b: (Vector with the same component number as a)
     :return: (Vector, 3D) the cross product of ``a`` and ``b``, if the component number is 3
     :return: (Scalar) the last component of cross product of ``Vector([a,0])`` and ``Vector([b,0])``, if the component number is 2

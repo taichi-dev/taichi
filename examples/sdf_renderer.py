@@ -157,7 +157,7 @@ for i in range(50000):
     if i % interval == 0 and i > 0:
         print("{:.2f} samples/s".format(interval / (time.time() - last_t)))
         last_t = time.time()
-        img = color_buffer.to_numpy(as_vector=True) * (1 / (i + 1))
+        img = color_buffer.to_numpy() * (1 / (i + 1))
         img = img / img.mean() * 0.24
         gui.set_image(np.sqrt(img))
         gui.show()

@@ -4,7 +4,7 @@ from taichi import approx
 
 
 @ti.all_archs
-def test_BasicUlts():
+def test_basic_utils():
     a = ti.Vector(3, dt=ti.f32)
     b = ti.Vector(3, dt=ti.f32)
     abT = ti.Matrix(3, 3, dt=ti.f32)

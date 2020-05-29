@@ -427,7 +427,7 @@ class Matrix(TaichiOperations):
 
         else:
             raise Exception(
-                "CrossProduct only supports 3D vector and 2D vector")
+                "cross product is only supported between 3D or 2D vectors")
 
     @staticmethod
     def diag(dim, val):

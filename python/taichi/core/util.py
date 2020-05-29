@@ -321,19 +321,19 @@ else:
 
         if create_sand_box_on_windows:
             # Create a sandbox for separated core lib development and loading
-            dir = os.path.join(get_output_directory(), 'tmp',
+            folder = os.path.join(get_output_directory(), 'tmp',
                                get_unique_task_id())
 
             lib_dir = os.path.join(get_repo_directory(), 'external', 'lib')
             os.environ['PATH'] += ';' + lib_dir
 
-            os.makedirs(dir)
+            os.makedirs(folder)
             if os.path.exists(dll_path1):
-                shutil.copy(dll_path1, os.path.join(dir, 'taichi_core.pyd'))
+                shutil.copy(dll_path1, os.path.join(folder, 'taichi_core.pyd'))
             else:
-                shutil.copy(dll_path2, os.path.join(dir, 'taichi_core.pyd'))
-            os.environ['PATH'] += ';' + dir
-            sys.path.append(dir)
+                shutil.copy(dll_path2, os.path.join(folder, 'taichi_core.pyd'))
+            os.environ['PATH'] += ';' + folder
+            sys.path.append(folder)
         else:
             shutil.copy(dll_path, os.path.join(bin_dir, 'taichi_core.pyd'))
             sys.path.append(bin_dir)
@@ -342,9 +342,7 @@ else:
         except Exception as e:
             print(e)
             print()
-            print(
-                'Is taichi\external\lib correctly set to branch msvc or mingw?'
-            )
+            print('Hint: please make sure the major and minor versions of the Python executable is correct.')
             print()
             raise e
 

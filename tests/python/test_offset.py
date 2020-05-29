@@ -49,3 +49,29 @@ def test_struct_for_negative():
     for i in range(16, 48):
         for j in range(-16, 16):
             assert a[i, j] == i + j * 10
+
+
+@ti.all_archs
+def test_offset_for_matrix():
+    a = ti.Matrix(dt=ti.i32, shape=(32, 16, 8), offset=(-8, -16, -32))
+    b = ti.Matrix(dt=ti.i32, shape=(32, 16, 8), offset=None)
+
+
+@ti.all_archs
+def test_offset_for_var():
+    a = ti.var(dt=ti.i32, shape=16, offset=-48)
+    b = ti.var(dt=ti.i32, shape=(16,), offset=(16,))
+    c = ti.var(dt=ti.i32, shape=(16, 64), offset=(-16, -64))
+    d = ti.var(dt=ti.i32, shape=(16, 64), offset=None)
+
+
+@ti.must_throw(AssertionError)
+def test_offset_must_throw_var():
+    a = ti.var(dt=ti.float32, shape=3, offset=(3, 4))
+    b = ti.var(dt=ti.float32, shape=None, offset=(3, 4))
+
+
+@ti.must_throw(AssertionError)
+def test_offset_must_throw_mat():
+    c = ti.Matrix(dt=ti.i32, shape=(32, 16, 8), offset=(32, 16))
+    d = ti.Matrix(dt=ti.i32, shape=None, offset=(32, 16))

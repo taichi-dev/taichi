@@ -391,7 +391,7 @@ class Canvas {
             Vector4 color) {
     position = transform(position);
     std::string root_dir = get_repo_dir();
-    auto ttf_path = root_dir + std::string("/assets/fonts/go/Go-Regular.ttf");
+    auto ttf_path = root_dir + std::string("/external/fonts/NotoSansMono-Regular.ttf");
     img.write_text(ttf_path, str, size, position.x, position.y, color);
   }
 

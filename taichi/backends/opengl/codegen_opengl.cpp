@@ -415,14 +415,14 @@ class KernelGen : public IRVisitor {
           bin->element_type() != bin->lhs->element_type() ||
           bin->element_type() != bin->rhs->element_type()) {
         if (is_comparison(bin->op_type)) {
-        // TODO(#577): Taichi uses -1 as true due to LLVM i1... See
-        // https://github.com/taichi-dev/taichi/blob/6989c0e21d437a9ffdc0151cee9d3aa2aaa2241d/taichi/codegen/codegen_llvm.cpp#L564
-        // This is a workaround to make OpenGL compatible with the behavior.
+          // TODO(#577): Taichi uses -1 as true due to LLVM i1... See
+          // https://github.com/taichi-dev/taichi/blob/6989c0e21d437a9ffdc0151cee9d3aa2aaa2241d/taichi/codegen/codegen_llvm.cpp#L564
+          // This is a workaround to make OpenGL compatible with the behavior.
           emit("{} {} = -{}({} {} {});", dt_name, bin_name, dt_name, lhs_name,
-              binop, rhs_name);
+               binop, rhs_name);
         } else {
           emit("{} {} = {}({} {} {});", dt_name, bin_name, dt_name, lhs_name,
-              binop, rhs_name);
+               binop, rhs_name);
         }
       } else {
         emit("{} {} = {} {} {};", dt_name, bin_name, lhs_name, binop, rhs_name);

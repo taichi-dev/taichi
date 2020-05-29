@@ -391,9 +391,17 @@ class KernelCodegen : public IRVisitor {
       return;
     }
     const auto binop = metal_binary_op_type_symbol(op_type);
-    if (is_metal_binary_op_infix(bin->op_type)) {
-      emit("const {} {} = ({} {} {});", dt_name, bin_name, lhs_name, binop,
-           rhs_name);
+    if (is_metal_binary_op_infix(op_type)) {
+      if (is_comparison(op_type)) {
+        // TODO(#577): Taichi uses -1 as true due to LLVM i1... See
+        // https://github.com/taichi-dev/taichi/blob/6989c0e21d437a9ffdc0151cee9d3aa2aaa2241d/taichi/codegen/codegen_llvm.cpp#L564
+        // This is a workaround to make Metal compatible with the behavior.
+        emit("const {} {} = -({} {} {});", dt_name, bin_name, lhs_name, binop,
+             rhs_name);
+      } else {
+        emit("const {} {} = ({} {} {});", dt_name, bin_name, lhs_name, binop,
+             rhs_name);
+      }
     } else {
       // This is a function call
       emit("const {} {} =  {}({}, {});", dt_name, bin_name, binop, lhs_name,

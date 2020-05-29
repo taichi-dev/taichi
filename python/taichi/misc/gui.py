@@ -138,7 +138,8 @@ class GUI:
         # TODO: refactor Canvas::text
         font_size = float(font_size)
         pos = ti.vec(*pos)
-        color = ti.vec(0, 255, 0, 0)
+        r, g, b = color & 0xff, (color >> 8) & 0xff, (color >> 12) & 0xff
+        color = ti.vec(r / 255, g / 255, b / 255, 1)
         self.canvas.text(context, pos, font_size, color)
 
     def show(self, file=None):

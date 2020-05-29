@@ -4,6 +4,106 @@ from taichi import approx
 
 
 @ti.all_archs
+def test_basic_utils():
+    a = ti.Vector(3, dt=ti.f32)
+    b = ti.Vector(3, dt=ti.f32)
+    abT = ti.Matrix(3, 3, dt=ti.f32)
+    aNormalized = ti.Vector(3, dt=ti.f32)
+
+    normA = ti.var(ti.f32)
+    normSqrA = ti.var(ti.f32)
+
+    @ti.layout
+    def place():
+        ti.root.place(a, b, abT, aNormalized, normA, normSqrA)
+
+    @ti.kernel
+    def init():
+        a[None] = ti.Vector([1.0, 2.0, 3.0])
+        b[None] = ti.Vector([4.0, 5.0, 6.0])
+        abT[None] = ti.Matrix.outer_product(a, b)
+
+        normA[None] = a.norm()
+        normSqrA[None] = a.norm_sqr()
+
+        aNormalized[None] = ti.Matrix.normalized(a)
+
+    init()
+
+    for i in range(3):
+        for j in range(3):
+            assert abT[None][i, j] == a[None][i] * b[None][j]
+
+    sqrt14 = np.sqrt(14.0)
+    invSqrt14 = 1.0 / sqrt14
+    assert normSqrA[None] == 14.0
+    assert normA[None] == approx(sqrt14)
+    assert aNormalized[None][0] == approx(1.0 * invSqrt14)
+    assert aNormalized[None][1] == approx(2.0 * invSqrt14)
+    assert aNormalized[None][2] == approx(3.0 * invSqrt14)
+
+
+@ti.all_archs
+def test_cross():
+    a = ti.Vector(3, dt=ti.f32)
+    b = ti.Vector(3, dt=ti.f32)
+    c = ti.Vector(3, dt=ti.f32)
+
+    a2 = ti.Vector(2, dt=ti.f32)
+    b2 = ti.Vector(2, dt=ti.f32)
+    c2 = ti.var(dt=ti.f32)
+
+    @ti.layout
+    def place():
+        ti.root.place(a, b, c, a2, b2, c2)
+
+    @ti.kernel
+    def init():
+        a[None] = ti.Vector([1.0, 2.0, 3.0])
+        b[None] = ti.Vector([4.0, 5.0, 6.0])
+        c[None] = ti.Matrix.cross(a, b)
+
+        a2[None] = ti.Vector([1.0, 2.0])
+        b2[None] = ti.Vector([4.0, 5.0])
+        c2[None] = ti.Matrix.cross(a2, b2)
+
+    init()
+    assert c[None][0] == -3.0
+    assert c[None][1] == 6.0
+    assert c[None][2] == -3.0
+    assert c2[None] == -3.0
+
+
+@ti.all_archs
+def test_dot():
+    a = ti.Vector(3, dt=ti.f32)
+    b = ti.Vector(3, dt=ti.f32)
+    c = ti.var(dt=ti.f32)
+
+    a2 = ti.Vector(2, dt=ti.f32)
+    b2 = ti.Vector(2, dt=ti.f32)
+    c2 = ti.var(dt=ti.f32)
+
+    @ti.layout
+    def place():
+        ti.root.place(a, b, c, a2, b2, c2)
+
+    @ti.kernel
+    def init():
+        a[None] = ti.Vector([1.0, 2.0, 3.0])
+        b[None] = ti.Vector([4.0, 5.0, 6.0])
+        c[None] = ti.Matrix.dot(a, b)
+
+        a2[None] = ti.Vector([1.0, 2.0])
+        b2[None] = ti.Vector([4.0, 5.0])
+        c2[None] = ti.Matrix.dot(a2, b2)
+
+    init()
+    assert c[None] == 32.0
+    assert c2[None] == 14.0
+
+
+@ti.all_archs
 def test_transpose():
     dim = 3
     m = ti.Matrix(dim, dim, ti.f32)

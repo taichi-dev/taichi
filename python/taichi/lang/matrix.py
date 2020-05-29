@@ -541,10 +541,12 @@ class Matrix(TaichiOperations):
             yield '['
 
         for j in range(self.m):
-            if j: yield ', '
+            if j:
+                yield ', '
             yield '['
             for i in range(self.n):
-                if i: yield ', '
+                if i:
+                    yield ', '
                 yield self(i, j)
             yield ']'
 
@@ -596,13 +598,20 @@ class Matrix(TaichiOperations):
 
     @staticmethod
     def cross(a, b):
-        assert a.m == 1 and a.n == 3
-        assert b.m == 1 and b.n == 3
-        return Vector([
-            a(1) * b(2) - a(2) * b(1),
-            a(2) * b(0) - a(0) * b(2),
-            a(0) * b(1) - a(1) * b(0),
-        ])
+        if a.n == 3 and a.m == 1 and b.n == 3 and b.m == 1:
+            return Matrix([
+                a(1) * b(2) - a(2) * b(1),
+                a(2) * b(0) - a(0) * b(2),
+                a(0) * b(1) - a(1) * b(0),
+            ])
+
+        elif a.n == 2 and a.m == 1 and b.n == 2 and b.m == 1:
+            return a(0) * b(1) - a(1) * b(0)
+
+        else:
+            raise Exception(
+                "Cross product is only supported between pairs of 2D/3D vectors"
+            )
 
     @staticmethod
     def outer_product(a, b):

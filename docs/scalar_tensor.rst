@@ -92,7 +92,7 @@ You can access an element of the Taichi tensor by an index or indices.
     This sets the element value at index ``2`` of 1D tensor ``b`` to ``5``:
     ::
 
-        a[2] = 2
+        b[2] = 5
 
     .. note ::
 

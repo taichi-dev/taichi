@@ -322,7 +322,7 @@ else:
         if create_sand_box_on_windows:
             # Create a sandbox for separated core lib development and loading
             folder = os.path.join(get_output_directory(), 'tmp',
-                               get_unique_task_id())
+                                  get_unique_task_id())
 
             lib_dir = os.path.join(get_repo_directory(), 'external', 'lib')
             os.environ['PATH'] += ';' + lib_dir
@@ -342,7 +342,9 @@ else:
         except Exception as e:
             print(e)
             print()
-            print('Hint: please make sure the major and minor versions of the Python executable is correct.')
+            print(
+                'Hint: please make sure the major and minor versions of the Python executable is correct.'
+            )
             print()
             raise e
 

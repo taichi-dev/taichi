@@ -151,10 +151,10 @@ Methods
         c = ti.cross(a, b)
         # c = [2*6 - 5*3, 4*3 - 1*6, 1*5 - 4*2] = [-3, 6, -3]
 
-        a2 = ti.Vector([1, 2])
-        b2 = ti.Vector([4, 5])
-        c2 = ti.cross(a, b)
-        # c2 = 1*5 - 4*2 = -3
+        p = ti.Vector([1, 2])
+        q = ti.Vector([4, 5])
+        r = ti.cross(a, b)
+        # r = 1*5 - 4*2 = -3
 
 
 .. function:: ti.outer_product(a, b)

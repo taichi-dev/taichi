@@ -610,7 +610,7 @@ class Matrix(TaichiOperations):
 
         else:
             raise Exception(
-                "cross product is only supported between pairs of 3D or those of 2D vectors"
+                "Cross product is only supported between pairs of 2D/3D vectors"
             )
 
     @staticmethod

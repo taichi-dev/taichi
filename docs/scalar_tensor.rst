@@ -154,10 +154,11 @@ Meta data
 .. function:: a.parent(n = 1)
 
     :parameter a: (Tensor) the tensor
-    :parameter n: (optional, scalar) the number of parent steps, i.e. ``n=1`` for parent, ``n=2`` grandparent, etc...
+    :parameter n: (optional, scalar) the number of parent steps, i.e. ``n=1`` for parent, ``n=2`` grandparent, etc.
     :return: (SNode) the parent of ``a``'s containing SNode
 
     ::
+
         x = ti.var(ti.i32)
         y = ti.var(ti.i32)
         blk1 = ti.root.dense(ti.ij, (6, 5))

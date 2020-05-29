@@ -138,16 +138,24 @@ Methods
 
 .. function:: ti.cross(a, b)
 
-    :parameter a: (Vector, 3 component)
-    :parameter b: (Vector, 3 component)
-    :return: (Vector, 3D) the cross product of ``a`` and ``b``
+    :parameter a: (Vector, 2, or 3 component)
+    :parameter b: (Vector with the same component number as a)
+    :return: (Vector, 3D) the cross product of ``a`` and ``b``, if the component number is 3
+    :return: (Scalar) the last component of cross product of ``Vector([a,0])`` and ``Vector([b,0])``, if the component number is 2
 
     We use a right-handed coordinate system. E.g.,
     ::
 
         a = ti.Vector([1, 2, 3])
         b = ti.Vector([4, 5, 6])
-        c = ti.cross(a, b) # [2*6 - 5*3, 4*3 - 1*6, 1*5 - 4*2]
+        c = ti.cross(a, b)
+        # [2*6 - 5*3, 4*3 - 1*6, 1*5 - 4*2] = [-3, 6, -3]
+
+        a2 = ti.Vector([1, 2])
+        b2 = ti.Vector([4, 5])
+        c2 = ti.cross(a, b)
+        # [2*0 - 5*0, 4*0 - 1*0, 1*5 - 4*2] = [0, 0, -3]
+        # here it only calculates and returns the last component -3
 
 
 .. function:: ti.outer_product(a, b)

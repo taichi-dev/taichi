@@ -331,7 +331,7 @@ class LowerAST : public IRVisitor {
     auto fctx = make_flatten_ctx();
     expr->flatten(&fctx);
     stmt->eval_expr.cast<EvalExpression>()->stmt_ptr = stmt->expr->stmt;
-    stmt->parent->replace_with(stmt, std::move(fctx.stmts), false);
+    stmt->parent->replace_with(stmt, std::move(fctx.stmts));
     throw IRModified();
   }
 

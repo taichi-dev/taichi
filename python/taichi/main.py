@@ -16,68 +16,6 @@ import taichi as ti
 from taichi.tools.video import (accelerate_video, crop_video, make_video, mp4_to_gif, scale_video)
 
 
-def test_python(args):
-    print("\nRunning python tests...\n")
-    test_files = args.files
-    import taichi as ti
-    import pytest
-    if ti.is_release():
-        root_dir = ti.package_root()
-        test_dir = os.path.join(root_dir, 'tests')
-    else:
-        root_dir = ti.get_repo_directory()
-        test_dir = os.path.join(root_dir, 'tests', 'python')
-    pytest_args = []
-    if len(test_files):
-        # run individual tests
-        for f in test_files:
-            # auto-complete file names
-            if not f.startswith('test_'):
-                f = 'test_' + f
-            if not f.endswith('.py'):
-                f = f + '.py'
-            pytest_args.append(os.path.join(test_dir, f))
-    else:
-        # run all the tests
-        pytest_args = [test_dir]
-    if args.verbose:
-        pytest_args += ['-s', '-v']
-    if args.rerun:
-        pytest_args += ['--reruns', args.rerun]
-    if int(
-            pytest.main(
-                [os.path.join(root_dir, 'misc/empty_pytest.py'), '-n1',
-                 '-q'])) == 0:  # test if pytest has xdist or not
-        try:
-            from multiprocessing import cpu_count
-            threads = min(8, cpu_count())  # To prevent running out of memory
-        except:
-            threads = 2
-        os.environ['TI_DEVICE_MEMORY_GB'] = '0.5'  # Discussion: #769
-        arg_threads = None
-        if args.threads is not None:
-            arg_threads = int(args.threads)
-        env_threads = os.environ.get('TI_TEST_THREADS', '')
-        if arg_threads is not None:
-            threads = arg_threads
-        elif env_threads:
-            threads = int(env_threads)
-        print(f'Starting {threads} testing thread(s)...')
-        if threads > 1:
-            pytest_args += ['-n', str(threads)]
-    return int(pytest.main(pytest_args))
-
-
-def test_cpp(args):
-    import taichi as ti
-    test_files = args.files
-    # Cpp tests use the legacy non LLVM backend
-    ti.reset()
-    print("Running C++ tests...")
-    task = ti.Task('test')
-    return int(task.run(*test_files))
-
-
 def get_examples_dir() -> Path:
     """Get the path to the examples directory."""
     import taichi as ti
@@ -422,7 +360,7 @@ class TaichiMain:
     def video(self, arguments: list = sys.argv[2:]):
         """Make a video using *.png files in the current directory"""
         parser = argparse.ArgumentParser(description=f"{self.video.__doc__}")
-        parser.add_argument("inputs", nargs='*', help="A list of png files as inputs")
+        parser.add_argument("inputs", nargs='*', help="PNG file(s) as inputs")
         parser.add_argument('-o', '--output', required=False, default=Path('./video.mp4').resolve(), dest='output_file', type=lambda x: Path(x).resolve(), help="Path to output MP4 video file")
         parser.add_argument('-f', '--framerate', required=False, default=24, dest='framerate', type=int, help="Frame rate of the output MP4 video")
         args = parser.parse_args(arguments)
@@ -502,11 +440,72 @@ class TaichiMain:
         shutil.copytree(output_dir, baseline_dir)
         print(f"[benchmark] baseline data saved to {baseline_dir}")
 
+    @staticmethod
+    def _test_python(args):
+        print("\nRunning Python tests...\n")
+        import taichi as ti
+        import pytest
+        if ti.is_release():
+            root_dir = ti.package_root()
+            test_dir = os.path.join(root_dir, 'tests')
+        else:
+            root_dir = ti.get_repo_directory()
+            test_dir = os.path.join(root_dir, 'tests', 'python')
+        pytest_args = []
+
+        # TODO: use pathlib to deal with suffix and stem name manipulation
+        if args.files:
+            # run individual tests
+            for f in args.files:
+                # auto-complete file names
+                if not f.startswith('test_'):
+                    f = 'test_' + f
+                if not f.endswith('.py'):
+                    f = f + '.py'
+                pytest_args.append(os.path.join(test_dir, f))
+        else:
+            # run all the tests
+            pytest_args = [test_dir]
+        if args.verbose:
+            pytest_args += ['-s', '-v']
+        if args.rerun:
+            pytest_args += ['--reruns', args.rerun]
+        if int(
+                pytest.main(
+                    [os.path.join(root_dir, 'misc/empty_pytest.py'), '-n1',
+                    '-q'])) == 0:  # test if pytest has xdist or not
+            try:
+                from multiprocessing import cpu_count
+                threads = min(8, cpu_count())  # To prevent running out of memory
+            except NotImplementedError:
+                threads = 2
+            os.environ['TI_DEVICE_MEMORY_GB'] = '0.5'  # Discussion: #769
+
+            env_threads = os.environ.get('TI_TEST_THREADS', '')
+            threads = args.threads or env_threads or threads
+            print(f'Starting {threads} testing thread(s)...')
+            if int(threads) > 1:
+                pytest_args += ['-n', str(threads)]
+        return int(pytest.main(pytest_args))
+
+    @staticmethod
+    def _test_cpp(args):
+        import taichi as ti
+        # Cpp tests use the legacy non LLVM backend
+        ti.reset()
+        print("Running C++ tests...")
+        task = ti.Task('test')
+        return int(task.run(*args.files))
+
     def benchmark(self, arguments: list = sys.argv[2:]):
         """Run Python tests in benchmark mode"""
-        # TODO: Convert the logic to use args
         parser = argparse.ArgumentParser(description=f"{self.benchmark.__doc__}")
-        args = parser.parse_args(sys.argv[2:])
+        parser.add_argument('files', nargs='*', help='Test file(s) to be run')
+        parser.add_argument('-T', '--tprt', dest='tprt', action='store_true', help='Benchmark performance in terms of run time')
+        parser.add_argument('-v', '--verbose', action='store_true', help='Run with verbose outputs')
+        parser.add_argument('-r', '--rerun', required=False, default=None, dest='rerun', type=str, help='Rerun failed tests for given times')
+        parser.add_argument('-t', '--threads', required=False, default=None, dest='threads', type=str, help='Custom number of threads for parallel testing')
+        args = parser.parse_args(arguments)
 
         import shutil
         commit_hash = ti.core.get_commit_hash()
@@ -525,26 +524,33 @@ class TaichiMain:
             os.system('python benchmarks/run.py')
             # TODO: benchmark_python(args)
         else:
-            test_python(args)
+            TaichiMain._test_python(args)
 
     def test(self, arguments: list = sys.argv[2:]):
         """Run the tests"""
         # TODO: Convert the logic to use args
         parser = argparse.ArgumentParser(description=f"{self.test.__doc__}")
-        args = parser.parse_args(sys.argv[2:])
+        parser.add_argument('files', nargs='*', help='Test file(s) to be run')
+        parser.add_argument('-c', '--cpp', action='store_true', help='Only run the C++ tests')
+        parser.add_argument('-v', '--verbose', action='store_true', help='Run with verbose outputs')
+        parser.add_argument('-r', '--rerun', required=False, default=None, dest='rerun', type=str, help='Rerun failed tests for given times')
+        parser.add_argument('-t', '--threads', required=False, default=None, dest='threads', type=str, help='Custom number of threads for parallel testing')
+        args = parser.parse_args(arguments)
 
-        if len(args.files):
+        if args.files:
             if args.cpp:
-                return test_cpp(args)
+                return TaichiMain._test_cpp(args)
             else:
-                return test_python(args)
+                return TaichiMain._test_python(args)
         elif args.cpp:
-            return test_cpp(args)
+            # Only run C++ tests
+            return TaichiMain._test_cpp(args)
         else:
-            ret = test_python(args)
+            # Run both C++ and Python tests
+            ret = TaichiMain._test_python(args)
             if ret != 0:
                 return ret
-            return test_cpp(args)
+            return TaichiMain._test_cpp(args)
 
     def debug(self, arguments: list = sys.argv[2:]):
         """Debug a script"""

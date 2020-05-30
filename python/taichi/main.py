@@ -366,12 +366,12 @@ class TaichiMain:
             plot_in_gui(scatter)
 
     @staticmethod
-    def get_benchmark_baseline_dir():
+    def _get_benchmark_baseline_dir():
         import taichi as ti
         return os.path.join(ti.core.get_repo_dir(), 'benchmarks', 'baseline')
 
     @staticmethod
-    def get_benchmark_output_dir():
+    def _get_benchmark_output_dir():
         import taichi as ti
         return os.path.join(ti.core.get_repo_dir(), 'benchmarks', 'output')
 

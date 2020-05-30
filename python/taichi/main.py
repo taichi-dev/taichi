@@ -366,18 +366,22 @@ class TaichiMain:
         import shutil
         shutil.move('release.zip', fn)
 
+    @staticmethod
+    def _mp4_file(name: str) -> str:
+        if not name.endswith('.mp4'):
+            raise argparse.ArgumentTypeError("filename must be of type .mp4")
+        return name
+
     def gif(self, arguments: list = sys.argv[2:]):
-        """Convert mp4 file to gif"""
+        """Convert mp4 file to gif in the same directory"""
         parser = argparse.ArgumentParser(description=f"{self.gif.__doc__}")
-        args = parser.parse_args(sys.argv[2:])
-        
-        # TODO: Convert the logic to use args
-        input_fn = sys.argv[2]
-        assert input_fn[-4:] == '.mp4'
-        output_fn = input_fn[:-4] + '.gif'
-        ti.info('Converting {} to {}'.format(input_fn, output_fn))
-        framerate = 24
-        mp4_to_gif(input_fn, output_fn, framerate)
+        parser.add_argument('-i', '--input', required=True, dest='input_file' ,type=TaichiMain._mp4_file, help="Path to input MP4 video file")
+        parser.add_argument('-f', '--framerate', required=False, default=24 ,dest='framerate' ,type=int, help="Frame rate of the output GIF")
+        args = parser.parse_args(arguments)
+
+        args.output_file = Path(args.input_file).with_suffix('.gif') 
+        ti.info(f"Converting {args.input_file} to {args.output_file}")
+        mp4_to_gif(args.input_file, args.output_file, args.framerate)
 
     def video_speed(self, arguments: list = sys.argv[2:]):
         """Speed up video"""

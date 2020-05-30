@@ -135,7 +135,6 @@ class TaichiMain:
         sys.path.append(str(examples_dir.resolve()))
         print(f"Running example {args.name} ...")
         runpy.run_path(target, run_name='__main__')
-        run_example(name=args.name)
 
     def release(self, arguments: list = sys.argv[2:]):
         """Make source code release"""

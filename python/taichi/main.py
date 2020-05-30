@@ -385,7 +385,6 @@ class TaichiMain:
 
     def video_speed(self, arguments: list = sys.argv[2:]):
         """Speed up video in the same directory"""
-        # TODO: Convert the logic to use args
         parser = argparse.ArgumentParser(description=f"{self.video_speed.__doc__}")
         parser.add_argument('-i', '--input', required=True, dest='input_file' ,type=TaichiMain._mp4_file, help="Path to input MP4 video file")
         parser.add_argument('-s', '--speed', required=True, dest='speed' ,type=float, help="Speedup factor for the output MP4 based on input. (e.g. 2.0)")
@@ -395,22 +394,17 @@ class TaichiMain:
         accelerate_video(args.input_file, args.output_file, args.speed)
 
     def video_crop(self, arguments: list = sys.argv[2:]):
-        """Crop video"""
-        # TODO: Convert the logic to use args
+        """Crop video in the same directory"""
         parser = argparse.ArgumentParser(description=f"{self.video_crop.__doc__}")
-        args = parser.parse_args(sys.argv[2:])
+        parser.add_argument('-i', '--input', required=True, dest='input_file' ,type=TaichiMain._mp4_file, help="Path to input MP4 video file")
+        parser.add_argument('--x1', required=True, dest='x_begin' ,type=float, help="X coordinate of the beginning crop point")
+        parser.add_argument('--x2', required=True, dest='x_end' ,type=float, help="X coordinate of the ending crop point")
+        parser.add_argument('--y1', required=True, dest='y_begin' ,type=float, help="Y coordinate of the beginning crop point")
+        parser.add_argument('--y2', required=True, dest='y_end' ,type=float, help="Y coordinate of the ending crop point")
+        args = parser.parse_args(arguments)
 
-        if len(sys.argv) != 7:
-            print('Usage: ti video_crop fn x_begin x_end y_begin y_end')
-            return -1
-        input_fn = sys.argv[2]
-        assert input_fn[-4:] == '.mp4'
-        output_fn = input_fn[:-4] + '-cropped.mp4'
-        x_begin = float(sys.argv[3])
-        x_end = float(sys.argv[4])
-        y_begin = float(sys.argv[5])
-        y_end = float(sys.argv[6])
-        crop_video(input_fn, output_fn, x_begin, x_end, y_begin, y_end)
+        args.output_file = Path(args.input_file).with_name(f"{Path(args.input_file).stem}-cropped")
+        crop_video(args.input_file, args.output_file, args.x_begin, args.x_end, args.y_begin, args.y_end)
 
     def video_scale(self, arguments: list = sys.argv[2:]):
         """Scale video resolution"""

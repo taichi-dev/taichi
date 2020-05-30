@@ -554,17 +554,14 @@ class TaichiMain:
             return TaichiMain._test_cpp(args)
 
     def debug(self, arguments: list = sys.argv[2:]):
-        """Debug a script"""
-        # TODO: Convert the logic to use args
+        """Debug a single script"""
         parser = argparse.ArgumentParser(description=f"{self.debug.__doc__}")
-        args = parser.parse_args(sys.argv[2:])
+        parser.add_argument('filename', help='A single (Python) script to run with debugger, e.g. render.py')
+        args = parser.parse_args(arguments)
 
         ti.core.set_core_trigger_gdb_when_crash(True)
-        if argc <= 2:
-            print("Please specify [file name], e.g. render.py")
-            return -1
-        name = sys.argv[2]
-        with open(name) as script:
+
+        with open(args.filename) as script:
             script = script.read()
 
         # FIXME: exec is a security risk here!

@@ -483,9 +483,8 @@ class TaichiMain:
 
     def regression(self, arguments: list = sys.argv[2:]):
         """Display benchmark regression test result"""
-        # TODO: Convert the logic to use args
         parser = argparse.ArgumentParser(description=f"{self.regression.__doc__}")
-        args = parser.parse_args(sys.argv[2:])
+        args = parser.parse_args(arguments)
 
         baseline_dir = get_benchmark_baseline_dir()
         output_dir = get_benchmark_output_dir()

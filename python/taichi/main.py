@@ -262,7 +262,6 @@ class TaichiMain:
     registered_commands = {
         "example",
         "release",
-        "convert",
         "gif",
         "video_speed",
         "video_crop",
@@ -367,23 +366,6 @@ class TaichiMain:
         fn = f'taichi-src-v{ver[0]}-{ver[1]}-{ver[2]}-{commit}-{md5}.zip'
         import shutil
         shutil.move('release.zip', fn)
-
-    def convert(self, arguments: list = sys.argv[2:]):
-        """???"""
-        # TODO: Convert the logic to use args
-        parser = argparse.ArgumentParser(description=f"{self.convert.__doc__}")
-        args = parser.parse_args(sys.argv[2:])
-
-        import shutil
-        # http://www.commandlinefu.com/commands/view/3584/remove-color-codes-special-characters-with-sed
-        # TODO: Windows support
-        for fn in sys.argv[2:]:
-            print("Converting logging file: {}".format(fn))
-            tmp_fn = '/tmp/{}.{:05d}.backup'.format(fn,
-                                                    random.randint(0, 10000))
-            shutil.move(fn, tmp_fn)
-            command = r'sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g"'
-            os.system('{} {} > {}'.format(command, tmp_fn, fn))
 
     def gif(self, arguments: list = sys.argv[2:]):
         """Convert mp4 file to gif"""

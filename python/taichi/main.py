@@ -16,64 +16,6 @@ import taichi as ti
 from taichi.tools.video import (accelerate_video, crop_video, make_video, mp4_to_gif, scale_video)
 
 
-def get_examples_dir() -> Path:
-    """Get the path to the examples directory."""
-    import taichi as ti
-
-    root_dir = ti.package_root() if ti.is_release() else ti.get_repo_directory(
-    )
-    examples_dir = Path(root_dir) / 'examples'
-    return examples_dir
-
-
-def get_available_examples() -> set:
-    """Get a set of all available example names."""
-    examples_dir = get_examples_dir()
-    all_examples = examples_dir.rglob('*.py')
-    all_example_names = {
-        str(f.resolve()).split('/')[-1].split('.')[0]
-        for f in all_examples
-    }
-    return all_example_names
-
-
-def make_argument_parser():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-v',
-                        '--verbose',
-                        action='store_true',
-                        help='Run with verbose outputs')
-    parser.add_argument('-r',
-                        '--rerun',
-                        help='Rerun failed tests for given times')
-    parser.add_argument('-t',
-                        '--threads',
-                        help='Number of threads for parallel testing')
-    parser.add_argument('-c',
-                        '--cpp',
-                        action='store_true',
-                        help='Run C++ tests')
-    parser.add_argument('-g',
-                        '--gui',
-                        action='store_true',
-                        help='Display benchmark regression result in GUI')
-    parser.add_argument('-T',
-                        '--tprt',
-                        action='store_true',
-                        help='Benchmark for time performance')
-    parser.add_argument(
-        '-a',
-        '--arch',
-        help='Specify arch(s) to run test on, e.g. -a opengl,metal')
-    parser.add_argument(
-        '-n',
-        '--exclusive',
-        action='store_true',
-        help='Exclude arch(s) instead of include, e.g. -na opengl,metal')
-    parser.add_argument('files', nargs='*', help='Files to be tested')
-    return parser
-
-
 def timer(func):
     import timeit
     @wraps(func)
@@ -125,7 +67,7 @@ class TaichiMain:
         
         parser = argparse.ArgumentParser(
             description="Taichi CLI",
-            usage=self._usage()
+            usage=TaichiMain._usage()
         )
         if len(sys.argv[1:2]) == 0:
             parser.print_help()
@@ -135,13 +77,14 @@ class TaichiMain:
         args = parser.parse_args(sys.argv[1:2])
         if args.command not in self.registered_commands:
             if args.command.endswith(".py"):
-                self._exec_python_file(args.command)
+                TaichiMain._exec_python_file(args.command)
             print(f"{args.command} is not a valid command!")
             parser.print_help()
             exit(1)
         getattr(self, args.command)(sys.argv[2:])
 
-    def _usage(self) -> str:
+    @staticmethod
+    def _usage() -> str:
         """Compose deterministic usage message based on registered_commands."""
         # TODO: add some color to commands
         msg = "\n"
@@ -150,19 +93,41 @@ class TaichiMain:
             msg += f"{command}{' ' * (space - len(command))}|-> {getattr(self, command).__doc__}\n"
         return msg
 
-    def _exec_python_file(self, filename: str):
+    @staticmethod
+    def _exec_python_file(filename: str):
         """Execute a Python file based on filename."""
         # TODO: do we really need this?
         import subprocess
         subprocess.call([sys.executable, filename] + sys.argv[1:])
 
+    @staticmethod
+    def _get_examples_dir() -> Path:
+        """Get the path to the examples directory."""
+        import taichi as ti
+
+        root_dir = ti.package_root() if ti.is_release() else ti.get_repo_directory(
+        )
+        examples_dir = Path(root_dir) / 'examples'
+        return examples_dir
+
+    @staticmethod
+    def _get_available_examples() -> set:
+        """Get a set of all available example names."""
+        examples_dir = TaichiMain._get_examples_dir()
+        all_examples = examples_dir.rglob('*.py')
+        all_example_names = {
+            str(f.resolve()).split('/')[-1].split('.')[0]
+            for f in all_examples
+        }
+        return all_example_names
+
     def example(self, arguments: list = sys.argv[2:]):
         """Run an example by name"""
         parser = argparse.ArgumentParser(description=f"{self.example.__doc__}")
-        parser.add_argument("name", help=f"Name of an example\n", choices=sorted(get_available_examples()))
+        parser.add_argument("name", help=f"Name of an example\n", choices=sorted(TaichiMain._get_available_examples()))
         args = parser.parse_args(arguments)
 
-        examples_dir = get_examples_dir()
+        examples_dir = TaichiMain._get_examples_dir()
         target = str((examples_dir / f"{args.name}.py").resolve())
         # path for examples needs to be modified for implicit relative imports
         sys.path.append(str(examples_dir.resolve()))

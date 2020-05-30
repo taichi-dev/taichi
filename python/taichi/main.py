@@ -467,8 +467,9 @@ class TaichiMain:
             r"sed '/^\s*\.\(L[A-Z]\|[a-z]\)/ d' {0} > clean_{0}".format(fn))
 
     def update(self, arguments: list = sys.argv[2:]):
-        """???"""
+        """Update the Taichi codebase"""
         # TODO: Convert the logic to use args
+        # TODO: Test if this still works, fix if it doesn't
         parser = argparse.ArgumentParser(description=f"{self.update.__doc__}")
         args = parser.parse_args(sys.argv[2:])
         ti.core.update(True)

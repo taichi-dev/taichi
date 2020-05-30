@@ -17,6 +17,6 @@ void cfg_optimization(IRNode *root) {
       break;
   }
 }
-} // namespace irpass
+}  // namespace irpass
 
 TLANG_NAMESPACE_END

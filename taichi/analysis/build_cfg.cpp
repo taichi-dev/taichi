@@ -34,9 +34,9 @@ class CFGBuilder : public IRVisitor {
   }
 
   CFGNode *new_node(int next_begin_location) {
-    auto node = graph->push_back(current_block, begin_location,
-                                 current_stmt_id - 1,
-                                 last_node_in_current_block);
+    auto node =
+        graph->push_back(current_block, begin_location, current_stmt_id - 1,
+                         last_node_in_current_block);
     for (auto &prev_node : prev_nodes) {
       CFGNode::add_edge(prev_node, node);
     }

@@ -76,14 +76,12 @@ void ControlFlowGraph::erase(int position) {
         nodes[position]->prev_node_in_same_block;
   }
   for (auto &prev_node : nodes[position]->prev) {
-    prev_node->next.erase(std::find(prev_node->next.begin(),
-                                    prev_node->next.end(),
-                                    nodes[position].get()));
+    prev_node->next.erase(std::find(
+        prev_node->next.begin(), prev_node->next.end(), nodes[position].get()));
   }
   for (auto &next_node : nodes[position]->next) {
-    next_node->prev.erase(std::find(next_node->prev.begin(),
-                                    next_node->prev.end(),
-                                    nodes[position].get()));
+    next_node->prev.erase(std::find(
+        next_node->prev.begin(), next_node->prev.end(), nodes[position].get()));
   }
   for (auto &prev_node : nodes[position]->prev) {
     for (auto &next_node : nodes[position]->next) {

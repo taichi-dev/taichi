@@ -1,4 +1,6 @@
-#define _CHECK(cond, r)                        \
+// Note that TI_ASSERT provided by runtime doesn't check fail immediately. As
+// a hack, we just check the last error code whenever we call TI_ASSERT.
+#define TI_TEST_CHECK(cond, r)                 \
   do {                                         \
     TI_ASSERT(cond);                           \
     if ((r)->error_code) {                     \
@@ -37,7 +39,7 @@ i32 test_list_manager(Context *context) {
     list->append(&j);
   }
   for (int i = 0; i < 320; i++) {
-    TI_ASSERT(list->get<i32>(i) == i + 5);
+    TI_TEST_CHECK(list->get<i32>(i) == i + 5, runtime);
   }
   return 0;
 }
@@ -63,14 +65,14 @@ i32 test_node_allocator(Context *context) {
     ptrs[i] = nodes->allocate();
   }
   for (int i = 5; i < 19; i++) {
-    TI_ASSERT(nodes->locate(ptrs[i]) == i);
+    TI_TEST_CHECK(nodes->locate(ptrs[i]) == i, runtime);
   }
 
   for (int i = 19; i < 24; i++) {
     auto idx = nodes->locate(ptrs[i]);
     taichi_printf(runtime, "i %d", i);
     taichi_printf(runtime, "idx %d", idx);
-    TI_ASSERT(idx == i - 19);
+    TI_TEST_CHECK(idx == i - 19, runtime);
   }
   return 0;
 }
@@ -83,7 +85,7 @@ i32 test_node_allocator_gc_cpu(Context *context) {
   constexpr int kHalfN = kN / 2;
   Ptr ptrs[kN];
   // Initially |free_list| is empty
-  _CHECK(nodes->free_list->size() == 0, runtime);
+  TI_TEST_CHECK(nodes->free_list->size() == 0, runtime);
   for (int i = 0; i < kN; i++) {
     taichi_printf(runtime, "[1] allocating %d\n", i);
     ptrs[i] = nodes->allocate();
@@ -94,10 +96,10 @@ i32 test_node_allocator_gc_cpu(Context *context) {
     taichi_printf(runtime, "[1] ptr %p\n", ptrs[i]);
     nodes->recycle(ptrs[i]);
   }
-  _CHECK(nodes->free_list->size() == 0, runtime);
+  TI_TEST_CHECK(nodes->free_list->size() == 0, runtime);
   nodes->gc_serial();
   // After the first round GC, |free_list| should have |kN| items.
-  _CHECK(nodes->free_list->size() == kN, runtime);
+  TI_TEST_CHECK(nodes->free_list->size() == kN, runtime);
 
   // In the second round, all items should come from |free_list|.
   for (int i = 0; i < kHalfN; i++) {
@@ -105,7 +107,7 @@ i32 test_node_allocator_gc_cpu(Context *context) {
     ptrs[i] = nodes->allocate();
     taichi_printf(runtime, "[2] ptr %p\n", ptrs[i]);
   }
-  _CHECK(nodes->free_list_used == kHalfN, runtime);
+  TI_TEST_CHECK(nodes->free_list_used == kHalfN, runtime);
   for (int i = 0; i < kHalfN; i++) {
     taichi_printf(runtime, "[2] deallocating %d\n", i);
     taichi_printf(runtime, "[2] ptr %p\n", ptrs[i]);
@@ -114,7 +116,9 @@ i32 test_node_allocator_gc_cpu(Context *context) {
   nodes->gc_serial();
   // After GC, all items should be returned to |free_list|.
   printf("free_list_size=%d\n", nodes->free_list->size());
-  _CHECK(nodes->free_list->size() == kN, runtime);
+  TI_TEST_CHECK(nodes->free_list->size() == kN, runtime);
 
   return 0;
 }
+
+#undef TI_TEST_CHECK

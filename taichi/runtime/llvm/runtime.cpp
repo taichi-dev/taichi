@@ -409,6 +409,10 @@ struct ListManager {
     num_elements = 0;
   }
 
+  void resize(i32 n) {
+    num_elements = n;
+  }
+
   Ptr get_element_ptr(i32 i) {
     return chunks[i >> log2chunk_num_elements] +
            element_size * (i & ((1 << log2chunk_num_elements) - 1));
@@ -612,8 +616,9 @@ struct NodeManager {
       free_list->get<list_data_type>(i - free_list_used) =
           free_list->get<list_data_type>(i);
     }
+    const i32 num_unused = max_i32(free_list->size() - free_list_used, 0);
     free_list_used = 0;
-    free_list->clear();
+    free_list->resize(num_unused);
 
     // zero-fill recycled and push to free list
     for (int i = 0; i < recycled_list->size(); i++) {

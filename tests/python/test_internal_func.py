@@ -52,7 +52,7 @@ def test_node_manager():
     test()
 
 
-def _test_node_manager_gc():
+def test_node_manager_gc():
     @ti.kernel
     def test_cpu():
         ti.call_internal("test_node_allocator_gc_cpu")

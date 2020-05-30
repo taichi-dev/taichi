@@ -1,14 +1,14 @@
 #pragma once
 
 #include "taichi/ir/ir.h"
-#include <unordered_set>
 
 TLANG_NAMESPACE_BEGIN
 
 // A basic block in control-flow graph
 class CFGNode {
  public:
-  // This node corresponds to block->statements[i] for i in [begin_location, end_location].
+  // This node corresponds to block->statements[i]
+  // for i in [begin_location, end_location).
   Block *block;
   int begin_location, end_location;
   // For updating begin/end locations when modifying the block.

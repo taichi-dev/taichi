@@ -25,11 +25,11 @@ void CFGNode::add_edge(CFGNode *from, CFGNode *to) {
 }
 
 bool CFGNode::empty() const {
-  return begin_location > end_location;
+  return begin_location >= end_location;
 }
 
 void CFGNode::erase(int location) {
-  TI_ASSERT(location >= begin_location && location <= end_location);
+  TI_ASSERT(location >= begin_location && location < end_location);
   block->erase(location);
   end_location--;
   for (auto node = next_node_in_same_block; node != nullptr;
@@ -42,8 +42,9 @@ void CFGNode::erase(int location) {
 bool CFGNode::erase_entire_node() {
   if (empty())
     return false;
-  int node_size = end_location - begin_location + 1;
-  for (int location = end_location; location >= begin_location; location--) {
+  int node_size = end_location - begin_location;
+  for (int location = end_location - 1; location >= begin_location;
+       location--) {
     block->erase(location);
   }
   end_location -= node_size;  // become empty

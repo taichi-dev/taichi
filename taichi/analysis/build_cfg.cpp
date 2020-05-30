@@ -35,7 +35,7 @@ class CFGBuilder : public IRVisitor {
 
   CFGNode *new_node(int next_begin_location) {
     auto node =
-        graph->push_back(current_block, begin_location, current_stmt_id - 1,
+        graph->push_back(current_block, begin_location, current_stmt_id,
                          last_node_in_current_block);
     for (auto &prev_node : prev_nodes) {
       CFGNode::add_edge(prev_node, node);
@@ -47,12 +47,12 @@ class CFGBuilder : public IRVisitor {
   }
 
   void visit(ContinueStmt *stmt) override {
-    // Don't put ContinueStmt in any nodes.
+    // Don't put ContinueStmt in any CFGNodes.
     continues_in_current_loop.push_back(new_node(current_stmt_id + 1));
   }
 
   void visit(WhileControlStmt *stmt) override {
-    // Don't put WhileControlStmt in any nodes.
+    // Don't put WhileControlStmt in any CFGNodes.
     auto node = new_node(current_stmt_id + 1);
     breaks_in_current_loop.push_back(node);
     prev_nodes.push_back(node);

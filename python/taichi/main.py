@@ -101,22 +101,6 @@ def get_available_examples() -> set:
     return all_example_names
 
 
-def run_example(name: str):
-    """Run an example based on the example NAME."""
-    all_example_names = get_available_examples()
-    if name not in all_example_names:
-        sys.exit(
-            f"Sorry, {name} is not an available example name!\nAvailable example names are: {sorted(all_example_names)}"
-        )
-    examples_dir = get_examples_dir()
-    target = str((examples_dir / f"{name}.py").resolve())
-    # we need to modify path for examples that use
-    # implicit relative imports
-    sys.path.append(str(examples_dir.resolve()))
-    print(f"Running example {name} ...")
-    runpy.run_path(target, run_name='__main__')
-
-
 def get_benchmark_baseline_dir():
     import taichi as ti
     return os.path.join(ti.core.get_repo_dir(), 'benchmarks', 'baseline')
@@ -336,7 +320,7 @@ class TaichiMain:
         for command in sorted(self.registered_commands):
             msg += f"{command}{' ' * (space - len(command))}|-> {getattr(self, command).__doc__}\n"
         return msg
-    
+
     def _exec_python_file(self, filename: str):
         """Execute a Python file based on filename."""
         # TODO: do we really need this?
@@ -346,8 +330,15 @@ class TaichiMain:
     def example(self, arguments: list = sys.argv[2:]):
         """Run an example by name"""
         parser = argparse.ArgumentParser(description=f"{self.example.__doc__}")
-        parser.add_argument("name", help=f"Name of an example\n")
+        parser.add_argument("name", help=f"Name of an example\n", choices=sorted(get_available_examples()))
         args = parser.parse_args(arguments)
+
+        examples_dir = get_examples_dir()
+        target = str((examples_dir / f"{args.name}.py").resolve())
+        # path for examples needs to be modified for implicit relative imports
+        sys.path.append(str(examples_dir.resolve()))
+        print(f"Running example {args.name} ...")
+        runpy.run_path(target, run_name='__main__')
         run_example(name=args.name)
 
     def release(self, arguments: list = sys.argv[2:]):
@@ -643,5 +634,8 @@ class TaichiMain:
         task.run(*sys.argv[2:])
 
 
-if __name__ == "__main__":
+def main():
     TaichiMain()
+
+if __name__ == "__main__":
+    main()

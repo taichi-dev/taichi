@@ -492,16 +492,15 @@ class TaichiMain:
 
     def baseline(self, arguments: list = sys.argv[2:]):
         """Archive current benchmark result as baseline"""
-        # TODO: Convert the logic to use args
         parser = argparse.ArgumentParser(description=f"{self.baseline.__doc__}")
-        args = parser.parse_args(sys.argv[2:])
+        args = parser.parse_args(arguments)
 
         import shutil
         baseline_dir = get_benchmark_baseline_dir()
         output_dir = get_benchmark_output_dir()
         shutil.rmtree(baseline_dir, True)
         shutil.copytree(output_dir, baseline_dir)
-        print('[benchmark] baseline data saved')
+        print(f"[benchmark] baseline data saved to {baseline_dir}")
 
     def benchmark(self, arguments: list = sys.argv[2:]):
         """Run Python tests in benchmark mode"""

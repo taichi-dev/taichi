@@ -463,13 +463,11 @@ class TaichiMain:
 
     def format(self, arguments: list = sys.argv[2:]):
         """Reformat modified source files"""
-        # TODO: Convert the logic to use args
         parser = argparse.ArgumentParser(description=f"{self.format.__doc__}")
-        args = parser.parse_args(sys.argv[2:])
-        diff = None
-        if len(sys.argv) >= 3:
-            diff = sys.argv[2]
-        ti.core.format(diff=diff)
+        parser.add_argument('-d', '--diff', required=False, default=None, dest='diff', type=str, help="A commit hash that git can use to compare diff with")
+        args = parser.parse_args(arguments)
+
+        ti.core.format(diff=args.diff)
 
     def format_all(self, arguments: list = sys.argv[2:]):
         """Reformat all source files"""

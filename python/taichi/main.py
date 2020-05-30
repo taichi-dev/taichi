@@ -455,10 +455,9 @@ class TaichiMain:
 
     def update(self, arguments: list = sys.argv[2:]):
         """Update the Taichi codebase"""
-        # TODO: Convert the logic to use args
         # TODO: Test if this still works, fix if it doesn't
         parser = argparse.ArgumentParser(description=f"{self.update.__doc__}")
-        args = parser.parse_args(sys.argv[2:])
+        args = parser.parse_args(arguments)
         ti.core.update(True)
         ti.core.build()
 

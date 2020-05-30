@@ -268,7 +268,6 @@ class TaichiMain:
         "doc",
         "asm",
         "update",
-        "statement",
         "format_all",
         "format",
         "build",
@@ -474,15 +473,6 @@ class TaichiMain:
         args = parser.parse_args(sys.argv[2:])
         ti.core.update(True)
         ti.core.build()
-
-    def statement(self, arguments: list = sys.argv[2:]):
-        """???"""
-        # TODO: Convert the logic to use args
-        parser = argparse.ArgumentParser(description=f"{self.statement.__doc__}")
-        args = parser.parse_args(sys.argv[2:])
-
-        # FIXME: exec is a security risk here!
-        exec(sys.argv[2])
 
     def format(self, arguments: list = sys.argv[2:]):
         """Reformat modified source files"""

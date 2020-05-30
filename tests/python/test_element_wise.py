@@ -117,6 +117,8 @@ def _test_matrix_element_wise_writeback_binary(dtype,
     @ti.kernel
     def func():
         a[None] = ti_func(u1[None], u2[None])
+        # Suggested by @k-ye, we forbid `matrix = scalar`, and use `matrix.fill(scalar)` instead for filling a matrix with a same scalar in Taichi-scope.
+        # Discussion: https://github.com/taichi-dev/taichi/pull/1062#pullrequestreview-421364614
         if ti.static(is_atomic):
             b[None] = ti_func(u2[None], u3[None])
         else:
@@ -269,8 +271,6 @@ def test_matrix_element_wise_writeback_binary_i32():
                                                  max)
         _test_matrix_element_wise_writeback_binary(ti.i32, n, m, ti.atomic_min,
                                                  min)
-        # We also support `matrix = scalar` syntax in Taichi-scope.
-        # Discussion: https://github.com/taichi-dev/taichi/pull/1062#issuecomment-635089253
         _test_matrix_element_wise_writeback_binary(ti.i32, n, m, ti.assign,
                                                  lambda x, y: y, False)
 

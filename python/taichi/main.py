@@ -38,7 +38,6 @@ class TaichiMain:
         "video_scale",
         "video",
         "doc",
-        "asm",
         "update",
         "format_all",
         "format",
@@ -241,16 +240,6 @@ class TaichiMain:
         args = parser.parse_args(arguments)
 
         os.system(f'cd {ti.get_repo_directory()}/docs && sphinx-build -b html . build')
-
-    def asm(self, arguments: list = sys.argv[2:]):
-        """???"""
-        # TODO: Convert the logic to use args
-        parser = argparse.ArgumentParser(description=f"{self.asm.__doc__}")
-        args = parser.parse_args(sys.argv[2:])
-
-        fn = sys.argv[2]
-        os.system(
-            r"sed '/^\s*\.\(L[A-Z]\|[a-z]\)/ d' {0} > clean_{0}".format(fn))
 
     def update(self, arguments: list = sys.argv[2:]):
         """Update the Taichi codebase"""

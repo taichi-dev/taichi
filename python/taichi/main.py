@@ -255,7 +255,6 @@ def timer(func):
     return wrapper
 
 
-# TODO: add back the debug flag
 class TaichiMain:
     registered_commands = {
         "example",
@@ -278,8 +277,9 @@ class TaichiMain:
         "debug",
         "run"
     }
+
     @timer
-    def __init__(self):
+    def __init__(self, debug=False):
         self.banner = f"\n{'*' * 43}\n**   \u262f Taichi Programming Language       **\n{'*' * 43}"
         print(self.banner)
 
@@ -288,6 +288,9 @@ class TaichiMain:
             if val not in ['0', '1']:
                 raise ValueError(
                     "Environment variable TI_DEBUG can only have value 0 or 1.")
+        if debug:
+            print(f"\n{'*' * 17} Debug Mode {'*' * 17}\n")
+            os.environ['TI_DEBUG'] = '1'
         
         parser = argparse.ArgumentParser(
             description="Taichi CLI",
@@ -599,6 +602,11 @@ class TaichiMain:
 
 def main():
     TaichiMain()
+
+
+def main_debug():
+    TaichiMain(debug=True)
+
 
 if __name__ == "__main__":
     main()

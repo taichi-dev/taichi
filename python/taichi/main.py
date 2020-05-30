@@ -37,113 +37,6 @@ def get_available_examples() -> set:
     return all_example_names
 
 
-def get_benchmark_baseline_dir():
-    import taichi as ti
-    return os.path.join(ti.core.get_repo_dir(), 'benchmarks', 'baseline')
-
-
-def get_benchmark_output_dir():
-    import taichi as ti
-    return os.path.join(ti.core.get_repo_dir(), 'benchmarks', 'output')
-
-
-def display_benchmark_regression(xd, yd, args):
-    def parse_dat(file):
-        dict = {}
-        for line in open(file).readlines():
-            try:
-                a, b = line.strip().split(':')
-            except:
-                continue
-            b = float(b)
-            if abs(b % 1.0) < 1e-5:  # codegen_*
-                b = int(b)
-            dict[a.strip()] = b
-        return dict
-
-    def parse_name(file):
-        if file[0:5] == 'test_':
-            return file[5:-4].replace('__test_', '::', 1)
-        elif file[0:10] == 'benchmark_':
-            return '::'.join(reversed(file[10:-4].split('__arch_')))
-        else:
-            raise Exception(f'bad benchmark file name {file}')
-
-    def get_dats(dir):
-        list = []
-        for x in os.listdir(dir):
-            if x.endswith('.dat'):
-                list.append(x)
-        dict = {}
-        for x in list:
-            name = parse_name(x)
-            path = os.path.join(dir, x)
-            dict[name] = parse_dat(path)
-        return dict
-
-    def plot_in_gui(scatter):
-        import numpy as np
-        import taichi as ti
-        gui = ti.GUI('Regression Test', (640, 480), 0x001122)
-        print('[Hint] press SPACE to go for next display')
-        for key, data in scatter.items():
-            data = np.array([((i + 0.5) / len(data), x / 2)
-                             for i, x in enumerate(data)])
-            while not gui.get_event((ti.GUI.PRESS, ti.GUI.SPACE)):
-                gui.core.title = key
-                gui.line((0, 0.5), (1, 0.5), 1.8, 0x66ccff)
-                gui.circles(data, 0xffcc66, 1.5)
-                gui.show()
-
-    spec = args.files
-    single_line = spec and len(spec) == 1
-    xs, ys = get_dats(xd), get_dats(yd)
-    scatter = defaultdict(list)
-    for name in reversed(sorted(set(xs.keys()).union(ys.keys()))):
-        file, func = name.split('::')
-        u, v = xs.get(name, {}), ys.get(name, {})
-        ret = ''
-        for key in set(u.keys()).union(v.keys()):
-            if spec and key not in spec:
-                continue
-            a, b = u.get(key, 0), v.get(key, 0)
-            if a == 0:
-                if b == 0:
-                    res = 1.0
-                else:
-                    res = math.inf
-            else:
-                res = b / a
-            scatter[key].append(res)
-            if res == 1: continue
-            if not single_line:
-                ret += f'{key:<30}'
-            res -= 1
-            color = Fore.RESET
-            if res > 0: color = Fore.RED
-            elif res < 0: color = Fore.GREEN
-            if isinstance(a, float):
-                a = f'{a:>7.2}'
-            else:
-                a = f'{a:>7}'
-            if isinstance(b, float):
-                b = f'{b:>7.2}'
-            else:
-                b = f'{b:>7}'
-            ret += f'{Fore.MAGENTA}{a}{Fore.RESET} -> '
-            ret += f'{Fore.CYAN}{b} {color}{res:>+9.1%}{Fore.RESET}\n'
-        if ret != '':
-            print(f'{file + "::" + func:_<58}', end='')
-            if not single_line:
-                print('')
-            print(ret, end='')
-            if not single_line:
-                print('')
-
-    if args.gui:
-        plot_in_gui(scatter)
-
-
 def make_argument_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument('-v',
@@ -419,14 +312,123 @@ class TaichiMain:
         args = parser.parse_args(arguments)
         ti.core.build()
 
+    @staticmethod
+    def _display_benchmark_regression(xd, yd, args):
+        def parse_dat(file):
+            dict = {}
+            for line in open(file).readlines():
+                try:
+                    a, b = line.strip().split(':')
+                except:
+                    continue
+                b = float(b)
+                if abs(b % 1.0) < 1e-5:  # codegen_*
+                    b = int(b)
+                dict[a.strip()] = b
+            return dict
+
+        def parse_name(file):
+            if file[0:5] == 'test_':
+                return file[5:-4].replace('__test_', '::', 1)
+            elif file[0:10] == 'benchmark_':
+                return '::'.join(reversed(file[10:-4].split('__arch_')))
+            else:
+                raise Exception(f'bad benchmark file name {file}')
+
+        def get_dats(dir):
+            list = []
+            for x in os.listdir(dir):
+                if x.endswith('.dat'):
+                    list.append(x)
+            dict = {}
+            for x in list:
+                name = parse_name(x)
+                path = os.path.join(dir, x)
+                dict[name] = parse_dat(path)
+            return dict
+
+        def plot_in_gui(scatter):
+            import numpy as np
+            import taichi as ti
+            gui = ti.GUI('Regression Test', (640, 480), 0x001122)
+            print('[Hint] press SPACE to go for next display')
+            for key, data in scatter.items():
+                data = np.array([((i + 0.5) / len(data), x / 2)
+                                for i, x in enumerate(data)])
+                while not gui.get_event((ti.GUI.PRESS, ti.GUI.SPACE)):
+                    gui.core.title = key
+                    gui.line((0, 0.5), (1, 0.5), 1.8, 0x66ccff)
+                    gui.circles(data, 0xffcc66, 1.5)
+                    gui.show()
+
+        spec = args.files
+        single_line = spec and len(spec) == 1
+        xs, ys = get_dats(xd), get_dats(yd)
+        scatter = defaultdict(list)
+        for name in reversed(sorted(set(xs.keys()).union(ys.keys()))):
+            file, func = name.split('::')
+            u, v = xs.get(name, {}), ys.get(name, {})
+            ret = ''
+            for key in set(u.keys()).union(v.keys()):
+                if spec and key not in spec:
+                    continue
+                a, b = u.get(key, 0), v.get(key, 0)
+                if a == 0:
+                    if b == 0:
+                        res = 1.0
+                    else:
+                        res = math.inf
+                else:
+                    res = b / a
+                scatter[key].append(res)
+                if res == 1: continue
+                if not single_line:
+                    ret += f'{key:<30}'
+                res -= 1
+                color = Fore.RESET
+                if res > 0: color = Fore.RED
+                elif res < 0: color = Fore.GREEN
+                if isinstance(a, float):
+                    a = f'{a:>7.2}'
+                else:
+                    a = f'{a:>7}'
+                if isinstance(b, float):
+                    b = f'{b:>7.2}'
+                else:
+                    b = f'{b:>7}'
+                ret += f'{Fore.MAGENTA}{a}{Fore.RESET} -> '
+                ret += f'{Fore.CYAN}{b} {color}{res:>+9.1%}{Fore.RESET}\n'
+            if ret != '':
+                print(f'{file + "::" + func:_<58}', end='')
+                if not single_line:
+                    print('')
+                print(ret, end='')
+                if not single_line:
+                    print('')
+
+        if args.gui:
+            plot_in_gui(scatter)
+
+    @staticmethod
+    def get_benchmark_baseline_dir():
+        import taichi as ti
+        return os.path.join(ti.core.get_repo_dir(), 'benchmarks', 'baseline')
+
+    @staticmethod
+    def get_benchmark_output_dir():
+        import taichi as ti
+        return os.path.join(ti.core.get_repo_dir(), 'benchmarks', 'output')
+
     def regression(self, arguments: list = sys.argv[2:]):
         """Display benchmark regression test result"""
         parser = argparse.ArgumentParser(description=f"{self.regression.__doc__}")
+        parser.add_argument('files', nargs='*', help='Test file(s) to be run for benchmarking')
+        parser.add_argument('-g', '--gui', dest='gui', action='store_true', help='Display benchmark regression result in GUI')
         args = parser.parse_args(arguments)
 
-        baseline_dir = get_benchmark_baseline_dir()
-        output_dir = get_benchmark_output_dir()
-        display_benchmark_regression(baseline_dir, output_dir, args)
+        baseline_dir = TaichiMain._get_benchmark_baseline_dir()
+        output_dir = TaichiMain._get_benchmark_output_dir()
+        TaichiMain._display_benchmark_regression(baseline_dir, output_dir, args)
 
     def baseline(self, arguments: list = sys.argv[2:]):
         """Archive current benchmark result as baseline"""
@@ -434,8 +436,8 @@ class TaichiMain:
         args = parser.parse_args(arguments)
 
         import shutil
-        baseline_dir = get_benchmark_baseline_dir()
-        output_dir = get_benchmark_output_dir()
+        baseline_dir = TaichiMain._get_benchmark_baseline_dir()
+        output_dir = TaichiMain._get_benchmark_output_dir()
         shutil.rmtree(baseline_dir, True)
         shutil.copytree(output_dir, baseline_dir)
         print(f"[benchmark] baseline data saved to {baseline_dir}")
@@ -513,7 +515,7 @@ class TaichiMain:
             current_commit_hash = f.read().strip()
         assert commit_hash == current_commit_hash, f"Built commit {commit_hash:.6} differs from current commit {current_commit_hash:.6}, refuse to benchmark"
         os.environ['TI_PRINT_BENCHMARK_STAT'] = '1'
-        output_dir = get_benchmark_output_dir()
+        output_dir = TaichiMain._get_benchmark_output_dir()
         shutil.rmtree(output_dir, True)
         os.mkdir(output_dir)
         os.environ['TI_BENCHMARK_OUTPUT_DIR'] = output_dir
@@ -528,7 +530,6 @@ class TaichiMain:
 
     def test(self, arguments: list = sys.argv[2:]):
         """Run the tests"""
-        # TODO: Convert the logic to use args
         parser = argparse.ArgumentParser(description=f"{self.test.__doc__}")
         parser.add_argument('files', nargs='*', help='Test file(s) to be run')
         parser.add_argument('-c', '--cpp', action='store_true', help='Only run the C++ tests')

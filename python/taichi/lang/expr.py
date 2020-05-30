@@ -91,6 +91,9 @@ class Expr(TaichiOperations):
                      (taichi_lang_core.get_max_num_indices() - len(key)))
         self.setter(value, *key)
 
+    def __iter__(self):
+        raise SyntaxError("Python-scope struct-for is not supported")
+
     def __getitem__(self, key):
         import taichi as ti
         assert not ti.get_runtime().inside_kernel

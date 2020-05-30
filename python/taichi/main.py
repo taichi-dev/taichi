@@ -13,9 +13,7 @@ from pathlib import Path
 from colorama import Back, Fore, Style
 
 import taichi as ti
-from taichi.tools.video import (accelerate_video, crop_video,
-                                interpolate_frames, make_video, mp4_to_gif,
-                                scale_video)
+from taichi.tools.video import (accelerate_video, crop_video, make_video, mp4_to_gif, scale_video)
 
 
 def test_python(args):
@@ -268,7 +266,6 @@ class TaichiMain:
         "video_scale",
         "video",
         "doc",
-        "interpolate",
         "asm",
         "update",
         "statement",
@@ -458,13 +455,6 @@ class TaichiMain:
 
         os.system('cd {}/docs && sphinx-build -b html . build'.format(
             ti.get_repo_directory()))
-
-    def interpolate(self, arguments: list = sys.argv[2:]):
-        """???"""
-        # TODO: Convert the logic to use args
-        parser = argparse.ArgumentParser(description=f"{self.interpolate.__doc__}")
-        args = parser.parse_args(sys.argv[2:])
-        interpolate_frames('.')
 
     def asm(self, arguments: list = sys.argv[2:]):
         """???"""

@@ -407,20 +407,17 @@ class TaichiMain:
         crop_video(args.input_file, args.output_file, args.x_begin, args.x_end, args.y_begin, args.y_end)
 
     def video_scale(self, arguments: list = sys.argv[2:]):
-        """Scale video resolution"""
-        # TODO: Convert the logic to use args
+        """Scale video resolution in the same directory"""
         parser = argparse.ArgumentParser(description=f"{self.video_scale.__doc__}")
-        args = parser.parse_args(sys.argv[2:])
+        parser.add_argument('-i', '--input', required=True, dest='input_file' ,type=TaichiMain._mp4_file, help="Path to input MP4 video file")
+        parser.add_argument('-w', '--ratio-width', required=True, dest='ratio_width' ,type=float, help="The scaling ratio of the resolution on width")
+        parser.add_argument('--ratio-height', required=False, default=None, dest='ratio_height', type=float, help="The scaling ratio of the resolution on height [default: equal to ratio-width]")
+        args = parser.parse_args(arguments)
 
-        input_fn = sys.argv[2]
-        assert input_fn[-4:] == '.mp4'
-        output_fn = input_fn[:-4] + '-scaled.mp4'
-        ratiow = float(sys.argv[3])
-        if len(sys.argv) >= 5:
-            ratioh = float(sys.argv[4])
-        else:
-            ratioh = ratiow
-        scale_video(input_fn, output_fn, ratiow, ratioh)
+        if not args.ratio_height:
+            args.ratio_height = args.ratio_width
+        args.output_file = Path(args.input_file).with_name(f"{Path(args.input_file).stem}-scaled")
+        scale_video(args.input_file, args.output_file, args.ratio_width, args.ratio_height)
 
     def video(self, arguments: list = sys.argv[2:]):
         """Make a video using *.png files in the current folder"""

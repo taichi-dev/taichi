@@ -1,15 +1,21 @@
-import sys
-import os
-import shutil
-import time
-import math
-import random
 import argparse
-from collections import defaultdict
-from colorama import Fore, Back, Style
-from taichi.tools.video import make_video, interpolate_frames, mp4_to_gif, scale_video, crop_video, accelerate_video
-from pathlib import Path
+import math
+import os
+import random
 import runpy
+import shutil
+import sys
+import time
+from collections import defaultdict
+from functools import wraps
+from pathlib import Path
+
+from colorama import Back, Fore, Style
+
+import taichi as ti
+from taichi.tools.video import (accelerate_video, crop_video,
+                                interpolate_frames, make_video, mp4_to_gif,
+                                scale_video)
 
 
 def test_python(args):
@@ -255,214 +261,100 @@ def make_argument_parser():
     return parser
 
 
-def main(debug=False):
-    argc = len(sys.argv)
-    if argc == 1:
-        mode = 'help'
-        parser_args = sys.argv
-    else:
-        mode = sys.argv[1]
-        parser_args = sys.argv[2:]
-    parser = make_argument_parser()
-    args = parser.parse_args(args=parser_args)
+def timer(func):
+    import timeit
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        start = timeit.default_timer()
+        result = func(*args, **kwargs)
+        elapsed = timeit.default_timer() - start
+        print(f">>> Running time: {elapsed:.2f}s")
+        return result
+    return wrapper
 
-    lines = []
-    print()
-    lines.append(u' *******************************************')
-    lines.append(u' **     Taichi Programming Language       **')
-    lines.append(u' *******************************************')
-    if 'TI_DEBUG' in os.environ:
-        val = os.environ['TI_DEBUG']
-        if val not in ['0', '1']:
-            raise ValueError(
-                "Environment variable TI_DEBUG can only have value 0 or 1.")
-    if debug:
-        lines.append(u' *****************Debug Mode****************')
-        os.environ['TI_DEBUG'] = '1'
-    print(u'\n'.join(lines))
-    print()
-    import taichi as ti
-    if args.arch is not None:
-        arch = args.arch
-        if args.exclusive:
-            arch = '^' + arch
-        print(f'Running on Arch={arch}')
-        os.environ['TI_WANTED_ARCHS'] = arch
 
-    if mode == 'help':
-        print(
-            "    Usage: ti run [task name]        |-> Run a specific task\n"
-            "           ti test                   |-> Run all the tests\n"
-            "           ti benchmark              |-> Run python tests in benchmark mode\n"
-            "           ti baseline               |-> Archive current benchmark result as baseline\n"
-            "           ti regression             |-> Display benchmark regression test result\n"
-            "           ti format                 |-> Reformat modified source files\n"
-            "           ti format_all             |-> Reformat all source files\n"
-            "           ti build                  |-> Build C++ files\n"
-            "           ti video                  |-> Make a video using *.png files in the current folder\n"
-            "           ti video_scale            |-> Scale video resolution \n"
-            "           ti video_crop             |-> Crop video\n"
-            "           ti video_speed            |-> Speed up video\n"
-            "           ti gif                    |-> Convert mp4 file to gif\n"
-            "           ti doc                    |-> Build documentation\n"
-            "           ti release                |-> Make source code release\n"
-            "           ti debug [script.py]      |-> Debug script\n"
-            "           ti example [name]         |-> Run an example by name\n"
+# TODO: add back the debug flag
+class TaichiMain:
+    registered_commands = {
+        "example",
+        "release",
+        "convert",
+        "gif",
+        "video_speed",
+        "video_crop",
+        "video_scale",
+        "video",
+        "doc",
+        "interpolate",
+        "asm",
+        "update",
+        "statement",
+        "format_all",
+        "format",
+        "build",
+        "regression",
+        "baseline",
+        "benchmark",
+        "test",
+        "debug",
+        "run"
+    }
+    @timer
+    def __init__(self):
+        self.banner = f"\n{'*' * 43}\n**   \u262f Taichi Programming Language       **\n{'*' * 43}"
+        print(self.banner)
+
+        if 'TI_DEBUG' in os.environ:
+            val = os.environ['TI_DEBUG']
+            if val not in ['0', '1']:
+                raise ValueError(
+                    "Environment variable TI_DEBUG can only have value 0 or 1.")
+        
+        parser = argparse.ArgumentParser(
+            description="Taichi CLI",
+            usage=self._usage()
         )
-        return 0
+        if len(sys.argv[1:2]) == 0:
+            parser.print_help()
+            exit(1)
 
-    t = time.time()
-    if mode.endswith('.py'):
+        parser.add_argument('command', help="command from the above list to run")
+        args = parser.parse_args(sys.argv[1:2])
+        if args.command not in self.registered_commands:
+            if args.command.endswith(".py"):
+                self._exec_python_file(args.command)
+            print(f"{args.command} is not a valid command!")
+            parser.print_help()
+            exit(1)
+        getattr(self, args.command)(sys.argv[2:])
+
+    def _usage(self) -> str:
+        """Compose deterministic usage message based on registered_commands."""
+        # TODO: add some color to commands
+        msg = "\n"
+        space = 20
+        for command in sorted(self.registered_commands):
+            msg += f"{command}{' ' * (space - len(command))}|-> {getattr(self, command).__doc__}\n"
+        return msg
+    
+    def _exec_python_file(self, filename: str):
+        """Execute a Python file based on filename."""
+        # TODO: do we really need this?
         import subprocess
-        subprocess.call([sys.executable, mode] + sys.argv[1:])
-    elif mode == "run":
-        if argc <= 1:
-            print("Please specify [task name], e.g. test_math")
-            return -1
-        print(sys.argv)
-        name = sys.argv[1]
-        task = ti.Task(name)
-        task.run(*sys.argv[2:])
-    elif mode == "debug":
-        ti.core.set_core_trigger_gdb_when_crash(True)
-        if argc <= 2:
-            print("Please specify [file name], e.g. render.py")
-            return -1
-        name = sys.argv[2]
-        with open(name) as script:
-            script = script.read()
-        exec(script, {'__name__': '__main__'})
-    elif mode == "test":
-        if len(args.files):
-            if args.cpp:
-                return test_cpp(args)
-            else:
-                return test_python(args)
-        elif args.cpp:
-            return test_cpp(args)
-        else:
-            ret = test_python(args)
-            if ret != 0:
-                return ret
-            return test_cpp(args)
-    elif mode == "benchmark":
-        import shutil
-        commit_hash = ti.core.get_commit_hash()
-        with os.popen('git rev-parse HEAD') as f:
-            current_commit_hash = f.read().strip()
-        assert commit_hash == current_commit_hash, f"Built commit {commit_hash:.6} differs from current commit {current_commit_hash:.6}, refuse to benchmark"
-        os.environ['TI_PRINT_BENCHMARK_STAT'] = '1'
-        output_dir = get_benchmark_output_dir()
-        shutil.rmtree(output_dir, True)
-        os.mkdir(output_dir)
-        os.environ['TI_BENCHMARK_OUTPUT_DIR'] = output_dir
-        if os.environ.get('TI_WANTED_ARCHS') is None and not args.tprt:
-            # since we only do number-of-statements benchmark for SPRT
-            os.environ['TI_WANTED_ARCHS'] = 'x64'
-        if args.tprt:
-            os.system('python benchmarks/run.py')
-            # TODO: benchmark_python(args)
-        else:
-            test_python(args)
-    elif mode == "baseline":
-        import shutil
-        baseline_dir = get_benchmark_baseline_dir()
-        output_dir = get_benchmark_output_dir()
-        shutil.rmtree(baseline_dir, True)
-        shutil.copytree(output_dir, baseline_dir)
-        print('[benchmark] baseline data saved')
-    elif mode == "regression":
-        baseline_dir = get_benchmark_baseline_dir()
-        output_dir = get_benchmark_output_dir()
-        display_benchmark_regression(baseline_dir, output_dir, args)
-    elif mode == "build":
-        ti.core.build()
-    elif mode == "format":
-        diff = None
-        if len(sys.argv) >= 3:
-            diff = sys.argv[2]
-        ti.core.format(diff=diff)
-    elif mode == "format_all":
-        ti.core.format(all=True)
-    elif mode == "statement":
-        exec(sys.argv[2])
-    elif mode == "update":
-        ti.core.update(True)
-        ti.core.build()
-    elif mode == "asm":
-        fn = sys.argv[2]
-        os.system(
-            r"sed '/^\s*\.\(L[A-Z]\|[a-z]\)/ d' {0} > clean_{0}".format(fn))
-    elif mode == "interpolate":
-        interpolate_frames('.')
-    elif mode == "doc":
-        os.system('cd {}/docs && sphinx-build -b html . build'.format(
-            ti.get_repo_directory()))
-    elif mode == "video":
-        files = sorted(os.listdir('.'))
-        files = list(filter(lambda x: x.endswith('.png'), files))
-        if len(sys.argv) >= 3:
-            frame_rate = int(sys.argv[2])
-        else:
-            frame_rate = 24
-        if len(sys.argv) >= 4:
-            trunc = int(sys.argv[3])
-            files = files[:trunc]
-        ti.info('Making video using {} png files...', len(files))
-        ti.info("frame_rate={}", frame_rate)
-        output_fn = 'video.mp4'
-        make_video(files, output_path=output_fn, frame_rate=frame_rate)
-        ti.info('Done! Output video file = {}', output_fn)
-    elif mode == "video_scale":
-        input_fn = sys.argv[2]
-        assert input_fn[-4:] == '.mp4'
-        output_fn = input_fn[:-4] + '-scaled.mp4'
-        ratiow = float(sys.argv[3])
-        if len(sys.argv) >= 5:
-            ratioh = float(sys.argv[4])
-        else:
-            ratioh = ratiow
-        scale_video(input_fn, output_fn, ratiow, ratioh)
-    elif mode == "video_crop":
-        if len(sys.argv) != 7:
-            print('Usage: ti video_crop fn x_begin x_end y_begin y_end')
-            return -1
-        input_fn = sys.argv[2]
-        assert input_fn[-4:] == '.mp4'
-        output_fn = input_fn[:-4] + '-cropped.mp4'
-        x_begin = float(sys.argv[3])
-        x_end = float(sys.argv[4])
-        y_begin = float(sys.argv[5])
-        y_end = float(sys.argv[6])
-        crop_video(input_fn, output_fn, x_begin, x_end, y_begin, y_end)
-    elif mode == "video_speed":
-        if len(sys.argv) != 4:
-            print('Usage: ti video_speed fn speed_up_factor')
-            return -1
-        input_fn = sys.argv[2]
-        assert input_fn[-4:] == '.mp4'
-        output_fn = input_fn[:-4] + '-sped.mp4'
-        speed = float(sys.argv[3])
-        accelerate_video(input_fn, output_fn, speed)
-    elif mode == "gif":
-        input_fn = sys.argv[2]
-        assert input_fn[-4:] == '.mp4'
-        output_fn = input_fn[:-4] + '.gif'
-        ti.info('Converting {} to {}'.format(input_fn, output_fn))
-        framerate = 24
-        mp4_to_gif(input_fn, output_fn, framerate)
-    elif mode == "convert":
-        import shutil
-        # http://www.commandlinefu.com/commands/view/3584/remove-color-codes-special-characters-with-sed
-        # TODO: Windows support
-        for fn in sys.argv[2:]:
-            print("Converting logging file: {}".format(fn))
-            tmp_fn = '/tmp/{}.{:05d}.backup'.format(fn,
-                                                    random.randint(0, 10000))
-            shutil.move(fn, tmp_fn)
-            command = r'sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g"'
-            os.system('{} {} > {}'.format(command, tmp_fn, fn))
-    elif mode == "release":
+        subprocess.call([sys.executable, filename] + sys.argv[1:])
+
+    def example(self, arguments: list = sys.argv[2:]):
+        """Run an example by name"""
+        parser = argparse.ArgumentParser(description=f"{self.example.__doc__}")
+        parser.add_argument("name", help=f"Name of an example\n")
+        args = parser.parse_args(arguments)
+        run_example(name=args.name)
+
+    def release(self, arguments: list = sys.argv[2:]):
+        """Make source code release"""
+        parser = argparse.ArgumentParser(description=f"{self.release.__doc__}")
+        args = parser.parse_args(arguments)
+
         from git import Git
         import zipfile
         import hashlib
@@ -484,26 +376,272 @@ def main(debug=False):
         fn = f'taichi-src-v{ver[0]}-{ver[1]}-{ver[2]}-{commit}-{md5}.zip'
         import shutil
         shutil.move('release.zip', fn)
-    elif mode == "example":
-        if len(sys.argv) != 3:
-            sys.exit(
-                f"Invalid arguments! Usage: ti example [name]\nAvailable example names are: {sorted(get_available_examples())}"
-            )
-        example = sys.argv[2]
-        run_example(name=example)
-    else:
+
+    def convert(self, arguments: list = sys.argv[2:]):
+        """???"""
+        # TODO: Convert the logic to use args
+        parser = argparse.ArgumentParser(description=f"{self.convert.__doc__}")
+        args = parser.parse_args(sys.argv[2:])
+
+        import shutil
+        # http://www.commandlinefu.com/commands/view/3584/remove-color-codes-special-characters-with-sed
+        # TODO: Windows support
+        for fn in sys.argv[2:]:
+            print("Converting logging file: {}".format(fn))
+            tmp_fn = '/tmp/{}.{:05d}.backup'.format(fn,
+                                                    random.randint(0, 10000))
+            shutil.move(fn, tmp_fn)
+            command = r'sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g"'
+            os.system('{} {} > {}'.format(command, tmp_fn, fn))
+
+    def gif(self, arguments: list = sys.argv[2:]):
+        """Convert mp4 file to gif"""
+        parser = argparse.ArgumentParser(description=f"{self.gif.__doc__}")
+        args = parser.parse_args(sys.argv[2:])
+        
+        # TODO: Convert the logic to use args
+        input_fn = sys.argv[2]
+        assert input_fn[-4:] == '.mp4'
+        output_fn = input_fn[:-4] + '.gif'
+        ti.info('Converting {} to {}'.format(input_fn, output_fn))
+        framerate = 24
+        mp4_to_gif(input_fn, output_fn, framerate)
+
+    def video_speed(self, arguments: list = sys.argv[2:]):
+        """Speed up video"""
+        # TODO: Convert the logic to use args
+        parser = argparse.ArgumentParser(description=f"{self.video_speed.__doc__}")
+        args = parser.parse_args(sys.argv[2:])
+
+        if len(sys.argv) != 4:
+            print('Usage: ti video_speed fn speed_up_factor')
+            return -1
+        input_fn = sys.argv[2]
+        assert input_fn[-4:] == '.mp4'
+        output_fn = input_fn[:-4] + '-sped.mp4'
+        speed = float(sys.argv[3])
+        accelerate_video(input_fn, output_fn, speed)
+
+    def video_crop(self, arguments: list = sys.argv[2:]):
+        """Crop video"""
+        # TODO: Convert the logic to use args
+        parser = argparse.ArgumentParser(description=f"{self.video_crop.__doc__}")
+        args = parser.parse_args(sys.argv[2:])
+
+        if len(sys.argv) != 7:
+            print('Usage: ti video_crop fn x_begin x_end y_begin y_end')
+            return -1
+        input_fn = sys.argv[2]
+        assert input_fn[-4:] == '.mp4'
+        output_fn = input_fn[:-4] + '-cropped.mp4'
+        x_begin = float(sys.argv[3])
+        x_end = float(sys.argv[4])
+        y_begin = float(sys.argv[5])
+        y_end = float(sys.argv[6])
+        crop_video(input_fn, output_fn, x_begin, x_end, y_begin, y_end)
+
+    def video_scale(self, arguments: list = sys.argv[2:]):
+        """Scale video resolution"""
+        # TODO: Convert the logic to use args
+        parser = argparse.ArgumentParser(description=f"{self.video_scale.__doc__}")
+        args = parser.parse_args(sys.argv[2:])
+
+        input_fn = sys.argv[2]
+        assert input_fn[-4:] == '.mp4'
+        output_fn = input_fn[:-4] + '-scaled.mp4'
+        ratiow = float(sys.argv[3])
+        if len(sys.argv) >= 5:
+            ratioh = float(sys.argv[4])
+        else:
+            ratioh = ratiow
+        scale_video(input_fn, output_fn, ratiow, ratioh)
+
+    def video(self, arguments: list = sys.argv[2:]):
+        """Make a video using *.png files in the current folder"""
+        # TODO: Convert the logic to use args
+        parser = argparse.ArgumentParser(description=f"{self.video.__doc__}")
+        args = parser.parse_args(sys.argv[2:])
+
+        files = sorted(os.listdir('.'))
+        files = list(filter(lambda x: x.endswith('.png'), files))
+        if len(sys.argv) >= 3:
+            frame_rate = int(sys.argv[2])
+        else:
+            frame_rate = 24
+        if len(sys.argv) >= 4:
+            trunc = int(sys.argv[3])
+            files = files[:trunc]
+        ti.info('Making video using {} png files...', len(files))
+        ti.info("frame_rate={}", frame_rate)
+        output_fn = 'video.mp4'
+        make_video(files, output_path=output_fn, frame_rate=frame_rate)
+        ti.info('Done! Output video file = {}', output_fn)
+
+    def doc(self, arguments: list = sys.argv[2:]):
+        """Build documentation"""
+        # TODO: Convert the logic to use args
+        parser = argparse.ArgumentParser(description=f"{self.doc.__doc__}")
+        args = parser.parse_args(sys.argv[2:])
+
+        os.system('cd {}/docs && sphinx-build -b html . build'.format(
+            ti.get_repo_directory()))
+
+    def interpolate(self, arguments: list = sys.argv[2:]):
+        """???"""
+        # TODO: Convert the logic to use args
+        parser = argparse.ArgumentParser(description=f"{self.interpolate.__doc__}")
+        args = parser.parse_args(sys.argv[2:])
+        interpolate_frames('.')
+
+    def asm(self, arguments: list = sys.argv[2:]):
+        """???"""
+        # TODO: Convert the logic to use args
+        parser = argparse.ArgumentParser(description=f"{self.asm.__doc__}")
+        args = parser.parse_args(sys.argv[2:])
+
+        fn = sys.argv[2]
+        os.system(
+            r"sed '/^\s*\.\(L[A-Z]\|[a-z]\)/ d' {0} > clean_{0}".format(fn))
+
+    def update(self, arguments: list = sys.argv[2:]):
+        """???"""
+        # TODO: Convert the logic to use args
+        parser = argparse.ArgumentParser(description=f"{self.update.__doc__}")
+        args = parser.parse_args(sys.argv[2:])
+        ti.core.update(True)
+        ti.core.build()
+
+    def statement(self, arguments: list = sys.argv[2:]):
+        """???"""
+        # TODO: Convert the logic to use args
+        parser = argparse.ArgumentParser(description=f"{self.statement.__doc__}")
+        args = parser.parse_args(sys.argv[2:])
+
+        # FIXME: exec is a security risk here!
+        exec(sys.argv[2])
+
+    def format(self, arguments: list = sys.argv[2:]):
+        """Reformat modified source files"""
+        # TODO: Convert the logic to use args
+        parser = argparse.ArgumentParser(description=f"{self.format.__doc__}")
+        args = parser.parse_args(sys.argv[2:])
+        diff = None
+        if len(sys.argv) >= 3:
+            diff = sys.argv[2]
+        ti.core.format(diff=diff)
+
+    def format_all(self, arguments: list = sys.argv[2:]):
+        """Reformat all source files"""
+        # TODO: Convert the logic to use args
+        parser = argparse.ArgumentParser(description=f"{self.format_all.__doc__}")
+        args = parser.parse_args(sys.argv[2:])
+        ti.core.format(all=True)
+
+    def build(self, arguments: list = sys.argv[2:]):
+        """Build C++ files"""
+        # TODO: Convert the logic to use args
+        parser = argparse.ArgumentParser(description=f"{self.build.__doc__}")
+        args = parser.parse_args(sys.argv[2:])
+        ti.core.build()
+
+    def regression(self, arguments: list = sys.argv[2:]):
+        """Display benchmark regression test result"""
+        # TODO: Convert the logic to use args
+        parser = argparse.ArgumentParser(description=f"{self.regression.__doc__}")
+        args = parser.parse_args(sys.argv[2:])
+
+        baseline_dir = get_benchmark_baseline_dir()
+        output_dir = get_benchmark_output_dir()
+        display_benchmark_regression(baseline_dir, output_dir, args)
+
+    def baseline(self, arguments: list = sys.argv[2:]):
+        """Archive current benchmark result as baseline"""
+        # TODO: Convert the logic to use args
+        parser = argparse.ArgumentParser(description=f"{self.baseline.__doc__}")
+        args = parser.parse_args(sys.argv[2:])
+
+        import shutil
+        baseline_dir = get_benchmark_baseline_dir()
+        output_dir = get_benchmark_output_dir()
+        shutil.rmtree(baseline_dir, True)
+        shutil.copytree(output_dir, baseline_dir)
+        print('[benchmark] baseline data saved')
+
+    def benchmark(self, arguments: list = sys.argv[2:]):
+        """Run Python tests in benchmark mode"""
+        # TODO: Convert the logic to use args
+        parser = argparse.ArgumentParser(description=f"{self.benchmark.__doc__}")
+        args = parser.parse_args(sys.argv[2:])
+
+        import shutil
+        commit_hash = ti.core.get_commit_hash()
+        with os.popen('git rev-parse HEAD') as f:
+            current_commit_hash = f.read().strip()
+        assert commit_hash == current_commit_hash, f"Built commit {commit_hash:.6} differs from current commit {current_commit_hash:.6}, refuse to benchmark"
+        os.environ['TI_PRINT_BENCHMARK_STAT'] = '1'
+        output_dir = get_benchmark_output_dir()
+        shutil.rmtree(output_dir, True)
+        os.mkdir(output_dir)
+        os.environ['TI_BENCHMARK_OUTPUT_DIR'] = output_dir
+        if os.environ.get('TI_WANTED_ARCHS') is None and not args.tprt:
+            # since we only do number-of-statements benchmark for SPRT
+            os.environ['TI_WANTED_ARCHS'] = 'x64'
+        if args.tprt:
+            os.system('python benchmarks/run.py')
+            # TODO: benchmark_python(args)
+        else:
+            test_python(args)
+
+    def test(self, arguments: list = sys.argv[2:]):
+        """Run the tests"""
+        # TODO: Convert the logic to use args
+        parser = argparse.ArgumentParser(description=f"{self.test.__doc__}")
+        args = parser.parse_args(sys.argv[2:])
+
+        if len(args.files):
+            if args.cpp:
+                return test_cpp(args)
+            else:
+                return test_python(args)
+        elif args.cpp:
+            return test_cpp(args)
+        else:
+            ret = test_python(args)
+            if ret != 0:
+                return ret
+            return test_cpp(args)
+
+    def debug(self, arguments: list = sys.argv[2:]):
+        """Debug a script"""
+        # TODO: Convert the logic to use args
+        parser = argparse.ArgumentParser(description=f"{self.debug.__doc__}")
+        args = parser.parse_args(sys.argv[2:])
+
+        ti.core.set_core_trigger_gdb_when_crash(True)
+        if argc <= 2:
+            print("Please specify [file name], e.g. render.py")
+            return -1
+        name = sys.argv[2]
+        with open(name) as script:
+            script = script.read()
+
+        # FIXME: exec is a security risk here!
+        exec(script, {'__name__': '__main__'})
+
+    def run(self, arguments: list = sys.argv[2:]):
+        """Run a specific task"""
+        # TODO: Convert the logic to use args
+        parser = argparse.ArgumentParser(description=f"{self.run.__doc__}")
+        args = parser.parse_args(sys.argv[2:])
+
+        if argc <= 1:
+            print("Please specify [task name], e.g. test_math")
+            return -1
+        print(sys.argv)
         name = sys.argv[1]
-        print('Running task [{}]...'.format(name))
         task = ti.Task(name)
         task.run(*sys.argv[2:])
-    print()
-    print(">>> Running time: {:.2f}s".format(time.time() - t))
-    return 0
 
 
-def main_debug():
-    main(debug=True)
-
-
-if __name__ == '__main__':
-    exit(main())
+if __name__ == "__main__":
+    TaichiMain()

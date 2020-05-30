@@ -419,9 +419,6 @@ class Matrix(TaichiOperations):
     def dim(self):
         return self.loop_range().dim()
 
-    def __iter__(self):
-        return iter(self.loop_range())
-
     #def data_type(self):
     #    # XXX(@yuanming-hu): Do we need to tell users we are a matrix of dt?
     #    return self.loop_range().data_type()

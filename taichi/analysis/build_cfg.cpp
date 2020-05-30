@@ -29,7 +29,7 @@ class CFGBuilder : public IRVisitor {
 
   void visit(Stmt *stmt) override {
     if (stmt->is_container_statement()) {
-      TI_ERROR("Visitor for container stmt undefined.");
+      TI_ERROR("Visitor for container statement undefined.");
     }
   }
 

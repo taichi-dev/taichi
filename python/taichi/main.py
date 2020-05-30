@@ -438,12 +438,10 @@ class TaichiMain:
 
     def doc(self, arguments: list = sys.argv[2:]):
         """Build documentation"""
-        # TODO: Convert the logic to use args
         parser = argparse.ArgumentParser(description=f"{self.doc.__doc__}")
-        args = parser.parse_args(sys.argv[2:])
+        args = parser.parse_args(arguments)
 
-        os.system('cd {}/docs && sphinx-build -b html . build'.format(
-            ti.get_repo_directory()))
+        os.system(f'cd {ti.get_repo_directory()}/docs && sphinx-build -b html . build')
 
     def asm(self, arguments: list = sys.argv[2:]):
         """???"""

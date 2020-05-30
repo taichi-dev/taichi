@@ -569,17 +569,14 @@ class TaichiMain:
 
     def run(self, arguments: list = sys.argv[2:]):
         """Run a specific task"""
-        # TODO: Convert the logic to use args
+        # TODO: discuss do we really need this?
         parser = argparse.ArgumentParser(description=f"{self.run.__doc__}")
-        args = parser.parse_args(sys.argv[2:])
+        parser.add_argument('taskname', help='A single task name to run, e.g. test_math')
+        parser.add_argument('taskargs', nargs='*', help='Optional task argument(s) to run with task')
+        args = parser.parse_args(arguments)
 
-        if argc <= 1:
-            print("Please specify [task name], e.g. test_math")
-            return -1
-        print(sys.argv)
-        name = sys.argv[1]
-        task = ti.Task(name)
-        task.run(*sys.argv[2:])
+        task = ti.Task(args.taskname)
+        task.run(*args.taskargs)
 
 
 def main():

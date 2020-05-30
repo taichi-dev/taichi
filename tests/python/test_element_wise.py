@@ -117,7 +117,10 @@ def _test_matrix_element_wise_writeback_binary(dtype,
     @ti.kernel
     def func():
         a[None] = ti_func(u1[None], u2[None])
-        b[None] = ti_func(u2[None], u3[None])
+        if ti.static(is_atomic):
+            b[None] = ti_func(u2[None], u3[None])
+        else:
+            b[None] = u2[None].fill(u3[None])
 
     func()
 

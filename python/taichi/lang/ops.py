@@ -21,7 +21,9 @@ def stack_info():
 def unary(foo):
     import taichi as ti
 
-    imp_foo = lambda x: foo(Expr(x))
+    @functools.wraps(foo)
+    def imp_foo(x):
+        return foo(Expr(x))
 
     @functools.wraps(foo)
     def wrapped(a):
@@ -40,8 +42,13 @@ binary_ops = []
 def binary(foo):
     import taichi as ti
 
-    imp_foo = lambda x, y: foo(Expr(x), Expr(y))
-    rev_foo = lambda x, y: foo(Expr(y), Expr(x))
+    @functools.wraps(foo)
+    def imp_foo(x, y):
+        return foo(Expr(x), Expr(y))
+
+    @functools.wraps(foo)
+    def rev_foo(x, y):
+        return foo(Expr(y), Expr(x))
 
     @functools.wraps(foo)
     def wrapped(a, b):
@@ -62,14 +69,16 @@ writeback_binary_ops = []
 def writeback_binary(foo):
     import taichi as ti
 
-    imp_foo = lambda x, y: foo(x, Expr(y))
+    @functools.wraps(foo)
+    def imp_foo(x, y):
+        return foo(x, Expr(y))
 
     @functools.wraps(foo)
     def wrapped(a, b):
         if ti.is_taichi_class(a):
             return a.element_wise_binary(imp_foo, b)
         elif ti.is_taichi_class(b):
-            assert False, f'cannot augassign taichi class {type(b)} to scalar expr'
+            raise SyntaxError(f'cannot augassign taichi class {type(b)} to scalar expr')
         else:
             return imp_foo(a, b)
 

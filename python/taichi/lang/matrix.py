@@ -134,6 +134,9 @@ class Matrix(TaichiOperations):
         ret = self.empty_copy()
         if isinstance(other, (list, tuple)):
             other = Matrix(other)
+        if foo.__name__ == 'assign' and not isinstance(other, Matrix):
+            raise SyntaxError(f'cannot assign scalar expr to '
+                'taichi class {type(a)}, maybe you want to use `a.fill(b)` instead?')
         if isinstance(other, Matrix):
             assert self.m == other.m and self.n == other.n
             for i in range(self.n * self.m):
@@ -435,6 +438,11 @@ class Matrix(TaichiOperations):
         return -(ret == ti.expr_init(-len(self.entries)))
 
     def fill(self, val):
+        if impl.inside_kernel():
+            def assign_renamed(x, y):
+                import taichi as ti
+                return ti.assign(x, y)
+            return self.element_wise_binary(assign_renamed, val)
         if isinstance(val, numbers.Number):
             val = tuple(
                 [tuple([val for _ in range(self.m)]) for _ in range(self.n)])

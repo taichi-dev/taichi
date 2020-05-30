@@ -1,5 +1,5 @@
 #include "taichi/ir/ir.h"
-#include "taichi/ir/cfg.h"
+#include "taichi/ir/control_flow_graph.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/analysis.h"
 

@@ -1,4 +1,4 @@
-#include "taichi/ir/cfg.h"
+#include "taichi/ir/control_flow_graph.h"
 #include <queue>
 
 TLANG_NAMESPACE_BEGIN
@@ -55,40 +55,40 @@ bool CFGNode::erase_entire_node() {
   return true;
 }
 
+void ControlFlowGraph::erase(int node_id) {
+  // Erase an empty node.
+  TI_ASSERT(node_id >= 0 && node_id < (int)size());
+  TI_ASSERT(nodes[node_id] && nodes[node_id]->empty());
+  if (nodes[node_id]->prev_node_in_same_block) {
+    nodes[node_id]->prev_node_in_same_block->next_node_in_same_block =
+        nodes[node_id]->next_node_in_same_block;
+  }
+  if (nodes[node_id]->next_node_in_same_block) {
+    nodes[node_id]->next_node_in_same_block->prev_node_in_same_block =
+        nodes[node_id]->prev_node_in_same_block;
+  }
+  for (auto &prev_node : nodes[node_id]->prev) {
+    prev_node->next.erase(std::find(
+        prev_node->next.begin(), prev_node->next.end(), nodes[node_id].get()));
+  }
+  for (auto &next_node : nodes[node_id]->next) {
+    next_node->prev.erase(std::find(
+        next_node->prev.begin(), next_node->prev.end(), nodes[node_id].get()));
+  }
+  for (auto &prev_node : nodes[node_id]->prev) {
+    for (auto &next_node : nodes[node_id]->next) {
+      CFGNode::add_edge(prev_node, next_node);
+    }
+  }
+  nodes[node_id].reset();
+}
+
 std::size_t ControlFlowGraph::size() const {
   return nodes.size();
 }
 
 CFGNode *ControlFlowGraph::back() {
   return nodes.back().get();
-}
-
-void ControlFlowGraph::erase(int position) {
-  // Erase an empty node.
-  TI_ASSERT(position >= 0 && position < (int)size());
-  TI_ASSERT(nodes[position] && nodes[position]->empty());
-  if (nodes[position]->prev_node_in_same_block) {
-    nodes[position]->prev_node_in_same_block->next_node_in_same_block =
-        nodes[position]->next_node_in_same_block;
-  }
-  if (nodes[position]->next_node_in_same_block) {
-    nodes[position]->next_node_in_same_block->prev_node_in_same_block =
-        nodes[position]->prev_node_in_same_block;
-  }
-  for (auto &prev_node : nodes[position]->prev) {
-    prev_node->next.erase(std::find(
-        prev_node->next.begin(), prev_node->next.end(), nodes[position].get()));
-  }
-  for (auto &next_node : nodes[position]->next) {
-    next_node->prev.erase(std::find(
-        next_node->prev.begin(), next_node->prev.end(), nodes[position].get()));
-  }
-  for (auto &prev_node : nodes[position]->prev) {
-    for (auto &next_node : nodes[position]->next) {
-      CFGNode::add_edge(prev_node, next_node);
-    }
-  }
-  nodes[position].reset();
 }
 
 void ControlFlowGraph::simplify_graph() {

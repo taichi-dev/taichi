@@ -29,6 +29,10 @@ class CFGNode {
 };
 
 class ControlFlowGraph {
+ private:
+  // Erase an empty node.
+  void erase(int node_id);
+
  public:
   std::vector<std::unique_ptr<CFGNode>> nodes;
   const int start_node = 0;
@@ -41,8 +45,6 @@ class ControlFlowGraph {
 
   std::size_t size() const;
   CFGNode *back();
-
-  void erase(int position);
 
   void simplify_graph();
   bool unreachable_code_elimination();

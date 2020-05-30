@@ -411,6 +411,18 @@ class Matrix(TaichiOperations):
     def loop_range(self):
         return self.entries[0]
 
+    def shape(self):
+        # Took `self.entries[0]` as a representation of this tensor-of-matrices.
+        # https://github.com/taichi-dev/taichi/issues/1069#issuecomment-635712140
+        return self.loop_range().shape()
+
+    def dim(self):
+        return self.loop_range().dim()
+
+    #def data_type(self):
+    #    # XXX(@yuanming-hu): Do we need to tell users we are a matrix of dt?
+    #    return self.loop_range().data_type()
+
     # TODO
     @broadcast_if_scalar
     def augassign(self, other, op):

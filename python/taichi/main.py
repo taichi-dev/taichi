@@ -477,9 +477,8 @@ class TaichiMain:
 
     def build(self, arguments: list = sys.argv[2:]):
         """Build C++ files"""
-        # TODO: Convert the logic to use args
         parser = argparse.ArgumentParser(description=f"{self.build.__doc__}")
-        args = parser.parse_args(sys.argv[2:])
+        args = parser.parse_args(arguments)
         ti.core.build()
 
     def regression(self, arguments: list = sys.argv[2:]):

@@ -78,7 +78,8 @@ def writeback_binary(foo):
         if ti.is_taichi_class(a):
             return a.element_wise_binary(imp_foo, b)
         elif ti.is_taichi_class(b):
-            raise SyntaxError(f'cannot augassign taichi class {type(b)} to scalar expr')
+            raise SyntaxError(
+                f'cannot augassign taichi class {type(b)} to scalar expr')
         else:
             return imp_foo(a, b)
 

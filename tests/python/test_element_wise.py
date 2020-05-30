@@ -88,11 +88,11 @@ def _test_matrix_element_wise_binary(dtype, n, m, ti_func, math_func):
 
 @ti.host_arch_only
 def _test_matrix_element_wise_writeback_binary(dtype,
-                                             n,
-                                             m,
-                                             ti_func,
-                                             math_func,
-                                             is_atomic=True):
+                                               n,
+                                               m,
+                                               ti_func,
+                                               math_func,
+                                               is_atomic=True):
     a = ti.Matrix(n, m, dt=dtype, shape=())
     b = ti.Matrix(n, m, dt=dtype, shape=())
     u1 = ti.Matrix(n, m, dt=dtype, shape=())
@@ -258,33 +258,35 @@ def test_matrix_element_wise_writeback_binary_i32():
         # We support `matrix += scalar` syntax in Taichi-scope.
         # Discussion: https://github.com/taichi-dev/taichi/pull/1062#pullrequestreview-419402587
         _test_matrix_element_wise_writeback_binary(ti.i32, n, m, ti.atomic_add,
-                                                 ops.add)
+                                                   ops.add)
         _test_matrix_element_wise_writeback_binary(ti.i32, n, m, ti.atomic_sub,
-                                                 ops.sub)
+                                                   ops.sub)
         _test_matrix_element_wise_writeback_binary(ti.i32, n, m, ti.atomic_and,
-                                                 ops.and_)
+                                                   ops.and_)
         _test_matrix_element_wise_writeback_binary(ti.i32, n, m, ti.atomic_xor,
-                                                 ops.xor)
+                                                   ops.xor)
         _test_matrix_element_wise_writeback_binary(ti.i32, n, m, ti.atomic_or,
-                                                 ops.or_)
+                                                   ops.or_)
         _test_matrix_element_wise_writeback_binary(ti.i32, n, m, ti.atomic_max,
-                                                 max)
+                                                   max)
         _test_matrix_element_wise_writeback_binary(ti.i32, n, m, ti.atomic_min,
-                                                 min)
+                                                   min)
+        # We also support `matrix = scalar` syntax in Taichi-scope.
+        # Discussion: https://github.com/taichi-dev/taichi/pull/1062#issuecomment-635089253
         _test_matrix_element_wise_writeback_binary(ti.i32, n, m, ti.assign,
-                                                 lambda x, y: y, False)
+                                                   lambda x, y: y, False)
 
 
 def test_matrix_element_wise_writeback_binary_f32():
     seed(987)
     for n, m in [(5, 4), (3, 1)]:
         _test_matrix_element_wise_writeback_binary(ti.f32, n, m, ti.atomic_add,
-                                                 ops.add)
+                                                   ops.add)
         _test_matrix_element_wise_writeback_binary(ti.f32, n, m, ti.atomic_sub,
-                                                 ops.sub)
+                                                   ops.sub)
         _test_matrix_element_wise_writeback_binary(ti.f32, n, m, ti.atomic_max,
-                                                 max)
+                                                   max)
         _test_matrix_element_wise_writeback_binary(ti.f32, n, m, ti.atomic_min,
-                                                 min)
+                                                   min)
         _test_matrix_element_wise_writeback_binary(ti.f32, n, m, ti.assign,
-                                                 lambda x, y: y, False)
+                                                   lambda x, y: y, False)

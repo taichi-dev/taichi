@@ -471,9 +471,8 @@ class TaichiMain:
 
     def format_all(self, arguments: list = sys.argv[2:]):
         """Reformat all source files"""
-        # TODO: Convert the logic to use args
         parser = argparse.ArgumentParser(description=f"{self.format_all.__doc__}")
-        args = parser.parse_args(sys.argv[2:])
+        args = parser.parse_args(arguments)
         ti.core.format(all=True)
 
     def build(self, arguments: list = sys.argv[2:]):

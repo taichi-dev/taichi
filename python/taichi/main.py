@@ -52,7 +52,7 @@ class TaichiMain:
 
     @timer
     def __init__(self, debug=False):
-        self.banner = f"\n{'*' * 43}\n**   \u262f Taichi Programming Language       **\n{'*' * 43}"
+        self.banner = f"\n{'*' * 43}\n**      Taichi Programming Language      **\n{'*' * 43}"
         print(self.banner)
 
         if 'TI_DEBUG' in os.environ:

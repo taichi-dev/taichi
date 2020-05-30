@@ -4,7 +4,7 @@
   do {                                         \
     TI_ASSERT(cond);                           \
     if ((r)->error_code) {                     \
-      printf("%s", (r)->error_message_buffer); \
+      taichi_printf((r), "%s", (r)->error_message_buffer); \
       abort();                                 \
     }                                          \
   } while (0)

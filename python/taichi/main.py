@@ -375,8 +375,8 @@ class TaichiMain:
     def gif(self, arguments: list = sys.argv[2:]):
         """Convert mp4 file to gif in the same directory"""
         parser = argparse.ArgumentParser(description=f"{self.gif.__doc__}")
-        parser.add_argument('-i', '--input', required=True, dest='input_file' ,type=TaichiMain._mp4_file, help="Path to input MP4 video file")
-        parser.add_argument('-f', '--framerate', required=False, default=24 ,dest='framerate' ,type=int, help="Frame rate of the output GIF")
+        parser.add_argument('-i', '--input', required=True, dest='input_file', type=TaichiMain._mp4_file, help="Path to input MP4 video file")
+        parser.add_argument('-f', '--framerate', required=False, default=24, dest='framerate', type=int, help="Frame rate of the output GIF")
         args = parser.parse_args(arguments)
 
         args.output_file = Path(args.input_file).with_suffix('.gif') 
@@ -386,8 +386,8 @@ class TaichiMain:
     def video_speed(self, arguments: list = sys.argv[2:]):
         """Speed up video in the same directory"""
         parser = argparse.ArgumentParser(description=f"{self.video_speed.__doc__}")
-        parser.add_argument('-i', '--input', required=True, dest='input_file' ,type=TaichiMain._mp4_file, help="Path to input MP4 video file")
-        parser.add_argument('-s', '--speed', required=True, dest='speed' ,type=float, help="Speedup factor for the output MP4 based on input. (e.g. 2.0)")
+        parser.add_argument('-i', '--input', required=True, dest='input_file', type=TaichiMain._mp4_file, help="Path to input MP4 video file")
+        parser.add_argument('-s', '--speed', required=True, dest='speed', type=float, help="Speedup factor for the output MP4 based on input. (e.g. 2.0)")
         args = parser.parse_args(arguments)
 
         args.output_file = Path(args.input_file).with_name(f"{Path(args.input_file).stem}-sped")
@@ -396,11 +396,11 @@ class TaichiMain:
     def video_crop(self, arguments: list = sys.argv[2:]):
         """Crop video in the same directory"""
         parser = argparse.ArgumentParser(description=f"{self.video_crop.__doc__}")
-        parser.add_argument('-i', '--input', required=True, dest='input_file' ,type=TaichiMain._mp4_file, help="Path to input MP4 video file")
-        parser.add_argument('--x1', required=True, dest='x_begin' ,type=float, help="X coordinate of the beginning crop point")
-        parser.add_argument('--x2', required=True, dest='x_end' ,type=float, help="X coordinate of the ending crop point")
-        parser.add_argument('--y1', required=True, dest='y_begin' ,type=float, help="Y coordinate of the beginning crop point")
-        parser.add_argument('--y2', required=True, dest='y_end' ,type=float, help="Y coordinate of the ending crop point")
+        parser.add_argument('-i', '--input', required=True, dest='input_file', type=TaichiMain._mp4_file, help="Path to input MP4 video file")
+        parser.add_argument('--x1', required=True, dest='x_begin', type=float, help="X coordinate of the beginning crop point")
+        parser.add_argument('--x2', required=True, dest='x_end', type=float, help="X coordinate of the ending crop point")
+        parser.add_argument('--y1', required=True, dest='y_begin', type=float, help="Y coordinate of the beginning crop point")
+        parser.add_argument('--y2', required=True, dest='y_end', type=float, help="Y coordinate of the ending crop point")
         args = parser.parse_args(arguments)
 
         args.output_file = Path(args.input_file).with_name(f"{Path(args.input_file).stem}-cropped")
@@ -409,8 +409,8 @@ class TaichiMain:
     def video_scale(self, arguments: list = sys.argv[2:]):
         """Scale video resolution in the same directory"""
         parser = argparse.ArgumentParser(description=f"{self.video_scale.__doc__}")
-        parser.add_argument('-i', '--input', required=True, dest='input_file' ,type=TaichiMain._mp4_file, help="Path to input MP4 video file")
-        parser.add_argument('-w', '--ratio-width', required=True, dest='ratio_width' ,type=float, help="The scaling ratio of the resolution on width")
+        parser.add_argument('-i', '--input', required=True, dest='input_file', type=TaichiMain._mp4_file, help="Path to input MP4 video file")
+        parser.add_argument('-w', '--ratio-width', required=True, dest='ratio_width', type=float, help="The scaling ratio of the resolution on width")
         parser.add_argument('--ratio-height', required=False, default=None, dest='ratio_height', type=float, help="The scaling ratio of the resolution on height [default: equal to ratio-width]")
         args = parser.parse_args(arguments)
 
@@ -420,25 +420,21 @@ class TaichiMain:
         scale_video(args.input_file, args.output_file, args.ratio_width, args.ratio_height)
 
     def video(self, arguments: list = sys.argv[2:]):
-        """Make a video using *.png files in the current folder"""
-        # TODO: Convert the logic to use args
+        """Make a video using *.png files in the current directory"""
         parser = argparse.ArgumentParser(description=f"{self.video.__doc__}")
-        args = parser.parse_args(sys.argv[2:])
+        parser.add_argument("inputs", nargs='*', help="A list of png files as inputs")
+        parser.add_argument('-o', '--output', required=False, default=Path('./video.mp4').resolve(), dest='output_file', type=lambda x: Path(x).resolve(), help="Path to output MP4 video file")
+        parser.add_argument('-f', '--framerate', required=False, default=24, dest='framerate', type=int, help="Frame rate of the output MP4 video")
+        args = parser.parse_args(arguments)
+        
+        if not args.inputs:
+            args.inputs = [str(p.resolve()) for p in Path('.').glob('*.png')]
 
-        files = sorted(os.listdir('.'))
-        files = list(filter(lambda x: x.endswith('.png'), files))
-        if len(sys.argv) >= 3:
-            frame_rate = int(sys.argv[2])
-        else:
-            frame_rate = 24
-        if len(sys.argv) >= 4:
-            trunc = int(sys.argv[3])
-            files = files[:trunc]
-        ti.info('Making video using {} png files...', len(files))
-        ti.info("frame_rate={}", frame_rate)
-        output_fn = 'video.mp4'
-        make_video(files, output_path=output_fn, frame_rate=frame_rate)
-        ti.info('Done! Output video file = {}', output_fn)
+        ti.info(f'Making video using {len(args.inputs)} png files...')
+        ti.info(f'frame_rate = {args.framerate}')
+
+        make_video(args.inputs, output_path=str(args.output_file), frame_rate=args.framerate)
+        ti.info(f'Done! Output video file = {args.output_file}')
 
     def doc(self, arguments: list = sys.argv[2:]):
         """Build documentation"""

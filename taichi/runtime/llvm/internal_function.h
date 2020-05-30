@@ -1,12 +1,12 @@
 // Note that TI_ASSERT provided by runtime doesn't check fail immediately. As
 // a hack, we just check the last error code whenever we call TI_ASSERT.
-#define TI_TEST_CHECK(cond, r)                 \
-  do {                                         \
-    TI_ASSERT(cond);                           \
-    if ((r)->error_code) {                     \
+#define TI_TEST_CHECK(cond, r)                             \
+  do {                                                     \
+    TI_ASSERT(cond);                                       \
+    if ((r)->error_code) {                                 \
       taichi_printf((r), "%s", (r)->error_message_buffer); \
-      abort();                                 \
-    }                                          \
+      abort();                                             \
+    }                                                      \
   } while (0)
 
 i32 do_nothing(Context *context) {

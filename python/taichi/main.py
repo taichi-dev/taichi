@@ -384,19 +384,15 @@ class TaichiMain:
         mp4_to_gif(args.input_file, args.output_file, args.framerate)
 
     def video_speed(self, arguments: list = sys.argv[2:]):
-        """Speed up video"""
+        """Speed up video in the same directory"""
         # TODO: Convert the logic to use args
         parser = argparse.ArgumentParser(description=f"{self.video_speed.__doc__}")
-        args = parser.parse_args(sys.argv[2:])
+        parser.add_argument('-i', '--input', required=True, dest='input_file' ,type=TaichiMain._mp4_file, help="Path to input MP4 video file")
+        parser.add_argument('-s', '--speed', required=True, dest='speed' ,type=float, help="Speedup factor for the output MP4 based on input. (e.g. 2.0)")
+        args = parser.parse_args(arguments)
 
-        if len(sys.argv) != 4:
-            print('Usage: ti video_speed fn speed_up_factor')
-            return -1
-        input_fn = sys.argv[2]
-        assert input_fn[-4:] == '.mp4'
-        output_fn = input_fn[:-4] + '-sped.mp4'
-        speed = float(sys.argv[3])
-        accelerate_video(input_fn, output_fn, speed)
+        args.output_file = Path(args.input_file).with_name(f"{Path(args.input_file).stem}-sped")
+        accelerate_video(args.input_file, args.output_file, args.speed)
 
     def video_crop(self, arguments: list = sys.argv[2:]):
         """Crop video"""

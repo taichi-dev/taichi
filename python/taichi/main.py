@@ -67,15 +67,19 @@ class TaichiMain:
         
         parser = argparse.ArgumentParser(
             description="Taichi CLI",
-            usage=TaichiMain._usage()
+            usage=self._usage()
         )
+        parser.add_argument('command', help="command from the above list to run")
+
+        # Print help if no command provided
         if len(sys.argv[1:2]) == 0:
             parser.print_help()
             exit(1)
 
-        parser.add_argument('command', help="command from the above list to run")
+        # Parse the command
         args = parser.parse_args(sys.argv[1:2])
         if args.command not in self.registered_commands:
+            # TODO: do we really need this?
             if args.command.endswith(".py"):
                 TaichiMain._exec_python_file(args.command)
             print(f"{args.command} is not a valid command!")
@@ -83,8 +87,7 @@ class TaichiMain:
             exit(1)
         getattr(self, args.command)(sys.argv[2:])
 
-    @staticmethod
-    def _usage() -> str:
+    def _usage(self) -> str:
         """Compose deterministic usage message based on registered_commands."""
         # TODO: add some color to commands
         msg = "\n"
@@ -436,6 +439,8 @@ class TaichiMain:
         if args.verbose:
             pytest_args += ['-s', '-v']
         if args.rerun:
+            if int(pytest.main([os.path.join(root_dir, 'misc/empty_pytest.py'), '--reruns', '2', '-q'])) != 0:
+                sys.exit("Plugin pytest-rerunfailures is not available for Pytest!")
             pytest_args += ['--reruns', args.rerun]
         if int(
                 pytest.main(
@@ -453,6 +458,8 @@ class TaichiMain:
             print(f'Starting {threads} testing thread(s)...')
             if int(threads) > 1:
                 pytest_args += ['-n', str(threads)]
+        else:
+            print("[Warning] Plugin pytest-xdist is not available for Pytest!")
         return int(pytest.main(pytest_args))
 
     @staticmethod

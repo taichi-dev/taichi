@@ -21,7 +21,7 @@ ijkl = indices(0, 1, 2, 3)
 outer_product = deprecated('ti.outer_product(a, b)', 'a.outer_product(b)')(Matrix.outer_product)
 cross = deprecated('ti.cross(a, b)', 'a.cross(b)')(Matrix.cross)
 dot = deprecated('ti.dot(a, b)', 'a.dot(b)')(Matrix.dot)
-normalized = deprecated('ti.normalized(a, b)', 'a.normalized()')(Matrix.normalized)
+normalized = deprecated('ti.normalized(a)', 'a.normalized()')(Matrix.normalized)
 
 cfg = default_cfg()
 current_cfg = current_cfg()

@@ -155,7 +155,7 @@ def sdf_normal(p):
         inc[i] += d
         dec[i] -= d
         n[i] = (0.5 / d) * (sdf(inc) - sdf(dec))
-    return ti.Matrix.normalized(n)
+    return n.normalized()
 
 
 @ti.func
@@ -289,7 +289,7 @@ def dda_particle(eye_pos, d, t):
                     if dist < closest_intersection and dist > 0:
                         hit_pos = eye_pos + dist * d
                         closest_intersection = dist
-                        normal = ti.Matrix.normalized(hit_pos - x)
+                        normal = (hit_pos - x).normalized()
                         c = color
             else:
                 running = 0
@@ -349,7 +349,7 @@ def render():
                         fov * aspect_ratio - 1e-5),
                        2 * fov * (v + ti.random(ti.f32)) / res[1] - fov - 1e-5,
                        -1.0])
-        d = ti.Matrix.normalized(d)
+        d = d.normalized()
         t = (ti.random() - 0.5) * shutter_time
 
         contrib = ti.Vector([0.0, 0.0, 0.0])
@@ -375,8 +375,7 @@ def render():
                         ti.random() - 0.5,
                         ti.random() - 0.5
                     ]) * light_direction_noise
-                    direct = ti.Matrix.normalized(
-                        ti.Vector(light_direction) + dir_noise)
+                    direct = (ti.Vector(light_direction) + dir_noise).normalized()
                     dot = direct.dot(normal)
                     if dot > 0:
                         dist, _, _ = next_hit(pos, direct, t)

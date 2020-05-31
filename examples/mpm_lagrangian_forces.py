@@ -124,7 +124,7 @@ def g2p():
                 g_v = grid_v[base(0) + i, base(1) + j]
                 weight = w[i](0) * w[j](1)
                 new_v += weight * g_v
-                new_C += 4 * weight * ti.outer_product(g_v, dpos) * inv_dx
+                new_C += 4 * weight * g_v.outer_product(dpos) * inv_dx
 
         v[p] = new_v
         x[p] += dt * v[p]

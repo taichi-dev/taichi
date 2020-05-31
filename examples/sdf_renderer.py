@@ -37,8 +37,8 @@ def intersect_light(pos, d):
 def out_dir(n):
     u = ti.Vector([1.0, 0.0, 0.0])
     if abs(n[1]) < 1 - eps:
-        u = ti.normalized(ti.cross(n, ti.Vector([0.0, 1.0, 0.0])))
-    v = ti.cross(n, u)
+        u = n.cross(ti.Vector([0.0, 1.0, 0.0])).normalized()
+    v = n.cross(u)
     phi = 2 * math.pi * ti.random()
     ay = ti.sqrt(ti.random())
     ax = ti.sqrt(1 - ay**2)
@@ -97,7 +97,7 @@ def sdf_normal(p):
         inc = p
         inc[i] += d
         n[i] = (1 / d) * (sdf(inc) - sdf_center)
-    return ti.normalized(n)
+    return n.normalized()
 
 
 @ti.func
@@ -124,7 +124,7 @@ def render():
             (2 * fov * (u + ti.random()) / res[1] - fov * aspect_ratio - 1e-5),
             2 * fov * (v + ti.random()) / res[1] - fov - 1e-5, -1.0
         ])
-        d = ti.normalized(d)
+        d = d.normalized()
 
         throughput = ti.Vector([1.0, 1.0, 1.0])
 

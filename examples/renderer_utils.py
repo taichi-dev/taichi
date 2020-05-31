@@ -9,9 +9,8 @@ inf = 1e10
 def out_dir(n):
     u = ti.Vector([1.0, 0.0, 0.0])
     if ti.abs(n[1]) < 1 - 1e-3:
-        u = ti.Matrix.normalized(ti.Matrix.cross(n, ti.Vector([0.0, 1.0,
-                                                               0.0])))
-    v = ti.Matrix.cross(n, u)
+        u = n.cross(ti.Vector([0.0, 1.0, 0.0])).normalized()
+    v = n.cross(u)
     phi = 2 * math.pi * ti.random(ti.f32)
     r = ti.random(ti.f32)
     ay = ti.sqrt(r)
@@ -33,7 +32,7 @@ def refract(d, n, ni_over_nt):
     discr = 1.0 - ni_over_nt * ni_over_nt * (1.0 - dt * dt)
     if discr > 0.0:
         has_r = 1
-        rd = ti.normalized(ni_over_nt * (d - n * dt) - n * ti.sqrt(discr))
+        rd = (ni_over_nt * (d - n * dt) - n * ti.sqrt(discr)).normalized()
     else:
         rd *= 0.0
     return has_r, rd

@@ -1337,7 +1337,7 @@ void stack_push(Ptr stack, size_t max_num_elements, std::size_t element_size) {
   std::memset(stack_top_primal(stack, element_size), 0, element_size * 2);
 }
 
-#include "internal_function.h"
+#include "internal_functions.h"
 }
 
 #endif

@@ -115,7 +115,7 @@ i32 test_node_allocator_gc_cpu(Context *context) {
   }
   nodes->gc_serial();
   // After GC, all items should be returned to |free_list|.
-  printf("free_list_size=%d\n", nodes->free_list->size());
+  taichi_printf(runtime, "free_list_size=%d\n", nodes->free_list->size());
   TI_TEST_CHECK(nodes->free_list->size() == kN, runtime);
 
   return 0;

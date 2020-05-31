@@ -55,4 +55,3 @@ def test_print_matrix():
 
     func(233.3)
     ti.sync()
-

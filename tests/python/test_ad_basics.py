@@ -55,7 +55,7 @@ def grad_test(tifunc, npfunc=None, default_fp=ti.f32):
 def test_size1():
     x = ti.var(ti.i32)
 
-    ti.root.dense(ti.i, 1).place(x)    
+    ti.root.dense(ti.i, 1).place(x)
 
     x[0] = 1
     assert x[0] == 1

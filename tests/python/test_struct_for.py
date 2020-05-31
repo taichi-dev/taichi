@@ -84,10 +84,9 @@ def test_nested2():
 
     n = 2048
 
-    ti.root.dense(ti.i, n // 512).dense(ti.i,
-                                        16).dense(ti.i,
-                                                    8).dense(ti.i,
-                                                            4).place(x)
+    ti.root.dense(ti.i, n // 512).dense(ti.i, 16).dense(ti.i,
+                                                        8).dense(ti.i,
+                                                                 4).place(x)
     ti.root.dense(ti.i, n).place(y)
 
     @ti.kernel
@@ -177,8 +176,8 @@ def test_nested_2d_more_nests():
 
     ti.root.dense(ti.ij, n // 16).dense(ti.ij,
                                         2).dense(ti.ij,
-                                                    4).dense(ti.ij,
-                                                            2).place(x, y)
+                                                 4).dense(ti.ij,
+                                                          2).place(x, y)
 
     @ti.kernel
     def fill():

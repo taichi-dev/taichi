@@ -37,10 +37,14 @@ def test_cli_exit_one_with_bogus_command_provided():
 
 
 def test_cli_can_dispatch_commands_to_methods_correctly():
-    with patch_sys_argv_helper(["ti", "example", "bogus_example_name_for_test"]):
-        with patch.object(TaichiMain, 'example', return_value=None) as mock_method:
+    with patch_sys_argv_helper(
+        ["ti", "example", "bogus_example_name_for_test"]):
+        with patch.object(TaichiMain, 'example',
+                          return_value=None) as mock_method:
             TaichiMain(test_mode=False)
-            mock_method.assert_called_once_with(["bogus_example_name_for_test"])
+            mock_method.assert_called_once_with(
+                ["bogus_example_name_for_test"])
+
 
 def test_cli_example():
     with patch_sys_argv_helper(["ti", "example", "minimal"]) as custom_argv:
@@ -48,15 +52,18 @@ def test_cli_example():
         args = cli.example(custom_argv[2:])
         assert args.name == "minimal"
 
+
 def test_cli_gif():
-    with patch_sys_argv_helper(["ti", "gif", "-i", "video.mp4", "-f", "30"]) as custom_argv:
+    with patch_sys_argv_helper(["ti", "gif", "-i", "video.mp4", "-f",
+                                "30"]) as custom_argv:
         cli = TaichiMain(test_mode=True)
         args = cli.gif(custom_argv[2:])
         assert args.input_file == "video.mp4"
         assert args.framerate == 30
         assert args.output_file == "video.gif"
-    
-    with patch_sys_argv_helper(["ti", "gif", "-i", "video.mp3", "-f", "30"]) as custom_argv:
+
+    with patch_sys_argv_helper(["ti", "gif", "-i", "video.mp3", "-f",
+                                "30"]) as custom_argv:
         with pytest.raises(SystemExit) as pytest_wrapped_err:
             cli = TaichiMain(test_mode=True)
             args = cli.gif(custom_argv[2:])
@@ -64,14 +71,16 @@ def test_cli_gif():
 
 
 def test_cli_video_speed():
-    with patch_sys_argv_helper(["ti", "video_speed", "-i", "video.mp4", "-s", "2.0"]) as custom_argv:
+    with patch_sys_argv_helper(
+        ["ti", "video_speed", "-i", "video.mp4", "-s", "2.0"]) as custom_argv:
         cli = TaichiMain(test_mode=True)
         args = cli.video_speed(custom_argv[2:])
         assert args.input_file == "video.mp4"
         assert args.speed == 2.0
         assert args.output_file == "video-sped.mp4"
-    
-    with patch_sys_argv_helper(["ti", "video_speed", "-i", "video.mp3", "-s", "2.0"]) as custom_argv:
+
+    with patch_sys_argv_helper(
+        ["ti", "video_speed", "-i", "video.mp3", "-s", "2.0"]) as custom_argv:
         with pytest.raises(SystemExit) as pytest_wrapped_err:
             cli = TaichiMain(test_mode=True)
             args = cli.video_speed(custom_argv[2:])
@@ -79,7 +88,10 @@ def test_cli_video_speed():
 
 
 def test_cli_video_crop():
-    with patch_sys_argv_helper(["ti", "video_crop", "-i", "video.mp4", "--x1", "10.0", "--x2", "20.0", "--y1", "10.0", "--y2", "20.0"]) as custom_argv:
+    with patch_sys_argv_helper([
+            "ti", "video_crop", "-i", "video.mp4", "--x1", "10.0", "--x2",
+            "20.0", "--y1", "10.0", "--y2", "20.0"
+    ]) as custom_argv:
         cli = TaichiMain(test_mode=True)
         args = cli.video_crop(custom_argv[2:])
         assert args.input_file == "video.mp4"
@@ -88,15 +100,20 @@ def test_cli_video_crop():
         assert args.y_begin == 10.0
         assert args.y_end == 20.0
         assert args.output_file == "video-cropped.mp4"
-    
-    with patch_sys_argv_helper(["ti", "video_crop", "-i", "video.mp3", "--x1", "10.0", "--x2", "20.0", "--y1", "10.0", "--y2", "20.0"]) as custom_argv:
+
+    with patch_sys_argv_helper([
+            "ti", "video_crop", "-i", "video.mp3", "--x1", "10.0", "--x2",
+            "20.0", "--y1", "10.0", "--y2", "20.0"
+    ]) as custom_argv:
         with pytest.raises(SystemExit) as pytest_wrapped_err:
             cli = TaichiMain(test_mode=True)
             args = cli.video_crop(custom_argv[2:])
             assert pytest_wrapped_err.__context__.type == argparse.ArgumentTypeError
 
+
 def test_cli_video_scale():
-    with patch_sys_argv_helper(["ti", "video_scale", "-i", "video.mp4", "-w", "1.2"]) as custom_argv:
+    with patch_sys_argv_helper(
+        ["ti", "video_scale", "-i", "video.mp4", "-w", "1.2"]) as custom_argv:
         cli = TaichiMain(test_mode=True)
         args = cli.video_scale(custom_argv[2:])
         assert args.input_file == "video.mp4"
@@ -104,47 +121,59 @@ def test_cli_video_scale():
         assert args.ratio_height == 1.2
         assert args.output_file == "video-scaled.mp4"
 
-    with patch_sys_argv_helper(["ti", "video_scale", "-i", "video.mp4", "-w", "1.2", "--ratio-height", "1.5"]) as custom_argv:
+    with patch_sys_argv_helper([
+            "ti", "video_scale", "-i", "video.mp4", "-w", "1.2",
+            "--ratio-height", "1.5"
+    ]) as custom_argv:
         cli = TaichiMain(test_mode=True)
         args = cli.video_scale(custom_argv[2:])
         assert args.input_file == "video.mp4"
         assert args.ratio_width == 1.2
         assert args.ratio_height == 1.5
         assert args.output_file == "video-scaled.mp4"
-    
-    with patch_sys_argv_helper(["ti", "video_scale", "-i", "video.mp3", "-w", "1.2", "--ratio-height", "1.5"]) as custom_argv:
+
+    with patch_sys_argv_helper([
+            "ti", "video_scale", "-i", "video.mp3", "-w", "1.2",
+            "--ratio-height", "1.5"
+    ]) as custom_argv:
         with pytest.raises(SystemExit) as pytest_wrapped_err:
             cli = TaichiMain(test_mode=True)
             args = cli.video_scale(custom_argv[2:])
             assert pytest_wrapped_err.__context__.type == argparse.ArgumentTypeError
 
+
 def test_cli_video():
-    with patch_sys_argv_helper(["ti", "video", "image.gif", "-o", "video.mp4", "-f", "30"]) as custom_argv:
+    with patch_sys_argv_helper(
+        ["ti", "video", "image.gif", "-o", "video.mp4", "-f",
+         "30"]) as custom_argv:
         cli = TaichiMain(test_mode=True)
         args = cli.video(custom_argv[2:])
         assert args.inputs == ["image.gif"]
-        assert args.framerate ==30
+        assert args.framerate == 30
         assert isinstance(args.output_file, Path)
         assert args.output_file.name == "video.mp4"
 
-    with patch_sys_argv_helper(["ti", "video", "-o", "video.mp4", "-f", "30"]) as custom_argv:
+    with patch_sys_argv_helper(["ti", "video", "-o", "video.mp4", "-f",
+                                "30"]) as custom_argv:
         cli = TaichiMain(test_mode=True)
         args = cli.video(custom_argv[2:])
         assert isinstance(args.inputs, list)
-        assert args.framerate ==30
+        assert args.framerate == 30
         assert isinstance(args.output_file, Path)
         assert args.output_file.name == "video.mp4"
 
 
 def test_cli_format():
-    with patch_sys_argv_helper(["ti", "format", "-d", "51fff7af"]) as custom_argv:
+    with patch_sys_argv_helper(["ti", "format", "-d",
+                                "51fff7af"]) as custom_argv:
         cli = TaichiMain(test_mode=True)
         args = cli.format(custom_argv[2:])
         assert args.diff == "51fff7af"
 
 
 def test_cli_regression():
-    with patch_sys_argv_helper(["ti", "regression", "a.py", "b.py", "-g"]) as custom_argv:
+    with patch_sys_argv_helper(["ti", "regression", "a.py", "b.py",
+                                "-g"]) as custom_argv:
         cli = TaichiMain(test_mode=True)
         args = cli.regression(custom_argv[2:])
         assert args.files == ["a.py", "b.py"]
@@ -152,7 +181,9 @@ def test_cli_regression():
 
 
 def test_cli_benchmark():
-    with patch_sys_argv_helper(["ti", "benchmark", "a.py", "b.py", "-T", "-v", "-r2", "-t4"]) as custom_argv:
+    with patch_sys_argv_helper(
+        ["ti", "benchmark", "a.py", "b.py", "-T", "-v", "-r2",
+         "-t4"]) as custom_argv:
         cli = TaichiMain(test_mode=True)
         args = cli.benchmark(custom_argv[2:])
         assert args.files == ["a.py", "b.py"]
@@ -163,7 +194,9 @@ def test_cli_benchmark():
 
 
 def test_cli_test():
-    with patch_sys_argv_helper(["ti", "test", "test_a.py", "test_b.py", "-c", "-v", "-r2", "-t4"]) as custom_argv:
+    with patch_sys_argv_helper(
+        ["ti", "test", "test_a.py", "test_b.py", "-c", "-v", "-r2",
+         "-t4"]) as custom_argv:
         cli = TaichiMain(test_mode=True)
         args = cli.test(custom_argv[2:])
         assert args.files == ["test_a.py", "test_b.py"]
@@ -181,7 +214,8 @@ def test_cli_debug():
 
 
 def test_cli_run():
-    with patch_sys_argv_helper(["ti", "run", "test_task", "arg1", "arg2"]) as custom_argv:
+    with patch_sys_argv_helper(["ti", "run", "test_task", "arg1",
+                                "arg2"]) as custom_argv:
         cli = TaichiMain(test_mode=True)
         args = cli.run(custom_argv[2:])
         assert args.taskname == "test_task"

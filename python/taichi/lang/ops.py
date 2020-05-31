@@ -1,5 +1,6 @@
 from .expr import *
 from .util import *
+from .impl import expr_init
 import numbers
 import functools
 
@@ -20,7 +21,9 @@ def stack_info():
 def unary(foo):
     import taichi as ti
 
-    imp_foo = lambda x: foo(Expr(x))
+    @functools.wraps(foo)
+    def imp_foo(x):
+        return foo(Expr(x))
 
     @functools.wraps(foo)
     def wrapped(a):
@@ -39,8 +42,13 @@ binary_ops = []
 def binary(foo):
     import taichi as ti
 
-    imp_foo = lambda x, y: foo(Expr(x), Expr(y))
-    rev_foo = lambda x, y: foo(Expr(y), Expr(x))
+    @functools.wraps(foo)
+    def imp_foo(x, y):
+        return foo(Expr(x), Expr(y))
+
+    @functools.wraps(foo)
+    def rev_foo(x, y):
+        return foo(Expr(y), Expr(x))
 
     @functools.wraps(foo)
     def wrapped(a, b):
@@ -52,6 +60,30 @@ def binary(foo):
             return imp_foo(a, b)
 
     binary_ops.append(wrapped)
+    return wrapped
+
+
+writeback_binary_ops = []
+
+
+def writeback_binary(foo):
+    import taichi as ti
+
+    @functools.wraps(foo)
+    def imp_foo(x, y):
+        return foo(x, Expr(y))
+
+    @functools.wraps(foo)
+    def wrapped(a, b):
+        if ti.is_taichi_class(a):
+            return a.element_wise_binary(imp_foo, b)
+        elif ti.is_taichi_class(b):
+            raise SyntaxError(
+                f'cannot augassign taichi class {type(b)} to scalar expr')
+        else:
+            return imp_foo(a, b)
+
+    writeback_binary_ops.append(wrapped)
     return wrapped
 
 
@@ -304,6 +336,57 @@ def bit_and(a, b):
 # We don't have logic_and/or instructions yet:
 logical_or = bit_or
 logical_and = bit_and
+
+
+@writeback_binary
+def atomic_add(a, b):
+    return expr_init(
+        Expr(taichi_lang_core.expr_atomic_add(a.ptr, b.ptr), tb=stack_info()))
+
+
+@writeback_binary
+def atomic_sub(a, b):
+    return expr_init(
+        Expr(taichi_lang_core.expr_atomic_sub(a.ptr, b.ptr), tb=stack_info()))
+
+
+@writeback_binary
+def atomic_min(a, b):
+    return expr_init(
+        Expr(taichi_lang_core.expr_atomic_min(a.ptr, b.ptr), tb=stack_info()))
+
+
+@writeback_binary
+def atomic_max(a, b):
+    return expr_init(
+        Expr(taichi_lang_core.expr_atomic_max(a.ptr, b.ptr), tb=stack_info()))
+
+
+@writeback_binary
+def atomic_and(a, b):
+    return expr_init(
+        Expr(taichi_lang_core.expr_atomic_bit_and(a.ptr, b.ptr),
+             tb=stack_info()))
+
+
+@writeback_binary
+def atomic_or(a, b):
+    return expr_init(
+        Expr(taichi_lang_core.expr_atomic_bit_or(a.ptr, b.ptr),
+             tb=stack_info()))
+
+
+@writeback_binary
+def atomic_xor(a, b):
+    return expr_init(
+        Expr(taichi_lang_core.expr_atomic_bit_xor(a.ptr, b.ptr),
+             tb=stack_info()))
+
+
+@writeback_binary
+def assign(a, b):
+    taichi_lang_core.expr_assign(a.ptr, b.ptr, stack_info())
+    return a
 
 
 def ti_max(*args):

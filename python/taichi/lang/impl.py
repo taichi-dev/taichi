@@ -44,34 +44,6 @@ def wrap_scalar(x):
         return x
 
 
-def atomic_add(a, b):
-    return a.atomic_add(b)
-
-
-def atomic_sub(a, b):
-    return a.atomic_sub(b)
-
-
-def atomic_min(a, b):
-    return a.atomic_min(b)
-
-
-def atomic_max(a, b):
-    return a.atomic_max(b)
-
-
-def atomic_and(a, b):
-    return a.atomic_and(b)
-
-
-def atomic_or(a, b):
-    return a.atomic_or(b)
-
-
-def atomic_xor(a, b):
-    return a.atomic_xor(b)
-
-
 def subscript(value, *indices):
     import numpy as np
     if isinstance(value, np.ndarray):

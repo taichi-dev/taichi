@@ -1,3 +1,4 @@
+"""
 import taichi as ti
 
 ti.cfg.print_ir = True
@@ -29,3 +30,4 @@ def test_global_store_branching():
 
     for i in range(N):
         assert y.grad[i] == (i % 2 == 0)
+"""

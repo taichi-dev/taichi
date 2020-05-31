@@ -51,7 +51,7 @@ class TaichiMain:
     }
 
     @timer
-    def __init__(self, debug=False):
+    def __init__(self, debug: bool = False, test_mode: bool = False):
         self.banner = f"\n{'*' * 43}\n**      Taichi Programming Language      **\n{'*' * 43}"
         print(self.banner)
 
@@ -84,6 +84,11 @@ class TaichiMain:
             print(f"{args.command} is not a valid command!")
             parser.print_help()
             exit(1)
+        
+        # Flag for unit testing
+        self.test_mode = test_mode
+        if self.test_mode: return 
+
         getattr(self, args.command)(sys.argv[2:])
 
     def _usage(self) -> str:
@@ -134,12 +139,19 @@ class TaichiMain:
         # path for examples needs to be modified for implicit relative imports
         sys.path.append(str(examples_dir.resolve()))
         print(f"Running example {args.name} ...")
+        
+        # Short circuit for testing
+        if self.test_mode: return args
+
         runpy.run_path(target, run_name='__main__')
 
     def release(self, arguments: list = sys.argv[2:]):
         """Make source code release"""
         parser = argparse.ArgumentParser(description=f"{self.release.__doc__}")
         args = parser.parse_args(arguments)
+
+        # Short circuit for testing
+        if self.test_mode: return args
 
         from git import Git
         import zipfile
@@ -176,8 +188,11 @@ class TaichiMain:
         parser.add_argument('-f', '--framerate', required=False, default=24, dest='framerate', type=int, help="Frame rate of the output GIF")
         args = parser.parse_args(arguments)
 
-        args.output_file = Path(args.input_file).with_suffix('.gif') 
+        args.output_file = str(Path(args.input_file).with_suffix('.gif'))
         ti.info(f"Converting {args.input_file} to {args.output_file}")
+
+        # Short circuit for testing
+        if self.test_mode: return args
         mp4_to_gif(args.input_file, args.output_file, args.framerate)
 
     def video_speed(self, arguments: list = sys.argv[2:]):
@@ -187,7 +202,10 @@ class TaichiMain:
         parser.add_argument('-s', '--speed', required=True, dest='speed', type=float, help="Speedup factor for the output MP4 based on input. (e.g. 2.0)")
         args = parser.parse_args(arguments)
 
-        args.output_file = Path(args.input_file).with_name(f"{Path(args.input_file).stem}-sped")
+        args.output_file = str(Path(args.input_file).with_name(f"{Path(args.input_file).stem}-sped{Path(args.input_file).suffix}"))
+
+        # Short circuit for testing
+        if self.test_mode: return args
         accelerate_video(args.input_file, args.output_file, args.speed)
 
     def video_crop(self, arguments: list = sys.argv[2:]):
@@ -200,7 +218,10 @@ class TaichiMain:
         parser.add_argument('--y2', required=True, dest='y_end', type=float, help="Y coordinate of the ending crop point")
         args = parser.parse_args(arguments)
 
-        args.output_file = Path(args.input_file).with_name(f"{Path(args.input_file).stem}-cropped")
+        args.output_file = str(Path(args.input_file).with_name(f"{Path(args.input_file).stem}-cropped{Path(args.input_file).suffix}"))
+
+        # Short circuit for testing
+        if self.test_mode: return args
         crop_video(args.input_file, args.output_file, args.x_begin, args.x_end, args.y_begin, args.y_end)
 
     def video_scale(self, arguments: list = sys.argv[2:]):
@@ -213,7 +234,10 @@ class TaichiMain:
 
         if not args.ratio_height:
             args.ratio_height = args.ratio_width
-        args.output_file = Path(args.input_file).with_name(f"{Path(args.input_file).stem}-scaled")
+        args.output_file = str(Path(args.input_file).with_name(f"{Path(args.input_file).stem}-scaled{Path(args.input_file).suffix}"))
+
+        # Short circuit for testing
+        if self.test_mode: return args
         scale_video(args.input_file, args.output_file, args.ratio_width, args.ratio_height)
 
     def video(self, arguments: list = sys.argv[2:]):
@@ -230,6 +254,8 @@ class TaichiMain:
         ti.info(f'Making video using {len(args.inputs)} png files...')
         ti.info(f'frame_rate = {args.framerate}')
 
+        # Short circuit for testing
+        if self.test_mode: return args
         make_video(args.inputs, output_path=str(args.output_file), frame_rate=args.framerate)
         ti.info(f'Done! Output video file = {args.output_file}')
 
@@ -238,6 +264,8 @@ class TaichiMain:
         parser = argparse.ArgumentParser(description=f"{self.doc.__doc__}")
         args = parser.parse_args(arguments)
 
+        # Short circuit for testing
+        if self.test_mode: return args
         os.system(f'cd {ti.get_repo_directory()}/docs && sphinx-build -b html . build')
 
     def update(self, arguments: list = sys.argv[2:]):
@@ -245,6 +273,9 @@ class TaichiMain:
         # TODO: Test if this still works, fix if it doesn't
         parser = argparse.ArgumentParser(description=f"{self.update.__doc__}")
         args = parser.parse_args(arguments)
+
+        # Short circuit for testing
+        if self.test_mode: return args
         ti.core.update(True)
         ti.core.build()
 
@@ -254,18 +285,26 @@ class TaichiMain:
         parser.add_argument('-d', '--diff', required=False, default=None, dest='diff', type=str, help="A commit hash that git can use to compare diff with")
         args = parser.parse_args(arguments)
 
+        # Short circuit for testing
+        if self.test_mode: return args
         ti.core.format(diff=args.diff)
 
     def format_all(self, arguments: list = sys.argv[2:]):
         """Reformat all source files"""
         parser = argparse.ArgumentParser(description=f"{self.format_all.__doc__}")
         args = parser.parse_args(arguments)
+
+        # Short circuit for testing
+        if self.test_mode: return args
         ti.core.format(all=True)
 
     def build(self, arguments: list = sys.argv[2:]):
         """Build C++ files"""
         parser = argparse.ArgumentParser(description=f"{self.build.__doc__}")
         args = parser.parse_args(arguments)
+
+        # Short circuit for testing
+        if self.test_mode: return args
         ti.core.build()
 
     @staticmethod
@@ -382,6 +421,9 @@ class TaichiMain:
         parser.add_argument('-g', '--gui', dest='gui', action='store_true', help='Display benchmark regression result in GUI')
         args = parser.parse_args(arguments)
 
+        # Short circuit for testing
+        if self.test_mode: return args
+
         baseline_dir = TaichiMain._get_benchmark_baseline_dir()
         output_dir = TaichiMain._get_benchmark_output_dir()
         TaichiMain._display_benchmark_regression(baseline_dir, output_dir, args)
@@ -390,6 +432,9 @@ class TaichiMain:
         """Archive current benchmark result as baseline"""
         parser = argparse.ArgumentParser(description=f"{self.baseline.__doc__}")
         args = parser.parse_args(arguments)
+
+        # Short circuit for testing
+        if self.test_mode: return args
 
         import shutil
         baseline_dir = TaichiMain._get_benchmark_baseline_dir()
@@ -430,6 +475,8 @@ class TaichiMain:
             if int(pytest.main([os.path.join(root_dir, 'misc/empty_pytest.py'), '--reruns', '2', '-q'])) != 0:
                 sys.exit("Plugin pytest-rerunfailures is not available for Pytest!")
             pytest_args += ['--reruns', args.rerun]
+        # TODO: configure the parallel test runner in setup.py
+        # follow https://docs.pytest.org/en/latest/example/simple.html#dynamically-adding-command-line-options
         if int(
                 pytest.main(
                     [os.path.join(root_dir, 'misc/empty_pytest.py'), '-n1',
@@ -464,10 +511,13 @@ class TaichiMain:
         parser = argparse.ArgumentParser(description=f"{self.benchmark.__doc__}")
         parser.add_argument('files', nargs='*', help='Test file(s) to be run')
         parser.add_argument('-T', '--tprt', dest='tprt', action='store_true', help='Benchmark performance in terms of run time')
-        parser.add_argument('-v', '--verbose', action='store_true', help='Run with verbose outputs')
+        parser.add_argument('-v', '--verbose', dest='verbose', action='store_true', help='Run with verbose outputs')
         parser.add_argument('-r', '--rerun', required=False, default=None, dest='rerun', type=str, help='Rerun failed tests for given times')
         parser.add_argument('-t', '--threads', required=False, default=None, dest='threads', type=str, help='Custom number of threads for parallel testing')
         args = parser.parse_args(arguments)
+
+        # Short circuit for testing
+        if self.test_mode: return args
 
         import shutil
         commit_hash = ti.core.get_commit_hash()
@@ -492,11 +542,14 @@ class TaichiMain:
         """Run the tests"""
         parser = argparse.ArgumentParser(description=f"{self.test.__doc__}")
         parser.add_argument('files', nargs='*', help='Test file(s) to be run')
-        parser.add_argument('-c', '--cpp', action='store_true', help='Only run the C++ tests')
-        parser.add_argument('-v', '--verbose', action='store_true', help='Run with verbose outputs')
+        parser.add_argument('-c', '--cpp', dest='cpp', action='store_true', help='Only run the C++ tests')
+        parser.add_argument('-v', '--verbose', dest='verbose', action='store_true', help='Run with verbose outputs')
         parser.add_argument('-r', '--rerun', required=False, default=None, dest='rerun', type=str, help='Rerun failed tests for given times')
         parser.add_argument('-t', '--threads', required=False, default=None, dest='threads', type=str, help='Custom number of threads for parallel testing')
         args = parser.parse_args(arguments)
+
+        # Short circuit for testing
+        if self.test_mode: return args
 
         if args.files:
             if args.cpp:
@@ -519,6 +572,9 @@ class TaichiMain:
         parser.add_argument('filename', help='A single (Python) script to run with debugger, e.g. render.py')
         args = parser.parse_args(arguments)
 
+        # Short circuit for testing
+        if self.test_mode: return args
+
         ti.core.set_core_trigger_gdb_when_crash(True)
 
         with open(args.filename) as script:
@@ -534,6 +590,9 @@ class TaichiMain:
         parser.add_argument('taskname', help='A single task name to run, e.g. test_math')
         parser.add_argument('taskargs', nargs='*', help='Optional task argument(s) to run with task')
         args = parser.parse_args(arguments)
+
+        # Short circuit for testing
+        if self.test_mode: return args
 
         task = ti.Task(args.taskname)
         task.run(*args.taskargs)

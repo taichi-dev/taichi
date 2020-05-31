@@ -637,3 +637,4 @@ Vector.dot = Matrix.dot
 Vector.cross = Matrix.cross
 Vector.outer_product = Matrix.outer_product
 Vector.unit = Matrix.unit
+Vector.normalized = Matrix.normalized

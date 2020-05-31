@@ -64,7 +64,7 @@ def sdf(o):
     wall = min(o[1] + 0.1, o[2] + 0.4)
     sphere = (o - ti.Vector([0.0, 0.35, 0.0])).norm() - 0.36
 
-    q = (o - ti.Vector([0.8, 0.3, 0])).abs() - ti.Vector([0.3, 0.3, 0.3])
+    q = ti.abs(o - ti.Vector([0.8, 0.3, 0])) - ti.Vector([0.3, 0.3, 0.3])
     box = ti.Vector([max(0, q[0]), max(0, q[1]),
                      max(0, q[2])]).norm() + min(q.max(), 0)
 

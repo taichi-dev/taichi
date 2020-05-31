@@ -180,7 +180,7 @@ vectorize = core.vectorize
 block_dim = core.block_dim
 cache = core.cache
 
-inversed = deprecated('ti.inversed(a)', 'a.inversed()')(Matrix.inversed)
+inversed = deprecated('ti.inversed(a)', 'a.inverse()')(Matrix.inversed)
 transposed = deprecated('ti.transposed(a)', 'a.transpose()')(Matrix.transposed)
 
 

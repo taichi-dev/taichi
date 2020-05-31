@@ -95,7 +95,7 @@ def grid_op():
             # center sticky circle
             dist = ti.Vector([i * dx - 0.5, j * dx - 0.5])
             if dist.norm_sqr() < 0.005:
-                dist = ti.Vector.normalized(dist)
+                dist = dist.normalized()
                 grid_v[i, j] -= dist * grid_v[i, j].dot(dist)
 
             # box

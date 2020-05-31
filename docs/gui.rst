@@ -150,10 +150,11 @@ Paint on a window
     Draw a hollow rectangle.
 
 
-.. function:: gui.text(context, pos, font_size = 15, color = 0xFFFFFF)
+.. function:: gui.text(content, pos, font_size = 15, color = 0xFFFFFF)
 
     :parameter gui: (GUI) the window object
-    :parameter pow: (tuple of 2) the top-left point position of the fonts / texts
+    :parameter content: (str) the text to draw
+    :parameter pos: (tuple of 2) the top-left point position of the fonts / texts
     :parameter font_size: (optional, scalar) the size of font (in height)
     :parameter color: (optional, RGB hex) the foreground color of text
 

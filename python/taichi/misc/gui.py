@@ -133,14 +133,14 @@ class GUI:
         self.line(c, d, radius, color)
         self.line(d, a, radius, color)
 
-    def text(self, context, pos, font_size=15, color=0xFFFFFF):
+    def text(self, content, pos, font_size=15, color=0xFFFFFF):
         import taichi as ti
         # TODO: refactor Canvas::text
         font_size = float(font_size)
         pos = ti.vec(*pos)
         r, g, b = (color >> 16) & 0xff, (color >> 8) & 0xff, color & 0xff
         color = ti.vec(r / 255, g / 255, b / 255, 1)
-        self.canvas.text(context, pos, font_size, color)
+        self.canvas.text(content, pos, font_size, color)
 
     def show(self, file=None):
         self.core.update()

@@ -670,7 +670,9 @@ class TaichiMain:
     def test(self, arguments: list = sys.argv[2:]):
         """Run the tests"""
         parser = argparse.ArgumentParser(description=f"{self.test.__doc__}")
-        parser.add_argument('files', nargs='*', help='Test file(s) to be run')
+        parser.add_argument('files',
+                            nargs='*',
+                            help='Test name(s) to be run, e.g. "cli"')
         parser.add_argument('-c',
                             '--cpp',
                             dest='cpp',

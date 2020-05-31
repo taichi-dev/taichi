@@ -195,11 +195,11 @@ def test_cli_benchmark():
 
 def test_cli_test():
     with patch_sys_argv_helper(
-        ["ti", "test", "test_a.py", "test_b.py", "-c", "-v", "-r2",
+        ["ti", "test", "cli", "atomic", "-c", "-v", "-r2",
          "-t4"]) as custom_argv:
         cli = TaichiMain(test_mode=True)
         args = cli.test(custom_argv[2:])
-        assert args.files == ["test_a.py", "test_b.py"]
+        assert args.files == ["cli", "atomic"]
         assert args.cpp == True
         assert args.verbose == True
         assert args.rerun == "2"

@@ -13,9 +13,7 @@ def test_basic_utils():
     normA = ti.var(ti.f32)
     normSqrA = ti.var(ti.f32)
 
-    @ti.layout
-    def place():
-        ti.root.place(a, b, abT, aNormalized, normA, normSqrA)
+    ti.root.place(a, b, abT, aNormalized, normA, normSqrA)
 
     @ti.kernel
     def init():
@@ -53,9 +51,7 @@ def test_cross():
     b2 = ti.Vector(2, dt=ti.f32)
     c2 = ti.var(dt=ti.f32)
 
-    @ti.layout
-    def place():
-        ti.root.place(a, b, c, a2, b2, c2)
+    ti.root.place(a, b, c, a2, b2, c2)
 
     @ti.kernel
     def init():
@@ -84,9 +80,7 @@ def test_dot():
     b2 = ti.Vector(2, dt=ti.f32)
     c2 = ti.var(dt=ti.f32)
 
-    @ti.layout
-    def place():
-        ti.root.place(a, b, c, a2, b2, c2)
+    ti.root.place(a, b, c, a2, b2, c2)
 
     @ti.kernel
     def init():
@@ -108,9 +102,7 @@ def test_transpose():
     dim = 3
     m = ti.Matrix(dim, dim, ti.f32)
 
-    @ti.layout
-    def place():
-        ti.root.place(m)
+    ti.root.place(m)
 
     @ti.kernel
     def transpose():
@@ -135,9 +127,7 @@ def _test_polar_decomp(dim, dt):
     I = ti.Matrix(dim, dim, dt)
     D = ti.Matrix(dim, dim, dt)
 
-    @ti.layout
-    def place():
-        ti.root.place(m, r, s, I, D)
+    ti.root.place(m, r, s, I, D)
 
     @ti.kernel
     def polar():
@@ -181,9 +171,7 @@ def test_polar_decomp():
 def test_matrix():
     x = ti.Matrix(2, 2, dt=ti.i32)
 
-    @ti.layout
-    def xy():
-        ti.root.dense(ti.i, 16).place(x)
+    ti.root.dense(ti.i, 16).place(x)
 
     @ti.kernel
     def inc():

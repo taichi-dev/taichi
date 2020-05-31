@@ -7,13 +7,10 @@ def test_listgen():
     x = ti.var(ti.i32)
     n = 1024
 
-    @ti.layout
-    def layout():
-        ti.root.dense(ti.ij, 4).dense(ti.ij,
-                                      4).dense(ti.ij,
-                                               4).dense(ti.ij,
-                                                        4).dense(ti.ij,
-                                                                 4).place(x)
+    ti.root.dense(ti.ij, 4).dense(ti.ij, 4).dense(ti.ij,
+                                                  4).dense(ti.ij,
+                                                           4).dense(ti.ij,
+                                                                    4).place(x)
 
     @ti.kernel
     def fill(c: ti.i32):
@@ -40,11 +37,9 @@ def test_nested_3d():
     x = ti.var(ti.i32)
     n = 128
 
-    @ti.layout
-    def layout():
-        ti.root.dense(ti.ijk, 4).dense(ti.ijk, 4).dense(ti.ijk,
-                                                        4).dense(ti.ijk,
-                                                                 2).place(x)
+    ti.root.dense(ti.ijk, 4).dense(ti.ijk, 4).dense(ti.ijk,
+                                                    4).dense(ti.ijk,
+                                                             2).place(x)
 
     @ti.kernel
     def fill():

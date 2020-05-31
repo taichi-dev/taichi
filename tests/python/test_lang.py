@@ -6,10 +6,8 @@ def test_nested_subscript():
     x = ti.var(ti.i32)
     y = ti.var(ti.i32)
 
-    @ti.layout
-    def place():
-        ti.root.dense(ti.i, 1).place(x)
-        ti.root.dense(ti.i, 1).place(y)
+    ti.root.dense(ti.i, 1).place(x)
+    ti.root.dense(ti.i, 1).place(y)
 
     x[0] = 0
 
@@ -30,9 +28,7 @@ def test_norm():
 
     n = 1024
 
-    @ti.layout
-    def values():
-        ti.root.dense(ti.i, n).dense(ti.i, 2).place(val, f)
+    ti.root.dense(ti.i, n).dense(ti.i, 2).place(val, f)
 
     @ti.kernel
     def test():
@@ -63,9 +59,7 @@ def test_simple2():
 
     n = 16
 
-    @ti.layout
-    def values():
-        ti.root.dense(ti.i, n).place(val, f)
+    ti.root.dense(ti.i, n).place(val, f)
 
     @ti.kernel
     def test():

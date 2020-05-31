@@ -7,9 +7,7 @@ def test_while():
 
     N = 1
 
-    @ti.layout
-    def place():
-        ti.root.dense(ti.i, N).place(x)
+    ti.root.dense(ti.i, N).place(x)
 
     @ti.kernel
     def func():

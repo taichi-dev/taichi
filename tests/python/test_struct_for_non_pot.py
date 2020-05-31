@@ -8,10 +8,8 @@ def test_1d():
 
     n = 100
 
-    @ti.layout
-    def place():
-        ti.root.dense(ti.k, n).place(x)
-        ti.root.place(sum)
+    ti.root.dense(ti.k, n).place(x)
+    ti.root.place(sum)
 
     @ti.kernel
     def accumulate():
@@ -32,10 +30,8 @@ def test_2d():
     n = 100
     m = 19
 
-    @ti.layout
-    def place():
-        ti.root.dense(ti.k, n).dense(ti.i, m).place(x)
-        ti.root.place(sum)
+    ti.root.dense(ti.k, n).dense(ti.i, m).place(x)
+    ti.root.place(sum)
 
     @ti.kernel
     def accumulate():

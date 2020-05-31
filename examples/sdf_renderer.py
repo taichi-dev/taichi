@@ -22,8 +22,8 @@ light_radius = 2.0
 @ti.func
 def intersect_light(pos, d):
     light_loc = ti.Vector(light_pos)
-    dot = -ti.dot(d, ti.Vector(light_normal))
-    dist = ti.dot(d, light_loc - pos)
+    dot = -d.dot(ti.Vector(light_normal))
+    dist = d.dot(light_loc - pos)
     dist_to_light = inf
     if dot > 0 and dist > 0:
         D = dist / dot

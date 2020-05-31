@@ -21,12 +21,12 @@ def test_basic_utils():
     def init():
         a[None] = ti.Vector([1.0, 2.0, 3.0])
         b[None] = ti.Vector([4.0, 5.0, 6.0])
-        abT[None] = ti.Matrix.outer_product(a, b)
+        abT[None] = a.outer_product(b)
 
         normA[None] = a.norm()
         normSqrA[None] = a.norm_sqr()
 
-        aNormalized[None] = ti.Matrix.normalized(a)
+        aNormalized[None] = a.normalized()
 
     init()
 
@@ -61,11 +61,11 @@ def test_cross():
     def init():
         a[None] = ti.Vector([1.0, 2.0, 3.0])
         b[None] = ti.Vector([4.0, 5.0, 6.0])
-        c[None] = ti.Matrix.cross(a, b)
+        c[None] = a.cross(b)
 
         a2[None] = ti.Vector([1.0, 2.0])
         b2[None] = ti.Vector([4.0, 5.0])
-        c2[None] = ti.Matrix.cross(a2, b2)
+        c2[None] = a2.cross(b2)
 
     init()
     assert c[None][0] == -3.0
@@ -92,11 +92,11 @@ def test_dot():
     def init():
         a[None] = ti.Vector([1.0, 2.0, 3.0])
         b[None] = ti.Vector([4.0, 5.0, 6.0])
-        c[None] = ti.Matrix.dot(a, b)
+        c[None] = a.dot(b)
 
         a2[None] = ti.Vector([1.0, 2.0])
         b2[None] = ti.Vector([4.0, 5.0])
-        c2[None] = ti.Matrix.dot(a2, b2)
+        c2[None] = a2.dot(b2)
 
     init()
     assert c[None] == 32.0
@@ -114,7 +114,7 @@ def test_transpose():
 
     @ti.kernel
     def transpose():
-        mat = ti.transposed(m[None])
+        mat = m[None].transpose()
         m[None] = mat
 
     for i in range(dim):
@@ -145,8 +145,8 @@ def _test_polar_decomp(dim, dt):
         r[None] = R
         s[None] = S
         m[None] = R @ S
-        I[None] = R @ ti.transposed(R)
-        D[None] = S - ti.transposed(S)
+        I[None] = R @ R.transpose()
+        D[None] = S - S.transpose()
 
     def V(i, j):
         return i * 2 + j * 7 + int(i == j) * 3
@@ -216,7 +216,7 @@ def _test_mat_inverse_size(n):
 
     @ti.kernel
     def invert():
-        m[None] = ti.inversed(m[None])
+        m[None] = m[None].inverse()
 
     invert()
 

@@ -9,9 +9,7 @@ def test_POT1():
     m = 8
     p = 16
 
-    @ti.layout
-    def values():
-        ti.root.dense(ti.i, n).dense(ti.j, m).dense(ti.k, p).place(val)
+    ti.root.dense(ti.i, n).dense(ti.j, m).dense(ti.k, p).place(val)
 
     assert val.dim() == 3
     assert val.shape() == (n, m, p)
@@ -25,9 +23,7 @@ def test_POT2():
     m = 7
     p = 11
 
-    @ti.layout
-    def values():
-        ti.root.dense(ti.i, n).dense(ti.j, m).dense(ti.k, p).place(val)
+    ti.root.dense(ti.i, n).dense(ti.j, m).dense(ti.k, p).place(val)
 
     assert val.dim() == 3
     assert val.shape() == (n, m, p)
@@ -41,9 +37,7 @@ def test_unordered():
     m = 7
     p = 11
 
-    @ti.layout
-    def values():
-        ti.root.dense(ti.k, n).dense(ti.i, m).dense(ti.j, p).place(val)
+    ti.root.dense(ti.k, n).dense(ti.i, m).dense(ti.j, p).place(val)
 
     assert val.dim() == 3
     assert val.shape() == (n, m, p)

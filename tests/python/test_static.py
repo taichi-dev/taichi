@@ -7,9 +7,7 @@ def test_static_if():
         ti.init()
         x = ti.var(ti.i32)
 
-        @ti.layout
-        def place():
-            ti.root.dense(ti.i, 1).place(x)
+        ti.root.dense(ti.i, 1).place(x)
 
         @ti.kernel
         def static():
@@ -26,9 +24,7 @@ def test_static_if():
 def test_static_if_error():
     x = ti.var(ti.i32)
 
-    @ti.layout
-    def place():
-        ti.root.dense(ti.i, 1).place(x)
+    ti.root.dense(ti.i, 1).place(x)
 
     @ti.kernel
     def static():

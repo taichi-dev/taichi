@@ -3,7 +3,7 @@ from . import impl
 import copy
 import numbers
 import numpy as np
-from .util import to_numpy_type, to_pytorch_type
+from .util import to_numpy_type, to_pytorch_type, deprecated
 from .common_ops import TaichiOperations
 from collections.abc import Iterable
 
@@ -61,7 +61,7 @@ class Matrix(TaichiOperations):
                 raise Exception(
                     "rows/cols must be list of lists or lists of vectors")
             if cols is not None:
-                t = self.transposed(self)
+                t = self.transpose()
                 self.n = t.n
                 self.m = t.m
                 self.entries = t.entries
@@ -300,19 +300,19 @@ class Matrix(TaichiOperations):
             sum = sum + self(i, i)
         return sum
 
-    def inversed(self):
+    def inverse(self):
         assert self.n == self.m, 'Only square matrices are invertible'
         if self.n == 1:
             return Matrix([1 / self(0, 0)])
         elif self.n == 2:
-            inv_det = impl.expr_init(1.0 / self.determinant(self))
+            inv_det = impl.expr_init(1.0 / self.determinant())
             # Discussion: https://github.com/taichi-dev/taichi/pull/943#issuecomment-626344323
             return inv_det * Matrix([[self(1, 1), -self(0, 1)],
                                      [-self(1, 0), self(0, 0)]]).variable()
         elif self.n == 3:
             n = 3
             import taichi as ti
-            inv_determinant = ti.expr_init(1.0 / ti.determinant(self))
+            inv_determinant = ti.expr_init(1.0 / self.determinant())
             entries = [[0] * n for _ in range(n)]
 
             def E(x, y):
@@ -327,7 +327,7 @@ class Matrix(TaichiOperations):
         elif self.n == 4:
             n = 4
             import taichi as ti
-            inv_determinant = ti.expr_init(1.0 / ti.determinant(self))
+            inv_determinant = ti.expr_init(1.0 / self.determinant())
             entries = [[0] * n for _ in range(n)]
 
             def E(x, y):
@@ -351,24 +351,29 @@ class Matrix(TaichiOperations):
             raise Exception(
                 "Inversions of matrices with sizes >= 5 are not supported")
 
-    @staticmethod
+    inversed = deprecated('a.inversed()', 'a.inverse()')(inverse)
+
     def normalized(a, eps=0):
         assert a.m == 1
         invlen = 1.0 / (Matrix.norm(a) + eps)
         return invlen * a
 
     @staticmethod
+    @deprecated('ti.Matrix.transposed(a)', 'a.transpose()')
     def transposed(a):
+        return a.transpose()
+
+    @deprecated('a.T()', 'a.transpose()')
+    def T(self):
+        return self.transpose()
+
+    def transpose(a):
         ret = Matrix(a.m, a.n, empty=True)
         for i in range(a.n):
             for j in range(a.m):
                 ret.set_entry(j, i, a(i, j))
         return ret
 
-    def T(self):
-        return self.transposed(self)
-
-    @staticmethod
     def determinant(a):
         if a.n == 2 and a.m == 2:
             return a(0, 0) * a(1, 1) - a(0, 1) * a(1, 0)
@@ -594,9 +599,8 @@ class Matrix(TaichiOperations):
     def dot(self, other):
         assert self.m == 1
         assert other.m == 1
-        return (self.transposed(self) @ other).subscript(0, 0)
+        return (self.transpose() @ other).subscript(0, 0)
 
-    @staticmethod
     def cross(a, b):
         if a.n == 3 and a.m == 1 and b.n == 3 and b.m == 1:
             return Matrix([
@@ -613,7 +617,6 @@ class Matrix(TaichiOperations):
                 "Cross product is only supported between pairs of 2D/3D vectors"
             )
 
-    @staticmethod
     def outer_product(a, b):
         assert a.m == 1
         assert b.m == 1

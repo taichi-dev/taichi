@@ -1,4 +1,5 @@
 from .impl import *
+from .util import deprecated
 from .matrix import Matrix, Vector
 from .transformer import TaichiSyntaxError
 from .ndrange import ndrange, GroupedNDRange
@@ -17,10 +18,10 @@ ij = indices(0, 1)
 ijk = indices(0, 1, 2)
 ijkl = indices(0, 1, 2, 3)
 
-outer_product = Matrix.outer_product
-cross = Matrix.cross
-dot = Matrix.dot
-normalized = Matrix.normalized
+outer_product = deprecated('ti.outer_product(a, b)', 'a.outer_product(b)')(Matrix.outer_product)
+cross = deprecated('ti.cross(a, b)', 'a.cross(b)')(Matrix.cross)
+dot = deprecated('ti.dot(a, b)', 'a.dot(b)')(Matrix.dot)
+normalized = deprecated('ti.normalized(a, b)', 'a.normalized()')(Matrix.normalized)
 
 cfg = default_cfg()
 current_cfg = current_cfg()
@@ -179,8 +180,8 @@ vectorize = core.vectorize
 block_dim = core.block_dim
 cache = core.cache
 
-inversed = Matrix.inversed
-transposed = Matrix.transposed
+inversed = deprecated('ti.inversed(a)', 'a.inversed()')(Matrix.inversed)
+transposed = deprecated('ti.transposed(a)', 'a.transpose()')(Matrix.transposed)
 
 
 def polar_decompose(A, dt=None):
@@ -197,8 +198,8 @@ def svd(A, dt=None):
     return svd(A, dt)
 
 
-determinant = Matrix.determinant
-tr = Matrix.trace
+determinant = deprecated('ti.determinant(a)', 'a.determinant()')(Matrix.determinant)
+tr = deprecated('ti.tr(a)', 'a.trace()')(Matrix.trace)
 
 
 def Tape(loss, clear_gradients=True):

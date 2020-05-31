@@ -69,10 +69,8 @@ def bit_cast(obj, type):
         return Expr(taichi_lang_core.bits_cast(Expr(obj).ptr, type))
 
 
+@deprecated('ti.sqr(x)', 'x ** 2')
 def sqr(obj):
-    import warnings
-    warnings.warn('ti.sqr(x) is deprecated. Please use x ** 2 directly.',
-                  DeprecationWarning)
     return obj * obj
 
 

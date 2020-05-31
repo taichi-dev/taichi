@@ -57,8 +57,8 @@ def compute_total_energy():
         currentT = compute_T(i)
         F = currentT @ restT[i].inverse()
         # NeoHookean
-        I1 = (F @ ti.Matrix.transposed(F)).trace()
-        J = ti.Matrix.determinant(F)
+        I1 = (F @ F.transpose()).trace()
+        J = F.determinant()
         element_energy = 0.5 * mu * (
             I1 - 2) - mu * ti.log(J) + 0.5 * la * ti.log(J)**2
         ti.atomic_add(total_energy[None], element_energy * 1e-3)

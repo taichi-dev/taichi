@@ -160,3 +160,20 @@ def to_taichi_type(dt):
             return u64
 
     raise AssertionError("Unknown type {}".format(dt))
+
+
+def deprecated(old, new):
+    import functools
+
+    def decorator(foo):
+        @functools.wraps(foo)
+        def wrapped(*args, **kwargs):
+            import warnings
+            msg = f'{old} is deprecated, please use {new} instead'
+            #warnings.warn(msg, DeprecationWarning)
+            raise DeprecationWarning(msg)
+            return foo(*args, **kwargs)
+
+        return wrapped
+
+    return decorator

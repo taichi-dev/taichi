@@ -65,9 +65,8 @@ print("*** project_name = '{}'".format(project_name))
 shutil.rmtree('taichi/lib', ignore_errors=True)
 shutil.rmtree('taichi/tests', ignore_errors=True)
 shutil.rmtree('taichi/examples', ignore_errors=True)
-shutil.rmtree('taichi/external', ignore_errors=True)
+shutil.rmtree('taichi/assets', ignore_errors=True)
 os.makedirs('taichi/lib', exist_ok=True)
-os.makedirs('taichi/external', exist_ok=True)
 shutil.rmtree('build', ignore_errors=True)
 shutil.rmtree('dist', ignore_errors=True)
 shutil.rmtree('taichi/include', ignore_errors=True)
@@ -84,7 +83,7 @@ else:
 
 shutil.copytree('../tests/python', './taichi/tests')
 shutil.copytree('../examples', './taichi/examples')
-shutil.copytree('../external/fonts', './taichi/external/fonts')
+shutil.copytree('../external/assets', './taichi/assets')
 
 if get_os_name() != 'osx':
     libdevice_path = ti.core.libdevice_path()
@@ -112,7 +111,7 @@ else:
 shutil.rmtree('taichi/lib')
 shutil.rmtree('taichi/tests')
 shutil.rmtree('taichi/examples')
-shutil.rmtree('taichi/external')
+shutil.rmtree('taichi/assets')
 shutil.rmtree('./build')
 
 if mode == 'upload':

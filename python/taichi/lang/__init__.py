@@ -18,10 +18,12 @@ ij = indices(0, 1)
 ijk = indices(0, 1, 2)
 ijkl = indices(0, 1, 2, 3)
 
-outer_product = deprecated('ti.outer_product(a, b)', 'a.outer_product(b)')(Matrix.outer_product)
+outer_product = deprecated('ti.outer_product(a, b)',
+                           'a.outer_product(b)')(Matrix.outer_product)
 cross = deprecated('ti.cross(a, b)', 'a.cross(b)')(Matrix.cross)
 dot = deprecated('ti.dot(a, b)', 'a.dot(b)')(Matrix.dot)
-normalized = deprecated('ti.normalized(a)', 'a.normalized()')(Matrix.normalized)
+normalized = deprecated('ti.normalized(a)',
+                        'a.normalized()')(Matrix.normalized)
 
 cfg = default_cfg()
 current_cfg = current_cfg()
@@ -198,7 +200,8 @@ def svd(A, dt=None):
     return svd(A, dt)
 
 
-determinant = deprecated('ti.determinant(a)', 'a.determinant()')(Matrix.determinant)
+determinant = deprecated('ti.determinant(a)',
+                         'a.determinant()')(Matrix.determinant)
 tr = deprecated('ti.tr(a)', 'a.trace()')(Matrix.trace)
 
 

@@ -375,7 +375,8 @@ def render():
                         ti.random() - 0.5,
                         ti.random() - 0.5
                     ]) * light_direction_noise
-                    direct = (ti.Vector(light_direction) + dir_noise).normalized()
+                    direct = (ti.Vector(light_direction) +
+                              dir_noise).normalized()
                     dot = direct.dot(normal)
                     if dot > 0:
                         dist, _, _ = next_hit(pos, direct, t)

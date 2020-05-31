@@ -335,10 +335,10 @@ class Matrix(TaichiOperations):
 
     inversed = deprecated('a.inversed()', 'a.inverse()')(inverse)
 
-    def normalized(a, eps=0):
-        assert a.m == 1
-        invlen = 1.0 / (Matrix.norm(a) + eps)
-        return invlen * a
+    def normalized(self, eps=0):
+        assert self.m == 1
+        invlen = 1.0 / (Matrix.norm(self) + eps)
+        return invlen * self
 
     @staticmethod
     @deprecated('ti.Matrix.transposed(a)', 'a.transpose()')
@@ -576,29 +576,29 @@ class Matrix(TaichiOperations):
         assert other.m == 1
         return (self.transpose() @ other).subscript(0, 0)
 
-    def cross(a, b):
-        if a.n == 3 and a.m == 1 and b.n == 3 and b.m == 1:
+    def cross(self, b):
+        if self.n == 3 and self.m == 1 and b.n == 3 and b.m == 1:
             return Matrix([
-                a(1) * b(2) - a(2) * b(1),
-                a(2) * b(0) - a(0) * b(2),
-                a(0) * b(1) - a(1) * b(0),
+                self(1) * b(2) - self(2) * b(1),
+                self(2) * b(0) - self(0) * b(2),
+                self(0) * b(1) - self(1) * b(0),
             ])
 
-        elif a.n == 2 and a.m == 1 and b.n == 2 and b.m == 1:
-            return a(0) * b(1) - a(1) * b(0)
+        elif self.n == 2 and self.m == 1 and b.n == 2 and b.m == 1:
+            return self(0) * b(1) - self(1) * b(0)
 
         else:
             raise Exception(
                 "Cross product is only supported between pairs of 2D/3D vectors"
             )
 
-    def outer_product(a, b):
-        assert a.m == 1
+    def outer_product(self, b):
+        assert self.m == 1
         assert b.m == 1
-        c = Matrix(a.n, b.n)
-        for i in range(a.n):
+        c = Matrix(self.n, b.n)
+        for i in range(self.n):
             for j in range(b.n):
-                c(i, j).assign(a(i) * b(j))
+                c(i, j).assign(self(i) * b(j))
         return c
 
 

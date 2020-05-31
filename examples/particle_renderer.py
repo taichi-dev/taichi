@@ -98,7 +98,7 @@ def query_density_int(ipos):
 def voxel_color(pos):
     p = pos * grid_resolution
 
-    p -= ti.Matrix.floor(p)
+    p -= ti.floor(p)
 
     boundary = 0.1
     count = 0
@@ -192,7 +192,7 @@ def dda(eye_pos, d):
         pos = eye_pos + d * (near + 5 * eps)
 
         o = grid_resolution * pos
-        ipos = ti.Matrix.floor(o).cast(int)
+        ipos = ti.floor(o).cast(int)
         dis = (ipos - o + 0.5 + rsign * 0.5) * rinv
         running = 1
         i = 0
@@ -266,7 +266,7 @@ def dda_particle(eye_pos, d, t):
                 rsign[i] = -1
 
         o = grid_res * pos
-        ipos = ti.Matrix.floor(o).cast(int)
+        ipos = ti.floor(o).cast(int)
         dis = (ipos - o + 0.5 + rsign * 0.5) * rinv
         running = 1
         # DDA for voxels with at least one particle
@@ -416,7 +416,7 @@ def initialize_particle_grid():
     for p in range(num_particles[None]):
         x = particle_x[p]
         v = particle_v[p]
-        ipos = ti.Matrix.floor(x * particle_grid_res).cast(ti.i32)
+        ipos = ti.floor(x * particle_grid_res).cast(ti.i32)
         for i in range(-support, support + 1):
             for j in range(-support, support + 1):
                 for k in range(-support, support + 1):

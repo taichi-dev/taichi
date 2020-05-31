@@ -7,7 +7,7 @@ Matrices
 - ``ti.Vector`` is the same as ``ti.Matrix``, except that it has only one column.
 - Differentiate element-wise product ``*`` and matrix product ``@``.
 - ``ti.Vector(n, dt=ti.f32)`` or ``ti.Matrix(n, m, dt=ti.f32)`` to create tensors of vectors/matrices.
-- ``A.transposed(A)`` or simply ``A.T()``
+- ``A.transpose()``
 - ``A.inverse()``
 - ``A.trace()``
 - ``A.determinant()``

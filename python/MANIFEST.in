@@ -2,6 +2,7 @@ include MANIFEST.in
 include *.txt
 include *.py
 include *.cfg
+include *.ttf
 include taichi/lib/*.so
 include taichi/lib/*.pyd
 include taichi/lib/*.bc

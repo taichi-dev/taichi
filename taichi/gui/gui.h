@@ -390,7 +390,7 @@ class Canvas {
             real size,
             Vector4 color) {
     position = transform(position);
-    std::string root_dir = get_repo_dir();
+    std::string root_dir = get_python_package_dir();
     auto ttf_path =
         root_dir + std::string("/external/fonts/NotoSansMono-Regular.ttf");
     img.write_text(ttf_path, str, size, position.x, position.y, color);

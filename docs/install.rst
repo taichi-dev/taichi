@@ -20,10 +20,10 @@ Taichi can be easily installed via ``pip``:
 Troubleshooting
 ---------------
 
-Version issues
-**************
+Python issues
+*************
 
-- If ``pip`` complains that it could not find a package satisfying like `this forum thread <https://forum.taichi.graphics/t/pip-taichi/224/17>`_ does:
+- If ``pip`` complains that it could not find a package satisfying like `#1097 <https://github.com/taichi-dev/taichi/issues/1097>`_ or `this forum thread <https://forum.taichi.graphics/t/pip-taichi/224/17>`_ does:
 
   .. code-block:: none
   
@@ -35,14 +35,14 @@ Version issues
     .. code-block:: bash
   
       python3 -c "print(__import__('sys').version[:3])"
-      # should obtain one of: 3.6, 3.7 or 3.8
+      # 3.6, 3.7 or 3.8
 
   * Make sure your Python executable is 64-bit:
   
     .. code-block:: bash
   
       python3 -c "print(__import__('platform').architecture()[0])"
-      # should obtain: 64bit
+      # 64bit
 
 CUDA issues
 ***********

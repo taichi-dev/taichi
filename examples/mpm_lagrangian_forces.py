@@ -57,8 +57,8 @@ def compute_total_energy():
         currentT = compute_T(i)
         F = currentT @ restT[i].inverse()
         # NeoHookean
-        I1 = (F @ ti.Matrix.transposed(F)).trace()
-        J = ti.Matrix.determinant(F)
+        I1 = (F @ F.transpose()).trace()
+        J = F.determinant()
         element_energy = 0.5 * mu * (
             I1 - 2) - mu * ti.log(J) + 0.5 * la * ti.log(J)**2
         ti.atomic_add(total_energy[None], element_energy * 1e-3)
@@ -95,8 +95,8 @@ def grid_op():
             # center sticky circle
             dist = ti.Vector([i * dx - 0.5, j * dx - 0.5])
             if dist.norm_sqr() < 0.005:
-                dist = ti.Vector.normalized(dist)
-                grid_v[i, j] -= dist * ti.dot(grid_v[i, j], dist)
+                dist = dist.normalized()
+                grid_v[i, j] -= dist * grid_v[i, j].dot(dist)
 
             # box
             if i < bound and grid_v(0)[i, j] < 0:
@@ -124,7 +124,7 @@ def g2p():
                 g_v = grid_v[base(0) + i, base(1) + j]
                 weight = w[i](0) * w[j](1)
                 new_v += weight * g_v
-                new_C += 4 * weight * ti.outer_product(g_v, dpos) * inv_dx
+                new_C += 4 * weight * g_v.outer_product(dpos) * inv_dx
 
         v[p] = new_v
         x[p] += dt * v[p]

@@ -14,6 +14,9 @@ def test_print(dt):
         print(ti.cast(1234.5, dt))
 
     func()
+    # Discussion: https://github.com/taichi-dev/taichi/issues/1063#issuecomment-636421904
+    # Synchronize to prevent cross-test failure of print:
+    ti.sync()
 
 
 # TODO: As described by @k-ye above, what we want to ensure
@@ -25,6 +28,7 @@ def test_multi_print():
         print(x, 1234.5, y)
 
     func(666, 233.3)
+    ti.sync()
 
 
 @ti.archs_excluding(ti.metal, ti.opengl)
@@ -36,15 +40,18 @@ def test_print_string():
         print('cool', x, 'well', y)
 
     func(666, 233.3)
+    ti.sync()
 
 
 @ti.archs_excluding(ti.metal, ti.opengl)
 def test_print_matrix():
     x = ti.Matrix(2, 3, dt=ti.f32, shape=())
-    y = ti.Vector(4, dt=ti.f32, shape=3)
+    y = ti.Vector(3, dt=ti.f32, shape=3)
 
     @ti.kernel
     def func(k: ti.f32):
-        print('hello', x[None], 'and', y[2] * k, x[None] / k)
+        print('hello', x[None], 'world!')
+        print(y[2] * k, x[None] / k, y[2])
 
     func(233.3)
+    ti.sync()

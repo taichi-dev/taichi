@@ -9,9 +9,7 @@ def test_to_numpy_2d():
     n = 4
     m = 7
 
-    @ti.layout
-    def values():
-        ti.root.dense(ti.ij, (n, m)).place(val)
+    ti.root.dense(ti.ij, (n, m)).place(val)
 
     for i in range(n):
         for j in range(m):
@@ -32,9 +30,7 @@ def test_from_numpy_2d():
     n = 4
     m = 7
 
-    @ti.layout
-    def values():
-        ti.root.dense(ti.ij, (n, m)).place(val)
+    ti.root.dense(ti.ij, (n, m)).place(val)
 
     arr = np.empty(shape=(n, m), dtype=np.int32)
 
@@ -57,9 +53,7 @@ def test_f64():
     n = 4
     m = 7
 
-    @ti.layout
-    def values():
-        ti.root.dense(ti.ij, (n, m)).place(val)
+    ti.root.dense(ti.ij, (n, m)).place(val)
 
     for i in range(n):
         for j in range(m):

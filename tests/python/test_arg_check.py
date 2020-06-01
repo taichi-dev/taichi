@@ -5,9 +5,7 @@ import taichi as ti
 def test_argument_error():
     x = ti.var(ti.i32)
 
-    @ti.layout
-    def layout():
-        ti.root.place(x)
+    ti.root.place(x)
 
     try:
 

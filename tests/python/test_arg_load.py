@@ -6,9 +6,7 @@ def test_arg_load():
     x = ti.var(ti.i32)
     y = ti.var(ti.f32)
 
-    @ti.layout
-    def layout():
-        ti.root.place(x, y)
+    ti.root.place(x, y)
 
     @ti.kernel
     def set_i32(v: ti.i32):
@@ -37,9 +35,7 @@ def test_arg_load_f64():
     x = ti.var(ti.i32)
     y = ti.var(ti.f32)
 
-    @ti.layout
-    def layout():
-        ti.root.place(x, y)
+    ti.root.place(x, y)
 
     @ti.kernel
     def set_f64(v: ti.f64):
@@ -61,9 +57,7 @@ def test_ext_arr():
     N = 128
     x = ti.var(ti.f32)
 
-    @ti.layout
-    def layout():
-        ti.root.dense(ti.i, N).place(x)
+    ti.root.dense(ti.i, N).place(x)
 
     @ti.kernel
     def set_f32(v: ti.ext_arr()):

@@ -5,9 +5,7 @@ import taichi as ti
 def test_offload_with_cross_block_locals():
     ret = ti.var(ti.f32)
 
-    @ti.layout
-    def place():
-        ti.root.place(ret)
+    ti.root.place(ret)
 
     @ti.kernel
     def ker():
@@ -25,9 +23,7 @@ def test_offload_with_cross_block_locals():
 def test_offload_with_cross_block_locals2():
     ret = ti.var(ti.f32)
 
-    @ti.layout
-    def place():
-        ti.root.place(ret)
+    ti.root.place(ret)
 
     @ti.kernel
     def ker():

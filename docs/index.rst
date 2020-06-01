@@ -1,5 +1,5 @@
 The Taichi Programming Language
-=========================================================
+===============================
 
 .. toctree::
    :caption: Overview
@@ -53,6 +53,7 @@ The Taichi Programming Language
    utilities
    cpp_style
    internal
+   taichicon
 
 
 .. toctree::

@@ -8,10 +8,8 @@ def test_linear():
 
     n = 128
 
-    @ti.layout
-    def place():
-        ti.root.dense(ti.i, n).place(x)
-        ti.root.dense(ti.i, n).place(y)
+    ti.root.dense(ti.i, n).place(x)
+    ti.root.dense(ti.i, n).place(y)
 
     for i in range(n):
         x[i] = i
@@ -34,10 +32,8 @@ def test_linear_nested():
 
     n = 128
 
-    @ti.layout
-    def place():
-        ti.root.dense(ti.i, n // 16).dense(ti.i, 16).place(x)
-        ti.root.dense(ti.i, n // 16).dense(ti.i, 16).place(y)
+    ti.root.dense(ti.i, n // 16).dense(ti.i, 16).place(x)
+    ti.root.dense(ti.i, n // 16).dense(ti.i, 16).place(y)
 
     for i in range(n):
         x[i] = i
@@ -55,9 +51,7 @@ def test_linear_nested_aos():
 
     n = 128
 
-    @ti.layout
-    def place():
-        ti.root.dense(ti.i, n // 16).dense(ti.i, 16).place(x, y)
+    ti.root.dense(ti.i, n // 16).dense(ti.i, 16).place(x, y)
 
     for i in range(n):
         x[i] = i
@@ -74,9 +68,7 @@ def test_2d_nested():
 
     n = 128
 
-    @ti.layout
-    def place():
-        ti.root.dense(ti.ij, n // 16).dense(ti.ij, (32, 16)).place(x)
+    ti.root.dense(ti.ij, n // 16).dense(ti.ij, (32, 16)).place(x)
 
     for i in range(n * 2):
         for j in range(n):

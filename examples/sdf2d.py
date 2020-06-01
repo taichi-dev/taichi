@@ -73,7 +73,7 @@ def gradient(p):  # ASK(yuanming-hu): do we have sdf.grad?
     bx = sdf(p + vec2(-1e-4, 0))[0]
     ay = sdf(p + vec2(0, +1e-4))[0]
     by = sdf(p + vec2(0, -1e-4))[0]
-    return ti.Vector.normalized(vec2(ax - bx, ay - by))
+    return vec2(ax - bx, ay - by).normalized()
 
 
 @ti.func

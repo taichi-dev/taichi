@@ -8,13 +8,13 @@ def polar_decompose2d(a, dt):
     c = x * scale
     s = y * scale
     r = ti.Matrix([[c, -s], [s, c]])
-    return r, ti.Matrix.transposed(r) @ a
+    return r, r.transpose() @ a
 
 
 @ti.func
 def polar_decompose3d(A, dt):
     U, sig, V = ti.svd(A, dt)
-    return U @ ti.transposed(V), V @ sig @ ti.transposed(V)
+    return U @ V.transpose(), V @ sig @ V.transpose()
 
 
 # https://www.seas.upenn.edu/~cffjiang/research/svd/svd.pdf

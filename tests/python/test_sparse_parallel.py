@@ -8,10 +8,8 @@ def test_pointer():
 
     n = 128
 
-    @ti.layout
-    def place():
-        ti.root.pointer(ti.i, n).dense(ti.i, n).place(x)
-        ti.root.place(s)
+    ti.root.pointer(ti.i, n).dense(ti.i, n).place(x)
+    ti.root.place(s)
 
     @ti.kernel
     def activate():
@@ -35,10 +33,8 @@ def test_pointer2():
 
     n = 128
 
-    @ti.layout
-    def place():
-        ti.root.pointer(ti.i, n).dense(ti.i, n).place(x)
-        ti.root.place(s)
+    ti.root.pointer(ti.i, n).dense(ti.i, n).place(x)
+    ti.root.place(s)
 
     @ti.kernel
     def activate():
@@ -61,9 +57,7 @@ def test_nested_struct_fill_and_clear():
     a = ti.var(dt=ti.f32)
     N = 512
 
-    @ti.layout
-    def place():
-        ti.root.pointer(ti.ij, [N, N]).dense(ti.ij, [8, 8]).place(a)
+    ti.root.pointer(ti.ij, [N, N]).dense(ti.ij, [8, 8]).place(a)
 
     @ti.kernel
     def fill():

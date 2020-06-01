@@ -9,9 +9,7 @@ def test_nested():
     p, q = 3, 7
     n, m = 2, 4
 
-    @ti.layout
-    def place():
-        ti.root.dense(ti.ij, (p, q)).dense(ti.ij, (n, m)).place(x)
+    ti.root.dense(ti.ij, (p, q)).dense(ti.ij, (n, m)).place(x)
 
     @ti.kernel
     def iterate():
@@ -34,9 +32,7 @@ def test_nested_demote():
     p, q = 3, 7
     n, m = 2, 4
 
-    @ti.layout
-    def place():
-        ti.root.dense(ti.ij, (p, q)).dense(ti.ij, (n, m)).place(x)
+    ti.root.dense(ti.ij, (p, q)).dense(ti.ij, (n, m)).place(x)
 
     @ti.kernel
     def iterate():

@@ -8,10 +8,8 @@ def test_pointer():
 
     n = 128
 
-    @ti.layout
-    def place():
-        ti.root.pointer(ti.i, n).dense(ti.i, n).place(x)
-        ti.root.place(s)
+    ti.root.pointer(ti.i, n).dense(ti.i, n).place(x)
+    ti.root.place(s)
 
     @ti.kernel
     def func():
@@ -56,10 +54,8 @@ def test_pointer2():
 
     n = 128
 
-    @ti.layout
-    def place():
-        ti.root.pointer(ti.i, n).pointer(ti.i, n).dense(ti.i, n).place(x)
-        ti.root.place(s)
+    ti.root.pointer(ti.i, n).pointer(ti.i, n).dense(ti.i, n).place(x)
+    ti.root.place(s)
 
     @ti.kernel
     def func():

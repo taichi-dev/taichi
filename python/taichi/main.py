@@ -98,7 +98,7 @@ class TaichiMain:
         msg = "\n"
         space = 20
         for command in sorted(self.registered_commands):
-            msg += f"{command}{' ' * (space - len(command))}|-> {getattr(self, command).__doc__}\n"
+            msg += f"    {command}{' ' * (space - len(command))}|-> {getattr(self, command).__doc__}\n"
         return msg
 
     @staticmethod

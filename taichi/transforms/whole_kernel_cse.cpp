@@ -7,10 +7,53 @@ TLANG_NAMESPACE_BEGIN
 
 // Whole Kernel Common Subexpression Elimination
 class WholeKernelCSE : public BasicStmtVisitor {
+ private:
+  std::unordered_set<int> visited;
+  // each scope corresponds to an unordered_set
+  std::vector<std::unordered_set<Stmt *>> visible_stmts;
+
  public:
   using BasicStmtVisitor::visit;
 
   WholeKernelCSE() {
+  }
+
+  bool is_done(Stmt *stmt) {
+    return visited.find(stmt->instance_id) != visited.end();
+  }
+
+  void set_done(Stmt *stmt) {
+    visited.insert(stmt->instance_id);
+  }
+
+  void visit(Stmt *stmt) override {
+    if (stmt->has_global_side_effect())
+      return;
+    // Generic visitor for all non-container statements that don't have global
+    // side effect.
+    if (is_done(stmt)) {
+      visible_stmts.back().insert(stmt);
+      return;
+    }
+    for (auto &scope : visible_stmts) {
+      for (auto &prev_stmt : scope) {
+        if (irpass::analysis::same_statements(stmt, prev_stmt)) {
+          stmt->replace_with(prev_stmt);
+          stmt->parent->erase(stmt);
+          throw IRModified();
+        }
+      }
+    }
+    visible_stmts.back().insert(stmt);
+    set_done(stmt);
+  }
+
+  void visit(Block *stmt_list) override {
+    visible_stmts.emplace_back();
+    for (auto &stmt : stmt_list->statements) {
+      stmt->accept(this);
+    }
+    visible_stmts.pop_back();
   }
 
   void visit(IfStmt *if_stmt) override {
@@ -56,6 +99,11 @@ class WholeKernelCSE : public BasicStmtVisitor {
         throw IRModified();
       }
     }
+
+    if (if_stmt->true_statements)
+      if_stmt->true_statements->accept(this);
+    if (if_stmt->false_statements)
+      if_stmt->false_statements->accept(this);
   }
 
   static void run(IRNode *node) {

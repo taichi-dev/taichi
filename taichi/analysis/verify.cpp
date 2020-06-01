@@ -87,16 +87,6 @@ class IRVerifier : public BasicStmtVisitor {
     }
   }
 
-  void visit(RangeForStmt *for_stmt) override {
-    basic_verify(for_stmt);
-    for_stmt->body->accept(this);
-  }
-
-  void visit(StructForStmt *for_stmt) override {
-    basic_verify(for_stmt);
-    for_stmt->body->accept(this);
-  }
-
   static void run(IRNode *root) {
     IRVerifier verifier(root);
     root->accept(&verifier);

@@ -12,9 +12,7 @@ def test_dynamic():
 
     n = 128
 
-    @ti.layout
-    def place():
-        ti.root.dynamic(ti.i, n).place(x)
+    ti.root.dynamic(ti.i, n).place(x)
 
     @ti.kernel
     def count():
@@ -34,9 +32,7 @@ def test_dense_dynamic():
 
     x = ti.var(ti.i32)
 
-    @ti.layout
-    def place():
-        ti.root.dense(ti.i, n).dynamic(ti.j, n, 128).place(x)
+    ti.root.dense(ti.i, n).dynamic(ti.j, n, 128).place(x)
 
     @ti.kernel
     def append():

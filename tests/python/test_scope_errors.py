@@ -5,9 +5,7 @@ import taichi as ti
 def test_if():
     x = ti.var(ti.f32)
 
-    @ti.layout
-    def layout():
-        ti.root.dense(ti.i, 1).place(x)
+    ti.root.dense(ti.i, 1).place(x)
 
     @ti.kernel
     def func():
@@ -24,9 +22,7 @@ def test_if():
 def test_for():
     x = ti.var(ti.f32)
 
-    @ti.layout
-    def layout():
-        ti.root.dense(ti.i, 1).place(x)
+    ti.root.dense(ti.i, 1).place(x)
 
     @ti.kernel
     def func():
@@ -41,9 +37,7 @@ def test_for():
 def test_while():
     x = ti.var(ti.f32)
 
-    @ti.layout
-    def layout():
-        ti.root.dense(ti.i, 1).place(x)
+    ti.root.dense(ti.i, 1).place(x)
 
     @ti.kernel
     def func():

@@ -4,8 +4,8 @@ import time
 
 # TODO: these are not really tests...
 def all_archs_for_this(test):
-    # ti.call_internal() is not supported on Metal and OpenGL yet
-    return ti.archs_excluding(ti.metal, ti.opengl)(test)
+    # ti.call_internal() is not supported on CUDA, Metal, OpenGL yet
+    return ti.archs_excluding(ti.metal, ti.opengl, ti.cuda)(test)
 
 
 @all_archs_for_this
@@ -50,3 +50,12 @@ def test_node_manager():
 
     test()
     test()
+
+
+@all_archs_for_this
+def test_node_manager_gc():
+    @ti.kernel
+    def test_cpu():
+        ti.call_internal("test_node_allocator_gc_cpu")
+
+    test_cpu()

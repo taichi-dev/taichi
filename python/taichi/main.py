@@ -124,12 +124,17 @@ class TaichiMain:
                             choices=sorted(
                                 TaichiMain._get_available_examples()))
         args = parser.parse_args(arguments)
+                  
+        name = args.name
+        # try to find and remove python file extension once
+        if name.endswith('.py'):
+            name = name.split('.')[0]
 
         examples_dir = TaichiMain._get_examples_dir()
-        target = str((examples_dir / f"{args.name}.py").resolve())
+        target = str((examples_dir / f"{name}.py").resolve())
         # path for examples needs to be modified for implicit relative imports
         sys.path.append(str(examples_dir.resolve()))
-        print(f"Running example {args.name} ...")
+        print(f"Running example {name} ...")
 
         # Short circuit for testing
         if self.test_mode: return args

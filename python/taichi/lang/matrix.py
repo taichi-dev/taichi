@@ -409,7 +409,7 @@ class Matrix(TaichiOperations):
     #def data_type(self):
     #    # XXX(@yuanming-hu): Do we need to tell users we are a matrix of dt?
     #    return self.loop_range().data_type()
-    
+
     def make_grad(self):
         ret = self.empty_copy()
         for i in range(len(ret.entries)):

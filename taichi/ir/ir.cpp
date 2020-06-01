@@ -800,6 +800,11 @@ std::unique_ptr<Block> Block::clone() const {
   return new_block;
 }
 
+DelayedIRModifier::~DelayedIRModifier() {
+  TI_ASSERT(to_insert_before.empty());
+  TI_ASSERT(to_erase.empty());
+}
+
 void DelayedIRModifier::erase(Stmt *stmt) {
   to_erase.push_back(stmt);
 }

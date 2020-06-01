@@ -878,6 +878,7 @@ class DelayedIRModifier {
   std::vector<Stmt *> to_erase;
 
  public:
+  ~DelayedIRModifier();
   void erase(Stmt *stmt);
   void insert_before(Stmt *old_statement, std::unique_ptr<Stmt> new_statement);
   void insert_before(Stmt *old_statement, VecStatement &&new_statements);

@@ -122,7 +122,6 @@ Methods
 
 
 .. function:: a.dot(b)
-.. function:: ti.dot(a, b)
 
     :parameter a: (Vector)
     :parameter b: (Vector)
@@ -136,7 +135,7 @@ Methods
         a.dot(b) # 1*2 + 3*4 = 14
 
 
-.. function:: ti.cross(a, b)
+.. function:: a.cross(b)
 
     :parameter a: (Vector, 2 or 3 components)
     :parameter b: (Vector of the same size as a)
@@ -156,7 +155,7 @@ Methods
         # r = 1*5 - 4*2 = -3
 
 
-.. function:: ti.outer_product(a, b)
+.. function:: a.outer_product(b)
 
     :parameter a: (Vector)
     :parameter b: (Vector)
@@ -171,7 +170,7 @@ Methods
         # c = [[1*4, 1*5, 1*6], [2*4, 2*5, 2*6]]
 
 .. note::
-    This is not the same as ``ti.cross``. ``a`` and ``b`` do not have to be 3-component vectors.
+    This have no common with ``ti.cross``. ``a`` and ``b`` do not have to be 3 or 2 component vectors.
 
 
 .. function:: a.cast(dt)

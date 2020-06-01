@@ -10,9 +10,7 @@ def test_dynamic():
     x = ti.var(ti.f32)
     n = 128
 
-    @ti.layout
-    def place():
-        ti.root.dynamic(ti.i, n, 32).place(x)
+    ti.root.dynamic(ti.i, n, 32).place(x)
 
     @ti.kernel
     def func():
@@ -30,9 +28,7 @@ def test_dynamic2():
     x = ti.var(ti.f32)
     n = 128
 
-    @ti.layout
-    def place():
-        ti.root.dynamic(ti.i, n, 32).place(x)
+    ti.root.dynamic(ti.i, n, 32).place(x)
 
     @ti.kernel
     def func():
@@ -50,9 +46,7 @@ def test_dynamic_matrix():
     x = ti.Matrix(2, 1, dt=ti.i32)
     n = 8192
 
-    @ti.layout
-    def place():
-        ti.root.dynamic(ti.i, n, chunk_size=128).place(x)
+    ti.root.dynamic(ti.i, n, chunk_size=128).place(x)
 
     @ti.kernel
     def func():
@@ -75,9 +69,7 @@ def test_append():
     x = ti.var(ti.i32)
     n = 128
 
-    @ti.layout
-    def place():
-        ti.root.dynamic(ti.i, n, 32).place(x)
+    ti.root.dynamic(ti.i, n, 32).place(x)
 
     @ti.kernel
     def func():
@@ -100,9 +92,7 @@ def test_length():
     y = ti.var(ti.f32, shape=())
     n = 128
 
-    @ti.layout
-    def place():
-        ti.root.dynamic(ti.i, n, 32).place(x)
+    ti.root.dynamic(ti.i, n, 32).place(x)
 
     @ti.kernel
     def func():
@@ -127,11 +117,9 @@ def test_append_ret_value():
     z = ti.var(ti.i32)
     n = 128
 
-    @ti.layout
-    def place():
-        ti.root.dynamic(ti.i, n, 32).place(x)
-        ti.root.dynamic(ti.i, n, 32).place(y)
-        ti.root.dynamic(ti.i, n, 32).place(z)
+    ti.root.dynamic(ti.i, n, 32).place(x)
+    ti.root.dynamic(ti.i, n, 32).place(y)
+    ti.root.dynamic(ti.i, n, 32).place(z)
 
     @ti.kernel
     def func():
@@ -153,9 +141,7 @@ def test_dense_dynamic():
     x = ti.var(ti.i32)
     l = ti.var(ti.i32, shape=n)
 
-    @ti.layout
-    def place():
-        ti.root.dense(ti.i, n).dynamic(ti.j, n, 8).place(x)
+    ti.root.dense(ti.i, n).dynamic(ti.j, n, 8).place(x)
 
     @ti.kernel
     def func():
@@ -179,9 +165,7 @@ def test_dense_dynamic_len():
     x = ti.var(ti.i32)
     l = ti.var(ti.i32, shape=n)
 
-    @ti.layout
-    def place():
-        ti.root.dense(ti.i, n).dynamic(ti.j, n, 32).place(x)
+    ti.root.dense(ti.i, n).dynamic(ti.j, n, 32).place(x)
 
     @ti.kernel
     def func():

@@ -47,9 +47,12 @@ class DiffRange {
   }
 };
 
+class ControlFlowGraph;
+
 // IR Analysis
 namespace irpass::analysis {
 
+std::unique_ptr<ControlFlowGraph> build_cfg(IRNode *root);
 void check_fields_registered(IRNode *root);
 std::unique_ptr<IRNode> clone(IRNode *root, Kernel *kernel = nullptr);
 int count_statements(IRNode *root);

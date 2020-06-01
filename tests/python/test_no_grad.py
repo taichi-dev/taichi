@@ -9,10 +9,8 @@ def test_no_grad():
     N = 1
 
     # no gradients allocated for x
-    @ti.layout
-    def place():
-        ti.root.dense(ti.i, N).place(x)
-        ti.root.place(loss, loss.grad)
+    ti.root.dense(ti.i, N).place(x)
+    ti.root.place(loss, loss.grad)
 
     @ti.kernel
     def func():

@@ -165,7 +165,7 @@ def intersect_scene(pos, ray_dir):
     cur_dist, hit_pos = intersect_sphere(pos, ray_dir, sp1_center, sp1_radius)
     if 0 < cur_dist < closest:
         closest = cur_dist
-        normal = ti.normalized(hit_pos - sp1_center)
+        normal = (hit_pos - sp1_center).normalized()
         c, mat = ti.Vector([1.0, 1.0, 1.0]), mat_glass
     # left box
     hit, cur_dist, pnorm = ray_aabb_intersection2_transformed(
@@ -270,7 +270,7 @@ def sample_area_light(hit_pos, pos_normal):
     x = ti.random() * light_x_range + light_x_min_pos
     z = ti.random() * light_z_range + light_z_min_pos
     on_light_pos = ti.Vector([x, light_y_pos, z])
-    return ti.normalized(on_light_pos - hit_pos)
+    return (on_light_pos - hit_pos).normalized()
 
 
 @ti.func
@@ -317,8 +317,8 @@ def sample_brdf(normal):
     # Malley's method
     u = ti.Vector([1.0, 0.0, 0.0])
     if abs(normal[1]) < 1 - eps:
-        u = ti.cross(normal, ti.Vector([0.0, 1.0, 0.0]))
-    v = ti.cross(normal, u)
+        u = normal.cross(ti.Vector([0.0, 1.0, 0.0]))
+    v = normal.cross(u)
 
     theta = theta * math.pi * 0.25
     costt, sintt = ti.cos(theta), ti.sin(theta)
@@ -391,7 +391,7 @@ def sample_ray_dir(indir, normal, hit_pos, mat):
             u = reflect(indir, normal)
         else:
             u = refr_dir
-    return ti.normalized(u), pdf
+    return u.normalized(), pdf
 
 
 stratify_res = 5
@@ -412,7 +412,7 @@ def render():
              fov - 1e-5),
             -1.0,
         ])
-        ray_dir = ti.normalized(ray_dir)
+        ray_dir = ray_dir.normalized()
 
         acc_color = ti.Vector([0.0, 0.0, 0.0])
         throughput = ti.Vector([1.0, 1.0, 1.0])

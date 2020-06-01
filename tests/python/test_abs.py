@@ -8,11 +8,9 @@ def test_abs():
 
     N = 16
 
-    @ti.layout
-    def place():
-        ti.root.dense(ti.i, N).place(x)
-        ti.root.dense(ti.i, N).place(y)
-        ti.root.lazy_grad()
+    ti.root.dense(ti.i, N).place(x)
+    ti.root.dense(ti.i, N).place(y)
+    ti.root.lazy_grad()
 
     @ti.kernel
     def func():

@@ -8,10 +8,8 @@ def test_loop_grad():
     n = 16
     m = 8
 
-    @ti.layout
-    def place():
-        ti.root.dense(ti.ij, (n, m)).place(x)
-        ti.root.lazy_grad()
+    ti.root.dense(ti.ij, (n, m)).place(x)
+    ti.root.lazy_grad()
 
     @ti.kernel
     def func():
@@ -41,10 +39,8 @@ def test_loop_grad_complex():
     n = 16
     m = 8
 
-    @ti.layout
-    def place():
-        ti.root.dense(ti.ij, (n, m)).place(x)
-        ti.root.lazy_grad()
+    ti.root.dense(ti.ij, (n, m)).place(x)
+    ti.root.lazy_grad()
 
     @ti.kernel
     def func():

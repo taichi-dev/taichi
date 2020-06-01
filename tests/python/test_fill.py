@@ -8,9 +8,7 @@ def test_fill_scalar():
     n = 4
     m = 7
 
-    @ti.layout
-    def values():
-        ti.root.dense(ti.ij, (n, m)).place(val)
+    ti.root.dense(ti.ij, (n, m)).place(val)
 
     for i in range(n):
         for j in range(m):
@@ -30,9 +28,7 @@ def test_fill_matrix_scalar():
     n = 4
     m = 7
 
-    @ti.layout
-    def values():
-        ti.root.dense(ti.ij, (n, m)).place(val)
+    ti.root.dense(ti.ij, (n, m)).place(val)
 
     for i in range(n):
         for j in range(m):
@@ -56,9 +52,7 @@ def test_fill_matrix_matrix():
     n = 4
     m = 7
 
-    @ti.layout
-    def values():
-        ti.root.dense(ti.ij, (n, m)).place(val)
+    ti.root.dense(ti.ij, (n, m)).place(val)
 
     for i in range(n):
         for j in range(m):

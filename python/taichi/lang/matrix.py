@@ -3,18 +3,9 @@ from . import impl
 import copy
 import numbers
 import numpy as np
-from .util import to_numpy_type, to_pytorch_type
+from .util import to_numpy_type, to_pytorch_type, deprecated
 from .common_ops import TaichiOperations
 from collections.abc import Iterable
-
-
-def broadcast_if_scalar(func):
-    def broadcasted(self, other, *args, **kwargs):
-        if isinstance(other, expr.Expr) or isinstance(other, numbers.Number):
-            other = self.broadcast(expr.Expr(other))
-        return func(self, other, *args, **kwargs)
-
-    return broadcasted
 
 
 class Matrix(TaichiOperations):
@@ -61,11 +52,11 @@ class Matrix(TaichiOperations):
                 raise Exception(
                     "rows/cols must be list of lists or lists of vectors")
             if cols is not None:
-                t = self.transposed(self)
+                t = self.transpose()
                 self.n = t.n
                 self.m = t.m
                 self.entries = t.entries
-        elif isinstance(n, list) or isinstance(n, np.ndarray):
+        elif isinstance(n, (list, tuple, np.ndarray)):
             if len(n) == 0:
                 mat = []
             elif isinstance(n[0], Matrix):
@@ -139,17 +130,15 @@ class Matrix(TaichiOperations):
                 0], "Matrices with mixed global/local entries are not allowed"
         return results[0]
 
-    def assign(self, other):
-        if isinstance(other, expr.Expr):
-            raise Exception('Cannot assign scalar expr to Matrix/Vector.')
-        if not isinstance(other, Matrix):
-            other = Matrix(other)
-        assert other.n == self.n and other.m == self.m
-        for i in range(self.n * self.m):
-            self.entries[i].assign(other.entries[i])
-
     def element_wise_binary(self, foo, other):
         ret = self.empty_copy()
+        if isinstance(other, (list, tuple)):
+            other = Matrix(other)
+        if foo.__name__ == 'assign' and not isinstance(other, Matrix):
+            raise SyntaxError(
+                f'cannot assign scalar expr to '
+                'taichi class {type(a)}, maybe you want to use `a.fill(b)` instead?'
+            )
         if isinstance(other, Matrix):
             assert self.m == other.m and self.n == other.n
             for i in range(self.n * self.m):
@@ -174,13 +163,6 @@ class Matrix(TaichiOperations):
                 ret(i, j).assign(self(i, 0) * other(0, j))
                 for k in range(1, other.n):
                     ret(i, j).assign(ret(i, j) + self(i, k) * other(k, j))
-        return ret
-
-    # TODO
-    def broadcast(self, scalar):
-        ret = self.empty_copy()
-        for i in range(self.n * self.m):
-            ret.entries[i] = scalar
         return ret
 
     def linearize_entry_id(self, *args):
@@ -237,12 +219,12 @@ class Matrix(TaichiOperations):
             self.index = index
 
         def __getitem__(self, item):
-            if not isinstance(item, list):
+            if not isinstance(item, (list, tuple)):
                 item = [item]
             return self.mat(*item)[self.index]
 
         def __setitem__(self, key, value):
-            if not isinstance(key, list):
+            if not isinstance(key, (list, tuple)):
                 key = [key]
             self.mat(*key)[self.index] = value
 
@@ -300,19 +282,19 @@ class Matrix(TaichiOperations):
             sum = sum + self(i, i)
         return sum
 
-    def inversed(self):
+    def inverse(self):
         assert self.n == self.m, 'Only square matrices are invertible'
         if self.n == 1:
             return Matrix([1 / self(0, 0)])
         elif self.n == 2:
-            inv_det = impl.expr_init(1.0 / self.determinant(self))
+            inv_det = impl.expr_init(1.0 / self.determinant())
             # Discussion: https://github.com/taichi-dev/taichi/pull/943#issuecomment-626344323
             return inv_det * Matrix([[self(1, 1), -self(0, 1)],
                                      [-self(1, 0), self(0, 0)]]).variable()
         elif self.n == 3:
             n = 3
             import taichi as ti
-            inv_determinant = ti.expr_init(1.0 / ti.determinant(self))
+            inv_determinant = ti.expr_init(1.0 / self.determinant())
             entries = [[0] * n for _ in range(n)]
 
             def E(x, y):
@@ -327,7 +309,7 @@ class Matrix(TaichiOperations):
         elif self.n == 4:
             n = 4
             import taichi as ti
-            inv_determinant = ti.expr_init(1.0 / ti.determinant(self))
+            inv_determinant = ti.expr_init(1.0 / self.determinant())
             entries = [[0] * n for _ in range(n)]
 
             def E(x, y):
@@ -351,24 +333,29 @@ class Matrix(TaichiOperations):
             raise Exception(
                 "Inversions of matrices with sizes >= 5 are not supported")
 
-    @staticmethod
-    def normalized(a, eps=0):
-        assert a.m == 1
-        invlen = 1.0 / (Matrix.norm(a) + eps)
-        return invlen * a
+    inversed = deprecated('a.inversed()', 'a.inverse()')(inverse)
+
+    def normalized(self, eps=0):
+        assert self.m == 1
+        invlen = 1.0 / (Matrix.norm(self) + eps)
+        return invlen * self
 
     @staticmethod
+    @deprecated('ti.Matrix.transposed(a)', 'a.transpose()')
     def transposed(a):
+        return a.transpose()
+
+    #@deprecated('a.T()', 'a.transpose()')
+    def T(self):
+        return self.transpose()
+
+    def transpose(a):
         ret = Matrix(a.m, a.n, empty=True)
         for i in range(a.n):
             for j in range(a.m):
                 ret.set_entry(j, i, a(i, j))
         return ret
 
-    def T(self):
-        return self.transposed(self)
-
-    @staticmethod
     def determinant(a):
         if a.n == 2 and a.m == 2:
             return a(0, 0) * a(1, 1) - a(0, 1) * a(1, 0)
@@ -422,21 +409,7 @@ class Matrix(TaichiOperations):
     #def data_type(self):
     #    # XXX(@yuanming-hu): Do we need to tell users we are a matrix of dt?
     #    return self.loop_range().data_type()
-
-    # TODO
-    @broadcast_if_scalar
-    def augassign(self, other, op):
-        if not isinstance(other, Matrix):
-            other = Matrix(other)
-        assert self.n == other.n and self.m == other.m
-        for i in range(len(self.entries)):
-            self.entries[i].augassign(other.entries[i], op)
-
-    def atomic_add(self, other):
-        assert self.n == other.n and self.m == other.m
-        for i in range(len(self.entries)):
-            self.entries[i].atomic_add(other.entries[i])
-
+    
     def make_grad(self):
         ret = self.empty_copy()
         for i in range(len(ret.entries)):
@@ -484,6 +457,13 @@ class Matrix(TaichiOperations):
         return -(ret == ti.expr_init(-len(self.entries)))
 
     def fill(self, val):
+        if impl.inside_kernel():
+
+            def assign_renamed(x, y):
+                import taichi as ti
+                return ti.assign(x, y)
+
+            return self.element_wise_binary(assign_renamed, val)
         if isinstance(val, numbers.Number):
             val = tuple(
                 [tuple([val for _ in range(self.m)]) for _ in range(self.n)])
@@ -606,33 +586,31 @@ class Matrix(TaichiOperations):
     def dot(self, other):
         assert self.m == 1
         assert other.m == 1
-        return (self.transposed(self) @ other).subscript(0, 0)
+        return (self.transpose() @ other).subscript(0, 0)
 
-    @staticmethod
-    def cross(a, b):
-        if a.n == 3 and a.m == 1 and b.n == 3 and b.m == 1:
+    def cross(self, b):
+        if self.n == 3 and self.m == 1 and b.n == 3 and b.m == 1:
             return Matrix([
-                a(1) * b(2) - a(2) * b(1),
-                a(2) * b(0) - a(0) * b(2),
-                a(0) * b(1) - a(1) * b(0),
+                self(1) * b(2) - self(2) * b(1),
+                self(2) * b(0) - self(0) * b(2),
+                self(0) * b(1) - self(1) * b(0),
             ])
 
-        elif a.n == 2 and a.m == 1 and b.n == 2 and b.m == 1:
-            return a(0) * b(1) - a(1) * b(0)
+        elif self.n == 2 and self.m == 1 and b.n == 2 and b.m == 1:
+            return self(0) * b(1) - self(1) * b(0)
 
         else:
             raise Exception(
                 "Cross product is only supported between pairs of 2D/3D vectors"
             )
 
-    @staticmethod
-    def outer_product(a, b):
-        assert a.m == 1
+    def outer_product(self, b):
+        assert self.m == 1
         assert b.m == 1
-        c = Matrix(a.n, b.n)
-        for i in range(a.n):
+        c = Matrix(self.n, b.n)
+        for i in range(self.n):
             for j in range(b.n):
-                c(i, j).assign(a(i) * b(j))
+                c(i, j).assign(self(i) * b(j))
         return c
 
 
@@ -646,3 +624,4 @@ Vector.dot = Matrix.dot
 Vector.cross = Matrix.cross
 Vector.outer_product = Matrix.outer_product
 Vector.unit = Matrix.unit
+Vector.normalized = Matrix.normalized

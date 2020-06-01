@@ -19,9 +19,7 @@ def test_singleton():
 def test_singleton2():
     x = ti.var(ti.i32)
 
-    @ti.layout
-    def l():
-        ti.root.place(x)
+    ti.root.place(x)
 
     @ti.kernel
     def fill():
@@ -40,10 +38,8 @@ def test_linear():
 
     n = 128
 
-    @ti.layout
-    def place():
-        ti.root.dense(ti.i, n).place(x)
-        ti.root.dense(ti.i, n).place(y)
+    ti.root.dense(ti.i, n).place(x)
+    ti.root.dense(ti.i, n).place(y)
 
     @ti.kernel
     def fill():
@@ -65,10 +61,8 @@ def test_nested():
 
     n = 128
 
-    @ti.layout
-    def place():
-        ti.root.dense(ti.i, n // 4).dense(ti.i, 4).place(x)
-        ti.root.dense(ti.i, n).place(y)
+    ti.root.dense(ti.i, n // 4).dense(ti.i, 4).place(x)
+    ti.root.dense(ti.i, n).place(y)
 
     @ti.kernel
     def fill():
@@ -90,13 +84,10 @@ def test_nested2():
 
     n = 2048
 
-    @ti.layout
-    def place():
-        ti.root.dense(ti.i, n // 512).dense(ti.i,
-                                            16).dense(ti.i,
-                                                      8).dense(ti.i,
-                                                               4).place(x)
-        ti.root.dense(ti.i, n).place(y)
+    ti.root.dense(ti.i, n // 512).dense(ti.i, 16).dense(ti.i,
+                                                        8).dense(ti.i,
+                                                                 4).place(x)
+    ti.root.dense(ti.i, n).place(y)
 
     @ti.kernel
     def fill():
@@ -118,9 +109,7 @@ def test_2d():
 
     n, m = 32, 16
 
-    @ti.layout
-    def place():
-        ti.root.dense(ti.ij, n).place(x, y)
+    ti.root.dense(ti.ij, n).place(x, y)
 
     @ti.kernel
     def fill():
@@ -141,9 +130,7 @@ def test_2d_non_POT():
 
     n, m = 13, 17
 
-    @ti.layout
-    def place():
-        ti.root.dense(ti.ij, (n, m)).place(x)
+    ti.root.dense(ti.ij, (n, m)).place(x)
 
     @ti.kernel
     def fill():
@@ -166,9 +153,7 @@ def test_nested_2d():
 
     n = 32
 
-    @ti.layout
-    def place():
-        ti.root.dense(ti.ij, n // 4).dense(ti.ij, 4).place(x, y)
+    ti.root.dense(ti.ij, n // 4).dense(ti.ij, 4).place(x, y)
 
     @ti.kernel
     def fill():
@@ -189,12 +174,10 @@ def test_nested_2d_more_nests():
 
     n = 64
 
-    @ti.layout
-    def place():
-        ti.root.dense(ti.ij, n // 16).dense(ti.ij,
-                                            2).dense(ti.ij,
-                                                     4).dense(ti.ij,
-                                                              2).place(x, y)
+    ti.root.dense(ti.ij, n // 16).dense(ti.ij,
+                                        2).dense(ti.ij,
+                                                 4).dense(ti.ij,
+                                                          2).place(x, y)
 
     @ti.kernel
     def fill():
@@ -214,9 +197,7 @@ def test_linear_k():
 
     n = 128
 
-    @ti.layout
-    def place():
-        ti.root.dense(ti.k, n).place(x)
+    ti.root.dense(ti.k, n).place(x)
 
     @ti.kernel
     def fill():

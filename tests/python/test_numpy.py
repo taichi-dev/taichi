@@ -7,9 +7,7 @@ def with_data_type(dt):
 
     n = 4
 
-    @ti.layout
-    def values():
-        ti.root.dense(ti.i, n).place(val)
+    ti.root.dense(ti.i, n).place(val)
 
     @ti.kernel
     def test_numpy(arr: ti.ext_arr()):
@@ -56,9 +54,7 @@ def test_numpy_2d():
     n = 4
     m = 7
 
-    @ti.layout
-    def values():
-        ti.root.dense(ti.i, n).dense(ti.j, m).place(val)
+    ti.root.dense(ti.i, n).dense(ti.j, m).place(val)
 
     @ti.kernel
     def test_numpy(arr: ti.ext_arr()):
@@ -86,9 +82,7 @@ def test_numpy_2d_transpose():
     n = 8
     m = 8
 
-    @ti.layout
-    def values():
-        ti.root.dense(ti.ij, (n, m)).place(val)
+    ti.root.dense(ti.ij, (n, m)).place(val)
 
     @ti.kernel
     def test_numpy(arr: ti.ext_arr()):
@@ -116,9 +110,7 @@ def test_numpy_3d():
     m = 7
     p = 11
 
-    @ti.layout
-    def values():
-        ti.root.dense(ti.i, n).dense(ti.j, m).dense(ti.k, p).place(val)
+    ti.root.dense(ti.i, n).dense(ti.j, m).dense(ti.k, p).place(val)
 
     @ti.kernel
     def test_numpy(arr: ti.ext_arr()):
@@ -150,9 +142,7 @@ def test_numpy_3d():
     m = 7
     p = 11
 
-    @ti.layout
-    def values():
-        ti.root.dense(ti.i, n).dense(ti.j, m).dense(ti.k, p).place(val)
+    ti.root.dense(ti.i, n).dense(ti.j, m).dense(ti.k, p).place(val)
 
     @ti.kernel
     def test_numpy(arr: ti.ext_arr()):

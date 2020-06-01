@@ -154,6 +154,7 @@ Supported scalar functions:
     .. code-block:: python
 
         B = ti.Matrix([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
+        C = ti.Matrix([[3.0, 4.0, 5.0], [6.0, 7.0, 8.0]])
 
         A = ti.sin(B)
         # is equivalent to
@@ -161,6 +162,29 @@ Supported scalar functions:
             for j in ti.static(range(3)):
                 A[i, j] = ti.sin(B[i, j])
 
+        A = ti.pow(B, 2)
+        # is equivalent to
+        for i in ti.static(range(2)):
+            for j in ti.static(range(3)):
+                A[i, j] = ti.pow(B[i, j], 2)
+
+        A = ti.pow(B, C)
+        # is equivalent to
+        for i in ti.static(range(2)):
+            for j in ti.static(range(3)):
+                A[i, j] = ti.pow(B[i, j], C[i, j])
+
+        A += 2
+        # is equivalent to
+        for i in ti.static(range(2)):
+            for j in ti.static(range(3)):
+                A[i, j] += 2
+
+        A += B
+        # is equivalent to
+        for i in ti.static(range(2)):
+            for j in ti.static(range(3)):
+                A[i, j] += B[i, j]
 
 Debugging
 ---------

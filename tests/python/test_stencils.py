@@ -9,9 +9,7 @@ def test_simple():
 
     n = 128
 
-    @ti.layout
-    def place():
-        ti.root.dense(ti.i, n).place(x, y)
+    ti.root.dense(ti.i, n).place(x, y)
 
     @ti.kernel
     def run():

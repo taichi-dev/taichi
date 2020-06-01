@@ -7,9 +7,7 @@ def test_abs():
 
     N = 16
 
-    @ti.layout
-    def place():
-        ti.root.dense(ti.i, N).place(x)
+    ti.root.dense(ti.i, N).place(x)
 
     @ti.kernel
     def func():
@@ -30,9 +28,7 @@ def test_int():
 
     N = 16
 
-    @ti.layout
-    def place():
-        ti.root.dense(ti.i, N).place(x)
+    ti.root.dense(ti.i, N).place(x)
 
     @ti.kernel
     def func():
@@ -58,9 +54,7 @@ def test_minmax():
 
     N = 16
 
-    @ti.layout
-    def place():
-        ti.root.dense(ti.i, N).place(x, y, minimum, maximum)
+    ti.root.dense(ti.i, N).place(x, y, minimum, maximum)
 
     @ti.kernel
     def func():

@@ -9,9 +9,8 @@ inf = 1e10
 def out_dir(n):
     u = ti.Vector([1.0, 0.0, 0.0])
     if ti.abs(n[1]) < 1 - 1e-3:
-        u = ti.Matrix.normalized(ti.Matrix.cross(n, ti.Vector([0.0, 1.0,
-                                                               0.0])))
-    v = ti.Matrix.cross(n, u)
+        u = n.cross(ti.Vector([0.0, 1.0, 0.0])).normalized()
+    v = n.cross(u)
     phi = 2 * math.pi * ti.random(ti.f32)
     r = ti.random(ti.f32)
     ay = ti.sqrt(r)
@@ -22,18 +21,18 @@ def out_dir(n):
 @ti.func
 def reflect(d, n):
     # Assuming |d| and |n| are normalized
-    return d - 2.0 * ti.dot(d, n) * n
+    return d - 2.0 * d.dot(n) * n
 
 
 @ti.func
 def refract(d, n, ni_over_nt):
     # Assuming |d| and |n| are normalized
     has_r, rd = 0, d
-    dt = ti.dot(d, n)
+    dt = d.dot(n)
     discr = 1.0 - ni_over_nt * ni_over_nt * (1.0 - dt * dt)
     if discr > 0.0:
         has_r = 1
-        rd = ti.normalized(ni_over_nt * (d - n * dt) - n * ti.sqrt(discr))
+        rd = (ni_over_nt * (d - n * dt) - n * ti.sqrt(discr)).normalized()
     else:
         rd *= 0.0
     return has_r, rd
@@ -121,9 +120,9 @@ def intersect_sphere(pos, d, center, radius):
 def ray_plane_intersect(pos, d, pt_on_plane, norm):
     dist = inf
     hit_pos = ti.Vector([0.0, 0.0, 0.0])
-    denom = ti.dot(d, norm)
+    denom = d.dot(norm)
     if abs(denom) > eps:
-        dist = ti.dot((pt_on_plane - pos), norm) / denom
+        dist = norm.dot(pt_on_plane - pos) / denom
         hit_pos = pos + d * dist
     return dist, hit_pos
 
@@ -133,7 +132,7 @@ def point_aabb_distance2(box_min, box_max, o):
     p = ti.Vector([0.0, 0.0, 0.0])
     for i in ti.static(range(3)):
         p[i] = ti.max(ti.min(o[i], box_max[i]), box_min[i])
-    return ti.Matrix.norm_sqr(p - o)
+    return (p - o).norm_sqr()
 
 
 @ti.func

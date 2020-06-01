@@ -4,17 +4,109 @@ from taichi import approx
 
 
 @ti.all_archs
+def test_basic_utils():
+    a = ti.Vector(3, dt=ti.f32)
+    b = ti.Vector(3, dt=ti.f32)
+    abT = ti.Matrix(3, 3, dt=ti.f32)
+    aNormalized = ti.Vector(3, dt=ti.f32)
+
+    normA = ti.var(ti.f32)
+    normSqrA = ti.var(ti.f32)
+
+    ti.root.place(a, b, abT, aNormalized, normA, normSqrA)
+
+    @ti.kernel
+    def init():
+        a[None] = ti.Vector([1.0, 2.0, 3.0])
+        b[None] = ti.Vector([4.0, 5.0, 6.0])
+        abT[None] = a.outer_product(b)
+
+        normA[None] = a.norm()
+        normSqrA[None] = a.norm_sqr()
+
+        aNormalized[None] = a.normalized()
+
+    init()
+
+    for i in range(3):
+        for j in range(3):
+            assert abT[None][i, j] == a[None][i] * b[None][j]
+
+    sqrt14 = np.sqrt(14.0)
+    invSqrt14 = 1.0 / sqrt14
+    assert normSqrA[None] == 14.0
+    assert normA[None] == approx(sqrt14)
+    assert aNormalized[None][0] == approx(1.0 * invSqrt14)
+    assert aNormalized[None][1] == approx(2.0 * invSqrt14)
+    assert aNormalized[None][2] == approx(3.0 * invSqrt14)
+
+
+@ti.all_archs
+def test_cross():
+    a = ti.Vector(3, dt=ti.f32)
+    b = ti.Vector(3, dt=ti.f32)
+    c = ti.Vector(3, dt=ti.f32)
+
+    a2 = ti.Vector(2, dt=ti.f32)
+    b2 = ti.Vector(2, dt=ti.f32)
+    c2 = ti.var(dt=ti.f32)
+
+    ti.root.place(a, b, c, a2, b2, c2)
+
+    @ti.kernel
+    def init():
+        a[None] = ti.Vector([1.0, 2.0, 3.0])
+        b[None] = ti.Vector([4.0, 5.0, 6.0])
+        c[None] = a.cross(b)
+
+        a2[None] = ti.Vector([1.0, 2.0])
+        b2[None] = ti.Vector([4.0, 5.0])
+        c2[None] = a2.cross(b2)
+
+    init()
+    assert c[None][0] == -3.0
+    assert c[None][1] == 6.0
+    assert c[None][2] == -3.0
+    assert c2[None] == -3.0
+
+
+@ti.all_archs
+def test_dot():
+    a = ti.Vector(3, dt=ti.f32)
+    b = ti.Vector(3, dt=ti.f32)
+    c = ti.var(dt=ti.f32)
+
+    a2 = ti.Vector(2, dt=ti.f32)
+    b2 = ti.Vector(2, dt=ti.f32)
+    c2 = ti.var(dt=ti.f32)
+
+    ti.root.place(a, b, c, a2, b2, c2)
+
+    @ti.kernel
+    def init():
+        a[None] = ti.Vector([1.0, 2.0, 3.0])
+        b[None] = ti.Vector([4.0, 5.0, 6.0])
+        c[None] = a.dot(b)
+
+        a2[None] = ti.Vector([1.0, 2.0])
+        b2[None] = ti.Vector([4.0, 5.0])
+        c2[None] = a2.dot(b2)
+
+    init()
+    assert c[None] == 32.0
+    assert c2[None] == 14.0
+
+
+@ti.all_archs
 def test_transpose():
     dim = 3
     m = ti.Matrix(dim, dim, ti.f32)
 
-    @ti.layout
-    def place():
-        ti.root.place(m)
+    ti.root.place(m)
 
     @ti.kernel
     def transpose():
-        mat = ti.transposed(m[None])
+        mat = m[None].transpose()
         m[None] = mat
 
     for i in range(dim):
@@ -35,9 +127,7 @@ def _test_polar_decomp(dim, dt):
     I = ti.Matrix(dim, dim, dt)
     D = ti.Matrix(dim, dim, dt)
 
-    @ti.layout
-    def place():
-        ti.root.place(m, r, s, I, D)
+    ti.root.place(m, r, s, I, D)
 
     @ti.kernel
     def polar():
@@ -45,8 +135,8 @@ def _test_polar_decomp(dim, dt):
         r[None] = R
         s[None] = S
         m[None] = R @ S
-        I[None] = R @ ti.transposed(R)
-        D[None] = S - ti.transposed(S)
+        I[None] = R @ R.transpose()
+        D[None] = S - S.transpose()
 
     def V(i, j):
         return i * 2 + j * 7 + int(i == j) * 3
@@ -81,9 +171,7 @@ def test_polar_decomp():
 def test_matrix():
     x = ti.Matrix(2, 2, dt=ti.i32)
 
-    @ti.layout
-    def xy():
-        ti.root.dense(ti.i, 16).place(x)
+    ti.root.dense(ti.i, 16).place(x)
 
     @ti.kernel
     def inc():
@@ -116,7 +204,7 @@ def _test_mat_inverse_size(n):
 
     @ti.kernel
     def invert():
-        m[None] = ti.inversed(m[None])
+        m[None] = m[None].inverse()
 
     invert()
 
@@ -143,6 +231,9 @@ def test_unit_vectors():
     for i in range(3):
         for j in range(3):
             assert a[i][j] == int(i == j)
+
+
+# TODO: move codes below to test_matrix.py:
 
 
 @ti.all_archs
@@ -179,14 +270,12 @@ def test_init_matrix_from_vectors():
 def test_any_all():
     a = ti.Matrix(2, 2, dt=ti.i32, shape=())
     b = ti.var(dt=ti.i32, shape=())
+    c = ti.var(dt=ti.i32, shape=())
 
     @ti.kernel
-    def func_any():
+    def func():
         b[None] = any(a[None])
-
-    @ti.kernel
-    def func_all():
-        b[None] = all(a[None])
+        c[None] = all(a[None])
 
     for i in range(2):
         for j in range(2):
@@ -195,14 +284,38 @@ def test_any_all():
             a[None][1, 1] = i
             a[None][0, 1] = j
 
-            func_any()
+            func()
             if i == 1 or j == 1:
                 assert b[None] == 1
             else:
                 assert b[None] == 0
 
-            func_all()
             if i == 1 and j == 1:
-                assert b[None] == 1
+                assert c[None] == 1
             else:
-                assert b[None] == 0
+                assert c[None] == 0
+
+
+# must not throw any error:
+@ti.all_archs
+def test_matrix_list_assign():
+
+    m = ti.Matrix(2, 2, dt=ti.i32, shape=(2, 2, 1))
+    v = ti.Vector(2, dt=ti.i32, shape=(2, 2, 1))
+
+    m[1, 0, 0] = [[4, 3], [6, 7]]
+    v[1, 0, 0] = [8, 4]
+
+    assert np.allclose(m.to_numpy()[1, 0, 0, :, :], np.array([[4, 3], [6, 7]]))
+    assert np.allclose(v.to_numpy()[1, 0, 0, :], np.array([8, 4]))
+
+    @ti.kernel
+    def func():
+        m[1, 0, 0] = [[1, 2], [3, 4]]
+        v[1, 0, 0] = [5, 6]
+        m[1, 0, 0] += [[1, 2], [3, 4]]
+        v[1, 0, 0] += [5, 6]
+
+    func()
+    assert np.allclose(m.to_numpy()[1, 0, 0, :, :], np.array([[2, 4], [6, 8]]))
+    assert np.allclose(v.to_numpy()[1, 0, 0, :], np.array([10, 12]))

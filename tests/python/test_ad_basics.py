@@ -30,9 +30,7 @@ def grad_test(tifunc, npfunc=None, default_fp=ti.f32):
         x = ti.var(default_fp)
         y = ti.var(default_fp)
 
-        @ti.layout
-        def place():
-            ti.root.dense(ti.i, 1).place(x, x.grad, y, y.grad)
+        ti.root.dense(ti.i, 1).place(x, x.grad, y, y.grad)
 
         @ti.kernel
         def func():
@@ -57,9 +55,7 @@ def grad_test(tifunc, npfunc=None, default_fp=ti.f32):
 def test_size1():
     x = ti.var(ti.i32)
 
-    @ti.layout
-    def place():
-        ti.root.dense(ti.i, 1).place(x)
+    ti.root.dense(ti.i, 1).place(x)
 
     x[0] = 1
     assert x[0] == 1
@@ -120,10 +116,8 @@ def test_mod():
     x = ti.var(ti.i32)
     y = ti.var(ti.i32)
 
-    @ti.layout
-    def place():
-        ti.root.dense(ti.i, 1).place(x, y)
-        ti.root.lazy_grad()
+    ti.root.dense(ti.i, 1).place(x, y)
+    ti.root.lazy_grad()
 
     @ti.kernel
     def func():
@@ -173,10 +167,8 @@ def test_obey_kernel_simplicity():
     x = ti.var(ti.f32)
     y = ti.var(ti.f32)
 
-    @ti.layout
-    def place():
-        ti.root.dense(ti.i, 1).place(x, y)
-        ti.root.lazy_grad()
+    ti.root.dense(ti.i, 1).place(x, y)
+    ti.root.lazy_grad()
 
     @ti.kernel
     def func():

@@ -6,9 +6,7 @@ def test_kernel_template_mapper():
     x = ti.var(ti.i32)
     y = ti.var(ti.f32)
 
-    @ti.layout
-    def layout():
-        ti.root.place(x, y)
+    ti.root.place(x, y)
 
     mapper = ti.KernelTemplateMapper(
         (ti.template(), ti.template(), ti.template()),
@@ -37,9 +35,7 @@ def test_kernel_template_mapper_numpy():
     x = ti.var(ti.i32)
     y = ti.var(ti.f32)
 
-    @ti.layout
-    def layout():
-        ti.root.place(x, y)
+    ti.root.place(x, y)
 
     annotations = (ti.template(), ti.template(), ti.ext_arr())
 

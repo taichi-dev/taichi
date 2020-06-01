@@ -23,5 +23,7 @@ while True:
     if gui.is_pressed(ti.GUI.LMB):
         x, y = gui.get_cursor_pos()
 
+    gui.text(f'({x:.3}, {y:.3})', (x, y))
+
     gui.circle((x, y), 0xffffff, 8)
     gui.show()

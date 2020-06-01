@@ -10,12 +10,10 @@ def test_clear_all_gradients():
 
     n = 128
 
-    @ti.layout
-    def layout():
-        ti.root.place(x)
-        ti.root.dense(ti.i, n).place(y)
-        ti.root.dense(ti.i, n).dense(ti.j, n).place(z, w)
-        ti.root.lazy_grad()
+    ti.root.place(x)
+    ti.root.dense(ti.i, n).place(y)
+    ti.root.dense(ti.i, n).dense(ti.j, n).place(z, w)
+    ti.root.lazy_grad()
 
     x.grad[None] = 3
     for i in range(n):

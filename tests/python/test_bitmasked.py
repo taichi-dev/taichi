@@ -41,10 +41,8 @@ def test_bitmasked_then_dense():
 
     n = 128
 
-    @ti.layout
-    def place():
-        ti.root.bitmasked(ti.i, n).dense(ti.i, n).place(x)
-        ti.root.place(s)
+    ti.root.bitmasked(ti.i, n).dense(ti.i, n).place(x)
+    ti.root.place(s)
 
     @ti.kernel
     def func():

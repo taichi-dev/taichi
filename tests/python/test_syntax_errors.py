@@ -5,9 +5,7 @@ import taichi as ti
 def test_try():
     x = ti.var(ti.f32)
 
-    @ti.layout
-    def layout():
-        ti.root.dense(ti.i, 1).place(x)
+    ti.root.dense(ti.i, 1).place(x)
 
     @ti.kernel
     def func():
@@ -23,9 +21,7 @@ def test_try():
 def test_import():
     x = ti.var(ti.f32)
 
-    @ti.layout
-    def layout():
-        ti.root.dense(ti.i, 1).place(x)
+    ti.root.dense(ti.i, 1).place(x)
 
     @ti.kernel
     def func():
@@ -38,9 +34,7 @@ def test_import():
 def test_for_else():
     x = ti.var(ti.f32)
 
-    @ti.layout
-    def layout():
-        ti.root.dense(ti.i, 1).place(x)
+    ti.root.dense(ti.i, 1).place(x)
 
     @ti.kernel
     def func():
@@ -56,9 +50,7 @@ def test_for_else():
 def test_while_else():
     x = ti.var(ti.f32)
 
-    @ti.layout
-    def layout():
-        ti.root.dense(ti.i, 1).place(x)
+    ti.root.dense(ti.i, 1).place(x)
 
     @ti.kernel
     def func():
@@ -74,9 +66,7 @@ def test_while_else():
 def test_loop_var_range():
     x = ti.var(ti.f32)
 
-    @ti.layout
-    def layout():
-        ti.root.dense(ti.i, 1).place(x)
+    ti.root.dense(ti.i, 1).place(x)
 
     @ti.kernel
     def func():
@@ -91,9 +81,7 @@ def test_loop_var_range():
 def test_loop_var_struct():
     x = ti.var(ti.f32)
 
-    @ti.layout
-    def layout():
-        ti.root.dense(ti.i, 1).place(x)
+    ti.root.dense(ti.i, 1).place(x)
 
     @ti.kernel
     def func():
@@ -108,9 +96,7 @@ def test_loop_var_struct():
 def test_loop_var_struct():
     x = ti.var(ti.f32)
 
-    @ti.layout
-    def layout():
-        ti.root.dense(ti.i, 1).place(x)
+    ti.root.dense(ti.i, 1).place(x)
 
     @ti.kernel
     def func():
@@ -125,9 +111,7 @@ def test_loop_var_struct():
 def test_ternary():
     x = ti.var(ti.f32)
 
-    @ti.layout
-    def layout():
-        ti.root.dense(ti.i, 1).place(x)
+    ti.root.dense(ti.i, 1).place(x)
 
     @ti.kernel
     def func():

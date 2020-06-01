@@ -8,11 +8,9 @@ def test_normal_grad():
 
     n = 128
 
-    @ti.layout
-    def place():
-        ti.root.dense(ti.i, n).place(x)
-        ti.root.place(loss)
-        ti.root.lazy_grad()
+    ti.root.dense(ti.i, n).place(x)
+    ti.root.place(loss)
+    ti.root.lazy_grad()
 
     @ti.kernel
     def func():
@@ -36,11 +34,9 @@ def test_stop_grad():
 
     n = 128
 
-    @ti.layout
-    def place():
-        ti.root.dense(ti.i, n).place(x)
-        ti.root.place(loss)
-        ti.root.lazy_grad()
+    ti.root.dense(ti.i, n).place(x)
+    ti.root.place(loss)
+    ti.root.lazy_grad()
 
     @ti.kernel
     def func():
@@ -65,11 +61,9 @@ def test_stop_grad2():
 
     n = 128
 
-    @ti.layout
-    def place():
-        ti.root.dense(ti.i, n).place(x)
-        ti.root.place(loss)
-        ti.root.lazy_grad()
+    ti.root.dense(ti.i, n).place(x)
+    ti.root.place(loss)
+    ti.root.lazy_grad()
 
     @ti.kernel
     def func():

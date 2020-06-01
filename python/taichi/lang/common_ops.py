@@ -111,6 +111,86 @@ class TaichiOperations:
         import taichi as ti
         return ti.logical_not(self)
 
+    def atomic_add(self, other):
+        import taichi as ti
+        return ti.atomic_add(self, other)
+
+    def atomic_sub(self, other):
+        import taichi as ti
+        return ti.atomic_sub(self, other)
+
+    def atomic_and(self, other):
+        import taichi as ti
+        return ti.atomic_and(self, other)
+
+    def atomic_xor(self, other):
+        import taichi as ti
+        return ti.atomic_xor(self, other)
+
+    def atomic_or(self, other):
+        import taichi as ti
+        return ti.atomic_or(self, other)
+
+    def __iadd__(self, other):
+        self.atomic_add(other)
+        return self
+
+    def __isub__(self, other):
+        self.atomic_sub(other)
+        return self
+
+    def __iand__(self, other):
+        self.atomic_and(other)
+        return self
+
+    def __ixor__(self, other):
+        self.atomic_xor(other)
+        return self
+
+    def __ior__(self, other):
+        self.atomic_or(other)
+        return self
+
+    # we don't support atomic_mul/truediv/floordiv yet:
+    def __imul__(self, other):
+        import taichi as ti
+        self.assign(ti.mul(self, other))
+        return self
+
+    def __itruediv__(self, other):
+        import taichi as ti
+        self.assign(ti.truediv(self, other))
+        return self
+
+    def __ifloordiv__(self, other):
+        import taichi as ti
+        self.assign(ti.floordiv(self, other))
+        return self
+
+    def assign(self, other):
+        import taichi as ti
+        return ti.assign(self, other)
+
+    def augassign(self, x, op):
+        if op == 'Add':
+            self += x
+        elif op == 'Sub':
+            self -= x
+        elif op == 'Mult':
+            self *= x
+        elif op == 'Div':
+            self /= x
+        elif op == 'FloorDiv':
+            self //= x
+        elif op == 'BitAnd':
+            self &= x
+        elif op == 'BitOr':
+            self |= x
+        elif op == 'BitXor':
+            self ^= x
+        else:
+            assert False, op
+
     def __ti_int__(self):
         import taichi as ti
         return ti.cast(self, ti.get_runtime().default_ip)

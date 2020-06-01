@@ -472,6 +472,3 @@ def _print_taichi_header():
 
 
 _print_taichi_header()
-
-if not is_release():
-    ti_core.set_core_trigger_gdb_when_crash(True)

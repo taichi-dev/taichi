@@ -10,7 +10,6 @@ from colorama import Fore, Back, Style
 from taichi.tools.video import make_video, interpolate_frames, mp4_to_gif, scale_video, crop_video, accelerate_video
 from pathlib import Path
 import runpy
-from typing import Tuple, Set
 
 
 def test_python(args):

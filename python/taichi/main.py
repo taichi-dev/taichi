@@ -124,7 +124,7 @@ class TaichiMain:
                             choices=sorted(
                                 TaichiMain._get_available_examples()))
         args = parser.parse_args(arguments)
-                  
+
         name = args.name
         # try to find and remove python file extension once
         if name.endswith('.py'):
@@ -745,7 +745,6 @@ class TaichiMain:
 
     def run(self, arguments: list = sys.argv[2:]):
         """Run a specific task"""
-        # TODO: discuss do we really need this?
         parser = argparse.ArgumentParser(description=f"{self.run.__doc__}")
         parser.add_argument('taskname',
                             help='A single task name to run, e.g. test_math')

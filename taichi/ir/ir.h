@@ -874,7 +874,7 @@ class Block : public IRNode {
 
 class DelayedIRModifier {
  private:
-  std::vector<std::pair<Stmt *, VecStatement &&>> to_insert_before;
+  std::vector<std::pair<Stmt *, VecStatement>> to_insert_before;
   std::vector<Stmt *> to_erase;
 
  public:

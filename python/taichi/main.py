@@ -10,6 +10,7 @@ from colorama import Fore, Back, Style
 from taichi.tools.video import make_video, interpolate_frames, mp4_to_gif, scale_video, crop_video, accelerate_video
 from pathlib import Path
 import runpy
+from typing import Tuple, Set
 
 
 def test_python(args):
@@ -98,6 +99,9 @@ def get_available_examples() -> set:
 def run_example(name: str):
     """Run an example based on the example NAME."""
     all_example_names = get_available_examples()
+    # try to find and remove python file extension once
+    if name.endswith('.py'):
+        name = name.split('.')[0]
     if name not in all_example_names:
         sys.exit(
             f"Sorry, {name} is not an available example name!\nAvailable example names are: {sorted(all_example_names)}"

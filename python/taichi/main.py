@@ -18,6 +18,7 @@ from taichi.tools.video import (accelerate_video, crop_video, make_video,
 
 
 def timer(func):
+    """Function decorator to benchmark a function runnign time."""
     import timeit
 
     @wraps(func)
@@ -31,12 +32,24 @@ def timer(func):
     return wrapper
 
 
+def registerableCLI(cls):
+    """Class decorator to register methodss with @register into a set."""
+    cls.registered_commands = set([])
+    for name in dir(cls):
+        method = getattr(cls, name)
+        if hasattr(method, 'registered'):
+            cls.registered_commands.add(name) 
+    return cls
+
+
+def register(func):
+    """Method decorator to register CLI commands."""
+    func.registered = True
+    return func
+
+
+@registerableCLI
 class TaichiMain:
-    registered_commands = {
-        "example", "release", "gif", "video_speed", "video_crop",
-        "video_scale", "video", "doc", "update", "format_all", "format",
-        "build", "regression", "baseline", "benchmark", "test", "debug", "run"
-    }
 
     @timer
     def __init__(self, debug: bool = False, test_mode: bool = False):
@@ -116,6 +129,7 @@ class TaichiMain:
         }
         return all_example_names
 
+    @register
     def example(self, arguments: list = sys.argv[2:]):
         """Run an example by name"""
         parser = argparse.ArgumentParser(description=f"{self.example.__doc__}")
@@ -141,6 +155,7 @@ class TaichiMain:
 
         runpy.run_path(target, run_name='__main__')
 
+    @register
     def release(self, arguments: list = sys.argv[2:]):
         """Make source code release"""
         parser = argparse.ArgumentParser(description=f"{self.release.__doc__}")
@@ -177,6 +192,7 @@ class TaichiMain:
             raise argparse.ArgumentTypeError("filename must be of type .mp4")
         return name
 
+    @register
     def gif(self, arguments: list = sys.argv[2:]):
         """Convert mp4 file to gif in the same directory"""
         parser = argparse.ArgumentParser(description=f"{self.gif.__doc__}")
@@ -202,6 +218,7 @@ class TaichiMain:
         if self.test_mode: return args
         mp4_to_gif(args.input_file, args.output_file, args.framerate)
 
+    @register
     def video_speed(self, arguments: list = sys.argv[2:]):
         """Speed up video in the same directory"""
         parser = argparse.ArgumentParser(
@@ -230,7 +247,8 @@ class TaichiMain:
         # Short circuit for testing
         if self.test_mode: return args
         accelerate_video(args.input_file, args.output_file, args.speed)
-
+    
+    @register
     def video_crop(self, arguments: list = sys.argv[2:]):
         """Crop video in the same directory"""
         parser = argparse.ArgumentParser(
@@ -273,6 +291,7 @@ class TaichiMain:
         crop_video(args.input_file, args.output_file, args.x_begin, args.x_end,
                    args.y_begin, args.y_end)
 
+    @register
     def video_scale(self, arguments: list = sys.argv[2:]):
         """Scale video resolution in the same directory"""
         parser = argparse.ArgumentParser(
@@ -313,6 +332,7 @@ class TaichiMain:
         scale_video(args.input_file, args.output_file, args.ratio_width,
                     args.ratio_height)
 
+    @register
     def video(self, arguments: list = sys.argv[2:]):
         """Make a video using *.png files in the current directory"""
         parser = argparse.ArgumentParser(description=f"{self.video.__doc__}")
@@ -346,6 +366,7 @@ class TaichiMain:
                    frame_rate=args.framerate)
         ti.info(f'Done! Output video file = {args.output_file}')
 
+    @register
     def doc(self, arguments: list = sys.argv[2:]):
         """Build documentation"""
         parser = argparse.ArgumentParser(description=f"{self.doc.__doc__}")
@@ -357,6 +378,7 @@ class TaichiMain:
             f'cd {ti.get_repo_directory()}/docs && sphinx-build -b html . build'
         )
 
+    @register
     def update(self, arguments: list = sys.argv[2:]):
         """Update the Taichi codebase"""
         # TODO: Test if this still works, fix if it doesn't
@@ -368,6 +390,7 @@ class TaichiMain:
         ti.core.update(True)
         ti.core.build()
 
+    @register
     def format(self, arguments: list = sys.argv[2:]):
         """Reformat modified source files"""
         parser = argparse.ArgumentParser(description=f"{self.format.__doc__}")
@@ -385,6 +408,7 @@ class TaichiMain:
         if self.test_mode: return args
         ti.core.format(diff=args.diff)
 
+    @register
     def format_all(self, arguments: list = sys.argv[2:]):
         """Reformat all source files"""
         parser = argparse.ArgumentParser(
@@ -395,6 +419,7 @@ class TaichiMain:
         if self.test_mode: return args
         ti.core.format(all=True)
 
+    @register
     def build(self, arguments: list = sys.argv[2:]):
         """Build C++ files"""
         parser = argparse.ArgumentParser(description=f"{self.build.__doc__}")
@@ -511,6 +536,7 @@ class TaichiMain:
         import taichi as ti
         return os.path.join(ti.core.get_repo_dir(), 'benchmarks', 'output')
 
+    @register
     def regression(self, arguments: list = sys.argv[2:]):
         """Display benchmark regression test result"""
         parser = argparse.ArgumentParser(
@@ -533,6 +559,7 @@ class TaichiMain:
         TaichiMain._display_benchmark_regression(baseline_dir, output_dir,
                                                  args)
 
+    @register
     def baseline(self, arguments: list = sys.argv[2:]):
         """Archive current benchmark result as baseline"""
         parser = argparse.ArgumentParser(
@@ -618,6 +645,7 @@ class TaichiMain:
         task = ti.Task('test')
         return int(task.run(*args.files))
 
+    @register
     def benchmark(self, arguments: list = sys.argv[2:]):
         """Run Python tests in benchmark mode"""
         parser = argparse.ArgumentParser(
@@ -672,6 +700,7 @@ class TaichiMain:
         else:
             TaichiMain._test_python(args)
 
+    @register
     def test(self, arguments: list = sys.argv[2:]):
         """Run the tests"""
         parser = argparse.ArgumentParser(description=f"{self.test.__doc__}")
@@ -723,6 +752,7 @@ class TaichiMain:
                 return ret
             return TaichiMain._test_cpp(args)
 
+    @register
     def debug(self, arguments: list = sys.argv[2:]):
         """Debug a single script"""
         parser = argparse.ArgumentParser(description=f"{self.debug.__doc__}")
@@ -743,6 +773,7 @@ class TaichiMain:
         # FIXME: exec is a security risk here!
         exec(script, {'__name__': '__main__'})
 
+    @register
     def run(self, arguments: list = sys.argv[2:]):
         """Run a specific task"""
         parser = argparse.ArgumentParser(description=f"{self.run.__doc__}")

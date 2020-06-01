@@ -8,7 +8,7 @@ Coordinate offsets
 
 .. code-block:: python
 
-    a = ti.Matrix(2, 2, dt=ti.f32, shape=(32, 64), offset = (-16, 8))
+    a = ti.Matrix(2, 2, dt=ti.f32, shape=(32, 64), offset=(-16, 8))
 
 In this way, the tensor's indices are from ``(-16, 8)`` to ``(16, 72)`` (exclusive).
 
@@ -23,9 +23,10 @@ In this way, the tensor's indices are from ``(-16, 8)`` to ``(16, 72)`` (exclusi
 
 .. code-block:: python
 
-    a = ti.Matrix(2, 3, dt = ti.f32, shape = (32,), offset = (-16, ))     # Works!
-    b = ti.Matrix(2, 1, dt = ti.f32, shape = None, offset = (32,))        # ValueError
-    c = ti.Matrix(3, 2, dt = ti.f32, shape = (32, 32), offset = (-16, ))  # ValueError
-    d = ti.var(dt = ti.i32, shape = 16, offset = -16)                     # Works!
-    e = ti.var(dt = ti.i32, shape = None, offset = -16)                   # ValueError
-    f = ti.var(dt = ti.i32, shape = (16, 32), offset = -16)               # ValueError
+    a = ti.Matrix(2, 3, dt=ti.f32, shape=(32,), offset=(-16, ))          # Works!
+    b = ti.Vector(3, dt=ti.f32, shape=(16, 32, 64), offset=(7, 3, -4))   # Works!
+    c = ti.Matrix(2, 1, dt=ti.f32, shape=None, offset=(32,))             # ValueError
+    d = ti.Matrix(3, 2, dt=ti.f32, shape=(32, 32), offset=(-16, ))       # ValueError
+    e = ti.var(dt=ti.i32, shape=16, offset=-16)                          # Works!
+    f = ti.var(dt=ti.i32, shape=None, offset=-16)                        # ValueError
+    g = ti.var(dt=ti.i32, shape=(16, 32), offset=-16)                    # ValueError

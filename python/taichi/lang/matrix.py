@@ -619,7 +619,7 @@ class Matrix(TaichiOperations):
 
 
 def Vector(n=1, dt=None, shape=None, offset=None, **kwargs):
-    return Matrix(n, 1, dt, shape, offset, **kwargs)
+    return Matrix(n, 1, dt=dt, shape=shape, offset=offset, **kwargs)
 
 
 Vector.zero = Matrix.zero

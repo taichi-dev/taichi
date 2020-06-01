@@ -106,7 +106,9 @@ class Matrix(TaichiOperations):
                 offset = (offset, )
 
             if offset is not None:
-                assert len(shape) == len(offset), f'The dimensionality of shape and offset must be the same  (f{len(shape)} != f{len(offset)})'
+                assert len(shape) == len(
+                    offset
+                ), f'The dimensionality of shape and offset must be the same  (f{len(shape)} != f{len(offset)})'
 
             import taichi as ti
             if layout is None:
@@ -115,9 +117,11 @@ class Matrix(TaichiOperations):
             dim = len(shape)
             if layout.soa:
                 for i, e in enumerate(self.entries):
-                    ti.root.dense(ti.index_nd(dim), shape).place(e, offset=offset)
+                    ti.root.dense(ti.index_nd(dim), shape).place(e,
+                                                                 offset=offset)
                     if needs_grad:
-                        ti.root.dense(ti.index_nd(dim), shape).place(e.grad, offset=offset)
+                        ti.root.dense(ti.index_nd(dim),
+                                      shape).place(e.grad, offset=offset)
             else:
                 var_list = []
                 for i, e in enumerate(self.entries):
@@ -125,11 +129,13 @@ class Matrix(TaichiOperations):
                 if needs_grad:
                     for i, e in enumerate(self.entries):
                         var_list.append(e.grad)
-                ti.root.dense(ti.index_nd(dim), shape).place(*tuple(var_list), offset=offset)
+                ti.root.dense(ti.index_nd(dim), shape).place(*tuple(var_list),
+                                                             offset=offset)
         else:
             if offset is not None:
-                raise ValueError("shape cannot be None when offset is being set")
-                
+                raise ValueError(
+                    "shape cannot be None when offset is being set")
+
     def is_global(self):
         results = [False for _ in self.entries]
         for i, e in enumerate(self.entries):

@@ -234,10 +234,12 @@ def var(dt, shape=None, offset=None, needs_grad=False):
         shape = (shape, )
 
     if isinstance(offset, numbers.Number):
-        offset = (offset,)
+        offset = (offset, )
 
     if shape is not None and offset is not None:
-        assert len(shape) == len(offset), f'The dimensionality of shape and offset must be the same  (f{len(shape)} != f{len(offset)})'
+        assert len(shape) == len(
+            offset
+        ), f'The dimensionality of shape and offset must be the same  (f{len(shape)} != f{len(offset)})'
 
     if offset is not None and shape is None:
         raise ValueError("shape cannot be None when offset is being set")

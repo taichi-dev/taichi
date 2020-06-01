@@ -60,7 +60,7 @@ def test_offset_for_matrix():
 @ti.all_archs
 def test_offset_for_var():
     a = ti.var(dt=ti.i32, shape=16, offset=-48)
-    b = ti.var(dt=ti.i32, shape=(16,), offset=(16,))
+    b = ti.var(dt=ti.i32, shape=(16, ), offset=(16, ))
     c = ti.var(dt=ti.i32, shape=(16, 64), offset=(-16, -64))
     d = ti.var(dt=ti.i32, shape=(16, 64), offset=None)
 

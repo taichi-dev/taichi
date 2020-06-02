@@ -28,7 +28,7 @@ constexpr char kKernelThreadIdName[] = "utid_";        // 'u' for unsigned
 constexpr char kKernelGridSizeName[] = "ugrid_size_";  // 'u' for unsigned
 constexpr char kRootBufferName[] = "root_addr";
 constexpr char kGlobalTmpsBufferName[] = "global_tmps_addr";
-constexpr char kContexBufferName[] = "ctx_addr";
+constexpr char kContextBufferName[] = "ctx_addr";
 constexpr char kContextVarName[] = "kernel_ctx_";
 constexpr char kRuntimeBufferName[] = "runtime_addr";
 constexpr char kRuntimeVarName[] = "runtime_";
@@ -44,7 +44,7 @@ std::string buffer_to_name(BuffersEnum b) {
     case BuffersEnum::GlobalTmps:
       return kGlobalTmpsBufferName;
     case BuffersEnum::Context:
-      return kContexBufferName;
+      return kContextBufferName;
     case BuffersEnum::Runtime:
       return kRuntimeBufferName;
     default:
@@ -880,7 +880,7 @@ class KernelCodegen : public IRVisitor {
            kRuntimeVarName, kRuntimeBufferName);
       if (!ctx_attribs_.empty()) {
         emit("{} {}({});", kernel_args_classname(), kContextVarName,
-             kContexBufferName);
+             kContextBufferName);
       }
       // Init RandState
       emit(

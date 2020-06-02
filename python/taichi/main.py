@@ -38,7 +38,7 @@ def registerableCLI(cls):
     for name in dir(cls):
         method = getattr(cls, name)
         if hasattr(method, 'registered'):
-            cls.registered_commands.add(name) 
+            cls.registered_commands.add(name)
     return cls
 
 
@@ -50,7 +50,6 @@ def register(func):
 
 @registerableCLI
 class TaichiMain:
-
     @timer
     def __init__(self, debug: bool = False, test_mode: bool = False):
         self.banner = f"\n{'*' * 43}\n**      Taichi Programming Language      **\n{'*' * 43}"
@@ -123,10 +122,7 @@ class TaichiMain:
         """Get a set of all available example names."""
         examples_dir = TaichiMain._get_examples_dir()
         all_examples = examples_dir.rglob('*.py')
-        all_example_names = {
-            Path(f).stem
-            for f in all_examples
-        }
+        all_example_names = {Path(f).stem for f in all_examples}
         return all_example_names
 
     @staticmethod
@@ -137,6 +133,7 @@ class TaichiMain:
                 return choice.split('.')[0]
             else:
                 return choice
+
         return support_choice_with_dot_py
 
     @register
@@ -145,10 +142,11 @@ class TaichiMain:
         choices = TaichiMain._get_available_examples()
 
         parser = argparse.ArgumentParser(description=f"{self.example.__doc__}")
-        parser.add_argument("name",
-                            help=f"Name of an example (supports .py extension too)\n",
-                            type=TaichiMain._example_choices_type(choices),
-                            choices=sorted(choices))
+        parser.add_argument(
+            "name",
+            help=f"Name of an example (supports .py extension too)\n",
+            type=TaichiMain._example_choices_type(choices),
+            choices=sorted(choices))
         args = parser.parse_args(arguments)
 
         examples_dir = TaichiMain._get_examples_dir()
@@ -254,7 +252,7 @@ class TaichiMain:
         # Short circuit for testing
         if self.test_mode: return args
         accelerate_video(args.input_file, args.output_file, args.speed)
-    
+
     @register
     def video_crop(self, arguments: list = sys.argv[2:]):
         """Crop video in the same directory"""

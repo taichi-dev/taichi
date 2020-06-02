@@ -50,7 +50,6 @@ def register(func):
 
 @registerableCLI
 class TaichiMain:
-    @timer
     def __init__(self, debug: bool = False, test_mode: bool = False):
         self.banner = f"\n{'*' * 43}\n**      Taichi Programming Language      **\n{'*' * 43}"
         print(self.banner)
@@ -66,7 +65,7 @@ class TaichiMain:
             os.environ['TI_DEBUG'] = '1'
 
         parser = argparse.ArgumentParser(description="Taichi CLI",
-                                         usage=self._usage())
+                                            usage=self._usage())
         parser.add_argument('command',
                             help="command from the above list to run")
 
@@ -75,21 +74,25 @@ class TaichiMain:
             parser.print_help()
             exit(1)
 
+        # Flag for unit testing
+        self.test_mode = test_mode
+
+        self.main_parser = parser
+
+    @timer
+    def __call__(self):
         # Parse the command
-        args = parser.parse_args(sys.argv[1:2])
+        args = self.main_parser.parse_args(sys.argv[1:2])
+
         if args.command not in self.registered_commands:
             # TODO: do we really need this?
             if args.command.endswith(".py"):
                 TaichiMain._exec_python_file(args.command)
             print(f"{args.command} is not a valid command!")
-            parser.print_help()
+            self.main_parser.print_help()
             exit(1)
 
-        # Flag for unit testing
-        self.test_mode = test_mode
-        if self.test_mode: return
-
-        getattr(self, args.command)(sys.argv[2:])
+        return getattr(self, args.command)(sys.argv[2:])
 
     def _usage(self) -> str:
         """Compose deterministic usage message based on registered_commands."""
@@ -797,12 +800,14 @@ class TaichiMain:
 
 
 def main():
-    TaichiMain()
+    cli = TaichiMain()
+    return cli()
 
 
 def main_debug():
-    TaichiMain(debug=True)
+    cli = TaichiMain(debug=True)
+    return cli()
 
 
 if __name__ == "__main__":
-    main()
+    exit(main())

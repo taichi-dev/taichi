@@ -23,7 +23,7 @@ Troubleshooting
 Python issues
 *************
 
-- If ``pip`` complains that it could not find a package satisfying like `#1097 <https://github.com/taichi-dev/taichi/issues/1097>`_ or `this forum thread <https://forum.taichi.graphics/t/pip-taichi/224/17>`_ does:
+- If ``pip`` complains that it could not find a satisfying package, i.e.,
 
   .. code-block:: none
   

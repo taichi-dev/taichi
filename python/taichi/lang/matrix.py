@@ -14,8 +14,8 @@ class Matrix(TaichiOperations):
     # TODO(archibate): move the last two line to **kwargs,
     # since they're not commonly used as positional args.
     def __init__(self,
-                 n,
-                 m,
+                 n=1,
+                 m=1,
                  dt=None,
                  shape=None,
                  offset=None,

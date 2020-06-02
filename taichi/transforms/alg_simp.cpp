@@ -232,75 +232,27 @@ class AlgSimp : public BasicStmtVisitor {
   }
 
   static bool alg_is_zero(ConstStmt *stmt) {
-    if (!stmt)
+    if (!stmt || stmt->width() != 1)
       return false;
-    if (stmt->width() != 1)
-      return false;
-    auto val = stmt->val[0];
-    auto data_type = stmt->ret_type.data_type;
-    if (is_real(data_type))
-      return val.val_float() == 0;
-    else if (is_signed(data_type))
-      return val.val_int() == 0;
-    else if (is_unsigned(data_type))
-      return val.val_uint() == 0;
-    else {
-      TI_NOT_IMPLEMENTED
-    }
+    return stmt->val[0].equal_value(0);
   }
 
   static bool alg_is_one(ConstStmt *stmt) {
-    if (!stmt)
+    if (!stmt || stmt->width() != 1)
       return false;
-    if (stmt->width() != 1)
-      return false;
-    auto val = stmt->val[0];
-    auto data_type = stmt->ret_type.data_type;
-    if (is_real(data_type))
-      return val.val_float() == 1;
-    else if (is_signed(data_type))
-      return val.val_int() == 1;
-    else if (is_unsigned(data_type))
-      return val.val_uint() == 1;
-    else {
-      TI_NOT_IMPLEMENTED
-    }
+    return stmt->val[0].equal_value(1);
   }
 
   static bool alg_is_two(ConstStmt *stmt) {
-    if (!stmt)
+    if (!stmt || stmt->width() != 1)
       return false;
-    if (stmt->width() != 1)
-      return false;
-    auto val = stmt->val[0];
-    auto data_type = stmt->ret_type.data_type;
-    if (is_real(data_type))
-      return val.val_float() == 2;
-    else if (is_signed(data_type))
-      return val.val_int() == 2;
-    else if (is_unsigned(data_type))
-      return val.val_uint() == 2;
-    else {
-      TI_NOT_IMPLEMENTED
-    }
+    return stmt->val[0].equal_value(2);
   }
 
   static bool alg_is_minus_one(ConstStmt *stmt) {
-    if (!stmt)
+    if (!stmt || stmt->width() != 1)
       return false;
-    if (stmt->width() != 1)
-      return false;
-    auto val = stmt->val[0];
-    auto data_type = stmt->ret_type.data_type;
-    if (is_real(data_type))
-      return val.val_float() == -1;
-    else if (is_signed(data_type))
-      return val.val_int() == -1;
-    else if (is_unsigned(data_type))
-      return val.val_uint() == (uint64)-1;
-    else {
-      TI_NOT_IMPLEMENTED
-    }
+    return stmt->val[0].equal_value(-1);
   }
 
   static bool run(IRNode *node, bool fast_math) {

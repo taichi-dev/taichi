@@ -14,3 +14,7 @@
 	path = external/glad
 	url = https://github.com/taichi-dev/taichi_glad_ready
 	shallow = true
+[submodule "external/assets"]
+	path = external/assets
+	url = https://github.com/taichi-dev/taichi_assets
+	shallow = true

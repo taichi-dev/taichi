@@ -872,6 +872,19 @@ class Block : public IRNode {
   TI_DEFINE_ACCEPT
 };
 
+class DelayedIRModifier {
+ private:
+  std::vector<std::pair<Stmt *, VecStatement>> to_insert_before;
+  std::vector<Stmt *> to_erase;
+
+ public:
+  ~DelayedIRModifier();
+  void erase(Stmt *stmt);
+  void insert_before(Stmt *old_statement, std::unique_ptr<Stmt> new_statement);
+  void insert_before(Stmt *old_statement, VecStatement &&new_statements);
+  bool modify_ir();
+};
+
 class SNodeOpStmt : public Stmt {
  public:
   SNodeOpType op_type;

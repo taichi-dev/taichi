@@ -39,9 +39,9 @@ def _test_svd(dt, n):
     @ti.kernel
     def run():
         U[None], sigma[None], V[None] = ti.svd(A[None], dt)
-        UtU[None] = ti.transposed(U[None]) @ U[None]
-        VtV[None] = ti.transposed(V[None]) @ V[None]
-        A_reconstructed[None] = U[None] @ sigma[None] @ ti.transposed(V[None])
+        UtU[None] = U[None].transpose() @ U[None]
+        VtV[None] = V[None].transpose() @ V[None]
+        A_reconstructed[None] = U[None] @ sigma[None] @ V[None].transpose()
 
     if n == 3:
         A[None] = [[1, 1, 3], [9, -3, 2], [-3, 4, 2]]

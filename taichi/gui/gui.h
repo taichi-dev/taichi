@@ -390,8 +390,13 @@ class Canvas {
             real size,
             Vector4 color) {
     position = transform(position);
-    std::string root_dir = get_repo_dir();
-    auto ttf_path = root_dir + std::string("/assets/fonts/go/Go-Regular.ttf");
+    std::string folder;
+    if (is_release()) {
+      folder = fmt::format("{}/../assets", lang::compiled_lib_dir);
+    } else {
+      folder = fmt::format("{}/external/assets", get_repo_dir());
+    }
+    auto ttf_path = fmt::format("{}/Go-Regular.ttf", folder);
     img.write_text(ttf_path, str, size, position.x, position.y, color);
   }
 
@@ -402,7 +407,7 @@ class Canvas {
   }
 
   void clear(uint32 c) {
-    img.reset(color_from_hex(c));
+    clear(color_from_hex(c));
   }
 
   ~Canvas() {

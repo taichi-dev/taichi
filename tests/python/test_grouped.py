@@ -9,9 +9,7 @@ def test_vector_index():
     m = 7
     p = 11
 
-    @ti.layout
-    def values():
-        ti.root.dense(ti.i, n).dense(ti.j, m).dense(ti.k, p).place(val)
+    ti.root.dense(ti.i, n).dense(ti.j, m).dense(ti.k, p).place(val)
 
     @ti.kernel
     def test():
@@ -37,9 +35,7 @@ def test_grouped():
     m = 8
     p = 16
 
-    @ti.layout
-    def values():
-        ti.root.dense(ti.i, n).dense(ti.j, m).dense(ti.k, p).place(val)
+    ti.root.dense(ti.i, n).dense(ti.j, m).dense(ti.k, p).place(val)
 
     @ti.kernel
     def test():

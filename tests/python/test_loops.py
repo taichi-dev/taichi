@@ -8,11 +8,9 @@ def test_loops():
 
     N = 512
 
-    @ti.layout
-    def place():
-        ti.root.dense(ti.i, N).place(x)
-        ti.root.dense(ti.i, N).place(y)
-        ti.root.lazy_grad()
+    ti.root.dense(ti.i, N).place(x)
+    ti.root.dense(ti.i, N).place(y)
+    ti.root.lazy_grad()
 
     for i in range(N // 2, N):
         y[i] = i - 300
@@ -38,11 +36,9 @@ def test_numpy_loops():
 
     N = 512
 
-    @ti.layout
-    def place():
-        ti.root.dense(ti.i, N).place(x)
-        ti.root.dense(ti.i, N).place(y)
-        ti.root.lazy_grad()
+    ti.root.dense(ti.i, N).place(x)
+    ti.root.dense(ti.i, N).place(y)
+    ti.root.lazy_grad()
 
     for i in range(N // 2, N):
         y[i] = i - 300
@@ -72,9 +68,7 @@ def test_nested_loops():
 
     n = 2048
 
-    @ti.layout
-    def layout():
-        ti.root.dense(ti.ij, n).place(x)
+    ti.root.dense(ti.ij, n).place(x)
 
     @ti.kernel
     def paint():
@@ -120,10 +114,8 @@ def test_dynamic_loop_range():
     c = ti.var(ti.i32)
     n = 2000
 
-    @ti.layout
-    def layout():
-        ti.root.dense(ti.i, n).place(x)
-        ti.root.place(c)
+    ti.root.dense(ti.i, n).place(x)
+    ti.root.place(c)
 
     @ti.kernel
     def test():
@@ -143,9 +135,7 @@ def test_loop_arg_as_range():
     x = ti.var(ti.i32)
     n = 1000
 
-    @ti.layout
-    def layout():
-        ti.root.dense(ti.i, n).place(x)
+    ti.root.dense(ti.i, n).place(x)
 
     @ti.kernel
     def test(b: ti.i32, e: ti.i32):

@@ -757,7 +757,7 @@ void Block::replace_with(Stmt *old_statement,
     }
   }
   TI_ASSERT(location != -1);
-  if (replace_usages)
+  if (replace_usages && !new_statements.stmts.empty())
     old_statement->replace_with(new_statements.back().get());
   trash_bin.push_back(std::move(statements[location]));
   if (new_statements.size() == 1) {
@@ -798,6 +798,40 @@ std::unique_ptr<Block> Block::clone() const {
   for (auto &stmt : statements)
     new_block->insert(stmt->clone());
   return new_block;
+}
+
+DelayedIRModifier::~DelayedIRModifier() {
+  TI_ASSERT(to_insert_before.empty());
+  TI_ASSERT(to_erase.empty());
+}
+
+void DelayedIRModifier::erase(Stmt *stmt) {
+  to_erase.push_back(stmt);
+}
+
+void DelayedIRModifier::insert_before(Stmt *old_statement,
+                                      std::unique_ptr<Stmt> new_statements) {
+  to_insert_before.emplace_back(old_statement,
+                                VecStatement(std::move(new_statements)));
+}
+
+void DelayedIRModifier::insert_before(Stmt *old_statement,
+                                      VecStatement &&new_statements) {
+  to_insert_before.emplace_back(old_statement, std::move(new_statements));
+}
+
+bool DelayedIRModifier::modify_ir() {
+  if (to_insert_before.empty() && to_erase.empty())
+    return false;
+  for (auto &i : to_insert_before) {
+    i.first->parent->insert_before(i.first, std::move(i.second));
+  }
+  to_insert_before.clear();
+  for (auto &stmt : to_erase) {
+    stmt->parent->erase(stmt);
+  }
+  to_erase.clear();
+  return true;
 }
 
 FrontendSNodeOpStmt::FrontendSNodeOpStmt(SNodeOpType op_type,

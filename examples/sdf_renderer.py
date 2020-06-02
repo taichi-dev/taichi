@@ -22,8 +22,8 @@ light_radius = 2.0
 @ti.func
 def intersect_light(pos, d):
     light_loc = ti.Vector(light_pos)
-    dot = -ti.dot(d, ti.Vector(light_normal))
-    dist = ti.dot(d, light_loc - pos)
+    dot = -d.dot(ti.Vector(light_normal))
+    dist = d.dot(light_loc - pos)
     dist_to_light = inf
     if dot > 0 and dist > 0:
         D = dist / dot
@@ -37,8 +37,8 @@ def intersect_light(pos, d):
 def out_dir(n):
     u = ti.Vector([1.0, 0.0, 0.0])
     if abs(n[1]) < 1 - eps:
-        u = ti.normalized(ti.cross(n, ti.Vector([0.0, 1.0, 0.0])))
-    v = ti.cross(n, u)
+        u = n.cross(ti.Vector([0.0, 1.0, 0.0])).normalized()
+    v = n.cross(u)
     phi = 2 * math.pi * ti.random()
     ay = ti.sqrt(ti.random())
     ax = ti.sqrt(1 - ay**2)
@@ -64,7 +64,7 @@ def sdf(o):
     wall = min(o[1] + 0.1, o[2] + 0.4)
     sphere = (o - ti.Vector([0.0, 0.35, 0.0])).norm() - 0.36
 
-    q = (o - ti.Vector([0.8, 0.3, 0])).abs() - ti.Vector([0.3, 0.3, 0.3])
+    q = ti.abs(o - ti.Vector([0.8, 0.3, 0])) - ti.Vector([0.3, 0.3, 0.3])
     box = ti.Vector([max(0, q[0]), max(0, q[1]),
                      max(0, q[2])]).norm() + min(q.max(), 0)
 
@@ -97,7 +97,7 @@ def sdf_normal(p):
         inc = p
         inc[i] += d
         n[i] = (1 / d) * (sdf(inc) - sdf_center)
-    return ti.normalized(n)
+    return n.normalized()
 
 
 @ti.func
@@ -124,7 +124,7 @@ def render():
             (2 * fov * (u + ti.random()) / res[1] - fov * aspect_ratio - 1e-5),
             2 * fov * (v + ti.random()) / res[1] - fov - 1e-5, -1.0
         ])
-        d = ti.normalized(d)
+        d = d.normalized()
 
         throughput = ti.Vector([1.0, 1.0, 1.0])
 

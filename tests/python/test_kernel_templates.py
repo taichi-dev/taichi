@@ -8,9 +8,7 @@ def test_kernel_template_basic():
 
     n = 16
 
-    @ti.layout
-    def layout():
-        ti.root.dense(ti.i, n).place(x, y)
+    ti.root.dense(ti.i, n).place(x, y)
 
     @ti.kernel
     def inc(a: ti.template(), b: ti.template()):
@@ -41,11 +39,9 @@ def test_kernel_template_gradient():
     z = ti.var(ti.f32)
     loss = ti.var(ti.f32)
 
-    @ti.layout
-    def tensors():
-        ti.root.dense(ti.i, 16).place(x, y, z)
-        ti.root.place(loss)
-        ti.root.lazy_grad()
+    ti.root.dense(ti.i, 16).place(x, y, z)
+    ti.root.place(loss)
+    ti.root.lazy_grad()
 
     @ti.kernel
     def double(a: ti.template(), b: ti.template()):

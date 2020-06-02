@@ -9,9 +9,7 @@ def test_ad_reduce():
 
     N = 16
 
-    @ti.layout
-    def place():
-        ti.root.place(loss, loss.grad).dense(ti.i, N).place(x, x.grad)
+    ti.root.place(loss, loss.grad).dense(ti.i, N).place(x, x.grad)
 
     @ti.kernel
     def func():

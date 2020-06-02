@@ -8,11 +8,9 @@ def test_complex_kernels():
 
     n = 128
 
-    @ti.layout
-    def place():
-        ti.root.dense(ti.i, n).place(x)
-        ti.root.place(total)
-        ti.root.lazy_grad()
+    ti.root.dense(ti.i, n).place(x)
+    ti.root.place(total)
+    ti.root.lazy_grad()
 
     @ti.kernel
     def func(mul: ti.f32):
@@ -41,11 +39,9 @@ def test_complex_kernels_indirect():
 
     n = 128
 
-    @ti.layout
-    def place():
-        ti.root.dense(ti.i, n).place(x)
-        ti.root.place(total)
-        ti.root.lazy_grad()
+    ti.root.dense(ti.i, n).place(x)
+    ti.root.place(total)
+    ti.root.lazy_grad()
 
     @ti.kernel
     def func(mul: ti.f32):

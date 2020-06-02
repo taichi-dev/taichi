@@ -9,10 +9,8 @@ def run_atomic_add_global_case(vartype, step, valproc=lambda x: x):
     y = ti.var(vartype)
     c = ti.var(vartype)
 
-    @ti.layout
-    def place():
-        ti.root.dense(ti.i, n).place(x, y)
-        ti.root.place(c)
+    ti.root.dense(ti.i, n).place(x, y)
+    ti.root.place(c)
 
     # Make Taichi correctly infer the type
     # TODO: Taichi seems to treat numpy.int32 as a float type, fix that.
@@ -53,9 +51,7 @@ def test_atomic_add_expr_evaled():
     c = ti.var(ti.i32)
     step = 42
 
-    @ti.layout
-    def place():
-        ti.root.place(c)
+    ti.root.place(c)
 
     @ti.kernel
     def func():
@@ -75,9 +71,7 @@ def test_atomic_add_demoted():
     y = ti.var(ti.i32)
     step = 42
 
-    @ti.layout
-    def place():
-        ti.root.dense(ti.i, n).place(x, y)
+    ti.root.dense(ti.i, n).place(x, y)
 
     @ti.kernel
     def func():
@@ -108,9 +102,7 @@ def test_atomic_add_with_local_store_simplify1():
     y = ti.var(ti.i32)
     step = 42
 
-    @ti.layout
-    def place():
-        ti.root.dense(ti.i, n).place(x, y)
+    ti.root.dense(ti.i, n).place(x, y)
 
     @ti.kernel
     def func():
@@ -141,9 +133,7 @@ def test_atomic_add_with_local_store_simplify2():
     x = ti.var(ti.i32)
     step = 42
 
-    @ti.layout
-    def place():
-        ti.root.dense(ti.i, n).place(x)
+    ti.root.dense(ti.i, n).place(x)
 
     @ti.kernel
     def func():
@@ -164,9 +154,7 @@ def test_atomic_add_with_if_simplify():
     x = ti.var(ti.i32)
     step = 42
 
-    @ti.layout
-    def place():
-        ti.root.dense(ti.i, n).place(x)
+    ti.root.dense(ti.i, n).place(x)
 
     boundary = n / 2
 
@@ -213,9 +201,7 @@ def test_atomic_sub_expr_evaled():
     c = ti.var(ti.i32)
     step = 42
 
-    @ti.layout
-    def place():
-        ti.root.place(c)
+    ti.root.place(c)
 
     @ti.kernel
     def func():
@@ -233,9 +219,7 @@ def test_atomic_max_expr_evaled():
     c = ti.var(ti.i32)
     step = 42
 
-    @ti.layout
-    def place():
-        ti.root.place(c)
+    ti.root.place(c)
 
     @ti.kernel
     def func():
@@ -253,9 +237,7 @@ def test_atomic_min_expr_evaled():
     c = ti.var(ti.i32)
     step = 42
 
-    @ti.layout
-    def place():
-        ti.root.place(c)
+    ti.root.place(c)
 
     @ti.kernel
     def func():
@@ -274,9 +256,7 @@ def test_atomic_and_expr_evaled():
     c = ti.var(ti.i32)
     step = 42
 
-    @ti.layout
-    def place():
-        ti.root.place(c)
+    ti.root.place(c)
 
     max_int = 2147483647
 
@@ -297,9 +277,7 @@ def test_atomic_or_expr_evaled():
     c = ti.var(ti.i32)
     step = 42
 
-    @ti.layout
-    def place():
-        ti.root.place(c)
+    ti.root.place(c)
 
     @ti.kernel
     def func():
@@ -318,9 +296,7 @@ def test_atomic_xor_expr_evaled():
     c = ti.var(ti.i32)
     step = 42
 
-    @ti.layout
-    def place():
-        ti.root.place(c)
+    ti.root.place(c)
 
     @ti.kernel
     def func():

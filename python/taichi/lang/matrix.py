@@ -566,24 +566,24 @@ class Matrix(TaichiOperations):
                           [ti.sin(alpha), ti.cos(alpha)]])
 
     @staticmethod
-    def var(alpha):
+    def var(n, m, dt, shape):
         import taichi as ti
-        return
-    
-    @staticmethod
-    def cols(alpha):
-        import taichi as ti
-        return
+        return ti.Matrix(n=n, m=m, dt=dt, shape=shape)
 
     @staticmethod
-    def rows(alpha):
+    def cols(columns):
         import taichi as ti
-        return
+        return ti.Matrix(cols=columns)
 
     @staticmethod
-    def empty(alpha):
+    def rows(rows):
         import taichi as ti
-        return
+        return ti.Matrix(rows=rows)
+
+    @staticmethod
+    def empty(n, m):
+        import taichi as ti
+        return ti.Matrix(n=n, m=m, empty=True)
 
     def __hash__(self):
         # TODO: refactor KernelTemplateMapper
@@ -622,14 +622,6 @@ class Matrix(TaichiOperations):
         return c
 
 
-def Vector(n=1, dt=None, shape=None, **kwargs):
-    return Matrix(n, 1, dt, shape, **kwargs)
-
-
-Vector.zero = Matrix.zero
-Vector.one = Matrix.one
-Vector.dot = Matrix.dot
-Vector.cross = Matrix.cross
-Vector.outer_product = Matrix.outer_product
-Vector.unit = Matrix.unit
-Vector.normalized = Matrix.normalized
+class Vector(Matrix):
+    def __init__(self, n, dt=None, shape=None, **kwargs):
+        super(Vector, self).__init__(n, m=1, dt=dt, shape=shape, **kwargs)

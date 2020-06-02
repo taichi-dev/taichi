@@ -9,7 +9,7 @@ Taichi can be easily installed via ``pip``:
 
 .. note::
 
-    Currently, Taichi only supports Python 3.6/3.7/3.8.
+    Currently, Taichi only supports Python 3.6/3.7/3.8 (64-bit).
 
 
 - On Ubuntu 19.04+, please execute ``sudo apt install libtinfo5``.
@@ -19,6 +19,30 @@ Taichi can be easily installed via ``pip``:
 
 Troubleshooting
 ---------------
+
+Python issues
+*************
+
+- If ``pip`` complains that it could not find a satisfying package, i.e.,
+
+  .. code-block:: none
+  
+    ERROR: Could not find a version that satisfies the requirement taichi (from versions: none)
+    ERROR: No matching distribution found for taichi
+
+  * Make sure you're using Python version 3.6/3.7/3.8:
+  
+    .. code-block:: bash
+  
+      python3 -c "print(__import__('sys').version[:3])"
+      # 3.6, 3.7 or 3.8
+
+  * Make sure your Python executable is 64-bit:
+  
+    .. code-block:: bash
+  
+      python3 -c "print(__import__('platform').architecture()[0])"
+      # 64bit
 
 CUDA issues
 ***********

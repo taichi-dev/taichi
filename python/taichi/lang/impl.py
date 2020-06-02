@@ -241,7 +241,8 @@ def var(dt, shape=None, offset=None, needs_grad=False):
             offset
         ), f'The dimensionality of shape and offset must be the same  (f{len(shape)} != f{len(offset)})'
 
-    assert (offset is not None and shape is None) == False, f'The shape cannot be None when offset is being set'
+    assert (offset is not None and shape is None
+            ) == False, f'The shape cannot be None when offset is being set'
 
     assert not get_runtime(
     ).materialized, 'No new variables can be declared after kernel invocations or Python-scope tensor accesses.'

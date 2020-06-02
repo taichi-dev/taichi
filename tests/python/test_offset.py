@@ -65,13 +65,12 @@ def test_offset_for_var():
     @ti.kernel
     def test():
         for i, j in e:
-            e[i, j] = i * j 
+            e[i, j] = i * j
 
     test()
     for i in range(4, 20):
         for j in range(-4, 12):
             assert e[i, j] == i * j
-
 
 
 @ti.all_archs
@@ -89,19 +88,20 @@ def test_offset_for_vector():
             c[i][0] = 2 * i
 
     test()
-    for i in range(offset, offset+shape, 1):
+    for i in range(offset, offset + shape, 1):
         assert c[i][0] == 2 * i
 
 
 @ti.all_archs
 def test_offset_for_matrix():
-    a = ti.Matrix(3, 3, shape = (16, 16), offset = (-16, 16), dt = ti.float32)
+    a = ti.Matrix(3, 3, shape=(16, 16), offset=(-16, 16), dt=ti.float32)
 
     @ti.kernel
     def test():
         for i, j in a:
             for m in range(3):
                 a[i, j][0, 0] = i + j
+
     test()
 
     for i in range(-16, 0):

@@ -565,6 +565,26 @@ class Matrix(TaichiOperations):
         return ti.Matrix([[ti.cos(alpha), -ti.sin(alpha)],
                           [ti.sin(alpha), ti.cos(alpha)]])
 
+    @staticmethod
+    def var(alpha):
+        import taichi as ti
+        return
+    
+    @staticmethod
+    def cols(alpha):
+        import taichi as ti
+        return
+
+    @staticmethod
+    def rows(alpha):
+        import taichi as ti
+        return
+
+    @staticmethod
+    def empty(alpha):
+        import taichi as ti
+        return
+
     def __hash__(self):
         # TODO: refactor KernelTemplateMapper
         # If not, we get `unhashable type: Matrix` when

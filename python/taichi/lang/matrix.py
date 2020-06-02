@@ -14,10 +14,11 @@ class Matrix(TaichiOperations):
     # TODO(archibate): move the last two line to **kwargs,
     # since they're not commonly used as positional args.
     def __init__(self,
-                 n=1,
-                 m=1,
+                 n,
+                 m,
                  dt=None,
                  shape=None,
+                 offset=None,
                  empty=False,
                  layout=None,
                  needs_grad=False,
@@ -101,6 +102,14 @@ class Matrix(TaichiOperations):
         if shape is not None:
             if isinstance(shape, numbers.Number):
                 shape = (shape, )
+            if isinstance(offset, numbers.Number):
+                offset = (offset, )
+
+            if offset is not None:
+                assert len(shape) == len(
+                    offset
+                ), f'The dimensionality of shape and offset must be the same  (f{len(shape)} != f{len(offset)})'
+
             import taichi as ti
             if layout is None:
                 layout = ti.AOS
@@ -108,9 +117,11 @@ class Matrix(TaichiOperations):
             dim = len(shape)
             if layout.soa:
                 for i, e in enumerate(self.entries):
-                    ti.root.dense(ti.index_nd(dim), shape).place(e)
+                    ti.root.dense(ti.index_nd(dim), shape).place(e,
+                                                                 offset=offset)
                     if needs_grad:
-                        ti.root.dense(ti.index_nd(dim), shape).place(e.grad)
+                        ti.root.dense(ti.index_nd(dim),
+                                      shape).place(e.grad, offset=offset)
             else:
                 var_list = []
                 for i, e in enumerate(self.entries):
@@ -118,7 +129,10 @@ class Matrix(TaichiOperations):
                 if needs_grad:
                     for i, e in enumerate(self.entries):
                         var_list.append(e.grad)
-                ti.root.dense(ti.index_nd(dim), shape).place(*tuple(var_list))
+                ti.root.dense(ti.index_nd(dim), shape).place(*tuple(var_list),
+                                                             offset=offset)
+        else:
+            assert offset is None, f"shape cannot be None when offset is being set"
 
     def is_global(self):
         results = [False for _ in self.entries]
@@ -613,8 +627,8 @@ class Matrix(TaichiOperations):
         return c
 
 
-def Vector(n=1, dt=None, shape=None, **kwargs):
-    return Matrix(n, 1, dt, shape, **kwargs)
+def Vector(n, dt=None, shape=None, offset=None, **kwargs):
+    return Matrix(n, 1, dt=dt, shape=shape, offset=offset, **kwargs)
 
 
 Vector.zero = Matrix.zero

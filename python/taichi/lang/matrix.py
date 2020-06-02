@@ -398,6 +398,17 @@ class Matrix(TaichiOperations):
     def loop_range(self):
         return self.entries[0]
 
+    def shape(self):
+        # Took `self.entries[0]` as a representation of this tensor-of-matrices.
+        # https://github.com/taichi-dev/taichi/issues/1069#issuecomment-635712140
+        return self.loop_range().shape()
+
+    def dim(self):
+        return self.loop_range().dim()
+
+    def data_type(self):
+        return self.loop_range().data_type()
+
     def make_grad(self):
         ret = self.empty_copy()
         for i in range(len(ret.entries)):

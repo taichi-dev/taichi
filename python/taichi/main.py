@@ -124,31 +124,38 @@ class TaichiMain:
         examples_dir = TaichiMain._get_examples_dir()
         all_examples = examples_dir.rglob('*.py')
         all_example_names = {
-            str(f.resolve()).split('/')[-1].split('.')[0]
+            Path(f).stem
             for f in all_examples
         }
         return all_example_names
 
+    @staticmethod
+    def _example_choices_type(choices):
+        def support_choice_with_dot_py(choice):
+            if choice.endswith('.py') and choice.split('.')[0] in choices:
+                # try to find and remove python file extension
+                return choice.split('.')[0]
+            else:
+                return choice
+        return support_choice_with_dot_py
+
     @register
     def example(self, arguments: list = sys.argv[2:]):
-        """Run an example by name"""
+        """Run an example by name (or name.py)"""
+        choices = TaichiMain._get_available_examples()
+
         parser = argparse.ArgumentParser(description=f"{self.example.__doc__}")
         parser.add_argument("name",
-                            help=f"Name of an example\n",
-                            choices=sorted(
-                                TaichiMain._get_available_examples()))
+                            help=f"Name of an example (supports .py extension too)\n",
+                            type=TaichiMain._example_choices_type(choices),
+                            choices=sorted(choices))
         args = parser.parse_args(arguments)
 
-        name = args.name
-        # try to find and remove python file extension once
-        if name.endswith('.py'):
-            name = name.split('.')[0]
-
         examples_dir = TaichiMain._get_examples_dir()
-        target = str((examples_dir / f"{name}.py").resolve())
+        target = str((examples_dir / f"{args.name}.py").resolve())
         # path for examples needs to be modified for implicit relative imports
         sys.path.append(str(examples_dir.resolve()))
-        print(f"Running example {name} ...")
+        print(f"Running example {args.name} ...")
 
         # Short circuit for testing
         if self.test_mode: return args

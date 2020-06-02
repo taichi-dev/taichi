@@ -28,9 +28,9 @@ constexpr char kKernelThreadIdName[] = "utid_";        // 'u' for unsigned
 constexpr char kKernelGridSizeName[] = "ugrid_size_";  // 'u' for unsigned
 constexpr char kRootBufferName[] = "root_addr";
 constexpr char kGlobalTmpsBufferName[] = "global_tmps_addr";
-constexpr char kArgsBufferName[] = "args_addr";
+constexpr char kContexBufferName[] = "ctx_addr";
+constexpr char kContextVarName[] = "kernel_ctx_";
 constexpr char kRuntimeBufferName[] = "runtime_addr";
-constexpr char kArgsContextName[] = "args_ctx_";
 constexpr char kRuntimeVarName[] = "runtime_";
 constexpr char kLinearLoopIndexName[] = "linear_loop_idx_";
 constexpr char kListgenElemVarName[] = "listgen_elem_";
@@ -43,8 +43,8 @@ std::string buffer_to_name(BuffersEnum b) {
       return kRootBufferName;
     case BuffersEnum::GlobalTmps:
       return kGlobalTmpsBufferName;
-    case BuffersEnum::Args:
-      return kArgsBufferName;
+    case BuffersEnum::Context:
+      return kContexBufferName;
     case BuffersEnum::Runtime:
       return kRuntimeBufferName;
     default:
@@ -273,17 +273,17 @@ class KernelCodegen : public IRVisitor {
   void visit(ArgLoadStmt *stmt) override {
     const auto dt = metal_data_type_name(stmt->element_type());
     if (stmt->is_ptr) {
-      emit("device {} *{} = {}.arg{}();", dt, stmt->raw_name(),
-           kArgsContextName, stmt->arg_id);
+      emit("device {} *{} = {}.arg{}();", dt, stmt->raw_name(), kContextVarName,
+           stmt->arg_id);
     } else {
-      emit("const {} {} = *{}.arg{}();", dt, stmt->raw_name(), kArgsContextName,
+      emit("const {} {} = *{}.arg{}();", dt, stmt->raw_name(), kContextVarName,
            stmt->arg_id);
     }
   }
 
   void visit(KernelReturnStmt *stmt) override {
     // TODO: use stmt->ret_id instead of 0 as index
-    emit("*{}.ret0() = {};", kArgsContextName, stmt->value->raw_name());
+    emit("*{}.ret0() = {};", kContextVarName, stmt->value->raw_name());
   }
 
   void visit(ExternalPtrStmt *stmt) override {
@@ -302,7 +302,7 @@ class KernelCodegen : public IRVisitor {
       std::vector<std::string> size_var_names;
       for (int i = 0; i < num_indices; i++) {
         std::string var_name = fmt::format("{}_size{}_", stmt->raw_name(), i);
-        emit("const int {} = {}.extra_arg({}, {});", var_name, kArgsContextName,
+        emit("const int {} = {}.extra_arg({}, {});", var_name, kContextVarName,
              arg_id, i);
         size_var_names.push_back(std::move(var_name));
       }
@@ -631,7 +631,7 @@ class KernelCodegen : public IRVisitor {
     }
     result.push_back(BuffersEnum::GlobalTmps);
     if (!ctx_attribs_.empty()) {
-      result.push_back(BuffersEnum::Args);
+      result.push_back(BuffersEnum::Context);
     }
     result.push_back(BuffersEnum::Runtime);
     return result;
@@ -824,14 +824,15 @@ class KernelCodegen : public IRVisitor {
     ka.task_type = stmt->task_type;
     if (type == Type::clear_list) {
       ka.num_threads = 1;
-      ka.buffers = {BuffersEnum::Runtime, BuffersEnum::Args};
+      ka.buffers = {BuffersEnum::Runtime, BuffersEnum::Context};
     } else if (type == Type::listgen) {
       // listgen kernels use grid-stride loops
       const auto &sn_descs = compiled_structs_->snode_descriptors;
       ka.num_threads = std::min(
           sn_descs.find(sn->id)->second.total_num_self_from_root(sn_descs),
           kMaxNumThreadsGridStrideLoop);
-      ka.buffers = {BuffersEnum::Runtime, BuffersEnum::Root, BuffersEnum::Args};
+      ka.buffers = {BuffersEnum::Runtime, BuffersEnum::Root,
+                    BuffersEnum::Context};
     } else {
       TI_ERROR("Unsupported offload task type {}", stmt->task_name());
     }
@@ -878,8 +879,8 @@ class KernelCodegen : public IRVisitor {
       emit("device Runtime *{} = reinterpret_cast<device Runtime *>({});",
            kRuntimeVarName, kRuntimeBufferName);
       if (!ctx_attribs_.empty()) {
-        emit("{} {}({});", kernel_args_classname(), kArgsContextName,
-             kArgsBufferName);
+        emit("{} {}({});", kernel_args_classname(), kContextVarName,
+             kContexBufferName);
       }
       // Init RandState
       emit(

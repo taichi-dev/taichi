@@ -65,7 +65,7 @@ class TaichiMain:
             os.environ['TI_DEBUG'] = '1'
 
         parser = argparse.ArgumentParser(description="Taichi CLI",
-                                            usage=self._usage())
+                                         usage=self._usage())
         parser.add_argument('command',
                             help="command from the above list to run")
 

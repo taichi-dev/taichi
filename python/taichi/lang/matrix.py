@@ -14,8 +14,8 @@ class Matrix(TaichiOperations):
     # TODO(archibate): move the last two line to **kwargs,
     # since they're not commonly used as positional args.
     def __init__(self,
-                 n=1,
-                 m=1,
+                 n,
+                 m,
                  dt=None,
                  shape=None,
                  offset=None,
@@ -132,9 +132,7 @@ class Matrix(TaichiOperations):
                 ti.root.dense(ti.index_nd(dim), shape).place(*tuple(var_list),
                                                              offset=offset)
         else:
-            if offset is not None:
-                raise ValueError(
-                    "shape cannot be None when offset is being set")
+            assert offset is None, f"shape cannot be None when offset is being set"
 
     def is_global(self):
         results = [False for _ in self.entries]
@@ -618,7 +616,7 @@ class Matrix(TaichiOperations):
         return c
 
 
-def Vector(n=1, dt=None, shape=None, offset=None, **kwargs):
+def Vector(n, dt=None, shape=None, offset=None, **kwargs):
     return Matrix(n, 1, dt=dt, shape=shape, offset=offset, **kwargs)
 
 

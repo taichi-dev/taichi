@@ -229,9 +229,20 @@ class Root:
 root = Root()
 
 
-def var(dt, shape=None, needs_grad=False):
+def var(dt, shape=None, offset=None, needs_grad=False):
     if isinstance(shape, numbers.Number):
         shape = (shape, )
+
+    if isinstance(offset, numbers.Number):
+        offset = (offset, )
+
+    if shape is not None and offset is not None:
+        assert len(shape) == len(
+            offset
+        ), f'The dimensionality of shape and offset must be the same  (f{len(shape)} != f{len(offset)})'
+
+    assert (offset is not None and shape is None
+            ) == False, f'The shape cannot be None when offset is being set'
 
     assert not get_runtime(
     ).materialized, 'No new variables can be declared after kernel invocations or Python-scope tensor accesses.'
@@ -251,10 +262,9 @@ def var(dt, shape=None, needs_grad=False):
 
     if shape is not None:
         dim = len(shape)
-        root.dense(index_nd(dim), shape).place(x)
+        root.dense(index_nd(dim), shape).place(x, offset=offset)
         if needs_grad:
             root.dense(index_nd(dim), shape).place(x.grad)
-
     return x
 
 

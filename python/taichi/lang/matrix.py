@@ -18,47 +18,20 @@ class Matrix(TaichiOperations):
                  m=1,
                  dt=None,
                  shape=None,
+                 offset=None,
                  empty=False,
                  layout=None,
                  needs_grad=False,
                  keep_raw=False,
                  rows=None,
                  cols=None):
-        # TODO: refactor: use multiple initializer like `ti.Matrix.cols([a, b, c])`
-        # and `ti.Matrix.empty(n, m)` instead of ad-hoc `ti.Matrix(cols=[a, b, c])`.
         self.grad = None
-        """
         if rows is not None or cols is not None:
-            if rows is not None and cols is not None:
-                raise Exception("cannot specify both rows and columns")
-            if cols is not None:
-                rows = cols
-            self.n = len(rows)
-            if isinstance(rows[0], Matrix):
-                for row in rows:
-                    assert row.m == 1, "inputs must be vectors, ie. size n by 1"
-                    assert row.n == rows[
-                        0].n, "input vectors must be the same shape"
-                self.m = rows[0].n
-                # l-value copy:
-                self.entries = [row(i) for row in rows for i in range(row.n)]
-            elif isinstance(rows[0], list):
-                for row in rows:
-                    assert len(row) == len(
-                        rows[0]), "input lists must be the same shape"
-                self.m = len(rows[0])
-                # l-value copy:
-                self.entries = [x for row in rows for x in row]
-            else:
-                raise Exception(
-                    "rows/cols must be list of lists or lists of vectors")
-            if cols is not None:
-                t = self.transpose()
-                self.n = t.n
-                self.m = t.m
-                self.entries = t.entries
-        """
-        if isinstance(n, (list, tuple, np.ndarray)):
+            raise Exception(
+                "ad-hoc usage of row- and column- vectors is deprecated." +
+                "This message will be removed in the next version.")
+
+        elif isinstance(n, (list, tuple, np.ndarray)):
             if len(n) == 0:
                 mat = []
             elif isinstance(n[0], Matrix):
@@ -103,6 +76,14 @@ class Matrix(TaichiOperations):
         if shape is not None:
             if isinstance(shape, numbers.Number):
                 shape = (shape, )
+            if isinstance(offset, numbers.Number):
+                offset = (offset, )
+
+            if offset is not None:
+                assert len(shape) == len(
+                    offset
+                ), f'The dimensionality of shape and offset must be the same  (f{len(shape)} != f{len(offset)})'
+
             import taichi as ti
             if layout is None:
                 layout = ti.AOS
@@ -110,9 +91,11 @@ class Matrix(TaichiOperations):
             dim = len(shape)
             if layout.soa:
                 for i, e in enumerate(self.entries):
-                    ti.root.dense(ti.index_nd(dim), shape).place(e)
+                    ti.root.dense(ti.index_nd(dim), shape).place(e,
+                                                                 offset=offset)
                     if needs_grad:
-                        ti.root.dense(ti.index_nd(dim), shape).place(e.grad)
+                        ti.root.dense(ti.index_nd(dim),
+                                      shape).place(e.grad, offset=offset)
             else:
                 var_list = []
                 for i, e in enumerate(self.entries):
@@ -120,7 +103,10 @@ class Matrix(TaichiOperations):
                 if needs_grad:
                     for i, e in enumerate(self.entries):
                         var_list.append(e.grad)
-                ti.root.dense(ti.index_nd(dim), shape).place(*tuple(var_list))
+                ti.root.dense(ti.index_nd(dim), shape).place(*tuple(var_list),
+                                                             offset=offset)
+        else:
+            assert offset is None, f"shape cannot be None when offset is being set"
 
     def is_global(self):
         results = [False for _ in self.entries]
@@ -400,6 +386,17 @@ class Matrix(TaichiOperations):
     def loop_range(self):
         return self.entries[0]
 
+    def shape(self):
+        # Took `self.entries[0]` as a representation of this tensor-of-matrices.
+        # https://github.com/taichi-dev/taichi/issues/1069#issuecomment-635712140
+        return self.loop_range().shape()
+
+    def dim(self):
+        return self.loop_range().dim()
+
+    def data_type(self):
+        return self.loop_range().data_type()
+
     def make_grad(self):
         ret = self.empty_copy()
         for i in range(len(ret.entries)):
@@ -573,39 +570,6 @@ class Matrix(TaichiOperations):
         return ti.Matrix(n=n, m=m, dt=dt, shape=shape)
 
     @staticmethod
-    def cols(cols):
-        import taichi as ti
-        mat = ti.Matrix()
-        if cols is not None:
-                rows = cols
-        mat.n = len(rows)
-        if isinstance(rows[0], Matrix):
-            for row in rows:
-                assert row.m == 1, "inputs must be vectors, ie. size n by 1"
-                assert row.n == rows[
-                    0].n, "input vectors must be the same shape"
-            mat.m = rows[0].n
-            # l-value copy:
-            mat.entries = [row(i) for row in rows for i in range(row.n)]
-        elif isinstance(rows[0], list):
-            for row in rows:
-                assert len(row) == len(
-                    rows[0]), "input lists must be the same shape"
-            mat.m = len(rows[0])
-            # l-value copy:
-            mat.entries = [x for row in rows for x in row]
-        else:
-            raise Exception(
-                "rows/cols must be list of lists or lists of vectors")
-        if cols is not None:
-            t = mat.transpose()
-            mat.n = t.n
-            mat.m = t.m
-            mat.entries = t.entries
-        
-        return mat
-
-    @staticmethod
     def rows(rows):
         import taichi as ti
         mat = ti.Matrix()
@@ -627,8 +591,14 @@ class Matrix(TaichiOperations):
             mat.entries = [x for row in rows for x in row]
         else:
             raise Exception(
-                "rows must be list of lists or lists of vectors")
+                "cols/rows must be list of lists or lists of vectors")
+        print(mat.entries, mat.n, mat.m)
         return mat
+
+    @staticmethod
+    def cols(cols):
+        import taichi as ti
+        return ti.Matrix.rows(cols).transpose()
 
     @staticmethod
     def empty(n, m):
@@ -671,6 +641,8 @@ class Matrix(TaichiOperations):
                 c(i, j).assign(self(i) * b(j))
         return c
 
+
+"""
 def Vector(n, dt=None, shape=None, offset=None, **kwargs):
     return Matrix(n, 1, dt=dt, shape=shape, offset=offset, **kwargs)
 
@@ -683,9 +655,16 @@ Vector.outer_product = Matrix.outer_product
 Vector.unit = Matrix.unit
 Vector.normalized = Matrix.normalized
 """
+
+
 class Vector(Matrix):
-    def __init__(self, n, dt=None, shape=None, **kwargs):
-        super(Vector, self).__init__(n, m=1, dt=dt, shape=shape, **kwargs)
+    def __init_(n, dt=None, shape=None, offset=None, **kwargs):
+        super(Vector, self).__init__(n,
+                                     1,
+                                     dt=dt,
+                                     shape=shape,
+                                     offset=offset,
+                                     **kwargs)
 
     def __ti_repr__(self):
         if self.m != 1:
@@ -703,4 +682,3 @@ class Vector(Matrix):
 
         if self.m != 1:
             yield ']'
-"""

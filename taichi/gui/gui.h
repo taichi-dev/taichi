@@ -407,7 +407,7 @@ class Canvas {
   }
 
   void clear(uint32 c) {
-    img.reset(color_from_hex(c));
+    clear(color_from_hex(c));
   }
 
   ~Canvas() {

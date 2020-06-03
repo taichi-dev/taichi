@@ -4,6 +4,26 @@ from taichi import approx
 
 
 @ti.all_archs
+def test_const_init():
+    a = ti.Matrix(2, 3, dt=ti.i32, shape=())
+    b = ti.Vector(3, dt=ti.i32, shape=())
+
+    @ti.kernel
+    def init():
+        a[None] = ti.Matrix([[0, 1, 2], [3, 4, 5]])
+        b[None] = ti.Vector([0, 1, 2])
+
+    init()
+
+    for i in range(2):
+        for j in range(3):
+            assert a[None][i, j] == i * 3 + j
+
+    for j in range(3):
+        assert b[None][j] == j
+
+
+@ti.all_archs
 def test_basic_utils():
     a = ti.Vector(3, dt=ti.f32)
     b = ti.Vector(3, dt=ti.f32)

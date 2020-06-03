@@ -786,10 +786,10 @@ class TaichiMain:
 
         if args.arch is not None:
             arch = args.arch
-        if args.exclusive:
-            arch = '^' + arch
-        print(f'Running on Arch={arch}')
-        os.environ['TI_WANTED_ARCHS'] = arch
+            if args.exclusive:
+                arch = '^' + arch
+            print(f'Running on Arch={arch}')
+            os.environ['TI_WANTED_ARCHS'] = arch
 
         # Short circuit for testing
         if self.test_mode: return args

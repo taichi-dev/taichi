@@ -331,6 +331,11 @@ def bit_and(a, b):
     return Expr(taichi_lang_core.expr_bit_and(a.ptr, b.ptr), tb=stack_info())
 
 
+@binary
+def bit_xor(a, b):
+    return Expr(taichi_lang_core.expr_bit_xor(a.ptr, b.ptr), tb=stack_info())
+
+
 # We don't have logic_and/or instructions yet:
 logical_or = bit_or
 logical_and = bit_and
@@ -397,10 +402,7 @@ def ti_max(*args):
                 args[1], numbers.Number):
             return max(args[0], args[1])
         else:
-            return Expr(
-                taichi_lang_core.expr_max(
-                    Expr(args[0]).ptr,
-                    Expr(args[1]).ptr))
+            return ti.max(args[0], args[1])
     else:
         return ti_max(args[0], ti_max(*args[1:]))
 
@@ -415,10 +417,7 @@ def ti_min(*args):
                 args[1], numbers.Number):
             return min(args[0], args[1])
         else:
-            return Expr(
-                taichi_lang_core.expr_min(
-                    Expr(args[0]).ptr,
-                    Expr(args[1]).ptr))
+            return ti.min(args[0], args[1])
     else:
         return ti_min(args[0], ti_min(*args[1:]))
 

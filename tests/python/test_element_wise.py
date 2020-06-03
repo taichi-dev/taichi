@@ -1,292 +1,293 @@
 # TODO: make test_element_wise slim (#1055)
 import taichi as ti
-from taichi import approx
-from random import random, randint, seed
-import operator as ops
-import math
+import numpy as np
+from taichi import allclose
+import pytest
 
 
 def _c_mod(a, b):
     return a - b * int(float(a) / b)
 
 
-def rand(dtype):
-    if ti.core.is_integral(dtype):
-        return randint(1, 5)
+@pytest.mark.parametrize('is_mat', [(True, True), (True, False), (False, True)])
+@ti.all_archs
+def test_binary_f(is_mat):
+    lhs_is_mat, rhs_is_mat = is_mat
+
+    x = ti.Matrix(3, 2, ti.f32, 16)
+    if lhs_is_mat:
+        y = ti.Matrix(3, 2, ti.f32, ())
     else:
-        # Prevent integer operands in pow and floordiv in GLSL
-        # Discussion: https://github.com/taichi-dev/taichi/pull/943#discussion_r423177941
-        return float(randint(1, 5)) / 5 - 0.01
+        y = ti.var(ti.f32, ())
+    if rhs_is_mat:
+        z = ti.Matrix(3, 2, ti.f32, ())
+    else:
+        z = ti.var(ti.f32, ())
 
-
-@ti.host_arch_only
-def _test_matrix_element_wise_unary(dtype, n, m, ti_func, math_func):
-    a = ti.Matrix(n, m, dt=dtype, shape=())
-    u = ti.Matrix(n, m, dt=dtype, shape=())
-
-    w = []
-    for i in range(n * m):
-        w.append(rand(dtype))
-
-    for i in range(n):
-        for j in range(m):
-            u[None][i, j] = w[i * m + j]
+    if lhs_is_mat:
+        y.from_numpy(np.array([[0, 2], [9, 3], [7, 4]], np.float32))
+    else:
+        y[None] = 6
+    if rhs_is_mat:
+        z.from_numpy(np.array([[4, 5], [6, 3], [9, 2]], np.float32))
+    else:
+        z[None] = 5
 
     @ti.kernel
     def func():
-        a[None] = ti_func(u[None])
+        x[0] = y[None] + z[None]
+        x[1] = y[None] - z[None]
+        x[2] = y[None] * z[None]
+        x[3] = y[None] / z[None]
+        x[4] = y[None] // z[None]
+        x[5] = y[None] % z[None]
+        x[6] = y[None] ** z[None]
+        x[7] = y[None] == z[None]
+        x[8] = y[None] != z[None]
+        x[9] = y[None] > z[None]
+        x[10] = y[None] >= z[None]
+        x[11] = y[None] < z[None]
+        x[12] = y[None] <= z[None]
+        x[13] = ti.atan2(y[None], z[None])
+        x[14] = ti.min(y[None], z[None])
+        x[15] = ti.max(y[None], z[None])
 
     func()
+    x = x.to_numpy()
+    y = y.to_numpy()
+    z = z.to_numpy()
+    assert allclose(x[0], y + z)
+    assert allclose(x[1], y - z)
+    assert allclose(x[2], y * z)
+    assert allclose(x[3], y / z)
+    assert allclose(x[4], y // z)
+    assert allclose(x[5], y % z)
+    assert allclose(x[6], y ** z)
+    assert allclose(x[7], y == z)
+    assert allclose(x[8], y != z)
+    assert allclose(x[9], y > z)
+    assert allclose(x[10], y >= z)
+    assert allclose(x[11], y < z)
+    assert allclose(x[12], y <= z)
+    assert allclose(x[13], np.arctan2(y, z))
+    assert allclose(x[14], np.minimum(y, z))
+    assert allclose(x[15], np.maximum(y, z))
 
-    for i in range(n):
-        for j in range(m):
-            expected = math_func(w[i * m + j])
-            assert a[None][i, j] == approx(expected)
 
+@pytest.mark.parametrize('is_mat', [(True, True), (True, False), (False, True)])
+@ti.all_archs
+def test_binary_i(is_mat):
+    lhs_is_mat, rhs_is_mat = is_mat
 
-@ti.host_arch_only
-def _test_matrix_element_wise_binary(dtype, n, m, ti_func, math_func):
-    a = ti.Matrix(n, m, dt=dtype, shape=())
-    b = ti.Matrix(n, m, dt=dtype, shape=())
-    c = ti.Matrix(n, m, dt=dtype, shape=())
-    u1 = ti.Matrix(n, m, dt=dtype, shape=())
-    u2 = ti.Matrix(n, m, dt=dtype, shape=())
-    u3 = ti.var(dt=dtype, shape=())
+    x = ti.Matrix(3, 2, ti.i32, 19)
+    if lhs_is_mat:
+        y = ti.Matrix(3, 2, ti.i32, ())
+    else:
+        y = ti.var(ti.i32, ())
+    if rhs_is_mat:
+        z = ti.Matrix(3, 2, ti.i32, ())
+    else:
+        z = ti.var(ti.i32, ())
 
-    w1 = []
-    w2 = []
-    for i in range(n * m):
-        w1.append(rand(dtype))
-        w2.append(rand(dtype))
-
-    w3 = rand(dtype)
-
-    for i in range(n):
-        for j in range(m):
-            u1[None][i, j] = w1[i * m + j]
-            u2[None][i, j] = w2[i * m + j]
-
-    u3[None] = w3
+    if lhs_is_mat:
+        y.from_numpy(np.array([[0, 2], [9, 3], [7, 4]], np.int32))
+    else:
+        y[None] = 6
+    if rhs_is_mat:
+        z.from_numpy(np.array([[4, 5], [6, 3], [9, 2]], np.int32))
+    else:
+        z[None] = 5
 
     @ti.kernel
     def func():
-        a[None] = ti_func(u1[None], u2[None])
-        b[None] = ti_func(u1[None], u3[None])
-        c[None] = ti_func(u3[None], u1[None])
+        x[0] = y[None] + z[None]
+        x[1] = y[None] - z[None]
+        x[2] = y[None] * z[None]
+        x[3] = y[None] // z[None]
+        x[4] = ti.raw_div(y[None], z[None])
+        x[5] = y[None] % z[None]
+        x[6] = ti.raw_mod(y[None], z[None])
+        x[7] = y[None] ** z[None]
+        x[8] = y[None] == z[None]
+        x[9] = y[None] != z[None]
+        x[10] = y[None] > z[None]
+        x[11] = y[None] >= z[None]
+        x[12] = y[None] < z[None]
+        x[13] = y[None] <= z[None]
+        x[14] = y[None] & z[None]
+        x[15] = y[None] ^ z[None]
+        x[16] = y[None] | z[None]
+        x[17] = ti.min(y[None], z[None])
+        x[18] = ti.max(y[None], z[None])
 
     func()
+    x = x.to_numpy()
+    y = y.to_numpy()
+    z = z.to_numpy()
+    assert allclose(x[0], y + z)
+    assert allclose(x[1], y - z)
+    assert allclose(x[2], y * z)
+    assert allclose(x[3], y // z)
+    assert allclose(x[4], y // z)
+    assert allclose(x[5], y % z)
+    assert allclose(x[6], y % z)
+    assert allclose(x[7], y ** z)
+    assert allclose(x[8], y == z)
+    assert allclose(x[9], y != z)
+    assert allclose(x[10], y > z)
+    assert allclose(x[11], y >= z)
+    assert allclose(x[12], y < z)
+    assert allclose(x[13], y <= z)
+    assert allclose(x[14], y & z)
+    assert allclose(x[15], y ^ z)
+    assert allclose(x[16], y | z)
+    assert allclose(x[17], np.minimum(y, z))
+    assert allclose(x[18], np.maximum(y, z))
 
-    for i in range(n):
-        for j in range(m):
-            expected = math_func(w1[i * m + j], w2[i * m + j])
-            assert a[None][i, j] == approx(expected)
-            expected = math_func(w1[i * m + j], w3)
-            assert b[None][i, j] == approx(expected)
-            expected = math_func(w3, w1[i * m + j])
-            assert c[None][i, j] == approx(expected)
 
+@pytest.mark.parametrize('rhs_is_mat', [True, False])
+@ti.all_archs
+def test_writeback_binary_f(rhs_is_mat):
+    x = ti.Matrix(3, 2, ti.f32, 9)
+    y = ti.Matrix(3, 2, ti.f32, ())
+    if rhs_is_mat:
+        z = ti.Matrix(3, 2, ti.f32, ())
+    else:
+        z = ti.var(ti.f32, ())
 
-@ti.host_arch_only
-def _test_matrix_element_wise_writeback_binary(dtype,
-                                               n,
-                                               m,
-                                               ti_func,
-                                               math_func,
-                                               is_atomic=True):
-    a = ti.Matrix(n, m, dt=dtype, shape=())
-    b = ti.Matrix(n, m, dt=dtype, shape=())
-    u1 = ti.Matrix(n, m, dt=dtype, shape=())
-    u2 = ti.Matrix(n, m, dt=dtype, shape=())
-    u3 = ti.var(dt=dtype, shape=())
-
-    w1 = []
-    w2 = []
-    for i in range(n * m):
-        w1.append(rand(dtype))
-        w2.append(rand(dtype))
-
-    w3 = rand(dtype)
-
-    for i in range(n):
-        for j in range(m):
-            u1[None][i, j] = w1[i * m + j]
-            u2[None][i, j] = w2[i * m + j]
-
-    u3[None] = w3
+    y.from_numpy(np.array([[0, 2], [9, 3], [7, 4]], np.float32))
+    if rhs_is_mat:
+        z.from_numpy(np.array([[4, 5], [6, 3], [9, 2]], np.float32))
+    else:
+        z[None] = 5
 
     @ti.kernel
     def func():
-        a[None] = ti_func(u1[None], u2[None])
-        # Suggested by @k-ye, we forbid `matrix = scalar`, and use `matrix.fill(scalar)` instead for filling a matrix with a same scalar in Taichi-scope.
-        # Discussion: https://github.com/taichi-dev/taichi/pull/1062#pullrequestreview-421364614
-        if ti.static(is_atomic):
-            b[None] = ti_func(u2[None], u3[None])
+        for i in x:
+            x[i] = y[None]
+        if ti.static(rhs_is_mat):
+            x[0] = z[None]
         else:
-            b[None] = u2[None].fill(u3[None])
+            x[0].fill(z[None])
+        x[1] += z[None]
+        x[2] -= z[None]
+        x[3] *= z[None]
+        x[4] /= z[None]
+        x[5] //= z[None]
+        x[6] %= z[None]
+        ti.atomic_min(x[7], z[None])
+        ti.atomic_max(x[8], z[None])
 
     func()
-
-    for i in range(n):
-        for j in range(m):
-            expected = math_func(w1[i * m + j], w2[i * m + j])
-            assert u1[None][i, j] == approx(expected)
-
-            # ti.atomic_* returns the orignal value of lhs,
-            # while ti.assign returns the value-after-assign of lhs.
-            # Discussion: https://github.com/taichi-dev/taichi/pull/1062#issuecomment-635090596
-            if is_atomic:
-                expected = w1[i * m + j]
-            assert a[None][i, j] == approx(expected)
-
-            expected = math_func(w2[i * m + j], w3)
-            assert u2[None][i, j] == approx(expected)
-
-            if is_atomic:
-                expected = w2[i * m + j]
-            assert b[None][i, j] == approx(expected)
+    x = x.to_numpy()
+    y = y.to_numpy()
+    z = z.to_numpy()
+    assert allclose(x[1], y + z)
+    assert allclose(x[2], y - z)
+    assert allclose(x[3], y * z)
+    assert allclose(x[4], y / z)
+    assert allclose(x[5], y // z)
+    assert allclose(x[6], y % z)
+    assert allclose(x[7], np.minimum(y, z))
+    assert allclose(x[8], np.maximum(y, z))
 
 
-def test_matrix_element_wise_unary_infix():
-    seed(5156)
-    for n, m in [(5, 4), (3, 1)]:
-        _test_matrix_element_wise_unary(ti.i32, n, m, ti.logical_not, ops.not_)
-        _test_matrix_element_wise_unary(ti.i32, n, m, ops.invert, ops.invert)
-        _test_matrix_element_wise_unary(ti.i32, n, m, ops.neg, ops.neg)
-        _test_matrix_element_wise_unary(ti.f32, n, m, ops.neg, ops.neg)
+@pytest.mark.parametrize('rhs_is_mat', [(True, True), (True, False)])
+@ti.all_archs
+def test_writeback_binary_i(rhs_is_mat):
+    x = ti.Matrix(3, 2, ti.i32, 12)
+    y = ti.Matrix(3, 2, ti.i32, ())
+    if rhs_is_mat:
+        z = ti.Matrix(3, 2, ti.i32, ())
+    else:
+        z = ti.var(ti.i32, ())
+
+    y.from_numpy(np.array([[0, 2], [9, 3], [7, 4]], np.int32))
+    if rhs_is_mat:
+        z.from_numpy(np.array([[4, 5], [6, 3], [9, 2]], np.int32))
+    else:
+        z[None] = 5
+
+    @ti.kernel
+    def func():
+        for i in x:
+            x[i] = y[None]
+        x[0] = z[None]
+        x[1] += z[None]
+        x[2] -= z[None]
+        x[3] *= z[None]
+        x[4] //= z[None]
+        x[5] %= z[None]
+        x[6] &= z[None]
+        x[7] |= z[None]
+        x[8] ^= z[None]
+        ti.atomic_min(x[10], z[None])
+        ti.atomic_max(x[11], z[None])
+
+    func()
+    x = x.to_numpy()
+    y = y.to_numpy()
+    z = z.to_numpy()
+    assert allclose(x[1], y + z)
+    assert allclose(x[2], y - z)
+    assert allclose(x[3], y * z)
+    assert allclose(x[4], y // z)
+    assert allclose(x[5], y % z)
+    assert allclose(x[6], y & z)
+    assert allclose(x[7], y | z)
+    assert allclose(x[8], y ^ z)
+    assert allclose(x[10], np.minimum(y, z))
+    assert allclose(x[11], np.maximum(y, z))
 
 
-def test_matrix_element_wise_binary_infix_f32_1():
-    seed(4399)
-    for n, m in [(5, 4), (3, 1)]:
-        _test_matrix_element_wise_binary(ti.f32, n, m, ops.add, ops.add)
-        _test_matrix_element_wise_binary(ti.f32, n, m, ops.sub, ops.sub)
-        _test_matrix_element_wise_binary(ti.f32, n, m, ops.mul, ops.mul)
-        _test_matrix_element_wise_binary(ti.f32, n, m, ops.mod, ops.mod)
+@ti.all_archs
+def test_unary():
+    xi = ti.Matrix(3, 2, ti.i32, 4)
+    yi = ti.Matrix(3, 2, ti.i32, ())
+    xf = ti.Matrix(3, 2, ti.f32, 13)
+    yf = ti.Matrix(3, 2, ti.f32, ())
 
+    yi.from_numpy(np.array([[3, 2], [9, 0], [7, 4]], np.int32))
+    yf.from_numpy(np.array([[0.3, 0.2], [0.9, 0.1], [0.7, 0.4]], np.float32))
 
-def test_matrix_element_wise_binary_infix_f32_2():
-    seed(4401)
-    for n, m in [(5, 4), (3, 1)]:
-        _test_matrix_element_wise_binary(ti.f32, n, m, ops.truediv,
-                                         ops.truediv)
-        _test_matrix_element_wise_binary(ti.f32, n, m, ops.floordiv,
-                                         ops.floordiv)
-        _test_matrix_element_wise_binary(ti.f32, n, m, ops.pow, ops.pow)
+    @ti.kernel
+    def func():
+        xi[0] = -yi[None]
+        xi[1] = ~yi[None]
+        xi[2] = ti.logical_not(yi[None])
+        xi[3] = ti.abs(yi[None])
+        xf[0] = -yf[None]
+        xf[1] = ti.abs(yf[None])
+        xf[2] = ti.sqrt(yf[None])
+        xf[3] = ti.sin(yf[None])
+        xf[4] = ti.cos(yf[None])
+        xf[5] = ti.tan(yf[None])
+        xf[6] = ti.asin(yf[None])
+        xf[7] = ti.acos(yf[None])
+        xf[8] = ti.tanh(yf[None])
+        xf[9] = ti.floor(yf[None])
+        xf[10] = ti.ceil(yf[None])
+        xf[11] = ti.exp(yf[None])
+        xf[12] = ti.log(yf[None])
 
-
-def test_matrix_element_wise_binary_infix_f32_cmp():
-    seed(4400)
-    for n, m in [(5, 4), (3, 1)]:
-        _test_matrix_element_wise_binary(ti.f32, n, m, ops.lt, ops.lt)
-        _test_matrix_element_wise_binary(ti.f32, n, m, ops.le, ops.le)
-        _test_matrix_element_wise_binary(ti.f32, n, m, ops.gt, ops.gt)
-        _test_matrix_element_wise_binary(ti.f32, n, m, ops.ge, ops.ge)
-        _test_matrix_element_wise_binary(ti.f32, n, m, ops.eq, ops.eq)
-        _test_matrix_element_wise_binary(ti.f32, n, m, ops.ne, ops.ne)
-
-
-def test_matrix_element_wise_binary_infix_i32():
-    seed(6174)
-    for n, m in [(5, 4), (3, 1)]:
-        _test_matrix_element_wise_binary(ti.i32, n, m, ops.add, ops.add)
-        _test_matrix_element_wise_binary(ti.i32, n, m, ops.sub, ops.sub)
-        _test_matrix_element_wise_binary(ti.i32, n, m, ops.mul, ops.mul)
-        _test_matrix_element_wise_binary(ti.i32, n, m, ops.mod, ops.mod)
-        _test_matrix_element_wise_binary(ti.i32, n, m, ops.pow, ops.pow)
-        # TODO: add pow(f32, i32) test
-
-
-def test_matrix_element_wise_binary_infix_i32_cmp():
-    seed(6175)
-    for n, m in [(5, 4), (3, 1)]:
-        _test_matrix_element_wise_binary(ti.i32, n, m, ops.lt, ops.lt)
-        _test_matrix_element_wise_binary(ti.i32, n, m, ops.le, ops.le)
-        _test_matrix_element_wise_binary(ti.i32, n, m, ops.gt, ops.gt)
-        _test_matrix_element_wise_binary(ti.i32, n, m, ops.ge, ops.ge)
-        _test_matrix_element_wise_binary(ti.i32, n, m, ops.eq, ops.eq)
-        _test_matrix_element_wise_binary(ti.i32, n, m, ops.ne, ops.ne)
-
-
-def test_matrix_element_wise_binary_f32():
-    seed(666)
-    for n, m in [(5, 4), (3, 1)]:
-        _test_matrix_element_wise_binary(ti.f32, n, m, ti.atan2, math.atan2)
-        _test_matrix_element_wise_binary(ti.f32, n, m, ti.min, min)
-        _test_matrix_element_wise_binary(ti.f32, n, m, ti.max, max)
-        _test_matrix_element_wise_binary(ti.f32, n, m, ti.pow, pow)
-
-
-def test_matrix_element_wise_binary_i32():
-    seed(985)
-    for n, m in [(5, 4), (3, 1)]:
-        _test_matrix_element_wise_binary(ti.i32, n, m, ti.min, min)
-        _test_matrix_element_wise_binary(ti.i32, n, m, ti.max, max)
-        _test_matrix_element_wise_binary(ti.i32, n, m, ti.pow, pow)
-        _test_matrix_element_wise_binary(ti.i32, n, m, ti.raw_mod, _c_mod)
-        _test_matrix_element_wise_binary(ti.i32, n, m, ops.or_, ops.or_)
-        _test_matrix_element_wise_binary(ti.i32, n, m, ops.and_, ops.and_)
-        # TODO: add ti.raw_div
-
-
-def test_matrix_element_wise_unary_1():
-    seed(233)
-    for n, m in [(5, 4), (3, 1)]:
-        _test_matrix_element_wise_unary(ti.f32, n, m, ti.sin, math.sin)
-        _test_matrix_element_wise_unary(ti.f32, n, m, ti.cos, math.cos)
-        _test_matrix_element_wise_unary(ti.f32, n, m, ti.tan, math.tan)
-        _test_matrix_element_wise_unary(ti.f32, n, m, ti.asin, math.asin)
-        _test_matrix_element_wise_unary(ti.f32, n, m, ti.acos, math.acos)
-        _test_matrix_element_wise_unary(ti.f32, n, m, ti.tanh, math.tanh)
-        _test_matrix_element_wise_unary(ti.f32, n, m, ti.sqrt, math.sqrt)
-        _test_matrix_element_wise_unary(ti.f32, n, m, ti.exp, math.exp)
-        _test_matrix_element_wise_unary(ti.f32, n, m, ti.log, math.log)
-
-
-def test_matrix_element_wise_unary_2():
-    seed(211)
-    for n, m in [(5, 4), (3, 1)]:
-        _test_matrix_element_wise_unary(ti.f32, n, m, ti.ceil, math.ceil)
-        _test_matrix_element_wise_unary(ti.f32, n, m, ti.floor, math.floor)
-        _test_matrix_element_wise_unary(ti.f32, n, m, ti.abs, abs)
-        _test_matrix_element_wise_unary(ti.i32, n, m, ti.abs, abs)
-        # TODO(archibate): why ti.inv, ti.sqr doesn't work?
-
-
-def test_matrix_element_wise_writeback_binary_i32():
-    seed(986)
-    for n, m in [(5, 4), (3, 1)]:
-        # We support `matrix += scalar` syntax in Taichi-scope.
-        # Discussion: https://github.com/taichi-dev/taichi/pull/1062#pullrequestreview-419402587
-        _test_matrix_element_wise_writeback_binary(ti.i32, n, m, ti.atomic_add,
-                                                   ops.add)
-        _test_matrix_element_wise_writeback_binary(ti.i32, n, m, ti.atomic_sub,
-                                                   ops.sub)
-        _test_matrix_element_wise_writeback_binary(ti.i32, n, m, ti.atomic_and,
-                                                   ops.and_)
-        _test_matrix_element_wise_writeback_binary(ti.i32, n, m, ti.atomic_xor,
-                                                   ops.xor)
-        _test_matrix_element_wise_writeback_binary(ti.i32, n, m, ti.atomic_or,
-                                                   ops.or_)
-        _test_matrix_element_wise_writeback_binary(ti.i32, n, m, ti.atomic_max,
-                                                   max)
-        _test_matrix_element_wise_writeback_binary(ti.i32, n, m, ti.atomic_min,
-                                                   min)
-        # We also support `matrix = scalar` syntax in Taichi-scope.
-        # Discussion: https://github.com/taichi-dev/taichi/pull/1062#issuecomment-635089253
-        _test_matrix_element_wise_writeback_binary(ti.i32, n, m, ti.assign,
-                                                   lambda x, y: y, False)
-
-
-def test_matrix_element_wise_writeback_binary_f32():
-    seed(987)
-    for n, m in [(5, 4), (3, 1)]:
-        _test_matrix_element_wise_writeback_binary(ti.f32, n, m, ti.atomic_add,
-                                                   ops.add)
-        _test_matrix_element_wise_writeback_binary(ti.f32, n, m, ti.atomic_sub,
-                                                   ops.sub)
-        _test_matrix_element_wise_writeback_binary(ti.f32, n, m, ti.atomic_max,
-                                                   max)
-        _test_matrix_element_wise_writeback_binary(ti.f32, n, m, ti.atomic_min,
-                                                   min)
-        _test_matrix_element_wise_writeback_binary(ti.f32, n, m, ti.assign,
-                                                   lambda x, y: y, False)
+    func()
+    xi = xi.to_numpy()
+    yi = yi.to_numpy()
+    xf = xf.to_numpy()
+    yf = yf.to_numpy()
+    assert allclose(xi[0], -yi)
+    assert allclose(xi[1], ~yi)
+    assert allclose(xi[3], np.abs(yi))
+    assert allclose(xf[0], -yf)
+    assert allclose(xf[1], np.abs(yf))
+    assert allclose(xf[2], np.sqrt(yf))
+    assert allclose(xf[3], np.sin(yf))
+    assert allclose(xf[4], np.cos(yf))
+    assert allclose(xf[5], np.tan(yf))
+    assert allclose(xf[6], np.arcsin(yf))
+    assert allclose(xf[7], np.arccos(yf))
+    assert allclose(xf[8], np.tanh(yf))
+    assert allclose(xf[9], np.floor(yf))
+    assert allclose(xf[10], np.ceil(yf))
+    assert allclose(xf[11], np.exp(yf))
+    assert allclose(xf[12], np.log(yf))

@@ -170,8 +170,7 @@ def deprecated(old, new):
         def wrapped(*args, **kwargs):
             import warnings
             msg = f'{old} is deprecated, please use {new} instead'
-            #warnings.warn(msg, DeprecationWarning)
-            raise DeprecationWarning(msg)
+            warnings.warn(msg, DeprecationWarning)
             return foo(*args, **kwargs)
 
         return wrapped

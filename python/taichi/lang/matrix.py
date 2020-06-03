@@ -26,10 +26,14 @@ class Matrix(TaichiOperations):
                  rows=None,
                  cols=None):
         self.grad = None
+
         if rows is not None or cols is not None:
             raise Exception(
                 "ad-hoc usage of row- and column- vectors is deprecated." +
                 "This message will be removed in the next version.")
+        if empty == True:
+            raise Exception(
+                "instantiation of empty matrix via ti.Matrix is deprecated.")
 
         elif isinstance(n, (list, tuple, np.ndarray)):
             if len(n) == 0:
@@ -59,17 +63,14 @@ class Matrix(TaichiOperations):
             self.n = n
             self.m = m
             self.dt = dt
-            if empty:
-                self.entries = [None] * n * m
+            if dt is None:
+                for i in range(n * m):
+                    self.entries.append(impl.expr_init(None))
             else:
-                if dt is None:
-                    for i in range(n * m):
-                        self.entries.append(impl.expr_init(None))
-                else:
-                    assert not impl.inside_kernel()
-                    for i in range(n * m):
-                        self.entries.append(impl.var(dt))
-                    self.grad = self.make_grad()
+                assert not impl.inside_kernel()
+                for i in range(n * m):
+                    self.entries.append(impl.var(dt))
+                self.grad = self.make_grad()
 
         if layout is not None:
             assert shape is not None, 'layout is useless without shape'
@@ -234,7 +235,8 @@ class Matrix(TaichiOperations):
                 self(i, j)[index] = item[i][j]
 
     def empty_copy(self):
-        return Matrix(self.n, self.m, empty=True)
+        import taichi as ti
+        return ti.Matrix.empty(self.n, self.m)
 
     def zeros_copy(self):
         return Matrix(self.n, self.m)
@@ -338,7 +340,7 @@ class Matrix(TaichiOperations):
         return self.transpose()
 
     def transpose(a):
-        ret = Matrix(a.m, a.n, empty=True)
+        ret = Matrix.empty(a.m, a.n)
         for i in range(a.n):
             for j in range(a.m):
                 ret.set_entry(j, i, a(i, j))
@@ -601,9 +603,10 @@ class Matrix(TaichiOperations):
         return ti.Matrix.rows(cols).transpose()
 
     @staticmethod
-    def empty(n, m):
+    def empty(n, m, dt=None):
         import taichi as ti
-        return ti.Matrix(n=n, m=m, empty=True)
+        mat = ti.Matrix([[None] * m for _ in range(n)], dt=dt)
+        return mat
 
     def __hash__(self):
         # TODO: refactor KernelTemplateMapper
@@ -640,21 +643,6 @@ class Matrix(TaichiOperations):
             for j in range(b.n):
                 c(i, j).assign(self(i) * b(j))
         return c
-
-
-"""
-def Vector(n, dt=None, shape=None, offset=None, **kwargs):
-    return Matrix(n, 1, dt=dt, shape=shape, offset=offset, **kwargs)
-
-
-Vector.zero = Matrix.zero
-Vector.one = Matrix.one
-Vector.dot = Matrix.dot
-Vector.cross = Matrix.cross
-Vector.outer_product = Matrix.outer_product
-Vector.unit = Matrix.unit
-Vector.normalized = Matrix.normalized
-"""
 
 
 class Vector(Matrix):

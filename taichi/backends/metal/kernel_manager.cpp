@@ -174,7 +174,7 @@ class RuntimeListOpsMtlKernel : public CompiledMtlKernelBase {
               MTLCommandBuffer *command_buffer) override {
     BindBuffers buffers;
     for (const auto b : kernel_attribs_.buffers) {
-      if (b == BufferEnum::Args) {
+      if (b == BufferEnum::Context) {
         buffers.push_back({args_buffer_.get(), b});
       } else {
         buffers.push_back({input_buffers.find(b)->second, b});
@@ -204,13 +204,13 @@ class CompiledTaichiKernel {
     std::string_view taichi_kernel_name;
     std::string mtl_source_code;
     const std::vector<KernelAttributes> *mtl_kernels_attribs;
-    const KernelContextAttributes *args_attribs;
+    const KernelContextAttributes *ctx_attribs;
     MTLDevice *device;
     MemoryPool *mem_pool;
     ProfilerBase *profiler;
   };
 
-  CompiledTaichiKernel(Params params) : args_attribs(*params.args_attribs) {
+  CompiledTaichiKernel(Params params) : ctx_attribs(*params.ctx_attribs) {
     auto *const device = params.device;
     auto kernel_lib = new_library_with_source(device, params.mtl_source_code);
     if (kernel_lib == nullptr) {
@@ -244,47 +244,49 @@ class CompiledTaichiKernel {
       TI_DEBUG("Added {} for Taichi kernel {}", ka.debug_string(),
                params.taichi_kernel_name);
     }
-    if (!args_attribs.empty()) {
-      args_mem = std::make_unique<BufferMemoryView>(args_attribs.total_bytes(),
-                                                    params.mem_pool);
-      args_buffer =
-          new_mtl_buffer_no_copy(device, args_mem->ptr(), args_mem->size());
+    if (!ctx_attribs.empty()) {
+      ctx_mem = std::make_unique<BufferMemoryView>(ctx_attribs.total_bytes(),
+                                                   params.mem_pool);
+      ctx_buffer =
+          new_mtl_buffer_no_copy(device, ctx_mem->ptr(), ctx_mem->size());
     }
   }
 
   // Have to be exposed as public for Impl to use. We cannot friend the Impl
   // class because it is private.
   std::vector<std::unique_ptr<CompiledMtlKernelBase>> compiled_mtl_kernels;
-  KernelContextAttributes args_attribs;
-  std::unique_ptr<BufferMemoryView> args_mem;
-  nsobj_unique_ptr<MTLBuffer> args_buffer;
+  KernelContextAttributes ctx_attribs;
+  std::unique_ptr<BufferMemoryView> ctx_mem;
+  nsobj_unique_ptr<MTLBuffer> ctx_buffer;
 
  private:
 };
 
 class HostMetalCtxBlitter {
  public:
-  HostMetalCtxBlitter(const KernelContextAttributes *args_attribs,
-                      Context *ctx,
-                      BufferMemoryView *args_mem)
-      : ctx_attribs_(args_attribs), ctx_(ctx), args_mem_(args_mem) {
+  HostMetalCtxBlitter(const KernelContextAttributes *ctx_attribs,
+                      Context *host_ctx,
+                      BufferMemoryView *ctx_buffer_mem)
+      : ctx_attribs_(ctx_attribs),
+        host_ctx_(host_ctx),
+        kernel_ctx_mem_(ctx_buffer_mem) {
   }
 
   void host_to_metal() {
-#define TO_METAL(type)             \
-  auto d = ctx_->get_arg<type>(i); \
+#define TO_METAL(type)                  \
+  auto d = host_ctx_->get_arg<type>(i); \
   std::memcpy(device_ptr, &d, sizeof(d))
 
     if (ctx_attribs_->empty()) {
       return;
     }
-    char *const base = (char *)args_mem_->ptr();
+    char *const base = (char *)kernel_ctx_mem_->ptr();
     for (int i = 0; i < ctx_attribs_->args().size(); ++i) {
       const auto &arg = ctx_attribs_->args()[i];
       const auto dt = arg.dt;
       char *device_ptr = base + arg.offset_in_mem;
       if (arg.is_array) {
-        const void *host_ptr = ctx_->get_arg<void *>(i);
+        const void *host_ptr = host_ctx_->get_arg<void *>(i);
         std::memcpy(device_ptr, host_ptr, arg.stride);
       } else if (dt == MetalDataType::i32) {
         TO_METAL(int32);
@@ -306,24 +308,25 @@ class HostMetalCtxBlitter {
       }
     }
     char *device_ptr = base + ctx_attribs_->ctx_bytes();
-    std::memcpy(device_ptr, ctx_->extra_args, ctx_attribs_->extra_args_bytes());
+    std::memcpy(device_ptr, host_ctx_->extra_args,
+                ctx_attribs_->extra_args_bytes());
 #undef TO_METAL
   }
 
   void metal_to_host() {
 #define TO_HOST(type)                                   \
   const type d = *reinterpret_cast<type *>(device_ptr); \
-  ctx_->set_arg<type>(i, d)
+  host_ctx_->set_arg<type>(i, d)
 
     if (ctx_attribs_->empty()) {
       return;
     }
-    char *const base = (char *)args_mem_->ptr();
+    char *const base = (char *)kernel_ctx_mem_->ptr();
     for (int i = 0; i < ctx_attribs_->args().size(); ++i) {
       const auto &arg = ctx_attribs_->args()[i];
       char *device_ptr = base + arg.offset_in_mem;
       if (arg.is_array) {
-        void *host_ptr = ctx_->get_arg<void *>(i);
+        void *host_ptr = host_ctx_->get_arg<void *>(i);
         std::memcpy(host_ptr, device_ptr, arg.stride);
       }
     }
@@ -333,7 +336,7 @@ class HostMetalCtxBlitter {
       const auto &ret = ctx_attribs_->rets()[i];
       char *device_ptr = base + ret.offset_in_mem;
       if (ret.is_array) {
-        void *host_ptr = ctx_->get_arg<void *>(i);
+        void *host_ptr = host_ctx_->get_arg<void *>(i);
         std::memcpy(host_ptr, device_ptr, ret.stride);
       } else {
         const auto dt = ret.dt;
@@ -363,17 +366,17 @@ class HostMetalCtxBlitter {
   static std::unique_ptr<HostMetalCtxBlitter> maybe_make(
       const CompiledTaichiKernel &kernel,
       Context *ctx) {
-    if (kernel.args_attribs.empty()) {
+    if (kernel.ctx_attribs.empty()) {
       return nullptr;
     }
-    return std::make_unique<HostMetalCtxBlitter>(&kernel.args_attribs, ctx,
-                                                 kernel.args_mem.get());
+    return std::make_unique<HostMetalCtxBlitter>(&kernel.ctx_attribs, ctx,
+                                                 kernel.ctx_mem.get());
   }
 
  private:
   const KernelContextAttributes *const ctx_attribs_;
-  Context *const ctx_;
-  BufferMemoryView *const args_mem_;
+  Context *const host_ctx_;
+  BufferMemoryView *const kernel_ctx_mem_;
 };
 
 }  // namespace
@@ -443,7 +446,7 @@ class KernelManager::Impl {
     params.taichi_kernel_name = taichi_kernel_name;
     params.mtl_source_code = mtl_kernel_source_code;
     params.mtl_kernels_attribs = &kernels_attribs;
-    params.args_attribs = &ctx_attribs;
+    params.ctx_attribs = &ctx_attribs;
     params.device = device_.get();
     params.mem_pool = mem_pool_;
     params.profiler = profiler_;
@@ -467,7 +470,7 @@ class KernelManager::Impl {
     };
     if (ctx_blitter) {
       ctx_blitter->host_to_metal();
-      input_buffers[BufferEnum::Args] = ctk.args_buffer.get();
+      input_buffers[BufferEnum::Context] = ctk.ctx_buffer.get();
     }
     for (const auto &mk : ctk.compiled_mtl_kernels) {
       mk->launch(input_buffers, cur_command_buffer_.get());

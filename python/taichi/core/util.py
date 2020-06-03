@@ -35,8 +35,8 @@ def import_ti_core(tmp_dir=None):
         import taichi_core as core
     except Exception as e:
         if isinstance(e, ImportError):
-            print(Fore.YELLOW +
-                "Share object taichi_core import failed, "
+            print(
+                Fore.YELLOW + "Share object taichi_core import failed, "
                 "check this page for possible solutions:\n"
                 "https://taichi.readthedocs.io/en/stable/install.html#troubleshooting"
                 + Fore.RESET)

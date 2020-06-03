@@ -746,6 +746,20 @@ void Block::insert_before(Stmt *old_statement, VecStatement &&new_statements) {
   }
 }
 
+void Block::insert_after(Stmt *old_statement, VecStatement &&new_statements) {
+  int location = -1;
+  for (int i = 0; i < (int)statements.size(); i++) {
+    if (old_statement == statements[i].get()) {
+      location = i + 1;
+      break;
+    }
+  }
+  TI_ASSERT(location != -1);
+  for (int i = (int)new_statements.size() - 1; i >= 0; i--) {
+    insert(std::move(new_statements[i]), location);
+  }
+}
+
 void Block::replace_with(Stmt *old_statement,
                          VecStatement &&new_statements,
                          bool replace_usages) {
@@ -820,13 +834,28 @@ void DelayedIRModifier::insert_before(Stmt *old_statement,
   to_insert_before.emplace_back(old_statement, std::move(new_statements));
 }
 
+void DelayedIRModifier::insert_after(Stmt *old_statement,
+                                     std::unique_ptr<Stmt> new_statements) {
+  to_insert_after.emplace_back(old_statement,
+                               VecStatement(std::move(new_statements)));
+}
+
+void DelayedIRModifier::insert_after(Stmt *old_statement,
+                                     VecStatement &&new_statements) {
+  to_insert_after.emplace_back(old_statement, std::move(new_statements));
+}
+
 bool DelayedIRModifier::modify_ir() {
-  if (to_insert_before.empty() && to_erase.empty())
+  if (to_insert_before.empty() && to_insert_after.empty() && to_erase.empty())
     return false;
   for (auto &i : to_insert_before) {
     i.first->parent->insert_before(i.first, std::move(i.second));
   }
   to_insert_before.clear();
+  for (auto &i : to_insert_after) {
+    i.first->parent->insert_after(i.first, std::move(i.second));
+  }
+  to_insert_after.clear();
   for (auto &stmt : to_erase) {
     stmt->parent->erase(stmt);
   }

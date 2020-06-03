@@ -3,7 +3,7 @@ from . import impl
 import copy
 import numbers
 import numpy as np
-from .util import to_numpy_type, to_pytorch_type, deprecated
+from .util import *
 from .common_ops import TaichiOperations
 from collections.abc import Iterable
 
@@ -144,6 +144,7 @@ class Matrix(TaichiOperations):
                 0], "Matrices with mixed global/local entries are not allowed"
         return results[0]
 
+    @taichi_scope
     def element_wise_binary(self, foo, other):
         ret = self.empty_copy()
         if isinstance(other, (list, tuple)):
@@ -163,12 +164,14 @@ class Matrix(TaichiOperations):
                 ret.entries[i] = foo(self.entries[i], other)
         return ret
 
+    @taichi_scope
     def element_wise_unary(self, foo):
         ret = self.empty_copy()
         for i in range(self.n * self.m):
             ret.entries[i] = foo(self.entries[i])
         return ret
 
+    @taichi_scope
     def __matmul__(self, other):
         assert self.m == other.n
         ret = Matrix(self.n, other.m)
@@ -243,6 +246,7 @@ class Matrix(TaichiOperations):
             self.mat(*key)[self.index] = value
 
     # host access
+    @python_scope
     def __getitem__(self, index):
         return Matrix.Proxy(self, index)
         ret = [[] for _ in range(self.n)]
@@ -252,6 +256,7 @@ class Matrix(TaichiOperations):
         return ret
 
     # host access
+    @python_scope
     def __setitem__(self, index, item):
         if not isinstance(item[0], list):
             item = [[i] for i in item]
@@ -270,11 +275,13 @@ class Matrix(TaichiOperations):
         ret.entries = copy.copy(self.entries)
         return ret
 
+    @taichi_scope
     def variable(self):
         ret = self.copy()
         ret.entries = [impl.expr_init(e) for e in ret.entries]
         return ret
 
+    @taichi_scope
     def cast(self, dt):
         ret = self.copy()
         if type(dt) is type and issubclass(dt, numbers.Number):
@@ -289,6 +296,7 @@ class Matrix(TaichiOperations):
             ret.entries[i] = impl.cast(ret.entries[i], dt)
         return ret
 
+    @taichi_scope
     def trace(self):
         assert self.n == self.m
         sum = expr.Expr(self(0, 0))
@@ -296,6 +304,7 @@ class Matrix(TaichiOperations):
             sum = sum + self(i, i)
         return sum
 
+    @taichi_scope
     def inverse(self):
         assert self.n == self.m, 'Only square matrices are invertible'
         if self.n == 1:
@@ -349,6 +358,7 @@ class Matrix(TaichiOperations):
 
     inversed = deprecated('a.inversed()', 'a.inverse()')(inverse)
 
+    @taichi_scope
     def normalized(self, eps=0):
         assert self.m == 1
         invlen = 1.0 / (Matrix.norm(self) + eps)
@@ -363,6 +373,7 @@ class Matrix(TaichiOperations):
     def T(self):
         return self.transpose()
 
+    @taichi_scope
     def transpose(a):
         ret = Matrix(a.m, a.n, empty=True)
         for i in range(a.n):
@@ -370,6 +381,7 @@ class Matrix(TaichiOperations):
                 ret.set_entry(j, i, a(i, j))
         return ret
 
+    @taichi_scope
     def determinant(a):
         if a.n == 2 and a.m == 2:
             return a(0, 0) * a(1, 1) - a(0, 1) * a(1, 0)
@@ -429,32 +441,37 @@ class Matrix(TaichiOperations):
             ret.entries[i] = self.entries[i].grad
         return ret
 
+    @taichi_scope
     def sum(self):
         ret = self.entries[0]
         for i in range(1, len(self.entries)):
             ret = ret + self.entries[i]
         return ret
 
+    @taichi_scope
     def norm(self, l=2, eps=0):
         assert l == 2
         return impl.sqrt(self.norm_sqr() + eps)
 
-    # TODO: avoid using sqr here since people might consider "sqr" as "square root". New name TBD.
+    @taichi_scope
     def norm_sqr(self):
         return (self**2).sum()
 
+    @taichi_scope
     def max(self):
         ret = self.entries[0]
         for i in range(1, len(self.entries)):
             ret = impl.max(ret, self.entries[i])
         return ret
 
+    @taichi_scope
     def min(self):
         ret = self.entries[0]
         for i in range(1, len(self.entries)):
             ret = impl.min(ret, self.entries[i])
         return ret
 
+    @taichi_scope
     def any(self):
         import taichi as ti
         ret = (self.entries[0] != ti.expr_init(0))
@@ -462,6 +479,7 @@ class Matrix(TaichiOperations):
             ret = ret + (self.entries[i] != ti.expr_init(0))
         return -(ret < ti.expr_init(0))
 
+    @taichi_scope
     def all(self):
         import taichi as ti
         ret = self.entries[0] != ti.expr_init(0)
@@ -497,6 +515,7 @@ class Matrix(TaichiOperations):
         from .meta import fill_matrix
         fill_matrix(self, val)
 
+    @python_scope
     def to_numpy(self, keep_dims=False):
         # Discussion: https://github.com/taichi-dev/taichi/pull/1046#issuecomment-633548858
         as_vector = self.m == 1 and not keep_dims
@@ -510,6 +529,7 @@ class Matrix(TaichiOperations):
         ti.sync()
         return ret
 
+    @python_scope
     def to_torch(self, device=None, keep_dims=False):
         import torch
         as_vector = self.m == 1 and not keep_dims
@@ -524,6 +544,7 @@ class Matrix(TaichiOperations):
         ti.sync()
         return ret
 
+    @python_scope
     def from_numpy(self, ndarray):
         if len(ndarray.shape) == self.loop_range().dim() + 1:
             as_vector = True
@@ -538,9 +559,11 @@ class Matrix(TaichiOperations):
         import taichi as ti
         ti.sync()
 
+    @python_scope
     def from_torch(self, torch_tensor):
         return self.from_numpy(torch_tensor.contiguous())
 
+    @taichi_scope
     def __ti_repr__(self):
         if self.m != 1:
             yield '['
@@ -559,18 +582,21 @@ class Matrix(TaichiOperations):
             yield ']'
 
     @staticmethod
+    @taichi_scope
     def zero(dt, n, m=1):
         import taichi as ti
         return ti.Matrix([[ti.cast(0, dt) for _ in range(m)]
                           for _ in range(n)])
 
     @staticmethod
+    @taichi_scope
     def one(dt, n):
         import taichi as ti
         return ti.Matrix([[ti.cast(1, dt) for _ in range(n)]
                           for _ in range(n)])
 
     @staticmethod
+    @taichi_scope
     def unit(n, i, dt=None):
         import taichi as ti
         if dt is None:
@@ -579,12 +605,14 @@ class Matrix(TaichiOperations):
         return ti.Matrix([ti.cast(int(j == i), dt) for j in range(n)])
 
     @staticmethod
+    @taichi_scope
     def identity(dt, n):
         import taichi as ti
         return ti.Matrix([[ti.cast(int(i == j), dt) for j in range(n)]
                           for i in range(n)])
 
     @staticmethod
+    @taichi_scope
     def rotation2d(alpha):
         import taichi as ti
         return ti.Matrix([[ti.cos(alpha), -ti.sin(alpha)],
@@ -596,11 +624,13 @@ class Matrix(TaichiOperations):
         # using matrices as template arguments.
         return id(self)
 
+    @taichi_scope
     def dot(self, other):
         assert self.m == 1
         assert other.m == 1
         return (self.transpose() @ other).subscript(0, 0)
 
+    @taichi_scope
     def cross(self, b):
         if self.n == 3 and self.m == 1 and b.n == 3 and b.m == 1:
             return Matrix([
@@ -617,6 +647,7 @@ class Matrix(TaichiOperations):
                 "Cross product is only supported between pairs of 2D/3D vectors"
             )
 
+    @taichi_scope
     def outer_product(self, b):
         assert self.m == 1
         assert b.m == 1

@@ -1,6 +1,6 @@
 <div align="center">
-  <img width="500px" src="https://github.com/yuanming-hu/taichi/raw/master/misc/logo.png">
-  <h3> <a href="https://taichi.readthedocs.io/en/latest/hello.html"> Tutorial </a> | <a href="https://github.com/yuanming-hu/taichi/tree/master/examples"> Examples </a> | <a href="https://taichi.readthedocs.io/en/latest/contributor_guide.html"> Contributor Guidelines </a> | <a href="https://forum.taichi.graphics/"> Forum </a> </h3>
+  <img width="500px" src="https://github.com/taichi-dev/taichi/raw/master/misc/logo.png">
+  <h3> <a href="https://taichi.readthedocs.io/en/latest/hello.html"> Tutorial </a> | <a href="https://github.com/taichi-dev/taichi/tree/master/examples"> Examples </a> | <a href="https://taichi.readthedocs.io/en/latest/contributor_guide.html"> Contributor Guidelines </a> | <a href="https://forum.taichi.graphics/"> Forum </a> </h3>
   <h3> <a href="https://taichi.readthedocs.io/en/stable/"> Documentation </a> | <a href="https://taichi.readthedocs.io/zh_CN/latest/"> 简体中文文档 </a> </h3>
 </div>
 

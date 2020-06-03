@@ -27,6 +27,7 @@ class Matrix(TaichiOperations):
         # TODO: refactor: use multiple initializer like `ti.Matrix.cols([a, b, c])`
         # and `ti.Matrix.empty(n, m)` instead of ad-hoc `ti.Matrix(cols=[a, b, c])`.
         self.grad = None
+        """
         if rows is not None or cols is not None:
             if rows is not None and cols is not None:
                 raise Exception("cannot specify both rows and columns")
@@ -56,7 +57,8 @@ class Matrix(TaichiOperations):
                 self.n = t.n
                 self.m = t.m
                 self.entries = t.entries
-        elif isinstance(n, (list, tuple, np.ndarray)):
+        """
+        if isinstance(n, (list, tuple, np.ndarray)):
             if len(n) == 0:
                 mat = []
             elif isinstance(n[0], Matrix):
@@ -571,14 +573,62 @@ class Matrix(TaichiOperations):
         return ti.Matrix(n=n, m=m, dt=dt, shape=shape)
 
     @staticmethod
-    def cols(columns):
+    def cols(cols):
         import taichi as ti
-        return ti.Matrix(cols=columns)
+        mat = ti.Matrix()
+        if cols is not None:
+                rows = cols
+        mat.n = len(rows)
+        if isinstance(rows[0], Matrix):
+            for row in rows:
+                assert row.m == 1, "inputs must be vectors, ie. size n by 1"
+                assert row.n == rows[
+                    0].n, "input vectors must be the same shape"
+            mat.m = rows[0].n
+            # l-value copy:
+            mat.entries = [row(i) for row in rows for i in range(row.n)]
+        elif isinstance(rows[0], list):
+            for row in rows:
+                assert len(row) == len(
+                    rows[0]), "input lists must be the same shape"
+            mat.m = len(rows[0])
+            # l-value copy:
+            mat.entries = [x for row in rows for x in row]
+        else:
+            raise Exception(
+                "rows/cols must be list of lists or lists of vectors")
+        if cols is not None:
+            t = mat.transpose()
+            mat.n = t.n
+            mat.m = t.m
+            mat.entries = t.entries
+        
+        return mat
 
     @staticmethod
     def rows(rows):
         import taichi as ti
-        return ti.Matrix(rows=rows)
+        mat = ti.Matrix()
+        mat.n = len(rows)
+        if isinstance(rows[0], Matrix):
+            for row in rows:
+                assert row.m == 1, "inputs must be vectors, ie. size n by 1"
+                assert row.n == rows[
+                    0].n, "input vectors must be the same shape"
+            mat.m = rows[0].n
+            # l-value copy:
+            mat.entries = [row(i) for row in rows for i in range(row.n)]
+        elif isinstance(rows[0], list):
+            for row in rows:
+                assert len(row) == len(
+                    rows[0]), "input lists must be the same shape"
+            mat.m = len(rows[0])
+            # l-value copy:
+            mat.entries = [x for row in rows for x in row]
+        else:
+            raise Exception(
+                "rows must be list of lists or lists of vectors")
+        return mat
 
     @staticmethod
     def empty(n, m):
@@ -621,7 +671,36 @@ class Matrix(TaichiOperations):
                 c(i, j).assign(self(i) * b(j))
         return c
 
+def Vector(n, dt=None, shape=None, offset=None, **kwargs):
+    return Matrix(n, 1, dt=dt, shape=shape, offset=offset, **kwargs)
 
+
+Vector.zero = Matrix.zero
+Vector.one = Matrix.one
+Vector.dot = Matrix.dot
+Vector.cross = Matrix.cross
+Vector.outer_product = Matrix.outer_product
+Vector.unit = Matrix.unit
+Vector.normalized = Matrix.normalized
+"""
 class Vector(Matrix):
     def __init__(self, n, dt=None, shape=None, **kwargs):
         super(Vector, self).__init__(n, m=1, dt=dt, shape=shape, **kwargs)
+
+    def __ti_repr__(self):
+        if self.m != 1:
+            yield '['
+
+        for j in range(self.m):
+            if j:
+                yield ', '
+            yield '['
+            for i in range(self.n):
+                if i:
+                    yield ', '
+                yield self(i, j)
+            yield ']'
+
+        if self.m != 1:
+            yield ']'
+"""

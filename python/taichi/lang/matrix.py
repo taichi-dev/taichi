@@ -363,6 +363,7 @@ class Matrix(TaichiOperations):
     def T(self):
         return self.transpose()
 
+    @deprecated('ti.transpose(a)', 'a.transpose()')
     def transpose(a):
         ret = Matrix(a.m, a.n, empty=True)
         for i in range(a.n):
@@ -370,6 +371,14 @@ class Matrix(TaichiOperations):
                 ret.set_entry(j, i, a(i, j))
         return ret
 
+    def transpose(self):
+        ret = Matrix(self.m, self.n, empty=True)
+        for i in range(self.n):
+            for j in range(self.m):
+                ret.set_entry(j,i,self(i,j))
+        return ret
+
+    @deprecated('ti.determinant(a)', 'a.determinant()')
     def determinant(a):
         if a.n == 2 and a.m == 2:
             return a(0, 0) * a(1, 1) - a(0, 1) * a(1, 0)
@@ -398,6 +407,36 @@ class Matrix(TaichiOperations):
         else:
             raise Exception(
                 "Determinants of matrices with sizes >= 5 are not supported")
+
+    def determinant(self):
+        if self.n == 2 and self.m == 2:
+            return self(0, 0) * self(1, 1) - self(0, 1) * self(1, 0)
+        elif self.n == 3 and self.m == 3:
+            return self(0, 0) * (self(1, 1) * self(2, 2) - self(2, 1) * self(1, 2)) - self(
+                1, 0) * (self(0, 1) * self(2, 2) - self(2, 1) * self(0, 2)) + self(
+                    2, 0) * (self(0, 1) * self(1, 2) - self(1, 1) * self(0, 2))
+        elif self.n == 4 and self.m == 4:
+            import taichi as ti
+            n = 4
+
+            def E(x, y):
+                return self(x % n, y % n)
+
+            det = ti.expr_init(0.0)
+            for i in range(4):
+                det = det + (-1.0)**i * (
+                    self(i, 0) *
+                    (E(i + 1, 1) *
+                     (E(i + 2, 2) * E(i + 3, 3) - E(i + 3, 2) * E(i + 2, 3)) -
+                     E(i + 2, 1) *
+                     (E(i + 1, 2) * E(i + 3, 3) - E(i + 3, 2) * E(i + 1, 3)) +
+                     E(i + 3, 1) *
+                     (E(i + 1, 2) * E(i + 2, 3) - E(i + 2, 2) * E(i + 1, 3))))
+            return det
+        else:
+            raise Exception(
+                "Determinants of matrices with sizes >= 5 are not supported")
+
 
     @staticmethod
     def diag(dim, val):

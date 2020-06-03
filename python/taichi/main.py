@@ -784,7 +784,7 @@ class TaichiMain:
 
         args = parser.parse_args(arguments)
 
-        if args.arch is not None:
+        if args.arch:
             arch = args.arch
             if args.exclusive:
                 arch = '^' + arch

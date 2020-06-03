@@ -41,7 +41,6 @@ class WholeKernelCSE : public BasicStmtVisitor {
         if (irpass::analysis::same_statements(stmt, prev_stmt)) {
           stmt->replace_with(prev_stmt);
           modifier.erase(stmt);
-          std::cout << "to_erase " << stmt->id << std::endl;
           return;
         }
       }

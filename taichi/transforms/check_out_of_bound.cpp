@@ -26,7 +26,7 @@ class CheckOutOfBound : public BasicStmtVisitor {
       return;
     TI_ASSERT(stmt->snodes.size() == 1);
     auto snode = stmt->snodes[0];
-    bool has_offset = !snode->index_offsets.empty();
+    bool has_offset = !(snode->index_offsets.empty());
     auto new_stmts = VecStatement();
     auto zero = new_stmts.push_back<ConstStmt>(LaneAttribute<TypedConstant>(0));
     Stmt *result =
@@ -36,7 +36,7 @@ class CheckOutOfBound : public BasicStmtVisitor {
     std::string offset_msg = "Offset [";
     std::vector<Stmt *> args;
     for (int i = 0; i < stmt->indices.size(); i++) {
-      int offset_i = snode->index_offsets[i];
+      int offset_i = has_offset ? snode->index_offsets[i] : -1;
       auto lower_bound = has_offset
                              ? new_stmts.push_back<ConstStmt>(
                                    LaneAttribute<TypedConstant>(offset_i))
@@ -86,7 +86,6 @@ class CheckOutOfBound : public BasicStmtVisitor {
       try {
         node->accept(&checker);
       } catch (IRModified) {
-        TI_TRACE("check_out_of_bound modified IR");
         modified = true;
       }
       if (!modified)
@@ -98,7 +97,6 @@ class CheckOutOfBound : public BasicStmtVisitor {
 namespace irpass {
 
 void check_out_of_bound(IRNode *root) {
-  TI_TRACE("running check_out_of_bound");
   return CheckOutOfBound::run(root);
 }
 

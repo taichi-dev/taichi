@@ -53,7 +53,7 @@ static std::string lookup_keysym(WPARAM wParam, LPARAM lParam) {
     default:
       if (VK_F1 <= key && key <= VK_F12)
         return fmt::format("F{}", key - VK_F1);
-      else if (std::isascii(key))
+      else if (isascii(key))
         return std::string(1, std::tolower(key));
       else
         return fmt::format("Vk{}", key);

@@ -287,6 +287,27 @@ bool initialize_opengl(bool error_tolerance) {
   }
 
   glfwInit();
+  if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+    if (error_tolerance) {
+      TI_WARN("[glsl] cannot initialize GLAD");
+      supported = std::make_optional<bool>(false);
+      return false;
+    }
+    TI_ERROR("[glsl] cannot initialize GLAD");
+  }
+
+  GLint major = 0, minor = 0;
+  glGetIntegerv(GL_MAJOR_VERSION, &major);
+  check_opengl_error("glGetIntegerv(GL_MAJOR_VERSION)");
+  glGetIntegerv(GL_MINOR_VERSION, &minor);
+  check_opengl_error("glGetIntegerv(GL_MINOR_VERSION)");
+
+  if (major < 4 || minor < 3) {
+    TI_DEBUG("[glsl] OpenGL version {}.{} < 4.3, not supported", major, minor);
+    supported = std::make_optional<bool>(false);
+    return false;
+  }
+
   // Compute Shader requires OpenGL 4.3+ (or OpenGL ES 3.1+)
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
@@ -312,14 +333,9 @@ bool initialize_opengl(bool error_tolerance) {
   glfwHideWindow(window);
   glfwMakeContextCurrent(window);
 
-  if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
-    if (error_tolerance) {
-      TI_WARN("[glsl] cannot initialize GLAD");
-      supported = std::make_optional<bool>(false);
-      return false;
-    }
-    TI_ERROR("[glsl] cannot initialize GLAD");
-  }
+  const char *glver = (const char *)glGetString(GL_VERSION);
+  TI_TRACE("[glsl] OpenGL {}", glver);
+
 #define PER_OPENGL_EXTENSION(x)    \
   if ((opengl_has_##x = GLAD_##x)) \
     TI_TRACE("[glsl] Found " #x);

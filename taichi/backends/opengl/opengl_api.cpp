@@ -337,7 +337,6 @@ bool initialize_opengl(bool error_tolerance) {
     return false;
   }
 
-
 #define PER_OPENGL_EXTENSION(x)    \
   if ((opengl_has_##x = GLAD_##x)) \
     TI_TRACE("[glsl] Found " #x);

@@ -287,6 +287,31 @@ bool initialize_opengl(bool error_tolerance) {
   }
 
   glfwInit();
+  // Compute Shader requires OpenGL 4.3+ (or OpenGL ES 3.1+)
+  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+  // GLEW cannot load GL without a context
+  // And the best way to make context is by creating a window
+  // Then hide it immediately, LOL
+  GLFWwindow *window =
+      glfwCreateWindow(1, 1, "Make OpenGL Context", nullptr, nullptr);
+  if (!window) {
+    const char *desc = nullptr;
+    int status = glfwGetError(&desc);
+    if (!desc)
+      desc = "Unknown Error";
+    if (error_tolerance) {
+      // error tolerated, returning false
+      TI_TRACE("[glsl] cannot create GLFW window: error {}: {}", status, desc);
+      supported = std::make_optional<bool>(false);
+      return false;
+    }
+    TI_ERROR("[glsl] cannot create GLFW window: error {}: {}", status, desc);
+  }
+  glfwHideWindow(window);
+  glfwMakeContextCurrent(window);
+
   if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
     if (error_tolerance) {
       TI_WARN("[glsl] cannot initialize GLAD");
@@ -312,30 +337,6 @@ bool initialize_opengl(bool error_tolerance) {
     return false;
   }
 
-  // Compute Shader requires OpenGL 4.3+ (or OpenGL ES 3.1+)
-  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-  // GLEW cannot load GL without a context
-  // And the best way to make context is by creating a window
-  // Then hide it immediately, LOL
-  GLFWwindow *window =
-      glfwCreateWindow(1, 1, "Make OpenGL Context", nullptr, nullptr);
-  if (!window) {
-    const char *desc = nullptr;
-    int status = glfwGetError(&desc);
-    if (!desc)
-      desc = "Unknown Error";
-    if (error_tolerance) {
-      // error tolerated, returning false
-      TI_TRACE("[glsl] cannot create GLFW window: error {}: {}", status, desc);
-      supported = std::make_optional<bool>(false);
-      return false;
-    }
-    TI_ERROR("[glsl] cannot create GLFW window: error {}: {}", status, desc);
-  }
-  glfwHideWindow(window);
-  glfwMakeContextCurrent(window);
 
 #define PER_OPENGL_EXTENSION(x)    \
   if ((opengl_has_##x = GLAD_##x)) \

@@ -215,6 +215,7 @@ class Matrix(TaichiOperations):
         for e in self.entries:
             snode.place(e)
 
+    @taichi_scope
     def subscript(self, *indices):
         if self.is_global():
             ret = self.empty_copy()

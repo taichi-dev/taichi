@@ -227,6 +227,62 @@ class Matrix(TaichiOperations):
                 j = 0
             return self(i, j)
 
+    @property
+    def x(self):
+        if impl.inside_kernel():
+            return self.subscript(0)
+        else:
+            return self[0]
+
+    @property
+    def y(self):
+        if impl.inside_kernel():
+            return self.subscript(1)
+        else:
+            return self[1]
+
+    @property
+    def z(self):
+        if impl.inside_kernel():
+            return self.subscript(2)
+        else:
+            return self[2]
+
+    @property
+    def w(self):
+        if impl.inside_kernel():
+            return self.subscript(3)
+        else:
+            return self[3]
+
+    @x.setter
+    def x(self, value):
+        if impl.inside_kernel():
+            self.subscript(0).assign(value)
+        else:
+            self[0] = value
+
+    @y.setter
+    def y(self, value):
+        if impl.inside_kernel():
+            self.subscript(1).assign(value)
+        else:
+            self[1] = value
+
+    @z.setter
+    def z(self, value):
+        if impl.inside_kernel():
+            self.subscript(2).assign(value)
+        else:
+            self[2] = value
+
+    @w.setter
+    def w(self, value):
+        if impl.inside_kernel():
+            self.subscript(3).assign(value)
+        else:
+            self[3] = value
+
     class Proxy:
         def __init__(self, mat, index):
             self.mat = mat
@@ -241,6 +297,38 @@ class Matrix(TaichiOperations):
             if not isinstance(key, (list, tuple)):
                 key = [key]
             self.mat(*key)[self.index] = value
+
+        @property
+        def x(self):
+            return self[0]
+
+        @property
+        def y(self):
+            return self[1]
+
+        @property
+        def z(self):
+            return self[2]
+
+        @property
+        def w(self):
+            return self[3]
+
+        @x.setter
+        def x(self, value):
+            self[0] = value
+
+        @y.setter
+        def y(self, value):
+            self[1] = value
+
+        @z.setter
+        def z(self, value):
+            self[2] = value
+
+        @w.setter
+        def w(self, value):
+            self[3] = value
 
     # host access
     def __getitem__(self, index):

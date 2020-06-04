@@ -151,8 +151,8 @@ class Matrix(TaichiOperations):
             other = Matrix(other)
         if foo.__name__ == 'assign' and not isinstance(other, Matrix):
             raise SyntaxError(
-                f'cannot assign scalar expr to '
-                'taichi class {type(a)}, maybe you want to use `a.fill(b)` instead?'
+                'cannot assign scalar expr to '
+                f'taichi class {type(a)}, maybe you want to use `a.fill(b)` instead?'
             )
         if isinstance(other, Matrix):
             assert self.m == other.m and self.n == other.n

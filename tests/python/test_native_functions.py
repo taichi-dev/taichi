@@ -1,4 +1,5 @@
 import taichi as ti
+import numpy as np
 
 
 @ti.all_archs
@@ -49,25 +50,28 @@ def test_int():
 def test_minmax():
     x = ti.var(ti.f32)
     y = ti.var(ti.f32)
+    z = ti.var(ti.f32)
     minimum = ti.var(ti.f32)
     maximum = ti.var(ti.f32)
 
     N = 16
 
-    ti.root.dense(ti.i, N).place(x, y, minimum, maximum)
+    ti.root.dense(ti.i, N).place(x, y, z, minimum, maximum)
 
     @ti.kernel
     def func():
         for i in range(N):
-            minimum[i] = min(x[i], y[i])
-            maximum[i] = max(x[i], y[i])
+            minimum[i] = min(x[i], y[i], z[i])
+            maximum[i] = max(x[i], y[i], z[i])
 
     for i in range(N):
         x[i] = i
         y[i] = N - i
+        z[i] = i - 2 if i % 2 else i + 2
 
     func()
 
-    for i in range(N):
-        assert minimum[i] == min(x[i], y[i])
-        assert maximum[i] == max(x[i], y[i])
+    assert np.allclose(minimum.to_numpy(),
+            np.minimum(np.minimum(x.to_numpy(), y.to_numpy()), z.to_numpy()))
+    assert np.allclose(maximum.to_numpy(),
+            np.maximum(np.maximum(x.to_numpy(), y.to_numpy()), z.to_numpy()))

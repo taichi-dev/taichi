@@ -398,13 +398,9 @@ def ti_max(*args):
     if num_args == 1:
         return args[0]
     elif num_args == 2:
-        if isinstance(args[0], numbers.Number) and isinstance(
-                args[1], numbers.Number):
-            return max(args[0], args[1])
-        else:
-            return ti.max(args[0], args[1])
+        return max(args[0], args[1])
     else:
-        return ti_max(args[0], ti_max(*args[1:]))
+        return max(args[0], ti_max(*args[1:]))
 
 
 def ti_min(*args):
@@ -413,13 +409,9 @@ def ti_min(*args):
     if num_args == 1:
         return args[0]
     elif num_args == 2:
-        if isinstance(args[0], numbers.Number) and isinstance(
-                args[1], numbers.Number):
-            return min(args[0], args[1])
-        else:
-            return ti.min(args[0], args[1])
+        return min(args[0], args[1])
     else:
-        return ti_min(args[0], ti_min(*args[1:]))
+        return min(args[0], ti_min(*args[1:]))
 
 
 def ti_any(a):

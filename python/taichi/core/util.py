@@ -16,7 +16,6 @@ if sys.version_info[0] < 3 or sys.version_info[1] <= 5:
 
 warnings.filterwarnings('always')
 
-
 ti_core = None
 
 

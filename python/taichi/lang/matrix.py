@@ -523,7 +523,8 @@ class Matrix(TaichiOperations):
             warnings.warn(
                 'v.to_numpy(as_vector=True) is deprecated, '
                 'please use v.to_numpy() directly instead',
-                DeprecationWarning, stacklevel=3)
+                DeprecationWarning,
+                stacklevel=3)
         as_vector = self.m == 1 and not keep_dims
         dim_ext = (self.n, ) if as_vector else (self.n, self.m)
         ret = np.empty(self.loop_range().shape() + dim_ext,

@@ -297,7 +297,8 @@ bool initialize_opengl(bool error_tolerance) {
   }
 
   const char *glver = (const char *)glGetString(GL_VERSION);
-  if (glver) TI_TRACE("[glsl] OpenGL {}", glver);
+  if (glver)
+    TI_TRACE("[glsl] OpenGL {}", glver);
 
   GLint major = 0, minor = 0;
   glGetIntegerv(GL_MAJOR_VERSION, &major);

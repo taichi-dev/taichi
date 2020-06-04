@@ -36,8 +36,10 @@ def import_ti_core(tmp_dir=None):
     except Exception as e:
         if isinstance(e, ImportError):
             print(
-                "Share object taichi_core import failed. If you are on Windows, please consider installing \"Microsoft Visual C++ Redistributable\" (https://aka.ms/vs/16/release/vc_redist.x64.exe)"
-            )
+                Fore.YELLOW + "Share object taichi_core import failed, "
+                "check this page for possible solutions:\n"
+                "https://taichi.readthedocs.io/en/stable/install.html#troubleshooting"
+                + Fore.RESET)
         raise e
     ti_core = core
     if get_os_name() != 'win':

@@ -353,6 +353,11 @@ TI_EXPORT void print_traceback() {
   }
   std::free(strings);
 #endif
+
+  fmt::print(
+      fg(fmt::color::orange),
+      "\nInternal Error occurred, check this page for possible solutions:\n"
+      "https://taichi.readthedocs.io/en/stable/install.html#troubleshooting\n");
 }
 
 TI_NAMESPACE_END

@@ -420,11 +420,8 @@ class TaichiMain:
             prog='ti format',
             description=f"{self.format.__doc__}")
         parser.add_argument(
-            '-d',
-            '--diff',
-            required=False,
-            default=None,
-            dest='diff',
+            'diff',
+            nargs='?',
             type=str,
             help="A commit hash that git can use to compare diff with")
         args = parser.parse_args(arguments)

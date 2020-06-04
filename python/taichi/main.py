@@ -446,7 +446,7 @@ class TaichiMain:
     def build(self, arguments: list = sys.argv[2:]):
         """Build C++ files"""
         parser = argparse.ArgumentParser(
-            prog='ti regression',
+            prog='ti build',
             description=f"{self.build.__doc__}")
         args = parser.parse_args(arguments)
 
@@ -809,7 +809,9 @@ class TaichiMain:
     @register
     def debug(self, arguments: list = sys.argv[2:]):
         """Debug a single script"""
-        parser = argparse.ArgumentParser(description=f"{self.debug.__doc__}")
+        parser = argparse.ArgumentParser(
+                prog='ti debug',
+                description=f"{self.debug.__doc__}")
         parser.add_argument(
             'filename',
             help='A single (Python) script to run with debugger, e.g. render.py'
@@ -830,7 +832,9 @@ class TaichiMain:
     @register
     def run(self, arguments: list = sys.argv[2:]):
         """Run a specific task"""
-        parser = argparse.ArgumentParser(description=f"{self.run.__doc__}")
+        parser = argparse.ArgumentParser(
+                prog='ti run',
+                description=f"{self.run.__doc__}")
         parser.add_argument('taskname',
                             help='A single task name to run, e.g. test_math')
         parser.add_argument('taskargs',

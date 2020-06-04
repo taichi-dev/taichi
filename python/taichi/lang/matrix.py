@@ -592,7 +592,7 @@ class Matrix(TaichiOperations):
     @staticmethod
     def rows(rows):
         import taichi as ti
-        mat = ti.Matrix().empty()
+        mat = ti.Matrix()
         mat.n = len(rows)
         if isinstance(rows[0], Matrix):
             for row in rows:
@@ -620,9 +620,9 @@ class Matrix(TaichiOperations):
         return ti.Matrix.rows(cols).transpose()
 
     @staticmethod
-    def empty(n, m, dt=None):
+    def empty(n, m):
         import taichi as ti
-        mat = ti.Matrix([[None] * m for _ in range(n)], dt=dt)
+        mat = ti.Matrix([[None] * m for _ in range(n)])
         return mat
 
     def __hash__(self):
@@ -670,20 +670,3 @@ class Vector(Matrix):
                                      shape=shape,
                                      offset=offset,
                                      **kwargs)
-
-    def __ti_repr__(self):
-        if self.m != 1:
-            yield '['
-
-        for j in range(self.m):
-            if j:
-                yield ', '
-            yield '['
-            for i in range(self.n):
-                if i:
-                    yield ', '
-                yield self(i, j)
-            yield ']'
-
-        if self.m != 1:
-            yield ']'

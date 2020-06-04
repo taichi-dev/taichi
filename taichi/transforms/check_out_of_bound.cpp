@@ -59,9 +59,7 @@ class CheckOutOfBound : public BasicStmtVisitor {
         offset_msg += ", ";
       }
       msg += std::to_string(size_i);
-      if (has_offset) {
-        offset_msg += std::to_string(offset_i);
-      }
+      offset_msg += std::to_string(offset_i);
       args.emplace_back(stmt->indices[i]);
     }
     offset_msg += "]";

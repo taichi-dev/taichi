@@ -450,9 +450,9 @@ void CodeGenLLVM::visit(BinaryOpStmt *stmt) {
     if (arch_is_cpu(current_arch())) {
       if (ret_type == DataType::f32) {
         if (stmt->rhs->ret_type.data_type == DataType::f32) {
-          llvm_val[stmt] =
-              create_call("pow_f32", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
-        } else if (stmt->rhs->ret_type.data_type == DataType::i64){
+          llvm_val[stmt] = create_call(
+              "pow_f32", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
+        } else if (stmt->rhs->ret_type.data_type == DataType::i64) {
           llvm_val[stmt] = create_call(
               "pow_f32_i64", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
         } else {
@@ -461,9 +461,9 @@ void CodeGenLLVM::visit(BinaryOpStmt *stmt) {
         }
       } else if (ret_type == DataType::f64) {
         if (stmt->rhs->ret_type.data_type == DataType::f64) {
-          llvm_val[stmt] =
-              create_call("pow_f64", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
-        } else if (stmt->rhs->ret_type.data_type == DataType::i64){
+          llvm_val[stmt] = create_call(
+              "pow_f64", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
+        } else if (stmt->rhs->ret_type.data_type == DataType::i64) {
           llvm_val[stmt] = create_call(
               "pow_f64_i64", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
         } else {

@@ -277,9 +277,9 @@ class TypeCheck : public IRVisitor {
     matching = matching && (stmt->lhs->ret_type.data_type != DataType::unknown);
     matching = matching && (stmt->rhs->ret_type.data_type != DataType::unknown);
     matching = matching && (stmt->lhs->ret_type == stmt->rhs->ret_type ||
-        (stmt->op_type == BinaryOpType::pow &&
-            is_real(stmt->lhs->ret_type.data_type) &&
-            stmt->rhs->ret_type.data_type == DataType::i64));
+                            (stmt->op_type == BinaryOpType::pow &&
+                             is_real(stmt->lhs->ret_type.data_type) &&
+                             stmt->rhs->ret_type.data_type == DataType::i64));
     if (!matching) {
       error();
     }

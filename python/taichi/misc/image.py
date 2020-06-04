@@ -4,7 +4,7 @@ import taichi as ti
 
 def cook_image(img):
     if isinstance(img, ti.Matrix):
-        img = img.to_numpy(as_vector=True)
+        img = img.to_numpy()
     if isinstance(img, ti.Expr):
         img = img.to_numpy()
     assert isinstance(img, np.ndarray)

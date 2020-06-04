@@ -49,30 +49,41 @@ class GUI:
 
     def set_image(self, img):
         import numpy as np
+        import taichi as ti
         from .image import cook_image
+        from .util import get_os_name
+
+        ti.profiler_start('cook_image')
         img = cook_image(img)
+        ti.profiler_stop()
+
+        ti.profiler_start('astype')
         if img.dtype in [np.uint8, np.uint16, np.uint32, np.uint64]:
             img = img.astype(np.float32) * (1 / np.iinfo(img.dtype).max)
         elif img.dtype in [np.float32, np.float64]:
-            img = np.clip(img.astype(np.float32), 0, 1)
+            if img.dtype == np.float32 and get_os_name() == 'win':
+                img = np.clip(img.astype(np.float32), 0, 1)
         else:
             raise ValueError(
                 f'Data type {img.dtype} not supported in GUI.set_image')
+        ti.profiler_stop()
+
+        ti.profiler_start('concatenate')
         if len(img.shape) == 2:
             img = img[..., None]
         if img.shape[2] == 1:
-            img = img + np.zeros(shape=(1, 1, 4))
+            img = img + np.zeros(shape=(1, 1, 4), dtype=np.float32)
         if img.shape[2] == 3:
-            img = np.concatenate([
-                img,
+            img = np.concatenate([img,
                 np.zeros(shape=(img.shape[0], img.shape[1], 1),
-                         dtype=np.float32)
-            ],
-                                 axis=2)
-        img = img.astype(np.float32)
+                         dtype=np.float32)], axis=2)
         assert img.shape[:
                          2] == self.res, "Image resolution does not match GUI resolution"
+        ti.profiler_stop()
+
+        ti.profiler_start('set_img')
         self.core.set_img(np.ascontiguousarray(img).ctypes.data)
+        ti.profiler_stop()
 
     def circle(self, pos, color=0xFFFFFF, radius=1):
         self.canvas.circle_single(pos[0], pos[1], color, radius)

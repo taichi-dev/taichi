@@ -142,6 +142,9 @@ class Expr(TaichiOperations):
             self.materialize_layout_callback()
         return self.snode().shape()
 
+    def shape_ext(self):
+        return ()
+
     def data_type(self):
         return self.snode().data_type()
 

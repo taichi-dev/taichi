@@ -497,11 +497,17 @@ class Matrix(TaichiOperations):
         from .meta import fill_matrix
         fill_matrix(self, val)
 
+    def shape_ext(self, as_vector=None):
+        if as_vector is None:
+            as_vector = self.m == 1
+        shape_ext = (self.n, ) if as_vector else (self.n, self.m)
+        return shape_ext
+
     def to_numpy(self, keep_dims=False):
         # Discussion: https://github.com/taichi-dev/taichi/pull/1046#issuecomment-633548858
         as_vector = self.m == 1 and not keep_dims
-        dim_ext = (self.n, ) if as_vector else (self.n, self.m)
-        ret = np.empty(self.loop_range().shape() + dim_ext,
+        shape_ext = self.shape_ext(as_vector)
+        ret = np.empty(self.loop_range().shape() + shape_ext,
                        dtype=to_numpy_type(
                            self.loop_range().snode().data_type()))
         from .meta import matrix_to_ext_arr
@@ -513,8 +519,8 @@ class Matrix(TaichiOperations):
     def to_torch(self, device=None, keep_dims=False):
         import torch
         as_vector = self.m == 1 and not keep_dims
-        dim_ext = (self.n, ) if as_vector else (self.n, self.m)
-        ret = torch.empty(self.loop_range().shape() + dim_ext,
+        shape_ext = self.shape_ext(as_vector)
+        ret = torch.empty(self.loop_range().shape() + shape_ext,
                           dtype=to_pytorch_type(
                               self.loop_range().snode().data_type()),
                           device=device)

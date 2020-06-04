@@ -30,14 +30,15 @@ class Matrix(TaichiOperations):
 
         if rows is not None or cols is not None:
             warnings.warn(
-            f"ad-hoc usage of row- and column- vectors is deprecated.",
-            PendingDeprecationWarning,
-            stacklevel=3)
+                f"ad-hoc usage of row- and column- vectors is deprecated.",
+                PendingDeprecationWarning,
+                stacklevel=3)
             if rows is not None and cols is not None:
                 raise Exception("cannot specify both rows and columns")
             self.dt = dt
             import taichi as ti
-            mat = ti.Matrix.cols(cols) if cols is not None else ti.Matrix.rows(rows)
+            mat = ti.Matrix.cols(cols) if cols is not None else ti.Matrix.rows(
+                rows)
             self.n = mat.n
             self.m = mat.m
             self.entries = mat.entries
@@ -45,9 +46,9 @@ class Matrix(TaichiOperations):
 
         elif empty == True:
             warnings.warn(
-            f"instantiation of empty matrix via ti.Matrix is deprecated.",
-            PendingDeprecationWarning,
-            stacklevel=3)
+                f"instantiation of empty matrix via ti.Matrix is deprecated.",
+                PendingDeprecationWarning,
+                stacklevel=3)
             self.dt = dt
             self.entries = [[None] * m for _ in range(n)]
             return

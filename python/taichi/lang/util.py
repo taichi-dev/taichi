@@ -170,10 +170,35 @@ def deprecated(old, new):
         def wrapped(*args, **kwargs):
             import warnings
             msg = f'{old} is deprecated, please use {new} instead'
-            #warnings.warn(msg, DeprecationWarning)
-            raise DeprecationWarning(msg)
+            warnings.warn(msg, DeprecationWarning, stacklevel=2)
             return foo(*args, **kwargs)
 
         return wrapped
 
     return decorator
+
+
+def taichi_scope(func):
+    import functools
+    from . import impl
+
+    @functools.wraps(func)
+    def wrapped(*args, **kwargs):
+        assert impl.inside_kernel(), \
+                f'{func.__name__} cannot be called in Python-scope'
+        return func(*args, **kwargs)
+
+    return wrapped
+
+
+def python_scope(func):
+    import functools
+    from . import impl
+
+    @functools.wraps(func)
+    def wrapped(*args, **kwargs):
+        assert not impl.inside_kernel(), \
+                f'{func.__name__} cannot be called in Taichi-scope'
+        return func(*args, **kwargs)
+
+    return wrapped

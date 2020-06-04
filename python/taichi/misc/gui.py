@@ -176,7 +176,7 @@ class GUI:
         self.core.update()
         if file:
             self.core.screenshot(file)
-        self.clear(self.background_color)
+        self.clear()
 
     class EventFilter:
         def __init__(self, *filter):

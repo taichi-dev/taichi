@@ -296,6 +296,9 @@ bool initialize_opengl(bool error_tolerance) {
     TI_ERROR("[glsl] cannot initialize GLAD");
   }
 
+  const char *glver = (const char *)glGetString(GL_VERSION);
+  if (glver) TI_TRACE("[glsl] OpenGL {}", glver);
+
   GLint major = 0, minor = 0;
   glGetIntegerv(GL_MAJOR_VERSION, &major);
   check_opengl_error("glGetIntegerv(GL_MAJOR_VERSION)");
@@ -332,9 +335,6 @@ bool initialize_opengl(bool error_tolerance) {
   }
   glfwHideWindow(window);
   glfwMakeContextCurrent(window);
-
-  const char *glver = (const char *)glGetString(GL_VERSION);
-  TI_TRACE("[glsl] OpenGL {}", glver);
 
 #define PER_OPENGL_EXTENSION(x)    \
   if ((opengl_has_##x = GLAD_##x)) \

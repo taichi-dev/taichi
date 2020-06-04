@@ -268,6 +268,38 @@ f64 pow_f64(f64 a, f64 b) {
   return std::pow(a, b);
 }
 
+f32 pow_f32_i64(f32 x, i64 n) {
+  if (n > 512)
+    return std::pow(x, n);
+  bool neg = n < 0;
+  n = abs(n);
+  f32 tmp = x;
+  f32 ans = 1;
+  while (n) {
+    if (n & 1)
+      ans *= tmp;
+    tmp *= tmp;
+    n >>= 1;
+  }
+  return neg ? 1.0 / ans : ans;
+}
+
+f64 pow_f64_i64(f64 x, i64 n) {
+  if (n > 512)
+    return std::pow(x, n);
+  bool neg = n < 0;
+  n = abs(n);
+  f64 tmp = x;
+  f64 ans = 1;
+  while (n) {
+    if (n & 1)
+      ans *= tmp;
+    tmp *= tmp;
+    n >>= 1;
+  }
+  return neg ? 1.0 / ans : ans;
+}
+
 f32 __nv_sgnf(f32 x) {
   return sgn_f32(x);
 }

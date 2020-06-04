@@ -248,15 +248,24 @@ class TypeCheck : public IRVisitor {
       stmt->op_type = BinaryOpType::div;
     }
 
+    auto ret_type = stmt->lhs->ret_type.data_type;
     if (stmt->lhs->ret_type.data_type != stmt->rhs->ret_type.data_type) {
-      auto ret_type = promoted_type(stmt->lhs->ret_type.data_type,
-                                    stmt->rhs->ret_type.data_type);
+      ret_type = promoted_type(stmt->lhs->ret_type.data_type,
+                               stmt->rhs->ret_type.data_type);
       if (ret_type != stmt->lhs->ret_type.data_type) {
-        // promote rhs
+        // promote lhs
         auto cast_stmt = insert_type_cast_before(stmt, stmt->lhs, ret_type);
         stmt->lhs = cast_stmt;
       }
-      if (ret_type != stmt->rhs->ret_type.data_type) {
+      if (stmt->op_type == BinaryOpType::pow && is_real(ret_type) &&
+          is_integral(stmt->rhs->ret_type.data_type)) {
+        if (stmt->rhs->ret_type.data_type != DataType::i64) {
+          // promote rhs
+          auto cast_stmt =
+              insert_type_cast_before(stmt, stmt->rhs, DataType::i64);
+          stmt->rhs = cast_stmt;
+        }
+      } else if (ret_type != stmt->rhs->ret_type.data_type) {
         // promote rhs
         auto cast_stmt = insert_type_cast_before(stmt, stmt->rhs, ret_type);
         stmt->rhs = cast_stmt;
@@ -267,19 +276,23 @@ class TypeCheck : public IRVisitor {
         matching && (stmt->lhs->ret_type.width == stmt->rhs->ret_type.width);
     matching = matching && (stmt->lhs->ret_type.data_type != DataType::unknown);
     matching = matching && (stmt->rhs->ret_type.data_type != DataType::unknown);
-    matching = matching && (stmt->lhs->ret_type == stmt->rhs->ret_type);
+    matching = matching && (stmt->lhs->ret_type == stmt->rhs->ret_type ||
+        (stmt->op_type == BinaryOpType::pow &&
+            is_real(stmt->lhs->ret_type.data_type) &&
+            stmt->rhs->ret_type.data_type == DataType::i64));
     if (!matching) {
       error();
     }
     if (binary_is_bitwise(stmt->op_type)) {
-      if (!is_integral(stmt->lhs->ret_type.data_type)) {
+      if (!is_integral(stmt->lhs->ret_type.data_type) ||
+          !is_integral(stmt->rhs->ret_type.data_type)) {
         error("Error: bitwise operations can only apply to integral types.");
       }
     }
     if (is_comparison(stmt->op_type)) {
       stmt->ret_type = VectorType(stmt->lhs->ret_type.width, DataType::i32);
     } else {
-      stmt->ret_type = stmt->lhs->ret_type;
+      stmt->ret_type = VectorType(stmt->lhs->ret_type.width, ret_type);
     }
   }
 

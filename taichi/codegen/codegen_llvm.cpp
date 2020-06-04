@@ -449,11 +449,27 @@ void CodeGenLLVM::visit(BinaryOpStmt *stmt) {
   } else if (op == BinaryOpType::pow) {
     if (arch_is_cpu(current_arch())) {
       if (ret_type == DataType::f32) {
-        llvm_val[stmt] =
-            create_call("pow_f32", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
+        if (stmt->rhs->ret_type.data_type == DataType::f32) {
+          llvm_val[stmt] =
+              create_call("pow_f32", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
+        } else if (stmt->rhs->ret_type.data_type == DataType::i64){
+          llvm_val[stmt] = create_call(
+              "pow_f32_i64", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
+        } else {
+          TI_P(data_type_name(stmt->rhs->ret_type.data_type));
+          TI_NOT_IMPLEMENTED
+        }
       } else if (ret_type == DataType::f64) {
-        llvm_val[stmt] =
-            create_call("pow_f64", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
+        if (stmt->rhs->ret_type.data_type == DataType::f64) {
+          llvm_val[stmt] =
+              create_call("pow_f64", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
+        } else if (stmt->rhs->ret_type.data_type == DataType::i64){
+          llvm_val[stmt] = create_call(
+              "pow_f64_i64", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
+        } else {
+          TI_P(data_type_name(stmt->rhs->ret_type.data_type));
+          TI_NOT_IMPLEMENTED
+        }
       } else if (ret_type == DataType::i32) {
         llvm_val[stmt] =
             create_call("pow_i32", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});

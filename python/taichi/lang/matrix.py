@@ -30,8 +30,8 @@ class Matrix(TaichiOperations):
 
         if rows is not None or cols is not None:
             warnings.warn(
-                f"ad-hoc usage of row- and column- vectors is deprecated.",
-                PendingDeprecationWarning,
+                f"ti.Matrix(rows=[...]) or ti.Matrix(cols=[...]) is deprecated, use ti.Matrix.rows([...]) or ti.Matrix.cols([...]) instead.",
+                DeprecationWarning,
                 stacklevel=3)
             if rows is not None and cols is not None:
                 raise Exception("cannot specify both rows and columns")

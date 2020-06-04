@@ -6,6 +6,7 @@ import numpy as np
 from .util import to_numpy_type, to_pytorch_type, deprecated
 from .common_ops import TaichiOperations
 from collections.abc import Iterable
+import warnings
 
 
 class Matrix(TaichiOperations):
@@ -28,12 +29,28 @@ class Matrix(TaichiOperations):
         self.grad = None
 
         if rows is not None or cols is not None:
-            raise Exception(
-                "ad-hoc usage of row- and column- vectors is deprecated." +
-                "This message will be removed in the next version.")
-        if empty == True:
-            raise Exception(
-                "instantiation of empty matrix via ti.Matrix is deprecated.")
+            warnings.warn(
+            f"ad-hoc usage of row- and column- vectors is deprecated.",
+            PendingDeprecationWarning,
+            stacklevel=3)
+            if rows is not None and cols is not None:
+                raise Exception("cannot specify both rows and columns")
+            self.dt = dt
+            import taichi as ti
+            mat = ti.Matrix.cols(cols) if cols is not None else ti.Matrix.rows(rows)
+            self.n = mat.n
+            self.m = mat.m
+            self.entries = mat.entries
+            return
+
+        elif empty == True:
+            warnings.warn(
+            f"instantiation of empty matrix via ti.Matrix is deprecated.",
+            PendingDeprecationWarning,
+            stacklevel=3)
+            self.dt = dt
+            self.entries = [[None] * m for _ in range(n)]
+            return
 
         elif isinstance(n, (list, tuple, np.ndarray)):
             if len(n) == 0:
@@ -594,7 +611,6 @@ class Matrix(TaichiOperations):
         else:
             raise Exception(
                 "cols/rows must be list of lists or lists of vectors")
-        print(mat.entries, mat.n, mat.m)
         return mat
 
     @staticmethod

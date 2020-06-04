@@ -285,6 +285,36 @@ def test_init_matrix_from_vectors():
             assert m3[0][i, j] == int(i + 3 * j + 1)
             assert m4[0][j, i] == int(i + 3 * j + 1)
 
+# Remove this once the apis are fully deprecated in incoming version.
+@ti.all_archs
+def test_init_matrix_from_vectors_deprecated():
+    m1 = ti.Matrix(3, 3, dt=ti.f32, shape=(3))
+    m2 = ti.Matrix(3, 3, dt=ti.f32, shape=(3))
+    m3 = ti.Matrix(3, 3, dt=ti.f32, shape=(3))
+    m4 = ti.Matrix(3, 3, dt=ti.f32, shape=(3))
+
+    @ti.kernel
+    def fill():
+        for i in range(3):
+            a = ti.Vector([1.0, 4.0, 7.0])
+            b = ti.Vector([2.0, 5.0, 8.0])
+            c = ti.Vector([3.0, 6.0, 9.0])
+            m1[i] = ti.Matrix(rows=[a, b, c])
+            m2[i] = ti.Matrix(cols=[a, b, c])
+            m3[i] = ti.Matrix(rows=[[1.0, 4.0, 7.0], [2.0, 5.0, 8.0],
+                                    [3.0, 6.0, 9.0]])
+            m4[i] = ti.Matrix(cols=[[1.0, 4.0, 7.0], [2.0, 5.0, 8.0],
+                                    [3.0, 6.0, 9.0]])
+
+    fill()
+
+    for j in range(3):
+        for i in range(3):
+            assert m1[0][i, j] == int(i + 3 * j + 1)
+            assert m2[0][j, i] == int(i + 3 * j + 1)
+            assert m3[0][i, j] == int(i + 3 * j + 1)
+            assert m4[0][j, i] == int(i + 3 * j + 1)
+
 
 @ti.all_archs
 def test_any_all():

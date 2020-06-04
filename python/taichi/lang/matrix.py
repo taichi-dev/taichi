@@ -520,8 +520,9 @@ class Matrix(TaichiOperations):
         # Discussion: https://github.com/taichi-dev/taichi/pull/1046#issuecomment-633548858
         if as_vector is not None:
             import warnings
-            warnings.warn('v.to_numpy(as_vector=True) is deprecated, '
-            'please use v.to_numpy() directly instead', DeprecationWarning)
+            warnings.warn(
+                'v.to_numpy(as_vector=True) is deprecated, '
+                'please use v.to_numpy() directly instead', DeprecationWarning)
         as_vector = self.m == 1 and not keep_dims
         dim_ext = (self.n, ) if as_vector else (self.n, self.m)
         ret = np.empty(self.loop_range().shape() + dim_ext,

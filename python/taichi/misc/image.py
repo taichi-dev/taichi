@@ -1,6 +1,7 @@
 import numpy as np
 import taichi as ti
 
+
 def imwrite(img, filename):
     img = img.to_numpy()
     assert len(img.shape) in [2, 3]

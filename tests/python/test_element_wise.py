@@ -9,7 +9,8 @@ def _c_mod(a, b):
     return a - b * int(float(a) / b)
 
 
-@pytest.mark.parametrize('is_mat', [(True, True), (True, False), (False, True)])
+@pytest.mark.parametrize('is_mat', [(True, True), (True, False),
+                                    (False, True)])
 @ti.all_archs
 def test_binary_f(is_mat):
     lhs_is_mat, rhs_is_mat = is_mat
@@ -41,7 +42,7 @@ def test_binary_f(is_mat):
         x[3] = y[None] / z[None]
         x[4] = y[None] // z[None]
         x[5] = y[None] % z[None]
-        x[6] = y[None] ** z[None]
+        x[6] = y[None]**z[None]
         x[7] = y[None] == z[None]
         x[8] = y[None] != z[None]
         x[9] = y[None] > z[None]
@@ -62,7 +63,7 @@ def test_binary_f(is_mat):
     assert allclose(x[3], y / z)
     assert allclose(x[4], y // z)
     assert allclose(x[5], y % z)
-    assert allclose(x[6], y ** z)
+    assert allclose(x[6], y**z)
     assert allclose(x[7], y == z)
     assert allclose(x[8], y != z)
     assert allclose(x[9], y > z)
@@ -74,7 +75,8 @@ def test_binary_f(is_mat):
     assert allclose(x[15], np.maximum(y, z))
 
 
-@pytest.mark.parametrize('is_mat', [(True, True), (True, False), (False, True)])
+@pytest.mark.parametrize('is_mat', [(True, True), (True, False),
+                                    (False, True)])
 @ti.all_archs
 def test_binary_i(is_mat):
     lhs_is_mat, rhs_is_mat = is_mat
@@ -107,7 +109,7 @@ def test_binary_i(is_mat):
         x[4] = ti.raw_div(y[None], z[None])
         x[5] = y[None] % z[None]
         x[6] = ti.raw_mod(y[None], z[None])
-        x[7] = y[None] ** z[None]
+        x[7] = y[None]**z[None]
         x[8] = y[None] == z[None]
         x[9] = y[None] != z[None]
         x[10] = y[None] > z[None]
@@ -131,7 +133,7 @@ def test_binary_i(is_mat):
     assert allclose(x[4], y // z)
     assert allclose(x[5], y % z)
     assert allclose(x[6], y % z)
-    assert allclose(x[7], y ** z)
+    assert allclose(x[7], y**z)
     assert allclose(x[8], y == z)
     assert allclose(x[9], y != z)
     assert allclose(x[10], y > z)

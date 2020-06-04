@@ -20,6 +20,11 @@ Taichi can be easily installed via ``pip``:
 Troubleshooting
 ---------------
 
+Windows issues
+**************
+
+- If Taichi crashes and reports ``ImportError`` on Windows: Please consider installing `Microsoft Visual C++ Redistributable <https://aka.ms/vs/16/release/vc_redist.x64.exe>`_.
+
 Python issues
 *************
 
@@ -49,7 +54,7 @@ CUDA issues
 
 - If Taichi crashes with the following messages:
 
-    .. code-block::
+    .. code-block:: none
 
         [Taichi] mode=release
         [Taichi] version 0.6.0, supported archs: [cpu, cuda, opengl], commit 14094f25, python 3.8.2
@@ -71,7 +76,7 @@ OpenGL issues
 
 - If Taichi crashes with a stack backtrace containing a line of ``glfwCreateWindow`` (see `#958 <https://github.com/taichi-dev/taichi/issues/958>`_):
 
-  .. code-block::
+  .. code-block:: none
 
         [Taichi] mode=release
         [E 05/12/20 18.25:00.129] Received signal 11 (Segmentation Fault)
@@ -95,4 +100,10 @@ OpenGL issues
 Linux issues
 ************
 
-- If Taichi crashes and reports ``libtinfo.so.5 not found``: Please install ``libtinfo5`` on Ubuntu or ``ncurses5-compat-libs`` (AUR) on Arch Linux.
+- If Taichi crashes and reports ``libtinfo.so.5 not found``: Please install ``libtinfo5`` for Ubuntu or ``ncurses5-compat-libs`` (AUR) for Arch Linux.
+
+
+Other issues
+************
+
+- If none of those above address your problem, please report this by `opening an issue <https://github.com/taichi-dev/taichi/issues/new?labels=potential+bug&template=bug_report.md>`_ on GitHub. This would help us improve user experiences and compatibility, many thanks!

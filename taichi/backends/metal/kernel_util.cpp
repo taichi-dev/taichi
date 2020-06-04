@@ -18,7 +18,7 @@ std::string KernelAttributes::buffers_name(Buffers b) {
   const static std::unordered_map<Buffers, std::string> m = {
       REGISTER_NAME(Root),
       REGISTER_NAME(GlobalTmps),
-      REGISTER_NAME(Args),
+      REGISTER_NAME(Context),
       REGISTER_NAME(Runtime),
   };
 #undef REGISTER_NAME

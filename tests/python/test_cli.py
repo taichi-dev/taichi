@@ -172,8 +172,7 @@ def test_cli_video():
 
 
 def test_cli_format():
-    with patch_sys_argv_helper(["ti", "format",
-                                "51fff7af"]) as custom_argv:
+    with patch_sys_argv_helper(["ti", "format", "51fff7af"]) as custom_argv:
         cli = TaichiMain(test_mode=True)
         args = cli()
         assert args.diff == "51fff7af"

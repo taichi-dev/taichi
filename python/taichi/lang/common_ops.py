@@ -151,7 +151,7 @@ class TaichiOperations:
         self.atomic_or(other)
         return self
 
-    # we don't support atomic_mul/truediv/floordiv yet:
+    # we don't support atomic_mul/truediv/floordiv/mod yet:
     def __imul__(self, other):
         import taichi as ti
         self.assign(ti.mul(self, other))
@@ -165,6 +165,11 @@ class TaichiOperations:
     def __ifloordiv__(self, other):
         import taichi as ti
         self.assign(ti.floordiv(self, other))
+        return self
+
+    def __imod__(self, other):
+        import taichi as ti
+        self.assign(ti.mod(self, other))
         return self
 
     def assign(self, other):
@@ -182,6 +187,8 @@ class TaichiOperations:
             self /= x
         elif op == 'FloorDiv':
             self //= x
+        elif op == 'Mod':
+            self %= x
         elif op == 'BitAnd':
             self &= x
         elif op == 'BitOr':

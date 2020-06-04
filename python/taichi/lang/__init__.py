@@ -452,6 +452,7 @@ def torch_test(func):
 def host_arch_only(func):
     import taichi as ti
 
+    @functools.wraps(func)
     def test(*args, **kwargs):
         archs = [ti.core.host_arch()]
         for arch in archs:

@@ -46,8 +46,8 @@ class Matrix(TaichiOperations):
 
         elif empty == True:
             warnings.warn(
-                f"instantiation of empty matrix via ti.Matrix is deprecated.",
-                PendingDeprecationWarning,
+                f"ti.Matrix(n, m, empty=True) is deprecated, use ti.Matrix.empty(n, m) instead",
+                DeprecationWarning,
                 stacklevel=3)
             self.dt = dt
             self.entries = [[None] * m for _ in range(n)]

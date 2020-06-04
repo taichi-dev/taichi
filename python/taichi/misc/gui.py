@@ -75,7 +75,6 @@ class GUI:
             assert img.shape[:2] == self.res, "Image resolution does not match GUI resolution"
             return np.ascontiguousarray(img)
 
-        ti.profiler_start('copy_image')
         if isinstance(img, ti.Expr):
             if ti.core.is_integral(img.data_type()):
                 # image of uint is not optimized by xxx_to_image
@@ -102,11 +101,8 @@ class GUI:
 
         else:
             raise ValueError(f"GUI.set_image only takes Taichi tensor or NumPy array, not {type(img)}")
-        ti.profiler_stop()
 
-        ti.profiler_start('set_img')
         self.core.set_img(self.img.ctypes.data)
-        ti.profiler_stop()
 
     def circle(self, pos, color=0xFFFFFF, radius=1):
         self.canvas.circle_single(pos[0], pos[1], color, radius)

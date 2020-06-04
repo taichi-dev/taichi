@@ -1,7 +1,7 @@
 import taichi as ti
 import numpy as np
 
-ti.init()
+ti.init(arch=ti.cpu, print_ir=True)
 
 res = 1280, 720
 pixels = ti.Vector(3, dt=ti.f32, shape=res)
@@ -14,7 +14,18 @@ def paint(size_x: ti.template(), size_y: ti.template()):
     pixels[i, j] = [u, v, 0]
 
 gui = ti.GUI('UV', res)
-while not gui.get_event(ti.GUI.ESCAPE):
+
+paint(res[0], res[1])
+gui.set_image(pixels)
+
+for i in range(200):
+    ti.profiler_start('paint')
     paint(res[0], res[1])
+    ti.sync()
+    ti.profiler_stop()
+    ti.profiler_start('set_image')
     gui.set_image(pixels)
+    ti.profiler_stop()
     gui.show()
+
+ti.profiler_print()

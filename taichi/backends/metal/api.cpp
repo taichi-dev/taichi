@@ -9,6 +9,7 @@ namespace metal {
 
 extern "C" {
 id MTLCreateSystemDefaultDevice();
+id MTLCopyAllDevices();
 }
 
 namespace {
@@ -24,6 +25,15 @@ using mac::wrap_as_nsobj_unique_ptr;
 nsobj_unique_ptr<MTLDevice> mtl_create_system_default_device() {
   id dev = MTLCreateSystemDefaultDevice();
   return wrap_as_nsobj_unique_ptr(reinterpret_cast<MTLDevice *>(dev));
+}
+
+nsobj_unique_ptr<mac::TI_NSArray> mtl_copy_all_devices() {
+  id na = MTLCopyAllDevices();
+  return wrap_as_nsobj_unique_ptr(reinterpret_cast<mac::TI_NSArray *>(na));
+}
+
+std::string mtl_device_name(MTLDevice *dev) {
+  return mac::to_string(cast_call<mac::TI_NSString *>(dev, "name"));
 }
 
 nsobj_unique_ptr<MTLCommandQueue> new_command_queue(MTLDevice *dev) {

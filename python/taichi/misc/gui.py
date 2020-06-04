@@ -32,6 +32,7 @@ class GUI:
         if isinstance(res, numbers.Number):
             res = (res, res)
         self.res = res
+        self.img = np.ascontiguousarray(np.zeros(self.res + (4,), np.float32))
         self.core = ti.core.GUI(name, ti.veci(*res))
         self.canvas = self.core.get_canvas()
         self.background_color = background_color
@@ -50,39 +51,61 @@ class GUI:
     def set_image(self, img):
         import numpy as np
         import taichi as ti
-        from .image import cook_image
-        from .util import get_os_name
 
-        ti.profiler_start('cook_image')
-        img = cook_image(img)
-        ti.profiler_stop()
+        def cook_image(img):
+            if img.dtype in [np.uint8, np.uint16, np.uint32, np.uint64]:
+                img = img.astype(np.float32) * (1 / np.iinfo(img.dtype).max)
+            elif img.dtype in [np.float32, np.float64]:
+                img = img.astype(np.float32)
+                from .util import get_os_name
+                if img.dtype == np.float32 and get_os_name() == 'win':
+                    img = np.clip(img, 0, 1)
+            else:
+                raise ValueError(
+                    f'Data type {img.dtype} not supported in GUI.set_image')
+            
+            if len(img.shape) == 2:
+                img = img[..., None]
+            if img.shape[2] == 1:
+                img = img + np.zeros(shape=(1, 1, 4), dtype=np.float32)
+            if img.shape[2] == 3:
+                img = np.concatenate([img,
+                    np.zeros(shape=(img.shape[0], img.shape[1], 1),
+                             dtype=np.float32)], axis=2)
+            assert img.shape[:2] == self.res, "Image resolution does not match GUI resolution"
+            return np.ascontiguousarray(img)
 
-        ti.profiler_start('astype')
-        if img.dtype in [np.uint8, np.uint16, np.uint32, np.uint64]:
-            img = img.astype(np.float32) * (1 / np.iinfo(img.dtype).max)
-        elif img.dtype in [np.float32, np.float64]:
-            if img.dtype == np.float32 and get_os_name() == 'win':
-                img = np.clip(img.astype(np.float32), 0, 1)
+        ti.profiler_start('copy_image')
+        if isinstance(img, ti.Expr):
+            if ti.core.is_integral(img.data_type()):
+                # image of uint is not optimized by xxx_to_image
+                self.img = cook_image(img.to_numpy())
+            else:
+                assert img.shape() == self.res, "Image resolution does not match GUI resolution"
+                from taichi.lang.meta import tensor_to_image
+                tensor_to_image(img, self.img)
+                ti.sync()
+
+        elif isinstance(img, ti.Matrix):
+            if ti.core.is_integral(img.data_type()):
+                self.img = cook_image(img.to_numpy())
+            else:
+                assert img.shape() == self.res, "Image resolution does not match GUI resolution"
+                assert img.n in [3, 4], "Only greyscale, RGB or RGBA images are supported in GUI.set_image"
+                assert img.m == 1
+                from taichi.lang.meta import vector_to_image
+                vector_to_image(img, self.img)
+                ti.sync()
+
+        elif isinstance(img, np.ndarray):
+            self.img = cook_image(img)
+
         else:
-            raise ValueError(
-                f'Data type {img.dtype} not supported in GUI.set_image')
-        ti.profiler_stop()
-
-        ti.profiler_start('concatenate')
-        if len(img.shape) == 2:
-            img = img[..., None]
-        if img.shape[2] == 1:
-            img = img + np.zeros(shape=(1, 1, 4), dtype=np.float32)
-        if img.shape[2] == 3:
-            img = np.concatenate([img,
-                np.zeros(shape=(img.shape[0], img.shape[1], 1),
-                         dtype=np.float32)], axis=2)
-        assert img.shape[:
-                         2] == self.res, "Image resolution does not match GUI resolution"
+            raise ValueError(f"GUI.set_image only takes Taichi tensor or NumPy array, not {type(img)}")
         ti.profiler_stop()
 
         ti.profiler_start('set_img')
-        self.core.set_img(np.ascontiguousarray(img).ctypes.data)
+        self.core.set_img(self.img.ctypes.data)
         ti.profiler_stop()
 
     def circle(self, pos, color=0xFFFFFF, radius=1):

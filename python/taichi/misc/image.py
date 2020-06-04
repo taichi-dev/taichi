@@ -1,19 +1,9 @@
 import numpy as np
 import taichi as ti
 
-
-def cook_image(img):
-    if isinstance(img, ti.Matrix):
-        img = img.to_numpy()
-    if isinstance(img, ti.Expr):
-        img = img.to_numpy()
-    assert isinstance(img, np.ndarray)
-    assert len(img.shape) in [2, 3]
-    return img
-
-
 def imwrite(img, filename):
-    img = cook_image(img)
+    img = img.to_numpy()
+    assert len(img.shape) in [2, 3]
     resx, resy = img.shape[:2]
     if len(img.shape) == 3:
         comp = img.shape[2]
@@ -35,7 +25,8 @@ def imread(filename, channels=0):
 
 
 def imshow(img, winname='Taichi'):
-    img = cook_image(img)
+    img = img.to_numpy()
+    assert len(img.shape) in [2, 3]
     gui = ti.GUI(winname, res=img.shape[:2])
     while not gui.get_event(ti.GUI.ESCAPE):
         gui.set_image(img)

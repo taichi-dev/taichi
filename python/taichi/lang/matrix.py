@@ -592,7 +592,7 @@ class Matrix(TaichiOperations):
     @staticmethod
     def rows(rows):
         import taichi as ti
-        mat = ti.Matrix()
+        mat = ti.Matrix().empty()
         mat.n = len(rows)
         if isinstance(rows[0], Matrix):
             for row in rows:

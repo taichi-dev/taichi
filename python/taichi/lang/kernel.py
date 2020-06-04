@@ -121,11 +121,8 @@ class Func:
             self.argument_names.append(param.name)
 
 
+@deprecated('@ti.classfunc', '@ti.func directly')
 def classfunc(foo):
-    import warnings
-    warnings.warn('@ti.classfunc is deprecated. Please use @ti.func directly.',
-                  DeprecationWarning)
-
     func = Func(foo, classfunc=True)
 
     @functools.wraps(foo)
@@ -545,11 +542,8 @@ def kernel(func):
     return _kernel_impl(func, level_of_class_stackframe=3)
 
 
+@deprecated('@ti.classkernel', '@ti.kernel directly')
 def classkernel(func):
-    import warnings
-    warnings.warn(
-        '@ti.classkernel is deprecated. Please use @ti.kernel directly.',
-        DeprecationWarning)
     return _kernel_impl(func, level_of_class_stackframe=3)
 
 

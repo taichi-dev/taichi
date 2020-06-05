@@ -58,7 +58,7 @@ while True:
         if gui.event.key == ti.GUI.SPACE:
             run()
             render()
-        elif gui.event.key == ti.GUI.ESCAPE:
+        elif gui.event.key in [ti.GUI.ESCAPE, ti.GUI.EXIT]:
             exit()
     gui.set_image(img.to_numpy().astype(np.uint8))
     gui.show()

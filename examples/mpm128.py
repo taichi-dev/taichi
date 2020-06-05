@@ -105,7 +105,7 @@ gravity[None] = [0, -1]
 for frame in range(20000):
   while gui.get_event(ti.GUI.PRESS):
     if gui.event.key == 'r': reset()
-    elif gui.event.key == ti.GUI.ESCAPE: exit(0)
+    elif gui.event.key in [ti.GUI.ESCAPE, ti.GUI.EXIT]: exit(0)
   if gui.event is not None: gravity[None] = [0, 0] # if had any event
   if gui.is_pressed(ti.GUI.LEFT,  'a'): gravity[None][0] = -1
   if gui.is_pressed(ti.GUI.RIGHT, 'd'): gravity[None][0] = 1

@@ -449,7 +449,7 @@ set_ic()
 set_bc()
 
 n = 0
-while (1):
+while gui.get_event(ti.GUI.ESCAPE, ti.GUI.EXIT):
     calc_dt()
     copy_to_old()
     for rk_step in range(2):

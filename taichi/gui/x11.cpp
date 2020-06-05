@@ -3,6 +3,7 @@
 #if defined(TI_GUI_X11)
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
+#include <cstdlib>
 
 // Undo terrible unprefixed macros in X.h
 #ifdef None
@@ -73,6 +74,12 @@ void GUI::process_event() {
     switch (ev.type) {
       case Expose:
         break;
+      case ClientMessage:
+          // https://stackoverflow.com/questions/10792361/how-do-i-gracefully-exit-an-x11-event-loop
+          if (ev.xclient.data.l[0] == *(Atom *)wmDeleteMessage) {
+            key_events.push_back(KeyEvent{KeyEvent::Type::press, "WMExit", cursor_pos});
+          }
+          break;
       case MotionNotify:
         set_mouse_pos(ev.xbutton.x, height - ev.xbutton.y - 1);
         mouse_event(MouseEvent{MouseEvent::Type::move, cursor_pos});
@@ -114,6 +121,9 @@ void GUI::create_window() {
                ButtonPressMask | ExposureMask | KeyPressMask | KeyReleaseMask |
                    ButtonPress | ButtonReleaseMask | EnterWindowMask |
                    LeaveWindowMask | PointerMotionMask);
+  wmDeleteMessage = std::malloc(sizeof(Atom));
+  *(Atom *)wmDeleteMessage = XInternAtom((Display *)display, "WM_DELETE_WINDOW", False);
+  XSetWMProtocols((Display *)display, window, (Atom *)wmDeleteMessage, 1);
   XMapWindow((Display *)display, window);
   img = new CXImage((Display *)display, (Visual *)visual, width, height);
 }
@@ -129,6 +139,8 @@ void GUI::set_title(std::string title) {
 }
 
 GUI::~GUI() {
+  XCloseDisplay((Display *)display);
+  std::free(wmDeleteMessage);
   delete img;
 }
 

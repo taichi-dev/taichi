@@ -23,6 +23,7 @@ class GUI:
     LMB = 'LMB'
     MMB = 'MMB'
     RMB = 'RMB'
+    EXIT = 'WMExit'
     RELEASE = False
     PRESS = True
 

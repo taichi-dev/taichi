@@ -37,6 +37,6 @@ def imread(filename, channels=0):
 def imshow(img, winname='Taichi'):
     img = cook_image(img)
     gui = ti.GUI(winname, res=img.shape[:2])
-    while not gui.get_event(ti.GUI.ESCAPE):
+    while not gui.get_event(ti.GUI.ESCAPE, ti.GUI.EXIT):
         gui.set_image(img)
         gui.show()

@@ -276,6 +276,21 @@ A *event filter* is a list combined of *key*, *type* and *(type, key)* tuple, e.
         mouse_x, mouse_y = gui.get_cursor_pos()
 
 
+.. attribute:: gui.running
+
+    :parameter gui: (GUI)
+    :return: (bool) ``True`` if ``ti.GUI.EXIT`` event occurred, vice versa
+
+    For example:
+
+    ::
+
+        while gui.running:
+            render()
+            gui.set_image(pixels)
+            gui.show()
+
+
 Image I/O
 ---------
 

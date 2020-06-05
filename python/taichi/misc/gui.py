@@ -227,6 +227,17 @@ class GUI:
             self.get_key_event()  # pop to update self.key_pressed
         return len(self.key_pressed) != 0
 
+    @property
+    def running(self):
+        return not self.core.should_close
+
+    @running.setter
+    def running(self, value):
+        if value:
+            self.core.should_close = 0
+        elif not self.core.should_close:
+            self.core.should_close = 1
+
 
 def rgb_to_hex(c):
     to255 = lambda x: min(255, max(0, int(x * 255)))

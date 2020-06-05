@@ -784,7 +784,7 @@ class GUI : public GUIBase {
     // Pretty like SIGTERM, you can hook it, but you have to terminate after your handler is done.
     if (should_close) {
       if (++should_close > 5) {  // if the event is not processed in 5 frames, raise RuntimeError
-        throw std::string("Window manager sent close message, exiting...");
+        throw std::string("Window close button clicked, exiting... (use `while gui.running` to exit gracefully)");
       }
     }
     process_event();

@@ -28,7 +28,6 @@ The Taichi Programming Language
    scalar_tensor
    vector
    matrix
-   offset
    snode
 
 
@@ -39,6 +38,7 @@ The Taichi Programming Language
    meta
    layout
    sparse
+   offset
    differentiable_programming
    odop
    compilation

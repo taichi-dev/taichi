@@ -221,8 +221,10 @@ class GUI:
 
     def has_key_pressed(self):
         import warnings
-        warnings.warn('gui.has_key_pressed() is deprecated, use gui.get_event() instead.',
-                DeprecationWarning, stacklevel=3)
+        warnings.warn(
+            'gui.has_key_pressed() is deprecated, use gui.get_event() instead.',
+            DeprecationWarning,
+            stacklevel=3)
         if self.has_key_event():
             self.get_key_event()  # pop to update self.key_pressed
         return len(self.key_pressed) != 0

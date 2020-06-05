@@ -779,12 +779,16 @@ class GUI : public GUIBase {
     }
     last_frame_time = taichi::Time::get_time();
     redraw();
-    // Some old examples / users don't even provide a `break` statement for us to terminate loop.
-    // So we have to terminate the program with RuntimeError if ti.GUI.EXIT event is not processed.
-    // Pretty like SIGTERM, you can hook it, but you have to terminate after your handler is done.
+    // Some old examples / users don't even provide a `break` statement for us
+    // to terminate loop. So we have to terminate the program with RuntimeError
+    // if ti.GUI.EXIT event is not processed. Pretty like SIGTERM, you can hook
+    // it, but you have to terminate after your handler is done.
     if (should_close) {
-      if (++should_close > 5) {  // if the event is not processed in 5 frames, raise RuntimeError
-        throw std::string("Window close button clicked, exiting... (use `while gui.running` to exit gracefully)");
+      if (++should_close >
+          5) {  // if the event is not processed in 5 frames, raise RuntimeError
+        throw std::string(
+            "Window close button clicked, exiting... (use `while gui.running` "
+            "to exit gracefully)");
       }
     }
     process_event();

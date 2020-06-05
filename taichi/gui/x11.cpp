@@ -75,12 +75,13 @@ void GUI::process_event() {
       case Expose:
         break;
       case ClientMessage:
-          // https://stackoverflow.com/questions/10792361/how-do-i-gracefully-exit-an-x11-event-loop
-          if (ev.xclient.data.l[0] == *(Atom *)wmDeleteMessage) {
-            key_events.push_back(KeyEvent{KeyEvent::Type::press, "WMClose", cursor_pos});
-            should_close++;
-          }
-          break;
+        // https://stackoverflow.com/questions/10792361/how-do-i-gracefully-exit-an-x11-event-loop
+        if (ev.xclient.data.l[0] == *(Atom *)wmDeleteMessage) {
+          key_events.push_back(
+              KeyEvent{KeyEvent::Type::press, "WMClose", cursor_pos});
+          should_close++;
+        }
+        break;
       case MotionNotify:
         set_mouse_pos(ev.xbutton.x, height - ev.xbutton.y - 1);
         mouse_event(MouseEvent{MouseEvent::Type::move, cursor_pos});
@@ -123,7 +124,8 @@ void GUI::create_window() {
                    ButtonPress | ButtonReleaseMask | EnterWindowMask |
                    LeaveWindowMask | PointerMotionMask);
   wmDeleteMessage = std::malloc(sizeof(Atom));
-  *(Atom *)wmDeleteMessage = XInternAtom((Display *)display, "WM_DELETE_WINDOW", False);
+  *(Atom *)wmDeleteMessage =
+      XInternAtom((Display *)display, "WM_DELETE_WINDOW", False);
   XSetWMProtocols((Display *)display, window, (Atom *)wmDeleteMessage, 1);
   XMapWindow((Display *)display, window);
   img = new CXImage((Display *)display, (Visual *)visual, width, height);

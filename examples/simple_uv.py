@@ -8,15 +8,15 @@ pixels = ti.Vector(3, dt=ti.f32, shape=res)
 
 
 @ti.kernel
-def paint(size_x: ti.template(), size_y: ti.template()):
+def paint():
     for i, j in pixels:
-        u = i / size_x
-        v = j / size_y
+        u = i / res[0]
+        v = j / res[1]
         pixels[i, j] = [u, v, 0]
 
 
 gui = ti.GUI('UV', res)
 while not gui.get_event(ti.GUI.ESCAPE):
-    paint(res[0], res[1])
+    paint()
     gui.set_image(pixels)
     gui.show()

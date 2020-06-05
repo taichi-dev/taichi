@@ -286,6 +286,9 @@ A *event filter* is a list combined of *key*, *type* and *(type, key)* tuple, e.
     ::
 
         while gui.running:
+            if gui.get_event(ti.GUI.ESCAPE):
+                gui.running = False
+
             render()
             gui.set_image(pixels)
             gui.show()

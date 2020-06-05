@@ -78,7 +78,7 @@ def main(ver='master'):
                     f'** Warning: tag {tag.lower()} undefined in the "details" dict. Please include the tag into "details", unless the tag is a typo.'
                 )
 
-    all_changes.append(format(c))
+        all_changes.append(format(c))
 
     res = 'Highlights:\n'
     for tag in sorted(notable_changes.keys()):

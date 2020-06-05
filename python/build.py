@@ -62,6 +62,8 @@ with open('../setup.py') as fin:
 
 print("*** project_name = '{}'".format(project_name))
 
+try: os.remove('taichi/CHANGELOG.md')
+except: pass
 shutil.rmtree('taichi/lib', ignore_errors=True)
 shutil.rmtree('taichi/tests', ignore_errors=True)
 shutil.rmtree('taichi/examples', ignore_errors=True)
@@ -81,6 +83,7 @@ else:
     shutil.copy('../runtimes/RelWithDebInfo/taichi_core.dll',
                 'taichi/lib/taichi_core.pyd')
 
+shutil.copy('../CHANGELOG.md', './taichi/CHANGELOG.md')
 shutil.copytree('../tests/python', './taichi/tests')
 shutil.copytree('../examples', './taichi/examples')
 shutil.copytree('../external/assets', './taichi/assets')
@@ -112,6 +115,8 @@ shutil.rmtree('taichi/lib')
 shutil.rmtree('taichi/tests')
 shutil.rmtree('taichi/examples')
 shutil.rmtree('taichi/assets')
+try: os.remove('taichi/CHANGELOG.md')
+except: pass
 shutil.rmtree('./build')
 
 if mode == 'upload':

@@ -604,12 +604,6 @@ class Matrix(TaichiOperations):
         from .meta import fill_matrix
         fill_matrix(self, val)
 
-    def shape_ext(self, as_vector=None):
-        if as_vector is None:
-            as_vector = self.m == 1
-        shape_ext = (self.n, ) if as_vector else (self.n, self.m)
-        return shape_ext
-
     @python_scope
     def to_numpy(self, keep_dims=False, as_vector=None):
         # Discussion: https://github.com/taichi-dev/taichi/pull/1046#issuecomment-633548858
@@ -621,7 +615,7 @@ class Matrix(TaichiOperations):
                 DeprecationWarning,
                 stacklevel=3)
         as_vector = self.m == 1 and not keep_dims
-        shape_ext = self.shape_ext(as_vector)
+        shape_ext = (self.n, ) if as_vector else (self.n, self.m)
         ret = np.empty(self.loop_range().shape() + shape_ext,
                        dtype=to_numpy_type(
                            self.loop_range().snode().data_type()))
@@ -635,7 +629,7 @@ class Matrix(TaichiOperations):
     def to_torch(self, device=None, keep_dims=False):
         import torch
         as_vector = self.m == 1 and not keep_dims
-        shape_ext = self.shape_ext(as_vector)
+        shape_ext = (self.n, ) if as_vector else (self.n, self.m)
         ret = torch.empty(self.loop_range().shape() + shape_ext,
                           dtype=to_pytorch_type(
                               self.loop_range().snode().data_type()),

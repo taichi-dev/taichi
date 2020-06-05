@@ -471,6 +471,7 @@ class GUI : public GUIBase {
   std::unique_ptr<Canvas> canvas;
   float64 last_frame_time;
   bool key_pressed;
+  int should_close{0};
   std::vector<std::string> log_entries;
   Vector2i cursor_pos;
   bool button_status[3];
@@ -778,6 +779,14 @@ class GUI : public GUIBase {
     }
     last_frame_time = taichi::Time::get_time();
     redraw();
+    // Some old examples / users don't even provide a `break` statement for us to terminate loop.
+    // So we have to terminate the program with RuntimeError if ti.GUI.EXIT event is not processed.
+    // Pretty like SIGTERM, you can hook it, but you have to terminate after your handler is done.
+    if (should_close) {
+      if (++should_close > 5) {  // if the event is not processed in 5 frames, raise RuntimeError
+        throw std::string("Window manager sent close message, exiting...");
+      }
+    }
     process_event();
     while (last_frame_interval.size() > 30) {
       last_frame_interval.erase(last_frame_interval.begin());

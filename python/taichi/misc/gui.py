@@ -174,7 +174,8 @@ class GUI:
         for e in self.get_events(*filter):
             self.event = e
             return True
-        return False
+        else:
+            return False
 
     def get_events(self, *filter):
         filter = filter and GUI.EventFilter(*filter) or None
@@ -219,6 +220,9 @@ class GUI:
         return pos[0], pos[1]
 
     def has_key_pressed(self):
+        import warnings
+        warnings.warn('gui.has_key_pressed() is deprecated, use gui.get_event() instead.',
+                DeprecationWarning, stacklevel=3)
         if self.has_key_event():
             self.get_key_event()  # pop to update self.key_pressed
         return len(self.key_pressed) != 0

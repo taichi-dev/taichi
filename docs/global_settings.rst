@@ -1,6 +1,7 @@
 Global settings
 ---------------
 
+- Disable advanced optimization to save compile time: ``ti.core.toggle_advanced_optimization(False)``
 - Restart the Taichi runtime system (clear memory, destroy all variables and kernels): ``ti.reset()``
 - Eliminate verbose outputs: ``ti.get_runtime().set_verbose(False)``
 - To not trigger GDB when crashes: ``export TI_GDB_TRIGGER=0``

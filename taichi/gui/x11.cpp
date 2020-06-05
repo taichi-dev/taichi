@@ -77,7 +77,7 @@ void GUI::process_event() {
       case ClientMessage:
           // https://stackoverflow.com/questions/10792361/how-do-i-gracefully-exit-an-x11-event-loop
           if (ev.xclient.data.l[0] == *(Atom *)wmDeleteMessage) {
-            key_events.push_back(KeyEvent{KeyEvent::Type::press, "WMExit", cursor_pos});
+            key_events.push_back(KeyEvent{KeyEvent::Type::press, "WMClose", cursor_pos});
             should_close++;
           }
           break;

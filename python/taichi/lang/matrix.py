@@ -147,9 +147,6 @@ class Matrix(TaichiOperations):
         return results[0]
 
     def is_pyconstant(self):
-        results = [False for _ in self.entries]
-        for i, e in enumerate(self.entries):
-            results[i] = not isinstance(e, expr.Expr)
         return all([not isinstance(e, expr.Expr) for e in self.entries])
 
     @staticmethod

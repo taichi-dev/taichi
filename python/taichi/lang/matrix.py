@@ -180,7 +180,6 @@ class Matrix(TaichiOperations):
             ret.entries[i] = foo(self.entries[i])
         return ret
 
-    @taichi_scope
     def __matmul__(self, other):
         # TODO: move to common_ops.py, redirect to `ti.matmul` too?
         if self.is_pyconstant():

@@ -3,15 +3,14 @@
 import sys
 from git import Repo
 
+
 def main(ver='master'):
     g = Repo('.')
     commits = list(g.iter_commits(ver, max_count=200))
     begin, end = -1, 0
 
-
     def format(c):
         return f'{c.summary} (by **{c.author}**)'
-
 
     notable_changes = {}
     all_changes = []
@@ -92,8 +91,8 @@ def main(ver='master'):
 
     return res
 
+
 if __name__ == '__main__':
     ver = sys.argv[1] if len(sys.argv) > 1 else 'master'
     res = main(ver)
     print(res)
-

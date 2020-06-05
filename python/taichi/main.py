@@ -186,13 +186,15 @@ class TaichiMain:
                 '-s',
                 '--save',
                 action='store_true',
-                help="Save changelog to CHANGELOG.md instead of print to stdout")
+                help="Save changelog to CHANGELOG.md instead of print to stdout"
+            )
             args = parser.parse_args(arguments)
 
             from . import make_changelog
             res = make_changelog.main(args.version)
             if args.save:
-                changelog_md = os.path.join(ti.core.get_repo_dir(), 'CHANGELOG.md')
+                changelog_md = os.path.join(ti.core.get_repo_dir(),
+                                            'CHANGELOG.md')
                 with open(changelog_md, 'w') as f:
                     f.write(res)
             else:

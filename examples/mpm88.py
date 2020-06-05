@@ -1,6 +1,5 @@
 import taichi as ti
 import random
-
 ti.init(arch=ti.gpu)
 
 dim = 2
@@ -73,21 +72,17 @@ def substep():
     J[p] *= 1 + dt * new_C.trace()
     C[p] = new_C
 
-
-gui = ti.GUI("MPM88", (512, 512))
-
 for i in range(n_particles):
   x[i] = [random.random() * 0.4 + 0.2, random.random() * 0.4 + 0.2]
   v[i] = [0, -1]
   J[i] = 1
 
+gui = ti.GUI("MPM88", (512, 512))
 for frame in range(20000):
   for s in range(50):
     grid_v.fill([0, 0])
     grid_m.fill(0)
     substep()
-
   gui.clear(0x112F41)
-  pos = x.to_numpy()
-  gui.circles(pos, radius=1.5, color=0x068587)
+  gui.circles(x.to_numpy(), radius=1.5, color=0x068587)
   gui.show()

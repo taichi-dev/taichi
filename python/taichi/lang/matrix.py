@@ -635,7 +635,6 @@ class Matrix(TaichiOperations):
         dim_ext = (self.n, ) if as_vector else (self.n, self.m)
 
         if self.is_pyconstant():
-            # TO @rexwangcc: all operations can be based on this:
             return np.array(self.entries).reshape(dim_ext)
 
         ret = np.empty(self.loop_range().shape() + dim_ext,
@@ -701,7 +700,7 @@ class Matrix(TaichiOperations):
 
     def __repr__(self):
         """Python scope object print support."""
-        return str(np.array(self.entries).reshape((self.n, self.m)))
+        return str(self.to_numpy())
 
     @staticmethod
     @taichi_scope

@@ -1,468 +1,179 @@
-import sys
-import os
-import shutil
-import time
-import math
-import random
 import argparse
-from collections import defaultdict
-from colorama import Fore, Back, Style
-from taichi.tools.video import make_video, interpolate_frames, mp4_to_gif, scale_video, crop_video, accelerate_video
-from pathlib import Path
+import math
+import os
+import random
 import runpy
+import shutil
+import sys
+import time
+from collections import defaultdict
+from functools import wraps
+from pathlib import Path
+
+from colorama import Back, Fore, Style
+
+import taichi as ti
+from taichi.tools.video import (accelerate_video, crop_video, make_video,
+                                mp4_to_gif, scale_video)
 
 
-def test_python(args):
-    print("\nRunning python tests...\n")
-    test_files = args.files
-    import taichi as ti
-    import pytest
-    if ti.is_release():
-        root_dir = ti.package_root()
-        test_dir = os.path.join(root_dir, 'tests')
-    else:
-        root_dir = ti.get_repo_directory()
-        test_dir = os.path.join(root_dir, 'tests', 'python')
-    pytest_args = []
-    if len(test_files):
-        # run individual tests
-        for f in test_files:
-            # auto-complete file names
-            if not f.startswith('test_'):
-                f = 'test_' + f
-            if not f.endswith('.py'):
-                f = f + '.py'
-            pytest_args.append(os.path.join(test_dir, f))
-    else:
-        # run all the tests
-        pytest_args = [test_dir]
-    if args.verbose:
-        pytest_args += ['-s', '-v']
-    if args.rerun:
-        pytest_args += ['--reruns', args.rerun]
-    if int(
-            pytest.main(
-                [os.path.join(root_dir, 'misc/empty_pytest.py'), '-n1',
-                 '-q'])) == 0:  # test if pytest has xdist or not
-        try:
-            from multiprocessing import cpu_count
-            threads = min(8, cpu_count())  # To prevent running out of memory
-        except:
-            threads = 2
-        os.environ['TI_DEVICE_MEMORY_GB'] = '0.5'  # Discussion: #769
-        arg_threads = None
-        if args.threads is not None:
-            arg_threads = int(args.threads)
-        env_threads = os.environ.get('TI_TEST_THREADS', '')
-        if arg_threads is not None:
-            threads = arg_threads
-        elif env_threads:
-            threads = int(env_threads)
-        print(f'Starting {threads} testing thread(s)...')
-        if threads > 1:
-            pytest_args += ['-n', str(threads)]
-    return int(pytest.main(pytest_args))
+def timer(func):
+    """Function decorator to benchmark a function runnign time."""
+    import timeit
+
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        start = timeit.default_timer()
+        result = func(*args, **kwargs)
+        elapsed = timeit.default_timer() - start
+        print(f">>> Running time: {elapsed:.2f}s")
+        return result
+
+    return wrapper
 
 
-def test_cpp(args):
-    import taichi as ti
-    test_files = args.files
-    # Cpp tests use the legacy non LLVM backend
-    ti.reset()
-    print("Running C++ tests...")
-    task = ti.Task('test')
-    return int(task.run(*test_files))
+def registerableCLI(cls):
+    """Class decorator to register methodss with @register into a set."""
+    cls.registered_commands = set([])
+    for name in dir(cls):
+        method = getattr(cls, name)
+        if hasattr(method, 'registered'):
+            cls.registered_commands.add(name)
+    return cls
 
 
-def get_examples_dir() -> Path:
-    """Get the path to the examples directory."""
-    import taichi as ti
-
-    root_dir = ti.package_root() if ti.is_release() else ti.get_repo_directory(
-    )
-    examples_dir = Path(root_dir) / 'examples'
-    return examples_dir
+def register(func):
+    """Method decorator to register CLI commands."""
+    func.registered = True
+    return func
 
 
-def get_available_examples() -> set:
-    """Get a set of all available example names."""
-    examples_dir = get_examples_dir()
-    all_examples = examples_dir.rglob('*.py')
-    all_example_names = {
-        str(f.resolve()).split('/')[-1].split('.')[0]
-        for f in all_examples
-    }
-    return all_example_names
+@registerableCLI
+class TaichiMain:
+    def __init__(self, debug: bool = False, test_mode: bool = False):
+        self.banner = f"\n{'*' * 43}\n**      Taichi Programming Language      **\n{'*' * 43}"
+        print(self.banner)
 
+        if 'TI_DEBUG' in os.environ:
+            val = os.environ['TI_DEBUG']
+            if val not in ['0', '1']:
+                raise ValueError(
+                    "Environment variable TI_DEBUG can only have value 0 or 1."
+                )
+        if debug:
+            print(f"\n{'*' * 17} Debug Mode {'*' * 17}\n")
+            os.environ['TI_DEBUG'] = '1'
 
-def run_example(name: str):
-    """Run an example based on the example NAME."""
-    all_example_names = get_available_examples()
-    if name not in all_example_names:
-        sys.exit(
-            f"Sorry, {name} is not an available example name!\nAvailable example names are: {sorted(all_example_names)}"
-        )
-    examples_dir = get_examples_dir()
-    target = str((examples_dir / f"{name}.py").resolve())
-    # we need to modify path for examples that use
-    # implicit relative imports
-    sys.path.append(str(examples_dir.resolve()))
-    print(f"Running example {name} ...")
-    runpy.run_path(target, run_name='__main__')
+        parser = argparse.ArgumentParser(description="Taichi CLI",
+                                         usage=self._usage())
+        parser.add_argument('command',
+                            help="command from the above list to run")
 
+        # Print help if no command provided
+        if len(sys.argv[1:2]) == 0:
+            parser.print_help()
+            exit(1)
 
-def get_benchmark_baseline_dir():
-    import taichi as ti
-    return os.path.join(ti.core.get_repo_dir(), 'benchmarks', 'baseline')
+        # Flag for unit testing
+        self.test_mode = test_mode
 
+        self.main_parser = parser
 
-def get_benchmark_output_dir():
-    import taichi as ti
-    return os.path.join(ti.core.get_repo_dir(), 'benchmarks', 'output')
+    @timer
+    def __call__(self):
+        # Parse the command
+        args = self.main_parser.parse_args(sys.argv[1:2])
 
+        if args.command not in self.registered_commands:
+            # TODO: do we really need this?
+            if args.command.endswith(".py"):
+                TaichiMain._exec_python_file(args.command)
+            print(f"{args.command} is not a valid command!")
+            self.main_parser.print_help()
+            exit(1)
 
-def display_benchmark_regression(xd, yd, args):
-    def parse_dat(file):
-        dict = {}
-        for line in open(file).readlines():
-            try:
-                a, b = line.strip().split(':')
-            except:
-                continue
-            b = float(b)
-            if abs(b % 1.0) < 1e-5:  # codegen_*
-                b = int(b)
-            dict[a.strip()] = b
-        return dict
+        return getattr(self, args.command)(sys.argv[2:])
 
-    def parse_name(file):
-        if file[0:5] == 'test_':
-            return file[5:-4].replace('__test_', '::', 1)
-        elif file[0:10] == 'benchmark_':
-            return '::'.join(reversed(file[10:-4].split('__arch_')))
-        else:
-            raise Exception(f'bad benchmark file name {file}')
+    def _usage(self) -> str:
+        """Compose deterministic usage message based on registered_commands."""
+        # TODO: add some color to commands
+        msg = "\n"
+        space = 20
+        for command in sorted(self.registered_commands):
+            msg += f"    {command}{' ' * (space - len(command))}|-> {getattr(self, command).__doc__}\n"
+        return msg
 
-    def get_dats(dir):
-        list = []
-        for x in os.listdir(dir):
-            if x.endswith('.dat'):
-                list.append(x)
-        dict = {}
-        for x in list:
-            name = parse_name(x)
-            path = os.path.join(dir, x)
-            dict[name] = parse_dat(path)
-        return dict
-
-    def plot_in_gui(scatter):
-        import numpy as np
-        import taichi as ti
-        gui = ti.GUI('Regression Test', (640, 480), 0x001122)
-        print('[Hint] press SPACE to go for next display')
-        for key, data in scatter.items():
-            data = np.array([((i + 0.5) / len(data), x / 2)
-                             for i, x in enumerate(data)])
-            while not gui.get_event((ti.GUI.PRESS, ti.GUI.SPACE)):
-                gui.core.title = key
-                gui.line((0, 0.5), (1, 0.5), 1.8, 0x66ccff)
-                gui.circles(data, 0xffcc66, 1.5)
-                gui.show()
-
-    spec = args.files
-    single_line = spec and len(spec) == 1
-    xs, ys = get_dats(xd), get_dats(yd)
-    scatter = defaultdict(list)
-    for name in reversed(sorted(set(xs.keys()).union(ys.keys()))):
-        file, func = name.split('::')
-        u, v = xs.get(name, {}), ys.get(name, {})
-        ret = ''
-        for key in set(u.keys()).union(v.keys()):
-            if spec and key not in spec:
-                continue
-            a, b = u.get(key, 0), v.get(key, 0)
-            if a == 0:
-                if b == 0:
-                    res = 1.0
-                else:
-                    res = math.inf
-            else:
-                res = b / a
-            scatter[key].append(res)
-            if res == 1: continue
-            if not single_line:
-                ret += f'{key:<30}'
-            res -= 1
-            color = Fore.RESET
-            if res > 0: color = Fore.RED
-            elif res < 0: color = Fore.GREEN
-            if isinstance(a, float):
-                a = f'{a:>7.2}'
-            else:
-                a = f'{a:>7}'
-            if isinstance(b, float):
-                b = f'{b:>7.2}'
-            else:
-                b = f'{b:>7}'
-            ret += f'{Fore.MAGENTA}{a}{Fore.RESET} -> '
-            ret += f'{Fore.CYAN}{b} {color}{res:>+9.1%}{Fore.RESET}\n'
-        if ret != '':
-            print(f'{file + "::" + func:_<58}', end='')
-            if not single_line:
-                print('')
-            print(ret, end='')
-            if not single_line:
-                print('')
-
-    if args.gui:
-        plot_in_gui(scatter)
-
-
-def make_argument_parser():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-v',
-                        '--verbose',
-                        action='store_true',
-                        help='Run with verbose outputs')
-    parser.add_argument('-r',
-                        '--rerun',
-                        help='Rerun failed tests for given times')
-    parser.add_argument('-t',
-                        '--threads',
-                        help='Number of threads for parallel testing')
-    parser.add_argument('-c',
-                        '--cpp',
-                        action='store_true',
-                        help='Run C++ tests')
-    parser.add_argument('-g',
-                        '--gui',
-                        action='store_true',
-                        help='Display benchmark regression result in GUI')
-    parser.add_argument('-T',
-                        '--tprt',
-                        action='store_true',
-                        help='Benchmark for time performance')
-    parser.add_argument(
-        '-a',
-        '--arch',
-        help='Specify arch(s) to run test on, e.g. -a opengl,metal')
-    parser.add_argument(
-        '-n',
-        '--exclusive',
-        action='store_true',
-        help='Exclude arch(s) instead of include, e.g. -na opengl,metal')
-    parser.add_argument('files', nargs='*', help='Files to be tested')
-    return parser
-
-
-def main(debug=False):
-    argc = len(sys.argv)
-    if argc == 1:
-        mode = 'help'
-        parser_args = sys.argv
-    else:
-        mode = sys.argv[1]
-        parser_args = sys.argv[2:]
-    parser = make_argument_parser()
-    args = parser.parse_args(args=parser_args)
-
-    lines = []
-    print()
-    lines.append(u' *******************************************')
-    lines.append(u' **     Taichi Programming Language       **')
-    lines.append(u' *******************************************')
-    if 'TI_DEBUG' in os.environ:
-        val = os.environ['TI_DEBUG']
-        if val not in ['0', '1']:
-            raise ValueError(
-                "Environment variable TI_DEBUG can only have value 0 or 1.")
-    if debug:
-        lines.append(u' *****************Debug Mode****************')
-        os.environ['TI_DEBUG'] = '1'
-    print(u'\n'.join(lines))
-    print()
-    import taichi as ti
-    if args.arch is not None:
-        arch = args.arch
-        if args.exclusive:
-            arch = '^' + arch
-        print(f'Running on Arch={arch}')
-        os.environ['TI_WANTED_ARCHS'] = arch
-
-    if mode == 'help':
-        print(
-            "    Usage: ti run [task name]        |-> Run a specific task\n"
-            "           ti test                   |-> Run all the tests\n"
-            "           ti benchmark              |-> Run python tests in benchmark mode\n"
-            "           ti baseline               |-> Archive current benchmark result as baseline\n"
-            "           ti regression             |-> Display benchmark regression test result\n"
-            "           ti format                 |-> Reformat modified source files\n"
-            "           ti format_all             |-> Reformat all source files\n"
-            "           ti build                  |-> Build C++ files\n"
-            "           ti video                  |-> Make a video using *.png files in the current folder\n"
-            "           ti video_scale            |-> Scale video resolution \n"
-            "           ti video_crop             |-> Crop video\n"
-            "           ti video_speed            |-> Speed up video\n"
-            "           ti gif                    |-> Convert mp4 file to gif\n"
-            "           ti doc                    |-> Build documentation\n"
-            "           ti release                |-> Make source code release\n"
-            "           ti debug [script.py]      |-> Debug script\n"
-            "           ti example [name]         |-> Run an example by name\n"
-        )
-        return 0
-
-    t = time.time()
-    if mode.endswith('.py'):
+    @staticmethod
+    def _exec_python_file(filename: str):
+        """Execute a Python file based on filename."""
+        # TODO: do we really need this?
         import subprocess
-        subprocess.call([sys.executable, mode] + sys.argv[1:])
-    elif mode == "run":
-        if argc <= 1:
-            print("Please specify [task name], e.g. test_math")
-            return -1
-        print(sys.argv)
-        name = sys.argv[1]
-        task = ti.Task(name)
-        task.run(*sys.argv[2:])
-    elif mode == "debug":
-        ti.core.set_core_trigger_gdb_when_crash(True)
-        if argc <= 2:
-            print("Please specify [file name], e.g. render.py")
-            return -1
-        name = sys.argv[2]
-        with open(name) as script:
-            script = script.read()
-        exec(script, {'__name__': '__main__'})
-    elif mode == "test":
-        if len(args.files):
-            if args.cpp:
-                return test_cpp(args)
+        subprocess.call([sys.executable, filename] + sys.argv[1:])
+
+    @staticmethod
+    def _get_examples_dir() -> Path:
+        """Get the path to the examples directory."""
+        import taichi as ti
+
+        root_dir = ti.package_root() if ti.is_release(
+        ) else ti.get_repo_directory()
+        examples_dir = Path(root_dir) / 'examples'
+        return examples_dir
+
+    @staticmethod
+    def _get_available_examples() -> set:
+        """Get a set of all available example names."""
+        examples_dir = TaichiMain._get_examples_dir()
+        all_examples = examples_dir.rglob('*.py')
+        all_example_names = {Path(f).stem for f in all_examples}
+        return all_example_names
+
+    @staticmethod
+    def _example_choices_type(choices):
+        def support_choice_with_dot_py(choice):
+            if choice.endswith('.py') and choice.split('.')[0] in choices:
+                # try to find and remove python file extension
+                return choice.split('.')[0]
             else:
-                return test_python(args)
-        elif args.cpp:
-            return test_cpp(args)
-        else:
-            ret = test_python(args)
-            if ret != 0:
-                return ret
-            return test_cpp(args)
-    elif mode == "benchmark":
-        import shutil
-        commit_hash = ti.core.get_commit_hash()
-        with os.popen('git rev-parse HEAD') as f:
-            current_commit_hash = f.read().strip()
-        assert commit_hash == current_commit_hash, f"Built commit {commit_hash:.6} differs from current commit {current_commit_hash:.6}, refuse to benchmark"
-        os.environ['TI_PRINT_BENCHMARK_STAT'] = '1'
-        output_dir = get_benchmark_output_dir()
-        shutil.rmtree(output_dir, True)
-        os.mkdir(output_dir)
-        os.environ['TI_BENCHMARK_OUTPUT_DIR'] = output_dir
-        if os.environ.get('TI_WANTED_ARCHS') is None and not args.tprt:
-            # since we only do number-of-statements benchmark for SPRT
-            os.environ['TI_WANTED_ARCHS'] = 'x64'
-        if args.tprt:
-            os.system('python benchmarks/run.py')
-            # TODO: benchmark_python(args)
-        else:
-            test_python(args)
-    elif mode == "baseline":
-        import shutil
-        baseline_dir = get_benchmark_baseline_dir()
-        output_dir = get_benchmark_output_dir()
-        shutil.rmtree(baseline_dir, True)
-        shutil.copytree(output_dir, baseline_dir)
-        print('[benchmark] baseline data saved')
-    elif mode == "regression":
-        baseline_dir = get_benchmark_baseline_dir()
-        output_dir = get_benchmark_output_dir()
-        display_benchmark_regression(baseline_dir, output_dir, args)
-    elif mode == "build":
-        ti.core.build()
-    elif mode == "format":
-        diff = None
-        if len(sys.argv) >= 3:
-            diff = sys.argv[2]
-        ti.core.format(diff=diff)
-    elif mode == "format_all":
-        ti.core.format(all=True)
-    elif mode == "statement":
-        exec(sys.argv[2])
-    elif mode == "update":
-        ti.core.update(True)
-        ti.core.build()
-    elif mode == "asm":
-        fn = sys.argv[2]
-        os.system(
-            r"sed '/^\s*\.\(L[A-Z]\|[a-z]\)/ d' {0} > clean_{0}".format(fn))
-    elif mode == "interpolate":
-        interpolate_frames('.')
-    elif mode == "doc":
-        os.system('cd {}/docs && sphinx-build -b html . build'.format(
-            ti.get_repo_directory()))
-    elif mode == "video":
-        files = sorted(os.listdir('.'))
-        files = list(filter(lambda x: x.endswith('.png'), files))
-        if len(sys.argv) >= 3:
-            frame_rate = int(sys.argv[2])
-        else:
-            frame_rate = 24
-        if len(sys.argv) >= 4:
-            trunc = int(sys.argv[3])
-            files = files[:trunc]
-        ti.info('Making video using {} png files...', len(files))
-        ti.info("frame_rate={}", frame_rate)
-        output_fn = 'video.mp4'
-        make_video(files, output_path=output_fn, frame_rate=frame_rate)
-        ti.info('Done! Output video file = {}', output_fn)
-    elif mode == "video_scale":
-        input_fn = sys.argv[2]
-        assert input_fn[-4:] == '.mp4'
-        output_fn = input_fn[:-4] + '-scaled.mp4'
-        ratiow = float(sys.argv[3])
-        if len(sys.argv) >= 5:
-            ratioh = float(sys.argv[4])
-        else:
-            ratioh = ratiow
-        scale_video(input_fn, output_fn, ratiow, ratioh)
-    elif mode == "video_crop":
-        if len(sys.argv) != 7:
-            print('Usage: ti video_crop fn x_begin x_end y_begin y_end')
-            return -1
-        input_fn = sys.argv[2]
-        assert input_fn[-4:] == '.mp4'
-        output_fn = input_fn[:-4] + '-cropped.mp4'
-        x_begin = float(sys.argv[3])
-        x_end = float(sys.argv[4])
-        y_begin = float(sys.argv[5])
-        y_end = float(sys.argv[6])
-        crop_video(input_fn, output_fn, x_begin, x_end, y_begin, y_end)
-    elif mode == "video_speed":
-        if len(sys.argv) != 4:
-            print('Usage: ti video_speed fn speed_up_factor')
-            return -1
-        input_fn = sys.argv[2]
-        assert input_fn[-4:] == '.mp4'
-        output_fn = input_fn[:-4] + '-sped.mp4'
-        speed = float(sys.argv[3])
-        accelerate_video(input_fn, output_fn, speed)
-    elif mode == "gif":
-        input_fn = sys.argv[2]
-        assert input_fn[-4:] == '.mp4'
-        output_fn = input_fn[:-4] + '.gif'
-        ti.info('Converting {} to {}'.format(input_fn, output_fn))
-        framerate = 24
-        mp4_to_gif(input_fn, output_fn, framerate)
-    elif mode == "convert":
-        import shutil
-        # http://www.commandlinefu.com/commands/view/3584/remove-color-codes-special-characters-with-sed
-        # TODO: Windows support
-        for fn in sys.argv[2:]:
-            print("Converting logging file: {}".format(fn))
-            tmp_fn = '/tmp/{}.{:05d}.backup'.format(fn,
-                                                    random.randint(0, 10000))
-            shutil.move(fn, tmp_fn)
-            command = r'sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g"'
-            os.system('{} {} > {}'.format(command, tmp_fn, fn))
-    elif mode == "release":
+                return choice
+
+        return support_choice_with_dot_py
+
+    @register
+    def example(self, arguments: list = sys.argv[2:]):
+        """Run an example by name (or name.py)"""
+        choices = TaichiMain._get_available_examples()
+
+        parser = argparse.ArgumentParser(prog='ti example',
+                                         description=f"{self.example.__doc__}")
+        parser.add_argument(
+            "name",
+            help=f"Name of an example (supports .py extension too)\n",
+            type=TaichiMain._example_choices_type(choices),
+            choices=sorted(choices))
+        args = parser.parse_args(arguments)
+
+        examples_dir = TaichiMain._get_examples_dir()
+        target = str((examples_dir / f"{args.name}.py").resolve())
+        # path for examples needs to be modified for implicit relative imports
+        sys.path.append(str(examples_dir.resolve()))
+        print(f"Running example {args.name} ...")
+
+        # Short circuit for testing
+        if self.test_mode: return args
+
+        runpy.run_path(target, run_name='__main__')
+
+    @register
+    def release(self, arguments: list = sys.argv[2:]):
+        """Make source code release"""
+        parser = argparse.ArgumentParser(prog='ti release',
+                                         description=f"{self.release.__doc__}")
+        args = parser.parse_args(arguments)
+
+        # Short circuit for testing
+        if self.test_mode: return args
+
         from git import Git
         import zipfile
         import hashlib
@@ -484,26 +195,653 @@ def main(debug=False):
         fn = f'taichi-src-v{ver[0]}-{ver[1]}-{ver[2]}-{commit}-{md5}.zip'
         import shutil
         shutil.move('release.zip', fn)
-    elif mode == "example":
-        if len(sys.argv) != 3:
-            sys.exit(
-                f"Invalid arguments! Usage: ti example [name]\nAvailable example names are: {sorted(get_available_examples())}"
-            )
-        example = sys.argv[2]
-        run_example(name=example)
-    else:
-        name = sys.argv[1]
-        print('Running task [{}]...'.format(name))
-        task = ti.Task(name)
-        task.run(*sys.argv[2:])
-    print()
-    print(">>> Running time: {:.2f}s".format(time.time() - t))
-    return 0
+
+    @staticmethod
+    def _mp4_file(name: str) -> str:
+        if not name.endswith('.mp4'):
+            raise argparse.ArgumentTypeError("filename must be of type .mp4")
+        return name
+
+    @register
+    def gif(self, arguments: list = sys.argv[2:]):
+        """Convert mp4 file to gif in the same directory"""
+        parser = argparse.ArgumentParser(prog='ti gif',
+                                         description=f"{self.gif.__doc__}")
+        parser.add_argument('-i',
+                            '--input',
+                            required=True,
+                            dest='input_file',
+                            type=TaichiMain._mp4_file,
+                            help="Path to input MP4 video file")
+        parser.add_argument('-f',
+                            '--framerate',
+                            required=False,
+                            default=24,
+                            dest='framerate',
+                            type=int,
+                            help="Frame rate of the output GIF")
+        args = parser.parse_args(arguments)
+
+        args.output_file = str(Path(args.input_file).with_suffix('.gif'))
+        ti.info(f"Converting {args.input_file} to {args.output_file}")
+
+        # Short circuit for testing
+        if self.test_mode: return args
+        mp4_to_gif(args.input_file, args.output_file, args.framerate)
+
+    @register
+    def video_speed(self, arguments: list = sys.argv[2:]):
+        """Speed up video in the same directory"""
+        parser = argparse.ArgumentParser(
+            prog='ti video_speed', description=f"{self.video_speed.__doc__}")
+        parser.add_argument('-i',
+                            '--input',
+                            required=True,
+                            dest='input_file',
+                            type=TaichiMain._mp4_file,
+                            help="Path to input MP4 video file")
+        parser.add_argument(
+            '-s',
+            '--speed',
+            required=True,
+            dest='speed',
+            type=float,
+            help="Speedup factor for the output MP4 based on input. (e.g. 2.0)"
+        )
+        args = parser.parse_args(arguments)
+
+        args.output_file = str(
+            Path(args.input_file).with_name(
+                f"{Path(args.input_file).stem}-sped{Path(args.input_file).suffix}"
+            ))
+
+        # Short circuit for testing
+        if self.test_mode: return args
+        accelerate_video(args.input_file, args.output_file, args.speed)
+
+    @register
+    def video_crop(self, arguments: list = sys.argv[2:]):
+        """Crop video in the same directory"""
+        parser = argparse.ArgumentParser(
+            prog='ti video_crop', description=f"{self.video_crop.__doc__}")
+        parser.add_argument('-i',
+                            '--input',
+                            required=True,
+                            dest='input_file',
+                            type=TaichiMain._mp4_file,
+                            help="Path to input MP4 video file")
+        parser.add_argument('--x1',
+                            required=True,
+                            dest='x_begin',
+                            type=float,
+                            help="X coordinate of the beginning crop point")
+        parser.add_argument('--x2',
+                            required=True,
+                            dest='x_end',
+                            type=float,
+                            help="X coordinate of the ending crop point")
+        parser.add_argument('--y1',
+                            required=True,
+                            dest='y_begin',
+                            type=float,
+                            help="Y coordinate of the beginning crop point")
+        parser.add_argument('--y2',
+                            required=True,
+                            dest='y_end',
+                            type=float,
+                            help="Y coordinate of the ending crop point")
+        args = parser.parse_args(arguments)
+
+        args.output_file = str(
+            Path(args.input_file).with_name(
+                f"{Path(args.input_file).stem}-cropped{Path(args.input_file).suffix}"
+            ))
+
+        # Short circuit for testing
+        if self.test_mode: return args
+        crop_video(args.input_file, args.output_file, args.x_begin, args.x_end,
+                   args.y_begin, args.y_end)
+
+    @register
+    def video_scale(self, arguments: list = sys.argv[2:]):
+        """Scale video resolution in the same directory"""
+        parser = argparse.ArgumentParser(
+            prog='ti video_scale', description=f"{self.video_scale.__doc__}")
+        parser.add_argument('-i',
+                            '--input',
+                            required=True,
+                            dest='input_file',
+                            type=TaichiMain._mp4_file,
+                            help="Path to input MP4 video file")
+        parser.add_argument(
+            '-w',
+            '--ratio-width',
+            required=True,
+            dest='ratio_width',
+            type=float,
+            help="The scaling ratio of the resolution on width")
+        parser.add_argument(
+            '--ratio-height',
+            required=False,
+            default=None,
+            dest='ratio_height',
+            type=float,
+            help=
+            "The scaling ratio of the resolution on height [default: equal to ratio-width]"
+        )
+        args = parser.parse_args(arguments)
+
+        if not args.ratio_height:
+            args.ratio_height = args.ratio_width
+        args.output_file = str(
+            Path(args.input_file).with_name(
+                f"{Path(args.input_file).stem}-scaled{Path(args.input_file).suffix}"
+            ))
+
+        # Short circuit for testing
+        if self.test_mode: return args
+        scale_video(args.input_file, args.output_file, args.ratio_width,
+                    args.ratio_height)
+
+    @register
+    def video(self, arguments: list = sys.argv[2:]):
+        """Make a video using *.png files in the current directory"""
+        parser = argparse.ArgumentParser(prog='ti video',
+                                         description=f"{self.video.__doc__}")
+        parser.add_argument("inputs", nargs='*', help="PNG file(s) as inputs")
+        parser.add_argument('-o',
+                            '--output',
+                            required=False,
+                            default=Path('./video.mp4').resolve(),
+                            dest='output_file',
+                            type=lambda x: Path(x).resolve(),
+                            help="Path to output MP4 video file")
+        parser.add_argument('-f',
+                            '--framerate',
+                            required=False,
+                            default=24,
+                            dest='framerate',
+                            type=int,
+                            help="Frame rate of the output MP4 video")
+        args = parser.parse_args(arguments)
+
+        if not args.inputs:
+            args.inputs = [str(p.resolve()) for p in Path('.').glob('*.png')]
+
+        ti.info(f'Making video using {len(args.inputs)} png files...')
+        ti.info(f'frame_rate = {args.framerate}')
+
+        # Short circuit for testing
+        if self.test_mode: return args
+        make_video(args.inputs,
+                   output_path=str(args.output_file),
+                   frame_rate=args.framerate)
+        ti.info(f'Done! Output video file = {args.output_file}')
+
+    @register
+    def doc(self, arguments: list = sys.argv[2:]):
+        """Build documentation"""
+        parser = argparse.ArgumentParser(prog='ti doc',
+                                         description=f"{self.doc.__doc__}")
+        args = parser.parse_args(arguments)
+
+        # Short circuit for testing
+        if self.test_mode: return args
+        os.system(
+            f'cd {ti.get_repo_directory()}/docs && sphinx-build -b html . build'
+        )
+
+    @register
+    def update(self, arguments: list = sys.argv[2:]):
+        """Update the Taichi codebase"""
+        # TODO: Test if this still works, fix if it doesn't
+        parser = argparse.ArgumentParser(prog='ti update',
+                                         description=f"{self.update.__doc__}")
+        args = parser.parse_args(arguments)
+
+        # Short circuit for testing
+        if self.test_mode: return args
+        ti.core.update(True)
+        ti.core.build()
+
+    @register
+    def format(self, arguments: list = sys.argv[2:]):
+        """Reformat modified source files"""
+        parser = argparse.ArgumentParser(prog='ti format',
+                                         description=f"{self.format.__doc__}")
+        parser.add_argument(
+            'diff',
+            nargs='?',
+            type=str,
+            help="A commit hash that git can use to compare diff with")
+        args = parser.parse_args(arguments)
+
+        # Short circuit for testing
+        if self.test_mode: return args
+        ti.core.format(diff=args.diff)
+
+    @register
+    def format_all(self, arguments: list = sys.argv[2:]):
+        """Reformat all source files"""
+        parser = argparse.ArgumentParser(
+            prog='ti format_all', description=f"{self.format_all.__doc__}")
+        args = parser.parse_args(arguments)
+
+        # Short circuit for testing
+        if self.test_mode: return args
+        ti.core.format(all=True)
+
+    @register
+    def build(self, arguments: list = sys.argv[2:]):
+        """Build C++ files"""
+        parser = argparse.ArgumentParser(prog='ti build',
+                                         description=f"{self.build.__doc__}")
+        args = parser.parse_args(arguments)
+
+        # Short circuit for testing
+        if self.test_mode: return args
+        ti.core.build()
+
+    @staticmethod
+    def _display_benchmark_regression(xd, yd, args):
+        def parse_dat(file):
+            dict = {}
+            for line in open(file).readlines():
+                try:
+                    a, b = line.strip().split(':')
+                except:
+                    continue
+                b = float(b)
+                if abs(b % 1.0) < 1e-5:  # codegen_*
+                    b = int(b)
+                dict[a.strip()] = b
+            return dict
+
+        def parse_name(file):
+            if file[0:5] == 'test_':
+                return file[5:-4].replace('__test_', '::', 1)
+            elif file[0:10] == 'benchmark_':
+                return '::'.join(reversed(file[10:-4].split('__arch_')))
+            else:
+                raise Exception(f'bad benchmark file name {file}')
+
+        def get_dats(dir):
+            list = []
+            for x in os.listdir(dir):
+                if x.endswith('.dat'):
+                    list.append(x)
+            dict = {}
+            for x in list:
+                name = parse_name(x)
+                path = os.path.join(dir, x)
+                dict[name] = parse_dat(path)
+            return dict
+
+        def plot_in_gui(scatter):
+            import numpy as np
+            import taichi as ti
+            gui = ti.GUI('Regression Test', (640, 480), 0x001122)
+            print('[Hint] press SPACE to go for next display')
+            for key, data in scatter.items():
+                data = np.array([((i + 0.5) / len(data), x / 2)
+                                 for i, x in enumerate(data)])
+                while not gui.get_event((ti.GUI.PRESS, ti.GUI.SPACE)):
+                    gui.core.title = key
+                    gui.line((0, 0.5), (1, 0.5), 1.8, 0x66ccff)
+                    gui.circles(data, 0xffcc66, 1.5)
+                    gui.show()
+
+        spec = args.files
+        single_line = spec and len(spec) == 1
+        xs, ys = get_dats(xd), get_dats(yd)
+        scatter = defaultdict(list)
+        for name in reversed(sorted(set(xs.keys()).union(ys.keys()))):
+            file, func = name.split('::')
+            u, v = xs.get(name, {}), ys.get(name, {})
+            ret = ''
+            for key in set(u.keys()).union(v.keys()):
+                if spec and key not in spec:
+                    continue
+                a, b = u.get(key, 0), v.get(key, 0)
+                if a == 0:
+                    if b == 0:
+                        res = 1.0
+                    else:
+                        res = math.inf
+                else:
+                    res = b / a
+                scatter[key].append(res)
+                if res == 1: continue
+                if not single_line:
+                    ret += f'{key:<30}'
+                res -= 1
+                color = Fore.RESET
+                if res > 0: color = Fore.RED
+                elif res < 0: color = Fore.GREEN
+                if isinstance(a, float):
+                    a = f'{a:>7.2}'
+                else:
+                    a = f'{a:>7}'
+                if isinstance(b, float):
+                    b = f'{b:>7.2}'
+                else:
+                    b = f'{b:>7}'
+                ret += f'{Fore.MAGENTA}{a}{Fore.RESET} -> '
+                ret += f'{Fore.CYAN}{b} {color}{res:>+9.1%}{Fore.RESET}\n'
+            if ret != '':
+                print(f'{file + "::" + func:_<58}', end='')
+                if not single_line:
+                    print('')
+                print(ret, end='')
+                if not single_line:
+                    print('')
+
+        if args.gui:
+            plot_in_gui(scatter)
+
+    @staticmethod
+    def _get_benchmark_baseline_dir():
+        import taichi as ti
+        return os.path.join(ti.core.get_repo_dir(), 'benchmarks', 'baseline')
+
+    @staticmethod
+    def _get_benchmark_output_dir():
+        import taichi as ti
+        return os.path.join(ti.core.get_repo_dir(), 'benchmarks', 'output')
+
+    @register
+    def regression(self, arguments: list = sys.argv[2:]):
+        """Display benchmark regression test result"""
+        parser = argparse.ArgumentParser(
+            prog='ti regression', description=f"{self.regression.__doc__}")
+        parser.add_argument('files',
+                            nargs='*',
+                            help='Test file(s) to be run for benchmarking')
+        parser.add_argument('-g',
+                            '--gui',
+                            dest='gui',
+                            action='store_true',
+                            help='Display benchmark regression result in GUI')
+        args = parser.parse_args(arguments)
+
+        # Short circuit for testing
+        if self.test_mode: return args
+
+        baseline_dir = TaichiMain._get_benchmark_baseline_dir()
+        output_dir = TaichiMain._get_benchmark_output_dir()
+        TaichiMain._display_benchmark_regression(baseline_dir, output_dir,
+                                                 args)
+
+    @register
+    def baseline(self, arguments: list = sys.argv[2:]):
+        """Archive current benchmark result as baseline"""
+        parser = argparse.ArgumentParser(
+            prog='ti baseline', description=f"{self.baseline.__doc__}")
+        args = parser.parse_args(arguments)
+
+        # Short circuit for testing
+        if self.test_mode: return args
+
+        import shutil
+        baseline_dir = TaichiMain._get_benchmark_baseline_dir()
+        output_dir = TaichiMain._get_benchmark_output_dir()
+        shutil.rmtree(baseline_dir, True)
+        shutil.copytree(output_dir, baseline_dir)
+        print(f"[benchmark] baseline data saved to {baseline_dir}")
+
+    @staticmethod
+    def _test_python(args):
+        print("\nRunning Python tests...\n")
+        import taichi as ti
+        import pytest
+        if ti.is_release():
+            root_dir = ti.package_root()
+            test_dir = os.path.join(root_dir, 'tests')
+        else:
+            root_dir = ti.get_repo_directory()
+            test_dir = os.path.join(root_dir, 'tests', 'python')
+        pytest_args = []
+
+        # TODO: use pathlib to deal with suffix and stem name manipulation
+        if args.files:
+            # run individual tests
+            for f in args.files:
+                # auto-complete file names
+                if not f.startswith('test_'):
+                    f = 'test_' + f
+                if not f.endswith('.py'):
+                    f = f + '.py'
+                pytest_args.append(os.path.join(test_dir, f))
+        else:
+            # run all the tests
+            pytest_args = [test_dir]
+        if args.verbose:
+            pytest_args += ['-s', '-v']
+        if args.rerun:
+            if int(
+                    pytest.main([
+                        os.path.join(root_dir, 'misc/empty_pytest.py'),
+                        '--reruns', '2', '-q'
+                    ])) != 0:
+                sys.exit(
+                    "Plugin pytest-rerunfailures is not available for Pytest!")
+            pytest_args += ['--reruns', args.rerun]
+        # TODO: configure the parallel test runner in setup.py
+        # follow https://docs.pytest.org/en/latest/example/simple.html#dynamically-adding-command-line-options
+        if int(
+                pytest.main([
+                    os.path.join(root_dir, 'misc/empty_pytest.py'), '-n1', '-q'
+                ])) == 0:  # test if pytest has xdist or not
+            try:
+                from multiprocessing import cpu_count
+                threads = min(8,
+                              cpu_count())  # To prevent running out of memory
+            except NotImplementedError:
+                threads = 2
+            os.environ['TI_DEVICE_MEMORY_GB'] = '0.5'  # Discussion: #769
+
+            env_threads = os.environ.get('TI_TEST_THREADS', '')
+            threads = args.threads or env_threads or threads
+            print(f'Starting {threads} testing thread(s)...')
+            if int(threads) > 1:
+                pytest_args += ['-n', str(threads)]
+        else:
+            print("[Warning] Plugin pytest-xdist is not available for Pytest!")
+        return int(pytest.main(pytest_args))
+
+    @staticmethod
+    def _test_cpp(args):
+        import taichi as ti
+        # Cpp tests use the legacy non LLVM backend
+        ti.reset()
+        print("Running C++ tests...")
+        task = ti.Task('test')
+        return int(task.run(*args.files))
+
+    @register
+    def benchmark(self, arguments: list = sys.argv[2:]):
+        """Run Python tests in benchmark mode"""
+        parser = argparse.ArgumentParser(
+            prog='ti benchmark', description=f"{self.benchmark.__doc__}")
+        parser.add_argument('files', nargs='*', help='Test file(s) to be run')
+        parser.add_argument('-T',
+                            '--tprt',
+                            dest='tprt',
+                            action='store_true',
+                            help='Benchmark performance in terms of run time')
+        parser.add_argument('-v',
+                            '--verbose',
+                            dest='verbose',
+                            action='store_true',
+                            help='Run with verbose outputs')
+        parser.add_argument('-r',
+                            '--rerun',
+                            required=False,
+                            default=None,
+                            dest='rerun',
+                            type=str,
+                            help='Rerun failed tests for given times')
+        parser.add_argument(
+            '-t',
+            '--threads',
+            required=False,
+            default=None,
+            dest='threads',
+            type=str,
+            help='Custom number of threads for parallel testing')
+        args = parser.parse_args(arguments)
+
+        # Short circuit for testing
+        if self.test_mode: return args
+
+        import shutil
+        commit_hash = ti.core.get_commit_hash()
+        with os.popen('git rev-parse HEAD') as f:
+            current_commit_hash = f.read().strip()
+        assert commit_hash == current_commit_hash, f"Built commit {commit_hash:.6} differs from current commit {current_commit_hash:.6}, refuse to benchmark"
+        os.environ['TI_PRINT_BENCHMARK_STAT'] = '1'
+        output_dir = TaichiMain._get_benchmark_output_dir()
+        shutil.rmtree(output_dir, True)
+        os.mkdir(output_dir)
+        os.environ['TI_BENCHMARK_OUTPUT_DIR'] = output_dir
+        if os.environ.get('TI_WANTED_ARCHS') is None and not args.tprt:
+            # since we only do number-of-statements benchmark for SPRT
+            os.environ['TI_WANTED_ARCHS'] = 'x64'
+        if args.tprt:
+            os.system('python benchmarks/run.py')
+            # TODO: benchmark_python(args)
+        else:
+            TaichiMain._test_python(args)
+
+    @register
+    def test(self, arguments: list = sys.argv[2:]):
+        """Run the tests"""
+        parser = argparse.ArgumentParser(prog='ti test',
+                                         description=f"{self.test.__doc__}")
+        parser.add_argument('files',
+                            nargs='*',
+                            help='Test name(s) to be run, e.g. "cli"')
+        parser.add_argument('-c',
+                            '--cpp',
+                            dest='cpp',
+                            action='store_true',
+                            help='Only run the C++ tests')
+        parser.add_argument('-v',
+                            '--verbose',
+                            dest='verbose',
+                            action='store_true',
+                            help='Run with verbose outputs')
+        parser.add_argument('-r',
+                            '--rerun',
+                            required=False,
+                            default=None,
+                            dest='rerun',
+                            type=str,
+                            help='Rerun failed tests for given times')
+        parser.add_argument(
+            '-t',
+            '--threads',
+            required=False,
+            default=None,
+            dest='threads',
+            type=str,
+            help='Custom number of threads for parallel testing')
+        parser.add_argument(
+            '-a',
+            '--arch',
+            required=False,
+            default=None,
+            dest='arch',
+            type=str,
+            help='Custom the arch(s) (backend) to run tests on')
+        parser.add_argument(
+            '-n',
+            '--exclusive',
+            required=False,
+            default=False,
+            dest='exclusive',
+            action='store_true',
+            help=
+            'Exclude arch(s) from test instead of include them, together with -a'
+        )
+
+        args = parser.parse_args(arguments)
+
+        if args.arch:
+            arch = args.arch
+            if args.exclusive:
+                arch = '^' + arch
+            print(f'Running on Arch={arch}')
+            os.environ['TI_WANTED_ARCHS'] = arch
+
+        # Short circuit for testing
+        if self.test_mode: return args
+
+        if args.files:
+            if args.cpp:
+                return TaichiMain._test_cpp(args)
+            else:
+                return TaichiMain._test_python(args)
+        elif args.cpp:
+            # Only run C++ tests
+            return TaichiMain._test_cpp(args)
+        else:
+            # Run both C++ and Python tests
+            ret = TaichiMain._test_python(args)
+            if ret != 0:
+                return ret
+            return TaichiMain._test_cpp(args)
+
+    @register
+    def debug(self, arguments: list = sys.argv[2:]):
+        """Debug a single script"""
+        parser = argparse.ArgumentParser(prog='ti debug',
+                                         description=f"{self.debug.__doc__}")
+        parser.add_argument(
+            'filename',
+            help='A single (Python) script to run with debugger, e.g. render.py'
+        )
+        args = parser.parse_args(arguments)
+
+        # Short circuit for testing
+        if self.test_mode: return args
+
+        ti.core.set_core_trigger_gdb_when_crash(True)
+
+        with open(args.filename) as script:
+            script = script.read()
+
+        # FIXME: exec is a security risk here!
+        exec(script, {'__name__': '__main__'})
+
+    @register
+    def run(self, arguments: list = sys.argv[2:]):
+        """Run a specific task"""
+        parser = argparse.ArgumentParser(prog='ti run',
+                                         description=f"{self.run.__doc__}")
+        parser.add_argument('taskname',
+                            help='A single task name to run, e.g. test_math')
+        parser.add_argument('taskargs',
+                            nargs='*',
+                            help='Optional task argument(s) to run with task')
+        args = parser.parse_args(arguments)
+
+        # Short circuit for testing
+        if self.test_mode: return args
+
+        task = ti.Task(args.taskname)
+        task.run(*args.taskargs)
+
+
+def main():
+    cli = TaichiMain()
+    return cli()
 
 
 def main_debug():
-    main(debug=True)
+    cli = TaichiMain(debug=True)
+    return cli()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     exit(main())

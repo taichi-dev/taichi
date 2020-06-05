@@ -4,6 +4,26 @@ from taichi import approx
 
 
 @ti.all_archs
+def test_const_init():
+    a = ti.Matrix(2, 3, dt=ti.i32, shape=())
+    b = ti.Vector(3, dt=ti.i32, shape=())
+
+    @ti.kernel
+    def init():
+        a[None] = ti.Matrix([[0, 1, 2], [3, 4, 5]])
+        b[None] = ti.Vector([0, 1, 2])
+
+    init()
+
+    for i in range(2):
+        for j in range(3):
+            assert a[None][i, j] == i * 3 + j
+
+    for j in range(3):
+        assert b[None][j] == j
+
+
+@ti.all_archs
 def test_basic_utils():
     a = ti.Vector(3, dt=ti.f32)
     b = ti.Vector(3, dt=ti.f32)
@@ -319,3 +339,23 @@ def test_matrix_list_assign():
     func()
     assert np.allclose(m.to_numpy()[1, 0, 0, :, :], np.array([[2, 4], [6, 8]]))
     assert np.allclose(v.to_numpy()[1, 0, 0, :], np.array([10, 12]))
+
+
+@ti.host_arch_only
+def test_vector_xyzw_accessor():
+    u = ti.Vector(2, dt=ti.i32, shape=(2, 2, 1))
+    v = ti.Vector(4, dt=ti.i32, shape=(2, 2, 1))
+
+    u[1, 0, 0].y = 3
+    v[1, 0, 0].w = 4
+
+    @ti.kernel
+    def func():
+        u[1, 0, 0].x = 8 * u[1, 0, 0].y
+        v[1, 0, 0].z = 1 - v[1, 0, 0].w
+        v[1, 0, 0].x = 6
+
+    func()
+    assert u[1, 0, 0].x == 24
+    assert u[1, 0, 0].y == 3
+    assert np.allclose(v.to_numpy()[1, 0, 0, :], np.array([6, 0, -3, 4]))

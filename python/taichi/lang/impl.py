@@ -6,6 +6,7 @@ from .snode import SNode
 from .util import *
 
 
+@taichi_scope
 def expr_init(rhs):
     import taichi as ti
     if rhs is None:
@@ -29,6 +30,7 @@ def expr_init(rhs):
             return Expr(taichi_lang_core.expr_var(Expr(rhs).ptr))
 
 
+@taichi_scope
 def expr_init_func(rhs):  # temporary solution to allow passing in tensors as
     import taichi as ti
     if isinstance(rhs, Expr) and rhs.ptr.is_global_var():
@@ -45,6 +47,7 @@ def wrap_scalar(x):
         return x
 
 
+@taichi_scope
 def subscript(value, *indices):
     import numpy as np
     if isinstance(value, np.ndarray):
@@ -76,6 +79,7 @@ def subscript(value, *indices):
         return Expr(taichi_lang_core.subscript(value.ptr, indices_expr_group))
 
 
+@taichi_scope
 def chain_compare(comparators, ops):
     assert len(comparators) == len(ops) + 1, \
       f'Chain comparison invoked with {len(comparators)} comparators but {len(ops)} operators'
@@ -180,6 +184,7 @@ def get_runtime():
     return pytaichi
 
 
+@taichi_scope
 def make_constant_expr(val):
     if isinstance(val, int):
         if pytaichi.default_ip == i32:
@@ -229,9 +234,21 @@ class Root:
 root = Root()
 
 
-def var(dt, shape=None, needs_grad=False):
+@python_scope
+def var(dt, shape=None, offset=None, needs_grad=False):
     if isinstance(shape, numbers.Number):
         shape = (shape, )
+
+    if isinstance(offset, numbers.Number):
+        offset = (offset, )
+
+    if shape is not None and offset is not None:
+        assert len(shape) == len(
+            offset
+        ), f'The dimensionality of shape and offset must be the same  (f{len(shape)} != f{len(offset)})'
+
+    assert (offset is not None and shape is None
+            ) == False, f'The shape cannot be None when offset is being set'
 
     assert not get_runtime(
     ).materialized, 'No new variables can be declared after kernel invocations or Python-scope tensor accesses.'
@@ -251,10 +268,9 @@ def var(dt, shape=None, needs_grad=False):
 
     if shape is not None:
         dim = len(shape)
-        root.dense(index_nd(dim), shape).place(x)
+        root.dense(index_nd(dim), shape).place(x, offset=offset)
         if needs_grad:
             root.dense(index_nd(dim), shape).place(x.grad)
-
     return x
 
 
@@ -267,6 +283,7 @@ SOA = Layout(soa=True)
 AOS = Layout(soa=False)
 
 
+@python_scope
 def layout(func):
     assert not pytaichi.materialized, "All layout must be specified before the first kernel launch / data access."
     warnings.warn(
@@ -276,6 +293,7 @@ def layout(func):
     pytaichi.layout_functions.append(func)
 
 
+@taichi_scope
 def ti_print(*vars):
     def entry2content(var):
         if isinstance(var, str):
@@ -317,6 +335,7 @@ def ti_print(*vars):
     taichi_lang_core.create_print(contentries)
 
 
+@taichi_scope
 def ti_int(var):
     if hasattr(var, '__ti_int__'):
         return var.__ti_int__()
@@ -324,6 +343,7 @@ def ti_int(var):
         return int(var)
 
 
+@taichi_scope
 def ti_float(var):
     if hasattr(var, '__ti_float__'):
         return var.__ti_float__()

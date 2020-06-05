@@ -26,7 +26,7 @@ struct KernelAttributes {
   enum class Buffers {
     Root,
     GlobalTmps,
-    Args,
+    Context,
     Runtime,
   };
   std::string name;

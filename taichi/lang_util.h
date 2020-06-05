@@ -199,6 +199,38 @@ class TypedConstant {
   TypedConstant(float64 x) : dt(DataType::f64), val_f64(x) {
   }
 
+  template <typename T>
+  TypedConstant(DataType dt, const T &value) : dt(dt) {
+    if (dt == DataType::f32) {
+      val_f32 = value;
+    } else if (dt == DataType::i32) {
+      val_i32 = value;
+    } else if (dt == DataType::i64) {
+      val_i64 = value;
+    } else if (dt == DataType::f64) {
+      val_f64 = value;
+    } else if (dt == DataType::i8) {
+      val_i8 = value;
+    } else if (dt == DataType::i16) {
+      val_i16 = value;
+    } else if (dt == DataType::u8) {
+      val_u8 = value;
+    } else if (dt == DataType::u16) {
+      val_u16 = value;
+    } else if (dt == DataType::u32) {
+      val_u32 = value;
+    } else if (dt == DataType::u64) {
+      val_u64 = value;
+    } else {
+      TI_NOT_IMPLEMENTED
+    }
+  }
+
+  template <typename T>
+  bool equal_value(const T &value) const {
+    return equal_type_and_value(TypedConstant(dt, value));
+  }
+
   std::string stringify() const;
 
   bool equal_type_and_value(const TypedConstant &o) const;

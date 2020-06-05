@@ -37,6 +37,7 @@ class Expr(TaichiOperations):
         self.grad = None
         self.val = self
 
+    @python_scope
     def __setitem__(self, key, value):
         if not Expr.layout_materialized:
             self.materialize_layout_callback()
@@ -50,9 +51,8 @@ class Expr(TaichiOperations):
                      (taichi_lang_core.get_max_num_indices() - len(key)))
         self.setter(value, *key)
 
+    @python_scope
     def __getitem__(self, key):
-        import taichi as ti
-        assert not ti.get_runtime().inside_kernel
         if not Expr.layout_materialized:
             self.materialize_layout_callback()
         self.initialize_accessor()
@@ -70,6 +70,7 @@ class Expr(TaichiOperations):
     def serialize(self):
         return self.ptr.serialize()
 
+    @python_scope
     def initialize_accessor(self):
         if self.getter:
             return
@@ -103,16 +104,19 @@ class Expr(TaichiOperations):
         self.getter = getter
         self.setter = setter
 
+    @python_scope
     def set_grad(self, grad):
         self.grad = grad
         self.ptr.set_grad(grad.ptr)
 
+    @python_scope
     def clear(self, deactivate=False):
         assert not deactivate
         node = self.ptr.snode().parent
         assert node
         node.clear_data()
 
+    @python_scope
     def fill(self, val):
         # TODO: avoid too many template instantiations
         from .meta import fill_tensor
@@ -145,6 +149,7 @@ class Expr(TaichiOperations):
     def data_type(self):
         return self.snode().data_type()
 
+    @python_scope
     def to_numpy(self):
         from .meta import tensor_to_ext_arr
         import numpy as np
@@ -155,6 +160,7 @@ class Expr(TaichiOperations):
         ti.sync()
         return arr
 
+    @python_scope
     def to_torch(self, device=None):
         from .meta import tensor_to_ext_arr
         import torch
@@ -166,6 +172,7 @@ class Expr(TaichiOperations):
         ti.sync()
         return arr
 
+    @python_scope
     def from_numpy(self, arr):
         assert self.dim() == len(arr.shape)
         s = self.shape()
@@ -178,9 +185,11 @@ class Expr(TaichiOperations):
         import taichi as ti
         ti.sync()
 
+    @python_scope
     def from_torch(self, arr):
         self.from_numpy(arr.contiguous())
 
+    @python_scope
     def copy_from(self, other):
         assert isinstance(other, Expr)
         from .meta import tensor_to_tensor

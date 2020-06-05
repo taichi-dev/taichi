@@ -163,9 +163,11 @@ def gd_w2():
 
 
 try:
-  f = open('mnist.pkl', 'rb')
+    f = open('mnist.pkl', 'rb')
 except FileNotFoundError:
-  raise FileNotFoundError('mnist.pkl not found, please run examples/mnist_download_data.py first.')
+    raise FileNotFoundError(
+        'mnist.pkl not found, please run examples/mnist_download_data.py first.'
+    )
 with f:
     mnist = pickle.load(f)
 

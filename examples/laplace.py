@@ -10,7 +10,9 @@ ti.root.dense(ti.ij, 16).place(x, y)
 def laplace():
     for i, j in x:
         if (i + j) % 3 == 0:
-            y[i, j] = 4.0 * x[i, j] - x[i - 1, j] - x[i + 1, j] - x[i, j - 1] - x[i, j + 1]
+            y[i, j] = 4.0 * x[i, j] - x[i - 1,
+                                        j] - x[i + 1,
+                                               j] - x[i, j - 1] - x[i, j + 1]
         else:
             y[i, j] = 0.0
 

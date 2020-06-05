@@ -36,8 +36,8 @@ class CheckOutOfBound : public BasicStmtVisitor {
     std::string offset_msg = "Offset [";
     std::vector<Stmt *> args;
     for (int i = 0; i < stmt->indices.size(); i++) {
-      int offset_i = has_offset ? snode->index_offsets[i] : -1;
-      auto lower_bound = has_offset
+      int offset_i = has_offset ? snode->index_offsets[i] : 0;
+      auto lower_bound = offset_i != 0
                              ? new_stmts.push_back<ConstStmt>(
                                    LaneAttribute<TypedConstant>(offset_i))
                              : zero;
@@ -45,7 +45,7 @@ class CheckOutOfBound : public BasicStmtVisitor {
           BinaryOpType::cmp_ge, stmt->indices[i], lower_bound);
       int size_i =
           snode->extractors[snode->physical_index_position[i]].num_elements;
-      int upper_bound_i = has_offset ? offset_i + size_i : size_i;
+      int upper_bound_i = offset_i + size_i;
       auto upper_bound = new_stmts.push_back<ConstStmt>(
           LaneAttribute<TypedConstant>(upper_bound_i));
       auto check_upper_bound = new_stmts.push_back<BinaryOpStmt>(

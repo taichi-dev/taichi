@@ -150,7 +150,7 @@ class Matrix(TaichiOperations):
         results = [False for _ in self.entries]
         for i, e in enumerate(self.entries):
             results[i] = not isinstance(e, expr.Expr)
-        return all(results)
+        return all([not isinstance(e, expr.Expr) for e in self.entries])
 
     @staticmethod
     def make_from_numpy(nparray):

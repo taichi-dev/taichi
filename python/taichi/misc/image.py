@@ -3,7 +3,7 @@ import taichi as ti
 
 
 def imwrite(img, filename):
-    if not isinstance(np.ndarray):
+    if not isinstance(img, np.ndarray):
         img = img.to_numpy()
     assert len(img.shape) in [2, 3]
     resx, resy = img.shape[:2]
@@ -27,7 +27,7 @@ def imread(filename, channels=0):
 
 
 def imshow(img, winname='Taichi'):
-    if not isinstance(np.ndarray):
+    if not isinstance(img, np.ndarray):
         img = img.to_numpy()
     assert len(img.shape) in [2, 3]
     gui = ti.GUI(winname, res=img.shape[:2])

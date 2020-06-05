@@ -168,7 +168,7 @@ class TaichiMain:
     def changelog(self, arguments: list = sys.argv[2:]):
         """Display changelog of current version"""
         parser = argparse.ArgumentParser(prog='ti changelog',
-                                         description=f"{self.release.__doc__}")
+                                         description=f"{self.changelog.__doc__}")
         import taichi as ti
         if ti.is_release():
             args = parser.parse_args(arguments)

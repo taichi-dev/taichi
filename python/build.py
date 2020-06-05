@@ -64,7 +64,7 @@ print("*** project_name = '{}'".format(project_name))
 
 try:
     os.remove('taichi/CHANGELOG.md')
-except:
+except FileNotFoundError:
     pass
 shutil.rmtree('taichi/lib', ignore_errors=True)
 shutil.rmtree('taichi/tests', ignore_errors=True)

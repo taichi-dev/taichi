@@ -162,7 +162,11 @@ def gd_w2():
             weight2[i, j] -= learning_rate * weight2.grad[i, j]
 
 
-with open('mnist.pkl', 'rb') as f:
+try:
+  f = open('mnist.pkl', 'rb')
+except FileNotFoundError:
+  raise FileNotFoundError('mnist.pkl not found, please run examples/mnist_download_data.py first.')
+with f:
     mnist = pickle.load(f)
 
 training_images = mnist['training_images']

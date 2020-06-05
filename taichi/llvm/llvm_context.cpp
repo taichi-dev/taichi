@@ -142,10 +142,11 @@ void compile_runtime_bitcode(Arch arch) {
     auto dst_runtime_bc = fmt::format("{}{}", runtime_folder, fn_bc);
     namespace fs = std::filesystem;
     if (do_cache && fs::exists(src_runtime_bc)) {
-      TI_TRACE("Restoring cached runtime module bitcode [{}]...", src_runtime_bc);
+      TI_TRACE("Restoring cached runtime module bitcode [{}]...",
+               src_runtime_bc);
       std::error_code ec;
       if (!fs::copy_file(src_runtime_bc, dst_runtime_bc,
-            fs::copy_options::overwrite_existing)) {
+                         fs::copy_options::overwrite_existing)) {
         TI_WARN("Failed to copy from saved runtime bitcode cache.");
       } else {
         TI_TRACE("Runtime module bitcode loaded.");
@@ -166,14 +167,15 @@ void compile_runtime_bitcode(Arch arch) {
     if (ret) {
       TI_ERROR("LLVMRuntime compilation failed.");
     }
-    cmd = fmt::format("llvm-as {}runtime.ll -o {}", runtime_folder, dst_runtime_bc);
+    cmd = fmt::format("llvm-as {}runtime.ll -o {}", runtime_folder,
+                      dst_runtime_bc);
     std::system(cmd.c_str());
     TI_TRACE("Runtime module bitcode compiled.");
     runtime_compiled.insert((int)arch);
     if (do_cache) {
       TI_TRACE("Saving runtime module bitcode cache [{}]...", dst_runtime_bc);
       if (!fs::copy_file(dst_runtime_bc, src_runtime_bc,
-            fs::copy_options::overwrite_existing)) {
+                         fs::copy_options::overwrite_existing)) {
         TI_WARN("Failed to save runtime bitcode cache.");
       }
     }

@@ -32,6 +32,7 @@ class GUI:
         if isinstance(res, numbers.Number):
             res = (res, res)
         self.res = res
+        # The GUI canvas uses RGBA for storage, therefore we needs NxMx4 for a image
         self.img = np.ascontiguousarray(np.zeros(self.res + (4, ), np.float32))
         self.core = ti.core.GUI(name, ti.veci(*res))
         self.canvas = self.core.get_canvas()

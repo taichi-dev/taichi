@@ -37,6 +37,7 @@
 #include "taichi/lang_util.h"
 #include "taichi/jit/jit_session.h"
 #include "taichi/common/task.h"
+#include "taichi/util/environ_config.h"
 #include <filesystem>
 
 TLANG_NAMESPACE_BEGIN
@@ -131,6 +132,7 @@ void compile_runtime_bitcode(Arch arch) {
   if (is_release())
     return;
   TI_AUTO_PROF;
+  bool do_cache = get_environ_config("TI_CACHE_RUNTIME_BITCODE", 0);
   static std::set<int> runtime_compiled;
   if (runtime_compiled.find((int)arch) == runtime_compiled.end()) {
     auto runtime_src_folder = get_runtime_src_dir();
@@ -139,7 +141,7 @@ void compile_runtime_bitcode(Arch arch) {
     auto src_runtime_bc = fmt::format("{}{}", runtime_src_folder, fn_bc);
     auto dst_runtime_bc = fmt::format("{}{}", runtime_folder, fn_bc);
     namespace fs = std::filesystem;
-    if (fs::exists(src_runtime_bc)) {
+    if (do_cache && fs::exists(src_runtime_bc)) {
       TI_TRACE("Restoring cached runtime module bitcode [{}]...", src_runtime_bc);
       std::error_code ec;
       if (!fs::copy_file(src_runtime_bc, dst_runtime_bc,
@@ -168,10 +170,12 @@ void compile_runtime_bitcode(Arch arch) {
     std::system(cmd.c_str());
     TI_TRACE("Runtime module bitcode compiled.");
     runtime_compiled.insert((int)arch);
-    TI_TRACE("Saving runtime module bitcode cache [{}]...", dst_runtime_bc);
-    if (!fs::copy_file(dst_runtime_bc, src_runtime_bc,
-          fs::copy_options::overwrite_existing)) {
-      TI_WARN("Failed to save runtime bitcode cache.");
+    if (do_cache) {
+      TI_TRACE("Saving runtime module bitcode cache [{}]...", dst_runtime_bc);
+      if (!fs::copy_file(dst_runtime_bc, src_runtime_bc,
+            fs::copy_options::overwrite_existing)) {
+        TI_WARN("Failed to save runtime bitcode cache.");
+      }
     }
   }
 }

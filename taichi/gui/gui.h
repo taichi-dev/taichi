@@ -428,7 +428,7 @@ class GUIBaseX11 {
   void *visual;
   unsigned long window;
   CXImage *img;
-  void *wmDeleteMessage;
+  std::vector<char> wmDeleteMessage;
 };
 
 using GUIBase = GUIBaseX11;

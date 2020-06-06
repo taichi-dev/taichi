@@ -26,32 +26,44 @@ class CheckOutOfBound : public BasicStmtVisitor {
       return;
     TI_ASSERT(stmt->snodes.size() == 1);
     auto snode = stmt->snodes[0];
+    bool has_offset = !(snode->index_offsets.empty());
     auto new_stmts = VecStatement();
     auto zero = new_stmts.push_back<ConstStmt>(LaneAttribute<TypedConstant>(0));
     Stmt *result =
         new_stmts.push_back<ConstStmt>(LaneAttribute<TypedConstant>(true));
 
     std::string msg = "Accessing Tensor of Size [";
+    std::string offset_msg = "Offset [";
     std::vector<Stmt *> args;
     for (int i = 0; i < stmt->indices.size(); i++) {
-      auto check_zero = new_stmts.push_back<BinaryOpStmt>(
-          BinaryOpType::cmp_ge, stmt->indices[i], zero);
+      int offset_i = has_offset ? snode->index_offsets[i] : 0;
+      auto lower_bound = offset_i != 0
+                             ? new_stmts.push_back<ConstStmt>(
+                                   LaneAttribute<TypedConstant>(offset_i))
+                             : zero;
+      auto check_lower_bound = new_stmts.push_back<BinaryOpStmt>(
+          BinaryOpType::cmp_ge, stmt->indices[i], lower_bound);
       int size_i =
           snode->extractors[snode->physical_index_position[i]].num_elements;
-      auto bound =
-          new_stmts.push_back<ConstStmt>(LaneAttribute<TypedConstant>(size_i));
-      auto check_bound = new_stmts.push_back<BinaryOpStmt>(
-          BinaryOpType::cmp_lt, stmt->indices[i], bound);
-      auto check_i = new_stmts.push_back<BinaryOpStmt>(BinaryOpType::bit_and,
-                                                       check_zero, check_bound);
+      int upper_bound_i = offset_i + size_i;
+      auto upper_bound = new_stmts.push_back<ConstStmt>(
+          LaneAttribute<TypedConstant>(upper_bound_i));
+      auto check_upper_bound = new_stmts.push_back<BinaryOpStmt>(
+          BinaryOpType::cmp_lt, stmt->indices[i], upper_bound);
+      auto check_i = new_stmts.push_back<BinaryOpStmt>(
+          BinaryOpType::bit_and, check_lower_bound, check_upper_bound);
       result = new_stmts.push_back<BinaryOpStmt>(BinaryOpType::bit_and, result,
                                                  check_i);
-      if (i > 0)
+      if (i > 0) {
         msg += ", ";
+        offset_msg += ", ";
+      }
       msg += std::to_string(size_i);
+      offset_msg += std::to_string(offset_i);
       args.emplace_back(stmt->indices[i]);
     }
-    msg += "] with indices (";
+    offset_msg += "]";
+    msg += "] " + (has_offset ? offset_msg : "") + " with indices (";
     for (int i = 0; i < stmt->indices.size(); i++) {
       if (i > 0)
         msg += ", ";

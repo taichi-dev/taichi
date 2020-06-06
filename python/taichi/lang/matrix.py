@@ -596,7 +596,7 @@ class Matrix(TaichiOperations):
         mat.n = len(rows)
         if isinstance(rows[0], Matrix):
             for row in rows:
-                assert row.m == 1, "inputs must be vectors, ie. size n by 1"
+                assert row.m == 1, "Inputs must be vectors, i.e. m == 1"
                 assert row.n == rows[
                     0].n, "Input vectors must share the same shape"
             mat.m = rows[0].n

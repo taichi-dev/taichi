@@ -57,6 +57,7 @@ __pycache__
 /taichi/common/version.h
 /taichi/common/commit_hash.h
 /python/test_env
+/CHANGELOG.md
 libpython_path.txt
 .vscode
 _build

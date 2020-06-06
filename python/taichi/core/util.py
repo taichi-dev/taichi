@@ -261,7 +261,6 @@ def prepare_sandbox(src):
     dest = os.path.join(tmp_dir, 'taichi_core.so')
     shutil.copy(src, dest)
     os.mkdir(os.path.join(tmp_dir, 'runtime/'))
-    print(f'[Taichi] sandbox prepared')
     return tmp_dir
 
 

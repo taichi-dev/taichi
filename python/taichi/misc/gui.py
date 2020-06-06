@@ -33,6 +33,8 @@ class GUI:
         if isinstance(res, numbers.Number):
             res = (res, res)
         self.res = res
+        # The GUI canvas uses RGBA for storage, therefore we need NxMx4 for an image.
+        self.img = np.ascontiguousarray(np.zeros(self.res + (4, ), np.float32))
         self.core = ti.core.GUI(name, ti.veci(*res))
         self.canvas = self.core.get_canvas()
         self.background_color = background_color
@@ -54,32 +56,66 @@ class GUI:
             color = self.background_color
         self.canvas.clear(color)
 
-    def set_image(self, img):
-        import numpy as np
-        from .image import cook_image
-        img = cook_image(img)
+    def cook_image(self, img):
         if img.dtype in [np.uint8, np.uint16, np.uint32, np.uint64]:
             img = img.astype(np.float32) * (1 / np.iinfo(img.dtype).max)
         elif img.dtype in [np.float32, np.float64]:
-            img = np.clip(img.astype(np.float32), 0, 1)
+            img = img.astype(np.float32)
         else:
             raise ValueError(
                 f'Data type {img.dtype} not supported in GUI.set_image')
+
         if len(img.shape) == 2:
             img = img[..., None]
+
         if img.shape[2] == 1:
-            img = img + np.zeros(shape=(1, 1, 4))
+            img = img + np.zeros((1, 1, 4), np.float32)
         if img.shape[2] == 3:
-            img = np.concatenate([
-                img,
-                np.zeros(shape=(img.shape[0], img.shape[1], 1),
-                         dtype=np.float32)
-            ],
-                                 axis=2)
-        img = img.astype(np.float32)
-        assert img.shape[:
-                         2] == self.res, "Image resolution does not match GUI resolution"
-        self.core.set_img(np.ascontiguousarray(img).ctypes.data)
+            zeros = np.zeros((img.shape[0], img.shape[1], 1), np.float32)
+            img = np.concatenate([img, zeros], axis=2)
+
+        res = img.shape[:2]
+        assert res == self.res, "Image resolution does not match GUI resolution"
+        return np.ascontiguousarray(img)
+
+    def set_image(self, img):
+        import numpy as np
+        import taichi as ti
+
+        if isinstance(img, ti.Expr):
+            if ti.core.is_integral(img.data_type()):
+                # image of uint is not optimized by xxx_to_image
+                self.img = self.cook_image(img.to_numpy())
+            else:
+                assert img.shape(
+                ) == self.res, "Image resolution does not match GUI resolution"
+                from taichi.lang.meta import tensor_to_image
+                tensor_to_image(img, self.img)
+                ti.sync()
+
+        elif isinstance(img, ti.Matrix):
+            if ti.core.is_integral(img.data_type()):
+                self.img = self.cook_image(img.to_numpy())
+            else:
+                assert img.shape(
+                ) == self.res, "Image resolution does not match GUI resolution"
+                assert img.n in [
+                    3, 4
+                ], "Only greyscale, RGB or RGBA images are supported in GUI.set_image"
+                assert img.m == 1
+                from taichi.lang.meta import vector_to_image
+                vector_to_image(img, self.img)
+                ti.sync()
+
+        elif isinstance(img, np.ndarray):
+            self.img = self.cook_image(img)
+
+        else:
+            raise ValueError(
+                f"GUI.set_image only takes a Taichi tensor or NumPy array, not {type(img)}"
+            )
+
+        self.core.set_img(self.img.ctypes.data)
 
     def circle(self, pos, color=0xFFFFFF, radius=1):
         self.canvas.circle_single(pos[0], pos[1], color, radius)

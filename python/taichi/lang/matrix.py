@@ -598,7 +598,7 @@ class Matrix(TaichiOperations):
             for row in rows:
                 assert row.m == 1, "inputs must be vectors, ie. size n by 1"
                 assert row.n == rows[
-                    0].n, "input vectors must be the same shape"
+                    0].n, "Input vectors must share the same shape"
             mat.m = rows[0].n
             # l-value copy:
             mat.entries = [row(i) for row in rows for i in range(row.n)]

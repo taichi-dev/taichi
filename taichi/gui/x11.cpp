@@ -126,7 +126,8 @@ void GUI::create_window() {
   wmDeleteMessage = std::vector<char>(sizeof(Atom));
   *(Atom *)wmDeleteMessage.data() =
       XInternAtom((Display *)display, "WM_DELETE_WINDOW", False);
-  XSetWMProtocols((Display *)display, window, (Atom *)wmDeleteMessage.data(), 1);
+  XSetWMProtocols((Display *)display, window, (Atom *)wmDeleteMessage.data(),
+                  1);
   XMapWindow((Display *)display, window);
   img = new CXImage((Display *)display, (Visual *)visual, width, height);
 }

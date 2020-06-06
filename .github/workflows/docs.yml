@@ -7,10 +7,11 @@ on:
 
 jobs:
   check_docs_build:
-    name: Build and Test
+    name: Check Docs Build
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
     - uses: ammaraskar/sphinx-action@master
       with:
+        build-command: "sphinx-build -b html . build"
         docs-folder: "docs/"

@@ -43,6 +43,12 @@ class GUI:
             self.core.set_profiler(
                 ti.core.get_current_program().get_profiler())
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, val, tb):
+        self.core = None  # dereference to call GUI::~GUI()
+
     def clear(self, color=None):
         if color is None:
             color = self.background_color

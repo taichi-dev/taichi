@@ -784,8 +784,8 @@ class GUI : public GUIBase {
     // if ti.GUI.EXIT event is not processed. Pretty like SIGTERM, you can hook
     // it, but you have to terminate after your handler is done.
     if (should_close) {
-      if (++should_close >
-          5) {  // if the event is not processed in 5 frames, raise RuntimeError
+      if (++should_close > 5) {
+        // if the event is not processed in 5 frames, raise RuntimeError
         throw std::string(
             "Window close button clicked, exiting... (use `while gui.running` "
             "to exit gracefully)");

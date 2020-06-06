@@ -1,4 +1,4 @@
-name: Documnetation Build Check
+name: Documentation Build Check
 on:
   pull_request:
     types: [opened, synchronize, reopened]

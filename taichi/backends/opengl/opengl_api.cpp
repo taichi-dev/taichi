@@ -355,7 +355,6 @@ struct CompiledKernel {
   std::string kernel_name;
   std::unique_ptr<GLProgram> glsl;
   KernelParallelAttrib kpa;
-  UsedFeature used;
 
   // disscussion:
   // https://github.com/taichi-dev/taichi/pull/696#issuecomment-609332527
@@ -364,9 +363,8 @@ struct CompiledKernel {
 
   explicit CompiledKernel(const std::string &kernel_name_,
                           const std::string &kernel_source_code,
-                          const KernelParallelAttrib &kpa_,
-                          const UsedFeature &used_)
-      : kernel_name(kernel_name_), kpa(std::move(kpa_)), used(used_) {
+                          const KernelParallelAttrib &kpa_)
+      : kernel_name(kernel_name_), kpa(std::move(kpa_)) {
     display_kernel_info(kernel_name_, kernel_source_code, kpa);
     glsl = std::make_unique<GLProgram>(GLShader(kernel_source_code));
     glsl->link();
@@ -401,10 +399,30 @@ struct CompiledKernel {
   }
 };
 
+#define MAX_PRINT_ENTRIES 128
+
+struct GLSLRuntime {
+  int rand_state;
+  int msg_count;
+  int msg_buf[MAX_PRINT_ENTRIES];
+} __attribute__((packed));
+
+struct GLSLLauncherImpl {
+  std::unique_ptr<GLSSBO> root_ssbo;
+  std::unique_ptr<GLSSBO> runtime_ssbo;
+  std::unique_ptr<GLSSBO> gtmp_ssbo;
+  std::vector<GLSSBO> ssbo;
+  std::vector<char> root_buffer;
+  std::vector<char> gtmp_buffer;
+  std::unique_ptr<GLSLRuntime> runtime;
+  std::vector<std::unique_ptr<CompiledProgram>> programs;
+};
+
 struct CompiledProgram::Impl {
   std::vector<std::unique_ptr<CompiledKernel>> kernels;
   int arg_count, ret_count;
   std::map<int, size_t> ext_arr_map;
+  UsedFeature used;
 
   Impl(Kernel *kernel) {
     arg_count = kernel->args.size();
@@ -418,10 +436,9 @@ struct CompiledProgram::Impl {
 
   void add(const std::string &kernel_name,
            const std::string &kernel_source_code,
-           KernelParallelAttrib &&kpa,
-           const UsedFeature &used) {
+           KernelParallelAttrib &&kpa) {
     kernels.push_back(std::make_unique<CompiledKernel>(
-        kernel_name, kernel_source_code, std::move(kpa), used));
+        kernel_name, kernel_source_code, std::move(kpa)));
   }
 
   void launch(Context &ctx, GLSLLauncher *launcher) const {
@@ -430,6 +447,11 @@ struct CompiledProgram::Impl {
         IOV{ctx.args, std::max(arg_count, ret_count) * sizeof(uint64_t)});
     std::vector<char> base_arr;
     std::vector<void *> saved_ctx_ptrs;
+    if (used.print) {
+      auto rt_buf = (GLSLRuntime *)launcher->impl->runtime_ssbo->map();
+      rt_buf->msg_count = 0;
+      launcher->impl->runtime_ssbo->unmap();
+    }
     // TODO: these dirty codes are introduced by #694
     if (ext_arr_map.size()) {
       iov.push_back(
@@ -474,22 +496,21 @@ struct CompiledProgram::Impl {
         cpit++;
       }  // extract back to all extptr from my baseptr
     }
+    if (used.print) {
+      auto rt_buf = (GLSLRuntime *)launcher->impl->runtime_ssbo->map();
+      auto msg_count = rt_buf->msg_count;
+      if (msg_count > MAX_PRINT_ENTRIES) {
+        TI_WARN("[glsl] Too much print within one kernel: {} > {}, cutting tail",
+            msg_count, MAX_PRINT_ENTRIES);
+        msg_count = MAX_PRINT_ENTRIES;
+      }
+      for (int i = 0; i < msg_count; i++) {
+        std::cout << rt_buf->msg_buf[i] << std::endl;
+      }
+      rt_buf->msg_count = 0;
+      launcher->impl->runtime_ssbo->unmap();
+    }
   }
-};
-
-struct GLSLRuntime {
-  int rand_state;
-};
-
-struct GLSLLauncherImpl {
-  std::unique_ptr<GLSSBO> root_ssbo;
-  std::unique_ptr<GLSSBO> runtime_ssbo;
-  std::unique_ptr<GLSSBO> gtmp_ssbo;
-  std::vector<GLSSBO> ssbo;
-  std::vector<char> root_buffer;
-  std::vector<char> gtmp_buffer;
-  std::unique_ptr<GLSLRuntime> runtime;
-  std::vector<std::unique_ptr<CompiledProgram>> programs;
 };
 
 GLSLLauncher::GLSLLauncher(size_t root_size) {
@@ -576,8 +597,7 @@ struct CompiledProgram::Impl {
 
   void add(const std::string &kernel_name,
            const std::string &kernel_source_code,
-           KernelParallelAttrib &&kpa,
-           const UsedFeature &used) {
+           KernelParallelAttrib &&kpa) {
     TI_NOT_IMPLEMENTED;
   }
 
@@ -642,9 +662,12 @@ CompiledProgram::~CompiledProgram() = default;
 
 void CompiledProgram::add(const std::string &kernel_name,
                           const std::string &kernel_source_code,
-                          KernelParallelAttrib &&kpa,
-                          const UsedFeature &used) {
-  impl->add(kernel_name, kernel_source_code, std::move(kpa), used);
+                          KernelParallelAttrib &&kpa) {
+  impl->add(kernel_name, kernel_source_code, std::move(kpa));
+}
+
+void CompiledProgram::set_used(const UsedFeature &used) {
+  impl->used = used;
 }
 
 void CompiledProgram::launch(Context &ctx, GLSLLauncher *launcher) const {

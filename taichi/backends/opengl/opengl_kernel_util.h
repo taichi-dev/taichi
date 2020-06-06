@@ -21,6 +21,7 @@ struct UsedFeature {
   bool int64{false};
   bool global_temp{false};
   bool fast_pow{false};
+  bool print{false};
 };
 
 using SNodeId = std::string;

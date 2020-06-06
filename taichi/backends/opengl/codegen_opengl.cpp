@@ -109,8 +109,13 @@ class KernelGen : public IRVisitor {
     emit("}}");
 
     // clang-format off
-    std::string kernel_header =
-      "layout(packed, binding = 6) buffer runtime { int _rand_state_; };\n";
+    std::string kernel_header = "";
+    kernel_header +=
+      "layout(shared, binding = 6) buffer runtime {\n"
+      "\tint _rand_state_;\n"
+      "\tint _msg_count_;\n"
+      "\tint _mesg_i32_[];\n"
+      "};\n";
     kernel_header +=
       "layout(packed, binding = 0) buffer data_i32 { int _data_i32_[]; };\n"
       "layout(packed, binding = 0) buffer data_f32 { float _data_f32_[]; };\n"
@@ -174,6 +179,11 @@ class KernelGen : public IRVisitor {
 #include "taichi/backends/opengl/shaders/fast_pow.glsl.h"
       );
     }
+    if (used.print) {
+      kernel_header += (
+#include "taichi/backends/opengl/shaders/print.glsl.h"
+      );
+    }
 
     line_appender_header_.append_raw(kernel_header);
 
@@ -191,7 +201,7 @@ class KernelGen : public IRVisitor {
         "#version 430 core\n" + extensions + "precision highp float;\n" +
         line_appender_header_.lines() + line_appender_.lines();
     compiled_program_->add(std::move(glsl_kernel_name_), kernel_src_code,
-                           std::move(kpa), used);
+                           std::move(kpa));
     line_appender_header_.clear_all();
     line_appender_.clear_all();
     kpa = KernelParallelAttrib();
@@ -212,7 +222,18 @@ class KernelGen : public IRVisitor {
   }
 
   void visit(PrintStmt *stmt) override {
-    TI_WARN("Cannot print inside OpenGL kernel, ignored");
+    TI_ASSERT_INFO(stmt->contents.size() == 1, "`print` with multiple argument not supported on OpenGL");
+    auto content = stmt->contents[0];
+
+    if (std::holds_alternative<Stmt *>(content)) {
+      auto arg_stmt = std::get<Stmt *>(content);
+      used.print = true;
+      emit("_msg_push_{}({});",
+          opengl_data_type_short_name(arg_stmt->ret_type.data_type),
+          arg_stmt->short_name());
+    } else {
+      TI_NOT_IMPLEMENTED;
+    }
   }
 
   void visit(RandStmt *stmt) override {
@@ -682,6 +703,8 @@ class KernelGen : public IRVisitor {
   }
 
   std::unique_ptr<CompiledProgram> get_compiled_program() {
+    // We have to set it at the last moment, to get all used feature.
+    compiled_program_->set_used(used);
     return std::move(compiled_program_);
   }
 

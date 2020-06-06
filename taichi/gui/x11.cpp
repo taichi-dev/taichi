@@ -35,7 +35,7 @@ class CXImage {
         *p++ = uint8(clamp(int(c[2] * 255.0_f), 0, 255));
         *p++ = uint8(clamp(int(c[1] * 255.0_f), 0, 255));
         *p++ = uint8(clamp(int(c[0] * 255.0_f), 0, 255));
-        *p++ = uint8(clamp(int(c[3] * 255.0_f), 0, 255));
+        *p++ = 0;
       }
     }
   }

@@ -89,7 +89,7 @@ Paint on a window
     .. note ::
 
         When using ``float32`` or ``float64`` as the data type,
-        ``img`` entries will be clipped into range ``[0, 1]``.
+        ``img`` entries will be clipped into range ``[0, 1]`` for display.
 
 
 .. function:: gui.circle(pos, color = 0xFFFFFF, radius = 1)
@@ -169,14 +169,14 @@ Every event have a key and type.
 
 ::
 
-  ti.GUI.ESCAPE
-  ti.GUI.SHIFT
-  ti.GUI.LEFT
-  'a'
+  ti.GUI.ESCAPE  # Esc
+  ti.GUI.SHIFT   # Shift
+  ti.GUI.LEFT    # Left Arrow
+  'a'            # we use lowercase for alphabet
   'b'
   ...
-  ti.GUI.LMB
-  ti.GUI.RMB
+  ti.GUI.LMB     # Left Mouse Button
+  ti.GUI.RMB     # Right Mouse Button
 
 *Event type* is the type of event, for now, there are just three type of event:
 

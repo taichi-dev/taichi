@@ -119,9 +119,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd,
       break;
     case WM_CLOSE:
       // https://stackoverflow.com/questions/3155782/what-is-the-difference-between-wm-quit-wm-close-and-wm-destroy-in-a-windows-pr
-      gui->key_events.push_back(GUI::KeyEvent{GUI::KeyEvent::Type::press,
-                                              "WMClose", gui->cursor_pos});
-      gui->should_close++;
+      gui->send_window_close_message();
       break;
   }
   return DefWindowProc(hwnd, uMsg, wParam, lParam);

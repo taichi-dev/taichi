@@ -707,6 +707,12 @@ class GUI : public GUIBase {
 
   void process_event();
 
+  void send_window_close_message() {
+    key_events.push_back(GUI::KeyEvent{GUI::KeyEvent::Type::press,
+                                            "WMClose", cursor_pos});
+    should_close++;
+  }
+
   void mouse_event(MouseEvent e) {
     if (e.type == MouseEvent::Type::press) {
       button_status[0] = true;

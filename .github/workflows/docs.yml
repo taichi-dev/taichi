@@ -14,10 +14,10 @@ jobs:
     - uses: actions/setup-python@v2
       with:
         python-version: 3.7
-    - name: Install Dependencies
+    - name: Install dependencies
       run: |
         pip install sphinx_rtd_theme
-    - uses: ammaraskar/sphinx-action@master
-      with:
-        build-command: "sphinx-build -b html . build"
-        docs-folder: "docs/"
+    - name: Try to build docs
+      run: |
+        pip install sphinx sphinx_rtd_theme
+        sphinx-build -b html . build

@@ -26,11 +26,11 @@ def imread(filename, channels=0):
     return img.swapaxes(0, 1)[:, ::-1, :]
 
 
-def imshow(img, winname='Taichi'):
+def imshow(img, window_name='Taichi'):
     if not isinstance(img, np.ndarray):
         img = img.to_numpy()
     assert len(img.shape) in [2, 3]
-    gui = ti.GUI(winname, res=img.shape[:2])
+    gui = ti.GUI(window_name, res=img.shape[:2])
     while not gui.get_event(ti.GUI.ESCAPE):
         gui.set_image(img)
         gui.show()

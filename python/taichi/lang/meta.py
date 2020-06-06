@@ -18,9 +18,9 @@ def tensor_to_ext_arr(tensor: ti.template(), arr: ti.ext_arr()):
 @ti.func
 def cook_image_type(x):
     x = ti.cast(x, ti.f32)
-    # Issue #1000, don't know why win GUI doesn't do clamp for us
+    # Issue #1000, we don't know why Windows GUI does not do clamping for us
     if ti.static(ti.get_os_name() == 'win'):
-        x = ti.min(1, ti.max(0, x))
+        x = min(1, max(0, x))
     return x
 
 

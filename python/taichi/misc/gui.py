@@ -32,7 +32,7 @@ class GUI:
         if isinstance(res, numbers.Number):
             res = (res, res)
         self.res = res
-        # The GUI canvas uses RGBA for storage, therefore we needs NxMx4 for a image
+        # The GUI canvas uses RGBA for storage, therefore we need NxMx4 for an image.
         self.img = np.ascontiguousarray(np.zeros(self.res + (4, ), np.float32))
         self.core = ti.core.GUI(name, ti.veci(*res))
         self.canvas = self.core.get_canvas()
@@ -110,7 +110,7 @@ class GUI:
 
         else:
             raise ValueError(
-                f"GUI.set_image only takes Taichi tensor or NumPy array, not {type(img)}"
+                f"GUI.set_image only takes a Taichi tensor or NumPy array, not {type(img)}"
             )
 
         self.core.set_img(self.img.ctypes.data)

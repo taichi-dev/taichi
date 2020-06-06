@@ -69,10 +69,6 @@ LRESULT CALLBACK WindowProc(HWND hwnd,
   using namespace taichi;
   int x, y;
   switch (uMsg) {
-    case WM_DESTROY:
-      PostQuitMessage(0);
-      exit(0);
-      return 0;
     case WM_LBUTTONDOWN:
       gui->mouse_event(
           GUI::MouseEvent{GUI::MouseEvent::Type::press, gui->cursor_pos});
@@ -203,6 +199,7 @@ void GUI::set_title(std::string title) {
 GUI::~GUI() {
   std::free(data);
   DeleteDC(src);
+  DestroyWindow(hwnd);
   gui_from_hwnd.erase(hwnd);
 }
 

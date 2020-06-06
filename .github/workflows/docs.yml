@@ -16,8 +16,7 @@ jobs:
         python-version: 3.7
     - name: Install dependencies
       run: |
-        pip install sphinx_rtd_theme
+        pip install sphinx sphinx_rtd_theme
     - name: Try to build docs
       run: |
-        pip install sphinx sphinx_rtd_theme
-        sphinx-build -b html . build
+        cd docs && sphinx-build -b html . build

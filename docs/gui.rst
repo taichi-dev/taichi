@@ -279,29 +279,29 @@ A *event filter* is a list combined of *key*, *type* and *(type, key)* tuple, e.
 Image I/O
 ---------
 
-.. function:: ti.imread(filename, channels = 0)
+.. function:: ti.imread(filename, channels=0)
 
-    :parameter filename: (string) filename of the image you want to load
-    :parameter channels: (int) the number of channels in your specified image, the default value is zero.
+    :parameter filename: (string) the filename of the image to load
+    :parameter channels: (int) the number of channels in your specified image. The default value ``0`` means the channels of the returned image is adaptive to the image file.
     
-    This function can load an image from the target filename, return it as a np.ndarray
+    This function loads an image from the target filename and returns it as a ``np.ndarray``.
 
 .. function:: ti.imshow(img, windname)
 
-    :parameter img: (Matrix or Expr) the image you want to show in the GUI
-    :parameter windname: (string) the name of GUI window
+    :parameter img: (Matrix or Expr) the image to show in the GUI
+    :parameter windname: (string) the name of the GUI window
 
-    This function will open an instance of ti.GUI and show the input image on the screen.
+    This function will create an instance of ``ti.GUI`` and show the input image on the screen.
 
 .. function:: ti.imwrite(img, filename)
 
     :parameter img: (Matrix or Expr) the images you want to export
     :parameter filename: (string) filename you want to save
 
-    Please make sure that the input image is a Taichi Matrix or Expr and **it has shape [height, width, compoents] correctly**. For example:
+    Please make sure that the input image is a Taichi tensor of scalar or Vector, and **the tensor has correct shape (height, width, components)**. For example:
     
     
-- And here is a simple example:
+Here is a simple example:
 
 .. code-block:: python
 

@@ -585,9 +585,9 @@ class Matrix(TaichiOperations):
                           [ti.sin(alpha), ti.cos(alpha)]])
 
     @staticmethod
-    def var(n, m, dt, shape):
+    def var(n, m, dt, **kwargs):
         import taichi as ti
-        return ti.Matrix(n=n, m=m, dt=dt, shape=shape)
+        return ti.Matrix(n=n, m=m, dt=dt, **kwargs)
 
     @staticmethod
     def rows(rows):

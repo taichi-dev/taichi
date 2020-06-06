@@ -11,11 +11,12 @@ def imwrite(img, filename):
     elif img.dtype in [np.float32, np.float64]:
         img = (np.clip(img, 0, 1) * 255.0 + 0.5).astype(np.uint8)
     elif img.dtype != np.uint8:
-        raise ValueError(
-            f'Data type {img.dtype} not supported in ti.imwrite')
+        raise ValueError(f'Data type {img.dtype} not supported in ti.imwrite')
 
-    assert len(img.shape) in [2, 3], "Image must be either RGB/RGBA or greyscale"
-    assert img.shape[2] in [1, 3, 4], "Image must be either RGB/RGBA or greyscale"
+    assert len(img.shape) in [2,
+                              3], "Image must be either RGB/RGBA or greyscale"
+    assert img.shape[2] in [1, 3,
+                            4], "Image must be either RGB/RGBA or greyscale"
 
     resx, resy = img.shape[:2]
     if len(img.shape) == 2:

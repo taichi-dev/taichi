@@ -119,7 +119,7 @@ shutil.rmtree('taichi/examples')
 shutil.rmtree('taichi/assets')
 try:
     os.remove('taichi/CHANGELOG.md')
-except:
+except FileNotFoundError:
     pass
 shutil.rmtree('./build')
 

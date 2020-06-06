@@ -3,7 +3,14 @@ Hello, world!
 
 We introduce the Taichi programming language through a very basic `fractal` example.
 
-Running the Taichi code below (``python3 fractal.py``) will give you an animation of
+.. note::
+
+    A successful installation of Taichi should add a command-line interfce to your system.
+    You could use it to run bundled examples for convenience. Please run ``ti example -h``
+    for more information.
+
+
+Running the Taichi code below (``python3 fractal.py`` or ``ti example fractal``) will give you an animation of
 `Julia set <https://en.wikipedia.org/wiki/Julia_set>`_:
 
 .. image:: https://github.com/yuanming-hu/public_files/raw/master/graphics/taichi/fractal.gif

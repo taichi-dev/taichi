@@ -118,12 +118,11 @@ LRESULT CALLBACK WindowProc(HWND hwnd,
                                               gui->cursor_pos});
       break;
     case WM_CLOSE:
+      // https://stackoverflow.com/questions/3155782/what-is-the-difference-between-wm-quit-wm-close-and-wm-destroy-in-a-windows-pr
       gui->key_events.push_back(GUI::KeyEvent{GUI::KeyEvent::Type::press,
                                               "WMClose", gui->cursor_pos});
       gui->should_close++;
-      // https://stackoverflow.com/questions/3155782/what-is-the-difference-between-wm-quit-wm-close-and-wm-destroy-in-a-windows-pr
-      // Not to let DefWindowProc destroy the window yet:
-      return 0;
+      break;
   }
   return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
@@ -199,7 +198,6 @@ void GUI::set_title(std::string title) {
 GUI::~GUI() {
   std::free(data);
   DeleteDC(src);
-  DestroyWindow(hwnd);
   gui_from_hwnd.erase(hwnd);
 }
 

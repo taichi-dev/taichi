@@ -6,7 +6,7 @@ We introduce the Taichi programming language through a very basic `fractal` exam
 .. note::
 
     A successful installation of Taichi should add a command-line interfce to your system.
-    You could use it to run bundled examples for convenience. Please run ``ti example -h`` 
+    You could use it to run bundled examples for convenience. Please run ``ti example -h``
     for more information.
 
 

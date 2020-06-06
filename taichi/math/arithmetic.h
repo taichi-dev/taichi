@@ -16,9 +16,7 @@ T iroundup(T a, T b) {
 
 template <typename T>
 uint32_t log2int(T value) {
-  if constexpr (!std::is_integral_v<T>) {
-    static_assert(always_false_v<T>, "Must be integral type");
-  }
+  static_assert(std::is_integral_v<T>, "Must be integral type");
 
   uint32_t ret = 0;
   value >>= 1;

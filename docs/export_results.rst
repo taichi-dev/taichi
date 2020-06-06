@@ -13,12 +13,12 @@ Export images using ``ti.GUI.show``
 +++++++++++++++++++++++++++++++++++
 
 - ``ti.GUI.show(filename)`` can not only display the GUI canvas on your screen, but also save the image to your specified ``filename``.
-- Note that the format of the image is fully determined by the suffix of ``filename``. 
+- Note that the format of the image is fully determined by the suffix of ``filename``.
 - Taichi now supports saving to ``png``, ``jpg``, and ``bmp`` formats.
 - We recommend using ``png`` format. For example:
 
 .. code-block:: python
-    
+
     import taichi as ti
     import os
 
@@ -49,7 +49,7 @@ Export images using ``ti.imwrite``
 ++++++++++++++++++++++++++++++++++
 
 To save images without creating a ``ti.GUI``, use ``ti.imwrite``. For example:
-    
+
     .. code-block:: python
 
         import taichi as ti
@@ -74,7 +74,7 @@ Export Videos
 -------------
 
 .. note::
-    
+
     The video export utilities of Taichi depend on ``ffmpeg``. If ``ffmpeg`` is not installed on your machine, please follow the installation instructions of ``ffmpeg`` at the end of this page.
 
 - ``ti.VideoManger`` can help you export results in ``mp4`` or ``gif`` format. For example,
@@ -107,7 +107,7 @@ Export Videos
     video_manger.make_video(gif=True, mp4=True)
     print(f"MP4 video is saved to {video_manger.get_output_filename(".mp4")}")
     print(f"GIF video is saved to {video_manger.get_output_filename(".gif")}")
-    
+
 After running the code above, you will find the output videos in the ``./results/`` folder.
 
 Install ffmpeg
@@ -122,7 +122,7 @@ Install ffmpeg on Windows
 
 - **Important:** add ``D:/YOUR_FFMPEG_FOLDER/bin`` to the ``PATH`` environment variable;
 
-- Open the Windows ``cmd`` or ``PowerShell`` and type the line of code below to test your installation. If ``ffmpeg`` is set up properly, the version information will be printed. 
+- Open the Windows ``cmd`` or ``PowerShell`` and type the line of code below to test your installation. If ``ffmpeg`` is set up properly, the version information will be printed.
 
 .. code-block:: shell
 
@@ -150,7 +150,7 @@ Install ``ffmpeg`` on Linux
 
     sudo pacman -S ffmpeg
 
-- Test your installation using 
+- Test your installation using
 
 .. code-block:: shell
 

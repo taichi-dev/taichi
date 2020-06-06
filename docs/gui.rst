@@ -283,7 +283,7 @@ Image I/O
 
     :parameter filename: (string) the filename of the image to load
     :parameter channels: (int) the number of channels in your specified image. The default value ``0`` means the channels of the returned image is adaptive to the image file.
-    
+
     This function loads an image from the target filename and returns it as a ``np.ndarray``.
 
 .. function:: ti.imshow(img, windname)
@@ -299,8 +299,8 @@ Image I/O
     :parameter filename: (string) filename you want to save
 
     Please make sure that the input image is a Taichi tensor of scalar or Vector, and **the tensor has correct shape (height, width, components)**. For example:
-    
-    
+
+
 Here is a simple example:
 
 .. code-block:: python

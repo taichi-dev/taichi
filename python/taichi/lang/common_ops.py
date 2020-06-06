@@ -68,10 +68,6 @@ class TaichiOperations:
         return ti.floordiv(self, other)
 
     def __rfloordiv__(self, other):
-        if self.is_pyconstant():
-            return self.make_from_numpy(
-                numpy_or_constant(other) // self.to_numpy())
-
         import taichi as ti
         return ti.floordiv(other, self)
 

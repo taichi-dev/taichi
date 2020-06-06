@@ -49,10 +49,20 @@ nsobj_unique_ptr<O> wrap_as_nsobj_unique_ptr(O *nsobj) {
 // Prepend "TI_" to native ObjC type names, otherwise clang-format thinks this
 // is an ObjC file and is not happy formatting it.
 struct TI_NSString;
+struct TI_NSArray;
 
 // |str| must exist during the entire lifetime of the returned object, as it
 // does not own the underlying memory. Think of it as std::string_view.
 nsobj_unique_ptr<TI_NSString> wrap_string_as_ns_string(const std::string &str);
+
+std::string to_string(TI_NSString *ns);
+
+int ns_array_count(TI_NSArray *na);
+
+template <typename R>
+R ns_array_object_at_index(TI_NSArray *na, int i) {
+  return cast_call<R>(na, "objectAtIndex:", i);
+}
 
 }  // namespace mac
 }  // namespace taichi

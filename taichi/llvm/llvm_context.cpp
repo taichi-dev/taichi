@@ -156,10 +156,12 @@ void compile_runtime_bitcode(Arch arch) {
                src_runtime_bc);
 #ifdef _WIN32
       auto ret = fs::copy_file(src_runtime_bc, dst_runtime_bc,
-                         fs::copy_options::overwrite_existing);
+                               fs::copy_options::overwrite_existing);
 #else
-      auto ret = (std::system(fmt::format("cp {} {}",
-              src_runtime_bc, dst_runtime_bc).c_str()) & 255) == 0;
+      auto ret =
+          (std::system(fmt::format("cp {} {}", src_runtime_bc, dst_runtime_bc)
+                           .c_str()) &
+           255) == 0;
 #endif
       if (!ret) {
         TI_WARN("Failed to copy from saved runtime bitcode cache.");
@@ -191,10 +193,11 @@ void compile_runtime_bitcode(Arch arch) {
       TI_TRACE("Saving runtime module bitcode cache [{}]...", dst_runtime_bc);
 #ifdef _WIN32
       auto ret = fs::copy_file(dst_runtime_bc, src_runtime_bc,
-          fs::copy_options::overwrite_existing);
+                               fs::copy_options::overwrite_existing);
 #else
-      auto ret = (system(fmt::format("cp {} {}",
-              dst_runtime_bc, src_runtime_bc).c_str()) & 255) == 0;
+      auto ret = (system(fmt::format("cp {} {}", dst_runtime_bc, src_runtime_bc)
+                             .c_str()) &
+                  255) == 0;
 #endif
       if (!ret) {
         TI_WARN("Failed to save runtime bitcode cache.");

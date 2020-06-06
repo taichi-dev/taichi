@@ -500,7 +500,8 @@ struct CompiledProgram::Impl {
       auto rt_buf = (GLSLRuntime *)launcher->impl->runtime_ssbo->map();
       auto msg_count = rt_buf->msg_count;
       if (msg_count > MAX_PRINT_ENTRIES) {
-        TI_WARN("[glsl] Too much print within one kernel: {} > {}, cutting tail",
+        TI_WARN(
+            "[glsl] Too much print within one kernel: {} > {}, cutting tail",
             msg_count, MAX_PRINT_ENTRIES);
         msg_count = MAX_PRINT_ENTRIES;
       }

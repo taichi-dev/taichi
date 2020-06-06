@@ -51,7 +51,7 @@ The Taichi Programming Language
 
    dev_install
    contributor_guide
-   utilities
+   dev_utilities
    cpp_style
    internal
    taichicon
@@ -62,6 +62,7 @@ The Taichi Programming Language
    :maxdepth: 3
 
    gui
+   utilities
    global_settings
    faq
    acknowledgments

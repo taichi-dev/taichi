@@ -18,16 +18,16 @@ def tensor_to_ext_arr(tensor: ti.template(), arr: ti.ext_arr()):
 @ti.func
 def cook_image_type(x):
     x = ti.cast(x, ti.f32)
-    # Issue #1000, we don't know why Windows GUI does not do clamping for us
-    if ti.static(ti.get_os_name() == 'win'):
-        x = min(1, max(0, x))
     return x
 
 
 @ti.kernel
 def tensor_to_image(tensor: ti.template(), arr: ti.ext_arr()):
     for I in ti.grouped(tensor):
-        arr[I] = cook_image_type(tensor[I])
+        t = cook_image_type(tensor[I])
+        arr[I, 0] = t
+        arr[I, 1] = t
+        arr[I, 2] = t
 
 
 @ti.kernel

@@ -55,8 +55,6 @@ class GUI:
         elif img.dtype in [np.float32, np.float64]:
             img = img.astype(np.float32)
             from .util import get_os_name
-            if img.dtype == np.float32 and get_os_name() == 'win':
-                img = np.clip(img, 0, 1)
         else:
             raise ValueError(
                 f'Data type {img.dtype} not supported in GUI.set_image')

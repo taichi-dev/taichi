@@ -38,7 +38,7 @@
 #include "taichi/jit/jit_session.h"
 #include "taichi/common/task.h"
 #include "taichi/util/environ_config.h"
-#include <filesystem>
+#include <experimental/filesystem>
 
 TLANG_NAMESPACE_BEGIN
 
@@ -140,7 +140,7 @@ void compile_runtime_bitcode(Arch arch) {
     auto fn_bc = get_runtime_fn(arch);
     auto src_runtime_bc = fmt::format("{}{}", runtime_src_folder, fn_bc);
     auto dst_runtime_bc = fmt::format("{}{}", runtime_folder, fn_bc);
-    namespace fs = std::filesystem;
+    namespace fs = std::experimental::filesystem;
     if (do_cache && fs::exists(src_runtime_bc)) {
       TI_TRACE("Restoring cached runtime module bitcode [{}]...",
                src_runtime_bc);

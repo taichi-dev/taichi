@@ -132,7 +132,7 @@ TI_NAMESPACE_BEGIN
 
 void GUI::process_event() {
   MSG msg;
-  if (PeekMessage(&msg, hwnd, 0, 0, PM_REMOVE)) {
+  if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
     TranslateMessage(&msg);
     DispatchMessage(&msg);
   }

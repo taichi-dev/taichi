@@ -37,11 +37,11 @@ Export images using ``ti.GUI.show``
     # mainloop
     for i in range(iterations):
         paint()
-        gui.set_image(pixel)
+        gui.set_image(pixels)
 
-        img_name = f"frame_{i:05d}.png"   # create filename with suffix png
-        print(f"Frame {i} is recorded in {img_name}")
-        gui.show(img_name)  # export and show in GUI
+        filename = f'frame_{i:05d}.png'   # create filename with suffix png
+        print(f'Frame {i} is recorded in {filename}')
+        gui.show(filename)  # export and show in GUI
 
 - After running the code above, you will get a series of images in the current folder.
 
@@ -56,21 +56,21 @@ To save images without creating a ``ti.GUI``, use ``ti.imwrite``. For example:
 
         ti.init()
 
-        pixel = ti.var(ti.u8, shape=(512, 512, 3))
+        pixels = ti.var(ti.u8, shape=(512, 512, 3))
 
         @ti.kernel
-        def set_pixel():
-            for i, j, k in pixel:
-                pixel[i, j, k] = ti.random() * 255
+        def set_pixels():
+            for i, j, k in pixels:
+                pixels[i, j, k] = ti.random() * 255
 
-        set_pixel()
-        img_name = f"imwrite_export.png"
-        ti.imwrite(pixel.to_numpy(), img_name)
-        print(f"The image has been saved to {img_name}")
+        set_pixels()
+        filename = f'imwrite_export.png'
+        ti.imwrite(pixels.to_numpy(), filename)
+        print(f'The image has been saved to {filename}')
 
 Taichi offers helper functions that read, write, and show images. Please check out :ref:`gui` for more details.
 
-Export Videos
+Export videos
 -------------
 
 .. note::
@@ -85,12 +85,12 @@ Export Videos
 
     ti.init()
 
-    pixel = ti.var(ti.u8, shape=(512, 512, 3))
+    pixels = ti.var(ti.u8, shape=(512, 512, 3))
 
     @ti.kernel
     def paint():
-        for i, j, k in pixel:
-            pixel[i, j, k] = ti.random() * 255
+        for i, j, k in pixels:
+            pixels[i, j, k] = ti.random() * 255
 
     result_dir = "./results"
     video_manger = ti.VideoManager(output_dir=result_dir, framerate=24, automatic_build=False)
@@ -98,15 +98,15 @@ Export Videos
     for i in range(50):
         paint()
 
-        pixel_img = pixel.to_numpy()
-        video_manger.write_frame(pixel_img)
-        print(f"\rFrame {i+1}/50 is recorded", end='')
+        pixels_img = pixels.to_numpy()
+        video_manger.write_frame(pixels_img)
+        print(f'\rFrame {i+1}/50 is recorded', end='')
 
     print()
-    print("Exporting .mp4 and .gif videos...")
+    print('Exporting .mp4 and .gif videos...')
     video_manger.make_video(gif=True, mp4=True)
-    print(f"MP4 video is saved to {video_manger.get_output_filename(".mp4")}")
-    print(f"GIF video is saved to {video_manger.get_output_filename(".gif")}")
+    print(f'MP4 video is saved to {video_manger.get_output_filename(".mp4")}')
+    print(f'GIF video is saved to {video_manger.get_output_filename(".gif")}')
 
 After running the code above, you will find the output videos in the ``./results/`` folder.
 

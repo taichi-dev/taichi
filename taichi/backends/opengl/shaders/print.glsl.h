@@ -7,7 +7,7 @@ void _msg_push_i32(int x) {
   _mesg_i32_[i] = x;
 }
 
-void _msg_push_f32(int x) {
+void _msg_push_f32(float x) {
   _msg_push_i32(floatBitsToInt(x));
 }
 )

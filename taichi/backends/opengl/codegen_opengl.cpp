@@ -222,7 +222,10 @@ class KernelGen : public IRVisitor {
   }
 
   void visit(PrintStmt *stmt) override {
-    TI_ASSERT_INFO(stmt->contents.size() == 1, "`print` with multiple argument not supported on OpenGL");
+    if (stmt->contents.size() != 1) {
+      TI_WARN("`print` with multiple argument not supported on OpenGL, ignoring");
+      return;
+    }
     auto content = stmt->contents[0];
 
     if (std::holds_alternative<Stmt *>(content)) {
@@ -232,7 +235,7 @@ class KernelGen : public IRVisitor {
           opengl_data_type_short_name(arg_stmt->ret_type.data_type),
           arg_stmt->short_name());
     } else {
-      TI_NOT_IMPLEMENTED;
+      TI_WARN("`print` for string is not supported on OpenGL, ignoring");
     }
   }
 

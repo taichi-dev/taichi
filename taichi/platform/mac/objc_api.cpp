@@ -15,6 +15,14 @@ nsobj_unique_ptr<TI_NSString> wrap_string_as_ns_string(const std::string &str) {
   return wrap_as_nsobj_unique_ptr(ptr);
 }
 
+std::string to_string(TI_NSString *ns) {
+  return cast_call<const char *>(ns, "UTF8String");
+}
+
+int ns_array_count(TI_NSArray *na) {
+  return cast_call<int>(na, "count");
+}
+
 }  // namespace mac
 }  // namespace taichi
 

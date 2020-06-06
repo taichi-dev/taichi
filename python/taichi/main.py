@@ -446,15 +446,16 @@ class TaichiMain:
     def _display_benchmark_regression(xd, yd, args):
         def parse_dat(file):
             dict = {}
-            for line in open(file).readlines():
-                try:
-                    a, b = line.strip().split(':')
-                except:
-                    continue
-                b = float(b)
-                if abs(b % 1.0) < 1e-5:  # codegen_*
-                    b = int(b)
-                dict[a.strip()] = b
+            with open(file) as f:
+                for line in f.readlines():
+                    try:
+                        a, b = line.strip().split(':')
+                    except:
+                        continue
+                    b = float(b)
+                    if abs(b % 1.0) < 1e-5:  # codegen_*
+                        b = int(b)
+                    dict[a.strip()] = b
             return dict
 
         def parse_name(file):

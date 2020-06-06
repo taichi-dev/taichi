@@ -98,3 +98,29 @@ def test_not_out_of_bound_dynamic():
         x[3] = 1
 
     func()
+
+
+@ti.must_throw(RuntimeError)
+def test_out_of_bound_with_offset():
+    ti.init(debug=True)
+    ti.set_gdb_trigger(False)
+    x = ti.var(ti.i32, shape=(8, 16), offset=(-8, -8))
+
+    @ti.kernel
+    def func():
+        x[0, 0] = 1
+
+    func()
+
+
+def test_not_out_of_bound_with_offset():
+    ti.init(debug=True)
+    ti.set_gdb_trigger(False)
+    x = ti.var(ti.i32, shape=(8, 16), offset=(-4, -8))
+
+    @ti.kernel
+    def func():
+        x[-4, -8] = 1
+        x[3, 7] = 2
+
+    func()

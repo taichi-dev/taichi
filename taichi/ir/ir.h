@@ -840,6 +840,7 @@ class Block : public IRNode {
                     std::unique_ptr<Stmt> &&new_statement,
                     bool replace_usages = true);
   void insert_before(Stmt *old_statement, VecStatement &&new_statements);
+  void insert_after(Stmt *old_statement, VecStatement &&new_statements);
   void replace_with(Stmt *old_statement,
                     VecStatement &&new_statements,
                     bool replace_usages = true);
@@ -875,6 +876,7 @@ class Block : public IRNode {
 class DelayedIRModifier {
  private:
   std::vector<std::pair<Stmt *, VecStatement>> to_insert_before;
+  std::vector<std::pair<Stmt *, VecStatement>> to_insert_after;
   std::vector<Stmt *> to_erase;
 
  public:
@@ -882,6 +884,8 @@ class DelayedIRModifier {
   void erase(Stmt *stmt);
   void insert_before(Stmt *old_statement, std::unique_ptr<Stmt> new_statement);
   void insert_before(Stmt *old_statement, VecStatement &&new_statements);
+  void insert_after(Stmt *old_statement, std::unique_ptr<Stmt> new_statement);
+  void insert_after(Stmt *old_statement, VecStatement &&new_statements);
   bool modify_ir();
 };
 

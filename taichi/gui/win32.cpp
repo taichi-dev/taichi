@@ -4,6 +4,7 @@
 #include <windowsx.h>
 #include "taichi/common/task.h"
 #include "taichi/gui/gui.h"
+#include <cctype>
 #include <map>
 
 // Note: some code is copied from MSDN:
@@ -53,7 +54,7 @@ static std::string lookup_keysym(WPARAM wParam, LPARAM lParam) {
       if (VK_F1 <= key && key <= VK_F12)
         return fmt::format("F{}", key - VK_F1);
       else if (isascii(key))
-        return std::string(1, key);
+        return std::string(1, std::tolower(key));
       else
         return fmt::format("Vk{}", key);
   }

@@ -3,6 +3,7 @@ import re
 import shutil
 import sys
 import ctypes
+import warnings
 from pathlib import Path
 from colorama import Fore, Back, Style
 from taichi.misc.settings import get_output_directory, get_build_directory, get_bin_directory, get_repo_directory, get_runtime_directory
@@ -12,6 +13,8 @@ if sys.version_info[0] < 3 or sys.version_info[1] <= 5:
     print("\nPlease restart with Python 3.6+\n")
     print("Current Python version:", sys.version_info)
     exit(-1)
+
+warnings.filterwarnings('always')
 
 ti_core = None
 

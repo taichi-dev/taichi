@@ -3,7 +3,7 @@ from . import impl
 import copy
 import numbers
 import numpy as np
-from .util import to_numpy_type, to_pytorch_type, deprecated
+from .util import taichi_scope, python_scope, deprecated, to_numpy_type
 from .common_ops import TaichiOperations
 from collections.abc import Iterable
 import warnings
@@ -27,7 +27,7 @@ class Matrix(TaichiOperations):
                  rows=None,
                  cols=None):
         self.grad = None
-
+        # construct from rows or cols
         if rows is not None or cols is not None:
             warnings.warn(
                 f"ti.Matrix(rows=[...]) or ti.Matrix(cols=[...]) is deprecated, use ti.Matrix.rows([...]) or ti.Matrix.cols([...]) instead.",
@@ -60,7 +60,7 @@ class Matrix(TaichiOperations):
                 raise Exception(
                     'cols/rows required when using list of vectors')
             elif not isinstance(n[0], Iterable):
-                if impl.get_runtime().inside_kernel:
+                if impl.inside_kernel():
                     # wrap potential constants with Expr
                     if keep_raw:
                         mat = [list([x]) for x in n]
@@ -76,6 +76,7 @@ class Matrix(TaichiOperations):
             else:
                 self.m = 1
             self.entries = [x for row in mat for x in row]
+        # construct global matrix
         else:
             self.entries = []
             self.n = n
@@ -133,10 +134,18 @@ class Matrix(TaichiOperations):
             if isinstance(e, expr.Expr):
                 if e.ptr.is_global_var():
                     results[i] = True
-            assert results[i] == results[
-                0], "Matrices with mixed global/local entries are not allowed"
+            assert results[i] == results[0], \
+                "Matrices with mixed global/local entries are not allowed"
         return results[0]
 
+    def is_pyconstant(self):
+        return all([not isinstance(e, expr.Expr) for e in self.entries])
+
+    @staticmethod
+    def make_from_numpy(nparray):
+        return Matrix(nparray)
+
+    @taichi_scope
     def element_wise_binary(self, foo, other):
         ret = self.empty_copy()
         if isinstance(other, (list, tuple)):
@@ -147,7 +156,7 @@ class Matrix(TaichiOperations):
                 f'taichi class {type(a)}, maybe you want to use `a.fill(b)` instead?'
             )
         if isinstance(other, Matrix):
-            assert self.m == other.m and self.n == other.n
+            assert self.m == other.m and self.n == other.n, f"Dimension mismatch between shapes ({self.n}, {self.m}), ({other.n}, {other.m})"
             for i in range(self.n * self.m):
                 ret.entries[i] = foo(self.entries[i], other.entries[i])
         else:  # assumed to be scalar
@@ -156,6 +165,7 @@ class Matrix(TaichiOperations):
                 ret.entries[i] = foo(self.entries[i], other)
         return ret
 
+    @taichi_scope
     def element_wise_unary(self, foo):
         ret = self.empty_copy()
         for i in range(self.n * self.m):
@@ -163,7 +173,11 @@ class Matrix(TaichiOperations):
         return ret
 
     def __matmul__(self, other):
-        assert self.m == other.n
+        # TODO: move to common_ops.py, redirect to `ti.matmul` too?
+        if self.is_pyconstant():
+            return self.make_from_numpy(self.to_numpy() @ other.to_numpy())
+
+        assert self.m == other.n, f"Dimension mismatch between shapes ({self.n}, {self.m}), ({other.n}, {other.m})"
         ret = Matrix(self.n, other.m)
         for i in range(self.n):
             for j in range(other.m):
@@ -205,6 +219,7 @@ class Matrix(TaichiOperations):
         for e in self.entries:
             snode.place(e)
 
+    @taichi_scope
     def subscript(self, *indices):
         if self.is_global():
             ret = self.empty_copy()
@@ -220,8 +235,65 @@ class Matrix(TaichiOperations):
                 j = 0
             return self(i, j)
 
+    @property
+    def x(self):
+        if impl.inside_kernel():
+            return self.subscript(0)
+        else:
+            return self[0]
+
+    @property
+    def y(self):
+        if impl.inside_kernel():
+            return self.subscript(1)
+        else:
+            return self[1]
+
+    @property
+    def z(self):
+        if impl.inside_kernel():
+            return self.subscript(2)
+        else:
+            return self[2]
+
+    @property
+    def w(self):
+        if impl.inside_kernel():
+            return self.subscript(3)
+        else:
+            return self[3]
+
+    @x.setter
+    def x(self, value):
+        if impl.inside_kernel():
+            self.subscript(0).assign(value)
+        else:
+            self[0] = value
+
+    @y.setter
+    def y(self, value):
+        if impl.inside_kernel():
+            self.subscript(1).assign(value)
+        else:
+            self[1] = value
+
+    @z.setter
+    def z(self, value):
+        if impl.inside_kernel():
+            self.subscript(2).assign(value)
+        else:
+            self[2] = value
+
+    @w.setter
+    def w(self, value):
+        if impl.inside_kernel():
+            self.subscript(3).assign(value)
+        else:
+            self[3] = value
+
     class Proxy:
         def __init__(self, mat, index):
+            """Proxy when a tensor of Matrices is accessed by host."""
             self.mat = mat
             self.index = index
 
@@ -235,22 +307,59 @@ class Matrix(TaichiOperations):
                 key = [key]
             self.mat(*key)[self.index] = value
 
-    # host access
-    def __getitem__(self, index):
-        return Matrix.Proxy(self, index)
-        ret = [[] for _ in range(self.n)]
-        for i in range(self.n):
-            for j in range(self.m):
-                ret[i].append(self(i, j)[index])
-        return ret
+        @property
+        def x(self):
+            return self[0]
+
+        @property
+        def y(self):
+            return self[1]
+
+        @property
+        def z(self):
+            return self[2]
+
+        @property
+        def w(self):
+            return self[3]
+
+        @x.setter
+        def x(self, value):
+            self[0] = value
+
+        @y.setter
+        def y(self, value):
+            self[1] = value
+
+        @z.setter
+        def z(self, value):
+            self[2] = value
+
+        @w.setter
+        def w(self, value):
+            self[3] = value
 
     # host access
+    @python_scope
+    def __getitem__(self, index):
+        return Matrix.Proxy(self, index)
+
+    # host access
+    @python_scope
     def __setitem__(self, index, item):
         if not isinstance(item[0], list):
             item = [[i] for i in item]
         for i in range(self.n):
             for j in range(self.m):
                 self(i, j)[index] = item[i][j]
+
+    # host access, return a complete Matrix instead of Proxy
+    def at(self, index):
+        ret = self.empty_copy()
+        for i in range(self.n):
+            for j in range(self.m):
+                ret.entries[i * self.m + j] = self[index][i, j]
+        return ret
 
     def empty_copy(self):
         import taichi as ti
@@ -264,11 +373,13 @@ class Matrix(TaichiOperations):
         ret.entries = copy.copy(self.entries)
         return ret
 
+    @taichi_scope
     def variable(self):
         ret = self.copy()
         ret.entries = [impl.expr_init(e) for e in ret.entries]
         return ret
 
+    @taichi_scope
     def cast(self, dt):
         ret = self.copy()
         if type(dt) is type and issubclass(dt, numbers.Number):
@@ -283,6 +394,7 @@ class Matrix(TaichiOperations):
             ret.entries[i] = impl.cast(ret.entries[i], dt)
         return ret
 
+    @taichi_scope
     def trace(self):
         assert self.n == self.m
         sum = expr.Expr(self(0, 0))
@@ -290,6 +402,7 @@ class Matrix(TaichiOperations):
             sum = sum + self(i, i)
         return sum
 
+    @taichi_scope
     def inverse(self):
         assert self.n == self.m, 'Only square matrices are invertible'
         if self.n == 1:
@@ -343,6 +456,7 @@ class Matrix(TaichiOperations):
 
     inversed = deprecated('a.inversed()', 'a.inverse()')(inverse)
 
+    @taichi_scope
     def normalized(self, eps=0):
         assert self.m == 1
         invlen = 1.0 / (Matrix.norm(self) + eps)
@@ -357,6 +471,7 @@ class Matrix(TaichiOperations):
     def T(self):
         return self.transpose()
 
+    @taichi_scope
     def transpose(a):
         ret = Matrix.empty(a.m, a.n)
         for i in range(a.n):
@@ -364,6 +479,7 @@ class Matrix(TaichiOperations):
                 ret.set_entry(j, i, a(i, j))
         return ret
 
+    @taichi_scope
     def determinant(a):
         if a.n == 2 and a.m == 2:
             return a(0, 0) * a(1, 1) - a(0, 1) * a(1, 0)
@@ -423,32 +539,37 @@ class Matrix(TaichiOperations):
             ret.entries[i] = self.entries[i].grad
         return ret
 
+    @taichi_scope
     def sum(self):
         ret = self.entries[0]
         for i in range(1, len(self.entries)):
             ret = ret + self.entries[i]
         return ret
 
+    @taichi_scope
     def norm(self, l=2, eps=0):
         assert l == 2
         return impl.sqrt(self.norm_sqr() + eps)
 
-    # TODO: avoid using sqr here since people might consider "sqr" as "square root". New name TBD.
+    @taichi_scope
     def norm_sqr(self):
         return (self**2).sum()
 
+    @taichi_scope
     def max(self):
         ret = self.entries[0]
         for i in range(1, len(self.entries)):
             ret = impl.max(ret, self.entries[i])
         return ret
 
+    @taichi_scope
     def min(self):
         ret = self.entries[0]
         for i in range(1, len(self.entries)):
             ret = impl.min(ret, self.entries[i])
         return ret
 
+    @taichi_scope
     def any(self):
         import taichi as ti
         ret = (self.entries[0] != ti.expr_init(0))
@@ -456,6 +577,7 @@ class Matrix(TaichiOperations):
             ret = ret + (self.entries[i] != ti.expr_init(0))
         return -(ret < ti.expr_init(0))
 
+    @taichi_scope
     def all(self):
         import taichi as ti
         ret = self.entries[0] != ti.expr_init(0)
@@ -491,10 +613,22 @@ class Matrix(TaichiOperations):
         from .meta import fill_matrix
         fill_matrix(self, val)
 
-    def to_numpy(self, keep_dims=False):
+    @python_scope
+    def to_numpy(self, keep_dims=False, as_vector=None):
         # Discussion: https://github.com/taichi-dev/taichi/pull/1046#issuecomment-633548858
+        if as_vector is not None:
+            import warnings
+            warnings.warn(
+                'v.to_numpy(as_vector=True) is deprecated, '
+                'please use v.to_numpy() directly instead',
+                DeprecationWarning,
+                stacklevel=3)
         as_vector = self.m == 1 and not keep_dims
         dim_ext = (self.n, ) if as_vector else (self.n, self.m)
+
+        if self.is_pyconstant():
+            return np.array(self.entries).reshape(dim_ext)
+
         ret = np.empty(self.loop_range().shape() + dim_ext,
                        dtype=to_numpy_type(
                            self.loop_range().snode().data_type()))
@@ -504,6 +638,7 @@ class Matrix(TaichiOperations):
         ti.sync()
         return ret
 
+    @python_scope
     def to_torch(self, device=None, keep_dims=False):
         import torch
         as_vector = self.m == 1 and not keep_dims
@@ -518,6 +653,7 @@ class Matrix(TaichiOperations):
         ti.sync()
         return ret
 
+    @python_scope
     def from_numpy(self, ndarray):
         if len(ndarray.shape) == self.loop_range().dim() + 1:
             as_vector = True
@@ -532,9 +668,11 @@ class Matrix(TaichiOperations):
         import taichi as ti
         ti.sync()
 
+    @python_scope
     def from_torch(self, torch_tensor):
         return self.from_numpy(torch_tensor.contiguous())
 
+    @taichi_scope
     def __ti_repr__(self):
         if self.m != 1:
             yield '['
@@ -552,19 +690,26 @@ class Matrix(TaichiOperations):
         if self.m != 1:
             yield ']'
 
+    def __repr__(self):
+        """Python scope object print support."""
+        return str(self.to_numpy())
+
     @staticmethod
+    @taichi_scope
     def zero(dt, n, m=1):
         import taichi as ti
         return ti.Matrix([[ti.cast(0, dt) for _ in range(m)]
                           for _ in range(n)])
 
     @staticmethod
+    @taichi_scope
     def one(dt, n):
         import taichi as ti
         return ti.Matrix([[ti.cast(1, dt) for _ in range(n)]
                           for _ in range(n)])
 
     @staticmethod
+    @taichi_scope
     def unit(n, i, dt=None):
         import taichi as ti
         if dt is None:
@@ -573,12 +718,14 @@ class Matrix(TaichiOperations):
         return ti.Matrix([ti.cast(int(j == i), dt) for j in range(n)])
 
     @staticmethod
+    @taichi_scope
     def identity(dt, n):
         import taichi as ti
         return ti.Matrix([[ti.cast(int(i == j), dt) for j in range(n)]
                           for i in range(n)])
 
     @staticmethod
+    @taichi_scope
     def rotation2d(alpha):
         import taichi as ti
         return ti.Matrix([[ti.cos(alpha), -ti.sin(alpha)],
@@ -631,11 +778,13 @@ class Matrix(TaichiOperations):
         # using matrices as template arguments.
         return id(self)
 
+    @taichi_scope
     def dot(self, other):
         assert self.m == 1
         assert other.m == 1
         return (self.transpose() @ other).subscript(0, 0)
 
+    @taichi_scope
     def cross(self, b):
         if self.n == 3 and self.m == 1 and b.n == 3 and b.m == 1:
             return Matrix([
@@ -652,6 +801,7 @@ class Matrix(TaichiOperations):
                 "Cross product is only supported between pairs of 2D/3D vectors"
             )
 
+    @taichi_scope
     def outer_product(self, b):
         assert self.m == 1
         assert b.m == 1

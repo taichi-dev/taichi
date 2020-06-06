@@ -605,7 +605,7 @@ class Matrix(TaichiOperations):
         elif isinstance(rows[0], list):
             for row in rows:
                 assert len(row) == len(
-                    rows[0]), "input lists must be the same shape"
+                    rows[0]), "Input lists share the same shape"
             mat.m = len(rows[0])
             # l-value copy:
             mat.entries = [x for row in rows for x in row]

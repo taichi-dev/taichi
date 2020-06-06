@@ -31,6 +31,10 @@ using mac::nsobj_unique_ptr;
 
 nsobj_unique_ptr<MTLDevice> mtl_create_system_default_device();
 
+nsobj_unique_ptr<mac::TI_NSArray> mtl_copy_all_devices();
+
+std::string mtl_device_name(MTLDevice *dev);
+
 nsobj_unique_ptr<MTLCommandQueue> new_command_queue(MTLDevice *dev);
 
 nsobj_unique_ptr<MTLCommandBuffer> new_command_buffer(MTLCommandQueue *queue);

@@ -79,7 +79,7 @@ As a temporary local variable
     ::
 
         # Taichi-scope
-        a = ti.Matrix([[2, 3, 4], [5, 6, 7])
+        a = ti.Matrix([[2, 3, 4], [5, 6, 7]])
 
 
 .. function:: ti.Matrix(rows=[v0, v1, v2, ...])

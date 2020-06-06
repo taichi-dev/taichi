@@ -11,6 +11,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.7
+    - name: Install Dependencies
+      run: |
+        pip install sphinx_rtd_theme
     - uses: ammaraskar/sphinx-action@master
       with:
         build-command: "sphinx-build -b html . build"

@@ -54,24 +54,21 @@ class GUI:
             img = img.astype(np.float32) * (1 / np.iinfo(img.dtype).max)
         elif img.dtype in [np.float32, np.float64]:
             img = img.astype(np.float32)
-            from .util import get_os_name
         else:
             raise ValueError(
                 f'Data type {img.dtype} not supported in GUI.set_image')
 
         if len(img.shape) == 2:
             img = img[..., None]
+
         if img.shape[2] == 1:
-            img = img + np.zeros(shape=(1, 1, 4), dtype=np.float32)
+            img = img + np.zeros((1, 1, 4), np.float32)
         if img.shape[2] == 3:
-            img = np.concatenate([
-                img,
-                np.zeros(shape=(img.shape[0], img.shape[1], 1),
-                         dtype=np.float32)
-            ],
-                                 axis=2)
-        assert img.shape[:
-                         2] == self.res, "Image resolution does not match GUI resolution"
+            zeros = np.zeros((img.shape[0], img.shape[1], 1), np.float32)
+            img = np.concatenate([img, zeros], axis=2)
+
+        res = img.shape[:2]
+        assert res == self.res, "Image resolution does not match GUI resolution"
         return np.ascontiguousarray(img)
 
     def set_image(self, img):

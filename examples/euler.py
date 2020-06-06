@@ -466,3 +466,4 @@ while (1):
         gui.set_image(cmap(img.to_numpy()))
         gui.show()
     n += 1
+

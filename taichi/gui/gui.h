@@ -708,8 +708,8 @@ class GUI : public GUIBase {
   void process_event();
 
   void send_window_close_message() {
-    key_events.push_back(GUI::KeyEvent{GUI::KeyEvent::Type::press,
-                                            "WMClose", cursor_pos});
+    key_events.push_back(
+        GUI::KeyEvent{GUI::KeyEvent::Type::press, "WMClose", cursor_pos});
     should_close++;
   }
 

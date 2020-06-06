@@ -611,7 +611,7 @@ class Matrix(TaichiOperations):
             mat.entries = [x for row in rows for x in row]
         else:
             raise Exception(
-                "cols/rows must be list of lists or lists of vectors")
+                "Cols/rows must be a list of lists, or a list of vectors")
         return mat
 
     @staticmethod

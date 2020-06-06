@@ -38,7 +38,12 @@
 #include "taichi/jit/jit_session.h"
 #include "taichi/common/task.h"
 #include "taichi/util/environ_config.h"
-#include <experimental/filesystem>
+#ifdef _WIN32
+// Travis CI seems doesn't support <filesystem>...
+#include <filesystem>
+#else
+#include <unistd.h>
+#endif
 
 TLANG_NAMESPACE_BEGIN
 
@@ -140,13 +145,23 @@ void compile_runtime_bitcode(Arch arch) {
     auto fn_bc = get_runtime_fn(arch);
     auto src_runtime_bc = fmt::format("{}{}", runtime_src_folder, fn_bc);
     auto dst_runtime_bc = fmt::format("{}{}", runtime_folder, fn_bc);
-    namespace fs = std::experimental::filesystem;
-    if (do_cache && fs::exists(src_runtime_bc)) {
+#ifdef _WIN32
+    namespace fs = std::filesystem;
+    bool src_exists = fs::exists(src_runtime_bc);
+#else
+    bool src_exists = !access(src_runtime_bc.c_str(), F_OK);
+#endif
+    if (do_cache && src_exists) {
       TI_TRACE("Restoring cached runtime module bitcode [{}]...",
                src_runtime_bc);
-      std::error_code ec;
-      if (!fs::copy_file(src_runtime_bc, dst_runtime_bc,
-                         fs::copy_options::overwrite_existing)) {
+#ifdef _WIN32
+      auto ret = fs::copy_file(src_runtime_bc, dst_runtime_bc,
+                         fs::copy_options::overwrite_existing);
+#else
+      auto ret = (std::system(fmt::format("cp {} {}",
+              src_runtime_bc, dst_runtime_bc).c_str()) & 255) == 0;
+#endif
+      if (!ret) {
         TI_WARN("Failed to copy from saved runtime bitcode cache.");
       } else {
         TI_TRACE("Runtime module bitcode loaded.");
@@ -174,8 +189,14 @@ void compile_runtime_bitcode(Arch arch) {
     runtime_compiled.insert((int)arch);
     if (do_cache) {
       TI_TRACE("Saving runtime module bitcode cache [{}]...", dst_runtime_bc);
-      if (!fs::copy_file(dst_runtime_bc, src_runtime_bc,
-                         fs::copy_options::overwrite_existing)) {
+#ifdef _WIN32
+      auto ret = fs::copy_file(dst_runtime_bc, src_runtime_bc,
+          fs::copy_options::overwrite_existing);
+#else
+      auto ret = (system(fmt::format("cp {} {}",
+              dst_runtime_bc, src_runtime_bc).c_str()) & 255) == 0;
+#endif
+      if (!ret) {
         TI_WARN("Failed to save runtime bitcode cache.");
       }
     }

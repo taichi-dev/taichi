@@ -1,0 +1,16 @@
+name: Documnetation Build Check
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+    - "docs/**"
+
+jobs:
+  check_docs_build:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: ammaraskar/sphinx-action@master
+      with:
+        docs-folder: "docs/"

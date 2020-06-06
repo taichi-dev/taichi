@@ -6,18 +6,14 @@ Please make sure that your program runs well before reading this tutorial.
 Export Images
 -------------
 
-- There are 2 common ways to export the result of your program(presumably a Taichi tensor) to images. The first one working with ti.GUI that it is more friendly to begginers. 
+- There are 2 common ways to export the result of your program (presumably a Taichi tensor) to images. The first one working with ti.GUI that it is more friendly to begginers. 
 - The second approach is to call some built-in functions in Taichi to make things done, which is more flexible and harder.
 
 Export Images by ti.GUI
 +++++++++++++++++++++++
 
-.. note::
-    
-    For beginners and debug purposes, we recommend this first method by ti.GUI!
-
-- The first method of exporting images is to use **ti.GUI.show()**. It can not only display the result to the screen but also export the result to your specified place.
-- About the format of saved images: **the type of image is fully determined by your suffix**. 
+- For beginners and debug purposes, we recommend this first method by ti.GUI! That is to use **ti.GUI.show(filename)**. It can not only display the result to the screen but also export the result to your specified `filename`.
+- Note that **the format of image is fully determined by your suffix**. 
 - Though Taichi now supports exporting to .png, .jpg and .bmp these 3 mainstream formats, we strongly **recommend using .png** which has been tested well at this moment. For example:
 
 .. code-block:: python
@@ -26,28 +22,22 @@ Export Images by ti.GUI
     import os
     pixel = ti.var(ti.u8, shape=(512, 512, 3))
 
+ti.init()
     @ti.kernel
     def paint():
-        for I in ti.grouped(pixel):
-            pixel[I] = ti.random() * 255
+        for i, j, k in pixel:
+            pixel[i, j, k] = ti.random() * 255
 
     iterations = 1000
     gui = ti.GUI("Export Result", res = 512)
-
-    # set up the images output
-    output_dir = "./results/"
-    if os.path.exists(output_dir) == False:
-        os.makedirs(output_dir)
 
     # mainloop
     for i in range(iterations):
         paint()
         gui.set_image(pixel)
 
-        # img_name = os.path.join(output_dir, f"frame_{i}.jpg")   # create filename with suffix jpg
-        # img_name = os.path.join(output_dir, f"frame_{i}.bmp")   # create filename with suffix bmp
-        img_name = os.path.join(output_dir, f"frame_{i}.png")   # create filename with suffix png
-        print("%s recorded in frame %d" % (img_name, i))
+        img_name = f"frame_{i}.png"   # create filename with suffix png
+        print("Frame %d is recorded in %s" % (i, img_name))
         gui.show(img_name)  # export and show in GUI
 
 - After running these codes above, you should get a batch of images in your "./results" folder.
@@ -150,7 +140,7 @@ Install ffmpeg on Windows
 
 Install FFmpeg on Linux
 +++++++++++++++++++++++
-- Most Linux distribution came with Linux natively.
+- Most Linux distribution came with ``ffmpeg`` natively.
 - Install ffmpeg on Ubuntu
 
 .. code-block:: shell
@@ -163,6 +153,12 @@ Install FFmpeg on Linux
 .. code-block:: shell
 
     sudo yum install ffmpeg ffmpeg-devel
+
+- Install ffmpeg on Arch Linux:
+
+.. code-block: shell
+
+    sudo pacman -S ffmpeg
 
 - test your installation by 
 

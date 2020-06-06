@@ -279,10 +279,32 @@ A *event filter* is a list combined of *key*, *type* and *(type, key)* tuple, e.
 Image I/O
 ---------
 
+.. function:: ti.imread(filename, channels = 0)
+
+    :parameter filename: (string) filename of the image you want to load
+    :parameter channels: (int) the number of channels in your specified image, the default value is zero.
+    
+    This function can load an image from the target filename, return it as a np.ndarray
+
+.. function:: ti.imshow(img, windname)
+
+    :parameter img: (Matrix or Expr) the image you want to show in the GUI
+    :parameter windname: (string) the name of GUI window
+
+    This function will open an instance of ti.GUI and show the input image on the screen.
+
+.. function:: ti.imwrite(img, filename)
+
+    :parameter img: (Matrix or Expr) the images you want to export
+    :parameter filename: (string) filename you want to save
+
+    Please make sure that the input image is a Taichi Matrix or Expr and **it has shape [height, width, compoents] correctly**. For example:
+    
+    
+- And here is a simple example:
+
 .. code-block:: python
 
     img = ti.imread('hello.png')
     ti.imshow(img, 'Window Title')
     ti.imwrite(img, 'hello2.png')
-
-TODO: complete here

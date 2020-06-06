@@ -20,9 +20,11 @@ Export Images by ti.GUI
     
     import taichi as ti
     import os
+
+    ti.init()
+
     pixel = ti.var(ti.u8, shape=(512, 512, 3))
 
-ti.init()
     @ti.kernel
     def paint():
         for i, j, k in pixel:
@@ -47,42 +49,27 @@ Export Images by Taichi built-ins
 
 - Why we have to instantiate GUI just for the sake of export images? The former method under the help of "ti.GUI" looks weird.
 - If you are familiared with Taichi, we recommend using these following methods for manipulating images.
-- This second approach is to use **ti.imwrite**. It is much more flexible compared with its former.
-
-.. function:: ti.imwrite(img, filename)
-
-    :parameter img: (Matrix or Expr) the images you want to export
-    :parameter filename: (string) filename you want to save
-
-    Please make sure that the input image is a Taichi Matrix or Expr and **it has shape [height, width, compoents] correctly**. For example:
+- This second approach is to use **ti.imwrite**, which is much more flexible compared with its former. For example:
     
     .. code-block:: python
 
         import taichi as ti
+
+        ti.init()
+
         pixel = ti.var(ti.u8, shape=(512, 512, 3))
 
         @ti.kernel
         def set_pixel():
-            for I in ti.grouped(pixel):
-                pixel[I] = ti.random() * 255
-        
+            for i, j, k in pixel:
+                pixel[i, j, k] = ti.random() * 255
+
         set_pixel()
-        ti.imwrite(pixel.to_numpy(), f"imwrite_export.png")
+        img_name = f"imwrite_export.png"
+        ti.imwrite(pixel.to_numpy(), img_name)
+        print(f"The image has been saved to {img_name}")
 
-.. function:: ti.imread(filename, channels = 0)
-
-    :parameter filename: (string) filename of the image you want to load
-    :parameter channels: (int) the number of channels in your specified image, the default value is zero.
-    
-    This function can load an image from the target filename, return it as a np.ndarray
-
-.. function:: ti.imshow(img, windname)
-
-    :parameter img: (Matrix or Expr) the image you want to show in the GUI
-    :parameter windname: (string) the name of GUI window
-
-    This function will open an instance of ti.GUI and show the input image on the screen.
-
+- Taichi offers some helper functions that can read/write/show images easily. Please check :ref:`gui` for more details.
 
 Export Videos
 -------------
@@ -97,12 +84,14 @@ Export Videos
 
     import taichi as ti
 
+    ti.init()
+
     pixel = ti.var(ti.u8, shape=(512, 512, 3))
 
     @ti.kernel
     def paint():
-        for I in ti.grouped(pixel):
-            pixel[I] = ti.random() * 255
+        for i, j, k in pixel:
+            pixel[i, j, k] = ti.random() * 255
 
     result_dir = "./results"
     video_manger = ti.VideoManager(output_dir=result_dir, framerate=24, automatic_build=False)
@@ -112,11 +101,12 @@ Export Videos
 
         pixel_img = pixel.to_numpy()
         video_manger.write_frame(pixel_img)
-        print("\rframe %d/%d" % (i, 50), end='')
+        print(f"\rFrame {i+1}/50 is recorded", end='')
 
+    print("\nBegin to export .mp4 and .gif videos ...")
     video_manger.make_video(gif = True, mp4 = True)
-    print("mp4 video saved to %s" % video_manger.get_output_filename(".mp4"))
-    print("gif video saved to %s" % video_manger.get_output_filename(".gif"))
+    print("Mp4 video is saved to %s" % video_manger.get_output_filename(".mp4"))
+    print("Gif video is saved to %s" % video_manger.get_output_filename(".gif"))
     
 Running these codes above, you can find the resulting video in "./results/" folder :)
 

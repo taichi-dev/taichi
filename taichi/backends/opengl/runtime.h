@@ -40,12 +40,12 @@ struct GLSLMsgEntry {
     type |= ((type_bm_hi >> i) & 1) << 1;
     return type;
   }
-} __attribute__((packed));
+};
 
 struct GLSLRuntime {
   int rand_state;
   int msg_count;
   GLSLMsgEntry msg_buf[MAX_MESSAGES];
-} __attribute__((packed));
+};
 
 #endif

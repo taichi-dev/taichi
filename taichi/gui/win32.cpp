@@ -69,10 +69,6 @@ LRESULT CALLBACK WindowProc(HWND hwnd,
   using namespace taichi;
   int x, y;
   switch (uMsg) {
-    case WM_DESTROY:
-      PostQuitMessage(0);
-      exit(0);
-      return 0;
     case WM_LBUTTONDOWN:
       gui->mouse_event(
           GUI::MouseEvent{GUI::MouseEvent::Type::press, gui->cursor_pos});
@@ -122,7 +118,8 @@ LRESULT CALLBACK WindowProc(HWND hwnd,
                                               gui->cursor_pos});
       break;
     case WM_CLOSE:
-      exit(0);
+      // https://stackoverflow.com/questions/3155782/what-is-the-difference-between-wm-quit-wm-close-and-wm-destroy-in-a-windows-pr
+      gui->send_window_close_message();
       break;
   }
   return DefWindowProc(hwnd, uMsg, wParam, lParam);
@@ -132,7 +129,7 @@ TI_NAMESPACE_BEGIN
 
 void GUI::process_event() {
   MSG msg;
-  if (PeekMessage(&msg, hwnd, 0, 0, PM_REMOVE)) {
+  if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
     TranslateMessage(&msg);
     DispatchMessage(&msg);
   }
@@ -180,9 +177,10 @@ void GUI::redraw() {
   for (int i = 0; i < width; i++) {
     for (int j = 0; j < height; j++) {
       auto c = reinterpret_cast<unsigned char *>(data + (j * width) + i);
-      c[0] = (unsigned char)(canvas->img[i][height - j - 1][2] * 255.0_f);
-      c[1] = (unsigned char)(canvas->img[i][height - j - 1][1] * 255.0_f);
-      c[2] = (unsigned char)(canvas->img[i][height - j - 1][0] * 255.0_f);
+      auto d = canvas->img[i][height - j - 1];
+      c[0] = uint8(clamp(int(d[2] * 255.0_f), 0, 255));
+      c[1] = uint8(clamp(int(d[1] * 255.0_f), 0, 255));
+      c[2] = uint8(clamp(int(d[0] * 255.0_f), 0, 255));
       c[3] = 0;
     }
   }

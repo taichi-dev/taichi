@@ -354,16 +354,6 @@ bool is_power_of_two(uint32 x) {
   return x != 0 && (x & (x - 1)) == 0;
 }
 
-uint32 log2int(uint64 value) {
-  uint32 ret = 0;
-  value >>= 1;
-  while (value) {
-    value >>= 1;
-    ret += 1;
-  }
-  return ret;
-}
-
 struct ListManager {
   static constexpr std::size_t max_num_chunks = 1024;
   Ptr chunks[max_num_chunks];
@@ -384,7 +374,7 @@ struct ListManager {
                           "max_num_elements_per_chunk must be POT.");
     lock = 0;
     num_elements = 0;
-    log2chunk_num_elements = log2int(num_elements_per_chunk);
+    log2chunk_num_elements = taichi::log2int(num_elements_per_chunk);
   }
 
   void append(void *data_ptr);

@@ -93,7 +93,7 @@ reset()
 gui = ti.GUI("Water Wave", shape)
 for frame in range(100000):
     for e in gui.get_events(ti.GUI.PRESS):
-        if e.key == ti.GUI.ESCAPE:
+        if e.key in [ti.GUI.ESCAPE, ti.GUI.EXIT]:
             exit()
         elif e.key == 'r':
             reset()

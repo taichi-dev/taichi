@@ -44,8 +44,12 @@ def imshow(img, window_name='Taichi'):
         img = img.to_numpy()
     assert len(img.shape) in [2,
                               3], "Image must be either RGB/RGBA or greyscale"
-    gui = ti.GUI(window_name, res=img.shape[:2])
-    img = gui.cook_image(img)
-    while not gui.get_event(ti.GUI.ESCAPE):
-        gui.set_image(img)
-        gui.show()
+
+    with ti.GUI(window_name, res=img.shape[:2]) as gui:
+        img = gui.cook_image(img)
+        while gui.running:
+            if gui.get_event(ti.GUI.ESCAPE):
+                gui.running = False
+
+            gui.set_image(img)
+            gui.show()

@@ -69,10 +69,6 @@ LRESULT CALLBACK WindowProc(HWND hwnd,
   using namespace taichi;
   int x, y;
   switch (uMsg) {
-    case WM_DESTROY:
-      PostQuitMessage(0);
-      exit(0);
-      return 0;
     case WM_LBUTTONDOWN:
       gui->mouse_event(
           GUI::MouseEvent{GUI::MouseEvent::Type::press, gui->cursor_pos});
@@ -122,7 +118,8 @@ LRESULT CALLBACK WindowProc(HWND hwnd,
                                               gui->cursor_pos});
       break;
     case WM_CLOSE:
-      exit(0);
+      // https://stackoverflow.com/questions/3155782/what-is-the-difference-between-wm-quit-wm-close-and-wm-destroy-in-a-windows-pr
+      gui->send_window_close_message();
       break;
   }
   return DefWindowProc(hwnd, uMsg, wParam, lParam);

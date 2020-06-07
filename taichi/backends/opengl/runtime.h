@@ -45,7 +45,7 @@ struct GLSLMsgEntry {
 struct GLSLRuntime {
   int rand_state;
   int msg_count;
-  GLSLMsgEntry msg_buf[MAX_MESSAGES * MSG_SIZE];
+  GLSLMsgEntry msg_buf[MAX_MESSAGES];
 } __attribute__((packed));
 
 #endif

@@ -239,8 +239,6 @@ class TypedConstant {
     return equal_type_and_value(o);
   }
 
-  TypedConstant operator-() const;
-
   int32 &val_int32();
   float32 &val_float32();
   int64 &val_int64();
@@ -254,6 +252,7 @@ class TypedConstant {
   int64 val_int() const;
   uint64 val_uint() const;
   float64 val_float() const;
+  float64 val_cast_to_float64() const;
 };
 
 inline std::string make_list(const std::vector<std::string> &data,

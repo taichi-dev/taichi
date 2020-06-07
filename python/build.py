@@ -85,6 +85,8 @@ else:
     shutil.copy('../runtimes/RelWithDebInfo/taichi_core.dll',
                 'taichi/lib/taichi_core.pyd')
 
+os.system('{} -m taichi changelog --save && cat ../CHANGELOG.md'.format(get_python_executable()))
+
 shutil.copy('../CHANGELOG.md', './taichi/CHANGELOG.md')
 shutil.copytree('../tests/python', './taichi/tests')
 shutil.copytree('../examples', './taichi/examples')

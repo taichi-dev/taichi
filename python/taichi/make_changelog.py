@@ -4,8 +4,8 @@ import sys
 from git import Repo
 
 
-def main(ver='master'):
-    g = Repo('.')
+def main(ver='master', repo_dir='.'):
+    g = Repo(repo_dir)
     commits = list(g.iter_commits(ver, max_count=200))
     begin, end = -1, 0
 

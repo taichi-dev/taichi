@@ -62,7 +62,7 @@ The Taichi Programming Language
    :maxdepth: 3
 
    gui
-   utilities
+   cli_utilities
    global_settings
    faq
    acknowledgments

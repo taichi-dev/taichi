@@ -229,8 +229,8 @@ class KernelGen : public IRVisitor {
 
       int size = stmt->contents.size();
       if (size > MAX_CONTENTS_PER_MSG) {
-        TI_WARN("[glsl] printing too much contents: {} > {}, clipping",
-            size, MAX_CONTENTS_PER_MSG);
+        TI_WARN("[glsl] printing too much contents: {} > {}, clipping", size,
+                MAX_CONTENTS_PER_MSG);
       }
       emit("int _msgid = _msg_allocate_slot();");
       for (int i = 0; i < size; i++) {
@@ -239,8 +239,8 @@ class KernelGen : public IRVisitor {
         if (std::holds_alternative<Stmt *>(content)) {
           auto arg_stmt = std::get<Stmt *>(content);
           emit("_msg_set_{}(_msgid, {}, {});",
-              opengl_data_type_short_name(arg_stmt->ret_type.data_type),
-              i, arg_stmt->short_name());
+               opengl_data_type_short_name(arg_stmt->ret_type.data_type), i,
+               arg_stmt->short_name());
 
         } else {
           auto str = std::get<std::string>(content);

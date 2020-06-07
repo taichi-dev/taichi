@@ -452,9 +452,8 @@ struct CompiledProgram::Impl {
 
     auto msg_count = rt_buf->msg_count;
     if (msg_count > MAX_MESSAGES) {
-      TI_WARN(
-          "[glsl] Too much print within one kernel: {} > {}, clipping",
-          msg_count, MAX_MESSAGES);
+      TI_WARN("[glsl] Too much print within one kernel: {} > {}, clipping",
+              msg_count, MAX_MESSAGES);
       msg_count = MAX_MESSAGES;
     }
 
@@ -477,18 +476,18 @@ struct CompiledProgram::Impl {
 
         std::string str;
         switch (type) {
-        case 1:
-          str = fmt::format("{}", u.val_i32);
-          break;
-        case 2:
-          str = fmt::format("{}", u.val_f32);
-          break;
-        case 3:
-          str = str_table.at(value);
-          break;
-        default:
-          TI_WARN("[glsl] Unexpected serialization type: {}, ignoring", type);
-          break;
+          case 1:
+            str = fmt::format("{}", u.val_i32);
+            break;
+          case 2:
+            str = fmt::format("{}", u.val_f32);
+            break;
+          case 3:
+            str = str_table.at(value);
+            break;
+          default:
+            TI_WARN("[glsl] Unexpected serialization type: {}, ignoring", type);
+            break;
         };
         std::cout << str;
       }

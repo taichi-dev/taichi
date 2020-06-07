@@ -1,5 +1,5 @@
-#define MAX_MESSAGES         (1024 * 4) // * 4 * 32 = 512 KB
-#define MSG_SIZE             32
+#define MAX_MESSAGES (1024 * 4)  // * 4 * 32 = 512 KB
+#define MSG_SIZE 32
 // 2 left for the `type` bitmap, 1 left for the contents-count
 #define MAX_CONTENTS_PER_MSG (MSG_SIZE - 3)
 

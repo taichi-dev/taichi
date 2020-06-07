@@ -51,7 +51,7 @@ The Taichi Programming Language
 
    dev_install
    contributor_guide
-   dev_utilities
+   utilities
    cpp_style
    internal
    taichicon

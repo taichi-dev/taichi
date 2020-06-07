@@ -7,15 +7,13 @@ int _msg_allocate_slot() {
 }
 
 void _msg_set(int msgid, int contid, int type, int value) {
-  int base = msgid << 5; // MSG_SIZE = (1 << 5)
-  _mesg_i32_[base + contid] = value;
-  _mesg_i32_[base + 30] |= (type & 1) << contid;
-  _mesg_i32_[base + 31] |= (type >> 1) << contid;
+  _msg_buf_[msgid].contents[contid] = value;
+  _msg_buf_[msgid].type_bitmap_low |= (type & 1) << contid;
+  _msg_buf_[msgid].type_bitmap_high |= (type >> 1) << contid;
 }
 
 void _msg_set_end(int msgid, int contid) {
-  int base = msgid << 5;
-  _mesg_i32_[base + 29] = contid;
+  _msg_buf_[msgid].num_contents = contid;
 }
 
 void _msg_set_i32(int msgid, int contid, int value) {

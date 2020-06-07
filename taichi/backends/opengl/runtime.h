@@ -8,10 +8,17 @@
 
 #include "taichi/util/macros.h"
 STR(
-layout(shared, binding = 6) buffer runtime {
+struct _msg_entry_t {
+  int contents[29];
+  int num_contents;
+  int type_bitmap_low;
+  int type_bitmap_high;
+};
+
+layout(std430, binding = 6) buffer runtime {
   int _rand_state_;
   int _msg_count_;
-  int _mesg_i32_[];
+  _msg_entry_t _msg_buf_[];
 };
 )
 

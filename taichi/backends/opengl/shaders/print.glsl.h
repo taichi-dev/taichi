@@ -2,29 +2,25 @@
 // clang-format off
 #include "taichi/util/macros.h"
 STR(
-int _msg_allocate_slot() {
-  return atomicAdd(_msg_count_, 1);
+void _msg_set(int mid, int cid, int type, int val) {
+  _msg_buf_[mid].contents[cid] = val;
+  _msg_buf_[mid].type_bm_lo |= (type & 1) << cid;
+  _msg_buf_[mid].type_bm_hi |= (type >> 1) << cid;
 }
 
-void _msg_set(int msgid, int contid, int type, int value) {
-  _msg_buf_[msgid].contents[contid] = value;
-  _msg_buf_[msgid].type_bitmap_low |= (type & 1) << contid;
-  _msg_buf_[msgid].type_bitmap_high |= (type >> 1) << contid;
+void _msg_set_end(int mid, int cid) {
+  _msg_buf_[mid].num_contents = cid;
 }
 
-void _msg_set_end(int msgid, int contid) {
-  _msg_buf_[msgid].num_contents = contid;
+void _msg_set_i32(int mid, int cid, int val) {
+  _msg_set(mid, cid, 1, val);
 }
 
-void _msg_set_i32(int msgid, int contid, int value) {
-  _msg_set(msgid, contid, 1, value);
+void _msg_set_f32(int mid, int cid, float val) {
+  _msg_set(mid, cid, 2, floatBitsToInt(val));
 }
 
-void _msg_set_f32(int msgid, int contid, float value) {
-  _msg_set(msgid, contid, 2, floatBitsToInt(value));
-}
-
-void _msg_set_str(int msgid, int contid, int stridx) {
-  _msg_set(msgid, contid, 3, stridx);
+void _msg_set_str(int mid, int cid, int stridx) {
+  _msg_set(mid, cid, 3, stridx);
 }
 )

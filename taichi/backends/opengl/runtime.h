@@ -11,8 +11,8 @@ STR(
 struct _msg_entry_t {
   int contents[29];
   int num_contents;
-  int type_bitmap_low;
-  int type_bitmap_high;
+  int type_bm_lo;
+  int type_bm_hi;
 };
 
 layout(std430, binding = 6) buffer runtime {
@@ -32,12 +32,12 @@ struct GLSLMsgEntry {
   } contents[MAX_CONTENTS_PER_MSG];
 
   int num_contents;
-  int type_bitmap_low;
-  int type_bitmap_high;
+  int type_bm_lo;
+  int type_bm_hi;
 
   int get_type_of(int i) const {
-    int type = (type_bitmap_low >> i) & 1;
-    type |= ((type_bitmap_high >> i) & 1) << 1;
+    int type = (type_bm_lo >> i) & 1;
+    type |= ((type_bm_hi >> i) & 1) << 1;
     return type;
   }
 } __attribute__((packed));

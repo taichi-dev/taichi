@@ -223,35 +223,29 @@ class KernelGen : public IRVisitor {
   void visit(PrintStmt *stmt) override {
     used.print = true;
 
-    emit("{{ // print contents");
-    {
-      ScopedIndent _s(line_appender_);
-
       int size = stmt->contents.size();
       if (size > MAX_CONTENTS_PER_MSG) {
         TI_WARN("[glsl] printing too much contents: {} > {}, clipping", size,
                 MAX_CONTENTS_PER_MSG);
       }
-      emit("int _msgid = _msg_allocate_slot();");
+      auto msgid_name = fmt::format("_mi_{}", stmt->short_name());
+      emit("int {} = atomicAdd(_msg_count_, 1);", msgid_name);
       for (int i = 0; i < size; i++) {
         auto const &content = stmt->contents[i];
 
         if (std::holds_alternative<Stmt *>(content)) {
           auto arg_stmt = std::get<Stmt *>(content);
-          emit("_msg_set_{}(_msgid, {}, {});",
-               opengl_data_type_short_name(arg_stmt->ret_type.data_type), i,
-               arg_stmt->short_name());
+          emit("_msg_set_{}({}, {}, {});",
+               opengl_data_type_short_name(arg_stmt->ret_type.data_type),
+               msgid_name, i, arg_stmt->short_name());
 
         } else {
           auto str = std::get<std::string>(content);
           int stridx = compiled_program_->lookup_or_add_string(str);
-          emit("_msg_set_str(_msgid, {}, {});", i, stridx);
+          emit("_msg_set_str({}, {}, {});", msgid_name, i, stridx);
         }
       }
-
-      emit("_msg_set_end(_msgid, {});", size);
-    }
-    emit("}}");
+      emit("_msg_set_end({}, {});", msgid_name, size);
   }
 
   void visit(RandStmt *stmt) override {

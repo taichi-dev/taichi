@@ -174,16 +174,19 @@ class TypeCheck : public IRVisitor {
     if (stmt->is_cast()) {
       stmt->ret_type.data_type = stmt->cast_type;
     }
-    if (is_trigonometric(stmt->op_type) &&
-        !is_real(stmt->operand->ret_type.data_type)) {
-      TI_ERROR("[{}] Trigonometric operator takes real inputs only. At {}",
-               stmt->name(), stmt->tb);
-    }
-    if ((stmt->op_type == UnaryOpType::floor ||
-         stmt->op_type == UnaryOpType::ceil) &&
-        !is_real(stmt->operand->ret_type.data_type)) {
-      TI_ERROR("[{}] floor/ceil takes real inputs only. At {}", stmt->name(),
-               stmt->tb);
+    if (!is_real(stmt->operand->ret_type.data_type)) {
+      if (is_trigonometric(stmt->op_type)) {
+        TI_ERROR("[{}] Trigonometric operator takes real inputs only. At {}",
+                 stmt->name(), stmt->tb);
+      } else if (stmt->op_type == UnaryOpType::floor ||
+                 stmt->op_type == UnaryOpType::ceil) {
+        TI_ERROR("[{}] floor/ceil takes real inputs only. At {}", stmt->name(),
+                 stmt->tb);
+      } else if (stmt->op_type == UnaryOpType::sqrt ||
+                 stmt->op_type == UnaryOpType::exp ||
+                 stmt->op_type == UnaryOpType::log) {
+        cast(stmt->operand, config.default_fp);
+      }
     }
   }
 

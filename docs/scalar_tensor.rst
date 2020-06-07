@@ -7,10 +7,11 @@ Tensors of scalars
 Declaration
 -----------
 
-.. function:: ti.var(dt, shape = None)
+.. function:: ti.var(dt, shape = None, offset = None)
 
     :parameter dt: (DataType) type of the tensor element
     :parameter shape: (optional, scalar or tuple) the shape of tensor
+    :parameter offset: (optional, scalar or tuple) see :ref:`offset`
 
     For example, this creates a *dense* tensor with four ``int32`` as elements:
     ::

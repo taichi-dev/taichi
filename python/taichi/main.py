@@ -165,6 +165,42 @@ class TaichiMain:
         runpy.run_path(target, run_name='__main__')
 
     @register
+    def changelog(self, arguments: list = sys.argv[2:]):
+        """Display changelog of current version"""
+        parser = argparse.ArgumentParser(
+            prog='ti changelog', description=f"{self.changelog.__doc__}")
+        import taichi as ti
+        if ti.is_release():
+            args = parser.parse_args(arguments)
+            changelog_md = os.path.join(ti.package_root(), 'CHANGELOG.md')
+            with open(changelog_md) as f:
+                print(f.read())
+        else:
+            parser.add_argument(
+                'version',
+                nargs='?',
+                type=str,
+                default='master',
+                help="A version (tag) that git can use to compare diff with")
+            parser.add_argument(
+                '-s',
+                '--save',
+                action='store_true',
+                help="Save changelog to CHANGELOG.md instead of print to stdout"
+            )
+            args = parser.parse_args(arguments)
+
+            from . import make_changelog
+            res = make_changelog.main(args.version, ti.core.get_repo_dir())
+            if args.save:
+                changelog_md = os.path.join(ti.core.get_repo_dir(),
+                                            'CHANGELOG.md')
+                with open(changelog_md, 'w') as f:
+                    f.write(res)
+            else:
+                print(res)
+
+    @register
     def release(self, arguments: list = sys.argv[2:]):
         """Make source code release"""
         parser = argparse.ArgumentParser(prog='ti release',
@@ -366,7 +402,8 @@ class TaichiMain:
         args = parser.parse_args(arguments)
 
         if not args.inputs:
-            args.inputs = [str(p.resolve()) for p in Path('.').glob('*.png')]
+            args.inputs = sorted(
+                str(p.resolve()) for p in Path('.').glob('*.png'))
 
         ti.info(f'Making video using {len(args.inputs)} png files...')
         ti.info(f'frame_rate = {args.framerate}')

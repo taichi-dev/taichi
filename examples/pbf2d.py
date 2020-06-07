@@ -337,7 +337,7 @@ def main():
     print(f'boundary={boundary} grid={grid_size} cell_size={cell_size}')
     gui = ti.GUI('PBF2D', screen_res)
     print_counter = 0
-    while True:
+    while gui.running:
         move_board()
         run_pbf()
         print_counter += 1

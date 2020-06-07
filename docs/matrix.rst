@@ -16,8 +16,7 @@ Matrices
 - ``U, sigma, V = ti.svd(A, ti.f32)`` (Note that ``sigma`` is a ``3x3`` diagonal matrix)
 - ``any(A)``
 - ``all(A)``
-- Currently, only ``+, -, @`` Matrix operations are supported in Python scope. An exception will be raised if you try to apply other operations
-  on Matrix (Matrices) in Python scope, use them in Taichi scope instead.
+- Currently, only ``+, -, @`` Matrix operations have experimental support in Python-scope. An exception will be raised if you try to apply other operations in Python-scope, use them in Taichi-scope (`@ti.kernel`) instead.
 
 TODO: doc here better like Vector. WIP
 

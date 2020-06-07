@@ -204,6 +204,12 @@ void updateLayer(id self, SEL _) {
   CGColorSpaceRelease(colorspace);
 }
 
+BOOL windowShouldClose(id self, SEL _, id sender) {
+  auto *gui = gui_from_id[sender];
+  gui->window_received_close.store(true);
+  return true;
+}
+
 Class ViewClass;
 Class AppDelClass;
 
@@ -227,6 +233,10 @@ __attribute__((constructor)) static void initView() {
 
   AppDelClass = objc_allocateClassPair((Class)objc_getClass("NSObject"),
                                        "AppDelegate", 0);
+  Protocol *WinDelProtocol = objc_getProtocol("NSWindowDelegate");
+  class_addMethod(AppDelClass, sel_getUid("windowShouldClose:"),
+                  (IMP)windowShouldClose, "c@:@");
+  class_addProtocol(AppDelClass, WinDelProtocol);
   objc_registerClassPair(AppDelClass);
 }
 
@@ -265,9 +275,12 @@ void GUI::create_window() {
        0, false);
   view = call(clscall(kTaichiViewClassName, "alloc"), "initWithFrame:", rect);
   gui_from_id[view] = this;
+  // Needed by NSWindowDelegate
+  gui_from_id[window] = this;
   // Use layer to speed up the draw
   // https://developer.apple.com/documentation/appkit/nsview/1483695-wantslayer?language=objc
   call(view, "setWantsLayer:", YES);
+  call(window, "setDelegate:", appDelObj);
   call(window, "setContentView:", view);
   call(window, "becomeFirstResponder");
   call(window, "setAcceptsMouseMovedEvents:", YES);
@@ -279,6 +292,10 @@ void GUI::process_event() {
        "runMode:beforeDate:", NSDefaultRunLoopMode,
        clscall("NSDate", "distantPast"));
   while (1) {
+    if (window_received_close.load()) {
+      send_window_close_message();
+      window_received_close.store(false);
+    }
     auto event = call(
         NSApp, "nextEventMatchingMask:untilDate:inMode:dequeue:", NSUIntegerMax,
         clscall("NSDate", "distantPast"), NSDefaultRunLoopMode, YES);

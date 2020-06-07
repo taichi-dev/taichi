@@ -3,6 +3,8 @@
 #include "taichi/math/math.h"
 #include "taichi/system/timer.h"
 #include "taichi/program/profiler.h"
+
+#include <atomic>
 #include <ctime>
 #include <numeric>
 
@@ -454,6 +456,7 @@ class GUIBaseCocoa {
   id window, view;
   std::size_t img_data_length;
   std::vector<uint8_t> img_data;
+  std::atomic_bool window_received_close = false;
 };
 
 using GUIBase = GUIBaseCocoa;

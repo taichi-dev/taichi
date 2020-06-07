@@ -31,8 +31,8 @@
 // clang-format off
 METAL_BEGIN_RUNTIME_UTILS_DEF
 STR(
-    // clang-format on
-    using PtrOffset = int32_t; constant constexpr int kAlignment = 8;
+    using PtrOffset = int32_t;
+    constant constexpr int kAlignment = 8;
 
     [[maybe_unused]] PtrOffset mtl_memalloc_alloc(device MemoryAllocator * ma,
                                                   int32_t size) {
@@ -208,7 +208,6 @@ STR(
           addr + (meta.num_slots * meta.element_stride));
       return atomic_load_explicit(n_ptr, metal::memory_order_relaxed);
     }
-    // clang-format off
 )
 METAL_END_RUNTIME_UTILS_DEF
 // clang-format on

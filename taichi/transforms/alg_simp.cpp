@@ -139,7 +139,7 @@ class AlgSimp : public BasicStmtVisitor {
         stmt->replace_with(result.get());
         modifier.insert_before(stmt, std::move(result));
         modifier.erase(stmt);
-      } else if (exponent == std::round(exponent) && exponent >= 0 &&
+      } else if (exponent == std::round(exponent) && exponent > 0 &&
                  exponent <= max_weaken_exponent) {
         // a ** n -> Exponentiation by squaring
         auto a = stmt->lhs;

@@ -1,3 +1,6 @@
+#define MAX_PRINT_ENTRIES (1024 * 4) // * 2 * 4 * 32 = 1 MB
+#define MAX_CONTENTS_PER_PRINT 32
+
 #ifdef __GLSL__
 // clang-format off
 
@@ -13,12 +16,10 @@ layout(shared, binding = 6) buffer runtime {
 // clang-format on
 #else
 
-#define MAX_PRINT_ENTRIES (1024 * 8) // * 4 = 32 KB
-
 struct GLSLRuntime {
   int rand_state;
   int msg_count;
-  int msg_buf[MAX_PRINT_ENTRIES];
+  int msg_buf[MAX_PRINT_ENTRIES * MAX_CONTENTS_PER_PRINT * 2];
 } __attribute__((packed));
 
 #endif

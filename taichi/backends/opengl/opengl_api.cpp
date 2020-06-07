@@ -440,12 +440,10 @@ struct CompiledProgram::Impl {
     int i;
     for (i = 0; i < str_table.size(); i++) {
       if (str_table[i] == str) {
-        TI_INFO("found = {}", i);
         return i;
       }
     }
     str_table.push_back(str);
-    TI_INFO("ret = {}", i);
     return i;
   }
 
@@ -455,12 +453,12 @@ struct CompiledProgram::Impl {
     auto msg_count = rt_buf->msg_count;
     if (msg_count > MAX_PRINT_ENTRIES) {
       TI_WARN(
-          "[glsl] Too much print within one kernel: {} > {}, cutting tail",
+          "[glsl] Too much print within one kernel: {} > {}, clipping",
           msg_count, MAX_PRINT_ENTRIES);
       msg_count = MAX_PRINT_ENTRIES;
     }
 
-    for (int i = 0; i < msg_count; i++) {
+    for (int i = 0; i < msg_count * MAX_CONTENTS_PER_PRINT; i++) {
       int type = rt_buf->msg_buf[i * 2];
       int value = rt_buf->msg_buf[i * 2 + 1];
 
@@ -474,19 +472,23 @@ struct CompiledProgram::Impl {
       std::string str;
       switch (type) {
       case 0:
+        i += MAX_CONTENTS_PER_PRINT - i % MAX_CONTENTS_PER_PRINT - 1;
+        str = "\n";
+        break;
+      case -1:
         str = fmt::format("{}", u.val_i32);
         break;
-      case 1:
+      case -2:
         str = fmt::format("{}", u.val_f32);
         break;
-      case 2:
-        TI_INFO("lookup {}", value);
+      case -3:
         str = str_table.at(value);
         break;
       default:
         TI_WARN("[glsl] Unexpected serialization type: {}, ignoring", type);
+        break;
       };
-      std::cout << str << std::endl;
+      std::cout << str;
     }
     rt_buf->msg_count = 0;
     launcher->impl->runtime_ssbo->unmap();

@@ -1,7 +1,7 @@
 Command line utilities
 ======================
 
-A successful installation of Taichi should add a CLI (Command-Line Interfce) to your system,
+A successful installation of Taichi should add a CLI (Command-Line Interface) to your system,
 which is helpful to perform several rountine tasks quickly. To invoke the CLI, please
 run ``ti`` or ``python3 -m taichi``.
 

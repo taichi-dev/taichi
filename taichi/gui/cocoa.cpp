@@ -292,10 +292,6 @@ void GUI::process_event() {
        "runMode:beforeDate:", NSDefaultRunLoopMode,
        clscall("NSDate", "distantPast"));
   while (1) {
-    if (window_received_close.load()) {
-      send_window_close_message();
-      window_received_close.store(false);
-    }
     auto event = call(
         NSApp, "nextEventMatchingMask:untilDate:inMode:dequeue:", NSUIntegerMax,
         clscall("NSDate", "distantPast"), NSDefaultRunLoopMode, YES);
@@ -347,6 +343,10 @@ void GUI::process_event() {
     } else {
       break;
     }
+  }
+  if (window_received_close.load()) {
+    send_window_close_message();
+    window_received_close.store(false);
   }
 }
 

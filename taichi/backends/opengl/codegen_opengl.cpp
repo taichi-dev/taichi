@@ -227,15 +227,18 @@ class KernelGen : public IRVisitor {
       return;
     }
     auto content = stmt->contents[0];
+    used.print = true;
 
     if (std::holds_alternative<Stmt *>(content)) {
       auto arg_stmt = std::get<Stmt *>(content);
-      used.print = true;
       emit("_msg_push_{}({});",
            opengl_data_type_short_name(arg_stmt->ret_type.data_type),
            arg_stmt->short_name());
+
     } else {
-      TI_WARN("`print` for string is not supported on OpenGL, ignoring");
+      auto str = std::get<std::string>(content);
+      int i = compiled_program_->lookup_or_add_string(str);
+      emit("_msg_push_strid({});", i);
     }
   }
 

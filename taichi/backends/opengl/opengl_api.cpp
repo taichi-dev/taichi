@@ -416,6 +416,7 @@ struct CompiledProgram::Impl {
   std::vector<std::unique_ptr<CompiledKernel>> kernels;
   int arg_count, ret_count;
   std::map<int, size_t> ext_arr_map;
+  std::vector<std::string> str_table;
   UsedFeature used;
 
   Impl(Kernel *kernel) {
@@ -435,7 +436,20 @@ struct CompiledProgram::Impl {
         kernel_name, kernel_source_code, std::move(kpa)));
   }
 
-  static void dump_message_buffer(GLSLLauncher *launcher) {
+  int lookup_or_add_string(const std::string &str) {
+    int i;
+    for (i = 0; i < str_table.size(); i++) {
+      if (str_table[i] == str) {
+        TI_INFO("found = {}", i);
+        return i;
+      }
+    }
+    str_table.push_back(str);
+    TI_INFO("ret = {}", i);
+    return i;
+  }
+
+  void dump_message_buffer(GLSLLauncher *launcher) const {
     auto rt_buf = (GLSLRuntime *)launcher->impl->runtime_ssbo->map();
 
     auto msg_count = rt_buf->msg_count;
@@ -464,6 +478,10 @@ struct CompiledProgram::Impl {
         break;
       case 1:
         str = fmt::format("{}", u.val_f32);
+        break;
+      case 2:
+        TI_INFO("lookup {}", value);
+        str = str_table.at(value);
         break;
       default:
         TI_WARN("[glsl] Unexpected serialization type: {}, ignoring", type);
@@ -625,6 +643,10 @@ struct CompiledProgram::Impl {
     TI_NOT_IMPLEMENTED;
   }
 
+  int lookup_or_add_string(const std::string &str) {
+    TI_NOT_IMPLEMENTED;
+  }
+
   void launch(Context &ctx, GLSLLauncher *launcher) const {
     TI_NOT_IMPLEMENTED;
   }
@@ -692,6 +714,10 @@ void CompiledProgram::add(const std::string &kernel_name,
 
 void CompiledProgram::set_used(const UsedFeature &used) {
   impl->used = used;
+}
+
+int CompiledProgram::lookup_or_add_string(const std::string &str) {
+  return impl->lookup_or_add_string(str);
 }
 
 void CompiledProgram::launch(Context &ctx, GLSLLauncher *launcher) const {

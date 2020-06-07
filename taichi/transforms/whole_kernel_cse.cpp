@@ -17,6 +17,8 @@ class WholeKernelCSE : public BasicStmtVisitor {
   using BasicStmtVisitor::visit;
 
   WholeKernelCSE() {
+    allow_undefined_visitor = true;
+    invoke_default_visitor = true;
   }
 
   bool is_done(Stmt *stmt) {

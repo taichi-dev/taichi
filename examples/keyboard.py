@@ -5,10 +5,10 @@ delta = 0.01
 
 gui = ti.GUI("Keyboard", res=(400, 400))
 
-while True:
+while gui.running:
     while gui.get_event(ti.GUI.PRESS):
         if gui.event.key == ti.GUI.ESCAPE:
-            exit()
+            gui.running = False
         elif gui.event.key == ti.GUI.RMB:
             x, y = gui.event.pos
 

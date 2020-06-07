@@ -110,41 +110,41 @@ class KernelGen : public IRVisitor {
 
     // clang-format off
     std::string kernel_header =
-      "layout(packed, binding = 6) buffer runtime { int _rand_state_; };\n";
+      "layout(std430, binding = 6) buffer runtime { int _rand_state_; };\n";
     kernel_header +=
-      "layout(packed, binding = 0) buffer data_i32 { int _data_i32_[]; };\n"
-      "layout(packed, binding = 0) buffer data_f32 { float _data_f32_[]; };\n"
-      "layout(packed, binding = 0) buffer data_f64 { double _data_f64_[]; };\n";
+      "layout(std430, binding = 0) buffer data_i32 { int _data_i32_[]; };\n"
+      "layout(std430, binding = 0) buffer data_f32 { float _data_f32_[]; };\n"
+      "layout(std430, binding = 0) buffer data_f64 { double _data_f64_[]; };\n";
     if (used.int64)
-      kernel_header += "layout(packed, binding = 0) buffer data_i64 { int64_t _data_i64_[]; };\n";
+      kernel_header += "layout(std430, binding = 0) buffer data_i64 { int64_t _data_i64_[]; };\n";
 
     if (used.global_temp) {
       kernel_header +=
-          "layout(packed, binding = 1) buffer gtmp_i32 { int _gtmp_i32_[]; };\n"
-          "layout(packed, binding = 1) buffer gtmp_f32 { float _gtmp_f32_[]; };\n"
-          "layout(packed, binding = 1) buffer gtmp_f64 { double _gtmp_f64_[]; };\n";
+          "layout(std430, binding = 1) buffer gtmp_i32 { int _gtmp_i32_[]; };\n"
+          "layout(std430, binding = 1) buffer gtmp_f32 { float _gtmp_f32_[]; };\n"
+          "layout(std430, binding = 1) buffer gtmp_f64 { double _gtmp_f64_[]; };\n";
       if (used.int64)
-        kernel_header += "layout(packed, binding = 1) buffer gtmp_i64 { int64_t _gtmp_i64_[]; };\n";
+        kernel_header += "layout(std430, binding = 1) buffer gtmp_i64 { int64_t _gtmp_i64_[]; };\n";
     }
     if (used.argument) {
       kernel_header +=
-          "layout(packed, binding = 2) buffer args_i32 { int _args_i32_[]; };\n"
-          "layout(packed, binding = 2) buffer args_f32 { float _args_f32_[]; };\n"
-          "layout(packed, binding = 2) buffer args_f64 { double _args_f64_[]; };\n";
+          "layout(std430, binding = 2) buffer args_i32 { int _args_i32_[]; };\n"
+          "layout(std430, binding = 2) buffer args_f32 { float _args_f32_[]; };\n"
+          "layout(std430, binding = 2) buffer args_f64 { double _args_f64_[]; };\n";
       if (used.int64)
-        kernel_header += "layout(packed, binding = 2) buffer args_i64 { int64_t _args_i64_[]; };\n";
+        kernel_header += "layout(std430, binding = 2) buffer args_i64 { int64_t _args_i64_[]; };\n";
     }
     if (used.extra_arg) {
       kernel_header +=
-          "layout(packed, binding = 3) buffer earg_i32 { int _earg_i32_[]; };\n";
+          "layout(std430, binding = 3) buffer earg_i32 { int _earg_i32_[]; };\n";
     }
     if (used.external_ptr) {
       kernel_header +=
-          "layout(packed, binding = 4) buffer extr_i32 { int _extr_i32_[]; };\n"
-          "layout(packed, binding = 4) buffer extr_f32 { float _extr_f32_[]; };\n"
-          "layout(packed, binding = 4) buffer extr_f64 { double _extr_f64_[]; };\n";
+          "layout(std430, binding = 4) buffer extr_i32 { int _extr_i32_[]; };\n"
+          "layout(std430, binding = 4) buffer extr_f32 { float _extr_f32_[]; };\n"
+          "layout(std430, binding = 4) buffer extr_f64 { double _extr_f64_[]; };\n";
       if (used.int64)
-        kernel_header += "layout(packed, binding = 4) buffer extr_i64 { int64_t _extr_i64_[]; };\n";
+        kernel_header += "layout(std430, binding = 4) buffer extr_i64 { int64_t _extr_i64_[]; };\n";
     }
     // clang-format on
     if (used.simulated_atomic_float) {

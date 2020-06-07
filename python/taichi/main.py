@@ -191,7 +191,7 @@ class TaichiMain:
             args = parser.parse_args(arguments)
 
             from . import make_changelog
-            res = make_changelog.main(args.version)
+            res = make_changelog.main(args.version, ti.core.get_repo_dir())
             if args.save:
                 changelog_md = os.path.join(ti.core.get_repo_dir(),
                                             'CHANGELOG.md')
@@ -402,7 +402,8 @@ class TaichiMain:
         args = parser.parse_args(arguments)
 
         if not args.inputs:
-            args.inputs = [str(p.resolve()) for p in Path('.').glob('*.png')]
+            args.inputs = sorted(
+                str(p.resolve()) for p in Path('.').glob('*.png'))
 
         ti.info(f'Making video using {len(args.inputs)} png files...')
         ti.info(f'frame_rate = {args.framerate}')

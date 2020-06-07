@@ -812,11 +812,14 @@ class Matrix(TaichiOperations):
         return c
 
 
-class Vector(Matrix):
-    def __init_(n, dt=None, shape=None, offset=None, **kwargs):
-        super(Vector, self).__init__(n,
-                                     1,
-                                     dt=dt,
-                                     shape=shape,
-                                     offset=offset,
-                                     **kwargs)
+def Vector(n, dt=None, shape=None, offset=None, **kwargs):
+    return Matrix(n, 1, dt=dt, shape=shape, offset=offset, **kwargs)
+
+
+Vector.zero = Matrix.zero
+Vector.one = Matrix.one
+Vector.dot = Matrix.dot
+Vector.cross = Matrix.cross
+Vector.outer_product = Matrix.outer_product
+Vector.unit = Matrix.unit
+Vector.normalized = Matrix.normalized

@@ -402,7 +402,7 @@ class TaichiMain:
         args = parser.parse_args(arguments)
 
         if not args.inputs:
-            args.inputs = [str(p.resolve()) for p in Path('.').glob('*.png')]
+            args.inputs = sorted(str(p.resolve()) for p in Path('.').glob('*.png'))
 
         ti.info(f'Making video using {len(args.inputs)} png files...')
         ti.info(f'frame_rate = {args.framerate}')
